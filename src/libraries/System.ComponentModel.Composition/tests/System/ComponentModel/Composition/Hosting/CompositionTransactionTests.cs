@@ -293,8 +293,8 @@ namespace System.ComponentModel.Composition.Hosting
         [Fact]
         public void AtomicComposition_CompleteValues()
         {
-            object key1 = new Object();
-            object key2 = new Object();
+            object key1 = new object();
+            object key2 = new object();
 
             using (var contextA = new AtomicComposition())
             {
@@ -357,7 +357,7 @@ namespace System.ComponentModel.Composition.Hosting
         {
             // This is a rather convoluted test that exercises the way AtomicComposition used to work to
             // ensure consistency of the newer design
-            var key = new Object();
+            var key = new object();
 
             using (var contextA = new AtomicComposition())
             {

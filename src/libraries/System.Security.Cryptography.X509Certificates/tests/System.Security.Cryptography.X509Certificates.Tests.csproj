@@ -2,21 +2,17 @@
   <PropertyGroup>
     <ProjectGuid>{A28B0064-EFB2-4B77-B97C-DECF5DAB074E}</ProjectGuid>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
+    <HaveDSA Condition="'$(TargetGroup)'=='netcoreapp' OR '$(TargetGroup)'=='uap' OR '$(TargetGroup)'=='net462'">true</HaveDSA>
+    <HaveCertificateCreation Condition="'$(TargetGroup)'=='netcoreapp' OR '$(TargetGroup)'=='uap' OR '$(TargetGroup)'=='net472'">true</HaveCertificateCreation>
     <DefineConstants Condition="'$(TargetGroup)'=='netcoreapp'">$(DefineConstants);netcoreapp</DefineConstants>
+    <DefineConstants Condition="'$(TargetGroup)'=='uap'">$(DefineConstants);uap</DefineConstants>
+    <DefineConstants Condition="'$(TargetGroup)'!='netcoreapp' AND '$(TargetGroup)'!='uap' AND '$(TargetGroup)'!='net462'">$(DefineConstants);NO_DSA_AVAILABLE</DefineConstants>
+    <DefineConstants Condition="'$(HaveCertificateCreation)'!='true'">$(DefineConstants);NO_EPHEMERALKEYSET_AVAILABLE</DefineConstants>
+    <DefineConstants Condition="'$(TargetGroup)'=='netcoreapp' OR '$(TargetGroup)'=='uap'">$(DefineConstants);HAVE_THUMBPRINT_OVERLOADS</DefineConstants>
     <Configurations>netcoreapp-OSX-Debug;netcoreapp-OSX-Release;netcoreapp-Unix-Debug;netcoreapp-Unix-Release;netcoreapp-Windows_NT-Debug;netcoreapp-Windows_NT-Release;uap-Windows_NT-Debug;uap-Windows_NT-Release</Configurations>
   </PropertyGroup>
   <ItemGroup>
     <Compile Include="Cert.cs" />
-    <Compile Include="CertificateCreation\CertificateRequestApiTests.cs" />
-    <Compile Include="CertificateCreation\CertificateRequestChainTests.cs" />
-    <Compile Include="CertificateCreation\CertificateRequestUsageTests.cs" />
-    <Compile Include="CertificateCreation\DSAX509SignatureGenerator.cs" />
-    <Compile Include="CertificateCreation\EccTestData.cs" />
-    <Compile Include="CertificateCreation\ECDsaX509SignatureGeneratorTests.cs" />
-    <Compile Include="CertificateCreation\PrivateKeyAssociationTests.cs" />
-    <Compile Include="CertificateCreation\RSAPkcs1X509SignatureGeneratorTests.cs" />
-    <Compile Include="CertificateCreation\RSAPssX509SignatureGeneratorTests.cs" />
-    <Compile Include="CertificateCreation\SubjectAltNameBuilderTests.cs" />
     <Compile Include="CertTests.cs" />
     <Compile Include="ChainHolder.cs" />
     <Compile Include="ChainTests.cs" />
@@ -24,8 +20,6 @@
     <Compile Include="CollectionTests.cs" />
     <Compile Include="ContentTypeTests.cs" />
     <Compile Include="CtorTests.cs" />
-    <Compile Include="DSAOther.cs" />
-    <Compile Include="ECDsaOther.cs" />
     <Compile Include="ExportTests.cs" />
     <Compile Include="ExtensionsTests.cs" />
     <Compile Include="FindTests.cs" />
@@ -35,7 +29,6 @@
     <Compile Include="PfxTests.cs" />
     <Compile Include="PropsTests.cs" />
     <Compile Include="PublicKeyTests.cs" />
-    <Compile Include="RSAOther.cs" />
     <Compile Include="TestData.cs" />
     <Compile Include="TestEnvironmentConfiguration.cs" />
     <Compile Include="X500DistinguishedNameEncodingTests.cs" />
@@ -46,6 +39,21 @@
       <Link>CommonTest\System\Security\Cryptography\ByteUtils.cs</Link>
     </Compile>
     <Compile Include="ImportTests.cs" />
+  </ItemGroup>
+  <ItemGroup Condition="'$(HaveCertificateCreation)'=='true'">
+    <Compile Include="CertificateCreation\CertificateRequestApiTests.cs" />
+    <Compile Include="CertificateCreation\CertificateRequestChainTests.cs" />
+    <Compile Include="CertificateCreation\CertificateRequestUsageTests.cs" />
+    <Compile Include="CertificateCreation\DSAX509SignatureGenerator.cs" />
+    <Compile Include="CertificateCreation\EccTestData.cs" />
+    <Compile Include="CertificateCreation\ECDsaX509SignatureGeneratorTests.cs" />
+    <Compile Include="CertificateCreation\PrivateKeyAssociationTests.cs" />
+    <Compile Include="CertificateCreation\RSAPkcs1X509SignatureGeneratorTests.cs" />
+    <Compile Include="CertificateCreation\RSAPssX509SignatureGeneratorTests.cs" />
+    <Compile Include="CertificateCreation\SubjectAltNameBuilderTests.cs" />
+    <Compile Include="DSAOther.cs" />
+    <Compile Include="ECDsaOther.cs" />
+    <Compile Include="RSAOther.cs" />
   </ItemGroup>
   <ItemGroup Condition=" '$(TargetsUnix)' == 'true' AND '$(TargetsOSX)' != 'true' ">
     <Compile Include="X509FilesystemTests.Unix.cs" />

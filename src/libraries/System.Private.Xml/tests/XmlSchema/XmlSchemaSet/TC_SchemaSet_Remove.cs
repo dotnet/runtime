@@ -168,7 +168,7 @@ namespace System.Xml.Tests
                 ICollection Col = sc.Schemas();
                 CError.Compare(Col.Count, 2, "ICollection.Count");
                 CError.Compare(sc.Contains("ns-b"), false, "Contains");
-                CError.Compare(sc.Contains(String.Empty), true, "Contains");
+                CError.Compare(sc.Contains(string.Empty), true, "Contains");
                 CError.Compare(sc.Contains("ns-a"), true, "Contains");
             }
             catch (Exception)
@@ -192,7 +192,7 @@ namespace System.Xml.Tests
                 XmlSchema Schema1 = sc.Add("ns-b", Path.Combine(TestData._Root, "import_v4_b.xsd"));
                 XmlSchema Schema2 = sc.Add(null, Path.Combine(TestData._Root, "import_v5_a.xsd")); // param as filename
                 sc.Compile();
-                ICollection col = sc.Schemas(String.Empty);
+                ICollection col = sc.Schemas(string.Empty);
                 foreach (XmlSchema schema in col)
                 {
                     sc.Remove(schema); //should remove just one
@@ -202,7 +202,7 @@ namespace System.Xml.Tests
                 ICollection Col = sc.Schemas();
                 CError.Compare(Col.Count, 2, "ICollection.Count");
                 CError.Compare(sc.Contains("ns-b"), true, "Contains");
-                CError.Compare(sc.Contains(String.Empty), false, "Contains");
+                CError.Compare(sc.Contains(string.Empty), false, "Contains");
                 CError.Compare(sc.Contains("ns-a"), true, "Contains");
             }
             catch (Exception)

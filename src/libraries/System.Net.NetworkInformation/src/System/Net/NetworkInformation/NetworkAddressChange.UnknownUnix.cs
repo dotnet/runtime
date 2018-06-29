@@ -11,5 +11,11 @@ namespace System.Net.NetworkInformation
             add { throw new PlatformNotSupportedException(); }
             remove { throw new PlatformNotSupportedException(); }
         }
+
+        public static event NetworkAvailabilityChangedEventHandler NetworkAvailabilityChanged
+        {
+            add { throw new PlatformNotSupportedException(); }
+            remove { throw new PlatformNotSupportedException(); }
+        }
     }
 }

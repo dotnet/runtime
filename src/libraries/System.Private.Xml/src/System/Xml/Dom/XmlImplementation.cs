@@ -23,7 +23,7 @@ namespace System.Xml
         // Test if the DOM implementation implements a specific feature.
         public bool HasFeature(string strFeature, string strVersion)
         {
-            if (String.Equals("XML", strFeature, StringComparison.OrdinalIgnoreCase))
+            if (string.Equals("XML", strFeature, StringComparison.OrdinalIgnoreCase))
             {
                 if (strVersion == null || strVersion == "1.0" || strVersion == "2.0")
                     return true;

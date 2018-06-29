@@ -16,7 +16,7 @@ namespace System.Tests
         {
             long start = GC.GetAllocatedBytesForCurrentThread();
 
-            GC.KeepAlive(new String('a', size));
+            GC.KeepAlive(new string('a', size));
 
             long end = GC.GetAllocatedBytesForCurrentThread();
 

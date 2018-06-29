@@ -59,7 +59,7 @@ namespace System.Xml.Tests
         [Theory]
         [InlineData("single")]
         [InlineData("multiple")]
-        public void SanityTestForSimpleType_MultipleCallInOneContext(String param)
+        public void SanityTestForSimpleType_MultipleCallInOneContext(string param)
         {
             XmlSchemaValidator val = CreateValidator(XSDFILE_VALIDATE_TEXT);
             CValidationEventHolder holder = new CValidationEventHolder();
@@ -538,7 +538,7 @@ namespace System.Xml.Tests
         [InlineData("duplicate")]
         [InlineData("missing")]
         [InlineData("ignore")]
-        public void TestForIdentityConstraints_Valid_InvalidDuplicateKey_InvalidKeyRefMissing_InvalidIdentitiConstraintIsSet(String constrType)
+        public void TestForIdentityConstraints_Valid_InvalidDuplicateKey_InvalidKeyRefMissing_InvalidIdentitiConstraintIsSet(string constrType)
         {
             XmlSchemaValidator val;
             XmlSchemaInfo info = new XmlSchemaInfo();
@@ -674,7 +674,7 @@ namespace System.Xml.Tests
         [Theory]
         [InlineData("first")]
         [InlineData("second")] //(BUG #307549)
-        public void TestXmlSchemaInfoValuesAfterUnionValidation_Without_With_ValidationEndElementOverload(String overload)
+        public void TestXmlSchemaInfoValuesAfterUnionValidation_Without_With_ValidationEndElementOverload(string overload)
         {
             XmlSchemaValidator val = CreateValidator(XSDFILE_VALIDATE_END_ELEMENT);
             XmlSchemaInfo info = new XmlSchemaInfo();
@@ -761,7 +761,7 @@ namespace System.Xml.Tests
         [Theory]
         [InlineData("valid")]
         [InlineData("invalid")]
-        public void SkipAfterValidating_ValidContent_IncompleteContent(String validity)
+        public void SkipAfterValidating_ValidContent_IncompleteContent(string validity)
         {
             XmlSchemaValidator val = CreateValidator(XSDFILE_VALIDATE_END_ELEMENT);
             XmlSchemaInfo info = new XmlSchemaInfo();

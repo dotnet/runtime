@@ -293,7 +293,7 @@ namespace System.Data.SqlClient
                 }
             }
 
-            String name = ((SqlParameter)value).ParameterName;
+            string name = ((SqlParameter)value).ParameterName;
             if (0 == name.Length)
             {
                 index = 1;

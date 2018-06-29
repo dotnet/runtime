@@ -28,7 +28,7 @@ namespace System.Reflection.Internal
 
             if (byteCount == 0)
             {
-                return String.Empty;
+                return string.Empty;
             }
 
             return utf8Decoder.GetString(bytes, byteCount);
@@ -42,7 +42,7 @@ namespace System.Reflection.Internal
 
             if (prefixedByteCount == 0)
             {
-                return String.Empty;
+                return string.Empty;
             }
 
             byte[] buffer = ArrayPool<byte>.Shared.Rent(prefixedByteCount);

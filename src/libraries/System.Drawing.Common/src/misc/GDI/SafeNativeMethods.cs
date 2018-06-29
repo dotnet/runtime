@@ -3,7 +3,6 @@
 // See the LICENSE file in the project root for more information.
 
 using System.Runtime.InteropServices;
-using System.Security;
 
 namespace System.Drawing.Internal
 {
@@ -16,7 +15,7 @@ namespace System.Drawing.Internal
         public sealed class CommonHandles
         {
             static CommonHandles() { }
-            
+
             /// <summary>
             /// Handle type for GDI objects.
             /// </summary>
@@ -37,6 +36,6 @@ namespace System.Drawing.Internal
             IntPtr hRgn = System.Internal.HandleCollector.Add(IntCreateRectRgn(x1, y1, x2, y2), CommonHandles.GDI);
             DbgUtil.AssertWin32(hRgn != IntPtr.Zero, "IntCreateRectRgn([x1={0}, y1={1}, x2={2}, y2={3}]) failed.", x1, y1, x2, y2);
             return hRgn;
-        }        
+        }
     }
 }

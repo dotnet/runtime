@@ -35,14 +35,11 @@
     <Compile Include="$(CommonPath)\Interop\Windows\advapi32\Interop.LUID.cs">
       <Link>Common\Interop\Interop.LUID.cs</Link>
     </Compile>
-    <Compile Include="$(CommonPath)\Interop\Windows\advapi32\Interop.LUIDAndAttributes.cs">
-      <Link>Common\Interop\Interop.LUIDAndAttributes.cs</Link>
+    <Compile Include="$(CommonPath)\Interop\Windows\advapi32\Interop.LUID_AND_ATTRIBUTES.cs">
+      <Link>Common\Interop\Interop.LUID_AND_ATTRIBUTES.cs</Link>
     </Compile>
-    <Compile Include="$(CommonPath)\Interop\Windows\advapi32\Interop.LUIDAndAttributes1.cs">
-      <Link>Common\Interop\Interop.LUIDAndAttributes1.cs</Link>
-    </Compile>
-    <Compile Include="$(CommonPath)\Interop\Windows\advapi32\Interop.TokenPrivilege.cs">
-      <Link>Common\Interop\Interop.TokenPrivilege.cs</Link>
+    <Compile Include="$(CommonPath)\Interop\Windows\advapi32\Interop.TOKEN_PRIVILEGE.cs">
+      <Link>Common\Interop\Interop.TOKEN_PRIVILEGE.cs</Link>
     </Compile>
     <Compile Include="$(CommonPath)\Interop\Windows\advapi32\Interop.SecurityImpersonationLevel.cs">
       <Link>Common\Interop\Interop.SecurityImpersonationLevel.cs</Link>
@@ -101,8 +98,8 @@
     <Compile Include="$(CommonPath)\Interop\Windows\kernel32\Interop.GetCurrentThread.cs">
       <Link>Common\Interop\Interop.GetCurrentThread.cs</Link>
     </Compile>
-    <Compile Include="$(CommonPath)\Interop\Windows\advapi32\Interop.AdjustTokenPrivileges_TokenPrivilege.cs">
-      <Link>Common\Interop\Interop.AdjustTokenPrivileges_TokenPrivilege.cs</Link>
+    <Compile Include="$(CommonPath)\Interop\Windows\advapi32\Interop.AdjustTokenPrivileges.cs">
+      <Link>Common\Interop\Interop.AdjustTokenPrivileges.cs</Link>
     </Compile>
     <Compile Include="$(CommonPath)\Interop\Windows\advapi32\Interop.DuplicateTokenEx_SafeTokenHandle.cs">
       <Link>Common\Interop\Interop.DuplicateTokenEx_SafeTokenHandle.cs</Link>

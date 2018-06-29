@@ -86,12 +86,12 @@ namespace System.Numerics.Tests
             byte[] tempByteArray2 = new byte[0];
             
             // Axiom: X/1 = X
-            VerifyIdentityString(BigInteger.One + " " + Int32.MaxValue + " b/", Int32.MaxValue.ToString());
-            VerifyIdentityString(BigInteger.One + " " + Int64.MaxValue + " b/", Int64.MaxValue.ToString());
+            VerifyIdentityString(BigInteger.One + " " + int.MaxValue + " b/", Int32.MaxValue.ToString());
+            VerifyIdentityString(BigInteger.One + " " + long.MaxValue + " b/", Int64.MaxValue.ToString());
 
             for (int i = 0; i < s_samples; i++)
             {
-                String randBigInt = Print(GetRandomByteArray(s_random));
+                string randBigInt = Print(GetRandomByteArray(s_random));
                 VerifyIdentityString(BigInteger.One + " " + randBigInt + "b/", randBigInt.Substring(0, randBigInt.Length - 1));
             }
         }
@@ -104,12 +104,12 @@ namespace System.Numerics.Tests
             byte[] tempByteArray2 = new byte[0];
             
             // Axiom: 0/X = 0
-            VerifyIdentityString(Int32.MaxValue + " " + BigInteger.Zero + " b/", BigInteger.Zero.ToString());
-            VerifyIdentityString(Int64.MaxValue + " " + BigInteger.Zero + " b/", BigInteger.Zero.ToString());
+            VerifyIdentityString(int.MaxValue + " " + BigInteger.Zero + " b/", BigInteger.Zero.ToString());
+            VerifyIdentityString(long.MaxValue + " " + BigInteger.Zero + " b/", BigInteger.Zero.ToString());
 
             for (int i = 0; i < s_samples; i++)
             {
-                String randBigInt = Print(GetRandomByteArray(s_random));
+                string randBigInt = Print(GetRandomByteArray(s_random));
                 VerifyIdentityString(randBigInt + BigInteger.Zero + " b/", BigInteger.Zero.ToString());
             }
         }
@@ -179,7 +179,7 @@ namespace System.Numerics.Tests
             return MyBigIntImp.GetNonZeroRandomByteArray(random, size);
         }
         
-        private static String Print(byte[] bytes)
+        private static string Print(byte[] bytes)
         {
             return MyBigIntImp.Print(bytes);
         }

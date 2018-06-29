@@ -138,7 +138,7 @@ namespace System.Runtime.Serialization.Xml.Canonicalization.Tests
             if (!MarkToRender(prefix, searchOuterContext, context, false))
             {
                 string nodeName = context != null ? context.CurrentNodeName : null;
-                throw new XmlException(String.Format("Unable to find prefix: {0}, {1}", prefix, nodeName));
+                throw new XmlException(string.Format("Unable to find prefix: {0}, {1}", prefix, nodeName));
             }
         }
 
@@ -335,7 +335,7 @@ namespace System.Runtime.Serialization.Xml.Canonicalization.Tests
 
             public int Compare(NamespaceEntry x, NamespaceEntry y)
             {
-                return String.Compare(x.Prefix, y.Prefix, StringComparison.Ordinal);
+                return string.Compare(x.Prefix, y.Prefix, StringComparison.Ordinal);
             }
         }
     }

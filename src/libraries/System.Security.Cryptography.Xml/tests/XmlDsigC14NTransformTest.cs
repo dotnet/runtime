@@ -381,7 +381,7 @@ namespace System.Security.Cryptography.Xml.Tests
             XmlDocument doc = new XmlDocument();
             doc.AppendChild(doc.CreateElement("foo", "urn:foo"));
             doc.DocumentElement.AppendChild(doc.CreateElement("bar", "urn:bar"));
-            Assert.Equal(String.Empty, doc.DocumentElement.GetAttribute("xmlns"));
+            Assert.Equal(string.Empty, doc.DocumentElement.GetAttribute("xmlns"));
             XmlDsigC14NTransform t = new XmlDsigC14NTransform();
             t.LoadInput(doc);
             Stream s = t.GetOutput() as Stream;

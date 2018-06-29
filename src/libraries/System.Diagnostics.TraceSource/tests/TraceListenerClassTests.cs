@@ -73,15 +73,15 @@ namespace System.Diagnostics.TraceSourceTests
         {
             var listener = new TestTraceListener();
             listener.Filter = new TestTraceFilter(false);
-            listener.Write((Object)"Message");
+            listener.Write((object)"Message");
             Assert.Equal(0, listener.GetCallCount(Method.Write));
 
             listener.Filter = new TestTraceFilter(true);
 
-            listener.Write((Object)null);
+            listener.Write((object)null);
             Assert.Equal(0, listener.GetCallCount(Method.Write));
 
-            listener.Write((Object)"Message");
+            listener.Write((object)"Message");
             Assert.Equal(1, listener.GetCallCount(Method.Write));
         }
 
@@ -110,18 +110,18 @@ namespace System.Diagnostics.TraceSourceTests
         {
             var listener = new TestTraceListener();
             listener.Filter = new TestTraceFilter(false);
-            listener.Write((Object)"Message", "Category");
+            listener.Write((object)"Message", "Category");
             Assert.Equal(0, listener.GetCallCount(Method.Write));
 
             listener.Filter = new TestTraceFilter(true);
 
-            listener.Write((Object)"Message", null);
+            listener.Write((object)"Message", null);
             Assert.Equal(1, listener.GetCallCount(Method.Write));
 
-            listener.Write((Object)"Message", "Category");
+            listener.Write((object)"Message", "Category");
             Assert.Equal(2, listener.GetCallCount(Method.Write));
 
-            listener.Write((Object)null, "Category");
+            listener.Write((object)null, "Category");
             Assert.Equal(3, listener.GetCallCount(Method.Write));
         }
 
@@ -150,16 +150,16 @@ namespace System.Diagnostics.TraceSourceTests
         {
             var listener = new TestTraceListener();
             listener.Filter = new TestTraceFilter(false);
-            listener.WriteLine((Object)"Message");
+            listener.WriteLine((object)"Message");
             Assert.Equal(0, listener.GetCallCount(Method.WriteLine));
 
             listener.Filter = new TestTraceFilter(true);
 
             // NOTE: Writing null will result in a newline being written
-            listener.WriteLine((Object)null);
+            listener.WriteLine((object)null);
             Assert.Equal(1, listener.GetCallCount(Method.WriteLine));
 
-            listener.WriteLine((Object)"Message");
+            listener.WriteLine((object)"Message");
             Assert.Equal(2, listener.GetCallCount(Method.WriteLine));
         }
 
@@ -188,18 +188,18 @@ namespace System.Diagnostics.TraceSourceTests
         {
             var listener = new TestTraceListener();
             listener.Filter = new TestTraceFilter(false);
-            listener.WriteLine((Object)"Message", "Category");
+            listener.WriteLine((object)"Message", "Category");
             Assert.Equal(0, listener.GetCallCount(Method.WriteLine));
 
             listener.Filter = new TestTraceFilter(true);
 
-            listener.WriteLine((Object)"Message", null);
+            listener.WriteLine((object)"Message", null);
             Assert.Equal(1, listener.GetCallCount(Method.WriteLine));
 
-            listener.WriteLine((Object)"Message", "Category");
+            listener.WriteLine((object)"Message", "Category");
             Assert.Equal(2, listener.GetCallCount(Method.WriteLine));
 
-            listener.WriteLine((Object)null, "Category");
+            listener.WriteLine((object)null, "Category");
             Assert.Equal(3, listener.GetCallCount(Method.WriteLine));
         }
 
@@ -209,16 +209,16 @@ namespace System.Diagnostics.TraceSourceTests
             var cache = new TraceEventCache();
             var listener = new TestTextTraceListener();
             listener.Filter = new TestTraceFilter(false);
-            listener.TraceData(cache, "Source", TraceEventType.Critical, 1, new Object());
+            listener.TraceData(cache, "Source", TraceEventType.Critical, 1, new object());
             Assert.Equal(0, listener.WriteCount);
 
             listener = new TestTextTraceListener();
-            listener.TraceData(cache, "Source", TraceEventType.Critical, 1, new Object());
+            listener.TraceData(cache, "Source", TraceEventType.Critical, 1, new object());
             var expected = 2; // header and message.
             Assert.Equal(expected, listener.WriteCount);
 
             listener = new TestTextTraceListener();
-            listener.TraceData(cache, "Source", TraceEventType.Critical, 1, (Object)null);
+            listener.TraceData(cache, "Source", TraceEventType.Critical, 1, (object)null);
             Assert.Equal(expected, listener.WriteCount);
         }
 
@@ -228,11 +228,11 @@ namespace System.Diagnostics.TraceSourceTests
             var cache = new TraceEventCache();
             var listener = new TestTextTraceListener();
             listener.Filter = new TestTraceFilter(false);
-            listener.TraceData(cache, "Source", TraceEventType.Critical, 1, new Object[0]);
+            listener.TraceData(cache, "Source", TraceEventType.Critical, 1, new object[0]);
             Assert.Equal(0, listener.WriteCount);
 
             listener = new TestTextTraceListener();
-            listener.TraceData(cache, "Source", TraceEventType.Critical, 1, (Object[])null);
+            listener.TraceData(cache, "Source", TraceEventType.Critical, 1, (object[])null);
             var expected = 2; // header and message.
             Assert.Equal(expected, listener.WriteCount);
 

@@ -177,8 +177,8 @@ namespace MS.Internal.Xml.Cache
         public static int GetLocation(XPathNode[] pageNode, int idxNode)
         {
             Debug.Assert(pageNode != null && idxNode != 0, "Cannot pass null argument(s)");
-            Debug.Assert(idxNode <= UInt16.MaxValue);
-            Debug.Assert(pageNode[0].PageInfo.PageNumber <= Int16.MaxValue);
+            Debug.Assert(idxNode <= ushort.MaxValue);
+            Debug.Assert(pageNode[0].PageInfo.PageNumber <= short.MaxValue);
             return (pageNode[0].PageInfo.PageNumber << 16) | idxNode;
         }
 

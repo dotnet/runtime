@@ -155,11 +155,23 @@ namespace System.Security.Cryptography
                     return VerifyHash((ReadOnlySpan<byte>)hash, (ReadOnlySpan<byte>)signature);
                 }
 
-                public override bool VerifyHash(ReadOnlySpan<byte> hash, ReadOnlySpan<byte> signature) =>
-                    Interop.AppleCrypto.VerifySignature(
+                public override bool VerifyHash(ReadOnlySpan<byte> hash, ReadOnlySpan<byte> signature)
+                {
+                    // The signature format for .NET is r.Concat(s). Each of r and s are of length BitsToBytes(KeySize), even
+                    // when they would have leading zeroes.  If it's the correct size, then we need to encode it from
+                    // r.Concat(s) to SEQUENCE(INTEGER(r), INTEGER(s)), because that's the format that OpenSSL expects.
+                    int expectedBytes = 2 * AsymmetricAlgorithmHelpers.BitsToBytes(KeySize);
+                    if (signature.Length != expectedBytes)
+                    {
+                        // The input isn't of the right length, so we can't sensibly re-encode it.
+                        return false;
+                    }
+
+                    return Interop.AppleCrypto.VerifySignature(
                         GetKeys().PublicKey,
                         hash,
                         AsymmetricAlgorithmHelpers.ConvertIeee1363ToDer(signature));
+                }
 
                 protected override byte[] HashData(byte[] data, int offset, int count, HashAlgorithmName hashAlgorithm) =>
                     AsymmetricAlgorithmHelpers.HashData(data, offset, count, hashAlgorithm);

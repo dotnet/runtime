@@ -1,4 +1,4 @@
-﻿// Licensed to the .NET Foundation under one or more agreements.
+// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
@@ -290,7 +290,7 @@ namespace SerializationTestTypes
 
         public BaseDCNoIsRef()
         {
-            _data = String.Empty;
+            _data = string.Empty;
         }
     }
 
@@ -328,7 +328,7 @@ namespace SerializationTestTypes
     [CollectionDataContract(IsReference = false)]
     public class DerivedCDCFromBaseDC : BaseDC, IList<string>
     {
-        public string Data223 = String.Empty;
+        public string Data223 = string.Empty;
         private List<string> _internalData = new List<string>();
 
         public int IndexOf(string item)

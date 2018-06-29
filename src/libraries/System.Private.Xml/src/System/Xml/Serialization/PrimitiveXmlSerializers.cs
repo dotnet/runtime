@@ -1,4 +1,4 @@
-﻿// Licensed to the .NET Foundation under one or more agreements.
+// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
@@ -17,7 +17,7 @@ namespace System.Xml.Serialization
                 return;
             }
             TopLevelElement();
-            WriteNullableStringLiteral(@"string", @"", ((System.String)o));
+            WriteNullableStringLiteral(@"string", @"", ((string)o));
         }
 
         internal void Write_int(object o)
@@ -28,7 +28,7 @@ namespace System.Xml.Serialization
                 WriteEmptyTag(@"int", @"");
                 return;
             }
-            WriteElementStringRaw(@"int", @"", System.Xml.XmlConvert.ToString((System.Int32)((System.Int32)o)));
+            WriteElementStringRaw(@"int", @"", System.Xml.XmlConvert.ToString((int)((int)o)));
         }
 
         internal void Write_boolean(object o)
@@ -39,7 +39,7 @@ namespace System.Xml.Serialization
                 WriteEmptyTag(@"boolean", @"");
                 return;
             }
-            WriteElementStringRaw(@"boolean", @"", System.Xml.XmlConvert.ToString((System.Boolean)((System.Boolean)o)));
+            WriteElementStringRaw(@"boolean", @"", System.Xml.XmlConvert.ToString((bool)((bool)o)));
         }
 
         internal void Write_short(object o)
@@ -50,7 +50,7 @@ namespace System.Xml.Serialization
                 WriteEmptyTag(@"short", @"");
                 return;
             }
-            WriteElementStringRaw(@"short", @"", System.Xml.XmlConvert.ToString((System.Int16)((System.Int16)o)));
+            WriteElementStringRaw(@"short", @"", System.Xml.XmlConvert.ToString((short)((short)o)));
         }
 
         internal void Write_long(object o)
@@ -61,7 +61,7 @@ namespace System.Xml.Serialization
                 WriteEmptyTag(@"long", @"");
                 return;
             }
-            WriteElementStringRaw(@"long", @"", System.Xml.XmlConvert.ToString((System.Int64)((System.Int64)o)));
+            WriteElementStringRaw(@"long", @"", System.Xml.XmlConvert.ToString((long)((long)o)));
         }
 
         internal void Write_float(object o)
@@ -72,7 +72,7 @@ namespace System.Xml.Serialization
                 WriteEmptyTag(@"float", @"");
                 return;
             }
-            WriteElementStringRaw(@"float", @"", System.Xml.XmlConvert.ToString((System.Single)((System.Single)o)));
+            WriteElementStringRaw(@"float", @"", System.Xml.XmlConvert.ToString((float)((float)o)));
         }
 
         internal void Write_double(object o)
@@ -83,7 +83,7 @@ namespace System.Xml.Serialization
                 WriteEmptyTag(@"double", @"");
                 return;
             }
-            WriteElementStringRaw(@"double", @"", System.Xml.XmlConvert.ToString((System.Double)((System.Double)o)));
+            WriteElementStringRaw(@"double", @"", System.Xml.XmlConvert.ToString((double)((double)o)));
         }
 
         internal void Write_decimal(object o)
@@ -95,7 +95,7 @@ namespace System.Xml.Serialization
                 return;
             }
             // Preventing inlining optimization which is causing issue for XmlConvert.ToString(Decimal)
-            Decimal d = (System.Decimal)o;
+            decimal d = (decimal)o;
             WriteElementStringRaw(@"decimal", @"", System.Xml.XmlConvert.ToString(d));
         }
 
@@ -118,7 +118,7 @@ namespace System.Xml.Serialization
                 WriteEmptyTag(@"unsignedByte", @"");
                 return;
             }
-            WriteElementStringRaw(@"unsignedByte", @"", System.Xml.XmlConvert.ToString((System.Byte)((System.Byte)o)));
+            WriteElementStringRaw(@"unsignedByte", @"", System.Xml.XmlConvert.ToString((byte)((byte)o)));
         }
 
         internal void Write_byte(object o)
@@ -129,7 +129,7 @@ namespace System.Xml.Serialization
                 WriteEmptyTag(@"byte", @"");
                 return;
             }
-            WriteElementStringRaw(@"byte", @"", System.Xml.XmlConvert.ToString((System.SByte)((System.SByte)o)));
+            WriteElementStringRaw(@"byte", @"", System.Xml.XmlConvert.ToString((sbyte)((sbyte)o)));
         }
 
         internal void Write_unsignedShort(object o)
@@ -140,7 +140,7 @@ namespace System.Xml.Serialization
                 WriteEmptyTag(@"unsignedShort", @"");
                 return;
             }
-            WriteElementStringRaw(@"unsignedShort", @"", System.Xml.XmlConvert.ToString((System.UInt16)((System.UInt16)o)));
+            WriteElementStringRaw(@"unsignedShort", @"", System.Xml.XmlConvert.ToString((ushort)((ushort)o)));
         }
 
         internal void Write_unsignedInt(object o)
@@ -151,7 +151,7 @@ namespace System.Xml.Serialization
                 WriteEmptyTag(@"unsignedInt", @"");
                 return;
             }
-            WriteElementStringRaw(@"unsignedInt", @"", System.Xml.XmlConvert.ToString((System.UInt32)((System.UInt32)o)));
+            WriteElementStringRaw(@"unsignedInt", @"", System.Xml.XmlConvert.ToString((uint)((uint)o)));
         }
 
         internal void Write_unsignedLong(object o)
@@ -162,7 +162,7 @@ namespace System.Xml.Serialization
                 WriteEmptyTag(@"unsignedLong", @"");
                 return;
             }
-            WriteElementStringRaw(@"unsignedLong", @"", System.Xml.XmlConvert.ToString((System.UInt64)((System.UInt64)o)));
+            WriteElementStringRaw(@"unsignedLong", @"", System.Xml.XmlConvert.ToString((ulong)((ulong)o)));
         }
 
         internal void Write_base64Binary(object o)
@@ -174,7 +174,7 @@ namespace System.Xml.Serialization
                 return;
             }
             TopLevelElement();
-            WriteNullableStringLiteralRaw(@"base64Binary", @"", FromByteArrayBase64(((System.Byte[])o)));
+            WriteNullableStringLiteralRaw(@"base64Binary", @"", FromByteArrayBase64(((byte[])o)));
         }
 
         internal void Write_guid(object o)
@@ -210,7 +210,7 @@ namespace System.Xml.Serialization
                 WriteEmptyTag(@"char", @"");
                 return;
             }
-            WriteElementString(@"char", @"", FromChar(((System.Char)o)));
+            WriteElementString(@"char", @"", FromChar(((char)o)));
         }
 
         internal void Write_QName(object o)
@@ -707,26 +707,26 @@ namespace System.Xml.Serialization
         {
         }
 
-        private System.String _id4_boolean;
-        private System.String _id14_unsignedInt;
-        private System.String _id15_unsignedLong;
-        private System.String _id7_float;
-        private System.String _id10_dateTime;
-        private System.String _id6_long;
-        private System.String _id9_decimal;
-        private System.String _id8_double;
-        private System.String _id17_guid;
-        private System.String _id19_TimeSpan;
-        private System.String _id2_Item;
-        private System.String _id13_unsignedShort;
-        private System.String _id18_char;
-        private System.String _id3_int;
-        private System.String _id12_byte;
-        private System.String _id16_base64Binary;
-        private System.String _id11_unsignedByte;
-        private System.String _id5_short;
-        private System.String _id1_string;
-        private System.String _id1_QName;
+        private string _id4_boolean;
+        private string _id14_unsignedInt;
+        private string _id15_unsignedLong;
+        private string _id7_float;
+        private string _id10_dateTime;
+        private string _id6_long;
+        private string _id9_decimal;
+        private string _id8_double;
+        private string _id17_guid;
+        private string _id19_TimeSpan;
+        private string _id2_Item;
+        private string _id13_unsignedShort;
+        private string _id18_char;
+        private string _id3_int;
+        private string _id12_byte;
+        private string _id16_base64Binary;
+        private string _id11_unsignedByte;
+        private string _id5_short;
+        private string _id1_string;
+        private string _id1_QName;
 
         protected override void InitIDs()
         {

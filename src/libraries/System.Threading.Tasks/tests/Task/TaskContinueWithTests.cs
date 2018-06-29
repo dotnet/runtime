@@ -1397,7 +1397,7 @@ namespace System.Threading.Tasks.Tests
             }
         }
 
-        private static Task<Int32> Choose(CancellationToken cancellationToken)
+        private static Task<int> Choose(CancellationToken cancellationToken)
         {
             // Set up completion structures
             //var boxedCompleted = new StrongBox<Task>(); // Acts as both completion marker and sync obj for targets

@@ -61,7 +61,7 @@ namespace Microsoft.SqlServer.Server
         }
 
         //  valid for SqlDbType.Bit
-        public virtual Boolean GetBoolean(SmiEventSink sink, int ordinal)
+        public virtual bool GetBoolean(SmiEventSink sink, int ordinal)
         {
             if (!CanGet)
             {
@@ -74,7 +74,7 @@ namespace Microsoft.SqlServer.Server
         }
 
         //  valid for SqlDbType.TinyInt
-        public virtual Byte GetByte(SmiEventSink sink, int ordinal)
+        public virtual byte GetByte(SmiEventSink sink, int ordinal)
         {
             if (!CanGet)
             {
@@ -88,7 +88,7 @@ namespace Microsoft.SqlServer.Server
 
         // valid for SqlDbTypes: Binary, VarBinary, Image, Udt, Xml, Char, VarChar, Text, NChar, NVarChar, NText
         //  (Character type support needed for ExecuteXmlReader handling)
-        public virtual Int64 GetBytesLength(SmiEventSink sink, int ordinal)
+        public virtual long GetBytesLength(SmiEventSink sink, int ordinal)
         {
             if (!CanGet)
             {
@@ -112,7 +112,7 @@ namespace Microsoft.SqlServer.Server
         }
 
         // valid for character types: Char, VarChar, Text, NChar, NVarChar, NText
-        public virtual Int64 GetCharsLength(SmiEventSink sink, int ordinal)
+        public virtual long GetCharsLength(SmiEventSink sink, int ordinal)
         {
             if (!CanGet)
             {
@@ -134,7 +134,7 @@ namespace Microsoft.SqlServer.Server
                 throw System.Data.Common.ADP.InternalError(System.Data.Common.ADP.InternalErrorCode.UnimplementedSMIMethod);
             }
         }
-        public virtual String GetString(SmiEventSink sink, int ordinal)
+        public virtual string GetString(SmiEventSink sink, int ordinal)
         {
             if (!CanGet)
             {
@@ -147,7 +147,7 @@ namespace Microsoft.SqlServer.Server
         }
 
         // valid for SqlDbType.SmallInt
-        public virtual Int16 GetInt16(SmiEventSink sink, int ordinal)
+        public virtual short GetInt16(SmiEventSink sink, int ordinal)
         {
             if (!CanGet)
             {
@@ -160,7 +160,7 @@ namespace Microsoft.SqlServer.Server
         }
 
         // valid for SqlDbType.Int
-        public virtual Int32 GetInt32(SmiEventSink sink, int ordinal)
+        public virtual int GetInt32(SmiEventSink sink, int ordinal)
         {
             if (!CanGet)
             {
@@ -173,7 +173,7 @@ namespace Microsoft.SqlServer.Server
         }
 
         // valid for SqlDbType.BigInt, SqlDbType.Money, SqlDbType.SmallMoney
-        public virtual Int64 GetInt64(SmiEventSink sink, int ordinal)
+        public virtual long GetInt64(SmiEventSink sink, int ordinal)
         {
             if (!CanGet)
             {
@@ -186,7 +186,7 @@ namespace Microsoft.SqlServer.Server
         }
 
         // valid for SqlDbType.Real
-        public virtual Single GetSingle(SmiEventSink sink, int ordinal)
+        public virtual float GetSingle(SmiEventSink sink, int ordinal)
         {
             if (!CanGet)
             {
@@ -199,7 +199,7 @@ namespace Microsoft.SqlServer.Server
         }
 
         // valid for SqlDbType.Float
-        public virtual Double GetDouble(SmiEventSink sink, int ordinal)
+        public virtual double GetDouble(SmiEventSink sink, int ordinal)
         {
             if (!CanGet)
             {
@@ -302,7 +302,7 @@ namespace Microsoft.SqlServer.Server
         }
 
         //  valid for SqlDbType.Bit
-        public virtual void SetBoolean(SmiEventSink sink, int ordinal, Boolean value)
+        public virtual void SetBoolean(SmiEventSink sink, int ordinal, bool value)
         {
             if (!CanSet)
             {
@@ -315,7 +315,7 @@ namespace Microsoft.SqlServer.Server
         }
 
         //  valid for SqlDbType.TinyInt
-        public virtual void SetByte(SmiEventSink sink, int ordinal, Byte value)
+        public virtual void SetByte(SmiEventSink sink, int ordinal, byte value)
         {
             if (!CanSet)
             {
@@ -395,7 +395,7 @@ namespace Microsoft.SqlServer.Server
         }
 
         // valid for SqlDbType.SmallInt
-        public virtual void SetInt16(SmiEventSink sink, int ordinal, Int16 value)
+        public virtual void SetInt16(SmiEventSink sink, int ordinal, short value)
         {
             if (!CanSet)
             {
@@ -408,7 +408,7 @@ namespace Microsoft.SqlServer.Server
         }
 
         // valid for SqlDbType.Int
-        public virtual void SetInt32(SmiEventSink sink, int ordinal, Int32 value)
+        public virtual void SetInt32(SmiEventSink sink, int ordinal, int value)
         {
             if (!CanSet)
             {
@@ -421,7 +421,7 @@ namespace Microsoft.SqlServer.Server
         }
 
         // valid for SqlDbType.BigInt, SqlDbType.Money, SqlDbType.SmallMoney
-        public virtual void SetInt64(SmiEventSink sink, int ordinal, Int64 value)
+        public virtual void SetInt64(SmiEventSink sink, int ordinal, long value)
         {
             if (!CanSet)
             {
@@ -434,7 +434,7 @@ namespace Microsoft.SqlServer.Server
         }
 
         // valid for SqlDbType.Real
-        public virtual void SetSingle(SmiEventSink sink, int ordinal, Single value)
+        public virtual void SetSingle(SmiEventSink sink, int ordinal, float value)
         {
             if (!CanSet)
             {
@@ -447,7 +447,7 @@ namespace Microsoft.SqlServer.Server
         }
 
         // valid for SqlDbType.Float
-        public virtual void SetDouble(SmiEventSink sink, int ordinal, Double value)
+        public virtual void SetDouble(SmiEventSink sink, int ordinal, double value)
         {
             if (!CanSet)
             {

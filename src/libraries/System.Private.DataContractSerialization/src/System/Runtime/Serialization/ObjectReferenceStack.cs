@@ -96,7 +96,7 @@ namespace System.Runtime.Serialization
             }
             for (int i = (currentCount - 1); i >= 0; i--)
             {
-                if (Object.ReferenceEquals(obj, _objectArray[i]) && _isReferenceArray != null && !_isReferenceArray[i])
+                if (object.ReferenceEquals(obj, _objectArray[i]) && _isReferenceArray != null && !_isReferenceArray[i])
                     return true;
             }
             return false;

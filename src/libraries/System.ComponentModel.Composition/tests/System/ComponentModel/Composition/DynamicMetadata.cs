@@ -303,7 +303,7 @@ namespace System.ComponentModel.Composition
 
         public static DynamicMetadataTestClass Get(string s)
         {
-            return new DynamicMetadataTestClass(Int32.Parse(s));
+            return new DynamicMetadataTestClass(int.Parse(s));
         }
     }
 

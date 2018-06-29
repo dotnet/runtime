@@ -17,6 +17,10 @@ namespace System.Data.SqlClient.ManualTesting.Tests
         private static readonly Type s_tdsParserStateObjectFactory = s_systemDotData?.GetType("System.Data.SqlClient.TdsParserStateObjectFactory");
         private static readonly PropertyInfo s_useManagedSNI = s_tdsParserStateObjectFactory?.GetProperty("UseManagedSNI", BindingFlags.Static | BindingFlags.Public);
 
+        private static readonly string[] s_azureSqlServerEndpoints = {".database.windows.net",
+                                                                     ".database.cloudapi.de",
+                                                                     ".database.usgovcloudapi.net",
+                                                                     ".database.chinacloudapi.cn"};
         static DataTestUtility()
         {
             NpConnStr = Environment.GetEnvironmentVariable("TEST_NP_CONN_STR");
@@ -63,6 +67,42 @@ namespace System.Data.SqlClient.ManualTesting.Tests
         public static bool IsLocalDBInstalled() => int.TryParse(Environment.GetEnvironmentVariable("TEST_LOCALDB_INSTALLED"), out int result) ? result == 1 : false;
 
         public static bool IsIntegratedSecuritySetup() => int.TryParse(Environment.GetEnvironmentVariable("TEST_INTEGRATEDSECURITY_SETUP"), out int result) ? result == 1 : false;
+
+        public static string getAccessToken()
+        {
+            return Environment.GetEnvironmentVariable("TEST_ACCESSTOKEN_SETUP");
+        }
+
+        public static bool IsAccessTokenSetup() => string.IsNullOrEmpty(getAccessToken()) ? false : true;
+
+        // This method assumes dataSource parameter is in TCP connection string format.
+        public static bool IsAzureSqlServer(string dataSource)
+        {
+            int i = dataSource.LastIndexOf(',');
+            if (i >= 0)
+            {
+                dataSource = dataSource.Substring(0, i);
+            }
+
+            i = dataSource.LastIndexOf('\\');
+            if (i >= 0)
+            {
+                dataSource = dataSource.Substring(0, i);
+            }
+
+            // trim redundant whitespace
+            dataSource = dataSource.Trim();
+
+            // check if servername end with any azure endpoints
+            for (i = 0; i < s_azureSqlServerEndpoints.Length; i++)
+            {
+                if (dataSource.EndsWith(s_azureSqlServerEndpoints[i], StringComparison.OrdinalIgnoreCase))
+                {
+                    return true;
+                }
+            }
+            return false;
+        }
 
         private static bool CheckException<TException>(Exception ex, string exceptionMessage, bool innerExceptionMustBeNull) where TException : Exception
         {

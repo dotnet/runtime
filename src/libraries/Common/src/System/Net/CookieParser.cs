@@ -194,7 +194,7 @@ namespace System.Net
         {
             _tokenLength = 0;
             _start = _index;
-            while ((_index < _length) && Char.IsWhiteSpace(_tokenStream[_index]))
+            while ((_index < _length) && char.IsWhiteSpace(_tokenStream[_index]))
             {
                 ++_index;
                 ++_start;

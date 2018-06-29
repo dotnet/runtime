@@ -210,6 +210,14 @@ namespace System.Xml.Serialization
 
                     return null;
                 }
+
+#if !FEATURE_SERIALIZATION_UAPAOT
+                if (!IsSerializerVersionMatch(serializer, type, defaultNamespace))
+                {
+                    XmlSerializationEventSource.Log.XmlSerializerExpired(serializerName, type.FullName);
+                    return null;
+                }
+#endif
             }
             else
             {
@@ -249,6 +257,20 @@ namespace System.Xml.Serialization
         }
 
 #if !FEATURE_SERIALIZATION_UAPAOT
+        private static bool IsSerializerVersionMatch(Assembly serializer, Type type, string defaultNamespace)
+        {
+            if (serializer == null)
+                return false;
+            object[] attrs = serializer.GetCustomAttributes(typeof(XmlSerializerVersionAttribute), false);
+            if (attrs.Length != 1)
+                return false;
+
+            XmlSerializerVersionAttribute assemblyInfo = (XmlSerializerVersionAttribute)attrs[0];
+            if (assemblyInfo.ParentAssemblyId == GenerateAssemblyId(type) && assemblyInfo.Namespace == defaultNamespace)
+                return true;
+            return false;
+        }
+
         private static string GenerateAssemblyId(Type type)
         {
             Module[] modules = type.Assembly.GetModules();
@@ -406,7 +428,7 @@ namespace System.Xml.Serialization
                 writer.WriteLine("}");
 
                 string codecontent = compiler.Source.ToString();
-                Byte[] info = new UTF8Encoding(true).GetBytes(codecontent);
+                byte[] info = new UTF8Encoding(true).GetBytes(codecontent);
                 stream.Write(info, 0, info.Length);
                 stream.Flush();
                 return true;
@@ -432,10 +454,10 @@ namespace System.Xml.Serialization
             if (types != null && types.Length > 0 && types[0] != null)
             {
                 ConstructorInfo AssemblyVersionAttribute_ctor = typeof(AssemblyVersionAttribute).GetConstructor(
-                    new Type[] { typeof(String) }
+                    new Type[] { typeof(string) }
                     );
                 string assemblyVersion = types[0].Assembly.GetName().Version.ToString();
-                assemblyBuilder.SetCustomAttribute(new CustomAttributeBuilder(AssemblyVersionAttribute_ctor, new Object[] { assemblyVersion }));
+                assemblyBuilder.SetCustomAttribute(new CustomAttributeBuilder(AssemblyVersionAttribute_ctor, new object[] { assemblyVersion }));
             }
             CodeIdentifiers classes = new CodeIdentifiers();
             classes.AddUnique("XmlSerializationWriter", "XmlSerializationWriter");

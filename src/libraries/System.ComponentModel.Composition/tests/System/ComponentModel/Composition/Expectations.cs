@@ -139,10 +139,10 @@ namespace System.ComponentModel.Composition
             yield return "";
             yield return " ";
             yield return "   ";
-            yield return (Int32)1;
-            yield return (Byte)1;
-            yield return (Single)1.1;
-            yield return (Double)1.1;
+            yield return (int)1;
+            yield return (byte)1;
+            yield return (float)1.1;
+            yield return (double)1.1;
             yield return DayOfWeek.Wednesday;
         }
 

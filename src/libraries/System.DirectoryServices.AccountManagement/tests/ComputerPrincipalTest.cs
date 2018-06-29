@@ -21,7 +21,7 @@ namespace System.DirectoryServices.AccountManagement.Tests
         public void Ctor_NullContext_ThrowsArgumentException()
         {
             AssertExtensions.Throws<ArgumentException>(null, () => new ComputerPrincipal(null));
-            AssertExtensions.Throws<ArgumentException>(null, () => new ComputerPrincipal(null, "samAcountName", "password", enabled: true));
+            AssertExtensions.Throws<ArgumentException>(null, () => new ComputerPrincipal(null, "samAccountName", "password", enabled: true));
         }
 
         [Fact]

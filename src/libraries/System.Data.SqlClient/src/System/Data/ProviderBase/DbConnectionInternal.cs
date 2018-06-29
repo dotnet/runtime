@@ -84,11 +84,11 @@ namespace System.Data.ProviderBase
                         // native resources and GC may not happen soon enough.
                         // VSDevDiv 479564: don't dispose if still holding reference in _enlistedTransaction
                         if (null != previousTransactionClone &&
-                                !Object.ReferenceEquals(previousTransactionClone, _enlistedTransaction))
+                                !object.ReferenceEquals(previousTransactionClone, _enlistedTransaction))
                         {
                             previousTransactionClone.Dispose();
                         }
-                        if (null != valueClone && !Object.ReferenceEquals(valueClone, _enlistedTransaction))
+                        if (null != valueClone && !object.ReferenceEquals(valueClone, _enlistedTransaction))
                         {
                             valueClone.Dispose();
                         }

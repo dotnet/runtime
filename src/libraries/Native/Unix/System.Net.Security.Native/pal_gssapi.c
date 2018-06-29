@@ -50,7 +50,7 @@ static gss_OID_desc gss_mech_ntlm_OID_desc = {.length = ARRAY_SIZE(gss_ntlm_oid_
 #endif
 
 // transfers ownership of the underlying data from gssBuffer to PAL_GssBuffer
-static void NetSecurityNative_MoveBuffer(gss_buffer_t gssBuffer, struct PAL_GssBuffer* targetBuffer)
+static void NetSecurityNative_MoveBuffer(gss_buffer_t gssBuffer, PAL_GssBuffer* targetBuffer)
 {
     assert(gssBuffer != NULL);
     assert(targetBuffer != NULL);
@@ -106,7 +106,7 @@ uint32_t NetSecurityNative_DeleteSecContext(uint32_t* minorStatus, GssCtxId** co
 static uint32_t NetSecurityNative_DisplayStatus(uint32_t* minorStatus,
                                                 uint32_t statusValue,
                                                 int statusType,
-                                                struct PAL_GssBuffer* outBuffer)
+                                                PAL_GssBuffer* outBuffer)
 {
     assert(minorStatus != NULL);
     assert(outBuffer != NULL);
@@ -121,13 +121,13 @@ static uint32_t NetSecurityNative_DisplayStatus(uint32_t* minorStatus,
 }
 
 uint32_t
-NetSecurityNative_DisplayMinorStatus(uint32_t* minorStatus, uint32_t statusValue, struct PAL_GssBuffer* outBuffer)
+NetSecurityNative_DisplayMinorStatus(uint32_t* minorStatus, uint32_t statusValue, PAL_GssBuffer* outBuffer)
 {
     return NetSecurityNative_DisplayStatus(minorStatus, statusValue, GSS_C_MECH_CODE, outBuffer);
 }
 
 uint32_t
-NetSecurityNative_DisplayMajorStatus(uint32_t* minorStatus, uint32_t statusValue, struct PAL_GssBuffer* outBuffer)
+NetSecurityNative_DisplayMajorStatus(uint32_t* minorStatus, uint32_t statusValue, PAL_GssBuffer* outBuffer)
 {
     return NetSecurityNative_DisplayStatus(minorStatus, statusValue, GSS_C_GSS_CODE, outBuffer);
 }
@@ -177,7 +177,7 @@ uint32_t NetSecurityNative_InitSecContext(uint32_t* minorStatus,
                                           uint32_t reqFlags,
                                           uint8_t* inputBytes,
                                           uint32_t inputLength,
-                                          struct PAL_GssBuffer* outBuffer,
+                                          PAL_GssBuffer* outBuffer,
                                           uint32_t* retFlags,
                                           int32_t* isNtlmUsed)
 {
@@ -254,7 +254,7 @@ uint32_t NetSecurityNative_AcceptSecContext(uint32_t* minorStatus,
                                             GssCtxId** contextHandle,
                                             uint8_t* inputBytes,
                                             uint32_t inputLength,
-                                            struct PAL_GssBuffer* outBuffer)
+                                            PAL_GssBuffer* outBuffer)
 {
     assert(minorStatus != NULL);
     assert(contextHandle != NULL);
@@ -312,7 +312,7 @@ uint32_t NetSecurityNative_Wrap(uint32_t* minorStatus,
                                 uint8_t* inputBytes,
                                 int32_t offset,
                                 int32_t count,
-                                struct PAL_GssBuffer* outBuffer)
+                                PAL_GssBuffer* outBuffer)
 {
     assert(minorStatus != NULL);
     assert(contextHandle != NULL);
@@ -339,7 +339,7 @@ uint32_t NetSecurityNative_Unwrap(uint32_t* minorStatus,
                                   uint8_t* inputBytes,
                                   int32_t offset,
                                   int32_t count,
-                                  struct PAL_GssBuffer* outBuffer)
+                                  PAL_GssBuffer* outBuffer)
 {
     assert(minorStatus != NULL);
     assert(contextHandle != NULL);

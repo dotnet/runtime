@@ -3444,7 +3444,10 @@ Usage: dotnet {0} [--assembly &lt;assembly file path&gt;] [--type &lt;type name&
   <data name="MoreHelp" xml:space="preserve">
     <value>If you would like more help, please type "sgen {0}".</value>
   </data>
-    <data name="GenerateSerializerNotFound" xml:space="preserve">
+  <data name="GenerateSerializerNotFound" xml:space="preserve">
     <value>Method 'System.Xml.Serialization.XmlSerializer.GenerateSerializer' was not found. This is likely because you are using an older version of the framework. Please update to .NET Core v2.1 or later.</value>
+  </data>
+  <data name="event_XmlSerializerExpired" xml:space="preserve">
+    <value>Pre-generated serializer '{0}' has expired. You need to re-generate serializer for '{1}'</value>
   </data>
 </root>

@@ -221,8 +221,8 @@ namespace System.Net.Http.Functional.Tests
         {
             using (var rm = new HttpResponseMessage())
             {
-                rm.ReasonPhrase = String.Empty;
-                Assert.Equal(String.Empty, rm.ReasonPhrase);
+                rm.ReasonPhrase = string.Empty;
+                Assert.Equal(string.Empty, rm.ReasonPhrase);
             }
         }
 

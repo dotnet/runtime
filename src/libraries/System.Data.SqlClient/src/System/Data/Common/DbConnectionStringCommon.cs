@@ -13,7 +13,7 @@ using System.Reflection;
 
 namespace System.Data.Common
 {
-    internal static class DbConnectionStringBuilderUtil
+    internal static partial class DbConnectionStringBuilderUtil
     {
         internal static bool ConvertToBoolean(object value)
         {
@@ -33,7 +33,7 @@ namespace System.Data.Common
                     else if (StringComparer.OrdinalIgnoreCase.Equals(tmp, "false") || StringComparer.OrdinalIgnoreCase.Equals(tmp, "no"))
                         return false;
                 }
-                return Boolean.Parse(svalue);
+                return bool.Parse(svalue);
             }
             try
             {
@@ -41,7 +41,7 @@ namespace System.Data.Common
             }
             catch (InvalidCastException e)
             {
-                throw ADP.ConvertFailed(value.GetType(), typeof(Boolean), e);
+                throw ADP.ConvertFailed(value.GetType(), typeof(bool), e);
             }
         }
 
@@ -63,7 +63,7 @@ namespace System.Data.Common
                     else if (StringComparer.OrdinalIgnoreCase.Equals(tmp, "false") || StringComparer.OrdinalIgnoreCase.Equals(tmp, "no"))
                         return false;
                 }
-                return Boolean.Parse(svalue);
+                return bool.Parse(svalue);
             }
             try
             {
@@ -71,7 +71,7 @@ namespace System.Data.Common
             }
             catch (InvalidCastException e)
             {
-                throw ADP.ConvertFailed(value.GetType(), typeof(Boolean), e);
+                throw ADP.ConvertFailed(value.GetType(), typeof(bool), e);
             }
         }
 
@@ -83,7 +83,7 @@ namespace System.Data.Common
             }
             catch (InvalidCastException e)
             {
-                throw ADP.ConvertFailed(value.GetType(), typeof(Int32), e);
+                throw ADP.ConvertFailed(value.GetType(), typeof(int), e);
             }
         }
 
@@ -95,7 +95,7 @@ namespace System.Data.Common
             }
             catch (InvalidCastException e)
             {
-                throw ADP.ConvertFailed(value.GetType(), typeof(String), e);
+                throw ADP.ConvertFailed(value.GetType(), typeof(string), e);
             }
         }
 
@@ -306,6 +306,7 @@ namespace System.Data.Common
         internal const string MaxPoolSize = "Max Pool Size";
         internal const string Pooling = "Pooling";
         internal const string MinPoolSize = "Min Pool Size";
+        internal const string PoolBlockingPeriod = "PoolBlockingPeriod";
     }
 
     internal static class DbConnectionStringSynonyms

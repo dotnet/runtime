@@ -26,36 +26,40 @@ namespace System.Security.Cryptography
                 algorithm == CngAlgorithm.ECDsa.Algorithm);
         }
 
-        internal string GetCurveName()
+        internal string GetCurveName(out string oidValue)
         {
             if (IsECNamedCurve())
             {
+                oidValue = null;
                 return _keyHandle.GetPropertyAsString(KeyPropertyName.ECCCurveName, CngPropertyOptions.None);
             }
 
             // Use hard-coded values (for use with pre-Win10 APIs)
-            return GetECSpecificCurveName();
+            return GetECSpecificCurveName(out oidValue);
         }
 
-        private string GetECSpecificCurveName()
+        private string GetECSpecificCurveName(out string oidValue)
         {
             string algorithm = Algorithm.Algorithm;
 
             if (algorithm == CngAlgorithm.ECDiffieHellmanP256.Algorithm ||
                 algorithm == CngAlgorithm.ECDsaP256.Algorithm)
             {
+                oidValue = Oids.secp256r1;
                 return "nistP256";
             }
 
             if (algorithm == CngAlgorithm.ECDiffieHellmanP384.Algorithm ||
                 algorithm == CngAlgorithm.ECDsaP384.Algorithm)
             {
+                oidValue = Oids.secp384r1;
                 return "nistP384";
             }
 
             if (algorithm == CngAlgorithm.ECDiffieHellmanP521.Algorithm ||
                 algorithm == CngAlgorithm.ECDsaP521.Algorithm)
             {
+                oidValue = Oids.secp521r1;
                 return "nistP521";
             }
 

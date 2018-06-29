@@ -378,7 +378,7 @@ namespace System.Management
         void ManagementObjectCTOR(ManagementScope scope, ManagementPath path, ObjectGetOptions options)
         {
             // We may use this to set the scope path
-            string nsPath = String.Empty;
+            string nsPath = string.Empty;
 
             if ((null != path) && !path.IsEmpty)
             {
@@ -673,9 +673,9 @@ namespace System.Management
         { 
             get 
             { 
-                Object serverName = null;
-                Object scopeName = null;
-                Object className = null;
+                object serverName = null;
+                object scopeName = null;
+                object className = null;
                 int propertyType = 0;
                 int propertyFlavor = 0;
 
@@ -708,9 +708,9 @@ namespace System.Management
                 ManagementPath classPath = new ManagementPath();
 
                 // initialize in case of throw
-                classPath.Server = String.Empty;
-                classPath.NamespacePath = String.Empty;
-                classPath.ClassName = String.Empty;
+                classPath.Server = string.Empty;
+                classPath.NamespacePath = string.Empty;
+                classPath.ClassName = string.Empty;
                 
                 // Some of these may throw if they are NULL
                 try 
@@ -2146,7 +2146,7 @@ namespace System.Management
         /// End Class
         ///    </code>
         /// </example>
-        public Object InvokeMethod(string methodName, Object[] args) 
+        public object InvokeMethod(string methodName, object[] args) 
         { 
             object result = null;
 
@@ -2193,7 +2193,7 @@ namespace System.Management
         public void InvokeMethod(
             ManagementOperationObserver watcher, 
             string methodName, 
-            Object[] args) 
+            object[] args) 
         { 
             if ((null == path) || (path.Path.Length==0))
                 throw new InvalidOperationException();
@@ -2513,7 +2513,7 @@ namespace System.Management
         /// <returns>
         ///    <para>The copied object.</para>
         /// </returns>
-        public override Object Clone()
+        public override object Clone()
         {
             if (PutButNotGot)
             {
@@ -2824,7 +2824,7 @@ namespace System.Management
                                 break;
 
                             // Handle the result parameter separately
-                            if (String.Compare(propertyName, RETURNVALUE, StringComparison.OrdinalIgnoreCase) == 0)
+                            if (string.Equals(propertyName, RETURNVALUE, StringComparison.OrdinalIgnoreCase))
                             {
                                 result = outParams[RETURNVALUE];
                             }

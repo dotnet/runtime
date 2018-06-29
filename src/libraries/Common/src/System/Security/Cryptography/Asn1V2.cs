@@ -399,7 +399,7 @@ namespace System.Security.Cryptography.Asn1
         }
 
         public
-#if netcoreapp
+#if netcoreapp || uap
             override
 #endif
         int GetByteCount(ReadOnlySpan<char> chars)
@@ -434,7 +434,7 @@ namespace System.Security.Cryptography.Asn1
         }
 
         public
-#if netcoreapp
+#if netcoreapp || uap
             override
 #endif
         int GetCharCount(ReadOnlySpan<byte> bytes)

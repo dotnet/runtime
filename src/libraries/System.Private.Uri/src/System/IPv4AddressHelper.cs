@@ -12,7 +12,7 @@ namespace System
     {
         internal const long Invalid = -1;
         // Note: the native parser cannot handle MaxIPv4Value, only MaxIPv4Value - 1
-        private const long MaxIPv4Value = UInt32.MaxValue;
+        private const long MaxIPv4Value = uint.MaxValue;
         private const int Octal = 8;
         private const int Decimal = 10;
         private const int Hex = 16;

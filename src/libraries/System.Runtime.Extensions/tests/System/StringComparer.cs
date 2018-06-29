@@ -38,12 +38,12 @@ namespace System.Tests
 
         private static void VerifyComparer(StringComparer sc, bool ignoreCase)
         {
-            String s1 = "Hello";
-            String s1a = "Hello";
-            String s1b = "HELLO";
-            String s2 = "There";
-            String aa = "\0AAAAAAAAA";
-            String bb = "\0BBBBBBBBBBBB";
+            string s1 = "Hello";
+            string s1a = "Hello";
+            string s1b = "HELLO";
+            string s2 = "There";
+            string aa = "\0AAAAAAAAA";
+            string bb = "\0BBBBBBBBBBBB";
 
             Assert.True(sc.Equals(s1, s1a));
             Assert.True(sc.Equals(s1, s1a));

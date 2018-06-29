@@ -115,7 +115,7 @@ namespace System.Data.SqlClient
         }
 
         //  valid for SqlDbType.Bit
-        internal void SetBoolean(Boolean value)
+        internal void SetBoolean(bool value)
         {
             Debug.Assert(
                 SmiXetterAccessMap.IsSetterAccessValid(_metaData, SmiXetterTypeCode.XetBoolean));
@@ -138,7 +138,7 @@ namespace System.Data.SqlClient
         }
 
         //  valid for SqlDbType.TinyInt
-        internal void SetByte(Byte value)
+        internal void SetByte(byte value)
         {
             Debug.Assert(
                 SmiXetterAccessMap.IsSetterAccessValid(_metaData, SmiXetterTypeCode.XetByte));
@@ -288,7 +288,7 @@ namespace System.Data.SqlClient
 
                     if (SqlDbType.Variant == _metaData.SqlDbType)
                     {
-                        _stateObj.Parser.WriteSqlVariantValue(new String(buffer, bufferOffset, length), length, 0, _stateObj);
+                        _stateObj.Parser.WriteSqlVariantValue(new string(buffer, bufferOffset, length), length, 0, _stateObj);
                     }
                     else
                     {
@@ -418,7 +418,7 @@ namespace System.Data.SqlClient
         }
 
         // valid for SqlDbType.SmallInt
-        internal void SetInt16(Int16 value)
+        internal void SetInt16(short value)
         {
             Debug.Assert(
                 SmiXetterAccessMap.IsSetterAccessValid(_metaData, SmiXetterTypeCode.XetInt16));
@@ -435,7 +435,7 @@ namespace System.Data.SqlClient
         }
 
         // valid for SqlDbType.Int
-        internal void SetInt32(Int32 value)
+        internal void SetInt32(int value)
         {
             Debug.Assert(
                 SmiXetterAccessMap.IsSetterAccessValid(_metaData, SmiXetterTypeCode.XetInt32));
@@ -451,7 +451,7 @@ namespace System.Data.SqlClient
         }
 
         // valid for SqlDbType.BigInt, SqlDbType.Money, SqlDbType.SmallMoney
-        internal void SetInt64(Int64 value)
+        internal void SetInt64(long value)
         {
             Debug.Assert(
                 SmiXetterAccessMap.IsSetterAccessValid(_metaData, SmiXetterTypeCode.XetInt64));
@@ -492,7 +492,7 @@ namespace System.Data.SqlClient
         }
 
         // valid for SqlDbType.Real
-        internal void SetSingle(Single value)
+        internal void SetSingle(float value)
         {
             Debug.Assert(
                 SmiXetterAccessMap.IsSetterAccessValid(_metaData, SmiXetterTypeCode.XetSingle));
@@ -508,7 +508,7 @@ namespace System.Data.SqlClient
         }
 
         // valid for SqlDbType.Float
-        internal void SetDouble(Double value)
+        internal void SetDouble(double value)
         {
             Debug.Assert(
                 SmiXetterAccessMap.IsSetterAccessValid(_metaData, SmiXetterTypeCode.XetDouble));
@@ -575,7 +575,7 @@ namespace System.Data.SqlClient
                 if (SqlDbType.SmallDateTime == _metaData.SqlDbType)
                 {
                     TdsDateTime dt = MetaType.FromDateTime(value, (byte)_metaData.MaxLength);
-                    Debug.Assert(0 <= dt.days && dt.days <= UInt16.MaxValue, "Invalid DateTime '" + value + "' for SmallDateTime");
+                    Debug.Assert(0 <= dt.days && dt.days <= ushort.MaxValue, "Invalid DateTime '" + value + "' for SmallDateTime");
 
                     _stateObj.Parser.WriteShort(dt.days, _stateObj);
                     _stateObj.Parser.WriteShort(dt.time, _stateObj);
@@ -591,7 +591,7 @@ namespace System.Data.SqlClient
                     int days = value.Subtract(DateTime.MinValue).Days;
                     if (SqlDbType.DateTime2 == _metaData.SqlDbType)
                     {
-                        Int64 time = value.TimeOfDay.Ticks / TdsEnums.TICKS_FROM_SCALE[_metaData.Scale];
+                        long time = value.TimeOfDay.Ticks / TdsEnums.TICKS_FROM_SCALE[_metaData.Scale];
                         _stateObj.WriteByteArray(BitConverter.GetBytes(time), (int)_metaData.MaxLength - 3, 0);
                     }
                     _stateObj.WriteByteArray(BitConverter.GetBytes(days), 3, 0);
@@ -641,7 +641,7 @@ namespace System.Data.SqlClient
                 length = (byte)_metaData.MaxLength;
                 _stateObj.WriteByte(length);
             }
-            Int64 time = value.Ticks / TdsEnums.TICKS_FROM_SCALE[scale];
+            long time = value.Ticks / TdsEnums.TICKS_FROM_SCALE[scale];
             _stateObj.WriteByteArray(BitConverter.GetBytes(time), length, 0);
         }
 
@@ -669,9 +669,9 @@ namespace System.Data.SqlClient
                 _stateObj.WriteByte(length);
             }
             DateTime utcDateTime = value.UtcDateTime;
-            Int64 time = utcDateTime.TimeOfDay.Ticks / TdsEnums.TICKS_FROM_SCALE[scale];
+            long time = utcDateTime.TimeOfDay.Ticks / TdsEnums.TICKS_FROM_SCALE[scale];
             int days = utcDateTime.Subtract(DateTime.MinValue).Days;
-            Int16 offset = (Int16)value.Offset.TotalMinutes;
+            short offset = (short)value.Offset.TotalMinutes;
 
             _stateObj.WriteByteArray(BitConverter.GetBytes(time), length - 5, 0); // time
             _stateObj.WriteByteArray(BitConverter.GetBytes(days), 3, 0); // date

@@ -3,97 +3,56 @@
 // See the LICENSE file in the project root for more information.
 
 using System.Runtime.InteropServices;
-using System.Drawing.Internal;
+using Gdip = System.Drawing.SafeNativeMethods.Gdip;
 
 namespace System.Drawing.Drawing2D
 {
     public sealed class Matrix : MarshalByRefObject, IDisposable
     {
-        internal IntPtr nativeMatrix;
+        internal IntPtr NativeMatrix { get; private set; }
 
         public Matrix()
         {
-            IntPtr nativeMatrix;
-            int status = SafeNativeMethods.Gdip.GdipCreateMatrix(out nativeMatrix);
-
-            if (status != SafeNativeMethods.Gdip.Ok)
-                throw SafeNativeMethods.Gdip.StatusException(status);
-
-            this.nativeMatrix = nativeMatrix;
+            Gdip.CheckStatus(Gdip.GdipCreateMatrix(out IntPtr nativeMatrix));
+            NativeMatrix = nativeMatrix;
         }
 
         public Matrix(float m11, float m12, float m21, float m22, float dx, float dy)
         {
-            IntPtr nativeMatrix;
-            int status = SafeNativeMethods.Gdip.GdipCreateMatrix2(m11, m12, m21, m22, dx, dy, out nativeMatrix);
-
-            if (status != SafeNativeMethods.Gdip.Ok)
-                throw SafeNativeMethods.Gdip.StatusException(status);
-
-            this.nativeMatrix = nativeMatrix;
+            Gdip.CheckStatus(Gdip.GdipCreateMatrix2(m11, m12, m21, m22, dx, dy, out IntPtr nativeMatrix));
+            NativeMatrix = nativeMatrix;
         }
 
-        public Matrix(RectangleF rect, PointF[] plgpts)
+        private Matrix(IntPtr nativeMatrix)
+        {
+            NativeMatrix = nativeMatrix;
+        }
+
+        public unsafe Matrix(RectangleF rect, PointF[] plgpts)
         {
             if (plgpts == null)
-            {
                 throw new ArgumentNullException(nameof(plgpts));
-            }
             if (plgpts.Length != 3)
+                throw Gdip.StatusException(Gdip.InvalidParameter);
+
+            fixed (PointF* p = plgpts)
             {
-                throw SafeNativeMethods.Gdip.StatusException(SafeNativeMethods.Gdip.InvalidParameter);
-            }
-
-            IntPtr buf = SafeNativeMethods.Gdip.ConvertPointToMemory(plgpts);
-
-            try
-            {
-                GPRECTF gprectf = new GPRECTF(rect);
-                IntPtr nativeMatrix;
-                int status = SafeNativeMethods.Gdip.GdipCreateMatrix3(ref gprectf, new HandleRef(null, buf), out nativeMatrix);
-
-                if (status != SafeNativeMethods.Gdip.Ok)
-                {
-                    throw SafeNativeMethods.Gdip.StatusException(status);
-                }
-
-                this.nativeMatrix = nativeMatrix;
-            }
-            finally
-            {
-                Marshal.FreeHGlobal(buf);
+                Gdip.CheckStatus(Gdip.GdipCreateMatrix3(ref rect, p, out IntPtr nativeMatrix));
+                NativeMatrix = nativeMatrix;
             }
         }
 
-        public Matrix(Rectangle rect, Point[] plgpts)
+        public unsafe Matrix(Rectangle rect, Point[] plgpts)
         {
             if (plgpts == null)
-            {
                 throw new ArgumentNullException(nameof(plgpts));
-            }
             if (plgpts.Length != 3)
+                throw Gdip.StatusException(Gdip.InvalidParameter);
+
+            fixed (Point* p = plgpts)
             {
-                throw SafeNativeMethods.Gdip.StatusException(SafeNativeMethods.Gdip.InvalidParameter);
-            }
-
-            IntPtr buf = SafeNativeMethods.Gdip.ConvertPointToMemory(plgpts);
-
-            try
-            {
-                GPRECT gprect = new GPRECT(rect);
-                IntPtr nativeMatrix;
-                int status = SafeNativeMethods.Gdip.GdipCreateMatrix3I(ref gprect, new HandleRef(null, buf), out nativeMatrix);
-
-                if (status != SafeNativeMethods.Gdip.Ok)
-                {
-                    throw SafeNativeMethods.Gdip.StatusException(status);
-                }
-
-                this.nativeMatrix = nativeMatrix;
-            }
-            finally
-            {
-                Marshal.FreeHGlobal(buf);
+                Gdip.CheckStatus(Gdip.GdipCreateMatrix3I(ref rect, p, out IntPtr nativeMatrix));
+                NativeMatrix = nativeMatrix;
             }
         }
 
@@ -105,10 +64,10 @@ namespace System.Drawing.Drawing2D
 
         private void Dispose(bool disposing)
         {
-            if (nativeMatrix != IntPtr.Zero)
+            if (NativeMatrix != IntPtr.Zero)
             {
-                SafeNativeMethods.Gdip.GdipDeleteMatrix(new HandleRef(this, nativeMatrix));
-                nativeMatrix = IntPtr.Zero;
+                Gdip.GdipDeleteMatrix(new HandleRef(this, NativeMatrix));
+                NativeMatrix = IntPtr.Zero;
             }
         }
 
@@ -116,15 +75,10 @@ namespace System.Drawing.Drawing2D
 
         public Matrix Clone()
         {
-            IntPtr clonedMatrix;
-            int status = SafeNativeMethods.Gdip.GdipCloneMatrix(new HandleRef(this, nativeMatrix), out clonedMatrix);
-
-            if (status != SafeNativeMethods.Gdip.Ok)
-                throw SafeNativeMethods.Gdip.StatusException(status);
-
+            Gdip.CheckStatus(Gdip.GdipCloneMatrix(new HandleRef(this, NativeMatrix), out IntPtr clonedMatrix));
             return new Matrix(clonedMatrix);
         }
-    
+
         public float[] Elements
         {
             get
@@ -133,12 +87,7 @@ namespace System.Drawing.Drawing2D
 
                 try
                 {
-                    int status = SafeNativeMethods.Gdip.GdipGetMatrixElements(new HandleRef(this, nativeMatrix), buf);
-
-                    if (status != SafeNativeMethods.Gdip.Ok)
-                    {
-                        throw SafeNativeMethods.Gdip.StatusException(status);
-                    }
+                    Gdip.CheckStatus(Gdip.GdipGetMatrixElements(new HandleRef(this, NativeMatrix), buf));
 
                     float[] m = new float[6];
                     Marshal.Copy(buf, m, 0, 6);
@@ -156,12 +105,10 @@ namespace System.Drawing.Drawing2D
 
         public void Reset()
         {
-            int status = SafeNativeMethods.Gdip.GdipSetMatrixElements(new HandleRef(this, nativeMatrix),
-                                                       1.0f, 0.0f, 0.0f,
-                                                       1.0f, 0.0f, 0.0f);
-
-            if (status != SafeNativeMethods.Gdip.Ok)
-                throw SafeNativeMethods.Gdip.StatusException(status);
+            Gdip.CheckStatus(Gdip.GdipSetMatrixElements(
+                new HandleRef(this, NativeMatrix),
+                1.0f, 0.0f, 0.0f,
+                1.0f, 0.0f, 0.0f));
         }
 
         public void Multiply(Matrix matrix) => Multiply(matrix, MatrixOrder.Prepend);
@@ -169,51 +116,37 @@ namespace System.Drawing.Drawing2D
         public void Multiply(Matrix matrix, MatrixOrder order)
         {
             if (matrix == null)
-            {
                 throw new ArgumentNullException(nameof(matrix));
-            }
-
-            if (matrix.nativeMatrix == nativeMatrix)
-            {
+            if (matrix.NativeMatrix == NativeMatrix)
                 throw new InvalidOperationException(SR.GdiplusObjectBusy);
-            }
 
-            int status = SafeNativeMethods.Gdip.GdipMultiplyMatrix(new HandleRef(this, nativeMatrix), new HandleRef(matrix, matrix.nativeMatrix),
-                                                    order);
-
-            if (status != SafeNativeMethods.Gdip.Ok)
-                throw SafeNativeMethods.Gdip.StatusException(status);
+            Gdip.CheckStatus(Gdip.GdipMultiplyMatrix(
+                new HandleRef(this, NativeMatrix),
+                new HandleRef(matrix, matrix.NativeMatrix),
+                order));
         }
 
         public void Translate(float offsetX, float offsetY) => Translate(offsetX, offsetY, MatrixOrder.Prepend);
 
         public void Translate(float offsetX, float offsetY, MatrixOrder order)
         {
-            int status = SafeNativeMethods.Gdip.GdipTranslateMatrix(new HandleRef(this, nativeMatrix),
-                                                     offsetX, offsetY, order);
-
-            if (status != SafeNativeMethods.Gdip.Ok)
-                throw SafeNativeMethods.Gdip.StatusException(status);
+            Gdip.CheckStatus(Gdip.GdipTranslateMatrix(
+                new HandleRef(this, NativeMatrix),
+                offsetX, offsetY, order));
         }
 
         public void Scale(float scaleX, float scaleY) => Scale(scaleX, scaleY, MatrixOrder.Prepend);
 
         public void Scale(float scaleX, float scaleY, MatrixOrder order)
         {
-            int status = SafeNativeMethods.Gdip.GdipScaleMatrix(new HandleRef(this, nativeMatrix), scaleX, scaleY, order);
-
-            if (status != SafeNativeMethods.Gdip.Ok)
-                throw SafeNativeMethods.Gdip.StatusException(status);
+            Gdip.CheckStatus(Gdip.GdipScaleMatrix(new HandleRef(this, NativeMatrix), scaleX, scaleY, order));
         }
 
         public void Rotate(float angle) => Rotate(angle, MatrixOrder.Prepend);
 
         public void Rotate(float angle, MatrixOrder order)
         {
-            int status = SafeNativeMethods.Gdip.GdipRotateMatrix(new HandleRef(this, nativeMatrix), angle, order);
-
-            if (status != SafeNativeMethods.Gdip.Ok)
-                throw SafeNativeMethods.Gdip.StatusException(status);
+            Gdip.CheckStatus(Gdip.GdipRotateMatrix(new HandleRef(this, NativeMatrix), angle, order));
         }
 
         public void RotateAt(float angle, PointF point) => RotateAt(angle, point, MatrixOrder.Prepend);
@@ -222,43 +155,34 @@ namespace System.Drawing.Drawing2D
             int status;
             if (order == MatrixOrder.Prepend)
             {
-                status = SafeNativeMethods.Gdip.GdipTranslateMatrix(new HandleRef(this, nativeMatrix), point.X, point.Y, order);
-                status |= SafeNativeMethods.Gdip.GdipRotateMatrix(new HandleRef(this, nativeMatrix), angle, order);
-                status |= SafeNativeMethods.Gdip.GdipTranslateMatrix(new HandleRef(this, nativeMatrix), -point.X, -point.Y, order);
+                status = Gdip.GdipTranslateMatrix(new HandleRef(this, NativeMatrix), point.X, point.Y, order);
+                status |= Gdip.GdipRotateMatrix(new HandleRef(this, NativeMatrix), angle, order);
+                status |= Gdip.GdipTranslateMatrix(new HandleRef(this, NativeMatrix), -point.X, -point.Y, order);
             }
             else
             {
-                status = SafeNativeMethods.Gdip.GdipTranslateMatrix(new HandleRef(this, nativeMatrix), -point.X, -point.Y, order);
-                status |= SafeNativeMethods.Gdip.GdipRotateMatrix(new HandleRef(this, nativeMatrix), angle, order);
-                status |= SafeNativeMethods.Gdip.GdipTranslateMatrix(new HandleRef(this, nativeMatrix), point.X, point.Y, order);
+                status = Gdip.GdipTranslateMatrix(new HandleRef(this, NativeMatrix), -point.X, -point.Y, order);
+                status |= Gdip.GdipRotateMatrix(new HandleRef(this, NativeMatrix), angle, order);
+                status |= Gdip.GdipTranslateMatrix(new HandleRef(this, NativeMatrix), point.X, point.Y, order);
             }
 
-            if (status != SafeNativeMethods.Gdip.Ok)
-                throw SafeNativeMethods.Gdip.StatusException(status);
+            if (status != Gdip.Ok)
+                throw Gdip.StatusException(status);
         }
 
         public void Shear(float shearX, float shearY)
         {
-            int status = SafeNativeMethods.Gdip.GdipShearMatrix(new HandleRef(this, nativeMatrix), shearX, shearY, MatrixOrder.Prepend);
-
-            if (status != SafeNativeMethods.Gdip.Ok)
-                throw SafeNativeMethods.Gdip.StatusException(status);
+            Gdip.CheckStatus(Gdip.GdipShearMatrix(new HandleRef(this, NativeMatrix), shearX, shearY, MatrixOrder.Prepend));
         }
 
         public void Shear(float shearX, float shearY, MatrixOrder order)
         {
-            int status = SafeNativeMethods.Gdip.GdipShearMatrix(new HandleRef(this, nativeMatrix), shearX, shearY, order);
-
-            if (status != SafeNativeMethods.Gdip.Ok)
-                throw SafeNativeMethods.Gdip.StatusException(status);
+            Gdip.CheckStatus(Gdip.GdipShearMatrix(new HandleRef(this, NativeMatrix), shearX, shearY, order));
         }
 
         public void Invert()
         {
-            int status = SafeNativeMethods.Gdip.GdipInvertMatrix(new HandleRef(this, nativeMatrix));
-
-            if (status != SafeNativeMethods.Gdip.Ok)
-                throw SafeNativeMethods.Gdip.StatusException(status);
+            Gdip.CheckStatus(Gdip.GdipInvertMatrix(new HandleRef(this, NativeMatrix)));
         }
 
         public unsafe void TransformPoints(PointF[] pts)
@@ -268,15 +192,10 @@ namespace System.Drawing.Drawing2D
 
             fixed (PointF* p = pts)
             {
-                int status = SafeNativeMethods.Gdip.GdipTransformMatrixPoints(
-                    new HandleRef(this, nativeMatrix),
+                Gdip.CheckStatus(Gdip.GdipTransformMatrixPoints(
+                    new HandleRef(this, NativeMatrix),
                     p,
-                    pts.Length);
-
-                if (status != SafeNativeMethods.Gdip.Ok)
-                {
-                    throw SafeNativeMethods.Gdip.StatusException(status);
-                }
+                    pts.Length));
             }
         }
 
@@ -287,15 +206,10 @@ namespace System.Drawing.Drawing2D
 
             fixed (Point* p = pts)
             {
-                int status = SafeNativeMethods.Gdip.GdipTransformMatrixPointsI(
-                    new HandleRef(this, nativeMatrix),
+                Gdip.CheckStatus(Gdip.GdipTransformMatrixPointsI(
+                    new HandleRef(this, NativeMatrix),
                     p,
-                    pts.Length);
-
-                if (status != SafeNativeMethods.Gdip.Ok)
-                {
-                    throw SafeNativeMethods.Gdip.StatusException(status);
-                }
+                    pts.Length));
             }
         }
 
@@ -306,15 +220,10 @@ namespace System.Drawing.Drawing2D
 
             fixed (PointF* p = pts)
             {
-                int status = SafeNativeMethods.Gdip.GdipVectorTransformMatrixPoints(
-                    new HandleRef(this, nativeMatrix),
+                Gdip.CheckStatus(Gdip.GdipVectorTransformMatrixPoints(
+                    new HandleRef(this, NativeMatrix),
                     p,
-                    pts.Length);
-
-                if (status != SafeNativeMethods.Gdip.Ok)
-                {
-                    throw SafeNativeMethods.Gdip.StatusException(status);
-                }
+                    pts.Length));
             }
         }
 
@@ -327,15 +236,10 @@ namespace System.Drawing.Drawing2D
 
             fixed (Point* p = pts)
             {
-                int status = SafeNativeMethods.Gdip.GdipVectorTransformMatrixPointsI(
-                    new HandleRef(this, nativeMatrix),
+                Gdip.CheckStatus(Gdip.GdipVectorTransformMatrixPointsI(
+                    new HandleRef(this, NativeMatrix),
                     p,
-                    pts.Length);
-
-                if (status != SafeNativeMethods.Gdip.Ok)
-                {
-                    throw SafeNativeMethods.Gdip.StatusException(status);
-                }
+                    pts.Length));
             }
         }
 
@@ -343,11 +247,7 @@ namespace System.Drawing.Drawing2D
         {
             get
             {
-                int status = SafeNativeMethods.Gdip.GdipIsMatrixInvertible(new HandleRef(this, nativeMatrix), out int isInvertible);
-
-                if (status != SafeNativeMethods.Gdip.Ok)
-                    throw SafeNativeMethods.Gdip.StatusException(status);
-
+                Gdip.CheckStatus(Gdip.GdipIsMatrixInvertible(new HandleRef(this, NativeMatrix), out int isInvertible));
                 return isInvertible != 0;
             }
         }
@@ -356,34 +256,24 @@ namespace System.Drawing.Drawing2D
         {
             get
             {
-                int status = SafeNativeMethods.Gdip.GdipIsMatrixIdentity(new HandleRef(this, nativeMatrix), out int isIdentity);
-
-                if (status != SafeNativeMethods.Gdip.Ok)
-                    throw SafeNativeMethods.Gdip.StatusException(status);
-
+                Gdip.CheckStatus(Gdip.GdipIsMatrixIdentity(new HandleRef(this, NativeMatrix), out int isIdentity));
                 return isIdentity != 0;
             }
         }
         public override bool Equals(object obj)
         {
             Matrix matrix2 = obj as Matrix;
-            if (matrix2 == null) return false;
+            if (matrix2 == null)
+                return false;
 
-
-            int status = SafeNativeMethods.Gdip.GdipIsMatrixEqual(new HandleRef(this, nativeMatrix),
-                                                   new HandleRef(matrix2, matrix2.nativeMatrix),
-                                                   out int isEqual);
-
-            if (status != SafeNativeMethods.Gdip.Ok)
-                throw SafeNativeMethods.Gdip.StatusException(status);
+            Gdip.CheckStatus(Gdip.GdipIsMatrixEqual(
+                new HandleRef(this, NativeMatrix),
+                new HandleRef(matrix2, matrix2.NativeMatrix),
+                out int isEqual));
 
             return isEqual != 0;
         }
 
         public override int GetHashCode() => base.GetHashCode();
-
-        internal Matrix(IntPtr nativeMatrix) => SetNativeMatrix(nativeMatrix);
-
-        internal void SetNativeMatrix(IntPtr nativeMatrix) => this.nativeMatrix = nativeMatrix;
     }
 }

@@ -51,7 +51,7 @@ namespace System.Data.SqlTypes
         private byte[] _rgbWorkBuf;    // A 1-byte work buffer.
 
         // The max data length that we support at this time.
-        private const long x_lMaxLen = System.Int32.MaxValue;
+        private const long x_lMaxLen = int.MaxValue;
 
         private const long x_lNull = -1L;
 

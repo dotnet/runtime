@@ -69,7 +69,7 @@ namespace System.Collections.Concurrent.Tests
                 {
                     Assert.True(
                         key.Equals(pairEnumerator.Current.Key - 1),
-                        String.Format("Keys are not normalized {0} {1}", key, pairEnumerator.Current.Key));
+                        string.Format("Keys are not normalized {0} {1}", key, pairEnumerator.Current.Key));
                 }
                 key = pairEnumerator.Current.Key;
                 for (long i = pairEnumerator.Current.Value.Item1; i < pairEnumerator.Current.Value.Item2; i++)
@@ -92,7 +92,7 @@ namespace System.Collections.Concurrent.Tests
                 {
                     Assert.True(
                         key.Equals(pairEnumerator.Current.Key - 1),
-                        String.Format("Keys are not normalized {0} {1}", key, pairEnumerator.Current.Key));
+                        string.Format("Keys are not normalized {0} {1}", key, pairEnumerator.Current.Key));
                 }
                 key = pairEnumerator.Current.Key;
                 var tuple = pairEnumerator.Current.Value;
@@ -201,7 +201,7 @@ namespace System.Collections.Concurrent.Tests
                 {
                     Assert.True(
                         key.Equals(pairEnumerator.Current.Key - 1),
-                        String.Format("Keys are not normalized {0} {1}", key, pairEnumerator.Current.Key));
+                        string.Format("Keys are not normalized {0} {1}", key, pairEnumerator.Current.Key));
                 }
                 key = pairEnumerator.Current.Key;
                 for (int i = pairEnumerator.Current.Value.Item1; i < pairEnumerator.Current.Value.Item2; i++)
@@ -224,7 +224,7 @@ namespace System.Collections.Concurrent.Tests
                 {
                     Assert.True(
                         key.Equals(pairEnumerator.Current.Key - 1),
-                        String.Format("Keys are not normalized {0} {1}", key, pairEnumerator.Current.Key));
+                        string.Format("Keys are not normalized {0} {1}", key, pairEnumerator.Current.Key));
                 }
                 key = pairEnumerator.Current.Key;
                 var tuple = pairEnumerator.Current.Value;

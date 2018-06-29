@@ -66,7 +66,7 @@ namespace Microsoft.Internal
         {
             if (!condition)
             {
-                throw UncatchableException(String.Format(message, arg0));
+                throw UncatchableException(string.Format(message, arg0));
             }
         }
 
@@ -75,7 +75,7 @@ namespace Microsoft.Internal
         {
             if (!condition)
             {
-                throw UncatchableException(String.Format(message, arg0, arg1));
+                throw UncatchableException(string.Format(message, arg0, arg1));
             }
         }
 
@@ -84,7 +84,7 @@ namespace Microsoft.Internal
         {
             if (!condition)
             {
-                throw UncatchableException(String.Format(message, arg0, arg1, arg2));
+                throw UncatchableException(string.Format(message, arg0, arg1, arg2));
             }
         }
 
@@ -93,7 +93,7 @@ namespace Microsoft.Internal
         {
             if (!condition)
             {
-                throw UncatchableException(String.Format(message, args));
+                throw UncatchableException(string.Format(message, args));
             }
         }
 

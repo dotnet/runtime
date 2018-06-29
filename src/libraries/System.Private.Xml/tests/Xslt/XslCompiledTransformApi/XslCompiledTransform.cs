@@ -39,9 +39,9 @@ namespace System.Xml.Tests
             return methInfo;
         }
 
-        protected String scriptTestPath = null;
+        protected string scriptTestPath = null;
 
-        protected String ScriptTestPath
+        protected string ScriptTestPath
         {
             get
             {
@@ -63,8 +63,8 @@ namespace System.Xml.Tests
         {
             get
             {
-                String asmPath = Path.Combine(Path.Combine("TestFiles", FilePathUtil.GetTestDataPath(), "xsltc", "precompiled"), "bftBaseLine.dll");
-                String type = "bftBaseLine";
+                string asmPath = Path.Combine(Path.Combine("TestFiles", FilePathUtil.GetTestDataPath(), "xsltc", "precompiled"), "bftBaseLine.dll");
+                string type = "bftBaseLine";
 
                 Assembly asm = AssemblyLoadContext.Default.LoadFromAssemblyPath(asmPath);
                 Type t = asm.GetType(type);
@@ -73,7 +73,7 @@ namespace System.Xml.Tests
             }
         }
 
-        protected void WLoad(XslCompiledTransform instance, MethodInfo meth, Byte[] bytes, Type[] types)
+        protected void WLoad(XslCompiledTransform instance, MethodInfo meth, byte[] bytes, Type[] types)
         {
             instance.Load(meth, bytes, types);
         }
@@ -96,7 +96,7 @@ namespace System.Xml.Tests
             XslCompiledTransform xslt = new XslCompiledTransform();
             try
             {
-                WLoad(xslt, (MethodInfo)null, new Byte[5], new Type[5]);
+                WLoad(xslt, (MethodInfo)null, new byte[5], new Type[5]);
             }
             catch (Exception e)
             {
@@ -1650,7 +1650,7 @@ namespace System.Xml.Tests
         {
             string Baseline = Path.Combine("baseline", (string)param);
             xslt = new XslCompiledTransform();
-            String _strXslFile = "showParam.xsl";
+            string _strXslFile = "showParam.xsl";
 
             _strXslFile = FullFilePath(_strXslFile);
             _output.WriteLine("Compiling {0}", _strXslFile);
@@ -1758,7 +1758,7 @@ namespace System.Xml.Tests
         public void LoadXmlReader1(object param, OutputType outputType, NavType navType)
         {
             string Baseline = Path.Combine("baseline", (string)param);
-            Boolean fTEST_FAIL = false;
+            bool fTEST_FAIL = false;
             xslt = new XslCompiledTransform();
 
             XmlReaderSettings xrs = new XmlReaderSettings();
@@ -1822,7 +1822,7 @@ namespace System.Xml.Tests
         [Theory]
         public void LoadXmlReader3()
         {
-            Boolean fTEST_FAIL = false;
+            bool fTEST_FAIL = false;
             xslt = new XslCompiledTransform();
 
             XmlReaderSettings xrs = new XmlReaderSettings();
@@ -1859,7 +1859,7 @@ namespace System.Xml.Tests
         [Theory]
         public void LoadXmlReader4()
         {
-            Boolean fTEST_FAIL = false;
+            bool fTEST_FAIL = false;
             xslt = new XslCompiledTransform();
 
             XmlReaderSettings xrs = new XmlReaderSettings();
@@ -1895,7 +1895,7 @@ namespace System.Xml.Tests
         [Theory]
         public void LoadXmlReader5()
         {
-            Boolean fTEST_FAIL = false;
+            bool fTEST_FAIL = false;
             xslt = new XslCompiledTransform();
 
             XmlReaderSettings xrs = new XmlReaderSettings();
@@ -2612,7 +2612,7 @@ namespace System.Xml.Tests
         public void TransformStrStr1(object param, XslInputType xslInputType, ReaderType readerType)
         {
             string Baseline = Path.Combine("baseline", (string)param);
-            String szFullFilename = FullFilePath("fruits.xml");
+            string szFullFilename = FullFilePath("fruits.xml");
 
             if (LoadXSL("showParam.xsl", xslInputType, readerType) == 1)
             {
@@ -2650,7 +2650,7 @@ namespace System.Xml.Tests
         [Theory]
         public void TransformStrStr3(XslInputType xslInputType, ReaderType readerType)
         {
-            String szFullFilename = FullFilePath("fruits.xml");
+            string szFullFilename = FullFilePath("fruits.xml");
 
             if (LoadXSL("showParam.xsl", xslInputType, readerType) == 1)
             {
@@ -2697,7 +2697,7 @@ namespace System.Xml.Tests
         [Theory]
         public void TransformStrStr5(XslInputType xslInputType, ReaderType readerType)
         {
-            String szFullFilename = FullFilePath("fruits.xml");
+            string szFullFilename = FullFilePath("fruits.xml");
 
             if (LoadXSL("showParam.xsl", xslInputType, readerType) == 1)
             {
@@ -2743,7 +2743,7 @@ namespace System.Xml.Tests
         [Theory]
         public void TransformStrStr7(XslInputType xslInputType, ReaderType readerType)
         {
-            String szFullFilename = FullFilePath("fruits.xml");
+            string szFullFilename = FullFilePath("fruits.xml");
 
             if (LoadXSL("showParam.xsl", xslInputType, readerType) == 1)
             {
@@ -2768,7 +2768,7 @@ namespace System.Xml.Tests
         public void TransformStrStr8(object param, XslInputType xslInputType, ReaderType readerType)
         {
             string Baseline = Path.Combine("baseline", (string)param);
-            String szFullFilename = FullFilePath("fruits.xml");
+            string szFullFilename = FullFilePath("fruits.xml");
 
             for (int i = 0; i < 50; i++)
             {
@@ -2878,7 +2878,7 @@ namespace System.Xml.Tests
         [Theory]
         public void TransformStrStr12(XslInputType xslInputType, ReaderType readerType)
         {
-            String szFullFilename = FullFilePath("fruits.xml");
+            string szFullFilename = FullFilePath("fruits.xml");
             int iCount = 0;
             if (LoadXSL("showParam.xsl", xslInputType, readerType) == 1)
             {
@@ -2915,7 +2915,7 @@ namespace System.Xml.Tests
         [Theory]
         public void TransformStrStr12_win(XslInputType xslInputType, ReaderType readerType)
         {
-            String szFullFilename = FullFilePath("fruits.xml");
+            string szFullFilename = FullFilePath("fruits.xml");
 
             if (LoadXSL("showParam.xsl", xslInputType, readerType) == 1)
             {
@@ -2934,7 +2934,7 @@ namespace System.Xml.Tests
         [Theory]
         public void TransformStrStr13(XslInputType xslInputType, ReaderType readerType)
         {
-            String szFullFilename = FullFilePath("fruits.xml");
+            string szFullFilename = FullFilePath("fruits.xml");
             Stream strmTemp;
 
             if (LoadXSL("showParam.xsl", xslInputType, readerType) == 1)
@@ -2984,7 +2984,7 @@ namespace System.Xml.Tests
         [Theory]
         public void TransformStrStrResolver1(XslInputType xslInputType, ReaderType readerType)
         {
-            String szFullFilename = FullFilePath("fruits.xml");
+            string szFullFilename = FullFilePath("fruits.xml");
             string expected = @"<result>
   <fruit>Apple</fruit>
   <fruit>orange</fruit>
@@ -3017,7 +3017,7 @@ namespace System.Xml.Tests
             // "xmlResolver_document_function.xsl" contains
             // <xsl:for-each select="document('xmlResolver_document_function.xml')//elem">
 
-            String szFullFilename = FullFilePath("fruits.xml");
+            string szFullFilename = FullFilePath("fruits.xml");
 
             if (LoadXSL("xmlResolver_document_function.xsl", xslInputType, readerType) == 1)
             {
@@ -3043,7 +3043,7 @@ namespace System.Xml.Tests
             // "xmlResolver_document_function.xsl" contains
             // <xsl:for-each select="document('xmlResolver_document_function.xml')//elem">
 
-            String szFullFilename = FullFilePath("fruits.xml");
+            string szFullFilename = FullFilePath("fruits.xml");
             string Baseline = Path.Combine("baseline", (string)param);
 
             if (LoadXSL("xmlResolver_document_function.xsl", xslInputType, readerType) == 1)
@@ -3379,7 +3379,7 @@ param2 (correct answer is 'local-param2-arg'): local-param2-arg
             // Create the file.
             using (FileStream fs = File.Open(testFile, FileMode.Open))
             {
-                Byte[] info = new UTF8Encoding(true).GetBytes("<PASSED  />");
+                byte[] info = new UTF8Encoding(true).GetBytes("<PASSED  />");
                 fs.Write(info, 0, info.Length);
             }
 

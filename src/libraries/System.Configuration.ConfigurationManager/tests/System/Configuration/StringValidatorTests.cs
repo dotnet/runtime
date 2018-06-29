@@ -1,4 +1,4 @@
-﻿// Licensed to the .NET Foundation under one or more agreements.
+// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
@@ -22,7 +22,7 @@ namespace System.ConfigurationTests
         public void CanValidate_PassInNotStringType()
         {
             StringValidator validator = new StringValidator(5);
-            Assert.False(validator.CanValidate(typeof(Int32)));
+            Assert.False(validator.CanValidate(typeof(int)));
         }
 
         [Fact]

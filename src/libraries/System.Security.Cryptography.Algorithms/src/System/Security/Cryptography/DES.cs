@@ -65,7 +65,7 @@ namespace System.Security.Cryptography
                 throw new CryptographicException(SR.Cryptography_InvalidKeySize);
 
             byte[] rgbOddParityKey = rgbKey.FixupKeyParity();
-            UInt64 key = QuadWordFromBigEndian(rgbOddParityKey);
+            ulong key = QuadWordFromBigEndian(rgbOddParityKey);
             if ((key == 0x0101010101010101) ||
                 (key == 0xfefefefefefefefe) ||
                 (key == 0x1f1f1f1f0e0e0e0e) ||
@@ -83,7 +83,7 @@ namespace System.Security.Cryptography
                 throw new CryptographicException(SR.Cryptography_InvalidKeySize);
 
             byte[] rgbOddParityKey = rgbKey.FixupKeyParity();
-            UInt64 key = QuadWordFromBigEndian(rgbOddParityKey);
+            ulong key = QuadWordFromBigEndian(rgbOddParityKey);
             if ((key == 0x01fe01fe01fe01fe) ||
                 (key == 0xfe01fe01fe01fe01) ||
                 (key == 0x1fe01fe00ef10ef1) ||
@@ -111,13 +111,13 @@ namespace System.Security.Cryptography
             return false;
         }
 
-        private static UInt64 QuadWordFromBigEndian(byte[] block)
+        private static ulong QuadWordFromBigEndian(byte[] block)
         {
-            UInt64 x = (
-                (((UInt64)block[0]) << 56) | (((UInt64)block[1]) << 48) |
-                (((UInt64)block[2]) << 40) | (((UInt64)block[3]) << 32) |
-                (((UInt64)block[4]) << 24) | (((UInt64)block[5]) << 16) |
-                (((UInt64)block[6]) << 8) | ((UInt64)block[7])
+            ulong x = (
+                (((ulong)block[0]) << 56) | (((ulong)block[1]) << 48) |
+                (((ulong)block[2]) << 40) | (((ulong)block[3]) << 32) |
+                (((ulong)block[4]) << 24) | (((ulong)block[5]) << 16) |
+                (((ulong)block[6]) << 8) | ((ulong)block[7])
                 );
             return x;
         }

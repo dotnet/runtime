@@ -10,7 +10,7 @@ internal partial class Interop
     internal partial class NtDll
     {
         [DllImport(Libraries.NtDll, CharSet = CharSet.Unicode)]
-        internal static extern int NtQuerySystemInformation(int query, IntPtr dataPtr, int size, out int returnedSize);
+        internal static unsafe extern int NtQuerySystemInformation(int query, void* dataPtr, int size, out int returnedSize);
 
         internal const int NtQuerySystemProcessInformation = 5;
         internal const uint STATUS_INFO_LENGTH_MISMATCH = 0xC0000004;

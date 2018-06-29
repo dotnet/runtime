@@ -186,7 +186,7 @@ namespace System.DirectoryServices.AccountManagement
                     GlobalDebug.WriteLineIf(GlobalDebug.Warn, "AuthZSet", "Failed to retrieve group list, {0}", lastError);
 
                     throw new PrincipalOperationException(
-                                    String.Format(
+                                    string.Format(
                                             CultureInfo.CurrentCulture,
                                             SR.AuthZFailedToRetrieveGroupList,
                                             lastError));
@@ -391,7 +391,7 @@ namespace System.DirectoryServices.AccountManagement
                 else
                 {
                     Debug.Assert((_userType == ContextType.Domain) &&
-                                  (String.Compare(Utils.GetComputerFlatName(), sidIssuerName, StringComparison.OrdinalIgnoreCase) != 0));
+                                 !string.Equals(Utils.GetComputerFlatName(), sidIssuerName, StringComparison.OrdinalIgnoreCase));
 
                     // It's a domain group, because it's a domain user and the SID issuer isn't the local machine
 

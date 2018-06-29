@@ -130,7 +130,7 @@ namespace System.Reflection.Context.Projection
             if ((type & MemberTypes.Property) != 0)
                 matchingMembers.AddRange(GetProperties(bindingAttr));
 
-            matchingMembers.RemoveAll(member => string.Compare(member.Name, name, comparisonType) != 0);
+            matchingMembers.RemoveAll(member => !string.Equals(member.Name, name, comparisonType));
             
             return matchingMembers.ToArray();
         }

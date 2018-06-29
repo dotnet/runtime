@@ -114,16 +114,16 @@ namespace System.Threading.Tasks.Tests
                 int range = tuple.Item2 - tuple.Item1;
                 if (range > rangeSize)
                 {
-                    Assert.False(range > rangeSize, String.Format("    > FAILED.  Observed chunk size of {0}", range));
+                    Assert.False(range > rangeSize, string.Format("    > FAILED.  Observed chunk size of {0}", range));
                     Interlocked.Increment(ref numMore);
                 }
                 else if (range < rangeSize)
                     Interlocked.Increment(ref numLess);
             });
 
-            Assert.False(numMore > 0, String.Format("    > FAILED.  {0} chunks larger than desired range size.", numMore));
+            Assert.False(numMore > 0, string.Format("    > FAILED.  {0} chunks larger than desired range size.", numMore));
 
-            Assert.False(numLess > 1, String.Format("    > FAILED.  {0} chunks smaller than desired range size.", numLess));
+            Assert.False(numLess > 1, string.Format("    > FAILED.  {0} chunks smaller than desired range size.", numLess));
 
             RangePartitionerChunkTest((long)from, (long)to, (long)rangeSize);
         }
@@ -139,15 +139,15 @@ namespace System.Threading.Tasks.Tests
                 long range = tuple.Item2 - tuple.Item1;
                 if (range > rangeSize)
                 {
-                    Assert.False(range > rangeSize, String.Format("    > FAILED.  Observed chunk size of {0}", range));
+                    Assert.False(range > rangeSize, string.Format("    > FAILED.  Observed chunk size of {0}", range));
                     Interlocked.Increment(ref numMore);
                 }
                 else if (range < rangeSize) Interlocked.Increment(ref numLess);
             });
 
-            Assert.False(numMore > 0, String.Format("    > FAILED.  {0} chunks larger than desired range size.", numMore));
+            Assert.False(numMore > 0, string.Format("    > FAILED.  {0} chunks larger than desired range size.", numMore));
 
-            Assert.False(numLess > 1, String.Format("    > FAILED.  {0} chunks smaller than desired range size.", numLess));
+            Assert.False(numLess > 1, string.Format("    > FAILED.  {0} chunks smaller than desired range size.", numLess));
         }
 
         private static void RangePartitionerCoverageTest(int from, int to, int rangeSize)
@@ -169,7 +169,7 @@ namespace System.Threading.Tasks.Tests
 
             for (int i = 0; i < range; i++)
             {
-                Assert.False(visits[i] != 1, String.Format("    > FAILED.  Visits[{0}] = {1}", i, visits[i]));
+                Assert.False(visits[i] != 1, string.Format("    > FAILED.  Visits[{0}] = {1}", i, visits[i]));
             }
 
             RangePartitionerCoverageTest((long)from, (long)to, (long)rangeSize);
@@ -194,7 +194,7 @@ namespace System.Threading.Tasks.Tests
 
             for (long i = 0; i < range; i++)
             {
-                Assert.False(visits[i] != 1, String.Format("    > FAILED.  Visits[{0}] = {1}", i, visits[i]));
+                Assert.False(visits[i] != 1, string.Format("    > FAILED.  Visits[{0}] = {1}", i, visits[i]));
             }
         }
     }

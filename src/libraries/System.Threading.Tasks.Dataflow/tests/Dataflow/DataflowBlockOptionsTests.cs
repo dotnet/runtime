@@ -57,14 +57,14 @@ namespace System.Threading.Tasks.Dataflow.Tests
             var edbo = new ExecutionDataflowBlockOptions();
             var gdbo = new GroupingDataflowBlockOptions();
 
-            foreach (int value in new[] { 2, Int32.MaxValue, DataflowBlockOptions.Unbounded })
+            foreach (int value in new[] { 2, int.MaxValue, DataflowBlockOptions.Unbounded })
             {
                 SetAndTest(dbo, (o,v) => o.MaxMessagesPerTask = v, o => o.MaxMessagesPerTask, value);
                 SetAndTest(dbo, (o,v) => o.BoundedCapacity = v, o => o.BoundedCapacity, value);
                 SetAndTest(edbo, (o,v) => o.MaxDegreeOfParallelism = v, o => o.MaxDegreeOfParallelism, value);
                 SetAndTest(gdbo, (o,v) => o.MaxNumberOfGroups = v, o => o.MaxNumberOfGroups, value);
             }
-            SetAndTest(gdbo, (o,v) => o.MaxNumberOfGroups = v, o => o.MaxNumberOfGroups, Int64.MaxValue);
+            SetAndTest(gdbo, (o,v) => o.MaxNumberOfGroups = v, o => o.MaxNumberOfGroups, long.MaxValue);
 
             foreach (TaskScheduler value in new[] { new ConcurrentExclusiveSchedulerPair().ConcurrentScheduler, TaskScheduler.Default })
             {

@@ -14,7 +14,7 @@ namespace System.Xml.Tests
             var reader = Utils.CreateFragmentReader("<Root a='-56.455'/>");
             reader.PositionOnElement("Root");
             reader.MoveToAttribute("a");
-            Assert.Equal("-56.455", reader.ReadContentAs(typeof(String), null));
+            Assert.Equal("-56.455", reader.ReadContentAs(typeof(string), null));
         }
 
         [Fact]
@@ -23,7 +23,7 @@ namespace System.Xml.Tests
             var reader = Utils.CreateFragmentReader("<Root a='0'/>");
             reader.PositionOnElement("Root");
             reader.MoveToAttribute("a");
-            Assert.Equal("0", reader.ReadContentAs(typeof(String), null));
+            Assert.Equal("0", reader.ReadContentAs(typeof(string), null));
         }
 
         [Fact]
@@ -32,7 +32,7 @@ namespace System.Xml.Tests
             var reader = Utils.CreateFragmentReader("<Root a='0099.99'/>");
             reader.PositionOnElement("Root");
             reader.MoveToAttribute("a");
-            Assert.Equal("0099.99", reader.ReadContentAs(typeof(String), null));
+            Assert.Equal("0099.99", reader.ReadContentAs(typeof(string), null));
         }
 
         [Fact]
@@ -41,7 +41,7 @@ namespace System.Xml.Tests
             var reader = Utils.CreateFragmentReader("<Root a='-56.44'/>");
             reader.PositionOnElement("Root");
             reader.MoveToAttribute("a");
-            Assert.Equal("-56.44", reader.ReadContentAs(typeof(String), null));
+            Assert.Equal("-56.44", reader.ReadContentAs(typeof(string), null));
         }
 
         [Fact]
@@ -50,7 +50,7 @@ namespace System.Xml.Tests
             var reader = Utils.CreateFragmentReader("<Root a='-000123456'/>");
             reader.PositionOnElement("Root");
             reader.MoveToAttribute("a");
-            Assert.Equal("-000123456", reader.ReadContentAs(typeof(String), null));
+            Assert.Equal("-000123456", reader.ReadContentAs(typeof(string), null));
         }
 
         [Fact]
@@ -59,7 +59,7 @@ namespace System.Xml.Tests
             var reader = Utils.CreateFragmentReader("<Root a='99999.44456'/>");
             reader.PositionOnElement("Root");
             reader.MoveToAttribute("a");
-            Assert.Equal("99999.44456", reader.ReadContentAs(typeof(String), null));
+            Assert.Equal("99999.44456", reader.ReadContentAs(typeof(string), null));
         }
 
         [Fact]

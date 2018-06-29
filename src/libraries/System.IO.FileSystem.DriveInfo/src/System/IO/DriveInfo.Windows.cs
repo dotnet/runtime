@@ -51,7 +51,7 @@ namespace System.IO
             }
         }
 
-        public String DriveFormat
+        public string DriveFormat
         {
             get
             {
@@ -159,7 +159,7 @@ namespace System.IO
         }
 
         // Null is a valid volume label.
-        public String VolumeLabel
+        public string VolumeLabel
         {
             get
             {

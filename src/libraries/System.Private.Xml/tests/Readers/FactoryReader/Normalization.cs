@@ -13,10 +13,10 @@ namespace System.Xml.Tests
     [TestCase(Name = "FactoryReader Normalization", Desc = "FactoryReader")]
     public partial class TCNormalization : TCXMLReaderBaseGeneral
     {
-        protected const String ST_ATTR_TEST_NAME = "ATTRIBUTE5";
-        protected const String ST_ATTR_EXP_STRING = "x x";
-        protected const String ST_ATTR_EXP_STRING_MS = "x     x";
-        protected const String ST_ELEM_EXP_STRING = "x\nx";
+        protected const string ST_ATTR_TEST_NAME = "ATTRIBUTE5";
+        protected const string ST_ATTR_EXP_STRING = "x x";
+        protected const string ST_ATTR_EXP_STRING_MS = "x     x";
+        protected const string ST_ELEM_EXP_STRING = "x\nx";
 
 
         public override int Init(object objParam)
@@ -188,7 +188,7 @@ namespace System.Xml.Tests
 
             for (int i = 0; i < invalidXML.Length; i++)
             {
-                string strxml = String.Format("<ROOT>&#x{0};</ROOT>", invalidXML[i]);
+                string strxml = string.Format("<ROOT>&#x{0};</ROOT>", invalidXML[i]);
 
                 ReloadSourceStr(strxml);
                 try

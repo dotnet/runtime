@@ -1757,10 +1757,10 @@ nameof(collections), SR.BlockingCollection_ValidateCollectionsArray_DispElems);
         private static void ValidateTimeout(TimeSpan timeout)
         {
             long totalMilliseconds = (long)timeout.TotalMilliseconds;
-            if ((totalMilliseconds < 0 || totalMilliseconds > Int32.MaxValue) && (totalMilliseconds != Timeout.Infinite))
+            if ((totalMilliseconds < 0 || totalMilliseconds > int.MaxValue) && (totalMilliseconds != Timeout.Infinite))
             {
                 throw new ArgumentOutOfRangeException(nameof(timeout), timeout,
-                    String.Format(CultureInfo.InvariantCulture, SR.BlockingCollection_TimeoutInvalid, Int32.MaxValue));
+                    string.Format(CultureInfo.InvariantCulture, SR.BlockingCollection_TimeoutInvalid, int.MaxValue));
             }
         }
 
@@ -1774,7 +1774,7 @@ nameof(collections), SR.BlockingCollection_ValidateCollectionsArray_DispElems);
             if ((millisecondsTimeout < 0) && (millisecondsTimeout != Timeout.Infinite))
             {
                 throw new ArgumentOutOfRangeException(nameof(millisecondsTimeout), millisecondsTimeout,
-                    String.Format(CultureInfo.InvariantCulture, SR.BlockingCollection_TimeoutInvalid, Int32.MaxValue));
+                    string.Format(CultureInfo.InvariantCulture, SR.BlockingCollection_TimeoutInvalid, int.MaxValue));
             }
         }
 

@@ -619,7 +619,7 @@ namespace System.Numerics.Tests
                         break;
                 }
 
-                Assert.True(Valid, String.Format("Cycle {0} corrupted with operation {1} on order {2}", id, op, order));
+                Assert.True(Valid, string.Format("Cycle {0} corrupted with operation {1} on order {2}", id, op, order));
             }
         }
 

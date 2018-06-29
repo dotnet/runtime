@@ -557,7 +557,7 @@ namespace System.Net
                                 int newNow = Environment.TickCount;
                                 int waitDuration = haveNextTick ?
                                     (int)(IsTickBetween(now, nextTick, newNow) ?
-                                        Math.Min(unchecked((uint)(nextTick - newNow)), (uint)(Int32.MaxValue - TickCountResolution)) + TickCountResolution :
+                                        Math.Min(unchecked((uint)(nextTick - newNow)), (uint)(int.MaxValue - TickCountResolution)) + TickCountResolution :
                                         0) :
                                     ThreadIdleTimeoutMilliseconds;
 

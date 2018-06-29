@@ -965,7 +965,7 @@ namespace System.Xml.Serialization
                 Type formatter = typeof(XmlConvert);
                 System.Reflection.MethodInfo format = formatter.GetMethod("ToString", new Type[] { pm.TypeDesc.Type });
                 if (format != null)
-                    return (string)format.Invoke(formatter, new Object[] { value });
+                    return (string)format.Invoke(formatter, new object[] { value });
             }
             else
             {

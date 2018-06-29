@@ -87,7 +87,7 @@ namespace DPStressHarness
         public abstract void Run();
 
 
-        protected void ExecuteSetupPhase(Object targetInstance)
+        protected void ExecuteSetupPhase(object targetInstance)
         {
             if (_setupMethods != null)
             {
@@ -98,7 +98,7 @@ namespace DPStressHarness
             }
         }
 
-        protected void ExecuteCleanupPhase(Object targetInstance)
+        protected void ExecuteCleanupPhase(object targetInstance)
         {
             if (_cleanupMethods != null)
             {
@@ -109,7 +109,7 @@ namespace DPStressHarness
             }
         }
 
-        protected void SetVariations(Object targetInstance)
+        protected void SetVariations(object targetInstance)
         {
             FieldInfo[] fields = targetInstance.GetType().GetFields(BindingFlags.Instance | BindingFlags.Static | BindingFlags.Public);
 
@@ -165,9 +165,9 @@ namespace DPStressHarness
                 logger.AddTestMetric(Constants.TEST_METRIC_TARGET_ASSEMBLY_NAME, (new AssemblyName(TestMetrics.TargetAssembly.FullName)).Name, null);
             }
 
-            logger.AddTestMetric(Constants.TEST_METRIC_PEAK_WORKING_SET, String.Format("{0}", TestMetrics.PeakWorkingSet), "bytes");
-            logger.AddTestMetric(Constants.TEST_METRIC_WORKING_SET, String.Format("{0}", TestMetrics.WorkingSet), "bytes");
-            logger.AddTestMetric(Constants.TEST_METRIC_PRIVATE_BYTES, String.Format("{0}", TestMetrics.PrivateBytes), "bytes");
+            logger.AddTestMetric(Constants.TEST_METRIC_PEAK_WORKING_SET, string.Format("{0}", TestMetrics.PeakWorkingSet), "bytes");
+            logger.AddTestMetric(Constants.TEST_METRIC_WORKING_SET, string.Format("{0}", TestMetrics.WorkingSet), "bytes");
+            logger.AddTestMetric(Constants.TEST_METRIC_PRIVATE_BYTES, string.Format("{0}", TestMetrics.PrivateBytes), "bytes");
         }
     }
 }

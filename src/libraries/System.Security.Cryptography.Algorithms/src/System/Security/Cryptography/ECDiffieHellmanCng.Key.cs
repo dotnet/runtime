@@ -13,7 +13,7 @@ namespace System.Security.Cryptography
         {
             private readonly ECCngKey _key = new ECCngKey(BCryptNative.AlgorithmName.ECDH);
 
-            private string GetCurveName() => _key.GetCurveName(KeySize);
+            private string GetCurveName(out string oidValue) => _key.GetCurveName(KeySize, out oidValue);
 
             public override void GenerateKey(ECCurve curve)
             {
@@ -32,7 +32,7 @@ namespace System.Security.Cryptography
             {
                 get
                 {
-                    string curveName = GetCurveName();
+                    string curveName = GetCurveName(out _);
 
                     return new ECDiffieHellmanCngPublicKey(
                         curveName == null

@@ -9,18 +9,18 @@ namespace System.Threading
     /// </summary>
     internal static class PlatformHelper
     {
-        private const Int32 PROCESSOR_COUNT_REFRESH_INTERVAL_MS = 30000; // How often to refresh the count, in milliseconds.
-        private static volatile Int32 s_processorCount; // The last count seen.
-        private static volatile Int32 s_lastProcessorCountRefreshTicks; // The last time we refreshed.
+        private const int PROCESSOR_COUNT_REFRESH_INTERVAL_MS = 30000; // How often to refresh the count, in milliseconds.
+        private static volatile int s_processorCount; // The last count seen.
+        private static volatile int s_lastProcessorCountRefreshTicks; // The last time we refreshed.
 
         /// <summary>
         /// Gets the number of available processors
         /// </summary>
-        internal static Int32 ProcessorCount
+        internal static int ProcessorCount
         {
             get
             {
-                Int32 now = Environment.TickCount;
+                int now = Environment.TickCount;
                 if (s_processorCount == 0 || (now - s_lastProcessorCountRefreshTicks) >= PROCESSOR_COUNT_REFRESH_INTERVAL_MS)
                 {
                     s_processorCount = Environment.ProcessorCount;

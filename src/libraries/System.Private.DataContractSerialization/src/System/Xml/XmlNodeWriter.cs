@@ -87,9 +87,9 @@ namespace System.Xml
         public abstract void WriteText(char[] chars, int offset, int count);
         public abstract void WriteText(byte[] buffer, int offset, int count);
         public abstract void WriteInt32Text(int value);
-        public abstract void WriteInt64Text(Int64 value);
+        public abstract void WriteInt64Text(long value);
         public abstract void WriteBoolText(bool value);
-        public abstract void WriteUInt64Text(UInt64 value);
+        public abstract void WriteUInt64Text(ulong value);
         public abstract void WriteFloatText(float value);
         public abstract void WriteDoubleText(double value);
         public abstract void WriteDecimalText(decimal value);
@@ -137,9 +137,9 @@ namespace System.Xml
             public override void WriteText(char[] chars, int offset, int count) { }
             public override void WriteText(byte[] buffer, int offset, int count) { }
             public override void WriteInt32Text(int value) { }
-            public override void WriteInt64Text(Int64 value) { }
+            public override void WriteInt64Text(long value) { }
             public override void WriteBoolText(bool value) { }
-            public override void WriteUInt64Text(UInt64 value) { }
+            public override void WriteUInt64Text(ulong value) { }
             public override void WriteFloatText(float value) { }
             public override void WriteDoubleText(double value) { }
             public override void WriteDecimalText(decimal value) { }

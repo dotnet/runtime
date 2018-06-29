@@ -645,7 +645,7 @@ namespace System.Runtime.Serialization
                     {
                         if (IsDictionary)
                         {
-                            if (String.CompareOrdinal(KeyName, ValueName) == 0)
+                            if (string.CompareOrdinal(KeyName, ValueName) == 0)
                             {
                                 DataContract.ThrowInvalidDataContractException(
                                     SR.Format(SR.DupKeyValueName, DataContract.GetClrTypeFullName(UnderlyingType), KeyName),
