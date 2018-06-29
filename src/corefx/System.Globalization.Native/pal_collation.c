@@ -28,7 +28,7 @@ const int32_t CompareOptionsIgnoreWidth = 0x10;
 // change ICU's default behavior here isn't really justified unless someone has a strong reason
 // for !StringSort to behave differently.
 
-typedef struct { UChar* items; size_t size; } UCharList;
+typedef struct { UChar* items; size_t capacity; size_t size; } UCharList;
 
 int TreeComparer(const void* left, const void* right)
 {
@@ -119,13 +119,13 @@ bool IsHalfFullHigherSymbol(UChar character)
         || (0xff61 <= character && character <= 0xff65);
 }
 
-static bool AddItem(UCharList* list, size_t* currentCapacity, const UChar item)
+static bool AddItem(UCharList* list, const UChar item)
 {
     size_t size = list->size++;
-    if (size >= *currentCapacity)
+    if (size >= list->capacity)
     {
-        *currentCapacity *= 2;
-        UChar* ptr = (UChar*)realloc(list->items, *currentCapacity * sizeof(UChar*));
+        list->capacity *= 2;
+        UChar* ptr = (UChar*)realloc(list->items, list->capacity * sizeof(UChar*));
         if (ptr == NULL)
         {
             return false;
@@ -159,18 +159,18 @@ UCharList* GetCustomRules(int32_t options, UColAttributeValue strength, bool isI
     if (!(needsIgnoreKanaTypeCustomRule || needsNotIgnoreKanaTypeCustomRule || needsIgnoreWidthCustomRule || needsNotIgnoreWidthCustomRule))
         return NULL;
 
-    // If we need to create customRules, the KanaType custom rule will be 88 kana characters * 4 = 352 chars long
-    // and the Width custom rule will be at least 215 halfwidth characters * 4 = 860 chars long.
-    // Use 512 as the starting size, so the customRules won't have to grow if we are just
-    // doing the KanaType custom rule.
-    size_t capacity = 512;
     UCharList* customRules = (UCharList*)malloc(sizeof(UCharList));
     if (customRules == NULL)
     {
         return NULL;
     }
 
-    customRules->items = calloc(capacity, sizeof(UChar));
+    // If we need to create customRules, the KanaType custom rule will be 88 kana characters * 4 = 352 chars long
+    // and the Width custom rule will be at least 215 halfwidth characters * 4 = 860 chars long.
+    // Use 512 as the starting size, so the customRules won't have to grow if we are just
+    // doing the KanaType custom rule.
+    customRules->capacity = 512;
+    customRules->items = calloc(customRules->capacity, sizeof(UChar));
     if (customRules->items == NULL)
     {
         free(customRules);
@@ -188,10 +188,10 @@ UCharList* GetCustomRules(int32_t options, UColAttributeValue strength, bool isI
             // Hiragana is the range 3041 to 3096 & 309D & 309E
             if (hiraganaChar <= 0x3096 || hiraganaChar >= 0x309D) // characters between 3096 and 309D are not mapped to katakana
             {
-                if(!(AddItem(customRules, &capacity, '&')              &&
-                     AddItem(customRules, &capacity, hiraganaChar)     &&
-                     AddItem(customRules, &capacity, compareChar)      &&
-                     AddItem(customRules, &capacity, hiraganaChar + hiraganaToKatakanaOffset)))
+                if(!(AddItem(customRules, '&')              &&
+                     AddItem(customRules, hiraganaChar)     &&
+                     AddItem(customRules, compareChar)      &&
+                     AddItem(customRules, hiraganaChar + hiraganaToKatakanaOffset)))
                 {
                     free(customRules->items);
                     free(customRules);
@@ -219,11 +219,11 @@ UCharList* GetCustomRules(int32_t options, UColAttributeValue strength, bool isI
             // this character is a symbol, and if so skip it
             if (!(isIgnoreSymbols && needsNotIgnoreWidthCustomRule && (needsEscape || IsHalfFullHigherSymbol(higherChar))))
             {
-                if(!(AddItem(customRules, &capacity, '&')                    &&
-                   (!needsEscape || AddItem(customRules, &capacity, '\\'))   &&
-                   AddItem(customRules, &capacity, lowerChar)                &&
-                   AddItem(customRules, &capacity, compareChar)              &&
-                   AddItem(customRules, &capacity, higherChar)))
+                if(!(AddItem(customRules, '&')                    &&
+                   (!needsEscape || AddItem(customRules, '\\'))   &&
+                   AddItem(customRules, lowerChar)                &&
+                   AddItem(customRules, compareChar)              &&
+                   AddItem(customRules, higherChar)))
                 {
                     free(customRules->items);
                     free(customRules);
@@ -286,6 +286,7 @@ UCollator* CloneCollatorWithOptions(const UCollator* pCollator, int32_t options,
         }
 
         pClonedCollator = ucol_openRules(completeRules, completeRulesLength, UCOL_DEFAULT, strength, NULL, pErr);
+        free(completeRules);
         free(customRules);
     }
 
@@ -385,6 +386,7 @@ ResultCode GlobalizationNative_GetSortHandle(const char* lpLocaleName, SortHandl
 
     if (U_FAILURE(err))
     {
+        pthread_mutex_destroy(&(*ppSortHandle)->collatorsLockObject);
         free(*ppSortHandle);
         (*ppSortHandle) = NULL;
     }
