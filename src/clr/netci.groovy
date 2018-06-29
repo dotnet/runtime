@@ -3496,6 +3496,7 @@ def static shouldGenerateFlowJob(def scenario, def isPR, def architecture, def c
     if (scenario == 'corefx_innerloop') {
         return false
     }
+
     // Filter based on OS and architecture.
 
     switch (architecture) {
@@ -3557,6 +3558,14 @@ def static shouldGenerateFlowJob(def scenario, def isPR, def architecture, def c
         else if (architecture == 'x86') {
             // Linux/x86 only want innerloop and default test
             if (!isNormalOrInnerloop) {
+                return false
+            }
+        }
+        else if (architecture == 'x64') {
+            // Linux/x64 corefx testing doesn't need a flow job; the "build" job runs run-corefx-tests.py which
+            // builds and runs the corefx tests. Other Linux/x64 flow jobs are required to get the test
+            // build from a Windows machine.
+            if (isCoreFxScenario(scenario)) {
                 return false
             }
         }
