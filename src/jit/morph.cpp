@@ -11875,6 +11875,9 @@ GenTree* Compiler::fgMorphSmpOp(GenTree* tree, MorphAddrContext* mac)
             }
             break;
 #endif
+        case GT_LIST:
+            // Special handling for the arg list.
+            return fgMorphArgList(tree->AsArgList(), mac);
 
         default:
             break;
@@ -18901,4 +18904,65 @@ bool Compiler::fgCheckStmtAfterTailCall()
         }
     }
     return nextMorphStmt == nullptr;
+}
+
+//------------------------------------------------------------------------
+// fgMorphArgList: morph argument list tree without recursion.
+//
+// Arguments:
+//    args - argument list tree to morph;
+//    mac  - morph address context, used to morph children.
+//
+// Return Value:
+//    morphed argument list.
+//
+GenTreeArgList* Compiler::fgMorphArgList(GenTreeArgList* args, MorphAddrContext* mac)
+{
+    // Use a non-recursive algorithm that morphs all actual list values,
+    // memorizes the last node for each effect flag and resets
+    // them during the second iteration.
+    constexpr int      numberOfTrackedFlags               = 5;
+    constexpr unsigned trackedFlags[numberOfTrackedFlags] = {GTF_ASG, GTF_CALL, GTF_EXCEPT, GTF_GLOB_REF,
+                                                             GTF_ORDER_SIDEEFF};
+    static_assert_no_msg((trackedFlags[0] | trackedFlags[1] | trackedFlags[2] | trackedFlags[3] | trackedFlags[4]) ==
+                         GTF_ALL_EFFECT);
+
+    GenTree* memorizedLastNodes[numberOfTrackedFlags] = {nullptr};
+
+    for (GenTreeArgList* listNode = args; listNode != nullptr; listNode = listNode->Rest())
+    {
+        // Morph actual list values.
+        GenTree*& arg = listNode->Current();
+        arg           = fgMorphTree(arg, mac);
+
+        // Remember the last list node with each flag.
+        for (int i = 0; i < numberOfTrackedFlags; ++i)
+        {
+            if ((arg->gtFlags & trackedFlags[i]) != 0)
+            {
+                memorizedLastNodes[i] = listNode;
+            }
+        }
+    }
+
+    for (GenTreeArgList* listNode = args; listNode != nullptr; listNode = listNode->Rest())
+    {
+        // Clear all old effects from the list node.
+        listNode->gtFlags &= ~GTF_ALL_EFFECT;
+
+        // Spread each flag to all list nodes (to the prefix) before the memorized last node.
+        for (int i = 0; i < numberOfTrackedFlags; ++i)
+        {
+            if (memorizedLastNodes[i] != nullptr)
+            {
+                listNode->gtFlags |= trackedFlags[i];
+            }
+            if (listNode == memorizedLastNodes[i])
+            {
+                memorizedLastNodes[i] = nullptr;
+            }
+        }
+    }
+
+    return args;
 }
