@@ -8728,6 +8728,10 @@ void LinearScan::dumpNodeInfo(GenTree* node, regMaskTP dstCandidates, int srcCou
 
 void LinearScan::dumpDefList()
 {
+    if (!VERBOSE)
+    {
+        return;
+    }
     JITDUMP("DefList: { ");
     bool first = true;
     for (RefInfoListNode *listNode = defList.Begin(), *end = defList.End(); listNode != end;
