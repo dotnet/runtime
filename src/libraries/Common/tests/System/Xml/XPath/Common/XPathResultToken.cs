@@ -24,13 +24,13 @@ namespace XPathTests.Common
 
         public XPathResultToken()
         {
-            BaseURI = String.Empty;
-            LocalName = String.Empty;
-            Name = String.Empty;
-            NamespaceURI = String.Empty;
-            Prefix = String.Empty;
-            Value = String.Empty;
-            XmlLang = String.Empty;
+            BaseURI = string.Empty;
+            LocalName = string.Empty;
+            Name = string.Empty;
+            NamespaceURI = string.Empty;
+            Prefix = string.Empty;
+            Value = string.Empty;
+            XmlLang = string.Empty;
         }
     }
 }

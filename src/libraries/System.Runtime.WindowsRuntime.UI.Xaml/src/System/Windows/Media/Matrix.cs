@@ -157,7 +157,7 @@ namespace Windows.UI.Xaml.Media
 
             // Helper to get the numeric list separator for a given culture.
             char separator = TokenizerHelper.GetNumericListSeparator(provider);
-            return String.Format(provider,
+            return string.Format(provider,
                                  "{1:" + format + "}{0}{2:" + format + "}{0}{3:" + format + "}{0}{4:" + format + "}{0}{5:" + format + "}{0}{6:" + format + "}",
                                  separator,
                                  _m11,

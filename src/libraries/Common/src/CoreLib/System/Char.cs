@@ -21,12 +21,12 @@ namespace System
     [Serializable]
     [StructLayout(LayoutKind.Sequential)]
     [System.Runtime.CompilerServices.TypeForwardedFrom("mscorlib, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089")] 
-    public struct Char : IComparable, IComparable<Char>, IEquatable<Char>, IConvertible
+    public readonly struct Char : IComparable, IComparable<char>, IEquatable<char>, IConvertible
     {
         //
         // Member Variables
         //
-        private char m_value; // Do not rename (binary serialization)
+        private readonly char m_value; // Do not rename (binary serialization)
 
         //
         // Public Constants
@@ -87,7 +87,7 @@ namespace System
         // Return the Unicode category for Unicode character <= 0x00ff.      
         private static UnicodeCategory GetLatin1UnicodeCategory(char ch)
         {
-            Debug.Assert(IsLatin1(ch), "Char.GetLatin1UnicodeCategory(): ch should be <= 007f");
+            Debug.Assert(IsLatin1(ch), "char.GetLatin1UnicodeCategory(): ch should be <= 007f");
             return (UnicodeCategory)(s_categoryForLatin1[(int)ch]);
         }
 
@@ -107,17 +107,17 @@ namespace System
 
         // Used for comparing two boxed Char objects.
         //
-        public override bool Equals(Object obj)
+        public override bool Equals(object obj)
         {
-            if (!(obj is Char))
+            if (!(obj is char))
             {
                 return false;
             }
-            return (m_value == ((Char)obj).m_value);
+            return (m_value == ((char)obj).m_value);
         }
 
         [System.Runtime.Versioning.NonVersionable]
-        public bool Equals(Char obj)
+        public bool Equals(char obj)
         {
             return m_value == obj;
         }
@@ -128,34 +128,34 @@ namespace System
         // null is considered to be less than any instance.
         // If object is not of type Char, this method throws an ArgumentException.
         //
-        public int CompareTo(Object value)
+        public int CompareTo(object value)
         {
             if (value == null)
             {
                 return 1;
             }
-            if (!(value is Char))
+            if (!(value is char))
             {
                 throw new ArgumentException(SR.Arg_MustBeChar);
             }
 
-            return (m_value - ((Char)value).m_value);
+            return (m_value - ((char)value).m_value);
         }
 
-        public int CompareTo(Char value)
+        public int CompareTo(char value)
         {
             return (m_value - value);
         }
 
         // Overrides System.Object.ToString.
-        public override String ToString()
+        public override string ToString()
         {
-            return Char.ToString(m_value);
+            return char.ToString(m_value);
         }
 
-        public String ToString(IFormatProvider provider)
+        public string ToString(IFormatProvider provider)
         {
-            return Char.ToString(m_value);
+            return char.ToString(m_value);
         }
 
         //
@@ -168,7 +168,7 @@ namespace System
         // Provides a string representation of a character.
         public static string ToString(char c) => string.CreateFromChar(c);
 
-        public static char Parse(String s)
+        public static char Parse(string s)
         {
             if (s == null)
             {
@@ -182,7 +182,7 @@ namespace System
             return s[0];
         }
 
-        public static bool TryParse(String s, out Char result)
+        public static bool TryParse(string s, out char result)
         {
             result = '\0';
             if (s == null)
@@ -201,7 +201,7 @@ namespace System
         // Static Methods
         //
         /*=================================ISDIGIT======================================
-        **A wrapper for Char.  Returns a boolean indicating whether    **
+        **A wrapper for char.  Returns a boolean indicating whether    **
         **character c is considered to be a digit.                                    **
         ==============================================================================*/
         // Determines whether a character is a digit.
@@ -233,7 +233,7 @@ namespace System
         }
 
         /*=================================ISLETTER=====================================
-        **A wrapper for Char.  Returns a boolean indicating whether    **
+        **A wrapper for char.  Returns a boolean indicating whether    **
         **character c is considered to be a letter.                                   **
         ==============================================================================*/
         // Determines whether a character is a letter.
@@ -271,7 +271,7 @@ namespace System
         }
 
         /*===============================ISWHITESPACE===================================
-        **A wrapper for Char.  Returns a boolean indicating whether    **
+        **A wrapper for char.  Returns a boolean indicating whether    **
         **character c is considered to be a whitespace character.                     **
         ==============================================================================*/
         // Determines whether a character is whitespace.
@@ -393,7 +393,7 @@ namespace System
         }
 
         /*=================================TOUPPER======================================
-        **A wrapper for Char.toUpperCase.  Converts character c to its **
+        **A wrapper for char.ToUpperCase.  Converts character c to its **
         **uppercase equivalent.  If c is already an uppercase character or is not an  **
         **alphabetic, nothing happens.                                                **
         ==============================================================================*/
@@ -425,7 +425,7 @@ namespace System
         }
 
         /*=================================TOLOWER======================================
-        **A wrapper for Char.toLowerCase.  Converts character c to its **
+        **A wrapper for char.ToLowerCase.  Converts character c to its **
         **lowercase equivalent.  If c is already a lowercase character or is not an   **
         **alphabetic, nothing happens.                                                **
         ==============================================================================*/
@@ -512,7 +512,7 @@ namespace System
             throw new InvalidCastException(SR.Format(SR.InvalidCast_FromTo, "Char", "Double"));
         }
 
-        Decimal IConvertible.ToDecimal(IFormatProvider provider)
+        decimal IConvertible.ToDecimal(IFormatProvider provider)
         {
             throw new InvalidCastException(SR.Format(SR.InvalidCast_FromTo, "Char", "Decimal"));
         }
@@ -522,7 +522,7 @@ namespace System
             throw new InvalidCastException(SR.Format(SR.InvalidCast_FromTo, "Char", "DateTime"));
         }
 
-        Object IConvertible.ToType(Type type, IFormatProvider provider)
+        object IConvertible.ToType(Type type, IFormatProvider provider)
         {
             return Convert.DefaultToType((IConvertible)this, type, provider);
         }
@@ -535,7 +535,7 @@ namespace System
             return (CharUnicodeInfo.GetUnicodeCategory(c) == UnicodeCategory.Control);
         }
 
-        public static bool IsControl(String s, int index)
+        public static bool IsControl(string s, int index)
         {
             if (s == null)
                 throw new ArgumentNullException(nameof(s));
@@ -552,7 +552,7 @@ namespace System
         }
 
 
-        public static bool IsDigit(String s, int index)
+        public static bool IsDigit(string s, int index)
         {
             if (s == null)
                 throw new ArgumentNullException(nameof(s));
@@ -568,7 +568,7 @@ namespace System
             return (CharUnicodeInfo.GetUnicodeCategory(s, index) == UnicodeCategory.DecimalDigitNumber);
         }
 
-        public static bool IsLetter(String s, int index)
+        public static bool IsLetter(string s, int index)
         {
             if (s == null)
                 throw new ArgumentNullException(nameof(s));
@@ -589,7 +589,7 @@ namespace System
             return (CheckLetter(CharUnicodeInfo.GetUnicodeCategory(s, index)));
         }
 
-        public static bool IsLetterOrDigit(String s, int index)
+        public static bool IsLetterOrDigit(string s, int index)
         {
             if (s == null)
                 throw new ArgumentNullException(nameof(s));
@@ -605,7 +605,7 @@ namespace System
             return CheckLetterOrDigit(CharUnicodeInfo.GetUnicodeCategory(s, index));
         }
 
-        public static bool IsLower(String s, int index)
+        public static bool IsLower(string s, int index)
         {
             if (s == null)
                 throw new ArgumentNullException(nameof(s));
@@ -655,7 +655,7 @@ namespace System
             return (CheckNumber(CharUnicodeInfo.GetUnicodeCategory(c)));
         }
 
-        public static bool IsNumber(String s, int index)
+        public static bool IsNumber(string s, int index)
         {
             if (s == null)
                 throw new ArgumentNullException(nameof(s));
@@ -683,7 +683,7 @@ namespace System
         //
         ////////////////////////////////////////////////////////////////////////
 
-        public static bool IsPunctuation(String s, int index)
+        public static bool IsPunctuation(string s, int index)
         {
             if (s == null)
                 throw new ArgumentNullException(nameof(s));
@@ -732,7 +732,7 @@ namespace System
             return (CheckSeparator(CharUnicodeInfo.GetUnicodeCategory(c)));
         }
 
-        public static bool IsSeparator(String s, int index)
+        public static bool IsSeparator(string s, int index)
         {
             if (s == null)
                 throw new ArgumentNullException(nameof(s));
@@ -753,7 +753,7 @@ namespace System
             return (c >= HIGH_SURROGATE_START && c <= LOW_SURROGATE_END);
         }
 
-        public static bool IsSurrogate(String s, int index)
+        public static bool IsSurrogate(string s, int index)
         {
             if (s == null)
             {
@@ -792,7 +792,7 @@ namespace System
             return (CheckSymbol(CharUnicodeInfo.GetUnicodeCategory(c)));
         }
 
-        public static bool IsSymbol(String s, int index)
+        public static bool IsSymbol(string s, int index)
         {
             if (s == null)
                 throw new ArgumentNullException(nameof(s));
@@ -809,7 +809,7 @@ namespace System
         }
 
 
-        public static bool IsUpper(String s, int index)
+        public static bool IsUpper(string s, int index)
         {
             if (s == null)
                 throw new ArgumentNullException(nameof(s));
@@ -830,7 +830,7 @@ namespace System
             return (CharUnicodeInfo.GetUnicodeCategory(s, index) == UnicodeCategory.UppercaseLetter);
         }
 
-        public static bool IsWhiteSpace(String s, int index)
+        public static bool IsWhiteSpace(string s, int index)
         {
             if (s == null)
                 throw new ArgumentNullException(nameof(s));
@@ -856,7 +856,7 @@ namespace System
             return CharUnicodeInfo.GetUnicodeCategory((int)c);
         }
 
-        public static UnicodeCategory GetUnicodeCategory(String s, int index)
+        public static UnicodeCategory GetUnicodeCategory(string s, int index)
         {
             if (s == null)
                 throw new ArgumentNullException(nameof(s));
@@ -876,7 +876,7 @@ namespace System
             return CharUnicodeInfo.GetNumericValue(c);
         }
 
-        public static double GetNumericValue(String s, int index)
+        public static double GetNumericValue(string s, int index)
         {
             if (s == null)
                 throw new ArgumentNullException(nameof(s));
@@ -896,7 +896,7 @@ namespace System
             return ((c >= CharUnicodeInfo.HIGH_SURROGATE_START) && (c <= CharUnicodeInfo.HIGH_SURROGATE_END));
         }
 
-        public static bool IsHighSurrogate(String s, int index)
+        public static bool IsHighSurrogate(string s, int index)
         {
             if (s == null)
             {
@@ -917,7 +917,7 @@ namespace System
             return ((c >= CharUnicodeInfo.LOW_SURROGATE_START) && (c <= CharUnicodeInfo.LOW_SURROGATE_END));
         }
 
-        public static bool IsLowSurrogate(String s, int index)
+        public static bool IsLowSurrogate(string s, int index)
         {
             if (s == null)
             {
@@ -933,7 +933,7 @@ namespace System
         /*================================= IsSurrogatePair ============================
          ** Check if the string specified by the index starts with a surrogate pair.
          ==============================================================================*/
-        public static bool IsSurrogatePair(String s, int index)
+        public static bool IsSurrogatePair(string s, int index)
         {
             if (s == null)
             {
@@ -972,7 +972,7 @@ namespace System
          ** Convert an UTF32 value into a surrogate pair.
          ==============================================================================*/
 
-        public static String ConvertFromUtf32(int utf32)
+        public static string ConvertFromUtf32(int utf32)
         {
             // For UTF32 values from U+00D800 ~ U+00DFFF, we should throw.  They
             // are considered as irregular code unit sequence, but they are not illegal.
@@ -984,7 +984,7 @@ namespace System
             if (utf32 < UNICODE_PLANE01_START)
             {
                 // This is a BMP character.
-                return (Char.ToString((char)utf32));
+                return (char.ToString((char)utf32));
             }
 
             unsafe
@@ -1025,7 +1025,7 @@ namespace System
         ** This method throws if a low surrogate is seen without preceding a high-surrogate.
         ==============================================================================*/
 
-        public static int ConvertToUtf32(String s, int index)
+        public static int ConvertToUtf32(string s, int index)
         {
             if (s == null)
             {

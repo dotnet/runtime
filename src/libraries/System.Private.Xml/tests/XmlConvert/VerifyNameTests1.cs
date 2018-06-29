@@ -127,7 +127,7 @@ namespace System.Xml.Tests
             {
                 char c = Convert.ToChar(i);
 
-                string actName = String.Format("a{0}b", c);
+                string actName = string.Format("a{0}b", c);
                 string expName = null;
                 bool bException = false;
 
@@ -205,7 +205,7 @@ namespace System.Xml.Tests
             {
                 char c = Convert.ToChar(i);
 
-                string actName = String.Format("abc{0}", c);
+                string actName = string.Format("abc{0}", c);
                 string expName = null;
                 bool bException = false;
 

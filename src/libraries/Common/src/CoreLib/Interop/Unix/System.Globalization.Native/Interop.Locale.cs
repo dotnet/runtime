@@ -35,6 +35,6 @@ internal static partial class Interop
         internal static extern unsafe bool GetLocaleInfoGroupingSizes(string localeName, uint localeGroupingData, ref int primaryGroupSize, ref int secondaryGroupSize);
 
         [DllImport(Libraries.GlobalizationNative, CharSet = CharSet.Unicode, EntryPoint = "GlobalizationNative_GetLocales")]
-        internal static extern unsafe int GetLocales([Out] Char[] value, int valueLength);
+        internal static extern unsafe int GetLocales([Out] char[] value, int valueLength);
     }
 }

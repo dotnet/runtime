@@ -1,4 +1,4 @@
-﻿// Licensed to the .NET Foundation under one or more agreements.
+// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
@@ -85,8 +85,8 @@ namespace System.Net
                     port = hostAndPort.Substring(colonIndex + 1); // Excludes colon 
 
                     // Loosely validate the port just to make sure it was a port and not something else
-                    UInt16 portValue;
-                    if (!UInt16.TryParse(port, NumberStyles.Integer, CultureInfo.InvariantCulture, out portValue))
+                    ushort portValue;
+                    if (!ushort.TryParse(port, NumberStyles.Integer, CultureInfo.InvariantCulture, out portValue))
                     {
                         return inputServiceName;
                     }
@@ -147,7 +147,7 @@ namespace System.Net
 
         public bool Add(string uriPrefix)
         {
-            Debug.Assert(!String.IsNullOrEmpty(uriPrefix));
+            Debug.Assert(!string.IsNullOrEmpty(uriPrefix));
 
             string[] newServiceNames = BuildServiceNames(uriPrefix);
 

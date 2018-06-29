@@ -10,7 +10,7 @@ namespace System.Collections
     // that can be consumed by some of the common collections.
     public interface IEqualityComparer
     {
-        bool Equals(Object x, Object y);
-        int GetHashCode(Object obj);
+        bool Equals(object x, object y);
+        int GetHashCode(object obj);
     }
 }

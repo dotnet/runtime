@@ -120,7 +120,7 @@ namespace System.Reflection.Metadata.Tests
 
             Assert.Equal(0, new BlobReader(null, 0).Length); // this is valid
             Assert.Throws<BadImageFormatException>(() => new BlobReader(null, 0).ReadByte()); // but can't read anything non-empty from it...
-            Assert.Same(String.Empty, new BlobReader(null, 0).ReadUtf8NullTerminated()); // can read empty string.
+            Assert.Same(string.Empty, new BlobReader(null, 0).ReadUtf8NullTerminated()); // can read empty string.
         }
 
         [Fact]

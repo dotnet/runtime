@@ -161,7 +161,7 @@ if "%__BuildArch%" == "arm64" (
     set __msbuildArgs=/p:Platform=%__BuildArch% /p:PlatformToolset="%__PlatformToolset%"
 )
 
-call %__rootDir%/run.cmd build-managed -project="%__IntermediatesDir%\install.vcxproj" -- /t:rebuild /p:Configuration=%CMAKE_BUILD_TYPE% %__msbuildArgs%
+call msbuild "%__IntermediatesDir%\install.vcxproj" /t:rebuild /p:Configuration=%CMAKE_BUILD_TYPE% %__msbuildArgs%
 IF ERRORLEVEL 1 (
     goto :Failure
 )
@@ -184,7 +184,7 @@ popd
 
 if not exist "%__IntermediatesDir%\install.vcxproj" goto :Failure
 
-call %__rootDir%/run.cmd build-managed -project="%__IntermediatesDir%\install.vcxproj" -- /t:rebuild /p:Configuration=%CMAKE_BUILD_TYPE% %__msbuildArgs%
+call msbuild "%__IntermediatesDir%\install.vcxproj" /t:rebuild /p:Configuration=%CMAKE_BUILD_TYPE% %__msbuildArgs%
 IF ERRORLEVEL 1 (
     goto :Failure
 )

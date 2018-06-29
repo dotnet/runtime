@@ -159,7 +159,7 @@ namespace System.Drawing
             get
             {
                 var matrix = new Matrix();
-                int status = SafeNativeMethods.Gdip.GdipGetTextureTransform(new HandleRef(this, NativeBrush), new HandleRef(matrix, matrix.nativeMatrix));
+                int status = SafeNativeMethods.Gdip.GdipGetTextureTransform(new HandleRef(this, NativeBrush), new HandleRef(matrix, matrix.NativeMatrix));
                 SafeNativeMethods.Gdip.CheckStatus(status);
 
                 return matrix;
@@ -171,7 +171,7 @@ namespace System.Drawing
                     throw new ArgumentNullException(nameof(value));
                 }
 
-                int status = SafeNativeMethods.Gdip.GdipSetTextureTransform(new HandleRef(this, NativeBrush), new HandleRef(value, value.nativeMatrix));
+                int status = SafeNativeMethods.Gdip.GdipSetTextureTransform(new HandleRef(this, NativeBrush), new HandleRef(value, value.NativeMatrix));
                 SafeNativeMethods.Gdip.CheckStatus(status);
             }
         }
@@ -227,13 +227,13 @@ namespace System.Drawing
 
             // Multiplying the transform by a disposed matrix is a nop in GDI+, but throws
             // with the libgdiplus backend. Simulate a nop for compatability with GDI+.
-            if (matrix.nativeMatrix == IntPtr.Zero)
+            if (matrix.NativeMatrix == IntPtr.Zero)
             {
                 return;
             }
 
             int status = SafeNativeMethods.Gdip.GdipMultiplyTextureTransform(new HandleRef(this, NativeBrush),
-                                                              new HandleRef(matrix, matrix.nativeMatrix),
+                                                              new HandleRef(matrix, matrix.NativeMatrix),
                                                               order);
             SafeNativeMethods.Gdip.CheckStatus(status);
         }

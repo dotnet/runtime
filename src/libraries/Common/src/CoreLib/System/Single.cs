@@ -23,9 +23,9 @@ namespace System
     [Serializable]
     [StructLayout(LayoutKind.Sequential)]
     [TypeForwardedFrom("mscorlib, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089")]
-    public struct Single : IComparable, IConvertible, IFormattable, IComparable<Single>, IEquatable<Single>, ISpanFormattable
+    public struct Single : IComparable, IConvertible, IFormattable, IComparable<float>, IEquatable<float>, ISpanFormattable
     {
-        private float m_value; // Do not rename (binary serialization)
+        private readonly float m_value; // Do not rename (binary serialization)
 
         //
         // Public constants
@@ -118,13 +118,13 @@ namespace System
         // null is considered to be less than any instance.
         // If object is not of type Single, this method throws an ArgumentException.
         //
-        public int CompareTo(Object value)
+        public int CompareTo(object value)
         {
             if (value == null)
             {
                 return 1;
             }
-            if (value is Single)
+            if (value is float)
             {
                 float f = (float)value;
                 if (m_value < f) return -1;
@@ -141,7 +141,7 @@ namespace System
         }
 
 
-        public int CompareTo(Single value)
+        public int CompareTo(float value)
         {
             if (m_value < value) return -1;
             if (m_value > value) return 1;
@@ -155,48 +155,48 @@ namespace System
         }
 
         [NonVersionable]
-        public static bool operator ==(Single left, Single right)
+        public static bool operator ==(float left, float right)
         {
             return left == right;
         }
 
         [NonVersionable]
-        public static bool operator !=(Single left, Single right)
+        public static bool operator !=(float left, float right)
         {
             return left != right;
         }
 
         [NonVersionable]
-        public static bool operator <(Single left, Single right)
+        public static bool operator <(float left, float right)
         {
             return left < right;
         }
 
         [NonVersionable]
-        public static bool operator >(Single left, Single right)
+        public static bool operator >(float left, float right)
         {
             return left > right;
         }
 
         [NonVersionable]
-        public static bool operator <=(Single left, Single right)
+        public static bool operator <=(float left, float right)
         {
             return left <= right;
         }
 
         [NonVersionable]
-        public static bool operator >=(Single left, Single right)
+        public static bool operator >=(float left, float right)
         {
             return left >= right;
         }
 
-        public override bool Equals(Object obj)
+        public override bool Equals(object obj)
         {
-            if (!(obj is Single))
+            if (!(obj is float))
             {
                 return false;
             }
-            float temp = ((Single)obj).m_value;
+            float temp = ((float)obj).m_value;
             if (temp == m_value)
             {
                 return true;
@@ -205,7 +205,7 @@ namespace System
             return IsNaN(temp) && IsNaN(m_value);
         }
 
-        public bool Equals(Single obj)
+        public bool Equals(float obj)
         {
             if (obj == m_value)
             {
@@ -217,7 +217,7 @@ namespace System
 
         public override int GetHashCode()
         {
-            var bits = Unsafe.As<float, int>(ref m_value);
+            var bits = Unsafe.As<float, int>(ref Unsafe.AsRef(in m_value));
 
             // Optimized check for IsNan() || IsZero()
             if (((bits - 1) & 0x7FFFFFFF) >= 0x7F800000)
@@ -229,22 +229,22 @@ namespace System
             return bits;
         }
 
-        public override String ToString()
+        public override string ToString()
         {
             return Number.FormatSingle(m_value, null, NumberFormatInfo.CurrentInfo);
         }
 
-        public String ToString(IFormatProvider provider)
+        public string ToString(IFormatProvider provider)
         {
             return Number.FormatSingle(m_value, null, NumberFormatInfo.GetInstance(provider));
         }
 
-        public String ToString(String format)
+        public string ToString(string format)
         {
             return Number.FormatSingle(m_value, format, NumberFormatInfo.CurrentInfo);
         }
 
-        public String ToString(String format, IFormatProvider provider)
+        public string ToString(string format, IFormatProvider provider)
         {
             return Number.FormatSingle(m_value, format, NumberFormatInfo.GetInstance(provider));
         }
@@ -262,26 +262,26 @@ namespace System
         // PositiveInfinity or NegativeInfinity for a number that is too
         // large or too small.
         //
-        public static float Parse(String s)
+        public static float Parse(string s)
         {
             if (s == null) ThrowHelper.ThrowArgumentNullException(ExceptionArgument.s);
             return Number.ParseSingle(s, NumberStyles.Float | NumberStyles.AllowThousands, NumberFormatInfo.CurrentInfo);
         }
 
-        public static float Parse(String s, NumberStyles style)
+        public static float Parse(string s, NumberStyles style)
         {
             NumberFormatInfo.ValidateParseStyleFloatingPoint(style);
             if (s == null) ThrowHelper.ThrowArgumentNullException(ExceptionArgument.s);
             return Number.ParseSingle(s, style, NumberFormatInfo.CurrentInfo);
         }
 
-        public static float Parse(String s, IFormatProvider provider)
+        public static float Parse(string s, IFormatProvider provider)
         {
             if (s == null) ThrowHelper.ThrowArgumentNullException(ExceptionArgument.s);
             return Number.ParseSingle(s, NumberStyles.Float | NumberStyles.AllowThousands, NumberFormatInfo.GetInstance(provider));
         }
 
-        public static float Parse(String s, NumberStyles style, IFormatProvider provider)
+        public static float Parse(string s, NumberStyles style, IFormatProvider provider)
         {
             NumberFormatInfo.ValidateParseStyleFloatingPoint(style);
             if (s == null) ThrowHelper.ThrowArgumentNullException(ExceptionArgument.s);
@@ -294,7 +294,7 @@ namespace System
             return Number.ParseSingle(s, style, NumberFormatInfo.GetInstance(provider));
         }
 
-        public static Boolean TryParse(String s, out Single result)
+        public static bool TryParse(string s, out float result)
         {
             if (s == null)
             {
@@ -310,7 +310,7 @@ namespace System
             return TryParse(s, NumberStyles.Float | NumberStyles.AllowThousands, NumberFormatInfo.CurrentInfo, out result);
         }
 
-        public static Boolean TryParse(String s, NumberStyles style, IFormatProvider provider, out Single result)
+        public static bool TryParse(string s, NumberStyles style, IFormatProvider provider, out float result)
         {
             NumberFormatInfo.ValidateParseStyleFloatingPoint(style);
 
@@ -329,7 +329,7 @@ namespace System
             return TryParse(s, style, NumberFormatInfo.GetInstance(provider), out result);
         }
 
-        private static Boolean TryParse(ReadOnlySpan<char> s, NumberStyles style, NumberFormatInfo info, out Single result)
+        private static bool TryParse(ReadOnlySpan<char> s, NumberStyles style, NumberFormatInfo info, out float result)
         {
             bool success = Number.TryParseSingle(s, style, info, out result);
             if (!success)
@@ -425,7 +425,7 @@ namespace System
             return Convert.ToDouble(m_value);
         }
 
-        Decimal IConvertible.ToDecimal(IFormatProvider provider)
+        decimal IConvertible.ToDecimal(IFormatProvider provider)
         {
             return Convert.ToDecimal(m_value);
         }
@@ -435,7 +435,7 @@ namespace System
             throw new InvalidCastException(SR.Format(SR.InvalidCast_FromTo, "Single", "DateTime"));
         }
 
-        Object IConvertible.ToType(Type type, IFormatProvider provider)
+        object IConvertible.ToType(Type type, IFormatProvider provider)
         {
             return Convert.DefaultToType((IConvertible)this, type, provider);
         }

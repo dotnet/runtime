@@ -16,10 +16,10 @@ namespace System.Xml.Tests
 
             Assert.Equal("attributeName", attribute.Name);
             Assert.Equal("attributeName", attribute.LocalName);
-            Assert.Equal(String.Empty, attribute.Value);
-            Assert.Equal(String.Empty, attribute.Prefix);
+            Assert.Equal(string.Empty, attribute.Value);
+            Assert.Equal(string.Empty, attribute.Prefix);
             Assert.Equal("attributeName=\"\"", attribute.OuterXml);
-            Assert.Equal(String.Empty, attribute.InnerXml);
+            Assert.Equal(string.Empty, attribute.InnerXml);
             Assert.Equal(XmlNodeType.Attribute, attribute.NodeType);
         }
 
@@ -43,10 +43,10 @@ namespace System.Xml.Tests
             var attribute = xmlDocument.CreateAttribute("attributeName", "namespace");
 
             Assert.Equal("attributeName", attribute.LocalName);
-            Assert.Equal(String.Empty, attribute.Value);
-            Assert.Equal(String.Empty, attribute.Prefix);
+            Assert.Equal(string.Empty, attribute.Value);
+            Assert.Equal(string.Empty, attribute.Prefix);
             Assert.Equal("namespace", attribute.NamespaceURI);
-            Assert.Equal(String.Empty, attribute.InnerXml);
+            Assert.Equal(string.Empty, attribute.InnerXml);
             Assert.Equal(XmlNodeType.Attribute, attribute.NodeType);
         }
     }

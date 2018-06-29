@@ -479,7 +479,7 @@ namespace XmlCoreTest.Common
             }
         }
 
-        public static XmlReader Create(String inputUri, XmlReaderSettings settings, XmlParserContext inputContext)
+        public static XmlReader Create(string inputUri, XmlReaderSettings settings, XmlParserContext inputContext)
         {
             if (AsyncUtil.IsAsyncEnabled)
             {
@@ -515,7 +515,7 @@ namespace XmlCoreTest.Common
             }
         }
 
-        public static XmlReader Create(Stream input, XmlReaderSettings settings, String baseUri)
+        public static XmlReader Create(Stream input, XmlReaderSettings settings, string baseUri)
         {
             if (AsyncUtil.IsAsyncEnabled)
             {
@@ -563,7 +563,7 @@ namespace XmlCoreTest.Common
             }
         }
 
-        public static XmlReader Create(TextReader input, XmlReaderSettings settings, String baseUri)
+        public static XmlReader Create(TextReader input, XmlReaderSettings settings, string baseUri)
         {
             if (AsyncUtil.IsAsyncEnabled)
             {

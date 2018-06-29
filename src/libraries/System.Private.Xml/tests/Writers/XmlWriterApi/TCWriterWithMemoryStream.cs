@@ -1,4 +1,4 @@
-﻿// Licensed to the .NET Foundation under one or more agreements.
+// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
@@ -70,11 +70,11 @@ namespace System.Xml.Tests
                 using (XmlWriter w = CreateMemWriter(utils, ms, ws))
                 {
                     w.WriteStartElement("foo");
-                    w.WriteString(new String('a', (2048 * 3) - 50));
-                    w.WriteCData(String.Empty);
-                    w.WriteComment(String.Empty);
-                    w.WriteCData(String.Empty);
-                    w.WriteComment(String.Empty);
+                    w.WriteString(new string('a', (2048 * 3) - 50));
+                    w.WriteCData(string.Empty);
+                    w.WriteComment(string.Empty);
+                    w.WriteCData(string.Empty);
+                    w.WriteComment(string.Empty);
                 }
             }
         }
@@ -89,7 +89,7 @@ namespace System.Xml.Tests
                 using (XmlWriter w = CreateMemWriter(utils, ms, ws))
                 {
                     w.WriteStartElement("foo");
-                    w.WriteString(new String('a', (2048 * 3) - 50));
+                    w.WriteString(new string('a', (2048 * 3) - 50));
                     w.WriteRaw("");
                     w.WriteCData("");
                     w.WriteComment("");
@@ -111,7 +111,7 @@ namespace System.Xml.Tests
                 using (XmlWriter w = CreateMemWriter(utils, ms, ws))
                 {
                     w.WriteStartElement("foo");
-                    w.WriteString(new String('a', (2048 * 3) - 50));
+                    w.WriteString(new string('a', (2048 * 3) - 50));
                     w.WriteRaw("");
                     w.WriteCData("");
                     w.WriteString("");
@@ -272,7 +272,7 @@ namespace System.Xml.Tests
                     using (XmlWriter w = CreateMemWriter(utils, ms, ws))
                     {
                         w.WriteStartElement("foo");
-                        w.WriteString(new String('a', (2048 * 3) - 50));
+                        w.WriteString(new string('a', (2048 * 3) - 50));
                         w.WriteRaw("");
                         w.WriteCData("");
                         w.WriteComment("");
@@ -309,11 +309,11 @@ namespace System.Xml.Tests
                     using (XmlWriter w = CreateMemWriter(utils, ms, ws))
                     {
                         w.WriteStartElement("foo");
-                        w.WriteString(new String('a', (2048 * 3) - 50));
-                        w.WriteCData(String.Empty);
-                        w.WriteComment(String.Empty);
-                        w.WriteCData(String.Empty);
-                        w.WriteComment(String.Empty);
+                        w.WriteString(new string('a', (2048 * 3) - 50));
+                        w.WriteCData(string.Empty);
+                        w.WriteComment(string.Empty);
+                        w.WriteCData(string.Empty);
+                        w.WriteComment(string.Empty);
                         w.WriteEndElement();
                         w.Flush();
                         ms.Position = 0;
@@ -344,7 +344,7 @@ namespace System.Xml.Tests
                     using (XmlWriter w = CreateMemWriter(utils, ms, ws))
                     {
                         w.WriteStartElement("foo");
-                        w.WriteString(new String('a', (2048 * 3) - 50));
+                        w.WriteString(new string('a', (2048 * 3) - 50));
                         w.WriteRaw("");
                         w.WriteCData("");
                         w.WriteString("");

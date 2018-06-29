@@ -188,7 +188,7 @@ namespace System.Data.Odbc
             return retcode;
         }
 
-        internal ODBC32.RetCode GetTypeInfo(Int16 fSqlType)
+        internal ODBC32.RetCode GetTypeInfo(short fSqlType)
         {
             ODBC32.RetCode retcode = Interop.Odbc.SQLGetTypeInfo(this, fSqlType);
             ODBC.TraceODBC(3, "SQLGetTypeInfo", retcode);
@@ -291,8 +291,8 @@ namespace System.Data.Odbc
         internal ODBC32.RetCode Statistics(string tableCatalog,
                                            string tableSchema,
                                            string tableName,
-                                           Int16 unique,
-                                           Int16 accuracy)
+                                           short unique,
+                                           short accuracy)
         {
             ODBC32.RetCode retcode = Interop.Odbc.SQLStatisticsW(this,
                                                                         tableCatalog,
@@ -313,8 +313,8 @@ namespace System.Data.Odbc
             ODBC32.RetCode retcode = Interop.Odbc.SQLStatisticsW(this,
             null, 0, null, 0,
             tableName, ODBC.ShortStringLength(tableName),
-            (Int16)ODBC32.SQL_INDEX.UNIQUE,
-            (Int16)ODBC32.SQL_STATISTICS_RESERVED.ENSURE);
+            (short)ODBC32.SQL_INDEX.UNIQUE,
+            (short)ODBC32.SQL_STATISTICS_RESERVED.ENSURE);
             ODBC.TraceODBC(3, "SQLStatisticsW", retcode);
             return retcode;
         }

@@ -368,7 +368,7 @@ namespace System.Threading.Tasks.Tests
         {
             // Test FromResult with value type
             {
-                var results = new[] { -1, 0, 1, 1, 42, Int32.MaxValue, Int32.MinValue, 42, -42 }; // includes duplicate values to ensure that tasks from these aren't the same object
+                var results = new[] { -1, 0, 1, 1, 42, int.MaxValue, int.MinValue, 42, -42 }; // includes duplicate values to ensure that tasks from these aren't the same object
                 Task<int>[] tasks = new Task<int>[results.Length];
                 for (int i = 0; i < results.Length; i++)
                     tasks[i] = Task.FromResult(results[i]);
@@ -398,7 +398,7 @@ namespace System.Threading.Tasks.Tests
             // Test FromResult with reference type
             {
                 var results = new[] { new object(), null, new object(), null, new object() }; // includes duplicate values to ensure that tasks from these aren't the same object
-                Task<Object>[] tasks = new Task<Object>[results.Length];
+                Task<object>[] tasks = new Task<object>[results.Length];
                 for (int i = 0; i < results.Length; i++)
                     tasks[i] = Task.FromResult(results[i]);
 
@@ -885,20 +885,20 @@ namespace System.Threading.Tasks.Tests
         {
             Task<int> future = new Task<int>(() => 1);
             Assert.Throws<ArgumentNullException>(
-               () => { future.ContinueWith((Action<Task<int>, Object>)null, null, CancellationToken.None); });
+               () => { future.ContinueWith((Action<Task<int>, object>)null, null, CancellationToken.None); });
             Assert.Throws<ArgumentNullException>(
-              () => { future.ContinueWith((Action<Task<int>, Object>)null, null, TaskContinuationOptions.None); });
+              () => { future.ContinueWith((Action<Task<int>, object>)null, null, TaskContinuationOptions.None); });
             Assert.Throws<ArgumentNullException>(
-              () => { future.ContinueWith((Action<Task<int>, Object>)null, null, CancellationToken.None, TaskContinuationOptions.None, TaskScheduler.Default); });
+              () => { future.ContinueWith((Action<Task<int>, object>)null, null, CancellationToken.None, TaskContinuationOptions.None, TaskScheduler.Default); });
             Assert.Throws<ArgumentNullException>(
               () => { future.ContinueWith((t, s) => { }, null, CancellationToken.None, TaskContinuationOptions.None, null); });
 
             Assert.Throws<ArgumentNullException>(
-               () => { future.ContinueWith<int>((Func<Task<int>, Object, int>)null, null, CancellationToken.None); });
+               () => { future.ContinueWith<int>((Func<Task<int>, object, int>)null, null, CancellationToken.None); });
             Assert.Throws<ArgumentNullException>(
-              () => { future.ContinueWith<int>((Func<Task<int>, Object, int>)null, null, TaskContinuationOptions.None); });
+              () => { future.ContinueWith<int>((Func<Task<int>, object, int>)null, null, TaskContinuationOptions.None); });
             Assert.Throws<ArgumentNullException>(
-              () => { future.ContinueWith<int>((Func<Task<int>, Object, int>)null, null, CancellationToken.None, TaskContinuationOptions.None, TaskScheduler.Default); });
+              () => { future.ContinueWith<int>((Func<Task<int>, object, int>)null, null, CancellationToken.None, TaskContinuationOptions.None, TaskScheduler.Default); });
             Assert.Throws<ArgumentNullException>(
               () => { future.ContinueWith<int>((t, s) => 2, null, CancellationToken.None, TaskContinuationOptions.None, null); });
         }

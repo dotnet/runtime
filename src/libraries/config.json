@@ -646,12 +646,12 @@
     "msbuild": {
       "osSpecific": {
         "windows": {
-          "defaultParameters": "/nologo /verbosity:minimal /clp:Summary /maxcpucount /nodeReuse:false /l:BinClashLogger,Tools\\net46\\Microsoft.DotNet.Build.Tasks.dll;LogFile=binclash.log",
-          "path": "Tools/msbuild.cmd"
+          "defaultParameters": "msbuild /nologo /verbosity:minimal /clp:Summary /maxcpucount /nodeReuse:false /l:BinClashLogger,Tools\\Microsoft.DotNet.Build.Tasks.dll;LogFile=binclash.log",
+          "path": "Tools/dotnetcli/dotnet"
         },
         "unix": {
-          "defaultParameters": "/nologo /verbosity:minimal /clp:Summary /maxcpucount /l:BinClashLogger,Tools/Microsoft.DotNet.Build.Tasks.dll;LogFile=binclash.log",
-          "path": "Tools/msbuild.sh"
+          "defaultParameters": "msbuild /nologo /verbosity:minimal /clp:Summary /maxcpucount /l:BinClashLogger,Tools/Microsoft.DotNet.Build.Tasks.dll;LogFile=binclash.log",
+          "path": "Tools/dotnetcli/dotnet"
         }
       },
       "valueTypes": {

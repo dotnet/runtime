@@ -127,7 +127,7 @@ namespace System.Xml.Xsl.XsltOld
             }
         }
 
-        internal Processor.OutputResult BeginEvent(int state, XPathNodeType nodeType, string prefix, string name, string nspace, bool empty, Object htmlProps, bool search)
+        internal Processor.OutputResult BeginEvent(int state, XPathNodeType nodeType, string prefix, string name, string nspace, bool empty, object htmlProps, bool search)
         {
             if (!CanOutput(state))
             {
@@ -318,7 +318,7 @@ namespace System.Xml.Xsl.XsltOld
             return _attributeCount++;
         }
 
-        private void BeginAttribute(string prefix, string name, string nspace, Object htmlAttrProps, bool search)
+        private void BeginAttribute(string prefix, string name, string nspace, object htmlAttrProps, bool search)
         {
             int attrib = FindAttribute(name, nspace, ref prefix);
 

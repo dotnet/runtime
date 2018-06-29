@@ -49,7 +49,7 @@ namespace System.Security.AccessControl
         {
         }
 
-        public EventWaitHandleAccessRule(String identity, EventWaitHandleRights eventRights, AccessControlType type)
+        public EventWaitHandleAccessRule(string identity, EventWaitHandleRights eventRights, AccessControlType type)
             : this(new NTAccount(identity), (int)eventRights, false, InheritanceFlags.None, PropagationFlags.None, type)
         {
         }
@@ -115,7 +115,7 @@ namespace System.Security.AccessControl
         {
         }
 
-        internal EventWaitHandleSecurity(String name, AccessControlSections includeSections)
+        internal EventWaitHandleSecurity(string name, AccessControlSections includeSections)
             : base(true, ResourceType.KernelObject, name, includeSections, HandleErrorCode, null)
         {
             // Let the underlying ACL API's demand unmanaged code permission.

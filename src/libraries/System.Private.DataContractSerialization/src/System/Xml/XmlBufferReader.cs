@@ -359,7 +359,7 @@ namespace System.Xml
 
         public int ReadInt16()
         {
-            return (Int16)ReadUInt16();
+            return (short)ReadUInt16();
         }
 
         public int ReadInt32()
@@ -384,8 +384,8 @@ namespace System.Xml
 
         public long ReadInt64()
         {
-            Int64 lo = (UInt32)ReadInt32();
-            Int64 hi = (UInt32)ReadInt32();
+            long lo = (uint)ReadInt32();
+            long hi = (uint)ReadInt32();
             return (hi << 32) + lo;
         }
 
@@ -997,7 +997,7 @@ namespace System.Xml
         public int GetInt16(int offset)
         {
             byte[] buffer = _buffer;
-            return (Int16)(buffer[offset] + (buffer[offset + 1] << 8));
+            return (short)(buffer[offset] + (buffer[offset + 1] << 8));
         }
 
         public int GetInt32(int offset)
@@ -1018,12 +1018,12 @@ namespace System.Xml
             b2 = buffer[offset + 1];
             b3 = buffer[offset + 2];
             b4 = buffer[offset + 3];
-            Int64 lo = (UInt32)(((((b4 << 8) + b3) << 8) + b2) << 8) + b1;
+            long lo = (uint)(((((b4 << 8) + b3) << 8) + b2) << 8) + b1;
             b1 = buffer[offset + 4];
             b2 = buffer[offset + 5];
             b3 = buffer[offset + 6];
             b4 = buffer[offset + 7];
-            Int64 hi = (UInt32)(((((b4 << 8) + b3) << 8) + b2) << 8) + b1;
+            long hi = (uint)(((((b4 << 8) + b3) << 8) + b2) << 8) + b1;
             return (hi << 32) + lo;
         }
 

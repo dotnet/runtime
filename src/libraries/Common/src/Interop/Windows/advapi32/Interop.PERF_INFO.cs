@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
+using System;
 using System.Globalization;
 using System.Runtime.InteropServices;
 
@@ -10,80 +11,83 @@ internal partial class Interop
     internal partial class Advapi32
     {
         [StructLayout(LayoutKind.Sequential)]
-        internal class PERF_COUNTER_BLOCK
+        internal struct PERF_COUNTER_BLOCK
         {
-            internal int ByteLength = 0;
+            internal int ByteLength;
         }
 
         [StructLayout(LayoutKind.Sequential)]
-        internal class PERF_COUNTER_DEFINITION
+        internal struct PERF_COUNTER_DEFINITION
         {
-            internal int ByteLength = 0;
-            internal int CounterNameTitleIndex = 0;
-            internal int CounterNameTitlePtr = 0;
-            internal int CounterHelpTitleIndex = 0;
-            internal int CounterHelpTitlePtr = 0;
-            internal int DefaultScale = 0;
-            internal int DetailLevel = 0;
-            internal int CounterType = 0;
-            internal int CounterSize = 0;
-            internal int CounterOffset = 0;
+            internal int ByteLength;
+            internal int CounterNameTitleIndex;
+            internal int CounterNameTitlePtr;
+            internal int CounterHelpTitleIndex;
+            internal int CounterHelpTitlePtr;
+            internal int DefaultScale;
+            internal int DetailLevel;
+            internal int CounterType;
+            internal int CounterSize;
+            internal int CounterOffset;
         }
 
         [StructLayout(LayoutKind.Sequential)]
-        internal class PERF_DATA_BLOCK
+        internal struct PERF_DATA_BLOCK
         {
-            internal int Signature1 = 0;
-            internal int Signature2 = 0;
-            internal int LittleEndian = 0;
-            internal int Version = 0;
-            internal int Revision = 0;
-            internal int TotalByteLength = 0;
-            internal int HeaderLength = 0;
-            internal int NumObjectTypes = 0;
-            internal int DefaultObject = 0;
-            internal SYSTEMTIME SystemTime = null;
-            internal int pad1 = 0;  // Need to pad the struct to get quadword alignment for the 'long' after SystemTime
-            internal long PerfTime = 0;
-            internal long PerfFreq = 0;
-            internal long PerfTime100nSec = 0;
-            internal int SystemNameLength = 0;
-            internal int SystemNameOffset = 0;
+            internal int Signature1;
+            internal int Signature2;
+            internal int LittleEndian;
+            internal int Version;
+            internal int Revision;
+            internal int TotalByteLength;
+            internal int HeaderLength;
+            internal int NumObjectTypes;
+            internal int DefaultObject;
+            internal SYSTEMTIME SystemTime;
+            internal int pad1;  // Need to pad the struct to get quadword alignment for the 'long' after SystemTime
+            internal long PerfTime;
+            internal long PerfFreq;
+            internal long PerfTime100nSec;
+            internal int SystemNameLength;
+            internal int SystemNameOffset;
         }
 
         [StructLayout(LayoutKind.Sequential)]
-        internal class PERF_INSTANCE_DEFINITION
+        internal struct PERF_INSTANCE_DEFINITION
         {
-            internal int ByteLength = 0;
-            internal int ParentObjectTitleIndex = 0;
-            internal int ParentObjectInstance = 0;
-            internal int UniqueID = 0;
-            internal int NameOffset = 0;
-            internal int NameLength = 0;
+            internal int ByteLength;
+            internal int ParentObjectTitleIndex;
+            internal int ParentObjectInstance;
+            internal int UniqueID;
+            internal int NameOffset;
+            internal int NameLength;
+
+            internal static ReadOnlySpan<char> GetName(in PERF_INSTANCE_DEFINITION instance, ReadOnlySpan<byte> data)
+                => (instance.NameLength == 0) ? default
+                    : MemoryMarshal.Cast<byte, char>(data.Slice(instance.NameOffset, instance.NameLength - sizeof(char))); // NameLength includes the null-terminator
         }
 
         [StructLayout(LayoutKind.Sequential)]
-        internal class PERF_OBJECT_TYPE
+        internal struct PERF_OBJECT_TYPE
         {
-            internal int TotalByteLength = 0;
-            internal int DefinitionLength = 0;
-            internal int HeaderLength = 0;
-            internal int ObjectNameTitleIndex = 0;
-            internal int ObjectNameTitlePtr = 0;
-            internal int ObjectHelpTitleIndex = 0;
-            internal int ObjectHelpTitlePtr = 0;
-            internal int DetailLevel = 0;
-            internal int NumCounters = 0;
-            internal int DefaultCounter = 0;
-            internal int NumInstances = 0;
-            internal int CodePage = 0;
-            internal long PerfTime = 0;
-            internal long PerfFreq = 0;
+            internal int TotalByteLength;
+            internal int DefinitionLength;
+            internal int HeaderLength;
+            internal int ObjectNameTitleIndex;
+            internal int ObjectNameTitlePtr;
+            internal int ObjectHelpTitleIndex;
+            internal int ObjectHelpTitlePtr;
+            internal int DetailLevel;
+            internal int NumCounters;
+            internal int DefaultCounter;
+            internal int NumInstances;
+            internal int CodePage;
+            internal long PerfTime;
+            internal long PerfFreq;
         }
 
-        [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Performance", "CA1812:AvoidUninstantiatedInternalClasses")]
         [StructLayout(LayoutKind.Sequential)]
-        internal class SYSTEMTIME
+        internal struct SYSTEMTIME
         {
             internal short wYear;
             internal short wMonth;

@@ -9,7 +9,7 @@
 /**
 * Constants from curl.h for supported features
 */
-enum CurlFeatures
+typedef enum
 {
     PAL_CURL_VERSION_IPV6 =         (1<<0),
     PAL_CURL_VERSION_KERBEROS4 =    (1<<1),
@@ -32,7 +32,7 @@ enum CurlFeatures
     PAL_CURL_VERSION_KERBEROS5 =    (1<<18),
     PAL_CURL_VERSION_UNIX_SOCKETS = (1<<19),
     PAL_CURL_VERSION_PSL =          (1<<20),
-};
+} CurlFeatures;
 
 /*
 Gets the features supported by libcurl.

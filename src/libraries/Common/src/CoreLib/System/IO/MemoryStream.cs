@@ -393,7 +393,7 @@ namespace System.IO
             return n;
         }
 
-        public override Task<int> ReadAsync(Byte[] buffer, int offset, int count, CancellationToken cancellationToken)
+        public override Task<int> ReadAsync(byte[] buffer, int offset, int count, CancellationToken cancellationToken)
         {
             if (buffer == null)
                 throw new ArgumentNullException(nameof(buffer), SR.ArgumentNull_Buffer);
@@ -722,7 +722,7 @@ namespace System.IO
             _position = i;
         }
 
-        public override Task WriteAsync(Byte[] buffer, int offset, int count, CancellationToken cancellationToken)
+        public override Task WriteAsync(byte[] buffer, int offset, int count, CancellationToken cancellationToken)
         {
             if (buffer == null)
                 throw new ArgumentNullException(nameof(buffer), SR.ArgumentNull_Buffer);

@@ -97,7 +97,7 @@ namespace EncodingTests
             get { return 1; }
         }
 
-        public override bool Equals(Object value)
+        public override bool Equals(object value)
         {
             return value is EncoderCustomFallback;
         }

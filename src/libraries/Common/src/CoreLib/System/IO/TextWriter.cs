@@ -184,7 +184,7 @@ namespace System.IO
         }
 
         // Writes the text representation of a boolean to the text stream. This
-        // method outputs either Boolean.TrueString or Boolean.FalseString.
+        // method outputs either bool.TrueString or bool.FalseString.
         //
         public virtual void Write(bool value)
         {
@@ -193,7 +193,7 @@ namespace System.IO
 
         // Writes the text representation of an integer to the text stream. The
         // text representation of the given value is produced by calling the
-        // Int32.ToString() method.
+        // int.ToString() method.
         //
         public virtual void Write(int value)
         {
@@ -202,7 +202,7 @@ namespace System.IO
 
         // Writes the text representation of an integer to the text stream. The
         // text representation of the given value is produced by calling the
-        // UInt32.ToString() method.
+        // uint.ToString() method.
         //
         [CLSCompliant(false)]
         public virtual void Write(uint value)
@@ -212,7 +212,7 @@ namespace System.IO
 
         // Writes the text representation of a long to the text stream. The
         // text representation of the given value is produced by calling the
-        // Int64.ToString() method.
+        // long.ToString() method.
         //
         public virtual void Write(long value)
         {
@@ -221,7 +221,7 @@ namespace System.IO
 
         // Writes the text representation of an unsigned long to the text
         // stream. The text representation of the given value is produced
-        // by calling the UInt64.ToString() method.
+        // by calling the ulong.ToString() method.
         //
         [CLSCompliant(false)]
         public virtual void Write(ulong value)
@@ -231,7 +231,7 @@ namespace System.IO
 
         // Writes the text representation of a float to the text stream. The
         // text representation of the given value is produced by calling the
-        // Float.toString(float) method.
+        // float.ToString(float) method.
         //
         public virtual void Write(float value)
         {
@@ -240,7 +240,7 @@ namespace System.IO
 
         // Writes the text representation of a double to the text stream. The
         // text representation of the given value is produced by calling the
-        // Double.toString(double) method.
+        // double.ToString(double) method.
         //
         public virtual void Write(double value)
         {
@@ -299,7 +299,7 @@ namespace System.IO
         }
 
         // Writes out a formatted string.  Uses the same semantics as
-        // String.Format.
+        // string.Format.
         //
         public virtual void Write(string format, object arg0)
         {
@@ -307,7 +307,7 @@ namespace System.IO
         }
 
         // Writes out a formatted string.  Uses the same semantics as
-        // String.Format.
+        // string.Format.
         //
         public virtual void Write(string format, object arg0, object arg1)
         {
@@ -315,7 +315,7 @@ namespace System.IO
         }
 
         // Writes out a formatted string.  Uses the same semantics as
-        // String.Format.
+        // string.Format.
         //
         public virtual void Write(string format, object arg0, object arg1, object arg2)
         {
@@ -323,7 +323,7 @@ namespace System.IO
         }
 
         // Writes out a formatted string.  Uses the same semantics as
-        // String.Format.
+        // string.Format.
         //
         public virtual void Write(string format, params object[] arg)
         {
@@ -498,7 +498,7 @@ namespace System.IO
         }
 
         // Writes out a formatted string and a new line.  Uses the same
-        // semantics as String.Format.
+        // semantics as string.Format.
         //
         public virtual void WriteLine(string format, object arg0)
         {
@@ -506,7 +506,7 @@ namespace System.IO
         }
 
         // Writes out a formatted string and a new line.  Uses the same
-        // semantics as String.Format.
+        // semantics as string.Format.
         //
         public virtual void WriteLine(string format, object arg0, object arg1)
         {
@@ -514,7 +514,7 @@ namespace System.IO
         }
 
         // Writes out a formatted string and a new line.  Uses the same
-        // semantics as String.Format.
+        // semantics as string.Format.
         //
         public virtual void WriteLine(string format, object arg0, object arg1, object arg2)
         {
@@ -522,7 +522,7 @@ namespace System.IO
         }
 
         // Writes out a formatted string and a new line.  Uses the same
-        // semantics as String.Format.
+        // semantics as string.Format.
         //
         public virtual void WriteLine(string format, params object[] arg)
         {
@@ -559,18 +559,17 @@ namespace System.IO
         /// <param name="value">The string (as a StringBuilder) to write to the stream</param>
         public virtual Task WriteAsync(StringBuilder value, CancellationToken cancellationToken = default)
         {
-            // Do the argument checking before 'going async' so you get it early
-            if (value == null)
-            {
-                throw new ArgumentNullException(nameof(value));
-            }
-            // Then do the rest which may be deferred (done in the returned Task)
-            return WriteAsyncCore(value, cancellationToken);
+            return
+                cancellationToken.IsCancellationRequested ? Task.FromCanceled(cancellationToken) :
+                value == null ? Task.CompletedTask :
+                WriteAsyncCore(value, cancellationToken);
 
             async Task WriteAsyncCore(StringBuilder sb, CancellationToken ct)
             {
                 foreach (ReadOnlyMemory<char> chunk in sb.GetChunks())
+                {
                     await WriteAsync(chunk, ct).ConfigureAwait(false);
+                }
             }
         }
 
@@ -596,6 +595,7 @@ namespace System.IO
         }
 
         public virtual Task WriteAsync(ReadOnlyMemory<char> buffer, CancellationToken cancellationToken = default) =>
+            cancellationToken.IsCancellationRequested ? Task.FromCanceled(cancellationToken) :
             MemoryMarshal.TryGetArray(buffer, out ArraySegment<char> array) ?
                 WriteAsync(array.Array, array.Offset, array.Count) :
                 Task.Factory.StartNew(state =>
@@ -631,10 +631,21 @@ namespace System.IO
         /// StringBuilder.GetChunks() method to avoid creating the intermediate string
         /// </summary>
         /// <param name="value">The string (as a StringBuilder) to write to the stream</param>
-        public async virtual Task WriteLineAsync(StringBuilder value, CancellationToken cancellationToken = default)
+        public virtual Task WriteLineAsync(StringBuilder value, CancellationToken cancellationToken = default)
         {
-            await WriteAsync(value, cancellationToken).ConfigureAwait(false);
-            await WriteAsync(CoreNewLine, cancellationToken).ConfigureAwait(false);
+            return
+                cancellationToken.IsCancellationRequested ? Task.FromCanceled(cancellationToken) :
+                value == null ? WriteAsync(CoreNewLine, cancellationToken) :
+                WriteLineAsyncCore(value, cancellationToken);
+
+            async Task WriteLineAsyncCore(StringBuilder sb, CancellationToken ct)
+            {
+                foreach (ReadOnlyMemory<char> chunk in sb.GetChunks())
+                {
+                    await WriteAsync(chunk, ct).ConfigureAwait(false);
+                }
+                await WriteAsync(CoreNewLine, ct).ConfigureAwait(false);
+            }
         }
 
         public Task WriteLineAsync(char[] buffer)
@@ -659,6 +670,7 @@ namespace System.IO
         }
 
         public virtual Task WriteLineAsync(ReadOnlyMemory<char> buffer, CancellationToken cancellationToken = default) =>
+            cancellationToken.IsCancellationRequested ? Task.FromCanceled(cancellationToken) :
             MemoryMarshal.TryGetArray(buffer, out ArraySegment<char> array) ?
                 WriteLineAsync(array.Array, array.Offset, array.Count) :
                 Task.Factory.StartNew(state =>
@@ -797,7 +809,7 @@ namespace System.IO
             public override void Write(double value) => _out.Write(value);
 
             [MethodImpl(MethodImplOptions.Synchronized)]
-            public override void Write(Decimal value) => _out.Write(value);
+            public override void Write(decimal value) => _out.Write(value);
 
             [MethodImpl(MethodImplOptions.Synchronized)]
             public override void Write(string value) => _out.Write(value);

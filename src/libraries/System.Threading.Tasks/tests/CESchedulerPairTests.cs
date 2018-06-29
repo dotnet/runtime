@@ -70,7 +70,7 @@ namespace System.Threading.Tasks.Tests
         //}
 
         protected override IEnumerable<Task> GetScheduledTasks() { return null; }
-        private Object _lockObj = new Object();
+        private object _lockObj = new object();
         private int _counter = 1; //This is used to keep track of how many scheduler tasks were created
         public ThreadLocal<int> SchedulerID = new ThreadLocal<int>(); //This is the ID of the scheduler. 
 
@@ -93,7 +93,7 @@ namespace System.Threading.Tasks.Tests
         [InlineData("scheduler")]
         [InlineData("maxconcurrent")]
         [InlineData("all")]
-        public static void TestCreationOptions(String ctorType)
+        public static void TestCreationOptions(string ctorType)
         {
             ConcurrentExclusiveSchedulerPair schedPair = null;
             //Need to define the default values since these values are passed to the verification methods
@@ -114,11 +114,11 @@ namespace System.Threading.Tasks.Tests
                     schedPair = new ConcurrentExclusiveSchedulerPair(scheduler, maxConcurrentLevel);
                     break;
                 case "all":
-                    maxConcurrentLevel = Int32.MaxValue;
+                    maxConcurrentLevel = int.MaxValue;
                     schedPair = new ConcurrentExclusiveSchedulerPair(scheduler, -1/*MaxConcurrentLevel*/, -1/*MaxItemsPerTask*/); //-1 gets converted to Int32.MaxValue
                     break;
                 default:
-                    throw new NotImplementedException(String.Format("The option specified {0} to create the ConcurrentExclusiveSchedulerPair is invalid", ctorType));
+                    throw new NotImplementedException(string.Format("The option specified {0} to create the ConcurrentExclusiveSchedulerPair is invalid", ctorType));
             }
 
             //Create the factories that use the exclusive scheduler and the concurrent scheduler. We test to ensure
@@ -266,7 +266,7 @@ namespace System.Threading.Tasks.Tests
             int customSchedulerConcurrency = 1;
             TrackingTaskScheduler scheduler = new TrackingTaskScheduler(customSchedulerConcurrency);
             // specify a maxConcurrencyLevel > TaskScheduler's maxconcurrencyLevel to ensure the pair takes the min of the two
-            ConcurrentExclusiveSchedulerPair schedPair = new ConcurrentExclusiveSchedulerPair(scheduler, Int32.MaxValue);
+            ConcurrentExclusiveSchedulerPair schedPair = new ConcurrentExclusiveSchedulerPair(scheduler, int.MaxValue);
             Assert.Equal(scheduler.MaximumConcurrencyLevel, schedPair.ConcurrentScheduler.MaximumConcurrencyLevel);
 
             //Now schedule a reader task that would block and verify that more reader tasks scheduled are not executed 
@@ -333,7 +333,7 @@ namespace System.Threading.Tasks.Tests
 
         [Theory]
         [MemberData(nameof(ApiType))]
-        public static void TestIntegration(String apiType, bool useReader)
+        public static void TestIntegration(string apiType, bool useReader)
         {
             Debug.WriteLine(string.Format(" Running apiType:{0} useReader:{1}", apiType, useReader));
             int taskCount = Environment.ProcessorCount; //To get varying number of tasks as a function of cores
@@ -590,7 +590,7 @@ namespace System.Threading.Tasks.Tests
                     }
                     break;
                 default:
-                    throw new ArgumentOutOfRangeException(String.Format("Api name specified {0} is invalid or is of incorrect case", apiType));
+                    throw new ArgumentOutOfRangeException(string.Format("Api name specified {0} is invalid or is of incorrect case", apiType));
             }
         }
 
@@ -601,13 +601,13 @@ namespace System.Threading.Tasks.Tests
         {
             get
             {
-                List<Object[]> values = new List<object[]>();
-                foreach (String apiType in new String[] {
+                List<object[]> values = new List<object[]>();
+                foreach (string apiType in new string[] {
                     "StartNew", "Start", "ContinueWith", /* FromAsync: Not supported in .NET Native */ "ContinueWhenAll", "ContinueWhenAny" })
                 {
                     foreach (bool useReader in new bool[] { true, false })
                     {
-                        values.Add(new Object[] { apiType, useReader });
+                        values.Add(new object[] { apiType, useReader });
                     }
                 }
 

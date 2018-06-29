@@ -5,9 +5,6 @@
 #pragma once
 
 #include "pal_compiler.h"
-
-BEGIN_EXTERN_C
-
 #include "pal_types.h"
 
 /**
@@ -37,20 +34,20 @@ enum
 /*
  * Window Size of the terminal
  */
-struct WinSize
+typedef struct
 {
     uint16_t Row;
     uint16_t Col;
     uint16_t XPixel;
     uint16_t YPixel;
-};
+} WinSize;
 
 /**
  * Gets the windows size of the terminal
  *
  * Returns 0 on success; otherwise, returns errorNo.
  */
-DLLEXPORT int32_t SystemNative_GetWindowSize(struct WinSize* windowsSize);
+DLLEXPORT int32_t SystemNative_GetWindowSize(WinSize* windowsSize);
 
 /**
  * Gets whether the specified file descriptor is for a terminal.
@@ -122,13 +119,13 @@ DLLEXPORT int32_t SystemNative_GetSignalForBreak(void);
  */
 DLLEXPORT int32_t SystemNative_SetSignalForBreak(int32_t signalForBreak);
 
-enum CtrlCode
+typedef enum
 {
     Interrupt = 0,
     Break = 1
-};
+} CtrlCode;
 
-typedef void (*CtrlCallback)(enum CtrlCode signalCode);
+typedef void (*CtrlCallback)(CtrlCode signalCode);
 /**
  * Called by pal_signal.cpp to reinitialize the console on SIGCONT/SIGCHLD.
  */
@@ -138,5 +135,3 @@ void ReinitializeConsole(void);
  * Called by pal_signal.cpp to uninitialize the console on SIGINT/SIGQUIT.
  */
 void UninitializeConsole(void);
-
-END_EXTERN_C

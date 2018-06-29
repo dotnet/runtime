@@ -32,7 +32,7 @@ namespace System.Globalization
 
     internal partial class CalendarData
     {
-        private bool LoadCalendarDataFromSystem(String localeName, CalendarId calendarId)
+        private bool LoadCalendarDataFromSystem(string localeName, CalendarId calendarId)
         {
             bool result = true;
             result &= GetCalendarInfo(localeName, calendarId, CalendarDataType.NativeName, out this.sNativeName);

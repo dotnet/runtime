@@ -113,7 +113,7 @@ namespace System.Data.SqlClient
 
             if (_cachedBytes.Count == 0)
             {
-                return String.Empty;
+                return string.Empty;
             }
             SqlXml sxml = new SqlXml(ToStream());
             return sxml.Value;

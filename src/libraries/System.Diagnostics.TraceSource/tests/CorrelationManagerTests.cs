@@ -84,7 +84,7 @@ namespace System.Diagnostics.TraceSourceTests
         }
 
         [Fact]
-        public async Task CorrelationManager_ActivtyIdAcrossAwait()
+        public async Task CorrelationManager_ActivityIdAcrossAwait()
         {
             Guid g = Guid.NewGuid();
             Trace.CorrelationManager.ActivityId = g;

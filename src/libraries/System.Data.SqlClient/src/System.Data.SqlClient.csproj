@@ -10,8 +10,14 @@
     <AssemblyVersion Condition="'$(TargetGroup)' == 'netstandard1.3'">4.1.0.0</AssemblyVersion>
     <Configurations>netcoreapp-Debug;netcoreapp-Release;netcoreapp-Unix-Debug;netcoreapp-Unix-Release;netcoreapp-Windows_NT-Debug;netcoreapp-Windows_NT-Release;netfx-Windows_NT-Debug;netfx-Windows_NT-Release;netstandard-Debug;netstandard-Release;netstandard-Unix-Debug;netstandard-Unix-Release;netstandard-Windows_NT-Debug;netstandard-Windows_NT-Release;netstandard1.2-Debug;netstandard1.2-Release;netstandard1.3-Debug;netstandard1.3-Release;uap-Windows_NT-Debug;uap-Windows_NT-Release;uap10.0.16299-Windows_NT-Debug;uap10.0.16299-Windows_NT-Release</Configurations>
   </PropertyGroup>
+  <PropertyGroup Condition="'$(TargetGroup)'=='netcoreapp'">
+    <DefineConstants>$(DefineConstants);netcoreapp</DefineConstants>
+  </PropertyGroup>
   <ItemGroup Condition="'$(TargetGroup)' == 'netstandard' OR '$(TargetGroup)' == 'netcoreapp' OR '$(IsUAPAssembly)' == 'true' ">
     <Compile Include="System.Data.SqlClient.TypeForwards.cs" />
+  </ItemGroup>
+  <ItemGroup  Condition="'$(IsPartialFacadeAssembly)' != 'true' AND '$(OSGroup)' != 'AnyOS' AND '$(TargetGroup)' == 'netcoreapp'">
+    <Compile Include="System\Data\SqlClient\PoolBlockingPeriod.cs" />
   </ItemGroup>
   <ItemGroup Condition="'$(IsPartialFacadeAssembly)' != 'true' AND '$(OSGroup)' != 'AnyOS'">
     <Compile Include="Microsoft\SqlServer\Server\ITypedGetters.cs" />
@@ -205,6 +211,12 @@
     <Compile Include="System\Data\SqlClient\TdsParserStateObjectManaged.cs" />
     <Compile Include="Interop\SNINativeMethodWrapper.Common.cs" />
     <Compile Include="System\Data\SqlClient\SqlCredential.cs" />
+  </ItemGroup>
+  <ItemGroup  Condition="'$(IsPartialFacadeAssembly)' != 'true' AND '$(OSGroup)' != 'AnyOS' AND '$(TargetGroup)' == 'netcoreapp'">
+    <Compile Include="System\Data\Common\DbConnectionStringCommon.NetCoreApp.cs"/>
+    <Compile Include="System\Data\ProviderBase\DbConnectionPool.NetCoreApp.cs" />
+    <Compile Include="System\Data\SqlClient\SqlConnectionString.NetCoreApp.cs" />
+    <Compile Include="System\Data\SqlClient\SqlConnectionStringBuilder.NetCoreApp.cs" />
   </ItemGroup>
   <!-- Manage the SNI toggle for Windows netstandard and UWP -->
   <ItemGroup Condition="('$(TargetGroup)' == 'netstandard' OR '$(TargetGroup)' == 'netcoreapp') AND '$(TargetsWindows)' == 'true'">

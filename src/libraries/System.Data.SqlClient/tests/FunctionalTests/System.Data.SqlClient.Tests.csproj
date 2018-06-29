@@ -4,6 +4,7 @@
     <Configurations>netstandard-Unix-Debug;netstandard-Unix-Release;netstandard-Windows_NT-Debug;netstandard-Windows_NT-Release</Configurations>
   </PropertyGroup>
   <ItemGroup>
+    <Compile Include="AADAccessTokenTest.cs" />
     <Compile Include="CloneTests.cs" />
     <Compile Include="BaseProviderAsyncTest\BaseProviderAsyncTest.cs" />
     <Compile Include="BaseProviderAsyncTest\MockCommand.cs" />

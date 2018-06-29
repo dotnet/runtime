@@ -199,7 +199,7 @@ namespace System.Xml
             get { return _impl.NameTable; }
         }
 
-        public override String LookupNamespace(String prefix)
+        public override string LookupNamespace(string prefix)
         {
             string ns = _impl.LookupNamespace(prefix);
             if (ns != null && ns.Length == 0)

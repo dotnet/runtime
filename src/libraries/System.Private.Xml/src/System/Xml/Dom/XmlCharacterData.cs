@@ -20,7 +20,7 @@ namespace System.Xml
         }
 
         // Gets or sets the value of the node.
-        public override String Value
+        public override string Value
         {
             get { return Data; }
             set { Data = value; }
@@ -45,7 +45,7 @@ namespace System.Xml
                 }
                 else
                 {
-                    return String.Empty;
+                    return string.Empty;
                 }
             }
 
@@ -78,7 +78,7 @@ namespace System.Xml
         }
 
         // Retrieves a substring of the full string from the specified range.
-        public virtual String Substring(int offset, int count)
+        public virtual string Substring(int offset, int count)
         {
             int len = _data != null ? _data.Length : 0;
             if (len > 0)
@@ -89,12 +89,12 @@ namespace System.Xml
                 }
                 return _data.Substring(offset, count);
             }
-            return String.Empty;
+            return string.Empty;
         }
 
         // Appends the specified string to the end of the character
         // data of the node.
-        public virtual void AppendData(String strData)
+        public virtual void AppendData(string strData)
         {
             XmlNode parent = ParentNode;
             int capacity = _data != null ? _data.Length : 0;
@@ -157,7 +157,7 @@ namespace System.Xml
 
         // Replace the specified number of characters starting at the specified offset with the
         // specified string.
-        public virtual void ReplaceData(int offset, int count, String strData)
+        public virtual void ReplaceData(int offset, int count, string strData)
         {
             int len = _data != null ? _data.Length : 0;
             if (len > 0)

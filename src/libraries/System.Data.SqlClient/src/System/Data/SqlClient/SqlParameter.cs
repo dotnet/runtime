@@ -417,7 +417,7 @@ namespace System.Data.SqlClient
             {
                 // Split the input name. The type name is specified as single 3 part name.
                 // NOTE: ParseTypeName throws if format is incorrect
-                String[] names;
+                string[] names;
                 if (SqlDbType.Udt == mt.SqlDbType)
                 {
                     names = ParseTypeName(UdtTypeName, true /* is UdtTypeName */);
@@ -726,7 +726,7 @@ namespace System.Data.SqlClient
             }
         }
 
-        public String TypeName
+        public string TypeName
         {
             get
             {
@@ -975,7 +975,7 @@ namespace System.Data.SqlClient
                     }
                     else if ((DbType.Currency == destinationType.DbType) && (typeof(string) == currentType))
                     {
-                        value = Decimal.Parse((string)value, NumberStyles.Currency, (IFormatProvider)null);
+                        value = decimal.Parse((string)value, NumberStyles.Currency, (IFormatProvider)null);
                     }
                     else if ((typeof(SqlBytes) == currentType) && (typeof(byte[]) == destinationType.ClassType))
                     {

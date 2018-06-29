@@ -17,7 +17,7 @@ namespace XmlCoreTest.Common
             _writer = XmlWriter.Create(strm, xws);
         }
 
-        public CustomWriter(String filename, XmlWriterSettings xws)
+        public CustomWriter(string filename, XmlWriterSettings xws)
         {
             _writer = XmlWriter.Create(FilePathUtil.getStream(filename), xws);
         }

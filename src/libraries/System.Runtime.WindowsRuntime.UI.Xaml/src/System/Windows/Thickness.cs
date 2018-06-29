@@ -94,7 +94,7 @@ namespace Windows.UI.Xaml
 
         internal string InternalToString(double l, CultureInfo cultureInfo)
         {
-            if (Double.IsNaN(l)) return "Auto";
+            if (double.IsNaN(l)) return "Auto";
             return Convert.ToString(l, cultureInfo);
         }
 

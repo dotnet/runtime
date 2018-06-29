@@ -267,14 +267,14 @@ namespace System.Xml.Schema
         {
             Type t = value.GetType();
             string stringValue = string.Empty;
-            if (t == typeof(IEnumerable) && t != typeof(System.String))
+            if (t == typeof(IEnumerable) && t != typeof(string))
             {
                 StringBuilder bldr = new StringBuilder();
                 IEnumerator enumerator = (value as IEnumerable).GetEnumerator();
                 if (enumerator.MoveNext())
                 {
                     bldr.Append("{");
-                    Object cur = enumerator.Current;
+                    object cur = enumerator.Current;
                     if (cur is IFormattable)
                     {
                         bldr.Append(((IFormattable)cur).ToString("", CultureInfo.InvariantCulture));

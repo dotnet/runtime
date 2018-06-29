@@ -1,4 +1,4 @@
-﻿// Licensed to the .NET Foundation under one or more agreements.
+// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
@@ -59,7 +59,7 @@ namespace WebServer
                 return false;
             }
 
-            string[] split = authHeader.Split(new Char[] { ' ' });
+            string[] split = authHeader.Split(new char[] { ' ' });
             if (split.Length < 2)
             {
                 context.Response.StatusCode = 500;
@@ -77,7 +77,7 @@ namespace WebServer
             // Decode base64 username:password.
             byte[] bytes = Convert.FromBase64String(split[1]);
             string credential = Encoding.ASCII.GetString(bytes);
-            string[] pair = credential.Split(new Char[] { ':' });
+            string[] pair = credential.Split(new char[] { ':' });
 
             // Prefix "domain\" to username if domain is specified.
             if (domain != null)

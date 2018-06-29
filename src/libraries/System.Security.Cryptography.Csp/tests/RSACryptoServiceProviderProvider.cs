@@ -14,6 +14,8 @@ namespace System.Security.Cryptography.Rsa.Tests
 
         public bool Supports384PrivateKey => true;
 
+        public bool SupportsLargeExponent => false;
+
         public bool SupportsSha2Oaep => false;
 
         public bool SupportsPss => false;

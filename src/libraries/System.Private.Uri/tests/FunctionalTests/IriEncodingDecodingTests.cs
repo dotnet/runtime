@@ -66,7 +66,7 @@ namespace System.PrivateUri.Tests
             {
                 string sourceStr = host + path + RFC3986CompliantDecoding[i, 0];
                 uri = new Uri(sourceStr);
-                Assert.Equal(path + RFC3986CompliantDecoding[i, 1], String.Join(String.Empty, uri.Segments));
+                Assert.Equal(path + RFC3986CompliantDecoding[i, 1], string.Join(string.Empty, uri.Segments));
             }
         }
 

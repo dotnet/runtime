@@ -153,7 +153,7 @@ namespace System.Net.Http.Functional.Tests
             {
                 string[] tokens = url.Split(':');
                 string remoteHost = tokens[0];
-                int remotePort = Int32.Parse(tokens[1]);
+                int remotePort = int.Parse(tokens[1]);
 
                 Send200Response(writer);
                 await ProcessConnectMethod((NetworkStream)reader.BaseStream, remoteHost, remotePort);

@@ -14,7 +14,7 @@ namespace System.Xml.Tests
             var reader = Utils.CreateFragmentReader("<a>2000-02-29T23:59:59+13:60</a>");
             reader.PositionOnElement("a");
             reader.Read();
-            Assert.Throws<XmlException>(() => reader.ReadContentAs(typeof(Char), null));
+            Assert.Throws<XmlException>(() => reader.ReadContentAs(typeof(char), null));
         }
     }
 }

@@ -442,7 +442,7 @@ internal class SqlDependencyProcessDispatcher : MarshalByRefObject
                         handle = reader.GetGuid(1);
 
                         // Only process QueryNotification messages.
-                        if (0 == string.Compare(msgType, "http://schemas.microsoft.com/SQL/Notifications/QueryNotification", StringComparison.OrdinalIgnoreCase))
+                        if (string.Equals(msgType, "http://schemas.microsoft.com/SQL/Notifications/QueryNotification", StringComparison.OrdinalIgnoreCase))
                         {
                             SqlXml payload = reader.GetSqlXml(2);
                             if (null != payload)

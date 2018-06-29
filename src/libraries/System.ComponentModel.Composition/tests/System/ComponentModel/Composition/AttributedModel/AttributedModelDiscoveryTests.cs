@@ -127,7 +127,7 @@ namespace System.ComponentModel.Composition.AttributedModel
             // CompositionConstants.PartCreationPolicyMetadataName should be ignored
             Assert.NotEqual(CreationPolicy.NonShared, definition.Metadata.GetValue<CreationPolicy>(CompositionConstants.PartCreationPolicyMetadataName));
 
-            // Key ShouldNotBeIgnored should actully be in the dictionary
+            // Key ShouldNotBeIgnored should actually be in the dictionary
             Assert.Equal("Value", definition.Metadata["ShouldNotBeIgnored"]);
         }
 

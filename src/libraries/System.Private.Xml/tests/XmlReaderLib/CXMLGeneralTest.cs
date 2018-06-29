@@ -18,27 +18,27 @@ namespace System.Xml.Tests
 
         public const int ASCII_ZERO = 48;
 
-        public const String ST_ENTTEST_NAME = "ENTITY1";
+        public const string ST_ENTTEST_NAME = "ENTITY1";
 
-        public const String ST_TEXT_VALUE = "xxx";
+        public const string ST_TEXT_VALUE = "xxx";
 
-        public const String ST_DECIMAL = "#decimal";
-        public const String ST_HEXIDECIMAL = "#hexidecimal";
-        public const String ST_GT = "gt";
-        public const String ST_LT = "lt";
+        public const string ST_DECIMAL = "#decimal";
+        public const string ST_HEXIDECIMAL = "#hexidecimal";
+        public const string ST_GT = "gt";
+        public const string ST_LT = "lt";
 
-        public const String ST_IGNORE_ENTITIES = "xxx&gt;xxx&#66;xxx&#x44;xxx&e1;xxx";
-        public const String ST_EXPAND_ENTITIES = "xxx>xxxBxxxDxxxe1fooxxx";
-        public const String ST_EXPAND_ENTITIES2 = "xxx&gt;xxxBxxxDxxxe1fooxxx";
-        public const String ST_EXPAND_ENTITIES3 = "xxx&gt;xxxBxxxDxxx&e1;xxx";
-        public const String ST_EXPAND_CHAR_ENTITIES = "xxx>xxxBxxxDxxx";
-        public const String ST_ENT1_ATT_EXPAND_ENTITIES = "xxx<xxxAxxxCxxxNO_REFERENCEe1;xxx";
-        public const String ST_ENT1_ATT_EXPAND_CHAR_ENTITIES = "xxx<xxxAxxxCxxx&e1;xxx";
+        public const string ST_IGNORE_ENTITIES = "xxx&gt;xxx&#66;xxx&#x44;xxx&e1;xxx";
+        public const string ST_EXPAND_ENTITIES = "xxx>xxxBxxxDxxxe1fooxxx";
+        public const string ST_EXPAND_ENTITIES2 = "xxx&gt;xxxBxxxDxxxe1fooxxx";
+        public const string ST_EXPAND_ENTITIES3 = "xxx&gt;xxxBxxxDxxx&e1;xxx";
+        public const string ST_EXPAND_CHAR_ENTITIES = "xxx>xxxBxxxDxxx";
+        public const string ST_ENT1_ATT_EXPAND_ENTITIES = "xxx<xxxAxxxCxxxNO_REFERENCEe1;xxx";
+        public const string ST_ENT1_ATT_EXPAND_CHAR_ENTITIES = "xxx<xxxAxxxCxxx&e1;xxx";
 
-        public const String ST_ENT1_ATT_IGNORE_ENTITIES = "xxx&lt;xxx&#65;xxx&#x43;xxx&e1;xxx";
-        public const String ST_ENT1_ATT_EXPAND_CHAR_ENTITIES2 = "xxx&lt;xxxAxxxCxxx&e1;xxx";
-        public const String ST_ENT1_ATT_EXPAND_CHAR_ENTITIES3 = "xxx<xxxAxxxCxxx";
-        public const String ST_ENT1_ATT_EXPAND_CHAR_ENTITIES4 = "xxx&lt;xxxAxxxCxxxe1fooxxx";
+        public const string ST_ENT1_ATT_IGNORE_ENTITIES = "xxx&lt;xxx&#65;xxx&#x43;xxx&e1;xxx";
+        public const string ST_ENT1_ATT_EXPAND_CHAR_ENTITIES2 = "xxx&lt;xxxAxxxCxxx&e1;xxx";
+        public const string ST_ENT1_ATT_EXPAND_CHAR_ENTITIES3 = "xxx<xxxAxxxCxxx";
+        public const string ST_ENT1_ATT_EXPAND_CHAR_ENTITIES4 = "xxx&lt;xxxAxxxCxxxe1fooxxx";
 
         private const string _NOVALIDATION = "None";
         private const string _VALIDATION_ONE = "Validation_One";
@@ -386,22 +386,22 @@ namespace System.Xml.Tests
             CError.Compare(DataReader.Depth, nDepth, "E");
 
             DataReader.Read();
-            CError.Compare(DataReader.VerifyNode(XmlNodeType.Text, String.Empty, "\nT2"), "nT2");
+            CError.Compare(DataReader.VerifyNode(XmlNodeType.Text, string.Empty, "\nT2"), "nT2");
             CError.Compare(DataReader.Depth, nDepth, "T2");
 
             DataReader.Read();
-            CError.Compare(DataReader.VerifyNode(XmlNodeType.Element, "E", String.Empty), "nE2");
+            CError.Compare(DataReader.VerifyNode(XmlNodeType.Element, "E", string.Empty), "nE2");
             CError.Compare(DataReader.Depth, nDepth, "E2");
 
             if (IsXmlNodeReader() || IsXmlValidatingReader())
             {
                 DataReader.Read();
-                CError.Compare(DataReader.VerifyNode(XmlNodeType.EndEntity, "MyEntity", String.Empty), "ee");
+                CError.Compare(DataReader.VerifyNode(XmlNodeType.EndEntity, "MyEntity", string.Empty), "ee");
                 CError.Compare(DataReader.Depth, 1, "eed");
             }
 
             DataReader.Read();
-            CError.Compare(DataReader.VerifyNode(XmlNodeType.EndElement, "root", String.Empty), "nr");
+            CError.Compare(DataReader.VerifyNode(XmlNodeType.EndElement, "root", string.Empty), "nr");
             CError.Compare(DataReader.Depth, 0, "er");
 
             return TEST_PASS;
@@ -422,15 +422,15 @@ namespace System.Xml.Tests
             CError.Compare(DataReader.Depth, 1, "E");
 
             DataReader.Read();
-            CError.Compare(DataReader.VerifyNode(XmlNodeType.Text, String.Empty, "\nT2"), "nT2");
+            CError.Compare(DataReader.VerifyNode(XmlNodeType.Text, string.Empty, "\nT2"), "nT2");
             CError.Compare(DataReader.Depth, 1, "T2");
 
             DataReader.Read();
-            CError.Compare(DataReader.VerifyNode(XmlNodeType.Element, "E", String.Empty), "nE2");
+            CError.Compare(DataReader.VerifyNode(XmlNodeType.Element, "E", string.Empty), "nE2");
             CError.Compare(DataReader.Depth, 1, "E2");
 
             DataReader.Read();
-            CError.Compare(DataReader.VerifyNode(XmlNodeType.EndElement, "root", String.Empty), "nr");
+            CError.Compare(DataReader.VerifyNode(XmlNodeType.EndElement, "root", string.Empty), "nr");
             CError.Compare(DataReader.Depth, 0, "er");
 
             return TEST_PASS;
@@ -488,7 +488,7 @@ namespace System.Xml.Tests
                     CError.Compare(DataReader.Prefix, "bar", "Compare Prefix");
                 }
             }
-            CError.Compare(DataReader.NamespaceURI, String.Empty, "Compare Namespace with String.Empty");
+            CError.Compare(DataReader.NamespaceURI, string.Empty, "Compare Namespace with String.Empty");
 
             return TEST_PASS;
         }
@@ -499,10 +499,10 @@ namespace System.Xml.Tests
             ReloadSource();
 
             DataReader.PositionOnElement(s_NONAMESPACE);
-            CError.Compare(DataReader.NamespaceURI, String.Empty, "Compare Namespace with EmptyString");
+            CError.Compare(DataReader.NamespaceURI, string.Empty, "Compare Namespace with EmptyString");
             CError.Compare(DataReader.Name, s_NONAMESPACE, "Compare Name");
             CError.Compare(DataReader.LocalName, s_NONAMESPACE, "Compare LocalName");
-            CError.Compare(DataReader.Prefix, String.Empty, "Compare Prefix");
+            CError.Compare(DataReader.Prefix, string.Empty, "Compare Prefix");
 
             return TEST_PASS;
         }
@@ -519,7 +519,7 @@ namespace System.Xml.Tests
             CError.Compare(DataReader.NamespaceURI, "1000", "Compare Namespace for Element");
             if (DataReader.MoveToFirstAttribute())
             {
-                CError.Compare(DataReader.NamespaceURI, String.Empty, "Compare Namespace for Attr");
+                CError.Compare(DataReader.NamespaceURI, string.Empty, "Compare Namespace for Attr");
             }
             return TEST_PASS;
         }
@@ -567,7 +567,7 @@ namespace System.Xml.Tests
                         CError.Compare(DataReader.NamespaceURI, "1", "Compare Namespace");
                         CError.Compare(DataReader.Name, "check", "Compare Name");
                         CError.Compare(DataReader.LocalName, "check", "Compare LocalName");
-                        CError.Compare(DataReader.Prefix, String.Empty, "Compare Prefix");
+                        CError.Compare(DataReader.Prefix, string.Empty, "Compare Prefix");
                     }
                     else if (DataReader.LocalName == "check1")
                     {
@@ -575,7 +575,7 @@ namespace System.Xml.Tests
                         CError.Compare(DataReader.NamespaceURI, "1", "Compare Namespace");
                         CError.Compare(DataReader.Name, "check1", "Compare Name");
                         CError.Compare(DataReader.LocalName, "check1", "Compare LocalName");
-                        CError.Compare(DataReader.Prefix, String.Empty, "Compare Prefix");
+                        CError.Compare(DataReader.Prefix, string.Empty, "Compare Prefix");
                     }
                     else if (DataReader.LocalName == "check8")
                     {
@@ -591,7 +591,7 @@ namespace System.Xml.Tests
                         CError.Compare(DataReader.NamespaceURI, "100", "Compare Namespace");
                         CError.Compare(DataReader.Name, "check100", "Compare Name");
                         CError.Compare(DataReader.LocalName, "check100", "Compare LocalName");
-                        CError.Compare(DataReader.Prefix, String.Empty, "Compare Prefix");
+                        CError.Compare(DataReader.Prefix, string.Empty, "Compare Prefix");
                     }
                     else if (DataReader.LocalName == "check5")
                     {
@@ -607,7 +607,7 @@ namespace System.Xml.Tests
                         CError.Compare(DataReader.NamespaceURI, "14", "Compare Namespace");
                         CError.Compare(DataReader.Name, "check14", "Compare Name");
                         CError.Compare(DataReader.LocalName, "check14", "Compare LocalName");
-                        CError.Compare(DataReader.Prefix, String.Empty, "Compare Prefix");
+                        CError.Compare(DataReader.Prefix, string.Empty, "Compare Prefix");
                     }
                     else if (DataReader.LocalName == "a13")
                     {
@@ -615,7 +615,7 @@ namespace System.Xml.Tests
                         CError.Compare(DataReader.NamespaceURI, "1", "Compare Namespace1");
                         CError.Compare(DataReader.Name, "a13", "Compare Name1");
                         CError.Compare(DataReader.LocalName, "a13", "Compare LocalName1");
-                        CError.Compare(DataReader.Prefix, String.Empty, "Compare Prefix1");
+                        CError.Compare(DataReader.Prefix, string.Empty, "Compare Prefix1");
                         DataReader.MoveToFirstAttribute();
                         CError.Compare(DataReader.NamespaceURI, "13", "Compare Namespace2");
                         CError.Compare(DataReader.Name, "a:check", "Compare Name2");
@@ -691,7 +691,7 @@ namespace System.Xml.Tests
             do
             {
                 CError.WriteLine("Name=" + DataReader.Name + " Value=" + DataReader.Value + " NodeType=" + (DataReader.NodeType).ToString());
-                CError.Compare(DataReader.LookupNamespace(String.Empty), "14", "Compare LookupNamespace");
+                CError.Compare(DataReader.LookupNamespace(string.Empty), "14", "Compare LookupNamespace");
             } while (DataReader.MoveToNextAttribute() == true);
             return TEST_PASS;
         }
@@ -779,7 +779,7 @@ namespace System.Xml.Tests
 
         private void CompareAllNS(string strDef, string strA, string strB, string strC, string strD, string strE, string strF, string strG, string strH)
         {
-            CError.Compare(DataReader.LookupNamespace(String.Empty), strDef, "Compare LookupNamespace-default");
+            CError.Compare(DataReader.LookupNamespace(string.Empty), strDef, "Compare LookupNamespace-default");
             CError.Compare(DataReader.LookupNamespace("a"), strA, "Compare LookupNamespace-a");
             CError.Compare(DataReader.LookupNamespace("b"), strB, "Compare LookupNamespace-b");
             CError.Compare(DataReader.LookupNamespace("c"), strC, "Compare LookupNamespace-c");
@@ -1618,7 +1618,7 @@ namespace System.Xml.Tests
             while (true == DataReader.Read())
             {
                 if (DataReader.Name == "XMLLANG0") break;
-                CError.Compare(DataReader.XmlLang, String.Empty, "Compare XmlLang with String.Empty");
+                CError.Compare(DataReader.XmlLang, string.Empty, "Compare XmlLang with String.Empty");
             }
 
             while (true == DataReader.Read())
@@ -1672,7 +1672,7 @@ namespace System.Xml.Tests
         {
             ReloadSource();
             DataReader.PositionOnElement("NOXMLLANG");
-            CError.Compare(DataReader.XmlLang, String.Empty, "Compare XmlLang with EmptyString");
+            CError.Compare(DataReader.XmlLang, string.Empty, "Compare XmlLang with EmptyString");
 
             return TEST_PASS;
         }
@@ -1756,7 +1756,7 @@ namespace System.Xml.Tests
 
             for (int i = 0; i < aValidLang.Length; i++)
             {
-                string strxml = String.Format("<ROOT xml:lang='{0}'/>", aValidLang[i]);
+                string strxml = string.Format("<ROOT xml:lang='{0}'/>", aValidLang[i]);
 
                 ReloadSourceStr(strxml);
 
@@ -1778,8 +1778,8 @@ namespace System.Xml.Tests
         {
             bool bPassed = false;
             XmlNodeType actNodeType;
-            String strActName;
-            String strActValue;
+            string strActName;
+            string strActValue;
 
             ReloadSource();
             PositionOnNodeType(testNodeType);
@@ -1809,7 +1809,7 @@ namespace System.Xml.Tests
 
             DataReader.Skip();
 
-            bPassed = DataReader.VerifyNode(XmlNodeType.Element, "AFTERSKIP1", String.Empty);
+            bPassed = DataReader.VerifyNode(XmlNodeType.Element, "AFTERSKIP1", string.Empty);
 
             return BoolToLTMResult(bPassed);
         }
@@ -1824,7 +1824,7 @@ namespace System.Xml.Tests
 
             DataReader.Skip();
 
-            bPassed = DataReader.VerifyNode(XmlNodeType.Element, "AFTERSKIP2", String.Empty);
+            bPassed = DataReader.VerifyNode(XmlNodeType.Element, "AFTERSKIP2", string.Empty);
 
             return BoolToLTMResult(bPassed);
         }
@@ -1839,7 +1839,7 @@ namespace System.Xml.Tests
 
             DataReader.Skip();
 
-            bPassed = DataReader.VerifyNode(XmlNodeType.Element, "AFTERSKIP3", String.Empty);
+            bPassed = DataReader.VerifyNode(XmlNodeType.Element, "AFTERSKIP3", string.Empty);
 
             return BoolToLTMResult(bPassed);
         }
@@ -1857,7 +1857,7 @@ namespace System.Xml.Tests
 
             DataReader.Skip();
 
-            bPassed = DataReader.VerifyNode(XmlNodeType.EndElement, "ELEM2", String.Empty) && bPassed;
+            bPassed = DataReader.VerifyNode(XmlNodeType.EndElement, "ELEM2", string.Empty) && bPassed;
 
             return BoolToLTMResult(bPassed);
         }
@@ -1886,7 +1886,7 @@ namespace System.Xml.Tests
 
             DataReader.Skip();
 
-            bPassed = DataReader.VerifyNode(XmlNodeType.Element, "ELEM3", String.Empty) && bPassed;
+            bPassed = DataReader.VerifyNode(XmlNodeType.Element, "ELEM3", string.Empty) && bPassed;
 
             return BoolToLTMResult(bPassed);
         }
@@ -1902,7 +1902,7 @@ namespace System.Xml.Tests
 
             DataReader.Skip();
 
-            bPassed = DataReader.VerifyNode(XmlNodeType.Element, "ENTITY2", String.Empty) && bPassed;
+            bPassed = DataReader.VerifyNode(XmlNodeType.Element, "ENTITY2", string.Empty) && bPassed;
 
             return BoolToLTMResult(bPassed);
         }
@@ -1921,7 +1921,7 @@ namespace System.Xml.Tests
 
             DataReader.Skip();
 
-            bPassed = DataReader.VerifyNode(XmlNodeType.Element, "ENTITY2", String.Empty) && bPassed;
+            bPassed = DataReader.VerifyNode(XmlNodeType.Element, "ENTITY2", string.Empty) && bPassed;
 
             return BoolToLTMResult(bPassed);
         }
@@ -1995,7 +1995,7 @@ namespace System.Xml.Tests
 
             DataReader.Skip();
 
-            bPassed = DataReader.VerifyNode(XmlNodeType.None, String.Empty, String.Empty);
+            bPassed = DataReader.VerifyNode(XmlNodeType.None, string.Empty, string.Empty);
 
             return BoolToLTMResult(bPassed);
         }
@@ -2024,11 +2024,11 @@ namespace System.Xml.Tests
             {
                 CError.WriteLine(DataReader.Value);
             }
-            bPassed = DataReader.VerifyNode(XmlNodeType.EntityReference, "e1", String.Empty) && bPassed;
+            bPassed = DataReader.VerifyNode(XmlNodeType.EntityReference, "e1", string.Empty) && bPassed;
 
             DataReader.Skip();
 
-            bPassed = DataReader.VerifyNode(XmlNodeType.Element, "ENTITY2", String.Empty) && bPassed;
+            bPassed = DataReader.VerifyNode(XmlNodeType.Element, "ENTITY2", string.Empty) && bPassed;
 
             return BoolToLTMResult(bPassed);
         }
@@ -2080,10 +2080,10 @@ namespace System.Xml.Tests
     [InheritRequired()]
     public abstract partial class TCBaseURI : TCXMLReaderBaseGeneral
     {
-        public const String ST_TEST_ENT = "AllNodeTypes.ent";
+        public const string ST_TEST_ENT = "AllNodeTypes.ent";
 
-        public const String ST_GEN_ENT_NAME = "ext3";
-        public const String ST_GEN_ENT_VALUE = "blah";
+        public const string ST_GEN_ENT_NAME = "ext3";
+        public const string ST_GEN_ENT_VALUE = "blah";
 
         ////////////////////////////////////////////////////////////////
         // Variations
@@ -2092,7 +2092,7 @@ namespace System.Xml.Tests
         public int TestBaseURI1()
         {
             bool bPassed = false;
-            String strExpBaseURI;
+            string strExpBaseURI;
 
             ReloadSource();
             PositionOnNodeType(XmlNodeType.Element);
@@ -2103,7 +2103,7 @@ namespace System.Xml.Tests
             Uri ExpBaseURI = new Uri("file:///" + strExpBaseURI);
 
             if (IsXsltReader())
-                bPassed = CError.Equals(DataReader.BaseURI, String.Empty, CurVariation.Desc);
+                bPassed = CError.Equals(DataReader.BaseURI, string.Empty, CurVariation.Desc);
             else
                 bPassed = CError.Equals(DataReader.BaseURI, ExpBaseURI.ToString(), CurVariation.Desc);
 
@@ -2114,7 +2114,7 @@ namespace System.Xml.Tests
         public int TestBaseURI2()
         {
             bool bPassed = false;
-            String strExpBaseURI;
+            string strExpBaseURI;
 
             ReloadSource();
             PositionOnNodeType(XmlNodeType.Attribute);
@@ -2126,7 +2126,7 @@ namespace System.Xml.Tests
             Uri ExpBaseURI = new Uri("file:///" + strExpBaseURI);
 
             if (IsXsltReader())
-                bPassed = CError.Equals(DataReader.BaseURI, String.Empty, CurVariation.Desc);
+                bPassed = CError.Equals(DataReader.BaseURI, string.Empty, CurVariation.Desc);
             else
                 bPassed = CError.Equals(DataReader.BaseURI, ExpBaseURI.ToString(), CurVariation.Desc);
 
@@ -2137,7 +2137,7 @@ namespace System.Xml.Tests
         public int TestBaseURI3()
         {
             bool bPassed = false;
-            String strExpBaseURI;
+            string strExpBaseURI;
 
             ReloadSource();
             PositionOnNodeType(XmlNodeType.Text);
@@ -2149,7 +2149,7 @@ namespace System.Xml.Tests
             Uri ExpBaseURI = new Uri("file:///" + strExpBaseURI);
 
             if (IsXsltReader())
-                bPassed = CError.Equals(DataReader.BaseURI, String.Empty, CurVariation.Desc);
+                bPassed = CError.Equals(DataReader.BaseURI, string.Empty, CurVariation.Desc);
             else
                 bPassed = CError.Equals(DataReader.BaseURI, ExpBaseURI.ToString(), CurVariation.Desc);
 
@@ -2185,7 +2185,7 @@ namespace System.Xml.Tests
         public int TestBaseURI6()
         {
             bool bPassed = false;
-            String strExpBaseURI;
+            string strExpBaseURI;
 
             ReloadSource();
             PositionOnNodeType(XmlNodeType.ProcessingInstruction);
@@ -2197,7 +2197,7 @@ namespace System.Xml.Tests
             Uri ExpBaseURI = new Uri("file:///" + strExpBaseURI);
 
             if (IsXsltReader())
-                bPassed = CError.Equals(DataReader.BaseURI, String.Empty, CurVariation.Desc);
+                bPassed = CError.Equals(DataReader.BaseURI, string.Empty, CurVariation.Desc);
             else
                 bPassed = CError.Equals(DataReader.BaseURI, ExpBaseURI.ToString(), CurVariation.Desc);
 
@@ -2208,7 +2208,7 @@ namespace System.Xml.Tests
         public int TestBaseURI7()
         {
             bool bPassed = false;
-            String strExpBaseURI;
+            string strExpBaseURI;
 
             ReloadSource();
             PositionOnNodeType(XmlNodeType.Comment);
@@ -2220,7 +2220,7 @@ namespace System.Xml.Tests
             Uri ExpBaseURI = new Uri("file:///" + strExpBaseURI);
 
             if (IsXsltReader())
-                bPassed = CError.Equals(DataReader.BaseURI, String.Empty, CurVariation.Desc);
+                bPassed = CError.Equals(DataReader.BaseURI, string.Empty, CurVariation.Desc);
             else
                 bPassed = CError.Equals(DataReader.BaseURI, ExpBaseURI.ToString(), CurVariation.Desc);
 
@@ -2231,7 +2231,7 @@ namespace System.Xml.Tests
         public int TestBaseURI8()
         {
             bool bPassed = false;
-            String strExpBaseURI;
+            string strExpBaseURI;
 
             if (IsXsltReader() || IsXPathNavigatorReader())
                 return TEST_SKIPPED;
@@ -2246,7 +2246,7 @@ namespace System.Xml.Tests
             Uri ExpBaseURI = new Uri("file:///" + strExpBaseURI);
 
             if (IsXsltReader() || IsXPathNavigatorReader())
-                bPassed = CError.Equals(DataReader.BaseURI, String.Empty, CurVariation.Desc);
+                bPassed = CError.Equals(DataReader.BaseURI, string.Empty, CurVariation.Desc);
             else
                 bPassed = CError.Equals(DataReader.BaseURI, ExpBaseURI.ToString(), CurVariation.Desc);
 
@@ -2260,7 +2260,7 @@ namespace System.Xml.Tests
                 return TEST_SKIPPED;
 
             bool bPassed = false;
-            string strExpBaseURI = String.Empty;
+            string strExpBaseURI = string.Empty;
 
             ReloadSource();
             PositionOnNodeType(XmlNodeType.Whitespace);
@@ -2281,7 +2281,7 @@ namespace System.Xml.Tests
         public int TestBaseURI10()
         {
             bool bPassed = false;
-            String strExpBaseURI;
+            string strExpBaseURI;
 
             ReloadSource();
             PositionOnNodeType(XmlNodeType.EndElement);
@@ -2293,7 +2293,7 @@ namespace System.Xml.Tests
             Uri ExpBaseURI = new Uri("file:///" + strExpBaseURI);
 
             if (IsXsltReader())
-                bPassed = CError.Equals(DataReader.BaseURI, String.Empty, CurVariation.Desc);
+                bPassed = CError.Equals(DataReader.BaseURI, string.Empty, CurVariation.Desc);
             else
                 bPassed = CError.Equals(DataReader.BaseURI, ExpBaseURI.ToString(), CurVariation.Desc);
 
@@ -2307,7 +2307,7 @@ namespace System.Xml.Tests
                 return TEST_SKIPPED;
 
             bool bPassed = false;
-            String strExpBaseURI;
+            string strExpBaseURI;
 
             ReloadSource();
             PositionOnNodeType(XmlNodeType.EntityReference);
@@ -2329,7 +2329,7 @@ namespace System.Xml.Tests
                 return TEST_SKIPPED;
 
             bool bPassed = false;
-            String strExpBaseURI;
+            string strExpBaseURI;
 
             ReloadSource();
 
@@ -2350,7 +2350,7 @@ namespace System.Xml.Tests
         public int TestTextReaderBaseURI4()
         {
             bool bPassed = false;
-            String strExpBaseURI;
+            string strExpBaseURI;
 
             if (IsXsltReader() || IsXPathNavigatorReader())
                 return TEST_SKIPPED;
@@ -2368,18 +2368,18 @@ namespace System.Xml.Tests
 
             if (IsXmlTextReader() || IsXmlNodeReader() || IsXmlValidatingReader())
             {
-                bPassed = DataReader.VerifyNode(XmlNodeType.EntityReference, ST_GEN_ENT_NAME, String.Empty);
+                bPassed = DataReader.VerifyNode(XmlNodeType.EntityReference, ST_GEN_ENT_NAME, string.Empty);
 
                 if (DataReader.CanResolveEntity)
                 {
                     DataReader.ResolveEntity();
                     DataReader.Read();
                     CError.WriteLine("HeRE" + DataReader.Value);
-                    bPassed = DataReader.VerifyNode(XmlNodeType.Text, String.Empty, ST_GEN_ENT_VALUE) && bPassed;
+                    bPassed = DataReader.VerifyNode(XmlNodeType.Text, string.Empty, ST_GEN_ENT_VALUE) && bPassed;
                 }
             }
             else
-                bPassed = DataReader.VerifyNode(XmlNodeType.Text, String.Empty, ST_GEN_ENT_VALUE) && bPassed;
+                bPassed = DataReader.VerifyNode(XmlNodeType.Text, string.Empty, ST_GEN_ENT_VALUE) && bPassed;
 
             bPassed = CError.Equals(DataReader.BaseURI, ExpBaseURI.ToString(), "After ResolveEntity");
 
@@ -2409,18 +2409,18 @@ namespace System.Xml.Tests
 
             if (IsXmlTextReader() || IsXmlNodeReader() || IsXmlValidatingReader())
             {
-                bPassed = DataReader.VerifyNode(XmlNodeType.EntityReference, "bug62426", String.Empty);
+                bPassed = DataReader.VerifyNode(XmlNodeType.EntityReference, "bug62426", string.Empty);
 
                 if (DataReader.CanResolveEntity)
                 {
                     DataReader.ResolveEntity();
                     DataReader.Read();
                     CError.WriteLine("HeRE" + DataReader.Value);
-                    bPassed = DataReader.VerifyNode(XmlNodeType.Text, String.Empty, "bug62426") && bPassed;
+                    bPassed = DataReader.VerifyNode(XmlNodeType.Text, string.Empty, "bug62426") && bPassed;
                 }
             }
             else
-                bPassed = DataReader.VerifyNode(XmlNodeType.Text, String.Empty, "bug62426") && bPassed;
+                bPassed = DataReader.VerifyNode(XmlNodeType.Text, string.Empty, "bug62426") && bPassed;
 
             bPassed = CError.Compare(DataReader.BaseURI.Contains("Common/bug_62426.xml"), "After ResolveEntity");
 

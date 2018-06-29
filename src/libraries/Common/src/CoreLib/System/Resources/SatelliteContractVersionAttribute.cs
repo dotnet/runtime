@@ -19,13 +19,13 @@ namespace System.Resources
     [AttributeUsage(AttributeTargets.Assembly, AllowMultiple = false)]
     public sealed class SatelliteContractVersionAttribute : Attribute
     {
-        public SatelliteContractVersionAttribute(String version)
+        public SatelliteContractVersionAttribute(string version)
         {
             if (version == null)
                 throw new ArgumentNullException(nameof(version));
             Version = version;
         }
 
-        public String Version { get; }
+        public string Version { get; }
     }
 }

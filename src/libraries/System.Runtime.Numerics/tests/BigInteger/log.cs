@@ -19,7 +19,7 @@ namespace System.Numerics.Tests
             BigInteger bi;
 
             // Log Method - Log(1,+Infinity)
-            Assert.Equal(0, BigInteger.Log(1, Double.PositiveInfinity));
+            Assert.Equal(0, BigInteger.Log(1, double.PositiveInfinity));
 
             // Log Method - Log(1,0)
             VerifyLogString("0 1 bLog");
@@ -34,7 +34,7 @@ namespace System.Numerics.Tests
             // Log Method - Log(0, 0>x>1)
             for (int i = 0; i < s_samples; i++)
             {
-                Assert.Equal(Double.PositiveInfinity, BigInteger.Log(0, s_random.NextDouble()));
+                Assert.Equal(double.PositiveInfinity, BigInteger.Log(0, s_random.NextDouble()));
             }
 
             // Log Method - base = 0
@@ -45,7 +45,7 @@ namespace System.Numerics.Tests
                 {
                     bi = new BigInteger(GetRandomPosByteArray(s_random, 8));
                 }
-                Assert.True((Double.IsNaN(BigInteger.Log(bi, 0))));
+                Assert.True((double.IsNaN(BigInteger.Log(bi, 0))));
             }
 
             // Log Method - base = 1
@@ -58,13 +58,13 @@ namespace System.Numerics.Tests
             // Log Method - base = NaN
             for (int i = 0; i < s_samples; i++)
             {
-                Assert.True(Double.IsNaN(BigInteger.Log(new BigInteger(GetRandomByteArray(s_random, 10)), Double.NaN)));
+                Assert.True(double.IsNaN(BigInteger.Log(new BigInteger(GetRandomByteArray(s_random, 10)), double.NaN)));
             }
 
             // Log Method - base = +Infinity
             for (int i = 0; i < s_samples; i++)
             {
-                Assert.True(Double.IsNaN(BigInteger.Log(new BigInteger(GetRandomByteArray(s_random, 10)), Double.PositiveInfinity)));
+                Assert.True(double.IsNaN(BigInteger.Log(new BigInteger(GetRandomByteArray(s_random, 10)), double.PositiveInfinity)));
             }
 
             // Log Method - Log(0,1)
@@ -76,7 +76,7 @@ namespace System.Numerics.Tests
                 tempByteArray1 = GetRandomByteArray(s_random, 10);
                 tempByteArray2 = GetRandomNegByteArray(s_random, 1);
                 VerifyLogString(Print(tempByteArray2) + Print(tempByteArray1) + "bLog");
-                Assert.True(Double.IsNaN(BigInteger.Log(new BigInteger(GetRandomByteArray(s_random, 10)), -s_random.NextDouble())));
+                Assert.True(double.IsNaN(BigInteger.Log(new BigInteger(GetRandomByteArray(s_random, 10)), -s_random.NextDouble())));
             }
 
             // Log Method - value < 0
@@ -91,7 +91,7 @@ namespace System.Numerics.Tests
             for (int i = 0; i < s_samples; i++)
             {
                 BigInteger temp = new BigInteger(GetRandomPosByteArray(s_random, 10));
-                Double newbase = Math.Min(s_random.NextDouble(), 0.5);
+                double newbase = Math.Min(s_random.NextDouble(), 0.5);
                 Assert.True(ApproxEqual(BigInteger.Log(temp, newbase), Math.Log((double)temp, newbase)));
             }
 
@@ -99,7 +99,7 @@ namespace System.Numerics.Tests
             for (int i = 0; i < s_samples; i++)
             {
                 BigInteger temp = new BigInteger(GetRandomPosByteArray(s_random, s_random.Next(1, 100)));
-                Double newbase = Math.Min(s_random.NextDouble(), 0.5);
+                double newbase = Math.Min(s_random.NextDouble(), 0.5);
                 Assert.True(ApproxEqual(BigInteger.Log(temp, newbase), Math.Log((double)temp, newbase)));
             }
 
@@ -208,7 +208,7 @@ namespace System.Numerics.Tests
             return MyBigIntImp.GetRandomByteArray(random, size);
         }
 
-        private static Byte[] GetRandomPosByteArray(Random random, int size)
+        private static byte[] GetRandomPosByteArray(Random random, int size)
         {
             byte[] value = new byte[size];
 
@@ -221,7 +221,7 @@ namespace System.Numerics.Tests
             return value;
         }
 
-        private static Byte[] GetRandomNegByteArray(Random random, int size)
+        private static byte[] GetRandomNegByteArray(Random random, int size)
         {
             byte[] value = new byte[size];
 
@@ -234,7 +234,7 @@ namespace System.Numerics.Tests
             return value;
         }
 
-        private static String Print(byte[] bytes)
+        private static string Print(byte[] bytes)
         {
             return MyBigIntImp.Print(bytes);
         }
@@ -242,17 +242,17 @@ namespace System.Numerics.Tests
         private static bool ApproxEqual(double value1, double value2)
         {
             //Special case values;
-            if (Double.IsNaN(value1))
+            if (double.IsNaN(value1))
             {
-                return Double.IsNaN(value2);
+                return double.IsNaN(value2);
             }
-            if (Double.IsNegativeInfinity(value1))
+            if (double.IsNegativeInfinity(value1))
             {
-                return Double.IsNegativeInfinity(value2);
+                return double.IsNegativeInfinity(value2);
             }
-            if (Double.IsPositiveInfinity(value1))
+            if (double.IsPositiveInfinity(value1))
             {
-                return Double.IsPositiveInfinity(value2);
+                return double.IsPositiveInfinity(value2);
             }
             if (value2 == 0)
             {
@@ -260,7 +260,7 @@ namespace System.Numerics.Tests
             }
 
             double result = Math.Abs((value1 / value2) - 1);
-            return (result <= Double.Parse("1e-15"));
+            return (result <= double.Parse("1e-15"));
         }
     }
 }

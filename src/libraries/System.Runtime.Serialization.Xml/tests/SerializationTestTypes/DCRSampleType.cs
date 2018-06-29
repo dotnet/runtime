@@ -1,4 +1,4 @@
-﻿// Licensed to the .NET Foundation under one or more agreements.
+// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
@@ -15,55 +15,55 @@ namespace SerializationTestTypes
         public PrimitiveContainer()
         {
             a = false;
-            b = Byte.MaxValue;
-            c = Byte.MinValue;
+            b = byte.MaxValue;
+            c = byte.MinValue;
 
             //char
             //datetime
-            e = Decimal.MaxValue;
-            f = Decimal.MinusOne;
-            g = Decimal.MinValue;
-            h = Decimal.One;
-            i = Decimal.Zero;
-            j = default(Decimal);
-            k = default(Double);
-            l = Double.Epsilon;
-            m = Double.MaxValue;
-            n = Double.MinValue;
-            o = Double.NaN;
-            p = Double.NegativeInfinity;
-            q = Double.PositiveInfinity;
-            r = default(Single);
-            s = Single.Epsilon;
-            t = Single.MinValue;
-            u = Single.MaxValue;
-            v = Single.NaN;
-            w = Single.NegativeInfinity;
-            x = Single.PositiveInfinity;
-            y = default(Int32);
-            z = Int32.MaxValue;
-            z1 = Int32.MinValue;
-            z2 = default(Int64);
-            z3 = Int64.MaxValue;
-            z4 = Int64.MinValue;
-            z5 = new Object();
-            z6 = default(SByte);
-            z7 = SByte.MaxValue;
-            z8 = SByte.MinValue;
-            z9 = default(Int16);
-            z91 = Int16.MaxValue;
-            z92 = Int16.MinValue;
+            e = decimal.MaxValue;
+            f = decimal.MinusOne;
+            g = decimal.MinValue;
+            h = decimal.One;
+            i = decimal.Zero;
+            j = default(decimal);
+            k = default(double);
+            l = double.Epsilon;
+            m = double.MaxValue;
+            n = double.MinValue;
+            o = double.NaN;
+            p = double.NegativeInfinity;
+            q = double.PositiveInfinity;
+            r = default(float);
+            s = float.Epsilon;
+            t = float.MinValue;
+            u = float.MaxValue;
+            v = float.NaN;
+            w = float.NegativeInfinity;
+            x = float.PositiveInfinity;
+            y = default(int);
+            z = int.MaxValue;
+            z1 = int.MinValue;
+            z2 = default(long);
+            z3 = long.MaxValue;
+            z4 = long.MinValue;
+            z5 = new object();
+            z6 = default(sbyte);
+            z7 = sbyte.MaxValue;
+            z8 = sbyte.MinValue;
+            z9 = default(short);
+            z91 = short.MaxValue;
+            z92 = short.MinValue;
             z93 = "abc";
-            z94 = default(UInt16);
-            z95 = UInt16.MaxValue;
-            z96 = UInt16.MinValue;
-            z97 = default(UInt32);
-            z98 = UInt32.MaxValue;
-            z99 = UInt32.MinValue;
-            z990 = default(UInt64);
-            z991 = UInt64.MaxValue;
-            z992 = UInt64.MinValue;
-            z993 = new Byte[] { 1, 2, 3, 4 };
+            z94 = default(ushort);
+            z95 = ushort.MaxValue;
+            z96 = ushort.MinValue;
+            z97 = default(uint);
+            z98 = uint.MaxValue;
+            z99 = uint.MinValue;
+            z990 = default(ulong);
+            z991 = ulong.MaxValue;
+            z992 = ulong.MinValue;
+            z993 = new byte[] { 1, 2, 3, 4 };
         }
 
         [DataMember]
@@ -76,7 +76,7 @@ namespace SerializationTestTypes
         public object c;
 
         [DataMember]
-        public object d = Char.MaxValue;
+        public object d = char.MaxValue;
 
         [DataMember]
         public object f5 = DateTime.MaxValue;
@@ -217,7 +217,7 @@ namespace SerializationTestTypes
         public object z992;
 
         [DataMember]
-        public Byte[] z993;
+        public byte[] z993;
 
         [DataMember]
         public object xmlQualifiedName = new XmlQualifiedName("WCF", "http://www.microsoft.com");

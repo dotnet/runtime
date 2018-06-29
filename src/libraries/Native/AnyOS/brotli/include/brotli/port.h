@@ -103,6 +103,10 @@ OR:
 #else
 #define BROTLI_ENC_API __declspec(dllimport)
 #endif  /* BROTLIENC_SHARED_COMPILATION */
+#elif !defined(_WIN32)
+#define BROTLI_COMMON_API __attribute__ ((__visibility__ ("default")))
+#define BROTLI_DEC_API __attribute__ ((__visibility__ ("default")))
+#define BROTLI_ENC_API __attribute__ ((__visibility__ ("default")))
 #else  /* BROTLI_SHARED_COMPILATION && _WIN32 */
 #define BROTLI_COMMON_API
 #define BROTLI_DEC_API

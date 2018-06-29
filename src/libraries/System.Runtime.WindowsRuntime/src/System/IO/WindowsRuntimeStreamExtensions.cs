@@ -24,10 +24,10 @@ namespace System.IO
     {
         #region Constants and static Fields
 
-        private const Int32 DefaultBufferSize = 16384;  // = 0x4000 = 16 KBytes.
+        private const int DefaultBufferSize = 16384;  // = 0x4000 = 16 KBytes.
 
-        private static ConditionalWeakTable<Object, Stream> s_winRtToNetFxAdapterMap
-                 = new ConditionalWeakTable<Object, Stream>();
+        private static ConditionalWeakTable<object, Stream> s_winRtToNetFxAdapterMap
+                 = new ConditionalWeakTable<object, Stream>();
 
         private static ConditionalWeakTable<Stream, NetFxToWinRtStreamAdapter> s_netFxToWinRtAdapterMap
                  = new ConditionalWeakTable<Stream, NetFxToWinRtStreamAdapter>();
@@ -64,12 +64,12 @@ namespace System.IO
         }
 #endif  // DEBUG
 
-        private static void EnsureAdapterBufferSize(Stream adapter, Int32 requiredBufferSize, String methodName)
+        private static void EnsureAdapterBufferSize(Stream adapter, int requiredBufferSize, string methodName)
         {
             Debug.Assert(adapter != null);
-            Debug.Assert(!String.IsNullOrWhiteSpace(methodName));
+            Debug.Assert(!string.IsNullOrWhiteSpace(methodName));
 
-            Int32 currentBufferSize = 0;
+            int currentBufferSize = 0;
             BufferedStream bufferedAdapter = adapter as BufferedStream;
             if (bufferedAdapter != null)
                 currentBufferSize = bufferedAdapter.BufferSize;
@@ -96,7 +96,7 @@ namespace System.IO
 
 
         [CLSCompliant(false)]
-        public static Stream AsStreamForRead(this IInputStream windowsRuntimeStream, Int32 bufferSize)
+        public static Stream AsStreamForRead(this IInputStream windowsRuntimeStream, int bufferSize)
         {
             return AsStreamInternal(windowsRuntimeStream, bufferSize, "AsStreamForRead", forceBufferSize: true);
         }
@@ -110,7 +110,7 @@ namespace System.IO
 
 
         [CLSCompliant(false)]
-        public static Stream AsStreamForWrite(this IOutputStream windowsRuntimeStream, Int32 bufferSize)
+        public static Stream AsStreamForWrite(this IOutputStream windowsRuntimeStream, int bufferSize)
         {
             return AsStreamInternal(windowsRuntimeStream, bufferSize, "AsStreamForWrite", forceBufferSize: true);
         }
@@ -124,13 +124,13 @@ namespace System.IO
 
 
         [CLSCompliant(false)]
-        public static Stream AsStream(this IRandomAccessStream windowsRuntimeStream, Int32 bufferSize)
+        public static Stream AsStream(this IRandomAccessStream windowsRuntimeStream, int bufferSize)
         {
             return AsStreamInternal(windowsRuntimeStream, bufferSize, "AsStream", forceBufferSize: true);
         }
 
 
-        private static Stream AsStreamInternal(Object windowsRuntimeStream, Int32 bufferSize, String invokedMethodName, bool forceBufferSize)
+        private static Stream AsStreamInternal(object windowsRuntimeStream, int bufferSize, string invokedMethodName, bool forceBufferSize)
         {
             if (windowsRuntimeStream == null)
                 throw new ArgumentNullException(nameof(windowsRuntimeStream));
@@ -138,7 +138,7 @@ namespace System.IO
             if (bufferSize < 0)
                 throw new ArgumentOutOfRangeException(nameof(bufferSize), SR.ArgumentOutOfRange_WinRtAdapterBufferSizeMayNotBeNegative);
 
-            Debug.Assert(!String.IsNullOrWhiteSpace(invokedMethodName));
+            Debug.Assert(!string.IsNullOrWhiteSpace(invokedMethodName));
             Contract.Ensures(Contract.Result<Stream>() != null);
             Contract.EndContractBlock();
 
@@ -188,24 +188,24 @@ namespace System.IO
 
 
         // Separate method so we only pay for closure allocation if this code is executed:
-        private static Stream WinRtToNetFxAdapterMap_GetValue(Object winRtStream)
+        private static Stream WinRtToNetFxAdapterMap_GetValue(object winRtStream)
         {
             return s_winRtToNetFxAdapterMap.GetValue(winRtStream, (wrtStr) => WinRtToNetFxStreamAdapter.Create(wrtStr));
         }
 
 
         // Separate method so we only pay for closure allocation if this code is executed:
-        private static Stream WinRtToNetFxAdapterMap_GetValue(Object winRtStream, Int32 bufferSize)
+        private static Stream WinRtToNetFxAdapterMap_GetValue(object winRtStream, int bufferSize)
         {
             return s_winRtToNetFxAdapterMap.GetValue(winRtStream, (wrtStr) => new BufferedStream(WinRtToNetFxStreamAdapter.Create(wrtStr), bufferSize));
         }
 
 
-        private static Stream AsStreamInternalFactoryHelper(Object windowsRuntimeStream, Int32 bufferSize, String invokedMethodName, bool forceBufferSize)
+        private static Stream AsStreamInternalFactoryHelper(object windowsRuntimeStream, int bufferSize, string invokedMethodName, bool forceBufferSize)
         {
             Debug.Assert(windowsRuntimeStream != null);
             Debug.Assert(bufferSize >= 0);
-            Debug.Assert(!String.IsNullOrWhiteSpace(invokedMethodName));
+            Debug.Assert(!string.IsNullOrWhiteSpace(invokedMethodName));
 
             Contract.Ensures(Contract.Result<Stream>() != null);
             Contract.EndContractBlock();
@@ -249,7 +249,7 @@ namespace System.IO
             Contract.Ensures(Contract.Result<IInputStream>() != null);
             Contract.EndContractBlock();
 
-            Object adapter = AsWindowsRuntimeStreamInternal(stream);
+            object adapter = AsWindowsRuntimeStreamInternal(stream);
 
             IInputStream winRtStream = adapter as IInputStream;
             Debug.Assert(winRtStream != null);
@@ -270,7 +270,7 @@ namespace System.IO
             Contract.Ensures(Contract.Result<IOutputStream>() != null);
             Contract.EndContractBlock();
 
-            Object adapter = AsWindowsRuntimeStreamInternal(stream);
+            object adapter = AsWindowsRuntimeStreamInternal(stream);
 
             IOutputStream winRtStream = adapter as IOutputStream;
             Debug.Assert(winRtStream != null);
@@ -291,7 +291,7 @@ namespace System.IO
             Contract.Ensures(Contract.Result<IRandomAccessStream>() != null);
             Contract.EndContractBlock();
 
-            Object adapter = AsWindowsRuntimeStreamInternal(stream);
+            object adapter = AsWindowsRuntimeStreamInternal(stream);
 
             IRandomAccessStream winRtStream = adapter as IRandomAccessStream;
             Debug.Assert(winRtStream != null);
@@ -300,7 +300,7 @@ namespace System.IO
         }
 
 
-        private static Object AsWindowsRuntimeStreamInternal(Stream stream)
+        private static object AsWindowsRuntimeStreamInternal(Stream stream)
         {
             Contract.Ensures(Contract.Result<Object>() != null);
             Contract.EndContractBlock();
@@ -319,7 +319,7 @@ namespace System.IO
             // In that case we do not need to put the wrapper into the map.
             if (sAdptr != null)
             {
-                Object wrappedWinRtStream = sAdptr.GetWindowsRuntimeStream<Object>();
+                object wrappedWinRtStream = sAdptr.GetWindowsRuntimeStream<Object>();
                 if (wrappedWinRtStream == null)
                     throw new ObjectDisposedException(nameof(stream), SR.ObjectDisposed_CannotPerformOperation);
 

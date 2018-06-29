@@ -976,7 +976,7 @@ namespace System.Numerics.Tests
             Vector4 v2 = new Vector4(5.5f, 4.5f, 6.5f, 7.5f);
 
             Vector4 v3 = v1 + v2;
-            Vector4 v5 = new Vector4(-1.0f, 0.0f, 0.0f, Single.NaN);
+            Vector4 v5 = new Vector4(-1.0f, 0.0f, 0.0f, float.NaN);
             Vector4 v4 = v1 + v5;
             Assert.Equal(8.0f, v3.X);
             Assert.Equal(6.5f, v3.Y);
@@ -985,7 +985,7 @@ namespace System.Numerics.Tests
             Assert.Equal(1.5f, v4.X);
             Assert.Equal(2.0f, v4.Y);
             Assert.Equal(3.0f, v4.Z);
-            Assert.Equal(Single.NaN, v4.W);
+            Assert.Equal(float.NaN, v4.W);
         }
 
         // A test for Vector4f (float, float, float, float)
@@ -1345,16 +1345,16 @@ namespace System.Numerics.Tests
         public void Vector4AbsTest()
         {
             Vector4 v1 = new Vector4(-2.5f, 2.0f, 3.0f, 3.3f);
-            Vector4 v3 = Vector4.Abs(new Vector4(Single.PositiveInfinity, 0.0f, Single.NegativeInfinity, Single.NaN));
+            Vector4 v3 = Vector4.Abs(new Vector4(float.PositiveInfinity, 0.0f, float.NegativeInfinity, float.NaN));
             Vector4 v = Vector4.Abs(v1);
             Assert.Equal(2.5f, v.X);
             Assert.Equal(2.0f, v.Y);
             Assert.Equal(3.0f, v.Z);
             Assert.Equal(3.3f, v.W);
-            Assert.Equal(Single.PositiveInfinity, v3.X);
+            Assert.Equal(float.PositiveInfinity, v3.X);
             Assert.Equal(0.0f, v3.Y);
-            Assert.Equal(Single.PositiveInfinity, v3.Z);
-            Assert.Equal(Single.NaN, v3.W);
+            Assert.Equal(float.PositiveInfinity, v3.Z);
+            Assert.Equal(float.NaN, v3.W);
         }
 
         [Fact]
@@ -1366,7 +1366,7 @@ namespace System.Numerics.Tests
             Assert.Equal(2, (int)Vector4.SquareRoot(v2).Y);
             Assert.Equal(2, (int)Vector4.SquareRoot(v2).Z);
             Assert.Equal(2, (int)Vector4.SquareRoot(v2).W);
-            Assert.Equal(Single.NaN, Vector4.SquareRoot(v1).X);
+            Assert.Equal(float.NaN, Vector4.SquareRoot(v1).X);
         }
 
         // A test to make sure these types are blittable directly into GPU buffer memory layouts

@@ -212,7 +212,7 @@ namespace System.ComponentModel.Tests
             TestComponent component = new TestComponent();
 
             // no context
-            Assert.Equal(String.Empty, (string)converter.ConvertTo(null, null, component, typeof(string)));
+            Assert.Equal(string.Empty, (string)converter.ConvertTo(null, null, component, typeof(string)));
 
             // context with IReferenceService
             TestReferenceService referenceService = new TestReferenceService();

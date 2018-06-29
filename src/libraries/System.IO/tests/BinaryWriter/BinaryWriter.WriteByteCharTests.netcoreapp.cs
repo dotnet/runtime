@@ -15,7 +15,7 @@ namespace System.IO.Tests
         public void BinaryWriter_WriteSpan()
         {
             byte[] bytes = new byte[] { 4, 2, 7, 0xFF };
-            char[] chars = new char[] { 'a', '7', Char.MaxValue };
+            char[] chars = new char[] { 'a', '7', char.MaxValue };
             Span<byte> byteSpan = new Span<byte>(bytes);
             Span<char> charSpan = new Span<char>(chars);
 
@@ -41,7 +41,7 @@ namespace System.IO.Tests
                     Assert.Equal('7', testChar);
 
                     testChar = BitConverter.ToChar(new byte[] { (byte)baseStream.ReadByte(), (byte)baseStream.ReadByte() }, 0);
-                    Assert.Equal(Char.MaxValue, testChar);
+                    Assert.Equal(char.MaxValue, testChar);
                 }
             }
         }

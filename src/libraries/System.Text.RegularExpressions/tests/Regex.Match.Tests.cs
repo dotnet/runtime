@@ -50,7 +50,7 @@ namespace System.Text.RegularExpressions.Tests
 
             // {,n} is treated as a literal rather than {0,n} as it should be
             yield return new object[] { @"a{,3}b", "a{,3}bc", RegexOptions.None, 0, 6, true, "a{,3}b" };
-            yield return new object[] { @"a{,3}b", "aaabc", RegexOptions.None, 0, 5, false, String.Empty };
+            yield return new object[] { @"a{,3}b", "aaabc", RegexOptions.None, 0, 5, false, string.Empty };
 
             // Using [a-z], \s, \w: Actual - "([a-zA-Z]+)\\s(\\w+)"
             yield return new object[] { @"([a-zA-Z]+)\s(\w+)", "David Bau", RegexOptions.None, 0, 9, true, "David Bau" };

@@ -27,7 +27,7 @@ namespace System.Tests
 
             c = StringComparer.Create(CultureInfo.InvariantCulture, ignoreCase: false);
             Assert.NotNull(c);
-            Assert.True(c.Equals((object)"hello", (object)String.Copy("hello")));
+            Assert.True(c.Equals((object)"hello", (object)string.Copy("hello")));
             Assert.False(c.Equals((object)"hello", (object)"HEllO"));
             Assert.False(c.Equals("hello", "HEllO"));
             Assert.False(c.Equals((object)"bello", (object)"HEllO"));
@@ -77,7 +77,7 @@ namespace System.Tests
             StringComparer c = StringComparer.Ordinal;
 
             Assert.Equal(0, c.Compare((object)"hello", (object)"hello"));
-            Assert.Equal(0, c.Compare((object)"hello", (object)String.Copy("hello")));
+            Assert.Equal(0, c.Compare((object)"hello", (object)string.Copy("hello")));
             Assert.Equal(-1, c.Compare(null, (object)"hello"));
             Assert.Equal(1, c.Compare((object)"hello", null));
 

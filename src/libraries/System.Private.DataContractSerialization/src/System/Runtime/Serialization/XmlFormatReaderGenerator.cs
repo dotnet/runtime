@@ -674,7 +674,7 @@ namespace System.Runtime.Serialization
                     _ilg.Stloc(growingCollection);
                 }
                 LocalBuilder i = _ilg.DeclareLocal(Globals.TypeOfInt, "i");
-                object forLoop = _ilg.For(i, 0, Int32.MaxValue);
+                object forLoop = _ilg.For(i, 0, int.MaxValue);
                 IsStartElement(_memberNamesArg, _memberNamespacesArg);
                 _ilg.If();
                 _ilg.Call(_contextArg, XmlFormatGeneratorStatics.IncrementItemCountMethod, 1);
@@ -770,7 +770,7 @@ namespace System.Runtime.Serialization
                 _ilg.Call(_contextArg, XmlFormatGeneratorStatics.AddNewObjectMethod, _objectLocal);
 
                 LocalBuilder i = _ilg.DeclareLocal(Globals.TypeOfInt, "i");
-                object forLoop = _ilg.For(i, 0, Int32.MaxValue);
+                object forLoop = _ilg.For(i, 0, int.MaxValue);
                 IsStartElement(_memberNamesArg, _memberNamespacesArg);
                 _ilg.If();
                 _ilg.Call(_contextArg, XmlFormatGeneratorStatics.IncrementItemCountMethod, 1);

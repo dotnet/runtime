@@ -206,7 +206,7 @@ namespace System.Reflection.Metadata
         {
             for (int i = 0; i < keys.Length - 1; i++)
             {
-                Debug.Assert(String.CompareOrdinal(keys[i], keys[i + 1]) < 0);
+                Debug.Assert(string.CompareOrdinal(keys[i], keys[i + 1]) < 0);
             }
         }
 

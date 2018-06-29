@@ -1,4 +1,4 @@
-﻿// Licensed to the .NET Foundation under one or more agreements.
+// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
@@ -1541,7 +1541,7 @@ string.Format(@"<?xml version=""1.0"" encoding=""utf-8""?>
 
         attrOverrides = new XmlAttributeOverrides();
         attrs = new XmlAttributes();
-        Object defaultAnimal = "Cat";
+        object defaultAnimal = "Cat";
         attrs.XmlDefaultValue = defaultAnimal;
         attrOverrides.Add(typeof(Pet), "Animal", attrs);
         attrs = new XmlAttributes();
@@ -1650,10 +1650,10 @@ string.Format(@"<?xml version=""1.0"" encoding=""utf-8""?>
     public static void SerializeWithDefaultValueSetToNaNTest()
     {
         var value = new DefaultValuesSetToNaN();
-        value.DoubleField = Double.NaN;
-        value.SingleField = Single.NaN;
-        value.FloatProp = Single.NaN;
-        value.DoubleProp = Double.NaN;
+        value.DoubleField = double.NaN;
+        value.SingleField = float.NaN;
+        value.FloatProp = float.NaN;
+        value.DoubleProp = double.NaN;
 
         bool result=SerializeWithDefaultValue(value,
 @"<?xml version=""1.0""?>
@@ -1665,10 +1665,10 @@ string.Format(@"<?xml version=""1.0"" encoding=""utf-8""?>
     public static void SerializeWithDefaultValueSetToPositiveInfinityTest()
     {
         var value = new DefaultValuesSetToPositiveInfinity();
-        value.DoubleField = Double.PositiveInfinity;
-        value.SingleField = Single.PositiveInfinity;
-        value.FloatProp = Single.PositiveInfinity;
-        value.DoubleProp = Double.PositiveInfinity;
+        value.DoubleField = double.PositiveInfinity;
+        value.SingleField = float.PositiveInfinity;
+        value.FloatProp = float.PositiveInfinity;
+        value.DoubleProp = double.PositiveInfinity;
 
         bool result = SerializeWithDefaultValue(value,
 @"<?xml version=""1.0""?>
@@ -1680,10 +1680,10 @@ string.Format(@"<?xml version=""1.0"" encoding=""utf-8""?>
     public static void SerializeWithDefaultValueSetToNegativeInfinityTest()
     {
         var value = new DefaultValuesSetToNegativeInfinity();
-        value.DoubleField = Double.NegativeInfinity;
-        value.SingleField = Single.NegativeInfinity;
-        value.FloatProp = Single.NegativeInfinity;
-        value.DoubleProp = Double.NegativeInfinity;
+        value.DoubleField = double.NegativeInfinity;
+        value.SingleField = float.NegativeInfinity;
+        value.FloatProp = float.NegativeInfinity;
+        value.DoubleProp = double.NegativeInfinity;
 
         bool result = SerializeWithDefaultValue(value,
         @"<?xml version=""1.0""?>

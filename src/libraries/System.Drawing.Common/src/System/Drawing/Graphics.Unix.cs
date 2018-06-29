@@ -58,7 +58,7 @@ namespace System.Drawing
 
         public delegate bool DrawImageAbort(IntPtr callbackdata);
 
-        internal Graphics(IntPtr nativeGraphics) => _nativeGraphics = nativeGraphics;
+        internal Graphics(IntPtr nativeGraphics) => NativeGraphics = nativeGraphics;
 
         ~Graphics()
         {
@@ -103,7 +103,7 @@ namespace System.Drawing
         public GraphicsContainer BeginContainer()
         {
             int state;
-            int status = SafeNativeMethods.Gdip.GdipBeginContainer2(new HandleRef(this, _nativeGraphics), out state);
+            int status = SafeNativeMethods.Gdip.GdipBeginContainer2(new HandleRef(this, NativeGraphics), out state);
             SafeNativeMethods.Gdip.CheckStatus(status);
 
             return new GraphicsContainer(state);
@@ -113,10 +113,7 @@ namespace System.Drawing
         {
             int state;
 
-            var dstf = new GPRECT(dstrect);
-            var srcf = new GPRECT(srcrect);
-
-            int status = SafeNativeMethods.Gdip.GdipBeginContainerI(new HandleRef(this, _nativeGraphics), ref dstf, ref srcf, unchecked((int)unit), out state);
+            int status = SafeNativeMethods.Gdip.GdipBeginContainerI(new HandleRef(this, NativeGraphics), ref dstrect, ref srcrect, unit, out state);
             SafeNativeMethods.Gdip.CheckStatus(status);
 
             return new GraphicsContainer(state);
@@ -126,20 +123,16 @@ namespace System.Drawing
         {
             int state;
 
-            var dstf = new GPRECTF(dstrect);
-            var srcf = new GPRECTF(srcrect);
-
-            int status = SafeNativeMethods.Gdip.GdipBeginContainer(new HandleRef(this, _nativeGraphics), ref dstf, ref srcf, unchecked((int)unit), out state);
+            int status = SafeNativeMethods.Gdip.GdipBeginContainer(new HandleRef(this, NativeGraphics), ref dstrect, ref srcrect, unit, out state);
             SafeNativeMethods.Gdip.CheckStatus(status);
 
             return new GraphicsContainer(state);
         }
 
-
         public void Clear(Color color)
         {
             int status;
-            status = SafeNativeMethods.Gdip.GdipGraphicsClear(_nativeGraphics, color.ToArgb());
+            status = SafeNativeMethods.Gdip.GdipGraphicsClear(NativeGraphics, color.ToArgb());
             SafeNativeMethods.Gdip.CheckStatus(status);
         }
 
@@ -201,7 +194,7 @@ namespace System.Drawing
                 blockRegionSize.Height, AllPlanes, 2 /* ZPixmap*/);
             if (image == IntPtr.Zero)
             {
-                string s = String.Format("XGetImage returned NULL when asked to for a {0}x{1} region block",
+                string s = string.Format("XGetImage returned NULL when asked to for a {0}x{1} region block",
                     blockRegionSize.Width, blockRegionSize.Height);
                 throw new InvalidOperationException(s);
             }
@@ -262,8 +255,8 @@ namespace System.Drawing
                         maccontext.Release();
                 }
 
-                status = SafeNativeMethods.Gdip.GdipDeleteGraphics(_nativeGraphics);
-                _nativeGraphics = IntPtr.Zero;
+                status = SafeNativeMethods.Gdip.GdipDeleteGraphics(NativeGraphics);
+                NativeGraphics = IntPtr.Zero;
                 SafeNativeMethods.Gdip.CheckStatus(status);
                 disposed = true;
             }
@@ -290,7 +283,7 @@ namespace System.Drawing
             if (pen == null)
                 throw new ArgumentNullException(nameof(pen));
 
-            status = SafeNativeMethods.Gdip.GdipDrawArc(_nativeGraphics, pen.NativePen,
+            status = SafeNativeMethods.Gdip.GdipDrawArc(NativeGraphics, pen.NativePen,
                                         x, y, width, height, startAngle, sweepAngle);
             SafeNativeMethods.Gdip.CheckStatus(status);
         }
@@ -303,7 +296,7 @@ namespace System.Drawing
             int status;
             if (pen == null)
                 throw new ArgumentNullException(nameof(pen));
-            status = SafeNativeMethods.Gdip.GdipDrawArcI(_nativeGraphics, pen.NativePen,
+            status = SafeNativeMethods.Gdip.GdipDrawArcI(NativeGraphics, pen.NativePen,
                         x, y, width, height, startAngle, sweepAngle);
             SafeNativeMethods.Gdip.CheckStatus(status);
         }
@@ -313,7 +306,7 @@ namespace System.Drawing
             int status;
             if (pen == null)
                 throw new ArgumentNullException(nameof(pen));
-            status = SafeNativeMethods.Gdip.GdipDrawBezier(_nativeGraphics, pen.NativePen,
+            status = SafeNativeMethods.Gdip.GdipDrawBezier(NativeGraphics, pen.NativePen,
                             pt1.X, pt1.Y, pt2.X, pt2.Y, pt3.X,
                             pt3.Y, pt4.X, pt4.Y);
             SafeNativeMethods.Gdip.CheckStatus(status);
@@ -324,7 +317,7 @@ namespace System.Drawing
             int status;
             if (pen == null)
                 throw new ArgumentNullException(nameof(pen));
-            status = SafeNativeMethods.Gdip.GdipDrawBezierI(_nativeGraphics, pen.NativePen,
+            status = SafeNativeMethods.Gdip.GdipDrawBezierI(NativeGraphics, pen.NativePen,
                             pt1.X, pt1.Y, pt2.X, pt2.Y, pt3.X,
                             pt3.Y, pt4.X, pt4.Y);
             SafeNativeMethods.Gdip.CheckStatus(status);
@@ -335,7 +328,7 @@ namespace System.Drawing
             int status;
             if (pen == null)
                 throw new ArgumentNullException(nameof(pen));
-            status = SafeNativeMethods.Gdip.GdipDrawBezier(_nativeGraphics, pen.NativePen, x1,
+            status = SafeNativeMethods.Gdip.GdipDrawBezier(NativeGraphics, pen.NativePen, x1,
                             y1, x2, y2, x3, y3, x4, y4);
             SafeNativeMethods.Gdip.CheckStatus(status);
         }
@@ -360,7 +353,7 @@ namespace System.Drawing
                 Point p3 = points[i + 2];
                 Point p4 = points[i + 3];
 
-                status = SafeNativeMethods.Gdip.GdipDrawBezier(_nativeGraphics,
+                status = SafeNativeMethods.Gdip.GdipDrawBezier(NativeGraphics,
             pen.NativePen,
                                         p1.X, p1.Y, p2.X, p2.Y,
                                         p3.X, p3.Y, p4.X, p4.Y);
@@ -388,7 +381,7 @@ namespace System.Drawing
                 PointF p3 = points[i + 2];
                 PointF p4 = points[i + 3];
 
-                status = SafeNativeMethods.Gdip.GdipDrawBezier(_nativeGraphics,
+                status = SafeNativeMethods.Gdip.GdipDrawBezier(NativeGraphics,
             pen.NativePen,
                                         p1.X, p1.Y, p2.X, p2.Y,
                                         p3.X, p3.Y, p4.X, p4.Y);
@@ -405,7 +398,7 @@ namespace System.Drawing
                 throw new ArgumentNullException(nameof(points));
 
             int status;
-            status = SafeNativeMethods.Gdip.GdipDrawClosedCurve(_nativeGraphics, pen.NativePen, points, points.Length);
+            status = SafeNativeMethods.Gdip.GdipDrawClosedCurve(NativeGraphics, pen.NativePen, points, points.Length);
             SafeNativeMethods.Gdip.CheckStatus(status);
         }
 
@@ -417,7 +410,7 @@ namespace System.Drawing
                 throw new ArgumentNullException(nameof(points));
 
             int status;
-            status = SafeNativeMethods.Gdip.GdipDrawClosedCurveI(_nativeGraphics, pen.NativePen, points, points.Length);
+            status = SafeNativeMethods.Gdip.GdipDrawClosedCurveI(NativeGraphics, pen.NativePen, points, points.Length);
             SafeNativeMethods.Gdip.CheckStatus(status);
         }
 
@@ -431,7 +424,7 @@ namespace System.Drawing
                 throw new ArgumentNullException(nameof(points));
 
             int status;
-            status = SafeNativeMethods.Gdip.GdipDrawClosedCurve2I(_nativeGraphics, pen.NativePen, points, points.Length, tension);
+            status = SafeNativeMethods.Gdip.GdipDrawClosedCurve2I(NativeGraphics, pen.NativePen, points, points.Length, tension);
             SafeNativeMethods.Gdip.CheckStatus(status);
         }
 
@@ -445,7 +438,7 @@ namespace System.Drawing
                 throw new ArgumentNullException(nameof(points));
 
             int status;
-            status = SafeNativeMethods.Gdip.GdipDrawClosedCurve2(_nativeGraphics, pen.NativePen, points, points.Length, tension);
+            status = SafeNativeMethods.Gdip.GdipDrawClosedCurve2(NativeGraphics, pen.NativePen, points, points.Length, tension);
             SafeNativeMethods.Gdip.CheckStatus(status);
         }
 
@@ -457,7 +450,7 @@ namespace System.Drawing
                 throw new ArgumentNullException(nameof(points));
 
             int status;
-            status = SafeNativeMethods.Gdip.GdipDrawCurveI(_nativeGraphics, pen.NativePen, points, points.Length);
+            status = SafeNativeMethods.Gdip.GdipDrawCurveI(NativeGraphics, pen.NativePen, points, points.Length);
             SafeNativeMethods.Gdip.CheckStatus(status);
         }
 
@@ -469,7 +462,7 @@ namespace System.Drawing
                 throw new ArgumentNullException(nameof(points));
 
             int status;
-            status = SafeNativeMethods.Gdip.GdipDrawCurve(_nativeGraphics, pen.NativePen, points, points.Length);
+            status = SafeNativeMethods.Gdip.GdipDrawCurve(NativeGraphics, pen.NativePen, points, points.Length);
             SafeNativeMethods.Gdip.CheckStatus(status);
         }
 
@@ -481,7 +474,7 @@ namespace System.Drawing
                 throw new ArgumentNullException(nameof(points));
 
             int status;
-            status = SafeNativeMethods.Gdip.GdipDrawCurve2(_nativeGraphics, pen.NativePen, points, points.Length, tension);
+            status = SafeNativeMethods.Gdip.GdipDrawCurve2(NativeGraphics, pen.NativePen, points, points.Length, tension);
             SafeNativeMethods.Gdip.CheckStatus(status);
         }
 
@@ -493,7 +486,7 @@ namespace System.Drawing
                 throw new ArgumentNullException(nameof(points));
 
             int status;
-            status = SafeNativeMethods.Gdip.GdipDrawCurve2I(_nativeGraphics, pen.NativePen, points, points.Length, tension);
+            status = SafeNativeMethods.Gdip.GdipDrawCurve2I(NativeGraphics, pen.NativePen, points, points.Length, tension);
             SafeNativeMethods.Gdip.CheckStatus(status);
         }
 
@@ -505,7 +498,7 @@ namespace System.Drawing
                 throw new ArgumentNullException(nameof(points));
 
             int status;
-            status = SafeNativeMethods.Gdip.GdipDrawCurve3(_nativeGraphics, pen.NativePen,
+            status = SafeNativeMethods.Gdip.GdipDrawCurve3(NativeGraphics, pen.NativePen,
                             points, points.Length, offset,
                             numberOfSegments, 0.5f);
             SafeNativeMethods.Gdip.CheckStatus(status);
@@ -519,7 +512,7 @@ namespace System.Drawing
                 throw new ArgumentNullException(nameof(points));
 
             int status;
-            status = SafeNativeMethods.Gdip.GdipDrawCurve3I(_nativeGraphics, pen.NativePen,
+            status = SafeNativeMethods.Gdip.GdipDrawCurve3I(NativeGraphics, pen.NativePen,
                             points, points.Length, offset,
                             numberOfSegments, tension);
             SafeNativeMethods.Gdip.CheckStatus(status);
@@ -533,7 +526,7 @@ namespace System.Drawing
                 throw new ArgumentNullException(nameof(points));
 
             int status;
-            status = SafeNativeMethods.Gdip.GdipDrawCurve3(_nativeGraphics, pen.NativePen,
+            status = SafeNativeMethods.Gdip.GdipDrawCurve3(NativeGraphics, pen.NativePen,
                             points, points.Length, offset,
                             numberOfSegments, tension);
             SafeNativeMethods.Gdip.CheckStatus(status);
@@ -559,7 +552,7 @@ namespace System.Drawing
             if (pen == null)
                 throw new ArgumentNullException(nameof(pen));
             int status;
-            status = SafeNativeMethods.Gdip.GdipDrawEllipseI(_nativeGraphics, pen.NativePen, x, y, width, height);
+            status = SafeNativeMethods.Gdip.GdipDrawEllipseI(NativeGraphics, pen.NativePen, x, y, width, height);
             SafeNativeMethods.Gdip.CheckStatus(status);
         }
 
@@ -567,7 +560,7 @@ namespace System.Drawing
         {
             if (pen == null)
                 throw new ArgumentNullException(nameof(pen));
-            int status = SafeNativeMethods.Gdip.GdipDrawEllipse(_nativeGraphics, pen.NativePen, x, y, width, height);
+            int status = SafeNativeMethods.Gdip.GdipDrawEllipse(NativeGraphics, pen.NativePen, x, y, width, height);
             SafeNativeMethods.Gdip.CheckStatus(status);
         }
 
@@ -600,7 +593,7 @@ namespace System.Drawing
             if (image == null)
                 throw new ArgumentNullException(nameof(image));
 
-            int status = SafeNativeMethods.Gdip.GdipDrawImageRect(_nativeGraphics, image.nativeImage, rect.X, rect.Y, rect.Width, rect.Height);
+            int status = SafeNativeMethods.Gdip.GdipDrawImageRect(NativeGraphics, image.nativeImage, rect.X, rect.Y, rect.Width, rect.Height);
             SafeNativeMethods.Gdip.CheckStatus(status);
         }
 
@@ -609,7 +602,7 @@ namespace System.Drawing
             if (image == null)
                 throw new ArgumentNullException(nameof(image));
 
-            int status = SafeNativeMethods.Gdip.GdipDrawImage(_nativeGraphics, image.nativeImage, point.X, point.Y);
+            int status = SafeNativeMethods.Gdip.GdipDrawImage(NativeGraphics, image.nativeImage, point.X, point.Y);
             SafeNativeMethods.Gdip.CheckStatus(status);
         }
 
@@ -620,7 +613,7 @@ namespace System.Drawing
             if (destPoints == null)
                 throw new ArgumentNullException(nameof(destPoints));
 
-            int status = SafeNativeMethods.Gdip.GdipDrawImagePointsI(_nativeGraphics, image.nativeImage, destPoints, destPoints.Length);
+            int status = SafeNativeMethods.Gdip.GdipDrawImagePointsI(NativeGraphics, image.nativeImage, destPoints, destPoints.Length);
             SafeNativeMethods.Gdip.CheckStatus(status);
         }
 
@@ -644,7 +637,7 @@ namespace System.Drawing
                 throw new ArgumentNullException(nameof(image));
             if (destPoints == null)
                 throw new ArgumentNullException(nameof(destPoints));
-            int status = SafeNativeMethods.Gdip.GdipDrawImagePoints(_nativeGraphics, image.nativeImage, destPoints, destPoints.Length);
+            int status = SafeNativeMethods.Gdip.GdipDrawImagePoints(NativeGraphics, image.nativeImage, destPoints, destPoints.Length);
             SafeNativeMethods.Gdip.CheckStatus(status);
         }
 
@@ -652,7 +645,7 @@ namespace System.Drawing
         {
             if (image == null)
                 throw new ArgumentNullException(nameof(image));
-            int status = SafeNativeMethods.Gdip.GdipDrawImageI(_nativeGraphics, image.nativeImage, x, y);
+            int status = SafeNativeMethods.Gdip.GdipDrawImageI(NativeGraphics, image.nativeImage, x, y);
             SafeNativeMethods.Gdip.CheckStatus(status);
         }
 
@@ -660,7 +653,7 @@ namespace System.Drawing
         {
             if (image == null)
                 throw new ArgumentNullException(nameof(image));
-            int status = SafeNativeMethods.Gdip.GdipDrawImage(_nativeGraphics, image.nativeImage, x, y);
+            int status = SafeNativeMethods.Gdip.GdipDrawImage(NativeGraphics, image.nativeImage, x, y);
             SafeNativeMethods.Gdip.CheckStatus(status);
         }
 
@@ -668,7 +661,7 @@ namespace System.Drawing
         {
             if (image == null)
                 throw new ArgumentNullException(nameof(image));
-            int status = SafeNativeMethods.Gdip.GdipDrawImageRectRectI(_nativeGraphics, image.nativeImage,
+            int status = SafeNativeMethods.Gdip.GdipDrawImageRectRectI(NativeGraphics, image.nativeImage,
                 destRect.X, destRect.Y, destRect.Width, destRect.Height,
                 srcRect.X, srcRect.Y, srcRect.Width, srcRect.Height,
                 srcUnit, IntPtr.Zero, null, IntPtr.Zero);
@@ -679,7 +672,7 @@ namespace System.Drawing
         {
             if (image == null)
                 throw new ArgumentNullException(nameof(image));
-            int status = SafeNativeMethods.Gdip.GdipDrawImageRectRect(_nativeGraphics, image.nativeImage,
+            int status = SafeNativeMethods.Gdip.GdipDrawImageRectRect(NativeGraphics, image.nativeImage,
                 destRect.X, destRect.Y, destRect.Width, destRect.Height,
                 srcRect.X, srcRect.Y, srcRect.Width, srcRect.Height,
                 srcUnit, IntPtr.Zero, null, IntPtr.Zero);
@@ -693,7 +686,7 @@ namespace System.Drawing
             if (destPoints == null)
                 throw new ArgumentNullException(nameof(destPoints));
 
-            int status = SafeNativeMethods.Gdip.GdipDrawImagePointsRectI(_nativeGraphics, image.nativeImage,
+            int status = SafeNativeMethods.Gdip.GdipDrawImagePointsRectI(NativeGraphics, image.nativeImage,
                 destPoints, destPoints.Length, srcRect.X, srcRect.Y,
                 srcRect.Width, srcRect.Height, srcUnit, IntPtr.Zero,
                 null, IntPtr.Zero);
@@ -707,7 +700,7 @@ namespace System.Drawing
             if (destPoints == null)
                 throw new ArgumentNullException(nameof(destPoints));
 
-            int status = SafeNativeMethods.Gdip.GdipDrawImagePointsRect(_nativeGraphics, image.nativeImage,
+            int status = SafeNativeMethods.Gdip.GdipDrawImagePointsRect(NativeGraphics, image.nativeImage,
                 destPoints, destPoints.Length, srcRect.X, srcRect.Y,
                 srcRect.Width, srcRect.Height, srcUnit, IntPtr.Zero,
                 null, IntPtr.Zero);
@@ -721,7 +714,7 @@ namespace System.Drawing
                 throw new ArgumentNullException(nameof(image));
             if (destPoints == null)
                 throw new ArgumentNullException(nameof(destPoints));
-            int status = SafeNativeMethods.Gdip.GdipDrawImagePointsRectI(_nativeGraphics, image.nativeImage,
+            int status = SafeNativeMethods.Gdip.GdipDrawImagePointsRectI(NativeGraphics, image.nativeImage,
                 destPoints, destPoints.Length, srcRect.X, srcRect.Y,
                 srcRect.Width, srcRect.Height, srcUnit,
                 imageAttr != null ? imageAttr.nativeImageAttributes : IntPtr.Zero, null, IntPtr.Zero);
@@ -732,7 +725,7 @@ namespace System.Drawing
         {
             if (image == null)
                 throw new ArgumentNullException(nameof(image));
-            int status = SafeNativeMethods.Gdip.GdipDrawImageRect(_nativeGraphics, image.nativeImage, x, y,
+            int status = SafeNativeMethods.Gdip.GdipDrawImageRect(NativeGraphics, image.nativeImage, x, y,
                            width, height);
             SafeNativeMethods.Gdip.CheckStatus(status);
         }
@@ -744,7 +737,7 @@ namespace System.Drawing
                 throw new ArgumentNullException(nameof(image));
             if (destPoints == null)
                 throw new ArgumentNullException(nameof(destPoints));
-            int status = SafeNativeMethods.Gdip.GdipDrawImagePointsRect(_nativeGraphics, image.nativeImage,
+            int status = SafeNativeMethods.Gdip.GdipDrawImagePointsRect(NativeGraphics, image.nativeImage,
                 destPoints, destPoints.Length, srcRect.X, srcRect.Y,
                 srcRect.Width, srcRect.Height, srcUnit,
                 imageAttr != null ? imageAttr.nativeImageAttributes : IntPtr.Zero, null, IntPtr.Zero);
@@ -755,7 +748,7 @@ namespace System.Drawing
         {
             if (image == null)
                 throw new ArgumentNullException(nameof(image));
-            int status = SafeNativeMethods.Gdip.GdipDrawImagePointRectI(_nativeGraphics, image.nativeImage, x, y, srcRect.X, srcRect.Y, srcRect.Width, srcRect.Height, srcUnit);
+            int status = SafeNativeMethods.Gdip.GdipDrawImagePointRectI(NativeGraphics, image.nativeImage, x, y, srcRect.X, srcRect.Y, srcRect.Width, srcRect.Height, srcUnit);
             SafeNativeMethods.Gdip.CheckStatus(status);
         }
 
@@ -763,7 +756,7 @@ namespace System.Drawing
         {
             if (image == null)
                 throw new ArgumentNullException(nameof(image));
-            int status = SafeNativeMethods.Gdip.GdipDrawImageRectI(_nativeGraphics, image.nativeImage, x, y, width, height);
+            int status = SafeNativeMethods.Gdip.GdipDrawImageRectI(NativeGraphics, image.nativeImage, x, y, width, height);
             SafeNativeMethods.Gdip.CheckStatus(status);
         }
 
@@ -771,7 +764,7 @@ namespace System.Drawing
         {
             if (image == null)
                 throw new ArgumentNullException(nameof(image));
-            int status = SafeNativeMethods.Gdip.GdipDrawImagePointRect(_nativeGraphics, image.nativeImage, x, y, srcRect.X, srcRect.Y, srcRect.Width, srcRect.Height, srcUnit);
+            int status = SafeNativeMethods.Gdip.GdipDrawImagePointRect(NativeGraphics, image.nativeImage, x, y, srcRect.X, srcRect.Y, srcRect.Width, srcRect.Height, srcUnit);
             SafeNativeMethods.Gdip.CheckStatus(status);
         }
 
@@ -781,7 +774,7 @@ namespace System.Drawing
                 throw new ArgumentNullException(nameof(image));
             if (destPoints == null)
                 throw new ArgumentNullException(nameof(destPoints));
-            int status = SafeNativeMethods.Gdip.GdipDrawImagePointsRect(_nativeGraphics, image.nativeImage,
+            int status = SafeNativeMethods.Gdip.GdipDrawImagePointsRect(NativeGraphics, image.nativeImage,
                 destPoints, destPoints.Length, srcRect.X, srcRect.Y,
                 srcRect.Width, srcRect.Height, srcUnit,
                 imageAttr != null ? imageAttr.nativeImageAttributes : IntPtr.Zero, callback, IntPtr.Zero);
@@ -795,7 +788,7 @@ namespace System.Drawing
             if (destPoints == null)
                 throw new ArgumentNullException(nameof(destPoints));
 
-            int status = SafeNativeMethods.Gdip.GdipDrawImagePointsRectI(_nativeGraphics, image.nativeImage,
+            int status = SafeNativeMethods.Gdip.GdipDrawImagePointsRectI(NativeGraphics, image.nativeImage,
                 destPoints, destPoints.Length, srcRect.X, srcRect.Y,
                 srcRect.Width, srcRect.Height, srcUnit,
                 imageAttr != null ? imageAttr.nativeImageAttributes : IntPtr.Zero, callback, IntPtr.Zero);
@@ -809,7 +802,7 @@ namespace System.Drawing
             if (destPoints == null)
                 throw new ArgumentNullException(nameof(destPoints));
 
-            int status = SafeNativeMethods.Gdip.GdipDrawImagePointsRectI(_nativeGraphics, image.nativeImage,
+            int status = SafeNativeMethods.Gdip.GdipDrawImagePointsRectI(NativeGraphics, image.nativeImage,
                 destPoints, destPoints.Length, srcRect.X, srcRect.Y,
                 srcRect.Width, srcRect.Height, srcUnit,
                 imageAttr != null ? imageAttr.nativeImageAttributes : IntPtr.Zero, callback, (IntPtr)callbackData);
@@ -820,7 +813,7 @@ namespace System.Drawing
         {
             if (image == null)
                 throw new ArgumentNullException(nameof(image));
-            int status = SafeNativeMethods.Gdip.GdipDrawImageRectRect(_nativeGraphics, image.nativeImage,
+            int status = SafeNativeMethods.Gdip.GdipDrawImageRectRect(NativeGraphics, image.nativeImage,
                                 destRect.X, destRect.Y, destRect.Width, destRect.Height,
                                srcX, srcY, srcWidth, srcHeight, srcUnit, IntPtr.Zero,
                                null, IntPtr.Zero);
@@ -829,7 +822,7 @@ namespace System.Drawing
 
         public void DrawImage(Image image, PointF[] destPoints, RectangleF srcRect, GraphicsUnit srcUnit, ImageAttributes imageAttr, DrawImageAbort callback, int callbackData)
         {
-            int status = SafeNativeMethods.Gdip.GdipDrawImagePointsRect(_nativeGraphics, image.nativeImage,
+            int status = SafeNativeMethods.Gdip.GdipDrawImagePointsRect(NativeGraphics, image.nativeImage,
                 destPoints, destPoints.Length, srcRect.X, srcRect.Y,
                 srcRect.Width, srcRect.Height, srcUnit,
                 imageAttr != null ? imageAttr.nativeImageAttributes : IntPtr.Zero, callback, (IntPtr)callbackData);
@@ -840,7 +833,7 @@ namespace System.Drawing
         {
             if (image == null)
                 throw new ArgumentNullException(nameof(image));
-            int status = SafeNativeMethods.Gdip.GdipDrawImageRectRectI(_nativeGraphics, image.nativeImage,
+            int status = SafeNativeMethods.Gdip.GdipDrawImageRectRectI(NativeGraphics, image.nativeImage,
                                 destRect.X, destRect.Y, destRect.Width, destRect.Height,
                                srcX, srcY, srcWidth, srcHeight, srcUnit, IntPtr.Zero,
                                null, IntPtr.Zero);
@@ -851,7 +844,7 @@ namespace System.Drawing
         {
             if (image == null)
                 throw new ArgumentNullException(nameof(image));
-            int status = SafeNativeMethods.Gdip.GdipDrawImageRectRect(_nativeGraphics, image.nativeImage,
+            int status = SafeNativeMethods.Gdip.GdipDrawImageRectRect(NativeGraphics, image.nativeImage,
                                 destRect.X, destRect.Y, destRect.Width, destRect.Height,
                                srcX, srcY, srcWidth, srcHeight, srcUnit,
                 imageAttrs != null ? imageAttrs.nativeImageAttributes : IntPtr.Zero, null, IntPtr.Zero);
@@ -862,7 +855,7 @@ namespace System.Drawing
         {
             if (image == null)
                 throw new ArgumentNullException(nameof(image));
-            int status = SafeNativeMethods.Gdip.GdipDrawImageRectRectI(_nativeGraphics, image.nativeImage,
+            int status = SafeNativeMethods.Gdip.GdipDrawImageRectRectI(NativeGraphics, image.nativeImage,
                                         destRect.X, destRect.Y, destRect.Width,
                     destRect.Height, srcX, srcY, srcWidth, srcHeight,
                     srcUnit, imageAttr != null ? imageAttr.nativeImageAttributes : IntPtr.Zero, null, IntPtr.Zero);
@@ -873,7 +866,7 @@ namespace System.Drawing
         {
             if (image == null)
                 throw new ArgumentNullException(nameof(image));
-            int status = SafeNativeMethods.Gdip.GdipDrawImageRectRectI(_nativeGraphics, image.nativeImage,
+            int status = SafeNativeMethods.Gdip.GdipDrawImageRectRectI(NativeGraphics, image.nativeImage,
                                         destRect.X, destRect.Y, destRect.Width,
                     destRect.Height, srcX, srcY, srcWidth, srcHeight,
                     srcUnit, imageAttr != null ? imageAttr.nativeImageAttributes : IntPtr.Zero, callback,
@@ -885,7 +878,7 @@ namespace System.Drawing
         {
             if (image == null)
                 throw new ArgumentNullException(nameof(image));
-            int status = SafeNativeMethods.Gdip.GdipDrawImageRectRect(_nativeGraphics, image.nativeImage,
+            int status = SafeNativeMethods.Gdip.GdipDrawImageRectRect(NativeGraphics, image.nativeImage,
                                         destRect.X, destRect.Y, destRect.Width,
                     destRect.Height, srcX, srcY, srcWidth, srcHeight,
                     srcUnit, imageAttrs != null ? imageAttrs.nativeImageAttributes : IntPtr.Zero,
@@ -897,7 +890,7 @@ namespace System.Drawing
         {
             if (image == null)
                 throw new ArgumentNullException(nameof(image));
-            int status = SafeNativeMethods.Gdip.GdipDrawImageRectRect(_nativeGraphics, image.nativeImage,
+            int status = SafeNativeMethods.Gdip.GdipDrawImageRectRect(NativeGraphics, image.nativeImage,
                 destRect.X, destRect.Y, destRect.Width, destRect.Height,
                 srcX, srcY, srcWidth, srcHeight, srcUnit,
                 imageAttrs != null ? imageAttrs.nativeImageAttributes : IntPtr.Zero, callback, callbackData);
@@ -908,7 +901,7 @@ namespace System.Drawing
         {
             if (image == null)
                 throw new ArgumentNullException(nameof(image));
-            int status = SafeNativeMethods.Gdip.GdipDrawImageRectRect(_nativeGraphics, image.nativeImage,
+            int status = SafeNativeMethods.Gdip.GdipDrawImageRectRect(NativeGraphics, image.nativeImage,
                                destRect.X, destRect.Y, destRect.Width, destRect.Height,
                 srcX, srcY, srcWidth, srcHeight, srcUnit,
                 imageAttrs != null ? imageAttrs.nativeImageAttributes : IntPtr.Zero, callback, callbackData);
@@ -966,7 +959,7 @@ namespace System.Drawing
         {
             if (pen == null)
                 throw new ArgumentNullException(nameof(pen));
-            int status = SafeNativeMethods.Gdip.GdipDrawLine(_nativeGraphics, pen.NativePen,
+            int status = SafeNativeMethods.Gdip.GdipDrawLine(NativeGraphics, pen.NativePen,
                             pt1.X, pt1.Y, pt2.X, pt2.Y);
             SafeNativeMethods.Gdip.CheckStatus(status);
         }
@@ -975,7 +968,7 @@ namespace System.Drawing
         {
             if (pen == null)
                 throw new ArgumentNullException(nameof(pen));
-            int status = SafeNativeMethods.Gdip.GdipDrawLineI(_nativeGraphics, pen.NativePen,
+            int status = SafeNativeMethods.Gdip.GdipDrawLineI(NativeGraphics, pen.NativePen,
                             pt1.X, pt1.Y, pt2.X, pt2.Y);
             SafeNativeMethods.Gdip.CheckStatus(status);
         }
@@ -984,7 +977,7 @@ namespace System.Drawing
         {
             if (pen == null)
                 throw new ArgumentNullException(nameof(pen));
-            int status = SafeNativeMethods.Gdip.GdipDrawLineI(_nativeGraphics, pen.NativePen, x1, y1, x2, y2);
+            int status = SafeNativeMethods.Gdip.GdipDrawLineI(NativeGraphics, pen.NativePen, x1, y1, x2, y2);
             SafeNativeMethods.Gdip.CheckStatus(status);
         }
 
@@ -995,7 +988,7 @@ namespace System.Drawing
             if (!float.IsNaN(x1) && !float.IsNaN(y1) &&
                 !float.IsNaN(x2) && !float.IsNaN(y2))
             {
-                int status = SafeNativeMethods.Gdip.GdipDrawLine(_nativeGraphics, pen.NativePen, x1, y1, x2, y2);
+                int status = SafeNativeMethods.Gdip.GdipDrawLine(NativeGraphics, pen.NativePen, x1, y1, x2, y2);
                 SafeNativeMethods.Gdip.CheckStatus(status);
             }
         }
@@ -1006,7 +999,7 @@ namespace System.Drawing
                 throw new ArgumentNullException(nameof(pen));
             if (points == null)
                 throw new ArgumentNullException(nameof(points));
-            int status = SafeNativeMethods.Gdip.GdipDrawLines(_nativeGraphics, pen.NativePen, points, points.Length);
+            int status = SafeNativeMethods.Gdip.GdipDrawLines(NativeGraphics, pen.NativePen, points, points.Length);
             SafeNativeMethods.Gdip.CheckStatus(status);
         }
 
@@ -1016,7 +1009,7 @@ namespace System.Drawing
                 throw new ArgumentNullException(nameof(pen));
             if (points == null)
                 throw new ArgumentNullException(nameof(points));
-            int status = SafeNativeMethods.Gdip.GdipDrawLinesI(_nativeGraphics, pen.NativePen, points, points.Length);
+            int status = SafeNativeMethods.Gdip.GdipDrawLinesI(NativeGraphics, pen.NativePen, points, points.Length);
             SafeNativeMethods.Gdip.CheckStatus(status);
         }
 
@@ -1026,7 +1019,8 @@ namespace System.Drawing
                 throw new ArgumentNullException(nameof(pen));
             if (path == null)
                 throw new ArgumentNullException(nameof(path));
-            int status = SafeNativeMethods.Gdip.GdipDrawPath(_nativeGraphics, pen.NativePen, path.nativePath);
+
+            int status = SafeNativeMethods.Gdip.GdipDrawPath(NativeGraphics, pen.NativePen, path._nativePath);
             SafeNativeMethods.Gdip.CheckStatus(status);
         }
 
@@ -1048,7 +1042,7 @@ namespace System.Drawing
         {
             if (pen == null)
                 throw new ArgumentNullException(nameof(pen));
-            int status = SafeNativeMethods.Gdip.GdipDrawPie(_nativeGraphics, pen.NativePen, x, y, width, height, startAngle, sweepAngle);
+            int status = SafeNativeMethods.Gdip.GdipDrawPie(NativeGraphics, pen.NativePen, x, y, width, height, startAngle, sweepAngle);
             SafeNativeMethods.Gdip.CheckStatus(status);
         }
 
@@ -1059,7 +1053,7 @@ namespace System.Drawing
         {
             if (pen == null)
                 throw new ArgumentNullException(nameof(pen));
-            int status = SafeNativeMethods.Gdip.GdipDrawPieI(_nativeGraphics, pen.NativePen, x, y, width, height, startAngle, sweepAngle);
+            int status = SafeNativeMethods.Gdip.GdipDrawPieI(NativeGraphics, pen.NativePen, x, y, width, height, startAngle, sweepAngle);
             SafeNativeMethods.Gdip.CheckStatus(status);
         }
 
@@ -1069,7 +1063,7 @@ namespace System.Drawing
                 throw new ArgumentNullException(nameof(pen));
             if (points == null)
                 throw new ArgumentNullException(nameof(points));
-            int status = SafeNativeMethods.Gdip.GdipDrawPolygonI(_nativeGraphics, pen.NativePen, points, points.Length);
+            int status = SafeNativeMethods.Gdip.GdipDrawPolygonI(NativeGraphics, pen.NativePen, points, points.Length);
             SafeNativeMethods.Gdip.CheckStatus(status);
         }
 
@@ -1079,7 +1073,7 @@ namespace System.Drawing
                 throw new ArgumentNullException(nameof(pen));
             if (points == null)
                 throw new ArgumentNullException(nameof(points));
-            int status = SafeNativeMethods.Gdip.GdipDrawPolygon(_nativeGraphics, pen.NativePen, points, points.Length);
+            int status = SafeNativeMethods.Gdip.GdipDrawPolygon(NativeGraphics, pen.NativePen, points, points.Length);
             SafeNativeMethods.Gdip.CheckStatus(status);
         }
 
@@ -1094,7 +1088,7 @@ namespace System.Drawing
         {
             if (pen == null)
                 throw new ArgumentNullException(nameof(pen));
-            int status = SafeNativeMethods.Gdip.GdipDrawRectangle(_nativeGraphics, pen.NativePen, x, y, width, height);
+            int status = SafeNativeMethods.Gdip.GdipDrawRectangle(NativeGraphics, pen.NativePen, x, y, width, height);
             SafeNativeMethods.Gdip.CheckStatus(status);
         }
 
@@ -1102,7 +1096,7 @@ namespace System.Drawing
         {
             if (pen == null)
                 throw new ArgumentNullException(nameof(pen));
-            int status = SafeNativeMethods.Gdip.GdipDrawRectangleI(_nativeGraphics, pen.NativePen, x, y, width, height);
+            int status = SafeNativeMethods.Gdip.GdipDrawRectangleI(NativeGraphics, pen.NativePen, x, y, width, height);
             SafeNativeMethods.Gdip.CheckStatus(status);
         }
 
@@ -1112,7 +1106,7 @@ namespace System.Drawing
                 throw new ArgumentNullException("image");
             if (rects == null)
                 throw new ArgumentNullException(nameof(rects));
-            int status = SafeNativeMethods.Gdip.GdipDrawRectangles(_nativeGraphics, pen.NativePen, rects, rects.Length);
+            int status = SafeNativeMethods.Gdip.GdipDrawRectangles(NativeGraphics, pen.NativePen, rects, rects.Length);
             SafeNativeMethods.Gdip.CheckStatus(status);
         }
 
@@ -1122,7 +1116,7 @@ namespace System.Drawing
                 throw new ArgumentNullException("image");
             if (rects == null)
                 throw new ArgumentNullException(nameof(rects));
-            int status = SafeNativeMethods.Gdip.GdipDrawRectanglesI(_nativeGraphics, pen.NativePen, rects, rects.Length);
+            int status = SafeNativeMethods.Gdip.GdipDrawRectanglesI(NativeGraphics, pen.NativePen, rects, rects.Length);
             SafeNativeMethods.Gdip.CheckStatus(status);
         }
 
@@ -1160,7 +1154,7 @@ namespace System.Drawing
             if (s == null || s.Length == 0)
                 return;
 
-            int status = SafeNativeMethods.Gdip.GdipDrawString(_nativeGraphics, s, s.Length, font.NativeFont, ref layoutRectangle, format != null ? format.nativeFormat : IntPtr.Zero, brush.NativeBrush);
+            int status = SafeNativeMethods.Gdip.GdipDrawString(NativeGraphics, s, s.Length, font.NativeFont, ref layoutRectangle, format != null ? format.nativeFormat : IntPtr.Zero, brush.NativeBrush);
             SafeNativeMethods.Gdip.CheckStatus(status);
         }
 
@@ -1168,7 +1162,7 @@ namespace System.Drawing
         {
             if (container == null)
                 throw new ArgumentNullException(nameof(container));
-            int status = SafeNativeMethods.Gdip.GdipEndContainer(new HandleRef(this, _nativeGraphics), container.nativeGraphicsContainer);
+            int status = SafeNativeMethods.Gdip.GdipEndContainer(new HandleRef(this, NativeGraphics), container.nativeGraphicsContainer);
             SafeNativeMethods.Gdip.CheckStatus(status);
         }
 
@@ -1358,7 +1352,7 @@ namespace System.Drawing
                 throw new ArgumentNullException(nameof(brush));
             if (points == null)
                 throw new ArgumentNullException(nameof(points));
-            int status = SafeNativeMethods.Gdip.GdipFillClosedCurve(_nativeGraphics, brush.NativeBrush, points, points.Length);
+            int status = SafeNativeMethods.Gdip.GdipFillClosedCurve(NativeGraphics, brush.NativeBrush, points, points.Length);
             SafeNativeMethods.Gdip.CheckStatus(status);
         }
 
@@ -1368,7 +1362,7 @@ namespace System.Drawing
                 throw new ArgumentNullException(nameof(brush));
             if (points == null)
                 throw new ArgumentNullException(nameof(points));
-            int status = SafeNativeMethods.Gdip.GdipFillClosedCurveI(_nativeGraphics, brush.NativeBrush, points, points.Length);
+            int status = SafeNativeMethods.Gdip.GdipFillClosedCurveI(NativeGraphics, brush.NativeBrush, points, points.Length);
             SafeNativeMethods.Gdip.CheckStatus(status);
         }
 
@@ -1397,7 +1391,7 @@ namespace System.Drawing
                 throw new ArgumentNullException(nameof(brush));
             if (points == null)
                 throw new ArgumentNullException(nameof(points));
-            int status = SafeNativeMethods.Gdip.GdipFillClosedCurve2(_nativeGraphics, brush.NativeBrush, points, points.Length, tension, fillmode);
+            int status = SafeNativeMethods.Gdip.GdipFillClosedCurve2(NativeGraphics, brush.NativeBrush, points, points.Length, tension, fillmode);
             SafeNativeMethods.Gdip.CheckStatus(status);
         }
 
@@ -1407,7 +1401,7 @@ namespace System.Drawing
                 throw new ArgumentNullException(nameof(brush));
             if (points == null)
                 throw new ArgumentNullException(nameof(points));
-            int status = SafeNativeMethods.Gdip.GdipFillClosedCurve2I(_nativeGraphics, brush.NativeBrush, points, points.Length, tension, fillmode);
+            int status = SafeNativeMethods.Gdip.GdipFillClosedCurve2I(NativeGraphics, brush.NativeBrush, points, points.Length, tension, fillmode);
             SafeNativeMethods.Gdip.CheckStatus(status);
         }
 
@@ -1429,7 +1423,7 @@ namespace System.Drawing
         {
             if (brush == null)
                 throw new ArgumentNullException(nameof(brush));
-            int status = SafeNativeMethods.Gdip.GdipFillEllipse(_nativeGraphics, brush.NativeBrush, x, y, width, height);
+            int status = SafeNativeMethods.Gdip.GdipFillEllipse(NativeGraphics, brush.NativeBrush, x, y, width, height);
             SafeNativeMethods.Gdip.CheckStatus(status);
         }
 
@@ -1437,7 +1431,7 @@ namespace System.Drawing
         {
             if (brush == null)
                 throw new ArgumentNullException(nameof(brush));
-            int status = SafeNativeMethods.Gdip.GdipFillEllipseI(_nativeGraphics, brush.NativeBrush, x, y, width, height);
+            int status = SafeNativeMethods.Gdip.GdipFillEllipseI(NativeGraphics, brush.NativeBrush, x, y, width, height);
             SafeNativeMethods.Gdip.CheckStatus(status);
         }
 
@@ -1447,7 +1441,8 @@ namespace System.Drawing
                 throw new ArgumentNullException(nameof(brush));
             if (path == null)
                 throw new ArgumentNullException(nameof(path));
-            int status = SafeNativeMethods.Gdip.GdipFillPath(_nativeGraphics, brush.NativeBrush, path.nativePath);
+
+            int status = SafeNativeMethods.Gdip.GdipFillPath(NativeGraphics, brush.NativeBrush, path._nativePath);
             SafeNativeMethods.Gdip.CheckStatus(status);
         }
 
@@ -1455,7 +1450,7 @@ namespace System.Drawing
         {
             if (brush == null)
                 throw new ArgumentNullException(nameof(brush));
-            int status = SafeNativeMethods.Gdip.GdipFillPie(_nativeGraphics, brush.NativeBrush, rect.X, rect.Y, rect.Width, rect.Height, startAngle, sweepAngle);
+            int status = SafeNativeMethods.Gdip.GdipFillPie(NativeGraphics, brush.NativeBrush, rect.X, rect.Y, rect.Width, rect.Height, startAngle, sweepAngle);
             SafeNativeMethods.Gdip.CheckStatus(status);
         }
 
@@ -1463,7 +1458,7 @@ namespace System.Drawing
         {
             if (brush == null)
                 throw new ArgumentNullException(nameof(brush));
-            int status = SafeNativeMethods.Gdip.GdipFillPieI(_nativeGraphics, brush.NativeBrush, x, y, width, height, startAngle, sweepAngle);
+            int status = SafeNativeMethods.Gdip.GdipFillPieI(NativeGraphics, brush.NativeBrush, x, y, width, height, startAngle, sweepAngle);
             SafeNativeMethods.Gdip.CheckStatus(status);
         }
 
@@ -1471,7 +1466,7 @@ namespace System.Drawing
         {
             if (brush == null)
                 throw new ArgumentNullException(nameof(brush));
-            int status = SafeNativeMethods.Gdip.GdipFillPie(_nativeGraphics, brush.NativeBrush, x, y, width, height, startAngle, sweepAngle);
+            int status = SafeNativeMethods.Gdip.GdipFillPie(NativeGraphics, brush.NativeBrush, x, y, width, height, startAngle, sweepAngle);
             SafeNativeMethods.Gdip.CheckStatus(status);
         }
 
@@ -1481,7 +1476,7 @@ namespace System.Drawing
                 throw new ArgumentNullException(nameof(brush));
             if (points == null)
                 throw new ArgumentNullException(nameof(points));
-            int status = SafeNativeMethods.Gdip.GdipFillPolygon2(_nativeGraphics, brush.NativeBrush, points, points.Length);
+            int status = SafeNativeMethods.Gdip.GdipFillPolygon2(NativeGraphics, brush.NativeBrush, points, points.Length);
             SafeNativeMethods.Gdip.CheckStatus(status);
         }
 
@@ -1491,7 +1486,7 @@ namespace System.Drawing
                 throw new ArgumentNullException(nameof(brush));
             if (points == null)
                 throw new ArgumentNullException(nameof(points));
-            int status = SafeNativeMethods.Gdip.GdipFillPolygon2I(_nativeGraphics, brush.NativeBrush, points, points.Length);
+            int status = SafeNativeMethods.Gdip.GdipFillPolygon2I(NativeGraphics, brush.NativeBrush, points, points.Length);
             SafeNativeMethods.Gdip.CheckStatus(status);
         }
 
@@ -1501,7 +1496,7 @@ namespace System.Drawing
                 throw new ArgumentNullException(nameof(brush));
             if (points == null)
                 throw new ArgumentNullException(nameof(points));
-            int status = SafeNativeMethods.Gdip.GdipFillPolygonI(_nativeGraphics, brush.NativeBrush, points, points.Length, fillMode);
+            int status = SafeNativeMethods.Gdip.GdipFillPolygonI(NativeGraphics, brush.NativeBrush, points, points.Length, fillMode);
             SafeNativeMethods.Gdip.CheckStatus(status);
         }
 
@@ -1511,7 +1506,7 @@ namespace System.Drawing
                 throw new ArgumentNullException(nameof(brush));
             if (points == null)
                 throw new ArgumentNullException(nameof(points));
-            int status = SafeNativeMethods.Gdip.GdipFillPolygon(_nativeGraphics, brush.NativeBrush, points, points.Length, fillMode);
+            int status = SafeNativeMethods.Gdip.GdipFillPolygon(NativeGraphics, brush.NativeBrush, points, points.Length, fillMode);
             SafeNativeMethods.Gdip.CheckStatus(status);
         }
 
@@ -1534,7 +1529,7 @@ namespace System.Drawing
             if (brush == null)
                 throw new ArgumentNullException(nameof(brush));
 
-            int status = SafeNativeMethods.Gdip.GdipFillRectangleI(_nativeGraphics, brush.NativeBrush, x, y, width, height);
+            int status = SafeNativeMethods.Gdip.GdipFillRectangleI(NativeGraphics, brush.NativeBrush, x, y, width, height);
             SafeNativeMethods.Gdip.CheckStatus(status);
         }
 
@@ -1543,7 +1538,7 @@ namespace System.Drawing
             if (brush == null)
                 throw new ArgumentNullException(nameof(brush));
 
-            int status = SafeNativeMethods.Gdip.GdipFillRectangle(_nativeGraphics, brush.NativeBrush, x, y, width, height);
+            int status = SafeNativeMethods.Gdip.GdipFillRectangle(NativeGraphics, brush.NativeBrush, x, y, width, height);
             SafeNativeMethods.Gdip.CheckStatus(status);
         }
 
@@ -1554,7 +1549,7 @@ namespace System.Drawing
             if (rects == null)
                 throw new ArgumentNullException(nameof(rects));
 
-            int status = SafeNativeMethods.Gdip.GdipFillRectanglesI(_nativeGraphics, brush.NativeBrush, rects, rects.Length);
+            int status = SafeNativeMethods.Gdip.GdipFillRectanglesI(NativeGraphics, brush.NativeBrush, rects, rects.Length);
             SafeNativeMethods.Gdip.CheckStatus(status);
         }
 
@@ -1565,7 +1560,7 @@ namespace System.Drawing
             if (rects == null)
                 throw new ArgumentNullException(nameof(rects));
 
-            int status = SafeNativeMethods.Gdip.GdipFillRectangles(_nativeGraphics, brush.NativeBrush, rects, rects.Length);
+            int status = SafeNativeMethods.Gdip.GdipFillRectangles(NativeGraphics, brush.NativeBrush, rects, rects.Length);
             SafeNativeMethods.Gdip.CheckStatus(status);
         }
 
@@ -1577,7 +1572,7 @@ namespace System.Drawing
             if (region == null)
                 throw new ArgumentNullException(nameof(region));
 
-            int status = (int)SafeNativeMethods.Gdip.GdipFillRegion(new HandleRef(this, _nativeGraphics), new HandleRef(brush, brush.NativeBrush), new HandleRef(region, region._nativeRegion));
+            int status = (int)SafeNativeMethods.Gdip.GdipFillRegion(new HandleRef(this, NativeGraphics), new HandleRef(brush, brush.NativeBrush), new HandleRef(region, region.NativeRegion));
             SafeNativeMethods.Gdip.CheckStatus(status);
         }
 
@@ -1681,7 +1676,7 @@ namespace System.Drawing
         {
             int argb;
 
-            int status = SafeNativeMethods.Gdip.GdipGetNearestColor(_nativeGraphics, out argb);
+            int status = SafeNativeMethods.Gdip.GdipGetNearestColor(NativeGraphics, out argb);
             SafeNativeMethods.Gdip.CheckStatus(status);
 
             return Color.FromArgb(argb);
@@ -1708,10 +1703,10 @@ namespace System.Drawing
             for (int i = 0; i < regcount; i++)
             {
                 regions[i] = new Region();
-                native_regions[i] = regions[i]._nativeRegion;
+                native_regions[i] = regions[i].NativeRegion;
             }
 
-            int status = SafeNativeMethods.Gdip.GdipMeasureCharacterRanges(_nativeGraphics, text, text.Length,
+            int status = SafeNativeMethods.Gdip.GdipMeasureCharacterRanges(NativeGraphics, text, text.Length,
                 font.NativeFont, ref layoutRect, stringFormat.nativeFormat, regcount, out native_regions[0]);
             SafeNativeMethods.Gdip.CheckStatus(status);
 
@@ -1729,7 +1724,7 @@ namespace System.Drawing
 
             RectangleF boundingBox = new RectangleF();
 
-            int status = SafeNativeMethods.Gdip.GdipMeasureString(_nativeGraphics, text, text.Length, font.NativeFont,
+            int status = SafeNativeMethods.Gdip.GdipMeasureString(NativeGraphics, text, text.Length, font.NativeFont,
                 ref layoutRect, stringFormat, out boundingBox, null, null);
             SafeNativeMethods.Gdip.CheckStatus(status);
 
@@ -1744,34 +1739,34 @@ namespace System.Drawing
         public SizeF MeasureString(string text, Font font, SizeF layoutArea)
         {
             RectangleF rect = new RectangleF(0, 0, layoutArea.Width, layoutArea.Height);
-            return GdipMeasureString(_nativeGraphics, text, font, ref rect, IntPtr.Zero);
+            return GdipMeasureString(NativeGraphics, text, font, ref rect, IntPtr.Zero);
         }
 
         public SizeF MeasureString(string text, Font font, int width)
         {
-            RectangleF rect = new RectangleF(0, 0, width, Int32.MaxValue);
-            return GdipMeasureString(_nativeGraphics, text, font, ref rect, IntPtr.Zero);
+            RectangleF rect = new RectangleF(0, 0, width, int.MaxValue);
+            return GdipMeasureString(NativeGraphics, text, font, ref rect, IntPtr.Zero);
         }
 
         public SizeF MeasureString(string text, Font font, SizeF layoutArea, StringFormat stringFormat)
         {
             RectangleF rect = new RectangleF(0, 0, layoutArea.Width, layoutArea.Height);
             IntPtr format = (stringFormat == null) ? IntPtr.Zero : stringFormat.nativeFormat;
-            return GdipMeasureString(_nativeGraphics, text, font, ref rect, format);
+            return GdipMeasureString(NativeGraphics, text, font, ref rect, format);
         }
 
         public SizeF MeasureString(string text, Font font, int width, StringFormat format)
         {
-            RectangleF rect = new RectangleF(0, 0, width, Int32.MaxValue);
+            RectangleF rect = new RectangleF(0, 0, width, int.MaxValue);
             IntPtr stringFormat = (format == null) ? IntPtr.Zero : format.nativeFormat;
-            return GdipMeasureString(_nativeGraphics, text, font, ref rect, stringFormat);
+            return GdipMeasureString(NativeGraphics, text, font, ref rect, stringFormat);
         }
 
         public SizeF MeasureString(string text, Font font, PointF origin, StringFormat stringFormat)
         {
             RectangleF rect = new RectangleF(origin.X, origin.Y, 0, 0);
             IntPtr format = (stringFormat == null) ? IntPtr.Zero : stringFormat.nativeFormat;
-            return GdipMeasureString(_nativeGraphics, text, font, ref rect, format);
+            return GdipMeasureString(NativeGraphics, text, font, ref rect, format);
         }
 
         public SizeF MeasureString(string text, Font font, SizeF layoutArea, StringFormat stringFormat,
@@ -1795,7 +1790,7 @@ namespace System.Drawing
             {
                 fixed (int* pc = &charactersFitted, pl = &linesFilled)
                 {
-                    int status = SafeNativeMethods.Gdip.GdipMeasureString(_nativeGraphics, text, text.Length,
+                    int status = SafeNativeMethods.Gdip.GdipMeasureString(NativeGraphics, text, text.Length,
                     font.NativeFont, ref rect, format, out boundingBox, pc, pl);
                     SafeNativeMethods.Gdip.CheckStatus(status);
                 }
@@ -1809,7 +1804,7 @@ namespace System.Drawing
             int status = SafeNativeMethods.Gdip.InvalidParameter;
             if (hdc == _nativeHdc)
             {
-                status = SafeNativeMethods.Gdip.GdipReleaseDC(_nativeGraphics, _nativeHdc);
+                status = SafeNativeMethods.Gdip.GdipReleaseDC(NativeGraphics, _nativeHdc);
                 _nativeHdc = IntPtr.Zero;
             }
             SafeNativeMethods.Gdip.CheckStatus(status);
@@ -1818,14 +1813,14 @@ namespace System.Drawing
         public void Restore(GraphicsState gstate)
         {
             // the possible NRE thrown by gstate.nativeState match MS behaviour
-            int status = SafeNativeMethods.Gdip.GdipRestoreGraphics(_nativeGraphics, (uint)gstate.nativeState);
+            int status = SafeNativeMethods.Gdip.GdipRestoreGraphics(NativeGraphics, (uint)gstate.nativeState);
             SafeNativeMethods.Gdip.CheckStatus(status);
         }
 
         public GraphicsState Save()
         {
             uint saveState;
-            int status = SafeNativeMethods.Gdip.GdipSaveGraphics(_nativeGraphics, out saveState);
+            int status = SafeNativeMethods.Gdip.GdipSaveGraphics(NativeGraphics, out saveState);
             SafeNativeMethods.Gdip.CheckStatus(status);
 
             GraphicsState state = new GraphicsState((int)saveState);
@@ -1840,7 +1835,7 @@ namespace System.Drawing
 
             IntPtr ptrPt = MarshallingHelpers.FromPointToUnManagedMemory(pts);
 
-            int status = SafeNativeMethods.Gdip.GdipTransformPoints(_nativeGraphics, destSpace, srcSpace, ptrPt, pts.Length);
+            int status = SafeNativeMethods.Gdip.GdipTransformPoints(NativeGraphics, destSpace, srcSpace, ptrPt, pts.Length);
             SafeNativeMethods.Gdip.CheckStatus(status);
 
             MarshallingHelpers.FromUnManagedMemoryToPoint(ptrPt, pts);
@@ -1853,7 +1848,7 @@ namespace System.Drawing
                 throw new ArgumentNullException(nameof(pts));
             IntPtr ptrPt = MarshallingHelpers.FromPointToUnManagedMemoryI(pts);
 
-            int status = SafeNativeMethods.Gdip.GdipTransformPointsI(_nativeGraphics, destSpace, srcSpace, ptrPt, pts.Length);
+            int status = SafeNativeMethods.Gdip.GdipTransformPointsI(NativeGraphics, destSpace, srcSpace, ptrPt, pts.Length);
             SafeNativeMethods.Gdip.CheckStatus(status);
 
             MarshallingHelpers.FromUnManagedMemoryToPointI(ptrPt, pts);
@@ -1863,11 +1858,10 @@ namespace System.Drawing
         {
             get
             {
-                var rect = new GPRECTF();
-                int status = SafeNativeMethods.Gdip.GdipGetVisibleClipBounds(new HandleRef(this, NativeGraphics), ref rect);
+                int status = SafeNativeMethods.Gdip.GdipGetVisibleClipBounds(new HandleRef(this, NativeGraphics), out RectangleF rect);
                 SafeNativeMethods.Gdip.CheckStatus(status);
 
-                return rect.ToRectangleF();
+                return rect;
             }
         }
 

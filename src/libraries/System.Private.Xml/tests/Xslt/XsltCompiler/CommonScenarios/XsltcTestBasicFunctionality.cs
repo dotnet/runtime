@@ -38,8 +38,8 @@ namespace System.Xml.Tests
             {
                 return;// TEST_SKIPPED;
             }
-            String cmdLine = param0.ToString();
-            String baselineFile = param1.ToString();
+            string cmdLine = param0.ToString();
+            string baselineFile = param1.ToString();
 
             VerifyTest(cmdLine, baselineFile, _createFromInputFile);
         }

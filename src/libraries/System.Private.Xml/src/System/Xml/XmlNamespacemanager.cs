@@ -192,7 +192,7 @@ namespace System.Xml
             int declIndex = LookupNamespaceDecl(prefix);
             while (declIndex != -1)
             {
-                if (String.Equals(_nsdecls[declIndex].uri, uri) && _nsdecls[declIndex].scopeId == _scopeId)
+                if (string.Equals(_nsdecls[declIndex].uri, uri) && _nsdecls[declIndex].scopeId == _scopeId)
                 {
                     _nsdecls[declIndex].uri = null;
                 }
@@ -296,7 +296,7 @@ namespace System.Xml
                 // Non-atomized lookup
                 for (int thisDecl = _lastDecl; thisDecl >= 0; thisDecl--)
                 {
-                    if (String.Equals(_nsdecls[thisDecl].prefix, prefix) && _nsdecls[thisDecl].uri != null)
+                    if (string.Equals(_nsdecls[thisDecl].prefix, prefix) && _nsdecls[thisDecl].uri != null)
                     {
                         return thisDecl;
                     }
@@ -310,10 +310,10 @@ namespace System.Xml
             // Don't assume that prefix is atomized
             for (int thisDecl = _lastDecl; thisDecl >= 0; thisDecl--)
             {
-                if (String.Equals(_nsdecls[thisDecl].uri, uri))
+                if (string.Equals(_nsdecls[thisDecl].uri, uri))
                 {
                     string prefix = _nsdecls[thisDecl].prefix;
-                    if (String.Equals(LookupNamespace(prefix), uri))
+                    if (string.Equals(LookupNamespace(prefix), uri))
                     {
                         return prefix;
                     }
@@ -327,7 +327,7 @@ namespace System.Xml
             // Don't assume that prefix is atomized
             for (int thisDecl = _lastDecl; _nsdecls[thisDecl].scopeId == _scopeId; thisDecl--)
             {
-                if (String.Equals(_nsdecls[thisDecl].prefix, prefix) && _nsdecls[thisDecl].uri != null)
+                if (string.Equals(_nsdecls[thisDecl].prefix, prefix) && _nsdecls[thisDecl].uri != null)
                 {
                     if (prefix.Length > 0 || _nsdecls[thisDecl].uri.Length > 0)
                     {

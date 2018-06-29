@@ -1,4 +1,4 @@
-﻿// Licensed to the .NET Foundation under one or more agreements.
+// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
@@ -31,7 +31,7 @@ namespace System.Data.SqlClient
 
         internal SNIHandle Handle => _sessionHandle;
 
-        internal override UInt32 Status => _sessionHandle != null ? _sessionHandle.Status : TdsEnums.SNI_UNINITIALIZED;
+        internal override uint Status => _sessionHandle != null ? _sessionHandle.Status : TdsEnums.SNI_UNINITIALIZED;
 
         internal override object SessionHandle => _sessionHandle;
 
@@ -77,16 +77,16 @@ namespace System.Data.SqlClient
 
             // Translate to SNI timeout values (Int32 milliseconds)
             long timeout;
-            if (Int64.MaxValue == timerExpire)
+            if (long.MaxValue == timerExpire)
             {
-                timeout = Int32.MaxValue;
+                timeout = int.MaxValue;
             }
             else
             {
                 timeout = ADP.TimerRemainingMilliseconds(timerExpire);
-                if (timeout > Int32.MaxValue)
+                if (timeout > int.MaxValue)
                 {
-                    timeout = Int32.MaxValue;
+                    timeout = int.MaxValue;
                 }
                 else if (0 > timeout)
                 {
@@ -105,9 +105,9 @@ namespace System.Data.SqlClient
             return IntPtr.Zero == ptr || IntPtr.Zero != ptr && source != null;
         }
 
-        public void ReadAsyncCallback(IntPtr key, IntPtr packet, UInt32 error) => ReadAsyncCallback(key, packet, error);
+        public void ReadAsyncCallback(IntPtr key, IntPtr packet, uint error) => ReadAsyncCallback(key, packet, error);
 
-        public void WriteAsyncCallback(IntPtr key, IntPtr packet, UInt32 sniError) => WriteAsyncCallback(key, packet, sniError);
+        public void WriteAsyncCallback(IntPtr key, IntPtr packet, uint sniError) => WriteAsyncCallback(key, packet, sniError);
 
         protected override void RemovePacketFromPendingList(object ptr)
         {

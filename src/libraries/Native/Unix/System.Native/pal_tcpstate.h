@@ -5,12 +5,9 @@
 #pragma once
 
 #include "pal_compiler.h"
-
-BEGIN_EXTERN_C
-
 #include "pal_config.h"
 
-enum TcpState
+typedef enum
 {
     TcpState_Unknown,
     TcpState_Closed,
@@ -25,8 +22,6 @@ enum TcpState
     TcpState_LastAck,
     TcpState_TimeWait,
     TcpState_DeleteTcb
-};
+} TcpState;
 
 DLLEXPORT int32_t SystemNative_MapTcpState(int32_t tcpState);
-
-END_EXTERN_C

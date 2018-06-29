@@ -285,7 +285,7 @@ namespace System.Net
             }
         }
 
-        public IAsyncResult BeginGetContext(AsyncCallback callback, Object state)
+        public IAsyncResult BeginGetContext(AsyncCallback callback, object state)
         {
             CheckDisposed();
             if (_state != State.Started)

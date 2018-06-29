@@ -84,7 +84,7 @@ namespace System.Xml.Tests
             switch (readerType)
             {
                 case ReaderType.CoreReader:
-                    xr = ReaderHelper.Create(sr, readerSettings, (String)null);
+                    xr = ReaderHelper.Create(sr, readerSettings, (string)null);
                     break;
                 default:
                     CError.Compare(false, "Unknown reader type: " + readerType);
@@ -104,7 +104,7 @@ namespace System.Xml.Tests
             switch (readerType)
             {
                 case ReaderType.CoreReader:
-                    xr = ReaderHelper.Create(sr, readerSettings, (String)null /*baseUri*/);
+                    xr = ReaderHelper.Create(sr, readerSettings, (string)null /*baseUri*/);
                     break;
                 default:
                     CError.Compare(false, "Unknown reader type: " + readerType);

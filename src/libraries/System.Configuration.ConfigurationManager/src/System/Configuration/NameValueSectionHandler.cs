@@ -1,4 +1,4 @@
-﻿// Licensed to the .NET Foundation under one or more agreements.
+// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
@@ -52,15 +52,15 @@ namespace System.Configuration
                 // handle <set>, <remove>, <clear> tags
                 if (child.Name == "add")
                 {
-                    String key = HandlerBase.RemoveRequiredAttribute(child, keyAttriuteName);
-                    String value = HandlerBase.RemoveRequiredAttribute(child, valueAttributeName, true/*allowEmptyString*/);
+                    string key = HandlerBase.RemoveRequiredAttribute(child, keyAttriuteName);
+                    string value = HandlerBase.RemoveRequiredAttribute(child, valueAttributeName, true/*allowEmptyString*/);
                     HandlerBase.CheckForUnrecognizedAttributes(child);
 
                     result[key] = value;
                 }
                 else if (child.Name == "remove")
                 {
-                    String key = HandlerBase.RemoveRequiredAttribute(child, keyAttriuteName);
+                    string key = HandlerBase.RemoveRequiredAttribute(child, keyAttriuteName);
                     HandlerBase.CheckForUnrecognizedAttributes(child);
 
                     result.Remove(key);

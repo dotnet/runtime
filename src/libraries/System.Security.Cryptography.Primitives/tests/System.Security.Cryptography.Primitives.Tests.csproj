@@ -24,6 +24,7 @@
   <ItemGroup Condition="'$(TargetGroup)'=='netcoreapp'">
     <Compile Include="FixedTimeEqualsTests.cs" />
     <Compile Include="HashAlgorithmTest.netcoreapp.cs" />
+    <Compile Include="PbeParametersTests.cs" />
     <Compile Include="ZeroMemoryTests.cs" />
   </ItemGroup>
 </Project>
