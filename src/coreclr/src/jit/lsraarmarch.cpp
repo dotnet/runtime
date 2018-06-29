@@ -512,16 +512,18 @@ int LinearScan::BuildPutArgSplit(GenTreePutArgSplit* argNode)
                 assert(!node->IsMultiRegNode());
                 currentRegCount = 1;
             }
-            regMaskTP sourceMask = RBM_NONE;
-            if (sourceRegCount < argNode->gtNumRegs)
+            // Consume all the registers, setting the appropriate register mask for the ones that
+            // go into registers.
+            for (unsigned regIndex = 0; regIndex < currentRegCount; regIndex++)
             {
-                for (unsigned regIndex = 0; regIndex < currentRegCount; regIndex++)
+                regMaskTP sourceMask = RBM_NONE;
+                if (sourceRegCount < argNode->gtNumRegs)
                 {
-                    sourceMask |= genRegMask((regNumber)((unsigned)argReg + sourceRegCount + regIndex));
+                    sourceMask = genRegMask((regNumber)((unsigned)argReg + sourceRegCount));
                 }
+                sourceRegCount++;
+                BuildUse(node, sourceMask, regIndex);
             }
-            sourceRegCount += currentRegCount;
-            BuildUse(node, sourceMask);
         }
         srcCount += sourceRegCount;
         assert(putArgChild->isContained());

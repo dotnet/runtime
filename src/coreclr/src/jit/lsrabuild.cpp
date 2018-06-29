@@ -2091,7 +2091,11 @@ void LinearScan::buildIntervals()
 
         // Note: the visited set is cleared in LinearScan::doLinearScan()
         markBlockVisited(block);
-        assert(defList.IsEmpty());
+        if (!defList.IsEmpty())
+        {
+            INDEBUG(dumpDefList());
+            assert(!"Expected empty defList at end of block");
+        }
 
         if (enregisterLocalVars)
         {
