@@ -728,9 +728,24 @@ namespace System.Net.Http
                 // Wait for response headers to be read.
                 await readDataAvailableTask.ConfigureAwait(false);
 
-                // TODO: Handle empty response using EmptyReadStream
+                // Start to process the response body.
+                bool emptyResponse = false;
+                lock (_responseBufferLock)
+                {
+                    if (_responseComplete && _responseBuffer.ReadBytes.Length == 0)
+                    {
+                        emptyResponse = true;
+                    }
+                }
 
-                responseContent.SetStream(new Http2ResponseStream(this));
+                if (emptyResponse)
+                {
+                    responseContent.SetStream(EmptyReadStream.Instance);
+                }
+                else
+                {
+                    responseContent.SetStream(new Http2ReadStream(this));
+                }
 
                 return _response;
             }
@@ -833,7 +848,7 @@ namespace System.Net.Http
                 return bytesToCopy;
             }
 
-            public async ValueTask<int> ReadResponseBodyAsyncCore(Task onDataAvailable, Memory<byte> buffer)
+            public async ValueTask<int> ReadDataAsyncCore(Task onDataAvailable, Memory<byte> buffer)
             {
                 await onDataAvailable.ConfigureAwait(false);
 
@@ -850,9 +865,13 @@ namespace System.Net.Http
                 }
             }
 
-            public ValueTask<int> ReadResponseBodyAsync(Memory<byte> buffer)
+            // TODO: Cancellation support
+            public ValueTask<int> ReadDataAsync(Memory<byte> buffer, CancellationToken cancellationToken)
             {
-                Debug.Assert(buffer.Length > 0);
+                if (buffer.Length == 0)
+                {
+                    return new ValueTask<int>(0);
+                }
 
                 Task onDataAvailable;
                 lock (_responseBufferLock)
@@ -872,7 +891,7 @@ namespace System.Net.Http
                     onDataAvailable = _responseDataAvailable.Task;
                 }
 
-                return ReadResponseBodyAsyncCore(onDataAvailable, buffer);
+                return ReadDataAsyncCore(onDataAvailable, buffer);
             }
 
             protected virtual void Dispose(bool disposing)
@@ -901,59 +920,24 @@ namespace System.Net.Http
         }
 
         // TODO: Refactor this so that we can share a common base class with HTTP/1.1 content streams.
-        class Http2ResponseStream : Stream
+        sealed class Http2ReadStream : BaseAsyncStream
         {
             private readonly Http2Stream _http2Stream;
 
-            public Http2ResponseStream(Http2Stream http2Stream)
+            public Http2ReadStream(Http2Stream http2Stream)
             {
                 _http2Stream = http2Stream;
             }
 
             public override bool CanRead => true;
-
-            public override bool CanSeek => false;
-
             public override bool CanWrite => false;
 
-            public override long Length => throw new NotImplementedException();
-
-            public override long Position { get => throw new NotImplementedException(); set => throw new NotImplementedException(); }
-
-            public override void Flush()
+            public override ValueTask<int> ReadAsync(Memory<byte> destination, CancellationToken cancellationToken)
             {
-                throw new NotImplementedException();
+                return _http2Stream.ReadDataAsync(destination, cancellationToken);
             }
 
-            public override int Read(byte[] buffer, int offset, int count)
-            {
-                throw new NotImplementedException();
-            }
-
-            public override long Seek(long offset, SeekOrigin origin)
-            {
-                throw new NotImplementedException();
-            }
-
-            public override void SetLength(long value)
-            {
-                throw new NotImplementedException();
-            }
-
-            public override void Write(byte[] buffer, int offset, int count)
-            {
-                throw new NotImplementedException();
-            }
-
-            public override ValueTask<int> ReadAsync(Memory<byte> destination, CancellationToken cancellationToken = default)
-            {
-                return _http2Stream.ReadResponseBodyAsync(destination);
-            }
-
-            public override Task<int> ReadAsync(byte[] buffer, int offset, int count, CancellationToken cancellationToken)
-            {
-                return ReadAsync(new Memory<byte>(buffer, offset, count), cancellationToken).AsTask();
-            }
+            public override ValueTask WriteAsync(ReadOnlyMemory<byte> destination, CancellationToken cancellationToken) => throw new NotSupportedException();
         }
 
         // TODO: Should this be public?
