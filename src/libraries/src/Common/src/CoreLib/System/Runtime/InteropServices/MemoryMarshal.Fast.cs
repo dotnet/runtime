@@ -22,7 +22,7 @@ namespace System.Runtime.InteropServices
         /// Thrown when <typeparamref name="T"/> contains pointers.
         /// </exception>
         /// <exception cref="System.OverflowException">
-        /// Thrown if the Length property of the new Span would exceed Int32.MaxValue.
+        /// Thrown if the Length property of the new Span would exceed int.MaxValue.
         /// </exception>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static Span<byte> AsBytes<T>(Span<T> span)
@@ -45,7 +45,7 @@ namespace System.Runtime.InteropServices
         /// Thrown when <typeparamref name="T"/> contains pointers.
         /// </exception>
         /// <exception cref="System.OverflowException">
-        /// Thrown if the Length property of the new Span would exceed Int32.MaxValue.
+        /// Thrown if the Length property of the new Span would exceed int.MaxValue.
         /// </exception>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static ReadOnlySpan<byte> AsBytes<T>(ReadOnlySpan<T> span)

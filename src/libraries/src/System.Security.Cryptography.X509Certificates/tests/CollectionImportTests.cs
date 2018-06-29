@@ -310,6 +310,7 @@ namespace System.Security.Cryptography.X509Certificates.Tests
             }
         }
 
+#if !NO_EPHEMERALKEYSET_AVAILABLE
         [Fact]
         public static void InvalidStorageFlags()
         {
@@ -327,7 +328,7 @@ namespace System.Security.Cryptography.X509Certificates.Tests
             // No test is performed here for the ephemeral flag failing downlevel, because the live
             // binary is always used by default, meaning it doesn't know EphemeralKeySet doesn't exist.
         }
-        
+
         [Fact]
         public static void InvalidStorageFlags_PersistedEphemeral()
         {
@@ -345,16 +346,19 @@ namespace System.Security.Cryptography.X509Certificates.Tests
                 "keyStorageFlags",
                 () => coll.Import(string.Empty, string.Empty, PersistedEphemeral));
         }
+#endif
 
         public static IEnumerable<object[]> StorageFlags
         {
             get
             {
                 yield return new object[] { X509KeyStorageFlags.DefaultKeySet };
+
+#if !NO_EPHEMERALKEYSET_AVAILABLE
                 if (!RuntimeInformation.IsOSPlatform(OSPlatform.OSX))
                     yield return new object[] { X509KeyStorageFlags.EphemeralKeySet };
+#endif
             }
         }
-
     }
 }

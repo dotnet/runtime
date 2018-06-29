@@ -79,7 +79,7 @@ namespace System.DirectoryServices.ActiveDirectory
             this.directoryEntryMgr = directoryEntryMgr;
 
             // initialize the transfer role owner attributes
-            _becomeRoleOwnerAttrs = new String[5];
+            _becomeRoleOwnerAttrs = new string[5];
             _becomeRoleOwnerAttrs[0] = PropertyManager.BecomeSchemaMaster;
             _becomeRoleOwnerAttrs[1] = PropertyManager.BecomeDomainMaster;
             _becomeRoleOwnerAttrs[2] = PropertyManager.BecomePdc;
@@ -645,7 +645,7 @@ namespace System.DirectoryServices.ActiveDirectory
             }
         }
 
-        public Int64 HighestCommittedUsn
+        public long HighestCommittedUsn
         {
             get
             {
@@ -662,7 +662,7 @@ namespace System.DirectoryServices.ActiveDirectory
                 {
                     rootDSE.Dispose();
                 }
-                return Int64.Parse(serverHighestCommittedUsn, NumberFormatInfo.InvariantInfo);
+                return long.Parse(serverHighestCommittedUsn, NumberFormatInfo.InvariantInfo);
             }
         }
 
@@ -701,7 +701,7 @@ namespace System.DirectoryServices.ActiveDirectory
                     {
                         osVersion = osVersion.Substring(0, index);
                     }
-                    _cachedNumericOSVersion = (double)Double.Parse(osVersion, NumberFormatInfo.InvariantInfo);
+                    _cachedNumericOSVersion = (double)double.Parse(osVersion, NumberFormatInfo.InvariantInfo);
                 }
 
                 return _cachedNumericOSVersion;
@@ -766,7 +766,7 @@ namespace System.DirectoryServices.ActiveDirectory
             }
         }
 
-        public override String SiteName
+        public override string SiteName
         {
             get
             {
@@ -784,7 +784,7 @@ namespace System.DirectoryServices.ActiveDirectory
             }
         }
 
-        internal String SiteObjectName
+        internal string SiteObjectName
         {
             get
             {
@@ -801,7 +801,7 @@ namespace System.DirectoryServices.ActiveDirectory
             }
         }
 
-        internal String ComputerObjectName
+        internal string ComputerObjectName
         {
             get
             {
@@ -818,7 +818,7 @@ namespace System.DirectoryServices.ActiveDirectory
             }
         }
 
-        internal String ServerObjectName
+        internal string ServerObjectName
         {
             get
             {
@@ -835,7 +835,7 @@ namespace System.DirectoryServices.ActiveDirectory
             }
         }
 
-        internal String NtdsaObjectName
+        internal string NtdsaObjectName
         {
             get
             {
@@ -1309,12 +1309,12 @@ namespace System.DirectoryServices.ActiveDirectory
 
         private DateTime ParseDateTime(string dateTime)
         {
-            int year = (int)Int32.Parse(dateTime.Substring(0, 4), NumberFormatInfo.InvariantInfo);
-            int month = (int)Int32.Parse(dateTime.Substring(4, 2), NumberFormatInfo.InvariantInfo);
-            int day = (int)Int32.Parse(dateTime.Substring(6, 2), NumberFormatInfo.InvariantInfo);
-            int hour = (int)Int32.Parse(dateTime.Substring(8, 2), NumberFormatInfo.InvariantInfo);
-            int min = (int)Int32.Parse(dateTime.Substring(10, 2), NumberFormatInfo.InvariantInfo);
-            int sec = (int)Int32.Parse(dateTime.Substring(12, 2), NumberFormatInfo.InvariantInfo);
+            int year = (int)int.Parse(dateTime.Substring(0, 4), NumberFormatInfo.InvariantInfo);
+            int month = (int)int.Parse(dateTime.Substring(4, 2), NumberFormatInfo.InvariantInfo);
+            int day = (int)int.Parse(dateTime.Substring(6, 2), NumberFormatInfo.InvariantInfo);
+            int hour = (int)int.Parse(dateTime.Substring(8, 2), NumberFormatInfo.InvariantInfo);
+            int min = (int)int.Parse(dateTime.Substring(10, 2), NumberFormatInfo.InvariantInfo);
+            int sec = (int)int.Parse(dateTime.Substring(12, 2), NumberFormatInfo.InvariantInfo);
 
             // this is the UniversalTime
             return new DateTime(year, month, day, hour, min, sec, 0);

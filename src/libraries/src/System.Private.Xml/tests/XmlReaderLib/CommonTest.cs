@@ -23,14 +23,14 @@ namespace System.Xml.Tests
             ReloadSource();
             DataReader.Dispose();
 
-            CError.Compare(DataReader.Name, String.Empty, "Name");
+            CError.Compare(DataReader.Name, string.Empty, "Name");
             CError.Compare(DataReader.NodeType, XmlNodeType.None, "NodeType");
             CError.Compare(DataReader.ReadState, ReadState.Closed, "ReadState");
             CError.Compare(DataReader.AttributeCount, 0, "Attrib Count");
-            CError.Compare(DataReader.XmlLang, String.Empty, "XML Lang");
+            CError.Compare(DataReader.XmlLang, string.Empty, "XML Lang");
             CError.Compare(DataReader.XmlSpace, XmlSpace.None, "Space");
             if (!(IsXmlNodeReader() || IsXmlNodeReaderDataDoc()))
-                CError.Compare(DataReader.BaseURI, String.Empty, "BaseUri");
+                CError.Compare(DataReader.BaseURI, string.Empty, "BaseUri");
             CError.Compare(DataReader.Depth, 0, "Depth");
             CError.Compare(DataReader.EOF, IsSubtreeReader() ? true : false, "EOF");
             CError.Compare(DataReader.HasAttributes, false, "HasAttr");
@@ -41,7 +41,7 @@ namespace System.Xml.Tests
                 CError.Compare(DataReader.LineNumber, 0, "LN");
                 CError.Compare(DataReader.LinePosition, 0, "LP");
             }
-            CError.Compare(DataReader.LocalName, String.Empty, "LocalName");
+            CError.Compare(DataReader.LocalName, string.Empty, "LocalName");
             CError.Compare(DataReader.IsEmptyElement, false, "IsEmptyElement");
             CError.Compare(DataReader.Read(), IsCharCheckingReader() ? true : false, "Read");
             CError.Compare(DataReader.ReadAttributeValue(), false, "ReadAV");
@@ -436,11 +436,11 @@ namespace System.Xml.Tests
         [Variation("Tag name > 4K, invalid")]
         public int Read22()
         {
-            string strtag = new String('a', 17 * 1024);
-            string strxml = String.Format("<{0}><{0}>{0}</{0}></{0}", strtag);
+            string strtag = new string('a', 17 * 1024);
+            string strxml = string.Format("<{0}><{0}>{0}</{0}></{0}", strtag);
             bool bPassed = TestInvalidXmlStr(strxml, 1, 87050, "Xml_UnexpectedEOFInElementContent");
 
-            strxml = String.Format("<{0}><{0}>{0}</0></0>", strtag);
+            strxml = string.Format("<{0}><{0}>{0}</0></0>", strtag);
             bPassed = TestInvalidXmlStr(strxml, 1, 52231, "Xml_BadStartNameChar") && bPassed;
 
             return BoolToLTMResult(bPassed);
@@ -449,8 +449,8 @@ namespace System.Xml.Tests
         [Variation("Surrogate char in name > 4K, invalid")]
         public int Read22a()
         {
-            string strtag = new String('\uFF71', 17 * 1024);
-            string strxml = String.Format("<{0}><{0}>{0}</{0}></{0}>", strtag);
+            string strtag = new string('\uFF71', 17 * 1024);
+            string strxml = string.Format("<{0}><{0}>{0}</{0}></{0}>", strtag);
             bool bPassed = TestInvalidXmlStr(strxml, 1, 2, "Xml_BadStartNameChar");
             return BoolToLTMResult(bPassed);
         }
@@ -480,7 +480,7 @@ namespace System.Xml.Tests
         [Variation("1.Valid XML declaration.Errata5", Param = "1.0")]
         public int Read24a()
         {
-            string str = String.Format("<?xml version='{0}' ?><root />", this.CurVariation.Param);
+            string str = string.Format("<?xml version='{0}' ?><root />", this.CurVariation.Param);
             CError.WriteLine(str);
             bool bPassed = TestValidXmlStr(str);
             return BoolToLTMResult(bPassed);
@@ -497,7 +497,7 @@ namespace System.Xml.Tests
         public int Read25b()
         {
             if (IsSubtreeReader() || IsXmlNodeReader() || IsXmlNodeReaderDataDoc()) return TEST_SKIPPED;
-            string str = String.Format("<?xml version='{0}'>", this.CurVariation.Param);
+            string str = string.Format("<?xml version='{0}'>", this.CurVariation.Param);
             CError.WriteLine(str);
             bool bPassed = TestInvalidXmlStr(str, 1, 16, "Xml_InvalidVersionNumber");
             return BoolToLTMResult(bPassed);
@@ -514,7 +514,7 @@ namespace System.Xml.Tests
         public int Read26b()
         {
             if (IsSubtreeReader() || IsXmlNodeReader() || IsXmlNodeReaderDataDoc()) return TEST_SKIPPED;
-            string str = String.Format("<?xml version='1.0' standalone='{0}'>", this.CurVariation.Param);
+            string str = string.Format("<?xml version='1.0' standalone='{0}'>", this.CurVariation.Param);
             CError.WriteLine(str);
             bool bPassed = TestInvalidXmlStr(str, 1, 32, "Xml_InvalidXmlDecl");
             return BoolToLTMResult(bPassed);
@@ -889,8 +889,8 @@ namespace System.Xml.Tests
             DataReader.Read();
 
             CError.Compare(DataReader.Value.Length, 2, "len");
-            CError.Compare(Convert.ToUInt16(DataReader.Value[0]), (UInt16)56319, "v[0]");
-            CError.Compare(Convert.ToUInt16(DataReader.Value[1]), (UInt16)56320, "v[1]");
+            CError.Compare(Convert.ToUInt16(DataReader.Value[0]), (ushort)56319, "v[0]");
+            CError.Compare(Convert.ToUInt16(DataReader.Value[1]), (ushort)56320, "v[1]");
 
             return TEST_PASS;
         }
@@ -922,10 +922,10 @@ namespace System.Xml.Tests
             }
 
             DataReader.Read();
-            DataReader.CompareNode(XmlNodeType.EndElement, "root", String.Empty);
+            DataReader.CompareNode(XmlNodeType.EndElement, "root", string.Empty);
 
             DataReader.Read();
-            DataReader.CompareNode(XmlNodeType.None, String.Empty, String.Empty);
+            DataReader.CompareNode(XmlNodeType.None, string.Empty, string.Empty);
 
             return TEST_PASS;
         }
@@ -960,8 +960,8 @@ namespace System.Xml.Tests
         [Variation("Tag name > 4K")]
         public int v10()
         {
-            string strtag = new String('a', 17 * 1024);
-            string strxml = String.Format("<{0}><{0}>{0}</{0}></{0}>", strtag);
+            string strtag = new string('a', 17 * 1024);
+            string strxml = string.Format("<{0}><{0}>{0}</{0}></{0}>", strtag);
             ReloadSourceStr(strxml);
 
             while (DataReader.Read()) ;
@@ -976,14 +976,14 @@ namespace System.Xml.Tests
             ReloadSourceStr(strxml);
 
             DataReader.Read();
-            bool bPassed = DataReader.VerifyNode(XmlNodeType.Element, "case", String.Empty);
+            bool bPassed = DataReader.VerifyNode(XmlNodeType.Element, "case", string.Empty);
             if (!(IsXsltReader() || IsXPathNavigatorReader()))
             {
                 DataReader.Read();
-                bPassed = DataReader.VerifyNode(XmlNodeType.Whitespace, String.Empty, " \t\n\r") && bPassed;
+                bPassed = DataReader.VerifyNode(XmlNodeType.Whitespace, string.Empty, " \t\n\r") && bPassed;
             }
             DataReader.Read();
-            bPassed = DataReader.VerifyNode(XmlNodeType.EndElement, "case", String.Empty) && bPassed;
+            bPassed = DataReader.VerifyNode(XmlNodeType.EndElement, "case", string.Empty) && bPassed;
 
             return BoolToLTMResult(bPassed);
         }
@@ -995,7 +995,7 @@ namespace System.Xml.Tests
             ReloadSource(filename);
             string name = "a1234567890abcdefg";
             DataReader.PositionOnElement(name);
-            DataReader.CompareNode(XmlNodeType.Element, name, String.Empty);
+            DataReader.CompareNode(XmlNodeType.Element, name, string.Empty);
 
             while (DataReader.Read()) ;
 

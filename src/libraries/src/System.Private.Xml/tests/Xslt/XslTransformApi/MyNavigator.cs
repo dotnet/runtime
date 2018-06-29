@@ -45,10 +45,10 @@ public class MyNavigator : XPathNavigator
     public override string Value { get { return _xn.Value; } }
 
     /// <include file='doc\XPathNavigator.uex' path='docs/doc[@for="XPathNavigator.BaseURI"]/*' />
-    public override String BaseURI { get { return _xn.BaseURI; } }
+    public override string BaseURI { get { return _xn.BaseURI; } }
 
     /// <include file='doc\XPathNavigator.uex' path='docs/doc[@for="XPathNavigator.XmlLang"]/*' />
-    public override String XmlLang { get { return _xn.XmlLang; } }
+    public override string XmlLang { get { return _xn.XmlLang; } }
 
     /// <include file='doc\XPathNavigator.uex' path='docs/doc[@for="XPathNavigator.IsEmptyElement"]/*' />
     public override bool IsEmptyElement { get { return _xn.IsEmptyElement; } }

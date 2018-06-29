@@ -91,7 +91,7 @@ namespace CoreXml.Test.XLinq.FunctionalTests.EventsTests
                 {
                     xDoc.ReplaceNodes(newValue);
                     Assert.True(xDoc.Nodes().Count() == 1, "Not all content were removed");
-                    Assert.True(Object.ReferenceEquals(xDoc.FirstNode, newValue), "Did not replace correctly");
+                    Assert.True(object.ReferenceEquals(xDoc.FirstNode, newValue), "Did not replace correctly");
                     docHelper.Verify(new XObjectChange[] { XObjectChange.Remove, XObjectChange.Add }, new XObject[] { toReplace, newValue });
                 }
                 undo.Undo();
@@ -121,7 +121,7 @@ namespace CoreXml.Test.XLinq.FunctionalTests.EventsTests
                 {
                     xElem.ReplaceNodes(newValue);
                     Assert.True(xElem.Nodes().Count() == 1, "Did not replace correctly");
-                    Assert.True(Object.ReferenceEquals(xElem.FirstNode, newValue), "Did not replace correctly");
+                    Assert.True(object.ReferenceEquals(xElem.FirstNode, newValue), "Did not replace correctly");
                     Assert.True(xElem.HasAttributes, "ReplaceNodes removed attributes");
                     xElem.Verify();
                     eHelper.Verify(new XObjectChange[] { XObjectChange.Remove, XObjectChange.Add }, new XObject[] { toReplace, newValue });
@@ -239,7 +239,7 @@ namespace CoreXml.Test.XLinq.FunctionalTests.EventsTests
                 {
                     xElem.ReplaceAll(newValue);
                     Assert.True(xElem.Nodes().Count() == 1, "Did not replace correctly");
-                    Assert.True(Object.ReferenceEquals(xElem.FirstNode, newValue), "Did not replace correctly");
+                    Assert.True(object.ReferenceEquals(xElem.FirstNode, newValue), "Did not replace correctly");
                     Assert.True(!xElem.HasAttributes, "ReplaceAll did not remove attributes");
                     xElem.Verify();
                     eHelper.Verify(toReplace.Length + 1);

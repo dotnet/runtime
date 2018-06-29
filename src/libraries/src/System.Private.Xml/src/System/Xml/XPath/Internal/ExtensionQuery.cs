@@ -84,7 +84,7 @@ namespace MS.Internal.Xml.XPath
             if (value is double) return value;
             if (value is bool) return value;
             if (value is XPathNavigator) return value;
-            if (value is Int32) return (double)(Int32)value;
+            if (value is int) return (double)(int)value;
 
             if (value == null)
             {
@@ -112,13 +112,13 @@ namespace MS.Internal.Xml.XPath
                 return navigable.CreateNavigator();
             }
 
-            if (value is Int16) return (double)(Int16)value;
-            if (value is Int64) return (double)(Int64)value;
-            if (value is UInt32) return (double)(UInt32)value;
-            if (value is UInt16) return (double)(UInt16)value;
-            if (value is UInt64) return (double)(UInt64)value;
-            if (value is Single) return (double)(Single)value;
-            if (value is Decimal) return (double)(Decimal)value;
+            if (value is short) return (double)(short)value;
+            if (value is long) return (double)(long)value;
+            if (value is uint) return (double)(uint)value;
+            if (value is ushort) return (double)(ushort)value;
+            if (value is ulong) return (double)(ulong)value;
+            if (value is float) return (double)(float)value;
+            if (value is decimal) return (double)(decimal)value;
             return value.ToString();
         }
 

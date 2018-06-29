@@ -5,6 +5,7 @@
       uap-Windows_NT;
       netcoreapp-Linux;
       netcoreapp-OSX;
+      netcoreapp-Unix;
       netcoreapp-Windows_NT;
     </BuildConfigurations>
   </PropertyGroup>

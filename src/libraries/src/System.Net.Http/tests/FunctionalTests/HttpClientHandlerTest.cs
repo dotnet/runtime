@@ -281,7 +281,7 @@ namespace System.Net.Http.Functional.Tests
         {
             using (HttpClientHandler handler = CreateHttpClientHandler())
             {
-                IDictionary<String, object> dict = handler.Properties;
+                IDictionary<string, object> dict = handler.Properties;
                 Assert.Same(dict, handler.Properties);
                 Assert.Equal(0, dict.Count);
             }
@@ -292,9 +292,9 @@ namespace System.Net.Http.Functional.Tests
         {
             using (HttpClientHandler handler = CreateHttpClientHandler())
             {
-                IDictionary<String, object> dict = handler.Properties;
+                IDictionary<string, object> dict = handler.Properties;
 
-                var item = new Object();
+                var item = new object();
                 dict.Add("item", item);
 
                 object value;

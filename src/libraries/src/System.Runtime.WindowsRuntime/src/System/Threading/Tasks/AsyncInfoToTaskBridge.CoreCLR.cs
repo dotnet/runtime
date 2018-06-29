@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
+using Internal.Runtime.InteropServices.WindowsRuntime;
 using Internal.Threading.Tasks;
 using System.ComponentModel;
 using System.Diagnostics;
@@ -79,7 +80,7 @@ namespace System.Threading.Tasks
 
                 if (!base.Task.IsFaulted)
                 {
-                    Debug.Assert(false, String.Format("Expected base task to already be faulted but found it in state {0}", base.Task.Status));
+                    Debug.Assert(false, string.Format("Expected base task to already be faulted but found it in state {0}", base.Task.Status));
                     base.TrySetException(ex);
                 }
             }
@@ -176,7 +177,7 @@ namespace System.Threading.Tasks
                         }
                         else
                         {
-                            error = RestrictedErrorInfoHelper.AttachRestrictedErrorInfo(asyncInfo.ErrorCode);
+                            error = ExceptionSupport.AttachRestrictedErrorInfo(asyncInfo.ErrorCode);
                         }
                     }
                     else if (asyncStatus == AsyncStatus.Completed && getResultsFunction != null)

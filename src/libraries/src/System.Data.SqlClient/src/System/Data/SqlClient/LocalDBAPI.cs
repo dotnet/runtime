@@ -13,7 +13,7 @@ namespace System.Data
 
 
         [UnmanagedFunctionPointer(CallingConvention.Cdecl, CharSet = CharSet.Unicode)]
-        private delegate int LocalDBFormatMessageDelegate(int hrLocalDB, UInt32 dwFlags, UInt32 dwLanguageId, StringBuilder buffer, ref UInt32 buflen);
+        private delegate int LocalDBFormatMessageDelegate(int hrLocalDB, uint dwFlags, uint dwLanguageId, StringBuilder buffer, ref uint buflen);
 
         // check if name is in format (localdb)\<InstanceName - not empty> and return instance name if it is
         internal static string GetLocalDbInstanceNameFromServerName(string serverName)

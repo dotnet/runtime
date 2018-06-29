@@ -64,12 +64,12 @@ namespace System.Numerics.Tests
             byte[] tempByteArray2 = new byte[0];
 
             // Axiom: X^1 = X
-            VerifyIdentityString(BigInteger.One + " " + Int32.MaxValue + " bPow", Int32.MaxValue.ToString());
-            VerifyIdentityString(BigInteger.One + " " + Int64.MaxValue + " bPow", Int64.MaxValue.ToString());
+            VerifyIdentityString(BigInteger.One + " " + int.MaxValue + " bPow", Int32.MaxValue.ToString());
+            VerifyIdentityString(BigInteger.One + " " + long.MaxValue + " bPow", Int64.MaxValue.ToString());
 
             for (int i = 0; i < s_samples; i++)
             {
-                String randBigInt = Print(GetRandomByteArray(s_random));
+                string randBigInt = Print(GetRandomByteArray(s_random));
                 VerifyIdentityString(BigInteger.One + " " + randBigInt + "bPow", randBigInt.Substring(0, randBigInt.Length - 1));
             }
         }
@@ -81,12 +81,12 @@ namespace System.Numerics.Tests
             byte[] tempByteArray2 = new byte[0];
 
             // Axiom: X^0 = 1
-            VerifyIdentityString(BigInteger.Zero + " " + Int32.MaxValue + " bPow", BigInteger.One.ToString());
-            VerifyIdentityString(BigInteger.Zero + " " + Int64.MaxValue + " bPow", BigInteger.One.ToString());
+            VerifyIdentityString(BigInteger.Zero + " " + int.MaxValue + " bPow", BigInteger.One.ToString());
+            VerifyIdentityString(BigInteger.Zero + " " + long.MaxValue + " bPow", BigInteger.One.ToString());
 
             for (int i = 0; i < s_samples; i++)
             {
-                String randBigInt = Print(GetRandomByteArray(s_random));
+                string randBigInt = Print(GetRandomByteArray(s_random));
                 VerifyIdentityString(BigInteger.Zero + " " + randBigInt + "bPow", BigInteger.One.ToString());
             }
         }
@@ -98,11 +98,11 @@ namespace System.Numerics.Tests
             byte[] tempByteArray2 = new byte[0];
 
             // Axiom: 0^X = 0
-            VerifyIdentityString(Int32.MaxValue + " " + BigInteger.Zero + " bPow", BigInteger.Zero.ToString());
+            VerifyIdentityString(int.MaxValue + " " + BigInteger.Zero + " bPow", BigInteger.Zero.ToString());
 
             for (int i = 0; i < s_samples; i++)
             {
-                String randBigInt = Print(GetRandomPosByteArray(s_random, 4));
+                string randBigInt = Print(GetRandomPosByteArray(s_random, 4));
                 VerifyIdentityString(randBigInt + BigInteger.Zero + " bPow", BigInteger.Zero.ToString());
             }
         }
@@ -114,11 +114,11 @@ namespace System.Numerics.Tests
             byte[] tempByteArray2 = new byte[0];
 
             // Axiom: 1^X = 1
-            VerifyIdentityString(Int32.MaxValue + " " + BigInteger.One + " bPow", BigInteger.One.ToString());
+            VerifyIdentityString(int.MaxValue + " " + BigInteger.One + " bPow", BigInteger.One.ToString());
 
             for (int i = 0; i < s_samples; i++)
             {
-                String randBigInt = Print(GetRandomPosByteArray(s_random, 4));
+                string randBigInt = Print(GetRandomPosByteArray(s_random, 4));
                 VerifyIdentityString(randBigInt + BigInteger.One + " bPow", BigInteger.One.ToString());
             }
         }
@@ -217,7 +217,7 @@ namespace System.Numerics.Tests
             return MyBigIntImp.GetRandomByteArray(random, size);
         }
 
-        private static Byte[] GetRandomPosByteArray(Random random, int size)
+        private static byte[] GetRandomPosByteArray(Random random, int size)
         {
             byte[] value = new byte[size];
 
@@ -230,7 +230,7 @@ namespace System.Numerics.Tests
             return value;
         }
 
-        private static Byte[] GetRandomNegByteArray(Random random, int size)
+        private static byte[] GetRandomNegByteArray(Random random, int size)
         {
             byte[] value = new byte[size];
 
@@ -243,7 +243,7 @@ namespace System.Numerics.Tests
             return value;
         }
 
-        private static String Print(byte[] bytes)
+        private static string Print(byte[] bytes)
         {
             return MyBigIntImp.Print(bytes);
         }

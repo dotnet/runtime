@@ -1,4 +1,4 @@
-﻿// Licensed to the .NET Foundation under one or more agreements.
+// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
@@ -16,7 +16,7 @@ namespace System.PrivateUri.Tests
             UriBuilder builder = new UriBuilder(s_starterUri);
             Assert.Equal<String>(s_starterUri.Scheme, builder.Scheme);
             Assert.Equal<String>(s_starterUri.Scheme, builder.Uri.Scheme);
-            String newValue = "newvalue";
+            string newValue = "newvalue";
             builder.Scheme = newValue;
             Assert.Equal<String>(newValue, builder.Scheme);
             Assert.Equal<String>(newValue, builder.Uri.Scheme);
@@ -28,7 +28,7 @@ namespace System.PrivateUri.Tests
             UriBuilder builder = new UriBuilder(s_starterUri);
             Assert.Equal<String>(s_starterUri.UserInfo, builder.UserName + ":" + builder.Password);
             Assert.Equal<String>(s_starterUri.UserInfo, builder.Uri.UserInfo);
-            String newValue = "newvalue";
+            string newValue = "newvalue";
             builder.UserName = newValue;
             Assert.Equal<String>(newValue, builder.UserName);
             Assert.Equal<String>(newValue + ":" + builder.Password, builder.Uri.UserInfo);
@@ -40,7 +40,7 @@ namespace System.PrivateUri.Tests
             UriBuilder builder = new UriBuilder(s_starterUri);
             Assert.Equal<String>(s_starterUri.UserInfo, builder.UserName + ":" + builder.Password);
             Assert.Equal<String>(s_starterUri.UserInfo, builder.Uri.UserInfo);
-            String newValue = "newvalue";
+            string newValue = "newvalue";
             builder.Password = newValue;
             Assert.Equal<String>(newValue, builder.Password);
             Assert.Equal<String>(builder.UserName + ":" + newValue, builder.Uri.UserInfo);
@@ -52,7 +52,7 @@ namespace System.PrivateUri.Tests
             UriBuilder builder = new UriBuilder(s_starterUri);
             Assert.Equal<String>(s_starterUri.Host, builder.Host);
             Assert.Equal<String>(s_starterUri.Host, builder.Uri.Host);
-            String newValue = "newvalue";
+            string newValue = "newvalue";
             builder.Host = newValue;
             Assert.Equal<String>(newValue, builder.Host);
             Assert.Equal<String>(newValue, builder.Uri.Host);
@@ -76,7 +76,7 @@ namespace System.PrivateUri.Tests
             UriBuilder builder = new UriBuilder(s_starterUri);
             Assert.Equal<String>(s_starterUri.AbsolutePath, builder.Path);
             Assert.Equal<String>(s_starterUri.AbsolutePath, builder.Uri.AbsolutePath);
-            String newValue = "/newvalue";
+            string newValue = "/newvalue";
             builder.Path = newValue;
             Assert.Equal<String>(newValue, builder.Path);
             Assert.Equal<String>(newValue, builder.Uri.AbsolutePath);
@@ -88,7 +88,7 @@ namespace System.PrivateUri.Tests
             UriBuilder builder = new UriBuilder(s_starterUri);
             Assert.Equal<String>(s_starterUri.Query, builder.Query);
             Assert.Equal<String>(s_starterUri.Query, builder.Uri.Query);
-            String newValue = "newvalue";
+            string newValue = "newvalue";
             builder.Query = newValue;
             Assert.Equal<String>("?" + newValue, builder.Query);
             Assert.Equal<String>("?" + newValue, builder.Uri.Query);
@@ -100,7 +100,7 @@ namespace System.PrivateUri.Tests
             UriBuilder builder = new UriBuilder(s_starterUri);
             Assert.Equal<String>(s_starterUri.Fragment, builder.Fragment);
             Assert.Equal<String>(s_starterUri.Fragment, builder.Uri.Fragment);
-            String newValue = "newvalue";
+            string newValue = "newvalue";
             builder.Fragment = newValue;
             Assert.Equal<String>("#" + newValue, builder.Fragment);
             Assert.Equal<String>("#" + newValue, builder.Uri.Fragment);

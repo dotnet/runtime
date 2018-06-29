@@ -15,12 +15,12 @@ namespace System.Runtime.Serialization
         {
         }
 
-        public InvalidDataContractException(String message)
+        public InvalidDataContractException(string message)
             : base(message)
         {
         }
 
-        public InvalidDataContractException(String message, Exception innerException)
+        public InvalidDataContractException(string message, Exception innerException)
             : base(message, innerException)
         {
         }

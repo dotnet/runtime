@@ -495,6 +495,7 @@ namespace System.Data.SqlClient
         public System.Collections.IDictionary RetrieveStatistics() { throw null; }
         public static void ChangePassword(string connectionString, string newPassword) { throw null; }
         public static void ChangePassword(string connectionString, System.Data.SqlClient.SqlCredential credential, System.Security.SecureString newPassword) { throw null; }
+        public string AccessToken { get { throw null; } set { } }
 
     }
     public sealed partial class SqlConnectionStringBuilder : System.Data.Common.DbConnectionStringBuilder

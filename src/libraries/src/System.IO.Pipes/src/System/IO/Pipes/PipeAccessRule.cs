@@ -13,7 +13,7 @@ namespace System.IO.Pipes
         //
         // Constructor for creating access rules for pipe objects
         //
-        public PipeAccessRule( String identity, PipeAccessRights rights, AccessControlType type)
+        public PipeAccessRule( string identity, PipeAccessRights rights, AccessControlType type)
             : this( new NTAccount(identity), AccessMaskFromRights(rights, type), false, type)
         {
         }

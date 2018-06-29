@@ -38,7 +38,7 @@ namespace System.IO.Tests
         [Fact]
         public static void RenamedEventArgs_ctor_Invalid()
         {
-            Assert.Throws<NullReferenceException>(() => new RenamedEventArgs((WatcherChangeTypes)0, null, String.Empty, String.Empty));
+            Assert.Throws<NullReferenceException>(() => new RenamedEventArgs((WatcherChangeTypes)0, null, string.Empty, string.Empty));
         }
     }
 }

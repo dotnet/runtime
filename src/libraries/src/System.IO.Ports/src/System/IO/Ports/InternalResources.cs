@@ -15,7 +15,7 @@ namespace System.IO.Ports
             throw new EndOfStreamException(SR.IO_EOF_ReadBeyondEOF);
         }
 
-        internal static String GetMessage(int errorCode)
+        internal static string GetMessage(int errorCode)
         {
             return new Win32Exception(errorCode).Message;
         }
@@ -45,7 +45,7 @@ namespace System.IO.Ports
         internal static void WinIOError()
         {
             int errorCode = Marshal.GetLastWin32Error();
-            WinIOError(errorCode, String.Empty);
+            WinIOError(errorCode, string.Empty);
         }
 
         internal static void WinIOError(string str)
@@ -59,7 +59,7 @@ namespace System.IO.Ports
         // will determine the appropriate exception to throw dependent on your
         // error, and depending on the error, insert a string into the message
         // gotten from the ResourceManager.
-        internal static void WinIOError(int errorCode, String str)
+        internal static void WinIOError(int errorCode, string str)
         {
             switch (errorCode)
             {

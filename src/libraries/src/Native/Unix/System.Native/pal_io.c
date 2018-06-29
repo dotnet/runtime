@@ -160,7 +160,7 @@ c_static_assert(PAL_IN_EXCL_UNLINK == IN_EXCL_UNLINK);
 c_static_assert(PAL_IN_ISDIR == IN_ISDIR);
 #endif // HAVE_INOTIFY
 
-static void ConvertFileStatus(const struct stat_* src, struct FileStatus* dst)
+static void ConvertFileStatus(const struct stat_* src, FileStatus* dst)
 {
     dst->Dev = (int64_t)src->st_dev;
     dst->Ino = (int64_t)src->st_ino;
@@ -191,7 +191,7 @@ static void ConvertFileStatus(const struct stat_* src, struct FileStatus* dst)
 
 // CoreCLR expects the "2" suffixes on these: they should be cleaned up in our
 // next coordinated System.Native changes
-int32_t SystemNative_Stat2(const char* path, struct FileStatus* output)
+int32_t SystemNative_Stat2(const char* path, FileStatus* output)
 {
     struct stat_ result;
     int ret;
@@ -205,7 +205,7 @@ int32_t SystemNative_Stat2(const char* path, struct FileStatus* output)
     return ret;
 }
 
-int32_t SystemNative_FStat2(intptr_t fd, struct FileStatus* output)
+int32_t SystemNative_FStat2(intptr_t fd, FileStatus* output)
 {
     struct stat_ result;
     int ret;
@@ -219,7 +219,7 @@ int32_t SystemNative_FStat2(intptr_t fd, struct FileStatus* output)
     return ret;
 }
 
-int32_t SystemNative_LStat2(const char* path, struct FileStatus* output)
+int32_t SystemNative_LStat2(const char* path, FileStatus* output)
 {
     struct stat_ result;
     int ret = lstat_(path, &result);
@@ -356,7 +356,7 @@ int32_t SystemNative_ShmUnlink(const char* name)
 #endif
 }
 
-static void ConvertDirent(const struct dirent* entry, struct DirectoryEntry* outputEntry)
+static void ConvertDirent(const struct dirent* entry, DirectoryEntry* outputEntry)
 {
     // We use Marshal.PtrToStringAnsi on the managed side, which takes a pointer to
     // the start of the unmanaged string. Give the caller back a pointer to the
@@ -431,7 +431,7 @@ int32_t SystemNative_GetReadDirRBufferSize(void)
 // If the platform supports readdir_r, the caller provides a buffer into which the data is read.
 // If the platform uses readdir, the caller must ensure no calls are made to readdir/closedir since those will invalidate
 // the current dirent. We assume the platform supports concurrent readdir calls to different DIRs.
-int32_t SystemNative_ReadDirR(DIR* dir, uint8_t* buffer, int32_t bufferSize, struct DirectoryEntry* outputEntry)
+int32_t SystemNative_ReadDirR(DIR* dir, uint8_t* buffer, int32_t bufferSize, DirectoryEntry* outputEntry)
 {
     assert(dir != NULL);
     assert(outputEntry != NULL);
@@ -924,7 +924,7 @@ int32_t SystemNative_FTruncate(intptr_t fd, int64_t length)
     return result;
 }
 
-int32_t SystemNative_Poll(struct PollEvent* pollEvents, uint32_t eventCount, int32_t milliseconds, uint32_t* triggered)
+int32_t SystemNative_Poll(PollEvent* pollEvents, uint32_t eventCount, int32_t milliseconds, uint32_t* triggered)
 {
     if (pollEvents == NULL || triggered == NULL)
     {
@@ -952,7 +952,7 @@ int32_t SystemNative_Poll(struct PollEvent* pollEvents, uint32_t eventCount, int
 
     for (uint32_t i = 0; i < eventCount; i++)
     {
-        const struct PollEvent* event = &pollEvents[i];
+        const PollEvent* event = &pollEvents[i];
         pollfds[i].fd = event->FileDescriptor;
         // we need to do this for platforms like AIX where PAL_POLL* doesn't
         // match up to their reality; this is PollEvent -> system polling

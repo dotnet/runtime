@@ -282,7 +282,7 @@ namespace System.Collections.Specialized
             else if (action == NotifyCollectionChangedAction.Remove)
                 InitializeRemove(action, changedItems, startingIndex);
             else
-                Debug.Assert(false, String.Format("Unsupported action: {0}", action.ToString()));
+                Debug.Assert(false, string.Format("Unsupported action: {0}", action.ToString()));
         }
 
         private void InitializeAdd(NotifyCollectionChangedAction action, IList newItems, int newStartingIndex)

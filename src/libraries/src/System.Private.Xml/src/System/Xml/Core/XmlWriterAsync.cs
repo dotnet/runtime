@@ -568,7 +568,7 @@ namespace System.Xml
         // Element Helper Methods
 
         // Writes out an attribute with the specified name, namespace URI, and string value.
-        public async Task WriteElementStringAsync(string prefix, String localName, String ns, String value)
+        public async Task WriteElementStringAsync(string prefix, string localName, string ns, string value)
         {
             await WriteStartElementAsync(prefix, localName, ns).ConfigureAwait(false);
             if (null != value && 0 != value.Length)

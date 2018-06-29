@@ -149,7 +149,7 @@ namespace System.Globalization
                 // Failed, just use empty string
                 StringBuilderCache.Release(sb);
                 Debug.Fail("[CultureData.GetLocaleInfo(LocaleStringData)] Failed");
-                return String.Empty;
+                return string.Empty;
             }
             return StringBuilderCache.GetStringAndRelease(sb);
         }
@@ -216,7 +216,7 @@ namespace System.Globalization
                 // Failed, just use empty string
                 StringBuilderCache.Release(sb);
                 Debug.Fail("[CultureData.GetTimeFormatString(bool shortFormat)] Failed");
-                return String.Empty;
+                return string.Empty;
             }
 
             return ConvertIcuTimeFormatString(StringBuilderCache.GetStringAndRelease(sb));
@@ -227,19 +227,19 @@ namespace System.Globalization
             return this.GetLocaleInfo(LocaleNumberData.FirstDayOfWeek);
         }
 
-        private String[] GetTimeFormats()
+        private string[] GetTimeFormats()
         {
             string format = GetTimeFormatString(false);
             return new string[] { format };
         }
 
-        private String[] GetShortTimeFormats()
+        private string[] GetShortTimeFormats()
         {
             string format = GetTimeFormatString(true);
             return new string[] { format };
         }
 
-        private static CultureData GetCultureDataFromRegionName(String regionName)
+        private static CultureData GetCultureDataFromRegionName(string regionName)
         {
             // no support to lookup by region name, other than the hard-coded list in CultureData
             return null;
@@ -371,7 +371,7 @@ namespace System.Globalization
                 return Array.Empty<CultureInfo>();
             }
             
-            Char [] chars = new Char[bufferLength];
+            char [] chars = new char[bufferLength];
             
             bufferLength = Interop.Globalization.GetLocales(chars, bufferLength);
             if (bufferLength <= 0)
@@ -394,7 +394,7 @@ namespace System.Globalization
                 int length = (int) chars[index++];
                 if (index + length <= bufferLength)
                 {
-                    CultureInfo ci = CultureInfo.GetCultureInfo(new String(chars, index, length));
+                    CultureInfo ci = CultureInfo.GetCultureInfo(new string(chars, index, length));
                     if ((enumNeutrals && ci.IsNeutralCulture) || (enumSpecificss && !ci.IsNeutralCulture))
                     {
                         list.Add(ci);

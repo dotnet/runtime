@@ -78,7 +78,7 @@ namespace RemoteExecutorConsoleApp
                 output.AppendLine("  " + exc);
                 output.AppendLine();
                 output.AppendLine("Child process:");
-                output.AppendLine(String.Format("  {0} {1} {2}", a, t, mi));
+                output.AppendLine(string.Format("  {0} {1} {2}", a, t, mi));
                 output.AppendLine();
 
                 if (additionalArgs.Length > 0)

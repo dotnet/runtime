@@ -589,7 +589,7 @@ namespace System.DirectoryServices.AccountManagement
         {
             GlobalDebug.WriteLineIf(GlobalDebug.Warn, "ADDNLinkedAttrSet", "TranslateForeignMembers: Translating foreign members");
 
-            List<Byte[]> sidList = new List<Byte[]>(_foreignMembersCurrentGroup.Count);
+            List<byte[]> sidList = new List<byte[]>(_foreignMembersCurrentGroup.Count);
 
             // Foreach foreign principal retrive the sid. 
             // If the SID is for a fake object we have to track it separately.  If we were attempt to translate it
@@ -603,7 +603,7 @@ namespace System.DirectoryServices.AccountManagement
                     throw new PrincipalOperationException(SR.ADStoreCtxCantRetrieveObjectSidForCrossStore);
                 }
 
-                Byte[] sid = (Byte[])de.Properties["objectSid"].Value;
+                byte[] sid = (byte[])de.Properties["objectSid"].Value;
 
                 // What type of SID is it?
                 SidType sidType = Utils.ClassifySID(sid);
@@ -661,7 +661,7 @@ namespace System.DirectoryServices.AccountManagement
 
                 if (_fakePrincipalMembers.Count > 0)
                 {
-                    foreignPrincipal = _storeCtx.ConstructFakePrincipalFromSID((Byte[])_fakePrincipalMembers[0].Properties["objectSid"].Value);
+                    foreignPrincipal = _storeCtx.ConstructFakePrincipalFromSID((byte[])_fakePrincipalMembers[0].Properties["objectSid"].Value);
                     _fakePrincipalMembers[0].Dispose();
                     _fakePrincipalMembers.RemoveAt(0);
                 }
@@ -1304,7 +1304,7 @@ namespace System.DirectoryServices.AccountManagement
 
         private List<string> _groupsToVisit = new List<string>();
 
-        protected Object current = null; // current member of the group (or current group of the user)
+        protected object current = null; // current member of the group (or current group of the user)
 
         private bool _returnedPrimaryGroup = false;
         private string _primaryGroupDN;                      // the DN of the user's PrimaryGroup (not included in this.members/originalMembers)
@@ -1397,7 +1397,7 @@ namespace System.DirectoryServices.AccountManagement
         public IEnumerator membersEnum = null;
         public Queue<IEnumerable> membersQueue;
         public ADStoreCtx storeCtx;
-        public Object current;
+        public object current;
         public bool returnedPrimaryGroup;
         public List<DirectoryEntry> foreignMembersCurrentGroup;
         public List<DirectoryEntry> fakePrincipalMembers;

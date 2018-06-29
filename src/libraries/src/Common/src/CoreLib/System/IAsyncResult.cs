@@ -23,7 +23,7 @@ namespace System
         WaitHandle AsyncWaitHandle { get; }
 
 
-        Object AsyncState { get; }
+        object AsyncState { get; }
 
         bool CompletedSynchronously { get; }
     }

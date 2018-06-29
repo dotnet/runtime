@@ -437,7 +437,7 @@ namespace System.Collections.Immutable
                     }
                     else
                     {
-                        throw new ArgumentException(String.Format(CultureInfo.CurrentCulture, SR.DuplicateKey, key));
+                        throw new ArgumentException(string.Format(CultureInfo.CurrentCulture, SR.DuplicateKey, key));
                     }
                 }
 

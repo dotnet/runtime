@@ -55,9 +55,9 @@ namespace System.Xml
         // Resource resolution
 
         // Maps a URI to an Object containing the actual resource.
-        public override Object GetEntity(Uri absoluteUri, string role, Type ofObjectToReturn)
+        public override object GetEntity(Uri absoluteUri, string role, Type ofObjectToReturn)
         {
-            if (ofObjectToReturn == null || ofObjectToReturn == typeof(System.IO.Stream) || ofObjectToReturn == typeof(System.Object))
+            if (ofObjectToReturn == null || ofObjectToReturn == typeof(System.IO.Stream) || ofObjectToReturn == typeof(object))
             {
                 return DownloadManager.GetStream(absoluteUri, _credentials, _proxy, _cachePolicy);
             }

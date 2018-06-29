@@ -202,15 +202,29 @@ namespace System.Data.SqlClient
         public const byte FEATUREEXT_TERMINATOR = 0xFF;
         public const byte FEATUREEXT_SRECOVERY = 0x01;
         public const byte FEATUREEXT_GLOBALTRANSACTIONS = 0x05;
+        public const byte FEATUREEXT_FEDAUTH = 0x02;
 
         [Flags]
         public enum FeatureExtension : uint
         {
             None = 0,
             SessionRecovery = 1,
+            FedAuth = 2,
             GlobalTransactions = 8,
         }
 
+        public const byte FEDAUTHLIB_LIVEID = 0X00;
+        public const byte FEDAUTHLIB_SECURITYTOKEN = 0x01;
+        public const byte FEDAUTHLIB_ADAL = 0x02;
+        public const byte FEDAUTHLIB_RESERVED = 0X7F;
+
+        public enum FedAuthLibrary : byte
+        {
+            LiveId = FEDAUTHLIB_LIVEID,
+            SecurityToken = FEDAUTHLIB_SECURITYTOKEN,
+            ADAL = FEDAUTHLIB_ADAL, // For later support
+            Default = FEDAUTHLIB_RESERVED
+        }
 
         //    Loginrec defines
         public const byte MAX_LOG_NAME = 30;              // TDS 4.2 login rec max name length
@@ -926,6 +940,31 @@ namespace System.Data.SqlClient
         Snix_Read,
         Snix_Close,
         Snix_SendRows,
+    }
+
+    internal enum ParsingErrorState
+    {
+        Undefined = 0,
+        FedAuthInfoLengthTooShortForCountOfInfoIds = 1,
+        FedAuthInfoLengthTooShortForData = 2,
+        FedAuthInfoFailedToReadCountOfInfoIds = 3,
+        FedAuthInfoFailedToReadTokenStream = 4,
+        FedAuthInfoInvalidOffset = 5,
+        FedAuthInfoFailedToReadData = 6,
+        FedAuthInfoDataNotUnicode = 7,
+        FedAuthInfoDoesNotContainStsurlAndSpn = 8,
+        FedAuthInfoNotReceived = 9,
+        FedAuthNotAcknowledged = 10,
+        FedAuthFeatureAckContainsExtraData = 11,
+        FedAuthFeatureAckUnknownLibraryType = 12,
+        UnrequestedFeatureAckReceived = 13,
+        UnknownFeatureAck = 14,
+        InvalidTdsTokenReceived = 15,
+        SessionStateLengthTooShort = 16,
+        SessionStateInvalidStatus = 17,
+        CorruptedTdsStream = 18,
+        ProcessSniPacketFailed = 19,
+        FedAuthRequiredPreLoginResponseInvalidValue = 20,
     }
 }
 

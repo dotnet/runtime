@@ -56,7 +56,7 @@ namespace System.Text
 
             int index = 0;
 
-            if (count > 0 && Char.IsLowSurrogate(chars[0]))
+            if (count > 0 && char.IsLowSurrogate(chars[0]))
             {
                 pTempBuffer[1] = chars[0];
                 index++;
@@ -82,7 +82,7 @@ namespace System.Text
             if (count < 0)
                 throw new ArgumentOutOfRangeException(nameof(count), SR.ArgumentOutOfRange_NeedNonNegNum);
             
-            bool excludeLastChar = count > 0 && !flush && Char.IsHighSurrogate(chars[count - 1]);
+            bool excludeLastChar = count > 0 && !flush && char.IsHighSurrogate(chars[count - 1]);
 
             if (excludeLastChar)
                 count--;
@@ -144,7 +144,7 @@ namespace System.Text
             if (byteCount == 0)
                 return 0;
 
-            char lastChar = charCount > 0 && !flush && Char.IsHighSurrogate(chars[charCount - 1]) ? chars[charCount - 1] : NULL_CHAR;
+            char lastChar = charCount > 0 && !flush && char.IsHighSurrogate(chars[charCount - 1]) ? chars[charCount - 1] : NULL_CHAR;
 
             if (lastChar != NULL_CHAR)
                 charCount--;

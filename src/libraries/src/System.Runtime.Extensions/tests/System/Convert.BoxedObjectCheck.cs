@@ -14,38 +14,38 @@ namespace System.Tests
         {
             yield return new object[] { true };
             yield return new object[] { false };
-            yield return new object[] { Byte.MinValue };
-            yield return new object[] { Byte.MaxValue };
-            yield return new object[] { SByte.MinValue };
-            yield return new object[] { SByte.MaxValue };
-            yield return new object[] { (SByte)0 };
-            yield return new object[] { Int16.MinValue };
-            yield return new object[] { Int16.MaxValue };
-            yield return new object[] { (Int16)0 };
-            yield return new object[] { UInt16.MinValue };
-            yield return new object[] { UInt16.MaxValue };
-            yield return new object[] { Int32.MinValue };
-            yield return new object[] { Int32.MaxValue };
-            yield return new object[] { (Int32)0 };
-            yield return new object[] { UInt32.MinValue };
-            yield return new object[] { UInt32.MaxValue };
-            yield return new object[] { Int64.MinValue };
-            yield return new object[] { Int64.MaxValue };
-            yield return new object[] { (Int64)0 };
-            yield return new object[] { UInt64.MinValue };
-            yield return new object[] { UInt64.MaxValue };
-            yield return new object[] { Char.MinValue };
-            yield return new object[] { Char.MaxValue };
-            yield return new object[] { (Char)0 };
-            yield return new object[] { Double.MinValue };
-            yield return new object[] { Double.MaxValue };
-            yield return new object[] { (Double)0 };
-            yield return new object[] { Single.MinValue };
-            yield return new object[] { Single.MaxValue };
-            yield return new object[] { (Single)0 };
-            yield return new object[] { Decimal.MinValue };
-            yield return new object[] { Decimal.MaxValue };
-            yield return new object[] { (Decimal)0 };
+            yield return new object[] { byte.MinValue };
+            yield return new object[] { byte.MaxValue };
+            yield return new object[] { sbyte.MinValue };
+            yield return new object[] { sbyte.MaxValue };
+            yield return new object[] { (sbyte)0 };
+            yield return new object[] { short.MinValue };
+            yield return new object[] { short.MaxValue };
+            yield return new object[] { (short)0 };
+            yield return new object[] { ushort.MinValue };
+            yield return new object[] { ushort.MaxValue };
+            yield return new object[] { int.MinValue };
+            yield return new object[] { int.MaxValue };
+            yield return new object[] { (int)0 };
+            yield return new object[] { uint.MinValue };
+            yield return new object[] { uint.MaxValue };
+            yield return new object[] { long.MinValue };
+            yield return new object[] { long.MaxValue };
+            yield return new object[] { (long)0 };
+            yield return new object[] { ulong.MinValue };
+            yield return new object[] { ulong.MaxValue };
+            yield return new object[] { char.MinValue };
+            yield return new object[] { char.MaxValue };
+            yield return new object[] { (char)0 };
+            yield return new object[] { double.MinValue };
+            yield return new object[] { double.MaxValue };
+            yield return new object[] { (double)0 };
+            yield return new object[] { float.MinValue };
+            yield return new object[] { float.MaxValue };
+            yield return new object[] { (float)0 };
+            yield return new object[] { decimal.MinValue };
+            yield return new object[] { decimal.MaxValue };
+            yield return new object[] { (decimal)0 };
             yield return new object[] { DateTime.MinValue };
             yield return new object[] { DateTime.Now };
             yield return new object[] { DateTime.MaxValue };
@@ -79,36 +79,36 @@ namespace System.Tests
         public static object GetBoxedCopy(object obj)
         {
             Type type = obj.GetType();
-            if (type == typeof(Boolean))
-                return Convert.ChangeType(obj, typeof(Boolean));
-            else if (type == typeof(Byte))
-                return Convert.ChangeType(obj, typeof(Byte));
-            else if (type == typeof(SByte))
-                return Convert.ChangeType(obj, typeof(SByte));
-            else if (type == typeof(Int16))
-                return Convert.ChangeType(obj, typeof(Int16));
-            else if (type == typeof(Int32))
-                return Convert.ChangeType(obj, typeof(Int32));
-            else if (type == typeof(Int64))
-                return Convert.ChangeType(obj, typeof(Int64));
-            else if (type == typeof(UInt16))
-                return Convert.ChangeType(obj, typeof(UInt16));
-            else if (type == typeof(UInt32))
-                return Convert.ChangeType(obj, typeof(UInt32));
-            else if (type == typeof(UInt64))
-                return Convert.ChangeType(obj, typeof(UInt64));
+            if (type == typeof(bool))
+                return Convert.ChangeType(obj, typeof(bool));
+            else if (type == typeof(byte))
+                return Convert.ChangeType(obj, typeof(byte));
+            else if (type == typeof(sbyte))
+                return Convert.ChangeType(obj, typeof(sbyte));
+            else if (type == typeof(short))
+                return Convert.ChangeType(obj, typeof(short));
+            else if (type == typeof(int))
+                return Convert.ChangeType(obj, typeof(int));
+            else if (type == typeof(long))
+                return Convert.ChangeType(obj, typeof(long));
+            else if (type == typeof(ushort))
+                return Convert.ChangeType(obj, typeof(ushort));
+            else if (type == typeof(uint))
+                return Convert.ChangeType(obj, typeof(uint));
+            else if (type == typeof(ulong))
+                return Convert.ChangeType(obj, typeof(ulong));
             else if (type == typeof(IntPtr))
                 return Convert.ChangeType(obj, typeof(IntPtr));
             else if (type == typeof(UIntPtr))
                 return Convert.ChangeType(obj, typeof(UIntPtr));
-            else if (type == typeof(Char))
-                return Convert.ChangeType(obj, typeof(Char));
-            else if (type == typeof(Double))
-                return Convert.ChangeType(obj, typeof(Double));
-            else if (type == typeof(Single))
-                return Convert.ChangeType(obj, typeof(Single));
-            else if (type == typeof(Decimal))
-                return Convert.ChangeType(obj, typeof(Decimal));
+            else if (type == typeof(char))
+                return Convert.ChangeType(obj, typeof(char));
+            else if (type == typeof(double))
+                return Convert.ChangeType(obj, typeof(double));
+            else if (type == typeof(float))
+                return Convert.ChangeType(obj, typeof(float));
+            else if (type == typeof(decimal))
+                return Convert.ChangeType(obj, typeof(decimal));
             else
                 // Not a primitive type
                 return RuntimeHelpers.GetObjectValue(obj);

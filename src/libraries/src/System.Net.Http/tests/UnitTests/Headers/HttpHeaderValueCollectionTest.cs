@@ -103,7 +103,7 @@ namespace System.Net.Http.Tests
             HttpRequestHeaders headers = new HttpRequestHeaders();
             Assert.Null(headers.TransferEncodingChunked);
             Assert.Equal(0, headers.TransferEncoding.Count);
-            Assert.Equal(String.Empty, headers.TransferEncoding.ToString());
+            Assert.Equal(string.Empty, headers.TransferEncoding.ToString());
 
             headers.TransferEncoding.Add(specialChunked);
 
@@ -153,7 +153,7 @@ namespace System.Net.Http.Tests
             collection.ParseAdd(null);
             Assert.False(collection.IsSpecialValueSet);
             Assert.Equal(0, collection.Count);
-            Assert.Equal(String.Empty, collection.ToString());
+            Assert.Equal(string.Empty, collection.ToString());
         }
 
         [Fact]
@@ -201,7 +201,7 @@ namespace System.Net.Http.Tests
 
             Assert.False(headers.WwwAuthenticate.IsSpecialValueSet);
             Assert.Equal(0, headers.WwwAuthenticate.Count);
-            Assert.Equal(String.Empty, headers.WwwAuthenticate.ToString());
+            Assert.Equal(string.Empty, headers.WwwAuthenticate.ToString());
         }
 
         [Fact]

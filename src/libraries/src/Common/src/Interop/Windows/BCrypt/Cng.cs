@@ -20,6 +20,7 @@ namespace Internal.NativeCrypto
         /// </summary>
         internal static class AlgorithmName
         {
+            public const string DSA = "DSA";                    // BCRYPT_DSA_ALGORITHM
             public const string ECDH = "ECDH";                  // BCRYPT_ECDH_ALGORITHM
             public const string ECDHP256 = "ECDH_P256";         // BCRYPT_ECDH_P256_ALGORITHM
             public const string ECDHP384 = "ECDH_P384";         // BCRYPT_ECDH_P384_ALGORITHM
@@ -28,6 +29,7 @@ namespace Internal.NativeCrypto
             public const string ECDsaP256 = "ECDSA_P256";       // BCRYPT_ECDSA_P256_ALGORITHM
             public const string ECDsaP384 = "ECDSA_P384";       // BCRYPT_ECDSA_P384_ALGORITHM
             public const string ECDsaP521 = "ECDSA_P521";       // BCRYPT_ECDSA_P521_ALGORITHM
+            public const string RSA = "RSA";                    // BCRYPT_RSA_ALGORITHM
             public const string MD5 = "MD5";                    // BCRYPT_MD5_ALGORITHM
             public const string Sha1 = "SHA1";                  // BCRYPT_SHA1_ALGORITHM
             public const string Sha256 = "SHA256";              // BCRYPT_SHA256_ALGORITHM
@@ -63,7 +65,7 @@ namespace Internal.NativeCrypto
         public const string BCRYPT_CHAIN_MODE_CBC = "ChainingModeCBC";
         public const string BCRYPT_CHAIN_MODE_ECB = "ChainingModeECB";
 
-        public static SafeAlgorithmHandle BCryptOpenAlgorithmProvider(String pszAlgId, String pszImplementation, OpenAlgorithmProviderFlags dwFlags)
+        public static SafeAlgorithmHandle BCryptOpenAlgorithmProvider(string pszAlgId, string pszImplementation, OpenAlgorithmProviderFlags dwFlags)
         {
             SafeAlgorithmHandle hAlgorithm = null;
             NTSTATUS ntStatus = Interop.BCryptOpenAlgorithmProvider(out hAlgorithm, pszAlgId, pszImplementation, (int)dwFlags);
@@ -76,7 +78,7 @@ namespace Internal.NativeCrypto
         {
             unsafe
             {
-                const String BCRYPT_KEY_DATA_BLOB = "KeyDataBlob";
+                const string BCRYPT_KEY_DATA_BLOB = "KeyDataBlob";
                 int keySize = key.Length;
                 int blobSize = sizeof(BCRYPT_KEY_DATA_BLOB_HEADER) + keySize;
                 byte[] blob = new byte[blobSize];
@@ -99,12 +101,12 @@ namespace Internal.NativeCrypto
         [StructLayout(LayoutKind.Sequential)]
         private struct BCRYPT_KEY_DATA_BLOB_HEADER
         {
-            public UInt32 dwMagic;
-            public UInt32 dwVersion;
-            public UInt32 cbKeyData;
+            public uint dwMagic;
+            public uint dwVersion;
+            public uint cbKeyData;
 
-            public const UInt32 BCRYPT_KEY_DATA_BLOB_MAGIC = 0x4d42444b;
-            public const UInt32 BCRYPT_KEY_DATA_BLOB_VERSION1 = 0x1;
+            public const uint BCRYPT_KEY_DATA_BLOB_MAGIC = 0x4d42444b;
+            public const uint BCRYPT_KEY_DATA_BLOB_VERSION1 = 0x1;
         }
 
         public static void SetCipherMode(this SafeAlgorithmHandle hAlg, string cipherMode)
@@ -185,10 +187,10 @@ namespace Internal.NativeCrypto
 
         private static class BCryptGetPropertyStrings
         {
-            public const String BCRYPT_HASH_LENGTH = "HashDigestLength";
+            public const string BCRYPT_HASH_LENGTH = "HashDigestLength";
         }
 
-        public static String CryptFormatObject(String oidValue, byte[] rawData, bool multiLine)
+        public static string CryptFormatObject(string oidValue, byte[] rawData, bool multiLine)
         {
             const int X509_ASN_ENCODING = 0x00000001;
             const int CRYPT_FORMAT_STR_MULTI_LINE = 0x00000001;
@@ -225,10 +227,10 @@ namespace Internal.NativeCrypto
         private static class Interop
         {
             [DllImport(Libraries.BCrypt, CharSet = CharSet.Unicode)]
-            public static extern NTSTATUS BCryptOpenAlgorithmProvider(out SafeAlgorithmHandle phAlgorithm, String pszAlgId, String pszImplementation, int dwFlags);
+            public static extern NTSTATUS BCryptOpenAlgorithmProvider(out SafeAlgorithmHandle phAlgorithm, string pszAlgId, string pszImplementation, int dwFlags);
 
             [DllImport(Libraries.BCrypt, CharSet = CharSet.Unicode)]
-            public static extern unsafe NTSTATUS BCryptSetProperty(SafeAlgorithmHandle hObject, String pszProperty, String pbInput, int cbInput, int dwFlags);
+            public static extern unsafe NTSTATUS BCryptSetProperty(SafeAlgorithmHandle hObject, string pszProperty, string pbInput, int cbInput, int dwFlags);
 
             [DllImport(Libraries.BCrypt, CharSet = CharSet.Unicode, EntryPoint = "BCryptSetProperty")]
             private static extern unsafe NTSTATUS BCryptSetIntPropertyPrivate(SafeBCryptHandle hObject, string pszProperty, ref int pdwInput, int cbInput, int dwFlags);
@@ -239,7 +241,7 @@ namespace Internal.NativeCrypto
             }
 
             [DllImport(Libraries.BCrypt, CharSet = CharSet.Unicode)]
-            public static extern NTSTATUS BCryptImportKey(SafeAlgorithmHandle hAlgorithm, IntPtr hImportKey, String pszBlobType, out SafeKeyHandle hKey, IntPtr pbKeyObject, int cbKeyObject, byte[] pbInput, int cbInput, int dwFlags);
+            public static extern NTSTATUS BCryptImportKey(SafeAlgorithmHandle hAlgorithm, IntPtr hImportKey, string pszBlobType, out SafeKeyHandle hKey, IntPtr pbKeyObject, int cbKeyObject, byte[] pbInput, int cbInput, int dwFlags);
 
             [DllImport(Libraries.BCrypt, CharSet = CharSet.Unicode)]
             public static extern unsafe NTSTATUS BCryptEncrypt(SafeKeyHandle hKey, byte* pbInput, int cbInput, IntPtr paddingInfo, [In,Out] byte [] pbIV, int cbIV, byte* pbOutput, int cbOutput, out int cbResult, int dwFlags);
@@ -254,7 +256,7 @@ namespace Internal.NativeCrypto
                 [In]      int dwFormatStrType,      // select multiline
                 [In]      IntPtr pFormatStruct,     // unused - pass IntPtr.Zero
                 [MarshalAs(UnmanagedType.LPStr)]
-                [In]      String lpszStructType,    // OID value
+                [In]      string lpszStructType,    // OID value
                 [In]      byte[] pbEncoded,         // Data to be formatted
                 [In]      int cbEncoded,            // Length of data to be formatted
                 [MarshalAs(UnmanagedType.LPWStr)]

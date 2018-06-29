@@ -269,7 +269,7 @@ namespace System.Xml
             {
                 if (_inclusivePrefixes[i].Length == xmlnsAttribute.prefixLength)
                 {
-                    if (String.Compare(Encoding.UTF8.GetString(_xmlnsBuffer, xmlnsAttribute.prefixOffset, xmlnsAttribute.prefixLength), _inclusivePrefixes[i], StringComparison.Ordinal) == 0)
+                    if (string.Compare(Encoding.UTF8.GetString(_xmlnsBuffer, xmlnsAttribute.prefixOffset, xmlnsAttribute.prefixLength), _inclusivePrefixes[i], StringComparison.Ordinal) == 0)
                     {
                         return true;
                     }

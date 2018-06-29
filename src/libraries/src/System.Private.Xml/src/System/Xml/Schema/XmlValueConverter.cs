@@ -312,7 +312,7 @@ namespace System.Xml.Schema
         protected static readonly Type DateTimeType = typeof(DateTime);
         protected static readonly Type DateTimeOffsetType = typeof(DateTimeOffset);
         protected static readonly Type BooleanType = typeof(bool);
-        protected static readonly Type ByteArrayType = typeof(Byte[]);
+        protected static readonly Type ByteArrayType = typeof(byte[]);
         protected static readonly Type XmlQualifiedNameType = typeof(XmlQualifiedName);
         protected static readonly Type UriType = typeof(Uri);
         protected static readonly Type TimeSpanType = typeof(TimeSpan);
@@ -781,7 +781,7 @@ namespace System.Xml.Schema
 
         internal static int DecimalToInt32(decimal value)
         {
-            if (value < (decimal)Int32.MinValue || value > (decimal)Int32.MaxValue)
+            if (value < (decimal)int.MinValue || value > (decimal)int.MaxValue)
                 throw new OverflowException(SR.Format(SR.XmlConvert_Overflow, new string[] { XmlConvert.ToString(value), "Int32" }));
 
             return (int)value;
@@ -789,7 +789,7 @@ namespace System.Xml.Schema
 
         protected static long DecimalToInt64(decimal value)
         {
-            if (value < (decimal)Int64.MinValue || value > (decimal)Int64.MaxValue)
+            if (value < (decimal)long.MinValue || value > (decimal)long.MaxValue)
                 throw new OverflowException(SR.Format(SR.XmlConvert_Overflow, new string[] { XmlConvert.ToString(value), "Int64" }));
 
             return (long)value;
@@ -797,7 +797,7 @@ namespace System.Xml.Schema
 
         protected static ulong DecimalToUInt64(decimal value)
         {
-            if (value < (decimal)UInt64.MinValue || value > (decimal)UInt64.MaxValue)
+            if (value < (decimal)ulong.MinValue || value > (decimal)ulong.MaxValue)
                 throw new OverflowException(SR.Format(SR.XmlConvert_Overflow, new string[] { XmlConvert.ToString(value), "UInt64" }));
 
             return (ulong)value;
@@ -805,7 +805,7 @@ namespace System.Xml.Schema
 
         protected static byte Int32ToByte(int value)
         {
-            if (value < (int)Byte.MinValue || value > (int)Byte.MaxValue)
+            if (value < (int)byte.MinValue || value > (int)byte.MaxValue)
                 throw new OverflowException(SR.Format(SR.XmlConvert_Overflow, new string[] { XmlConvert.ToString(value), "Byte" }));
 
             return (byte)value;
@@ -813,7 +813,7 @@ namespace System.Xml.Schema
 
         protected static short Int32ToInt16(int value)
         {
-            if (value < (int)Int16.MinValue || value > (int)Int16.MaxValue)
+            if (value < (int)short.MinValue || value > (int)short.MaxValue)
                 throw new OverflowException(SR.Format(SR.XmlConvert_Overflow, new string[] { XmlConvert.ToString(value), "Int16" }));
 
             return (short)value;
@@ -821,7 +821,7 @@ namespace System.Xml.Schema
 
         protected static sbyte Int32ToSByte(int value)
         {
-            if (value < (int)SByte.MinValue || value > (int)SByte.MaxValue)
+            if (value < (int)sbyte.MinValue || value > (int)sbyte.MaxValue)
                 throw new OverflowException(SR.Format(SR.XmlConvert_Overflow, new string[] { XmlConvert.ToString(value), "SByte" }));
 
             return (sbyte)value;
@@ -829,7 +829,7 @@ namespace System.Xml.Schema
 
         protected static ushort Int32ToUInt16(int value)
         {
-            if (value < (int)UInt16.MinValue || value > (int)UInt16.MaxValue)
+            if (value < (int)ushort.MinValue || value > (int)ushort.MaxValue)
                 throw new OverflowException(SR.Format(SR.XmlConvert_Overflow, new string[] { XmlConvert.ToString(value), "UInt16" }));
 
             return (ushort)value;
@@ -837,7 +837,7 @@ namespace System.Xml.Schema
 
         protected static int Int64ToInt32(long value)
         {
-            if (value < (long)Int32.MinValue || value > (long)Int32.MaxValue)
+            if (value < (long)int.MinValue || value > (long)int.MaxValue)
                 throw new OverflowException(SR.Format(SR.XmlConvert_Overflow, new string[] { XmlConvert.ToString(value), "Int32" }));
 
             return (int)value;
@@ -845,7 +845,7 @@ namespace System.Xml.Schema
 
         protected static uint Int64ToUInt32(long value)
         {
-            if (value < (long)UInt32.MinValue || value > (long)UInt32.MaxValue)
+            if (value < (long)uint.MinValue || value > (long)uint.MaxValue)
                 throw new OverflowException(SR.Format(SR.XmlConvert_Overflow, new string[] { XmlConvert.ToString(value), "UInt32" }));
 
             return (uint)value;

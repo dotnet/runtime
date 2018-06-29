@@ -16,20 +16,40 @@
     <Compile Include="SatelliteContractVersionAttributeTests.cs" />
     <Compile Include="MissingSatelliteAssemblyException.cs" />
     <Compile Include="ResourceSetTests.cs" />
-    <EmbeddedResource Include="Resources\TestResx.netstandard17.resx">
+    <_WorkaroundCoreMSBuildResource Include="Resources\TestResx.netstandard17.resx">
       <Generator>ResXFileCodeGenerator</Generator>
       <LastGenOutput>TestResx.netstandard17.Designer.cs</LastGenOutput>
-    </EmbeddedResource>
+    </_WorkaroundCoreMSBuildResource>
     <Compile Include="Resources\TestResx.netstandard17.Designer.cs">
       <AutoGen>True</AutoGen>
       <DesignTime>True</DesignTime>
       <DependentUpon>TestResx.netstandard17.resx</DependentUpon>
     </Compile>
-  </ItemGroup>
-  <ItemGroup>
     <EmbeddedResource Include="Resources\TestResx.resx">
       <Generator>ResXFileCodeGenerator</Generator>
       <LastGenOutput>TestResx.Designer.cs</LastGenOutput>
     </EmbeddedResource>
   </ItemGroup>
+  <!--
+  MSBuild on .NET Core doesn't support non-string resources.
+  See https://github.com/Microsoft/msbuild/issues/1352 and https://github.com/Microsoft/msbuild/issues/2221
+  Workaround this for now by invoking the desktop resgen.exe on Windows.
+  -->
+  <Target Name="WorkaroundCoreMSBuildResources"
+          BeforeTargets="PrepareResources"
+          Condition="'$(OS)' == 'Windows_NT'">
+    <PropertyGroup>
+      <_ResourceRelativeDir>%(_WorkaroundCoreMSBuildResource.RelativeDir)</_ResourceRelativeDir>
+      <_ResourceRelativeDir>$(_ResourceRelativeDir.TrimEnd('\'))</_ResourceRelativeDir>
+      <_ResourceOutputName>$(IntermediateOutputPath)$(RootNamespace).$(_ResourceRelativeDir).%(_WorkaroundCoreMSBuildResource.FileName).resources</_ResourceOutputName>
+    </PropertyGroup>
+
+    <Exec Command="resgen.exe %(_WorkaroundCoreMSBuildResource.Identity) $(_ResourceOutputName)" />
+
+    <ItemGroup>
+      <EmbeddedResource Include="$(_ResourceOutputName)"
+                        WithCulture="false"
+                        Type="Non-Resx" />
+    </ItemGroup>
+  </Target>
 </Project>

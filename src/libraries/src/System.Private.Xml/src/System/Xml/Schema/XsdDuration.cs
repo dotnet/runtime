@@ -299,9 +299,9 @@ namespace System.Xml.Schema
                     if (IsNegative)
                     {
                         // Handle special case of Int64.MaxValue + 1 before negation, since it would otherwise overflow
-                        if (ticks == (ulong)Int64.MaxValue + 1)
+                        if (ticks == (ulong)long.MaxValue + 1)
                         {
-                            result = new TimeSpan(Int64.MinValue);
+                            result = new TimeSpan(long.MinValue);
                         }
                         else
                         {
@@ -632,7 +632,7 @@ namespace System.Xml.Schema
             {
                 digit = s[offset] - '0';
 
-                if (result > (Int32.MaxValue - digit) / 10)
+                if (result > (int.MaxValue - digit) / 10)
                 {
                     if (!eatDigits)
                     {

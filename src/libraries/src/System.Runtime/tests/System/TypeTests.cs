@@ -319,7 +319,7 @@ namespace System.Tests
         private static Func<AssemblyName, Assembly> assemblyloader = (aName) => aName.Name == "TestLoadAssembly" ?
                            Assembly.LoadFrom(@".\TestLoadAssembly.dll") :
                            null;
-        private static Func<Assembly, String, Boolean, Type> typeloader = (assem, name, ignore) => assem == null ?
+        private static Func<Assembly, string, bool, Type> typeloader = (assem, name, ignore) => assem == null ?
                              Type.GetType(name, false, ignore) :
                                  assem.GetType(name, false, ignore);
         [Fact]

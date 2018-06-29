@@ -51,7 +51,7 @@ if [ ! -d $TMPDIR ]; then
 	mkdir -p $TMPDIR 
 fi
 
-TIZEN_URL=http://download.tizen.org/snapshots/tizen
+TIZEN_URL=http://download.tizen.org/releases/milestone/tizen
 BUILD_XML=build.xml
 REPOMD_XML=repomd.xml
 PRIMARY_XML=primary.xml

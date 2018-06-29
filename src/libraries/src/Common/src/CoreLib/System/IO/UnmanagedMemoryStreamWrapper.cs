@@ -160,7 +160,7 @@ namespace System.IO
             stream.Write(buffer, 0, buffer.Length);
         }
 
-        public override void SetLength(Int64 value)
+        public override void SetLength(long value)
         {
             // This was probably meant to call _unmanagedStream.SetLength(value), but it was forgotten in V.4.0.
             // Now this results in a call to the base which touches the underlying array which is never actually used.
@@ -169,7 +169,7 @@ namespace System.IO
         }
 
 
-        public override Task CopyToAsync(Stream destination, Int32 bufferSize, CancellationToken cancellationToken)
+        public override Task CopyToAsync(Stream destination, int bufferSize, CancellationToken cancellationToken)
         {
             // The parameter checks must be in sync with the base version:
             if (destination == null)
@@ -201,7 +201,7 @@ namespace System.IO
         }
 
 
-        public override Task<Int32> ReadAsync(Byte[] buffer, Int32 offset, Int32 count, CancellationToken cancellationToken)
+        public override Task<int> ReadAsync(byte[] buffer, int offset, int count, CancellationToken cancellationToken)
         {
             return _unmanagedStream.ReadAsync(buffer, offset, count, cancellationToken);
         }
@@ -212,7 +212,7 @@ namespace System.IO
         }
 
 
-        public override Task WriteAsync(Byte[] buffer, Int32 offset, Int32 count, CancellationToken cancellationToken)
+        public override Task WriteAsync(byte[] buffer, int offset, int count, CancellationToken cancellationToken)
         {
             return _unmanagedStream.WriteAsync(buffer, offset, count, cancellationToken);
         }

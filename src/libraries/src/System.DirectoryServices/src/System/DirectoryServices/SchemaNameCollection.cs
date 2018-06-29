@@ -111,7 +111,7 @@ namespace System.DirectoryServices
         /// </devdoc>
         public bool Contains(string value) => IndexOf(value) != -1;
 
-        public void CopyTo(String[] stringArray, int index)
+        public void CopyTo(string[] stringArray, int index)
         {
             object[] values = GetValue();
             values.CopyTo(stringArray, index);

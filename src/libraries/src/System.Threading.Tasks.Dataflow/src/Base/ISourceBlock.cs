@@ -29,10 +29,10 @@ namespace System.Threading.Tasks.Dataflow
 
         /// <include file='XmlDocs/CommonXmlDocComments.xml' path='CommonXmlDocComments/Sources/Member[@name="ConsumeMessage"]/*' />
         [SuppressMessage("Microsoft.Design", "CA1021:AvoidOutParameters", MessageId = "2#")]
-        TOutput ConsumeMessage(DataflowMessageHeader messageHeader, ITargetBlock<TOutput> target, out Boolean messageConsumed);
+        TOutput ConsumeMessage(DataflowMessageHeader messageHeader, ITargetBlock<TOutput> target, out bool messageConsumed);
 
         /// <include file='XmlDocs/CommonXmlDocComments.xml' path='CommonXmlDocComments/Sources/Member[@name="ReserveMessage"]/*' />
-        Boolean ReserveMessage(DataflowMessageHeader messageHeader, ITargetBlock<TOutput> target);
+        bool ReserveMessage(DataflowMessageHeader messageHeader, ITargetBlock<TOutput> target);
 
         /// <include file='XmlDocs/CommonXmlDocComments.xml' path='CommonXmlDocComments/Sources/Member[@name="ReleaseReservation"]/*' />
         void ReleaseReservation(DataflowMessageHeader messageHeader, ITargetBlock<TOutput> target);

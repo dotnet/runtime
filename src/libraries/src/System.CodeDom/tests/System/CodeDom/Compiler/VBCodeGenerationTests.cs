@@ -449,7 +449,7 @@ namespace System.CodeDom.Compiler.Tests
             arrayMethod.Name = "ArrayMethod";
             arrayMethod.Parameters.Add(new CodeParameterDeclarationExpression(typeof(int), "parameter"));
             arrayMethod.Attributes = (arrayMethod.Attributes & ~MemberAttributes.AccessMask) | MemberAttributes.Public;
-            arrayMethod.ReturnType = new CodeTypeReference(typeof(System.Int64));
+            arrayMethod.ReturnType = new CodeTypeReference(typeof(long));
             arrayMethod.Statements.Add(new CodeVariableDeclarationStatement(typeof(int), "arraySize", new CodePrimitiveExpression(3)));
             arrayMethod.Statements.Add(new CodeVariableDeclarationStatement(typeof(int[]), "array1"));
             arrayMethod.Statements.Add(new CodeVariableDeclarationStatement(new CodeTypeReference("System.Int32", 1), "array2", new CodeArrayCreateExpression(typeof(int[]), new CodePrimitiveExpression(3))));
@@ -460,7 +460,7 @@ namespace System.CodeDom.Compiler.Tests
                                          new CodePrimitiveExpression(4),
                                          new CodePrimitiveExpression(9),})));
             arrayMethod.Statements.Add(new CodeAssignStatement(new CodeVariableReferenceExpression("array1"), new CodeArrayCreateExpression(typeof(int[]), new CodeVariableReferenceExpression("arraySize"))));
-            arrayMethod.Statements.Add(new CodeVariableDeclarationStatement(typeof(System.Int64), "retValue", new CodePrimitiveExpression(0)));
+            arrayMethod.Statements.Add(new CodeVariableDeclarationStatement(typeof(long), "retValue", new CodePrimitiveExpression(0)));
             arrayMethod.Statements.Add(new CodeVariableDeclarationStatement(typeof(int), "i"));
             arrayMethod.Statements.Add(
                 new CodeIterationStatement(
@@ -817,11 +817,11 @@ namespace System.CodeDom.Compiler.Tests
             // create method to test casting value type -> reference type
             CodeMemberMethod valueToReference = new CodeMemberMethod();
             valueToReference.Name = "ValueToReference";
-            valueToReference.ReturnType = new CodeTypeReference(typeof(System.Object));
+            valueToReference.ReturnType = new CodeTypeReference(typeof(object));
             valueToReference.Attributes = MemberAttributes.Public | MemberAttributes.Static;
             CodeParameterDeclarationExpression valueParam = new CodeParameterDeclarationExpression(typeof(int), "value");
             valueToReference.Parameters.Add(valueParam);
-            valueToReference.Statements.Add(new CodeMethodReturnStatement(new CodeCastExpression(typeof(System.Object), new CodeVariableReferenceExpression("value"))));
+            valueToReference.Statements.Add(new CodeMethodReturnStatement(new CodeCastExpression(typeof(object), new CodeVariableReferenceExpression("value"))));
             cd.Members.Add(valueToReference);
 
             AssertEqual(cd,
@@ -1178,7 +1178,7 @@ namespace System.CodeDom.Compiler.Tests
             cmm.Attributes = MemberAttributes.Public | MemberAttributes.Static;
             param = new CodeParameterDeclarationExpression(typeof(int), "a");
             cmm.Parameters.Add(param);
-            cmm.Parameters.Add(new CodeParameterDeclarationExpression(typeof(String), "exceptionMessage"));
+            cmm.Parameters.Add(new CodeParameterDeclarationExpression(typeof(string), "exceptionMessage"));
 
             tcfstmt = new CodeTryCatchFinallyStatement();
             CodeCatchClause catchClause = new CodeCatchClause("e");
@@ -1202,7 +1202,7 @@ namespace System.CodeDom.Compiler.Tests
             cmm.Attributes = MemberAttributes.Public | MemberAttributes.Static;
             param = new CodeParameterDeclarationExpression(typeof(int), "a");
             cmm.Parameters.Add(param);
-            cmm.Parameters.Add(new CodeParameterDeclarationExpression(typeof(String), "exceptionMessage"));
+            cmm.Parameters.Add(new CodeParameterDeclarationExpression(typeof(string), "exceptionMessage"));
 
             tcfstmt = new CodeTryCatchFinallyStatement();
             catchClause = new CodeCatchClause("e", new CodeTypeReference(typeof(ArgumentNullException)));
@@ -3209,7 +3209,7 @@ namespace System.CodeDom.Compiler.Tests
             kType.Constraints.Add(iComparableT);
 
             CodeTypeParameter vType = new CodeTypeParameter("TValue");
-            vType.Constraints.Add(new CodeTypeReference(typeof(IList<System.String>)));
+            vType.Constraints.Add(new CodeTypeReference(typeof(IList<string>)));
             vType.CustomAttributes.Add(new CodeAttributeDeclaration(
                 "System.ComponentModel.DescriptionAttribute", new CodeAttributeArgument(new CodePrimitiveExpression("ValueType"))));
 

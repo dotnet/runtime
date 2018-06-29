@@ -428,9 +428,9 @@ namespace System.Net.Primitives.Functional.Tests
             NetworkCredential c = CredentialCache.DefaultCredentials as NetworkCredential;
             Assert.NotNull(c);
 
-            Assert.Equal(String.Empty, c.UserName);
-            Assert.Equal(String.Empty, c.Password);
-            Assert.Equal(String.Empty, c.Domain);
+            Assert.Equal(string.Empty, c.UserName);
+            Assert.Equal(string.Empty, c.Password);
+            Assert.Equal(string.Empty, c.Domain);
         }
         
         [Theory]
@@ -555,9 +555,9 @@ namespace System.Net.Primitives.Functional.Tests
             NetworkCredential nc = CredentialCache.DefaultNetworkCredentials as NetworkCredential;
             Assert.NotNull(nc);
 
-            Assert.Equal(String.Empty, nc.UserName);
-            Assert.Equal(String.Empty, nc.Password);
-            Assert.Equal(String.Empty, nc.Domain);
+            Assert.Equal(string.Empty, nc.UserName);
+            Assert.Equal(string.Empty, nc.Password);
+            Assert.Equal(string.Empty, nc.Domain);
         }
     }
 }

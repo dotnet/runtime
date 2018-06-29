@@ -42,7 +42,7 @@ namespace System.DirectoryServices.AccountManagement
 
                     default:
                         throw new ConfigurationErrorsException(
-                                            String.Format(
+                                            string.Format(
                                                 CultureInfo.CurrentCulture,
                                                 SR.ConfigHandlerUnknownConfigSection,
                                                 child.Name));

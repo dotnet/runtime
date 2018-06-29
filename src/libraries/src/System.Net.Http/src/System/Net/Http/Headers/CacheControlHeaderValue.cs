@@ -232,14 +232,34 @@ namespace System.Net.Http.Headers
             {
                 AppendValueWithSeparatorIfRequired(sb, maxAgeString);
                 sb.Append('=');
-                sb.Append(((int)_maxAge.Value.TotalSeconds).ToString(NumberFormatInfo.InvariantInfo));
+                int maxAge = (int)_maxAge.GetValueOrDefault().TotalSeconds;
+                if (maxAge >= 0)
+                {
+                    sb.Append(maxAge);
+                }
+                else
+                {
+                    // In the corner case where the value is negative, ensure it uses
+                    // the invariant's negative sign rather than the current culture's.
+                    sb.Append(maxAge.ToString(NumberFormatInfo.InvariantInfo));
+                }
             }
 
             if (_sharedMaxAge.HasValue)
             {
                 AppendValueWithSeparatorIfRequired(sb, sharedMaxAgeString);
                 sb.Append('=');
-                sb.Append(((int)_sharedMaxAge.Value.TotalSeconds).ToString(NumberFormatInfo.InvariantInfo));
+                int sharedMaxAge = (int)_sharedMaxAge.GetValueOrDefault().TotalSeconds;
+                if (sharedMaxAge >= 0)
+                {
+                    sb.Append(sharedMaxAge);
+                }
+                else
+                {
+                    // In the corner case where the value is negative, ensure it uses
+                    // the invariant's negative sign rather than the current culture's.
+                    sb.Append(sharedMaxAge.ToString(NumberFormatInfo.InvariantInfo));
+                }
             }
 
             if (_maxStale)
@@ -248,7 +268,17 @@ namespace System.Net.Http.Headers
                 if (_maxStaleLimit.HasValue)
                 {
                     sb.Append('=');
-                    sb.Append(((int)_maxStaleLimit.Value.TotalSeconds).ToString(NumberFormatInfo.InvariantInfo));
+                    int maxStaleLimit = (int)_maxStaleLimit.GetValueOrDefault().TotalSeconds;
+                    if (maxStaleLimit >= 0)
+                    {
+                        sb.Append(maxStaleLimit);
+                    }
+                    else
+                    {
+                        // In the corner case where the value is negative, ensure it uses
+                        // the invariant's negative sign rather than the current culture's.
+                        sb.Append(maxStaleLimit.ToString(NumberFormatInfo.InvariantInfo));
+                    }
                 }
             }
 
@@ -256,7 +286,17 @@ namespace System.Net.Http.Headers
             {
                 AppendValueWithSeparatorIfRequired(sb, minFreshString);
                 sb.Append('=');
-                sb.Append(((int)_minFresh.Value.TotalSeconds).ToString(NumberFormatInfo.InvariantInfo));
+                int minFresh = (int)_minFresh.GetValueOrDefault().TotalSeconds;
+                if (minFresh >= 0)
+                {
+                    sb.Append(minFresh);
+                }
+                else
+                {
+                    // In the corner case where the value is negative, ensure it uses
+                    // the invariant's negative sign rather than the current culture's.
+                    sb.Append(minFresh.ToString(NumberFormatInfo.InvariantInfo));
+                }
             }
 
             if (_privateField)

@@ -409,7 +409,7 @@ namespace System.DirectoryServices.AccountManagement
             if ((contextType == ContextType.Machine) && (container != null))
                 throw new ArgumentException(SR.ContextNoContainerForMachineCtx);
 
-            if ((contextType == ContextType.ApplicationDirectory) && ((String.IsNullOrEmpty(container)) || (String.IsNullOrEmpty(name))))
+            if ((contextType == ContextType.ApplicationDirectory) && ((string.IsNullOrEmpty(container)) || (string.IsNullOrEmpty(name))))
                 throw new ArgumentException(SR.ContextNoContainerForApplicationDirectoryCtx);
 
             _contextType = contextType;

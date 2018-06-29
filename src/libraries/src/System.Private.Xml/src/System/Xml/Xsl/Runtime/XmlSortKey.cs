@@ -154,7 +154,7 @@ namespace System.Xml.Xsl.Runtime
             if (that == null)
                 return CompareToEmpty(obj);
 
-            cmp = Decimal.Compare(_decVal, that._decVal);
+            cmp = decimal.Compare(_decVal, that._decVal);
             if (cmp == 0)
                 return BreakSortingTie(that);
 
@@ -301,7 +301,7 @@ namespace System.Xml.Xsl.Runtime
 
         public XmlDoubleSortKey(double value, XmlCollation collation)
         {
-            if (Double.IsNaN(value))
+            if (double.IsNaN(value))
             {
                 // Treat NaN as if it were the empty sequence
                 _isNaN = true;
@@ -310,7 +310,7 @@ namespace System.Xml.Xsl.Runtime
                 // Greatest, Descending: isEmptyGreatest = false
                 // Least, Ascending: isEmptyGreatest = false
                 // Least, Descending: isEmptyGreatest = true
-                _dblVal = (collation.EmptyGreatest != collation.DescendingOrder) ? Double.PositiveInfinity : Double.NegativeInfinity;
+                _dblVal = (collation.EmptyGreatest != collation.DescendingOrder) ? double.PositiveInfinity : double.NegativeInfinity;
             }
             else
             {
@@ -340,14 +340,14 @@ namespace System.Xml.Xsl.Runtime
                         return BreakSortingTie(that);
 
                     // NaN sorts before or after all non-NaN values
-                    Debug.Assert(_dblVal == Double.NegativeInfinity || _dblVal == Double.PositiveInfinity);
-                    return (_dblVal == Double.NegativeInfinity) ? -1 : 1;
+                    Debug.Assert(_dblVal == double.NegativeInfinity || _dblVal == double.PositiveInfinity);
+                    return (_dblVal == double.NegativeInfinity) ? -1 : 1;
                 }
                 else if (that._isNaN)
                 {
                     // NaN sorts before or after all non-NaN values
-                    Debug.Assert(that._dblVal == Double.NegativeInfinity || that._dblVal == Double.PositiveInfinity);
-                    return (that._dblVal == Double.NegativeInfinity) ? 1 : -1;
+                    Debug.Assert(that._dblVal == double.NegativeInfinity || that._dblVal == double.PositiveInfinity);
+                    return (that._dblVal == double.NegativeInfinity) ? 1 : -1;
                 }
 
                 return BreakSortingTie(that);
