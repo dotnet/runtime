@@ -208,6 +208,12 @@ private:
         return new (comp, GT_LEA) GenTreeAddrMode(resultType, base, index, 0, 0);
     }
 
+    GenTree* OffsetByIndexWithScale(GenTree* base, GenTree* index, unsigned scale)
+    {
+        var_types resultType = (base->TypeGet() == TYP_REF) ? TYP_BYREF : base->TypeGet();
+        return new (comp, GT_LEA) GenTreeAddrMode(resultType, base, index, scale, 0);
+    }
+
     // Replace the definition of the given use with a lclVar, allocating a new temp
     // if 'tempNum' is BAD_VAR_NUM.
     unsigned ReplaceWithLclVar(LIR::Use& use, unsigned tempNum = BAD_VAR_NUM)

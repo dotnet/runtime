@@ -3085,6 +3085,16 @@ GenTree* Lowering::LowerDirectCall(GenTreeCall* call)
             result = Ind(Ind(result));
             break;
 
+        case IAT_RELPVALUE:
+        {
+            // Non-virtual direct calls to addresses accessed by
+            // a single relative indirection.
+            GenTree* cellAddr = AddrGen(addr);
+            GenTree* indir    = Ind(cellAddr);
+            result            = comp->gtNewOperNode(GT_ADD, TYP_I_IMPL, indir, AddrGen(addr));
+            break;
+        }
+
         default:
             noway_assert(!"Bad accessType");
             break;
@@ -3874,6 +3884,9 @@ GenTree* Lowering::LowerNonvirtPinvokeCall(GenTreeCall* call)
             case IAT_PPVALUE:
                 result = Ind(Ind(AddrGen(addr)));
                 break;
+
+            case IAT_RELPVALUE:
+                unreached();
         }
     }
 
@@ -3970,19 +3983,24 @@ GenTree* Lowering::LowerVirtualVtableCall(GenTreeCall* call)
             //
             // Save relative offset to tmp (vtab is virtual table pointer, vtabOffsOfIndirection is offset of
             // vtable-1st-level-indirection):
-            // tmp = [vtab + vtabOffsOfIndirection]
+            // tmp = vtab
             //
             // Save address of method to result (vtabOffsAfterIndirection is offset of vtable-2nd-level-indirection):
-            // result = [vtab + vtabOffsOfIndirection + vtabOffsAfterIndirection + tmp]
+            // result = [tmp + vtabOffsOfIndirection + vtabOffsAfterIndirection + [tmp + vtabOffsOfIndirection]]
+            //
+            //
+            // If relative pointers are also in second level indirection, additional temporary is used:
+            // tmp1 = vtab
+            // tmp2 = tmp1 + vtabOffsOfIndirection + vtabOffsAfterIndirection + [tmp1 + vtabOffsOfIndirection]
+            // result = tmp2 + [tmp2]
+            //
             unsigned lclNumTmp = comp->lvaGrabTemp(true DEBUGARG("lclNumTmp"));
-
             comp->lvaTable[lclNumTmp].incRefCnts(comp->compCurBB->getBBWeight(comp), comp);
-            GenTree* lclvNodeStore = comp->gtNewTempAssign(lclNumTmp, result);
 
-            LIR::Range range = LIR::SeqTree(comp, lclvNodeStore);
-            JITDUMP("result of obtaining pointer to virtual table:\n");
-            DISPRANGE(range);
-            BlockRange().InsertBefore(call, std::move(range));
+            unsigned lclNumTmp2 = comp->lvaGrabTemp(true DEBUGARG("lclNumTmp2"));
+            comp->lvaTable[lclNumTmp2].incRefCnts(comp->compCurBB->getBBWeight(comp), comp);
+
+            GenTree* lclvNodeStore = comp->gtNewTempAssign(lclNumTmp, result);
 
             GenTree* tmpTree = comp->gtNewLclvNode(lclNumTmp, result->TypeGet());
             tmpTree          = Offset(tmpTree, vtabOffsOfIndirection);
@@ -3991,7 +4009,22 @@ GenTree* Lowering::LowerVirtualVtableCall(GenTreeCall* call)
             GenTree* offs = comp->gtNewIconNode(vtabOffsOfIndirection + vtabOffsAfterIndirection, TYP_INT);
             result = comp->gtNewOperNode(GT_ADD, TYP_I_IMPL, comp->gtNewLclvNode(lclNumTmp, result->TypeGet()), offs);
 
-            result = Ind(OffsetByIndex(result, tmpTree));
+            GenTree* base           = OffsetByIndexWithScale(result, tmpTree, 1);
+            GenTree* lclvNodeStore2 = comp->gtNewTempAssign(lclNumTmp2, base);
+
+            LIR::Range range = LIR::SeqTree(comp, lclvNodeStore);
+            JITDUMP("result of obtaining pointer to virtual table:\n");
+            DISPRANGE(range);
+            BlockRange().InsertBefore(call, std::move(range));
+
+            LIR::Range range2 = LIR::SeqTree(comp, lclvNodeStore2);
+            JITDUMP("result of obtaining pointer to virtual table 2nd level indirection:\n");
+            DISPRANGE(range2);
+            BlockRange().InsertAfter(lclvNodeStore, std::move(range2));
+
+            result = Ind(comp->gtNewLclvNode(lclNumTmp2, result->TypeGet()));
+            result =
+                comp->gtNewOperNode(GT_ADD, TYP_I_IMPL, result, comp->gtNewLclvNode(lclNumTmp2, result->TypeGet()));
         }
         else
         {

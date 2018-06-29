@@ -955,7 +955,7 @@ inline DWORD MethodTable::VtableIndirectionSlotIterator::GetOffsetFromMethodTabl
 }
 
 //==========================================================================================
-inline PTR_PCODE MethodTable::VtableIndirectionSlotIterator::GetIndirectionSlot()
+inline DPTR(MethodTable::VTableIndir2_t) MethodTable::VtableIndirectionSlotIterator::GetIndirectionSlot()
 {
     LIMITED_METHOD_DAC_CONTRACT;
     PRECONDITION(m_i != (DWORD) -1 && m_i < m_count);
@@ -965,7 +965,7 @@ inline PTR_PCODE MethodTable::VtableIndirectionSlotIterator::GetIndirectionSlot(
 
 //==========================================================================================
 #ifndef DACCESS_COMPILE
-inline void MethodTable::VtableIndirectionSlotIterator::SetIndirectionSlot(PTR_PCODE pChunk)
+inline void MethodTable::VtableIndirectionSlotIterator::SetIndirectionSlot(DPTR(MethodTable::VTableIndir2_t) pChunk)
 {
     LIMITED_METHOD_CONTRACT;
     m_pSlot->SetValueMaybeNull(pChunk);

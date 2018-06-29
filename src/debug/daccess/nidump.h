@@ -194,7 +194,7 @@ public:
                           PTR_Module module );
     
 #ifndef STUB_DISPATCH_ALL
-    void DumpMethodTableSlotChunk( PTR_PCODE slotChunk, COUNT_T size );
+    void DumpMethodTableSlotChunk( TADDR slotChunk, COUNT_T size, bool );
 #endif
 
     void DumpSlot( unsigned index, PCODE tgt );
@@ -478,6 +478,8 @@ private:
     template<typename T>
     TADDR DPtrToPreferredAddr( T ptr );
 
+    TADDR DPtrToPreferredAddr( TADDR tptr );
+
     void DumpAssemblySignature(CORCOMPILE_ASSEMBLY_SIGNATURE & assemblySignature);
 
     SIZE_T CountFields( PTR_MethodTable mt );
@@ -500,12 +502,13 @@ private:
 
     struct SlotChunk
     {
-        PTR_PCODE addr;
+        TADDR addr;
         WORD nSlots;
+        bool isRelative;
 
         inline bool operator==(const SlotChunk& sc) const
         {
-            return (addr == sc.addr) && (nSlots == sc.nSlots);
+            return (addr == sc.addr) && (nSlots == sc.nSlots) && (isRelative == sc.isRelative);
         }
 
         inline bool operator<(const SlotChunk& sc) const

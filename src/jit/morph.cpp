@@ -7613,8 +7613,22 @@ void Compiler::fgMorphTailCall(GenTreeCall* call, void* pfnCopyArgs)
 
         /* Now the appropriate vtable slot */
 
-        add  = gtNewOperNode(GT_ADD, TYP_I_IMPL, vtbl, gtNewIconNode(vtabOffsAfterIndirection, TYP_I_IMPL));
+        add = gtNewOperNode(GT_ADD, TYP_I_IMPL, vtbl, gtNewIconNode(vtabOffsAfterIndirection, TYP_I_IMPL));
+
+        GenTree* indOffTree = nullptr;
+
+        if (isRelative)
+        {
+            indOffTree = impCloneExpr(add, &add, NO_CLASS_HANDLE, (unsigned)CHECK_SPILL_ALL,
+                                      nullptr DEBUGARG("virtual table call 2"));
+        }
+
         vtbl = gtNewOperNode(GT_IND, TYP_I_IMPL, add);
+
+        if (isRelative)
+        {
+            vtbl = gtNewOperNode(GT_ADD, TYP_I_IMPL, vtbl, indOffTree);
+        }
 
         // Switch this to a plain indirect call
         call->gtFlags &= ~GTF_CALL_VIRT_KIND_MASK;

@@ -156,6 +156,26 @@ public:
     }
 #endif // DACCESS_COMPILE
 
+    static TADDR GetRelativeMaybeNull(TADDR base, TADDR addr)
+    {
+        LIMITED_METHOD_DAC_CONTRACT;
+        if (addr == NULL)
+        {
+            return NULL;
+        }
+        else
+        {
+            return addr - base;
+        }
+    }
+
+    static TADDR GetRelative(TADDR base, TADDR addr)
+    {
+        LIMITED_METHOD_DAC_CONTRACT;
+        PRECONDITION(addr != NULL);
+        return addr - base;
+    }
+
 private:
 #ifndef DACCESS_COMPILE
     Volatile<TADDR> m_delta;
@@ -720,6 +740,19 @@ public:
         VolatileStore((PTR_TYPE *)(&m_ptr), addr);
     }
 #endif
+
+    static TADDR GetRelativeMaybeNull(TADDR base, TADDR addr)
+    {
+        LIMITED_METHOD_DAC_CONTRACT;
+        return addr;
+    }
+
+    static TADDR GetRelative(TADDR base, TADDR addr)
+    {
+        LIMITED_METHOD_DAC_CONTRACT;
+        PRECONDITION(addr != NULL);
+        return addr;
+    }
 
 private:
     TADDR m_ptr;

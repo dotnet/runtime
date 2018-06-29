@@ -9979,7 +9979,7 @@ MethodTable * MethodTableBuilder::AllocateNewMT(Module *pLoaderModule,
         else
         {
             // Use the locally allocated chunk
-            it.SetIndirectionSlot((PTR_PCODE)(pData+dwCurrentUnsharedSlotOffset));
+            it.SetIndirectionSlot((MethodTable::VTableIndir2_t *)(pData+dwCurrentUnsharedSlotOffset));
             dwCurrentUnsharedSlotOffset += it.GetSize();
         }
     }
@@ -10545,7 +10545,7 @@ MethodTableBuilder::SetupMethodTable2(
 
                 if (pMD->HasNonVtableSlot())
                 {
-                    *pMD->GetAddrOfSlot() = addr;
+                    *((PCODE *)pMD->GetAddrOfSlot()) = addr;
                 }
                 else
                 {
