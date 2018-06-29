@@ -817,8 +817,8 @@ GenTree* Lowering::LowerSwitch(GenTree* node)
 //    If the jump table contains less than 32 (64 on 64 bit targets) entries and there
 //    are at most 2 distinct jump targets then the jump table can be converted to a word
 //    of bits where a 0 bit corresponds to one jump target and a 1 bit corresponds to the
-//    other jump target. Instead of the indirect jump a BT-JCC sequnce is used to jump
-//    to the appropiate target:
+//    other jump target. Instead of the indirect jump a BT-JCC sequence is used to jump
+//    to the appropriate target:
 //        mov eax, 245 ; jump table converted to a "bit table"
 //        bt  eax, ebx ; ebx is supposed to contain the switch value
 //        jc target1
@@ -1028,7 +1028,7 @@ GenTree* Lowering::NewPutArg(GenTreeCall* call, GenTree* arg, fgArgTabEntry* inf
 
 #ifdef _TARGET_ARMARCH_
     // Mark contained when we pass struct
-    // GT_FIELD_LIST is always marked conatained when it is generated
+    // GT_FIELD_LIST is always marked contained when it is generated
     if (type == TYP_STRUCT)
     {
         arg->SetContained();

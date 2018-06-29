@@ -3271,7 +3271,7 @@ GenTree* Compiler::optAssertionPropLocal_RelOp(ASSERT_VALARG_TP assertions, GenT
 #endif
     else
     {
-        // We currently don't fold/optimze when the GT_LCL_VAR has been cast to a small type
+        // We currently don't fold/optimize when the GT_LCL_VAR has been cast to a small type
         return nullptr;
     }
 

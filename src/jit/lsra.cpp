@@ -869,7 +869,7 @@ void LinearScan::setBlockSequence()
             // the blocks - but fgBBcount does not appear to be updated when blocks are removed.
             if (nextBlock == nullptr /* && bbSeqCount != compiler->fgBBcount*/ && !verifiedAllBBs)
             {
-                // If we don't encounter all blocks by traversing the regular sucessor links, do a full
+                // If we don't encounter all blocks by traversing the regular successor links, do a full
                 // traversal of all the blocks, and add them in layout order.
                 // This may include:
                 //   - internal-only blocks (in the fgAddCodeList) which may not be in the flow graph
@@ -5590,7 +5590,7 @@ void LinearScan::allocateRegisters()
 
                     // There MUST be caller-save registers available, because they have all just been killed.
                     // Amd64 Windows: xmm4-xmm5 are guaranteed to be available as xmm0-xmm3 are used for passing args.
-                    // Amd64 Unix: xmm8-xmm15 are guaranteed to be avilable as xmm0-xmm7 are used for passing args.
+                    // Amd64 Unix: xmm8-xmm15 are guaranteed to be available as xmm0-xmm7 are used for passing args.
                     // X86 RyuJIT Windows: xmm4-xmm7 are guanrateed to be available.
                     assert(assignedRegister != REG_NA);
 
@@ -5598,7 +5598,7 @@ void LinearScan::allocateRegisters()
                     // Note:
                     //   i) The reason we have to spill is that SaveDef position is allocated after the Kill positions
                     //      of the call node are processed.  Since callee-trash registers are killed by call node
-                    //      we explicity spill and unassign the register.
+                    //      we explicitly spill and unassign the register.
                     //  ii) These will look a bit backward in the dump, but it's a pain to dump the alloc before the
                     //  spill).
                     unassignPhysReg(getRegisterRecord(assignedRegister), currentRefPosition);
@@ -5776,7 +5776,7 @@ void LinearScan::allocateRegisters()
 // Arguments:
 //    reg      -    register to be updated
 //    interval -    interval to be assigned
-//    regType  -    regsiter type
+//    regType  -    register type
 //
 // Return Value:
 //    None
@@ -5816,7 +5816,7 @@ void LinearScan::updateAssignedInterval(RegRecord* reg, Interval* interval, Regi
 // Arguments:
 //    reg      -    register to be updated
 //    interval -    interval to be assigned
-//    regType  -    regsiter type
+//    regType  -    register type
 //
 // Return Value:
 //    None
@@ -8112,7 +8112,7 @@ void LinearScan::resolveEdge(BasicBlock*      fromBlock,
                     if (genIsValidDoubleReg(fromReg))
                     {
                         // Ensure that either:
-                        // - the Interval targetting fromReg is not double, or
+                        // - the Interval targeting fromReg is not double, or
                         // - the other half of the double is free.
                         Interval* otherInterval = sourceIntervals[source[fromReg]];
                         regNumber upperHalfReg  = REG_NEXT(fromReg);

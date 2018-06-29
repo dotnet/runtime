@@ -155,7 +155,7 @@ GenTree* Compiler::getObjectHandleNodeFromAllocation(GenTree* tree)
 //    an object reference pointer, is treated in the same way as an array reference pointer.
 //
 //    Null check folding tries to find GT_INDIR(obj + const) that GT_NULLCHECK(obj) can be folded into
-///   and removed. Currently, the algorithm only matches GT_INDIR and GT_NULLCHECK in the same basic block.
+//    and removed. Currently, the algorithm only matches GT_INDIR and GT_NULLCHECK in the same basic block.
 
 void Compiler::optEarlyProp()
 {

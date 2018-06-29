@@ -185,7 +185,7 @@ inline ti_types JITtype2tiType(CorInfoType type)
  * can't work out the size, GC-ness etc. of the "struct".  So using TI_REF
  * just tricks these backend parts into generating pseudo-trees for
  * the generic code we're verifying.  These trees then get thrown away
- * anyway as we do verification of genreic code in import-only mode.
+ * anyway as we do verification of generic code in import-only mode.
  *
  */
 
@@ -277,7 +277,7 @@ inline ti_types JITtype2tiType(CorInfoType type)
  *
  * The reason that there can be 2 types of byrefs (general byrefs, and byref
  * locals) is that byref locals initially point to uninitialized items.
- * Therefore these byrefs must be tracked specialy.
+ * Therefore these byrefs must be tracked specially.
  */
 
 class typeInfo
@@ -390,8 +390,8 @@ public:
 public:
     // Note that we specifically ignore the permanent byref here. The rationale is that
     // the type system doesn't know about this (it's jit only), ie, signatures don't specify if
-    // a byref is safe, so they are fully equivalent for the jit, except for the RET instruction
-    // , instructions that load safe byrefs and the stack merging logic, which need to know about
+    // a byref is safe, so they are fully equivalent for the jit, except for the RET instruction,
+    // instructions that load safe byrefs and the stack merging logic, which need to know about
     // the bit
     static bool AreEquivalent(const typeInfo& li, const typeInfo& ti)
     {
