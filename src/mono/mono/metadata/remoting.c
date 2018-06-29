@@ -167,6 +167,7 @@ mono_remoting_init (void)
 static void
 mono_remoting_marshal_init (void)
 {
+	ERROR_DECL (error);
 	MonoClass *klass;
 
 	static gboolean module_initialized = FALSE;
@@ -179,27 +180,34 @@ mono_remoting_marshal_init (void)
 
 #ifndef DISABLE_JIT
 	klass = mono_class_get_remoting_services_class ();
-	method_rs_serialize = mono_class_get_method_from_name (klass, "SerializeCallData", -1);
+	method_rs_serialize = mono_class_get_method_from_name_checked (klass, "SerializeCallData", -1, 0, error);
+ 	mono_error_assert_ok (error);
 	g_assert (method_rs_serialize);
-	method_rs_deserialize = mono_class_get_method_from_name (klass, "DeserializeCallData", -1);
+	method_rs_deserialize = mono_class_get_method_from_name_checked (klass, "DeserializeCallData", -1, 0, error);
+ 	mono_error_assert_ok (error);
 	g_assert (method_rs_deserialize);
-	method_rs_serialize_exc = mono_class_get_method_from_name (klass, "SerializeExceptionData", -1);
+	method_rs_serialize_exc = mono_class_get_method_from_name_checked (klass, "SerializeExceptionData", -1, 0, error);
+ 	mono_error_assert_ok (error);
 	g_assert (method_rs_serialize_exc);
 	
 	klass = mono_defaults.real_proxy_class;
-	method_rs_appdomain_target = mono_class_get_method_from_name (klass, "GetAppDomainTarget", -1);
+	method_rs_appdomain_target = mono_class_get_method_from_name_checked (klass, "GetAppDomainTarget", -1, 0, error);
+ 	mono_error_assert_ok (error);
 	g_assert (method_rs_appdomain_target);
 	
 	klass = mono_defaults.exception_class;
-	method_exc_fixexc = mono_class_get_method_from_name (klass, "FixRemotingException", -1);
+	method_exc_fixexc = mono_class_get_method_from_name_checked (klass, "FixRemotingException", -1, 0, error);
+ 	mono_error_assert_ok (error);
 	g_assert (method_exc_fixexc);
 
 	klass = mono_class_get_call_context_class ();
-	method_set_call_context = mono_class_get_method_from_name (klass, "SetCurrentCallContext", -1);
+	method_set_call_context = mono_class_get_method_from_name_checked (klass, "SetCurrentCallContext", -1, 0, error);
+ 	mono_error_assert_ok (error);
 	g_assert (method_set_call_context);
 
 	klass = mono_class_get_context_class ();
-	method_needs_context_sink = mono_class_get_method_from_name (klass, "get_NeedsContextSink", -1);
+	method_needs_context_sink = mono_class_get_method_from_name_checked (klass, "get_NeedsContextSink", -1, 0, error);
+ 	mono_error_assert_ok (error);
 	g_assert (method_needs_context_sink);
 #endif	
 
@@ -1457,7 +1465,9 @@ mono_marshal_get_ldfld_wrapper (MonoType *type)
 
 #ifndef DISABLE_REMOTING
 	if (!tp_load) {
-		tp_load = mono_class_get_method_from_name (mono_defaults.transparent_proxy_class, "LoadRemoteFieldNew", -1);
+		ERROR_DECL (error);
+		tp_load = mono_class_get_method_from_name_checked (mono_defaults.transparent_proxy_class, "LoadRemoteFieldNew", -1, 0, error);
+		mono_error_assert_ok (error);
 		g_assert (tp_load != NULL);
 	}
 #endif
@@ -1757,7 +1767,9 @@ mono_marshal_get_stfld_wrapper (MonoType *type)
 
 #ifndef DISABLE_REMOTING
 	if (!tp_store) {
-		tp_store = mono_class_get_method_from_name (mono_defaults.transparent_proxy_class, "StoreRemoteField", -1);
+		ERROR_DECL (error);
+		tp_store = mono_class_get_method_from_name_checked (mono_defaults.transparent_proxy_class, "StoreRemoteField", -1, 0, error);
+		mono_error_assert_ok (error);
 		g_assert (tp_store != NULL);
 	}
 #endif

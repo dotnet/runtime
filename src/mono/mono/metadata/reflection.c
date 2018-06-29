@@ -893,7 +893,7 @@ mono_get_reflection_missing_object (MonoDomain *domain)
 		MonoClass *missing_klass;
 		missing_klass = mono_class_get_missing_class ();
 		mono_class_init (missing_klass);
-		missing_value_field = mono_class_get_field_from_name (missing_klass, "Value");
+		missing_value_field = mono_class_get_field_from_name_full (missing_klass, "Value", NULL);
 		g_assert (missing_value_field);
 	}
 	/* FIXME change mono_field_get_value_object_checked to return a handle */
@@ -912,7 +912,7 @@ get_dbnull_object (MonoDomain *domain, MonoError *error)
 	if (!dbnull_value_field) {
 		MonoClass *dbnull_klass;
 		dbnull_klass = mono_class_get_dbnull_class ();
-		dbnull_value_field = mono_class_get_field_from_name (dbnull_klass, "Value");
+		dbnull_value_field = mono_class_get_field_from_name_full (dbnull_klass, "Value", NULL);
 		g_assert (dbnull_value_field);
 	}
 	/* FIXME change mono_field_get_value_object_checked to return a handle */
@@ -2964,7 +2964,8 @@ mono_reflection_call_is_assignable_to (MonoClass *klass, MonoClass *oklass, Mono
 	error_init (error);
 
 	if (method == NULL) {
-		method = mono_class_get_method_from_name (mono_class_get_type_builder_class (), "IsAssignableTo", 1);
+		method = mono_class_get_method_from_name_checked (mono_class_get_type_builder_class (), "IsAssignableTo", 1, 0, error);
+		mono_error_assert_ok (error);
 		g_assert (method);
 	}
 

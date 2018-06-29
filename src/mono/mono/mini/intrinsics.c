@@ -184,13 +184,13 @@ emit_span_intrinsics (MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSignature
 {
 	MonoInst *ins;
 
-	MonoClassField *ptr_field = mono_class_get_field_from_name (cmethod->klass, "_pointer");
+	MonoClassField *ptr_field = mono_class_get_field_from_name_full (cmethod->klass, "_pointer", NULL);
 	if (!ptr_field)
 		/* Portable Span<T> */
 		return NULL;
 
 	if (!strcmp (cmethod->name, "get_Item")) {
-		MonoClassField *length_field = mono_class_get_field_from_name (cmethod->klass, "_length");
+		MonoClassField *length_field = mono_class_get_field_from_name_full (cmethod->klass, "_length", NULL);
 
 		g_assert (length_field);
 
@@ -223,7 +223,7 @@ emit_span_intrinsics (MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSignature
 
 		return ins;
 	} else if (!strcmp (cmethod->name, "get_Length")) {
-		MonoClassField *length_field = mono_class_get_field_from_name (cmethod->klass, "_length");
+		MonoClassField *length_field = mono_class_get_field_from_name_full (cmethod->klass, "_length", NULL);
 		g_assert (length_field);
 
 		/*

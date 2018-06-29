@@ -889,13 +889,13 @@ create_object_handle_from_sockaddr (struct sockaddr *saddr, int sa_size, gint32 
 	
 	/* Locate the SocketAddress data buffer in the object */
 	if (!domain->sockaddr_data_field) {
-		domain->sockaddr_data_field = mono_class_get_field_from_name (domain->sockaddr_class, "m_Buffer");
+		domain->sockaddr_data_field = mono_class_get_field_from_name_full (domain->sockaddr_class, "m_Buffer", NULL);
 		g_assert (domain->sockaddr_data_field);
 	}
 
 	/* Locate the SocketAddress data buffer length in the object */
 	if (!domain->sockaddr_data_length_field) {
-		domain->sockaddr_data_length_field = mono_class_get_field_from_name (domain->sockaddr_class, "m_Size");
+		domain->sockaddr_data_length_field = mono_class_get_field_from_name_full (domain->sockaddr_class, "m_Size", NULL);
 		g_assert (domain->sockaddr_data_length_field);
 	}
 
@@ -1107,13 +1107,13 @@ create_sockaddr_from_handle (MonoObjectHandle saddr_obj, socklen_t *sa_size, gin
 
 	/* Locate the SocketAddress data buffer in the object */
 	if (!domain->sockaddr_data_field) {
-		domain->sockaddr_data_field = mono_class_get_field_from_name (domain->sockaddr_class, "m_Buffer");
+		domain->sockaddr_data_field = mono_class_get_field_from_name_full (domain->sockaddr_class, "m_Buffer", NULL);
 		g_assert (domain->sockaddr_data_field);
 	}
 
 	/* Locate the SocketAddress data buffer length in the object */
 	if (!domain->sockaddr_data_length_field) {
-		domain->sockaddr_data_length_field = mono_class_get_field_from_name (domain->sockaddr_class, "m_Size");
+		domain->sockaddr_data_length_field = mono_class_get_field_from_name_full (domain->sockaddr_class, "m_Size", NULL);
 		g_assert (domain->sockaddr_data_length_field);
 	}
 
@@ -1560,7 +1560,7 @@ Socket_to_SOCKET (MonoObjectHandle sockobj)
 {
 	MonoClassField *field;
 	
-	field = mono_class_get_field_from_name (mono_handle_class (sockobj), "m_Handle");
+	field = mono_class_get_field_from_name_full (mono_handle_class (sockobj), "m_Handle", NULL);
 	MonoSafeHandleHandle safe_handle = MONO_HANDLE_NEW_GET_FIELD(sockobj, MonoSafeHandle, field);
 
 	if (MONO_HANDLE_IS_NULL (safe_handle))
@@ -1811,10 +1811,10 @@ ves_icall_System_Net_Sockets_Socket_GetSocketOption_obj_internal (gsize sock, gi
 		/* Locate and set the fields "bool enabled" and "int
 		 * lingerTime"
 		 */
-		field = mono_class_get_field_from_name(obj_class, "enabled");
+		field = mono_class_get_field_from_name_full (obj_class, "enabled", NULL);
 		MONO_HANDLE_SET_FIELD_VAL (obj, guint8, field, linger.l_onoff);
 
-		field = mono_class_get_field_from_name(obj_class, "lingerTime");
+		field = mono_class_get_field_from_name_full (obj_class, "lingerTime", NULL);
 		MONO_HANDLE_SET_FIELD_VAL (obj, guint32, field, linger.l_linger);
 
 		MONO_HANDLE_ASSIGN (obj_val, obj);
@@ -1926,7 +1926,7 @@ ipaddress_handle_to_struct_in_addr (MonoObjectHandle ipaddr)
 	struct in_addr inaddr;
 	MonoClassField *field;
 	
-	field = mono_class_get_field_from_name (mono_handle_class (ipaddr), "m_Address");
+	field = mono_class_get_field_from_name_full (mono_handle_class (ipaddr), "m_Address", NULL);
 	g_assert (field);
 
 	/* No idea why .net uses a 64bit type to hold a 32bit value...
@@ -1946,7 +1946,7 @@ ipaddress_handle_to_struct_in6_addr (MonoObjectHandle ipaddr)
 	MonoClassField *field;
 	int i;
 
-	field = mono_class_get_field_from_name (mono_handle_class (ipaddr), "m_Numbers");
+	field = mono_class_get_field_from_name_full (mono_handle_class (ipaddr), "m_Numbers", NULL);
 	g_assert (field);
 	MonoArrayHandle data = MONO_HANDLE_NEW_GET_FIELD (ipaddr, MonoArray, field);
 
@@ -2048,9 +2048,9 @@ ves_icall_System_Net_Sockets_Socket_SetSocketOption_internal (gsize sock, gint32
 			/* Dig out "bool enabled" and "int lingerTime"
 			 * fields
 			 */
-			field = mono_class_get_field_from_name (obj_class, "enabled");
+			field = mono_class_get_field_from_name_full (obj_class, "enabled", NULL);
 			linger.l_onoff = MONO_HANDLE_GET_FIELD_VAL (obj_val, guint8, field);
-			field = mono_class_get_field_from_name (obj_class, "lingerTime");
+			field = mono_class_get_field_from_name_full (obj_class, "lingerTime", NULL);
 			linger.l_linger = MONO_HANDLE_GET_FIELD_VAL (obj_val, guint32, field);
 			
 			valsize = sizeof (linger);
@@ -2068,14 +2068,14 @@ ves_icall_System_Net_Sockets_Socket_SetSocketOption_internal (gsize sock, gint32
 				/*
 				 *	Get group address
 				 */
-				field = mono_class_get_field_from_name (obj_class, "m_Group");
+				field = mono_class_get_field_from_name_full (obj_class, "m_Group", NULL);
 				g_assert (field);
 				MONO_HANDLE_ASSIGN (address, MONO_HANDLE_NEW_GET_FIELD (obj_val, MonoObject, field));
 				
 				if (!MONO_HANDLE_IS_NULL (address))
 					mreq6.ipv6mr_multiaddr = ipaddress_handle_to_struct_in6_addr (address);
 
-				field = mono_class_get_field_from_name (obj_class, "m_Interface");
+				field = mono_class_get_field_from_name_full (obj_class, "m_Interface", NULL);
 				mreq6.ipv6mr_interface = MONO_HANDLE_GET_FIELD_VAL (obj_val, guint64, field);
 				
 #if defined(__APPLE__) || defined(__FreeBSD__)
@@ -2110,7 +2110,7 @@ ves_icall_System_Net_Sockets_Socket_SetSocketOption_internal (gsize sock, gint32
 				 * members, so I have to dig the value out of
 				 * those :-(
 				 */
-				field = mono_class_get_field_from_name (obj_class, "group");
+				field = mono_class_get_field_from_name_full (obj_class, "group", NULL);
 				MONO_HANDLE_ASSIGN (address, MONO_HANDLE_NEW_GET_FIELD (obj_val, MonoObject, field));
 
 				/* address might not be defined and if so, set the address to ADDR_ANY.
@@ -2118,14 +2118,14 @@ ves_icall_System_Net_Sockets_Socket_SetSocketOption_internal (gsize sock, gint32
 				if (!MONO_HANDLE_IS_NULL (address))
 					mreq.imr_multiaddr = ipaddress_handle_to_struct_in_addr (address);
 
-				field = mono_class_get_field_from_name (obj_class, "localAddress");
+				field = mono_class_get_field_from_name_full (obj_class, "localAddress", NULL);
 				MONO_HANDLE_ASSIGN (address, MONO_HANDLE_NEW_GET_FIELD (obj_val, MonoObject, field));
 
 #ifdef HAVE_STRUCT_IP_MREQN
 				if (!MONO_HANDLE_IS_NULL (address))
 					mreq.imr_address = ipaddress_handle_to_struct_in_addr (address);
 
-				field = mono_class_get_field_from_name (obj_class, "ifIndex");
+				field = mono_class_get_field_from_name_full (obj_class, "ifIndex", NULL);
 				mreq.imr_ifindex = MONO_HANDLE_GET_FIELD_VAL (obj_val, gint32, field);
 #else
 				if (!MONO_HANDLE_IS_NULL (address))

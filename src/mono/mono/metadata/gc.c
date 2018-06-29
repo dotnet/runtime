@@ -292,7 +292,9 @@ mono_gc_run_finalize (void *obj, void *data)
 
 #ifndef HOST_WASM
 	if (!domain->finalize_runtime_invoke) {
-		MonoMethod *invoke = mono_marshal_get_runtime_invoke (mono_class_get_method_from_name_flags (mono_defaults.object_class, "Finalize", 0, 0), TRUE);
+		MonoMethod *finalize_method = mono_class_get_method_from_name_checked (mono_defaults.object_class, "Finalize", 0, 0, error);
+		mono_error_assert_ok (error);
+		MonoMethod *invoke = mono_marshal_get_runtime_invoke (finalize_method, TRUE);
 
 		domain->finalize_runtime_invoke = mono_compile_method_checked (invoke, error);
 		mono_error_assert_ok (error); /* expect this not to fail */

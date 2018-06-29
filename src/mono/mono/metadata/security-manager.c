@@ -102,8 +102,10 @@ mono_get_context_capture_method (void)
 	/* older corlib revisions won't have the class (nor the method) */
 	MonoClass *execution_context = mono_class_try_get_execution_context_class ();
 	if (execution_context && !method) {
+		ERROR_DECL (error);
 		mono_class_init (execution_context);
-		method = mono_class_get_method_from_name (execution_context, "Capture", 0);
+		method = mono_class_get_method_from_name_checked (execution_context, "Capture", 0, 0, error);
+		mono_error_assert_ok (error);
 	}
 
 	return method;

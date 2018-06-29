@@ -65,6 +65,10 @@ static gboolean can_access_type (MonoClass *access_klass, MonoClass *member_klas
 static char* mono_assembly_name_from_token (MonoImage *image, guint32 type_token);
 static guint32 mono_field_resolve_flags (MonoClassField *field);
 
+static MonoProperty* mono_class_get_property_from_name_internal (MonoClass *klass, const char *name);
+
+static MonoClass *mono_class_from_mono_type_internal (MonoType *type);
+
 static
 MonoImage *
 mono_method_get_image (MonoMethod *method)
@@ -1811,6 +1815,16 @@ mono_ptr_class_get (MonoType *type)
 MonoClass *
 mono_class_from_mono_type (MonoType *type)
 {
+	MonoClass *result;
+	MONO_ENTER_GC_UNSAFE;
+	result = mono_class_from_mono_type_internal (type);
+	MONO_EXIT_GC_UNSAFE;
+	return result;
+}
+
+MonoClass *
+mono_class_from_mono_type_internal (MonoType *type)
+{
 	switch (type->type) {
 	case MONO_TYPE_OBJECT:
 		return type->data.klass? type->data.klass: mono_defaults.object_class;
@@ -2108,7 +2122,11 @@ mono_class_get_field (MonoClass *klass, guint32 field_token)
 MonoClassField *
 mono_class_get_field_from_name (MonoClass *klass, const char *name)
 {
-	return mono_class_get_field_from_name_full (klass, name, NULL);
+	MonoClassField *result;
+	MONO_ENTER_GC_UNSAFE;
+	result = mono_class_get_field_from_name_full (klass, name, NULL);
+	MONO_EXIT_GC_UNSAFE;
+	return result;
 }
 
 /**
@@ -2127,6 +2145,8 @@ mono_class_get_field_from_name (MonoClass *klass, const char *name)
 MonoClassField *
 mono_class_get_field_from_name_full (MonoClass *klass, const char *name, MonoType *type)
 {
+	MONO_REQ_GC_UNSAFE_MODE;
+
 	int i;
 
 	mono_class_setup_fields (klass);
@@ -2329,6 +2349,17 @@ mono_class_get_event_token (MonoEvent *event)
 MonoProperty*
 mono_class_get_property_from_name (MonoClass *klass, const char *name)
 {
+	MonoProperty *result = NULL;
+	MONO_ENTER_GC_UNSAFE;
+	result = mono_class_get_property_from_name_internal (klass, name);
+	MONO_EXIT_GC_UNSAFE;
+	return result;
+}
+
+MonoProperty*
+mono_class_get_property_from_name_internal (MonoClass *klass, const char *name)
+{
+	MONO_REQ_GC_UNSAFE_MODE;
 	while (klass) {
 		MonoProperty* p;
 		gpointer iter = NULL;
@@ -3434,7 +3465,31 @@ mono_gparam_is_assignable_from (MonoClass *target, MonoClass *candidate)
 gboolean
 mono_class_is_assignable_from (MonoClass *klass, MonoClass *oklass)
 {
+	gboolean result = FALSE;
+	MONO_ENTER_GC_UNSAFE;
 	ERROR_DECL (error);
+	mono_class_is_assignable_from_checked (klass, oklass, &result, error);
+	mono_error_cleanup (error);
+	MONO_EXIT_GC_UNSAFE;
+	return result;
+}
+
+/**
+ * mono_class_is_assignable_from_checked:
+ * \param klass the class to be assigned to
+ * \param oklass the source class
+ * \param result set if there was no error
+ * \param error set if there was an error
+ *
+ * Sets \p result to TRUE if an instance of class \p oklass can be assigned to
+ * an instance of class \p klass or FALSE if it cannot.  On error, no \p error
+ * is set and \p result is not valid.
+ */
+void
+mono_class_is_assignable_from_checked (MonoClass *klass, MonoClass *oklass, gboolean *result, MonoError *error)
+{
+	MONO_REQ_GC_UNSAFE_MODE;
+	g_assert (result);
 	/*FIXME this will cause a lot of irrelevant stuff to be loaded.*/
 	if (!m_class_is_inited (klass))
 		mono_class_init (klass);
@@ -3442,16 +3497,21 @@ mono_class_is_assignable_from (MonoClass *klass, MonoClass *oklass)
 	if (!m_class_is_inited (oklass))
 		mono_class_init (oklass);
 
-	if (mono_class_has_failure (klass) || mono_class_has_failure  (oklass))
-		return FALSE;
+	if (mono_class_has_failure (klass) || mono_class_has_failure  (oklass)) {
+		*result = FALSE;
+		return;
+	}
 
 	MonoType *klass_byval_arg = m_class_get_byval_arg (klass);
 	MonoType  *oklass_byval_arg = m_class_get_byval_arg (oklass);
 
 	if (mono_type_is_generic_argument (klass_byval_arg)) {
-		if (!mono_type_is_generic_argument (oklass_byval_arg))
-			return FALSE;
-		return mono_gparam_is_assignable_from (klass, oklass);
+		if (!mono_type_is_generic_argument (oklass_byval_arg)) {
+			*result = FALSE;
+			return;
+		}
+		*result = mono_gparam_is_assignable_from (klass, oklass);
+		return;
 	}
 
 	/* This can happen if oklass is a tyvar that has a constraint which is another tyvar which in turn
@@ -3469,12 +3529,15 @@ mono_class_is_assignable_from (MonoClass *klass, MonoClass *oklass)
 
 		if (constraints) {
 			for (i = 0; constraints [i]; ++i) {
-				if (mono_class_is_assignable_from (klass, constraints [i]))
-					return TRUE;
+				if (mono_class_is_assignable_from (klass, constraints [i])) {
+					*result = TRUE;
+					return;
+				}
 			}
 		}
 
-		return mono_class_has_parent (oklass, klass);
+		*result = mono_class_has_parent (oklass, klass);
+		return;
 	}
 
 	if (MONO_CLASS_IS_INTERFACE (klass)) {
@@ -3485,18 +3548,20 @@ mono_class_is_assignable_from (MonoClass *klass, MonoClass *oklass)
 			 * oklass might be a generic type parameter but they have 
 			 * interface_offsets set.
 			 */
-			gboolean result = mono_reflection_call_is_assignable_to (oklass, klass, error);
-			if (!is_ok (error)) {
-				mono_error_cleanup (error);
-				return FALSE;
-			}
-			return result;
+			gboolean assign_result = mono_reflection_call_is_assignable_to (oklass, klass, error);
+			return_if_nok (error);
+			*result = assign_result;
+			return;
 		}
-		if (!m_class_get_interface_bitmap (oklass))
+		if (!m_class_get_interface_bitmap (oklass)) {
 			/* Happens with generic instances of not-yet created dynamic types */
-			return FALSE;
-		if (MONO_CLASS_IMPLEMENTS_INTERFACE (oklass, m_class_get_interface_id (klass)))
-			return TRUE;
+			*result = FALSE;
+			return;
+		}
+		if (MONO_CLASS_IMPLEMENTS_INTERFACE (oklass, m_class_get_interface_id (klass))) {
+			*result = TRUE;
+			return;
+		}	
 
 		if (m_class_is_array_special_interface (klass) && m_class_get_rank (oklass) == 1) {
 			if (mono_class_is_gtd (klass)) {
@@ -3507,15 +3572,18 @@ mono_class_is_assignable_from (MonoClass *klass, MonoClass *oklass)
 				 * have returned TRUE for
 				 * MONO_CLASS_IMPLEMENTS_INTERFACE, above.
 				 */
-				return FALSE;
+				*result = FALSE;
+				return;
 			}
 			// FIXME: IEnumerator`1 should not be an array special interface.
 			// The correct fix is to make
 			// ((IEnumerable<U>) (new T[] {...})).GetEnumerator()
 			// return an IEnumerator<U> (like .NET does) instead of IEnumerator<T>
 			// and to stop marking IEnumerable`1 as an array_special_interface.
-			if (mono_class_get_generic_type_definition (klass) == mono_defaults.generic_ienumerator_class)
-				return FALSE;
+			if (mono_class_get_generic_type_definition (klass) == mono_defaults.generic_ienumerator_class) {
+				*result = FALSE;
+				return;
+			}
 
 			//XXX we could offset this by having the cast target computed at JIT time
 			//XXX we could go even further and emit a wrapper that would do the extra type check
@@ -3530,40 +3598,48 @@ mono_class_is_assignable_from (MonoClass *klass, MonoClass *oklass)
 
 				//array covariant casts only operates on scalar to scalar
 				//This is so int[] can't be casted to IComparable<int>[]
-				if (!(m_class_is_valuetype (obj_klass) && !m_class_is_valuetype (iface_klass)) && mono_class_is_assignable_from (iface_klass, obj_klass))
-					return TRUE;
+				if (!(m_class_is_valuetype (obj_klass) && !m_class_is_valuetype (iface_klass)) && mono_class_is_assignable_from (iface_klass, obj_klass)) {
+					*result = TRUE;
+					return;
+				}
 			}
 		}
 
 		if (mono_class_has_variant_generic_params (klass)) {
 			int i;
 			mono_class_setup_interfaces (oklass, error);
-			if (!mono_error_ok (error)) {
-				mono_error_cleanup (error);
-				return FALSE;
-			}
+			return_if_nok (error);
 
 			/*klass is a generic variant interface, We need to extract from oklass a list of ifaces which are viable candidates.*/
 			for (i = 0; i < m_class_get_interface_offsets_count (oklass); ++i) {
 				MonoClass *iface = m_class_get_interfaces_packed (oklass) [i];
 
-				if (mono_class_is_variant_compatible (klass, iface, FALSE))
-					return TRUE;
+				if (mono_class_is_variant_compatible (klass, iface, FALSE)) {
+					*result = TRUE;
+					return;
+				}
 			}
 		}
-		return FALSE;
+		*result = FALSE;
+		return;
 	} else if (m_class_is_delegate (klass)) {
-		if (mono_class_has_variant_generic_params (klass) && mono_class_is_variant_compatible (klass, oklass, FALSE))
-			return TRUE;
+		if (mono_class_has_variant_generic_params (klass) && mono_class_is_variant_compatible (klass, oklass, FALSE)) {
+			*result = TRUE;
+			return;
+		}
 	}else if (m_class_get_rank (klass)) {
 		MonoClass *eclass, *eoclass;
 
-		if (m_class_get_rank (oklass) != m_class_get_rank (klass))
-			return FALSE;
+		if (m_class_get_rank (oklass) != m_class_get_rank (klass)) {
+			*result = FALSE;
+			return;
+		}
 
 		/* vectors vs. one dimensional arrays */
-		if (oklass_byval_arg->type != klass_byval_arg->type)
-			return FALSE;
+		if (oklass_byval_arg->type != klass_byval_arg->type) {
+			*result = FALSE;
+			return;
+		}
 
 		eclass = m_class_get_cast_class (klass);
 		eoclass = m_class_get_cast_class (oklass);
@@ -3576,20 +3652,26 @@ mono_class_is_assignable_from (MonoClass *klass, MonoClass *oklass)
 		if (m_class_is_valuetype (eoclass)) {
 			if ((eclass == mono_defaults.enum_class) || 
 			    (eclass == m_class_get_parent (mono_defaults.enum_class)) ||
-				(eclass == mono_defaults.object_class))
-				return FALSE;
+			    (eclass == mono_defaults.object_class)) {
+				*result = FALSE;
+				return;
+			}
 		}
 
-		return mono_class_is_assignable_from (eclass, eoclass);
+		mono_class_is_assignable_from_checked (eclass, eoclass, result, error);
+		return;
 	} else if (mono_class_is_nullable (klass)) {
 		if (mono_class_is_nullable (oklass))
-			return mono_class_is_assignable_from (m_class_get_cast_class (klass), m_class_get_cast_class (oklass));
+			mono_class_is_assignable_from_checked (m_class_get_cast_class (klass), m_class_get_cast_class (oklass), result, error);
 		else
-			return mono_class_is_assignable_from (m_class_get_cast_class (klass), oklass);
-	} else if (klass == mono_defaults.object_class)
-		return TRUE;
+			mono_class_is_assignable_from_checked (m_class_get_cast_class (klass), oklass, result, error);
+		return;
+	} else if (klass == mono_defaults.object_class) {
+		*result = TRUE;
+		return;
+	}
 
-	return mono_class_has_parent (oklass, klass);
+	*result = mono_class_has_parent (oklass, klass);
 }	
 
 /*Check if @oklass is variant compatible with @klass.*/
@@ -3764,6 +3846,8 @@ mono_class_is_assignable_from_slow (MonoClass *target, MonoClass *candidate)
 MonoMethod*
 mono_class_get_cctor (MonoClass *klass)
 {
+	MonoMethod *result = NULL;
+	ERROR_DECL (error);
 	MonoCachedClassInfo cached_info;
 
 	if (image_is_dynamic (m_class_get_image (klass))) {
@@ -3771,30 +3855,31 @@ mono_class_get_cctor (MonoClass *klass)
 		 * has_cctor is not set for these classes because mono_class_init () is
 		 * not run for them.
 		 */
-		return mono_class_get_method_from_name_flags (klass, ".cctor", -1, METHOD_ATTRIBUTE_SPECIAL_NAME);
+		result = mono_class_get_method_from_name_checked (klass, ".cctor", -1, METHOD_ATTRIBUTE_SPECIAL_NAME, error);
+		mono_error_assert_msg_ok (error, "Could not lookup class cctor in dynamic image");
+		return result;
 	}
 
 	mono_class_init (klass);
 
 	if (!m_class_has_cctor (klass))
-		return NULL;
+		return result;
 
 	if (mono_class_is_ginst (klass) && !m_class_get_methods (klass)) {
-		ERROR_DECL (error);
-		error_init (error);
-		MonoMethod *result = mono_class_get_inflated_method (klass, mono_class_get_cctor (mono_class_get_generic_class (klass)->container_class), error);
+		result = mono_class_get_inflated_method (klass, mono_class_get_cctor (mono_class_get_generic_class (klass)->container_class), error);
 		mono_error_assert_msg_ok (error, "Could not lookup inflated class cctor"); /* FIXME do proper error handling */
 		return result;
 	}
 
 	if (mono_class_get_cached_class_info (klass, &cached_info)) {
-		ERROR_DECL (error);
-		MonoMethod *result = mono_get_method_checked (m_class_get_image (klass), cached_info.cctor_token, klass, NULL, error);
+		result = mono_get_method_checked (m_class_get_image (klass), cached_info.cctor_token, klass, NULL, error);
 		mono_error_assert_msg_ok (error, "Could not lookup class cctor from cached metadata");
 		return result;
 	}
 
-	return mono_class_get_method_from_name_flags (klass, ".cctor", -1, METHOD_ATTRIBUTE_SPECIAL_NAME);
+	result = mono_class_get_method_from_name_checked (klass, ".cctor", -1, METHOD_ATTRIBUTE_SPECIAL_NAME, error);
+	mono_error_assert_msg_ok (error, "Could not lookup class cctor");
+	return result;
 }
 
 /**
@@ -4864,7 +4949,13 @@ mono_event_get_flags (MonoEvent *event)
 MonoMethod *
 mono_class_get_method_from_name (MonoClass *klass, const char *name, int param_count)
 {
-	return mono_class_get_method_from_name_flags (klass, name, param_count, 0);
+	MonoMethod *result;
+	MONO_ENTER_GC_UNSAFE;
+	ERROR_DECL (error);
+	result = mono_class_get_method_from_name_checked (klass, name, param_count, 0, error);
+	mono_error_cleanup (error);
+	MONO_EXIT_GC_UNSAFE;
+	return result;
 }
 
 MonoMethod*
@@ -4924,12 +5015,12 @@ mono_find_method_in_metadata (MonoClass *klass, const char *name, int param_coun
 MonoMethod *
 mono_class_get_method_from_name_flags (MonoClass *klass, const char *name, int param_count, int flags)
 {
+	MonoMethod *method;
+	MONO_ENTER_GC_UNSAFE;
 	ERROR_DECL (error);
-	error_init (error);
-
-	MonoMethod * const method = mono_class_get_method_from_name_checked (klass, name, param_count, flags, error);
-
+	method = mono_class_get_method_from_name_checked (klass, name, param_count, flags, error);
 	mono_error_cleanup (error);
+	MONO_EXIT_GC_UNSAFE;
 	return method;
 }
 

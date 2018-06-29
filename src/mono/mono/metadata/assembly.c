@@ -2759,6 +2759,16 @@ mono_assembly_load_from (MonoImage *image, const char *fname,
 void
 mono_assembly_name_free (MonoAssemblyName *aname)
 {
+	MONO_ENTER_GC_UNSAFE;
+	mono_assembly_name_free_internal (aname);
+	MONO_EXIT_GC_UNSAFE;
+}
+
+void
+mono_assembly_name_free_internal (MonoAssemblyName *aname)
+{
+	MONO_REQ_GC_UNSAFE_MODE;
+
 	if (aname == NULL)
 		return;
 
@@ -3183,11 +3193,15 @@ mono_assembly_name_parse (const char *name, MonoAssemblyName *aname)
 MonoAssemblyName*
 mono_assembly_name_new (const char *name)
 {
+	MonoAssemblyName *result = NULL;
+	MONO_ENTER_GC_UNSAFE;
 	MonoAssemblyName *aname = g_new0 (MonoAssemblyName, 1);
 	if (mono_assembly_name_parse (name, aname))
-		return aname;
-	g_free (aname);
-	return NULL;
+		result = aname;
+	else
+		g_free (aname);
+	MONO_EXIT_GC_UNSAFE;
+	return result;
 }
 
 /**
@@ -3196,7 +3210,11 @@ mono_assembly_name_new (const char *name)
 const char*
 mono_assembly_name_get_name (MonoAssemblyName *aname)
 {
-	return aname->name;
+	const char *result = NULL;
+	MONO_ENTER_GC_UNSAFE;
+	result = aname->name;
+	MONO_EXIT_GC_UNSAFE;
+	return result;
 }
 
 /**
@@ -3205,7 +3223,11 @@ mono_assembly_name_get_name (MonoAssemblyName *aname)
 const char*
 mono_assembly_name_get_culture (MonoAssemblyName *aname)
 {
-	return aname->culture;
+	const char *result = NULL;
+	MONO_ENTER_GC_UNSAFE;
+	result = aname->culture;
+	MONO_EXIT_GC_UNSAFE;
+	return result;
 }
 
 /**

@@ -911,6 +911,17 @@ class_get_rgctx_template_oti (MonoClass *klass, int type_argc, guint32 slot, gbo
 	}
 }
 
+static MonoMethod*
+get_method_nofail (MonoClass *klass, const char *method_name, int num_params, int flags)
+{
+	MonoMethod *method;
+	ERROR_DECL (error);
+	method = mono_class_get_method_from_name_checked (klass, method_name, num_params, flags, error);
+	mono_error_assert_ok (error);
+	g_assertf (method, "Could not lookup method %s in %s", method_name, m_class_get_name (klass));
+	return method;
+}
+
 static gpointer
 class_type_info (MonoDomain *domain, MonoClass *klass, MonoRgctxInfoType info_type, MonoError *error)
 {
@@ -989,7 +1000,7 @@ class_type_info (MonoDomain *domain, MonoClass *klass, MonoRgctxInfoType info_ty
 					sprintf (name, "memcpy");
 				else
 					sprintf (name, "memcpy_aligned_%d", size);
-				m = mono_class_get_method_from_name (mono_defaults.string_class, name, 3);
+				m = get_method_nofail (mono_defaults.string_class, name, 3, 0);
 				g_assert (m);
 				mono_memory_barrier ();
 				memcpy_method [size] = m;
@@ -1010,7 +1021,7 @@ class_type_info (MonoDomain *domain, MonoClass *klass, MonoRgctxInfoType info_ty
 					sprintf (name, "bzero");
 				else
 					sprintf (name, "bzero_aligned_%d", size);
-				m = mono_class_get_method_from_name (mono_defaults.string_class, name, 2);
+				m = get_method_nofail (mono_defaults.string_class, name, 2, 0);
 				g_assert (m);
 				mono_memory_barrier ();
 				bzero_method [size] = m;
@@ -1037,13 +1048,14 @@ class_type_info (MonoDomain *domain, MonoClass *klass, MonoRgctxInfoType info_ty
 			return NULL;
 
 		if (info_type == MONO_RGCTX_INFO_NULLABLE_CLASS_BOX)
-			method = mono_class_get_method_from_name (klass, "Box", 1);
+			method = mono_class_get_method_from_name_checked (klass, "Box", 1, 0, error);
 		else
-			method = mono_class_get_method_from_name (klass, "Unbox", 1);
+			method = mono_class_get_method_from_name_checked (klass, "Unbox", 1, 0, error);
+
+		return_val_if_nok (error, NULL);
 
 		addr = mono_jit_compile_method (method, error);
-		if (!mono_error_ok (error))
-			return NULL;
+		return_val_if_nok (error, NULL);
 
 		// The caller uses the gsharedvt call signature
 

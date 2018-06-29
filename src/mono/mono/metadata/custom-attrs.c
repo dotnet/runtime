@@ -581,8 +581,10 @@ create_cattr_typed_arg (MonoType *t, MonoObject *val, MonoError *error)
 
 	error_init (error);
 
-	if (!ctor)
-		ctor = mono_class_get_method_from_name (mono_class_get_custom_attribute_typed_argument_class (), ".ctor", 2);
+	if (!ctor) {
+		ctor = mono_class_get_method_from_name_checked (mono_class_get_custom_attribute_typed_argument_class (), ".ctor", 2, 0, error);
+		mono_error_assert_ok (error);
+	}
 	
 	params [0] = mono_type_get_object_checked (mono_domain_get (), t, error);
 	return_val_if_nok (error, NULL);
@@ -607,8 +609,10 @@ create_cattr_named_arg (void *minfo, MonoObject *typedarg, MonoError *error)
 
 	error_init (error);
 
-	if (!ctor)
-		ctor = mono_class_get_method_from_name (mono_class_get_custom_attribute_named_argument_class (), ".ctor", 2);
+	if (!ctor) {
+		ctor = mono_class_get_method_from_name_checked (mono_class_get_custom_attribute_named_argument_class (), ".ctor", 2, 0, error);
+		mono_error_assert_ok (error);
+	}
 
 	params [0] = minfo;
 	params [1] = typedarg;
@@ -883,7 +887,7 @@ create_custom_attr (MonoImage *image, MonoMethod *method, const guchar *data, gu
 		named += name_len;
 		if (named_type == CATTR_TYPE_FIELD) {
 			/* how this fail is a blackbox */
-			field = mono_class_get_field_from_name (mono_object_class (attr), name);
+			field = mono_class_get_field_from_name_full (mono_object_class (attr), name, NULL);
 			if (!field) {
 				mono_error_set_generic_error (error, "System.Reflection", "CustomAttributeFormatException", "Could not find a field with name %s", name);
 				goto fail;
@@ -1041,7 +1045,7 @@ mono_reflection_create_custom_attr_data_args (MonoImage *image, MonoMethod *meth
 		if (named_type == CATTR_TYPE_FIELD) {
 			/* Named arg is a field. */
 			MonoObject *obj;
-			MonoClassField *field = mono_class_get_field_from_name (attrklass, name);
+			MonoClassField *field = mono_class_get_field_from_name_full (attrklass, name, NULL);
 
 			if (!field) {
 				g_free (name);
@@ -1185,8 +1189,10 @@ create_custom_attr_data_handle (MonoImage *image, MonoCustomAttrEntry *cattr, Mo
 
 	g_assert (image->assembly);
 
-	if (!ctor)
-		ctor = mono_class_get_method_from_name (mono_defaults.customattribute_data_class, ".ctor", 4);
+	if (!ctor) {
+		ctor = mono_class_get_method_from_name_checked (mono_defaults.customattribute_data_class, ".ctor", 4, 0, error);
+		mono_error_assert_ok (error);
+	}
 
 	domain = mono_domain_get ();
 

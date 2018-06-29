@@ -548,11 +548,13 @@ mono_mb_emit_icall (MonoMethodBuilder *mb, gpointer func)
 void
 mono_mb_emit_exception_full (MonoMethodBuilder *mb, const char *exc_nspace, const char *exc_name, const char *msg)
 {
+	ERROR_DECL (error);
 	MonoMethod *ctor = NULL;
 
 	MonoClass *mme = mono_class_load_from_name (mono_defaults.corlib, exc_nspace, exc_name);
 	mono_class_init (mme);
-	ctor = mono_class_get_method_from_name (mme, ".ctor", 0);
+	ctor = mono_class_get_method_from_name_checked (mme, ".ctor", 0, 0, error);
+	mono_error_assert_ok (error);
 	g_assert (ctor);
 	mono_mb_emit_op (mb, CEE_NEWOBJ, ctor);
 	if (msg != NULL) {

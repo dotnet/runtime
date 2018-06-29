@@ -3473,7 +3473,7 @@ internal_execute_field_getter (MonoDomain *domain, MonoObject *this_arg, MonoArr
 	return_if_nok (error);
 		
 	do {
-		MonoClassField* field = mono_class_get_field_from_name (k, str);
+		MonoClassField* field = mono_class_get_field_from_name_full (k, str, NULL);
 		if (field) {
 			g_free (str);
 			MonoClass *field_klass =  mono_class_from_mono_type (field->type);
@@ -3521,7 +3521,7 @@ internal_execute_field_setter (MonoDomain *domain, MonoObject *this_arg, MonoArr
 	return_if_nok (error);
 		
 	do {
-		MonoClassField* field = mono_class_get_field_from_name (k, str);
+		MonoClassField* field = mono_class_get_field_from_name_full (k, str, NULL);
 		if (field) {
 			g_free (str);
 			MonoClass *field_klass =  mono_class_from_mono_type (field->type);

@@ -168,8 +168,10 @@ mono_threadpool_enqueue_work_item (MonoDomain *domain, MonoObject *work_item, Mo
 	if (!threadpool_class)
 		threadpool_class = mono_class_load_from_name (mono_defaults.corlib, "System.Threading", "ThreadPool");
 
-	if (!unsafe_queue_custom_work_item_method)
-		unsafe_queue_custom_work_item_method = mono_class_get_method_from_name (threadpool_class, "UnsafeQueueCustomWorkItem", 2);
+	if (!unsafe_queue_custom_work_item_method) {
+		unsafe_queue_custom_work_item_method = mono_class_get_method_from_name_checked (threadpool_class, "UnsafeQueueCustomWorkItem", 2, 0, error);
+		mono_error_assert_ok (error);
+	}
 	g_assert (unsafe_queue_custom_work_item_method);
 
 	f = FALSE;

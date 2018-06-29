@@ -197,7 +197,7 @@ create_domain_objects (MonoDomain *domain)
 	 */
 	string_vt = mono_class_vtable_checked (domain, mono_defaults.string_class, error);
 	mono_error_assert_ok (error);
-	string_empty_fld = mono_class_get_field_from_name (mono_defaults.string_class, "Empty");
+	string_empty_fld = mono_class_get_field_from_name_full (mono_defaults.string_class, "Empty", NULL);
 	g_assert (string_empty_fld);
 	MonoString *empty_str = mono_string_new_checked (domain, "", error);
 	mono_error_assert_ok (error);
@@ -356,7 +356,7 @@ mono_get_corlib_version (void)
 
 	klass = mono_class_load_from_name (mono_defaults.corlib, "System", "Environment");
 	mono_class_init (klass);
-	field = mono_class_get_field_from_name (klass, "mono_corlib_version");
+	field = mono_class_get_field_from_name_full (klass, "mono_corlib_version", NULL);
 	if (!field)
 		goto exit;
 
@@ -395,7 +395,7 @@ mono_check_corlib_version_internal (void)
 
 	/* Check that the managed and unmanaged layout of MonoInternalThread matches */
 	guint32 native_offset = (guint32) MONO_STRUCT_OFFSET (MonoInternalThread, last);
-	guint32 managed_offset = mono_field_get_offset (mono_class_get_field_from_name (mono_defaults.internal_thread_class, "last"));
+	guint32 managed_offset = mono_field_get_offset (mono_class_get_field_from_name_full (mono_defaults.internal_thread_class, "last", NULL));
 	if (native_offset != managed_offset)
 		return g_strdup_printf ("expected InternalThread.last field offset %u, found %u. See InternalThread.last comment", native_offset, managed_offset);
 
@@ -719,7 +719,7 @@ mono_domain_has_type_resolve (MonoDomain *domain)
 	MonoObject *o;
 
 	if (field == NULL) {
-		field = mono_class_get_field_from_name (mono_defaults.appdomain_class, "TypeResolve");
+		field = mono_class_get_field_from_name_full (mono_defaults.appdomain_class, "TypeResolve", NULL);
 		g_assert (field);
 	}
 
@@ -1357,7 +1357,7 @@ mono_domain_fire_assembly_load (MonoAssembly *assembly, gpointer user_data)
 	mono_domain_assemblies_unlock (domain);
 
 	if (assembly_load_field == NULL) {
-		assembly_load_field = mono_class_get_field_from_name (klass, "AssemblyLoad");
+		assembly_load_field = mono_class_get_field_from_name_full (klass, "AssemblyLoad", NULL);
 		g_assert (assembly_load_field);
 	}
 

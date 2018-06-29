@@ -583,7 +583,7 @@ bridge_test_cross_reference2 (int num_sccs, MonoGCBridgeSCC **sccs, int num_xref
 	gboolean modified;
 
 	if (!mono_bridge_test_field) {
-		mono_bridge_test_field = mono_class_get_field_from_name (mono_object_get_class (sccs[0]->objs [0]), "__test");
+		mono_bridge_test_field = mono_class_get_field_from_name_full (mono_object_get_class (sccs[0]->objs [0]), "__test", NULL);
 		g_assert (mono_bridge_test_field);
 	}
 
@@ -633,7 +633,7 @@ bridge_test_positive_status (int num_sccs, MonoGCBridgeSCC **sccs, int num_xrefs
 	int i;
 
 	if (!mono_bridge_test_field) {
-		mono_bridge_test_field = mono_class_get_field_from_name (mono_object_get_class (sccs[0]->objs [0]), "__test");
+		mono_bridge_test_field = mono_class_get_field_from_name_full (mono_object_get_class (sccs[0]->objs [0]), "__test", NULL);
 		g_assert (mono_bridge_test_field);
 	}
 

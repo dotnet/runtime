@@ -178,7 +178,8 @@ mono_set_timeout_exec (int id)
 	MonoClass *klass = mono_class_load_from_name (mono_defaults.corlib, "System.Threading", "WasmRuntime");
 	g_assert (klass);
 
-	MonoMethod *method = mono_class_get_method_from_name (klass, "TimeoutCallback", -1);
+	MonoMethod *method = mono_class_get_method_from_name_checked (klass, "TimeoutCallback", -1, 0, error);
+	mono_error_assert_ok (error);
 	g_assert (method);
 
 	gpointer params[1] = { &id };

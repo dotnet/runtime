@@ -93,6 +93,8 @@
 #endif
 #endif
 
+static void mono_config_for_assembly_internal (MonoImage *assembly);
+
 /**
  * mono_config_get_os:
  *
@@ -606,6 +608,16 @@ mono_config_string_for_assembly_file (const char *filename)
 void 
 mono_config_for_assembly (MonoImage *assembly)
 {
+	MONO_ENTER_GC_UNSAFE;
+	mono_config_for_assembly_internal (assembly);
+	MONO_EXIT_GC_UNSAFE;
+}
+
+void
+mono_config_for_assembly_internal (MonoImage *assembly)
+{
+	MONO_REQ_GC_UNSAFE_MODE;
+
 	ParseState state = {NULL};
 	int got_it = 0, i;
 	char *aname, *cfg, *cfg_name;

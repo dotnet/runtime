@@ -224,8 +224,10 @@ do_console_cancel_event (void)
 	if (mono_defaults.console_class == NULL)
 		return;
 
-	if (System_Console_DoConsoleCancelEventBackground_method == ((gpointer)-1))
-		System_Console_DoConsoleCancelEventBackground_method = mono_class_get_method_from_name (mono_defaults.console_class, "DoConsoleCancelEventInBackground", 0);
+	if (System_Console_DoConsoleCancelEventBackground_method == ((gpointer)-1)) {
+		System_Console_DoConsoleCancelEventBackground_method = mono_class_get_method_from_name_checked (mono_defaults.console_class, "DoConsoleCancelEventInBackground", 0, 0, error);
+		mono_error_assert_ok (error);
+	}
 	if (System_Console_DoConsoleCancelEventBackground_method == NULL)
 		return;
 

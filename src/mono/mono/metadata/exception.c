@@ -467,7 +467,11 @@ mono_get_exception_null_reference (void)
 MonoException *
 mono_get_exception_execution_engine (const char *msg)
 {
-	return mono_exception_from_name_msg (mono_get_corlib (), "System", "ExecutionEngineException", msg);
+	MonoException *result;
+	MONO_ENTER_GC_UNSAFE;
+	result = mono_exception_from_name_msg (mono_get_corlib (), "System", "ExecutionEngineException", msg);
+	MONO_EXIT_GC_UNSAFE;
+	return result;
 }
 
 /**
@@ -1075,7 +1079,8 @@ mono_get_exception_runtime_wrapped_handle (MonoObjectHandle wrapped_exception, M
 	mono_error_assert_ok (error);
 	g_assert (!MONO_HANDLE_IS_NULL (o));
 
-	method = mono_class_get_method_from_name (klass, ".ctor", 1);
+	method = mono_class_get_method_from_name_checked (klass, ".ctor", 1, 0, error);
+	mono_error_assert_ok (error);
 	g_assert (method);
 
 	gpointer args [ ] = { MONO_HANDLE_RAW (wrapped_exception) };

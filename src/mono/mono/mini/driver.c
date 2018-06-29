@@ -627,11 +627,16 @@ interp_regression_step (MonoImage *image, int verbose, int *total_run, int *tota
 					/* FIXME: there is an ordering problem if there're multiple attributes, do this instead:
 					 * MonoObject *obj = create_custom_attr (ainfo->image, centry->ctor, centry->data, centry->data_size, error); */
 					mono_error_cleanup (error);
-					MonoMethod *getter = mono_class_get_method_from_name (klass, "get_Category", -1);
+					error_init (error);
+					MonoMethod *getter = mono_class_get_method_from_name_checked (klass, "get_Category", -1, 0, error);
+					mono_error_cleanup (error);
+					error_init (error);
 					MonoObject *str = mini_get_interp_callbacks ()->runtime_invoke (getter, obj, NULL, &exc, error);
 					mono_error_cleanup (error);
+					error_init (error);
 					char *utf8_str = mono_string_to_utf8_checked ((MonoString *) str, error);
 					mono_error_cleanup (error);
+					error_init (error);
 					if (!strcmp (utf8_str, "!INTERPRETER")) {
 						g_print ("skip %s...\n", method->name);
 						filter = FALSE;
