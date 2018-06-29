@@ -2144,13 +2144,13 @@ ves_icall_System_Threading_WaitHandle_SignalAndWait_Internal (gpointer toSignal,
 
 	mono_thread_set_state (thread, ThreadState_WaitSleepJoin);
 	
-	MONO_ENTER_GC_SAFE;
 #ifdef HOST_WIN32
+	MONO_ENTER_GC_SAFE;
 	ret = mono_w32handle_convert_wait_ret (mono_win32_signal_object_and_wait (toSignal, toWait, ms, TRUE), 1);
+	MONO_EXIT_GC_SAFE;
 #else
 	ret = mono_w32handle_signal_and_wait (toSignal, toWait, ms, TRUE);
 #endif
-	MONO_EXIT_GC_SAFE;
 	
 	mono_thread_clr_state (thread, ThreadState_WaitSleepJoin);
 

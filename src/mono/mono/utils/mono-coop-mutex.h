@@ -109,13 +109,27 @@ mono_coop_cond_timedwait (MonoCoopCond *cond, MonoCoopMutex *mutex, guint32 time
 static inline void
 mono_coop_cond_signal (MonoCoopCond *cond)
 {
+	/*
+	 * On glibc using NTPL (ie Linux with an underlying futex), signaling a
+	 * condition variable can block in the __condvar_quiesce_and_switch_g1
+	 * operation. So switch to GC Safe mode here.
+	 */
+	MONO_ENTER_GC_SAFE;
 	mono_os_cond_signal (&cond->c);
+	MONO_EXIT_GC_SAFE;
 }
 
 static inline void
 mono_coop_cond_broadcast (MonoCoopCond *cond)
 {
+	/*
+	 * On glibc using NTPL (ie Linux with an underlying futex), signaling a
+	 * condition variable can block in the __condvar_quiesce_and_switch_g1
+	 * operation. So switch to GC Safe mode here.
+	 */
+	MONO_ENTER_GC_SAFE;
 	mono_os_cond_broadcast (&cond->c);
+	MONO_EXIT_GC_SAFE;
 }
 
 G_END_DECLS

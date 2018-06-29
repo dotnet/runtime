@@ -206,7 +206,7 @@ get_method_from_ip (void *ip)
 	}
 
 	method = jinfo_get_method (ji);
-	method_name = mono_method_full_name (method, TRUE);
+	method_name = mono_method_get_name_full (method, TRUE, FALSE, MONO_TYPE_NAME_FORMAT_IL);
 	/* FIXME: unused ? */
 	location = mono_debug_lookup_source_location (method, (guint32)((guint8*)ip - (guint8*)ji->code_start), domain);
 
