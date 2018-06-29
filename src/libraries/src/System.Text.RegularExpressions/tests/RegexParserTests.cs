@@ -862,6 +862,8 @@ namespace System.Text.RegularExpressions.Tests
         [InlineData("a{2147483648,}", RegexOptions.None, RegexParseError.CaptureGroupOutOfRange)]
         [InlineData("a{0,2147483647}", RegexOptions.None, null)]
         [InlineData("a{0,2147483648}", RegexOptions.None, RegexParseError.CaptureGroupOutOfRange)]
+        // Surrogate pair which is parsed as [char,char-char,char] as we operate on UTF-16 code units.
+        [InlineData("[\uD82F\uDCA0-\uD82F\uDCA3]", RegexOptions.IgnoreCase, RegexParseError.ReversedCharRange)]
         public void Parse_NotNetFramework(string pattern, RegexOptions options, object error)
         {
             Parse(pattern, options, error);
