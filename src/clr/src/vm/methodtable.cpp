@@ -4297,7 +4297,8 @@ void MethodTable::Save(DataImage *image, DWORD profilingFlags)
     {
         if (!image->IsStored(it.GetIndirectionSlot()))
         {
-            if (CanInternVtableChunk(image, it))
+            if (!MethodTable::VTableIndir2_t::isRelative
+                && CanInternVtableChunk(image, it))
                 image->StoreInternedStructure(it.GetIndirectionSlot(), it.GetSize(), DataImage::ITEM_VTABLE_CHUNK);
             else
                 image->StoreStructure(it.GetIndirectionSlot(), it.GetSize(), DataImage::ITEM_VTABLE_CHUNK);
@@ -4989,7 +4990,7 @@ void MethodTable::Fixup(DataImage *image)
             // Virtual slots live in chunks pointed to by vtable indirections
 
             slotBase = (PVOID) GetVtableIndirections()[GetIndexOfVtableIndirection(slotNumber)].GetValueMaybeNull();
-            slotOffset = GetIndexAfterVtableIndirection(slotNumber) * sizeof(PCODE);
+            slotOffset = GetIndexAfterVtableIndirection(slotNumber) * sizeof(MethodTable::VTableIndir2_t);
         }
         else if (HasSingleNonVirtualSlot())
         {
@@ -5016,7 +5017,7 @@ void MethodTable::Fixup(DataImage *image)
         if (pMD->GetMethodTable() == this)
         {
             ZapRelocationType relocType;
-            if (slotNumber >= GetNumVirtuals())
+            if (slotNumber >= GetNumVirtuals() || MethodTable::VTableIndir2_t::isRelative)
                 relocType = IMAGE_REL_BASED_RelativePointer;
             else
                 relocType = IMAGE_REL_BASED_PTR;
@@ -5039,9 +5040,15 @@ void MethodTable::Fixup(DataImage *image)
             _ASSERTE(pSourceMT->GetMethodDescForSlot(slotNumber) == pMD);
 #endif
 
+            ZapRelocationType relocType;
+            if (MethodTable::VTableIndir2_t::isRelative)
+                relocType = IMAGE_REL_BASED_RELPTR;
+            else
+                relocType = IMAGE_REL_BASED_PTR;
+
             if (image->CanEagerBindToMethodDesc(pMD) && pMD->GetLoaderModule() == pZapModule)
             {
-                pMD->FixupSlot(image, slotBase, slotOffset);
+                pMD->FixupSlot(image, slotBase, slotOffset, relocType);
             }
             else
             {
@@ -5050,7 +5057,7 @@ void MethodTable::Fixup(DataImage *image)
                     ZapNode * importThunk = image->GetVirtualImportThunk(pMD->GetMethodTable(), pMD, slotNumber);
                     // On ARM, make sure that the address to the virtual thunk that we write into the
                     // vtable "chunk" has the Thumb bit set.
-                    image->FixupFieldToNode(slotBase, slotOffset, importThunk ARM_ARG(THUMB_CODE));
+                    image->FixupFieldToNode(slotBase, slotOffset, importThunk ARM_ARG(THUMB_CODE) NOT_ARM_ARG(0), relocType);
                 }
                 else
                 {
@@ -9790,7 +9797,15 @@ void MethodTable::SetSlot(UINT32 slotNumber, PCODE slotCode)
     _ASSERTE(IsThumbCode(slotCode));
 #endif
 
-    *GetSlotPtrRaw(slotNumber) = slotCode;
+    TADDR slot = GetSlotPtrRaw(slotNumber);
+    if (slotNumber < GetNumVirtuals())
+    {
+        ((MethodTable::VTableIndir2_t *) slot)->SetValueMaybeNull(slotCode);
+    }
+    else
+    {
+        *((PCODE *)slot) = slotCode;
+    }
 }
 
 //==========================================================================================

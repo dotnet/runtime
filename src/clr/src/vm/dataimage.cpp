@@ -749,8 +749,10 @@ FORCEINLINE static CorCompileSection GetSectionForNodeType(ZapNodeType type)
         return CORCOMPILE_SECTION_READONLY_WARM;
 
     case NodeTypeForItemKind(DataImage::ITEM_DICTIONARY):
+        return CORCOMPILE_SECTION_READONLY_DICTIONARY;
+
     case NodeTypeForItemKind(DataImage::ITEM_VTABLE_CHUNK):
-        return CORCOMPILE_SECTION_READONLY_VCHUNKS_AND_DICTIONARY;
+        return CORCOMPILE_SECTION_READONLY_VCHUNKS;
 
     // SECTION_CLASS_COLD
     case NodeTypeForItemKind(DataImage::ITEM_PARAM_TYPEDESC):

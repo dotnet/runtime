@@ -572,7 +572,8 @@ void ZapImage::AllocateVirtualSections()
 #endif // defined(WIN64EXCEPTIONS)
 
         m_pPreloadSections[CORCOMPILE_SECTION_READONLY_WARM] = NewVirtualSection(pTextSection, IBCProfiledSection | WarmRange | ReadonlySection, TARGET_POINTER_SIZE);
-        m_pPreloadSections[CORCOMPILE_SECTION_READONLY_VCHUNKS_AND_DICTIONARY] = NewVirtualSection(pTextSection, IBCProfiledSection | WarmRange | ReadonlySection, TARGET_POINTER_SIZE);
+        m_pPreloadSections[CORCOMPILE_SECTION_READONLY_VCHUNKS] = NewVirtualSection(pTextSection, IBCProfiledSection | WarmRange | ReadonlySection, TARGET_POINTER_SIZE);
+        m_pPreloadSections[CORCOMPILE_SECTION_READONLY_DICTIONARY] = NewVirtualSection(pTextSection, IBCProfiledSection | WarmRange | ReadonlySection, TARGET_POINTER_SIZE);
 
         //
         // GC Info for methods which were not touched in profiling
