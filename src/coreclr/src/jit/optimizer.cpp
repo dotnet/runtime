@@ -1472,7 +1472,7 @@ class LoopSearch
 {
 
     // Keeping track of which blocks are in the loop requires two block sets since we may add blocks
-    // as we go but the BlockSet type's max ID doesn't increase to accomodate them.  Define a helper
+    // as we go but the BlockSet type's max ID doesn't increase to accommodate them.  Define a helper
     // struct to make the ensuing code more readable.
     struct LoopBlockSet
     {
@@ -8901,7 +8901,7 @@ void Compiler::optOptimizeBools()
                         B1: brtrue(t1, BX)
                         B2: brtrue(t2, BX)
                         B3:
-                   we wil try to fold it to :
+                   we will try to fold it to :
                         B1: brtrue(t1|t2, BX)
                         B3:
                 */
@@ -9105,7 +9105,7 @@ void Compiler::optOptimizeBools()
 
             // The new top level node that we just created does feed directly into
             // a comparison against zero, so set the GTF_SET_FLAGS bit so that
-            // we generate an instuction that sets the flags, which allows us
+            // we generate an instruction that sets the flags, which allows us
             // to omit the cmp with zero instruction.
 
             // Request that the codegen for cmpOp1 sets the condition flags

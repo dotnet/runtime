@@ -162,7 +162,7 @@ void CodeGen::genEmitGSCookieCheck(bool pushReg)
         //    cookie check as part of tail call codegen. GenExitCode() needs to special case
         //    fast tail calls implemented as epilog+jmp or such tail calls should always get
         //    dispatched via helper.
-        // 3) Materialize GS cookie check as a sperate node hanging off GT_CALL node in
+        // 3) Materialize GS cookie check as a separate node hanging off GT_CALL node in
         //    right execution order during rationalization.
         //
         // There are two calls that use R11: VSD and calli pinvokes with cookie param. Tail
@@ -365,7 +365,7 @@ void CodeGen::genEHCatchRet(BasicBlock* block)
     // Set RAX to the address the VM should return to after the catch.
     // Generate a RIP-relative
     //         lea reg, [rip + disp32] ; the RIP is implicit
-    // which will be position-indepenent.
+    // which will be position-independent.
     getEmitter()->emitIns_R_L(INS_lea, EA_PTR_DSP_RELOC, block->bbJumpDest, REG_INTRET);
 }
 
@@ -6000,7 +6000,7 @@ void CodeGen::genJumpKindsForTree(GenTree* cmpTree, emitJumpKind jmpKind[2], boo
 //                     jne <true label>
 //
 // As we can see from the above equalities that the operands of a compare operator need to be
-// reveresed in case of BLT/CLT, BGT.UN/CGT.UN, BLE/CLE, BGE.UN/CGE.UN.
+// reversed in case of BLT/CLT, BGT.UN/CGT.UN, BLE/CLE, BGE.UN/CGE.UN.
 void CodeGen::genCompareFloat(GenTree* treeNode)
 {
     assert(treeNode->OperIsCompare());
@@ -6513,7 +6513,7 @@ void CodeGen::genIntToIntCast(GenTree* treeNode)
                 if (needScratchReg)
                 {
                     regNumber tmpReg = treeNode->GetSingleTempReg();
-                    inst_RV_RV(INS_mov, tmpReg, sourceReg, TYP_LONG); // Move the 64-bit value to a writeable temp reg
+                    inst_RV_RV(INS_mov, tmpReg, sourceReg, TYP_LONG); // Move the 64-bit value to a writable temp reg
                     inst_RV_SH(INS_SHIFT_RIGHT_LOGICAL, srcSize, tmpReg, 32); // Shift right by 32 bits
                     genJumpToThrowHlpBlk(EJ_jne, SCK_OVERFLOW);               // Throw if result shift is non-zero
                 }
@@ -6725,7 +6725,7 @@ void CodeGen::genIntToFloatCast(GenTree* treeNode)
     // which does a partial write to lower 4/8 bytes of xmm register keeping the other
     // upper bytes unmodified.  If "cvtsi2ss/sd xmmReg, r32/r64" occurs inside a loop,
     // the partial write could introduce a false dependency and could cause a stall
-    // if there are further uses of xmmReg. We have such a case occuring with a
+    // if there are further uses of xmmReg. We have such a case occurring with a
     // customer reported version of SpectralNorm benchmark, resulting in 2x perf
     // regression.  To avoid false dependency, we emit "xorps xmmReg, xmmReg" before
     // cvtsi2ss/sd instruction.
@@ -6744,7 +6744,7 @@ void CodeGen::genIntToFloatCast(GenTree* treeNode)
     if (srcType == TYP_ULONG)
     {
         // The instruction sequence below is less accurate than what clang
-        // and gcc generate. However, we keep the current sequence for backward compatiblity.
+        // and gcc generate. However, we keep the current sequence for backward compatibility.
         // If we change the instructions below, FloatingPointUtils::convertUInt64ToDobule
         // should be also updated for consistent conversion result.
         assert(dstType == TYP_DOUBLE);
@@ -6831,7 +6831,7 @@ void CodeGen::genFloatToIntCast(GenTree* treeNode)
 
     // If the dstType is TYP_UINT, we have 32-bits to encode the
     // float number. Any of 33rd or above bits can be the sign bit.
-    // To acheive it we pretend as if we are converting it to a long.
+    // To achieve it we pretend as if we are converting it to a long.
     if (varTypeIsUnsigned(dstType) && (dstSize == EA_ATTR(genTypeSize(TYP_INT))))
     {
         dstType = TYP_LONG;
@@ -6904,7 +6904,7 @@ void CodeGen::genCkfinite(GenTree* treeNode)
 
     // If the target type is TYP_DOUBLE, we want to extract the high 32 bits into the register.
     // There is no easy way to do this. To not require an extra register, we'll use shuffles
-    // to move the high 32 bits into the low 32 bits, then then shuffle it back, since we
+    // to move the high 32 bits into the low 32 bits, then shuffle it back, since we
     // need to produce the value into the target register.
     //
     // For TYP_DOUBLE, we'll generate (for targetReg != op1->gtRegNum):

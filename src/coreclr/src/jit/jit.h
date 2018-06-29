@@ -33,7 +33,7 @@
 #pragma warning(disable : 4511) // can't generate copy constructor
 #pragma warning(disable : 4512) // can't generate assignment constructor
 #pragma warning(disable : 4610) // user defined constructor required
-#pragma warning(disable : 4211) // nonstandard extention used (char name[0] in structs)
+#pragma warning(disable : 4211) // nonstandard extension used (char name[0] in structs)
 #pragma warning(disable : 4127) // conditional expression constant
 #pragma warning(disable : 4201) // "nonstandard extension used : nameless struct/union"
 
