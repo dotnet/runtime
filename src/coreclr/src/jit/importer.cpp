@@ -1784,7 +1784,7 @@ GenTree* Compiler::impLookupToTree(CORINFO_RESOLVED_TOKEN* pResolvedToken,
 
         CORINFO_GENERIC_HANDLE handle       = nullptr;
         void*                  pIndirection = nullptr;
-        assert(pLookup->constLookup.accessType != IAT_PPVALUE);
+        assert(pLookup->constLookup.accessType != IAT_PPVALUE && pLookup->constLookup.accessType != IAT_RELPVALUE);
 
         if (pLookup->constLookup.accessType == IAT_VALUE)
         {
@@ -1819,7 +1819,7 @@ GenTree* Compiler::impReadyToRunLookupToTree(CORINFO_CONST_LOOKUP* pLookup,
 {
     CORINFO_GENERIC_HANDLE handle       = nullptr;
     void*                  pIndirection = nullptr;
-    assert(pLookup->accessType != IAT_PPVALUE);
+    assert(pLookup->accessType != IAT_PPVALUE && pLookup->accessType != IAT_RELPVALUE);
 
     if (pLookup->accessType == IAT_VALUE)
     {
@@ -7276,7 +7276,8 @@ var_types Compiler::impImportCall(OPCODE                  opcode,
                     call = gtNewCallNode(CT_USER_FUNC, callInfo->hMethod, callRetTyp, nullptr, ilOffset);
                     call->gtCall.gtStubCallStubAddr = callInfo->stubLookup.constLookup.addr;
                     call->gtFlags |= GTF_CALL_VIRT_STUB;
-                    assert(callInfo->stubLookup.constLookup.accessType != IAT_PPVALUE);
+                    assert(callInfo->stubLookup.constLookup.accessType != IAT_PPVALUE &&
+                           callInfo->stubLookup.constLookup.accessType != IAT_RELPVALUE);
                     if (callInfo->stubLookup.constLookup.accessType == IAT_PVALUE)
                     {
                         call->gtCall.gtCallMoreFlags |= GTF_CALL_M_VIRTSTUB_REL_INDIRECT;
