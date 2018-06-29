@@ -992,8 +992,9 @@ var_types Compiler::getReturnTypeForStruct(CORINFO_CLASS_HANDLE clsHnd,
                                            structPassingKind*   wbReturnStruct /* = nullptr */,
                                            unsigned             structSize /* = 0 */)
 {
-    var_types         useType           = TYP_UNKNOWN;
-    structPassingKind howToReturnStruct = SPK_Unknown; // We must change this before we return
+    var_types         useType             = TYP_UNKNOWN;
+    structPassingKind howToReturnStruct   = SPK_Unknown; // We must change this before we return
+    bool              canReturnInRegister = true;
 
     assert(clsHnd != NO_CLASS_HANDLE);
 
@@ -1013,6 +1014,7 @@ var_types Compiler::getReturnTypeForStruct(CORINFO_CLASS_HANDLE clsHnd,
     if (structDesc.eightByteCount == 1)
     {
         assert(structSize <= sizeof(double));
+        assert(structDesc.passedInRegisters);
 
         if (structDesc.eightByteClassifications[0] == SystemVClassificationTypeSSE)
         {
@@ -1021,6 +1023,11 @@ var_types Compiler::getReturnTypeForStruct(CORINFO_CLASS_HANDLE clsHnd,
             useType           = GetEightByteType(structDesc, 0);
             howToReturnStruct = SPK_PrimitiveType;
         }
+    }
+    else
+    {
+        // Return classification is not always size based...
+        canReturnInRegister = structDesc.passedInRegisters;
     }
 
 #endif // UNIX_AMD64_ABI
@@ -1031,7 +1038,7 @@ var_types Compiler::getReturnTypeForStruct(CORINFO_CLASS_HANDLE clsHnd,
     // The largest primitive type is 8 bytes (TYP_DOUBLE)
     // so we can skip calling getPrimitiveTypeForStruct when we
     // have a struct that is larger than that.
-    if ((useType == TYP_UNKNOWN) && (structSize <= sizeof(double)))
+    if (canReturnInRegister && (useType == TYP_UNKNOWN) && (structSize <= sizeof(double)))
     {
         // We set the "primitive" useType based upon the structSize
         // and also examine the clsHnd to see if it is an HFA of count one
