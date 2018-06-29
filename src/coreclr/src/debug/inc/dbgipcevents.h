@@ -2012,11 +2012,6 @@ struct MSLAYOUT DebuggerIPCEvent
 
         struct MSLAYOUT
         {
-            DWORD64              dataBreakpointMask;
-        } DataBreakpointData;
-
-        struct MSLAYOUT
-        {
             LSPTR_STEPPER        stepperToken;
             VMPTR_Thread         vmThreadToken;
             FramePointer         frameToken;

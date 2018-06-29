@@ -6,7 +6,7 @@
  /* File created by MIDL compiler version 8.01.0622 */
 /* at Mon Jan 18 19:14:07 2038
  */
-/* Compiler settings for D:/dotnet/coreclr/src/inc/cordebug.idl:
+/* Compiler settings for C:/Dev/CoreCLR/src/inc/cordebug.idl:
     Oicf, W1, Zp8, env=Win32 (32b run), target_arch=X86 8.01.0622 
     protocol : dce , ms_ext, c_ext, robust
     error checks: allocation ref bounds_check enum stub_data 
@@ -3788,8 +3788,7 @@ EXTERN_C const IID IID_ICorDebugManagedCallback4;
         
         virtual HRESULT STDMETHODCALLTYPE DataBreakpoint( 
             /* [in] */ ICorDebugProcess *pProcess,
-            /* [in] */ ICorDebugThread *pThread,
-            /* [in] */ ULONG64 dataBreakpointMask) = 0;
+            /* [in] */ ICorDebugThread *pThread) = 0;
         
     };
     
@@ -3823,8 +3822,7 @@ EXTERN_C const IID IID_ICorDebugManagedCallback4;
         HRESULT ( STDMETHODCALLTYPE *DataBreakpoint )( 
             ICorDebugManagedCallback4 * This,
             /* [in] */ ICorDebugProcess *pProcess,
-            /* [in] */ ICorDebugThread *pThread,
-            /* [in] */ ULONG64 dataBreakpointMask);
+            /* [in] */ ICorDebugThread *pThread);
         
         END_INTERFACE
     } ICorDebugManagedCallback4Vtbl;
@@ -3855,8 +3853,8 @@ EXTERN_C const IID IID_ICorDebugManagedCallback4;
 #define ICorDebugManagedCallback4_AfterGarbageCollection(This,pProcess)	\
     ( (This)->lpVtbl -> AfterGarbageCollection(This,pProcess) ) 
 
-#define ICorDebugManagedCallback4_DataBreakpoint(This,pProcess,pThread,dataBreakpointMask)	\
-    ( (This)->lpVtbl -> DataBreakpoint(This,pProcess,pThread,dataBreakpointMask) ) 
+#define ICorDebugManagedCallback4_DataBreakpoint(This,pProcess,pThread)	\
+    ( (This)->lpVtbl -> DataBreakpoint(This,pProcess,pThread) ) 
 
 #endif /* COBJMACROS */
 
@@ -8843,38 +8841,6 @@ enum CorDebugRegister
         REGISTER_ARM_R11	= ( REGISTER_ARM_R10 + 1 ) ,
         REGISTER_ARM_R12	= ( REGISTER_ARM_R11 + 1 ) ,
         REGISTER_ARM_LR	= ( REGISTER_ARM_R12 + 1 ) ,
-        REGISTER_ARM_D0	= ( REGISTER_ARM_LR + 1 ) ,
-        REGISTER_ARM_D1	= ( REGISTER_ARM_D0 + 1 ) ,
-        REGISTER_ARM_D2	= ( REGISTER_ARM_D1 + 1 ) ,
-        REGISTER_ARM_D3	= ( REGISTER_ARM_D2 + 1 ) ,
-        REGISTER_ARM_D4	= ( REGISTER_ARM_D3 + 1 ) ,
-        REGISTER_ARM_D5	= ( REGISTER_ARM_D4 + 1 ) ,
-        REGISTER_ARM_D6	= ( REGISTER_ARM_D5 + 1 ) ,
-        REGISTER_ARM_D7	= ( REGISTER_ARM_D6 + 1 ) ,
-        REGISTER_ARM_D8	= ( REGISTER_ARM_D7 + 1 ) ,
-        REGISTER_ARM_D9	= ( REGISTER_ARM_D8 + 1 ) ,
-        REGISTER_ARM_D10	= ( REGISTER_ARM_D9 + 1 ) ,
-        REGISTER_ARM_D11	= ( REGISTER_ARM_D10 + 1 ) ,
-        REGISTER_ARM_D12	= ( REGISTER_ARM_D11 + 1 ) ,
-        REGISTER_ARM_D13	= ( REGISTER_ARM_D12 + 1 ) ,
-        REGISTER_ARM_D14	= ( REGISTER_ARM_D13 + 1 ) ,
-        REGISTER_ARM_D15	= ( REGISTER_ARM_D14 + 1 ) ,
-        REGISTER_ARM_D16	= ( REGISTER_ARM_D15 + 1 ) ,
-        REGISTER_ARM_D17	= ( REGISTER_ARM_D16 + 1 ) ,
-        REGISTER_ARM_D18	= ( REGISTER_ARM_D17 + 1 ) ,
-        REGISTER_ARM_D19	= ( REGISTER_ARM_D18 + 1 ) ,
-        REGISTER_ARM_D20	= ( REGISTER_ARM_D19 + 1 ) ,
-        REGISTER_ARM_D21	= ( REGISTER_ARM_D20 + 1 ) ,
-        REGISTER_ARM_D22	= ( REGISTER_ARM_D21 + 1 ) ,
-        REGISTER_ARM_D23	= ( REGISTER_ARM_D22 + 1 ) ,
-        REGISTER_ARM_D24	= ( REGISTER_ARM_D23 + 1 ) ,
-        REGISTER_ARM_D25	= ( REGISTER_ARM_D24 + 1 ) ,
-        REGISTER_ARM_D26	= ( REGISTER_ARM_D25 + 1 ) ,
-        REGISTER_ARM_D27	= ( REGISTER_ARM_D26 + 1 ) ,
-        REGISTER_ARM_D28	= ( REGISTER_ARM_D27 + 1 ) ,
-        REGISTER_ARM_D29	= ( REGISTER_ARM_D28 + 1 ) ,
-        REGISTER_ARM_D30	= ( REGISTER_ARM_D29 + 1 ) ,
-        REGISTER_ARM_D31	= ( REGISTER_ARM_D30 + 1 ) ,
         REGISTER_ARM64_PC	= 0,
         REGISTER_ARM64_SP	= ( REGISTER_ARM64_PC + 1 ) ,
         REGISTER_ARM64_FP	= ( REGISTER_ARM64_SP + 1 ) ,
