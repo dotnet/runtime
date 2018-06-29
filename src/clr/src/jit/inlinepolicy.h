@@ -339,7 +339,7 @@ private:
 // FullPolicy is an experimental policy that will always inline if
 // possible, subject to externally settable depth and size limits.
 //
-// It's useful for unconvering the full set of possible inlines for
+// It's useful for uncovering the full set of possible inlines for
 // methods.
 
 class FullPolicy : public DiscretionaryPolicy
