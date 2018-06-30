@@ -7,7 +7,6 @@ using System.ComponentModel.Composition.Hosting;
 using System.ComponentModel.Composition.Primitives;
 using System.ComponentModel.Composition.ReflectionModel;
 using System.Reflection;
-using Microsoft.Internal;
 
 namespace System.ComponentModel.Composition.AttributedModel
 {
@@ -23,9 +22,20 @@ namespace System.ComponentModel.Composition.AttributedModel
         public AttributedExportDefinition(AttributedPartCreationInfo partCreationInfo, MemberInfo member, ExportAttribute exportAttribute, Type typeIdentityType, string contractName)
             : base(contractName, (IDictionary<string, object>)null)
         {
-            Assumes.NotNull(partCreationInfo);
-            Assumes.NotNull(member);
-            Assumes.NotNull(exportAttribute);
+            if(partCreationInfo == null)
+            {
+                throw new ArgumentNullException(nameof(partCreationInfo));
+            }
+
+            if (member == null)
+            {
+                throw new ArgumentNullException(nameof(member));
+            }
+
+            if (exportAttribute == null)
+            {
+                throw new ArgumentNullException(nameof(exportAttribute));
+            }
 
             _partCreationInfo = partCreationInfo;
             _member = member;

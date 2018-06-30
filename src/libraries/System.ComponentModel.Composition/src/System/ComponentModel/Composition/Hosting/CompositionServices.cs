@@ -26,7 +26,10 @@ namespace System.ComponentModel.Composition.Hosting
 
         internal static Type GetDefaultTypeFromMember(this MemberInfo member)
         {
-            Assumes.NotNull(member);
+            if (member == null)
+            {
+                throw new ArgumentNullException(nameof(member));
+            }
 
             switch (member.MemberType)
             {
@@ -39,7 +42,10 @@ namespace System.ComponentModel.Composition.Hosting
 
                 case MemberTypes.Field:
                 default:
-                    Assumes.IsTrue(member.MemberType == MemberTypes.Field);
+                    if(member.MemberType != MemberTypes.Field)
+                    {
+                        throw new Exception(SR.Diagnostic_InternalExceptionMessage);
+                    }
                     return ((FieldInfo)member).FieldType;
             }
         }
@@ -58,7 +64,10 @@ namespace System.ComponentModel.Composition.Hosting
 
         internal static Type AdjustSpecifiedTypeIdentityType(this Type specifiedContractType, Type memberType)
         {
-            Assumes.NotNull(specifiedContractType);
+            if (specifiedContractType == null)
+            {
+                throw new ArgumentNullException(nameof(specifiedContractType));
+            }
 
             if ((memberType != null) && memberType.IsGenericType && specifiedContractType.IsGenericType)
             {
@@ -120,7 +129,10 @@ internal static string GetTypeIdentityFromExport(this MemberInfo member, Type ty
             else
             {
                 MethodInfo method = member as MethodInfo;
-                Assumes.NotNull(method);
+                if (method == null) 
+                {
+                    throw new Exception(SR.Diagnostic_InternalExceptionMessage);
+                }
                 return AttributedModelServices.GetTypeIdentity(method);
             }
         }
@@ -398,7 +410,10 @@ internal static Type GetContractTypeFromImport(this IAttributedImport import, Im
 
             private void InferArrayType(Type itemType)
             {
-                Assumes.NotNull(itemType);
+                if (itemType == null)
+                {
+                    throw new ArgumentNullException(nameof(itemType));
+                }
 
                 if (_arrayType == null)
                 {
@@ -618,7 +633,11 @@ internal static Type GetContractTypeFromImport(this IAttributedImport import, Im
 
         private static bool IsValidAttributeType(Type type, bool arrayAllowed)
         {
-            Assumes.NotNull(type);
+            if (type == null)
+            {
+                throw new ArgumentNullException(nameof(type));
+            }
+
             // Definitions of valid attribute type taken from C# 3.0 Specification section 17.1.3.
 
             // One of the following types: bool, byte, char, double, float, int, long, sbyte, short, string, uint, ulong, ushort.

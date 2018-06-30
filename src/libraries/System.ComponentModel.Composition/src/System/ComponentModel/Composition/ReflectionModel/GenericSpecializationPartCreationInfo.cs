@@ -31,9 +31,20 @@ namespace System.ComponentModel.Composition.ReflectionModel
 
         public GenericSpecializationPartCreationInfo(IReflectionPartCreationInfo originalPartCreationInfo, ReflectionComposablePartDefinition originalPart, Type[] specialization)
         {
-            Assumes.NotNull(originalPartCreationInfo);
-            Assumes.NotNull(specialization);
-            Assumes.NotNull(originalPart);
+            if(originalPartCreationInfo == null)
+            {
+                throw new ArgumentNullException(nameof(originalPartCreationInfo));
+            }
+
+            if(originalPart == null)
+            {
+                throw new ArgumentNullException(nameof(originalPart));
+            }
+
+            if(specialization == null)
+            {
+                throw new ArgumentNullException(nameof(specialization));
+            }
 
             _originalPartCreationInfo = originalPartCreationInfo;
             _originalPart = originalPart;
@@ -112,7 +123,10 @@ namespace System.ComponentModel.Composition.ReflectionModel
         private MemberInfo[] GetAccessors(LazyMemberInfo originalLazyMember)
         {
             BuildTables();
-            Assumes.NotNull(_membersTable);
+            if(_membersTable == null)
+            {
+                throw new ArgumentNullException(nameof(_membersTable));
+            }
 
             return _membersTable[originalLazyMember];
         }
@@ -120,7 +134,10 @@ namespace System.ComponentModel.Composition.ReflectionModel
         private ParameterInfo GetParameter(Lazy<ParameterInfo> originalParameter)
         {
             BuildTables();
-            Assumes.NotNull(_parametersTable);
+            if (_parametersTable == null)
+            {
+                throw new ArgumentNullException(nameof(_parametersTable));
+            }
 
             return _parametersTable[originalParameter];
         }
@@ -143,7 +160,10 @@ namespace System.ComponentModel.Composition.ReflectionModel
                     members = _members;
                     parameters = _parameters;
 
-                    Assumes.NotNull(members);
+                    if (members == null)
+                    {
+                        throw new Exception(SR.Diagnostic_InternalExceptionMessage);
+                    }
                 }
             }
 
@@ -170,7 +190,10 @@ namespace System.ComponentModel.Composition.ReflectionModel
 
         private Dictionary<LazyMemberInfo, MemberInfo[]> BuildMembersTable(List<LazyMemberInfo> members)
         {
-            Assumes.NotNull(members);
+            if (members == null)
+            {
+                throw new ArgumentNullException(nameof(members));
+            }
 
             Dictionary<LazyMemberInfo, MemberInfo[]> membersTable = new Dictionary<LazyMemberInfo, MemberInfo[]>();
             Dictionary<int, MemberInfo> specializedPartMembers = new Dictionary<int, MemberInfo>();
@@ -219,7 +242,10 @@ namespace System.ComponentModel.Composition.ReflectionModel
                     if (genericAccessors[i] != null)
                     {
                         specializedPartMembers.TryGetValue(genericAccessors[i].MetadataToken, out accessors[i]);
-                        Assumes.NotNull(accessors[i]);
+                        if (accessors[i] == null)
+                        {
+                            throw new Exception(SR.Diagnostic_InternalExceptionMessage);
+                        }
                     }
                 }
 
@@ -326,7 +352,10 @@ namespace System.ComponentModel.Composition.ReflectionModel
             else
             {
                 ReflectionParameterImportDefinition parameterImport = reflectionImport as ReflectionParameterImportDefinition;
-                Assumes.NotNull(parameterImport);
+                if (parameterImport == null)
+                {
+                    throw new Exception(SR.Diagnostic_InternalExceptionMessage);
+                }
 
                 Lazy<ParameterInfo> lazyParameter = parameterImport.ImportingLazyParameter;
                 Lazy<ParameterInfo> parameter = new Lazy<ParameterInfo>(() => GetParameter(lazyParameter));

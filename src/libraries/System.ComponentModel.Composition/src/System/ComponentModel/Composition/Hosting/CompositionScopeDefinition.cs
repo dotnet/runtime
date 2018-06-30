@@ -189,7 +189,10 @@ namespace System.ComponentModel.Composition.Hosting
 
         internal IEnumerable<Tuple<ComposablePartDefinition, ExportDefinition>> GetExportsFromPublicSurface(ImportDefinition definition)
         {
-            Assumes.NotNull(definition, nameof(definition));
+            if (definition == null)
+            {
+                throw new ArgumentNullException(nameof(definition));
+            }
 
             var exports = new List<Tuple<ComposablePartDefinition, ExportDefinition>>();
 

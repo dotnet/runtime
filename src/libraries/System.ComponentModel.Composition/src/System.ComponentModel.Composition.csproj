@@ -184,29 +184,6 @@
     <Compile Include="System\ComponentModel\Composition\ReflectionModel\ReflectionProperty.cs" />
     <Compile Include="System\ComponentModel\Composition\ReflectionModel\ReflectionType.cs" />
     <Compile Include="System\ComponentModel\Composition\ReflectionModel\ReflectionWritableMember.cs" />
-    <Compile Include="$(CommonPath)\Microsoft\Internal\Assumes.cs">
-      <Link>Microsoft\Internal\Assumes.cs</Link>
-    </Compile>
-    <Compile Include="$(CommonPath)\Microsoft\Internal\Assumes.InternalErrorException.cs">
-      <Link>Microsoft\Internal\Assumes.InternalErrorException.cs</Link>
-    </Compile>
-    <Compile Include="$(CommonPath)\Microsoft\Internal\CommonStrings.Designer.cs">
-      <Link>Microsoft\Internal\CommonStrings.Designer.cs</Link>
-      <AutoGen>True</AutoGen>
-      <DesignTime>True</DesignTime>
-      <DependentUpon>CommonStrings.resx</DependentUpon>
-    </Compile>
-    <Compile Include="$(CommonPath)\Microsoft\Internal\Requires.cs">
-      <Link>Microsoft\Internal\Requires.cs</Link>
-    </Compile>
-  </ItemGroup>
-  <ItemGroup Condition="'$(TargetGroup)' != 'netstandard'">
-    <EmbeddedResource Include="$(CommonPath)\Microsoft\Internal\CommonStrings.resx">
-      <Link>Microsoft\Internal\CommonStrings.resx</Link>
-      <Generator>ResXFileCodeGenerator</Generator>
-      <LastGenOutput>CommonStrings.Designer.cs</LastGenOutput>
-      <CustomToolNamespace>Microsoft.Internal</CustomToolNamespace>
-    </EmbeddedResource>
   </ItemGroup>
   <ItemGroup Condition="'$(TargetGroup)' != 'netstandard'">
     <Reference Include="Microsoft.Win32.Primitives" />
