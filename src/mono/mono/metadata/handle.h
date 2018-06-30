@@ -638,8 +638,8 @@ be reviewed and probably changed FIXME.
 */
 extern const MonoObjectHandle mono_null_value_handle;
 #define NULL_HANDLE mono_null_value_handle
-#define NULL_HANDLE_STRING MONO_HANDLE_CAST(MonoString, NULL_HANDLE)
-#define NULL_HANDLE_ARRAY (MONO_HANDLE_CAST (MonoArray, NULL_HANDLE))
+#define NULL_HANDLE_STRING (MONO_HANDLE_CAST (MonoString, NULL_HANDLE))
+#define NULL_HANDLE_ARRAY  (MONO_HANDLE_CAST (MonoArray,  NULL_HANDLE))
 
 #if MONO_TYPE_SAFE_HANDLES
 

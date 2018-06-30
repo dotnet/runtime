@@ -3062,7 +3062,7 @@ mono_runtime_try_invoke (MonoMethod *method, void *obj, void **params, MonoObjec
 	return do_runtime_invoke (method, obj, params, exc, error);
 }
 
-static MonoObjectHandle
+MonoObjectHandle
 mono_runtime_try_invoke_handle (MonoMethod *method, MonoObjectHandle obj, void **params, MonoError* error)
 {
 	// FIXME? typing of params
@@ -3805,7 +3805,7 @@ mono_property_set_value (MonoProperty *prop, void *obj, void **params, MonoObjec
 }
 
 /**
- * mono_property_set_value_checked:
+ * mono_property_set_value_handle:
  * \param prop \c MonoProperty to set
  * \param obj instance object on which to act
  * \param params parameters to pass to the propery
@@ -3816,14 +3816,14 @@ mono_property_set_value (MonoProperty *prop, void *obj, void **params, MonoObjec
  * If an exception is thrown, it will be caught and returned via \p error.
  */
 gboolean
-mono_property_set_value_checked (MonoProperty *prop, void *obj, void **params, MonoError *error)
+mono_property_set_value_handle (MonoProperty *prop, MonoObjectHandle obj, void **params, MonoError *error)
 {
 	MONO_REQ_GC_UNSAFE_MODE;
 
 	MonoObject *exc;
 
 	error_init (error);
-	do_runtime_invoke (prop->set, obj, params, &exc, error);
+	do_runtime_invoke (prop->set, MONO_HANDLE_RAW (obj), params, &exc, error);
 	if (exc != NULL && is_ok (error))
 		mono_error_set_exception_instance (error, (MonoException*)exc);
 	return is_ok (error);
@@ -6309,6 +6309,14 @@ mono_array_new_specific_checked (MonoVTable *vtable, uintptr_t n, MonoError *err
 	}
 
 	return (MonoArray*)o;
+}
+
+
+MonoArrayHandle
+mono_array_new_specific_handle (MonoVTable *vtable, uintptr_t n, MonoError *error)
+{
+	// FIXMEcoop invert relationship with mono_array_new_specific_checked
+	return MONO_HANDLE_NEW (MonoArray, mono_array_new_specific_checked (vtable, n, error));
 }
 
 MonoArray*
@@ -8887,7 +8895,7 @@ mono_array_addr_with_size (MonoArray *array, int size, uintptr_t idx)
 	char *res;
 	MONO_ENTER_GC_UNSAFE;
 
-	res = ((char*)(array)->vector) + size * idx;
+	res = mono_array_addr_with_size_fast (array, size, idx);
 	MONO_EXIT_GC_UNSAFE;
 	return res;
 }
