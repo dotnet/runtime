@@ -18906,6 +18906,10 @@ bool Compiler::fgCheckStmtAfterTailCall()
     return nextMorphStmt == nullptr;
 }
 
+static const int      numberOfTrackedFlags               = 5;
+static const unsigned trackedFlags[numberOfTrackedFlags] = {GTF_ASG, GTF_CALL, GTF_EXCEPT, GTF_GLOB_REF,
+                                                            GTF_ORDER_SIDEEFF};
+
 //------------------------------------------------------------------------
 // fgMorphArgList: morph argument list tree without recursion.
 //
@@ -18921,11 +18925,7 @@ GenTreeArgList* Compiler::fgMorphArgList(GenTreeArgList* args, MorphAddrContext*
     // Use a non-recursive algorithm that morphs all actual list values,
     // memorizes the last node for each effect flag and resets
     // them during the second iteration.
-    constexpr int      numberOfTrackedFlags               = 5;
-    constexpr unsigned trackedFlags[numberOfTrackedFlags] = {GTF_ASG, GTF_CALL, GTF_EXCEPT, GTF_GLOB_REF,
-                                                             GTF_ORDER_SIDEEFF};
-    static_assert_no_msg((trackedFlags[0] | trackedFlags[1] | trackedFlags[2] | trackedFlags[3] | trackedFlags[4]) ==
-                         GTF_ALL_EFFECT);
+    assert((trackedFlags[0] | trackedFlags[1] | trackedFlags[2] | trackedFlags[3] | trackedFlags[4]) == GTF_ALL_EFFECT);
 
     GenTree* memorizedLastNodes[numberOfTrackedFlags] = {nullptr};
 
