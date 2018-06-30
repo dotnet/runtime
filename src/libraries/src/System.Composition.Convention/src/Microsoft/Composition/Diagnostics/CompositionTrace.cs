@@ -12,7 +12,10 @@ namespace Microsoft.Composition.Diagnostics
     {
         internal static void Registration_ConstructorConventionOverridden(Type type)
         {
-            Assumes.NotNull(type);
+            if (type == null)
+            {
+                throw new ArgumentNullException(nameof(type));
+            }
 
             if (CompositionTraceSource.CanWriteInformation)
             {
@@ -24,7 +27,10 @@ namespace Microsoft.Composition.Diagnostics
 
         internal static void Registration_TypeExportConventionOverridden(Type type)
         {
-            Assumes.NotNull(type);
+            if (type == null)
+            {
+                throw new ArgumentNullException(nameof(type));
+            }
 
             if (CompositionTraceSource.CanWriteWarning)
             {
@@ -36,7 +42,15 @@ namespace Microsoft.Composition.Diagnostics
 
         internal static void Registration_MemberExportConventionOverridden(Type type, MemberInfo member)
         {
-            Assumes.NotNull(type, member);
+            if (type == null)
+            {
+                throw new ArgumentNullException(nameof(type));
+            }
+
+            if (member == null)
+            {
+                throw new ArgumentNullException(nameof(member));
+            }
 
             if (CompositionTraceSource.CanWriteWarning)
             {
@@ -48,7 +62,15 @@ namespace Microsoft.Composition.Diagnostics
 
         internal static void Registration_MemberImportConventionOverridden(Type type, MemberInfo member)
         {
-            Assumes.NotNull(type, member);
+            if (type == null)
+            {
+                throw new ArgumentNullException(nameof(type));
+            }
+
+            if (member == null)
+            {
+                throw new ArgumentNullException(nameof(member));
+            }
 
             if (CompositionTraceSource.CanWriteWarning)
             {
@@ -60,7 +82,15 @@ namespace Microsoft.Composition.Diagnostics
 
         internal static void Registration_OnSatisfiedImportNotificationOverridden(Type type, MemberInfo member)
         {
-            Assumes.NotNull(type, member);
+            if (type == null)
+            {
+                throw new ArgumentNullException(nameof(type));
+            }
+
+            if (member == null)
+            {
+                throw new ArgumentNullException(nameof(member));
+            }
 
             if (CompositionTraceSource.CanWriteWarning)
             {
@@ -72,7 +102,10 @@ namespace Microsoft.Composition.Diagnostics
 
         internal static void Registration_PartCreationConventionOverridden(Type type)
         {
-            Assumes.NotNull(type);
+            if (type == null)
+            {
+                throw new ArgumentNullException(nameof(type));
+            }
 
             if (CompositionTraceSource.CanWriteWarning)
             {
@@ -84,7 +117,15 @@ namespace Microsoft.Composition.Diagnostics
 
         internal static void Registration_MemberImportConventionMatchedTwice(Type type, MemberInfo member)
         {
-            Assumes.NotNull(type, member);
+            if (type == null)
+            {
+                throw new ArgumentNullException(nameof(type));
+            }
+
+            if (member == null)
+            {
+                throw new ArgumentNullException(nameof(member));
+            }
 
             if (CompositionTraceSource.CanWriteWarning)
             {
@@ -96,7 +137,10 @@ namespace Microsoft.Composition.Diagnostics
 
         internal static void Registration_PartMetadataConventionOverridden(Type type)
         {
-            Assumes.NotNull(type);
+            if (type == null)
+            {
+                throw new ArgumentNullException(nameof(type));
+            }
 
             if (CompositionTraceSource.CanWriteWarning)
             {
@@ -108,7 +152,15 @@ namespace Microsoft.Composition.Diagnostics
 
         internal static void Registration_ParameterImportConventionOverridden(ParameterInfo parameter, ConstructorInfo constructor)
         {
-            Assumes.NotNull(parameter, constructor);
+            if (parameter == null)
+            {
+                throw new ArgumentNullException(nameof(parameter));
+            }
+
+            if (constructor == null)
+            {
+                throw new ArgumentNullException(nameof(constructor));
+            }
 
             if (CompositionTraceSource.CanWriteWarning)
             {

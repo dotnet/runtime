@@ -25,7 +25,10 @@ namespace System.Composition
 
         private static ArgumentException CreateArgumentException(string message, string parameterName)
         {
-            Assumes.NotNull(parameterName);
+            if (parameterName == null)
+            {
+                throw new ArgumentNullException(nameof(parameterName));
+            }
 
             return new ArgumentException(SR.Format(message, parameterName), parameterName);
         }

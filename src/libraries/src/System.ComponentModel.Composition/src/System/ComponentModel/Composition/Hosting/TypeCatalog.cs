@@ -258,7 +258,10 @@ namespace System.ComponentModel.Composition.Hosting
                     {
                         if (_parts == null)
                         {
-                            Assumes.NotNull(_types);
+                            if (_types == null)
+                            {
+                                throw new Exception(SR.Diagnostic_InternalExceptionMessage);
+                            }
 
                             var collection = new List<ComposablePartDefinition>();
                             foreach (Type type in _types)
@@ -283,7 +286,10 @@ namespace System.ComponentModel.Composition.Hosting
 
         internal override IEnumerable<ComposablePartDefinition> GetCandidateParts(ImportDefinition definition)
         {
-            Assumes.NotNull(definition);
+            if (definition == null)
+            {
+                throw new ArgumentNullException(nameof(definition));
+            }
 
             string contractName = definition.ContractName;
             if (string.IsNullOrEmpty(contractName))

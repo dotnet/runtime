@@ -25,7 +25,10 @@ namespace System.ComponentModel.Composition.ReflectionModel
             ICompositionElement origin)
             : base(contractName, requiredTypeIdentity, requiredMetadata, cardinality, false, true, requiredCreationPolicy, metadata, origin)
         {
-            Assumes.NotNull(importingLazyParameter);
+            if (importingLazyParameter == null)
+            {
+                throw new ArgumentNullException(nameof(importingLazyParameter));
+            }
 
             _importingLazyParameter = importingLazyParameter;
         }

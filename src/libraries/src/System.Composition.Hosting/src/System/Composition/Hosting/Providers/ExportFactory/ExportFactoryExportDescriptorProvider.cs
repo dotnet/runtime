@@ -28,14 +28,14 @@ namespace System.Composition.Hosting.Providers.ExportFactory
         private static ExportDescriptorPromise[] GetExportFactoryDescriptors<TProduct>(CompositionContract exportFactoryContract, DependencyAccessor definitionAccessor)
         {
             var productContract = exportFactoryContract.ChangeType(typeof(TProduct));
-            var boundaries = EmptyArray<string>.Value;
+            var boundaries = Array.Empty<string>();
 
             IEnumerable<string> specifiedBoundaries;
             CompositionContract unwrapped;
             if (exportFactoryContract.TryUnwrapMetadataConstraint(Constants.SharingBoundaryImportMetadataConstraintName, out specifiedBoundaries, out unwrapped))
             {
                 productContract = unwrapped.ChangeType(typeof(TProduct));
-                boundaries = (specifiedBoundaries ?? EmptyArray<string>.Value).ToArray();
+                boundaries = (specifiedBoundaries ?? Array.Empty<string>()).ToArray();
             }
 
             return definitionAccessor.ResolveDependencies("product", productContract, false)

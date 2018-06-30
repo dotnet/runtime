@@ -2,7 +2,6 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
-using Microsoft.Internal;
 
 namespace System.ComponentModel.Composition.Diagnostics
 {
@@ -48,7 +47,10 @@ namespace System.ComponentModel.Composition.Diagnostics
 
         private static void EnsureEnabled(bool condition)
         {
-            Assumes.IsTrue(condition, "To avoid unnecessary work when a trace level has not been enabled, check CanWriteXXX before calling this method.");
+            if(!condition)
+            {
+                throw new Exception(SR.Trace_Level_Not_Enabled);
+            }
         }
     }
 }

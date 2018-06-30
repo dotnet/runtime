@@ -17,7 +17,7 @@ namespace System.Composition.TypedParts.Util
             if (member == null) throw new ArgumentNullException(nameof(member));
 
             if (!(member is TypeInfo) && member.DeclaringType != reflectedType)
-                return EmptyArray<Attribute>.Value;
+                return Array.Empty<Attribute>();
 #if netstandard10
             return member.GetCustomAttributes(false);
 #else

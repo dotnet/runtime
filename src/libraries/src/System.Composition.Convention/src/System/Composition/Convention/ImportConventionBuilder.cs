@@ -36,7 +36,14 @@ namespace System.Composition.Convention
         /// <returns>An import builder allowing further configuration.</returns>
         public ImportConventionBuilder AsContractName(string contractName)
         {
-            Requires.NotNullOrEmpty(contractName, nameof(contractName));
+            if (contractName == null)
+            {
+                throw new ArgumentNullException(nameof(contractName));
+            }
+            if(contractName.Length == 0)
+            {
+                throw new ArgumentException(SR.Format(SR.ArgumentException_EmptyString, nameof(contractName)), nameof(contractName));
+            }
             _contractName = contractName;
             return this;
         }
@@ -48,7 +55,10 @@ namespace System.Composition.Convention
         /// <returns>An export builder allowing further configuration.</returns>
         public ImportConventionBuilder AsContractName(Func<Type, string> getContractNameFromPartType)
         {
-            Requires.NotNull(getContractNameFromPartType, nameof(getContractNameFromPartType));
+            if (getContractNameFromPartType == null)
+            {
+                throw new ArgumentNullException(nameof(getContractNameFromPartType));
+            }
             _getContractNameFromPartType = getContractNameFromPartType;
             return this;
         }
@@ -92,7 +102,14 @@ namespace System.Composition.Convention
         /// <returns>An import builder allowing further configuration.</returns>
         public ImportConventionBuilder AddMetadataConstraint(string name, object value)
         {
-            Requires.NotNullOrEmpty(name, nameof(name));
+            if (name == null)
+            {
+                throw new ArgumentNullException(nameof(name));
+            }
+            if (name.Length == 0)
+            {
+                throw new ArgumentException(SR.Format(SR.ArgumentException_EmptyString, nameof(name)), nameof(name));
+            }
             if (_metadataConstraintItems == null)
             {
                 _metadataConstraintItems = new List<Tuple<string, object>>();
@@ -109,8 +126,19 @@ namespace System.Composition.Convention
         /// <returns>An export builder allowing further configuration.</returns>
         public ImportConventionBuilder AddMetadataConstraint(string name, Func<Type, object> getConstraintValueFromPartType)
         {
-            Requires.NotNullOrEmpty(name, nameof(name));
-            Requires.NotNull(getConstraintValueFromPartType, nameof(getConstraintValueFromPartType));
+            if (name == null)
+            {
+                throw new ArgumentNullException(nameof(name));
+            }
+            if (name.Length == 0)
+            {
+                throw new ArgumentException(SR.Format(SR.ArgumentException_EmptyString, nameof(name)), nameof(name));
+            }
+
+            if(getConstraintValueFromPartType == null)
+            {
+                throw new ArgumentNullException(nameof(getConstraintValueFromPartType));
+            }
 
             if (_metadataConstraintItemFuncs == null)
             {

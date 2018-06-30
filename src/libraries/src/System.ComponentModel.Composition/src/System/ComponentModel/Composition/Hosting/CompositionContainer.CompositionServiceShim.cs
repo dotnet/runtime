@@ -3,7 +3,6 @@
 // See the LICENSE file in the project root for more information.
 
 using System.ComponentModel.Composition.Primitives;
-using Microsoft.Internal;
 
 namespace System.ComponentModel.Composition.Hosting
 {
@@ -15,7 +14,10 @@ namespace System.ComponentModel.Composition.Hosting
 
             public CompositionServiceShim(CompositionContainer innerContainer)
             {
-                Assumes.NotNull(innerContainer);
+                if (innerContainer == null)
+                {
+                    throw new ArgumentNullException(nameof(innerContainer));
+                }
                 _innerContainer = innerContainer;
             }
 

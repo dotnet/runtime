@@ -5,7 +5,6 @@
 using System.Collections.Generic;
 using System.ComponentModel.Composition.Primitives;
 using System.Globalization;
-using Microsoft.Internal;
 
 namespace System.ComponentModel.Composition.ReflectionModel
 {
@@ -26,7 +25,10 @@ namespace System.ComponentModel.Composition.ReflectionModel
             ICompositionElement origin) 
             : base(contractName, requiredTypeIdentity, requiredMetadata, cardinality, isRecomposable, isPrerequisite, requiredCreationPolicy, metadata, origin)
         {
-            Assumes.NotNull(contractName);
+            if (contractName == null)
+            {
+                throw new ArgumentNullException(nameof(contractName));
+            }
 
             _importingLazyMember = importingLazyMember;
         }
