@@ -393,13 +393,7 @@ void CodeGen::siInit()
         }
         else
         {
-            siLatestTrackedScopes =
-                static_cast<siScope**>(compiler->compGetMemArray(scopeCount, sizeof(siScope*), CMK_SiScope));
-
-            for (unsigned i = 0; i < scopeCount; i++)
-            {
-                siLatestTrackedScopes[i] = nullptr;
-            }
+            siLatestTrackedScopes = new (compiler->getAllocator(CMK_SiScope)) siScope* [scopeCount] {};
         }
 
         compiler->compResetScopeLists();
