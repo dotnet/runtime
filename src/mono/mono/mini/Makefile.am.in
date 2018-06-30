@@ -34,6 +34,21 @@ sgen_libs = \
 	$(monodir)/mono/utils/libmonoutils.la \
 	$(glib_libs)
 
+if ENABLE_LLVM
+-include $(mono_build_root)/llvm/llvm_config.mk
+LLVM_CFLAGS=$(LLVM_CFLAGS_INTERNAL) $(LLVM_CFLAGS_EXTERNAL)
+LLVM_CXXFLAGS=$(LLVM_CXXFLAGS_INTERNAL) $(LLVM_CXXFLAGS_EXTERNAL)
+LLVM_LDFLAGS=$(LLVM_LDFLAGS_INTERNAL) $(LLVM_LDFLAGS_EXTERNAL)
+LLVM_LIBS=$(LLVM_LIBS_INTERNAL) $(LLVM_LIBS_EXTERNAL)
+
+print-llvm-info:
+	echo "cflags: $(LLVM_CFLAGS)"
+	echo "cxxflags: $(LLVM_CXXFLAGS)"
+	echo "ldflags: $(LLVM_LDFLAGS)"
+	echo "libs: $(LLVM_LIBS)"
+endif
+
+
 if FULL_AOT_TESTS
 # if the tests are going to run with framework assemblies compiled with
 # -d:MOBILE, tell the runtime to remap framework assemblies using the mobile
@@ -158,8 +173,9 @@ if LOADED_LLVM
 lib_LTLIBRARIES += libmono-llvm.la
 libmono_llvm_la_SOURCES = mini-llvm.c mini-llvm-cpp.cpp llvm-jit.cpp
 libmono_llvm_la_LIBADD = $(glib_libs) $(LLVM_LIBS) $(LLVM_LDFLAGS)
+
 if HOST_DARWIN
-libmono_llvm_la_LDFLAGS=-Wl,-undefined -Wl,suppress -Wl,-flat_namespace
+libmono_llvm_la_LDFLAGS=-Wl,-undefined -Wl,suppress -Wl,-flat_namespace 
 endif
 endif
 
@@ -229,7 +245,7 @@ mono_boehm_LDADD = \
 	$(MONO_DTRACE_OBJECT)
 
 mono_boehm_LDFLAGS = \
-	$(static_flags) $(monobinldflags) $(monobin_platform_ldflags)
+	$(static_flags) $(monobinldflags) $(monobin_platform_ldflags) 
 
 mono_sgen_LDADD = \
 	$(MONO_SGEN_LIB)	\
@@ -238,7 +254,7 @@ mono_sgen_LDADD = \
 	-lm			\
 	$(MONO_DTRACE_OBJECT)
 
-mono_sgen_LDFLAGS = $(static_flags) $(monobinldflags) $(monobin_platform_ldflags)
+mono_sgen_LDFLAGS = $(static_flags) $(monobinldflags) $(monobin_platform_ldflags) 
 
 if BITCODE
 libmonoldflags += -no-undefined
@@ -671,12 +687,12 @@ libmini_la_CFLAGS = $(mono_CFLAGS)
 libmonoboehm_2_0_la_SOURCES =
 libmonoboehm_2_0_la_CFLAGS = $(mono_boehm_CFLAGS)
 libmonoboehm_2_0_la_LIBADD = libmini.la $(interp_libs_with_mini) $(dbg_libs_with_mini) $(boehm_libs) $(LIBMONO_DTRACE_OBJECT) $(LLVMMONOF)
-libmonoboehm_2_0_la_LDFLAGS = $(libmonoldflags) $(monobin_platform_ldflags)
+libmonoboehm_2_0_la_LDFLAGS = $(libmonoldflags) $(monobin_platform_ldflags) 
 
 libmonosgen_2_0_la_SOURCES =
 libmonosgen_2_0_la_CFLAGS = $(mono_sgen_CFLAGS)
 libmonosgen_2_0_la_LIBADD = libmini.la $(interp_libs_with_mini) $(dbg_libs_with_mini) $(sgen_libs) $(LIBMONO_DTRACE_OBJECT) $(LLVMMONOF)
-libmonosgen_2_0_la_LDFLAGS = $(libmonoldflags) $(monobin_platform_ldflags)
+libmonosgen_2_0_la_LDFLAGS = $(libmonoldflags) $(monobin_platform_ldflags) 
 
 libmonoincludedir = $(includedir)/mono-$(API_VER)/mono/jit
 
@@ -977,9 +993,15 @@ patch-automake:
 tags:
 	etags -o TAGS `find .. -name "*.h" -o -name "*.c"`
 
+if ENABLE_LLVM
+llvm_makefile_dep = $(mono_build_root)/llvm/llvm_config.mk
+endif
+
 if HAS_EXTENSION_MODULE
 else
-Makefile.am: Makefile.am.in
+Makefile.am: Makefile.am.in $(llvm_makefile_dep)
 	echo "##################### Generated from Makefile.am.in, do not modify ##########################" > $@
 	cat $< >> $@
+
 endif
+
