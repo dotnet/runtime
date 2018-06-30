@@ -1146,7 +1146,7 @@ bool Compiler::optRecordLoop(BasicBlock*   head,
     if (optLoopTable == nullptr)
     {
         assert(loopInd == 0);
-        optLoopTable = static_cast<LoopDsc*>(compGetMemArray(MAX_LOOP_NUM, sizeof(LoopDsc), CMK_LoopOpt));
+        optLoopTable = getAllocator(CMK_LoopOpt).allocate<LoopDsc>(MAX_LOOP_NUM);
     }
     else
     {
