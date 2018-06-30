@@ -1,14 +1,13 @@
-// Copyright (c) .NET Foundation. All rights reserved.
-// Licensed under the Apache License, Version 2.0. See License.txt in the project root for license information.
-
-using System;
+// Licensed to the .NET Foundation under one or more agreements.
+// The .NET Foundation licenses this file to you under the MIT license.
+// See the LICENSE file in the project root for more information.
 
 namespace System.Net.Http.HPack
 {
     internal class Huffman
     {
         // TODO: this can be constructed from _decodingTable
-        private static readonly (uint code, int bitLength)[] _encodingTable = new (uint code, int bitLength)[]
+        private static readonly (uint code, int bitLength)[] s_encodingTable = new (uint code, int bitLength)[]
         {
             (0b11111111_11000000_00000000_00000000, 13),
             (0b11111111_11111111_10110000_00000000, 23),
@@ -269,7 +268,7 @@ namespace System.Net.Http.HPack
             (0b11111111_11111111_11111111_11111100, 30)
         };
 
-        private static readonly (int codeLength, int[] codes)[] _decodingTable = new[]
+        private static readonly (int codeLength, int[] codes)[] s_decodingTable = new[]
         {
             (5, new[] { 48, 49, 50, 97, 99, 101, 105, 111, 115, 116 }),
             (6, new[] { 32, 37, 45, 46, 47, 51, 52, 53, 54, 55, 56, 57, 61, 65, 95, 98, 100, 102, 103, 104, 108, 109, 110, 112, 114, 117 }),
@@ -296,7 +295,7 @@ namespace System.Net.Http.HPack
 
         public static (uint encoded, int bitLength) Encode(int data)
         {
-            return _encodingTable[data];
+            return s_encodingTable[data];
         }
 
         /// <summary>
@@ -309,17 +308,17 @@ namespace System.Net.Http.HPack
         /// <returns>The number of decoded symbols.</returns>
         public static int Decode(byte[] src, int offset, int count, byte[] dst)
         {
-            var i = offset;
-            var j = 0;
-            var lastDecodedBits = 0;
+            int i = offset;
+            int j = 0;
+            int lastDecodedBits = 0;
             while (i < count)
             {
-                var next = (uint)(src[i] << 24 + lastDecodedBits);
+                uint next = (uint)(src[i] << 24 + lastDecodedBits);
                 next |= (i + 1 < src.Length ? (uint)(src[i + 1] << 16 + lastDecodedBits) : 0);
                 next |= (i + 2 < src.Length ? (uint)(src[i + 2] << 8 + lastDecodedBits) : 0);
                 next |= (i + 3 < src.Length ? (uint)(src[i + 3] << lastDecodedBits) : 0);
 
-                var ones = (uint)(int.MinValue >> (8 - lastDecodedBits - 1));
+                uint ones = (uint)(int.MinValue >> (8 - lastDecodedBits - 1));
                 if (i == count - 1 && lastDecodedBits > 0 && (next & ones) == ones)
                 {
                     // The remaining 7 or less bits are all 1, which is padding.
@@ -332,24 +331,25 @@ namespace System.Net.Http.HPack
                 // The longest possible symbol size is 30 bits. If we're at the last 4 bytes
                 // of the input, we need to make sure we pass the correct number of valid bits
                 // left, otherwise the trailing 0s in next may form a valid symbol.
-                var validBits = Math.Min(30, (8 - lastDecodedBits) + (count - i - 1) * 8);
-                var ch = Decode(next, validBits, out var decodedBits);
+                int validBits = Math.Min(30, (8 - lastDecodedBits) + (count - i - 1) * 8);
+                int ch = Decode(next, validBits, out int decodedBits);
 
                 if (ch == -1)
                 {
                     // No valid symbol could be decoded with the bits in next
-                    throw new HuffmanDecodingException("CoreStrings.HPackHuffmanErrorIncomplete");
+                    throw new HuffmanDecodingException();
                 }
                 else if (ch == 256)
                 {
                     // A Huffman-encoded string literal containing the EOS symbol MUST be treated as a decoding error.
                     // http://httpwg.org/specs/rfc7541.html#rfc.section.5.2
-                    throw new HuffmanDecodingException("CoreStrings.HPackHuffmanErrorEOS");
+                    throw new HuffmanDecodingException();
                 }
 
                 if (j == dst.Length)
                 {
-                    throw new HuffmanDecodingException("CoreStrings.HPackHuffmanErrorDestinationTooSmall");
+                    // Destination is too small.
+                    throw new HuffmanDecodingException();
                 }
 
                 dst[j++] = (byte)ch;
@@ -396,21 +396,21 @@ namespace System.Net.Http.HPack
             // symbol in the list of values associated with bit length b in the decoding table by indexing it
             // with codeMax - v.
 
-            var codeMax = 0;
+            int codeMax = 0;
 
-            for (var i = 0; i < _decodingTable.Length && _decodingTable[i].codeLength <= validBits; i++)
+            for (int i = 0; i < s_decodingTable.Length && s_decodingTable[i].codeLength <= validBits; i++)
             {
-                var (codeLength, codes) = _decodingTable[i];
+                (int codeLength, int[] codes) = s_decodingTable[i];
 
                 if (i > 0)
                 {
-                    codeMax <<= codeLength - _decodingTable[i - 1].codeLength;
+                    codeMax <<= codeLength - s_decodingTable[i - 1].codeLength;
                 }
 
                 codeMax += codes.Length;
 
-                var mask = int.MinValue >> (codeLength - 1);
-                var masked = (data & mask) >> (32 - codeLength);
+                int mask = int.MinValue >> (codeLength - 1);
+                long masked = (data & mask) >> (32 - codeLength);
 
                 if (masked < codeMax)
                 {
