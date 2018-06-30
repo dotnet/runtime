@@ -7394,7 +7394,7 @@ mono_ldstr_utf8 (MonoImage *image, guint32 idx, MonoError *error)
 
 	as = g_utf16_to_utf8 ((guint16*)str, len2, NULL, &written, &gerror);
 	if (gerror) {
-		mono_error_set_argument (error, "string", "%s", gerror->message);
+		mono_error_set_argument (error, "string", gerror->message);
 		g_error_free (gerror);
 		return NULL;
 	}
@@ -7455,7 +7455,7 @@ mono_utf16_to_utf8 (const gunichar2 *s, gsize slength, MonoError *error)
 
 	as = g_utf16_to_utf8 (s, slength, NULL, &written, &gerror);
 	if (gerror) {
-		mono_error_set_argument (error, "string", "%s", gerror->message);
+		mono_error_set_argument (error, "string", gerror->message);
 		g_error_free (gerror);
 		return NULL;
 	}

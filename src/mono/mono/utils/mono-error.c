@@ -482,7 +482,7 @@ mono_error_set_out_of_memory (MonoError *oerror, const char *msg_format, ...)
 }
 
 void
-mono_error_set_argument (MonoError *oerror, const char *argument, const char *msg_format, ...)
+mono_error_set_argument_format (MonoError *oerror, const char *argument, const char *msg_format, ...)
 {
 	MonoErrorInternal *error = (MonoErrorInternal*)oerror;
 	mono_error_prepare (error);
@@ -491,6 +491,18 @@ mono_error_set_argument (MonoError *oerror, const char *argument, const char *ms
 	error->first_argument = argument;
 
 	set_error_message ();
+}
+
+void
+mono_error_set_argument (MonoError *oerror, const char *argument, const char *msg)
+{
+	MonoErrorInternal *error = (MonoErrorInternal*)oerror;
+	mono_error_prepare (error);
+
+	error->error_code = MONO_ERROR_ARGUMENT;
+	error->first_argument = argument;
+	if (msg && msg [0] && !(error->full_message = g_strdup (msg)))
+		error->flags |= MONO_ERROR_INCOMPLETE;
 }
 
 void

@@ -1828,7 +1828,7 @@ mono_reflection_parse_type_checked (char *name, MonoTypeNameParse *info, MonoErr
 	if (ok) {
 		mono_identifier_unescape_info (info);
 	} else {
-		mono_error_set_argument (error, "typeName", "failed parse: %s", name);
+		mono_error_set_argument_format (error, "typeName", "failed parse: %s", name);
 	}
 	return (ok != 0);
 }
@@ -2412,7 +2412,7 @@ mono_reflection_bind_generic_parameters (MonoReflectionTypeHandle reftype, int t
 	guint gtd_type_argc = mono_class_get_generic_container (klass)->type_argc;
 	if (gtd_type_argc != type_argc) {
 		mono_loader_unlock ();
-		mono_error_set_argument (error, "types", "The generic type definition needs %d type arguments, but was instantiated with %d ", gtd_type_argc, type_argc);
+		mono_error_set_argument_format (error, "types", "The generic type definition needs %d type arguments, but was instantiated with %d ", gtd_type_argc, type_argc);
 		return NULL;
 	}
 

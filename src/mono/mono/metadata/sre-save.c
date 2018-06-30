@@ -357,16 +357,14 @@ method_encode_code (MonoDynamicImage *assembly, ReflectionMethodBuilder *mb, Mon
 			num_exception = mono_reflection_method_count_clauses (mb->ilgen);
 	} else {
 		code = mb->code;
-		if (code == NULL){
-			ERROR_DECL_VALUE (inner_error);
-			char *name = mono_string_to_utf8_checked (mb->name, &inner_error);
-			if (!is_ok (&inner_error)) {
-				name = g_strdup ("");
-				mono_error_cleanup (&inner_error);
-			}
-			char *str = g_strdup_printf ("Method %s does not have any IL associated", name);
-			mono_error_set_argument (error, NULL, "a method does not have any IL associated");
-			g_free (str);
+		if (code == NULL) {
+			ERROR_DECL (inner_error);
+			char *name = mono_string_to_utf8_checked (mb->name, inner_error);
+			if (!is_ok (inner_error))
+				mono_error_set_argument (error, NULL, "a method does not have any IL associated");
+			else
+				mono_error_set_argument_format (error, NULL, "Method %s does not have any IL associated", name);
+			mono_error_cleanup (inner_error);
 			g_free (name);
 			return 0;
 		}

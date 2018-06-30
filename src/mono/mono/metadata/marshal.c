@@ -781,7 +781,7 @@ mono_array_to_byvalarray (gpointer native_arr, MonoArray *arr, MonoClass *elclas
 		as = g_utf16_to_utf8 (mono_array_addr (arr, gunichar2, 0), mono_array_length (arr), NULL, NULL, &gerror);
 		if (gerror) {
 			ERROR_DECL (error);
-			mono_error_set_argument (error, "string", "%s", gerror->message);
+			mono_error_set_argument (error, "string", gerror->message);
 			mono_error_set_pending_exception (error);
 			g_error_free (gerror);
 			return;
@@ -5069,7 +5069,7 @@ ves_icall_System_Runtime_InteropServices_Marshal_SizeOf (MonoReflectionTypeHandl
 	if (type->type == MONO_TYPE_PTR || type->type == MONO_TYPE_FNPTR) {
 		return sizeof (gpointer);
 	} else if (layout == TYPE_ATTRIBUTE_AUTO_LAYOUT) {
-		mono_error_set_argument (error, "t", "Type %s cannot be marshaled as an unmanaged structure.", m_class_get_name (klass));
+		mono_error_set_argument_format (error, "t", "Type %s cannot be marshaled as an unmanaged structure.", m_class_get_name (klass));
 		return 0;
 	}
 
@@ -5218,7 +5218,7 @@ ves_icall_System_Runtime_InteropServices_Marshal_OffsetOf (MonoReflectionTypeHan
 		/* Get back original class instance */
 		klass = mono_class_from_mono_type (type);
 
-		mono_error_set_argument (error, "fieldName", "Field passed in is not a marshaled member of the type %s", m_class_get_name (klass));
+		mono_error_set_argument_format (error, "fieldName", "Field passed in is not a marshaled member of the type %s", m_class_get_name (klass));
 		return 0;
 	}
 

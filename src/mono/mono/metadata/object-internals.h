@@ -25,13 +25,10 @@
 #define MONO_CHECK_ARG(arg, expr, retval) do {				\
 	if (G_UNLIKELY (!(expr)))					\
 	{								\
-		char *msg = g_strdup_printf ("assertion `%s' failed",	\
-		#expr);							\
 		if (arg) {} /* check if the name exists */		\
 		ERROR_DECL (error);					\
-		mono_error_set_argument (error, #arg, msg);		\
+		mono_error_set_argument_format (error, #arg, "assertion `%s' failed", #expr); \
 		mono_error_set_pending_exception (error);		\
-		g_free (msg);						\
 		return retval;						\
 	} 								\
 } while (0)

@@ -164,7 +164,10 @@ void
 mono_error_set_out_of_memory (MonoError *error, const char *msg_format, ...) MONO_ATTR_FORMAT_PRINTF(2,3);
 
 void
-mono_error_set_argument (MonoError *error, const char *argument, const char *msg_format, ...) MONO_ATTR_FORMAT_PRINTF(3,4);
+mono_error_set_argument_format (MonoError *error, const char *argument, const char *msg_format, ...) MONO_ATTR_FORMAT_PRINTF(3,4);
+
+void
+mono_error_set_argument (MonoError *error, const char *argument, const char *msg);
 
 void
 mono_error_set_argument_null (MonoError *oerror, const char *argument, const char *msg_format, ...) MONO_ATTR_FORMAT_PRINTF(3,4);
