@@ -720,6 +720,7 @@
 #pragma warning(disable:4273) // inconsistent dll linkage
 #pragma warning(disable:4293) // shift count negative or too big, undefined behavior
 #pragma warning(disable:4305) // truncation from 'double' to 'float'
+#pragma warning(disable:4312) // 'type cast': conversion from 'MonoNativeThreadId' to 'gpointer' of greater size
 #pragma warning(disable:4389) // signed/unsigned mismatch
 #pragma warning(disable:4456) // declaration of 'j' hides previous local declaration
 #pragma warning(disable:4457) // declaration of 'text' hides function parameter

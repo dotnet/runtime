@@ -28,9 +28,9 @@ mono_w32process_get_pid (gpointer handle)
 }
 
 static gboolean
-mono_w32process_try_get_modules (gpointer process, gpointer *modules, guint32 size, guint32 *needed)
+mono_w32process_try_get_modules (gpointer process, HMODULE *modules, guint32 size, PDWORD needed)
 {
-	return EnumProcessModules (process, (HMODULE *) modules, size, (LPDWORD) needed);
+	return EnumProcessModules (process, modules, size, needed);
 }
 
 static guint32
@@ -54,7 +54,7 @@ mono_w32process_module_get_information (gpointer process, gpointer module, MODUL
 static gboolean
 mono_w32process_get_fileversion_info (gunichar2 *filename, gpointer *data)
 {
-	guint32 handle;
+	DWORD handle;
 	gsize datasize;
 
 	g_assert (data);

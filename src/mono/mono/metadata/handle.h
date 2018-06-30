@@ -422,7 +422,7 @@ MONO_HANDLE_TYPECHECK_FOR (TYPE) (TYPE *a)			\
 // Otherwise we are forced to evaluate twice, or use C++.
 #ifdef _MSC_VER
 typedef struct _MonoTypeofCastHelper *MonoTypeofCastHelper; // a pointer type unrelated to anything else
-#define MONO_TYPEOF_CAST(typeexpr, expr) (0 ? (typeexpr) : (MonoTypeofCastHelper)(expr))
+#define MONO_TYPEOF_CAST(typeexpr, expr) __pragma(warning(suppress:4133))(0 ? (typeexpr) : (MonoTypeofCastHelper)(expr))
 #else
 #define MONO_TYPEOF_CAST(typeexpr, expr) ((typeof (typeexpr))(expr))
 #endif

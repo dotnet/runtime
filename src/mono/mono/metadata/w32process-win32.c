@@ -403,14 +403,14 @@ ves_icall_Microsoft_Win32_NativeMethods_TerminateProcess (gpointer handle, gint3
 MonoBoolean
 ves_icall_Microsoft_Win32_NativeMethods_GetExitCodeProcess (gpointer handle, gint32 *exitcode, MonoError *error)
 {
-	return GetExitCodeProcess (handle, exitcode);
+	return GetExitCodeProcess (handle, (PDWORD)exitcode);
 }
 
 #if G_HAVE_API_SUPPORT(HAVE_CLASSIC_WINAPI_SUPPORT)
 static inline MonoBoolean
 mono_icall_get_process_working_set_size (gpointer handle, gsize *min, gsize *max)
 {
-	return GetProcessWorkingSetSize (handle, min, max);
+	return GetProcessWorkingSetSize (handle, (PSIZE_T)min, (PSIZE_T)max);
 }
 #endif /* G_HAVE_API_SUPPORT(HAVE_CLASSIC_WINAPI_SUPPORT) */
 

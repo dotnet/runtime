@@ -3871,7 +3871,8 @@ mono_local_time (const struct timeval *tv, struct tm *tm) {
 #ifdef HAVE_LOCALTIME_R
 	localtime_r(&tv->tv_sec, tm);
 #else
-	*tm = *localtime(&tv->tv_sec);
+	time_t const tv_sec = tv->tv_sec; // Copy due to Win32/Posix contradiction.
+	*tm = *localtime (&tv_sec);
 #endif
 }
 

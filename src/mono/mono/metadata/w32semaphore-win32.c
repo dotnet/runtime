@@ -35,7 +35,7 @@ ves_icall_System_Threading_Semaphore_CreateSemaphore_internal (gint32 initialCou
 MonoBoolean
 ves_icall_System_Threading_Semaphore_ReleaseSemaphore_internal (gpointer handle, gint32 releaseCount, gint32 *prevcount)
 { 
-	return ReleaseSemaphore (handle, releaseCount, prevcount);
+	return ReleaseSemaphore (handle, releaseCount, (PLONG)prevcount);
 }
 
 gpointer

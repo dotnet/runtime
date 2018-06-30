@@ -1772,7 +1772,7 @@ mono_arch_unwindinfo_init_method_unwind_info (gpointer cfg)
 }
 
 void
-mono_arch_unwindinfo_install_method_unwind_info (gpointer *monoui, gpointer code, guint code_size)
+mono_arch_unwindinfo_install_method_unwind_info (PUNWIND_INFO *monoui, gpointer code, guint code_size)
 {
 	PUNWIND_INFO unwindinfo, targetinfo;
 	guchar codecount;
@@ -1780,7 +1780,7 @@ mono_arch_unwindinfo_install_method_unwind_info (gpointer *monoui, gpointer code
 	if (!*monoui)
 		return;
 
-	unwindinfo = (PUNWIND_INFO)*monoui;
+	unwindinfo = *monoui;
 	targetlocation = (guint64)&(((guchar*)code)[code_size]);
 	targetinfo = (PUNWIND_INFO) ALIGN_TO(targetlocation, sizeof (mgreg_t));
 
