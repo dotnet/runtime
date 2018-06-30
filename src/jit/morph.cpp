@@ -2787,7 +2787,7 @@ GenTreeCall* Compiler::fgMorphArgs(GenTreeCall* call)
         ArrayStack<NonStandardArg> args;
 
     public:
-        NonStandardArgs(Compiler* compiler) : args(compiler, 3) // We will have at most 3 non-standard arguments
+        NonStandardArgs(CompAllocator alloc) : args(alloc, 3) // We will have at most 3 non-standard arguments
         {
         }
 
@@ -2874,7 +2874,7 @@ GenTreeCall* Compiler::fgMorphArgs(GenTreeCall* call)
             args.IndexRef(index).node = node;
         }
 
-    } nonStandardArgs(this);
+    } nonStandardArgs(getAllocator(CMK_ArrayStack));
 
     // Count of args. On first morph, this is counted before we've filled in the arg table.
     // On remorph, we grab it from the arg table.
@@ -5122,7 +5122,7 @@ GenTree* Compiler::fgMorphMultiregStructArg(GenTree* arg, fgArgTabEntry* fgEntry
     // We need to propagate any GTF_ALL_EFFECT flags from the end of the list back to the beginning.
     // This is verified in fgDebugCheckFlags().
 
-    ArrayStack<GenTree*> stack(this);
+    ArrayStack<GenTree*> stack(getAllocator(CMK_ArrayStack));
     GenTree*             tree;
     for (tree = newArg; (tree->gtGetOp2() != nullptr) && tree->gtGetOp2()->OperIsFieldList(); tree = tree->gtGetOp2())
     {
@@ -9872,7 +9872,7 @@ GenTree* Compiler::fgMorphBlkNode(GenTree* tree, bool isDest)
         addr                  = tree;
         GenTree* effectiveVal = tree->gtEffectiveVal();
 
-        GenTreePtrStack commas(this);
+        GenTreePtrStack commas(getAllocator(CMK_ArrayStack));
         for (GenTree* comma = tree; comma != nullptr && comma->gtOper == GT_COMMA; comma = comma->gtGetOp2())
         {
             commas.Push(comma);
@@ -13639,7 +13639,7 @@ DONE_MORPHING_CHILDREN:
                 // Perform the transform ADDR(COMMA(x, ..., z)) == COMMA(x, ..., ADDR(z)).
                 // (Be sure to mark "z" as an l-value...)
 
-                GenTreePtrStack commas(this);
+                GenTreePtrStack commas(getAllocator(CMK_ArrayStack));
                 for (GenTree* comma = op1; comma != nullptr && comma->gtOper == GT_COMMA; comma = comma->gtGetOp2())
                 {
                     commas.Push(comma);
@@ -18540,7 +18540,7 @@ void Compiler::fgMarkAddressExposedLocals()
         for (stmt = block->bbTreeList; stmt; stmt = stmt->gtNext)
         {
             // Call Compiler::fgMarkAddrTakenLocalsCB on each node
-            AXCStack stk(this);
+            AXCStack stk(getAllocator(CMK_ArrayStack));
             stk.Push(AXC_None); // We start in neither an addr or ind context.
             fgWalkTree(&stmt->gtStmt.gtStmtExpr, fgMarkAddrTakenLocalsPreCB, fgMarkAddrTakenLocalsPostCB, &stk);
         }
@@ -18746,7 +18746,7 @@ bool Compiler::fgMorphCombineSIMDFieldAssignments(BasicBlock* block, GenTree* st
 
     // Since we generated a new address node which didn't exist before,
     // we should expose this address manually here.
-    AXCStack stk(this);
+    AXCStack stk(getAllocator(CMK_ArrayStack));
     stk.Push(AXC_None);
     fgWalkTree(&stmt->gtStmt.gtStmtExpr, fgMarkAddrTakenLocalsPreCB, fgMarkAddrTakenLocalsPostCB, &stk);
 

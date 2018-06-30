@@ -17,14 +17,14 @@
 // static
 void* CompAllocBitSetTraits::Alloc(Compiler* comp, size_t byteSize)
 {
-    return comp->compGetMem(byteSize, CMK_bitset);
+    return comp->getAllocator(CMK_bitset).allocate<char>(byteSize);
 }
 
 #ifdef DEBUG
 // static
 void* CompAllocBitSetTraits::DebugAlloc(Compiler* comp, size_t byteSize)
 {
-    return comp->compGetMem(byteSize, CMK_DebugOnly);
+    return comp->getAllocator(CMK_DebugOnly).allocate<char>(byteSize);
 }
 #endif // DEBUG
 
@@ -141,14 +141,14 @@ BitSetSupport::BitSetOpCounter* BasicBlockBitSetTraits::GetOpCounter(Compiler* c
 // static
 void* BitVecTraits::Alloc(BitVecTraits* b, size_t byteSize)
 {
-    return b->comp->compGetMem(byteSize, CMK_bitset);
+    return b->comp->getAllocator(CMK_bitset).allocate<char>(byteSize);
 }
 
 #ifdef DEBUG
 // static
 void* BitVecTraits::DebugAlloc(BitVecTraits* b, size_t byteSize)
 {
-    return b->comp->compGetMem(byteSize, CMK_DebugOnly);
+    return b->comp->getAllocator(CMK_DebugOnly).allocate<char>(byteSize);
 }
 #endif // DEBUG
 

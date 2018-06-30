@@ -50,7 +50,7 @@ VNFunc GetVNFuncForOper(genTreeOps oper, bool isUnsigned)
     }
 }
 
-ValueNumStore::ValueNumStore(Compiler* comp, CompAllocator* alloc)
+ValueNumStore::ValueNumStore(Compiler* comp, CompAllocator alloc)
     : m_pComp(comp)
     , m_alloc(alloc)
     ,
@@ -60,7 +60,7 @@ ValueNumStore::ValueNumStore(Compiler* comp, CompAllocator* alloc)
 #endif
     m_nextChunkBase(0)
     , m_fixedPointMapSels(alloc, 8)
-    , m_checkedBoundVNs(comp)
+    , m_checkedBoundVNs(alloc)
     , m_chunks(alloc, 8)
     , m_intCnsMap(nullptr)
     , m_longCnsMap(nullptr)
@@ -672,7 +672,7 @@ bool ValueNumStore::IsSharedStatic(ValueNum vn)
     return GetVNFunc(vn, &funcAttr) && (s_vnfOpAttribs[funcAttr.m_func] & VNFOA_SharedStatic) != 0;
 }
 
-ValueNumStore::Chunk::Chunk(CompAllocator*         alloc,
+ValueNumStore::Chunk::Chunk(CompAllocator          alloc,
                             ValueNum*              pNextBaseVN,
                             var_types              typ,
                             ChunkExtraAttribs      attribs,
@@ -4538,8 +4538,8 @@ void Compiler::fgValueNumber()
     assert(fgVNPassesCompleted > 0 || vnStore == nullptr);
     if (fgVNPassesCompleted == 0)
     {
-        CompAllocator* allocator = new (this, CMK_ValueNumber) CompAllocator(this, CMK_ValueNumber);
-        vnStore                  = new (this, CMK_ValueNumber) ValueNumStore(this, allocator);
+        CompAllocator allocator(getAllocator(CMK_ValueNumber));
+        vnStore = new (allocator) ValueNumStore(this, allocator);
     }
     else
     {

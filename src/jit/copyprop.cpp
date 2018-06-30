@@ -21,12 +21,6 @@
 #include "ssabuilder.h"
 #include "treelifeupdater.h"
 
-template <typename T>
-inline static T* allocate_any(jitstd::allocator<void>& alloc, size_t count = 1)
-{
-    return jitstd::allocator<T>(alloc).allocate(count);
-}
-
 /**************************************************************************************
  *
  * Corresponding to the live definition pushes, pop the stack as we finish a sub-paths
@@ -370,7 +364,7 @@ void Compiler::optBlockCopyProp(BasicBlock* block, LclNumToGenTreePtrStack* curS
                 GenTreePtrStack* stack;
                 if (!curSsaName->Lookup(lclNum, &stack))
                 {
-                    stack = new (curSsaName->GetAllocator()) GenTreePtrStack(this);
+                    stack = new (curSsaName->GetAllocator()) GenTreePtrStack(curSsaName->GetAllocator());
                 }
                 stack->Push(tree);
                 curSsaName->Set(lclNum, stack);
@@ -383,7 +377,7 @@ void Compiler::optBlockCopyProp(BasicBlock* block, LclNumToGenTreePtrStack* curS
                 GenTreePtrStack* stack;
                 if (!curSsaName->Lookup(lclNum, &stack))
                 {
-                    stack = new (curSsaName->GetAllocator()) GenTreePtrStack(this);
+                    stack = new (curSsaName->GetAllocator()) GenTreePtrStack(curSsaName->GetAllocator());
                     stack->Push(tree);
                     curSsaName->Set(lclNum, stack);
                 }
@@ -431,10 +425,10 @@ void Compiler::optVnCopyProp()
         return;
     }
 
-    CompAllocator allocator(this, CMK_CopyProp);
+    CompAllocator allocator(getAllocator(CMK_CopyProp));
 
     // Compute the domTree to use.
-    BlkToBlkVectorMap* domTree = new (&allocator) BlkToBlkVectorMap(&allocator);
+    BlkToBlkVectorMap* domTree = new (allocator) BlkToBlkVectorMap(allocator);
     domTree->Reallocate(fgBBcount * 3 / 2); // Prime the allocation
     SsaBuilder::ComputeDominators(this, domTree);
 
@@ -453,9 +447,9 @@ void Compiler::optVnCopyProp()
     VarSetOps::AssignNoCopy(this, optCopyPropKillSet, VarSetOps::MakeEmpty(this));
 
     // The map from lclNum to its recently live definitions as a stack.
-    LclNumToGenTreePtrStack curSsaName(&allocator);
+    LclNumToGenTreePtrStack curSsaName(allocator);
 
-    BlockWorkStack* worklist = new (&allocator) BlockWorkStack(&allocator);
+    BlockWorkStack* worklist = new (allocator) BlockWorkStack(allocator);
 
     worklist->push_back(BlockWork(fgFirstBB));
     while (!worklist->empty())

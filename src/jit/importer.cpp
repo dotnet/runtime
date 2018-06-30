@@ -17045,7 +17045,7 @@ void* Compiler::BlockListNode::operator new(size_t sz, Compiler* comp)
 {
     if (comp->impBlockListNodeFreeList == nullptr)
     {
-        return (BlockListNode*)comp->compGetMem(sizeof(BlockListNode), CMK_BasicBlock);
+        return comp->getAllocator(CMK_BasicBlock).allocate<BlockListNode>(1);
     }
     else
     {
@@ -17272,7 +17272,7 @@ void Compiler::verInitBBEntryState(BasicBlock* block, EntryState* srcState)
         return;
     }
 
-    block->bbEntryState = (EntryState*)compGetMem(sizeof(EntryState));
+    block->bbEntryState = getAllocator(CMK_Unknown).allocate<EntryState>(1);
 
     // block->bbEntryState.esRefcount = 1;
 
@@ -19839,7 +19839,7 @@ CORINFO_CLASS_HANDLE Compiler::impGetSpecialIntrinsicExactReturnType(CORINFO_MET
 //    pointer to token into jit-allocated memory.
 CORINFO_RESOLVED_TOKEN* Compiler::impAllocateToken(CORINFO_RESOLVED_TOKEN token)
 {
-    CORINFO_RESOLVED_TOKEN* memory = (CORINFO_RESOLVED_TOKEN*)compGetMem(sizeof(token));
+    CORINFO_RESOLVED_TOKEN* memory = getAllocator(CMK_Unknown).allocate<CORINFO_RESOLVED_TOKEN>(1);
     *memory                        = token;
     return memory;
 }

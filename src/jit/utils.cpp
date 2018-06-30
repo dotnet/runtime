@@ -953,7 +953,7 @@ FixedBitVect* FixedBitVect::bitVectInit(UINT size, Compiler* comp)
 
     assert(bitVectMemSize * bitChunkSize() >= size);
 
-    bv = (FixedBitVect*)comp->compGetMem(sizeof(FixedBitVect) + bitVectMemSize, CMK_FixedBitVect);
+    bv = (FixedBitVect*)comp->getAllocator(CMK_FixedBitVect).allocate<char>(sizeof(FixedBitVect) + bitVectMemSize);
     memset(bv->bitVect, 0, bitVectMemSize);
 
     bv->bitVectSize = size;
@@ -1491,10 +1491,8 @@ void HelperCallProperties::init()
 // MyAssembly;mscorlib;System
 // MyAssembly;mscorlib System
 
-AssemblyNamesList2::AssemblyNamesList2(const wchar_t* list, HostAllocator* alloc) : m_alloc(alloc)
+AssemblyNamesList2::AssemblyNamesList2(const wchar_t* list, HostAllocator alloc) : m_alloc(alloc)
 {
-    assert(m_alloc != nullptr);
-
     WCHAR          prevChar   = '?';     // dummy
     LPWSTR         nameStart  = nullptr; // start of the name currently being processed. nullptr if no current name
     AssemblyName** ppPrevLink = &m_pNames;
@@ -1561,8 +1559,8 @@ AssemblyNamesList2::~AssemblyNamesList2()
         AssemblyName* cur = pName;
         pName             = pName->m_next;
 
-        m_alloc->Free(cur->m_assemblyName);
-        m_alloc->Free(cur);
+        m_alloc.deallocate(cur->m_assemblyName);
+        m_alloc.deallocate(cur);
     }
 }
 
