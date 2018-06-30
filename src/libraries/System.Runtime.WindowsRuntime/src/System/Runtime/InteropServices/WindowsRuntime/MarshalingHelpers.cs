@@ -326,8 +326,7 @@ namespace System.Runtime.InteropServices.WindowsRuntime
             INotifyCollectionChanged _this = Unsafe.As<INotifyCollectionChanged>(this);
             EventRegistrationTokenTable<NotifyCollectionChangedEventHandler> table = s_weakTable.GetOrCreateValue(_this);
 
-            NotifyCollectionChangedEventHandler handler = table.ExtractHandler(token);
-            if (handler != null)
+            if (table.RemoveEventHandler(token, out NotifyCollectionChangedEventHandler handler))
             {
                 _this.CollectionChanged -= handler;
             }
@@ -408,8 +407,7 @@ namespace System.Runtime.InteropServices.WindowsRuntime
             INotifyPropertyChanged _this = Unsafe.As<INotifyPropertyChanged>(this);
             EventRegistrationTokenTable<PropertyChangedEventHandler> table = s_weakTable.GetOrCreateValue(_this);
 
-            PropertyChangedEventHandler handler = table.ExtractHandler(token);
-            if (handler != null)
+            if (table.RemoveEventHandler(token, out PropertyChangedEventHandler handler))
             {
                 _this.PropertyChanged -= handler;
             }
@@ -516,8 +514,7 @@ namespace System.Runtime.InteropServices.WindowsRuntime
             ICommand _this = Unsafe.As<ICommand>(this);
             EventRegistrationTokenTable<EventHandler> table = s_weakTable.GetOrCreateValue(_this);
 
-            EventHandler handler = table.ExtractHandler(token);
-            if (handler != null)
+            if (table.RemoveEventHandler(token, out EventHandler handler))
             {
                 _this.CanExecuteChanged -= handler;
             }
