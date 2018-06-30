@@ -310,24 +310,22 @@ namespace System.Net.Http
             Debug.Assert(_kind == HttpConnectionKind.Https || _kind == HttpConnectionKind.SslProxyTunnel);
 
             // See if we have an HTTP2 connection
-            lock (SyncObj)
+            Http2Connection http2Connection = _http2Connection;
+            if (http2Connection != null)
             {
-                if (_http2Connection != null)
-                {
-                    // TODO: Check connection validity and timeouts
+                if (NetEventSource.IsEnabled) Trace("Using existing HTTP2 connection.");
+                return (http2Connection, false, null);
+            }
 
-                    if (NetEventSource.IsEnabled)
+            // Ensure that the connection creation semaphore is created 
+            if (_http2ConnectionCreateLock == null)
+            {
+                lock (SyncObj)
+                {
+                    if (_http2ConnectionCreateLock == null)
                     {
-                        Trace("Using existing HTTP2 connection.");
+                        _http2ConnectionCreateLock = new SemaphoreSlim(1);
                     }
-
-                    return (_http2Connection, false, null);
-                }
-
-                // Ensure that the connection creation semaphore is created 
-                if (_http2ConnectionCreateLock == null)
-                {
-                    _http2ConnectionCreateLock = new SemaphoreSlim(1);
                 }
             }
 
@@ -373,14 +371,11 @@ namespace System.Net.Http
                     if (sslStream.NegotiatedApplicationProtocol == SslApplicationProtocol.Http2)
                     {
                         // The server accepted our request for HTTP2.
-                        Http2Connection http2Connection = new Http2Connection(sslStream);
+                        http2Connection = new Http2Connection(sslStream);
                         await http2Connection.SetupAsync().ConfigureAwait(false);
 
-                        lock (SyncObj)
-                        {
-                            Debug.Assert(_http2Connection == null);
-                            _http2Connection = http2Connection;
-                        }
+                        Debug.Assert(_http2Connection == null);
+                        _http2Connection = http2Connection;
 
                         if (NetEventSource.IsEnabled)
                         {
