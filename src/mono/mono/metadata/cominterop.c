@@ -69,6 +69,9 @@ mono_string_to_bstr(MonoString* ptr)
 	return mono_ptr_to_bstr(mono_string_chars(ptr), mono_string_length(ptr));
 }
 
+static void*
+mono_cominterop_get_com_interface_internal (gboolean icall, MonoObject *object, MonoClass *ic, MonoError *error);
+
 #ifndef DISABLE_COM
 
 #define OPDEF(a,b,c,d,e,f,g,h,i,j) \
@@ -1626,50 +1629,8 @@ cominterop_get_idispatch_for_object (MonoObject* object, MonoError *error)
 void*
 ves_icall_System_Runtime_InteropServices_Marshal_GetIUnknownForObjectInternal (MonoObject* object)
 {
-#ifndef DISABLE_COM
 	ERROR_DECL (error);
-
-	if (!object)
-		return NULL;
-
-	if (cominterop_object_is_rcw (object)) {
-		MonoClass *klass = NULL;
-		MonoRealProxy* real_proxy = NULL;
-		if (!object)
-			return NULL;
-		klass = mono_object_class (object);
-		if (!mono_class_is_transparent_proxy (klass)) {
-			g_assert_not_reached ();
-			return NULL;
-		}
-
-		real_proxy = ((MonoTransparentProxy*)object)->rp;
-		if (!real_proxy) {
-			g_assert_not_reached ();
-			return NULL;
-		}
-
-		klass = mono_object_class (real_proxy);
-		if (klass != mono_class_get_interop_proxy_class ()) {
-			g_assert_not_reached ();
-			return NULL;
-		}
-
-		if (!((MonoComInteropProxy*)real_proxy)->com_object) {
-			g_assert_not_reached ();
-			return NULL;
-		}
-
-		return ((MonoComInteropProxy*)real_proxy)->com_object->iunknown;
-	}
-	else {
-		void* ccw_entry = cominterop_get_ccw_checked (object, mono_class_get_iunknown_class (), error);
-		mono_error_set_pending_exception (error);
-		return ccw_entry;
-	}
-#else
-	g_assert_not_reached ();
-#endif
+	return mono_cominterop_get_com_interface_internal (TRUE, object, NULL, error);
 }
 
 MonoObject*
@@ -3739,6 +3700,15 @@ void*
 mono_cominterop_get_com_interface (MonoObject *object, MonoClass *ic, MonoError *error)
 {
 	error_init (error);
+	return mono_cominterop_get_com_interface_internal (FALSE, object, ic, error);
+}
+
+static void*
+mono_cominterop_get_com_interface_internal (gboolean icall, MonoObject *object, MonoClass *ic, MonoError *error)
+{
+	// Common code for mono_cominterop_get_com_interface and
+	// ves_icall_System_Runtime_InteropServices_Marshal_GetIUnknownForObjectInternal,
+	// which are almost identical.
 
 #ifndef DISABLE_COM
 	if (!object)
@@ -3751,32 +3721,42 @@ mono_cominterop_get_com_interface (MonoObject *object, MonoClass *ic, MonoError 
 			return NULL;
 		klass = mono_object_class (object);
 		if (!mono_class_is_transparent_proxy (klass)) {
+			g_assertf (!icall, "Class is not transparent");
 			mono_error_set_invalid_operation (error, "Class is not transparent");
 			return NULL;
 		}
 
 		real_proxy = ((MonoTransparentProxy*)object)->rp;
 		if (!real_proxy) {
+			g_assertf (!icall, "RealProxy is null");
 			mono_error_set_invalid_operation (error, "RealProxy is null");
 			return NULL;
 		}
 
 		klass = mono_object_class (real_proxy);
 		if (klass != mono_class_get_interop_proxy_class ()) {
+			g_assertf (!icall, "Object is not a proxy");
 			mono_error_set_invalid_operation (error, "Object is not a proxy");
 			return NULL;
 		}
 
 		if (!((MonoComInteropProxy*)real_proxy)->com_object) {
+			g_assertf (!icall, "Proxy points to null COM object");
 			mono_error_set_invalid_operation (error, "Proxy points to null COM object");
 			return NULL;
 		}
 
+		if (icall)
+			return ((MonoComInteropProxy*)real_proxy)->com_object->iunknown;
 		void* com_itf = cominterop_get_interface_checked (((MonoComInteropProxy*)real_proxy)->com_object, ic, error);
 		return com_itf;
 	}
 	else {
+		if (icall)
+			ic = mono_class_get_iunknown_class ();
 		void* ccw_entry = cominterop_get_ccw_checked (object, ic, error);
+		if (icall)
+			mono_error_set_pending_exception (error);
 		return ccw_entry;
 	}
 #else
