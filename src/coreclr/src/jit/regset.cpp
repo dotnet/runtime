@@ -1065,7 +1065,7 @@ RegSet::SpillDsc* RegSet::SpillDsc::alloc(Compiler* pComp, RegSet* regSet, var_t
     }
     else
     {
-        spill = (RegSet::SpillDsc*)pComp->compGetMem(sizeof(SpillDsc));
+        spill = pComp->getAllocator().allocate<SpillDsc>(1);
     }
     return spill;
 }

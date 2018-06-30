@@ -433,48 +433,10 @@ inline bool RefTypeIsDef(RefType refType)
 
 typedef regNumberSmall* VarToRegMap;
 
-template <typename ElementType, CompMemKind MemKind>
-class ListElementAllocator
-{
-private:
-    template <typename U, CompMemKind CMK>
-    friend class ListElementAllocator;
-
-    Compiler* m_compiler;
-
-public:
-    ListElementAllocator(Compiler* compiler) : m_compiler(compiler)
-    {
-    }
-
-    template <typename U>
-    ListElementAllocator(const ListElementAllocator<U, MemKind>& other) : m_compiler(other.m_compiler)
-    {
-    }
-
-    ElementType* allocate(size_t count)
-    {
-        return reinterpret_cast<ElementType*>(m_compiler->compGetMem(sizeof(ElementType) * count, MemKind));
-    }
-
-    void deallocate(ElementType* pointer, size_t count)
-    {
-    }
-
-    template <typename U>
-    struct rebind
-    {
-        typedef ListElementAllocator<U, MemKind> allocator;
-    };
-};
-
-typedef ListElementAllocator<Interval, CMK_LSRA_Interval>       LinearScanMemoryAllocatorInterval;
-typedef ListElementAllocator<RefPosition, CMK_LSRA_RefPosition> LinearScanMemoryAllocatorRefPosition;
-
-typedef jitstd::list<Interval, LinearScanMemoryAllocatorInterval>                         IntervalList;
-typedef jitstd::list<RefPosition, LinearScanMemoryAllocatorRefPosition>                   RefPositionList;
-typedef jitstd::list<RefPosition, LinearScanMemoryAllocatorRefPosition>::iterator         RefPositionIterator;
-typedef jitstd::list<RefPosition, LinearScanMemoryAllocatorRefPosition>::reverse_iterator RefPositionReverseIterator;
+typedef jitstd::list<Interval>                      IntervalList;
+typedef jitstd::list<RefPosition>                   RefPositionList;
+typedef jitstd::list<RefPosition>::iterator         RefPositionIterator;
+typedef jitstd::list<RefPosition>::reverse_iterator RefPositionReverseIterator;
 
 class Referenceable
 {
@@ -1399,21 +1361,9 @@ private:
     Compiler* compiler;
 
 private:
-#if MEASURE_MEM_ALLOC
-    CompAllocator* lsraAllocator;
-#endif
-
-    CompAllocator* getAllocator(Compiler* comp)
+    CompAllocator getAllocator(Compiler* comp)
     {
-#if MEASURE_MEM_ALLOC
-        if (lsraAllocator == nullptr)
-        {
-            lsraAllocator = new (comp, CMK_LSRA) CompAllocator(comp, CMK_LSRA);
-        }
-        return lsraAllocator;
-#else
-        return comp->getAllocator();
-#endif
+        return comp->getAllocator(CMK_LSRA);
     }
 
 #ifdef DEBUG

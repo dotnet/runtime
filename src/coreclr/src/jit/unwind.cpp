@@ -160,12 +160,6 @@ void Compiler::unwindPushPopCFI(regNumber reg)
     }
 }
 
-template <typename T>
-inline static T* allocate_any(jitstd::allocator<void>& alloc, size_t count = 5)
-{
-    return jitstd::allocator<T>(alloc).allocate(count);
-}
-
 typedef jitstd::vector<CFI_CODE> CFICodeVector;
 
 void Compiler::unwindBegPrologCFI()
@@ -185,9 +179,7 @@ void Compiler::unwindBegPrologCFI()
         unwindGetFuncLocations(func, false, &func->coldStartLoc, &func->coldEndLoc);
     }
 
-    jitstd::allocator<void> allocator(getAllocator());
-
-    func->cfiCodes = new (allocate_any<CFICodeVector>(allocator), jitstd::placement_t()) CFICodeVector(allocator);
+    func->cfiCodes = new (getAllocator()) CFICodeVector(getAllocator());
 #endif // FEATURE_EH_FUNCLETS
 }
 

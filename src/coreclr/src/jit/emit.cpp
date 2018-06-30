@@ -514,7 +514,7 @@ void* emitter::emitGetMem(size_t sz)
     emitTotMemAlloc += sz;
 #endif
 
-    return emitComp->compGetMem(sz, CMK_InstDesc);
+    return emitComp->getAllocator(CMK_InstDesc).allocate<char>(sz);
 }
 
 /*****************************************************************************

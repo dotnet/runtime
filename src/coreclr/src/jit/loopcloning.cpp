@@ -789,7 +789,7 @@ void LC_Deref::DeriveLevelConditions(JitExpandArrayStack<JitExpandArrayStack<LC_
 // Return Values:
 //      None
 //
-void LC_Deref::EnsureChildren(CompAllocator* alloc)
+void LC_Deref::EnsureChildren(CompAllocator alloc)
 {
     if (children == nullptr)
     {

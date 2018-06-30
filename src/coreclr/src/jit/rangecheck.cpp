@@ -23,7 +23,7 @@ RangeCheck::RangeCheck(Compiler* pCompiler)
     , m_pDefTable(nullptr)
 #endif
     , m_pCompiler(pCompiler)
-    , m_alloc(pCompiler, CMK_RangeCheck)
+    , m_alloc(pCompiler->getAllocator(CMK_RangeCheck))
     , m_nVisitBudget(MAX_VISIT_BUDGET)
 {
 }
@@ -38,7 +38,7 @@ RangeCheck::RangeMap* RangeCheck::GetRangeMap()
 {
     if (m_pRangeMap == nullptr)
     {
-        m_pRangeMap = new (&m_alloc) RangeMap(&m_alloc);
+        m_pRangeMap = new (m_alloc) RangeMap(m_alloc);
     }
     return m_pRangeMap;
 }
@@ -48,7 +48,7 @@ RangeCheck::OverflowMap* RangeCheck::GetOverflowMap()
 {
     if (m_pOverflowMap == nullptr)
     {
-        m_pOverflowMap = new (&m_alloc) OverflowMap(&m_alloc);
+        m_pOverflowMap = new (m_alloc) OverflowMap(m_alloc);
     }
     return m_pOverflowMap;
 }
@@ -256,7 +256,7 @@ void RangeCheck::OptimizeRangeCheck(BasicBlock* block, GenTree* stmt, GenTree* t
 
     GetRangeMap()->RemoveAll();
     GetOverflowMap()->RemoveAll();
-    m_pSearchPath = new (&m_alloc) SearchPath(&m_alloc);
+    m_pSearchPath = new (m_alloc) SearchPath(m_alloc);
 
     // Get the range for this index.
     Range range = GetRange(block, treeIndex, false DEBUGARG(0));
@@ -517,7 +517,7 @@ void RangeCheck::SetDef(UINT64 hash, Location* loc)
 {
     if (m_pDefTable == nullptr)
     {
-        m_pDefTable = new (&m_alloc) VarToLocMap(&m_alloc);
+        m_pDefTable = new (m_alloc) VarToLocMap(m_alloc);
     }
 #ifdef DEBUG
     Location* loc2;
@@ -1186,7 +1186,7 @@ Range RangeCheck::ComputeRange(BasicBlock* block, GenTree* expr, bool monotonic 
         range = Range(Limit(Limit::keUnknown));
     }
 
-    GetRangeMap()->Set(expr, new (&m_alloc) Range(range));
+    GetRangeMap()->Set(expr, new (m_alloc) Range(range));
     m_pSearchPath->Remove(expr);
     return range;
 }
@@ -1254,7 +1254,7 @@ void RangeCheck::MapStmtDefs(const Location& loc)
             // To avoid ind(addr) use asgs
             if (loc.parent->OperIsAssignment())
             {
-                SetDef(HashCode(lclNum, ssaNum), new (&m_alloc) Location(loc));
+                SetDef(HashCode(lclNum, ssaNum), new (m_alloc) Location(loc));
             }
         }
     }
@@ -1263,7 +1263,7 @@ void RangeCheck::MapStmtDefs(const Location& loc)
     {
         if (loc.parent->OperGet() == GT_ASG)
         {
-            SetDef(HashCode(lclNum, ssaNum), new (&m_alloc) Location(loc));
+            SetDef(HashCode(lclNum, ssaNum), new (m_alloc) Location(loc));
         }
     }
 }
