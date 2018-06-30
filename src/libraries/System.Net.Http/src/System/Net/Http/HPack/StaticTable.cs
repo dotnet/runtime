@@ -1,37 +1,24 @@
-// Copyright (c) .NET Foundation. All rights reserved.
-// Licensed under the Apache License, Version 2.0. See License.txt in the project root for license information.
+// Licensed to the .NET Foundation under one or more agreements.
+// The .NET Foundation licenses this file to you under the MIT license.
+// See the LICENSE file in the project root for more information.
 
-using System.Collections.Generic;
 using System.Text;
 
 namespace System.Net.Http.HPack
 {
     internal class StaticTable
     {
-        private static readonly StaticTable _instance = new StaticTable();
-
-        private readonly Dictionary<int, int> _statusIndex = new Dictionary<int, int>
-        {
-            [200] = 8,
-            [204] = 9,
-            [206] = 10,
-            [304] = 11,
-            [400] = 12,
-            [404] = 13,
-            [500] = 14,
-        };
+        private static readonly StaticTable s_instance = new StaticTable();
 
         private StaticTable()
         {
         }
 
-        public static StaticTable Instance => _instance;
+        public static StaticTable Instance => s_instance;
 
         public int Count => _staticTable.Length;
 
         public HeaderField this[int index] => _staticTable[index];
-
-        public IReadOnlyDictionary<int, int> StatusIndex => _statusIndex;
 
         private readonly HeaderField[] _staticTable = new HeaderField[]
         {
@@ -97,6 +84,9 @@ namespace System.Net.Http.HPack
             CreateHeaderField("via", ""),
             CreateHeaderField("www-authenticate", "")
         };
+
+        // TODO: The HeaderField constructor will allocate and copy again. We should avoid this.
+        // Tackle as part of header table allocation strategy in general (see note in HeaderField constructor).
 
         private static HeaderField CreateHeaderField(string name, string value)
             => new HeaderField(Encoding.ASCII.GetBytes(name), Encoding.ASCII.GetBytes(value));

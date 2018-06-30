@@ -1,7 +1,6 @@
-// Copyright (c) .NET Foundation. All rights reserved.
-// Licensed under the Apache License, Version 2.0. See License.txt in the project root for license information.
-
-using System;
+// Licensed to the .NET Foundation under one or more agreements.
+// The .NET Foundation licenses this file to you under the MIT license.
+// See the LICENSE file in the project root for more information.
 
 namespace System.Net.Http.HPack
 {
@@ -9,7 +8,7 @@ namespace System.Net.Http.HPack
     {
         public static bool Encode(int i, int n, Span<byte> buffer, out int length)
         {
-            var j = 0;
+            int j = 0;
             length = 0;
 
             if (buffer.Length == 0)
@@ -17,14 +16,13 @@ namespace System.Net.Http.HPack
                 return false;
             }
 
+            buffer[j] &= MaskHigh(8 - n);
             if (i < (1 << n) - 1)
             {
-                buffer[j] &= MaskHigh(8 - n);
                 buffer[j++] |= (byte)i;
             }
             else
             {
-                buffer[j] &= MaskHigh(8 - n);
                 buffer[j++] |= (byte)((1 << n) - 1);
 
                 if (j == buffer.Length)

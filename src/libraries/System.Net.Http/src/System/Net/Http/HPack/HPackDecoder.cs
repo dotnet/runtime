@@ -1,5 +1,8 @@
-// Copyright (c) .NET Foundation. All rights reserved.
-// Licensed under the Apache License, Version 2.0. See License.txt in the project root for license information.
+// Licensed to the .NET Foundation under one or more agreements.
+// The .NET Foundation licenses this file to you under the MIT license.
+// See the LICENSE file in the project root for more information.
+
+using System.Diagnostics;
 
 namespace System.Net.Http.HPack
 {
@@ -112,9 +115,201 @@ namespace System.Net.Http.HPack
 
         public void Decode(ReadOnlySpan<byte> data, HeaderCallback onHeader)
         {
-            for (var i = 0; i < data.Length; i++)
+            for (int i = 0; i < data.Length; i++)
             {
-                OnByte(data[i], onHeader);
+                byte b = data[i];
+
+                switch (_state)
+                {
+                    case State.Ready:
+                        if ((b & IndexedHeaderFieldMask) == IndexedHeaderFieldRepresentation)
+                        {
+                            int val = b & ~IndexedHeaderFieldMask;
+
+                            if (_integerDecoder.StartDecode((byte)val, IndexedHeaderFieldPrefix))
+                            {
+                                OnIndexedHeaderField(_integerDecoder.Value, onHeader);
+                            }
+                            else
+                            {
+                                _state = State.HeaderFieldIndex;
+                            }
+                        }
+                        else if ((b & LiteralHeaderFieldWithIncrementalIndexingMask) == LiteralHeaderFieldWithIncrementalIndexingRepresentation)
+                        {
+                            _index = true;
+                            int val = b & ~LiteralHeaderFieldWithIncrementalIndexingMask;
+
+                            if (val == 0)
+                            {
+                                _state = State.HeaderNameLength;
+                            }
+                            else if (_integerDecoder.StartDecode((byte)val, LiteralHeaderFieldWithIncrementalIndexingPrefix))
+                            {
+                                OnIndexedHeaderName(_integerDecoder.Value);
+                            }
+                            else
+                            {
+                                _state = State.HeaderNameIndex;
+                            }
+                        }
+                        else if ((b & LiteralHeaderFieldWithoutIndexingMask) == LiteralHeaderFieldWithoutIndexingRepresentation)
+                        {
+                            _index = false;
+                            int val = b & ~LiteralHeaderFieldWithoutIndexingMask;
+
+                            if (val == 0)
+                            {
+                                _state = State.HeaderNameLength;
+                            }
+                            else if (_integerDecoder.StartDecode((byte)val, LiteralHeaderFieldWithoutIndexingPrefix))
+                            {
+                                OnIndexedHeaderName(_integerDecoder.Value);
+                            }
+                            else
+                            {
+                                _state = State.HeaderNameIndex;
+                            }
+                        }
+                        else if ((b & LiteralHeaderFieldNeverIndexedMask) == LiteralHeaderFieldNeverIndexedRepresentation)
+                        {
+                            _index = false;
+                            int val = b & ~LiteralHeaderFieldNeverIndexedMask;
+
+                            if (val == 0)
+                            {
+                                _state = State.HeaderNameLength;
+                            }
+                            else if (_integerDecoder.StartDecode((byte)val, LiteralHeaderFieldNeverIndexedPrefix))
+                            {
+                                OnIndexedHeaderName(_integerDecoder.Value);
+                            }
+                            else
+                            {
+                                _state = State.HeaderNameIndex;
+                            }
+                        }
+                        else if ((b & DynamicTableSizeUpdateMask) == DynamicTableSizeUpdateRepresentation)
+                        {
+                            if (_integerDecoder.StartDecode((byte)(b & ~DynamicTableSizeUpdateMask), DynamicTableSizeUpdatePrefix))
+                            {
+                                // TODO: validate that it's less than what's defined via SETTINGS
+                                _dynamicTable.Resize(_integerDecoder.Value);
+                            }
+                            else
+                            {
+                                _state = State.DynamicTableSizeUpdate;
+                            }
+                        }
+                        else
+                        {
+                            // Can't happen
+                            Debug.Fail("Unreachable code");
+                            throw new InternalException();
+                        }
+
+                        break;
+                    case State.HeaderFieldIndex:
+                        if (_integerDecoder.Decode(b))
+                        {
+                            OnIndexedHeaderField(_integerDecoder.Value, onHeader);
+                        }
+
+                        break;
+                    case State.HeaderNameIndex:
+                        if (_integerDecoder.Decode(b))
+                        {
+                            OnIndexedHeaderName(_integerDecoder.Value);
+                        }
+
+                        break;
+                    case State.HeaderNameLength:
+                        _huffman = (b & HuffmanMask) != 0;
+
+                        if (_integerDecoder.StartDecode((byte)(b & ~HuffmanMask), StringLengthPrefix))
+                        {
+                            OnStringLength(_integerDecoder.Value, nextState: State.HeaderName);
+                        }
+                        else
+                        {
+                            _state = State.HeaderNameLengthContinue;
+                        }
+
+                        break;
+                    case State.HeaderNameLengthContinue:
+                        if (_integerDecoder.Decode(b))
+                        {
+                            OnStringLength(_integerDecoder.Value, nextState: State.HeaderName);
+                        }
+
+                        break;
+                    case State.HeaderName:
+                        _stringOctets[_stringIndex++] = b;
+
+                        if (_stringIndex == _stringLength)
+                        {
+                            OnString(nextState: State.HeaderValueLength);
+                        }
+
+                        break;
+                    case State.HeaderValueLength:
+                        _huffman = (b & HuffmanMask) != 0;
+
+                        if (_integerDecoder.StartDecode((byte)(b & ~HuffmanMask), StringLengthPrefix))
+                        {
+                            OnStringLength(_integerDecoder.Value, nextState: State.HeaderValue);
+                        }
+                        else
+                        {
+                            _state = State.HeaderValueLengthContinue;
+                        }
+
+                        break;
+                    case State.HeaderValueLengthContinue:
+                        if (_integerDecoder.Decode(b))
+                        {
+                            OnStringLength(_integerDecoder.Value, nextState: State.HeaderValue);
+                        }
+
+                        break;
+                    case State.HeaderValue:
+                        _stringOctets[_stringIndex++] = b;
+
+                        if (_stringIndex == _stringLength)
+                        {
+                            OnString(nextState: State.Ready);
+
+                            var headerNameSpan = new Span<byte>(_headerName, 0, _headerNameLength);
+                            var headerValueSpan = new Span<byte>(_headerValueOctets, 0, _headerValueLength);
+
+                            onHeader(headerNameSpan, headerValueSpan);
+
+                            if (_index)
+                            {
+                                _dynamicTable.Insert(headerNameSpan, headerValueSpan);
+                            }
+                        }
+
+                        break;
+                    case State.DynamicTableSizeUpdate:
+                        if (_integerDecoder.Decode(b))
+                        {
+                            if (_integerDecoder.Value > _maxDynamicTableSize)
+                            {
+                                // Dynamic table size update is too large.
+                                throw new HPackDecodingException();
+                            }
+
+                            _dynamicTable.Resize(_integerDecoder.Value);
+                            _state = State.Ready;
+                        }
+
+                        break;
+                    default:
+                        // Can't happen
+                        Debug.Fail("HPACK decoder reach an invalid state");
+                        throw new InternalException();
+                }
             }
         }
 
@@ -122,213 +317,21 @@ namespace System.Net.Http.HPack
         {
             if (_state != State.Ready)
             {
-                throw new HPackDecodingException("CoreStrings.HPackErrorIncompleteHeaderBlock");
-            }
-        }
-
-        private void OnByte(byte b, HeaderCallback onHeader)
-        {
-            switch (_state)
-            {
-                case State.Ready:
-                    if ((b & IndexedHeaderFieldMask) == IndexedHeaderFieldRepresentation)
-                    {
-                        var val = b & ~IndexedHeaderFieldMask;
-
-                        if (_integerDecoder.BeginDecode((byte)val, IndexedHeaderFieldPrefix))
-                        {
-                            OnIndexedHeaderField(_integerDecoder.Value, onHeader);
-                        }
-                        else
-                        {
-                            _state = State.HeaderFieldIndex;
-                        }
-                    }
-                    else if ((b & LiteralHeaderFieldWithIncrementalIndexingMask) == LiteralHeaderFieldWithIncrementalIndexingRepresentation)
-                    {
-                        _index = true;
-                        var val = b & ~LiteralHeaderFieldWithIncrementalIndexingMask;
-
-                        if (val == 0)
-                        {
-                            _state = State.HeaderNameLength;
-                        }
-                        else if (_integerDecoder.BeginDecode((byte)val, LiteralHeaderFieldWithIncrementalIndexingPrefix))
-                        {
-                            OnIndexedHeaderName(_integerDecoder.Value);
-                        }
-                        else
-                        {
-                            _state = State.HeaderNameIndex;
-                        }
-                    }
-                    else if ((b & LiteralHeaderFieldWithoutIndexingMask) == LiteralHeaderFieldWithoutIndexingRepresentation)
-                    {
-                        _index = false;
-                        var val = b & ~LiteralHeaderFieldWithoutIndexingMask;
-
-                        if (val == 0)
-                        {
-                            _state = State.HeaderNameLength;
-                        }
-                        else if (_integerDecoder.BeginDecode((byte)val, LiteralHeaderFieldWithoutIndexingPrefix))
-                        {
-                            OnIndexedHeaderName(_integerDecoder.Value);
-                        }
-                        else
-                        {
-                            _state = State.HeaderNameIndex;
-                        }
-                    }
-                    else if ((b & LiteralHeaderFieldNeverIndexedMask) == LiteralHeaderFieldNeverIndexedRepresentation)
-                    {
-                        _index = false;
-                        var val = b & ~LiteralHeaderFieldNeverIndexedMask;
-
-                        if (val == 0)
-                        {
-                            _state = State.HeaderNameLength;
-                        }
-                        else if (_integerDecoder.BeginDecode((byte)val, LiteralHeaderFieldNeverIndexedPrefix))
-                        {
-                            OnIndexedHeaderName(_integerDecoder.Value);
-                        }
-                        else
-                        {
-                            _state = State.HeaderNameIndex;
-                        }
-                    }
-                    else if ((b & DynamicTableSizeUpdateMask) == DynamicTableSizeUpdateRepresentation)
-                    {
-                        if (_integerDecoder.BeginDecode((byte)(b & ~DynamicTableSizeUpdateMask), DynamicTableSizeUpdatePrefix))
-                        {
-                            // TODO: validate that it's less than what's defined via SETTINGS
-                            _dynamicTable.Resize(_integerDecoder.Value);
-                        }
-                        else
-                        {
-                            _state = State.DynamicTableSizeUpdate;
-                        }
-                    }
-                    else
-                    {
-                        // Can't happen
-                        throw new HPackDecodingException($"Byte value {b} does not encode a valid header field representation.");
-                    }
-
-                    break;
-                case State.HeaderFieldIndex:
-                    if (_integerDecoder.Decode(b))
-                    {
-                        OnIndexedHeaderField(_integerDecoder.Value, onHeader);
-                    }
-
-                    break;
-                case State.HeaderNameIndex:
-                    if (_integerDecoder.Decode(b))
-                    {
-                        OnIndexedHeaderName(_integerDecoder.Value);
-                    }
-
-                    break;
-                case State.HeaderNameLength:
-                    _huffman = (b & HuffmanMask) != 0;
-
-                    if (_integerDecoder.BeginDecode((byte)(b & ~HuffmanMask), StringLengthPrefix))
-                    {
-                        OnStringLength(_integerDecoder.Value, nextState: State.HeaderName);
-                    }
-                    else
-                    {
-                        _state = State.HeaderNameLengthContinue;
-                    }
-
-                    break;
-                case State.HeaderNameLengthContinue:
-                    if (_integerDecoder.Decode(b))
-                    {
-                        OnStringLength(_integerDecoder.Value, nextState: State.HeaderName);
-                    }
-
-                    break;
-                case State.HeaderName:
-                    _stringOctets[_stringIndex++] = b;
-
-                    if (_stringIndex == _stringLength)
-                    {
-                        OnString(nextState: State.HeaderValueLength);
-                    }
-
-                    break;
-                case State.HeaderValueLength:
-                    _huffman = (b & HuffmanMask) != 0;
-
-                    if (_integerDecoder.BeginDecode((byte)(b & ~HuffmanMask), StringLengthPrefix))
-                    {
-                        OnStringLength(_integerDecoder.Value, nextState: State.HeaderValue);
-                    }
-                    else
-                    {
-                        _state = State.HeaderValueLengthContinue;
-                    }
-
-                    break;
-                case State.HeaderValueLengthContinue:
-                    if (_integerDecoder.Decode(b))
-                    {
-                        OnStringLength(_integerDecoder.Value, nextState: State.HeaderValue);
-                    }
-
-                    break;
-                case State.HeaderValue:
-                    _stringOctets[_stringIndex++] = b;
-
-                    if (_stringIndex == _stringLength)
-                    {
-                        OnString(nextState: State.Ready);
-
-                        var headerNameSpan = new Span<byte>(_headerName, 0, _headerNameLength);
-                        var headerValueSpan = new Span<byte>(_headerValueOctets, 0, _headerValueLength);
-
-                        onHeader(headerNameSpan, headerValueSpan);
-
-                        if (_index)
-                        {
-                            _dynamicTable.Insert(headerNameSpan, headerValueSpan);
-                        }
-                    }
-
-                    break;
-                case State.DynamicTableSizeUpdate:
-                    if (_integerDecoder.Decode(b))
-                    {
-                        if (_integerDecoder.Value > _maxDynamicTableSize)
-                        {
-                            throw new HPackDecodingException(
-                                $"CoreStrings.FormatHPackErrorDynamicTableSizeUpdateTooLarge({_integerDecoder.Value}, {_maxDynamicTableSize})");
-                        }
-
-                        _dynamicTable.Resize(_integerDecoder.Value);
-                        _state = State.Ready;
-                    }
-
-                    break;
-                default:
-                    // Can't happen
-                    throw new HPackDecodingException("The HPACK decoder reached an invalid state.");
+                // Incomplete header block
+                throw new HPackDecodingException();
             }
         }
 
         private void OnIndexedHeaderField(int index, HeaderCallback onHeader)
         {
-            var header = GetHeader(index);
+            HeaderField header = GetHeader(index);
             onHeader(new Span<byte>(header.Name), new Span<byte>(header.Value));
             _state = State.Ready;
         }
 
         private void OnIndexedHeaderName(int index)
         {
-            var header = GetHeader(index);
+            HeaderField header = GetHeader(index);
             _headerName = header.Name;
             _headerNameLength = header.Name.Length;
             _state = State.HeaderValueLength;
@@ -338,7 +341,8 @@ namespace System.Net.Http.HPack
         {
             if (length > _stringOctets.Length)
             {
-                throw new HPackDecodingException($"CoreStrings.FormatHPackStringLengthTooLarge({length}, {_stringOctets.Length})");
+                // String length too large.
+                throw new HPackDecodingException();
             }
 
             _stringLength = length;
@@ -373,9 +377,10 @@ namespace System.Net.Http.HPack
                     _headerValueLength = Decode(_headerValueOctets);
                 }
             }
-            catch (HuffmanDecodingException ex)
+            catch (HuffmanDecodingException)
             {
-                throw new HPackDecodingException($"CoreStrings.HPackHuffmanError", ex);
+                // Error in huffman encoding.
+                throw new HPackDecodingException();
             }
 
             _state = nextState;
@@ -389,9 +394,10 @@ namespace System.Net.Http.HPack
                     ? StaticTable.Instance[index - 1]
                     : _dynamicTable[index - StaticTable.Instance.Count - 1];
             }
-            catch (IndexOutOfRangeException ex)
+            catch (IndexOutOfRangeException)
             {
-                throw new HPackDecodingException($"CoreStrings.FormatHPackErrorIndexOutOfRange({index})", ex);
+                // Header index out of range.
+                throw new HPackDecodingException();
             }
         }
     }
