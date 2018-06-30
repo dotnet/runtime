@@ -3512,7 +3512,7 @@ void Compiler::lvaSortByRefCount()
 
     if (lvaTrackedToVarNum == nullptr)
     {
-        lvaTrackedToVarNum = static_cast<unsigned*>(compGetMemArray(lclMAX_TRACKED, sizeof(unsigned), CMK_LvaTable));
+        lvaTrackedToVarNum = new (getAllocator(CMK_LvaTable)) unsigned[lclMAX_TRACKED];
     }
 
 #ifdef DEBUG
