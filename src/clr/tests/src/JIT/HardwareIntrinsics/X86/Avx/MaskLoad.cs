@@ -24,7 +24,7 @@ namespace IntelHardwareIntrinsicTest
             {
                 using (TestTable<float, uint> floatTable = new TestTable<float, uint>(new float[8] { 1, -5, 100, 0, 1, 2, 3, 4 }, new uint[8] { uint.MaxValue, uint.MaxValue, 0, 0, uint.MaxValue, uint.MaxValue, 0, 0 }, new float[8]))
                 {
-                    Vector256<float> vf = Avx.MaskLoad((float*)(floatTable.inArrayPtr), Avx.LoadVector256((uint*)(floatTable.maskArrayPtr)));
+                    Vector256<float> vf = Avx.MaskLoad((float*)(floatTable.inArrayPtr), Avx.LoadVector256((float*)(floatTable.maskArrayPtr)));
                     Unsafe.Write(floatTable.outArrayPtr, vf);
 
                     if (!floatTable.CheckResult((x, m, y) => m == uint.MaxValue ? BitConverter.SingleToInt32Bits(x) == BitConverter.SingleToInt32Bits(y) : BitConverter.SingleToInt32Bits(y) == 0))
@@ -41,7 +41,7 @@ namespace IntelHardwareIntrinsicTest
 
                 using (TestTable<double, ulong> doubleTable = new TestTable<double, ulong>(new double[4] { 1, -5, 100, 0}, new ulong[4] { 0, ulong.MaxValue, ulong.MaxValue, 0}, new double[4]))
                 {
-                    Vector256<double> vf = Avx.MaskLoad((double*)(doubleTable.inArrayPtr), Avx.LoadVector256((ulong*)(doubleTable.maskArrayPtr)));
+                    Vector256<double> vf = Avx.MaskLoad((double*)(doubleTable.inArrayPtr), Avx.LoadVector256((double*)(doubleTable.maskArrayPtr)));
                     Unsafe.Write(doubleTable.outArrayPtr, vf);
 
                     if (!doubleTable.CheckResult((x, m, y) =>  m == ulong.MaxValue ? BitConverter.DoubleToInt64Bits(x) == BitConverter.DoubleToInt64Bits(y) : BitConverter.DoubleToInt64Bits(y) == 0))
@@ -58,7 +58,7 @@ namespace IntelHardwareIntrinsicTest
 
                 using (TestTable<float, uint> floatTable = new TestTable<float, uint>(new float[4] { 1, -5, 100, 0 }, new uint[4] { uint.MaxValue, 0, 0, uint.MaxValue }, new float[4]))
                 {
-                    Vector128<float> vf = Avx.MaskLoad((float*)(floatTable.inArrayPtr), Sse2.LoadVector128((uint*)(floatTable.maskArrayPtr)));
+                    Vector128<float> vf = Avx.MaskLoad((float*)(floatTable.inArrayPtr), Sse.LoadVector128((float*)(floatTable.maskArrayPtr)));
                     Unsafe.Write(floatTable.outArrayPtr, vf);
 
                     if (!floatTable.CheckResult((x, m, y) => m == uint.MaxValue ? BitConverter.SingleToInt32Bits(x) == BitConverter.SingleToInt32Bits(y) : BitConverter.SingleToInt32Bits(y) == 0))
@@ -75,7 +75,7 @@ namespace IntelHardwareIntrinsicTest
 
                 using (TestTable<double, ulong> doubleTable = new TestTable<double, ulong>(new double[2] { 1, -5}, new ulong[2] { 0, ulong.MaxValue}, new double[2]))
                 {
-                    Vector128<double> vf = Avx.MaskLoad((double*)(doubleTable.inArrayPtr), Sse2.LoadVector128((ulong*)(doubleTable.maskArrayPtr)));
+                    Vector128<double> vf = Avx.MaskLoad((double*)(doubleTable.inArrayPtr), Sse2.LoadVector128((double*)(doubleTable.maskArrayPtr)));
                     Unsafe.Write(doubleTable.outArrayPtr, vf);
 
                     if (!doubleTable.CheckResult((x, m, y) =>  m == ulong.MaxValue ? BitConverter.DoubleToInt64Bits(x) == BitConverter.DoubleToInt64Bits(y) : BitConverter.DoubleToInt64Bits(y) == 0))
