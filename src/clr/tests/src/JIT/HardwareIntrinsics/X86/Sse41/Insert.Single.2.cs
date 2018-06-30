@@ -21,9 +21,9 @@ namespace JIT.HardwareIntrinsics.X86
 {
     public static partial class Program
     {
-        private static void InsertSingle0()
+        private static void InsertSingle2()
         {
-            var test = new SimpleBinaryOpTest__InsertSingle0();
+            var test = new SimpleBinaryOpTest__InsertSingle2();
 
             if (test.IsSupported)
             {
@@ -85,7 +85,7 @@ namespace JIT.HardwareIntrinsics.X86
         }
     }
 
-    public sealed unsafe class SimpleBinaryOpTest__InsertSingle0
+    public sealed unsafe class SimpleBinaryOpTest__InsertSingle2
     {
         private static readonly int LargestVectorSize = 16;
 
@@ -104,7 +104,7 @@ namespace JIT.HardwareIntrinsics.X86
 
         private SimpleBinaryOpTest__DataTable<Single, Single, Single> _dataTable;
 
-        static SimpleBinaryOpTest__InsertSingle0()
+        static SimpleBinaryOpTest__InsertSingle2()
         {
             var random = new Random();
 
@@ -114,7 +114,7 @@ namespace JIT.HardwareIntrinsics.X86
             Unsafe.CopyBlockUnaligned(ref Unsafe.As<Vector128<Single>, byte>(ref _clsVar2), ref Unsafe.As<Single, byte>(ref _data2[0]), (uint)Unsafe.SizeOf<Vector128<Single>>());
         }
 
-        public SimpleBinaryOpTest__InsertSingle0()
+        public SimpleBinaryOpTest__InsertSingle2()
         {
             Succeeded = true;
 
@@ -139,7 +139,7 @@ namespace JIT.HardwareIntrinsics.X86
             var result = Sse41.Insert(
                 Unsafe.Read<Vector128<Single>>(_dataTable.inArray1Ptr),
                 Unsafe.Read<Vector128<Single>>(_dataTable.inArray2Ptr),
-                0
+                2
             );
 
             Unsafe.Write(_dataTable.outArrayPtr, result);
@@ -151,7 +151,7 @@ namespace JIT.HardwareIntrinsics.X86
             var result = Sse41.Insert(
                 Sse.LoadVector128((Single*)(_dataTable.inArray1Ptr)),
                 LoadVector128((Single*)(_dataTable.inArray2Ptr)),
-                0
+                2
             );
 
             Unsafe.Write(_dataTable.outArrayPtr, result);
@@ -163,7 +163,7 @@ namespace JIT.HardwareIntrinsics.X86
             var result = Sse41.Insert(
                 Sse.LoadAlignedVector128((Single*)(_dataTable.inArray1Ptr)),
                 LoadAlignedVector128((Single*)(_dataTable.inArray2Ptr)),
-                0
+                2
             );
 
             Unsafe.Write(_dataTable.outArrayPtr, result);
@@ -176,7 +176,7 @@ namespace JIT.HardwareIntrinsics.X86
                                      .Invoke(null, new object[] {
                                         Unsafe.Read<Vector128<Single>>(_dataTable.inArray1Ptr),
                                         Unsafe.Read<Vector128<Single>>(_dataTable.inArray2Ptr),
-                                        (byte)0
+                                        (byte)2
                                      });
 
             Unsafe.Write(_dataTable.outArrayPtr, (Vector128<Single>)(result));
@@ -189,7 +189,7 @@ namespace JIT.HardwareIntrinsics.X86
                                      .Invoke(null, new object[] {
                                         Sse.LoadVector128((Single*)(_dataTable.inArray1Ptr)),
                                         LoadVector128((Single*)(_dataTable.inArray2Ptr)),
-                                        (byte)0
+                                        (byte)2
                                      });
 
             Unsafe.Write(_dataTable.outArrayPtr, (Vector128<Single>)(result));
@@ -202,7 +202,7 @@ namespace JIT.HardwareIntrinsics.X86
                                      .Invoke(null, new object[] {
                                         Sse.LoadAlignedVector128((Single*)(_dataTable.inArray1Ptr)),
                                         LoadAlignedVector128((Single*)(_dataTable.inArray2Ptr)),
-                                        (byte)0
+                                        (byte)2
                                      });
 
             Unsafe.Write(_dataTable.outArrayPtr, (Vector128<Single>)(result));
@@ -214,7 +214,7 @@ namespace JIT.HardwareIntrinsics.X86
             var result = Sse41.Insert(
                 _clsVar1,
                 _clsVar2,
-                0
+                2
             );
 
             Unsafe.Write(_dataTable.outArrayPtr, result);
@@ -225,7 +225,7 @@ namespace JIT.HardwareIntrinsics.X86
         {
             var left = Unsafe.Read<Vector128<Single>>(_dataTable.inArray1Ptr);
             var right = Unsafe.Read<Vector128<Single>>(_dataTable.inArray2Ptr);
-            var result = Sse41.Insert(left, right, 0);
+            var result = Sse41.Insert(left, right, 2);
 
             Unsafe.Write(_dataTable.outArrayPtr, result);
             ValidateResult(left, right, _dataTable.outArrayPtr);
@@ -235,7 +235,7 @@ namespace JIT.HardwareIntrinsics.X86
         {
             var left = Sse.LoadVector128((Single*)(_dataTable.inArray1Ptr));
             var right = LoadVector128((Single*)(_dataTable.inArray2Ptr));
-            var result = Sse41.Insert(left, right, 0);
+            var result = Sse41.Insert(left, right, 2);
 
             Unsafe.Write(_dataTable.outArrayPtr, result);
             ValidateResult(left, right, _dataTable.outArrayPtr);
@@ -245,7 +245,7 @@ namespace JIT.HardwareIntrinsics.X86
         {
             var left = Sse.LoadAlignedVector128((Single*)(_dataTable.inArray1Ptr));
             var right = LoadAlignedVector128((Single*)(_dataTable.inArray2Ptr));
-            var result = Sse41.Insert(left, right, 0);
+            var result = Sse41.Insert(left, right, 2);
 
             Unsafe.Write(_dataTable.outArrayPtr, result);
             ValidateResult(left, right, _dataTable.outArrayPtr);
@@ -253,8 +253,8 @@ namespace JIT.HardwareIntrinsics.X86
 
         public void RunLclFldScenario()
         {
-            var test = new SimpleBinaryOpTest__InsertSingle0();
-            var result = Sse41.Insert(test._fld1, test._fld2, 0);
+            var test = new SimpleBinaryOpTest__InsertSingle2();
+            var result = Sse41.Insert(test._fld1, test._fld2, 2);
 
             Unsafe.Write(_dataTable.outArrayPtr, result);
             ValidateResult(test._fld1, test._fld2, _dataTable.outArrayPtr);
@@ -262,7 +262,7 @@ namespace JIT.HardwareIntrinsics.X86
 
         public void RunFldScenario()
         {
-            var result = Sse41.Insert(_fld1, _fld2, 0);
+            var result = Sse41.Insert(_fld1, _fld2, 2);
 
             Unsafe.Write(_dataTable.outArrayPtr, result);
             ValidateResult(_fld1, _fld2, _dataTable.outArrayPtr);
@@ -318,7 +318,7 @@ namespace JIT.HardwareIntrinsics.X86
             {
                 for (var i = 1; i < RetElementCount; i++)
                 {
-                    if (BitConverter.SingleToInt32Bits(result[i]) != BitConverter.SingleToInt32Bits(left[i]))
+                    if (i == 1 ? BitConverter.SingleToInt32Bits(result[i]) != BitConverter.SingleToInt32Bits(0.0f) : BitConverter.SingleToInt32Bits(result[i]) != BitConverter.SingleToInt32Bits(left[i]))
                     {
                         Succeeded = false;
                         break;
@@ -328,7 +328,7 @@ namespace JIT.HardwareIntrinsics.X86
 
             if (!Succeeded)
             {
-                Console.WriteLine($"{nameof(Sse41)}.{nameof(Sse41.Insert)}<Single>(Vector128<Single>, Vector128<Single>.0): {method} failed:");
+                Console.WriteLine($"{nameof(Sse41)}.{nameof(Sse41.Insert)}<Single>(Vector128<Single>, Vector128<Single>.2): {method} failed:");
                 Console.WriteLine($"    left: ({string.Join(", ", left)})");
                 Console.WriteLine($"   right: ({string.Join(", ", right)})");
                 Console.WriteLine($"  result: ({string.Join(", ", result)})");
