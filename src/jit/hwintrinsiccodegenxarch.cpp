@@ -239,27 +239,10 @@ void CodeGen::genHWIntrinsic(GenTreeHWIntrinsic* node)
                     {
                         ssize_t ival = op3->AsIntCon()->IconValue();
                         assert((ival >= 0) && (ival <= 255));
-
-                        if ((intrinsicId == NI_SSE41_Insert) && (baseType == TYP_FLOAT))
-                        {
-                            // Bits 6 and 7 impact the index that is selected from op2
-                            // when op2 is already in register. However, our API exposes
-                            // op2 as a scalar and so bits 6 and 7 must be set to 0.
-                            ival &= 0x3F;
-                        }
-
                         emitSwCase((int8_t)ival);
                     }
                     else
                     {
-                        if ((intrinsicId == NI_SSE41_Insert) && (baseType == TYP_FLOAT))
-                        {
-                            // Bits 6 and 7 impact the index that is selected from op2
-                            // when op2 is already in register. However, our API exposes
-                            // op2 as a scalar and so bits 6 and 7 must be set to 0.
-                            emit->emitIns_R_I(INS_and, EA_1BYTE, op3Reg, 0x3F);
-                        }
-
                         // We emit a fallback case for the scenario when the imm-op is not a constant. This should
                         // normally happen when the intrinsic is called indirectly, such as via Reflection. However, it
                         // can also occur if the consumer calls it directly and just doesn't pass a constant value.
