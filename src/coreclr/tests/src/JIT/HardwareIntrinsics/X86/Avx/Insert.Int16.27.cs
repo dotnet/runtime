@@ -22,9 +22,7 @@ namespace JIT.HardwareIntrinsics.X86
         private static void InsertInt1627()
         {
             var test = new SimpleUnaryOpTest__InsertInt1627();
-            
-            try
-            {
+
             if (test.IsSupported)
             {
                 // Validates basic functionality works, using Unsafe.Read
@@ -77,11 +75,6 @@ namespace JIT.HardwareIntrinsics.X86
                 // Validates we throw on unsupported hardware
                 test.RunUnsupportedScenario();
             }
-            }
-            catch (PlatformNotSupportedException)
-            {
-                test.Succeeded = true;
-            }
 
             if (!test.Succeeded)
             {
@@ -126,7 +119,7 @@ namespace JIT.HardwareIntrinsics.X86
             _dataTable = new SimpleUnaryOpTest__DataTable<Int16, Int16>(_data, new Int16[RetElementCount], LargestVectorSize);
         }
 
-        public bool IsSupported => Avx.IsSupported;
+        public bool IsSupported => Avx.IsSupported && (Environment.Is64BitProcess || ((typeof(Int16) != typeof(long)) && (typeof(Int16) != typeof(ulong))));
 
         public bool Succeeded { get; set; }
 

@@ -22,9 +22,7 @@ namespace JIT.HardwareIntrinsics.X86
         private static void ExtractSingle129()
         {
             var test = new SimpleUnaryOpTest__ExtractSingle129();
-            
-            try
-            {
+
             if (test.IsSupported)
             {
                 // Validates basic functionality works, using Unsafe.Read
@@ -77,11 +75,6 @@ namespace JIT.HardwareIntrinsics.X86
                 // Validates we throw on unsupported hardware
                 test.RunUnsupportedScenario();
             }
-            }
-            catch (PlatformNotSupportedException)
-            {
-                test.Succeeded = true;
-            }
 
             if (!test.Succeeded)
             {
@@ -126,7 +119,7 @@ namespace JIT.HardwareIntrinsics.X86
             _dataTable = new SimpleUnaryOpTest__DataTable<Single, Single>(_data, new Single[RetElementCount], LargestVectorSize);
         }
 
-        public bool IsSupported => Sse41.IsSupported;
+        public bool IsSupported => Sse41.IsSupported && (Environment.Is64BitProcess || ((typeof(Single) != typeof(long)) && (typeof(Single) != typeof(ulong))));
 
         public bool Succeeded { get; set; }
 

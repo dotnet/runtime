@@ -22,9 +22,7 @@ namespace JIT.HardwareIntrinsics.X86
         private static void InsertInt321()
         {
             var test = new SimpleUnaryOpTest__InsertInt321();
-            
-            try
-            {
+
             if (test.IsSupported)
             {
                 // Validates basic functionality works, using Unsafe.Read
@@ -77,11 +75,6 @@ namespace JIT.HardwareIntrinsics.X86
                 // Validates we throw on unsupported hardware
                 test.RunUnsupportedScenario();
             }
-            }
-            catch (PlatformNotSupportedException)
-            {
-                test.Succeeded = true;
-            }
 
             if (!test.Succeeded)
             {
@@ -126,7 +119,7 @@ namespace JIT.HardwareIntrinsics.X86
             _dataTable = new SimpleUnaryOpTest__DataTable<Int32, Int32>(_data, new Int32[RetElementCount], LargestVectorSize);
         }
 
-        public bool IsSupported => Sse41.IsSupported;
+        public bool IsSupported => Sse41.IsSupported && (Environment.Is64BitProcess || ((typeof(Int32) != typeof(long)) && (typeof(Int32) != typeof(ulong))));
 
         public bool Succeeded { get; set; }
 
