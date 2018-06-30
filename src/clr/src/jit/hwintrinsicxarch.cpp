@@ -911,7 +911,7 @@ GenTree* Compiler::impSSEIntrinsic(NamedIntrinsic        intrinsic,
             // the type system. It is safe to do this here since the retNode type
             // and the signature return type are both TYP_SIMD16.
             assert(sig->numArgs == 1);
-            retNode = impSIMDPopStack(TYP_SIMD16);
+            retNode = impSIMDPopStack(TYP_SIMD16, false, sig->retTypeClass);
             SetOpLclRelatedToSIMDIntrinsic(retNode);
             assert(retNode->gtType == getSIMDTypeForSize(getSIMDTypeSizeInBytes(sig->retTypeSigClass)));
             break;
@@ -1232,7 +1232,7 @@ GenTree* Compiler::impAvxOrAvx2Intrinsic(NamedIntrinsic        intrinsic,
             // the type system. It is safe to do this here since the retNode type
             // and the signature return type are both TYP_SIMD32.
             assert(sig->numArgs == 1);
-            retNode = impSIMDPopStack(TYP_SIMD32);
+            retNode = impSIMDPopStack(TYP_SIMD32, false, sig->retTypeClass);
             SetOpLclRelatedToSIMDIntrinsic(retNode);
             assert(retNode->gtType == getSIMDTypeForSize(getSIMDTypeSizeInBytes(sig->retTypeSigClass)));
             break;
