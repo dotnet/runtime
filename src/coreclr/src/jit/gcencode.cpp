@@ -1906,7 +1906,7 @@ PendingArgsStack::PendingArgsStack(unsigned maxDepth, Compiler* pComp)
     /* Do we need an array as well as the mask ? */
 
     if (pasMaxDepth > BITS_IN_pasMask)
-        pasTopArray = (BYTE*)pComp->compGetMem(pasMaxDepth - BITS_IN_pasMask);
+        pasTopArray = pComp->getAllocator(CMK_Unknown).allocate<BYTE>(pasMaxDepth - BITS_IN_pasMask);
 }
 
 //-----------------------------------------------------------------------------

@@ -83,9 +83,7 @@ RefInfoListNodePool::RefInfoListNodePool(Compiler* compiler, unsigned preallocat
 {
     if (preallocate > 0)
     {
-        size_t           preallocateSize = sizeof(RefInfoListNode) * preallocate;
-        RefInfoListNode* preallocatedNodes =
-            static_cast<RefInfoListNode*>(compiler->compGetMem(preallocateSize, CMK_LSRA));
+        RefInfoListNode* preallocatedNodes = compiler->getAllocator(CMK_LSRA).allocate<RefInfoListNode>(preallocate);
 
         RefInfoListNode* head = preallocatedNodes;
         head->m_next          = nullptr;
@@ -119,7 +117,7 @@ RefInfoListNode* RefInfoListNodePool::GetNode(RefPosition* r, GenTree* t, unsign
     RefInfoListNode* head = m_freeList;
     if (head == nullptr)
     {
-        head = reinterpret_cast<RefInfoListNode*>(m_compiler->compGetMem(sizeof(RefInfoListNode)));
+        head = m_compiler->getAllocator(CMK_LSRA).allocate<RefInfoListNode>(1);
     }
     else
     {

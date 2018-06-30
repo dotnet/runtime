@@ -45,19 +45,6 @@ namespace utility
     }; 
     
  
-    // Helper to allocate objects of any type, given an allocator of void type.
-    //
-    // @param alloc An allocator of void type used to create an allocator of type T.
-    // @param count The number of objects of type T that need to be allocated.
-    //
-    // @return A pointer to an object or an array of objects that was allocated.
-    template <typename T>
-    inline
-    static T* allocate(jitstd::allocator<void>& alloc, size_t count = 1)
-    {
-        return jitstd::allocator<T>(alloc).allocate(count);
-    }
-
     // Ensures that "wset" is the union of the initial state of "wset" and "rset".
     // Elements from "rset" that were not in "wset" are added to "cset."
     template <typename Set>

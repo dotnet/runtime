@@ -5,11 +5,6 @@
 #ifndef _SMALLHASHTABLE_H_
 #define _SMALLHASHTABLE_H_
 
-// Since compiler depends on valuenum which depends on smallhash, forward declare
-// a wrapper for comp->compGetMem here (implemented in compiler.hpp) that can be used below.
-class Compiler;
-void* compGetMem(Compiler* comp, size_t sz);
-
 // genLog2 is defined in compiler.hpp
 unsigned genLog2(unsigned value);
 
@@ -109,7 +104,7 @@ struct HashTableInfo<unsigned>
 //    TKey     - The type of the table's keys.
 //    TValue   - The type of the table's values.
 //    TKeyInfo - A type that conforms to the HashTableInfo<TKey> concept.
-template <typename TKey, typename TValue, typename TKeyInfo = HashTableInfo<TKey>>
+template <typename TKey, typename TValue, typename TKeyInfo = HashTableInfo<TKey>, typename TAllocator = CompAllocator>
 class HashTableBase
 {
     friend class KeyValuePair;
@@ -151,10 +146,10 @@ protected:
     };
 
 private:
-    Compiler* m_compiler;       // The compiler context to use for allocations.
-    Bucket*   m_buckets;        // The bucket array.
-    unsigned  m_numBuckets;     // The number of buckets in the bucket array.
-    unsigned  m_numFullBuckets; // The number of occupied buckets.
+    TAllocator m_alloc;          // The memory allocator.
+    Bucket*    m_buckets;        // The bucket array.
+    unsigned   m_numBuckets;     // The number of buckets in the bucket array.
+    unsigned   m_numFullBuckets; // The number of occupied buckets.
 
     //------------------------------------------------------------------------
     // HashTableBase::Insert: inserts a key-value pair into a bucket array.
@@ -302,11 +297,8 @@ private:
         Bucket* currentBuckets = m_buckets;
 
         unsigned newNumBuckets = m_numBuckets == 0 ? InitialNumBuckets : m_numBuckets * 2;
-        size_t   allocSize     = sizeof(Bucket) * newNumBuckets;
-        assert((sizeof(Bucket) * m_numBuckets) < allocSize);
-
-        auto* newBuckets = reinterpret_cast<Bucket*>(compGetMem(m_compiler, allocSize));
-        memset(newBuckets, 0, allocSize);
+        Bucket*  newBuckets    = m_alloc.template allocate<Bucket>(newNumBuckets);
+        memset(newBuckets, 0, sizeof(Bucket) * newNumBuckets);
 
         for (unsigned currentIndex = 0; currentIndex < m_numBuckets; currentIndex++)
         {
@@ -326,11 +318,9 @@ private:
     }
 
 protected:
-    HashTableBase(Compiler* compiler, Bucket* buckets, unsigned numBuckets)
-        : m_compiler(compiler), m_buckets(buckets), m_numBuckets(numBuckets), m_numFullBuckets(0)
+    HashTableBase(TAllocator alloc, Bucket* buckets, unsigned numBuckets)
+        : m_alloc(alloc), m_buckets(buckets), m_numBuckets(numBuckets), m_numFullBuckets(0)
     {
-        assert(compiler != nullptr);
-
         if (numBuckets > 0)
         {
             assert((numBuckets & (numBuckets - 1)) == 0); // Size must be a power of 2
@@ -599,10 +589,10 @@ public:
 //------------------------------------------------------------------------
 // HashTable: a simple subclass of `HashTableBase` that always uses heap
 //            storage for its bucket array.
-template <typename TKey, typename TValue, typename TKeyInfo = HashTableInfo<TKey>>
-class HashTable final : public HashTableBase<TKey, TValue, TKeyInfo>
+template <typename TKey, typename TValue, typename TKeyInfo = HashTableInfo<TKey>, typename TAllocator = CompAllocator>
+class HashTable final : public HashTableBase<TKey, TValue, TKeyInfo, TAllocator>
 {
-    typedef HashTableBase<TKey, TValue, TKeyInfo> TBase;
+    typedef HashTableBase<TKey, TValue, TKeyInfo, TAllocator> TBase;
 
     static unsigned RoundUp(unsigned initialSize)
     {
@@ -610,15 +600,12 @@ class HashTable final : public HashTableBase<TKey, TValue, TKeyInfo>
     }
 
 public:
-    HashTable(Compiler* compiler) : TBase(compiler, nullptr, 0)
+    HashTable(TAllocator alloc) : TBase(alloc, nullptr, 0)
     {
     }
 
-    HashTable(Compiler* compiler, unsigned initialSize)
-        : TBase(compiler,
-                reinterpret_cast<typename TBase::Bucket*>(
-                    compGetMem(compiler, RoundUp(initialSize) * sizeof(typename TBase::Bucket))),
-                RoundUp(initialSize))
+    HashTable(TAllocator alloc, unsigned initialSize)
+        : TBase(alloc, alloc.template allocate<TBase::Bucket>(RoundUp(initialSize)), RoundUp(initialSize))
     {
     }
 };
@@ -630,10 +617,14 @@ public:
 //                 the map at any given time falls below a certain
 //                 threshold. Switches to heap storage once the initial
 //                 inline storage is exhausted.
-template <typename TKey, typename TValue, unsigned NumInlineBuckets = 8, typename TKeyInfo = HashTableInfo<TKey>>
-class SmallHashTable final : public HashTableBase<TKey, TValue, TKeyInfo>
+template <typename TKey,
+          typename TValue,
+          unsigned NumInlineBuckets = 8,
+          typename TKeyInfo         = HashTableInfo<TKey>,
+          typename TAllocator       = CompAllocator>
+class SmallHashTable final : public HashTableBase<TKey, TValue, TKeyInfo, TAllocator>
 {
-    typedef HashTableBase<TKey, TValue, TKeyInfo> TBase;
+    typedef HashTableBase<TKey, TValue, TKeyInfo, TAllocator> TBase;
 
     enum : unsigned
     {
@@ -643,7 +634,7 @@ class SmallHashTable final : public HashTableBase<TKey, TValue, TKeyInfo>
     typename TBase::Bucket m_inlineBuckets[RoundedNumInlineBuckets];
 
 public:
-    SmallHashTable(Compiler* compiler) : TBase(compiler, m_inlineBuckets, RoundedNumInlineBuckets)
+    SmallHashTable(TAllocator alloc) : TBase(alloc, m_inlineBuckets, RoundedNumInlineBuckets)
     {
     }
 };

@@ -11,10 +11,10 @@ template <class T>
 class JitExpandArray
 {
 protected:
-    CompAllocator* m_alloc;   // The allocator object that should be used to allocate members.
-    T*             m_members; // Pointer to the element array.
-    unsigned       m_size;    // The size of the element array.
-    unsigned       m_minSize; // The minimum size of the element array.
+    CompAllocator m_alloc;   // The allocator object that should be used to allocate members.
+    T*            m_members; // Pointer to the element array.
+    unsigned      m_size;    // The size of the element array.
+    unsigned      m_minSize; // The minimum size of the element array.
 
     // Ensure that the element array is large enough for the specified index to be valid.
     void EnsureCoversInd(unsigned idx);
@@ -54,7 +54,7 @@ public:
     //    time an array element (having index `idx`) is accessed, an array
     //    of size max(`minSize`, `idx`) is allocated.
     //
-    JitExpandArray(CompAllocator* alloc, unsigned minSize = 1)
+    JitExpandArray(CompAllocator alloc, unsigned minSize = 1)
         : m_alloc(alloc), m_members(nullptr), m_size(0), m_minSize(minSize)
     {
         assert(minSize > 0);
@@ -71,7 +71,7 @@ public:
     {
         if (m_members != nullptr)
         {
-            m_alloc->Free(m_members);
+            m_alloc.deallocate(m_members);
         }
     }
 
@@ -86,11 +86,11 @@ public:
     //    This is equivalent to calling the destructor and then constructing
     //    the array again.
     //
-    void Init(CompAllocator* alloc, unsigned minSize = 1)
+    void Init(CompAllocator alloc, unsigned minSize = 1)
     {
         if (m_members != nullptr)
         {
-            m_alloc->Free(m_members);
+            m_alloc.deallocate(m_members);
         }
         m_alloc   = alloc;
         m_members = nullptr;
@@ -220,7 +220,7 @@ public:
     // Notes:
     //    See JitExpandArray constructor notes.
     //
-    JitExpandArrayStack(CompAllocator* alloc, unsigned minSize = 1) : JitExpandArray<T>(alloc, minSize), m_used(0)
+    JitExpandArrayStack(CompAllocator alloc, unsigned minSize = 1) : JitExpandArray<T>(alloc, minSize), m_used(0)
     {
     }
 
@@ -391,18 +391,11 @@ void JitExpandArray<T>::EnsureCoversInd(unsigned idx)
         unsigned oldSize    = m_size;
         T*       oldMembers = m_members;
         m_size              = max(idx + 1, max(m_minSize, m_size * 2));
-        if (sizeof(T) < sizeof(int))
-        {
-            m_members = (T*)m_alloc->ArrayAlloc(ALIGN_UP(m_size * sizeof(T), sizeof(int)), sizeof(BYTE));
-        }
-        else
-        {
-            m_members = (T*)m_alloc->ArrayAlloc(m_size, sizeof(T));
-        }
+        m_members           = m_alloc.allocate<T>(m_size);
         if (oldMembers != nullptr)
         {
             memcpy(m_members, oldMembers, oldSize * sizeof(T));
-            m_alloc->Free(oldMembers);
+            m_alloc.deallocate(oldMembers);
         }
         InitializeRange(oldSize, m_size);
     }

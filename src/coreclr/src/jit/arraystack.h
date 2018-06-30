@@ -11,14 +11,12 @@ class ArrayStack
     static const int builtinSize = 8;
 
 public:
-    ArrayStack(Compiler* comp, int initialSize = builtinSize)
+    ArrayStack(CompAllocator alloc, int initialSize = builtinSize) : m_alloc(alloc)
     {
-        compiler = comp;
-
         if (initialSize > builtinSize)
         {
             maxIndex = initialSize;
-            data     = new (compiler, CMK_ArrayStack) T[initialSize];
+            data     = new (alloc) T[initialSize];
         }
         else
         {
@@ -58,7 +56,7 @@ public:
         // and copy over
         T* oldData = data;
         noway_assert(maxIndex * 2 > maxIndex);
-        data = new (compiler, CMK_ArrayStack) T[maxIndex * 2];
+        data = new (m_alloc) T[maxIndex * 2];
         for (int i = 0; i < maxIndex; i++)
         {
             data[i] = oldData[i];
@@ -149,10 +147,10 @@ public:
     }
 
 private:
-    Compiler* compiler; // needed for allocation
-    int       tosIndex; // first free location
-    int       maxIndex;
-    T*        data;
+    CompAllocator m_alloc;
+    int           tosIndex; // first free location
+    int           maxIndex;
+    T*            data;
     // initial allocation
     T builtinData[builtinSize];
 };

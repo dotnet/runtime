@@ -28,9 +28,7 @@ XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
  *
  * @params alloc The allocator class used to allocate jitstd data.
  */
-SsaRenameState::SsaRenameState(const jitstd::allocator<int>& alloc,
-                               unsigned                      lvaCount,
-                               bool                          byrefStatesMatchGcHeapStates)
+SsaRenameState::SsaRenameState(CompAllocator alloc, unsigned lvaCount, bool byrefStatesMatchGcHeapStates)
     : counts(nullptr)
     , stacks(nullptr)
     , definedLocs(alloc)
@@ -51,7 +49,7 @@ void SsaRenameState::EnsureCounts()
 {
     if (counts == nullptr)
     {
-        counts = jitstd::utility::allocate<unsigned>(m_alloc, lvaCount);
+        counts = m_alloc.allocate<unsigned>(lvaCount);
         for (unsigned i = 0; i < lvaCount; ++i)
         {
             counts[i] = SsaConfig::FIRST_SSA_NUM;
@@ -68,7 +66,7 @@ void SsaRenameState::EnsureStacks()
 {
     if (stacks == nullptr)
     {
-        stacks = jitstd::utility::allocate<Stack*>(m_alloc, lvaCount);
+        stacks = m_alloc.allocate<Stack*>(lvaCount);
         for (unsigned i = 0; i < lvaCount; ++i)
         {
             stacks[i] = nullptr;
@@ -141,7 +139,7 @@ void SsaRenameState::Push(BasicBlock* bb, unsigned lclNum, unsigned count)
     if (stack == nullptr)
     {
         DBG_SSA_JITDUMP("\tCreating a new stack\n");
-        stack = stacks[lclNum] = new (jitstd::utility::allocate<Stack>(m_alloc), jitstd::placement_t()) Stack(m_alloc);
+        stack = stacks[lclNum] = new (m_alloc) Stack(m_alloc);
     }
 
     if (stack->empty() || stack->back().m_bb != bb)

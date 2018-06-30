@@ -539,12 +539,12 @@ class AssemblyNamesList2
         AssemblyName* m_next;
     };
 
-    AssemblyName*  m_pNames; // List of names
-    HostAllocator* m_alloc;  // HostAllocator to use in this class
+    AssemblyName* m_pNames; // List of names
+    HostAllocator m_alloc;  // HostAllocator to use in this class
 
 public:
     // Take a Unicode string list of assembly names, parse it, and store it.
-    AssemblyNamesList2(const wchar_t* list, __in HostAllocator* alloc);
+    AssemblyNamesList2(const wchar_t* list, HostAllocator alloc);
 
     ~AssemblyNamesList2();
 

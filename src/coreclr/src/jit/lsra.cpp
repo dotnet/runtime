@@ -605,11 +605,8 @@ LinearScanInterface* getLinearScanAllocator(Compiler* comp)
 
 LinearScan::LinearScan(Compiler* theCompiler)
     : compiler(theCompiler)
-#if MEASURE_MEM_ALLOC
-    , lsraAllocator(nullptr)
-#endif // MEASURE_MEM_ALLOC
-    , intervals(LinearScanMemoryAllocatorInterval(theCompiler))
-    , refPositions(LinearScanMemoryAllocatorRefPosition(theCompiler))
+    , intervals(theCompiler->getAllocator(CMK_LSRA_Interval))
+    , refPositions(theCompiler->getAllocator(CMK_LSRA_RefPosition))
     , listNodePool(theCompiler)
 {
 #ifdef DEBUG

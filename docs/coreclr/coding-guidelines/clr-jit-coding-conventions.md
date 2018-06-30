@@ -125,7 +125,8 @@ Note that these conventions are different from the CLR C++ Coding Conventions, d
     * [15.5.9 Global class objects](#15.5.9)
   * [15.6 Exceptions](#15.6)
   * [15.7 Code tuning for performance optimization](#15.7)
-  * [15.8 Obsoleting functions, classes and macros](#15.8)
+  * [15.8 Memory allocation](#15.8)
+  * [15.9 Obsoleting functions, classes and macros](#15.9)
 
 # <a name="4"/>4 Principles
 
@@ -1938,7 +1939,45 @@ In general, code should be written to be readable first, and optimized for perfo
 
 In the case of tight loops and code that has been analyzed to be a performance bottleneck, performance optimizations take a higher priority. Talk to the performance team if in doubt.
 
-## <a name="15.8"/>15.8 Obsoleting functions, classes and macros
+## <a name="15.8"/>15.8 Memory allocation
+
+All memory required during the compilation of a method must be allocated using the `Compiler`'s arena allocator. This allocator takes care of deallocating all the memory when compilation ends, avoiding memory leaks and simplifying memory management.
+
+However, the use of an arena allocator can increase memory usage and it's worth considering its impact when writing JIT code. Simple code changes can have a significant impact on memory usage, such as hoisting a `std::vector` variable out of a loop:
+```c++
+std::vector<int> outer; // same memory gets used for all iterations
+for (...)
+{
+    std::vector<int> inner; // this will allocate memory on every iteration
+                            // and previously allocated memory is simply wasted
+}
+```
+Node based data structures (e.g linked lists) may benefit from retaining and reusing removed nodes, provided that maintaining free lists doesn't add significant cost.
+
+The arena allocator should not be used directly. `Compiler::getAllocator(CompMemKind)` returns a `CompAllocator` object that wraps the arena allocator and supports memory usage tracking when `MEASURE_MEM_ALLOC` is enabled. It's best to use a meaningful memory kind (e.g. not `CMK_Generic`) but exceptions can be made for small allocations. `CompAllocator` objects are always pointer sized and can be freely copied and stored (useful to avoid repeated `CompMemKind` references).
+
+The `new (CompAllocator)` operator should be preferred over `CompAllocator::allocate(size_t)`. The later is intended to be used only when constructors must not be run, such as when allocating arrays for containers like `std::vector`.
+```c++
+// typical object allocation
+RangeCheck* p = new (compiler->getAllocator(CMK_RangeCheck)) RangeCheck(compiler);
+// slightly shorter alternative
+RangeCheck* p = new (compiler, CMK_RangeCheck) RangeCheck(compiler);
+// allocate an array with default initialized elements
+LclVarDsc* p = new (compiler->getAllocator(CMK_LvaTable)) LclVarDsc[lvaCount];
+// use list initialization to zero out an array
+unsigned* p = new (compiler->getAllocator(CMK_LvaTable)) unsigned[lvaTrackedCount] { };
+// use CompAllocator::allocate to allocate memory without doing any initialization...
+LclVarDsc* p = compiler->getAllocator(CMK_LvaTable).allocate<LclVarDsc>(lvaCount);
+// ... and construct elements in place as needed
+new (&p[i], jitstd::placement_t()) LclVarDsc(compiler)
+```
+Note that certain classes (e.g. `GenTree`) provide their own `new` operator overloads, those should be used instead of the general purpose `new (CompAllocator)` operator.
+
+`jitstd` container classes accept a `CompAllocator` object by implicit conversion from `CompAllocator` to `jitstd::allocator`.
+
+Debug/checked code that needs to allocate memory outside of method compilation can use the `HostAllocator` class and the associated `new` operator. This is a normal memory allocator that requires manual memory deallocation.
+
+## <a name="15.9"/>15.9 Obsoleting functions, classes and macros
 
 The Visual C++ compiler has support built in for marking various user defined constructs as deprecated. This functionality is accessed via one of two mechanisms:
 

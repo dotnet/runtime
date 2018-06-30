@@ -134,7 +134,7 @@ void Compiler::fgResetForSsa()
  */
 SsaBuilder::SsaBuilder(Compiler* pCompiler)
     : m_pCompiler(pCompiler)
-    , m_allocator(pCompiler, CMK_SSA)
+    , m_allocator(pCompiler->getAllocator(CMK_SSA))
     , m_visitedTraits(0, pCompiler) // at this point we do not know the size, SetupBBRoot can add a block
 #ifdef SSA_FEATURE_DOMARR
     , m_pDomPreOrder(nullptr)
@@ -193,8 +193,7 @@ int SsaBuilder::TopologicalSort(BasicBlock** postOrder, int count)
     BasicBlock* block     = comp->fgFirstBB;
     BitVecOps::AddElemD(&m_visitedTraits, m_visited, block->bbNum);
 
-    ArrayStack<AllSuccessorEnumerator> blocks(comp);
-
+    ArrayStack<AllSuccessorEnumerator> blocks(m_allocator);
     blocks.Emplace(comp, block);
     DumpBlockAndSuccessors(comp, block);
 
@@ -538,7 +537,7 @@ void SsaBuilder::ComputeDominanceFrontiers(BasicBlock** postOrder, int count, Bl
             {
                 DBG_SSA_JITDUMP("      Adding BB%02u to dom frontier of pred dom BB%02u.\n", block->bbNum, b1->bbNum);
 
-                BlkVector& b1DF = *mapDF->Emplace(b1, &m_allocator);
+                BlkVector& b1DF = *mapDF->Emplace(b1, m_allocator);
                 // It's possible to encounter the same DF multiple times, ensure that we don't add duplicates.
                 if (b1DF.empty() || (b1DF.back() != block))
                 {
@@ -692,12 +691,12 @@ void SsaBuilder::InsertPhiFunctions(BasicBlock** postOrder, int count)
     EndPhase(PHASE_BUILD_SSA_LIVENESS);
 
     // Compute dominance frontier.
-    BlkToBlkVectorMap mapDF(&m_allocator);
+    BlkToBlkVectorMap mapDF(m_allocator);
     ComputeDominanceFrontiers(postOrder, count, &mapDF);
     EndPhase(PHASE_BUILD_SSA_DF);
 
     // Use the same IDF vector for all blocks to avoid unnecessary memory allocations
-    BlkVector blockIDF(&m_allocator);
+    BlkVector blockIDF(m_allocator);
 
     JITDUMP("Inserting phi functions:\n");
 
@@ -1614,7 +1613,7 @@ void SsaBuilder::RenameVariables(BlkToBlkVectorMap* domTree, SsaRenameState* pRe
     };
     typedef jitstd::vector<BlockWork> BlockWorkStack;
 
-    BlockWorkStack* blocksToDo = new (&m_allocator) BlockWorkStack(&m_allocator);
+    BlockWorkStack* blocksToDo = new (m_allocator) BlockWorkStack(m_allocator);
     blocksToDo->push_back(BlockWork(m_pCompiler->fgFirstBB)); // Probably have to include other roots of dom tree.
 
     while (blocksToDo->size() != 0)
@@ -1739,7 +1738,7 @@ void SsaBuilder::Build()
 
     if (blockCount > DEFAULT_MIN_OPTS_BB_COUNT)
     {
-        postOrder = new (&m_allocator) BasicBlock*[blockCount];
+        postOrder = new (m_allocator) BasicBlock*[blockCount];
     }
     else
     {
@@ -1758,7 +1757,7 @@ void SsaBuilder::Build()
     ComputeImmediateDom(postOrder, count);
 
     // Compute the dominator tree.
-    BlkToBlkVectorMap* domTree = new (&m_allocator) BlkToBlkVectorMap(&m_allocator);
+    BlkToBlkVectorMap* domTree = new (m_allocator) BlkToBlkVectorMap(m_allocator);
     ComputeDominators(postOrder, count, domTree);
     EndPhase(PHASE_BUILD_SSA_DOMS);
 
@@ -1766,8 +1765,8 @@ void SsaBuilder::Build()
     InsertPhiFunctions(postOrder, count);
 
     // Rename local variables and collect UD information for each ssa var.
-    SsaRenameState* pRenameState = new (&m_allocator)
-        SsaRenameState(&m_allocator, m_pCompiler->lvaCount, m_pCompiler->byrefStatesMatchGcHeapStates);
+    SsaRenameState* pRenameState =
+        new (m_allocator) SsaRenameState(m_allocator, m_pCompiler->lvaCount, m_pCompiler->byrefStatesMatchGcHeapStates);
     RenameVariables(domTree, pRenameState);
     EndPhase(PHASE_BUILD_SSA_RENAME);
 

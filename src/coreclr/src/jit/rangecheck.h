@@ -175,10 +175,10 @@ struct Limit
         return false;
     }
 #ifdef DEBUG
-    const char* ToString(CompAllocator* alloc)
+    const char* ToString(CompAllocator alloc)
     {
         unsigned size = 64;
-        char*    buf  = (char*)alloc->Alloc(size);
+        char*    buf  = alloc.allocate<char>(size);
         switch (type)
         {
             case keUndef:
@@ -231,10 +231,10 @@ struct Range
     }
 
 #ifdef DEBUG
-    char* ToString(CompAllocator* alloc)
+    char* ToString(CompAllocator alloc)
     {
         size_t size = 64;
-        char*  buf  = (char*)alloc->Alloc(size);
+        char*  buf  = alloc.allocate<char>(size);
         sprintf_s(buf, size, "<%s, %s>", lLimit.ToString(alloc), uLimit.ToString(alloc));
         return buf;
     }
