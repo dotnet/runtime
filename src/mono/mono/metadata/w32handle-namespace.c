@@ -104,7 +104,7 @@ mono_w32handle_namespace_search_handle (MonoW32Type type, const gchar *name)
 	NamespaceSearchHandleData search_data;
 
 	if (!has_namespace (type))
-		g_error ("%s: type %s does not have a namespace", __func__, type);
+		g_error ("%s: type %s does not have a namespace", __func__, mono_w32handle_get_typename (type));
 
 	mono_trace (G_LOG_LEVEL_DEBUG, MONO_TRACE_IO_LAYER_HANDLE, "%s: Lookup for handle named [%s] type %s",
 		__func__, name, mono_w32handle_get_typename (type));
