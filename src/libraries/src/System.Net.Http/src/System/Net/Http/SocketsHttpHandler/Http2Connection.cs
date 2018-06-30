@@ -29,6 +29,7 @@ namespace System.Net.Http
     {
         private readonly SslStream _stream;
 
+        // NOTE: These are mutable structs; do not make these readonly.
         private ArrayBuffer _incomingBuffer;
         private ArrayBuffer _outgoingBuffer;
 
@@ -57,7 +58,7 @@ namespace System.Net.Http
 
             _httpStreams = new ConcurrentDictionary<int, Http2Stream>();
 
-            _writerLock = new SemaphoreSlim(1);
+            _writerLock = new SemaphoreSlim(1, 1);
 
             _nextStream = 1;
         }
@@ -66,7 +67,7 @@ namespace System.Net.Http
         {
             // Send connection preface
             _outgoingBuffer.EnsureWriteSpace(s_http2ConnectionPreface.Length);
-            s_http2ConnectionPreface.AsSpan().CopyTo(_outgoingBuffer.WriteBytes);
+            s_http2ConnectionPreface.AsSpan().CopyTo(_outgoingBuffer.WriteSpan);
             _outgoingBuffer.Commit(s_http2ConnectionPreface.Length);
 
             // Send empty settings frame
@@ -118,12 +119,12 @@ namespace System.Net.Http
 
         private async Task EnsureIncomingBytesAsync(int minReadBytes)
         {
-            if (_incomingBuffer.ReadBytes.Length >= minReadBytes)
+            if (_incomingBuffer.ReadSpan.Length >= minReadBytes)
             {
                 return;
             }
 
-            int bytesNeeded = minReadBytes - _incomingBuffer.ReadBytes.Length;
+            int bytesNeeded = minReadBytes - _incomingBuffer.ReadSpan.Length;
             _incomingBuffer.EnsureWriteSpace(bytesNeeded);
             int bytesRead = await ReadAtLeastAsync(_stream, _incomingBuffer.WriteMemory, bytesNeeded).ConfigureAwait(false);
             _incomingBuffer.Commit(bytesRead);
@@ -131,7 +132,7 @@ namespace System.Net.Http
 
         private async Task FlushOutgoingBytesAsync()
         {
-            Debug.Assert(_outgoingBuffer.ReadBytes.Length > 0);
+            Debug.Assert(_outgoingBuffer.ReadSpan.Length > 0);
 
             await SendFramesAsync(_outgoingBuffer.ReadMemory).ConfigureAwait(false);
             _outgoingBuffer.Consume(_outgoingBuffer.ReadMemory.Length);
@@ -141,7 +142,7 @@ namespace System.Net.Http
         {
             // Read frame header
             await EnsureIncomingBytesAsync(FrameHeader.Size).ConfigureAwait(false);
-            FrameHeader frameHeader = FrameHeader.Read(_incomingBuffer.ReadBytes);
+            FrameHeader frameHeader = FrameHeader.ReadFrom(_incomingBuffer.ReadSpan);
             _incomingBuffer.Consume(FrameHeader.Size);
 
             if (frameHeader.Length > FrameHeader.MaxLength)
@@ -193,7 +194,7 @@ namespace System.Net.Http
                         case FrameType.RstStream:       // TODO
                             throw new NotImplementedException();
 
-                        case FrameType.PushPromise:     // Should not happen, since we turn this off in our settings
+                        case FrameType.PushPromise:     // Should not happen, since we disable this in our initial SETTINGS (TODO: We aren't currently, but we should)
                         case FrameType.Continuation:    // Should only be received while processing headers in ProcessHeadersFrame
                         default:
                             throw new Http2ProtocolException(Http2ProtocolErrorCode.ProtocolError);
@@ -233,7 +234,7 @@ namespace System.Net.Http
             // Probably want to pass a state object to Decode.
             HPackDecoder.HeaderCallback headerCallback = http2Stream.OnResponseHeader;
 
-            _hpackDecoder.Decode(GetFrameData(_incomingBuffer.ReadBytes.Slice(0, frameHeader.Length), frameHeader.PaddedFlag, frameHeader.PriorityFlag), headerCallback);
+            _hpackDecoder.Decode(GetFrameData(_incomingBuffer.ReadSpan.Slice(0, frameHeader.Length), frameHeader.PaddedFlag, frameHeader.PriorityFlag), headerCallback);
             _incomingBuffer.Consume(frameHeader.Length);
 
             while (!frameHeader.EndHeadersFlag)
@@ -245,7 +246,7 @@ namespace System.Net.Http
                     throw new Http2ProtocolException(Http2ProtocolErrorCode.ProtocolError);
                 }
 
-                _hpackDecoder.Decode(_incomingBuffer.ReadBytes.Slice(0, frameHeader.Length), headerCallback);
+                _hpackDecoder.Decode(_incomingBuffer.ReadSpan.Slice(0, frameHeader.Length), headerCallback);
                 _incomingBuffer.Consume(frameHeader.Length);
             }
 
@@ -294,7 +295,7 @@ namespace System.Net.Http
 
             Http2Stream http2Stream = GetStream(frameHeader.StreamId);
 
-            ReadOnlySpan<byte> frameData = GetFrameData(_incomingBuffer.ReadBytes.Slice(0, frameHeader.Length), hasPad: frameHeader.PaddedFlag, hasPriority: false);
+            ReadOnlySpan<byte> frameData = GetFrameData(_incomingBuffer.ReadSpan.Slice(0, frameHeader.Length), hasPad: frameHeader.PaddedFlag, hasPriority: false);
 
             http2Stream.OnResponseData(frameData, frameHeader.EndStreamFlag);
 
@@ -382,7 +383,7 @@ namespace System.Net.Http
             // Send PING ACK
             WriteFrameHeader(new FrameHeader(FrameHeader.PingLength, FrameType.Ping, FrameFlags.Ack, 0));
             _outgoingBuffer.EnsureWriteSpace(FrameHeader.PingLength);
-            _incomingBuffer.ReadBytes.Slice(0, FrameHeader.PingLength).CopyTo(_outgoingBuffer.WriteBytes);
+            _incomingBuffer.ReadSpan.Slice(0, FrameHeader.PingLength).CopyTo(_outgoingBuffer.WriteSpan);
             _outgoingBuffer.Commit(FrameHeader.PingLength);
             await FlushOutgoingBytesAsync().ConfigureAwait(false);
 
@@ -398,7 +399,7 @@ namespace System.Net.Http
                 throw new Http2ProtocolException(Http2ProtocolErrorCode.FrameSizeError);
             }
 
-            int windowUpdate = (int)((uint)((_incomingBuffer.ReadBytes[0] << 24) | (_incomingBuffer.ReadBytes[1] << 16) | (_incomingBuffer.ReadBytes[2] << 8) | _incomingBuffer.ReadBytes[3]) & 0x7FFFFFFF);
+            int windowUpdate = (int)((uint)((_incomingBuffer.ReadSpan[0] << 24) | (_incomingBuffer.ReadSpan[1] << 16) | (_incomingBuffer.ReadSpan[2] << 8) | _incomingBuffer.ReadSpan[3]) & 0x7FFFFFFF);
 
             Debug.Assert(windowUpdate >= 0);
             if (windowUpdate == 0)
@@ -414,7 +415,7 @@ namespace System.Net.Http
         private void WriteFrameHeader(FrameHeader frameHeader)
         {
             _outgoingBuffer.EnsureWriteSpace(FrameHeader.Size);
-            frameHeader.Write(_outgoingBuffer.WriteBytes);
+            frameHeader.WriteTo(_outgoingBuffer.WriteSpan);
             _outgoingBuffer.Commit(FrameHeader.Size);
         }
 
@@ -463,7 +464,7 @@ namespace System.Net.Http
             public bool EndStreamFlag => (Flags & FrameFlags.EndStream) != 0;
             public bool PriorityFlag => (Flags & FrameFlags.Priority) != 0;
 
-            public static FrameHeader Read(ReadOnlySpan<byte> buffer)
+            public static FrameHeader ReadFrom(ReadOnlySpan<byte> buffer)
             {
                 Debug.Assert(buffer.Length >= Size);
 
@@ -474,7 +475,7 @@ namespace System.Net.Http
                     (int)((uint)((buffer[5] << 24) | (buffer[6] << 16) | (buffer[7] << 8) | buffer[8]) & 0x7FFFFFFF));
             }
 
-            public void Write(Span<byte> buffer)
+            public void WriteTo(Span<byte> buffer)
             {
                 Debug.Assert(buffer.Length >= Size);
 
@@ -547,6 +548,7 @@ namespace System.Net.Http
             }
         }
 
+        // TODO: These are relatively expensive (buffers etc) and should be pooled.
         class Http2Stream : IDisposable
         {
             private readonly Http2Connection _connection;
@@ -585,17 +587,17 @@ namespace System.Net.Http
 
             private void GrowWriteBuffer()
             {
-                _requestBuffer.EnsureWriteSpace(_requestBuffer.WriteBytes.Length + 1);
+                _requestBuffer.EnsureWriteSpace(_requestBuffer.WriteSpan.Length + 1);
             }
 
             private void WriteHeader(ref int bufferOffset, string name, string value)
             {
-                Debug.Assert(bufferOffset <= _requestBuffer.WriteBytes.Length);
+                Debug.Assert(bufferOffset <= _requestBuffer.WriteSpan.Length);
 
                 // TODO: Enforce frame size limit
 
                 int bytesWritten;
-                while (!HPackEncoder.EncodeHeader(name, value, _requestBuffer.WriteBytes.Slice(bufferOffset), out bytesWritten))
+                while (!HPackEncoder.EncodeHeader(name, value, _requestBuffer.WriteSpan.Slice(bufferOffset), out bytesWritten))
                 {
                     GrowWriteBuffer();
                 }
@@ -689,7 +691,7 @@ namespace System.Net.Http
                 }
 
                 FrameHeader frameHeader = new FrameHeader(bufferOffset - FrameHeader.Size, FrameType.Headers, flags, _streamId);
-                frameHeader.Write(_requestBuffer.WriteBytes);
+                frameHeader.WriteTo(_requestBuffer.WriteSpan);
                 _requestBuffer.Commit(bufferOffset);
             }
 
@@ -705,7 +707,7 @@ namespace System.Net.Http
                 // Send request body, if any
                 if (request.Content != null)
                 {
-                    throw new Exception("Request body not supported yet");
+                    throw new NotImplementedException("Request body not supported yet");
                 }
 
                 // Construct response
@@ -723,7 +725,7 @@ namespace System.Net.Http
                 Task readDataAvailableTask = _responseDataAvailable.Task;
 
                 await _connection.SendFramesAsync(_requestBuffer.ReadMemory).ConfigureAwait(false);
-                _requestBuffer.Consume(_requestBuffer.ReadBytes.Length);
+                _requestBuffer.Consume(_requestBuffer.ReadSpan.Length);
 
                 // Wait for response headers to be read.
                 await readDataAvailableTask.ConfigureAwait(false);
@@ -732,7 +734,7 @@ namespace System.Net.Http
                 bool emptyResponse = false;
                 lock (_responseBufferLock)
                 {
-                    if (_responseComplete && _responseBuffer.ReadBytes.Length == 0)
+                    if (_responseComplete && _responseBuffer.ReadSpan.Length == 0)
                     {
                         emptyResponse = true;
                     }
@@ -750,7 +752,7 @@ namespace System.Net.Http
                 return _response;
             }
 
-            private static readonly byte[] StatusHeaderName = Encoding.ASCII.GetBytes(":status");
+            private static readonly byte[] s_statusHeaderName = Encoding.ASCII.GetBytes(":status");
 
             // Copied from HttpConnection
             // TODO: Consolidate this logic?
@@ -758,7 +760,7 @@ namespace System.Net.Http
 
             public void OnResponseHeader(ReadOnlySpan<byte> name, ReadOnlySpan<byte> value)
             {
-                if (name.SequenceEqual(StatusHeaderName))
+                if (name.SequenceEqual(s_statusHeaderName))
                 {
                     if (value.Length != 3)
                         throw new Exception("Invalid status code");
@@ -816,7 +818,7 @@ namespace System.Net.Http
                     Debug.Assert(!_responseComplete);
 
                     _responseBuffer.EnsureWriteSpace(buffer.Length);
-                    buffer.CopyTo(_responseBuffer.WriteBytes);
+                    buffer.CopyTo(_responseBuffer.WriteSpan);
                     _responseBuffer.Commit(buffer.Length);
 
                     if (endStream)
@@ -839,11 +841,11 @@ namespace System.Net.Http
 
             private int ReadFromBuffer(Span<byte> buffer)
             {
-                Debug.Assert(_responseBuffer.ReadBytes.Length > 0);
+                Debug.Assert(_responseBuffer.ReadSpan.Length > 0);
                 Debug.Assert(buffer.Length > 0);
 
-                int bytesToCopy = Math.Min(buffer.Length, _responseBuffer.ReadBytes.Length);
-                _responseBuffer.ReadBytes.CopyTo(buffer);
+                int bytesToCopy = Math.Min(buffer.Length, _responseBuffer.ReadSpan.Length);
+                _responseBuffer.ReadSpan.CopyTo(buffer);
                 _responseBuffer.Consume(bytesToCopy);
                 return bytesToCopy;
             }
@@ -854,7 +856,7 @@ namespace System.Net.Http
 
                 lock (_responseBufferLock)
                 {
-                    if (_responseBuffer.ReadBytes.Length > 0)
+                    if (_responseBuffer.ReadSpan.Length > 0)
                     {
                         return ReadFromBuffer(buffer.Span);
                     }
@@ -876,7 +878,7 @@ namespace System.Net.Http
                 Task onDataAvailable;
                 lock (_responseBufferLock)
                 {
-                    if (_responseBuffer.ReadBytes.Length > 0)
+                    if (_responseBuffer.ReadSpan.Length > 0)
                     {
                         return new ValueTask<int>(ReadFromBuffer(buffer.Span));
                     }
@@ -973,7 +975,7 @@ namespace System.Net.Http
             public Http2ProtocolErrorCode ErrorCode => _errorCode;
         }
 
-        internal static async Task<int> ReadAtLeastAsync(Stream stream, Memory<byte> buffer, int minReadBytes)
+        internal static async ValueTask<int> ReadAtLeastAsync(Stream stream, Memory<byte> buffer, int minReadBytes)
         {
             Debug.Assert(buffer.Length >= minReadBytes);
 
