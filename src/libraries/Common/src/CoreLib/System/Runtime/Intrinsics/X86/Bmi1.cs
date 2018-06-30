@@ -30,22 +30,22 @@ namespace System.Runtime.Intrinsics.X86
         /// unsigned int _bextr_u32 (unsigned int a, unsigned int start, unsigned int len)
         ///   BEXTR r32a, reg/m32, r32b
         /// </summary>
-        public static uint BitFieldExtract(uint value, uint start, uint length) => BitFieldExtract(value, start, length);
+        public static uint BitFieldExtract(uint value, byte start, byte length) => BitFieldExtract(value, start, length);
         /// <summary>
         /// unsigned __int64 _bextr_u64 (unsigned __int64 a, unsigned int start, unsigned int len)
         ///   BEXTR r64a, reg/m64, r64b
         /// </summary>
-        public static ulong BitFieldExtract(ulong value, ulong start, ulong length) => BitFieldExtract(value, start, length);
+        public static ulong BitFieldExtract(ulong value, byte start, byte length) => BitFieldExtract(value, start, length);
         /// <summary>
         /// unsigned int _bextr2_u32 (unsigned int a, unsigned int control)
         ///   BEXTR r32a, reg/m32, r32b
         /// </summary>
-        public static uint BitFieldExtract(uint value, uint control) => BitFieldExtract(value, control);
+        public static uint BitFieldExtract(uint value, ushort control) => BitFieldExtract(value, control);
         /// <summary>
         /// unsigned __int64 _bextr2_u64 (unsigned __int64 a, unsigned __int64 control)
         ///   BEXTR r64a, reg/m64, r64b
         /// </summary>
-        public static ulong BitFieldExtract(ulong value, ulong control) => BitFieldExtract(value, control);
+        public static ulong BitFieldExtract(ulong value, ushort control) => BitFieldExtract(value, control);
         
         /// <summary>
         /// unsigned int _blsi_u32 (unsigned int a)
@@ -62,12 +62,12 @@ namespace System.Runtime.Intrinsics.X86
         /// unsigned int _blsmsk_u32 (unsigned int a)
         ///   BLSMSK reg, reg/m32
         /// </summary>
-        public static uint GetMaskUptoLowestSetBit(uint value) => GetMaskUptoLowestSetBit(value);
+        public static uint GetMaskUpToLowestSetBit(uint value) => GetMaskUpToLowestSetBit(value);
         /// <summary>
         /// unsigned __int64 _blsmsk_u64 (unsigned __int64 a)
         ///   BLSMSK reg, reg/m64
         /// </summary>
-        public static ulong GetMaskUptoLowestSetBit(ulong value) => GetMaskUptoLowestSetBit(value);
+        public static ulong GetMaskUpToLowestSetBit(ulong value) => GetMaskUpToLowestSetBit(value);
         
         /// <summary>
         /// unsigned int _blsr_u32 (unsigned int a)
