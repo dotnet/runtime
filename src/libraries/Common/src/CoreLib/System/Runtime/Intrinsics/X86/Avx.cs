@@ -241,6 +241,10 @@ namespace System.Runtime.Intrinsics.X86
         /// </summary>
         public static byte Extract(Vector256<byte> value, byte index)
         {
+            if (!IsSupported)
+            {
+                throw new PlatformNotSupportedException();
+            }
             return Unsafe.Add<byte>(ref Unsafe.As<Vector256<byte>, byte>(ref value), index & 0x1F);
         }
 
@@ -251,6 +255,10 @@ namespace System.Runtime.Intrinsics.X86
         /// </summary>
         public static ushort Extract(Vector256<ushort> value, byte index)
         {
+            if (!IsSupported)
+            {
+                throw new PlatformNotSupportedException();
+            }
             return Unsafe.Add<ushort>(ref Unsafe.As<Vector256<ushort>, ushort>(ref value), index & 0xF);
         }
 
@@ -260,6 +268,10 @@ namespace System.Runtime.Intrinsics.X86
         /// </summary>
         public static int Extract(Vector256<int> value, byte index)
         {
+            if (!IsSupported)
+            {
+                throw new PlatformNotSupportedException();
+            }
             return Unsafe.Add<int>(ref Unsafe.As<Vector256<int>, int>(ref value), index & 0x7);
         }
 
@@ -269,6 +281,10 @@ namespace System.Runtime.Intrinsics.X86
         /// </summary>
         public static uint Extract(Vector256<uint> value, byte index)
         {
+            if (!IsSupported)
+            {
+                throw new PlatformNotSupportedException();
+            }
             return Unsafe.Add<uint>(ref Unsafe.As<Vector256<uint>, uint>(ref value), index & 0x7);
         }
 
@@ -278,7 +294,7 @@ namespace System.Runtime.Intrinsics.X86
         /// </summary>
         public static long Extract(Vector256<long> value, byte index)
         {
-            if (IntPtr.Size != 8)
+            if (!IsSupported || (IntPtr.Size != 8))
             {
                 throw new PlatformNotSupportedException();
             }
@@ -291,7 +307,7 @@ namespace System.Runtime.Intrinsics.X86
         /// </summary>
         public static ulong Extract(Vector256<ulong> value, byte index)
         {
-            if (IntPtr.Size != 8)
+            if (!IsSupported || (IntPtr.Size != 8))
             {
                 throw new PlatformNotSupportedException();
             }
@@ -523,6 +539,11 @@ namespace System.Runtime.Intrinsics.X86
         /// </summary>
         public static Vector256<long> Insert(Vector256<long> value, long data, byte index)
         {
+            if (IntPtr.Size != 8)
+            {
+                throw new PlatformNotSupportedException();
+            }
+
             unsafe
             {
                 index &= 0x3;
@@ -539,6 +560,11 @@ namespace System.Runtime.Intrinsics.X86
         /// </summary>
         public static Vector256<ulong> Insert(Vector256<ulong> value, ulong data, byte index)
         {
+            if (IntPtr.Size != 8)
+            {
+                throw new PlatformNotSupportedException();
+            }
+
             unsafe
             {
                 index &= 0x3;
