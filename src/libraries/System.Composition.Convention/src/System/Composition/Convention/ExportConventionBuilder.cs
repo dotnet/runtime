@@ -9,8 +9,6 @@ using System.Linq;
 using System.Text;
 using System.Reflection;
 
-using Microsoft.Internal;
-
 namespace System.Composition.Convention
 {
     /// <summary>
@@ -43,7 +41,10 @@ namespace System.Composition.Convention
         /// <returns>An export builder allowing further configuration.</returns>
         public ExportConventionBuilder AsContractType(Type type)
         {
-            Requires.NotNull(type, nameof(type));
+            if (type == null)
+            {
+                throw new ArgumentNullException(nameof(type));
+            }
             _contractType = type;
             return this;
         }
@@ -55,7 +56,14 @@ namespace System.Composition.Convention
         /// <returns>An export builder allowing further configuration.</returns>
         public ExportConventionBuilder AsContractName(string contractName)
         {
-            Requires.NotNullOrEmpty(contractName, nameof(contractName));
+            if(contractName == null)
+            {
+                throw new ArgumentNullException(nameof(contractName));
+            }
+            if(contractName.Length == 0)
+            {
+                throw new ArgumentException(SR.Format(SR.ArgumentException_EmptyString, nameof(contractName)), nameof(contractName));
+            }
             _contractName = contractName;
             return this;
         }
@@ -67,7 +75,10 @@ namespace System.Composition.Convention
         /// <returns>An export builder allowing further configuration.</returns>
         public ExportConventionBuilder AsContractName(Func<Type, string> getContractNameFromPartType)
         {
-            Requires.NotNull(getContractNameFromPartType, nameof(getContractNameFromPartType));
+            if (getContractNameFromPartType == null)
+            {
+                throw new ArgumentNullException(nameof(getContractNameFromPartType));
+            }
             _getContractNameFromPartType = getContractNameFromPartType;
             return this;
         }
@@ -80,7 +91,15 @@ namespace System.Composition.Convention
         /// <returns>An export builder allowing further configuration.</returns>
         public ExportConventionBuilder AddMetadata(string name, object value)
         {
-            Requires.NotNullOrEmpty(name, nameof(name));
+            if (name == null)
+            {
+                throw new ArgumentNullException(nameof(name));
+            }
+
+            if (name.Length == 0)
+            {
+                throw new ArgumentException(SR.Format(SR.ArgumentException_EmptyString, nameof(name)), nameof(name));
+            }
             if (_metadataItems == null)
             {
                 _metadataItems = new List<Tuple<string, object>>();
@@ -97,8 +116,20 @@ namespace System.Composition.Convention
         /// <returns>An export builder allowing further configuration.</returns>
         public ExportConventionBuilder AddMetadata(string name, Func<Type, object> getValueFromPartType)
         {
-            Requires.NotNullOrEmpty(name, nameof(name));
-            Requires.NotNull(getValueFromPartType, nameof(getValueFromPartType));
+            if (name == null)
+            {
+                throw new ArgumentNullException(nameof(name));
+            }
+            if (name.Length == 0)
+            {
+                throw new ArgumentException(SR.Format(SR.ArgumentException_EmptyString, nameof(name)), nameof(name));
+            }
+
+            if (getValueFromPartType == null)
+            {
+                throw new ArgumentNullException(nameof(getValueFromPartType));
+            }
+            
             if (_metadataItemFuncs == null)
             {
                 _metadataItemFuncs = new List<Tuple<string, Func<Type, object>>>();

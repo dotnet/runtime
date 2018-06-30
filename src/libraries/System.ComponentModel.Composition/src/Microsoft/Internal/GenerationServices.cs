@@ -4,6 +4,7 @@
 
 using System;
 using System.Collections;
+using System.Diagnostics;
 using System.Globalization;
 using System.Linq;
 using System.Reflection;
@@ -71,7 +72,7 @@ namespace Microsoft.Internal
         /// <returns></returns>
         public static void LoadValue(this ILGenerator ilGenerator, object value)
         {
-            Assumes.NotNull(ilGenerator);
+            Debug.Assert(ilGenerator != null);
 
             //
             // Get nulls out of the way - they are basically typeless, so we just load null
@@ -168,10 +169,22 @@ namespace Microsoft.Internal
         /// <returns></returns>
         public static void AddItemToLocalDictionary(this ILGenerator ilGenerator, LocalBuilder dictionary, object key, object value)
         {
-            Assumes.NotNull(ilGenerator);
-            Assumes.NotNull(dictionary);
-            Assumes.NotNull(key);
-            Assumes.NotNull(value);
+            Debug.Assert(ilGenerator != null);
+
+            if (dictionary == null)
+            {
+                throw new ArgumentNullException(nameof(dictionary));
+            }
+
+            if (key == null)
+            {
+                throw new ArgumentNullException(nameof(key));
+            }
+
+            if (value == null)
+            {
+                throw new ArgumentNullException(nameof(value));
+            }
 
             ilGenerator.Emit(OpCodes.Ldloc, dictionary);
             ilGenerator.LoadValue(key);
@@ -187,10 +200,22 @@ namespace Microsoft.Internal
         /// <returns></returns>
         public static void AddLocalToLocalDictionary(this ILGenerator ilGenerator, LocalBuilder dictionary, object key, LocalBuilder value)
         {
-            Assumes.NotNull(ilGenerator);
-            Assumes.NotNull(dictionary);
-            Assumes.NotNull(key);
-            Assumes.NotNull(value);
+            Debug.Assert(ilGenerator != null);
+
+            if (dictionary == null)
+            {
+                throw new ArgumentNullException(nameof(dictionary));
+            }
+
+            if (key == null)
+            {
+                throw new ArgumentNullException(nameof(key));
+            }
+
+            if (value == null)
+            {
+                throw new ArgumentNullException(nameof(value));
+            }
 
             ilGenerator.Emit(OpCodes.Ldloc, dictionary);
             ilGenerator.LoadValue(key);
@@ -206,9 +231,17 @@ namespace Microsoft.Internal
         /// <returns></returns>
         public static void GetExceptionDataAndStoreInLocal(this ILGenerator ilGenerator, LocalBuilder exception, LocalBuilder dataStore)
         {
-            Assumes.NotNull(ilGenerator);
-            Assumes.NotNull(exception);
-            Assumes.NotNull(dataStore);
+            Debug.Assert(ilGenerator != null);
+
+            if (exception == null)
+            {
+                throw new ArgumentNullException(nameof(exception));
+            }
+
+            if (dataStore == null)
+            {
+                throw new ArgumentNullException(nameof(dataStore));
+            }
 
             ilGenerator.Emit(OpCodes.Ldloc, exception);
             ilGenerator.Emit(OpCodes.Callvirt, ExceptionGetData);
@@ -217,8 +250,12 @@ namespace Microsoft.Internal
 
         private static void LoadEnumerable(this ILGenerator ilGenerator, IEnumerable enumerable)
         {
-            Assumes.NotNull(ilGenerator);
-            Assumes.NotNull(enumerable);
+            Debug.Assert(ilGenerator != null);
+
+            if (enumerable == null)
+            {
+                throw new ArgumentNullException(nameof(enumerable));
+            }
 
             // We load enumerable as an array - this is the most compact and efficient way of representing it
             Type elementType = null;
@@ -281,7 +318,8 @@ namespace Microsoft.Internal
 
         private static void LoadString(this ILGenerator ilGenerator, string s)
         {
-            Assumes.NotNull(ilGenerator);
+            Debug.Assert(ilGenerator != null);
+
             if (s == null)
             {
                 ilGenerator.LoadNull();
@@ -294,31 +332,36 @@ namespace Microsoft.Internal
 
         private static void LoadInt(this ILGenerator ilGenerator, int value)
         {
-            Assumes.NotNull(ilGenerator);
+            Debug.Assert(ilGenerator != null);
+
             ilGenerator.Emit(OpCodes.Ldc_I4, value);
         }
 
         private static void LoadLong(this ILGenerator ilGenerator, long value)
         {
-            Assumes.NotNull(ilGenerator);
+            Debug.Assert(ilGenerator != null);
+
             ilGenerator.Emit(OpCodes.Ldc_I8, value);
         }
 
         private static void LoadFloat(this ILGenerator ilGenerator, float value)
         {
-            Assumes.NotNull(ilGenerator);
+            Debug.Assert(ilGenerator != null);
+
             ilGenerator.Emit(OpCodes.Ldc_R4, value);
         }
 
         private static void LoadDouble(this ILGenerator ilGenerator, double value)
         {
-            Assumes.NotNull(ilGenerator);
+            Debug.Assert(ilGenerator != null);
+
             ilGenerator.Emit(OpCodes.Ldc_R8, value);
         }
 
         private static void LoadTypeOf(this ILGenerator ilGenerator, Type type)
         {
-            Assumes.NotNull(ilGenerator);
+            Debug.Assert(ilGenerator != null);
+
             //typeofs() translate into ldtoken and Type::GetTypeFromHandle call
             ilGenerator.Emit(OpCodes.Ldtoken, type);
             ilGenerator.EmitCall(OpCodes.Call, GenerationServices._typeGetTypeFromHandleMethod, null);

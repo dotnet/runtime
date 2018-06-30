@@ -5,7 +5,6 @@
 using System.ComponentModel.Composition;
 using System.ComponentModel.Composition.Primitives;
 using System.Globalization;
-using Microsoft.Internal;
 
 namespace System.ComponentModel
 {
@@ -20,7 +19,10 @@ namespace System.ComponentModel
 
         public static ArgumentException CreateContainsNullElement(string parameterName)
         {
-            Assumes.NotNull(parameterName);
+            if(parameterName == null)
+            {
+                throw new ArgumentNullException(nameof(parameterName));
+            }
 
             string message = Format(SR.Argument_NullElement, parameterName);
 
@@ -29,14 +31,25 @@ namespace System.ComponentModel
 
         public static ObjectDisposedException CreateObjectDisposed(object instance)
         {
-            Assumes.NotNull(instance);
+            if(instance == null)
+            {
+                throw new ArgumentNullException(nameof(instance));
+            }
 
             return new ObjectDisposedException(instance.GetType().ToString());
         }
 
         public static NotImplementedException CreateNotOverriddenByDerived(string memberName)
         {
-            Assumes.NotNullOrEmpty(memberName);
+            if(memberName == null)
+            {
+                throw new ArgumentNullException(nameof(memberName));
+            }
+
+            if(memberName.Length == 0) 
+            {
+                throw new ArgumentException(SR.Format(SR.ArgumentException_EmptyString, nameof(memberName)), nameof(memberName));
+            }
 
             string message = Format(SR.NotImplemented_NotOverriddenByDerived, memberName);
 
@@ -45,7 +58,16 @@ namespace System.ComponentModel
 
         public static ArgumentException CreateExportDefinitionNotOnThisComposablePart(string parameterName)
         {
-            Assumes.NotNullOrEmpty(parameterName);
+            if(parameterName == null)
+            {
+                throw new ArgumentNullException(nameof(parameterName));
+            }
+
+            if(parameterName.Length == 0) 
+            {
+                throw new ArgumentException(SR.ArgumentException_EmptyString);
+            }
+
 
             string message = Format(SR.ExportDefinitionNotOnThisComposablePart, parameterName);
 
@@ -54,7 +76,15 @@ namespace System.ComponentModel
 
         public static ArgumentException CreateImportDefinitionNotOnThisComposablePart(string parameterName)
         {
-            Assumes.NotNullOrEmpty(parameterName);
+            if(parameterName == null)
+            {
+                throw new ArgumentNullException(nameof(parameterName));
+            }
+
+            if(parameterName.Length == 0) 
+            {
+                throw new ArgumentException(SR.Format(SR.ArgumentException_EmptyString, nameof(parameterName)), nameof(parameterName));
+            }
 
             string message = Format(SR.ImportDefinitionNotOnThisComposablePart, parameterName);
 
@@ -63,7 +93,20 @@ namespace System.ComponentModel
 
         public static CompositionException CreateCannotGetExportedValue(ComposablePart part, ExportDefinition definition, Exception innerException)
         {
-            Assumes.NotNull(part, definition, innerException);
+            if(part == null)
+            {
+                throw new ArgumentNullException(nameof(part));
+            }
+            
+            if(definition == null)
+            {
+                throw new ArgumentNullException(nameof(definition));
+            }
+
+            if(innerException == null)
+            {
+                throw new ArgumentNullException(nameof(innerException));
+            }
 
             return new CompositionException(
                 ErrorBuilder.CreateCannotGetExportedValue(part, definition, innerException));
@@ -71,15 +114,35 @@ namespace System.ComponentModel
 
         public static ArgumentException CreateReflectionModelInvalidPartDefinition(string parameterName, Type partDefinitionType)
         {
-            Assumes.NotNullOrEmpty(parameterName);
-            Assumes.NotNull(partDefinitionType);
+            if(parameterName == null)
+            {
+                throw new ArgumentNullException(nameof(parameterName));
+            }
+
+            if(parameterName.Length == 0)
+            {
+                throw new ArgumentException(SR.Format(SR.ArgumentException_EmptyString, nameof(parameterName)), nameof(parameterName));
+            }
+
+            if(partDefinitionType == null)
+            {
+                throw new ArgumentNullException(nameof(partDefinitionType));
+            }
 
             return new ArgumentException(string.Format(CultureInfo.CurrentCulture, SR.ReflectionModel_InvalidPartDefinition, partDefinitionType), parameterName);
         }
 
         public static ArgumentException ExportFactory_TooManyGenericParameters(string typeName)
         {
-            Assumes.NotNullOrEmpty(typeName);
+            if(typeName == null)
+            {
+                throw new ArgumentNullException(nameof(typeName));
+            }
+
+            if(typeName.Length == 0)
+            {
+                throw new ArgumentException(SR.Format(SR.ArgumentException_EmptyString, nameof(typeName)), nameof(typeName));
+            }
 
             string message = Format(SR.ExportFactory_TooManyGenericParameters, typeName);
 

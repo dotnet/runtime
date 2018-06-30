@@ -2,8 +2,6 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
-using Microsoft.Internal;
-
 namespace System.Composition.Hosting.Util
 {
     // Extremely performance-sensitive.
@@ -35,9 +33,10 @@ namespace System.Composition.Hosting.Util
                 return;
             }
 
-            // This overload of IsTrue doesn't call String.Format unless required.
-            // Do, not switch to other version as it affects performance.
-            Assumes.IsTrue(e.Index != index, "An item with the key '{0}' has already been added.", index);
+            if(e.Index == index)
+            {
+                throw new ArgumentException(SR.Format(SR.Key_Already_Exist, index), nameof(index));
+            }
 
             for (int offset = 1; offset <= LocalOffsetMax; ++offset)
             {
@@ -49,7 +48,10 @@ namespace System.Composition.Hosting.Util
                     return;
                 }
 
-                Assumes.IsTrue(e.Index != index, "An item with the key '{0}' has already been added.", index);
+                if (e.Index == index)
+                {
+                    throw new ArgumentException(SR.Format(SR.Key_Already_Exist, index), nameof(index));
+                }
             }
 
             if (_overflow == null)

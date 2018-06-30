@@ -53,7 +53,10 @@ namespace Microsoft.Composition.Diagnostics
 
         private static void EnsureEnabled(bool condition)
         {
-            Assumes.IsTrue(condition, "To avoid unnecessary work when a trace level has not been enabled, check CanWriteXXX before calling this method.");
+            if (!condition)
+            {
+                throw new Exception(SR.Trace_Level_Not_Enabled);
+            }
         }
     }
 }
