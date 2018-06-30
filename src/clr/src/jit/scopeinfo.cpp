@@ -160,7 +160,7 @@ CodeGen::siScope* CodeGen::siNewScope(unsigned LVnum, unsigned varNum)
         siEndTrackedScope(varIndex);
     }
 
-    siScope* newScope = (siScope*)compiler->compGetMem(sizeof(*newScope), CMK_SiScope);
+    siScope* newScope = compiler->getAllocator(CMK_SiScope).allocate<siScope>(1);
 
     newScope->scStartLoc.CaptureLocation(getEmitter());
     assert(newScope->scStartLoc.Valid());
@@ -825,7 +825,7 @@ void CodeGen::siDispOpenScopes()
 
 CodeGen::psiScope* CodeGen::psiNewPrologScope(unsigned LVnum, unsigned slotNum)
 {
-    psiScope* newScope = (psiScope*)compiler->compGetMem(sizeof(*newScope), CMK_SiScope);
+    psiScope* newScope = compiler->getAllocator(CMK_SiScope).allocate<psiScope>(1);
 
     newScope->scStartLoc.CaptureLocation(getEmitter());
     assert(newScope->scStartLoc.Valid());

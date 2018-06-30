@@ -98,7 +98,7 @@ class Compiler;
 /*****************************************************************************/
 
 //
-// Declare global operator new overloads that use the Compiler::compGetMem() function for allocation.
+// Declare global operator new overloads that use the compiler's arena allocator
 //
 
 // I wanted to make the second argument optional, with default = CMK_Unknown, but that
@@ -3665,7 +3665,7 @@ public:
     template <typename T>
     T* fgAllocateTypeForEachBlk(CompMemKind cmk = CMK_Unknown)
     {
-        return (T*)compGetMem((fgBBNumMax + 1) * sizeof(T), cmk);
+        return getAllocator(cmk).allocate<T>(fgBBNumMax + 1);
     }
 
     // BlockSets are relative to a specific set of BasicBlock numbers. If that changes
@@ -4394,7 +4394,7 @@ public:
         // The switch block "switchBlk" just had an entry with value "from" modified to the value "to".
         // Update "this" as necessary: if "from" is no longer an element of the jump table of "switchBlk",
         // remove it from "this", and ensure that "to" is a member.  Use "alloc" to do any required allocation.
-        void UpdateTarget(CompAllocator* alloc, BasicBlock* switchBlk, BasicBlock* from, BasicBlock* to);
+        void UpdateTarget(CompAllocator alloc, BasicBlock* switchBlk, BasicBlock* from, BasicBlock* to);
     };
 
     typedef JitHashTable<BasicBlock*, JitPtrKeyFuncs<BasicBlock>, SwitchUniqueSuccSet> BlockToSwitchDescMap;
@@ -8615,95 +8615,11 @@ public:
                           JitFlags*                        compileFlags,
                           CorInfoInstantiationVerification instVerInfo);
 
-    ArenaAllocator* compGetAllocator();
+    ArenaAllocator* compGetArenaAllocator();
 
 #if MEASURE_MEM_ALLOC
-
     static bool s_dspMemStats; // Display per-phase memory statistics for every function
-
-    struct MemStats
-    {
-        unsigned allocCnt;                 // # of allocs
-        UINT64   allocSz;                  // total size of those alloc.
-        UINT64   allocSzMax;               // Maximum single allocation.
-        UINT64   allocSzByKind[CMK_Count]; // Classified by "kind".
-        UINT64   nraTotalSizeAlloc;
-        UINT64   nraTotalSizeUsed;
-
-        static const char* s_CompMemKindNames[]; // Names of the kinds.
-
-        MemStats() : allocCnt(0), allocSz(0), allocSzMax(0), nraTotalSizeAlloc(0), nraTotalSizeUsed(0)
-        {
-            for (int i = 0; i < CMK_Count; i++)
-            {
-                allocSzByKind[i] = 0;
-            }
-        }
-        MemStats(const MemStats& ms)
-            : allocCnt(ms.allocCnt)
-            , allocSz(ms.allocSz)
-            , allocSzMax(ms.allocSzMax)
-            , nraTotalSizeAlloc(ms.nraTotalSizeAlloc)
-            , nraTotalSizeUsed(ms.nraTotalSizeUsed)
-        {
-            for (int i = 0; i < CMK_Count; i++)
-            {
-                allocSzByKind[i] = ms.allocSzByKind[i];
-            }
-        }
-
-        // Until we have ubiquitous constructors.
-        void Init()
-        {
-            this->MemStats::MemStats();
-        }
-
-        void AddAlloc(size_t sz, CompMemKind cmk)
-        {
-            allocCnt += 1;
-            allocSz += sz;
-            if (sz > allocSzMax)
-            {
-                allocSzMax = sz;
-            }
-            allocSzByKind[cmk] += sz;
-        }
-
-        void Print(FILE* f);       // Print these stats to f.
-        void PrintByKind(FILE* f); // Do just the by-kind histogram part.
-    };
-    MemStats genMemStats;
-
-    struct AggregateMemStats : public MemStats
-    {
-        unsigned nMethods;
-
-        AggregateMemStats() : MemStats(), nMethods(0)
-        {
-        }
-
-        void Add(const MemStats& ms)
-        {
-            nMethods++;
-            allocCnt += ms.allocCnt;
-            allocSz += ms.allocSz;
-            allocSzMax = max(allocSzMax, ms.allocSzMax);
-            for (int i = 0; i < CMK_Count; i++)
-            {
-                allocSzByKind[i] += ms.allocSzByKind[i];
-            }
-            nraTotalSizeAlloc += ms.nraTotalSizeAlloc;
-            nraTotalSizeUsed += ms.nraTotalSizeUsed;
-        }
-
-        void Print(FILE* f); // Print these stats to jitstdout.
-    };
-
-    static CritSecObject     s_memStatsLock;    // This lock protects the data structures below.
-    static MemStats          s_maxCompMemStats; // Stats for the compilation with the largest amount allocated.
-    static AggregateMemStats s_aggMemStats;     // Aggregates statistics for all compilations.
-
-#endif // MEASURE_MEM_ALLOC
+#endif                         // MEASURE_MEM_ALLOC
 
 #if LOOP_HOIST_STATS
     unsigned m_loopsConsidered;
@@ -8721,10 +8637,6 @@ public:
 
     static void PrintAggregateLoopHoistStats(FILE* f);
 #endif // LOOP_HOIST_STATS
-
-    void* compGetMemArray(size_t numElem, size_t elemSize, CompMemKind cmk = CMK_Unknown);
-    void* compGetMem(size_t sz, CompMemKind cmk = CMK_Unknown);
-    void compFreeMem(void*);
 
     bool compIsForImportOnly();
     bool compIsForInlining();
@@ -8749,7 +8661,7 @@ public:
     {
         VarScopeDsc*             data;
         VarScopeListNode*        next;
-        static VarScopeListNode* Create(VarScopeDsc* value, CompAllocator* alloc)
+        static VarScopeListNode* Create(VarScopeDsc* value, CompAllocator alloc)
         {
             VarScopeListNode* node = new (alloc) VarScopeListNode;
             node->data             = value;
@@ -8762,7 +8674,7 @@ public:
     {
         VarScopeListNode*       head;
         VarScopeListNode*       tail;
-        static VarScopeMapInfo* Create(VarScopeListNode* node, CompAllocator* alloc)
+        static VarScopeMapInfo* Create(VarScopeListNode* node, CompAllocator alloc)
         {
             VarScopeMapInfo* info = new (alloc) VarScopeMapInfo;
             info->head            = node;
@@ -8832,19 +8744,9 @@ protected:
     bool skipMethod();
 #endif
 
-    ArenaAllocator* compAllocator;
+    ArenaAllocator* compArenaAllocator;
 
 public:
-    CompAllocator* compAllocatorGeneric; // An allocator that uses the CMK_Generic tracker.
-#if MEASURE_MEM_ALLOC
-    CompAllocator* compAllocatorBitset;    // An allocator that uses the CMK_bitset tracker.
-    CompAllocator* compAllocatorGC;        // An allocator that uses the CMK_GC tracker.
-    CompAllocator* compAllocatorLoopHoist; // An allocator that uses the CMK_LoopHoist tracker.
-#ifdef DEBUG
-    CompAllocator* compAllocatorDebugOnly; // An allocator that uses the CMK_DebugOnly tracker.
-#endif                                     // DEBUG
-#endif                                     // MEASURE_MEM_ALLOC
-
     void compFunctionTraceStart();
     void compFunctionTraceEnd(void* methodCodePtr, ULONG methodCodeSize, bool isNYI);
 
@@ -8882,47 +8784,25 @@ public:
     // Assumes called as part of process shutdown; does any compiler-specific work associated with that.
     static void ProcessShutdownWork(ICorStaticInfo* statInfo);
 
-    CompAllocator* getAllocator()
+    CompAllocator getAllocator(CompMemKind cmk = CMK_Generic)
     {
-        return compAllocatorGeneric;
+        return CompAllocator(compArenaAllocator, cmk);
     }
 
-#if MEASURE_MEM_ALLOC
-    CompAllocator* getAllocatorBitset()
+    CompAllocator getAllocatorGC()
     {
-        return compAllocatorBitset;
+        return getAllocator(CMK_GC);
     }
-    CompAllocator* getAllocatorGC()
+
+    CompAllocator getAllocatorLoopHoist()
     {
-        return compAllocatorGC;
+        return getAllocator(CMK_LoopHoist);
     }
-    CompAllocator* getAllocatorLoopHoist()
-    {
-        return compAllocatorLoopHoist;
-    }
-#else  // !MEASURE_MEM_ALLOC
-    CompAllocator* getAllocatorBitset()
-    {
-        return compAllocatorGeneric;
-    }
-    CompAllocator* getAllocatorGC()
-    {
-        return compAllocatorGeneric;
-    }
-    CompAllocator* getAllocatorLoopHoist()
-    {
-        return compAllocatorGeneric;
-    }
-#endif // !MEASURE_MEM_ALLOC
 
 #ifdef DEBUG
-    CompAllocator* getAllocatorDebugOnly()
+    CompAllocator getAllocatorDebugOnly()
     {
-#if MEASURE_MEM_ALLOC
-        return compAllocatorDebugOnly;
-#else  // !MEASURE_MEM_ALLOC
-        return compAllocatorGeneric;
-#endif // !MEASURE_MEM_ALLOC
+        return getAllocator(CMK_DebugOnly);
     }
 #endif // DEBUG
 
@@ -9293,7 +9173,7 @@ public:
         if (compRoot->m_fieldSeqStore == nullptr)
         {
             // Create a CompAllocator that labels sub-structure with CMK_FieldSeqStore, and use that for allocation.
-            CompAllocator* ialloc     = new (this, CMK_FieldSeqStore) CompAllocator(this, CMK_FieldSeqStore);
+            CompAllocator ialloc(getAllocator(CMK_FieldSeqStore));
             compRoot->m_fieldSeqStore = new (ialloc) FieldSeqStore(ialloc);
         }
         return compRoot->m_fieldSeqStore;
@@ -9314,8 +9194,8 @@ public:
         {
             // Create a CompAllocator that labels sub-structure with CMK_ZeroOffsetFieldMap, and use that for
             // allocation.
-            CompAllocator* ialloc = new (this, CMK_ZeroOffsetFieldMap) CompAllocator(this, CMK_ZeroOffsetFieldMap);
-            m_zeroOffsetFieldMap  = new (ialloc) NodeToFieldSeqMap(ialloc);
+            CompAllocator ialloc(getAllocator(CMK_ZeroOffsetFieldMap));
+            m_zeroOffsetFieldMap = new (ialloc) NodeToFieldSeqMap(ialloc);
         }
         return m_zeroOffsetFieldMap;
     }
@@ -9341,7 +9221,7 @@ public:
         if (compRoot->m_arrayInfoMap == nullptr)
         {
             // Create a CompAllocator that labels sub-structure with CMK_ArrayInfoMap, and use that for allocation.
-            CompAllocator* ialloc    = new (this, CMK_ArrayInfoMap) CompAllocator(this, CMK_ArrayInfoMap);
+            CompAllocator ialloc(getAllocator(CMK_ArrayInfoMap));
             compRoot->m_arrayInfoMap = new (ialloc) NodeToArrayInfoMap(ialloc);
         }
         return compRoot->m_arrayInfoMap;
@@ -9396,7 +9276,7 @@ public:
         if (compRoot->m_memorySsaMap[memoryKind] == nullptr)
         {
             // Create a CompAllocator that labels sub-structure with CMK_ArrayInfoMap, and use that for allocation.
-            CompAllocator* ialloc                = new (this, CMK_ArrayInfoMap) CompAllocator(this, CMK_ArrayInfoMap);
+            CompAllocator ialloc(getAllocator(CMK_ArrayInfoMap));
             compRoot->m_memorySsaMap[memoryKind] = new (ialloc) NodeToUnsignedMap(ialloc);
         }
         return compRoot->m_memorySsaMap[memoryKind];
@@ -9455,25 +9335,6 @@ public:
     bool killGCRefs(GenTree* tree);
 
 }; // end of class Compiler
-
-// Inline methods of CompAllocator.
-void* CompAllocator::Alloc(size_t sz)
-{
-#if MEASURE_MEM_ALLOC
-    return m_comp->compGetMem(sz, m_cmk);
-#else
-    return m_comp->compGetMem(sz);
-#endif
-}
-
-void* CompAllocator::ArrayAlloc(size_t elems, size_t elemSize)
-{
-#if MEASURE_MEM_ALLOC
-    return m_comp->compGetMemArray(elems, elemSize, m_cmk);
-#else
-    return m_comp->compGetMemArray(elems, elemSize);
-#endif
-}
 
 // LclVarDsc constructor. Uses Compiler, so must come after Compiler definition.
 inline LclVarDsc::LclVarDsc(Compiler* comp)
@@ -9564,7 +9425,7 @@ protected:
     Compiler*            m_compiler;
     ArrayStack<GenTree*> m_ancestors;
 
-    GenTreeVisitor(Compiler* compiler) : m_compiler(compiler), m_ancestors(compiler)
+    GenTreeVisitor(Compiler* compiler) : m_compiler(compiler), m_ancestors(compiler->getAllocator(CMK_ArrayStack))
     {
         assert(compiler != nullptr);
 

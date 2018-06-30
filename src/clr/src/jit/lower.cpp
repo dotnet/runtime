@@ -1935,7 +1935,7 @@ void Lowering::LowerFastTailCall(GenTreeCall* call)
     // call could over-write the stack arg that is setup earlier.
     GenTree*             firstPutArgStk = nullptr;
     GenTreeArgList*      args;
-    ArrayStack<GenTree*> putargs(comp);
+    ArrayStack<GenTree*> putargs(comp->getAllocator(CMK_ArrayStack));
 
     for (args = call->gtCallArgs; args; args = args->Rest())
     {

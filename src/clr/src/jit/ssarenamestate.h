@@ -101,7 +101,7 @@ struct SsaRenameState
     typedef unsigned*                            Counts;
     typedef jitstd::list<SsaRenameStateLocDef>   DefStack;
 
-    SsaRenameState(const jitstd::allocator<int>& allocator, unsigned lvaCount, bool byrefStatesMatchGcHeapStates);
+    SsaRenameState(CompAllocator allocator, unsigned lvaCount, bool byrefStatesMatchGcHeapStates);
 
     void EnsureCounts();
     void EnsureStacks();
@@ -182,7 +182,7 @@ private:
     unsigned lvaCount;
 
     // Allocator to allocate stacks.
-    jitstd::allocator<void> m_alloc;
+    CompAllocator m_alloc;
 
     // Indicates whether GcHeap and ByrefExposed use the same state.
     bool byrefStatesMatchGcHeapStates;

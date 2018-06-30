@@ -588,7 +588,7 @@ const char* BasicBlock::dspToString(int blockNumPadding /* = 2*/)
 // Allocation function for MemoryPhiArg.
 void* BasicBlock::MemoryPhiArg::operator new(size_t sz, Compiler* comp)
 {
-    return comp->compGetMem(sz, CMK_MemoryPhiArg);
+    return comp->getAllocator(CMK_MemoryPhiArg).allocate<char>(sz);
 }
 
 //------------------------------------------------------------------------
