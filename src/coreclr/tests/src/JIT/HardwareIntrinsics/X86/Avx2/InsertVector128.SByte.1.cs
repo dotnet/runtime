@@ -14,6 +14,7 @@ using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using System.Runtime.Intrinsics;
 using System.Runtime.Intrinsics.X86;
+using static System.Runtime.Intrinsics.X86.Sse;
 using static System.Runtime.Intrinsics.X86.Sse2;
 
 namespace JIT.HardwareIntrinsics.X86

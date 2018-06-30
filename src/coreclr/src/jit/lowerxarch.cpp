@@ -2401,8 +2401,69 @@ bool Lowering::IsContainableHWIntrinsicOp(GenTreeHWIntrinsic* containingNode, Ge
                     break;
                 }
 
-                case NI_SSE2_Insert:
                 case NI_SSE41_Insert:
+                {
+                    if (containingNode->gtSIMDBaseType == TYP_FLOAT)
+                    {
+                        assert(supportsSIMDScalarLoads == false);
+
+                        GenTree* op1 = containingNode->gtGetOp1();
+                        GenTree* op2 = containingNode->gtGetOp2();
+                        GenTree* op3 = nullptr;
+
+                        assert(op1->OperIsList());
+                        assert(containingNode->gtGetOp2() == nullptr);
+
+                        GenTreeArgList* argList = op1->AsArgList();
+
+                        op1     = argList->Current();
+                        argList = argList->Rest();
+
+                        op2     = argList->Current();
+                        argList = argList->Rest();
+
+                        assert(node == op2);
+
+                        op3 = argList->Current();
+
+                        // The upper two bits of the immediate value are ignored if
+                        // op2 comes from memory. In order to support using the upper
+                        // bits, we need to disable containment support if op3 is not
+                        // constant or if the constant is greater than 0x3F (which means
+                        // at least one of the upper two bits is set).
+
+                        if (op3->IsCnsIntOrI())
+                        {
+                            ssize_t ival = op3->AsIntCon()->IconValue();
+                            assert((ival >= 0) && (ival <= 255));
+
+                            if (ival <= 0x3F)
+                            {
+                                supportsAlignedSIMDLoads   = !comp->canUseVexEncoding();
+                                supportsUnalignedSIMDLoads = !supportsAlignedSIMDLoads;
+                                supportsGeneralLoads       = supportsUnalignedSIMDLoads;
+
+                                break;
+                            }
+                        }
+
+                        assert(supportsAlignedSIMDLoads == false);
+                        assert(supportsUnalignedSIMDLoads == false);
+                        assert(supportsGeneralLoads == false);
+                    }
+                    else
+                    {
+                        assert(supportsAlignedSIMDLoads == false);
+                        assert(supportsUnalignedSIMDLoads == false);
+
+                        supportsSIMDScalarLoads = true;
+                        supportsGeneralLoads    = supportsSIMDScalarLoads;
+                    }
+
+                    break;
+                }
+
+                case NI_SSE2_Insert:
                 case NI_AVX_CompareScalar:
                 {
                     assert(supportsAlignedSIMDLoads == false);
