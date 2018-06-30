@@ -997,12 +997,15 @@ const SIMDIntrinsicInfo* Compiler::getSIMDIntrinsicInfo(CORINFO_CLASS_HANDLE* in
 // Arguments:
 //    type        -  the type of value that the caller expects to be popped off the stack.
 //    expectAddr  -  if true indicates we are expecting type stack entry to be a TYP_BYREF.
+//    structType  -  the class handle to use when normalizing if it is not the same as the stack entry class handle;
+//                   this can happen for certain scenarios, such as folding away a static cast, where we want the
+//                   value popped to have the type that would have been returned.
 //
 // Notes:
 //    If the popped value is a struct, and the expected type is a simd type, it will be set
 //    to that type, otherwise it will assert if the type being popped is not the expected type.
 
-GenTree* Compiler::impSIMDPopStack(var_types type, bool expectAddr)
+GenTree* Compiler::impSIMDPopStack(var_types type, bool expectAddr, CORINFO_CLASS_HANDLE structType)
 {
     StackEntry se   = impPopStack();
     typeInfo   ti   = se.seTypeInfo;
@@ -1046,8 +1049,13 @@ GenTree* Compiler::impSIMDPopStack(var_types type, bool expectAddr)
     if (varTypeIsStruct(tree) && ((tree->OperGet() == GT_RET_EXPR) || (tree->OperGet() == GT_CALL) || isParam))
     {
         assert(ti.IsType(TI_STRUCT));
-        CORINFO_CLASS_HANDLE structType = ti.GetClassHandleForValueClass();
-        tree                            = impNormStructVal(tree, structType, (unsigned)CHECK_SPILL_ALL);
+
+        if (structType == nullptr)
+        {
+            structType = ti.GetClassHandleForValueClass();
+        }
+
+        tree = impNormStructVal(tree, structType, (unsigned)CHECK_SPILL_ALL);
     }
 
     // Now set the type of the tree to the specialized SIMD struct type, if applicable.
