@@ -8605,7 +8605,8 @@ void CodeGen::genFnEpilog(BasicBlock* block)
     // Method handle and address info used in case of jump epilog
     CORINFO_METHOD_HANDLE methHnd = nullptr;
     CORINFO_CONST_LOOKUP  addrInfo;
-    addrInfo.addr = nullptr;
+    addrInfo.addr       = nullptr;
+    addrInfo.accessType = IAT_VALUE;
 
     if (jmpEpilog && lastNode->gtOper == GT_JMP)
     {
