@@ -1,5 +1,6 @@
-// Copyright (c) .NET Foundation. All rights reserved.
-// Licensed under the Apache License, Version 2.0. See License.txt in the project root for license information.
+// Licensed to the .NET Foundation under one or more agreements.
+// The .NET Foundation licenses this file to you under the MIT license.
+// See the LICENSE file in the project root for more information.
 
 namespace System.Net.Http.HPack
 {
@@ -9,7 +10,8 @@ namespace System.Net.Http.HPack
         // * Static table encoding
         //          This should be based off some sort of "known headers/values" scheme, so we don't need
         //          to re-lookup header names each time.
-        //
+        // * Huffman encoding
+        //      
         // Things we should consider adding:
         // * Dynamic table encoding.
         //          This would make the encoder stateful, which complicates things significantly.
@@ -19,7 +21,7 @@ namespace System.Net.Http.HPack
 
         public static bool EncodeHeader(string name, string value, Span<byte> buffer, out int length)
         {
-            var i = 0;
+            int i = 0;
             length = 0;
 
             if (buffer.Length == 0)
@@ -34,7 +36,7 @@ namespace System.Net.Http.HPack
                 return false;
             }
 
-            if (!EncodeString(name, buffer.Slice(i), out var nameLength, lowercase: true))
+            if (!EncodeString(name, buffer.Slice(i), out int nameLength, lowercase: true))
             {
                 return false;
             }
@@ -46,7 +48,7 @@ namespace System.Net.Http.HPack
                 return false;
             }
 
-            if (!EncodeString(value, buffer.Slice(i), out var valueLength, lowercase: false))
+            if (!EncodeString(value, buffer.Slice(i), out int valueLength, lowercase: false))
             {
                 return false;
             }
@@ -61,7 +63,7 @@ namespace System.Net.Http.HPack
         {
             const int toLowerMask = 0x20;
 
-            var i = 0;
+            int i = 0;
             length = 0;
 
             if (buffer.Length == 0)
@@ -71,7 +73,7 @@ namespace System.Net.Http.HPack
 
             buffer[0] = 0;
 
-            if (!IntegerEncoder.Encode(s.Length, 7, buffer, out var nameLength))
+            if (!IntegerEncoder.Encode(s.Length, 7, buffer, out int nameLength))
             {
                 return false;
             }
@@ -79,7 +81,7 @@ namespace System.Net.Http.HPack
             i += nameLength;
 
             // TODO: use huffman encoding
-            for (var j = 0; j < s.Length; j++)
+            for (int j = 0; j < s.Length; j++)
             {
                 if (i >= buffer.Length)
                 {
