@@ -22,9 +22,7 @@ namespace JIT.HardwareIntrinsics.X86
         private static void InsertSByte1()
         {
             var test = new SimpleUnaryOpTest__InsertSByte1();
-            
-            try
-            {
+
             if (test.IsSupported)
             {
                 // Validates basic functionality works, using Unsafe.Read
@@ -77,11 +75,6 @@ namespace JIT.HardwareIntrinsics.X86
                 // Validates we throw on unsupported hardware
                 test.RunUnsupportedScenario();
             }
-            }
-            catch (PlatformNotSupportedException)
-            {
-                test.Succeeded = true;
-            }
 
             if (!test.Succeeded)
             {
@@ -126,7 +119,7 @@ namespace JIT.HardwareIntrinsics.X86
             _dataTable = new SimpleUnaryOpTest__DataTable<SByte, SByte>(_data, new SByte[RetElementCount], LargestVectorSize);
         }
 
-        public bool IsSupported => Avx.IsSupported;
+        public bool IsSupported => Avx.IsSupported && (Environment.Is64BitProcess || ((typeof(SByte) != typeof(long)) && (typeof(SByte) != typeof(ulong))));
 
         public bool Succeeded { get; set; }
 
