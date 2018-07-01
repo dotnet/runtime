@@ -122,6 +122,9 @@ namespace System.Net.Http.HPack
                 switch (_state)
                 {
                     case State.Ready:
+                        // TODO: Instead of masking and comparing each prefix value,
+                        // consider doing a 16-way switch on the first four bits (which is the max prefix size).
+                        // Look at this once we have more concrete perf data.
                         if ((b & IndexedHeaderFieldMask) == IndexedHeaderFieldRepresentation)
                         {
                             int val = b & ~IndexedHeaderFieldMask;
@@ -390,9 +393,9 @@ namespace System.Net.Http.HPack
         {
             try
             {
-                return index <= StaticTable.Instance.Count
-                    ? StaticTable.Instance[index - 1]
-                    : _dynamicTable[index - StaticTable.Instance.Count - 1];
+                return index <= StaticTable.Count
+                    ? StaticTable.Get(index - 1)
+                    : _dynamicTable[index - StaticTable.Count - 1];
             }
             catch (IndexOutOfRangeException)
             {
