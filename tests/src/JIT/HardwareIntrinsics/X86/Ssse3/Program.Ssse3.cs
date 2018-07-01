@@ -23,6 +23,7 @@ namespace JIT.HardwareIntrinsics.X86
                 ["HorizontalSubtractSaturate.Int16"] = HorizontalSubtractSaturateInt16,
                 ["MultiplyAddAdjacent.Int16"] = MultiplyAddAdjacentInt16,
                 ["MultiplyHighRoundScale.Int16"] = MultiplyHighRoundScaleInt16,
+                ["Shuffle.Byte"] = ShuffleByte,
                 ["Shuffle.SByte"] = ShuffleSByte,
                 ["Sign.SByte"] = SignSByte,
                 ["Sign.Int16"] = SignInt16,
