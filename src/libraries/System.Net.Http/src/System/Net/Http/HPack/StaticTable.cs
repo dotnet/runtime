@@ -6,21 +6,13 @@ using System.Text;
 
 namespace System.Net.Http.HPack
 {
-    internal class StaticTable
+    internal static class StaticTable
     {
-        private static readonly StaticTable s_instance = new StaticTable();
+        public static int Count => s_staticTable.Length;
 
-        private StaticTable()
-        {
-        }
+        public static HeaderField Get(int index) => s_staticTable[index];
 
-        public static StaticTable Instance => s_instance;
-
-        public int Count => _staticTable.Length;
-
-        public HeaderField this[int index] => _staticTable[index];
-
-        private readonly HeaderField[] _staticTable = new HeaderField[]
+        private static readonly HeaderField[] s_staticTable = new HeaderField[]
         {
             CreateHeaderField(":authority", ""),
             CreateHeaderField(":method", "GET"),
