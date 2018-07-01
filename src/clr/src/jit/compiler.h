@@ -194,12 +194,11 @@ public:
 // SsaDefArray: A resizable array of SSA definitions.
 //
 // Unlike an ordinary resizable array implementation, this allows only element
-// addition (by calling AllocSsaNum) and has special handling for the special
-// SSA numbers (RESERVED_SSA_NUM, UNINIT_SSA_NUM and FIRST_SSA_NUM).
-// Array elements are default constructed as new SSA numbers are allocated.
-// This includes the element associated with UNINIT_SSA_NUM that is automatically
-// allocated. The array doesn't impose any particular requirements on the elements
-// it stores.
+// addition (by calling AllocSsaNum) and has special handling for RESERVED_SSA_NUM
+// (basically it's a 1-based array). The array doesn't impose any particular
+// requirements on the elements it stores and AllocSsaNum forwards its arguments
+// to the array element constructor, this way the array supports both LclSsaVarDsc
+// and SsaMemDef elements.
 //
 template <typename T>
 class SsaDefArray
@@ -209,13 +208,12 @@ class SsaDefArray
     unsigned m_count;
 
     static_assert_no_msg(SsaConfig::RESERVED_SSA_NUM == 0);
-    static_assert_no_msg(SsaConfig::UNINIT_SSA_NUM == 1);
-    static_assert_no_msg(SsaConfig::FIRST_SSA_NUM == 2);
+    static_assert_no_msg(SsaConfig::FIRST_SSA_NUM == 1);
 
     // Get the minimum valid SSA number.
     unsigned GetMinSsaNum() const
     {
-        return SsaConfig::UNINIT_SSA_NUM;
+        return SsaConfig::FIRST_SSA_NUM;
     }
 
     // Increase (double) the size of the array.
@@ -233,20 +231,6 @@ class SsaDefArray
 
         m_array     = newArray;
         m_arraySize = newSize;
-
-        if (m_count == 0)
-        {
-            // The first time we allocate a SSA number we actually need to allocate 2:
-            // - SsaConfig::UNINIT_SSA_NUM
-            // - SsaConfig::FIRST_SSA_NUM
-            // It would perhaps make more sense to put this code in AllocSsaNum but let's
-            // keep it here because it's rarely run.
-
-            assert(m_arraySize == 2);
-
-            m_array[0] = T();
-            m_count++;
-        }
     }
 
 public:

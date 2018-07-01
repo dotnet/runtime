@@ -5814,15 +5814,6 @@ void Compiler::fgValueNumberTree(GenTree* tree, bool evalAsgLhsInd)
                     unsigned   ssaNum = lclFld->GetSsaNum();
                     LclVarDsc* varDsc = &lvaTable[lclNum];
 
-                    if (ssaNum == SsaConfig::UNINIT_SSA_NUM)
-                    {
-                        if (varDsc->GetPerSsaData(ssaNum)->m_vnPair.GetLiberal() == ValueNumStore::NoVN)
-                        {
-                            ValueNum vnForLcl                       = vnStore->VNForExpr(compCurBB, lclFld->TypeGet());
-                            varDsc->GetPerSsaData(ssaNum)->m_vnPair = ValueNumPair(vnForLcl, vnForLcl);
-                        }
-                    }
-
                     var_types indType = tree->TypeGet();
                     if (lclFld->gtFieldSeq == FieldSeqStore::NotAField() || fgExcludeFromSsa(lclFld->GetLclNum()))
                     {

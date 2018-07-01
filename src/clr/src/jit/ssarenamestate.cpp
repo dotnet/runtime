@@ -56,10 +56,7 @@ unsigned SsaRenameState::CountForUse(unsigned lclNum)
     DBG_SSA_JITDUMP("[SsaRenameState::CountForUse] V%02u\n", lclNum);
 
     Stack* stack = stacks[lclNum];
-    if (stack == nullptr || stack->empty())
-    {
-        return SsaConfig::UNINIT_SSA_NUM;
-    }
+    noway_assert((stack != nullptr) && !stack->empty());
     return stack->back().m_count;
 }
 
