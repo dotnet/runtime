@@ -6112,9 +6112,9 @@ void Compiler::impCheckForPInvokeCall(
             return;
         }
 
-        // PInvoke CALL in IL stubs must be inlined on CoreRT. Skip the ambient conditions checks and
-        // profitability checks
-        if (!(opts.jitFlags->IsSet(JitFlags::JIT_FLAG_IL_STUB) && IsTargetAbi(CORINFO_CORERT_ABI)))
+        // Legal PInvoke CALL in PInvoke IL stubs must be inlined to avoid infinite recursive
+        // inlining in CoreRT. Skip the ambient conditions checks and profitability checks.
+        if (!IsTargetAbi(CORINFO_CORERT_ABI) || (info.compFlags & CORINFO_FLG_PINVOKE) == 0)
         {
             if (!impCanPInvokeInline())
             {
