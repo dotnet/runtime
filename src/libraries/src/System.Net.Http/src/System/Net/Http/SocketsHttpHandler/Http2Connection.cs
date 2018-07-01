@@ -2,7 +2,6 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
-using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
@@ -24,10 +23,10 @@ using System.Threading.Tasks;
 
 namespace System.Net.Http
 {
-    // TODO: This should probably implement IDisposable.
-    internal sealed class Http2Connection : HttpConnectionBase
+    internal sealed class Http2Connection : HttpConnectionBase, IDisposable
     {
         private readonly SslStream _stream;
+        private readonly object _syncObject;
 
         // NOTE: These are mutable structs; do not make these readonly.
         private ArrayBuffer _incomingBuffer;
@@ -35,12 +34,14 @@ namespace System.Net.Http
 
         private readonly HPackDecoder _hpackDecoder;
 
-        private readonly ConcurrentDictionary<int, Http2Stream> _httpStreams;
+        private readonly Dictionary<int, Http2Stream> _httpStreams;
 
         private readonly SemaphoreSlim _writerLock;
 
         private int _nextStream;
         private bool _expectingSettingsAck;
+
+        private bool _disposed;
 
         private const int MaxStreamId = int.MaxValue;
 
@@ -51,12 +52,13 @@ namespace System.Net.Http
         public Http2Connection(SslStream stream)
         {
             _stream = stream;
+            _syncObject = new object();
             _incomingBuffer = new ArrayBuffer(InitialBufferSize);
             _outgoingBuffer = new ArrayBuffer(InitialBufferSize);
 
             _hpackDecoder = new HPackDecoder();
 
-            _httpStreams = new ConcurrentDictionary<int, Http2Stream>();
+            _httpStreams = new Dictionary<int, Http2Stream>();
 
             _writerLock = new SemaphoreSlim(1, 1);
 
@@ -94,27 +96,6 @@ namespace System.Net.Http
             await ProcessSettingsFrame(frameHeader).ConfigureAwait(false);
 
             ProcessIncomingFrames();
-        }
-
-        private int GetNewStreamId()
-        {
-            int newStream = _nextStream;
-            while (true)
-            {
-                if (newStream == MaxStreamId)
-                {
-                    // No more stream Ids available
-                    return -1;
-                }
-
-                int original = Interlocked.CompareExchange(ref _nextStream, newStream + 2, newStream);
-                if (original == newStream)
-                {
-                    return newStream;
-                }
-
-                newStream = original;
-            }
         }
 
         private async Task EnsureIncomingBytesAsync(int minReadBytes)
@@ -212,13 +193,20 @@ namespace System.Net.Http
 
         private Http2Stream GetStream(int streamId)
         {
-            if (streamId <= 0 ||
-                !_httpStreams.TryGetValue(streamId, out Http2Stream http2Stream))
+            if (streamId <= 0)
             {
                 throw new Http2ProtocolException(Http2ProtocolErrorCode.ProtocolError);
             }
 
-            return http2Stream;
+            lock (_syncObject)
+            {
+                if (!_httpStreams.TryGetValue(streamId, out Http2Stream http2Stream))
+                {
+                    throw new Http2ProtocolException(Http2ProtocolErrorCode.ProtocolError);
+                }
+
+                return http2Stream;
+            }
         }
 
         private async Task ProcessHeadersFrame(FrameHeader frameHeader)
@@ -419,6 +407,49 @@ namespace System.Net.Http
             _outgoingBuffer.Commit(FrameHeader.Size);
         }
 
+        private bool CheckForShutdown()
+        {
+            Debug.Assert(_disposed);
+            Debug.Assert(Monitor.IsEntered(_syncObject));
+
+            // Check if dictionary has become empty
+            using (Dictionary<int, Http2Stream>.Enumerator enumerator = _httpStreams.GetEnumerator())
+            {
+                if (enumerator.MoveNext())
+                {
+                    // Not empty
+                    return false;
+                }
+            }
+
+            return true;
+        }
+
+        private void Shutdown()
+        {
+            _stream.Close();
+        }
+
+        public void Dispose()
+        {
+            bool shutdown = false;
+
+            lock (_syncObject)
+            {
+                if (!_disposed)
+                {
+                    _disposed = true;
+
+                    shutdown = CheckForShutdown();
+                }
+            }
+
+            if (shutdown)
+            {
+                Shutdown();
+            }
+        }
+
         private enum FrameType : byte
         {
             Data = 0,
@@ -528,15 +559,7 @@ namespace System.Net.Http
 
         public sealed override async Task<HttpResponseMessage> SendAsync(HttpRequestMessage request, bool doRequestAuth, CancellationToken cancellationToken)
         {
-            int streamId = GetNewStreamId();
-            if (streamId == -1)
-            {
-                // TODO: Gracefully shutdown connection and mark as not usable.
-                // TODO: In debug builds, we should set the stream limit reasonably low (4K maybe?) so that we can hit it during stress testing.
-                throw new Exception("out of stream IDs");
-            }
-
-            Http2Stream http2Stream = new Http2Stream(this, streamId);
+            Http2Stream http2Stream = new Http2Stream(this);
             try
             {
                 return await http2Stream.SendAsync(request, cancellationToken).ConfigureAwait(false);
@@ -566,15 +589,25 @@ namespace System.Net.Http
             private bool _disposed = false;
 
 
-            public Http2Stream(Http2Connection connection, int streamId)
+            public Http2Stream(Http2Connection connection)
             {
                 _connection = connection;
-                _streamId = streamId;
 
-                if (!_connection._httpStreams.TryAdd(streamId, this))
+                lock (connection._syncObject)
                 {
-                    Debug.Fail("_httpStreams.TryAdd failed");
-                    throw new InternalException();
+                    if (connection._disposed || connection._nextStream == MaxStreamId)
+                    {
+                        // Throw a retryable request exception. This will cause retry logic to kick in
+                        // and perform another connection attempt. The user should never see this exception.
+                        throw new HttpRequestException(null, null, true);
+                    }
+
+                    _streamId = connection._nextStream;
+
+                    // Client-initiated streams are always odd-numbered, so increase by 2.
+                    connection._nextStream += 2;
+
+                    connection._httpStreams.Add(_streamId, this);
                 }
 
                 _requestBuffer = new ArrayBuffer(InitialBufferSize);
@@ -898,32 +931,37 @@ namespace System.Net.Http
                 return ReadDataAsyncCore(onDataAvailable, buffer);
             }
 
-            protected virtual void Dispose(bool disposing)
+            public void Dispose()
             {
-                // TODO: Make this interlocked
-                if (!_disposed)
+                bool shutdown = false;
+
+                lock (_connection._syncObject)
                 {
-                    if (disposing)
+                    if (!_disposed)
                     {
-                        if (!_connection._httpStreams.TryRemove(_streamId, out Http2Stream removed))
+                        _disposed = true;
+
+                        if (!_connection._httpStreams.Remove(_streamId, out Http2Stream removed))
                         {
-                            Debug.Fail("_httpStreams.TryRemove failed");
+                            Debug.Fail("_httpStreams.Remove failed");
                         }
 
                         Debug.Assert(removed == this, "_httpStreams.TryRemove returned unexpected stream");
+
+                        if (_connection._disposed)
+                        {
+                            shutdown = _connection.CheckForShutdown();
+                        }
                     }
-
-                    _disposed = true;
                 }
-            }
 
-            public void Dispose()
-            {
-                Dispose(true);
+                if (shutdown)
+                {
+                    _connection.Shutdown();
+                }
             }
         }
 
-        // TODO: Refactor this so that we can share a common base class with HTTP/1.1 content streams.
         sealed class Http2ReadStream : BaseAsyncStream
         {
             private readonly Http2Stream _http2Stream;
