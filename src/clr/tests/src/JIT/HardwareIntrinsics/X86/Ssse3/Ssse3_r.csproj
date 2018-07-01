@@ -38,6 +38,7 @@
     <Compile Include="HorizontalSubtractSaturate.Int16.cs" />
     <Compile Include="MultiplyAddAdjacent.Int16.cs" />
     <Compile Include="MultiplyHighRoundScale.Int16.cs" />
+    <Compile Include="Shuffle.Byte.cs" />
     <Compile Include="Shuffle.SByte.cs" />
     <Compile Include="Sign.SByte.cs" />
     <Compile Include="Sign.Int16.cs" />
