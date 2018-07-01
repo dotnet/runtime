@@ -110,7 +110,7 @@ public:
     }
 };
 
-ArenaAllocator::SinglePagePool ArenaAllocator::s_pagePool;
+ArenaAllocator::SinglePagePool ArenaAllocator::s_pagePool = {};
 
 //------------------------------------------------------------------------
 // ArenaAllocator::bypassHostAllocator:
@@ -200,7 +200,6 @@ void* ArenaAllocator::allocateNewPage(size_t size)
     if (pageSize < size)
     {
         NOMEM();
-        return nullptr;
     }
 
     // If the current page is now full, update a few statistics
@@ -247,7 +246,6 @@ void* ArenaAllocator::allocateNewPage(size_t size)
         if (newPage == nullptr)
         {
             NOMEM();
-            return nullptr;
         }
 
         if (tryPoolNewPage)

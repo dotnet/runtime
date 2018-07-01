@@ -864,7 +864,6 @@ AddrToMethodHandleMap* DisAssembler::GetAddrToMethodHandleMap()
 {
     if (disAddrToMethodHandleMap == nullptr)
     {
-        assert(disComp->getAllocator() != nullptr);
         disAddrToMethodHandleMap = new (disComp->getAllocator()) AddrToMethodHandleMap(disComp->getAllocator());
     }
     return disAddrToMethodHandleMap;
@@ -877,7 +876,6 @@ AddrToMethodHandleMap* DisAssembler::GetHelperAddrToMethodHandleMap()
 {
     if (disHelperAddrToMethodHandleMap == nullptr)
     {
-        assert(disComp->getAllocator() != nullptr);
         disHelperAddrToMethodHandleMap = new (disComp->getAllocator()) AddrToMethodHandleMap(disComp->getAllocator());
     }
     return disHelperAddrToMethodHandleMap;
@@ -890,7 +888,6 @@ AddrToAddrMap* DisAssembler::GetRelocationMap()
 {
     if (disRelocationMap == nullptr)
     {
-        assert(disComp->getAllocator() != nullptr);
         disRelocationMap = new (disComp->getAllocator()) AddrToAddrMap(disComp->getAllocator());
     }
     return disRelocationMap;
