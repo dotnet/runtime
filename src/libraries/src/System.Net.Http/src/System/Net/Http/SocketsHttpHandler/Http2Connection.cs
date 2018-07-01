@@ -720,6 +720,8 @@ namespace System.Net.Http
                 // (either with a 100-continue that timed out, or without 100-continue),
                 // we can stop sending the request without tearing down the entire connection.
 
+                // TODO: Avoid allocating a TaskCompletionSource repeatedly by using a resettable ValueTaskSource.
+                // See: https://github.com/dotnet/corefx/blob/master/src/Common/tests/System/Threading/Tasks/Sources/ManualResetValueTaskSource.cs
                 Debug.Assert(_responseDataAvailable == null);
                 _responseDataAvailable = new TaskCompletionSource<bool>();
                 Task readDataAvailableTask = _responseDataAvailable.Task;
