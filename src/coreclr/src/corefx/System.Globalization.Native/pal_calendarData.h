@@ -11,7 +11,7 @@
 /*
 * These values should be kept in sync with System.Globalization.CalendarId
 */
-typedef enum
+enum
 {
     UNINITIALIZED_VALUE = 0,
     GREGORIAN = 1,               // Gregorian (localized) calendar
@@ -40,7 +40,8 @@ typedef enum
     PERSIAN = 22,
     UMALQURA = 23,
     LAST_CALENDAR = 23 // Last calendar ID
-} CalendarId;
+};
+typedef uint16_t CalendarId;
 
 /*
 * These values should be kept in sync with System.Globalization.CalendarDataType
