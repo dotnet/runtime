@@ -866,6 +866,12 @@ namespace System.Net.Http
                     _disposed = true;
                     list.ForEach(c => c._connection.Dispose());
                     list.Clear();
+
+                    if (_http2Connection != null)
+                    {
+                        _http2Connection.Dispose();
+                        _http2Connection = null;
+                    }
                 }
                 Debug.Assert(list.Count == 0, $"Expected {nameof(list)}.{nameof(list.Count)} == 0");
             }
