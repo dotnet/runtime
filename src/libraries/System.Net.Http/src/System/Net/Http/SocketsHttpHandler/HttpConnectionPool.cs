@@ -69,6 +69,8 @@ namespace System.Net.Http
             _proxyUri = proxyUri;
             _maxConnections = maxConnections;
 
+            _http2Enabled = (_poolManager.Settings._maxHttpVersion == HttpVersion.Version20);
+
             switch (kind)
             {
                 case HttpConnectionKind.Http:
@@ -76,6 +78,8 @@ namespace System.Net.Http
                     Debug.Assert(port != 0);
                     Debug.Assert(sslHostName == null);
                     Debug.Assert(proxyUri == null);
+
+                    _http2Enabled = false;
                     break;
 
                 case HttpConnectionKind.Https:
@@ -83,8 +87,6 @@ namespace System.Net.Http
                     Debug.Assert(port != 0);
                     Debug.Assert(sslHostName != null);
                     Debug.Assert(proxyUri == null);
-
-                    _http2Enabled = true;
                     break;
 
                 case HttpConnectionKind.Proxy:
@@ -92,6 +94,8 @@ namespace System.Net.Http
                     Debug.Assert(port == 0);
                     Debug.Assert(sslHostName == null);
                     Debug.Assert(proxyUri != null);
+
+                    _http2Enabled = false;
                     break;
 
                 case HttpConnectionKind.ProxyTunnel:
@@ -99,6 +103,8 @@ namespace System.Net.Http
                     Debug.Assert(port != 0);
                     Debug.Assert(sslHostName == null);
                     Debug.Assert(proxyUri != null);
+
+                    _http2Enabled = false;
                     break;
 
                 case HttpConnectionKind.SslProxyTunnel:
@@ -106,8 +112,6 @@ namespace System.Net.Http
                     Debug.Assert(port != 0);
                     Debug.Assert(sslHostName != null);
                     Debug.Assert(proxyUri != null);
-
-                    _http2Enabled = true;
                     break;
 
                 case HttpConnectionKind.ProxyConnect:
@@ -115,16 +119,13 @@ namespace System.Net.Http
                     Debug.Assert(port != 0);
                     Debug.Assert(sslHostName == null);
                     Debug.Assert(proxyUri != null);
+
+                    _http2Enabled = false;
                     break;
 
                 default:
                     Debug.Fail("Unkown HttpConnectionKind in HttpConnectionPool.ctor");
                     break;
-            }
-
-            if (_http2Enabled && _poolManager.Settings._maxHttpVersion != HttpVersion.Version20)
-            {
-                _http2Enabled = false;
             }
 
             if (sslHostName != null)
