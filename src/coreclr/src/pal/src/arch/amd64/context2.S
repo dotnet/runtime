@@ -76,22 +76,6 @@ LOCAL_LABEL(Done_CONTEXT_CONTROL):
     fxsave  [rdi + CONTEXT_FltSave]
 LOCAL_LABEL(Done_CONTEXT_FLOATING_POINT):
 
-    test    BYTE PTR [rdi + CONTEXT_ContextFlags], CONTEXT_DEBUG_REGISTERS
-    je      LOCAL_LABEL(Done_CONTEXT_DEBUG_REGISTERS)
-    mov     rdx, dr0
-    mov     [rdi + CONTEXT_Dr0], rdx
-    mov     rdx, dr1
-    mov     [rdi + CONTEXT_Dr1], rdx
-    mov     rdx, dr2
-    mov     [rdi + CONTEXT_Dr2], rdx
-    mov     rdx, dr3
-    mov     [rdi + CONTEXT_Dr3], rdx
-    mov     rdx, dr6
-    mov     [rdi + CONTEXT_Dr6], rdx
-    mov     rdx, dr7
-    mov     [rdi + CONTEXT_Dr7], rdx
-LOCAL_LABEL(Done_CONTEXT_DEBUG_REGISTERS):
-
     free_stack 8
     ret
 LEAF_END CONTEXT_CaptureContext, _TEXT
@@ -107,31 +91,15 @@ LEAF_ENTRY RtlRestoreContext, _TEXT
 
 #ifdef HAS_ASAN
     test    BYTE PTR [rdi + CONTEXT_ContextFlags], CONTEXT_CONTROL
-    je      LOCAL_LABEL(Restore_CONTEXT_DEBUG_REGISTERS)
+    je      LOCAL_LABEL(Restore_CONTEXT_FLOATING_POINT)
 
     push_nonvol_reg rdi
     push_nonvol_reg rsi
     call    EXTERNAL_C_FUNC(__asan_handle_no_return)
     pop_nonvol_reg rsi
     pop_nonvol_reg rdi
-LOCAL_LABEL(Restore_CONTEXT_DEBUG_REGISTERS):
+LOCAL_LABEL(Restore_CONTEXT_FLOATING_POINT):
 #endif
-    test    BYTE PTR [rdi + CONTEXT_ContextFlags], CONTEXT_DEBUG_REGISTERS
-    je      LOCAL_LABEL(Done_Restore_CONTEXT_DEBUG_REGISTERS)
-    mov     rdx, [rdi + CONTEXT_Dr0]
-    mov     dr0, rdx
-    mov     rdx, [rdi + CONTEXT_Dr1]
-    mov     dr1, rdx
-    mov     rdx, [rdi + CONTEXT_Dr2]
-    mov     dr2, rdx
-    mov     rdx, [rdi + CONTEXT_Dr3]
-    mov     dr3, rdx
-    mov     rdx, [rdi + CONTEXT_Dr6]
-    mov     dr6, rdx
-    mov     rdx, [rdi + CONTEXT_Dr7]
-    mov     dr7, rdx
-LOCAL_LABEL(Done_Restore_CONTEXT_DEBUG_REGISTERS):
-
     test    BYTE PTR [rdi + CONTEXT_ContextFlags], CONTEXT_FLOATING_POINT
     je      LOCAL_LABEL(Done_Restore_CONTEXT_FLOATING_POINT)
     fxrstor [rdi + CONTEXT_FltSave]
