@@ -43,13 +43,14 @@ private:
     unsigned int m_numBuffersStolen;
     unsigned int m_numBuffersLeaked;
     Volatile<LONG> m_numEventsStored;
+    Volatile<LONG> m_numEventsDropped;
     LONG m_numEventsWritten;
 #endif // _DEBUG
 
     // Allocate a new buffer for the specified thread.
     // This function will store the buffer in the thread's buffer list for future use and also return it here.
     // A NULL return value means that a buffer could not be allocated.
-    EventPipeBuffer* AllocateBufferForThread(Thread *pThread, unsigned int requestSize);
+    EventPipeBuffer* AllocateBufferForThread(EventPipeSession &session, Thread *pThread, unsigned int requestSize);
 
     // Add a buffer to the thread buffer list.
     void AddBufferToThreadBufferList(EventPipeBufferList *pThreadBuffers, EventPipeBuffer *pBuffer);
@@ -81,6 +82,9 @@ public:
     // threads can be in the middle of a write operation and get blocked, and we may not get an opportunity
     // to free their buffer for a very long time.
     void DeAllocateBuffers();
+
+    // Get next event.  This is used to dispatch events to EventListener.
+    EventPipeEventInstance* GetNextEvent();
 
 #ifdef _DEBUG
     bool EnsureConsistency();

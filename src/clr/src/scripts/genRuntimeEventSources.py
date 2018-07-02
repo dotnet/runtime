@@ -39,7 +39,7 @@ manifestTypeToCSharpTypeMap = {
     "win:UInt32" : "UInt32",
     "win:UInt64" : "UInt64",
     "win:Int32" : "Int32",
-    "win:Pointer" : "UIntPtr",
+    "win:Pointer" : "IntPtr",
     "win:UnicodeString" : "string",
     "win:Binary" : "byte[]",
     "win:Double" : "double",
@@ -116,7 +116,7 @@ def generateEvent(eventNode, providerNode, outputFile, stringTable):
         # Calculate the number of arguments.
         for argumentNode in argumentNodes:
             if argumentNode.nodeName == "data":
-                if argumentNode.getAttribute("inType") != "win:Binary" and argumentNode.getAttribute("inType") != "win:AnsiString":
+                if argumentNode.getAttribute("inType") != "win:Binary" and argumentNode.getAttribute("inType") != "win:AnsiString" and argumentNode.getAttribute("count") == "":
                     argumentCount += 1
                 else:
                     break
@@ -181,9 +181,26 @@ def generateEvents(providerNode, outputFile, stringTable):
         eventsNode = node
         break
 
+    # Get the list of event nodes.
+    eventNodes = eventsNode.getElementsByTagName("event")
+
+    # Build a list of events to be emitted.  This is where old versions of events are stripped.
+    # key = eventID, value = version
+    eventList = dict()
+    for eventNode in eventNodes:
+        eventID = eventNode.getAttribute("value")
+        eventVersion = eventNode.getAttribute("version")
+        eventList[eventID] = eventVersion
+
     # Iterate over each event node and process it.
-    for eventNode in eventsNode.getElementsByTagName("event"):
-        generateEvent(eventNode, providerNode, outputFile, stringTable)
+    # Only emit events for the latest version of the event, otherwise EventSource initialization will fail.
+    for eventNode in eventNodes:
+        eventID = eventNode.getAttribute("value")
+        eventVersion = eventNode.getAttribute("version")
+        if eventID in eventList and eventList[eventID] == eventVersion:
+            generateEvent(eventNode, providerNode, outputFile, stringTable)
+        elif eventID not in eventList:
+            raise ValueError("eventID could not be found in the list of events to emit.", eventID)
 
 def generateValueMapEnums(providerNode, outputFile, stringTable, enumTypeMap):
 
@@ -355,10 +372,18 @@ namespace System.Diagnostics.Tracing
 """
             writeOutput(outputFile, header)
             increaseTabLevel()
-            writeOutput(outputFile, "[EventSource(Name = \"" + providerName + "\", Guid = \"" + providerNode.getAttribute("guid") + "\")]\n")
-            writeOutput(outputFile, "internal sealed unsafe class " + providerNameToClassNameMap[providerName] + " : EventSource\n")
+
+            className = providerNameToClassNameMap[providerName]
+            writeOutput(outputFile, "[EventSource(Name = \"" + providerName + "\")]\n")
+            writeOutput(outputFile, "internal sealed partial class " + className + " : EventSource\n")
             writeOutput(outputFile, "{\n")
             increaseTabLevel()
+
+            # Create a static property for the EventSource name so that we don't have to initialize the EventSource to get its name.
+            writeOutput(outputFile, "internal const string EventSourceName = \"" + providerName + "\";\n")
+
+            # Write the static Log property.
+            writeOutput(outputFile, "internal static " + className + " Log = new " + className + "();\n\n")
 
             # Write the keywords class.
             generateKeywordsClass(providerNode, outputFile)

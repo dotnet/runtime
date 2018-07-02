@@ -156,6 +156,12 @@ namespace System.Diagnostics.Tracing
 
         internal protected  override void OnEventSourceCreated(EventSource eventSource)
         {
+            // Don't enable forwarding of RuntimeEventSource events.`
+            if (eventSource.GetType() == typeof(RuntimeEventSource))
+            {
+                return;
+            }
+
             string eventSourceFilter = eventSourceNameFilter.Value;
             if (string.IsNullOrEmpty(eventSourceFilter) || (eventSource.Name.IndexOf(eventSourceFilter, StringComparison.OrdinalIgnoreCase) >= 0))
             {   

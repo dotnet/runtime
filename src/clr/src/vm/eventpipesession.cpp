@@ -10,6 +10,7 @@
 #ifdef FEATURE_PERFTRACING
 
 EventPipeSession::EventPipeSession(
+    EventPipeSessionType sessionType,
     unsigned int circularBufferSizeInMB,
     EventPipeProviderConfiguration *pProviders,
     unsigned int numProviders)
@@ -22,6 +23,7 @@ EventPipeSession::EventPipeSession(
     }
     CONTRACTL_END;
 
+    m_sessionType = sessionType;
     m_circularBufferSizeInBytes = circularBufferSizeInMB * 1024 * 1024; // 1MB;
     m_rundownEnabled = false;
     m_pProviderList = new EventPipeSessionProviderList(

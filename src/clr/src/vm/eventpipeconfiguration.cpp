@@ -309,7 +309,7 @@ size_t EventPipeConfiguration::GetCircularBufferSize() const
     return ret;
 }
 
-EventPipeSession* EventPipeConfiguration::CreateSession(unsigned int circularBufferSizeInMB, EventPipeProviderConfiguration *pProviders, unsigned int numProviders)
+EventPipeSession* EventPipeConfiguration::CreateSession(EventPipeSessionType sessionType, unsigned int circularBufferSizeInMB, EventPipeProviderConfiguration *pProviders, unsigned int numProviders)
 {
     CONTRACTL
     {
@@ -319,7 +319,7 @@ EventPipeSession* EventPipeConfiguration::CreateSession(unsigned int circularBuf
     }
     CONTRACTL_END;
 
-    return new EventPipeSession(circularBufferSizeInMB, pProviders, numProviders);
+    return new EventPipeSession(sessionType, circularBufferSizeInMB, pProviders, numProviders);
 }
 
 void EventPipeConfiguration::DeleteSession(EventPipeSession *pSession)
