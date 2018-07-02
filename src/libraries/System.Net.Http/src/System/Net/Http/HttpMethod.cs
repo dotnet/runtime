@@ -167,7 +167,7 @@ namespace System.Net.Http
                 method;
         }
 
-        internal bool HasBody
+        internal bool MustHaveRequestBody
         {
             get
             {

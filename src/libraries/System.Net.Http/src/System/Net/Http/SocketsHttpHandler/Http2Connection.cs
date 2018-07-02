@@ -706,9 +706,9 @@ namespace System.Net.Http
                 {
                     // Write out Content-Length: 0 header to indicate no body,
                     // unless this is a method that never has a body.
-                    // TODO: Optimize using static table
-                    if (normalizedMethod.HasBody)
+                    if (normalizedMethod.MustHaveRequestBody)
                     {
+                        // TODO: Optimize using static table
                         WriteHeader(ref bufferOffset, "Content-Length", "0");
                     }
                 }
