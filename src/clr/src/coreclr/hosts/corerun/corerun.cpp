@@ -110,7 +110,7 @@ public:
 
             // Check for %CORE_ROOT% and try to load CoreCLR.dll from it if it is set
             StackSString coreRoot;
-			m_coreCLRModule = NULL; // Initialize this here since we don't call TryLoadCoreCLR if CORE_ROOT is unset.
+            m_coreCLRModule = NULL; // Initialize this here since we don't call TryLoadCoreCLR if CORE_ROOT is unset.
             if (WszGetEnvironmentVariable(W("CORE_ROOT"), coreRoot) > 0 && coreRoot.GetCount() > 0)
             {
                 coreRoot.Append(W('\\'));
@@ -365,6 +365,64 @@ STARTUP_FLAGS CreateStartupFlags() {
     return initialFlags;
 }
 
+// Class used to manage activation context.
+// See: https://docs.microsoft.com/en-us/windows/desktop/SbsCs/using-the-activation-context-api
+class ActivationContext
+{
+public:
+    //       logger - Logger to record errors
+    // assemblyPath - Assembly containing activation context manifest
+    ActivationContext(Logger &logger, _In_z_ const WCHAR *assemblyPath)
+        : _actCookie{}
+        , _actCxt{ INVALID_HANDLE_VALUE }
+        , _logger{ logger }
+    {
+        ACTCTX cxt{};
+        cxt.cbSize = sizeof(cxt);
+        cxt.dwFlags = (ACTCTX_FLAG_APPLICATION_NAME_VALID | ACTCTX_FLAG_RESOURCE_NAME_VALID);
+        cxt.lpSource = assemblyPath;
+        cxt.lpResourceName = MAKEINTRESOURCEW(1); // The CreateProcess manifest which contains the context details
+
+        _actCxt = ::CreateActCtxW(&cxt);
+        if (_actCxt == INVALID_HANDLE_VALUE)
+        {
+            DWORD err = ::GetLastError();
+            if (err == ERROR_RESOURCE_TYPE_NOT_FOUND)
+            {
+                _logger << W("Assembly does not contain a manifest for activation") << Logger::endl;
+            }
+            else
+            {
+                _logger << W("Activation Context creation failed. Error Code: ") << Logger::hresult << err << Logger::endl;
+            }
+        }
+        else
+        {
+            BOOL res = ::ActivateActCtx(_actCxt, &_actCookie);
+            if (res == FALSE)
+                _logger << W("Failed to activate Activation Context. Error Code: ") << Logger::hresult << ::GetLastError() << Logger::endl;
+        }
+    }
+
+    ~ActivationContext()
+    {
+        if (_actCookie != ULONG_PTR{})
+        {
+            BOOL res = ::DeactivateActCtx(0, _actCookie);
+            if (res == FALSE)
+                _logger << W("Failed to de-activate Activation Context. Error Code: ") << Logger::hresult << ::GetLastError() << Logger::endl;
+        }
+
+        if (_actCxt != INVALID_HANDLE_VALUE)
+            ::ReleaseActCtx(_actCxt);
+    }
+
+private:
+    Logger &_logger;
+    HANDLE _actCxt;
+    ULONG_PTR _actCookie;
+};
+
 bool TryRun(const int argc, const wchar_t* argv[], Logger &log, const bool verbose, const bool waitForDebugger, DWORD &exitCode)
 {
 
@@ -578,14 +636,18 @@ bool TryRun(const int argc, const wchar_t* argv[], Logger &log, const bool verbo
         }
     }
 
-    hr = host->ExecuteAssembly(domainId, managedAssemblyFullName, argc-1, (argc-1)?&(argv[1]):NULL, &exitCode);
-    if (FAILED(hr)) {
-        log << W("Failed call to ExecuteAssembly. ERRORCODE: ") << Logger::hresult << hr << Logger::endl;
-        return false;
+    {
+        ActivationContext cxt{ log, managedAssemblyFullName.GetUnicode() };
+
+        hr = host->ExecuteAssembly(domainId, managedAssemblyFullName, argc - 1, (argc - 1) ? &(argv[1]) : NULL, &exitCode);
+        if (FAILED(hr))
+        {
+            log << W("Failed call to ExecuteAssembly. ERRORCODE: ") << Logger::hresult << hr << Logger::endl;
+            return false;
+        }
+
+        log << W("App exit value = ") << exitCode << Logger::endl;
     }
-
-    log << W("App exit value = ") << exitCode << Logger::endl;
-
 
     //-------------------------------------------------------------
 
