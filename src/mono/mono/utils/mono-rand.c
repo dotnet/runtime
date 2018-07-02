@@ -53,26 +53,23 @@ static gint file = -1;
    - Return -1 on error
    getrandom() is retried if it failed with EINTR: interrupted by a signal. */
 static gint
-mono_getrandom (guchar *buffer, gint buffer_size, gint flags, MonoError *error)
+mono_getrandom (guchar *buffer, gssize buffer_size, gint flags, MonoError *error)
 {
-	static gint getrandom_works = 1;
-	gint count = 0;
-	gint err;
+	g_assert (buffer || !buffer_size);
 
-	if (!getrandom_works) {
+	static gboolean getrandom_fail;
+
+	if (getrandom_fail)
 		return 0;
-	}
-
-	error_init (error);
 
 	/* Read until the buffer is filled. This may block if random pool isn't initialized. */
-	do {
-		err = getrandom (buffer + count, buffer_size - count, flags);
+	while (buffer_size > 0) {
+		gssize const err = getrandom (buffer, buffer_size, flags);
 		if (err < 0) {
 			if (errno == EINTR)
 				continue;
 			if (errno == ENOSYS || errno == EPERM) {
-				getrandom_works = 0;
+				getrandom_fail = TRUE;
 				return 0;
 			}
 			g_warning ("Entropy error! Error in getrandom (%s).", strerror (errno));
@@ -80,8 +77,9 @@ mono_getrandom (guchar *buffer, gint buffer_size, gint flags, MonoError *error)
 			mono_error_set_execution_engine (error, "Entropy error! Error in getrandom (%s).", strerror (errno));
 			return -1;
 		}
-		count += err;
-	} while (count < buffer_size);
+		buffer_size -= err;
+		buffer += err;
+	}
 	return 1;
 }
 #endif /* HAVE_GETRANDOM */
@@ -93,32 +91,24 @@ mono_getrandom (guchar *buffer, gint buffer_size, gint flags, MonoError *error)
    - Return -1 on error
    getentropy() is retried if it failed with EINTR: interrupted by a signal. */
 static gint
-mono_getentropy (guchar *buffer, gint buffer_size, MonoError *error)
+mono_getentropy (guchar *buffer, gssize buffer_size, MonoError *error)
 {
-	static gint getentropy_works = 1;
-	gint count = 0;
-	gint len;
-	gint err;
+	g_assert (buffer || !buffer_size);
 
-	if (!getentropy_works) {
+	static gboolean getentropy_fail;
+
+	if (getentropy_fail)
 		return 0;
-	}
-
-	error_init (error);
 
 	/* Read until the buffer is filled. This may block if random pool isn't initialized. */
 	while (buffer_size > 0) {
-		if (buffer_size > 256) {
-			len = 256;
-		} else {
-			len = buffer_size;
-		}
-		err = getentropy (buffer + count, len);
+		gssize const len = MIN (buffer_size, 256);
+		gint const err = getentropy (buffer, len);
 		if (err < 0) {
 			if (errno == EINTR)
 				continue;
 			if (errno == ENOSYS || errno == EPERM) {
-				getentropy_works = 0;
+				getentropy_fail = TRUE;
 				return 0;
 			}
 			g_warning ("Entropy error! Error in getentropy (%s).", strerror (errno));
@@ -126,7 +116,7 @@ mono_getentropy (guchar *buffer, gint buffer_size, MonoError *error)
 			mono_error_set_execution_engine (error, "Entropy error! Error in getentropy (%s).", strerror (errno));
 			return -1;
 		}
-		count += len;
+		buffer += len;
 		buffer_size -= len;
 	}
 	return 1;
@@ -134,15 +124,15 @@ mono_getentropy (guchar *buffer, gint buffer_size, MonoError *error)
 #endif /* HAVE_GETENTROPY */
 
 static void
-get_entropy_from_egd (const char *path, guchar *buffer, int buffer_size, MonoError *error)
+get_entropy_from_egd (const char *path, guchar *buffer, gssize buffer_size, MonoError *error)
 {
+	g_assert (buffer || !buffer_size);
+
 	struct sockaddr_un egd_addr;
 	gint socket_fd;
 	gint ret;
 	guint offset = 0;
 	int err = 0;
-
-	error_init (error);
 	
 	socket_fd = socket (PF_UNIX, SOCK_STREAM, 0);
 	if (socket_fd < 0) {
@@ -212,7 +202,7 @@ get_entropy_from_egd (const char *path, guchar *buffer, int buffer_size, MonoErr
 gboolean
 mono_rand_open (void)
 {
-	static gint32 status = 0;
+	static gint32 status;
 	if (status != 0 || mono_atomic_cas_i32 (&status, 1, 0) != 0) {
 		while (status != 2)
 			mono_thread_info_yield ();
@@ -235,28 +225,25 @@ mono_rand_open (void)
 }
 
 gpointer
-mono_rand_init (guchar *seed, gint seed_size)
+mono_rand_init (const guchar *seed, gssize seed_size)
 {
 	// file < 0 is expected in the egd case
 	return (!use_egd && file < 0) ? NULL : GINT_TO_POINTER (file);
 }
 
 gboolean
-mono_rand_try_get_bytes (gpointer *handle, guchar *buffer, gint buffer_size, MonoError *error)
+mono_rand_try_get_bytes (gpointer *handle, guchar *buffer, gssize buffer_size, MonoError *error)
 {
-#if defined(HAVE_GETRANDOM) || defined(HAVE_GETENTROPY)
-	gint res;
-#endif
-
+	g_assert (buffer || !buffer_size);
 	g_assert (handle);
 
 	error_init (error);
 
 #if defined(HAVE_GETRANDOM) || defined(HAVE_GETENTROPY)
 #ifdef HAVE_GETRANDOM
-	res = mono_getrandom (buffer, buffer_size, 0, error);
+	gint const res = mono_getrandom (buffer, buffer_size, 0, error);
 #else
-	res = mono_getentropy (buffer, buffer_size, error);
+	gint const res = mono_getentropy (buffer, buffer_size, error);
 #endif
 	if (res < 0)
 		return FALSE;
@@ -279,11 +266,8 @@ mono_rand_try_get_bytes (gpointer *handle, guchar *buffer, gint buffer_size, Mon
 		g_free (socket_path);
 	} else {
 		/* Read until the buffer is filled. This may block if using NAME_DEV_RANDOM. */
-		gint count = 0;
-		gint err;
-
-		do {
-			err = read (file, buffer + count, buffer_size - count);
+		while (buffer_size > 0) {
+			gssize const err = read (file, buffer, buffer_size);
 			if (err < 0) {
 				if (errno == EINTR)
 					continue;
@@ -292,8 +276,9 @@ mono_rand_try_get_bytes (gpointer *handle, guchar *buffer, gint buffer_size, Mon
 				mono_error_set_execution_engine (error, "Entropy error! Error in read (%s).", strerror (errno));
 				return FALSE;
 			}
-			count += err;
-		} while (count < buffer_size);
+			buffer += err;
+			buffer_size -= err;
+		}
 	}
 	return TRUE;
 }
@@ -311,7 +296,7 @@ mono_rand_close (gpointer provider)
 gboolean
 mono_rand_open (void)
 {
-	static gint32 status = 0;
+	static gint32 status;
 	if (status != 0 || mono_atomic_cas_i32 (&status, 1, 0) != 0) {
 		while (status != 2)
 			mono_thread_info_yield ();
@@ -326,33 +311,36 @@ mono_rand_open (void)
 }
 
 gpointer
-mono_rand_init (guchar *seed, gint seed_size)
+mono_rand_init (const guchar *seed, gssize seed_size)
 {
 	return "srand"; // NULL will be interpreted as failure; return arbitrary nonzero pointer
 }
 
 gboolean
-mono_rand_try_get_bytes (gpointer *handle, guchar *buffer, gint buffer_size, MonoError *error)
+mono_rand_try_get_bytes (gpointer *handle, guchar *buffer, gssize buffer_size, MonoError *error)
 {
-	gint count = 0;
+	// This functions is not used on any mainstream platform, perhaps not at all.
+
+	g_assert (buffer || !buffer_size);
 
 	error_init (error);
+
+	g_assert (RAND_MAX >= 0xFF); // FIXME static_assert when compilers catch up.
 	
-	do {
-		if (buffer_size - count >= sizeof (gint32) && RAND_MAX >= 0xFFFFFFFF) {
-			*(gint32*) buffer = rand();
-			count += sizeof (gint32);
-			buffer += sizeof (gint32) / sizeof (guchar);
-		} else if (buffer_size - count >= sizeof (gint16) && RAND_MAX >= 0xFFFF) {
-			*(gint16*) buffer = rand();
-			count += sizeof (gint16);
-			buffer += sizeof (gint16) / sizeof (guchar);
-		} else if (buffer_size - count >= sizeof (gint8) && RAND_MAX >= 0xFF) {
-			*(gint8*) buffer = rand();
-			count += sizeof (gint8);
-			buffer += sizeof (gint8) / sizeof (guchar);
+	while (buffer_size > 0) {
+		int const i = rand ();
+		int j;
+		if (buffer_size >= (j = 4) && RAND_MAX >= 0xFFFFFFFF)
+			*(gint32*) buffer = i;
+		else if (buffer_size >= (j = 2) && RAND_MAX >= 0xFFFF)
+			*(gint16*) buffer = i;
+		else {
+			j = 1;
+			*(gint8*) buffer = i;
 		}
-	} while (count < buffer_size);
+		buffer += j;
+		buffer_size -= j;
+	}
 
 	return TRUE;
 }

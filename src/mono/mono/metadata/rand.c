@@ -21,30 +21,27 @@
 #include "utils/mono-rand.h"
 
 MonoBoolean
-ves_icall_System_Security_Cryptography_RNGCryptoServiceProvider_RngOpen (void)
+ves_icall_System_Security_Cryptography_RNGCryptoServiceProvider_RngOpen (MonoError *error)
 {
 	return (MonoBoolean) mono_rand_open ();
 }
 
 gpointer
-ves_icall_System_Security_Cryptography_RNGCryptoServiceProvider_RngInitialize (MonoArray *seed)
+ves_icall_System_Security_Cryptography_RNGCryptoServiceProvider_RngInitialize (const guchar *seed, gssize seed_length, MonoError *error)
 {
-	
-	return mono_rand_init (seed ? mono_array_addr (seed, guchar, 0) : NULL, seed ? mono_array_length (seed) : 0);
+	return mono_rand_init (seed, seed_length);
 }
 
 gpointer
-ves_icall_System_Security_Cryptography_RNGCryptoServiceProvider_RngGetBytes (gpointer handle, MonoArray *arry)
+ves_icall_System_Security_Cryptography_RNGCryptoServiceProvider_RngGetBytes (gpointer handle, guchar *array, gssize array_length, MonoError *error)
 {
-	ERROR_DECL (error);
-	g_assert (arry);
-	mono_rand_try_get_bytes (&handle, mono_array_addr (arry, guchar, 0), mono_array_length (arry), error);
-	mono_error_set_pending_exception (error);
+	g_assert (array || !array_length);
+	mono_rand_try_get_bytes (&handle, array, array_length, error);
 	return handle;
 }
 
 void
-ves_icall_System_Security_Cryptography_RNGCryptoServiceProvider_RngClose (gpointer handle)
+ves_icall_System_Security_Cryptography_RNGCryptoServiceProvider_RngClose (gpointer handle, MonoError *error)
 {
 	mono_rand_close (handle);
 }

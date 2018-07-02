@@ -851,10 +851,10 @@ HANDLES(ICALL(RTH_17, "IsPrimitive", ves_icall_RuntimeTypeHandle_IsPrimitive))
 HANDLES(ICALL(RTH_18, "type_is_assignable_from", ves_icall_RuntimeTypeHandle_type_is_assignable_from))
 
 ICALL_TYPE(RNG, "System.Security.Cryptography.RNGCryptoServiceProvider", RNG_1)
-ICALL(RNG_1, "RngClose", ves_icall_System_Security_Cryptography_RNGCryptoServiceProvider_RngClose)
-ICALL(RNG_2, "RngGetBytes", ves_icall_System_Security_Cryptography_RNGCryptoServiceProvider_RngGetBytes)
-ICALL(RNG_3, "RngInitialize", ves_icall_System_Security_Cryptography_RNGCryptoServiceProvider_RngInitialize)
-ICALL(RNG_4, "RngOpen", ves_icall_System_Security_Cryptography_RNGCryptoServiceProvider_RngOpen)
+HANDLES(ICALL(RNG_1, "RngClose", ves_icall_System_Security_Cryptography_RNGCryptoServiceProvider_RngClose))
+HANDLES(ICALL(RNG_2, "RngGetBytes", ves_icall_System_Security_Cryptography_RNGCryptoServiceProvider_RngGetBytes))
+HANDLES(ICALL(RNG_3, "RngInitialize", ves_icall_System_Security_Cryptography_RNGCryptoServiceProvider_RngInitialize))
+HANDLES(ICALL(RNG_4, "RngOpen", ves_icall_System_Security_Cryptography_RNGCryptoServiceProvider_RngOpen))
 
 #ifndef DISABLE_POLICY_EVIDENCE
 ICALL_TYPE(EVID, "System.Security.Policy.Evidence", EVID_1)

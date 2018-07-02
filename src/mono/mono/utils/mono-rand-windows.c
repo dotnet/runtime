@@ -43,7 +43,7 @@ mono_rand_open (void)
  * \returns On success, a non-NULL handle which can be used to fetch random data from \c mono_rand_try_get_bytes. On failure, NULL.
  */
 gpointer
-mono_rand_init (guchar *seed, gint seed_size)
+mono_rand_init (const guchar *seed, gssize seed_size)
 {
 #if WIN7_OR_NEWER
 	// NULL will be interpreted as failure; return arbitrary nonzero pointer
@@ -68,7 +68,7 @@ mono_rand_init (guchar *seed, gint seed_size)
  * \returns FALSE on failure and sets \p error, TRUE on success.
  */
 gboolean
-mono_rand_try_get_bytes (gpointer *handle, guchar *buffer, gint buffer_size, MonoError *error)
+mono_rand_try_get_bytes (gpointer *handle, guchar *buffer, gssize buffer_size, MonoError *error)
 {
 	g_assert (buffer || !buffer_size);
 	error_init (error);
