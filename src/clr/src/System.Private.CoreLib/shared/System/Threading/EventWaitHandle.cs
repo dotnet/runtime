@@ -10,9 +10,9 @@ namespace System.Threading
     public partial class EventWaitHandle : WaitHandle
     {
         public EventWaitHandle(bool initialState, EventResetMode mode) :
-			this(initialState, mode, null, out _)
-		{
-		}
+            this(initialState, mode, null, out _)
+        {
+        }
 
         public EventWaitHandle(bool initialState, EventResetMode mode, string name) :
             this(initialState, mode, name, out _)
