@@ -15,6 +15,7 @@ class EventPipeEventInstance;
 class EventPipeProvider;
 struct EventPipeProviderConfiguration;
 class EventPipeSession;
+enum class EventPipeSessionType;
 class EventPipeSessionProvider;
 
 enum class EventPipeEventLevel
@@ -53,7 +54,7 @@ public:
     EventPipeProvider* GetProvider(const SString &providerID);
 
     // Create a new session.
-    EventPipeSession* CreateSession(unsigned int circularBufferSizeInMB, EventPipeProviderConfiguration *pProviders, unsigned int numProviders);
+    EventPipeSession* CreateSession(EventPipeSessionType sessionType, unsigned int circularBufferSizeInMB, EventPipeProviderConfiguration *pProviders, unsigned int numProviders);
 
     // Delete a session.
     void DeleteSession(EventPipeSession *pSession);

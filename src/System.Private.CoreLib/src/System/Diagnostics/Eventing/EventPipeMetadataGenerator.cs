@@ -384,6 +384,13 @@ namespace System.Diagnostics.Tracing
             if (parameterType == typeof(Guid)) // Guid is not a part of TypeCode enum
                 return GuidTypeCode;
 
+            // IntPtr and UIntPtr are converted to their non-pointer types.
+            if (parameterType == typeof(IntPtr))
+                return IntPtr.Size == 4 ? TypeCode.Int32 : TypeCode.Int64;
+
+            if (parameterType == typeof(UIntPtr))
+                return UIntPtr.Size == 4 ? TypeCode.UInt32 : TypeCode.UInt64;
+
             return Type.GetTypeCode(parameterType);
         }
     }
