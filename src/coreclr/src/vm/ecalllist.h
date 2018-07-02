@@ -1181,8 +1181,10 @@ FCFuncStart(gEventPipeInternalFuncs)
     QCFuncElement("DefineEvent", EventPipeInternal::DefineEvent)
     QCFuncElement("DeleteProvider", EventPipeInternal::DeleteProvider)
     QCFuncElement("EventActivityIdControl", EventPipeInternal::EventActivityIdControl)
+    QCFuncElement("GetProvider", EventPipeInternal::GetProvider)
     QCFuncElement("WriteEvent", EventPipeInternal::WriteEvent)
     QCFuncElement("WriteEventData", EventPipeInternal::WriteEventData)
+    QCFuncElement("GetNextEvent", EventPipeInternal::GetNextEvent)
 FCFuncEnd()
 #endif // FEATURE_PERFTRACING
 

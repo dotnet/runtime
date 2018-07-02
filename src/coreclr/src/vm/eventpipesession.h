@@ -12,6 +12,12 @@ struct EventPipeProviderConfiguration;
 class EventPipeSessionProviderList;
 class EventPipeSessionProvider;
 
+enum class EventPipeSessionType
+{
+    File,
+    Streaming
+};
+
 class EventPipeSession
 {
 private:
@@ -24,10 +30,15 @@ private:
     // True if rundown is enabled.
     Volatile<bool> m_rundownEnabled;
 
+    // The type of the session.
+    // This determines behavior within the system (e.g. policies around which events to drop, etc.)
+    EventPipeSessionType m_sessionType;
+
 public:
 
     // TODO: This needs to be exposed via EventPipe::CreateSession() and EventPipe::DeleteSession() to avoid memory ownership issues.
     EventPipeSession(
+        EventPipeSessionType sessionType,
         unsigned int circularBufferSizeInMB,
         EventPipeProviderConfiguration *pProviders,
         unsigned int numProviders);
@@ -36,6 +47,13 @@ public:
 
     // Determine if the session is valid or not.  Invalid sessions can be detected before they are enabled.
     bool IsValid() const;
+
+    // Get the session type.
+    EventPipeSessionType GetSessionType() const
+    {
+        LIMITED_METHOD_CONTRACT;
+        return m_sessionType;
+    }
 
     // Get the configured size of the circular buffer.
     size_t GetCircularBufferSize() const

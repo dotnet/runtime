@@ -7,8 +7,19 @@ using System.Runtime.InteropServices;
 using System.Security;
 using Microsoft.Win32;
 
+#if FEATURE_PERFTRACING
+
 namespace System.Diagnostics.Tracing
 {
+    [StructLayout(LayoutKind.Sequential)]
+    internal struct EventPipeEventInstanceData
+    {
+        internal IntPtr ProviderID;
+        internal uint EventID;
+        internal IntPtr Payload;
+        internal uint PayloadLength;
+    }
+
     [StructLayout(LayoutKind.Sequential)]
     internal struct EventPipeProviderConfiguration
     {
@@ -166,6 +177,9 @@ namespace System.Diagnostics.Tracing
         internal static extern unsafe IntPtr DefineEvent(IntPtr provHandle, uint eventID, long keywords, uint eventVersion, uint level, void *pMetadata, uint metadataLength);
 
         [DllImport(JitHelpers.QCall, CharSet = CharSet.Unicode)]
+        internal static extern IntPtr GetProvider(string providerName);
+
+        [DllImport(JitHelpers.QCall, CharSet = CharSet.Unicode)]
         internal static extern void DeleteProvider(IntPtr provHandle);
 
         [DllImport(JitHelpers.QCall, CharSet = CharSet.Unicode)]
@@ -176,5 +190,10 @@ namespace System.Diagnostics.Tracing
 
         [DllImport(JitHelpers.QCall, CharSet = CharSet.Unicode)]
         internal static extern unsafe void WriteEventData(IntPtr eventHandle, uint eventID, EventProvider.EventData* pEventData, uint dataCount, Guid* activityId, Guid* relatedActivityId);
+
+        [DllImport(JitHelpers.QCall, CharSet = CharSet.Unicode)]
+        internal static extern unsafe bool GetNextEvent(EventPipeEventInstanceData* pInstance);
     }
 }
+
+#endif // FEATURE_PERFTRACING
