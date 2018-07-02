@@ -12,6 +12,7 @@ class CrstStatic;
 class CrawlFrame;
 class EventPipeConfiguration;
 class EventPipeEvent;
+class EventPipeEventInstance;
 class EventPipeFile;
 class EventPipeJsonFile;
 class EventPipeBuffer;
@@ -250,6 +251,9 @@ class EventPipe
         // Create a provider.
         static EventPipeProvider* CreateProvider(const SString &providerName, EventPipeCallback pCallbackFunction = NULL, void *pCallbackData = NULL);
 
+        // Get a provider.
+        static EventPipeProvider* GetProvider(const SString &providerName);
+
         // Delete a provider.
         static void DeleteProvider(EventPipeProvider *pProvider);
 
@@ -272,6 +276,9 @@ class EventPipe
 
         // Save the command line for the current process.
         static void SaveCommandLine(LPCWSTR pwzAssemblyPath, int argc, LPCWSTR *argv);
+
+        // Get next event.
+        static EventPipeEventInstance* GetNextEvent();
 
     protected:
 
@@ -373,6 +380,15 @@ private:
         EVENT_ACTIVITY_CONTROL_CREATE_SET_ID = 5
     };
 
+    struct EventPipeEventInstanceData
+    {
+    public:
+        void *ProviderID;
+        unsigned int EventID;
+        const BYTE *Payload;
+        unsigned int PayloadLength;
+    };
+
 public:
 
     static void QCALLTYPE Enable(
@@ -397,6 +413,9 @@ public:
         void *pMetadata,
         UINT32 metadataLength);
 
+    static INT_PTR QCALLTYPE GetProvider(
+        __in_z LPCWSTR providerName);
+
     static void QCALLTYPE DeleteProvider(
         INT_PTR provHandle);
 
@@ -417,6 +436,9 @@ public:
         EventData *pEventData,
         UINT32 eventDataCount,
         LPCGUID pActivityId, LPCGUID pRelatedActivityId);
+
+    static bool QCALLTYPE GetNextEvent(
+        EventPipeEventInstanceData *pInstance); 
 };
 
 #endif // FEATURE_PERFTRACING

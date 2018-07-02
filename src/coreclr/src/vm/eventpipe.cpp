@@ -221,6 +221,7 @@ void EventPipe::EnableOnStartup()
 
         // Create a new session.
         EventPipeSession *pSession = new EventPipeSession(
+            EventPipeSessionType::File,
             1024 /* 1 GB circular buffer */,
             NULL, /* pProviders */
             0 /* numProviders */);
@@ -293,7 +294,11 @@ void EventPipe::Enable(
     CONTRACTL_END;
 
     // Create a new session.
-    EventPipeSession *pSession = s_pConfig->CreateSession(circularBufferSizeInMB, pProviders, static_cast<unsigned int>(numProviders));
+    EventPipeSession *pSession = s_pConfig->CreateSession(
+        (strOutputPath != NULL) ? EventPipeSessionType::File : EventPipeSessionType::Streaming,
+        circularBufferSizeInMB,
+        pProviders,
+        static_cast<unsigned int>(numProviders));
 
     // Enable the session.
     Enable(strOutputPath, pSession);
@@ -329,8 +334,13 @@ void EventPipe::Enable(LPCWSTR strOutputPath, EventPipeSession *pSession)
     CrstHolder _crst(GetLock());
 
     // Create the event pipe file.
-    SString eventPipeFileOutputPath(strOutputPath);
-    s_pFile = new EventPipeFile(eventPipeFileOutputPath);
+    // A NULL output path means that we should not write the results to a file.
+    // This is used in the EventListener streaming case.
+    if (strOutputPath != NULL)
+    {
+        SString eventPipeFileOutputPath(strOutputPath);
+        s_pFile = new EventPipeFile(eventPipeFileOutputPath);
+    }
 
 #ifdef _DEBUG
     if((CLRConfig::GetConfigValue(CLRConfig::INTERNAL_EnableEventPipe) & 2) == 2)
@@ -395,39 +405,39 @@ void EventPipe::Disable()
         FlushProcessWriteBuffers();
 
         // Write to the file.
-        LARGE_INTEGER disableTimeStamp;
-        QueryPerformanceCounter(&disableTimeStamp);
-        s_pBufferManager->WriteAllBuffersToFile(s_pFile, disableTimeStamp);
-
-        if(CLRConfig::GetConfigValue(CLRConfig::INTERNAL_EventPipeRundown) > 0)
-        {
-            // Before closing the file, do rundown.
-            const unsigned int numRundownProviders = 2;
-            EventPipeProviderConfiguration rundownProviders[] =
-            {
-                { W("Microsoft-Windows-DotNETRuntime"), 0x80020138, static_cast<unsigned int>(EventPipeEventLevel::Verbose) }, // Public provider.
-                { W("Microsoft-Windows-DotNETRuntimeRundown"), 0x80020138, static_cast<unsigned int>(EventPipeEventLevel::Verbose) } // Rundown provider.
-            };
-            // The circular buffer size doesn't matter because all events are written synchronously during rundown.
-            s_pSession = s_pConfig->CreateSession(1 /* circularBufferSizeInMB */, rundownProviders, numRundownProviders);
-            s_pConfig->EnableRundown(s_pSession);
-
-            // Ask the runtime to emit rundown events.
-            if(g_fEEStarted && !g_fEEShutDown)
-            {
-                ETW::EnumerationLog::EndRundown();
-            }
-
-            // Disable the event pipe now that rundown is complete.
-            s_pConfig->Disable(s_pSession);
-
-            // Delete the rundown session.
-            s_pConfig->DeleteSession(s_pSession);
-            s_pSession = NULL;
-        }
-
         if(s_pFile != NULL)
         {
+            LARGE_INTEGER disableTimeStamp;
+            QueryPerformanceCounter(&disableTimeStamp);
+            s_pBufferManager->WriteAllBuffersToFile(s_pFile, disableTimeStamp);
+
+            if(CLRConfig::GetConfigValue(CLRConfig::INTERNAL_EventPipeRundown) > 0)
+            {
+                // Before closing the file, do rundown.
+                const unsigned int numRundownProviders = 2;
+                EventPipeProviderConfiguration rundownProviders[] =
+                {
+                    { W("Microsoft-Windows-DotNETRuntime"), 0x80020138, static_cast<unsigned int>(EventPipeEventLevel::Verbose) }, // Public provider.
+                    { W("Microsoft-Windows-DotNETRuntimeRundown"), 0x80020138, static_cast<unsigned int>(EventPipeEventLevel::Verbose) } // Rundown provider.
+                };
+                // The circular buffer size doesn't matter because all events are written synchronously during rundown.
+                s_pSession = s_pConfig->CreateSession(EventPipeSessionType::File, 1 /* circularBufferSizeInMB */, rundownProviders, numRundownProviders);
+                s_pConfig->EnableRundown(s_pSession);
+
+                // Ask the runtime to emit rundown events.
+                if(g_fEEStarted && !g_fEEShutDown)
+                {
+                    ETW::EnumerationLog::EndRundown();
+                }
+
+                // Disable the event pipe now that rundown is complete.
+                s_pConfig->Disable(s_pSession);
+
+                // Delete the rundown session.
+                s_pConfig->DeleteSession(s_pSession);
+                s_pSession = NULL;
+            }
+
             delete(s_pFile);
             s_pFile = NULL;
         }
@@ -484,6 +494,25 @@ EventPipeProvider* EventPipe::CreateProvider(const SString &providerName, EventP
 
     return pProvider;
 
+}
+
+EventPipeProvider* EventPipe::GetProvider(const SString &providerName)
+{
+    CONTRACTL
+    {
+        THROWS;
+        GC_NOTRIGGER;
+        MODE_ANY;
+    }
+    CONTRACTL_END;
+
+    EventPipeProvider *pProvider = NULL;
+    if (s_pConfig != NULL)
+    {
+        pProvider = s_pConfig->GetProvider(providerName);
+    }
+
+    return pProvider;
 }
 
 void EventPipe::DeleteProvider(EventPipeProvider *pProvider)
@@ -975,6 +1004,28 @@ void EventPipe::SaveCommandLine(LPCWSTR pwzAssemblyPath, int argc, LPCWSTR *argv
 #endif
 }
 
+EventPipeEventInstance* EventPipe::GetNextEvent()
+{
+    CONTRACTL
+    {
+        THROWS;
+        GC_TRIGGERS;
+        MODE_PREEMPTIVE;
+    }
+    CONTRACTL_END;
+
+    EventPipeEventInstance *pInstance = NULL;
+
+    // Only fetch the next event if a tracing session exists.
+    // The buffer manager is not disposed until the process is shutdown.
+    if (s_pSession != NULL)
+    {
+        pInstance = s_pBufferManager->GetNextEvent();
+    }
+
+    return pInstance;
+}
+
 void QCALLTYPE EventPipeInternal::Enable(
         __in_z LPCWSTR outputFile,
         UINT32 circularBufferSizeInMB,
@@ -1039,6 +1090,22 @@ INT_PTR QCALLTYPE EventPipeInternal::DefineEvent(
     END_QCALL;
 
     return reinterpret_cast<INT_PTR>(pEvent);
+}
+
+INT_PTR QCALLTYPE EventPipeInternal::GetProvider(
+    __in_z LPCWSTR providerName)
+{
+    QCALL_CONTRACT;
+
+    EventPipeProvider *pProvider = NULL;
+
+    BEGIN_QCALL;
+    
+    pProvider = EventPipe::GetProvider(providerName);
+
+    END_QCALL;
+
+    return reinterpret_cast<INT_PTR>(pProvider);
 }
 
 void QCALLTYPE EventPipeInternal::DeleteProvider(
@@ -1152,5 +1219,28 @@ void QCALLTYPE EventPipeInternal::WriteEventData(
 
     END_QCALL;
 }
+
+bool QCALLTYPE EventPipeInternal::GetNextEvent(
+    EventPipeEventInstanceData *pInstance)
+{
+    QCALL_CONTRACT;
+
+    EventPipeEventInstance *pNextInstance = NULL;
+    BEGIN_QCALL;
+
+    _ASSERTE(pInstance != NULL);
+
+    pNextInstance = EventPipe::GetNextEvent();
+    if (pNextInstance)
+    {
+        pInstance->ProviderID = pNextInstance->GetEvent()->GetProvider();
+        pInstance->EventID = pNextInstance->GetEvent()->GetEventID();
+        pInstance->Payload = pNextInstance->GetData();
+        pInstance->PayloadLength = pNextInstance->GetDataLength();
+    }
+
+    END_QCALL;
+    return pNextInstance != NULL;
+} 
 
 #endif // FEATURE_PERFTRACING

@@ -75,6 +75,8 @@
                              message="$(string.RuntimePublisher.MonitoringKeywordMessage)" symbol="CLR_MONITORING_KEYWORD" />
                     <keyword name="CodeSymbolsKeyword" mask="0x400000000"
                              message="$(string.RuntimePublisher.CodeSymbolsKeywordMessage)" symbol="CLR_CODESYMBOLS_KEYWORD" />
+                    <keyword name="EventSourceKeyword" mask="0x800000000"
+                             message="$(string.RuntimePublisher.EventSourceKeywordMessage)" symbol="CLR_EVENTSOURCE_KEYWORD" />
                 </keywords>
                 <!--Tasks-->
                 <tasks>
@@ -3261,7 +3263,7 @@
                            symbol="CodeSymbols" message="$(string.RuntimePublisher.CodeSymbolsEventMessage)"/>
                     
                    <event value="270" version="0" level="win:Informational"  template="EventSource"
-                           opcode="win:Start"
+                           keywords="EventSourceKeyword"
                            symbol="EventSource" />
                 </events>
             </provider>
@@ -6853,6 +6855,7 @@
                 <string id="RuntimePublisher.DebuggerKeywordMessage" value="Debugger" />
                 <string id="RuntimePublisher.MonitoringKeywordMessage" value="Monitoring" />
                 <string id="RuntimePublisher.CodeSymbolsKeywordMessage" value="CodeSymbols" />
+                <string id="RuntimePublisher.EventSourceKeywordMessage" value="EventSource" />
                 <string id="RundownPublisher.LoaderKeywordMessage" value="Loader" />
                 <string id="RundownPublisher.JitKeywordMessage" value="Jit" />
                 <string id="RundownPublisher.JittedMethodILToNativeMapRundownKeywordMessage" value="JittedMethodILToNativeMapRundown" />

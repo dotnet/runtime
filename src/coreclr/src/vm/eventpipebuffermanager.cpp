@@ -29,6 +29,7 @@ EventPipeBufferManager::EventPipeBufferManager()
     m_numBuffersStolen = 0;
     m_numBuffersLeaked = 0;
     m_numEventsStored = 0;
+    m_numEventsDropped = 0;
     m_numEventsWritten = 0;
 #endif // _DEBUG
 }
@@ -76,7 +77,7 @@ EventPipeBufferManager::~EventPipeBufferManager()
     }
 }
 
-EventPipeBuffer* EventPipeBufferManager::AllocateBufferForThread(Thread *pThread, unsigned int requestSize)
+EventPipeBuffer* EventPipeBufferManager::AllocateBufferForThread(EventPipeSession &session, Thread *pThread, unsigned int requestSize)
 {
     CONTRACTL
     {
@@ -133,11 +134,14 @@ EventPipeBuffer* EventPipeBufferManager::AllocateBufferForThread(Thread *pThread
         }
     }
 
+    // Only steal buffers from other threads if the session being written to is a
+    // file-based session.  Streaming sessions will simply drop events.
+    // TODO: Add dropped events telemetry here.
     EventPipeBuffer *pNewBuffer = NULL;
-    if(!allocateNewBuffer)
+    if(!allocateNewBuffer && (session.GetSessionType() == EventPipeSessionType::File))
     {
         // We can't allocate a new buffer.
-        // Find the oldest buffer, zero it, and re-purpose it for this thread.
+        // Find the oldest buffer, de-allocate it, and re-purpose it for this thread.
 
         // Find the thread that contains the oldest stealable buffer, and get its list of buffers.
         EventPipeBufferList *pListToStealFrom = FindThreadToStealFrom();
@@ -179,7 +183,7 @@ EventPipeBuffer* EventPipeBufferManager::AllocateBufferForThread(Thread *pThread
         // Pick the base buffer size based.  Debug builds have a smaller size to stress the allocate/steal path more.
         unsigned int baseBufferSize =
 #ifdef _DEBUG
-            5 * 1024; // 5K
+            30 * 1024; // 30K
 #else
             100 * 1024; // 100K
 #endif
@@ -190,6 +194,13 @@ EventPipeBuffer* EventPipeBufferManager::AllocateBufferForThread(Thread *pThread
         if(bufferSize < requestSize)
         {
             bufferSize = requestSize;
+        }
+
+        // Don't allow the buffer size to exceed 1MB.
+        const unsigned int maxBufferSize = 1024 * 1024;
+        if(bufferSize > maxBufferSize)
+        {
+            bufferSize = maxBufferSize;
         }
 
         // EX_TRY is used here as opposed to new (nothrow) because
@@ -363,7 +374,7 @@ bool EventPipeBufferManager::WriteEvent(Thread *pThread, EventPipeSession &sessi
         // to switch to preemptive mode here.
 
         unsigned int requestSize = sizeof(EventPipeEventInstance) + payload.GetSize();
-        pBuffer = AllocateBufferForThread(pThread, requestSize);
+        pBuffer = AllocateBufferForThread(session, pThread, requestSize);
     }
 
     // Try to write the event after we allocated (or stole) a buffer.
@@ -381,6 +392,10 @@ bool EventPipeBufferManager::WriteEvent(Thread *pThread, EventPipeSession &sessi
     if(!allocNewBuffer)
     {
         InterlockedIncrement(&m_numEventsStored);
+    }
+    else
+    {
+        InterlockedIncrement(&m_numEventsDropped);
     }
 #endif // _DEBUG
     return !allocNewBuffer;
@@ -455,6 +470,64 @@ void EventPipeBufferManager::WriteAllBuffersToFile(EventPipeFile *pFile, LARGE_I
 
         // Pop the event from the buffer.
         pOldestContainingList->PopNextEvent(stopTimeStamp);
+    }
+}
+
+EventPipeEventInstance* EventPipeBufferManager::GetNextEvent()
+{
+    CONTRACTL
+    {
+        NOTHROW;
+        GC_NOTRIGGER;
+        MODE_ANY;
+    }
+    CONTRACTL_END;
+
+    // Take the lock before walking the buffer list.
+    SpinLockHolder _slh(&m_lock);
+
+    // Naively walk the circular buffer, getting the event stream in timestamp order.
+    LARGE_INTEGER stopTimeStamp;
+    QueryPerformanceCounter(&stopTimeStamp);
+    while (true)
+    {
+        EventPipeEventInstance *pOldestInstance = NULL;
+        EventPipeBuffer *pOldestContainingBuffer = NULL;
+        EventPipeBufferList *pOldestContainingList = NULL;
+        SListElem<EventPipeBufferList*> *pElem = m_pPerThreadBufferList->GetHead();
+        while (pElem != NULL)
+        {
+            EventPipeBufferList *pBufferList = pElem->GetValue();
+
+            // Peek the next event out of the list.
+            EventPipeBuffer *pContainingBuffer = NULL;
+            EventPipeEventInstance *pNext = pBufferList->PeekNextEvent(stopTimeStamp, &pContainingBuffer);
+            if (pNext != NULL)
+            {
+                // If it's the oldest event we've seen, then save it.
+                if ((pOldestInstance == NULL) ||
+                    (pOldestInstance->GetTimeStamp()->QuadPart > pNext->GetTimeStamp()->QuadPart))
+                {
+                    pOldestInstance = pNext;
+                    pOldestContainingBuffer = pContainingBuffer;
+                    pOldestContainingList = pBufferList;
+                }
+            }
+
+            pElem = m_pPerThreadBufferList->GetNext(pElem);
+        }
+
+        if (pOldestInstance == NULL)
+        {
+            // We're done.  There are no more events.
+            return NULL;
+        }
+
+        // Pop the event from the buffer.
+        pOldestContainingList->PopNextEvent(stopTimeStamp);
+
+        // Return the oldest event that hasn't yet been processed.
+        return pOldestInstance;
     }
 }
 
@@ -777,25 +850,22 @@ EventPipeEventInstance* EventPipeBufferList::PopNextEvent(LARGE_INTEGER beforeTi
     EventPipeBuffer *pContainingBuffer = NULL;
     EventPipeEventInstance *pNext = PeekNextEvent(beforeTimeStamp, &pContainingBuffer);
 
+    // Check to see if we need to clean-up the buffer that contained the previously popped event.
+    if(pContainingBuffer->GetPrevious() != NULL)
+    {
+            // Remove the previous node.  The previous node should always be the head node.
+            EventPipeBuffer *pRemoved = GetAndRemoveHead();
+            _ASSERTE(pRemoved != pContainingBuffer);
+            _ASSERTE(pContainingBuffer == GetHead());
+
+            // De-allocate the buffer.
+            m_pManager->DeAllocateBuffer(pRemoved);
+    }
+
     // If the event is non-NULL, pop it.
     if(pNext != NULL && pContainingBuffer != NULL)
     {
         pContainingBuffer->PopNext(beforeTimeStamp);
-
-        // If the buffer is not the last buffer in the list and it has been drained, de-allocate it.
-        if((pContainingBuffer->GetNext() != NULL) && (pContainingBuffer->PeekNext(beforeTimeStamp) == NULL))
-        {
-            // This buffer must be the head node of the list.
-            _ASSERTE(pContainingBuffer->GetPrevious() == NULL);
-            EventPipeBuffer *pRemoved = GetAndRemoveHead();
-            _ASSERTE(pRemoved == pContainingBuffer);
-
-            // De-allocate the buffer.
-            m_pManager->DeAllocateBuffer(pRemoved);
-
-            // Reset the read buffer so that it becomes the head node on next peek or pop operation.
-            m_pReadBuffer = NULL;
-        }
     }
 
     return pNext;
