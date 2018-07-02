@@ -63,6 +63,17 @@ typedef struct {
 
 #define MONO_UNWIND_INFO_RT_FUNC_SIZE 128
 
+typedef BOOLEAN (WINAPI* RtlInstallFunctionTableCallbackPtr)(
+	DWORD64 TableIdentifier,
+	DWORD64 BaseAddress,
+	DWORD Length,
+	PGET_RUNTIME_FUNCTION_CALLBACK Callback,
+	PVOID Context,
+	PCWSTR OutOfProcessCallbackDll);
+
+typedef BOOLEAN (WINAPI* RtlDeleteFunctionTablePtr)(
+	PRUNTIME_FUNCTION FunctionTable);
+
 // On Win8/Win2012Server and later we can use dynamic growable function tables
 // instead of RtlInstallFunctionTableCallback. This gives us the benefit to
 // include all needed unwind upon registration.
@@ -515,7 +526,6 @@ mono_amd64_get_tls_gs_offset (void) MONO_LLVM_INTERNAL;
 
 #if defined(TARGET_WIN32) && !defined(DISABLE_JIT)
 
-#if G_HAVE_API_SUPPORT(HAVE_CLASSIC_WINAPI_SUPPORT)
 #define MONO_ARCH_HAVE_UNWIND_TABLE 1
 #define MONO_ARCH_HAVE_CODE_CHUNK_TRACKING 1
 
@@ -600,7 +610,6 @@ mono_arch_code_chunk_new (void *chunk, int size);
 void
 mono_arch_code_chunk_destroy (void *chunk);
 
-#endif /* G_HAVE_API_SUPPORT(HAVE_CLASSIC_WINAPI_SUPPORT) */
 #endif /* defined(TARGET_WIN32) && !defined(DISABLE_JIT) */
 
 #ifdef MONO_ARCH_HAVE_UNWIND_TABLE
