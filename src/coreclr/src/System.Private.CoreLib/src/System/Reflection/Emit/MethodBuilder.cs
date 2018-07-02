@@ -358,6 +358,11 @@ namespace System.Reflection.Emit
             }
         }
 
+        internal void SetToken(MethodToken token)
+        {
+            m_tkMethod = token;
+        }
+
         internal byte[] GetBody()
         {
             // Returns the il bytes of this method.
