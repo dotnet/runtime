@@ -3709,4 +3709,13 @@
   <data name="ArgumentOutOfRange_Week_ISO" xml:space="preserve">
     <value>The week parameter must be in the range 1 through 53.</value>
   </data>
+  <data name="Argument_BadPInvokeMethod" xml:space="preserve">
+    <value>PInvoke methods must be static and native and cannot be abstract.</value>
+  </data>
+  <data name="Argument_BadPInvokeOnInterface" xml:space="preserve">
+    <value>PInvoke methods cannot exist on interfaces.</value>
+  </data>
+  <data name="Argument_MethodRedefined" xml:space="preserve">
+    <value>Method has been already defined.</value>
+  </data>
 </root>
