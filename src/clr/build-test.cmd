@@ -358,6 +358,19 @@ REM ===
 REM === Create the test overlay
 REM ===
 REM =========================================================================================
+
+set RuntimeIdArg=
+if defined __RuntimeId (
+    set RuntimeIdArg=-RuntimeID="%__RuntimeId%"
+)
+
+set TargetsWindowsArg=
+if "%__TargetsWindows%"=="1" (
+    set TargetsWindowsArg=-TargetsWindows=true
+) else if "%__TargetsWindows%"=="0" (
+    set TargetsWindowsArg=-TargetsWindows=false
+)
+
 echo %__MsgPrefix%Creating test overlay...
 
 set __BuildLogRootName=Tests_Overlay_Managed
@@ -402,19 +415,6 @@ if errorlevel 1 (
 if defined __SkipManaged goto SkipBuildingWrappers
 
 echo %__MsgPrefix%Creating test wrappers...
-
-set RuntimeIdArg=
-set TargetsWindowsArg=
-
-if defined __RuntimeId (
-    set RuntimeIdArg=-RuntimeID="%__RuntimeId%"
-)
-
-if "%__TargetsWindows%"=="1" (
-    set TargetsWindowsArg=-TargetsWindows=true
-) else if "%__TargetsWindows%"=="0" (
-    set TargetsWindowsArg=-TargetsWindows=false
-)
 
 set __BuildLogRootName=Tests_XunitWrapper
 set __BuildLog=%__LogsDir%\%__BuildLogRootName%_%__BuildOS%__%__BuildArch%__%__BuildType%.log
