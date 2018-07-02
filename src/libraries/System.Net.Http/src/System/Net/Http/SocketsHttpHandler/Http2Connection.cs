@@ -14,9 +14,8 @@ using System.Threading.Tasks;
 
 // Some stuff to do:
 
-// * Handle errors/shutdown, both graceful and abortive, at connection level and per-stream
-// * Handle request cancellation
 // * Handle request body
+// * Handle request cancellation
 // * Handle frame limit and sending CONTINUATION on request headers
 // * Flow control (both inbound and outbound)
 // * Various TODOs below
@@ -25,6 +24,7 @@ namespace System.Net.Http
 {
     internal sealed class Http2Connection : HttpConnectionBase, IDisposable
     {
+        private readonly HttpConnectionPool _pool;
         private readonly SslStream _stream;
         private readonly object _syncObject;
 
@@ -49,8 +49,9 @@ namespace System.Net.Http
 
         private const int InitialBufferSize = 4096;
 
-        public Http2Connection(SslStream stream)
+        public Http2Connection(HttpConnectionPool pool, SslStream stream)
         {
+            _pool = pool;
             _stream = stream;
             _syncObject = new object();
             _incomingBuffer = new ArrayBuffer(InitialBufferSize);
@@ -171,7 +172,10 @@ namespace System.Net.Http
                             ProcessWindowUpdateFrame(frameHeader);
                             break;
 
-                        case FrameType.GoAway:          // TODO
+                        case FrameType.GoAway:
+                            ProcessGoAwayFrame(frameHeader);
+                            break;
+
                         case FrameType.RstStream:       // TODO
                             throw new NotImplementedException();
 
@@ -184,10 +188,7 @@ namespace System.Net.Http
             }
             catch (Exception)
             {
-                // TODO: Shutdown handling 
-                // Send GOAWAY to the peer, unless they sent us a GOAWAY first
-                // Fail any pending requests
-                // Clear out reference to connection so that the next request will create a new connection
+                AbortStreams(0);
             }
         }
 
@@ -241,6 +242,11 @@ namespace System.Net.Http
             _hpackDecoder.CompleteDecode();
 
             http2Stream.OnResponseHeadersComplete(endStream);
+
+            if (endStream)
+            {
+                RemoveStream(http2Stream);
+            }
         }
 
         private ReadOnlySpan<byte> GetFrameData(ReadOnlySpan<byte> frameData, bool hasPad, bool hasPriority)
@@ -285,9 +291,16 @@ namespace System.Net.Http
 
             ReadOnlySpan<byte> frameData = GetFrameData(_incomingBuffer.ReadSpan.Slice(0, frameHeader.Length), hasPad: frameHeader.PaddedFlag, hasPriority: false);
 
-            http2Stream.OnResponseData(frameData, frameHeader.EndStreamFlag);
+            bool endStream = frameHeader.EndStreamFlag;
+
+            http2Stream.OnResponseData(frameData, endStream);
 
             _incomingBuffer.Consume(frameHeader.Length);
+
+            if (endStream)
+            {
+                RemoveStream(http2Stream);
+            }
         }
 
         private async Task ProcessSettingsFrame(FrameHeader frameHeader)
@@ -400,6 +413,22 @@ namespace System.Net.Http
             _incomingBuffer.Consume(frameHeader.Length);
         }
 
+        private void ProcessGoAwayFrame(FrameHeader frameHeader)
+        {
+            Debug.Assert(frameHeader.Type == FrameType.GoAway);
+
+            if (frameHeader.Length < FrameHeader.GoAwayMinLength)
+            {
+                throw new Http2ProtocolException(Http2ProtocolErrorCode.FrameSizeError);
+            }
+
+            int lastValidStream = (int)((uint)((_incomingBuffer.ReadSpan[0] << 24) | (_incomingBuffer.ReadSpan[1] << 16) | (_incomingBuffer.ReadSpan[2] << 8) | _incomingBuffer.ReadSpan[3]) & 0x7FFFFFFF);
+
+            AbortStreams(lastValidStream);
+
+            _incomingBuffer.Consume(frameHeader.Length);
+        }
+
         private void WriteFrameHeader(FrameHeader frameHeader)
         {
             _outgoingBuffer.EnsureWriteSpace(FrameHeader.Size);
@@ -407,7 +436,33 @@ namespace System.Net.Http
             _outgoingBuffer.Commit(FrameHeader.Size);
         }
 
-        private bool CheckForShutdown()
+        private void AbortStreams(int lastValidStream)
+        {
+            lock (_syncObject)
+            {
+                if (!_disposed)
+                {
+                    _pool.InvalidateHttp2Connection(this);
+
+                    _disposed = true;
+                }
+
+                foreach (KeyValuePair<int, Http2Stream> kvp in _httpStreams)
+                {
+                    int streamId = kvp.Key;
+                    if (streamId > lastValidStream)
+                    {
+                        kvp.Value.OnResponseAbort();
+
+                        _httpStreams.Remove(streamId);
+                    }
+                }
+
+                CheckForShutdown();
+            }
+        }
+
+        private void CheckForShutdown()
         {
             Debug.Assert(_disposed);
             Debug.Assert(Monitor.IsEntered(_syncObject));
@@ -418,35 +473,24 @@ namespace System.Net.Http
                 if (enumerator.MoveNext())
                 {
                     // Not empty
-                    return false;
+                    return;
                 }
             }
 
-            return true;
-        }
-
-        private void Shutdown()
-        {
+            // Do shutdown.
             _stream.Close();
         }
 
         public void Dispose()
         {
-            bool shutdown = false;
-
             lock (_syncObject)
             {
                 if (!_disposed)
                 {
                     _disposed = true;
 
-                    shutdown = CheckForShutdown();
+                    CheckForShutdown();
                 }
-            }
-
-            if (shutdown)
-            {
-                Shutdown();
             }
         }
 
@@ -477,6 +521,7 @@ namespace System.Net.Http
             public const int PriorityInfoLength = 5;       // for both PRIORITY frame and priority info within HEADERS
             public const int PingLength = 8;
             public const int WindowUpdateLength = 4;
+            public const int GoAwayMinLength = 8;
 
             public FrameHeader(int length, FrameType type, FrameFlags flags, int streamId)
             {
@@ -571,49 +616,77 @@ namespace System.Net.Http
             }
         }
 
+        private int AddStream(Http2Stream http2Stream)
+        {
+            int streamId;
+
+            lock (_syncObject)
+            {
+                if (_disposed || _nextStream == MaxStreamId)
+                {
+                    // Throw a retryable request exception. This will cause retry logic to kick in
+                    // and perform another connection attempt. The user should never see this exception.
+                    throw new HttpRequestException(null, null, true);
+                }
+
+                streamId = _nextStream;
+
+                // Client-initiated streams are always odd-numbered, so increase by 2.
+                _nextStream += 2;
+
+                _httpStreams.Add(streamId, http2Stream);
+            }
+
+            return streamId;
+        }
+
+        private void RemoveStream(Http2Stream http2Stream)
+        {
+            lock (_syncObject)
+            {
+                if (!_httpStreams.Remove(http2Stream.StreamId, out Http2Stream removed))
+                {
+                    Debug.Fail("_httpStreams.Remove failed");
+                }
+
+                Debug.Assert(removed == http2Stream, "_httpStreams.TryRemove returned unexpected stream");
+
+                if (_disposed)
+                {
+                    CheckForShutdown();
+                }
+            }
+        }
+
         // TODO: These are relatively expensive (buffers etc) and should be pooled.
         class Http2Stream : IDisposable
         {
             private readonly Http2Connection _connection;
             private readonly int _streamId;
+            private readonly object _syncObject;
 
             // TODO: In debug build, make initial size small (10)
             private ArrayBuffer _requestBuffer;
 
             private ArrayBuffer _responseBuffer;
-            private object _responseBufferLock;
             private TaskCompletionSource<bool> _responseDataAvailable;
             private bool _responseComplete;
+            private bool _responseAborted;
 
             private HttpResponseMessage _response;
-            private bool _disposed = false;
-
+            private bool _disposed;
 
             public Http2Stream(Http2Connection connection)
             {
                 _connection = connection;
 
-                lock (connection._syncObject)
-                {
-                    if (connection._disposed || connection._nextStream == MaxStreamId)
-                    {
-                        // Throw a retryable request exception. This will cause retry logic to kick in
-                        // and perform another connection attempt. The user should never see this exception.
-                        throw new HttpRequestException(null, null, true);
-                    }
+                _streamId = connection.AddStream(this);
 
-                    _streamId = connection._nextStream;
-
-                    // Client-initiated streams are always odd-numbered, so increase by 2.
-                    connection._nextStream += 2;
-
-                    connection._httpStreams.Add(_streamId, this);
-                }
+                _syncObject = new object();
+                _disposed = false;
 
                 _requestBuffer = new ArrayBuffer(InitialBufferSize);
-
                 _responseBuffer = new ArrayBuffer(InitialBufferSize);
-                _responseBufferLock = new object();
             }
 
             public int StreamId => _streamId;
@@ -767,7 +840,7 @@ namespace System.Net.Http
 
                 // Start to process the response body.
                 bool emptyResponse = false;
-                lock (_responseBufferLock)
+                lock (_syncObject)
                 {
                     if (_responseComplete && _responseBuffer.ReadSpan.Length == 0)
                     {
@@ -848,8 +921,13 @@ namespace System.Net.Http
             {
                 TaskCompletionSource<bool> readDataAvailable = null;
 
-                lock (_responseBufferLock)
+                lock (_syncObject)
                 {
+                    if (_disposed)
+                    {
+                        return;
+                    }
+
                     Debug.Assert(!_responseComplete);
 
                     _responseBuffer.EnsureWriteSpace(buffer.Length);
@@ -860,6 +938,35 @@ namespace System.Net.Http
                     {
                         _responseComplete = true;
                     }
+
+                    if (_responseDataAvailable != null)
+                    {
+                        readDataAvailable = _responseDataAvailable;
+                        _responseDataAvailable = null;
+                    }
+                }
+
+                if (readDataAvailable != null)
+                {
+                    readDataAvailable.SetResult(true);
+                }
+            }
+
+            public void OnResponseAbort()
+            {
+                TaskCompletionSource<bool> readDataAvailable = null;
+
+                lock (_syncObject)
+                {
+                    if (_disposed)
+                    {
+                        return;
+                    }
+
+                    Debug.Assert(!_responseComplete);
+
+                    _responseComplete = true;
+                    _responseAborted = true;
 
                     if (_responseDataAvailable != null)
                     {
@@ -889,7 +996,7 @@ namespace System.Net.Http
             {
                 await onDataAvailable.ConfigureAwait(false);
 
-                lock (_responseBufferLock)
+                lock (_syncObject)
                 {
                     if (_responseBuffer.ReadSpan.Length > 0)
                     {
@@ -911,7 +1018,7 @@ namespace System.Net.Http
                 }
 
                 Task onDataAvailable;
-                lock (_responseBufferLock)
+                lock (_syncObject)
                 {
                     if (_responseBuffer.ReadSpan.Length > 0)
                     {
@@ -920,10 +1027,16 @@ namespace System.Net.Http
 
                     if (_responseComplete)
                     {
+                        if (_responseAborted)
+                        {
+                            return new ValueTask<int>(Task.FromException<int>(new IOException(SR.net_http_invalid_response)));
+                        }
+
                         return new ValueTask<int>(0);
                     }
 
                     Debug.Assert(_responseDataAvailable == null);
+                    Debug.Assert(!_responseAborted);
                     _responseDataAvailable = new TaskCompletionSource<bool>(TaskCreationOptions.RunContinuationsAsynchronously);
                     onDataAvailable = _responseDataAvailable.Task;
                 }
@@ -933,31 +1046,14 @@ namespace System.Net.Http
 
             public void Dispose()
             {
-                bool shutdown = false;
-
-                lock (_connection._syncObject)
+                lock (_syncObject)
                 {
                     if (!_disposed)
                     {
                         _disposed = true;
 
-                        if (!_connection._httpStreams.Remove(_streamId, out Http2Stream removed))
-                        {
-                            Debug.Fail("_httpStreams.Remove failed");
-                        }
-
-                        Debug.Assert(removed == this, "_httpStreams.TryRemove returned unexpected stream");
-
-                        if (_connection._disposed)
-                        {
-                            shutdown = _connection.CheckForShutdown();
-                        }
+                        // TODO: If the stream is not complete, we should send RST_STREAM
                     }
-                }
-
-                if (shutdown)
-                {
-                    _connection.Shutdown();
                 }
             }
         }
@@ -965,10 +1061,28 @@ namespace System.Net.Http
         sealed class Http2ReadStream : BaseAsyncStream
         {
             private readonly Http2Stream _http2Stream;
+            private int _disposed; // 0==no, 1==yes
 
             public Http2ReadStream(Http2Stream http2Stream)
             {
+                Debug.Assert(http2Stream != null);
                 _http2Stream = http2Stream;
+            }
+
+            protected override void Dispose(bool disposing)
+            {
+                if (Interlocked.Exchange(ref _disposed, 1) != 0)
+                {
+                    return;
+                }
+
+                if (disposing)
+                {
+                    Debug.Assert(_http2Stream != null);
+                    _http2Stream.Dispose();
+                }
+
+                base.Dispose(disposing);
             }
 
             public override bool CanRead => true;
