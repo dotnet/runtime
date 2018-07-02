@@ -314,7 +314,7 @@
   </PropertyGroup>
 
   <PropertyGroup>
-    <OptionalToolingJsonPath>$(ProjectDir)\external\test-runtime\optional.json</OptionalToolingJsonPath>
+    <OptionalToolingProjectPath>$(ProjectDir)\external\test-runtime\optional.csproj</OptionalToolingProjectPath>
   </PropertyGroup>
 
   <PropertyGroup>

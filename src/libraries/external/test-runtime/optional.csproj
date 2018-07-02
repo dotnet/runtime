@@ -1,0 +1,12 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <Import Project="..\..\dependencies.props" />
+  <PropertyGroup>
+    <TargetFramework>net45</TargetFramework>
+  </PropertyGroup>
+  <ItemGroup>
+    <PackageReference Include="Microsoft.DotNet.IBCMerge" Version="$(MicrosoftDotNetIBCMergePackageVersion)" />
+    <PackageReference Include="TestILC.amd64ret" Version="$(TestILCAmd64retPackageVersion)" />
+    <PackageReference Include="TestILC.armret" Version="$(TestILCArmretPackageVersion)" />
+    <PackageReference Include="TestILC.x86ret" Version="$(TestILCX86retPackageVersion)" />
+  </ItemGroup>
+</Project>
