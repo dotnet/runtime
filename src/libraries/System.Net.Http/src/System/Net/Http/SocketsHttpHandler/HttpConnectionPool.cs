@@ -372,7 +372,7 @@ namespace System.Net.Http
                     if (sslStream.NegotiatedApplicationProtocol == SslApplicationProtocol.Http2)
                     {
                         // The server accepted our request for HTTP2.
-                        http2Connection = new Http2Connection(sslStream);
+                        http2Connection = new Http2Connection(this, sslStream);
                         await http2Connection.SetupAsync().ConfigureAwait(false);
 
                         Debug.Assert(_http2Connection == null);
@@ -850,6 +850,12 @@ namespace System.Net.Http
                 list.Add(new CachedConnection(connection));
                 if (NetEventSource.IsEnabled) connection.Trace("Stored connection in pool.");
             }
+        }
+
+        public void InvalidateHttp2Connection(Http2Connection connection)
+        {
+            Debug.Assert(_http2Connection == connection);
+            _http2Connection = null;
         }
 
         /// <summary>
