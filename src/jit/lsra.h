@@ -1056,7 +1056,6 @@ private:
     regMaskTP allSIMDRegs();
     regMaskTP internalFloatRegCandidates();
 
-    bool isMultiRegRelated(RefPosition* refPosition, LsraLocation location);
     bool registerIsFree(regNumber regNum, RegisterType regType);
     bool registerIsAvailable(RegRecord*    physRegRecord,
                              LsraLocation  currentLoc,
@@ -1655,7 +1654,6 @@ public:
         , isSpecialPutArg(false)
         , preferCalleeSave(false)
         , isConstant(false)
-        , isMultiReg(false)
         , physReg(REG_COUNT)
 #ifdef DEBUG
         , intervalIndex(0)
@@ -1725,9 +1723,6 @@ public:
     // True if this interval is defined by a constant node that may be reused and/or may be
     // able to reuse a constant that's already in a register.
     bool isConstant : 1;
-
-    // True if this Interval is defined by a node that produces multiple registers.
-    bool isMultiReg : 1;
 
     // The register to which it is currently assigned.
     regNumber physReg;
