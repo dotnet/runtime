@@ -7,11 +7,8 @@
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
     <OutputType>Exe</OutputType>
     <Platform Condition=" '$(Platform)' == '' ">AnyCPU</Platform>
-    <NoStdLib>true</NoStdLib>
-    <NoCompilerStandardLib>true</NoCompilerStandardLib>
-    <IsDotNetFrameworkProductAssembly>true</IsDotNetFrameworkProductAssembly>
-    <AssemblyKey>Open</AssemblyKey>
-    <ExcludeMscorlibFacade>true</ExcludeMscorlibFacade>
+	<AssemblyKey>Open</AssemblyKey>
+	<IsDotNetFrameworkProductAssembly>true</IsDotNetFrameworkProductAssembly>
   </PropertyGroup>
 
   <PropertyGroup>
