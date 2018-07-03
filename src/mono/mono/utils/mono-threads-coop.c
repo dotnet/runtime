@@ -508,17 +508,56 @@ mono_threads_assert_gc_unsafe_region (void)
 	MONO_REQ_GC_UNSAFE_MODE;
 }
 
+typedef enum {
+	MONO_THREADS_SUSPEND_FULL_PREEMPTIVE = 0,
+	MONO_THREADS_SUSPEND_FULL_COOP,
+	MONO_THREADS_SUSPEND_HYBRID
+} MonoThreadsSuspendPolicy;
+
+static MonoThreadsSuspendPolicy
+mono_threads_suspend_policy (void)
+{
+#if defined (ENABLE_COOP_SUSPEND)
+	return MONO_THREADS_SUSPEND_FULL_COOP;
+#else
+#if defined (ENABLE_HYBRID_SUSPEND)
+	return MONO_THREADS_SUSPEND_HYBRID;
+#else
+	static MonoThreadsSuspendPolicy policy = -1;
+	if (G_UNLIKELY (policy == -1)) {
+		if (g_hasenv ("MONO_ENABLE_COOP") || g_hasenv ("MONO_ENABLE_COOP_SUSPEND")) {
+			g_assertf (!g_hasenv ("MONO_ENABLE_HYBRID_SUSPEND"), "Environment variables set to enable both hybrid and cooperative suspend simultaneously");
+			policy = MONO_THREADS_SUSPEND_FULL_COOP;
+		} else if (g_hasenv ("MONO_ENABLE_HYBRID_SUSPEND"))
+			policy = MONO_THREADS_SUSPEND_HYBRID;
+		else
+			policy = MONO_THREADS_SUSPEND_FULL_PREEMPTIVE;
+	}
+	return policy;
+#endif
+#endif
+}
+
+const char*
+mono_threads_suspend_policy_name (void)
+{
+	MonoThreadsSuspendPolicy policy = mono_threads_suspend_policy ();
+	switch (policy) {
+	case MONO_THREADS_SUSPEND_FULL_COOP:
+		return "cooperative";
+	case MONO_THREADS_SUSPEND_FULL_PREEMPTIVE:
+		return "preemptive";
+	case MONO_THREADS_SUSPEND_HYBRID:
+		return "hybrid";
+	default:
+		g_assert_not_reached ();
+	}
+}
+
 gboolean
 mono_threads_is_cooperative_suspension_enabled (void)
 {
-#if defined(ENABLE_COOP_SUSPEND)
-	return TRUE;
-#else
-	static int is_coop_enabled = -1;
-	if (G_UNLIKELY (is_coop_enabled == -1))
-		is_coop_enabled = (g_hasenv ("MONO_ENABLE_COOP") || g_hasenv ("MONO_ENABLE_COOP_SUSPEND")) ? 1 : 0;
-	return is_coop_enabled == 1;
-#endif
+	return (mono_threads_suspend_policy () == MONO_THREADS_SUSPEND_FULL_COOP);
 }
 
 gboolean
@@ -537,14 +576,7 @@ mono_threads_is_blocking_transition_enabled (void)
 gboolean
 mono_threads_is_hybrid_suspension_enabled (void)
 {
-#if defined(ENABLE_HYBRID_SUSPEND)
-	return TRUE;
-#else
-	static int is_hybrid_suspension_enabled = -1;
-	if (G_UNLIKELY (is_hybrid_suspension_enabled == -1))
-		is_hybrid_suspension_enabled = (g_hasenv ("MONO_ENABLE_HYBRID_SUSPEND")) ? 1 : 0;
-	return is_hybrid_suspension_enabled == 1;
-#endif
+	return (mono_threads_suspend_policy () == MONO_THREADS_SUSPEND_HYBRID);
 }
 
 

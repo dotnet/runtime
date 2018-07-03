@@ -28,6 +28,9 @@ extern volatile size_t mono_polling_required;
 void
 mono_threads_state_poll (void);
 
+const char*
+mono_threads_suspend_policy_name (void);
+
 gboolean
 mono_threads_is_blocking_transition_enabled (void);
 
