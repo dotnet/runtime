@@ -1486,13 +1486,6 @@ void Compiler::compShutdown()
     }
 #endif // FEATURE_JIT_METHOD_PERF
 
-#if COUNT_RANGECHECKS
-    if (optRangeChkAll > 0)
-    {
-        fprintf(fout, "Removed %u of %u range checks\n", optRangeChkRmv, optRangeChkAll);
-    }
-#endif // COUNT_RANGECHECKS
-
 #if COUNT_AST_OPERS
 
     // Add up all the counts so that we can show percentages of total
@@ -2007,9 +2000,7 @@ void Compiler::compInit(ArenaAllocator* pAlloc, InlineInfo* inlineInfo)
     compQmarkUsed         = false;
     compFloatingPointUsed = false;
     compUnsafeCastUsed    = false;
-#if CPU_USES_BLOCK_MOVE
-    compBlkOpUsed = false;
-#endif
+
     compNeedsGSSecurityCookie = false;
     compGSReorderStackLayout  = false;
 #if STACK_PROBES
@@ -2034,11 +2025,6 @@ void Compiler::compInit(ArenaAllocator* pAlloc, InlineInfo* inlineInfo)
 
     // Used to track when we should consider running EarlyProp
     optMethodFlags = 0;
-
-    for (unsigned i = 0; i < MAX_LOOP_NUM; i++)
-    {
-        AllVarSetOps::AssignNoCopy(this, optLoopTable[i].lpAsgVars, AllVarSetOps::UninitVal());
-    }
 
 #ifdef DEBUG
     m_nodeTestData      = nullptr;
@@ -2076,54 +2062,7 @@ void Compiler::compInit(ArenaAllocator* pAlloc, InlineInfo* inlineInfo)
     fgOrder = FGOrderTree;
 
 #ifdef FEATURE_SIMD
-    // SIMD Types
-    SIMDFloatHandle   = nullptr;
-    SIMDDoubleHandle  = nullptr;
-    SIMDIntHandle     = nullptr;
-    SIMDUShortHandle  = nullptr;
-    SIMDUByteHandle   = nullptr;
-    SIMDShortHandle   = nullptr;
-    SIMDByteHandle    = nullptr;
-    SIMDLongHandle    = nullptr;
-    SIMDUIntHandle    = nullptr;
-    SIMDULongHandle   = nullptr;
-    SIMDVector2Handle = nullptr;
-    SIMDVector3Handle = nullptr;
-    SIMDVector4Handle = nullptr;
-    SIMDVectorHandle  = nullptr;
-#ifdef FEATURE_HW_INTRINSICS
-#if defined(_TARGET_ARM64_)
-    Vector64FloatHandle  = nullptr;
-    Vector64UIntHandle   = nullptr;
-    Vector64UShortHandle = nullptr;
-    Vector64UByteHandle  = nullptr;
-    Vector64IntHandle    = nullptr;
-    Vector64ShortHandle  = nullptr;
-    Vector64ByteHandle   = nullptr;
-#endif // defined(_TARGET_ARM64_)
-    Vector128FloatHandle  = nullptr;
-    Vector128DoubleHandle = nullptr;
-    Vector128IntHandle    = nullptr;
-    Vector128UShortHandle = nullptr;
-    Vector128UByteHandle  = nullptr;
-    Vector128ShortHandle  = nullptr;
-    Vector128ByteHandle   = nullptr;
-    Vector128LongHandle   = nullptr;
-    Vector128UIntHandle   = nullptr;
-    Vector128ULongHandle  = nullptr;
-#if defined(_TARGET_XARCH_)
-    Vector256FloatHandle  = nullptr;
-    Vector256DoubleHandle = nullptr;
-    Vector256IntHandle    = nullptr;
-    Vector256UShortHandle = nullptr;
-    Vector256UByteHandle  = nullptr;
-    Vector256ShortHandle  = nullptr;
-    Vector256ByteHandle   = nullptr;
-    Vector256LongHandle   = nullptr;
-    Vector256UIntHandle   = nullptr;
-    Vector256ULongHandle  = nullptr;
-#endif // defined(_TARGET_XARCH_)
-#endif // FEATURE_HW_INTRINSICS
+    m_simdHandleCache = nullptr;
 #endif // FEATURE_SIMD
 
     compUsesThrowHelper = false;

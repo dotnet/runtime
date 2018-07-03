@@ -6351,7 +6351,7 @@ size_t emitter::emitOutputInstr(insGroup* ig, instrDesc* id, BYTE** dp)
             }
             else
             {
-                TempDsc* tmpDsc = emitComp->tmpFindNum(varNum);
+                TempDsc* tmpDsc = codeGen->regSet.tmpFindNum(varNum);
                 vt              = tmpDsc->tdTempType();
             }
             if (vt == TYP_REF || vt == TYP_BYREF)

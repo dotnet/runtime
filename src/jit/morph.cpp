@@ -9644,9 +9644,6 @@ GenTree* Compiler::fgMorphInitBlock(GenTree* tree)
         //
         if (!destDoFldAsg)
         {
-#if CPU_USES_BLOCK_MOVE
-            compBlkOpUsed = true;
-#endif
             dest             = fgMorphBlockOperand(dest, dest->TypeGet(), blockWidth, true);
             tree->gtOp.gtOp1 = dest;
             tree->gtFlags |= (dest->gtFlags & GTF_ALL_EFFECT);
@@ -10588,9 +10585,6 @@ GenTree* Compiler::fgMorphCopyBlock(GenTree* tree)
 
         if (requiresCopyBlock)
         {
-#if CPU_USES_BLOCK_MOVE
-            compBlkOpUsed = true;
-#endif
             var_types asgType = dest->TypeGet();
             dest              = fgMorphBlockOperand(dest, asgType, blockWidth, true /*isDest*/);
             asg->gtOp.gtOp1   = dest;
@@ -17061,10 +17055,6 @@ void Compiler::fgMorph()
     /* Add any internal blocks/trees we may need */
 
     fgAddInternal();
-
-#if OPT_BOOL_OPS
-    fgMultipleNots = false;
-#endif
 
 #ifdef DEBUG
     /* Inliner could add basic blocks. Check that the flowgraph data is up-to-date */
