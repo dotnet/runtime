@@ -1294,7 +1294,7 @@ void CodeGen::genFloatReturn(GenTree* treeNode)
         TempDsc* t = regSet.rsUnspillInPlace(op1, op1->gtRegNum);
         inst_FS_ST(INS_fld, emitActualTypeSize(op1->gtType), t, 0);
         op1->gtFlags &= ~GTF_SPILLED;
-        compiler->tmpRlsTemp(t);
+        regSet.tmpRlsTemp(t);
     }
 }
 #endif // _TARGET_X86_
@@ -7277,7 +7277,7 @@ void CodeGen::genSSE41RoundOp(GenTreeOp* treeNode)
             varNum = tmpDsc->tdTempNum();
             offset = 0;
 
-            compiler->tmpRlsTemp(tmpDsc);
+            regSet.tmpRlsTemp(tmpDsc);
         }
         else if (srcNode->isIndir())
         {
@@ -7766,7 +7766,7 @@ void CodeGen::genPutArgStkFieldList(GenTreePutArgStk* putArgStk)
                     assert(fieldNode->IsRegOptional());
                     TempDsc* tmp = getSpillTempDsc(fieldNode);
                     getEmitter()->emitIns_S(INS_push, emitActualTypeSize(fieldNode->TypeGet()), tmp->tdTempNum(), 0);
-                    compiler->tmpRlsTemp(tmp);
+                    regSet.tmpRlsTemp(tmp);
                 }
                 else
                 {

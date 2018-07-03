@@ -471,7 +471,6 @@ typedef ptrdiff_t ssize_t;
                               // case of single block methods.
 #define COUNT_LOOPS 0         // Collect stats about loops, such as the total number of natural loops, a histogram of
                               // the number of loop exits, etc.
-#define COUNT_RANGECHECKS 0   // Count range checks removed (in lexical CSE?).
 #define DATAFLOW_ITER 0       // Count iterations in lexical CSE and constant folding dataflow.
 #define DISPLAY_SIZES 0       // Display generated code, data, and GC information sizes.
 #define MEASURE_BLOCK_SIZE 0  // Collect stats about basic block and flowList node sizes and memory allocations.
