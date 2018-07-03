@@ -24,6 +24,7 @@
     <Delete Files="$(BinDir)SOS.NETCore.*" />
     <Delete Files="$(BinDir)mscorlib.*" />
     <Delete Files="$(BinDir)System.Private.CoreLib.*" />
+    <Delete Files="$(BinDir)netcoreapp2.0/R2RDump.*" />
   </Target>
 
   <!--
