@@ -364,7 +364,7 @@ namespace System.ComponentModel.Composition
             factoryIL.Emit(OpCodes.Ret);
 
             // Finished implementing the type
-            proxyType = proxyTypeBuilder.CreateType();
+            proxyType = proxyTypeBuilder.CreateTypeInfo();
 
             return proxyType;
         }
