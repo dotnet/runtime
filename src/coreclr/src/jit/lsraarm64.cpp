@@ -434,13 +434,16 @@ int LinearScan::BuildNode(GenTree* tree)
             setDelayFree(locationUse);
             RefPosition* valueUse = BuildUse(tree->gtCmpXchg.gtOpValue);
             setDelayFree(valueUse);
-            if (!cmpXchgNode->gtOpComparand->isContained() && !compiler->compSupports(InstructionSet_Atomics))
+            if (!cmpXchgNode->gtOpComparand->isContained())
             {
+                RefPosition* comparandUse = BuildUse(tree->gtCmpXchg.gtOpComparand);
+
                 // For ARMv8 exclusives the lifetime of the comparand must be extended because
                 // it may be used used multiple during retries
-
-                RefPosition* comparandUse = BuildUse(tree->gtCmpXchg.gtOpComparand);
-                setDelayFree(comparandUse);
+                if (!compiler->compSupports(InstructionSet_Atomics))
+                {
+                    setDelayFree(comparandUse);
+                }
             }
 
             // Internals may not collide with target
@@ -465,17 +468,20 @@ int LinearScan::BuildNode(GenTree* tree)
                 {
                     buildInternalIntRegisterDefForNode(tree);
                 }
+            }
 
-                // For ARMv8 exclusives the lifetime of the addr and data must be extended because
-                // it may be used used multiple during retries
-                assert(!tree->gtGetOp1()->isContained());
-                RefPosition* op1Use = BuildUse(tree->gtGetOp1());
-                RefPosition* op2Use = nullptr;
-                if (!tree->gtGetOp2()->isContained())
-                {
-                    op2Use = BuildUse(tree->gtGetOp2());
-                }
+            assert(!tree->gtGetOp1()->isContained());
+            RefPosition* op1Use = BuildUse(tree->gtGetOp1());
+            RefPosition* op2Use = nullptr;
+            if (!tree->gtGetOp2()->isContained())
+            {
+                op2Use = BuildUse(tree->gtGetOp2());
+            }
 
+            // For ARMv8 exclusives the lifetime of the addr and data must be extended because
+            // it may be used used multiple during retries
+            if (!compiler->compSupports(InstructionSet_Atomics))
+            {
                 // Internals may not collide with target
                 if (dstCount == 1)
                 {
