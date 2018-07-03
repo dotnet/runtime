@@ -805,9 +805,9 @@ public:
     void dmpConstructStringLiteral(DLD key, DLD value);
     InfoAccessType repConstructStringLiteral(CORINFO_MODULE_HANDLE module, mdToken metaTok, void** ppValue);
 
-    void recConvertPInvokeCalliToCall(CORINFO_RESOLVED_TOKEN * pResolvedToken, bool fMustConvert, bool result);
+    void recConvertPInvokeCalliToCall(CORINFO_RESOLVED_TOKEN* pResolvedToken, bool fMustConvert, bool result);
     void dmpConvertPInvokeCalliToCall(DLD key, DWORDLONG value);
-    bool repConvertPInvokeCalliToCall(CORINFO_RESOLVED_TOKEN * pResolvedToken, bool fMustConvert);
+    bool repConvertPInvokeCalliToCall(CORINFO_RESOLVED_TOKEN* pResolvedToken, bool fMustConvert);
 
     void recEmptyStringLiteral(void** ppValue, InfoAccessType result);
     void dmpEmptyStringLiteral(DWORD key, DLD value);
