@@ -479,16 +479,38 @@ gboolean mono_jit_map_is_enabled (void);
 /*
  * Per-OS implementation functions.
  */
-void mono_runtime_install_handlers (void);
-gboolean mono_runtime_install_custom_handlers (const char *handlers);
-void mono_runtime_install_custom_handlers_usage (void);
-void mono_runtime_cleanup_handlers (void);
-void mono_runtime_setup_stat_profiler (void);
-void mono_runtime_shutdown_stat_profiler (void);
-void mono_runtime_posix_install_handlers (void);
-void mono_gdb_render_native_backtraces (pid_t crashed_pid);
+void
+mono_runtime_install_handlers (void);
 
-void mono_cross_helpers_run (void);
+gboolean
+mono_runtime_install_custom_handlers (const char *handlers);
+
+void
+mono_runtime_install_custom_handlers_usage (void);
+
+void
+mono_runtime_cleanup_handlers (void);
+
+void
+mono_runtime_setup_stat_profiler (void);
+
+void
+mono_runtime_shutdown_stat_profiler (void);
+
+void
+mono_runtime_posix_install_handlers (void);
+
+void
+mono_gdb_render_native_backtraces (pid_t crashed_pid);
+
+void
+mono_cross_helpers_run (void);
+
+void
+mono_dump_native_crash_info (const char *signal, void *ctx, MONO_SIG_HANDLER_INFO_TYPE *info);
+
+void
+mono_post_native_crash_handler (const char *signal, void *ctx, MONO_SIG_HANDLER_INFO_TYPE *info, gboolean crash_chaining);
 
 /*
  * Signal handling
