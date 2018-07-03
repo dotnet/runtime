@@ -205,7 +205,6 @@ namespace System.Data.SqlClient
         public const byte FEATUREEXT_GLOBALTRANSACTIONS = 0x05;
         public const byte FEATUREEXT_UTF8SUPPORT = 0x0A;
 
-
         [Flags]
         public enum FeatureExtension : uint
         {
@@ -215,6 +214,7 @@ namespace System.Data.SqlClient
             GlobalTransactions = 16,
             UTF8Support = 512,
         }
+
         public const uint UTF8_IN_TDSCOLLATION = 0x4000000;
 
         public const byte FEDAUTHLIB_LIVEID = 0X00;

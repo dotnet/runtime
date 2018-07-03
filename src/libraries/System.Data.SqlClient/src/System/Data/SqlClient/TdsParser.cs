@@ -2281,6 +2281,7 @@ namespace System.Data.SqlClient
                             {
                                 return false;
                             }
+
                             // UTF8 collation
                             if ((env.newCollation.info & TdsEnums.UTF8_IN_TDSCOLLATION) == TdsEnums.UTF8_IN_TDSCOLLATION)
                             {
@@ -3253,6 +3254,7 @@ namespace System.Data.SqlClient
                 {
                     return false;
                 }
+
                 // UTF8 collation
                 if ((rec.collation.info & TdsEnums.UTF8_IN_TDSCOLLATION) == TdsEnums.UTF8_IN_TDSCOLLATION)
                 {
@@ -3770,6 +3772,7 @@ namespace System.Data.SqlClient
                 {
                     return false;
                 }
+
                 // UTF8 collation
                 if ((col.collation.info & TdsEnums.UTF8_IN_TDSCOLLATION) == TdsEnums.UTF8_IN_TDSCOLLATION)
                 {
