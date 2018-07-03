@@ -4,6 +4,7 @@
 
 using System.Collections.Generic;
 using System.Globalization;
+using System.IO;
 using System.Threading;
 using Xunit;
 
@@ -181,23 +182,24 @@ namespace System.ComponentModel.DataAnnotations.Tests
             {
                 Thread.CurrentThread.CurrentCulture = _original;
             }
-        }
+        }      
 
         [Theory]
         [MemberData(nameof(DotDecimalRanges))]
         [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework, "2648 not fixed on NetFX")]
         public static void ParseDotSeparatorExtremaInCommaSeparatorCultures(Type type, string min, string max)
         {
-            using (new TempCulture("en-US"))
+            RemoteInvoke((t, m1, m2) =>
             {
-                Assert.True(new RangeAttribute(type, min, max).IsValid(null));
-            }
+                Thread.CurrentThread.CurrentCulture = CultureInfo.GetCultureInfoByIetfLanguageTag("en-US");
 
-            using (new TempCulture("fr-FR"))
-            {
-                RangeAttribute range = new RangeAttribute(type, min, max);
+                Assert.True(new RangeAttribute(Type.GetType(t), m1, m2).IsValid(null));
+
+                Thread.CurrentThread.CurrentCulture = CultureInfo.GetCultureInfoByIetfLanguageTag("fr-FR");               
+
+                RangeAttribute range = new RangeAttribute(Type.GetType(t), m1, m2);
                 AssertExtensions.Throws<ArgumentException>("value", () => range.IsValid(null));
-            }
+            }, type.ToString(), min, max).Dispose();
         }
 
         [Theory]
@@ -205,23 +207,24 @@ namespace System.ComponentModel.DataAnnotations.Tests
         [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework, "2648 not fixed on NetFX")]
         public static void ParseDotSeparatorInvariantExtremaInCommaSeparatorCultures(Type type, string min, string max)
         {
-            using (new TempCulture("en-US"))
+            RemoteInvoke((t, m1, m2) =>
             {
-                Assert.True(
-                    new RangeAttribute(type, min, max)
-                    {
-                        ParseLimitsInInvariantCulture = true
-                    }.IsValid(null));
-            }
+                Thread.CurrentThread.CurrentCulture = CultureInfo.GetCultureInfoByIetfLanguageTag("en-US");
 
-            using (new TempCulture("fr-FR"))
-            {
                 Assert.True(
-                    new RangeAttribute(type, min, max)
+                    new RangeAttribute(Type.GetType(t), m1, m2)
                     {
                         ParseLimitsInInvariantCulture = true
                     }.IsValid(null));
-            }
+
+                Thread.CurrentThread.CurrentCulture = CultureInfo.GetCultureInfoByIetfLanguageTag("fr-FR");
+
+                Assert.True(
+                    new RangeAttribute(Type.GetType(t), m1, m2)
+                    {
+                        ParseLimitsInInvariantCulture = true
+                    }.IsValid(null));
+            }, type.ToString(), min, max).Dispose();
         }
 
         [Theory]
@@ -229,16 +232,17 @@ namespace System.ComponentModel.DataAnnotations.Tests
         [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework, "2648 not fixed on NetFX")]
         public static void ParseCommaSeparatorExtremaInCommaSeparatorCultures(Type type, string min, string max)
         {
-            using (new TempCulture("en-US"))
+            RemoteInvoke((t, m1, m2) =>
             {
-                RangeAttribute range = new RangeAttribute(type, min, max);
-                AssertExtensions.Throws<ArgumentException>("value", () => range.IsValid(null));
-            }
+                Thread.CurrentThread.CurrentCulture = CultureInfo.GetCultureInfoByIetfLanguageTag("en-US");
 
-            using (new TempCulture("fr-FR"))
-            {
-                Assert.True(new RangeAttribute(type, min, max).IsValid(null));
-            }
+                RangeAttribute range = new RangeAttribute(Type.GetType(t), m1, m2);
+                AssertExtensions.Throws<ArgumentException>("value", () => range.IsValid(null));
+
+                Thread.CurrentThread.CurrentCulture = CultureInfo.GetCultureInfoByIetfLanguageTag("fr-FR");
+
+                Assert.True(new RangeAttribute(Type.GetType(t), m1, m2).IsValid(null));
+            }, type.ToString(), min, max).Dispose();
         }
 
         [Theory]
@@ -246,32 +250,34 @@ namespace System.ComponentModel.DataAnnotations.Tests
         [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework, "2648 not fixed on NetFX")]
         public static void ParseCommaSeparatorInvariantExtremaInCommaSeparatorCultures(Type type, string min, string max)
         {
-            using (new TempCulture("en-US"))
+            RemoteInvoke((t, m1, m2) =>
             {
-                RangeAttribute range = new RangeAttribute(type, min, max);
-                AssertExtensions.Throws<ArgumentException>("value", () => range.IsValid(null));
-            }
+                Thread.CurrentThread.CurrentCulture = CultureInfo.GetCultureInfoByIetfLanguageTag("en-US");
 
-            using (new TempCulture("fr-FR"))
-            {
-                Assert.True(new RangeAttribute(type, min, max).IsValid(null));
-            }
+                RangeAttribute range = new RangeAttribute(Type.GetType(t), m1, m2);
+                AssertExtensions.Throws<ArgumentException>("value", () => range.IsValid(null));
+
+                Thread.CurrentThread.CurrentCulture = CultureInfo.GetCultureInfoByIetfLanguageTag("fr-FR");
+
+                Assert.True(new RangeAttribute(Type.GetType(t), m1, m2).IsValid(null));
+            }, type.ToString(), min, max).Dispose();
         }
 
         [Theory][MemberData(nameof(DotDecimalValidValues))]
         [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework, "2648 not fixed on NetFX")]
         public static void DotDecimalExtremaAndValues(Type type, string min, string max, string value)
         {
-            using (new TempCulture("en-US"))
+            RemoteInvoke((t, m1, m2, v) =>
             {
-                Assert.True(new RangeAttribute(type, min, max).IsValid(value));
-            }
+                Thread.CurrentThread.CurrentCulture = CultureInfo.GetCultureInfoByIetfLanguageTag("en-US");
 
-            using (new TempCulture("fr-FR"))
-            {
-                RangeAttribute range = new RangeAttribute(type, min, max);
-                AssertExtensions.Throws<ArgumentException>("value", () => range.IsValid(value));
-            }
+                Assert.True(new RangeAttribute(Type.GetType(t), m1, m2).IsValid(v));
+
+                Thread.CurrentThread.CurrentCulture = CultureInfo.GetCultureInfoByIetfLanguageTag("fr-FR");
+
+                RangeAttribute range = new RangeAttribute(Type.GetType(t), m1, m2);
+                AssertExtensions.Throws<ArgumentException>("value", () => range.IsValid(v));
+            }, type.ToString(), min, max, value).Dispose();
         }
 
         [Theory]
@@ -279,23 +285,24 @@ namespace System.ComponentModel.DataAnnotations.Tests
         [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework, "2648 not fixed on NetFX")]
         public static void DotDecimalExtremaAndValuesInvariantParse(Type type, string min, string max, string value)
         {
-            using (new TempCulture("en-US"))
+            RemoteInvoke((t, m1, m2, v) =>
             {
+                Thread.CurrentThread.CurrentCulture = CultureInfo.GetCultureInfoByIetfLanguageTag("en-US");
+
                 Assert.True(
-                    new RangeAttribute(type, min, max)
+                    new RangeAttribute(Type.GetType(t), m1, m2)
                     {
                         ParseLimitsInInvariantCulture = true
-                    }.IsValid(value));
-            }
+                    }.IsValid(v));
 
-            using (new TempCulture("fr-FR"))
-            {
-                RangeAttribute range = new RangeAttribute(type, min, max)
+                Thread.CurrentThread.CurrentCulture = CultureInfo.GetCultureInfoByIetfLanguageTag("fr-FR");
+
+                RangeAttribute range = new RangeAttribute(Type.GetType(t), m1, m2)
                 {
                     ParseLimitsInInvariantCulture = true
                 };
-                AssertExtensions.Throws<ArgumentException>("value", () => range.IsValid(value));
-            }
+                AssertExtensions.Throws<ArgumentException>("value", () => range.IsValid(v));
+            }, type.ToString(), min, max, value).Dispose();
         }
 
         [Theory]
@@ -303,23 +310,24 @@ namespace System.ComponentModel.DataAnnotations.Tests
         [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework, "2648 not fixed on NetFX")]
         public static void DotDecimalExtremaAndValuesInvariantConvert(Type type, string min, string max, string value)
         {
-            using (new TempCulture("en-US"))
+            RemoteInvoke((t, m1, m2, v) =>
             {
+                Thread.CurrentThread.CurrentCulture = CultureInfo.GetCultureInfoByIetfLanguageTag("en-US");
+
                 Assert.True(
-                    new RangeAttribute(type, min, max)
+                    new RangeAttribute(Type.GetType(t), m1, m2)
                     {
                         ConvertValueInInvariantCulture = true
-                    }.IsValid(value));
-            }
+                    }.IsValid(v));
 
-            using (new TempCulture("fr-FR"))
-            {
-                RangeAttribute range = new RangeAttribute(type, min, max)
+                Thread.CurrentThread.CurrentCulture = CultureInfo.GetCultureInfoByIetfLanguageTag("fr-FR");
+
+                RangeAttribute range = new RangeAttribute(Type.GetType(t), m1, m2)
                 {
                     ConvertValueInInvariantCulture = true
                 };
-                AssertExtensions.Throws<ArgumentException>("value", () => range.IsValid(value));
-            }
+                AssertExtensions.Throws<ArgumentException>("value", () => range.IsValid(v));
+            }, type.ToString(), min, max, value).Dispose();
         }
 
         [Theory]
@@ -327,27 +335,27 @@ namespace System.ComponentModel.DataAnnotations.Tests
         [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework, "2648 not fixed on NetFX")]
         public static void DotDecimalExtremaAndValuesInvariantBoth(Type type, string min, string max, string value)
         {
-            using (new TempCulture("en-US"))
+            RemoteInvoke((t, m1, m2, v) =>
             {
-                Assert.True(
-                    new RangeAttribute(type, min, max)
-                    {
-                        ConvertValueInInvariantCulture = true,
-                        ParseLimitsInInvariantCulture = true
-                    }.IsValid(value));
-            }
+                Thread.CurrentThread.CurrentCulture = CultureInfo.GetCultureInfoByIetfLanguageTag("en-US");
 
-            using (new TempCulture("fr-FR"))
-            {
                 Assert.True(
-                    new RangeAttribute(type, min, max)
+                    new RangeAttribute(Type.GetType(t), m1, m2)
                     {
                         ConvertValueInInvariantCulture = true,
                         ParseLimitsInInvariantCulture = true
-                    }.IsValid(value));
-            }
+                    }.IsValid(v));
+
+                Thread.CurrentThread.CurrentCulture = CultureInfo.GetCultureInfoByIetfLanguageTag("fr-FR");
+
+                Assert.True(
+                    new RangeAttribute(Type.GetType(t), m1, m2)
+                    {
+                        ConvertValueInInvariantCulture = true,
+                        ParseLimitsInInvariantCulture = true
+                    }.IsValid(v));
+            }, type.ToString(), min, max, value).Dispose();
         }
-
         [Theory]
         [MemberData(nameof(DotDecimalNonStringValidValues))]
         [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework, "2648 not fixed on NetFX")]
@@ -528,21 +536,23 @@ namespace System.ComponentModel.DataAnnotations.Tests
             }
         }
 
+
         [Theory]
         [MemberData(nameof(DotDecimalInvalidValues))]
         [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework, "2648 not fixed on NetFX")]
         public static void DotDecimalExtremaAndInvalidValues(Type type, string min, string max, string value)
         {
-            using (new TempCulture("en-US"))
+            RemoteInvoke((t, m1, m2, v) =>
             {
-                Assert.False(new RangeAttribute(type, min, max).IsValid(value));
-            }
+                Thread.CurrentThread.CurrentCulture = CultureInfo.GetCultureInfoByIetfLanguageTag("en-US");
 
-            using (new TempCulture("fr-FR"))
-            {
-                RangeAttribute range = new RangeAttribute(type, min, max);
-                AssertExtensions.Throws<ArgumentException>("value", () => range.IsValid(value));
-            }
+                Assert.False(new RangeAttribute(Type.GetType(t), m1, m2).IsValid(v));
+
+                Thread.CurrentThread.CurrentCulture = CultureInfo.GetCultureInfoByIetfLanguageTag("fr-FR");
+
+                RangeAttribute range = new RangeAttribute(Type.GetType(t), m1, m2);
+                AssertExtensions.Throws<ArgumentException>("value", () => range.IsValid(v));
+            }, type.ToString(), min, max, value).Dispose();
         }
 
         [Theory]
@@ -550,23 +560,24 @@ namespace System.ComponentModel.DataAnnotations.Tests
         [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework, "2648 not fixed on NetFX")]
         public static void DotDecimalExtremaAndInvalidValuesInvariantParse(Type type, string min, string max, string value)
         {
-            using (new TempCulture("en-US"))
+            RemoteInvoke((t, m1, m2, v) =>
             {
+                Thread.CurrentThread.CurrentCulture = CultureInfo.GetCultureInfoByIetfLanguageTag("en-US");
+
                 Assert.False(
-                    new RangeAttribute(type, min, max)
+                    new RangeAttribute(Type.GetType(t), m1, m2)
                     {
                         ParseLimitsInInvariantCulture = true
-                    }.IsValid(value));
-            }
+                    }.IsValid(v));
 
-            using (new TempCulture("fr-FR"))
-            {
-                RangeAttribute range = new RangeAttribute(type, min, max)
+                Thread.CurrentThread.CurrentCulture = CultureInfo.GetCultureInfoByIetfLanguageTag("fr-FR");
+
+                RangeAttribute range = new RangeAttribute(Type.GetType(t), m1, m2)
                 {
                     ParseLimitsInInvariantCulture = true
                 };
-                AssertExtensions.Throws<ArgumentException>("value", () => range.IsValid(value));
-            }
+                AssertExtensions.Throws<ArgumentException>("value", () => range.IsValid(v));
+            }, type.ToString(), min, max, value).Dispose();
         }
 
         [Theory]
@@ -574,23 +585,24 @@ namespace System.ComponentModel.DataAnnotations.Tests
         [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework, "2648 not fixed on NetFX")]
         public static void DotDecimalExtremaAndInvalidValuesInvariantConvert(Type type, string min, string max, string value)
         {
-            using (new TempCulture("en-US"))
+            RemoteInvoke((t, m1, m2, v) =>
             {
+                Thread.CurrentThread.CurrentCulture = CultureInfo.GetCultureInfoByIetfLanguageTag("en-US");
+
                 Assert.False(
-                    new RangeAttribute(type, min, max)
+                    new RangeAttribute(Type.GetType(t), m1, m2)
                     {
                         ConvertValueInInvariantCulture = true
-                    }.IsValid(value));
-            }
+                    }.IsValid(v));
 
-            using (new TempCulture("fr-FR"))
-            {
-                RangeAttribute range = new RangeAttribute(type, min, max)
+                Thread.CurrentThread.CurrentCulture = CultureInfo.GetCultureInfoByIetfLanguageTag("fr-FR");
+
+                RangeAttribute range = new RangeAttribute(Type.GetType(t), m1, m2)
                 {
                     ConvertValueInInvariantCulture = true
                 };
-                AssertExtensions.Throws<ArgumentException>("value", () => range.IsValid(value));
-            }
+                AssertExtensions.Throws<ArgumentException>("value", () => range.IsValid(v));
+            }, type.ToString(), min, max, value).Dispose();
         }
 
         [Theory]
@@ -598,25 +610,26 @@ namespace System.ComponentModel.DataAnnotations.Tests
         [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework, "2648 not fixed on NetFX")]
         public static void DotDecimalExtremaAndInvalidValuesInvariantBoth(Type type, string min, string max, string value)
         {
-            using (new TempCulture("en-US"))
+            RemoteInvoke((t, m1, m2, v) =>
             {
-                Assert.False(
-                    new RangeAttribute(type, min, max)
-                    {
-                        ConvertValueInInvariantCulture = true,
-                        ParseLimitsInInvariantCulture = true
-                    }.IsValid(value));
-            }
+                Thread.CurrentThread.CurrentCulture = CultureInfo.GetCultureInfoByIetfLanguageTag("en-US");
 
-            using (new TempCulture("fr-FR"))
-            {
                 Assert.False(
-                    new RangeAttribute(type, min, max)
+                    new RangeAttribute(Type.GetType(t), m1, m2)
                     {
                         ConvertValueInInvariantCulture = true,
                         ParseLimitsInInvariantCulture = true
-                    }.IsValid(value));
-            }
+                    }.IsValid(v));
+
+                Thread.CurrentThread.CurrentCulture = CultureInfo.GetCultureInfoByIetfLanguageTag("fr-FR");
+
+                Assert.False(
+                    new RangeAttribute(Type.GetType(t), m1, m2)
+                    {
+                        ConvertValueInInvariantCulture = true,
+                        ParseLimitsInInvariantCulture = true
+                    }.IsValid(v));
+            }, type.ToString(), min, max, value).Dispose();
         }
 
         [Theory]
@@ -624,16 +637,17 @@ namespace System.ComponentModel.DataAnnotations.Tests
         [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework, "2648 not fixed on NetFX")]
         public static void CommaDecimalExtremaAndValues(Type type, string min, string max, string value)
         {
-            using (new TempCulture("en-US"))
+            RemoteInvoke((t, m1, m2, v) =>
             {
-                RangeAttribute range = new RangeAttribute(type, min, max);
-                AssertExtensions.Throws<ArgumentException>("value", () => range.IsValid(value));
-            }
+                Thread.CurrentThread.CurrentCulture = CultureInfo.GetCultureInfoByIetfLanguageTag("en-US");
 
-            using (new TempCulture("fr-FR"))
-            {
-                Assert.True(new RangeAttribute(type, min, max).IsValid(value));
-            }
+                RangeAttribute range = new RangeAttribute(Type.GetType(t), m1, m2);
+                AssertExtensions.Throws<ArgumentException>("value", () => range.IsValid(v));
+  
+                Thread.CurrentThread.CurrentCulture = CultureInfo.GetCultureInfoByIetfLanguageTag("fr-FR");
+
+                Assert.True(new RangeAttribute(Type.GetType(t), m1, m2).IsValid(v));
+            }, type.ToString(), min, max, value).Dispose();
         }
 
         [Theory]
@@ -641,23 +655,24 @@ namespace System.ComponentModel.DataAnnotations.Tests
         [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework, "2648 not fixed on NetFX")]
         public static void CommaDecimalExtremaAndValuesInvariantParse(Type type, string min, string max, string value)
         {
-            using (new TempCulture("en-US"))
+            RemoteInvoke((t, m1, m2, v) =>
             {
-                RangeAttribute range = new RangeAttribute(type, min, max)
-                {
-                    ParseLimitsInInvariantCulture = true
-                };
-                AssertExtensions.Throws<ArgumentException>("value", () => range.IsValid(value));
-            }
+                Thread.CurrentThread.CurrentCulture = CultureInfo.GetCultureInfoByIetfLanguageTag("en-US");
 
-            using (new TempCulture("fr-FR"))
-            {
-                RangeAttribute range = new RangeAttribute(type, min, max)
+                RangeAttribute range = new RangeAttribute(Type.GetType(t), m1, m2)
                 {
                     ParseLimitsInInvariantCulture = true
                 };
-                AssertExtensions.Throws<ArgumentException>("value", () => range.IsValid(value));
-            }
+                AssertExtensions.Throws<ArgumentException>("value", () => range.IsValid(v));
+
+                Thread.CurrentThread.CurrentCulture = CultureInfo.GetCultureInfoByIetfLanguageTag("fr-FR");
+
+                range = new RangeAttribute(Type.GetType(t), m1, m2)
+                {
+                    ParseLimitsInInvariantCulture = true
+                };
+                AssertExtensions.Throws<ArgumentException>("value", () => range.IsValid(v));
+            }, type.ToString(), min, max, value).Dispose();
         }
 
         [Theory]
@@ -665,23 +680,24 @@ namespace System.ComponentModel.DataAnnotations.Tests
         [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework, "2648 not fixed on NetFX")]
         public static void CommaDecimalExtremaAndValuesInvariantConvert(Type type, string min, string max, string value)
         {
-            using (new TempCulture("en-US"))
+            RemoteInvoke((t, m1, m2, v) =>
             {
-                RangeAttribute range = new RangeAttribute(type, min, max)
-                {
-                    ConvertValueInInvariantCulture = true
-                };
-                AssertExtensions.Throws<ArgumentException>("value", () => range.IsValid(value));
-            }
+                Thread.CurrentThread.CurrentCulture = CultureInfo.GetCultureInfoByIetfLanguageTag("en-US");
 
-            using (new TempCulture("fr-FR"))
-            {
-                RangeAttribute range = new RangeAttribute(type, min, max)
+                RangeAttribute range = new RangeAttribute(Type.GetType(t), m1, m2)
                 {
                     ConvertValueInInvariantCulture = true
                 };
-                AssertExtensions.Throws<ArgumentException>("value", () => range.IsValid(value));
-            }
+                AssertExtensions.Throws<ArgumentException>("value", () => range.IsValid(v));
+
+                Thread.CurrentThread.CurrentCulture = CultureInfo.GetCultureInfoByIetfLanguageTag("fr-FR");
+
+                range = new RangeAttribute(Type.GetType(t), m1, m2)
+                {
+                    ConvertValueInInvariantCulture = true
+                };
+                AssertExtensions.Throws<ArgumentException>("value", () => range.IsValid(v));
+            }, type.ToString(), min, max, value).Dispose();
         }
 
         [Theory]
@@ -689,25 +705,26 @@ namespace System.ComponentModel.DataAnnotations.Tests
         [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework, "2648 not fixed on NetFX")]
         public static void CommaDecimalExtremaAndValuesInvariantBoth(Type type, string min, string max, string value)
         {
-            using (new TempCulture("en-US"))
+            RemoteInvoke((t, m1, m2, v) =>
             {
-                RangeAttribute range = new RangeAttribute(type, min, max)
-                {
-                    ConvertValueInInvariantCulture = true,
-                    ParseLimitsInInvariantCulture = true
-                };
-                AssertExtensions.Throws<ArgumentException>("value", () => range.IsValid(value));
-            }
+                Thread.CurrentThread.CurrentCulture = CultureInfo.GetCultureInfoByIetfLanguageTag("en-US");
 
-            using (new TempCulture("fr-FR"))
-            {
-                RangeAttribute range = new RangeAttribute(type, min, max)
+                RangeAttribute range = new RangeAttribute(Type.GetType(t), m1, m2)
                 {
                     ConvertValueInInvariantCulture = true,
                     ParseLimitsInInvariantCulture = true
                 };
-                AssertExtensions.Throws<ArgumentException>("value", () => range.IsValid(value));
-            }
+                AssertExtensions.Throws<ArgumentException>("value", () => range.IsValid(v));
+
+                Thread.CurrentThread.CurrentCulture = CultureInfo.GetCultureInfoByIetfLanguageTag("fr-FR");
+
+                range = new RangeAttribute(Type.GetType(t), m1, m2)
+                {
+                    ConvertValueInInvariantCulture = true,
+                    ParseLimitsInInvariantCulture = true
+                };
+                AssertExtensions.Throws<ArgumentException>("value", () => range.IsValid(v));
+            }, type.ToString(), min, max, value).Dispose();
         }
 
         [Theory]
@@ -715,16 +732,17 @@ namespace System.ComponentModel.DataAnnotations.Tests
         [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework, "2648 not fixed on NetFX")]
         public static void CommaDecimalExtremaAndInvalidValues(Type type, string min, string max, string value)
         {
-            using (new TempCulture("en-US"))
+            RemoteInvoke((t, m1, m2, v) =>
             {
-                RangeAttribute range = new RangeAttribute(type, min, max);
-                AssertExtensions.Throws<ArgumentException>("value", () => range.IsValid(value));
-            }
+                Thread.CurrentThread.CurrentCulture = CultureInfo.GetCultureInfoByIetfLanguageTag("en-US");
 
-            using (new TempCulture("fr-FR"))
-            {
-                Assert.False(new RangeAttribute(type, min, max).IsValid(value));
-            }
+                RangeAttribute range = new RangeAttribute(Type.GetType(t), m1, m2);
+                AssertExtensions.Throws<ArgumentException>("value", () => range.IsValid(v));
+
+                Thread.CurrentThread.CurrentCulture = CultureInfo.GetCultureInfoByIetfLanguageTag("fr-FR");
+
+                Assert.False(new RangeAttribute(Type.GetType(t), m1, m2).IsValid(v));
+            }, type.ToString(), min, max, value).Dispose();
         }
 
         [Theory]
@@ -732,23 +750,24 @@ namespace System.ComponentModel.DataAnnotations.Tests
         [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework, "2648 not fixed on NetFX")]
         public static void CommaDecimalExtremaAndInvalidValuesInvariantParse(Type type, string min, string max, string value)
         {
-            using (new TempCulture("en-US"))
+            RemoteInvoke((t, m1, m2, v) =>
             {
-                RangeAttribute range = new RangeAttribute(type, min, max)
-                {
-                    ParseLimitsInInvariantCulture = true
-                };
-                AssertExtensions.Throws<ArgumentException>("value", () => range.IsValid(value));
-            }
+                Thread.CurrentThread.CurrentCulture = CultureInfo.GetCultureInfoByIetfLanguageTag("en-US");
 
-            using (new TempCulture("fr-FR"))
-            {
-                RangeAttribute range = new RangeAttribute(type, min, max)
+                RangeAttribute range = new RangeAttribute(Type.GetType(t), m1, m2)
                 {
                     ParseLimitsInInvariantCulture = true
                 };
-                AssertExtensions.Throws<ArgumentException>("value", () => range.IsValid(value));
-            }
+                AssertExtensions.Throws<ArgumentException>("value", () => range.IsValid(v));
+
+                Thread.CurrentThread.CurrentCulture = CultureInfo.GetCultureInfoByIetfLanguageTag("fr-FR");
+
+                range = new RangeAttribute(Type.GetType(t), m1, m2)
+                {
+                    ParseLimitsInInvariantCulture = true
+                };
+                AssertExtensions.Throws<ArgumentException>("value", () => range.IsValid(v));
+            }, type.ToString(), min, max, value).Dispose();
         }
 
         [Theory]
@@ -756,23 +775,24 @@ namespace System.ComponentModel.DataAnnotations.Tests
         [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework, "2648 not fixed on NetFX")]
         public static void CommaDecimalExtremaAndInvalidValuesInvariantConvert(Type type, string min, string max, string value)
         {
-            using (new TempCulture("en-US"))
+            RemoteInvoke((t, m1, m2, v) =>
             {
-                RangeAttribute range = new RangeAttribute(type, min, max)
-                {
-                    ConvertValueInInvariantCulture = true
-                };
-                AssertExtensions.Throws<ArgumentException>("value", () => range.IsValid(value));
-            }
+                Thread.CurrentThread.CurrentCulture = CultureInfo.GetCultureInfoByIetfLanguageTag("en-US");
 
-            using (new TempCulture("fr-FR"))
-            {
-                RangeAttribute range = new RangeAttribute(type, min, max)
+                RangeAttribute range = new RangeAttribute(Type.GetType(t), m1, m2)
                 {
                     ConvertValueInInvariantCulture = true
                 };
-                AssertExtensions.Throws<ArgumentException>("value", () => range.IsValid(value));
-            }
+                AssertExtensions.Throws<ArgumentException>("value", () => range.IsValid(v));
+
+                Thread.CurrentThread.CurrentCulture = CultureInfo.GetCultureInfoByIetfLanguageTag("fr-FR");
+
+                range = new RangeAttribute(Type.GetType(t), m1, m2)
+                {
+                    ConvertValueInInvariantCulture = true
+                };
+                AssertExtensions.Throws<ArgumentException>("value", () => range.IsValid(v));
+            }, type.ToString(), min, max, value).Dispose();
         }
 
         [Theory]
@@ -780,25 +800,26 @@ namespace System.ComponentModel.DataAnnotations.Tests
         [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework, "2648 not fixed on NetFX")]
         public static void CommaDecimalExtremaAndInvalidValuesInvariantBoth(Type type, string min, string max, string value)
         {
-            using (new TempCulture("en-US"))
+            RemoteInvoke((t, m1, m2, v) =>
             {
-                RangeAttribute range = new RangeAttribute(type, min, max)
-                {
-                    ConvertValueInInvariantCulture = true,
-                    ParseLimitsInInvariantCulture = true
-                };
-                AssertExtensions.Throws<ArgumentException>("value", () => range.IsValid(value));
-            }
+                Thread.CurrentThread.CurrentCulture = CultureInfo.GetCultureInfoByIetfLanguageTag("en-US");
 
-            using (new TempCulture("fr-FR"))
-            {
-                RangeAttribute range = new RangeAttribute(type, min, max)
+                RangeAttribute range = new RangeAttribute(Type.GetType(t), m1, m2)
                 {
                     ConvertValueInInvariantCulture = true,
                     ParseLimitsInInvariantCulture = true
                 };
-                AssertExtensions.Throws<ArgumentException>("value", () => range.IsValid(value));
-            }
+                AssertExtensions.Throws<ArgumentException>("value", () => range.IsValid(v));
+
+                Thread.CurrentThread.CurrentCulture = CultureInfo.GetCultureInfoByIetfLanguageTag("fr-FR");
+
+                range = new RangeAttribute(Type.GetType(t), m1, m2)
+                {
+                    ConvertValueInInvariantCulture = true,
+                    ParseLimitsInInvariantCulture = true
+                };
+                AssertExtensions.Throws<ArgumentException>("value", () => range.IsValid(v));
+            }, type.ToString(), min, max, value).Dispose();
         }
 
         [Theory]
