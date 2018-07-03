@@ -126,8 +126,6 @@ void Compiler::fgInit()
     /* This global flag is set whenever we add a throw block for a RngChk */
     fgRngChkThrowAdded = false; /* reset flag for fgIsCodeAdded() */
 
-    fgIncrCount = 0;
-
     /* We will record a list of all BBJ_RETURN blocks here */
     fgReturnBlocks = nullptr;
 
@@ -6808,8 +6806,6 @@ unsigned Compiler::fgGetNestingLevel(BasicBlock* block, unsigned* pFinallyNestin
 
 void Compiler::fgImport()
 {
-    fgHasPostfix = false;
-
     impImport(fgFirstBB);
 
     if (!opts.jitFlags->IsSet(JitFlags::JIT_FLAG_SKIP_VERIFICATION))

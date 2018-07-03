@@ -325,7 +325,7 @@ void RegSet::rsSpillTree(regNumber reg, GenTree* tree, unsigned regIdx /* =0 */)
         treeType = tree->TypeGet();
     }
 
-    var_types tempType = Compiler::tmpNormalizeType(treeType);
+    var_types tempType = RegSet::tmpNormalizeType(treeType);
     regMaskTP mask;
     bool      floatSpill = false;
 
@@ -390,7 +390,7 @@ void RegSet::rsSpillTree(regNumber reg, GenTree* tree, unsigned regIdx /* =0 */)
     SpillDsc* spill = SpillDsc::alloc(m_rsCompiler, this, tempType);
 
     // Grab a temp to store the spilled value
-    TempDsc* temp    = m_rsCompiler->tmpGetTemp(tempType);
+    TempDsc* temp    = tmpGetTemp(tempType);
     spill->spillTemp = temp;
     tempType         = temp->tdTempType();
 
@@ -464,7 +464,7 @@ void RegSet::rsSpillFPStack(GenTreeCall* call)
 
     /* Grab a temp to store the spilled value */
 
-    spill->spillTemp = temp = m_rsCompiler->tmpGetTemp(treeType);
+    spill->spillTemp = temp = tmpGetTemp(treeType);
 
     /* Remember what it is we have spilled */
 
@@ -602,7 +602,7 @@ XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
 XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
 */
 
-void Compiler::tmpInit()
+void RegSet::tmpInit()
 {
     tmpCount = 0;
     tmpSize  = 0;
@@ -615,7 +615,7 @@ void Compiler::tmpInit()
 }
 
 /* static */
-var_types Compiler::tmpNormalizeType(var_types type)
+var_types RegSet::tmpNormalizeType(var_types type)
 {
     type = genActualType(type);
 
@@ -638,7 +638,7 @@ var_types Compiler::tmpNormalizeType(var_types type)
  *  the garbage collector).
  */
 
-TempDsc* Compiler::tmpGetTemp(var_types type)
+TempDsc* RegSet::tmpGetTemp(var_types type)
 {
     type          = tmpNormalizeType(type);
     unsigned size = genTypeSize(type);
@@ -676,7 +676,7 @@ TempDsc* Compiler::tmpGetTemp(var_types type)
     noway_assert(temp != nullptr);
 
 #ifdef DEBUG
-    if (verbose)
+    if (m_rsCompiler->verbose)
     {
         printf("%s temp #%u, slot %u, size = %u\n", isNewTemp ? "created" : "reused", -temp->tdTempNum(), slot,
                temp->tdTempSize());
@@ -700,7 +700,7 @@ TempDsc* Compiler::tmpGetTemp(var_types type)
  * has been preallocated, it is a fatal error.
  */
 
-void Compiler::tmpPreAllocateTemps(var_types type, unsigned count)
+void RegSet::tmpPreAllocateTemps(var_types type, unsigned count)
 {
     assert(type == tmpNormalizeType(type));
     unsigned size = genTypeSize(type);
@@ -728,10 +728,10 @@ void Compiler::tmpPreAllocateTemps(var_types type, unsigned count)
         }
 #endif // _TARGET_ARM_
 
-        TempDsc* temp = new (this, CMK_Unknown) TempDsc(-((int)tmpCount), size, type);
+        TempDsc* temp = new (m_rsCompiler, CMK_Unknown) TempDsc(-((int)tmpCount), size, type);
 
 #ifdef DEBUG
-        if (verbose)
+        if (m_rsCompiler->verbose)
         {
             printf("pre-allocated temp #%u, slot %u, size = %u\n", -temp->tdTempNum(), slot, temp->tdTempSize());
         }
@@ -748,7 +748,7 @@ void Compiler::tmpPreAllocateTemps(var_types type, unsigned count)
  *  Release the given temp.
  */
 
-void Compiler::tmpRlsTemp(TempDsc* temp)
+void RegSet::tmpRlsTemp(TempDsc* temp)
 {
     assert(temp != nullptr);
 
@@ -759,7 +759,7 @@ void Compiler::tmpRlsTemp(TempDsc* temp)
     slot = tmpSlot(temp->tdTempSize());
 
 #ifdef DEBUG
-    if (verbose)
+    if (m_rsCompiler->verbose)
     {
         printf("release temp #%u, slot %u, size = %u\n", -temp->tdTempNum(), slot, temp->tdTempSize());
     }
@@ -798,7 +798,7 @@ void Compiler::tmpRlsTemp(TempDsc* temp)
  *
  *  When looking for temps on the "used" list, this can be used any time.
  */
-TempDsc* Compiler::tmpFindNum(int tnum, TEMP_USAGE_TYPE usageType /* = TEMP_USAGE_FREE */) const
+TempDsc* RegSet::tmpFindNum(int tnum, TEMP_USAGE_TYPE usageType /* = TEMP_USAGE_FREE */) const
 {
     assert(tnum < 0); // temp numbers are negative
 
@@ -818,7 +818,7 @@ TempDsc* Compiler::tmpFindNum(int tnum, TEMP_USAGE_TYPE usageType /* = TEMP_USAG
  *  A helper function is used to iterate over all the temps.
  */
 
-TempDsc* Compiler::tmpListBeg(TEMP_USAGE_TYPE usageType /* = TEMP_USAGE_FREE */) const
+TempDsc* RegSet::tmpListBeg(TEMP_USAGE_TYPE usageType /* = TEMP_USAGE_FREE */) const
 {
     TempDsc* const* tmpLists;
     if (usageType == TEMP_USAGE_FREE)
@@ -845,7 +845,7 @@ TempDsc* Compiler::tmpListBeg(TEMP_USAGE_TYPE usageType /* = TEMP_USAGE_FREE */)
  * Used with tmpListBeg() to iterate over the list of temps.
  */
 
-TempDsc* Compiler::tmpListNxt(TempDsc* curTemp, TEMP_USAGE_TYPE usageType /* = TEMP_USAGE_FREE */) const
+TempDsc* RegSet::tmpListNxt(TempDsc* curTemp, TEMP_USAGE_TYPE usageType /* = TEMP_USAGE_FREE */) const
 {
     assert(curTemp != nullptr);
 
@@ -884,7 +884,7 @@ TempDsc* Compiler::tmpListNxt(TempDsc* curTemp, TEMP_USAGE_TYPE usageType /* = T
 /*****************************************************************************
  * Return 'true' if all allocated temps are free (not in use).
  */
-bool Compiler::tmpAllFree() const
+bool RegSet::tmpAllFree() const
 {
     // The 'tmpGetCount' should equal the number of things in the 'tmpUsed' lists. This is a convenient place
     // to assert that.
@@ -1093,7 +1093,7 @@ void RegSet::SpillDsc::freeDsc(RegSet* regSet, RegSet::SpillDsc* spillDsc)
 void RegSet::rsSpillChk()
 {
     // All grabbed temps should have been released
-    assert(m_rsCompiler->tmpGetCount == 0);
+    assert(tmpGetCount == 0);
 
     for (regNumber reg = REG_FIRST; reg < REG_COUNT; reg = REG_NEXT(reg))
     {

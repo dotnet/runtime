@@ -121,7 +121,7 @@ CodeGen::CodeGen(Compiler* theCompiler) : CodeGenInterface(theCompiler)
     setVerbose(compiler->verbose);
 #endif // DEBUG
 
-    compiler->tmpInit();
+    regSet.tmpInit();
 
     instInit();
 
@@ -2314,7 +2314,7 @@ void CodeGen::genGenerateCode(void** codePtr, ULONG* nativeSizeOfCode)
 
     genFinalizeFrame();
 
-    unsigned maxTmpSize = compiler->tmpSize; // This is precise after LSRA has pre-allocated the temps.
+    unsigned maxTmpSize = regSet.tmpGetTotalSize(); // This is precise after LSRA has pre-allocated the temps.
 
     getEmitter()->emitBegFN(isFramePointerUsed()
 #if defined(DEBUG)
@@ -2581,7 +2581,7 @@ void CodeGen::genGenerateCode(void** codePtr, ULONG* nativeSizeOfCode)
 
     /* Shut down the temp logic */
 
-    compiler->tmpDone();
+    regSet.tmpDone();
 
 #if DISPLAY_SIZES
 
@@ -4781,8 +4781,8 @@ void CodeGen::genCheckUseBlockInit()
 
     if (!TRACK_GC_TEMP_LIFETIMES)
     {
-        assert(compiler->tmpAllFree());
-        for (TempDsc* tempThis = compiler->tmpListBeg(); tempThis != nullptr; tempThis = compiler->tmpListNxt(tempThis))
+        assert(regSet.tmpAllFree());
+        for (TempDsc* tempThis = regSet.tmpListBeg(); tempThis != nullptr; tempThis = regSet.tmpListNxt(tempThis))
         {
             if (varTypeIsGC(tempThis->tdTempType()))
             {
@@ -6542,9 +6542,8 @@ void CodeGen::genZeroInitFrame(int untrLclHi, int untrLclLo, regNumber initReg, 
 
         if (!TRACK_GC_TEMP_LIFETIMES)
         {
-            assert(compiler->tmpAllFree());
-            for (TempDsc* tempThis = compiler->tmpListBeg(); tempThis != nullptr;
-                 tempThis          = compiler->tmpListNxt(tempThis))
+            assert(regSet.tmpAllFree());
+            for (TempDsc* tempThis = regSet.tmpListBeg(); tempThis != nullptr; tempThis = regSet.tmpListNxt(tempThis))
             {
                 if (!varTypeIsGC(tempThis->tdTempType()))
                 {
@@ -7695,7 +7694,7 @@ void CodeGen::genFinalizeFrame()
        here (where we have committed to the final numbers for the frame offsets)
        This will ensure that the prolog size is always correct
     */
-    getEmitter()->emitMaxTmpSize = compiler->tmpSize;
+    getEmitter()->emitMaxTmpSize = regSet.tmpGetTotalSize();
 
 #ifdef DEBUG
     if (compiler->opts.dspCode || compiler->opts.disAsm || compiler->opts.disAsm2 || verbose)
@@ -7970,8 +7969,8 @@ void CodeGen::genFnProlog()
 
     if (!TRACK_GC_TEMP_LIFETIMES)
     {
-        assert(compiler->tmpAllFree());
-        for (TempDsc* tempThis = compiler->tmpListBeg(); tempThis != nullptr; tempThis = compiler->tmpListNxt(tempThis))
+        assert(regSet.tmpAllFree());
+        for (TempDsc* tempThis = regSet.tmpListBeg(); tempThis != nullptr; tempThis = regSet.tmpListNxt(tempThis))
         {
             if (!varTypeIsGC(tempThis->tdTempType()))
             {
@@ -8552,7 +8551,7 @@ void CodeGen::genFnProlog()
     getEmitter()->emitEndProlog();
     compiler->unwindEndProlog();
 
-    noway_assert(getEmitter()->emitMaxTmpSize == compiler->tmpSize);
+    noway_assert(getEmitter()->emitMaxTmpSize == regSet.tmpGetTotalSize());
 }
 #ifdef _PREFAST_
 #pragma warning(pop)

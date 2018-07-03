@@ -1865,11 +1865,11 @@ inline UNATIVE_OFFSET emitter::emitInsSizeSV(code_t code, int var, int dsp)
         }
 
         // The offset is already assigned. Find the temp.
-        TempDsc* tmp = emitComp->tmpFindNum(var, Compiler::TEMP_USAGE_USED);
+        TempDsc* tmp = codeGen->regSet.tmpFindNum(var, RegSet::TEMP_USAGE_USED);
         if (tmp == nullptr)
         {
             // It might be in the free lists, if we're working on zero initializing the temps.
-            tmp = emitComp->tmpFindNum(var, Compiler::TEMP_USAGE_FREE);
+            tmp = codeGen->regSet.tmpFindNum(var, RegSet::TEMP_USAGE_FREE);
         }
         assert(tmp != nullptr);
         offs = tmp->tdTempOffs();
@@ -3131,7 +3131,7 @@ regNumber emitter::emitInsBinary(instruction ins, emitAttr attr, GenTree* dst, G
             varNum = tmpDsc->tdTempNum();
             offset = 0;
 
-            emitComp->tmpRlsTemp(tmpDsc);
+            codeGen->regSet.tmpRlsTemp(tmpDsc);
         }
         else if (memOp->isIndir())
         {

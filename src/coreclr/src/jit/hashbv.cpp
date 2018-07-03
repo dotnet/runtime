@@ -358,7 +358,7 @@ bool hashBvNode::sameAs(hashBvNode* other)
 hashBv::hashBv(Compiler* comp)
 {
     this->compiler      = comp;
-    this->log2_hashSize = globalData()->hbvHashSizeLog2;
+    this->log2_hashSize = 0;
 
     int hts = hashtable_size();
     nodeArr = getNewVector(hts);
@@ -422,20 +422,6 @@ hashBvNode*& hashBv::nodeFreeList(hashBvGlobalData* data)
 hashBv*& hashBv::hbvFreeList(hashBvGlobalData* data)
 {
     return data->hbvFreeList;
-}
-
-void hashBv::freeVector(hashBvNode* vect, int vectorLength)
-{
-    // not enough space to do anything with it
-    if (vectorLength < 2)
-    {
-        return;
-    }
-
-    hbvFreeListNode* f              = (hbvFreeListNode*)vect;
-    f->next                         = globalData()->hbvFreeVectorList;
-    globalData()->hbvFreeVectorList = f;
-    f->size                         = vectorLength;
 }
 
 void hashBv::hbvFree()
@@ -547,7 +533,6 @@ void hashBv::Resize(int newSize)
         return;
     }
 
-    int oldSizeLog2  = log2_hashSize;
     int log2_newSize = genLog2((unsigned)newSize);
 
     hashBvNode** newNodes = this->getNewVector(newSize);
@@ -1297,7 +1282,6 @@ bool hashBv::MultiTraverseLHSBigger(hashBv* other)
 
     // this is larger
     hashBvNode*** cursors;
-    int           shiftFactor     = this->log2_hashSize - other->log2_hashSize;
     int           expansionFactor = hts / ots;
     cursors                       = (hashBvNode***)alloca(expansionFactor * sizeof(void*));
 
@@ -2015,13 +1999,4 @@ more_data:
         }
         goto more_data;
     }
-}
-
-indexType HbvNext(hashBv* bv, Compiler* comp)
-{
-    if (bv)
-    {
-        bv->globalData()->hashBvNextIterator.initFrom(bv);
-    }
-    return bv->globalData()->hashBvNextIterator.nextBit();
 }
