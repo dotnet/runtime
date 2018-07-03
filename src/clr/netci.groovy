@@ -2863,8 +2863,12 @@ Constants.allScenarios.each { scenario ->
                     // Create the new job
                     def newJob = job(Utilities.getFullJobName(project, jobName, isPR, folderName)) {}
 
-                    // Should we add corefx_innerloop to views?
-                    addToViews(newJob, isPR, architecture, os)
+                    // We don't want to include in view any job that is only used by a flow job (because we want the views to have only the
+                    // "top-level" jobs. Build only jobs are such jobs.
+                    if (!isBuildOnly)
+                    {
+                        addToViews(newJob, isPR, architecture, os)
+                    }
 
                     setJobMachineAffinity(architecture, os, true, false, false, newJob) // isBuildJob = true, isTestJob = false, isFlowJob = false
 
@@ -3403,6 +3407,8 @@ ${runScript} \\
 
 // Create a test job that will be used by a flow job.
 // Returns the newly created job.
+// Note that we don't add tests jobs to the various views, since they are always used by a flow job, which is in the views,
+// and we want the views to be the minimal set of "top-level" jobs that represent all work.
 def static CreateTestJob(def dslFactory, def project, def branch, def architecture, def os, def configuration, def scenario, def isPR, def inputCoreCLRBuildName, def inputTestsBuildName)
 {
     def windowsArmJob = ((os == "Windows_NT") && (architecture in Constants.armWindowsCrossArchitectureList))
@@ -3416,8 +3422,6 @@ def static CreateTestJob(def dslFactory, def project, def branch, def architectu
     }
 
     setJobMachineAffinity(architecture, os, false, true, false, newJob) // isBuildJob = false, isTestJob = true, isFlowJob = false
-
-    addToViews(newJob, isPR, architecture, os)
 
     if (scenario == 'jitdiff') {
         def osGroup = getOSGroup(os)
