@@ -28,6 +28,13 @@ namespace System.ComponentModel.Composition.Registration.Tests
             public FooImplWithConstructors(int id, string name) { }
         }
 
+        private class FooImplWithConstructors2 : IFoo
+        {
+            public FooImplWithConstructors2() { }
+            public FooImplWithConstructors2(IEnumerable<IFoo> ids) { }
+            public FooImplWithConstructors2(int id, string name) { }
+        }
+
         private class RealPart
         {
         }
@@ -120,7 +127,6 @@ namespace System.ComponentModel.Composition.Registration.Tests
             ConstructorInfo constructor2 = projectedType2.GetConstructors().Where(c => c.GetParameters().Length == 1).Single();
             ConstructorInfo constructor3 = projectedType2.GetConstructors().Where(c => c.GetParameters().Length == 2).Single();
 
-
             // necessary as BuildConventionConstructorAttributes is only called for type level query for attributes
             var typeLevelAttrs = projectedType2.GetCustomAttributes(false);
 
@@ -130,7 +136,7 @@ namespace System.ComponentModel.Composition.Registration.Tests
             ConstructorInfo ci = constructor2;
             var attrs = ci.GetCustomAttributes(false);
             Assert.Equal(1, attrs.Length);
-            Assert.Equal(typeof(ImportingConstructorAttribute), attrs[0].GetType());
+            Assert.IsType<ImportingConstructorAttribute>(attrs[0]);
         }
 
         [Fact]
@@ -141,11 +147,11 @@ namespace System.ComponentModel.Composition.Registration.Tests
             builder.ForTypesDerivedFrom<IFoo>()
                 .Export<IFoo>();
 
-            builder.ForType<FooImplWithConstructors>().
-                SelectConstructor(param => new FooImplWithConstructors(param.Import<IEnumerable<IFoo>>()));
+            builder.ForType<FooImplWithConstructors2>().
+                SelectConstructor(param => new FooImplWithConstructors2(param.Import<IEnumerable<IFoo>>()));
 
             TypeInfo projectedType1 = builder.MapType(typeof(FooImpl).GetTypeInfo().GetTypeInfo());
-            TypeInfo projectedType2 = builder.MapType(typeof(FooImplWithConstructors).GetTypeInfo().GetTypeInfo());
+            TypeInfo projectedType2 = builder.MapType(typeof(FooImplWithConstructors2).GetTypeInfo().GetTypeInfo());
 
             ConstructorInfo constructor1 = projectedType2.GetConstructors().Where(c => c.GetParameters().Length == 0).Single();
             ConstructorInfo constructor2 = projectedType2.GetConstructors().Where(c => c.GetParameters().Length == 1).Single();
@@ -160,7 +166,7 @@ namespace System.ComponentModel.Composition.Registration.Tests
             ConstructorInfo ci = constructor2;
             var attrs = ci.GetCustomAttributes(false);
             Assert.Equal(1, attrs.Length);
-            Assert.Equal(typeof(ImportingConstructorAttribute), attrs[0].GetType());
+            Assert.IsType<ImportingConstructorAttribute>(attrs[0]);
         }
 
         private interface IGenericInterface<T> { }
