@@ -4,8 +4,8 @@
   <PropertyGroup>
       <RestoreOutputPath>$(SourceDir)Common\CoreFX\obj</RestoreOutputPath>
       <Language>C#</Language>
-      <NugetTargetMoniker>.NETCoreApp,Version=v2.0</NugetTargetMoniker>
-      <NugetTargetMonikerShort>netcoreapp2.0</NugetTargetMonikerShort>
+      <NugetTargetMoniker>.NETCoreApp,Version=v3.0</NugetTargetMoniker>
+      <TargetFramework>netcoreapp3.0</TargetFramework>
       <ContainsPackageReferences>true</ContainsPackageReferences>
       <CLRTestKind>SharedLibrary</CLRTestKind>
       <IsTestProject>false</IsTestProject>
@@ -15,6 +15,7 @@
       <!-- Xunit Abstractions is differently versioned then the rest of XUnit -->
       <XUnitAbstractionsVersion>2.0.1</XUnitAbstractionsVersion>
       <CoreFXXUnitPackageVersion>2.2.0-beta2-build3300</CoreFXXUnitPackageVersion>
+      <MicrosoftDiagnosticsTracingTraceVentVersion>2.0.19</MicrosoftDiagnosticsTracingTraceVentVersion>
   </PropertyGroup>
 
   <!-- Switch RuntimeIdentifier according to currently running OSGroup -->
@@ -84,6 +85,9 @@
       <Version>$(MicrosoftPrivateCoreFxNETCoreAppPackageVersion)</Version>
     </PackageReference>
     <PackageReference Include="System.Data.SqlClient">
+      <Version>$(MicrosoftPrivateCoreFxNETCoreAppPackageVersion)</Version>
+    </PackageReference>
+    <PackageReference Include="System.Diagnostics.PerformanceCounter">
       <Version>$(MicrosoftPrivateCoreFxNETCoreAppPackageVersion)</Version>
     </PackageReference>
     <PackageReference Include="System.DirectoryServices">
@@ -159,10 +163,10 @@
     <PackageReference Include="Microsoft.Win32.SystemEvents">
       <Version>$(MicrosoftPrivateCoreFxNETCoreAppPackageVersion)</Version>
     </PackageReference>
+    <PackageReference Include="Microsoft.Diagnostics.Tracing.TraceEvent">
+      <Version>$(MicrosoftDiagnosticsTracingTraceVentVersion)</Version>
+    </PackageReference>
   </ItemGroup>
-  <PropertyGroup>
-    <TargetFramework>netcoreapp2.2</TargetFramework>
-  </PropertyGroup>
   <ItemGroup>
     <PackageToInclude Include="@(PackageReference -> '%(Identity)' )"/>
   </ItemGroup>
