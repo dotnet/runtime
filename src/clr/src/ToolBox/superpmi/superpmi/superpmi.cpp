@@ -26,8 +26,8 @@ extern int doParallelSuperPMI(CommandLine::Options& o);
 // There must be a single, fixed prefix common to all strings, to ease the determination of when
 // to parse the string fully.
 const char* const g_AllFormatStringFixedPrefix  = "Loaded ";
-const char* const g_SummaryFormatString         = "Loaded %d  Jitted %d  FailedCompile %d";
-const char* const g_AsmDiffsSummaryFormatString = "Loaded %d  Jitted %d  FailedCompile %d  Diffs %d";
+const char* const g_SummaryFormatString         = "Loaded %d  Jitted %d  FailedCompile %d Excluded %d";
+const char* const g_AsmDiffsSummaryFormatString = "Loaded %d  Jitted %d  FailedCompile %d Excluded %d Diffs %d";
 
 //#define SuperPMI_ChewMemory 0x7FFFFFFF //Amount of address space to consume on startup
 
@@ -238,6 +238,7 @@ int __cdecl main(int argc, char* argv[])
     int errorCount        = 0;
     int missingCount      = 0;
     int index             = 0;
+    int excludedCount     = 0;
 
     st1.Start();
     NearDiffer nearDiffer(o.targetArchitecture, o.useCoreDisTools);
@@ -284,7 +285,17 @@ int __cdecl main(int argc, char* argv[])
 
         loadedCount++;
         if (!MethodContext::Initialize(loadedCount, mcb.buff, mcb.size, &mc))
+        {
             return (int)SpmiResult::GeneralFailure;
+        }
+
+        if (reader->IsMethodExcluded(mc))
+        {
+            excludedCount++;
+            LogInfo("main method %d of size %d with was excluded from the compilation.",
+                    reader->GetMethodContextIndex(), mc->methodSize);
+            continue;
+        }
 
         if (jit == nullptr)
         {
@@ -552,12 +563,12 @@ int __cdecl main(int argc, char* argv[])
     // NOTE: these output status strings are parsed by parallelsuperpmi.cpp::ProcessChildStdOut().
     if (o.applyDiff)
     {
-        LogInfo(g_AsmDiffsSummaryFormatString, loadedCount, jittedCount, failToReplayCount,
+        LogInfo(g_AsmDiffsSummaryFormatString, loadedCount, jittedCount, failToReplayCount, excludedCount,
                 jittedCount - failToReplayCount - matchCount);
     }
     else
     {
-        LogInfo(g_SummaryFormatString, loadedCount, jittedCount, failToReplayCount);
+        LogInfo(g_SummaryFormatString, loadedCount, jittedCount, failToReplayCount, excludedCount);
     }
 
     st2.Stop();

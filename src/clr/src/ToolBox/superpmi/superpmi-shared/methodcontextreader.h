@@ -135,6 +135,13 @@ public:
     {
         return curMCIndex;
     }
+
+    // Return should this method context be excluded from the replay or not.
+    bool IsMethodExcluded(MethodContext* mc)
+    {
+        // Right now it is just a stub.
+        return false;
+    }
 };
 #pragma pack(pop)
 

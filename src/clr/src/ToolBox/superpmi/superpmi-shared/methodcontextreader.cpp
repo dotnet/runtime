@@ -83,26 +83,26 @@ MethodContextReader::MethodContextReader(
 {
     this->mutex = CreateMutexA(NULL, FALSE, nullptr);
 
-    std::string tocFileName, mchFile;
+    std::string tocFileName, mchFileName;
 
     // First, check to see if they passed an MCH file (look for a paired MCT file)
     tocFileName = MethodContextReader::CheckForPairedFile(inputFileName, ".mch", ".mct");
     if (!tocFileName.empty())
     {
-        mchFile = inputFileName;
+        mchFileName = inputFileName;
     }
     else
     {
         // Okay, it wasn't an MCH file, let's check to see if it was an MCT file
         // so check for a paired MCH file instead
-        mchFile = MethodContextReader::CheckForPairedFile(inputFileName, ".mct", ".mch");
-        if (!mchFile.empty())
+        mchFileName = MethodContextReader::CheckForPairedFile(inputFileName, ".mct", ".mch");
+        if (!mchFileName.empty())
         {
             tocFileName = inputFileName;
         }
         else
         {
-            mchFile = inputFileName;
+            mchFileName = inputFileName;
         }
     }
 
@@ -110,8 +110,8 @@ MethodContextReader::MethodContextReader(
         this->tocFile.LoadToc(tocFileName.c_str());
 
     // we'll get here even if we don't have a valid index file
-    this->fileHandle = OpenFile(mchFile.c_str(), (this->hasTOC() && this->hasIndex()) ? FILE_ATTRIBUTE_NORMAL
-                                                                                      : FILE_FLAG_SEQUENTIAL_SCAN);
+    this->fileHandle = OpenFile(mchFileName.c_str(), (this->hasTOC() && this->hasIndex()) ? FILE_ATTRIBUTE_NORMAL
+                                                                                          : FILE_FLAG_SEQUENTIAL_SCAN);
     if (this->fileHandle != INVALID_HANDLE_VALUE)
     {
         GetFileSizeEx(this->fileHandle, (PLARGE_INTEGER) & this->fileSize);
