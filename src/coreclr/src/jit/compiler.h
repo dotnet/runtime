@@ -128,17 +128,6 @@ unsigned ReinterpretHexAsDecimal(unsigned);
 
 /*****************************************************************************/
 
-#if defined(FEATURE_SIMD)
-#if defined(_TARGET_XARCH_)
-const unsigned TEMP_MAX_SIZE = YMM_REGSIZE_BYTES;
-#elif defined(_TARGET_ARM64_)
-const unsigned       TEMP_MAX_SIZE = FP_REGSIZE_BYTES;
-#endif // defined(_TARGET_XARCH_) || defined(_TARGET_ARM64_)
-#else  // !FEATURE_SIMD
-const unsigned TEMP_MAX_SIZE = sizeof(double);
-#endif // !FEATURE_SIMD
-const unsigned TEMP_SLOT_COUNT = (TEMP_MAX_SIZE / sizeof(int));
-
 const unsigned FLG_CCTOR = (CORINFO_FLG_CONSTRUCTOR | CORINFO_FLG_STATIC);
 
 #ifdef DEBUG
@@ -1331,7 +1320,7 @@ public:
 #ifdef _TARGET_ARM_
         unsigned int regSize = (hfaType == TYP_DOUBLE) ? 2 : 1;
 #else
-        unsigned int regSize       = 1;
+        unsigned int regSize = 1;
 #endif
         for (unsigned int regIndex = 1; regIndex < numRegs; regIndex++)
         {
@@ -2546,7 +2535,7 @@ public:
     }
 
     // reverse map of tracked number to var number
-    unsigned lvaTrackedToVarNum[lclMAX_TRACKED];
+    unsigned* lvaTrackedToVarNum;
 
 #if DOUBLE_ALIGN
 #ifdef DEBUG
@@ -3014,8 +3003,6 @@ protected:
     unsigned impStkSize; // Size of the full stack
 
 #define SMALL_STACK_SIZE 16 // number of elements in impSmallStack
-
-    StackEntry impSmallStack[SMALL_STACK_SIZE]; // Use this array if possible
 
     struct SavedStack // used to save/restore stack contents.
     {
@@ -3769,19 +3756,13 @@ public:
 
     unsigned fgMeasureIR();
 
-#if OPT_BOOL_OPS // Used to detect multiple logical "not" assignments.
-    bool fgMultipleNots;
-#endif
-
     bool fgModified;         // True if the flow graph has been modified recently
     bool fgComputePredsDone; // Have we computed the bbPreds list
     bool fgCheapPredsValid;  // Is the bbCheapPreds list valid?
     bool fgDomsComputed;     // Have we computed the dominator sets?
     bool fgOptimizedFinally; // Did we optimize any try-finallys?
 
-    bool     fgHasSwitch;  // any BBJ_SWITCH jumps?
-    bool     fgHasPostfix; // any postfix ++/-- found?
-    unsigned fgIncrCount;  // number of increment nodes found
+    bool fgHasSwitch; // any BBJ_SWITCH jumps?
 
     BlockSet fgEnterBlks; // Set of blocks which have a special transfer of control; the "entry" blocks plus EH handler
                           // begin blocks.
@@ -3958,11 +3939,6 @@ public:
     VARSET_VALRET_TP fgGetHandlerLiveVars(BasicBlock* block);
 
     void fgLiveVarAnalysis(bool updateInternalOnly = false);
-
-    // This is used in the liveness computation, as a temporary.  When we use the
-    // arbitrary-length VarSet representation, it is better not to allocate a new one
-    // at each call.
-    VARSET_TP fgMarkIntfUnionVS;
 
     void fgUpdateRefCntForClone(BasicBlock* addedToBlock, GenTree* clonedTree);
 
@@ -5506,8 +5482,8 @@ protected:
     bool fgHasLoops;        // True if this method has any loops, set in fgComputeReachability
 
 public:
-    LoopDsc       optLoopTable[MAX_LOOP_NUM]; // loop descriptor table
-    unsigned char optLoopCount;               // number of tracked loops
+    LoopDsc*      optLoopTable; // loop descriptor table
+    unsigned char optLoopCount; // number of tracked loops
 
     bool optRecordLoop(BasicBlock*   head,
                        BasicBlock*   first,
@@ -6331,33 +6307,7 @@ public:
                                               BasicBlock*       slow);
     void optInsertLoopCloningStress(BasicBlock* head);
 
-#if COUNT_RANGECHECKS
-    static unsigned optRangeChkRmv;
-    static unsigned optRangeChkAll;
-#endif
-
 protected:
-    struct arraySizes
-    {
-        unsigned arrayVar;
-        int      arrayDim;
-
-#define MAX_ARRAYS 4 // a magic max number of arrays tracked for bounds check elimination
-    };
-
-    struct RngChkDsc
-    {
-        RngChkDsc* rcdNextInBucket; // used by the hash table
-
-        unsigned short rcdHashValue; // to make matching faster
-        unsigned short rcdIndex;     // 0..optRngChkCount-1
-
-        GenTree* rcdTree; // the array index tree
-    };
-
-    unsigned            optRngChkCount;
-    static const size_t optRngChkHashSize;
-
     ssize_t optGetArrayRefScaleAndIndex(GenTree* mul, GenTree** pIndex DEBUGARG(bool bRngChk));
     GenTree* optFindLocalInit(BasicBlock* block, GenTree* local, VARSET_TP* pKilledInOut, bool* isKilledAfterInit);
 
@@ -6871,45 +6821,6 @@ public:
 
     /*****************************************************************************/
 
-public:
-    void tmpInit();
-
-    enum TEMP_USAGE_TYPE
-    {
-        TEMP_USAGE_FREE,
-        TEMP_USAGE_USED
-    };
-
-    static var_types tmpNormalizeType(var_types type);
-    TempDsc* tmpGetTemp(var_types type); // get temp for the given type
-    void tmpRlsTemp(TempDsc* temp);
-    TempDsc* tmpFindNum(int temp, TEMP_USAGE_TYPE usageType = TEMP_USAGE_FREE) const;
-
-    void     tmpEnd();
-    TempDsc* tmpListBeg(TEMP_USAGE_TYPE usageType = TEMP_USAGE_FREE) const;
-    TempDsc* tmpListNxt(TempDsc* curTemp, TEMP_USAGE_TYPE usageType = TEMP_USAGE_FREE) const;
-    void tmpDone();
-
-#ifdef DEBUG
-    bool tmpAllFree() const;
-#endif // DEBUG
-
-    void tmpPreAllocateTemps(var_types type, unsigned count);
-
-protected:
-    unsigned tmpCount; // Number of temps
-    unsigned tmpSize;  // Size of all the temps
-#ifdef DEBUG
-public:
-    // Used by RegSet::rsSpillChk()
-    unsigned tmpGetCount; // Temps which haven't been released yet
-#endif
-private:
-    static unsigned tmpSlot(unsigned size); // which slot in tmpFree[] or tmpUsed[] to use
-
-    TempDsc* tmpFree[TEMP_MAX_SIZE / sizeof(int)];
-    TempDsc* tmpUsed[TEMP_MAX_SIZE / sizeof(int)];
-
     /*
     XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
     XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
@@ -7294,71 +7205,89 @@ private:
     // by the hardware.  It is allocated when/if such situations are encountered during Lowering.
     unsigned lvaSIMDInitTempVarNum;
 
-    // SIMD Types
-    CORINFO_CLASS_HANDLE SIMDFloatHandle;
-    CORINFO_CLASS_HANDLE SIMDDoubleHandle;
-    CORINFO_CLASS_HANDLE SIMDIntHandle;
-    CORINFO_CLASS_HANDLE SIMDUShortHandle;
-    CORINFO_CLASS_HANDLE SIMDUByteHandle;
-    CORINFO_CLASS_HANDLE SIMDShortHandle;
-    CORINFO_CLASS_HANDLE SIMDByteHandle;
-    CORINFO_CLASS_HANDLE SIMDLongHandle;
-    CORINFO_CLASS_HANDLE SIMDUIntHandle;
-    CORINFO_CLASS_HANDLE SIMDULongHandle;
-    CORINFO_CLASS_HANDLE SIMDVector2Handle;
-    CORINFO_CLASS_HANDLE SIMDVector3Handle;
-    CORINFO_CLASS_HANDLE SIMDVector4Handle;
-    CORINFO_CLASS_HANDLE SIMDVectorHandle;
+    struct SIMDHandlesCache
+    {
+        // SIMD Types
+        CORINFO_CLASS_HANDLE SIMDFloatHandle;
+        CORINFO_CLASS_HANDLE SIMDDoubleHandle;
+        CORINFO_CLASS_HANDLE SIMDIntHandle;
+        CORINFO_CLASS_HANDLE SIMDUShortHandle;
+        CORINFO_CLASS_HANDLE SIMDUByteHandle;
+        CORINFO_CLASS_HANDLE SIMDShortHandle;
+        CORINFO_CLASS_HANDLE SIMDByteHandle;
+        CORINFO_CLASS_HANDLE SIMDLongHandle;
+        CORINFO_CLASS_HANDLE SIMDUIntHandle;
+        CORINFO_CLASS_HANDLE SIMDULongHandle;
+        CORINFO_CLASS_HANDLE SIMDVector2Handle;
+        CORINFO_CLASS_HANDLE SIMDVector3Handle;
+        CORINFO_CLASS_HANDLE SIMDVector4Handle;
+        CORINFO_CLASS_HANDLE SIMDVectorHandle;
 
 #ifdef FEATURE_HW_INTRINSICS
 #if defined(_TARGET_ARM64_)
-    CORINFO_CLASS_HANDLE Vector64FloatHandle;
-    CORINFO_CLASS_HANDLE Vector64UIntHandle;
-    CORINFO_CLASS_HANDLE Vector64UShortHandle;
-    CORINFO_CLASS_HANDLE Vector64UByteHandle;
-    CORINFO_CLASS_HANDLE Vector64ShortHandle;
-    CORINFO_CLASS_HANDLE Vector64ByteHandle;
-    CORINFO_CLASS_HANDLE Vector64IntHandle;
+        CORINFO_CLASS_HANDLE Vector64FloatHandle;
+        CORINFO_CLASS_HANDLE Vector64UIntHandle;
+        CORINFO_CLASS_HANDLE Vector64UShortHandle;
+        CORINFO_CLASS_HANDLE Vector64UByteHandle;
+        CORINFO_CLASS_HANDLE Vector64ShortHandle;
+        CORINFO_CLASS_HANDLE Vector64ByteHandle;
+        CORINFO_CLASS_HANDLE Vector64IntHandle;
 #endif // defined(_TARGET_ARM64_)
-    CORINFO_CLASS_HANDLE Vector128FloatHandle;
-    CORINFO_CLASS_HANDLE Vector128DoubleHandle;
-    CORINFO_CLASS_HANDLE Vector128IntHandle;
-    CORINFO_CLASS_HANDLE Vector128UShortHandle;
-    CORINFO_CLASS_HANDLE Vector128UByteHandle;
-    CORINFO_CLASS_HANDLE Vector128ShortHandle;
-    CORINFO_CLASS_HANDLE Vector128ByteHandle;
-    CORINFO_CLASS_HANDLE Vector128LongHandle;
-    CORINFO_CLASS_HANDLE Vector128UIntHandle;
-    CORINFO_CLASS_HANDLE Vector128ULongHandle;
+        CORINFO_CLASS_HANDLE Vector128FloatHandle;
+        CORINFO_CLASS_HANDLE Vector128DoubleHandle;
+        CORINFO_CLASS_HANDLE Vector128IntHandle;
+        CORINFO_CLASS_HANDLE Vector128UShortHandle;
+        CORINFO_CLASS_HANDLE Vector128UByteHandle;
+        CORINFO_CLASS_HANDLE Vector128ShortHandle;
+        CORINFO_CLASS_HANDLE Vector128ByteHandle;
+        CORINFO_CLASS_HANDLE Vector128LongHandle;
+        CORINFO_CLASS_HANDLE Vector128UIntHandle;
+        CORINFO_CLASS_HANDLE Vector128ULongHandle;
 #if defined(_TARGET_XARCH_)
-    CORINFO_CLASS_HANDLE Vector256FloatHandle;
-    CORINFO_CLASS_HANDLE Vector256DoubleHandle;
-    CORINFO_CLASS_HANDLE Vector256IntHandle;
-    CORINFO_CLASS_HANDLE Vector256UShortHandle;
-    CORINFO_CLASS_HANDLE Vector256UByteHandle;
-    CORINFO_CLASS_HANDLE Vector256ShortHandle;
-    CORINFO_CLASS_HANDLE Vector256ByteHandle;
-    CORINFO_CLASS_HANDLE Vector256LongHandle;
-    CORINFO_CLASS_HANDLE Vector256UIntHandle;
-    CORINFO_CLASS_HANDLE Vector256ULongHandle;
+        CORINFO_CLASS_HANDLE Vector256FloatHandle;
+        CORINFO_CLASS_HANDLE Vector256DoubleHandle;
+        CORINFO_CLASS_HANDLE Vector256IntHandle;
+        CORINFO_CLASS_HANDLE Vector256UShortHandle;
+        CORINFO_CLASS_HANDLE Vector256UByteHandle;
+        CORINFO_CLASS_HANDLE Vector256ShortHandle;
+        CORINFO_CLASS_HANDLE Vector256ByteHandle;
+        CORINFO_CLASS_HANDLE Vector256LongHandle;
+        CORINFO_CLASS_HANDLE Vector256UIntHandle;
+        CORINFO_CLASS_HANDLE Vector256ULongHandle;
 #endif // defined(_TARGET_XARCH_)
 #endif // FEATURE_HW_INTRINSICS
+
+        SIMDHandlesCache()
+        {
+            memset(this, 0, sizeof(*this));
+        }
+    };
+
+    SIMDHandlesCache* m_simdHandleCache;
 
     // Get the handle for a SIMD type.
     CORINFO_CLASS_HANDLE gtGetStructHandleForSIMD(var_types simdType, var_types simdBaseType)
     {
+        if (m_simdHandleCache == nullptr)
+        {
+            // This may happen if the JIT generates SIMD node on its own, without importing them.
+            // Otherwise getBaseTypeAndSizeOfSIMDType should have created the cache.
+            return NO_CLASS_HANDLE;
+        }
+
         if (simdBaseType == TYP_FLOAT)
         {
             switch (simdType)
             {
                 case TYP_SIMD8:
-                    return SIMDVector2Handle;
+                    return m_simdHandleCache->SIMDVector2Handle;
                 case TYP_SIMD12:
-                    return SIMDVector3Handle;
+                    return m_simdHandleCache->SIMDVector3Handle;
                 case TYP_SIMD16:
-                    if ((getSIMDVectorType() == TYP_SIMD32) || (SIMDVector4Handle != NO_CLASS_HANDLE))
+                    if ((getSIMDVectorType() == TYP_SIMD32) ||
+                        (m_simdHandleCache->SIMDVector4Handle != NO_CLASS_HANDLE))
                     {
-                        return SIMDVector4Handle;
+                        return m_simdHandleCache->SIMDVector4Handle;
                     }
                     break;
                 case TYP_SIMD32:
@@ -7371,35 +7300,30 @@ private:
         switch (simdBaseType)
         {
             case TYP_FLOAT:
-                return SIMDFloatHandle;
+                return m_simdHandleCache->SIMDFloatHandle;
             case TYP_DOUBLE:
-                return SIMDDoubleHandle;
+                return m_simdHandleCache->SIMDDoubleHandle;
             case TYP_INT:
-                return SIMDIntHandle;
+                return m_simdHandleCache->SIMDIntHandle;
             case TYP_USHORT:
-                return SIMDUShortHandle;
+                return m_simdHandleCache->SIMDUShortHandle;
             case TYP_UBYTE:
-                return SIMDUByteHandle;
+                return m_simdHandleCache->SIMDUByteHandle;
             case TYP_SHORT:
-                return SIMDShortHandle;
+                return m_simdHandleCache->SIMDShortHandle;
             case TYP_BYTE:
-                return SIMDByteHandle;
+                return m_simdHandleCache->SIMDByteHandle;
             case TYP_LONG:
-                return SIMDLongHandle;
+                return m_simdHandleCache->SIMDLongHandle;
             case TYP_UINT:
-                return SIMDUIntHandle;
+                return m_simdHandleCache->SIMDUIntHandle;
             case TYP_ULONG:
-                return SIMDULongHandle;
+                return m_simdHandleCache->SIMDULongHandle;
             default:
                 assert(!"Didn't find a class handle for simdType");
         }
         return NO_CLASS_HANDLE;
     }
-
-    // SIMD Methods
-    CORINFO_METHOD_HANDLE SIMDVectorFloat_set_Item;
-    CORINFO_METHOD_HANDLE SIMDVectorFloat_get_Length;
-    CORINFO_METHOD_HANDLE SIMDVectorFloat_op_Addition;
 
     // Returns true if the tree corresponds to a TYP_SIMD lcl var.
     // Note that both SIMD vector args and locals are mared as lvSIMDType = true, but
@@ -7869,10 +7793,6 @@ public:
 
 // NOTE: These values are only reliable after
 //       the importing is completely finished.
-
-#if CPU_USES_BLOCK_MOVE
-    bool compBlkOpUsed; // Does the method do a COPYBLK or INITBLK
-#endif
 
 #ifdef DEBUG
     // State information - which phases have completed?

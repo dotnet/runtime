@@ -40,6 +40,8 @@ void Compiler::lvaInit()
 
     lvaGenericsContextUseCount = 0;
 
+    lvaTrackedToVarNum = nullptr;
+
     lvaSortAgain    = false; // false: We don't need to call lvaSortOnly()
     lvaTrackedFixed = false; // false: We can still add new tracked variables
 
@@ -3508,9 +3510,14 @@ void Compiler::lvaSortByRefCount()
         }
     }
 
+    if (lvaTrackedToVarNum == nullptr)
+    {
+        lvaTrackedToVarNum = new (getAllocator(CMK_LvaTable)) unsigned[lclMAX_TRACKED];
+    }
+
 #ifdef DEBUG
     // Re-Initialize to -1 for safety in debug build.
-    memset(lvaTrackedToVarNum, -1, sizeof(lvaTrackedToVarNum));
+    memset(lvaTrackedToVarNum, -1, lclMAX_TRACKED * sizeof(unsigned));
 #endif
 
     /* Assign indices to all the variables we've decided to track */
@@ -4226,7 +4233,7 @@ unsigned Compiler::lvaGetMaxSpillTempSize()
 
     if (lvaDoneFrameLayout >= REGALLOC_FRAME_LAYOUT)
     {
-        result = tmpSize;
+        result = codeGen->regSet.tmpGetTotalSize();
     }
     else
     {
@@ -4795,8 +4802,8 @@ void Compiler::lvaFixVirtualFrameOffsets()
         }
     }
 
-    assert(tmpAllFree());
-    for (TempDsc* temp = tmpListBeg(); temp != nullptr; temp = tmpListNxt(temp))
+    assert(codeGen->regSet.tmpAllFree());
+    for (TempDsc* temp = codeGen->regSet.tmpListBeg(); temp != nullptr; temp = codeGen->regSet.tmpListNxt(temp))
     {
         temp->tdAdjustTempOffs(delta);
     }
@@ -6511,11 +6518,11 @@ int Compiler::lvaAllocateTemps(int stkOffs, bool mustDoubleAlign)
             assignDone = true;
         }
 
-        assert(tmpAllFree());
+        assert(codeGen->regSet.tmpAllFree());
 
     AGAIN2:
 
-        for (TempDsc* temp = tmpListBeg(); temp != nullptr; temp = tmpListNxt(temp))
+        for (TempDsc* temp = codeGen->regSet.tmpListBeg(); temp != nullptr; temp = codeGen->regSet.tmpListNxt(temp))
         {
             var_types tempType = temp->tdTempType();
             unsigned  size;
@@ -6997,8 +7004,8 @@ void Compiler::lvaTableDump(FrameLayoutState curState)
     //-------------------------------------------------------------------------
     // Display the code-gen temps
 
-    assert(tmpAllFree());
-    for (TempDsc* temp = tmpListBeg(); temp != nullptr; temp = tmpListNxt(temp))
+    assert(codeGen->regSet.tmpAllFree());
+    for (TempDsc* temp = codeGen->regSet.tmpListBeg(); temp != nullptr; temp = codeGen->regSet.tmpListNxt(temp))
     {
         printf(";  TEMP_%02u %26s%*s%7s  -> ", -temp->tdTempNum(), " ", refCntWtdWidth, " ",
                varTypeName(temp->tdTempType()));

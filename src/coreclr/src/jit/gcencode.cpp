@@ -2365,8 +2365,9 @@ size_t GCInfo::gcMakeRegPtrTable(BYTE* dest, int mask, const InfoHdr& header, un
 
         /* Count&Write spill temps that hold pointers */
 
-        assert(compiler->tmpAllFree());
-        for (TempDsc* tempItem = compiler->tmpListBeg(); tempItem != nullptr; tempItem = compiler->tmpListNxt(tempItem))
+        assert(compiler->codeGen->regSet.tmpAllFree());
+        for (TempDsc* tempItem = compiler->codeGen->regSet.tmpListBeg(); tempItem != nullptr;
+             tempItem          = compiler->codeGen->regSet.tmpListNxt(tempItem))
         {
             if (varTypeIsGC(tempItem->tdTempType()))
             {
@@ -4330,8 +4331,9 @@ void GCInfo::gcMakeRegPtrTable(
     {
         // Count&Write spill temps that hold pointers.
 
-        assert(compiler->tmpAllFree());
-        for (TempDsc* tempItem = compiler->tmpListBeg(); tempItem != nullptr; tempItem = compiler->tmpListNxt(tempItem))
+        assert(compiler->codeGen->regSet.tmpAllFree());
+        for (TempDsc* tempItem = compiler->codeGen->regSet.tmpListBeg(); tempItem != nullptr;
+             tempItem          = compiler->codeGen->regSet.tmpListNxt(tempItem))
         {
             if (varTypeIsGC(tempItem->tdTempType()))
             {

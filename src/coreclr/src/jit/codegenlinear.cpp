@@ -676,7 +676,7 @@ void CodeGen::genCodeForBBlist()
 
     /* Finalize the temp   tracking logic */
 
-    compiler->tmpEnd();
+    regSet.tmpEnd();
 
 #ifdef DEBUG
     if (compiler->verbose)
@@ -991,7 +991,7 @@ void CodeGen::genUnspillRegIfNeeded(GenTree* tree)
                     TempDsc* t = regSet.rsUnspillInPlace(call, unspillTreeReg, i);
                     getEmitter()->emitIns_R_S(ins_Load(dstType), emitActualTypeSize(dstType), dstReg, t->tdTempNum(),
                                               0);
-                    compiler->tmpRlsTemp(t);
+                    regSet.tmpRlsTemp(t);
                     gcInfo.gcMarkRegPtrVal(dstReg, dstType);
                 }
             }
@@ -1019,7 +1019,7 @@ void CodeGen::genUnspillRegIfNeeded(GenTree* tree)
                     TempDsc* t = regSet.rsUnspillInPlace(splitArg, dstReg, i);
                     getEmitter()->emitIns_R_S(ins_Load(dstType), emitActualTypeSize(dstType), dstReg, t->tdTempNum(),
                                               0);
-                    compiler->tmpRlsTemp(t);
+                    regSet.tmpRlsTemp(t);
                     gcInfo.gcMarkRegPtrVal(dstReg, dstType);
                 }
             }
@@ -1046,7 +1046,7 @@ void CodeGen::genUnspillRegIfNeeded(GenTree* tree)
                     TempDsc* t = regSet.rsUnspillInPlace(multiReg, dstReg, i);
                     getEmitter()->emitIns_R_S(ins_Load(dstType), emitActualTypeSize(dstType), dstReg, t->tdTempNum(),
                                               0);
-                    compiler->tmpRlsTemp(t);
+                    regSet.tmpRlsTemp(t);
                     gcInfo.gcMarkRegPtrVal(dstReg, dstType);
                 }
             }
@@ -1060,7 +1060,7 @@ void CodeGen::genUnspillRegIfNeeded(GenTree* tree)
             TempDsc* t = regSet.rsUnspillInPlace(unspillTree, unspillTree->gtRegNum);
             getEmitter()->emitIns_R_S(ins_Load(unspillTree->gtType), emitActualTypeSize(unspillTree->TypeGet()), dstReg,
                                       t->tdTempNum(), 0);
-            compiler->tmpRlsTemp(t);
+            regSet.tmpRlsTemp(t);
 
             unspillTree->gtFlags &= ~GTF_SPILLED;
             gcInfo.gcMarkRegPtrVal(dstReg, unspillTree->TypeGet());
