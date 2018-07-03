@@ -2684,8 +2684,7 @@ regNumber LinearScan::tryAllocateFreeReg(Interval* currentInterval, RefPosition*
         {
             // Don't use the relatedInterval for preferencing if its next reference is not a new definition,
             // or if it is only related because they are multi-reg targets of the same node.
-            if (!RefTypeIsDef(nextRelatedRefPosition->refType) ||
-                isMultiRegRelated(nextRelatedRefPosition, refPosition->nodeLocation))
+            if (!RefTypeIsDef(nextRelatedRefPosition->refType))
             {
                 relatedInterval = nullptr;
             }
@@ -4917,18 +4916,6 @@ bool LinearScan::registerIsFree(regNumber regNum, RegisterType regType)
 #endif // _TARGET_ARM_
 
     return isFree;
-}
-
-// isMultiRegRelated: is this RefPosition defining part of a multi-reg value
-//                    at the given location?
-//
-bool LinearScan::isMultiRegRelated(RefPosition* refPosition, LsraLocation location)
-{
-#ifdef FEATURE_MULTIREG_ARGS_OR_RET
-    return ((refPosition->nodeLocation == location) && refPosition->getInterval()->isMultiReg);
-#else
-    return false;
-#endif
 }
 
 //------------------------------------------------------------------------
@@ -8595,10 +8582,6 @@ void Interval::dump()
     if (isConstant)
     {
         printf(" (constant)");
-    }
-    if (isMultiReg)
-    {
-        printf(" (multireg)");
     }
 
     printf(" RefPositions {");
