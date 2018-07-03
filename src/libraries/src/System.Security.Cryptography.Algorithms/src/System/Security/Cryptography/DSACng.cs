@@ -55,15 +55,50 @@ namespace System.Security.Cryptography
                 }
             }
 
-            private void ImportKeyBlob(byte[] rsaBlob, bool includePrivate)
+            private byte[] ExportEncryptedPkcs8(ReadOnlySpan<char> pkcs8Password, int kdfCount)
+            {
+                using (SafeNCryptKeyHandle keyHandle = GetDuplicatedKeyHandle())
+                {
+                    return CngKeyLite.ExportPkcs8KeyBlob(keyHandle, pkcs8Password, kdfCount);
+                }
+            }
+
+            private bool TryExportEncryptedPkcs8(
+                ReadOnlySpan<char> pkcs8Password,
+                int kdfCount,
+                Span<byte> destination,
+                out int bytesWritten)
+            {
+                using (SafeNCryptKeyHandle keyHandle = GetDuplicatedKeyHandle())
+                {
+                    return CngKeyLite.TryExportPkcs8KeyBlob(
+                        keyHandle,
+                        pkcs8Password,
+                        kdfCount,
+                        destination,
+                        out bytesWritten);
+                }
+            }
+
+            private void ImportKeyBlob(byte[] dsaBlob, bool includePrivate)
             {
                 // Use generic blob type for multiple version support
                 string blobType = includePrivate ?
                     Interop.BCrypt.KeyBlobType.BCRYPT_PRIVATE_KEY_BLOB :
                     Interop.BCrypt.KeyBlobType.BCRYPT_PUBLIC_KEY_BLOB;
 
-                SafeNCryptKeyHandle keyHandle = CngKeyLite.ImportKeyBlob(blobType, rsaBlob);
+                SafeNCryptKeyHandle keyHandle = CngKeyLite.ImportKeyBlob(blobType, dsaBlob);
+                SetKeyHandle(keyHandle);
+            }
 
+            private void AcceptImport(CngPkcs8.Pkcs8Response response)
+            {
+                SafeNCryptKeyHandle keyHandle = response.KeyHandle;
+                SetKeyHandle(keyHandle);
+            }
+
+            private void SetKeyHandle(SafeNCryptKeyHandle keyHandle)
+            {
                 Debug.Assert(!keyHandle.IsInvalid);
 
                 _keyHandle = keyHandle;

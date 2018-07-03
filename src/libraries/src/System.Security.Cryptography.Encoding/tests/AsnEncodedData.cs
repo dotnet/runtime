@@ -17,7 +17,7 @@ namespace System.Security.Cryptography.Encoding.Tests
             byte[] rawData = { 0x41, 0x42, 0x43 };
             AsnEncodedData a = new AsnEncodedData(rawData);
             a.Oid = null;
-            String s = a.Format(true);
+            string s = a.Format(true);
             Assert.Equal("41 42 43", s);
             return;
         }
@@ -29,7 +29,7 @@ namespace System.Security.Cryptography.Encoding.Tests
             byte[] rawData = { 0x41, 0x42, 0x43 };
             AsnEncodedData a = new AsnEncodedData(rawData);
             a.Oid = new Oid("1.3.6.1.4.1.311.2.1.27");  //SPC_FINANCIAL_CRITERIA_OBJID
-            String s = a.Format(true);
+            string s = a.Format(true);
             Assert.Equal("414243", s);
             return;
         }

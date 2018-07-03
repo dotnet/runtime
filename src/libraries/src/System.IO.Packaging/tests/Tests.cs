@@ -1,4 +1,4 @@
-﻿// Licensed to the .NET Foundation under one or more agreements.
+// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
@@ -1603,9 +1603,9 @@ namespace System.IO.Packaging.Tests
                     int cnt = 0;
                     foreach (var part in package.GetParts())
                     {
-                        sb.Append(String.Format("#{0}" + NL, cnt++));
-                        sb.Append(String.Format("Uri: {0}" + NL, part.Uri));
-                        sb.Append(String.Format("ContentType: {0}" + NL, part.ContentType));
+                        sb.Append(string.Format("#{0}" + NL, cnt++));
+                        sb.Append(string.Format("Uri: {0}" + NL, part.Uri));
+                        sb.Append(string.Format("ContentType: {0}" + NL, part.ContentType));
                     }
                     string s = sb.ToString().Replace(NL, "~");
                     string other = @"#0~Uri: /docProps/app.xml~ContentType: application/vnd.openxmlformats-officedocument.extended-properties+xml~#1~Uri: /docProps/core.xml~ContentType: application/vnd.openxmlformats-package.core-properties+xml~#2~Uri: /word/document.xml~ContentType: application/vnd.openxmlformats-officedocument.wordprocessingml.document.main+xml~#3~Uri: /word/fontTable.xml~ContentType: application/vnd.openxmlformats-officedocument.wordprocessingml.fontTable+xml~#4~Uri: /word/settings.xml~ContentType: application/vnd.openxmlformats-officedocument.wordprocessingml.settings+xml~#5~Uri: /word/styles.xml~ContentType: application/vnd.openxmlformats-officedocument.wordprocessingml.styles+xml~#6~Uri: /word/theme/theme1.xml~ContentType: application/vnd.openxmlformats-officedocument.theme+xml~#7~Uri: /word/webSettings.xml~ContentType: application/vnd.openxmlformats-officedocument.wordprocessingml.webSettings+xml~#8~Uri: /word/_rels/document.xml.rels~ContentType: application/vnd.openxmlformats-package.relationships+xml~#9~Uri: /_rels/.rels~ContentType: application/vnd.openxmlformats-package.relationships+xml~";
@@ -3620,7 +3620,7 @@ namespace System.IO.Packaging.Tests
                 if (args[i] == null)
                     args[i] = "(null)";
             }
-            var s = String.Format(format, args) + ", ";
+            var s = string.Format(format, args) + ", ";
             sb.Append(s);
         }
     }

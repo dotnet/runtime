@@ -189,7 +189,7 @@ namespace System.Globalization
                         break;
                     }
                 }
-                if (Char.IsLetter(ch) || ch == '\'' || ch == '.')
+                if (char.IsLetter(ch) || ch == '\'' || ch == '.')
                 {
                     break;
                 }
@@ -314,7 +314,7 @@ namespace System.Globalization
                         index++;
                     }
                 }
-                else if (Char.IsWhiteSpace(ch))
+                else if (char.IsWhiteSpace(ch))
                 {
                     // Found a whitespace.  We have to add the current date word/postfix.
                     AddDateWordOrPostfix(formatPostfix, dateWord.ToString());
@@ -479,7 +479,7 @@ namespace System.Globalization
                         i++;
                         break;
                     default:
-                        if (_ymdFlags == FoundDatePattern.FoundYMDPatternFlag && !Char.IsWhiteSpace(ch))
+                        if (_ymdFlags == FoundDatePattern.FoundYMDPatternFlag && !char.IsWhiteSpace(ch))
                         {
                             // We are not seeing "." after YMD. Clear the flag.
                             _ymdFlags = FoundDatePattern.None;
@@ -659,7 +659,7 @@ namespace System.Globalization
                 // so we don't have to go to native code side.
                 for (int j = 0; j < array[i].Length; j++)
                 {
-                    if (Char.IsWhiteSpace(array[i][j]))
+                    if (char.IsWhiteSpace(array[i][j]))
                     {
                         return true;
                     }

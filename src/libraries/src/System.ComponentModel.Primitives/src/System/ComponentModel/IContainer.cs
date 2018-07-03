@@ -33,7 +33,7 @@ namespace System.ComponentModel
         /// <para>Adds the specified <see cref='System.ComponentModel.IComponent'/> to the <see cref='System.ComponentModel.IContainer'/>
         /// at the end of the list, and assigns a name to the component.</para>
         /// </summary>
-        void Add(IComponent component, String name);
+        void Add(IComponent component, string name);
 
         // The components in the container.
         /// <summary>

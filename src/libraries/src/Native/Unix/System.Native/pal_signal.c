@@ -112,7 +112,7 @@ static void* SignalHandlerLoop(void* arg)
         {
             // We're now handling SIGQUIT and SIGINT. Invoke the callback, if we have one.
             CtrlCallback callback = g_ctrlCallback;
-            enum CtrlCode ctrlCode = signalCode == SIGQUIT ? Break : Interrupt;
+            CtrlCode ctrlCode = signalCode == SIGQUIT ? Break : Interrupt;
             if (callback != NULL)
             {
                 callback(ctrlCode);
@@ -184,7 +184,7 @@ void SystemNative_UnregisterForCtrl()
     g_ctrlCallback = NULL;
 }
 
-void SystemNative_RestoreAndHandleCtrl(enum CtrlCode ctrlCode)
+void SystemNative_RestoreAndHandleCtrl(CtrlCode ctrlCode)
 {
     int signalCode = ctrlCode == Break ? SIGQUIT : SIGINT;
     UninitializeConsole();

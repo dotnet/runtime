@@ -7,13 +7,6 @@ SET (CMAKE_C_FLAGS_RELEASE_INIT             "/Ox")
 SET (CMAKE_C_FLAGS_RELWITHDEBINFO_INIT      "/O2 /Zi")
 SET (CMAKE_ASM_MASM_FLAGS                   "${CMAKE_ASM_MASM_FLAGS} /ZH:SHA_256")
 
-# CXX Compiler flags
-SET (CMAKE_CXX_FLAGS                        "-std=c++11")
-SET (CMAKE_CXX_FLAGS_INIT                   "/W0 /FC")
-SET (CMAKE_CXX_FLAGS_DEBUG_INIT             "/Od /Zi")
-SET (CMAKE_CXX_FLAGS_RELEASE_INIT           "/Ox")
-SET (CMAKE_CXX_FLAGS_RELWITHDEBINFO_INIT    "/O2 /Zi")
-
 # Configuration of our libray specs and our directories
 SET (CMAKE_INSTALL_PREFIX                   $ENV{__CMakeBinDir})
 SET (CMAKE_INCLUDE_CURRENT_DIR              ON)

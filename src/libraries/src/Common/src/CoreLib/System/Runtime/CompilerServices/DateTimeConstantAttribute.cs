@@ -14,6 +14,6 @@ namespace System.Runtime.CompilerServices
             _date = new DateTime(ticks);
         }
 
-        public override Object Value => _date;
+        public override object Value => _date;
     }
 }

@@ -91,6 +91,7 @@
     <Compile Include="HttpClientHandlerTest.ClientCertificates.cs" />
     <Compile Include="HttpClientHandlerTest.Asynchrony.cs" />
     <Compile Include="HttpClientHandlerTest.DefaultProxyCredentials.cs" />
+    <Compile Include="HttpClientHandlerTest.Proxy.cs" />
     <Compile Include="HttpClientHandlerTest.ResponseDrain.cs" />
     <Compile Include="HttpClientHandlerTest.MaxConnectionsPerServer.cs" />
     <Compile Include="HttpClientHandlerTest.MaxResponseHeadersLength.cs" />
@@ -115,7 +116,7 @@
     <Compile Include="HttpProtocolTests.cs" />
     <Compile Include="HttpRequestMessageTest.cs" />
     <Compile Include="HttpResponseMessageTest.cs" />
-    <Compile Include="LoopbackGetRequestHttpProxy.cs" />
+    <Compile Include="LoopbackProxyServer.cs" />
     <Compile Include="MessageProcessingHandlerTest.cs" />
     <Compile Include="MultipartContentTest.cs" />
     <Compile Include="MultipartFormDataContentTest.cs" />

@@ -66,8 +66,17 @@ namespace System.Security.Cryptography.Tests.Asn1
         {
             using (AsnWriter writer = new AsnWriter((AsnEncodingRules)ruleSet))
             {
-                Assert.Throws<CryptographicException>(
-                    () => writer.WriteObjectIdentifier(nonOidValue));
+                if (nonOidValue == null)
+                {
+                    AssertExtensions.Throws<ArgumentNullException>(
+                        "oidValue",
+                        () => writer.WriteObjectIdentifier(nonOidValue));
+                }
+                else
+                {
+                    Assert.Throws<CryptographicException>(
+                        () => writer.WriteObjectIdentifier(nonOidValue));
+                }
             }
         }
 
@@ -291,6 +300,7 @@ namespace System.Security.Cryptography.Tests.Asn1
         public static IEnumerable<object[]> InvalidOidData { get; } =
             new object[][]
             {
+                new object[] { "Null", PublicEncodingRules.BER, null },
                 new object[] { "Empty string", PublicEncodingRules.BER, "" },
                 new object[] { "No period", PublicEncodingRules.CER, "1" },
                 new object[] { "No second RID", PublicEncodingRules.DER, "1." },
@@ -300,6 +310,7 @@ namespace System.Security.Cryptography.Tests.Asn1
                 new object[] { "Leading zero - First RID", PublicEncodingRules.BER, "01.0" },
                 new object[] { "Double zero - second RID", PublicEncodingRules.CER, "0.00" },
                 new object[] { "Leading zero - second RID", PublicEncodingRules.DER, "0.01" },
+                new object[] { "Double-period", PublicEncodingRules.BER, "0..0" },
                 new object[] { "Ends with period - second RID", PublicEncodingRules.BER, "0.0." },
                 new object[] { "Ends with period - third RID", PublicEncodingRules.BER, "0.1.30." },
                 new object[] { "Double zero - third RID", PublicEncodingRules.CER, "0.1.00" },

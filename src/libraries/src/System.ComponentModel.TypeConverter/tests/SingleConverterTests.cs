@@ -16,8 +16,8 @@ namespace System.ComponentModel.Tests
         {
             ConvertFrom_WithContext(new object[2, 3]
                 {
-                    { 1.1f + " ", (Single)1.1, null },
-                    { "+7", (Single)7, CultureInfo.InvariantCulture }
+                    { 1.1f + " ", (float)1.1, null },
+                    { "+7", (float)7, CultureInfo.InvariantCulture }
                 },
                 SingleConverterTests.s_converter);
         }
@@ -34,8 +34,8 @@ namespace System.ComponentModel.Tests
         {
             ConvertTo_WithContext(new object[2, 3]
                 {
-                    { (Single)1.1, 1.1f.ToString(), null },
-                    { (Single)1.1, 1, CultureInfo.InvariantCulture }
+                    { (float)1.1, 1.1f.ToString(), null },
+                    { (float)1.1, 1, CultureInfo.InvariantCulture }
                 },
                 SingleConverterTests.s_converter);
         }

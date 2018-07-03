@@ -6,174 +6,174 @@ using Xunit;
 
 namespace System.Tests
 {
-    public class ConvertToInt32Tests : ConvertTestBase<Int32>
+    public class ConvertToInt32Tests : ConvertTestBase<int>
     {
         [Fact]
         public void FromBoolean()
         {
-            Boolean[] testValues = { true, false };
-            Int32[] expectedValues = { 1, 0 };
+            bool[] testValues = { true, false };
+            int[] expectedValues = { 1, 0 };
             Verify(Convert.ToInt32, testValues, expectedValues);
         }
 
         [Fact]
         public void FromByte()
         {
-            Byte[] testValues = { Byte.MaxValue, Byte.MinValue };
-            Int32[] expectedValues = { 255, 0 };
+            byte[] testValues = { byte.MaxValue, byte.MinValue };
+            int[] expectedValues = { 255, 0 };
             Verify(Convert.ToInt32, testValues, expectedValues);
         }
 
         [Fact]
         public void FromChar()
         {
-            Char[] testValues = { Char.MinValue, Char.MaxValue, 'b' };
-            Int32[] expectedValues = { Char.MinValue, Char.MaxValue, 98 };
+            char[] testValues = { char.MinValue, char.MaxValue, 'b' };
+            int[] expectedValues = { char.MinValue, char.MaxValue, 98 };
             Verify(Convert.ToInt32, testValues, expectedValues);
         }
 
         [Fact]
         public void FromDecimal()
         {
-            Decimal[] testValues = { 100m, -100m, 0m };
-            Int32[] expectedValues = { 100, -100, 0 };
+            decimal[] testValues = { 100m, -100m, 0m };
+            int[] expectedValues = { 100, -100, 0 };
             Verify(Convert.ToInt32, testValues, expectedValues);
 
-            Decimal[] overflowValues = { Decimal.MaxValue, Decimal.MinValue };
-            VerifyThrows<OverflowException, Decimal>(Convert.ToInt32, overflowValues);
+            decimal[] overflowValues = { decimal.MaxValue, decimal.MinValue };
+            VerifyThrows<OverflowException, decimal>(Convert.ToInt32, overflowValues);
         }
 
         [Fact]
         public void FromDouble()
         {
-            Double[] testValues = { 100.0, -100.0, 0 };
-            Int32[] expectedValues = { 100, -100, 0 };
+            double[] testValues = { 100.0, -100.0, 0 };
+            int[] expectedValues = { 100, -100, 0 };
             Verify(Convert.ToInt32, testValues, expectedValues);
 
-            Double[] overflowValues = { Double.MaxValue, Double.MinValue };
-            VerifyThrows<OverflowException, Double>(Convert.ToInt32, overflowValues);
+            double[] overflowValues = { double.MaxValue, double.MinValue };
+            VerifyThrows<OverflowException, double>(Convert.ToInt32, overflowValues);
         }
 
         [Fact]
         public void FromInt16()
         {
-            Int16[] testValues = { 100, -100, 0, };
-            Int32[] expectedValues = { 100, -100, 0, };
+            short[] testValues = { 100, -100, 0, };
+            int[] expectedValues = { 100, -100, 0, };
             Verify(Convert.ToInt32, testValues, expectedValues);
         }
 
         [Fact]
         public void FromInt32()
         {
-            Int32[] testValues = { Int32.MaxValue, Int32.MinValue, 0 };
-            Int32[] expectedValues = { Int32.MaxValue, Int32.MinValue, 0 };
+            int[] testValues = { int.MaxValue, int.MinValue, 0 };
+            int[] expectedValues = { int.MaxValue, int.MinValue, 0 };
             Verify(Convert.ToInt32, testValues, expectedValues);
         }
 
         [Fact]
         public void FromInt64()
         {
-            Int64[] testValues = { 100, -100, 0 };
-            Int32[] expectedValues = { 100, -100, 0 };
+            long[] testValues = { 100, -100, 0 };
+            int[] expectedValues = { 100, -100, 0 };
             Verify(Convert.ToInt32, testValues, expectedValues);
 
-            Int64[] overflowValues = { Int64.MaxValue, Int64.MinValue };
-            VerifyThrows<OverflowException, Int64>(Convert.ToInt32, overflowValues);
+            long[] overflowValues = { long.MaxValue, long.MinValue };
+            VerifyThrows<OverflowException, long>(Convert.ToInt32, overflowValues);
         }
 
         [Fact]
         public void FromObject()
         {
-            Object[] testValues = { null };
-            Int32[] expectedValues = { 0 };
+            object[] testValues = { null };
+            int[] expectedValues = { 0 };
             VerifyFromObject(Convert.ToInt32, Convert.ToInt32, testValues, expectedValues);
 
-            Object[] invalidValues = { new Object() };
+            object[] invalidValues = { new object() };
             VerifyFromObjectThrows<InvalidCastException>(Convert.ToInt32, Convert.ToInt32, invalidValues);
         }
 
         [Fact]
         public void FromSByte()
         {
-            SByte[] testValues = { 100, -100, 0 };
-            Int32[] expectedValues = { 100, -100, 0 };
+            sbyte[] testValues = { 100, -100, 0 };
+            int[] expectedValues = { 100, -100, 0 };
             Verify(Convert.ToInt32, testValues, expectedValues);
         }
 
         [Fact]
         public void FromSingle()
         {
-            Single[] testValues = { 100.0f, -100.0f, 0.0f, };
-            Int32[] expectedValues = { 100, -100, 0, };
+            float[] testValues = { 100.0f, -100.0f, 0.0f, };
+            int[] expectedValues = { 100, -100, 0, };
             Verify(Convert.ToInt32, testValues, expectedValues);
 
-            Single[] overflowValues = { Single.MaxValue, Single.MinValue };
-            VerifyThrows<OverflowException, Single>(Convert.ToInt32, overflowValues);
+            float[] overflowValues = { float.MaxValue, float.MinValue };
+            VerifyThrows<OverflowException, float>(Convert.ToInt32, overflowValues);
         }
 
         [Fact]
         public void FromString()
         {
-            String[] testValues = { "100", "-100", "0", Int32.MinValue.ToString(), Int32.MaxValue.ToString(), null };
-            Int32[] expectedValues = { 100, -100, 0, Int32.MinValue, Int32.MaxValue, 0 };
+            string[] testValues = { "100", "-100", "0", Int32.MinValue.ToString(), Int32.MaxValue.ToString(), null };
+            int[] expectedValues = { 100, -100, 0, int.MinValue, int.MaxValue, 0 };
             VerifyFromString(Convert.ToInt32, Convert.ToInt32, testValues, expectedValues);
 
-            String[] overflowValues = { Int64.MinValue.ToString(), Int64.MaxValue.ToString() };
+            string[] overflowValues = { Int64.MinValue.ToString(), Int64.MaxValue.ToString() };
             VerifyFromStringThrows<OverflowException>(Convert.ToInt32, Convert.ToInt32, overflowValues);
 
-            String[] formatExceptionValues = { "abba" };
+            string[] formatExceptionValues = { "abba" };
             VerifyFromStringThrows<FormatException>(Convert.ToInt32, Convert.ToInt32, formatExceptionValues);
         }
 
         [Fact]
         public void FromStringWithBase()
         {
-            String[] testValues = { null, null, null, null, "7FFFFFFF", "2147483647", "17777777777", "1111111111111111111111111111111", "80000000", "-2147483648", "20000000000", "10000000000000000000000000000000", };
-            Int32[] testBases = { 10, 2, 8, 16, 16, 10, 8, 2, 16, 10, 8, 2, };
-            Int32[] expectedValues = { 0, 0, 0, 0, Int32.MaxValue, Int32.MaxValue, Int32.MaxValue, Int32.MaxValue, Int32.MinValue, Int32.MinValue, Int32.MinValue, Int32.MinValue, };
+            string[] testValues = { null, null, null, null, "7FFFFFFF", "2147483647", "17777777777", "1111111111111111111111111111111", "80000000", "-2147483648", "20000000000", "10000000000000000000000000000000", };
+            int[] testBases = { 10, 2, 8, 16, 16, 10, 8, 2, 16, 10, 8, 2, };
+            int[] expectedValues = { 0, 0, 0, 0, int.MaxValue, int.MaxValue, int.MaxValue, int.MaxValue, int.MinValue, int.MinValue, int.MinValue, int.MinValue, };
             VerifyFromStringWithBase(Convert.ToInt32, testValues, testBases, expectedValues);
 
-            String[] overflowValues = { "2147483648", "-2147483649", "111111111111111111111111111111111", "1FFFFffff", "777777777777" };
-            Int32[] overflowBases = { 10, 10, 2, 16, 8 };
+            string[] overflowValues = { "2147483648", "-2147483649", "111111111111111111111111111111111", "1FFFFffff", "777777777777" };
+            int[] overflowBases = { 10, 10, 2, 16, 8 };
             VerifyFromStringWithBaseThrows<OverflowException>(Convert.ToInt32, overflowValues, overflowBases);
 
-            String[] formatExceptionValues = { "12", "ffffffffffffffffffff" };
-            Int32[] formatExceptionBases = { 2, 8 };
+            string[] formatExceptionValues = { "12", "ffffffffffffffffffff" };
+            int[] formatExceptionBases = { 2, 8 };
             VerifyFromStringWithBaseThrows<FormatException>(Convert.ToInt32, formatExceptionValues, formatExceptionBases);
 
-            String[] argumentExceptionValues = { "10", "11", "abba", "-ab" };
-            Int32[] argumentExceptionBases = { -1, 3, 0, 16 };
+            string[] argumentExceptionValues = { "10", "11", "abba", "-ab" };
+            int[] argumentExceptionBases = { -1, 3, 0, 16 };
             VerifyFromStringWithBaseThrows<ArgumentException>(Convert.ToInt32, argumentExceptionValues, argumentExceptionBases);
         }
 
         [Fact]
         public void FromUInt16()
         {
-            UInt16[] testValues = { 100, 0 };
-            Int32[] expectedValues = { 100, 0 };
+            ushort[] testValues = { 100, 0 };
+            int[] expectedValues = { 100, 0 };
             Verify(Convert.ToInt32, testValues, expectedValues);
         }
 
         [Fact]
         public void FromUInt32()
         {
-            UInt32[] testValues = { 100, 0 };
-            Int32[] expectedValues = { 100, 0 };
+            uint[] testValues = { 100, 0 };
+            int[] expectedValues = { 100, 0 };
             Verify(Convert.ToInt32, testValues, expectedValues);
 
-            UInt32[] overflowValues = { UInt32.MaxValue };
-            VerifyThrows<OverflowException, UInt32>(Convert.ToInt32, overflowValues);
+            uint[] overflowValues = { uint.MaxValue };
+            VerifyThrows<OverflowException, uint>(Convert.ToInt32, overflowValues);
         }
 
         [Fact]
         public void FromUInt64()
         {
-            UInt64[] testValues = { 100, 0 };
-            Int32[] expectedValues = { 100, 0 };
+            ulong[] testValues = { 100, 0 };
+            int[] expectedValues = { 100, 0 };
             Verify(Convert.ToInt32, testValues, expectedValues);
 
-            UInt64[] overflowValues = { UInt64.MaxValue };
-            VerifyThrows<OverflowException, UInt64>(Convert.ToInt32, overflowValues);
+            ulong[] overflowValues = { ulong.MaxValue };
+            VerifyThrows<OverflowException, ulong>(Convert.ToInt32, overflowValues);
         }
     }
 }

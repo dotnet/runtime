@@ -12,7 +12,7 @@ namespace System.IO
 {
     internal static class WinRtIOHelper
     {
-        internal const Int32 DefaultIOBufferSize = 0x3000;  // = 12 KBytes = 12288 Bytes
+        internal const int DefaultIOBufferSize = 0x3000;  // = 12 KBytes = 12288 Bytes
 
 
         internal static ExceptionDispatchInfo NativeExceptionToIOExceptionInfo(Exception nativeException)
@@ -30,8 +30,8 @@ namespace System.IO
                 return ExceptionDispatchInfo.Capture(nativeException);
 
             // If we do not have a meaningful message, we use a general IO error message:
-            String message = nativeException.Message;
-            if (String.IsNullOrWhiteSpace(message))
+            string message = nativeException.Message;
+            if (string.IsNullOrWhiteSpace(message))
                 message = SR.IO_General;
 
             return ExceptionDispatchInfo.Capture(new IOException(message, nativeException));

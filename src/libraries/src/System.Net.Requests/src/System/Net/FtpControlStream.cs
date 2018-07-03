@@ -784,7 +784,7 @@ namespace System.Net
         /// <summary>
         ///    <para>Formats an IP address (contained in a UInt32) to a FTP style command string</para>
         /// </summary>
-        private String FormatAddress(IPAddress address, int Port)
+        private string FormatAddress(IPAddress address, int Port)
         {
             byte[] localAddressInBytes = address.GetAddressBytes();
 
@@ -810,7 +810,7 @@ namespace System.Net
         private string FormatAddressV6(IPAddress address, int port)
         {
             StringBuilder sb = new StringBuilder(43); // based on max size of IPv6 address + port + seperators
-            String addressString = address.ToString();
+            string addressString = address.ToString();
             sb.Append("|2|");
             sb.Append(addressString);
             sb.Append('|');
@@ -998,7 +998,7 @@ namespace System.Net
                 {
                     pos1++;
                     long result;
-                    if (Int64.TryParse(str.Substring(pos1, pos2 - pos1),
+                    if (long.TryParse(str.Substring(pos1, pos2 - pos1),
                                         NumberStyles.AllowLeadingWhite | NumberStyles.AllowTrailingWhite,
                                         NumberFormatInfo.InvariantInfo, out result))
                     {
@@ -1021,7 +1021,7 @@ namespace System.Net
             }
             else
             {
-                return String.Empty;
+                return string.Empty;
             }
         }
 
@@ -1040,7 +1040,7 @@ namespace System.Net
 
             int index = parsedList.Length - 1;
             // skip the last non-number token (e.g. terminating '.')
-            if (!Char.IsNumber(parsedList[index], 0))
+            if (!char.IsNumber(parsedList[index], 0))
                 index--;
 
             int port = Convert.ToByte(parsedList[index--], NumberFormatInfo.InvariantInfo);
@@ -1162,7 +1162,7 @@ namespace System.Net
             if (response.Status == ResponseDescription.NoStatus)
             {
                 // If the response does not start with three digits, then it is not a valid response from an FTP server.
-                if (!(Char.IsDigit(responseString[0]) && Char.IsDigit(responseString[1]) && Char.IsDigit(responseString[2]) && (responseString[3] == ' ' || responseString[3] == '-')))
+                if (!(char.IsDigit(responseString[0]) && char.IsDigit(responseString[1]) && char.IsDigit(responseString[2]) && (responseString[3] == ' ' || responseString[3] == '-')))
                 {
                     return false;
                 }

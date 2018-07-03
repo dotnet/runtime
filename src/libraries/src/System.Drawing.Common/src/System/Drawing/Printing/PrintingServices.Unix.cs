@@ -52,7 +52,7 @@ namespace System.Drawing.Printing
         private static bool cups_installed;
 
         private static Hashtable installed_printers;
-        private static string default_printer = String.Empty;
+        private static string default_printer = string.Empty;
 
         #endregion
 
@@ -193,7 +193,7 @@ namespace System.Drawing.Printing
         /// <param name="force">Does the check disregarding the last cached value if true</param>
         internal static bool IsPrinterValid(string printer)
         {
-            if (!cups_installed || printer == null | printer == String.Empty)
+            if (!cups_installed || printer == null | printer == string.Empty)
                 return false;
 
             return installed_printers.Contains(printer);
@@ -206,7 +206,7 @@ namespace System.Drawing.Printing
         /// <param name="settings">PrinterSettings object to initialize</param>
         internal static void LoadPrinterSettings(string printer, PrinterSettings settings)
         {
-            if (cups_installed == false || (printer == null) || (printer == String.Empty))
+            if (cups_installed == false || (printer == null) || (printer == string.Empty))
                 return;
 
             if (installed_printers.Count == 0)
@@ -230,7 +230,7 @@ namespace System.Drawing.Printing
             settings.PrinterCapabilities.Clear();
 
             IntPtr dests = IntPtr.Zero, ptr = IntPtr.Zero, ptr_printer, ppd_handle = IntPtr.Zero;
-            string name = String.Empty;
+            string name = string.Empty;
             CUPS_DESTS printer_dest;
             PPD_FILE ppd;
             int ret = 0, cups_dests_size;
@@ -436,7 +436,7 @@ namespace System.Drawing.Printing
         /// </summary>
         private static PrinterResolution ParseResolution(string resolution)
         {
-            if (String.IsNullOrEmpty(resolution))
+            if (string.IsNullOrEmpty(resolution))
                 return null;
 
             int dpiIndex = resolution.IndexOf("dpi");
@@ -599,7 +599,7 @@ namespace System.Drawing.Printing
             int n_printers = 0;
             int cups_dests_size = Marshal.SizeOf(typeof(CUPS_DESTS));
             string name, first, type, status, comment;
-            first = type = status = comment = String.Empty;
+            first = type = status = comment = string.Empty;
             int state = 0;
 
             try
@@ -615,13 +615,13 @@ namespace System.Drawing.Printing
                     if (printer.is_default == 1)
                         default_printer = name;
 
-                    if (first.Equals(String.Empty))
+                    if (first.Equals(string.Empty))
                         first = name;
 
                     NameValueCollection options = LoadPrinterOptions(printer.options, printer.num_options);
 
                     if (options["printer-state"] != null)
-                        state = Int32.Parse(options["printer-state"]);
+                        state = int.Parse(options["printer-state"]);
 
                     if (options["printer-comment"] != null)
                         comment = options["printer-state"];
@@ -639,7 +639,7 @@ namespace System.Drawing.Printing
                             break;
                     }
 
-                    installed_printers.Add(name, new SysPrn.Printer(String.Empty, type, status, comment));
+                    installed_printers.Add(name, new SysPrn.Printer(string.Empty, type, status, comment));
 
                     ptr_printers = (IntPtr)((long)ptr_printers + cups_dests_size);
                 }
@@ -650,7 +650,7 @@ namespace System.Drawing.Printing
                 CloseDests(ref dests, n_printers);
             }
 
-            if (default_printer.Equals(String.Empty))
+            if (default_printer.Equals(string.Empty))
                 default_printer = first;
         }
 
@@ -701,7 +701,7 @@ namespace System.Drawing.Printing
                 NameValueCollection options = LoadPrinterOptions(cups_dests.options, cups_dests.num_options);
 
                 if (options["printer-state"] != null)
-                    state = Int32.Parse(options["printer-state"]);
+                    state = int.Parse(options["printer-state"]);
 
                 if (options["printer-comment"] != null)
                     comment = options["printer-state"];
@@ -831,7 +831,7 @@ namespace System.Drawing.Printing
                 "copies=" + printer_settings.Copies + " " +
                 "Collate=" + printer_settings.Collate + " " +
                 "ColorModel=" + (page_settings.Color ? "Color" : "Black") + " " +
-                "PageSize=" + String.Format("Custom.{0}x{1}", width, height) + " " +
+                "PageSize=" + string.Format("Custom.{0}x{1}", width, height) + " " +
                 "landscape=" + page_settings.Landscape
             );
 

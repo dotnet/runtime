@@ -76,10 +76,10 @@ namespace System.Net.Primitives.Functional.Tests
         public static void ToString_Compare_Success()
         {
             IPEndPoint ep = new IPEndPoint(testIpV61, 500);
-            Assert.Equal(ep.ToString(), String.Format("[{0}]:500", ep.Address.ToString()));
+            Assert.Equal(ep.ToString(), string.Format("[{0}]:500", ep.Address.ToString()));
 
             ep = new IPEndPoint(testIpV42, 500);
-            Assert.Equal(ep.ToString(), String.Format("{0}:500", ep.Address.ToString()));
+            Assert.Equal(ep.ToString(), string.Format("{0}:500", ep.Address.ToString()));
         }
 
         [Fact]

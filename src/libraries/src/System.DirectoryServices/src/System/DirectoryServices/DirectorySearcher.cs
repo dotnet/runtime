@@ -176,7 +176,7 @@ namespace System.DirectoryServices
             set
             {
                 // prevent integer overflow
-                if (value.TotalSeconds > Int32.MaxValue)
+                if (value.TotalSeconds > int.MaxValue)
                 {
                     throw new ArgumentException(SR.TimespanExceedMax, nameof(value));
                 }
@@ -300,7 +300,7 @@ namespace System.DirectoryServices
             set
             {
                 // prevent integer overflow
-                if (value.TotalSeconds > Int32.MaxValue)
+                if (value.TotalSeconds > int.MaxValue)
                 {
                     throw new ArgumentException(SR.TimespanExceedMax, nameof(value));
                 }
@@ -319,7 +319,7 @@ namespace System.DirectoryServices
             set
             {
                 // prevent integer overflow
-                if (value.TotalSeconds > Int32.MaxValue)
+                if (value.TotalSeconds > int.MaxValue)
                 {
                     throw new ArgumentException(SR.TimespanExceedMax, nameof(value));
                 }

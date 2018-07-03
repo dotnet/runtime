@@ -1,4 +1,4 @@
-﻿// Licensed to the .NET Foundation under one or more agreements.
+// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
@@ -60,7 +60,7 @@ namespace System.Xml.Tests
             {
                 try
                 {
-                    w.WriteStartElement(String.Empty);
+                    w.WriteStartElement(string.Empty);
                 }
                 catch (ArgumentException e)
                 {
@@ -102,7 +102,7 @@ namespace System.Xml.Tests
         {
             using (XmlWriter w = utils.CreateWriter())
             {
-                w.WriteStartElement("Root", String.Empty);
+                w.WriteStartElement("Root", string.Empty);
                 w.WriteEndElement();
             }
             Assert.True(utils.CompareReader("<Root />"));
@@ -149,8 +149,8 @@ namespace System.Xml.Tests
         {
             string enc = (utils.WriterType == WriterType.UnicodeWriter || utils.WriterType == WriterType.UnicodeWriterIndent) ? "16" : "8";
             string exp = (utils.WriterType == WriterType.UTF8WriterIndent || utils.WriterType == WriterType.UnicodeWriterIndent) ?
-                String.Format("<?xml version=\"1.0\" encoding=\"utf-{0}\"?>" + Environment.NewLine + "<a:b xmlns:a=\"c\" />", enc) :
-                String.Format("<?xml version=\"1.0\" encoding=\"utf-{0}\"?><a:b xmlns:a=\"c\" />", enc);
+                string.Format("<?xml version=\"1.0\" encoding=\"utf-{0}\"?>" + Environment.NewLine + "<a:b xmlns:a=\"c\" />", enc) :
+                string.Format("<?xml version=\"1.0\" encoding=\"utf-{0}\"?><a:b xmlns:a=\"c\" />", enc);
 
             XmlWriterSettings ws = new XmlWriterSettings();
             ws.OmitXmlDeclaration = false;

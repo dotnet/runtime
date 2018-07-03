@@ -225,7 +225,7 @@ namespace ManagedTests.DynamicCSharp.Conformance.dynamic.dynamicType.formalParam
             ret = Varifier(5, "MyType(sbyte[])");
             dynamic d1 = (ushort)4444;
             dynamic d2 = (short)-333;
-            dynamic d3 = (string)String.Empty;
+            dynamic d3 = (string)string.Empty;
             v = new MyType(d1, d2, d3);
             ret = Varifier(6, "MyType(ushort, short, string)");
             d1 = (ulong)123456789;
@@ -241,7 +241,7 @@ namespace ManagedTests.DynamicCSharp.Conformance.dynamic.dynamicType.formalParam
             ;
             var d33 = new string[]
             {
-            "A", "", String.Empty, null, "1AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA1"
+            "A", "", string.Empty, null, "1AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA1"
             }
 
             ;
@@ -254,7 +254,7 @@ namespace ManagedTests.DynamicCSharp.Conformance.dynamic.dynamicType.formalParam
             }
 
             ;
-            d2 = String.Empty;
+            d2 = string.Empty;
             d3 = new object[]
             {
             0, null, -1.1, 'c', "123", 999999
@@ -431,8 +431,8 @@ namespace ManagedTests.DynamicCSharp.Conformance.dynamic.dynamicType.formalParam
             ;
             new MyType1(vn);
             ret &= Varifier(5, MyType1.Result, "(1) MyType1(params int?[]");
-            v1 = Int32.MaxValue;
-            v2 = Int32.MinValue;
+            v1 = int.MaxValue;
+            v2 = int.MinValue;
             v3 = unchecked(-int.MinValue + 1);
             dynamic v4 = -int.MaxValue + 1;
             new MyType1(v1, v2, v3, v4);
@@ -442,20 +442,20 @@ namespace ManagedTests.DynamicCSharp.Conformance.dynamic.dynamicType.formalParam
             dynamic v13 = "+0000000000000000000000000000000000000000000000000000000000+";
             new MyType1(v11, v12, v13); // call v11 [v12] -> 2 or 7
             ret &= Varifier(6, MyType1.Result, "(1) MyType1(short, long=-12345, string=\"AAA\")");
-            new MyType1(v11, p2: Int64.MinValue); // assert but run
+            new MyType1(v11, p2: long.MinValue); // assert but run
             ret &= Varifier(6, MyType1.Result, "(2) MyType1(short, long=-12345, string=\"AAA\")");
             new MyType1(v11, p3: "QQQQQQQQQQQQQQQQQQQQQQQ"); // assert but run
             ret &= Varifier(6, MyType1.Result, "(3) MyType1(short, long=-12345, string=\"AAA\")");
             dynamic v21 = new object[]
             {
-            null, String.Empty, "", 'c', 0
+            null, string.Empty, "", 'c', 0
             }
 
             ;
             new MyType1(v21);
             ret &= Varifier(7, MyType1.Result, "(1) MyType1(params object[])");
             dynamic v22 = (object)null;
-            dynamic v23 = String.Empty;
+            dynamic v23 = string.Empty;
             dynamic v24 = "";
             dynamic v25 = 'c';
             MyType1.Result = -1;

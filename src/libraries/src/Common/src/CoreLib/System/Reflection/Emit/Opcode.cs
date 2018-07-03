@@ -110,7 +110,7 @@ namespace System.Reflection.Emit
 
         private static volatile string[] g_nameCache;
 
-        public String Name
+        public string Name
         {
             get
             {
@@ -122,7 +122,7 @@ namespace System.Reflection.Emit
                 string[] nameCache = g_nameCache;
                 if (nameCache == null)
                 {
-                    nameCache = new String[0x11f];
+                    nameCache = new string[0x11f];
                     g_nameCache = nameCache;
                 }
 
@@ -144,7 +144,7 @@ namespace System.Reflection.Emit
                     }
                 }
 
-                String name = Volatile.Read(ref nameCache[idx]);
+                string name = Volatile.Read(ref nameCache[idx]);
                 if (name != null)
                     return name;
 
@@ -155,7 +155,7 @@ namespace System.Reflection.Emit
             }
         }
 
-        public override bool Equals(Object obj)
+        public override bool Equals(object obj)
         {
             if (obj is OpCode)
                 return Equals((OpCode)obj);
@@ -183,7 +183,7 @@ namespace System.Reflection.Emit
             return Value;
         }
 
-        public override String ToString()
+        public override string ToString()
         {
             return Name;
         }

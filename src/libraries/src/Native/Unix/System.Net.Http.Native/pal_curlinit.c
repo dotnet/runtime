@@ -19,7 +19,7 @@ int32_t HttpNative_EnsureCurlIsInitialized(void)
     {
         if (!initializationAttempted)
         {
-            errorCode = curl_global_init(CURL_GLOBAL_ALL);
+            errorCode = (int32_t)(curl_global_init(CURL_GLOBAL_ALL));
             initializationAttempted = true;
         }
     }

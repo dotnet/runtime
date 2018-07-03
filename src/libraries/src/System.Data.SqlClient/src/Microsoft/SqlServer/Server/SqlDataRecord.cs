@@ -43,13 +43,13 @@ namespace Microsoft.SqlServer.Server
             }
         }
 
-        public virtual String GetName(int ordinal)
+        public virtual string GetName(int ordinal)
         {
             EnsureSubclassOverride();
             return GetSqlMetaData(ordinal).Name;
         }
 
-        public virtual String GetDataTypeName(int ordinal)
+        public virtual string GetDataTypeName(int ordinal)
         {
             EnsureSubclassOverride();
             SqlMetaData metaData = GetSqlMetaData(ordinal);
@@ -72,7 +72,7 @@ namespace Microsoft.SqlServer.Server
             }
         }
 
-        public virtual Object GetValue(int ordinal)
+        public virtual object GetValue(int ordinal)
         {
             EnsureSubclassOverride();
             SmiMetaData metaData = GetSmiMetaData(ordinal);
@@ -128,7 +128,7 @@ namespace Microsoft.SqlServer.Server
             }
         }
 
-        public virtual object this[String name]
+        public virtual object this[string name]
         {
             get
             {
@@ -173,19 +173,19 @@ namespace Microsoft.SqlServer.Server
             return ValueUtilsSmi.GetGuid(_eventSink, _recordBuffer, ordinal, GetSmiMetaData(ordinal));
         }
 
-        public virtual Int16 GetInt16(int ordinal)
+        public virtual short GetInt16(int ordinal)
         {
             EnsureSubclassOverride();
             return ValueUtilsSmi.GetInt16(_eventSink, _recordBuffer, ordinal, GetSmiMetaData(ordinal));
         }
 
-        public virtual Int32 GetInt32(int ordinal)
+        public virtual int GetInt32(int ordinal)
         {
             EnsureSubclassOverride();
             return ValueUtilsSmi.GetInt32(_eventSink, _recordBuffer, ordinal, GetSmiMetaData(ordinal));
         }
 
-        public virtual Int64 GetInt64(int ordinal)
+        public virtual long GetInt64(int ordinal)
         {
             EnsureSubclassOverride();
             return ValueUtilsSmi.GetInt64(_eventSink, _recordBuffer, ordinal, GetSmiMetaData(ordinal));
@@ -217,7 +217,7 @@ namespace Microsoft.SqlServer.Server
             }
         }
 
-        public virtual Decimal GetDecimal(int ordinal)
+        public virtual decimal GetDecimal(int ordinal)
         {
             EnsureSubclassOverride();
             return ValueUtilsSmi.GetDecimal(_eventSink, _recordBuffer, ordinal, GetSmiMetaData(ordinal));
@@ -468,19 +468,19 @@ namespace Microsoft.SqlServer.Server
             ValueUtilsSmi.SetChars(_eventSink, _recordBuffer, ordinal, GetSmiMetaData(ordinal), fieldOffset, buffer, bufferOffset, length);
         }
 
-        public virtual void SetInt16(int ordinal, System.Int16 value)
+        public virtual void SetInt16(int ordinal, short value)
         {
             EnsureSubclassOverride();
             ValueUtilsSmi.SetInt16(_eventSink, _recordBuffer, ordinal, GetSmiMetaData(ordinal), value);
         }
 
-        public virtual void SetInt32(int ordinal, System.Int32 value)
+        public virtual void SetInt32(int ordinal, int value)
         {
             EnsureSubclassOverride();
             ValueUtilsSmi.SetInt32(_eventSink, _recordBuffer, ordinal, GetSmiMetaData(ordinal), value);
         }
 
-        public virtual void SetInt64(int ordinal, System.Int64 value)
+        public virtual void SetInt64(int ordinal, long value)
         {
             EnsureSubclassOverride();
             ValueUtilsSmi.SetInt64(_eventSink, _recordBuffer, ordinal, GetSmiMetaData(ordinal), value);
@@ -504,7 +504,7 @@ namespace Microsoft.SqlServer.Server
             ValueUtilsSmi.SetString(_eventSink, _recordBuffer, ordinal, GetSmiMetaData(ordinal), value);
         }
 
-        public virtual void SetDecimal(int ordinal, Decimal value)
+        public virtual void SetDecimal(int ordinal, decimal value)
         {
             EnsureSubclassOverride();
             ValueUtilsSmi.SetDecimal(_eventSink, _recordBuffer, ordinal, GetSmiMetaData(ordinal), value);

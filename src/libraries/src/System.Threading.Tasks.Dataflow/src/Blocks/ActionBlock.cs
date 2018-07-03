@@ -280,7 +280,7 @@ namespace System.Threading.Tasks.Dataflow
         }
 
         /// <include file='XmlDocs/CommonXmlDocComments.xml' path='CommonXmlDocComments/Targets/Member[@name="OfferMessage"]/*' />
-        DataflowMessageStatus ITargetBlock<TInput>.OfferMessage(DataflowMessageHeader messageHeader, TInput messageValue, ISourceBlock<TInput> source, Boolean consumeToAccept)
+        DataflowMessageStatus ITargetBlock<TInput>.OfferMessage(DataflowMessageHeader messageHeader, TInput messageValue, ISourceBlock<TInput> source, bool consumeToAccept)
         {
             return _defaultTarget != null ?
                 _defaultTarget.OfferMessage(messageHeader, messageValue, source, consumeToAccept) :
@@ -357,7 +357,7 @@ namespace System.Threading.Tasks.Dataflow
             }
 
             /// <summary>Gets the number of outstanding input operations.</summary>
-            public Int32 CurrentDegreeOfParallelism
+            public int CurrentDegreeOfParallelism
             {
                 get { return _defaultDebugInfo != null ? _defaultDebugInfo.CurrentDegreeOfParallelism : _spscDebugInfo.CurrentDegreeOfParallelism; }
             }

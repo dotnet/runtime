@@ -96,6 +96,26 @@ namespace System.SpanTests
             spanInt.ValidateNonNullEmpty();
         }
 
+        [Fact]
+        public static void CovariantAsSpanNotSupported()
+        {
+            object[] a = new string[10];
+            Assert.Throws<ArrayTypeMismatchException>(() => a.AsSpan());
+            Assert.Throws<ArrayTypeMismatchException>(() => a.AsSpan(0, a.Length));
+        }
+
+        [Fact]
+        public static void GuidArrayAsSpanWithStartAndLength()
+        {
+            var arr = new Guid[20];
+
+            Span<Guid> slice = arr.AsSpan().Slice(2, 2);
+            Guid guid = Guid.NewGuid();
+            slice[1] = guid;
+
+            Assert.Equal(guid, arr[3]);
+        }
+
         [Theory]
         [InlineData(0, 0)]
         [InlineData(3, 0)]

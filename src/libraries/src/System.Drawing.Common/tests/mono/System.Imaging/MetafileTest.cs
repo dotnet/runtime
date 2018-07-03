@@ -328,7 +328,7 @@ namespace MonoTests.System.Drawing.Imaging
         {
             using (MemoryStream ms = new MemoryStream())
             {
-                Assert.Throws<ArgumentException>(() => Metafile_StreamEmfType(ms, (EmfType)Int32.MinValue));
+                Assert.Throws<ArgumentException>(() => Metafile_StreamEmfType(ms, (EmfType)int.MinValue));
             }
         }
 

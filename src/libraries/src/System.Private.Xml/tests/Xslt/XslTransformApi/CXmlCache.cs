@@ -402,7 +402,7 @@ public class CXmlNode : CXmlBase
 
     override public void WriteXml(TextWriter rTW)
     {
-        String strXml;
+        string strXml;
         CXmlAttribute rAttribute;
         CXmlBase rNode;
 
@@ -1210,7 +1210,7 @@ public class CXmlCache
 public class ChecksumWriter : TextWriter
 {
     private int _nPosition = 0;
-    private Decimal _dResult = 0;
+    private decimal _dResult = 0;
     private Encoding _encoding;
 
     // --------------------------------------------------------------------------------------------------
@@ -1224,7 +1224,7 @@ public class ChecksumWriter : TextWriter
     // --------------------------------------------------------------------------------------------------
     //    Properties
     // --------------------------------------------------------------------------------------------------
-    public Decimal CheckSum
+    public decimal CheckSum
     {
         get { return _dResult; }
     }
@@ -1237,7 +1237,7 @@ public class ChecksumWriter : TextWriter
     // --------------------------------------------------------------------------------------------------
     //    Public methods
     // --------------------------------------------------------------------------------------------------
-    override public void Write(String str)
+    override public void Write(string str)
     {
         int i;
         int m;
@@ -1249,7 +1249,7 @@ public class ChecksumWriter : TextWriter
         }
     }
 
-    override public void Write(Char[] rgch)
+    override public void Write(char[] rgch)
     {
         int i;
         int m;
@@ -1261,7 +1261,7 @@ public class ChecksumWriter : TextWriter
         }
     }
 
-    override public void Write(Char[] rgch, Int32 iOffset, Int32 iCount)
+    override public void Write(char[] rgch, int iOffset, int iCount)
     {
         int i;
         int m;
@@ -1273,9 +1273,9 @@ public class ChecksumWriter : TextWriter
         }
     }
 
-    override public void Write(Char ch)
+    override public void Write(char ch)
     {
-        _dResult += Math.Round((Decimal)(ch / (_nPosition + 1.0)), 10);
+        _dResult += Math.Round((decimal)(ch / (_nPosition + 1.0)), 10);
         _nPosition++;
     }
 

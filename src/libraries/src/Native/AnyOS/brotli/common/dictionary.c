@@ -5883,7 +5883,7 @@ static BrotliDictionary kBrotliDictionary = {
   122784,
 
   /* data */
-#ifdef BROTLI_EXTERNAL_DICTIONARY_DATA
+#if defined(BROTLI_EXTERNAL_DICTIONARY_DATA)
   NULL
 #else
   kBrotliDictionaryData

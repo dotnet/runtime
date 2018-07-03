@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
+using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
 using Xunit;
@@ -35,6 +36,62 @@ namespace System.IO.Tests
 
             await Assert.ThrowsAnyAsync<OperationCanceledException>(() => writer.WriteAsync(Memory<char>.Empty, new CancellationToken(true)));
             await Assert.ThrowsAnyAsync<OperationCanceledException>(() => writer.WriteLineAsync(Memory<char>.Empty, new CancellationToken(true)));
+        }
+
+        [Fact]
+        public void TestWriteStringBuilder()
+        {
+            StringBuilder sb = getSb();
+            StringWriter sw = new StringWriter();
+            sw.Write(sb);
+            Assert.Equal(sb.ToString(), sw.ToString());
+        }
+
+        [Fact]
+        public async Task TestWriteAsyncStringBuilder()
+        {
+            StringBuilder sb = getSb();
+            StringWriter sw = new StringWriter();
+            await sw.WriteAsync(sb);
+            Assert.Equal(sb.ToString(), sw.ToString());
+        }
+
+        [Fact]
+        public void TestWriteAsyncStringBuilderCancelled()
+        {
+            StringBuilder sb = getSb();
+            StringWriter sw = new StringWriter();
+            CancellationTokenSource cts = new CancellationTokenSource();
+            cts.Cancel();
+            Assert.Equal(TaskStatus.Canceled, sw.WriteAsync(sb, cts.Token).Status);
+        }
+
+        [Fact]
+        public void TestWriteLineStringBuilder()
+        {
+            StringBuilder sb = getSb();
+            StringWriter sw = new StringWriter();
+            sw.WriteLine(sb);
+            Assert.Equal(sb.ToString() + Environment.NewLine, sw.ToString());
+        }
+
+        [Fact]
+        public async Task TestWriteLineAsyncStringBuilder()
+        {
+            StringBuilder sb = getSb();
+            StringWriter sw = new StringWriter();
+            await sw.WriteLineAsync(sb);
+            Assert.Equal(sb.ToString() + Environment.NewLine, sw.ToString());
+        }
+
+        [Fact]
+        public void TestWriteLineAsyncStringBuilderCancelled()
+        {
+            StringBuilder sb = getSb();
+            StringWriter sw = new StringWriter();
+            CancellationTokenSource cts = new CancellationTokenSource();
+            cts.Cancel();
+            Assert.Equal(TaskStatus.Canceled, sw.WriteLineAsync(sb, cts.Token).Status);
         }
     }
 }

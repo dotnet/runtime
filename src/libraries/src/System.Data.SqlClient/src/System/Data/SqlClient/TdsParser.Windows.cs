@@ -55,7 +55,7 @@ namespace System.Data.SqlClient
                     if (!s_fSSPILoaded)
                     {
                         // use local for ref param to defer setting s_maxSSPILength until we know the call succeeded.
-                        UInt32 maxLength = 0;
+                        uint maxLength = 0;
 
                         if (0 != SNINativeMethodWrapper.SNISecInitPackage(ref maxLength))
                             SSPIError(SQLMessage.SSPIInitializeError(), TdsEnums.INIT_SSPI_PACKAGE);
@@ -66,7 +66,7 @@ namespace System.Data.SqlClient
                 }
             }
 
-            if (s_maxSSPILength > Int32.MaxValue)
+            if (s_maxSSPILength > int.MaxValue)
             {
                 throw SQL.InvalidSSPIPacketSize();   // SqlBu 332503
             }

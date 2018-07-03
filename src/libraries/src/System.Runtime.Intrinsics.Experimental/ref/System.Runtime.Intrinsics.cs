@@ -208,17 +208,11 @@ namespace System.Runtime.Intrinsics.X86
     public static class Aes 
     {
         public static bool IsSupported { get { throw null; } }
-        public static Vector128<sbyte> Decrypt(Vector128<sbyte> value, Vector128<sbyte> roundKey) { throw null; }
         public static Vector128<byte> Decrypt(Vector128<byte> value, Vector128<byte> roundKey) { throw null; }
-        public static Vector128<sbyte> DecryptLast(Vector128<sbyte> value, Vector128<sbyte> roundKey) { throw null; }
         public static Vector128<byte> DecryptLast(Vector128<byte> value, Vector128<byte> roundKey) { throw null; }
-        public static Vector128<sbyte> Encrypt(Vector128<sbyte> value, Vector128<sbyte> roundKey) { throw null; }
         public static Vector128<byte> Encrypt(Vector128<byte> value, Vector128<byte> roundKey) { throw null; }
-        public static Vector128<sbyte> EncryptLast(Vector128<sbyte> value, Vector128<sbyte> roundKey) { throw null; }
         public static Vector128<byte> EncryptLast(Vector128<byte> value, Vector128<byte> roundKey) { throw null; }
-        public static Vector128<sbyte> InvisibleMixColumn(Vector128<sbyte> value) { throw null; }
-        public static Vector128<byte> InvisibleMixColumn(Vector128<byte> value) { throw null; }
-        public static Vector128<sbyte> KeygenAssist(Vector128<sbyte> value, byte control) { throw null; }
+        public static Vector128<byte> InverseMixColumns(Vector128<byte> value) { throw null; }
         public static Vector128<byte> KeygenAssist(Vector128<byte> value, byte control) { throw null; }
     }
     public static class Avx
@@ -264,9 +258,7 @@ namespace System.Runtime.Intrinsics.X86
         public static Vector256<float> DuplicateEvenIndexed(Vector256<float> value) { throw null; }
         public static Vector256<double> DuplicateEvenIndexed(Vector256<double> value) { throw null; }
         public static Vector256<float> DuplicateOddIndexed(Vector256<float> value) { throw null; }
-        public static sbyte Extract(Vector256<sbyte> value, byte index) { throw null; }
         public static byte Extract(Vector256<byte> value, byte index) { throw null; }
-        public static short Extract(Vector256<short> value, byte index) { throw null; }
         public static ushort Extract(Vector256<ushort> value, byte index) { throw null; }
         public static int Extract(Vector256<int> value, byte index) { throw null; }
         public static uint Extract(Vector256<uint> value, byte index) { throw null; }
@@ -338,14 +330,14 @@ namespace System.Runtime.Intrinsics.X86
         public static unsafe Vector256<uint> LoadDquVector256(uint* address) { throw null; }
         public static unsafe Vector256<long> LoadDquVector256(long* address) { throw null; }
         public static unsafe Vector256<ulong> LoadDquVector256(ulong* address) { throw null; }
-        public static unsafe Vector128<float> MaskLoad(float* address, Vector128<uint> mask) { throw null; }
-        public static unsafe Vector128<double> MaskLoad(double* address, Vector128<ulong> mask) { throw null; }
-        public static unsafe Vector256<float> MaskLoad(float* address, Vector256<uint> mask) { throw null; }
-        public static unsafe Vector256<double> MaskLoad(double* address, Vector256<ulong> mask) { throw null; }
-        public static unsafe void MaskStore(float* address, Vector128<float> mask, Vector128<uint> source) { throw null; }
-        public static unsafe void MaskStore(double* address, Vector128<double> mask, Vector128<ulong> source) { throw null; }
-        public static unsafe void MaskStore(float* address, Vector256<float> mask, Vector256<uint> source) { throw null; }
-        public static unsafe void MaskStore(double* address, Vector256<double> mask, Vector256<ulong> source) { throw null; }
+        public static unsafe Vector128<float> MaskLoad(float* address, Vector128<float> mask) { throw null; }
+        public static unsafe Vector128<double> MaskLoad(double* address, Vector128<double> mask) { throw null; }
+        public static unsafe Vector256<float> MaskLoad(float* address, Vector256<float> mask) { throw null; }
+        public static unsafe Vector256<double> MaskLoad(double* address, Vector256<double> mask) { throw null; }
+        public static unsafe void MaskStore(float* address, Vector128<float> mask, Vector128<float> source) { throw null; }
+        public static unsafe void MaskStore(double* address, Vector128<double> mask, Vector128<double> source) { throw null; }
+        public static unsafe void MaskStore(float* address, Vector256<float> mask, Vector256<float> source) { throw null; }
+        public static unsafe void MaskStore(double* address, Vector256<double> mask, Vector256<double> source) { throw null; }
         public static Vector256<float> Max(Vector256<float> left, Vector256<float> right) { throw null; }
         public static Vector256<double> Max(Vector256<double> left, Vector256<double> right) { throw null; }
         public static Vector256<float> Min(Vector256<float> left, Vector256<float> right) { throw null; }
@@ -801,14 +793,14 @@ namespace System.Runtime.Intrinsics.X86
         public static bool IsSupported { get { throw null; } }
         public static uint AndNot(uint left, uint right) { throw null; }
         public static ulong AndNot(ulong left, ulong right) { throw null; }
-        public static uint BitFieldExtract(uint value, uint start, uint length) { throw null; }
-        public static ulong BitFieldExtract(ulong value, ulong start, ulong length) { throw null; }
-        public static uint BitFieldExtract(uint value, uint control) { throw null; }
-        public static ulong BitFieldExtract(ulong value, ulong control) { throw null; }
+        public static uint BitFieldExtract(uint value, byte start, byte length) { throw null; }
+        public static ulong BitFieldExtract(ulong value, byte start, byte length) { throw null; }
+        public static uint BitFieldExtract(uint value, ushort control) { throw null; }
+        public static ulong BitFieldExtract(ulong value, ushort control) { throw null; }
         public static uint ExtractLowestSetBit(uint value) { throw null; }
         public static ulong ExtractLowestSetBit(ulong value) { throw null; }
-        public static uint GetMaskUptoLowestSetBit(uint value) { throw null; }
-        public static ulong GetMaskUptoLowestSetBit(ulong value) { throw null; }
+        public static uint GetMaskUpToLowestSetBit(uint value) { throw null; }
+        public static ulong GetMaskUpToLowestSetBit(ulong value) { throw null; }
         public static uint ResetLowestSetBit(uint value) { throw null; }
         public static ulong ResetLowestSetBit(ulong value) { throw null; }
         public static uint TrailingZeroCount(uint value) { throw null; }
@@ -1146,7 +1138,6 @@ namespace System.Runtime.Intrinsics.X86
         public static Vector128<ulong> ConvertScalarToVector128UInt64(ulong value) { throw null; }
         public static Vector128<double> Divide(Vector128<double> left, Vector128<double> right) { throw null; }
         public static Vector128<double> DivideScalar(Vector128<double> left, Vector128<double> right) { throw null; }
-        public static short Extract(Vector128<short> value, byte index) { throw null; }
         public static ushort Extract(Vector128<ushort> value, byte index) { throw null; }
         public static Vector128<short> Insert(Vector128<short> value, short data, byte index) { throw null; }
         public static Vector128<ushort> Insert(Vector128<ushort> value, ushort data, byte index) { throw null; }
@@ -1420,7 +1411,6 @@ namespace System.Runtime.Intrinsics.X86
         public static Vector128<long> ConvertToVector128Int64(Vector128<uint> value) { throw null; }
         public static Vector128<float> DotProduct(Vector128<float> left, Vector128<float> right, byte control) { throw null; }
         public static Vector128<double> DotProduct(Vector128<double> left, Vector128<double> right, byte control) { throw null; }
-        public static sbyte Extract(Vector128<sbyte> value, byte index) { throw null; }
         public static byte Extract(Vector128<byte> value, byte index) { throw null; }
         public static int Extract(Vector128<int> value, byte index) { throw null; }
         public static uint Extract(Vector128<uint> value, byte index) { throw null; }
@@ -1439,7 +1429,7 @@ namespace System.Runtime.Intrinsics.X86
         public static Vector128<uint> Insert(Vector128<uint> value, uint data, byte index) { throw null; }
         public static Vector128<long> Insert(Vector128<long> value, long data, byte index) { throw null; }
         public static Vector128<ulong> Insert(Vector128<ulong> value, ulong data, byte index) { throw null; }
-        public static Vector128<float> Insert(Vector128<float> value, float data, byte index) { throw null; }
+        public static Vector128<float> Insert(Vector128<float> value, Vector128<float> data, byte index) { throw null; }
         public static Vector128<sbyte> Max(Vector128<sbyte> left, Vector128<sbyte> right) { throw null; }
         public static Vector128<ushort> Max(Vector128<ushort> left, Vector128<ushort> right) { throw null; }
         public static Vector128<int> Max(Vector128<int> left, Vector128<int> right) { throw null; }
@@ -1597,6 +1587,7 @@ namespace System.Runtime.Intrinsics.X86
         public static Vector128<short> MultiplyAddAdjacent(Vector128<byte> left, Vector128<sbyte> right) { throw null; }
         public static Vector128<short> MultiplyHighRoundScale(Vector128<short> left, Vector128<short> right) { throw null; }
         public static Vector128<sbyte> Shuffle(Vector128<sbyte> value, Vector128<sbyte> mask) { throw null; }
+        public static Vector128<byte> Shuffle(Vector128<byte> value, Vector128<byte> mask) { throw null; }
         public static Vector128<sbyte> Sign(Vector128<sbyte> left, Vector128<sbyte> right) { throw null; }
         public static Vector128<short> Sign(Vector128<short> left, Vector128<short> right) { throw null; }
         public static Vector128<int> Sign(Vector128<int> left, Vector128<int> right) { throw null; }

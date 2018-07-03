@@ -223,7 +223,7 @@ namespace System.Data.SqlClient.ManualTesting.Tests
 
         protected override object ReadInternal(DbDataReader reader, int ordinal, SqlRandomTableColumn columnInfo, Type asType)
         {
-            ValidateReadType(typeof(Int64), asType);
+            ValidateReadType(typeof(long), asType);
             if (reader.IsDBNull(ordinal))
                 return DBNull.Value;
             return reader.GetInt64(ordinal);
@@ -231,7 +231,7 @@ namespace System.Data.SqlClient.ManualTesting.Tests
 
         protected override bool CompareValuesInternal(SqlRandomTableColumn columnInfo, object expected, object actual)
         {
-            return CompareValues<Int64>(expected, actual);
+            return CompareValues<long>(expected, actual);
         }
     }
 
@@ -270,7 +270,7 @@ namespace System.Data.SqlClient.ManualTesting.Tests
 
         protected override bool CompareValuesInternal(SqlRandomTableColumn columnInfo, object expected, object actual)
         {
-            return CompareValues<Int32>(expected, actual);
+            return CompareValues<int>(expected, actual);
         }
     }
 
@@ -309,7 +309,7 @@ namespace System.Data.SqlClient.ManualTesting.Tests
 
         protected override bool CompareValuesInternal(SqlRandomTableColumn columnInfo, object expected, object actual)
         {
-            return CompareValues<Int16>(expected, actual);
+            return CompareValues<short>(expected, actual);
         }
     }
 
@@ -662,7 +662,7 @@ namespace System.Data.SqlClient.ManualTesting.Tests
 
         protected override object ReadInternal(DbDataReader reader, int ordinal, SqlRandomTableColumn columnInfo, Type asType)
         {
-            ValidateReadType(typeof(Boolean), asType);
+            ValidateReadType(typeof(bool), asType);
             if (reader.IsDBNull(ordinal))
                 return DBNull.Value;
             return reader.GetBoolean(ordinal);
@@ -670,7 +670,7 @@ namespace System.Data.SqlClient.ManualTesting.Tests
 
         protected override bool CompareValuesInternal(SqlRandomTableColumn columnInfo, object expected, object actual)
         {
-            return CompareValues<Boolean>(expected, actual);
+            return CompareValues<bool>(expected, actual);
         }
     }
 
@@ -858,7 +858,7 @@ namespace System.Data.SqlClient.ManualTesting.Tests
 
         protected override bool CompareValuesInternal(SqlRandomTableColumn columnInfo, object expected, object actual)
         {
-            return CompareValues<Single>(expected, actual);
+            return CompareValues<float>(expected, actual);
         }
     }
 
@@ -926,7 +926,7 @@ namespace System.Data.SqlClient.ManualTesting.Tests
 
         protected override bool CompareValuesInternal(SqlRandomTableColumn columnInfo, object expected, object actual)
         {
-            return CompareValues<Double>(expected, actual);
+            return CompareValues<double>(expected, actual);
         }
     }
 

@@ -206,10 +206,10 @@ namespace System.Security.Principal
             {
                 bool result;
 
-                byte[] BinaryForm1 = new Byte[sid1.BinaryLength];
+                byte[] BinaryForm1 = new byte[sid1.BinaryLength];
                 sid1.GetBinaryForm(BinaryForm1, 0);
 
-                byte[] BinaryForm2 = new Byte[sid2.BinaryLength];
+                byte[] BinaryForm2 = new byte[sid2.BinaryLength];
                 sid2.GetBinaryForm(BinaryForm2, 0);
 
                 return (Interop.Advapi32.IsEqualDomainSid(BinaryForm1, BinaryForm2, out result) == FALSE ? false : result);
@@ -271,7 +271,7 @@ namespace System.Security.Principal
             // not having to P/Invoke twice (once to get the buffer, once to get the data)
             //
 
-            byte[] BinaryForm = new Byte[sid.BinaryLength];
+            byte[] BinaryForm = new byte[sid.BinaryLength];
             sid.GetBinaryForm(BinaryForm, 0);
             uint sidLength = (uint)SecurityIdentifier.MaxBinaryLength;
             byte[] resultSidBinary = new byte[sidLength];

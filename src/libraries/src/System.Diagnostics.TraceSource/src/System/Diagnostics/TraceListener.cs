@@ -180,7 +180,7 @@ namespace System.Diagnostics
             return null;
         }
 
-        public virtual void TraceTransfer(TraceEventCache eventCache, String source, int id, string message, Guid relatedActivityId)
+        public virtual void TraceTransfer(TraceEventCache eventCache, string source, int id, string message, Guid relatedActivityId)
         {
             TraceEvent(eventCache, source, TraceEventType.Transfer, id, message + ", relatedActivityId=" + relatedActivityId.ToString()); 
         }
@@ -337,13 +337,13 @@ namespace System.Diagnostics
 
         // new write methods used by TraceSource
 
-        public virtual void TraceData(TraceEventCache eventCache, String source, TraceEventType eventType, int id, object data)
+        public virtual void TraceData(TraceEventCache eventCache, string source, TraceEventType eventType, int id, object data)
         {
             if (Filter != null && !Filter.ShouldTrace(eventCache, source, eventType, id, null, null, data))
                 return;
 
             WriteHeader(source, eventType, id);
-            string datastring = String.Empty;
+            string datastring = string.Empty;
             if (data != null)
                 datastring = data.ToString();
 
@@ -351,7 +351,7 @@ namespace System.Diagnostics
             WriteFooter(eventCache);
         }
 
-        public virtual void TraceData(TraceEventCache eventCache, String source, TraceEventType eventType, int id, params object[] data)
+        public virtual void TraceData(TraceEventCache eventCache, string source, TraceEventType eventType, int id, params object[] data)
         {
             if (Filter != null && !Filter.ShouldTrace(eventCache, source, eventType, id, null, null, null, data))
                 return;
@@ -375,13 +375,13 @@ namespace System.Diagnostics
             WriteFooter(eventCache);
         }
 
-        public virtual void TraceEvent(TraceEventCache eventCache, String source, TraceEventType eventType, int id)
+        public virtual void TraceEvent(TraceEventCache eventCache, string source, TraceEventType eventType, int id)
         {
-            TraceEvent(eventCache, source, eventType, id, String.Empty);
+            TraceEvent(eventCache, source, eventType, id, string.Empty);
         }
 
         // All other TraceEvent methods come through this one.
-        public virtual void TraceEvent(TraceEventCache eventCache, String source, TraceEventType eventType, int id, string message)
+        public virtual void TraceEvent(TraceEventCache eventCache, string source, TraceEventType eventType, int id, string message)
         {
             if (Filter != null && !Filter.ShouldTrace(eventCache, source, eventType, id, message))
                 return;
@@ -392,23 +392,23 @@ namespace System.Diagnostics
             WriteFooter(eventCache);
         }
 
-        public virtual void TraceEvent(TraceEventCache eventCache, String source, TraceEventType eventType, int id, string format, params object[] args)
+        public virtual void TraceEvent(TraceEventCache eventCache, string source, TraceEventType eventType, int id, string format, params object[] args)
         {
             if (Filter != null && !Filter.ShouldTrace(eventCache, source, eventType, id, format, args))
                 return;
 
             WriteHeader(source, eventType, id);
             if (args != null)
-                WriteLine(String.Format(CultureInfo.InvariantCulture, format, args));
+                WriteLine(string.Format(CultureInfo.InvariantCulture, format, args));
             else
                 WriteLine(format);
 
             WriteFooter(eventCache);
         }
 
-        private void WriteHeader(String source, TraceEventType eventType, int id)
+        private void WriteHeader(string source, TraceEventType eventType, int id)
         {
-            Write(String.Format(CultureInfo.InvariantCulture, "{0} {1}: {2} : ", source, eventType.ToString(), id.ToString(CultureInfo.InvariantCulture)));
+            Write(string.Format(CultureInfo.InvariantCulture, "{0} {1}: {2} : ", source, eventType.ToString(), id.ToString(CultureInfo.InvariantCulture)));
         }
 
         private void WriteFooter(TraceEventCache eventCache)

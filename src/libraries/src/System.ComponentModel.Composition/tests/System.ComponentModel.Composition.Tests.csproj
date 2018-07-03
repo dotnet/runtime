@@ -21,14 +21,9 @@
     <Compile Include="$(CommonTestPath)\System\IO\TempFile.cs">
       <Link>Common\System\IO\TempFile.cs</Link>
     </Compile>
-    <Compile Include="CacheTestsMetadataViews.cs" />
-    <Compile Include="ICollectionOfStrings.cs" />
-    <Compile Include="IExportableTest.cs" />
     <Compile Include="IMetadataView.cs" />
-    <Compile Include="ISimpleMetadataView.cs" />
     <Compile Include="MetadataTests_IMetadataView.cs" />
-    <Compile Include="Microsoft\Internal\LazyServices.cs" />
-    <Compile Include="StringsTests.cs" />
+    <Compile Include="System\LazyHelper.cs" />
     <Compile Include="System\ComponentModel\Composition\AdvancedValueComposition.cs" />
     <Compile Include="System\ComponentModel\Composition\AggregateExportProviderTest.cs" />
     <Compile Include="System\ComponentModel\Composition\AttributedModelServicesTests.cs" />
@@ -67,9 +62,6 @@
     <Compile Include="System\ComponentModel\Composition\ConstraintServicesTests.cs" />
     <Compile Include="System\ComponentModel\Composition\ContractBasedImportDefinitionTests.cs" />
     <Compile Include="System\ComponentModel\Composition\ContractMismatchExceptionTests.cs" />
-    <Compile Include="System\ComponentModel\Composition\Diagnostics\CompositionTraceIdTests.cs" />
-    <Compile Include="System\ComponentModel\Composition\Diagnostics\TraceEventDetails.cs" />
-    <Compile Include="System\ComponentModel\Composition\Diagnostics\TraceId.cs" />
     <Compile Include="System\ComponentModel\Composition\DynamicMetadata.cs" />
     <Compile Include="System\ComponentModel\Composition\Expectations.cs" />
     <Compile Include="System\ComponentModel\Composition\ExportableAttributeTests.cs" />
@@ -155,7 +147,6 @@
     <Compile Include="System\ComponentModel\Composition\ScopedCompositionServicetests.cs" />
     <Compile Include="System\ComponentModel\Composition\ScopeExportFactoryTests.cs" />
     <Compile Include="System\ComponentModel\Composition\ScopingHelpers.cs" />
-    <Compile Include="System\Globalization\CurrentCultureContext.cs" />
     <Compile Include="System\Integration\AdaptingCollectionTests.cs" />
     <Compile Include="System\Integration\CatalogFilteringTests.cs" />
     <Compile Include="System\Integration\CompositionContainerAttributedModelCycleTests.cs" />
@@ -184,8 +175,9 @@
     <Compile Include="System\UnitTesting\ExtendedAssert.cs" />
     <Compile Include="System\UnitTesting\RetryMode.cs" />
     <Compile Include="System\UnitTesting\TestServices.cs" />
-    <Compile Include="TestAssembly.cs" />
-    <Compile Include="TransparentTestCase.cs" />
+    <Compile Include="$(CommonTestPath)\System\ThreadCultureChange.cs">
+      <Link>Common\System\ThreadCultureChange.cs</Link>
+    </Compile>
   </ItemGroup>
   <ItemGroup>
     <Service Include="{82A7F48D-3B50-4B1E-B82E-3ADA8210C358}" />

@@ -13,6 +13,6 @@ internal static partial class Interop
         internal const uint MUI_PREFERRED_UI_LANGUAGES = 0x10;
 
         [DllImport(Libraries.Kernel32, CharSet = CharSet.Unicode, SetLastError = true, ExactSpelling = true)]
-        internal static extern bool GetFileMUIPath(uint flags, String filePath, [Out] StringBuilder language, ref int languageLength, [Out] StringBuilder fileMuiPath, ref int fileMuiPathLength, ref Int64 enumerator);
+        internal static extern bool GetFileMUIPath(uint flags, string filePath, [Out] StringBuilder language, ref int languageLength, [Out] StringBuilder fileMuiPath, ref int fileMuiPathLength, ref long enumerator);
     }
 }

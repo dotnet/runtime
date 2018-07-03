@@ -100,7 +100,7 @@ namespace System.Globalization
              A 99 means the year is not supported for translation.
              for convenience the table was defined for 750 year,
              but only 640 years are supported. (from 1583 to 2239)
-             the years before 1582 (starting of Georgian calander)
+             the years before 1582 (starting of Georgian calendar)
              and after 2239, are filled with 99.
 
              Greogrian January 1st falls usually in Tevet (4th month). Tevet has always 29 days.

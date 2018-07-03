@@ -21,13 +21,30 @@ namespace System.Net.NetworkInformation
         [ThreadStatic]
         private static Random t_idGenerator;
 
+        private PingReply SendPingCore(IPAddress address, byte[] buffer, int timeout, PingOptions options)
+        {
+            try
+            {
+                PingReply reply = RawSocketPermissions.CanUseRawSockets(address.AddressFamily) ?
+                    SendIcmpEchoRequestOverRawSocket(address, buffer, timeout, options) :
+                    SendWithPingUtility(address, buffer, timeout, options);
+
+                return reply;
+            }
+            finally
+            {
+                Finish();
+            }
+        }
+
         private async Task<PingReply> SendPingAsyncCore(IPAddress address, byte[] buffer, int timeout, PingOptions options)
         {
             try
             {
                 Task<PingReply> t = RawSocketPermissions.CanUseRawSockets(address.AddressFamily) ?
-                    SendIcmpEchoRequestOverRawSocket(address, buffer, timeout, options) :
-                    SendWithPingUtility(address, buffer, timeout, options);
+                    SendIcmpEchoRequestOverRawSocketAsync(address, buffer, timeout, options) :
+                    SendWithPingUtilityAsync(address, buffer, timeout, options);
+
                 PingReply reply = await t.ConfigureAwait(false);
                 if (_canceled)
                 {
@@ -41,37 +58,156 @@ namespace System.Net.NetworkInformation
             }
         }
 
-        private async Task<PingReply> SendIcmpEchoRequestOverRawSocket(IPAddress address, byte[] buffer, int timeout, PingOptions options)
+        private SocketConfig GetSocketConfig(IPAddress address, byte[] buffer, int timeout, PingOptions options)
         {
-            EndPoint endPoint = new IPEndPoint(address, 0);
+            SocketConfig config = new SocketConfig();
+            config.EndPoint = new IPEndPoint(address, 0);
+            config.Timeout = timeout;
+            config.Options = options;
 
-            bool isIpv4 = address.AddressFamily == AddressFamily.InterNetwork;
-            ProtocolType protocolType = isIpv4 ? ProtocolType.Icmp : ProtocolType.IcmpV6;
+            config.IsIpv4 = address.AddressFamily == AddressFamily.InterNetwork;
+            config.ProtocolType = config.IsIpv4 ? ProtocolType.Icmp : ProtocolType.IcmpV6;
 
-            // Use a random value as the identifier.  This doesn't need to be perfectly random
+            // Use a random value as the identifier. This doesn't need to be perfectly random
             // or very unpredictable, rather just good enough to avoid unexpected conflicts.
             Random rand = t_idGenerator ?? (t_idGenerator = new Random());
-            ushort identifier = (ushort)rand.Next((int)ushort.MaxValue + 1);
+            config.Identifier = (ushort)rand.Next((int)ushort.MaxValue + 1);
 
             IcmpHeader header = new IcmpHeader()
             {
-                Type = isIpv4 ? (byte)IcmpV4MessageType.EchoRequest : (byte)IcmpV6MessageType.EchoRequest,
+                Type = config.IsIpv4 ? (byte)IcmpV4MessageType.EchoRequest : (byte)IcmpV6MessageType.EchoRequest,
                 Code = 0,
                 HeaderChecksum = 0,
-                Identifier = identifier,
+                Identifier = config.Identifier,
                 SequenceNumber = 0,
             };
 
-            byte[] sendBuffer = CreateSendMessageBuffer(header, buffer);
+            config.SendBuffer = CreateSendMessageBuffer(header, buffer);
+            return config;
+        }
 
-            using (Socket socket = new Socket(address.AddressFamily, SocketType.Raw, protocolType))
+        private Socket GetRawSocket(SocketConfig socketConfig)
+        {
+            // Setting Socket.DontFragment and .Ttl is not supported on Unix, so socketConfig.Options is ignored.
+            AddressFamily addrFamily = ((IPEndPoint)socketConfig.EndPoint).Address.AddressFamily;
+            Socket socket = new Socket(addrFamily, SocketType.Raw, socketConfig.ProtocolType);
+            socket.ReceiveTimeout = socketConfig.Timeout;
+            socket.SendTimeout = socketConfig.Timeout;
+            if (socketConfig.Options != null && socketConfig.Options.Ttl > 0)
             {
-                socket.ReceiveTimeout = timeout;
-                socket.SendTimeout = timeout;
-                // Setting Socket.DontFragment and .Ttl is not supported on Unix, so ignore the PingOptions parameter.
+                socket.Ttl = (short)socketConfig.Options.Ttl;
+            }
+            return socket;
+        }
 
-                int ipHeaderLength = isIpv4 ? MinIpHeaderLengthInBytes : 0;
-                await socket.SendToAsync(new ArraySegment<byte>(sendBuffer), SocketFlags.None, endPoint).ConfigureAwait(false);
+        private bool TryGetPingReply(SocketConfig socketConfig, byte[] receiveBuffer, int bytesReceived, Stopwatch sw, ref int ipHeaderLength, out PingReply reply)
+        {
+            byte type, code;
+            reply = null;
+
+            if (socketConfig.IsIpv4)
+            {
+                // Determine actual size of IP header
+                byte ihl = (byte)(receiveBuffer[0] & 0x0f); // Internet Header Length
+                ipHeaderLength = 4 * ihl;
+                if (bytesReceived - ipHeaderLength < IcmpHeaderLengthInBytes)
+                {
+                    return false; // Not enough bytes to reconstruct actual IP header + ICMP header.
+                }
+            }
+
+            int icmpHeaderOffset = ipHeaderLength;
+
+            // Skip IP header.
+            IcmpHeader receivedHeader = MemoryMarshal.Read<IcmpHeader>(receiveBuffer.AsSpan(icmpHeaderOffset));
+            type = receivedHeader.Type;
+            code = receivedHeader.Code;
+
+            if (socketConfig.Identifier != receivedHeader.Identifier
+                || type == (byte)IcmpV4MessageType.EchoRequest
+                || type == (byte)IcmpV6MessageType.EchoRequest) // Echo Request, ignore
+            {
+                return false;
+            }
+            
+            sw.Stop();
+            long roundTripTime = sw.ElapsedMilliseconds;
+            int dataOffset = ipHeaderLength + IcmpHeaderLengthInBytes;
+            // We want to return a buffer with the actual data we sent out, not including the header data.
+            byte[] dataBuffer = new byte[bytesReceived - dataOffset];
+            Buffer.BlockCopy(receiveBuffer, dataOffset, dataBuffer, 0, dataBuffer.Length);
+
+            IPStatus status = socketConfig.IsIpv4
+                ? IcmpV4MessageConstants.MapV4TypeToIPStatus(type, code)
+                : IcmpV6MessageConstants.MapV6TypeToIPStatus(type, code);
+
+            IPAddress address = ((IPEndPoint)socketConfig.EndPoint).Address;
+            reply = new PingReply(address, socketConfig.Options, status, roundTripTime, dataBuffer);
+            return true;
+        }
+
+        private PingReply SendIcmpEchoRequestOverRawSocket(IPAddress address, byte[] buffer, int timeout, PingOptions options)
+        {
+            SocketConfig socketConfig = GetSocketConfig(address, buffer, timeout, options);
+            using (Socket socket = GetRawSocket(socketConfig))
+            {
+                int ipHeaderLength = socketConfig.IsIpv4 ? MinIpHeaderLengthInBytes : 0;
+                try
+                {
+                    socket.SendTo(socketConfig.SendBuffer, SocketFlags.None, socketConfig.EndPoint);
+                }
+                catch (SocketException ex) when (ex.SocketErrorCode == SocketError.TimedOut)
+                {
+                    return CreateTimedOutPingReply();
+                }
+
+                byte[] receiveBuffer = new byte[MaxIpHeaderLengthInBytes + IcmpHeaderLengthInBytes + buffer.Length];
+
+                long elapsed;
+                Stopwatch sw = Stopwatch.StartNew();
+                // Read from the socket in a loop. We may receive messages that are not echo replies, or that are not in response
+                // to the echo request we just sent. We need to filter such messages out, and continue reading until our timeout.
+                // For example, when pinging the local host, we need to filter out our own echo requests that the socket reads.
+                while ((elapsed = sw.ElapsedMilliseconds) < timeout)
+                {
+                    int bytesReceived;
+                    try
+                    {
+                        bytesReceived = socket.ReceiveFrom(receiveBuffer, SocketFlags.None, ref socketConfig.EndPoint);
+                    }
+                    catch (SocketException ex) when (ex.SocketErrorCode == SocketError.TimedOut)
+                    {
+                        return CreateTimedOutPingReply();
+                    }
+
+                    if (bytesReceived - ipHeaderLength < IcmpHeaderLengthInBytes)
+                    {
+                        continue; // Not enough bytes to reconstruct IP header + ICMP header.
+                    }
+
+                    if (TryGetPingReply(socketConfig, receiveBuffer, bytesReceived, sw, ref ipHeaderLength, out PingReply reply))
+                    {
+                        return reply;
+                    }
+                }
+
+                // We have exceeded our timeout duration, and no reply has been received.
+                return CreateTimedOutPingReply();
+            }
+        }
+
+        private async Task<PingReply> SendIcmpEchoRequestOverRawSocketAsync(IPAddress address, byte[] buffer, int timeout, PingOptions options)
+        {
+            SocketConfig socketConfig = GetSocketConfig(address, buffer, timeout, options);
+            using (Socket socket = GetRawSocket(socketConfig))
+            {
+                int ipHeaderLength = socketConfig.IsIpv4 ? MinIpHeaderLengthInBytes : 0;
+
+                await socket.SendToAsync(
+                    new ArraySegment<byte>(socketConfig.SendBuffer),
+                    SocketFlags.None, socketConfig.EndPoint)
+                    .ConfigureAwait(false);
+
                 byte[] receiveBuffer = new byte[MaxIpHeaderLengthInBytes + IcmpHeaderLengthInBytes + buffer.Length];
 
                 long elapsed;
@@ -82,15 +218,15 @@ namespace System.Net.NetworkInformation
                 while ((elapsed = sw.ElapsedMilliseconds) < timeout)
                 {
                     Task<SocketReceiveFromResult> receiveTask = socket.ReceiveFromAsync(
-                                                                    new ArraySegment<byte>(receiveBuffer),
-                                                                    SocketFlags.None,
-                                                                    endPoint);
+                        new ArraySegment<byte>(receiveBuffer),
+                        SocketFlags.None,
+                        socketConfig.EndPoint);
+
                     var cts = new CancellationTokenSource();
                     Task finished = await Task.WhenAny(receiveTask, Task.Delay(timeout - (int)elapsed, cts.Token)).ConfigureAwait(false);
                     cts.Cancel();
                     if (finished != receiveTask)
                     {
-                        sw.Stop();
                         return CreateTimedOutPingReply();
                     }
 
@@ -101,57 +237,18 @@ namespace System.Net.NetworkInformation
                         continue; // Not enough bytes to reconstruct IP header + ICMP header.
                     }
 
-                    byte type, code;
-                    unsafe
+                    if (TryGetPingReply(socketConfig, receiveBuffer, bytesReceived, sw, ref ipHeaderLength, out PingReply reply))
                     {
-                        fixed (byte* bytesPtr = &receiveBuffer[0])
-                        {
-                            if (isIpv4)
-                            {
-                                // Determine actual size of IP header
-                                byte ihl = (byte)(bytesPtr[0] & 0x0f); // Internet Header Length
-                                ipHeaderLength = 4 * ihl;
-                                if (bytesReceived - ipHeaderLength < IcmpHeaderLengthInBytes)
-                                {
-                                    continue; // Not enough bytes to reconstruct actual IP header + ICMP header.
-                                }
-                            }
-
-                            int icmpHeaderOffset = ipHeaderLength;
-                            IcmpHeader receivedHeader = *((IcmpHeader*)(bytesPtr + icmpHeaderOffset)); // Skip IP header.
-                            type = receivedHeader.Type;
-                            code = receivedHeader.Code;
-
-                            if (identifier != receivedHeader.Identifier
-                                || type == (byte)IcmpV4MessageType.EchoRequest
-                                || type == (byte)IcmpV6MessageType.EchoRequest) // Echo Request, ignore
-                            {
-                                continue;
-                            }
-                        }
+                        return reply;
                     }
-
-                    sw.Stop();
-                    long roundTripTime = sw.ElapsedMilliseconds;
-                    int dataOffset = ipHeaderLength + IcmpHeaderLengthInBytes;
-                    // We want to return a buffer with the actual data we sent out, not including the header data.
-                    byte[] dataBuffer = new byte[bytesReceived - dataOffset];
-                    Buffer.BlockCopy(receiveBuffer, dataOffset, dataBuffer, 0, dataBuffer.Length);
-
-                    IPStatus status = isIpv4
-                                        ? IcmpV4MessageConstants.MapV4TypeToIPStatus(type, code)
-                                        : IcmpV6MessageConstants.MapV6TypeToIPStatus(type, code);
-
-                    return new PingReply(address, options, status, roundTripTime, dataBuffer);
                 }
 
                 // We have exceeded our timeout duration, and no reply has been received.
-                sw.Stop();
                 return CreateTimedOutPingReply();
             }
         }
 
-        private async Task<PingReply> SendWithPingUtility(IPAddress address, byte[] buffer, int timeout, PingOptions options)
+        private Process GetPingProcess(IPAddress address, byte[] buffer, PingOptions options)
         {
             bool isIpv4 = address.AddressFamily == AddressFamily.InterNetwork;
             string pingExecutable = isIpv4 ? UnixCommandLinePing.Ping4UtilityPath : UnixCommandLinePing.Ping6UtilityPath;
@@ -160,49 +257,28 @@ namespace System.Net.NetworkInformation
                 throw new PlatformNotSupportedException(SR.net_ping_utility_not_found);
             }
 
-            string processArgs = UnixCommandLinePing.ConstructCommandLine(buffer.Length, address.ToString(), isIpv4);
+            string processArgs = UnixCommandLinePing.ConstructCommandLine(buffer.Length, address.ToString(), isIpv4, options?.Ttl ?? 0);
+
             ProcessStartInfo psi = new ProcessStartInfo(pingExecutable, processArgs);
             psi.RedirectStandardOutput = true;
             psi.RedirectStandardError = true;
-            Process p = new Process() { StartInfo = psi };
+            return new Process() { StartInfo = psi };
+        }
 
-            var processCompletion = new TaskCompletionSource<bool>(TaskCreationOptions.RunContinuationsAsynchronously);
-            p.EnableRaisingEvents = true;
-            p.Exited += (s, e) => processCompletion.SetResult(true);
-            p.Start();
-            var cts = new CancellationTokenSource();
-            Task timeoutTask = Task.Delay(timeout, cts.Token);
-
-            Task finished = await Task.WhenAny(processCompletion.Task, timeoutTask).ConfigureAwait(false);
-            if (finished == timeoutTask && !p.HasExited)
+        private PingReply SendWithPingUtility(IPAddress address, byte[] buffer, int timeout, PingOptions options)
+        {
+            using (Process p = GetPingProcess(address, buffer, options))
             {
-                // Try to kill the ping process if it didn't return. If it is already in the process of exiting, a Win32Exception will be thrown.
-                try
+                p.Start();
+                if (!p.WaitForExit(timeout) || p.ExitCode == 1 || p.ExitCode == 2)
                 {
-                    p.Kill();
-                }
-                catch (Win32Exception) { }
-                return CreateTimedOutPingReply();
-            }
-            else
-            {
-                cts.Cancel();
-                if (p.ExitCode == 1 || p.ExitCode == 2)
-                {
-                    // Throw timeout for known failure return codes from ping functions.
                     return CreateTimedOutPingReply();
                 }
 
                 try
                 {
-                    string output = await p.StandardOutput.ReadToEndAsync().ConfigureAwait(false);
-                    long rtt = UnixCommandLinePing.ParseRoundTripTime(output);
-                    return new PingReply(
-                            address,
-                            null, // Ping utility cannot accommodate these, return null to indicate they were ignored.
-                            IPStatus.Success,
-                            rtt,
-                            Array.Empty<byte>()); // Ping utility doesn't deliver this info.
+                    string output = p.StandardOutput.ReadToEnd();
+                    return ParsePingUtilityOutput(address, output);
                 }
                 catch (Exception)
                 {
@@ -210,6 +286,64 @@ namespace System.Net.NetworkInformation
                     throw new PingException(SR.net_ping);
                 }
             }
+        }
+
+        private async Task<PingReply> SendWithPingUtilityAsync(IPAddress address, byte[] buffer, int timeout, PingOptions options)
+        {
+            using (Process p = GetPingProcess(address, buffer, options))
+            {
+                var processCompletion = new TaskCompletionSource<bool>(TaskCreationOptions.RunContinuationsAsynchronously);
+                p.EnableRaisingEvents = true;
+                p.Exited += (s, e) => processCompletion.SetResult(true);
+                p.Start();
+
+                var cts = new CancellationTokenSource();
+                Task timeoutTask = Task.Delay(timeout, cts.Token);
+                Task finished = await Task.WhenAny(processCompletion.Task, timeoutTask).ConfigureAwait(false);
+
+                if (finished == timeoutTask && !p.HasExited)
+                {
+                    // Try to kill the ping process if it didn't return. If it is already in the process of exiting, 
+                    // a Win32Exception will be thrown.
+                    try
+                    {
+                        p.Kill();
+                    }
+                    catch (Win32Exception) { }
+                    return CreateTimedOutPingReply();
+                }
+                else
+                {
+                    cts.Cancel();
+                    if (p.ExitCode == 1 || p.ExitCode == 2)
+                    {
+                        // Throw timeout for known failure return codes from ping functions.
+                        return CreateTimedOutPingReply();
+                    }
+
+                    try
+                    {
+                        string output = await p.StandardOutput.ReadToEndAsync().ConfigureAwait(false);
+                        return ParsePingUtilityOutput(address, output);
+                    }
+                    catch (Exception)
+                    {
+                        // If the standard output cannot be successfully parsed, throw a generic PingException.
+                        throw new PingException(SR.net_ping);
+                    }
+                }
+            }
+        }
+
+        private PingReply ParsePingUtilityOutput(IPAddress address, string output)
+        {
+            long rtt = UnixCommandLinePing.ParseRoundTripTime(output);
+            return new PingReply(
+                address,
+                null, // Ping utility cannot accommodate these, return null to indicate they were ignored.
+                IPStatus.Success,
+                rtt,
+                Array.Empty<byte>()); // Ping utility doesn't deliver this info.
         }
 
         private PingReply CreateTimedOutPingReply()
@@ -237,6 +371,20 @@ namespace System.Net.NetworkInformation
             public ushort SequenceNumber;
         }
 
+        // Since this is private should be safe to trust that the calling code 
+        // will behave. To get a little performance boost raw fields are exposed 
+        // and no validation is performed.
+        private class SocketConfig
+        {
+            public EndPoint EndPoint;
+            public PingOptions Options;
+            public ushort Identifier;
+            public bool IsIpv4;
+            public ProtocolType ProtocolType;
+            public int Timeout;
+            public byte[] SendBuffer;
+        }
+
         private static unsafe byte[] CreateSendMessageBuffer(IcmpHeader header, byte[] payload)
         {
             int headerSize = sizeof(IcmpHeader);
@@ -260,8 +408,8 @@ namespace System.Net.NetworkInformation
                 // Combine each pair of bytes into a 16-bit number and add it to the sum
                 ushort element0 = (ushort)((buffer[i] << 8) & 0xFF00);
                 ushort element1 = (i + 1 < buffer.Length)
-                                    ? (ushort)(buffer[i + 1] & 0x00FF)
-                                    : (ushort)0; // If there's an odd number of bytes, pad by one octet of zeros.
+                    ? (ushort)(buffer[i + 1] & 0x00FF)
+                    : (ushort)0; // If there's an odd number of bytes, pad by one octet of zeros.
                 ushort combined = (ushort)(element0 | element1);
                 sum += (uint)combined;
             }

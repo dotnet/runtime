@@ -11,10 +11,10 @@
 
 #include "../common/constants.h"
 #include "../common/dictionary.h"
+#include "../common/platform.h"
 #include <brotli/types.h>
 #include "./command.h"
 #include "./hash.h"
-#include "./port.h"
 #include "./quality.h"
 
 #if defined(__cplusplus) || defined(c_plusplus)
@@ -26,11 +26,10 @@ extern "C" {
    CreateBackwardReferences calls, and must be incremented by the amount written
    by this call. */
 BROTLI_INTERNAL void BrotliCreateBackwardReferences(
-    const BrotliDictionary* dictionary, size_t num_bytes, size_t position,
-    const uint8_t* ringbuffer, size_t ringbuffer_mask,
-    const BrotliEncoderParams* params, HasherHandle hasher, int* dist_cache,
-    size_t* last_insert_len, Command* commands, size_t* num_commands,
-    size_t* num_literals);
+    size_t num_bytes, size_t position, const uint8_t* ringbuffer,
+    size_t ringbuffer_mask, const BrotliEncoderParams* params,
+    HasherHandle hasher, int* dist_cache, size_t* last_insert_len,
+    Command* commands, size_t* num_commands, size_t* num_literals);
 
 #if defined(__cplusplus) || defined(c_plusplus)
 }  /* extern "C" */

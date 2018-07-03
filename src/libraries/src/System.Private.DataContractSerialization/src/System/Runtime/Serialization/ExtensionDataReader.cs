@@ -53,7 +53,7 @@ namespace System.Runtime.Serialization
             s_prefixToNsTable = new Dictionary<string, string>();
             AddPrefix(Globals.XsiPrefix, Globals.SchemaInstanceNamespace);
             AddPrefix(Globals.SerPrefix, Globals.SerializationNamespace);
-            AddPrefix(String.Empty, String.Empty);
+            AddPrefix(string.Empty, string.Empty);
         }
 
         internal ExtensionDataReader(XmlObjectSerializerReadContext context)
@@ -195,7 +195,7 @@ namespace System.Runtime.Serialization
             _localName = _element.localName;
             _ns = _element.ns;
             _prefix = _element.prefix;
-            _value = String.Empty;
+            _value = string.Empty;
             _attributeCount = _element.attributeCount;
             _attributeIndex = -1;
         }
@@ -280,19 +280,19 @@ namespace System.Runtime.Serialization
 
                 case ExtensionDataNodeType.Text:
                     _nodeType = XmlNodeType.Text;
-                    _prefix = String.Empty;
-                    _ns = String.Empty;
-                    _localName = String.Empty;
+                    _prefix = string.Empty;
+                    _ns = string.Empty;
+                    _localName = string.Empty;
                     _attributeCount = 0;
                     _attributeIndex = -1;
                     break;
 
                 case ExtensionDataNodeType.EndElement:
                     _nodeType = XmlNodeType.EndElement;
-                    _prefix = String.Empty;
-                    _ns = String.Empty;
-                    _localName = String.Empty;
-                    _value = String.Empty;
+                    _prefix = string.Empty;
+                    _ns = string.Empty;
+                    _localName = string.Empty;
+                    _value = string.Empty;
                     _attributeCount = 0;
                     _attributeIndex = -1;
                     PopElement();
@@ -302,10 +302,10 @@ namespace System.Runtime.Serialization
                     if (_depth != 0)
                         throw new XmlException(SR.InvalidXmlDeserializingExtensionData);
                     _nodeType = XmlNodeType.None;
-                    _prefix = String.Empty;
-                    _ns = String.Empty;
-                    _localName = String.Empty;
-                    _value = String.Empty;
+                    _prefix = string.Empty;
+                    _ns = string.Empty;
+                    _localName = string.Empty;
+                    _value = string.Empty;
                     _attributeCount = 0;
                     _readState = ReadState.EndOfFile;
                     return false;
@@ -483,14 +483,14 @@ namespace System.Runtime.Serialization
         internal static string GetPrefix(string ns)
         {
             string prefix;
-            ns = ns ?? String.Empty;
+            ns = ns ?? string.Empty;
             if (!s_nsToPrefixTable.TryGetValue(ns, out prefix))
             {
                 lock (s_nsToPrefixTable)
                 {
                     if (!s_nsToPrefixTable.TryGetValue(ns, out prefix))
                     {
-                        prefix = (ns == null || ns.Length == 0) ? String.Empty : "p" + s_nsToPrefixTable.Count;
+                        prefix = (ns == null || ns.Length == 0) ? string.Empty : "p" + s_nsToPrefixTable.Count;
                         AddPrefix(prefix, ns);
                     }
                 }

@@ -339,7 +339,7 @@ namespace System.Runtime.Serialization
             for (int i = 0; i < Members.Count; i++)
             {
                 string memberName = Members[i].Name;
-                if (memberName.Length == count && String.CompareOrdinal(value, index, memberName, 0, count) == 0)
+                if (memberName.Length == count && string.CompareOrdinal(value, index, memberName, 0, count) == 0)
                 {
                     return Values[i];
                 }

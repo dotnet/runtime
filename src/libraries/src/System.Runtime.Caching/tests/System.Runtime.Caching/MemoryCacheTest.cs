@@ -55,7 +55,7 @@ namespace MonoTests.System.Runtime.Caching
 
             Assert.Throws<ArgumentException>(() =>
             {
-                mc = new MemoryCache(String.Empty);
+                mc = new MemoryCache(string.Empty);
             });
 
             Assert.Throws<ArgumentException>(() =>
@@ -316,7 +316,7 @@ namespace MonoTests.System.Runtime.Caching
             Assert.False(monitor.HasChanged);
 
             // The actual unique id is constructed from key names followed by the hex value of ticks of their last modifed time
-            Assert.False(String.IsNullOrEmpty(monitor.UniqueId));
+            Assert.False(string.IsNullOrEmpty(monitor.UniqueId));
 
 			monitor = mc.CreateCacheEntryChangeMonitor (new string [] { "key1", "doesnotexist" });
 			Assert.NotNull (monitor);
@@ -479,7 +479,7 @@ namespace MonoTests.System.Runtime.Caching
                 ci2 = mc.AddOrGetExisting(ci, null);
             });
 
-            ci = new CacheItem(String.Empty, "value");
+            ci = new CacheItem(string.Empty, "value");
             ci2 = mc.AddOrGetExisting(ci, null);
             Assert.NotNull(ci2);
             Assert.NotEqual(ci, ci2);

@@ -116,7 +116,7 @@ namespace System.Xml
         internal string strReservedXmlns;
         internal string strReservedXml;
 
-        internal String baseURI;
+        internal string baseURI;
 
         private XmlResolver _resolver;
         internal bool bSetResolver;
@@ -149,7 +149,7 @@ namespace System.Xml
             strXml = Xml;
             strReservedXmlns = XmlReservedNs.NsXmlNs;
             strReservedXml = XmlReservedNs.NsXml;
-            baseURI = String.Empty;
+            baseURI = string.Empty;
             objLock = new object();
 
             if (imp.NameTable.GetType() == typeof(NameTable))
@@ -201,7 +201,7 @@ namespace System.Xml
         }
 
         // NOTE: This does not correctly check start name char, but we cannot change it since it would be a breaking change.
-        internal static void CheckName(String name)
+        internal static void CheckName(string name)
         {
             int endPos = ValidateNames.ParseNmtoken(name, 0);
             if (endPos < name.Length)
@@ -386,13 +386,13 @@ namespace System.Xml
         }
 
         // Gets the name of the node.
-        public override String Name
+        public override string Name
         {
             get { return strDocumentName; }
         }
 
         // Gets the name of the current node without the namespace prefix.
-        public override String LocalName
+        public override string LocalName
         {
             get { return strDocumentName; }
         }
@@ -607,11 +607,11 @@ namespace System.Xml
         }
 
         // Creates an XmlAttribute with the specified name.
-        public XmlAttribute CreateAttribute(String name)
+        public XmlAttribute CreateAttribute(string name)
         {
-            String prefix = String.Empty;
-            String localName = String.Empty;
-            String namespaceURI = String.Empty;
+            string prefix = string.Empty;
+            string localName = string.Empty;
+            string namespaceURI = string.Empty;
 
             SplitName(name, out prefix, out localName);
 
@@ -620,7 +620,7 @@ namespace System.Xml
             return CreateAttribute(prefix, localName, namespaceURI);
         }
 
-        internal void SetDefaultNamespace(String prefix, String localName, ref String namespaceURI)
+        internal void SetDefaultNamespace(string prefix, string localName, ref string namespaceURI)
         {
             if (prefix == strXmlns || (prefix.Length == 0 && localName == strXmlns))
             {
@@ -633,14 +633,14 @@ namespace System.Xml
         }
 
         // Creates a XmlCDataSection containing the specified data.
-        public virtual XmlCDataSection CreateCDataSection(String data)
+        public virtual XmlCDataSection CreateCDataSection(string data)
         {
             fCDataNodesPresent = true;
             return new XmlCDataSection(data, this);
         }
 
         // Creates an XmlComment containing the specified data.
-        public virtual XmlComment CreateComment(String data)
+        public virtual XmlComment CreateComment(string data)
         {
             return new XmlComment(data, this);
         }
@@ -658,10 +658,10 @@ namespace System.Xml
         }
 
         // Creates an element with the specified name.
-        public XmlElement CreateElement(String name)
+        public XmlElement CreateElement(string name)
         {
-            string prefix = String.Empty;
-            string localName = String.Empty;
+            string prefix = string.Empty;
+            string localName = string.Empty;
             SplitName(name, out prefix, out localName);
             return CreateElement(prefix, localName, string.Empty);
         }
@@ -732,26 +732,26 @@ namespace System.Xml
         }
 
         // Creates an XmlEntityReference with the specified name.
-        public virtual XmlEntityReference CreateEntityReference(String name)
+        public virtual XmlEntityReference CreateEntityReference(string name)
         {
             return new XmlEntityReference(name, this);
         }
 
         // Creates a XmlProcessingInstruction with the specified name
         // and data strings.
-        public virtual XmlProcessingInstruction CreateProcessingInstruction(String target, String data)
+        public virtual XmlProcessingInstruction CreateProcessingInstruction(string target, string data)
         {
             return new XmlProcessingInstruction(target, data, this);
         }
 
         // Creates a XmlDeclaration node with the specified values.
-        public virtual XmlDeclaration CreateXmlDeclaration(String version, string encoding, string standalone)
+        public virtual XmlDeclaration CreateXmlDeclaration(string version, string encoding, string standalone)
         {
             return new XmlDeclaration(version, encoding, standalone, this);
         }
 
         // Creates an XmlText with the specified text.
-        public virtual XmlText CreateTextNode(String text)
+        public virtual XmlText CreateTextNode(string text)
         {
             return new XmlText(text, this);
         }
@@ -902,7 +902,7 @@ namespace System.Xml
 
         // Returns an XmlNodeList containing
         // a list of all descendant elements that match the specified name.
-        public virtual XmlNodeList GetElementsByTagName(String name)
+        public virtual XmlNodeList GetElementsByTagName(string name)
         {
             return new XmlElementList(this, name);
         }
@@ -911,10 +911,10 @@ namespace System.Xml
 
         // Creates an XmlAttribute with the specified LocalName
         // and NamespaceURI.
-        public XmlAttribute CreateAttribute(String qualifiedName, String namespaceURI)
+        public XmlAttribute CreateAttribute(string qualifiedName, string namespaceURI)
         {
-            string prefix = String.Empty;
-            string localName = String.Empty;
+            string prefix = string.Empty;
+            string localName = string.Empty;
 
             SplitName(qualifiedName, out prefix, out localName);
             return CreateAttribute(prefix, localName, namespaceURI);
@@ -922,17 +922,17 @@ namespace System.Xml
 
         // Creates an XmlElement with the specified LocalName and
         // NamespaceURI.
-        public XmlElement CreateElement(String qualifiedName, String namespaceURI)
+        public XmlElement CreateElement(string qualifiedName, string namespaceURI)
         {
-            string prefix = String.Empty;
-            string localName = String.Empty;
+            string prefix = string.Empty;
+            string localName = string.Empty;
             SplitName(qualifiedName, out prefix, out localName);
             return CreateElement(prefix, localName, namespaceURI);
         }
 
         // Returns a XmlNodeList containing
         // a list of all descendant elements that match the specified name.
-        public virtual XmlNodeList GetElementsByTagName(String localName, String namespaceURI)
+        public virtual XmlNodeList GetElementsByTagName(string localName, string namespaceURI)
         {
             return new XmlElementList(this, localName, namespaceURI);
         }
@@ -1029,7 +1029,7 @@ namespace System.Xml
                         break;
 
                     default:
-                        throw new InvalidOperationException(String.Format(CultureInfo.InvariantCulture, SR.Xdom_Import, node.NodeType.ToString()));
+                        throw new InvalidOperationException(string.Format(CultureInfo.InvariantCulture, SR.Xdom_Import, node.NodeType.ToString()));
                 }
             }
 
@@ -1710,7 +1710,7 @@ namespace System.Xml
             return null;
         }
 
-        internal String Version
+        internal string Version
         {
             get
             {
@@ -1721,7 +1721,7 @@ namespace System.Xml
             }
         }
 
-        internal String Encoding
+        internal string Encoding
         {
             get
             {
@@ -1732,7 +1732,7 @@ namespace System.Xml
             }
         }
 
-        internal String Standalone
+        internal string Standalone
         {
             get
             {
@@ -1743,7 +1743,7 @@ namespace System.Xml
             }
         }
 
-        internal XmlEntity GetEntityNode(String name)
+        internal XmlEntity GetEntityNode(string name)
         {
             if (DocumentType != null)
             {
@@ -1776,12 +1776,12 @@ namespace System.Xml
             }
         }
 
-        public override String BaseURI
+        public override string BaseURI
         {
             get { return baseURI; }
         }
 
-        internal void SetBaseURI(String inBaseURI)
+        internal void SetBaseURI(string inBaseURI)
         {
             baseURI = inBaseURI;
         }

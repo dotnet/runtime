@@ -18,7 +18,7 @@ namespace System.IO
     internal abstract partial class StreamOperationAsyncResult : IAsyncResult
     {
         private AsyncCallback _userCompletionCallback = null;
-        private Object _userAsyncStateInfo = null;
+        private object _userAsyncStateInfo = null;
 
         private IAsyncInfo _asyncStreamOperation = null;
 
@@ -26,7 +26,7 @@ namespace System.IO
         private volatile bool _callbackInvoked = false;
         private volatile ManualResetEvent _waitHandle = null;
 
-        private Int64 _bytesCompleted = 0;
+        private long _bytesCompleted = 0;
 
         private ExceptionDispatchInfo _errorInfo = null;
 
@@ -35,7 +35,7 @@ namespace System.IO
 
 
         protected internal StreamOperationAsyncResult(IAsyncInfo asyncStreamOperation,
-                                                      AsyncCallback userCompletionCallback, Object userAsyncStateInfo,
+                                                      AsyncCallback userCompletionCallback, object userAsyncStateInfo,
                                                       bool processCompletedOperationInCallback)
         {
             if (asyncStreamOperation == null)
@@ -124,7 +124,7 @@ namespace System.IO
         }
 
 
-        internal Int64 BytesCompleted
+        internal long BytesCompleted
         {
             get { return _bytesCompleted; }
         }
@@ -179,10 +179,10 @@ namespace System.IO
         }
 
 
-        internal abstract void ProcessConcreteCompletedOperation(IAsyncInfo completedOperation, out Int64 bytesCompleted);
+        internal abstract void ProcessConcreteCompletedOperation(IAsyncInfo completedOperation, out long bytesCompleted);
 
 
-        private static void ProcessCompletedOperation_InvalidOperationThrowHelper(ExceptionDispatchInfo errInfo, String errMsg)
+        private static void ProcessCompletedOperation_InvalidOperationThrowHelper(ExceptionDispatchInfo errInfo, string errMsg)
         {
             Exception errInfoSrc = (errInfo == null) ? null : errInfo.SourceException;
 
@@ -297,8 +297,8 @@ namespace System.IO
     {
         private IBuffer _userBuffer = null;
 
-        internal StreamReadAsyncResult(IAsyncOperationWithProgress<IBuffer, UInt32> asyncStreamReadOperation, IBuffer buffer,
-                                       AsyncCallback userCompletionCallback, Object userAsyncStateInfo,
+        internal StreamReadAsyncResult(IAsyncOperationWithProgress<IBuffer, uint> asyncStreamReadOperation, IBuffer buffer,
+                                       AsyncCallback userCompletionCallback, object userAsyncStateInfo,
                                        bool processCompletedOperationInCallback)
 
             : base(asyncStreamReadOperation, userCompletionCallback, userAsyncStateInfo, processCompletedOperationInCallback)
@@ -311,13 +311,13 @@ namespace System.IO
         }
 
 
-        internal override void ProcessConcreteCompletedOperation(IAsyncInfo completedOperation, out Int64 bytesCompleted)
+        internal override void ProcessConcreteCompletedOperation(IAsyncInfo completedOperation, out long bytesCompleted)
         {
-            ProcessConcreteCompletedOperation((IAsyncOperationWithProgress<IBuffer, UInt32>)completedOperation, out bytesCompleted);
+            ProcessConcreteCompletedOperation((IAsyncOperationWithProgress<IBuffer, uint>)completedOperation, out bytesCompleted);
         }
 
 
-        private void ProcessConcreteCompletedOperation(IAsyncOperationWithProgress<IBuffer, UInt32> completedOperation, out Int64 bytesCompleted)
+        private void ProcessConcreteCompletedOperation(IAsyncOperationWithProgress<IBuffer, uint> completedOperation, out long bytesCompleted)
         {
             IBuffer resultBuffer = completedOperation.GetResults();
             Debug.Assert(resultBuffer != null);
@@ -334,8 +334,8 @@ namespace System.IO
 
     internal class StreamWriteAsyncResult : StreamOperationAsyncResult
     {
-        internal StreamWriteAsyncResult(IAsyncOperationWithProgress<UInt32, UInt32> asyncStreamWriteOperation,
-                                        AsyncCallback userCompletionCallback, Object userAsyncStateInfo,
+        internal StreamWriteAsyncResult(IAsyncOperationWithProgress<uint, uint> asyncStreamWriteOperation,
+                                        AsyncCallback userCompletionCallback, object userAsyncStateInfo,
                                         bool processCompletedOperationInCallback)
 
             : base(asyncStreamWriteOperation, userCompletionCallback, userAsyncStateInfo, processCompletedOperationInCallback)
@@ -344,15 +344,15 @@ namespace System.IO
         }
 
 
-        internal override void ProcessConcreteCompletedOperation(IAsyncInfo completedOperation, out Int64 bytesCompleted)
+        internal override void ProcessConcreteCompletedOperation(IAsyncInfo completedOperation, out long bytesCompleted)
         {
-            ProcessConcreteCompletedOperation((IAsyncOperationWithProgress<UInt32, UInt32>)completedOperation, out bytesCompleted);
+            ProcessConcreteCompletedOperation((IAsyncOperationWithProgress<uint, uint>)completedOperation, out bytesCompleted);
         }
 
 
-        private void ProcessConcreteCompletedOperation(IAsyncOperationWithProgress<UInt32, UInt32> completedOperation, out Int64 bytesCompleted)
+        private void ProcessConcreteCompletedOperation(IAsyncOperationWithProgress<uint, uint> completedOperation, out long bytesCompleted)
         {
-            UInt32 bytesWritten = completedOperation.GetResults();
+            uint bytesWritten = completedOperation.GetResults();
             bytesCompleted = bytesWritten;
         }
     }  // class StreamWriteAsyncResult
@@ -364,7 +364,7 @@ namespace System.IO
 
     internal class StreamFlushAsyncResult : StreamOperationAsyncResult
     {
-        internal StreamFlushAsyncResult(IAsyncOperation<Boolean> asyncStreamFlushOperation, bool processCompletedOperationInCallback)
+        internal StreamFlushAsyncResult(IAsyncOperation<bool> asyncStreamFlushOperation, bool processCompletedOperationInCallback)
 
             : base(asyncStreamFlushOperation, null, null, processCompletedOperationInCallback)
         {
@@ -372,15 +372,15 @@ namespace System.IO
         }
 
 
-        internal override void ProcessConcreteCompletedOperation(IAsyncInfo completedOperation, out Int64 bytesCompleted)
+        internal override void ProcessConcreteCompletedOperation(IAsyncInfo completedOperation, out long bytesCompleted)
         {
-            ProcessConcreteCompletedOperation((IAsyncOperation<Boolean>)completedOperation, out bytesCompleted);
+            ProcessConcreteCompletedOperation((IAsyncOperation<bool>)completedOperation, out bytesCompleted);
         }
 
 
-        private void ProcessConcreteCompletedOperation(IAsyncOperation<Boolean> completedOperation, out Int64 bytesCompleted)
+        private void ProcessConcreteCompletedOperation(IAsyncOperation<bool> completedOperation, out long bytesCompleted)
         {
-            Boolean success = completedOperation.GetResults();
+            bool success = completedOperation.GetResults();
             bytesCompleted = (success ? 0 : -1);
         }
     }  // class StreamFlushAsyncResult

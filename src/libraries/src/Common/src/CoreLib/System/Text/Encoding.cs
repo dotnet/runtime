@@ -603,7 +603,7 @@ namespace System.Text
         }
 
 
-        public virtual Object Clone()
+        public virtual object Clone()
         {
             Encoding newEncoding = (Encoding)this.MemberwiseClone();
 
@@ -1241,7 +1241,7 @@ namespace System.Text
 
         private static Encoding BigEndianUTF32 => UTF32Encoding.s_bigEndianDefault;
 
-        public override bool Equals(Object value)
+        public override bool Equals(object value)
         {
             Encoding that = value as Encoding;
             if (that != null)
@@ -1325,7 +1325,7 @@ namespace System.Text
                 _encoding = encoding;
             }
             
-            public Object GetRealObject(StreamingContext context)
+            public object GetRealObject(StreamingContext context)
             {
                 throw new PlatformNotSupportedException();
             }
@@ -1390,7 +1390,7 @@ namespace System.Text
                 _encoding = encoding;
             }
 
-            public Object GetRealObject(StreamingContext context)
+            public object GetRealObject(StreamingContext context)
             {
                 throw new PlatformNotSupportedException();
             }

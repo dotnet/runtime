@@ -1807,7 +1807,7 @@ namespace System.Xml.Serialization
             {
                 ElementAccessor e1 = (ElementAccessor)o1;
                 ElementAccessor e2 = (ElementAccessor)o2;
-                return String.Compare(e1.ToString(string.Empty), e2.ToString(string.Empty), StringComparison.Ordinal);
+                return string.Compare(e1.ToString(string.Empty), e2.ToString(string.Empty), StringComparison.Ordinal);
             }
         }
 

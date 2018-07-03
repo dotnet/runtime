@@ -129,12 +129,16 @@ public class WindowsIdentityTests
     {
         using (var mutex = new Mutex())
         {
-            Assert.Throws<ArgumentException>(() =>
+            SafeAccessTokenHandle handle = null;
+            try
             {
-                WindowsIdentity.RunImpersonated(
-                    new SafeAccessTokenHandle(mutex.SafeWaitHandle.DangerousGetHandle()),
-                    () => { });
-            });
+                handle = new SafeAccessTokenHandle(mutex.SafeWaitHandle.DangerousGetHandle());
+                Assert.Throws<ArgumentException>(() => WindowsIdentity.RunImpersonated(handle, () => { }));
+            }
+            finally
+            {
+                handle?.SetHandleAsInvalid();
+            }
         }
     }
 

@@ -66,7 +66,7 @@ namespace XPathTests.FunctionalTests.CoreFunctionLibrary
         {
             var xml = "dummy.xml";
             var testExpression = @"number(""- 1"")";
-            var expected = Double.NaN;
+            var expected = double.NaN;
 
             Utils.XPathNumberTest(xml, testExpression, expected);
         }
@@ -94,7 +94,7 @@ namespace XPathTests.FunctionalTests.CoreFunctionLibrary
         {
             var xml = "dummy.xml";
             var testExpression = @"number(""test"")";
-            var expected = Double.NaN;
+            var expected = double.NaN;
 
             Utils.XPathNumberTest(xml, testExpression, expected);
         }
@@ -181,7 +181,7 @@ namespace XPathTests.FunctionalTests.CoreFunctionLibrary
             var xml = "xp004.xml";
             var startingNodePath = "/Doc/Test1";
             var testExpression = @"sum(child::*)";
-            var expected = Double.NaN;
+            var expected = double.NaN;
 
             Utils.XPathNumberTest(xml, testExpression, expected, startingNodePath: startingNodePath);
         }
@@ -422,7 +422,7 @@ namespace XPathTests.FunctionalTests.CoreFunctionLibrary
         {
             var xml = "books.xml";
             var testExpression = @"number(""//notAbook"")";
-            var expected = Double.NaN;
+            var expected = double.NaN;
 
             Utils.XPathNumberTest(xml, testExpression, expected);
         }

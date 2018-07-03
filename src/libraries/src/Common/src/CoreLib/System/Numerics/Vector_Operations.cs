@@ -22,9 +22,9 @@ namespace System.Numerics
         /// <param name="right">The second source vector.</param>
         /// <returns>The new vector with elements selected based on the mask.</returns>
         [MethodImplAttribute(MethodImplOptions.AggressiveInlining)]
-        public static Vector<Single> ConditionalSelect(Vector<int> condition, Vector<Single> left, Vector<Single> right)
+        public static Vector<float> ConditionalSelect(Vector<int> condition, Vector<float> left, Vector<float> right)
         {
-            return (Vector<Single>)Vector<Single>.ConditionalSelect((Vector<Single>)condition, left, right);
+            return (Vector<float>)Vector<float>.ConditionalSelect((Vector<float>)condition, left, right);
         }
 
         /// <summary>
@@ -75,9 +75,9 @@ namespace System.Numerics
         /// <param name="right">The second vector to compare.</param>
         /// <returns>The resultant vector.</returns>
         [MethodImplAttribute(MethodImplOptions.AggressiveInlining)]
-        public static Vector<int> Equals(Vector<Single> left, Vector<Single> right)
+        public static Vector<int> Equals(Vector<float> left, Vector<float> right)
         {
-            return (Vector<int>)Vector<Single>.Equals(left, right);
+            return (Vector<int>)Vector<float>.Equals(left, right);
         }
 
         /// <summary>
@@ -163,9 +163,9 @@ namespace System.Numerics
         /// <param name="right">The second vector to compare.</param>
         /// <returns>The resultant integral vector.</returns>
         [MethodImplAttribute(MethodImplOptions.AggressiveInlining)]
-        public static Vector<int> LessThan(Vector<Single> left, Vector<Single> right)
+        public static Vector<int> LessThan(Vector<float> left, Vector<float> right)
         {
-            return (Vector<int>)Vector<Single>.LessThan(left, right);
+            return (Vector<int>)Vector<float>.LessThan(left, right);
         }
 
         /// <summary>
@@ -256,9 +256,9 @@ namespace System.Numerics
         /// <param name="right">The second vector to compare.</param>
         /// <returns>The resultant integral vector.</returns>
         [MethodImplAttribute(MethodImplOptions.AggressiveInlining)]
-        public static Vector<int> LessThanOrEqual(Vector<Single> left, Vector<Single> right)
+        public static Vector<int> LessThanOrEqual(Vector<float> left, Vector<float> right)
         {
-            return (Vector<int>)Vector<Single>.LessThanOrEqual(left, right);
+            return (Vector<int>)Vector<float>.LessThanOrEqual(left, right);
         }
 
         /// <summary>
@@ -349,9 +349,9 @@ namespace System.Numerics
         /// <param name="right">The second vector to compare.</param>
         /// <returns>The resultant integral vector.</returns>
         [MethodImplAttribute(MethodImplOptions.AggressiveInlining)]
-        public static Vector<int> GreaterThan(Vector<Single> left, Vector<Single> right)
+        public static Vector<int> GreaterThan(Vector<float> left, Vector<float> right)
         {
-            return (Vector<int>)Vector<Single>.GreaterThan(left, right);
+            return (Vector<int>)Vector<float>.GreaterThan(left, right);
         }
 
         /// <summary>
@@ -443,9 +443,9 @@ namespace System.Numerics
         /// <param name="right">The second vector to compare.</param>
         /// <returns>The resultant integral vector.</returns>
         [MethodImplAttribute(MethodImplOptions.AggressiveInlining)]
-        public static Vector<int> GreaterThanOrEqual(Vector<Single> left, Vector<Single> right)
+        public static Vector<int> GreaterThanOrEqual(Vector<float> left, Vector<float> right)
         {
-            return (Vector<int>)Vector<Single>.GreaterThanOrEqual(left, right);
+            return (Vector<int>)Vector<float>.GreaterThanOrEqual(left, right);
         }
 
         /// <summary>
@@ -752,9 +752,9 @@ namespace System.Numerics
         /// <param name="value">The source vector</param>
         /// <returns>The reinterpreted vector.</returns>
         [MethodImplAttribute(MethodImplOptions.AggressiveInlining)]
-        public static Vector<Byte> AsVectorByte<T>(Vector<T> value) where T : struct
+        public static Vector<byte> AsVectorByte<T>(Vector<T> value) where T : struct
         {
-            return (Vector<Byte>)value;
+            return (Vector<byte>)value;
         }
 
         /// <summary>
@@ -764,9 +764,9 @@ namespace System.Numerics
         /// <returns>The reinterpreted vector.</returns>
         [CLSCompliant(false)]
         [MethodImplAttribute(MethodImplOptions.AggressiveInlining)]
-        public static Vector<SByte> AsVectorSByte<T>(Vector<T> value) where T : struct
+        public static Vector<sbyte> AsVectorSByte<T>(Vector<T> value) where T : struct
         {
-            return (Vector<SByte>)value;
+            return (Vector<sbyte>)value;
         }
 
         /// <summary>
@@ -776,9 +776,9 @@ namespace System.Numerics
         /// <returns>The reinterpreted vector.</returns>
         [CLSCompliant(false)]
         [MethodImplAttribute(MethodImplOptions.AggressiveInlining)]
-        public static Vector<UInt16> AsVectorUInt16<T>(Vector<T> value) where T : struct
+        public static Vector<ushort> AsVectorUInt16<T>(Vector<T> value) where T : struct
         {
-            return (Vector<UInt16>)value;
+            return (Vector<ushort>)value;
         }
 
         /// <summary>
@@ -787,9 +787,9 @@ namespace System.Numerics
         /// <param name="value">The source vector</param>
         /// <returns>The reinterpreted vector.</returns>
         [MethodImplAttribute(MethodImplOptions.AggressiveInlining)]
-        public static Vector<Int16> AsVectorInt16<T>(Vector<T> value) where T : struct
+        public static Vector<short> AsVectorInt16<T>(Vector<T> value) where T : struct
         {
-            return (Vector<Int16>)value;
+            return (Vector<short>)value;
         }
 
         /// <summary>
@@ -799,9 +799,9 @@ namespace System.Numerics
         /// <returns>The reinterpreted vector.</returns>
         [CLSCompliant(false)]
         [MethodImplAttribute(MethodImplOptions.AggressiveInlining)]
-        public static Vector<UInt32> AsVectorUInt32<T>(Vector<T> value) where T : struct
+        public static Vector<uint> AsVectorUInt32<T>(Vector<T> value) where T : struct
         {
-            return (Vector<UInt32>)value;
+            return (Vector<uint>)value;
         }
 
         /// <summary>
@@ -810,9 +810,9 @@ namespace System.Numerics
         /// <param name="value">The source vector</param>
         /// <returns>The reinterpreted vector.</returns>
         [MethodImplAttribute(MethodImplOptions.AggressiveInlining)]
-        public static Vector<Int32> AsVectorInt32<T>(Vector<T> value) where T : struct
+        public static Vector<int> AsVectorInt32<T>(Vector<T> value) where T : struct
         {
-            return (Vector<Int32>)value;
+            return (Vector<int>)value;
         }
 
         /// <summary>
@@ -822,9 +822,9 @@ namespace System.Numerics
         /// <returns>The reinterpreted vector.</returns>
         [CLSCompliant(false)]
         [MethodImplAttribute(MethodImplOptions.AggressiveInlining)]
-        public static Vector<UInt64> AsVectorUInt64<T>(Vector<T> value) where T : struct
+        public static Vector<ulong> AsVectorUInt64<T>(Vector<T> value) where T : struct
         {
-            return (Vector<UInt64>)value;
+            return (Vector<ulong>)value;
         }
 
 
@@ -834,9 +834,9 @@ namespace System.Numerics
         /// <param name="value">The source vector</param>
         /// <returns>The reinterpreted vector.</returns>
         [MethodImplAttribute(MethodImplOptions.AggressiveInlining)]
-        public static Vector<Int64> AsVectorInt64<T>(Vector<T> value) where T : struct
+        public static Vector<long> AsVectorInt64<T>(Vector<T> value) where T : struct
         {
-            return (Vector<Int64>)value;
+            return (Vector<long>)value;
         }
 
         /// <summary>
@@ -845,9 +845,9 @@ namespace System.Numerics
         /// <param name="value">The source vector</param>
         /// <returns>The reinterpreted vector.</returns>
         [MethodImplAttribute(MethodImplOptions.AggressiveInlining)]
-        public static Vector<Single> AsVectorSingle<T>(Vector<T> value) where T : struct
+        public static Vector<float> AsVectorSingle<T>(Vector<T> value) where T : struct
         {
-            return (Vector<Single>)value;
+            return (Vector<float>)value;
         }
 
         /// <summary>
@@ -856,9 +856,9 @@ namespace System.Numerics
         /// <param name="value">The source vector</param>
         /// <returns>The reinterpreted vector.</returns>
         [MethodImplAttribute(MethodImplOptions.AggressiveInlining)]
-        public static Vector<Double> AsVectorDouble<T>(Vector<T> value) where T : struct
+        public static Vector<double> AsVectorDouble<T>(Vector<T> value) where T : struct
         {
-            return (Vector<Double>)value;
+            return (Vector<double>)value;
         }
         #endregion Conversion Methods
     }

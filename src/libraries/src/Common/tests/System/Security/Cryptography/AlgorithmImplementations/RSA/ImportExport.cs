@@ -67,7 +67,7 @@ namespace System.Security.Cryptography.Rsa.Tests
 
             // DP is the most likely to fail, the rest just otherwise ensure that Export
             // isn't losing data.
-            AssertKeyEquals(ref diminishedDPParameters, ref exported);
+            AssertKeyEquals(diminishedDPParameters, exported);
         }
 
         [ActiveIssue(20214, TargetFrameworkMonikers.NetFramework)]
@@ -96,7 +96,7 @@ namespace System.Security.Cryptography.Rsa.Tests
 
                 exported = rsa.ExportParameters(true);
 
-                AssertKeyEquals(ref imported, ref exported);
+                AssertKeyEquals(imported, exported);
             }
         }
 
@@ -122,7 +122,7 @@ namespace System.Security.Cryptography.Rsa.Tests
 
             // Exponent is the most likely to fail, the rest just otherwise ensure that Export
             // isn't losing data.
-            AssertKeyEquals(ref unusualExponentParameters, ref exported);
+            AssertKeyEquals(unusualExponentParameters, exported);
         }
 
         [ActiveIssue(20214, TargetFrameworkMonikers.NetFramework)]
@@ -140,7 +140,7 @@ namespace System.Security.Cryptography.Rsa.Tests
                 exportedPublic = rsa.ExportParameters(false);
             }
 
-            AssertKeyEquals(ref imported, ref exported);
+            AssertKeyEquals(imported, exported);
 
             Assert.Equal(exportedPublic.Modulus, imported.Modulus);
             Assert.Equal(exportedPublic.Exponent, imported.Exponent);
@@ -174,7 +174,7 @@ namespace System.Security.Cryptography.Rsa.Tests
                 Assert.Equal(imported.Modulus.Length * 8, rsa.KeySize);
 
                 exported = rsa.ExportParameters(true);
-                AssertKeyEquals(ref imported, ref exported);
+                AssertKeyEquals(imported, exported);
             }
         }
 
@@ -213,18 +213,18 @@ namespace System.Security.Cryptography.Rsa.Tests
                 RSAParameters exportedPrivate3 = rsa.ExportParameters(true);
                 RSAParameters exportedPublic3 = rsa.ExportParameters(false);
 
-                AssertKeyEquals(ref imported, ref exportedPrivate);
+                AssertKeyEquals(imported, exportedPrivate);
 
                 Assert.Equal(imported.Modulus, exportedPublic.Modulus);
                 Assert.Equal(imported.Exponent, exportedPublic.Exponent);
                 Assert.Null(exportedPublic.D);
                 ValidateParameters(ref exportedPublic);
 
-                AssertKeyEquals(ref exportedPrivate, ref exportedPrivate2);
-                AssertKeyEquals(ref exportedPrivate, ref exportedPrivate3);
+                AssertKeyEquals(exportedPrivate, exportedPrivate2);
+                AssertKeyEquals(exportedPrivate, exportedPrivate3);
 
-                AssertKeyEquals(ref exportedPublic, ref exportedPublic2);
-                AssertKeyEquals(ref exportedPublic, ref exportedPublic3);
+                AssertKeyEquals(exportedPublic, exportedPublic2);
+                AssertKeyEquals(exportedPublic, exportedPublic3);
             }
         }
 
@@ -295,7 +295,7 @@ namespace System.Security.Cryptography.Rsa.Tests
             }
         }
 
-        internal static void AssertKeyEquals(ref RSAParameters expected, ref RSAParameters actual)
+        internal static void AssertKeyEquals(in RSAParameters expected, in RSAParameters actual)
         {
             Assert.Equal(expected.Modulus, actual.Modulus);
             Assert.Equal(expected.Exponent, actual.Exponent);
@@ -318,7 +318,7 @@ namespace System.Security.Cryptography.Rsa.Tests
                 // If it didn't, we'll test that the value is at least legal.
                 if (!expected.D.SequenceEqual(actual.D))
                 {
-                    VerifyDValue(ref actual);
+                    VerifyDValue(actual);
                 }
             }
         }
@@ -352,7 +352,7 @@ namespace System.Security.Cryptography.Rsa.Tests
             }
         }
 
-        private static void VerifyDValue(ref RSAParameters rsaParams)
+        private static void VerifyDValue(in RSAParameters rsaParams)
         {
             if (rsaParams.P == null)
             {

@@ -1,4 +1,4 @@
-﻿// Licensed to the .NET Foundation under one or more agreements.
+// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
@@ -571,7 +571,7 @@ namespace System.Data.Common
         internal const int DefaultCommandTimeout = 30;
 
         // security issue, don't rely upon static public readonly values - AS/URT 109635
-        internal static readonly String StrEmpty = ""; // String.Empty
+        internal static readonly string StrEmpty = ""; // String.Empty
 
         internal static readonly IntPtr PtrZero = new IntPtr(0); // IntPtr.Zero
         internal static readonly int PtrSize = IntPtr.Size;
@@ -663,7 +663,7 @@ namespace System.Data.Common
         }
 
         [ReliabilityContract(Consistency.WillNotCorruptState, Cer.MayFail)]
-        internal static IntPtr IntPtrOffset(IntPtr pbase, Int32 offset)
+        internal static IntPtr IntPtrOffset(IntPtr pbase, int offset)
         {
             if (4 == ADP.PtrSize)
             {

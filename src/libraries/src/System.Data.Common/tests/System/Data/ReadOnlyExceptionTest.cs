@@ -38,7 +38,7 @@ namespace System.Data.Tests
             DataTable tbl = DataProvider.CreateParentDataTable();
             tbl.Columns[0].ReadOnly = true;
 
-            //chaeck for int column
+            //check for int column
             // ReadOnlyException - EndEdit
             //tbl.Rows[0].BeginEdit();   // this throw an exception but according to MSDN it shouldn't !!!
             //tbl.Rows[0][0] = 99 ;
@@ -53,7 +53,7 @@ namespace System.Data.Tests
                 tbl.Rows[0].ItemArray = new object[] { 99, "value", "value" };
             });
 
-            //chaeck for string column
+            //check for string column
             tbl.Columns[0].ReadOnly = false;
             tbl.Columns[1].ReadOnly = true;
 

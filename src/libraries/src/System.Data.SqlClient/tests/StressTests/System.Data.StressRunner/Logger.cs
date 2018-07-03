@@ -35,7 +35,7 @@ namespace DPStressHarness
         {
             Debug.Assert(_runElem != null);
 
-            if (metricValue.Equals(String.Empty))
+            if (metricValue.Equals(string.Empty))
                 return;
 
             AddRunMetricElement(_runElem, metricName, metricValue);
@@ -58,7 +58,7 @@ namespace DPStressHarness
             Debug.Assert(_runElem != null);
             Debug.Assert(_testElem != null);
 
-            if (metricValue.Equals(String.Empty))
+            if (metricValue.Equals(string.Empty))
                 return;
 
             AddTestMetricElement(_testElem, metricName, metricValue, metricUnits, isHigherBetter);

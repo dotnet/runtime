@@ -390,7 +390,7 @@ namespace Microsoft.XmlSerializer.Generator
             return arg.Equals(formal, StringComparison.InvariantCultureIgnoreCase);
         }
 
-        public bool ShortNameArgumentMatch(string arg, string shortName)
+        private bool ShortNameArgumentMatch(string arg, string shortName)
         {
             // Short name format, eg: -a 
             if (arg.Length < 2 || arg[0] != '-')
@@ -448,7 +448,7 @@ namespace Microsoft.XmlSerializer.Generator
         private void WriteHeader()
         {
             // do not localize Copyright header
-            Console.WriteLine(String.Format(CultureInfo.CurrentCulture, "[Microsoft (R) .NET Core Xml Serialization Generation Utility, Version {0}]", ThisAssembly.InformationalVersion));
+            Console.WriteLine(string.Format(CultureInfo.CurrentCulture, "[Microsoft (R) .NET Core Xml Serialization Generation Utility, Version {0}]", ThisAssembly.InformationalVersion));
             Console.WriteLine("Copyright (C) Microsoft Corporation. All rights reserved.");
         }
 

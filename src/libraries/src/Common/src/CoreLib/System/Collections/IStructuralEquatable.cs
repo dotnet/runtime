@@ -6,7 +6,7 @@ namespace System.Collections
 {
     public interface IStructuralEquatable
     {
-        Boolean Equals(Object other, IEqualityComparer comparer);
+        bool Equals(object other, IEqualityComparer comparer);
         int GetHashCode(IEqualityComparer comparer);
     }
 }

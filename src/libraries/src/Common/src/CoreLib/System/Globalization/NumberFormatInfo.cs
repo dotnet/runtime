@@ -237,7 +237,7 @@ namespace System.Globalization
             }
         }
 
-        public Object Clone()
+        public object Clone()
         {
             NumberFormatInfo n = (NumberFormatInfo)MemberwiseClone();
             n.isReadOnly = false;
@@ -325,7 +325,7 @@ namespace System.Globalization
                 }
                 VerifyWritable();
 
-                Int32[] inputSizes = (Int32[])value.Clone();
+                int[] inputSizes = (int[])value.Clone();
                 CheckGroupSize(nameof(CurrencyGroupSizes), inputSizes);
                 currencyGroupSizes = inputSizes;
             }
@@ -348,7 +348,7 @@ namespace System.Globalization
                 }
                 VerifyWritable();
 
-                Int32[] inputSizes = (Int32[])value.Clone();
+                int[] inputSizes = (int[])value.Clone();
                 CheckGroupSize(nameof(NumberGroupSizes), inputSizes);
                 numberGroupSizes = inputSizes;
             }
@@ -369,7 +369,7 @@ namespace System.Globalization
                         SR.ArgumentNull_Obj);
                 }
                 VerifyWritable();
-                Int32[] inputSizes = (Int32[])value.Clone();
+                int[] inputSizes = (int[])value.Clone();
                 CheckGroupSize(nameof(PercentGroupSizes), inputSizes);
                 percentGroupSizes = inputSizes;
             }
@@ -774,7 +774,7 @@ namespace System.Globalization
             }
         }
 
-        public Object GetFormat(Type formatType)
+        public object GetFormat(Type formatType)
         {
             return formatType == typeof(NumberFormatInfo) ? this : null;
         }

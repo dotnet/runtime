@@ -83,7 +83,7 @@ namespace System.Tests
             VerifyStillAlive(w);
             object v1;
             Assert.True(w.TryGetTarget(out v1));
-            Assert.True(Object.ReferenceEquals(v1, o1));
+            Assert.True(object.ReferenceEquals(v1, o1));
             GC.KeepAlive(o1);
 
             object o2 = new char[100];
@@ -91,7 +91,7 @@ namespace System.Tests
             VerifyStillAlive(w);
             object v2;
             Assert.True(w.TryGetTarget(out v2));
-            Assert.True(Object.ReferenceEquals(v2, o2));
+            Assert.True(object.ReferenceEquals(v2, o2));
             GC.KeepAlive(o2);
 
             Latch l = new Latch();

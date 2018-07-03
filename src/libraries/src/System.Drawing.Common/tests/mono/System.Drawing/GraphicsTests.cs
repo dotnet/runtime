@@ -82,7 +82,7 @@ namespace MonoTests.System.Drawing
         {
             int x, y;
             if (!IsEmptyBitmap(bitmap, out x, out y))
-                Assert.True(false, String.Format("Position {0},{1}", x, y));
+                Assert.True(false, string.Format("Position {0},{1}", x, y));
         }
 
         private void CheckForNonEmptyBitmap(Bitmap bitmap)
@@ -1184,7 +1184,7 @@ namespace MonoTests.System.Drawing
         [ConditionalFact(Helpers.GdiplusIsAvailable)]
         public void BeginContainer_GraphicsUnit_Bad()
         {
-            Assert.Throws<ArgumentException>(() => BeginContainer_GraphicsUnit((GraphicsUnit)Int32.MinValue));
+            Assert.Throws<ArgumentException>(() => BeginContainer_GraphicsUnit((GraphicsUnit)int.MinValue));
         }
 
         [ConditionalFact(Helpers.GdiplusIsAvailable)]
@@ -1359,7 +1359,7 @@ namespace MonoTests.System.Drawing
         public void FillDrawRectangle_Width_Default()
         {
             // default pen size
-            using (Bitmap bitmap = FillDrawRectangle(Single.MinValue))
+            using (Bitmap bitmap = FillDrawRectangle(float.MinValue))
             {
                 // NW
                 Assert.Equal(0xFFFF0000, (uint)bitmap.GetPixel(4, 4).ToArgb());
@@ -1530,7 +1530,7 @@ namespace MonoTests.System.Drawing
         public void DrawFillRectangle_Width_Default()
         {
             // default pen size
-            using (Bitmap bitmap = DrawFillRectangle(Single.MinValue))
+            using (Bitmap bitmap = DrawFillRectangle(float.MinValue))
             {
                 // NW - no blue border
                 Assert.Equal(0xFFFF0000, (uint)bitmap.GetPixel(4, 4).ToArgb());
@@ -1681,7 +1681,7 @@ namespace MonoTests.System.Drawing
         public void DrawLines_Width_Default()
         {
             // default pen size
-            using (Bitmap bitmap = DrawLines(Single.MinValue))
+            using (Bitmap bitmap = DrawLines(float.MinValue))
             {
                 // start
                 Assert.Equal(0xFFFF0000, (uint)bitmap.GetPixel(4, 4).ToArgb());
@@ -1719,12 +1719,12 @@ namespace MonoTests.System.Drawing
                 {
                     SizeF size = g.MeasureString(null, font);
                     Assert.True(size.IsEmpty);
-                    size = g.MeasureString(String.Empty, font);
+                    size = g.MeasureString(string.Empty, font);
                     Assert.True(size.IsEmpty);
                     // null font
                     size = g.MeasureString(null, null);
                     Assert.True(size.IsEmpty);
-                    size = g.MeasureString(String.Empty, null);
+                    size = g.MeasureString(string.Empty, null);
                     Assert.True(size.IsEmpty);
                 }
             }
@@ -1749,7 +1749,7 @@ namespace MonoTests.System.Drawing
                 SizeF size = g.MeasureString("a", font, SizeF.Empty);
                 Assert.False(size.IsEmpty);
 
-                size = g.MeasureString(String.Empty, font, SizeF.Empty);
+                size = g.MeasureString(string.Empty, font, SizeF.Empty);
                 Assert.True(size.IsEmpty);
             }
         }
@@ -1760,8 +1760,8 @@ namespace MonoTests.System.Drawing
             using (Graphics g = Graphics.FromImage(bitmap))
             {
                 SizeF size0 = g.MeasureString(s, font, 0);
-                SizeF sizeN = g.MeasureString(s, font, Int32.MinValue);
-                SizeF sizeP = g.MeasureString(s, font, Int32.MaxValue);
+                SizeF sizeN = g.MeasureString(s, font, int.MinValue);
+                SizeF sizeP = g.MeasureString(s, font, int.MaxValue);
                 Assert.Equal(size0, sizeN);
                 Assert.Equal(size0, sizeP);
             }
@@ -1789,13 +1789,13 @@ namespace MonoTests.System.Drawing
             using (Graphics g = Graphics.FromImage(bitmap))
             {
                 string_format.Alignment = StringAlignment.Near;
-                SizeF near = g.MeasureString(text, font, Int32.MaxValue, string_format);
+                SizeF near = g.MeasureString(text, font, int.MaxValue, string_format);
 
                 string_format.Alignment = StringAlignment.Center;
-                SizeF center = g.MeasureString(text, font, Int32.MaxValue, string_format);
+                SizeF center = g.MeasureString(text, font, int.MaxValue, string_format);
 
                 string_format.Alignment = StringAlignment.Far;
-                SizeF far = g.MeasureString(text, font, Int32.MaxValue, string_format);
+                SizeF far = g.MeasureString(text, font, int.MaxValue, string_format);
 
                 Assert.Equal(near.Width, center.Width, 1);
                 Assert.Equal(near.Height, center.Height, 1);
@@ -1816,13 +1816,13 @@ namespace MonoTests.System.Drawing
             using (Graphics g = Graphics.FromImage(bitmap))
             {
                 string_format.Alignment = StringAlignment.Near;
-                SizeF near = g.MeasureString(text, font, Int32.MaxValue, string_format);
+                SizeF near = g.MeasureString(text, font, int.MaxValue, string_format);
 
                 string_format.Alignment = StringAlignment.Center;
-                SizeF center = g.MeasureString(text, font, Int32.MaxValue, string_format);
+                SizeF center = g.MeasureString(text, font, int.MaxValue, string_format);
 
                 string_format.Alignment = StringAlignment.Far;
-                SizeF far = g.MeasureString(text, font, Int32.MaxValue, string_format);
+                SizeF far = g.MeasureString(text, font, int.MaxValue, string_format);
 
                 Assert.Equal(near.Width, center.Width, 0);
                 Assert.Equal(near.Height, center.Height, 0);
@@ -1842,13 +1842,13 @@ namespace MonoTests.System.Drawing
             using (Graphics g = Graphics.FromImage(bitmap))
             {
                 string_format.LineAlignment = StringAlignment.Near;
-                SizeF near = g.MeasureString(text, font, Int32.MaxValue, string_format);
+                SizeF near = g.MeasureString(text, font, int.MaxValue, string_format);
 
                 string_format.LineAlignment = StringAlignment.Center;
-                SizeF center = g.MeasureString(text, font, Int32.MaxValue, string_format);
+                SizeF center = g.MeasureString(text, font, int.MaxValue, string_format);
 
                 string_format.LineAlignment = StringAlignment.Far;
-                SizeF far = g.MeasureString(text, font, Int32.MaxValue, string_format);
+                SizeF far = g.MeasureString(text, font, int.MaxValue, string_format);
 
                 Assert.Equal(near.Width, center.Width, 1);
                 Assert.Equal(near.Height, center.Height, 1);
@@ -1869,13 +1869,13 @@ namespace MonoTests.System.Drawing
             using (Graphics g = Graphics.FromImage(bitmap))
             {
                 string_format.LineAlignment = StringAlignment.Near;
-                SizeF near = g.MeasureString(text, font, Int32.MaxValue, string_format);
+                SizeF near = g.MeasureString(text, font, int.MaxValue, string_format);
 
                 string_format.LineAlignment = StringAlignment.Center;
-                SizeF center = g.MeasureString(text, font, Int32.MaxValue, string_format);
+                SizeF center = g.MeasureString(text, font, int.MaxValue, string_format);
 
                 string_format.LineAlignment = StringAlignment.Far;
-                SizeF far = g.MeasureString(text, font, Int32.MaxValue, string_format);
+                SizeF far = g.MeasureString(text, font, int.MaxValue, string_format);
 
                 Assert.Equal(near.Width, center.Width, 1);
                 Assert.Equal(near.Height, center.Height, 1);
@@ -1931,7 +1931,7 @@ namespace MonoTests.System.Drawing
             using (Bitmap bitmap = new Bitmap(20, 20))
             using (Graphics g = Graphics.FromImage(bitmap))
             {
-                string s = String.Empty;
+                string s = string.Empty;
                 SizeF size = g.MeasureString(s, font);
                 Assert.Equal(0, size.Height);
                 Assert.Equal(0, size.Width);
@@ -1979,12 +1979,12 @@ namespace MonoTests.System.Drawing
             {
                 Region[] regions = g.MeasureCharacterRanges(null, font, new RectangleF(), null);
                 Assert.Equal(0, regions.Length);
-                regions = g.MeasureCharacterRanges(String.Empty, font, new RectangleF(), null);
+                regions = g.MeasureCharacterRanges(string.Empty, font, new RectangleF(), null);
                 Assert.Equal(0, regions.Length);
                 // null font is ok with null or empty string
                 regions = g.MeasureCharacterRanges(null, null, new RectangleF(), null);
                 Assert.Equal(0, regions.Length);
-                regions = g.MeasureCharacterRanges(String.Empty, null, new RectangleF(), null);
+                regions = g.MeasureCharacterRanges(string.Empty, null, new RectangleF(), null);
                 Assert.Equal(0, regions.Length);
             }
         }
@@ -2151,7 +2151,7 @@ namespace MonoTests.System.Drawing
                     Assert.Equal(sb.Height, zb.Height);
                 }
 
-                Region[] max = Measure(gfx, new RectangleF(0, 0, Single.MaxValue, Single.MaxValue));
+                Region[] max = Measure(gfx, new RectangleF(0, 0, float.MaxValue, float.MaxValue));
                 Assert.Equal(3, max.Length);
                 for (int i = 0; i < 3; i++)
                 {
@@ -2170,7 +2170,7 @@ namespace MonoTests.System.Drawing
         {
             using (Graphics gfx = Graphics.FromImage(new Bitmap(1, 1)))
             {
-                Region[] min = Measure(gfx, new RectangleF(0, 0, Single.MinValue, Single.MinValue));
+                Region[] min = Measure(gfx, new RectangleF(0, 0, float.MinValue, float.MinValue));
                 Assert.Equal(3, min.Length);
                 for (int i = 0; i < 3; i++)
                 {
@@ -2707,7 +2707,7 @@ namespace MonoTests.System.Drawing
             using (Bitmap bmp = new Bitmap(40, 40))
             using (Graphics g = Graphics.FromImage(bmp))
             {
-                Assert.Throws<ArgumentNullException>(() => g.DrawImage(null, Int32.MaxValue, Int32.MinValue));
+                Assert.Throws<ArgumentNullException>(() => g.DrawImage(null, int.MaxValue, int.MinValue));
             }
         }
 
@@ -2717,7 +2717,7 @@ namespace MonoTests.System.Drawing
             using (Bitmap bmp = new Bitmap(40, 40))
             using (Graphics g = Graphics.FromImage(bmp))
             {
-                Assert.Throws<OverflowException>(() => g.DrawImage(bmp, Int32.MaxValue, Int32.MinValue));
+                Assert.Throws<OverflowException>(() => g.DrawImage(bmp, int.MaxValue, int.MinValue));
             }
         }
 
@@ -2737,7 +2737,7 @@ namespace MonoTests.System.Drawing
             using (Bitmap bmp = new Bitmap(40, 40))
             using (Graphics g = Graphics.FromImage(bmp))
             {
-                Assert.Throws<ArgumentNullException>(() => g.DrawImage(null, Single.MaxValue, Single.MinValue));
+                Assert.Throws<ArgumentNullException>(() => g.DrawImage(null, float.MaxValue, float.MinValue));
             }
         }
 
@@ -2747,7 +2747,7 @@ namespace MonoTests.System.Drawing
             using (Bitmap bmp = new Bitmap(40, 40))
             using (Graphics g = Graphics.FromImage(bmp))
             {
-                Assert.Throws<OverflowException>(() => g.DrawImage(bmp, Single.MaxValue, Single.MinValue));
+                Assert.Throws<OverflowException>(() => g.DrawImage(bmp, float.MaxValue, float.MinValue));
             }
         }
 

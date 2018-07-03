@@ -127,7 +127,7 @@ namespace System.Data.ProviderBase
         {
             get
             {
-                return (_isInfiniteTimeout) ? Int64.MaxValue : _timerExpire;
+                return (_isInfiniteTimeout) ? long.MaxValue : _timerExpire;
             }
         }
 

@@ -39,17 +39,17 @@ namespace System.Numerics.Tests
 
             // Just basic tests
             // Large Power Of Two
-            VerifyIsPowerOfTwo((BigInteger)Int32.MaxValue + 1, true);
+            VerifyIsPowerOfTwo((BigInteger)int.MaxValue + 1, true);
 
             // Large Non Power Of Two
-            VerifyIsPowerOfTwo((BigInteger)Int32.MaxValue + 2, false);
+            VerifyIsPowerOfTwo((BigInteger)int.MaxValue + 2, false);
 
 
             // Small Power Of Two
-            VerifyIsPowerOfTwo((BigInteger)Int16.MaxValue + 1, true);
+            VerifyIsPowerOfTwo((BigInteger)short.MaxValue + 1, true);
 
             // Small Non Power Of Two
-            VerifyIsPowerOfTwo((BigInteger)Int32.MaxValue - 2, false);
+            VerifyIsPowerOfTwo((BigInteger)int.MaxValue - 2, false);
 
             // Zero Case, 1, -1
             // Zero

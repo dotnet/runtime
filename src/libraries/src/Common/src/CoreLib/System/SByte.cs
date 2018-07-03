@@ -12,9 +12,9 @@ namespace System
     [Serializable]
     [CLSCompliant(false)]    [StructLayout(LayoutKind.Sequential)]
     [TypeForwardedFrom("mscorlib, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089")]
-    public struct SByte : IComparable, IConvertible, IFormattable, IComparable<SByte>, IEquatable<SByte>, ISpanFormattable
+    public readonly struct SByte : IComparable, IConvertible, IFormattable, IComparable<sbyte>, IEquatable<sbyte>, ISpanFormattable
     {
-        private sbyte m_value; // Do not rename (binary serialization)
+        private readonly sbyte m_value; // Do not rename (binary serialization)
 
         // The maximum value that a Byte may represent: 127.
         public const sbyte MaxValue = (sbyte)0x7F;
@@ -29,36 +29,36 @@ namespace System
         // null is considered to be less than any instance.
         // If object is not of type SByte, this method throws an ArgumentException.
         // 
-        public int CompareTo(Object obj)
+        public int CompareTo(object obj)
         {
             if (obj == null)
             {
                 return 1;
             }
-            if (!(obj is SByte))
+            if (!(obj is sbyte))
             {
                 throw new ArgumentException(SR.Arg_MustBeSByte);
             }
-            return m_value - ((SByte)obj).m_value;
+            return m_value - ((sbyte)obj).m_value;
         }
 
-        public int CompareTo(SByte value)
+        public int CompareTo(sbyte value)
         {
             return m_value - value;
         }
 
         // Determines whether two Byte objects are equal.
-        public override bool Equals(Object obj)
+        public override bool Equals(object obj)
         {
-            if (!(obj is SByte))
+            if (!(obj is sbyte))
             {
                 return false;
             }
-            return m_value == ((SByte)obj).m_value;
+            return m_value == ((sbyte)obj).m_value;
         }
 
         [NonVersionable]
-        public bool Equals(SByte obj)
+        public bool Equals(sbyte obj)
         {
             return m_value == obj;
         }
@@ -71,22 +71,22 @@ namespace System
 
 
         // Provides a string representation of a byte.
-        public override String ToString()
+        public override string ToString()
         {
             return Number.FormatInt32(m_value, null, null);
         }
 
-        public String ToString(IFormatProvider provider)
+        public string ToString(IFormatProvider provider)
         {
             return Number.FormatInt32(m_value, null, provider);
         }
 
-        public String ToString(String format)
+        public string ToString(string format)
         {
             return ToString(format, null);
         }
 
-        public String ToString(String format, IFormatProvider provider)
+        public string ToString(string format, IFormatProvider provider)
         {
             if (m_value < 0 && format != null && format.Length > 0 && (format[0] == 'X' || format[0] == 'x'))
             {
@@ -107,14 +107,14 @@ namespace System
         }
 
         [CLSCompliant(false)]
-        public static sbyte Parse(String s)
+        public static sbyte Parse(string s)
         {
             if (s == null) ThrowHelper.ThrowArgumentNullException(ExceptionArgument.s);
             return Parse((ReadOnlySpan<char>)s, NumberStyles.Integer, NumberFormatInfo.CurrentInfo);
         }
 
         [CLSCompliant(false)]
-        public static sbyte Parse(String s, NumberStyles style)
+        public static sbyte Parse(string s, NumberStyles style)
         {
             NumberFormatInfo.ValidateParseStyleInteger(style);
             if (s == null) ThrowHelper.ThrowArgumentNullException(ExceptionArgument.s);
@@ -122,7 +122,7 @@ namespace System
         }
 
         [CLSCompliant(false)]
-        public static sbyte Parse(String s, IFormatProvider provider)
+        public static sbyte Parse(string s, IFormatProvider provider)
         {
             if (s == null) ThrowHelper.ThrowArgumentNullException(ExceptionArgument.s);
             return Parse((ReadOnlySpan<char>)s, NumberStyles.Integer, NumberFormatInfo.GetInstance(provider));
@@ -133,7 +133,7 @@ namespace System
         // NumberFormatInfo is assumed.
         // 
         [CLSCompliant(false)]
-        public static sbyte Parse(String s, NumberStyles style, IFormatProvider provider)
+        public static sbyte Parse(string s, NumberStyles style, IFormatProvider provider)
         {
             NumberFormatInfo.ValidateParseStyleInteger(style);
             if (s == null) ThrowHelper.ThrowArgumentNullException(ExceptionArgument.s);
@@ -147,7 +147,7 @@ namespace System
             return Parse(s, style, NumberFormatInfo.GetInstance(provider));
         }
 
-        private static sbyte Parse(String s, NumberStyles style, NumberFormatInfo info)
+        private static sbyte Parse(string s, NumberStyles style, NumberFormatInfo info)
         {
             if (s == null) ThrowHelper.ThrowArgumentNullException(ExceptionArgument.s);
             return Parse((ReadOnlySpan<char>)s, style, info);
@@ -167,7 +167,7 @@ namespace System
 
             if ((style & NumberStyles.AllowHexSpecifier) != 0)
             { // We are parsing a hexadecimal number
-                if ((i < 0) || i > Byte.MaxValue)
+                if ((i < 0) || i > byte.MaxValue)
                 {
                     throw new OverflowException(SR.Overflow_SByte);
                 }
@@ -179,7 +179,7 @@ namespace System
         }
 
         [CLSCompliant(false)]
-        public static bool TryParse(String s, out SByte result)
+        public static bool TryParse(string s, out sbyte result)
         {
             if (s == null)
             {
@@ -197,7 +197,7 @@ namespace System
         }
 
         [CLSCompliant(false)]
-        public static bool TryParse(String s, NumberStyles style, IFormatProvider provider, out SByte result)
+        public static bool TryParse(string s, NumberStyles style, IFormatProvider provider, out sbyte result)
         {
             NumberFormatInfo.ValidateParseStyleInteger(style);
 
@@ -217,7 +217,7 @@ namespace System
             return TryParse(s, style, NumberFormatInfo.GetInstance(provider), out result);
         }
 
-        private static bool TryParse(ReadOnlySpan<char> s, NumberStyles style, NumberFormatInfo info, out SByte result)
+        private static bool TryParse(ReadOnlySpan<char> s, NumberStyles style, NumberFormatInfo info, out sbyte result)
         {
             result = 0;
             int i;
@@ -228,7 +228,7 @@ namespace System
 
             if ((style & NumberStyles.AllowHexSpecifier) != 0)
             { // We are parsing a hexadecimal number
-                if ((i < 0) || i > Byte.MaxValue)
+                if ((i < 0) || i > byte.MaxValue)
                 {
                     return false;
                 }
@@ -314,7 +314,7 @@ namespace System
             return Convert.ToDouble(m_value);
         }
 
-        Decimal IConvertible.ToDecimal(IFormatProvider provider)
+        decimal IConvertible.ToDecimal(IFormatProvider provider)
         {
             return Convert.ToDecimal(m_value);
         }
@@ -324,7 +324,7 @@ namespace System
             throw new InvalidCastException(SR.Format(SR.InvalidCast_FromTo, "SByte", "DateTime"));
         }
 
-        Object IConvertible.ToType(Type type, IFormatProvider provider)
+        object IConvertible.ToType(Type type, IFormatProvider provider)
         {
             return Convert.DefaultToType((IConvertible)this, type, provider);
         }

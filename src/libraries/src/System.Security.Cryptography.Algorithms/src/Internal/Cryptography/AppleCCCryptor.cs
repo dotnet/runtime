@@ -56,7 +56,7 @@ namespace Internal.Cryptography
         {
             Debug.Assert(input != null, "Expected valid input, got null");
             Debug.Assert(inputOffset >= 0, $"Expected non-negative inputOffset, got {inputOffset}");
-            Debug.Assert(count > 0, $"Expected positive count, got {count}");
+            Debug.Assert(count >= 0, $"Expected non-negative count, got {count}");
             Debug.Assert((count % BlockSizeInBytes) == 0, $"Expected count aligned to block size {BlockSizeInBytes}, got {count}");
             Debug.Assert(input.Length - inputOffset >= count, $"Expected valid input length/offset/count triplet, got {input.Length}/{inputOffset}/{count}");
 

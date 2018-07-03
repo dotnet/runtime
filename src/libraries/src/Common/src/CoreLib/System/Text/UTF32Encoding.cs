@@ -125,7 +125,7 @@ namespace System.Text
         // EncodingNLS, UTF7Encoding, UTF8Encoding, UTF32Encoding, ASCIIEncoding, UnicodeEncoding
         // parent method is safe
 
-        public override unsafe int GetByteCount(String s)
+        public override unsafe int GetByteCount(string s)
         {
             // Validate input
             if (s==null)
@@ -158,7 +158,7 @@ namespace System.Text
         // So if you fix this, fix the others.  Currently those include:
         // EncodingNLS, UTF7Encoding, UTF8Encoding, UTF32Encoding, ASCIIEncoding, UnicodeEncoding
 
-        public override unsafe int GetBytes(String s, int charIndex, int charCount,
+        public override unsafe int GetBytes(string s, int charIndex, int charCount,
                                               byte[] bytes, int byteIndex)
         {
             if (s == null || bytes == null)
@@ -417,7 +417,7 @@ namespace System.Text
                     //
                     // In previous char, we encounter a high surrogate, so we are expecting a low surrogate here.
                     //
-                    if (Char.IsLowSurrogate(ch))
+                    if (char.IsLowSurrogate(ch))
                     {
                         // They're all legal
                         highSurrogate = '\0';
@@ -447,7 +447,7 @@ namespace System.Text
                 }
 
                 // Do we have another high surrogate?
-                if (Char.IsHighSurrogate(ch))
+                if (char.IsHighSurrogate(ch))
                 {
                     //
                     // We'll have a high surrogate to check next time.
@@ -457,7 +457,7 @@ namespace System.Text
                 }
 
                 // Check for illegal characters
-                if (Char.IsLowSurrogate(ch))
+                if (char.IsLowSurrogate(ch))
                 {
                     // We have a leading low surrogate, do the fallback
                     charsForFallback = chars;
@@ -552,7 +552,7 @@ namespace System.Text
                     //
                     // In previous char, we encountered a high surrogate, so we are expecting a low surrogate here.
                     //
-                    if (Char.IsLowSurrogate(ch))
+                    if (char.IsLowSurrogate(ch))
                     {
                         // Is it a legal one?
                         uint iTemp = GetSurrogate(highSurrogate, ch);
@@ -616,7 +616,7 @@ namespace System.Text
                 }
 
                 // Do we have another high surrogate?, if so remember it
-                if (Char.IsHighSurrogate(ch))
+                if (char.IsHighSurrogate(ch))
                 {
                     //
                     // We'll have a high surrogate to check next time.
@@ -626,7 +626,7 @@ namespace System.Text
                 }
 
                 // Check for illegal characters (low surrogate)
-                if (Char.IsLowSurrogate(ch))
+                if (char.IsLowSurrogate(ch))
                 {
                     // We have a leading low surrogate, do the fallback
                     charsForFallback = chars;
@@ -1159,7 +1159,7 @@ namespace System.Text
             _emitUTF32ByteOrderMark ? (_bigEndian ? s_bigEndianPreamble : s_littleEndianPreamble) :
             Array.Empty<byte>();
 
-        public override bool Equals(Object value)
+        public override bool Equals(object value)
         {
             UTF32Encoding that = value as UTF32Encoding;
             if (that != null)

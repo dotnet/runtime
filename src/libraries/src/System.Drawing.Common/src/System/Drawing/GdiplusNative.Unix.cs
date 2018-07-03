@@ -249,15 +249,9 @@ namespace System.Drawing
                 GdipIsVisiblePathPointI_ptr = FunctionWrapper.Load<GdipIsVisiblePathPointI_delegate>(s_gdipModule, "GdipIsVisiblePathPointI", LibraryName);
                 GdipIsOutlineVisiblePathPoint_ptr = FunctionWrapper.Load<GdipIsOutlineVisiblePathPoint_delegate>(s_gdipModule, "GdipIsOutlineVisiblePathPoint", LibraryName);
                 GdipIsOutlineVisiblePathPointI_ptr = FunctionWrapper.Load<GdipIsOutlineVisiblePathPointI_delegate>(s_gdipModule, "GdipIsOutlineVisiblePathPointI", LibraryName);
-                GdipCreateFont_ptr = FunctionWrapper.Load<GdipCreateFont_delegate>(s_gdipModule, "GdipCreateFont", LibraryName);
-                GdipDeleteFont_ptr = FunctionWrapper.Load<GdipDeleteFont_delegate>(s_gdipModule, "GdipDeleteFont", LibraryName);
-                GdipGetLogFont_ptr = FunctionWrapper.Load<GdipGetLogFont_delegate>(s_gdipModule, "GdipGetLogFontW", LibraryName);
                 GdipCreateFontFromDC_ptr = FunctionWrapper.Load<GdipCreateFontFromDC_delegate>(s_gdipModule, "GdipCreateFontFromDC", LibraryName);
                 GdipCreateFontFromLogfont_ptr = FunctionWrapper.Load<GdipCreateFontFromLogfont_delegate>(s_gdipModule, "GdipCreateFontFromLogfontW", LibraryName);
                 GdipCreateFontFromHfont_ptr = FunctionWrapper.Load<GdipCreateFontFromHfont_delegate>(s_gdipModule, "GdipCreateFontFromHfontA", LibraryName);
-                GdipGetFontSize_ptr = FunctionWrapper.Load<GdipGetFontSize_delegate>(s_gdipModule, "GdipGetFontSize", LibraryName);
-                GdipGetFontHeight_ptr = FunctionWrapper.Load<GdipGetFontHeight_delegate>(s_gdipModule, "GdipGetFontHeight", LibraryName);
-                GdipGetFontHeightGivenDPI_ptr = FunctionWrapper.Load<GdipGetFontHeightGivenDPI_delegate>(s_gdipModule, "GdipGetFontHeightGivenDPI", LibraryName);
                 GdipCreateMetafileFromFile_ptr = FunctionWrapper.Load<GdipCreateMetafileFromFile_delegate>(s_gdipModule, "GdipCreateMetafileFromFile", LibraryName);
                 GdipCreateMetafileFromEmf_ptr = FunctionWrapper.Load<GdipCreateMetafileFromEmf_delegate>(s_gdipModule, "GdipCreateMetafileFromEmf", LibraryName);
                 GdipCreateMetafileFromWmf_ptr = FunctionWrapper.Load<GdipCreateMetafileFromWmf_delegate>(s_gdipModule, "GdipCreateMetafileFromWmf", LibraryName);
@@ -949,21 +943,6 @@ namespace System.Drawing
             private static FunctionWrapper<GdipIsOutlineVisiblePathPointI_delegate> GdipIsOutlineVisiblePathPointI_ptr;
             internal static int GdipIsOutlineVisiblePathPointI(IntPtr path, int x, int y, IntPtr pen, IntPtr graphics, out bool result) => GdipIsOutlineVisiblePathPointI_ptr.Delegate(path, x, y, pen, graphics, out result);
 
-            private delegate int GdipCreateFont_delegate(IntPtr fontFamily, float emSize, FontStyle style, GraphicsUnit unit, out IntPtr font);
-            private static FunctionWrapper<GdipCreateFont_delegate> GdipCreateFont_ptr;
-            internal static int GdipCreateFont(IntPtr fontFamily, float emSize, FontStyle style, GraphicsUnit unit, out IntPtr font) => GdipCreateFont_ptr.Delegate(fontFamily, emSize, style, unit, out font);
-
-            private delegate int GdipDeleteFont_delegate(IntPtr font);
-            private static FunctionWrapper<GdipDeleteFont_delegate> GdipDeleteFont_ptr;
-            internal static int GdipDeleteFont(IntPtr font) => GdipDeleteFont_ptr.Delegate(font);
-            internal static int IntGdipDeleteFont(HandleRef font) => (int)GdipDeleteFont_ptr.Delegate(font.Handle);
-
-#pragma warning disable CS0618 // Legacy code: We don't care about using obsolete API's.
-            private delegate int GdipGetLogFont_delegate(IntPtr font, IntPtr graphics, [MarshalAs(UnmanagedType.AsAny), Out] object logfontA);
-#pragma warning restore CS0618
-            private static FunctionWrapper<GdipGetLogFont_delegate> GdipGetLogFont_ptr;
-            internal static int GdipGetLogFont(IntPtr font, IntPtr graphics, [Out] object logfontA) => GdipGetLogFont_ptr.Delegate(font, graphics, logfontA);
-
             private delegate int GdipCreateFontFromDC_delegate(IntPtr hdc, out IntPtr font);
             private static FunctionWrapper<GdipCreateFontFromDC_delegate> GdipCreateFontFromDC_ptr;
             internal static int GdipCreateFontFromDC(IntPtr hdc, out IntPtr font) => GdipCreateFontFromDC_ptr.Delegate(hdc, out font);
@@ -975,18 +954,6 @@ namespace System.Drawing
             private delegate int GdipCreateFontFromHfont_delegate(IntPtr hdc, out IntPtr font, ref LOGFONT lf);
             private static FunctionWrapper<GdipCreateFontFromHfont_delegate> GdipCreateFontFromHfont_ptr;
             internal static int GdipCreateFontFromHfont(IntPtr hdc, out IntPtr font, ref LOGFONT lf) => GdipCreateFontFromHfont_ptr.Delegate(hdc, out font, ref lf);
-
-            private delegate int GdipGetFontSize_delegate(IntPtr font, out float size);
-            private static FunctionWrapper<GdipGetFontSize_delegate> GdipGetFontSize_ptr;
-            internal static int GdipGetFontSize(IntPtr font, out float size) => GdipGetFontSize_ptr.Delegate(font, out size);
-
-            private delegate int GdipGetFontHeight_delegate(IntPtr font, IntPtr graphics, out float height);
-            private static FunctionWrapper<GdipGetFontHeight_delegate> GdipGetFontHeight_ptr;
-            internal static int GdipGetFontHeight(IntPtr font, IntPtr graphics, out float height) => GdipGetFontHeight_ptr.Delegate(font, graphics, out height);
-
-            private delegate int GdipGetFontHeightGivenDPI_delegate(IntPtr font, float dpi, out float height);
-            private static FunctionWrapper<GdipGetFontHeightGivenDPI_delegate> GdipGetFontHeightGivenDPI_ptr;
-            internal static int GdipGetFontHeightGivenDPI(IntPtr font, float dpi, out float height) => GdipGetFontHeightGivenDPI_ptr.Delegate(font, dpi, out height);
 
             private delegate int GdipCreateMetafileFromFile_delegate([MarshalAs(UnmanagedType.LPWStr)]string filename, out IntPtr metafile);
             private static FunctionWrapper<GdipCreateMetafileFromFile_delegate> GdipCreateMetafileFromFile_ptr;

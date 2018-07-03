@@ -1,4 +1,4 @@
-﻿// Licensed to the .NET Foundation under one or more agreements.
+// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
@@ -39,7 +39,7 @@ namespace System.Xml
         private static readonly long s_lInt32Base = ((long)1) << 32;      // 2**32
         private static readonly ulong s_ulInt32Base = ((ulong)1) << 32;     // 2**32
         private static readonly ulong s_ulInt32BaseForMod = s_ulInt32Base - 1;    // 2**32 - 1 (0xFFF...FF)
-        internal static readonly ulong x_llMax = Int64.MaxValue;   // Max of Int64
+        internal static readonly ulong x_llMax = long.MaxValue;   // Max of Int64
         //private static readonly uint x_ulBase10 = 10;
         private static readonly double s_DUINT_BASE = (double)s_lInt32Base;     // 2**32
         private static readonly double s_DUINT_BASE2 = s_DUINT_BASE * s_DUINT_BASE;  // 2**64
@@ -175,12 +175,12 @@ namespace System.Xml
             return (char)(uiDigit + '0');
         }
 
-        public Decimal ToDecimal()
+        public decimal ToDecimal()
         {
             if ((int)m_data4 != 0 || m_bScale > 28)
                 throw new XmlException(SR.SqlTypes_ArithOverflow, (string)null);
 
-            return new Decimal((int)m_data1, (int)m_data2, (int)m_data3, !IsPositive, m_bScale);
+            return new decimal((int)m_data1, (int)m_data2, (int)m_data3, !IsPositive, m_bScale);
         }
 
         private void TrimTrailingZeros()
@@ -220,7 +220,7 @@ namespace System.Xml
                 m_bLen = 1;
         }
 
-        public override String ToString()
+        public override string ToString()
         {
             AssertValid();
 
@@ -276,7 +276,7 @@ namespace System.Xml
 
             AssertValid();
 
-            return new String(szResult);
+            return new string(szResult);
         }
 
 
@@ -313,7 +313,7 @@ namespace System.Xml
         public BinXmlSqlMoney(int v) { _data = v; }
         public BinXmlSqlMoney(long v) { _data = v; }
 
-        public Decimal ToDecimal()
+        public decimal ToDecimal()
         {
             bool neg;
             ulong v;
@@ -329,12 +329,12 @@ namespace System.Xml
             }
             // SQL Server stores money8 as ticks of 1/10000.
             const byte MoneyScale = 4;
-            return new Decimal(unchecked((int)v), unchecked((int)(v >> 32)), 0, neg, MoneyScale);
+            return new decimal(unchecked((int)v), unchecked((int)(v >> 32)), 0, neg, MoneyScale);
         }
 
-        public override String ToString()
+        public override string ToString()
         {
-            Decimal money = ToDecimal();
+            decimal money = ToDecimal();
             // Formatting of SqlMoney: At least two digits after decimal point
             return money.ToString("#0.00##", CultureInfo.InvariantCulture);
         }

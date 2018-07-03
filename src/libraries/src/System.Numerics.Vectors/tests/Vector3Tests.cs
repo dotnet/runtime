@@ -642,11 +642,11 @@ namespace System.Numerics.Tests
         [Fact]
         public void Vector3UnaryNegationTest1()
         {
-            Vector3 a = -new Vector3(Single.NaN, Single.PositiveInfinity, Single.NegativeInfinity);
+            Vector3 a = -new Vector3(float.NaN, float.PositiveInfinity, float.NegativeInfinity);
             Vector3 b = -new Vector3(0.0f, 0.0f, 0.0f);
-            Assert.Equal(Single.NaN, a.X);
-            Assert.Equal(Single.NegativeInfinity, a.Y);
-            Assert.Equal(Single.PositiveInfinity, a.Z);
+            Assert.Equal(float.NaN, a.X);
+            Assert.Equal(float.NegativeInfinity, a.Y);
+            Assert.Equal(float.PositiveInfinity, a.Z);
             Assert.Equal(0.0f, b.X);
             Assert.Equal(0.0f, b.Y);
             Assert.Equal(0.0f, b.Z);
@@ -1122,14 +1122,14 @@ namespace System.Numerics.Tests
         public void Vector3AbsTest()
         {
             Vector3 v1 = new Vector3(-2.5f, 2.0f, 0.5f);
-            Vector3 v3 = Vector3.Abs(new Vector3(0.0f, Single.NegativeInfinity, Single.NaN));
+            Vector3 v3 = Vector3.Abs(new Vector3(0.0f, float.NegativeInfinity, float.NaN));
             Vector3 v = Vector3.Abs(v1);
             Assert.Equal(2.5f, v.X);
             Assert.Equal(2.0f, v.Y);
             Assert.Equal(0.5f, v.Z);
             Assert.Equal(0.0f, v3.X);
-            Assert.Equal(Single.PositiveInfinity, v3.Y);
-            Assert.Equal(Single.NaN, v3.Z);
+            Assert.Equal(float.PositiveInfinity, v3.Y);
+            Assert.Equal(float.NaN, v3.Z);
         }
 
         [Fact]
@@ -1140,7 +1140,7 @@ namespace System.Numerics.Tests
             Assert.Equal(2, (int)Vector3.SquareRoot(b).X);
             Assert.Equal(2, (int)Vector3.SquareRoot(b).Y);
             Assert.Equal(4, (int)Vector3.SquareRoot(b).Z);
-            Assert.Equal(Single.NaN, Vector3.SquareRoot(a).X);
+            Assert.Equal(float.NaN, Vector3.SquareRoot(a).X);
         }
 
         // A test to make sure these types are blittable directly into GPU buffer memory layouts

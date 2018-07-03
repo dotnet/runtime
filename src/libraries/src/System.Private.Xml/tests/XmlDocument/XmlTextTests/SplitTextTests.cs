@@ -18,7 +18,7 @@ namespace System.Xml.Tests
             var node = xmlDocument.DocumentElement.FirstChild.FirstChild;
             var splitNode = ((XmlText)node).SplitText(0);
 
-            Assert.Equal(String.Empty, node.Value);
+            Assert.Equal(string.Empty, node.Value);
             Assert.Equal("This is a test", splitNode.Value);
         }
 

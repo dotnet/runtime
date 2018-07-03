@@ -346,7 +346,7 @@ namespace System.Threading
                 {
                     return false;
                 }
-                else if (observedCount > (Int32.MaxValue - signalCount))
+                else if (observedCount > (int.MaxValue - signalCount))
                 {
                     throw new InvalidOperationException(SR.CountdownEvent_Increment_AlreadyMax);
                 }

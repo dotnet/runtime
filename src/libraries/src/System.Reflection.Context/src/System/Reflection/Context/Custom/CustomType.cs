@@ -115,7 +115,7 @@ namespace System.Reflection.Context.Custom
             CustomType type = this;
             foreach (PropertyInfo newDeclaredProperty in type.NewProperties)
             {
-                if (string.Compare(newDeclaredProperty.Name, name, comparison) == 0)
+                if (string.Equals(newDeclaredProperty.Name, name, comparison))
                     matchingProperties.Add(newDeclaredProperty);
             }
 
@@ -125,7 +125,7 @@ namespace System.Reflection.Context.Custom
                 {
                     foreach (PropertyInfo newBaseProperty in type.NewProperties)
                     {
-                        if (string.Compare(newBaseProperty.Name, name, comparison) == 0)
+                        if (string.Equals(newBaseProperty.Name, name, comparison))
                             matchingProperties.Add(new InheritedPropertyInfo(newBaseProperty, this));
                     }
                 }
@@ -226,7 +226,7 @@ namespace System.Reflection.Context.Custom
             // in runtime reflection hidden methods are always returned in GetMethods
             foreach (PropertyInfo newDeclaredProperty in NewProperties)
             {
-                if (string.Compare(newDeclaredProperty.Name, targetPropertyName, comparison) == 0)
+                if (string.Equals(newDeclaredProperty.Name, targetPropertyName, comparison))
                 {
                     MethodInfo accessor = getPropertyGetter ? newDeclaredProperty.GetGetMethod() : newDeclaredProperty.GetSetMethod();
                     if (accessor != null)
@@ -245,7 +245,7 @@ namespace System.Reflection.Context.Custom
                     // A new method with a different ReflectedType should be used.
                     foreach (PropertyInfo newBaseProperty in baseType.NewProperties)
                     {
-                        if (string.Compare(newBaseProperty.Name, targetPropertyName, comparison) == 0)
+                        if (string.Equals(newBaseProperty.Name, targetPropertyName, comparison))
                         {
                             PropertyInfo inheritedProperty = new InheritedPropertyInfo(newBaseProperty, this);
 

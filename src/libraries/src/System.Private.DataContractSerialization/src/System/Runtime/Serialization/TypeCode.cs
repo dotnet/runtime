@@ -12,55 +12,55 @@ namespace System.Runtime.Serialization
             {
                 return TypeCode.Empty;
             }
-            else if (type == typeof(Boolean))
+            else if (type == typeof(bool))
             {
                 return TypeCode.Boolean;
             }
-            else if (type == typeof(Char))
+            else if (type == typeof(char))
             {
                 return TypeCode.Char;
             }
-            else if (type == typeof(SByte))
+            else if (type == typeof(sbyte))
             {
                 return TypeCode.SByte;
             }
-            else if (type == typeof(Byte))
+            else if (type == typeof(byte))
             {
                 return TypeCode.Byte;
             }
-            else if (type == typeof(Int16))
+            else if (type == typeof(short))
             {
                 return TypeCode.Int16;
             }
-            else if (type == typeof(UInt16))
+            else if (type == typeof(ushort))
             {
                 return TypeCode.UInt16;
             }
-            else if (type == typeof(Int32))
+            else if (type == typeof(int))
             {
                 return TypeCode.Int32;
             }
-            else if (type == typeof(UInt32))
+            else if (type == typeof(uint))
             {
                 return TypeCode.UInt32;
             }
-            else if (type == typeof(Int64))
+            else if (type == typeof(long))
             {
                 return TypeCode.Int64;
             }
-            else if (type == typeof(UInt64))
+            else if (type == typeof(ulong))
             {
                 return TypeCode.UInt64;
             }
-            else if (type == typeof(Single))
+            else if (type == typeof(float))
             {
                 return TypeCode.Single;
             }
-            else if (type == typeof(Double))
+            else if (type == typeof(double))
             {
                 return TypeCode.Double;
             }
-            else if (type == typeof(Decimal))
+            else if (type == typeof(decimal))
             {
                 return TypeCode.Decimal;
             }
@@ -68,7 +68,7 @@ namespace System.Runtime.Serialization
             {
                 return TypeCode.DateTime;
             }
-            else if (type == typeof(String))
+            else if (type == typeof(string))
             {
                 return TypeCode.String;
             }

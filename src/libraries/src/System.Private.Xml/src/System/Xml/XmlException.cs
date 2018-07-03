@@ -83,7 +83,7 @@ namespace System.Xml
         }
 
         //provided to meet the ECMA standards
-        public XmlException(String message) : this(message, ((Exception)null), 0, 0)
+        public XmlException(string message) : this(message, ((Exception)null), 0, 0)
         {
 #if DEBUG
             Debug.Assert(message == null || !message.StartsWith("Xml_", StringComparison.Ordinal), "Do not pass a resource here!");
@@ -91,17 +91,17 @@ namespace System.Xml
         }
 
         //provided to meet ECMA standards
-        public XmlException(String message, Exception innerException) : this(message, innerException, 0, 0)
+        public XmlException(string message, Exception innerException) : this(message, innerException, 0, 0)
         {
         }
 
         //provided to meet ECMA standards
-        public XmlException(String message, Exception innerException, int lineNumber, int linePosition) :
+        public XmlException(string message, Exception innerException, int lineNumber, int linePosition) :
             this(message, innerException, lineNumber, linePosition, null)
         {
         }
 
-        internal XmlException(String message, Exception innerException, int lineNumber, int linePosition, string sourceUri) :
+        internal XmlException(string message, Exception innerException, int lineNumber, int linePosition, string sourceUri) :
             base(FormatUserMessage(message, lineNumber, linePosition), innerException)
         {
             HResult = HResults.Xml;
@@ -124,11 +124,11 @@ namespace System.Xml
             this(res, new string[] { arg }, null, 0, 0, sourceUri)
         { }
 
-        internal XmlException(string res, String arg, IXmlLineInfo lineInfo) :
+        internal XmlException(string res, string arg, IXmlLineInfo lineInfo) :
             this(res, new string[] { arg }, lineInfo, null)
         { }
 
-        internal XmlException(string res, String arg, Exception innerException, IXmlLineInfo lineInfo) :
+        internal XmlException(string res, string arg, Exception innerException, IXmlLineInfo lineInfo) :
             this(res, new string[] { arg }, innerException, (lineInfo == null ? 0 : lineInfo.LineNumber), (lineInfo == null ? 0 : lineInfo.LinePosition), null)
         { }
 

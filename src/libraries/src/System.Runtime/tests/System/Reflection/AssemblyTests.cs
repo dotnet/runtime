@@ -12,12 +12,12 @@ using Xunit;
 
 [assembly: System.Reflection.CustomAttributesTests.Data.Attr(77, name = "AttrSimple")]
 [assembly: System.Reflection.CustomAttributesTests.Data.Int32Attr(77, name = "Int32AttrSimple"),
-System.Reflection.CustomAttributesTests.Data.Int64Attr((Int64)77, name = "Int64AttrSimple"),
+System.Reflection.CustomAttributesTests.Data.Int64Attr((long)77, name = "Int64AttrSimple"),
 System.Reflection.CustomAttributesTests.Data.StringAttr("hello", name = "StringAttrSimple"),
 System.Reflection.CustomAttributesTests.Data.EnumAttr(System.Reflection.CustomAttributesTests.Data.MyColorEnum.RED, name = "EnumAttrSimple"),
-System.Reflection.CustomAttributesTests.Data.TypeAttr(typeof(Object), name = "TypeAttrSimple")]
+System.Reflection.CustomAttributesTests.Data.TypeAttr(typeof(object), name = "TypeAttrSimple")]
 
-[assembly: System.Runtime.CompilerServices.CompilationRelaxationsAttribute((Int32)8)]
+[assembly: System.Runtime.CompilerServices.CompilationRelaxationsAttribute((int)8)]
 [assembly: System.Diagnostics.Debuggable((System.Diagnostics.DebuggableAttribute.DebuggingModes)263)]
 [assembly: System.CLSCompliant(false)]
 
@@ -647,7 +647,7 @@ namespace System.Reflection.Tests
             Assert.True(result, string.Format("Did not find custom attribute of type {0} ", attrType));
         }
 
-        private bool VerifyCustomAttribute(Type type, String attributeStr)
+        private bool VerifyCustomAttribute(Type type, string attributeStr)
         {
             Assembly asm = typeof(AssemblyCustomAttributeTest).Assembly;
 

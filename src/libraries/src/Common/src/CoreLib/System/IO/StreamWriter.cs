@@ -965,7 +965,7 @@ namespace System.IO
         // to ensure performant access inside the state machine that corresponds this async method.
         private static async Task FlushAsyncInternal(StreamWriter _this, bool flushStream, bool flushEncoder,
                                                      char[] charBuffer, int charPos, bool haveWrittenPreamble,
-                                                     Encoding encoding, Encoder encoder, Byte[] byteBuffer, Stream stream, CancellationToken cancellationToken)
+                                                     Encoding encoding, Encoder encoder, byte[] byteBuffer, Stream stream, CancellationToken cancellationToken)
         {
             if (!haveWrittenPreamble)
             {

@@ -65,16 +65,16 @@ namespace System.Tests
         public const int NUM_ITERS_APPEND = 1000;
         public const int NUM_ITERS_TOSTRING = 1000;
 
-        public static String s1 = "12345";
-        public static String s2 = "1234567890";
-        public static String s3 = "1234567890abcde";
-        public static String s4 = "1234567890abcdefghij";
-        public static String s5 = "1234567890abcdefghijklmno";
-        public static String s6 = "1234567890abcdefghijklmnopqrst";
-        public static String s7 = "1234567890abcdefghijklmnopqrstuvwxy";
-        public static String s8 = "1234567890abcdefghijklmnopqrstuvwxyzABCD";
-        public static String s9 = "1234567890abcdefghijklmnopqrstuvwxyzABCDEFGHI";
-        public static String s10 = "1234567890abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMN";
+        public static string s1 = "12345";
+        public static string s2 = "1234567890";
+        public static string s3 = "1234567890abcde";
+        public static string s4 = "1234567890abcdefghij";
+        public static string s5 = "1234567890abcdefghijklmno";
+        public static string s6 = "1234567890abcdefghijklmnopqrst";
+        public static string s7 = "1234567890abcdefghijklmnopqrstuvwxy";
+        public static string s8 = "1234567890abcdefghijklmnopqrstuvwxyzABCD";
+        public static string s9 = "1234567890abcdefghijklmnopqrstuvwxyzABCDEFGHI";
+        public static string s10 = "1234567890abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMN";
 
         [Benchmark]
         public static void StringConcat()

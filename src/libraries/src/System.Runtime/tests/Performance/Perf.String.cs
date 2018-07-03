@@ -432,7 +432,7 @@ namespace System.Tests
 
         private static readonly object[] s_getHashCodeStrings = new object[]
         {
-            String.Empty,
+            string.Empty,
             "  ",
             "TeSt!",
             "I think Turkish i \u0131s TROUBL\u0130NG",
@@ -634,7 +634,7 @@ namespace System.Tests
         {
             foreach (var iteration in Benchmark.Iterations)
                 using (iteration.StartMeasurement())
-                    String.Format(s, o);
+                    string.Format(s, o);
         }
 
         [Benchmark]
@@ -642,7 +642,7 @@ namespace System.Tests
         {
             foreach (var iteration in Benchmark.Iterations)
                 using (iteration.StartMeasurement())
-                    String.Format("More testing: {0} {1} {2} {3} {4} {5}{6} {7}", '1', "Foo", "Foo", "Foo", "Foo", "Foo", "Foo", "Foo");
+                    string.Format("More testing: {0} {1} {2} {3} {4} {5}{6} {7}", '1', "Foo", "Foo", "Foo", "Foo", "Foo", "Foo", "Foo");
         }
 
         [Benchmark]
@@ -679,7 +679,7 @@ namespace System.Tests
         [Benchmark]
         public static int IndexerCheckLengthHoisting()
         {
-            String s1 = "ddsz dszdsz \t  dszdsz  a\u0300\u00C0 \t Te st \u0400Te \u0400st\u0020\u00A0\u2000\u2001\u2002\u2003\u2004\u2005\t Te\t \tst \t\r\n\u0020\u00A0\u2000\u2001\u2002\u2003\u2004\u2005";
+            string s1 = "ddsz dszdsz \t  dszdsz  a\u0300\u00C0 \t Te st \u0400Te \u0400st\u0020\u00A0\u2000\u2001\u2002\u2003\u2004\u2005\t Te\t \tst \t\r\n\u0020\u00A0\u2000\u2001\u2002\u2003\u2004\u2005";
 
             int counter = 0;
 
@@ -700,7 +700,7 @@ namespace System.Tests
         [Benchmark]
         public static int IndexerCheckPathLength()
         {
-            String s1 = "ddsz dszdsz \t  dszdsz  a\u0300\u00C0 \t Te st \u0400Te \u0400st\u0020\u00A0\u2000\u2001\u2002\u2003\u2004\u2005\t Te\t \tst \t\r\n\u0020\u00A0\u2000\u2001\u2002\u2003\u2004\u2005";
+            string s1 = "ddsz dszdsz \t  dszdsz  a\u0300\u00C0 \t Te st \u0400Te \u0400st\u0020\u00A0\u2000\u2001\u2002\u2003\u2004\u2005\t Te\t \tst \t\r\n\u0020\u00A0\u2000\u2001\u2002\u2003\u2004\u2005";
 
             int counter = 0;
 
@@ -752,7 +752,7 @@ namespace System.Tests
         [InlineData(2142)]
         public static void PadLeft(int n)
         {
-            String s1 = "a";
+            string s1 = "a";
 
             foreach (var iteration in Benchmark.Iterations)
                 using (iteration.StartMeasurement())
@@ -983,7 +983,7 @@ namespace System.Tests
             string s2 = strings[1];
             foreach (var iteration in Benchmark.Iterations)
                 using (iteration.StartMeasurement())
-                    String.Compare(s1, s2, comparison);
+                    string.Compare(s1, s2, comparison);
         }
 
         [Benchmark]

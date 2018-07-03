@@ -9,131 +9,131 @@ namespace System.Numerics
     internal class ConstantHelper
     {
         [MethodImplAttribute(MethodImplOptions.AggressiveInlining)]
-        public static Byte GetByteWithAllBitsSet()
+        public static byte GetByteWithAllBitsSet()
         {
-            Byte value = 0;
+            byte value = 0;
             unsafe
             {
                 unchecked
                 {
-                    *((Byte*)&value) = (Byte)0xff;
+                    *((byte*)&value) = (byte)0xff;
                 }
             }
             return value;
         }
         [MethodImplAttribute(MethodImplOptions.AggressiveInlining)]
-        public static SByte GetSByteWithAllBitsSet()
+        public static sbyte GetSByteWithAllBitsSet()
         {
-            SByte value = 0;
+            sbyte value = 0;
             unsafe
             {
                 unchecked
                 {
-                    *((SByte*)&value) = (SByte)0xff;
+                    *((sbyte*)&value) = (sbyte)0xff;
                 }
             }
             return value;
         }
         [MethodImplAttribute(MethodImplOptions.AggressiveInlining)]
-        public static UInt16 GetUInt16WithAllBitsSet()
+        public static ushort GetUInt16WithAllBitsSet()
         {
-            UInt16 value = 0;
+            ushort value = 0;
             unsafe
             {
                 unchecked
                 {
-                    *((UInt16*)&value) = (UInt16)0xffff;
+                    *((ushort*)&value) = (ushort)0xffff;
                 }
             }
             return value;
         }
         [MethodImplAttribute(MethodImplOptions.AggressiveInlining)]
-        public static Int16 GetInt16WithAllBitsSet()
+        public static short GetInt16WithAllBitsSet()
         {
-            Int16 value = 0;
+            short value = 0;
             unsafe
             {
                 unchecked
                 {
-                    *((Int16*)&value) = (Int16)0xffff;
+                    *((short*)&value) = (short)0xffff;
                 }
             }
             return value;
         }
         [MethodImplAttribute(MethodImplOptions.AggressiveInlining)]
-        public static UInt32 GetUInt32WithAllBitsSet()
+        public static uint GetUInt32WithAllBitsSet()
         {
-            UInt32 value = 0;
+            uint value = 0;
             unsafe
             {
                 unchecked
                 {
-                    *((UInt32*)&value) = (UInt32)0xffffffff;
+                    *((uint*)&value) = (uint)0xffffffff;
                 }
             }
             return value;
         }
         [MethodImplAttribute(MethodImplOptions.AggressiveInlining)]
-        public static Int32 GetInt32WithAllBitsSet()
+        public static int GetInt32WithAllBitsSet()
         {
-            Int32 value = 0;
+            int value = 0;
             unsafe
             {
                 unchecked
                 {
-                    *((Int32*)&value) = (Int32)0xffffffff;
+                    *((int*)&value) = (int)0xffffffff;
                 }
             }
             return value;
         }
         [MethodImplAttribute(MethodImplOptions.AggressiveInlining)]
-        public static UInt64 GetUInt64WithAllBitsSet()
+        public static ulong GetUInt64WithAllBitsSet()
         {
-            UInt64 value = 0;
+            ulong value = 0;
             unsafe
             {
                 unchecked
                 {
-                    *((UInt64*)&value) = (UInt64)0xffffffffffffffff;
+                    *((ulong*)&value) = (ulong)0xffffffffffffffff;
                 }
             }
             return value;
         }
         [MethodImplAttribute(MethodImplOptions.AggressiveInlining)]
-        public static Int64 GetInt64WithAllBitsSet()
+        public static long GetInt64WithAllBitsSet()
         {
-            Int64 value = 0;
+            long value = 0;
             unsafe
             {
                 unchecked
                 {
-                    *((Int64*)&value) = (Int64)0xffffffffffffffff;
+                    *((long*)&value) = (long)0xffffffffffffffff;
                 }
             }
             return value;
         }
         [MethodImplAttribute(MethodImplOptions.AggressiveInlining)]
-        public static Single GetSingleWithAllBitsSet()
+        public static float GetSingleWithAllBitsSet()
         {
-            Single value = 0;
+            float value = 0;
             unsafe
             {
                 unchecked
                 {
-                    *((Int32*)&value) = (Int32)0xffffffff;
+                    *((int*)&value) = (int)0xffffffff;
                 }
             }
             return value;
         }
         [MethodImplAttribute(MethodImplOptions.AggressiveInlining)]
-        public static Double GetDoubleWithAllBitsSet()
+        public static double GetDoubleWithAllBitsSet()
         {
-            Double value = 0;
+            double value = 0;
             unsafe
             {
                 unchecked
                 {
-                    *((Int64*)&value) = (Int64)0xffffffffffffffff;
+                    *((long*)&value) = (long)0xffffffffffffffff;
                 }
             }
             return value;

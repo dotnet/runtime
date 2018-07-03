@@ -63,7 +63,7 @@ namespace System.Net.Http
         private ICredentials _credentials;
         private IWebProxy _proxy;
         private X509Certificate2Collection _clientCertificates;
-        private IDictionary<String, Object> _properties; // Only create dictionary when required.
+        private IDictionary<string, object> _properties; // Only create dictionary when required.
         private Func<HttpRequestMessage, X509Certificate2, X509Chain, SslPolicyErrors, bool> _serverCertificateCustomValidationCallback;
 
         #endregion Fields
@@ -106,7 +106,7 @@ namespace System.Net.Http
                 }
                 if (!UseCookies)
                 {
-                    throw new InvalidOperationException(String.Format(CultureInfo.InvariantCulture,
+                    throw new InvalidOperationException(string.Format(CultureInfo.InvariantCulture,
                         SR.net_http_invalid_enable_first, nameof(UseCookies), "true"));
                 }
                 CheckDisposedOrStarted();
@@ -200,7 +200,7 @@ namespace System.Net.Http
                 CheckDisposedOrStarted();
                 if (value != null && value != CredentialCache.DefaultCredentials && !(value is NetworkCredential))
                 {
-                    throw new PlatformNotSupportedException(String.Format(CultureInfo.InvariantCulture,
+                    throw new PlatformNotSupportedException(string.Format(CultureInfo.InvariantCulture,
                         SR.net_http_value_not_supported, value, nameof(Credentials)));
                 }
                 
@@ -219,7 +219,7 @@ namespace System.Net.Http
                 CheckDisposedOrStarted();
                 if (value != null && value != CredentialCache.DefaultCredentials && !(value is NetworkCredential))
                 {
-                    throw new PlatformNotSupportedException(String.Format(CultureInfo.InvariantCulture,
+                    throw new PlatformNotSupportedException(string.Format(CultureInfo.InvariantCulture,
                         SR.net_http_value_not_supported, value, nameof(DefaultProxyCredentials)));
                 }
                 
@@ -337,13 +337,13 @@ namespace System.Net.Http
             }
         }
 
-        public IDictionary<String, Object> Properties
+        public IDictionary<string, object> Properties
         {
             get
             {
                 if (_properties == null)
                 {
-                    _properties = new Dictionary<String, object>();
+                    _properties = new Dictionary<string, object>();
                 }
 
                 return _properties;

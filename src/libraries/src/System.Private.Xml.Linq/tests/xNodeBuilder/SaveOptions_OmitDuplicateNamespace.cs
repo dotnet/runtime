@@ -118,7 +118,7 @@ namespace CoreXml.Test.XLinq
                 public void testFromTheRootNodeSimple()
                 {
                     string xml = CurrentChild.Params[0] as string;
-                    Object elemObj = Parse(xml);
+                    object elemObj = Parse(xml);
 
                     // Write using XmlWriter in duplicate namespace decl. removal mode
                     string removedByWriter = SaveXElement(elemObj, SaveOptions.OmitDuplicateNamespaces | SaveOptions.DisableFormatting);

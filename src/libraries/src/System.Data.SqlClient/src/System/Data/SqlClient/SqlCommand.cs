@@ -972,7 +972,7 @@ namespace System.Data.SqlClient
             }
         }
 
-        private void VerifyEndExecuteState(Task completionTask, String endMethod)
+        private void VerifyEndExecuteState(Task completionTask, string endMethod)
         {
             Debug.Assert(completionTask != null);
 
@@ -2181,13 +2181,13 @@ namespace System.Data.SqlClient
                         object value;
 
                         value = r[colNames[(int)ProcParamsColIndex.XmlSchemaCollectionCatalogName]];
-                        p.XmlSchemaCollectionDatabase = ADP.IsNull(value) ? String.Empty : (string)value;
+                        p.XmlSchemaCollectionDatabase = ADP.IsNull(value) ? string.Empty : (string)value;
 
                         value = r[colNames[(int)ProcParamsColIndex.XmlSchemaCollectionSchemaName]];
-                        p.XmlSchemaCollectionOwningSchema = ADP.IsNull(value) ? String.Empty : (string)value;
+                        p.XmlSchemaCollectionOwningSchema = ADP.IsNull(value) ? string.Empty : (string)value;
 
                         value = r[colNames[(int)ProcParamsColIndex.XmlSchemaCollectionName]];
-                        p.XmlSchemaCollectionName = ADP.IsNull(value) ? String.Empty : (string)value;
+                        p.XmlSchemaCollectionName = ADP.IsNull(value) ? string.Empty : (string)value;
                     }
 
                     if (MetaType._IsVarTime(p.SqlDbType))
@@ -3662,7 +3662,7 @@ namespace System.Data.SqlClient
             return s;
         }
 
-        private String GetCommandText(CommandBehavior behavior)
+        private string GetCommandText(CommandBehavior behavior)
         {
             // build the batch string we send over, since we execute within a stored proc (sp_executesql), the SET options never need to be
             // turned off since they are scoped to the sproc

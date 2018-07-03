@@ -26,13 +26,13 @@ namespace System
             HResult = HResults.COR_E_DLLNOTFOUND;
         }
 
-        public DllNotFoundException(String message)
+        public DllNotFoundException(string message)
             : base(message)
         {
             HResult = HResults.COR_E_DLLNOTFOUND;
         }
 
-        public DllNotFoundException(String message, Exception inner)
+        public DllNotFoundException(string message, Exception inner)
             : base(message, inner)
         {
             HResult = HResults.COR_E_DLLNOTFOUND;

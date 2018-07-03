@@ -109,7 +109,7 @@ namespace System.ComponentModel.Composition.AttributedModel
             CompositionBatch batch = new CompositionBatch();
 
             batch.AddPart(new ImportValueTypes());
-            batch.AddExportedValue("Int32", typeof(Int32), (short)10);
+            batch.AddExportedValue("Int32", typeof(int), (short)10);
 
             CompositionAssert.ThrowsError(ErrorId.ImportEngine_PartCannotSetImport,
                               ErrorId.ReflectionModel_ImportNotAssignableFromExport,
@@ -127,7 +127,7 @@ namespace System.ComponentModel.Composition.AttributedModel
             CompositionBatch batch = new CompositionBatch();
 
             batch.AddPart(new ImportValueTypes());
-            batch.AddExportedValue("Int16", typeof(Int16), (int)10);
+            batch.AddExportedValue("Int16", typeof(short), (int)10);
 
             CompositionAssert.ThrowsError(ErrorId.ImportEngine_PartCannotSetImport,
                                           ErrorId.ReflectionModel_ImportNotAssignableFromExport,
@@ -144,7 +144,7 @@ namespace System.ComponentModel.Composition.AttributedModel
             CompositionBatch batch = new CompositionBatch();
 
             batch.AddPart(new ImportValueTypes());
-            batch.AddExportedValue("UInt32", typeof(UInt32), (int)10);
+            batch.AddExportedValue("UInt32", typeof(uint), (int)10);
 
             CompositionAssert.ThrowsError(ErrorId.ImportEngine_PartCannotSetImport,
                                           ErrorId.ReflectionModel_ImportNotAssignableFromExport,
@@ -161,7 +161,7 @@ namespace System.ComponentModel.Composition.AttributedModel
             CompositionBatch batch = new CompositionBatch();
 
             batch.AddPart(new ImportValueTypes());
-            batch.AddExportedValue("Int32", typeof(Int32), (uint)10);
+            batch.AddExportedValue("Int32", typeof(int), (uint)10);
 
             CompositionAssert.ThrowsError(ErrorId.ImportEngine_PartCannotSetImport,
                                           ErrorId.ReflectionModel_ImportNotAssignableFromExport,
@@ -178,7 +178,7 @@ namespace System.ComponentModel.Composition.AttributedModel
             CompositionBatch batch = new CompositionBatch();
 
             batch.AddPart(new ImportValueTypes());
-            batch.AddExportedValue("Int64", typeof(Int64), (int)10);
+            batch.AddExportedValue("Int64", typeof(long), (int)10);
 
             CompositionAssert.ThrowsError(ErrorId.ImportEngine_PartCannotSetImport,
                                           ErrorId.ReflectionModel_ImportNotAssignableFromExport,
@@ -195,7 +195,7 @@ namespace System.ComponentModel.Composition.AttributedModel
             CompositionBatch batch = new CompositionBatch();
 
             batch.AddPart(new ImportValueTypes());
-            batch.AddExportedValue("Double", typeof(Double), (float)10);
+            batch.AddExportedValue("Double", typeof(double), (float)10);
 
             CompositionAssert.ThrowsError(ErrorId.ImportEngine_PartCannotSetImport,
                                           ErrorId.ReflectionModel_ImportNotAssignableFromExport,
@@ -212,7 +212,7 @@ namespace System.ComponentModel.Composition.AttributedModel
             CompositionBatch batch = new CompositionBatch();
 
             batch.AddPart(new ImportValueTypes());
-            batch.AddExportedValue("Single", typeof(Single), (double)10);
+            batch.AddExportedValue("Single", typeof(float), (double)10);
 
             CompositionAssert.ThrowsError(ErrorId.ImportEngine_PartCannotSetImport,
                                           ErrorId.ReflectionModel_ImportNotAssignableFromExport,
@@ -229,7 +229,7 @@ namespace System.ComponentModel.Composition.AttributedModel
             CompositionBatch batch = new CompositionBatch();
 
             batch.AddPart(new ImportValueTypes());
-            batch.AddExportedValue("Int32", typeof(Int32), (float)10);
+            batch.AddExportedValue("Int32", typeof(int), (float)10);
 
             CompositionAssert.ThrowsError(ErrorId.ImportEngine_PartCannotSetImport,
                                           ErrorId.ReflectionModel_ImportNotAssignableFromExport,
@@ -246,7 +246,7 @@ namespace System.ComponentModel.Composition.AttributedModel
             CompositionBatch batch = new CompositionBatch();
 
             batch.AddPart(new ImportValueTypes());
-            batch.AddExportedValue("Single", typeof(Single), (int)10);
+            batch.AddExportedValue("Single", typeof(float), (int)10);
 
             CompositionAssert.ThrowsError(ErrorId.ImportEngine_PartCannotSetImport,
                                           ErrorId.ReflectionModel_ImportNotAssignableFromExport,

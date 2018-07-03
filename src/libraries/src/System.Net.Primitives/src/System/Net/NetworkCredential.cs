@@ -136,12 +136,12 @@ namespace System.Net
         ///       authentication type.
         ///    </para>
         /// </devdoc>
-        public NetworkCredential GetCredential(Uri uri, String authenticationType)
+        public NetworkCredential GetCredential(Uri uri, string authenticationType)
         {
             return this;
         }
 
-        public NetworkCredential GetCredential(string host, int port, String authenticationType)
+        public NetworkCredential GetCredential(string host, int port, string authenticationType)
         {
             return this;
         }

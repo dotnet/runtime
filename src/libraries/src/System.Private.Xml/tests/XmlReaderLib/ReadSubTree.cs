@@ -116,7 +116,7 @@ namespace System.Xml.Tests
 
             XmlReader r = DataReader.ReadSubtree();
             CError.Compare(r.ReadState, ReadState.Initial, "Reader state is not Initial");
-            CError.Compare(r.Name, String.Empty, "Name is not empty");
+            CError.Compare(r.Name, string.Empty, "Name is not empty");
             CError.Compare(r.NodeType, XmlNodeType.None, "Nodetype is not empty");
             CError.Compare(r.Depth, 0, "Depth is not zero");
 
@@ -132,7 +132,7 @@ namespace System.Xml.Tests
             r.Dispose();
 
             CError.Compare(r.ReadState, ReadState.Closed, "Reader state is not Initial");
-            CError.Compare(r.Name, String.Empty, "Name is not empty");
+            CError.Compare(r.Name, string.Empty, "Name is not empty");
             CError.Compare(r.NodeType, XmlNodeType.None, "Nodetype is not empty");
 
             DataReader.Read();
@@ -209,7 +209,7 @@ namespace System.Xml.Tests
             }
 
             string fileName = GetTestFileName(EREADER_TYPE.GENERIC);
-            bool ci = Boolean.Parse(CurVariation.Params[0].ToString());
+            bool ci = bool.Parse(CurVariation.Params[0].ToString());
             XmlReaderSettings settings = new XmlReaderSettings();
             settings.CloseInput = ci;
             CError.WriteLine(ci);

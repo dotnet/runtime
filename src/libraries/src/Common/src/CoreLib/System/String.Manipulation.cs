@@ -1246,7 +1246,7 @@ namespace System
             return SplitInternal(separator ?? string.Empty, null, int.MaxValue, options);
         }
 
-        public string[] Split(string separator, Int32 count, StringSplitOptions options = StringSplitOptions.None)
+        public string[] Split(string separator, int count, StringSplitOptions options = StringSplitOptions.None)
         {
             return SplitInternal(separator ?? string.Empty, null, count, options);
         }
@@ -1256,7 +1256,7 @@ namespace System
             return SplitInternal(null, separator, int.MaxValue, options);
         }
 
-        public string[] Split(string[] separator, Int32 count, StringSplitOptions options)
+        public string[] Split(string[] separator, int count, StringSplitOptions options)
         {
             return SplitInternal(null, separator, count, options);
         }
@@ -1682,7 +1682,7 @@ namespace System
         }
 
         // Trims the whitespace from both ends of the string.  Whitespace is defined by
-        // Char.IsWhiteSpace.
+        // char.IsWhiteSpace.
         //
         public string Trim() => TrimWhiteSpaceHelper(TrimType.Both);
 

@@ -6,8 +6,8 @@ namespace System.Xml
 {
     public class UniqueId
     {
-        private Int64 _idLow;
-        private Int64 _idHigh;
+        private long _idLow;
+        private long _idHigh;
         private string _s;
         private const int guidLength = 16;
         private const int uuidLength = 45;
@@ -348,7 +348,7 @@ namespace System.Xml
         {
             if (IsGuid)
             {
-                Int64 hash = (_idLow ^ _idHigh);
+                long hash = (_idLow ^ _idHigh);
                 return ((int)(hash >> 32)) ^ ((int)hash);
             }
             else
@@ -357,14 +357,14 @@ namespace System.Xml
             }
         }
 
-        private unsafe Int64 UnsafeGetInt64(byte* pb)
+        private unsafe long UnsafeGetInt64(byte* pb)
         {
-            Int32 idLow = UnsafeGetInt32(pb);
-            Int32 idHigh = UnsafeGetInt32(&pb[4]);
-            return (((Int64)idHigh) << 32) | ((UInt32)idLow);
+            int idLow = UnsafeGetInt32(pb);
+            int idHigh = UnsafeGetInt32(&pb[4]);
+            return (((long)idHigh) << 32) | ((uint)idLow);
         }
 
-        private unsafe Int32 UnsafeGetInt32(byte* pb)
+        private unsafe int UnsafeGetInt32(byte* pb)
         {
             int value = pb[3];
             value <<= 8;
@@ -376,13 +376,13 @@ namespace System.Xml
             return value;
         }
 
-        private unsafe void UnsafeSetInt64(Int64 value, byte* pb)
+        private unsafe void UnsafeSetInt64(long value, byte* pb)
         {
             UnsafeSetInt32((int)value, pb);
             UnsafeSetInt32((int)(value >> 32), &pb[4]);
         }
 
-        private unsafe void UnsafeSetInt32(Int32 value, byte* pb)
+        private unsafe void UnsafeSetInt32(int value, byte* pb)
         {
             pb[0] = (byte)value;
             value >>= 8;

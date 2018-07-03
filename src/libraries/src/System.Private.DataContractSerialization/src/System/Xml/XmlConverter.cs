@@ -123,7 +123,7 @@ namespace System.Xml
             return ToInt32(ToString(buffer, offset, count));
         }
 
-        public static Int64 ToInt64(string value)
+        public static long ToInt64(string value)
         {
             try
             {
@@ -143,7 +143,7 @@ namespace System.Xml
             }
         }
 
-        public static Int64 ToInt64(byte[] buffer, int offset, int count)
+        public static long ToInt64(byte[] buffer, int offset, int count)
         {
             long value;
             if (TryParseInt64(buffer, offset, count, out value))
@@ -232,7 +232,7 @@ namespace System.Xml
             return ToDecimal(ToString(buffer, offset, count));
         }
 
-        public static DateTime ToDateTime(Int64 value)
+        public static DateTime ToDateTime(long value)
         {
             try
             {
@@ -339,7 +339,7 @@ namespace System.Xml
             return ToGuid(ToString(buffer, offset, count));
         }
 
-        public static UInt64 ToUInt64(string value)
+        public static ulong ToUInt64(string value)
         {
             try
             {
@@ -359,7 +359,7 @@ namespace System.Xml
             }
         }
 
-        public static UInt64 ToUInt64(byte[] buffer, int offset, int count)
+        public static ulong ToUInt64(byte[] buffer, int offset, int count)
         {
             return ToUInt64(ToString(buffer, offset, count));
         }
@@ -415,7 +415,7 @@ namespace System.Xml
 
         public static string ToString(bool value) { return value ? "true" : "false"; }
         public static string ToString(int value) { return XmlConvert.ToString(value); }
-        public static string ToString(Int64 value) { return XmlConvert.ToString(value); }
+        public static string ToString(long value) { return XmlConvert.ToString(value); }
         public static string ToString(float value) { return XmlConvert.ToString(value); }
         public static string ToString(double value) { return XmlConvert.ToString(value); }
         public static string ToString(decimal value) { return XmlConvert.ToString(value); }
@@ -423,7 +423,7 @@ namespace System.Xml
 
         public static string ToString(UniqueId value) { return value.ToString(); }
         public static string ToString(Guid value) { return value.ToString(); }
-        public static string ToString(UInt64 value) { return value.ToString(NumberFormatInfo.InvariantInfo); }
+        public static string ToString(ulong value) { return value.ToString(NumberFormatInfo.InvariantInfo); }
 
         public static string ToString(DateTime value)
         {
@@ -436,8 +436,8 @@ namespace System.Xml
         {
             if (value is int)
                 return ToString((int)value);
-            else if (value is Int64)
-                return ToString((Int64)value);
+            else if (value is long)
+                return ToString((long)value);
             else if (value is float)
                 return ToString((float)value);
             else if (value is double)
@@ -450,8 +450,8 @@ namespace System.Xml
                 return ToString((UniqueId)value);
             else if (value is Guid)
                 return ToString((Guid)value);
-            else if (value is UInt64)
-                return ToString((UInt64)value);
+            else if (value is ulong)
+                return ToString((ulong)value);
             else if (value is DateTime)
                 return ToString((DateTime)value);
             else if (value is bool)
@@ -744,14 +744,14 @@ namespace System.Xml
         {
             // Simple equals function will report that -0 is equal to +0, so compare bits instead
             float negativeZero = -0e0F;
-            return (*(Int32*)&value == *(Int32*)&negativeZero);
+            return (*(int*)&value == *(int*)&negativeZero);
         }
 
         private static unsafe bool IsNegativeZero(double value)
         {
             // Simple equals function will report that -0 is equal to +0, so compare bits instead
             double negativeZero = -0e0;
-            return (*(Int64*)&value == *(Int64*)&negativeZero);
+            return (*(long*)&value == *(long*)&negativeZero);
         }
 
         private static int ToInfinity(bool isNegative, byte[] buffer, int offset)
@@ -811,7 +811,7 @@ namespace System.Xml
             return ToAsciiChars(value.ToString(null, NumberFormatInfo.InvariantInfo), buffer, offset);
         }
 
-        public static int ToChars(UInt64 value, byte[] buffer, int offset)
+        public static int ToChars(ulong value, byte[] buffer, int offset)
         {
             return ToAsciiChars(value.ToString(null, NumberFormatInfo.InvariantInfo), buffer, offset);
         }

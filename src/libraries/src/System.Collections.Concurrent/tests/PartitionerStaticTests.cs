@@ -368,7 +368,7 @@ namespace System.Collections.Concurrent.Tests
                 for (int i = 0; i < s_enumerators.Count; i++)
                 {
                     Assert.True(s_enumerators[i].IsDisposed(), 
-                        String.Format("AreEnumeratorsDisposed:  FAILED.  enumerator {0} was not disposed for SCENARIO: {1}.", i, scenario));
+                        string.Format("AreEnumeratorsDisposed:  FAILED.  enumerator {0} was not disposed for SCENARIO: {1}.", i, scenario));
                 }
             }
         }
@@ -389,7 +389,7 @@ namespace System.Collections.Concurrent.Tests
                 disposed = false;
             }
 
-            public Boolean MoveNext()
+            public bool MoveNext()
             {
                 return m_elements.MoveNext();
             }
@@ -399,7 +399,7 @@ namespace System.Collections.Concurrent.Tests
                 get { return m_elements.Current; }
             }
 
-            Object System.Collections.IEnumerator.Current
+            object System.Collections.IEnumerator.Current
             {
                 get { return m_elements.Current; }
             }

@@ -28,7 +28,7 @@ namespace System.Runtime.Caching.Configuration
             }
 
             int iValue;
-            if (!Int32.TryParse(sValue, out iValue)
+            if (!int.TryParse(sValue, out iValue)
                 || iValue < 0
                 || (!zeroAllowed && iValue == 0))
             {
@@ -62,7 +62,7 @@ namespace System.Runtime.Caching.Configuration
 
             if (sValue == "Infinite")
             {
-                return Int32.MaxValue;
+                return int.MaxValue;
             }
 
             TimeSpan tValue;
@@ -72,7 +72,7 @@ namespace System.Runtime.Caching.Configuration
             }
 
             double milliseconds = tValue.TotalMilliseconds;
-            int iValue = (milliseconds < (double)Int32.MaxValue) ? (int)milliseconds : Int32.MaxValue;
+            int iValue = (milliseconds < (double)int.MaxValue) ? (int)milliseconds : int.MaxValue;
             return iValue;
         }
 
@@ -86,7 +86,7 @@ namespace System.Runtime.Caching.Configuration
             }
 
             bool bValue;
-            if (!Boolean.TryParse(sValue, out bValue))
+            if (!bool.TryParse(sValue, out bValue))
             {
                 throw new ArgumentException(RH.Format(SR.Value_must_be_boolean, valueName, sValue), nameof(config));
             }

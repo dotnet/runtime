@@ -801,7 +801,7 @@ namespace System.Xml
         // Test if the DOM implementation implements a specific feature.
         public virtual bool Supports(string feature, string version)
         {
-            if (String.Equals("XML", feature, StringComparison.OrdinalIgnoreCase))
+            if (string.Equals("XML", feature, StringComparison.OrdinalIgnoreCase))
             {
                 if (version == null || version == "1.0" || version == "2.0")
                     return true;
@@ -999,7 +999,7 @@ namespace System.Xml
             }
         }
 
-        public virtual String BaseURI
+        public virtual string BaseURI
         {
             get
             {
@@ -1017,7 +1017,7 @@ namespace System.Xml
                         return curNode.BaseURI;
                     curNode = curNode.ParentNode;
                 }
-                return String.Empty;
+                return string.Empty;
             }
         }
 
@@ -1347,7 +1347,7 @@ namespace System.Xml
             }
         }
 
-        internal virtual String XmlLang
+        internal virtual string XmlLang
         {
             get
             {
@@ -1363,7 +1363,7 @@ namespace System.Xml
                     }
                     node = node.ParentNode;
                 } while (node != null);
-                return String.Empty;
+                return string.Empty;
             }
         }
 
@@ -1385,7 +1385,7 @@ namespace System.Xml
 
         internal virtual string GetXPAttribute(string localName, string namespaceURI)
         {
-            return String.Empty;
+            return string.Empty;
         }
 
         internal virtual bool IsText

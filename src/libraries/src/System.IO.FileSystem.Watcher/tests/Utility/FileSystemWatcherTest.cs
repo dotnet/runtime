@@ -117,7 +117,7 @@ namespace System.IO.Tests
         /// </summary>
         public static void ExpectEvent(WaitHandle eventOccurred, string eventName_NoRetry)
         {
-            string message = String.Format("Didn't observe a {0} event within {1}ms", eventName_NoRetry, WaitForExpectedEventTimeout_NoRetry);
+            string message = string.Format("Didn't observe a {0} event within {1}ms", eventName_NoRetry, WaitForExpectedEventTimeout_NoRetry);
             Assert.True(eventOccurred.WaitOne(WaitForExpectedEventTimeout_NoRetry), message);
         }
 

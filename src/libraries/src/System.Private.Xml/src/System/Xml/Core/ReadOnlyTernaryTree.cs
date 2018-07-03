@@ -49,7 +49,7 @@ namespace System.Xml
             mapped to.  Find is case-insensitive.
         */
         /// <include file='doc\ReadOnlyTernaryTree.uex' path='docs/doc[@for="TernaryTreeReadOnly.FindCaseInsensitiveString"]/*' />
-        public byte FindCaseInsensitiveString(String stringToFind)
+        public byte FindCaseInsensitiveString(string stringToFind)
         {
             //Debug.Assert(wszFind != null && wszFind.Length != 0);
 

@@ -626,7 +626,7 @@ namespace System.Diagnostics.Tracing
                 uint metadataLength = (metadata != null) ? (uint)metadata.Length : 0;
 
                 string eventName = m_eventData[i].Name;
-                Int64 keywords = m_eventData[i].Descriptor.Keywords;
+                long keywords = m_eventData[i].Descriptor.Keywords;
                 uint eventVersion = m_eventData[i].Descriptor.Version;
                 uint level = m_eventData[i].Descriptor.Level;
 
@@ -2025,7 +2025,7 @@ namespace System.Diagnostics.Tracing
         }
 
         // helper for writing to all EventListeners attached the current eventSource.  
-        private unsafe void WriteToAllListeners(int eventId, Guid* activityID, Guid* childActivityID, params object[] args)
+        internal unsafe void WriteToAllListeners(int eventId, Guid* activityID, Guid* childActivityID, params object[] args)
         {
             EventWrittenEventArgs eventCallbackArgs = new EventWrittenEventArgs(this);
             eventCallbackArgs.EventId = eventId;
@@ -3254,7 +3254,7 @@ namespace System.Diagnostics.Tracing
         {
             // If the first parameter is (case insensitive) 'relatedActivityId' then skip it.  
             if (args.Length > 0 && args[0].ParameterType == typeof(Guid) &&
-                string.Compare(args[0].Name, "relatedActivityId", StringComparison.OrdinalIgnoreCase) == 0)
+                string.Equals(args[0].Name, "relatedActivityId", StringComparison.OrdinalIgnoreCase))
             {
                 var newargs = new ParameterInfo[args.Length - 1];
                 Array.Copy(args, 1, newargs, 0, args.Length - 1);
@@ -3948,6 +3948,13 @@ namespace System.Diagnostics.Tracing
             }
 
             eventSource.SendCommand(this, EventProviderType.None, 0, 0, EventCommand.Update, true, level, matchAnyKeyword, arguments);
+
+#if FEATURE_PERFTRACING
+            if (eventSource.GetType() == typeof(RuntimeEventSource))
+            {
+                EventPipeEventDispatcher.Instance.SendCommand(this, EventCommand.Update, true, level, matchAnyKeyword);
+            }
+#endif // FEATURE_PERFTRACING
         }
         /// <summary>
         /// Disables all events coming from eventSource identified by 'eventSource'.  
@@ -3962,6 +3969,13 @@ namespace System.Diagnostics.Tracing
             }
 
             eventSource.SendCommand(this, EventProviderType.None, 0, 0, EventCommand.Update, false, EventLevel.LogAlways, EventKeywords.None, null);
+
+#if FEATURE_PERFTRACING
+            if (eventSource.GetType() == typeof(RuntimeEventSource))
+            {
+                EventPipeEventDispatcher.Instance.SendCommand(this, EventCommand.Update, false, EventLevel.LogAlways, EventKeywords.None);
+            }
+#endif // FEATURE_PERFTRACING
         }
 
         /// <summary>
@@ -4133,6 +4147,11 @@ namespace System.Diagnostics.Tracing
                     }
                 }
             }
+
+#if FEATURE_PERFTRACING
+            // Remove the listener from the EventPipe dispatcher.
+            EventPipeEventDispatcher.Instance.RemoveEventListener(listenerToRemove);
+#endif // FEATURE_PERFTRACING
         }
 
         /// <summary>
@@ -4433,7 +4452,7 @@ namespace System.Diagnostics.Tracing
         /// <summary>
         /// Gets the payload for the event.
         /// </summary>
-        public ReadOnlyCollection<Object> Payload { get; internal set; }
+        public ReadOnlyCollection<object> Payload { get; internal set; }
 
         /// <summary>
         /// Gets the payload argument names.
@@ -5233,7 +5252,7 @@ namespace System.Diagnostics.Tracing
                 templates.Append(" length=\"").Append(name).Append("Size\"");
             }
             // ETW does not support 64-bit value maps, so we don't specify these as ETW maps
-            if (type.IsEnum() && Enum.GetUnderlyingType(type) != typeof(UInt64) && Enum.GetUnderlyingType(type) != typeof(Int64))
+            if (type.IsEnum() && Enum.GetUnderlyingType(type) != typeof(ulong) && Enum.GetUnderlyingType(type) != typeof(long))
             {
                 templates.Append(" map=\"").Append(type.Name).Append("\"");
                 if (mapsTab == null)
@@ -5796,7 +5815,7 @@ namespace System.Diagnostics.Tracing
                     int leftBracket = i;
                     i++;
                     int argNum = 0;
-                    while (i < eventMessage.Length && Char.IsDigit(eventMessage[i]))
+                    while (i < eventMessage.Length && char.IsDigit(eventMessage[i]))
                     {
                         argNum = argNum * 10 + eventMessage[i] - '0';
                         i++;

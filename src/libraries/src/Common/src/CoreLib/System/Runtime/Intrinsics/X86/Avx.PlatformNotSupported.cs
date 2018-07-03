@@ -238,17 +238,7 @@ namespace System.Runtime.Intrinsics.X86
         /// __int8 _mm256_extract_epi8 (__m256i a, const int index)
         ///   HELPER
         /// </summary>
-        public static sbyte Extract(Vector256<sbyte> value, byte index) { throw new PlatformNotSupportedException(); }
-        /// <summary>
-        /// __int8 _mm256_extract_epi8 (__m256i a, const int index)
-        ///   HELPER
-        /// </summary>
         public static byte Extract(Vector256<byte> value, byte index) { throw new PlatformNotSupportedException(); }
-        /// <summary>
-        /// __int16 _mm256_extract_epi16 (__m256i a, const int index)
-        ///   HELPER
-        /// </summary>
-        public static short Extract(Vector256<short> value, byte index) { throw new PlatformNotSupportedException(); }
         /// <summary>
         /// __int16 _mm256_extract_epi16 (__m256i a, const int index)
         ///   HELPER
@@ -638,45 +628,45 @@ namespace System.Runtime.Intrinsics.X86
         /// __m128 _mm_maskload_ps (float const * mem_addr, __m128i mask)
         ///   VMASKMOVPS xmm, xmm, m128
         /// </summary>
-        public static unsafe Vector128<float> MaskLoad(float* address, Vector128<uint> mask) { throw new PlatformNotSupportedException(); }
+        public static unsafe Vector128<float> MaskLoad(float* address, Vector128<float> mask) { throw new PlatformNotSupportedException(); }
         /// <summary>
         /// __m128d _mm_maskload_pd (double const * mem_addr, __m128i mask)
         ///   VMASKMOVPD xmm, xmm, m128
         /// </summary>
-        public static unsafe Vector128<double> MaskLoad(double* address, Vector128<ulong> mask) { throw new PlatformNotSupportedException(); }
+        public static unsafe Vector128<double> MaskLoad(double* address, Vector128<double> mask) { throw new PlatformNotSupportedException(); }
 
         /// <summary>
         /// __m256 _mm256_maskload_ps (float const * mem_addr, __m256i mask)
         ///   VMASKMOVPS ymm, ymm, m256
         /// </summary>
-        public static unsafe Vector256<float> MaskLoad(float* address, Vector256<uint> mask) { throw new PlatformNotSupportedException(); }
+        public static unsafe Vector256<float> MaskLoad(float* address, Vector256<float> mask) { throw new PlatformNotSupportedException(); }
         /// <summary>
         /// __m256d _mm256_maskload_pd (double const * mem_addr, __m256i mask)
         ///   VMASKMOVPD ymm, ymm, m256
         /// </summary>
-        public static unsafe Vector256<double> MaskLoad(double* address, Vector256<ulong> mask) { throw new PlatformNotSupportedException(); }
+        public static unsafe Vector256<double> MaskLoad(double* address, Vector256<double> mask) { throw new PlatformNotSupportedException(); }
 
         /// <summary>
         /// void _mm_maskstore_ps (float * mem_addr, __m128i mask, __m128 a)
         ///   VMASKMOVPS m128, xmm, xmm
         /// </summary>
-        public static unsafe void MaskStore(float* address, Vector128<float> mask, Vector128<uint> source) { throw new PlatformNotSupportedException(); }
+        public static unsafe void MaskStore(float* address, Vector128<float> mask, Vector128<float> source) { throw new PlatformNotSupportedException(); }
         /// <summary>
         /// void _mm_maskstore_pd (double * mem_addr, __m128i mask, __m128d a)
         ///   VMASKMOVPD m128, xmm, xmm
         /// </summary>
-        public static unsafe void MaskStore(double* address, Vector128<double> mask, Vector128<ulong> source) { throw new PlatformNotSupportedException(); }
+        public static unsafe void MaskStore(double* address, Vector128<double> mask, Vector128<double> source) { throw new PlatformNotSupportedException(); }
 
         /// <summary>
         /// void _mm256_maskstore_ps (float * mem_addr, __m256i mask, __m256 a)
         ///   VMASKMOVPS m256, ymm, ymm
         /// </summary>
-        public static unsafe void MaskStore(float* address, Vector256<float> mask, Vector256<uint> source) { throw new PlatformNotSupportedException(); }
+        public static unsafe void MaskStore(float* address, Vector256<float> mask, Vector256<float> source) { throw new PlatformNotSupportedException(); }
         /// <summary>
         /// void _mm256_maskstore_pd (double * mem_addr, __m256i mask, __m256d a)
         ///   VMASKMOVPD m256, ymm, ymm
         /// </summary>
-        public static unsafe void MaskStore(double* address, Vector256<double> mask, Vector256<ulong> source) { throw new PlatformNotSupportedException(); }
+        public static unsafe void MaskStore(double* address, Vector256<double> mask, Vector256<double> source) { throw new PlatformNotSupportedException(); }
 
         /// <summary>
         /// __m256 _mm256_max_ps (__m256 a, __m256 b)

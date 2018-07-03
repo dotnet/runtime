@@ -96,7 +96,7 @@ namespace Microsoft.Framework.WebEncoders
         /// </summary>
         public string Encode(string value)
         {
-            if (String.IsNullOrEmpty(value))
+            if (string.IsNullOrEmpty(value))
             {
                 return value;
             }

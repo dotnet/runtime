@@ -65,8 +65,8 @@ namespace Microsoft.SqlServer.Server
         internal const int MaxTimeScale = 7;        // Max scale for time, datetime2, and datetimeoffset
         internal static readonly DateTime MaxSmallDateTime = new DateTime(2079, 06, 06, 23, 59, 29, 998);
         internal static readonly DateTime MinSmallDateTime = new DateTime(1899, 12, 31, 23, 59, 29, 999);
-        internal static readonly SqlMoney MaxSmallMoney = new SqlMoney(((Decimal)Int32.MaxValue) / 10000);
-        internal static readonly SqlMoney MinSmallMoney = new SqlMoney(((Decimal)Int32.MinValue) / 10000);
+        internal static readonly SqlMoney MaxSmallMoney = new SqlMoney(((decimal)int.MaxValue) / 10000);
+        internal static readonly SqlMoney MinSmallMoney = new SqlMoney(((decimal)int.MinValue) / 10000);
         internal const SqlCompareOptions DefaultStringCompareOptions = SqlCompareOptions.IgnoreCase
                                         | SqlCompareOptions.IgnoreKanaType | SqlCompareOptions.IgnoreWidth;
 

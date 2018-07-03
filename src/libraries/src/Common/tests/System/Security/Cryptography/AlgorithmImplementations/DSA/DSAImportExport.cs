@@ -100,15 +100,15 @@ namespace System.Security.Cryptography.Dsa.Tests
                 DSAParameters exportedPrivate3 = dsa.ExportParameters(true);
                 DSAParameters exportedPublic3 = dsa.ExportParameters(false);
 
-                AssertKeyEquals(ref imported, ref exportedPrivate);
+                AssertKeyEquals(imported, exportedPrivate);
 
                 ValidateParameters(ref exportedPublic);
 
-                AssertKeyEquals(ref exportedPrivate, ref exportedPrivate2);
-                AssertKeyEquals(ref exportedPrivate, ref exportedPrivate3);
+                AssertKeyEquals(exportedPrivate, exportedPrivate2);
+                AssertKeyEquals(exportedPrivate, exportedPrivate3);
 
-                AssertKeyEquals(ref exportedPublic, ref exportedPublic2);
-                AssertKeyEquals(ref exportedPublic, ref exportedPublic3);
+                AssertKeyEquals(exportedPublic, exportedPublic2);
+                AssertKeyEquals(exportedPublic, exportedPublic3);
             }
         }
 
@@ -127,12 +127,12 @@ namespace System.Security.Cryptography.Dsa.Tests
                 {
                     dsa2.ImportParameters(exported);
                     DSAParameters exported2 = dsa2.ExportParameters(includePrivate);
-                    AssertKeyEquals(ref exported, ref exported2);
+                    AssertKeyEquals(in exported, in exported2);
                 }
             }
         }
 
-        internal static void AssertKeyEquals(ref DSAParameters expected, ref DSAParameters actual)
+        internal static void AssertKeyEquals(in DSAParameters expected, in DSAParameters actual)
         {
             Assert.Equal(expected.G, actual.G);
             Assert.Equal(expected.P, actual.P);

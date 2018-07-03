@@ -23,19 +23,19 @@ namespace CoreXml.Test.XLinq
                     XmlReader DataReader = GetReader();
                     ((IDisposable)DataReader).Dispose();
 
-                    TestLog.Compare(DataReader.Name, String.Empty, "Name");
+                    TestLog.Compare(DataReader.Name, string.Empty, "Name");
                     TestLog.Compare(DataReader.NodeType, XmlNodeType.None, "NodeType");
                     TestLog.Compare(DataReader.ReadState, ReadState.Closed, "ReadState");
                     TestLog.Compare(DataReader.AttributeCount, 0, "Attrib Count");
-                    TestLog.Compare(DataReader.XmlLang, String.Empty, "XML Lang");
+                    TestLog.Compare(DataReader.XmlLang, string.Empty, "XML Lang");
                     TestLog.Compare(DataReader.XmlSpace, XmlSpace.None, "Space");
-                    TestLog.Compare(DataReader.BaseURI, String.Empty, "BaseUri");
+                    TestLog.Compare(DataReader.BaseURI, string.Empty, "BaseUri");
                     TestLog.Compare(DataReader.Depth, 0, "Depth");
                     TestLog.Compare(DataReader.EOF, false, "EOF");
                     TestLog.Compare(DataReader.HasAttributes, false, "HasAttr");
                     TestLog.Compare(DataReader.HasValue, false, "HasValue");
                     TestLog.Compare(DataReader.IsDefault, false, "IsDefault");
-                    TestLog.Compare(DataReader.LocalName, String.Empty, "LocalName");
+                    TestLog.Compare(DataReader.LocalName, string.Empty, "LocalName");
                     try
                     {
                         TestLog.Compare(((IXmlLineInfo)DataReader).LineNumber, 0, "Line number");

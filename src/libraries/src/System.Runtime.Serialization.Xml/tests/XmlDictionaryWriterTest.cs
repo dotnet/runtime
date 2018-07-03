@@ -432,7 +432,7 @@ public static class XmlDictionaryWriterTest
         writer.WriteStartElement("Fragment" + nestedLevelsLeft);
         for (int i = 0; i < 5; i++)
         {
-            writer.WriteStartElement(String.Format("Element{0}_{1}", nestedLevelsLeft, i));
+            writer.WriteStartElement(string.Format("Element{0}_{1}", nestedLevelsLeft, i));
             writer.WriteAttributeString("attr1", "value1");
             writer.WriteAttributeString("attr2", "value2");
         }

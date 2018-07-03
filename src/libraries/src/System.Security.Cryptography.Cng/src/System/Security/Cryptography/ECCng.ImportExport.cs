@@ -44,7 +44,7 @@ namespace System.Security.Cryptography
             out CngKeyBlobFormat format,
             out string curveName)
         {
-            curveName = key.GetCurveName();
+            curveName = key.GetCurveName(out _);
             bool forceGenericBlob = false;
 
             if (string.IsNullOrEmpty(curveName))

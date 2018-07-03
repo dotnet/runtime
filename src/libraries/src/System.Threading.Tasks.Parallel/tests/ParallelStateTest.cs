@@ -443,11 +443,11 @@ namespace System.Threading.Tasks.Test
             Debug.WriteLine("Calling StopAction on index: {0}, StartIndex: {1}, real index {2}", i, _startIndex, i - _startIndex);
 
             // We already called Stop() on the Parallel state
-            Assert.False(_isStopped && _isStopped != state.IsStopped, String.Format("Expecting IsStopped to be true for iteration {0}", i));
+            Assert.False(_isStopped && _isStopped != state.IsStopped, string.Format("Expecting IsStopped to be true for iteration {0}", i));
 
             // If we previously called Stop() on the parallel state,
             // we expect all iterations see the state's ShouldExitCurrentIteration to be true
-            Assert.False(_isStopped && !state.ShouldExitCurrentIteration, String.Format("Expecting ShouldExitCurrentIteration to be true for iteration {0}", i));
+            Assert.False(_isStopped && !state.ShouldExitCurrentIteration, string.Format("Expecting ShouldExitCurrentIteration to be true for iteration {0}", i));
 
             try
             {
@@ -484,11 +484,11 @@ namespace System.Threading.Tasks.Test
             else
             {
                 // We already called Stop() on the Parallel state
-                Assert.False(_isStopped && !state.IsStopped, String.Format("Expecting IsStopped to be true for iteration {0}", i));
+                Assert.False(_isStopped && !state.IsStopped, string.Format("Expecting IsStopped to be true for iteration {0}", i));
 
                 // If we previously called Stop() on the parallel state,
                 // we expect all iterations see the state's ShouldExitCurrentIteration to be true
-                Assert.False(_isStopped && !state.ShouldExitCurrentIteration, String.Format("Expecting ShouldExitCurrentIteration to be true for iteration {0}", i));
+                Assert.False(_isStopped && !state.ShouldExitCurrentIteration, string.Format("Expecting ShouldExitCurrentIteration to be true for iteration {0}", i));
             }
         }
 
@@ -516,12 +516,12 @@ namespace System.Threading.Tasks.Test
             if (_lowestBreakIter.HasValue)
             {
                 Assert.False(state.LowestBreakIteration.Value != _lowestBreakIter.Value,
-                    String.Format("Expecting LowestBreakIteration value to be {0} for iteration {1}, while getting {2}", _lowestBreakIter, i, state.LowestBreakIteration.Value));
+                    string.Format("Expecting LowestBreakIteration value to be {0} for iteration {1}, while getting {2}", _lowestBreakIter, i, state.LowestBreakIteration.Value));
 
                 // If we previously called Break() on the parallel state,
                 // we expect all higher iterations see the state's ShouldExitCurrentIteration to be true
                 Assert.False(i > _lowestBreakIter.Value && !state.ShouldExitCurrentIteration,
-                    String.Format("Expecting ShouldExitCurrentIteration to be true for iteration {0}, LowestBreakIteration is {1}", i, _lowestBreakIter));
+                    string.Format("Expecting ShouldExitCurrentIteration to be true for iteration {0}, LowestBreakIteration is {1}", i, _lowestBreakIter));
             }
 
             if (_lowestBreakIter.HasValue && i < _lowestBreakIter.Value && state.ShouldExitCurrentIteration)
@@ -533,7 +533,7 @@ namespace System.Threading.Tasks.Test
                 // in between retrieving LowestBreakIteration value and ShouldExitCurrentIteration
                 // which changes the value of ShouldExitCurrentIteration. 
                 // We do another sample instead of LowestBreakIteration before failing the test
-                Assert.False(i < lbi, String.Format("Expecting ShouldExitCurrentIteration to be false for iteration {0}, LowestBreakIteration is {1}", i, lbi));
+                Assert.False(i < lbi, string.Format("Expecting ShouldExitCurrentIteration to be false for iteration {0}, LowestBreakIteration is {1}", i, lbi));
             }
 
             if (!_lowestBreakIter.HasValue || (_lowestBreakIter.HasValue && i < _lowestBreakIter.Value))
@@ -591,7 +591,7 @@ namespace System.Threading.Tasks.Test
                 if (state.LowestBreakIteration.HasValue)
                 {
                     Assert.False(i > state.LowestBreakIteration.Value && !state.ShouldExitCurrentIteration,
-                        String.Format("Expecting ShouldExitCurrentIteration to be true for iteration {0}, LowestBreakIteration is {1}", i, state.LowestBreakIteration.Value));
+                        string.Format("Expecting ShouldExitCurrentIteration to be true for iteration {0}, LowestBreakIteration is {1}", i, state.LowestBreakIteration.Value));
                 }
 
                 if (state.LowestBreakIteration.HasValue && i < state.LowestBreakIteration.Value && state.ShouldExitCurrentIteration)
@@ -604,7 +604,7 @@ namespace System.Threading.Tasks.Test
                     // in between retrieving LowestBreakIteration value and ShouldExitCurrentIteration
                     // which changes the value of ShouldExitCurrentIteration. 
                     // We do another sample instead of LowestBreakIteration before failing the test
-                    Assert.False(i < lbi, String.Format("Expecting ShouldExitCurrentIteration to be false for iteration {0}, LowestBreakIteration is {1}", i, lbi));
+                    Assert.False(i < lbi, string.Format("Expecting ShouldExitCurrentIteration to be false for iteration {0}, LowestBreakIteration is {1}", i, lbi));
                 }
             }
         }
@@ -626,10 +626,10 @@ namespace System.Threading.Tasks.Test
         {
             Debug.WriteLine("Calling ExceptionalAction on index {0}, StartIndex: {1}, real index {2}", i, _startIndex, i - _startIndex);
 
-            Assert.False(_isExceptional != state.IsExceptional, String.Format("IsExceptional is expected to be {0} while getting {1}", _isExceptional, state.IsExceptional));
+            Assert.False(_isExceptional != state.IsExceptional, string.Format("IsExceptional is expected to be {0} while getting {1}", _isExceptional, state.IsExceptional));
 
             // Previous iteration throws exception, the Parallel should stop it's work
-            Assert.False(_isExceptional && !state.ShouldExitCurrentIteration, String.Format("Expecting ShouldExitCurrentIteration to be true, since Exception was thrown on previous iterations"));
+            Assert.False(_isExceptional && !state.ShouldExitCurrentIteration, string.Format("Expecting ShouldExitCurrentIteration to be true, since Exception was thrown on previous iterations"));
 
             try
             {
@@ -669,11 +669,11 @@ namespace System.Threading.Tasks.Test
             }
             else
             {
-                Assert.False(state.IsExceptional && !_isExceptional, String.Format("IsExceptional is expected to be {0} while getting {1}", _isExceptional, state.IsExceptional));
+                Assert.False(state.IsExceptional && !_isExceptional, string.Format("IsExceptional is expected to be {0} while getting {1}", _isExceptional, state.IsExceptional));
 
                 // Previous iteration throws exception, the Parallel should stop it's work
                 Assert.False(state.IsExceptional && !state.ShouldExitCurrentIteration,
-                    String.Format("Expecting ShouldExitCurrentIteration to be true, since Exception was thrown on previous iterations"));
+                    string.Format("Expecting ShouldExitCurrentIteration to be true, since Exception was thrown on previous iterations"));
             }
         }
         #endregion
@@ -754,13 +754,13 @@ namespace System.Threading.Tasks.Test
 
             if (_results[i] < minLimit || _results[i] > maxLimit)
             {
-                Assert.False(double.MinValue == _results[i], String.Format("results[{0}] has been revisited", i));
+                Assert.False(double.MinValue == _results[i], string.Format("results[{0}] has been revisited", i));
 
                 if (_isStopped && 0 == _results[i])
                     Debug.WriteLine("Stopped calculation at index = {0}", i);
 
                 Assert.True(_isStopped && 0 == _results[i],
-                    String.Format("Incorrect results[{0}]. Expected to lie between {1} and {2}, but got {3})", i, minLimit, maxLimit, _results[i]));
+                    string.Format("Incorrect results[{0}]. Expected to lie between {1} and {2}, but got {3})", i, minLimit, maxLimit, _results[i]));
             }
         }
 
@@ -778,7 +778,7 @@ namespace System.Threading.Tasks.Test
             Assert.False(loopResult == null, "No ParallelLoopResult returned");
 
             Assert.False(loopResult.Value.IsCompleted == true || loopResult.Value.LowestBreakIteration != null,
-                    String.Format("ParallelLoopResult invalid, expecting Completed=false,LowestBreakIteration=null, actual: {0}, {1}", loopResult.Value.IsCompleted, loopResult.Value.LowestBreakIteration));
+                    string.Format("ParallelLoopResult invalid, expecting Completed=false,LowestBreakIteration=null, actual: {0}, {1}", loopResult.Value.IsCompleted, loopResult.Value.LowestBreakIteration));
 
             for (int i = 0; i < _parameters.Count; i++)
                 Verify(i);
@@ -799,7 +799,7 @@ namespace System.Threading.Tasks.Test
             Assert.False(loopResult == null, "No ParallelLoopResult returned");
 
             Assert.False(loopResult.Value.IsCompleted == true || loopResult.Value.LowestBreakIteration == null || loopResult.Value.LowestBreakIteration != _lowestBreakIter,
-                String.Format("ParallelLoopResult invalid, expecting Completed=false,LowestBreakIteration={0}, actual: {1}, {2}", _lowestBreakIter, loopResult.Value.IsCompleted, loopResult.Value.LowestBreakIteration));
+                string.Format("ParallelLoopResult invalid, expecting Completed=false,LowestBreakIteration={0}, actual: {1}, {2}", _lowestBreakIter, loopResult.Value.IsCompleted, loopResult.Value.LowestBreakIteration));
 
             for (int i = 0; i < _lowestBreakIter.Value - _startIndex; i++)
                 Verify(i);

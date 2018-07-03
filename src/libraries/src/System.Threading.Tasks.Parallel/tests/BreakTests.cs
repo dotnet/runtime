@@ -59,7 +59,7 @@ namespace System.Threading.Tasks.Tests
             // Throw a curveball here and loop from just-under-Int32.MaxValue to 
             // just-over-Int32.MaxValue.  Make sure that 64-bit indices are being
             // handled correctly.
-            long loopbase = (long)Int32.MaxValue - 10;
+            long loopbase = (long)int.MaxValue - 10;
             Parallel.For(loopbase, loopbase + loopsize, delegate(long i, ParallelLoopState ps)
             {
                 complete[i - loopbase] = true;

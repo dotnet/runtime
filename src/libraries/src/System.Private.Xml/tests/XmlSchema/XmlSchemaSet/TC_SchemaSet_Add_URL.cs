@@ -28,7 +28,7 @@ namespace System.Xml.Tests
             try
             {
                 XmlSchemaSet sc = new XmlSchemaSet();
-                sc.Add((String)null, (String)null);
+                sc.Add((string)null, (string)null);
             }
             catch (ArgumentNullException)
             {
@@ -44,7 +44,7 @@ namespace System.Xml.Tests
         public void v2()
         {
             XmlSchemaSet sc = new XmlSchemaSet();
-            XmlSchema Schema = sc.Add((String)null, TestData._FileXSD1);
+            XmlSchema Schema = sc.Add((string)null, TestData._FileXSD1);
             Assert.Equal(Schema != null, true);
 
             return;

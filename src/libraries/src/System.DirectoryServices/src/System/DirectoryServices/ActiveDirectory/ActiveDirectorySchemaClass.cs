@@ -1338,7 +1338,7 @@ namespace System.DirectoryServices.ActiveDirectory
 
                 string filter = "(&(" + PropertyManager.ObjectCategory + "=classSchema)" + str.ToString() + "(!(" + PropertyManager.IsDefunct + "=TRUE)))";
 
-                string[] propertiesToLoad = new String[1];
+                string[] propertiesToLoad = new string[1];
                 propertiesToLoad[0] = PropertyManager.LdapDisplayName;
 
                 ADSearcher searcher = new ADSearcher(_schemaEntry, filter, propertiesToLoad, SearchScope.OneLevel);
@@ -1416,7 +1416,7 @@ namespace System.DirectoryServices.ActiveDirectory
 
                 string filter = "(&(" + PropertyManager.ObjectCategory + "=attributeSchema)" + str.ToString() + "(!(" + PropertyManager.IsDefunct + "=TRUE)))";
 
-                string[] propertiesToLoad = new String[1];
+                string[] propertiesToLoad = new string[1];
                 propertiesToLoad[0] = PropertyManager.LdapDisplayName;
 
                 ADSearcher searcher = new ADSearcher(_schemaEntry, filter, propertiesToLoad, SearchScope.OneLevel);

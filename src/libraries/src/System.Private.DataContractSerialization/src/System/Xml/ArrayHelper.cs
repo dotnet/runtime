@@ -125,91 +125,91 @@ namespace System.Xml
         }
     }
 
-    internal class Int16ArrayHelperWithString : ArrayHelper<string, Int16>
+    internal class Int16ArrayHelperWithString : ArrayHelper<string, short>
     {
         public static readonly Int16ArrayHelperWithString Instance = new Int16ArrayHelperWithString();
 
-        protected override int ReadArray(XmlDictionaryReader reader, string localName, string namespaceUri, Int16[] array, int offset, int count)
+        protected override int ReadArray(XmlDictionaryReader reader, string localName, string namespaceUri, short[] array, int offset, int count)
         {
             return reader.ReadArray(localName, namespaceUri, array, offset, count);
         }
 
-        protected override void WriteArray(XmlDictionaryWriter writer, string prefix, string localName, string namespaceUri, Int16[] array, int offset, int count)
+        protected override void WriteArray(XmlDictionaryWriter writer, string prefix, string localName, string namespaceUri, short[] array, int offset, int count)
         {
             writer.WriteArray(prefix, localName, namespaceUri, array, offset, count);
         }
     }
 
-    internal class Int16ArrayHelperWithDictionaryString : ArrayHelper<XmlDictionaryString, Int16>
+    internal class Int16ArrayHelperWithDictionaryString : ArrayHelper<XmlDictionaryString, short>
     {
         public static readonly Int16ArrayHelperWithDictionaryString Instance = new Int16ArrayHelperWithDictionaryString();
 
-        protected override int ReadArray(XmlDictionaryReader reader, XmlDictionaryString localName, XmlDictionaryString namespaceUri, Int16[] array, int offset, int count)
+        protected override int ReadArray(XmlDictionaryReader reader, XmlDictionaryString localName, XmlDictionaryString namespaceUri, short[] array, int offset, int count)
         {
             return reader.ReadArray(localName, namespaceUri, array, offset, count);
         }
 
-        protected override void WriteArray(XmlDictionaryWriter writer, string prefix, XmlDictionaryString localName, XmlDictionaryString namespaceUri, Int16[] array, int offset, int count)
+        protected override void WriteArray(XmlDictionaryWriter writer, string prefix, XmlDictionaryString localName, XmlDictionaryString namespaceUri, short[] array, int offset, int count)
         {
             writer.WriteArray(prefix, localName, namespaceUri, array, offset, count);
         }
     }
 
-    internal class Int32ArrayHelperWithString : ArrayHelper<string, Int32>
+    internal class Int32ArrayHelperWithString : ArrayHelper<string, int>
     {
         public static readonly Int32ArrayHelperWithString Instance = new Int32ArrayHelperWithString();
 
-        protected override int ReadArray(XmlDictionaryReader reader, string localName, string namespaceUri, Int32[] array, int offset, int count)
+        protected override int ReadArray(XmlDictionaryReader reader, string localName, string namespaceUri, int[] array, int offset, int count)
         {
             return reader.ReadArray(localName, namespaceUri, array, offset, count);
         }
 
-        protected override void WriteArray(XmlDictionaryWriter writer, string prefix, string localName, string namespaceUri, Int32[] array, int offset, int count)
+        protected override void WriteArray(XmlDictionaryWriter writer, string prefix, string localName, string namespaceUri, int[] array, int offset, int count)
         {
             writer.WriteArray(prefix, localName, namespaceUri, array, offset, count);
         }
     }
 
-    internal class Int32ArrayHelperWithDictionaryString : ArrayHelper<XmlDictionaryString, Int32>
+    internal class Int32ArrayHelperWithDictionaryString : ArrayHelper<XmlDictionaryString, int>
     {
         public static readonly Int32ArrayHelperWithDictionaryString Instance = new Int32ArrayHelperWithDictionaryString();
 
-        protected override int ReadArray(XmlDictionaryReader reader, XmlDictionaryString localName, XmlDictionaryString namespaceUri, Int32[] array, int offset, int count)
+        protected override int ReadArray(XmlDictionaryReader reader, XmlDictionaryString localName, XmlDictionaryString namespaceUri, int[] array, int offset, int count)
         {
             return reader.ReadArray(localName, namespaceUri, array, offset, count);
         }
 
-        protected override void WriteArray(XmlDictionaryWriter writer, string prefix, XmlDictionaryString localName, XmlDictionaryString namespaceUri, Int32[] array, int offset, int count)
+        protected override void WriteArray(XmlDictionaryWriter writer, string prefix, XmlDictionaryString localName, XmlDictionaryString namespaceUri, int[] array, int offset, int count)
         {
             writer.WriteArray(prefix, localName, namespaceUri, array, offset, count);
         }
     }
 
-    internal class Int64ArrayHelperWithString : ArrayHelper<string, Int64>
+    internal class Int64ArrayHelperWithString : ArrayHelper<string, long>
     {
         public static readonly Int64ArrayHelperWithString Instance = new Int64ArrayHelperWithString();
 
-        protected override int ReadArray(XmlDictionaryReader reader, string localName, string namespaceUri, Int64[] array, int offset, int count)
+        protected override int ReadArray(XmlDictionaryReader reader, string localName, string namespaceUri, long[] array, int offset, int count)
         {
             return reader.ReadArray(localName, namespaceUri, array, offset, count);
         }
 
-        protected override void WriteArray(XmlDictionaryWriter writer, string prefix, string localName, string namespaceUri, Int64[] array, int offset, int count)
+        protected override void WriteArray(XmlDictionaryWriter writer, string prefix, string localName, string namespaceUri, long[] array, int offset, int count)
         {
             writer.WriteArray(prefix, localName, namespaceUri, array, offset, count);
         }
     }
 
-    internal class Int64ArrayHelperWithDictionaryString : ArrayHelper<XmlDictionaryString, Int64>
+    internal class Int64ArrayHelperWithDictionaryString : ArrayHelper<XmlDictionaryString, long>
     {
         public static readonly Int64ArrayHelperWithDictionaryString Instance = new Int64ArrayHelperWithDictionaryString();
 
-        protected override int ReadArray(XmlDictionaryReader reader, XmlDictionaryString localName, XmlDictionaryString namespaceUri, Int64[] array, int offset, int count)
+        protected override int ReadArray(XmlDictionaryReader reader, XmlDictionaryString localName, XmlDictionaryString namespaceUri, long[] array, int offset, int count)
         {
             return reader.ReadArray(localName, namespaceUri, array, offset, count);
         }
 
-        protected override void WriteArray(XmlDictionaryWriter writer, string prefix, XmlDictionaryString localName, XmlDictionaryString namespaceUri, Int64[] array, int offset, int count)
+        protected override void WriteArray(XmlDictionaryWriter writer, string prefix, XmlDictionaryString localName, XmlDictionaryString namespaceUri, long[] array, int offset, int count)
         {
             writer.WriteArray(prefix, localName, namespaceUri, array, offset, count);
         }

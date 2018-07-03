@@ -55,7 +55,7 @@ namespace System.Net.Http.WinHttpHandlerUnitTests
             Assert.Equal(WindowsProxyUsePolicy.UseWinHttpProxy, handler.WindowsProxyUsePolicy);
             Assert.Equal(null, handler.DefaultProxyCredentials);
             Assert.Equal(null, handler.Proxy);
-            Assert.Equal(Int32.MaxValue, handler.MaxConnectionsPerServer);
+            Assert.Equal(int.MaxValue, handler.MaxConnectionsPerServer);
             Assert.Equal(TimeSpan.FromSeconds(30), handler.SendTimeout);
             Assert.Equal(TimeSpan.FromSeconds(30), handler.ReceiveHeadersTimeout);
             Assert.Equal(TimeSpan.FromSeconds(30), handler.ReceiveDataTimeout);
@@ -227,7 +227,7 @@ namespace System.Net.Http.WinHttpHandlerUnitTests
         public void Properties_Get_CountIsZero()
         {
             var handler = new WinHttpHandler();
-            IDictionary<String, object> dict = handler.Properties;
+            IDictionary<string, object> dict = handler.Properties;
             Assert.Equal(0, dict.Count);
         }
 
@@ -235,10 +235,10 @@ namespace System.Net.Http.WinHttpHandlerUnitTests
         public void Properties_AddItemToDictionary_ItemPresent()
         {
             var handler = new WinHttpHandler();
-            IDictionary<String, object> dict = handler.Properties;
+            IDictionary<string, object> dict = handler.Properties;
             Assert.Same(dict, handler.Properties);
 
-            var item = new Object();
+            var item = new object();
             dict.Add("item", item);
 
             object value;
@@ -873,7 +873,7 @@ namespace System.Net.Http.WinHttpHandlerUnitTests
             using (var client = new HttpClient(handler))
             {
                 var request = new HttpRequestMessage(HttpMethod.Post, TestServer.FakeServerEndpoint);
-                var content = new StringContent(new String('a', 1000));
+                var content = new StringContent(new string('a', 1000));
                 request.Content = content;
 
                 await Assert.ThrowsAsync<TaskCanceledException>(() =>

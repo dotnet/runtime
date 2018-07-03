@@ -114,10 +114,10 @@ namespace System
             if (x == null) return -1;
             if (y == null) return 1;
 
-            String sa = x as String;
+            string sa = x as string;
             if (sa != null)
             {
-                String sb = y as String;
+                string sb = y as string;
                 if (sb != null)
                 {
                     return Compare(sa, sb);
@@ -133,15 +133,15 @@ namespace System
             throw new ArgumentException(SR.Argument_ImplementIComparable);
         }
 
-        public new bool Equals(Object x, Object y)
+        public new bool Equals(object x, object y)
         {
             if (x == y) return true;
             if (x == null || y == null) return false;
 
-            String sa = x as String;
+            string sa = x as string;
             if (sa != null)
             {
-                String sb = y as String;
+                string sb = y as string;
                 if (sb != null)
                 {
                     return Equals(sa, sb);
@@ -165,8 +165,8 @@ namespace System
             return obj.GetHashCode();
         }
 
-        public abstract int Compare(String x, String y);
-        public abstract bool Equals(String x, String y);
+        public abstract int Compare(string x, string y);
+        public abstract bool Equals(string x, string y);
         public abstract int GetHashCode(string obj);
     }
 
@@ -293,7 +293,7 @@ namespace System
                 {
                     return false;
                 }
-                return (string.Compare(x, y, StringComparison.OrdinalIgnoreCase) == 0);
+                return string.Equals(x, y, StringComparison.OrdinalIgnoreCase);
             }
             return x.Equals(y);
         }

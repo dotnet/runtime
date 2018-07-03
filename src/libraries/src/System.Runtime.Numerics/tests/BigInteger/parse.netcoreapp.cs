@@ -48,7 +48,7 @@ namespace System.Numerics.Tests
             else
             {
                 Assert.Throws<FormatException>(() => { BigInteger.Parse(num1.AsSpan(), provider: nfi); });
-                Assert.False(BigInteger.TryParse(num1.AsSpan(), NumberStyles.Any, nfi, out BigInteger test), String.Format("Expected TryParse to fail on {0}", num1));
+                Assert.False(BigInteger.TryParse(num1.AsSpan(), NumberStyles.Any, nfi, out BigInteger test), string.Format("Expected TryParse to fail on {0}", num1));
             }
         }
 
@@ -63,7 +63,7 @@ namespace System.Numerics.Tests
             else
             {
                 Assert.Throws<FormatException>(() => { BigInteger.Parse(num1.AsSpan(), ns, nfi); });
-                Assert.False(BigInteger.TryParse(num1.AsSpan(), ns, nfi, out BigInteger test), String.Format("Expected TryParse to fail on {0}", num1));
+                Assert.False(BigInteger.TryParse(num1.AsSpan(), ns, nfi, out BigInteger test), string.Format("Expected TryParse to fail on {0}", num1));
             }
         }
     }

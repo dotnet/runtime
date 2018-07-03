@@ -11,6 +11,6 @@ internal partial class Interop
     internal partial class Advapi32
     {
         [DllImport(Libraries.Advapi32, CharSet = CharSet.Unicode, BestFitMapping = false, EntryPoint = "RegConnectRegistryW")]
-        internal static extern int RegConnectRegistry(String machineName, SafeRegistryHandle key, out SafeRegistryHandle result);
+        internal static extern int RegConnectRegistry(string machineName, SafeRegistryHandle key, out SafeRegistryHandle result);
     }
 }

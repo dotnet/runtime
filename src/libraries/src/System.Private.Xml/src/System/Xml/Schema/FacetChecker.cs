@@ -792,15 +792,15 @@ namespace System.Xml.Schema
         {
             return null;
         }
-        internal virtual Exception CheckValueFacets(Int64 value, XmlSchemaDatatype datatype)
+        internal virtual Exception CheckValueFacets(long value, XmlSchemaDatatype datatype)
         {
             return null;
         }
-        internal virtual Exception CheckValueFacets(Int32 value, XmlSchemaDatatype datatype)
+        internal virtual Exception CheckValueFacets(int value, XmlSchemaDatatype datatype)
         {
             return null;
         }
-        internal virtual Exception CheckValueFacets(Int16 value, XmlSchemaDatatype datatype)
+        internal virtual Exception CheckValueFacets(short value, XmlSchemaDatatype datatype)
         {
             return null;
         }
@@ -1062,18 +1062,18 @@ namespace System.Xml.Schema
             return null;
         }
 
-        internal override Exception CheckValueFacets(Int64 value, XmlSchemaDatatype datatype)
+        internal override Exception CheckValueFacets(long value, XmlSchemaDatatype datatype)
         {
             decimal decimalValue = (decimal)value;
             return CheckValueFacets(decimalValue, datatype);
         }
 
-        internal override Exception CheckValueFacets(Int32 value, XmlSchemaDatatype datatype)
+        internal override Exception CheckValueFacets(int value, XmlSchemaDatatype datatype)
         {
             decimal decimalValue = (decimal)value;
             return CheckValueFacets(decimalValue, datatype);
         }
-        internal override Exception CheckValueFacets(Int16 value, XmlSchemaDatatype datatype)
+        internal override Exception CheckValueFacets(short value, XmlSchemaDatatype datatype)
         {
             decimal decimalValue = (decimal)value;
             return CheckValueFacets(decimalValue, datatype);
@@ -1100,9 +1100,9 @@ namespace System.Xml.Schema
             int powerCnt = 0;
             if (value < 0)
             {
-                value = Decimal.Negate(value); //Need to compare maxValue allowed against the absolute value
+                value = decimal.Negate(value); //Need to compare maxValue allowed against the absolute value
             }
-            while (Decimal.Truncate(value) != value)
+            while (decimal.Truncate(value) != value)
             { //Till it has a fraction
                 value = value * 10;
                 powerCnt++;

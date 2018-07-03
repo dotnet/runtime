@@ -14,7 +14,7 @@ namespace System.Xml.Tests
             var reader = Utils.CreateFragmentReader("<Root>44.55</Root>");
             reader.PositionOnElement("Root");
             reader.Read();
-            Assert.Equal("44.55", reader.ReadContentAs(typeof(String), null));
+            Assert.Equal("44.55", reader.ReadContentAs(typeof(string), null));
         }
 
         [Fact]
@@ -23,7 +23,7 @@ namespace System.Xml.Tests
             var reader = Utils.CreateFragmentReader("<Root>0</Root>");
             reader.PositionOnElement("Root");
             reader.Read();
-            Assert.Equal("0", reader.ReadContentAs(typeof(String), null));
+            Assert.Equal("0", reader.ReadContentAs(typeof(string), null));
         }
 
         [Fact]
@@ -32,7 +32,7 @@ namespace System.Xml.Tests
             var reader = Utils.CreateFragmentReader("<Root>9999.9</Root>");
             reader.PositionOnElement("Root");
             reader.Read();
-            Assert.Equal("9999.9", reader.ReadContentAs(typeof(String), null));
+            Assert.Equal("9999.9", reader.ReadContentAs(typeof(string), null));
         }
 
         [Fact]
@@ -41,7 +41,7 @@ namespace System.Xml.Tests
             var reader = Utils.CreateFragmentReader("<Root>44.44</Root>");
             reader.PositionOnElement("Root");
             reader.Read();
-            Assert.Equal("44.44", reader.ReadContentAs(typeof(String), null));
+            Assert.Equal("44.44", reader.ReadContentAs(typeof(string), null));
         }
 
         [Fact]
@@ -104,7 +104,7 @@ namespace System.Xml.Tests
             var reader = Utils.CreateFragmentReader("<Root>-005.5</Root>");
             reader.PositionOnElement("Root");
             reader.Read();
-            Assert.Equal("-005.5", reader.ReadContentAs(typeof(String), null));
+            Assert.Equal("-005.5", reader.ReadContentAs(typeof(string), null));
         }
 
         [Fact]
@@ -113,7 +113,7 @@ namespace System.Xml.Tests
             var reader = Utils.CreateFragmentReader("<Root>0001</Root>");
             reader.PositionOnElement("Root");
             reader.Read();
-            Assert.Equal("0001", reader.ReadContentAs(typeof(String), null));
+            Assert.Equal("0001", reader.ReadContentAs(typeof(string), null));
         }
     }
 }

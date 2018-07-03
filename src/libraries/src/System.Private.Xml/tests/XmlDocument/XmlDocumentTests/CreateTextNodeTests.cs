@@ -12,7 +12,7 @@ namespace System.Xml.Tests
         public static void NodeTypeTest()
         {
             var xmlDocument = new XmlDocument();
-            var newNode = xmlDocument.CreateTextNode(String.Empty);
+            var newNode = xmlDocument.CreateTextNode(string.Empty);
 
             Assert.Equal(XmlNodeType.Text, newNode.NodeType);
         }

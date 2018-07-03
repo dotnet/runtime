@@ -151,7 +151,7 @@ namespace Windows.UI.Xaml.Media.Animation
             }
         }
 
-        public override bool Equals(Object value)
+        public override bool Equals(object value)
         {
             if (value is RepeatBehavior)
             {

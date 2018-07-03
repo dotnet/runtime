@@ -132,7 +132,7 @@ namespace System.Numerics.Tests
             BigInteger ret = new BigInteger(0);
             string op = operators.Dequeue();
 
-            while (String.CompareOrdinal(op, "endmake") != 0)
+            while (string.CompareOrdinal(op, "endmake") != 0)
             {
                 bytes.Add(byte.Parse(op));
                 op = operators.Dequeue();
@@ -170,7 +170,7 @@ namespace System.Numerics.Tests
                 case "u*":
                     return num1 * num1;
                 default:
-                    throw new ArgumentException(String.Format("Invalid operation found: {0}", op));
+                    throw new ArgumentException(string.Format("Invalid operation found: {0}", op));
             }
         }
 
@@ -230,7 +230,7 @@ namespace System.Numerics.Tests
                 case "bAdd":
                     return BigInteger.Add(num1, num2);
                 default:
-                    throw new ArgumentException(String.Format("Invalid operation found: {0}", op));
+                    throw new ArgumentException(string.Format("Invalid operation found: {0}", op));
             }
         }
 
@@ -241,7 +241,7 @@ namespace System.Numerics.Tests
                 case "tModPow":
                     return BigInteger.ModPow(num1, num2, num3);
                 default:
-                    throw new ArgumentException(String.Format("Invalid operation found: {0}", op));
+                    throw new ArgumentException(string.Format("Invalid operation found: {0}", op));
             }
         }
 
@@ -253,7 +253,7 @@ namespace System.Numerics.Tests
             _myOut = 0;
         }
 
-        private static String Print(byte[] bytes)
+        private static string Print(byte[] bytes)
         {
            return MyBigIntImp.PrintFormatX(bytes);
         }

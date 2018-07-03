@@ -14,7 +14,7 @@ namespace System.Xml.Tests
             var reader = Utils.CreateFragmentReader("<Root a='  0099.99  '/>");
             reader.PositionOnElement("Root");
             reader.MoveToAttribute("a");
-            Assert.Equal(99.99m, reader.ReadContentAs(typeof(Decimal), null));
+            Assert.Equal(99.99m, reader.ReadContentAs(typeof(decimal), null));
         }
 
         [Fact]
@@ -41,7 +41,7 @@ namespace System.Xml.Tests
             var reader = Utils.CreateFragmentReader("<Root a=' 0 '/>");
             reader.PositionOnElement("Root");
             reader.MoveToAttribute("a");
-            Assert.Equal(0m, reader.ReadContentAs(typeof(Decimal), null));
+            Assert.Equal(0m, reader.ReadContentAs(typeof(decimal), null));
         }
 
         [Fact]
@@ -50,7 +50,7 @@ namespace System.Xml.Tests
             var reader = Utils.CreateFragmentReader("<Root a=' -56.44 '/>");
             reader.PositionOnElement("Root");
             reader.MoveToAttribute("a");
-            Assert.Equal(-56.44m, reader.ReadContentAs(typeof(Decimal), null));
+            Assert.Equal(-56.44m, reader.ReadContentAs(typeof(decimal), null));
         }
 
         [Fact]
@@ -59,7 +59,7 @@ namespace System.Xml.Tests
             var reader = Utils.CreateFragmentReader("<Root a='  -56.455'/>");
             reader.PositionOnElement("Root");
             reader.MoveToAttribute("a");
-            Assert.Equal(-56.455m, reader.ReadContentAs(typeof(Decimal), null));
+            Assert.Equal(-56.455m, reader.ReadContentAs(typeof(decimal), null));
         }
 
         [Fact]
@@ -68,7 +68,7 @@ namespace System.Xml.Tests
             var reader = Utils.CreateFragmentReader("<Root a='-000123456  '/>");
             reader.PositionOnElement("Root");
             reader.MoveToAttribute("a");
-            Assert.Equal(-123456m, reader.ReadContentAs(typeof(Decimal), null));
+            Assert.Equal(-123456m, reader.ReadContentAs(typeof(decimal), null));
         }
 
         [Fact]
@@ -77,7 +77,7 @@ namespace System.Xml.Tests
             var reader = Utils.CreateFragmentReader("<Root a='99999.44456'/>");
             reader.PositionOnElement("Root");
             reader.MoveToAttribute("a");
-            Assert.Equal(99999.44456m, reader.ReadContentAs(typeof(Decimal), null));
+            Assert.Equal(99999.44456m, reader.ReadContentAs(typeof(decimal), null));
         }
 
         [Fact]

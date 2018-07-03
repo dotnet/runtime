@@ -17,6 +17,6 @@ namespace System.Collections
         // value less than zero if x is less than y, zero if x is equal to y, or a
         // value greater than zero if x is greater than y.
         // 
-        int Compare(Object x, Object y);
+        int Compare(object x, object y);
     }
 }

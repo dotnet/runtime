@@ -163,7 +163,7 @@ namespace System.Net
                 {
                     throw new ArgumentException(SR.net_listener_slash, nameof(uriPrefix));
                 }
-                registeredPrefix = uriPrefix[j] == ':' ? String.Copy(uriPrefix) : uriPrefix.Substring(0, j) + (i == 7 ? ":80" : ":443") + uriPrefix.Substring(j);
+                registeredPrefix = uriPrefix[j] == ':' ? string.Copy(uriPrefix) : uriPrefix.Substring(0, j) + (i == 7 ? ":80" : ":443") + uriPrefix.Substring(j);
                 fixed (char* pChar = registeredPrefix)
                 {
                     i = 0;

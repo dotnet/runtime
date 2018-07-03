@@ -254,7 +254,7 @@ namespace Windows.UI.Xaml
             return this + duration;
         }
 
-        public override bool Equals(Object value)
+        public override bool Equals(object value)
         {
             return value is Duration && Equals((Duration)value);
         }

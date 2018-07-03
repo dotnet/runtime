@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
+using Internal.Runtime.InteropServices.WindowsRuntime;
 using System.ComponentModel;
 using System.Diagnostics;
 using System.Diagnostics.Contracts;
@@ -113,7 +114,7 @@ namespace System
                     return Task.CompletedTask;
 
                 case AsyncStatus.Error:
-                    return Task.FromException(RestrictedErrorInfoHelper.AttachRestrictedErrorInfo(source.ErrorCode));
+                    return Task.FromException(ExceptionSupport.AttachRestrictedErrorInfo(source.ErrorCode));
 
                 case AsyncStatus.Canceled:
                     return Task.FromCanceled(cancellationToken.IsCancellationRequested ? cancellationToken : new CancellationToken(true));
@@ -189,7 +190,7 @@ namespace System
                     return Task.FromResult(source.GetResults());
 
                 case AsyncStatus.Error:
-                    return Task.FromException<TResult>(RestrictedErrorInfoHelper.AttachRestrictedErrorInfo(source.ErrorCode));
+                    return Task.FromException<TResult>(ExceptionSupport.AttachRestrictedErrorInfo(source.ErrorCode));
 
                 case AsyncStatus.Canceled:
                     return Task.FromCanceled<TResult>(cancellationToken.IsCancellationRequested ? cancellationToken : new CancellationToken(true));
@@ -292,7 +293,7 @@ namespace System
                     return Task.CompletedTask;
 
                 case AsyncStatus.Error:
-                    return Task.FromException(RestrictedErrorInfoHelper.AttachRestrictedErrorInfo(source.ErrorCode));
+                    return Task.FromException(ExceptionSupport.AttachRestrictedErrorInfo(source.ErrorCode));
 
                 case AsyncStatus.Canceled:
                     return Task.FromCanceled(cancellationToken.IsCancellationRequested ? cancellationToken : new CancellationToken(true));
@@ -401,7 +402,7 @@ namespace System
                     return Task.FromResult(source.GetResults());
 
                 case AsyncStatus.Error:
-                    return Task.FromException<TResult>(RestrictedErrorInfoHelper.AttachRestrictedErrorInfo(source.ErrorCode));
+                    return Task.FromException<TResult>(ExceptionSupport.AttachRestrictedErrorInfo(source.ErrorCode));
 
                 case AsyncStatus.Canceled:
                     return Task.FromCanceled<TResult>(cancellationToken.IsCancellationRequested ? cancellationToken : new CancellationToken(true));

@@ -17,7 +17,7 @@ namespace System.Xml
         ///    <para>Gets the atomized String object containing the same
         ///       chars as the specified range of chars in the given char array.</para>
         /// </devdoc>
-        public abstract String Get(char[] array, int offset, int length);
+        public abstract string Get(char[] array, int offset, int length);
 
         /// <devdoc>
         ///    <para>
@@ -25,19 +25,19 @@ namespace System.Xml
         ///       value as the specified string.
         ///    </para>
         /// </devdoc>
-        public abstract String Get(String array);
+        public abstract string Get(string array);
 
         /// <devdoc>
         ///    <para>Creates a new atom for the characters at the specified range
         ///       of characters in the specified string.</para>
         /// </devdoc>
-        public abstract String Add(char[] array, int offset, int length);
+        public abstract string Add(char[] array, int offset, int length);
 
         /// <devdoc>
         ///    <para>
         ///       Creates a new atom for the specified string.
         ///    </para>
         /// </devdoc>
-        public abstract String Add(String array);
+        public abstract string Add(string array);
     }
 }

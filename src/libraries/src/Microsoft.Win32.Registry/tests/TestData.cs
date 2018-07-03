@@ -54,7 +54,7 @@ namespace Microsoft.Win32.RegistryTests
                 new object[] { 0, (byte)rand.Next(byte.MinValue, byte.MaxValue), RegistryValueKind.String },
                 new object[] { 1, (sbyte)rand.Next(sbyte.MinValue, sbyte.MaxValue), RegistryValueKind.String },
                 new object[] { 2, (short)rand.Next(short.MinValue, short.MaxValue), RegistryValueKind.String },
-                new object[] { 3, (ushort)rand.Next(ushort.MinValue, UInt16.MaxValue), RegistryValueKind.String },
+                new object[] { 3, (ushort)rand.Next(ushort.MinValue, ushort.MaxValue), RegistryValueKind.String },
                 new object[] { 4, (char)rand.Next(char.MinValue, char.MaxValue), RegistryValueKind.String },
                 new object[] { 5, (int)rand.Next(int.MinValue, int.MaxValue), RegistryValueKind.DWord },
                 // Random Numbers that can fit into Int32

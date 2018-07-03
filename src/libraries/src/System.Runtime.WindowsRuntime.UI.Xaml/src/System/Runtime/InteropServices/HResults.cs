@@ -13,10 +13,10 @@ namespace System.Runtime.InteropServices
     /// </summary>
     internal static class HResults
     {
-        internal const Int32 E_XAMLPARSEFAILED = unchecked((int)0x802B000A);
-        internal const Int32 E_LAYOUTCYCLE = unchecked((int)0x802B0014);
-        internal const Int32 E_ELEMENTNOTENABLED = unchecked((int)0x802B001E);
-        internal const Int32 E_ELEMENTNOTAVAILABLE = unchecked((int)0x802B001F);
+        internal const int E_XAMLPARSEFAILED = unchecked((int)0x802B000A);
+        internal const int E_LAYOUTCYCLE = unchecked((int)0x802B0014);
+        internal const int E_ELEMENTNOTENABLED = unchecked((int)0x802B001E);
+        internal const int E_ELEMENTNOTAVAILABLE = unchecked((int)0x802B001F);
     }  // internal static sealed class HResults
 }  // namespace System.Runtime.InteropServices.WindowsRuntime
 

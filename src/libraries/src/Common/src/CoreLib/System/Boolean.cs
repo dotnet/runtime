@@ -19,12 +19,12 @@ namespace System
 {
     [Serializable]
     [TypeForwardedFrom("mscorlib, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089")]
-    public struct Boolean : IComparable, IConvertible, IComparable<Boolean>, IEquatable<Boolean>
+    public readonly struct Boolean : IComparable, IConvertible, IComparable<bool>, IEquatable<bool>
     {
         //
         // Member Variables
         //
-        private bool m_value; // Do not rename (binary serialization)
+        private readonly bool m_value; // Do not rename (binary serialization)
 
         // The true value.
         //
@@ -41,11 +41,11 @@ namespace System
 
         // The internal string representation of true.
         // 
-        internal const String TrueLiteral = "True";
+        internal const string TrueLiteral = "True";
 
         // The internal string representation of false.
         // 
-        internal const String FalseLiteral = "False";
+        internal const string FalseLiteral = "False";
 
 
         //
@@ -54,11 +54,11 @@ namespace System
 
         // The public string representation of true.
         // 
-        public static readonly String TrueString = TrueLiteral;
+        public static readonly string TrueString = TrueLiteral;
 
         // The public string representation of false.
         // 
-        public static readonly String FalseString = FalseLiteral;
+        public static readonly string FalseString = FalseLiteral;
 
         //
         // Overriden Instance Methods
@@ -81,7 +81,7 @@ namespace System
         **Exceptions: None.
         ==============================================================================*/
         // Converts the boolean value of this instance to a String.
-        public override String ToString()
+        public override string ToString()
         {
             if (false == m_value)
             {
@@ -90,41 +90,57 @@ namespace System
             return TrueLiteral;
         }
 
-        public String ToString(IFormatProvider provider)
+        public string ToString(IFormatProvider provider)
         {
             return ToString();
         }
 
         public bool TryFormat(Span<char> destination, out int charsWritten)
         {
-            string s = m_value ? TrueLiteral : FalseLiteral;
-
-            if (s.AsSpan().TryCopyTo(destination))
+            if (m_value)
             {
-                charsWritten = s.Length;
-                return true;
+                if ((uint)destination.Length > 3) // uint cast, per https://github.com/dotnet/coreclr/issues/18688
+                {
+                    destination[0] = 'T';
+                    destination[1] = 'r';
+                    destination[2] = 'u';
+                    destination[3] = 'e';
+                    charsWritten = 4;
+                    return true;
+                }
             }
             else
             {
-                charsWritten = 0;
-                return false;
+                if ((uint)destination.Length > 4)
+                {
+                    destination[0] = 'F';
+                    destination[1] = 'a';
+                    destination[2] = 'l';
+                    destination[3] = 's';
+                    destination[4] = 'e';
+                    charsWritten = 5;
+                    return true;
+                }
             }
+
+            charsWritten = 0;
+            return false;
         }
 
         // Determines whether two Boolean objects are equal.
-        public override bool Equals(Object obj)
+        public override bool Equals(object obj)
         {
             //If it's not a boolean, we're definitely not equal
-            if (!(obj is Boolean))
+            if (!(obj is bool))
             {
                 return false;
             }
 
-            return (m_value == ((Boolean)obj).m_value);
+            return (m_value == ((bool)obj).m_value);
         }
 
         [NonVersionable]
-        public bool Equals(Boolean obj)
+        public bool Equals(bool obj)
         {
             return m_value == obj;
         }
@@ -136,18 +152,18 @@ namespace System
         // 
         // Returns a value less than zero if this  object
         // 
-        public int CompareTo(Object obj)
+        public int CompareTo(object obj)
         {
             if (obj == null)
             {
                 return 1;
             }
-            if (!(obj is Boolean))
+            if (!(obj is bool))
             {
                 throw new ArgumentException(SR.Arg_MustBeBoolean);
             }
 
-            if (m_value == ((Boolean)obj).m_value)
+            if (m_value == ((bool)obj).m_value)
             {
                 return 0;
             }
@@ -158,7 +174,7 @@ namespace System
             return 1;
         }
 
-        public int CompareTo(Boolean value)
+        public int CompareTo(bool value)
         {
             if (m_value == value)
             {
@@ -198,7 +214,7 @@ namespace System
 
         // Determines whether a String represents true or false.
         // 
-        public static Boolean Parse(String value)
+        public static bool Parse(string value)
         {
             if (value == null) throw new ArgumentNullException(nameof(value));
             return Parse(value.AsSpan());
@@ -209,7 +225,7 @@ namespace System
 
         // Determines whether a String represents true or false.
         // 
-        public static Boolean TryParse(String value, out Boolean result)
+        public static bool TryParse(string value, out bool result)
         {
             if (value == null)
             {
@@ -260,7 +276,7 @@ namespace System
             int start = 0;
             while (start < value.Length)
             {
-                if (!Char.IsWhiteSpace(value[start]) && value[start] != nullChar)
+                if (!char.IsWhiteSpace(value[start]) && value[start] != nullChar)
                 {
                     break;
                 }
@@ -270,7 +286,7 @@ namespace System
             int end = value.Length - 1;
             while (end >= start)
             {
-                if (!Char.IsWhiteSpace(value[end]) && value[end] != nullChar)
+                if (!char.IsWhiteSpace(value[end]) && value[end] != nullChar)
                 {
                     break;
                 }
@@ -350,7 +366,7 @@ namespace System
             return Convert.ToDouble(m_value);
         }
 
-        Decimal IConvertible.ToDecimal(IFormatProvider provider)
+        decimal IConvertible.ToDecimal(IFormatProvider provider)
         {
             return Convert.ToDecimal(m_value);
         }
@@ -360,7 +376,7 @@ namespace System
             throw new InvalidCastException(SR.Format(SR.InvalidCast_FromTo, "Boolean", "DateTime"));
         }
 
-        Object IConvertible.ToType(Type type, IFormatProvider provider)
+        object IConvertible.ToType(Type type, IFormatProvider provider)
         {
             return Convert.DefaultToType((IConvertible)this, type, provider);
         }

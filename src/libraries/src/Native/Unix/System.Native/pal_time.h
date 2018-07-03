@@ -5,9 +5,6 @@
 #pragma once
 
 #include "pal_compiler.h"
-
-BEGIN_EXTERN_C
-
 #include "pal_types.h"
 
 typedef struct UTimBuf
@@ -40,5 +37,3 @@ DLLEXPORT int32_t SystemNative_GetTimestamp(uint64_t* timestamp);
 DLLEXPORT int32_t SystemNative_GetAbsoluteTime(uint64_t* timestamp);
 
 DLLEXPORT int32_t SystemNative_GetTimebaseInfo(uint32_t* numer, uint32_t* denom);
-
-END_EXTERN_C

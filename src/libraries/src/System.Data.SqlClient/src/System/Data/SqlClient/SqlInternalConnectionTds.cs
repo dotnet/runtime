@@ -22,15 +22,15 @@ namespace System.Data.SqlClient
     internal class SessionStateRecord
     {
         internal bool _recoverable;
-        internal UInt32 _version;
-        internal Int32 _dataLength;
+        internal uint _version;
+        internal int _dataLength;
         internal byte[] _data;
     }
 
     internal class SessionData
     {
         internal const int _maxNumberOfSessionStates = 256;
-        internal UInt32 _tdsVersion;
+        internal uint _tdsVersion;
         internal bool _encrypted;
 
         internal string _database;
@@ -106,12 +106,20 @@ namespace System.Data.SqlClient
         private TdsParser _parser;
         private SqlLoginAck _loginAck;
         private SqlCredential _credential;
+        private FederatedAuthenticationFeatureExtensionData? _fedAuthFeatureExtensionData;
 
         // Connection Resiliency
         private bool _sessionRecoveryRequested;
         internal bool _sessionRecoveryAcknowledged;
         internal SessionData _currentSessionData; // internal for use from TdsParser only, other should use CurrentSessionData property that will fix database and language
         private SessionData _recoverySessionData;
+
+        // Federated Authentication
+        // Response obtained from the server for FEDAUTHREQUIRED prelogin option.
+        internal bool _fedAuthRequired;
+        internal bool _federatedAuthenticationRequested;
+        internal bool _federatedAuthenticationAcknowledged;
+        internal byte[] _accessTokenInBytes;
 
         // The errors in the transient error set are contained in
         // https://azure.microsoft.com/en-us/documentation/articles/sql-database-develop-error-messages/#transient-faults-connection-loss-and-other-temporary-errors
@@ -171,7 +179,7 @@ namespace System.Data.SqlClient
         private int _asyncCommandCount; // number of async Begins minus number of async Ends.
 
         // FOR SSE
-        private string _instanceName = String.Empty;
+        private string _instanceName = string.Empty;
 
         // FOR NOTIFICATIONS
         private DbConnectionPoolIdentity _identity; // Used to lookup info for notification matching Start().
@@ -295,7 +303,7 @@ namespace System.Data.SqlClient
         private RoutingInfo _routingInfo = null;
         private Guid _originalClientConnectionId = Guid.Empty;
         private string _routingDestination = null;
-        
+        private readonly TimeoutTimer _timeout;
 
         // although the new password is generally not used it must be passed to the ctor
         // the new Login7 packet will always write out the new password (or a length of zero and no bytes if not present)
@@ -310,7 +318,9 @@ namespace System.Data.SqlClient
                 bool redirectedUserInstance,
                 SqlConnectionString userConnectionOptions = null, // NOTE: userConnectionOptions may be different to connectionOptions if the connection string has been expanded (see SqlConnectionString.Expand)
                 SessionData reconnectSessionData = null,
-                bool applyTransientFaultHandling = false) : base(connectionOptions)
+                bool applyTransientFaultHandling = false,
+                string accessToken = null) : base(connectionOptions)
+
         {
 #if DEBUG
             if (reconnectSessionData != null)
@@ -335,6 +345,10 @@ namespace System.Data.SqlClient
                 }
             }
 
+            if (accessToken != null)
+            {
+                _accessTokenInBytes = System.Text.Encoding.Unicode.GetBytes(accessToken);
+            }
 
             _identity = identity;
             Debug.Assert(newSecurePassword != null || newPassword != null, "cannot have both new secure change password and string based change password to be null");
@@ -355,9 +369,10 @@ namespace System.Data.SqlClient
 
             _parserLock.Wait(canReleaseFromAnyThread: false);
             ThreadHasParserLockForClose = true;   // In case of error, let ourselves know that we already own the parser lock
+
             try
             {
-                var timeout = TimeoutTimer.StartSecondsTimeout(connectionOptions.ConnectTimeout);
+                _timeout = TimeoutTimer.StartSecondsTimeout(connectionOptions.ConnectTimeout);
 
                 // If transient fault handling is enabled then we can retry the login up to the ConnectRetryCount.
                 int connectionEstablishCount = applyTransientFaultHandling ? connectionOptions.ConnectRetryCount + 1 : 1;
@@ -366,7 +381,7 @@ namespace System.Data.SqlClient
                 {
                     try
                     {
-                        OpenLoginEnlist(timeout, connectionOptions, credential, newPassword, newSecurePassword, redirectedUserInstance);
+                        OpenLoginEnlist(_timeout, connectionOptions, credential, newPassword, newSecurePassword, redirectedUserInstance);
 
                         break;
                     }
@@ -374,8 +389,8 @@ namespace System.Data.SqlClient
                     {
                         if (i + 1 == connectionEstablishCount
                             || !applyTransientFaultHandling
-                            || timeout.IsExpired
-                            || timeout.MillisecondsRemaining < transientRetryIntervalInMilliSeconds
+                            || _timeout.IsExpired
+                            || _timeout.MillisecondsRemaining < transientRetryIntervalInMilliSeconds
                             || !IsTransientError(sqlex))
                         {
                             throw sqlex;
@@ -545,7 +560,7 @@ namespace System.Data.SqlClient
         {
             get
             {
-                return (String.Format((IFormatProvider)null, "{0:00}.{1:00}.{2:0000}", _loginAck.majorVersion,
+                return (string.Format((IFormatProvider)null, "{0:00}.{1:00}.{2:0000}", _loginAck.majorVersion,
                        (short)_loginAck.minorVersion, _loginAck.buildNum));
             }
         }
@@ -837,7 +852,7 @@ namespace System.Data.SqlClient
                 }
             }
 
-            string transactionName = (null == name) ? String.Empty : name;
+            string transactionName = (null == name) ? string.Empty : name;
 
             ExecuteTransactionYukon(transactionRequest, transactionName, iso, internalTransaction, isDelegateControlRequest);
         }
@@ -1017,6 +1032,10 @@ namespace System.Data.SqlClient
 
             if (_routingInfo == null)
             { // ROR should not affect state of connection recovery
+                if (_federatedAuthenticationRequested && !_federatedAuthenticationAcknowledged)
+                {
+                    throw SQL.ParsingError(ParsingErrorState.FedAuthNotAcknowledged);
+                }
                 if (!_sessionRecoveryAcknowledged)
                 {
                     _currentSessionData = null;
@@ -1046,7 +1065,7 @@ namespace System.Data.SqlClient
                 _recoverySessionData = null;
             }
 
-            Debug.Assert(SniContext.Snix_Login == Parser._physicalStateObj.SniContext, String.Format((IFormatProvider)null, "SniContext should be Snix_Login; actual Value: {0}", Parser._physicalStateObj.SniContext));
+            Debug.Assert(SniContext.Snix_Login == Parser._physicalStateObj.SniContext, string.Format((IFormatProvider)null, "SniContext should be Snix_Login; actual Value: {0}", Parser._physicalStateObj.SniContext));
             _parser._physicalStateObj.SniContext = SniContext.Snix_EnableMars;
             _parser.EnableMars();
 
@@ -1082,7 +1101,7 @@ namespace System.Data.SqlClient
             if (!timeout.IsInfinite)
             {
                 long t = timeout.MillisecondsRemaining / 1000;
-                if ((long)Int32.MaxValue > t)
+                if ((long)int.MaxValue > t)
                 {
                     timeoutInSeconds = (int)t;
                 }
@@ -1125,9 +1144,22 @@ namespace System.Data.SqlClient
                 _sessionRecoveryRequested = true;
             }
 
+            if (_accessTokenInBytes != null)
+            {
+                requestedFeatures |= TdsEnums.FeatureExtension.FedAuth;
+                _fedAuthFeatureExtensionData = new FederatedAuthenticationFeatureExtensionData
+                {
+                    libraryType = TdsEnums.FedAuthLibrary.SecurityToken,
+                    fedAuthRequiredPreLoginResponse = _fedAuthRequired,
+                    accessToken = _accessTokenInBytes
+                };
+                // No need any further info from the server for token based authentication. So set _federatedAuthenticationRequested to true
+                _federatedAuthenticationRequested = true;
+            }
+
             // The GLOBALTRANSACTIONS and UTF8 support features are implicitly requested
-            requestedFeatures |= TdsEnums.FeatureExtension.GlobalTransactions | TdsEnums.FeatureExtension.UTF8Support ;
-            _parser.TdsLogin(login, requestedFeatures, _recoverySessionData);
+            requestedFeatures |= TdsEnums.FeatureExtension.GlobalTransactions | TdsEnums.FeatureExtension.UTF8Support;
+            _parser.TdsLogin(login, requestedFeatures, _recoverySessionData, _fedAuthFeatureExtensionData);
         }
 
         private void LoginFailure()
@@ -1297,7 +1329,7 @@ namespace System.Data.SqlClient
                     _parser.Disconnect();
 
                 _parser = new TdsParser(ConnectionOptions.MARS, ConnectionOptions.Asynchronous);
-                Debug.Assert(SniContext.Undefined == Parser._physicalStateObj.SniContext, String.Format((IFormatProvider)null, "SniContext should be Undefined; actual Value: {0}", Parser._physicalStateObj.SniContext));
+                Debug.Assert(SniContext.Undefined == Parser._physicalStateObj.SniContext, string.Format((IFormatProvider)null, "SniContext should be Undefined; actual Value: {0}", Parser._physicalStateObj.SniContext));
 
                 try
                 {
@@ -1335,7 +1367,7 @@ namespace System.Data.SqlClient
                         _currentLanguage = _originalLanguage = ConnectionOptions.CurrentLanguage;
                         CurrentDatabase = _originalDatabase = ConnectionOptions.InitialCatalog;
                         _currentFailoverPartner = null;
-                        _instanceName = String.Empty;
+                        _instanceName = string.Empty;
 
                         routingAttempts++;
 
@@ -1488,7 +1520,7 @@ namespace System.Data.SqlClient
                     _parser.Disconnect();
 
                 _parser = new TdsParser(ConnectionOptions.MARS, ConnectionOptions.Asynchronous);
-                Debug.Assert(SniContext.Undefined == Parser._physicalStateObj.SniContext, String.Format((IFormatProvider)null, "SniContext should be Undefined; actual Value: {0}", Parser._physicalStateObj.SniContext));
+                Debug.Assert(SniContext.Undefined == Parser._physicalStateObj.SniContext, string.Format((IFormatProvider)null, "SniContext should be Undefined; actual Value: {0}", Parser._physicalStateObj.SniContext));
 
                 ServerInfo currentServerInfo;
                 if (useFailoverHost)
@@ -1750,7 +1782,7 @@ namespace System.Data.SqlClient
                     break;
 
                 case TdsEnums.ENV_PACKETSIZE:
-                    _currentPacketSize = Int32.Parse(rec.newValue, CultureInfo.InvariantCulture);
+                    _currentPacketSize = int.Parse(rec.newValue, CultureInfo.InvariantCulture);
                     break;
 
                 case TdsEnums.ENV_COLLATION:
@@ -1898,6 +1930,32 @@ namespace System.Data.SqlClient
                         {
                             IsGlobalTransactionsEnabledForServer = true;
                         }
+                        break;
+                    }
+                case TdsEnums.FEATUREEXT_FEDAUTH:
+                    {
+                        if (!_federatedAuthenticationRequested)
+                        {
+                            throw SQL.ParsingErrorFeatureId(ParsingErrorState.UnrequestedFeatureAckReceived, featureId);
+                        }
+
+                        Debug.Assert(_fedAuthFeatureExtensionData != null, "_fedAuthFeatureExtensionData must not be null when _federatedAuthenticatonRequested == true");
+
+                        switch (_fedAuthFeatureExtensionData.Value.libraryType)
+                        {
+                            case TdsEnums.FedAuthLibrary.SecurityToken:
+                                // The server shouldn't have sent any additional data with the ack (like a nonce)
+                                if (data.Length != 0)
+                                {
+                                    throw SQL.ParsingError(ParsingErrorState.FedAuthFeatureAckContainsExtraData);
+                                }
+                                break;
+
+                            default:
+                                Debug.Assert(false, "Unknown _fedAuthLibrary type");
+                                throw SQL.ParsingErrorLibraryType(ParsingErrorState.FedAuthFeatureAckUnknownLibraryType, (int)_fedAuthFeatureExtensionData.Value.libraryType);
+                        }
+                        _federatedAuthenticationAcknowledged = true;
                         break;
                     }
 

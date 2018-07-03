@@ -21,7 +21,7 @@ namespace System.Xml.Schema
             XmlLang
         };
 
-        private String _defExpanded;  // default value in its expanded form
+        private string _defExpanded;  // default value in its expanded form
 
         private int _lineNum;
         private int _linePos;
@@ -38,7 +38,7 @@ namespace System.Xml.Schema
         //
         // Constructors
         //
-        public SchemaAttDef(XmlQualifiedName name, String prefix)
+        public SchemaAttDef(XmlQualifiedName name, string prefix)
             : base(name, prefix)
         {
         }
@@ -141,9 +141,9 @@ namespace System.Xml.Schema
             set { _valueLineNum = value; }
         }
 
-        internal String DefaultValueExpanded
+        internal string DefaultValueExpanded
         {
-            get { return (_defExpanded != null) ? _defExpanded : String.Empty; }
+            get { return (_defExpanded != null) ? _defExpanded : string.Empty; }
             set { _defExpanded = value; }
         }
 
@@ -185,11 +185,11 @@ namespace System.Xml.Schema
                 (values != null) &&
                 (values.Count <= 2))
             {
-                String s1 = values[0].ToString();
+                string s1 = values[0].ToString();
 
                 if (values.Count == 2)
                 {
-                    String s2 = values[1].ToString();
+                    string s2 = values[1].ToString();
 
                     if ((s1 == "default" || s2 == "default") &&
                         (s1 == "preserve" || s2 == "preserve"))

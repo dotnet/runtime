@@ -1,4 +1,4 @@
-﻿// Licensed to the .NET Foundation under one or more agreements.
+// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
@@ -106,22 +106,22 @@ namespace System.Configuration
             return new ConfigXmlText(_filename, LineNumber, text, this);
         }
 
-        public override XmlCDataSection CreateCDataSection(String data)
+        public override XmlCDataSection CreateCDataSection(string data)
         {
             return new ConfigXmlCDataSection(_filename, LineNumber, data, this);
         }
 
-        public override XmlComment CreateComment(String data)
+        public override XmlComment CreateComment(string data)
         {
             return new ConfigXmlComment(_filename, LineNumber, data, this);
         }
 
-        public override XmlSignificantWhitespace CreateSignificantWhitespace(String data)
+        public override XmlSignificantWhitespace CreateSignificantWhitespace(string data)
         {
             return new ConfigXmlSignificantWhitespace(_filename, LineNumber, data, this);
         }
 
-        public override XmlWhitespace CreateWhitespace(String data)
+        public override XmlWhitespace CreateWhitespace(string data)
         {
             return new ConfigXmlWhitespace(_filename, LineNumber, data, this);
         }

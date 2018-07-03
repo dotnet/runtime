@@ -60,11 +60,11 @@ namespace DPStressHarness
                         break;
 
                     case "-duration":
-                        TestMetrics.StressDuration = Int32.Parse(args[++i]);
+                        TestMetrics.StressDuration = int.Parse(args[++i]);
                         break;
 
                     case "-threads":
-                        TestMetrics.StressThreads = Int32.Parse(args[++i]);
+                        TestMetrics.StressThreads = int.Parse(args[++i]);
                         break;
 
                     case "-verify":
@@ -84,7 +84,7 @@ namespace DPStressHarness
                         break;
 
                     case "-exceptionThreshold":
-                        TestMetrics.ExceptionThreshold = Int32.Parse(args[++i]);
+                        TestMetrics.ExceptionThreshold = int.Parse(args[++i]);
                         break;
 
                     case "-monitorenabled":
@@ -92,7 +92,7 @@ namespace DPStressHarness
                         break;
 
                     case "-randomSeed":
-                        TestMetrics.RandomSeed = Int32.Parse(args[++i]);
+                        TestMetrics.RandomSeed = int.Parse(args[++i]);
                         break;
 
                     case "-filter":

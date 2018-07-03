@@ -484,10 +484,10 @@ namespace System.IO.Tests
         public void FileSystemWatcher_Path()
         {
             FileSystemWatcher watcher = new FileSystemWatcher();
-            Assert.Equal(String.Empty, watcher.Path);
+            Assert.Equal(string.Empty, watcher.Path);
 
             watcher.Path = null;
-            Assert.Equal(String.Empty, watcher.Path);
+            Assert.Equal(string.Empty, watcher.Path);
 
             watcher.Path = ".";
             Assert.Equal(".", watcher.Path);
@@ -523,7 +523,7 @@ namespace System.IO.Tests
 
             // FSW starts with String.Empty and will ignore setting this if it is already set,
             // but if you set it after some other valid string has been set it will throw.            
-            Assert.Throws<ArgumentException>(() => watcher.Path = String.Empty);
+            Assert.Throws<ArgumentException>(() => watcher.Path = string.Empty);
             // Non-existent path
             Assert.Throws<ArgumentException>(() => watcher.Path = GetTestFilePath());
             // Web path

@@ -14,7 +14,7 @@ internal static partial class Interop
         [StructLayout(LayoutKind.Sequential)]
         internal unsafe struct GssBuffer : IDisposable
         {
-            internal UInt64 _length;
+            internal ulong _length;
             internal IntPtr _data;
 
             internal int Copy(byte[] destination, int offset)

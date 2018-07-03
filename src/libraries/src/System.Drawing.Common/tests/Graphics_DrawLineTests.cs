@@ -22,6 +22,7 @@ namespace System.Drawing.Tests
             }
         }
 
+        [ActiveIssue(30683, TargetFrameworkMonikers.Netcoreapp)]
         [ConditionalFact(Helpers.GdiplusIsAvailable)]
         public void DrawLines_PointFs()
         {

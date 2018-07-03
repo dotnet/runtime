@@ -1,4 +1,4 @@
-﻿// Licensed to the .NET Foundation under one or more agreements.
+// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
@@ -110,7 +110,7 @@ namespace System.PrivateUri.Tests
 
             Assert.Equal<Uri>(test, result); //"Transitivity failure"
 
-            Assert.True(String.CompareOrdinal(rel.ToString(), 0, "./", 0, 2) == 0, "Cannot have colon in first segment, must append ./");
+            Assert.True(string.CompareOrdinal(rel.ToString(), 0, "./", 0, 2) == 0, "Cannot have colon in first segment, must append ./");
         }
 
         [Fact]
@@ -126,7 +126,7 @@ namespace System.PrivateUri.Tests
 
             Assert.Equal<Uri>(test, result); //"Transitivity failure"
 
-            Assert.True(String.CompareOrdinal(rel.ToString(), 0, "./", 0, 2) == 0, "Cannot have colon in first segment, must append ./");
+            Assert.True(string.CompareOrdinal(rel.ToString(), 0, "./", 0, 2) == 0, "Cannot have colon in first segment, must append ./");
         }
 
         [Fact]
@@ -143,7 +143,7 @@ namespace System.PrivateUri.Tests
 
             Assert.Equal<String>(test.LocalPath, result.LocalPath); //  "Transitivity failure"
 
-            Assert.True(String.CompareOrdinal(rel.ToString(), 0, "./", 0, 2) == 0, "Cannot have colon in first segment, must append ./");
+            Assert.True(string.CompareOrdinal(rel.ToString(), 0, "./", 0, 2) == 0, "Cannot have colon in first segment, must append ./");
         }
 
         [Fact]

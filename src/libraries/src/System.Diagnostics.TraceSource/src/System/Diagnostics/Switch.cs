@@ -24,7 +24,7 @@ namespace System.Diagnostics
         private int _switchSetting = 0;
         private volatile bool _initialized = false;
         private bool _initializing = false;
-        private volatile string _switchValueString = String.Empty;
+        private volatile string _switchValueString = string.Empty;
         private string _defaultValue;
         private object _initializedLock;
 
@@ -39,7 +39,7 @@ namespace System.Diagnostics
             {
                 if (_initializedLock == null)
                 {
-                    Object o = new Object();
+                    object o = new object();
                     Interlocked.CompareExchange<Object>(ref _initializedLock, o, null);
                 }
 
@@ -230,7 +230,7 @@ namespace System.Diagnostics
 
         protected virtual void OnValueChanged()
         {
-            SwitchSetting = Int32.Parse(Value, CultureInfo.InvariantCulture);
+            SwitchSetting = int.Parse(Value, CultureInfo.InvariantCulture);
         }
 
         internal static void RefreshAll()

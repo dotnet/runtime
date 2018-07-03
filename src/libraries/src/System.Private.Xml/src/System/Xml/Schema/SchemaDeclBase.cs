@@ -126,7 +126,7 @@ namespace System.Xml.Schema
             return (datatype.TokenizedType != XmlTokenizedType.NOTATION && datatype.TokenizedType != XmlTokenizedType.ENUMERATION) || values.Contains(pVal.ToString());
         }
 
-        internal bool CheckValue(Object pVal)
+        internal bool CheckValue(object pVal)
         {
             return (presence != Use.Fixed && presence != Use.RequiredFixed) || (defaultValueTyped != null && datatype.IsEqual(pVal, defaultValueTyped));
         }

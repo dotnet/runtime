@@ -70,6 +70,7 @@ namespace System.Threading.Tasks.Tests.CancelWait
                 {
                     case API.Cancel:
                         _taskTree.CancellationTokenSource.Cancel();
+                        _taskTree.Task.Wait();
                         break;
 
                     case API.Wait:
@@ -131,8 +132,11 @@ namespace System.Threading.Tasks.Tests.CancelWait
 
                     if (current.IsLeaf)
                     {
-                        if (!_countdownEvent.IsSet)
-                            _countdownEvent.Signal();
+                        lock (_countdownEvent)
+                        {
+                            if (!_countdownEvent.IsSet)
+                                _countdownEvent.Signal();
+                        }
                     }
                     else
                     {
@@ -162,10 +166,13 @@ namespace System.Threading.Tasks.Tests.CancelWait
                         }
                         finally
                         {
-                            // stop the tree creation and let the main thread proceed
-                            if (!_countdownEvent.IsSet)
+                            lock (_countdownEvent)
                             {
-                                _countdownEvent.Signal(_countdownEvent.CurrentCount);
+                                // stop the tree creation and let the main thread proceed
+                                if (!_countdownEvent.IsSet)
+                                {
+                                    _countdownEvent.Signal(_countdownEvent.CurrentCount);
+                                }
                             }
                         }
                     }
@@ -208,6 +215,7 @@ namespace System.Threading.Tasks.Tests.CancelWait
                         VerifyCancel(current);
                         VerifyResult(current);
                     });
+                    Assert.Null(_caughtException);
                     break;
 
                 //root task was calling wait

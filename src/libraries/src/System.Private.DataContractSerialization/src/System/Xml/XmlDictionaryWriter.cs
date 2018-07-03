@@ -306,11 +306,11 @@ namespace System.Xml
         {
             if (type == typeof(bool))
                 BooleanArrayHelperWithString.Instance.WriteArray(this, prefix, localName, namespaceUri, reader);
-            else if (type == typeof(Int16))
+            else if (type == typeof(short))
                 Int16ArrayHelperWithString.Instance.WriteArray(this, prefix, localName, namespaceUri, reader);
-            else if (type == typeof(Int32))
+            else if (type == typeof(int))
                 Int32ArrayHelperWithString.Instance.WriteArray(this, prefix, localName, namespaceUri, reader);
-            else if (type == typeof(Int64))
+            else if (type == typeof(long))
                 Int64ArrayHelperWithString.Instance.WriteArray(this, prefix, localName, namespaceUri, reader);
             else if (type == typeof(float))
                 SingleArrayHelperWithString.Instance.WriteArray(this, prefix, localName, namespaceUri, reader);
@@ -335,11 +335,11 @@ namespace System.Xml
         {
             if (type == typeof(bool))
                 BooleanArrayHelperWithDictionaryString.Instance.WriteArray(this, prefix, localName, namespaceUri, reader);
-            else if (type == typeof(Int16))
+            else if (type == typeof(short))
                 Int16ArrayHelperWithDictionaryString.Instance.WriteArray(this, prefix, localName, namespaceUri, reader);
-            else if (type == typeof(Int32))
+            else if (type == typeof(int))
                 Int32ArrayHelperWithDictionaryString.Instance.WriteArray(this, prefix, localName, namespaceUri, reader);
-            else if (type == typeof(Int64))
+            else if (type == typeof(long))
                 Int64ArrayHelperWithDictionaryString.Instance.WriteArray(this, prefix, localName, namespaceUri, reader);
             else if (type == typeof(float))
                 SingleArrayHelperWithDictionaryString.Instance.WriteArray(this, prefix, localName, namespaceUri, reader);
@@ -481,7 +481,7 @@ namespace System.Xml
         }
 
         // Int16
-        public virtual void WriteArray(string prefix, string localName, string namespaceUri, Int16[] array, int offset, int count)
+        public virtual void WriteArray(string prefix, string localName, string namespaceUri, short[] array, int offset, int count)
         {
             CheckArray(array, offset, count);
             for (int i = 0; i < count; i++)
@@ -492,13 +492,13 @@ namespace System.Xml
             }
         }
 
-        public virtual void WriteArray(string prefix, XmlDictionaryString localName, XmlDictionaryString namespaceUri, Int16[] array, int offset, int count)
+        public virtual void WriteArray(string prefix, XmlDictionaryString localName, XmlDictionaryString namespaceUri, short[] array, int offset, int count)
         {
             WriteArray(prefix, XmlDictionaryString.GetString(localName), XmlDictionaryString.GetString(namespaceUri), array, offset, count);
         }
 
         // Int32
-        public virtual void WriteArray(string prefix, string localName, string namespaceUri, Int32[] array, int offset, int count)
+        public virtual void WriteArray(string prefix, string localName, string namespaceUri, int[] array, int offset, int count)
         {
             CheckArray(array, offset, count);
             for (int i = 0; i < count; i++)
@@ -509,13 +509,13 @@ namespace System.Xml
             }
         }
 
-        public virtual void WriteArray(string prefix, XmlDictionaryString localName, XmlDictionaryString namespaceUri, Int32[] array, int offset, int count)
+        public virtual void WriteArray(string prefix, XmlDictionaryString localName, XmlDictionaryString namespaceUri, int[] array, int offset, int count)
         {
             WriteArray(prefix, XmlDictionaryString.GetString(localName), XmlDictionaryString.GetString(namespaceUri), array, offset, count);
         }
 
         // Int64
-        public virtual void WriteArray(string prefix, string localName, string namespaceUri, Int64[] array, int offset, int count)
+        public virtual void WriteArray(string prefix, string localName, string namespaceUri, long[] array, int offset, int count)
         {
             CheckArray(array, offset, count);
             for (int i = 0; i < count; i++)
@@ -526,7 +526,7 @@ namespace System.Xml
             }
         }
 
-        public virtual void WriteArray(string prefix, XmlDictionaryString localName, XmlDictionaryString namespaceUri, Int64[] array, int offset, int count)
+        public virtual void WriteArray(string prefix, XmlDictionaryString localName, XmlDictionaryString namespaceUri, long[] array, int offset, int count)
         {
             WriteArray(prefix, XmlDictionaryString.GetString(localName), XmlDictionaryString.GetString(namespaceUri), array, offset, count);
         }

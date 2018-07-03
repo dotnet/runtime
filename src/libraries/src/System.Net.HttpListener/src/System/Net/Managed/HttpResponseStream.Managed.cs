@@ -130,7 +130,7 @@ namespace System.Net
         private static byte[] s_crlf = new byte[] { 13, 10 };
         private static byte[] GetChunkSizeBytes(int size, bool final)
         {
-            string str = String.Format("{0:x}\r\n{1}", size, final ? "\r\n" : "");
+            string str = string.Format("{0:x}\r\n{1}", size, final ? "\r\n" : "");
             return Encoding.ASCII.GetBytes(str);
         }
 

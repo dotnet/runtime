@@ -65,7 +65,7 @@ namespace DPStressHarness
 
             LogStandardMetrics(logger);
 
-            logger.AddTestMetric(Constants.TEST_METRIC_ELAPSED_SECONDS, String.Format("{0:F2}", TestMetrics.ElapsedSeconds), "sec", false);
+            logger.AddTestMetric(Constants.TEST_METRIC_ELAPSED_SECONDS, string.Format("{0:F2}", TestMetrics.ElapsedSeconds), "sec", false);
 
             logger.Save();
 
@@ -78,7 +78,7 @@ namespace DPStressHarness
         }
 
 
-        private void ExecuteTest(Object targetInstance, TestMethodDelegate tmd)
+        private void ExecuteTest(object targetInstance, TestMethodDelegate tmd)
         {
             int warmupIterations = _attr.WarmupIterations;
             int testIterations = _attr.TestIterations;

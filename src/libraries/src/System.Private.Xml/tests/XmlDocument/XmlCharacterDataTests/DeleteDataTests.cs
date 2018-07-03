@@ -19,7 +19,7 @@ namespace System.Xml.Tests
             cdataNode.DeleteData(0, cdataNode.Length);
 
             Assert.Equal(0, cdataNode.Length);
-            Assert.Equal(String.Empty, cdataNode.Data);
+            Assert.Equal(string.Empty, cdataNode.Data);
             Assert.Equal(XmlNodeType.CDATA, cdataNode.NodeType);
         }
 
@@ -68,7 +68,7 @@ namespace System.Xml.Tests
             cdataNode.DeleteData(0, cdataNode.Data.Length + 1);
 
             Assert.Equal(0, cdataNode.Length);
-            Assert.Equal(String.Empty, cdataNode.Data);
+            Assert.Equal(string.Empty, cdataNode.Data);
             Assert.Equal(XmlNodeType.CDATA, cdataNode.NodeType);
         }
 
@@ -80,10 +80,10 @@ namespace System.Xml.Tests
 
             var cdataNode = (XmlCharacterData)xmlDocument.DocumentElement.FirstChild;
 
-            cdataNode.DeleteData(0, Int32.MaxValue);
+            cdataNode.DeleteData(0, int.MaxValue);
 
             Assert.Equal(0, cdataNode.Length);
-            Assert.Equal(String.Empty, cdataNode.Data);
+            Assert.Equal(string.Empty, cdataNode.Data);
             Assert.Equal(XmlNodeType.CDATA, cdataNode.NodeType);
         }
 

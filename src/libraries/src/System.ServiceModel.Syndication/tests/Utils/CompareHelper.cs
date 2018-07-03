@@ -2,12 +2,11 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
-using System;
 using System.Collections.Generic;
-using System.Linq;
+using System.IO;
 using System.Text;
-using System.Threading.Tasks;
 using System.Xml;
+using Xunit;
 
 namespace System.ServiceModel.Syndication.Tests
 {
@@ -25,45 +24,47 @@ namespace System.ServiceModel.Syndication.Tests
 
     public class CompareHelper
     {
-        private List<AllowableDifference> _allowableDifferences = null;
-
-        private XmlDiff _diff;
-
-        public List<AllowableDifference> AllowableDifferences
+        public static void AssertEqualWriteOutput(string expected, Action<XmlWriter> writeFunction)
         {
-            get
+            using (var stringWriter = new StringWriter())
             {
-                return _allowableDifferences;
-            }
-            set
-            {
-                _allowableDifferences = value;
+                using (var writer = new XmlTextWriter(stringWriter))
+                {
+                    writer.Formatting = Formatting.Indented;
+                    writer.Indentation = 4;
+                    writer.IndentChar = ' ';
+
+                    writeFunction(writer);
+                }
+
+                AssertEqualLongString(expected, stringWriter.ToString());
             }
         }
 
-        public XmlDiff Diff
+        public static void AssertEqualLongString(string expected, string actual)
         {
-            get
+            if (actual != expected)
             {
-                return _diff;
-            }
-            set
-            {
-                _diff = value;
+                string message = "-- Expected -" + Environment.NewLine + expected + Environment.NewLine + "-- Actual -" + Environment.NewLine + actual + Environment.NewLine;
+                throw new NotSupportedException(message);
             }
         }
+
+        public List<AllowableDifference> AllowableDifferences { get; set; } = null;
+
+        public XmlDiff Diff { get; set; }
         public bool Compare(string source, string target, out string diffNode)
         {
             diffNode = string.Empty;
             StringBuilder stringBuilder = new StringBuilder();
-            if (_diff.Compare(source, target))
+            if (Diff.Compare(source, target))
             {
                 return true;
             }
             else
             {
                 XmlDocument diffDoc = new XmlDocument();
-                diffDoc.LoadXml(_diff.ToXml());
+                diffDoc.LoadXml(Diff.ToXml());
                 XmlNodeList totalFailures = diffDoc.SelectNodes("/Root/Node/Diff[@DiffType]");
                 XmlNodeList attrFailures = diffDoc.SelectNodes("/Root/Node/Diff[@DiffType=6]|/Root/Node/Diff[@DiffType=5]|/Root/Node/Diff[@DiffType=1]");
 

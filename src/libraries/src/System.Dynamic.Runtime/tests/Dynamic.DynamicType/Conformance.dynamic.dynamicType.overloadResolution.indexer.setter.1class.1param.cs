@@ -256,7 +256,7 @@ namespace ManagedTests.DynamicCSharp.Conformance.dynamic.dynamicType.overloadRes
             // should not happen
             if (null == rm)
                 return false;
-            if (String.IsNullOrEmpty(id) || String.IsNullOrEmpty(actualError))
+            if (string.IsNullOrEmpty(id) || string.IsNullOrEmpty(actualError))
             {
                 System.Console.WriteLine("Empty error id or actual message");
                 return false;
@@ -265,10 +265,10 @@ namespace ManagedTests.DynamicCSharp.Conformance.dynamic.dynamicType.overloadRes
             string message = rm.GetString(id, null);
             if ((null != args) && (0 < args.Length))
             {
-                message = String.Format(CultureInfo.InvariantCulture, message, args);
+                message = string.Format(CultureInfo.InvariantCulture, message, args);
             }
 
-            bool ret = 0 == String.CompareOrdinal(message, actualError);
+            bool ret = 0 == string.CompareOrdinal(message, actualError);
             // debug
             if (!ret)
             {

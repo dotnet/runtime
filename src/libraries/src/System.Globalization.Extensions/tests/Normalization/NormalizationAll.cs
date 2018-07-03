@@ -17,7 +17,7 @@ namespace System.Globalization.Tests
             string[] parts = codepoints.Split('-');
             foreach (string part in parts)
             {
-                sb.Append((char) Int32.Parse(part, NumberStyles.HexNumber | NumberStyles.AllowTrailingWhite | NumberStyles.AllowLeadingWhite, CultureInfo.InvariantCulture));
+                sb.Append((char) int.Parse(part, NumberStyles.HexNumber | NumberStyles.AllowTrailingWhite | NumberStyles.AllowLeadingWhite, CultureInfo.InvariantCulture));
             }
             return sb.ToString();
         }

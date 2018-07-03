@@ -22,7 +22,7 @@ namespace System.Linq.Tests
         public void SameResultsRepeatCallsStringQuery()
         {
             var q = from x in new[] { "!@#$%^" }
-                    where !String.IsNullOrEmpty(x)
+                    where !string.IsNullOrEmpty(x)
                     select x;
 
             Assert.Equal(q.Single(), q.Single());

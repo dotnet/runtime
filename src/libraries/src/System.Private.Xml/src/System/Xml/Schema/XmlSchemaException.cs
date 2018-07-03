@@ -78,7 +78,7 @@ namespace System.Xml.Schema
         }
 
         /// <include file='doc\XmlSchemaException.uex' path='docs/doc[@for="XmlSchemaException.XmlSchemaException2"]/*' />
-        public XmlSchemaException(String message) : this(message, ((Exception)null), 0, 0)
+        public XmlSchemaException(string message) : this(message, ((Exception)null), 0, 0)
         {
 #if DEBUG
             Debug.Assert(message == null || !message.StartsWith("Sch_", StringComparison.Ordinal), "Do not pass a resource here!");
@@ -86,12 +86,12 @@ namespace System.Xml.Schema
         }
 
         /// <include file='doc\XmlSchemaException.uex' path='docs/doc[@for="XmlSchemaException.XmlSchemaException0"]/*' />
-        public XmlSchemaException(String message, Exception innerException) : this(message, innerException, 0, 0)
+        public XmlSchemaException(string message, Exception innerException) : this(message, innerException, 0, 0)
         {
         }
 
         /// <include file='doc\XmlSchemaException.uex' path='docs/doc[@for="XmlSchemaException.XmlSchemaException3"]/*' />
-        public XmlSchemaException(String message, Exception innerException, int lineNumber, int linePosition) :
+        public XmlSchemaException(string message, Exception innerException, int lineNumber, int linePosition) :
             this((message == null ? SR.Sch_DefaultException : SR.Xml_UserException), new string[] { message }, innerException, null, lineNumber, linePosition, null)
         {
         }

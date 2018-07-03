@@ -49,7 +49,7 @@ namespace System.Reflection.Emit
             return m_label;
         }
 
-        public override bool Equals(Object obj)
+        public override bool Equals(object obj)
         {
             if (obj is Label)
                 return Equals((Label)obj);

@@ -1,0 +1,2 @@
+1.0.5
+https://github.com/google/brotli/releases/tag/v1.0.5

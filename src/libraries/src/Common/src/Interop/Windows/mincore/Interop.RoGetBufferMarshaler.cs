@@ -14,6 +14,6 @@ internal partial class Interop
     internal partial class mincore
     {
         [DllImport(Libraries.RoBuffer, CallingConvention = CallingConvention.StdCall, PreserveSig = true)]
-        internal static extern Int32 RoGetBufferMarshaler(out IMarshal bufferMarshalerPtr);
+        internal static extern int RoGetBufferMarshaler(out IMarshal bufferMarshalerPtr);
     }
 }

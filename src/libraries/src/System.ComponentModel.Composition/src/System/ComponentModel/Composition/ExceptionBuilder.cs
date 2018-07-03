@@ -9,7 +9,7 @@ using Microsoft.Internal;
 
 namespace System.ComponentModel
 {
-    internal static class ExceptionBuilder // UNDONE combine with other one
+    internal static class ExceptionBuilder
     {
         public static Exception CreateDiscoveryException(string messageFormat, params string[] arguments)
         {
@@ -88,7 +88,7 @@ namespace System.ComponentModel
 
         private static string Format(string format, params string[] arguments)
         {
-            return String.Format(CultureInfo.CurrentCulture, format, arguments);
+            return string.Format(CultureInfo.CurrentCulture, format, arguments);
         }
     }
 }

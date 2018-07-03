@@ -81,9 +81,9 @@ namespace System.Threading.Tasks.Tests
             foreach (double r in _results)
             {
                 //If action is empty we are expected zero as result
-                Assert.False(_actionType == ActionType.Empty && r != 0, String.Format("Differ in results. Expected result to be Zero but got {0}", r));
+                Assert.False(_actionType == ActionType.Empty && r != 0, string.Format("Differ in results. Expected result to be Zero but got {0}", r));
 
-                Assert.False(_actionType != ActionType.Empty && (r < minLimit || r > maxLimit), String.Format("Differ in results. Expected result to lie between {0} and {1} but got {2}", minLimit, maxLimit, r));
+                Assert.False(_actionType != ActionType.Empty && (r < minLimit || r > maxLimit), string.Format("Differ in results. Expected result to lie between {0} and {1} but got {2}", minLimit, maxLimit, r));
             }
         }
 

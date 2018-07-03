@@ -39,7 +39,7 @@ namespace System.Collections
         // GetKey with no intervening calls to GetNext will return
         // the same object.
         // 
-        Object Key
+        object Key
         {
             get;
         }
@@ -50,7 +50,7 @@ namespace System.Collections
         // to GetValue with no intervening calls to GetNext will
         // return the same object.
         // 
-        Object Value
+        object Value
         {
             get;
         }

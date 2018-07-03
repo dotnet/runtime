@@ -132,7 +132,7 @@ namespace System.Data.SqlClient
                 opt = new SqlConnectionString(opt, instanceName, userInstance: false, setEnlistValue: null);
                 poolGroupProviderInfo = null; // null so we do not pass to constructor below...
             }
-            result = new SqlInternalConnectionTds(identity, opt, key.Credential, poolGroupProviderInfo, "", null, redirectedUserInstance, userOpt, recoverySessionData, applyTransientFaultHandling: applyTransientFaultHandling);
+            result = new SqlInternalConnectionTds(identity, opt, key.Credential, poolGroupProviderInfo, "", null, redirectedUserInstance, userOpt, recoverySessionData, applyTransientFaultHandling: applyTransientFaultHandling, key.AccessToken);
             return result;
         }
 
@@ -165,10 +165,10 @@ namespace System.Data.SqlClient
             {    // never pool context connections.
                 int connectionTimeout = opt.ConnectTimeout;
 
-                if ((0 < connectionTimeout) && (connectionTimeout < Int32.MaxValue / 1000))
+                if ((0 < connectionTimeout) && (connectionTimeout < int.MaxValue / 1000))
                     connectionTimeout *= 1000;
-                else if (connectionTimeout >= Int32.MaxValue / 1000)
-                    connectionTimeout = Int32.MaxValue;
+                else if (connectionTimeout >= int.MaxValue / 1000)
+                    connectionTimeout = int.MaxValue;
 
                 poolingOptions = new DbConnectionPoolGroupOptions(
                                                     opt.IntegratedSecurity,

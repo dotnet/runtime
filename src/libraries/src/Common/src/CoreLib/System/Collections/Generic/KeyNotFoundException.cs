@@ -17,13 +17,13 @@ namespace System.Collections.Generic
             HResult = HResults.COR_E_KEYNOTFOUND;
         }
 
-        public KeyNotFoundException(String message)
+        public KeyNotFoundException(string message)
             : base(message)
         {
             HResult = HResults.COR_E_KEYNOTFOUND;
         }
 
-        public KeyNotFoundException(String message, Exception innerException)
+        public KeyNotFoundException(string message, Exception innerException)
             : base(message, innerException)
         {
             HResult = HResults.COR_E_KEYNOTFOUND;

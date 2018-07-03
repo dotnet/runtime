@@ -115,7 +115,7 @@ namespace System.Tests
             {
                 using (iteration.StartMeasurement())
                 {
-                    s_arr1 = Array.CreateInstance(typeof(System.Int32), s_DIM_1);
+                    s_arr1 = Array.CreateInstance(typeof(int), s_DIM_1);
                 }
             }
         }
@@ -127,7 +127,7 @@ namespace System.Tests
             {
                 using (iteration.StartMeasurement())
                 {
-                    s_arr2 = Array.CreateInstance(typeof(System.Int32), s_DIM_2, s_DIM_2);
+                    s_arr2 = Array.CreateInstance(typeof(int), s_DIM_2, s_DIM_2);
                 }
             }
         }
@@ -139,7 +139,7 @@ namespace System.Tests
             {
                 using (iteration.StartMeasurement())
                 {
-                    s_arr3 = Array.CreateInstance(typeof(System.Int32), s_DIM_3, s_DIM_3, s_DIM_3);
+                    s_arr3 = Array.CreateInstance(typeof(int), s_DIM_3, s_DIM_3, s_DIM_3);
                 }
             }
         }
@@ -147,7 +147,7 @@ namespace System.Tests
         [Benchmark]
         public static void ArrayAssign1D()
         {
-            s_arr1 = Array.CreateInstance(typeof(System.Int32), s_DIM_1);
+            s_arr1 = Array.CreateInstance(typeof(int), s_DIM_1);
 
             foreach (var iteration in Benchmark.Iterations)
             {
@@ -173,7 +173,7 @@ namespace System.Tests
         [Benchmark]
         public static void ArrayAssign2D()
         {
-            s_arr2 = Array.CreateInstance(typeof(System.Int32), s_DIM_2, s_DIM_2);
+            s_arr2 = Array.CreateInstance(typeof(int), s_DIM_2, s_DIM_2);
 
             foreach (var iteration in Benchmark.Iterations)
             {
@@ -202,7 +202,7 @@ namespace System.Tests
         [Benchmark]
         public static void ArrayAssign3D()
         {
-            s_arr3 = Array.CreateInstance(typeof(System.Int32), s_DIM_3, s_DIM_3, s_DIM_3);
+            s_arr3 = Array.CreateInstance(typeof(int), s_DIM_3, s_DIM_3, s_DIM_3);
 
             foreach (var iteration in Benchmark.Iterations)
             {
@@ -235,7 +235,7 @@ namespace System.Tests
         public static void ArrayRetrieve1D()
         {
             int value;
-            s_arr1 = Array.CreateInstance(typeof(System.Int32), s_DIM_1);
+            s_arr1 = Array.CreateInstance(typeof(int), s_DIM_1);
 
             for (int i = 0; i < s_DIM_1; i++)
                 s_arr1.SetValue(i, i);
@@ -265,7 +265,7 @@ namespace System.Tests
         public static void ArrayRetrieve2D()
         {
             int value;
-            s_arr2 = Array.CreateInstance(typeof(System.Int32), s_DIM_2, s_DIM_2);
+            s_arr2 = Array.CreateInstance(typeof(int), s_DIM_2, s_DIM_2);
 
             for (int i = 0; i < s_DIM_2; i++)
             {
@@ -301,7 +301,7 @@ namespace System.Tests
         public static void ArrayRetrieve3D()
         {
             int value;
-            s_arr3 = Array.CreateInstance(typeof(System.Int32), s_DIM_3, s_DIM_3, s_DIM_3);
+            s_arr3 = Array.CreateInstance(typeof(int), s_DIM_3, s_DIM_3, s_DIM_3);
 
             for (int i = 0; i < s_DIM_3; i++)
             {
@@ -343,8 +343,8 @@ namespace System.Tests
         [Benchmark]
         public static void ArrayCopy1D()
         {
-            Array dummy = Array.CreateInstance(typeof(System.Int32), s_DIM_1);
-            s_arr1 = Array.CreateInstance(typeof(System.Int32), s_DIM_1);
+            Array dummy = Array.CreateInstance(typeof(int), s_DIM_1);
+            s_arr1 = Array.CreateInstance(typeof(int), s_DIM_1);
 
             for (int i = 0; i < s_DIM_1; i++)
                 s_arr1.SetValue(i, i);
@@ -363,8 +363,8 @@ namespace System.Tests
         {
             int arrayLen = (int)Math.Pow(s_DIM_2, 2);
 
-            Array dummy = Array.CreateInstance(typeof(System.Int32), s_DIM_2, s_DIM_2);
-            s_arr2 = Array.CreateInstance(typeof(System.Int32), s_DIM_2, s_DIM_2);
+            Array dummy = Array.CreateInstance(typeof(int), s_DIM_2, s_DIM_2);
+            s_arr2 = Array.CreateInstance(typeof(int), s_DIM_2, s_DIM_2);
 
             for (int i = 0; i < s_DIM_2; i++)
             {
@@ -386,8 +386,8 @@ namespace System.Tests
         {
             int arrayLen = (int)Math.Pow(s_DIM_3, 3);
 
-            Array dummy = Array.CreateInstance(typeof(System.Int32), s_DIM_3, s_DIM_3, s_DIM_3);
-            s_arr3 = Array.CreateInstance(typeof(System.Int32), s_DIM_3, s_DIM_3, s_DIM_3);
+            Array dummy = Array.CreateInstance(typeof(int), s_DIM_3, s_DIM_3, s_DIM_3);
+            s_arr3 = Array.CreateInstance(typeof(int), s_DIM_3, s_DIM_3, s_DIM_3);
 
             for (int i = 0; i < s_DIM_3; i++)
             {

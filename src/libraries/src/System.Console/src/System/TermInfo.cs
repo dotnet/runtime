@@ -129,7 +129,7 @@ namespace System
                 _readAs32Bit =
                     magic == MagicLegacyNumber ? false :
                     magic == Magic32BitNumber ? true :
-                    throw new InvalidOperationException(SR.Format(SR.IO_TermInfoInvalidMagicNumber, String.Concat("O" + Convert.ToString(magic, 8)))); // magic number was not recognized. Printing the magic number in octal.
+                    throw new InvalidOperationException(SR.Format(SR.IO_TermInfoInvalidMagicNumber, string.Concat("O" + Convert.ToString(magic, 8)))); // magic number was not recognized. Printing the magic number in octal.
                 _sizeOfInt = (_readAs32Bit) ? 4 : 2;
 
                 _nameSectionNumBytes = ReadInt16(data, 2);
@@ -854,7 +854,7 @@ namespace System
             /// <summary>Converts an Int32 to a Boolean, with 0 meaning false and all non-zero values meaning true.</summary>
             /// <param name="i">The integer value to convert.</param>
             /// <returns>true if the integer was non-zero; otherwise, false.</returns>
-            private static bool AsBool(Int32 i) { return i != 0; }
+            private static bool AsBool(int i) { return i != 0; }
 
             /// <summary>Converts a Boolean to an Int32, with true meaning 1 and false meaning 0.</summary>
             /// <param name="b">The Boolean value to convert.</param>
@@ -867,7 +867,7 @@ namespace System
             /// <returns>The formatted string.</returns>
             private static unsafe string FormatPrintF(string format, object arg)
             {
-                Debug.Assert(arg is string || arg is Int32);
+                Debug.Assert(arg is string || arg is int);
 
                 // Determine how much space is needed to store the formatted string.
                 string stringArg = arg as string;
@@ -934,16 +934,16 @@ namespace System
 
                 /// <summary>Initializes the parameter with an integer value.</summary>
                 /// <param name="value">The value to be stored in the parameter.</param>
-                public FormatParam(Int32 value) : this(value, null) { }
+                public FormatParam(int value) : this(value, null) { }
 
                 /// <summary>Initializes the parameter with a string value.</summary>
                 /// <param name="value">The value to be stored in the parameter.</param>
-                public FormatParam(String value) : this(0, value ?? string.Empty) { }
+                public FormatParam(string value) : this(0, value ?? string.Empty) { }
 
                 /// <summary>Initializes the parameter.</summary>
                 /// <param name="intValue">The integer value.</param>
                 /// <param name="stringValue">The string value.</param>
-                private FormatParam(Int32 intValue, String stringValue)
+                private FormatParam(int intValue, string stringValue)
                 {
                     _int32 = intValue;
                     _string = stringValue;

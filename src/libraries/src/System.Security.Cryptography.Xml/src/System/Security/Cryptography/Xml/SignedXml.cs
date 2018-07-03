@@ -335,7 +335,7 @@ namespace System.Security.Cryptography.Xml
                 // Check key usages to make sure it is good for signing.
                 foreach (X509Extension extension in certificate.Extensions)
                 {
-                    if (string.Compare(extension.Oid.Value, "2.5.29.15" /* szOID_KEY_USAGE */, StringComparison.OrdinalIgnoreCase) == 0)
+                    if (string.Equals(extension.Oid.Value, "2.5.29.15" /* szOID_KEY_USAGE */, StringComparison.OrdinalIgnoreCase))
                     {
                         X509KeyUsageExtension keyUsage = new X509KeyUsageExtension();
                         keyUsage.CopyFrom(extension);

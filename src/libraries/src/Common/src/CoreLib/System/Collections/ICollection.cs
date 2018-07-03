@@ -54,7 +54,7 @@ namespace System.Collections
         // that the this pointer may not be sufficient for collections that 
         // wrap other collections;  those should return the underlying 
         // collection's SyncRoot property.
-        Object SyncRoot
+        object SyncRoot
         { get; }
 
         // Is this collection synchronized (i.e., thread-safe)?  If you want a 

@@ -5,9 +5,6 @@
 #pragma once
 
 #include "pal_compiler.h"
-
-BEGIN_EXTERN_C
-
 #include "pal_types.h"
 
 /**
@@ -28,5 +25,3 @@ DLLEXPORT int32_t SystemNative_SNPrintF(char* string, int32_t size, const char* 
  * a negative number and errno and ferror are both set.
  */
 DLLEXPORT int32_t SystemNative_PrintF(const char* format, ...);
-
-END_EXTERN_C

@@ -76,6 +76,9 @@
     <BinPlaceConfiguration Condition="'$(BuildingNETCoreAppVertical)' == 'true'" Include="netcoreapp2.0">
       <RefPath>$(RefRootPath)netcoreapp2.0/</RefPath>
     </BinPlaceConfiguration>
+    <BinPlaceConfiguration Include="netcoreapp2.0-Windows_NT">
+      <RuntimePath>$(ShimsTargetRuntimeRoot)netcoreapp2.0/</RuntimePath>
+    </BinPlaceConfiguration>
     <!-- some libraries that produce packages will remain targeting uap10.0.16299 -->
     <BinPlaceConfiguration Condition="'$(BuildingUAPVertical)' == 'true' OR '$(BuildingUAPAOTVertical)' == 'true'" Include="uap10.0.16299">
       <RefPath>$(RefRootPath)uap10.0.16299/</RefPath>

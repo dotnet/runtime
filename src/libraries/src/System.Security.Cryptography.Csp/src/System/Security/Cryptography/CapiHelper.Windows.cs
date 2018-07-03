@@ -1094,12 +1094,12 @@ namespace Internal.NativeCrypto
         /// <summary>
         /// Helper for signing and verifications that accept a string/Type/HashAlgorithm to specify a hashing algorithm.
         /// </summary>
-        public static int ObjToHashAlgId(Object hashAlg)
+        public static int ObjToHashAlgId(object hashAlg)
         {
             if (hashAlg == null)
                 throw new ArgumentNullException(nameof(hashAlg));
 
-            String hashAlgString = hashAlg as String;
+            string hashAlgString = hashAlg as string;
             if (hashAlgString != null)
             {
                 int algId = NameOrOidToHashAlgId(hashAlgString, OidGroup.HashAlgorithm);
@@ -1152,7 +1152,7 @@ namespace Internal.NativeCrypto
         /// </summary>
         [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Security", "CA5351", Justification = "MD5 is used when the user asks for it.")]
         [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Security", "CA5350", Justification = "SHA1 is used when the user asks for it.")]
-        internal static HashAlgorithm ObjToHashAlgorithm(Object hashAlg)
+        internal static HashAlgorithm ObjToHashAlgorithm(object hashAlg)
         {
             int algId = ObjToHashAlgId(hashAlg);
             switch (algId)
@@ -1186,15 +1186,15 @@ namespace Internal.NativeCrypto
 
             // CAPI does not have ALGID mappings for all of the hash algorithms - see if we know the mapping
             // first to avoid doing an AD lookup on these values
-            if (String.Equals(oid, CapiHelper.OID_OIWSEC_SHA256, StringComparison.Ordinal))
+            if (string.Equals(oid, CapiHelper.OID_OIWSEC_SHA256, StringComparison.Ordinal))
             {
                 return CapiHelper.CALG_SHA_256;
             }
-            else if (String.Equals(oid, CapiHelper.OID_OIWSEC_SHA384, StringComparison.Ordinal))
+            else if (string.Equals(oid, CapiHelper.OID_OIWSEC_SHA384, StringComparison.Ordinal))
             {
                 return CapiHelper.CALG_SHA_384;
             }
-            else if (String.Equals(oid, CapiHelper.OID_OIWSEC_SHA512, StringComparison.Ordinal))
+            else if (string.Equals(oid, CapiHelper.OID_OIWSEC_SHA512, StringComparison.Ordinal))
             {
                 return CapiHelper.CALG_SHA_512;
             }
@@ -1611,11 +1611,11 @@ namespace Internal.NativeCrypto
 
             [DllImport(Libraries.Advapi32, CharSet = CharSet.Unicode, SetLastError = true, EntryPoint = "CryptSignHashW")]
             [return: MarshalAs(UnmanagedType.Bool)]
-            public static extern bool CryptSignHash(SafeHashHandle hHash, KeySpec dwKeySpec, String sDescription, CryptSignAndVerifyHashFlags dwFlags, [Out] byte[] pbSignature, [In, Out] ref int pdwSigLen);
+            public static extern bool CryptSignHash(SafeHashHandle hHash, KeySpec dwKeySpec, string sDescription, CryptSignAndVerifyHashFlags dwFlags, [Out] byte[] pbSignature, [In, Out] ref int pdwSigLen);
 
             [DllImport(Libraries.Advapi32, CharSet = CharSet.Unicode, SetLastError = true, EntryPoint = "CryptVerifySignatureW")]
             [return: MarshalAs(UnmanagedType.Bool)]
-            public static extern bool CryptVerifySignature(SafeHashHandle hHash, byte[] pbSignature, int dwSigLen, SafeKeyHandle hPubKey, String sDescription, CryptSignAndVerifyHashFlags dwFlags);
+            public static extern bool CryptVerifySignature(SafeHashHandle hHash, byte[] pbSignature, int dwSigLen, SafeKeyHandle hPubKey, string sDescription, CryptSignAndVerifyHashFlags dwFlags);
 
             [DllImport(Libraries.Advapi32, CharSet = CharSet.Unicode, SetLastError = true)]
             [return: MarshalAs(UnmanagedType.Bool)]
