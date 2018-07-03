@@ -364,7 +364,7 @@ namespace System.DirectoryServices.ActiveDirectory
             OnInsertComplete(index, newValue);
         }
 
-        protected override void OnValidate(Object value)
+        protected override void OnValidate(object value)
         {
             if (value == null) throw new ArgumentNullException(nameof(value));
 

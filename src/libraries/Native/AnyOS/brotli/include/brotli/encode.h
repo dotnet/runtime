@@ -27,6 +27,11 @@ extern "C" {
  * @note equal to @c BROTLI_MAX_DISTANCE_BITS constant.
  */
 #define BROTLI_MAX_WINDOW_BITS 24
+/**
+ * Maximal value for ::BROTLI_PARAM_LGWIN parameter
+ * in "Large Window Brotli" (32-bit).
+ */
+#define BROTLI_LARGE_MAX_WINDOW_BITS 30
 /** Minimal value for ::BROTLI_PARAM_LGBLOCK parameter. */
 #define BROTLI_MIN_INPUT_BLOCK_BITS 16
 /** Maximal value for ::BROTLI_PARAM_LGBLOCK parameter. */
@@ -176,7 +181,27 @@ typedef enum BrotliEncoderParameter {
    *
    * The default value is 0, which means that the total input size is unknown.
    */
-  BROTLI_PARAM_SIZE_HINT = 5
+  BROTLI_PARAM_SIZE_HINT = 5,
+  /**
+   * Flag that determines if "Large Window Brotli" is used.
+   */
+  BROTLI_PARAM_LARGE_WINDOW = 6,
+  /**
+   * Recommended number of postfix bits (NPOSTFIX).
+   *
+   * Encoder may change this value.
+   *
+   * Range is from 0 to ::BROTLI_MAX_NPOSTFIX.
+   */
+  BROTLI_PARAM_NPOSTFIX = 7,
+  /**
+   * Recommended number of direct distance codes (NDIRECT).
+   *
+   * Encoder may change this value.
+   *
+   * Range is from 0 to (15 << NPOSTFIX) in steps of (1 << NPOSTFIX).
+   */
+  BROTLI_PARAM_NDIRECT = 8
 } BrotliEncoderParameter;
 
 /**
@@ -209,10 +234,11 @@ BROTLI_ENC_API BROTLI_BOOL BrotliEncoderSetParameter(
  *
  * @p alloc_func and @p free_func @b MUST be both zero or both non-zero. In the
  * case they are both zero, default memory allocators are used. @p opaque is
- * passed to @p alloc_func and @p free_func when they are called.
+ * passed to @p alloc_func and @p free_func when they are called. @p free_func
+ * has to return without doing anything when asked to free a NULL pointer.
  *
  * @param alloc_func custom memory allocation function
- * @param free_func custom memory fee function
+ * @param free_func custom memory free function
  * @param opaque custom memory manager handle
  * @returns @c 0 if instance can not be allocated or initialized
  * @returns pointer to initialized ::BrotliEncoderState otherwise
@@ -230,10 +256,9 @@ BROTLI_ENC_API void BrotliEncoderDestroyInstance(BrotliEncoderState* state);
 /**
  * Calculates the output size bound for the given @p input_size.
  *
- * @warning Result is not applicable to ::BrotliEncoderCompressStream output,
- *          because every "flush" adds extra overhead bytes, and some encoder
- *          settings (e.g. quality @c 0 and @c 1) might imply a "soft flush"
- *          after every chunk of input.
+ * @warning Result is only valid if quality is at least @c 2 and, in
+ *          case ::BrotliEncoderCompressStream was used, no flushes
+ *          (::BROTLI_OPERATION_FLUSH) were performed.
  *
  * @param input_size size of projected input
  * @returns @c 0 if result does not fit @c size_t

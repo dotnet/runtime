@@ -146,16 +146,16 @@ namespace System.Threading.Tasks
         }
 
 
-        private const Int32 CooperativeMultitaskingTaskTimeout_Min = 100;  // millisec
-        private const Int32 CooperativeMultitaskingTaskTimeout_Increment = 50;  // millisec
-        private const Int32 CooperativeMultitaskingTaskTimeout_RootTask = (Int32.MaxValue / 2);
+        private const int CooperativeMultitaskingTaskTimeout_Min = 100;  // millisec
+        private const int CooperativeMultitaskingTaskTimeout_Increment = 50;  // millisec
+        private const int CooperativeMultitaskingTaskTimeout_RootTask = (int.MaxValue / 2);
 
-        private static Int32 GenerateCooperativeMultitaskingTaskTimeout()
+        private static int GenerateCooperativeMultitaskingTaskTimeout()
         {
             // This logic ensures that we have a diversity of timeouts across worker tasks (100, 150, 200, 250, 100, etc)
             // Otherwise all worker will try to timeout at precisely the same point, which is bad if the work is just about to finish.
-            Int32 period = PlatformHelper.ProcessorCount;
-            Int32 pseudoRnd = Environment.TickCount;
+            int period = PlatformHelper.ProcessorCount;
+            int pseudoRnd = Environment.TickCount;
             return CooperativeMultitaskingTaskTimeout_Min + (pseudoRnd % period) * CooperativeMultitaskingTaskTimeout_Increment;
         }
     }

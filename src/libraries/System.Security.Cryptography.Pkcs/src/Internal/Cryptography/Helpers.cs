@@ -464,6 +464,31 @@ namespace Internal.Cryptography
             return parsedCertificate.TbsCertificate.SubjectPublicKeyInfo;
         }
 
+        public static ReadOnlyMemory<byte> DecodeOctetString(ReadOnlyMemory<byte> encodedOctetString)
+        {
+            AsnReader reader = new AsnReader(encodedOctetString, AsnEncodingRules.BER);
+
+            if (reader.PeekEncodedValue().Length != encodedOctetString.Length)
+            {
+                throw new CryptographicException(SR.Cryptography_Der_Invalid_Encoding);
+            }
+
+            if (reader.TryGetPrimitiveOctetStringBytes(out ReadOnlyMemory<byte> primitiveContents))
+            {
+                return primitiveContents;
+            }
+
+            byte[] tooBig = new byte[encodedOctetString.Length];
+
+            if (reader.TryCopyOctetStringBytes(tooBig, out int bytesWritten))
+            {
+                return tooBig.AsMemory(0, bytesWritten);
+            }
+
+            Debug.Fail("TryCopyOctetStringBytes failed with an over-allocated array");
+            throw new CryptographicException();
+        }
+
         [StructLayout(LayoutKind.Sequential)]
         private struct Certificate
         {

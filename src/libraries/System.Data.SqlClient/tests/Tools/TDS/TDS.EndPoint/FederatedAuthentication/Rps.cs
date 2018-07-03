@@ -1,4 +1,4 @@
-﻿// Licensed to the .NET Foundation under one or more agreements.
+// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
@@ -88,7 +88,7 @@ namespace Microsoft.SqlServer.TDS.EndPoint.FederatedAuthentication
             object authenticator = Activator.CreateInstance(_rpsAuthType, new object[] { _rps });
 
             // Call Authenticate in the Authenticator object using the encrypted ticket and the site name provided
-            return _rpsAuthType.GetMethod("Authenticate").Invoke(authenticator, new object[] { siteName, System.Text.Encoding.Unicode.GetString(encryptedTicket), (UInt32)2 /*compact ticket*/, rpsPropBag });
+            return _rpsAuthType.GetMethod("Authenticate").Invoke(authenticator, new object[] { siteName, System.Text.Encoding.Unicode.GetString(encryptedTicket), (uint)2 /*compact ticket*/, rpsPropBag });
         }
 
         /// <summary>

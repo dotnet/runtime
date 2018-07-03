@@ -28,18 +28,25 @@
 /* "code length of 8 is repeated" */
 #define BROTLI_INITIAL_REPEATED_CODE_LENGTH 8
 
+/* "Large Window Brotli" */
+#define BROTLI_LARGE_MAX_DISTANCE_BITS 62U
+#define BROTLI_LARGE_MIN_WBITS 10
+#define BROTLI_LARGE_MAX_WBITS 30
+
 /* Specification: 4. Encoding of distances */
 #define BROTLI_NUM_DISTANCE_SHORT_CODES 16
 #define BROTLI_MAX_NPOSTFIX 3
 #define BROTLI_MAX_NDIRECT 120
 #define BROTLI_MAX_DISTANCE_BITS 24U
-/* BROTLI_NUM_DISTANCE_SYMBOLS == 520 */
-#define BROTLI_NUM_DISTANCE_SYMBOLS (BROTLI_NUM_DISTANCE_SHORT_CODES + \
-                                     BROTLI_MAX_NDIRECT +              \
-                                     (BROTLI_MAX_DISTANCE_BITS <<      \
-                                      (BROTLI_MAX_NPOSTFIX + 1)))
-/* Distance that is guaranteed to be representable in any stream. */
+#define BROTLI_DISTANCE_ALPHABET_SIZE(NPOSTFIX, NDIRECT, MAXNBITS) ( \
+    BROTLI_NUM_DISTANCE_SHORT_CODES + (NDIRECT) +                    \
+    ((MAXNBITS) << ((NPOSTFIX) + 1)))
+/* BROTLI_NUM_DISTANCE_SYMBOLS == 1128 */
+#define BROTLI_NUM_DISTANCE_SYMBOLS \
+    BROTLI_DISTANCE_ALPHABET_SIZE(  \
+        BROTLI_MAX_NDIRECT, BROTLI_MAX_NPOSTFIX, BROTLI_LARGE_MAX_DISTANCE_BITS)
 #define BROTLI_MAX_DISTANCE 0x3FFFFFC
+#define BROTLI_MAX_ALLOWED_DISTANCE 0x7FFFFFFC
 
 /* 7.1. Context modes and context ID lookup for literals */
 /* "context IDs for literals are in the range of 0..63" */

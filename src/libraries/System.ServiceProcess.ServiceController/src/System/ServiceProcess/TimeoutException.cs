@@ -23,7 +23,7 @@ namespace System.ServiceProcess
             HResult = ServiceControllerTimeout;
         }
 
-        public TimeoutException(String message, Exception innerException)
+        public TimeoutException(string message, Exception innerException)
             : base(message, innerException)
         {
             HResult = ServiceControllerTimeout;

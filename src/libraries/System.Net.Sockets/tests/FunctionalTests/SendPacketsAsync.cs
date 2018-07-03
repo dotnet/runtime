@@ -273,7 +273,7 @@ namespace System.Net.Sockets.Tests
         {
             AssertExtensions.Throws<ArgumentException>("path", null, () =>
             {
-                SendPackets(type, new SendPacketsElement(String.Empty), 0);
+                SendPackets(type, new SendPacketsElement(string.Empty), 0);
             });
         }
 

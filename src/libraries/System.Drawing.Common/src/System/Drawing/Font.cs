@@ -3,7 +3,9 @@
 // See the LICENSE file in the project root for more information.
 
 using System.ComponentModel;
+using System.Diagnostics;
 using System.Globalization;
+using System.Runtime.InteropServices;
 using System.Runtime.Serialization;
 
 namespace System.Drawing
@@ -133,6 +135,97 @@ namespace System.Drawing
         internal IntPtr NativeFont => _nativeFont;
 
         /// <summary>
+        /// Cleans up Windows resources for this <see cref='Font'/>.
+        /// </summary>
+        ~Font() => Dispose(false);
+
+        /// <summary>
+        /// Cleans up Windows resources for this <see cref='Font'/>.
+        /// </summary>
+        public void Dispose()
+        {
+            Dispose(true);
+            GC.SuppressFinalize(this);
+        }
+
+        private void Dispose(bool disposing)
+        {
+            if (_nativeFont != IntPtr.Zero)
+            {
+                try
+                {
+#if DEBUG
+                    int status =
+#endif
+                    SafeNativeMethods.Gdip.GdipDeleteFont(new HandleRef(this, _nativeFont));
+#if DEBUG
+                    Debug.Assert(status == SafeNativeMethods.Gdip.Ok, "GDI+ returned an error status: " + status.ToString(CultureInfo.InvariantCulture));
+#endif
+                }
+                catch (Exception ex) when (!ClientUtils.IsCriticalException(ex))
+                {
+                }
+                finally
+                {
+                    _nativeFont = IntPtr.Zero;
+                }
+            }
+        }
+
+        /// <summary>
+        /// Returns the height of this Font in the specified graphics context.
+        /// </summary>
+        public float GetHeight(Graphics graphics)
+        {
+            if (graphics == null)
+            {
+                throw new ArgumentNullException(nameof(graphics));
+            }
+
+            float height;
+            int status = SafeNativeMethods.Gdip.GdipGetFontHeight(new HandleRef(this, NativeFont), new HandleRef(graphics, graphics.NativeGraphics), out height);
+            SafeNativeMethods.Gdip.CheckStatus(status);
+
+            return height;
+        }
+
+        public float GetHeight(float dpi)
+        {
+            float size;
+            int status = SafeNativeMethods.Gdip.GdipGetFontHeightGivenDPI(new HandleRef(this, NativeFont), dpi, out size);
+            SafeNativeMethods.Gdip.CheckStatus(status);
+            return size;
+        }
+
+        /// <summary>
+        /// Returns a value indicating whether the specified object is a <see cref='Font'/> equivalent to this
+        /// <see cref='Font'/>.
+        /// </summary>
+        public override bool Equals(object obj)
+        {
+            if (obj == this)
+            {
+                return true;
+            }
+            
+            if (!(obj is Font font))
+            {
+                return false;
+            }
+
+            // Note: If this and/or the passed-in font are disposed, this method can still return true since we check for cached properties
+            // here.
+            // We need to call properties on the passed-in object since it could be a proxy in a remoting scenario and proxies don't
+            // have access to private/internal fields.
+            return font.FontFamily.Equals(FontFamily) &&
+                font.GdiVerticalFont == GdiVerticalFont &&
+                font.GdiCharSet == GdiCharSet &&
+                font.Style == Style &&
+                font.Size == Size &&
+                font.Unit == Unit;
+        }
+
+        /// <summary>
         /// Gets the hash code for this <see cref='Font'/>.
         /// </summary>
         public override int GetHashCode()
@@ -155,5 +248,8 @@ namespace System.Drawing
                                     _gdiCharSet,
                                     _gdiVerticalFont);
         }
+        
+        // This is used by SystemFonts when constructing a system Font objects.
+        internal void SetSystemFontName(string systemFontName) => _systemFontName = systemFontName;
     }
 }

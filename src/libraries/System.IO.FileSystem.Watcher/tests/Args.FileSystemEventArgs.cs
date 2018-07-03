@@ -30,7 +30,7 @@ namespace System.IO.Tests
         [Fact]
         public static void FileSystemEventArgs_ctor_Invalid()
         {
-            Assert.Throws<NullReferenceException>(() => new FileSystemEventArgs((WatcherChangeTypes)0, null, String.Empty));
+            Assert.Throws<NullReferenceException>(() => new FileSystemEventArgs((WatcherChangeTypes)0, null, string.Empty));
         }
     }
 }

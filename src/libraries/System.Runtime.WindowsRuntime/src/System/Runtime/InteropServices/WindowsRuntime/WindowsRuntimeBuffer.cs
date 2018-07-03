@@ -21,7 +21,7 @@ namespace System.Runtime.InteropServices.WindowsRuntime
     {
         #region Constants
 
-        private const String WinTypesDLL = "WinTypes.dll";
+        private const string WinTypesDLL = "WinTypes.dll";
 
         private enum MSHCTX : int { Local = 0, NoSharedMem = 1, DifferentMachine = 2, InProc = 3, CrossCtx = 4 }
         private enum MSHLFLAGS : int { Normal = 0, TableStrong = 1, TableWeak = 2, NoPing = 4 }
@@ -33,13 +33,13 @@ namespace System.Runtime.InteropServices.WindowsRuntime
         #region Static factory methods
 
         [CLSCompliant(false)]
-        public static IBuffer Create(Int32 capacity)
+        public static IBuffer Create(int capacity)
         {
             if (capacity < 0) throw new ArgumentOutOfRangeException(nameof(capacity));
 
             Contract.Ensures(Contract.Result<IBuffer>() != null);
-            Contract.Ensures(Contract.Result<IBuffer>().Length == unchecked((UInt32)0));
-            Contract.Ensures(Contract.Result<IBuffer>().Capacity == unchecked((UInt32)capacity));
+            Contract.Ensures(Contract.Result<IBuffer>().Length == unchecked((uint)0));
+            Contract.Ensures(Contract.Result<IBuffer>().Capacity == unchecked((uint)capacity));
             Contract.EndContractBlock();
 
             return new WindowsRuntimeBuffer(capacity);
@@ -47,7 +47,7 @@ namespace System.Runtime.InteropServices.WindowsRuntime
 
 
         [CLSCompliant(false)]
-        public static IBuffer Create(Byte[] data, Int32 offset, Int32 length, Int32 capacity)
+        public static IBuffer Create(byte[] data, int offset, int length, int capacity)
         {
             if (data == null) throw new ArgumentNullException(nameof(data));
             if (offset < 0) throw new ArgumentOutOfRangeException(nameof(offset));
@@ -58,12 +58,12 @@ namespace System.Runtime.InteropServices.WindowsRuntime
             if (capacity < length) throw new ArgumentException(SR.Argument_InsufficientBufferCapacity);
 
             Contract.Ensures(Contract.Result<IBuffer>() != null);
-            Contract.Ensures(Contract.Result<IBuffer>().Length == unchecked((UInt32)length));
-            Contract.Ensures(Contract.Result<IBuffer>().Capacity == unchecked((UInt32)capacity));
+            Contract.Ensures(Contract.Result<IBuffer>().Length == unchecked((uint)length));
+            Contract.Ensures(Contract.Result<IBuffer>().Capacity == unchecked((uint)capacity));
 
             Contract.EndContractBlock();
 
-            Byte[] underlyingData = new Byte[capacity];
+            byte[] underlyingData = new byte[capacity];
             Buffer.BlockCopy(data, offset, underlyingData, 0, length);
             return new WindowsRuntimeBuffer(underlyingData, 0, length, capacity);
         }
@@ -85,23 +85,23 @@ namespace System.Runtime.InteropServices.WindowsRuntime
             try
             {
                 IMarshal proxy;
-                Int32 hr = Interop.mincore.RoGetBufferMarshaler(out proxy);
+                int hr = Interop.mincore.RoGetBufferMarshaler(out proxy);
                 t_winRtMarshalProxy = proxy;
 
                 if (hr != __HResults.S_OK)
                 {
-                    Exception ex = new Exception(String.Format("{0} ({1}!RoGetBufferMarshaler)", SR.WinRtCOM_Error, WinTypesDLL));
+                    Exception ex = new Exception(string.Format("{0} ({1}!RoGetBufferMarshaler)", SR.WinRtCOM_Error, WinTypesDLL));
                     ex.SetErrorCode(hr);
                     throw ex;
                 }
 
                 if (proxy == null)
-                    throw new NullReferenceException(String.Format("{0} ({1}!RoGetBufferMarshaler)", SR.WinRtCOM_Error, WinTypesDLL));
+                    throw new NullReferenceException(string.Format("{0} ({1}!RoGetBufferMarshaler)", SR.WinRtCOM_Error, WinTypesDLL));
             }
             catch (DllNotFoundException ex)
             {
                 throw new NotImplementedException(SR.Format(SR.NotImplemented_NativeRoutineNotFound,
-                                                               String.Format("{0}!RoGetBufferMarshaler", WinTypesDLL)),
+                                                               string.Format("{0}!RoGetBufferMarshaler", WinTypesDLL)),
                                                   ex);
             }
         }
@@ -111,10 +111,10 @@ namespace System.Runtime.InteropServices.WindowsRuntime
 
         #region Fields
 
-        private Byte[] _data = null;
-        private Int32 _dataStartOffs = 0;
-        private Int32 _usefulDataLength = 0;
-        private Int32 _maxDataCapacity = 0;
+        private byte[] _data = null;
+        private int _dataStartOffs = 0;
+        private int _usefulDataLength = 0;
+        private int _maxDataCapacity = 0;
         private GCHandle _pinHandle;
 
         // Pointer to data[dataStartOffs] when data is pinned:
@@ -125,14 +125,14 @@ namespace System.Runtime.InteropServices.WindowsRuntime
 
         #region Constructors
 
-        internal WindowsRuntimeBuffer(Int32 capacity)
+        internal WindowsRuntimeBuffer(int capacity)
         {
             if (capacity < 0)
                 throw new ArgumentOutOfRangeException(nameof(capacity));
 
             Contract.EndContractBlock();
 
-            _data = new Byte[capacity];
+            _data = new byte[capacity];
             _dataStartOffs = 0;
             _usefulDataLength = 0;
             _maxDataCapacity = capacity;
@@ -140,7 +140,7 @@ namespace System.Runtime.InteropServices.WindowsRuntime
         }
 
 
-        internal WindowsRuntimeBuffer(Byte[] data, Int32 offset, Int32 length, Int32 capacity)
+        internal WindowsRuntimeBuffer(byte[] data, int offset, int length, int capacity)
         {
             if (data == null) throw new ArgumentNullException(nameof(data));
             if (offset < 0) throw new ArgumentOutOfRangeException(nameof(offset));
@@ -163,14 +163,14 @@ namespace System.Runtime.InteropServices.WindowsRuntime
 
         #region Helpers
 
-        internal void GetUnderlyingData(out Byte[] underlyingDataArray, out Int32 underlyingDataArrayStartOffset)
+        internal void GetUnderlyingData(out byte[] underlyingDataArray, out int underlyingDataArrayStartOffset)
         {
             underlyingDataArray = _data;
             underlyingDataArrayStartOffset = _dataStartOffs;
         }
 
 
-        private unsafe Byte* PinUnderlyingData()
+        private unsafe byte* PinUnderlyingData()
         {
             GCHandle gcHandle = default(GCHandle);
             bool ptrWasStored = false;
@@ -209,7 +209,7 @@ namespace System.Runtime.InteropServices.WindowsRuntime
             }
 
             // Ok, now all is good:
-            return (Byte*)buffPtr;
+            return (byte*)buffPtr;
         }
 
         ~WindowsRuntimeBuffer()
@@ -223,17 +223,17 @@ namespace System.Runtime.InteropServices.WindowsRuntime
 
         #region Implementation of Windows.Foundation.IBuffer
 
-        UInt32 IBuffer.Capacity
+        uint IBuffer.Capacity
         {
-            get { return unchecked((UInt32)_maxDataCapacity); }
+            get { return unchecked((uint)_maxDataCapacity); }
         }
 
 
-        UInt32 IBuffer.Length
+        uint IBuffer.Length
         {
             get
             {
-                return unchecked((UInt32)_usefulDataLength);
+                return unchecked((uint)_usefulDataLength);
             }
 
             set
@@ -246,8 +246,8 @@ namespace System.Runtime.InteropServices.WindowsRuntime
                 }
 
                 // Capacity is ensured to not exceed Int32.MaxValue, so Length is within this limit and this cast is safe:
-                Debug.Assert(((IBuffer)this).Capacity <= Int32.MaxValue);
-                _usefulDataLength = unchecked((Int32)value);
+                Debug.Assert(((IBuffer)this).Capacity <= int.MaxValue);
+                _usefulDataLength = unchecked((int)value);
             }
         }
 
@@ -274,28 +274,28 @@ namespace System.Runtime.InteropServices.WindowsRuntime
 
         #region Implementation of IMarshal
 
-        void IMarshal.DisconnectObject(UInt32 dwReserved)
+        void IMarshal.DisconnectObject(uint dwReserved)
         {
             EnsureHasMarshalProxy();
             t_winRtMarshalProxy.DisconnectObject(dwReserved);
         }
 
 
-        void IMarshal.GetMarshalSizeMax(ref Guid riid, IntPtr pv, UInt32 dwDestContext, IntPtr pvDestContext, UInt32 mshlflags, out UInt32 pSize)
+        void IMarshal.GetMarshalSizeMax(ref Guid riid, IntPtr pv, uint dwDestContext, IntPtr pvDestContext, uint mshlflags, out uint pSize)
         {
             EnsureHasMarshalProxy();
             t_winRtMarshalProxy.GetMarshalSizeMax(ref riid, pv, dwDestContext, pvDestContext, mshlflags, out pSize);
         }
 
 
-        void IMarshal.GetUnmarshalClass(ref Guid riid, IntPtr pv, UInt32 dwDestContext, IntPtr pvDestContext, UInt32 mshlFlags, out Guid pCid)
+        void IMarshal.GetUnmarshalClass(ref Guid riid, IntPtr pv, uint dwDestContext, IntPtr pvDestContext, uint mshlFlags, out Guid pCid)
         {
             EnsureHasMarshalProxy();
             t_winRtMarshalProxy.GetUnmarshalClass(ref riid, pv, dwDestContext, pvDestContext, mshlFlags, out pCid);
         }
 
 
-        void IMarshal.MarshalInterface(IntPtr pStm, ref Guid riid, IntPtr pv, UInt32 dwDestContext, IntPtr pvDestContext, UInt32 mshlflags)
+        void IMarshal.MarshalInterface(IntPtr pStm, ref Guid riid, IntPtr pv, uint dwDestContext, IntPtr pvDestContext, uint mshlflags)
         {
             EnsureHasMarshalProxy();
             t_winRtMarshalProxy.MarshalInterface(pStm, ref riid, pv, dwDestContext, pvDestContext, mshlflags);

@@ -34,13 +34,13 @@ namespace System
         // message, its HRESULT set to COR_E_ARITHMETIC, 
         // and its ExceptionInfo reference set to null. 
         // 
-        public ArithmeticException(String message)
+        public ArithmeticException(string message)
             : base(message)
         {
             HResult = HResults.COR_E_ARITHMETIC;
         }
 
-        public ArithmeticException(String message, Exception innerException)
+        public ArithmeticException(string message, Exception innerException)
             : base(message, innerException)
         {
             HResult = HResults.COR_E_ARITHMETIC;

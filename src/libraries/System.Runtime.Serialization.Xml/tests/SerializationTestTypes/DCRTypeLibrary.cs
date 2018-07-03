@@ -1,4 +1,4 @@
-﻿// Licensed to the .NET Foundation under one or more agreements.
+// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
@@ -87,7 +87,7 @@ namespace SerializationTestTypes
         public DateTime dateHired;
 
         [DataMember]
-        public Decimal salary;
+        public decimal salary;
 
         [DataMember]
         public Individual individual;
@@ -237,18 +237,18 @@ namespace SerializationTestTypes
             {
                 if (_fxPrimitivesInCollectionList.Count == 0)
                 {
-                    _fxPrimitivesInCollectionList.Add(typeof(List<System.Boolean>));
-                    _fxPrimitivesInCollectionList.Add(typeof(List<System.Byte>));
-                    _fxPrimitivesInCollectionList.Add(typeof(List<System.Byte[]>));
-                    _fxPrimitivesInCollectionList.Add(typeof(List<System.Char>));
+                    _fxPrimitivesInCollectionList.Add(typeof(List<bool>));
+                    _fxPrimitivesInCollectionList.Add(typeof(List<byte>));
+                    _fxPrimitivesInCollectionList.Add(typeof(List<byte[]>));
+                    _fxPrimitivesInCollectionList.Add(typeof(List<char>));
                     _fxPrimitivesInCollectionList.Add(typeof(List<System.DateTime>));
                     _fxPrimitivesInCollectionList.Add(typeof(List<System.DBNull>));
-                    _fxPrimitivesInCollectionList.Add(typeof(List<System.Decimal>));
-                    _fxPrimitivesInCollectionList.Add(typeof(List<System.Double>));
+                    _fxPrimitivesInCollectionList.Add(typeof(List<decimal>));
+                    _fxPrimitivesInCollectionList.Add(typeof(List<double>));
                     _fxPrimitivesInCollectionList.Add(typeof(List<System.Guid>));
-                    _fxPrimitivesInCollectionList.Add(typeof(List<System.Int16>));
-                    _fxPrimitivesInCollectionList.Add(typeof(List<System.Int32>));
-                    _fxPrimitivesInCollectionList.Add(typeof(List<System.Int64>));
+                    _fxPrimitivesInCollectionList.Add(typeof(List<short>));
+                    _fxPrimitivesInCollectionList.Add(typeof(List<int>));
+                    _fxPrimitivesInCollectionList.Add(typeof(List<long>));
                     _fxPrimitivesInCollectionList.Add(typeof(List<System.Nullable<System.Boolean>>));
                     _fxPrimitivesInCollectionList.Add(typeof(List<System.Nullable<System.Byte>>));
                     _fxPrimitivesInCollectionList.Add(typeof(List<System.Nullable<System.Char>>));
@@ -265,13 +265,13 @@ namespace SerializationTestTypes
                     _fxPrimitivesInCollectionList.Add(typeof(List<System.Nullable<System.UInt16>>));
                     _fxPrimitivesInCollectionList.Add(typeof(List<System.Nullable<System.UInt32>>));
                     _fxPrimitivesInCollectionList.Add(typeof(List<System.Nullable<System.UInt64>>));
-                    _fxPrimitivesInCollectionList.Add(typeof(List<System.SByte>));
-                    _fxPrimitivesInCollectionList.Add(typeof(List<System.Single>));
-                    _fxPrimitivesInCollectionList.Add(typeof(List<System.String>));
+                    _fxPrimitivesInCollectionList.Add(typeof(List<sbyte>));
+                    _fxPrimitivesInCollectionList.Add(typeof(List<float>));
+                    _fxPrimitivesInCollectionList.Add(typeof(List<string>));
                     _fxPrimitivesInCollectionList.Add(typeof(List<System.TimeSpan>));
-                    _fxPrimitivesInCollectionList.Add(typeof(List<System.UInt16>));
-                    _fxPrimitivesInCollectionList.Add(typeof(List<System.UInt32>));
-                    _fxPrimitivesInCollectionList.Add(typeof(List<System.UInt64>));
+                    _fxPrimitivesInCollectionList.Add(typeof(List<ushort>));
+                    _fxPrimitivesInCollectionList.Add(typeof(List<uint>));
+                    _fxPrimitivesInCollectionList.Add(typeof(List<ulong>));
                     _fxPrimitivesInCollectionList.Add(typeof(List<System.Xml.XmlElement>));
                     _fxPrimitivesInCollectionList.Add(typeof(List<System.Xml.XmlNode[]>));
                     _fxPrimitivesInCollectionList.Add(typeof(List<System.DateTimeOffset>));
@@ -716,7 +716,7 @@ namespace SerializationTestTypes
         {
             RefData other = obj as RefData;
             if (other == null) return false;
-            return (Object.ReferenceEquals(this.Data, other.Data));
+            return (object.ReferenceEquals(this.Data, other.Data));
         }
 
         public override int GetHashCode()

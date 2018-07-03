@@ -972,7 +972,7 @@ namespace XmlCoreTest.Common
     /// </summary>
     public class XmlReaderAsync
     {
-        public static XmlReader Create(String inputUri, XmlReaderSettings settings = null, XmlParserContext inputContext = null)
+        public static XmlReader Create(string inputUri, XmlReaderSettings settings = null, XmlParserContext inputContext = null)
         {
             if (settings == null)
             {
@@ -1034,7 +1034,7 @@ namespace XmlCoreTest.Common
             return Create(input, settings, string.Empty);
         }
 
-        public static XmlReader Create(TextReader input, XmlReaderSettings settings, String baseUri)
+        public static XmlReader Create(TextReader input, XmlReaderSettings settings, string baseUri)
         {
             if (settings == null)
             {
@@ -1326,7 +1326,7 @@ namespace XmlCoreTest.Common
             return CoreWriter.WriteDocTypeAsync(name, pubid, sysid, subset);
         }
 
-        public new void WriteElementString(string prefix, String localName, String ns, String value)
+        public new void WriteElementString(string prefix, string localName, string ns, string value)
         {
             if (AsyncUtil.RedirectWriter)
             {
@@ -1344,7 +1344,7 @@ namespace XmlCoreTest.Common
                 CoreWriter.WriteElementString(prefix, localName, ns, value);
             }
         }
-        public new Task WriteElementStringAsync(string prefix, String localName, String ns, String value)
+        public new Task WriteElementStringAsync(string prefix, string localName, string ns, string value)
         {
             return CoreWriter.WriteElementStringAsync(prefix, localName, ns, value);
         }
@@ -1876,12 +1876,12 @@ namespace XmlCoreTest.Common
             CoreWriter.WriteValue(value);
         }
 
-        public new void WriteElementString(string localName, String value)
+        public new void WriteElementString(string localName, string value)
         {
             CoreWriter.WriteElementString(localName, value);
         }
 
-        public new void WriteElementString(string localName, String ns, String value)
+        public new void WriteElementString(string localName, string ns, string value)
         {
             CoreWriter.WriteElementString(localName, ns, value);
         }

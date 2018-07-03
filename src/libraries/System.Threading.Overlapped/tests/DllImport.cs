@@ -10,7 +10,7 @@ internal static class DllImport
 {
 #if !uap
     [DllImport("kernel32.dll", SetLastError = true, CharSet = CharSet.Unicode, BestFitMapping = false)]
-    internal static extern Win32Handle CreateFile(String lpFileName,
+    internal static extern Win32Handle CreateFile(string lpFileName,
        FileAccess dwDesiredAccess, FileShare dwShareMode,
        IntPtr securityAttrs, CreationDisposition dwCreationDisposition,
        FileAttributes dwFlagsAndAttributes, IntPtr hTemplateFile);

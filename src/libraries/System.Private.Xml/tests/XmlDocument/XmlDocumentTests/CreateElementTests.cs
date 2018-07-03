@@ -24,7 +24,7 @@ namespace System.Xml.Tests
         public static void LongElementName()
         {
             var xmlDocument = new XmlDocument();
-            var nodeName = new String('a', 2097152);
+            var nodeName = new string('a', 2097152);
 
             var newNode = xmlDocument.CreateElement(nodeName);
 
@@ -48,7 +48,7 @@ namespace System.Xml.Tests
         {
             var xmlDocument = new XmlDocument();
 
-            AssertExtensions.Throws<ArgumentException>(null, () => xmlDocument.CreateElement(String.Empty));
+            AssertExtensions.Throws<ArgumentException>(null, () => xmlDocument.CreateElement(string.Empty));
         }
 
         [Fact]
@@ -77,7 +77,7 @@ namespace System.Xml.Tests
         public static void NamespaceWithLocalName()
         {
             var xmlDocument = new XmlDocument();
-            var newNode = xmlDocument.CreateElement("foo:bar", String.Empty);
+            var newNode = xmlDocument.CreateElement("foo:bar", string.Empty);
 
             Assert.Equal("foo", newNode.Prefix);
             Assert.Equal("bar", newNode.LocalName);

@@ -292,9 +292,9 @@ namespace System.Xml.Tests
 
             using (XmlWriter w = CreateMemWriter(utils, wSettings))
             {
-                w.WriteStartElement(String.Empty, "e", "ns");
-                w.WriteAttributeString(String.Empty, "attr", "ns", "val");
-                w.WriteElementString(String.Empty, "el", "ns", "val");
+                w.WriteStartElement(string.Empty, "e", "ns");
+                w.WriteAttributeString(string.Empty, "attr", "ns", "val");
+                w.WriteElementString(string.Empty, "el", "ns", "val");
             }
             VerifyOutput("<e p1:attr=\"val\" xmlns:p1=\"ns\" xmlns=\"ns\"><el>val</el></e>");
             return;
@@ -364,9 +364,9 @@ namespace System.Xml.Tests
 
             using (XmlWriter w = CreateMemWriter(utils, wSettings))
             {
-                w.WriteStartElement(String.Empty, "e", String.Empty);
-                w.WriteAttributeString(String.Empty, "attr", String.Empty, "val");
-                w.WriteElementString(String.Empty, "el", String.Empty, "val");
+                w.WriteStartElement(string.Empty, "e", string.Empty);
+                w.WriteAttributeString(string.Empty, "attr", string.Empty, "val");
+                w.WriteElementString(string.Empty, "el", string.Empty, "val");
             }
             VerifyOutput("<e attr=\"val\"><el>val</el></e>");
             return;

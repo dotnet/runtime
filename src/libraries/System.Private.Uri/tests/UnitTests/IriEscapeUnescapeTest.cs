@@ -1,4 +1,4 @@
-﻿// Licensed to the .NET Foundation under one or more agreements.
+// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
@@ -201,7 +201,7 @@ namespace System.Net.Test.Uri.IriTest
                 for (int i = 0; i < components.Length; i++)
                 {
                     Assert.True(
-                        0 == String.CompareOrdinal(results_en[i], results_zh[i]),
+                        0 == string.CompareOrdinal(results_en[i], results_zh[i]),
                         "Detected locale differences when processing UriComponents." + components[i]);
                 }
             }

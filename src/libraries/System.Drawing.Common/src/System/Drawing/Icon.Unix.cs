@@ -154,7 +154,7 @@ namespace System.Drawing
             if (count > 0)
             {
                 imageData = original.imageData;
-                id = UInt16.MaxValue;
+                id = ushort.MaxValue;
 
                 for (ushort i = 0; i < count; i++)
                 {
@@ -167,7 +167,7 @@ namespace System.Drawing
                 }
 
                 // if a perfect match isn't found we look for the biggest icon *smaller* than specified
-                if (id == UInt16.MaxValue)
+                if (id == ushort.MaxValue)
                 {
                     int requested = Math.Min(size.Height, size.Width);
                     // previously best set to 1st image, as this might not be smallest changed loop to check all
@@ -192,10 +192,10 @@ namespace System.Drawing
                 }
 
                 // last one, if nothing better can be found
-                if (id == UInt16.MaxValue)
+                if (id == ushort.MaxValue)
                 {
                     int i = count;
-                    while (id == UInt16.MaxValue && i > 0)
+                    while (id == ushort.MaxValue && i > 0)
                     {
                         i--;
                         if (!iconDir.idEntries[i].ignore)
@@ -203,7 +203,7 @@ namespace System.Drawing
                     }
                 }
 
-                if (id == UInt16.MaxValue)
+                if (id == ushort.MaxValue)
                     throw new ArgumentException("Icon", "No valid icon image found");
 
                 iconSize.Height = iconDir.idEntries[id].height;
@@ -296,7 +296,7 @@ namespace System.Drawing
         {
             if (filePath == null)
                 throw new ArgumentNullException(nameof(filePath));
-            if (String.IsNullOrEmpty(filePath))
+            if (string.IsNullOrEmpty(filePath))
                 throw new ArgumentException("Null or empty path.", "path");
             if (!File.Exists(filePath))
                 throw new FileNotFoundException("Couldn't find specified file.", filePath);
@@ -377,7 +377,7 @@ namespace System.Drawing
             writer.Write(ide.planes);
             writer.Write(ide.bitCount);
             writer.Write(ide.bytesInRes);
-            writer.Write((offset == UInt32.MaxValue) ? ide.imageOffset : offset);
+            writer.Write((offset == uint.MaxValue) ? ide.imageOffset : offset);
         }
 
         private void SaveAll(BinaryWriter writer)
@@ -389,7 +389,7 @@ namespace System.Drawing
 
             for (int i = 0; i < (int)count; i++)
             {
-                SaveIconDirEntry(writer, iconDir.idEntries[i], UInt32.MaxValue);
+                SaveIconDirEntry(writer, iconDir.idEntries[i], uint.MaxValue);
             }
 
             for (int i = 0; i < (int)count; i++)
@@ -486,7 +486,7 @@ namespace System.Drawing
 
             ide.bytesInRes = (uint)(bih.biSize + xor_size + and_size);
 
-            SaveIconDirEntry(writer, ide, UInt32.MaxValue);
+            SaveIconDirEntry(writer, ide, uint.MaxValue);
             SaveIconImage(writer, ii);
         }
 

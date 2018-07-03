@@ -10,7 +10,7 @@ namespace System.Globalization
     {
         private int GetHijriDateAdjustment()
         {
-            if (_hijriAdvance == Int32.MinValue)
+            if (_hijriAdvance == int.MinValue)
             {
                 // Never been set before.  Use the system value from registry.
                 _hijriAdvance = GetAdvanceHijriDate();
@@ -55,7 +55,7 @@ namespace System.Globalization
             {
                 try
                 {
-                    Object value = key.InternalGetValue(HijriAdvanceRegKeyEntry, null, false, false);
+                    object value = key.InternalGetValue(HijriAdvanceRegKeyEntry, null, false, false);
                     if (value == null)
                     {
                         return (0);
@@ -69,7 +69,7 @@ namespace System.Globalization
                         {
                             try
                             {
-                                int advance = Int32.Parse(str.AsSpan(HijriAdvanceRegKeyEntry.Length), provider:CultureInfo.InvariantCulture);
+                                int advance = int.Parse(str.AsSpan(HijriAdvanceRegKeyEntry.Length), provider:CultureInfo.InvariantCulture);
                                 if ((advance >= MinAdvancedHijri) && (advance <= MaxAdvancedHijri))
                                 {
                                     hijriAdvance = advance;

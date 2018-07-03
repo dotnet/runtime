@@ -100,7 +100,7 @@ typedef enum
     Default = 0,
 } DataHashSize;
 
-enum SslErrorCode
+typedef enum
 {
     PAL_SSL_ERROR_NONE = 0,
     PAL_SSL_ERROR_SSL = 1,
@@ -108,7 +108,7 @@ enum SslErrorCode
     PAL_SSL_ERROR_WANT_WRITE = 3,
     PAL_SSL_ERROR_SYSCALL = 5,
     PAL_SSL_ERROR_ZERO_RETURN = 6,
-};
+} SslErrorCode;
 
 // the function pointer definition for the callback used in SslCtxSetVerify
 typedef int32_t (*SslCtxSetVerifyCallback)(int32_t, X509_STORE_CTX*);

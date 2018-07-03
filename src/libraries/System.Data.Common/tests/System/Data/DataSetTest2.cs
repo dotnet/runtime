@@ -686,7 +686,7 @@ namespace System.Data.Tests
         [Fact]
         public void InferXmlSchema_inferingTables1()
         {
-            //Acroding to the msdn documantaion :
+            //According to the msdn documantaion :
             //ms-help://MS.MSDNQTR.2003FEB.1033/cpguide/html/cpconinferringtables.htm
             //Elements that have attributes specified in them will result in inferred tables
 
@@ -710,7 +710,7 @@ namespace System.Data.Tests
         [Fact]
         public void InferXmlSchema_inferingTables2()
         {
-            //Acroding to the msdn documantaion :
+            //According to the msdn documantaion :
             //ms-help://MS.MSDNQTR.2003FEB.1033/cpguide/html/cpconinferringtables.htm
             //Elements that have child elements will result in inferred tables
 
@@ -734,7 +734,7 @@ namespace System.Data.Tests
         [Fact]
         public void InferXmlSchema_inferingTables3()
         {
-            //Acroding to the msdn documantaion :
+            //According to the msdn documantaion :
             //ms-help://MS.MSDNQTR.2003FEB.1033/cpguide/html/cpconinferringtables.htm
             //The document, or root, element will result in an inferred table if it has attributes
             //or child elements that will be inferred as columns.
@@ -760,7 +760,7 @@ namespace System.Data.Tests
         [Fact]
         public void InferXmlSchema_inferingTables4()
         {
-            //Acroding to the msdn documantaion :
+            //According to the msdn documantaion :
             //ms-help://MS.MSDNQTR.2003FEB.1033/cpguide/html/cpconinferringtables.htm
             //The document, or root, element will result in an inferred table if it has attributes
             //or child elements that will be inferred as columns.
@@ -785,7 +785,7 @@ namespace System.Data.Tests
         [Fact]
         public void InferXmlSchema_inferingTables5()
         {
-            //Acroding to the msdn documantaion :
+            //According to the msdn documantaion :
             //ms-help://MS.MSDNQTR.2003FEB.1033/cpguide/html/cpconinferringtables.htm
             //Elements that repeat will result in a single inferred table
 

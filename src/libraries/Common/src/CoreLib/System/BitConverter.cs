@@ -376,7 +376,7 @@ namespace System
 
             if (length > (int.MaxValue / 3))
             {
-                // (Int32.MaxValue / 3) == 715,827,882 Bytes == 699 MB
+                // (int.MaxValue / 3) == 715,827,882 Bytes == 699 MB
                 throw new ArgumentOutOfRangeException(nameof(length), SR.Format(SR.ArgumentOutOfRange_LengthTooLarge, (int.MaxValue / 3)));
             }
 

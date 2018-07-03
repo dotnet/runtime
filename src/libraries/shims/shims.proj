@@ -2,6 +2,16 @@
 <Project ToolsVersion="4.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003" DefaultTargets="Build">
   <Import Project="dir.props" />
 
+  <PropertyGroup>
+    <PackageConfigurations>
+      netcoreapp2.0;
+    </PackageConfigurations>
+    <BuildConfigurations>
+      $(BuildConfigurations);
+      $(PackageConfigurations);
+    </BuildConfigurations>
+  </PropertyGroup>
+
   <Target Name="GetGenFacadesInputs">
     <ItemGroup>
       <NetFxContracts Include="@(NetFxReference->'$(NetFxRefPath)%(Identity).dll')" Condition="'$(TargetGroup)' != 'netfx'">
@@ -93,6 +103,27 @@
       <RuntimeBinplaceItem Include="@(BinPlaceItemNames->'$(GenFacadesOutputPath)%(Identity).dll')" />
       <FileWrites Include="@(BinPlaceItem)" />
     </ItemGroup>
+  </Target>
+
+  <Target Name="GetCompatibilityShimsToPackage"
+          BeforeTargets="GetFilesToPackage">
+    <ItemGroup>
+      <!-- All the shims defined in netfxreference.props produced by this project need to be included in the ref path. -->
+      <FilesToPackage Include="@(NetFxReference->'$(GenFacadesOutputPath)%(Identity).dll')">
+        <TargetFramework>netcoreapp2.0</TargetFramework>
+        <TargetPath>/ref/netcoreapp2.0</TargetPath>
+      </FilesToPackage>
+
+      <!-- For the implementation path in the package we only want to include the non-manual shims produced by this project
+      and the manual shims that we produce against the 2.0.0 implementation will be included to the shims package through
+      a project reference, therefore we need to exclude them here.     -->
+      <_manualShimProjects Include="manual\*.csproj" />
+      <_manualShims Include="@(_manualShimProjects->'%(FileName)')" />
+      <_libShims Include="@(NetFxReference)" Exclude="@(_manualShims)" />
+    </ItemGroup>
+    <PropertyGroup>
+      <TargetPath>@(_libShims->'$(GenFacadesOutputPath)%(Identity).dll')</TargetPath>
+    </PropertyGroup>
   </Target>
 </Project>
 

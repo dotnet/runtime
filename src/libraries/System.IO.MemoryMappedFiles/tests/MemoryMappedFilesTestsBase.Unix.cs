@@ -25,7 +25,7 @@ namespace System.IO.MemoryMappedFiles.Tests
                 RuntimeInformation.IsOSPlatform(OSPlatform.Create("FREEBSD")) ? _SC_PAGESIZE_FreeBSD :
                 RuntimeInformation.IsOSPlatform(OSPlatform.Create("NETBSD")) ? _SC_PAGESIZE_NetBSD :
                 _SC_PAGESIZE_Linux);
-            Assert.InRange(pageSize, 1, Int32.MaxValue);
+            Assert.InRange(pageSize, 1, int.MaxValue);
             return pageSize;
         });
 

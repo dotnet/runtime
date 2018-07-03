@@ -14,7 +14,7 @@ namespace System.Xml.Tests
             var reader = Utils.CreateFragmentReader("<Root>  2<!-- Comment inbetween--><![CDATA[5]]>5<?a?>   </Root>");
             reader.PositionOnElement("Root");
             reader.Read();
-            Assert.Equal(Byte.MaxValue, reader.ReadContentAs(typeof(Byte), null));
+            Assert.Equal(byte.MaxValue, reader.ReadContentAs(typeof(byte), null));
         }
 
         [Fact]
@@ -23,7 +23,7 @@ namespace System.Xml.Tests
             var reader = Utils.CreateFragmentReader("<Root> <![CDATA[0]]><?a?><!-- Comment inbetween--> </Root>");
             reader.PositionOnElement("Root");
             reader.Read();
-            Assert.Equal(Byte.MinValue, reader.ReadContentAs(typeof(Byte), null));
+            Assert.Equal(byte.MinValue, reader.ReadContentAs(typeof(byte), null));
         }
 
         [Fact]
@@ -32,7 +32,7 @@ namespace System.Xml.Tests
             var reader = Utils.CreateFragmentReader("<Root> <?a?><![CDATA[2]]>5<!-- Comment inbetween-->5 </Root>");
             reader.PositionOnElement("Root");
             reader.Read();
-            Assert.Equal(Byte.MaxValue, reader.ReadContentAs(typeof(Byte), null));
+            Assert.Equal(byte.MaxValue, reader.ReadContentAs(typeof(byte), null));
         }
 
         [Fact]
@@ -41,7 +41,7 @@ namespace System.Xml.Tests
             var reader = Utils.CreateFragmentReader("<Root>  <![CDATA[false]]><!-- Comment inbetween-->  <?a?></Root>");
             reader.PositionOnElement("Root");
             reader.Read();
-            Assert.Throws<XmlException>(() => reader.ReadContentAs(typeof(Byte), null));
+            Assert.Throws<XmlException>(() => reader.ReadContentAs(typeof(byte), null));
         }
 
         [Fact]
@@ -50,7 +50,7 @@ namespace System.Xml.Tests
             var reader = Utils.CreateFragmentReader("<Root><!-- Comment inbetween--><![CDATA[true]]></Root>");
             reader.PositionOnElement("Root");
             reader.Read();
-            Assert.Throws<XmlException>(() => reader.ReadContentAs(typeof(Byte), null));
+            Assert.Throws<XmlException>(() => reader.ReadContentAs(typeof(byte), null));
         }
 
         [Fact]
@@ -59,7 +59,7 @@ namespace System.Xml.Tests
             var reader = Utils.CreateFragmentReader("<Root>  <!-- Comment inbetween--><![CDATA[0]]>   </Root>");
             reader.PositionOnElement("Root");
             reader.Read();
-            Assert.Equal(Byte.MinValue, reader.ReadContentAs(typeof(Byte), null));
+            Assert.Equal(byte.MinValue, reader.ReadContentAs(typeof(byte), null));
         }
     }
 }

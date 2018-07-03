@@ -45,11 +45,11 @@ namespace System.Xml.Tests
         public static void EmptyString()
         {
             var xmlDocument = new XmlDocument();
-            var cdataNode = (XmlCharacterData)xmlDocument.CreateCDataSection(String.Empty);
+            var cdataNode = (XmlCharacterData)xmlDocument.CreateCDataSection(string.Empty);
 
             var subString = cdataNode.Substring(0, 10);
 
-            Assert.Equal(String.Empty, subString);
+            Assert.Equal(string.Empty, subString);
         }
     }
 }

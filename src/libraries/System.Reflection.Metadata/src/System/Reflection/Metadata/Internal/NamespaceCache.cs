@@ -72,7 +72,7 @@ namespace System.Reflection.Metadata.Ecma335
         ///   reader.GetString(GetSimpleName(handle, 3)) == "Test"
         ///   reader.GetString(GetSimpleName(handle, 1000)) == "Test"
         /// </summary>
-        private StringHandle GetSimpleName(NamespaceDefinitionHandle fullNamespaceHandle, int segmentIndex = Int32.MaxValue)
+        private StringHandle GetSimpleName(NamespaceDefinitionHandle fullNamespaceHandle, int segmentIndex = int.MaxValue)
         {
             StringHandle handleContainingSegment = fullNamespaceHandle.GetFullName();
             Debug.Assert(!handleContainingSegment.IsVirtual);
@@ -126,7 +126,7 @@ namespace System.Reflection.Metadata.Ecma335
                     new NamespaceDataBuilder(
                         rootNamespace,
                         rootNamespace.GetFullName(),
-                        String.Empty));
+                        string.Empty));
 
                 PopulateTableWithTypeDefinitions(namespaceBuilderTable);
                 PopulateTableWithExportedTypes(namespaceBuilderTable);
@@ -263,7 +263,7 @@ namespace System.Reflection.Metadata.Ecma335
                     }
                     else
                     {
-                        parentName = String.Empty;
+                        parentName = string.Empty;
                     }
                 }
                 else

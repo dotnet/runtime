@@ -75,7 +75,7 @@ namespace System.Threading
                 {
                     EventData* eventPayload = stackalloc EventData[2];
 
-                    Int32 senseAsInt32 = currentSense ? 1 : 0; // write out Boolean as Int32
+                    int senseAsInt32 = currentSense ? 1 : 0; // write out Boolean as Int32
                     eventPayload[0] = new EventData
                     {
                         Size = sizeof(int),

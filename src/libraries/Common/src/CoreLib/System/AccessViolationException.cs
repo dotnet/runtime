@@ -26,13 +26,13 @@ namespace System
             HResult = HResults.E_POINTER;
         }
 
-        public AccessViolationException(String message)
+        public AccessViolationException(string message)
             : base(message)
         {
             HResult = HResults.E_POINTER;
         }
 
-        public AccessViolationException(String message, Exception innerException)
+        public AccessViolationException(string message, Exception innerException)
             : base(message, innerException)
         {
             HResult = HResults.E_POINTER;

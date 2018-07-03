@@ -420,10 +420,10 @@ namespace System.Xml
         {
             Debug.Assert(_reader.NodeType == XmlNodeType.DocumentType);
 
-            String publicId = null;
-            String systemId = null;
-            String internalSubset = _reader.Value;
-            String localName = _reader.LocalName;
+            string publicId = null;
+            string systemId = null;
+            string internalSubset = _reader.Value;
+            string localName = _reader.LocalName;
             while (_reader.MoveToNextAttribute())
             {
                 switch (_reader.Name)
@@ -686,10 +686,10 @@ namespace System.Xml
 
         private XmlParserContext GetContext(XmlNode node)
         {
-            String lang = null;
+            string lang = null;
             XmlSpace spaceMode = XmlSpace.None;
             XmlDocumentType docType = _doc.DocumentType;
-            String baseURI = _doc.BaseURI;
+            string baseURI = _doc.BaseURI;
             //constructing xmlnamespace
             HashSet<string> prefixes = new HashSet<string>();
             XmlNameTable nt = _doc.NameTable;
@@ -714,7 +714,7 @@ namespace System.Xml
                         else if (!bHasDefXmlnsAttr && attr.Prefix.Length == 0 && attr.LocalName == _doc.strXmlns)
                         {
                             // Save the case xmlns="..." where xmlns is the LocalName
-                            mgr.AddNamespace(String.Empty, attr.Value);
+                            mgr.AddNamespace(string.Empty, attr.Value);
                             bHasDefXmlnsAttr = true;
                         }
                         else if (spaceMode == XmlSpace.None && attr.Prefix == _doc.strXml && attr.LocalName == _doc.strSpace)
@@ -862,7 +862,7 @@ namespace System.Xml
             mgr.PopScope();
         }
 
-        private String EntitizeName(String name)
+        private string EntitizeName(string name)
         {
             return "&" + name + ";";
         }
@@ -928,7 +928,7 @@ namespace System.Xml
 
 #pragma warning disable 618
         // Creates a XmlValidatingReader suitable for parsing InnerXml strings
-        private XmlReader CreateInnerXmlReader(String xmlFragment, XmlNodeType nt, XmlParserContext context, XmlDocument doc)
+        private XmlReader CreateInnerXmlReader(string xmlFragment, XmlNodeType nt, XmlParserContext context, XmlDocument doc)
         {
             XmlNodeType contentNT = nt;
             if (contentNT == XmlNodeType.Entity || contentNT == XmlNodeType.EntityReference)

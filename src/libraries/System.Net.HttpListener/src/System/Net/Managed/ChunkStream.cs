@@ -273,7 +273,7 @@ namespace System.Net
                 {
                     if (_saved.Length > 0)
                     {
-                        _chunkSize = Int32.Parse(RemoveChunkExtension(_saved.ToString()), NumberStyles.HexNumber);
+                        _chunkSize = int.Parse(RemoveChunkExtension(_saved.ToString()), NumberStyles.HexNumber);
                     }
                 }
                 catch (Exception)
@@ -287,7 +287,7 @@ namespace System.Net
             _chunkRead = 0;
             try
             {
-                _chunkSize = Int32.Parse(RemoveChunkExtension(_saved.ToString()), NumberStyles.HexNumber);
+                _chunkSize = int.Parse(RemoveChunkExtension(_saved.ToString()), NumberStyles.HexNumber);
             }
             catch (Exception)
             {

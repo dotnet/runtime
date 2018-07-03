@@ -64,13 +64,13 @@ namespace System.Xml.Tests
             {
                 return; //TEST_SKIPPED;
             }
-            String cmdLine = ReplaceCurrentWorkingDirectory(param0.ToString());
-            String asmName = param1.ToString();
-            bool asmCreated = String.Compare(param2.ToString(), "yes", true) == 0;
-            String typeName = param3.ToString();
-            String pdbName = param4.ToString();
-            bool pdbCreated = String.Compare(param5.ToString(), "yes", true) == 0;
-            String baselineFile = param6.ToString();
+            string cmdLine = ReplaceCurrentWorkingDirectory(param0.ToString());
+            string asmName = param1.ToString();
+            bool asmCreated = string.Compare(param2.ToString(), "yes", true) == 0;
+            string typeName = param3.ToString();
+            string pdbName = param4.ToString();
+            bool pdbCreated = string.Compare(param5.ToString(), "yes", true) == 0;
+            string baselineFile = param6.ToString();
 
             VerifyTest(cmdLine, asmName, asmCreated, typeName, pdbName, pdbCreated, baselineFile, _createFromInputFile);
         }

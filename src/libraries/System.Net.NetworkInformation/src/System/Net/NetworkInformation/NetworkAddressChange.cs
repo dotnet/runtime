@@ -23,6 +23,10 @@ namespace System.Net.NetworkInformation
         private static readonly ContextCallback s_runHandlerNotAvailable = new ContextCallback(RunAvailabilityHandlerNotAvailable);
         private static readonly ContextCallback s_runAddressChangedHandler = new ContextCallback(RunAddressChangedHandler);
 
+        // Introduced for supporting design-time loading of System.Windows.dll
+        [Obsolete("This API supports the .NET Framework infrastructure and is not intended to be used directly from your code.", true)]
+        public static void RegisterNetworkChange(NetworkChange nc) { }
+
         private static void RunAddressChangedHandler(object state)
         {
             ((NetworkAddressChangedEventHandler)state)(null, EventArgs.Empty);

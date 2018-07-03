@@ -20,7 +20,7 @@ namespace System.IO.Pipes
         internal static string GetPipePath(string serverName, string pipeName)
         {
             string normalizedPipePath = Path.GetFullPath(@"\\" + serverName + @"\pipe\" + pipeName);
-            if (String.Equals(normalizedPipePath, @"\\.\pipe\" + AnonymousPipeName, StringComparison.OrdinalIgnoreCase))
+            if (string.Equals(normalizedPipePath, @"\\.\pipe\" + AnonymousPipeName, StringComparison.OrdinalIgnoreCase))
             {
                 throw new ArgumentOutOfRangeException(nameof(pipeName), SR.ArgumentOutOfRange_AnonymousReserved);
             }
@@ -71,7 +71,7 @@ namespace System.IO.Pipes
                 }
                 else
                 {
-                    throw Win32Marshal.GetExceptionForWin32Error(errorCode, String.Empty);
+                    throw Win32Marshal.GetExceptionForWin32Error(errorCode, string.Empty);
                 }
             }
             _isMessageComplete = (errorCode != Interop.Errors.ERROR_MORE_DATA);

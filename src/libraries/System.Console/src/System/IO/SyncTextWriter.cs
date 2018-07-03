@@ -40,7 +40,7 @@ namespace System.IO
             get { return _out.FormatProvider; }
         }
 
-        public override String NewLine
+        public override string NewLine
         {
             get { lock (this) { return _out.NewLine; } }
             set { lock (this) { _out.NewLine = value; } }
@@ -145,7 +145,7 @@ namespace System.IO
             }
         }
 
-        public override void Write(Decimal value)
+        public override void Write(decimal value)
         {
             lock (this)
             {
@@ -153,7 +153,7 @@ namespace System.IO
             }
         }
 
-        public override void Write(String value)
+        public override void Write(string value)
         {
             lock (this)
             {
@@ -161,7 +161,7 @@ namespace System.IO
             }
         }
 
-        public override void Write(Object value)
+        public override void Write(object value)
         {
             lock (this)
             {
@@ -169,7 +169,7 @@ namespace System.IO
             }
         }
 
-        public override void Write(String format, Object[] arg)
+        public override void Write(string format, object[] arg)
         {
             lock (this)
             {
@@ -273,7 +273,7 @@ namespace System.IO
             }
         }
 
-        public override void WriteLine(String value)
+        public override void WriteLine(string value)
         {
             lock (this)
             {
@@ -281,7 +281,7 @@ namespace System.IO
             }
         }
 
-        public override void WriteLine(Object value)
+        public override void WriteLine(object value)
         {
             lock (this)
             {
@@ -289,7 +289,7 @@ namespace System.IO
             }
         }
 
-        public override void WriteLine(String format, Object[] arg)
+        public override void WriteLine(string format, object[] arg)
         {
             lock (this)
             {
@@ -307,7 +307,7 @@ namespace System.IO
             return Task.CompletedTask;
         }
 
-        public override Task WriteAsync(String value)
+        public override Task WriteAsync(string value)
         {
             Write(value);
             return Task.CompletedTask;
@@ -325,7 +325,7 @@ namespace System.IO
             return Task.CompletedTask;
         }
 
-        public override Task WriteLineAsync(String value)
+        public override Task WriteLineAsync(string value)
         {
             WriteLine(value);
             return Task.CompletedTask;

@@ -1150,8 +1150,8 @@ namespace System.Runtime.Serialization
                     int endIndex = i;
                     bool hasConflictingType = false;
                     while (endIndex < membersInHierarchy.Count - 1
-                        && String.CompareOrdinal(membersInHierarchy[endIndex].member.Name, membersInHierarchy[endIndex + 1].member.Name) == 0
-                        && String.CompareOrdinal(membersInHierarchy[endIndex].ns, membersInHierarchy[endIndex + 1].ns) == 0)
+                        && string.CompareOrdinal(membersInHierarchy[endIndex].member.Name, membersInHierarchy[endIndex + 1].member.Name) == 0
+                        && string.CompareOrdinal(membersInHierarchy[endIndex].ns, membersInHierarchy[endIndex + 1].ns) == 0)
                     {
                         membersInHierarchy[endIndex].member.ConflictingMember = membersInHierarchy[endIndex + 1].member;
                         if (!hasConflictingType)
@@ -1508,11 +1508,11 @@ namespace System.Runtime.Serialization
             {
                 public int Compare(Member x, Member y)
                 {
-                    int nsCompare = String.CompareOrdinal(x.ns, y.ns);
+                    int nsCompare = string.CompareOrdinal(x.ns, y.ns);
                     if (nsCompare != 0)
                         return nsCompare;
 
-                    int nameCompare = String.CompareOrdinal(x.member.Name, y.member.Name);
+                    int nameCompare = string.CompareOrdinal(x.member.Name, y.member.Name);
                     if (nameCompare != 0)
                         return nameCompare;
 
@@ -1561,7 +1561,7 @@ namespace System.Runtime.Serialization
                 if (orderCompare != 0)
                     return orderCompare;
 
-                return String.CompareOrdinal(x.Name, y.Name);
+                return string.CompareOrdinal(x.Name, y.Name);
             }
 
             internal static DataMemberComparer Singleton = new DataMemberComparer();

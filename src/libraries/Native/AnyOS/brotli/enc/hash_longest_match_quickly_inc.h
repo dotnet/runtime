@@ -81,7 +81,7 @@ static BROTLI_INLINE size_t FN(HashMemAllocInBytes)(
    Compute a hash from these, and store the value somewhere within
    [ix .. ix+3]. */
 static BROTLI_INLINE void FN(Store)(HasherHandle handle,
-    const uint8_t *data, const size_t mask, const size_t ix) {
+    const uint8_t* data, const size_t mask, const size_t ix) {
   const uint32_t key = FN(HashBytes)(&data[ix & mask]);
   /* Wiggle the value with the bucket sweep range. */
   const uint32_t off = (ix >> 3) % BUCKET_SWEEP;
@@ -89,7 +89,7 @@ static BROTLI_INLINE void FN(Store)(HasherHandle handle,
 }
 
 static BROTLI_INLINE void FN(StoreRange)(HasherHandle handle,
-    const uint8_t *data, const size_t mask, const size_t ix_start,
+    const uint8_t* data, const size_t mask, const size_t ix_start,
     const size_t ix_end) {
   size_t i;
   for (i = ix_start; i < ix_end; ++i) {
@@ -125,11 +125,12 @@ static BROTLI_INLINE void FN(PrepareDistanceCache)(
    Writes the best match into |out|.
    |out|->score is updated only if a better match is found. */
 static BROTLI_INLINE void FN(FindLongestMatch)(
-    HasherHandle handle, const BrotliDictionary* dictionary,
-    const uint16_t* dictionary_hash, const uint8_t* BROTLI_RESTRICT data,
+    HasherHandle handle, const BrotliEncoderDictionary* dictionary,
+    const uint8_t* BROTLI_RESTRICT data,
     const size_t ring_buffer_mask, const int* BROTLI_RESTRICT distance_cache,
     const size_t cur_ix, const size_t max_length, const size_t max_backward,
-    const size_t gap, HasherSearchResult* BROTLI_RESTRICT out) {
+    const size_t gap, const size_t max_distance,
+    HasherSearchResult* BROTLI_RESTRICT out) {
   HashLongestMatchQuickly* self = FN(Self)(handle);
   const size_t best_len_in = out->len;
   const size_t cur_ix_masked = cur_ix & ring_buffer_mask;
@@ -191,7 +192,7 @@ static BROTLI_INLINE void FN(FindLongestMatch)(
       }
     }
   } else {
-    uint32_t *bucket = self->buckets_ + key;
+    uint32_t* bucket = self->buckets_ + key;
     int i;
     prev_ix = *bucket++;
     for (i = 0; i < BUCKET_SWEEP; ++i, prev_ix = *bucket++) {
@@ -221,9 +222,9 @@ static BROTLI_INLINE void FN(FindLongestMatch)(
     }
   }
   if (USE_DICTIONARY && min_score == out->score) {
-    SearchInStaticDictionary(dictionary, dictionary_hash,
-        handle, &data[cur_ix_masked], max_length, max_backward + gap, out,
-        BROTLI_TRUE);
+    SearchInStaticDictionary(dictionary,
+        handle, &data[cur_ix_masked], max_length, max_backward + gap,
+        max_distance, out, BROTLI_TRUE);
   }
   self->buckets_[key + ((cur_ix >> 3) % BUCKET_SWEEP)] = (uint32_t)cur_ix;
 }

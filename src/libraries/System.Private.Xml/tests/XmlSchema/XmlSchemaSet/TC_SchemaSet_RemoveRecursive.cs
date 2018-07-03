@@ -203,14 +203,14 @@ namespace System.Xml.Tests
                 sc.RemoveRecursive(Schema1);
                 CError.Compare(sc.Count, 2, "Count");
                 CError.Compare(sc.Contains("ns-b"), false, "Contains");
-                CError.Compare(sc.Contains(String.Empty), true, "Contains");
+                CError.Compare(sc.Contains(string.Empty), true, "Contains");
                 CError.Compare(sc.Contains("ns-a"), true, "Contains");
 
                 sc.RemoveRecursive(Schema2);
                 ICollection Col = sc.Schemas();
                 CError.Compare(Col.Count, 0, "ICollection.Count");
                 CError.Compare(sc.Contains("ns-b"), false, "Contains");
-                CError.Compare(sc.Contains(String.Empty), false, "Contains");
+                CError.Compare(sc.Contains(string.Empty), false, "Contains");
                 CError.Compare(sc.Contains("ns-a"), false, "Contains");
 
                 //before compile
@@ -219,13 +219,13 @@ namespace System.Xml.Tests
                 sc.RemoveRecursive(Schema1);
                 CError.Compare(sc.Count, 2, "Count");
                 CError.Compare(sc.Contains("ns-b"), false, "Contains");
-                CError.Compare(sc.Contains(String.Empty), true, "Contains");
+                CError.Compare(sc.Contains(string.Empty), true, "Contains");
                 CError.Compare(sc.Contains("ns-a"), true, "Contains");
                 sc.RemoveRecursive(Schema2);
                 Col = sc.Schemas();
                 CError.Compare(Col.Count, 0, "ICollection.Count");
                 CError.Compare(sc.Contains("ns-b"), false, "Contains");
-                CError.Compare(sc.Contains(String.Empty), false, "Contains");
+                CError.Compare(sc.Contains(string.Empty), false, "Contains");
                 CError.Compare(sc.Contains("ns-a"), false, "Contains");
             }
             catch (Exception e)

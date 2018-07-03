@@ -115,7 +115,7 @@ namespace System.Net
             }
         }
 
-        public String ContentEncoding
+        public string ContentEncoding
         {
             get
             {
@@ -269,7 +269,7 @@ namespace System.Net
                 if (_characterSet == null && !string.IsNullOrWhiteSpace(contentType))
                 {
                     //sets characterset so the branch is never executed again.
-                    _characterSet = String.Empty;
+                    _characterSet = string.Empty;
 
                     //first string is the media type
                     string srchString = contentType.ToLower();
@@ -344,7 +344,7 @@ namespace System.Net
         {
             CheckDisposed();
             string headerValue = Headers[headerName];
-            return ((headerValue == null) ? String.Empty : headerValue);
+            return ((headerValue == null) ? string.Empty : headerValue);
         }
 
         public override void Close()

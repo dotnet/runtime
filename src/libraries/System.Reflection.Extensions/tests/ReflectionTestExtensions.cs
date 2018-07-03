@@ -21,7 +21,7 @@ namespace System.Reflection.Tests
         public static int Count<T>(this IEnumerable<T> items)
         {
             int count = 0;
-            foreach (Object i in items)
+            foreach (object i in items)
             {
                 count++;
             }

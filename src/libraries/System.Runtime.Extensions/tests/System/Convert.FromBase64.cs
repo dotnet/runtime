@@ -208,6 +208,29 @@ namespace System.Tests
             VerifyInvalidInput("abcdab==abcd");
             VerifyInvalidInput("abcda===abcd");
             VerifyInvalidInput("abcd====abcd");
+
+            // Input must not contain extra trailing padding characters
+            VerifyInvalidInput("=");
+            VerifyInvalidInput("abc===");
+        }
+
+        [Fact]
+        [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework)]
+        public static void ExtraPaddingCharacter()
+        {
+            VerifyInvalidInput("abcdxyz=" + "=");
+        }
+
+        [Fact]
+        [SkipOnTargetFramework(~TargetFrameworkMonikers.NetFramework)]
+        public static void ExtraPaddingCharacterOnNetFx()
+        {
+            // This should throw a FormatException because of the extra "=". But due to a bug in NetFx, this 
+            // gets "successfully" decoded as if it were "abcdyz==".
+
+            byte[] actual = Convert.FromBase64String("abcdxyz=" + "=");
+            byte[] expected = { 0x69, 0xb7, 0x1d, 0xcb };
+            Assert.Equal<byte>(expected, actual);
         }
 
         [Fact]

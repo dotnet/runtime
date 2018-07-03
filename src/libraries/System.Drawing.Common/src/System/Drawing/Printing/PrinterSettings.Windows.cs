@@ -1194,7 +1194,7 @@ namespace System.Drawing.Printing
         }
 
         // names is pointer to DEVNAMES
-        private static String ReadOneDEVNAME(IntPtr pDevnames, int slot)
+        private static string ReadOneDEVNAME(IntPtr pDevnames, int slot)
         {
             int offset = checked(Marshal.SystemDefaultCharSize * Marshal.ReadInt16((IntPtr)(checked((long)pDevnames + slot * 2))));
             string result = Marshal.PtrToStringAuto((IntPtr)(checked((long)pDevnames + offset)));
@@ -1383,7 +1383,7 @@ namespace System.Drawing.Printing
             [
                 EditorBrowsable(EditorBrowsableState.Never)
             ]
-            public Int32 Add(PaperSize paperSize)
+            public int Add(PaperSize paperSize)
             {
                 PaperSize[] newArray = new PaperSize[Count + 1];
                 ((ICollection)this).CopyTo(newArray, 0);
@@ -1473,7 +1473,7 @@ namespace System.Drawing.Printing
             }
 
             [EditorBrowsable(EditorBrowsableState.Never)]
-            public Int32 Add(PaperSource paperSource)
+            public int Add(PaperSource paperSource)
             {
                 PaperSource[] newArray = new PaperSource[Count + 1];
                 ((ICollection)this).CopyTo(newArray, 0);
@@ -1562,7 +1562,7 @@ namespace System.Drawing.Printing
             }
 
             [EditorBrowsable(EditorBrowsableState.Never)]
-            public Int32 Add(PrinterResolution printerResolution)
+            public int Add(PrinterResolution printerResolution)
             {
                 PrinterResolution[] newArray = new PrinterResolution[Count + 1];
                 ((ICollection)this).CopyTo(newArray, 0);
@@ -1574,12 +1574,12 @@ namespace System.Drawing.Printing
 
         public class StringCollection : ICollection
         {
-            private String[] _array;
+            private string[] _array;
 
             /// <summary>
             /// Initializes a new instance of the <see cref='StringCollection'/> class.
             /// </summary>
-            public StringCollection(String[] array)
+            public StringCollection(string[] array)
             {
                 _array = array;
             }
@@ -1598,7 +1598,7 @@ namespace System.Drawing.Printing
             /// <summary>
             /// Gets the string with the specified index.
             /// </summary>
-            public virtual String this[int index]
+            public virtual string this[int index]
             {
                 get
                 {
@@ -1654,9 +1654,9 @@ namespace System.Drawing.Printing
             [
                 EditorBrowsable(EditorBrowsableState.Never)
             ]
-            public Int32 Add(String value)
+            public int Add(string value)
             {
-                String[] newArray = new String[Count + 1];
+                string[] newArray = new string[Count + 1];
                 ((ICollection)this).CopyTo(newArray, 0);
                 newArray[Count] = value;
                 _array = newArray;

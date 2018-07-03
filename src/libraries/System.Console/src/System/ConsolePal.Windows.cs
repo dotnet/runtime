@@ -185,7 +185,7 @@ namespace System
 
         // Use this for blocking in Console.ReadKey, which needs to protect itself in case multiple threads call it simultaneously.
         // Use a ReadKey-specific lock though, to allow other fields to be initialized on this type.
-        private static readonly Object s_readKeySyncObject = new object();
+        private static readonly object s_readKeySyncObject = new object();
 
         // ReadLine & Read can't use this because they need to use ReadFile
         // to be able to handle redirected input.  We have to accept that

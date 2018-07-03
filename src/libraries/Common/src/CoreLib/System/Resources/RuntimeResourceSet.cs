@@ -173,7 +173,7 @@ namespace System.Resources
         // for arbitrarily long times, since the object is usually a string
         // literal that will live for the lifetime of the appdomain.  The
         // value is a ResourceLocator instance, which might cache the object.
-        private Dictionary<String, ResourceLocator> _resCache;
+        private Dictionary<string, ResourceLocator> _resCache;
 
 
         // For our special load-on-demand reader, cache the cast.  The 
@@ -185,15 +185,15 @@ namespace System.Resources
         // want to fill this out if we can avoid it.  The problem is resource
         // fallback will somewhat regularly cause us to look up resources that 
         // don't exist.
-        private Dictionary<String, ResourceLocator> _caseInsensitiveTable;
+        private Dictionary<string, ResourceLocator> _caseInsensitiveTable;
 
         // If we're not using our custom reader, then enumerate through all
         // the resources once, adding them into the table.
         private bool _haveReadFromReader;
 
-        internal RuntimeResourceSet(String fileName) : base(false)
+        internal RuntimeResourceSet(string fileName) : base(false)
         {
-            _resCache = new Dictionary<String, ResourceLocator>(FastResourceComparer.Default);
+            _resCache = new Dictionary<string, ResourceLocator>(FastResourceComparer.Default);
             Stream stream = new FileStream(fileName, FileMode.Open, FileAccess.Read, FileShare.Read);
             _defaultReader = new ResourceReader(stream, _resCache);
             Reader = _defaultReader;
@@ -201,7 +201,7 @@ namespace System.Resources
 
         internal RuntimeResourceSet(Stream stream) : base(false)
         {
-            _resCache = new Dictionary<String, ResourceLocator>(FastResourceComparer.Default);
+            _resCache = new Dictionary<string, ResourceLocator>(FastResourceComparer.Default);
             _defaultReader = new ResourceReader(stream, _resCache);
             Reader = _defaultReader;
         }
@@ -256,36 +256,36 @@ namespace System.Resources
         }
 
 
-        public override String GetString(String key)
+        public override string GetString(string key)
         {
-            Object o = GetObject(key, false, true);
-            return (String)o;
+            object o = GetObject(key, false, true);
+            return (string)o;
         }
 
-        public override String GetString(String key, bool ignoreCase)
+        public override string GetString(string key, bool ignoreCase)
         {
-            Object o = GetObject(key, ignoreCase, true);
-            return (String)o;
+            object o = GetObject(key, ignoreCase, true);
+            return (string)o;
         }
 
-        public override Object GetObject(String key)
+        public override object GetObject(string key)
         {
             return GetObject(key, false, false);
         }
 
-        public override Object GetObject(String key, bool ignoreCase)
+        public override object GetObject(string key, bool ignoreCase)
         {
             return GetObject(key, ignoreCase, false);
         }
 
-        private Object GetObject(String key, bool ignoreCase, bool isString)
+        private object GetObject(string key, bool ignoreCase, bool isString)
         {
             if (key == null)
                 throw new ArgumentNullException(nameof(key));
             if (Reader == null || _resCache == null)
                 throw new ObjectDisposedException(null, SR.ObjectDisposed_ResourceSet);
 
-            Object value = null;
+            object value = null;
             ResourceLocator resLocation;
 
             lock (Reader)
@@ -348,7 +348,7 @@ namespace System.Resources
                     // If necessary, init our case insensitive hash table.
                     if (ignoreCase && _caseInsensitiveTable == null)
                     {
-                        _caseInsensitiveTable = new Dictionary<String, ResourceLocator>(StringComparer.OrdinalIgnoreCase);
+                        _caseInsensitiveTable = new Dictionary<string, ResourceLocator>(StringComparer.OrdinalIgnoreCase);
                     }
 
                     if (_defaultReader == null)
@@ -357,7 +357,7 @@ namespace System.Resources
                         while (en.MoveNext())
                         {
                             DictionaryEntry entry = en.Entry;
-                            String readKey = (String)entry.Key;
+                            string readKey = (string)entry.Key;
                             ResourceLocator resLoc = new ResourceLocator(-1, entry.Value);
                             _resCache.Add(readKey, resLoc);
                             if (ignoreCase)
@@ -375,7 +375,7 @@ namespace System.Resources
                         while (en.MoveNext())
                         {
                             // Note: Always ask for the resource key before the data position.
-                            String currentKey = (String)en.Key;
+                            string currentKey = (string)en.Key;
                             int dataPos = en.DataPosition;
                             ResourceLocator resLoc = new ResourceLocator(dataPos, null);
                             _caseInsensitiveTable.Add(currentKey, resLoc);
@@ -383,7 +383,7 @@ namespace System.Resources
                     }
                     _haveReadFromReader = true;
                 }
-                Object obj = null;
+                object obj = null;
                 bool found = false;
                 bool keyInWrongCase = false;
                 if (_defaultReader != null)
@@ -410,11 +410,11 @@ namespace System.Resources
         // The last parameter indicates whether the lookup required a 
         // case-insensitive lookup to succeed, indicating we shouldn't add 
         // the ResourceLocation to our case-sensitive cache.
-        private Object ResolveResourceLocator(ResourceLocator resLocation, String key, Dictionary<String, ResourceLocator> copyOfCache, bool keyInWrongCase)
+        private object ResolveResourceLocator(ResourceLocator resLocation, string key, Dictionary<string, ResourceLocator> copyOfCache, bool keyInWrongCase)
         {
             // We need to explicitly resolve loosely linked manifest
             // resources, and we need to resolve ResourceLocators with null objects.
-            Object value = resLocation.Value;
+            object value = resLocation.Value;
             if (value == null)
             {
                 ResourceTypeCode typeCode;

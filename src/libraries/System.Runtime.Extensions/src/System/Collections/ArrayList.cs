@@ -30,11 +30,11 @@ namespace System.Collections
     [System.Runtime.CompilerServices.TypeForwardedFrom("mscorlib, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089")]
     public class ArrayList : IList, ICloneable
     {
-        private Object[] _items; // Do not rename (binary serialization)
+        private object[] _items; // Do not rename (binary serialization)
         private int _size; // Do not rename (binary serialization)
         private int _version; // Do not rename (binary serialization)
         [NonSerialized]
-        private Object _syncRoot;
+        private object _syncRoot;
 
         private const int _defaultCapacity = 4;
 
@@ -66,7 +66,7 @@ namespace System.Collections
             if (capacity == 0)
                 _items = Array.Empty<Object>();
             else
-                _items = new Object[capacity];
+                _items = new object[capacity];
         }
 
         // Constructs a ArrayList, copying the contents of the given collection. The
@@ -85,7 +85,7 @@ namespace System.Collections
             }
             else
             {
-                _items = new Object[count];
+                _items = new object[count];
                 AddRange(c);
             }
         }
@@ -113,7 +113,7 @@ namespace System.Collections
                 {
                     if (value > 0)
                     {
-                        Object[] newItems = new Object[value];
+                        object[] newItems = new object[value];
                         if (_size > 0)
                         {
                             Array.Copy(_items, 0, newItems, 0, _size);
@@ -122,7 +122,7 @@ namespace System.Collections
                     }
                     else
                     {
-                        _items = new Object[_defaultCapacity];
+                        _items = new object[_defaultCapacity];
                     }
                 }
             }
@@ -156,13 +156,13 @@ namespace System.Collections
         }
 
         // Synchronization root for this object.
-        public virtual Object SyncRoot
+        public virtual object SyncRoot
         {
             get
             {
                 if (_syncRoot == null)
                 {
-                    System.Threading.Interlocked.CompareExchange<Object>(ref _syncRoot, new Object(), null);
+                    System.Threading.Interlocked.CompareExchange<Object>(ref _syncRoot, new object(), null);
                 }
                 return _syncRoot;
             }
@@ -170,7 +170,7 @@ namespace System.Collections
 
         // Sets or Gets the element at the given index.
         // 
-        public virtual Object this[int index]
+        public virtual object this[int index]
         {
             get
             {
@@ -204,7 +204,7 @@ namespace System.Collections
         // increased by one. If required, the capacity of the list is doubled
         // before adding the new element.
         //
-        public virtual int Add(Object value)
+        public virtual int Add(object value)
         {
             if (_size == _items.Length) EnsureCapacity(_size + 1);
             _items[_size] = value;
@@ -241,7 +241,7 @@ namespace System.Collections
         // The method uses the Array.BinarySearch method to perform the
         // search.
         // 
-        public virtual int BinarySearch(int index, int count, Object value, IComparer comparer)
+        public virtual int BinarySearch(int index, int count, object value, IComparer comparer)
         {
             if (index < 0)
                 throw new ArgumentOutOfRangeException(nameof(index), SR.ArgumentOutOfRange_NeedNonNegNum);
@@ -253,12 +253,12 @@ namespace System.Collections
             return Array.BinarySearch((Array)_items, index, count, value, comparer);
         }
 
-        public virtual int BinarySearch(Object value)
+        public virtual int BinarySearch(object value)
         {
             return BinarySearch(0, Count, value, null);
         }
 
-        public virtual int BinarySearch(Object value, IComparer comparer)
+        public virtual int BinarySearch(object value, IComparer comparer)
         {
             return BinarySearch(0, Count, value, comparer);
         }
@@ -278,7 +278,7 @@ namespace System.Collections
         // Clones this ArrayList, doing a shallow copy.  (A copy is made of all
         // Object references in the ArrayList, but the Objects pointed to 
         // are not cloned).
-        public virtual Object Clone()
+        public virtual object Clone()
         {
             ArrayList la = new ArrayList(_size);
             la._size = _size;
@@ -292,7 +292,7 @@ namespace System.Collections
         // It does a linear, O(n) search.  Equality is determined by calling
         // item.Equals().
         //
-        public virtual bool Contains(Object item)
+        public virtual bool Contains(object item)
         {
             if (item == null)
             {
@@ -416,7 +416,7 @@ namespace System.Collections
         // This method uses the Array.IndexOf method to perform the
         // search.
         // 
-        public virtual int IndexOf(Object value)
+        public virtual int IndexOf(object value)
         {
             return Array.IndexOf((Array)_items, value, 0, _size);
         }
@@ -430,7 +430,7 @@ namespace System.Collections
         // This method uses the Array.IndexOf method to perform the
         // search.
         // 
-        public virtual int IndexOf(Object value, int startIndex)
+        public virtual int IndexOf(object value, int startIndex)
         {
             if (startIndex > _size)
                 throw new ArgumentOutOfRangeException(nameof(startIndex), SR.ArgumentOutOfRange_Index);
@@ -446,7 +446,7 @@ namespace System.Collections
         // This method uses the Array.IndexOf method to perform the
         // search.
         // 
-        public virtual int IndexOf(Object value, int startIndex, int count)
+        public virtual int IndexOf(object value, int startIndex, int count)
         {
             if (startIndex > _size)
                 throw new ArgumentOutOfRangeException(nameof(startIndex), SR.ArgumentOutOfRange_Index);
@@ -458,7 +458,7 @@ namespace System.Collections
         // is increased by one. If required, the capacity of the list is doubled
         // before inserting the new element.
         // 
-        public virtual void Insert(int index, Object value)
+        public virtual void Insert(int index, object value)
         {
             // Note that insertions at the end are legal.
             if (index < 0 || index > _size) throw new ArgumentOutOfRangeException(nameof(index), SR.ArgumentOutOfRange_ArrayListInsert);
@@ -494,7 +494,7 @@ namespace System.Collections
                     Array.Copy(_items, index, _items, index + count, _size - index);
                 }
 
-                Object[] itemsToInsert = new Object[count];
+                object[] itemsToInsert = new object[count];
                 c.CopyTo(itemsToInsert, 0);
                 itemsToInsert.CopyTo(_items, index);
                 _size += count;
@@ -510,7 +510,7 @@ namespace System.Collections
         // This method uses the Array.LastIndexOf method to perform the
         // search.
         // 
-        public virtual int LastIndexOf(Object value)
+        public virtual int LastIndexOf(object value)
         {
             return LastIndexOf(value, _size - 1, _size);
         }
@@ -524,7 +524,7 @@ namespace System.Collections
         // This method uses the Array.LastIndexOf method to perform the
         // search.
         // 
-        public virtual int LastIndexOf(Object value, int startIndex)
+        public virtual int LastIndexOf(object value, int startIndex)
         {
             if (startIndex >= _size)
                 throw new ArgumentOutOfRangeException(nameof(startIndex), SR.ArgumentOutOfRange_Index);
@@ -540,7 +540,7 @@ namespace System.Collections
         // This method uses the Array.LastIndexOf method to perform the
         // search.
         // 
-        public virtual int LastIndexOf(Object value, int startIndex, int count)
+        public virtual int LastIndexOf(object value, int startIndex, int count)
         {
             if (Count != 0 && (startIndex < 0 || count < 0))
                 throw new ArgumentOutOfRangeException(startIndex < 0 ? nameof(startIndex) : nameof(count), SR.ArgumentOutOfRange_NeedNonNegNum);
@@ -575,7 +575,7 @@ namespace System.Collections
         // Removes the element at the given index. The size of the list is
         // decreased by one.
         // 
-        public virtual void Remove(Object obj)
+        public virtual void Remove(object obj)
         {
             int index = IndexOf(obj);
             if (index >= 0)
@@ -624,7 +624,7 @@ namespace System.Collections
 
         // Returns an IList that contains count copies of value.
         //
-        public static ArrayList Repeat(Object value, int count)
+        public static ArrayList Repeat(object value, int count)
         {
             if (count < 0)
                 throw new ArgumentOutOfRangeException(nameof(count), SR.ArgumentOutOfRange_NeedNonNegNum);
@@ -743,12 +743,12 @@ namespace System.Collections
 
         // ToArray returns a new Object array containing the contents of the ArrayList.
         // This requires copying the ArrayList, which is an O(n) operation.
-        public virtual Object[] ToArray()
+        public virtual object[] ToArray()
         {
             if (_size == 0)
                 return Array.Empty<Object>();
 
-            Object[] array = new Object[_size];
+            object[] array = new object[_size];
             Array.Copy(_items, 0, array, 0, _size);
             return array;
         }
@@ -825,7 +825,7 @@ namespace System.Collections
                 get { return _list.IsSynchronized; }
             }
 
-            public override Object this[int index]
+            public override object this[int index]
             {
                 get
                 {
@@ -838,12 +838,12 @@ namespace System.Collections
                 }
             }
 
-            public override Object SyncRoot
+            public override object SyncRoot
             {
                 get { return _list.SyncRoot; }
             }
 
-            public override int Add(Object obj)
+            public override int Add(object obj)
             {
                 int i = _list.Add(obj);
                 _version++;
@@ -856,7 +856,7 @@ namespace System.Collections
             }
 
             // Other overloads with automatically work
-            public override int BinarySearch(int index, int count, Object value, IComparer comparer)
+            public override int BinarySearch(int index, int count, object value, IComparer comparer)
             {
                 if (index < 0 || count < 0)
                     throw new ArgumentOutOfRangeException(index < 0 ? nameof(index) : nameof(count), SR.ArgumentOutOfRange_NeedNonNegNum);
@@ -898,14 +898,14 @@ namespace System.Collections
                 _version++;
             }
 
-            public override Object Clone()
+            public override object Clone()
             {
                 // This does not do a shallow copy of _list into a ArrayList!
                 // This clones the IListWrapper, creating another wrapper class!
                 return new IListWrapper(_list);
             }
 
-            public override bool Contains(Object obj)
+            public override bool Contains(object obj)
             {
                 return _list.Contains(obj);
             }
@@ -951,18 +951,18 @@ namespace System.Collections
                 return new IListWrapperEnumWrapper(this, index, count);
             }
 
-            public override int IndexOf(Object value)
+            public override int IndexOf(object value)
             {
                 return _list.IndexOf(value);
             }
 
             [SuppressMessage("Microsoft.Contracts", "CC1055")]  // Skip extra error checking to avoid *potential* AppCompat problems.
-            public override int IndexOf(Object value, int startIndex)
+            public override int IndexOf(object value, int startIndex)
             {
                 return IndexOf(value, startIndex, _list.Count - startIndex);
             }
 
-            public override int IndexOf(Object value, int startIndex, int count)
+            public override int IndexOf(object value, int startIndex, int count)
             {
                 if (startIndex < 0 || startIndex > Count) throw new ArgumentOutOfRangeException(nameof(startIndex), SR.ArgumentOutOfRange_Index);
                 if (count < 0 || startIndex > Count - count) throw new ArgumentOutOfRangeException(nameof(count), SR.ArgumentOutOfRange_Count);
@@ -984,7 +984,7 @@ namespace System.Collections
                 }
             }
 
-            public override void Insert(int index, Object obj)
+            public override void Insert(int index, object obj)
             {
                 _list.Insert(index, obj);
                 _version++;
@@ -1018,19 +1018,19 @@ namespace System.Collections
                 }
             }
 
-            public override int LastIndexOf(Object value)
+            public override int LastIndexOf(object value)
             {
                 return LastIndexOf(value, _list.Count - 1, _list.Count);
             }
 
             [SuppressMessage("Microsoft.Contracts", "CC1055")]  // Skip extra error checking to avoid *potential* AppCompat problems.
-            public override int LastIndexOf(Object value, int startIndex)
+            public override int LastIndexOf(object value, int startIndex)
             {
                 return LastIndexOf(value, startIndex, startIndex + 1);
             }
 
             [SuppressMessage("Microsoft.Contracts", "CC1055")]  // Skip extra error checking to avoid *potential* AppCompat problems.
-            public override int LastIndexOf(Object value, int startIndex, int count)
+            public override int LastIndexOf(object value, int startIndex, int count)
             {
                 if (_list.Count == 0)
                     return -1;
@@ -1055,7 +1055,7 @@ namespace System.Collections
                 }
             }
 
-            public override void Remove(Object value)
+            public override void Remove(object value)
             {
                 int index = IndexOf(value);
                 if (index >= 0)
@@ -1098,7 +1098,7 @@ namespace System.Collections
                 int j = index + count - 1;
                 while (i < j)
                 {
-                    Object tmp = _list[i];
+                    object tmp = _list[i];
                     _list[i++] = _list[j];
                     _list[j--] = tmp;
                 }
@@ -1144,7 +1144,7 @@ namespace System.Collections
                 if (_list.Count - index < count)
                     throw new ArgumentException(SR.Argument_InvalidOffLen);
 
-                Object[] array = new Object[count];
+                object[] array = new object[count];
                 CopyTo(index, array, 0, count);
                 Array.Sort(array, 0, count, comparer);
                 for (int i = 0; i < count; i++)
@@ -1154,12 +1154,12 @@ namespace System.Collections
             }
 
 
-            public override Object[] ToArray()
+            public override object[] ToArray()
             {
                 if (Count == 0)
                     return Array.Empty<Object>();
 
-                Object[] array = new Object[Count];
+                object[] array = new object[Count];
                 _list.CopyTo(array, 0);
                 return array;
             }
@@ -1225,7 +1225,7 @@ namespace System.Collections
                     return r && _remaining-- > 0;
                 }
 
-                public Object Current
+                public object Current
                 {
                     get
                     {
@@ -1251,7 +1251,7 @@ namespace System.Collections
         private class SyncArrayList : ArrayList
         {
             private ArrayList _list;
-            private Object _root;
+            private object _root;
 
             internal SyncArrayList(ArrayList list)
                 : base(false)
@@ -1300,7 +1300,7 @@ namespace System.Collections
                 get { return true; }
             }
 
-            public override Object this[int index]
+            public override object this[int index]
             {
                 get
                 {
@@ -1318,12 +1318,12 @@ namespace System.Collections
                 }
             }
 
-            public override Object SyncRoot
+            public override object SyncRoot
             {
                 get { return _root; }
             }
 
-            public override int Add(Object value)
+            public override int Add(object value)
             {
                 lock (_root)
                 {
@@ -1339,7 +1339,7 @@ namespace System.Collections
                 }
             }
 
-            public override int BinarySearch(Object value)
+            public override int BinarySearch(object value)
             {
                 lock (_root)
                 {
@@ -1347,7 +1347,7 @@ namespace System.Collections
                 }
             }
 
-            public override int BinarySearch(Object value, IComparer comparer)
+            public override int BinarySearch(object value, IComparer comparer)
             {
                 lock (_root)
                 {
@@ -1356,7 +1356,7 @@ namespace System.Collections
             }
 
             [SuppressMessage("Microsoft.Contracts", "CC1055")]  // Skip extra error checking to avoid *potential* AppCompat problems.
-            public override int BinarySearch(int index, int count, Object value, IComparer comparer)
+            public override int BinarySearch(int index, int count, object value, IComparer comparer)
             {
                 lock (_root)
                 {
@@ -1372,7 +1372,7 @@ namespace System.Collections
                 }
             }
 
-            public override Object Clone()
+            public override object Clone()
             {
                 lock (_root)
                 {
@@ -1380,7 +1380,7 @@ namespace System.Collections
                 }
             }
 
-            public override bool Contains(Object item)
+            public override bool Contains(object item)
             {
                 lock (_root)
                 {
@@ -1430,7 +1430,7 @@ namespace System.Collections
                 }
             }
 
-            public override int IndexOf(Object value)
+            public override int IndexOf(object value)
             {
                 lock (_root)
                 {
@@ -1439,7 +1439,7 @@ namespace System.Collections
             }
 
             [SuppressMessage("Microsoft.Contracts", "CC1055")]  // Skip extra error checking to avoid *potential* AppCompat problems.
-            public override int IndexOf(Object value, int startIndex)
+            public override int IndexOf(object value, int startIndex)
             {
                 lock (_root)
                 {
@@ -1448,7 +1448,7 @@ namespace System.Collections
             }
 
             [SuppressMessage("Microsoft.Contracts", "CC1055")]  // Skip extra error checking to avoid *potential* AppCompat problems.
-            public override int IndexOf(Object value, int startIndex, int count)
+            public override int IndexOf(object value, int startIndex, int count)
             {
                 lock (_root)
                 {
@@ -1456,7 +1456,7 @@ namespace System.Collections
                 }
             }
 
-            public override void Insert(int index, Object value)
+            public override void Insert(int index, object value)
             {
                 lock (_root)
                 {
@@ -1473,7 +1473,7 @@ namespace System.Collections
                 }
             }
 
-            public override int LastIndexOf(Object value)
+            public override int LastIndexOf(object value)
             {
                 lock (_root)
                 {
@@ -1482,7 +1482,7 @@ namespace System.Collections
             }
 
             [SuppressMessage("Microsoft.Contracts", "CC1055")]  // Skip extra error checking to avoid *potential* AppCompat problems.
-            public override int LastIndexOf(Object value, int startIndex)
+            public override int LastIndexOf(object value, int startIndex)
             {
                 lock (_root)
                 {
@@ -1491,7 +1491,7 @@ namespace System.Collections
             }
 
             [SuppressMessage("Microsoft.Contracts", "CC1055")]  // Skip extra error checking to avoid *potential* AppCompat problems.
-            public override int LastIndexOf(Object value, int startIndex, int count)
+            public override int LastIndexOf(object value, int startIndex, int count)
             {
                 lock (_root)
                 {
@@ -1499,7 +1499,7 @@ namespace System.Collections
                 }
             }
 
-            public override void Remove(Object value)
+            public override void Remove(object value)
             {
                 lock (_root)
                 {
@@ -1576,7 +1576,7 @@ namespace System.Collections
                 }
             }
 
-            public override Object[] ToArray()
+            public override object[] ToArray()
             {
                 lock (_root)
                 {
@@ -1606,7 +1606,7 @@ namespace System.Collections
         private class SyncIList : IList
         {
             private IList _list;
-            private Object _root;
+            private object _root;
 
             internal SyncIList(IList list)
             {
@@ -1635,7 +1635,7 @@ namespace System.Collections
                 get { return true; }
             }
 
-            public virtual Object this[int index]
+            public virtual object this[int index]
             {
                 get
                 {
@@ -1653,12 +1653,12 @@ namespace System.Collections
                 }
             }
 
-            public virtual Object SyncRoot
+            public virtual object SyncRoot
             {
                 get { return _root; }
             }
 
-            public virtual int Add(Object value)
+            public virtual int Add(object value)
             {
                 lock (_root)
                 {
@@ -1675,7 +1675,7 @@ namespace System.Collections
                 }
             }
 
-            public virtual bool Contains(Object item)
+            public virtual bool Contains(object item)
             {
                 lock (_root)
                 {
@@ -1699,7 +1699,7 @@ namespace System.Collections
                 }
             }
 
-            public virtual int IndexOf(Object value)
+            public virtual int IndexOf(object value)
             {
                 lock (_root)
                 {
@@ -1707,7 +1707,7 @@ namespace System.Collections
                 }
             }
 
-            public virtual void Insert(int index, Object value)
+            public virtual void Insert(int index, object value)
             {
                 lock (_root)
                 {
@@ -1715,7 +1715,7 @@ namespace System.Collections
                 }
             }
 
-            public virtual void Remove(Object value)
+            public virtual void Remove(object value)
             {
                 lock (_root)
                 {
@@ -1761,7 +1761,7 @@ namespace System.Collections
                 get { return _list.IsSynchronized; }
             }
 
-            public virtual Object this[int index]
+            public virtual object this[int index]
             {
                 get
                 {
@@ -1773,12 +1773,12 @@ namespace System.Collections
                 }
             }
 
-            public virtual Object SyncRoot
+            public virtual object SyncRoot
             {
                 get { return _list.SyncRoot; }
             }
 
-            public virtual int Add(Object obj)
+            public virtual int Add(object obj)
             {
                 throw new NotSupportedException(SR.NotSupported_FixedSizeCollection);
             }
@@ -1788,7 +1788,7 @@ namespace System.Collections
                 throw new NotSupportedException(SR.NotSupported_FixedSizeCollection);
             }
 
-            public virtual bool Contains(Object obj)
+            public virtual bool Contains(object obj)
             {
                 return _list.Contains(obj);
             }
@@ -1803,17 +1803,17 @@ namespace System.Collections
                 return _list.GetEnumerator();
             }
 
-            public virtual int IndexOf(Object value)
+            public virtual int IndexOf(object value)
             {
                 return _list.IndexOf(value);
             }
 
-            public virtual void Insert(int index, Object obj)
+            public virtual void Insert(int index, object obj)
             {
                 throw new NotSupportedException(SR.NotSupported_FixedSizeCollection);
             }
 
-            public virtual void Remove(Object value)
+            public virtual void Remove(object value)
             {
                 throw new NotSupportedException(SR.NotSupported_FixedSizeCollection);
             }
@@ -1854,7 +1854,7 @@ namespace System.Collections
                 get { return _list.IsSynchronized; }
             }
 
-            public override Object this[int index]
+            public override object this[int index]
             {
                 get
                 {
@@ -1867,12 +1867,12 @@ namespace System.Collections
                 }
             }
 
-            public override Object SyncRoot
+            public override object SyncRoot
             {
                 get { return _list.SyncRoot; }
             }
 
-            public override int Add(Object obj)
+            public override int Add(object obj)
             {
                 throw new NotSupportedException(SR.NotSupported_FixedSizeCollection);
             }
@@ -1883,7 +1883,7 @@ namespace System.Collections
             }
 
             [SuppressMessage("Microsoft.Contracts", "CC1055")]  // Skip extra error checking to avoid *potential* AppCompat problems.
-            public override int BinarySearch(int index, int count, Object value, IComparer comparer)
+            public override int BinarySearch(int index, int count, object value, IComparer comparer)
             {
                 return _list.BinarySearch(index, count, value, comparer);
             }
@@ -1901,14 +1901,14 @@ namespace System.Collections
                 throw new NotSupportedException(SR.NotSupported_FixedSizeCollection);
             }
 
-            public override Object Clone()
+            public override object Clone()
             {
                 FixedSizeArrayList arrayList = new FixedSizeArrayList(_list);
                 arrayList._list = (ArrayList)_list.Clone();
                 return arrayList;
             }
 
-            public override bool Contains(Object obj)
+            public override bool Contains(object obj)
             {
                 return _list.Contains(obj);
             }
@@ -1935,24 +1935,24 @@ namespace System.Collections
                 return _list.GetEnumerator(index, count);
             }
 
-            public override int IndexOf(Object value)
+            public override int IndexOf(object value)
             {
                 return _list.IndexOf(value);
             }
 
             [SuppressMessage("Microsoft.Contracts", "CC1055")]  // Skip extra error checking to avoid *potential* AppCompat problems.
-            public override int IndexOf(Object value, int startIndex)
+            public override int IndexOf(object value, int startIndex)
             {
                 return _list.IndexOf(value, startIndex);
             }
 
             [SuppressMessage("Microsoft.Contracts", "CC1055")]  // Skip extra error checking to avoid *potential* AppCompat problems.
-            public override int IndexOf(Object value, int startIndex, int count)
+            public override int IndexOf(object value, int startIndex, int count)
             {
                 return _list.IndexOf(value, startIndex, count);
             }
 
-            public override void Insert(int index, Object obj)
+            public override void Insert(int index, object obj)
             {
                 throw new NotSupportedException(SR.NotSupported_FixedSizeCollection);
             }
@@ -1963,24 +1963,24 @@ namespace System.Collections
                 throw new NotSupportedException(SR.NotSupported_FixedSizeCollection);
             }
 
-            public override int LastIndexOf(Object value)
+            public override int LastIndexOf(object value)
             {
                 return _list.LastIndexOf(value);
             }
 
             [SuppressMessage("Microsoft.Contracts", "CC1055")]  // Skip extra error checking to avoid *potential* AppCompat problems.
-            public override int LastIndexOf(Object value, int startIndex)
+            public override int LastIndexOf(object value, int startIndex)
             {
                 return _list.LastIndexOf(value, startIndex);
             }
 
             [SuppressMessage("Microsoft.Contracts", "CC1055")]  // Skip extra error checking to avoid *potential* AppCompat problems.
-            public override int LastIndexOf(Object value, int startIndex, int count)
+            public override int LastIndexOf(object value, int startIndex, int count)
             {
                 return _list.LastIndexOf(value, startIndex, count);
             }
 
-            public override void Remove(Object value)
+            public override void Remove(object value)
             {
                 throw new NotSupportedException(SR.NotSupported_FixedSizeCollection);
             }
@@ -2027,7 +2027,7 @@ namespace System.Collections
                 _version = _list._version;
             }
 
-            public override Object[] ToArray()
+            public override object[] ToArray()
             {
                 return _list.ToArray();
             }
@@ -2073,7 +2073,7 @@ namespace System.Collections
                 get { return _list.IsSynchronized; }
             }
 
-            public virtual Object this[int index]
+            public virtual object this[int index]
             {
                 get
                 {
@@ -2085,12 +2085,12 @@ namespace System.Collections
                 }
             }
 
-            public virtual Object SyncRoot
+            public virtual object SyncRoot
             {
                 get { return _list.SyncRoot; }
             }
 
-            public virtual int Add(Object obj)
+            public virtual int Add(object obj)
             {
                 throw new NotSupportedException(SR.NotSupported_ReadOnlyCollection);
             }
@@ -2100,7 +2100,7 @@ namespace System.Collections
                 throw new NotSupportedException(SR.NotSupported_ReadOnlyCollection);
             }
 
-            public virtual bool Contains(Object obj)
+            public virtual bool Contains(object obj)
             {
                 return _list.Contains(obj);
             }
@@ -2115,17 +2115,17 @@ namespace System.Collections
                 return _list.GetEnumerator();
             }
 
-            public virtual int IndexOf(Object value)
+            public virtual int IndexOf(object value)
             {
                 return _list.IndexOf(value);
             }
 
-            public virtual void Insert(int index, Object obj)
+            public virtual void Insert(int index, object obj)
             {
                 throw new NotSupportedException(SR.NotSupported_ReadOnlyCollection);
             }
 
-            public virtual void Remove(Object value)
+            public virtual void Remove(object value)
             {
                 throw new NotSupportedException(SR.NotSupported_ReadOnlyCollection);
             }
@@ -2165,7 +2165,7 @@ namespace System.Collections
                 get { return _list.IsSynchronized; }
             }
 
-            public override Object this[int index]
+            public override object this[int index]
             {
                 get
                 {
@@ -2177,12 +2177,12 @@ namespace System.Collections
                 }
             }
 
-            public override Object SyncRoot
+            public override object SyncRoot
             {
                 get { return _list.SyncRoot; }
             }
 
-            public override int Add(Object obj)
+            public override int Add(object obj)
             {
                 throw new NotSupportedException(SR.NotSupported_ReadOnlyCollection);
             }
@@ -2193,7 +2193,7 @@ namespace System.Collections
             }
 
             [SuppressMessage("Microsoft.Contracts", "CC1055")]  // Skip extra error checking to avoid *potential* AppCompat problems.
-            public override int BinarySearch(int index, int count, Object value, IComparer comparer)
+            public override int BinarySearch(int index, int count, object value, IComparer comparer)
             {
                 return _list.BinarySearch(index, count, value, comparer);
             }
@@ -2212,14 +2212,14 @@ namespace System.Collections
                 throw new NotSupportedException(SR.NotSupported_ReadOnlyCollection);
             }
 
-            public override Object Clone()
+            public override object Clone()
             {
                 ReadOnlyArrayList arrayList = new ReadOnlyArrayList(_list);
                 arrayList._list = (ArrayList)_list.Clone();
                 return arrayList;
             }
 
-            public override bool Contains(Object obj)
+            public override bool Contains(object obj)
             {
                 return _list.Contains(obj);
             }
@@ -2246,24 +2246,24 @@ namespace System.Collections
                 return _list.GetEnumerator(index, count);
             }
 
-            public override int IndexOf(Object value)
+            public override int IndexOf(object value)
             {
                 return _list.IndexOf(value);
             }
 
             [SuppressMessage("Microsoft.Contracts", "CC1055")]  // Skip extra error checking to avoid *potential* AppCompat problems.
-            public override int IndexOf(Object value, int startIndex)
+            public override int IndexOf(object value, int startIndex)
             {
                 return _list.IndexOf(value, startIndex);
             }
 
             [SuppressMessage("Microsoft.Contracts", "CC1055")]  // Skip extra error checking to avoid *potential* AppCompat problems.
-            public override int IndexOf(Object value, int startIndex, int count)
+            public override int IndexOf(object value, int startIndex, int count)
             {
                 return _list.IndexOf(value, startIndex, count);
             }
 
-            public override void Insert(int index, Object obj)
+            public override void Insert(int index, object obj)
             {
                 throw new NotSupportedException(SR.NotSupported_ReadOnlyCollection);
             }
@@ -2274,24 +2274,24 @@ namespace System.Collections
                 throw new NotSupportedException(SR.NotSupported_ReadOnlyCollection);
             }
 
-            public override int LastIndexOf(Object value)
+            public override int LastIndexOf(object value)
             {
                 return _list.LastIndexOf(value);
             }
 
             [SuppressMessage("Microsoft.Contracts", "CC1055")]  // Skip extra error checking to avoid *potential* AppCompat problems.
-            public override int LastIndexOf(Object value, int startIndex)
+            public override int LastIndexOf(object value, int startIndex)
             {
                 return _list.LastIndexOf(value, startIndex);
             }
 
             [SuppressMessage("Microsoft.Contracts", "CC1055")]  // Skip extra error checking to avoid *potential* AppCompat problems.
-            public override int LastIndexOf(Object value, int startIndex, int count)
+            public override int LastIndexOf(object value, int startIndex, int count)
             {
                 return _list.LastIndexOf(value, startIndex, count);
             }
 
-            public override void Remove(Object value)
+            public override void Remove(object value)
             {
                 throw new NotSupportedException(SR.NotSupported_ReadOnlyCollection);
             }
@@ -2335,7 +2335,7 @@ namespace System.Collections
                 throw new NotSupportedException(SR.NotSupported_ReadOnlyCollection);
             }
 
-            public override Object[] ToArray()
+            public override object[] ToArray()
             {
                 return _list.ToArray();
             }
@@ -2362,7 +2362,7 @@ namespace System.Collections
             private int _index;
             private int _endIndex;       // Where to stop.
             private int _version;
-            private Object _currentElement;
+            private object _currentElement;
             private int _startIndex;     // Save this for Reset.
 
             internal ArrayListEnumerator(ArrayList list, int index, int count)
@@ -2393,7 +2393,7 @@ namespace System.Collections
                 return false;
             }
 
-            public Object Current
+            public object Current
             {
                 get
                 {
@@ -2445,7 +2445,7 @@ namespace System.Collections
                 _version++;
             }
 
-            public override int Add(Object value)
+            public override int Add(object value)
             {
                 InternalUpdateRange();
                 _baseList.Insert(_baseIndex + _baseSize, value);
@@ -2470,7 +2470,7 @@ namespace System.Collections
                 }
             }
 
-            public override int BinarySearch(int index, int count, Object value, IComparer comparer)
+            public override int BinarySearch(int index, int count, object value, IComparer comparer)
             {
                 if (index < 0 || count < 0)
                     throw new ArgumentOutOfRangeException(index < 0 ? nameof(index) : nameof(count), SR.ArgumentOutOfRange_NeedNonNegNum);
@@ -2509,7 +2509,7 @@ namespace System.Collections
                 }
             }
 
-            public override Object Clone()
+            public override object Clone()
             {
                 InternalUpdateRange();
                 Range arrayList = new Range(_baseList, _baseIndex, _baseSize);
@@ -2517,7 +2517,7 @@ namespace System.Collections
                 return arrayList;
             }
 
-            public override bool Contains(Object item)
+            public override bool Contains(object item)
             {
                 InternalUpdateRange();
                 if (item == null)
@@ -2619,7 +2619,7 @@ namespace System.Collections
                 return new Range(this, index, count);
             }
 
-            public override Object SyncRoot
+            public override object SyncRoot
             {
                 get
                 {
@@ -2628,7 +2628,7 @@ namespace System.Collections
             }
 
 
-            public override int IndexOf(Object value)
+            public override int IndexOf(object value)
             {
                 InternalUpdateRange();
                 int i = _baseList.IndexOf(value, _baseIndex, _baseSize);
@@ -2636,7 +2636,7 @@ namespace System.Collections
                 return -1;
             }
 
-            public override int IndexOf(Object value, int startIndex)
+            public override int IndexOf(object value, int startIndex)
             {
                 if (startIndex < 0)
                     throw new ArgumentOutOfRangeException(nameof(startIndex), SR.ArgumentOutOfRange_NeedNonNegNum);
@@ -2649,7 +2649,7 @@ namespace System.Collections
                 return -1;
             }
 
-            public override int IndexOf(Object value, int startIndex, int count)
+            public override int IndexOf(object value, int startIndex, int count)
             {
                 if (startIndex < 0 || startIndex > _baseSize)
                     throw new ArgumentOutOfRangeException(nameof(startIndex), SR.ArgumentOutOfRange_Index);
@@ -2663,7 +2663,7 @@ namespace System.Collections
                 return -1;
             }
 
-            public override void Insert(int index, Object value)
+            public override void Insert(int index, object value)
             {
                 if (index < 0 || index > _baseSize) throw new ArgumentOutOfRangeException(nameof(index), SR.ArgumentOutOfRange_Index);
 
@@ -2691,7 +2691,7 @@ namespace System.Collections
                 }
             }
 
-            public override int LastIndexOf(Object value)
+            public override int LastIndexOf(object value)
             {
                 InternalUpdateRange();
                 int i = _baseList.LastIndexOf(value, _baseIndex + _baseSize - 1, _baseSize);
@@ -2700,13 +2700,13 @@ namespace System.Collections
             }
 
             [SuppressMessage("Microsoft.Contracts", "CC1055")]  // Skip extra error checking to avoid *potential* AppCompat problems.
-            public override int LastIndexOf(Object value, int startIndex)
+            public override int LastIndexOf(object value, int startIndex)
             {
                 return LastIndexOf(value, startIndex, startIndex + 1);
             }
 
             [SuppressMessage("Microsoft.Contracts", "CC1055")]  // Skip extra error checking to avoid *potential* AppCompat problems.
-            public override int LastIndexOf(Object value, int startIndex, int count)
+            public override int LastIndexOf(object value, int startIndex, int count)
             {
                 InternalUpdateRange();
                 if (_baseSize == 0)
@@ -2788,7 +2788,7 @@ namespace System.Collections
                 InternalUpdateVersion();
             }
 
-            public override Object this[int index]
+            public override object this[int index]
             {
                 get
                 {
@@ -2805,12 +2805,12 @@ namespace System.Collections
                 }
             }
 
-            public override Object[] ToArray()
+            public override object[] ToArray()
             {
                 InternalUpdateRange();
                 if (_baseSize == 0)
                     return Array.Empty<Object>();
-                Object[] array = new Object[_baseSize];
+                object[] array = new object[_baseSize];
                 Array.Copy(_baseList._items, _baseIndex, array, 0, _baseSize);
                 return array;
             }
@@ -2837,10 +2837,10 @@ namespace System.Collections
             private ArrayList _list;
             private int _index;
             private int _version;
-            private Object _currentElement;
+            private object _currentElement;
             private bool _isArrayList;
             // this object is used to indicate enumeration has not started or has terminated
-            private static Object s_dummyObject = new Object();
+            private static object s_dummyObject = new object();
 
             internal ArrayListEnumeratorSimple(ArrayList list)
             {
@@ -2890,7 +2890,7 @@ namespace System.Collections
                 }
             }
 
-            public Object Current
+            public object Current
             {
                 get
                 {
@@ -2936,7 +2936,7 @@ namespace System.Collections
             }
 
             [DebuggerBrowsable(DebuggerBrowsableState.RootHidden)]
-            public Object[] Items
+            public object[] Items
             {
                 get
                 {

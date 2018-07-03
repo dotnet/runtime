@@ -47,7 +47,7 @@ namespace System.Reflection
             return type.GetEvents(Everything);
         }
 
-        public static FieldInfo GetRuntimeField(this Type type, String name)
+        public static FieldInfo GetRuntimeField(this Type type, string name)
         {
             if (type == null) 
             {
@@ -56,7 +56,7 @@ namespace System.Reflection
             return type.GetField(name);
         }
 
-        public static MethodInfo GetRuntimeMethod(this Type type, String name, Type[] parameters)
+        public static MethodInfo GetRuntimeMethod(this Type type, string name, Type[] parameters)
         {
             if (type == null) 
             {
@@ -65,7 +65,7 @@ namespace System.Reflection
             return type.GetMethod(name, parameters);
         }
 
-        public static PropertyInfo GetRuntimeProperty(this Type type, String name)
+        public static PropertyInfo GetRuntimeProperty(this Type type, string name)
         {
             if (type == null) 
             {
@@ -74,7 +74,7 @@ namespace System.Reflection
             return type.GetProperty(name);
         }
 
-        public static EventInfo GetRuntimeEvent(this Type type, String name)
+        public static EventInfo GetRuntimeEvent(this Type type, string name)
         {
             if (type == null) 
             {

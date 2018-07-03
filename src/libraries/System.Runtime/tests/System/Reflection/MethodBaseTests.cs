@@ -25,7 +25,7 @@ namespace System.Reflection.Tests
         [Fact]
         public static void Test_GetCurrentMethod_GenericMethodDefinition()
         {
-            MethodBase m = MyFakeGenericMethod<Byte>();
+            MethodBase m = MyFakeGenericMethod<byte>();
             
             Assert.Equal("MyFakeGenericMethod", m.Name);
             Assert.Equal("MethodBaseTests", m.ReflectedType.Name);

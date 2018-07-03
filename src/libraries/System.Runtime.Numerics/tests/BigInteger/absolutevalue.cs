@@ -85,12 +85,12 @@ namespace System.Numerics.Tests
             }
         }
 
-        private static Byte[] GetRandomByteArray(Random random)
+        private static byte[] GetRandomByteArray(Random random)
         {
             return MyBigIntImp.GetRandomByteArray(random, random.Next(0, 1024));
         }
 
-        private static String Print(byte[] bytes)
+        private static string Print(byte[] bytes)
         {
             return MyBigIntImp.Print(bytes);
         }

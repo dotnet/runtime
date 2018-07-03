@@ -12,9 +12,9 @@
 #ifndef BROTLI_ENC_COMPRESS_FRAGMENT_H_
 #define BROTLI_ENC_COMPRESS_FRAGMENT_H_
 
+#include "../common/platform.h"
 #include <brotli/types.h>
 #include "./memory.h"
-#include "./port.h"
 
 #if defined(__cplusplus) || defined(c_plusplus)
 extern "C" {

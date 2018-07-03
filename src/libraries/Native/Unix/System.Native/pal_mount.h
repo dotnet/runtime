@@ -5,20 +5,17 @@
 #pragma once
 
 #include "pal_compiler.h"
-
-BEGIN_EXTERN_C
-
 #include "pal_types.h"
 
 /**
  * Struct to describe the amount of free space and total space on a given mount point
  */
-struct MountPointInformation
+typedef struct
 {
     uint64_t AvailableFreeSpace;
     uint64_t TotalFreeSpace;
     uint64_t TotalSize;
-};
+} MountPointInformation;
 
 /**
  * Function pointer to call back into C# when we find a mount point via GetAllMountPoints.
@@ -50,5 +47,3 @@ DLLEXPORT int32_t SystemNative_GetFormatInfoForMountPoint(
  * as much as possible.
  */
 DLLEXPORT int32_t SystemNative_GetAllMountPoints(MountPointFound onFound);
-
-END_EXTERN_C

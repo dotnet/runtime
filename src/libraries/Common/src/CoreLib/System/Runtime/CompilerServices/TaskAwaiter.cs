@@ -318,7 +318,7 @@ namespace System.Runtime.CompilerServices
                         innerTask.Id);
 
                     // Ensure the continuation runs under the activity ID of the task that completed for the
-                    // case the antecendent is a promise (in the other cases this is already the case).
+                    // case the antecedent is a promise (in the other cases this is already the case).
                     if (innerEtwLog.TasksSetActivityIds && (innerTask.Options & (TaskCreationOptions)InternalTaskOptions.PromiseTask) != 0)
                         EventSource.SetCurrentThreadActivityId(TplEtwProvider.CreateGuidForTaskID(innerTask.Id), out prevActivityId);
                 }

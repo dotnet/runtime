@@ -26,13 +26,13 @@ namespace System.Threading
             HResult = HResults.COR_E_THREADSTATE;
         }
 
-        public ThreadStateException(String message)
+        public ThreadStateException(string message)
             : base(message)
         {
             HResult = HResults.COR_E_THREADSTATE;
         }
 
-        public ThreadStateException(String message, Exception innerException)
+        public ThreadStateException(string message, Exception innerException)
             : base(message, innerException)
         {
             HResult = HResults.COR_E_THREADSTATE;

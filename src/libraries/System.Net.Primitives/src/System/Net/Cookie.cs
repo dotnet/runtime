@@ -234,7 +234,7 @@ namespace System.Net
             }
             set
             {
-                if (String.IsNullOrEmpty(value) || !InternalSetName(value))
+                if (string.IsNullOrEmpty(value) || !InternalSetName(value))
                 {
                     throw new CookieException(SR.Format(SR.net_cookie_attribute, "Name", value == null ? "<null>" : value));
                 }
@@ -255,7 +255,7 @@ namespace System.Net
 #endif
         bool InternalSetName(string value)
         {
-            if (String.IsNullOrEmpty(value) || value[0] == '$' || value.IndexOfAny(ReservedToName) != -1)
+            if (string.IsNullOrEmpty(value) || value[0] == '$' || value.IndexOfAny(ReservedToName) != -1)
             {
                 m_name = string.Empty;
                 return false;
@@ -638,7 +638,7 @@ namespace System.Net
                         // Skip spaces
                         if (ports[i] != string.Empty)
                         {
-                            if (!Int32.TryParse(ports[i], out port))
+                            if (!int.TryParse(ports[i], out port))
                             {
                                 throw new CookieException(SR.Format(SR.net_cookie_attribute, CookieFields.PortAttributeName, value));
                             }

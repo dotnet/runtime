@@ -70,7 +70,7 @@ namespace DispatchProxyTests
             Assert.NotNull(proxy1);
             Assert.NotNull(proxy2);
             Assert.False(object.ReferenceEquals(proxy1, proxy2),
-                        String.Format("First and second instance of proxy type {0} were the same instance", proxy1.GetType().ToString()));
+                        string.Format("First and second instance of proxy type {0} were the same instance", proxy1.GetType().ToString()));
         }
 
 
@@ -83,7 +83,7 @@ namespace DispatchProxyTests
             Assert.NotNull(proxy1);
             Assert.NotNull(proxy2);
             Assert.False(proxy1.GetType() == proxy2.GetType(),
-                        String.Format("Proxy generated for base type {0} used same for base type {1}", typeof(TestDispatchProxy).Name, typeof(TestDispatchProxy).Name));
+                        string.Format("Proxy generated for base type {0} used same for base type {1}", typeof(TestDispatchProxy).Name, typeof(TestDispatchProxy).Name));
         }
 
         [Fact]
@@ -95,7 +95,7 @@ namespace DispatchProxyTests
             Assert.NotNull(proxy1);
             Assert.NotNull(proxy2);
             Assert.False(proxy1.GetType() == proxy2.GetType(),
-                        String.Format("Proxy generated for type {0} used same for type {1}", typeof(TestType_IHelloService).Name, typeof(TestType_IGoodbyeService).Name));
+                        string.Format("Proxy generated for type {0} used same for type {1}", typeof(TestType_IHelloService).Name, typeof(TestType_IGoodbyeService).Name));
         }
 
         [Fact]
@@ -140,7 +140,7 @@ namespace DispatchProxyTests
 
                 if (method == null)
                 {
-                    string error = String.Format("Proxy for {0} was called with null method", typeof(TestType_IHelloService).Name);
+                    string error = string.Format("Proxy for {0} was called with null method", typeof(TestType_IHelloService).Name);
                     errorBuilder.AppendLine(error);
                     return null;
                 }
@@ -149,7 +149,7 @@ namespace DispatchProxyTests
                     MethodInfo expectedMethod = typeof(TestType_IHelloService).GetTypeInfo().GetDeclaredMethod("Hello");
                     if (expectedMethod != method)
                     {
-                        string error = String.Format("Proxy for {0} was called with incorrect method.  Expected = {1}, Actual = {2}",
+                        string error = string.Format("Proxy for {0} was called with incorrect method.  Expected = {1}, Actual = {2}",
                                                     typeof(TestType_IHelloService).Name, expectedMethod, method);
                         errorBuilder.AppendLine(error);
                         return null;
@@ -184,13 +184,13 @@ namespace DispatchProxyTests
             ((TestDispatchProxy)proxy).CallOnInvoke = (method, args) =>
             {
                 invokedMethod = method;
-                return String.Empty;
+                return string.Empty;
             };
 
             proxy.Hello("testInput");
 
             MethodInfo expectedMethod = typeof(TestType_IHelloService).GetTypeInfo().GetDeclaredMethod("Hello");
-            Assert.True(invokedMethod != null && expectedMethod == invokedMethod, String.Format("Invoke expected method {0} but actual was {1}", expectedMethod, invokedMethod));
+            Assert.True(invokedMethod != null && expectedMethod == invokedMethod, string.Format("Invoke expected method {0} but actual was {1}", expectedMethod, invokedMethod));
         }
 
         [Fact]
@@ -202,19 +202,19 @@ namespace DispatchProxyTests
             ((TestDispatchProxy)proxy).CallOnInvoke = (method, args) =>
             {
                 actualArgs = args;
-                return String.Empty;
+                return string.Empty;
             };
 
             proxy.Hello("testInput");
 
             object[] expectedArgs = new object[] { "testInput" };
             Assert.True(actualArgs != null && actualArgs.Length == expectedArgs.Length,
-                String.Format("Invoked expected object[] of length {0} but actual was {1}",
+                string.Format("Invoked expected object[] of length {0} but actual was {1}",
                                 expectedArgs.Length, (actualArgs == null ? "null" : actualArgs.Length.ToString())));
             for (int i = 0; i < expectedArgs.Length; ++i)
             {
                 Assert.True(expectedArgs[i].Equals(actualArgs[i]),
-                    String.Format("Expected arg[{0}] = '{1}' but actual was '{2}'",
+                    string.Format("Expected arg[{0}] = '{1}' but actual was '{2}'",
                     i, expectedArgs[i], actualArgs[i]));
             }
         }
@@ -249,13 +249,13 @@ namespace DispatchProxyTests
             proxy.TestMethod((int)expectedArgs[0], (string)expectedArgs[1], (double)expectedArgs[2]);
 
             Assert.True(invokedArgs != null && invokedArgs.Length == expectedArgs.Length,
-                        String.Format("Expected {0} arguments but actual was {1}",
+                        string.Format("Expected {0} arguments but actual was {1}",
                         expectedArgs.Length, invokedArgs == null ? "null" : invokedArgs.Length.ToString()));
 
             for (int i = 0; i < expectedArgs.Length; ++i)
             {
                 Assert.True(expectedArgs[i].Equals(invokedArgs[i]),
-                    String.Format("Expected arg[{0}] = '{1}' but actual was '{2}'",
+                    string.Format("Expected arg[{0}] = '{1}' but actual was '{2}'",
                     i, expectedArgs[i], invokedArgs[i]));
             }
         }
@@ -271,25 +271,25 @@ namespace DispatchProxyTests
             ((TestDispatchProxy)proxy).CallOnInvoke = (method, args) =>
             {
                 invokedArgs = args;
-                return String.Empty;
+                return string.Empty;
             };
 
             proxy.ParamsMethod((int)expectedArgs[0], (string)expectedArgs[1], (double)expectedArgs[2]);
 
             // All separate params should have become a single object[1] array
             Assert.True(invokedArgs != null && invokedArgs.Length == 1,
-                        String.Format("Expected single element object[] but actual was {0}",
+                        string.Format("Expected single element object[] but actual was {0}",
                         invokedArgs == null ? "null" : invokedArgs.Length.ToString()));
 
             // That object[1] should contain an object[3] containing the args
             actualArgs = invokedArgs[0] as object[];
             Assert.True(actualArgs != null && actualArgs.Length == expectedArgs.Length,
-                String.Format("Invoked expected object[] of length {0} but actual was {1}",
+                string.Format("Invoked expected object[] of length {0} but actual was {1}",
                                 expectedArgs.Length, (actualArgs == null ? "null" : actualArgs.Length.ToString())));
             for (int i = 0; i < expectedArgs.Length; ++i)
             {
                 Assert.True(expectedArgs[i].Equals(actualArgs[i]),
-                    String.Format("Expected arg[{0}] = '{1}' but actual was '{2}'",
+                    string.Format("Expected arg[{0}] = '{1}' but actual was '{2}'",
                     i, expectedArgs[i], actualArgs[i]));
             }
         }
@@ -309,7 +309,7 @@ namespace DispatchProxyTests
             proxy.OneWay();
 
             MethodInfo expectedMethod = typeof(TestType_IOneWay).GetTypeInfo().GetDeclaredMethod("OneWay");
-            Assert.True(invokedMethod != null && expectedMethod == invokedMethod, String.Format("Invoke expected method {0} but actual was {1}", expectedMethod, invokedMethod));
+            Assert.True(invokedMethod != null && expectedMethod == invokedMethod, string.Format("Invoke expected method {0} but actual was {1}", expectedMethod, invokedMethod));
         }
 
         [Fact]
@@ -327,13 +327,13 @@ namespace DispatchProxyTests
             ((TestType_IHelloService)proxy).Hello("calling 1");
             ((TestType_IHelloService2)proxy).Hello("calling 2");
 
-            Assert.True(invokedMethods.Count == 2, String.Format("Expected 2 method invocations but received {0}", invokedMethods.Count));
+            Assert.True(invokedMethods.Count == 2, string.Format("Expected 2 method invocations but received {0}", invokedMethods.Count));
 
             MethodInfo expectedMethod = typeof(TestType_IHelloService).GetTypeInfo().GetDeclaredMethod("Hello");
-            Assert.True(invokedMethods[0] != null && expectedMethod == invokedMethods[0], String.Format("First invoke should have been TestType_IHelloService.Hello but actual was {0}", invokedMethods[0]));
+            Assert.True(invokedMethods[0] != null && expectedMethod == invokedMethods[0], string.Format("First invoke should have been TestType_IHelloService.Hello but actual was {0}", invokedMethods[0]));
 
             expectedMethod = typeof(TestType_IHelloService2).GetTypeInfo().GetDeclaredMethod("Hello");
-            Assert.True(invokedMethods[1] != null && expectedMethod == invokedMethods[1], String.Format("Second invoke should have been TestType_IHelloService2.Hello but actual was {0}", invokedMethods[1]));
+            Assert.True(invokedMethods[1] != null && expectedMethod == invokedMethods[1], string.Format("Second invoke should have been TestType_IHelloService2.Hello but actual was {0}", invokedMethods[1]));
         }
 
         [Fact]
@@ -376,17 +376,17 @@ namespace DispatchProxyTests
             proxy.ReadWrite = "testValue";
             string actualValue = proxy.ReadWrite;
 
-            Assert.True(invokedMethods.Count == 2, String.Format("Expected 2 method invocations but received {0}", invokedMethods.Count));
+            Assert.True(invokedMethods.Count == 2, string.Format("Expected 2 method invocations but received {0}", invokedMethods.Count));
 
             PropertyInfo propertyInfo = typeof(TestType_IPropertyService).GetTypeInfo().GetDeclaredProperty("ReadWrite");
             Assert.NotNull(propertyInfo);
 
             MethodInfo expectedMethod = propertyInfo.SetMethod;
-            Assert.True(invokedMethods[0] != null && expectedMethod == invokedMethods[0], String.Format("First invoke should have been {0} but actual was {1}",
+            Assert.True(invokedMethods[0] != null && expectedMethod == invokedMethods[0], string.Format("First invoke should have been {0} but actual was {1}",
                             expectedMethod.Name, invokedMethods[0]));
 
             expectedMethod = propertyInfo.GetMethod;
-            Assert.True(invokedMethods[1] != null && expectedMethod == invokedMethods[1], String.Format("Second invoke should have been {0} but actual was {1}",
+            Assert.True(invokedMethods[1] != null && expectedMethod == invokedMethods[1], string.Format("Second invoke should have been {0} but actual was {1}",
                             expectedMethod.Name, invokedMethods[1]));
 
             Assert.Null(actualValue);
@@ -478,17 +478,17 @@ namespace DispatchProxyTests
             proxy["key"] = "testValue";
             string actualValue = proxy["key"];
 
-            Assert.True(invokedMethods.Count == 2, String.Format("Expected 2 method invocations but received {0}", invokedMethods.Count));
+            Assert.True(invokedMethods.Count == 2, string.Format("Expected 2 method invocations but received {0}", invokedMethods.Count));
 
             PropertyInfo propertyInfo = typeof(TestType_IIndexerService).GetTypeInfo().GetDeclaredProperty("Item");
             Assert.NotNull(propertyInfo);
 
             MethodInfo expectedMethod = propertyInfo.SetMethod;
-            Assert.True(invokedMethods[0] != null && expectedMethod == invokedMethods[0], String.Format("First invoke should have been {0} but actual was {1}",
+            Assert.True(invokedMethods[0] != null && expectedMethod == invokedMethods[0], string.Format("First invoke should have been {0} but actual was {1}",
                             expectedMethod.Name, invokedMethods[0]));
 
             expectedMethod = propertyInfo.GetMethod;
-            Assert.True(invokedMethods[1] != null && expectedMethod == invokedMethods[1], String.Format("Second invoke should have been {0} but actual was {1}",
+            Assert.True(invokedMethods[1] != null && expectedMethod == invokedMethods[1], string.Format("Second invoke should have been {0} but actual was {1}",
                             expectedMethod.Name, invokedMethods[1]));
 
             Assert.Null(actualValue);

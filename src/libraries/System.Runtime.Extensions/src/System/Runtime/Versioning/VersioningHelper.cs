@@ -25,14 +25,14 @@ namespace System.Runtime.Versioning
         private const ResourceScope ResTypeMask = ResourceScope.Machine | ResourceScope.Process | ResourceScope.AppDomain | ResourceScope.Library;
         private const ResourceScope VisibilityMask = ResourceScope.Private | ResourceScope.Assembly;
 
-        public static string MakeVersionSafeName(String name, ResourceScope from, ResourceScope to)
+        public static string MakeVersionSafeName(string name, ResourceScope from, ResourceScope to)
         {
             return MakeVersionSafeName(name, from, to, null);
         }
 
         [ResourceExposure(ResourceScope.None)]
         [ResourceConsumption(ResourceScope.Process, ResourceScope.Process)]
-        public static string MakeVersionSafeName(String name, ResourceScope from, ResourceScope to, Type type)
+        public static string MakeVersionSafeName(string name, ResourceScope from, ResourceScope to, Type type)
         {
             ResourceScope fromResType = from & ResTypeMask;
             ResourceScope toResType = to & ResTypeMask;

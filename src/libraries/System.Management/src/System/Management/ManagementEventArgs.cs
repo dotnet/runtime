@@ -256,7 +256,7 @@ public class ProgressEventArgs : ManagementEventArgs
     public string Message 
     {
         get {
-            return (null != message) ? message : String.Empty;
+            return (null != message) ? message : string.Empty;
         }
     }
 }

@@ -1296,4 +1296,25 @@
   <data name="SQL_ChangePasswordUseOfUnallowedKey" xml:space="preserve">
     <value>The keyword '{0}' must not be specified in the connectionString argument to ChangePassword.</value>
   </data>
+  <data name="SQL_ParsingErrorWithState" xml:space="preserve">
+    <value>Internal connection fatal error. Error state: {0}.</value>
+  </data>
+  <data name="SQL_ParsingErrorValue" xml:space="preserve">
+    <value>Internal connection fatal error. Error state: {0}, Value: {1}.</value>
+  </data>
+  <data name="ADP_InvalidMixedUsageOfAccessTokenAndIntegratedSecurity" xml:space="preserve">
+    <value>Cannot set the AccessToken property if the 'Integrated Security' connection string keyword has been set to 'true' or 'SSPI'.</value>
+  </data>
+  <data name="ADP_InvalidMixedUsageOfAccessTokenAndUserIDPassword" xml:space="preserve">
+    <value>Cannot set the AccessToken property if 'UserID', 'UID', 'Password', or 'PWD' has been specified in connection string.</value>
+  </data>
+  <data name="ADP_InvalidMixedUsageOfCredentialAndAccessToken" xml:space="preserve">
+    <value>Cannot set the Credential property if the AccessToken property is already set.</value>
+  </data>
+ <data name="SQL_ParsingErrorFeatureId" xml:space="preserve"> 
+    <value>Internal connection fatal error. Error state: {0}, Feature Id: {1}.</value>
+  </data>
+  <data name="SQL_ParsingErrorAuthLibraryType" xml:space="preserve"> 
+    <value>Internal connection fatal error. Error state: {0}, Authentication Library Type: {1}.</value>
+  </data>
 </root>

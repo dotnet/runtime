@@ -13,14 +13,14 @@ namespace System.Numerics.Tests
     {
         private static bool s_noZeroOut = true;
 
-        public delegate String StringFormatter(String input, int precision, NumberFormatInfo nfi);
+        public delegate string StringFormatter(string input, int precision, NumberFormatInfo nfi);
         private static int s_samples = 1;
         private static Random s_random = new Random(100);
 
         [Fact]
         public static void RunSimpleToStringTests()
         {
-            String test;
+            string test;
 
             // Scenario 1: Large BigInteger - positive
             for (int i = 0; i < s_samples; i++)
@@ -84,8 +84,8 @@ namespace System.Numerics.Tests
         [Fact]
         public static void RunStandardFormatToStringTests()
         {
-            String test;
-            String format;
+            string test;
+            string format;
 
             // Currency
             RunStandardFormatToStringTests(s_random, "C", CultureInfo.CurrentCulture.NumberFormat.NegativeSign, CultureInfo.CurrentCulture.NumberFormat.CurrencyDecimalDigits, CurrencyFormatter);
@@ -285,7 +285,7 @@ namespace System.Numerics.Tests
             // Zero Placeholder
             RunCustomFormatToStringTests(s_random, "0", CultureInfo.CurrentCulture.NumberFormat.NegativeSign, 1, ZeroFormatter);
             RunCustomFormatToStringTests(s_random, "0000", CultureInfo.CurrentCulture.NumberFormat.NegativeSign, 4, ZeroFormatter);
-            RunCustomFormatToStringTests(s_random, new String('0', 500), CultureInfo.CurrentCulture.NumberFormat.NegativeSign, 500, ZeroFormatter);
+            RunCustomFormatToStringTests(s_random, new string('0', 500), CultureInfo.CurrentCulture.NumberFormat.NegativeSign, 500, ZeroFormatter);
         }
 
         [Fact]
@@ -294,7 +294,7 @@ namespace System.Numerics.Tests
             // Digit Placeholder
             RunCustomFormatToStringTests(s_random, "#", CultureInfo.CurrentCulture.NumberFormat.NegativeSign, 0, ZeroFormatter);
             RunCustomFormatToStringTests(s_random, "####", CultureInfo.CurrentCulture.NumberFormat.NegativeSign, 0, ZeroFormatter);
-            RunCustomFormatToStringTests(s_random, new String('#', 500), CultureInfo.CurrentCulture.NumberFormat.NegativeSign, 0, ZeroFormatter);
+            RunCustomFormatToStringTests(s_random, new string('#', 500), CultureInfo.CurrentCulture.NumberFormat.NegativeSign, 0, ZeroFormatter);
         }
 
         [Fact]
@@ -396,9 +396,9 @@ namespace System.Numerics.Tests
             RunCustomFormatToStringTests(s_random, "#\u2030000000", CultureInfo.CurrentCulture.NumberFormat.NegativeSign, 6, PerMilleSymbolFormatter);
         }
 
-        private static void RunSimpleProviderToStringTests(Random random, String format, NumberFormatInfo provider, int precision, StringFormatter formatter)
+        private static void RunSimpleProviderToStringTests(Random random, string format, NumberFormatInfo provider, int precision, StringFormatter formatter)
         {
-            String test;
+            string test;
 
             // Scenario 1: Large BigInteger - positive
             for (int i = 0; i < s_samples; i++)
@@ -440,9 +440,9 @@ namespace System.Numerics.Tests
             VerifyToString(Int64.MaxValue.ToString("d", provider), format, provider, false, formatter(Int64.MaxValue.ToString("d", provider), precision, provider));
         }
 
-        private static void RunStandardFormatToStringTests(Random random, String format, String negativeSign, int precision, StringFormatter formatter)
+        private static void RunStandardFormatToStringTests(Random random, string format, string negativeSign, int precision, StringFormatter formatter)
         {
-            String test;
+            string test;
 
             // Scenario 1: Large BigInteger - positive
             for (int i = 0; i < s_samples; i++)
@@ -486,9 +486,9 @@ namespace System.Numerics.Tests
             VerifyToString(Decimal.MaxValue.ToString(), format, formatter(Decimal.MaxValue.ToString(), precision, CultureInfo.CurrentCulture.NumberFormat));
         }
 
-        private static void RunCustomFormatToStringTests(Random random, String format, String negativeSign, int precision, StringFormatter formatter)
+        private static void RunCustomFormatToStringTests(Random random, string format, string negativeSign, int precision, StringFormatter formatter)
         {
-            String test;
+            string test;
 
             // Scenario 1: Large BigInteger - positive
             for (int i = 0; i < s_samples; i++)
@@ -532,10 +532,10 @@ namespace System.Numerics.Tests
             VerifyToString(Decimal.MaxValue.ToString(), format, formatter(Decimal.MaxValue.ToString(), precision, CultureInfo.CurrentCulture.NumberFormat));
         }
 
-        private static String CurrencyFormatter(String input, int precision, NumberFormatInfo nfi)
+        private static string CurrencyFormatter(string input, int precision, NumberFormatInfo nfi)
         {
-            String pre = String.Empty;
-            String post = String.Empty;
+            string pre = string.Empty;
+            string post = string.Empty;
 
             if (input.StartsWith(nfi.NegativeSign))
             {
@@ -623,10 +623,10 @@ namespace System.Numerics.Tests
             return pre + GroupFormatDigits(input, nfi.CurrencyGroupSeparator, nfi.CurrencyGroupSizes, nfi.CurrencyDecimalSeparator, precision) + post;
         }
 
-        private static String DecimalFormatter(String input, int precision, NumberFormatInfo nfi)
+        private static string DecimalFormatter(string input, int precision, NumberFormatInfo nfi)
         {
             bool IsNeg = false;
-            String output = input;
+            string output = input;
 
             if (input.StartsWith(nfi.NegativeSign))
             {
@@ -644,14 +644,14 @@ namespace System.Numerics.Tests
             return output;
         }
 
-        private static String ExponentialFormatter(String input, int precision, NumberFormatInfo nfi)
+        private static string ExponentialFormatter(string input, int precision, NumberFormatInfo nfi)
         {
             bool IsNeg = false;
-            Char[] temp = input.ToCharArray();
-            Char[] temp2;
-            String output = String.Empty;
-            String digits;
-            Char exp = 'E';
+            char[] temp = input.ToCharArray();
+            char[] temp2;
+            string output = string.Empty;
+            string digits;
+            char exp = 'E';
 
             if (precision < 0)
             {
@@ -667,7 +667,7 @@ namespace System.Numerics.Tests
             digits = (temp.Length - 1).ToString();
             digits = ZeroString(3 - digits.Length) + digits;
             temp2 = temp;
-            temp = new Char[precision + 2];
+            temp = new char[precision + 2];
             for (int j = 0; j < temp.Length; j++)
             {
                 if ((j < 100) && (j < temp2.Length))
@@ -712,17 +712,17 @@ namespace System.Numerics.Tests
             output = output + temp[0];
             if (precision != 0)
             {
-                output = output + nfi.NumberDecimalSeparator + new String(temp, 1, precision);
+                output = output + nfi.NumberDecimalSeparator + new string(temp, 1, precision);
             }
             output = output + exp + nfi.PositiveSign + digits;
 
             return output;
         }
 
-        private static String FixedFormatter(String input, int precision, NumberFormatInfo nfi)
+        private static string FixedFormatter(string input, int precision, NumberFormatInfo nfi)
         {
             bool IsNeg = false;
-            String output = input;
+            string output = input;
 
             if (input.StartsWith(nfi.NegativeSign))
             {
@@ -743,9 +743,9 @@ namespace System.Numerics.Tests
             return output;
         }
 
-        private static String GeneralFormatter(String input, int precision, NumberFormatInfo nfi)
+        private static string GeneralFormatter(string input, int precision, NumberFormatInfo nfi)
         {
-            String output = input;
+            string output = input;
             bool lowercase = false;
             char exp = 'E';
 
@@ -792,10 +792,10 @@ namespace System.Numerics.Tests
             return output;
         }
 
-        private static String NumberFormatter(String input, int precision, NumberFormatInfo nfi)
+        private static string NumberFormatter(string input, int precision, NumberFormatInfo nfi)
         {
-            String pre = String.Empty;
-            String post = String.Empty;
+            string pre = string.Empty;
+            string post = string.Empty;
 
             if (input.StartsWith(nfi.NegativeSign))
             {
@@ -825,10 +825,10 @@ namespace System.Numerics.Tests
             return pre + GroupFormatDigits(input, nfi.NumberGroupSeparator, nfi.NumberGroupSizes, nfi.NumberDecimalSeparator, precision) + post;
         }
 
-        private static String PercentFormatter(String input, int precision, NumberFormatInfo nfi)
+        private static string PercentFormatter(string input, int precision, NumberFormatInfo nfi)
         {
-            String pre = String.Empty;
-            String post = String.Empty;
+            string pre = string.Empty;
+            string post = string.Empty;
 
             if (input.StartsWith(nfi.NegativeSign))
             {
@@ -904,7 +904,7 @@ namespace System.Numerics.Tests
             return pre + GroupFormatDigits(input, nfi.PercentGroupSeparator, nfi.PercentGroupSizes, nfi.PercentDecimalSeparator, precision) + post;
         }
 
-        private static String HexFormatter(String input, int precision, NumberFormatInfo nfi)
+        private static string HexFormatter(string input, int precision, NumberFormatInfo nfi)
         {
             bool upper = true;
             if (precision < 0)
@@ -912,8 +912,8 @@ namespace System.Numerics.Tests
                 precision = -precision;
                 upper = false;
             }
-            String output = ConvertDecimalToHex(input, upper, nfi);
-            int typeChar = Int32.Parse(output.Substring(0, 1), NumberStyles.AllowHexSpecifier);
+            string output = ConvertDecimalToHex(input, upper, nfi);
+            int typeChar = int.Parse(output.Substring(0, 1), NumberStyles.AllowHexSpecifier);
 
             if (typeChar >= 8)
             {
@@ -927,14 +927,14 @@ namespace System.Numerics.Tests
             return output;
         }
 
-        private static String ZeroFormatter(String input, int precision, NumberFormatInfo nfi)
+        private static string ZeroFormatter(string input, int precision, NumberFormatInfo nfi)
         {
             bool IsNeg = false;
-            String output = input;
+            string output = input;
 
             if (output.Equals("0"))
             {
-                output = String.Empty;
+                output = string.Empty;
             }
             if (output.StartsWith(nfi.NegativeSign))
             {
@@ -958,14 +958,14 @@ namespace System.Numerics.Tests
             return output;
         }
 
-        private static String DecimalPointFormatter(String input, int precision, NumberFormatInfo nfi)
+        private static string DecimalPointFormatter(string input, int precision, NumberFormatInfo nfi)
         {
             bool IsNeg = false;
-            String output = input;
+            string output = input;
 
             if (output.Equals("0"))
             {
-                output = String.Empty;
+                output = string.Empty;
             }
             if (output.StartsWith(nfi.NegativeSign))
             {
@@ -994,9 +994,9 @@ namespace System.Numerics.Tests
             return output;
         }
 
-        private static String ThousandsFormatter(String input, int precision, NumberFormatInfo nfi)
+        private static string ThousandsFormatter(string input, int precision, NumberFormatInfo nfi)
         {
-            String pre = String.Empty;
+            string pre = string.Empty;
 
             if (input.StartsWith(nfi.NegativeSign))
             {
@@ -1005,23 +1005,23 @@ namespace System.Numerics.Tests
             }
             if (input.Equals("0"))
             {
-                input = String.Empty;
+                input = string.Empty;
             }
             input = ZeroString(precision - input.Length) + input;
 
-            return pre + GroupFormatDigits(input, nfi.NumberGroupSeparator, nfi.NumberGroupSizes, String.Empty, 0);
+            return pre + GroupFormatDigits(input, nfi.NumberGroupSeparator, nfi.NumberGroupSizes, string.Empty, 0);
         }
 
-        private static String ScalingFormatter(String input, int precision, NumberFormatInfo nfi)
+        private static string ScalingFormatter(string input, int precision, NumberFormatInfo nfi)
         {
             bool IsNeg = false;
-            String output = input;
-            String part = String.Empty;
+            string output = input;
+            string part = string.Empty;
             bool roundUp = false;
 
             if (output.Equals("0"))
             {
-                output = String.Empty;
+                output = string.Empty;
             }
             if (output.StartsWith(nfi.NegativeSign))
             {
@@ -1040,7 +1040,7 @@ namespace System.Numerics.Tests
 
             if (output.Length >= precision)
             {
-                part = String.Empty;
+                part = string.Empty;
                 if (output[output.Length - 3] > '4')
                 {
                     roundUp = true;
@@ -1049,9 +1049,9 @@ namespace System.Numerics.Tests
                 output = output.Substring(0, output.Length - precision);
                 if (roundUp)
                 {
-                    if (part == String.Empty)
+                    if (part == string.Empty)
                     {
-                        if (output == String.Empty)
+                        if (output == string.Empty)
                         {
                             output = "1";
                         }
@@ -1066,7 +1066,7 @@ namespace System.Numerics.Tests
                         if (part == "1" + ZeroString(precision - 3))
                         {
                             part = ZeroString(precision - 3);
-                            if (output == String.Empty)
+                            if (output == string.Empty)
                             {
                                 output = "1";
                             }
@@ -1080,7 +1080,7 @@ namespace System.Numerics.Tests
             }
             else
             {
-                output = String.Empty;
+                output = string.Empty;
             }
 
             if (part != string.Empty)
@@ -1088,7 +1088,7 @@ namespace System.Numerics.Tests
                 output = output + nfi.NumberDecimalSeparator + part;
             }
 
-            if (IsNeg && (output != String.Empty) && (output != (nfi.NumberDecimalSeparator + ZeroString(output.Length - nfi.NumberDecimalSeparator.Length))))
+            if (IsNeg && (output != string.Empty) && (output != (nfi.NumberDecimalSeparator + ZeroString(output.Length - nfi.NumberDecimalSeparator.Length))))
             {
                 output = nfi.NegativeSign + output;
             }
@@ -1096,10 +1096,10 @@ namespace System.Numerics.Tests
             return output;
         }
 
-        private static String PercentSymbolFormatter(String input, int precision, NumberFormatInfo nfi)
+        private static string PercentSymbolFormatter(string input, int precision, NumberFormatInfo nfi)
         {
             bool IsNeg = false;
-            String output = input;
+            string output = input;
 
             if (output.StartsWith(nfi.NegativeSign))
             {
@@ -1108,7 +1108,7 @@ namespace System.Numerics.Tests
             }
             if (output.Equals("0"))
             {
-                output = String.Empty;
+                output = string.Empty;
             }
             else
             {
@@ -1133,10 +1133,10 @@ namespace System.Numerics.Tests
             return output;
         }
 
-        private static String PerMilleSymbolFormatter(String input, int precision, NumberFormatInfo nfi)
+        private static string PerMilleSymbolFormatter(string input, int precision, NumberFormatInfo nfi)
         {
             bool IsNeg = false;
-            String output = input;
+            string output = input;
 
             if (output.StartsWith(nfi.NegativeSign))
             {
@@ -1145,7 +1145,7 @@ namespace System.Numerics.Tests
             }
             if (output.Equals("0"))
             {
-                output = String.Empty;
+                output = string.Empty;
             }
             else
             {
@@ -1170,14 +1170,14 @@ namespace System.Numerics.Tests
             return output;
         }
 
-        private static String ScientificFormatter(String input, int precision, NumberFormatInfo nfi)
+        private static string ScientificFormatter(string input, int precision, NumberFormatInfo nfi)
         {
             bool IsNeg = false;
-            Char[] temp = input.ToCharArray();
-            Char[] temp2;
-            String output = String.Empty;
-            String digits;
-            Char exp = 'E';
+            char[] temp = input.ToCharArray();
+            char[] temp2;
+            string output = string.Empty;
+            string digits;
+            char exp = 'E';
 
             if (precision < 0)
             {
@@ -1193,7 +1193,7 @@ namespace System.Numerics.Tests
             digits = (temp.Length - 1).ToString();
             digits = ZeroString(3 - digits.Length) + digits;
             temp2 = temp;
-            temp = new Char[precision + 2];
+            temp = new char[precision + 2];
             for (int j = 0; j < temp.Length; j++)
             {
                 if ((j < 50) && (j < temp2.Length))
@@ -1238,21 +1238,21 @@ namespace System.Numerics.Tests
             output = output + temp[0];
             if (precision != 0)
             {
-                output = output + nfi.NumberDecimalSeparator + new String(temp, 1, precision);
+                output = output + nfi.NumberDecimalSeparator + new string(temp, 1, precision);
             }
             output = output + exp + digits;
 
             return output;
         }
 
-        private static String SignedScientificFormatter(String input, int precision, NumberFormatInfo nfi)
+        private static string SignedScientificFormatter(string input, int precision, NumberFormatInfo nfi)
         {
             bool IsNeg = false;
-            Char[] temp = input.ToCharArray();
-            Char[] temp2;
-            String output = String.Empty;
-            String digits;
-            Char exp = 'E';
+            char[] temp = input.ToCharArray();
+            char[] temp2;
+            string output = string.Empty;
+            string digits;
+            char exp = 'E';
 
             if (precision < 0)
             {
@@ -1268,7 +1268,7 @@ namespace System.Numerics.Tests
             digits = (temp.Length - 1).ToString();
             digits = ZeroString(3 - digits.Length) + digits;
             temp2 = temp;
-            temp = new Char[precision + 2];
+            temp = new char[precision + 2];
             for (int j = 0; j < temp.Length; j++)
             {
                 if ((j < 50) && (j < temp2.Length))
@@ -1313,16 +1313,16 @@ namespace System.Numerics.Tests
             output = output + temp[0];
             if (precision != 0)
             {
-                output = output + nfi.NumberDecimalSeparator + new String(temp, 1, precision);
+                output = output + nfi.NumberDecimalSeparator + new string(temp, 1, precision);
             }
             output = output + exp + nfi.PositiveSign + digits;
 
             return output;
         }
 
-        private static String EmptyFormatter(String input, int precision, NumberFormatInfo nfi)
+        private static string EmptyFormatter(string input, int precision, NumberFormatInfo nfi)
         {
-            String temp = String.Empty;
+            string temp = string.Empty;
 
             if (input.StartsWith(nfi.NegativeSign))
             {
@@ -1332,16 +1332,16 @@ namespace System.Numerics.Tests
             return temp;
         }
 
-        private static StringFormatter ExtraFormatter(StringFormatter formatter, String added)
+        private static StringFormatter ExtraFormatter(StringFormatter formatter, string added)
         {
             return ExtraFormatter(formatter, added, 0);
         }
 
-        private static StringFormatter ExtraFormatter(StringFormatter formatter, String added, int placesAfter)
+        private static StringFormatter ExtraFormatter(StringFormatter formatter, string added, int placesAfter)
         {
-            StringFormatter sf = delegate (String input, int precision, NumberFormatInfo nfi)
+            StringFormatter sf = delegate (string input, int precision, NumberFormatInfo nfi)
             {
-                String temp = formatter(input, precision, nfi);
+                string temp = formatter(input, precision, nfi);
                 if (temp.Length < placesAfter)
                 {
                     placesAfter = temp.Length;
@@ -1364,9 +1364,9 @@ namespace System.Numerics.Tests
 
         private static StringFormatter CombinedFormatter(StringFormatter posFormatter, StringFormatter negFormatter, StringFormatter zeroFormatter, bool negInherited)
         {
-            StringFormatter sf = delegate (String input, int precision, NumberFormatInfo nfi)
+            StringFormatter sf = delegate (string input, int precision, NumberFormatInfo nfi)
             {
-                String temp = string.Empty;
+                string temp = string.Empty;
                 BigInteger bi = BigInteger.Parse(input);
 
                 if (bi > 0)
@@ -1391,19 +1391,19 @@ namespace System.Numerics.Tests
             return sf;
         }
 
-        private static void VerifyToString(String test, String expectedResult)
+        private static void VerifyToString(string test, string expectedResult)
         {
             VerifyToString(test, format: null, provider: null, expectError: false, expectedResult: expectedResult);
         }
 
-        private static void VerifyToString(String test, String format, String expectedResult)
+        private static void VerifyToString(string test, string format, string expectedResult)
         {
             VerifyToString(test, format: format, provider: null, expectError: false, expectedResult: expectedResult);
         }
 
-        private static void VerifyToString(String test, String format, IFormatProvider provider, bool expectError, String expectedResult)
+        private static void VerifyToString(string test, string format, IFormatProvider provider, bool expectError, string expectedResult)
         {
-            bool hasFormat = !String.IsNullOrEmpty(format);
+            bool hasFormat = !string.IsNullOrEmpty(format);
             bool hasProvider = provider != null;
             string result = null;
             
@@ -1458,10 +1458,10 @@ namespace System.Numerics.Tests
 
         static partial void VerifyTryFormat(string test, string format, IFormatProvider provider, bool expectError, string expectedResult);
 
-        private static String GetDigitSequence(int min, int max, Random random)
+        private static string GetDigitSequence(int min, int max, Random random)
         {
-            String result = String.Empty;
-            String[] digits = new String[] { "0", "1", "2", "3", "4", "5", "6", "7", "8", "9" };
+            string result = string.Empty;
+            string[] digits = new string[] { "0", "1", "2", "3", "4", "5", "6", "7", "8", "9" };
             int size = random.Next(min, max);
 
             for (int i = 0; i < size; i++)
@@ -1478,10 +1478,10 @@ namespace System.Numerics.Tests
 
             return result;
         }
-        private static String GetHexDigitSequence(int min, int max, Random random)
+        private static string GetHexDigitSequence(int min, int max, Random random)
         {
-            String result = String.Empty;
-            String[] digits = new String[] { "0", "1", "2", "3", "4", "5", "6", "7", "8", "9", "a", "b", "c", "d", "e", "f" };
+            string result = string.Empty;
+            string[] digits = new string[] { "0", "1", "2", "3", "4", "5", "6", "7", "8", "9", "a", "b", "c", "d", "e", "f" };
             int size = random.Next(min, max);
 
             for (int i = 0; i < size; i++)
@@ -1491,13 +1491,13 @@ namespace System.Numerics.Tests
 
             return result;
         }
-        private static String GetRandomInvalidFormatChar(Random random)
+        private static string GetRandomInvalidFormatChar(Random random)
         {
-            Char[] digits = new Char[] { 'C', 'c', 'D', 'd', 'E', 'e', 'F', 'f', 'G', 'g', 'N', 'n', 'P', 'p', 'X', 'x', 'R', 'r' };
-            Char result = 'C';
+            char[] digits = new char[] { 'C', 'c', 'D', 'd', 'E', 'e', 'F', 'f', 'G', 'g', 'N', 'n', 'P', 'p', 'X', 'x', 'R', 'r' };
+            char result = 'C';
             while (result == 'C')
             {
-                result = unchecked((Char)random.Next());
+                result = unchecked((char)random.Next());
                 for (int i = 0; i < digits.Length; i++)
                 {
                     if (result < 'A')
@@ -1508,17 +1508,17 @@ namespace System.Numerics.Tests
                         result = 'C';
                 }
             }
-            return new String(result, 1);
+            return new string(result, 1);
         }
 
-        private static String Fix(String input)
+        private static string Fix(string input)
         {
             return Fix(input, false);
         }
 
-        private static String Fix(String input, bool isHex)
+        private static string Fix(string input, bool isHex)
         {
-            String output = input;
+            string output = input;
 
             while (output.StartsWith("0") & (output.Length > 1))
             {
@@ -1528,7 +1528,7 @@ namespace System.Numerics.Tests
             {
                 output = ConvertHexToDecimal(output);
             }
-            List<Char> out2 = new List<Char>();
+            List<char> out2 = new List<char>();
             for (int i = 0; i < output.Length; i++)
             {
                 if ((output[i] >= '0') & (output[i] <= '9'))
@@ -1536,12 +1536,12 @@ namespace System.Numerics.Tests
                     out2.Add(output[i]);
                 }
             }
-            output = new String(out2.ToArray());
+            output = new string(out2.ToArray());
 
             return output;
         }
 
-        private static String ConvertHexToDecimal(string input)
+        private static string ConvertHexToDecimal(string input)
         {
             char[] inArr = input.ToCharArray();
             BigInteger x = 0;
@@ -1550,7 +1550,7 @@ namespace System.Numerics.Tests
             {
                 try
                 {
-                    BigInteger x2 = (Int32.Parse(new string(new char[] { inArr[i] }), NumberStyles.AllowHexSpecifier) * baseNum);
+                    BigInteger x2 = (int.Parse(new string(new char[] { inArr[i] }), NumberStyles.AllowHexSpecifier) * baseNum);
                     x = x + x2;
                 }
                 catch (FormatException)
@@ -1585,15 +1585,15 @@ namespace System.Numerics.Tests
                 }
                 number.Reverse();
             }
-            String y2 = new String(number.ToArray());
+            string y2 = new string(number.ToArray());
             return y2;
         }
 
-        private static String ConvertDecimalToHex(string input, bool upper, NumberFormatInfo nfi)
+        private static string ConvertDecimalToHex(string input, bool upper, NumberFormatInfo nfi)
         {
-            String output = string.Empty;
+            string output = string.Empty;
             BigInteger bi = BigInteger.Parse(input, nfi);
-            Byte[] bytes = bi.ToByteArray();
+            byte[] bytes = bi.ToByteArray();
             int[] chars = new int[bytes.Length * 2];
             for (int i = 0; i < bytes.Length; i++)
             {
@@ -1622,10 +1622,10 @@ namespace System.Numerics.Tests
             return output;
         }
 
-        private static String ConvertToExp(string input, int places)
+        private static string ConvertToExp(string input, int places)
         {
-            Char[] temp = input.Substring(0, places + 2).ToCharArray();
-            String ret = null;
+            char[] temp = input.Substring(0, places + 2).ToCharArray();
+            string ret = null;
             int i = places + 1;
 
             if (temp[i] >= '5')
@@ -1664,13 +1664,13 @@ namespace System.Numerics.Tests
             return ret;
         }
 
-        private static String GenerateGroups(int[] sizes, string seperator, Random random)
+        private static string GenerateGroups(int[] sizes, string seperator, Random random)
         {
             List<int> total_sizes = new List<int>();
             int total;
             int num_digits = random.Next(10, 100);
             ;
-            string digits = String.Empty;
+            string digits = string.Empty;
 
             total = 0;
             total_sizes.Add(0);
@@ -1722,9 +1722,9 @@ namespace System.Numerics.Tests
             return digits;
         }
 
-        private static String GroupFormatDigits(String input, String seperator, int[] sizes, String point, int places)
+        private static string GroupFormatDigits(string input, string seperator, int[] sizes, string point, int places)
         {
-            String output = String.Empty;
+            string output = string.Empty;
             int currentspot = input.Length - 1;
             int currentsize = 0;
             int size = 0;
@@ -1792,23 +1792,23 @@ namespace System.Numerics.Tests
             return output;
         }
 
-        private static String ZeroString(int size)
+        private static string ZeroString(int size)
         {
-            return size >= 1 ? new String('0', size) : String.Empty;
+            return size >= 1 ? new string('0', size) : string.Empty;
         }
 
-        private static String FString(int size, bool upper)
+        private static string FString(int size, bool upper)
         {
-            String ret = String.Empty;
+            string ret = string.Empty;
             if (size >= 1)
             {
                 if (upper)
                 {
-                    ret = new String('F', size);
+                    ret = new string('F', size);
                 }
                 else
                 {
-                    ret = new String('f', size);
+                    ret = new string('f', size);
                 }
             }
             return ret;

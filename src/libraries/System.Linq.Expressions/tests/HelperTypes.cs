@@ -345,14 +345,14 @@ namespace System.Linq.Expressions.Tests
         }
     }
 
-    public enum ByteEnum : byte { A = Byte.MaxValue }
-    public enum SByteEnum : sbyte { A = SByte.MaxValue }
-    public enum Int16Enum : short { A = Int16.MaxValue }
-    public enum UInt16Enum : ushort { A = UInt16.MaxValue }
-    public enum Int32Enum : int { A = Int32.MaxValue }
-    public enum UInt32Enum : uint { A = UInt32.MaxValue }
-    public enum Int64Enum : long { A = Int64.MaxValue }
-    public enum UInt64Enum : ulong { A = UInt64.MaxValue }
+    public enum ByteEnum : byte { A = byte.MaxValue }
+    public enum SByteEnum : sbyte { A = sbyte.MaxValue }
+    public enum Int16Enum : short { A = short.MaxValue }
+    public enum UInt16Enum : ushort { A = ushort.MaxValue }
+    public enum Int32Enum : int { A = int.MaxValue }
+    public enum UInt32Enum : uint { A = uint.MaxValue }
+    public enum Int64Enum : long { A = long.MaxValue }
+    public enum UInt64Enum : ulong { A = ulong.MaxValue }
 
 #if FEATURE_COMPILE
     public static class NonCSharpTypes

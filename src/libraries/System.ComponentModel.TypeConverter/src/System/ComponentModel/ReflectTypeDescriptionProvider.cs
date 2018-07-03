@@ -106,7 +106,7 @@ namespace System.ComponentModel
             //
             [typeof(bool)] = typeof(BooleanConverter),
             [typeof(byte)] = typeof(ByteConverter),
-            [typeof(SByte)] = typeof(SByteConverter),
+            [typeof(sbyte)] = typeof(SByteConverter),
             [typeof(char)] = typeof(CharConverter),
             [typeof(double)] = typeof(DoubleConverter),
             [typeof(string)] = typeof(StringConverter),
@@ -114,15 +114,15 @@ namespace System.ComponentModel
             [typeof(short)] = typeof(Int16Converter),
             [typeof(long)] = typeof(Int64Converter),
             [typeof(float)] = typeof(SingleConverter),
-            [typeof(UInt16)] = typeof(UInt16Converter),
-            [typeof(UInt32)] = typeof(UInt32Converter),
-            [typeof(UInt64)] = typeof(UInt64Converter),
+            [typeof(ushort)] = typeof(UInt16Converter),
+            [typeof(uint)] = typeof(UInt32Converter),
+            [typeof(ulong)] = typeof(UInt64Converter),
             [typeof(object)] = typeof(TypeConverter),
             [typeof(void)] = typeof(TypeConverter),
             [typeof(CultureInfo)] = typeof(CultureInfoConverter),
             [typeof(DateTime)] = typeof(DateTimeConverter),
             [typeof(DateTimeOffset)] = typeof(DateTimeOffsetConverter),
-            [typeof(Decimal)] = typeof(DecimalConverter),
+            [typeof(decimal)] = typeof(DecimalConverter),
             [typeof(TimeSpan)] = typeof(TimeSpanConverter),
             [typeof(Guid)] = typeof(GuidConverter),
             [typeof(Uri)] = typeof(UriTypeConverter),
@@ -588,7 +588,7 @@ namespace System.ComponentModel
 
             //CanExtend is expensive. We will remember results of CanExtend for the first 64 extenders and using "long canExtend" as a bit vector.
             // we want to avoid memory allocation as well so we don't use some more sophisticated data structure like an array of booleans
-            UInt64 canExtend = 0;
+            ulong canExtend = 0;
             int maxCanExtendResults = 64;
             // currentExtenders is what we intend to return. If the caller passed us
             // the return value from IExtenderListService, components will already be
@@ -620,7 +620,7 @@ namespace System.ComponentModel
                         extenderCount++;
                         // Performance:We would like to call CanExtend as little as possible therefore we remember its result
                         if (curIdx < maxCanExtendResults)
-                            canExtend |= (UInt64)1 << curIdx;
+                            canExtend |= (ulong)1 << curIdx;
                         if (!newExtenders && (idx >= existingExtenders.Length || currentExtenders[curIdx] != existingExtenders[idx++]))
                         {
                             newExtenders = true;
@@ -637,7 +637,7 @@ namespace System.ComponentModel
                     {
                         extenderCount++;
                         if (curIdx < maxCanExtendResults)
-                            canExtend |= (UInt64)1 << curIdx;
+                            canExtend |= (ulong)1 << curIdx;
                         if (!newExtenders && (idx >= existingExtenders.Length || prov != existingExtenders[idx++]))
                         {
                             newExtenders = true;
@@ -663,7 +663,7 @@ namespace System.ComponentModel
                     {
                         while (curIdx < currentExtenders.Length)
                         {
-                            if ((curIdx < maxCanExtendResults && (canExtend & ((UInt64)1 << curIdx)) != 0) ||
+                            if ((curIdx < maxCanExtendResults && (canExtend & ((ulong)1 << curIdx)) != 0) ||
                                             (curIdx >= maxCanExtendResults && currentExtenders[curIdx].CanExtend(instance)))
                             {
                                 Debug.Assert(idx < extenderCount, "There are more extenders than we expect");
@@ -679,7 +679,7 @@ namespace System.ComponentModel
                         {
                             IExtenderProvider p = component as IExtenderProvider;
 
-                            if (p != null && ((curIdx < maxCanExtendResults && (canExtend & ((UInt64)1 << curIdx)) != 0) ||
+                            if (p != null && ((curIdx < maxCanExtendResults && (canExtend & ((ulong)1 << curIdx)) != 0) ||
                                                 (curIdx >= maxCanExtendResults && p.CanExtend(instance))))
                             {
                                 Debug.Assert(idx < extenderCount, "There are more extenders than we expect");

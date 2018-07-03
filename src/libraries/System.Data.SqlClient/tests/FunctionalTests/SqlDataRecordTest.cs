@@ -1,4 +1,4 @@
-﻿// Licensed to the .NET Foundation under one or more agreements.
+// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
@@ -373,11 +373,11 @@ namespace System.Data.SqlClient.Tests
         public IEnumerator<object[]> GetEnumerator()
         {
             yield return new object[] { SqlDbType.UniqueIdentifier, Guid.NewGuid(), new Func<SqlDataRecord, object>(r => r.GetGuid(0)) };
-            yield return new object[] { SqlDbType.SmallInt, (Int16)123, new Func<SqlDataRecord, object>(r => r.GetInt16(0)) };
+            yield return new object[] { SqlDbType.SmallInt, (short)123, new Func<SqlDataRecord, object>(r => r.GetInt16(0)) };
             yield return new object[] { SqlDbType.Int, 123456, new Func<SqlDataRecord, object>(r => r.GetInt32(0)) };
-            yield return new object[] { SqlDbType.BigInt, (Int64)123456789, new Func<SqlDataRecord, object>(r => r.GetInt64(0)) };
-            yield return new object[] { SqlDbType.Float, (Double)1.2, new Func<SqlDataRecord, object>(r => r.GetDouble(0)) };
-            yield return new object[] { SqlDbType.Real, (Single)1.2, new Func<SqlDataRecord, object>(r => r.GetFloat(0)) };
+            yield return new object[] { SqlDbType.BigInt, (long)123456789, new Func<SqlDataRecord, object>(r => r.GetInt64(0)) };
+            yield return new object[] { SqlDbType.Float, (double)1.2, new Func<SqlDataRecord, object>(r => r.GetDouble(0)) };
+            yield return new object[] { SqlDbType.Real, (float)1.2, new Func<SqlDataRecord, object>(r => r.GetFloat(0)) };
             yield return new object[] { SqlDbType.Decimal, 1.2m, new Func<SqlDataRecord, object>(r => r.GetDecimal(0)) };
             yield return new object[] { SqlDbType.DateTime, DateTime.Now, new Func<SqlDataRecord, object>(r => r.GetDateTime(0)) };
             yield return new object[] { SqlDbType.DateTimeOffset, new DateTimeOffset(DateTime.Now), new Func<SqlDataRecord, object>(r => r.GetDateTimeOffset(0)) };

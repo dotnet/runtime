@@ -90,7 +90,7 @@ namespace System.Net.Http
         private TimeSpan _receiveDataTimeout = TimeSpan.FromSeconds(30);
         private int _maxResponseHeadersLength = HttpHandlerDefaults.DefaultMaxResponseHeadersLength;
         private int _maxResponseDrainSize = 64 * 1024;
-        private IDictionary<String, Object> _properties; // Only create dictionary when required.
+        private IDictionary<string, object> _properties; // Only create dictionary when required.
         private volatile bool _operationStarted;
         private volatile bool _disposed;
         private SafeWinHttpHandle _sessionHandle;
@@ -479,7 +479,7 @@ namespace System.Net.Http
             {
                 if (_properties == null)
                 {
-                    _properties = new Dictionary<String, object>();
+                    _properties = new Dictionary<string, object>();
                 }
 
                 return _properties;

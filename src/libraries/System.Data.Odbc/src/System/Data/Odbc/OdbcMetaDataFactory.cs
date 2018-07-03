@@ -248,8 +248,8 @@ namespace System.Data.Odbc
                 dataTypesRow[typeNameColumn] = getTypeInfoValues[indexTYPE_NAME];
                 dataTypesRow[SQLTypeNameColumn] = getTypeInfoValues[indexDATA_TYPE];
 
-                sqlType = (ODBC32.SQL_TYPE)(Int32)Convert.ChangeType(getTypeInfoValues[indexDATA_TYPE],
-                                                                      typeof(Int32),
+                sqlType = (ODBC32.SQL_TYPE)(int)Convert.ChangeType(getTypeInfoValues[indexDATA_TYPE],
+                                                                      typeof(int),
                                                                       (System.IFormatProvider)null);
                 // if the driver is pre version 3 and it returned the v2 SQL_DATE or SQL_TIME types they need
                 // to be mapped to thier v3 equlivants
@@ -375,25 +375,25 @@ namespace System.Data.Odbc
                 if (DBNull.Value != getTypeInfoValues[indexSEARCHABLE])
                 {
                     //Use Convert.ToInt16 instead of direct cast to short because the value will be Int32 in some cases
-                    Int16 searchableValue = Convert.ToInt16(getTypeInfoValues[indexSEARCHABLE], null);
+                    short searchableValue = Convert.ToInt16(getTypeInfoValues[indexSEARCHABLE], null);
                     switch (searchableValue)
                     {
-                        case (Int16)ODBC32.SQL_SEARCHABLE.UNSEARCHABLE:
+                        case (short)ODBC32.SQL_SEARCHABLE.UNSEARCHABLE:
                             dataTypesRow[isSearchableColumn] = false;
                             dataTypesRow[isSearchableWithLikeColumn] = false;
                             break;
 
-                        case (Int16)ODBC32.SQL_SEARCHABLE.LIKE_ONLY:
+                        case (short)ODBC32.SQL_SEARCHABLE.LIKE_ONLY:
                             dataTypesRow[isSearchableColumn] = false;
                             dataTypesRow[isSearchableWithLikeColumn] = true;
                             break;
 
-                        case (Int16)ODBC32.SQL_SEARCHABLE.ALL_EXCEPT_LIKE:
+                        case (short)ODBC32.SQL_SEARCHABLE.ALL_EXCEPT_LIKE:
                             dataTypesRow[isSearchableColumn] = true;
                             dataTypesRow[isSearchableWithLikeColumn] = false;
                             break;
 
-                        case (Int16)ODBC32.SQL_SEARCHABLE.SEARCHABLE:
+                        case (short)ODBC32.SQL_SEARCHABLE.SEARCHABLE:
                             dataTypesRow[isSearchableColumn] = true;
                             dataTypesRow[isSearchableWithLikeColumn] = true;
                             break;
@@ -451,7 +451,7 @@ namespace System.Data.Odbc
             return resultTable;
         }
 
-        private DataTable DataTableFromDataReaderProcedureColumns(IDataReader reader, string tableName, Boolean isColumn)
+        private DataTable DataTableFromDataReaderProcedureColumns(IDataReader reader, string tableName, bool isColumn)
         {
             // set up the column structure of the data table from the reader
             object[] values;
@@ -475,7 +475,7 @@ namespace System.Data.Odbc
             return resultTable;
         }
 
-        private DataTable DataTableFromDataReaderProcedures(IDataReader reader, string tableName, Int16 procedureType)
+        private DataTable DataTableFromDataReaderProcedures(IDataReader reader, string tableName, short procedureType)
         {
             // Build a DataTable from the reader
 
@@ -531,7 +531,7 @@ namespace System.Data.Odbc
         }
 
 
-        private DataTable GetColumnsCollection(String[] restrictions, OdbcConnection connection)
+        private DataTable GetColumnsCollection(string[] restrictions, OdbcConnection connection)
         {
             OdbcCommand command = null;
             OdbcDataReader dataReader = null;
@@ -541,7 +541,7 @@ namespace System.Data.Odbc
             try
             {
                 command = GetCommand(connection);
-                String[] allRestrictions = new string[columnsRestrictionsCount];
+                string[] allRestrictions = new string[columnsRestrictionsCount];
                 FillOutRestrictions(columnsRestrictionsCount, restrictions, allRestrictions, OdbcMetaDataCollectionNames.Columns);
 
                 dataReader = command.ExecuteReaderFromSQLMethod(allRestrictions, ODBC32.SQL_API.SQLCOLUMNS);
@@ -590,8 +590,8 @@ namespace System.Data.Odbc
             DataRow dataSourceInformation = dataSourceInformationTable.Rows[0];
 
             string stringValue;
-            Int16 int16Value;
-            Int32 int32Value;
+            short int16Value;
+            int int32Value;
             ODBC32.RetCode retcode;
 
             // update the catalog separator
@@ -636,19 +636,19 @@ namespace System.Data.Odbc
             if ((retcode == ODBC32.RetCode.SUCCESS) || (retcode == ODBC32.RetCode.SUCCESS_WITH_INFO))
             {
                 Common.SupportedJoinOperators supportedJoinOperators = Common.SupportedJoinOperators.None;
-                if ((int32Value & (Int32)ODBC32.SQL_OJ_CAPABILITIES.LEFT) != 0)
+                if ((int32Value & (int)ODBC32.SQL_OJ_CAPABILITIES.LEFT) != 0)
                 {
                     supportedJoinOperators = supportedJoinOperators | Common.SupportedJoinOperators.LeftOuter;
                 }
-                if ((int32Value & (Int32)ODBC32.SQL_OJ_CAPABILITIES.RIGHT) != 0)
+                if ((int32Value & (int)ODBC32.SQL_OJ_CAPABILITIES.RIGHT) != 0)
                 {
                     supportedJoinOperators = supportedJoinOperators | Common.SupportedJoinOperators.RightOuter;
                 }
-                if ((int32Value & (Int32)ODBC32.SQL_OJ_CAPABILITIES.FULL) != 0)
+                if ((int32Value & (int)ODBC32.SQL_OJ_CAPABILITIES.FULL) != 0)
                 {
                     supportedJoinOperators = supportedJoinOperators | Common.SupportedJoinOperators.FullOuter;
                 }
-                if ((int32Value & (Int32)ODBC32.SQL_OJ_CAPABILITIES.INNER) != 0)
+                if ((int32Value & (int)ODBC32.SQL_OJ_CAPABILITIES.INNER) != 0)
                 {
                     supportedJoinOperators = supportedJoinOperators | Common.SupportedJoinOperators.Inner;
                 }
@@ -664,19 +664,19 @@ namespace System.Data.Odbc
             {
                 switch (int16Value)
                 {
-                    case (Int16)ODBC32.SQL_GROUP_BY.NOT_SUPPORTED:
+                    case (short)ODBC32.SQL_GROUP_BY.NOT_SUPPORTED:
                         groupByBehavior = Common.GroupByBehavior.NotSupported;
                         break;
 
-                    case (Int16)ODBC32.SQL_GROUP_BY.GROUP_BY_EQUALS_SELECT:
+                    case (short)ODBC32.SQL_GROUP_BY.GROUP_BY_EQUALS_SELECT:
                         groupByBehavior = Common.GroupByBehavior.ExactMatch;
                         break;
 
-                    case (Int16)ODBC32.SQL_GROUP_BY.GROUP_BY_CONTAINS_SELECT:
+                    case (short)ODBC32.SQL_GROUP_BY.GROUP_BY_CONTAINS_SELECT:
                         groupByBehavior = Common.GroupByBehavior.MustContainAll;
                         break;
 
-                    case (Int16)ODBC32.SQL_GROUP_BY.NO_RELATION:
+                    case (short)ODBC32.SQL_GROUP_BY.NO_RELATION:
                         groupByBehavior = Common.GroupByBehavior.Unrelated;
                         break;
                         /* COLLATE is new in ODBC 3.0 and GroupByBehavior does not have a value for it.
@@ -697,13 +697,13 @@ namespace System.Data.Odbc
             {
                 switch (int16Value)
                 {
-                    case (Int16)ODBC32.SQL_IDENTIFIER_CASE.SENSITIVE:
+                    case (short)ODBC32.SQL_IDENTIFIER_CASE.SENSITIVE:
                         identifierCase = Common.IdentifierCase.Sensitive;
                         break;
 
-                    case (Int16)ODBC32.SQL_IDENTIFIER_CASE.UPPER:
-                    case (Int16)ODBC32.SQL_IDENTIFIER_CASE.LOWER:
-                    case (Int16)ODBC32.SQL_IDENTIFIER_CASE.MIXED:
+                    case (short)ODBC32.SQL_IDENTIFIER_CASE.UPPER:
+                    case (short)ODBC32.SQL_IDENTIFIER_CASE.LOWER:
+                    case (short)ODBC32.SQL_IDENTIFIER_CASE.MIXED:
                         identifierCase = Common.IdentifierCase.Insensitive;
                         break;
                 }
@@ -764,13 +764,13 @@ namespace System.Data.Odbc
             {
                 switch (int16Value)
                 {
-                    case (Int16)ODBC32.SQL_IDENTIFIER_CASE.SENSITIVE:
+                    case (short)ODBC32.SQL_IDENTIFIER_CASE.SENSITIVE:
                         quotedIdentifierCase = Common.IdentifierCase.Sensitive;
                         break;
 
-                    case (Int16)ODBC32.SQL_IDENTIFIER_CASE.UPPER:
-                    case (Int16)ODBC32.SQL_IDENTIFIER_CASE.LOWER:
-                    case (Int16)ODBC32.SQL_IDENTIFIER_CASE.MIXED:
+                    case (short)ODBC32.SQL_IDENTIFIER_CASE.UPPER:
+                    case (short)ODBC32.SQL_IDENTIFIER_CASE.LOWER:
+                    case (short)ODBC32.SQL_IDENTIFIER_CASE.MIXED:
                         quotedIdentifierCase = Common.IdentifierCase.Insensitive;
                         break;
                 }
@@ -783,7 +783,7 @@ namespace System.Data.Odbc
         }
 
 
-        private DataTable GetDataTypesCollection(String[] restrictions, OdbcConnection connection)
+        private DataTable GetDataTypesCollection(string[] restrictions, OdbcConnection connection)
         {
             if (ADP.IsEmptyArray(restrictions) == false)
             {
@@ -832,7 +832,7 @@ namespace System.Data.Odbc
             return dataTypesTable;
         }
 
-        private DataTable GetIndexCollection(String[] restrictions, OdbcConnection connection)
+        private DataTable GetIndexCollection(string[] restrictions, OdbcConnection connection)
         {
             OdbcCommand command = null;
             OdbcDataReader dataReader = null;
@@ -853,8 +853,8 @@ namespace System.Data.Odbc
                     throw ODBC.GetSchemaRestrictionRequired();
                 }
 
-                allRestrictions[3] = (Int16)ODBC32.SQL_INDEX.ALL;
-                allRestrictions[4] = (Int16)ODBC32.SQL_STATISTICS_RESERVED.ENSURE;
+                allRestrictions[3] = (short)ODBC32.SQL_INDEX.ALL;
+                allRestrictions[4] = (short)ODBC32.SQL_STATISTICS_RESERVED.ENSURE;
 
                 dataReader = command.ExecuteReaderFromSQLMethod(allRestrictions, ODBC32.SQL_API.SQLSTATISTICS);
 
@@ -886,7 +886,7 @@ namespace System.Data.Odbc
             return resultTable;
         }
 
-        private DataTable GetProcedureColumnsCollection(String[] restrictions, OdbcConnection connection, Boolean isColumns)
+        private DataTable GetProcedureColumnsCollection(string[] restrictions, OdbcConnection connection, bool isColumns)
         {
             OdbcCommand command = null;
             OdbcDataReader dataReader = null;
@@ -896,7 +896,7 @@ namespace System.Data.Odbc
             try
             {
                 command = GetCommand(connection);
-                String[] allRestrictions = new string[procedureColumnsRestrictionsCount];
+                string[] allRestrictions = new string[procedureColumnsRestrictionsCount];
                 FillOutRestrictions(procedureColumnsRestrictionsCount, restrictions, allRestrictions, OdbcMetaDataCollectionNames.Columns);
 
                 dataReader = command.ExecuteReaderFromSQLMethod(allRestrictions, ODBC32.SQL_API.SQLPROCEDURECOLUMNS);
@@ -929,7 +929,7 @@ namespace System.Data.Odbc
             return resultTable;
         }
 
-        private DataTable GetProceduresCollection(String[] restrictions, OdbcConnection connection)
+        private DataTable GetProceduresCollection(string[] restrictions, OdbcConnection connection)
         {
             OdbcCommand command = null;
             OdbcDataReader dataReader = null;
@@ -940,7 +940,7 @@ namespace System.Data.Odbc
             try
             {
                 command = GetCommand(connection);
-                String[] allRestrictions = new string[columnsRestrictionsCount];
+                string[] allRestrictions = new string[columnsRestrictionsCount];
                 FillOutRestrictions(columnsRestrictionsCount, restrictions, allRestrictions, OdbcMetaDataCollectionNames.Procedures);
 
 
@@ -952,21 +952,21 @@ namespace System.Data.Odbc
                 }
                 else
                 {
-                    Int16 procedureType;
+                    short procedureType;
                     if ((restrictions[indexOfProcedureType] == "SQL_PT_UNKNOWN") ||
                             (restrictions[indexOfProcedureType] == "0" /*ODBC32.SQL_PROCEDURETYPE.UNKNOWN*/))
                     {
-                        procedureType = (Int16)ODBC32.SQL_PROCEDURETYPE.UNKNOWN;
+                        procedureType = (short)ODBC32.SQL_PROCEDURETYPE.UNKNOWN;
                     }
                     else if ((restrictions[indexOfProcedureType] == "SQL_PT_PROCEDURE") ||
                              (restrictions[indexOfProcedureType] == "1" /*ODBC32.SQL_PROCEDURETYPE.PROCEDURE*/))
                     {
-                        procedureType = (Int16)ODBC32.SQL_PROCEDURETYPE.PROCEDURE;
+                        procedureType = (short)ODBC32.SQL_PROCEDURETYPE.PROCEDURE;
                     }
                     else if ((restrictions[indexOfProcedureType] == "SQL_PT_FUNCTION") ||
                              (restrictions[indexOfProcedureType] == "2" /*ODBC32.SQL_PROCEDURETYPE.FUNCTION*/))
                     {
-                        procedureType = (Int16)ODBC32.SQL_PROCEDURETYPE.FUNCTION;
+                        procedureType = (short)ODBC32.SQL_PROCEDURETYPE.FUNCTION;
                     }
                     else
                     {
@@ -1032,7 +1032,7 @@ namespace System.Data.Odbc
             return reservedWordsTable;
         }
 
-        private DataTable GetTablesCollection(String[] restrictions, OdbcConnection connection, Boolean isTables)
+        private DataTable GetTablesCollection(string[] restrictions, OdbcConnection connection, bool isTables)
         {
             OdbcCommand command = null;
             OdbcDataReader dataReader = null;
@@ -1081,12 +1081,12 @@ namespace System.Data.Odbc
             return resultTable;
         }
 
-        private Boolean IncludeIndexRow(object rowIndexName,
+        private bool IncludeIndexRow(object rowIndexName,
                                         string restrictionIndexName,
-                                        Int16 rowIndexType)
+                                        short rowIndexType)
         {
             // never include table statictics rows
-            if (rowIndexType == (Int16)ODBC32.SQL_STATISTICSTYPE.TABLE_STAT)
+            if (rowIndexType == (short)ODBC32.SQL_STATISTICSTYPE.TABLE_STAT)
             {
                 return false;
             }
@@ -1113,7 +1113,7 @@ namespace System.Data.Odbc
             return resultTable;
         }
 
-        protected override DataTable PrepareCollection(String collectionName, String[] restrictions, DbConnection connection)
+        protected override DataTable PrepareCollection(string collectionName, string[] restrictions, DbConnection connection)
         {
             DataTable resultTable = null;
             OdbcConnection odbcConnection = (OdbcConnection)connection;

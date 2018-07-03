@@ -55,7 +55,7 @@ namespace System.Security.Cryptography
         /// </summary>
         public static RSAEncryptionPadding CreateOaep(HashAlgorithmName hashAlgorithm)
         {
-            if (String.IsNullOrEmpty(hashAlgorithm.Name))
+            if (string.IsNullOrEmpty(hashAlgorithm.Name))
             {
                 throw new ArgumentException(SR.Cryptography_HashAlgorithmNameNullOrEmpty, nameof(hashAlgorithm));
             }
@@ -107,9 +107,9 @@ namespace System.Security.Cryptography
 
         public static bool operator ==(RSAEncryptionPadding left, RSAEncryptionPadding right)
         {
-            if (Object.ReferenceEquals(left, null))
+            if (object.ReferenceEquals(left, null))
             {
-                return Object.ReferenceEquals(right, null);
+                return object.ReferenceEquals(right, null);
             }
 
             return left.Equals(right);

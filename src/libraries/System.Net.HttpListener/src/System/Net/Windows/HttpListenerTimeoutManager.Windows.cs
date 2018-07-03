@@ -1,4 +1,4 @@
-﻿// Licensed to the .NET Foundation under one or more agreements.
+// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
@@ -42,7 +42,7 @@ namespace System.Net
 
         private void SetTimespanTimeout(Interop.HttpApi.HTTP_TIMEOUT_TYPE type, TimeSpan value)
         {
-            Int64 timeoutValue;
+            long timeoutValue;
 
             //
             // All timeouts are defined as USHORT in native layer (except MinSendRate, which is ULONG). Make sure that

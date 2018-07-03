@@ -20,7 +20,7 @@ namespace System.Xml.Tests
             Type t = e.GetType();
             Exception e2 = e.GetBaseException();
             int i = e.GetHashCode();
-            CError.Compare(!String.IsNullOrEmpty(e.Message), "Message");
+            CError.Compare(!string.IsNullOrEmpty(e.Message), "Message");
             string s3 = e.ToString();
         }
 

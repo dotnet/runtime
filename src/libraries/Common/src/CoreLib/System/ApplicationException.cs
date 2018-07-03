@@ -39,13 +39,13 @@ namespace System
         // message, its HRESULT set to COR_E_APPLICATION, 
         // and its ExceptionInfo reference set to null. 
         // 
-        public ApplicationException(String message)
+        public ApplicationException(string message)
             : base(message)
         {
             HResult = HResults.COR_E_APPLICATION;
         }
 
-        public ApplicationException(String message, Exception innerException)
+        public ApplicationException(string message, Exception innerException)
             : base(message, innerException)
         {
             HResult = HResults.COR_E_APPLICATION;

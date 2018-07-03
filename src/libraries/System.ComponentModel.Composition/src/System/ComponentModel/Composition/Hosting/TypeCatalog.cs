@@ -354,7 +354,7 @@ namespace System.ComponentModel.Composition.Hosting
 
         private string GetDisplayName()
         {
-            return String.Format(CultureInfo.CurrentCulture,
+            return string.Format(CultureInfo.CurrentCulture,
                                 SR.TypeCatalog_DisplayNameFormat,
                                 GetType().Name,
                                 GetTypesDisplay());

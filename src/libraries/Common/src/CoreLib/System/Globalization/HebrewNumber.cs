@@ -87,7 +87,7 @@ namespace System.Globalization
         //
         ////////////////////////////////////////////////////////////////////////////
 
-        internal static String ToString(int Number)
+        internal static string ToString(int Number)
         {
             char cTens = '\x0';
             char cUnits;               // tens and units chars

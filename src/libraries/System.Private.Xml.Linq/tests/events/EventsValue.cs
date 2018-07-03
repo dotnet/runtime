@@ -15,7 +15,7 @@ namespace CoreXml.Test.XLinq.FunctionalTests.EventsTests
         public void XTextChangeValue()
         {
             XText toChange = new XText("Original Value");
-            String newValue = "New Value";
+            string newValue = "New Value";
             XElement xElem = new XElement("root", toChange);
             XElement xElemOriginal = new XElement(xElem);
             using (UndoManager undo = new UndoManager(xElem))
@@ -41,7 +41,7 @@ namespace CoreXml.Test.XLinq.FunctionalTests.EventsTests
         public void XCDataChangeValue()
         {
             XCData toChange = new XCData("Original Value");
-            String newValue = "New Value";
+            string newValue = "New Value";
             XElement xElem = new XElement("root", toChange);
             XElement xElemOriginal = new XElement(xElem);
             using (UndoManager undo = new UndoManager(xElem))
@@ -67,7 +67,7 @@ namespace CoreXml.Test.XLinq.FunctionalTests.EventsTests
         public void XCommentChangeValue()
         {
             XComment toChange = new XComment("Original Value");
-            String newValue = "New Value";
+            string newValue = "New Value";
             XElement xElem = new XElement("root", toChange);
             XElement xElemOriginal = new XElement(xElem);
             using (UndoManager undo = new UndoManager(xElem))
@@ -93,7 +93,7 @@ namespace CoreXml.Test.XLinq.FunctionalTests.EventsTests
         public void XProcessingInstructionChangeValue()
         {
             XProcessingInstruction toChange = new XProcessingInstruction("target", "Original Value");
-            String newValue = "New Value";
+            string newValue = "New Value";
             XElement xElem = new XElement("root", toChange);
             XElement xElemOriginal = new XElement(xElem);
             using (UndoManager undo = new UndoManager(xElem))
@@ -180,7 +180,7 @@ namespace CoreXml.Test.XLinq.FunctionalTests.EventsTests
             new object[] { new XElement("root", InputSpace.GetElement(100, 10).DescendantNodes()), "newValue" }
         };
         [Theory, MemberData(nameof(ExecuteXElementVariationParams))]
-        public void ExecuteXElementVariation(XElement toChange, String newValue)
+        public void ExecuteXElementVariation(XElement toChange, string newValue)
         {
             int count = toChange.Nodes().Count();
             XElement xElem = new XElement("root", toChange);

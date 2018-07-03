@@ -12,7 +12,7 @@ namespace System.Diagnostics
     /// <summary>
     ///     Performance Counter component.
     ///     This class provides support for NT Performance counters.
-    ///     It handles both the existing counters (accesible by Perf Registry Interface)
+    ///     It handles both the existing counters (accessible by Perf Registry Interface)
     ///     and user defined (extensible) counters.
     ///     This class is a part of a larger framework, that includes the perf dll object and
     ///     perf service.
@@ -39,14 +39,14 @@ namespace System.Diagnostics
         [ObsoleteAttribute("This field has been deprecated and is not used.  Use machine.config or an application configuration file to set the size of the PerformanceCounter file mapping.")]
         public static int DefaultFileMappingSize = 524288;
 
-        private Object _instanceLockObject;
-        private Object InstanceLockObject
+        private object _instanceLockObject;
+        private object InstanceLockObject
         {
             get
             {
                 if (_instanceLockObject == null)
                 {
-                    Object o = new Object();
+                    object o = new object();
                     Interlocked.CompareExchange(ref _instanceLockObject, o, null);
                 }
                 return _instanceLockObject;

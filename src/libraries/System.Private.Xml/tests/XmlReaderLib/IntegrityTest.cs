@@ -125,32 +125,32 @@ namespace System.Xml.Tests
         [Variation("Name")]
         public int GetXmlReaderName()
         {
-            CError.Compare(DataReader.Name, String.Empty, CurVariation.Desc);
-            CError.Compare(DataReader.Name, String.Empty, CurVariation.Desc);
+            CError.Compare(DataReader.Name, string.Empty, CurVariation.Desc);
+            CError.Compare(DataReader.Name, string.Empty, CurVariation.Desc);
             return TEST_PASS;
         }
 
         [Variation("LocalName")]
         public int GetXmlReaderLocalName()
         {
-            CError.Compare(DataReader.LocalName, String.Empty, CurVariation.Desc);
-            CError.Compare(DataReader.LocalName, String.Empty, CurVariation.Desc);
+            CError.Compare(DataReader.LocalName, string.Empty, CurVariation.Desc);
+            CError.Compare(DataReader.LocalName, string.Empty, CurVariation.Desc);
             return TEST_PASS;
         }
 
         [Variation("NamespaceURI")]
         public int Namespace()
         {
-            CError.Compare(DataReader.NamespaceURI, String.Empty, CurVariation.Desc);
-            CError.Compare(DataReader.NamespaceURI, String.Empty, CurVariation.Desc);
+            CError.Compare(DataReader.NamespaceURI, string.Empty, CurVariation.Desc);
+            CError.Compare(DataReader.NamespaceURI, string.Empty, CurVariation.Desc);
             return TEST_PASS;
         }
 
         [Variation("Prefix")]
         public int Prefix()
         {
-            CError.Compare(DataReader.Prefix, String.Empty, CurVariation.Desc);
-            CError.Compare(DataReader.Prefix, String.Empty, CurVariation.Desc);
+            CError.Compare(DataReader.Prefix, string.Empty, CurVariation.Desc);
+            CError.Compare(DataReader.Prefix, string.Empty, CurVariation.Desc);
             return TEST_PASS;
         }
 
@@ -165,8 +165,8 @@ namespace System.Xml.Tests
         [Variation("Value")]
         public int GetXmlReaderValue()
         {
-            CError.Compare(DataReader.Value, String.Empty, CurVariation.Desc);
-            CError.Compare(DataReader.Value, String.Empty, CurVariation.Desc);
+            CError.Compare(DataReader.Value, string.Empty, CurVariation.Desc);
+            CError.Compare(DataReader.Value, string.Empty, CurVariation.Desc);
             return TEST_PASS;
         }
 
@@ -211,8 +211,8 @@ namespace System.Xml.Tests
         [Variation("XmlLang")]
         public int GetXmlLang()
         {
-            CError.Compare(DataReader.XmlLang, String.Empty, CurVariation.Desc);
-            CError.Compare(DataReader.XmlLang, String.Empty, CurVariation.Desc);
+            CError.Compare(DataReader.XmlLang, string.Empty, CurVariation.Desc);
+            CError.Compare(DataReader.XmlLang, string.Empty, CurVariation.Desc);
             return TEST_PASS;
         }
 
@@ -242,7 +242,7 @@ namespace System.Xml.Tests
         [Variation("GetAttribute(String.Empty)")]
         public int GetAttributeEmptyName()
         {
-            CError.Compare(DataReader.GetAttribute(String.Empty), null, "Compare the GetAttribute");
+            CError.Compare(DataReader.GetAttribute(string.Empty), null, "Compare the GetAttribute");
             return TEST_PASS;
         }
 
@@ -256,7 +256,7 @@ namespace System.Xml.Tests
         [Variation("GetAttribute(String.Empty, String.Empty)")]
         public int GetAttributeEmptyNameNamespace()
         {
-            CError.Compare(DataReader.GetAttribute(String.Empty, String.Empty), null, "Compare the GetAttribute");
+            CError.Compare(DataReader.GetAttribute(string.Empty, string.Empty), null, "Compare the GetAttribute");
             return TEST_PASS;
         }
 
@@ -448,7 +448,7 @@ namespace System.Xml.Tests
             string name = DataReader.Name;
             string value = DataReader.Value;
 
-            CError.Compare(DataReader.ReadInnerXml(), String.Empty, CurVariation.Desc);
+            CError.Compare(DataReader.ReadInnerXml(), string.Empty, CurVariation.Desc);
 
             CError.Compare(DataReader.VerifyNode(nt, name, value), "vn");
             return TEST_PASS;
@@ -461,7 +461,7 @@ namespace System.Xml.Tests
             XmlNodeType nt = DataReader.NodeType;
             string name = DataReader.Name;
             string value = DataReader.Value;
-            CError.Compare(DataReader.ReadOuterXml(), String.Empty, CurVariation.Desc);
+            CError.Compare(DataReader.ReadOuterXml(), string.Empty, CurVariation.Desc);
 
             CError.Compare(DataReader.VerifyNode(nt, name, value), "vn");
 
@@ -528,7 +528,7 @@ namespace System.Xml.Tests
             }
             else
             {
-                CError.Compare(DataReader.IsStartElement(String.Empty), false, CurVariation.Desc);
+                CError.Compare(DataReader.IsStartElement(string.Empty), false, CurVariation.Desc);
             }
             return TEST_PASS;
         }
@@ -560,7 +560,7 @@ namespace System.Xml.Tests
             }
             else
             {
-                CError.Compare(DataReader.IsStartElement(String.Empty, String.Empty), false, CurVariation.Desc);
+                CError.Compare(DataReader.IsStartElement(string.Empty, string.Empty), false, CurVariation.Desc);
             }
             return TEST_PASS;
         }
@@ -624,7 +624,7 @@ namespace System.Xml.Tests
             {
                 try
                 {
-                    DataReader.ReadStartElement(String.Empty);
+                    DataReader.ReadStartElement(string.Empty);
                 }
                 catch (XmlException)
                 {
@@ -670,7 +670,7 @@ namespace System.Xml.Tests
             {
                 try
                 {
-                    DataReader.ReadStartElement(String.Empty, String.Empty);
+                    DataReader.ReadStartElement(string.Empty, string.Empty);
                 }
                 catch (XmlException)
                 {

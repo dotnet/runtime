@@ -13,6 +13,32 @@ namespace System.Security.Cryptography.Tests.Asn1
     public static class SimpleSerialize
     {
         [Fact]
+        public static void SerializeNullAlgorithmIdentifier()
+        {
+            AlgorithmIdentifier identifier = new AlgorithmIdentifier
+            {
+                Algorithm = new Oid(null, "SHA-2-256"),
+                Parameters = new byte[] { 5, 0 },
+            };
+
+            Assert.Throws<CryptographicException>(
+                () => AsnSerializer.Serialize(identifier, AsnEncodingRules.DER));
+        }
+
+        [Fact]
+        public static void SerializeNullOidString()
+        {
+            AnyWithExpectedTag anyVal = new AnyWithExpectedTag
+            {
+                Id = null,
+                Data = "3000".HexToByteArray(),
+            };
+
+            Assert.Throws<CryptographicException>(
+                () => AsnSerializer.Serialize(anyVal, AsnEncodingRules.DER));
+        }
+
+        [Fact]
         public static void SerializeAlgorithmIdentifier()
         {
             AlgorithmIdentifier identifier = new AlgorithmIdentifier

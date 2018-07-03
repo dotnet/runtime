@@ -283,7 +283,7 @@ namespace System.Diagnostics.TraceSourceTests
             var trace = new TraceSource("TestTraceSource", SourceLevels.All);
             var listener = GetTraceListener();
             trace.Listeners.Add(listener);
-            trace.TraceData(TraceEventType.Verbose, 0, new Object());
+            trace.TraceData(TraceEventType.Verbose, 0, new object());
             Assert.Equal(1, listener.GetCallCount(Method.TraceData));
             var flushExpected = AutoFlush ? 1 : 0;
             Assert.Equal(flushExpected, listener.GetCallCount(Method.Flush));
@@ -295,7 +295,7 @@ namespace System.Diagnostics.TraceSourceTests
             var trace = new TraceSource("TestTraceSource", SourceLevels.All);
             var listener = GetTraceListener();
             trace.Listeners.Add(listener);
-            trace.TraceData(TraceEventType.Verbose, 0, new Object[0]);
+            trace.TraceData(TraceEventType.Verbose, 0, new object[0]);
             Assert.Equal(1, listener.GetCallCount(Method.TraceData));
             var flushExpected = AutoFlush ? 1 : 0;
             Assert.Equal(flushExpected, listener.GetCallCount(Method.Flush));

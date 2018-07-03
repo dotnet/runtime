@@ -9,7 +9,7 @@ namespace System.Reflection
 {
     internal static partial class RuntimeReflectionExtensions
     {
-        public static MethodInfo GetRuntimeMethod(this Type type, String name, Type[] parameters)
+        public static MethodInfo GetRuntimeMethod(this Type type, string name, Type[] parameters)
         {
             if (type == null) 
             {

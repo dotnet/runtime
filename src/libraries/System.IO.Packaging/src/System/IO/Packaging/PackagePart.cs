@@ -402,7 +402,7 @@ namespace System.IO.Packaging
         /// <exception cref="ArgumentException">If relationship is being targeted to a relationship part</exception>
         /// <exception cref="System.Xml.XmlException">If parameter "id" is not a valid Xsd Id</exception>
         /// <exception cref="System.Xml.XmlException">If an id is provided in the method, and its not unique</exception>
-        public PackageRelationship CreateRelationship(Uri targetUri, TargetMode targetMode, string relationshipType, String id)
+        public PackageRelationship CreateRelationship(Uri targetUri, TargetMode targetMode, string relationshipType, string id)
         {
             CheckInvalidState();
             _container.ThrowIfReadOnly();

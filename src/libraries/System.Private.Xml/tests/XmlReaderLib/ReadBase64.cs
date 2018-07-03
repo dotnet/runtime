@@ -284,7 +284,7 @@ namespace System.Xml.Tests
             {
                 DataReader.ReadContentAsBase64(base64, i, 2);
                 strActbase64 = (System.BitConverter.ToChar(base64, i)).ToString();
-                CError.Compare(String.Compare(strActbase64, 0, strTextBase64, i / 2, 1), 0, "Compare All Valid Base64");
+                CError.Compare(string.Compare(strActbase64, 0, strTextBase64, i / 2, 1), 0, "Compare All Valid Base64");
             }
 
             return TEST_PASS;
@@ -530,7 +530,7 @@ namespace System.Xml.Tests
             if (CheckCanReadBinaryContent()) return TEST_PASS;
 
             CError.WriteLine("ReadBase64 method... ");
-            CError.WriteLine(System.Int32.MaxValue);
+            CError.WriteLine(int.MaxValue);
 
             byte[] base64 = new byte[SIZE64];
 
@@ -803,7 +803,7 @@ namespace System.Xml.Tests
             {
                 DataReader.ReadElementContentAsBase64(base64, i, 2);
                 strActbase64 = (System.BitConverter.ToChar(base64, i)).ToString();
-                CError.Compare(String.Compare(strActbase64, 0, strTextBase64, i / 2, 1), 0, "Compare All Valid Base64");
+                CError.Compare(string.Compare(strActbase64, 0, strTextBase64, i / 2, 1), 0, "Compare All Valid Base64");
             }
 
             return TEST_PASS;
@@ -1034,7 +1034,7 @@ namespace System.Xml.Tests
             DataReader.PositionOnElement("base64");
 
             CError.WriteLine("ReadBase64 method... ");
-            CError.WriteLine(System.Int32.MaxValue);
+            CError.WriteLine(int.MaxValue);
 
             byte[] base64 = new byte[SIZE64];
 

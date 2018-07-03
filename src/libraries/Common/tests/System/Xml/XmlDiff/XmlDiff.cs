@@ -125,7 +125,7 @@ namespace System.Xml.XmlDiff
             this._SourceDoc.Option = this._XmlDiffOption;
             this._TargetDoc = new XmlDiffDocument();
             this._TargetDoc.Option = this.Option;
-            _Output = new StringBuilder(String.Empty);
+            _Output = new StringBuilder(string.Empty);
         }
 
         public bool Compare(Stream source, Stream target)
@@ -167,7 +167,7 @@ namespace System.Xml.XmlDiff
             xws.ConformanceLevel = ConformanceLevel.Auto;
             xws.CheckCharacters = false;
             _Writer = XmlWriter.Create(new StringWriter(_Output), xws);
-            _Writer.WriteStartElement(String.Empty, "Root", String.Empty);
+            _Writer.WriteStartElement(string.Empty, "Root", string.Empty);
 
             flag = CompareChildren(this._SourceDoc, this._TargetDoc);
 
@@ -221,15 +221,15 @@ namespace System.Xml.XmlDiff
                                 XmlDiffElement targetElem = targetChild as XmlDiffElement;
                                 Debug.Assert(sourceElem != null);
                                 Debug.Assert(targetElem != null);
-                                _Writer.WriteStartElement(String.Empty, "Node", String.Empty);
-                                _Writer.WriteAttributeString(String.Empty, "SourceLineNum", String.Empty, sourceElem.EndLineNumber.ToString());
-                                _Writer.WriteAttributeString(String.Empty, "SourceLinePos", String.Empty, sourceElem.EndLinePosition.ToString());
-                                _Writer.WriteAttributeString(String.Empty, "TargetLineNum", String.Empty, targetElem.EndLineNumber.ToString());
-                                _Writer.WriteAttributeString(String.Empty, "TargetLinePos", String.Empty, targetElem.EndLinePosition.ToString());
-                                _Writer.WriteStartElement(String.Empty, "Diff", String.Empty);
+                                _Writer.WriteStartElement(string.Empty, "Node", string.Empty);
+                                _Writer.WriteAttributeString(string.Empty, "SourceLineNum", string.Empty, sourceElem.EndLineNumber.ToString());
+                                _Writer.WriteAttributeString(string.Empty, "SourceLinePos", string.Empty, sourceElem.EndLinePosition.ToString());
+                                _Writer.WriteAttributeString(string.Empty, "TargetLineNum", string.Empty, targetElem.EndLineNumber.ToString());
+                                _Writer.WriteAttributeString(string.Empty, "TargetLinePos", string.Empty, targetElem.EndLinePosition.ToString());
+                                _Writer.WriteStartElement(string.Empty, "Diff", string.Empty);
                                 _Writer.WriteEndElement();
 
-                                _Writer.WriteStartElement(String.Empty, "Lexical-equal", String.Empty);
+                                _Writer.WriteStartElement(string.Empty, "Lexical-equal", string.Empty);
                                 _Writer.WriteCData("</" + sourceElem.Name + ">");
                                 _Writer.WriteEndElement();
                                 _Writer.WriteEndElement();
@@ -304,30 +304,30 @@ namespace System.Xml.XmlDiff
                                 {
                                     XmlDiffElement sourceElem = sourceChild as XmlDiffElement;
                                     XmlDiffElement targetElem = targetChild as XmlDiffElement;
-                                    _Writer.WriteStartElement(String.Empty, "Node", String.Empty);
-                                    _Writer.WriteAttributeString(String.Empty, "SourceLineNum", String.Empty, (sourceElem != null) ? sourceElem.EndLineNumber.ToString() : "-1");
-                                    _Writer.WriteAttributeString(String.Empty, "SourceLinePos", String.Empty, (sourceElem != null) ? sourceElem.EndLinePosition.ToString() : "-1");
-                                    _Writer.WriteAttributeString(String.Empty, "TargetLineNum", String.Empty, (targetElem != null) ? targetElem.EndLineNumber.ToString() : "-1");
-                                    _Writer.WriteAttributeString(String.Empty, "TargetLinePos", String.Empty, (targetElem != null) ? targetElem.EndLineNumber.ToString() : "-1");
-                                    _Writer.WriteStartElement(String.Empty, "Diff", String.Empty);
-                                    _Writer.WriteAttributeString(String.Empty, "DiffType", String.Empty, GetDiffType(result));
+                                    _Writer.WriteStartElement(string.Empty, "Node", string.Empty);
+                                    _Writer.WriteAttributeString(string.Empty, "SourceLineNum", string.Empty, (sourceElem != null) ? sourceElem.EndLineNumber.ToString() : "-1");
+                                    _Writer.WriteAttributeString(string.Empty, "SourceLinePos", string.Empty, (sourceElem != null) ? sourceElem.EndLinePosition.ToString() : "-1");
+                                    _Writer.WriteAttributeString(string.Empty, "TargetLineNum", string.Empty, (targetElem != null) ? targetElem.EndLineNumber.ToString() : "-1");
+                                    _Writer.WriteAttributeString(string.Empty, "TargetLinePos", string.Empty, (targetElem != null) ? targetElem.EndLineNumber.ToString() : "-1");
+                                    _Writer.WriteStartElement(string.Empty, "Diff", string.Empty);
+                                    _Writer.WriteAttributeString(string.Empty, "DiffType", string.Empty, GetDiffType(result));
                                     if (bSourceNonEmpElemEnd)
                                     {
-                                        _Writer.WriteStartElement(String.Empty, "File1", String.Empty);
+                                        _Writer.WriteStartElement(string.Empty, "File1", string.Empty);
                                         _Writer.WriteCData("</" + sourceElem.Name + ">");
                                         _Writer.WriteEndElement();
                                     }
 
                                     if (bTargetNonEmpElemEnd)
                                     {
-                                        _Writer.WriteStartElement(String.Empty, "File2", String.Empty);
+                                        _Writer.WriteStartElement(string.Empty, "File2", string.Empty);
                                         _Writer.WriteCData("</" + targetElem.Name + ">");
                                         _Writer.WriteEndElement();
                                     }
 
                                     _Writer.WriteEndElement();
 
-                                    _Writer.WriteStartElement(String.Empty, "Lexical-equal", String.Empty);
+                                    _Writer.WriteStartElement(string.Empty, "Lexical-equal", string.Empty);
                                     _Writer.WriteEndElement();
                                     _Writer.WriteEndElement();
                                 }
@@ -443,17 +443,17 @@ namespace System.Xml.XmlDiff
         // This function writes the result in XML format so that it can be used by other applications to display the diff
         private void WriteResult(XmlDiffNode sourceNode, XmlDiffNode targetNode, DiffType result)
         {
-            _Writer.WriteStartElement(String.Empty, "Node", String.Empty);
-            _Writer.WriteAttributeString(String.Empty, "SourceLineNum", String.Empty, (sourceNode != null) ? sourceNode.LineNumber.ToString() : "-1");
-            _Writer.WriteAttributeString(String.Empty, "SourceLinePos", String.Empty, (sourceNode != null) ? sourceNode.LinePosition.ToString() : "-1");
-            _Writer.WriteAttributeString(String.Empty, "TargetLineNum", String.Empty, (targetNode != null) ? targetNode.LineNumber.ToString() : "-1");
-            _Writer.WriteAttributeString(String.Empty, "TargetLinePos", String.Empty, (targetNode != null) ? targetNode.LinePosition.ToString() : "-1");
+            _Writer.WriteStartElement(string.Empty, "Node", string.Empty);
+            _Writer.WriteAttributeString(string.Empty, "SourceLineNum", string.Empty, (sourceNode != null) ? sourceNode.LineNumber.ToString() : "-1");
+            _Writer.WriteAttributeString(string.Empty, "SourceLinePos", string.Empty, (sourceNode != null) ? sourceNode.LinePosition.ToString() : "-1");
+            _Writer.WriteAttributeString(string.Empty, "TargetLineNum", string.Empty, (targetNode != null) ? targetNode.LineNumber.ToString() : "-1");
+            _Writer.WriteAttributeString(string.Empty, "TargetLinePos", string.Empty, (targetNode != null) ? targetNode.LinePosition.ToString() : "-1");
             if (result == DiffType.Success)
             {
-                _Writer.WriteStartElement(String.Empty, "Diff", String.Empty);
+                _Writer.WriteStartElement(string.Empty, "Diff", string.Empty);
                 _Writer.WriteEndElement();
 
-                _Writer.WriteStartElement(String.Empty, "Lexical-equal", String.Empty);
+                _Writer.WriteStartElement(string.Empty, "Lexical-equal", string.Empty);
                 if (sourceNode.NodeType == XmlDiffNodeType.CData)
                 {
                     _Writer.WriteString("<![CDATA[");
@@ -468,12 +468,12 @@ namespace System.Xml.XmlDiff
             }
             else
             {
-                _Writer.WriteStartElement(String.Empty, "Diff", String.Empty);
-                _Writer.WriteAttributeString(String.Empty, "DiffType", String.Empty, GetDiffType(result));
+                _Writer.WriteStartElement(string.Empty, "Diff", string.Empty);
+                _Writer.WriteAttributeString(string.Empty, "DiffType", string.Empty, GetDiffType(result));
 
                 if (sourceNode != null)
                 {
-                    _Writer.WriteStartElement(String.Empty, "File1", String.Empty);
+                    _Writer.WriteStartElement(string.Empty, "File1", string.Empty);
                     if (sourceNode.NodeType == XmlDiffNodeType.CData)
                     {
                         _Writer.WriteString("<![CDATA[");
@@ -490,7 +490,7 @@ namespace System.Xml.XmlDiff
 
                 if (targetNode != null)
                 {
-                    _Writer.WriteStartElement(String.Empty, "File2", String.Empty);
+                    _Writer.WriteStartElement(string.Empty, "File2", string.Empty);
                     if (targetNode.NodeType == XmlDiffNodeType.CData)
                     {
                         _Writer.WriteString("<![CDATA[");
@@ -506,7 +506,7 @@ namespace System.Xml.XmlDiff
 
                 _Writer.WriteEndElement();
 
-                _Writer.WriteStartElement(String.Empty, "Lexical-equal", String.Empty);
+                _Writer.WriteStartElement(string.Empty, "Lexical-equal", string.Empty);
                 _Writer.WriteEndElement();
             }
             _Writer.WriteEndElement();
@@ -514,7 +514,7 @@ namespace System.Xml.XmlDiff
 
         // This is a helper function for WriteResult.  It gets the Xml representation of the different node we wants
         // to write out and all it's children.
-        private String GetNodeText(XmlDiffNode diffNode, DiffType result)
+        private string GetNodeText(XmlDiffNode diffNode, DiffType result)
         {
             string text = string.Empty;
             switch (diffNode.NodeType)
@@ -606,12 +606,12 @@ namespace System.Xml.XmlDiff
             writer.Dispose();
         }
 
-        private String GetDiffType(DiffType type)
+        private string GetDiffType(DiffType type)
         {
             switch (type)
             {
                 case DiffType.None:
-                    return String.Empty;
+                    return string.Empty;
                 case DiffType.Element:
                     return "1";
                 case DiffType.Whitespace:
@@ -637,7 +637,7 @@ namespace System.Xml.XmlDiff
                 case DiffType.CData:
                     return "12";
                 default:
-                    return String.Empty;
+                    return string.Empty;
             }
         }
     }

@@ -21,7 +21,7 @@ namespace System.Diagnostics.TraceSourceTests
                 AssertUiEnabled = false;
             }
 
-            public String Output
+            public string Output
             {
                 get { return _writer.ToString(); }
             }
@@ -113,7 +113,7 @@ namespace System.Diagnostics.TraceSourceTests
         public void WriteLongMessage()
         {
             var listener = new DefaultTraceListener();
-            var longString = new String('a', 0x40000);
+            var longString = new string('a', 0x40000);
             listener.Write(longString);
             // nothing to assert, the output is written to Debug.Write
             // this simply provides code-coverage

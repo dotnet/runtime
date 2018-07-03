@@ -241,7 +241,7 @@ namespace System.Threading
             public TimeoutTracker(TimeSpan timeout)
             {
                 long ltm = (long)timeout.TotalMilliseconds;
-                if (ltm < -1 || ltm > (long)Int32.MaxValue)
+                if (ltm < -1 || ltm > (long)int.MaxValue)
                     throw new ArgumentOutOfRangeException(nameof(timeout));
                 _total = (int)ltm;
                 if (_total != -1 && _total != 0)

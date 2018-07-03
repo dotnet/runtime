@@ -16,13 +16,13 @@ namespace System
             HResult = HResults.COR_E_MISSINGMEMBER;
         }
 
-        public MissingMemberException(String message)
+        public MissingMemberException(string message)
             : base(message)
         {
             HResult = HResults.COR_E_MISSINGMEMBER;
         }
 
-        public MissingMemberException(String message, Exception inner)
+        public MissingMemberException(string message, Exception inner)
             : base(message, inner)
         {
             HResult = HResults.COR_E_MISSINGMEMBER;

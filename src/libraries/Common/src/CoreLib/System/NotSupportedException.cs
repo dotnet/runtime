@@ -25,13 +25,13 @@ namespace System
             HResult = HResults.COR_E_NOTSUPPORTED;
         }
 
-        public NotSupportedException(String message)
+        public NotSupportedException(string message)
             : base(message)
         {
             HResult = HResults.COR_E_NOTSUPPORTED;
         }
 
-        public NotSupportedException(String message, Exception innerException)
+        public NotSupportedException(string message, Exception innerException)
             : base(message, innerException)
         {
             HResult = HResults.COR_E_NOTSUPPORTED;

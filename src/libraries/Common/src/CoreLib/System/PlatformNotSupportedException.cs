@@ -25,13 +25,13 @@ namespace System
             HResult = HResults.COR_E_PLATFORMNOTSUPPORTED;
         }
 
-        public PlatformNotSupportedException(String message)
+        public PlatformNotSupportedException(string message)
             : base(message)
         {
             HResult = HResults.COR_E_PLATFORMNOTSUPPORTED;
         }
 
-        public PlatformNotSupportedException(String message, Exception inner)
+        public PlatformNotSupportedException(string message, Exception inner)
             : base(message, inner)
         {
             HResult = HResults.COR_E_PLATFORMNOTSUPPORTED;

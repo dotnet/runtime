@@ -337,7 +337,7 @@ namespace System.DirectoryServices.AccountManagement
                         p.GetChangeStatusForProperty(PropertyNames.AcctInfoExpiredAccount))
                 {
                     throw new InvalidOperationException(
-                                       String.Format(
+                                       string.Format(
                                            CultureInfo.CurrentCulture,
                                            SR.StoreCtxMultipleFiltersForPropertyUnsupported,
                                            PropertyNamesExternal.GetExternalForm(ExpirationDateFilter.PropertyNameStatic)));
@@ -439,7 +439,7 @@ namespace System.DirectoryServices.AccountManagement
                         else
                         {
                             // Internal error.  Didn't match either the known multivalued or scalar cases.
-                            Debug.Fail(String.Format(
+                            Debug.Fail(string.Format(
                                                 CultureInfo.CurrentCulture,
                                                 "StoreCtx.BuildFilterSet: fell off end looking for {0} of type {1}",
                                                 propertyName,

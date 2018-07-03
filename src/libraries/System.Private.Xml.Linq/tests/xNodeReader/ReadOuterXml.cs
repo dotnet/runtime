@@ -67,7 +67,7 @@ namespace CoreXml.Test.XLinq
                     XmlReader DataReader = GetReader();//GetReader(pGenericXml);
                     PositionOnElement(DataReader, strElem);
                     TestLog.Compare(DataReader.ReadOuterXml(), strOuterXml, "outer");
-                    TestLog.Compare(VerifyNode(DataReader, XmlNodeType.Text, String.Empty, "\n"), true, "vn2");
+                    TestLog.Compare(VerifyNode(DataReader, XmlNodeType.Text, string.Empty, "\n"), true, "vn2");
                 }
 
                 void TestOuterOnElement(string strElem, string strOuterXml, string strNextElemName, bool bWhitespace)
@@ -75,7 +75,7 @@ namespace CoreXml.Test.XLinq
                     XmlReader DataReader = GetReader();//GetReader(pGenericXml);
                     PositionOnElement(DataReader, strElem);
                     TestLog.Compare(DataReader.ReadOuterXml(), strOuterXml, "outer");
-                    TestLog.Compare(VerifyNode(DataReader, XmlNodeType.Element, strNextElemName, String.Empty), true, "vn2");
+                    TestLog.Compare(VerifyNode(DataReader, XmlNodeType.Element, strNextElemName, string.Empty), true, "vn2");
                 }
 
                 void TestOuterOnAttribute(string strElem, string strName, string strValue)
@@ -83,7 +83,7 @@ namespace CoreXml.Test.XLinq
                     XmlReader DataReader = GetReader();//GetReader(pGenericXml);
                     PositionOnElement(DataReader, strElem);
                     DataReader.MoveToAttribute(DataReader.AttributeCount / 2);
-                    string strExpected = String.Format("{0}=\"{1}\"", strName, strValue);
+                    string strExpected = string.Format("{0}=\"{1}\"", strName, strValue);
                     TestLog.Compare(DataReader.ReadOuterXml(), strExpected, "outer");
                     TestLog.Compare(VerifyNode(DataReader, XmlNodeType.Attribute, strName, strValue), true, "vn");
                 }
@@ -99,7 +99,7 @@ namespace CoreXml.Test.XLinq
                     string expValue = DataReader.Value;
 
                     PositionOnNodeType(DataReader, nt);
-                    TestLog.Compare(DataReader.ReadOuterXml(), String.Empty, "outer");
+                    TestLog.Compare(DataReader.ReadOuterXml(), string.Empty, "outer");
                     TestLog.Compare(VerifyNode(DataReader, expNt, expName, expValue), true, "vn");
                 }
 
@@ -220,8 +220,8 @@ namespace CoreXml.Test.XLinq
                             throw new TestException(TestResult.Failed, "");
                         }
                         catch (ArgumentOutOfRangeException) { }
-                        Assert.True(TestLog.Compare(DataReader.ReadOuterXml(), String.Empty, "outer"));
-                        Assert.True((DataReader.NodeType != XmlNodeType.Attribute) || (DataReader.Name != String.Empty) || (DataReader.Value != "UTF-8"));
+                        Assert.True(TestLog.Compare(DataReader.ReadOuterXml(), string.Empty, "outer"));
+                        Assert.True((DataReader.NodeType != XmlNodeType.Attribute) || (DataReader.Name != string.Empty) || (DataReader.Value != "UTF-8"));
                     }
                 }
 
@@ -234,7 +234,7 @@ namespace CoreXml.Test.XLinq
                     PositionOnElement(DataReader, s_ENT1);
 
                     TestLog.Compare(DataReader.ReadOuterXml(), strExpected, "outer");
-                    TestLog.Compare(VerifyNode(DataReader, XmlNodeType.Element, s_NEXT6, String.Empty), true, "vn");
+                    TestLog.Compare(VerifyNode(DataReader, XmlNodeType.Element, s_NEXT6, string.Empty), true, "vn");
                 }
 
                 //[Variation("ReadOuterXml on attribute with entities, EntityHandling = ExpandCharEntites")]
@@ -251,7 +251,7 @@ namespace CoreXml.Test.XLinq
                 //[Variation("One large element")]
                 public void TestTextReadOuterXml29()
                 {
-                    String strp = "a                                                             ";
+                    string strp = "a                                                             ";
                     strp += strp;
                     strp += strp;
                     strp += strp;

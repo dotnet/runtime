@@ -43,7 +43,7 @@ namespace System.Xml
         public string Encoding
         {
             get { return _encoding; }
-            set { _encoding = ((value == null) ? String.Empty : value); }
+            set { _encoding = ((value == null) ? string.Empty : value); }
         }
 
         // Specifies the value of the standalone attribute.
@@ -53,7 +53,7 @@ namespace System.Xml
             set
             {
                 if (value == null)
-                    _standalone = String.Empty;
+                    _standalone = string.Empty;
                 else if (value.Length == 0 || value == YES || value == NO)
                     _standalone = value;
                 else
@@ -61,7 +61,7 @@ namespace System.Xml
             }
         }
 
-        public override String Value
+        public override string Value
         {
             get { return InnerText; }
             set { InnerText = value; }
@@ -128,7 +128,7 @@ namespace System.Xml
         //override methods and properties from XmlNode
 
         // Gets the name of the node.
-        public override String Name
+        public override string Name
         {
             get
             {

@@ -6,8 +6,4 @@
 
 #include "pal_compiler.h"
 
-BEGIN_EXTERN_C
-
 DLLEXPORT int64_t SystemNative_GetSystemTimeAsTicks(void);
-
-END_EXTERN_C

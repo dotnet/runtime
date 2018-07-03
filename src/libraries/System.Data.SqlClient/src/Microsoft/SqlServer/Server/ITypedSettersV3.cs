@@ -32,10 +32,10 @@ namespace Microsoft.SqlServer.Server
         void SetDBNull(SmiEventSink sink, int ordinal);
 
         //  valid for SqlDbType.Bit
-        void SetBoolean(SmiEventSink sink, int ordinal, Boolean value);
+        void SetBoolean(SmiEventSink sink, int ordinal, bool value);
 
         //  valid for SqlDbType.TinyInt
-        void SetByte(SmiEventSink sink, int ordinal, Byte value);
+        void SetByte(SmiEventSink sink, int ordinal, byte value);
 
         // Semantics for SetBytes are to modify existing value, not overwrite
         //  Use in combination with SetLength to ensure overwriting when necessary
@@ -55,19 +55,19 @@ namespace Microsoft.SqlServer.Server
         void SetString(SmiEventSink sink, int ordinal, string value, int offset, int length);
 
         // valid for SqlDbType.SmallInt
-        void SetInt16(SmiEventSink sink, int ordinal, Int16 value);
+        void SetInt16(SmiEventSink sink, int ordinal, short value);
 
         // valid for SqlDbType.Int
-        void SetInt32(SmiEventSink sink, int ordinal, Int32 value);
+        void SetInt32(SmiEventSink sink, int ordinal, int value);
 
         // valid for SqlDbType.BigInt, SqlDbType.Money, SqlDbType.SmallMoney
-        void SetInt64(SmiEventSink sink, int ordinal, Int64 value);
+        void SetInt64(SmiEventSink sink, int ordinal, long value);
 
         // valid for SqlDbType.Real
-        void SetSingle(SmiEventSink sink, int ordinal, Single value);
+        void SetSingle(SmiEventSink sink, int ordinal, float value);
 
         // valid for SqlDbType.Float
-        void SetDouble(SmiEventSink sink, int ordinal, Double value);
+        void SetDouble(SmiEventSink sink, int ordinal, double value);
 
         // valid for SqlDbType.Numeric (uses SqlDecimal since Decimal cannot hold full range)
         void SetSqlDecimal(SmiEventSink sink, int ordinal, SqlDecimal value);

@@ -106,7 +106,7 @@ namespace CoreXml.Test.XLinq
                             TestLog.Compare(DataReader.Prefix, "bar", "Compare Prefix");
                         }
                     }
-                    TestLog.Compare(DataReader.NamespaceURI, String.Empty, "Compare Namespace with String.Empty");
+                    TestLog.Compare(DataReader.NamespaceURI, string.Empty, "Compare Namespace with String.Empty");
                 }
 
                 //[Variation("Namespace test immediately outside the Namespace scope")]
@@ -115,10 +115,10 @@ namespace CoreXml.Test.XLinq
                     XmlReader DataReader = GetReader();
 
                     PositionOnElement(DataReader, pNONAMESPACE);
-                    TestLog.Compare(DataReader.NamespaceURI, String.Empty, "Compare Namespace with EmptyString");
+                    TestLog.Compare(DataReader.NamespaceURI, string.Empty, "Compare Namespace with EmptyString");
                     TestLog.Compare(DataReader.Name, pNONAMESPACE, "Compare Name");
                     TestLog.Compare(DataReader.LocalName, pNONAMESPACE, "Compare LocalName");
-                    TestLog.Compare(DataReader.Prefix, String.Empty, "Compare Prefix");
+                    TestLog.Compare(DataReader.Prefix, string.Empty, "Compare Prefix");
                 }
 
                 //[Variation("Namespace test Attribute should has no default namespace", Priority = 0)]
@@ -129,7 +129,7 @@ namespace CoreXml.Test.XLinq
                     TestLog.Compare(DataReader.NamespaceURI, "1000", "Compare Namespace for Element");
                     if (DataReader.MoveToFirstAttribute())
                     {
-                        TestLog.Compare(DataReader.NamespaceURI, String.Empty, "Compare Namespace for Attr");
+                        TestLog.Compare(DataReader.NamespaceURI, string.Empty, "Compare Namespace for Attr");
                     }
                 }
 
@@ -169,14 +169,14 @@ namespace CoreXml.Test.XLinq
                                 TestLog.Compare(DataReader.NamespaceURI, "1", "Compare Namespace");
                                 TestLog.Compare(DataReader.Name, "check", "Compare Name");
                                 TestLog.Compare(DataReader.LocalName, "check", "Compare LocalName");
-                                TestLog.Compare(DataReader.Prefix, String.Empty, "Compare Prefix");
+                                TestLog.Compare(DataReader.Prefix, string.Empty, "Compare Prefix");
                             }
                             else if (DataReader.LocalName == "check1")
                             {
                                 TestLog.Compare(DataReader.NamespaceURI, "1", "Compare Namespace");
                                 TestLog.Compare(DataReader.Name, "check1", "Compare Name");
                                 TestLog.Compare(DataReader.LocalName, "check1", "Compare LocalName");
-                                TestLog.Compare(DataReader.Prefix, String.Empty, "Compare Prefix");
+                                TestLog.Compare(DataReader.Prefix, string.Empty, "Compare Prefix");
                             }
                             else if (DataReader.LocalName == "check8")
                             {
@@ -190,7 +190,7 @@ namespace CoreXml.Test.XLinq
                                 TestLog.Compare(DataReader.NamespaceURI, "100", "Compare Namespace");
                                 TestLog.Compare(DataReader.Name, "check100", "Compare Name");
                                 TestLog.Compare(DataReader.LocalName, "check100", "Compare LocalName");
-                                TestLog.Compare(DataReader.Prefix, String.Empty, "Compare Prefix");
+                                TestLog.Compare(DataReader.Prefix, string.Empty, "Compare Prefix");
                             }
                             else if (DataReader.LocalName == "check5")
                             {
@@ -204,14 +204,14 @@ namespace CoreXml.Test.XLinq
                                 TestLog.Compare(DataReader.NamespaceURI, "14", "Compare Namespace");
                                 TestLog.Compare(DataReader.Name, "check14", "Compare Name");
                                 TestLog.Compare(DataReader.LocalName, "check14", "Compare LocalName");
-                                TestLog.Compare(DataReader.Prefix, String.Empty, "Compare Prefix");
+                                TestLog.Compare(DataReader.Prefix, string.Empty, "Compare Prefix");
                             }
                             else if (DataReader.LocalName == "a13")
                             {
                                 TestLog.Compare(DataReader.NamespaceURI, "1", "Compare Namespace1");
                                 TestLog.Compare(DataReader.Name, "a13", "Compare Name1");
                                 TestLog.Compare(DataReader.LocalName, "a13", "Compare LocalName1");
-                                TestLog.Compare(DataReader.Prefix, String.Empty, "Compare Prefix1");
+                                TestLog.Compare(DataReader.Prefix, string.Empty, "Compare Prefix1");
                                 DataReader.MoveToFirstAttribute();
                                 TestLog.Compare(DataReader.NamespaceURI, "13", "Compare Namespace2");
                                 TestLog.Compare(DataReader.Name, "a:check", "Compare Name2");
@@ -254,7 +254,7 @@ namespace CoreXml.Test.XLinq
                     PositionOnElement(DataReader, "EMPTY_NAMESPACE1");
                     do
                     {
-                        TestLog.Compare(DataReader.LookupNamespace(String.Empty), "14", "Compare LookupNamespace");
+                        TestLog.Compare(DataReader.LookupNamespace(string.Empty), "14", "Compare LookupNamespace");
                     } while (DataReader.MoveToNextAttribute() == true);
                 }
 
@@ -330,7 +330,7 @@ namespace CoreXml.Test.XLinq
 
                 void CompareAllNS(XmlReader DataReader, string strDef, string strA, string strB, string strC, string strD, string strE, string strF, string strG, string strH)
                 {
-                    TestLog.Compare(DataReader.LookupNamespace(String.Empty), strDef, "Compare LookupNamespace-default");
+                    TestLog.Compare(DataReader.LookupNamespace(string.Empty), strDef, "Compare LookupNamespace-default");
                     TestLog.Compare(DataReader.LookupNamespace("a"), strA, "Compare LookupNamespace-a");
                     TestLog.Compare(DataReader.LookupNamespace("b"), strB, "Compare LookupNamespace-b");
                     TestLog.Compare(DataReader.LookupNamespace("c"), strC, "Compare LookupNamespace-c");
@@ -1005,7 +1005,7 @@ namespace CoreXml.Test.XLinq
                     while (true == DataReader.Read())
                     {
                         if (DataReader.Name == "XMLLANG0") break;
-                        TestLog.Compare(DataReader.XmlLang, String.Empty, "Compare XmlLang with String.Empty");
+                        TestLog.Compare(DataReader.XmlLang, string.Empty, "Compare XmlLang with String.Empty");
                     }
 
                     while (true == DataReader.Read())
@@ -1053,7 +1053,7 @@ namespace CoreXml.Test.XLinq
                 {
                     XmlReader DataReader = GetReader();
                     PositionOnElement(DataReader, "NOXMLLANG");
-                    TestLog.Compare(DataReader.XmlLang, String.Empty, "Compare XmlLang with EmptyString");
+                    TestLog.Compare(DataReader.XmlLang, string.Empty, "Compare XmlLang with EmptyString");
                 }
 
                 //[Variation("XmlLang test with multiple XmlLang declaration")]
@@ -1128,7 +1128,7 @@ namespace CoreXml.Test.XLinq
 
                     for (int i = 0; i < aValidLang.Length; i++)
                     {
-                        string strxml = String.Format("<ROOT xml:lang='{0}'/>", aValidLang[i]);
+                        string strxml = string.Format("<ROOT xml:lang='{0}'/>", aValidLang[i]);
 
                         XmlReader DataReader = GetReaderStr(strxml);
 
@@ -1143,8 +1143,8 @@ namespace CoreXml.Test.XLinq
                 {
                     bool bPassed = false;
                     XmlNodeType actNodeType;
-                    String strActName;
-                    String strActValue;
+                    string strActName;
+                    string strActValue;
 
                     XmlReader DataReader = GetReader();
                     PositionOnNodeType(DataReader, testNodeType);
@@ -1171,7 +1171,7 @@ namespace CoreXml.Test.XLinq
 
                     DataReader.Skip();
 
-                    bPassed = VerifyNode(DataReader, XmlNodeType.Element, "AFTERSKIP1", String.Empty);
+                    bPassed = VerifyNode(DataReader, XmlNodeType.Element, "AFTERSKIP1", string.Empty);
 
                     BoolToLTMResult(bPassed);
                 }
@@ -1186,7 +1186,7 @@ namespace CoreXml.Test.XLinq
 
                     DataReader.Skip();
 
-                    bPassed = VerifyNode(DataReader, XmlNodeType.Element, "AFTERSKIP2", String.Empty);
+                    bPassed = VerifyNode(DataReader, XmlNodeType.Element, "AFTERSKIP2", string.Empty);
 
                     BoolToLTMResult(bPassed);
                 }
@@ -1201,7 +1201,7 @@ namespace CoreXml.Test.XLinq
 
                     DataReader.Skip();
 
-                    bPassed = VerifyNode(DataReader, XmlNodeType.Element, "AFTERSKIP3", String.Empty);
+                    bPassed = VerifyNode(DataReader, XmlNodeType.Element, "AFTERSKIP3", string.Empty);
 
                     BoolToLTMResult(bPassed);
                 }
@@ -1219,7 +1219,7 @@ namespace CoreXml.Test.XLinq
 
                     DataReader.Skip();
 
-                    bPassed = VerifyNode(DataReader, XmlNodeType.EndElement, "ELEM2", String.Empty) && bPassed;
+                    bPassed = VerifyNode(DataReader, XmlNodeType.EndElement, "ELEM2", string.Empty) && bPassed;
 
                     BoolToLTMResult(bPassed);
                 }
@@ -1245,7 +1245,7 @@ namespace CoreXml.Test.XLinq
 
                     DataReader.Skip();
 
-                    bPassed = VerifyNode(DataReader, XmlNodeType.Element, "ELEM3", String.Empty) && bPassed;
+                    bPassed = VerifyNode(DataReader, XmlNodeType.Element, "ELEM3", string.Empty) && bPassed;
 
                     BoolToLTMResult(bPassed);
                 }
@@ -1261,7 +1261,7 @@ namespace CoreXml.Test.XLinq
 
                     DataReader.Skip();
 
-                    bPassed = VerifyNode(DataReader, XmlNodeType.Element, "ENTITY2", String.Empty) && bPassed;
+                    bPassed = VerifyNode(DataReader, XmlNodeType.Element, "ENTITY2", string.Empty) && bPassed;
 
                     BoolToLTMResult(bPassed);
                 }
@@ -1280,7 +1280,7 @@ namespace CoreXml.Test.XLinq
 
                     DataReader.Skip();
 
-                    bPassed = VerifyNode(DataReader, XmlNodeType.Element, "ENTITY2", String.Empty) && bPassed;
+                    bPassed = VerifyNode(DataReader, XmlNodeType.Element, "ENTITY2", string.Empty) && bPassed;
 
                     BoolToLTMResult(bPassed);
                 }
@@ -1327,7 +1327,7 @@ namespace CoreXml.Test.XLinq
 
                     DataReader.Skip();
 
-                    bPassed = VerifyNode(DataReader, XmlNodeType.None, String.Empty, String.Empty);
+                    bPassed = VerifyNode(DataReader, XmlNodeType.None, string.Empty, string.Empty);
 
                     BoolToLTMResult(bPassed);
                 }
@@ -1383,7 +1383,7 @@ namespace CoreXml.Test.XLinq
                     bool bPassed = false;
                     XmlReader DataReader = GetReader();
                     PositionOnNodeType(DataReader, XmlNodeType.Element);
-                    bPassed = TestLog.Equals(DataReader.BaseURI, String.Empty, Variation.Desc);
+                    bPassed = TestLog.Equals(DataReader.BaseURI, string.Empty, Variation.Desc);
                     BoolToLTMResult(bPassed);
                 }
 
@@ -1393,7 +1393,7 @@ namespace CoreXml.Test.XLinq
                     bool bPassed = false;
                     XmlReader DataReader = GetReader();
                     PositionOnNodeType(DataReader, XmlNodeType.Attribute);
-                    bPassed = TestLog.Equals(DataReader.BaseURI, String.Empty, Variation.Desc);
+                    bPassed = TestLog.Equals(DataReader.BaseURI, string.Empty, Variation.Desc);
                     BoolToLTMResult(bPassed);
                 }
 
@@ -1403,7 +1403,7 @@ namespace CoreXml.Test.XLinq
                     bool bPassed = false;
                     XmlReader DataReader = GetReader();
                     PositionOnNodeType(DataReader, XmlNodeType.Text);
-                    bPassed = TestLog.Equals(DataReader.BaseURI, String.Empty, Variation.Desc);
+                    bPassed = TestLog.Equals(DataReader.BaseURI, string.Empty, Variation.Desc);
                     BoolToLTMResult(bPassed);
                 }
 
@@ -1413,7 +1413,7 @@ namespace CoreXml.Test.XLinq
                     XmlReader DataReader = GetReader();
                     bool bPassed = false;
                     PositionOnNodeType(DataReader, XmlNodeType.CDATA);
-                    bPassed = TestLog.Equals(DataReader.BaseURI, String.Empty, Variation.Desc);
+                    bPassed = TestLog.Equals(DataReader.BaseURI, string.Empty, Variation.Desc);
                     BoolToLTMResult(bPassed);
                 }
 
@@ -1423,7 +1423,7 @@ namespace CoreXml.Test.XLinq
                     bool bPassed = false;
                     XmlReader DataReader = GetReader();
                     PositionOnNodeType(DataReader, XmlNodeType.ProcessingInstruction);
-                    bPassed = TestLog.Equals(DataReader.BaseURI, String.Empty, Variation.Desc);
+                    bPassed = TestLog.Equals(DataReader.BaseURI, string.Empty, Variation.Desc);
                     BoolToLTMResult(bPassed);
                 }
 
@@ -1433,7 +1433,7 @@ namespace CoreXml.Test.XLinq
                     bool bPassed = false;
                     XmlReader DataReader = GetReader();
                     PositionOnNodeType(DataReader, XmlNodeType.Comment);
-                    bPassed = TestLog.Equals(DataReader.BaseURI, String.Empty, Variation.Desc);
+                    bPassed = TestLog.Equals(DataReader.BaseURI, string.Empty, Variation.Desc);
                     BoolToLTMResult(bPassed);
                 }
 
@@ -1443,7 +1443,7 @@ namespace CoreXml.Test.XLinq
                     bool bPassed = false;
                     XmlReader DataReader = GetReader();
                     PositionOnNodeType(DataReader, XmlNodeType.Whitespace);
-                    bPassed = TestLog.Equals(DataReader.BaseURI, String.Empty, Variation.Desc);
+                    bPassed = TestLog.Equals(DataReader.BaseURI, string.Empty, Variation.Desc);
                     BoolToLTMResult(bPassed);
                 }
 
@@ -1453,7 +1453,7 @@ namespace CoreXml.Test.XLinq
                     bool bPassed = false;
                     XmlReader DataReader = GetReader();
                     PositionOnNodeType(DataReader, XmlNodeType.EndElement);
-                    bPassed = TestLog.Equals(DataReader.BaseURI, String.Empty, Variation.Desc);
+                    bPassed = TestLog.Equals(DataReader.BaseURI, string.Empty, Variation.Desc);
                     BoolToLTMResult(bPassed);
                 }
 
@@ -1464,9 +1464,9 @@ namespace CoreXml.Test.XLinq
                     XmlReader DataReader = GetReader();
                     PositionOnElement(DataReader, "ENTITY5");
                     DataReader.Read();
-                    bPassed = TestLog.Equals(DataReader.BaseURI, String.Empty, "Before ResolveEntity");
-                    bPassed = VerifyNode(DataReader, XmlNodeType.Text, String.Empty, ST_GEN_ENT_VALUE) && bPassed;
-                    bPassed = TestLog.Equals(DataReader.BaseURI, String.Empty, "After ResolveEntity");
+                    bPassed = TestLog.Equals(DataReader.BaseURI, string.Empty, "Before ResolveEntity");
+                    bPassed = VerifyNode(DataReader, XmlNodeType.Text, string.Empty, ST_GEN_ENT_VALUE) && bPassed;
+                    bPassed = TestLog.Equals(DataReader.BaseURI, string.Empty, "After ResolveEntity");
                     BoolToLTMResult(bPassed);
                 }
             }

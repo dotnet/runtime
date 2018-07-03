@@ -25,7 +25,7 @@ namespace System.Xml.Tests
         public void v1()
         {
             XmlSchemaSet sc = new XmlSchemaSet();
-            Assert.Equal(sc.Contains((String)null), false);
+            Assert.Equal(sc.Contains((string)null), false);
 
             return;
         }

@@ -62,7 +62,7 @@ namespace Properties {
         }
         
         /// <summary>
-        ///   Looks up a localized string similar to This manifest is discovered by one of the projection tests. Do not delete!.
+        ///   Looks up a localized string similar to This manifest is discovered by the CustomAssemblyTests.GetManifestResourceInfoTest. Do not delete!.
         /// </summary>
         internal static string Reason {
             get {

@@ -1,4 +1,4 @@
-﻿// Licensed to the .NET Foundation under one or more agreements.
+// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
@@ -114,16 +114,16 @@ namespace SerializationTestTypes
             //Fail if only one of the objects is null
             if ((null == originalData) != (null == deserializedData))
             {
-                String message = String.Format("Comparision failed: Original data is {0}, deserialized data is {1}",
+                string message = string.Format("Comparision failed: Original data is {0}, deserialized data is {1}",
                     originalData == null ? "null" : "not null", deserializedData == null ? "null" : "not null");
 
                 if (originalData != null)
                 {
-                    message += String.Format("Contents of Original data are {0}", originalData.ToString());
+                    message += string.Format("Contents of Original data are {0}", originalData.ToString());
                 }
                 if (deserializedData != null)
                 {
-                    message += String.Format("Contents of Deserialized data are {0}", deserializedData.ToString());
+                    message += string.Format("Contents of Deserialized data are {0}", deserializedData.ToString());
                 }
                 throw new Exception(message);
             }
@@ -145,7 +145,7 @@ namespace SerializationTestTypes
 
             if (!originalDataType.Equals(deserializedDataType))
             {
-                throw new Exception(String.Format("Comparision failed : Original type {0} not same as deserialized type {1}", originalDataType.ToString(), deserializedDataType.ToString()));
+                throw new Exception(string.Format("Comparision failed : Original type {0} not same as deserialized type {1}", originalDataType.ToString(), deserializedDataType.ToString()));
             }
 
             object[] dataContractAttributes = originalDataType.GetCustomAttributes(typeof(DataContractAttribute), false);
@@ -168,11 +168,11 @@ namespace SerializationTestTypes
             #endregion
 
             #region String type
-            else if (originalDataType.Equals(typeof(System.String)))
+            else if (originalDataType.Equals(typeof(string)))
             {
                 if (!originalData.Equals(deserializedData))
                 {
-                    throw new Exception(String.Format("Comparision failed: Original string data {0} is not same as deserialized string data {1}", originalData, deserializedData));
+                    throw new Exception(string.Format("Comparision failed: Original string data {0} is not same as deserialized string data {1}", originalData, deserializedData));
                 }
             }
             #endregion
@@ -183,10 +183,10 @@ namespace SerializationTestTypes
             {
                 string originalDataXml = ((XmlNode)originalData).InnerXml;
                 string deserializedDataXml = ((XmlNode)deserializedData).InnerXml;
-                Trace.WriteLine(String.Format(LogMessage, originalDataType, originalDataXml, deserializedDataType, deserializedDataXml));
+                Trace.WriteLine(string.Format(LogMessage, originalDataType, originalDataXml, deserializedDataType, deserializedDataXml));
                 if (!originalDataXml.Equals(deserializedDataXml))
                 {
-                    throw new Exception(String.Format("Comparision failed: Original XML data ({0}) is not the same as the deserialized XML data ({1})",
+                    throw new Exception(string.Format("Comparision failed: Original XML data ({0}) is not the same as the deserialized XML data ({1})",
                         originalDataXml, deserializedDataXml));
                 }
             }
@@ -198,14 +198,14 @@ namespace SerializationTestTypes
                 // only 1 possible value, DBNull.Value
                 if ((((DBNull)originalData) == DBNull.Value) != (((DBNull)deserializedData) == DBNull.Value))
                 {
-                    throw new Exception(String.Format("Different instances of DBNull: original={0}, deserialized={1}", originalData, deserializedData));
+                    throw new Exception(string.Format("Different instances of DBNull: original={0}, deserialized={1}", originalData, deserializedData));
                 }
             }
             else if (originalDataType.Equals(typeof(DateTime)))
             {
                 if (!(((DateTime)originalData).ToUniversalTime().Equals(((DateTime)deserializedData).ToUniversalTime())))
                 {
-                    throw new Exception(String.Format("Comparision failed: Original Datetime ticks {0} is not same as deserialized Datetime ticks {1}", ((DateTime)originalData).Ticks.ToString(), ((DateTime)deserializedData).Ticks.ToString()));
+                    throw new Exception(string.Format("Comparision failed: Original Datetime ticks {0} is not same as deserialized Datetime ticks {1}", ((DateTime)originalData).Ticks.ToString(), ((DateTime)deserializedData).Ticks.ToString()));
                 }
             }
             else if (
@@ -213,13 +213,13 @@ namespace SerializationTestTypes
                 || (originalDataType.Equals(typeof(Uri)))
                 || (originalDataType.Equals(typeof(XmlQualifiedName)))
                 || (originalDataType.Equals(typeof(Guid)))
-                || (originalDataType.Equals(typeof(Decimal)))
+                || (originalDataType.Equals(typeof(decimal)))
                 || (originalDataType.Equals(typeof(DateTimeOffset)))
              )
             {
                 if (!originalData.Equals(deserializedData))
                 {
-                    throw new Exception(String.Format("Comparision failed : Original type data {0} is not same as deserialized type data {1}", originalData.ToString(), deserializedData.ToString()));
+                    throw new Exception(string.Format("Comparision failed : Original type data {0} is not same as deserialized type data {1}", originalData.ToString(), deserializedData.ToString()));
                 }
             }
 
@@ -238,7 +238,7 @@ namespace SerializationTestTypes
                     bool different = !originalData.Equals(deserializedData);
                     if (different)
                     {
-                        throw new Exception(String.Format("Comparision failed: Original primitive data {0} is not same as deserialized primitive data {1}", originalData.ToString(), deserializedData.ToString()));
+                        throw new Exception(string.Format("Comparision failed: Original primitive data {0} is not same as deserialized primitive data {1}", originalData.ToString(), deserializedData.ToString()));
                     }
                 }
                 #endregion
@@ -256,7 +256,7 @@ namespace SerializationTestTypes
                             //Verify this will work for all scenarios
                             if (!originalData.ToString().Equals(deserializedData.ToString()))
                             {
-                                throw new Exception(String.Format("Comparision failed: Original enum data {0} is not same as deserialized enum data {1}", originalData.ToString(), deserializedData.ToString()));
+                                throw new Exception(string.Format("Comparision failed: Original enum data {0} is not same as deserialized enum data {1}", originalData.ToString(), deserializedData.ToString()));
                             }
                         }
                     }
@@ -286,7 +286,7 @@ namespace SerializationTestTypes
                 // the type knows how to compare itself, we'll use it
                 if (!originalData.Equals(deserializedData))
                 {
-                    throw new Exception(String.Format("Comparision failed: Original type data {0} is not same as deserialized type data {1}", originalData.ToString(), deserializedData.ToString()));
+                    throw new Exception(string.Format("Comparision failed: Original type data {0} is not same as deserialized type data {1}", originalData.ToString(), deserializedData.ToString()));
                 }
             }
             #endregion
@@ -312,7 +312,7 @@ namespace SerializationTestTypes
                 }
                 else
                 {
-                    throw new Exception(String.Format("Comparision failed: Original IDictionary type {0} and deserialized IDictionary type {1} are not of same", originalDataType.GetType().ToString(), deserializedDataType.GetType().ToString()));
+                    throw new Exception(string.Format("Comparision failed: Original IDictionary type {0} and deserialized IDictionary type {1} are not of same", originalDataType.GetType().ToString(), deserializedDataType.GetType().ToString()));
                 }
             }
             #endregion
@@ -333,7 +333,7 @@ namespace SerializationTestTypes
                 }
                 else
                 {
-                    throw new Exception(String.Format("Comparision failed: Original type {0} and deserialized type {1} are not IEnumerable", originalDataType.GetType().ToString(), deserializedDataType.GetType().ToString()));
+                    throw new Exception(string.Format("Comparision failed: Original type {0} and deserialized type {1} are not IEnumerable", originalDataType.GetType().ToString(), deserializedDataType.GetType().ToString()));
                 }
             }
 
@@ -480,7 +480,7 @@ namespace SerializationTestTypes
                 ||
                 ((data.GetType().IsClass)
                 &&
-                (!(data.GetType().Equals(typeof(System.String)))
+                (!(data.GetType().Equals(typeof(string)))
                 ))
                 )
             {

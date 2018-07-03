@@ -21,7 +21,7 @@ namespace System.Globalization
 
     public class TextElementEnumerator : IEnumerator
     {
-        private String _str;
+        private string _str;
         private int _index;
         private int _startIndex;
 
@@ -33,7 +33,7 @@ namespace System.Globalization
 
         private int _charLen;            // The next abstract char to look at after MoveNext() is called.  It could be 1 or 2, depending on if it is a surrogate or not.
 
-        internal TextElementEnumerator(String str, int startIndex, int strLen)
+        internal TextElementEnumerator(string str, int startIndex, int strLen)
         {
             Debug.Assert(str != null, "TextElementEnumerator(): str != null");
             Debug.Assert(startIndex >= 0 && strLen >= 0, "TextElementEnumerator(): startIndex >= 0 && strLen >= 0");
@@ -61,7 +61,7 @@ namespace System.Globalization
         // Get the current text element.
         //
 
-        public Object Current
+        public object Current
         {
             get
             {
@@ -73,7 +73,7 @@ namespace System.Globalization
         // Get the current text element.
         //
 
-        public String GetTextElement()
+        public string GetTextElement()
         {
             if (_index == _startIndex)
             {

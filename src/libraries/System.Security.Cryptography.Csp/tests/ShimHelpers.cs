@@ -45,8 +45,30 @@ namespace System.Security.Cryptography.Csp.Tests
         // Shims should override all virtual members and forward to their _impl.
         public static void VerifyAllBaseMembersOverloaded(Type shimType)
         {
-            // DecryptValue and EncryptValue throw PNSE in base class, so they don't need to be checked.
-            string[] namesToNotVerify = new string[] { "Dispose", "DecryptValue", "EncryptValue" };
+            string[] namesToNotVerify =
+            {
+                "Dispose",
+                // DecryptValue and EncryptValue throw PNSE in base class, so they don't need to be checked.
+                "DecryptValue",
+                "EncryptValue",
+                // Key Import/Export defers to ImportParameters/ExportParameters (covered by *KeyFileTests)
+                "ImportRSAPrivateKey",
+                "ImportRSAPublicKey",
+                "ImportSubjectPublicKeyInfo",
+                "ImportPkcs8PrivateKey",
+                "ImportEncryptedPkcs8PrivateKey",
+                "ExportRSAPrivateKey",
+                "ExportRSAPublicKey",
+                "ExportSubjectPublicKeyInfo",
+                "ExportPkcs8PrivateKey",
+                "ExportEncryptedPkcs8PrivateKey",
+                "ExportRSAPrivateKey",
+                "TryExportRSAPrivateKey",
+                "TryExportRSAPublicKey",
+                "TryExportSubjectPublicKeyInfo",
+                "TryExportPkcs8PrivateKey",
+                "TryExportEncryptedPkcs8PrivateKey",
+            };
 
             IEnumerable<MethodInfo> baseMethods = shimType.
                 GetMethods(BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Instance).

@@ -47,7 +47,7 @@ namespace System.IO
         private long _offset;
         private FileAccess _access;
         private bool _isOpen;
-        private Task<Int32> _lastReadTask; // The last successful task returned from ReadAsync 
+        private Task<int> _lastReadTask; // The last successful task returned from ReadAsync 
 
         /// <summary>
         /// Creates a closed stream.
@@ -456,7 +456,7 @@ namespace System.IO
         /// <param name="count">Maximum number of bytes to read.</param>       
         /// <param name="cancellationToken">Token that can be used to cancel this operation.</param>
         /// <returns>Task that can be used to access the number of bytes actually read.</returns>
-        public override Task<Int32> ReadAsync(Byte[] buffer, Int32 offset, Int32 count, CancellationToken cancellationToken)
+        public override Task<int> ReadAsync(byte[] buffer, int offset, int count, CancellationToken cancellationToken)
         {
             if (buffer == null)
                 throw new ArgumentNullException(nameof(buffer), SR.ArgumentNull_Buffer);
@@ -468,18 +468,18 @@ namespace System.IO
                 throw new ArgumentException(SR.Argument_InvalidOffLen);
 
             if (cancellationToken.IsCancellationRequested)
-                return Task.FromCanceled<Int32>(cancellationToken);
+                return Task.FromCanceled<int>(cancellationToken);
 
             try
             {
-                Int32 n = Read(buffer, offset, count);
-                Task<Int32> t = _lastReadTask;
+                int n = Read(buffer, offset, count);
+                Task<int> t = _lastReadTask;
                 return (t != null && t.Result == n) ? t : (_lastReadTask = Task.FromResult<Int32>(n));
             }
             catch (Exception ex)
             {
                 Debug.Assert(!(ex is OperationCanceledException));
-                return Task.FromException<Int32>(ex);
+                return Task.FromException<int>(ex);
             }
         }
 
@@ -752,7 +752,7 @@ namespace System.IO
         /// <param name="count">Number of bytes to write.</param>
         /// <param name="cancellationToken">Token that can be used to cancel the operation.</param>
         /// <returns>Task that can be awaited </returns>
-        public override Task WriteAsync(Byte[] buffer, Int32 offset, Int32 count, CancellationToken cancellationToken)
+        public override Task WriteAsync(byte[] buffer, int offset, int count, CancellationToken cancellationToken)
         {
             if (buffer == null)
                 throw new ArgumentNullException(nameof(buffer), SR.ArgumentNull_Buffer);

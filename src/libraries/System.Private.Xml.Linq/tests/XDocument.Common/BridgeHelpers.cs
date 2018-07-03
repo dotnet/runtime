@@ -975,7 +975,7 @@ namespace CoreXml.Test.XLinq
         {
             TextWriter tw = new StreamWriter(FilePathUtil.getStream(strFileName));
 
-            string str = new String('Z', (1 << 20) - 1);
+            string str = new string('Z', (1 << 20) - 1);
             tw.Write(str);
             tw.Flush();
             tw.Dispose();
@@ -1017,7 +1017,7 @@ namespace CoreXml.Test.XLinq
             w.WriteEndElement();
 
             w.WriteStartElement("ElemEmpty");
-            w.WriteString(String.Empty);
+            w.WriteString(string.Empty);
             w.WriteEndElement();
 
             w.WriteStartElement("ElemNum");
@@ -1081,7 +1081,7 @@ namespace CoreXml.Test.XLinq
             w.Flush();
 
             w.WriteStartElement("ElemEmpty");
-            w.WriteString(String.Empty);
+            w.WriteString(string.Empty);
             w.WriteEndElement();
 
             w.WriteStartElement("ElemNum");
@@ -1113,7 +1113,7 @@ namespace CoreXml.Test.XLinq
         {
             TextWriter tw = new StreamWriter(FilePathUtil.getStream(strFileName));
 
-            string str = new String('Z', (1 << 20) - 1);
+            string str = new string('Z', (1 << 20) - 1);
             tw.WriteLine("<Root>");
             tw.Write("<");
             tw.Write(str);
@@ -1246,7 +1246,7 @@ namespace CoreXml.Test.XLinq
 
                 if (r.NodeType == XmlNodeType.ProcessingInstruction && r.NodeType == XmlNodeType.XmlDeclaration)
                 {
-                    if (String.Compare(r.Name, 0, ST_XML, 0, 3) != 0)
+                    if (string.Compare(r.Name, 0, ST_XML, 0, 3) != 0)
                         return true;
                 }
 

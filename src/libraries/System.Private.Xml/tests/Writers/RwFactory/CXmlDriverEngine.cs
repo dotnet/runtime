@@ -659,7 +659,7 @@ namespace System.Xml.Tests
                     actVarCount++;
                     string varDescription = SelectDescription(varNode);
                     CXmlDriverVariation var = new CXmlDriverVariation((CXmlDriverScenario)testCase,
-                        varName, varDescription, Int32.Parse(varId), Int32.Parse(varPri),
+                        varName, varDescription, int.Parse(varId), int.Parse(varPri),
                         new CXmlDriverParam(varParam, defaultSection));
                     testCase.AddVariation(var);
                 }

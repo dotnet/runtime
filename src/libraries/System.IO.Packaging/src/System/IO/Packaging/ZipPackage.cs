@@ -385,7 +385,7 @@ namespace System.IO.Packaging
         // More generic function than GetPartNameFromZipItemName. In particular, it will handle piece names.
         internal static string GetOpcNameFromZipItemName(string zipItemName)
         {
-            return String.Concat(ForwardSlashString, zipItemName);
+            return string.Concat(ForwardSlashString, zipItemName);
         }
 
         // Convert from Metro CompressionOption to ZipFileInfo compression properties.
@@ -526,7 +526,7 @@ namespace System.IO.Packaging
                 //with the rules for comparing/normalizing partnames. 
                 //Refer to PackUriHelper.ValidatedPartUri.GetNormalizedPartUri method.
                 //Currently normalization just involves upper-casing ASCII and hence the simplification.
-                return (String.CompareOrdinal(extensionA.ToUpperInvariant(), extensionB.ToUpperInvariant()) == 0);
+                return (string.CompareOrdinal(extensionA.ToUpperInvariant(), extensionB.ToUpperInvariant()) == 0);
             }
 
             int IEqualityComparer<string>.GetHashCode(string extension)
@@ -753,8 +753,8 @@ namespace System.IO.Packaging
                     // Make sure that the current node read is an Element
                     if ((reader.NodeType == XmlNodeType.Element)
                         && (reader.Depth == 0)
-                        && (String.CompareOrdinal(reader.NamespaceURI, s_typesNamespaceUri) == 0)
-                        && (String.CompareOrdinal(reader.Name, s_typesTagName) == 0))
+                        && (string.CompareOrdinal(reader.NamespaceURI, s_typesNamespaceUri) == 0)
+                        && (string.CompareOrdinal(reader.Name, s_typesTagName) == 0))
                     {
                         //There should be a namespace Attribute present at this level.
                         //Also any other attribute on the <Types> tag is an error including xml: and xsi: attributes
@@ -779,21 +779,21 @@ namespace System.IO.Packaging
                             // Currently we expect the Default and Override Tag at Depth 1
                             if (reader.NodeType == XmlNodeType.Element
                                 && reader.Depth == 1
-                                && (String.CompareOrdinal(reader.NamespaceURI, s_typesNamespaceUri) == 0)
-                                && (String.CompareOrdinal(reader.Name, s_defaultTagName) == 0))
+                                && (string.CompareOrdinal(reader.NamespaceURI, s_typesNamespaceUri) == 0)
+                                && (string.CompareOrdinal(reader.Name, s_defaultTagName) == 0))
                             {
                                 ProcessDefaultTagAttributes(reader);
                             }
                             else
                                 if (reader.NodeType == XmlNodeType.Element
                                     && reader.Depth == 1
-                                    && (String.CompareOrdinal(reader.NamespaceURI, s_typesNamespaceUri) == 0)
-                                    && (String.CompareOrdinal(reader.Name, s_overrideTagName) == 0))
+                                    && (string.CompareOrdinal(reader.NamespaceURI, s_typesNamespaceUri) == 0)
+                                    && (string.CompareOrdinal(reader.Name, s_overrideTagName) == 0))
                                 {
                                     ProcessOverrideTagAttributes(reader);
                                 }
                                 else
-                                    if (reader.NodeType == XmlNodeType.EndElement && reader.Depth == 0 && String.CompareOrdinal(reader.Name, s_typesTagName) == 0)
+                                    if (reader.NodeType == XmlNodeType.EndElement && reader.Depth == 0 && string.CompareOrdinal(reader.Name, s_typesTagName) == 0)
                                         continue;
                                     else
                                     {
@@ -910,7 +910,7 @@ namespace System.IO.Packaging
                 //Skips over the following - ProcessingInstruction, DocumentType, Comment, Whitespace, or SignificantWhitespace
                 reader.MoveToContent();
 
-                if (reader.NodeType == XmlNodeType.EndElement && String.CompareOrdinal(elementName, reader.LocalName) == 0)
+                if (reader.NodeType == XmlNodeType.EndElement && string.CompareOrdinal(elementName, reader.LocalName) == 0)
                     return;
                 else
                     throw new XmlException(SR.Format(SR.ElementIsNotEmptyElement, elementName), null, ((IXmlLineInfo)reader).LineNumber, ((IXmlLineInfo)reader).LinePosition);
@@ -964,7 +964,7 @@ namespace System.IO.Packaging
                 ThrowIfXmlAttributeMissing(attributeName, attributeValue, tagName, reader);
 
                 //Checking for empty attribute
-                if (attributeValue == String.Empty)
+                if (attributeValue == string.Empty)
                     throw new XmlException(SR.Format(SR.RequiredAttributeEmpty, tagName, attributeName), null, ((IXmlLineInfo)reader).LineNumber, ((IXmlLineInfo)reader).LinePosition);
             }
 

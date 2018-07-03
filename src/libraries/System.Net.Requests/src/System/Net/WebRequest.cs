@@ -105,7 +105,7 @@ namespace System.Net
                 if (LookupLength >= Current.Prefix.Length)
                 {
                     // It is. See if these match.
-                    if (String.Compare(Current.Prefix,
+                    if (string.Compare(Current.Prefix,
                                        0,
                                        LookupUri,
                                        0,
@@ -263,7 +263,7 @@ namespace System.Net
                 Uri tempUri;
                 if (Uri.TryCreate(prefix, UriKind.Absolute, out tempUri))
                 {
-                    String cookedUri = tempUri.AbsoluteUri;
+                    string cookedUri = tempUri.AbsoluteUri;
 
                     // Special case for when a partial host matching is requested, drop the added trailing slash
                     // IE: http://host could match host or host.domain

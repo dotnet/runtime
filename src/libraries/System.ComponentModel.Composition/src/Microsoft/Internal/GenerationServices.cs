@@ -18,19 +18,19 @@ namespace Microsoft.Internal
 
         // typeofs are pretty expensive, so we cache them statically
         private static readonly Type TypeType = typeof(System.Type);
-        private static readonly Type StringType = typeof(System.String);
-        private static readonly Type CharType = typeof(System.Char);
-        private static readonly Type BooleanType = typeof(System.Boolean);
-        private static readonly Type ByteType = typeof(System.Byte);
-        private static readonly Type SByteType = typeof(System.SByte);
-        private static readonly Type Int16Type = typeof(System.Int16);
-        private static readonly Type UInt16Type = typeof(System.UInt16);
-        private static readonly Type Int32Type = typeof(System.Int32);
-        private static readonly Type UInt32Type = typeof(System.UInt32);
-        private static readonly Type Int64Type = typeof(System.Int64);
-        private static readonly Type UInt64Type = typeof(System.UInt64);
-        private static readonly Type DoubleType = typeof(System.Double);
-        private static readonly Type SingleType = typeof(System.Single);
+        private static readonly Type StringType = typeof(string);
+        private static readonly Type CharType = typeof(char);
+        private static readonly Type BooleanType = typeof(bool);
+        private static readonly Type ByteType = typeof(byte);
+        private static readonly Type SByteType = typeof(sbyte);
+        private static readonly Type Int16Type = typeof(short);
+        private static readonly Type UInt16Type = typeof(ushort);
+        private static readonly Type Int32Type = typeof(int);
+        private static readonly Type UInt32Type = typeof(uint);
+        private static readonly Type Int64Type = typeof(long);
+        private static readonly Type UInt64Type = typeof(ulong);
+        private static readonly Type DoubleType = typeof(double);
+        private static readonly Type SingleType = typeof(float);
         private static readonly Type IEnumerableTypeofT = typeof(System.Collections.Generic.IEnumerable<>);
         private static readonly Type IEnumerableType = typeof(System.Collections.IEnumerable);
 

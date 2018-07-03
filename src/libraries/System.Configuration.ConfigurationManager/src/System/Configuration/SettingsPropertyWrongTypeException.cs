@@ -1,4 +1,4 @@
-﻿// Licensed to the .NET Foundation under one or more agreements.
+// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
@@ -10,12 +10,12 @@ namespace System.Configuration
     [System.Runtime.CompilerServices.TypeForwardedFrom("System, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089")]
     public class SettingsPropertyWrongTypeException : Exception
     {
-        public SettingsPropertyWrongTypeException(String message)
+        public SettingsPropertyWrongTypeException(string message)
             : base(message)
         {
         }
 
-        public SettingsPropertyWrongTypeException(String message, Exception innerException)
+        public SettingsPropertyWrongTypeException(string message, Exception innerException)
              : base(message, innerException)
         {
         }

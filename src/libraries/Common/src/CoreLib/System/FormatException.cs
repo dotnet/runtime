@@ -25,13 +25,13 @@ namespace System
             HResult = HResults.COR_E_FORMAT;
         }
 
-        public FormatException(String message)
+        public FormatException(string message)
             : base(message)
         {
             HResult = HResults.COR_E_FORMAT;
         }
 
-        public FormatException(String message, Exception innerException)
+        public FormatException(string message, Exception innerException)
             : base(message, innerException)
         {
             HResult = HResults.COR_E_FORMAT;

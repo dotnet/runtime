@@ -11,23 +11,23 @@ namespace System.Xml.Tests
     [InheritRequired()]
     public abstract partial class TCLinePos : TCXMLReaderBaseGeneral
     {
-        public const String ST_ELEMENT = "ELEMENT";
-        public const String ST_SKIP = "SKIP";
-        public const String ST_ENTITYREF = "ENTITYREF";
-        public const String ST_A0 = "a0";
-        public const String ST_A1 = "a1";
-        public const String ST_A2 = "a2";
-        public const String ST_BASE64 = "BASE64";
-        public const String ST_BINHEX = "BINHEX";
-        public const String ST_CHARENTITY = "CHARENTITY";
+        public const string ST_ELEMENT = "ELEMENT";
+        public const string ST_SKIP = "SKIP";
+        public const string ST_ENTITYREF = "ENTITYREF";
+        public const string ST_A0 = "a0";
+        public const string ST_A1 = "a1";
+        public const string ST_A2 = "a2";
+        public const string ST_BASE64 = "BASE64";
+        public const string ST_BINHEX = "BINHEX";
+        public const string ST_CHARENTITY = "CHARENTITY";
 
-        public const String ST_BOOLXSD = "BOOLXSD";
-        public const String ST_DATE = "DATE";
-        public const String ST_DATETIME = "DATETIME";
-        public const String ST_INT = "INT";
-        public const String ST_TIME = "TIME";
-        public const String ST_TIMESPAN = "TIMESPAN";
-        public const String ST_DECIMAL2 = "DECIMAL";
+        public const string ST_BOOLXSD = "BOOLXSD";
+        public const string ST_DATE = "DATE";
+        public const string ST_DATETIME = "DATETIME";
+        public const string ST_INT = "INT";
+        public const string ST_TIME = "TIME";
+        public const string ST_TIMESPAN = "TIMESPAN";
+        public const string ST_DECIMAL2 = "DECIMAL";
 
         private void CheckPos(int line, int pos)
         {
@@ -363,7 +363,7 @@ namespace System.Xml.Tests
         [Variation("XmlTextReader:LineNumber and LinePos don't return the right position after ReadInnerXml is called")]
         public int TestLinePos41()
         {
-            String strXml = "<ROOT><CHARS2>\nxxx<MARKUP/>yyy\n</CHARS2></ROOT>";
+            string strXml = "<ROOT><CHARS2>\nxxx<MARKUP/>yyy\n</CHARS2></ROOT>";
             ReloadSourceStr(strXml);
             if (!IsCustomReader())
             {
@@ -383,7 +383,7 @@ namespace System.Xml.Tests
         [Variation("XmlTextReader: LineNum and LinePosition incorrect for EndTag token and text element")]
         public int TestLinePos42()
         {
-            String strXml = "<foo>\n       fooooooo\n</foo>";
+            string strXml = "<foo>\n       fooooooo\n</foo>";
             ReloadSourceStr(strXml);
             if (!IsCustomReader())
             {

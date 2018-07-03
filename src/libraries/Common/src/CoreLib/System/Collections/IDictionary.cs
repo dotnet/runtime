@@ -15,7 +15,7 @@ namespace System.Collections
         // Interfaces are not serializable
         // The Item property provides methods to read and edit entries 
         // in the Dictionary.
-        Object this[Object key]
+        object this[object key]
         {
             get;
             set;
@@ -35,11 +35,11 @@ namespace System.Collections
 
         // Returns whether this dictionary contains a particular key.
         //
-        bool Contains(Object key);
+        bool Contains(object key);
 
         // Adds a key-value pair to the dictionary.
         // 
-        void Add(Object key, Object value);
+        void Add(object key, object value);
 
         // Removes all pairs from the dictionary.
         void Clear();
@@ -55,6 +55,6 @@ namespace System.Collections
 
         // Removes a particular key from the dictionary.
         //
-        void Remove(Object key);
+        void Remove(object key);
     }
 }

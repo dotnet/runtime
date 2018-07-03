@@ -55,14 +55,49 @@ namespace System.Security.Cryptography
                 }
             }
 
+            private byte[] ExportEncryptedPkcs8(ReadOnlySpan<char> pkcs8Password, int kdfCount)
+            {
+                using (SafeNCryptKeyHandle keyHandle = GetDuplicatedKeyHandle())
+                {
+                    return CngKeyLite.ExportPkcs8KeyBlob(keyHandle, pkcs8Password, kdfCount);
+                }
+            }
+
+            private bool TryExportEncryptedPkcs8(
+                ReadOnlySpan<char> pkcs8Password,
+                int kdfCount,
+                Span<byte> destination,
+                out int bytesWritten)
+            {
+                using (SafeNCryptKeyHandle keyHandle = GetDuplicatedKeyHandle())
+                {
+                    return CngKeyLite.TryExportPkcs8KeyBlob(
+                        keyHandle,
+                        pkcs8Password,
+                        kdfCount,
+                        destination,
+                        out bytesWritten);
+                }
+            }
+
             private void ImportKeyBlob(byte[] rsaBlob, bool includePrivate)
             {
-                string blobType = includePrivate ?
-                    Interop.BCrypt.KeyBlobType.BCRYPT_RSAPRIVATE_BLOB :
-                    Interop.BCrypt.KeyBlobType.BCRYPT_RSAPUBLIC_KEY_BLOB;
+                string blobType = includePrivate
+                    ? Interop.BCrypt.KeyBlobType.BCRYPT_RSAPRIVATE_BLOB
+                    : Interop.BCrypt.KeyBlobType.BCRYPT_RSAPUBLIC_KEY_BLOB;
 
                 SafeNCryptKeyHandle keyHandle = CngKeyLite.ImportKeyBlob(blobType, rsaBlob);
+                SetKeyHandle(keyHandle);
+            }
 
+            private void AcceptImport(CngPkcs8.Pkcs8Response response)
+            {
+                SafeNCryptKeyHandle keyHandle = response.KeyHandle;
+                SetKeyHandle(keyHandle);
+            }
+
+            private void SetKeyHandle(SafeNCryptKeyHandle keyHandle)
+            {
                 Debug.Assert(!keyHandle.IsInvalid);
 
                 _keyHandle = keyHandle;

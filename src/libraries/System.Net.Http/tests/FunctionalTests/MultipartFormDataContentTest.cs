@@ -29,7 +29,7 @@ namespace System.Net.Http.Functional.Tests
         [Fact]
         public void Ctor_EmptyBoundary_ThrowsArgumentException()
         {
-            AssertExtensions.Throws<ArgumentException>("boundary", () => new MultipartFormDataContent(String.Empty));
+            AssertExtensions.Throws<ArgumentException>("boundary", () => new MultipartFormDataContent(string.Empty));
         }
 
         [Fact]
@@ -50,7 +50,7 @@ namespace System.Net.Http.Functional.Tests
         public void Add_EmptyName_ThrowsArgumentException()
         {
             var content = new MultipartFormDataContent();
-            AssertExtensions.Throws<ArgumentException>("name", () => content.Add(new StringContent("Hello world"), String.Empty));
+            AssertExtensions.Throws<ArgumentException>("name", () => content.Add(new StringContent("Hello world"), string.Empty));
         }
 
         [Fact]
@@ -64,7 +64,7 @@ namespace System.Net.Http.Functional.Tests
         public void Add_EmptyFileName_ThrowsArgumentException()
         {
             var content = new MultipartFormDataContent();
-            AssertExtensions.Throws<ArgumentException>("fileName", () => content.Add(new StringContent("Hello world"), "name", String.Empty));
+            AssertExtensions.Throws<ArgumentException>("fileName", () => content.Add(new StringContent("Hello world"), "name", string.Empty));
         }
 
         [Fact]

@@ -6,7 +6,7 @@
 
 /* Hash table on the 4-byte prefixes of static dictionary words. */
 
-#include <brotli/port.h>
+#include "../common/platform.h"
 #include "./dictionary_hash.h"
 
 #if defined(__cplusplus) || defined(c_plusplus)

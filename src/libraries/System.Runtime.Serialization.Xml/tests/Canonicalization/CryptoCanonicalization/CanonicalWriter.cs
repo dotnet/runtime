@@ -383,7 +383,7 @@ namespace System.Runtime.Serialization.Xml.Canonicalization.Tests
 
         private void ThrowBadStateException(string call)
         {
-            throw new InvalidOperationException(String.Format("Invalid Operation for writer state: {0}, {1}", call, _state));
+            throw new InvalidOperationException(string.Format("Invalid Operation for writer state: {0}, {1}", call, _state));
         }
 
         private void ThrowIfNotInStartState()
@@ -679,7 +679,7 @@ namespace System.Runtime.Serialization.Xml.Canonicalization.Tests
                 {
                     if (_state != WriteState.Attribute || LookupNamespace(string.Empty) != null)
                     {
-                        throw new InvalidOperationException(String.Format("Prefix not defined for namespace {0}", ns));
+                        throw new InvalidOperationException(string.Format("Prefix not defined for namespace {0}", ns));
                     }
 
                     prefix = string.Empty;
@@ -691,7 +691,7 @@ namespace System.Runtime.Serialization.Xml.Canonicalization.Tests
             {
                 if (_state != WriteState.Attribute)
                 {
-                    throw new InvalidOperationException(String.Format("Prefix not defined for namespace: {0}", ns));
+                    throw new InvalidOperationException(string.Format("Prefix not defined for namespace: {0}", ns));
                 }
 
                 if (BufferingWriter != null)
@@ -814,7 +814,7 @@ namespace System.Runtime.Serialization.Xml.Canonicalization.Tests
                         ns = LookupNamespace(prefix);
                         if (ns == null)
                         {
-                            throw new InvalidOperationException(String.Format("Undefined use of prefix at attribute: {0}, {1}", prefix, localName));
+                            throw new InvalidOperationException(string.Format("Undefined use of prefix at attribute: {0}, {1}", prefix, localName));
                         }
                     }
                 }
@@ -908,7 +908,7 @@ namespace System.Runtime.Serialization.Xml.Canonicalization.Tests
                 ns = LookupNamespace(prefix);
                 if (ns == null)
                 {
-                    throw new InvalidOperationException(String.Format("Undefined use of prefix at Element: {0}, {1}", prefix, localName));
+                    throw new InvalidOperationException(string.Format("Undefined use of prefix at Element: {0}, {1}", prefix, localName));
                 }
             }
             else if (prefix == null)
@@ -1202,13 +1202,13 @@ namespace System.Runtime.Serialization.Xml.Canonicalization.Tests
 
             public int Compare(AttributeEntry x, AttributeEntry y)
             {
-                int namespaceCompareResult = String.Compare(x.namespaceUri, y.namespaceUri, StringComparison.Ordinal);
+                int namespaceCompareResult = string.Compare(x.namespaceUri, y.namespaceUri, StringComparison.Ordinal);
                 if (namespaceCompareResult != 0)
                 {
                     return namespaceCompareResult;
                 }
 
-                return String.Compare(x.localName, y.localName, StringComparison.Ordinal);
+                return string.Compare(x.localName, y.localName, StringComparison.Ordinal);
             }
         }
     }

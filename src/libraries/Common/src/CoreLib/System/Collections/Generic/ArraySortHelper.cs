@@ -38,7 +38,7 @@ namespace System.Collections.Generic
             return result;
         }
 
-        internal static void ThrowOrIgnoreBadComparer(Object comparer)
+        internal static void ThrowOrIgnoreBadComparer(object comparer)
         {
             throw new ArgumentException(SR.Format(SR.Arg_BogusIComparer, comparer));
         }
@@ -654,10 +654,10 @@ namespace System.Collections.Generic
         private static void SwapIfGreaterWithItems(TKey[] keys, TValue[] values, IComparer<TKey> comparer, int a, int b)
         {
             Debug.Assert(keys != null);
-            Debug.Assert(values != null && values.Length >= keys.Length);
+            Debug.Assert(values != null);
             Debug.Assert(comparer != null);
-            Debug.Assert(0 <= a && a < keys.Length);
-            Debug.Assert(0 <= b && b < keys.Length);
+            Debug.Assert(0 <= a && a < keys.Length && a < values.Length);
+            Debug.Assert(0 <= b && b < keys.Length && b < values.Length);
 
             if (a != b)
             {

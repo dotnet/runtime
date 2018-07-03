@@ -25,7 +25,7 @@ namespace System.Xml.Tests
         public int XmlEncodeName1()
         {
             int i = ((CurVariation.id) - 1) * 2;
-            string strEnVal = String.Empty;
+            string strEnVal = string.Empty;
 
             strEnVal = XmlConvert.EncodeName((BitConverter.ToChar(_byte_CombiningChar, i)).ToString());
             CError.Compare(strEnVal, _Expbyte_CombiningChar[i / 2], "Comparison failed at " + i);

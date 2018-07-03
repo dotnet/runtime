@@ -657,7 +657,7 @@ namespace System.Xml.Schema
                 }
                 else
                 {
-                    builder._TargetNamespace = String.Empty;
+                    builder._TargetNamespace = string.Empty;
                 }
             }
             builder._SchemaInfo.TargetNamespaces.Add(builder._TargetNamespace, true);
@@ -1679,7 +1679,7 @@ namespace System.Xml.Schema
 
         private static bool ParseInteger(string str, ref uint n)
         {
-            return UInt32.TryParse(str, NumberStyles.AllowLeadingWhite | NumberStyles.AllowTrailingWhite, NumberFormatInfo.InvariantInfo, out n);
+            return uint.TryParse(str, NumberStyles.AllowLeadingWhite | NumberStyles.AllowTrailingWhite, NumberFormatInfo.InvariantInfo, out n);
         }
 
         private void XDR_CheckAttributeDefault(DeclBaseInfo decl, SchemaAttDef pAttdef)

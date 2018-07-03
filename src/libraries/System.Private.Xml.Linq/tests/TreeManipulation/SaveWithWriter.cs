@@ -314,7 +314,7 @@ namespace XLinqTests
 
         private string GenerateTestFileName(int index)
         {
-            string filename = String.Format("{0}{1}.xml", TestSaveFileName, index);
+            string filename = string.Format("{0}{1}.xml", TestSaveFileName, index);
             try
             {
                 FilePathUtil.getStream(filename);
@@ -366,7 +366,7 @@ namespace XLinqTests
             FilePathUtil.addStream(BaseSaveFileName, ms);
         }
 
-        private void SaveWithFile(Object doc)
+        private void SaveWithFile(object doc)
         {
             string file0 = GenerateTestFileName(0);
             string file1 = GenerateTestFileName(1);
@@ -396,7 +396,7 @@ namespace XLinqTests
             }
         }
 
-        private void SaveWithTextWriter(Object doc)
+        private void SaveWithTextWriter(object doc)
         {
             string file0 = GenerateTestFileName(0);
             string file1 = GenerateTestFileName(1);
@@ -436,7 +436,7 @@ namespace XLinqTests
             }
         }
 
-        private void SaveWithXmlWriter(Object doc)
+        private void SaveWithXmlWriter(object doc)
         {
             foreach (Encoding encoding in GetEncodings())
             {
@@ -485,10 +485,10 @@ namespace XLinqTests
             }
         }
 
-        private void TestToStringAndXml(Object doc, string expectedXml)
+        private void TestToStringAndXml(object doc, string expectedXml)
         {
             string toString = doc.ToString();
-            string xml = String.Empty;
+            string xml = string.Empty;
 
             if (doc is XDocument)
             {

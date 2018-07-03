@@ -1043,9 +1043,9 @@ public static partial class DataContractJsonSerializerTests
         Assert.StrictEqual(y.WithEnums[MyEnum.One], MyEnum.One);
         Assert.StrictEqual<StructNotSerializable>(y.WithStructs[new StructNotSerializable() { value = 10 }], new StructNotSerializable() { value = 12 });
         Assert.StrictEqual<StructNotSerializable>(y.WithStructs[new StructNotSerializable() { value = int.MaxValue }], new StructNotSerializable() { value = int.MinValue });
-        Assert.StrictEqual(y.WithNullables[Int16.MinValue], true);
+        Assert.StrictEqual(y.WithNullables[short.MinValue], true);
         Assert.StrictEqual(y.WithNullables[0], false);
-        Assert.StrictEqual(y.WithNullables[Int16.MaxValue], null);
+        Assert.StrictEqual(y.WithNullables[short.MaxValue], null);
     }
 
     [Fact]
@@ -2475,7 +2475,7 @@ public static partial class DataContractJsonSerializerTests
     public static void DCJS_NegativeDateTimeStylesTest_IncorrectDateTimeStyles()
     {
         string dateTimeFormat = "f";
-        DateTimeStyles[] dateTimeStyles = { DateTimeStyles.AssumeUniversal | DateTimeStyles.RoundtripKind, (DateTimeStyles)Int32.MaxValue };
+        DateTimeStyles[] dateTimeStyles = { DateTimeStyles.AssumeUniversal | DateTimeStyles.RoundtripKind, (DateTimeStyles)int.MaxValue };
         foreach (var style in dateTimeStyles)
         {
             var dcjsSettings = new DataContractJsonSerializerSettings()
@@ -2616,7 +2616,7 @@ public static partial class DataContractJsonSerializerTests
 
         var dateTime = new DateTime(2008, 5, 1, 8, 6, 32, DateTimeKind.Local);
         string expectedOutput = dateTime.ToString("yyyy-MM-ddTHH:mm:ss.fffK", DateTimeFormatInfo.CurrentInfo);
-        expectedOutput = String.Format("\"{0}\"", expectedOutput);
+        expectedOutput = string.Format("\"{0}\"", expectedOutput);
         dcjsSettings = new DataContractJsonSerializerSettings() { DateTimeFormat = jsonTypes.DTF_DefaultFormatProviderIsDateTimeFormatInfoDotCurrentInfo };
         var actual6 = SerializeAndDeserialize(dateTime, expectedOutput, dcjsSettings);
         Assert.NotNull(actual6);

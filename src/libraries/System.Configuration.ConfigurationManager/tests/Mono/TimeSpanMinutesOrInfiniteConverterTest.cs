@@ -113,8 +113,8 @@ namespace MonoTests.System.Configuration
 
             /* infinity tests */
             Assert.Equal("Infinite", cv.ConvertTo(null, null, TimeSpan.MaxValue, typeof(string)));
-            Assert.Equal("Infinite", cv.ConvertTo(null, null, new TimeSpan(Int64.MaxValue), typeof(string)));
-            Assert.Equal("15372286728", cv.ConvertTo(null, null, new TimeSpan(Int64.MaxValue - 1), typeof(string)));
+            Assert.Equal("Infinite", cv.ConvertTo(null, null, new TimeSpan(long.MaxValue), typeof(string)));
+            Assert.Equal("15372286728", cv.ConvertTo(null, null, new TimeSpan(long.MaxValue - 1), typeof(string)));
         }
 
         [Fact]

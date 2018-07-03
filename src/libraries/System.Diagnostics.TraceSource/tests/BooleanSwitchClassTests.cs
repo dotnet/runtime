@@ -8,7 +8,7 @@ namespace System.Diagnostics.TraceSourceTests
 {
     public class BooleanSwitchClassTests
     {
-        private const String Name = "TestSwitch";
+        private const string Name = "TestSwitch";
 
         [Fact]
         public void Constructor1()

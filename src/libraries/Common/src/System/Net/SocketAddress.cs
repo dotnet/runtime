@@ -228,16 +228,18 @@ namespace System.Net.Internals
 
         public override string ToString()
         {
-            StringBuilder bytes = new StringBuilder();
-            for (int i = SocketAddressPal.DataOffset; i < this.Size; i++)
+            var sb = new StringBuilder().Append(Family.ToString()).Append(':').Append(Size).Append(":{");
+
+            for (int i = SocketAddressPal.DataOffset; i < Size; i++)
             {
                 if (i > SocketAddressPal.DataOffset)
                 {
-                    bytes.Append(",");
+                    sb.Append(',');
                 }
-                bytes.Append(this[i].ToString(NumberFormatInfo.InvariantInfo));
+                sb.Append(this[i]);
             }
-            return Family.ToString() + ":" + Size.ToString(NumberFormatInfo.InvariantInfo) + ":{" + bytes.ToString() + "}";
+
+            return sb.Append('}').ToString();
         }
     }
 }

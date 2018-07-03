@@ -125,11 +125,11 @@ namespace System.DirectoryServices.ActiveDirectory
 
         public string Name { get; }
 
-        public override String Message
+        public override string Message
         {
             get
             {
-                String s = base.Message;
+                string s = base.Message;
                 if (!((Name == null) ||
                        (Name.Length == 0)))
                     return s + Environment.NewLine + SR.Format(SR.Name , Name) + Environment.NewLine;

@@ -26,7 +26,7 @@ namespace System.Tests
                 expectedValues[3] = dateTimeFormat.Calendar.MinSupportedDateTime;
 
             string pattern = dateTimeFormat.LongDatePattern + ' ' + dateTimeFormat.LongTimePattern;
-            String[] testValues = new String[expectedValues.Length];
+            string[] testValues = new string[expectedValues.Length];
             for (int i = 0; i < expectedValues.Length; i++)
             {
                 testValues[i] = expectedValues[i].ToString(pattern, dateTimeFormat);
@@ -35,7 +35,7 @@ namespace System.Tests
             VerifyFromString(Convert.ToDateTime, Convert.ToDateTime, testValues, expectedValues);
             VerifyFromObject(Convert.ToDateTime, Convert.ToDateTime, testValues, expectedValues);
 
-            String[] formatExceptionValues =
+            string[] formatExceptionValues =
             {
             "null",
             // Regression test for case which was throwing IndexOutOfRangeException
@@ -48,7 +48,7 @@ namespace System.Tests
         [Fact]
         public void FromStringWithCustomFormatProvider()
         {
-            String[] testValues = { null, "12/31/1999 11:59:59 PM", "0100/01/01 12:00:00 AM", "1492/02/29 12:00:00 AM", "0001/01/01 12:00:00 AM" };
+            string[] testValues = { null, "12/31/1999 11:59:59 PM", "0100/01/01 12:00:00 AM", "1492/02/29 12:00:00 AM", "0001/01/01 12:00:00 AM" };
             DateTime[] expectedValues = { DateTime.MinValue, new DateTime(1999, 12, 31, 23, 59, 59), new DateTime(100, 1, 1, 0, 0, 0), new DateTime(1492, 2, 29, 0, 0, 0), new DateTime(1, 1, 1, 0, 0, 0) };
             Assert.Equal(testValues.Length, expectedValues.Length);
 
@@ -75,8 +75,8 @@ namespace System.Tests
         [Fact]
         public void FromObject()
         {
-            Assert.Throws<InvalidCastException>(() => Convert.ToDateTime(new Object()));
-            Assert.Throws<InvalidCastException>(() => Convert.ToDateTime(new Object(), s_dateTimeFormatInfo));
+            Assert.Throws<InvalidCastException>(() => Convert.ToDateTime(new object()));
+            Assert.Throws<InvalidCastException>(() => Convert.ToDateTime(new object(), s_dateTimeFormatInfo));
         }
 
         [Fact]
@@ -94,7 +94,7 @@ namespace System.Tests
         [Fact]
         public void FromInt16()
         {
-            Assert.Throws<InvalidCastException>(() => Convert.ToDateTime((Int16)5));
+            Assert.Throws<InvalidCastException>(() => Convert.ToDateTime((short)5));
         }
 
         [Fact]
@@ -106,25 +106,25 @@ namespace System.Tests
         [Fact]
         public void FromInt64()
         {
-            Assert.Throws<InvalidCastException>(() => Convert.ToDateTime((Int64)5));
+            Assert.Throws<InvalidCastException>(() => Convert.ToDateTime((long)5));
         }
 
         [Fact]
         public void FromUInt16()
         {
-            Assert.Throws<InvalidCastException>(() => Convert.ToDateTime((UInt16)5));
+            Assert.Throws<InvalidCastException>(() => Convert.ToDateTime((ushort)5));
         }
 
         [Fact]
         public void FromUInt32()
         {
-            Assert.Throws<InvalidCastException>(() => Convert.ToDateTime((UInt32)5));
+            Assert.Throws<InvalidCastException>(() => Convert.ToDateTime((uint)5));
         }
 
         [Fact]
         public void FromUInt64()
         {
-            Assert.Throws<InvalidCastException>(() => Convert.ToDateTime((UInt64)5));
+            Assert.Throws<InvalidCastException>(() => Convert.ToDateTime((ulong)5));
         }
 
         [Fact]

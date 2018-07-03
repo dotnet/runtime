@@ -152,7 +152,7 @@ namespace System.Text
         // EncodingNLS, UTF7Encoding, UTF8Encoding, UTF32Encoding, ASCIIEncoding, UnicodeEncoding
         // parent method is safe
 
-        public override unsafe int GetByteCount(String chars)
+        public override unsafe int GetByteCount(string chars)
         {
             // Validate input
             if (chars==null)
@@ -193,7 +193,7 @@ namespace System.Text
         // So if you fix this, fix the others.  Currently those include:
         // EncodingNLS, UTF7Encoding, UTF8Encoding, UTF32Encoding, ASCIIEncoding, UnicodeEncoding
 
-        public override unsafe int GetBytes(String s, int charIndex, int charCount,
+        public override unsafe int GetBytes(string s, int charIndex, int charCount,
                                               byte[] bytes, int byteIndex)
         {
             if (s == null || bytes == null)
@@ -2553,7 +2553,7 @@ namespace System.Text
             _emitUTF8Identifier ? s_preamble :
             Array.Empty<byte>();
 
-        public override bool Equals(Object value)
+        public override bool Equals(object value)
         {
             UTF8Encoding that = value as UTF8Encoding;
             if (that != null)

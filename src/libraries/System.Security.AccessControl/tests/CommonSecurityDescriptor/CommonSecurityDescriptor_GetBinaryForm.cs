@@ -99,7 +99,7 @@ namespace System.Security.AccessControl.Tests
             if (resultSddl == null || verifierSddl == null)
                 Assert.True(resultSddl == null && verifierSddl == null);
             else
-                Assert.True(String.Compare(resultSddl, verifierSddl, StringComparison.CurrentCultureIgnoreCase) == 0);
+                Assert.True(string.Compare(resultSddl, verifierSddl, StringComparison.CurrentCultureIgnoreCase) == 0);
         }
     }
 }

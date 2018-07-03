@@ -62,7 +62,7 @@ public class UmsSecurityTests
         }
     }
 
-    static void VerifyNothingCanBeReadOrWritten(UnmanagedMemoryStream stream, Byte[] data)
+    static void VerifyNothingCanBeReadOrWritten(UnmanagedMemoryStream stream, byte[] data)
     {
         // No Read
         int count = stream.Read(data, 0, data.Length);
@@ -71,13 +71,13 @@ public class UmsSecurityTests
 
         // No write
         Assert.Throws<NotSupportedException>(() => stream.Write(data, 0, data.Length)); // Stream does not support writing.
-        Assert.Throws<NotSupportedException>(() => stream.WriteByte(Byte.MaxValue)); // Stream does not support writing.
+        Assert.Throws<NotSupportedException>(() => stream.WriteByte(byte.MaxValue)); // Stream does not support writing.
     }
 
-    public static void CheckStreamIntegrity(UnmanagedMemoryStream stream, Byte[] originalData)
+    public static void CheckStreamIntegrity(UnmanagedMemoryStream stream, byte[] originalData)
     {
         stream.Position = 0;
-        Byte[] streamData = new Byte[originalData.Length];
+        byte[] streamData = new byte[originalData.Length];
         int value = stream.Read(streamData, 0, streamData.Length);
 
         Assert.Equal(originalData.Length, value);

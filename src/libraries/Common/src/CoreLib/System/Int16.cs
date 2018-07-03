@@ -12,9 +12,9 @@ namespace System
     [Serializable]
     [StructLayout(LayoutKind.Sequential)]
     [TypeForwardedFrom("mscorlib, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089")]
-    public struct Int16 : IComparable, IConvertible, IFormattable, IComparable<Int16>, IEquatable<Int16>, ISpanFormattable
+    public readonly struct Int16 : IComparable, IConvertible, IFormattable, IComparable<short>, IEquatable<short>, ISpanFormattable
     {
-        private short m_value; // Do not rename (binary serialization)
+        private readonly short m_value; // Do not rename (binary serialization)
 
         public const short MaxValue = (short)0x7FFF;
         public const short MinValue = unchecked((short)0x8000);
@@ -25,37 +25,37 @@ namespace System
         // null is considered to be less than any instance.
         // If object is not of type Int16, this method throws an ArgumentException.
         // 
-        public int CompareTo(Object value)
+        public int CompareTo(object value)
         {
             if (value == null)
             {
                 return 1;
             }
 
-            if (value is Int16)
+            if (value is short)
             {
-                return m_value - ((Int16)value).m_value;
+                return m_value - ((short)value).m_value;
             }
 
             throw new ArgumentException(SR.Arg_MustBeInt16);
         }
 
-        public int CompareTo(Int16 value)
+        public int CompareTo(short value)
         {
             return m_value - value;
         }
 
-        public override bool Equals(Object obj)
+        public override bool Equals(object obj)
         {
-            if (!(obj is Int16))
+            if (!(obj is short))
             {
                 return false;
             }
-            return m_value == ((Int16)obj).m_value;
+            return m_value == ((short)obj).m_value;
         }
 
         [NonVersionable]
-        public bool Equals(Int16 obj)
+        public bool Equals(short obj)
         {
             return m_value == obj;
         }
@@ -67,22 +67,22 @@ namespace System
         }
 
 
-        public override String ToString()
+        public override string ToString()
         {
             return Number.FormatInt32(m_value, null, null);
         }
 
-        public String ToString(IFormatProvider provider)
+        public string ToString(IFormatProvider provider)
         {
             return Number.FormatInt32(m_value, null, provider);
         }
 
-        public String ToString(String format)
+        public string ToString(string format)
         {
             return ToString(format, null);
         }
 
-        public String ToString(String format, IFormatProvider provider)
+        public string ToString(string format, IFormatProvider provider)
         {
             if (m_value < 0 && format != null && format.Length > 0 && (format[0] == 'X' || format[0] == 'x'))
             {
@@ -103,26 +103,26 @@ namespace System
             return Number.TryFormatInt32(m_value, format, provider, destination, out charsWritten);
         }
 
-        public static short Parse(String s)
+        public static short Parse(string s)
         {
             if (s == null) ThrowHelper.ThrowArgumentNullException(ExceptionArgument.s);
             return Parse((ReadOnlySpan<char>)s, NumberStyles.Integer, NumberFormatInfo.CurrentInfo);
         }
 
-        public static short Parse(String s, NumberStyles style)
+        public static short Parse(string s, NumberStyles style)
         {
             NumberFormatInfo.ValidateParseStyleInteger(style);
             if (s == null) ThrowHelper.ThrowArgumentNullException(ExceptionArgument.s);
             return Parse((ReadOnlySpan<char>)s, style, NumberFormatInfo.CurrentInfo);
         }
 
-        public static short Parse(String s, IFormatProvider provider)
+        public static short Parse(string s, IFormatProvider provider)
         {
             if (s == null) ThrowHelper.ThrowArgumentNullException(ExceptionArgument.s);
             return Parse((ReadOnlySpan<char>)s, NumberStyles.Integer, NumberFormatInfo.GetInstance(provider));
         }
 
-        public static short Parse(String s, NumberStyles style, IFormatProvider provider)
+        public static short Parse(string s, NumberStyles style, IFormatProvider provider)
         {
             NumberFormatInfo.ValidateParseStyleInteger(style);
             if (s == null) ThrowHelper.ThrowArgumentNullException(ExceptionArgument.s);
@@ -151,7 +151,7 @@ namespace System
             // for negative numbers
             if ((style & NumberStyles.AllowHexSpecifier) != 0)
             { // We are parsing a hexadecimal number
-                if ((i < 0) || (i > UInt16.MaxValue))
+                if ((i < 0) || (i > ushort.MaxValue))
                 {
                     throw new OverflowException(SR.Overflow_Int16);
                 }
@@ -162,7 +162,7 @@ namespace System
             return (short)i;
         }
 
-        public static bool TryParse(String s, out Int16 result)
+        public static bool TryParse(string s, out short result)
         {
             if (s == null)
             {
@@ -178,7 +178,7 @@ namespace System
             return TryParse(s, NumberStyles.Integer, NumberFormatInfo.CurrentInfo, out result);
         }
 
-        public static bool TryParse(String s, NumberStyles style, IFormatProvider provider, out Int16 result)
+        public static bool TryParse(string s, NumberStyles style, IFormatProvider provider, out short result)
         {
             NumberFormatInfo.ValidateParseStyleInteger(style);
 
@@ -197,7 +197,7 @@ namespace System
             return TryParse(s, style, NumberFormatInfo.GetInstance(provider), out result);
         }
 
-        private static bool TryParse(ReadOnlySpan<char> s, NumberStyles style, NumberFormatInfo info, out Int16 result)
+        private static bool TryParse(ReadOnlySpan<char> s, NumberStyles style, NumberFormatInfo info, out short result)
         {
             result = 0;
             int i;
@@ -210,11 +210,11 @@ namespace System
             // for negative numbers
             if ((style & NumberStyles.AllowHexSpecifier) != 0)
             { // We are parsing a hexadecimal number
-                if ((i < 0) || i > UInt16.MaxValue)
+                if ((i < 0) || i > ushort.MaxValue)
                 {
                     return false;
                 }
-                result = (Int16)i;
+                result = (short)i;
                 return true;
             }
 
@@ -222,7 +222,7 @@ namespace System
             {
                 return false;
             }
-            result = (Int16)i;
+            result = (short)i;
             return true;
         }
 
@@ -296,7 +296,7 @@ namespace System
             return Convert.ToDouble(m_value);
         }
 
-        Decimal IConvertible.ToDecimal(IFormatProvider provider)
+        decimal IConvertible.ToDecimal(IFormatProvider provider)
         {
             return Convert.ToDecimal(m_value);
         }
@@ -306,7 +306,7 @@ namespace System
             throw new InvalidCastException(SR.Format(SR.InvalidCast_FromTo, "Int16", "DateTime"));
         }
 
-        Object IConvertible.ToType(Type type, IFormatProvider provider)
+        object IConvertible.ToType(Type type, IFormatProvider provider)
         {
             return Convert.DefaultToType((IConvertible)this, type, provider);
         }

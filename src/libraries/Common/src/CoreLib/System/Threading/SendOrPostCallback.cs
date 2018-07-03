@@ -4,5 +4,5 @@
 
 namespace System.Threading
 {
-    public delegate void SendOrPostCallback(Object state);
+    public delegate void SendOrPostCallback(object state);
 }

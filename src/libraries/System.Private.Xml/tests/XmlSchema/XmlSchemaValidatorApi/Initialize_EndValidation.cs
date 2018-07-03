@@ -198,7 +198,7 @@ namespace System.Xml.Tests
         [InlineData("other")]
         [InlineData("type")]
         [InlineData("attribute")]
-        public void InitializeWithElementValidate_OtherElement_Type_Attribute(String typeToValidate)
+        public void InitializeWithElementValidate_OtherElement_Type_Attribute(string typeToValidate)
         {
             XmlSchemaValidator val;
             XmlSchemaInfo info = new XmlSchemaInfo();
@@ -280,7 +280,7 @@ namespace System.Xml.Tests
         [Theory]
         [InlineData("other")]
         [InlineData("attribute")]
-        public void InitializeWithTypeValidate_OtherType_Attribute(String typeToValidate)
+        public void InitializeWithTypeValidate_OtherType_Attribute(string typeToValidate)
         {
             XmlSchemaValidator val;
             XmlSchemaInfo info = new XmlSchemaInfo();
@@ -379,7 +379,7 @@ namespace System.Xml.Tests
         [InlineData("other")]
         [InlineData("element")]
         [InlineData("type")]
-        public void InitializeWithAttributeValidate_OtherAttribute_Element_Type(String typeToValidate)
+        public void InitializeWithAttributeValidate_OtherAttribute_Element_Type(string typeToValidate)
         {
             XmlSchemaValidator val;
             XmlSchemaInfo info = new XmlSchemaInfo();
@@ -439,7 +439,7 @@ namespace System.Xml.Tests
         [InlineData("annotation")]
         [InlineData("group")]
         [InlineData("any")]
-        public void Pass_XmlSchemaAnnotation_XmlSchemaGroup_XmlSchemaAny_Invalid(String TypeToPass)
+        public void Pass_XmlSchemaAnnotation_XmlSchemaGroup_XmlSchemaAny_Invalid(string TypeToPass)
         {
             XmlSchemaValidator val = CreateValidator(new XmlSchemaSet());
             XmlSchemaObject obj = new XmlSchemaAnnotation();
@@ -478,7 +478,7 @@ namespace System.Xml.Tests
         [Theory]
         [InlineData("text")]
         [InlineData("whitespace")]
-        public void SetPartiaValidationAndCallValidate_Text_WhiteSpace_Valid(String typeToValidate)
+        public void SetPartiaValidationAndCallValidate_Text_WhiteSpace_Valid(string typeToValidate)
         {
             XmlSchemaValidator val;
             XmlSchemaInfo info = new XmlSchemaInfo();
@@ -527,7 +527,7 @@ namespace System.Xml.Tests
         [InlineData("valid")]
         [InlineData("missing")]
         [InlineData("ignore")]
-        public void TestForRootLevelIdentityConstraints_Valid_IDREFMissingInvalid_IgnoreIdentityConstraintsIsSetInvalid(String validity)
+        public void TestForRootLevelIdentityConstraints_Valid_IDREFMissingInvalid_IgnoreIdentityConstraintsIsSetInvalid(string validity)
         {
             XmlSchemaValidator val;
             XmlSchemaInfo info = new XmlSchemaInfo();

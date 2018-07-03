@@ -316,18 +316,18 @@ namespace System.Data.SqlClient.ManualTesting.Tests
                 conn.Open();
 
                 Guid randomizer = Guid.NewGuid();
-                string typeName = String.Format("dbo.[QHint_{0}]", randomizer);
-                string procName = String.Format("dbo.[QHint_Proc_{0}]", randomizer);
-                string createTypeSql = String.Format(
+                string typeName = string.Format("dbo.[QHint_{0}]", randomizer);
+                string procName = string.Format("dbo.[QHint_Proc_{0}]", randomizer);
+                string createTypeSql = string.Format(
                         "CREATE TYPE {0} AS TABLE("
                             + " c1 Int DEFAULT -1,"
                             + " c2 NVarChar(40) DEFAULT N'DEFUALT',"
                             + " c3 DateTime DEFAULT '1/1/2006',"
                             + " c4 Int DEFAULT -1)",
                             typeName);
-                string createProcSql = String.Format(
+                string createProcSql = string.Format(
                         "CREATE PROC {0}(@tvp {1} READONLY) AS SELECT TOP(2) * FROM @tvp ORDER BY c1", procName, typeName);
-                string dropSql = String.Format("DROP PROC {0}; DROP TYPE {1}", procName, typeName);
+                string dropSql = string.Format("DROP PROC {0}; DROP TYPE {1}", procName, typeName);
 
                 try
                 {
@@ -664,9 +664,9 @@ namespace System.Data.SqlClient.ManualTesting.Tests
             {
                 resultValue = (SqlDecimal)result;
             }
-            else if (result.GetType() == typeof(Decimal))
+            else if (result.GetType() == typeof(decimal))
             {
-                resultValue = new SqlDecimal((Decimal)result);
+                resultValue = new SqlDecimal((decimal)result);
             }
             else if (result.GetType() == typeof(SqlMoney))
             {
@@ -718,7 +718,7 @@ namespace System.Data.SqlClient.ManualTesting.Tests
                     {
                         try
                         {
-                            Decimal dummy = source.Value;
+                            decimal dummy = source.Value;
                         }
                         catch (OverflowException)
                         {
@@ -754,7 +754,7 @@ namespace System.Data.SqlClient.ManualTesting.Tests
                                 {
                                     if (source is char[])
                                     {
-                                        source = new String((char[])source);
+                                        source = new string((char[])source);
                                         isMatch = AllowableDifference((string)source, result, metadata);
                                     }
                                     else if (source is byte[])
@@ -770,23 +770,23 @@ namespace System.Data.SqlClient.ManualTesting.Tests
                                         source = new string(((SqlChars)source).Value);
                                         isMatch = AllowableDifference((string)source, result, metadata);
                                     }
-                                    else if (source is SqlInt64 && result is Int64)
+                                    else if (source is SqlInt64 && result is long)
                                     {
                                         isMatch = result.Equals(((SqlInt64)source).Value);
                                     }
-                                    else if (source is SqlInt32 && result is Int32)
+                                    else if (source is SqlInt32 && result is int)
                                     {
                                         isMatch = result.Equals(((SqlInt32)source).Value);
                                     }
-                                    else if (source is SqlInt16 && result is Int16)
+                                    else if (source is SqlInt16 && result is short)
                                     {
                                         isMatch = result.Equals(((SqlInt16)source).Value);
                                     }
-                                    else if (source is SqlSingle && result is Single)
+                                    else if (source is SqlSingle && result is float)
                                     {
                                         isMatch = result.Equals(((SqlSingle)source).Value);
                                     }
-                                    else if (source is SqlDouble && result is Double)
+                                    else if (source is SqlDouble && result is double)
                                     {
                                         isMatch = result.Equals(((SqlDouble)source).Value);
                                     }
@@ -805,9 +805,9 @@ namespace System.Data.SqlClient.ManualTesting.Tests
                                 }
                                 break;
                             case TypeCode.Decimal:
-                                if (result is SqlDecimal || result is Decimal || result is SqlMoney)
+                                if (result is SqlDecimal || result is decimal || result is SqlMoney)
                                 {
-                                    isMatch = AllowableDifference(new SqlDecimal((Decimal)source), result, metadata);
+                                    isMatch = AllowableDifference(new SqlDecimal((decimal)source), result, metadata);
                                 }
                                 break;
                             default:
@@ -1053,7 +1053,7 @@ namespace System.Data.SqlClient.ManualTesting.Tests
                 cmd.ExecuteNonQuery();
 
                 // and create the proc that uses the type            
-                cmd.CommandText = String.Format("CREATE PROC {0}(@tvp {1} READONLY) AS SELECT * FROM @tvp order by {2}",
+                cmd.CommandText = string.Format("CREATE PROC {0}(@tvp {1} READONLY) AS SELECT * FROM @tvp order by {2}",
                         GetProcName(tvpPerm), GetTypeName(tvpPerm), colOrdinal - 1);
                 cmd.ExecuteNonQuery();
             }
@@ -1292,7 +1292,7 @@ namespace System.Data.SqlClient.ManualTesting.Tests
                 {
                     object value;
                     // Special case to handle decimal values that may be too large for GetValue
-                    if (!rdr.IsDBNull(columnOrd) && rdr.GetFieldType(columnOrd) == typeof(Decimal))
+                    if (!rdr.IsDBNull(columnOrd) && rdr.GetFieldType(columnOrd) == typeof(decimal))
                     {
                         value = rdr.GetSqlValue(columnOrd);
                     }
@@ -1460,31 +1460,31 @@ namespace System.Data.SqlClient.ManualTesting.Tests
             SqlDataRecord rec = _sourceData[0];
 
             DataTable schemaTable = new DataTable();
-            schemaTable.Columns.Add(new DataColumn(SchemaTableColumn.ColumnName, typeof(System.String)));
-            schemaTable.Columns.Add(new DataColumn(SchemaTableColumn.ColumnOrdinal, typeof(System.Int32)));
-            schemaTable.Columns.Add(new DataColumn(SchemaTableColumn.ColumnSize, typeof(System.Int32)));
-            schemaTable.Columns.Add(new DataColumn(SchemaTableColumn.NumericPrecision, typeof(System.Int16)));
-            schemaTable.Columns.Add(new DataColumn(SchemaTableColumn.NumericScale, typeof(System.Int16)));
+            schemaTable.Columns.Add(new DataColumn(SchemaTableColumn.ColumnName, typeof(string)));
+            schemaTable.Columns.Add(new DataColumn(SchemaTableColumn.ColumnOrdinal, typeof(int)));
+            schemaTable.Columns.Add(new DataColumn(SchemaTableColumn.ColumnSize, typeof(int)));
+            schemaTable.Columns.Add(new DataColumn(SchemaTableColumn.NumericPrecision, typeof(short)));
+            schemaTable.Columns.Add(new DataColumn(SchemaTableColumn.NumericScale, typeof(short)));
 
             schemaTable.Columns.Add(new DataColumn(SchemaTableColumn.DataType, typeof(System.Type)));
             schemaTable.Columns.Add(new DataColumn(SchemaTableOptionalColumn.ProviderSpecificDataType, typeof(System.Type)));
-            schemaTable.Columns.Add(new DataColumn(SchemaTableColumn.NonVersionedProviderType, typeof(System.Int32)));
-            schemaTable.Columns.Add(new DataColumn(SchemaTableColumn.ProviderType, typeof(System.Int32)));
+            schemaTable.Columns.Add(new DataColumn(SchemaTableColumn.NonVersionedProviderType, typeof(int)));
+            schemaTable.Columns.Add(new DataColumn(SchemaTableColumn.ProviderType, typeof(int)));
 
-            schemaTable.Columns.Add(new DataColumn(SchemaTableColumn.IsLong, typeof(System.Boolean)));
-            schemaTable.Columns.Add(new DataColumn(SchemaTableColumn.AllowDBNull, typeof(System.Boolean)));
-            schemaTable.Columns.Add(new DataColumn(SchemaTableOptionalColumn.IsReadOnly, typeof(System.Boolean)));
-            schemaTable.Columns.Add(new DataColumn(SchemaTableOptionalColumn.IsRowVersion, typeof(System.Boolean)));
+            schemaTable.Columns.Add(new DataColumn(SchemaTableColumn.IsLong, typeof(bool)));
+            schemaTable.Columns.Add(new DataColumn(SchemaTableColumn.AllowDBNull, typeof(bool)));
+            schemaTable.Columns.Add(new DataColumn(SchemaTableOptionalColumn.IsReadOnly, typeof(bool)));
+            schemaTable.Columns.Add(new DataColumn(SchemaTableOptionalColumn.IsRowVersion, typeof(bool)));
 
-            schemaTable.Columns.Add(new DataColumn(SchemaTableColumn.IsUnique, typeof(System.Boolean)));
-            schemaTable.Columns.Add(new DataColumn(SchemaTableColumn.IsKey, typeof(System.Boolean)));
-            schemaTable.Columns.Add(new DataColumn(SchemaTableOptionalColumn.IsAutoIncrement, typeof(System.Boolean)));
-            schemaTable.Columns.Add(new DataColumn(SchemaTableOptionalColumn.IsHidden, typeof(System.Boolean)));
+            schemaTable.Columns.Add(new DataColumn(SchemaTableColumn.IsUnique, typeof(bool)));
+            schemaTable.Columns.Add(new DataColumn(SchemaTableColumn.IsKey, typeof(bool)));
+            schemaTable.Columns.Add(new DataColumn(SchemaTableOptionalColumn.IsAutoIncrement, typeof(bool)));
+            schemaTable.Columns.Add(new DataColumn(SchemaTableOptionalColumn.IsHidden, typeof(bool)));
 
-            schemaTable.Columns.Add(new DataColumn(SchemaTableOptionalColumn.BaseCatalogName, typeof(System.String)));
-            schemaTable.Columns.Add(new DataColumn(SchemaTableColumn.BaseSchemaName, typeof(System.String)));
-            schemaTable.Columns.Add(new DataColumn(SchemaTableColumn.BaseTableName, typeof(System.String)));
-            schemaTable.Columns.Add(new DataColumn(SchemaTableColumn.BaseColumnName, typeof(System.String)));
+            schemaTable.Columns.Add(new DataColumn(SchemaTableOptionalColumn.BaseCatalogName, typeof(string)));
+            schemaTable.Columns.Add(new DataColumn(SchemaTableColumn.BaseSchemaName, typeof(string)));
+            schemaTable.Columns.Add(new DataColumn(SchemaTableColumn.BaseTableName, typeof(string)));
+            schemaTable.Columns.Add(new DataColumn(SchemaTableColumn.BaseColumnName, typeof(string)));
 
             for (int i = 0; i < rec.FieldCount; i++)
             {
@@ -1547,17 +1547,17 @@ namespace System.Data.SqlClient.ManualTesting.Tests
             return _sourceData[_currentRow].GetDateTime(ordinal);
         }
 
-        override public Decimal GetDecimal(int ordinal)
+        override public decimal GetDecimal(int ordinal)
         {
             // DataRecord may have illegal values for Decimal...
-            Decimal result;
+            decimal result;
             try
             {
                 result = _sourceData[_currentRow].GetDecimal(ordinal);
             }
             catch (OverflowException)
             {
-                result = (Decimal)1;
+                result = (decimal)1;
             }
             return result;
         }
@@ -1577,27 +1577,27 @@ namespace System.Data.SqlClient.ManualTesting.Tests
             return _sourceData[_currentRow].GetGuid(ordinal);
         }
 
-        override public Int16 GetInt16(int ordinal)
+        override public short GetInt16(int ordinal)
         {
             return _sourceData[_currentRow].GetInt16(ordinal);
         }
 
-        override public Int32 GetInt32(int ordinal)
+        override public int GetInt32(int ordinal)
         {
             return _sourceData[_currentRow].GetInt32(ordinal);
         }
 
-        override public Int64 GetInt64(int ordinal)
+        override public long GetInt64(int ordinal)
         {
             return _sourceData[_currentRow].GetInt64(ordinal);
         }
 
-        override public String GetString(int ordinal)
+        override public string GetString(int ordinal)
         {
             return _sourceData[_currentRow].GetString(ordinal);
         }
 
-        override public Object GetValue(int ordinal)
+        override public object GetValue(int ordinal)
         {
             return _sourceData[_currentRow].GetValue(ordinal);
         }

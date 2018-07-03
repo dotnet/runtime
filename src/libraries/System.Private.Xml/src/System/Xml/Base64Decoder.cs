@@ -20,7 +20,7 @@ namespace System.Xml
         private int _bits;
         private int _bitsFilled;
 
-        private static readonly String s_charsBase64 = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/";
+        private static readonly string s_charsBase64 = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/";
         private static readonly byte[] s_mapBase64 = ConstructMapBase64();
         private const int MaxValidChar = (int)'z';
         private const byte Invalid = unchecked((byte)-1);

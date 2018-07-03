@@ -722,7 +722,7 @@ namespace System.Globalization
             }
         }
 
-        private unsafe SortKey CreateSortKey(String source, CompareOptions options)
+        private unsafe SortKey CreateSortKey(string source, CompareOptions options)
         {
             Debug.Assert(!_invariantMode);
 
@@ -764,12 +764,12 @@ namespace System.Globalization
 
             while (index < length)
             {
-                if (Char.IsHighSurrogate(text[index]))
+                if (char.IsHighSurrogate(text[index]))
                 {
-                    if (index == length - 1 || !Char.IsLowSurrogate(text[index+1]))
+                    if (index == length - 1 || !char.IsLowSurrogate(text[index+1]))
                         return false; // unpaired surrogate
 
-                    uc = CharUnicodeInfo.GetUnicodeCategory(Char.ConvertToUtf32(text[index], text[index+1]));
+                    uc = CharUnicodeInfo.GetUnicodeCategory(char.ConvertToUtf32(text[index], text[index+1]));
                     if (uc == UnicodeCategory.PrivateUse || uc == UnicodeCategory.OtherNotAssigned)
                         return false;
 
@@ -777,7 +777,7 @@ namespace System.Globalization
                     continue;
                 }
 
-                if (Char.IsLowSurrogate(text[index]))
+                if (char.IsLowSurrogate(text[index]))
                 {
                     return false; // unpaired surrogate
                 }

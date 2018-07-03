@@ -62,7 +62,7 @@ namespace System.Threading.Tasks
         /// <summary>Default MaxItemsPerTask to use for processing if none is specified.</summary>
         private const int DEFAULT_MAXITEMSPERTASK = UNLIMITED_PROCESSING;
         /// <summary>Default MaxConcurrencyLevel is the processor count if not otherwise specified.</summary>
-        private static Int32 DefaultMaxConcurrencyLevel { get { return Environment.ProcessorCount; } }
+        private static int DefaultMaxConcurrencyLevel { get { return Environment.ProcessorCount; } }
 
         /// <summary>Gets the sync obj used to protect all state on this instance.</summary>
         private object ValueLock { get { return m_threadProcessingMode; } }
@@ -116,8 +116,8 @@ namespace System.Threading.Tasks
 
             // Treat UNLIMITED_PROCESSING/-1 for both MCL and MIPT as the biggest possible value so that we don't
             // have to special case UNLIMITED_PROCESSING later on in processing.
-            if (m_maxConcurrencyLevel == UNLIMITED_PROCESSING) m_maxConcurrencyLevel = Int32.MaxValue;
-            if (m_maxItemsPerTask == UNLIMITED_PROCESSING) m_maxItemsPerTask = Int32.MaxValue;
+            if (m_maxConcurrencyLevel == UNLIMITED_PROCESSING) m_maxConcurrencyLevel = int.MaxValue;
+            if (m_maxItemsPerTask == UNLIMITED_PROCESSING) m_maxItemsPerTask = int.MaxValue;
 
             // Create the concurrent/exclusive schedulers for this pair
             m_exclusiveTaskScheduler = new ConcurrentExclusiveTaskScheduler(this, 1, ProcessingMode.ProcessingExclusiveTask);

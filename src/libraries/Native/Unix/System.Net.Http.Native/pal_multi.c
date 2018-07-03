@@ -127,9 +127,9 @@ int32_t HttpNative_MultiInfoRead(CURLM* multiHandle, int32_t* message, CURL** ea
         return 0;
     }
 
-    *message = curlMessage->msg;
+    *message = (int32_t)(curlMessage->msg);
     *easyHandle = curlMessage->easy_handle;
-    *result = curlMessage->data.result;
+    *result = (int32_t)(curlMessage->data.result);
 
     return 1;
 }

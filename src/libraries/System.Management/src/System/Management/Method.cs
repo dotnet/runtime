@@ -217,7 +217,7 @@ namespace System.Management
                 if (status < 0)
                 {
                     if (status == (int)tag_WBEMSTATUS.WBEM_E_INVALID_OBJECT)
-                        className = String.Empty;   // Interpret as an unspecified property - return ""
+                        className = string.Empty;   // Interpret as an unspecified property - return ""
                     else if ((status & 0xfffff000) == 0x80041000)
                         ManagementException.ThrowWithExtendedInfo((ManagementStatus)status);
                     else

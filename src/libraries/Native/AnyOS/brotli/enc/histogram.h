@@ -12,15 +12,18 @@
 #include <string.h>  /* memset */
 
 #include "../common/constants.h"
+#include "../common/context.h"
+#include "../common/platform.h"
 #include <brotli/types.h>
 #include "./block_splitter.h"
 #include "./command.h"
-#include "./context.h"
-#include "./port.h"
 
 #if defined(__cplusplus) || defined(c_plusplus)
 extern "C" {
 #endif
+
+/* The distance symbols effectively used by "Large Window Brotli" (32-bit). */
+#define BROTLI_NUM_HISTOGRAM_DISTANCE_SYMBOLS 544
 
 #define FN(X) X ## Literal
 #define DATA_SIZE BROTLI_NUM_LITERAL_SYMBOLS
@@ -38,7 +41,7 @@ extern "C" {
 #undef FN
 
 #define FN(X) X ## Distance
-#define DATA_SIZE BROTLI_NUM_DISTANCE_SYMBOLS
+#define DATA_SIZE BROTLI_NUM_HISTOGRAM_DISTANCE_SYMBOLS
 #include "./histogram_inc.h"  /* NOLINT(build/include) */
 #undef DataType
 #undef DATA_SIZE

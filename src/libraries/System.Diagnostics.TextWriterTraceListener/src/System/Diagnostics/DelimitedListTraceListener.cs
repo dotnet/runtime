@@ -69,7 +69,7 @@ namespace System.Diagnostics
         // warning would be hitted.
         protected override string[] GetSupportedAttributes() => new string[] { "delimiter" };
 
-        public override void TraceEvent(TraceEventCache eventCache, String source, TraceEventType eventType, int id, string format, params object[] args)
+        public override void TraceEvent(TraceEventCache eventCache, string source, TraceEventType eventType, int id, string format, params object[] args)
         {
             if (Filter != null && !Filter.ShouldTrace(eventCache, source, eventType, id, format, args, null, null))
                 return;
@@ -77,7 +77,7 @@ namespace System.Diagnostics
             WriteHeader(source, eventType, id);
 
             if (args != null)
-                WriteEscaped(String.Format(CultureInfo.InvariantCulture, format, args));
+                WriteEscaped(string.Format(CultureInfo.InvariantCulture, format, args));
             else
                 WriteEscaped(format);
             Write(Delimiter); // Use get_Delimiter
@@ -88,7 +88,7 @@ namespace System.Diagnostics
             WriteFooter(eventCache);
         }
 
-        public override void TraceEvent(TraceEventCache eventCache, String source, TraceEventType eventType, int id, string message)
+        public override void TraceEvent(TraceEventCache eventCache, string source, TraceEventType eventType, int id, string message)
         {
             if (Filter != null && !Filter.ShouldTrace(eventCache, source, eventType, id, message, null, null, null))
                 return;
@@ -104,7 +104,7 @@ namespace System.Diagnostics
             WriteFooter(eventCache);
         }
 
-        public override void TraceData(TraceEventCache eventCache, String source, TraceEventType eventType, int id, object data)
+        public override void TraceData(TraceEventCache eventCache, string source, TraceEventType eventType, int id, object data)
         {
             if (Filter != null && !Filter.ShouldTrace(eventCache, source, eventType, id, null, null, data, null))
                 return;
@@ -120,7 +120,7 @@ namespace System.Diagnostics
             WriteFooter(eventCache);
         }
 
-        public override void TraceData(TraceEventCache eventCache, String source, TraceEventType eventType, int id, params object[] data)
+        public override void TraceData(TraceEventCache eventCache, string source, TraceEventType eventType, int id, params object[] data)
         {
             if (Filter != null && !Filter.ShouldTrace(eventCache, source, eventType, id, null, null, null, data))
                 return;
@@ -144,7 +144,7 @@ namespace System.Diagnostics
             WriteFooter(eventCache);
         }
 
-        private void WriteHeader(String source, TraceEventType eventType, int id)
+        private void WriteHeader(string source, TraceEventType eventType, int id)
         {
             WriteEscaped(source);
             Write(Delimiter); // Use get_Delimiter

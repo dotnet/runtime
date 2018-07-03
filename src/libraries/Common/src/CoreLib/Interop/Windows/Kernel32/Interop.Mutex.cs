@@ -12,10 +12,10 @@ internal static partial class Interop
     {
         internal const uint CREATE_MUTEX_INITIAL_OWNER = 0x1;
 
-        [DllImport(Interop.Libraries.Kernel32, SetLastError = true, CharSet = CharSet.Unicode)]
+        [DllImport(Interop.Libraries.Kernel32, EntryPoint = "OpenMutexW", SetLastError = true, CharSet = CharSet.Unicode)]
         internal static extern SafeWaitHandle OpenMutex(uint desiredAccess, bool inheritHandle, string name);
 
-        [DllImport(Interop.Libraries.Kernel32, SetLastError = true, CharSet = CharSet.Unicode)]
+        [DllImport(Interop.Libraries.Kernel32, EntryPoint = "CreateMutexExW", SetLastError = true, CharSet = CharSet.Unicode)]
         internal static extern SafeWaitHandle CreateMutexEx(IntPtr lpMutexAttributes, string name, uint flags, uint desiredAccess);
 
         [DllImport(Interop.Libraries.Kernel32, SetLastError = true)]

@@ -128,7 +128,7 @@ namespace System.Reflection.Metadata.Ecma335.Tests
             builder.AddManifestResource(default(ManifestResourceAttributes), default(StringHandle), MetadataTokens.AssemblyFileHandle(1), default(uint));
             Assert.Equal(1, builder.GetRowCount(TableIndex.ManifestResource));
 
-            builder.AddAssemblyFile(default(StringHandle), default(BlobHandle), default(Boolean));
+            builder.AddAssemblyFile(default(StringHandle), default(BlobHandle), default(bool));
             Assert.Equal(1, builder.GetRowCount(TableIndex.File));
 
             builder.AddExportedType(default(TypeAttributes), default(StringHandle), default(StringHandle), MetadataTokens.AssemblyFileHandle(1), default(int));

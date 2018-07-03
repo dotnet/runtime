@@ -90,6 +90,12 @@ namespace System.Runtime.Intrinsics.X86
         public static Vector128<sbyte> Shuffle(Vector128<sbyte> value, Vector128<sbyte> mask) => Shuffle(value, mask);
 
         /// <summary>
+        /// __m128i _mm_shuffle_epi8 (__m128i a, __m128i b)
+        ///   PSHUFB xmm, xmm/m128
+        /// </summary>
+        public static Vector128<byte> Shuffle(Vector128<byte> value, Vector128<byte> mask) => Shuffle(value, mask);
+
+        /// <summary>
         /// __m128i _mm_sign_epi8 (__m128i a, __m128i b)
         ///   PSIGNB xmm, xmm/m128
         /// </summary>

@@ -166,7 +166,8 @@ namespace System.Net.Http
 
         public HttpConnectionSettings Settings => _poolManager.Settings;
         public bool IsSecure => _sslOptions != null;
-        public bool UsingProxy => _kind == HttpConnectionKind.Proxy;        // Tunnel doesn't count, only direct proxy usage
+        public HttpConnectionKind Kind => _kind;
+        public bool AnyProxyKind => (_proxyUri != null);
         public Uri ProxyUri => _proxyUri;
         public ICredentials ProxyCredentials => _poolManager.ProxyCredentials;
         public byte[] HostHeaderValueBytes => _hostHeaderValueBytes;

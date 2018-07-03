@@ -165,7 +165,7 @@ namespace System
         //  If the digits of the value is greater than len, no leading zero is added.
         //
         // Notes: 
-        //  The function can format to Int32.MaxValue.
+        //  The function can format to int.MaxValue.
         //
         ////////////////////////////////////////////////////////////////////////////
         internal static void FormatDigits(StringBuilder outputBuffer, int value, int len)
@@ -765,10 +765,10 @@ namespace System
 
 
         // output the 'z' famliy of formats, which output a the offset from UTC, e.g. "-07:30"
-        private static void FormatCustomizedTimeZone(DateTime dateTime, TimeSpan offset, ReadOnlySpan<char> format, Int32 tokenLen, Boolean timeOnly, StringBuilder result)
+        private static void FormatCustomizedTimeZone(DateTime dateTime, TimeSpan offset, ReadOnlySpan<char> format, int tokenLen, bool timeOnly, StringBuilder result)
         {
             // See if the instance already has an offset
-            Boolean dateTimeFormat = (offset == NullOffset);
+            bool dateTimeFormat = (offset == NullOffset);
             if (dateTimeFormat)
             {
                 // No offset. The instance is a DateTime and the output should be the local time zone
@@ -1069,7 +1069,7 @@ namespace System
             Debug.Assert(dtfi != null);
             if (format.Length == 0)
             {
-                Boolean timeOnlySpecialCase = false;
+                bool timeOnlySpecialCase = false;
                 if (dateTime.Ticks < Calendar.TicksPerDay)
                 {
                     // If the time is less than 1 day, consider it as time of day.

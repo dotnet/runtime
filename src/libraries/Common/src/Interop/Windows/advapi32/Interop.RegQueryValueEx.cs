@@ -32,7 +32,7 @@ internal partial class Interop
         [DllImport(Libraries.Advapi32, CharSet = CharSet.Unicode, BestFitMapping = false, EntryPoint = "RegQueryValueExW")]
         internal static extern int RegQueryValueEx(
             SafeRegistryHandle hKey,
-            String lpValueName,
+            string lpValueName,
             int[] lpReserved,
             ref int lpType,
             ref long lpData,
@@ -41,7 +41,7 @@ internal partial class Interop
         [DllImport(Libraries.Advapi32, CharSet = CharSet.Unicode, BestFitMapping = false, EntryPoint = "RegQueryValueExW")]
         internal static extern int RegQueryValueEx(
             SafeRegistryHandle hKey,
-            String lpValueName,
+            string lpValueName,
             int[] lpReserved,
             ref int lpType,
             [Out] char[] lpData,
@@ -50,7 +50,7 @@ internal partial class Interop
         [DllImport(Libraries.Advapi32, CharSet = CharSet.Unicode, BestFitMapping = false, EntryPoint = "RegQueryValueExW")]
         internal static extern int RegQueryValueEx(
             SafeRegistryHandle hKey,
-            String lpValueName,
+            string lpValueName,
             int[] lpReserved,
             ref int lpType,
             [Out]StringBuilder lpData,

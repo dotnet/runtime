@@ -1208,9 +1208,9 @@ namespace System.DirectoryServices.ActiveDirectory
                     string linkName = (string)PropertyManager.GetSearchResultPropertyValue(result, PropertyManager.Cn);
                     string transportName = (string)Utils.GetDNComponents(dn)[1].Value;
                     ActiveDirectoryTransportType transportType;
-                    if (String.Compare(transportName, "IP", StringComparison.OrdinalIgnoreCase) == 0)
+                    if (string.Equals(transportName, "IP", StringComparison.OrdinalIgnoreCase))
                         transportType = ActiveDirectoryTransportType.Rpc;
-                    else if (String.Compare(transportName, "SMTP", StringComparison.OrdinalIgnoreCase) == 0)
+                    else if (string.Equals(transportName, "SMTP", StringComparison.OrdinalIgnoreCase))
                         transportType = ActiveDirectoryTransportType.Smtp;
                     else
                     {
@@ -1275,9 +1275,9 @@ namespace System.DirectoryServices.ActiveDirectory
                     string cn = (string)PropertyManager.GetSearchResultPropertyValue(result, PropertyManager.Cn);
                     string transport = Utils.GetDNComponents((string)PropertyManager.GetSearchResultPropertyValue(result, PropertyManager.DistinguishedName))[1].Value;
                     ActiveDirectorySiteLink link = null;
-                    if (String.Compare(transport, "IP", StringComparison.OrdinalIgnoreCase) == 0)
+                    if (string.Equals(transport, "IP", StringComparison.OrdinalIgnoreCase))
                         link = new ActiveDirectorySiteLink(context, cn, ActiveDirectoryTransportType.Rpc, true, connectionEntry);
-                    else if (String.Compare(transport, "SMTP", StringComparison.OrdinalIgnoreCase) == 0)
+                    else if (string.Equals(transport, "SMTP", StringComparison.OrdinalIgnoreCase))
                         link = new ActiveDirectorySiteLink(context, cn, ActiveDirectoryTransportType.Smtp, true, connectionEntry);
                     else
                     {

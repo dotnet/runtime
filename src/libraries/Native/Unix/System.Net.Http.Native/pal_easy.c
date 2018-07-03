@@ -134,7 +134,7 @@ inline static CURLoption ConvertOption(PAL_CURLoption option)
 
 int32_t HttpNative_EasySetOptionString(CURL* handle, PAL_CURLoption option, const char* value)
 {
-    return curl_easy_setopt(handle, ConvertOption(option), value);
+    return (int32_t)(curl_easy_setopt(handle, ConvertOption(option), value));
 }
 
 int32_t HttpNative_EasySetOptionLong(CURL* handle, PAL_CURLoption option, int64_t value)
@@ -146,17 +146,17 @@ int32_t HttpNative_EasySetOptionLong(CURL* handle, PAL_CURLoption option, int64_
     // we map anything >= CurlOptionOffTBase to use curl_off_t.
     if (option >= CurlOptionOffTBase)
     {
-        return curl_easy_setopt(handle, curlOpt, (curl_off_t)value);
+        return (int32_t)(curl_easy_setopt(handle, curlOpt, (curl_off_t)value));
     }
     else
     {
-        return curl_easy_setopt(handle, curlOpt, (long)value);
+        return (int32_t)(curl_easy_setopt(handle, curlOpt, (long)value));
     }
 }
 
 int32_t HttpNative_EasySetOptionPointer(CURL* handle, PAL_CURLoption option, void* value)
 {
-    return curl_easy_setopt(handle, ConvertOption(option), value);
+    return (int32_t)(curl_easy_setopt(handle, ConvertOption(option), value));
 }
 
 const char* HttpNative_EasyGetErrorString(PAL_CURLcode code)
@@ -171,22 +171,22 @@ inline static CURLINFO ConvertInfo(PAL_CURLINFO info)
 
 int32_t HttpNative_EasyGetInfoPointer(CURL* handle, PAL_CURLINFO info, void** value)
 {
-    return curl_easy_getinfo(handle, ConvertInfo(info), value);
+    return (int32_t)(curl_easy_getinfo(handle, ConvertInfo(info), value));
 }
 
 int32_t HttpNative_EasyGetInfoLong(CURL* handle, PAL_CURLINFO info, int64_t* value)
 {
-    return curl_easy_getinfo(handle, ConvertInfo(info), value);
+    return (int32_t)(curl_easy_getinfo(handle, ConvertInfo(info), value));
 }
 
 int32_t HttpNative_EasyPerform(CURL* handle)
 {
-    return curl_easy_perform(handle);
+    return (int32_t)(curl_easy_perform(handle));
 }
 
 int32_t HttpNative_EasyUnpause(CURL* handle)
 {
-    return curl_easy_pause(handle, CURLPAUSE_CONT);
+    return (int32_t)(curl_easy_pause(handle, CURLPAUSE_CONT));
 }
 
 struct CallbackHandle
@@ -319,7 +319,7 @@ int32_t HttpNative_RegisterSslCtxCallback(CURL* curl,
     handle->sslUserPointer = userPointer;
 
     curl_easy_setopt(curl, CURLOPT_SSL_CTX_DATA, handle);
-    return curl_easy_setopt(curl, CURLOPT_SSL_CTX_FUNCTION, &ssl_ctx_callback);
+    return (int32_t)(curl_easy_setopt(curl, CURLOPT_SSL_CTX_FUNCTION, &ssl_ctx_callback));
 }
 
 static int debug_callback(CURL* curl, curl_infotype type, char* data, size_t size, void* userPointer)
@@ -345,9 +345,9 @@ int32_t HttpNative_RegisterDebugCallback(CURL* curl,
     handle->debugUserPointer = userPointer;
 
     CURLcode rv = curl_easy_setopt(curl, CURLOPT_DEBUGDATA, handle);
-    return rv == CURLE_OK ? 
-        curl_easy_setopt(curl, CURLOPT_DEBUGFUNCTION, &debug_callback) : 
-        rv;
+    return rv == CURLE_OK ?
+        (int32_t)(curl_easy_setopt(curl, CURLOPT_DEBUGFUNCTION, &debug_callback)) :
+        (int32_t)rv;
 }
 
 void HttpNative_FreeCallbackHandle(CallbackHandle* callbackHandle)

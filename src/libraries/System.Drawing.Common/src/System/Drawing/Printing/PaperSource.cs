@@ -18,7 +18,7 @@ namespace System.Drawing.Printing
         public PaperSource()
         {
             _kind = PaperSourceKind.Custom;
-            _name = String.Empty;
+            _name = string.Empty;
         }
 
         internal PaperSource(PaperSourceKind kind, string name)

@@ -33,7 +33,7 @@ namespace OLEDB.Test.ModuleCore
     public class CModInfo
     {
         //Data
-        private static String s_strCommandLine;
+        private static string s_strCommandLine;
         private static MyDict<string, string> s_hashOptions;
         private static object _includenotimplemented;
 

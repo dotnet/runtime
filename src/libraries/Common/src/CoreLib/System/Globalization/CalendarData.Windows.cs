@@ -13,7 +13,7 @@ namespace System.Globalization
 {
     internal partial class CalendarData
     {
-        private bool LoadCalendarDataFromSystem(String localeName, CalendarId calendarId)
+        private bool LoadCalendarDataFromSystem(string localeName, CalendarId calendarId)
         {
             Debug.Assert(!GlobalizationMode.Invariant);
 
@@ -127,7 +127,7 @@ namespace System.Globalization
         }
 
         // Call native side to figure out which calendars are allowed
-        internal static int GetCalendars(String localeName, bool useUserOverride, CalendarId[] calendars)
+        internal static int GetCalendars(string localeName, bool useUserOverride, CalendarId[] calendars)
         {
             Debug.Assert(!GlobalizationMode.Invariant);
 
@@ -451,7 +451,7 @@ namespace System.Globalization
             }
         }
 
-        private static unsafe String GetUserDefaultLocaleName()
+        private static unsafe string GetUserDefaultLocaleName()
         {
             Debug.Assert(!GlobalizationMode.Invariant);
 
@@ -463,7 +463,7 @@ namespace System.Globalization
             char* localeName = stackalloc char[LOCALE_NAME_MAX_LENGTH];
             result = CultureData.GetLocaleInfoEx(LOCALE_NAME_USER_DEFAULT, LOCALE_SNAME, localeName, LOCALE_NAME_MAX_LENGTH);
 
-            return result <= 0 ? "" : new String(localeName, 0, result - 1); // exclude the null termination
+            return result <= 0 ? "" : new string(localeName, 0, result - 1); // exclude the null termination
         }
     }
 }

@@ -19,11 +19,11 @@ using System.Runtime.InteropServices;
 //machine information
 public static class FileSystemDebugInfo
 {
-    public static String MachineInfo()
+    public static string MachineInfo()
     {
-        StringBuilder builder = new StringBuilder(String.Format("{0}/////////Machine Info///////////{0}", Environment.NewLine));
-        builder.AppendLine(String.Format("CurrentDrive NTFS?: {0}", IsCurrentDriveNTFS()));
-        builder.AppendLine(String.Format("////////////////////{0}", Environment.NewLine));
+        StringBuilder builder = new StringBuilder(string.Format("{0}/////////Machine Info///////////{0}", Environment.NewLine));
+        builder.AppendLine(string.Format("CurrentDrive NTFS?: {0}", IsCurrentDriveNTFS()));
+        builder.AppendLine(string.Format("////////////////////{0}", Environment.NewLine));
 
         return builder.ToString();
     }
@@ -33,16 +33,16 @@ public static class FileSystemDebugInfo
         return IOServices.IsDriveNTFS(IOServices.GetCurrentDrive());
     }
 
-    public static bool IsPathAdminAccessOnly(String path, bool treatPathAsFilePath)
+    public static bool IsPathAdminAccessOnly(string path, bool treatPathAsFilePath)
     {
         //we leave invalid paths as valid testcase scenarios and don't filter these
         //1) We check if the path is root on a system drive
         //2) @TODO WinDir?
-        String systemDrive = Environment.GetEnvironmentVariable("SystemDrive");
-        Char systemDriveLetter = systemDrive.ToLower()[0];
+        string systemDrive = Environment.GetEnvironmentVariable("SystemDrive");
+        char systemDriveLetter = systemDrive.ToLower()[0];
         try
         {
-            String dirName = Path.GetFullPath(path);
+            string dirName = Path.GetFullPath(path);
             if (treatPathAsFilePath)
                 dirName = Path.GetDirectoryName(dirName);
             if ((new DirectoryInfo(dirName)).Parent == null)
@@ -73,7 +73,7 @@ public static class FailSafeDirectoryOperations
     /// <param name="path"></param>
     /// <param name="recursive"></param>
     private const int MAX_ATTEMPT = 10;
-    public static void DeleteDirectory(String path, bool recursive)
+    public static void DeleteDirectory(string path, bool recursive)
     {
         DeleteDirectoryInfo(new DirectoryInfo(path), recursive);
     }
@@ -118,17 +118,17 @@ public static class FailSafeDirectoryOperations
     /// </summary>
     /// <param name="sourceName"></param>
     /// <param name="destName"></param>
-    public static void MoveDirectory(String sourceName, String destName)
+    public static void MoveDirectory(string sourceName, string destName)
     {
         MoveDirectoryInfo(new DirectoryInfo(sourceName), destName);
     }
 
-    public static DirectoryInfo MoveDirectoryInfo(DirectoryInfo dirInfo, String dirToMove)
+    public static DirectoryInfo MoveDirectoryInfo(DirectoryInfo dirInfo, string dirToMove)
     {
         int dirModificationAttemptCount;
         bool dirModificationOperationThrew;
         dirModificationAttemptCount = 0;
-        String originalDirName = dirInfo.FullName;
+        string originalDirName = dirInfo.FullName;
         do
         {
             dirModificationOperationThrew = false;
@@ -154,7 +154,7 @@ public static class FailSafeDirectoryOperations
     /// It can take some time before the Directory.Exists will return false after a directory delete/Move
     /// </summary>
     /// <param name="path"></param>
-    private static void EnsureDirectoryNotExist(String path)
+    private static void EnsureDirectoryNotExist(string path)
     {
         int dirModificationAttemptCount;
         dirModificationAttemptCount = 0;
@@ -180,7 +180,7 @@ public class ManageFileSystem : IDisposable
     private const int DefaultNumberofFiles = 100;
     private const int MaxNumberOfSubDirsPerDir = 2;
     //@TODO
-    public const String DirPrefixName = "Laks_";
+    public const string DirPrefixName = "Laks_";
 
     private int _directoryLevel;
     private int _numberOfFiles;
@@ -188,30 +188,30 @@ public class ManageFileSystem : IDisposable
 
     private Random _random;
 
-    private List<String> _listOfFiles;
-    private List<String> _listOfAllDirs;
-    private Dictionary<int, Dictionary<String, List<String>>> _allDirs;
+    private List<string> _listOfFiles;
+    private List<string> _listOfAllDirs;
+    private Dictionary<int, Dictionary<string, List<string>>> _allDirs;
 
 
     public ManageFileSystem()
     {
         Init(GetNonExistingDir(Directory.GetCurrentDirectory(), DirPrefixName), DefaultDirectoryDepth, DefaultNumberofFiles);
     }
-    public ManageFileSystem(String startDirName)
+    public ManageFileSystem(string startDirName)
         : this(startDirName, DefaultDirectoryDepth, DefaultNumberofFiles)
     {
     }
-    public ManageFileSystem(String startDirName, int dirDepth, int numFiles)
+    public ManageFileSystem(string startDirName, int dirDepth, int numFiles)
     {
         Init(startDirName, dirDepth, numFiles);
     }
 
-    public static String GetNonExistingDir(String parentDir, String prefix)
+    public static string GetNonExistingDir(string parentDir, string prefix)
     {
-        String tempPath;
+        string tempPath;
         while (true)
         {
-            tempPath = Path.Combine(parentDir, String.Format("{0}{1}", prefix, Path.GetFileNameWithoutExtension(Path.GetRandomFileName())));
+            tempPath = Path.Combine(parentDir, string.Format("{0}{1}", prefix, Path.GetFileNameWithoutExtension(Path.GetRandomFileName())));
             if (!Directory.Exists(tempPath) && !File.Exists(tempPath))
                 break;
         }
@@ -240,10 +240,10 @@ public class ManageFileSystem : IDisposable
         Dispose(false);
     }
 
-    private void Init(String startDirName, int dirDepth, int numFiles)
+    private void Init(string startDirName, int dirDepth, int numFiles)
     {
         if (Directory.Exists(Path.GetFullPath(startDirName)))
-            throw new ArgumentException(String.Format("ERROR: Directory exists : {0}", _startDir));
+            throw new ArgumentException(string.Format("ERROR: Directory exists : {0}", _startDir));
         _startDir = Path.GetFullPath(startDirName);
         _directoryLevel = dirDepth;
         _numberOfFiles = numFiles;
@@ -257,22 +257,22 @@ public class ManageFileSystem : IDisposable
     /// </summary>
     private void CreateFileSystem()
     {
-        _listOfFiles = new List<String>();
-        _listOfAllDirs = new List<String>();
+        _listOfFiles = new List<string>();
+        _listOfAllDirs = new List<string>();
         Directory.CreateDirectory(_startDir);
         //we will not include this directory
         //        m_listOfAllDirs.Add(m_startDir);
 
-        String currentWorkingDir = _startDir;
-        String parentDir = _startDir;
+        string currentWorkingDir = _startDir;
+        string parentDir = _startDir;
 
-        _allDirs = new Dictionary<int, Dictionary<String, List<String>>>();
+        _allDirs = new Dictionary<int, Dictionary<string, List<string>>>();
         //        List<String> dirsForOneLevel = new List<String>();
         //        List<String> tempDirsForOneLevel;
-        List<String> filesForThisDir;
-        Dictionary<String, List<String>> dirsForOneLevel = new Dictionary<String, List<String>>();
-        Dictionary<String, List<String>> tempDirsForOneLevel;
-        dirsForOneLevel.Add(_startDir, new List<String>());
+        List<string> filesForThisDir;
+        Dictionary<string, List<string>> dirsForOneLevel = new Dictionary<string, List<string>>();
+        Dictionary<string, List<string>> tempDirsForOneLevel;
+        dirsForOneLevel.Add(_startDir, new List<string>());
         _allDirs.Add(0, dirsForOneLevel);
 
         //First we create the directories
@@ -285,15 +285,15 @@ public class ManageFileSystem : IDisposable
             if (numOfDirPerDir == 0)
                 numOfDirPerDir = 1;
             //            Trace.Assert(numOfDirPerDir > 0, "Err_897324g! @TODO handle this scenario");
-            tempDirsForOneLevel = new Dictionary<String, List<String>>();
-            foreach (String dir in dirsForOneLevel.Keys)
+            tempDirsForOneLevel = new Dictionary<string, List<string>>();
+            foreach (string dir in dirsForOneLevel.Keys)
             //                for (int j = 0; j < dirsForOneLevel.Count; j++)
             {
                 for (int k = 0; k < numOfDirPerDir; k++)
                 {
-                    String dirName = GetNonExistingDir(dir, DirPrefixName);
-                    Debug.Assert(!Directory.Exists(dirName), String.Format("ERR_93472g! Directory exists: {0}", dirName));
-                    tempDirsForOneLevel.Add(dirName, new List<String>());
+                    string dirName = GetNonExistingDir(dir, DirPrefixName);
+                    Debug.Assert(!Directory.Exists(dirName), string.Format("ERR_93472g! Directory exists: {0}", dirName));
+                    tempDirsForOneLevel.Add(dirName, new List<string>());
                     _listOfAllDirs.Add(dirName);
                     Directory.CreateDirectory(dirName);
                 }
@@ -303,7 +303,7 @@ public class ManageFileSystem : IDisposable
         //Then we add the files 
         //@TODO!! random or fixed?
         int numberOfFilePerDirLevel = _numberOfFiles / _directoryLevel;
-        Byte[] bits;
+        byte[] bits;
         for (int i = 0; i < _directoryLevel; i++)
         {
             dirsForOneLevel = _allDirs[i];
@@ -313,13 +313,13 @@ public class ManageFileSystem : IDisposable
             if (numOFilesPerDir == 0)
                 numOFilesPerDir = 1;
             //            for (int j = 0; j < dirsForOneLevel.Count; j++)
-            foreach (String dir in dirsForOneLevel.Keys)
+            foreach (string dir in dirsForOneLevel.Keys)
             {
                 filesForThisDir = dirsForOneLevel[dir];
                 for (int k = 0; k < numOFilesPerDir; k++)
                 {
-                    String fileName = Path.Combine(dir, Path.GetFileName(Path.GetRandomFileName()));
-                    bits = new Byte[_random.Next(10)];
+                    string fileName = Path.Combine(dir, Path.GetFileName(Path.GetRandomFileName()));
+                    bits = new byte[_random.Next(10)];
                     _random.NextBytes(bits);
                     File.WriteAllBytes(fileName, bits);
                     _listOfFiles.Add(fileName);
@@ -329,42 +329,42 @@ public class ManageFileSystem : IDisposable
         }
     }
 
-    public String StartDirectory
+    public string StartDirectory
     {
         get { return _startDir; }
     }
 
     //some methods to help us
-    public String[] GetDirectories(int level)
+    public string[] GetDirectories(int level)
     {
-        Dictionary<String, List<String>> dirsForThisLevel = null;
+        Dictionary<string, List<string>> dirsForThisLevel = null;
         if (_allDirs.TryGetValue(level, out dirsForThisLevel))
         {
             //        Dictionary<String, List<String>> dirsForThisLevel = m_allDirs[level];
-            ICollection<String> keys = dirsForThisLevel.Keys;
-            String[] values = new String[keys.Count];
+            ICollection<string> keys = dirsForThisLevel.Keys;
+            string[] values = new string[keys.Count];
             keys.CopyTo(values, 0);
             return values;
         }
         else
-            return new String[0];
+            return new string[0];
     }
 
     /// <summary>
     /// Note that this doesn't return the m_startDir
     /// </summary>
     /// <returns></returns>
-    public String[] GetAllDirectories()
+    public string[] GetAllDirectories()
     {
         return _listOfAllDirs.ToArray();
     }
 
 
-    public String[] GetFiles(String dirName, int level)
+    public string[] GetFiles(string dirName, int level)
     {
-        String dirFullName = Path.GetFullPath(dirName);
-        Dictionary<String, List<String>> dirsForThisLevel = _allDirs[level];
-        foreach (String dir in dirsForThisLevel.Keys)
+        string dirFullName = Path.GetFullPath(dirName);
+        Dictionary<string, List<string>> dirsForThisLevel = _allDirs[level];
+        foreach (string dir in dirsForThisLevel.Keys)
         {
             if (dir.Equals(dirFullName, StringComparison.CurrentCultureIgnoreCase))
                 return dirsForThisLevel[dir].ToArray();
@@ -372,7 +372,7 @@ public class ManageFileSystem : IDisposable
         return null;
     }
 
-    public String[] GetAllFiles()
+    public string[] GetAllFiles()
     {
         return _listOfFiles.ToArray();
     }
@@ -390,7 +390,7 @@ public class TestInfo
 
     private delegate void ExceptionCode();
 
-    private void DeleteFile(String fileName)
+    private void DeleteFile(string fileName)
     {
         if (File.Exists(fileName))
             File.Delete(fileName);
@@ -398,12 +398,12 @@ public class TestInfo
 
 
     //Checks for error
-    private static bool Eval(bool expression, String msg, params Object[] values)
+    private static bool Eval(bool expression, string msg, params object[] values)
     {
-        return Eval(expression, String.Format(msg, values));
+        return Eval(expression, string.Format(msg, values));
     }
 
-    private static bool Eval<T>(T actual, T expected, String errorMsg)
+    private static bool Eval<T>(T actual, T expected, string errorMsg)
     {
         bool retValue = expected == null ? actual == null : expected.Equals(actual);
 
@@ -415,7 +415,7 @@ public class TestInfo
         return retValue;
     }
 
-    private static bool Eval(bool expression, String msg)
+    private static bool Eval(bool expression, string msg)
     {
         if (!expression)
         {
@@ -431,13 +431,13 @@ public class TestInfo
     }
 
     //Checks for a particular type of exception and an Exception msg
-    private static void CheckException<E>(ExceptionCode test, string error, String msgExpected)
+    private static void CheckException<E>(ExceptionCode test, string error, string msgExpected)
     {
         bool exception = false;
         try
         {
             test();
-            error = String.Format("{0} Exception NOT thrown ", error);
+            error = string.Format("{0} Exception NOT thrown ", error);
         }
         catch (Exception e)
         {
@@ -447,11 +447,11 @@ public class TestInfo
                 if (System.Globalization.CultureInfo.CurrentUICulture.Name == "en-US" && msgExpected != null && e.Message != msgExpected)
                 {
                     exception = false;
-                    error = String.Format("{0} Message Different: <{1}>", error, e.Message);
+                    error = string.Format("{0} Message Different: <{1}>", error, e.Message);
                 }
             }
             else
-                error = String.Format("{0} Exception type: {1}", error, e.GetType().Name);
+                error = string.Format("{0} Exception type: {1}", error, e.GetType().Name);
         }
         Eval(exception, error);
     }

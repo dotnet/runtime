@@ -26,13 +26,13 @@ namespace System.Threading
             HResult = HResults.COR_E_SYNCHRONIZATIONLOCK;
         }
 
-        public SynchronizationLockException(String message)
+        public SynchronizationLockException(string message)
             : base(message)
         {
             HResult = HResults.COR_E_SYNCHRONIZATIONLOCK;
         }
 
-        public SynchronizationLockException(String message, Exception innerException)
+        public SynchronizationLockException(string message, Exception innerException)
             : base(message, innerException)
         {
             HResult = HResults.COR_E_SYNCHRONIZATIONLOCK;

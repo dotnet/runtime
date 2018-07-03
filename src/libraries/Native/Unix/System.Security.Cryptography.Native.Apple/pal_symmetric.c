@@ -3,6 +3,7 @@
 // See the LICENSE file in the project root for more information.
 
 #include "pal_symmetric.h"
+#include "pal_utilities.h"
 
 #include <assert.h>
 
@@ -92,13 +93,16 @@ int32_t AppleCryptoNative_CryptorUpdate(CCCryptorRef cryptor,
     if (pbData == NULL || cbData < 0 || pbOutput == NULL || cbOutput < cbData || pcbWritten == NULL)
         return -1;
 
+    size_t sizeWritten = 0;
     CCStatus status = CCCryptorUpdate(cryptor,
                                       pbData,
                                       (size_t)cbData,
                                       pbOutput,
                                       (size_t)cbOutput,
-                                      (size_t*)pcbWritten);
+                                      &sizeWritten);
 
+    // Safe because sizeWritten is bounded by cbOutput.
+    *pcbWritten = SizeTToInt32(sizeWritten);
     *pccStatus = status;
     return status == kCCSuccess;
 }
@@ -114,9 +118,12 @@ int32_t AppleCryptoNative_CryptorFinal(
     if (pbOutput == NULL || cbOutput < 0 || pcbWritten == NULL)
         return -1;
 
+    size_t sizeWritten = 0;
     CCStatus status =
-        CCCryptorFinal(cryptor, pbOutput, (size_t)cbOutput, (size_t*)pcbWritten);
+        CCCryptorFinal(cryptor, pbOutput, (size_t)cbOutput, &sizeWritten);
 
+    // Safe because sizeWritten is bounded by cbOutput.
+    *pcbWritten = SizeTToInt32(sizeWritten);
     *pccStatus = status;
     return status == kCCSuccess;
 }

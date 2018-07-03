@@ -39,7 +39,7 @@ namespace Microsoft.Framework.WebEncoders
             var newFilter = new TextEncoderSettings(originalFilter);
 
             // Assert
-            for (int i = 0; i <= Char.MaxValue; i++)
+            for (int i = 0; i <= char.MaxValue; i++)
             {
                 Assert.Equal((i % 2) == 1, newFilter.IsCharacterAllowed((char)i));
             }
@@ -86,7 +86,7 @@ namespace Microsoft.Framework.WebEncoders
             {
                 Assert.True(filter.IsCharacterAllowed((char)i));
             }
-            for (int i = 0x2C80; i <= Char.MaxValue; i++)
+            for (int i = 0x2C80; i <= char.MaxValue; i++)
             {
                 Assert.False(filter.IsCharacterAllowed((char)i));
             }
@@ -165,7 +165,7 @@ namespace Microsoft.Framework.WebEncoders
             {
                 Assert.True(filter.IsCharacterAllowed((char)i));
             }
-            for (int i = 0x0080; i <= Char.MaxValue; i++)
+            for (int i = 0x0080; i <= char.MaxValue; i++)
             {
                 Assert.Equal((i % 2) == 1, filter.IsCharacterAllowed((char)i));
             }
@@ -202,7 +202,7 @@ namespace Microsoft.Framework.WebEncoders
             {
                 Assert.True(filter.IsCharacterAllowed((char)i));
             }
-            for (int i = 0x0180; i <= Char.MaxValue; i++)
+            for (int i = 0x0180; i <= char.MaxValue; i++)
             {
                 Assert.False(filter.IsCharacterAllowed((char)i));
             }
@@ -239,7 +239,7 @@ namespace Microsoft.Framework.WebEncoders
             {
                 Assert.True(filter.IsCharacterAllowed((char)i));
             }
-            for (int i = 0x2C80; i <= Char.MaxValue; i++)
+            for (int i = 0x2C80; i <= char.MaxValue; i++)
             {
                 Assert.False(filter.IsCharacterAllowed((char)i));
             }
@@ -257,7 +257,7 @@ namespace Microsoft.Framework.WebEncoders
         {
             // Arrange
             var filter = new TextEncoderSettings();
-            for (int i = 1; i <= Char.MaxValue; i++)
+            for (int i = 1; i <= char.MaxValue; i++)
             {
                 filter.AllowCharacter((char)i);
             }
@@ -266,7 +266,7 @@ namespace Microsoft.Framework.WebEncoders
             filter.Clear();
 
             // Assert
-            for (int i = 0; i <= Char.MaxValue; i++)
+            for (int i = 0; i <= char.MaxValue; i++)
             {
                 Assert.False(filter.IsCharacterAllowed((char)i));
             }
@@ -334,7 +334,7 @@ namespace Microsoft.Framework.WebEncoders
             {
                 Assert.Equal((i % 2) == 1, filter.IsCharacterAllowed((char)i));
             }
-            for (int i = 0xFFF0; i <= Char.MaxValue; i++)
+            for (int i = 0xFFF0; i <= char.MaxValue; i++)
             {
                 Assert.False(filter.IsCharacterAllowed((char)i));
             }
@@ -363,7 +363,7 @@ namespace Microsoft.Framework.WebEncoders
             {
                 Assert.Equal((i % 2) == 1, filter.IsCharacterAllowed((char)i));
             }
-            for (int i = 0xFFF0; i <= Char.MaxValue; i++)
+            for (int i = 0xFFF0; i <= char.MaxValue; i++)
             {
                 Assert.False(filter.IsCharacterAllowed((char)i));
             }
@@ -401,7 +401,7 @@ namespace Microsoft.Framework.WebEncoders
         {
             public override IEnumerable<int> GetAllowedCodePoints()
             {
-                for (int i = 1; i <= Char.MaxValue; i += 2)
+                for (int i = 1; i <= char.MaxValue; i += 2)
                 {
                     yield return i;
                 }

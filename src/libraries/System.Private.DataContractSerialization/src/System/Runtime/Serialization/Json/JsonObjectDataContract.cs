@@ -69,14 +69,14 @@ namespace System.Runtime.Serialization.Json
             if (value.IndexOfAny(JsonGlobals.FloatingPointCharacters) == -1)
             {
                 int intValue;
-                if (Int32.TryParse(value, NumberStyles.Float, NumberFormatInfo.InvariantInfo, out intValue))
+                if (int.TryParse(value, NumberStyles.Float, NumberFormatInfo.InvariantInfo, out intValue))
                 {
                     objectTypeCode = TypeCode.Int32;
                     return intValue;
                 }
 
                 long longValue;
-                if (Int64.TryParse(value, NumberStyles.Float, NumberFormatInfo.InvariantInfo, out longValue))
+                if (long.TryParse(value, NumberStyles.Float, NumberFormatInfo.InvariantInfo, out longValue))
                 {
                     objectTypeCode = TypeCode.Int64;
                     return longValue;
@@ -84,12 +84,12 @@ namespace System.Runtime.Serialization.Json
             }
 
             decimal decimalValue;
-            if (Decimal.TryParse(value, NumberStyles.Float, NumberFormatInfo.InvariantInfo, out decimalValue))
+            if (decimal.TryParse(value, NumberStyles.Float, NumberFormatInfo.InvariantInfo, out decimalValue))
             {
                 objectTypeCode = TypeCode.Decimal;
 
                 //check for decimal underflow
-                if (decimalValue == Decimal.Zero)
+                if (decimalValue == decimal.Zero)
                 {
                     double doubleValue = XmlConverter.ToDouble(value);
                     if (doubleValue != 0.0)

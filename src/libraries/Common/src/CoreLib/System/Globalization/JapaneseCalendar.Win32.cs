@@ -43,7 +43,7 @@ namespace System.Globalization
                 if (key == null) return null;
 
                 // Look up the values in our reg key
-                String[] valueNames = key.GetValueNames();
+                string[] valueNames = key.GetValueNames();
                 if (valueNames != null && valueNames.Length > 0)
                 {
                     registryEraRanges = new EraInfo[valueNames.Length];
@@ -143,7 +143,7 @@ namespace System.Globalization
         // . is a delimiter, but the value of . doesn't matter.
         // '_' marks the space between the japanese era name, japanese abbreviated era name
         //     english name, and abbreviated english names.
-        private static EraInfo GetEraFromValue(String value, String data)
+        private static EraInfo GetEraFromValue(string value, string data)
         {
             // Need inputs
             if (value == null || data == null) return null;
@@ -160,9 +160,9 @@ namespace System.Globalization
             int day;
 
             ReadOnlySpan<char> valueSpan = value.AsSpan();
-            if (!Int32.TryParse(valueSpan.Slice(0, 4), NumberStyles.None, NumberFormatInfo.InvariantInfo, out year) ||
-                !Int32.TryParse(valueSpan.Slice(5, 2), NumberStyles.None, NumberFormatInfo.InvariantInfo, out month) ||
-                !Int32.TryParse(valueSpan.Slice(8, 2), NumberStyles.None, NumberFormatInfo.InvariantInfo, out day))
+            if (!int.TryParse(valueSpan.Slice(0, 4), NumberStyles.None, NumberFormatInfo.InvariantInfo, out year) ||
+                !int.TryParse(valueSpan.Slice(5, 2), NumberStyles.None, NumberFormatInfo.InvariantInfo, out month) ||
+                !int.TryParse(valueSpan.Slice(8, 2), NumberStyles.None, NumberFormatInfo.InvariantInfo, out day))
             {
                 // Couldn't convert integer, fail
                 return null;
@@ -172,7 +172,7 @@ namespace System.Globalization
             // Get Strings
             //
             // Needs to be a certain length e_a_E_A at least (7 chars, exactly 4 groups)
-            String[] names = data.Split('_');
+            string[] names = data.Split('_');
 
             // Should have exactly 4 parts
             // 0 - Era Name
@@ -199,7 +199,7 @@ namespace System.Globalization
 
         // PAL Layer ends here
 
-        private static string[] s_japaneseErasEnglishNames = new String[] { "M", "T", "S", "H" };
+        private static string[] s_japaneseErasEnglishNames = new string[] { "M", "T", "S", "H" };
 
         private static string GetJapaneseEnglishEraName(int era)
         {

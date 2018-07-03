@@ -468,7 +468,7 @@ namespace System.Reflection
                 // packed[PackedArgs.MethodTokenPosition] = iface method token;
                 packedArr.BeginSet(PackedArgs.MethodTokenPosition);
                 il.Emit(OpCodes.Ldc_I4, methodToken);
-                packedArr.EndSet(typeof(Int32));
+                packedArr.EndSet(typeof(int));
 
                 // packed[PackedArgs.ArgsPosition] = args;
                 packedArr.BeginSet(PackedArgs.ArgsPosition);
@@ -540,49 +540,49 @@ namespace System.Reflection
                 if (type == null)
                     return 0;   // TypeCode.Empty;
 
-                if (type == typeof(Boolean))
+                if (type == typeof(bool))
                     return 3;   // TypeCode.Boolean;
 
-                if (type == typeof(Char))
+                if (type == typeof(char))
                     return 4;   // TypeCode.Char;
 
-                if (type == typeof(SByte))
+                if (type == typeof(sbyte))
                     return 5;   // TypeCode.SByte;
 
-                if (type == typeof(Byte))
+                if (type == typeof(byte))
                     return 6;   // TypeCode.Byte;
 
-                if (type == typeof(Int16))
+                if (type == typeof(short))
                     return 7;   // TypeCode.Int16;
 
-                if (type == typeof(UInt16))
+                if (type == typeof(ushort))
                     return 8;   // TypeCode.UInt16;
 
-                if (type == typeof(Int32))
+                if (type == typeof(int))
                     return 9;   // TypeCode.Int32;
 
-                if (type == typeof(UInt32))
+                if (type == typeof(uint))
                     return 10;  // TypeCode.UInt32;
 
-                if (type == typeof(Int64))
+                if (type == typeof(long))
                     return 11;  // TypeCode.Int64;
 
-                if (type == typeof(UInt64))
+                if (type == typeof(ulong))
                     return 12;  // TypeCode.UInt64;
 
-                if (type == typeof(Single))
+                if (type == typeof(float))
                     return 13;  // TypeCode.Single;
 
-                if (type == typeof(Double))
+                if (type == typeof(double))
                     return 14;  // TypeCode.Double;
 
-                if (type == typeof(Decimal))
+                if (type == typeof(decimal))
                     return 15;  // TypeCode.Decimal;
 
                 if (type == typeof(DateTime))
                     return 16;  // TypeCode.DateTime;
 
-                if (type == typeof(String))
+                if (type == typeof(string))
                     return 18;  // TypeCode.String;
 
                 if (type.GetTypeInfo().IsEnum)

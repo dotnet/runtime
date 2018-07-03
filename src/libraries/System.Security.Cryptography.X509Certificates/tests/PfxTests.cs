@@ -129,8 +129,11 @@ namespace System.Security.Cryptography.X509Certificates.Tests
                 VerifyPrivateKey((RSA)alg);
 
                 // Currently unable to set PrivateKey
-                Assert.Throws<PlatformNotSupportedException>(() => c.PrivateKey = null);
-                Assert.Throws<PlatformNotSupportedException>(() => c.PrivateKey = alg);
+                if (!PlatformDetection.IsFullFramework)
+                {
+                    Assert.Throws<PlatformNotSupportedException>(() => c.PrivateKey = null);
+                    Assert.Throws<PlatformNotSupportedException>(() => c.PrivateKey = alg);
+                }
             }
         }
 
@@ -185,16 +188,20 @@ namespace System.Security.Cryptography.X509Certificates.Tests
                 Assert.Null(pubOnly.PrivateKey);
 
                 // Currently unable to set PrivateKey
-                Assert.Throws<PlatformNotSupportedException>(() => cert.PrivateKey = null);
+                if (!PlatformDetection.IsFullFramework)
+                {
+                    Assert.Throws<PlatformNotSupportedException>(() => cert.PrivateKey = null);
+                }
 
                 using (var privKey = cert.GetECDsaPrivateKey())
                 {
-                    Assert.Throws<PlatformNotSupportedException>(() => cert.PrivateKey = privKey);
-                    Assert.Throws<PlatformNotSupportedException>(() => pubOnly.PrivateKey = privKey);
+                    Assert.ThrowsAny<NotSupportedException>(() => cert.PrivateKey = privKey);
+                    Assert.ThrowsAny<NotSupportedException>(() => pubOnly.PrivateKey = privKey);
                 }
             }
         }
 
+#if !NO_DSA_AVAILABLE
         [Fact]
         public static void DsaPrivateKeyProperty()
         {
@@ -216,6 +223,7 @@ namespace System.Security.Cryptography.X509Certificates.Tests
                 Assert.False(dsa.VerifyData(data, sig, HashAlgorithmName.SHA1), "Key verifies tampered data signature");
             }
         }
+#endif
 
         private static void Verify_ECDsaPrivateKey_WindowsPfx(ECDsa ecdsa)
         {
@@ -279,7 +287,8 @@ namespace System.Security.Cryptography.X509Certificates.Tests
                 }
             }
         }
-        
+
+#if !NO_DSA_AVAILABLE
         [Fact]
         public static void ReadDSAPrivateKey()
         {
@@ -301,7 +310,9 @@ namespace System.Security.Cryptography.X509Certificates.Tests
                 Assert.ThrowsAny<CryptographicException>(() => pubKey.SignData(data, HashAlgorithmName.SHA1));
             }
         }
+#endif
 
+#if !NO_EPHEMERALKEYSET_AVAILABLE
         [Fact]
         [PlatformSpecific(TestPlatforms.Windows)]  // Uses P/Invokes
         public static void EphemeralImport_HasNoKeyName()
@@ -371,6 +382,7 @@ namespace System.Security.Cryptography.X509Certificates.Tests
                 Assert.NotNull(key.KeyName);
             }
         }
+#endif
 
         [Fact]
         [PlatformSpecific(TestPlatforms.Windows)]  // Uses P/Invokes

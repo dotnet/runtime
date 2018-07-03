@@ -177,7 +177,7 @@ namespace System.Xml.Schema
                 get { return _size; }
             }
 
-            public Object SyncRoot
+            public object SyncRoot
             {
                 get
                 {
@@ -232,7 +232,7 @@ namespace System.Xml.Schema
                 get { return _size; }
             }
 
-            public Object SyncRoot
+            public object SyncRoot
             {
                 get
                 {
@@ -289,7 +289,7 @@ namespace System.Xml.Schema
                 currentIndex = -1;
             }
 
-            public Object Current
+            public object Current
             {
                 get
                 {

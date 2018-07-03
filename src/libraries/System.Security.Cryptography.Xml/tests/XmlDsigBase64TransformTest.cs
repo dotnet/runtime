@@ -152,7 +152,7 @@ namespace System.Security.Cryptography.Xml.Tests
             Stream s = (Stream)transform.GetOutput();
             string output = Stream2String(s);
             // Note that ChildNodes does not contain the text node.
-            Assert.Equal(String.Empty, output);
+            Assert.Equal(string.Empty, output);
         }
 
         [Fact]

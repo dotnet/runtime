@@ -270,8 +270,8 @@ namespace System.Threading.Tasks.Tests
 
             string stateParam = "test"; //used as a state parameter for the continuation if the useStateParam is true
             Task t1 = new Task(delegate { x = 1; });
-            Task t2 = t1.ContinueWith(delegate (Task t, Object obj) { y = 1; }, stateParam);
-            Task<int> t3 = t2.ContinueWith(delegate (Task t, Object obj) { return 5; }, stateParam);
+            Task t2 = t1.ContinueWith(delegate (Task t, object obj) { y = 1; }, stateParam);
+            Task<int> t3 = t2.ContinueWith(delegate (Task t, object obj) { return 5; }, stateParam);
             Task<int> t4 = t3.ContinueWith(delegate (Task<int> t, Object obj) { return Task<int>.Factory.StartNew(delegate { return 10; }); }, stateParam).Unwrap();
             Task<string> t5 = t4.ContinueWith(delegate (Task<int> t, Object obj) { return Task<string>.Factory.StartNew(delegate { for (int i = 0; i < 400; i++) ; return "worked"; }); }, stateParam).Unwrap();
 
@@ -527,7 +527,7 @@ namespace System.Threading.Tasks.Tests
                     delegate { ran = false; },
                     delegate (Task t)
                     {
-                        return t.ContinueWith<int>(delegate (Task f, Object obj) { ran = true; return 5; }, stateParam, options);
+                        return t.ContinueWith<int>(delegate (Task f, object obj) { ran = true; return 5; }, stateParam, options);
                     },
                     delegate { return ran; },
                     true
@@ -539,7 +539,7 @@ namespace System.Threading.Tasks.Tests
                     delegate { ran = false; },
                     delegate (Task t)
                     {
-                        return t.ContinueWith<int>(delegate (Task f, Object obj) { ran = true; return 5; }, stateParam, options);
+                        return t.ContinueWith<int>(delegate (Task f, object obj) { ran = true; return 5; }, stateParam, options);
                     },
                     delegate { return ran; },
                     true

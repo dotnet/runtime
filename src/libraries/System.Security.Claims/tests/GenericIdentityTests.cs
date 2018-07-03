@@ -32,8 +32,8 @@ namespace System.Security.Claims
         public void EmptyName()
         {
             GenericIdentity gi = new GenericIdentity("");
-            Assert.Equal(String.Empty, gi.Name);
-            Assert.Equal(String.Empty, gi.AuthenticationType);
+            Assert.Equal(string.Empty, gi.Name);
+            Assert.Equal(string.Empty, gi.AuthenticationType);
             Assert.False(gi.IsAuthenticated);
         }
 

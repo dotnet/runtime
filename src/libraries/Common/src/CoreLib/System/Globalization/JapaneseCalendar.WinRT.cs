@@ -46,7 +46,7 @@ namespace System.Globalization
 
         // PAL Layer ends here
 
-        private static string[] JapaneseErasEnglishNames = new String[] { "M", "T", "S", "H" };
+        private static string[] JapaneseErasEnglishNames = new string[] { "M", "T", "S", "H" };
 
         private static string GetJapaneseEnglishEraName(int era)
         {

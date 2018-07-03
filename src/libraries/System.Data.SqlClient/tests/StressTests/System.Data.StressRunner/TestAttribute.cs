@@ -90,7 +90,7 @@ namespace DPStressHarness
 
                 if (TestMetrics.Overrides.ContainsKey(propName))
                 {
-                    return Int32.Parse(TestMetrics.Overrides[propName]);
+                    return int.Parse(TestMetrics.Overrides[propName]);
                 }
                 else
                 {
@@ -108,7 +108,7 @@ namespace DPStressHarness
 
                 if (TestMetrics.Overrides.ContainsKey(propName))
                 {
-                    return Int32.Parse(TestMetrics.Overrides[propName]);
+                    return int.Parse(TestMetrics.Overrides[propName]);
                 }
                 else
                 {
@@ -156,7 +156,7 @@ namespace DPStressHarness
 
                 if (TestMetrics.Overrides.ContainsKey(propName))
                 {
-                    return Int32.Parse(TestMetrics.Overrides[propName]);
+                    return int.Parse(TestMetrics.Overrides[propName]);
                 }
                 else
                 {
@@ -174,7 +174,7 @@ namespace DPStressHarness
 
                 if (TestMetrics.Overrides.ContainsKey(propName))
                 {
-                    return Int32.Parse(TestMetrics.Overrides[propName]);
+                    return int.Parse(TestMetrics.Overrides[propName]);
                 }
                 else
                 {
@@ -192,7 +192,7 @@ namespace DPStressHarness
 
                 if (TestMetrics.Overrides.ContainsKey(propName))
                 {
-                    return Int32.Parse(TestMetrics.Overrides[propName]);
+                    return int.Parse(TestMetrics.Overrides[propName]);
                 }
                 else
                 {
@@ -223,7 +223,7 @@ namespace DPStressHarness
 
                 if (TestMetrics.Overrides.ContainsKey(propName))
                 {
-                    return Int32.Parse(TestMetrics.Overrides[propName]);
+                    return int.Parse(TestMetrics.Overrides[propName]);
                 }
                 else
                 {
@@ -241,7 +241,7 @@ namespace DPStressHarness
 
                 if (TestMetrics.Overrides.ContainsKey(propName))
                 {
-                    return Int32.Parse(TestMetrics.Overrides[propName]);
+                    return int.Parse(TestMetrics.Overrides[propName]);
                 }
                 else
                 {
@@ -259,7 +259,7 @@ namespace DPStressHarness
 
                 if (TestMetrics.Overrides.ContainsKey(propName))
                 {
-                    return Int32.Parse(TestMetrics.Overrides[propName]);
+                    return int.Parse(TestMetrics.Overrides[propName]);
                 }
                 else
                 {

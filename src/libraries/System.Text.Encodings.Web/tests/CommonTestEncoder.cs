@@ -89,7 +89,7 @@ namespace Microsoft.Framework.WebEncoders
 
         private static string EncodeCore(string value, [CallerMemberName] string encodeType = null)
         {
-            return String.Format(CultureInfo.InvariantCulture, "{0}[[{1}]]", encodeType, value);
+            return string.Format(CultureInfo.InvariantCulture, "{0}[[{1}]]", encodeType, value);
         }
 
         private static void EncodeCore(string value, int startIndex, int characterCount, TextWriter output, [CallerMemberName] string encodeType = null)

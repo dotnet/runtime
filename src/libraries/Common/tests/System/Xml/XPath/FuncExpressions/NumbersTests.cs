@@ -252,7 +252,7 @@ namespace XPathTests.FunctionalTests.Expressions
         {
             var xml = "dummy.xml";
             var testExpression = @"number(0 div 0) mod 1";
-            var expected = Double.NaN;
+            var expected = double.NaN;
 
             Utils.XPathNumberTest(xml, testExpression, expected);
         }
@@ -266,7 +266,7 @@ namespace XPathTests.FunctionalTests.Expressions
         {
             var xml = "dummy.xml";
             var testExpression = @"1 mod number(0 div 0)";
-            var expected = Double.NaN;
+            var expected = double.NaN;
 
             Utils.XPathNumberTest(xml, testExpression, expected);
         }
@@ -280,7 +280,7 @@ namespace XPathTests.FunctionalTests.Expressions
         {
             var xml = "dummy.xml";
             var testExpression = @"number(1 div 0) mod 1";
-            var expected = Double.NaN;
+            var expected = double.NaN;
 
             Utils.XPathNumberTest(xml, testExpression, expected);
         }
@@ -294,7 +294,7 @@ namespace XPathTests.FunctionalTests.Expressions
         {
             var xml = "dummy.xml";
             var testExpression = @"number(1 div 0) mod 0";
-            var expected = Double.NaN;
+            var expected = double.NaN;
 
             Utils.XPathNumberTest(xml, testExpression, expected);
         }
@@ -308,7 +308,7 @@ namespace XPathTests.FunctionalTests.Expressions
         {
             var xml = "dummy.xml";
             var testExpression = @"1 mod 0";
-            var expected = Double.NaN;
+            var expected = double.NaN;
 
             Utils.XPathNumberTest(xml, testExpression, expected);
         }

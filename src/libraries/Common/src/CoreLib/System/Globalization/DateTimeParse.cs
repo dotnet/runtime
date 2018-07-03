@@ -11,7 +11,7 @@ namespace System
 {
     internal static class DateTimeParse
     {
-        internal const Int32 MaxDateTimeNumberDigits = 8;
+        internal const int MaxDateTimeNumberDigits = 8;
 
         internal delegate bool MatchNumberDelegate(ref __DTString str, int digitLen, out int result);
 
@@ -418,7 +418,7 @@ new DS[] { DS.ERROR, DS.TX_NNN,  DS.TX_NNN,  DS.TX_NNN,  DS.ERROR,   DS.ERROR,  
             if (nextCharIndex < str.Value.Length)
             {
                 char nextCh = str.Value[nextCharIndex];
-                if (Char.IsLetter(nextCh))
+                if (char.IsLetter(nextCh))
                 {
                     return (false);
                 }
@@ -573,7 +573,7 @@ new DS[] { DS.ERROR, DS.TX_NNN,  DS.TX_NNN,  DS.TX_NNN,  DS.ERROR,   DS.ERROR,  
                 char nextCh = str.Value[str.Index];
                 // Skip whitespace, but don't update the index unless we find a time zone marker
                 int whitespaceCount = 0;
-                while (Char.IsWhiteSpace(nextCh) && str.Index + whitespaceCount < str.Length - 1)
+                while (char.IsWhiteSpace(nextCh) && str.Index + whitespaceCount < str.Length - 1)
                 {
                     whitespaceCount++;
                     nextCh = str.Value[str.Index + whitespaceCount];
@@ -602,7 +602,7 @@ new DS[] { DS.ERROR, DS.TX_NNN,  DS.TX_NNN,  DS.TX_NNN,  DS.ERROR,   DS.ERROR,  
         // This is the lexer. Check the character at the current index, and put the found token in dtok and
         // some raw date/time information in raw.
         //
-        private static Boolean Lex(DS dps, ref __DTString str, ref DateTimeToken dtok, ref DateTimeRawInfo raw, ref DateTimeResult result, ref DateTimeFormatInfo dtfi, DateTimeStyles styles)
+        private static bool Lex(DS dps, ref __DTString str, ref DateTimeToken dtok, ref DateTimeRawInfo raw, ref DateTimeResult result, ref DateTimeFormatInfo dtfi, DateTimeStyles styles)
         {
             TokenType tokenType;
             int tokenValue;
@@ -1119,7 +1119,7 @@ new DS[] { DS.ERROR, DS.TX_NNN,  DS.TX_NNN,  DS.TX_NNN,  DS.ERROR,   DS.ERROR,  
                     }
                     break;
                 case TokenType.UnknownToken:
-                    if (Char.IsLetter(str.m_current))
+                    if (char.IsLetter(str.m_current))
                     {
                         result.SetFailure(ParseFailureKind.FormatWithOriginalDateTimeAndParameter, nameof(SR.Format_UnknownDateTimeWord), str.Index);
                         LexTraceExit("0200", dps);
@@ -1128,7 +1128,7 @@ new DS[] { DS.ERROR, DS.TX_NNN,  DS.TX_NNN,  DS.TX_NNN,  DS.ERROR,   DS.ERROR,  
 
                     if ((str.m_current == '-' || str.m_current == '+') && ((result.flags & ParseFlags.TimeZoneUsed) == 0))
                     {
-                        Int32 originalIndex = str.Index;
+                        int originalIndex = str.Index;
                         if (ParseTimeZone(ref str, ref result.timeZoneOffset))
                         {
                             result.flags |= ParseFlags.TimeZoneUsed;
@@ -1160,10 +1160,10 @@ new DS[] { DS.ERROR, DS.TX_NNN,  DS.TX_NNN,  DS.TX_NNN,  DS.ERROR,   DS.ERROR,  
             return true;
         }
 
-        private static Boolean VerifyValidPunctuation(ref __DTString str)
+        private static bool VerifyValidPunctuation(ref __DTString str)
         {
             // Compatability Behavior. Allow trailing nulls and surrounding hashes
-            Char ch = str.Value[str.Index];
+            char ch = str.Value[str.Index];
             if (ch == '#')
             {
                 bool foundStart = false;
@@ -1198,7 +1198,7 @@ new DS[] { DS.ERROR, DS.TX_NNN,  DS.TX_NNN,  DS.TX_NNN,  DS.ERROR,   DS.ERROR,  
                             return false;
                         }
                     }
-                    else if ((!Char.IsWhiteSpace(ch)))
+                    else if ((!char.IsWhiteSpace(ch)))
                     {
                         // Anything other than whitespace outside hashes is invalid
                         if (!foundStart || foundEnd)
@@ -1247,7 +1247,7 @@ new DS[] { DS.ERROR, DS.TX_NNN,  DS.TX_NNN,  DS.TX_NNN,  DS.ERROR,   DS.ERROR,  
         //
         // Return 0 for YMD, 1 for MDY, 2 for DMY, otherwise -1.
         //
-        private static Boolean GetYearMonthDayOrder(string datePattern, DateTimeFormatInfo dtfi, out int order)
+        private static bool GetYearMonthDayOrder(string datePattern, DateTimeFormatInfo dtfi, out int order)
         {
             int yearOrder = -1;
             int monthOrder = -1;
@@ -1345,7 +1345,7 @@ new DS[] { DS.ERROR, DS.TX_NNN,  DS.TX_NNN,  DS.TX_NNN,  DS.ERROR,   DS.ERROR,  
         //
         // Return 0 for YM, 1 for MY, otherwise -1.
         //
-        private static Boolean GetYearMonthOrder(string pattern, DateTimeFormatInfo dtfi, out int order)
+        private static bool GetYearMonthOrder(string pattern, DateTimeFormatInfo dtfi, out int order)
         {
             int yearOrder = -1;
             int monthOrder = -1;
@@ -1411,7 +1411,7 @@ new DS[] { DS.ERROR, DS.TX_NNN,  DS.TX_NNN,  DS.TX_NNN,  DS.ERROR,   DS.ERROR,  
         //
         // Return 0 for MD, 1 for DM, otherwise -1.
         //
-        private static Boolean GetMonthDayOrder(string pattern, DateTimeFormatInfo dtfi, out int order)
+        private static bool GetMonthDayOrder(string pattern, DateTimeFormatInfo dtfi, out int order)
         {
             int monthOrder = -1;
             int dayOrder = -1;
@@ -1539,7 +1539,7 @@ new DS[] { DS.ERROR, DS.TX_NNN,  DS.TX_NNN,  DS.TX_NNN,  DS.ERROR,   DS.ERROR,  
         }
 
         // Processing teriminal case: DS.DX_NN
-        private static Boolean GetDayOfNN(ref DateTimeResult result, ref DateTimeStyles styles, ref DateTimeRawInfo raw, DateTimeFormatInfo dtfi)
+        private static bool GetDayOfNN(ref DateTimeResult result, ref DateTimeStyles styles, ref DateTimeRawInfo raw, DateTimeFormatInfo dtfi)
         {
             if ((result.flags & ParseFlags.HaveDate) != 0)
             {
@@ -1582,7 +1582,7 @@ new DS[] { DS.ERROR, DS.TX_NNN,  DS.TX_NNN,  DS.TX_NNN,  DS.ERROR,   DS.ERROR,  
         }
 
         // Processing teriminal case: DS.DX_NNN
-        private static Boolean GetDayOfNNN(ref DateTimeResult result, ref DateTimeRawInfo raw, DateTimeFormatInfo dtfi)
+        private static bool GetDayOfNNN(ref DateTimeResult result, ref DateTimeRawInfo raw, DateTimeFormatInfo dtfi)
         {
             if ((result.flags & ParseFlags.HaveDate) != 0)
             {
@@ -1639,7 +1639,7 @@ new DS[] { DS.ERROR, DS.TX_NNN,  DS.TX_NNN,  DS.TX_NNN,  DS.ERROR,   DS.ERROR,  
             return false;
         }
 
-        private static Boolean GetDayOfMN(ref DateTimeResult result, ref DateTimeStyles styles, ref DateTimeRawInfo raw, DateTimeFormatInfo dtfi)
+        private static bool GetDayOfMN(ref DateTimeResult result, ref DateTimeStyles styles, ref DateTimeRawInfo raw, DateTimeFormatInfo dtfi)
         {
             if ((result.flags & ParseFlags.HaveDate) != 0)
             {
@@ -1701,7 +1701,7 @@ new DS[] { DS.ERROR, DS.TX_NNN,  DS.TX_NNN,  DS.TX_NNN,  DS.ERROR,   DS.ERROR,  
         //
         ////////////////////////////////////////////////////////////////////////
 
-        private static Boolean GetHebrewDayOfNM(ref DateTimeResult result, ref DateTimeRawInfo raw, DateTimeFormatInfo dtfi)
+        private static bool GetHebrewDayOfNM(ref DateTimeResult result, ref DateTimeRawInfo raw, DateTimeFormatInfo dtfi)
         {
             int monthDayOrder;
             if (!GetMonthDayOrder(dtfi.MonthDayPattern, dtfi, out monthDayOrder))
@@ -1722,7 +1722,7 @@ new DS[] { DS.ERROR, DS.TX_NNN,  DS.TX_NNN,  DS.TX_NNN,  DS.ERROR,   DS.ERROR,  
             return false;
         }
 
-        private static Boolean GetDayOfNM(ref DateTimeResult result, ref DateTimeStyles styles, ref DateTimeRawInfo raw, DateTimeFormatInfo dtfi)
+        private static bool GetDayOfNM(ref DateTimeResult result, ref DateTimeStyles styles, ref DateTimeRawInfo raw, DateTimeFormatInfo dtfi)
         {
             if ((result.flags & ParseFlags.HaveDate) != 0)
             {
@@ -1778,7 +1778,7 @@ new DS[] { DS.ERROR, DS.TX_NNN,  DS.TX_NNN,  DS.TX_NNN,  DS.ERROR,   DS.ERROR,  
             return true;
         }
 
-        private static Boolean GetDayOfMNN(ref DateTimeResult result, ref DateTimeRawInfo raw, DateTimeFormatInfo dtfi)
+        private static bool GetDayOfMNN(ref DateTimeResult result, ref DateTimeRawInfo raw, DateTimeFormatInfo dtfi)
         {
             if ((result.flags & ParseFlags.HaveDate) != 0)
             {
@@ -1848,7 +1848,7 @@ new DS[] { DS.ERROR, DS.TX_NNN,  DS.TX_NNN,  DS.TX_NNN,  DS.ERROR,   DS.ERROR,  
             return false;
         }
 
-        private static Boolean GetDayOfYNN(ref DateTimeResult result, ref DateTimeRawInfo raw, DateTimeFormatInfo dtfi)
+        private static bool GetDayOfYNN(ref DateTimeResult result, ref DateTimeRawInfo raw, DateTimeFormatInfo dtfi)
         {
             if ((result.flags & ParseFlags.HaveDate) != 0)
             {
@@ -1883,7 +1883,7 @@ new DS[] { DS.ERROR, DS.TX_NNN,  DS.TX_NNN,  DS.TX_NNN,  DS.ERROR,   DS.ERROR,  
             return false;
         }
 
-        private static Boolean GetDayOfNNY(ref DateTimeResult result, ref DateTimeRawInfo raw, DateTimeFormatInfo dtfi)
+        private static bool GetDayOfNNY(ref DateTimeResult result, ref DateTimeRawInfo raw, DateTimeFormatInfo dtfi)
         {
             if ((result.flags & ParseFlags.HaveDate) != 0)
             {
@@ -1923,7 +1923,7 @@ new DS[] { DS.ERROR, DS.TX_NNN,  DS.TX_NNN,  DS.TX_NNN,  DS.ERROR,   DS.ERROR,  
         }
 
 
-        private static Boolean GetDayOfYMN(ref DateTimeResult result, ref DateTimeRawInfo raw)
+        private static bool GetDayOfYMN(ref DateTimeResult result, ref DateTimeRawInfo raw)
         {
             if ((result.flags & ParseFlags.HaveDate) != 0)
             {
@@ -1941,7 +1941,7 @@ new DS[] { DS.ERROR, DS.TX_NNN,  DS.TX_NNN,  DS.TX_NNN,  DS.ERROR,   DS.ERROR,  
             return false;
         }
 
-        private static Boolean GetDayOfYN(ref DateTimeResult result, ref DateTimeRawInfo raw)
+        private static bool GetDayOfYN(ref DateTimeResult result, ref DateTimeRawInfo raw)
         {
             if ((result.flags & ParseFlags.HaveDate) != 0)
             {
@@ -1959,7 +1959,7 @@ new DS[] { DS.ERROR, DS.TX_NNN,  DS.TX_NNN,  DS.TX_NNN,  DS.ERROR,   DS.ERROR,  
             return false;
         }
 
-        private static Boolean GetDayOfYM(ref DateTimeResult result, ref DateTimeRawInfo raw)
+        private static bool GetDayOfYM(ref DateTimeResult result, ref DateTimeRawInfo raw)
         {
             if ((result.flags & ParseFlags.HaveDate) != 0)
             {
@@ -2004,7 +2004,7 @@ new DS[] { DS.ERROR, DS.TX_NNN,  DS.TX_NNN,  DS.TX_NNN,  DS.ERROR,   DS.ERROR,  
         //
         // Adjust hour according to the time mark.
         //
-        private static Boolean AdjustHour(ref int hour, TM timeMark)
+        private static bool AdjustHour(ref int hour, TM timeMark)
         {
             if (timeMark != TM.NotSet)
             {
@@ -2031,7 +2031,7 @@ new DS[] { DS.ERROR, DS.TX_NNN,  DS.TX_NNN,  DS.TX_NNN,  DS.ERROR,   DS.ERROR,  
             return true;
         }
 
-        private static Boolean GetTimeOfN(ref DateTimeResult result, ref DateTimeRawInfo raw)
+        private static bool GetTimeOfN(ref DateTimeResult result, ref DateTimeRawInfo raw)
         {
             if ((result.flags & ParseFlags.HaveTime) != 0)
             {
@@ -2052,7 +2052,7 @@ new DS[] { DS.ERROR, DS.TX_NNN,  DS.TX_NNN,  DS.TX_NNN,  DS.ERROR,   DS.ERROR,  
             return true;
         }
 
-        private static Boolean GetTimeOfNN(ref DateTimeResult result, ref DateTimeRawInfo raw)
+        private static bool GetTimeOfNN(ref DateTimeResult result, ref DateTimeRawInfo raw)
         {
             Debug.Assert(raw.numCount >= 2, "raw.numCount >= 2");
             if ((result.flags & ParseFlags.HaveTime) != 0)
@@ -2068,7 +2068,7 @@ new DS[] { DS.ERROR, DS.TX_NNN,  DS.TX_NNN,  DS.TX_NNN,  DS.ERROR,   DS.ERROR,  
             return true;
         }
 
-        private static Boolean GetTimeOfNNN(ref DateTimeResult result, ref DateTimeRawInfo raw)
+        private static bool GetTimeOfNNN(ref DateTimeResult result, ref DateTimeRawInfo raw)
         {
             if ((result.flags & ParseFlags.HaveTime) != 0)
             {
@@ -2087,7 +2087,7 @@ new DS[] { DS.ERROR, DS.TX_NNN,  DS.TX_NNN,  DS.TX_NNN,  DS.ERROR,   DS.ERROR,  
         //
         // Processing terminal state: A Date suffix followed by one number.
         //
-        private static Boolean GetDateOfDSN(ref DateTimeResult result, ref DateTimeRawInfo raw)
+        private static bool GetDateOfDSN(ref DateTimeResult result, ref DateTimeRawInfo raw)
         {
             if (raw.numCount != 1 || result.Day != -1)
             {
@@ -2098,7 +2098,7 @@ new DS[] { DS.ERROR, DS.TX_NNN,  DS.TX_NNN,  DS.TX_NNN,  DS.ERROR,   DS.ERROR,  
             return true;
         }
 
-        private static Boolean GetDateOfNDS(ref DateTimeResult result, ref DateTimeRawInfo raw)
+        private static bool GetDateOfNDS(ref DateTimeResult result, ref DateTimeRawInfo raw)
         {
             if (result.Month == -1)
             {
@@ -2122,7 +2122,7 @@ new DS[] { DS.ERROR, DS.TX_NNN,  DS.TX_NNN,  DS.TX_NNN,  DS.ERROR,   DS.ERROR,  
             return true;
         }
 
-        private static Boolean GetDateOfNNDS(ref DateTimeResult result, ref DateTimeRawInfo raw, DateTimeFormatInfo dtfi)
+        private static bool GetDateOfNNDS(ref DateTimeResult result, ref DateTimeRawInfo raw, DateTimeFormatInfo dtfi)
         {
             // For partial CJK Dates, the only valid formats are with a specified year, followed by two numbers, which
             // will be the Month and Day, and with a specified Month, when the numbers are either the year and day or
@@ -2236,7 +2236,7 @@ new DS[] { DS.ERROR, DS.TX_NNN,  DS.TX_NNN,  DS.TX_NNN,  DS.ERROR,   DS.ERROR,  
         //
         ////////////////////////////////////////////////////////////////////////
 
-        internal static Boolean ProcessHebrewTerminalState(DS dps, ref __DTString str, ref DateTimeResult result, ref DateTimeStyles styles, ref DateTimeRawInfo raw, DateTimeFormatInfo dtfi)
+        internal static bool ProcessHebrewTerminalState(DS dps, ref __DTString str, ref DateTimeResult result, ref DateTimeStyles styles, ref DateTimeRawInfo raw, DateTimeFormatInfo dtfi)
         {
             // The following are accepted terminal state for Hebrew date.
             switch (dps)
@@ -2346,7 +2346,7 @@ new DS[] { DS.ERROR, DS.TX_NNN,  DS.TX_NNN,  DS.TX_NNN,  DS.ERROR,   DS.ERROR,  
         // A terminal state has been reached, call the appropriate function to fill in the parsing result.
         // Return true if the state is a terminal state.
         //
-        internal static Boolean ProcessTerminalState(DS dps, ref __DTString str, ref DateTimeResult result, ref DateTimeStyles styles, ref DateTimeRawInfo raw, DateTimeFormatInfo dtfi)
+        internal static bool ProcessTerminalState(DS dps, ref __DTString str, ref DateTimeResult result, ref DateTimeStyles styles, ref DateTimeRawInfo raw, DateTimeFormatInfo dtfi)
         {
             bool passed = true;
             switch (dps)
@@ -2516,7 +2516,7 @@ new DS[] { DS.ERROR, DS.TX_NNN,  DS.TX_NNN,  DS.TX_NNN,  DS.ERROR,   DS.ERROR,  
             DateTimeRawInfo raw = new DateTimeRawInfo();    // The buffer to store temporary parsing information.
             unsafe
             {
-                Int32* numberPointer = stackalloc Int32[3];
+                int* numberPointer = stackalloc int[3];
                 raw.Init(numberPointer);
             }
             raw.hasSameDateAndTimeSeparators = dtfi.DateSeparator.Equals(dtfi.TimeSeparator, StringComparison.Ordinal);
@@ -2730,7 +2730,7 @@ new DS[] { DS.ERROR, DS.TX_NNN,  DS.TX_NNN,  DS.TX_NNN,  DS.ERROR,   DS.ERROR,  
 
 
         // Handles time zone adjustments and sets DateTimeKind values as required by the styles
-        private static Boolean DetermineTimeZoneAdjustments(ref __DTString str, ref DateTimeResult result, DateTimeStyles styles, Boolean bTimeOnly)
+        private static bool DetermineTimeZoneAdjustments(ref __DTString str, ref DateTimeResult result, DateTimeStyles styles, bool bTimeOnly)
         {
             if ((result.flags & ParseFlags.CaptureOffset) != 0)
             {
@@ -2740,7 +2740,7 @@ new DS[] { DS.ERROR, DS.TX_NNN,  DS.TX_NNN,  DS.TX_NNN,  DS.ERROR,   DS.ERROR,  
             }
             else
             {
-                Int64 offsetTicks = result.timeZoneOffset.Ticks;
+                long offsetTicks = result.timeZoneOffset.Ticks;
 
                 // the DateTime offset must be within +- 14:00 hours.
                 if (offsetTicks < DateTimeOffset.MinOffset || offsetTicks > DateTimeOffset.MaxOffset)
@@ -2808,7 +2808,7 @@ new DS[] { DS.ERROR, DS.TX_NNN,  DS.TX_NNN,  DS.TX_NNN,  DS.ERROR,   DS.ERROR,  
         }
 
         // Apply validation and adjustments specific to DateTimeOffset
-        private static Boolean DateTimeOffsetTimeZonePostProcessing(ref __DTString str, ref DateTimeResult result, DateTimeStyles styles)
+        private static bool DateTimeOffsetTimeZonePostProcessing(ref __DTString str, ref DateTimeResult result, DateTimeStyles styles)
         {
             // For DateTimeOffset, default to the Utc or Local offset when an offset was not specified by
             // the input string.
@@ -2826,11 +2826,11 @@ new DS[] { DS.ERROR, DS.TX_NNN,  DS.TX_NNN,  DS.TX_NNN,  DS.ERROR,   DS.ERROR,  
                 }
             }
 
-            Int64 offsetTicks = result.timeZoneOffset.Ticks;
+            long offsetTicks = result.timeZoneOffset.Ticks;
 
             // there should be no overflow, because the offset can be no more than -+100 hours and the date already
             // fits within a DateTime.
-            Int64 utcTicks = result.parsedDate.Ticks - offsetTicks;
+            long utcTicks = result.parsedDate.Ticks - offsetTicks;
 
             // For DateTimeOffset, both the parsed time and the corresponding UTC value must be within the boundaries
             // of a DateTime instance.
@@ -2854,7 +2854,7 @@ new DS[] { DS.ERROR, DS.TX_NNN,  DS.TX_NNN,  DS.TX_NNN,  DS.ERROR,   DS.ERROR,  
                 if (((result.flags & ParseFlags.TimeZoneUsed) == 0) && ((styles & DateTimeStyles.AssumeUniversal) == 0))
                 {
                     // Handle the special case where the timeZoneOffset was defaulted to Local
-                    Boolean toUtcResult = AdjustTimeZoneToUniversal(ref result);
+                    bool toUtcResult = AdjustTimeZoneToUniversal(ref result);
                     result.timeZoneOffset = TimeSpan.Zero;
                     return toUtcResult;
                 }
@@ -2875,7 +2875,7 @@ new DS[] { DS.ERROR, DS.TX_NNN,  DS.TX_NNN,  DS.TX_NNN,  DS.ERROR,   DS.ERROR,  
         // the time is 2001/06/08 14:00, and timeZoneOffset = -07:00.
         // The result will be "2001/06/08 21:00"
         //
-        private static Boolean AdjustTimeZoneToUniversal(ref DateTimeResult result)
+        private static bool AdjustTimeZoneToUniversal(ref DateTimeResult result)
         {
             long resultTicks = result.parsedDate.Ticks;
             resultTicks -= result.timeZoneOffset.Ticks;
@@ -2900,12 +2900,12 @@ new DS[] { DS.ERROR, DS.TX_NNN,  DS.TX_NNN,  DS.TX_NNN,  DS.ERROR,   DS.ERROR,  
         // the time is 2001/06/08 14:00, and timeZoneOffset = -05:00.
         // The result will be "2001/06/08 11:00"
         //
-        private static Boolean AdjustTimeZoneToLocal(ref DateTimeResult result, bool bTimeOnly)
+        private static bool AdjustTimeZoneToLocal(ref DateTimeResult result, bool bTimeOnly)
         {
             long resultTicks = result.parsedDate.Ticks;
             // Convert to local ticks
             TimeZoneInfo tz = TimeZoneInfo.Local;
-            Boolean isAmbiguousLocalDst = false;
+            bool isAmbiguousLocalDst = false;
             if (resultTicks < Calendar.TicksPerDay)
             {
                 //
@@ -2936,7 +2936,7 @@ new DS[] { DS.ERROR, DS.TX_NNN,  DS.TX_NNN,  DS.TX_NNN,  DS.ERROR,   DS.ERROR,  
                 {
                     // Convert the GMT time to local time.
                     DateTime utcDt = new DateTime(resultTicks, DateTimeKind.Utc);
-                    Boolean isDaylightSavings = false;
+                    bool isDaylightSavings = false;
                     resultTicks += TimeZoneInfo.GetUtcOffsetFromUtc(utcDt, TimeZoneInfo.Local, out isDaylightSavings, out isAmbiguousLocalDst).Ticks;
                 }
             }
@@ -4948,13 +4948,13 @@ new DS[] { DS.ERROR, DS.TX_NNN,  DS.TX_NNN,  DS.TX_NNN,  DS.ERROR,   DS.ERROR,  
                     }
                 }
             }
-            else if (Char.IsWhiteSpace(m_current))
+            else if (char.IsWhiteSpace(m_current))
             {
                 // Just skip to the next character.
                 while (++Index < Length)
                 {
                     m_current = Value[Index];
-                    if (!(Char.IsWhiteSpace(m_current)))
+                    if (!(char.IsWhiteSpace(m_current)))
                     {
                         goto Start;
                     }
@@ -5002,7 +5002,7 @@ new DS[] { DS.ERROR, DS.TX_NNN,  DS.TX_NNN,  DS.TX_NNN,  DS.ERROR,   DS.ERROR,  
             Index + target.Length <= Length &&
             m_info.Compare(Value.Slice(Index, target.Length), target, CompareOptions.IgnoreCase) == 0;
 
-        private static readonly Char[] WhiteSpaceChecks = new Char[] { ' ', '\u00A0' };
+        private static readonly char[] WhiteSpaceChecks = new char[] { ' ', '\u00A0' };
 
         internal bool MatchSpecifiedWords(string target, bool checkWordBoundary, ref int matchLength)
         {
@@ -5035,7 +5035,7 @@ new DS[] { DS.ERROR, DS.TX_NNN,  DS.TX_NNN,  DS.TX_NNN,  DS.ERROR,   DS.ERROR,  
                     else
                     {
                         // Make sure we also have whitespace in the input string
-                        if (!Char.IsWhiteSpace(Value[thisPosition + segmentLength]))
+                        if (!char.IsWhiteSpace(Value[thisPosition + segmentLength]))
                         {
                             return false;
                         }
@@ -5051,7 +5051,7 @@ new DS[] { DS.ERROR, DS.TX_NNN,  DS.TX_NNN,  DS.TX_NNN,  DS.ERROR,   DS.ERROR,  
 
 
                     // Skip past multiple whitespace
-                    while (thisPosition < Value.Length && Char.IsWhiteSpace(Value[thisPosition]))
+                    while (thisPosition < Value.Length && char.IsWhiteSpace(Value[thisPosition]))
                     {
                         thisPosition++;
                         matchLength++;
@@ -5077,7 +5077,7 @@ new DS[] { DS.ERROR, DS.TX_NNN,  DS.TX_NNN,  DS.TX_NNN,  DS.ERROR,   DS.ERROR,  
                 int nextCharIndex = Index + matchLength;
                 if (nextCharIndex < Value.Length)
                 {
-                    if (Char.IsLetter(Value[nextCharIndex]))
+                    if (char.IsLetter(Value[nextCharIndex]))
                     {
                         return (false);
                     }
@@ -5219,7 +5219,7 @@ new DS[] { DS.ERROR, DS.TX_NNN,  DS.TX_NNN,  DS.TX_NNN,  DS.ERROR,   DS.ERROR,  
             while (Index + 1 < Length)
             {
                 char ch = Value[Index + 1];
-                if (!Char.IsWhiteSpace(ch))
+                if (!char.IsWhiteSpace(ch))
                 {
                     return;
                 }
@@ -5240,7 +5240,7 @@ new DS[] { DS.ERROR, DS.TX_NNN,  DS.TX_NNN,  DS.TX_NNN,  DS.ERROR,   DS.ERROR,  
                 return (false);
             }
 
-            if (!Char.IsWhiteSpace(m_current))
+            if (!char.IsWhiteSpace(m_current))
             {
                 return (true);
             }
@@ -5248,7 +5248,7 @@ new DS[] { DS.ERROR, DS.TX_NNN,  DS.TX_NNN,  DS.TX_NNN,  DS.ERROR,   DS.ERROR,  
             while (++Index < Length)
             {
                 m_current = Value[Index];
-                if (!Char.IsWhiteSpace(m_current))
+                if (!char.IsWhiteSpace(m_current))
                 {
                     return (true);
                 }
@@ -5260,7 +5260,7 @@ new DS[] { DS.ERROR, DS.TX_NNN,  DS.TX_NNN,  DS.TX_NNN,  DS.ERROR,   DS.ERROR,  
         internal void TrimTail()
         {
             int i = Length - 1;
-            while (i >= 0 && Char.IsWhiteSpace(Value[i]))
+            while (i >= 0 && char.IsWhiteSpace(Value[i]))
             {
                 i--;
             }
@@ -5330,7 +5330,7 @@ new DS[] { DS.ERROR, DS.TX_NNN,  DS.TX_NNN,  DS.TX_NNN,  DS.ERROR,   DS.ERROR,  
             while (Index + sub.length < Length)
             {
                 DTSubStringType currentType;
-                Char ch = Value[Index + sub.length];
+                char ch = Value[Index + sub.length];
                 if (ch >= '0' && ch <= '9')
                 {
                     currentType = DTSubStringType.Number;
@@ -5406,12 +5406,12 @@ new DS[] { DS.ERROR, DS.TX_NNN,  DS.TX_NNN,  DS.TX_NNN,  DS.ERROR,   DS.ERROR,  
     internal ref struct DTSubString
     {
         internal ReadOnlySpan<char> s;
-        internal Int32 index;
-        internal Int32 length;
+        internal int index;
+        internal int length;
         internal DTSubStringType type;
-        internal Int32 value;
+        internal int value;
 
-        internal Char this[Int32 relativeIndex]
+        internal char this[int relativeIndex]
         {
             get
             {

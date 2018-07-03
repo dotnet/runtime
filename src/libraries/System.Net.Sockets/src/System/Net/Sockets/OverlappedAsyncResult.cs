@@ -12,7 +12,7 @@ namespace System.Net.Sockets
     {
         private Internals.SocketAddress _socketAddress;
 
-        internal OverlappedAsyncResult(Socket socket, Object asyncState, AsyncCallback asyncCallback) :
+        internal OverlappedAsyncResult(Socket socket, object asyncState, AsyncCallback asyncCallback) :
             base(socket, asyncState, asyncCallback)
         {
         }
@@ -26,7 +26,7 @@ namespace System.Net.Sockets
 
     internal sealed class OriginalAddressOverlappedAsyncResult : OverlappedAsyncResult
     {
-        internal OriginalAddressOverlappedAsyncResult(Socket socket, Object asyncState, AsyncCallback asyncCallback) :
+        internal OriginalAddressOverlappedAsyncResult(Socket socket, object asyncState, AsyncCallback asyncCallback) :
             base(socket, asyncState, asyncCallback)
         {
         }

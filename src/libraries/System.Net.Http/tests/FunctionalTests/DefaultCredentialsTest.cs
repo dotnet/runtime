@@ -255,7 +255,7 @@ namespace System.Net.Http.Functional.Tests
         {
             public ICredentials InnerCredentials { get; set; }
 
-            public NetworkCredential GetCredential(Uri uri, String authType) => 
+            public NetworkCredential GetCredential(Uri uri, string authType) => 
                 InnerCredentials?.GetCredential(uri, authType);
         }
 

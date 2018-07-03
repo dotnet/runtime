@@ -15,7 +15,7 @@ namespace System.Security.Cryptography.X509Certificates.Tests
             byte[] expectedEncoding = "300e310c300a06035504031303466f6f".HexToByteArray();
 
             X500DistinguishedName n = new X500DistinguishedName("CN=Foo");
-            String s = n.Name;
+            string s = n.Name;
             Assert.Equal("CN=Foo", s);
             byte[] rawData = n.RawData;
             Assert.Equal(expectedEncoding, rawData);
@@ -27,7 +27,7 @@ namespace System.Security.Cryptography.X509Certificates.Tests
             byte[] encoding = "300e310c300a06035504031303466f6f".HexToByteArray();
 
             X500DistinguishedName n = new X500DistinguishedName(encoding);
-            String s = n.Name;
+            string s = n.Name;
             Assert.Equal("CN=Foo", s);
             byte[] rawData = n.RawData;
             Assert.Equal(encoding, rawData);

@@ -441,7 +441,7 @@ namespace System.Diagnostics
                 for (;;)
                 {
                     // Skip trailing whitespace.
-                    while (0 < endIdx && Char.IsWhiteSpace(filterAndPayloadSpecs[endIdx - 1]))
+                    while (0 < endIdx && char.IsWhiteSpace(filterAndPayloadSpecs[endIdx - 1]))
                         --endIdx;
 
                     int newlineIdx = filterAndPayloadSpecs.LastIndexOf('\n', endIdx - 1, endIdx);
@@ -450,7 +450,7 @@ namespace System.Diagnostics
                         startIdx = newlineIdx + 1;  // starts after the newline, or zero if we don't find one.   
 
                     // Skip leading whitespace
-                    while (startIdx < endIdx && Char.IsWhiteSpace(filterAndPayloadSpecs[startIdx]))
+                    while (startIdx < endIdx && char.IsWhiteSpace(filterAndPayloadSpecs[startIdx]))
                         startIdx++;
 
                     specList = new FilterAndTransform(filterAndPayloadSpecs, startIdx, endIdx, eventSource, specList);

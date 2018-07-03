@@ -185,18 +185,18 @@ namespace BasicEventSourceTests
 
                 /*************************************************************************/
 
-                GenerateArrayTest<Boolean>(ref tests, logger, new Boolean[] { false, true, false });
+                GenerateArrayTest<bool>(ref tests, logger, new bool[] { false, true, false });
                 GenerateArrayTest<byte>(ref tests, logger, new byte[] { 1, 10, 100 });
                 GenerateArrayTest<sbyte>(ref tests, logger, new sbyte[] { 1, 10, 100 });
-                GenerateArrayTest<Int16>(ref tests, logger, new Int16[] { 1, 10, 100 });
-                GenerateArrayTest<UInt16>(ref tests, logger, new UInt16[] { 1, 10, 100 });
-                GenerateArrayTest<Int32>(ref tests, logger, new Int32[] { 1, 10, 100 });
-                GenerateArrayTest<UInt32>(ref tests, logger, new UInt32[] { 1, 10, 100 });
-                GenerateArrayTest<Int64>(ref tests, logger, new Int64[] { 1, 10, 100 });
-                GenerateArrayTest<UInt64>(ref tests, logger, new UInt64[] { 1, 10, 100 });
-                GenerateArrayTest<Char>(ref tests, logger, new Char[] { 'a', 'c', 'b' });
-                GenerateArrayTest<Double>(ref tests, logger, new Double[] { 1, 10, 100 });
-                GenerateArrayTest<Single>(ref tests, logger, new Single[] { 1, 10, 100 });
+                GenerateArrayTest<short>(ref tests, logger, new short[] { 1, 10, 100 });
+                GenerateArrayTest<ushort>(ref tests, logger, new ushort[] { 1, 10, 100 });
+                GenerateArrayTest<int>(ref tests, logger, new int[] { 1, 10, 100 });
+                GenerateArrayTest<uint>(ref tests, logger, new uint[] { 1, 10, 100 });
+                GenerateArrayTest<long>(ref tests, logger, new long[] { 1, 10, 100 });
+                GenerateArrayTest<ulong>(ref tests, logger, new ulong[] { 1, 10, 100 });
+                GenerateArrayTest<char>(ref tests, logger, new char[] { 'a', 'c', 'b' });
+                GenerateArrayTest<double>(ref tests, logger, new double[] { 1, 10, 100 });
+                GenerateArrayTest<float>(ref tests, logger, new float[] { 1, 10, 100 });
                 GenerateArrayTest<IntPtr>(ref tests, logger, new IntPtr[] { (IntPtr)1, (IntPtr)10, (IntPtr)100 });
                 GenerateArrayTest<UIntPtr>(ref tests, logger, new UIntPtr[] { (UIntPtr)1, (UIntPtr)10, (UIntPtr)100 });
                 GenerateArrayTest<Guid>(ref tests, logger, new Guid[] { Guid.Empty, new Guid("121a11ee-3bcb-49cc-b425-f4906fb14f72") });

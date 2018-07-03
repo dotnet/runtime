@@ -5,7 +5,6 @@
 using System.Collections;
 using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
-using System.Drawing.Internal;
 using System.Internal;
 using System.IO;
 using System.Runtime.CompilerServices;
@@ -80,11 +79,10 @@ namespace System.Drawing
                 PlatformInitialize();
 
                 StartupInput input = StartupInput.GetDefault();
-                StartupOutput output;
 
                 // GDI+ ref counts multiple calls to Startup in the same process, so calls from multiple
                 // domains are ok, just make sure to pair each w/GdiplusShutdown
-                int status = GdiplusStartup(out s_initToken, ref input, out output);
+                int status = GdiplusStartup(out s_initToken, ref input, out StartupOutput output);
                 CheckStatus(status);
 
                 Debug.Unindent();
@@ -139,7 +137,7 @@ namespace System.Drawing
 
             /// <summary>
             /// Shutsdown GDI+
-            /// </summary>            
+            /// </summary>
             private static void Shutdown()
             {
                 Debug.WriteLineIf(s_gdiPlusInitialization.TraceVerbose, "Shutdown GDI+ [" + AppDomain.CurrentDomain.FriendlyName + "]");
@@ -200,7 +198,7 @@ namespace System.Drawing
             {
             }
 
-            //----------------------------------------------------------------------------------------                                                           
+            //----------------------------------------------------------------------------------------
             // Initialization methods (GdiplusInit.h)
             //----------------------------------------------------------------------------------------
 
@@ -229,7 +227,7 @@ namespace System.Drawing
             internal static int GdipDeleteFont(HandleRef font) => Initialized ? IntGdipDeleteFont(font) : Ok;
             internal static int GdipDeleteStringFormat(HandleRef format) => Initialized ? IntGdipDeleteStringFormat(format) : Ok;
 
-            //----------------------------------------------------------------------------------------                                                           
+            //----------------------------------------------------------------------------------------
             // Status codes
             //----------------------------------------------------------------------------------------
             internal const int Ok = 0;
@@ -257,9 +255,7 @@ namespace System.Drawing
             internal static void CheckStatus(int status)
             {
                 if (status != Ok)
-                {
                     throw StatusException(status);
-                }
             }
 
             internal static Exception StatusException(int status)
@@ -319,94 +315,6 @@ namespace System.Drawing
                 }
 
                 return new ExternalException(SR.GdiplusUnknown, E_UNEXPECTED);
-            }
-
-            //----------------------------------------------------------------------------------------                                                           
-            // Helper function:  Convert PointF[] to native memory block GpPointF*
-            //----------------------------------------------------------------------------------------
-            internal static IntPtr ConvertPointToMemory(PointF[] points)
-            {
-                if (points == null)
-                {
-                    throw new ArgumentNullException(nameof(points));
-                }
-
-                int size = (int)Marshal.SizeOf(typeof(GPPOINTF));
-                int count = points.Length;
-                IntPtr memory = Marshal.AllocHGlobal(checked(count * size));
-
-                for (int index = 0; index < count; index++)
-                {
-                    Marshal.StructureToPtr(new GPPOINTF(points[index]), (IntPtr)(checked((long)memory + index * size)), false);
-                }
-
-                return memory;
-            }
-
-            //----------------------------------------------------------------------------------------                                                           
-            // Helper function:  Convert Point[] to native memory block GpPoint*
-            //----------------------------------------------------------------------------------------
-            internal static IntPtr ConvertPointToMemory(Point[] points)
-            {
-                if (points == null)
-                {
-                    throw new ArgumentNullException(nameof(points));
-                }
-
-                int size = Marshal.SizeOf(typeof(GPPOINT));
-                int count = points.Length;
-                IntPtr memory = Marshal.AllocHGlobal(checked(count * size));
-
-                for (int index = 0; index < count; index++)
-                {
-                    Marshal.StructureToPtr(new GPPOINT(points[index]), (IntPtr)(checked((long)memory + index * size)), false);
-                }
-
-                return memory;
-            }
-
-            //----------------------------------------------------------------------------------------                                                           
-            // Helper function:  Convert RectangleF[] to native memory block GpRectF*
-            //----------------------------------------------------------------------------------------
-            internal static IntPtr ConvertRectangleToMemory(RectangleF[] rect)
-            {
-                if (rect == null)
-                {
-                    throw new ArgumentNullException(nameof(rect));
-                }
-
-                int size = Marshal.SizeOf(typeof(GPRECTF));
-                int count = rect.Length;
-                IntPtr memory = Marshal.AllocHGlobal(checked(count * size));
-
-                for (int index = 0; index < count; index++)
-                {
-                    Marshal.StructureToPtr(new GPRECTF(rect[index]), (IntPtr)(checked((long)memory + index * size)), false);
-                }
-
-                return memory;
-            }
-
-            //----------------------------------------------------------------------------------------                                                           
-            // Helper function:  Convert Rectangle[] to native memory block GpRect*
-            //----------------------------------------------------------------------------------------
-            internal static IntPtr ConvertRectangleToMemory(Rectangle[] rect)
-            {
-                if (rect == null)
-                {
-                    throw new ArgumentNullException(nameof(rect));
-                }
-
-                int size = (int)Marshal.SizeOf(typeof(GPRECT));
-                int count = rect.Length;
-                IntPtr memory = Marshal.AllocHGlobal(checked(count * size));
-
-                for (int index = 0; index < count; index++)
-                {
-                    Marshal.StructureToPtr(new GPRECT(rect[index]), (IntPtr)(checked((long)memory + index * size)), false);
-                }
-
-                return memory;
             }
         }
 
@@ -799,11 +707,12 @@ namespace System.Drawing
         {
             return IntGlobalAlloc(uFlags, new UIntPtr(dwBytes));
         }
-        
+
         static internal unsafe void ZeroMemory(byte* ptr, ulong length)
         {
             byte* end = ptr + length;
-            while (ptr != end) *ptr++ = 0;
+            while (ptr != end)
+                *ptr++ = 0;
         }
 
         public const int ERROR_ACCESS_DENIED = 5;

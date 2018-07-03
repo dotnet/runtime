@@ -68,22 +68,22 @@ int32_t SystemNative_EnumerateInterfaceAddresses(IPv4AddressFound onIpv4Found,
             if (onIpv4Found != NULL)
             {
                 // IP Address
-                struct IpAddressInfo iai;
-                memset(&iai, 0, sizeof(struct IpAddressInfo));
+                IpAddressInfo iai;
+                memset(&iai, 0, sizeof(IpAddressInfo));
                 iai.InterfaceIndex = interfaceIndex;
                 iai.NumAddressBytes = NUM_BYTES_IN_IPV4_ADDRESS;
 
                 struct sockaddr_in* sain = (struct sockaddr_in*)current->ifa_addr;
-                memcpy_s(iai.AddressBytes, sizeof_member(struct IpAddressInfo, AddressBytes), &sain->sin_addr.s_addr, sizeof(sain->sin_addr.s_addr));
+                memcpy_s(iai.AddressBytes, sizeof_member(IpAddressInfo, AddressBytes), &sain->sin_addr.s_addr, sizeof(sain->sin_addr.s_addr));
 
                 // Net Mask
-                struct IpAddressInfo maskInfo;
-                memset(&maskInfo, 0, sizeof(struct IpAddressInfo));
+                IpAddressInfo maskInfo;
+                memset(&maskInfo, 0, sizeof(IpAddressInfo));
                 maskInfo.InterfaceIndex = interfaceIndex;
                 maskInfo.NumAddressBytes = NUM_BYTES_IN_IPV4_ADDRESS;
 
                 struct sockaddr_in* mask_sain = (struct sockaddr_in*)current->ifa_netmask;
-                memcpy_s(maskInfo.AddressBytes, sizeof_member(struct IpAddressInfo, AddressBytes), &mask_sain->sin_addr.s_addr, sizeof(mask_sain->sin_addr.s_addr));
+                memcpy_s(maskInfo.AddressBytes, sizeof_member(IpAddressInfo, AddressBytes), &mask_sain->sin_addr.s_addr, sizeof(mask_sain->sin_addr.s_addr));
 
                 onIpv4Found(actualName, &iai, &maskInfo);
             }
@@ -92,13 +92,13 @@ int32_t SystemNative_EnumerateInterfaceAddresses(IPv4AddressFound onIpv4Found,
         {
             if (onIpv6Found != NULL)
             {
-                struct IpAddressInfo iai;
-                memset(&iai, 0, sizeof(struct IpAddressInfo));
+                IpAddressInfo iai;
+                memset(&iai, 0, sizeof(IpAddressInfo));
                 iai.InterfaceIndex = interfaceIndex;
                 iai.NumAddressBytes = NUM_BYTES_IN_IPV6_ADDRESS;
 
                 struct sockaddr_in6* sain6 = (struct sockaddr_in6*)current->ifa_addr;
-                memcpy_s(iai.AddressBytes, sizeof_member(struct IpAddressInfo, AddressBytes), sain6->sin6_addr.s6_addr, sizeof(sain6->sin6_addr.s6_addr));
+                memcpy_s(iai.AddressBytes, sizeof_member(IpAddressInfo, AddressBytes), sain6->sin6_addr.s6_addr, sizeof(sain6->sin6_addr.s6_addr));
                 uint32_t scopeId = sain6->sin6_scope_id;
                 onIpv6Found(actualName, &iai, &scopeId);
             }
@@ -111,13 +111,13 @@ int32_t SystemNative_EnumerateInterfaceAddresses(IPv4AddressFound onIpv4Found,
             {
                 struct sockaddr_ll* sall = (struct sockaddr_ll*)current->ifa_addr;
 
-                struct LinkLayerAddressInfo lla;
-                memset(&lla, 0, sizeof(struct LinkLayerAddressInfo));
+                LinkLayerAddressInfo lla;
+                memset(&lla, 0, sizeof(LinkLayerAddressInfo));
                 lla.InterfaceIndex = interfaceIndex;
                 lla.NumAddressBytes = sall->sll_halen;
                 lla.HardwareType = MapHardwareType(sall->sll_hatype);
 
-                memcpy_s(&lla.AddressBytes, sizeof_member(struct LinkLayerAddressInfo, AddressBytes), &sall->sll_addr, sall->sll_halen);
+                memcpy_s(&lla.AddressBytes, sizeof_member(LinkLayerAddressInfo, AddressBytes), &sall->sll_addr, sall->sll_halen);
                 onLinkLayerFound(current->ifa_name, &lla);
             }
         }
@@ -128,13 +128,13 @@ int32_t SystemNative_EnumerateInterfaceAddresses(IPv4AddressFound onIpv4Found,
             {
                 struct sockaddr_dl* sadl = (struct sockaddr_dl*)current->ifa_addr;
 
-                struct LinkLayerAddressInfo lla;
-                memset(&lla, 0, sizeof(struct LinkLayerAddressInfo));
+                LinkLayerAddressInfo lla;
+                memset(&lla, 0, sizeof(LinkLayerAddressInfo));
                 lla.InterfaceIndex = interfaceIndex;
                 lla.NumAddressBytes = sadl->sdl_alen;
                 lla.HardwareType = MapHardwareType(sadl->sdl_type);
 
-                memcpy_s(&lla.AddressBytes, sizeof_member(struct LinkLayerAddressInfo, AddressBytes), (uint8_t*)LLADDR(sadl), sadl->sdl_alen);
+                memcpy_s(&lla.AddressBytes, sizeof_member(LinkLayerAddressInfo, AddressBytes), (uint8_t*)LLADDR(sadl), sadl->sdl_alen);
                 onLinkLayerFound(current->ifa_name, &lla);
             }
         }
@@ -184,13 +184,13 @@ int32_t SystemNative_EnumerateGatewayAddressesForInterface(uint32_t interfaceInd
 
         if (isGateway && gatewayPresent)
         {
-            struct IpAddressInfo iai;
-            memset(&iai, 0, sizeof(struct IpAddressInfo));
+            IpAddressInfo iai;
+            memset(&iai, 0, sizeof(IpAddressInfo));
             iai.InterfaceIndex = interfaceIndex;
             iai.NumAddressBytes = NUM_BYTES_IN_IPV4_ADDRESS;
             struct sockaddr_in* sain = (struct sockaddr_in*)(hdr + 1);
             sain = sain + 1; // Skip over the first sockaddr, the destination address. The second is the gateway.
-            memcpy_s(iai.AddressBytes, sizeof_member(struct IpAddressInfo, AddressBytes), &sain->sin_addr.s_addr, sizeof(sain->sin_addr.s_addr));
+            memcpy_s(iai.AddressBytes, sizeof_member(IpAddressInfo, AddressBytes), &sain->sin_addr.s_addr, sizeof(sain->sin_addr.s_addr));
             onGatewayFound(&iai);
         }
     }

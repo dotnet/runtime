@@ -43,7 +43,7 @@ namespace System.Xml.Schema
         ///    <para>Gets the text description corresponding to the
         ///       validation error.</para>
         /// </devdoc>
-        public String Message
+        public string Message
         {
             get { return _ex.Message; }
         }

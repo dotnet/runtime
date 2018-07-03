@@ -279,7 +279,7 @@ namespace System.Xml.Tests
             MemoryStream ms = new MemoryStream();
             TextWriter tw = new StreamWriter(ms);
 
-            string str = new String('Z', (1 << 20) - 1);
+            string str = new string('Z', (1 << 20) - 1);
             tw.WriteLine("<Root>");
             tw.Write("<");
             tw.Write(str);

@@ -11,7 +11,7 @@ namespace System.ComponentModel
 
     public class AsyncCompletedEventArgs : EventArgs
     {
-        public AsyncCompletedEventArgs(Exception error, bool cancelled, Object userState)
+        public AsyncCompletedEventArgs(Exception error, bool cancelled, object userState)
         {
             _cancelled = cancelled;
             _error = error;
@@ -32,7 +32,7 @@ namespace System.ComponentModel
 
         public bool Cancelled { get { return _cancelled; } }
         public Exception Error { get { return _error; } }
-        public Object UserState { get { return _state; } }
+        public object UserState { get { return _state; } }
 
         private readonly bool _cancelled;
         private readonly Exception _error;

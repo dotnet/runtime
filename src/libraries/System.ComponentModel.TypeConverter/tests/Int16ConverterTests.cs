@@ -16,9 +16,9 @@ namespace System.ComponentModel.Tests
         {
             ConvertFrom_WithContext(new object[3, 3]
                 {
-                    { "-1  ", (Int16)(-1), null },
-                    { "#2", (Int16)2, null },
-                    { "+7", (Int16)7, CultureInfo.InvariantCulture }
+                    { "-1  ", (short)(-1), null },
+                    { "#2", (short)2, null },
+                    { "+7", (short)7, CultureInfo.InvariantCulture }
                 },
                 Int16ConverterTests.s_converter);
         }
@@ -35,9 +35,9 @@ namespace System.ComponentModel.Tests
         {
             ConvertTo_WithContext(new object[3, 3]
                 {
-                    { (Int16)(-1), "-1", null },
-                    { (Int16)2, (Int16)2, CultureInfo.InvariantCulture },
-                    { (Int16)3, (Single)3.0, null }
+                    { (short)(-1), "-1", null },
+                    { (short)2, (short)2, CultureInfo.InvariantCulture },
+                    { (short)3, (float)3.0, null }
                 },
                 Int16ConverterTests.s_converter);
         }

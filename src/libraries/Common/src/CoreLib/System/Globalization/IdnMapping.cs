@@ -281,7 +281,7 @@ namespace System.Globalization
 
             // Need to validate entire string length, 1 shorter if last char wasn't a dot
             if (unicode.Length > c_defaultNameLimit - (IsDot(unicode[unicode.Length - 1]) ? 0 : 1))
-                throw new ArgumentException(SR.Format(SR.Argument_IdnBadNameSize, 
+                throw new ArgumentException(SR.Format(SR.Argument_IdnBadNameSize,
                                                         c_defaultNameLimit - (IsDot(unicode[unicode.Length - 1]) ? 0 : 1)), nameof(unicode));
 
             // If last char wasn't a dot we need to check for trailing -
@@ -361,7 +361,7 @@ namespace System.Globalization
 
                     // Check last char
                     int iTest = iNextDot - 1;
-                    if (Char.IsLowSurrogate(unicode, iTest))
+                    if (char.IsLowSurrogate(unicode, iTest))
                     {
                         iTest--;
                     }
@@ -380,7 +380,7 @@ namespace System.Globalization
                 for (basicCount = iAfterLastDot; basicCount < iNextDot; basicCount++)
                 {
                     // Can't be lonely surrogate because it would've thrown in normalization
-                    Debug.Assert(Char.IsLowSurrogate(unicode, basicCount) == false, "[IdnMapping.punycode_encode]Unexpected low surrogate");
+                    Debug.Assert(char.IsLowSurrogate(unicode, basicCount) == false, "[IdnMapping.punycode_encode]Unexpected low surrogate");
 
                     // Double check our bidi rules
                     BidiCategory testBidi = CharUnicodeInfo.GetBidiCategory(unicode, basicCount);
@@ -406,7 +406,7 @@ namespace System.Globalization
                         numProcessed++;
                     }
                     // If its a surrogate, skip the next since our bidi category tester doesn't handle it.
-                    else if (Char.IsSurrogatePair(unicode, basicCount))
+                    else if (char.IsSurrogatePair(unicode, basicCount))
                         basicCount++;
                 }
 
@@ -452,7 +452,7 @@ namespace System.Globalization
                              j < iNextDot;
                              j += IsSupplementary(test) ? 2 : 1)
                         {
-                            test = Char.ConvertToUtf32(unicode, j);
+                            test = char.ConvertToUtf32(unicode, j);
                             if (test >= n && test < m) m = test;
                         }
 
@@ -465,7 +465,7 @@ namespace System.Globalization
                         for (j = iAfterLastDot;  j < iNextDot;  j+= IsSupplementary(test) ? 2 : 1)
                         {
                             // Make sure we're aware of surrogates
-                            test = Char.ConvertToUtf32(unicode, j);
+                            test = char.ConvertToUtf32(unicode, j);
 
                             // Adjust for character position (only the chars in our string already, some
                             // haven't been processed.
@@ -521,7 +521,7 @@ namespace System.Globalization
 
             // Throw if we're too long
             if (output.Length > c_defaultNameLimit - (IsDot(unicode[unicode.Length-1]) ? 0 : 1))
-                throw new ArgumentException(SR.Format(SR.Argument_IdnBadNameSize, 
+                throw new ArgumentException(SR.Format(SR.Argument_IdnBadNameSize,
                                                 c_defaultNameLimit - (IsDot(unicode[unicode.Length-1]) ? 0 : 1)), nameof(unicode));
             // Return our output string
             return output.ToString();
@@ -603,7 +603,7 @@ namespace System.Globalization
 
             // Throw if we're too long
             if (ascii.Length > c_defaultNameLimit - (IsDot(ascii[ascii.Length-1]) ? 0 : 1))
-                throw new ArgumentException(SR.Format(SR.Argument_IdnBadNameSize, 
+                throw new ArgumentException(SR.Format(SR.Argument_IdnBadNameSize,
                                             c_defaultNameLimit - (IsDot(ascii[ascii.Length-1]) ? 0 : 1)), nameof(ascii));
 
             // output stringbuilder
@@ -637,11 +637,11 @@ namespace System.Globalization
                     throw new ArgumentException(SR.Argument_IdnBadLabelSize, nameof(ascii));
 
                 // See if this section's ASCII or ACE
-                if (ascii.Length < c_strAcePrefix.Length + iAfterLastDot || 
-                    !ascii.Substring(iAfterLastDot,c_strAcePrefix.Length).Equals(c_strAcePrefix, StringComparison.OrdinalIgnoreCase))
+                if (ascii.Length < c_strAcePrefix.Length + iAfterLastDot ||
+                    string.Compare(ascii, iAfterLastDot, c_strAcePrefix, 0, c_strAcePrefix.Length, StringComparison.OrdinalIgnoreCase) != 0)
                 {
                     // Its ASCII, copy it
-                    output.Append(ascii.Substring(iAfterLastDot, iNextDot - iAfterLastDot));
+                    output.Append(ascii, iAfterLastDot, iNextDot - iAfterLastDot);
                 }
                 else
                 {
@@ -715,7 +715,7 @@ namespace System.Globalization
 
                             i += (int)(digit * w);
                             int t = k <= bias ? c_tmin : k >= bias + c_tmax ? c_tmax : k - bias;
-                            if (digit < t) 
+                            if (digit < t)
                                 break;
                             Debug.Assert(c_punycodeBase != t, "[IdnMapping.punycode_decode]Expected t != c_punycodeBase (36)");
                             if (w > c_maxint / (c_punycodeBase - t))
@@ -740,7 +740,7 @@ namespace System.Globalization
 
                         // insert n at position i of the output:  Really tricky if we have surrogates
                         int iUseInsertLocation;
-                        String strTemp = Char.ConvertFromUtf32(n);
+                        string strTemp = char.ConvertFromUtf32(n);
 
                         // If we have supplimentary characters
                         if (numSurrogatePairs > 0)
@@ -752,7 +752,7 @@ namespace System.Globalization
                                 // If its a surrogate, we have to go one more
                                 if (iUseInsertLocation >= output.Length)
                                     throw new ArgumentException(SR.Argument_IdnBadPunycode, nameof(ascii));
-                                if (Char.IsSurrogate(output[iUseInsertLocation]))
+                                if (char.IsSurrogate(output[iUseInsertLocation]))
                                     iUseInsertLocation++;
                             }
                         }
@@ -777,7 +777,7 @@ namespace System.Globalization
                     bool bRightToLeft = false;
 
                     // Check for RTL.  If right-to-left, then 1st & last chars must be RTL
-                    BidiCategory eBidi = CharUnicodeInfo.GetBidiCategory(output.ToString(), iOutputAfterLastDot);
+                    BidiCategory eBidi = CharUnicodeInfo.GetBidiCategory(output, iOutputAfterLastDot);
                     if (eBidi == BidiCategory.RightToLeft || eBidi == BidiCategory.RightToLeftArabic)
                     {
                         // It has to be right to left.
@@ -788,11 +788,11 @@ namespace System.Globalization
                     for (int iTest = iOutputAfterLastDot; iTest < output.Length; iTest++)
                     {
                         // This might happen if we run into a pair
-                        if (Char.IsLowSurrogate(output.ToString(), iTest)) 
+                        if (char.IsLowSurrogate(output[iTest]))
                             continue;
 
                         // Check to see if its LTR
-                        eBidi = CharUnicodeInfo.GetBidiCategory(output.ToString(), iTest);
+                        eBidi = CharUnicodeInfo.GetBidiCategory(output, iTest);
                         if ((bRightToLeft && eBidi == BidiCategory.LeftToRight) ||
                             (!bRightToLeft && (eBidi == BidiCategory.RightToLeft || eBidi == BidiCategory.RightToLeftArabic)))
                             throw new ArgumentException(SR.Argument_IdnBadBidi, nameof(ascii));
@@ -897,6 +897,5 @@ namespace System.Globalization
             //  0-25 map to a-z or A-Z
             return (char)(d + 'a');
         }
-        
     }
 }

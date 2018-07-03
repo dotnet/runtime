@@ -17,7 +17,7 @@ namespace System.Security.Cryptography.X509Certificates
         private IStorePal _storePal;
 
         public X509Store()
-            : this(StoreName.My, StoreLocation.CurrentUser)
+            : this("MY", StoreLocation.CurrentUser)
         {
         }
 
@@ -32,7 +32,7 @@ namespace System.Security.Cryptography.X509Certificates
         }
 
         public X509Store(StoreLocation storeLocation)
-            : this(StoreName.My, storeLocation)
+            : this("MY", storeLocation)
         {
         }
 

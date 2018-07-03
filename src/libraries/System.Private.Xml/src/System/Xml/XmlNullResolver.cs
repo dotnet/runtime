@@ -13,7 +13,7 @@ namespace System.Xml
         // Private constructor ensures existing only one instance of XmlNullResolver
         private XmlNullResolver() { }
 
-        public override Object GetEntity(Uri absoluteUri, string role, Type ofObjectToReturn)
+        public override object GetEntity(Uri absoluteUri, string role, Type ofObjectToReturn)
         {
             throw new XmlException(SR.Xml_NullResolver, string.Empty);
         }

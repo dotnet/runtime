@@ -1,4 +1,4 @@
-﻿// Licensed to the .NET Foundation under one or more agreements.
+// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
@@ -51,18 +51,18 @@ namespace Microsoft.VisualBasic.Tests
             yield return new object[] { (sbyte)42, true };
             yield return new object[] { (byte)0, false };
             yield return new object[] { (byte)42, true };
-            yield return new object[] { (System.Int16)0, false };
-            yield return new object[] { (System.Int16)42, true };
-            yield return new object[] { (System.UInt16)0, false };
-            yield return new object[] { (System.UInt16)42, true };
-            yield return new object[] { (System.Int32)0, false };
-            yield return new object[] { (System.Int32)42, true };
-            yield return new object[] { (System.UInt32)0, false };
-            yield return new object[] { (System.UInt32)42, true };
-            yield return new object[] { (System.Int64)0, false };
-            yield return new object[] { (System.Int64)42, true };
-            yield return new object[] { (System.UInt64)0, false };
-            yield return new object[] { (System.UInt64)42, true };
+            yield return new object[] { (short)0, false };
+            yield return new object[] { (short)42, true };
+            yield return new object[] { (ushort)0, false };
+            yield return new object[] { (ushort)42, true };
+            yield return new object[] { (int)0, false };
+            yield return new object[] { (int)42, true };
+            yield return new object[] { (uint)0, false };
+            yield return new object[] { (uint)42, true };
+            yield return new object[] { (long)0, false };
+            yield return new object[] { (long)42, true };
+            yield return new object[] { (ulong)0, false };
+            yield return new object[] { (ulong)42, true };
             yield return new object[] { 0.0m, false };
             yield return new object[] { 0.42m, true };
             yield return new object[] { (float)0.0, false };

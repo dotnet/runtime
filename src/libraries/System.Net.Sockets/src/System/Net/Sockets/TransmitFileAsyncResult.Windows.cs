@@ -1,4 +1,4 @@
-﻿// Licensed to the .NET Foundation under one or more agreements.
+// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
@@ -11,7 +11,7 @@ namespace System.Net.Sockets
         private FileStream _fileStream;
         private bool _doDisconnect;
 
-        internal TransmitFileAsyncResult(Socket socket, Object asyncState, AsyncCallback asyncCallback) :
+        internal TransmitFileAsyncResult(Socket socket, object asyncState, AsyncCallback asyncCallback) :
             base(socket, asyncState, asyncCallback)
         {
         }

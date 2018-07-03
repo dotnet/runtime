@@ -182,7 +182,7 @@ namespace System.Net.Http
             sb.Append(_content == null ? "<null>" : _content.GetType().ToString());
 
             sb.Append(", Headers:\r\n");
-            sb.Append(HeaderUtilities.DumpHeaders(_headers, _content == null ? null : _content.Headers));
+            HeaderUtilities.DumpHeaders(sb, _headers, _content?.Headers);
 
             return sb.ToString();
         }

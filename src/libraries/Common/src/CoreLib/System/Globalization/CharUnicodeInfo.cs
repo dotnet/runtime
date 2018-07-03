@@ -13,6 +13,7 @@
 ////////////////////////////////////////////////////////////////////////////
 
 using System.Diagnostics;
+using System.Text;
 
 namespace System.Globalization
 {
@@ -29,6 +30,7 @@ namespace System.Globalization
         internal const char HIGH_SURROGATE_END = '\udbff';
         internal const char LOW_SURROGATE_START = '\udc00';
         internal const char LOW_SURROGATE_END = '\udfff';
+        internal const int  HIGH_SURROGATE_RANGE = 0x3FF;
 
         internal const int UNICODE_CATEGORY_OFFSET = 0;
         internal const int BIDI_CATEGORY_OFFSET = 1;
@@ -41,7 +43,7 @@ namespace System.Globalization
         //
         // Actions:
         // Convert the BMP character or surrogate pointed by index to a UTF32 value.
-        // This is similar to Char.ConvertToUTF32, but the difference is that
+        // This is similar to char.ConvertToUTF32, but the difference is that
         // it does not throw exceptions when invalid surrogate characters are passed in.
         //
         // WARNING: since it doesn't throw an exception it CAN return a value
@@ -49,17 +51,17 @@ namespace System.Globalization
         //
         ////////////////////////////////////////////////////////////////////////
 
-        internal static int InternalConvertToUtf32(String s, int index)
+        internal static int InternalConvertToUtf32(string s, int index)
         {
             Debug.Assert(s != null, "s != null");
             Debug.Assert(index >= 0 && index < s.Length, "index < s.Length");
             if (index < s.Length - 1)
             {
                 int temp1 = (int)s[index] - HIGH_SURROGATE_START;
-                if (temp1 >= 0 && temp1 <= 0x3ff)
+                if (temp1 >= 0 && temp1 <= HIGH_SURROGATE_RANGE)
                 {
                     int temp2 = (int)s[index + 1] - LOW_SURROGATE_START;
-                    if (temp2 >= 0 && temp2 <= 0x3ff)
+                    if (temp2 >= 0 && temp2 <= HIGH_SURROGATE_RANGE)
                     {
                         // Convert the surrogate to UTF32 and get the result.
                         return ((temp1 * 0x400) + temp2 + UNICODE_PLANE01_START);
@@ -68,6 +70,29 @@ namespace System.Globalization
             }
             return ((int)s[index]);
         }
+
+        internal static int InternalConvertToUtf32(StringBuilder s, int index)
+        {
+            Debug.Assert(s != null, "s != null");
+            Debug.Assert(index >= 0 && index < s.Length, "index < s.Length");
+
+            int c = (int)s[index];
+            if (index < s.Length - 1)
+            {
+                int temp1 = c - HIGH_SURROGATE_START;
+                if (temp1 >= 0 && temp1 <= HIGH_SURROGATE_RANGE)
+                {
+                    int temp2 = (int)s[index + 1] - LOW_SURROGATE_START;
+                    if (temp2 >= 0 && temp2 <= HIGH_SURROGATE_RANGE)
+                    {
+                        // Convert the surrogate to UTF32 and get the result.
+                        return ((temp1 * 0x400) + temp2 + UNICODE_PLANE01_START);
+                    }
+                }
+            }
+            return c;
+        }
+
         ////////////////////////////////////////////////////////////////////////
         //
         // Convert a character or a surrogate pair starting at index of string s
@@ -90,7 +115,7 @@ namespace System.Globalization
         //
         ////////////////////////////////////////////////////////////////////////
 
-        internal static int InternalConvertToUtf32(String s, int index, out int charLength)
+        internal static int InternalConvertToUtf32(string s, int index, out int charLength)
         {
             Debug.Assert(s != null, "s != null");
             Debug.Assert(s.Length > 0, "s.Length > 0");
@@ -99,10 +124,10 @@ namespace System.Globalization
             if (index < s.Length - 1)
             {
                 int temp1 = (int)s[index] - HIGH_SURROGATE_START;
-                if (temp1 >= 0 && temp1 <= 0x3ff)
+                if (temp1 >= 0 && temp1 <= HIGH_SURROGATE_RANGE)
                 {
                     int temp2 = (int)s[index + 1] - LOW_SURROGATE_START;
-                    if (temp2 >= 0 && temp2 <= 0x3ff)
+                    if (temp2 >= 0 && temp2 <= HIGH_SURROGATE_RANGE)
                     {
                         // Convert the surrogate to UTF32 and get the result.
                         charLength++;
@@ -121,7 +146,7 @@ namespace System.Globalization
         //
         ////////////////////////////////////////////////////////////////////////
 
-        internal static bool IsWhiteSpace(String s, int index)
+        internal static bool IsWhiteSpace(string s, int index)
         {
             Debug.Assert(s != null, "s!=null");
             Debug.Assert(index >= 0 && index < s.Length, "index >= 0 && index < s.Length");
@@ -221,7 +246,7 @@ namespace System.Globalization
         }
 
 
-        public static double GetNumericValue(String s, int index)
+        public static double GetNumericValue(string s, int index)
         {
             if (s == null)
             {
@@ -239,7 +264,7 @@ namespace System.Globalization
             return (sbyte)(InternalGetDigitValues(ch) >> 8);
         }
 
-        public static int GetDecimalDigitValue(String s, int index)
+        public static int GetDecimalDigitValue(string s, int index)
         {
             if (s == null)
             {
@@ -259,7 +284,7 @@ namespace System.Globalization
             return (sbyte)(InternalGetDigitValues(ch) & 0x00FF);
         }
 
-        public static int GetDigitValue(String s, int index)
+        public static int GetDigitValue(string s, int index)
         {
             if (s == null)
             {
@@ -279,7 +304,7 @@ namespace System.Globalization
             return (GetUnicodeCategory((int)ch));
         }
 
-        public static UnicodeCategory GetUnicodeCategory(String s, int index)
+        public static UnicodeCategory GetUnicodeCategory(string s, int index)
         {
             if (s == null)
                 throw new ArgumentNullException(nameof(s));
@@ -347,7 +372,7 @@ namespace System.Globalization
         //
         ////////////////////////////////////////////////////////////////////////
 
-        internal static UnicodeCategory InternalGetUnicodeCategory(String value, int index)
+        internal static UnicodeCategory InternalGetUnicodeCategory(string value, int index)
         {
             Debug.Assert(value != null, "value can not be null");
             Debug.Assert(index < value.Length, "index < value.Length");
@@ -355,7 +380,7 @@ namespace System.Globalization
             return (GetUnicodeCategory(InternalConvertToUtf32(value, index)));
         }
 
-        internal static BidiCategory GetBidiCategory(String s, int index)
+        internal static BidiCategory GetBidiCategory(string s, int index)
         {
             if (s == null)
                 throw new ArgumentNullException(nameof(s));
@@ -368,6 +393,14 @@ namespace System.Globalization
             return ((BidiCategory) InternalGetCategoryValue(InternalConvertToUtf32(s, index), BIDI_CATEGORY_OFFSET));
         }
 
+        internal static BidiCategory GetBidiCategory(StringBuilder s, int index)
+        {
+            Debug.Assert(s != null, "s can not be null");
+            Debug.Assert(index >= 0 && index < s.Length, "invalid index"); ;
+
+            return ((BidiCategory) InternalGetCategoryValue(InternalConvertToUtf32(s, index), BIDI_CATEGORY_OFFSET));
+        }
+
         ////////////////////////////////////////////////////////////////////////
         //
         // Get the Unicode category of the character starting at index.  If the character is in BMP, charLength will return 1.
@@ -375,7 +408,7 @@ namespace System.Globalization
         //
         ////////////////////////////////////////////////////////////////////////
 
-        internal static UnicodeCategory InternalGetUnicodeCategory(String str, int index, out int charLength)
+        internal static UnicodeCategory InternalGetUnicodeCategory(string str, int index, out int charLength)
         {
             Debug.Assert(str != null, "str can not be null");
             Debug.Assert(str.Length > 0, "str.Length > 0"); ;

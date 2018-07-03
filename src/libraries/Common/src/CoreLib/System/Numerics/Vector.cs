@@ -109,45 +109,45 @@ namespace System.Numerics
             int vectorSizeInBytes = (int)(byteBase - vectorBase);
 
             int typeSizeInBytes = -1;
-            if (typeof(T) == typeof(Byte))
+            if (typeof(T) == typeof(byte))
             {
-                typeSizeInBytes = sizeof(Byte);
+                typeSizeInBytes = sizeof(byte);
             }
-            else if (typeof(T) == typeof(SByte))
+            else if (typeof(T) == typeof(sbyte))
             {
-                typeSizeInBytes = sizeof(SByte);
+                typeSizeInBytes = sizeof(sbyte);
             }
-            else if (typeof(T) == typeof(UInt16))
+            else if (typeof(T) == typeof(ushort))
             {
-                typeSizeInBytes = sizeof(UInt16);
+                typeSizeInBytes = sizeof(ushort);
             }
-            else if (typeof(T) == typeof(Int16))
+            else if (typeof(T) == typeof(short))
             {
-                typeSizeInBytes = sizeof(Int16);
+                typeSizeInBytes = sizeof(short);
             }
-            else if (typeof(T) == typeof(UInt32))
+            else if (typeof(T) == typeof(uint))
             {
-                typeSizeInBytes = sizeof(UInt32);
+                typeSizeInBytes = sizeof(uint);
             }
-            else if (typeof(T) == typeof(Int32))
+            else if (typeof(T) == typeof(int))
             {
-                typeSizeInBytes = sizeof(Int32);
+                typeSizeInBytes = sizeof(int);
             }
-            else if (typeof(T) == typeof(UInt64))
+            else if (typeof(T) == typeof(ulong))
             {
-                typeSizeInBytes = sizeof(UInt64);
+                typeSizeInBytes = sizeof(ulong);
             }
-            else if (typeof(T) == typeof(Int64))
+            else if (typeof(T) == typeof(long))
             {
-                typeSizeInBytes = sizeof(Int64);
+                typeSizeInBytes = sizeof(long);
             }
-            else if (typeof(T) == typeof(Single))
+            else if (typeof(T) == typeof(float))
             {
-                typeSizeInBytes = sizeof(Single);
+                typeSizeInBytes = sizeof(float);
             }
-            else if (typeof(T) == typeof(Double))
+            else if (typeof(T) == typeof(double))
             {
-                typeSizeInBytes = sizeof(Double);
+                typeSizeInBytes = sizeof(double);
             }
             else
             {
@@ -168,204 +168,204 @@ namespace System.Numerics
         {
             if (Vector.IsHardwareAccelerated)
             {
-                if (typeof(T) == typeof(Byte))
+                if (typeof(T) == typeof(byte))
                 {
-                    fixed (Byte* basePtr = &this.register.byte_0)
+                    fixed (byte* basePtr = &this.register.byte_0)
                     {
                         for (int g = 0; g < Count; g++)
                         {
-                            *(basePtr + g) = (Byte)(object)value;
+                            *(basePtr + g) = (byte)(object)value;
                         }
                     }
                 }
-                else if (typeof(T) == typeof(SByte))
+                else if (typeof(T) == typeof(sbyte))
                 {
-                    fixed (SByte* basePtr = &this.register.sbyte_0)
+                    fixed (sbyte* basePtr = &this.register.sbyte_0)
                     {
                         for (int g = 0; g < Count; g++)
                         {
-                            *(basePtr + g) = (SByte)(object)value;
+                            *(basePtr + g) = (sbyte)(object)value;
                         }
                     }
                 }
-                else if (typeof(T) == typeof(UInt16))
+                else if (typeof(T) == typeof(ushort))
                 {
-                    fixed (UInt16* basePtr = &this.register.uint16_0)
+                    fixed (ushort* basePtr = &this.register.uint16_0)
                     {
                         for (int g = 0; g < Count; g++)
                         {
-                            *(basePtr + g) = (UInt16)(object)value;
+                            *(basePtr + g) = (ushort)(object)value;
                         }
                     }
                 }
-                else if (typeof(T) == typeof(Int16))
+                else if (typeof(T) == typeof(short))
                 {
-                    fixed (Int16* basePtr = &this.register.int16_0)
+                    fixed (short* basePtr = &this.register.int16_0)
                     {
                         for (int g = 0; g < Count; g++)
                         {
-                            *(basePtr + g) = (Int16)(object)value;
+                            *(basePtr + g) = (short)(object)value;
                         }
                     }
                 }
-                else if (typeof(T) == typeof(UInt32))
+                else if (typeof(T) == typeof(uint))
                 {
-                    fixed (UInt32* basePtr = &this.register.uint32_0)
+                    fixed (uint* basePtr = &this.register.uint32_0)
                     {
                         for (int g = 0; g < Count; g++)
                         {
-                            *(basePtr + g) = (UInt32)(object)value;
+                            *(basePtr + g) = (uint)(object)value;
                         }
                     }
                 }
-                else if (typeof(T) == typeof(Int32))
+                else if (typeof(T) == typeof(int))
                 {
-                    fixed (Int32* basePtr = &this.register.int32_0)
+                    fixed (int* basePtr = &this.register.int32_0)
                     {
                         for (int g = 0; g < Count; g++)
                         {
-                            *(basePtr + g) = (Int32)(object)value;
+                            *(basePtr + g) = (int)(object)value;
                         }
                     }
                 }
-                else if (typeof(T) == typeof(UInt64))
+                else if (typeof(T) == typeof(ulong))
                 {
-                    fixed (UInt64* basePtr = &this.register.uint64_0)
+                    fixed (ulong* basePtr = &this.register.uint64_0)
                     {
                         for (int g = 0; g < Count; g++)
                         {
-                            *(basePtr + g) = (UInt64)(object)value;
+                            *(basePtr + g) = (ulong)(object)value;
                         }
                     }
                 }
-                else if (typeof(T) == typeof(Int64))
+                else if (typeof(T) == typeof(long))
                 {
-                    fixed (Int64* basePtr = &this.register.int64_0)
+                    fixed (long* basePtr = &this.register.int64_0)
                     {
                         for (int g = 0; g < Count; g++)
                         {
-                            *(basePtr + g) = (Int64)(object)value;
+                            *(basePtr + g) = (long)(object)value;
                         }
                     }
                 }
-                else if (typeof(T) == typeof(Single))
+                else if (typeof(T) == typeof(float))
                 {
-                    fixed (Single* basePtr = &this.register.single_0)
+                    fixed (float* basePtr = &this.register.single_0)
                     {
                         for (int g = 0; g < Count; g++)
                         {
-                            *(basePtr + g) = (Single)(object)value;
+                            *(basePtr + g) = (float)(object)value;
                         }
                     }
                 }
-                else if (typeof(T) == typeof(Double))
+                else if (typeof(T) == typeof(double))
                 {
-                    fixed (Double* basePtr = &this.register.double_0)
+                    fixed (double* basePtr = &this.register.double_0)
                     {
                         for (int g = 0; g < Count; g++)
                         {
-                            *(basePtr + g) = (Double)(object)value;
+                            *(basePtr + g) = (double)(object)value;
                         }
                     }
                 }
             }
             else
             {
-                if (typeof(T) == typeof(Byte))
+                if (typeof(T) == typeof(byte))
                 {
-                    register.byte_0 = (Byte)(object)value;
-                    register.byte_1 = (Byte)(object)value;
-                    register.byte_2 = (Byte)(object)value;
-                    register.byte_3 = (Byte)(object)value;
-                    register.byte_4 = (Byte)(object)value;
-                    register.byte_5 = (Byte)(object)value;
-                    register.byte_6 = (Byte)(object)value;
-                    register.byte_7 = (Byte)(object)value;
-                    register.byte_8 = (Byte)(object)value;
-                    register.byte_9 = (Byte)(object)value;
-                    register.byte_10 = (Byte)(object)value;
-                    register.byte_11 = (Byte)(object)value;
-                    register.byte_12 = (Byte)(object)value;
-                    register.byte_13 = (Byte)(object)value;
-                    register.byte_14 = (Byte)(object)value;
-                    register.byte_15 = (Byte)(object)value;
+                    register.byte_0 = (byte)(object)value;
+                    register.byte_1 = (byte)(object)value;
+                    register.byte_2 = (byte)(object)value;
+                    register.byte_3 = (byte)(object)value;
+                    register.byte_4 = (byte)(object)value;
+                    register.byte_5 = (byte)(object)value;
+                    register.byte_6 = (byte)(object)value;
+                    register.byte_7 = (byte)(object)value;
+                    register.byte_8 = (byte)(object)value;
+                    register.byte_9 = (byte)(object)value;
+                    register.byte_10 = (byte)(object)value;
+                    register.byte_11 = (byte)(object)value;
+                    register.byte_12 = (byte)(object)value;
+                    register.byte_13 = (byte)(object)value;
+                    register.byte_14 = (byte)(object)value;
+                    register.byte_15 = (byte)(object)value;
                 }
-                else if (typeof(T) == typeof(SByte))
+                else if (typeof(T) == typeof(sbyte))
                 {
-                    register.sbyte_0 = (SByte)(object)value;
-                    register.sbyte_1 = (SByte)(object)value;
-                    register.sbyte_2 = (SByte)(object)value;
-                    register.sbyte_3 = (SByte)(object)value;
-                    register.sbyte_4 = (SByte)(object)value;
-                    register.sbyte_5 = (SByte)(object)value;
-                    register.sbyte_6 = (SByte)(object)value;
-                    register.sbyte_7 = (SByte)(object)value;
-                    register.sbyte_8 = (SByte)(object)value;
-                    register.sbyte_9 = (SByte)(object)value;
-                    register.sbyte_10 = (SByte)(object)value;
-                    register.sbyte_11 = (SByte)(object)value;
-                    register.sbyte_12 = (SByte)(object)value;
-                    register.sbyte_13 = (SByte)(object)value;
-                    register.sbyte_14 = (SByte)(object)value;
-                    register.sbyte_15 = (SByte)(object)value;
+                    register.sbyte_0 = (sbyte)(object)value;
+                    register.sbyte_1 = (sbyte)(object)value;
+                    register.sbyte_2 = (sbyte)(object)value;
+                    register.sbyte_3 = (sbyte)(object)value;
+                    register.sbyte_4 = (sbyte)(object)value;
+                    register.sbyte_5 = (sbyte)(object)value;
+                    register.sbyte_6 = (sbyte)(object)value;
+                    register.sbyte_7 = (sbyte)(object)value;
+                    register.sbyte_8 = (sbyte)(object)value;
+                    register.sbyte_9 = (sbyte)(object)value;
+                    register.sbyte_10 = (sbyte)(object)value;
+                    register.sbyte_11 = (sbyte)(object)value;
+                    register.sbyte_12 = (sbyte)(object)value;
+                    register.sbyte_13 = (sbyte)(object)value;
+                    register.sbyte_14 = (sbyte)(object)value;
+                    register.sbyte_15 = (sbyte)(object)value;
                 }
-                else if (typeof(T) == typeof(UInt16))
+                else if (typeof(T) == typeof(ushort))
                 {
-                    register.uint16_0 = (UInt16)(object)value;
-                    register.uint16_1 = (UInt16)(object)value;
-                    register.uint16_2 = (UInt16)(object)value;
-                    register.uint16_3 = (UInt16)(object)value;
-                    register.uint16_4 = (UInt16)(object)value;
-                    register.uint16_5 = (UInt16)(object)value;
-                    register.uint16_6 = (UInt16)(object)value;
-                    register.uint16_7 = (UInt16)(object)value;
+                    register.uint16_0 = (ushort)(object)value;
+                    register.uint16_1 = (ushort)(object)value;
+                    register.uint16_2 = (ushort)(object)value;
+                    register.uint16_3 = (ushort)(object)value;
+                    register.uint16_4 = (ushort)(object)value;
+                    register.uint16_5 = (ushort)(object)value;
+                    register.uint16_6 = (ushort)(object)value;
+                    register.uint16_7 = (ushort)(object)value;
                 }
-                else if (typeof(T) == typeof(Int16))
+                else if (typeof(T) == typeof(short))
                 {
-                    register.int16_0 = (Int16)(object)value;
-                    register.int16_1 = (Int16)(object)value;
-                    register.int16_2 = (Int16)(object)value;
-                    register.int16_3 = (Int16)(object)value;
-                    register.int16_4 = (Int16)(object)value;
-                    register.int16_5 = (Int16)(object)value;
-                    register.int16_6 = (Int16)(object)value;
-                    register.int16_7 = (Int16)(object)value;
+                    register.int16_0 = (short)(object)value;
+                    register.int16_1 = (short)(object)value;
+                    register.int16_2 = (short)(object)value;
+                    register.int16_3 = (short)(object)value;
+                    register.int16_4 = (short)(object)value;
+                    register.int16_5 = (short)(object)value;
+                    register.int16_6 = (short)(object)value;
+                    register.int16_7 = (short)(object)value;
                 }
-                else if (typeof(T) == typeof(UInt32))
+                else if (typeof(T) == typeof(uint))
                 {
-                    register.uint32_0 = (UInt32)(object)value;
-                    register.uint32_1 = (UInt32)(object)value;
-                    register.uint32_2 = (UInt32)(object)value;
-                    register.uint32_3 = (UInt32)(object)value;
+                    register.uint32_0 = (uint)(object)value;
+                    register.uint32_1 = (uint)(object)value;
+                    register.uint32_2 = (uint)(object)value;
+                    register.uint32_3 = (uint)(object)value;
                 }
-                else if (typeof(T) == typeof(Int32))
+                else if (typeof(T) == typeof(int))
                 {
-                    register.int32_0 = (Int32)(object)value;
-                    register.int32_1 = (Int32)(object)value;
-                    register.int32_2 = (Int32)(object)value;
-                    register.int32_3 = (Int32)(object)value;
+                    register.int32_0 = (int)(object)value;
+                    register.int32_1 = (int)(object)value;
+                    register.int32_2 = (int)(object)value;
+                    register.int32_3 = (int)(object)value;
                 }
-                else if (typeof(T) == typeof(UInt64))
+                else if (typeof(T) == typeof(ulong))
                 {
-                    register.uint64_0 = (UInt64)(object)value;
-                    register.uint64_1 = (UInt64)(object)value;
+                    register.uint64_0 = (ulong)(object)value;
+                    register.uint64_1 = (ulong)(object)value;
                 }
-                else if (typeof(T) == typeof(Int64))
+                else if (typeof(T) == typeof(long))
                 {
-                    register.int64_0 = (Int64)(object)value;
-                    register.int64_1 = (Int64)(object)value;
+                    register.int64_0 = (long)(object)value;
+                    register.int64_1 = (long)(object)value;
                 }
-                else if (typeof(T) == typeof(Single))
+                else if (typeof(T) == typeof(float))
                 {
-                    register.single_0 = (Single)(object)value;
-                    register.single_1 = (Single)(object)value;
-                    register.single_2 = (Single)(object)value;
-                    register.single_3 = (Single)(object)value;
+                    register.single_0 = (float)(object)value;
+                    register.single_1 = (float)(object)value;
+                    register.single_2 = (float)(object)value;
+                    register.single_3 = (float)(object)value;
                 }
-                else if (typeof(T) == typeof(Double))
+                else if (typeof(T) == typeof(double))
                 {
-                    register.double_0 = (Double)(object)value;
-                    register.double_1 = (Double)(object)value;
+                    register.double_0 = (double)(object)value;
+                    register.double_1 = (double)(object)value;
                 }
             }
         }
@@ -395,233 +395,233 @@ namespace System.Numerics
 
             if (Vector.IsHardwareAccelerated)
             {
-                if (typeof(T) == typeof(Byte))
+                if (typeof(T) == typeof(byte))
                 {
-                    fixed (Byte* basePtr = &this.register.byte_0)
+                    fixed (byte* basePtr = &this.register.byte_0)
                     {
                         for (int g = 0; g < Count; g++)
                         {
-                            *(basePtr + g) = (Byte)(object)values[g + index];
+                            *(basePtr + g) = (byte)(object)values[g + index];
                         }
                     }
                 }
-                else if (typeof(T) == typeof(SByte))
+                else if (typeof(T) == typeof(sbyte))
                 {
-                    fixed (SByte* basePtr = &this.register.sbyte_0)
+                    fixed (sbyte* basePtr = &this.register.sbyte_0)
                     {
                         for (int g = 0; g < Count; g++)
                         {
-                            *(basePtr + g) = (SByte)(object)values[g + index];
+                            *(basePtr + g) = (sbyte)(object)values[g + index];
                         }
                     }
                 }
-                else if (typeof(T) == typeof(UInt16))
+                else if (typeof(T) == typeof(ushort))
                 {
-                    fixed (UInt16* basePtr = &this.register.uint16_0)
+                    fixed (ushort* basePtr = &this.register.uint16_0)
                     {
                         for (int g = 0; g < Count; g++)
                         {
-                            *(basePtr + g) = (UInt16)(object)values[g + index];
+                            *(basePtr + g) = (ushort)(object)values[g + index];
                         }
                     }
                 }
-                else if (typeof(T) == typeof(Int16))
+                else if (typeof(T) == typeof(short))
                 {
-                    fixed (Int16* basePtr = &this.register.int16_0)
+                    fixed (short* basePtr = &this.register.int16_0)
                     {
                         for (int g = 0; g < Count; g++)
                         {
-                            *(basePtr + g) = (Int16)(object)values[g + index];
+                            *(basePtr + g) = (short)(object)values[g + index];
                         }
                     }
                 }
-                else if (typeof(T) == typeof(UInt32))
+                else if (typeof(T) == typeof(uint))
                 {
-                    fixed (UInt32* basePtr = &this.register.uint32_0)
+                    fixed (uint* basePtr = &this.register.uint32_0)
                     {
                         for (int g = 0; g < Count; g++)
                         {
-                            *(basePtr + g) = (UInt32)(object)values[g + index];
+                            *(basePtr + g) = (uint)(object)values[g + index];
                         }
                     }
                 }
-                else if (typeof(T) == typeof(Int32))
+                else if (typeof(T) == typeof(int))
                 {
-                    fixed (Int32* basePtr = &this.register.int32_0)
+                    fixed (int* basePtr = &this.register.int32_0)
                     {
                         for (int g = 0; g < Count; g++)
                         {
-                            *(basePtr + g) = (Int32)(object)values[g + index];
+                            *(basePtr + g) = (int)(object)values[g + index];
                         }
                     }
                 }
-                else if (typeof(T) == typeof(UInt64))
+                else if (typeof(T) == typeof(ulong))
                 {
-                    fixed (UInt64* basePtr = &this.register.uint64_0)
+                    fixed (ulong* basePtr = &this.register.uint64_0)
                     {
                         for (int g = 0; g < Count; g++)
                         {
-                            *(basePtr + g) = (UInt64)(object)values[g + index];
+                            *(basePtr + g) = (ulong)(object)values[g + index];
                         }
                     }
                 }
-                else if (typeof(T) == typeof(Int64))
+                else if (typeof(T) == typeof(long))
                 {
-                    fixed (Int64* basePtr = &this.register.int64_0)
+                    fixed (long* basePtr = &this.register.int64_0)
                     {
                         for (int g = 0; g < Count; g++)
                         {
-                            *(basePtr + g) = (Int64)(object)values[g + index];
+                            *(basePtr + g) = (long)(object)values[g + index];
                         }
                     }
                 }
-                else if (typeof(T) == typeof(Single))
+                else if (typeof(T) == typeof(float))
                 {
-                    fixed (Single* basePtr = &this.register.single_0)
+                    fixed (float* basePtr = &this.register.single_0)
                     {
                         for (int g = 0; g < Count; g++)
                         {
-                            *(basePtr + g) = (Single)(object)values[g + index];
+                            *(basePtr + g) = (float)(object)values[g + index];
                         }
                     }
                 }
-                else if (typeof(T) == typeof(Double))
+                else if (typeof(T) == typeof(double))
                 {
-                    fixed (Double* basePtr = &this.register.double_0)
+                    fixed (double* basePtr = &this.register.double_0)
                     {
                         for (int g = 0; g < Count; g++)
                         {
-                            *(basePtr + g) = (Double)(object)values[g + index];
+                            *(basePtr + g) = (double)(object)values[g + index];
                         }
                     }
                 }
             }
             else
             {
-                if (typeof(T) == typeof(Byte))
+                if (typeof(T) == typeof(byte))
                 {
-                    fixed (Byte* basePtr = &this.register.byte_0)
+                    fixed (byte* basePtr = &this.register.byte_0)
                     {
-                        *(basePtr + 0) = (Byte)(object)values[0 + index];
-                        *(basePtr + 1) = (Byte)(object)values[1 + index];
-                        *(basePtr + 2) = (Byte)(object)values[2 + index];
-                        *(basePtr + 3) = (Byte)(object)values[3 + index];
-                        *(basePtr + 4) = (Byte)(object)values[4 + index];
-                        *(basePtr + 5) = (Byte)(object)values[5 + index];
-                        *(basePtr + 6) = (Byte)(object)values[6 + index];
-                        *(basePtr + 7) = (Byte)(object)values[7 + index];
-                        *(basePtr + 8) = (Byte)(object)values[8 + index];
-                        *(basePtr + 9) = (Byte)(object)values[9 + index];
-                        *(basePtr + 10) = (Byte)(object)values[10 + index];
-                        *(basePtr + 11) = (Byte)(object)values[11 + index];
-                        *(basePtr + 12) = (Byte)(object)values[12 + index];
-                        *(basePtr + 13) = (Byte)(object)values[13 + index];
-                        *(basePtr + 14) = (Byte)(object)values[14 + index];
-                        *(basePtr + 15) = (Byte)(object)values[15 + index];
+                        *(basePtr + 0) = (byte)(object)values[0 + index];
+                        *(basePtr + 1) = (byte)(object)values[1 + index];
+                        *(basePtr + 2) = (byte)(object)values[2 + index];
+                        *(basePtr + 3) = (byte)(object)values[3 + index];
+                        *(basePtr + 4) = (byte)(object)values[4 + index];
+                        *(basePtr + 5) = (byte)(object)values[5 + index];
+                        *(basePtr + 6) = (byte)(object)values[6 + index];
+                        *(basePtr + 7) = (byte)(object)values[7 + index];
+                        *(basePtr + 8) = (byte)(object)values[8 + index];
+                        *(basePtr + 9) = (byte)(object)values[9 + index];
+                        *(basePtr + 10) = (byte)(object)values[10 + index];
+                        *(basePtr + 11) = (byte)(object)values[11 + index];
+                        *(basePtr + 12) = (byte)(object)values[12 + index];
+                        *(basePtr + 13) = (byte)(object)values[13 + index];
+                        *(basePtr + 14) = (byte)(object)values[14 + index];
+                        *(basePtr + 15) = (byte)(object)values[15 + index];
                     }
                 }
-                else if (typeof(T) == typeof(SByte))
+                else if (typeof(T) == typeof(sbyte))
                 {
-                    fixed (SByte* basePtr = &this.register.sbyte_0)
+                    fixed (sbyte* basePtr = &this.register.sbyte_0)
                     {
-                        *(basePtr + 0) = (SByte)(object)values[0 + index];
-                        *(basePtr + 1) = (SByte)(object)values[1 + index];
-                        *(basePtr + 2) = (SByte)(object)values[2 + index];
-                        *(basePtr + 3) = (SByte)(object)values[3 + index];
-                        *(basePtr + 4) = (SByte)(object)values[4 + index];
-                        *(basePtr + 5) = (SByte)(object)values[5 + index];
-                        *(basePtr + 6) = (SByte)(object)values[6 + index];
-                        *(basePtr + 7) = (SByte)(object)values[7 + index];
-                        *(basePtr + 8) = (SByte)(object)values[8 + index];
-                        *(basePtr + 9) = (SByte)(object)values[9 + index];
-                        *(basePtr + 10) = (SByte)(object)values[10 + index];
-                        *(basePtr + 11) = (SByte)(object)values[11 + index];
-                        *(basePtr + 12) = (SByte)(object)values[12 + index];
-                        *(basePtr + 13) = (SByte)(object)values[13 + index];
-                        *(basePtr + 14) = (SByte)(object)values[14 + index];
-                        *(basePtr + 15) = (SByte)(object)values[15 + index];
+                        *(basePtr + 0) = (sbyte)(object)values[0 + index];
+                        *(basePtr + 1) = (sbyte)(object)values[1 + index];
+                        *(basePtr + 2) = (sbyte)(object)values[2 + index];
+                        *(basePtr + 3) = (sbyte)(object)values[3 + index];
+                        *(basePtr + 4) = (sbyte)(object)values[4 + index];
+                        *(basePtr + 5) = (sbyte)(object)values[5 + index];
+                        *(basePtr + 6) = (sbyte)(object)values[6 + index];
+                        *(basePtr + 7) = (sbyte)(object)values[7 + index];
+                        *(basePtr + 8) = (sbyte)(object)values[8 + index];
+                        *(basePtr + 9) = (sbyte)(object)values[9 + index];
+                        *(basePtr + 10) = (sbyte)(object)values[10 + index];
+                        *(basePtr + 11) = (sbyte)(object)values[11 + index];
+                        *(basePtr + 12) = (sbyte)(object)values[12 + index];
+                        *(basePtr + 13) = (sbyte)(object)values[13 + index];
+                        *(basePtr + 14) = (sbyte)(object)values[14 + index];
+                        *(basePtr + 15) = (sbyte)(object)values[15 + index];
                     }
                 }
-                else if (typeof(T) == typeof(UInt16))
+                else if (typeof(T) == typeof(ushort))
                 {
-                    fixed (UInt16* basePtr = &this.register.uint16_0)
+                    fixed (ushort* basePtr = &this.register.uint16_0)
                     {
-                        *(basePtr + 0) = (UInt16)(object)values[0 + index];
-                        *(basePtr + 1) = (UInt16)(object)values[1 + index];
-                        *(basePtr + 2) = (UInt16)(object)values[2 + index];
-                        *(basePtr + 3) = (UInt16)(object)values[3 + index];
-                        *(basePtr + 4) = (UInt16)(object)values[4 + index];
-                        *(basePtr + 5) = (UInt16)(object)values[5 + index];
-                        *(basePtr + 6) = (UInt16)(object)values[6 + index];
-                        *(basePtr + 7) = (UInt16)(object)values[7 + index];
+                        *(basePtr + 0) = (ushort)(object)values[0 + index];
+                        *(basePtr + 1) = (ushort)(object)values[1 + index];
+                        *(basePtr + 2) = (ushort)(object)values[2 + index];
+                        *(basePtr + 3) = (ushort)(object)values[3 + index];
+                        *(basePtr + 4) = (ushort)(object)values[4 + index];
+                        *(basePtr + 5) = (ushort)(object)values[5 + index];
+                        *(basePtr + 6) = (ushort)(object)values[6 + index];
+                        *(basePtr + 7) = (ushort)(object)values[7 + index];
                     }
                 }
-                else if (typeof(T) == typeof(Int16))
+                else if (typeof(T) == typeof(short))
                 {
-                    fixed (Int16* basePtr = &this.register.int16_0)
+                    fixed (short* basePtr = &this.register.int16_0)
                     {
-                        *(basePtr + 0) = (Int16)(object)values[0 + index];
-                        *(basePtr + 1) = (Int16)(object)values[1 + index];
-                        *(basePtr + 2) = (Int16)(object)values[2 + index];
-                        *(basePtr + 3) = (Int16)(object)values[3 + index];
-                        *(basePtr + 4) = (Int16)(object)values[4 + index];
-                        *(basePtr + 5) = (Int16)(object)values[5 + index];
-                        *(basePtr + 6) = (Int16)(object)values[6 + index];
-                        *(basePtr + 7) = (Int16)(object)values[7 + index];
+                        *(basePtr + 0) = (short)(object)values[0 + index];
+                        *(basePtr + 1) = (short)(object)values[1 + index];
+                        *(basePtr + 2) = (short)(object)values[2 + index];
+                        *(basePtr + 3) = (short)(object)values[3 + index];
+                        *(basePtr + 4) = (short)(object)values[4 + index];
+                        *(basePtr + 5) = (short)(object)values[5 + index];
+                        *(basePtr + 6) = (short)(object)values[6 + index];
+                        *(basePtr + 7) = (short)(object)values[7 + index];
                     }
                 }
-                else if (typeof(T) == typeof(UInt32))
+                else if (typeof(T) == typeof(uint))
                 {
-                    fixed (UInt32* basePtr = &this.register.uint32_0)
+                    fixed (uint* basePtr = &this.register.uint32_0)
                     {
-                        *(basePtr + 0) = (UInt32)(object)values[0 + index];
-                        *(basePtr + 1) = (UInt32)(object)values[1 + index];
-                        *(basePtr + 2) = (UInt32)(object)values[2 + index];
-                        *(basePtr + 3) = (UInt32)(object)values[3 + index];
+                        *(basePtr + 0) = (uint)(object)values[0 + index];
+                        *(basePtr + 1) = (uint)(object)values[1 + index];
+                        *(basePtr + 2) = (uint)(object)values[2 + index];
+                        *(basePtr + 3) = (uint)(object)values[3 + index];
                     }
                 }
-                else if (typeof(T) == typeof(Int32))
+                else if (typeof(T) == typeof(int))
                 {
-                    fixed (Int32* basePtr = &this.register.int32_0)
+                    fixed (int* basePtr = &this.register.int32_0)
                     {
-                        *(basePtr + 0) = (Int32)(object)values[0 + index];
-                        *(basePtr + 1) = (Int32)(object)values[1 + index];
-                        *(basePtr + 2) = (Int32)(object)values[2 + index];
-                        *(basePtr + 3) = (Int32)(object)values[3 + index];
+                        *(basePtr + 0) = (int)(object)values[0 + index];
+                        *(basePtr + 1) = (int)(object)values[1 + index];
+                        *(basePtr + 2) = (int)(object)values[2 + index];
+                        *(basePtr + 3) = (int)(object)values[3 + index];
                     }
                 }
-                else if (typeof(T) == typeof(UInt64))
+                else if (typeof(T) == typeof(ulong))
                 {
-                    fixed (UInt64* basePtr = &this.register.uint64_0)
+                    fixed (ulong* basePtr = &this.register.uint64_0)
                     {
-                        *(basePtr + 0) = (UInt64)(object)values[0 + index];
-                        *(basePtr + 1) = (UInt64)(object)values[1 + index];
+                        *(basePtr + 0) = (ulong)(object)values[0 + index];
+                        *(basePtr + 1) = (ulong)(object)values[1 + index];
                     }
                 }
-                else if (typeof(T) == typeof(Int64))
+                else if (typeof(T) == typeof(long))
                 {
-                    fixed (Int64* basePtr = &this.register.int64_0)
+                    fixed (long* basePtr = &this.register.int64_0)
                     {
-                        *(basePtr + 0) = (Int64)(object)values[0 + index];
-                        *(basePtr + 1) = (Int64)(object)values[1 + index];
+                        *(basePtr + 0) = (long)(object)values[0 + index];
+                        *(basePtr + 1) = (long)(object)values[1 + index];
                     }
                 }
-                else if (typeof(T) == typeof(Single))
+                else if (typeof(T) == typeof(float))
                 {
-                    fixed (Single* basePtr = &this.register.single_0)
+                    fixed (float* basePtr = &this.register.single_0)
                     {
-                        *(basePtr + 0) = (Single)(object)values[0 + index];
-                        *(basePtr + 1) = (Single)(object)values[1 + index];
-                        *(basePtr + 2) = (Single)(object)values[2 + index];
-                        *(basePtr + 3) = (Single)(object)values[3 + index];
+                        *(basePtr + 0) = (float)(object)values[0 + index];
+                        *(basePtr + 1) = (float)(object)values[1 + index];
+                        *(basePtr + 2) = (float)(object)values[2 + index];
+                        *(basePtr + 3) = (float)(object)values[3 + index];
                     }
                 }
-                else if (typeof(T) == typeof(Double))
+                else if (typeof(T) == typeof(double))
                 {
-                    fixed (Double* basePtr = &this.register.double_0)
+                    fixed (double* basePtr = &this.register.double_0)
                     {
-                        *(basePtr + 0) = (Double)(object)values[0 + index];
-                        *(basePtr + 1) = (Double)(object)values[1 + index];
+                        *(basePtr + 0) = (double)(object)values[0 + index];
+                        *(basePtr + 1) = (double)(object)values[1 + index];
                     }
                 }
             }
@@ -636,11 +636,11 @@ namespace System.Numerics
         internal unsafe Vector(void* dataPointer, int offset)
             : this()
         {
-            if (typeof(T) == typeof(Byte))
+            if (typeof(T) == typeof(byte))
             {
-                Byte* castedPtr = (Byte*)dataPointer;
+                byte* castedPtr = (byte*)dataPointer;
                 castedPtr += offset;
-                fixed (Byte* registerBase = &this.register.byte_0)
+                fixed (byte* registerBase = &this.register.byte_0)
                 {
                     for (int g = 0; g < Count; g++)
                     {
@@ -648,11 +648,11 @@ namespace System.Numerics
                     }
                 }
             }
-            else if (typeof(T) == typeof(SByte))
+            else if (typeof(T) == typeof(sbyte))
             {
-                SByte* castedPtr = (SByte*)dataPointer;
+                sbyte* castedPtr = (sbyte*)dataPointer;
                 castedPtr += offset;
-                fixed (SByte* registerBase = &this.register.sbyte_0)
+                fixed (sbyte* registerBase = &this.register.sbyte_0)
                 {
                     for (int g = 0; g < Count; g++)
                     {
@@ -660,11 +660,11 @@ namespace System.Numerics
                     }
                 }
             }
-            else if (typeof(T) == typeof(UInt16))
+            else if (typeof(T) == typeof(ushort))
             {
-                UInt16* castedPtr = (UInt16*)dataPointer;
+                ushort* castedPtr = (ushort*)dataPointer;
                 castedPtr += offset;
-                fixed (UInt16* registerBase = &this.register.uint16_0)
+                fixed (ushort* registerBase = &this.register.uint16_0)
                 {
                     for (int g = 0; g < Count; g++)
                     {
@@ -672,11 +672,11 @@ namespace System.Numerics
                     }
                 }
             }
-            else if (typeof(T) == typeof(Int16))
+            else if (typeof(T) == typeof(short))
             {
-                Int16* castedPtr = (Int16*)dataPointer;
+                short* castedPtr = (short*)dataPointer;
                 castedPtr += offset;
-                fixed (Int16* registerBase = &this.register.int16_0)
+                fixed (short* registerBase = &this.register.int16_0)
                 {
                     for (int g = 0; g < Count; g++)
                     {
@@ -684,11 +684,11 @@ namespace System.Numerics
                     }
                 }
             }
-            else if (typeof(T) == typeof(UInt32))
+            else if (typeof(T) == typeof(uint))
             {
-                UInt32* castedPtr = (UInt32*)dataPointer;
+                uint* castedPtr = (uint*)dataPointer;
                 castedPtr += offset;
-                fixed (UInt32* registerBase = &this.register.uint32_0)
+                fixed (uint* registerBase = &this.register.uint32_0)
                 {
                     for (int g = 0; g < Count; g++)
                     {
@@ -696,11 +696,11 @@ namespace System.Numerics
                     }
                 }
             }
-            else if (typeof(T) == typeof(Int32))
+            else if (typeof(T) == typeof(int))
             {
-                Int32* castedPtr = (Int32*)dataPointer;
+                int* castedPtr = (int*)dataPointer;
                 castedPtr += offset;
-                fixed (Int32* registerBase = &this.register.int32_0)
+                fixed (int* registerBase = &this.register.int32_0)
                 {
                     for (int g = 0; g < Count; g++)
                     {
@@ -708,11 +708,11 @@ namespace System.Numerics
                     }
                 }
             }
-            else if (typeof(T) == typeof(UInt64))
+            else if (typeof(T) == typeof(ulong))
             {
-                UInt64* castedPtr = (UInt64*)dataPointer;
+                ulong* castedPtr = (ulong*)dataPointer;
                 castedPtr += offset;
-                fixed (UInt64* registerBase = &this.register.uint64_0)
+                fixed (ulong* registerBase = &this.register.uint64_0)
                 {
                     for (int g = 0; g < Count; g++)
                     {
@@ -720,11 +720,11 @@ namespace System.Numerics
                     }
                 }
             }
-            else if (typeof(T) == typeof(Int64))
+            else if (typeof(T) == typeof(long))
             {
-                Int64* castedPtr = (Int64*)dataPointer;
+                long* castedPtr = (long*)dataPointer;
                 castedPtr += offset;
-                fixed (Int64* registerBase = &this.register.int64_0)
+                fixed (long* registerBase = &this.register.int64_0)
                 {
                     for (int g = 0; g < Count; g++)
                     {
@@ -732,11 +732,11 @@ namespace System.Numerics
                     }
                 }
             }
-            else if (typeof(T) == typeof(Single))
+            else if (typeof(T) == typeof(float))
             {
-                Single* castedPtr = (Single*)dataPointer;
+                float* castedPtr = (float*)dataPointer;
                 castedPtr += offset;
-                fixed (Single* registerBase = &this.register.single_0)
+                fixed (float* registerBase = &this.register.single_0)
                 {
                     for (int g = 0; g < Count; g++)
                     {
@@ -744,11 +744,11 @@ namespace System.Numerics
                     }
                 }
             }
-            else if (typeof(T) == typeof(Double))
+            else if (typeof(T) == typeof(double))
             {
-                Double* castedPtr = (Double*)dataPointer;
+                double* castedPtr = (double*)dataPointer;
                 castedPtr += offset;
-                fixed (Double* registerBase = &this.register.double_0)
+                fixed (double* registerBase = &this.register.double_0)
                 {
                     for (int g = 0; g < Count; g++)
                     {
@@ -775,16 +775,16 @@ namespace System.Numerics
         public Vector(Span<T> values)
             : this()
         {
-            if ((typeof(T) == typeof(Byte))
-                || (typeof(T) == typeof(SByte))
-                || (typeof(T) == typeof(UInt16))
-                || (typeof(T) == typeof(Int16))
-                || (typeof(T) == typeof(UInt32))
-                || (typeof(T) == typeof(Int32))
-                || (typeof(T) == typeof(UInt64))
-                || (typeof(T) == typeof(Int64))
-                || (typeof(T) == typeof(Single))
-                || (typeof(T) == typeof(Double)))
+            if ((typeof(T) == typeof(byte))
+                || (typeof(T) == typeof(sbyte))
+                || (typeof(T) == typeof(ushort))
+                || (typeof(T) == typeof(short))
+                || (typeof(T) == typeof(uint))
+                || (typeof(T) == typeof(int))
+                || (typeof(T) == typeof(ulong))
+                || (typeof(T) == typeof(long))
+                || (typeof(T) == typeof(float))
+                || (typeof(T) == typeof(double)))
             {
                 if (values.Length < Count)
                 {
@@ -840,123 +840,123 @@ namespace System.Numerics
 
             if (Vector.IsHardwareAccelerated)
             {
-                if (typeof(T) == typeof(Byte))
+                if (typeof(T) == typeof(byte))
                 {
-                    Byte[] byteArray = (Byte[])(object)destination;
-                    fixed (Byte* destinationBase = byteArray)
+                    byte[] byteArray = (byte[])(object)destination;
+                    fixed (byte* destinationBase = byteArray)
                     {
                         for (int g = 0; g < Count; g++)
                         {
-                            destinationBase[startIndex + g] = (Byte)(object)this[g];
+                            destinationBase[startIndex + g] = (byte)(object)this[g];
                         }
                     }
                 }
-                else if (typeof(T) == typeof(SByte))
+                else if (typeof(T) == typeof(sbyte))
                 {
-                    SByte[] sbyteArray = (SByte[])(object)destination;
-                    fixed (SByte* destinationBase = sbyteArray)
+                    sbyte[] sbyteArray = (sbyte[])(object)destination;
+                    fixed (sbyte* destinationBase = sbyteArray)
                     {
                         for (int g = 0; g < Count; g++)
                         {
-                            destinationBase[startIndex + g] = (SByte)(object)this[g];
+                            destinationBase[startIndex + g] = (sbyte)(object)this[g];
                         }
                     }
                 }
-                else if (typeof(T) == typeof(UInt16))
+                else if (typeof(T) == typeof(ushort))
                 {
-                    UInt16[] uint16Array = (UInt16[])(object)destination;
-                    fixed (UInt16* destinationBase = uint16Array)
+                    ushort[] uint16Array = (ushort[])(object)destination;
+                    fixed (ushort* destinationBase = uint16Array)
                     {
                         for (int g = 0; g < Count; g++)
                         {
-                            destinationBase[startIndex + g] = (UInt16)(object)this[g];
+                            destinationBase[startIndex + g] = (ushort)(object)this[g];
                         }
                     }
                 }
-                else if (typeof(T) == typeof(Int16))
+                else if (typeof(T) == typeof(short))
                 {
-                    Int16[] int16Array = (Int16[])(object)destination;
-                    fixed (Int16* destinationBase = int16Array)
+                    short[] int16Array = (short[])(object)destination;
+                    fixed (short* destinationBase = int16Array)
                     {
                         for (int g = 0; g < Count; g++)
                         {
-                            destinationBase[startIndex + g] = (Int16)(object)this[g];
+                            destinationBase[startIndex + g] = (short)(object)this[g];
                         }
                     }
                 }
-                else if (typeof(T) == typeof(UInt32))
+                else if (typeof(T) == typeof(uint))
                 {
-                    UInt32[] uint32Array = (UInt32[])(object)destination;
-                    fixed (UInt32* destinationBase = uint32Array)
+                    uint[] uint32Array = (uint[])(object)destination;
+                    fixed (uint* destinationBase = uint32Array)
                     {
                         for (int g = 0; g < Count; g++)
                         {
-                            destinationBase[startIndex + g] = (UInt32)(object)this[g];
+                            destinationBase[startIndex + g] = (uint)(object)this[g];
                         }
                     }
                 }
-                else if (typeof(T) == typeof(Int32))
+                else if (typeof(T) == typeof(int))
                 {
-                    Int32[] int32Array = (Int32[])(object)destination;
-                    fixed (Int32* destinationBase = int32Array)
+                    int[] int32Array = (int[])(object)destination;
+                    fixed (int* destinationBase = int32Array)
                     {
                         for (int g = 0; g < Count; g++)
                         {
-                            destinationBase[startIndex + g] = (Int32)(object)this[g];
+                            destinationBase[startIndex + g] = (int)(object)this[g];
                         }
                     }
                 }
-                else if (typeof(T) == typeof(UInt64))
+                else if (typeof(T) == typeof(ulong))
                 {
-                    UInt64[] uint64Array = (UInt64[])(object)destination;
-                    fixed (UInt64* destinationBase = uint64Array)
+                    ulong[] uint64Array = (ulong[])(object)destination;
+                    fixed (ulong* destinationBase = uint64Array)
                     {
                         for (int g = 0; g < Count; g++)
                         {
-                            destinationBase[startIndex + g] = (UInt64)(object)this[g];
+                            destinationBase[startIndex + g] = (ulong)(object)this[g];
                         }
                     }
                 }
-                else if (typeof(T) == typeof(Int64))
+                else if (typeof(T) == typeof(long))
                 {
-                    Int64[] int64Array = (Int64[])(object)destination;
-                    fixed (Int64* destinationBase = int64Array)
+                    long[] int64Array = (long[])(object)destination;
+                    fixed (long* destinationBase = int64Array)
                     {
                         for (int g = 0; g < Count; g++)
                         {
-                            destinationBase[startIndex + g] = (Int64)(object)this[g];
+                            destinationBase[startIndex + g] = (long)(object)this[g];
                         }
                     }
                 }
-                else if (typeof(T) == typeof(Single))
+                else if (typeof(T) == typeof(float))
                 {
-                    Single[] singleArray = (Single[])(object)destination;
-                    fixed (Single* destinationBase = singleArray)
+                    float[] singleArray = (float[])(object)destination;
+                    fixed (float* destinationBase = singleArray)
                     {
                         for (int g = 0; g < Count; g++)
                         {
-                            destinationBase[startIndex + g] = (Single)(object)this[g];
+                            destinationBase[startIndex + g] = (float)(object)this[g];
                         }
                     }
                 }
-                else if (typeof(T) == typeof(Double))
+                else if (typeof(T) == typeof(double))
                 {
-                    Double[] doubleArray = (Double[])(object)destination;
-                    fixed (Double* destinationBase = doubleArray)
+                    double[] doubleArray = (double[])(object)destination;
+                    fixed (double* destinationBase = doubleArray)
                     {
                         for (int g = 0; g < Count; g++)
                         {
-                            destinationBase[startIndex + g] = (Double)(object)this[g];
+                            destinationBase[startIndex + g] = (double)(object)this[g];
                         }
                     }
                 }
             }
             else
             {
-                if (typeof(T) == typeof(Byte))
+                if (typeof(T) == typeof(byte))
                 {
-                    Byte[] byteArray = (Byte[])(object)destination;
-                    fixed (Byte* destinationBase = byteArray)
+                    byte[] byteArray = (byte[])(object)destination;
+                    fixed (byte* destinationBase = byteArray)
                     {
                         destinationBase[startIndex + 0] = this.register.byte_0;
                         destinationBase[startIndex + 1] = this.register.byte_1;
@@ -976,10 +976,10 @@ namespace System.Numerics
                         destinationBase[startIndex + 15] = this.register.byte_15;
                     }
                 }
-                else if (typeof(T) == typeof(SByte))
+                else if (typeof(T) == typeof(sbyte))
                 {
-                    SByte[] sbyteArray = (SByte[])(object)destination;
-                    fixed (SByte* destinationBase = sbyteArray)
+                    sbyte[] sbyteArray = (sbyte[])(object)destination;
+                    fixed (sbyte* destinationBase = sbyteArray)
                     {
                         destinationBase[startIndex + 0] = this.register.sbyte_0;
                         destinationBase[startIndex + 1] = this.register.sbyte_1;
@@ -999,10 +999,10 @@ namespace System.Numerics
                         destinationBase[startIndex + 15] = this.register.sbyte_15;
                     }
                 }
-                else if (typeof(T) == typeof(UInt16))
+                else if (typeof(T) == typeof(ushort))
                 {
-                    UInt16[] uint16Array = (UInt16[])(object)destination;
-                    fixed (UInt16* destinationBase = uint16Array)
+                    ushort[] uint16Array = (ushort[])(object)destination;
+                    fixed (ushort* destinationBase = uint16Array)
                     {
                         destinationBase[startIndex + 0] = this.register.uint16_0;
                         destinationBase[startIndex + 1] = this.register.uint16_1;
@@ -1014,10 +1014,10 @@ namespace System.Numerics
                         destinationBase[startIndex + 7] = this.register.uint16_7;
                     }
                 }
-                else if (typeof(T) == typeof(Int16))
+                else if (typeof(T) == typeof(short))
                 {
-                    Int16[] int16Array = (Int16[])(object)destination;
-                    fixed (Int16* destinationBase = int16Array)
+                    short[] int16Array = (short[])(object)destination;
+                    fixed (short* destinationBase = int16Array)
                     {
                         destinationBase[startIndex + 0] = this.register.int16_0;
                         destinationBase[startIndex + 1] = this.register.int16_1;
@@ -1029,10 +1029,10 @@ namespace System.Numerics
                         destinationBase[startIndex + 7] = this.register.int16_7;
                     }
                 }
-                else if (typeof(T) == typeof(UInt32))
+                else if (typeof(T) == typeof(uint))
                 {
-                    UInt32[] uint32Array = (UInt32[])(object)destination;
-                    fixed (UInt32* destinationBase = uint32Array)
+                    uint[] uint32Array = (uint[])(object)destination;
+                    fixed (uint* destinationBase = uint32Array)
                     {
                         destinationBase[startIndex + 0] = this.register.uint32_0;
                         destinationBase[startIndex + 1] = this.register.uint32_1;
@@ -1040,10 +1040,10 @@ namespace System.Numerics
                         destinationBase[startIndex + 3] = this.register.uint32_3;
                     }
                 }
-                else if (typeof(T) == typeof(Int32))
+                else if (typeof(T) == typeof(int))
                 {
-                    Int32[] int32Array = (Int32[])(object)destination;
-                    fixed (Int32* destinationBase = int32Array)
+                    int[] int32Array = (int[])(object)destination;
+                    fixed (int* destinationBase = int32Array)
                     {
                         destinationBase[startIndex + 0] = this.register.int32_0;
                         destinationBase[startIndex + 1] = this.register.int32_1;
@@ -1051,28 +1051,28 @@ namespace System.Numerics
                         destinationBase[startIndex + 3] = this.register.int32_3;
                     }
                 }
-                else if (typeof(T) == typeof(UInt64))
+                else if (typeof(T) == typeof(ulong))
                 {
-                    UInt64[] uint64Array = (UInt64[])(object)destination;
-                    fixed (UInt64* destinationBase = uint64Array)
+                    ulong[] uint64Array = (ulong[])(object)destination;
+                    fixed (ulong* destinationBase = uint64Array)
                     {
                         destinationBase[startIndex + 0] = this.register.uint64_0;
                         destinationBase[startIndex + 1] = this.register.uint64_1;
                     }
                 }
-                else if (typeof(T) == typeof(Int64))
+                else if (typeof(T) == typeof(long))
                 {
-                    Int64[] int64Array = (Int64[])(object)destination;
-                    fixed (Int64* destinationBase = int64Array)
+                    long[] int64Array = (long[])(object)destination;
+                    fixed (long* destinationBase = int64Array)
                     {
                         destinationBase[startIndex + 0] = this.register.int64_0;
                         destinationBase[startIndex + 1] = this.register.int64_1;
                     }
                 }
-                else if (typeof(T) == typeof(Single))
+                else if (typeof(T) == typeof(float))
                 {
-                    Single[] singleArray = (Single[])(object)destination;
-                    fixed (Single* destinationBase = singleArray)
+                    float[] singleArray = (float[])(object)destination;
+                    fixed (float* destinationBase = singleArray)
                     {
                         destinationBase[startIndex + 0] = this.register.single_0;
                         destinationBase[startIndex + 1] = this.register.single_1;
@@ -1080,10 +1080,10 @@ namespace System.Numerics
                         destinationBase[startIndex + 3] = this.register.single_3;
                     }
                 }
-                else if (typeof(T) == typeof(Double))
+                else if (typeof(T) == typeof(double))
                 {
-                    Double[] doubleArray = (Double[])(object)destination;
-                    fixed (Double* destinationBase = doubleArray)
+                    double[] doubleArray = (double[])(object)destination;
+                    fixed (double* destinationBase = doubleArray)
                     {
                         destinationBase[startIndex + 0] = this.register.double_0;
                         destinationBase[startIndex + 1] = this.register.double_1;
@@ -1104,72 +1104,72 @@ namespace System.Numerics
                 {
                     throw new IndexOutOfRangeException(SR.Format(SR.Arg_ArgumentOutOfRangeException, index));
                 }
-                if (typeof(T) == typeof(Byte))
+                if (typeof(T) == typeof(byte))
                 {
-                    fixed (Byte* basePtr = &this.register.byte_0)
+                    fixed (byte* basePtr = &this.register.byte_0)
                     {
                         return (T)(object)*(basePtr + index);
                     }
                 }
-                else if (typeof(T) == typeof(SByte))
+                else if (typeof(T) == typeof(sbyte))
                 {
-                    fixed (SByte* basePtr = &this.register.sbyte_0)
+                    fixed (sbyte* basePtr = &this.register.sbyte_0)
                     {
                         return (T)(object)*(basePtr + index);
                     }
                 }
-                else if (typeof(T) == typeof(UInt16))
+                else if (typeof(T) == typeof(ushort))
                 {
-                    fixed (UInt16* basePtr = &this.register.uint16_0)
+                    fixed (ushort* basePtr = &this.register.uint16_0)
                     {
                         return (T)(object)*(basePtr + index);
                     }
                 }
-                else if (typeof(T) == typeof(Int16))
+                else if (typeof(T) == typeof(short))
                 {
-                    fixed (Int16* basePtr = &this.register.int16_0)
+                    fixed (short* basePtr = &this.register.int16_0)
                     {
                         return (T)(object)*(basePtr + index);
                     }
                 }
-                else if (typeof(T) == typeof(UInt32))
+                else if (typeof(T) == typeof(uint))
                 {
-                    fixed (UInt32* basePtr = &this.register.uint32_0)
+                    fixed (uint* basePtr = &this.register.uint32_0)
                     {
                         return (T)(object)*(basePtr + index);
                     }
                 }
-                else if (typeof(T) == typeof(Int32))
+                else if (typeof(T) == typeof(int))
                 {
-                    fixed (Int32* basePtr = &this.register.int32_0)
+                    fixed (int* basePtr = &this.register.int32_0)
                     {
                         return (T)(object)*(basePtr + index);
                     }
                 }
-                else if (typeof(T) == typeof(UInt64))
+                else if (typeof(T) == typeof(ulong))
                 {
-                    fixed (UInt64* basePtr = &this.register.uint64_0)
+                    fixed (ulong* basePtr = &this.register.uint64_0)
                     {
                         return (T)(object)*(basePtr + index);
                     }
                 }
-                else if (typeof(T) == typeof(Int64))
+                else if (typeof(T) == typeof(long))
                 {
-                    fixed (Int64* basePtr = &this.register.int64_0)
+                    fixed (long* basePtr = &this.register.int64_0)
                     {
                         return (T)(object)*(basePtr + index);
                     }
                 }
-                else if (typeof(T) == typeof(Single))
+                else if (typeof(T) == typeof(float))
                 {
-                    fixed (Single* basePtr = &this.register.single_0)
+                    fixed (float* basePtr = &this.register.single_0)
                     {
                         return (T)(object)*(basePtr + index);
                     }
                 }
-                else if (typeof(T) == typeof(Double))
+                else if (typeof(T) == typeof(double))
                 {
-                    fixed (Double* basePtr = &this.register.double_0)
+                    fixed (double* basePtr = &this.register.double_0)
                     {
                         return (T)(object)*(basePtr + index);
                     }
@@ -1217,7 +1217,7 @@ namespace System.Numerics
             }
             else
             {
-                if (typeof(T) == typeof(Byte))
+                if (typeof(T) == typeof(byte))
                 {
                     return
                         this.register.byte_0 == other.register.byte_0
@@ -1237,7 +1237,7 @@ namespace System.Numerics
                         && this.register.byte_14 == other.register.byte_14
                         && this.register.byte_15 == other.register.byte_15;
                 }
-                else if (typeof(T) == typeof(SByte))
+                else if (typeof(T) == typeof(sbyte))
                 {
                     return
                         this.register.sbyte_0 == other.register.sbyte_0
@@ -1257,7 +1257,7 @@ namespace System.Numerics
                         && this.register.sbyte_14 == other.register.sbyte_14
                         && this.register.sbyte_15 == other.register.sbyte_15;
                 }
-                else if (typeof(T) == typeof(UInt16))
+                else if (typeof(T) == typeof(ushort))
                 {
                     return
                         this.register.uint16_0 == other.register.uint16_0
@@ -1269,7 +1269,7 @@ namespace System.Numerics
                         && this.register.uint16_6 == other.register.uint16_6
                         && this.register.uint16_7 == other.register.uint16_7;
                 }
-                else if (typeof(T) == typeof(Int16))
+                else if (typeof(T) == typeof(short))
                 {
                     return
                         this.register.int16_0 == other.register.int16_0
@@ -1281,7 +1281,7 @@ namespace System.Numerics
                         && this.register.int16_6 == other.register.int16_6
                         && this.register.int16_7 == other.register.int16_7;
                 }
-                else if (typeof(T) == typeof(UInt32))
+                else if (typeof(T) == typeof(uint))
                 {
                     return
                         this.register.uint32_0 == other.register.uint32_0
@@ -1289,7 +1289,7 @@ namespace System.Numerics
                         && this.register.uint32_2 == other.register.uint32_2
                         && this.register.uint32_3 == other.register.uint32_3;
                 }
-                else if (typeof(T) == typeof(Int32))
+                else if (typeof(T) == typeof(int))
                 {
                     return
                         this.register.int32_0 == other.register.int32_0
@@ -1297,19 +1297,19 @@ namespace System.Numerics
                         && this.register.int32_2 == other.register.int32_2
                         && this.register.int32_3 == other.register.int32_3;
                 }
-                else if (typeof(T) == typeof(UInt64))
+                else if (typeof(T) == typeof(ulong))
                 {
                     return
                         this.register.uint64_0 == other.register.uint64_0
                         && this.register.uint64_1 == other.register.uint64_1;
                 }
-                else if (typeof(T) == typeof(Int64))
+                else if (typeof(T) == typeof(long))
                 {
                     return
                         this.register.int64_0 == other.register.int64_0
                         && this.register.int64_1 == other.register.int64_1;
                 }
-                else if (typeof(T) == typeof(Single))
+                else if (typeof(T) == typeof(float))
                 {
                     return
                         this.register.single_0 == other.register.single_0
@@ -1317,7 +1317,7 @@ namespace System.Numerics
                         && this.register.single_2 == other.register.single_2
                         && this.register.single_3 == other.register.single_3;
                 }
-                else if (typeof(T) == typeof(Double))
+                else if (typeof(T) == typeof(double))
                 {
                     return
                         this.register.double_0 == other.register.double_0
@@ -1340,83 +1340,83 @@ namespace System.Numerics
 
             if (Vector.IsHardwareAccelerated)
             {
-                if (typeof(T) == typeof(Byte))
+                if (typeof(T) == typeof(byte))
                 {
                     for (int g = 0; g < Count; g++)
                     {
-                        hash = HashHelpers.Combine(hash, ((Byte)(object)this[g]).GetHashCode());
+                        hash = HashHelpers.Combine(hash, ((byte)(object)this[g]).GetHashCode());
                     }
                     return hash;
                 }
-                else if (typeof(T) == typeof(SByte))
+                else if (typeof(T) == typeof(sbyte))
                 {
                     for (int g = 0; g < Count; g++)
                     {
-                        hash = HashHelpers.Combine(hash, ((SByte)(object)this[g]).GetHashCode());
+                        hash = HashHelpers.Combine(hash, ((sbyte)(object)this[g]).GetHashCode());
                     }
                     return hash;
                 }
-                else if (typeof(T) == typeof(UInt16))
+                else if (typeof(T) == typeof(ushort))
                 {
                     for (int g = 0; g < Count; g++)
                     {
-                        hash = HashHelpers.Combine(hash, ((UInt16)(object)this[g]).GetHashCode());
+                        hash = HashHelpers.Combine(hash, ((ushort)(object)this[g]).GetHashCode());
                     }
                     return hash;
                 }
-                else if (typeof(T) == typeof(Int16))
+                else if (typeof(T) == typeof(short))
                 {
                     for (int g = 0; g < Count; g++)
                     {
-                        hash = HashHelpers.Combine(hash, ((Int16)(object)this[g]).GetHashCode());
+                        hash = HashHelpers.Combine(hash, ((short)(object)this[g]).GetHashCode());
                     }
                     return hash;
                 }
-                else if (typeof(T) == typeof(UInt32))
+                else if (typeof(T) == typeof(uint))
                 {
                     for (int g = 0; g < Count; g++)
                     {
-                        hash = HashHelpers.Combine(hash, ((UInt32)(object)this[g]).GetHashCode());
+                        hash = HashHelpers.Combine(hash, ((uint)(object)this[g]).GetHashCode());
                     }
                     return hash;
                 }
-                else if (typeof(T) == typeof(Int32))
+                else if (typeof(T) == typeof(int))
                 {
                     for (int g = 0; g < Count; g++)
                     {
-                        hash = HashHelpers.Combine(hash, ((Int32)(object)this[g]).GetHashCode());
+                        hash = HashHelpers.Combine(hash, ((int)(object)this[g]).GetHashCode());
                     }
                     return hash;
                 }
-                else if (typeof(T) == typeof(UInt64))
+                else if (typeof(T) == typeof(ulong))
                 {
                     for (int g = 0; g < Count; g++)
                     {
-                        hash = HashHelpers.Combine(hash, ((UInt64)(object)this[g]).GetHashCode());
+                        hash = HashHelpers.Combine(hash, ((ulong)(object)this[g]).GetHashCode());
                     }
                     return hash;
                 }
-                else if (typeof(T) == typeof(Int64))
+                else if (typeof(T) == typeof(long))
                 {
                     for (int g = 0; g < Count; g++)
                     {
-                        hash = HashHelpers.Combine(hash, ((Int64)(object)this[g]).GetHashCode());
+                        hash = HashHelpers.Combine(hash, ((long)(object)this[g]).GetHashCode());
                     }
                     return hash;
                 }
-                else if (typeof(T) == typeof(Single))
+                else if (typeof(T) == typeof(float))
                 {
                     for (int g = 0; g < Count; g++)
                     {
-                        hash = HashHelpers.Combine(hash, ((Single)(object)this[g]).GetHashCode());
+                        hash = HashHelpers.Combine(hash, ((float)(object)this[g]).GetHashCode());
                     }
                     return hash;
                 }
-                else if (typeof(T) == typeof(Double))
+                else if (typeof(T) == typeof(double))
                 {
                     for (int g = 0; g < Count; g++)
                     {
-                        hash = HashHelpers.Combine(hash, ((Double)(object)this[g]).GetHashCode());
+                        hash = HashHelpers.Combine(hash, ((double)(object)this[g]).GetHashCode());
                     }
                     return hash;
                 }
@@ -1427,7 +1427,7 @@ namespace System.Numerics
             }
             else
             {
-                if (typeof(T) == typeof(Byte))
+                if (typeof(T) == typeof(byte))
                 {
                     hash = HashHelpers.Combine(hash, this.register.byte_0.GetHashCode());
                     hash = HashHelpers.Combine(hash, this.register.byte_1.GetHashCode());
@@ -1447,7 +1447,7 @@ namespace System.Numerics
                     hash = HashHelpers.Combine(hash, this.register.byte_15.GetHashCode());
                     return hash;
                 }
-                else if (typeof(T) == typeof(SByte))
+                else if (typeof(T) == typeof(sbyte))
                 {
                     hash = HashHelpers.Combine(hash, this.register.sbyte_0.GetHashCode());
                     hash = HashHelpers.Combine(hash, this.register.sbyte_1.GetHashCode());
@@ -1467,7 +1467,7 @@ namespace System.Numerics
                     hash = HashHelpers.Combine(hash, this.register.sbyte_15.GetHashCode());
                     return hash;
                 }
-                else if (typeof(T) == typeof(UInt16))
+                else if (typeof(T) == typeof(ushort))
                 {
                     hash = HashHelpers.Combine(hash, this.register.uint16_0.GetHashCode());
                     hash = HashHelpers.Combine(hash, this.register.uint16_1.GetHashCode());
@@ -1479,7 +1479,7 @@ namespace System.Numerics
                     hash = HashHelpers.Combine(hash, this.register.uint16_7.GetHashCode());
                     return hash;
                 }
-                else if (typeof(T) == typeof(Int16))
+                else if (typeof(T) == typeof(short))
                 {
                     hash = HashHelpers.Combine(hash, this.register.int16_0.GetHashCode());
                     hash = HashHelpers.Combine(hash, this.register.int16_1.GetHashCode());
@@ -1491,7 +1491,7 @@ namespace System.Numerics
                     hash = HashHelpers.Combine(hash, this.register.int16_7.GetHashCode());
                     return hash;
                 }
-                else if (typeof(T) == typeof(UInt32))
+                else if (typeof(T) == typeof(uint))
                 {
                     hash = HashHelpers.Combine(hash, this.register.uint32_0.GetHashCode());
                     hash = HashHelpers.Combine(hash, this.register.uint32_1.GetHashCode());
@@ -1499,7 +1499,7 @@ namespace System.Numerics
                     hash = HashHelpers.Combine(hash, this.register.uint32_3.GetHashCode());
                     return hash;
                 }
-                else if (typeof(T) == typeof(Int32))
+                else if (typeof(T) == typeof(int))
                 {
                     hash = HashHelpers.Combine(hash, this.register.int32_0.GetHashCode());
                     hash = HashHelpers.Combine(hash, this.register.int32_1.GetHashCode());
@@ -1507,19 +1507,19 @@ namespace System.Numerics
                     hash = HashHelpers.Combine(hash, this.register.int32_3.GetHashCode());
                     return hash;
                 }
-                else if (typeof(T) == typeof(UInt64))
+                else if (typeof(T) == typeof(ulong))
                 {
                     hash = HashHelpers.Combine(hash, this.register.uint64_0.GetHashCode());
                     hash = HashHelpers.Combine(hash, this.register.uint64_1.GetHashCode());
                     return hash;
                 }
-                else if (typeof(T) == typeof(Int64))
+                else if (typeof(T) == typeof(long))
                 {
                     hash = HashHelpers.Combine(hash, this.register.int64_0.GetHashCode());
                     hash = HashHelpers.Combine(hash, this.register.int64_1.GetHashCode());
                     return hash;
                 }
-                else if (typeof(T) == typeof(Single))
+                else if (typeof(T) == typeof(float))
                 {
                     hash = HashHelpers.Combine(hash, this.register.single_0.GetHashCode());
                     hash = HashHelpers.Combine(hash, this.register.single_1.GetHashCode());
@@ -1527,7 +1527,7 @@ namespace System.Numerics
                     hash = HashHelpers.Combine(hash, this.register.single_3.GetHashCode());
                     return hash;
                 }
-                else if (typeof(T) == typeof(Double))
+                else if (typeof(T) == typeof(double))
                 {
                     hash = HashHelpers.Combine(hash, this.register.double_0.GetHashCode());
                     hash = HashHelpers.Combine(hash, this.register.double_1.GetHashCode());
@@ -1597,93 +1597,93 @@ namespace System.Numerics
             {
                 if (Vector.IsHardwareAccelerated)
                 {
-                    if (typeof(T) == typeof(Byte))
+                    if (typeof(T) == typeof(byte))
                     {
-                        Byte* dataPtr = stackalloc Byte[Count];
+                        byte* dataPtr = stackalloc byte[Count];
                         for (int g = 0; g < Count; g++)
                         {
-                            dataPtr[g] = (Byte)(object)ScalarAdd(left[g], right[g]);
+                            dataPtr[g] = (byte)(object)ScalarAdd(left[g], right[g]);
                         }
                         return new Vector<T>(dataPtr);
                     }
-                    else if (typeof(T) == typeof(SByte))
+                    else if (typeof(T) == typeof(sbyte))
                     {
-                        SByte* dataPtr = stackalloc SByte[Count];
+                        sbyte* dataPtr = stackalloc sbyte[Count];
                         for (int g = 0; g < Count; g++)
                         {
-                            dataPtr[g] = (SByte)(object)ScalarAdd(left[g], right[g]);
+                            dataPtr[g] = (sbyte)(object)ScalarAdd(left[g], right[g]);
                         }
                         return new Vector<T>(dataPtr);
                     }
-                    else if (typeof(T) == typeof(UInt16))
+                    else if (typeof(T) == typeof(ushort))
                     {
-                        UInt16* dataPtr = stackalloc UInt16[Count];
+                        ushort* dataPtr = stackalloc ushort[Count];
                         for (int g = 0; g < Count; g++)
                         {
-                            dataPtr[g] = (UInt16)(object)ScalarAdd(left[g], right[g]);
+                            dataPtr[g] = (ushort)(object)ScalarAdd(left[g], right[g]);
                         }
                         return new Vector<T>(dataPtr);
                     }
-                    else if (typeof(T) == typeof(Int16))
+                    else if (typeof(T) == typeof(short))
                     {
-                        Int16* dataPtr = stackalloc Int16[Count];
+                        short* dataPtr = stackalloc short[Count];
                         for (int g = 0; g < Count; g++)
                         {
-                            dataPtr[g] = (Int16)(object)ScalarAdd(left[g], right[g]);
+                            dataPtr[g] = (short)(object)ScalarAdd(left[g], right[g]);
                         }
                         return new Vector<T>(dataPtr);
                     }
-                    else if (typeof(T) == typeof(UInt32))
+                    else if (typeof(T) == typeof(uint))
                     {
-                        UInt32* dataPtr = stackalloc UInt32[Count];
+                        uint* dataPtr = stackalloc uint[Count];
                         for (int g = 0; g < Count; g++)
                         {
-                            dataPtr[g] = (UInt32)(object)ScalarAdd(left[g], right[g]);
+                            dataPtr[g] = (uint)(object)ScalarAdd(left[g], right[g]);
                         }
                         return new Vector<T>(dataPtr);
                     }
-                    else if (typeof(T) == typeof(Int32))
+                    else if (typeof(T) == typeof(int))
                     {
-                        Int32* dataPtr = stackalloc Int32[Count];
+                        int* dataPtr = stackalloc int[Count];
                         for (int g = 0; g < Count; g++)
                         {
-                            dataPtr[g] = (Int32)(object)ScalarAdd(left[g], right[g]);
+                            dataPtr[g] = (int)(object)ScalarAdd(left[g], right[g]);
                         }
                         return new Vector<T>(dataPtr);
                     }
-                    else if (typeof(T) == typeof(UInt64))
+                    else if (typeof(T) == typeof(ulong))
                     {
-                        UInt64* dataPtr = stackalloc UInt64[Count];
+                        ulong* dataPtr = stackalloc ulong[Count];
                         for (int g = 0; g < Count; g++)
                         {
-                            dataPtr[g] = (UInt64)(object)ScalarAdd(left[g], right[g]);
+                            dataPtr[g] = (ulong)(object)ScalarAdd(left[g], right[g]);
                         }
                         return new Vector<T>(dataPtr);
                     }
-                    else if (typeof(T) == typeof(Int64))
+                    else if (typeof(T) == typeof(long))
                     {
-                        Int64* dataPtr = stackalloc Int64[Count];
+                        long* dataPtr = stackalloc long[Count];
                         for (int g = 0; g < Count; g++)
                         {
-                            dataPtr[g] = (Int64)(object)ScalarAdd(left[g], right[g]);
+                            dataPtr[g] = (long)(object)ScalarAdd(left[g], right[g]);
                         }
                         return new Vector<T>(dataPtr);
                     }
-                    else if (typeof(T) == typeof(Single))
+                    else if (typeof(T) == typeof(float))
                     {
-                        Single* dataPtr = stackalloc Single[Count];
+                        float* dataPtr = stackalloc float[Count];
                         for (int g = 0; g < Count; g++)
                         {
-                            dataPtr[g] = (Single)(object)ScalarAdd(left[g], right[g]);
+                            dataPtr[g] = (float)(object)ScalarAdd(left[g], right[g]);
                         }
                         return new Vector<T>(dataPtr);
                     }
-                    else if (typeof(T) == typeof(Double))
+                    else if (typeof(T) == typeof(double))
                     {
-                        Double* dataPtr = stackalloc Double[Count];
+                        double* dataPtr = stackalloc double[Count];
                         for (int g = 0; g < Count; g++)
                         {
-                            dataPtr[g] = (Double)(object)ScalarAdd(left[g], right[g]);
+                            dataPtr[g] = (double)(object)ScalarAdd(left[g], right[g]);
                         }
                         return new Vector<T>(dataPtr);
                     }
@@ -1695,101 +1695,101 @@ namespace System.Numerics
                 else
                 {
                     Vector<T> sum = new Vector<T>();
-                    if (typeof(T) == typeof(Byte))
+                    if (typeof(T) == typeof(byte))
                     {
-                        sum.register.byte_0 = (Byte)(left.register.byte_0 + right.register.byte_0);
-                        sum.register.byte_1 = (Byte)(left.register.byte_1 + right.register.byte_1);
-                        sum.register.byte_2 = (Byte)(left.register.byte_2 + right.register.byte_2);
-                        sum.register.byte_3 = (Byte)(left.register.byte_3 + right.register.byte_3);
-                        sum.register.byte_4 = (Byte)(left.register.byte_4 + right.register.byte_4);
-                        sum.register.byte_5 = (Byte)(left.register.byte_5 + right.register.byte_5);
-                        sum.register.byte_6 = (Byte)(left.register.byte_6 + right.register.byte_6);
-                        sum.register.byte_7 = (Byte)(left.register.byte_7 + right.register.byte_7);
-                        sum.register.byte_8 = (Byte)(left.register.byte_8 + right.register.byte_8);
-                        sum.register.byte_9 = (Byte)(left.register.byte_9 + right.register.byte_9);
-                        sum.register.byte_10 = (Byte)(left.register.byte_10 + right.register.byte_10);
-                        sum.register.byte_11 = (Byte)(left.register.byte_11 + right.register.byte_11);
-                        sum.register.byte_12 = (Byte)(left.register.byte_12 + right.register.byte_12);
-                        sum.register.byte_13 = (Byte)(left.register.byte_13 + right.register.byte_13);
-                        sum.register.byte_14 = (Byte)(left.register.byte_14 + right.register.byte_14);
-                        sum.register.byte_15 = (Byte)(left.register.byte_15 + right.register.byte_15);
+                        sum.register.byte_0 = (byte)(left.register.byte_0 + right.register.byte_0);
+                        sum.register.byte_1 = (byte)(left.register.byte_1 + right.register.byte_1);
+                        sum.register.byte_2 = (byte)(left.register.byte_2 + right.register.byte_2);
+                        sum.register.byte_3 = (byte)(left.register.byte_3 + right.register.byte_3);
+                        sum.register.byte_4 = (byte)(left.register.byte_4 + right.register.byte_4);
+                        sum.register.byte_5 = (byte)(left.register.byte_5 + right.register.byte_5);
+                        sum.register.byte_6 = (byte)(left.register.byte_6 + right.register.byte_6);
+                        sum.register.byte_7 = (byte)(left.register.byte_7 + right.register.byte_7);
+                        sum.register.byte_8 = (byte)(left.register.byte_8 + right.register.byte_8);
+                        sum.register.byte_9 = (byte)(left.register.byte_9 + right.register.byte_9);
+                        sum.register.byte_10 = (byte)(left.register.byte_10 + right.register.byte_10);
+                        sum.register.byte_11 = (byte)(left.register.byte_11 + right.register.byte_11);
+                        sum.register.byte_12 = (byte)(left.register.byte_12 + right.register.byte_12);
+                        sum.register.byte_13 = (byte)(left.register.byte_13 + right.register.byte_13);
+                        sum.register.byte_14 = (byte)(left.register.byte_14 + right.register.byte_14);
+                        sum.register.byte_15 = (byte)(left.register.byte_15 + right.register.byte_15);
                     }
-                    else if (typeof(T) == typeof(SByte))
+                    else if (typeof(T) == typeof(sbyte))
                     {
-                        sum.register.sbyte_0 = (SByte)(left.register.sbyte_0 + right.register.sbyte_0);
-                        sum.register.sbyte_1 = (SByte)(left.register.sbyte_1 + right.register.sbyte_1);
-                        sum.register.sbyte_2 = (SByte)(left.register.sbyte_2 + right.register.sbyte_2);
-                        sum.register.sbyte_3 = (SByte)(left.register.sbyte_3 + right.register.sbyte_3);
-                        sum.register.sbyte_4 = (SByte)(left.register.sbyte_4 + right.register.sbyte_4);
-                        sum.register.sbyte_5 = (SByte)(left.register.sbyte_5 + right.register.sbyte_5);
-                        sum.register.sbyte_6 = (SByte)(left.register.sbyte_6 + right.register.sbyte_6);
-                        sum.register.sbyte_7 = (SByte)(left.register.sbyte_7 + right.register.sbyte_7);
-                        sum.register.sbyte_8 = (SByte)(left.register.sbyte_8 + right.register.sbyte_8);
-                        sum.register.sbyte_9 = (SByte)(left.register.sbyte_9 + right.register.sbyte_9);
-                        sum.register.sbyte_10 = (SByte)(left.register.sbyte_10 + right.register.sbyte_10);
-                        sum.register.sbyte_11 = (SByte)(left.register.sbyte_11 + right.register.sbyte_11);
-                        sum.register.sbyte_12 = (SByte)(left.register.sbyte_12 + right.register.sbyte_12);
-                        sum.register.sbyte_13 = (SByte)(left.register.sbyte_13 + right.register.sbyte_13);
-                        sum.register.sbyte_14 = (SByte)(left.register.sbyte_14 + right.register.sbyte_14);
-                        sum.register.sbyte_15 = (SByte)(left.register.sbyte_15 + right.register.sbyte_15);
+                        sum.register.sbyte_0 = (sbyte)(left.register.sbyte_0 + right.register.sbyte_0);
+                        sum.register.sbyte_1 = (sbyte)(left.register.sbyte_1 + right.register.sbyte_1);
+                        sum.register.sbyte_2 = (sbyte)(left.register.sbyte_2 + right.register.sbyte_2);
+                        sum.register.sbyte_3 = (sbyte)(left.register.sbyte_3 + right.register.sbyte_3);
+                        sum.register.sbyte_4 = (sbyte)(left.register.sbyte_4 + right.register.sbyte_4);
+                        sum.register.sbyte_5 = (sbyte)(left.register.sbyte_5 + right.register.sbyte_5);
+                        sum.register.sbyte_6 = (sbyte)(left.register.sbyte_6 + right.register.sbyte_6);
+                        sum.register.sbyte_7 = (sbyte)(left.register.sbyte_7 + right.register.sbyte_7);
+                        sum.register.sbyte_8 = (sbyte)(left.register.sbyte_8 + right.register.sbyte_8);
+                        sum.register.sbyte_9 = (sbyte)(left.register.sbyte_9 + right.register.sbyte_9);
+                        sum.register.sbyte_10 = (sbyte)(left.register.sbyte_10 + right.register.sbyte_10);
+                        sum.register.sbyte_11 = (sbyte)(left.register.sbyte_11 + right.register.sbyte_11);
+                        sum.register.sbyte_12 = (sbyte)(left.register.sbyte_12 + right.register.sbyte_12);
+                        sum.register.sbyte_13 = (sbyte)(left.register.sbyte_13 + right.register.sbyte_13);
+                        sum.register.sbyte_14 = (sbyte)(left.register.sbyte_14 + right.register.sbyte_14);
+                        sum.register.sbyte_15 = (sbyte)(left.register.sbyte_15 + right.register.sbyte_15);
                     }
-                    else if (typeof(T) == typeof(UInt16))
+                    else if (typeof(T) == typeof(ushort))
                     {
-                        sum.register.uint16_0 = (UInt16)(left.register.uint16_0 + right.register.uint16_0);
-                        sum.register.uint16_1 = (UInt16)(left.register.uint16_1 + right.register.uint16_1);
-                        sum.register.uint16_2 = (UInt16)(left.register.uint16_2 + right.register.uint16_2);
-                        sum.register.uint16_3 = (UInt16)(left.register.uint16_3 + right.register.uint16_3);
-                        sum.register.uint16_4 = (UInt16)(left.register.uint16_4 + right.register.uint16_4);
-                        sum.register.uint16_5 = (UInt16)(left.register.uint16_5 + right.register.uint16_5);
-                        sum.register.uint16_6 = (UInt16)(left.register.uint16_6 + right.register.uint16_6);
-                        sum.register.uint16_7 = (UInt16)(left.register.uint16_7 + right.register.uint16_7);
+                        sum.register.uint16_0 = (ushort)(left.register.uint16_0 + right.register.uint16_0);
+                        sum.register.uint16_1 = (ushort)(left.register.uint16_1 + right.register.uint16_1);
+                        sum.register.uint16_2 = (ushort)(left.register.uint16_2 + right.register.uint16_2);
+                        sum.register.uint16_3 = (ushort)(left.register.uint16_3 + right.register.uint16_3);
+                        sum.register.uint16_4 = (ushort)(left.register.uint16_4 + right.register.uint16_4);
+                        sum.register.uint16_5 = (ushort)(left.register.uint16_5 + right.register.uint16_5);
+                        sum.register.uint16_6 = (ushort)(left.register.uint16_6 + right.register.uint16_6);
+                        sum.register.uint16_7 = (ushort)(left.register.uint16_7 + right.register.uint16_7);
                     }
-                    else if (typeof(T) == typeof(Int16))
+                    else if (typeof(T) == typeof(short))
                     {
-                        sum.register.int16_0 = (Int16)(left.register.int16_0 + right.register.int16_0);
-                        sum.register.int16_1 = (Int16)(left.register.int16_1 + right.register.int16_1);
-                        sum.register.int16_2 = (Int16)(left.register.int16_2 + right.register.int16_2);
-                        sum.register.int16_3 = (Int16)(left.register.int16_3 + right.register.int16_3);
-                        sum.register.int16_4 = (Int16)(left.register.int16_4 + right.register.int16_4);
-                        sum.register.int16_5 = (Int16)(left.register.int16_5 + right.register.int16_5);
-                        sum.register.int16_6 = (Int16)(left.register.int16_6 + right.register.int16_6);
-                        sum.register.int16_7 = (Int16)(left.register.int16_7 + right.register.int16_7);
+                        sum.register.int16_0 = (short)(left.register.int16_0 + right.register.int16_0);
+                        sum.register.int16_1 = (short)(left.register.int16_1 + right.register.int16_1);
+                        sum.register.int16_2 = (short)(left.register.int16_2 + right.register.int16_2);
+                        sum.register.int16_3 = (short)(left.register.int16_3 + right.register.int16_3);
+                        sum.register.int16_4 = (short)(left.register.int16_4 + right.register.int16_4);
+                        sum.register.int16_5 = (short)(left.register.int16_5 + right.register.int16_5);
+                        sum.register.int16_6 = (short)(left.register.int16_6 + right.register.int16_6);
+                        sum.register.int16_7 = (short)(left.register.int16_7 + right.register.int16_7);
                     }
-                    else if (typeof(T) == typeof(UInt32))
+                    else if (typeof(T) == typeof(uint))
                     {
-                        sum.register.uint32_0 = (UInt32)(left.register.uint32_0 + right.register.uint32_0);
-                        sum.register.uint32_1 = (UInt32)(left.register.uint32_1 + right.register.uint32_1);
-                        sum.register.uint32_2 = (UInt32)(left.register.uint32_2 + right.register.uint32_2);
-                        sum.register.uint32_3 = (UInt32)(left.register.uint32_3 + right.register.uint32_3);
+                        sum.register.uint32_0 = (uint)(left.register.uint32_0 + right.register.uint32_0);
+                        sum.register.uint32_1 = (uint)(left.register.uint32_1 + right.register.uint32_1);
+                        sum.register.uint32_2 = (uint)(left.register.uint32_2 + right.register.uint32_2);
+                        sum.register.uint32_3 = (uint)(left.register.uint32_3 + right.register.uint32_3);
                     }
-                    else if (typeof(T) == typeof(Int32))
+                    else if (typeof(T) == typeof(int))
                     {
-                        sum.register.int32_0 = (Int32)(left.register.int32_0 + right.register.int32_0);
-                        sum.register.int32_1 = (Int32)(left.register.int32_1 + right.register.int32_1);
-                        sum.register.int32_2 = (Int32)(left.register.int32_2 + right.register.int32_2);
-                        sum.register.int32_3 = (Int32)(left.register.int32_3 + right.register.int32_3);
+                        sum.register.int32_0 = (int)(left.register.int32_0 + right.register.int32_0);
+                        sum.register.int32_1 = (int)(left.register.int32_1 + right.register.int32_1);
+                        sum.register.int32_2 = (int)(left.register.int32_2 + right.register.int32_2);
+                        sum.register.int32_3 = (int)(left.register.int32_3 + right.register.int32_3);
                     }
-                    else if (typeof(T) == typeof(UInt64))
+                    else if (typeof(T) == typeof(ulong))
                     {
-                        sum.register.uint64_0 = (UInt64)(left.register.uint64_0 + right.register.uint64_0);
-                        sum.register.uint64_1 = (UInt64)(left.register.uint64_1 + right.register.uint64_1);
+                        sum.register.uint64_0 = (ulong)(left.register.uint64_0 + right.register.uint64_0);
+                        sum.register.uint64_1 = (ulong)(left.register.uint64_1 + right.register.uint64_1);
                     }
-                    else if (typeof(T) == typeof(Int64))
+                    else if (typeof(T) == typeof(long))
                     {
-                        sum.register.int64_0 = (Int64)(left.register.int64_0 + right.register.int64_0);
-                        sum.register.int64_1 = (Int64)(left.register.int64_1 + right.register.int64_1);
+                        sum.register.int64_0 = (long)(left.register.int64_0 + right.register.int64_0);
+                        sum.register.int64_1 = (long)(left.register.int64_1 + right.register.int64_1);
                     }
-                    else if (typeof(T) == typeof(Single))
+                    else if (typeof(T) == typeof(float))
                     {
-                        sum.register.single_0 = (Single)(left.register.single_0 + right.register.single_0);
-                        sum.register.single_1 = (Single)(left.register.single_1 + right.register.single_1);
-                        sum.register.single_2 = (Single)(left.register.single_2 + right.register.single_2);
-                        sum.register.single_3 = (Single)(left.register.single_3 + right.register.single_3);
+                        sum.register.single_0 = (float)(left.register.single_0 + right.register.single_0);
+                        sum.register.single_1 = (float)(left.register.single_1 + right.register.single_1);
+                        sum.register.single_2 = (float)(left.register.single_2 + right.register.single_2);
+                        sum.register.single_3 = (float)(left.register.single_3 + right.register.single_3);
                     }
-                    else if (typeof(T) == typeof(Double))
+                    else if (typeof(T) == typeof(double))
                     {
-                        sum.register.double_0 = (Double)(left.register.double_0 + right.register.double_0);
-                        sum.register.double_1 = (Double)(left.register.double_1 + right.register.double_1);
+                        sum.register.double_0 = (double)(left.register.double_0 + right.register.double_0);
+                        sum.register.double_1 = (double)(left.register.double_1 + right.register.double_1);
                     }
                     return sum;
                 }
@@ -1808,93 +1808,93 @@ namespace System.Numerics
             {
                 if (Vector.IsHardwareAccelerated)
                 {
-                    if (typeof(T) == typeof(Byte))
+                    if (typeof(T) == typeof(byte))
                     {
-                        Byte* dataPtr = stackalloc Byte[Count];
+                        byte* dataPtr = stackalloc byte[Count];
                         for (int g = 0; g < Count; g++)
                         {
-                            dataPtr[g] = (Byte)(object)ScalarSubtract(left[g], right[g]);
+                            dataPtr[g] = (byte)(object)ScalarSubtract(left[g], right[g]);
                         }
                         return new Vector<T>(dataPtr);
                     }
-                    else if (typeof(T) == typeof(SByte))
+                    else if (typeof(T) == typeof(sbyte))
                     {
-                        SByte* dataPtr = stackalloc SByte[Count];
+                        sbyte* dataPtr = stackalloc sbyte[Count];
                         for (int g = 0; g < Count; g++)
                         {
-                            dataPtr[g] = (SByte)(object)ScalarSubtract(left[g], right[g]);
+                            dataPtr[g] = (sbyte)(object)ScalarSubtract(left[g], right[g]);
                         }
                         return new Vector<T>(dataPtr);
                     }
-                    else if (typeof(T) == typeof(UInt16))
+                    else if (typeof(T) == typeof(ushort))
                     {
-                        UInt16* dataPtr = stackalloc UInt16[Count];
+                        ushort* dataPtr = stackalloc ushort[Count];
                         for (int g = 0; g < Count; g++)
                         {
-                            dataPtr[g] = (UInt16)(object)ScalarSubtract(left[g], right[g]);
+                            dataPtr[g] = (ushort)(object)ScalarSubtract(left[g], right[g]);
                         }
                         return new Vector<T>(dataPtr);
                     }
-                    else if (typeof(T) == typeof(Int16))
+                    else if (typeof(T) == typeof(short))
                     {
-                        Int16* dataPtr = stackalloc Int16[Count];
+                        short* dataPtr = stackalloc short[Count];
                         for (int g = 0; g < Count; g++)
                         {
-                            dataPtr[g] = (Int16)(object)ScalarSubtract(left[g], right[g]);
+                            dataPtr[g] = (short)(object)ScalarSubtract(left[g], right[g]);
                         }
                         return new Vector<T>(dataPtr);
                     }
-                    else if (typeof(T) == typeof(UInt32))
+                    else if (typeof(T) == typeof(uint))
                     {
-                        UInt32* dataPtr = stackalloc UInt32[Count];
+                        uint* dataPtr = stackalloc uint[Count];
                         for (int g = 0; g < Count; g++)
                         {
-                            dataPtr[g] = (UInt32)(object)ScalarSubtract(left[g], right[g]);
+                            dataPtr[g] = (uint)(object)ScalarSubtract(left[g], right[g]);
                         }
                         return new Vector<T>(dataPtr);
                     }
-                    else if (typeof(T) == typeof(Int32))
+                    else if (typeof(T) == typeof(int))
                     {
-                        Int32* dataPtr = stackalloc Int32[Count];
+                        int* dataPtr = stackalloc int[Count];
                         for (int g = 0; g < Count; g++)
                         {
-                            dataPtr[g] = (Int32)(object)ScalarSubtract(left[g], right[g]);
+                            dataPtr[g] = (int)(object)ScalarSubtract(left[g], right[g]);
                         }
                         return new Vector<T>(dataPtr);
                     }
-                    else if (typeof(T) == typeof(UInt64))
+                    else if (typeof(T) == typeof(ulong))
                     {
-                        UInt64* dataPtr = stackalloc UInt64[Count];
+                        ulong* dataPtr = stackalloc ulong[Count];
                         for (int g = 0; g < Count; g++)
                         {
-                            dataPtr[g] = (UInt64)(object)ScalarSubtract(left[g], right[g]);
+                            dataPtr[g] = (ulong)(object)ScalarSubtract(left[g], right[g]);
                         }
                         return new Vector<T>(dataPtr);
                     }
-                    else if (typeof(T) == typeof(Int64))
+                    else if (typeof(T) == typeof(long))
                     {
-                        Int64* dataPtr = stackalloc Int64[Count];
+                        long* dataPtr = stackalloc long[Count];
                         for (int g = 0; g < Count; g++)
                         {
-                            dataPtr[g] = (Int64)(object)ScalarSubtract(left[g], right[g]);
+                            dataPtr[g] = (long)(object)ScalarSubtract(left[g], right[g]);
                         }
                         return new Vector<T>(dataPtr);
                     }
-                    else if (typeof(T) == typeof(Single))
+                    else if (typeof(T) == typeof(float))
                     {
-                        Single* dataPtr = stackalloc Single[Count];
+                        float* dataPtr = stackalloc float[Count];
                         for (int g = 0; g < Count; g++)
                         {
-                            dataPtr[g] = (Single)(object)ScalarSubtract(left[g], right[g]);
+                            dataPtr[g] = (float)(object)ScalarSubtract(left[g], right[g]);
                         }
                         return new Vector<T>(dataPtr);
                     }
-                    else if (typeof(T) == typeof(Double))
+                    else if (typeof(T) == typeof(double))
                     {
-                        Double* dataPtr = stackalloc Double[Count];
+                        double* dataPtr = stackalloc double[Count];
                         for (int g = 0; g < Count; g++)
                         {
-                            dataPtr[g] = (Double)(object)ScalarSubtract(left[g], right[g]);
+                            dataPtr[g] = (double)(object)ScalarSubtract(left[g], right[g]);
                         }
                         return new Vector<T>(dataPtr);
                     }
@@ -1906,101 +1906,101 @@ namespace System.Numerics
                 else
                 {
                     Vector<T> difference = new Vector<T>();
-                    if (typeof(T) == typeof(Byte))
+                    if (typeof(T) == typeof(byte))
                     {
-                        difference.register.byte_0 = (Byte)(left.register.byte_0 - right.register.byte_0);
-                        difference.register.byte_1 = (Byte)(left.register.byte_1 - right.register.byte_1);
-                        difference.register.byte_2 = (Byte)(left.register.byte_2 - right.register.byte_2);
-                        difference.register.byte_3 = (Byte)(left.register.byte_3 - right.register.byte_3);
-                        difference.register.byte_4 = (Byte)(left.register.byte_4 - right.register.byte_4);
-                        difference.register.byte_5 = (Byte)(left.register.byte_5 - right.register.byte_5);
-                        difference.register.byte_6 = (Byte)(left.register.byte_6 - right.register.byte_6);
-                        difference.register.byte_7 = (Byte)(left.register.byte_7 - right.register.byte_7);
-                        difference.register.byte_8 = (Byte)(left.register.byte_8 - right.register.byte_8);
-                        difference.register.byte_9 = (Byte)(left.register.byte_9 - right.register.byte_9);
-                        difference.register.byte_10 = (Byte)(left.register.byte_10 - right.register.byte_10);
-                        difference.register.byte_11 = (Byte)(left.register.byte_11 - right.register.byte_11);
-                        difference.register.byte_12 = (Byte)(left.register.byte_12 - right.register.byte_12);
-                        difference.register.byte_13 = (Byte)(left.register.byte_13 - right.register.byte_13);
-                        difference.register.byte_14 = (Byte)(left.register.byte_14 - right.register.byte_14);
-                        difference.register.byte_15 = (Byte)(left.register.byte_15 - right.register.byte_15);
+                        difference.register.byte_0 = (byte)(left.register.byte_0 - right.register.byte_0);
+                        difference.register.byte_1 = (byte)(left.register.byte_1 - right.register.byte_1);
+                        difference.register.byte_2 = (byte)(left.register.byte_2 - right.register.byte_2);
+                        difference.register.byte_3 = (byte)(left.register.byte_3 - right.register.byte_3);
+                        difference.register.byte_4 = (byte)(left.register.byte_4 - right.register.byte_4);
+                        difference.register.byte_5 = (byte)(left.register.byte_5 - right.register.byte_5);
+                        difference.register.byte_6 = (byte)(left.register.byte_6 - right.register.byte_6);
+                        difference.register.byte_7 = (byte)(left.register.byte_7 - right.register.byte_7);
+                        difference.register.byte_8 = (byte)(left.register.byte_8 - right.register.byte_8);
+                        difference.register.byte_9 = (byte)(left.register.byte_9 - right.register.byte_9);
+                        difference.register.byte_10 = (byte)(left.register.byte_10 - right.register.byte_10);
+                        difference.register.byte_11 = (byte)(left.register.byte_11 - right.register.byte_11);
+                        difference.register.byte_12 = (byte)(left.register.byte_12 - right.register.byte_12);
+                        difference.register.byte_13 = (byte)(left.register.byte_13 - right.register.byte_13);
+                        difference.register.byte_14 = (byte)(left.register.byte_14 - right.register.byte_14);
+                        difference.register.byte_15 = (byte)(left.register.byte_15 - right.register.byte_15);
                     }
-                    else if (typeof(T) == typeof(SByte))
+                    else if (typeof(T) == typeof(sbyte))
                     {
-                        difference.register.sbyte_0 = (SByte)(left.register.sbyte_0 - right.register.sbyte_0);
-                        difference.register.sbyte_1 = (SByte)(left.register.sbyte_1 - right.register.sbyte_1);
-                        difference.register.sbyte_2 = (SByte)(left.register.sbyte_2 - right.register.sbyte_2);
-                        difference.register.sbyte_3 = (SByte)(left.register.sbyte_3 - right.register.sbyte_3);
-                        difference.register.sbyte_4 = (SByte)(left.register.sbyte_4 - right.register.sbyte_4);
-                        difference.register.sbyte_5 = (SByte)(left.register.sbyte_5 - right.register.sbyte_5);
-                        difference.register.sbyte_6 = (SByte)(left.register.sbyte_6 - right.register.sbyte_6);
-                        difference.register.sbyte_7 = (SByte)(left.register.sbyte_7 - right.register.sbyte_7);
-                        difference.register.sbyte_8 = (SByte)(left.register.sbyte_8 - right.register.sbyte_8);
-                        difference.register.sbyte_9 = (SByte)(left.register.sbyte_9 - right.register.sbyte_9);
-                        difference.register.sbyte_10 = (SByte)(left.register.sbyte_10 - right.register.sbyte_10);
-                        difference.register.sbyte_11 = (SByte)(left.register.sbyte_11 - right.register.sbyte_11);
-                        difference.register.sbyte_12 = (SByte)(left.register.sbyte_12 - right.register.sbyte_12);
-                        difference.register.sbyte_13 = (SByte)(left.register.sbyte_13 - right.register.sbyte_13);
-                        difference.register.sbyte_14 = (SByte)(left.register.sbyte_14 - right.register.sbyte_14);
-                        difference.register.sbyte_15 = (SByte)(left.register.sbyte_15 - right.register.sbyte_15);
+                        difference.register.sbyte_0 = (sbyte)(left.register.sbyte_0 - right.register.sbyte_0);
+                        difference.register.sbyte_1 = (sbyte)(left.register.sbyte_1 - right.register.sbyte_1);
+                        difference.register.sbyte_2 = (sbyte)(left.register.sbyte_2 - right.register.sbyte_2);
+                        difference.register.sbyte_3 = (sbyte)(left.register.sbyte_3 - right.register.sbyte_3);
+                        difference.register.sbyte_4 = (sbyte)(left.register.sbyte_4 - right.register.sbyte_4);
+                        difference.register.sbyte_5 = (sbyte)(left.register.sbyte_5 - right.register.sbyte_5);
+                        difference.register.sbyte_6 = (sbyte)(left.register.sbyte_6 - right.register.sbyte_6);
+                        difference.register.sbyte_7 = (sbyte)(left.register.sbyte_7 - right.register.sbyte_7);
+                        difference.register.sbyte_8 = (sbyte)(left.register.sbyte_8 - right.register.sbyte_8);
+                        difference.register.sbyte_9 = (sbyte)(left.register.sbyte_9 - right.register.sbyte_9);
+                        difference.register.sbyte_10 = (sbyte)(left.register.sbyte_10 - right.register.sbyte_10);
+                        difference.register.sbyte_11 = (sbyte)(left.register.sbyte_11 - right.register.sbyte_11);
+                        difference.register.sbyte_12 = (sbyte)(left.register.sbyte_12 - right.register.sbyte_12);
+                        difference.register.sbyte_13 = (sbyte)(left.register.sbyte_13 - right.register.sbyte_13);
+                        difference.register.sbyte_14 = (sbyte)(left.register.sbyte_14 - right.register.sbyte_14);
+                        difference.register.sbyte_15 = (sbyte)(left.register.sbyte_15 - right.register.sbyte_15);
                     }
-                    else if (typeof(T) == typeof(UInt16))
+                    else if (typeof(T) == typeof(ushort))
                     {
-                        difference.register.uint16_0 = (UInt16)(left.register.uint16_0 - right.register.uint16_0);
-                        difference.register.uint16_1 = (UInt16)(left.register.uint16_1 - right.register.uint16_1);
-                        difference.register.uint16_2 = (UInt16)(left.register.uint16_2 - right.register.uint16_2);
-                        difference.register.uint16_3 = (UInt16)(left.register.uint16_3 - right.register.uint16_3);
-                        difference.register.uint16_4 = (UInt16)(left.register.uint16_4 - right.register.uint16_4);
-                        difference.register.uint16_5 = (UInt16)(left.register.uint16_5 - right.register.uint16_5);
-                        difference.register.uint16_6 = (UInt16)(left.register.uint16_6 - right.register.uint16_6);
-                        difference.register.uint16_7 = (UInt16)(left.register.uint16_7 - right.register.uint16_7);
+                        difference.register.uint16_0 = (ushort)(left.register.uint16_0 - right.register.uint16_0);
+                        difference.register.uint16_1 = (ushort)(left.register.uint16_1 - right.register.uint16_1);
+                        difference.register.uint16_2 = (ushort)(left.register.uint16_2 - right.register.uint16_2);
+                        difference.register.uint16_3 = (ushort)(left.register.uint16_3 - right.register.uint16_3);
+                        difference.register.uint16_4 = (ushort)(left.register.uint16_4 - right.register.uint16_4);
+                        difference.register.uint16_5 = (ushort)(left.register.uint16_5 - right.register.uint16_5);
+                        difference.register.uint16_6 = (ushort)(left.register.uint16_6 - right.register.uint16_6);
+                        difference.register.uint16_7 = (ushort)(left.register.uint16_7 - right.register.uint16_7);
                     }
-                    else if (typeof(T) == typeof(Int16))
+                    else if (typeof(T) == typeof(short))
                     {
-                        difference.register.int16_0 = (Int16)(left.register.int16_0 - right.register.int16_0);
-                        difference.register.int16_1 = (Int16)(left.register.int16_1 - right.register.int16_1);
-                        difference.register.int16_2 = (Int16)(left.register.int16_2 - right.register.int16_2);
-                        difference.register.int16_3 = (Int16)(left.register.int16_3 - right.register.int16_3);
-                        difference.register.int16_4 = (Int16)(left.register.int16_4 - right.register.int16_4);
-                        difference.register.int16_5 = (Int16)(left.register.int16_5 - right.register.int16_5);
-                        difference.register.int16_6 = (Int16)(left.register.int16_6 - right.register.int16_6);
-                        difference.register.int16_7 = (Int16)(left.register.int16_7 - right.register.int16_7);
+                        difference.register.int16_0 = (short)(left.register.int16_0 - right.register.int16_0);
+                        difference.register.int16_1 = (short)(left.register.int16_1 - right.register.int16_1);
+                        difference.register.int16_2 = (short)(left.register.int16_2 - right.register.int16_2);
+                        difference.register.int16_3 = (short)(left.register.int16_3 - right.register.int16_3);
+                        difference.register.int16_4 = (short)(left.register.int16_4 - right.register.int16_4);
+                        difference.register.int16_5 = (short)(left.register.int16_5 - right.register.int16_5);
+                        difference.register.int16_6 = (short)(left.register.int16_6 - right.register.int16_6);
+                        difference.register.int16_7 = (short)(left.register.int16_7 - right.register.int16_7);
                     }
-                    else if (typeof(T) == typeof(UInt32))
+                    else if (typeof(T) == typeof(uint))
                     {
-                        difference.register.uint32_0 = (UInt32)(left.register.uint32_0 - right.register.uint32_0);
-                        difference.register.uint32_1 = (UInt32)(left.register.uint32_1 - right.register.uint32_1);
-                        difference.register.uint32_2 = (UInt32)(left.register.uint32_2 - right.register.uint32_2);
-                        difference.register.uint32_3 = (UInt32)(left.register.uint32_3 - right.register.uint32_3);
+                        difference.register.uint32_0 = (uint)(left.register.uint32_0 - right.register.uint32_0);
+                        difference.register.uint32_1 = (uint)(left.register.uint32_1 - right.register.uint32_1);
+                        difference.register.uint32_2 = (uint)(left.register.uint32_2 - right.register.uint32_2);
+                        difference.register.uint32_3 = (uint)(left.register.uint32_3 - right.register.uint32_3);
                     }
-                    else if (typeof(T) == typeof(Int32))
+                    else if (typeof(T) == typeof(int))
                     {
-                        difference.register.int32_0 = (Int32)(left.register.int32_0 - right.register.int32_0);
-                        difference.register.int32_1 = (Int32)(left.register.int32_1 - right.register.int32_1);
-                        difference.register.int32_2 = (Int32)(left.register.int32_2 - right.register.int32_2);
-                        difference.register.int32_3 = (Int32)(left.register.int32_3 - right.register.int32_3);
+                        difference.register.int32_0 = (int)(left.register.int32_0 - right.register.int32_0);
+                        difference.register.int32_1 = (int)(left.register.int32_1 - right.register.int32_1);
+                        difference.register.int32_2 = (int)(left.register.int32_2 - right.register.int32_2);
+                        difference.register.int32_3 = (int)(left.register.int32_3 - right.register.int32_3);
                     }
-                    else if (typeof(T) == typeof(UInt64))
+                    else if (typeof(T) == typeof(ulong))
                     {
-                        difference.register.uint64_0 = (UInt64)(left.register.uint64_0 - right.register.uint64_0);
-                        difference.register.uint64_1 = (UInt64)(left.register.uint64_1 - right.register.uint64_1);
+                        difference.register.uint64_0 = (ulong)(left.register.uint64_0 - right.register.uint64_0);
+                        difference.register.uint64_1 = (ulong)(left.register.uint64_1 - right.register.uint64_1);
                     }
-                    else if (typeof(T) == typeof(Int64))
+                    else if (typeof(T) == typeof(long))
                     {
-                        difference.register.int64_0 = (Int64)(left.register.int64_0 - right.register.int64_0);
-                        difference.register.int64_1 = (Int64)(left.register.int64_1 - right.register.int64_1);
+                        difference.register.int64_0 = (long)(left.register.int64_0 - right.register.int64_0);
+                        difference.register.int64_1 = (long)(left.register.int64_1 - right.register.int64_1);
                     }
-                    else if (typeof(T) == typeof(Single))
+                    else if (typeof(T) == typeof(float))
                     {
-                        difference.register.single_0 = (Single)(left.register.single_0 - right.register.single_0);
-                        difference.register.single_1 = (Single)(left.register.single_1 - right.register.single_1);
-                        difference.register.single_2 = (Single)(left.register.single_2 - right.register.single_2);
-                        difference.register.single_3 = (Single)(left.register.single_3 - right.register.single_3);
+                        difference.register.single_0 = (float)(left.register.single_0 - right.register.single_0);
+                        difference.register.single_1 = (float)(left.register.single_1 - right.register.single_1);
+                        difference.register.single_2 = (float)(left.register.single_2 - right.register.single_2);
+                        difference.register.single_3 = (float)(left.register.single_3 - right.register.single_3);
                     }
-                    else if (typeof(T) == typeof(Double))
+                    else if (typeof(T) == typeof(double))
                     {
-                        difference.register.double_0 = (Double)(left.register.double_0 - right.register.double_0);
-                        difference.register.double_1 = (Double)(left.register.double_1 - right.register.double_1);
+                        difference.register.double_0 = (double)(left.register.double_0 - right.register.double_0);
+                        difference.register.double_1 = (double)(left.register.double_1 - right.register.double_1);
                     }
                     return difference;
                 }
@@ -2020,93 +2020,93 @@ namespace System.Numerics
             {
                 if (Vector.IsHardwareAccelerated)
                 {
-                    if (typeof(T) == typeof(Byte))
+                    if (typeof(T) == typeof(byte))
                     {
-                        Byte* dataPtr = stackalloc Byte[Count];
+                        byte* dataPtr = stackalloc byte[Count];
                         for (int g = 0; g < Count; g++)
                         {
-                            dataPtr[g] = (Byte)(object)ScalarMultiply(left[g], right[g]);
+                            dataPtr[g] = (byte)(object)ScalarMultiply(left[g], right[g]);
                         }
                         return new Vector<T>(dataPtr);
                     }
-                    else if (typeof(T) == typeof(SByte))
+                    else if (typeof(T) == typeof(sbyte))
                     {
-                        SByte* dataPtr = stackalloc SByte[Count];
+                        sbyte* dataPtr = stackalloc sbyte[Count];
                         for (int g = 0; g < Count; g++)
                         {
-                            dataPtr[g] = (SByte)(object)ScalarMultiply(left[g], right[g]);
+                            dataPtr[g] = (sbyte)(object)ScalarMultiply(left[g], right[g]);
                         }
                         return new Vector<T>(dataPtr);
                     }
-                    else if (typeof(T) == typeof(UInt16))
+                    else if (typeof(T) == typeof(ushort))
                     {
-                        UInt16* dataPtr = stackalloc UInt16[Count];
+                        ushort* dataPtr = stackalloc ushort[Count];
                         for (int g = 0; g < Count; g++)
                         {
-                            dataPtr[g] = (UInt16)(object)ScalarMultiply(left[g], right[g]);
+                            dataPtr[g] = (ushort)(object)ScalarMultiply(left[g], right[g]);
                         }
                         return new Vector<T>(dataPtr);
                     }
-                    else if (typeof(T) == typeof(Int16))
+                    else if (typeof(T) == typeof(short))
                     {
-                        Int16* dataPtr = stackalloc Int16[Count];
+                        short* dataPtr = stackalloc short[Count];
                         for (int g = 0; g < Count; g++)
                         {
-                            dataPtr[g] = (Int16)(object)ScalarMultiply(left[g], right[g]);
+                            dataPtr[g] = (short)(object)ScalarMultiply(left[g], right[g]);
                         }
                         return new Vector<T>(dataPtr);
                     }
-                    else if (typeof(T) == typeof(UInt32))
+                    else if (typeof(T) == typeof(uint))
                     {
-                        UInt32* dataPtr = stackalloc UInt32[Count];
+                        uint* dataPtr = stackalloc uint[Count];
                         for (int g = 0; g < Count; g++)
                         {
-                            dataPtr[g] = (UInt32)(object)ScalarMultiply(left[g], right[g]);
+                            dataPtr[g] = (uint)(object)ScalarMultiply(left[g], right[g]);
                         }
                         return new Vector<T>(dataPtr);
                     }
-                    else if (typeof(T) == typeof(Int32))
+                    else if (typeof(T) == typeof(int))
                     {
-                        Int32* dataPtr = stackalloc Int32[Count];
+                        int* dataPtr = stackalloc int[Count];
                         for (int g = 0; g < Count; g++)
                         {
-                            dataPtr[g] = (Int32)(object)ScalarMultiply(left[g], right[g]);
+                            dataPtr[g] = (int)(object)ScalarMultiply(left[g], right[g]);
                         }
                         return new Vector<T>(dataPtr);
                     }
-                    else if (typeof(T) == typeof(UInt64))
+                    else if (typeof(T) == typeof(ulong))
                     {
-                        UInt64* dataPtr = stackalloc UInt64[Count];
+                        ulong* dataPtr = stackalloc ulong[Count];
                         for (int g = 0; g < Count; g++)
                         {
-                            dataPtr[g] = (UInt64)(object)ScalarMultiply(left[g], right[g]);
+                            dataPtr[g] = (ulong)(object)ScalarMultiply(left[g], right[g]);
                         }
                         return new Vector<T>(dataPtr);
                     }
-                    else if (typeof(T) == typeof(Int64))
+                    else if (typeof(T) == typeof(long))
                     {
-                        Int64* dataPtr = stackalloc Int64[Count];
+                        long* dataPtr = stackalloc long[Count];
                         for (int g = 0; g < Count; g++)
                         {
-                            dataPtr[g] = (Int64)(object)ScalarMultiply(left[g], right[g]);
+                            dataPtr[g] = (long)(object)ScalarMultiply(left[g], right[g]);
                         }
                         return new Vector<T>(dataPtr);
                     }
-                    else if (typeof(T) == typeof(Single))
+                    else if (typeof(T) == typeof(float))
                     {
-                        Single* dataPtr = stackalloc Single[Count];
+                        float* dataPtr = stackalloc float[Count];
                         for (int g = 0; g < Count; g++)
                         {
-                            dataPtr[g] = (Single)(object)ScalarMultiply(left[g], right[g]);
+                            dataPtr[g] = (float)(object)ScalarMultiply(left[g], right[g]);
                         }
                         return new Vector<T>(dataPtr);
                     }
-                    else if (typeof(T) == typeof(Double))
+                    else if (typeof(T) == typeof(double))
                     {
-                        Double* dataPtr = stackalloc Double[Count];
+                        double* dataPtr = stackalloc double[Count];
                         for (int g = 0; g < Count; g++)
                         {
-                            dataPtr[g] = (Double)(object)ScalarMultiply(left[g], right[g]);
+                            dataPtr[g] = (double)(object)ScalarMultiply(left[g], right[g]);
                         }
                         return new Vector<T>(dataPtr);
                     }
@@ -2118,101 +2118,101 @@ namespace System.Numerics
                 else
                 {
                     Vector<T> product = new Vector<T>();
-                    if (typeof(T) == typeof(Byte))
+                    if (typeof(T) == typeof(byte))
                     {
-                        product.register.byte_0 = (Byte)(left.register.byte_0 * right.register.byte_0);
-                        product.register.byte_1 = (Byte)(left.register.byte_1 * right.register.byte_1);
-                        product.register.byte_2 = (Byte)(left.register.byte_2 * right.register.byte_2);
-                        product.register.byte_3 = (Byte)(left.register.byte_3 * right.register.byte_3);
-                        product.register.byte_4 = (Byte)(left.register.byte_4 * right.register.byte_4);
-                        product.register.byte_5 = (Byte)(left.register.byte_5 * right.register.byte_5);
-                        product.register.byte_6 = (Byte)(left.register.byte_6 * right.register.byte_6);
-                        product.register.byte_7 = (Byte)(left.register.byte_7 * right.register.byte_7);
-                        product.register.byte_8 = (Byte)(left.register.byte_8 * right.register.byte_8);
-                        product.register.byte_9 = (Byte)(left.register.byte_9 * right.register.byte_9);
-                        product.register.byte_10 = (Byte)(left.register.byte_10 * right.register.byte_10);
-                        product.register.byte_11 = (Byte)(left.register.byte_11 * right.register.byte_11);
-                        product.register.byte_12 = (Byte)(left.register.byte_12 * right.register.byte_12);
-                        product.register.byte_13 = (Byte)(left.register.byte_13 * right.register.byte_13);
-                        product.register.byte_14 = (Byte)(left.register.byte_14 * right.register.byte_14);
-                        product.register.byte_15 = (Byte)(left.register.byte_15 * right.register.byte_15);
+                        product.register.byte_0 = (byte)(left.register.byte_0 * right.register.byte_0);
+                        product.register.byte_1 = (byte)(left.register.byte_1 * right.register.byte_1);
+                        product.register.byte_2 = (byte)(left.register.byte_2 * right.register.byte_2);
+                        product.register.byte_3 = (byte)(left.register.byte_3 * right.register.byte_3);
+                        product.register.byte_4 = (byte)(left.register.byte_4 * right.register.byte_4);
+                        product.register.byte_5 = (byte)(left.register.byte_5 * right.register.byte_5);
+                        product.register.byte_6 = (byte)(left.register.byte_6 * right.register.byte_6);
+                        product.register.byte_7 = (byte)(left.register.byte_7 * right.register.byte_7);
+                        product.register.byte_8 = (byte)(left.register.byte_8 * right.register.byte_8);
+                        product.register.byte_9 = (byte)(left.register.byte_9 * right.register.byte_9);
+                        product.register.byte_10 = (byte)(left.register.byte_10 * right.register.byte_10);
+                        product.register.byte_11 = (byte)(left.register.byte_11 * right.register.byte_11);
+                        product.register.byte_12 = (byte)(left.register.byte_12 * right.register.byte_12);
+                        product.register.byte_13 = (byte)(left.register.byte_13 * right.register.byte_13);
+                        product.register.byte_14 = (byte)(left.register.byte_14 * right.register.byte_14);
+                        product.register.byte_15 = (byte)(left.register.byte_15 * right.register.byte_15);
                     }
-                    else if (typeof(T) == typeof(SByte))
+                    else if (typeof(T) == typeof(sbyte))
                     {
-                        product.register.sbyte_0 = (SByte)(left.register.sbyte_0 * right.register.sbyte_0);
-                        product.register.sbyte_1 = (SByte)(left.register.sbyte_1 * right.register.sbyte_1);
-                        product.register.sbyte_2 = (SByte)(left.register.sbyte_2 * right.register.sbyte_2);
-                        product.register.sbyte_3 = (SByte)(left.register.sbyte_3 * right.register.sbyte_3);
-                        product.register.sbyte_4 = (SByte)(left.register.sbyte_4 * right.register.sbyte_4);
-                        product.register.sbyte_5 = (SByte)(left.register.sbyte_5 * right.register.sbyte_5);
-                        product.register.sbyte_6 = (SByte)(left.register.sbyte_6 * right.register.sbyte_6);
-                        product.register.sbyte_7 = (SByte)(left.register.sbyte_7 * right.register.sbyte_7);
-                        product.register.sbyte_8 = (SByte)(left.register.sbyte_8 * right.register.sbyte_8);
-                        product.register.sbyte_9 = (SByte)(left.register.sbyte_9 * right.register.sbyte_9);
-                        product.register.sbyte_10 = (SByte)(left.register.sbyte_10 * right.register.sbyte_10);
-                        product.register.sbyte_11 = (SByte)(left.register.sbyte_11 * right.register.sbyte_11);
-                        product.register.sbyte_12 = (SByte)(left.register.sbyte_12 * right.register.sbyte_12);
-                        product.register.sbyte_13 = (SByte)(left.register.sbyte_13 * right.register.sbyte_13);
-                        product.register.sbyte_14 = (SByte)(left.register.sbyte_14 * right.register.sbyte_14);
-                        product.register.sbyte_15 = (SByte)(left.register.sbyte_15 * right.register.sbyte_15);
+                        product.register.sbyte_0 = (sbyte)(left.register.sbyte_0 * right.register.sbyte_0);
+                        product.register.sbyte_1 = (sbyte)(left.register.sbyte_1 * right.register.sbyte_1);
+                        product.register.sbyte_2 = (sbyte)(left.register.sbyte_2 * right.register.sbyte_2);
+                        product.register.sbyte_3 = (sbyte)(left.register.sbyte_3 * right.register.sbyte_3);
+                        product.register.sbyte_4 = (sbyte)(left.register.sbyte_4 * right.register.sbyte_4);
+                        product.register.sbyte_5 = (sbyte)(left.register.sbyte_5 * right.register.sbyte_5);
+                        product.register.sbyte_6 = (sbyte)(left.register.sbyte_6 * right.register.sbyte_6);
+                        product.register.sbyte_7 = (sbyte)(left.register.sbyte_7 * right.register.sbyte_7);
+                        product.register.sbyte_8 = (sbyte)(left.register.sbyte_8 * right.register.sbyte_8);
+                        product.register.sbyte_9 = (sbyte)(left.register.sbyte_9 * right.register.sbyte_9);
+                        product.register.sbyte_10 = (sbyte)(left.register.sbyte_10 * right.register.sbyte_10);
+                        product.register.sbyte_11 = (sbyte)(left.register.sbyte_11 * right.register.sbyte_11);
+                        product.register.sbyte_12 = (sbyte)(left.register.sbyte_12 * right.register.sbyte_12);
+                        product.register.sbyte_13 = (sbyte)(left.register.sbyte_13 * right.register.sbyte_13);
+                        product.register.sbyte_14 = (sbyte)(left.register.sbyte_14 * right.register.sbyte_14);
+                        product.register.sbyte_15 = (sbyte)(left.register.sbyte_15 * right.register.sbyte_15);
                     }
-                    else if (typeof(T) == typeof(UInt16))
+                    else if (typeof(T) == typeof(ushort))
                     {
-                        product.register.uint16_0 = (UInt16)(left.register.uint16_0 * right.register.uint16_0);
-                        product.register.uint16_1 = (UInt16)(left.register.uint16_1 * right.register.uint16_1);
-                        product.register.uint16_2 = (UInt16)(left.register.uint16_2 * right.register.uint16_2);
-                        product.register.uint16_3 = (UInt16)(left.register.uint16_3 * right.register.uint16_3);
-                        product.register.uint16_4 = (UInt16)(left.register.uint16_4 * right.register.uint16_4);
-                        product.register.uint16_5 = (UInt16)(left.register.uint16_5 * right.register.uint16_5);
-                        product.register.uint16_6 = (UInt16)(left.register.uint16_6 * right.register.uint16_6);
-                        product.register.uint16_7 = (UInt16)(left.register.uint16_7 * right.register.uint16_7);
+                        product.register.uint16_0 = (ushort)(left.register.uint16_0 * right.register.uint16_0);
+                        product.register.uint16_1 = (ushort)(left.register.uint16_1 * right.register.uint16_1);
+                        product.register.uint16_2 = (ushort)(left.register.uint16_2 * right.register.uint16_2);
+                        product.register.uint16_3 = (ushort)(left.register.uint16_3 * right.register.uint16_3);
+                        product.register.uint16_4 = (ushort)(left.register.uint16_4 * right.register.uint16_4);
+                        product.register.uint16_5 = (ushort)(left.register.uint16_5 * right.register.uint16_5);
+                        product.register.uint16_6 = (ushort)(left.register.uint16_6 * right.register.uint16_6);
+                        product.register.uint16_7 = (ushort)(left.register.uint16_7 * right.register.uint16_7);
                     }
-                    else if (typeof(T) == typeof(Int16))
+                    else if (typeof(T) == typeof(short))
                     {
-                        product.register.int16_0 = (Int16)(left.register.int16_0 * right.register.int16_0);
-                        product.register.int16_1 = (Int16)(left.register.int16_1 * right.register.int16_1);
-                        product.register.int16_2 = (Int16)(left.register.int16_2 * right.register.int16_2);
-                        product.register.int16_3 = (Int16)(left.register.int16_3 * right.register.int16_3);
-                        product.register.int16_4 = (Int16)(left.register.int16_4 * right.register.int16_4);
-                        product.register.int16_5 = (Int16)(left.register.int16_5 * right.register.int16_5);
-                        product.register.int16_6 = (Int16)(left.register.int16_6 * right.register.int16_6);
-                        product.register.int16_7 = (Int16)(left.register.int16_7 * right.register.int16_7);
+                        product.register.int16_0 = (short)(left.register.int16_0 * right.register.int16_0);
+                        product.register.int16_1 = (short)(left.register.int16_1 * right.register.int16_1);
+                        product.register.int16_2 = (short)(left.register.int16_2 * right.register.int16_2);
+                        product.register.int16_3 = (short)(left.register.int16_3 * right.register.int16_3);
+                        product.register.int16_4 = (short)(left.register.int16_4 * right.register.int16_4);
+                        product.register.int16_5 = (short)(left.register.int16_5 * right.register.int16_5);
+                        product.register.int16_6 = (short)(left.register.int16_6 * right.register.int16_6);
+                        product.register.int16_7 = (short)(left.register.int16_7 * right.register.int16_7);
                     }
-                    else if (typeof(T) == typeof(UInt32))
+                    else if (typeof(T) == typeof(uint))
                     {
-                        product.register.uint32_0 = (UInt32)(left.register.uint32_0 * right.register.uint32_0);
-                        product.register.uint32_1 = (UInt32)(left.register.uint32_1 * right.register.uint32_1);
-                        product.register.uint32_2 = (UInt32)(left.register.uint32_2 * right.register.uint32_2);
-                        product.register.uint32_3 = (UInt32)(left.register.uint32_3 * right.register.uint32_3);
+                        product.register.uint32_0 = (uint)(left.register.uint32_0 * right.register.uint32_0);
+                        product.register.uint32_1 = (uint)(left.register.uint32_1 * right.register.uint32_1);
+                        product.register.uint32_2 = (uint)(left.register.uint32_2 * right.register.uint32_2);
+                        product.register.uint32_3 = (uint)(left.register.uint32_3 * right.register.uint32_3);
                     }
-                    else if (typeof(T) == typeof(Int32))
+                    else if (typeof(T) == typeof(int))
                     {
-                        product.register.int32_0 = (Int32)(left.register.int32_0 * right.register.int32_0);
-                        product.register.int32_1 = (Int32)(left.register.int32_1 * right.register.int32_1);
-                        product.register.int32_2 = (Int32)(left.register.int32_2 * right.register.int32_2);
-                        product.register.int32_3 = (Int32)(left.register.int32_3 * right.register.int32_3);
+                        product.register.int32_0 = (int)(left.register.int32_0 * right.register.int32_0);
+                        product.register.int32_1 = (int)(left.register.int32_1 * right.register.int32_1);
+                        product.register.int32_2 = (int)(left.register.int32_2 * right.register.int32_2);
+                        product.register.int32_3 = (int)(left.register.int32_3 * right.register.int32_3);
                     }
-                    else if (typeof(T) == typeof(UInt64))
+                    else if (typeof(T) == typeof(ulong))
                     {
-                        product.register.uint64_0 = (UInt64)(left.register.uint64_0 * right.register.uint64_0);
-                        product.register.uint64_1 = (UInt64)(left.register.uint64_1 * right.register.uint64_1);
+                        product.register.uint64_0 = (ulong)(left.register.uint64_0 * right.register.uint64_0);
+                        product.register.uint64_1 = (ulong)(left.register.uint64_1 * right.register.uint64_1);
                     }
-                    else if (typeof(T) == typeof(Int64))
+                    else if (typeof(T) == typeof(long))
                     {
-                        product.register.int64_0 = (Int64)(left.register.int64_0 * right.register.int64_0);
-                        product.register.int64_1 = (Int64)(left.register.int64_1 * right.register.int64_1);
+                        product.register.int64_0 = (long)(left.register.int64_0 * right.register.int64_0);
+                        product.register.int64_1 = (long)(left.register.int64_1 * right.register.int64_1);
                     }
-                    else if (typeof(T) == typeof(Single))
+                    else if (typeof(T) == typeof(float))
                     {
-                        product.register.single_0 = (Single)(left.register.single_0 * right.register.single_0);
-                        product.register.single_1 = (Single)(left.register.single_1 * right.register.single_1);
-                        product.register.single_2 = (Single)(left.register.single_2 * right.register.single_2);
-                        product.register.single_3 = (Single)(left.register.single_3 * right.register.single_3);
+                        product.register.single_0 = (float)(left.register.single_0 * right.register.single_0);
+                        product.register.single_1 = (float)(left.register.single_1 * right.register.single_1);
+                        product.register.single_2 = (float)(left.register.single_2 * right.register.single_2);
+                        product.register.single_3 = (float)(left.register.single_3 * right.register.single_3);
                     }
-                    else if (typeof(T) == typeof(Double))
+                    else if (typeof(T) == typeof(double))
                     {
-                        product.register.double_0 = (Double)(left.register.double_0 * right.register.double_0);
-                        product.register.double_1 = (Double)(left.register.double_1 * right.register.double_1);
+                        product.register.double_0 = (double)(left.register.double_0 * right.register.double_0);
+                        product.register.double_1 = (double)(left.register.double_1 * right.register.double_1);
                     }
                     return product;
                 }
@@ -2237,101 +2237,101 @@ namespace System.Numerics
                 else
                 {
                     Vector<T> product = new Vector<T>();
-                    if (typeof(T) == typeof(Byte))
+                    if (typeof(T) == typeof(byte))
                     {
-                        product.register.byte_0 = (Byte)(value.register.byte_0 * (Byte)(object)factor);
-                        product.register.byte_1 = (Byte)(value.register.byte_1 * (Byte)(object)factor);
-                        product.register.byte_2 = (Byte)(value.register.byte_2 * (Byte)(object)factor);
-                        product.register.byte_3 = (Byte)(value.register.byte_3 * (Byte)(object)factor);
-                        product.register.byte_4 = (Byte)(value.register.byte_4 * (Byte)(object)factor);
-                        product.register.byte_5 = (Byte)(value.register.byte_5 * (Byte)(object)factor);
-                        product.register.byte_6 = (Byte)(value.register.byte_6 * (Byte)(object)factor);
-                        product.register.byte_7 = (Byte)(value.register.byte_7 * (Byte)(object)factor);
-                        product.register.byte_8 = (Byte)(value.register.byte_8 * (Byte)(object)factor);
-                        product.register.byte_9 = (Byte)(value.register.byte_9 * (Byte)(object)factor);
-                        product.register.byte_10 = (Byte)(value.register.byte_10 * (Byte)(object)factor);
-                        product.register.byte_11 = (Byte)(value.register.byte_11 * (Byte)(object)factor);
-                        product.register.byte_12 = (Byte)(value.register.byte_12 * (Byte)(object)factor);
-                        product.register.byte_13 = (Byte)(value.register.byte_13 * (Byte)(object)factor);
-                        product.register.byte_14 = (Byte)(value.register.byte_14 * (Byte)(object)factor);
-                        product.register.byte_15 = (Byte)(value.register.byte_15 * (Byte)(object)factor);
+                        product.register.byte_0 = (byte)(value.register.byte_0 * (byte)(object)factor);
+                        product.register.byte_1 = (byte)(value.register.byte_1 * (byte)(object)factor);
+                        product.register.byte_2 = (byte)(value.register.byte_2 * (byte)(object)factor);
+                        product.register.byte_3 = (byte)(value.register.byte_3 * (byte)(object)factor);
+                        product.register.byte_4 = (byte)(value.register.byte_4 * (byte)(object)factor);
+                        product.register.byte_5 = (byte)(value.register.byte_5 * (byte)(object)factor);
+                        product.register.byte_6 = (byte)(value.register.byte_6 * (byte)(object)factor);
+                        product.register.byte_7 = (byte)(value.register.byte_7 * (byte)(object)factor);
+                        product.register.byte_8 = (byte)(value.register.byte_8 * (byte)(object)factor);
+                        product.register.byte_9 = (byte)(value.register.byte_9 * (byte)(object)factor);
+                        product.register.byte_10 = (byte)(value.register.byte_10 * (byte)(object)factor);
+                        product.register.byte_11 = (byte)(value.register.byte_11 * (byte)(object)factor);
+                        product.register.byte_12 = (byte)(value.register.byte_12 * (byte)(object)factor);
+                        product.register.byte_13 = (byte)(value.register.byte_13 * (byte)(object)factor);
+                        product.register.byte_14 = (byte)(value.register.byte_14 * (byte)(object)factor);
+                        product.register.byte_15 = (byte)(value.register.byte_15 * (byte)(object)factor);
                     }
-                    else if (typeof(T) == typeof(SByte))
+                    else if (typeof(T) == typeof(sbyte))
                     {
-                        product.register.sbyte_0 = (SByte)(value.register.sbyte_0 * (SByte)(object)factor);
-                        product.register.sbyte_1 = (SByte)(value.register.sbyte_1 * (SByte)(object)factor);
-                        product.register.sbyte_2 = (SByte)(value.register.sbyte_2 * (SByte)(object)factor);
-                        product.register.sbyte_3 = (SByte)(value.register.sbyte_3 * (SByte)(object)factor);
-                        product.register.sbyte_4 = (SByte)(value.register.sbyte_4 * (SByte)(object)factor);
-                        product.register.sbyte_5 = (SByte)(value.register.sbyte_5 * (SByte)(object)factor);
-                        product.register.sbyte_6 = (SByte)(value.register.sbyte_6 * (SByte)(object)factor);
-                        product.register.sbyte_7 = (SByte)(value.register.sbyte_7 * (SByte)(object)factor);
-                        product.register.sbyte_8 = (SByte)(value.register.sbyte_8 * (SByte)(object)factor);
-                        product.register.sbyte_9 = (SByte)(value.register.sbyte_9 * (SByte)(object)factor);
-                        product.register.sbyte_10 = (SByte)(value.register.sbyte_10 * (SByte)(object)factor);
-                        product.register.sbyte_11 = (SByte)(value.register.sbyte_11 * (SByte)(object)factor);
-                        product.register.sbyte_12 = (SByte)(value.register.sbyte_12 * (SByte)(object)factor);
-                        product.register.sbyte_13 = (SByte)(value.register.sbyte_13 * (SByte)(object)factor);
-                        product.register.sbyte_14 = (SByte)(value.register.sbyte_14 * (SByte)(object)factor);
-                        product.register.sbyte_15 = (SByte)(value.register.sbyte_15 * (SByte)(object)factor);
+                        product.register.sbyte_0 = (sbyte)(value.register.sbyte_0 * (sbyte)(object)factor);
+                        product.register.sbyte_1 = (sbyte)(value.register.sbyte_1 * (sbyte)(object)factor);
+                        product.register.sbyte_2 = (sbyte)(value.register.sbyte_2 * (sbyte)(object)factor);
+                        product.register.sbyte_3 = (sbyte)(value.register.sbyte_3 * (sbyte)(object)factor);
+                        product.register.sbyte_4 = (sbyte)(value.register.sbyte_4 * (sbyte)(object)factor);
+                        product.register.sbyte_5 = (sbyte)(value.register.sbyte_5 * (sbyte)(object)factor);
+                        product.register.sbyte_6 = (sbyte)(value.register.sbyte_6 * (sbyte)(object)factor);
+                        product.register.sbyte_7 = (sbyte)(value.register.sbyte_7 * (sbyte)(object)factor);
+                        product.register.sbyte_8 = (sbyte)(value.register.sbyte_8 * (sbyte)(object)factor);
+                        product.register.sbyte_9 = (sbyte)(value.register.sbyte_9 * (sbyte)(object)factor);
+                        product.register.sbyte_10 = (sbyte)(value.register.sbyte_10 * (sbyte)(object)factor);
+                        product.register.sbyte_11 = (sbyte)(value.register.sbyte_11 * (sbyte)(object)factor);
+                        product.register.sbyte_12 = (sbyte)(value.register.sbyte_12 * (sbyte)(object)factor);
+                        product.register.sbyte_13 = (sbyte)(value.register.sbyte_13 * (sbyte)(object)factor);
+                        product.register.sbyte_14 = (sbyte)(value.register.sbyte_14 * (sbyte)(object)factor);
+                        product.register.sbyte_15 = (sbyte)(value.register.sbyte_15 * (sbyte)(object)factor);
                     }
-                    else if (typeof(T) == typeof(UInt16))
+                    else if (typeof(T) == typeof(ushort))
                     {
-                        product.register.uint16_0 = (UInt16)(value.register.uint16_0 * (UInt16)(object)factor);
-                        product.register.uint16_1 = (UInt16)(value.register.uint16_1 * (UInt16)(object)factor);
-                        product.register.uint16_2 = (UInt16)(value.register.uint16_2 * (UInt16)(object)factor);
-                        product.register.uint16_3 = (UInt16)(value.register.uint16_3 * (UInt16)(object)factor);
-                        product.register.uint16_4 = (UInt16)(value.register.uint16_4 * (UInt16)(object)factor);
-                        product.register.uint16_5 = (UInt16)(value.register.uint16_5 * (UInt16)(object)factor);
-                        product.register.uint16_6 = (UInt16)(value.register.uint16_6 * (UInt16)(object)factor);
-                        product.register.uint16_7 = (UInt16)(value.register.uint16_7 * (UInt16)(object)factor);
+                        product.register.uint16_0 = (ushort)(value.register.uint16_0 * (ushort)(object)factor);
+                        product.register.uint16_1 = (ushort)(value.register.uint16_1 * (ushort)(object)factor);
+                        product.register.uint16_2 = (ushort)(value.register.uint16_2 * (ushort)(object)factor);
+                        product.register.uint16_3 = (ushort)(value.register.uint16_3 * (ushort)(object)factor);
+                        product.register.uint16_4 = (ushort)(value.register.uint16_4 * (ushort)(object)factor);
+                        product.register.uint16_5 = (ushort)(value.register.uint16_5 * (ushort)(object)factor);
+                        product.register.uint16_6 = (ushort)(value.register.uint16_6 * (ushort)(object)factor);
+                        product.register.uint16_7 = (ushort)(value.register.uint16_7 * (ushort)(object)factor);
                     }
-                    else if (typeof(T) == typeof(Int16))
+                    else if (typeof(T) == typeof(short))
                     {
-                        product.register.int16_0 = (Int16)(value.register.int16_0 * (Int16)(object)factor);
-                        product.register.int16_1 = (Int16)(value.register.int16_1 * (Int16)(object)factor);
-                        product.register.int16_2 = (Int16)(value.register.int16_2 * (Int16)(object)factor);
-                        product.register.int16_3 = (Int16)(value.register.int16_3 * (Int16)(object)factor);
-                        product.register.int16_4 = (Int16)(value.register.int16_4 * (Int16)(object)factor);
-                        product.register.int16_5 = (Int16)(value.register.int16_5 * (Int16)(object)factor);
-                        product.register.int16_6 = (Int16)(value.register.int16_6 * (Int16)(object)factor);
-                        product.register.int16_7 = (Int16)(value.register.int16_7 * (Int16)(object)factor);
+                        product.register.int16_0 = (short)(value.register.int16_0 * (short)(object)factor);
+                        product.register.int16_1 = (short)(value.register.int16_1 * (short)(object)factor);
+                        product.register.int16_2 = (short)(value.register.int16_2 * (short)(object)factor);
+                        product.register.int16_3 = (short)(value.register.int16_3 * (short)(object)factor);
+                        product.register.int16_4 = (short)(value.register.int16_4 * (short)(object)factor);
+                        product.register.int16_5 = (short)(value.register.int16_5 * (short)(object)factor);
+                        product.register.int16_6 = (short)(value.register.int16_6 * (short)(object)factor);
+                        product.register.int16_7 = (short)(value.register.int16_7 * (short)(object)factor);
                     }
-                    else if (typeof(T) == typeof(UInt32))
+                    else if (typeof(T) == typeof(uint))
                     {
-                        product.register.uint32_0 = (UInt32)(value.register.uint32_0 * (UInt32)(object)factor);
-                        product.register.uint32_1 = (UInt32)(value.register.uint32_1 * (UInt32)(object)factor);
-                        product.register.uint32_2 = (UInt32)(value.register.uint32_2 * (UInt32)(object)factor);
-                        product.register.uint32_3 = (UInt32)(value.register.uint32_3 * (UInt32)(object)factor);
+                        product.register.uint32_0 = (uint)(value.register.uint32_0 * (uint)(object)factor);
+                        product.register.uint32_1 = (uint)(value.register.uint32_1 * (uint)(object)factor);
+                        product.register.uint32_2 = (uint)(value.register.uint32_2 * (uint)(object)factor);
+                        product.register.uint32_3 = (uint)(value.register.uint32_3 * (uint)(object)factor);
                     }
-                    else if (typeof(T) == typeof(Int32))
+                    else if (typeof(T) == typeof(int))
                     {
-                        product.register.int32_0 = (Int32)(value.register.int32_0 * (Int32)(object)factor);
-                        product.register.int32_1 = (Int32)(value.register.int32_1 * (Int32)(object)factor);
-                        product.register.int32_2 = (Int32)(value.register.int32_2 * (Int32)(object)factor);
-                        product.register.int32_3 = (Int32)(value.register.int32_3 * (Int32)(object)factor);
+                        product.register.int32_0 = (int)(value.register.int32_0 * (int)(object)factor);
+                        product.register.int32_1 = (int)(value.register.int32_1 * (int)(object)factor);
+                        product.register.int32_2 = (int)(value.register.int32_2 * (int)(object)factor);
+                        product.register.int32_3 = (int)(value.register.int32_3 * (int)(object)factor);
                     }
-                    else if (typeof(T) == typeof(UInt64))
+                    else if (typeof(T) == typeof(ulong))
                     {
-                        product.register.uint64_0 = (UInt64)(value.register.uint64_0 * (UInt64)(object)factor);
-                        product.register.uint64_1 = (UInt64)(value.register.uint64_1 * (UInt64)(object)factor);
+                        product.register.uint64_0 = (ulong)(value.register.uint64_0 * (ulong)(object)factor);
+                        product.register.uint64_1 = (ulong)(value.register.uint64_1 * (ulong)(object)factor);
                     }
-                    else if (typeof(T) == typeof(Int64))
+                    else if (typeof(T) == typeof(long))
                     {
-                        product.register.int64_0 = (Int64)(value.register.int64_0 * (Int64)(object)factor);
-                        product.register.int64_1 = (Int64)(value.register.int64_1 * (Int64)(object)factor);
+                        product.register.int64_0 = (long)(value.register.int64_0 * (long)(object)factor);
+                        product.register.int64_1 = (long)(value.register.int64_1 * (long)(object)factor);
                     }
-                    else if (typeof(T) == typeof(Single))
+                    else if (typeof(T) == typeof(float))
                     {
-                        product.register.single_0 = (Single)(value.register.single_0 * (Single)(object)factor);
-                        product.register.single_1 = (Single)(value.register.single_1 * (Single)(object)factor);
-                        product.register.single_2 = (Single)(value.register.single_2 * (Single)(object)factor);
-                        product.register.single_3 = (Single)(value.register.single_3 * (Single)(object)factor);
+                        product.register.single_0 = (float)(value.register.single_0 * (float)(object)factor);
+                        product.register.single_1 = (float)(value.register.single_1 * (float)(object)factor);
+                        product.register.single_2 = (float)(value.register.single_2 * (float)(object)factor);
+                        product.register.single_3 = (float)(value.register.single_3 * (float)(object)factor);
                     }
-                    else if (typeof(T) == typeof(Double))
+                    else if (typeof(T) == typeof(double))
                     {
-                        product.register.double_0 = (Double)(value.register.double_0 * (Double)(object)factor);
-                        product.register.double_1 = (Double)(value.register.double_1 * (Double)(object)factor);
+                        product.register.double_0 = (double)(value.register.double_0 * (double)(object)factor);
+                        product.register.double_1 = (double)(value.register.double_1 * (double)(object)factor);
                     }
                     return product;
                 }
@@ -2356,101 +2356,101 @@ namespace System.Numerics
                 else
                 {
                     Vector<T> product = new Vector<T>();
-                    if (typeof(T) == typeof(Byte))
+                    if (typeof(T) == typeof(byte))
                     {
-                        product.register.byte_0 = (Byte)(value.register.byte_0 * (Byte)(object)factor);
-                        product.register.byte_1 = (Byte)(value.register.byte_1 * (Byte)(object)factor);
-                        product.register.byte_2 = (Byte)(value.register.byte_2 * (Byte)(object)factor);
-                        product.register.byte_3 = (Byte)(value.register.byte_3 * (Byte)(object)factor);
-                        product.register.byte_4 = (Byte)(value.register.byte_4 * (Byte)(object)factor);
-                        product.register.byte_5 = (Byte)(value.register.byte_5 * (Byte)(object)factor);
-                        product.register.byte_6 = (Byte)(value.register.byte_6 * (Byte)(object)factor);
-                        product.register.byte_7 = (Byte)(value.register.byte_7 * (Byte)(object)factor);
-                        product.register.byte_8 = (Byte)(value.register.byte_8 * (Byte)(object)factor);
-                        product.register.byte_9 = (Byte)(value.register.byte_9 * (Byte)(object)factor);
-                        product.register.byte_10 = (Byte)(value.register.byte_10 * (Byte)(object)factor);
-                        product.register.byte_11 = (Byte)(value.register.byte_11 * (Byte)(object)factor);
-                        product.register.byte_12 = (Byte)(value.register.byte_12 * (Byte)(object)factor);
-                        product.register.byte_13 = (Byte)(value.register.byte_13 * (Byte)(object)factor);
-                        product.register.byte_14 = (Byte)(value.register.byte_14 * (Byte)(object)factor);
-                        product.register.byte_15 = (Byte)(value.register.byte_15 * (Byte)(object)factor);
+                        product.register.byte_0 = (byte)(value.register.byte_0 * (byte)(object)factor);
+                        product.register.byte_1 = (byte)(value.register.byte_1 * (byte)(object)factor);
+                        product.register.byte_2 = (byte)(value.register.byte_2 * (byte)(object)factor);
+                        product.register.byte_3 = (byte)(value.register.byte_3 * (byte)(object)factor);
+                        product.register.byte_4 = (byte)(value.register.byte_4 * (byte)(object)factor);
+                        product.register.byte_5 = (byte)(value.register.byte_5 * (byte)(object)factor);
+                        product.register.byte_6 = (byte)(value.register.byte_6 * (byte)(object)factor);
+                        product.register.byte_7 = (byte)(value.register.byte_7 * (byte)(object)factor);
+                        product.register.byte_8 = (byte)(value.register.byte_8 * (byte)(object)factor);
+                        product.register.byte_9 = (byte)(value.register.byte_9 * (byte)(object)factor);
+                        product.register.byte_10 = (byte)(value.register.byte_10 * (byte)(object)factor);
+                        product.register.byte_11 = (byte)(value.register.byte_11 * (byte)(object)factor);
+                        product.register.byte_12 = (byte)(value.register.byte_12 * (byte)(object)factor);
+                        product.register.byte_13 = (byte)(value.register.byte_13 * (byte)(object)factor);
+                        product.register.byte_14 = (byte)(value.register.byte_14 * (byte)(object)factor);
+                        product.register.byte_15 = (byte)(value.register.byte_15 * (byte)(object)factor);
                     }
-                    else if (typeof(T) == typeof(SByte))
+                    else if (typeof(T) == typeof(sbyte))
                     {
-                        product.register.sbyte_0 = (SByte)(value.register.sbyte_0 * (SByte)(object)factor);
-                        product.register.sbyte_1 = (SByte)(value.register.sbyte_1 * (SByte)(object)factor);
-                        product.register.sbyte_2 = (SByte)(value.register.sbyte_2 * (SByte)(object)factor);
-                        product.register.sbyte_3 = (SByte)(value.register.sbyte_3 * (SByte)(object)factor);
-                        product.register.sbyte_4 = (SByte)(value.register.sbyte_4 * (SByte)(object)factor);
-                        product.register.sbyte_5 = (SByte)(value.register.sbyte_5 * (SByte)(object)factor);
-                        product.register.sbyte_6 = (SByte)(value.register.sbyte_6 * (SByte)(object)factor);
-                        product.register.sbyte_7 = (SByte)(value.register.sbyte_7 * (SByte)(object)factor);
-                        product.register.sbyte_8 = (SByte)(value.register.sbyte_8 * (SByte)(object)factor);
-                        product.register.sbyte_9 = (SByte)(value.register.sbyte_9 * (SByte)(object)factor);
-                        product.register.sbyte_10 = (SByte)(value.register.sbyte_10 * (SByte)(object)factor);
-                        product.register.sbyte_11 = (SByte)(value.register.sbyte_11 * (SByte)(object)factor);
-                        product.register.sbyte_12 = (SByte)(value.register.sbyte_12 * (SByte)(object)factor);
-                        product.register.sbyte_13 = (SByte)(value.register.sbyte_13 * (SByte)(object)factor);
-                        product.register.sbyte_14 = (SByte)(value.register.sbyte_14 * (SByte)(object)factor);
-                        product.register.sbyte_15 = (SByte)(value.register.sbyte_15 * (SByte)(object)factor);
+                        product.register.sbyte_0 = (sbyte)(value.register.sbyte_0 * (sbyte)(object)factor);
+                        product.register.sbyte_1 = (sbyte)(value.register.sbyte_1 * (sbyte)(object)factor);
+                        product.register.sbyte_2 = (sbyte)(value.register.sbyte_2 * (sbyte)(object)factor);
+                        product.register.sbyte_3 = (sbyte)(value.register.sbyte_3 * (sbyte)(object)factor);
+                        product.register.sbyte_4 = (sbyte)(value.register.sbyte_4 * (sbyte)(object)factor);
+                        product.register.sbyte_5 = (sbyte)(value.register.sbyte_5 * (sbyte)(object)factor);
+                        product.register.sbyte_6 = (sbyte)(value.register.sbyte_6 * (sbyte)(object)factor);
+                        product.register.sbyte_7 = (sbyte)(value.register.sbyte_7 * (sbyte)(object)factor);
+                        product.register.sbyte_8 = (sbyte)(value.register.sbyte_8 * (sbyte)(object)factor);
+                        product.register.sbyte_9 = (sbyte)(value.register.sbyte_9 * (sbyte)(object)factor);
+                        product.register.sbyte_10 = (sbyte)(value.register.sbyte_10 * (sbyte)(object)factor);
+                        product.register.sbyte_11 = (sbyte)(value.register.sbyte_11 * (sbyte)(object)factor);
+                        product.register.sbyte_12 = (sbyte)(value.register.sbyte_12 * (sbyte)(object)factor);
+                        product.register.sbyte_13 = (sbyte)(value.register.sbyte_13 * (sbyte)(object)factor);
+                        product.register.sbyte_14 = (sbyte)(value.register.sbyte_14 * (sbyte)(object)factor);
+                        product.register.sbyte_15 = (sbyte)(value.register.sbyte_15 * (sbyte)(object)factor);
                     }
-                    else if (typeof(T) == typeof(UInt16))
+                    else if (typeof(T) == typeof(ushort))
                     {
-                        product.register.uint16_0 = (UInt16)(value.register.uint16_0 * (UInt16)(object)factor);
-                        product.register.uint16_1 = (UInt16)(value.register.uint16_1 * (UInt16)(object)factor);
-                        product.register.uint16_2 = (UInt16)(value.register.uint16_2 * (UInt16)(object)factor);
-                        product.register.uint16_3 = (UInt16)(value.register.uint16_3 * (UInt16)(object)factor);
-                        product.register.uint16_4 = (UInt16)(value.register.uint16_4 * (UInt16)(object)factor);
-                        product.register.uint16_5 = (UInt16)(value.register.uint16_5 * (UInt16)(object)factor);
-                        product.register.uint16_6 = (UInt16)(value.register.uint16_6 * (UInt16)(object)factor);
-                        product.register.uint16_7 = (UInt16)(value.register.uint16_7 * (UInt16)(object)factor);
+                        product.register.uint16_0 = (ushort)(value.register.uint16_0 * (ushort)(object)factor);
+                        product.register.uint16_1 = (ushort)(value.register.uint16_1 * (ushort)(object)factor);
+                        product.register.uint16_2 = (ushort)(value.register.uint16_2 * (ushort)(object)factor);
+                        product.register.uint16_3 = (ushort)(value.register.uint16_3 * (ushort)(object)factor);
+                        product.register.uint16_4 = (ushort)(value.register.uint16_4 * (ushort)(object)factor);
+                        product.register.uint16_5 = (ushort)(value.register.uint16_5 * (ushort)(object)factor);
+                        product.register.uint16_6 = (ushort)(value.register.uint16_6 * (ushort)(object)factor);
+                        product.register.uint16_7 = (ushort)(value.register.uint16_7 * (ushort)(object)factor);
                     }
-                    else if (typeof(T) == typeof(Int16))
+                    else if (typeof(T) == typeof(short))
                     {
-                        product.register.int16_0 = (Int16)(value.register.int16_0 * (Int16)(object)factor);
-                        product.register.int16_1 = (Int16)(value.register.int16_1 * (Int16)(object)factor);
-                        product.register.int16_2 = (Int16)(value.register.int16_2 * (Int16)(object)factor);
-                        product.register.int16_3 = (Int16)(value.register.int16_3 * (Int16)(object)factor);
-                        product.register.int16_4 = (Int16)(value.register.int16_4 * (Int16)(object)factor);
-                        product.register.int16_5 = (Int16)(value.register.int16_5 * (Int16)(object)factor);
-                        product.register.int16_6 = (Int16)(value.register.int16_6 * (Int16)(object)factor);
-                        product.register.int16_7 = (Int16)(value.register.int16_7 * (Int16)(object)factor);
+                        product.register.int16_0 = (short)(value.register.int16_0 * (short)(object)factor);
+                        product.register.int16_1 = (short)(value.register.int16_1 * (short)(object)factor);
+                        product.register.int16_2 = (short)(value.register.int16_2 * (short)(object)factor);
+                        product.register.int16_3 = (short)(value.register.int16_3 * (short)(object)factor);
+                        product.register.int16_4 = (short)(value.register.int16_4 * (short)(object)factor);
+                        product.register.int16_5 = (short)(value.register.int16_5 * (short)(object)factor);
+                        product.register.int16_6 = (short)(value.register.int16_6 * (short)(object)factor);
+                        product.register.int16_7 = (short)(value.register.int16_7 * (short)(object)factor);
                     }
-                    else if (typeof(T) == typeof(UInt32))
+                    else if (typeof(T) == typeof(uint))
                     {
-                        product.register.uint32_0 = (UInt32)(value.register.uint32_0 * (UInt32)(object)factor);
-                        product.register.uint32_1 = (UInt32)(value.register.uint32_1 * (UInt32)(object)factor);
-                        product.register.uint32_2 = (UInt32)(value.register.uint32_2 * (UInt32)(object)factor);
-                        product.register.uint32_3 = (UInt32)(value.register.uint32_3 * (UInt32)(object)factor);
+                        product.register.uint32_0 = (uint)(value.register.uint32_0 * (uint)(object)factor);
+                        product.register.uint32_1 = (uint)(value.register.uint32_1 * (uint)(object)factor);
+                        product.register.uint32_2 = (uint)(value.register.uint32_2 * (uint)(object)factor);
+                        product.register.uint32_3 = (uint)(value.register.uint32_3 * (uint)(object)factor);
                     }
-                    else if (typeof(T) == typeof(Int32))
+                    else if (typeof(T) == typeof(int))
                     {
-                        product.register.int32_0 = (Int32)(value.register.int32_0 * (Int32)(object)factor);
-                        product.register.int32_1 = (Int32)(value.register.int32_1 * (Int32)(object)factor);
-                        product.register.int32_2 = (Int32)(value.register.int32_2 * (Int32)(object)factor);
-                        product.register.int32_3 = (Int32)(value.register.int32_3 * (Int32)(object)factor);
+                        product.register.int32_0 = (int)(value.register.int32_0 * (int)(object)factor);
+                        product.register.int32_1 = (int)(value.register.int32_1 * (int)(object)factor);
+                        product.register.int32_2 = (int)(value.register.int32_2 * (int)(object)factor);
+                        product.register.int32_3 = (int)(value.register.int32_3 * (int)(object)factor);
                     }
-                    else if (typeof(T) == typeof(UInt64))
+                    else if (typeof(T) == typeof(ulong))
                     {
-                        product.register.uint64_0 = (UInt64)(value.register.uint64_0 * (UInt64)(object)factor);
-                        product.register.uint64_1 = (UInt64)(value.register.uint64_1 * (UInt64)(object)factor);
+                        product.register.uint64_0 = (ulong)(value.register.uint64_0 * (ulong)(object)factor);
+                        product.register.uint64_1 = (ulong)(value.register.uint64_1 * (ulong)(object)factor);
                     }
-                    else if (typeof(T) == typeof(Int64))
+                    else if (typeof(T) == typeof(long))
                     {
-                        product.register.int64_0 = (Int64)(value.register.int64_0 * (Int64)(object)factor);
-                        product.register.int64_1 = (Int64)(value.register.int64_1 * (Int64)(object)factor);
+                        product.register.int64_0 = (long)(value.register.int64_0 * (long)(object)factor);
+                        product.register.int64_1 = (long)(value.register.int64_1 * (long)(object)factor);
                     }
-                    else if (typeof(T) == typeof(Single))
+                    else if (typeof(T) == typeof(float))
                     {
-                        product.register.single_0 = (Single)(value.register.single_0 * (Single)(object)factor);
-                        product.register.single_1 = (Single)(value.register.single_1 * (Single)(object)factor);
-                        product.register.single_2 = (Single)(value.register.single_2 * (Single)(object)factor);
-                        product.register.single_3 = (Single)(value.register.single_3 * (Single)(object)factor);
+                        product.register.single_0 = (float)(value.register.single_0 * (float)(object)factor);
+                        product.register.single_1 = (float)(value.register.single_1 * (float)(object)factor);
+                        product.register.single_2 = (float)(value.register.single_2 * (float)(object)factor);
+                        product.register.single_3 = (float)(value.register.single_3 * (float)(object)factor);
                     }
-                    else if (typeof(T) == typeof(Double))
+                    else if (typeof(T) == typeof(double))
                     {
-                        product.register.double_0 = (Double)(value.register.double_0 * (Double)(object)factor);
-                        product.register.double_1 = (Double)(value.register.double_1 * (Double)(object)factor);
+                        product.register.double_0 = (double)(value.register.double_0 * (double)(object)factor);
+                        product.register.double_1 = (double)(value.register.double_1 * (double)(object)factor);
                     }
                     return product;
                 }
@@ -2470,93 +2470,93 @@ namespace System.Numerics
             {
                 if (Vector.IsHardwareAccelerated)
                 {
-                    if (typeof(T) == typeof(Byte))
+                    if (typeof(T) == typeof(byte))
                     {
-                        Byte* dataPtr = stackalloc Byte[Count];
+                        byte* dataPtr = stackalloc byte[Count];
                         for (int g = 0; g < Count; g++)
                         {
-                            dataPtr[g] = (Byte)(object)ScalarDivide(left[g], right[g]);
+                            dataPtr[g] = (byte)(object)ScalarDivide(left[g], right[g]);
                         }
                         return new Vector<T>(dataPtr);
                     }
-                    else if (typeof(T) == typeof(SByte))
+                    else if (typeof(T) == typeof(sbyte))
                     {
-                        SByte* dataPtr = stackalloc SByte[Count];
+                        sbyte* dataPtr = stackalloc sbyte[Count];
                         for (int g = 0; g < Count; g++)
                         {
-                            dataPtr[g] = (SByte)(object)ScalarDivide(left[g], right[g]);
+                            dataPtr[g] = (sbyte)(object)ScalarDivide(left[g], right[g]);
                         }
                         return new Vector<T>(dataPtr);
                     }
-                    else if (typeof(T) == typeof(UInt16))
+                    else if (typeof(T) == typeof(ushort))
                     {
-                        UInt16* dataPtr = stackalloc UInt16[Count];
+                        ushort* dataPtr = stackalloc ushort[Count];
                         for (int g = 0; g < Count; g++)
                         {
-                            dataPtr[g] = (UInt16)(object)ScalarDivide(left[g], right[g]);
+                            dataPtr[g] = (ushort)(object)ScalarDivide(left[g], right[g]);
                         }
                         return new Vector<T>(dataPtr);
                     }
-                    else if (typeof(T) == typeof(Int16))
+                    else if (typeof(T) == typeof(short))
                     {
-                        Int16* dataPtr = stackalloc Int16[Count];
+                        short* dataPtr = stackalloc short[Count];
                         for (int g = 0; g < Count; g++)
                         {
-                            dataPtr[g] = (Int16)(object)ScalarDivide(left[g], right[g]);
+                            dataPtr[g] = (short)(object)ScalarDivide(left[g], right[g]);
                         }
                         return new Vector<T>(dataPtr);
                     }
-                    else if (typeof(T) == typeof(UInt32))
+                    else if (typeof(T) == typeof(uint))
                     {
-                        UInt32* dataPtr = stackalloc UInt32[Count];
+                        uint* dataPtr = stackalloc uint[Count];
                         for (int g = 0; g < Count; g++)
                         {
-                            dataPtr[g] = (UInt32)(object)ScalarDivide(left[g], right[g]);
+                            dataPtr[g] = (uint)(object)ScalarDivide(left[g], right[g]);
                         }
                         return new Vector<T>(dataPtr);
                     }
-                    else if (typeof(T) == typeof(Int32))
+                    else if (typeof(T) == typeof(int))
                     {
-                        Int32* dataPtr = stackalloc Int32[Count];
+                        int* dataPtr = stackalloc int[Count];
                         for (int g = 0; g < Count; g++)
                         {
-                            dataPtr[g] = (Int32)(object)ScalarDivide(left[g], right[g]);
+                            dataPtr[g] = (int)(object)ScalarDivide(left[g], right[g]);
                         }
                         return new Vector<T>(dataPtr);
                     }
-                    else if (typeof(T) == typeof(UInt64))
+                    else if (typeof(T) == typeof(ulong))
                     {
-                        UInt64* dataPtr = stackalloc UInt64[Count];
+                        ulong* dataPtr = stackalloc ulong[Count];
                         for (int g = 0; g < Count; g++)
                         {
-                            dataPtr[g] = (UInt64)(object)ScalarDivide(left[g], right[g]);
+                            dataPtr[g] = (ulong)(object)ScalarDivide(left[g], right[g]);
                         }
                         return new Vector<T>(dataPtr);
                     }
-                    else if (typeof(T) == typeof(Int64))
+                    else if (typeof(T) == typeof(long))
                     {
-                        Int64* dataPtr = stackalloc Int64[Count];
+                        long* dataPtr = stackalloc long[Count];
                         for (int g = 0; g < Count; g++)
                         {
-                            dataPtr[g] = (Int64)(object)ScalarDivide(left[g], right[g]);
+                            dataPtr[g] = (long)(object)ScalarDivide(left[g], right[g]);
                         }
                         return new Vector<T>(dataPtr);
                     }
-                    else if (typeof(T) == typeof(Single))
+                    else if (typeof(T) == typeof(float))
                     {
-                        Single* dataPtr = stackalloc Single[Count];
+                        float* dataPtr = stackalloc float[Count];
                         for (int g = 0; g < Count; g++)
                         {
-                            dataPtr[g] = (Single)(object)ScalarDivide(left[g], right[g]);
+                            dataPtr[g] = (float)(object)ScalarDivide(left[g], right[g]);
                         }
                         return new Vector<T>(dataPtr);
                     }
-                    else if (typeof(T) == typeof(Double))
+                    else if (typeof(T) == typeof(double))
                     {
-                        Double* dataPtr = stackalloc Double[Count];
+                        double* dataPtr = stackalloc double[Count];
                         for (int g = 0; g < Count; g++)
                         {
-                            dataPtr[g] = (Double)(object)ScalarDivide(left[g], right[g]);
+                            dataPtr[g] = (double)(object)ScalarDivide(left[g], right[g]);
                         }
                         return new Vector<T>(dataPtr);
                     }
@@ -2568,101 +2568,101 @@ namespace System.Numerics
                 else
                 {
                     Vector<T> quotient = new Vector<T>();
-                    if (typeof(T) == typeof(Byte))
+                    if (typeof(T) == typeof(byte))
                     {
-                        quotient.register.byte_0 = (Byte)(left.register.byte_0 / right.register.byte_0);
-                        quotient.register.byte_1 = (Byte)(left.register.byte_1 / right.register.byte_1);
-                        quotient.register.byte_2 = (Byte)(left.register.byte_2 / right.register.byte_2);
-                        quotient.register.byte_3 = (Byte)(left.register.byte_3 / right.register.byte_3);
-                        quotient.register.byte_4 = (Byte)(left.register.byte_4 / right.register.byte_4);
-                        quotient.register.byte_5 = (Byte)(left.register.byte_5 / right.register.byte_5);
-                        quotient.register.byte_6 = (Byte)(left.register.byte_6 / right.register.byte_6);
-                        quotient.register.byte_7 = (Byte)(left.register.byte_7 / right.register.byte_7);
-                        quotient.register.byte_8 = (Byte)(left.register.byte_8 / right.register.byte_8);
-                        quotient.register.byte_9 = (Byte)(left.register.byte_9 / right.register.byte_9);
-                        quotient.register.byte_10 = (Byte)(left.register.byte_10 / right.register.byte_10);
-                        quotient.register.byte_11 = (Byte)(left.register.byte_11 / right.register.byte_11);
-                        quotient.register.byte_12 = (Byte)(left.register.byte_12 / right.register.byte_12);
-                        quotient.register.byte_13 = (Byte)(left.register.byte_13 / right.register.byte_13);
-                        quotient.register.byte_14 = (Byte)(left.register.byte_14 / right.register.byte_14);
-                        quotient.register.byte_15 = (Byte)(left.register.byte_15 / right.register.byte_15);
+                        quotient.register.byte_0 = (byte)(left.register.byte_0 / right.register.byte_0);
+                        quotient.register.byte_1 = (byte)(left.register.byte_1 / right.register.byte_1);
+                        quotient.register.byte_2 = (byte)(left.register.byte_2 / right.register.byte_2);
+                        quotient.register.byte_3 = (byte)(left.register.byte_3 / right.register.byte_3);
+                        quotient.register.byte_4 = (byte)(left.register.byte_4 / right.register.byte_4);
+                        quotient.register.byte_5 = (byte)(left.register.byte_5 / right.register.byte_5);
+                        quotient.register.byte_6 = (byte)(left.register.byte_6 / right.register.byte_6);
+                        quotient.register.byte_7 = (byte)(left.register.byte_7 / right.register.byte_7);
+                        quotient.register.byte_8 = (byte)(left.register.byte_8 / right.register.byte_8);
+                        quotient.register.byte_9 = (byte)(left.register.byte_9 / right.register.byte_9);
+                        quotient.register.byte_10 = (byte)(left.register.byte_10 / right.register.byte_10);
+                        quotient.register.byte_11 = (byte)(left.register.byte_11 / right.register.byte_11);
+                        quotient.register.byte_12 = (byte)(left.register.byte_12 / right.register.byte_12);
+                        quotient.register.byte_13 = (byte)(left.register.byte_13 / right.register.byte_13);
+                        quotient.register.byte_14 = (byte)(left.register.byte_14 / right.register.byte_14);
+                        quotient.register.byte_15 = (byte)(left.register.byte_15 / right.register.byte_15);
                     }
-                    else if (typeof(T) == typeof(SByte))
+                    else if (typeof(T) == typeof(sbyte))
                     {
-                        quotient.register.sbyte_0 = (SByte)(left.register.sbyte_0 / right.register.sbyte_0);
-                        quotient.register.sbyte_1 = (SByte)(left.register.sbyte_1 / right.register.sbyte_1);
-                        quotient.register.sbyte_2 = (SByte)(left.register.sbyte_2 / right.register.sbyte_2);
-                        quotient.register.sbyte_3 = (SByte)(left.register.sbyte_3 / right.register.sbyte_3);
-                        quotient.register.sbyte_4 = (SByte)(left.register.sbyte_4 / right.register.sbyte_4);
-                        quotient.register.sbyte_5 = (SByte)(left.register.sbyte_5 / right.register.sbyte_5);
-                        quotient.register.sbyte_6 = (SByte)(left.register.sbyte_6 / right.register.sbyte_6);
-                        quotient.register.sbyte_7 = (SByte)(left.register.sbyte_7 / right.register.sbyte_7);
-                        quotient.register.sbyte_8 = (SByte)(left.register.sbyte_8 / right.register.sbyte_8);
-                        quotient.register.sbyte_9 = (SByte)(left.register.sbyte_9 / right.register.sbyte_9);
-                        quotient.register.sbyte_10 = (SByte)(left.register.sbyte_10 / right.register.sbyte_10);
-                        quotient.register.sbyte_11 = (SByte)(left.register.sbyte_11 / right.register.sbyte_11);
-                        quotient.register.sbyte_12 = (SByte)(left.register.sbyte_12 / right.register.sbyte_12);
-                        quotient.register.sbyte_13 = (SByte)(left.register.sbyte_13 / right.register.sbyte_13);
-                        quotient.register.sbyte_14 = (SByte)(left.register.sbyte_14 / right.register.sbyte_14);
-                        quotient.register.sbyte_15 = (SByte)(left.register.sbyte_15 / right.register.sbyte_15);
+                        quotient.register.sbyte_0 = (sbyte)(left.register.sbyte_0 / right.register.sbyte_0);
+                        quotient.register.sbyte_1 = (sbyte)(left.register.sbyte_1 / right.register.sbyte_1);
+                        quotient.register.sbyte_2 = (sbyte)(left.register.sbyte_2 / right.register.sbyte_2);
+                        quotient.register.sbyte_3 = (sbyte)(left.register.sbyte_3 / right.register.sbyte_3);
+                        quotient.register.sbyte_4 = (sbyte)(left.register.sbyte_4 / right.register.sbyte_4);
+                        quotient.register.sbyte_5 = (sbyte)(left.register.sbyte_5 / right.register.sbyte_5);
+                        quotient.register.sbyte_6 = (sbyte)(left.register.sbyte_6 / right.register.sbyte_6);
+                        quotient.register.sbyte_7 = (sbyte)(left.register.sbyte_7 / right.register.sbyte_7);
+                        quotient.register.sbyte_8 = (sbyte)(left.register.sbyte_8 / right.register.sbyte_8);
+                        quotient.register.sbyte_9 = (sbyte)(left.register.sbyte_9 / right.register.sbyte_9);
+                        quotient.register.sbyte_10 = (sbyte)(left.register.sbyte_10 / right.register.sbyte_10);
+                        quotient.register.sbyte_11 = (sbyte)(left.register.sbyte_11 / right.register.sbyte_11);
+                        quotient.register.sbyte_12 = (sbyte)(left.register.sbyte_12 / right.register.sbyte_12);
+                        quotient.register.sbyte_13 = (sbyte)(left.register.sbyte_13 / right.register.sbyte_13);
+                        quotient.register.sbyte_14 = (sbyte)(left.register.sbyte_14 / right.register.sbyte_14);
+                        quotient.register.sbyte_15 = (sbyte)(left.register.sbyte_15 / right.register.sbyte_15);
                     }
-                    else if (typeof(T) == typeof(UInt16))
+                    else if (typeof(T) == typeof(ushort))
                     {
-                        quotient.register.uint16_0 = (UInt16)(left.register.uint16_0 / right.register.uint16_0);
-                        quotient.register.uint16_1 = (UInt16)(left.register.uint16_1 / right.register.uint16_1);
-                        quotient.register.uint16_2 = (UInt16)(left.register.uint16_2 / right.register.uint16_2);
-                        quotient.register.uint16_3 = (UInt16)(left.register.uint16_3 / right.register.uint16_3);
-                        quotient.register.uint16_4 = (UInt16)(left.register.uint16_4 / right.register.uint16_4);
-                        quotient.register.uint16_5 = (UInt16)(left.register.uint16_5 / right.register.uint16_5);
-                        quotient.register.uint16_6 = (UInt16)(left.register.uint16_6 / right.register.uint16_6);
-                        quotient.register.uint16_7 = (UInt16)(left.register.uint16_7 / right.register.uint16_7);
+                        quotient.register.uint16_0 = (ushort)(left.register.uint16_0 / right.register.uint16_0);
+                        quotient.register.uint16_1 = (ushort)(left.register.uint16_1 / right.register.uint16_1);
+                        quotient.register.uint16_2 = (ushort)(left.register.uint16_2 / right.register.uint16_2);
+                        quotient.register.uint16_3 = (ushort)(left.register.uint16_3 / right.register.uint16_3);
+                        quotient.register.uint16_4 = (ushort)(left.register.uint16_4 / right.register.uint16_4);
+                        quotient.register.uint16_5 = (ushort)(left.register.uint16_5 / right.register.uint16_5);
+                        quotient.register.uint16_6 = (ushort)(left.register.uint16_6 / right.register.uint16_6);
+                        quotient.register.uint16_7 = (ushort)(left.register.uint16_7 / right.register.uint16_7);
                     }
-                    else if (typeof(T) == typeof(Int16))
+                    else if (typeof(T) == typeof(short))
                     {
-                        quotient.register.int16_0 = (Int16)(left.register.int16_0 / right.register.int16_0);
-                        quotient.register.int16_1 = (Int16)(left.register.int16_1 / right.register.int16_1);
-                        quotient.register.int16_2 = (Int16)(left.register.int16_2 / right.register.int16_2);
-                        quotient.register.int16_3 = (Int16)(left.register.int16_3 / right.register.int16_3);
-                        quotient.register.int16_4 = (Int16)(left.register.int16_4 / right.register.int16_4);
-                        quotient.register.int16_5 = (Int16)(left.register.int16_5 / right.register.int16_5);
-                        quotient.register.int16_6 = (Int16)(left.register.int16_6 / right.register.int16_6);
-                        quotient.register.int16_7 = (Int16)(left.register.int16_7 / right.register.int16_7);
+                        quotient.register.int16_0 = (short)(left.register.int16_0 / right.register.int16_0);
+                        quotient.register.int16_1 = (short)(left.register.int16_1 / right.register.int16_1);
+                        quotient.register.int16_2 = (short)(left.register.int16_2 / right.register.int16_2);
+                        quotient.register.int16_3 = (short)(left.register.int16_3 / right.register.int16_3);
+                        quotient.register.int16_4 = (short)(left.register.int16_4 / right.register.int16_4);
+                        quotient.register.int16_5 = (short)(left.register.int16_5 / right.register.int16_5);
+                        quotient.register.int16_6 = (short)(left.register.int16_6 / right.register.int16_6);
+                        quotient.register.int16_7 = (short)(left.register.int16_7 / right.register.int16_7);
                     }
-                    else if (typeof(T) == typeof(UInt32))
+                    else if (typeof(T) == typeof(uint))
                     {
-                        quotient.register.uint32_0 = (UInt32)(left.register.uint32_0 / right.register.uint32_0);
-                        quotient.register.uint32_1 = (UInt32)(left.register.uint32_1 / right.register.uint32_1);
-                        quotient.register.uint32_2 = (UInt32)(left.register.uint32_2 / right.register.uint32_2);
-                        quotient.register.uint32_3 = (UInt32)(left.register.uint32_3 / right.register.uint32_3);
+                        quotient.register.uint32_0 = (uint)(left.register.uint32_0 / right.register.uint32_0);
+                        quotient.register.uint32_1 = (uint)(left.register.uint32_1 / right.register.uint32_1);
+                        quotient.register.uint32_2 = (uint)(left.register.uint32_2 / right.register.uint32_2);
+                        quotient.register.uint32_3 = (uint)(left.register.uint32_3 / right.register.uint32_3);
                     }
-                    else if (typeof(T) == typeof(Int32))
+                    else if (typeof(T) == typeof(int))
                     {
-                        quotient.register.int32_0 = (Int32)(left.register.int32_0 / right.register.int32_0);
-                        quotient.register.int32_1 = (Int32)(left.register.int32_1 / right.register.int32_1);
-                        quotient.register.int32_2 = (Int32)(left.register.int32_2 / right.register.int32_2);
-                        quotient.register.int32_3 = (Int32)(left.register.int32_3 / right.register.int32_3);
+                        quotient.register.int32_0 = (int)(left.register.int32_0 / right.register.int32_0);
+                        quotient.register.int32_1 = (int)(left.register.int32_1 / right.register.int32_1);
+                        quotient.register.int32_2 = (int)(left.register.int32_2 / right.register.int32_2);
+                        quotient.register.int32_3 = (int)(left.register.int32_3 / right.register.int32_3);
                     }
-                    else if (typeof(T) == typeof(UInt64))
+                    else if (typeof(T) == typeof(ulong))
                     {
-                        quotient.register.uint64_0 = (UInt64)(left.register.uint64_0 / right.register.uint64_0);
-                        quotient.register.uint64_1 = (UInt64)(left.register.uint64_1 / right.register.uint64_1);
+                        quotient.register.uint64_0 = (ulong)(left.register.uint64_0 / right.register.uint64_0);
+                        quotient.register.uint64_1 = (ulong)(left.register.uint64_1 / right.register.uint64_1);
                     }
-                    else if (typeof(T) == typeof(Int64))
+                    else if (typeof(T) == typeof(long))
                     {
-                        quotient.register.int64_0 = (Int64)(left.register.int64_0 / right.register.int64_0);
-                        quotient.register.int64_1 = (Int64)(left.register.int64_1 / right.register.int64_1);
+                        quotient.register.int64_0 = (long)(left.register.int64_0 / right.register.int64_0);
+                        quotient.register.int64_1 = (long)(left.register.int64_1 / right.register.int64_1);
                     }
-                    else if (typeof(T) == typeof(Single))
+                    else if (typeof(T) == typeof(float))
                     {
-                        quotient.register.single_0 = (Single)(left.register.single_0 / right.register.single_0);
-                        quotient.register.single_1 = (Single)(left.register.single_1 / right.register.single_1);
-                        quotient.register.single_2 = (Single)(left.register.single_2 / right.register.single_2);
-                        quotient.register.single_3 = (Single)(left.register.single_3 / right.register.single_3);
+                        quotient.register.single_0 = (float)(left.register.single_0 / right.register.single_0);
+                        quotient.register.single_1 = (float)(left.register.single_1 / right.register.single_1);
+                        quotient.register.single_2 = (float)(left.register.single_2 / right.register.single_2);
+                        quotient.register.single_3 = (float)(left.register.single_3 / right.register.single_3);
                     }
-                    else if (typeof(T) == typeof(Double))
+                    else if (typeof(T) == typeof(double))
                     {
-                        quotient.register.double_0 = (Double)(left.register.double_0 / right.register.double_0);
-                        quotient.register.double_1 = (Double)(left.register.double_1 / right.register.double_1);
+                        quotient.register.double_0 = (double)(left.register.double_0 / right.register.double_0);
+                        quotient.register.double_1 = (double)(left.register.double_1 / right.register.double_1);
                     }
                     return quotient;
                 }
@@ -2695,10 +2695,10 @@ namespace System.Numerics
             {
                 if (Vector.IsHardwareAccelerated)
                 {
-                    Int64* resultBase = &result.register.int64_0;
-                    Int64* leftBase = &left.register.int64_0;
-                    Int64* rightBase = &right.register.int64_0;
-                    for (int g = 0; g < Vector<Int64>.Count; g++)
+                    long* resultBase = &result.register.int64_0;
+                    long* leftBase = &left.register.int64_0;
+                    long* rightBase = &right.register.int64_0;
+                    for (int g = 0; g < Vector<long>.Count; g++)
                     {
                         resultBase[g] = leftBase[g] & rightBase[g];
                     }
@@ -2726,10 +2726,10 @@ namespace System.Numerics
             {
                 if (Vector.IsHardwareAccelerated)
                 {
-                    Int64* resultBase = &result.register.int64_0;
-                    Int64* leftBase = &left.register.int64_0;
-                    Int64* rightBase = &right.register.int64_0;
-                    for (int g = 0; g < Vector<Int64>.Count; g++)
+                    long* resultBase = &result.register.int64_0;
+                    long* leftBase = &left.register.int64_0;
+                    long* rightBase = &right.register.int64_0;
+                    for (int g = 0; g < Vector<long>.Count; g++)
                     {
                         resultBase[g] = leftBase[g] | rightBase[g];
                     }
@@ -2757,10 +2757,10 @@ namespace System.Numerics
             {
                 if (Vector.IsHardwareAccelerated)
                 {
-                    Int64* resultBase = &result.register.int64_0;
-                    Int64* leftBase = &left.register.int64_0;
-                    Int64* rightBase = &right.register.int64_0;
-                    for (int g = 0; g < Vector<Int64>.Count; g++)
+                    long* resultBase = &result.register.int64_0;
+                    long* leftBase = &left.register.int64_0;
+                    long* rightBase = &right.register.int64_0;
+                    for (int g = 0; g < Vector<long>.Count; g++)
                     {
                         resultBase[g] = leftBase[g] ^ rightBase[g];
                     }
@@ -2819,9 +2819,9 @@ namespace System.Numerics
         /// <param name="value">The source vector</param>
         /// <returns>The reinterpreted vector.</returns>
         [Intrinsic]
-        public static explicit operator Vector<Byte>(Vector<T> value)
+        public static explicit operator Vector<byte>(Vector<T> value)
         {
-            return new Vector<Byte>(ref value.register);
+            return new Vector<byte>(ref value.register);
         }
 
         /// <summary>
@@ -2831,9 +2831,9 @@ namespace System.Numerics
         /// <returns>The reinterpreted vector.</returns>
         [CLSCompliant(false)]
         [Intrinsic]
-        public static explicit operator Vector<SByte>(Vector<T> value)
+        public static explicit operator Vector<sbyte>(Vector<T> value)
         {
-            return new Vector<SByte>(ref value.register);
+            return new Vector<sbyte>(ref value.register);
         }
 
         /// <summary>
@@ -2843,9 +2843,9 @@ namespace System.Numerics
         /// <returns>The reinterpreted vector.</returns>
         [CLSCompliant(false)]
         [Intrinsic]
-        public static explicit operator Vector<UInt16>(Vector<T> value)
+        public static explicit operator Vector<ushort>(Vector<T> value)
         {
-            return new Vector<UInt16>(ref value.register);
+            return new Vector<ushort>(ref value.register);
         }
 
         /// <summary>
@@ -2854,32 +2854,9 @@ namespace System.Numerics
         /// <param name="value">The source vector</param>
         /// <returns>The reinterpreted vector.</returns>
         [Intrinsic]
-        public static explicit operator Vector<Int16>(Vector<T> value)
+        public static explicit operator Vector<short>(Vector<T> value)
         {
-            return new Vector<Int16>(ref value.register);
-        }
-
-        /// <summary>
-        /// Reinterprets the bits of the given vector into those of another type.
-        /// </summary>
-        /// <param name="value">The source vector</param>
-        /// <returns>The reinterpreted vector.</returns>
-        [CLSCompliant(false)]
-        [Intrinsic]
-        public static explicit operator Vector<UInt32>(Vector<T> value)
-        {
-            return new Vector<UInt32>(ref value.register);
-        }
-
-        /// <summary>
-        /// Reinterprets the bits of the given vector into those of another type.
-        /// </summary>
-        /// <param name="value">The source vector</param>
-        /// <returns>The reinterpreted vector.</returns>
-        [Intrinsic]
-        public static explicit operator Vector<Int32>(Vector<T> value)
-        {
-            return new Vector<Int32>(ref value.register);
+            return new Vector<short>(ref value.register);
         }
 
         /// <summary>
@@ -2889,9 +2866,9 @@ namespace System.Numerics
         /// <returns>The reinterpreted vector.</returns>
         [CLSCompliant(false)]
         [Intrinsic]
-        public static explicit operator Vector<UInt64>(Vector<T> value)
+        public static explicit operator Vector<uint>(Vector<T> value)
         {
-            return new Vector<UInt64>(ref value.register);
+            return new Vector<uint>(ref value.register);
         }
 
         /// <summary>
@@ -2900,9 +2877,21 @@ namespace System.Numerics
         /// <param name="value">The source vector</param>
         /// <returns>The reinterpreted vector.</returns>
         [Intrinsic]
-        public static explicit operator Vector<Int64>(Vector<T> value)
+        public static explicit operator Vector<int>(Vector<T> value)
         {
-            return new Vector<Int64>(ref value.register);
+            return new Vector<int>(ref value.register);
+        }
+
+        /// <summary>
+        /// Reinterprets the bits of the given vector into those of another type.
+        /// </summary>
+        /// <param name="value">The source vector</param>
+        /// <returns>The reinterpreted vector.</returns>
+        [CLSCompliant(false)]
+        [Intrinsic]
+        public static explicit operator Vector<ulong>(Vector<T> value)
+        {
+            return new Vector<ulong>(ref value.register);
         }
 
         /// <summary>
@@ -2911,9 +2900,9 @@ namespace System.Numerics
         /// <param name="value">The source vector</param>
         /// <returns>The reinterpreted vector.</returns>
         [Intrinsic]
-        public static explicit operator Vector<Single>(Vector<T> value)
+        public static explicit operator Vector<long>(Vector<T> value)
         {
-            return new Vector<Single>(ref value.register);
+            return new Vector<long>(ref value.register);
         }
 
         /// <summary>
@@ -2922,9 +2911,20 @@ namespace System.Numerics
         /// <param name="value">The source vector</param>
         /// <returns>The reinterpreted vector.</returns>
         [Intrinsic]
-        public static explicit operator Vector<Double>(Vector<T> value)
+        public static explicit operator Vector<float>(Vector<T> value)
         {
-            return new Vector<Double>(ref value.register);
+            return new Vector<float>(ref value.register);
+        }
+
+        /// <summary>
+        /// Reinterprets the bits of the given vector into those of another type.
+        /// </summary>
+        /// <param name="value">The source vector</param>
+        /// <returns>The reinterpreted vector.</returns>
+        [Intrinsic]
+        public static explicit operator Vector<double>(Vector<T> value)
+        {
+            return new Vector<double>(ref value.register);
         }
 
         #endregion Conversions
@@ -2936,93 +2936,93 @@ namespace System.Numerics
         {
             if (Vector.IsHardwareAccelerated)
             {
-                if (typeof(T) == typeof(Byte))
+                if (typeof(T) == typeof(byte))
                 {
-                    Byte* dataPtr = stackalloc Byte[Count];
+                    byte* dataPtr = stackalloc byte[Count];
                     for (int g = 0; g < Count; g++)
                     {
-                        dataPtr[g] = ScalarEquals(left[g], right[g]) ? ConstantHelper.GetByteWithAllBitsSet() : (Byte)0;
+                        dataPtr[g] = ScalarEquals(left[g], right[g]) ? ConstantHelper.GetByteWithAllBitsSet() : (byte)0;
                     }
                     return new Vector<T>(dataPtr);
                 }
-                else if (typeof(T) == typeof(SByte))
+                else if (typeof(T) == typeof(sbyte))
                 {
-                    SByte* dataPtr = stackalloc SByte[Count];
+                    sbyte* dataPtr = stackalloc sbyte[Count];
                     for (int g = 0; g < Count; g++)
                     {
-                        dataPtr[g] = ScalarEquals(left[g], right[g]) ? ConstantHelper.GetSByteWithAllBitsSet() : (SByte)0;
+                        dataPtr[g] = ScalarEquals(left[g], right[g]) ? ConstantHelper.GetSByteWithAllBitsSet() : (sbyte)0;
                     }
                     return new Vector<T>(dataPtr);
                 }
-                else if (typeof(T) == typeof(UInt16))
+                else if (typeof(T) == typeof(ushort))
                 {
-                    UInt16* dataPtr = stackalloc UInt16[Count];
+                    ushort* dataPtr = stackalloc ushort[Count];
                     for (int g = 0; g < Count; g++)
                     {
-                        dataPtr[g] = ScalarEquals(left[g], right[g]) ? ConstantHelper.GetUInt16WithAllBitsSet() : (UInt16)0;
+                        dataPtr[g] = ScalarEquals(left[g], right[g]) ? ConstantHelper.GetUInt16WithAllBitsSet() : (ushort)0;
                     }
                     return new Vector<T>(dataPtr);
                 }
-                else if (typeof(T) == typeof(Int16))
+                else if (typeof(T) == typeof(short))
                 {
-                    Int16* dataPtr = stackalloc Int16[Count];
+                    short* dataPtr = stackalloc short[Count];
                     for (int g = 0; g < Count; g++)
                     {
-                        dataPtr[g] = ScalarEquals(left[g], right[g]) ? ConstantHelper.GetInt16WithAllBitsSet() : (Int16)0;
+                        dataPtr[g] = ScalarEquals(left[g], right[g]) ? ConstantHelper.GetInt16WithAllBitsSet() : (short)0;
                     }
                     return new Vector<T>(dataPtr);
                 }
-                else if (typeof(T) == typeof(UInt32))
+                else if (typeof(T) == typeof(uint))
                 {
-                    UInt32* dataPtr = stackalloc UInt32[Count];
+                    uint* dataPtr = stackalloc uint[Count];
                     for (int g = 0; g < Count; g++)
                     {
-                        dataPtr[g] = ScalarEquals(left[g], right[g]) ? ConstantHelper.GetUInt32WithAllBitsSet() : (UInt32)0;
+                        dataPtr[g] = ScalarEquals(left[g], right[g]) ? ConstantHelper.GetUInt32WithAllBitsSet() : (uint)0;
                     }
                     return new Vector<T>(dataPtr);
                 }
-                else if (typeof(T) == typeof(Int32))
+                else if (typeof(T) == typeof(int))
                 {
-                    Int32* dataPtr = stackalloc Int32[Count];
+                    int* dataPtr = stackalloc int[Count];
                     for (int g = 0; g < Count; g++)
                     {
-                        dataPtr[g] = ScalarEquals(left[g], right[g]) ? ConstantHelper.GetInt32WithAllBitsSet() : (Int32)0;
+                        dataPtr[g] = ScalarEquals(left[g], right[g]) ? ConstantHelper.GetInt32WithAllBitsSet() : (int)0;
                     }
                     return new Vector<T>(dataPtr);
                 }
-                else if (typeof(T) == typeof(UInt64))
+                else if (typeof(T) == typeof(ulong))
                 {
-                    UInt64* dataPtr = stackalloc UInt64[Count];
+                    ulong* dataPtr = stackalloc ulong[Count];
                     for (int g = 0; g < Count; g++)
                     {
-                        dataPtr[g] = ScalarEquals(left[g], right[g]) ? ConstantHelper.GetUInt64WithAllBitsSet() : (UInt64)0;
+                        dataPtr[g] = ScalarEquals(left[g], right[g]) ? ConstantHelper.GetUInt64WithAllBitsSet() : (ulong)0;
                     }
                     return new Vector<T>(dataPtr);
                 }
-                else if (typeof(T) == typeof(Int64))
+                else if (typeof(T) == typeof(long))
                 {
-                    Int64* dataPtr = stackalloc Int64[Count];
+                    long* dataPtr = stackalloc long[Count];
                     for (int g = 0; g < Count; g++)
                     {
-                        dataPtr[g] = ScalarEquals(left[g], right[g]) ? ConstantHelper.GetInt64WithAllBitsSet() : (Int64)0;
+                        dataPtr[g] = ScalarEquals(left[g], right[g]) ? ConstantHelper.GetInt64WithAllBitsSet() : (long)0;
                     }
                     return new Vector<T>(dataPtr);
                 }
-                else if (typeof(T) == typeof(Single))
+                else if (typeof(T) == typeof(float))
                 {
-                    Single* dataPtr = stackalloc Single[Count];
+                    float* dataPtr = stackalloc float[Count];
                     for (int g = 0; g < Count; g++)
                     {
-                        dataPtr[g] = ScalarEquals(left[g], right[g]) ? ConstantHelper.GetSingleWithAllBitsSet() : (Single)0;
+                        dataPtr[g] = ScalarEquals(left[g], right[g]) ? ConstantHelper.GetSingleWithAllBitsSet() : (float)0;
                     }
                     return new Vector<T>(dataPtr);
                 }
-                else if (typeof(T) == typeof(Double))
+                else if (typeof(T) == typeof(double))
                 {
-                    Double* dataPtr = stackalloc Double[Count];
+                    double* dataPtr = stackalloc double[Count];
                     for (int g = 0; g < Count; g++)
                     {
-                        dataPtr[g] = ScalarEquals(left[g], right[g]) ? ConstantHelper.GetDoubleWithAllBitsSet() : (Double)0;
+                        dataPtr[g] = ScalarEquals(left[g], right[g]) ? ConstantHelper.GetDoubleWithAllBitsSet() : (double)0;
                     }
                     return new Vector<T>(dataPtr);
                 }
@@ -3034,110 +3034,110 @@ namespace System.Numerics
             else
             {
                 Register register = new Register();
-                if (typeof(T) == typeof(Byte))
+                if (typeof(T) == typeof(byte))
                 {
-                    register.byte_0 = left.register.byte_0 == right.register.byte_0 ? ConstantHelper.GetByteWithAllBitsSet() : (Byte)0;
-                    register.byte_1 = left.register.byte_1 == right.register.byte_1 ? ConstantHelper.GetByteWithAllBitsSet() : (Byte)0;
-                    register.byte_2 = left.register.byte_2 == right.register.byte_2 ? ConstantHelper.GetByteWithAllBitsSet() : (Byte)0;
-                    register.byte_3 = left.register.byte_3 == right.register.byte_3 ? ConstantHelper.GetByteWithAllBitsSet() : (Byte)0;
-                    register.byte_4 = left.register.byte_4 == right.register.byte_4 ? ConstantHelper.GetByteWithAllBitsSet() : (Byte)0;
-                    register.byte_5 = left.register.byte_5 == right.register.byte_5 ? ConstantHelper.GetByteWithAllBitsSet() : (Byte)0;
-                    register.byte_6 = left.register.byte_6 == right.register.byte_6 ? ConstantHelper.GetByteWithAllBitsSet() : (Byte)0;
-                    register.byte_7 = left.register.byte_7 == right.register.byte_7 ? ConstantHelper.GetByteWithAllBitsSet() : (Byte)0;
-                    register.byte_8 = left.register.byte_8 == right.register.byte_8 ? ConstantHelper.GetByteWithAllBitsSet() : (Byte)0;
-                    register.byte_9 = left.register.byte_9 == right.register.byte_9 ? ConstantHelper.GetByteWithAllBitsSet() : (Byte)0;
-                    register.byte_10 = left.register.byte_10 == right.register.byte_10 ? ConstantHelper.GetByteWithAllBitsSet() : (Byte)0;
-                    register.byte_11 = left.register.byte_11 == right.register.byte_11 ? ConstantHelper.GetByteWithAllBitsSet() : (Byte)0;
-                    register.byte_12 = left.register.byte_12 == right.register.byte_12 ? ConstantHelper.GetByteWithAllBitsSet() : (Byte)0;
-                    register.byte_13 = left.register.byte_13 == right.register.byte_13 ? ConstantHelper.GetByteWithAllBitsSet() : (Byte)0;
-                    register.byte_14 = left.register.byte_14 == right.register.byte_14 ? ConstantHelper.GetByteWithAllBitsSet() : (Byte)0;
-                    register.byte_15 = left.register.byte_15 == right.register.byte_15 ? ConstantHelper.GetByteWithAllBitsSet() : (Byte)0;
+                    register.byte_0 = left.register.byte_0 == right.register.byte_0 ? ConstantHelper.GetByteWithAllBitsSet() : (byte)0;
+                    register.byte_1 = left.register.byte_1 == right.register.byte_1 ? ConstantHelper.GetByteWithAllBitsSet() : (byte)0;
+                    register.byte_2 = left.register.byte_2 == right.register.byte_2 ? ConstantHelper.GetByteWithAllBitsSet() : (byte)0;
+                    register.byte_3 = left.register.byte_3 == right.register.byte_3 ? ConstantHelper.GetByteWithAllBitsSet() : (byte)0;
+                    register.byte_4 = left.register.byte_4 == right.register.byte_4 ? ConstantHelper.GetByteWithAllBitsSet() : (byte)0;
+                    register.byte_5 = left.register.byte_5 == right.register.byte_5 ? ConstantHelper.GetByteWithAllBitsSet() : (byte)0;
+                    register.byte_6 = left.register.byte_6 == right.register.byte_6 ? ConstantHelper.GetByteWithAllBitsSet() : (byte)0;
+                    register.byte_7 = left.register.byte_7 == right.register.byte_7 ? ConstantHelper.GetByteWithAllBitsSet() : (byte)0;
+                    register.byte_8 = left.register.byte_8 == right.register.byte_8 ? ConstantHelper.GetByteWithAllBitsSet() : (byte)0;
+                    register.byte_9 = left.register.byte_9 == right.register.byte_9 ? ConstantHelper.GetByteWithAllBitsSet() : (byte)0;
+                    register.byte_10 = left.register.byte_10 == right.register.byte_10 ? ConstantHelper.GetByteWithAllBitsSet() : (byte)0;
+                    register.byte_11 = left.register.byte_11 == right.register.byte_11 ? ConstantHelper.GetByteWithAllBitsSet() : (byte)0;
+                    register.byte_12 = left.register.byte_12 == right.register.byte_12 ? ConstantHelper.GetByteWithAllBitsSet() : (byte)0;
+                    register.byte_13 = left.register.byte_13 == right.register.byte_13 ? ConstantHelper.GetByteWithAllBitsSet() : (byte)0;
+                    register.byte_14 = left.register.byte_14 == right.register.byte_14 ? ConstantHelper.GetByteWithAllBitsSet() : (byte)0;
+                    register.byte_15 = left.register.byte_15 == right.register.byte_15 ? ConstantHelper.GetByteWithAllBitsSet() : (byte)0;
                     return new Vector<T>(ref register);
                 }
-                else if (typeof(T) == typeof(SByte))
+                else if (typeof(T) == typeof(sbyte))
                 {
-                    register.sbyte_0 = left.register.sbyte_0 == right.register.sbyte_0 ? ConstantHelper.GetSByteWithAllBitsSet() : (SByte)0;
-                    register.sbyte_1 = left.register.sbyte_1 == right.register.sbyte_1 ? ConstantHelper.GetSByteWithAllBitsSet() : (SByte)0;
-                    register.sbyte_2 = left.register.sbyte_2 == right.register.sbyte_2 ? ConstantHelper.GetSByteWithAllBitsSet() : (SByte)0;
-                    register.sbyte_3 = left.register.sbyte_3 == right.register.sbyte_3 ? ConstantHelper.GetSByteWithAllBitsSet() : (SByte)0;
-                    register.sbyte_4 = left.register.sbyte_4 == right.register.sbyte_4 ? ConstantHelper.GetSByteWithAllBitsSet() : (SByte)0;
-                    register.sbyte_5 = left.register.sbyte_5 == right.register.sbyte_5 ? ConstantHelper.GetSByteWithAllBitsSet() : (SByte)0;
-                    register.sbyte_6 = left.register.sbyte_6 == right.register.sbyte_6 ? ConstantHelper.GetSByteWithAllBitsSet() : (SByte)0;
-                    register.sbyte_7 = left.register.sbyte_7 == right.register.sbyte_7 ? ConstantHelper.GetSByteWithAllBitsSet() : (SByte)0;
-                    register.sbyte_8 = left.register.sbyte_8 == right.register.sbyte_8 ? ConstantHelper.GetSByteWithAllBitsSet() : (SByte)0;
-                    register.sbyte_9 = left.register.sbyte_9 == right.register.sbyte_9 ? ConstantHelper.GetSByteWithAllBitsSet() : (SByte)0;
-                    register.sbyte_10 = left.register.sbyte_10 == right.register.sbyte_10 ? ConstantHelper.GetSByteWithAllBitsSet() : (SByte)0;
-                    register.sbyte_11 = left.register.sbyte_11 == right.register.sbyte_11 ? ConstantHelper.GetSByteWithAllBitsSet() : (SByte)0;
-                    register.sbyte_12 = left.register.sbyte_12 == right.register.sbyte_12 ? ConstantHelper.GetSByteWithAllBitsSet() : (SByte)0;
-                    register.sbyte_13 = left.register.sbyte_13 == right.register.sbyte_13 ? ConstantHelper.GetSByteWithAllBitsSet() : (SByte)0;
-                    register.sbyte_14 = left.register.sbyte_14 == right.register.sbyte_14 ? ConstantHelper.GetSByteWithAllBitsSet() : (SByte)0;
-                    register.sbyte_15 = left.register.sbyte_15 == right.register.sbyte_15 ? ConstantHelper.GetSByteWithAllBitsSet() : (SByte)0;
+                    register.sbyte_0 = left.register.sbyte_0 == right.register.sbyte_0 ? ConstantHelper.GetSByteWithAllBitsSet() : (sbyte)0;
+                    register.sbyte_1 = left.register.sbyte_1 == right.register.sbyte_1 ? ConstantHelper.GetSByteWithAllBitsSet() : (sbyte)0;
+                    register.sbyte_2 = left.register.sbyte_2 == right.register.sbyte_2 ? ConstantHelper.GetSByteWithAllBitsSet() : (sbyte)0;
+                    register.sbyte_3 = left.register.sbyte_3 == right.register.sbyte_3 ? ConstantHelper.GetSByteWithAllBitsSet() : (sbyte)0;
+                    register.sbyte_4 = left.register.sbyte_4 == right.register.sbyte_4 ? ConstantHelper.GetSByteWithAllBitsSet() : (sbyte)0;
+                    register.sbyte_5 = left.register.sbyte_5 == right.register.sbyte_5 ? ConstantHelper.GetSByteWithAllBitsSet() : (sbyte)0;
+                    register.sbyte_6 = left.register.sbyte_6 == right.register.sbyte_6 ? ConstantHelper.GetSByteWithAllBitsSet() : (sbyte)0;
+                    register.sbyte_7 = left.register.sbyte_7 == right.register.sbyte_7 ? ConstantHelper.GetSByteWithAllBitsSet() : (sbyte)0;
+                    register.sbyte_8 = left.register.sbyte_8 == right.register.sbyte_8 ? ConstantHelper.GetSByteWithAllBitsSet() : (sbyte)0;
+                    register.sbyte_9 = left.register.sbyte_9 == right.register.sbyte_9 ? ConstantHelper.GetSByteWithAllBitsSet() : (sbyte)0;
+                    register.sbyte_10 = left.register.sbyte_10 == right.register.sbyte_10 ? ConstantHelper.GetSByteWithAllBitsSet() : (sbyte)0;
+                    register.sbyte_11 = left.register.sbyte_11 == right.register.sbyte_11 ? ConstantHelper.GetSByteWithAllBitsSet() : (sbyte)0;
+                    register.sbyte_12 = left.register.sbyte_12 == right.register.sbyte_12 ? ConstantHelper.GetSByteWithAllBitsSet() : (sbyte)0;
+                    register.sbyte_13 = left.register.sbyte_13 == right.register.sbyte_13 ? ConstantHelper.GetSByteWithAllBitsSet() : (sbyte)0;
+                    register.sbyte_14 = left.register.sbyte_14 == right.register.sbyte_14 ? ConstantHelper.GetSByteWithAllBitsSet() : (sbyte)0;
+                    register.sbyte_15 = left.register.sbyte_15 == right.register.sbyte_15 ? ConstantHelper.GetSByteWithAllBitsSet() : (sbyte)0;
                     return new Vector<T>(ref register);
                 }
-                else if (typeof(T) == typeof(UInt16))
+                else if (typeof(T) == typeof(ushort))
                 {
-                    register.uint16_0 = left.register.uint16_0 == right.register.uint16_0 ? ConstantHelper.GetUInt16WithAllBitsSet() : (UInt16)0;
-                    register.uint16_1 = left.register.uint16_1 == right.register.uint16_1 ? ConstantHelper.GetUInt16WithAllBitsSet() : (UInt16)0;
-                    register.uint16_2 = left.register.uint16_2 == right.register.uint16_2 ? ConstantHelper.GetUInt16WithAllBitsSet() : (UInt16)0;
-                    register.uint16_3 = left.register.uint16_3 == right.register.uint16_3 ? ConstantHelper.GetUInt16WithAllBitsSet() : (UInt16)0;
-                    register.uint16_4 = left.register.uint16_4 == right.register.uint16_4 ? ConstantHelper.GetUInt16WithAllBitsSet() : (UInt16)0;
-                    register.uint16_5 = left.register.uint16_5 == right.register.uint16_5 ? ConstantHelper.GetUInt16WithAllBitsSet() : (UInt16)0;
-                    register.uint16_6 = left.register.uint16_6 == right.register.uint16_6 ? ConstantHelper.GetUInt16WithAllBitsSet() : (UInt16)0;
-                    register.uint16_7 = left.register.uint16_7 == right.register.uint16_7 ? ConstantHelper.GetUInt16WithAllBitsSet() : (UInt16)0;
+                    register.uint16_0 = left.register.uint16_0 == right.register.uint16_0 ? ConstantHelper.GetUInt16WithAllBitsSet() : (ushort)0;
+                    register.uint16_1 = left.register.uint16_1 == right.register.uint16_1 ? ConstantHelper.GetUInt16WithAllBitsSet() : (ushort)0;
+                    register.uint16_2 = left.register.uint16_2 == right.register.uint16_2 ? ConstantHelper.GetUInt16WithAllBitsSet() : (ushort)0;
+                    register.uint16_3 = left.register.uint16_3 == right.register.uint16_3 ? ConstantHelper.GetUInt16WithAllBitsSet() : (ushort)0;
+                    register.uint16_4 = left.register.uint16_4 == right.register.uint16_4 ? ConstantHelper.GetUInt16WithAllBitsSet() : (ushort)0;
+                    register.uint16_5 = left.register.uint16_5 == right.register.uint16_5 ? ConstantHelper.GetUInt16WithAllBitsSet() : (ushort)0;
+                    register.uint16_6 = left.register.uint16_6 == right.register.uint16_6 ? ConstantHelper.GetUInt16WithAllBitsSet() : (ushort)0;
+                    register.uint16_7 = left.register.uint16_7 == right.register.uint16_7 ? ConstantHelper.GetUInt16WithAllBitsSet() : (ushort)0;
                     return new Vector<T>(ref register);
                 }
-                else if (typeof(T) == typeof(Int16))
+                else if (typeof(T) == typeof(short))
                 {
-                    register.int16_0 = left.register.int16_0 == right.register.int16_0 ? ConstantHelper.GetInt16WithAllBitsSet() : (Int16)0;
-                    register.int16_1 = left.register.int16_1 == right.register.int16_1 ? ConstantHelper.GetInt16WithAllBitsSet() : (Int16)0;
-                    register.int16_2 = left.register.int16_2 == right.register.int16_2 ? ConstantHelper.GetInt16WithAllBitsSet() : (Int16)0;
-                    register.int16_3 = left.register.int16_3 == right.register.int16_3 ? ConstantHelper.GetInt16WithAllBitsSet() : (Int16)0;
-                    register.int16_4 = left.register.int16_4 == right.register.int16_4 ? ConstantHelper.GetInt16WithAllBitsSet() : (Int16)0;
-                    register.int16_5 = left.register.int16_5 == right.register.int16_5 ? ConstantHelper.GetInt16WithAllBitsSet() : (Int16)0;
-                    register.int16_6 = left.register.int16_6 == right.register.int16_6 ? ConstantHelper.GetInt16WithAllBitsSet() : (Int16)0;
-                    register.int16_7 = left.register.int16_7 == right.register.int16_7 ? ConstantHelper.GetInt16WithAllBitsSet() : (Int16)0;
+                    register.int16_0 = left.register.int16_0 == right.register.int16_0 ? ConstantHelper.GetInt16WithAllBitsSet() : (short)0;
+                    register.int16_1 = left.register.int16_1 == right.register.int16_1 ? ConstantHelper.GetInt16WithAllBitsSet() : (short)0;
+                    register.int16_2 = left.register.int16_2 == right.register.int16_2 ? ConstantHelper.GetInt16WithAllBitsSet() : (short)0;
+                    register.int16_3 = left.register.int16_3 == right.register.int16_3 ? ConstantHelper.GetInt16WithAllBitsSet() : (short)0;
+                    register.int16_4 = left.register.int16_4 == right.register.int16_4 ? ConstantHelper.GetInt16WithAllBitsSet() : (short)0;
+                    register.int16_5 = left.register.int16_5 == right.register.int16_5 ? ConstantHelper.GetInt16WithAllBitsSet() : (short)0;
+                    register.int16_6 = left.register.int16_6 == right.register.int16_6 ? ConstantHelper.GetInt16WithAllBitsSet() : (short)0;
+                    register.int16_7 = left.register.int16_7 == right.register.int16_7 ? ConstantHelper.GetInt16WithAllBitsSet() : (short)0;
                     return new Vector<T>(ref register);
                 }
-                else if (typeof(T) == typeof(UInt32))
+                else if (typeof(T) == typeof(uint))
                 {
-                    register.uint32_0 = left.register.uint32_0 == right.register.uint32_0 ? ConstantHelper.GetUInt32WithAllBitsSet() : (UInt32)0;
-                    register.uint32_1 = left.register.uint32_1 == right.register.uint32_1 ? ConstantHelper.GetUInt32WithAllBitsSet() : (UInt32)0;
-                    register.uint32_2 = left.register.uint32_2 == right.register.uint32_2 ? ConstantHelper.GetUInt32WithAllBitsSet() : (UInt32)0;
-                    register.uint32_3 = left.register.uint32_3 == right.register.uint32_3 ? ConstantHelper.GetUInt32WithAllBitsSet() : (UInt32)0;
+                    register.uint32_0 = left.register.uint32_0 == right.register.uint32_0 ? ConstantHelper.GetUInt32WithAllBitsSet() : (uint)0;
+                    register.uint32_1 = left.register.uint32_1 == right.register.uint32_1 ? ConstantHelper.GetUInt32WithAllBitsSet() : (uint)0;
+                    register.uint32_2 = left.register.uint32_2 == right.register.uint32_2 ? ConstantHelper.GetUInt32WithAllBitsSet() : (uint)0;
+                    register.uint32_3 = left.register.uint32_3 == right.register.uint32_3 ? ConstantHelper.GetUInt32WithAllBitsSet() : (uint)0;
                     return new Vector<T>(ref register);
                 }
-                else if (typeof(T) == typeof(Int32))
+                else if (typeof(T) == typeof(int))
                 {
-                    register.int32_0 = left.register.int32_0 == right.register.int32_0 ? ConstantHelper.GetInt32WithAllBitsSet() : (Int32)0;
-                    register.int32_1 = left.register.int32_1 == right.register.int32_1 ? ConstantHelper.GetInt32WithAllBitsSet() : (Int32)0;
-                    register.int32_2 = left.register.int32_2 == right.register.int32_2 ? ConstantHelper.GetInt32WithAllBitsSet() : (Int32)0;
-                    register.int32_3 = left.register.int32_3 == right.register.int32_3 ? ConstantHelper.GetInt32WithAllBitsSet() : (Int32)0;
+                    register.int32_0 = left.register.int32_0 == right.register.int32_0 ? ConstantHelper.GetInt32WithAllBitsSet() : (int)0;
+                    register.int32_1 = left.register.int32_1 == right.register.int32_1 ? ConstantHelper.GetInt32WithAllBitsSet() : (int)0;
+                    register.int32_2 = left.register.int32_2 == right.register.int32_2 ? ConstantHelper.GetInt32WithAllBitsSet() : (int)0;
+                    register.int32_3 = left.register.int32_3 == right.register.int32_3 ? ConstantHelper.GetInt32WithAllBitsSet() : (int)0;
                     return new Vector<T>(ref register);
                 }
-                else if (typeof(T) == typeof(UInt64))
+                else if (typeof(T) == typeof(ulong))
                 {
-                    register.uint64_0 = left.register.uint64_0 == right.register.uint64_0 ? ConstantHelper.GetUInt64WithAllBitsSet() : (UInt64)0;
-                    register.uint64_1 = left.register.uint64_1 == right.register.uint64_1 ? ConstantHelper.GetUInt64WithAllBitsSet() : (UInt64)0;
+                    register.uint64_0 = left.register.uint64_0 == right.register.uint64_0 ? ConstantHelper.GetUInt64WithAllBitsSet() : (ulong)0;
+                    register.uint64_1 = left.register.uint64_1 == right.register.uint64_1 ? ConstantHelper.GetUInt64WithAllBitsSet() : (ulong)0;
                     return new Vector<T>(ref register);
                 }
-                else if (typeof(T) == typeof(Int64))
+                else if (typeof(T) == typeof(long))
                 {
-                    register.int64_0 = left.register.int64_0 == right.register.int64_0 ? ConstantHelper.GetInt64WithAllBitsSet() : (Int64)0;
-                    register.int64_1 = left.register.int64_1 == right.register.int64_1 ? ConstantHelper.GetInt64WithAllBitsSet() : (Int64)0;
+                    register.int64_0 = left.register.int64_0 == right.register.int64_0 ? ConstantHelper.GetInt64WithAllBitsSet() : (long)0;
+                    register.int64_1 = left.register.int64_1 == right.register.int64_1 ? ConstantHelper.GetInt64WithAllBitsSet() : (long)0;
                     return new Vector<T>(ref register);
                 }
-                else if (typeof(T) == typeof(Single))
+                else if (typeof(T) == typeof(float))
                 {
-                    register.single_0 = left.register.single_0 == right.register.single_0 ? ConstantHelper.GetSingleWithAllBitsSet() : (Single)0;
-                    register.single_1 = left.register.single_1 == right.register.single_1 ? ConstantHelper.GetSingleWithAllBitsSet() : (Single)0;
-                    register.single_2 = left.register.single_2 == right.register.single_2 ? ConstantHelper.GetSingleWithAllBitsSet() : (Single)0;
-                    register.single_3 = left.register.single_3 == right.register.single_3 ? ConstantHelper.GetSingleWithAllBitsSet() : (Single)0;
+                    register.single_0 = left.register.single_0 == right.register.single_0 ? ConstantHelper.GetSingleWithAllBitsSet() : (float)0;
+                    register.single_1 = left.register.single_1 == right.register.single_1 ? ConstantHelper.GetSingleWithAllBitsSet() : (float)0;
+                    register.single_2 = left.register.single_2 == right.register.single_2 ? ConstantHelper.GetSingleWithAllBitsSet() : (float)0;
+                    register.single_3 = left.register.single_3 == right.register.single_3 ? ConstantHelper.GetSingleWithAllBitsSet() : (float)0;
                     return new Vector<T>(ref register);
                 }
-                else if (typeof(T) == typeof(Double))
+                else if (typeof(T) == typeof(double))
                 {
-                    register.double_0 = left.register.double_0 == right.register.double_0 ? ConstantHelper.GetDoubleWithAllBitsSet() : (Double)0;
-                    register.double_1 = left.register.double_1 == right.register.double_1 ? ConstantHelper.GetDoubleWithAllBitsSet() : (Double)0;
+                    register.double_0 = left.register.double_0 == right.register.double_0 ? ConstantHelper.GetDoubleWithAllBitsSet() : (double)0;
+                    register.double_1 = left.register.double_1 == right.register.double_1 ? ConstantHelper.GetDoubleWithAllBitsSet() : (double)0;
                     return new Vector<T>(ref register);
                 }
                 else
@@ -3153,93 +3153,93 @@ namespace System.Numerics
         {
             if (Vector.IsHardwareAccelerated)
             {
-                if (typeof(T) == typeof(Byte))
+                if (typeof(T) == typeof(byte))
                 {
-                    Byte* dataPtr = stackalloc Byte[Count];
+                    byte* dataPtr = stackalloc byte[Count];
                     for (int g = 0; g < Count; g++)
                     {
-                        dataPtr[g] = ScalarLessThan(left[g], right[g]) ? ConstantHelper.GetByteWithAllBitsSet() : (Byte)0;
+                        dataPtr[g] = ScalarLessThan(left[g], right[g]) ? ConstantHelper.GetByteWithAllBitsSet() : (byte)0;
                     }
                     return new Vector<T>(dataPtr);
                 }
-                else if (typeof(T) == typeof(SByte))
+                else if (typeof(T) == typeof(sbyte))
                 {
-                    SByte* dataPtr = stackalloc SByte[Count];
+                    sbyte* dataPtr = stackalloc sbyte[Count];
                     for (int g = 0; g < Count; g++)
                     {
-                        dataPtr[g] = ScalarLessThan(left[g], right[g]) ? ConstantHelper.GetSByteWithAllBitsSet() : (SByte)0;
+                        dataPtr[g] = ScalarLessThan(left[g], right[g]) ? ConstantHelper.GetSByteWithAllBitsSet() : (sbyte)0;
                     }
                     return new Vector<T>(dataPtr);
                 }
-                else if (typeof(T) == typeof(UInt16))
+                else if (typeof(T) == typeof(ushort))
                 {
-                    UInt16* dataPtr = stackalloc UInt16[Count];
+                    ushort* dataPtr = stackalloc ushort[Count];
                     for (int g = 0; g < Count; g++)
                     {
-                        dataPtr[g] = ScalarLessThan(left[g], right[g]) ? ConstantHelper.GetUInt16WithAllBitsSet() : (UInt16)0;
+                        dataPtr[g] = ScalarLessThan(left[g], right[g]) ? ConstantHelper.GetUInt16WithAllBitsSet() : (ushort)0;
                     }
                     return new Vector<T>(dataPtr);
                 }
-                else if (typeof(T) == typeof(Int16))
+                else if (typeof(T) == typeof(short))
                 {
-                    Int16* dataPtr = stackalloc Int16[Count];
+                    short* dataPtr = stackalloc short[Count];
                     for (int g = 0; g < Count; g++)
                     {
-                        dataPtr[g] = ScalarLessThan(left[g], right[g]) ? ConstantHelper.GetInt16WithAllBitsSet() : (Int16)0;
+                        dataPtr[g] = ScalarLessThan(left[g], right[g]) ? ConstantHelper.GetInt16WithAllBitsSet() : (short)0;
                     }
                     return new Vector<T>(dataPtr);
                 }
-                else if (typeof(T) == typeof(UInt32))
+                else if (typeof(T) == typeof(uint))
                 {
-                    UInt32* dataPtr = stackalloc UInt32[Count];
+                    uint* dataPtr = stackalloc uint[Count];
                     for (int g = 0; g < Count; g++)
                     {
-                        dataPtr[g] = ScalarLessThan(left[g], right[g]) ? ConstantHelper.GetUInt32WithAllBitsSet() : (UInt32)0;
+                        dataPtr[g] = ScalarLessThan(left[g], right[g]) ? ConstantHelper.GetUInt32WithAllBitsSet() : (uint)0;
                     }
                     return new Vector<T>(dataPtr);
                 }
-                else if (typeof(T) == typeof(Int32))
+                else if (typeof(T) == typeof(int))
                 {
-                    Int32* dataPtr = stackalloc Int32[Count];
+                    int* dataPtr = stackalloc int[Count];
                     for (int g = 0; g < Count; g++)
                     {
-                        dataPtr[g] = ScalarLessThan(left[g], right[g]) ? ConstantHelper.GetInt32WithAllBitsSet() : (Int32)0;
+                        dataPtr[g] = ScalarLessThan(left[g], right[g]) ? ConstantHelper.GetInt32WithAllBitsSet() : (int)0;
                     }
                     return new Vector<T>(dataPtr);
                 }
-                else if (typeof(T) == typeof(UInt64))
+                else if (typeof(T) == typeof(ulong))
                 {
-                    UInt64* dataPtr = stackalloc UInt64[Count];
+                    ulong* dataPtr = stackalloc ulong[Count];
                     for (int g = 0; g < Count; g++)
                     {
-                        dataPtr[g] = ScalarLessThan(left[g], right[g]) ? ConstantHelper.GetUInt64WithAllBitsSet() : (UInt64)0;
+                        dataPtr[g] = ScalarLessThan(left[g], right[g]) ? ConstantHelper.GetUInt64WithAllBitsSet() : (ulong)0;
                     }
                     return new Vector<T>(dataPtr);
                 }
-                else if (typeof(T) == typeof(Int64))
+                else if (typeof(T) == typeof(long))
                 {
-                    Int64* dataPtr = stackalloc Int64[Count];
+                    long* dataPtr = stackalloc long[Count];
                     for (int g = 0; g < Count; g++)
                     {
-                        dataPtr[g] = ScalarLessThan(left[g], right[g]) ? ConstantHelper.GetInt64WithAllBitsSet() : (Int64)0;
+                        dataPtr[g] = ScalarLessThan(left[g], right[g]) ? ConstantHelper.GetInt64WithAllBitsSet() : (long)0;
                     }
                     return new Vector<T>(dataPtr);
                 }
-                else if (typeof(T) == typeof(Single))
+                else if (typeof(T) == typeof(float))
                 {
-                    Single* dataPtr = stackalloc Single[Count];
+                    float* dataPtr = stackalloc float[Count];
                     for (int g = 0; g < Count; g++)
                     {
-                        dataPtr[g] = ScalarLessThan(left[g], right[g]) ? ConstantHelper.GetSingleWithAllBitsSet() : (Single)0;
+                        dataPtr[g] = ScalarLessThan(left[g], right[g]) ? ConstantHelper.GetSingleWithAllBitsSet() : (float)0;
                     }
                     return new Vector<T>(dataPtr);
                 }
-                else if (typeof(T) == typeof(Double))
+                else if (typeof(T) == typeof(double))
                 {
-                    Double* dataPtr = stackalloc Double[Count];
+                    double* dataPtr = stackalloc double[Count];
                     for (int g = 0; g < Count; g++)
                     {
-                        dataPtr[g] = ScalarLessThan(left[g], right[g]) ? ConstantHelper.GetDoubleWithAllBitsSet() : (Double)0;
+                        dataPtr[g] = ScalarLessThan(left[g], right[g]) ? ConstantHelper.GetDoubleWithAllBitsSet() : (double)0;
                     }
                     return new Vector<T>(dataPtr);
                 }
@@ -3251,110 +3251,110 @@ namespace System.Numerics
             else
             {
                 Register register = new Register();
-                if (typeof(T) == typeof(Byte))
+                if (typeof(T) == typeof(byte))
                 {
-                    register.byte_0 = left.register.byte_0 < right.register.byte_0 ? ConstantHelper.GetByteWithAllBitsSet() : (Byte)0;
-                    register.byte_1 = left.register.byte_1 < right.register.byte_1 ? ConstantHelper.GetByteWithAllBitsSet() : (Byte)0;
-                    register.byte_2 = left.register.byte_2 < right.register.byte_2 ? ConstantHelper.GetByteWithAllBitsSet() : (Byte)0;
-                    register.byte_3 = left.register.byte_3 < right.register.byte_3 ? ConstantHelper.GetByteWithAllBitsSet() : (Byte)0;
-                    register.byte_4 = left.register.byte_4 < right.register.byte_4 ? ConstantHelper.GetByteWithAllBitsSet() : (Byte)0;
-                    register.byte_5 = left.register.byte_5 < right.register.byte_5 ? ConstantHelper.GetByteWithAllBitsSet() : (Byte)0;
-                    register.byte_6 = left.register.byte_6 < right.register.byte_6 ? ConstantHelper.GetByteWithAllBitsSet() : (Byte)0;
-                    register.byte_7 = left.register.byte_7 < right.register.byte_7 ? ConstantHelper.GetByteWithAllBitsSet() : (Byte)0;
-                    register.byte_8 = left.register.byte_8 < right.register.byte_8 ? ConstantHelper.GetByteWithAllBitsSet() : (Byte)0;
-                    register.byte_9 = left.register.byte_9 < right.register.byte_9 ? ConstantHelper.GetByteWithAllBitsSet() : (Byte)0;
-                    register.byte_10 = left.register.byte_10 < right.register.byte_10 ? ConstantHelper.GetByteWithAllBitsSet() : (Byte)0;
-                    register.byte_11 = left.register.byte_11 < right.register.byte_11 ? ConstantHelper.GetByteWithAllBitsSet() : (Byte)0;
-                    register.byte_12 = left.register.byte_12 < right.register.byte_12 ? ConstantHelper.GetByteWithAllBitsSet() : (Byte)0;
-                    register.byte_13 = left.register.byte_13 < right.register.byte_13 ? ConstantHelper.GetByteWithAllBitsSet() : (Byte)0;
-                    register.byte_14 = left.register.byte_14 < right.register.byte_14 ? ConstantHelper.GetByteWithAllBitsSet() : (Byte)0;
-                    register.byte_15 = left.register.byte_15 < right.register.byte_15 ? ConstantHelper.GetByteWithAllBitsSet() : (Byte)0;
+                    register.byte_0 = left.register.byte_0 < right.register.byte_0 ? ConstantHelper.GetByteWithAllBitsSet() : (byte)0;
+                    register.byte_1 = left.register.byte_1 < right.register.byte_1 ? ConstantHelper.GetByteWithAllBitsSet() : (byte)0;
+                    register.byte_2 = left.register.byte_2 < right.register.byte_2 ? ConstantHelper.GetByteWithAllBitsSet() : (byte)0;
+                    register.byte_3 = left.register.byte_3 < right.register.byte_3 ? ConstantHelper.GetByteWithAllBitsSet() : (byte)0;
+                    register.byte_4 = left.register.byte_4 < right.register.byte_4 ? ConstantHelper.GetByteWithAllBitsSet() : (byte)0;
+                    register.byte_5 = left.register.byte_5 < right.register.byte_5 ? ConstantHelper.GetByteWithAllBitsSet() : (byte)0;
+                    register.byte_6 = left.register.byte_6 < right.register.byte_6 ? ConstantHelper.GetByteWithAllBitsSet() : (byte)0;
+                    register.byte_7 = left.register.byte_7 < right.register.byte_7 ? ConstantHelper.GetByteWithAllBitsSet() : (byte)0;
+                    register.byte_8 = left.register.byte_8 < right.register.byte_8 ? ConstantHelper.GetByteWithAllBitsSet() : (byte)0;
+                    register.byte_9 = left.register.byte_9 < right.register.byte_9 ? ConstantHelper.GetByteWithAllBitsSet() : (byte)0;
+                    register.byte_10 = left.register.byte_10 < right.register.byte_10 ? ConstantHelper.GetByteWithAllBitsSet() : (byte)0;
+                    register.byte_11 = left.register.byte_11 < right.register.byte_11 ? ConstantHelper.GetByteWithAllBitsSet() : (byte)0;
+                    register.byte_12 = left.register.byte_12 < right.register.byte_12 ? ConstantHelper.GetByteWithAllBitsSet() : (byte)0;
+                    register.byte_13 = left.register.byte_13 < right.register.byte_13 ? ConstantHelper.GetByteWithAllBitsSet() : (byte)0;
+                    register.byte_14 = left.register.byte_14 < right.register.byte_14 ? ConstantHelper.GetByteWithAllBitsSet() : (byte)0;
+                    register.byte_15 = left.register.byte_15 < right.register.byte_15 ? ConstantHelper.GetByteWithAllBitsSet() : (byte)0;
                     return new Vector<T>(ref register);
                 }
-                else if (typeof(T) == typeof(SByte))
+                else if (typeof(T) == typeof(sbyte))
                 {
-                    register.sbyte_0 = left.register.sbyte_0 < right.register.sbyte_0 ? ConstantHelper.GetSByteWithAllBitsSet() : (SByte)0;
-                    register.sbyte_1 = left.register.sbyte_1 < right.register.sbyte_1 ? ConstantHelper.GetSByteWithAllBitsSet() : (SByte)0;
-                    register.sbyte_2 = left.register.sbyte_2 < right.register.sbyte_2 ? ConstantHelper.GetSByteWithAllBitsSet() : (SByte)0;
-                    register.sbyte_3 = left.register.sbyte_3 < right.register.sbyte_3 ? ConstantHelper.GetSByteWithAllBitsSet() : (SByte)0;
-                    register.sbyte_4 = left.register.sbyte_4 < right.register.sbyte_4 ? ConstantHelper.GetSByteWithAllBitsSet() : (SByte)0;
-                    register.sbyte_5 = left.register.sbyte_5 < right.register.sbyte_5 ? ConstantHelper.GetSByteWithAllBitsSet() : (SByte)0;
-                    register.sbyte_6 = left.register.sbyte_6 < right.register.sbyte_6 ? ConstantHelper.GetSByteWithAllBitsSet() : (SByte)0;
-                    register.sbyte_7 = left.register.sbyte_7 < right.register.sbyte_7 ? ConstantHelper.GetSByteWithAllBitsSet() : (SByte)0;
-                    register.sbyte_8 = left.register.sbyte_8 < right.register.sbyte_8 ? ConstantHelper.GetSByteWithAllBitsSet() : (SByte)0;
-                    register.sbyte_9 = left.register.sbyte_9 < right.register.sbyte_9 ? ConstantHelper.GetSByteWithAllBitsSet() : (SByte)0;
-                    register.sbyte_10 = left.register.sbyte_10 < right.register.sbyte_10 ? ConstantHelper.GetSByteWithAllBitsSet() : (SByte)0;
-                    register.sbyte_11 = left.register.sbyte_11 < right.register.sbyte_11 ? ConstantHelper.GetSByteWithAllBitsSet() : (SByte)0;
-                    register.sbyte_12 = left.register.sbyte_12 < right.register.sbyte_12 ? ConstantHelper.GetSByteWithAllBitsSet() : (SByte)0;
-                    register.sbyte_13 = left.register.sbyte_13 < right.register.sbyte_13 ? ConstantHelper.GetSByteWithAllBitsSet() : (SByte)0;
-                    register.sbyte_14 = left.register.sbyte_14 < right.register.sbyte_14 ? ConstantHelper.GetSByteWithAllBitsSet() : (SByte)0;
-                    register.sbyte_15 = left.register.sbyte_15 < right.register.sbyte_15 ? ConstantHelper.GetSByteWithAllBitsSet() : (SByte)0;
+                    register.sbyte_0 = left.register.sbyte_0 < right.register.sbyte_0 ? ConstantHelper.GetSByteWithAllBitsSet() : (sbyte)0;
+                    register.sbyte_1 = left.register.sbyte_1 < right.register.sbyte_1 ? ConstantHelper.GetSByteWithAllBitsSet() : (sbyte)0;
+                    register.sbyte_2 = left.register.sbyte_2 < right.register.sbyte_2 ? ConstantHelper.GetSByteWithAllBitsSet() : (sbyte)0;
+                    register.sbyte_3 = left.register.sbyte_3 < right.register.sbyte_3 ? ConstantHelper.GetSByteWithAllBitsSet() : (sbyte)0;
+                    register.sbyte_4 = left.register.sbyte_4 < right.register.sbyte_4 ? ConstantHelper.GetSByteWithAllBitsSet() : (sbyte)0;
+                    register.sbyte_5 = left.register.sbyte_5 < right.register.sbyte_5 ? ConstantHelper.GetSByteWithAllBitsSet() : (sbyte)0;
+                    register.sbyte_6 = left.register.sbyte_6 < right.register.sbyte_6 ? ConstantHelper.GetSByteWithAllBitsSet() : (sbyte)0;
+                    register.sbyte_7 = left.register.sbyte_7 < right.register.sbyte_7 ? ConstantHelper.GetSByteWithAllBitsSet() : (sbyte)0;
+                    register.sbyte_8 = left.register.sbyte_8 < right.register.sbyte_8 ? ConstantHelper.GetSByteWithAllBitsSet() : (sbyte)0;
+                    register.sbyte_9 = left.register.sbyte_9 < right.register.sbyte_9 ? ConstantHelper.GetSByteWithAllBitsSet() : (sbyte)0;
+                    register.sbyte_10 = left.register.sbyte_10 < right.register.sbyte_10 ? ConstantHelper.GetSByteWithAllBitsSet() : (sbyte)0;
+                    register.sbyte_11 = left.register.sbyte_11 < right.register.sbyte_11 ? ConstantHelper.GetSByteWithAllBitsSet() : (sbyte)0;
+                    register.sbyte_12 = left.register.sbyte_12 < right.register.sbyte_12 ? ConstantHelper.GetSByteWithAllBitsSet() : (sbyte)0;
+                    register.sbyte_13 = left.register.sbyte_13 < right.register.sbyte_13 ? ConstantHelper.GetSByteWithAllBitsSet() : (sbyte)0;
+                    register.sbyte_14 = left.register.sbyte_14 < right.register.sbyte_14 ? ConstantHelper.GetSByteWithAllBitsSet() : (sbyte)0;
+                    register.sbyte_15 = left.register.sbyte_15 < right.register.sbyte_15 ? ConstantHelper.GetSByteWithAllBitsSet() : (sbyte)0;
                     return new Vector<T>(ref register);
                 }
-                else if (typeof(T) == typeof(UInt16))
+                else if (typeof(T) == typeof(ushort))
                 {
-                    register.uint16_0 = left.register.uint16_0 < right.register.uint16_0 ? ConstantHelper.GetUInt16WithAllBitsSet() : (UInt16)0;
-                    register.uint16_1 = left.register.uint16_1 < right.register.uint16_1 ? ConstantHelper.GetUInt16WithAllBitsSet() : (UInt16)0;
-                    register.uint16_2 = left.register.uint16_2 < right.register.uint16_2 ? ConstantHelper.GetUInt16WithAllBitsSet() : (UInt16)0;
-                    register.uint16_3 = left.register.uint16_3 < right.register.uint16_3 ? ConstantHelper.GetUInt16WithAllBitsSet() : (UInt16)0;
-                    register.uint16_4 = left.register.uint16_4 < right.register.uint16_4 ? ConstantHelper.GetUInt16WithAllBitsSet() : (UInt16)0;
-                    register.uint16_5 = left.register.uint16_5 < right.register.uint16_5 ? ConstantHelper.GetUInt16WithAllBitsSet() : (UInt16)0;
-                    register.uint16_6 = left.register.uint16_6 < right.register.uint16_6 ? ConstantHelper.GetUInt16WithAllBitsSet() : (UInt16)0;
-                    register.uint16_7 = left.register.uint16_7 < right.register.uint16_7 ? ConstantHelper.GetUInt16WithAllBitsSet() : (UInt16)0;
+                    register.uint16_0 = left.register.uint16_0 < right.register.uint16_0 ? ConstantHelper.GetUInt16WithAllBitsSet() : (ushort)0;
+                    register.uint16_1 = left.register.uint16_1 < right.register.uint16_1 ? ConstantHelper.GetUInt16WithAllBitsSet() : (ushort)0;
+                    register.uint16_2 = left.register.uint16_2 < right.register.uint16_2 ? ConstantHelper.GetUInt16WithAllBitsSet() : (ushort)0;
+                    register.uint16_3 = left.register.uint16_3 < right.register.uint16_3 ? ConstantHelper.GetUInt16WithAllBitsSet() : (ushort)0;
+                    register.uint16_4 = left.register.uint16_4 < right.register.uint16_4 ? ConstantHelper.GetUInt16WithAllBitsSet() : (ushort)0;
+                    register.uint16_5 = left.register.uint16_5 < right.register.uint16_5 ? ConstantHelper.GetUInt16WithAllBitsSet() : (ushort)0;
+                    register.uint16_6 = left.register.uint16_6 < right.register.uint16_6 ? ConstantHelper.GetUInt16WithAllBitsSet() : (ushort)0;
+                    register.uint16_7 = left.register.uint16_7 < right.register.uint16_7 ? ConstantHelper.GetUInt16WithAllBitsSet() : (ushort)0;
                     return new Vector<T>(ref register);
                 }
-                else if (typeof(T) == typeof(Int16))
+                else if (typeof(T) == typeof(short))
                 {
-                    register.int16_0 = left.register.int16_0 < right.register.int16_0 ? ConstantHelper.GetInt16WithAllBitsSet() : (Int16)0;
-                    register.int16_1 = left.register.int16_1 < right.register.int16_1 ? ConstantHelper.GetInt16WithAllBitsSet() : (Int16)0;
-                    register.int16_2 = left.register.int16_2 < right.register.int16_2 ? ConstantHelper.GetInt16WithAllBitsSet() : (Int16)0;
-                    register.int16_3 = left.register.int16_3 < right.register.int16_3 ? ConstantHelper.GetInt16WithAllBitsSet() : (Int16)0;
-                    register.int16_4 = left.register.int16_4 < right.register.int16_4 ? ConstantHelper.GetInt16WithAllBitsSet() : (Int16)0;
-                    register.int16_5 = left.register.int16_5 < right.register.int16_5 ? ConstantHelper.GetInt16WithAllBitsSet() : (Int16)0;
-                    register.int16_6 = left.register.int16_6 < right.register.int16_6 ? ConstantHelper.GetInt16WithAllBitsSet() : (Int16)0;
-                    register.int16_7 = left.register.int16_7 < right.register.int16_7 ? ConstantHelper.GetInt16WithAllBitsSet() : (Int16)0;
+                    register.int16_0 = left.register.int16_0 < right.register.int16_0 ? ConstantHelper.GetInt16WithAllBitsSet() : (short)0;
+                    register.int16_1 = left.register.int16_1 < right.register.int16_1 ? ConstantHelper.GetInt16WithAllBitsSet() : (short)0;
+                    register.int16_2 = left.register.int16_2 < right.register.int16_2 ? ConstantHelper.GetInt16WithAllBitsSet() : (short)0;
+                    register.int16_3 = left.register.int16_3 < right.register.int16_3 ? ConstantHelper.GetInt16WithAllBitsSet() : (short)0;
+                    register.int16_4 = left.register.int16_4 < right.register.int16_4 ? ConstantHelper.GetInt16WithAllBitsSet() : (short)0;
+                    register.int16_5 = left.register.int16_5 < right.register.int16_5 ? ConstantHelper.GetInt16WithAllBitsSet() : (short)0;
+                    register.int16_6 = left.register.int16_6 < right.register.int16_6 ? ConstantHelper.GetInt16WithAllBitsSet() : (short)0;
+                    register.int16_7 = left.register.int16_7 < right.register.int16_7 ? ConstantHelper.GetInt16WithAllBitsSet() : (short)0;
                     return new Vector<T>(ref register);
                 }
-                else if (typeof(T) == typeof(UInt32))
+                else if (typeof(T) == typeof(uint))
                 {
-                    register.uint32_0 = left.register.uint32_0 < right.register.uint32_0 ? ConstantHelper.GetUInt32WithAllBitsSet() : (UInt32)0;
-                    register.uint32_1 = left.register.uint32_1 < right.register.uint32_1 ? ConstantHelper.GetUInt32WithAllBitsSet() : (UInt32)0;
-                    register.uint32_2 = left.register.uint32_2 < right.register.uint32_2 ? ConstantHelper.GetUInt32WithAllBitsSet() : (UInt32)0;
-                    register.uint32_3 = left.register.uint32_3 < right.register.uint32_3 ? ConstantHelper.GetUInt32WithAllBitsSet() : (UInt32)0;
+                    register.uint32_0 = left.register.uint32_0 < right.register.uint32_0 ? ConstantHelper.GetUInt32WithAllBitsSet() : (uint)0;
+                    register.uint32_1 = left.register.uint32_1 < right.register.uint32_1 ? ConstantHelper.GetUInt32WithAllBitsSet() : (uint)0;
+                    register.uint32_2 = left.register.uint32_2 < right.register.uint32_2 ? ConstantHelper.GetUInt32WithAllBitsSet() : (uint)0;
+                    register.uint32_3 = left.register.uint32_3 < right.register.uint32_3 ? ConstantHelper.GetUInt32WithAllBitsSet() : (uint)0;
                     return new Vector<T>(ref register);
                 }
-                else if (typeof(T) == typeof(Int32))
+                else if (typeof(T) == typeof(int))
                 {
-                    register.int32_0 = left.register.int32_0 < right.register.int32_0 ? ConstantHelper.GetInt32WithAllBitsSet() : (Int32)0;
-                    register.int32_1 = left.register.int32_1 < right.register.int32_1 ? ConstantHelper.GetInt32WithAllBitsSet() : (Int32)0;
-                    register.int32_2 = left.register.int32_2 < right.register.int32_2 ? ConstantHelper.GetInt32WithAllBitsSet() : (Int32)0;
-                    register.int32_3 = left.register.int32_3 < right.register.int32_3 ? ConstantHelper.GetInt32WithAllBitsSet() : (Int32)0;
+                    register.int32_0 = left.register.int32_0 < right.register.int32_0 ? ConstantHelper.GetInt32WithAllBitsSet() : (int)0;
+                    register.int32_1 = left.register.int32_1 < right.register.int32_1 ? ConstantHelper.GetInt32WithAllBitsSet() : (int)0;
+                    register.int32_2 = left.register.int32_2 < right.register.int32_2 ? ConstantHelper.GetInt32WithAllBitsSet() : (int)0;
+                    register.int32_3 = left.register.int32_3 < right.register.int32_3 ? ConstantHelper.GetInt32WithAllBitsSet() : (int)0;
                     return new Vector<T>(ref register);
                 }
-                else if (typeof(T) == typeof(UInt64))
+                else if (typeof(T) == typeof(ulong))
                 {
-                    register.uint64_0 = left.register.uint64_0 < right.register.uint64_0 ? ConstantHelper.GetUInt64WithAllBitsSet() : (UInt64)0;
-                    register.uint64_1 = left.register.uint64_1 < right.register.uint64_1 ? ConstantHelper.GetUInt64WithAllBitsSet() : (UInt64)0;
+                    register.uint64_0 = left.register.uint64_0 < right.register.uint64_0 ? ConstantHelper.GetUInt64WithAllBitsSet() : (ulong)0;
+                    register.uint64_1 = left.register.uint64_1 < right.register.uint64_1 ? ConstantHelper.GetUInt64WithAllBitsSet() : (ulong)0;
                     return new Vector<T>(ref register);
                 }
-                else if (typeof(T) == typeof(Int64))
+                else if (typeof(T) == typeof(long))
                 {
-                    register.int64_0 = left.register.int64_0 < right.register.int64_0 ? ConstantHelper.GetInt64WithAllBitsSet() : (Int64)0;
-                    register.int64_1 = left.register.int64_1 < right.register.int64_1 ? ConstantHelper.GetInt64WithAllBitsSet() : (Int64)0;
+                    register.int64_0 = left.register.int64_0 < right.register.int64_0 ? ConstantHelper.GetInt64WithAllBitsSet() : (long)0;
+                    register.int64_1 = left.register.int64_1 < right.register.int64_1 ? ConstantHelper.GetInt64WithAllBitsSet() : (long)0;
                     return new Vector<T>(ref register);
                 }
-                else if (typeof(T) == typeof(Single))
+                else if (typeof(T) == typeof(float))
                 {
-                    register.single_0 = left.register.single_0 < right.register.single_0 ? ConstantHelper.GetSingleWithAllBitsSet() : (Single)0;
-                    register.single_1 = left.register.single_1 < right.register.single_1 ? ConstantHelper.GetSingleWithAllBitsSet() : (Single)0;
-                    register.single_2 = left.register.single_2 < right.register.single_2 ? ConstantHelper.GetSingleWithAllBitsSet() : (Single)0;
-                    register.single_3 = left.register.single_3 < right.register.single_3 ? ConstantHelper.GetSingleWithAllBitsSet() : (Single)0;
+                    register.single_0 = left.register.single_0 < right.register.single_0 ? ConstantHelper.GetSingleWithAllBitsSet() : (float)0;
+                    register.single_1 = left.register.single_1 < right.register.single_1 ? ConstantHelper.GetSingleWithAllBitsSet() : (float)0;
+                    register.single_2 = left.register.single_2 < right.register.single_2 ? ConstantHelper.GetSingleWithAllBitsSet() : (float)0;
+                    register.single_3 = left.register.single_3 < right.register.single_3 ? ConstantHelper.GetSingleWithAllBitsSet() : (float)0;
                     return new Vector<T>(ref register);
                 }
-                else if (typeof(T) == typeof(Double))
+                else if (typeof(T) == typeof(double))
                 {
-                    register.double_0 = left.register.double_0 < right.register.double_0 ? ConstantHelper.GetDoubleWithAllBitsSet() : (Double)0;
-                    register.double_1 = left.register.double_1 < right.register.double_1 ? ConstantHelper.GetDoubleWithAllBitsSet() : (Double)0;
+                    register.double_0 = left.register.double_0 < right.register.double_0 ? ConstantHelper.GetDoubleWithAllBitsSet() : (double)0;
+                    register.double_1 = left.register.double_1 < right.register.double_1 ? ConstantHelper.GetDoubleWithAllBitsSet() : (double)0;
                     return new Vector<T>(ref register);
                 }
                 else
@@ -3370,93 +3370,93 @@ namespace System.Numerics
         {
             if (Vector.IsHardwareAccelerated)
             {
-                if (typeof(T) == typeof(Byte))
+                if (typeof(T) == typeof(byte))
                 {
-                    Byte* dataPtr = stackalloc Byte[Count];
+                    byte* dataPtr = stackalloc byte[Count];
                     for (int g = 0; g < Count; g++)
                     {
-                        dataPtr[g] = ScalarGreaterThan(left[g], right[g]) ? ConstantHelper.GetByteWithAllBitsSet() : (Byte)0;
+                        dataPtr[g] = ScalarGreaterThan(left[g], right[g]) ? ConstantHelper.GetByteWithAllBitsSet() : (byte)0;
                     }
                     return new Vector<T>(dataPtr);
                 }
-                else if (typeof(T) == typeof(SByte))
+                else if (typeof(T) == typeof(sbyte))
                 {
-                    SByte* dataPtr = stackalloc SByte[Count];
+                    sbyte* dataPtr = stackalloc sbyte[Count];
                     for (int g = 0; g < Count; g++)
                     {
-                        dataPtr[g] = ScalarGreaterThan(left[g], right[g]) ? ConstantHelper.GetSByteWithAllBitsSet() : (SByte)0;
+                        dataPtr[g] = ScalarGreaterThan(left[g], right[g]) ? ConstantHelper.GetSByteWithAllBitsSet() : (sbyte)0;
                     }
                     return new Vector<T>(dataPtr);
                 }
-                else if (typeof(T) == typeof(UInt16))
+                else if (typeof(T) == typeof(ushort))
                 {
-                    UInt16* dataPtr = stackalloc UInt16[Count];
+                    ushort* dataPtr = stackalloc ushort[Count];
                     for (int g = 0; g < Count; g++)
                     {
-                        dataPtr[g] = ScalarGreaterThan(left[g], right[g]) ? ConstantHelper.GetUInt16WithAllBitsSet() : (UInt16)0;
+                        dataPtr[g] = ScalarGreaterThan(left[g], right[g]) ? ConstantHelper.GetUInt16WithAllBitsSet() : (ushort)0;
                     }
                     return new Vector<T>(dataPtr);
                 }
-                else if (typeof(T) == typeof(Int16))
+                else if (typeof(T) == typeof(short))
                 {
-                    Int16* dataPtr = stackalloc Int16[Count];
+                    short* dataPtr = stackalloc short[Count];
                     for (int g = 0; g < Count; g++)
                     {
-                        dataPtr[g] = ScalarGreaterThan(left[g], right[g]) ? ConstantHelper.GetInt16WithAllBitsSet() : (Int16)0;
+                        dataPtr[g] = ScalarGreaterThan(left[g], right[g]) ? ConstantHelper.GetInt16WithAllBitsSet() : (short)0;
                     }
                     return new Vector<T>(dataPtr);
                 }
-                else if (typeof(T) == typeof(UInt32))
+                else if (typeof(T) == typeof(uint))
                 {
-                    UInt32* dataPtr = stackalloc UInt32[Count];
+                    uint* dataPtr = stackalloc uint[Count];
                     for (int g = 0; g < Count; g++)
                     {
-                        dataPtr[g] = ScalarGreaterThan(left[g], right[g]) ? ConstantHelper.GetUInt32WithAllBitsSet() : (UInt32)0;
+                        dataPtr[g] = ScalarGreaterThan(left[g], right[g]) ? ConstantHelper.GetUInt32WithAllBitsSet() : (uint)0;
                     }
                     return new Vector<T>(dataPtr);
                 }
-                else if (typeof(T) == typeof(Int32))
+                else if (typeof(T) == typeof(int))
                 {
-                    Int32* dataPtr = stackalloc Int32[Count];
+                    int* dataPtr = stackalloc int[Count];
                     for (int g = 0; g < Count; g++)
                     {
-                        dataPtr[g] = ScalarGreaterThan(left[g], right[g]) ? ConstantHelper.GetInt32WithAllBitsSet() : (Int32)0;
+                        dataPtr[g] = ScalarGreaterThan(left[g], right[g]) ? ConstantHelper.GetInt32WithAllBitsSet() : (int)0;
                     }
                     return new Vector<T>(dataPtr);
                 }
-                else if (typeof(T) == typeof(UInt64))
+                else if (typeof(T) == typeof(ulong))
                 {
-                    UInt64* dataPtr = stackalloc UInt64[Count];
+                    ulong* dataPtr = stackalloc ulong[Count];
                     for (int g = 0; g < Count; g++)
                     {
-                        dataPtr[g] = ScalarGreaterThan(left[g], right[g]) ? ConstantHelper.GetUInt64WithAllBitsSet() : (UInt64)0;
+                        dataPtr[g] = ScalarGreaterThan(left[g], right[g]) ? ConstantHelper.GetUInt64WithAllBitsSet() : (ulong)0;
                     }
                     return new Vector<T>(dataPtr);
                 }
-                else if (typeof(T) == typeof(Int64))
+                else if (typeof(T) == typeof(long))
                 {
-                    Int64* dataPtr = stackalloc Int64[Count];
+                    long* dataPtr = stackalloc long[Count];
                     for (int g = 0; g < Count; g++)
                     {
-                        dataPtr[g] = ScalarGreaterThan(left[g], right[g]) ? ConstantHelper.GetInt64WithAllBitsSet() : (Int64)0;
+                        dataPtr[g] = ScalarGreaterThan(left[g], right[g]) ? ConstantHelper.GetInt64WithAllBitsSet() : (long)0;
                     }
                     return new Vector<T>(dataPtr);
                 }
-                else if (typeof(T) == typeof(Single))
+                else if (typeof(T) == typeof(float))
                 {
-                    Single* dataPtr = stackalloc Single[Count];
+                    float* dataPtr = stackalloc float[Count];
                     for (int g = 0; g < Count; g++)
                     {
-                        dataPtr[g] = ScalarGreaterThan(left[g], right[g]) ? ConstantHelper.GetSingleWithAllBitsSet() : (Single)0;
+                        dataPtr[g] = ScalarGreaterThan(left[g], right[g]) ? ConstantHelper.GetSingleWithAllBitsSet() : (float)0;
                     }
                     return new Vector<T>(dataPtr);
                 }
-                else if (typeof(T) == typeof(Double))
+                else if (typeof(T) == typeof(double))
                 {
-                    Double* dataPtr = stackalloc Double[Count];
+                    double* dataPtr = stackalloc double[Count];
                     for (int g = 0; g < Count; g++)
                     {
-                        dataPtr[g] = ScalarGreaterThan(left[g], right[g]) ? ConstantHelper.GetDoubleWithAllBitsSet() : (Double)0;
+                        dataPtr[g] = ScalarGreaterThan(left[g], right[g]) ? ConstantHelper.GetDoubleWithAllBitsSet() : (double)0;
                     }
                     return new Vector<T>(dataPtr);
                 }
@@ -3468,110 +3468,110 @@ namespace System.Numerics
             else
             {
                 Register register = new Register();
-                if (typeof(T) == typeof(Byte))
+                if (typeof(T) == typeof(byte))
                 {
-                    register.byte_0 = left.register.byte_0 > right.register.byte_0 ? ConstantHelper.GetByteWithAllBitsSet() : (Byte)0;
-                    register.byte_1 = left.register.byte_1 > right.register.byte_1 ? ConstantHelper.GetByteWithAllBitsSet() : (Byte)0;
-                    register.byte_2 = left.register.byte_2 > right.register.byte_2 ? ConstantHelper.GetByteWithAllBitsSet() : (Byte)0;
-                    register.byte_3 = left.register.byte_3 > right.register.byte_3 ? ConstantHelper.GetByteWithAllBitsSet() : (Byte)0;
-                    register.byte_4 = left.register.byte_4 > right.register.byte_4 ? ConstantHelper.GetByteWithAllBitsSet() : (Byte)0;
-                    register.byte_5 = left.register.byte_5 > right.register.byte_5 ? ConstantHelper.GetByteWithAllBitsSet() : (Byte)0;
-                    register.byte_6 = left.register.byte_6 > right.register.byte_6 ? ConstantHelper.GetByteWithAllBitsSet() : (Byte)0;
-                    register.byte_7 = left.register.byte_7 > right.register.byte_7 ? ConstantHelper.GetByteWithAllBitsSet() : (Byte)0;
-                    register.byte_8 = left.register.byte_8 > right.register.byte_8 ? ConstantHelper.GetByteWithAllBitsSet() : (Byte)0;
-                    register.byte_9 = left.register.byte_9 > right.register.byte_9 ? ConstantHelper.GetByteWithAllBitsSet() : (Byte)0;
-                    register.byte_10 = left.register.byte_10 > right.register.byte_10 ? ConstantHelper.GetByteWithAllBitsSet() : (Byte)0;
-                    register.byte_11 = left.register.byte_11 > right.register.byte_11 ? ConstantHelper.GetByteWithAllBitsSet() : (Byte)0;
-                    register.byte_12 = left.register.byte_12 > right.register.byte_12 ? ConstantHelper.GetByteWithAllBitsSet() : (Byte)0;
-                    register.byte_13 = left.register.byte_13 > right.register.byte_13 ? ConstantHelper.GetByteWithAllBitsSet() : (Byte)0;
-                    register.byte_14 = left.register.byte_14 > right.register.byte_14 ? ConstantHelper.GetByteWithAllBitsSet() : (Byte)0;
-                    register.byte_15 = left.register.byte_15 > right.register.byte_15 ? ConstantHelper.GetByteWithAllBitsSet() : (Byte)0;
+                    register.byte_0 = left.register.byte_0 > right.register.byte_0 ? ConstantHelper.GetByteWithAllBitsSet() : (byte)0;
+                    register.byte_1 = left.register.byte_1 > right.register.byte_1 ? ConstantHelper.GetByteWithAllBitsSet() : (byte)0;
+                    register.byte_2 = left.register.byte_2 > right.register.byte_2 ? ConstantHelper.GetByteWithAllBitsSet() : (byte)0;
+                    register.byte_3 = left.register.byte_3 > right.register.byte_3 ? ConstantHelper.GetByteWithAllBitsSet() : (byte)0;
+                    register.byte_4 = left.register.byte_4 > right.register.byte_4 ? ConstantHelper.GetByteWithAllBitsSet() : (byte)0;
+                    register.byte_5 = left.register.byte_5 > right.register.byte_5 ? ConstantHelper.GetByteWithAllBitsSet() : (byte)0;
+                    register.byte_6 = left.register.byte_6 > right.register.byte_6 ? ConstantHelper.GetByteWithAllBitsSet() : (byte)0;
+                    register.byte_7 = left.register.byte_7 > right.register.byte_7 ? ConstantHelper.GetByteWithAllBitsSet() : (byte)0;
+                    register.byte_8 = left.register.byte_8 > right.register.byte_8 ? ConstantHelper.GetByteWithAllBitsSet() : (byte)0;
+                    register.byte_9 = left.register.byte_9 > right.register.byte_9 ? ConstantHelper.GetByteWithAllBitsSet() : (byte)0;
+                    register.byte_10 = left.register.byte_10 > right.register.byte_10 ? ConstantHelper.GetByteWithAllBitsSet() : (byte)0;
+                    register.byte_11 = left.register.byte_11 > right.register.byte_11 ? ConstantHelper.GetByteWithAllBitsSet() : (byte)0;
+                    register.byte_12 = left.register.byte_12 > right.register.byte_12 ? ConstantHelper.GetByteWithAllBitsSet() : (byte)0;
+                    register.byte_13 = left.register.byte_13 > right.register.byte_13 ? ConstantHelper.GetByteWithAllBitsSet() : (byte)0;
+                    register.byte_14 = left.register.byte_14 > right.register.byte_14 ? ConstantHelper.GetByteWithAllBitsSet() : (byte)0;
+                    register.byte_15 = left.register.byte_15 > right.register.byte_15 ? ConstantHelper.GetByteWithAllBitsSet() : (byte)0;
                     return new Vector<T>(ref register);
                 }
-                else if (typeof(T) == typeof(SByte))
+                else if (typeof(T) == typeof(sbyte))
                 {
-                    register.sbyte_0 = left.register.sbyte_0 > right.register.sbyte_0 ? ConstantHelper.GetSByteWithAllBitsSet() : (SByte)0;
-                    register.sbyte_1 = left.register.sbyte_1 > right.register.sbyte_1 ? ConstantHelper.GetSByteWithAllBitsSet() : (SByte)0;
-                    register.sbyte_2 = left.register.sbyte_2 > right.register.sbyte_2 ? ConstantHelper.GetSByteWithAllBitsSet() : (SByte)0;
-                    register.sbyte_3 = left.register.sbyte_3 > right.register.sbyte_3 ? ConstantHelper.GetSByteWithAllBitsSet() : (SByte)0;
-                    register.sbyte_4 = left.register.sbyte_4 > right.register.sbyte_4 ? ConstantHelper.GetSByteWithAllBitsSet() : (SByte)0;
-                    register.sbyte_5 = left.register.sbyte_5 > right.register.sbyte_5 ? ConstantHelper.GetSByteWithAllBitsSet() : (SByte)0;
-                    register.sbyte_6 = left.register.sbyte_6 > right.register.sbyte_6 ? ConstantHelper.GetSByteWithAllBitsSet() : (SByte)0;
-                    register.sbyte_7 = left.register.sbyte_7 > right.register.sbyte_7 ? ConstantHelper.GetSByteWithAllBitsSet() : (SByte)0;
-                    register.sbyte_8 = left.register.sbyte_8 > right.register.sbyte_8 ? ConstantHelper.GetSByteWithAllBitsSet() : (SByte)0;
-                    register.sbyte_9 = left.register.sbyte_9 > right.register.sbyte_9 ? ConstantHelper.GetSByteWithAllBitsSet() : (SByte)0;
-                    register.sbyte_10 = left.register.sbyte_10 > right.register.sbyte_10 ? ConstantHelper.GetSByteWithAllBitsSet() : (SByte)0;
-                    register.sbyte_11 = left.register.sbyte_11 > right.register.sbyte_11 ? ConstantHelper.GetSByteWithAllBitsSet() : (SByte)0;
-                    register.sbyte_12 = left.register.sbyte_12 > right.register.sbyte_12 ? ConstantHelper.GetSByteWithAllBitsSet() : (SByte)0;
-                    register.sbyte_13 = left.register.sbyte_13 > right.register.sbyte_13 ? ConstantHelper.GetSByteWithAllBitsSet() : (SByte)0;
-                    register.sbyte_14 = left.register.sbyte_14 > right.register.sbyte_14 ? ConstantHelper.GetSByteWithAllBitsSet() : (SByte)0;
-                    register.sbyte_15 = left.register.sbyte_15 > right.register.sbyte_15 ? ConstantHelper.GetSByteWithAllBitsSet() : (SByte)0;
+                    register.sbyte_0 = left.register.sbyte_0 > right.register.sbyte_0 ? ConstantHelper.GetSByteWithAllBitsSet() : (sbyte)0;
+                    register.sbyte_1 = left.register.sbyte_1 > right.register.sbyte_1 ? ConstantHelper.GetSByteWithAllBitsSet() : (sbyte)0;
+                    register.sbyte_2 = left.register.sbyte_2 > right.register.sbyte_2 ? ConstantHelper.GetSByteWithAllBitsSet() : (sbyte)0;
+                    register.sbyte_3 = left.register.sbyte_3 > right.register.sbyte_3 ? ConstantHelper.GetSByteWithAllBitsSet() : (sbyte)0;
+                    register.sbyte_4 = left.register.sbyte_4 > right.register.sbyte_4 ? ConstantHelper.GetSByteWithAllBitsSet() : (sbyte)0;
+                    register.sbyte_5 = left.register.sbyte_5 > right.register.sbyte_5 ? ConstantHelper.GetSByteWithAllBitsSet() : (sbyte)0;
+                    register.sbyte_6 = left.register.sbyte_6 > right.register.sbyte_6 ? ConstantHelper.GetSByteWithAllBitsSet() : (sbyte)0;
+                    register.sbyte_7 = left.register.sbyte_7 > right.register.sbyte_7 ? ConstantHelper.GetSByteWithAllBitsSet() : (sbyte)0;
+                    register.sbyte_8 = left.register.sbyte_8 > right.register.sbyte_8 ? ConstantHelper.GetSByteWithAllBitsSet() : (sbyte)0;
+                    register.sbyte_9 = left.register.sbyte_9 > right.register.sbyte_9 ? ConstantHelper.GetSByteWithAllBitsSet() : (sbyte)0;
+                    register.sbyte_10 = left.register.sbyte_10 > right.register.sbyte_10 ? ConstantHelper.GetSByteWithAllBitsSet() : (sbyte)0;
+                    register.sbyte_11 = left.register.sbyte_11 > right.register.sbyte_11 ? ConstantHelper.GetSByteWithAllBitsSet() : (sbyte)0;
+                    register.sbyte_12 = left.register.sbyte_12 > right.register.sbyte_12 ? ConstantHelper.GetSByteWithAllBitsSet() : (sbyte)0;
+                    register.sbyte_13 = left.register.sbyte_13 > right.register.sbyte_13 ? ConstantHelper.GetSByteWithAllBitsSet() : (sbyte)0;
+                    register.sbyte_14 = left.register.sbyte_14 > right.register.sbyte_14 ? ConstantHelper.GetSByteWithAllBitsSet() : (sbyte)0;
+                    register.sbyte_15 = left.register.sbyte_15 > right.register.sbyte_15 ? ConstantHelper.GetSByteWithAllBitsSet() : (sbyte)0;
                     return new Vector<T>(ref register);
                 }
-                else if (typeof(T) == typeof(UInt16))
+                else if (typeof(T) == typeof(ushort))
                 {
-                    register.uint16_0 = left.register.uint16_0 > right.register.uint16_0 ? ConstantHelper.GetUInt16WithAllBitsSet() : (UInt16)0;
-                    register.uint16_1 = left.register.uint16_1 > right.register.uint16_1 ? ConstantHelper.GetUInt16WithAllBitsSet() : (UInt16)0;
-                    register.uint16_2 = left.register.uint16_2 > right.register.uint16_2 ? ConstantHelper.GetUInt16WithAllBitsSet() : (UInt16)0;
-                    register.uint16_3 = left.register.uint16_3 > right.register.uint16_3 ? ConstantHelper.GetUInt16WithAllBitsSet() : (UInt16)0;
-                    register.uint16_4 = left.register.uint16_4 > right.register.uint16_4 ? ConstantHelper.GetUInt16WithAllBitsSet() : (UInt16)0;
-                    register.uint16_5 = left.register.uint16_5 > right.register.uint16_5 ? ConstantHelper.GetUInt16WithAllBitsSet() : (UInt16)0;
-                    register.uint16_6 = left.register.uint16_6 > right.register.uint16_6 ? ConstantHelper.GetUInt16WithAllBitsSet() : (UInt16)0;
-                    register.uint16_7 = left.register.uint16_7 > right.register.uint16_7 ? ConstantHelper.GetUInt16WithAllBitsSet() : (UInt16)0;
+                    register.uint16_0 = left.register.uint16_0 > right.register.uint16_0 ? ConstantHelper.GetUInt16WithAllBitsSet() : (ushort)0;
+                    register.uint16_1 = left.register.uint16_1 > right.register.uint16_1 ? ConstantHelper.GetUInt16WithAllBitsSet() : (ushort)0;
+                    register.uint16_2 = left.register.uint16_2 > right.register.uint16_2 ? ConstantHelper.GetUInt16WithAllBitsSet() : (ushort)0;
+                    register.uint16_3 = left.register.uint16_3 > right.register.uint16_3 ? ConstantHelper.GetUInt16WithAllBitsSet() : (ushort)0;
+                    register.uint16_4 = left.register.uint16_4 > right.register.uint16_4 ? ConstantHelper.GetUInt16WithAllBitsSet() : (ushort)0;
+                    register.uint16_5 = left.register.uint16_5 > right.register.uint16_5 ? ConstantHelper.GetUInt16WithAllBitsSet() : (ushort)0;
+                    register.uint16_6 = left.register.uint16_6 > right.register.uint16_6 ? ConstantHelper.GetUInt16WithAllBitsSet() : (ushort)0;
+                    register.uint16_7 = left.register.uint16_7 > right.register.uint16_7 ? ConstantHelper.GetUInt16WithAllBitsSet() : (ushort)0;
                     return new Vector<T>(ref register);
                 }
-                else if (typeof(T) == typeof(Int16))
+                else if (typeof(T) == typeof(short))
                 {
-                    register.int16_0 = left.register.int16_0 > right.register.int16_0 ? ConstantHelper.GetInt16WithAllBitsSet() : (Int16)0;
-                    register.int16_1 = left.register.int16_1 > right.register.int16_1 ? ConstantHelper.GetInt16WithAllBitsSet() : (Int16)0;
-                    register.int16_2 = left.register.int16_2 > right.register.int16_2 ? ConstantHelper.GetInt16WithAllBitsSet() : (Int16)0;
-                    register.int16_3 = left.register.int16_3 > right.register.int16_3 ? ConstantHelper.GetInt16WithAllBitsSet() : (Int16)0;
-                    register.int16_4 = left.register.int16_4 > right.register.int16_4 ? ConstantHelper.GetInt16WithAllBitsSet() : (Int16)0;
-                    register.int16_5 = left.register.int16_5 > right.register.int16_5 ? ConstantHelper.GetInt16WithAllBitsSet() : (Int16)0;
-                    register.int16_6 = left.register.int16_6 > right.register.int16_6 ? ConstantHelper.GetInt16WithAllBitsSet() : (Int16)0;
-                    register.int16_7 = left.register.int16_7 > right.register.int16_7 ? ConstantHelper.GetInt16WithAllBitsSet() : (Int16)0;
+                    register.int16_0 = left.register.int16_0 > right.register.int16_0 ? ConstantHelper.GetInt16WithAllBitsSet() : (short)0;
+                    register.int16_1 = left.register.int16_1 > right.register.int16_1 ? ConstantHelper.GetInt16WithAllBitsSet() : (short)0;
+                    register.int16_2 = left.register.int16_2 > right.register.int16_2 ? ConstantHelper.GetInt16WithAllBitsSet() : (short)0;
+                    register.int16_3 = left.register.int16_3 > right.register.int16_3 ? ConstantHelper.GetInt16WithAllBitsSet() : (short)0;
+                    register.int16_4 = left.register.int16_4 > right.register.int16_4 ? ConstantHelper.GetInt16WithAllBitsSet() : (short)0;
+                    register.int16_5 = left.register.int16_5 > right.register.int16_5 ? ConstantHelper.GetInt16WithAllBitsSet() : (short)0;
+                    register.int16_6 = left.register.int16_6 > right.register.int16_6 ? ConstantHelper.GetInt16WithAllBitsSet() : (short)0;
+                    register.int16_7 = left.register.int16_7 > right.register.int16_7 ? ConstantHelper.GetInt16WithAllBitsSet() : (short)0;
                     return new Vector<T>(ref register);
                 }
-                else if (typeof(T) == typeof(UInt32))
+                else if (typeof(T) == typeof(uint))
                 {
-                    register.uint32_0 = left.register.uint32_0 > right.register.uint32_0 ? ConstantHelper.GetUInt32WithAllBitsSet() : (UInt32)0;
-                    register.uint32_1 = left.register.uint32_1 > right.register.uint32_1 ? ConstantHelper.GetUInt32WithAllBitsSet() : (UInt32)0;
-                    register.uint32_2 = left.register.uint32_2 > right.register.uint32_2 ? ConstantHelper.GetUInt32WithAllBitsSet() : (UInt32)0;
-                    register.uint32_3 = left.register.uint32_3 > right.register.uint32_3 ? ConstantHelper.GetUInt32WithAllBitsSet() : (UInt32)0;
+                    register.uint32_0 = left.register.uint32_0 > right.register.uint32_0 ? ConstantHelper.GetUInt32WithAllBitsSet() : (uint)0;
+                    register.uint32_1 = left.register.uint32_1 > right.register.uint32_1 ? ConstantHelper.GetUInt32WithAllBitsSet() : (uint)0;
+                    register.uint32_2 = left.register.uint32_2 > right.register.uint32_2 ? ConstantHelper.GetUInt32WithAllBitsSet() : (uint)0;
+                    register.uint32_3 = left.register.uint32_3 > right.register.uint32_3 ? ConstantHelper.GetUInt32WithAllBitsSet() : (uint)0;
                     return new Vector<T>(ref register);
                 }
-                else if (typeof(T) == typeof(Int32))
+                else if (typeof(T) == typeof(int))
                 {
-                    register.int32_0 = left.register.int32_0 > right.register.int32_0 ? ConstantHelper.GetInt32WithAllBitsSet() : (Int32)0;
-                    register.int32_1 = left.register.int32_1 > right.register.int32_1 ? ConstantHelper.GetInt32WithAllBitsSet() : (Int32)0;
-                    register.int32_2 = left.register.int32_2 > right.register.int32_2 ? ConstantHelper.GetInt32WithAllBitsSet() : (Int32)0;
-                    register.int32_3 = left.register.int32_3 > right.register.int32_3 ? ConstantHelper.GetInt32WithAllBitsSet() : (Int32)0;
+                    register.int32_0 = left.register.int32_0 > right.register.int32_0 ? ConstantHelper.GetInt32WithAllBitsSet() : (int)0;
+                    register.int32_1 = left.register.int32_1 > right.register.int32_1 ? ConstantHelper.GetInt32WithAllBitsSet() : (int)0;
+                    register.int32_2 = left.register.int32_2 > right.register.int32_2 ? ConstantHelper.GetInt32WithAllBitsSet() : (int)0;
+                    register.int32_3 = left.register.int32_3 > right.register.int32_3 ? ConstantHelper.GetInt32WithAllBitsSet() : (int)0;
                     return new Vector<T>(ref register);
                 }
-                else if (typeof(T) == typeof(UInt64))
+                else if (typeof(T) == typeof(ulong))
                 {
-                    register.uint64_0 = left.register.uint64_0 > right.register.uint64_0 ? ConstantHelper.GetUInt64WithAllBitsSet() : (UInt64)0;
-                    register.uint64_1 = left.register.uint64_1 > right.register.uint64_1 ? ConstantHelper.GetUInt64WithAllBitsSet() : (UInt64)0;
+                    register.uint64_0 = left.register.uint64_0 > right.register.uint64_0 ? ConstantHelper.GetUInt64WithAllBitsSet() : (ulong)0;
+                    register.uint64_1 = left.register.uint64_1 > right.register.uint64_1 ? ConstantHelper.GetUInt64WithAllBitsSet() : (ulong)0;
                     return new Vector<T>(ref register);
                 }
-                else if (typeof(T) == typeof(Int64))
+                else if (typeof(T) == typeof(long))
                 {
-                    register.int64_0 = left.register.int64_0 > right.register.int64_0 ? ConstantHelper.GetInt64WithAllBitsSet() : (Int64)0;
-                    register.int64_1 = left.register.int64_1 > right.register.int64_1 ? ConstantHelper.GetInt64WithAllBitsSet() : (Int64)0;
+                    register.int64_0 = left.register.int64_0 > right.register.int64_0 ? ConstantHelper.GetInt64WithAllBitsSet() : (long)0;
+                    register.int64_1 = left.register.int64_1 > right.register.int64_1 ? ConstantHelper.GetInt64WithAllBitsSet() : (long)0;
                     return new Vector<T>(ref register);
                 }
-                else if (typeof(T) == typeof(Single))
+                else if (typeof(T) == typeof(float))
                 {
-                    register.single_0 = left.register.single_0 > right.register.single_0 ? ConstantHelper.GetSingleWithAllBitsSet() : (Single)0;
-                    register.single_1 = left.register.single_1 > right.register.single_1 ? ConstantHelper.GetSingleWithAllBitsSet() : (Single)0;
-                    register.single_2 = left.register.single_2 > right.register.single_2 ? ConstantHelper.GetSingleWithAllBitsSet() : (Single)0;
-                    register.single_3 = left.register.single_3 > right.register.single_3 ? ConstantHelper.GetSingleWithAllBitsSet() : (Single)0;
+                    register.single_0 = left.register.single_0 > right.register.single_0 ? ConstantHelper.GetSingleWithAllBitsSet() : (float)0;
+                    register.single_1 = left.register.single_1 > right.register.single_1 ? ConstantHelper.GetSingleWithAllBitsSet() : (float)0;
+                    register.single_2 = left.register.single_2 > right.register.single_2 ? ConstantHelper.GetSingleWithAllBitsSet() : (float)0;
+                    register.single_3 = left.register.single_3 > right.register.single_3 ? ConstantHelper.GetSingleWithAllBitsSet() : (float)0;
                     return new Vector<T>(ref register);
                 }
-                else if (typeof(T) == typeof(Double))
+                else if (typeof(T) == typeof(double))
                 {
-                    register.double_0 = left.register.double_0 > right.register.double_0 ? ConstantHelper.GetDoubleWithAllBitsSet() : (Double)0;
-                    register.double_1 = left.register.double_1 > right.register.double_1 ? ConstantHelper.GetDoubleWithAllBitsSet() : (Double)0;
+                    register.double_0 = left.register.double_0 > right.register.double_0 ? ConstantHelper.GetDoubleWithAllBitsSet() : (double)0;
+                    register.double_1 = left.register.double_1 > right.register.double_1 ? ConstantHelper.GetDoubleWithAllBitsSet() : (double)0;
                     return new Vector<T>(ref register);
                 }
                 else
@@ -3604,75 +3604,75 @@ namespace System.Numerics
         [Intrinsic]
         internal static unsafe Vector<T> Abs(Vector<T> value)
         {
-            if (typeof(T) == typeof(Byte))
+            if (typeof(T) == typeof(byte))
             {
                 return value;
             }
-            else if (typeof(T) == typeof(UInt16))
+            else if (typeof(T) == typeof(ushort))
             {
                 return value;
             }
-            else if (typeof(T) == typeof(UInt32))
+            else if (typeof(T) == typeof(uint))
             {
                 return value;
             }
-            else if (typeof(T) == typeof(UInt64))
+            else if (typeof(T) == typeof(ulong))
             {
                 return value;
             }
             if (Vector.IsHardwareAccelerated)
             {
-                if (typeof(T) == typeof(SByte))
+                if (typeof(T) == typeof(sbyte))
                 {
-                    SByte* dataPtr = stackalloc SByte[Count];
+                    sbyte* dataPtr = stackalloc sbyte[Count];
                     for (int g = 0; g < Count; g++)
                     {
-                        dataPtr[g] = (SByte)(object)(Math.Abs((SByte)(object)value[g]));
+                        dataPtr[g] = (sbyte)(object)(Math.Abs((sbyte)(object)value[g]));
                     }
                     return new Vector<T>(dataPtr);
                 }
-                else if (typeof(T) == typeof(Int16))
+                else if (typeof(T) == typeof(short))
                 {
-                    Int16* dataPtr = stackalloc Int16[Count];
+                    short* dataPtr = stackalloc short[Count];
                     for (int g = 0; g < Count; g++)
                     {
-                        dataPtr[g] = (Int16)(object)(Math.Abs((Int16)(object)value[g]));
+                        dataPtr[g] = (short)(object)(Math.Abs((short)(object)value[g]));
                     }
                     return new Vector<T>(dataPtr);
                 }
-                else if (typeof(T) == typeof(Int32))
+                else if (typeof(T) == typeof(int))
                 {
-                    Int32* dataPtr = stackalloc Int32[Count];
+                    int* dataPtr = stackalloc int[Count];
                     for (int g = 0; g < Count; g++)
                     {
-                        dataPtr[g] = (Int32)(object)(Math.Abs((Int32)(object)value[g]));
+                        dataPtr[g] = (int)(object)(Math.Abs((int)(object)value[g]));
                     }
                     return new Vector<T>(dataPtr);
                 }
-                else if (typeof(T) == typeof(Int64))
+                else if (typeof(T) == typeof(long))
                 {
-                    Int64* dataPtr = stackalloc Int64[Count];
+                    long* dataPtr = stackalloc long[Count];
                     for (int g = 0; g < Count; g++)
                     {
-                        dataPtr[g] = (Int64)(object)(Math.Abs((Int64)(object)value[g]));
+                        dataPtr[g] = (long)(object)(Math.Abs((long)(object)value[g]));
                     }
                     return new Vector<T>(dataPtr);
                 }
-                else if (typeof(T) == typeof(Single))
+                else if (typeof(T) == typeof(float))
                 {
-                    Single* dataPtr = stackalloc Single[Count];
+                    float* dataPtr = stackalloc float[Count];
                     for (int g = 0; g < Count; g++)
                     {
-                        dataPtr[g] = (Single)(object)(Math.Abs((Single)(object)value[g]));
+                        dataPtr[g] = (float)(object)(Math.Abs((float)(object)value[g]));
                     }
                     return new Vector<T>(dataPtr);
                 }
-                else if (typeof(T) == typeof(Double))
+                else if (typeof(T) == typeof(double))
                 {
-                    Double* dataPtr = stackalloc Double[Count];
+                    double* dataPtr = stackalloc double[Count];
                     for (int g = 0; g < Count; g++)
                     {
-                        dataPtr[g] = (Double)(object)(Math.Abs((Double)(object)value[g]));
+                        dataPtr[g] = (double)(object)(Math.Abs((double)(object)value[g]));
                     }
                     return new Vector<T>(dataPtr);
                 }
@@ -3683,64 +3683,64 @@ namespace System.Numerics
             }
             else
             {
-                if (typeof(T) == typeof(SByte))
+                if (typeof(T) == typeof(sbyte))
                 {
-                    value.register.sbyte_0 = (SByte)(Math.Abs(value.register.sbyte_0));
-                    value.register.sbyte_1 = (SByte)(Math.Abs(value.register.sbyte_1));
-                    value.register.sbyte_2 = (SByte)(Math.Abs(value.register.sbyte_2));
-                    value.register.sbyte_3 = (SByte)(Math.Abs(value.register.sbyte_3));
-                    value.register.sbyte_4 = (SByte)(Math.Abs(value.register.sbyte_4));
-                    value.register.sbyte_5 = (SByte)(Math.Abs(value.register.sbyte_5));
-                    value.register.sbyte_6 = (SByte)(Math.Abs(value.register.sbyte_6));
-                    value.register.sbyte_7 = (SByte)(Math.Abs(value.register.sbyte_7));
-                    value.register.sbyte_8 = (SByte)(Math.Abs(value.register.sbyte_8));
-                    value.register.sbyte_9 = (SByte)(Math.Abs(value.register.sbyte_9));
-                    value.register.sbyte_10 = (SByte)(Math.Abs(value.register.sbyte_10));
-                    value.register.sbyte_11 = (SByte)(Math.Abs(value.register.sbyte_11));
-                    value.register.sbyte_12 = (SByte)(Math.Abs(value.register.sbyte_12));
-                    value.register.sbyte_13 = (SByte)(Math.Abs(value.register.sbyte_13));
-                    value.register.sbyte_14 = (SByte)(Math.Abs(value.register.sbyte_14));
-                    value.register.sbyte_15 = (SByte)(Math.Abs(value.register.sbyte_15));
+                    value.register.sbyte_0 = (sbyte)(Math.Abs(value.register.sbyte_0));
+                    value.register.sbyte_1 = (sbyte)(Math.Abs(value.register.sbyte_1));
+                    value.register.sbyte_2 = (sbyte)(Math.Abs(value.register.sbyte_2));
+                    value.register.sbyte_3 = (sbyte)(Math.Abs(value.register.sbyte_3));
+                    value.register.sbyte_4 = (sbyte)(Math.Abs(value.register.sbyte_4));
+                    value.register.sbyte_5 = (sbyte)(Math.Abs(value.register.sbyte_5));
+                    value.register.sbyte_6 = (sbyte)(Math.Abs(value.register.sbyte_6));
+                    value.register.sbyte_7 = (sbyte)(Math.Abs(value.register.sbyte_7));
+                    value.register.sbyte_8 = (sbyte)(Math.Abs(value.register.sbyte_8));
+                    value.register.sbyte_9 = (sbyte)(Math.Abs(value.register.sbyte_9));
+                    value.register.sbyte_10 = (sbyte)(Math.Abs(value.register.sbyte_10));
+                    value.register.sbyte_11 = (sbyte)(Math.Abs(value.register.sbyte_11));
+                    value.register.sbyte_12 = (sbyte)(Math.Abs(value.register.sbyte_12));
+                    value.register.sbyte_13 = (sbyte)(Math.Abs(value.register.sbyte_13));
+                    value.register.sbyte_14 = (sbyte)(Math.Abs(value.register.sbyte_14));
+                    value.register.sbyte_15 = (sbyte)(Math.Abs(value.register.sbyte_15));
                     return value;
                 }
-                else if (typeof(T) == typeof(Int16))
+                else if (typeof(T) == typeof(short))
                 {
-                    value.register.int16_0 = (Int16)(Math.Abs(value.register.int16_0));
-                    value.register.int16_1 = (Int16)(Math.Abs(value.register.int16_1));
-                    value.register.int16_2 = (Int16)(Math.Abs(value.register.int16_2));
-                    value.register.int16_3 = (Int16)(Math.Abs(value.register.int16_3));
-                    value.register.int16_4 = (Int16)(Math.Abs(value.register.int16_4));
-                    value.register.int16_5 = (Int16)(Math.Abs(value.register.int16_5));
-                    value.register.int16_6 = (Int16)(Math.Abs(value.register.int16_6));
-                    value.register.int16_7 = (Int16)(Math.Abs(value.register.int16_7));
+                    value.register.int16_0 = (short)(Math.Abs(value.register.int16_0));
+                    value.register.int16_1 = (short)(Math.Abs(value.register.int16_1));
+                    value.register.int16_2 = (short)(Math.Abs(value.register.int16_2));
+                    value.register.int16_3 = (short)(Math.Abs(value.register.int16_3));
+                    value.register.int16_4 = (short)(Math.Abs(value.register.int16_4));
+                    value.register.int16_5 = (short)(Math.Abs(value.register.int16_5));
+                    value.register.int16_6 = (short)(Math.Abs(value.register.int16_6));
+                    value.register.int16_7 = (short)(Math.Abs(value.register.int16_7));
                     return value;
                 }
-                else if (typeof(T) == typeof(Int32))
+                else if (typeof(T) == typeof(int))
                 {
-                    value.register.int32_0 = (Int32)(Math.Abs(value.register.int32_0));
-                    value.register.int32_1 = (Int32)(Math.Abs(value.register.int32_1));
-                    value.register.int32_2 = (Int32)(Math.Abs(value.register.int32_2));
-                    value.register.int32_3 = (Int32)(Math.Abs(value.register.int32_3));
+                    value.register.int32_0 = (int)(Math.Abs(value.register.int32_0));
+                    value.register.int32_1 = (int)(Math.Abs(value.register.int32_1));
+                    value.register.int32_2 = (int)(Math.Abs(value.register.int32_2));
+                    value.register.int32_3 = (int)(Math.Abs(value.register.int32_3));
                     return value;
                 }
-                else if (typeof(T) == typeof(Int64))
+                else if (typeof(T) == typeof(long))
                 {
-                    value.register.int64_0 = (Int64)(Math.Abs(value.register.int64_0));
-                    value.register.int64_1 = (Int64)(Math.Abs(value.register.int64_1));
+                    value.register.int64_0 = (long)(Math.Abs(value.register.int64_0));
+                    value.register.int64_1 = (long)(Math.Abs(value.register.int64_1));
                     return value;
                 }
-                else if (typeof(T) == typeof(Single))
+                else if (typeof(T) == typeof(float))
                 {
-                    value.register.single_0 = (Single)(Math.Abs(value.register.single_0));
-                    value.register.single_1 = (Single)(Math.Abs(value.register.single_1));
-                    value.register.single_2 = (Single)(Math.Abs(value.register.single_2));
-                    value.register.single_3 = (Single)(Math.Abs(value.register.single_3));
+                    value.register.single_0 = (float)(Math.Abs(value.register.single_0));
+                    value.register.single_1 = (float)(Math.Abs(value.register.single_1));
+                    value.register.single_2 = (float)(Math.Abs(value.register.single_2));
+                    value.register.single_3 = (float)(Math.Abs(value.register.single_3));
                     return value;
                 }
-                else if (typeof(T) == typeof(Double))
+                else if (typeof(T) == typeof(double))
                 {
-                    value.register.double_0 = (Double)(Math.Abs(value.register.double_0));
-                    value.register.double_1 = (Double)(Math.Abs(value.register.double_1));
+                    value.register.double_0 = (double)(Math.Abs(value.register.double_0));
+                    value.register.double_1 = (double)(Math.Abs(value.register.double_1));
                     return value;
                 }
                 else
@@ -3755,93 +3755,93 @@ namespace System.Numerics
         {
             if (Vector.IsHardwareAccelerated)
             {
-                if (typeof(T) == typeof(Byte))
+                if (typeof(T) == typeof(byte))
                 {
-                    Byte* dataPtr = stackalloc Byte[Count];
+                    byte* dataPtr = stackalloc byte[Count];
                     for (int g = 0; g < Count; g++)
                     {
-                        dataPtr[g] = ScalarLessThan(left[g], right[g]) ? (Byte)(object)left[g] : (Byte)(object)right[g];
+                        dataPtr[g] = ScalarLessThan(left[g], right[g]) ? (byte)(object)left[g] : (byte)(object)right[g];
                     }
                     return new Vector<T>(dataPtr);
                 }
-                else if (typeof(T) == typeof(SByte))
+                else if (typeof(T) == typeof(sbyte))
                 {
-                    SByte* dataPtr = stackalloc SByte[Count];
+                    sbyte* dataPtr = stackalloc sbyte[Count];
                     for (int g = 0; g < Count; g++)
                     {
-                        dataPtr[g] = ScalarLessThan(left[g], right[g]) ? (SByte)(object)left[g] : (SByte)(object)right[g];
+                        dataPtr[g] = ScalarLessThan(left[g], right[g]) ? (sbyte)(object)left[g] : (sbyte)(object)right[g];
                     }
                     return new Vector<T>(dataPtr);
                 }
-                else if (typeof(T) == typeof(UInt16))
+                else if (typeof(T) == typeof(ushort))
                 {
-                    UInt16* dataPtr = stackalloc UInt16[Count];
+                    ushort* dataPtr = stackalloc ushort[Count];
                     for (int g = 0; g < Count; g++)
                     {
-                        dataPtr[g] = ScalarLessThan(left[g], right[g]) ? (UInt16)(object)left[g] : (UInt16)(object)right[g];
+                        dataPtr[g] = ScalarLessThan(left[g], right[g]) ? (ushort)(object)left[g] : (ushort)(object)right[g];
                     }
                     return new Vector<T>(dataPtr);
                 }
-                else if (typeof(T) == typeof(Int16))
+                else if (typeof(T) == typeof(short))
                 {
-                    Int16* dataPtr = stackalloc Int16[Count];
+                    short* dataPtr = stackalloc short[Count];
                     for (int g = 0; g < Count; g++)
                     {
-                        dataPtr[g] = ScalarLessThan(left[g], right[g]) ? (Int16)(object)left[g] : (Int16)(object)right[g];
+                        dataPtr[g] = ScalarLessThan(left[g], right[g]) ? (short)(object)left[g] : (short)(object)right[g];
                     }
                     return new Vector<T>(dataPtr);
                 }
-                else if (typeof(T) == typeof(UInt32))
+                else if (typeof(T) == typeof(uint))
                 {
-                    UInt32* dataPtr = stackalloc UInt32[Count];
+                    uint* dataPtr = stackalloc uint[Count];
                     for (int g = 0; g < Count; g++)
                     {
-                        dataPtr[g] = ScalarLessThan(left[g], right[g]) ? (UInt32)(object)left[g] : (UInt32)(object)right[g];
+                        dataPtr[g] = ScalarLessThan(left[g], right[g]) ? (uint)(object)left[g] : (uint)(object)right[g];
                     }
                     return new Vector<T>(dataPtr);
                 }
-                else if (typeof(T) == typeof(Int32))
+                else if (typeof(T) == typeof(int))
                 {
-                    Int32* dataPtr = stackalloc Int32[Count];
+                    int* dataPtr = stackalloc int[Count];
                     for (int g = 0; g < Count; g++)
                     {
-                        dataPtr[g] = ScalarLessThan(left[g], right[g]) ? (Int32)(object)left[g] : (Int32)(object)right[g];
+                        dataPtr[g] = ScalarLessThan(left[g], right[g]) ? (int)(object)left[g] : (int)(object)right[g];
                     }
                     return new Vector<T>(dataPtr);
                 }
-                else if (typeof(T) == typeof(UInt64))
+                else if (typeof(T) == typeof(ulong))
                 {
-                    UInt64* dataPtr = stackalloc UInt64[Count];
+                    ulong* dataPtr = stackalloc ulong[Count];
                     for (int g = 0; g < Count; g++)
                     {
-                        dataPtr[g] = ScalarLessThan(left[g], right[g]) ? (UInt64)(object)left[g] : (UInt64)(object)right[g];
+                        dataPtr[g] = ScalarLessThan(left[g], right[g]) ? (ulong)(object)left[g] : (ulong)(object)right[g];
                     }
                     return new Vector<T>(dataPtr);
                 }
-                else if (typeof(T) == typeof(Int64))
+                else if (typeof(T) == typeof(long))
                 {
-                    Int64* dataPtr = stackalloc Int64[Count];
+                    long* dataPtr = stackalloc long[Count];
                     for (int g = 0; g < Count; g++)
                     {
-                        dataPtr[g] = ScalarLessThan(left[g], right[g]) ? (Int64)(object)left[g] : (Int64)(object)right[g];
+                        dataPtr[g] = ScalarLessThan(left[g], right[g]) ? (long)(object)left[g] : (long)(object)right[g];
                     }
                     return new Vector<T>(dataPtr);
                 }
-                else if (typeof(T) == typeof(Single))
+                else if (typeof(T) == typeof(float))
                 {
-                    Single* dataPtr = stackalloc Single[Count];
+                    float* dataPtr = stackalloc float[Count];
                     for (int g = 0; g < Count; g++)
                     {
-                        dataPtr[g] = ScalarLessThan(left[g], right[g]) ? (Single)(object)left[g] : (Single)(object)right[g];
+                        dataPtr[g] = ScalarLessThan(left[g], right[g]) ? (float)(object)left[g] : (float)(object)right[g];
                     }
                     return new Vector<T>(dataPtr);
                 }
-                else if (typeof(T) == typeof(Double))
+                else if (typeof(T) == typeof(double))
                 {
-                    Double* dataPtr = stackalloc Double[Count];
+                    double* dataPtr = stackalloc double[Count];
                     for (int g = 0; g < Count; g++)
                     {
-                        dataPtr[g] = ScalarLessThan(left[g], right[g]) ? (Double)(object)left[g] : (Double)(object)right[g];
+                        dataPtr[g] = ScalarLessThan(left[g], right[g]) ? (double)(object)left[g] : (double)(object)right[g];
                     }
                     return new Vector<T>(dataPtr);
                 }
@@ -3853,7 +3853,7 @@ namespace System.Numerics
             else
             {
                 Vector<T> vec = new Vector<T>();
-                if (typeof(T) == typeof(Byte))
+                if (typeof(T) == typeof(byte))
                 {
                     vec.register.byte_0 = left.register.byte_0 < right.register.byte_0 ? left.register.byte_0 : right.register.byte_0;
                     vec.register.byte_1 = left.register.byte_1 < right.register.byte_1 ? left.register.byte_1 : right.register.byte_1;
@@ -3873,7 +3873,7 @@ namespace System.Numerics
                     vec.register.byte_15 = left.register.byte_15 < right.register.byte_15 ? left.register.byte_15 : right.register.byte_15;
                     return vec;
                 }
-                else if (typeof(T) == typeof(SByte))
+                else if (typeof(T) == typeof(sbyte))
                 {
                     vec.register.sbyte_0 = left.register.sbyte_0 < right.register.sbyte_0 ? left.register.sbyte_0 : right.register.sbyte_0;
                     vec.register.sbyte_1 = left.register.sbyte_1 < right.register.sbyte_1 ? left.register.sbyte_1 : right.register.sbyte_1;
@@ -3893,7 +3893,7 @@ namespace System.Numerics
                     vec.register.sbyte_15 = left.register.sbyte_15 < right.register.sbyte_15 ? left.register.sbyte_15 : right.register.sbyte_15;
                     return vec;
                 }
-                else if (typeof(T) == typeof(UInt16))
+                else if (typeof(T) == typeof(ushort))
                 {
                     vec.register.uint16_0 = left.register.uint16_0 < right.register.uint16_0 ? left.register.uint16_0 : right.register.uint16_0;
                     vec.register.uint16_1 = left.register.uint16_1 < right.register.uint16_1 ? left.register.uint16_1 : right.register.uint16_1;
@@ -3905,7 +3905,7 @@ namespace System.Numerics
                     vec.register.uint16_7 = left.register.uint16_7 < right.register.uint16_7 ? left.register.uint16_7 : right.register.uint16_7;
                     return vec;
                 }
-                else if (typeof(T) == typeof(Int16))
+                else if (typeof(T) == typeof(short))
                 {
                     vec.register.int16_0 = left.register.int16_0 < right.register.int16_0 ? left.register.int16_0 : right.register.int16_0;
                     vec.register.int16_1 = left.register.int16_1 < right.register.int16_1 ? left.register.int16_1 : right.register.int16_1;
@@ -3917,7 +3917,7 @@ namespace System.Numerics
                     vec.register.int16_7 = left.register.int16_7 < right.register.int16_7 ? left.register.int16_7 : right.register.int16_7;
                     return vec;
                 }
-                else if (typeof(T) == typeof(UInt32))
+                else if (typeof(T) == typeof(uint))
                 {
                     vec.register.uint32_0 = left.register.uint32_0 < right.register.uint32_0 ? left.register.uint32_0 : right.register.uint32_0;
                     vec.register.uint32_1 = left.register.uint32_1 < right.register.uint32_1 ? left.register.uint32_1 : right.register.uint32_1;
@@ -3925,7 +3925,7 @@ namespace System.Numerics
                     vec.register.uint32_3 = left.register.uint32_3 < right.register.uint32_3 ? left.register.uint32_3 : right.register.uint32_3;
                     return vec;
                 }
-                else if (typeof(T) == typeof(Int32))
+                else if (typeof(T) == typeof(int))
                 {
                     vec.register.int32_0 = left.register.int32_0 < right.register.int32_0 ? left.register.int32_0 : right.register.int32_0;
                     vec.register.int32_1 = left.register.int32_1 < right.register.int32_1 ? left.register.int32_1 : right.register.int32_1;
@@ -3933,19 +3933,19 @@ namespace System.Numerics
                     vec.register.int32_3 = left.register.int32_3 < right.register.int32_3 ? left.register.int32_3 : right.register.int32_3;
                     return vec;
                 }
-                else if (typeof(T) == typeof(UInt64))
+                else if (typeof(T) == typeof(ulong))
                 {
                     vec.register.uint64_0 = left.register.uint64_0 < right.register.uint64_0 ? left.register.uint64_0 : right.register.uint64_0;
                     vec.register.uint64_1 = left.register.uint64_1 < right.register.uint64_1 ? left.register.uint64_1 : right.register.uint64_1;
                     return vec;
                 }
-                else if (typeof(T) == typeof(Int64))
+                else if (typeof(T) == typeof(long))
                 {
                     vec.register.int64_0 = left.register.int64_0 < right.register.int64_0 ? left.register.int64_0 : right.register.int64_0;
                     vec.register.int64_1 = left.register.int64_1 < right.register.int64_1 ? left.register.int64_1 : right.register.int64_1;
                     return vec;
                 }
-                else if (typeof(T) == typeof(Single))
+                else if (typeof(T) == typeof(float))
                 {
                     vec.register.single_0 = left.register.single_0 < right.register.single_0 ? left.register.single_0 : right.register.single_0;
                     vec.register.single_1 = left.register.single_1 < right.register.single_1 ? left.register.single_1 : right.register.single_1;
@@ -3953,7 +3953,7 @@ namespace System.Numerics
                     vec.register.single_3 = left.register.single_3 < right.register.single_3 ? left.register.single_3 : right.register.single_3;
                     return vec;
                 }
-                else if (typeof(T) == typeof(Double))
+                else if (typeof(T) == typeof(double))
                 {
                     vec.register.double_0 = left.register.double_0 < right.register.double_0 ? left.register.double_0 : right.register.double_0;
                     vec.register.double_1 = left.register.double_1 < right.register.double_1 ? left.register.double_1 : right.register.double_1;
@@ -3971,93 +3971,93 @@ namespace System.Numerics
         {
             if (Vector.IsHardwareAccelerated)
             {
-                if (typeof(T) == typeof(Byte))
+                if (typeof(T) == typeof(byte))
                 {
-                    Byte* dataPtr = stackalloc Byte[Count];
+                    byte* dataPtr = stackalloc byte[Count];
                     for (int g = 0; g < Count; g++)
                     {
-                        dataPtr[g] = ScalarGreaterThan(left[g], right[g]) ? (Byte)(object)left[g] : (Byte)(object)right[g];
+                        dataPtr[g] = ScalarGreaterThan(left[g], right[g]) ? (byte)(object)left[g] : (byte)(object)right[g];
                     }
                     return new Vector<T>(dataPtr);
                 }
-                else if (typeof(T) == typeof(SByte))
+                else if (typeof(T) == typeof(sbyte))
                 {
-                    SByte* dataPtr = stackalloc SByte[Count];
+                    sbyte* dataPtr = stackalloc sbyte[Count];
                     for (int g = 0; g < Count; g++)
                     {
-                        dataPtr[g] = ScalarGreaterThan(left[g], right[g]) ? (SByte)(object)left[g] : (SByte)(object)right[g];
+                        dataPtr[g] = ScalarGreaterThan(left[g], right[g]) ? (sbyte)(object)left[g] : (sbyte)(object)right[g];
                     }
                     return new Vector<T>(dataPtr);
                 }
-                else if (typeof(T) == typeof(UInt16))
+                else if (typeof(T) == typeof(ushort))
                 {
-                    UInt16* dataPtr = stackalloc UInt16[Count];
+                    ushort* dataPtr = stackalloc ushort[Count];
                     for (int g = 0; g < Count; g++)
                     {
-                        dataPtr[g] = ScalarGreaterThan(left[g], right[g]) ? (UInt16)(object)left[g] : (UInt16)(object)right[g];
+                        dataPtr[g] = ScalarGreaterThan(left[g], right[g]) ? (ushort)(object)left[g] : (ushort)(object)right[g];
                     }
                     return new Vector<T>(dataPtr);
                 }
-                else if (typeof(T) == typeof(Int16))
+                else if (typeof(T) == typeof(short))
                 {
-                    Int16* dataPtr = stackalloc Int16[Count];
+                    short* dataPtr = stackalloc short[Count];
                     for (int g = 0; g < Count; g++)
                     {
-                        dataPtr[g] = ScalarGreaterThan(left[g], right[g]) ? (Int16)(object)left[g] : (Int16)(object)right[g];
+                        dataPtr[g] = ScalarGreaterThan(left[g], right[g]) ? (short)(object)left[g] : (short)(object)right[g];
                     }
                     return new Vector<T>(dataPtr);
                 }
-                else if (typeof(T) == typeof(UInt32))
+                else if (typeof(T) == typeof(uint))
                 {
-                    UInt32* dataPtr = stackalloc UInt32[Count];
+                    uint* dataPtr = stackalloc uint[Count];
                     for (int g = 0; g < Count; g++)
                     {
-                        dataPtr[g] = ScalarGreaterThan(left[g], right[g]) ? (UInt32)(object)left[g] : (UInt32)(object)right[g];
+                        dataPtr[g] = ScalarGreaterThan(left[g], right[g]) ? (uint)(object)left[g] : (uint)(object)right[g];
                     }
                     return new Vector<T>(dataPtr);
                 }
-                else if (typeof(T) == typeof(Int32))
+                else if (typeof(T) == typeof(int))
                 {
-                    Int32* dataPtr = stackalloc Int32[Count];
+                    int* dataPtr = stackalloc int[Count];
                     for (int g = 0; g < Count; g++)
                     {
-                        dataPtr[g] = ScalarGreaterThan(left[g], right[g]) ? (Int32)(object)left[g] : (Int32)(object)right[g];
+                        dataPtr[g] = ScalarGreaterThan(left[g], right[g]) ? (int)(object)left[g] : (int)(object)right[g];
                     }
                     return new Vector<T>(dataPtr);
                 }
-                else if (typeof(T) == typeof(UInt64))
+                else if (typeof(T) == typeof(ulong))
                 {
-                    UInt64* dataPtr = stackalloc UInt64[Count];
+                    ulong* dataPtr = stackalloc ulong[Count];
                     for (int g = 0; g < Count; g++)
                     {
-                        dataPtr[g] = ScalarGreaterThan(left[g], right[g]) ? (UInt64)(object)left[g] : (UInt64)(object)right[g];
+                        dataPtr[g] = ScalarGreaterThan(left[g], right[g]) ? (ulong)(object)left[g] : (ulong)(object)right[g];
                     }
                     return new Vector<T>(dataPtr);
                 }
-                else if (typeof(T) == typeof(Int64))
+                else if (typeof(T) == typeof(long))
                 {
-                    Int64* dataPtr = stackalloc Int64[Count];
+                    long* dataPtr = stackalloc long[Count];
                     for (int g = 0; g < Count; g++)
                     {
-                        dataPtr[g] = ScalarGreaterThan(left[g], right[g]) ? (Int64)(object)left[g] : (Int64)(object)right[g];
+                        dataPtr[g] = ScalarGreaterThan(left[g], right[g]) ? (long)(object)left[g] : (long)(object)right[g];
                     }
                     return new Vector<T>(dataPtr);
                 }
-                else if (typeof(T) == typeof(Single))
+                else if (typeof(T) == typeof(float))
                 {
-                    Single* dataPtr = stackalloc Single[Count];
+                    float* dataPtr = stackalloc float[Count];
                     for (int g = 0; g < Count; g++)
                     {
-                        dataPtr[g] = ScalarGreaterThan(left[g], right[g]) ? (Single)(object)left[g] : (Single)(object)right[g];
+                        dataPtr[g] = ScalarGreaterThan(left[g], right[g]) ? (float)(object)left[g] : (float)(object)right[g];
                     }
                     return new Vector<T>(dataPtr);
                 }
-                else if (typeof(T) == typeof(Double))
+                else if (typeof(T) == typeof(double))
                 {
-                    Double* dataPtr = stackalloc Double[Count];
+                    double* dataPtr = stackalloc double[Count];
                     for (int g = 0; g < Count; g++)
                     {
-                        dataPtr[g] = ScalarGreaterThan(left[g], right[g]) ? (Double)(object)left[g] : (Double)(object)right[g];
+                        dataPtr[g] = ScalarGreaterThan(left[g], right[g]) ? (double)(object)left[g] : (double)(object)right[g];
                     }
                     return new Vector<T>(dataPtr);
                 }
@@ -4069,7 +4069,7 @@ namespace System.Numerics
             else
             {
                 Vector<T> vec = new Vector<T>();
-                if (typeof(T) == typeof(Byte))
+                if (typeof(T) == typeof(byte))
                 {
                     vec.register.byte_0 = left.register.byte_0 > right.register.byte_0 ? left.register.byte_0 : right.register.byte_0;
                     vec.register.byte_1 = left.register.byte_1 > right.register.byte_1 ? left.register.byte_1 : right.register.byte_1;
@@ -4089,7 +4089,7 @@ namespace System.Numerics
                     vec.register.byte_15 = left.register.byte_15 > right.register.byte_15 ? left.register.byte_15 : right.register.byte_15;
                     return vec;
                 }
-                else if (typeof(T) == typeof(SByte))
+                else if (typeof(T) == typeof(sbyte))
                 {
                     vec.register.sbyte_0 = left.register.sbyte_0 > right.register.sbyte_0 ? left.register.sbyte_0 : right.register.sbyte_0;
                     vec.register.sbyte_1 = left.register.sbyte_1 > right.register.sbyte_1 ? left.register.sbyte_1 : right.register.sbyte_1;
@@ -4109,7 +4109,7 @@ namespace System.Numerics
                     vec.register.sbyte_15 = left.register.sbyte_15 > right.register.sbyte_15 ? left.register.sbyte_15 : right.register.sbyte_15;
                     return vec;
                 }
-                else if (typeof(T) == typeof(UInt16))
+                else if (typeof(T) == typeof(ushort))
                 {
                     vec.register.uint16_0 = left.register.uint16_0 > right.register.uint16_0 ? left.register.uint16_0 : right.register.uint16_0;
                     vec.register.uint16_1 = left.register.uint16_1 > right.register.uint16_1 ? left.register.uint16_1 : right.register.uint16_1;
@@ -4121,7 +4121,7 @@ namespace System.Numerics
                     vec.register.uint16_7 = left.register.uint16_7 > right.register.uint16_7 ? left.register.uint16_7 : right.register.uint16_7;
                     return vec;
                 }
-                else if (typeof(T) == typeof(Int16))
+                else if (typeof(T) == typeof(short))
                 {
                     vec.register.int16_0 = left.register.int16_0 > right.register.int16_0 ? left.register.int16_0 : right.register.int16_0;
                     vec.register.int16_1 = left.register.int16_1 > right.register.int16_1 ? left.register.int16_1 : right.register.int16_1;
@@ -4133,7 +4133,7 @@ namespace System.Numerics
                     vec.register.int16_7 = left.register.int16_7 > right.register.int16_7 ? left.register.int16_7 : right.register.int16_7;
                     return vec;
                 }
-                else if (typeof(T) == typeof(UInt32))
+                else if (typeof(T) == typeof(uint))
                 {
                     vec.register.uint32_0 = left.register.uint32_0 > right.register.uint32_0 ? left.register.uint32_0 : right.register.uint32_0;
                     vec.register.uint32_1 = left.register.uint32_1 > right.register.uint32_1 ? left.register.uint32_1 : right.register.uint32_1;
@@ -4141,7 +4141,7 @@ namespace System.Numerics
                     vec.register.uint32_3 = left.register.uint32_3 > right.register.uint32_3 ? left.register.uint32_3 : right.register.uint32_3;
                     return vec;
                 }
-                else if (typeof(T) == typeof(Int32))
+                else if (typeof(T) == typeof(int))
                 {
                     vec.register.int32_0 = left.register.int32_0 > right.register.int32_0 ? left.register.int32_0 : right.register.int32_0;
                     vec.register.int32_1 = left.register.int32_1 > right.register.int32_1 ? left.register.int32_1 : right.register.int32_1;
@@ -4149,19 +4149,19 @@ namespace System.Numerics
                     vec.register.int32_3 = left.register.int32_3 > right.register.int32_3 ? left.register.int32_3 : right.register.int32_3;
                     return vec;
                 }
-                else if (typeof(T) == typeof(UInt64))
+                else if (typeof(T) == typeof(ulong))
                 {
                     vec.register.uint64_0 = left.register.uint64_0 > right.register.uint64_0 ? left.register.uint64_0 : right.register.uint64_0;
                     vec.register.uint64_1 = left.register.uint64_1 > right.register.uint64_1 ? left.register.uint64_1 : right.register.uint64_1;
                     return vec;
                 }
-                else if (typeof(T) == typeof(Int64))
+                else if (typeof(T) == typeof(long))
                 {
                     vec.register.int64_0 = left.register.int64_0 > right.register.int64_0 ? left.register.int64_0 : right.register.int64_0;
                     vec.register.int64_1 = left.register.int64_1 > right.register.int64_1 ? left.register.int64_1 : right.register.int64_1;
                     return vec;
                 }
-                else if (typeof(T) == typeof(Single))
+                else if (typeof(T) == typeof(float))
                 {
                     vec.register.single_0 = left.register.single_0 > right.register.single_0 ? left.register.single_0 : right.register.single_0;
                     vec.register.single_1 = left.register.single_1 > right.register.single_1 ? left.register.single_1 : right.register.single_1;
@@ -4169,7 +4169,7 @@ namespace System.Numerics
                     vec.register.single_3 = left.register.single_3 > right.register.single_3 ? left.register.single_3 : right.register.single_3;
                     return vec;
                 }
-                else if (typeof(T) == typeof(Double))
+                else if (typeof(T) == typeof(double))
                 {
                     vec.register.double_0 = left.register.double_0 > right.register.double_0 ? left.register.double_0 : right.register.double_0;
                     vec.register.double_1 = left.register.double_1 > right.register.double_1 ? left.register.double_1 : right.register.double_1;
@@ -4196,120 +4196,120 @@ namespace System.Numerics
             }
             else
             {
-                if (typeof(T) == typeof(Byte))
+                if (typeof(T) == typeof(byte))
                 {
-                    Byte product = 0;
-                    product += (Byte)(left.register.byte_0 * right.register.byte_0);
-                    product += (Byte)(left.register.byte_1 * right.register.byte_1);
-                    product += (Byte)(left.register.byte_2 * right.register.byte_2);
-                    product += (Byte)(left.register.byte_3 * right.register.byte_3);
-                    product += (Byte)(left.register.byte_4 * right.register.byte_4);
-                    product += (Byte)(left.register.byte_5 * right.register.byte_5);
-                    product += (Byte)(left.register.byte_6 * right.register.byte_6);
-                    product += (Byte)(left.register.byte_7 * right.register.byte_7);
-                    product += (Byte)(left.register.byte_8 * right.register.byte_8);
-                    product += (Byte)(left.register.byte_9 * right.register.byte_9);
-                    product += (Byte)(left.register.byte_10 * right.register.byte_10);
-                    product += (Byte)(left.register.byte_11 * right.register.byte_11);
-                    product += (Byte)(left.register.byte_12 * right.register.byte_12);
-                    product += (Byte)(left.register.byte_13 * right.register.byte_13);
-                    product += (Byte)(left.register.byte_14 * right.register.byte_14);
-                    product += (Byte)(left.register.byte_15 * right.register.byte_15);
+                    byte product = 0;
+                    product += (byte)(left.register.byte_0 * right.register.byte_0);
+                    product += (byte)(left.register.byte_1 * right.register.byte_1);
+                    product += (byte)(left.register.byte_2 * right.register.byte_2);
+                    product += (byte)(left.register.byte_3 * right.register.byte_3);
+                    product += (byte)(left.register.byte_4 * right.register.byte_4);
+                    product += (byte)(left.register.byte_5 * right.register.byte_5);
+                    product += (byte)(left.register.byte_6 * right.register.byte_6);
+                    product += (byte)(left.register.byte_7 * right.register.byte_7);
+                    product += (byte)(left.register.byte_8 * right.register.byte_8);
+                    product += (byte)(left.register.byte_9 * right.register.byte_9);
+                    product += (byte)(left.register.byte_10 * right.register.byte_10);
+                    product += (byte)(left.register.byte_11 * right.register.byte_11);
+                    product += (byte)(left.register.byte_12 * right.register.byte_12);
+                    product += (byte)(left.register.byte_13 * right.register.byte_13);
+                    product += (byte)(left.register.byte_14 * right.register.byte_14);
+                    product += (byte)(left.register.byte_15 * right.register.byte_15);
                     return (T)(object)product;
                 }
-                else if (typeof(T) == typeof(SByte))
+                else if (typeof(T) == typeof(sbyte))
                 {
-                    SByte product = 0;
-                    product += (SByte)(left.register.sbyte_0 * right.register.sbyte_0);
-                    product += (SByte)(left.register.sbyte_1 * right.register.sbyte_1);
-                    product += (SByte)(left.register.sbyte_2 * right.register.sbyte_2);
-                    product += (SByte)(left.register.sbyte_3 * right.register.sbyte_3);
-                    product += (SByte)(left.register.sbyte_4 * right.register.sbyte_4);
-                    product += (SByte)(left.register.sbyte_5 * right.register.sbyte_5);
-                    product += (SByte)(left.register.sbyte_6 * right.register.sbyte_6);
-                    product += (SByte)(left.register.sbyte_7 * right.register.sbyte_7);
-                    product += (SByte)(left.register.sbyte_8 * right.register.sbyte_8);
-                    product += (SByte)(left.register.sbyte_9 * right.register.sbyte_9);
-                    product += (SByte)(left.register.sbyte_10 * right.register.sbyte_10);
-                    product += (SByte)(left.register.sbyte_11 * right.register.sbyte_11);
-                    product += (SByte)(left.register.sbyte_12 * right.register.sbyte_12);
-                    product += (SByte)(left.register.sbyte_13 * right.register.sbyte_13);
-                    product += (SByte)(left.register.sbyte_14 * right.register.sbyte_14);
-                    product += (SByte)(left.register.sbyte_15 * right.register.sbyte_15);
+                    sbyte product = 0;
+                    product += (sbyte)(left.register.sbyte_0 * right.register.sbyte_0);
+                    product += (sbyte)(left.register.sbyte_1 * right.register.sbyte_1);
+                    product += (sbyte)(left.register.sbyte_2 * right.register.sbyte_2);
+                    product += (sbyte)(left.register.sbyte_3 * right.register.sbyte_3);
+                    product += (sbyte)(left.register.sbyte_4 * right.register.sbyte_4);
+                    product += (sbyte)(left.register.sbyte_5 * right.register.sbyte_5);
+                    product += (sbyte)(left.register.sbyte_6 * right.register.sbyte_6);
+                    product += (sbyte)(left.register.sbyte_7 * right.register.sbyte_7);
+                    product += (sbyte)(left.register.sbyte_8 * right.register.sbyte_8);
+                    product += (sbyte)(left.register.sbyte_9 * right.register.sbyte_9);
+                    product += (sbyte)(left.register.sbyte_10 * right.register.sbyte_10);
+                    product += (sbyte)(left.register.sbyte_11 * right.register.sbyte_11);
+                    product += (sbyte)(left.register.sbyte_12 * right.register.sbyte_12);
+                    product += (sbyte)(left.register.sbyte_13 * right.register.sbyte_13);
+                    product += (sbyte)(left.register.sbyte_14 * right.register.sbyte_14);
+                    product += (sbyte)(left.register.sbyte_15 * right.register.sbyte_15);
                     return (T)(object)product;
                 }
-                else if (typeof(T) == typeof(UInt16))
+                else if (typeof(T) == typeof(ushort))
                 {
-                    UInt16 product = 0;
-                    product += (UInt16)(left.register.uint16_0 * right.register.uint16_0);
-                    product += (UInt16)(left.register.uint16_1 * right.register.uint16_1);
-                    product += (UInt16)(left.register.uint16_2 * right.register.uint16_2);
-                    product += (UInt16)(left.register.uint16_3 * right.register.uint16_3);
-                    product += (UInt16)(left.register.uint16_4 * right.register.uint16_4);
-                    product += (UInt16)(left.register.uint16_5 * right.register.uint16_5);
-                    product += (UInt16)(left.register.uint16_6 * right.register.uint16_6);
-                    product += (UInt16)(left.register.uint16_7 * right.register.uint16_7);
+                    ushort product = 0;
+                    product += (ushort)(left.register.uint16_0 * right.register.uint16_0);
+                    product += (ushort)(left.register.uint16_1 * right.register.uint16_1);
+                    product += (ushort)(left.register.uint16_2 * right.register.uint16_2);
+                    product += (ushort)(left.register.uint16_3 * right.register.uint16_3);
+                    product += (ushort)(left.register.uint16_4 * right.register.uint16_4);
+                    product += (ushort)(left.register.uint16_5 * right.register.uint16_5);
+                    product += (ushort)(left.register.uint16_6 * right.register.uint16_6);
+                    product += (ushort)(left.register.uint16_7 * right.register.uint16_7);
                     return (T)(object)product;
                 }
-                else if (typeof(T) == typeof(Int16))
+                else if (typeof(T) == typeof(short))
                 {
-                    Int16 product = 0;
-                    product += (Int16)(left.register.int16_0 * right.register.int16_0);
-                    product += (Int16)(left.register.int16_1 * right.register.int16_1);
-                    product += (Int16)(left.register.int16_2 * right.register.int16_2);
-                    product += (Int16)(left.register.int16_3 * right.register.int16_3);
-                    product += (Int16)(left.register.int16_4 * right.register.int16_4);
-                    product += (Int16)(left.register.int16_5 * right.register.int16_5);
-                    product += (Int16)(left.register.int16_6 * right.register.int16_6);
-                    product += (Int16)(left.register.int16_7 * right.register.int16_7);
+                    short product = 0;
+                    product += (short)(left.register.int16_0 * right.register.int16_0);
+                    product += (short)(left.register.int16_1 * right.register.int16_1);
+                    product += (short)(left.register.int16_2 * right.register.int16_2);
+                    product += (short)(left.register.int16_3 * right.register.int16_3);
+                    product += (short)(left.register.int16_4 * right.register.int16_4);
+                    product += (short)(left.register.int16_5 * right.register.int16_5);
+                    product += (short)(left.register.int16_6 * right.register.int16_6);
+                    product += (short)(left.register.int16_7 * right.register.int16_7);
                     return (T)(object)product;
                 }
-                else if (typeof(T) == typeof(UInt32))
+                else if (typeof(T) == typeof(uint))
                 {
-                    UInt32 product = 0;
-                    product += (UInt32)(left.register.uint32_0 * right.register.uint32_0);
-                    product += (UInt32)(left.register.uint32_1 * right.register.uint32_1);
-                    product += (UInt32)(left.register.uint32_2 * right.register.uint32_2);
-                    product += (UInt32)(left.register.uint32_3 * right.register.uint32_3);
+                    uint product = 0;
+                    product += (uint)(left.register.uint32_0 * right.register.uint32_0);
+                    product += (uint)(left.register.uint32_1 * right.register.uint32_1);
+                    product += (uint)(left.register.uint32_2 * right.register.uint32_2);
+                    product += (uint)(left.register.uint32_3 * right.register.uint32_3);
                     return (T)(object)product;
                 }
-                else if (typeof(T) == typeof(Int32))
+                else if (typeof(T) == typeof(int))
                 {
-                    Int32 product = 0;
-                    product += (Int32)(left.register.int32_0 * right.register.int32_0);
-                    product += (Int32)(left.register.int32_1 * right.register.int32_1);
-                    product += (Int32)(left.register.int32_2 * right.register.int32_2);
-                    product += (Int32)(left.register.int32_3 * right.register.int32_3);
+                    int product = 0;
+                    product += (int)(left.register.int32_0 * right.register.int32_0);
+                    product += (int)(left.register.int32_1 * right.register.int32_1);
+                    product += (int)(left.register.int32_2 * right.register.int32_2);
+                    product += (int)(left.register.int32_3 * right.register.int32_3);
                     return (T)(object)product;
                 }
-                else if (typeof(T) == typeof(UInt64))
+                else if (typeof(T) == typeof(ulong))
                 {
-                    UInt64 product = 0;
-                    product += (UInt64)(left.register.uint64_0 * right.register.uint64_0);
-                    product += (UInt64)(left.register.uint64_1 * right.register.uint64_1);
+                    ulong product = 0;
+                    product += (ulong)(left.register.uint64_0 * right.register.uint64_0);
+                    product += (ulong)(left.register.uint64_1 * right.register.uint64_1);
                     return (T)(object)product;
                 }
-                else if (typeof(T) == typeof(Int64))
+                else if (typeof(T) == typeof(long))
                 {
-                    Int64 product = 0;
-                    product += (Int64)(left.register.int64_0 * right.register.int64_0);
-                    product += (Int64)(left.register.int64_1 * right.register.int64_1);
+                    long product = 0;
+                    product += (long)(left.register.int64_0 * right.register.int64_0);
+                    product += (long)(left.register.int64_1 * right.register.int64_1);
                     return (T)(object)product;
                 }
-                else if (typeof(T) == typeof(Single))
+                else if (typeof(T) == typeof(float))
                 {
-                    Single product = 0;
-                    product += (Single)(left.register.single_0 * right.register.single_0);
-                    product += (Single)(left.register.single_1 * right.register.single_1);
-                    product += (Single)(left.register.single_2 * right.register.single_2);
-                    product += (Single)(left.register.single_3 * right.register.single_3);
+                    float product = 0;
+                    product += (float)(left.register.single_0 * right.register.single_0);
+                    product += (float)(left.register.single_1 * right.register.single_1);
+                    product += (float)(left.register.single_2 * right.register.single_2);
+                    product += (float)(left.register.single_3 * right.register.single_3);
                     return (T)(object)product;
                 }
-                else if (typeof(T) == typeof(Double))
+                else if (typeof(T) == typeof(double))
                 {
-                    Double product = 0;
-                    product += (Double)(left.register.double_0 * right.register.double_0);
-                    product += (Double)(left.register.double_1 * right.register.double_1);
+                    double product = 0;
+                    product += (double)(left.register.double_0 * right.register.double_0);
+                    product += (double)(left.register.double_1 * right.register.double_1);
                     return (T)(object)product;
                 }
                 else
@@ -4324,93 +4324,93 @@ namespace System.Numerics
         {
             if (Vector.IsHardwareAccelerated)
             {
-                if (typeof(T) == typeof(Byte))
+                if (typeof(T) == typeof(byte))
                 {
-                    Byte* dataPtr = stackalloc Byte[Count];
+                    byte* dataPtr = stackalloc byte[Count];
                     for (int g = 0; g < Count; g++)
                     {
-                        dataPtr[g] = unchecked((Byte)Math.Sqrt((Byte)(object)value[g]));
+                        dataPtr[g] = unchecked((byte)Math.Sqrt((byte)(object)value[g]));
                     }
                     return new Vector<T>(dataPtr);
                 }
-                else if (typeof(T) == typeof(SByte))
+                else if (typeof(T) == typeof(sbyte))
                 {
-                    SByte* dataPtr = stackalloc SByte[Count];
+                    sbyte* dataPtr = stackalloc sbyte[Count];
                     for (int g = 0; g < Count; g++)
                     {
-                        dataPtr[g] = unchecked((SByte)Math.Sqrt((SByte)(object)value[g]));
+                        dataPtr[g] = unchecked((sbyte)Math.Sqrt((sbyte)(object)value[g]));
                     }
                     return new Vector<T>(dataPtr);
                 }
-                else if (typeof(T) == typeof(UInt16))
+                else if (typeof(T) == typeof(ushort))
                 {
-                    UInt16* dataPtr = stackalloc UInt16[Count];
+                    ushort* dataPtr = stackalloc ushort[Count];
                     for (int g = 0; g < Count; g++)
                     {
-                        dataPtr[g] = unchecked((UInt16)Math.Sqrt((UInt16)(object)value[g]));
+                        dataPtr[g] = unchecked((ushort)Math.Sqrt((ushort)(object)value[g]));
                     }
                     return new Vector<T>(dataPtr);
                 }
-                else if (typeof(T) == typeof(Int16))
+                else if (typeof(T) == typeof(short))
                 {
-                    Int16* dataPtr = stackalloc Int16[Count];
+                    short* dataPtr = stackalloc short[Count];
                     for (int g = 0; g < Count; g++)
                     {
-                        dataPtr[g] = unchecked((Int16)Math.Sqrt((Int16)(object)value[g]));
+                        dataPtr[g] = unchecked((short)Math.Sqrt((short)(object)value[g]));
                     }
                     return new Vector<T>(dataPtr);
                 }
-                else if (typeof(T) == typeof(UInt32))
+                else if (typeof(T) == typeof(uint))
                 {
-                    UInt32* dataPtr = stackalloc UInt32[Count];
+                    uint* dataPtr = stackalloc uint[Count];
                     for (int g = 0; g < Count; g++)
                     {
-                        dataPtr[g] = unchecked((UInt32)Math.Sqrt((UInt32)(object)value[g]));
+                        dataPtr[g] = unchecked((uint)Math.Sqrt((uint)(object)value[g]));
                     }
                     return new Vector<T>(dataPtr);
                 }
-                else if (typeof(T) == typeof(Int32))
+                else if (typeof(T) == typeof(int))
                 {
-                    Int32* dataPtr = stackalloc Int32[Count];
+                    int* dataPtr = stackalloc int[Count];
                     for (int g = 0; g < Count; g++)
                     {
-                        dataPtr[g] = unchecked((Int32)Math.Sqrt((Int32)(object)value[g]));
+                        dataPtr[g] = unchecked((int)Math.Sqrt((int)(object)value[g]));
                     }
                     return new Vector<T>(dataPtr);
                 }
-                else if (typeof(T) == typeof(UInt64))
+                else if (typeof(T) == typeof(ulong))
                 {
-                    UInt64* dataPtr = stackalloc UInt64[Count];
+                    ulong* dataPtr = stackalloc ulong[Count];
                     for (int g = 0; g < Count; g++)
                     {
-                        dataPtr[g] = unchecked((UInt64)Math.Sqrt((UInt64)(object)value[g]));
+                        dataPtr[g] = unchecked((ulong)Math.Sqrt((ulong)(object)value[g]));
                     }
                     return new Vector<T>(dataPtr);
                 }
-                else if (typeof(T) == typeof(Int64))
+                else if (typeof(T) == typeof(long))
                 {
-                    Int64* dataPtr = stackalloc Int64[Count];
+                    long* dataPtr = stackalloc long[Count];
                     for (int g = 0; g < Count; g++)
                     {
-                        dataPtr[g] = unchecked((Int64)Math.Sqrt((Int64)(object)value[g]));
+                        dataPtr[g] = unchecked((long)Math.Sqrt((long)(object)value[g]));
                     }
                     return new Vector<T>(dataPtr);
                 }
-                else if (typeof(T) == typeof(Single))
+                else if (typeof(T) == typeof(float))
                 {
-                    Single* dataPtr = stackalloc Single[Count];
+                    float* dataPtr = stackalloc float[Count];
                     for (int g = 0; g < Count; g++)
                     {
-                        dataPtr[g] = unchecked((Single)Math.Sqrt((Single)(object)value[g]));
+                        dataPtr[g] = unchecked((float)Math.Sqrt((float)(object)value[g]));
                     }
                     return new Vector<T>(dataPtr);
                 }
-                else if (typeof(T) == typeof(Double))
+                else if (typeof(T) == typeof(double))
                 {
-                    Double* dataPtr = stackalloc Double[Count];
+                    double* dataPtr = stackalloc double[Count];
                     for (int g = 0; g < Count; g++)
                     {
-                        dataPtr[g] = unchecked((Double)Math.Sqrt((Double)(object)value[g]));
+                        dataPtr[g] = unchecked((double)Math.Sqrt((double)(object)value[g]));
                     }
                     return new Vector<T>(dataPtr);
                 }
@@ -4421,110 +4421,110 @@ namespace System.Numerics
             }
             else
             {
-                if (typeof(T) == typeof(Byte))
+                if (typeof(T) == typeof(byte))
                 {
-                    value.register.byte_0 = (Byte)Math.Sqrt(value.register.byte_0);
-                    value.register.byte_1 = (Byte)Math.Sqrt(value.register.byte_1);
-                    value.register.byte_2 = (Byte)Math.Sqrt(value.register.byte_2);
-                    value.register.byte_3 = (Byte)Math.Sqrt(value.register.byte_3);
-                    value.register.byte_4 = (Byte)Math.Sqrt(value.register.byte_4);
-                    value.register.byte_5 = (Byte)Math.Sqrt(value.register.byte_5);
-                    value.register.byte_6 = (Byte)Math.Sqrt(value.register.byte_6);
-                    value.register.byte_7 = (Byte)Math.Sqrt(value.register.byte_7);
-                    value.register.byte_8 = (Byte)Math.Sqrt(value.register.byte_8);
-                    value.register.byte_9 = (Byte)Math.Sqrt(value.register.byte_9);
-                    value.register.byte_10 = (Byte)Math.Sqrt(value.register.byte_10);
-                    value.register.byte_11 = (Byte)Math.Sqrt(value.register.byte_11);
-                    value.register.byte_12 = (Byte)Math.Sqrt(value.register.byte_12);
-                    value.register.byte_13 = (Byte)Math.Sqrt(value.register.byte_13);
-                    value.register.byte_14 = (Byte)Math.Sqrt(value.register.byte_14);
-                    value.register.byte_15 = (Byte)Math.Sqrt(value.register.byte_15);
+                    value.register.byte_0 = (byte)Math.Sqrt(value.register.byte_0);
+                    value.register.byte_1 = (byte)Math.Sqrt(value.register.byte_1);
+                    value.register.byte_2 = (byte)Math.Sqrt(value.register.byte_2);
+                    value.register.byte_3 = (byte)Math.Sqrt(value.register.byte_3);
+                    value.register.byte_4 = (byte)Math.Sqrt(value.register.byte_4);
+                    value.register.byte_5 = (byte)Math.Sqrt(value.register.byte_5);
+                    value.register.byte_6 = (byte)Math.Sqrt(value.register.byte_6);
+                    value.register.byte_7 = (byte)Math.Sqrt(value.register.byte_7);
+                    value.register.byte_8 = (byte)Math.Sqrt(value.register.byte_8);
+                    value.register.byte_9 = (byte)Math.Sqrt(value.register.byte_9);
+                    value.register.byte_10 = (byte)Math.Sqrt(value.register.byte_10);
+                    value.register.byte_11 = (byte)Math.Sqrt(value.register.byte_11);
+                    value.register.byte_12 = (byte)Math.Sqrt(value.register.byte_12);
+                    value.register.byte_13 = (byte)Math.Sqrt(value.register.byte_13);
+                    value.register.byte_14 = (byte)Math.Sqrt(value.register.byte_14);
+                    value.register.byte_15 = (byte)Math.Sqrt(value.register.byte_15);
                     return value;
                 }
-                else if (typeof(T) == typeof(SByte))
+                else if (typeof(T) == typeof(sbyte))
                 {
-                    value.register.sbyte_0 = (SByte)Math.Sqrt(value.register.sbyte_0);
-                    value.register.sbyte_1 = (SByte)Math.Sqrt(value.register.sbyte_1);
-                    value.register.sbyte_2 = (SByte)Math.Sqrt(value.register.sbyte_2);
-                    value.register.sbyte_3 = (SByte)Math.Sqrt(value.register.sbyte_3);
-                    value.register.sbyte_4 = (SByte)Math.Sqrt(value.register.sbyte_4);
-                    value.register.sbyte_5 = (SByte)Math.Sqrt(value.register.sbyte_5);
-                    value.register.sbyte_6 = (SByte)Math.Sqrt(value.register.sbyte_6);
-                    value.register.sbyte_7 = (SByte)Math.Sqrt(value.register.sbyte_7);
-                    value.register.sbyte_8 = (SByte)Math.Sqrt(value.register.sbyte_8);
-                    value.register.sbyte_9 = (SByte)Math.Sqrt(value.register.sbyte_9);
-                    value.register.sbyte_10 = (SByte)Math.Sqrt(value.register.sbyte_10);
-                    value.register.sbyte_11 = (SByte)Math.Sqrt(value.register.sbyte_11);
-                    value.register.sbyte_12 = (SByte)Math.Sqrt(value.register.sbyte_12);
-                    value.register.sbyte_13 = (SByte)Math.Sqrt(value.register.sbyte_13);
-                    value.register.sbyte_14 = (SByte)Math.Sqrt(value.register.sbyte_14);
-                    value.register.sbyte_15 = (SByte)Math.Sqrt(value.register.sbyte_15);
+                    value.register.sbyte_0 = (sbyte)Math.Sqrt(value.register.sbyte_0);
+                    value.register.sbyte_1 = (sbyte)Math.Sqrt(value.register.sbyte_1);
+                    value.register.sbyte_2 = (sbyte)Math.Sqrt(value.register.sbyte_2);
+                    value.register.sbyte_3 = (sbyte)Math.Sqrt(value.register.sbyte_3);
+                    value.register.sbyte_4 = (sbyte)Math.Sqrt(value.register.sbyte_4);
+                    value.register.sbyte_5 = (sbyte)Math.Sqrt(value.register.sbyte_5);
+                    value.register.sbyte_6 = (sbyte)Math.Sqrt(value.register.sbyte_6);
+                    value.register.sbyte_7 = (sbyte)Math.Sqrt(value.register.sbyte_7);
+                    value.register.sbyte_8 = (sbyte)Math.Sqrt(value.register.sbyte_8);
+                    value.register.sbyte_9 = (sbyte)Math.Sqrt(value.register.sbyte_9);
+                    value.register.sbyte_10 = (sbyte)Math.Sqrt(value.register.sbyte_10);
+                    value.register.sbyte_11 = (sbyte)Math.Sqrt(value.register.sbyte_11);
+                    value.register.sbyte_12 = (sbyte)Math.Sqrt(value.register.sbyte_12);
+                    value.register.sbyte_13 = (sbyte)Math.Sqrt(value.register.sbyte_13);
+                    value.register.sbyte_14 = (sbyte)Math.Sqrt(value.register.sbyte_14);
+                    value.register.sbyte_15 = (sbyte)Math.Sqrt(value.register.sbyte_15);
                     return value;
                 }
-                else if (typeof(T) == typeof(UInt16))
+                else if (typeof(T) == typeof(ushort))
                 {
-                    value.register.uint16_0 = (UInt16)Math.Sqrt(value.register.uint16_0);
-                    value.register.uint16_1 = (UInt16)Math.Sqrt(value.register.uint16_1);
-                    value.register.uint16_2 = (UInt16)Math.Sqrt(value.register.uint16_2);
-                    value.register.uint16_3 = (UInt16)Math.Sqrt(value.register.uint16_3);
-                    value.register.uint16_4 = (UInt16)Math.Sqrt(value.register.uint16_4);
-                    value.register.uint16_5 = (UInt16)Math.Sqrt(value.register.uint16_5);
-                    value.register.uint16_6 = (UInt16)Math.Sqrt(value.register.uint16_6);
-                    value.register.uint16_7 = (UInt16)Math.Sqrt(value.register.uint16_7);
+                    value.register.uint16_0 = (ushort)Math.Sqrt(value.register.uint16_0);
+                    value.register.uint16_1 = (ushort)Math.Sqrt(value.register.uint16_1);
+                    value.register.uint16_2 = (ushort)Math.Sqrt(value.register.uint16_2);
+                    value.register.uint16_3 = (ushort)Math.Sqrt(value.register.uint16_3);
+                    value.register.uint16_4 = (ushort)Math.Sqrt(value.register.uint16_4);
+                    value.register.uint16_5 = (ushort)Math.Sqrt(value.register.uint16_5);
+                    value.register.uint16_6 = (ushort)Math.Sqrt(value.register.uint16_6);
+                    value.register.uint16_7 = (ushort)Math.Sqrt(value.register.uint16_7);
                     return value;
                 }
-                else if (typeof(T) == typeof(Int16))
+                else if (typeof(T) == typeof(short))
                 {
-                    value.register.int16_0 = (Int16)Math.Sqrt(value.register.int16_0);
-                    value.register.int16_1 = (Int16)Math.Sqrt(value.register.int16_1);
-                    value.register.int16_2 = (Int16)Math.Sqrt(value.register.int16_2);
-                    value.register.int16_3 = (Int16)Math.Sqrt(value.register.int16_3);
-                    value.register.int16_4 = (Int16)Math.Sqrt(value.register.int16_4);
-                    value.register.int16_5 = (Int16)Math.Sqrt(value.register.int16_5);
-                    value.register.int16_6 = (Int16)Math.Sqrt(value.register.int16_6);
-                    value.register.int16_7 = (Int16)Math.Sqrt(value.register.int16_7);
+                    value.register.int16_0 = (short)Math.Sqrt(value.register.int16_0);
+                    value.register.int16_1 = (short)Math.Sqrt(value.register.int16_1);
+                    value.register.int16_2 = (short)Math.Sqrt(value.register.int16_2);
+                    value.register.int16_3 = (short)Math.Sqrt(value.register.int16_3);
+                    value.register.int16_4 = (short)Math.Sqrt(value.register.int16_4);
+                    value.register.int16_5 = (short)Math.Sqrt(value.register.int16_5);
+                    value.register.int16_6 = (short)Math.Sqrt(value.register.int16_6);
+                    value.register.int16_7 = (short)Math.Sqrt(value.register.int16_7);
                     return value;
                 }
-                else if (typeof(T) == typeof(UInt32))
+                else if (typeof(T) == typeof(uint))
                 {
-                    value.register.uint32_0 = (UInt32)Math.Sqrt(value.register.uint32_0);
-                    value.register.uint32_1 = (UInt32)Math.Sqrt(value.register.uint32_1);
-                    value.register.uint32_2 = (UInt32)Math.Sqrt(value.register.uint32_2);
-                    value.register.uint32_3 = (UInt32)Math.Sqrt(value.register.uint32_3);
+                    value.register.uint32_0 = (uint)Math.Sqrt(value.register.uint32_0);
+                    value.register.uint32_1 = (uint)Math.Sqrt(value.register.uint32_1);
+                    value.register.uint32_2 = (uint)Math.Sqrt(value.register.uint32_2);
+                    value.register.uint32_3 = (uint)Math.Sqrt(value.register.uint32_3);
                     return value;
                 }
-                else if (typeof(T) == typeof(Int32))
+                else if (typeof(T) == typeof(int))
                 {
-                    value.register.int32_0 = (Int32)Math.Sqrt(value.register.int32_0);
-                    value.register.int32_1 = (Int32)Math.Sqrt(value.register.int32_1);
-                    value.register.int32_2 = (Int32)Math.Sqrt(value.register.int32_2);
-                    value.register.int32_3 = (Int32)Math.Sqrt(value.register.int32_3);
+                    value.register.int32_0 = (int)Math.Sqrt(value.register.int32_0);
+                    value.register.int32_1 = (int)Math.Sqrt(value.register.int32_1);
+                    value.register.int32_2 = (int)Math.Sqrt(value.register.int32_2);
+                    value.register.int32_3 = (int)Math.Sqrt(value.register.int32_3);
                     return value;
                 }
-                else if (typeof(T) == typeof(UInt64))
+                else if (typeof(T) == typeof(ulong))
                 {
-                    value.register.uint64_0 = (UInt64)Math.Sqrt(value.register.uint64_0);
-                    value.register.uint64_1 = (UInt64)Math.Sqrt(value.register.uint64_1);
+                    value.register.uint64_0 = (ulong)Math.Sqrt(value.register.uint64_0);
+                    value.register.uint64_1 = (ulong)Math.Sqrt(value.register.uint64_1);
                     return value;
                 }
-                else if (typeof(T) == typeof(Int64))
+                else if (typeof(T) == typeof(long))
                 {
-                    value.register.int64_0 = (Int64)Math.Sqrt(value.register.int64_0);
-                    value.register.int64_1 = (Int64)Math.Sqrt(value.register.int64_1);
+                    value.register.int64_0 = (long)Math.Sqrt(value.register.int64_0);
+                    value.register.int64_1 = (long)Math.Sqrt(value.register.int64_1);
                     return value;
                 }
-                else if (typeof(T) == typeof(Single))
+                else if (typeof(T) == typeof(float))
                 {
-                    value.register.single_0 = (Single)Math.Sqrt(value.register.single_0);
-                    value.register.single_1 = (Single)Math.Sqrt(value.register.single_1);
-                    value.register.single_2 = (Single)Math.Sqrt(value.register.single_2);
-                    value.register.single_3 = (Single)Math.Sqrt(value.register.single_3);
+                    value.register.single_0 = (float)Math.Sqrt(value.register.single_0);
+                    value.register.single_1 = (float)Math.Sqrt(value.register.single_1);
+                    value.register.single_2 = (float)Math.Sqrt(value.register.single_2);
+                    value.register.single_3 = (float)Math.Sqrt(value.register.single_3);
                     return value;
                 }
-                else if (typeof(T) == typeof(Double))
+                else if (typeof(T) == typeof(double))
                 {
-                    value.register.double_0 = (Double)Math.Sqrt(value.register.double_0);
-                    value.register.double_1 = (Double)Math.Sqrt(value.register.double_1);
+                    value.register.double_0 = (double)Math.Sqrt(value.register.double_0);
+                    value.register.double_1 = (double)Math.Sqrt(value.register.double_1);
                     return value;
                 }
                 else
@@ -4539,45 +4539,45 @@ namespace System.Numerics
         [MethodImplAttribute(MethodImplOptions.AggressiveInlining)]
         private static bool ScalarEquals(T left, T right)
         {
-            if (typeof(T) == typeof(Byte))
+            if (typeof(T) == typeof(byte))
             {
-                return (Byte)(object)left == (Byte)(object)right;
+                return (byte)(object)left == (byte)(object)right;
             }
-            else if (typeof(T) == typeof(SByte))
+            else if (typeof(T) == typeof(sbyte))
             {
-                return (SByte)(object)left == (SByte)(object)right;
+                return (sbyte)(object)left == (sbyte)(object)right;
             }
-            else if (typeof(T) == typeof(UInt16))
+            else if (typeof(T) == typeof(ushort))
             {
-                return (UInt16)(object)left == (UInt16)(object)right;
+                return (ushort)(object)left == (ushort)(object)right;
             }
-            else if (typeof(T) == typeof(Int16))
+            else if (typeof(T) == typeof(short))
             {
-                return (Int16)(object)left == (Int16)(object)right;
+                return (short)(object)left == (short)(object)right;
             }
-            else if (typeof(T) == typeof(UInt32))
+            else if (typeof(T) == typeof(uint))
             {
-                return (UInt32)(object)left == (UInt32)(object)right;
+                return (uint)(object)left == (uint)(object)right;
             }
-            else if (typeof(T) == typeof(Int32))
+            else if (typeof(T) == typeof(int))
             {
-                return (Int32)(object)left == (Int32)(object)right;
+                return (int)(object)left == (int)(object)right;
             }
-            else if (typeof(T) == typeof(UInt64))
+            else if (typeof(T) == typeof(ulong))
             {
-                return (UInt64)(object)left == (UInt64)(object)right;
+                return (ulong)(object)left == (ulong)(object)right;
             }
-            else if (typeof(T) == typeof(Int64))
+            else if (typeof(T) == typeof(long))
             {
-                return (Int64)(object)left == (Int64)(object)right;
+                return (long)(object)left == (long)(object)right;
             }
-            else if (typeof(T) == typeof(Single))
+            else if (typeof(T) == typeof(float))
             {
-                return (Single)(object)left == (Single)(object)right;
+                return (float)(object)left == (float)(object)right;
             }
-            else if (typeof(T) == typeof(Double))
+            else if (typeof(T) == typeof(double))
             {
-                return (Double)(object)left == (Double)(object)right;
+                return (double)(object)left == (double)(object)right;
             }
             else
             {
@@ -4588,45 +4588,45 @@ namespace System.Numerics
         [MethodImplAttribute(MethodImplOptions.AggressiveInlining)]
         private static bool ScalarLessThan(T left, T right)
         {
-            if (typeof(T) == typeof(Byte))
+            if (typeof(T) == typeof(byte))
             {
-                return (Byte)(object)left < (Byte)(object)right;
+                return (byte)(object)left < (byte)(object)right;
             }
-            else if (typeof(T) == typeof(SByte))
+            else if (typeof(T) == typeof(sbyte))
             {
-                return (SByte)(object)left < (SByte)(object)right;
+                return (sbyte)(object)left < (sbyte)(object)right;
             }
-            else if (typeof(T) == typeof(UInt16))
+            else if (typeof(T) == typeof(ushort))
             {
-                return (UInt16)(object)left < (UInt16)(object)right;
+                return (ushort)(object)left < (ushort)(object)right;
             }
-            else if (typeof(T) == typeof(Int16))
+            else if (typeof(T) == typeof(short))
             {
-                return (Int16)(object)left < (Int16)(object)right;
+                return (short)(object)left < (short)(object)right;
             }
-            else if (typeof(T) == typeof(UInt32))
+            else if (typeof(T) == typeof(uint))
             {
-                return (UInt32)(object)left < (UInt32)(object)right;
+                return (uint)(object)left < (uint)(object)right;
             }
-            else if (typeof(T) == typeof(Int32))
+            else if (typeof(T) == typeof(int))
             {
-                return (Int32)(object)left < (Int32)(object)right;
+                return (int)(object)left < (int)(object)right;
             }
-            else if (typeof(T) == typeof(UInt64))
+            else if (typeof(T) == typeof(ulong))
             {
-                return (UInt64)(object)left < (UInt64)(object)right;
+                return (ulong)(object)left < (ulong)(object)right;
             }
-            else if (typeof(T) == typeof(Int64))
+            else if (typeof(T) == typeof(long))
             {
-                return (Int64)(object)left < (Int64)(object)right;
+                return (long)(object)left < (long)(object)right;
             }
-            else if (typeof(T) == typeof(Single))
+            else if (typeof(T) == typeof(float))
             {
-                return (Single)(object)left < (Single)(object)right;
+                return (float)(object)left < (float)(object)right;
             }
-            else if (typeof(T) == typeof(Double))
+            else if (typeof(T) == typeof(double))
             {
-                return (Double)(object)left < (Double)(object)right;
+                return (double)(object)left < (double)(object)right;
             }
             else
             {
@@ -4637,45 +4637,45 @@ namespace System.Numerics
         [MethodImplAttribute(MethodImplOptions.AggressiveInlining)]
         private static bool ScalarGreaterThan(T left, T right)
         {
-            if (typeof(T) == typeof(Byte))
+            if (typeof(T) == typeof(byte))
             {
-                return (Byte)(object)left > (Byte)(object)right;
+                return (byte)(object)left > (byte)(object)right;
             }
-            else if (typeof(T) == typeof(SByte))
+            else if (typeof(T) == typeof(sbyte))
             {
-                return (SByte)(object)left > (SByte)(object)right;
+                return (sbyte)(object)left > (sbyte)(object)right;
             }
-            else if (typeof(T) == typeof(UInt16))
+            else if (typeof(T) == typeof(ushort))
             {
-                return (UInt16)(object)left > (UInt16)(object)right;
+                return (ushort)(object)left > (ushort)(object)right;
             }
-            else if (typeof(T) == typeof(Int16))
+            else if (typeof(T) == typeof(short))
             {
-                return (Int16)(object)left > (Int16)(object)right;
+                return (short)(object)left > (short)(object)right;
             }
-            else if (typeof(T) == typeof(UInt32))
+            else if (typeof(T) == typeof(uint))
             {
-                return (UInt32)(object)left > (UInt32)(object)right;
+                return (uint)(object)left > (uint)(object)right;
             }
-            else if (typeof(T) == typeof(Int32))
+            else if (typeof(T) == typeof(int))
             {
-                return (Int32)(object)left > (Int32)(object)right;
+                return (int)(object)left > (int)(object)right;
             }
-            else if (typeof(T) == typeof(UInt64))
+            else if (typeof(T) == typeof(ulong))
             {
-                return (UInt64)(object)left > (UInt64)(object)right;
+                return (ulong)(object)left > (ulong)(object)right;
             }
-            else if (typeof(T) == typeof(Int64))
+            else if (typeof(T) == typeof(long))
             {
-                return (Int64)(object)left > (Int64)(object)right;
+                return (long)(object)left > (long)(object)right;
             }
-            else if (typeof(T) == typeof(Single))
+            else if (typeof(T) == typeof(float))
             {
-                return (Single)(object)left > (Single)(object)right;
+                return (float)(object)left > (float)(object)right;
             }
-            else if (typeof(T) == typeof(Double))
+            else if (typeof(T) == typeof(double))
             {
-                return (Double)(object)left > (Double)(object)right;
+                return (double)(object)left > (double)(object)right;
             }
             else
             {
@@ -4686,45 +4686,45 @@ namespace System.Numerics
         [MethodImplAttribute(MethodImplOptions.AggressiveInlining)]
         private static T ScalarAdd(T left, T right)
         {
-            if (typeof(T) == typeof(Byte))
+            if (typeof(T) == typeof(byte))
             {
-                return (T)(object)unchecked((Byte)((Byte)(object)left + (Byte)(object)right));
+                return (T)(object)unchecked((byte)((byte)(object)left + (byte)(object)right));
             }
-            else if (typeof(T) == typeof(SByte))
+            else if (typeof(T) == typeof(sbyte))
             {
-                return (T)(object)unchecked((SByte)((SByte)(object)left + (SByte)(object)right));
+                return (T)(object)unchecked((sbyte)((sbyte)(object)left + (sbyte)(object)right));
             }
-            else if (typeof(T) == typeof(UInt16))
+            else if (typeof(T) == typeof(ushort))
             {
-                return (T)(object)unchecked((UInt16)((UInt16)(object)left + (UInt16)(object)right));
+                return (T)(object)unchecked((ushort)((ushort)(object)left + (ushort)(object)right));
             }
-            else if (typeof(T) == typeof(Int16))
+            else if (typeof(T) == typeof(short))
             {
-                return (T)(object)unchecked((Int16)((Int16)(object)left + (Int16)(object)right));
+                return (T)(object)unchecked((short)((short)(object)left + (short)(object)right));
             }
-            else if (typeof(T) == typeof(UInt32))
+            else if (typeof(T) == typeof(uint))
             {
-                return (T)(object)unchecked((UInt32)((UInt32)(object)left + (UInt32)(object)right));
+                return (T)(object)unchecked((uint)((uint)(object)left + (uint)(object)right));
             }
-            else if (typeof(T) == typeof(Int32))
+            else if (typeof(T) == typeof(int))
             {
-                return (T)(object)unchecked((Int32)((Int32)(object)left + (Int32)(object)right));
+                return (T)(object)unchecked((int)((int)(object)left + (int)(object)right));
             }
-            else if (typeof(T) == typeof(UInt64))
+            else if (typeof(T) == typeof(ulong))
             {
-                return (T)(object)unchecked((UInt64)((UInt64)(object)left + (UInt64)(object)right));
+                return (T)(object)unchecked((ulong)((ulong)(object)left + (ulong)(object)right));
             }
-            else if (typeof(T) == typeof(Int64))
+            else if (typeof(T) == typeof(long))
             {
-                return (T)(object)unchecked((Int64)((Int64)(object)left + (Int64)(object)right));
+                return (T)(object)unchecked((long)((long)(object)left + (long)(object)right));
             }
-            else if (typeof(T) == typeof(Single))
+            else if (typeof(T) == typeof(float))
             {
-                return (T)(object)unchecked((Single)((Single)(object)left + (Single)(object)right));
+                return (T)(object)unchecked((float)((float)(object)left + (float)(object)right));
             }
-            else if (typeof(T) == typeof(Double))
+            else if (typeof(T) == typeof(double))
             {
-                return (T)(object)unchecked((Double)((Double)(object)left + (Double)(object)right));
+                return (T)(object)unchecked((double)((double)(object)left + (double)(object)right));
             }
             else
             {
@@ -4735,45 +4735,45 @@ namespace System.Numerics
         [MethodImplAttribute(MethodImplOptions.AggressiveInlining)]
         private static T ScalarSubtract(T left, T right)
         {
-            if (typeof(T) == typeof(Byte))
+            if (typeof(T) == typeof(byte))
             {
-                return (T)(object)(Byte)((Byte)(object)left - (Byte)(object)right);
+                return (T)(object)(byte)((byte)(object)left - (byte)(object)right);
             }
-            else if (typeof(T) == typeof(SByte))
+            else if (typeof(T) == typeof(sbyte))
             {
-                return (T)(object)(SByte)((SByte)(object)left - (SByte)(object)right);
+                return (T)(object)(sbyte)((sbyte)(object)left - (sbyte)(object)right);
             }
-            else if (typeof(T) == typeof(UInt16))
+            else if (typeof(T) == typeof(ushort))
             {
-                return (T)(object)(UInt16)((UInt16)(object)left - (UInt16)(object)right);
+                return (T)(object)(ushort)((ushort)(object)left - (ushort)(object)right);
             }
-            else if (typeof(T) == typeof(Int16))
+            else if (typeof(T) == typeof(short))
             {
-                return (T)(object)(Int16)((Int16)(object)left - (Int16)(object)right);
+                return (T)(object)(short)((short)(object)left - (short)(object)right);
             }
-            else if (typeof(T) == typeof(UInt32))
+            else if (typeof(T) == typeof(uint))
             {
-                return (T)(object)(UInt32)((UInt32)(object)left - (UInt32)(object)right);
+                return (T)(object)(uint)((uint)(object)left - (uint)(object)right);
             }
-            else if (typeof(T) == typeof(Int32))
+            else if (typeof(T) == typeof(int))
             {
-                return (T)(object)(Int32)((Int32)(object)left - (Int32)(object)right);
+                return (T)(object)(int)((int)(object)left - (int)(object)right);
             }
-            else if (typeof(T) == typeof(UInt64))
+            else if (typeof(T) == typeof(ulong))
             {
-                return (T)(object)(UInt64)((UInt64)(object)left - (UInt64)(object)right);
+                return (T)(object)(ulong)((ulong)(object)left - (ulong)(object)right);
             }
-            else if (typeof(T) == typeof(Int64))
+            else if (typeof(T) == typeof(long))
             {
-                return (T)(object)(Int64)((Int64)(object)left - (Int64)(object)right);
+                return (T)(object)(long)((long)(object)left - (long)(object)right);
             }
-            else if (typeof(T) == typeof(Single))
+            else if (typeof(T) == typeof(float))
             {
-                return (T)(object)(Single)((Single)(object)left - (Single)(object)right);
+                return (T)(object)(float)((float)(object)left - (float)(object)right);
             }
-            else if (typeof(T) == typeof(Double))
+            else if (typeof(T) == typeof(double))
             {
-                return (T)(object)(Double)((Double)(object)left - (Double)(object)right);
+                return (T)(object)(double)((double)(object)left - (double)(object)right);
             }
             else
             {
@@ -4784,45 +4784,45 @@ namespace System.Numerics
         [MethodImplAttribute(MethodImplOptions.AggressiveInlining)]
         private static T ScalarMultiply(T left, T right)
         {
-            if (typeof(T) == typeof(Byte))
+            if (typeof(T) == typeof(byte))
             {
-                return (T)(object)unchecked((Byte)((Byte)(object)left * (Byte)(object)right));
+                return (T)(object)unchecked((byte)((byte)(object)left * (byte)(object)right));
             }
-            else if (typeof(T) == typeof(SByte))
+            else if (typeof(T) == typeof(sbyte))
             {
-                return (T)(object)unchecked((SByte)((SByte)(object)left * (SByte)(object)right));
+                return (T)(object)unchecked((sbyte)((sbyte)(object)left * (sbyte)(object)right));
             }
-            else if (typeof(T) == typeof(UInt16))
+            else if (typeof(T) == typeof(ushort))
             {
-                return (T)(object)unchecked((UInt16)((UInt16)(object)left * (UInt16)(object)right));
+                return (T)(object)unchecked((ushort)((ushort)(object)left * (ushort)(object)right));
             }
-            else if (typeof(T) == typeof(Int16))
+            else if (typeof(T) == typeof(short))
             {
-                return (T)(object)unchecked((Int16)((Int16)(object)left * (Int16)(object)right));
+                return (T)(object)unchecked((short)((short)(object)left * (short)(object)right));
             }
-            else if (typeof(T) == typeof(UInt32))
+            else if (typeof(T) == typeof(uint))
             {
-                return (T)(object)unchecked((UInt32)((UInt32)(object)left * (UInt32)(object)right));
+                return (T)(object)unchecked((uint)((uint)(object)left * (uint)(object)right));
             }
-            else if (typeof(T) == typeof(Int32))
+            else if (typeof(T) == typeof(int))
             {
-                return (T)(object)unchecked((Int32)((Int32)(object)left * (Int32)(object)right));
+                return (T)(object)unchecked((int)((int)(object)left * (int)(object)right));
             }
-            else if (typeof(T) == typeof(UInt64))
+            else if (typeof(T) == typeof(ulong))
             {
-                return (T)(object)unchecked((UInt64)((UInt64)(object)left * (UInt64)(object)right));
+                return (T)(object)unchecked((ulong)((ulong)(object)left * (ulong)(object)right));
             }
-            else if (typeof(T) == typeof(Int64))
+            else if (typeof(T) == typeof(long))
             {
-                return (T)(object)unchecked((Int64)((Int64)(object)left * (Int64)(object)right));
+                return (T)(object)unchecked((long)((long)(object)left * (long)(object)right));
             }
-            else if (typeof(T) == typeof(Single))
+            else if (typeof(T) == typeof(float))
             {
-                return (T)(object)unchecked((Single)((Single)(object)left * (Single)(object)right));
+                return (T)(object)unchecked((float)((float)(object)left * (float)(object)right));
             }
-            else if (typeof(T) == typeof(Double))
+            else if (typeof(T) == typeof(double))
             {
-                return (T)(object)unchecked((Double)((Double)(object)left * (Double)(object)right));
+                return (T)(object)unchecked((double)((double)(object)left * (double)(object)right));
             }
             else
             {
@@ -4833,45 +4833,45 @@ namespace System.Numerics
         [MethodImplAttribute(MethodImplOptions.AggressiveInlining)]
         private static T ScalarDivide(T left, T right)
         {
-            if (typeof(T) == typeof(Byte))
+            if (typeof(T) == typeof(byte))
             {
-                return (T)(object)(Byte)((Byte)(object)left / (Byte)(object)right);
+                return (T)(object)(byte)((byte)(object)left / (byte)(object)right);
             }
-            else if (typeof(T) == typeof(SByte))
+            else if (typeof(T) == typeof(sbyte))
             {
-                return (T)(object)(SByte)((SByte)(object)left / (SByte)(object)right);
+                return (T)(object)(sbyte)((sbyte)(object)left / (sbyte)(object)right);
             }
-            else if (typeof(T) == typeof(UInt16))
+            else if (typeof(T) == typeof(ushort))
             {
-                return (T)(object)(UInt16)((UInt16)(object)left / (UInt16)(object)right);
+                return (T)(object)(ushort)((ushort)(object)left / (ushort)(object)right);
             }
-            else if (typeof(T) == typeof(Int16))
+            else if (typeof(T) == typeof(short))
             {
-                return (T)(object)(Int16)((Int16)(object)left / (Int16)(object)right);
+                return (T)(object)(short)((short)(object)left / (short)(object)right);
             }
-            else if (typeof(T) == typeof(UInt32))
+            else if (typeof(T) == typeof(uint))
             {
-                return (T)(object)(UInt32)((UInt32)(object)left / (UInt32)(object)right);
+                return (T)(object)(uint)((uint)(object)left / (uint)(object)right);
             }
-            else if (typeof(T) == typeof(Int32))
+            else if (typeof(T) == typeof(int))
             {
-                return (T)(object)(Int32)((Int32)(object)left / (Int32)(object)right);
+                return (T)(object)(int)((int)(object)left / (int)(object)right);
             }
-            else if (typeof(T) == typeof(UInt64))
+            else if (typeof(T) == typeof(ulong))
             {
-                return (T)(object)(UInt64)((UInt64)(object)left / (UInt64)(object)right);
+                return (T)(object)(ulong)((ulong)(object)left / (ulong)(object)right);
             }
-            else if (typeof(T) == typeof(Int64))
+            else if (typeof(T) == typeof(long))
             {
-                return (T)(object)(Int64)((Int64)(object)left / (Int64)(object)right);
+                return (T)(object)(long)((long)(object)left / (long)(object)right);
             }
-            else if (typeof(T) == typeof(Single))
+            else if (typeof(T) == typeof(float))
             {
-                return (T)(object)(Single)((Single)(object)left / (Single)(object)right);
+                return (T)(object)(float)((float)(object)left / (float)(object)right);
             }
-            else if (typeof(T) == typeof(Double))
+            else if (typeof(T) == typeof(double))
             {
-                return (T)(object)(Double)((Double)(object)left / (Double)(object)right);
+                return (T)(object)(double)((double)(object)left / (double)(object)right);
             }
             else
             {
@@ -4882,54 +4882,54 @@ namespace System.Numerics
         [MethodImplAttribute(MethodImplOptions.AggressiveInlining)]
         private static T GetOneValue()
         {
-            if (typeof(T) == typeof(Byte))
+            if (typeof(T) == typeof(byte))
             {
-                Byte value = 1;
+                byte value = 1;
                 return (T)(object)value;
             }
-            else if (typeof(T) == typeof(SByte))
+            else if (typeof(T) == typeof(sbyte))
             {
-                SByte value = 1;
+                sbyte value = 1;
                 return (T)(object)value;
             }
-            else if (typeof(T) == typeof(UInt16))
+            else if (typeof(T) == typeof(ushort))
             {
-                UInt16 value = 1;
+                ushort value = 1;
                 return (T)(object)value;
             }
-            else if (typeof(T) == typeof(Int16))
+            else if (typeof(T) == typeof(short))
             {
-                Int16 value = 1;
+                short value = 1;
                 return (T)(object)value;
             }
-            else if (typeof(T) == typeof(UInt32))
+            else if (typeof(T) == typeof(uint))
             {
-                UInt32 value = 1;
+                uint value = 1;
                 return (T)(object)value;
             }
-            else if (typeof(T) == typeof(Int32))
+            else if (typeof(T) == typeof(int))
             {
-                Int32 value = 1;
+                int value = 1;
                 return (T)(object)value;
             }
-            else if (typeof(T) == typeof(UInt64))
+            else if (typeof(T) == typeof(ulong))
             {
-                UInt64 value = 1;
+                ulong value = 1;
                 return (T)(object)value;
             }
-            else if (typeof(T) == typeof(Int64))
+            else if (typeof(T) == typeof(long))
             {
-                Int64 value = 1;
+                long value = 1;
                 return (T)(object)value;
             }
-            else if (typeof(T) == typeof(Single))
+            else if (typeof(T) == typeof(float))
             {
-                Single value = 1;
+                float value = 1;
                 return (T)(object)value;
             }
-            else if (typeof(T) == typeof(Double))
+            else if (typeof(T) == typeof(double))
             {
-                Double value = 1;
+                double value = 1;
                 return (T)(object)value;
             }
             else
@@ -4941,43 +4941,43 @@ namespace System.Numerics
         [MethodImplAttribute(MethodImplOptions.AggressiveInlining)]
         private static T GetAllBitsSetValue()
         {
-            if (typeof(T) == typeof(Byte))
+            if (typeof(T) == typeof(byte))
             {
                 return (T)(object)ConstantHelper.GetByteWithAllBitsSet();
             }
-            else if (typeof(T) == typeof(SByte))
+            else if (typeof(T) == typeof(sbyte))
             {
                 return (T)(object)ConstantHelper.GetSByteWithAllBitsSet();
             }
-            else if (typeof(T) == typeof(UInt16))
+            else if (typeof(T) == typeof(ushort))
             {
                 return (T)(object)ConstantHelper.GetUInt16WithAllBitsSet();
             }
-            else if (typeof(T) == typeof(Int16))
+            else if (typeof(T) == typeof(short))
             {
                 return (T)(object)ConstantHelper.GetInt16WithAllBitsSet();
             }
-            else if (typeof(T) == typeof(UInt32))
+            else if (typeof(T) == typeof(uint))
             {
                 return (T)(object)ConstantHelper.GetUInt32WithAllBitsSet();
             }
-            else if (typeof(T) == typeof(Int32))
+            else if (typeof(T) == typeof(int))
             {
                 return (T)(object)ConstantHelper.GetInt32WithAllBitsSet();
             }
-            else if (typeof(T) == typeof(UInt64))
+            else if (typeof(T) == typeof(ulong))
             {
                 return (T)(object)ConstantHelper.GetUInt64WithAllBitsSet();
             }
-            else if (typeof(T) == typeof(Int64))
+            else if (typeof(T) == typeof(long))
             {
                 return (T)(object)ConstantHelper.GetInt64WithAllBitsSet();
             }
-            else if (typeof(T) == typeof(Single))
+            else if (typeof(T) == typeof(float))
             {
                 return (T)(object)ConstantHelper.GetSingleWithAllBitsSet();
             }
-            else if (typeof(T) == typeof(Double))
+            else if (typeof(T) == typeof(double))
             {
                 return (T)(object)ConstantHelper.GetDoubleWithAllBitsSet();
             }
@@ -5001,22 +5001,22 @@ namespace System.Numerics
         /// </summary>
         [CLSCompliant(false)]
         [Intrinsic]
-        public static unsafe void Widen(Vector<Byte> source, out Vector<UInt16> low, out Vector<UInt16> high)
+        public static unsafe void Widen(Vector<byte> source, out Vector<ushort> low, out Vector<ushort> high)
         {
-            int elements = Vector<Byte>.Count;
-            UInt16* lowPtr = stackalloc UInt16[elements / 2];
+            int elements = Vector<byte>.Count;
+            ushort* lowPtr = stackalloc ushort[elements / 2];
             for (int i = 0; i < elements / 2; i++)
             {
-                lowPtr[i] = (UInt16)source[i];
+                lowPtr[i] = (ushort)source[i];
             }
-            UInt16* highPtr = stackalloc UInt16[elements / 2];
+            ushort* highPtr = stackalloc ushort[elements / 2];
             for (int i = 0; i < elements / 2; i++)
             {
-                highPtr[i] = (UInt16)source[i + (elements / 2)];
+                highPtr[i] = (ushort)source[i + (elements / 2)];
             }
 
-            low = new Vector<UInt16>(lowPtr);
-            high = new Vector<UInt16>(highPtr);
+            low = new Vector<ushort>(lowPtr);
+            high = new Vector<ushort>(highPtr);
         }
 
         /// <summary>
@@ -5027,22 +5027,22 @@ namespace System.Numerics
         /// </summary>
         [CLSCompliant(false)]
         [Intrinsic]
-        public static unsafe void Widen(Vector<UInt16> source, out Vector<UInt32> low, out Vector<UInt32> high)
+        public static unsafe void Widen(Vector<ushort> source, out Vector<uint> low, out Vector<uint> high)
         {
-            int elements = Vector<UInt16>.Count;
-            UInt32* lowPtr = stackalloc UInt32[elements / 2];
+            int elements = Vector<ushort>.Count;
+            uint* lowPtr = stackalloc uint[elements / 2];
             for (int i = 0; i < elements / 2; i++)
             {
-                lowPtr[i] = (UInt32)source[i];
+                lowPtr[i] = (uint)source[i];
             }
-            UInt32* highPtr = stackalloc UInt32[elements / 2];
+            uint* highPtr = stackalloc uint[elements / 2];
             for (int i = 0; i < elements / 2; i++)
             {
-                highPtr[i] = (UInt32)source[i + (elements / 2)];
+                highPtr[i] = (uint)source[i + (elements / 2)];
             }
 
-            low = new Vector<UInt32>(lowPtr);
-            high = new Vector<UInt32>(highPtr);
+            low = new Vector<uint>(lowPtr);
+            high = new Vector<uint>(highPtr);
         }
 
         /// <summary>
@@ -5053,22 +5053,22 @@ namespace System.Numerics
         /// </summary>
         [CLSCompliant(false)]
         [Intrinsic]
-        public static unsafe void Widen(Vector<UInt32> source, out Vector<UInt64> low, out Vector<UInt64> high)
+        public static unsafe void Widen(Vector<uint> source, out Vector<ulong> low, out Vector<ulong> high)
         {
-            int elements = Vector<UInt32>.Count;
-            UInt64* lowPtr = stackalloc UInt64[elements / 2];
+            int elements = Vector<uint>.Count;
+            ulong* lowPtr = stackalloc ulong[elements / 2];
             for (int i = 0; i < elements / 2; i++)
             {
-                lowPtr[i] = (UInt64)source[i];
+                lowPtr[i] = (ulong)source[i];
             }
-            UInt64* highPtr = stackalloc UInt64[elements / 2];
+            ulong* highPtr = stackalloc ulong[elements / 2];
             for (int i = 0; i < elements / 2; i++)
             {
-                highPtr[i] = (UInt64)source[i + (elements / 2)];
+                highPtr[i] = (ulong)source[i + (elements / 2)];
             }
 
-            low = new Vector<UInt64>(lowPtr);
-            high = new Vector<UInt64>(highPtr);
+            low = new Vector<ulong>(lowPtr);
+            high = new Vector<ulong>(highPtr);
         }
 
         /// <summary>
@@ -5079,22 +5079,22 @@ namespace System.Numerics
         /// </summary>
         [CLSCompliant(false)]
         [Intrinsic]
-        public static unsafe void Widen(Vector<SByte> source, out Vector<Int16> low, out Vector<Int16> high)
+        public static unsafe void Widen(Vector<sbyte> source, out Vector<short> low, out Vector<short> high)
         {
-            int elements = Vector<SByte>.Count;
-            Int16* lowPtr = stackalloc Int16[elements / 2];
+            int elements = Vector<sbyte>.Count;
+            short* lowPtr = stackalloc short[elements / 2];
             for (int i = 0; i < elements / 2; i++)
             {
-                lowPtr[i] = (Int16)source[i];
+                lowPtr[i] = (short)source[i];
             }
-            Int16* highPtr = stackalloc Int16[elements / 2];
+            short* highPtr = stackalloc short[elements / 2];
             for (int i = 0; i < elements / 2; i++)
             {
-                highPtr[i] = (Int16)source[i + (elements / 2)];
+                highPtr[i] = (short)source[i + (elements / 2)];
             }
 
-            low = new Vector<Int16>(lowPtr);
-            high = new Vector<Int16>(highPtr);
+            low = new Vector<short>(lowPtr);
+            high = new Vector<short>(highPtr);
         }
 
         /// <summary>
@@ -5104,22 +5104,22 @@ namespace System.Numerics
         /// <param name="high">The second output vector, whose elements will contain the widened elements from higher indices in the source vector.</param>
         /// </summary>
         [Intrinsic]
-        public static unsafe void Widen(Vector<Int16> source, out Vector<Int32> low, out Vector<Int32> high)
+        public static unsafe void Widen(Vector<short> source, out Vector<int> low, out Vector<int> high)
         {
-            int elements = Vector<Int16>.Count;
-            Int32* lowPtr = stackalloc Int32[elements / 2];
+            int elements = Vector<short>.Count;
+            int* lowPtr = stackalloc int[elements / 2];
             for (int i = 0; i < elements / 2; i++)
             {
-                lowPtr[i] = (Int32)source[i];
+                lowPtr[i] = (int)source[i];
             }
-            Int32* highPtr = stackalloc Int32[elements / 2];
+            int* highPtr = stackalloc int[elements / 2];
             for (int i = 0; i < elements / 2; i++)
             {
-                highPtr[i] = (Int32)source[i + (elements / 2)];
+                highPtr[i] = (int)source[i + (elements / 2)];
             }
 
-            low = new Vector<Int32>(lowPtr);
-            high = new Vector<Int32>(highPtr);
+            low = new Vector<int>(lowPtr);
+            high = new Vector<int>(highPtr);
         }
 
         /// <summary>
@@ -5129,22 +5129,22 @@ namespace System.Numerics
         /// <param name="high">The second output vector, whose elements will contain the widened elements from higher indices in the source vector.</param>
         /// </summary>
         [Intrinsic]
-        public static unsafe void Widen(Vector<Int32> source, out Vector<Int64> low, out Vector<Int64> high)
+        public static unsafe void Widen(Vector<int> source, out Vector<long> low, out Vector<long> high)
         {
-            int elements = Vector<Int32>.Count;
-            Int64* lowPtr = stackalloc Int64[elements / 2];
+            int elements = Vector<int>.Count;
+            long* lowPtr = stackalloc long[elements / 2];
             for (int i = 0; i < elements / 2; i++)
             {
-                lowPtr[i] = (Int64)source[i];
+                lowPtr[i] = (long)source[i];
             }
-            Int64* highPtr = stackalloc Int64[elements / 2];
+            long* highPtr = stackalloc long[elements / 2];
             for (int i = 0; i < elements / 2; i++)
             {
-                highPtr[i] = (Int64)source[i + (elements / 2)];
+                highPtr[i] = (long)source[i + (elements / 2)];
             }
 
-            low = new Vector<Int64>(lowPtr);
-            high = new Vector<Int64>(highPtr);
+            low = new Vector<long>(lowPtr);
+            high = new Vector<long>(highPtr);
         }
 
         /// <summary>
@@ -5154,22 +5154,22 @@ namespace System.Numerics
         /// <param name="high">The second output vector, whose elements will contain the widened elements from higher indices in the source vector.</param>
         /// </summary>
         [Intrinsic]
-        public static unsafe void Widen(Vector<Single> source, out Vector<Double> low, out Vector<Double> high)
+        public static unsafe void Widen(Vector<float> source, out Vector<double> low, out Vector<double> high)
         {
-            int elements = Vector<Single>.Count;
-            Double* lowPtr = stackalloc Double[elements / 2];
+            int elements = Vector<float>.Count;
+            double* lowPtr = stackalloc double[elements / 2];
             for (int i = 0; i < elements / 2; i++)
             {
-                lowPtr[i] = (Double)source[i];
+                lowPtr[i] = (double)source[i];
             }
-            Double* highPtr = stackalloc Double[elements / 2];
+            double* highPtr = stackalloc double[elements / 2];
             for (int i = 0; i < elements / 2; i++)
             {
-                highPtr[i] = (Double)source[i + (elements / 2)];
+                highPtr[i] = (double)source[i + (elements / 2)];
             }
 
-            low = new Vector<Double>(lowPtr);
-            high = new Vector<Double>(highPtr);
+            low = new Vector<double>(lowPtr);
+            high = new Vector<double>(highPtr);
         }
 
         /// <summary>
@@ -5180,22 +5180,22 @@ namespace System.Numerics
         /// </summary>
         [CLSCompliant(false)]
         [Intrinsic]
-        public static unsafe Vector<Byte> Narrow(Vector<UInt16> low, Vector<UInt16> high)
+        public static unsafe Vector<byte> Narrow(Vector<ushort> low, Vector<ushort> high)
         {
 		    unchecked
 		    {
-				int elements = Vector<Byte>.Count;
-				Byte* retPtr = stackalloc Byte[elements];
+				int elements = Vector<byte>.Count;
+                byte* retPtr = stackalloc byte[elements];
 				for (int i = 0; i < elements / 2; i++)
 				{
-					retPtr[i] = (Byte)low[i];
+					retPtr[i] = (byte)low[i];
 				}
 				for (int i = 0; i < elements / 2; i++)
 				{
-					retPtr[i + (elements / 2)] = (Byte)high[i];
+					retPtr[i + (elements / 2)] = (byte)high[i];
 				}
 
-				return new Vector<Byte>(retPtr);
+				return new Vector<byte>(retPtr);
 		    }
         }
 
@@ -5207,22 +5207,22 @@ namespace System.Numerics
         /// </summary>
         [CLSCompliant(false)]
         [Intrinsic]
-        public static unsafe Vector<UInt16> Narrow(Vector<UInt32> low, Vector<UInt32> high)
+        public static unsafe Vector<ushort> Narrow(Vector<uint> low, Vector<uint> high)
         {
 		    unchecked
 		    {
-				int elements = Vector<UInt16>.Count;
-				UInt16* retPtr = stackalloc UInt16[elements];
+				int elements = Vector<ushort>.Count;
+                ushort* retPtr = stackalloc ushort[elements];
 				for (int i = 0; i < elements / 2; i++)
 				{
-					retPtr[i] = (UInt16)low[i];
+					retPtr[i] = (ushort)low[i];
 				}
 				for (int i = 0; i < elements / 2; i++)
 				{
-					retPtr[i + (elements / 2)] = (UInt16)high[i];
+					retPtr[i + (elements / 2)] = (ushort)high[i];
 				}
 
-				return new Vector<UInt16>(retPtr);
+				return new Vector<ushort>(retPtr);
 		    }
         }
 
@@ -5234,22 +5234,22 @@ namespace System.Numerics
         /// </summary>
         [CLSCompliant(false)]
         [Intrinsic]
-        public static unsafe Vector<UInt32> Narrow(Vector<UInt64> low, Vector<UInt64> high)
+        public static unsafe Vector<uint> Narrow(Vector<ulong> low, Vector<ulong> high)
         {
 		    unchecked
 		    {
-				int elements = Vector<UInt32>.Count;
-				UInt32* retPtr = stackalloc UInt32[elements];
+				int elements = Vector<uint>.Count;
+                uint* retPtr = stackalloc uint[elements];
 				for (int i = 0; i < elements / 2; i++)
 				{
-					retPtr[i] = (UInt32)low[i];
+					retPtr[i] = (uint)low[i];
 				}
 				for (int i = 0; i < elements / 2; i++)
 				{
-					retPtr[i + (elements / 2)] = (UInt32)high[i];
+					retPtr[i + (elements / 2)] = (uint)high[i];
 				}
 
-				return new Vector<UInt32>(retPtr);
+				return new Vector<uint>(retPtr);
 		    }
         }
 
@@ -5261,22 +5261,22 @@ namespace System.Numerics
         /// </summary>
         [CLSCompliant(false)]
         [Intrinsic]
-        public static unsafe Vector<SByte> Narrow(Vector<Int16> low, Vector<Int16> high)
+        public static unsafe Vector<sbyte> Narrow(Vector<short> low, Vector<short> high)
         {
 		    unchecked
 		    {
-				int elements = Vector<SByte>.Count;
-				SByte* retPtr = stackalloc SByte[elements];
+				int elements = Vector<sbyte>.Count;
+                sbyte* retPtr = stackalloc sbyte[elements];
 				for (int i = 0; i < elements / 2; i++)
 				{
-					retPtr[i] = (SByte)low[i];
+					retPtr[i] = (sbyte)low[i];
 				}
 				for (int i = 0; i < elements / 2; i++)
 				{
-					retPtr[i + (elements / 2)] = (SByte)high[i];
+					retPtr[i + (elements / 2)] = (sbyte)high[i];
 				}
 
-				return new Vector<SByte>(retPtr);
+				return new Vector<sbyte>(retPtr);
 		    }
         }
 
@@ -5287,22 +5287,22 @@ namespace System.Numerics
         /// <returns>A Vector{Int16} containing elements narrowed from the source vectors.</returns>
         /// </summary>
         [Intrinsic]
-        public static unsafe Vector<Int16> Narrow(Vector<Int32> low, Vector<Int32> high)
+        public static unsafe Vector<short> Narrow(Vector<int> low, Vector<int> high)
         {
 		    unchecked
 		    {
-				int elements = Vector<Int16>.Count;
-				Int16* retPtr = stackalloc Int16[elements];
+				int elements = Vector<short>.Count;
+                short* retPtr = stackalloc short[elements];
 				for (int i = 0; i < elements / 2; i++)
 				{
-					retPtr[i] = (Int16)low[i];
+					retPtr[i] = (short)low[i];
 				}
 				for (int i = 0; i < elements / 2; i++)
 				{
-					retPtr[i + (elements / 2)] = (Int16)high[i];
+					retPtr[i + (elements / 2)] = (short)high[i];
 				}
 
-				return new Vector<Int16>(retPtr);
+				return new Vector<short>(retPtr);
 		    }
         }
 
@@ -5313,22 +5313,22 @@ namespace System.Numerics
         /// <returns>A Vector{Int32} containing elements narrowed from the source vectors.</returns>
         /// </summary>
         [Intrinsic]
-        public static unsafe Vector<Int32> Narrow(Vector<Int64> low, Vector<Int64> high)
+        public static unsafe Vector<int> Narrow(Vector<long> low, Vector<long> high)
         {
 		    unchecked
 		    {
-				int elements = Vector<Int32>.Count;
-				Int32* retPtr = stackalloc Int32[elements];
+				int elements = Vector<int>.Count;
+                int* retPtr = stackalloc int[elements];
 				for (int i = 0; i < elements / 2; i++)
 				{
-					retPtr[i] = (Int32)low[i];
+					retPtr[i] = (int)low[i];
 				}
 				for (int i = 0; i < elements / 2; i++)
 				{
-					retPtr[i + (elements / 2)] = (Int32)high[i];
+					retPtr[i + (elements / 2)] = (int)high[i];
 				}
 
-				return new Vector<Int32>(retPtr);
+				return new Vector<int>(retPtr);
 		    }
         }
 
@@ -5339,22 +5339,22 @@ namespace System.Numerics
         /// <returns>A Vector{Single} containing elements narrowed from the source vectors.</returns>
         /// </summary>
         [Intrinsic]
-        public static unsafe Vector<Single> Narrow(Vector<Double> low, Vector<Double> high)
+        public static unsafe Vector<float> Narrow(Vector<double> low, Vector<double> high)
         {
 		    unchecked
 		    {
-				int elements = Vector<Single>.Count;
-				Single* retPtr = stackalloc Single[elements];
+				int elements = Vector<float>.Count;
+                float* retPtr = stackalloc float[elements];
 				for (int i = 0; i < elements / 2; i++)
 				{
-					retPtr[i] = (Single)low[i];
+					retPtr[i] = (float)low[i];
 				}
 				for (int i = 0; i < elements / 2; i++)
 				{
-					retPtr[i + (elements / 2)] = (Single)high[i];
+					retPtr[i + (elements / 2)] = (float)high[i];
 				}
 
-				return new Vector<Single>(retPtr);
+				return new Vector<float>(retPtr);
 		    }
         }
 
@@ -5367,18 +5367,18 @@ namespace System.Numerics
         /// <param name="value">The source vector.</param>
         /// <returns>The converted vector.</returns>
         [Intrinsic]
-        public static unsafe Vector<Single> ConvertToSingle(Vector<Int32> value)
+        public static unsafe Vector<float> ConvertToSingle(Vector<int> value)
         {
 			unchecked
 			{
-				int elements = Vector<Single>.Count;
-				Single* retPtr = stackalloc Single[elements];
+				int elements = Vector<float>.Count;
+                float* retPtr = stackalloc float[elements];
 				for (int i = 0; i < elements; i++)
 				{
-					retPtr[i] = (Single)value[i];
+					retPtr[i] = (float)value[i];
 				}
 
-				return new Vector<Single>(retPtr);
+				return new Vector<float>(retPtr);
 			}
         }
 
@@ -5389,18 +5389,18 @@ namespace System.Numerics
         /// <returns>The converted vector.</returns>
         [CLSCompliant(false)]
         [Intrinsic]
-        public static unsafe Vector<Single> ConvertToSingle(Vector<UInt32> value)
+        public static unsafe Vector<float> ConvertToSingle(Vector<uint> value)
         {
 			unchecked
 			{
-				int elements = Vector<Single>.Count;
-				Single* retPtr = stackalloc Single[elements];
+				int elements = Vector<float>.Count;
+                float* retPtr = stackalloc float[elements];
 				for (int i = 0; i < elements; i++)
 				{
-					retPtr[i] = (Single)value[i];
+					retPtr[i] = (float)value[i];
 				}
 
-				return new Vector<Single>(retPtr);
+				return new Vector<float>(retPtr);
 			}
         }
 
@@ -5410,18 +5410,18 @@ namespace System.Numerics
         /// <param name="value">The source vector.</param>
         /// <returns>The converted vector.</returns>
         [Intrinsic]
-        public static unsafe Vector<Double> ConvertToDouble(Vector<Int64> value)
+        public static unsafe Vector<double> ConvertToDouble(Vector<long> value)
         {
 			unchecked
 			{
-				int elements = Vector<Double>.Count;
-				Double* retPtr = stackalloc Double[elements];
+				int elements = Vector<double>.Count;
+                double* retPtr = stackalloc double[elements];
 				for (int i = 0; i < elements; i++)
 				{
-					retPtr[i] = (Double)value[i];
+					retPtr[i] = (double)value[i];
 				}
 
-				return new Vector<Double>(retPtr);
+				return new Vector<double>(retPtr);
 			}
         }
 
@@ -5432,18 +5432,18 @@ namespace System.Numerics
         /// <returns>The converted vector.</returns>
         [CLSCompliant(false)]
         [Intrinsic]
-        public static unsafe Vector<Double> ConvertToDouble(Vector<UInt64> value)
+        public static unsafe Vector<double> ConvertToDouble(Vector<ulong> value)
         {
 			unchecked
 			{
-				int elements = Vector<Double>.Count;
-				Double* retPtr = stackalloc Double[elements];
+				int elements = Vector<double>.Count;
+                double* retPtr = stackalloc double[elements];
 				for (int i = 0; i < elements; i++)
 				{
-					retPtr[i] = (Double)value[i];
+					retPtr[i] = (double)value[i];
 				}
 
-				return new Vector<Double>(retPtr);
+				return new Vector<double>(retPtr);
 			}
         }
 
@@ -5453,18 +5453,18 @@ namespace System.Numerics
         /// <param name="value">The source vector.</param>
         /// <returns>The converted vector.</returns>
         [Intrinsic]
-        public static unsafe Vector<Int32> ConvertToInt32(Vector<Single> value)
+        public static unsafe Vector<int> ConvertToInt32(Vector<float> value)
         {
 			unchecked
 			{
-				int elements = Vector<Int32>.Count;
-				Int32* retPtr = stackalloc Int32[elements];
+				int elements = Vector<int>.Count;
+                int* retPtr = stackalloc int[elements];
 				for (int i = 0; i < elements; i++)
 				{
-					retPtr[i] = (Int32)value[i];
+					retPtr[i] = (int)value[i];
 				}
 
-				return new Vector<Int32>(retPtr);
+				return new Vector<int>(retPtr);
 			}
         }
 
@@ -5475,18 +5475,18 @@ namespace System.Numerics
         /// <returns>The converted vector.</returns>
         [CLSCompliant(false)]
         [Intrinsic]
-        public static unsafe Vector<UInt32> ConvertToUInt32(Vector<Single> value)
+        public static unsafe Vector<uint> ConvertToUInt32(Vector<float> value)
         {
 			unchecked
 			{
-				int elements = Vector<UInt32>.Count;
-				UInt32* retPtr = stackalloc UInt32[elements];
+				int elements = Vector<uint>.Count;
+                uint* retPtr = stackalloc uint[elements];
 				for (int i = 0; i < elements; i++)
 				{
-					retPtr[i] = (UInt32)value[i];
+					retPtr[i] = (uint)value[i];
 				}
 
-				return new Vector<UInt32>(retPtr);
+				return new Vector<uint>(retPtr);
 			}
         }
 
@@ -5496,18 +5496,18 @@ namespace System.Numerics
         /// <param name="value">The source vector.</param>
         /// <returns>The converted vector.</returns>
         [Intrinsic]
-        public static unsafe Vector<Int64> ConvertToInt64(Vector<Double> value)
+        public static unsafe Vector<long> ConvertToInt64(Vector<double> value)
         {
 			unchecked
 			{
-				int elements = Vector<Int64>.Count;
-				Int64* retPtr = stackalloc Int64[elements];
+				int elements = Vector<long>.Count;
+                long* retPtr = stackalloc long[elements];
 				for (int i = 0; i < elements; i++)
 				{
-					retPtr[i] = (Int64)value[i];
+					retPtr[i] = (long)value[i];
 				}
 
-				return new Vector<Int64>(retPtr);
+				return new Vector<long>(retPtr);
 			}
         }
 
@@ -5518,18 +5518,18 @@ namespace System.Numerics
         /// <returns>The converted vector.</returns>
         [CLSCompliant(false)]
         [Intrinsic]
-        public static unsafe Vector<UInt64> ConvertToUInt64(Vector<Double> value)
+        public static unsafe Vector<ulong> ConvertToUInt64(Vector<double> value)
         {
 			unchecked
 			{
-				int elements = Vector<UInt64>.Count;
-				UInt64* retPtr = stackalloc UInt64[elements];
+				int elements = Vector<ulong>.Count;
+                ulong* retPtr = stackalloc ulong[elements];
 				for (int i = 0; i < elements; i++)
 				{
-					retPtr[i] = (UInt64)value[i];
+					retPtr[i] = (ulong)value[i];
 				}
 
-				return new Vector<UInt64>(retPtr);
+				return new Vector<ulong>(retPtr);
 			}
         }
 

@@ -163,7 +163,7 @@ namespace System.Numerics.Tests
             return MyBigIntImp.GetRandomByteArray(random, size);
         }
 
-        private static Byte[] GetRandomPosByteArray(Random random, int size)
+        private static byte[] GetRandomPosByteArray(Random random, int size)
         {
             byte[] value = new byte[size];
 
@@ -176,7 +176,7 @@ namespace System.Numerics.Tests
             return value;
         }
 
-        private static Byte[] GetRandomNegByteArray(Random random, int size)
+        private static byte[] GetRandomNegByteArray(Random random, int size)
         {
             byte[] value = new byte[size];
 
@@ -189,7 +189,7 @@ namespace System.Numerics.Tests
             return value;
         }
 
-        private static String Print(byte[] bytes)
+        private static string Print(byte[] bytes)
         {
             return MyBigIntImp.Print(bytes);
         }

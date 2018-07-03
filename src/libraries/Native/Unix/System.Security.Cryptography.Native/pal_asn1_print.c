@@ -31,7 +31,7 @@ ASN1_STRING* CryptoNative_DecodeAsn1TypeBytes(const uint8_t* buf, int32_t len, A
         return NULL;
     }
 
-    return d2i_ASN1_type_bytes(NULL, &buf, len, type);
+    return d2i_ASN1_type_bytes(NULL, &buf, len, (int32_t)type);
 }
 
 int32_t CryptoNative_Asn1StringPrintEx(BIO* out, ASN1_STRING* str, Asn1StringPrintFlags flags)

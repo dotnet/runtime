@@ -428,9 +428,9 @@ namespace CoreXml.Test.XLinq
                 public void docType_4()
                 {
                     XDocument doc = new XDocument();
-                    String docName = "";
+                    string docName = "";
                     if (Variation.Param.ToString() == "String.Empty")
-                        docName = String.Empty;
+                        docName = string.Empty;
                     else if (Variation.Param.ToString() == "null")
                         docName = null;
                     using (XmlWriter w = CreateWriter(doc))
@@ -542,7 +542,7 @@ namespace CoreXml.Test.XLinq
                     {
                         try
                         {
-                            w.WriteStartElement(String.Empty);
+                            w.WriteStartElement(string.Empty);
                         }
                         catch (ArgumentException)
                         {
@@ -577,7 +577,7 @@ namespace CoreXml.Test.XLinq
                 {
                     XDocument doc = new XDocument();
                     XmlWriter w = CreateWriter(doc);
-                    w.WriteStartElement("Root", String.Empty);
+                    w.WriteStartElement("Root", string.Empty);
                     w.WriteEndElement();
                     w.Dispose();
                     if (!CompareReader(doc, "<Root />"))
@@ -765,7 +765,7 @@ namespace CoreXml.Test.XLinq
                         try
                         {
                             w.WriteStartElement("Root");
-                            w.WriteStartAttribute(String.Empty);
+                            w.WriteStartAttribute(string.Empty);
                         }
                         catch (ArgumentException)
                         {
@@ -2381,7 +2381,7 @@ namespace CoreXml.Test.XLinq
 
                     w.Dispose();
 
-                    string strExpected = String.Format("<root xmlns:pre=\"{0}\"><pre:elt>text</pre:elt></root>", uri);
+                    string strExpected = string.Format("<root xmlns:pre=\"{0}\"><pre:elt>text</pre:elt></root>", uri);
                     if (!CompareReader(doc, strExpected)) throw new TestException(TestResult.Failed, "");
                 }
 
@@ -2546,7 +2546,7 @@ namespace CoreXml.Test.XLinq
                 {
                     XDocument doc = new XDocument();
                     XmlWriter w = CreateWriter(doc);
-                    w.WriteStartElement(String.Empty, "Root", "ns");
+                    w.WriteStartElement(string.Empty, "Root", "ns");
                     w.WriteEndElement();
                     w.Dispose();
 
@@ -2570,7 +2570,7 @@ namespace CoreXml.Test.XLinq
                 {
                     XDocument doc = new XDocument();
                     XmlWriter w = CreateWriter(doc);
-                    w.WriteStartElement("Root", String.Empty);
+                    w.WriteStartElement("Root", string.Empty);
                     w.WriteEndElement();
                     w.Dispose();
 
@@ -2596,7 +2596,7 @@ namespace CoreXml.Test.XLinq
                     XDocument doc = new XDocument();
                     XmlWriter w = CreateWriter(doc);
                     w.WriteStartElement("pre", "Root", "ns");
-                    w.WriteElementString(String.Empty, "child", "ns", "test");
+                    w.WriteElementString(string.Empty, "child", "ns", "test");
                     w.WriteEndElement();
                     w.Dispose();
 
@@ -2625,7 +2625,7 @@ namespace CoreXml.Test.XLinq
                         try
                         {
                             w.WriteStartElement("pre", "Root", "ns");
-                            w.WriteElementString("pre", "child", String.Empty, "test");
+                            w.WriteElementString("pre", "child", string.Empty, "test");
                         }
                         catch (ArgumentException)
                         {
@@ -2644,7 +2644,7 @@ namespace CoreXml.Test.XLinq
                         try
                         {
                             w.WriteStartElement("pre", "Root", "ns");
-                            w.WriteElementString("pre", "child", String.Empty, "test");
+                            w.WriteElementString("pre", "child", string.Empty, "test");
                         }
                         catch (ArgumentException)
                         {
@@ -2906,9 +2906,9 @@ namespace CoreXml.Test.XLinq
                     XmlWriter w = CreateWriter(doc);
                     w.WriteStartElement("Root");
                     w.WriteAttributeString(null, "a", null, "b");
-                    w.WriteAttributeString(String.Empty, "c", String.Empty, "d");
-                    w.WriteAttributeString(null, "e", String.Empty, "f");
-                    w.WriteAttributeString(String.Empty, "g", null, "h");
+                    w.WriteAttributeString(string.Empty, "c", string.Empty, "d");
+                    w.WriteAttributeString(null, "e", string.Empty, "f");
+                    w.WriteAttributeString(string.Empty, "g", null, "h");
                     w.WriteEndElement();
                     w.Dispose();
 
@@ -2949,7 +2949,7 @@ namespace CoreXml.Test.XLinq
                     XDocument doc = new XDocument();
                     XmlWriter w = CreateWriter(doc);
                     w.WriteStartElement("Root");
-                    w.WriteAttributeString("x", "a", String.Empty, "b");
+                    w.WriteAttributeString("x", "a", string.Empty, "b");
                     w.WriteEndElement();
                     w.Dispose();
 
@@ -3208,7 +3208,7 @@ namespace CoreXml.Test.XLinq
                     XDocument doc = new XDocument();
                     XmlWriter w = CreateWriter(doc);
                     w.WriteStartElement("Root");
-                    w.WriteAttributeString(String.Empty, "attr", "ns", "value");
+                    w.WriteAttributeString(string.Empty, "attr", "ns", "value");
                     w.WriteEndElement();
                     w.Dispose();
 
@@ -3234,7 +3234,7 @@ namespace CoreXml.Test.XLinq
                     XDocument doc = new XDocument();
                     XmlWriter w = CreateWriter(doc);
                     w.WriteStartElement("Root");
-                    w.WriteAttributeString("pre", "attr", String.Empty, "value");
+                    w.WriteAttributeString("pre", "attr", string.Empty, "value");
                     w.WriteEndElement();
                     w.Dispose();
 
@@ -3260,7 +3260,7 @@ namespace CoreXml.Test.XLinq
                     XDocument doc = new XDocument();
                     XmlWriter w = CreateWriter(doc);
                     w.WriteStartElement("pre", "Root", "ns");
-                    w.WriteAttributeString(String.Empty, "child", "ns", "test");
+                    w.WriteAttributeString(string.Empty, "child", "ns", "test");
                     w.WriteEndElement();
                     w.Dispose();
 
@@ -3286,7 +3286,7 @@ namespace CoreXml.Test.XLinq
                     XDocument doc = new XDocument();
                     XmlWriter w = CreateWriter(doc);
                     w.WriteStartElement("pre", "Root", "ns");
-                    w.WriteAttributeString("pre", "child", String.Empty, "test");
+                    w.WriteAttributeString("pre", "child", string.Empty, "test");
                     w.WriteEndElement();
                     w.Dispose();
 
@@ -3369,7 +3369,7 @@ namespace CoreXml.Test.XLinq
                     XDocument doc = new XDocument();
                     XmlWriter w = CreateWriter(doc);
                     w.WriteStartElement("Root");
-                    w.WriteCData(String.Empty);
+                    w.WriteCData(string.Empty);
                     w.WriteEndElement();
                     w.Dispose();
 
@@ -3546,7 +3546,7 @@ namespace CoreXml.Test.XLinq
                     XDocument doc = new XDocument();
                     XmlWriter w = CreateWriter(doc);
                     w.WriteStartElement("Root");
-                    w.WriteComment(String.Empty);
+                    w.WriteComment(string.Empty);
                     w.WriteEndElement();
                     w.Dispose();
 
@@ -3652,7 +3652,7 @@ namespace CoreXml.Test.XLinq
                             temp = null;
                             break;
                         case "String.Empty":
-                            temp = String.Empty;
+                            temp = string.Empty;
                             break;
                         default:
                             temp = Variation.Param.ToString();
@@ -4059,7 +4059,7 @@ namespace CoreXml.Test.XLinq
                     XDocument doc = new XDocument();
                     XmlWriter w = CreateWriter(doc);
                     w.WriteStartElement("Root");
-                    w.WriteProcessingInstruction("test", String.Empty);
+                    w.WriteProcessingInstruction("test", string.Empty);
                     w.WriteEndElement();
                     w.Dispose();
 
@@ -4096,7 +4096,7 @@ namespace CoreXml.Test.XLinq
                         try
                         {
                             w.WriteStartElement("Root");
-                            w.WriteProcessingInstruction(String.Empty, "test");
+                            w.WriteProcessingInstruction(string.Empty, "test");
                         }
                         catch (ArgumentException)
                         {
@@ -4286,7 +4286,7 @@ namespace CoreXml.Test.XLinq
                             if (Variation.Param.ToString() == "null")
                                 temp = null;
                             else
-                                temp = String.Empty;
+                                temp = string.Empty;
                             w.WriteNmToken(temp);
                             w.WriteEndElement();
                         }
@@ -4368,7 +4368,7 @@ namespace CoreXml.Test.XLinq
                             if (Variation.Param.ToString() == "null")
                                 temp = null;
                             else
-                                temp = String.Empty;
+                                temp = string.Empty;
                             w.WriteName(temp);
                             w.WriteEndElement();
                         }
@@ -4449,7 +4449,7 @@ namespace CoreXml.Test.XLinq
                             if (Variation.Param.ToString() == "null")
                                 temp = null;
                             else
-                                temp = String.Empty;
+                                temp = string.Empty;
                             w.WriteQualifiedName(temp, "test");
                             w.WriteEndElement();
                         }
@@ -4693,7 +4693,7 @@ namespace CoreXml.Test.XLinq
                     XDocument doc = new XDocument();
                     XmlWriter w = CreateWriter(doc);
                     w.WriteStartElement("Root");
-                    w.WriteString(String.Empty);
+                    w.WriteString(string.Empty);
                     w.WriteEndElement();
                     w.Dispose();
 
@@ -4813,7 +4813,7 @@ namespace CoreXml.Test.XLinq
                 public void writeString_13()
                 {
                     char[] invalidXML = { '\uD800', '\uDC00', '\uD800', '\uDFFF', '\uDBFF', '\uDC00', '\uDBFF', '\uDFFF' };
-                    string invXML = new String(invalidXML);
+                    string invXML = new string(invalidXML);
                     XDocument doc = new XDocument();
                     XmlWriter w = CreateWriter(doc);
                     w.WriteStartElement("Root");
@@ -4828,7 +4828,7 @@ namespace CoreXml.Test.XLinq
                 public void writeString_14()
                 {
                     char[] invalidXML = { 'a', 'b', '\uDA34' };
-                    string invXML = new String(invalidXML);
+                    string invXML = new string(invalidXML);
                     XDocument doc = new XDocument();
                     using (XmlWriter w = CreateWriter(doc))
                     {
@@ -4853,7 +4853,7 @@ namespace CoreXml.Test.XLinq
                 public void writeString_15()
                 {
                     char[] invalidXML = { '\uDF20', 'b', 'c' };
-                    string invXML = new String(invalidXML);
+                    string invXML = new string(invalidXML);
                     XDocument doc = new XDocument();
                     using (XmlWriter w = CreateWriter(doc))
                     {
@@ -4878,7 +4878,7 @@ namespace CoreXml.Test.XLinq
                 public void writeString_16()
                 {
                     char[] invalidXML = { 'a', '\uDE40', '\uDA72', 'c' };
-                    string invXML = new String(invalidXML);
+                    string invXML = new string(invalidXML);
                     XDocument doc = new XDocument();
                     using (XmlWriter w = CreateWriter(doc))
                     {
@@ -4929,7 +4929,7 @@ namespace CoreXml.Test.XLinq
                     if (Variation.Param.ToString() == "null")
                         temp = null;
                     else
-                        temp = String.Empty;
+                        temp = string.Empty;
                     w.WriteStartElement("Root");
 
                     w.WriteWhitespace(temp);
@@ -5001,7 +5001,7 @@ namespace CoreXml.Test.XLinq
                     XDocument doc = new XDocument();
                     XmlWriter w = CreateWriter(doc);
                     w.WriteStartElement("Root");
-                    w.WriteValue(Decimal.MaxValue);
+                    w.WriteValue(decimal.MaxValue);
                     w.WriteEndElement();
                     w.Dispose();
 
@@ -5014,7 +5014,7 @@ namespace CoreXml.Test.XLinq
                     XDocument doc = new XDocument();
                     XmlWriter w = CreateWriter(doc);
                     w.WriteStartElement("Root");
-                    w.WriteValue(Double.MaxValue);
+                    w.WriteValue(double.MaxValue);
                     w.WriteEndElement();
                     w.Dispose();
 
@@ -5027,7 +5027,7 @@ namespace CoreXml.Test.XLinq
                     XDocument doc = new XDocument();
                     XmlWriter w = CreateWriter(doc);
                     w.WriteStartElement("Root");
-                    w.WriteValue(Int32.MaxValue);
+                    w.WriteValue(int.MaxValue);
                     w.WriteEndElement();
                     w.Dispose();
 
@@ -5040,7 +5040,7 @@ namespace CoreXml.Test.XLinq
                     XDocument doc = new XDocument();
                     XmlWriter w = CreateWriter(doc);
                     w.WriteStartElement("Root");
-                    w.WriteValue(Int64.MaxValue);
+                    w.WriteValue(long.MaxValue);
                     w.WriteEndElement();
                     w.Dispose();
 
@@ -5053,7 +5053,7 @@ namespace CoreXml.Test.XLinq
                     XDocument doc = new XDocument();
                     XmlWriter w = CreateWriter(doc);
                     w.WriteStartElement("Root");
-                    w.WriteValue(Single.MaxValue);
+                    w.WriteValue(float.MaxValue);
                     w.WriteEndElement();
                     w.Dispose();
 
@@ -5245,8 +5245,8 @@ namespace CoreXml.Test.XLinq
                     XDocument doc = new XDocument();
                     XmlWriter w = CreateWriter(doc);
                     w.WriteStartElement("Root");
-                    string s = w.LookupPrefix(String.Empty);
-                    TestLog.Compare(s, String.Empty, "Error");
+                    string s = w.LookupPrefix(string.Empty);
+                    TestLog.Compare(s, string.Empty, "Error");
                     w.Dispose();
                 }
 
@@ -5294,7 +5294,7 @@ namespace CoreXml.Test.XLinq
                     w.WriteStartElement("Root", "foo");
                     w.WriteString("content");
                     string s = w.LookupPrefix("foo");
-                    TestLog.Compare(s, String.Empty, "Error");
+                    TestLog.Compare(s, string.Empty, "Error");
                     w.Dispose();
                 }
 
@@ -5363,7 +5363,7 @@ namespace CoreXml.Test.XLinq
                     TestLog.Compare(s, "x", "Error in nested element");
                     w.WriteEndElement();
                     s = w.LookupPrefix("foo");
-                    TestLog.Compare(s, String.Empty, "Error in root element");
+                    TestLog.Compare(s, string.Empty, "Error in root element");
                     w.WriteEndElement();
                     w.Dispose();
                 }
@@ -5830,7 +5830,7 @@ namespace CoreXml.Test.XLinq
                 //[Variation(Id = 14, Desc = "Index = Count = 0", Priority = 1)]
                 public void writeRaw_14()
                 {
-                    string lang = new String('a', 1);
+                    string lang = new string('a', 1);
                     char[] buffer = lang.ToCharArray();
                     XDocument doc = new XDocument();
                     XmlWriter w = CreateWriter(doc);
@@ -6355,7 +6355,7 @@ namespace CoreXml.Test.XLinq
                             w.WriteQualifiedName("foo", "bar");
                             break;
                         case "WriteValue":
-                            w.WriteValue(Int32.MaxValue);
+                            w.WriteValue(int.MaxValue);
                             break;
                         case "WriteAttributes":
                             XmlReader xr1 = XmlReader.Create(new StringReader("<root attr='test'/>"));

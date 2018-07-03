@@ -20,7 +20,7 @@ namespace System.Xml.Tests
                 Directory.CreateDirectory(targetDir);
             }
 
-            foreach (String file in Directory.GetFiles(sourcePath))
+            foreach (string file in Directory.GetFiles(sourcePath))
             {
                 string fileName = Path.GetFileName(file);
                 if (!File.Exists(Path.Combine(targetDir, fileName)))

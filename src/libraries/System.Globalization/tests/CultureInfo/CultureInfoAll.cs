@@ -143,7 +143,7 @@ namespace System.Globalization.Tests
             Assert.Equal(GetLocaleInfo(ci, LOCALE_SNATIVECOUNTRYNAME), ri.NativeName, StringComparer.OrdinalIgnoreCase);
         }
 
-        private int[] ConvertWin32GroupString(String win32Str)
+        private int[] ConvertWin32GroupString(string win32Str)
         {
             // None of these cases make any sense
             if (win32Str == null || win32Str.Length == 0)
@@ -195,12 +195,12 @@ namespace System.Globalization.Tests
         private string[] GetTimeFormats(CultureInfo ci, uint flags)
         {
             _timePatterns = new List<string>();
-            Assert.True(EnumTimeFormatsEx(EnumTimeFormats, ci.Name, flags, IntPtr.Zero), String.Format("EnumTimeFormatsEx failed with culture {0} and flags {1}", ci, flags));
+            Assert.True(EnumTimeFormatsEx(EnumTimeFormats, ci.Name, flags, IntPtr.Zero), string.Format("EnumTimeFormatsEx failed with culture {0} and flags {1}", ci, flags));
 
             return _timePatterns.ToArray();
         }
 
-        internal String ReescapeWin32String(String str)
+        internal string ReescapeWin32String(string str)
         {
             // If we don't have data, then don't try anything
             if (str == null)
@@ -344,7 +344,7 @@ namespace System.Globalization.Tests
             }
             else
             {
-                throw new KeyNotFoundException(String.Format("Got a calendar {0} which we cannot map its Id", cal));
+                throw new KeyNotFoundException(string.Format("Got a calendar {0} which we cannot map its Id", cal));
             }
 
             return calId;
@@ -360,7 +360,7 @@ namespace System.Globalization.Tests
 
         private string GetLocaleInfo(CultureInfo ci, uint lctype)
         {
-            Assert.True(GetLocaleInfoEx(ci.Name, lctype, sb, 400) > 0, String.Format("GetLocaleInfoEx failed when calling with lctype {0} and culture {1}", lctype, ci));
+            Assert.True(GetLocaleInfoEx(ci.Name, lctype, sb, 400) > 0, string.Format("GetLocaleInfoEx failed when calling with lctype {0} and culture {1}", lctype, ci));
             return sb.ToString();
         }
 
@@ -368,7 +368,7 @@ namespace System.Globalization.Tests
         {
             if (GetCalendarInfoEx(ci.Name, calendar, IntPtr.Zero, calType, sb, 400, IntPtr.Zero) <= 0)
             {
-                Assert.False(throwInFail, String.Format("GetCalendarInfoEx failed when calling with caltype {0} and culture {1} and calendar Id {2}", calType, ci, calendar));
+                Assert.False(throwInFail, string.Format("GetCalendarInfoEx failed when calling with caltype {0} and culture {1} and calendar Id {2}", calType, ci, calendar));
                 return "";
             }
             return ReescapeWin32String(sb.ToString());
@@ -420,7 +420,7 @@ namespace System.Globalization.Tests
         private int GetLocaleInfoAsInt(CultureInfo ci, uint lcType)
         {
             int data = 0;
-            Assert.True(GetLocaleInfoEx(ci.Name, lcType | LOCALE_RETURN_NUMBER, ref data, sizeof(int)) > 0, String.Format("GetLocaleInfoEx failed with culture {0} and lcType {1}.", ci, lcType));
+            Assert.True(GetLocaleInfoEx(ci.Name, lcType | LOCALE_RETURN_NUMBER, ref data, sizeof(int)) > 0, string.Format("GetLocaleInfoEx failed with culture {0} and lcType {1}.", ci, lcType));
 
             return data;
         }
