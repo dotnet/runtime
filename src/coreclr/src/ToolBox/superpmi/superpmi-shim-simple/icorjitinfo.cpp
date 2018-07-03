@@ -1266,7 +1266,7 @@ InfoAccessType interceptor_ICJI::constructStringLiteral(CORINFO_MODULE_HANDLE mo
     return original_ICorJitInfo->constructStringLiteral(module, metaTok, ppValue);
 }
 
-bool interceptor_ICJI::convertPInvokeCalliToCall(CORINFO_RESOLVED_TOKEN * pResolvedToken, bool fMustConvert)
+bool interceptor_ICJI::convertPInvokeCalliToCall(CORINFO_RESOLVED_TOKEN* pResolvedToken, bool fMustConvert)
 {
     return original_ICorJitInfo->convertPInvokeCalliToCall(pResolvedToken, fMustConvert);
 }

@@ -1580,7 +1580,7 @@ void* MyICJI::getTailCallCopyArgsThunk(CORINFO_SIG_INFO* pSig, CorInfoHelperTail
     return jitInstance->mc->repGetTailCallCopyArgsThunk(pSig, flags);
 }
 
-bool MyICJI::convertPInvokeCalliToCall(CORINFO_RESOLVED_TOKEN * pResolvedToken, bool fMustConvert)
+bool MyICJI::convertPInvokeCalliToCall(CORINFO_RESOLVED_TOKEN* pResolvedToken, bool fMustConvert)
 {
     jitInstance->mc->cr->AddCall("convertPInvokeCalliToCall");
     return jitInstance->mc->repConvertPInvokeCalliToCall(pResolvedToken, fMustConvert);

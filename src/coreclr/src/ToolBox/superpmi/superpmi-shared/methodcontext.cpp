@@ -2436,7 +2436,7 @@ InfoAccessType MethodContext::repConstructStringLiteral(CORINFO_MODULE_HANDLE mo
     return (InfoAccessType)temp2.B;
 }
 
-void MethodContext::recConvertPInvokeCalliToCall(CORINFO_RESOLVED_TOKEN * pResolvedToken, bool fMustConvert, bool result)
+void MethodContext::recConvertPInvokeCalliToCall(CORINFO_RESOLVED_TOKEN* pResolvedToken, bool fMustConvert, bool result)
 {
     if (ConvertPInvokeCalliToCall == nullptr)
         ConvertPInvokeCalliToCall = new LightWeightMap<DLD, DWORDLONG>();
@@ -2456,7 +2456,7 @@ void MethodContext::dmpConvertPInvokeCalliToCall(DLD key, DWORDLONG value)
 {
     printf("ConvertPInvokeCalliToCall key mod-%016llX tok-%08X, value %016llX", key.A, key.B, value);
 }
-bool MethodContext::repConvertPInvokeCalliToCall(CORINFO_RESOLVED_TOKEN * pResolvedToken, bool fMustConvert)
+bool MethodContext::repConvertPInvokeCalliToCall(CORINFO_RESOLVED_TOKEN* pResolvedToken, bool fMustConvert)
 {
     DLD key;
     ZeroMemory(&key, sizeof(DLD)); // We use the input structs as a key and use memcmp to compare.. so we need to zero
@@ -4362,7 +4362,8 @@ void MethodContext::dmpCanInlineTypeCheckWithObjectVTable(DWORDLONG key, DWORD v
 }
 BOOL MethodContext::repCanInlineTypeCheckWithObjectVTable(CORINFO_CLASS_HANDLE cls)
 {
-    AssertCodeMsg(CanInlineTypeCheckWithObjectVTable != nullptr, EXCEPTIONCODE_MC, "No map for CanInlineTypeCheckWithObjectVTable");
+    AssertCodeMsg(CanInlineTypeCheckWithObjectVTable != nullptr, EXCEPTIONCODE_MC,
+                  "No map for CanInlineTypeCheckWithObjectVTable");
     return (BOOL)CanInlineTypeCheckWithObjectVTable->Get((DWORDLONG)cls);
 }
 

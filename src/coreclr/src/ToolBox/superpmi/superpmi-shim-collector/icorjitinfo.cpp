@@ -1825,7 +1825,7 @@ InfoAccessType interceptor_ICJI::constructStringLiteral(CORINFO_MODULE_HANDLE mo
     return temp;
 }
 
-bool interceptor_ICJI::convertPInvokeCalliToCall(CORINFO_RESOLVED_TOKEN * pResolvedToken, bool fMustConvert)
+bool interceptor_ICJI::convertPInvokeCalliToCall(CORINFO_RESOLVED_TOKEN* pResolvedToken, bool fMustConvert)
 {
     mc->cr->AddCall("convertPInvokeCalliToCall");
     bool result = original_ICorJitInfo->convertPInvokeCalliToCall(pResolvedToken, fMustConvert);
