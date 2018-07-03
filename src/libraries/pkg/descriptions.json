@@ -373,6 +373,18 @@
     ]
   },
   {
+    "Name": "System.ComponentModel.Composition.Registration",
+    "Description": "This namespace provides classes that constitute the core of the Managed Extensibility Framework, or MEF.",
+    "CommonTypes": [
+      "System.ComponentModel.Composition.Registration.RegistrationBuilder",
+      "System.ComponentModel.Composition.Registration.PartBuilder",
+      "System.ComponentModel.Composition.Registration.PartBuilder<T>",
+      "System.ComponentModel.Composition.Registration.ParameterImportBuilder",
+      "System.ComponentModel.Composition.Registration.ImportBuilder",
+      "System.ComponentModel.Composition.Registration.ExportBuilder"
+    ]
+  },
+  {
     "Name": "System.ComponentModel.EventBasedAsync",
     "Description": "Provides support classes and delegates for the event-based asynchronous pattern. Developers should prefer the classes in the System.Threading.Tasks package.",
     "CommonTypes": [

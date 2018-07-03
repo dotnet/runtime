@@ -92,6 +92,12 @@ namespace System.Net.Http.Functional.Tests
         protected override bool UseSocketsHttpHandler => false;
     }
 
+    public sealed class PlatformHandler_HttpClientHandler_Proxy_Test : HttpClientHandler_Proxy_Test
+    {
+        public PlatformHandler_HttpClientHandler_Proxy_Test(ITestOutputHelper output) : base(output) { }
+        protected override bool UseSocketsHttpHandler => false;
+    }
+
     public sealed class PlatformHandler_SchSendAuxRecordHttpTest : SchSendAuxRecordHttpTest
     {
         public PlatformHandler_SchSendAuxRecordHttpTest(ITestOutputHelper output) : base(output) { }

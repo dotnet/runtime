@@ -53,7 +53,7 @@ namespace System.Data.SqlClient.ManualTesting.Tests
                         {
                             x = (int)fieldValue.GetType().InvokeMember("X", BindingFlags.GetProperty, null, fieldValue, null);
                             y = (int)fieldValue.GetType().InvokeMember("X", BindingFlags.GetProperty, null, fieldValue, null);
-                            d = (double)fieldValue.GetType().InvokeMember("Distance", BindingFlags.Public | BindingFlags.Default | BindingFlags.Instance | BindingFlags.InvokeMethod, null, fieldValue, new Object[] { });
+                            d = (double)fieldValue.GetType().InvokeMember("Distance", BindingFlags.Public | BindingFlags.Default | BindingFlags.Instance | BindingFlags.InvokeMethod, null, fieldValue, new object[] { });
                             builder.Append(string.Format("p.X = {0,3}, p.Y = {1,3}, p.Distance() = {2}", x, y, d));
                         }
                         else
@@ -66,7 +66,7 @@ namespace System.Data.SqlClient.ManualTesting.Tests
                         fNull = (bool)fieldValue.GetType().InvokeMember("IsNull", BindingFlags.GetProperty, null, fieldValue, null);
                         if (!fNull)
                         {
-                            o = fieldValue.GetType().InvokeMember("Center", BindingFlags.Public | BindingFlags.Default | BindingFlags.Instance | BindingFlags.GetProperty, null, fieldValue, new Object[] { });
+                            o = fieldValue.GetType().InvokeMember("Center", BindingFlags.Public | BindingFlags.Default | BindingFlags.Instance | BindingFlags.GetProperty, null, fieldValue, new object[] { });
                             builder.Append("Center = " + o);
                         }
                     }

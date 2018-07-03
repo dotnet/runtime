@@ -60,7 +60,7 @@ namespace System.Xml
             internal void Init(int nsTop)
             {
                 name = null;
-                defaultNs = String.Empty;
+                defaultNs = string.Empty;
                 defaultNsState = NamespaceState.Uninitialized;
                 xmlSpace = XmlSpace.None;
                 xmlLang = null;
@@ -292,7 +292,7 @@ namespace System.Xml
         }
 
         // Creates an instance of the XmlTextWriter class using the specified file.
-        public XmlTextWriter(String filename, Encoding encoding)
+        public XmlTextWriter(string filename, Encoding encoding)
         : this(new FileStream(filename, FileMode.Create,
                               FileAccess.Write, FileShare.Read), encoding)
         {
@@ -777,7 +777,7 @@ namespace System.Xml
                 {
                     throw new ArgumentException(SR.Xml_InvalidPiChars);
                 }
-                if (0 == String.Compare(name, "xml", StringComparison.OrdinalIgnoreCase) && _stateTable == s_stateTableDocument)
+                if (0 == string.Compare(name, "xml", StringComparison.OrdinalIgnoreCase) && _stateTable == s_stateTableDocument)
                 {
                     throw new ArgumentException(SR.Xml_DupXmlDecl);
                 }
@@ -829,7 +829,7 @@ namespace System.Xml
             {
                 if (null == ws)
                 {
-                    ws = String.Empty;
+                    ws = string.Empty;
                 }
 
                 if (!_xmlCharType.IsOnlyWhitespace(ws))
@@ -881,7 +881,7 @@ namespace System.Xml
 
 
         // Writes out the specified text content.
-        public override void WriteChars(Char[] buffer, int index, int count)
+        public override void WriteChars(char[] buffer, int index, int count)
         {
             try
             {
@@ -896,7 +896,7 @@ namespace System.Xml
         }
 
         // Writes raw markup from the specified character buffer.
-        public override void WriteRaw(Char[] buffer, int index, int count)
+        public override void WriteRaw(char[] buffer, int index, int count)
         {
             try
             {
@@ -911,7 +911,7 @@ namespace System.Xml
         }
 
         // Writes raw markup from the specified character string.
-        public override void WriteRaw(String data)
+        public override void WriteRaw(string data)
         {
             try
             {
@@ -1115,7 +1115,7 @@ namespace System.Xml
             {
                 for (int i = _top; i > 0; i--)
                 {
-                    String xlang = _stack[i].xmlLang;
+                    string xlang = _stack[i].xmlLang;
                     if (xlang != null)
                         return xlang;
                 }

@@ -33,7 +33,7 @@ namespace System.Xml.Tests
             return FilePathUtil.getStream(_sampleFileName);
         }
 
-        public String GetUrl()
+        public string GetUrl()
         {
             return _sampleFileName;
         }
@@ -67,7 +67,7 @@ namespace System.Xml.Tests
 
         public class ReaderDelegate
         {
-            public static bool Create(String url)
+            public static bool Create(string url)
             {
                 XmlReader reader = null;
                 try
@@ -131,7 +131,7 @@ namespace System.Xml.Tests
                 }
             }
 
-            public static bool Create(String url, XmlReaderSettings settings)
+            public static bool Create(string url, XmlReaderSettings settings)
             {
                 XmlReader reader = null;
                 try
@@ -215,7 +215,7 @@ namespace System.Xml.Tests
                 }
             }
 
-            public static bool Create(Stream input, XmlReaderSettings settings, String baseUri)
+            public static bool Create(Stream input, XmlReaderSettings settings, string baseUri)
             {
                 XmlReader reader = null;
                 try
@@ -257,7 +257,7 @@ namespace System.Xml.Tests
                 }
             }
 
-            public static bool Create(TextReader input, XmlReaderSettings settings, String baseUri)
+            public static bool Create(TextReader input, XmlReaderSettings settings, string baseUri)
             {
                 XmlReader reader = null;
                 try
@@ -299,7 +299,7 @@ namespace System.Xml.Tests
                 }
             }
 
-            public static bool Create(String url, XmlReaderSettings settings, XmlParserContext context)
+            public static bool Create(string url, XmlReaderSettings settings, XmlParserContext context)
             {
                 XmlReader reader = null;
                 try

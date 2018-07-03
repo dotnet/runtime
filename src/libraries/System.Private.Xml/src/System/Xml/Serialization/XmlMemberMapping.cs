@@ -70,7 +70,7 @@ namespace System.Xml.Serialization
         /// </devdoc>
         public string TypeName
         {
-            get { return Accessor.Mapping != null ? Accessor.Mapping.TypeName : String.Empty; }
+            get { return Accessor.Mapping != null ? Accessor.Mapping.TypeName : string.Empty; }
         }
 
         /// <devdoc>

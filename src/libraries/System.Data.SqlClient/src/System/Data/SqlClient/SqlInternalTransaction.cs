@@ -307,9 +307,9 @@ namespace System.Data.SqlClient
             Zombie();
         }
 
-        internal Int32 DecrementAndObtainOpenResultCount()
+        internal int DecrementAndObtainOpenResultCount()
         {
-            Int32 openResultCount = Interlocked.Decrement(ref _openResultCount);
+            int openResultCount = Interlocked.Decrement(ref _openResultCount);
             if (openResultCount < 0)
             {
                 throw SQL.OpenResultCountExceeded();
@@ -356,9 +356,9 @@ namespace System.Data.SqlClient
             }
         }
 
-        internal Int32 IncrementAndObtainOpenResultCount()
+        internal int IncrementAndObtainOpenResultCount()
         {
-            Int32 openResultCount = Interlocked.Increment(ref _openResultCount);
+            int openResultCount = Interlocked.Increment(ref _openResultCount);
 
             if (openResultCount < 0)
             {

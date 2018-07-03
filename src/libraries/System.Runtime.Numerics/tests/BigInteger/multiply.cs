@@ -144,12 +144,12 @@ namespace System.Numerics.Tests
             byte[] tempByteArray2 = new byte[0];
 
             // Axiom: X*1 = X
-            VerifyIdentityString(Int32.MaxValue + " " + BigInteger.One + " bMultiply", Int32.MaxValue.ToString());
-            VerifyIdentityString(Int64.MaxValue + " " + BigInteger.One + " bMultiply", Int64.MaxValue.ToString());
+            VerifyIdentityString(int.MaxValue + " " + BigInteger.One + " bMultiply", Int32.MaxValue.ToString());
+            VerifyIdentityString(long.MaxValue + " " + BigInteger.One + " bMultiply", Int64.MaxValue.ToString());
 
             for (int i = 0; i < s_samples; i++)
             {
-                String randBigInt = Print(GetRandomByteArray(random));
+                string randBigInt = Print(GetRandomByteArray(random));
                 VerifyIdentityString(randBigInt + BigInteger.One + " bMultiply", randBigInt + "u+");
             }
         }
@@ -162,12 +162,12 @@ namespace System.Numerics.Tests
             byte[] tempByteArray2 = new byte[0];
 
             // Axiom: X*0 = 0
-            VerifyIdentityString(Int32.MaxValue + " " + BigInteger.Zero + " bMultiply", BigInteger.Zero.ToString());
-            VerifyIdentityString(Int64.MaxValue + " " + BigInteger.Zero + " bMultiply", BigInteger.Zero.ToString());
+            VerifyIdentityString(int.MaxValue + " " + BigInteger.Zero + " bMultiply", BigInteger.Zero.ToString());
+            VerifyIdentityString(long.MaxValue + " " + BigInteger.Zero + " bMultiply", BigInteger.Zero.ToString());
 
             for (int i = 0; i < s_samples; i++)
             {
-                String randBigInt = Print(GetRandomByteArray(random));
+                string randBigInt = Print(GetRandomByteArray(random));
                 VerifyIdentityString(randBigInt + BigInteger.Zero + " bMultiply", BigInteger.Zero.ToString());
             }
         }
@@ -180,12 +180,12 @@ namespace System.Numerics.Tests
             byte[] tempByteArray2 = new byte[0];
 
             // Axiom: a*b = b*a
-            VerifyIdentityString(Int32.MaxValue + " " + Int64.MaxValue + " bMultiply", Int64.MaxValue + " " + Int32.MaxValue + " bMultiply");
+            VerifyIdentityString(int.MaxValue + " " + long.MaxValue + " bMultiply", long.MaxValue + " " + int.MaxValue + " bMultiply");
 
             for (int i = 0; i < s_samples; i++)
             {
-                String randBigInt1 = Print(GetRandomByteArray(random));
-                String randBigInt2 = Print(GetRandomByteArray(random));
+                string randBigInt1 = Print(GetRandomByteArray(random));
+                string randBigInt2 = Print(GetRandomByteArray(random));
                 VerifyIdentityString(randBigInt1 + randBigInt2 + "bMultiply", randBigInt2 + randBigInt1 + "bMultiply");
             }
         }
@@ -244,7 +244,7 @@ namespace System.Numerics.Tests
             return MyBigIntImp.GetRandomByteArray(random, size);
         }
 
-        private static String Print(byte[] bytes)
+        private static string Print(byte[] bytes)
         {
             return MyBigIntImp.Print(bytes);
         }

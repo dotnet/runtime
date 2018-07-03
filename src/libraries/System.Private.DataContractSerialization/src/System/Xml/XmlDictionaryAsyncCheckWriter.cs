@@ -576,37 +576,37 @@ namespace System.Xml
             CoreWriter.WriteArray(prefix, localName, namespaceUri, array, offset, count);
         }
 
-        public override void WriteArray(string prefix, string localName, string namespaceUri, Int16[] array, int offset, int count)
+        public override void WriteArray(string prefix, string localName, string namespaceUri, short[] array, int offset, int count)
         {
             CheckAsync();
             CoreWriter.WriteArray(prefix, localName, namespaceUri, array, offset, count);
         }
 
-        public override void WriteArray(string prefix, XmlDictionaryString localName, XmlDictionaryString namespaceUri, Int16[] array, int offset, int count)
+        public override void WriteArray(string prefix, XmlDictionaryString localName, XmlDictionaryString namespaceUri, short[] array, int offset, int count)
         {
             CheckAsync();
             CoreWriter.WriteArray(prefix, localName, namespaceUri, array, offset, count);
         }
 
-        public override void WriteArray(string prefix, string localName, string namespaceUri, Int32[] array, int offset, int count)
+        public override void WriteArray(string prefix, string localName, string namespaceUri, int[] array, int offset, int count)
         {
             CheckAsync();
             CoreWriter.WriteArray(prefix, localName, namespaceUri, array, offset, count);
         }
 
-        public override void WriteArray(string prefix, XmlDictionaryString localName, XmlDictionaryString namespaceUri, Int32[] array, int offset, int count)
+        public override void WriteArray(string prefix, XmlDictionaryString localName, XmlDictionaryString namespaceUri, int[] array, int offset, int count)
         {
             CheckAsync();
             CoreWriter.WriteArray(prefix, localName, namespaceUri, array, offset, count);
         }
 
-        public override void WriteArray(string prefix, string localName, string namespaceUri, Int64[] array, int offset, int count)
+        public override void WriteArray(string prefix, string localName, string namespaceUri, long[] array, int offset, int count)
         {
             CheckAsync();
             CoreWriter.WriteArray(prefix, localName, namespaceUri, array, offset, count);
         }
 
-        public override void WriteArray(string prefix, XmlDictionaryString localName, XmlDictionaryString namespaceUri, Int64[] array, int offset, int count)
+        public override void WriteArray(string prefix, XmlDictionaryString localName, XmlDictionaryString namespaceUri, long[] array, int offset, int count)
         {
             CheckAsync();
             CoreWriter.WriteArray(prefix, localName, namespaceUri, array, offset, count);

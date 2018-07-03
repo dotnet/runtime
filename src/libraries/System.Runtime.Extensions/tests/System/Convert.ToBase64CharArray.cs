@@ -39,12 +39,12 @@ namespace System.Tests
             // Convert the first half of the byte array, write to the first half of the char array
             int c = Convert.ToBase64CharArray(inputBuffer, 0, 3, outputBuffer, 0);
             Assert.Equal(4, c);
-            Assert.Equal("AAEC....", new String(outputBuffer));
+            Assert.Equal("AAEC....", new string(outputBuffer));
 
             // Convert the second half of the byte array, write to the second half of the char array
             c = Convert.ToBase64CharArray(inputBuffer, 3, 3, outputBuffer, 4);
             Assert.Equal(4, c);
-            Assert.Equal("AAECAwQF", new String(outputBuffer));
+            Assert.Equal("AAECAwQF", new string(outputBuffer));
         }
 
         [Fact]

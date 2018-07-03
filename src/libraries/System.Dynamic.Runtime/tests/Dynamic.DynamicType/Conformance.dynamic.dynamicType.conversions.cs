@@ -869,7 +869,7 @@ namespace ManagedTests.DynamicCSharp.Conformance.dynamic.dynamicType.conversions
             int failcount = 0;
             string origin = "aabb";
             dynamic d = origin;
-            String result = d;
+            string result = d;
             if (result != origin)
             {
                 failcount++;
@@ -903,7 +903,7 @@ namespace ManagedTests.DynamicCSharp.Conformance.dynamic.dynamicType.conversions
             //
             int origin = 10;
             dynamic d = origin;
-            Object result = d;
+            object result = d;
             if ((int)result != origin)
             {
                 failcount++;

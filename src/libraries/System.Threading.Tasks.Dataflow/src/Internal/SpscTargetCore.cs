@@ -399,7 +399,7 @@ namespace System.Threading.Tasks.Dataflow.Internal
             internal IEnumerable<TInput> InputQueue { get { return _target._messages.ToList(); } }
 
             /// <summary>Gets the current number of outstanding input processing operations.</summary>
-            internal Int32 CurrentDegreeOfParallelism { get { return _target._activeConsumer != null && !_target.Completion.IsCompleted ? 1 : 0; } }
+            internal int CurrentDegreeOfParallelism { get { return _target._activeConsumer != null && !_target.Completion.IsCompleted ? 1 : 0; } }
             /// <summary>Gets the DataflowBlockOptions used to configure this block.</summary>
             internal ExecutionDataflowBlockOptions DataflowBlockOptions { get { return _target._dataflowBlockOptions; } }
             /// <summary>Gets whether the block is declining further messages.</summary>

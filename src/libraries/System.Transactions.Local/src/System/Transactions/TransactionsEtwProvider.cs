@@ -1,4 +1,4 @@
-﻿// Licensed to the .NET Foundation under one or more agreements.
+// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
@@ -848,7 +848,7 @@ namespace System.Transactions
                 if (transactionID != null && transactionID.TransactionIdentifier != null)
                     TransactionScopeCreated(transactionID.TransactionIdentifier.ToString(), transactionScopeResult);
                 else
-                    TransactionScopeCreated(String.Empty, transactionScopeResult);
+                    TransactionScopeCreated(string.Empty, transactionScopeResult);
             }
         }
 
@@ -869,8 +869,8 @@ namespace System.Transactions
         {
             if (IsEnabled(EventLevel.Warning, ALL_KEYWORDS))
             {
-                String currentId = String.Empty;
-                String newId = String.Empty;
+                string currentId = string.Empty;
+                string newId = string.Empty;
                 if (currenttransactionID != null && currenttransactionID.TransactionIdentifier != null)
                 {
                     currentId = currenttransactionID.TransactionIdentifier.ToString();
@@ -902,7 +902,7 @@ namespace System.Transactions
                 if (transactionID != null && transactionID.TransactionIdentifier != null)
                     TransactionScopeNestedIncorrectly(transactionID.TransactionIdentifier.ToString());
                 else
-                    TransactionScopeNestedIncorrectly(String.Empty);
+                    TransactionScopeNestedIncorrectly(string.Empty);
             }
         }
 
@@ -925,7 +925,7 @@ namespace System.Transactions
                 if (transactionID != null && transactionID.TransactionIdentifier != null)
                     TransactionScopeDisposed(transactionID.TransactionIdentifier.ToString());
                 else
-                    TransactionScopeDisposed(String.Empty);
+                    TransactionScopeDisposed(string.Empty);
             }
         }
 
@@ -948,7 +948,7 @@ namespace System.Transactions
                 if (transactionID != null && transactionID.TransactionIdentifier != null)
                     TransactionScopeIncomplete(transactionID.TransactionIdentifier.ToString());
                 else
-                    TransactionScopeIncomplete(String.Empty);
+                    TransactionScopeIncomplete(string.Empty);
             }
         }
 
@@ -991,7 +991,7 @@ namespace System.Transactions
                 if (transactionID != null && transactionID.TransactionIdentifier != null)
                     TransactionScopeTimeout(transactionID.TransactionIdentifier.ToString());
                 else
-                    TransactionScopeTimeout(String.Empty);
+                    TransactionScopeTimeout(string.Empty);
             }
         }
 
@@ -1014,7 +1014,7 @@ namespace System.Transactions
                 if (transactionID != null && transactionID.TransactionIdentifier != null)
                     TransactionTimeout(transactionID.TransactionIdentifier.ToString());
                 else
-                    TransactionTimeout(String.Empty);
+                    TransactionTimeout(string.Empty);
             }
         }
 
@@ -1039,7 +1039,7 @@ namespace System.Transactions
                 if (enlistmentID != null)
                     TransactionstateEnlist(enlistmentID.EnlistmentIdentifier.ToString(), enlistmentType.ToString(), enlistmentOption.ToString());
                 else
-                    TransactionstateEnlist(String.Empty, enlistmentType.ToString(), enlistmentOption.ToString());
+                    TransactionstateEnlist(string.Empty, enlistmentType.ToString(), enlistmentOption.ToString());
             }
         }
 
@@ -1062,7 +1062,7 @@ namespace System.Transactions
                 if (transactionID != null && transactionID.TransactionIdentifier != null)
                     TransactionCommitted(transactionID.TransactionIdentifier.ToString());
                 else
-                    TransactionCommitted(String.Empty);
+                    TransactionCommitted(string.Empty);
             }
         }
 
@@ -1085,7 +1085,7 @@ namespace System.Transactions
                 if (transactionID != null && transactionID.TransactionIdentifier != null)
                     TransactionInDoubt(transactionID.TransactionIdentifier.ToString());
                 else
-                    TransactionInDoubt(String.Empty);
+                    TransactionInDoubt(string.Empty);
             }
         }
 
@@ -1106,8 +1106,8 @@ namespace System.Transactions
         {
             if (IsEnabled(EventLevel.Informational, ALL_KEYWORDS))
             {
-                String id = String.Empty;
-                String distributedId = String.Empty;
+                string id = string.Empty;
+                string distributedId = string.Empty;
                 if (transactionID != null && transactionID.TransactionIdentifier != null)
                     id= transactionID.TransactionIdentifier.ToString();
                 if (distributedTxID != null && distributedTxID.TransactionIdentifier != null)
@@ -1135,7 +1135,7 @@ namespace System.Transactions
                 if (transactionID != null && transactionID.TransactionIdentifier != null)
                     TransactionAborted(transactionID.TransactionIdentifier.ToString());
                 else
-                    TransactionAborted(String.Empty);
+                    TransactionAborted(string.Empty);
             }
           }
 

@@ -106,6 +106,7 @@
     <Reference Include="System.Runtime.Extensions" />
     <Reference Include="System.Runtime.InteropServices" />
     <Reference Include="System.Security.Cryptography.Primitives" />
+    <Reference Include="System.Text.Encoding.Extensions" />
   </ItemGroup>
   <ItemGroup Condition=" '$(TargetsOSX)' == 'true' ">
     <Reference Include="System.Runtime.Numerics" />

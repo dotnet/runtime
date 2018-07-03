@@ -53,6 +53,7 @@ namespace System.Net.Primitives.Functional.Tests
             Assert.NotEqual(sa1, sa4);
         }
 
+        [ActiveIssue(30523, TestPlatforms.AnyUnix)]
         [Fact]
         public static void ToString_Compare_Success()
         {
@@ -65,6 +66,16 @@ namespace System.Net.Primitives.Functional.Tests
             Assert.Equal(sa1.ToString(), sa2.ToString());
             Assert.NotEqual(sa1.ToString(), sa3.ToString());
             Assert.NotEqual(sa1.ToString(), sa4.ToString());
+
+            Assert.Equal("InterNetwork:64:{0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0}", sa1.ToString());
+            Assert.Equal("InterNetworkV6:48:{0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0}", sa4.ToString());
+
+            SocketAddress sa5 = new SocketAddress(AddressFamily.InterNetworkV6, 48);
+            for (int i = 2; i < sa5.Size; i++)
+            {
+                sa5[i] = (byte)i;
+            }
+            Assert.EndsWith("2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19,20,21,22,23,24,25,26,27,28,29,30,31,32,33,34,35,36,37,38,39,40,41,42,43,44,45,46,47}", sa5.ToString());
         }
     }
 }

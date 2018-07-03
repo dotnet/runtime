@@ -161,7 +161,7 @@ public partial class TimerFiringTests
         Timer[] timers = System.Linq.Enumerable.Range(0, maxTimers).Select(_ => new Timer(s => ce.Signal(), null, 100 /* enough time to wait on the are */, -1)).ToArray();
         try
         {
-            Assert.True(ce.Wait(MaxPositiveTimeoutInMs), String.Format("Not all timers fired, {0} left of {1}", ce.CurrentCount, maxTimers));
+            Assert.True(ce.Wait(MaxPositiveTimeoutInMs), string.Format("Not all timers fired, {0} left of {1}", ce.CurrentCount, maxTimers));
         }
         finally
         {

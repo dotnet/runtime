@@ -10,29 +10,131 @@
 #include "./metablock.h"
 
 #include "../common/constants.h"
+#include "../common/context.h"
+#include "../common/platform.h"
 #include <brotli/types.h>
 #include "./bit_cost.h"
 #include "./block_splitter.h"
 #include "./cluster.h"
-#include "./context.h"
 #include "./entropy_encode.h"
 #include "./histogram.h"
 #include "./memory.h"
-#include "./port.h"
 #include "./quality.h"
 
 #if defined(__cplusplus) || defined(c_plusplus)
 extern "C" {
 #endif
 
+void BrotliInitDistanceParams(BrotliEncoderParams* params,
+    uint32_t npostfix, uint32_t ndirect) {
+  BrotliDistanceParams* dist_params = &params->dist;
+  uint32_t alphabet_size, max_distance;
+
+  dist_params->distance_postfix_bits = npostfix;
+  dist_params->num_direct_distance_codes = ndirect;
+
+  alphabet_size = BROTLI_DISTANCE_ALPHABET_SIZE(
+      npostfix, ndirect, BROTLI_MAX_DISTANCE_BITS);
+  max_distance = ndirect + (1U << (BROTLI_MAX_DISTANCE_BITS + npostfix + 2)) -
+      (1U << (npostfix + 2));
+
+  if (params->large_window) {
+    static const uint32_t bound[BROTLI_MAX_NPOSTFIX + 1] = {0, 4, 12, 28};
+    uint32_t postfix = 1U << npostfix;
+    alphabet_size = BROTLI_DISTANCE_ALPHABET_SIZE(
+        npostfix, ndirect, BROTLI_LARGE_MAX_DISTANCE_BITS);
+    /* The maximum distance is set so that no distance symbol used can encode
+       a distance larger than BROTLI_MAX_ALLOWED_DISTANCE with all
+       its extra bits set. */
+    if (ndirect < bound[npostfix]) {
+      max_distance = BROTLI_MAX_ALLOWED_DISTANCE - (bound[npostfix] - ndirect);
+    } else if (ndirect >= bound[npostfix] + postfix) {
+      max_distance = (3U << 29) - 4 + (ndirect - bound[npostfix]);
+    } else {
+      max_distance = BROTLI_MAX_ALLOWED_DISTANCE;
+    }
+  }
+
+  dist_params->alphabet_size = alphabet_size;
+  dist_params->max_distance = max_distance;
+}
+
+static void RecomputeDistancePrefixes(Command* cmds,
+                                      size_t num_commands,
+                                      const BrotliDistanceParams* orig_params,
+                                      const BrotliDistanceParams* new_params) {
+  size_t i;
+
+  if (orig_params->distance_postfix_bits == new_params->distance_postfix_bits &&
+      orig_params->num_direct_distance_codes ==
+      new_params->num_direct_distance_codes) {
+    return;
+  }
+
+  for (i = 0; i < num_commands; ++i) {
+    Command* cmd = &cmds[i];
+    if (CommandCopyLen(cmd) && cmd->cmd_prefix_ >= 128) {
+      PrefixEncodeCopyDistance(CommandRestoreDistanceCode(cmd, orig_params),
+                               new_params->num_direct_distance_codes,
+                               new_params->distance_postfix_bits,
+                               &cmd->dist_prefix_,
+                               &cmd->dist_extra_);
+    }
+  }
+}
+
+static BROTLI_BOOL ComputeDistanceCost(const Command* cmds,
+                                       size_t num_commands,
+                                       const BrotliDistanceParams* orig_params,
+                                       const BrotliDistanceParams* new_params,
+                                       double* cost) {
+  size_t i;
+  BROTLI_BOOL equal_params = BROTLI_FALSE;
+  uint16_t dist_prefix;
+  uint32_t dist_extra;
+  double extra_bits = 0.0;
+  HistogramDistance histo;
+  HistogramClearDistance(&histo);
+
+  if (orig_params->distance_postfix_bits == new_params->distance_postfix_bits &&
+      orig_params->num_direct_distance_codes ==
+      new_params->num_direct_distance_codes) {
+    equal_params = BROTLI_TRUE;
+  }
+
+  for (i = 0; i < num_commands; i++) {
+    const Command* cmd = &cmds[i];
+    if (CommandCopyLen(cmd) && cmd->cmd_prefix_ >= 128) {
+      if (equal_params) {
+        dist_prefix = cmd->dist_prefix_;
+      } else {
+        uint32_t distance = CommandRestoreDistanceCode(cmd, orig_params);
+        if (distance > new_params->max_distance) {
+          return BROTLI_FALSE;
+        }
+        PrefixEncodeCopyDistance(distance,
+                                 new_params->num_direct_distance_codes,
+                                 new_params->distance_postfix_bits,
+                                 &dist_prefix,
+                                 &dist_extra);
+      }
+      HistogramAddDistance(&histo, dist_prefix & 0x3FF);
+      extra_bits += dist_prefix >> 10;
+    }
+  }
+
+  *cost = BrotliPopulationCostDistance(&histo) + extra_bits;
+  return BROTLI_TRUE;
+}
+
 void BrotliBuildMetaBlock(MemoryManager* m,
                           const uint8_t* ringbuffer,
                           const size_t pos,
                           const size_t mask,
-                          const BrotliEncoderParams* params,
+                          BrotliEncoderParams* params,
                           uint8_t prev_byte,
                           uint8_t prev_byte2,
-                          const Command* cmds,
+                          Command* cmds,
                           size_t num_commands,
                           ContextType literal_context_mode,
                           MetaBlockSplit* mb) {
@@ -45,6 +147,46 @@ void BrotliBuildMetaBlock(MemoryManager* m,
   size_t distance_histograms_size;
   size_t i;
   size_t literal_context_multiplier = 1;
+  uint32_t npostfix;
+  uint32_t ndirect_msb = 0;
+  BROTLI_BOOL check_orig = BROTLI_TRUE;
+  double best_dist_cost = 1e99;
+  BrotliEncoderParams orig_params = *params;
+  BrotliEncoderParams new_params = *params;
+
+  for (npostfix = 0; npostfix <= BROTLI_MAX_NPOSTFIX; npostfix++) {
+    for (; ndirect_msb < 16; ndirect_msb++) {
+      uint32_t ndirect = ndirect_msb << npostfix;
+      BROTLI_BOOL skip;
+      double dist_cost;
+      BrotliInitDistanceParams(&new_params, npostfix, ndirect);
+      if (npostfix == orig_params.dist.distance_postfix_bits &&
+          ndirect == orig_params.dist.num_direct_distance_codes) {
+        check_orig = BROTLI_FALSE;
+      }
+      skip = !ComputeDistanceCost(
+          cmds, num_commands,
+          &orig_params.dist, &new_params.dist, &dist_cost);
+      if (skip || (dist_cost > best_dist_cost)) {
+        break;
+      }
+      best_dist_cost = dist_cost;
+      params->dist = new_params.dist;
+    }
+    if (ndirect_msb > 0) ndirect_msb--;
+    ndirect_msb /= 2;
+  }
+  if (check_orig) {
+    double dist_cost;
+    ComputeDistanceCost(cmds, num_commands,
+                        &orig_params.dist, &orig_params.dist, &dist_cost);
+    if (dist_cost < best_dist_cost) {
+      best_dist_cost = dist_cost;
+      params->dist = orig_params.dist;
+    }
+  }
+  RecomputeDistancePrefixes(cmds, num_commands,
+                            &orig_params.dist, &params->dist);
 
   BrotliSplitBlock(m, cmds, num_commands,
                    ringbuffer, pos, mask, params,
@@ -77,7 +219,7 @@ void BrotliBuildMetaBlock(MemoryManager* m,
   if (BROTLI_IS_OOM(m)) return;
   ClearHistogramsDistance(distance_histograms, distance_histograms_size);
 
-  assert(mb->command_histograms == 0);
+  BROTLI_DCHECK(mb->command_histograms == 0);
   mb->command_histograms_size = mb->command_split.num_types;
   mb->command_histograms =
       BROTLI_ALLOC(m, HistogramCommand, mb->command_histograms_size);
@@ -90,14 +232,14 @@ void BrotliBuildMetaBlock(MemoryManager* m,
       literal_histograms, mb->command_histograms, distance_histograms);
   BROTLI_FREE(m, literal_context_modes);
 
-  assert(mb->literal_context_map == 0);
+  BROTLI_DCHECK(mb->literal_context_map == 0);
   mb->literal_context_map_size =
       mb->literal_split.num_types << BROTLI_LITERAL_CONTEXT_BITS;
   mb->literal_context_map =
       BROTLI_ALLOC(m, uint32_t, mb->literal_context_map_size);
   if (BROTLI_IS_OOM(m)) return;
 
-  assert(mb->literal_histograms == 0);
+  BROTLI_DCHECK(mb->literal_histograms == 0);
   mb->literal_histograms_size = mb->literal_context_map_size;
   mb->literal_histograms =
       BROTLI_ALLOC(m, HistogramLiteral, mb->literal_histograms_size);
@@ -121,14 +263,14 @@ void BrotliBuildMetaBlock(MemoryManager* m,
     }
   }
 
-  assert(mb->distance_context_map == 0);
+  BROTLI_DCHECK(mb->distance_context_map == 0);
   mb->distance_context_map_size =
       mb->distance_split.num_types << BROTLI_DISTANCE_CONTEXT_BITS;
   mb->distance_context_map =
       BROTLI_ALLOC(m, uint32_t, mb->distance_context_map_size);
   if (BROTLI_IS_OOM(m)) return;
 
-  assert(mb->distance_histograms == 0);
+  BROTLI_DCHECK(mb->distance_histograms == 0);
   mb->distance_histograms_size = mb->distance_context_map_size;
   mb->distance_histograms =
       BROTLI_ALLOC(m, HistogramDistance, mb->distance_histograms_size);
@@ -200,7 +342,7 @@ static void InitContextBlockSplitter(
     size_t* histograms_size) {
   size_t max_num_blocks = num_symbols / min_block_size + 1;
   size_t max_num_types;
-  assert(num_contexts <= BROTLI_MAX_STATIC_CONTEXTS);
+  BROTLI_DCHECK(num_contexts <= BROTLI_MAX_STATIC_CONTEXTS);
 
   self->alphabet_size_ = alphabet_size;
   self->num_contexts_ = num_contexts;
@@ -226,7 +368,7 @@ static void InitContextBlockSplitter(
   if (BROTLI_IS_OOM(m)) return;
   split->num_blocks = max_num_blocks;
   if (BROTLI_IS_OOM(m)) return;
-  assert(*histograms == 0);
+  BROTLI_DCHECK(*histograms == 0);
   *histograms_size = max_num_types * num_contexts;
   *histograms = BROTLI_ALLOC(m, HistogramLiteral, *histograms_size);
   self->histograms_ = *histograms;
@@ -379,7 +521,7 @@ static void MapStaticContexts(MemoryManager* m,
                               const uint32_t* static_context_map,
                               MetaBlockSplit* mb) {
   size_t i;
-  assert(mb->literal_context_map == 0);
+  BROTLI_DCHECK(mb->literal_context_map == 0);
   mb->literal_context_map_size =
       mb->literal_split.num_types << BROTLI_LITERAL_CONTEXT_BITS;
   mb->literal_context_map =
@@ -398,9 +540,9 @@ static void MapStaticContexts(MemoryManager* m,
 
 static BROTLI_INLINE void BrotliBuildMetaBlockGreedyInternal(
     MemoryManager* m, const uint8_t* ringbuffer, size_t pos, size_t mask,
-    uint8_t prev_byte, uint8_t prev_byte2, ContextType literal_context_mode,
+    uint8_t prev_byte, uint8_t prev_byte2, ContextLut literal_context_lut,
     const size_t num_contexts, const uint32_t* static_context_map,
-    const Command *commands, size_t n_commands, MetaBlockSplit* mb) {
+    const Command* commands, size_t n_commands, MetaBlockSplit* mb) {
   union {
     BlockSplitterLiteral plain;
     ContextBlockSplitter ctx;
@@ -441,7 +583,8 @@ static BROTLI_INLINE void BrotliBuildMetaBlockGreedyInternal(
       if (num_contexts == 1) {
         BlockSplitterAddSymbolLiteral(&lit_blocks.plain, literal);
       } else {
-        size_t context = Context(prev_byte, prev_byte2, literal_context_mode);
+        size_t context =
+            BROTLI_CONTEXT(prev_byte, prev_byte2, literal_context_lut);
         ContextBlockSplitterAddSymbol(&lit_blocks.ctx, m, literal,
                                       static_context_map[context]);
         if (BROTLI_IS_OOM(m)) return;
@@ -455,7 +598,7 @@ static BROTLI_INLINE void BrotliBuildMetaBlockGreedyInternal(
       prev_byte2 = ringbuffer[(pos - 2) & mask];
       prev_byte = ringbuffer[(pos - 1) & mask];
       if (cmd.cmd_prefix_ >= 128) {
-        BlockSplitterAddSymbolDistance(&dist_blocks, cmd.dist_prefix_);
+        BlockSplitterAddSymbolDistance(&dist_blocks, cmd.dist_prefix_ & 0x3FF);
       }
     }
   }
@@ -482,7 +625,7 @@ void BrotliBuildMetaBlockGreedy(MemoryManager* m,
                                 size_t mask,
                                 uint8_t prev_byte,
                                 uint8_t prev_byte2,
-                                ContextType literal_context_mode,
+                                ContextLut literal_context_lut,
                                 size_t num_contexts,
                                 const uint32_t* static_context_map,
                                 const Command* commands,
@@ -490,19 +633,17 @@ void BrotliBuildMetaBlockGreedy(MemoryManager* m,
                                 MetaBlockSplit* mb) {
   if (num_contexts == 1) {
     BrotliBuildMetaBlockGreedyInternal(m, ringbuffer, pos, mask, prev_byte,
-        prev_byte2, literal_context_mode, 1, NULL, commands, n_commands, mb);
+        prev_byte2, literal_context_lut, 1, NULL, commands, n_commands, mb);
   } else {
     BrotliBuildMetaBlockGreedyInternal(m, ringbuffer, pos, mask, prev_byte,
-        prev_byte2, literal_context_mode, num_contexts, static_context_map,
+        prev_byte2, literal_context_lut, num_contexts, static_context_map,
         commands, n_commands, mb);
   }
 }
 
-void BrotliOptimizeHistograms(size_t num_direct_distance_codes,
-                              size_t distance_postfix_bits,
+void BrotliOptimizeHistograms(uint32_t num_distance_codes,
                               MetaBlockSplit* mb) {
   uint8_t good_for_rle[BROTLI_NUM_COMMAND_SYMBOLS];
-  size_t num_distance_codes;
   size_t i;
   for (i = 0; i < mb->literal_histograms_size; ++i) {
     BrotliOptimizeHuffmanCountsForRle(256, mb->literal_histograms[i].data_,
@@ -513,9 +654,6 @@ void BrotliOptimizeHistograms(size_t num_direct_distance_codes,
                                       mb->command_histograms[i].data_,
                                       good_for_rle);
   }
-  num_distance_codes = BROTLI_NUM_DISTANCE_SHORT_CODES +
-      num_direct_distance_codes +
-      ((2 * BROTLI_MAX_DISTANCE_BITS) << distance_postfix_bits);
   for (i = 0; i < mb->distance_histograms_size; ++i) {
     BrotliOptimizeHuffmanCountsForRle(num_distance_codes,
                                       mb->distance_histograms[i].data_,

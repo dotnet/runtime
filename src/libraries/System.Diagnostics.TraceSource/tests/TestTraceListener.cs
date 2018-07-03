@@ -30,7 +30,7 @@ namespace System.Diagnostics.TraceSourceTests
         {
         }
 
-        public TestTraceListener(String name, bool threadSafe = false)
+        public TestTraceListener(string name, bool threadSafe = false)
             : base(name)
         {
             _threadSafe = threadSafe;
@@ -106,7 +106,7 @@ namespace System.Diagnostics.TraceSourceTests
             Call(Method.TraceData);
         }
 
-        public override void TraceTransfer(TraceEventCache eventCache, String source, int id, string message, Guid relatedActivityId)
+        public override void TraceTransfer(TraceEventCache eventCache, string source, int id, string message, Guid relatedActivityId)
         {
             Call(Method.TraceTransfer);
         }

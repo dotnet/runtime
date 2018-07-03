@@ -20,6 +20,6 @@ namespace System.Net
         ///     is available for the specified host and realm.
         ///   </para>
         /// </devdoc>
-        NetworkCredential GetCredential(Uri uri, String authType);
+        NetworkCredential GetCredential(Uri uri, string authType);
     }
 }

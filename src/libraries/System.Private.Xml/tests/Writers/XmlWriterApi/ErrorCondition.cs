@@ -592,38 +592,38 @@ namespace System.Xml.Tests
                 w.WriteStartElement("Root");
             switch (param)
             {
-                case 1: w.WriteComment(String.Empty); result = true; break;
-                case 2: w.WriteCData(String.Empty); result = true; break;
-                case 4: w.WriteRaw(String.Empty); result = true; break;
-                case 5: w.WriteString(String.Empty); result = true; break;
-                case 6: w.WriteValue(String.Empty); result = true; break;
-                case 7: w.WriteWhitespace(String.Empty); result = true; break;
+                case 1: w.WriteComment(string.Empty); result = true; break;
+                case 2: w.WriteCData(string.Empty); result = true; break;
+                case 4: w.WriteRaw(string.Empty); result = true; break;
+                case 5: w.WriteString(string.Empty); result = true; break;
+                case 6: w.WriteValue(string.Empty); result = true; break;
+                case 7: w.WriteWhitespace(string.Empty); result = true; break;
             }
             try
             {
                 switch (param)
                 {
-                    case 3: w.WriteEntityRef(String.Empty); break;
-                    case 8: w.WriteAttributeString(String.Empty, String.Empty); break;
-                    case 9: w.WriteAttributeString(String.Empty, String.Empty, String.Empty); break;
-                    case 10: w.WriteAttributeString(String.Empty, String.Empty, String.Empty, String.Empty); break;
-                    case 11: w.WriteDocType(String.Empty, String.Empty, String.Empty, String.Empty); break;
-                    case 12: w.WriteElementString(String.Empty, String.Empty); break;
-                    case 13: w.WriteElementString(String.Empty, String.Empty, String.Empty); break;
-                    case 14: w.WriteElementString(String.Empty, String.Empty, String.Empty, String.Empty); break;
-                    case 15: w.WriteEntityRef(String.Empty); break;
-                    case 16: w.WriteName(String.Empty); break;
-                    case 17: w.WriteNmToken(String.Empty); break;
-                    case 18: w.WriteProcessingInstruction(String.Empty, String.Empty); break;
-                    case 19: w.WriteQualifiedName(String.Empty, String.Empty); break;
-                    case 20: w.WriteStartAttribute(String.Empty); break;
-                    case 21: w.WriteStartAttribute(String.Empty, String.Empty); break;
-                    case 22: w.WriteStartAttribute(String.Empty, String.Empty, String.Empty); break;
-                    case 23: w.WriteStartElement(String.Empty); break;
-                    case 24: w.WriteStartElement(String.Empty, String.Empty); break;
-                    case 25: w.WriteStartElement(String.Empty, String.Empty, String.Empty); break;
-                    case 26: w.WriteDocType(String.Empty, String.Empty, String.Empty, String.Empty); break;
-                    case 27: w.WriteProcessingInstruction(String.Empty, String.Empty); break;
+                    case 3: w.WriteEntityRef(string.Empty); break;
+                    case 8: w.WriteAttributeString(string.Empty, string.Empty); break;
+                    case 9: w.WriteAttributeString(string.Empty, string.Empty, string.Empty); break;
+                    case 10: w.WriteAttributeString(string.Empty, string.Empty, string.Empty, string.Empty); break;
+                    case 11: w.WriteDocType(string.Empty, string.Empty, string.Empty, string.Empty); break;
+                    case 12: w.WriteElementString(string.Empty, string.Empty); break;
+                    case 13: w.WriteElementString(string.Empty, string.Empty, string.Empty); break;
+                    case 14: w.WriteElementString(string.Empty, string.Empty, string.Empty, string.Empty); break;
+                    case 15: w.WriteEntityRef(string.Empty); break;
+                    case 16: w.WriteName(string.Empty); break;
+                    case 17: w.WriteNmToken(string.Empty); break;
+                    case 18: w.WriteProcessingInstruction(string.Empty, string.Empty); break;
+                    case 19: w.WriteQualifiedName(string.Empty, string.Empty); break;
+                    case 20: w.WriteStartAttribute(string.Empty); break;
+                    case 21: w.WriteStartAttribute(string.Empty, string.Empty); break;
+                    case 22: w.WriteStartAttribute(string.Empty, string.Empty, string.Empty); break;
+                    case 23: w.WriteStartElement(string.Empty); break;
+                    case 24: w.WriteStartElement(string.Empty, string.Empty); break;
+                    case 25: w.WriteStartElement(string.Empty, string.Empty, string.Empty); break;
+                    case 26: w.WriteDocType(string.Empty, string.Empty, string.Empty, string.Empty); break;
+                    case 27: w.WriteProcessingInstruction(string.Empty, string.Empty); break;
                 }
             }
             catch (ArgumentException)
@@ -632,27 +632,27 @@ namespace System.Xml.Tests
                 {
                     switch (param)
                     {
-                        case 3: w.WriteEntityRef(String.Empty); break;
-                        case 8: w.WriteAttributeString(String.Empty, String.Empty); break;
-                        case 9: w.WriteAttributeString(String.Empty, String.Empty, String.Empty); break;
-                        case 10: w.WriteAttributeString(String.Empty, String.Empty, String.Empty, String.Empty); break;
-                        case 11: w.WriteDocType(String.Empty, String.Empty, String.Empty, String.Empty); break;
-                        case 12: w.WriteElementString(String.Empty, String.Empty); break;
-                        case 13: w.WriteElementString(String.Empty, String.Empty, String.Empty); break;
-                        case 14: w.WriteElementString(String.Empty, String.Empty, String.Empty, String.Empty); break;
-                        case 15: w.WriteEntityRef(String.Empty); break;
-                        case 16: w.WriteName(String.Empty); break;
-                        case 17: w.WriteNmToken(String.Empty); break;
-                        case 18: w.WriteProcessingInstruction(String.Empty, String.Empty); break;
-                        case 19: w.WriteQualifiedName(String.Empty, String.Empty); break;
-                        case 20: w.WriteStartAttribute(String.Empty); break;
-                        case 21: w.WriteStartAttribute(String.Empty, String.Empty); break;
-                        case 22: w.WriteStartAttribute(String.Empty, String.Empty, String.Empty); break;
-                        case 23: w.WriteStartElement(String.Empty); break;
-                        case 24: w.WriteStartElement(String.Empty, String.Empty); break;
-                        case 25: w.WriteStartElement(String.Empty, String.Empty, String.Empty); break;
-                        case 26: w.WriteDocType(String.Empty, String.Empty, String.Empty, String.Empty); break;
-                        case 27: w.WriteProcessingInstruction(String.Empty, String.Empty); break;
+                        case 3: w.WriteEntityRef(string.Empty); break;
+                        case 8: w.WriteAttributeString(string.Empty, string.Empty); break;
+                        case 9: w.WriteAttributeString(string.Empty, string.Empty, string.Empty); break;
+                        case 10: w.WriteAttributeString(string.Empty, string.Empty, string.Empty, string.Empty); break;
+                        case 11: w.WriteDocType(string.Empty, string.Empty, string.Empty, string.Empty); break;
+                        case 12: w.WriteElementString(string.Empty, string.Empty); break;
+                        case 13: w.WriteElementString(string.Empty, string.Empty, string.Empty); break;
+                        case 14: w.WriteElementString(string.Empty, string.Empty, string.Empty, string.Empty); break;
+                        case 15: w.WriteEntityRef(string.Empty); break;
+                        case 16: w.WriteName(string.Empty); break;
+                        case 17: w.WriteNmToken(string.Empty); break;
+                        case 18: w.WriteProcessingInstruction(string.Empty, string.Empty); break;
+                        case 19: w.WriteQualifiedName(string.Empty, string.Empty); break;
+                        case 20: w.WriteStartAttribute(string.Empty); break;
+                        case 21: w.WriteStartAttribute(string.Empty, string.Empty); break;
+                        case 22: w.WriteStartAttribute(string.Empty, string.Empty, string.Empty); break;
+                        case 23: w.WriteStartElement(string.Empty); break;
+                        case 24: w.WriteStartElement(string.Empty, string.Empty); break;
+                        case 25: w.WriteStartElement(string.Empty, string.Empty, string.Empty); break;
+                        case 26: w.WriteDocType(string.Empty, string.Empty, string.Empty, string.Empty); break;
+                        case 27: w.WriteProcessingInstruction(string.Empty, string.Empty); break;
                     }
                 }
                 catch (ArgumentException) { result = true; }
@@ -705,7 +705,7 @@ namespace System.Xml.Tests
             ((IDisposable)w).Dispose();
             ((IDisposable)w).Dispose();
             ((IDisposable)w).Dispose();
-            CError.Compare(w.LookupPrefix(""), String.Empty, "LookupPrefix");
+            CError.Compare(w.LookupPrefix(""), string.Empty, "LookupPrefix");
             CError.Compare(w.WriteState, WriteState.Closed, "WriteState");
             CError.Compare(w.XmlLang, null, "XmlLang");
             CError.Compare(w.XmlSpace, XmlSpace.None, "XmlSpace");
@@ -740,7 +740,7 @@ namespace System.Xml.Tests
             }
             catch (InvalidOperationException)
             {
-                CError.Compare(w.LookupPrefix(""), String.Empty, "LookupPrefix");
+                CError.Compare(w.LookupPrefix(""), string.Empty, "LookupPrefix");
                 CError.Compare(w.WriteState, WriteState.Error, "WriteState");
                 CError.Compare(w.XmlLang, null, "XmlLang");
                 CError.Compare(w.XmlSpace, XmlSpace.None, "XmlSpace");
@@ -885,7 +885,7 @@ namespace System.Xml.Tests
                     case 4: w.WriteBase64(buffer, 0, 3); break;
                     case 5: w.WriteBinHex(buffer, 0, 3); break;
                     case 6: w.WriteCData("a"); break;
-                    case 7: w.WriteCharEntity(Char.MaxValue); break;
+                    case 7: w.WriteCharEntity(char.MaxValue); break;
                     case 8: w.WriteChars(chbuffer, 1, 3); break;
                     case 9: w.WriteComment("a"); break;
                     case 10: w.WriteDocType("a", "b", "c", "d"); break;
@@ -921,7 +921,7 @@ namespace System.Xml.Tests
                         case 4: w.WriteBase64(buffer, 0, 3); break;
                         case 5: w.WriteBinHex(buffer, 0, 3); break;
                         case 6: w.WriteCData("a"); break;
-                        case 7: w.WriteCharEntity(Char.MaxValue); break;
+                        case 7: w.WriteCharEntity(char.MaxValue); break;
                         case 8: w.WriteChars(chbuffer, 1, 3); break;
                         case 9: w.WriteComment("a"); break;
                         case 10: w.WriteDocType("a", "b", "c", "d"); break;
@@ -1027,7 +1027,7 @@ namespace System.Xml.Tests
                         case 4: w.WriteBase64(buffer, 0, 3); break;
                         case 5: w.WriteBinHex(buffer, 0, 3); break;
                         case 6: w.WriteCData("a"); break;
-                        case 7: w.WriteCharEntity(Char.MaxValue); break;
+                        case 7: w.WriteCharEntity(char.MaxValue); break;
                         case 8: w.WriteChars(chbuffer, 1, 3); break;
                         case 9: w.WriteComment("a"); break;
                         case 10: w.WriteDocType("a", "b", "c", "d"); break;
@@ -1063,7 +1063,7 @@ namespace System.Xml.Tests
                             case 4: w.WriteBase64(buffer, 0, 3); break;
                             case 5: w.WriteBinHex(buffer, 0, 3); break;
                             case 6: w.WriteCData("a"); break;
-                            case 7: w.WriteCharEntity(Char.MaxValue); break;
+                            case 7: w.WriteCharEntity(char.MaxValue); break;
                             case 8: w.WriteChars(chbuffer, 1, 3); break;
                             case 9: w.WriteComment("a"); break;
                             case 10: w.WriteDocType("a", "b", "c", "d"); break;

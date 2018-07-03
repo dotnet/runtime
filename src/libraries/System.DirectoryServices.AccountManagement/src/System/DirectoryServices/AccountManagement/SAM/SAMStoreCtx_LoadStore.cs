@@ -52,7 +52,7 @@ namespace System.DirectoryServices.AccountManagement
                     else
                     {
                         throw new InvalidOperationException(
-                                        String.Format(CultureInfo.CurrentCulture, SR.StoreCtxUnsupportedPrincipalTypeForSave, principalType.ToString()));
+                                        string.Format(CultureInfo.CurrentCulture, SR.StoreCtxUnsupportedPrincipalTypeForSave, principalType.ToString()));
                     }
 
                     // Determine the SAM account name for the entry we'll be creating.  Use the name from the NT4 IdentityClaim.
@@ -512,7 +512,7 @@ namespace System.DirectoryServices.AccountManagement
             }
 
             // Valid SID, but not for our context (machine).  No match.
-            if (String.Compare(domainName, this.MachineFlatName, StringComparison.OrdinalIgnoreCase) != 0)
+            if (!string.Equals(domainName, this.MachineFlatName, StringComparison.OrdinalIgnoreCase))
             {
                 GlobalDebug.WriteLineIf(GlobalDebug.Warn, "SAMStoreCtx", "FindNativeBySIDIdentRef: {0} != {1}, no match", domainName, this.MachineFlatName);
                 return null;
@@ -864,7 +864,7 @@ namespace System.DirectoryServices.AccountManagement
             {
                 // We're intended to handle single-valued scalar properties
                 Debug.Assert(values.Count == 1);
-                Debug.Assert(values[0] is Int32);
+                Debug.Assert(values[0] is int);
 
                 int secondsLapsed = (int)values[0];
 
@@ -892,7 +892,7 @@ namespace System.DirectoryServices.AccountManagement
 
         private static void UserFlagsFromWinNTConverter(DirectoryEntry de, string suggestedWinNTProperty, Principal p, string propertyName)
         {
-            Debug.Assert(String.Compare(suggestedWinNTProperty, "UserFlags", StringComparison.OrdinalIgnoreCase) == 0);
+            Debug.Assert(string.Equals(suggestedWinNTProperty, "UserFlags", StringComparison.OrdinalIgnoreCase));
 
             SDSUtils.AccountControlFromDirectoryEntry(new dSPropertyCollection(de.Properties), suggestedWinNTProperty, p, propertyName, true);
         }
@@ -904,7 +904,7 @@ namespace System.DirectoryServices.AccountManagement
         private static void ExceptionToWinNTConverter(Principal p, string propertyName, DirectoryEntry de, string suggestedWinNTProperty, bool isLSAM)
         {
             throw new InvalidOperationException(
-                            String.Format(CultureInfo.CurrentCulture,
+                            string.Format(CultureInfo.CurrentCulture,
                                           SR.PrincipalUnsupportPropertyForType,
                                           p.GetType().ToString(),
                                           PropertyNamesExternal.GetExternalForm(propertyName)));
@@ -957,7 +957,7 @@ namespace System.DirectoryServices.AccountManagement
         {
             if (!isLSAM)
                 throw new InvalidOperationException(
-                    String.Format(CultureInfo.CurrentCulture,
+                    string.Format(CultureInfo.CurrentCulture,
                                   SR.PrincipalUnsupportPropertyForPlatform,
                                   PropertyNamesExternal.GetExternalForm(propertyName)));
         }
@@ -968,7 +968,7 @@ namespace System.DirectoryServices.AccountManagement
             {
                 if (!isLSAM)
                     throw new InvalidOperationException(
-                        String.Format(CultureInfo.CurrentCulture,
+                        string.Format(CultureInfo.CurrentCulture,
                                       SR.PrincipalUnsupportPropertyForPlatform,
                                       PropertyNamesExternal.GetExternalForm(propertyName)));
             }
@@ -988,7 +988,7 @@ namespace System.DirectoryServices.AccountManagement
         {
             if (!isLSAM)
                 throw new InvalidOperationException(
-                    String.Format(CultureInfo.CurrentCulture,
+                    string.Format(CultureInfo.CurrentCulture,
                                   SR.PrincipalUnsupportPropertyForPlatform,
                                   PropertyNamesExternal.GetExternalForm(propertyName)));
         }
@@ -1009,7 +1009,7 @@ namespace System.DirectoryServices.AccountManagement
 
         private static void UserFlagsToWinNTConverter(Principal p, string propertyName, DirectoryEntry de, string suggestedWinNTProperty, bool isLSAM)
         {
-            Debug.Assert(String.Compare(suggestedWinNTProperty, "UserFlags", StringComparison.OrdinalIgnoreCase) == 0);
+            Debug.Assert(string.Equals(suggestedWinNTProperty, "UserFlags", StringComparison.OrdinalIgnoreCase));
 
             SDSUtils.AccountControlToDirectoryEntry(p, propertyName, de, suggestedWinNTProperty, true, p.unpersisted);
         }
@@ -1063,7 +1063,7 @@ namespace System.DirectoryServices.AccountManagement
                         GlobalDebug.WriteLineIf(GlobalDebug.Warn, "SAMStoreCtx", "UpdateGroupMembership: error while clearing, hr={0}", hr);
 
                         throw new PrincipalOperationException(
-                                        String.Format(
+                                        string.Format(
                                                 CultureInfo.CurrentCulture,
                                                 SR.SAMStoreCtxFailedToClearGroup,
                                                 hr.ToString(CultureInfo.InvariantCulture)));
@@ -1085,7 +1085,7 @@ namespace System.DirectoryServices.AccountManagement
                          (memberType != typeof(GroupPrincipal)) && (!memberType.IsSubclassOf(typeof(GroupPrincipal))))
                     {
                         throw new InvalidOperationException(
-                                        String.Format(CultureInfo.CurrentCulture, SR.StoreCtxUnsupportedPrincipalTypeForGroupInsert, memberType.ToString()));
+                                        string.Format(CultureInfo.CurrentCulture, SR.StoreCtxUnsupportedPrincipalTypeForGroupInsert, memberType.ToString()));
                     }
 
                     // Can't inserted unpersisted principal

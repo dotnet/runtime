@@ -47,7 +47,7 @@ namespace System
             get { return _mods; }
         }
 
-        public override bool Equals(Object value)
+        public override bool Equals(object value)
         {
             return value is ConsoleKeyInfo && Equals((ConsoleKeyInfo)value);
         }

@@ -50,7 +50,7 @@ namespace System.Security.AccessControl
         {
         }
 
-        public MutexAccessRule(String identity, MutexRights eventRights, AccessControlType type)
+        public MutexAccessRule(string identity, MutexRights eventRights, AccessControlType type)
             : this(new NTAccount(identity), (int)eventRights, false, InheritanceFlags.None, PropagationFlags.None, type)
         {
         }
@@ -109,7 +109,7 @@ namespace System.Security.AccessControl
         {
         }
 
-        public MutexSecurity(String name, AccessControlSections includeSections)
+        public MutexSecurity(string name, AccessControlSections includeSections)
             : base(true, ResourceType.KernelObject, name, includeSections, HandleErrorCode, null)
         {
             // Let the underlying ACL API's demand unmanaged code permission.

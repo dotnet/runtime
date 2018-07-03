@@ -31,7 +31,7 @@ namespace System.Runtime.Caching
         private DateTime _lastTrimTime;
         private int _pollingInterval;
         private GCHandleRef<Timer> _timerHandleRef;
-        private Object _timerLock;
+        private object _timerLock;
         private long _totalCountBeforeTrim;
 
         private CacheMemoryMonitor _cacheMemoryMonitor;
@@ -132,7 +132,7 @@ namespace System.Runtime.Caching
                 _configCacheMemoryLimitMegabytes = element.CacheMemoryLimitMegabytes;
                 _configPhysicalMemoryLimitPercentage = element.PhysicalMemoryLimitPercentage;
                 double milliseconds = element.PollingInterval.TotalMilliseconds;
-                _configPollingInterval = (milliseconds < (double)Int32.MaxValue) ? (int)milliseconds : Int32.MaxValue;
+                _configPollingInterval = (milliseconds < (double)int.MaxValue) ? (int)milliseconds : int.MaxValue;
             }
             else
             {
@@ -144,7 +144,7 @@ namespace System.Runtime.Caching
             if (config != null)
             {
                 _configPollingInterval = ConfigUtil.GetIntValueFromTimeSpan(config, ConfigUtil.PollingInterval, _configPollingInterval);
-                _configCacheMemoryLimitMegabytes = ConfigUtil.GetIntValue(config, ConfigUtil.CacheMemoryLimitMegabytes, _configCacheMemoryLimitMegabytes, true, Int32.MaxValue);
+                _configCacheMemoryLimitMegabytes = ConfigUtil.GetIntValue(config, ConfigUtil.CacheMemoryLimitMegabytes, _configCacheMemoryLimitMegabytes, true, int.MaxValue);
                 _configPhysicalMemoryLimitPercentage = ConfigUtil.GetIntValue(config, ConfigUtil.PhysicalMemoryLimitPercentage, _configPhysicalMemoryLimitPercentage, true, 100);
             }
             if (!RuntimeInformation.IsOSPlatform(OSPlatform.Windows) && _configPhysicalMemoryLimitPercentage > 0)
@@ -250,7 +250,7 @@ namespace System.Runtime.Caching
             _memoryCache = memoryCache;
             _lastTrimGen2Count = -1;
             _lastTrimTime = DateTime.MinValue;
-            _timerLock = new Object();
+            _timerLock = new object();
             InitializeConfiguration(config);
             _pollingInterval = _configPollingInterval;
             _physicalMemoryMonitor = new PhysicalMemoryMonitor(_configPhysicalMemoryLimitPercentage);
@@ -340,7 +340,7 @@ namespace System.Runtime.Caching
         internal void UpdateConfig(NameValueCollection config)
         {
             int pollingInterval = ConfigUtil.GetIntValueFromTimeSpan(config, ConfigUtil.PollingInterval, _configPollingInterval);
-            int cacheMemoryLimitMegabytes = ConfigUtil.GetIntValue(config, ConfigUtil.CacheMemoryLimitMegabytes, _configCacheMemoryLimitMegabytes, true, Int32.MaxValue);
+            int cacheMemoryLimitMegabytes = ConfigUtil.GetIntValue(config, ConfigUtil.CacheMemoryLimitMegabytes, _configCacheMemoryLimitMegabytes, true, int.MaxValue);
             int physicalMemoryLimitPercentage = ConfigUtil.GetIntValue(config, ConfigUtil.PhysicalMemoryLimitPercentage, _configPhysicalMemoryLimitPercentage, true, 100);
 
             if (pollingInterval != _configPollingInterval)

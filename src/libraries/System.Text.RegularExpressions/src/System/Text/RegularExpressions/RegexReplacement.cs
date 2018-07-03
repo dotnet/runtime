@@ -8,8 +8,6 @@
 
 using System.Collections;
 using System.Collections.Generic;
-using System.IO;
-using System.Text;
 
 namespace System.Text.RegularExpressions
 {
@@ -35,7 +33,8 @@ namespace System.Text.RegularExpressions
             if (concat.Type() != RegexNode.Concatenate)
                 throw new ArgumentException(SR.ReplacementError);
 
-            StringBuilder sb = StringBuilderCache.Acquire();
+            Span<char> buffer = stackalloc char[256];
+            ValueStringBuilder vsb = new ValueStringBuilder(buffer);
             List<string> strings = new List<string>();
             List<int> rules = new List<int>();
 
@@ -46,19 +45,19 @@ namespace System.Text.RegularExpressions
                 switch (child.Type())
                 {
                     case RegexNode.Multi:
-                        sb.Append(child.Str);
+                        vsb.Append(child.Str);
                         break;
 
                     case RegexNode.One:
-                        sb.Append(child.Ch);
+                        vsb.Append(child.Ch);
                         break;
 
                     case RegexNode.Ref:
-                        if (sb.Length > 0)
+                        if (vsb.Length > 0)
                         {
                             rules.Add(strings.Count);
-                            strings.Add(sb.ToString());
-                            sb.Length = 0;
+                            strings.Add(vsb.ToString());
+                            vsb.Length = 0;
                         }
                         int slot = child.M;
 
@@ -73,13 +72,11 @@ namespace System.Text.RegularExpressions
                 }
             }
 
-            if (sb.Length > 0)
+            if (vsb.Length > 0)
             {
                 rules.Add(strings.Count);
-                strings.Add(sb.ToString());
+                strings.Add(vsb.ToString());
             }
-
-            StringBuilderCache.Release(sb);
 
             Pattern = rep;
             _strings = strings;
@@ -97,7 +94,7 @@ namespace System.Text.RegularExpressions
 
             if (!replRef.TryGetTarget(out repl) || !repl.Pattern.Equals(replacement))
             {
-                repl = RegexParser.ParseReplacement(replacement, caps, capsize, capnames, roptions);
+                repl = RegexParser.ParseReplacement(replacement, roptions, caps, capsize, capnames);
                 replRef.SetTarget(repl);
             }
 
@@ -113,80 +110,68 @@ namespace System.Text.RegularExpressions
         /// Given a Match, emits into the StringBuilder the evaluated
         /// substitution pattern.
         /// </summary>
-        private void ReplacementImpl(StringBuilder sb, Match match)
+        public void ReplacementImpl(ref ValueStringBuilder vsb, Match match)
         {
             for (int i = 0; i < _rules.Count; i++)
             {
                 int r = _rules[i];
                 if (r >= 0)   // string lookup
-                    sb.Append(_strings[r]);
+                    vsb.Append(_strings[r]);
                 else if (r < -Specials) // group lookup
-                    sb.Append(match.GroupToStringImpl(-Specials - 1 - r));
+                    vsb.Append(match.GroupToStringImpl(-Specials - 1 - r));
                 else
                 {
                     switch (-Specials - 1 - r)
                     { // special insertion patterns
                         case LeftPortion:
-                            sb.Append(match.GetLeftSubstring());
+                            vsb.Append(match.GetLeftSubstring());
                             break;
                         case RightPortion:
-                            sb.Append(match.GetRightSubstring());
+                            vsb.Append(match.GetRightSubstring());
                             break;
                         case LastGroup:
-                            sb.Append(match.LastGroupToStringImpl());
+                            vsb.Append(match.LastGroupToStringImpl());
                             break;
                         case WholeString:
-                            sb.Append(match.Text);
+                            vsb.Append(match.Text);
                             break;
                     }
                 }
             }
         }
 
-        /// <summary>
-        /// Given a Match, emits into the List<string> the evaluated
+       /// <summary>
+        /// Given a Match, emits into the ValueStringBuilder the evaluated
         /// Right-to-Left substitution pattern.
         /// </summary>
-        private void ReplacementImplRTL(List<string> al, Match match)
+        public void ReplacementImplRTL(ref ValueStringBuilder vsb, Match match)
         {
             for (int i = _rules.Count - 1; i >= 0; i--)
             {
                 int r = _rules[i];
                 if (r >= 0)  // string lookup
-                    al.Add(_strings[r]);
+                    vsb.AppendReversed(_strings[r]);
                 else if (r < -Specials) // group lookup
-                    al.Add(match.GroupToStringImpl(-Specials - 1 - r).ToString());
+                    vsb.AppendReversed(match.GroupToStringImpl(-Specials - 1 - r));
                 else
                 {
                     switch (-Specials - 1 - r)
                     { // special insertion patterns
                         case LeftPortion:
-                            al.Add(match.GetLeftSubstring().ToString());
+                            vsb.AppendReversed(match.GetLeftSubstring());
                             break;
                         case RightPortion:
-                            al.Add(match.GetRightSubstring().ToString());
+                            vsb.AppendReversed(match.GetRightSubstring());
                             break;
                         case LastGroup:
-                            al.Add(match.LastGroupToStringImpl().ToString());
+                            vsb.AppendReversed(match.LastGroupToStringImpl());
                             break;
                         case WholeString:
-                            al.Add(match.Text);
+                            vsb.AppendReversed(match.Text);
                             break;
                     }
                 }
             }
-        }
-
-        /// <summary>
-        /// Returns the replacement result for a single match
-        /// </summary>
-        public string Replacement(Match match)
-        {
-            StringBuilder sb = StringBuilderCache.Acquire();
-
-            ReplacementImpl(sb, match);
-
-            return StringBuilderCache.GetStringAndRelease(sb);
         }
 
         // Three very similar algorithms appear below: replace (pattern),
@@ -218,7 +203,8 @@ namespace System.Text.RegularExpressions
             }
             else
             {
-                StringBuilder sb = StringBuilderCache.Acquire();
+                Span<char> charInitSpan = stackalloc char[256];
+                var vsb = new ValueStringBuilder(charInitSpan);
 
                 if (!regex.RightToLeft)
                 {
@@ -227,10 +213,10 @@ namespace System.Text.RegularExpressions
                     do
                     {
                         if (match.Index != prevat)
-                            sb.Append(input, prevat, match.Index - prevat);
+                            vsb.Append(input.AsSpan(prevat, match.Index - prevat));
 
                         prevat = match.Index + match.Length;
-                        ReplacementImpl(sb, match);
+                        ReplacementImpl(ref vsb, match);
                         if (--count == 0)
                             break;
 
@@ -238,20 +224,23 @@ namespace System.Text.RegularExpressions
                     } while (match.Success);
 
                     if (prevat < input.Length)
-                        sb.Append(input, prevat, input.Length - prevat);
+                        vsb.Append(input.AsSpan(prevat, input.Length - prevat));
                 }
                 else
                 {
-                    List<string> al = new List<string>();
+                    // In right to left mode append all the inputs in reversed order to avoid an extra dynamic data structure
+                    // and to be able to work with Spans. A final reverse of the transformed reversed input string generates
+                    // the desired output. Similar to Tower of Hanoi.
+
                     int prevat = input.Length;
 
                     do
                     {
                         if (match.Index + match.Length != prevat)
-                            al.Add(input.Substring(match.Index + match.Length, prevat - match.Index - match.Length));
+                            vsb.AppendReversed(input.AsSpan(match.Index + match.Length, prevat - match.Index - match.Length));
 
                         prevat = match.Index;
-                        ReplacementImplRTL(al, match);
+                        ReplacementImplRTL(ref vsb, match);
                         if (--count == 0)
                             break;
 
@@ -259,15 +248,12 @@ namespace System.Text.RegularExpressions
                     } while (match.Success);
 
                     if (prevat > 0)
-                        sb.Append(input, 0, prevat);
+                        vsb.AppendReversed(input.AsSpan(0, prevat));
 
-                    for (int i = al.Count - 1; i >= 0; i--)
-                    {
-                        sb.Append(al[i]);
-                    }
+                    vsb.Reverse();
                 }
 
-                return StringBuilderCache.GetStringAndRelease(sb);
+                return vsb.ToString();
             }
         }
     }

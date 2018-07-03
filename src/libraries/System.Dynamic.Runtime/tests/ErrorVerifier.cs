@@ -192,7 +192,7 @@ public class ErrorVerifier
     private static ResourceManager s_rm2;
     public static string GetErrorElement(ErrorElementId id)
     {
-        return String.Empty;
+        return string.Empty;
     }
 
     public static bool Verify(ErrorMessageId id, string actualError, params string[] args)

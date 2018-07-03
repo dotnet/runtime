@@ -214,7 +214,7 @@ namespace System.Collections.Immutable
             get
             {
                 var self = this;
-                return self.IsDefault ? "Uninitialized" : String.Format(CultureInfo.CurrentCulture, "Length = {0}", self.Length);
+                return self.IsDefault ? "Uninitialized" : string.Format(CultureInfo.CurrentCulture, "Length = {0}", self.Length);
             }
         }
 

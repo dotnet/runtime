@@ -1,4 +1,4 @@
-﻿// Licensed to the .NET Foundation under one or more agreements.
+// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
@@ -27,7 +27,7 @@ namespace Stress.Data
         public static readonly string LargeStringParam = new string('p', 2000);
 
         // A temp table that when create puts the server session into a non-recoverable state until dropped.
-        private static readonly string s_tempTableName = String.Format("#stress_{0}", Guid.NewGuid().ToString("N"));
+        private static readonly string s_tempTableName = string.Format("#stress_{0}", Guid.NewGuid().ToString("N"));
 
         // The languages used for "SET LANGUAGE [language]" statements that modify the server session state.  Let's
         // keep error message readable so we're only using english languages.
@@ -257,7 +257,7 @@ namespace Stress.Data
         /// <summary>
         /// Returns a SELECT command that retrieves data from a table
         /// </summary>
-        private String GetSelectCommandForMultipleRows(Random rnd, DbCommand com, TableMetadata inputTable, bool isXml)
+        private string GetSelectCommandForMultipleRows(Random rnd, DbCommand com, TableMetadata inputTable, bool isXml)
         {
             int rowcount = rnd.Next(Depth);
 
@@ -303,7 +303,7 @@ namespace Stress.Data
         /// <summary>
         /// Returns a SELECT command that returns a single string parameter value.
         /// </summary>
-        private String GetSelectCommandForScalarValue(DbCommand com)
+        private string GetSelectCommandForScalarValue(DbCommand com)
         {
             string pName = GetParameterName("P1");
             StringBuilder cmdText = new StringBuilder();
@@ -627,17 +627,17 @@ namespace Stress.Data
                 case DbType.Byte:
                     return rnd.Next(byte.MinValue, byte.MaxValue + 1);
                 case DbType.Int16:
-                    return rnd.Next(Int16.MinValue, Int16.MaxValue + 1);
+                    return rnd.Next(short.MinValue, short.MaxValue + 1);
                 case DbType.Int32:
-                    return (rnd.Next(2) == 0 ? Int32.MaxValue / rnd.Next(1, 3) : Int32.MinValue / rnd.Next(1, 3));
+                    return (rnd.Next(2) == 0 ? int.MaxValue / rnd.Next(1, 3) : int.MinValue / rnd.Next(1, 3));
                 case DbType.Int64:
-                    return (rnd.Next(2) == 0 ? Int64.MaxValue / rnd.Next(1, 3) : Int64.MinValue / rnd.Next(1, 3));
+                    return (rnd.Next(2) == 0 ? long.MaxValue / rnd.Next(1, 3) : long.MinValue / rnd.Next(1, 3));
                 case DbType.Single:
-                    return rnd.NextDouble() * (rnd.Next(2) == 0 ? Single.MaxValue : Single.MinValue);
+                    return rnd.NextDouble() * (rnd.Next(2) == 0 ? float.MaxValue : float.MinValue);
                 case DbType.Double:
-                    return rnd.NextDouble() * (rnd.Next(2) == 0 ? Double.MaxValue : Double.MinValue);
+                    return rnd.NextDouble() * (rnd.Next(2) == 0 ? double.MaxValue : double.MinValue);
                 case DbType.Decimal:
-                    return rnd.Next(Int16.MinValue, Int16.MaxValue + 1);
+                    return rnd.Next(short.MinValue, short.MaxValue + 1);
                 case DbType.DateTime:
                 case DbType.DateTime2:
                     return DateTime.Now;

@@ -2,7 +2,6 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
-using System;
 using Test.Cryptography;
 
 namespace System.Security.Cryptography.Tests
@@ -172,6 +171,74 @@ namespace System.Security.Cryptography.Tests
                     "956FA22DD3C8682751296C129D55F8F8C15483103D99899446E13285998B7E0F05").HexToByteArray(),
             };
         }
+
+        internal static ECParameters GetNistP521Key2()
+        {
+            return new ECParameters
+            {
+                Curve = ECCurve.NamedCurves.nistP521,
+
+                Q =
+                {
+                    X = (
+                        "00751F26324C73CEF5D45EBB32937E3060E351960A57594AD03EB1CA0C5EA747" +
+                        "1213366BA991D24406717F86FDEFDE086E09B954A57DC0F5E9459756D60C2AAE" +
+                        "6DE0").HexToByteArray(),
+
+                    Y = (
+                        "01A8DDBB3F02C8C23524729F548B7E23325233EF67DD30752B924F297459E3C2" +
+                        "E12AE8D8F4FE4454E3847C18B255CACEF59737B918E1DE40F95E9FFE4F57B791" +
+                        "53A0").HexToByteArray(),
+                },
+
+                D = (
+                    "01A55F8785A5730BAEE1D6B3D301069F7FD64D8B04CCEA57EFD5961E68F33FAB" +
+                    "43545166CA6553CD38FF713D1289C698BD7D086B55E01B5BD5ED27E3630376B1" +
+                    "1666").HexToByteArray(),
+            };
+        }
+
+        internal static ECParameters GetNistP256ReferenceKey()
+        {
+            // From Suite B Implementers's Guide to FIPS 186-3 (ECDSA)
+            // Section D.1.1
+            return new ECParameters
+            {
+                Curve = ECCurve.NamedCurves.nistP256,
+
+                Q =
+                {
+                    X = "8101ECE47464A6EAD70CF69A6E2BD3D88691A3262D22CBA4F7635EAFF26680A8".HexToByteArray(),
+                    Y = "D8A12BA61D599235F67D9CB4D58F1783D3CA43E78F0A5ABAA624079936C0C3A9".HexToByteArray(),
+                },
+
+                D = "70A12C2DB16845ED56FF68CFC21A472B3F04D7D6851BF6349F2D7D5B3452B38A".HexToByteArray(),
+            };
+        }
+
+        internal static readonly ECParameters BrainpoolP160r1Key1 =
+            new ECParameters
+            {
+                Curve = ECCurve.NamedCurves.brainpoolP160r1,
+                Q =
+                {
+                    X = "8E628F0939C7629276CADBFE99C01C36509354E2".HexToByteArray(),
+                    Y = "72D2C8EEF1F6CC3205D0057EB9DE6CA9E3105096".HexToByteArray(),
+                },
+                D = "C5D944547DE115DB2588DC6FDEBA3B473E9C4D96".HexToByteArray(),
+            };
+
+        internal static readonly ECParameters Sect283k1Key1 =
+            new ECParameters
+            {
+                Curve = ECCurve.CreateFromValue("1.3.132.0.16"),
+                Q =
+                {
+                    X = "0752770BD33E6A6EE2096CB6B120E7497B47B6C077A147CB57DAF693909D840716EEA7AA".HexToByteArray(),
+                    Y = "047DB9995C35603C5E6B2F8CDFF0EB71D37AE3431BA0849EBAB13A4C9003C7969F55CD90".HexToByteArray(),
+                },
+                D = "00B4F1AE1E7FDCD4B0E82053C08A908852B26231E6C01670FCC6C3EA2C5D3FED40EDF037".HexToByteArray(),
+            };
 #endif // netcoreapp
     }
 }

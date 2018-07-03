@@ -140,7 +140,7 @@ namespace System.DirectoryServices.AccountManagement
             {
                 Debug.Fail("SAMStoreCtx.GetSchemaFilter: fell off end looking for " + principalType.ToString());
                 throw new InvalidOperationException(
-                                String.Format(CultureInfo.CurrentCulture, SR.StoreCtxUnsupportedPrincipalTypeForQuery, principalType.ToString()));
+                                string.Format(CultureInfo.CurrentCulture, SR.StoreCtxUnsupportedPrincipalTypeForQuery, principalType.ToString()));
             }
 
             return schemaTypes;

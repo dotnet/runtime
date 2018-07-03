@@ -9,20 +9,20 @@
 #ifndef BROTLI_ENC_BIT_COST_H_
 #define BROTLI_ENC_BIT_COST_H_
 
+#include "../common/platform.h"
 #include <brotli/types.h>
 #include "./fast_log.h"
 #include "./histogram.h"
-#include "./port.h"
 
 #if defined(__cplusplus) || defined(c_plusplus)
 extern "C" {
 #endif
 
-static BROTLI_INLINE double ShannonEntropy(const uint32_t *population,
-                                           size_t size, size_t *total) {
+static BROTLI_INLINE double ShannonEntropy(
+    const uint32_t* population, size_t size, size_t* total) {
   size_t sum = 0;
   double retval = 0;
-  const uint32_t *population_end = population + size;
+  const uint32_t* population_end = population + size;
   size_t p;
   if (size & 1) {
     goto odd_number_of_elements_left;
@@ -42,7 +42,7 @@ static BROTLI_INLINE double ShannonEntropy(const uint32_t *population,
 }
 
 static BROTLI_INLINE double BitsEntropy(
-    const uint32_t *population, size_t size) {
+    const uint32_t* population, size_t size) {
   size_t sum;
   double retval = ShannonEntropy(population, size, &sum);
   if (retval < sum) {

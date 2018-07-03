@@ -311,13 +311,13 @@ namespace System.Xml.Tests
     [InheritRequired()]
     public abstract partial class TCReadAttributeValue : TCXMLReaderBaseGeneral
     {
-        private bool VerifyAttribute(String strName, String strValue)
+        private bool VerifyAttribute(string strName, string strValue)
         {
             bool bPassed = false;
 
             bPassed = DataReader.VerifyNode(XmlNodeType.Attribute, strName, strValue);
             bPassed = DataReader.ReadAttributeValue() && bPassed;
-            bPassed = DataReader.VerifyNode(XmlNodeType.Text, String.Empty, strValue) && bPassed;
+            bPassed = DataReader.VerifyNode(XmlNodeType.Text, string.Empty, strValue) && bPassed;
             bPassed = !DataReader.ReadAttributeValue() && bPassed;
 
             return bPassed;
@@ -382,7 +382,7 @@ namespace System.Xml.Tests
             DataReader.PositionOnElement("ATTRIBUTE4");
 
             bPassed = DataReader.MoveToFirstAttribute();
-            bPassed = VerifyAttribute("a1", String.Empty) && bPassed;
+            bPassed = VerifyAttribute("a1", string.Empty) && bPassed;
 
             bPassed = !DataReader.MoveToNextAttribute() && bPassed;
 
@@ -402,18 +402,18 @@ namespace System.Xml.Tests
             DataReader.MoveToFirstAttribute();
 
             CError.Compare(DataReader.ReadAttributeValue(), "rava");
-            CError.Compare(DataReader.VerifyNode(XmlNodeType.Text, String.Empty, "a"), "vna");
+            CError.Compare(DataReader.VerifyNode(XmlNodeType.Text, string.Empty, "a"), "vna");
 
             CError.Compare(DataReader.ReadAttributeValue(), "rave");
-            CError.Compare(DataReader.VerifyNode(XmlNodeType.EntityReference, "e", String.Empty), "vne");
+            CError.Compare(DataReader.VerifyNode(XmlNodeType.EntityReference, "e", string.Empty), "vne");
 
             CError.Compare(DataReader.ReadAttributeValue(), "ravc");
-            CError.Compare(DataReader.VerifyNode(XmlNodeType.Text, String.Empty, "c"), "vnc");
+            CError.Compare(DataReader.VerifyNode(XmlNodeType.Text, string.Empty, "c"), "vnc");
 
             CError.Compare(!DataReader.ReadAttributeValue(), "nrav");
 
             DataReader.Read();
-            CError.Compare(DataReader.VerifyNode(XmlNodeType.None, String.Empty, String.Empty), "vnn");
+            CError.Compare(DataReader.VerifyNode(XmlNodeType.None, string.Empty, string.Empty), "vnn");
 
             return TEST_PASS;
         }

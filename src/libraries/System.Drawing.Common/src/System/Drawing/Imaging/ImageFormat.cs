@@ -161,16 +161,16 @@ namespace System.Drawing.Imaging
         /// </summary>
         public override string ToString()
         {
-            if (this == s_memoryBMP) return "MemoryBMP";
-            if (this == s_bmp) return "Bmp";
-            if (this == s_emf) return "Emf";
-            if (this == s_wmf) return "Wmf";
-            if (this == s_gif) return "Gif";
-            if (this == s_jpeg) return "Jpeg";
-            if (this == s_png) return "Png";
-            if (this == s_tiff) return "Tiff";
-            if (this == s_exif) return "Exif";
-            if (this == s_icon) return "Icon";
+            if (this.Guid == s_memoryBMP.Guid) return "MemoryBMP";
+            if (this.Guid == s_bmp.Guid) return "Bmp";
+            if (this.Guid == s_emf.Guid) return "Emf";
+            if (this.Guid == s_wmf.Guid) return "Wmf";
+            if (this.Guid == s_gif.Guid) return "Gif";
+            if (this.Guid == s_jpeg.Guid) return "Jpeg";
+            if (this.Guid == s_png.Guid) return "Png";
+            if (this.Guid == s_tiff.Guid) return "Tiff";
+            if (this.Guid == s_exif.Guid) return "Exif";
+            if (this.Guid == s_icon.Guid) return "Icon";
             return "[ImageFormat: " + _guid + "]";
         }
     }

@@ -713,7 +713,7 @@ A=Exit process R=Debug I=Continue";
 #endif
 
         [Conditional("DEBUG")]
-        public static void TraceException(String tagName, Exception e)
+        public static void TraceException(string tagName, Exception e)
         {
 #if DEBUG
             if (TraceBreak(tagName, null, e, true)) {
@@ -874,7 +874,7 @@ A=Exit process R=Debug I=Continue";
         //
         [Conditional("DEBUG")]
         [ResourceExposure(ResourceScope.None)]
-        internal static void Validate(Object obj)
+        internal static void Validate(object obj)
         {
 #if DEBUG
             Type        type;
@@ -905,7 +905,7 @@ A=Exit process R=Debug I=Continue";
         //
         [Conditional("DEBUG")]
         [ResourceExposure(ResourceScope.None)]
-        internal static void Validate(string tagName, Object obj)
+        internal static void Validate(string tagName, object obj)
         {
 #if DEBUG
             EnsureInit();
@@ -989,7 +989,7 @@ A=Exit process R=Debug I=Continue";
         // @param obj  The object to dump.
         // 
         [Conditional("DEBUG")]
-        internal static void Dump(string tagName, Object obj)
+        internal static void Dump(string tagName, object obj)
         {
 #if DEBUG
             EnsureInit();

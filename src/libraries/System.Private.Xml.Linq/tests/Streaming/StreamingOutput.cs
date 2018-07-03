@@ -183,7 +183,7 @@ namespace XDocumentTests.Streaming
                 "contacts",
                 new XElement("contact1", "jane"),
                 new XElement("contact2", "john"));
-            List<Object> list = new List<Object>();
+            List<object> list = new List<object>();
             list.Add(contact.Element("contact1"));
             list.Add(contact.Element("contact2"));
             XStreamingElement streamElement = new XStreamingElement("contacts", list);

@@ -1,4 +1,4 @@
-﻿// Licensed to the .NET Foundation under one or more agreements.
+// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
@@ -54,16 +54,16 @@ namespace Stress.Data
         {
             s_clrTypes = new Dictionary<Type, Func<DataStressReader, int, CancellationToken, Random, Task<object>>>();
 
-            s_clrTypes.Add(typeof(Boolean), (reader, ordinal, token, rnd) => reader.GetFieldValueSyncOrAsync<Boolean>(ordinal, token, rnd));
-            s_clrTypes.Add(typeof(Byte), (reader, ordinal, token, rnd) => reader.GetFieldValueSyncOrAsync<Byte>(ordinal, token, rnd));
-            s_clrTypes.Add(typeof(Int16), (reader, ordinal, token, rnd) => reader.GetFieldValueSyncOrAsync<Int16>(ordinal, token, rnd));
-            s_clrTypes.Add(typeof(Int32), (reader, ordinal, token, rnd) => reader.GetFieldValueSyncOrAsync<Int32>(ordinal, token, rnd));
-            s_clrTypes.Add(typeof(Int64), (reader, ordinal, token, rnd) => reader.GetFieldValueSyncOrAsync<Int64>(ordinal, token, rnd));
-            s_clrTypes.Add(typeof(Single), (reader, ordinal, token, rnd) => reader.GetFieldValueSyncOrAsync<Single>(ordinal, token, rnd));
-            s_clrTypes.Add(typeof(Double), (reader, ordinal, token, rnd) => reader.GetFieldValueSyncOrAsync<Double>(ordinal, token, rnd));
-            s_clrTypes.Add(typeof(String), (reader, ordinal, token, rnd) => reader.GetFieldValueSyncOrAsync<String>(ordinal, token, rnd));
-            s_clrTypes.Add(typeof(Char), (reader, ordinal, token, rnd) => reader.GetFieldValueSyncOrAsync<Char>(ordinal, token, rnd));
-            s_clrTypes.Add(typeof(Decimal), (reader, ordinal, token, rnd) => reader.GetFieldValueSyncOrAsync<Decimal>(ordinal, token, rnd));
+            s_clrTypes.Add(typeof(bool), (reader, ordinal, token, rnd) => reader.GetFieldValueSyncOrAsync<Boolean>(ordinal, token, rnd));
+            s_clrTypes.Add(typeof(byte), (reader, ordinal, token, rnd) => reader.GetFieldValueSyncOrAsync<Byte>(ordinal, token, rnd));
+            s_clrTypes.Add(typeof(short), (reader, ordinal, token, rnd) => reader.GetFieldValueSyncOrAsync<Int16>(ordinal, token, rnd));
+            s_clrTypes.Add(typeof(int), (reader, ordinal, token, rnd) => reader.GetFieldValueSyncOrAsync<Int32>(ordinal, token, rnd));
+            s_clrTypes.Add(typeof(long), (reader, ordinal, token, rnd) => reader.GetFieldValueSyncOrAsync<Int64>(ordinal, token, rnd));
+            s_clrTypes.Add(typeof(float), (reader, ordinal, token, rnd) => reader.GetFieldValueSyncOrAsync<Single>(ordinal, token, rnd));
+            s_clrTypes.Add(typeof(double), (reader, ordinal, token, rnd) => reader.GetFieldValueSyncOrAsync<Double>(ordinal, token, rnd));
+            s_clrTypes.Add(typeof(string), (reader, ordinal, token, rnd) => reader.GetFieldValueSyncOrAsync<String>(ordinal, token, rnd));
+            s_clrTypes.Add(typeof(char), (reader, ordinal, token, rnd) => reader.GetFieldValueSyncOrAsync<Char>(ordinal, token, rnd));
+            s_clrTypes.Add(typeof(decimal), (reader, ordinal, token, rnd) => reader.GetFieldValueSyncOrAsync<Decimal>(ordinal, token, rnd));
             s_clrTypes.Add(typeof(Guid), (reader, ordinal, token, rnd) => reader.GetFieldValueSyncOrAsync<Guid>(ordinal, token, rnd));
             s_clrTypes.Add(typeof(DateTime), (reader, ordinal, token, rnd) => reader.GetFieldValueSyncOrAsync<DateTime>(ordinal, token, rnd));
             s_clrTypes.Add(typeof(TimeSpan), (reader, ordinal, token, rnd) => reader.GetFieldValueSyncOrAsync<TimeSpan>(ordinal, token, rnd));

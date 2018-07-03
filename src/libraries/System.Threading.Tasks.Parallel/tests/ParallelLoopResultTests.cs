@@ -175,7 +175,7 @@ Parallel.For(1L, 0L, delegate (long i, ParallelLoopState ps)
             PLRcheck(plr, "OrderablePartitioner-ForEach-Complete", true, null);
         }
 
-        private static void PLRcheck(ParallelLoopResult plr, string ttype, bool shouldComplete, Int32? expectedLBI)
+        private static void PLRcheck(ParallelLoopResult plr, string ttype, bool shouldComplete, int? expectedLBI)
         {
             Assert.Equal(shouldComplete, plr.IsCompleted);
             Assert.Equal(expectedLBI, plr.LowestBreakIteration);

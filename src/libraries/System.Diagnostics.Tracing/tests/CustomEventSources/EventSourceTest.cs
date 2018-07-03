@@ -30,7 +30,7 @@ namespace SdtEventSources
 
         protected override void OnEventCommand(EventCommandEventArgs command)
         {
-            Debug.WriteLine(String.Format("EventSourceTest: Got Command {0}", command.Command));
+            Debug.WriteLine(string.Format("EventSourceTest: Got Command {0}", command.Command));
             Debug.WriteLine("  Args: " + string.Join(", ", command.Arguments.Select((pair) => string.Format("{0} -> {1}", pair.Key, pair.Value))));
         }
 
@@ -137,7 +137,7 @@ namespace SdtEventSources
         public void EventDateTime(DateTime dt) { WriteEvent(24, dt); }
 
         [Event(25, Keywords = Keywords.HasNoArgs, Level = EventLevel.Informational)]
-        public void EventWithManyTypeArgs(string msg, long l, uint ui, UInt64 ui64, char c,
+        public void EventWithManyTypeArgs(string msg, long l, uint ui, ulong ui64, char c,
                                           byte b, sbyte sb, short sh, ushort ush,
                                           float f, double d, Guid guid)
         {
@@ -163,7 +163,7 @@ namespace SdtEventSources
         }
 
         [Event(29, Keywords = Keywords.Transfer | Keywords.HasNoArgs, Level = EventLevel.Informational, Opcode = EventOpcode.Send, Task = Tasks.WorkManyArgs)]
-        public void EventWithXferManyTypeArgs(Guid RelatedActivityId, long l, uint ui, UInt64 ui64, char ch,
+        public void EventWithXferManyTypeArgs(Guid RelatedActivityId, long l, uint ui, ulong ui64, char ch,
                                           byte b, sbyte sb, short sh, ushort ush,
                                           float f, double d, Guid guid)
         {

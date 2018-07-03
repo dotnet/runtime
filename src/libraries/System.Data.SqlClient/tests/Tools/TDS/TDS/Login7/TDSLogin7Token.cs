@@ -1,4 +1,4 @@
-﻿// Licensed to the .NET Foundation under one or more agreements.
+// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
@@ -204,7 +204,7 @@ namespace Microsoft.SqlServer.TDS.Login7
             uint length = TDSUtilities.ReadUInt(source);
 
             // Read TDS version
-            string tdsVersion = String.Format("{0:X}", TDSUtilities.ReadUInt(source));
+            string tdsVersion = string.Format("{0:X}", TDSUtilities.ReadUInt(source));
 
             // Consturct TDS version
             TDSVersion = new Version(int.Parse(tdsVersion.Substring(0, 1)), int.Parse(tdsVersion.Substring(1, 1)), Convert.ToInt32(tdsVersion.Substring(2, 2), 16), Convert.ToInt32(tdsVersion.Substring(4, 4), 16));

@@ -357,7 +357,7 @@ namespace MS.Internal.Xml.Cache
         /// </summary>
         public void Create(XPathNodeInfoAtom info, XPathNodeType xptyp, int idxParent)
         {
-            Debug.Assert(info != null && idxParent <= UInt16.MaxValue);
+            Debug.Assert(info != null && idxParent <= ushort.MaxValue);
             _info = info;
             _props = (uint)xptyp;
             _idxParent = (ushort)idxParent;
@@ -435,7 +435,7 @@ namespace MS.Internal.Xml.Cache
         /// </summary>
         public void SetSibling(XPathNodeInfoTable infoTable, XPathNode[] pageSibling, int idxSibling)
         {
-            Debug.Assert(pageSibling != null && idxSibling != 0 && idxSibling <= UInt16.MaxValue, "Bad argument");
+            Debug.Assert(pageSibling != null && idxSibling != 0 && idxSibling <= ushort.MaxValue, "Bad argument");
             Debug.Assert(_idxSibling == 0, "SetSibling should not be called more than once.");
             _idxSibling = (ushort)idxSibling;
 
@@ -454,7 +454,7 @@ namespace MS.Internal.Xml.Cache
         /// </summary>
         public void SetSimilarElement(XPathNodeInfoTable infoTable, XPathNode[] pageSimilar, int idxSimilar)
         {
-            Debug.Assert(pageSimilar != null && idxSimilar != 0 && idxSimilar <= UInt16.MaxValue, "Bad argument");
+            Debug.Assert(pageSimilar != null && idxSimilar != 0 && idxSimilar <= ushort.MaxValue, "Bad argument");
             Debug.Assert(_idxSimilar == 0, "SetSimilarElement should not be called more than once.");
             _idxSimilar = (ushort)idxSimilar;
 

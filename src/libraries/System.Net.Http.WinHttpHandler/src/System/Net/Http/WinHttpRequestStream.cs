@@ -213,7 +213,7 @@ namespace System.Net.Http
             Debug.Assert(_chunkedMode);
             Debug.Assert(count > 0);
 
-            string chunkSizeString = String.Format("{0:x}\r\n", count);
+            string chunkSizeString = string.Format("{0:x}\r\n", count);
             byte[] chunkSize = Encoding.UTF8.GetBytes(chunkSizeString);
 
             await InternalWriteDataAsync(chunkSize, 0, chunkSize.Length, token).ConfigureAwait(false);

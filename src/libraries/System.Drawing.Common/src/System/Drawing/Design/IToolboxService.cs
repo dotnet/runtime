@@ -113,13 +113,13 @@ namespace System.Drawing.Design {
         /// <devdoc>
         ///    <para>Gets all .NET Framework tools on the specified toolbox category.</para>
         /// </devdoc>
-        ToolboxItemCollection GetToolboxItems(String category);
+        ToolboxItemCollection GetToolboxItems(string category);
 
         /// <include file='doc\IToolboxService.uex' path='docs/doc[@for="IToolboxService.GetToolboxItems3"]/*' />
         /// <devdoc>
         ///    <para>Gets all .NET Framework tools on the specified toolbox category.</para>
         /// </devdoc>
-        ToolboxItemCollection GetToolboxItems(String category, IDesignerHost host);
+        ToolboxItemCollection GetToolboxItems(string category, IDesignerHost host);
         
         /// <include file='doc\IToolboxService.uex' path='docs/doc[@for="IToolboxService.IsSupported"]/*' />
         /// <devdoc>

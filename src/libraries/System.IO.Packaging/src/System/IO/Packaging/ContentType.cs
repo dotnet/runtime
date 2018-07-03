@@ -77,7 +77,7 @@ namespace System.IO.Packaging
 
             if (contentType.Length == 0)
             {
-                _contentType = String.Empty;
+                _contentType = string.Empty;
             }
             else
             {
@@ -214,8 +214,8 @@ namespace System.IO.Packaging
                 // safe comparison because the _type and _subType strings have been restricted to
                 // ASCII characters, digits, and a small set of symbols.  This is not a safe comparison
                 // for the broader set of strings that have not been restricted in the same way.
-                result = (String.Equals(_type, contentType.TypeComponent, StringComparison.OrdinalIgnoreCase) &&
-                          String.Equals(_subType, contentType.SubTypeComponent, StringComparison.OrdinalIgnoreCase));
+                result = (string.Equals(_type, contentType.TypeComponent, StringComparison.OrdinalIgnoreCase) &&
+                          string.Equals(_subType, contentType.SubTypeComponent, StringComparison.OrdinalIgnoreCase));
             }
             return result;
         }
@@ -231,10 +231,10 @@ namespace System.IO.Packaging
                 //This is needed so that while debugging we get the correct 
                 //string
                 if (!_isInitialized)
-                    return String.Empty;
+                    return string.Empty;
 
-                Debug.Assert(String.CompareOrdinal(_type, String.Empty) != 0
-                   || String.CompareOrdinal(_subType, String.Empty) != 0);
+                Debug.Assert(string.CompareOrdinal(_type, string.Empty) != 0
+                   || string.CompareOrdinal(_subType, string.Empty) != 0);
 
                 StringBuilder stringBuilder = new StringBuilder(_type);
                 stringBuilder.Append(PackUriHelper.ForwardSlashChar);
@@ -429,7 +429,7 @@ namespace System.IO.Packaging
         /// <exception cref="ArgumentException">If the token is Empty</exception>
         private static string ValidateToken(string token)
         {
-            if (String.IsNullOrEmpty(token))
+            if (string.IsNullOrEmpty(token))
                 throw new ArgumentException(SR.InvalidToken_ContentType);
 
             for (int i = 0; i < token.Length; i++)
@@ -452,7 +452,7 @@ namespace System.IO.Packaging
         /// <exception cref="ArgumentException">If the parameter value is empty</exception>
         private static string ValidateQuotedStringOrToken(string parameterValue)
         {
-            if (String.IsNullOrEmpty(parameterValue))
+            if (string.IsNullOrEmpty(parameterValue))
                 throw new ArgumentException(SR.InvalidParameterValue);
 
             if (parameterValue.Length >= 2 &&
@@ -556,8 +556,8 @@ namespace System.IO.Packaging
         #region Private Members
 
         private string _contentType = null;
-        private string _type = String.Empty;
-        private string _subType = String.Empty;
+        private string _type = string.Empty;
+        private string _subType = string.Empty;
         private string _originalString;
         private Dictionary<string, string> _parameterDictionary = null;
         private bool _isInitialized = false;

@@ -397,7 +397,7 @@ namespace System.Numerics
         /// <param name="right">The scalar value.</param>
         /// <returns>The scaled vector.</returns>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static Vector2 Multiply(Vector2 left, Single right)
+        public static Vector2 Multiply(Vector2 left, float right)
         {
             return left * right;
         }
@@ -409,7 +409,7 @@ namespace System.Numerics
         /// <param name="right">The source vector.</param>
         /// <returns>The scaled vector.</returns>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static Vector2 Multiply(Single left, Vector2 right)
+        public static Vector2 Multiply(float left, Vector2 right)
         {
             return left * right;
         }
@@ -433,7 +433,7 @@ namespace System.Numerics
         /// <param name="divisor">The scalar value.</param>
         /// <returns>The result of the division.</returns>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static Vector2 Divide(Vector2 left, Single divisor)
+        public static Vector2 Divide(Vector2 left, float divisor)
         {
             return left / divisor;
         }

@@ -21,7 +21,7 @@ namespace System.Xml.Xsl.Qil
 
         public QilPatterns Patterns { get; set; }
 
-        public int Threshold { get; set; } = Int32.MaxValue;
+        public int Threshold { get; set; } = int.MaxValue;
         public int ReplacementCount { get; private set; }
 
         public int LastReplacement { get; private set; }

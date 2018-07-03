@@ -66,7 +66,7 @@ namespace Microsoft.Framework.WebEncoders
             // Act & assert - BMP chars
             for (int i = 0; i <= 0xFFFF; i++)
             {
-                string input = new String((char)i, 1);
+                string input = new string((char)i, 1);
                 string expected;
                 if (IsSurrogateCodePoint(i))
                 {
@@ -98,7 +98,7 @@ namespace Microsoft.Framework.WebEncoders
 
                     if (mustEncode)
                     {
-                        expected = String.Format(CultureInfo.InvariantCulture, "[U+{0:X4}]", i);
+                        expected = string.Format(CultureInfo.InvariantCulture, "[U+{0:X4}]", i);
                     }
                     else
                     {
@@ -113,8 +113,8 @@ namespace Microsoft.Framework.WebEncoders
             // Act & assert - astral chars
             for (int i = 0x10000; i <= 0x10FFFF; i++)
             {
-                string input = Char.ConvertFromUtf32(i);
-                string expected = String.Format(CultureInfo.InvariantCulture, "[U+{0:X}]", i);
+                string input = char.ConvertFromUtf32(i);
+                string expected = string.Format(CultureInfo.InvariantCulture, "[U+{0:X}]", i);
                 string retVal = encoder.Encode(input);
                 Assert.Equal(expected, retVal);
             }
@@ -403,7 +403,7 @@ namespace Microsoft.Framework.WebEncoders
 
             protected override void WriteEncodedScalar(ref Writer writer, uint value)
             {
-                writer.Write(String.Format(CultureInfo.InvariantCulture, "[U+{0:X4}]", value));
+                writer.Write(string.Format(CultureInfo.InvariantCulture, "[U+{0:X4}]", value));
             }
         }
     }

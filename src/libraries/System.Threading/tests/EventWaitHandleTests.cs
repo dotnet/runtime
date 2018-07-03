@@ -23,7 +23,7 @@ namespace System.Threading.Tests
         [Fact]
         public void Ctor_InvalidMode()
         {
-            AssertExtensions.Throws<ArgumentException>(null, () => new EventWaitHandle(true, (EventResetMode)12345));
+            AssertExtensions.Throws<ArgumentException>("mode", null, () => new EventWaitHandle(true, (EventResetMode)12345));
         }
 
         [SkipOnTargetFramework(~TargetFrameworkMonikers.NetFramework, "Full framework throws argument exception on long names")]

@@ -21,8 +21,8 @@ namespace System.Xml.Tests
         /// <returns></returns>
         public int v2()
         {
-            Double d1 = -0e0;
-            Double d2 = -0;
+            double d1 = -0e0;
+            double d2 = -0;
             CError.Compare(XmlConvert.ToString(d1), "-0", "ToString1 failed");
             CError.Compare(XmlConvert.ToString(d2), "0", "ToString2 failed");
             CError.Compare(XmlConvert.ToString(XmlConvert.ToDouble("-0e0")), "-0", "ToDouble1 failed");

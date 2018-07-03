@@ -37,6 +37,7 @@ namespace System.Security.Cryptography.X509Certificates.Tests
         }
 
         [Fact]
+        [ActiveIssue(30543, TargetFrameworkMonikers.NetFramework)]
         public static void TestSerial()
         {
             string expectedSerialHex = "B00000000100DD9F3BD08B0AAF11B000000033";
@@ -66,6 +67,7 @@ namespace System.Security.Cryptography.X509Certificates.Tests
             }
         }
 
+#if HAVE_THUMBPRINT_OVERLOADS
         [Theory]
         [InlineData("SHA1", false)]
         [InlineData("SHA1", true)]
@@ -148,6 +150,7 @@ namespace System.Security.Cryptography.X509Certificates.Tests
                 }
             }
         }
+#endif
 
         [Fact]
         public static void TestGetFormat()
@@ -209,6 +212,7 @@ namespace System.Security.Cryptography.X509Certificates.Tests
 
         [Fact]
         [ActiveIssue(2910, TestPlatforms.AnyUnix)]
+        [ActiveIssue(30544, TargetFrameworkMonikers.NetFramework)]
         public static void TestLoadSignedFile()
         {
             // X509Certificate2 can also extract the certificate from a signed file.

@@ -103,7 +103,7 @@ namespace Microsoft.SqlServer.Server
             throw System.Data.Common.ADP.InternalError(System.Data.Common.ADP.InternalErrorCode.UnimplementedSMIMethod);
         }
 
-        public virtual Boolean GetBoolean(int ordinal)
+        public virtual bool GetBoolean(int ordinal)
         {
             // ******** OBSOLETING from SMI -- use corresponding ITypedGettersV3 method instead
             //  Intended to be removed prior to RTM.
@@ -114,7 +114,7 @@ namespace Microsoft.SqlServer.Server
             throw System.Data.Common.ADP.InternalError(System.Data.Common.ADP.InternalErrorCode.UnimplementedSMIMethod);
         }
 
-        public virtual Byte GetByte(int ordinal)
+        public virtual byte GetByte(int ordinal)
         {
             // ******** OBSOLETING from SMI -- use corresponding ITypedGettersV3 method instead
             //  Intended to be removed prior to RTM.
@@ -136,7 +136,7 @@ namespace Microsoft.SqlServer.Server
             throw System.Data.Common.ADP.InternalError(System.Data.Common.ADP.InternalErrorCode.UnimplementedSMIMethod);
         }
 
-        public virtual Char GetChar(int ordinal)
+        public virtual char GetChar(int ordinal)
         {
             // ******** OBSOLETING from SMI -- use corresponding ITypedGettersV3 method instead
             //  Intended to be removed prior to RTM.
@@ -158,7 +158,7 @@ namespace Microsoft.SqlServer.Server
             throw System.Data.Common.ADP.InternalError(System.Data.Common.ADP.InternalErrorCode.UnimplementedSMIMethod);
         }
 
-        public virtual Int16 GetInt16(int ordinal)
+        public virtual short GetInt16(int ordinal)
         {
             // ******** OBSOLETING from SMI -- use corresponding ITypedGettersV3 method instead
             //  Intended to be removed prior to RTM.
@@ -169,7 +169,7 @@ namespace Microsoft.SqlServer.Server
             throw System.Data.Common.ADP.InternalError(System.Data.Common.ADP.InternalErrorCode.UnimplementedSMIMethod);
         }
 
-        public virtual Int32 GetInt32(int ordinal)
+        public virtual int GetInt32(int ordinal)
         {
             // ******** OBSOLETING from SMI -- use corresponding ITypedGettersV3 method instead
             //  Intended to be removed prior to RTM.
@@ -180,7 +180,7 @@ namespace Microsoft.SqlServer.Server
             throw System.Data.Common.ADP.InternalError(System.Data.Common.ADP.InternalErrorCode.UnimplementedSMIMethod);
         }
 
-        public virtual Int64 GetInt64(int ordinal)
+        public virtual long GetInt64(int ordinal)
         {
             // ******** OBSOLETING from SMI -- use corresponding ITypedGettersV3 method instead
             //  Intended to be removed prior to RTM.
@@ -191,7 +191,7 @@ namespace Microsoft.SqlServer.Server
             throw System.Data.Common.ADP.InternalError(System.Data.Common.ADP.InternalErrorCode.UnimplementedSMIMethod);
         }
 
-        public virtual Single GetFloat(int ordinal)
+        public virtual float GetFloat(int ordinal)
         {
             // ******** OBSOLETING from SMI -- use corresponding ITypedGettersV3 method instead
             //  Intended to be removed prior to RTM.
@@ -202,7 +202,7 @@ namespace Microsoft.SqlServer.Server
             throw System.Data.Common.ADP.InternalError(System.Data.Common.ADP.InternalErrorCode.UnimplementedSMIMethod);
         }
 
-        public virtual Double GetDouble(int ordinal)
+        public virtual double GetDouble(int ordinal)
         {
             // ******** OBSOLETING from SMI -- use corresponding ITypedGettersV3 method instead
             //  Intended to be removed prior to RTM.
@@ -213,7 +213,7 @@ namespace Microsoft.SqlServer.Server
             throw System.Data.Common.ADP.InternalError(System.Data.Common.ADP.InternalErrorCode.UnimplementedSMIMethod);
         }
 
-        public virtual String GetString(int ordinal)
+        public virtual string GetString(int ordinal)
         {
             // ******** OBSOLETING from SMI -- use corresponding ITypedGettersV3 method instead
             //  Intended to be removed prior to RTM.
@@ -224,7 +224,7 @@ namespace Microsoft.SqlServer.Server
             throw System.Data.Common.ADP.InternalError(System.Data.Common.ADP.InternalErrorCode.UnimplementedSMIMethod);
         }
 
-        public virtual Decimal GetDecimal(int ordinal)
+        public virtual decimal GetDecimal(int ordinal)
         {
             // ******** OBSOLETING from SMI -- use corresponding ITypedGettersV3 method instead
             //  Intended to be removed prior to RTM.
@@ -480,7 +480,7 @@ namespace Microsoft.SqlServer.Server
             throw System.Data.Common.ADP.InternalError(System.Data.Common.ADP.InternalErrorCode.UnimplementedSMIMethod);
         }
 
-        public virtual void SetBoolean(int ordinal, Boolean value)
+        public virtual void SetBoolean(int ordinal, bool value)
         {
             // ******** OBSOLETING from SMI -- use ITypedSettersV3 method instead
             //  Intended to be removed prior to RTM.
@@ -491,7 +491,7 @@ namespace Microsoft.SqlServer.Server
             throw System.Data.Common.ADP.InternalError(System.Data.Common.ADP.InternalErrorCode.UnimplementedSMIMethod);
         }
 
-        public virtual void SetByte(int ordinal, Byte value)
+        public virtual void SetByte(int ordinal, byte value)
         {
             // ******** OBSOLETING from SMI -- use ITypedSettersV3 method instead
             //  Intended to be removed prior to RTM.
@@ -535,7 +535,7 @@ namespace Microsoft.SqlServer.Server
             throw System.Data.Common.ADP.InternalError(System.Data.Common.ADP.InternalErrorCode.UnimplementedSMIMethod);
         }
 
-        public virtual void SetInt16(int ordinal, Int16 value)
+        public virtual void SetInt16(int ordinal, short value)
         {
             // ******** OBSOLETING from SMI -- use ITypedSettersV3 method instead
             //  Intended to be removed prior to RTM.
@@ -546,7 +546,7 @@ namespace Microsoft.SqlServer.Server
             throw System.Data.Common.ADP.InternalError(System.Data.Common.ADP.InternalErrorCode.UnimplementedSMIMethod);
         }
 
-        public virtual void SetInt32(int ordinal, Int32 value)
+        public virtual void SetInt32(int ordinal, int value)
         {
             // ******** OBSOLETING from SMI -- use ITypedSettersV3 method instead
             //  Intended to be removed prior to RTM.
@@ -557,7 +557,7 @@ namespace Microsoft.SqlServer.Server
             throw System.Data.Common.ADP.InternalError(System.Data.Common.ADP.InternalErrorCode.UnimplementedSMIMethod);
         }
 
-        public virtual void SetInt64(int ordinal, Int64 value)
+        public virtual void SetInt64(int ordinal, long value)
         {
             // ******** OBSOLETING from SMI -- use ITypedSettersV3 method instead
             //  Intended to be removed prior to RTM.
@@ -568,7 +568,7 @@ namespace Microsoft.SqlServer.Server
             throw System.Data.Common.ADP.InternalError(System.Data.Common.ADP.InternalErrorCode.UnimplementedSMIMethod);
         }
 
-        public virtual void SetFloat(int ordinal, Single value)
+        public virtual void SetFloat(int ordinal, float value)
         {
             // ******** OBSOLETING from SMI -- use ITypedSettersV3 method instead
             //  Intended to be removed prior to RTM.
@@ -579,7 +579,7 @@ namespace Microsoft.SqlServer.Server
             throw System.Data.Common.ADP.InternalError(System.Data.Common.ADP.InternalErrorCode.UnimplementedSMIMethod);
         }
 
-        public virtual void SetDouble(int ordinal, Double value)
+        public virtual void SetDouble(int ordinal, double value)
         {
             // ******** OBSOLETING from SMI -- use ITypedSettersV3 method instead
             //  Intended to be removed prior to RTM.
@@ -611,7 +611,7 @@ namespace Microsoft.SqlServer.Server
             throw System.Data.Common.ADP.InternalError(System.Data.Common.ADP.InternalErrorCode.UnimplementedSMIMethod);
         }
 
-        public virtual void SetDecimal(int ordinal, Decimal value)
+        public virtual void SetDecimal(int ordinal, decimal value)
         {
             // ******** OBSOLETING from SMI -- use ITypedSettersV3 method instead
             //  Intended to be removed prior to RTM.

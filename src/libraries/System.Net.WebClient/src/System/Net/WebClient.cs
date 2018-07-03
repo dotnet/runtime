@@ -1365,7 +1365,7 @@ namespace System.Net
             }
         }
 
-        private void DownloadStringAsyncCallback(byte[] returnBytes, Exception exception, Object state)
+        private void DownloadStringAsyncCallback(byte[] returnBytes, Exception exception, object state)
         {
             AsyncOperation asyncOp = (AsyncOperation)state;
             string stringData = null;
@@ -1405,7 +1405,7 @@ namespace System.Net
             }
         }
 
-        private void DownloadDataAsyncCallback(byte[] returnBytes, Exception exception, Object state)
+        private void DownloadDataAsyncCallback(byte[] returnBytes, Exception exception, object state)
         {
             AsyncOperation asyncOp = (AsyncOperation)state;
             DownloadDataCompletedEventArgs eventArgs = new DownloadDataCompletedEventArgs(returnBytes, exception, _canceled, asyncOp.UserSuppliedState);
@@ -1431,7 +1431,7 @@ namespace System.Net
             }
         }
 
-        private void DownloadFileAsyncCallback(byte[] returnBytes, Exception exception, Object state)
+        private void DownloadFileAsyncCallback(byte[] returnBytes, Exception exception, object state)
         {
             AsyncOperation asyncOp = (AsyncOperation)state;
             AsyncCompletedEventArgs eventArgs = new AsyncCompletedEventArgs(exception, _canceled, asyncOp.UserSuppliedState);

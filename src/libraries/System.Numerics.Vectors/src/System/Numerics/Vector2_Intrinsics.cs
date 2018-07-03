@@ -16,11 +16,11 @@ namespace System.Numerics
         /// <summary>
         /// The X component of the vector.
         /// </summary>
-        public Single X;
+        public float X;
         /// <summary>
         /// The Y component of the vector.
         /// </summary>
-        public Single Y;
+        public float Y;
 
         #region Constructors
         /// <summary>
@@ -28,7 +28,7 @@ namespace System.Numerics
         /// </summary>
         /// <param name="value">The element to fill the vector with.</param>
         [Intrinsic]
-        public Vector2(Single value) : this(value, value) { }
+        public Vector2(float value) : this(value, value) { }
 
         /// <summary>
         /// Constructs a vector with the given individual elements.
@@ -36,7 +36,7 @@ namespace System.Numerics
         /// <param name="x">The X component.</param>
         /// <param name="y">The Y component.</param>
         [Intrinsic]
-        public Vector2(Single x, Single y)
+        public Vector2(float x, float y)
         {
             X = x;
             Y = y;
@@ -49,7 +49,7 @@ namespace System.Numerics
         /// </summary>
         /// <param name="array">The destination array.</param>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public void CopyTo(Single[] array)
+        public void CopyTo(float[] array)
         {
             CopyTo(array, 0);
         }
@@ -62,7 +62,7 @@ namespace System.Numerics
         /// <exception cref="ArgumentOutOfRangeException">If index is greater than end of the array or index is less than zero.</exception>
         /// <exception cref="ArgumentException">If number of elements in source vector is greater than those available in destination array
         /// or if there are not enough elements to copy.</exception>
-        public void CopyTo(Single[] array, int index)
+        public void CopyTo(float[] array, int index)
         {
             if (array == null)
             {
@@ -211,7 +211,7 @@ namespace System.Numerics
         /// <returns>The scaled vector.</returns>
         [Intrinsic]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static Vector2 operator *(Single left, Vector2 right)
+        public static Vector2 operator *(float left, Vector2 right)
         {
             return new Vector2(left, left) * right;
         }
@@ -224,7 +224,7 @@ namespace System.Numerics
         /// <returns>The scaled vector.</returns>
         [Intrinsic]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static Vector2 operator *(Vector2 left, Single right)
+        public static Vector2 operator *(Vector2 left, float right)
         {
             return left * new Vector2(right, right);
         }

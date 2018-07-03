@@ -9,6 +9,7 @@
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'netstandard-Windows_NT-Debug|AnyCPU'" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'netstandard-Windows_NT-Release|AnyCPU'" />
   <ItemGroup>
+    <Compile Include="AADAccessTokenTest.cs" />
     <Compile Include="CloneTests.cs" />
     <Compile Include="BaseProviderAsyncTest\BaseProviderAsyncTest.cs" />
     <Compile Include="BaseProviderAsyncTest\MockCommand.cs" />

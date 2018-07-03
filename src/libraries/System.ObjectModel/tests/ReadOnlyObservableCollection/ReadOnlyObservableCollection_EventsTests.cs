@@ -116,14 +116,14 @@ namespace System.Collections.ObjectModel.Tests
             ReadOnlyObservableCollection<Guid> readonlyCol = new ReadOnlyObservableCollection<Guid>(collection);
             ((INotifyCollectionChanged)readonlyCol).CollectionChanged += (o, e) => { throw new ShouldNotBeInvokedException(); };
 
-            int[] iArrInvalidValues = new Int32[] { -1, -2, -100, -1000, -10000, -100000, -1000000, -10000000, -100000000, -1000000000, Int32.MinValue };
+            int[] iArrInvalidValues = new int[] { -1, -2, -100, -1000, -10000, -100000, -1000000, -10000000, -100000000, -1000000000, int.MinValue };
             foreach (var index in iArrInvalidValues)
             {
                 Assert.Throws<ArgumentOutOfRangeException>(() => collection.RemoveAt(index));
                 Assert.Equal(anArray.Length, readonlyCol.Count);
             }
 
-            int[] iArrLargeValues = new Int32[] { collection.Count, Int32.MaxValue, Int32.MaxValue / 2, Int32.MaxValue / 10 };
+            int[] iArrLargeValues = new int[] { collection.Count, int.MaxValue, int.MaxValue / 2, int.MaxValue / 10 };
             foreach (var index in iArrLargeValues)
             {
                 Assert.Throws<ArgumentOutOfRangeException>(() => collection.RemoveAt(index));
@@ -165,8 +165,8 @@ namespace System.Collections.ObjectModel.Tests
             ((INotifyCollectionChanged)readonlyCol).CollectionChanged += (o, e) => { throw new ShouldNotBeInvokedException(); };
 
             int validIndex = 2;
-            int[] iArrInvalidValues = new Int32[] { -1, -2, -100, -1000, -10000, -100000, -1000000, -10000000, -100000000, -1000000000, Int32.MinValue };
-            int[] iArrLargeValues = new Int32[] { anArray.Length, Int32.MaxValue, Int32.MaxValue / 2, Int32.MaxValue / 10 };
+            int[] iArrInvalidValues = new int[] { -1, -2, -100, -1000, -10000, -100000, -1000000, -10000000, -100000000, -1000000000, int.MinValue };
+            int[] iArrLargeValues = new int[] { anArray.Length, int.MaxValue, int.MaxValue / 2, int.MaxValue / 10 };
 
             foreach (var index in iArrInvalidValues)
             {
@@ -214,14 +214,14 @@ namespace System.Collections.ObjectModel.Tests
             ((INotifyCollectionChanged)readonlyCol).CollectionChanged += (o, e) => { throw new ShouldNotBeInvokedException(); };
 
             Guid itemToInsert = Guid.NewGuid();
-            int[] iArrInvalidValues = new Int32[] { -1, -2, -100, -1000, -10000, -100000, -1000000, -10000000, -100000000, -1000000000, Int32.MinValue };
+            int[] iArrInvalidValues = new int[] { -1, -2, -100, -1000, -10000, -100000, -1000000, -10000000, -100000000, -1000000000, int.MinValue };
             foreach (var index in iArrInvalidValues)
             {
                 Assert.Throws<ArgumentOutOfRangeException>(() => collection.Insert(index, itemToInsert));
                 Assert.Equal(anArray.Length, collection.Count);
             }
 
-            int[] iArrLargeValues = new Int32[] { collection.Count + 1, Int32.MaxValue, Int32.MaxValue / 2, Int32.MaxValue / 10 };
+            int[] iArrLargeValues = new int[] { collection.Count + 1, int.MaxValue, int.MaxValue / 2, int.MaxValue / 10 };
             foreach (var index in iArrLargeValues)
             {
                 Assert.Throws<ArgumentOutOfRangeException>(() => collection.Insert(index, itemToInsert));

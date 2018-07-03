@@ -30,7 +30,7 @@ namespace CoreXml.Test.XLinq
     public static class InputSpace
     {
         // loads either the file for DMLCreate
-        public static void Load(Object loadObject, ref XDocument xDoc, ref XDocument xmlDoc)
+        public static void Load(object loadObject, ref XDocument xDoc, ref XDocument xmlDoc)
         {
             Load(loadObject as string, ref xDoc, ref xmlDoc);
         }

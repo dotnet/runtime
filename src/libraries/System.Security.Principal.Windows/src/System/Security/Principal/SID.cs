@@ -799,11 +799,11 @@ nameof(binaryForm));
                 // otherwise you would see this: "S-1-NTAuthority-32-544"
                 //
 
-                result.AppendFormat("S-1-{0}", (long)_identifierAuthority);
+                result.Append("S-1-").Append((long)_identifierAuthority);
 
                 for (int i = 0; i < SubAuthorityCount; i++)
                 {
-                    result.AppendFormat("-{0}", (uint)(_subAuthorities[i]));
+                    result.Append('-').Append((uint)(_subAuthorities[i]));
                 }
 
                 _sddlForm = result.ToString();

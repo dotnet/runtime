@@ -41,10 +41,6 @@ namespace System.Net.NetworkInformation
         private static readonly AutoResetEvent s_runLoopStartedEvent = new AutoResetEvent(false);
         private static readonly AutoResetEvent s_runLoopEndedEvent = new AutoResetEvent(false);
 
-        //introduced for supporting design-time loading of System.Windows.dll
-        [Obsolete("This API supports the .NET Framework infrastructure and is not intended to be used directly from your code.", true)]
-        public static void RegisterNetworkChange(NetworkChange nc) { }
-
         public static event NetworkAddressChangedEventHandler NetworkAddressChanged
         {
             add

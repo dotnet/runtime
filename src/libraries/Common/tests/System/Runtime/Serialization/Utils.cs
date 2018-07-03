@@ -190,7 +190,7 @@ internal static class Utils
                 if (-1 != (coreCLRIdx = actualXElement.Name.LocalName.IndexOf("RkuXKXCQ")))
                 {
                     // Check whether the substring before this matches
-                    if (0 == String.Compare(baselineXElement.Name.LocalName.Substring(0, deskIdx), actualXElement.Name.LocalName.Substring(0, coreCLRIdx)))
+                    if (0 == string.Compare(baselineXElement.Name.LocalName.Substring(0, deskIdx), actualXElement.Name.LocalName.Substring(0, coreCLRIdx)))
                     {
                         // Check if the namespace matched.
                         if (baselineXElement.Name.Namespace.Equals(actualXElement.Name.Namespace)) return true;
@@ -227,12 +227,12 @@ internal static class Utils
             }
             if (deskAtrs[i].IsNamespaceDeclaration)
             {
-                if (0 != String.Compare(deskAtrs[i].Name.NamespaceName, coreCLRAtrs[i].Name.NamespaceName))
+                if (0 != string.Compare(deskAtrs[i].Name.NamespaceName, coreCLRAtrs[i].Name.NamespaceName))
                 {
                     Debug.WriteLine("Namespaces are different.Expected {0} namespace doesn't match with actual {1} namespace ", deskAtrs[i].Name.NamespaceName, coreCLRAtrs[i].Name.NamespaceName);
                     return false;
                 }
-                if (0 != String.Compare(deskAtrs[i].Value, coreCLRAtrs[i].Value))
+                if (0 != string.Compare(deskAtrs[i].Value, coreCLRAtrs[i].Value))
                 {
                     Debug.WriteLine("Attribute values are different. Expected {0} attribute values doesn't match with actual {1} attribute value.", deskAtrs[i].Value, coreCLRAtrs[i].Value);
                     return false;
@@ -323,7 +323,7 @@ internal static class Utils
                         if (deskNs.Equals(coreCLRNs))
                         {
                             // Also we check that the rest of the strings match.
-                            if (0 == String.Compare(deskElemValue.Substring(deskPrefix.Length), coreCLRElemValue.Substring(coreCLRPrefix.Length)))
+                            if (0 == string.Compare(deskElemValue.Substring(deskPrefix.Length), coreCLRElemValue.Substring(coreCLRPrefix.Length)))
                                 return true;
                         }
                     }
@@ -346,7 +346,7 @@ internal static class Utils
         }
         else
         {
-            localPrefix = String.Empty;
+            localPrefix = string.Empty;
         }
         Debug.WriteLine("Given attribute value {0} does not have any prefix value before :", atrValue);
         return false;

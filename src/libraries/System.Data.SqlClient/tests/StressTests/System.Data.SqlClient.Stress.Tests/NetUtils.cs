@@ -49,7 +49,7 @@ namespace Microsoft.Test.Data.SqlClient
             hostName = hostName.Trim();
 
             if ((hostName == ".") ||
-                 (String.Compare("(local)", hostName, StringComparison.OrdinalIgnoreCase) == 0))
+                 (string.Compare("(local)", hostName, StringComparison.OrdinalIgnoreCase) == 0))
             {
                 hostName = Dns.GetHostName();
             }

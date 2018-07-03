@@ -237,7 +237,7 @@ namespace System.Xml.Tests
 
             foreach (XmlSchemaExternal s in a.Includes)
             {
-                if (String.IsNullOrEmpty(s.Schema.SourceUri))
+                if (string.IsNullOrEmpty(s.Schema.SourceUri))
                 {
                     CError.Compare(false, "Unexpected null uri");
                 }
@@ -507,7 +507,7 @@ namespace System.Xml.Tests
 
             foreach (XmlSchemaExternal s in a.Includes)
             {
-                if (String.IsNullOrEmpty(s.Schema.SourceUri))
+                if (string.IsNullOrEmpty(s.Schema.SourceUri))
                 {
                     CError.Compare(false, "Unexpected null uri");
                 }
@@ -778,7 +778,7 @@ namespace System.Xml.Tests
 
             foreach (XmlSchemaExternal s in a.Includes)
             {
-                if (String.IsNullOrEmpty(s.Schema.SourceUri))
+                if (string.IsNullOrEmpty(s.Schema.SourceUri))
                 {
                     CError.Compare(false, "Unexpected null uri");
                 }

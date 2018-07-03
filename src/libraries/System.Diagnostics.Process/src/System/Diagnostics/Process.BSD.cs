@@ -71,7 +71,7 @@ namespace System.Diagnostics
             if (Interop.Sys.GetRLimit(Interop.Sys.RlimitResources.RLIMIT_RSS, out limit) == 0)
             {
                 maxWorkingSet = limit.CurrentLimit == Interop.Sys.RLIM_INFINITY ?
-                    new IntPtr(Int64.MaxValue) :
+                    new IntPtr(long.MaxValue) :
                     new IntPtr(Convert.ToInt64(limit.CurrentLimit));
             }
             else

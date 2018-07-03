@@ -641,7 +641,7 @@ namespace System.Diagnostics
                             categoryKey = Registry.LocalMachine.OpenSubKey(PerformanceCounterLib.ServicePath + "\\" + _categoryName + "\\Performance");
 
                             // first read the options
-                            Object optionsObject = categoryKey.GetValue("CategoryOptions");
+                            object optionsObject = categoryKey.GetValue("CategoryOptions");
                             if (optionsObject != null)
                             {
                                 int options = (int)optionsObject;
@@ -688,7 +688,7 @@ namespace System.Diagnostics
                                     {
                                         if (counterNamesBytes[i] == 0 && counterNamesBytes[i + 1] == 0 && start != i)
                                         {
-                                            string counter = new String((sbyte*)counterNamesPtr, start, i - start, Encoding.Unicode);
+                                            string counter = new string((sbyte*)counterNamesPtr, start, i - start, Encoding.Unicode);
                                             names.Add(counter.ToLowerInvariant());
                                             start = i + 2;
                                         }
@@ -1619,7 +1619,7 @@ namespace System.Diagnostics
 
         private static unsafe bool IsMisaligned(CounterEntry* counterEntry)
         {
-            return (((Int64)counterEntry & 0x7) != 0);
+            return (((long)counterEntry & 0x7) != 0);
         }
 
         private long ResolveOffset(int offset, int sizeToRead)
@@ -1842,7 +1842,7 @@ namespace System.Diagnostics
         {
             public int LifetimeType;
             public int ProcessId;
-            public Int64 StartupTime;
+            public long StartupTime;
         }
 
         private class CategoryData

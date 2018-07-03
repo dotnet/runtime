@@ -50,8 +50,8 @@ namespace System.Security.Cryptography.Xml.Tests
         // not to be used to test C14N output
         public static void AssertXmlEquals(string msg, string expected, string actual)
         {
-            expected = expected.Replace(xmldsig, String.Empty);
-            actual = actual.Replace(xmldsig, String.Empty);
+            expected = expected.Replace(xmldsig, string.Empty);
+            actual = actual.Replace(xmldsig, string.Empty);
             Assert.Equal(expected, actual);
         }
     }

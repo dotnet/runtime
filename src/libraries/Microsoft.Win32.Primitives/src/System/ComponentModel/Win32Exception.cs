@@ -99,7 +99,7 @@ namespace System.ComponentModel
                 s.AppendFormat(CultureInfo.InvariantCulture, " ({0:X8}, {1})", HResult, nativeErrorString);
             }
             
-            if (!(String.IsNullOrEmpty(message)))
+            if (!(string.IsNullOrEmpty(message)))
             {
                 s.Append(": ");
                 s.Append(message);

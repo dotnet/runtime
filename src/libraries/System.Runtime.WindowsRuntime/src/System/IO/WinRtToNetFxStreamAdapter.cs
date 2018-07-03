@@ -1,4 +1,4 @@
-﻿// Licensed to the .NET Foundation under one or more agreements.
+// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
@@ -20,7 +20,7 @@ namespace System.IO
     {
         #region Construction
 
-        internal static WinRtToNetFxStreamAdapter Create(Object windowsRuntimeStream)
+        internal static WinRtToNetFxStreamAdapter Create(object windowsRuntimeStream)
         {
             if (windowsRuntimeStream == null)
                 throw new ArgumentNullException(nameof(windowsRuntimeStream));
@@ -57,7 +57,7 @@ namespace System.IO
         }
 
 
-        private WinRtToNetFxStreamAdapter(Object winRtStream, bool canRead, bool canWrite, bool canSeek)
+        private WinRtToNetFxStreamAdapter(object winRtStream, bool canRead, bool canWrite, bool canSeek)
         {
             Debug.Assert(winRtStream != null);
             Debug.Assert(winRtStream is IInputStream || winRtStream is IOutputStream || winRtStream is IRandomAccessStream);
@@ -94,10 +94,10 @@ namespace System.IO
 
         #region Instance variables
 
-        private Byte[] _oneByteBuffer = null;
+        private byte[] _oneByteBuffer = null;
         private bool _leaveUnderlyingStreamOpen = true;
 
-        private Object _winRtStream;
+        private object _winRtStream;
         private readonly bool _canRead;
         private readonly bool _canWrite;
         private readonly bool _canSeek;
@@ -122,13 +122,13 @@ namespace System.IO
 
         public TWinRtStream GetWindowsRuntimeStream<TWinRtStream>() where TWinRtStream : class
         {
-            Object wrtStr = _winRtStream;
+            object wrtStr = _winRtStream;
 
             if (wrtStr == null)
                 return null;
 
             Debug.Assert(wrtStr is TWinRtStream,
-                            String.Format("Attempted to get the underlying WinRT stream typed as \"{0}\"," +
+                            string.Format("Attempted to get the underlying WinRT stream typed as \"{0}\"," +
                                           " but the underlying WinRT stream cannot be cast to that type. Its actual type is \"{1}\".",
                                           typeof(TWinRtStream).ToString(), wrtStr.GetType().ToString()));
 
@@ -136,13 +136,13 @@ namespace System.IO
         }
 
 
-        private Byte[] OneByteBuffer
+        private byte[] OneByteBuffer
         {
             get
             {
-                Byte[] obb = _oneByteBuffer;
+                byte[] obb = _oneByteBuffer;
                 if (obb == null)  // benign race for multiple init
-                    _oneByteBuffer = obb = new Byte[1];
+                    _oneByteBuffer = obb = new byte[1];
                 return obb;
             }
         }
@@ -159,7 +159,7 @@ namespace System.IO
 
         private TWinRtStream EnsureNotDisposed<TWinRtStream>() where TWinRtStream : class
         {
-            Object wrtStr = _winRtStream;
+            object wrtStr = _winRtStream;
 
             if (wrtStr == null)
                 throw new ObjectDisposedException(SR.ObjectDisposed_CannotPerformOperation);
@@ -236,7 +236,7 @@ namespace System.IO
 
         #region Length and Position functions
 
-        public override Int64 Length
+        public override long Length
         {
             get
             {
@@ -249,18 +249,18 @@ namespace System.IO
                 AssertValidStream(wrtStr);
 #endif  // DEBUG
 
-                UInt64 size = wrtStr.Size;
+                ulong size = wrtStr.Size;
 
                 // These are over 8000 PetaBytes, we do not expect this to happen. However, let's be defensive:
-                if (size > (UInt64)Int64.MaxValue)
+                if (size > (ulong)long.MaxValue)
                     throw new IOException(SR.IO_UnderlyingWinRTStreamTooLong_CannotUseLengthOrPosition);
 
-                return unchecked((Int64)size);
+                return unchecked((long)size);
             }
         }
 
 
-        public override Int64 Position
+        public override long Position
         {
             get
             {
@@ -273,13 +273,13 @@ namespace System.IO
                 AssertValidStream(wrtStr);
 #endif  // DEBUG
 
-                UInt64 pos = wrtStr.Position;
+                ulong pos = wrtStr.Position;
 
                 // These are over 8000 PetaBytes, we do not expect this to happen. However, let's be defensive:
-                if (pos > (UInt64)Int64.MaxValue)
+                if (pos > (ulong)long.MaxValue)
                     throw new IOException(SR.IO_UnderlyingWinRTStreamTooLong_CannotUseLengthOrPosition);
 
-                return unchecked((Int64)pos);
+                return unchecked((long)pos);
             }
 
             set
@@ -297,12 +297,12 @@ namespace System.IO
                 AssertValidStream(wrtStr);
 #endif  // DEBUG
 
-                wrtStr.Seek(unchecked((UInt64)value));
+                wrtStr.Seek(unchecked((ulong)value));
             }
         }
 
 
-        public override Int64 Seek(Int64 offset, SeekOrigin origin)
+        public override long Seek(long offset, SeekOrigin origin)
         {
             IRandomAccessStream wrtStr = EnsureNotDisposed<IRandomAccessStream>();
 
@@ -323,12 +323,12 @@ namespace System.IO
 
                 case SeekOrigin.Current:
                     {
-                        Int64 curPos = Position;
+                        long curPos = Position;
 
-                        if (Int64.MaxValue - curPos < offset)
+                        if (long.MaxValue - curPos < offset)
                             throw new IOException(SR.IO_CannotSeekBeyondInt64MaxValue);
 
-                        Int64 newPos = curPos + offset;
+                        long newPos = curPos + offset;
 
                         if (newPos < 0)
                             throw new IOException(SR.ArgumentOutOfRange_IO_CannotSeekToNegativePosition);
@@ -339,32 +339,32 @@ namespace System.IO
 
                 case SeekOrigin.End:
                     {
-                        UInt64 size = wrtStr.Size;
-                        Int64 newPos;
+                        ulong size = wrtStr.Size;
+                        long newPos;
 
-                        if (size > (UInt64)Int64.MaxValue)
+                        if (size > (ulong)long.MaxValue)
                         {
                             if (offset >= 0)
                                 throw new IOException(SR.IO_CannotSeekBeyondInt64MaxValue);
 
                             Debug.Assert(offset < 0);
 
-                            UInt64 absOffset = (offset == Int64.MinValue) ? ((UInt64)Int64.MaxValue) + 1 : (UInt64)(-offset);
+                            ulong absOffset = (offset == long.MinValue) ? ((ulong)long.MaxValue) + 1 : (ulong)(-offset);
                             Debug.Assert(absOffset <= size);
 
-                            UInt64 np = size - absOffset;
-                            if (np > (UInt64)Int64.MaxValue)
+                            ulong np = size - absOffset;
+                            if (np > (ulong)long.MaxValue)
                                 throw new IOException(SR.IO_CannotSeekBeyondInt64MaxValue);
 
-                            newPos = (Int64)np;
+                            newPos = (long)np;
                         }
                         else
                         {
-                            Debug.Assert(size <= (UInt64)Int64.MaxValue);
+                            Debug.Assert(size <= (ulong)long.MaxValue);
 
-                            Int64 s = unchecked((Int64)size);
+                            long s = unchecked((long)size);
 
-                            if (Int64.MaxValue - s < offset)
+                            if (long.MaxValue - s < offset)
                                 throw new IOException(SR.IO_CannotSeekBeyondInt64MaxValue);
 
                             newPos = s + offset;
@@ -385,7 +385,7 @@ namespace System.IO
         }
 
 
-        public override void SetLength(Int64 value)
+        public override void SetLength(long value)
         {
             if (value < 0)
                 throw new ArgumentOutOfRangeException(nameof(value), SR.ArgumentOutOfRange_CannotResizeStreamToNegative);
@@ -402,12 +402,12 @@ namespace System.IO
             AssertValidStream(wrtStr);
 #endif  // DEBUG
 
-            wrtStr.Size = unchecked((UInt64)value);
+            wrtStr.Size = unchecked((ulong)value);
 
             // If the length is set to a value < that the current position, then we need to set the position to that value
             // Because we can't directly set the position, we are going to seek to it.
             if (wrtStr.Size < wrtStr.Position)
-                wrtStr.Seek(unchecked((UInt64)value));
+                wrtStr.Seek(unchecked((ulong)value));
         }
 
         #endregion Length and Position functions
@@ -415,7 +415,7 @@ namespace System.IO
 
         #region Reading
 
-        private IAsyncResult BeginRead(Byte[] buffer, Int32 offset, Int32 count, AsyncCallback callback, Object state, bool usedByBlockingWrapper)
+        private IAsyncResult BeginRead(byte[] buffer, int offset, int count, AsyncCallback callback, object state, bool usedByBlockingWrapper)
         {
             // This method is somewhat tricky: We could consider just calling ReadAsync (recall that Task implements IAsyncResult).
             // It would be OK for cases where BeginRead is invoked directly by the public user.
@@ -462,8 +462,8 @@ namespace System.IO
 #endif  // DEBUG
 
             IBuffer userBuffer = buffer.AsBuffer(offset, count);
-            IAsyncOperationWithProgress<IBuffer, UInt32> asyncReadOperation = wrtStr.ReadAsync(userBuffer,
-                                                                                               unchecked((UInt32)count),
+            IAsyncOperationWithProgress<IBuffer, uint> asyncReadOperation = wrtStr.ReadAsync(userBuffer,
+                                                                                               unchecked((uint)count),
                                                                                                InputStreamOptions.Partial);
 
             StreamReadAsyncResult asyncResult = new StreamReadAsyncResult(asyncReadOperation, userBuffer, callback, state,
@@ -478,7 +478,7 @@ namespace System.IO
             return asyncResult;
         }
 
-        public override Int32 EndRead(IAsyncResult asyncResult)
+        public override int EndRead(IAsyncResult asyncResult)
         {
             if (asyncResult == null)
                 throw new ArgumentNullException(nameof(asyncResult));
@@ -512,10 +512,10 @@ namespace System.IO
 
                 // Done:
 
-                Int64 bytesCompleted = streamAsyncResult.BytesCompleted;
-                Debug.Assert(bytesCompleted <= unchecked((Int64)Int32.MaxValue));
+                long bytesCompleted = streamAsyncResult.BytesCompleted;
+                Debug.Assert(bytesCompleted <= unchecked((long)int.MaxValue));
 
-                return (Int32)bytesCompleted;
+                return (int)bytesCompleted;
             }
             finally
             {
@@ -524,7 +524,7 @@ namespace System.IO
             }
         }
 
-        public override Task<Int32> ReadAsync(Byte[] buffer, Int32 offset, Int32 count, CancellationToken cancellationToken)
+        public override Task<int> ReadAsync(byte[] buffer, int offset, int count, CancellationToken cancellationToken)
         {
             if (buffer == null)
                 throw new ArgumentNullException(nameof(buffer));
@@ -551,17 +551,17 @@ namespace System.IO
         }
 
 
-        public override Int32 Read(Byte[] buffer, Int32 offset, Int32 count)
+        public override int Read(byte[] buffer, int offset, int count)
         {
             // Arguments validation and not-disposed validation are done in BeginRead.
 
             IAsyncResult asyncResult = BeginRead(buffer, offset, count, null, null, usedByBlockingWrapper: true);
-            Int32 bytesRead = EndRead(asyncResult);
+            int bytesRead = EndRead(asyncResult);
             return bytesRead;
         }
 
 
-        public override Int32 ReadByte()
+        public override int ReadByte()
         {
             Contract.Ensures(Contract.Result<int>() >= -1);
             Contract.Ensures(Contract.Result<int>() < 256);
@@ -569,12 +569,12 @@ namespace System.IO
 
             // EnsureNotDisposed will be called in Read->BeginRead.
 
-            Byte[] oneByteArray = OneByteBuffer;
+            byte[] oneByteArray = OneByteBuffer;
 
             if (0 == Read(oneByteArray, 0, 1))
                 return -1;
 
-            Int32 value = oneByteArray[0];
+            int value = oneByteArray[0];
             return value;
         }
 
@@ -584,12 +584,12 @@ namespace System.IO
         #region Writing
 
 
-        public override IAsyncResult BeginWrite(Byte[] buffer, Int32 offset, Int32 count, AsyncCallback callback, Object state)
+        public override IAsyncResult BeginWrite(byte[] buffer, int offset, int count, AsyncCallback callback, object state)
         {
             return BeginWrite(buffer, offset, count, callback, state, usedByBlockingWrapper: false);
         }
 
-        private IAsyncResult BeginWrite(Byte[] buffer, Int32 offset, Int32 count, AsyncCallback callback, Object state, bool usedByBlockingWrapper)
+        private IAsyncResult BeginWrite(byte[] buffer, int offset, int count, AsyncCallback callback, object state, bool usedByBlockingWrapper)
         {
             // See the large comment in BeginRead about why we are not using this.WriteAsync,
             // and instead using a custom implementation of IAsyncResult.
@@ -617,7 +617,7 @@ namespace System.IO
 
             IBuffer asyncWriteBuffer = buffer.AsBuffer(offset, count);
 
-            IAsyncOperationWithProgress<UInt32, UInt32> asyncWriteOperation = wrtStr.WriteAsync(asyncWriteBuffer);
+            IAsyncOperationWithProgress<uint, uint> asyncWriteOperation = wrtStr.WriteAsync(asyncWriteBuffer);
 
             StreamWriteAsyncResult asyncResult = new StreamWriteAsyncResult(asyncWriteOperation, callback, state,
                                                                             processCompletedOperationInCallback: !usedByBlockingWrapper);
@@ -670,7 +670,7 @@ namespace System.IO
             }
         }
 
-        public override Task WriteAsync(Byte[] buffer, Int32 offset, Int32 count, CancellationToken cancellationToken)
+        public override Task WriteAsync(byte[] buffer, int offset, int count, CancellationToken cancellationToken)
         {
             if (buffer == null)
                 throw new ArgumentNullException(nameof(buffer));
@@ -698,7 +698,7 @@ namespace System.IO
 
             IBuffer asyncWriteBuffer = buffer.AsBuffer(offset, count);
 
-            IAsyncOperationWithProgress<UInt32, UInt32> asyncWriteOperation = wrtStr.WriteAsync(asyncWriteBuffer);
+            IAsyncOperationWithProgress<uint, uint> asyncWriteOperation = wrtStr.WriteAsync(asyncWriteBuffer);
             Task asyncWriteTask = asyncWriteOperation.AsTask(cancellationToken);
 
             // The underlying IBuffer is the only object to which we expose a direct pointer to native,
@@ -708,7 +708,7 @@ namespace System.IO
         }
 
 
-        public override void Write(Byte[] buffer, Int32 offset, Int32 count)
+        public override void Write(byte[] buffer, int offset, int count)
         {
             // Arguments validation and not-disposed validation are done in BeginWrite.
 
@@ -717,11 +717,11 @@ namespace System.IO
         }
 
 
-        public override void WriteByte(Byte value)
+        public override void WriteByte(byte value)
         {
             // EnsureNotDisposed will be called in Write->BeginWrite.
 
-            Byte[] oneByteArray = OneByteBuffer;
+            byte[] oneByteArray = OneByteBuffer;
             oneByteArray[0] = value;
 
             Write(oneByteArray, 0, 1);
@@ -747,7 +747,7 @@ namespace System.IO
             AssertValidStream(wrtStr);
 #endif  // DEBUG
 
-            IAsyncOperation<Boolean> asyncFlushOperation = wrtStr.FlushAsync();
+            IAsyncOperation<bool> asyncFlushOperation = wrtStr.FlushAsync();
             StreamFlushAsyncResult asyncResult = new StreamFlushAsyncResult(asyncFlushOperation, processCompletedOperationInCallback: false);
 
             asyncResult.Wait();
@@ -787,7 +787,7 @@ namespace System.IO
 
             cancellationToken.ThrowIfCancellationRequested();
 
-            IAsyncOperation<Boolean> asyncFlushOperation = wrtStr.FlushAsync();
+            IAsyncOperation<bool> asyncFlushOperation = wrtStr.FlushAsync();
             Task asyncFlushTask = asyncFlushOperation.AsTask(cancellationToken);
             return asyncFlushTask;
         }
@@ -799,7 +799,7 @@ namespace System.IO
         // Moved it to the end while using Dev10 VS because it does not understand async and everything that follows looses intellisense.
         // Should move this code into the Reading regios once using Dev11 VS becomes the norm.
 
-        private async Task<Int32> ReadAsyncInternal(Byte[] buffer, Int32 offset, Int32 count, CancellationToken cancellationToken)
+        private async Task<int> ReadAsyncInternal(byte[] buffer, int offset, int count, CancellationToken cancellationToken)
         {
             Debug.Assert(buffer != null);
             Debug.Assert(offset >= 0);
@@ -816,8 +816,8 @@ namespace System.IO
             try
             {
                 IBuffer userBuffer = buffer.AsBuffer(offset, count);
-                IAsyncOperationWithProgress<IBuffer, UInt32> asyncReadOperation = wrtStr.ReadAsync(userBuffer,
-                                                                                                   unchecked((UInt32)count),
+                IAsyncOperationWithProgress<IBuffer, uint> asyncReadOperation = wrtStr.ReadAsync(userBuffer,
+                                                                                                   unchecked((uint)count),
                                                                                                    InputStreamOptions.Partial);
 
                 IBuffer resultBuffer = await asyncReadOperation.AsTask(cancellationToken).ConfigureAwait(continueOnCapturedContext: false);
@@ -832,8 +832,8 @@ namespace System.IO
 
                 WinRtIOHelper.EnsureResultsInUserBuffer(userBuffer, resultBuffer);
 
-                Debug.Assert(resultBuffer.Length <= unchecked((UInt32)Int32.MaxValue));
-                return (Int32)resultBuffer.Length;
+                Debug.Assert(resultBuffer.Length <= unchecked((uint)int.MaxValue));
+                return (int)resultBuffer.Length;
             }
             catch (Exception ex)
             {

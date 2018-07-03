@@ -423,7 +423,7 @@ namespace System.Linq
         /// </exception>
         public static ParallelQuery<int> Range(int start, int count)
         {
-            if (count < 0 || (count > 0 && Int32.MaxValue - (count - 1) < start)) throw new ArgumentOutOfRangeException(nameof(count));
+            if (count < 0 || (count > 0 && int.MaxValue - (count - 1) < start)) throw new ArgumentOutOfRangeException(nameof(count));
             return new RangeEnumerable(start, count);
         }
 

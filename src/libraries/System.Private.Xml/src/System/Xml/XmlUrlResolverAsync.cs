@@ -10,9 +10,9 @@ namespace System.Xml
     public partial class XmlUrlResolver : XmlResolver
     {
         // Maps a URI to an Object containing the actual resource.
-        public override async Task<Object> GetEntityAsync(Uri absoluteUri, string role, Type ofObjectToReturn)
+        public override async Task<object> GetEntityAsync(Uri absoluteUri, string role, Type ofObjectToReturn)
         {
-            if (ofObjectToReturn == null || ofObjectToReturn == typeof(System.IO.Stream) || ofObjectToReturn == typeof(System.Object))
+            if (ofObjectToReturn == null || ofObjectToReturn == typeof(System.IO.Stream) || ofObjectToReturn == typeof(object))
             {
                 return await DownloadManager.GetStreamAsync(absoluteUri, _credentials, _proxy, _cachePolicy).ConfigureAwait(false);
             }

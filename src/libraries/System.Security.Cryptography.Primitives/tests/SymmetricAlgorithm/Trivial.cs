@@ -188,7 +188,7 @@ namespace System.Security.Cryptography.Encryption.Tests.Symmetric
                         s.IV = iv;
                         byte[] copyOfIv = s.IV;
                         Assert.Equal(iv, copyOfIv);
-                        Assert.False(Object.ReferenceEquals(iv, copyOfIv));
+                        Assert.False(object.ReferenceEquals(iv, copyOfIv));
                     }
 
                     {

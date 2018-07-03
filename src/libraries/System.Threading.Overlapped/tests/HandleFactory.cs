@@ -14,21 +14,18 @@ internal static partial class HandleFactory
         return new Win32Handle(handle);
     }
 
-    public static Win32Handle CreateSyncFileHandleForWrite(string fileName = null)
+    public static Win32Handle CreateSyncFileHandleForWrite(string fileName)
     {
         return CreateHandle(async:false, fileName:fileName);
     }
 
-    public static Win32Handle CreateAsyncFileHandleForWrite(string fileName = null)
+    public static Win32Handle CreateAsyncFileHandleForWrite(string fileName)
     {
         return CreateHandle(async:true, fileName:fileName);
     }
 
-    private static unsafe Win32Handle CreateHandle(bool async, string fileName = null)
+    private static unsafe Win32Handle CreateHandle(bool async, string fileName)
     {
-        // Assume the current directory is writable
-        fileName = fileName ?? @"Overlapped.tmp";
-
         Win32Handle handle;
 #if !uap
         handle = DllImport.CreateFile(

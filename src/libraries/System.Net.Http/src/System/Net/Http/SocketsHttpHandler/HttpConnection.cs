@@ -46,7 +46,6 @@ namespace System.Net.Http
         private readonly Socket _socket; // used for polling; _stream should be used for all reading/writing. _stream owns disposal.
         private readonly Stream _stream;
         private readonly TransportContext _transportContext;
-        private readonly bool _usingProxy;
         private readonly WeakReference<HttpConnection> _weakThisRef;
 
         private HttpRequestMessage _currentRequest;
@@ -78,7 +77,6 @@ namespace System.Net.Http
             _socket = socket; // may be null in cases where we couldn't easily get the underlying socket
             _stream = stream;
             _transportContext = transportContext;
-            _usingProxy = pool.UsingProxy;
 
             _writeBuffer = new byte[InitialWriteBufferSize];
             _readBuffer = new byte[InitialReadBufferSize];
@@ -224,7 +222,7 @@ namespace System.Net.Http
 
         public TransportContext TransportContext => _transportContext;
 
-        public bool UsingProxy => _usingProxy;
+        public HttpConnectionKind Kind => _pool.Kind;
 
         private int ReadBufferSize => _readBuffer.Length;
 
@@ -299,12 +297,12 @@ namespace System.Net.Http
 
             if (_pool.HostHeaderValueBytes != null)
             {
-                Debug.Assert(!_pool.UsingProxy);
+                Debug.Assert(Kind != HttpConnectionKind.Proxy);
                 await WriteBytesAsync(_pool.HostHeaderValueBytes).ConfigureAwait(false);
             }
             else
             {
-                Debug.Assert(_pool.UsingProxy);
+                Debug.Assert(Kind == HttpConnectionKind.Proxy);
 
                 // TODO: #28863 Uri.IdnHost is missing '[', ']' characters around IPv6 address.
                 // So, we need to add them manually for now.
@@ -389,7 +387,7 @@ namespace System.Net.Http
                 }
                 else
                 {
-                    if (_usingProxy)
+                    if (Kind == HttpConnectionKind.Proxy)
                     {
                         // Proxied requests contain full URL
                         Debug.Assert(request.RequestUri.Scheme == Uri.UriSchemeHttp);
@@ -701,7 +699,7 @@ namespace System.Net.Http
 
         public Task<HttpResponseMessage> SendWithNtProxyAuthAsync(HttpRequestMessage request, CancellationToken cancellationToken)
         {
-            if (_pool.UsingProxy && _pool.ProxyCredentials != null)
+            if (_pool.AnyProxyKind && _pool.ProxyCredentials != null)
             {
                 return AuthenticationHelper.SendWithNtProxyAuthAsync(request, _pool.ProxyUri, _pool.ProxyCredentials, this, cancellationToken);
             }

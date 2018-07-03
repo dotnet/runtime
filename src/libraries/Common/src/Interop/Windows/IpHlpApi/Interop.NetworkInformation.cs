@@ -178,15 +178,15 @@ internal static partial class Interop
             internal uint[] zoneIndices;
             internal IntPtr firstPrefix;
 
-            internal UInt64 transmitLinkSpeed;
-            internal UInt64 receiveLinkSpeed;
+            internal ulong transmitLinkSpeed;
+            internal ulong receiveLinkSpeed;
             internal IntPtr firstWinsServerAddress;
             internal IntPtr firstGatewayAddress;
-            internal UInt32 ipv4Metric;
-            internal UInt32 ipv6Metric;
-            internal UInt64 luid;
+            internal uint ipv4Metric;
+            internal uint ipv6Metric;
+            internal ulong luid;
             internal IpSocketAddress dhcpv4Server;
-            internal UInt32 compartmentId;
+            internal uint compartmentId;
             [MarshalAs(UnmanagedType.ByValArray, SizeConst = 16)]
             internal byte[] networkGuid;
             internal InterfaceConnectionType connectionType;
@@ -194,8 +194,8 @@ internal static partial class Interop
             internal IpSocketAddress dhcpv6Server; // Never available in Windows.
             [MarshalAs(UnmanagedType.ByValArray, SizeConst = 130)]
             internal byte[] dhcpv6ClientDuid;
-            internal UInt32 dhcpv6ClientDuidLength;
-            internal UInt32 dhcpV6Iaid;
+            internal uint dhcpv6ClientDuidLength;
+            internal uint dhcpV6Iaid;
 
             /* Windows 2008 +
                   PIP_ADAPTER_DNS_SUFFIX             FirstDnsSuffix; 
@@ -255,53 +255,53 @@ internal static partial class Interop
             private const int IfMaxStringSize = 256;
             private const int IfMaxPhysAddressLength = 32;
 
-            internal UInt64 interfaceLuid;
-            internal UInt32 interfaceIndex;
+            internal ulong interfaceLuid;
+            internal uint interfaceIndex;
             [MarshalAs(UnmanagedType.ByValArray, SizeConst = GuidLength)]
             internal byte[] interfaceGuid;
             [MarshalAs(UnmanagedType.ByValArray, SizeConst = IfMaxStringSize + 1)]
             internal char[] alias; // Null terminated string.
             [MarshalAs(UnmanagedType.ByValArray, SizeConst = IfMaxStringSize + 1)]
             internal char[] description; // Null terminated string.
-            internal UInt32 physicalAddressLength;
+            internal uint physicalAddressLength;
             [MarshalAs(UnmanagedType.ByValArray, SizeConst = IfMaxPhysAddressLength)]
             internal byte[] physicalAddress; // ANSI
             [MarshalAs(UnmanagedType.ByValArray, SizeConst = IfMaxPhysAddressLength)]
             internal byte[] permanentPhysicalAddress; // ANSI
-            internal UInt32 mtu;
+            internal uint mtu;
             internal NetworkInterfaceType type;
             internal InterfaceTunnelType tunnelType;
-            internal UInt32 mediaType; // Enum
-            internal UInt32 physicalMediumType; // Enum
-            internal UInt32 accessType; // Enum
-            internal UInt32 directionType; // Enum
+            internal uint mediaType; // Enum
+            internal uint physicalMediumType; // Enum
+            internal uint accessType; // Enum
+            internal uint directionType; // Enum
             internal byte interfaceAndOperStatusFlags; // Flags Enum
             internal OperationalStatus operStatus;
-            internal UInt32 adminStatus; // Enum
-            internal UInt32 mediaConnectState; // Enum
+            internal uint adminStatus; // Enum
+            internal uint mediaConnectState; // Enum
             [MarshalAs(UnmanagedType.ByValArray, SizeConst = GuidLength)]
             internal byte[] networkGuid;
             internal InterfaceConnectionType connectionType;
-            internal UInt64 transmitLinkSpeed;
-            internal UInt64 receiveLinkSpeed;
-            internal UInt64 inOctets;
-            internal UInt64 inUcastPkts;
-            internal UInt64 inNUcastPkts;
-            internal UInt64 inDiscards;
-            internal UInt64 inErrors;
-            internal UInt64 inUnknownProtos;
-            internal UInt64 inUcastOctets;
-            internal UInt64 inMulticastOctets;
-            internal UInt64 inBroadcastOctets;
-            internal UInt64 outOctets;
-            internal UInt64 outUcastPkts;
-            internal UInt64 outNUcastPkts;
-            internal UInt64 outDiscards;
-            internal UInt64 outErrors;
-            internal UInt64 outUcastOctets;
-            internal UInt64 outMulticastOctets;
-            internal UInt64 outBroadcastOctets;
-            internal UInt64 outQLen;
+            internal ulong transmitLinkSpeed;
+            internal ulong receiveLinkSpeed;
+            internal ulong inOctets;
+            internal ulong inUcastPkts;
+            internal ulong inNUcastPkts;
+            internal ulong inDiscards;
+            internal ulong inErrors;
+            internal ulong inUnknownProtos;
+            internal ulong inUcastOctets;
+            internal ulong inMulticastOctets;
+            internal ulong inBroadcastOctets;
+            internal ulong outOctets;
+            internal ulong outUcastPkts;
+            internal ulong outNUcastPkts;
+            internal ulong outDiscards;
+            internal ulong outErrors;
+            internal ulong outUcastOctets;
+            internal ulong outMulticastOctets;
+            internal ulong outBroadcastOctets;
+            internal ulong outQLen;
         }
 
         [StructLayout(LayoutKind.Sequential)]

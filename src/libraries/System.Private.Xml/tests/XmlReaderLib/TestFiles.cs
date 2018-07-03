@@ -170,7 +170,7 @@ namespace System.Xml.Tests
             s_fileNameMap.Add(EREADER_TYPE.BIGENDIAN, _BigEndianXml);
             s_fileNameMap.Add(EREADER_TYPE.BYTE, _ByteXml);
             s_fileNameMap.Add(EREADER_TYPE.GENERIC, _GenericXml);
-            s_fileNameMap.Add(EREADER_TYPE.STRING_ONLY, String.Empty);
+            s_fileNameMap.Add(EREADER_TYPE.STRING_ONLY, string.Empty);
             s_fileNameMap.Add(EREADER_TYPE.BIG_ELEMENT_SIZE, _BigFileXml);
             s_fileNameMap.Add(EREADER_TYPE.JUNK, _JunkFileXml);
             s_fileNameMap.Add(EREADER_TYPE.INVALID_NAMESPACE, _InvNamespaceXml);
@@ -632,7 +632,7 @@ namespace System.Xml.Tests
             Stream s = new MemoryStream();
             TextWriter tw = new StreamWriter(s);
 
-            string str = new String('Z', (1 << 20) - 1);
+            string str = new string('Z', (1 << 20) - 1);
             tw.Write(str);
             tw.Flush();
             FilePathUtil.addStream(strFileName, s);
@@ -671,7 +671,7 @@ namespace System.Xml.Tests
             w.WriteEndElement();
 
             w.WriteStartElement("ElemEmpty");
-            w.WriteString(String.Empty);
+            w.WriteString(string.Empty);
             w.WriteEndElement();
 
             w.WriteStartElement("ElemNum");
@@ -736,7 +736,7 @@ namespace System.Xml.Tests
             w.Flush();
 
             w.WriteStartElement("ElemEmpty");
-            w.WriteString(String.Empty);
+            w.WriteString(string.Empty);
             w.WriteEndElement();
 
             w.WriteStartElement("ElemNum");
@@ -769,7 +769,7 @@ namespace System.Xml.Tests
             Stream s = new MemoryStream();
             TextWriter tw = new StreamWriter(s);
 
-            string str = new String('Z', (1 << 20) - 1);
+            string str = new string('Z', (1 << 20) - 1);
             tw.WriteLine("<Root>");
             tw.Write("<");
             tw.Write(str);
@@ -868,7 +868,7 @@ namespace System.Xml.Tests
             }
         }
 
-        public static void WriteToBuffer(ref byte[] destBuffer, ref int destBuffLen, String strValue)
+        public static void WriteToBuffer(ref byte[] destBuffer, ref int destBuffLen, string strValue)
         {
             for (int i = 0; i < strValue.Length; i++)
             {

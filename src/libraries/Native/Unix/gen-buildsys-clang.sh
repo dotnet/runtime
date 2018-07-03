@@ -22,15 +22,12 @@ project_root="$1"/../../..
 if which "clang-$2.$3" > /dev/null 2>&1
     then
         export CC="$(which clang-$2.$3)"
-        export CXX="$(which clang++-$2.$3)"
 elif which "clang$2$3" > /dev/null 2>&1
     then
         export CC="$(which clang$2$3)"
-        export CXX="$(which clang++$2$3)"
 elif which clang > /dev/null 2>&1
     then
         export CC="$(which clang)"
-        export CXX="$(which clang++)"
 else
     echo "Unable to find Clang Compiler"
     exit 1

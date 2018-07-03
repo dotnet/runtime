@@ -446,7 +446,7 @@ namespace System.IO
             return readbytes;
         }
 
-        private int ReadFromBuffer(Byte[] array, int offset, int count, out Exception error)
+        private int ReadFromBuffer(byte[] array, int offset, int count, out Exception error)
         {
             try
             {

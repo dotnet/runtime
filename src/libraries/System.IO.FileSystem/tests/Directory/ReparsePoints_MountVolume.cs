@@ -27,17 +27,17 @@ public class Directory_ReparsePoints_MountVolume
         {
             Stopwatch watch;
 
-            const String MountPrefixName = "LaksMount";
+            const string MountPrefixName = "LaksMount";
 
-            String mountedDirName;
-            String dirNameWithoutRoot;
-            String dirNameReferedFromMountedDrive;
-            String dirName;
-            String[] expectedFiles;
-            String[] files;
-            String[] expectedDirs;
-            String[] dirs;
-            List<String> list;
+            string mountedDirName;
+            string dirNameWithoutRoot;
+            string dirNameReferedFromMountedDrive;
+            string dirName;
+            string[] expectedFiles;
+            string[] files;
+            string[] expectedDirs;
+            string[] dirs;
+            List<string> list;
 
             watch = new Stopwatch();
             watch.Start();
@@ -64,9 +64,9 @@ public class Directory_ReparsePoints_MountVolume
 
                             //Files
                             expectedFiles = fileManager.GetAllFiles();
-                            list = new List<String>();
+                            list = new List<string>();
                             //We will only test the filenames since they are unique
-                            foreach (String file in expectedFiles)
+                            foreach (string file in expectedFiles)
                                 list.Add(Path.GetFileName(file));
                             files = Directory.GetFiles(dirNameReferedFromMountedDrive, "*.*", SearchOption.AllDirectories);
                             Eval(files.Length == list.Count, "Err_3947g! wrong count");
@@ -78,14 +78,14 @@ public class Directory_ReparsePoints_MountVolume
                             if (!Eval(list.Count == 0, "Err_891vut! wrong count: {0}", list.Count))
                             {
                                 Console.WriteLine();
-                                foreach (String fileName in list)
+                                foreach (string fileName in list)
                                     Console.WriteLine(fileName);
                             }
 
                             //Directories
                             expectedDirs = fileManager.GetAllDirectories();
-                            list = new List<String>();
-                            foreach (String dir in expectedDirs)
+                            list = new List<string>();
+                            foreach (string dir in expectedDirs)
                                 list.Add(dir.Substring(dirName.Length));
                             dirs = Directory.GetDirectories(dirNameReferedFromMountedDrive, "*.*", SearchOption.AllDirectories);
                             Eval(dirs.Length == list.Count, "Err_813weq! wrong count");
@@ -98,7 +98,7 @@ public class Directory_ReparsePoints_MountVolume
                             if (!Eval(list.Count == 0, "Err_921mhs! wrong count: {0}", list.Count))
                             {
                                 Console.WriteLine();
-                                foreach (String value in list)
+                                foreach (string value in list)
                                     Console.WriteLine(value);
                             }
                         }
@@ -141,9 +141,9 @@ public class Directory_ReparsePoints_MountVolume
                             dirNameReferedFromMountedDrive = Path.Combine(mountedDirName, dirNameWithoutRoot);
                             //Files
                             expectedFiles = fileManager.GetAllFiles();
-                            list = new List<String>();
+                            list = new List<string>();
                             //We will only test the filenames since they are unique
-                            foreach (String file in expectedFiles)
+                            foreach (string file in expectedFiles)
                                 list.Add(Path.GetFileName(file));
                             files = Directory.GetFiles(dirNameReferedFromMountedDrive, "*.*", SearchOption.AllDirectories);
                             Eval(files.Length == list.Count, "Err_689myg! wrong count");
@@ -155,14 +155,14 @@ public class Directory_ReparsePoints_MountVolume
                             if (!Eval(list.Count == 0, "Err_952qkj! wrong count: {0}", list.Count))
                             {
                                 Console.WriteLine();
-                                foreach (String fileName in list)
+                                foreach (string fileName in list)
                                     Console.WriteLine(fileName);
                             }
 
                             //Directories
                             expectedDirs = fileManager.GetAllDirectories();
-                            list = new List<String>();
-                            foreach (String dir in expectedDirs)
+                            list = new List<string>();
+                            foreach (string dir in expectedDirs)
                                 list.Add(dir.Substring(dirName.Length));
                             dirs = Directory.GetDirectories(dirNameReferedFromMountedDrive, "*.*", SearchOption.AllDirectories);
                             Eval(dirs.Length == list.Count, "Err_154vrz! wrong count");
@@ -175,7 +175,7 @@ public class Directory_ReparsePoints_MountVolume
                             if (!Eval(list.Count == 0, "Err_630gjj! wrong count: {0}", list.Count))
                             {
                                 Console.WriteLine();
-                                foreach (String value in list)
+                                foreach (string value in list)
                                     Console.WriteLine(value);
                             }
                         }
@@ -216,9 +216,9 @@ public class Directory_ReparsePoints_MountVolume
                             dirNameReferedFromMountedDrive = Path.Combine(mountedDirName, dirNameWithoutRoot);
                             //Files
                             expectedFiles = fileManager.GetAllFiles();
-                            list = new List<String>();
+                            list = new List<string>();
                             //We will only test the filenames since they are unique
-                            foreach (String file in expectedFiles)
+                            foreach (string file in expectedFiles)
                                 list.Add(Path.GetFileName(file));
                             files = Directory.GetFiles(dirNameReferedFromMountedDrive, "*.*", SearchOption.AllDirectories);
                             Eval(files.Length == list.Count, "Err_213fuo! wrong count");
@@ -230,14 +230,14 @@ public class Directory_ReparsePoints_MountVolume
                             if (!Eval(list.Count == 0, "Err_301gtz! wrong count: {0}", list.Count))
                             {
                                 Console.WriteLine();
-                                foreach (String fileName in list)
+                                foreach (string fileName in list)
                                     Console.WriteLine(fileName);
                             }
 
                             //Directories
                             expectedDirs = fileManager.GetAllDirectories();
-                            list = new List<String>();
-                            foreach (String dir in expectedDirs)
+                            list = new List<string>();
+                            foreach (string dir in expectedDirs)
                                 list.Add(dir.Substring(dirName.Length));
                             dirs = Directory.GetDirectories(dirNameReferedFromMountedDrive, "*.*", SearchOption.AllDirectories);
                             Eval(dirs.Length == list.Count, "Err_771dxv! wrong count");
@@ -250,7 +250,7 @@ public class Directory_ReparsePoints_MountVolume
                             if (!Eval(list.Count == 0, "Err_424opm! wrong count: {0}", list.Count))
                             {
                                 Console.WriteLine();
-                                foreach (String value in list)
+                                foreach (string value in list)
                                     Console.WriteLine(value);
                             }
                         }
@@ -291,9 +291,9 @@ public class Directory_ReparsePoints_MountVolume
                             dirNameReferedFromMountedDrive = Path.Combine(mountedDirName, dirNameWithoutRoot);
                             //Files
                             expectedFiles = fileManager.GetAllFiles();
-                            list = new List<String>();
+                            list = new List<string>();
                             //We will only test the filenames since they are unique
-                            foreach (String file in expectedFiles)
+                            foreach (string file in expectedFiles)
                                 list.Add(Path.GetFileName(file));
                             files = Directory.GetFiles(dirNameReferedFromMountedDrive, "*.*", SearchOption.AllDirectories);
                             Eval(files.Length == list.Count, "Err_253yit! wrong count");
@@ -305,14 +305,14 @@ public class Directory_ReparsePoints_MountVolume
                             if (!Eval(list.Count == 0, "Err_141lgl! wrong count: {0}", list.Count))
                             {
                                 Console.WriteLine();
-                                foreach (String fileName in list)
+                                foreach (string fileName in list)
                                     Console.WriteLine(fileName);
                             }
 
                             //Directories
                             expectedDirs = fileManager.GetAllDirectories();
-                            list = new List<String>();
-                            foreach (String dir in expectedDirs)
+                            list = new List<string>();
+                            foreach (string dir in expectedDirs)
                                 list.Add(dir.Substring(dirName.Length));
                             dirs = Directory.GetDirectories(dirNameReferedFromMountedDrive, "*.*", SearchOption.AllDirectories);
                             Eval(dirs.Length == list.Count, "Err_512oxq! wrong count");
@@ -325,7 +325,7 @@ public class Directory_ReparsePoints_MountVolume
                             if (!Eval(list.Count == 0, "Err_574raf! wrong count: {0}", list.Count))
                             {
                                 Console.WriteLine();
-                                foreach (String value in list)
+                                foreach (string value in list)
                                     Console.WriteLine(value);
                             }
                         }
@@ -358,25 +358,25 @@ public class Directory_ReparsePoints_MountVolume
         Assert.True(s_pass);
     }
 
-    private static void DeleteFile(String fileName)
+    private static void DeleteFile(string fileName)
     {
         if (File.Exists(fileName))
             File.Delete(fileName);
     }
 
-    private static void DeleteDir(String fileName, bool sub)
+    private static void DeleteDir(string fileName, bool sub)
     {
         if (Directory.Exists(fileName))
             Directory.Delete(fileName, sub);
     }
 
     //Checks for error
-    private static bool Eval(bool expression, String msg, params Object[] values)
+    private static bool Eval(bool expression, string msg, params object[] values)
     {
-        return Eval(expression, String.Format(msg, values));
+        return Eval(expression, string.Format(msg, values));
     }
 
-    private static bool Eval<T>(T actual, T expected, String errorMsg)
+    private static bool Eval<T>(T actual, T expected, string errorMsg)
     {
         bool retValue = expected == null ? actual == null : expected.Equals(actual);
 
@@ -388,7 +388,7 @@ public class Directory_ReparsePoints_MountVolume
         return retValue;
     }
 
-    private static bool Eval(bool expression, String msg)
+    private static bool Eval(bool expression, string msg)
     {
         if (!expression)
         {
@@ -405,13 +405,13 @@ public class Directory_ReparsePoints_MountVolume
     }
 
     //Checks for a particular type of exception and an Exception msg in the English locale
-    private static void CheckException<E>(ExceptionCode test, string error, String msgExpected)
+    private static void CheckException<E>(ExceptionCode test, string error, string msgExpected)
     {
         bool exception = false;
         try
         {
             test();
-            error = String.Format("{0} Exception NOT thrown ", error);
+            error = string.Format("{0} Exception NOT thrown ", error);
         }
         catch (Exception e)
         {
@@ -421,11 +421,11 @@ public class Directory_ReparsePoints_MountVolume
                 if (System.Globalization.CultureInfo.CurrentUICulture.Name == "en-US" && msgExpected != null && e.Message != msgExpected)
                 {
                     exception = false;
-                    error = String.Format("{0} Message Different: <{1}>", error, e.Message);
+                    error = string.Format("{0} Message Different: <{1}>", error, e.Message);
                 }
             }
             else
-                error = String.Format("{0} Exception type: {1}", error, e.GetType().Name);
+                error = string.Format("{0} Exception type: {1}", error, e.GetType().Name);
         }
         Eval(exception, error);
     }

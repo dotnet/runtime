@@ -63,7 +63,7 @@ namespace System.Xml.Xsl.XsltOld
         internal ArrayList Imports { get { return _imports; } }
         internal Hashtable AttributeSetTable { get { return _attributeSetTable; } }
 
-        internal void AddSpace(Compiler compiler, String query, double Priority, bool PreserveSpace)
+        internal void AddSpace(Compiler compiler, string query, double Priority, bool PreserveSpace)
         {
             WhitespaceElement elem;
             if (_queryKeyTable != null)

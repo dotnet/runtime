@@ -19,7 +19,7 @@ namespace Microsoft.Framework.WebEncoders
             var bitmap = AllowedCharactersBitmap.CreateNew();
 
             // Assert
-            for (int i = 0; i <= Char.MaxValue; i++)
+            for (int i = 0; i <= char.MaxValue; i++)
             {
                 Assert.False(bitmap.IsCharacterAllowed((char)i));
             }
@@ -34,21 +34,21 @@ namespace Microsoft.Framework.WebEncoders
             // Act
             // The only chars which are allowed are those whose code points are multiples of 3 or 7
             // who aren't also multiples of 5. Exception: multiples of 35 are allowed.
-            for (int i = 0; i <= Char.MaxValue; i += 3)
+            for (int i = 0; i <= char.MaxValue; i += 3)
             {
                 bitmap.AllowCharacter((char)i);
             }
-            for (int i = 0; i <= Char.MaxValue; i += 5)
+            for (int i = 0; i <= char.MaxValue; i += 5)
             {
                 bitmap.ForbidCharacter((char)i);
             }
-            for (int i = 0; i <= Char.MaxValue; i += 7)
+            for (int i = 0; i <= char.MaxValue; i += 7)
             {
                 bitmap.AllowCharacter((char)i);
             }
 
             // Assert
-            for (int i = 0; i <= Char.MaxValue; i++)
+            for (int i = 0; i <= char.MaxValue; i++)
             {
                 bool isAllowed = false;
                 if (i % 3 == 0) { isAllowed = true; }
@@ -63,7 +63,7 @@ namespace Microsoft.Framework.WebEncoders
         {
             // Arrange
             var bitmap = AllowedCharactersBitmap.CreateNew();
-            for (int i = 1; i <= Char.MaxValue; i++)
+            for (int i = 1; i <= char.MaxValue; i++)
             {
                 bitmap.AllowCharacter((char)i);
             }
@@ -72,7 +72,7 @@ namespace Microsoft.Framework.WebEncoders
             bitmap.Clear();
 
             // Assert
-            for (int i = 0; i <= Char.MaxValue; i++)
+            for (int i = 0; i <= char.MaxValue; i++)
             {
                 Assert.False(bitmap.IsCharacterAllowed((char)i));
             }
@@ -104,7 +104,7 @@ namespace Microsoft.Framework.WebEncoders
             // we can validate that we properly merged the two bitmaps together
             // rather than simply overwriting the target.
             var bitmap = AllowedCharactersBitmap.CreateNew();
-            for (int i = 1; i <= Char.MaxValue; i += 2)
+            for (int i = 1; i <= char.MaxValue; i += 2)
             {
                 bitmap.AllowCharacter((char)i);
             }
@@ -113,7 +113,7 @@ namespace Microsoft.Framework.WebEncoders
             bitmap.ForbidUndefinedCharacters();
 
             // Assert
-            for (int i = 0; i <= Char.MaxValue; i++)
+            for (int i = 0; i <= char.MaxValue; i++)
             {
                 if (i % 2 == 0)
                 {

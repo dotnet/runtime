@@ -17,11 +17,11 @@ namespace System.Xml.Xsl.XsltOld
 
     internal class NamespaceInfo
     {
-        internal String prefix;
-        internal String nameSpace;
+        internal string prefix;
+        internal string nameSpace;
         internal int stylesheetId;
 
-        internal NamespaceInfo(String prefix, String nameSpace, int stylesheetId)
+        internal NamespaceInfo(string prefix, string nameSpace, int stylesheetId)
         {
             this.prefix = prefix;
             this.nameSpace = nameSpace;
@@ -434,7 +434,7 @@ namespace System.Xml.Xsl.XsltOld
                 while (input.MoveToNextAttribute());
                 input.ToParent();
             }
-            info.NegativeInfinitySymbol = String.Concat(info.NegativeSign, info.PositiveInfinitySymbol);
+            info.NegativeInfinitySymbol = string.Concat(info.NegativeSign, info.PositiveInfinitySymbol);
             if (Name == null)
             {
                 Name = new XmlQualifiedName();
@@ -458,8 +458,8 @@ namespace System.Xml.Xsl.XsltOld
 
         protected void CompileSpace(Compiler compiler, bool preserve)
         {
-            String value = compiler.GetSingleAttribute(compiler.Input.Atoms.Elements);
-            String[] elements = XmlConvert.SplitString(value);
+            string value = compiler.GetSingleAttribute(compiler.Input.Atoms.Elements);
+            string[] elements = XmlConvert.SplitString(value);
             for (int i = 0; i < elements.Length; i++)
             {
                 double defaultPriority = NameTest(elements[i]);
@@ -468,7 +468,7 @@ namespace System.Xml.Xsl.XsltOld
             CheckEmpty(compiler);
         }
 
-        private double NameTest(String name)
+        private double NameTest(string name)
         {
             if (name == "*")
             {
@@ -905,23 +905,23 @@ namespace System.Xml.Xsl.XsltOld
                     {
                         string langName = input.Value;
                         if (
-                            String.Compare(langName, "jscript", StringComparison.OrdinalIgnoreCase) == 0 ||
-                            String.Compare(langName, "javascript", StringComparison.OrdinalIgnoreCase) == 0
+                            string.Equals(langName, "jscript", StringComparison.OrdinalIgnoreCase) ||
+                            string.Equals(langName, "javascript", StringComparison.OrdinalIgnoreCase)
                         )
                         {
                             lang = ScriptingLanguage.JScript;
                         }
                         else if (
-                          String.Compare(langName, "c#", StringComparison.OrdinalIgnoreCase) == 0 ||
-                          String.Compare(langName, "csharp", StringComparison.OrdinalIgnoreCase) == 0
+                          string.Equals(langName, "c#", StringComparison.OrdinalIgnoreCase) ||
+                          string.Equals(langName, "csharp", StringComparison.OrdinalIgnoreCase)
                       )
                         {
                             lang = ScriptingLanguage.CSharp;
                         }
 #if !FEATURE_PAL // visualbasic
                         else if (
-                            String.Compare(langName, "vb", StringComparison.OrdinalIgnoreCase) == 0 ||
-                            String.Compare(langName, "visualbasic", StringComparison.OrdinalIgnoreCase) == 0
+                            string.Equals(langName, "vb", StringComparison.OrdinalIgnoreCase) ||
+                            string.Equals(langName, "visualbasic", StringComparison.OrdinalIgnoreCase)
                         )
                         {
                             lang = ScriptingLanguage.VisualBasic;

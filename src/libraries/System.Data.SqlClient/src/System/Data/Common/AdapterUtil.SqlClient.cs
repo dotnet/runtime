@@ -492,7 +492,7 @@ namespace System.Data.Common
         {
             return Argument(SR.GetString(SR.ADP_InvalidSizeValue, value.ToString(CultureInfo.InvariantCulture)));
         }
-        internal static ArgumentException ParameterValueOutOfRange(Decimal value)
+        internal static ArgumentException ParameterValueOutOfRange(decimal value)
         {
             return ADP.Argument(SR.GetString(SR.ADP_ParameterValueOutOfRange, value.ToString((IFormatProvider)null)));
         }
@@ -909,6 +909,18 @@ namespace System.Data.Common
         internal static ArgumentException InvalidMixedArgumentOfSecureCredentialAndIntegratedSecurity()
         {
             return Argument(SR.GetString(SR.ADP_InvalidMixedUsageOfSecureCredentialAndIntegratedSecurity));
+        }
+        internal static InvalidOperationException InvalidMixedUsageOfAccessTokenAndIntegratedSecurity()
+        {
+            return ADP.InvalidOperation(SR.GetString(SR.ADP_InvalidMixedUsageOfAccessTokenAndIntegratedSecurity));
+        }
+        static internal InvalidOperationException InvalidMixedUsageOfAccessTokenAndUserIDPassword()
+        {
+            return ADP.InvalidOperation(SR.GetString(SR.ADP_InvalidMixedUsageOfAccessTokenAndUserIDPassword));
+        }
+        static internal Exception InvalidMixedUsageOfCredentialAndAccessToken()
+        {
+            return ADP.InvalidOperation(SR.GetString(SR.ADP_InvalidMixedUsageOfCredentialAndAccessToken));
         }
     }
 }

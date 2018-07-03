@@ -474,7 +474,7 @@ namespace System.Xml
                 return false;
             }
             XmlAttributeCollection attributes;
-            int index = Int32.MaxValue;
+            int index = int.MaxValue;
             switch (scope)
             {
                 case XPathNamespaceScope.Local:

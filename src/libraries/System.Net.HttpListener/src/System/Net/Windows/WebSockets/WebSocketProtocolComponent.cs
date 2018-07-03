@@ -180,9 +180,9 @@ namespace System.Net.WebSockets
                 string version = null;
                 foreach (Interop.WebSocket.HttpHeader header in additionalHeaders)
                 {
-                    if (string.Compare(header.Name,
+                    if (string.Equals(header.Name,
                             HttpKnownHeaderNames.SecWebSocketVersion,
-                            StringComparison.OrdinalIgnoreCase) == 0)
+                            StringComparison.OrdinalIgnoreCase))
                     {
                         version = header.Value;
                         break;

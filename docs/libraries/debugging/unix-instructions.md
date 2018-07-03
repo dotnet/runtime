@@ -16,7 +16,7 @@ You may need to supply a path to load SOS. It can be found next to libcoreclr.so
 error: no such file
 (lldb) image list libcoreclr.so
 [  0] ..... /home/dan/dotnet/shared/Microsoft.NETCoreApp/2.0.4/libcoreclr.so
-(lldb) plugin load /home/dan/dotnet/shared/Microsoft.NETCoreApp/2.0.4/libcoreclr.so
+(lldb) plugin load /home/dan/dotnet/shared/Microsoft.NETCoreApp/2.0.4/libsosplugin.so
 ```
 
 ## Debugging core dumps with lldb

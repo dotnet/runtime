@@ -123,7 +123,7 @@ namespace System.Diagnostics
                 if (complusReg != null)
                 {
                     string installRoot = (string)complusReg.GetValue("InstallRoot");
-                    if (installRoot != null && installRoot != String.Empty)
+                    if (installRoot != null && installRoot != string.Empty)
                     {
                         string versionPrefix = "v" + Environment.Version.Major + "." + Environment.Version.Minor;
                         RegistryKey policyKey = complusReg.OpenSubKey("policy");
@@ -166,7 +166,7 @@ namespace System.Diagnostics
                                                 continue;
                                             }
 
-                                            if (!Int32.TryParse(splitVersion[0], out currentVersion[0]) || !Int32.TryParse(splitVersion[1], out currentVersion[1]))
+                                            if (!int.TryParse(splitVersion[0], out currentVersion[0]) || !int.TryParse(splitVersion[1], out currentVersion[1]))
                                             {
                                                 continue;
                                             }
@@ -201,7 +201,7 @@ namespace System.Diagnostics
                                 policyKey.Close();
                             }
 
-                            if (version != null && version != String.Empty)
+                            if (version != null && version != string.Empty)
                             {
                                 StringBuilder installBuilder = new StringBuilder();
                                 installBuilder.Append(installRoot);
@@ -234,7 +234,7 @@ namespace System.Diagnostics
             for (int i = 0; i < minorVersions.Length; i++)
             {
                 int o;
-                if (Int32.TryParse(minorVersions[i], out o))
+                if (int.TryParse(minorVersions[i], out o))
                 {
                     largestBuild = (largestBuild > o) ? largestBuild : o;
                 }

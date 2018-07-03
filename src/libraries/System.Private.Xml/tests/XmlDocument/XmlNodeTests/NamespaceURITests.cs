@@ -8,7 +8,7 @@ namespace System.Xml.Tests
 {
     public class NamespaceURITests
     {
-        private const String xmlnsName = "http://www.w3.org/2000/xmlns/";
+        private const string xmlnsName = "http://www.w3.org/2000/xmlns/";
 
         [Fact]
         public static void AllNodesForEmptyString()
@@ -19,16 +19,16 @@ namespace System.Xml.Tests
             xmlDocument.LoadXml(xml);
 
             foreach (XmlNode node in xmlDocument.DocumentElement.ChildNodes)
-                Assert.Equal(String.Empty, node.NamespaceURI);
+                Assert.Equal(string.Empty, node.NamespaceURI);
 
-            Assert.Equal(String.Empty, xmlDocument.CreateDocumentFragment().NamespaceURI);
+            Assert.Equal(string.Empty, xmlDocument.CreateDocumentFragment().NamespaceURI);
         }
 
         [Fact]
         public static void XmlDocumentEmptyString()
         {
             var xmlDocument = new XmlDocument();
-            Assert.Equal(String.Empty, xmlDocument.NamespaceURI);
+            Assert.Equal(string.Empty, xmlDocument.NamespaceURI);
         }
 
         [Fact]

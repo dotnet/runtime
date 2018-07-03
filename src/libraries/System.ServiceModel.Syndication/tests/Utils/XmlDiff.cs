@@ -1,4 +1,4 @@
-﻿// Licensed to the .NET Foundation under one or more agreements.
+// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
@@ -6,7 +6,6 @@ using System.Collections;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
-using System.Linq;
 using System.Text;
 using System.Xml;
 using System.Xml.XPath;
@@ -33,125 +32,71 @@ namespace System.ServiceModel.Syndication.Tests
 
     public class XmlDiff
     {
-        private XmlDiffDocument _SourceDoc;
-        private XmlDiffDocument _TargetDoc;
+        private XmlDiffDocument _sourceDoc;
+        private XmlDiffDocument _targetDoc;
 
-        private XmlTextWriter _Writer;     // Writer to write out the result
-        private StringBuilder _Output;
-
-        // Option Flags
-        private XmlDiffOption _XmlDiffOption = XmlDiffOption.None;
+        private XmlTextWriter _writer;     // Writer to write out the result
+        private StringBuilder _output;
 
         public XmlDiff()
         {
-            _XmlDiffOption = XmlDiffOption.IgnoreEmptyElement |
-                             XmlDiffOption.IgnoreWhitespace |
-                             XmlDiffOption.IgnoreAttributeOrder |
-                             XmlDiffOption.IgnoreNS |
-                             XmlDiffOption.IgnorePrefix |
-                             XmlDiffOption.IgnoreDTD |
-                             XmlDiffOption.IgnoreChildOrder;
+            Option = XmlDiffOption.IgnoreEmptyElement |
+                     XmlDiffOption.IgnoreWhitespace |
+                     XmlDiffOption.IgnoreAttributeOrder |
+                     XmlDiffOption.IgnoreNS |
+                     XmlDiffOption.IgnorePrefix |
+                     XmlDiffOption.IgnoreDTD |
+                     XmlDiffOption.IgnoreChildOrder;
         }
 
-        public XmlDiffOption Option
-        {
-            get
-            {
-                return _XmlDiffOption;
-            }
-            set
-            {
-                _XmlDiffOption = value;
-            }
-        }
+        public XmlDiffOption Option { get; set; } = XmlDiffOption.None;
 
-        internal bool IgnoreEmptyElement
-        {
-            get { return ((_XmlDiffOption & XmlDiffOption.IgnoreEmptyElement) != 0); }
-        }
+        internal bool IgnoreEmptyElement => (Option & XmlDiffOption.IgnoreEmptyElement) != 0;
 
-        internal bool IgnoreComments
-        {
-            get { return ((_XmlDiffOption & XmlDiffOption.IgnoreComments) != 0); }
-        }
+        internal bool IgnoreComments => (Option & XmlDiffOption.IgnoreComments) != 0;
 
-        internal bool IgnoreAttributeOrder
-        {
-            get { return ((_XmlDiffOption & XmlDiffOption.IgnoreAttributeOrder) != 0); }
-        }
+        internal bool IgnoreAttributeOrder => (Option & XmlDiffOption.IgnoreAttributeOrder) != 0;
 
-        internal bool IgnoreWhitespace
-        {
-            get { return ((_XmlDiffOption & XmlDiffOption.IgnoreWhitespace) != 0); }
-        }
+        internal bool IgnoreWhitespace => (Option & XmlDiffOption.IgnoreWhitespace) != 0;
 
-        internal bool IgnoreNS
-        {
-            get { return ((_XmlDiffOption & XmlDiffOption.IgnoreNS) != 0); }
-        }
+        internal bool IgnoreNS => (Option & XmlDiffOption.IgnoreNS) != 0;
 
-        internal bool IgnorePrefix
-        {
-            get { return ((_XmlDiffOption & XmlDiffOption.IgnorePrefix) != 0); }
-        }
+        internal bool IgnorePrefix => (Option & XmlDiffOption.IgnorePrefix) != 0;
 
-        internal bool IgnoreDTD
-        {
-            get { return ((_XmlDiffOption & XmlDiffOption.IgnoreDTD) != 0); }
-        }
+        internal bool IgnoreDTD => (Option & XmlDiffOption.IgnoreDTD) != 0;
 
-        internal bool IgnoreChildOrder
-        {
-            get { return ((_XmlDiffOption & XmlDiffOption.IgnoreChildOrder) != 0); }
-        }
+        internal bool IgnoreChildOrder => (Option & XmlDiffOption.IgnoreChildOrder) != 0;
 
-        internal bool ConcatenateAdjacentTextNodes
-        {
-            get { return ((_XmlDiffOption & XmlDiffOption.ConcatenateAdjacentTextNodes) != 0); }
-        }
+        internal bool ConcatenateAdjacentTextNodes => (Option & XmlDiffOption.ConcatenateAdjacentTextNodes) != 0;
 
-        internal bool TreatWhitespaceTextAsWSNode
-        {
-            get { return ((_XmlDiffOption & XmlDiffOption.TreatWhitespaceTextAsWSNode) != 0); }
-        }
+        internal bool TreatWhitespaceTextAsWSNode => (Option & XmlDiffOption.TreatWhitespaceTextAsWSNode) != 0;
 
-        internal bool ParseAttributeValuesAsQName
-        {
-            get { return ((_XmlDiffOption & XmlDiffOption.ParseAttributeValuesAsQName) != 0); }
-        }
+        internal bool ParseAttributeValuesAsQName => (Option & XmlDiffOption.ParseAttributeValuesAsQName) != 0;
 
-        internal bool DontWriteMatchingNodesToOutput
-        {
-            get { return ((_XmlDiffOption & XmlDiffOption.DontWriteMatchingNodesToOutput) != 0); }
-        }
+        internal bool DontWriteMatchingNodesToOutput => (Option & XmlDiffOption.DontWriteMatchingNodesToOutput) != 0;
 
-        internal bool DontWriteAnythingToOutput
-        {
-            get { return ((_XmlDiffOption & XmlDiffOption.DontWriteAnythingToOutput) != 0); }
-        }
+        internal bool DontWriteAnythingToOutput => (Option & XmlDiffOption.DontWriteAnythingToOutput) != 0;
 
         private void InitFiles()
         {
-            _SourceDoc = new XmlDiffDocument();
-            _SourceDoc.Option = _XmlDiffOption;
-            _TargetDoc = new XmlDiffDocument();
-            _TargetDoc.Option = this.Option;
-            _Output = new StringBuilder(String.Empty);
+            _sourceDoc = new XmlDiffDocument { Option = Option };
+            _targetDoc = new XmlDiffDocument { Option = Option };
+            _output = new StringBuilder(string.Empty);
         }
 
-        public bool Compare(String source, String target)
+        public bool Compare(string source, string target)
         {
             InitFiles();
-            _SourceDoc.Load(source);
-            _TargetDoc.Load(target);
+            _sourceDoc.Load(source);
+            _targetDoc.Load(target);
             return Diff();
         }
 
         public bool Compare(XmlReader source, XmlReader target)
         {
             InitFiles();
-            _SourceDoc.Load(source);
-            _TargetDoc.Load(target);
+            _sourceDoc.Load(source);
+            _targetDoc.Load(target);
             return Diff();
         }
 
@@ -159,9 +104,9 @@ namespace System.ServiceModel.Syndication.Tests
         {
             InitFiles();
 
-            _SourceDoc.Load(source);
-            _TargetDoc.Load(target);
-            XPathNavigator nav = _SourceDoc.CreateNavigator();
+            _sourceDoc.Load(source);
+            _targetDoc.Load(target);
+            XPathNavigator nav = _sourceDoc.CreateNavigator();
 
             if (!string.IsNullOrEmpty(advOptions.IgnoreChildOrderExpr))
             {
@@ -170,8 +115,8 @@ namespace System.ServiceModel.Syndication.Tests
                     advOptions,
                     nav);
 
-                _SourceDoc.SortChildren(expr);
-                _TargetDoc.SortChildren(expr);
+                _sourceDoc.SortChildren(expr);
+                _targetDoc.SortChildren(expr);
             }
 
             if (advOptions.IgnoreNodesExpr != null && advOptions.IgnoreNodesExpr != "")
@@ -181,8 +126,8 @@ namespace System.ServiceModel.Syndication.Tests
                     advOptions,
                     nav);
 
-                _SourceDoc.IgnoreNodes(expr);
-                _TargetDoc.IgnoreNodes(expr);
+                _sourceDoc.IgnoreNodes(expr);
+                _targetDoc.IgnoreNodes(expr);
             }
 
             if (advOptions.IgnoreValuesExpr != null && advOptions.IgnoreValuesExpr != "")
@@ -192,8 +137,8 @@ namespace System.ServiceModel.Syndication.Tests
                     advOptions,
                     nav);
 
-                _SourceDoc.IgnoreValues(expr);
-                _TargetDoc.IgnoreValues(expr);
+                _sourceDoc.IgnoreValues(expr);
+                _targetDoc.IgnoreValues(expr);
             }
 
             return Diff();
@@ -222,13 +167,13 @@ namespace System.ServiceModel.Syndication.Tests
         private bool Diff()
         {
             bool flag = false;
-            _Writer = new XmlTextWriter(new StringWriter(_Output));
-            _Writer.WriteStartElement(String.Empty, "Root", String.Empty);
+            _writer = new XmlTextWriter(new StringWriter(_output));
+            _writer.WriteStartElement(string.Empty, "Root", string.Empty);
 
-            flag = CompareChildren(_SourceDoc, _TargetDoc);
+            flag = CompareChildren(_sourceDoc, _targetDoc);
 
-            _Writer.WriteEndElement();
-            _Writer.Close();
+            _writer.WriteEndElement();
+            _writer.Close();
             return flag;
         }
 
@@ -281,18 +226,18 @@ namespace System.ServiceModel.Syndication.Tests
                                 Debug.Assert(targetElem != null);
                                 if (!DontWriteMatchingNodesToOutput && !DontWriteAnythingToOutput)
                                 {
-                                    _Writer.WriteStartElement(String.Empty, "Node", String.Empty);
-                                    _Writer.WriteAttributeString(String.Empty, "SourceLineNum", String.Empty, sourceElem.EndLineNumber.ToString());
-                                    _Writer.WriteAttributeString(String.Empty, "SourceLinePos", String.Empty, sourceElem.EndLinePosition.ToString());
-                                    _Writer.WriteAttributeString(String.Empty, "TargetLineNum", String.Empty, targetElem.EndLineNumber.ToString());
-                                    _Writer.WriteAttributeString(String.Empty, "TargetLinePos", String.Empty, targetElem.EndLinePosition.ToString());
-                                    _Writer.WriteStartElement(String.Empty, "Diff", String.Empty);
-                                    _Writer.WriteEndElement();
+                                    _writer.WriteStartElement(string.Empty, "Node", string.Empty);
+                                    _writer.WriteAttributeString(string.Empty, "SourceLineNum", string.Empty, sourceElem.EndLineNumber.ToString());
+                                    _writer.WriteAttributeString(string.Empty, "SourceLinePos", string.Empty, sourceElem.EndLinePosition.ToString());
+                                    _writer.WriteAttributeString(string.Empty, "TargetLineNum", string.Empty, targetElem.EndLineNumber.ToString());
+                                    _writer.WriteAttributeString(string.Empty, "TargetLinePos", string.Empty, targetElem.EndLinePosition.ToString());
+                                    _writer.WriteStartElement(string.Empty, "Diff", string.Empty);
+                                    _writer.WriteEndElement();
 
-                                    _Writer.WriteStartElement(String.Empty, "Lexical-equal", String.Empty);
-                                    _Writer.WriteCData("</" + sourceElem.Name + ">");
-                                    _Writer.WriteEndElement();
-                                    _Writer.WriteEndElement();
+                                    _writer.WriteStartElement(string.Empty, "Lexical-equal", string.Empty);
+                                    _writer.WriteCData("</" + sourceElem.Name + ">");
+                                    _writer.WriteEndElement();
+                                    _writer.WriteEndElement();
                                 }
                             }
 
@@ -367,32 +312,32 @@ namespace System.ServiceModel.Syndication.Tests
                                     XmlDiffElement targetElem = targetChild as XmlDiffElement;
                                     if (!DontWriteAnythingToOutput)
                                     {
-                                        _Writer.WriteStartElement(String.Empty, "Node", String.Empty);
-                                        _Writer.WriteAttributeString(String.Empty, "SourceLineNum", String.Empty, (sourceElem != null) ? sourceElem.EndLineNumber.ToString() : "-1");
-                                        _Writer.WriteAttributeString(String.Empty, "SourceLinePos", String.Empty, (sourceElem != null) ? sourceElem.EndLinePosition.ToString() : "-1");
-                                        _Writer.WriteAttributeString(String.Empty, "TargetLineNum", String.Empty, (targetElem != null) ? targetElem.EndLineNumber.ToString() : "-1");
-                                        _Writer.WriteAttributeString(String.Empty, "TargetLinePos", String.Empty, (targetElem != null) ? targetElem.EndLineNumber.ToString() : "-1");
-                                        _Writer.WriteStartElement(String.Empty, "Diff", String.Empty);
-                                        _Writer.WriteAttributeString(String.Empty, "DiffType", String.Empty, GetDiffType(result));
+                                        _writer.WriteStartElement(string.Empty, "Node", string.Empty);
+                                        _writer.WriteAttributeString(string.Empty, "SourceLineNum", string.Empty, (sourceElem != null) ? sourceElem.EndLineNumber.ToString() : "-1");
+                                        _writer.WriteAttributeString(string.Empty, "SourceLinePos", string.Empty, (sourceElem != null) ? sourceElem.EndLinePosition.ToString() : "-1");
+                                        _writer.WriteAttributeString(string.Empty, "TargetLineNum", string.Empty, (targetElem != null) ? targetElem.EndLineNumber.ToString() : "-1");
+                                        _writer.WriteAttributeString(string.Empty, "TargetLinePos", string.Empty, (targetElem != null) ? targetElem.EndLineNumber.ToString() : "-1");
+                                        _writer.WriteStartElement(string.Empty, "Diff", string.Empty);
+                                        _writer.WriteAttributeString(string.Empty, "DiffType", string.Empty, GetDiffType(result));
                                         if (bSourceNonEmpElemEnd)
                                         {
-                                            _Writer.WriteStartElement(String.Empty, "File1", String.Empty);
-                                            _Writer.WriteCData("</" + sourceElem.Name + ">");
-                                            _Writer.WriteEndElement();
+                                            _writer.WriteStartElement(string.Empty, "File1", string.Empty);
+                                            _writer.WriteCData("</" + sourceElem.Name + ">");
+                                            _writer.WriteEndElement();
                                         }
 
                                         if (bTargetNonEmpElemEnd)
                                         {
-                                            _Writer.WriteStartElement(String.Empty, "File2", String.Empty);
-                                            _Writer.WriteCData("</" + targetElem.Name + ">");
-                                            _Writer.WriteEndElement();
+                                            _writer.WriteStartElement(string.Empty, "File2", string.Empty);
+                                            _writer.WriteCData("</" + targetElem.Name + ">");
+                                            _writer.WriteEndElement();
                                         }
 
-                                        _Writer.WriteEndElement();
+                                        _writer.WriteEndElement();
 
-                                        _Writer.WriteStartElement(String.Empty, "Lexical-equal", String.Empty);
-                                        _Writer.WriteEndElement();
-                                        _Writer.WriteEndElement();
+                                        _writer.WriteStartElement(string.Empty, "Lexical-equal", string.Empty);
+                                        _writer.WriteEndElement();
+                                        _writer.WriteEndElement();
                                     }
                                 }
 
@@ -571,84 +516,84 @@ namespace System.ServiceModel.Syndication.Tests
 
             if (result != DiffType.Success || !DontWriteMatchingNodesToOutput)
             {
-                _Writer.WriteStartElement(String.Empty, "Node", String.Empty);
-                _Writer.WriteAttributeString(String.Empty, "SourceLineNum", String.Empty, (sourceNode != null) ? sourceNode.LineNumber.ToString() : "-1");
-                _Writer.WriteAttributeString(String.Empty, "SourceLinePos", String.Empty, (sourceNode != null) ? sourceNode.LinePosition.ToString() : "-1");
-                _Writer.WriteAttributeString(String.Empty, "TargetLineNum", String.Empty, (targetNode != null) ? targetNode.LineNumber.ToString() : "-1");
-                _Writer.WriteAttributeString(String.Empty, "TargetLinePos", String.Empty, (targetNode != null) ? targetNode.LinePosition.ToString() : "-1");
+                _writer.WriteStartElement(string.Empty, "Node", string.Empty);
+                _writer.WriteAttributeString(string.Empty, "SourceLineNum", string.Empty, (sourceNode != null) ? sourceNode.LineNumber.ToString() : "-1");
+                _writer.WriteAttributeString(string.Empty, "SourceLinePos", string.Empty, (sourceNode != null) ? sourceNode.LinePosition.ToString() : "-1");
+                _writer.WriteAttributeString(string.Empty, "TargetLineNum", string.Empty, (targetNode != null) ? targetNode.LineNumber.ToString() : "-1");
+                _writer.WriteAttributeString(string.Empty, "TargetLinePos", string.Empty, (targetNode != null) ? targetNode.LinePosition.ToString() : "-1");
             }
             if (result == DiffType.Success)
             {
                 if (!DontWriteMatchingNodesToOutput)
                 {
-                    _Writer.WriteStartElement(String.Empty, "Diff", String.Empty);
-                    _Writer.WriteEndElement();
+                    _writer.WriteStartElement(string.Empty, "Diff", string.Empty);
+                    _writer.WriteEndElement();
 
-                    _Writer.WriteStartElement(String.Empty, "Lexical-equal", String.Empty);
+                    _writer.WriteStartElement(string.Empty, "Lexical-equal", string.Empty);
                     if (sourceNode.NodeType == XmlDiffNodeType.CData)
                     {
-                        _Writer.WriteString("<![CDATA[");
-                        _Writer.WriteCData(GetNodeText(sourceNode, result));
-                        _Writer.WriteString("]]>");
+                        _writer.WriteString("<![CDATA[");
+                        _writer.WriteCData(GetNodeText(sourceNode, result));
+                        _writer.WriteString("]]>");
                     }
                     else
                     {
-                        _Writer.WriteCData(GetNodeText(sourceNode, result));
+                        _writer.WriteCData(GetNodeText(sourceNode, result));
                     }
-                    _Writer.WriteEndElement();
+                    _writer.WriteEndElement();
                 }
             }
             else
             {
-                _Writer.WriteStartElement(String.Empty, "Diff", String.Empty);
-                _Writer.WriteAttributeString(String.Empty, "DiffType", String.Empty, GetDiffType(result));
+                _writer.WriteStartElement(string.Empty, "Diff", string.Empty);
+                _writer.WriteAttributeString(string.Empty, "DiffType", string.Empty, GetDiffType(result));
 
                 if (sourceNode != null)
                 {
-                    _Writer.WriteStartElement(String.Empty, "File1", String.Empty);
+                    _writer.WriteStartElement(string.Empty, "File1", string.Empty);
                     if (sourceNode.NodeType == XmlDiffNodeType.CData)
                     {
-                        _Writer.WriteString("<![CDATA[");
-                        _Writer.WriteCData(GetNodeText(sourceNode, result));
-                        _Writer.WriteString("]]>");
+                        _writer.WriteString("<![CDATA[");
+                        _writer.WriteCData(GetNodeText(sourceNode, result));
+                        _writer.WriteString("]]>");
                     }
                     else
                     {
-                        _Writer.WriteString(GetNodeText(sourceNode, result));
+                        _writer.WriteString(GetNodeText(sourceNode, result));
                     }
-                    _Writer.WriteEndElement();
+                    _writer.WriteEndElement();
                 }
 
                 if (targetNode != null)
                 {
-                    _Writer.WriteStartElement(String.Empty, "File2", String.Empty);
+                    _writer.WriteStartElement(string.Empty, "File2", string.Empty);
                     if (targetNode.NodeType == XmlDiffNodeType.CData)
                     {
-                        _Writer.WriteString("<![CDATA[");
-                        _Writer.WriteCData(GetNodeText(targetNode, result));
-                        _Writer.WriteString("]]>");
+                        _writer.WriteString("<![CDATA[");
+                        _writer.WriteCData(GetNodeText(targetNode, result));
+                        _writer.WriteString("]]>");
                     }
                     else
                     {
-                        _Writer.WriteString(GetNodeText(targetNode, result));
+                        _writer.WriteString(GetNodeText(targetNode, result));
                     }
-                    _Writer.WriteEndElement();
+                    _writer.WriteEndElement();
                 }
 
-                _Writer.WriteEndElement();
+                _writer.WriteEndElement();
 
-                _Writer.WriteStartElement(String.Empty, "Lexical-equal", String.Empty);
-                _Writer.WriteEndElement();
+                _writer.WriteStartElement(string.Empty, "Lexical-equal", string.Empty);
+                _writer.WriteEndElement();
             }
             if (result != DiffType.Success || !DontWriteMatchingNodesToOutput)
             {
-                _Writer.WriteEndElement();
+                _writer.WriteEndElement();
             }
         }
 
         // This is a helper function for WriteResult.  It gets the Xml representation of the different node we wants
         // to write out and all it's children.
-        private String GetNodeText(XmlDiffNode diffNode, DiffType result)
+        private string GetNodeText(XmlDiffNode diffNode, DiffType result)
         {
             string text = string.Empty;
             switch (diffNode.NodeType)
@@ -823,11 +768,14 @@ namespace System.ServiceModel.Syndication.Tests
                         {
                             if (sourceAttr.ValueAsQName != null)
                             {
-                                if (!sourceAttr.ValueAsQName.Equals(targetAttr.ValueAsQName)) return false;
+                                if (!sourceAttr.ValueAsQName.Equals(targetAttr.ValueAsQName))
+                                {
+                                    return false;
+                                }
                             }
-                            else
+                            else if (targetAttr.ValueAsQName != null)
                             {
-                                if (targetAttr.ValueAsQName != null) return false;
+                                return false;
                             }
                         }
                         else
@@ -842,8 +790,8 @@ namespace System.ServiceModel.Syndication.Tests
 
         public string ToXml()
         {
-            if (_Output != null)
-                return _Output.ToString();
+            if (_output != null)
+                return _output.ToString();
             return string.Empty;
         }
 
@@ -866,12 +814,12 @@ namespace System.ServiceModel.Syndication.Tests
             writer.Close();
         }
 
-        private String GetDiffType(DiffType type)
+        private string GetDiffType(DiffType type)
         {
             switch (type)
             {
                 case DiffType.None:
-                    return String.Empty;
+                    return string.Empty;
                 case DiffType.Element:
                     return "1";
                 case DiffType.Whitespace:
@@ -897,7 +845,7 @@ namespace System.ServiceModel.Syndication.Tests
                 case DiffType.CData:
                     return "12";
                 default:
-                    return String.Empty;
+                    return string.Empty;
             }
         }
     }

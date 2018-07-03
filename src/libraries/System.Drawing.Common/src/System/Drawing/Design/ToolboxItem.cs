@@ -281,7 +281,7 @@ namespace System.Drawing.Design {
                 if (this.AssemblyName != null) {
                     return this.AssemblyName.Version.ToString();
                 }
-                return String.Empty;
+                return string.Empty;
             }
         }
 
@@ -605,7 +605,7 @@ namespace System.Drawing.Design {
                 }
             }
             else {
-                if (!String.IsNullOrEmpty(typeName)) {
+                if (!string.IsNullOrEmpty(typeName)) {
                     if (assemblyName != null) {
                         Assembly a = null;
                         try {

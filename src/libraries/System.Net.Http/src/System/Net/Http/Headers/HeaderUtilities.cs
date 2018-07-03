@@ -369,16 +369,15 @@ namespace System.Net.Http.Headers
             return true;
         }
 
-        internal static string DumpHeaders(params HttpHeaders[] headers)
+        internal static void DumpHeaders(StringBuilder sb, params HttpHeaders[] headers)
         {
-            // Return all headers as string similar to: 
+            // Appends all headers as string similar to: 
             // {
             //    HeaderName1: Value1
             //    HeaderName1: Value2
             //    HeaderName2: Value1
             //    ...
             // }
-            StringBuilder sb = new StringBuilder();
             sb.Append("{\r\n");
 
             for (int i = 0; i < headers.Length; i++)
@@ -400,8 +399,6 @@ namespace System.Net.Http.Headers
             }
 
             sb.Append('}');
-
-            return sb.ToString();
         }
 
         internal static bool IsValidEmailAddress(string value)

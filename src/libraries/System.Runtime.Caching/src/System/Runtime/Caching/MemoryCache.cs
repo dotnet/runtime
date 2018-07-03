@@ -143,7 +143,7 @@ namespace System.Runtime.Caching
                 {
                     CacheEntryUpdateArguments args = new CacheEntryUpdateArguments(cache, reason, entry.Key, null);
                     entry.CacheEntryUpdateCallback(args);
-                    Object expensiveObject = (args.UpdatedCacheItem != null) ? args.UpdatedCacheItem.Value : null;
+                    object expensiveObject = (args.UpdatedCacheItem != null) ? args.UpdatedCacheItem.Value : null;
                     CacheItemPolicy policy = args.UpdatedCacheItemPolicy;
                     // Only update the "expensive" object if the user returns a new object,
                     // a policy with update callback, and the change monitors haven't changed.  (Inserting
@@ -172,7 +172,7 @@ namespace System.Runtime.Caching
             int hashCode = cacheKey.Hash;
             if (hashCode < 0)
             {
-                hashCode = (hashCode == Int32.MinValue) ? 0 : -hashCode;
+                hashCode = (hashCode == int.MinValue) ? 0 : -hashCode;
             }
             int idx = hashCode % _storeCount;
             return _storeRefs[idx].Target;
@@ -227,12 +227,12 @@ namespace System.Runtime.Caching
             }
         }
 
-        private void OnAppDomainUnload(Object unusedObject, EventArgs unusedEventArgs)
+        private void OnAppDomainUnload(object unusedObject, EventArgs unusedEventArgs)
         {
             Dispose();
         }
 
-        private void OnUnhandledException(Object sender, UnhandledExceptionEventArgs eventArgs)
+        private void OnUnhandledException(object sender, UnhandledExceptionEventArgs eventArgs)
         {
             // if the CLR is terminating, dispose the cache. 
             // This will dispose the perf counters
@@ -345,11 +345,11 @@ namespace System.Runtime.Caching
             {
                 throw new ArgumentNullException(nameof(name));
             }
-            if (name == String.Empty)
+            if (name == string.Empty)
             {
                 throw new ArgumentException(SR.Empty_string_invalid, nameof(name));
             }
-            if (String.Equals(name, "default", StringComparison.OrdinalIgnoreCase))
+            if (string.Equals(name, "default", StringComparison.OrdinalIgnoreCase))
             {
                 throw new ArgumentException(SR.Default_is_reserved, nameof(name));
             }
@@ -365,11 +365,11 @@ namespace System.Runtime.Caching
             {
                 throw new ArgumentNullException(nameof(name));
             }
-            if (name == String.Empty)
+            if (name == string.Empty)
             {
                 throw new ArgumentException(SR.Empty_string_invalid, nameof(name));
             }
-            if (String.Equals(name, "default", StringComparison.OrdinalIgnoreCase))
+            if (string.Equals(name, "default", StringComparison.OrdinalIgnoreCase))
             {
                 throw new ArgumentException(SR.Default_is_reserved, nameof(name));
             }
@@ -433,7 +433,7 @@ namespace System.Runtime.Caching
             return (entry != null) ? entry.Value : null;
         }
 
-        public override CacheEntryChangeMonitor CreateCacheEntryChangeMonitor(IEnumerable<String> keys, String regionName = null)
+        public override CacheEntryChangeMonitor CreateCacheEntryChangeMonitor(IEnumerable<string> keys, string regionName = null)
         {
             if (regionName != null)
             {
@@ -443,7 +443,7 @@ namespace System.Runtime.Caching
             {
                 throw new ArgumentNullException(nameof(keys));
             }
-            List<String> keysClone = new List<String>(keys);
+            List<string> keysClone = new List<string>(keys);
             if (keysClone.Count == 0)
             {
                 throw new ArgumentException(RH.Format(SR.Empty_collection, nameof(keys)));
@@ -516,7 +516,7 @@ namespace System.Runtime.Caching
             return (entry != null) ? entry.Value : null;
         }
 
-        internal MemoryCacheEntry GetEntry(String key)
+        internal MemoryCacheEntry GetEntry(string key)
         {
             if (IsDisposed)
             {
@@ -832,7 +832,7 @@ namespace System.Runtime.Caching
             return _stats.GetLastSize();
         }
 
-        public override IDictionary<string, object> GetValues(IEnumerable<String> keys, string regionName = null)
+        public override IDictionary<string, object> GetValues(IEnumerable<string> keys, string regionName = null)
         {
             if (regionName != null)
             {

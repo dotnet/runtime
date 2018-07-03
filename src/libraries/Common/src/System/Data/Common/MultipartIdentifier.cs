@@ -61,7 +61,7 @@ namespace System.Data.Common
 
         private static bool IsWhitespace(char ch)
         {
-            return Char.IsWhiteSpace(ch);
+            return char.IsWhiteSpace(ch);
         }
 
         internal static string[] ParseMultipartIdentifier(string name, string leftQuote, string rightQuote, char separator, int limit, bool removequotes, string property, bool ThrowOnEmptyMultipartName)

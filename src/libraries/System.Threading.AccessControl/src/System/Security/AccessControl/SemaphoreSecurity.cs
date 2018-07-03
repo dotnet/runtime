@@ -46,7 +46,7 @@ namespace System.Security.AccessControl
         {
         }
 
-        public SemaphoreAccessRule(String identity, SemaphoreRights eventRights, AccessControlType type)
+        public SemaphoreAccessRule(string identity, SemaphoreRights eventRights, AccessControlType type)
             : this(new NTAccount(identity), (int)eventRights, false, InheritanceFlags.None, PropagationFlags.None, type)
         {
         }
@@ -103,7 +103,7 @@ namespace System.Security.AccessControl
         {
         }
 
-        public SemaphoreSecurity(String name, AccessControlSections includeSections)
+        public SemaphoreSecurity(string name, AccessControlSections includeSections)
             : base(true, ResourceType.KernelObject, name, includeSections, HandleErrorCode, null)
         {
             // Let the underlying ACL API's demand unmanaged code permission.

@@ -28,8 +28,8 @@ namespace System.ComponentModel.Tests
             CanConvertTo_WithContext(new object[3, 2]
                 {
                     { typeof(string), true },
-                    { typeof(Byte), true },
-                    { typeof(Single), true }
+                    { typeof(byte), true },
+                    { typeof(float), true }
                 },
                 ByteConverterTests.s_converter);
         }
@@ -39,13 +39,13 @@ namespace System.ComponentModel.Tests
         {
             ConvertFrom_WithContext(new object[7, 3]
                 {
-                    { "1  ", (Byte)1, null },
-                    { "#2", (Byte)2, null },
-                    { "0x3", (Byte)3, null },
-                    { "0X4", (Byte)4, null },
-                    { "&h5", (Byte)5, null },
-                    { "&H6", (Byte)6, null },
-                    { "+7", (Byte)7, CultureInfo.InvariantCulture }
+                    { "1  ", (byte)1, null },
+                    { "#2", (byte)2, null },
+                    { "0x3", (byte)3, null },
+                    { "0X4", (byte)4, null },
+                    { "&h5", (byte)5, null },
+                    { "&H6", (byte)6, null },
+                    { "+7", (byte)7, CultureInfo.InvariantCulture }
                 },
                 ByteConverterTests.s_converter);
         }
@@ -62,9 +62,9 @@ namespace System.ComponentModel.Tests
         {
             ConvertTo_WithContext(new object[3, 3]
                 {
-                    { (Byte)1, "1", null },
-                    { (Byte)2, (Byte)2, CultureInfo.InvariantCulture },
-                    { (Byte)3, (Single)3.0, null }
+                    { (byte)1, "1", null },
+                    { (byte)2, (byte)2, CultureInfo.InvariantCulture },
+                    { (byte)3, (float)3.0, null }
                 },
                 ByteConverterTests.s_converter);
         }

@@ -87,14 +87,14 @@ namespace System.Tests
             }
         }
 
-        private static DateTime TransitionTimeToDateTime(Int32 year, TimeZoneInfo.TransitionTime transitionTime)
+        private static DateTime TransitionTimeToDateTime(int year, TimeZoneInfo.TransitionTime transitionTime)
         {
             DateTime value;
             DateTime timeOfDay = transitionTime.TimeOfDay;
 
             if (transitionTime.IsFixedDateRule)
             {
-                Int32 day = DateTime.DaysInMonth(year, transitionTime.Month);
+                int day = DateTime.DaysInMonth(year, transitionTime.Month);
                 value = new DateTime(year, transitionTime.Month, (day < transitionTime.Day) ? day : transitionTime.Day, 
                             timeOfDay.Hour, timeOfDay.Minute, timeOfDay.Second, timeOfDay.Millisecond);
             }
@@ -119,7 +119,7 @@ namespace System.Tests
                 }
                 else
                 {
-                    Int32 daysInMonth = DateTime.DaysInMonth(year, transitionTime.Month);
+                    int daysInMonth = DateTime.DaysInMonth(year, transitionTime.Month);
                     value = new DateTime(year, transitionTime.Month, daysInMonth, timeOfDay.Hour, timeOfDay.Minute, timeOfDay.Second, timeOfDay.Millisecond);
 
                     int dayOfWeek = (int) value.DayOfWeek;

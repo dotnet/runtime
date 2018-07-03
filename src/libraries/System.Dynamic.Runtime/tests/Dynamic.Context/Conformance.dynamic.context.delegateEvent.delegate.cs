@@ -858,7 +858,7 @@ namespace ManagedTests.DynamicCSharp.Conformance.dynamic.context.dlgateEvent.dlg
                 }
 
                 dd021(66, "boo", "Dah");
-                if (0 != String.CompareOrdinal("Dah", Foo.str))
+                if (0 != string.CompareOrdinal("Dah", Foo.str))
                 {
                     ret = false;
                 }

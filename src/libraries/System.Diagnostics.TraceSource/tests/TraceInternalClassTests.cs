@@ -179,7 +179,7 @@ namespace System.Diagnostics.TraceSourceTests
         {
             var listener = GetTraceListener();
             Trace.Listeners.Add(listener);
-            Trace.Write((Object)"Message", "Category");
+            Trace.Write((object)"Message", "Category");
             Assert.Equal(1, listener.GetCallCount(Method.Write));
             var flushExpected = AutoFlush ? 1 : 0;
             Assert.Equal(flushExpected, listener.GetCallCount(Method.Flush));
@@ -201,7 +201,7 @@ namespace System.Diagnostics.TraceSourceTests
         {
             var listener = GetTraceListener();
             Trace.Listeners.Add(listener);
-            Trace.WriteLine((Object)"Message");
+            Trace.WriteLine((object)"Message");
             Assert.Equal(1, listener.GetCallCount(Method.WriteLine));
             var flushExpected = AutoFlush ? 1 : 0;
             Assert.Equal(flushExpected, listener.GetCallCount(Method.Flush));
@@ -223,7 +223,7 @@ namespace System.Diagnostics.TraceSourceTests
         {
             var listener = GetTraceListener();
             Trace.Listeners.Add(listener);
-            Trace.WriteLine((Object)"Message", "Category");
+            Trace.WriteLine((object)"Message", "Category");
             Assert.Equal(1, listener.GetCallCount(Method.WriteLine));
             var flushExpected = AutoFlush ? 1 : 0;
             Assert.Equal(flushExpected, listener.GetCallCount(Method.Flush));

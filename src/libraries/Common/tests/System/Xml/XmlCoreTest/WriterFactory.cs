@@ -176,7 +176,7 @@ namespace XmlCoreTest.Common
 
         public string GetString()
         {
-            string strRet = String.Empty;
+            string strRet = string.Empty;
             switch (writerType1)
             {
                 case WriterType.UTF8Writer:

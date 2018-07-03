@@ -49,8 +49,8 @@ namespace System.IO.Tests
                 UmsTests.ReadWriteUmsInvariants(stream);
 
                 Assert.Throws<ArgumentOutOfRangeException>(() => { stream.Position = -1; }); // "Non-negative number required."
-                Assert.Throws<ArgumentOutOfRangeException>(() => { stream.Position = unchecked(Int64.MaxValue + 1); });
-                Assert.Throws<ArgumentOutOfRangeException>(() => { stream.Position = Int32.MinValue; });
+                Assert.Throws<ArgumentOutOfRangeException>(() => { stream.Position = unchecked(long.MaxValue + 1); });
+                Assert.Throws<ArgumentOutOfRangeException>(() => { stream.Position = int.MinValue; });
 
                 stream.Position = stream.Length;
                 Assert.Equal(stream.Position, stream.Length);
@@ -72,7 +72,7 @@ namespace System.IO.Tests
                 UnmanagedMemoryStream stream = manager.Stream;
                 UmsTests.ReadWriteUmsInvariants(stream);
                 Assert.Throws<IOException>(() => stream.SetLength(1001)); 
-                Assert.Throws<ArgumentOutOfRangeException>(() => stream.SetLength(SByte.MinValue));
+                Assert.Throws<ArgumentOutOfRangeException>(() => stream.SetLength(sbyte.MinValue));
 
                 const long expectedLength = 500;
                 stream.Position = 501;
@@ -91,8 +91,8 @@ namespace System.IO.Tests
                 UnmanagedMemoryStream stream = manager.Stream;
                 UmsTests.ReadWriteUmsInvariants(stream);
 
-                Assert.Throws<IOException>(() => stream.Seek(unchecked(Int32.MaxValue + 1), SeekOrigin.Begin));
-                Assert.Throws<IOException>(() => stream.Seek(Int64.MinValue, SeekOrigin.End));
+                Assert.Throws<IOException>(() => stream.Seek(unchecked(int.MaxValue + 1), SeekOrigin.Begin));
+                Assert.Throws<IOException>(() => stream.Seek(long.MinValue, SeekOrigin.End));
                 AssertExtensions.Throws<ArgumentException>(null, () => stream.Seek(0, (SeekOrigin)7)); // Invalid seek origin
 
                 stream.Seek(10, SeekOrigin.Begin);

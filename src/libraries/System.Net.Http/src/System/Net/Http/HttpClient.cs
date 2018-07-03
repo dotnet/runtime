@@ -699,7 +699,7 @@ namespace System.Net.Http
             }
         }
 
-        private Uri CreateUri(String uri)
+        private Uri CreateUri(string uri)
         {
             if (string.IsNullOrEmpty(uri))
             {

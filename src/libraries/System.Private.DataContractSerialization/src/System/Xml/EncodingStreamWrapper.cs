@@ -446,7 +446,7 @@ namespace System.Xml
                 if (key[i] == buffer[offset + i])
                     continue;
 
-                if (key[i] != Char.ToLowerInvariant((char)buffer[offset + i]))
+                if (key[i] != char.ToLowerInvariant((char)buffer[offset + i]))
                     return false;
             }
             return true;

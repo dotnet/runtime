@@ -26,7 +26,7 @@ namespace System.Xml.Tests
         [Theory]
         [InlineData(null, "")]
         [InlineData("attr", null)]
-        public void PassNull_LocalName_Namespace__Invalid(String localName, String nameSpace)
+        public void PassNull_LocalName_Namespace__Invalid(string localName, string nameSpace)
         {
             XmlSchemaValidator val = CreateValidator(XSDFILE_VALIDATE_ATTRIBUTE);
             XmlSchemaInfo info = new XmlSchemaInfo();
@@ -84,7 +84,7 @@ namespace System.Xml.Tests
         [InlineData("DefaultAttribute")]
         [InlineData("FixedAttribute")]
         [InlineData("FixedRequiredAttribute")]
-        public void Validate_Required_Optional_Default_Fixed_FixedRequired_Attribute(String attrType)
+        public void Validate_Required_Optional_Default_Fixed_FixedRequired_Attribute(string attrType)
         {
             XmlSchemaValidator val = CreateValidator(XSDFILE_VALIDATE_ATTRIBUTE);
             XmlSchemaInfo info = new XmlSchemaInfo();

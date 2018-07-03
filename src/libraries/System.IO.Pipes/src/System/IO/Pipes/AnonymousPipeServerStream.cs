@@ -90,7 +90,7 @@ namespace System.IO.Pipes
         // This method should exist until we add a first class way of passing handles between parent and child
         // processes. For now, people do it via command line arguments. 
         [SuppressMessage("Microsoft.Reliability", "CA2001:AvoidCallingProblematicMethods", MessageId = "System.Runtime.InteropServices.SafeHandle.DangerousGetHandle", Justification = "By design")]
-        public String GetClientHandleAsString()
+        public string GetClientHandleAsString()
         {
             _clientHandleExposed = true;
             GC.SuppressFinalize(_clientHandle);

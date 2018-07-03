@@ -12,10 +12,10 @@ namespace System.Xml.Tests
         public static void CreateEmptyComment()
         {
             var xmlDocument = new XmlDocument();
-            var comment = xmlDocument.CreateComment(String.Empty);
+            var comment = xmlDocument.CreateComment(string.Empty);
 
             Assert.Equal("<!---->", comment.OuterXml);
-            Assert.Equal(String.Empty, comment.InnerText);
+            Assert.Equal(string.Empty, comment.InnerText);
             Assert.Equal(comment.NodeType, XmlNodeType.Comment);
         }
     }

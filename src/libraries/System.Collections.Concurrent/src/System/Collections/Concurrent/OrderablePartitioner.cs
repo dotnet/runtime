@@ -256,7 +256,7 @@ namespace System.Collections.Concurrent
                     return _source.Current.Value;
                 }
             }
-            Object IEnumerator.Current
+            object IEnumerator.Current
             {
                 get
                 {

@@ -258,7 +258,7 @@ namespace System.Net.Http
             }
         }
 
-        private static int GetProxySubstringLength(String proxyString, int idx)
+        private static int GetProxySubstringLength(string proxyString, int idx)
         {
             int endOfProxy = proxyString.IndexOfAny(s_proxyDelimiters, idx);
             return (endOfProxy == -1) ? proxyString.Length - idx : endOfProxy - idx;

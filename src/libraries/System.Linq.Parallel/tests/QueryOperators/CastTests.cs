@@ -161,7 +161,7 @@ namespace System.Linq.Parallel.Tests
 
             public int Value { get { return _value; } }
 
-            public static explicit operator Castable(Int32 value)
+            public static explicit operator Castable(int value)
             {
                 return new Castable(value);
             }

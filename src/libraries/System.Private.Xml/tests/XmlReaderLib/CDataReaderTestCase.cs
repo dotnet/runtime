@@ -44,7 +44,7 @@ namespace System.Xml.Tests
 
         public void CreateTestFile(EREADER_TYPE eReaderType)
         {
-            string strFileName = String.Empty;
+            string strFileName = string.Empty;
 
             TestFiles.CreateTestFile(ref strFileName, eReaderType);
         }

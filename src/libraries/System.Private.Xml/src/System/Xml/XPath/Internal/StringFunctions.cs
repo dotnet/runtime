@@ -167,14 +167,14 @@ namespace MS.Internal.Xml.XPath
             string str1 = _argList[0].Evaluate(nodeIterator).ToString();
             double num = XmlConvert.XPathRound(XmlConvert.ToXPathDouble(_argList[1].Evaluate(nodeIterator))) - 1;
 
-            if (Double.IsNaN(num) || str1.Length <= num)
+            if (double.IsNaN(num) || str1.Length <= num)
             {
                 return string.Empty;
             }
             if (_argList.Count == 3)
             {
                 double num1 = XmlConvert.XPathRound(XmlConvert.ToXPathDouble(_argList[2].Evaluate(nodeIterator)));
-                if (Double.IsNaN(num1))
+                if (double.IsNaN(num1))
                 {
                     return string.Empty;
                 }
@@ -202,7 +202,7 @@ namespace MS.Internal.Xml.XPath
             return str1.Substring((int)num);
         }
 
-        private Double StringLength(XPathNodeIterator nodeIterator)
+        private double StringLength(XPathNodeIterator nodeIterator)
         {
             if (_argList.Count > 0)
             {

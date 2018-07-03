@@ -83,7 +83,7 @@ namespace System.Runtime.Serialization
             if (ns != null)
             {
                 if (ns.Length == 0)
-                    writer.WriteAttributeString("xmlns", String.Empty, null, ns);
+                    writer.WriteAttributeString("xmlns", string.Empty, null, ns);
                 else
                 {
                     if (dictionaryWriter != null)
@@ -93,7 +93,7 @@ namespace System.Runtime.Serialization
                         string prefix = writer.LookupPrefix(ns);
                         if (prefix == null)
                         {
-                            prefix = String.Format(CultureInfo.InvariantCulture, "d{0}p{1}", depth, _prefixes);
+                            prefix = string.Format(CultureInfo.InvariantCulture, "d{0}p{1}", depth, _prefixes);
                             _prefixes++;
                             writer.WriteAttributeString("xmlns", prefix, null, ns);
                         }

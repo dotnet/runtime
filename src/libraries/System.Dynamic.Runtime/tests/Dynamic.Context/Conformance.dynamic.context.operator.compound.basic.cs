@@ -890,8 +890,8 @@ namespace ManagedTests.DynamicCSharp.Conformance.dynamic.context.operate.compoun
             ;
             // System.Console.WriteLine("{0}, {1}, {2}", arr[0], arr[1], arr[2]);
             ret &= 3400 == arr[0];
-            ret &= (468.18 - arr[1]) < Double.Epsilon;
-            ret &= (1326070373.2 - arr[2]) < Double.Epsilon;
+            ret &= (468.18 - arr[1]) < double.Epsilon;
+            ret &= (1326070373.2 - arr[2]) < double.Epsilon;
             v1 = 1.1f;
             v2 = -2.2f;
             v3 = 5.5f;
@@ -905,8 +905,8 @@ namespace ManagedTests.DynamicCSharp.Conformance.dynamic.context.operate.compoun
             ;
             System.Console.WriteLine("{0}, {1}, {2}", (object)arr.a1, (object)arr.a2, (object)arr.a3);
             ret &= (6.6 - arr.a1) < 0.0000001f; // delta ~ 0.00000009f
-            ret &= (1.23 - arr.a2) < Double.Epsilon;
-            ret &= (6 - arr.a3) < Double.Epsilon;
+            ret &= (1.23 - arr.a2) < double.Epsilon;
+            ret &= (6 - arr.a3) < double.Epsilon;
             System.Console.WriteLine((object)ret);
             return ret ? 0 : 1;
         }

@@ -64,16 +64,16 @@ namespace System.Xml.Tests
                 {
                     if (IsCoreReader())
                     {
-                        CError.Compare(DataReader.VerifyNode(XmlNodeType.Whitespace, String.Empty, "\n"), true, "vn");
+                        CError.Compare(DataReader.VerifyNode(XmlNodeType.Whitespace, string.Empty, "\n"), true, "vn");
                     }
                     else
                     {
-                        CError.Compare(DataReader.VerifyNode(XmlNodeType.Whitespace, String.Empty, "\r\n"), true, "vn");
+                        CError.Compare(DataReader.VerifyNode(XmlNodeType.Whitespace, string.Empty, "\r\n"), true, "vn");
                     }
                     DataReader.Read();
                 }
             }
-            CError.Compare(DataReader.VerifyNode(XmlNodeType.Element, strNextElemName, String.Empty), true, "vn2");
+            CError.Compare(DataReader.VerifyNode(XmlNodeType.Element, strNextElemName, string.Empty), true, "vn2");
 
             return TEST_PASS;
         }
@@ -85,7 +85,7 @@ namespace System.Xml.Tests
 
             DataReader.MoveToAttribute(DataReader.AttributeCount / 2);
 
-            string strExpected = String.Format("{0}=\"{1}\"", strName, strValue);
+            string strExpected = string.Format("{0}=\"{1}\"", strName, strValue);
 
             CError.Compare(DataReader.ReadOuterXml(), strExpected, "outer");
             CError.Compare(DataReader.VerifyNode(XmlNodeType.Attribute, strName, strValue), true, "vn");
@@ -106,7 +106,7 @@ namespace System.Xml.Tests
             ReloadSource();
             PositionOnNodeType(nt);
 
-            CError.Compare(DataReader.ReadOuterXml(), String.Empty, "outer");
+            CError.Compare(DataReader.ReadOuterXml(), string.Empty, "outer");
             CError.Compare(DataReader.VerifyNode(expNt, expName, expValue), true, "vn");
 
             return TEST_PASS;
@@ -389,7 +389,7 @@ namespace System.Xml.Tests
             DataReader.PositionOnElement(s_ENT1);
 
             CError.Compare(DataReader.ReadOuterXml(), strExpected, "outer");
-            CError.Compare(DataReader.VerifyNode(XmlNodeType.Element, s_NEXT6, String.Empty), true, "vn");
+            CError.Compare(DataReader.VerifyNode(XmlNodeType.Element, s_NEXT6, string.Empty), true, "vn");
 
             return TEST_PASS;
         }
@@ -428,7 +428,7 @@ namespace System.Xml.Tests
         [Variation("One large element")]
         public int TestTextReadOuterXml29()
         {
-            String strp = "a                                                             ";
+            string strp = "a                                                             ";
             strp += strp;
             strp += strp;
             strp += strp;

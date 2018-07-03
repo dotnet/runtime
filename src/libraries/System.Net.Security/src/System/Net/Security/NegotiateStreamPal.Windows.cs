@@ -109,7 +109,7 @@ namespace System.Net.Security
 
             try
             {
-                int maxCount = checked(Int32.MaxValue - 4 - sizes.cbBlockSize - sizes.cbSecurityTrailer);
+                int maxCount = checked(int.MaxValue - 4 - sizes.cbBlockSize - sizes.cbSecurityTrailer);
 
                 if (count > maxCount || count < 0)
                 {

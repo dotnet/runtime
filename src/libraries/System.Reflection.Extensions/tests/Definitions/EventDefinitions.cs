@@ -16,10 +16,10 @@ namespace System.Reflection.Tests
         public static int Members = 35;
         public static int MembersEverything = 41;
 
-        public static String[] DeclaredEvents = new String[] { "EventPublic", "EventPublicStatic", "EventInternal", "EventInternalStatic", "EventPrivate", "EventProtected", "EventProtectedStatic" };
-        public static String[] InheritedEvents = new String[] { };
-        public static String[] InheritedButHiddenEvents = new String[] { };
-        public static String[] PublicEvents = new String[] { "EventPublic", "EventPublicStatic" };
+        public static string[] DeclaredEvents = new string[] { "EventPublic", "EventPublicStatic", "EventInternal", "EventInternalStatic", "EventPrivate", "EventProtected", "EventProtectedStatic" };
+        public static string[] InheritedEvents = new string[] { };
+        public static string[] InheritedButHiddenEvents = new string[] { };
+        public static string[] PublicEvents = new string[] { "EventPublic", "EventPublicStatic" };
 
         public event EventHandler EventPublic;					// inherited
         public static event EventHandler EventPublicStatic;		// static members are not inherited
@@ -37,10 +37,10 @@ namespace System.Reflection.Tests
     {
         new public static int Members = 7;
         new public static int MembersEverything = 22;
-        new public static String[] DeclaredEvents = new String[] { };
-        new public static String[] InheritedEvents = new String[] { "EventPublic", "EventInternal", "EventProtected" };
-        new public static String[] InheritedButHiddenEvents = new String[] { };
-        new public static String[] PublicEvents = new String[] { };
+        new public static string[] DeclaredEvents = new string[] { };
+        new public static string[] InheritedEvents = new string[] { "EventPublic", "EventInternal", "EventProtected" };
+        new public static string[] InheritedButHiddenEvents = new string[] { };
+        new public static string[] PublicEvents = new string[] { };
     }
 
     public class EventTestSubClassWithNewEvents : EventTestSubClass
@@ -48,10 +48,10 @@ namespace System.Reflection.Tests
         new public static int Members = 15;
         new public static int MembersEverything = 29;
 
-        new public static String[] DeclaredEvents = new String[] { "EventProtected", "EventPublicNew" };
-        new public static String[] InheritedEvents = new String[] { "EventPublic", "EventInternal" };
-        new public static String[] InheritedButHiddenEvents = new String[] { "EventProtected" };
-        new public static String[] PublicEvents = new String[] { "EventPublic", "EventPublicNew" };
+        new public static string[] DeclaredEvents = new string[] { "EventProtected", "EventPublicNew" };
+        new public static string[] InheritedEvents = new string[] { "EventPublic", "EventInternal" };
+        new public static string[] InheritedButHiddenEvents = new string[] { "EventProtected" };
+        new public static string[] PublicEvents = new string[] { "EventPublic", "EventPublicNew" };
 
         new protected event EventHandler EventProtected;		// overrides the ProEvent from EventFieldTest parent		
         public event EventHandler EventPublicNew;
@@ -62,10 +62,10 @@ namespace System.Reflection.Tests
         new public static int Members = 23;
         new public static int MembersEverything = 43;
 
-        new public static String[] DeclaredEvents = new String[] { "eVentProtected", "eVentPublicNew", "eVENTInternal", "eVentPriVate" };
-        new public static String[] InheritedEvents = new String[] { "EventPublic", "EventInternal", "EventProtected", "EventPublicNew" };
-        new public static String[] InheritedButHiddenEvents = new String[] { "EventProtected" };
-        new public static String[] PublicEvents = new String[] { "eVentPublicNew", "EventPublic", "EventPublicNew" };
+        new public static string[] DeclaredEvents = new string[] { "eVentProtected", "eVentPublicNew", "eVENTInternal", "eVentPriVate" };
+        new public static string[] InheritedEvents = new string[] { "EventPublic", "EventInternal", "EventProtected", "EventPublicNew" };
+        new public static string[] InheritedButHiddenEvents = new string[] { "EventProtected" };
+        new public static string[] PublicEvents = new string[] { "eVentPublicNew", "EventPublic", "EventPublicNew" };
 
         protected event EventHandler eVentProtected;		// overrides the ProEvent from EventFieldTest parent		
         public event EventHandler eVentPublicNew;

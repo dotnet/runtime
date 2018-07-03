@@ -16,7 +16,7 @@ namespace System.Xml.Tests
 
             var cdataNode = (XmlCharacterData)xmlDocument.DocumentElement.FirstChild;
 
-            Assert.Equal(String.Empty, cdataNode.Data);
+            Assert.Equal(string.Empty, cdataNode.Data);
         }
 
         [Fact]

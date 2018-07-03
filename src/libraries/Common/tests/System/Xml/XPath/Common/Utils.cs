@@ -29,7 +29,7 @@ namespace XPathTests.Common
         {
             var xPathNavigator = CreateNavigatorFromFile(xml);
 
-            if (String.IsNullOrWhiteSpace(startingNodePath))
+            if (string.IsNullOrWhiteSpace(startingNodePath))
                 return xPathNavigator;
 
             var startingNode = xPathNavigator.Compile(startingNodePath);
@@ -147,7 +147,7 @@ namespace XPathTests.Common
                 Assert.Equal(expectedResult.Prefix, xPathSelection.Current.Prefix);
                 Assert.Equal(expectedResult.XmlLang, xPathSelection.Current.XmlLang);
 
-                if (String.IsNullOrWhiteSpace(xPathSelection.Current.Value))
+                if (string.IsNullOrWhiteSpace(xPathSelection.Current.Value))
                     Assert.Equal(expectedResult.Value.Trim(), xPathSelection.Current.Value.Trim());
                 else
                     Assert.Equal(expectedResult.Value, xPathSelection.Current.Value.Replace("\r\n", "\n"));

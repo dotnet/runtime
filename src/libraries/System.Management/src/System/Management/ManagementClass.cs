@@ -353,7 +353,7 @@ namespace System.Management
                 }
 
                 if (null != val)
-                    result.AddRange((String [])val);
+                    result.AddRange((string [])val);
 
                 return result; 
             } 
@@ -932,7 +932,7 @@ namespace System.Management
         ///    <para>Note that this does not create a copy of the
         ///       WMI class; only an additional representation is created.</para>
         /// </remarks>
-        public override Object Clone()
+        public override object Clone()
         {
             IWbemClassObjectFreeThreaded theClone = null;
             int status = wbemObject.Clone_(out theClone);
@@ -1465,7 +1465,7 @@ namespace System.Management
         /// cls.GetStronglyTypedClassCode(CodeLanguage.CSharp,"C:\temp\Logicaldisk.cs",String.Empty);
         ///    </code>
         /// </example>
-        public bool GetStronglyTypedClassCode(CodeLanguage lang, String filePath,String classNamespace)
+        public bool GetStronglyTypedClassCode(CodeLanguage lang, string filePath,string classNamespace)
         {
             // Ensure that the object is valid
             Get();

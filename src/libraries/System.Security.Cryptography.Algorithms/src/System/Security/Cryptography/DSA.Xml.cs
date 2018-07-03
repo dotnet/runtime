@@ -11,7 +11,7 @@ namespace System.Security.Cryptography
             throw new PlatformNotSupportedException();
         }
 
-        public override String ToXmlString(bool includePrivateParameters)
+        public override string ToXmlString(bool includePrivateParameters)
         {
             throw new PlatformNotSupportedException();
         }
