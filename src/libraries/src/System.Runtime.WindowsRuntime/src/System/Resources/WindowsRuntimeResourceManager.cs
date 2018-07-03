@@ -143,7 +143,7 @@ namespace System.Resources
 
             for (int i = 0; i < languages.Count; i++)
             {
-                if (CultureData.GetCultureData(languages[i], true) != null)
+                if (WindowsRuntimeResourceManagerBase.IsValidCulture(languages[i]))
                 {
                     return new CultureInfo(languages[i]);
                 }
@@ -152,7 +152,7 @@ namespace System.Resources
                 {
                     string localeName = localeNameBuffer.ToString();
 
-                    if (CultureData.GetCultureData(localeName, true) != null)
+                    if (WindowsRuntimeResourceManagerBase.IsValidCulture(localeName))
                     {
                         return new CultureInfo(localeName);
                     }
