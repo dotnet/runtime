@@ -5,6 +5,7 @@
   <ItemGroup>
     <Project Condition="$(SkipSOS) != 'true'" Include="ToolBox\SOS\NETCore\SOS.NETCore.csproj" />
     <Project Include="System.Private.CoreLib\System.Private.CoreLib.csproj" />
+    <Project Condition="'$(DotNetBuildFromSource)' != 'true' AND '$(__BuildManagedTools)' == '1'" Include="tools/r2rdump/R2RDump.csproj" />
   </ItemGroup>
 
   <Import Project="..\dir.targets" />
@@ -25,6 +26,11 @@
     <CoreLibPath>$(BinDir)System.Private.CoreLib.dll</CoreLibPath>
     <CoreLibPDBPath>$(BinDir)System.Private.CoreLib.pdb</CoreLibPDBPath>
   </PropertyGroup>
+
+  <Target Name="RestoreR2RDumpPackages" Condition="'$(DotNetBuildFromSource)' != 'true' AND '$(__BuildManagedTools)' == '1'" BeforeTargets="Build">
+    <Exec Command="$(DotnetRestoreCommand) tools/r2rdump/R2RDump.csproj"
+          StandardOutputImportance="Low" />
+  </Target>
 
   <Target Name="CopyCoreLib" AfterTargets="Build">
     <Copy Condition="Exists($(CoreLibPath))"
