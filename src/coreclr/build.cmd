@@ -594,6 +594,10 @@ if %__BuildCoreLib% EQU 1 (
         set __ExtraBuildArgs=!__ExtraBuildArgs! -SkipSOS=true
     )
 
+    if "%__BuildManagedTools%" == "1" (
+        set __ExtraBuildArgs=!__ExtraBuildArgs! -BuildManagedTools=true
+    )
+
     if /i "%__BuildArch%" == "arm64" (
         set __nugetBuildArgs=-buildNugetPackage=false
     ) else if "%__SkipNugetPackage%" == "1" (
