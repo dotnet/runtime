@@ -1565,6 +1565,8 @@ mono_get_version_info (void)
 #endif
 #endif
 
+	g_string_append_printf (output, "\tSuspend:       %s\n", mono_threads_suspend_policy_name ());
+
 	return g_string_free (output, FALSE);
 }
 
