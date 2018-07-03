@@ -1137,7 +1137,7 @@ processing_build_callback_data (int generation)
 		}
 	}
 
-	g_assert (xref_count == xref_index);
+	g_assertf (xref_count == xref_index, "xref_count is %d but we added %d xrefs", xref_count, xref_index);
 	xref_setup_time = step_timer (&curtime);
 
 #if defined (DUMP_GRAPH)
