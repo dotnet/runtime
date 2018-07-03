@@ -11,8 +11,8 @@
 #include "methodcontextiterator.h"
 
 // We use a hash to limit the number of comparisons we need to do.
- //The first level key to our hash map is ILCodeSize and the second
- //level map key is just an index and the value is an existing MC Hash.
+// The first level key to our hash map is ILCodeSize and the second
+// level map key is just an index and the value is an existing MC Hash.
 
 LightWeightMap<int, DenseLightWeightMap<char*>*>* inFile = nullptr;
 
