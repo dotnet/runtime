@@ -36,6 +36,73 @@ namespace System.Diagnostics
             return RemoteInvoke(GetMethodInfo(method), Array.Empty<string>(), options);
         }
 
+
+        /// <summary>Invokes the method from this assembly in another process using the specified arguments.</summary>
+        /// <param name="method">The method to invoke.</param>
+        /// <param name="options">Options to use for the invocation.</param>
+        public static RemoteInvokeHandle RemoteInvoke(
+            Action<string> method,
+            string arg,
+            RemoteInvokeOptions options = null)
+        {
+            // There's no exit code to check
+            options = options ?? new RemoteInvokeOptions();
+            options.CheckExitCode = false;
+
+            return RemoteInvoke(GetMethodInfo(method), new[] { arg }, options);
+        }
+
+        /// <summary>Invokes the method from this assembly in another process using the specified arguments.</summary>
+        /// <param name="method">The method to invoke.</param>
+        /// <param name="options">Options to use for the invocation.</param>
+        public static RemoteInvokeHandle RemoteInvoke(
+            Action<string, string> method,
+            string arg1,
+            string arg2,
+            RemoteInvokeOptions options = null)
+        {
+            // There's no exit code to check
+            options = options ?? new RemoteInvokeOptions();
+            options.CheckExitCode = false;
+
+            return RemoteInvoke(GetMethodInfo(method), new[] { arg1, arg2 }, options);
+        }
+
+        /// <summary>Invokes the method from this assembly in another process using the specified arguments.</summary>
+        /// <param name="method">The method to invoke.</param>
+        /// <param name="options">Options to use for the invocation.</param>
+        public static RemoteInvokeHandle RemoteInvoke(
+            Action<string, string, string> method,
+            string arg1,
+            string arg2,
+            string arg3,
+            RemoteInvokeOptions options = null)
+        {
+            // There's no exit code to check
+            options = options ?? new RemoteInvokeOptions();
+            options.CheckExitCode = false;
+
+            return RemoteInvoke(GetMethodInfo(method), new[] { arg1, arg2, arg3 }, options);
+        }   
+
+        /// <summary>Invokes the method from this assembly in another process using the specified arguments.</summary>
+        /// <param name="method">The method to invoke.</param>
+        /// <param name="options">Options to use for the invocation.</param>
+        public static RemoteInvokeHandle RemoteInvoke(
+            Action<string, string, string, string> method,
+            string arg1,
+            string arg2,
+            string arg3,
+            string arg4,
+            RemoteInvokeOptions options = null)
+        {
+            // There's no exit code to check
+            options = options ?? new RemoteInvokeOptions();
+            options.CheckExitCode = false;
+
+            return RemoteInvoke(GetMethodInfo(method), new[] { arg1, arg2, arg3, arg4 }, options);
+        }
+
         /// <summary>Invokes the method from this assembly in another process using the specified arguments.</summary>
         /// <param name="method">The method to invoke.</param>
         /// <param name="options">Options to use for the invocation.</param>
