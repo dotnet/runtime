@@ -4939,8 +4939,8 @@ mono_marshal_set_last_error (void)
 {
 	/* This icall is called just after a P/Invoke call before the P/Invoke
 	 * wrapper transitions the runtime back to running mode. */
-	MONO_REQ_GC_SAFE_MODE;
 #ifdef WIN32
+	MONO_REQ_GC_SAFE_MODE;
 	mono_native_tls_set_value (last_error_tls_id, GINT_TO_POINTER (GetLastError ()));
 #else
 	mono_native_tls_set_value (last_error_tls_id, GINT_TO_POINTER (errno));
