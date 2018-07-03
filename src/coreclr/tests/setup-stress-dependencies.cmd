@@ -81,7 +81,7 @@ if errorlevel 1 goto Fail
 
 REM Get downloaded dll path
 echo Locating coredistools.dll
-FOR /F "delims=" %%i IN ('dir %__PackageDir%\coredistools.dll /b/s ^| findstr /R "win[0-9]*-%__Arch%"') DO set __LibPath=%%i
+FOR /F "delims=" %%i IN ('dir %__PackageDir%\coredistools.dll /b/s ^| findstr /R "win-%__Arch%"') DO set __LibPath=%%i
 echo CoreDisTools library path: %__LibPath%
 if not exist "%__LibPath%" (
     echo Failed to locate the downloaded library: %__LibPath%
