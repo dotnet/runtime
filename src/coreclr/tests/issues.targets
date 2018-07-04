@@ -238,9 +238,6 @@
     <!-- The following are ARM64_altjit crossgen failures. For x64_arm64_altjit buildArm==x64. -->
 
     <ItemGroup Condition="'$(XunitTestBinBase)' != '' and '$(BuildArch)' == 'x64'">
-        <ExcludeList Include="$(XunitTestBinBase)\JIT\Regression\JitBlue\DevDiv_590771\DevDiv_590771\DevDiv_590771.cmd">
-            <Issue>17967</Issue>
-        </ExcludeList>
     </ItemGroup>
 
     <!-- Tests that need to be triaged for vararg usage as that is not supported -->

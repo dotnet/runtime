@@ -94812,3 +94812,19 @@ MaxAllowedDurationSeconds=600
 Categories=EXPECTED_PASS
 HostStyle=0
 
+[DevDiv_590771.cmd_11912]
+RelativePath=JIT\Regression\JitBlue\DevDiv_590771\DevDiv_590771\DevDiv_590771.cmd
+WorkingDir=JIT\Regression\JitBlue\DevDiv_590771\DevDiv_590771
+Expected=0
+MaxAllowedDurationSeconds=600
+Categories=EXPECTED_PASS
+HostStyle=0
+
+[GitHub_18522_8.cmd_11913]
+RelativePath=JIT\Regression\JitBlue\GitHub_18522\GitHub_18522_8\GitHub_18522_8.cmd
+WorkingDir=JIT\Regression\JitBlue\GitHub_18522\GitHub_18522_8
+Expected=0
+MaxAllowedDurationSeconds=600
+Categories=EXPECTED_PASS
+HostStyle=0
+
