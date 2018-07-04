@@ -2126,7 +2126,41 @@ void CodeGen::genAESIntrinsic(GenTreeHWIntrinsic* node)
 //
 void CodeGen::genBMI1Intrinsic(GenTreeHWIntrinsic* node)
 {
-    NYI("Implement BMI1 intrinsic code generation");
+    NamedIntrinsic intrinsicId = node->gtHWIntrinsicId;
+    regNumber      targetReg   = node->gtRegNum;
+    GenTree*       op1         = node->gtGetOp1();
+    GenTree*       op2         = node->gtGetOp2();
+    var_types      baseType    = node->gtSIMDBaseType;
+    var_types      targetType  = node->TypeGet();
+    instruction    ins         = HWIntrinsicInfo::lookupIns(intrinsicId, targetType);
+    emitter*       emit        = getEmitter();
+
+    assert(targetReg != REG_NA);
+    assert(op1 != nullptr);
+
+    if (!op1->OperIsList())
+    {
+        genConsumeOperands(node);
+    }
+
+    switch (intrinsicId)
+    {
+        case NI_BMI1_TrailingZeroCount:
+        {
+            assert(op2 == nullptr);
+            assert((targetType == TYP_INT) || (targetType == TYP_LONG));
+            genHWIntrinsic_R_RM(node, ins, emitTypeSize(node->TypeGet()));
+            break;
+        }
+
+        default:
+        {
+            unreached();
+            break;
+        }
+    }
+
+    genProduceReg(node);
 }
 
 //------------------------------------------------------------------------

@@ -569,6 +569,9 @@ INST3(LAST_AVX_INSTRUCTION, "LAST_AVX_INSTRUCTION",  0, IUM_WR, 0, 0, BAD_CODE, 
 // Scalar instructions in SSE4.2
 INST3( crc32,        "crc32"       , 0, IUM_WR, 0, 0, BAD_CODE,     BAD_CODE, PACK4(0xF2, 0x0F, 0x38, 0xF0))
 
+// BMI1
+INST3( tzcnt,        "tzcnt"       , 0, IUM_WR, 0, 0, BAD_CODE,     BAD_CODE, SSEFLT(0xBC))    // Count the Number of Trailing Zero Bits
+
 // LZCNT
 INST3( lzcnt,        "lzcnt"       , 0, IUM_WR, 0, 0, BAD_CODE,     BAD_CODE, SSEFLT(0xBD))
 
