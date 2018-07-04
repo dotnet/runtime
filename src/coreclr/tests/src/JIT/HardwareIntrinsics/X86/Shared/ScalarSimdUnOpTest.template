@@ -29,7 +29,7 @@ namespace JIT.HardwareIntrinsics.X86
                 return;
             }
 
-            var test = new SimpleScalarUnaryOpTest__{Method}{RetBaseType}();
+            var test = new ScalarSimdUnaryOpTest__{Method}{RetBaseType}();
 
             if (test.IsSupported)
             {
@@ -64,7 +64,7 @@ namespace JIT.HardwareIntrinsics.X86
         }
     }
 
-    public sealed unsafe class SimpleScalarUnaryOpTest__{Method}{RetBaseType}
+    public sealed unsafe class ScalarSimdUnaryOpTest__{Method}{RetBaseType}
     {
         private static readonly int LargestVectorSize = {LargestVectorSize};
 
@@ -76,19 +76,19 @@ namespace JIT.HardwareIntrinsics.X86
 
         private {Op1BaseType} _fld;
 
-        private SimpleScalarUnaryOpTest__DataTable<{RetBaseType}> _dataTable;
+        private ScalarSimdUnaryOpTest__DataTable<{RetBaseType}> _dataTable;
 
-        static SimpleScalarUnaryOpTest__{Method}{RetBaseType}()
+        static ScalarSimdUnaryOpTest__{Method}{RetBaseType}()
         {
             _clsVar = {NextValueOp1};
         }
 
-        public SimpleScalarUnaryOpTest__{Method}{RetBaseType}()
+        public ScalarSimdUnaryOpTest__{Method}{RetBaseType}()
         {
             Succeeded = true;
 
             _fld = {NextValueOp1};
-            _dataTable = new SimpleScalarUnaryOpTest__DataTable<{RetBaseType}>(new {RetBaseType}[RetElementCount], LargestVectorSize);
+            _dataTable = new ScalarSimdUnaryOpTest__DataTable<{RetBaseType}>(new {RetBaseType}[RetElementCount], LargestVectorSize);
         }
 
         public bool IsSupported => {Isa}.IsSupported;
@@ -137,7 +137,7 @@ namespace JIT.HardwareIntrinsics.X86
 
         public void RunLclFldScenario()
         {
-            var test = new SimpleScalarUnaryOpTest__{Method}{RetBaseType}();
+            var test = new ScalarSimdUnaryOpTest__{Method}{RetBaseType}();
             var result = {Isa}.{Method}(test._fld);
 
             Unsafe.Write(_dataTable.outArrayPtr, result);

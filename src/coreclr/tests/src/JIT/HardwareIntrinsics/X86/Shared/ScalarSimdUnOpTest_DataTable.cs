@@ -11,7 +11,7 @@ using System.Runtime.Intrinsics.X86;
 
 namespace JIT.HardwareIntrinsics.X86
 {
-    public unsafe struct SimpleScalarUnaryOpTest__DataTable<TResult> : IDisposable
+    public unsafe struct ScalarSimdUnaryOpTest__DataTable<TResult> : IDisposable
         where TResult : struct
     {
         public byte[] outArray;
@@ -20,7 +20,7 @@ namespace JIT.HardwareIntrinsics.X86
 
         private ulong alignment;
 
-        public SimpleScalarUnaryOpTest__DataTable(TResult[] outArray, int alignment)
+        public ScalarSimdUnaryOpTest__DataTable(TResult[] outArray, int alignment)
         {
             int sizeOfoutArray = outArray.Length * Unsafe.SizeOf<TResult>();
             if ((alignment != 32 && alignment != 16) || (alignment * 2) < sizeOfoutArray)
