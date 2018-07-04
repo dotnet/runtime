@@ -29,7 +29,7 @@ namespace JIT.HardwareIntrinsics.X86
                 return;
             }
 
-            var test = new SimpleScalarUnaryOpTest__SetAllVector128Double();
+            var test = new ScalarSimdUnaryOpTest__SetAllVector128Double();
 
             if (test.IsSupported)
             {
@@ -64,7 +64,7 @@ namespace JIT.HardwareIntrinsics.X86
         }
     }
 
-    public sealed unsafe class SimpleScalarUnaryOpTest__SetAllVector128Double
+    public sealed unsafe class ScalarSimdUnaryOpTest__SetAllVector128Double
     {
         private static readonly int LargestVectorSize = 16;
 
@@ -76,19 +76,19 @@ namespace JIT.HardwareIntrinsics.X86
 
         private Double _fld;
 
-        private SimpleScalarUnaryOpTest__DataTable<Double> _dataTable;
+        private ScalarSimdUnaryOpTest__DataTable<Double> _dataTable;
 
-        static SimpleScalarUnaryOpTest__SetAllVector128Double()
+        static ScalarSimdUnaryOpTest__SetAllVector128Double()
         {
             _clsVar = Random.NextDouble();
         }
 
-        public SimpleScalarUnaryOpTest__SetAllVector128Double()
+        public ScalarSimdUnaryOpTest__SetAllVector128Double()
         {
             Succeeded = true;
 
             _fld = Random.NextDouble();
-            _dataTable = new SimpleScalarUnaryOpTest__DataTable<Double>(new Double[RetElementCount], LargestVectorSize);
+            _dataTable = new ScalarSimdUnaryOpTest__DataTable<Double>(new Double[RetElementCount], LargestVectorSize);
         }
 
         public bool IsSupported => Sse2.IsSupported;
@@ -137,7 +137,7 @@ namespace JIT.HardwareIntrinsics.X86
 
         public void RunLclFldScenario()
         {
-            var test = new SimpleScalarUnaryOpTest__SetAllVector128Double();
+            var test = new ScalarSimdUnaryOpTest__SetAllVector128Double();
             var result = Sse2.SetAllVector128(test._fld);
 
             Unsafe.Write(_dataTable.outArrayPtr, result);
