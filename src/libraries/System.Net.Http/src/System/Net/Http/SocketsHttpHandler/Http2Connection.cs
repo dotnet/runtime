@@ -16,7 +16,6 @@ using System.Threading.Tasks;
 
 // * Handle request body
 // * Handle request cancellation
-// * Handle frame limit and sending CONTINUATION on request headers
 // * Flow control (both inbound and outbound)
 // * Various TODOs below
 
@@ -447,14 +446,31 @@ namespace System.Net.Http
                     _disposed = true;
                 }
 
+                List<Http2Stream> streamsToAbort = null;
+
                 foreach (KeyValuePair<int, Http2Stream> kvp in _httpStreams)
                 {
                     int streamId = kvp.Key;
+                    Debug.Assert(streamId == kvp.Value.StreamId);
+
                     if (streamId > lastValidStream)
                     {
-                        kvp.Value.OnResponseAbort();
+                        if (streamsToAbort == null)
+                        {
+                            streamsToAbort = new List<Http2Stream>();
+                        }
 
-                        _httpStreams.Remove(streamId);
+                        streamsToAbort.Add(kvp.Value);
+                    }
+                }
+
+                if (streamsToAbort != null)
+                {
+                    foreach (Http2Stream http2Stream in streamsToAbort)
+                    {
+                        http2Stream.OnResponseAbort();
+
+                        _httpStreams.Remove(http2Stream.StreamId);
                     }
                 }
 
@@ -505,15 +521,17 @@ namespace System.Net.Http
             Ping = 6,
             GoAway = 7,
             WindowUpdate = 8,
-            Continuation = 9
+            Continuation = 9,
+
+            Last = 9
         }
 
         private struct FrameHeader
         {
-            public readonly int Length;
-            public readonly FrameType Type;
-            public readonly FrameFlags Flags;
-            public readonly int StreamId;
+            public int Length;
+            public FrameType Type;
+            public FrameFlags Flags;
+            public int StreamId;
 
             public const int Size = 9;
             public const int MaxLength = 16384;
@@ -554,6 +572,8 @@ namespace System.Net.Http
             public void WriteTo(Span<byte> buffer)
             {
                 Debug.Assert(buffer.Length >= Size);
+                Debug.Assert(Type <= FrameType.Last);
+                Debug.Assert((Flags & FrameFlags.ValidBits) == Flags);
 
                 buffer[0] = (byte)((Length & 0x00FF0000) >> 16);
                 buffer[1] = (byte)((Length & 0x0000FF00) >> 8);
@@ -581,6 +601,8 @@ namespace System.Net.Http
             EndHeaders =    0b00000100,
             Padded =        0b00001000,
             Priority =      0b00100000,
+
+            ValidBits =     0b00101101
         }
 
         private async Task SendFramesAsync(Memory<byte> frame)
@@ -696,22 +718,73 @@ namespace System.Net.Http
                 _requestBuffer.EnsureWriteSpace(_requestBuffer.WriteSpan.Length + 1);
             }
 
-            private void WriteHeader(ref int bufferOffset, string name, string value)
+            struct HeaderEncodingState
             {
-                Debug.Assert(bufferOffset <= _requestBuffer.WriteSpan.Length);
+                public bool IsFirstFrame;
+                public bool IsEmptyResponse;
+                public int CurrentFrameOffset;
+            }
 
-                // TODO: Enforce frame size limit
+            private void WriteCurrentFrameHeader(ref HeaderEncodingState state, int frameLength, bool isLastFrame)
+            {
+                Debug.Assert(frameLength > 0);
 
+                FrameHeader frameHeader = new FrameHeader();
+                frameHeader.Length = frameLength;
+                frameHeader.StreamId = _streamId;
+
+                if (state.IsFirstFrame)
+                {
+                    frameHeader.Type = FrameType.Headers;
+                    frameHeader.Flags = (state.IsEmptyResponse ? FrameFlags.EndStream : FrameFlags.None);
+                }
+                else
+                {
+                    frameHeader.Type = FrameType.Continuation;
+                    frameHeader.Flags = FrameFlags.None;
+                }
+
+                if (isLastFrame)
+                {
+                    frameHeader.Flags |= FrameFlags.EndHeaders;
+                }
+
+                // Update the curent HEADERS or CONTINUATION frame with length, and write it to the buffer.
+                frameHeader.WriteTo(_requestBuffer.ReadSpan.Slice(state.CurrentFrameOffset));
+            }
+
+            private void WriteHeader(ref HeaderEncodingState state, string name, string value)
+            {
                 int bytesWritten;
-                while (!HPackEncoder.EncodeHeader(name, value, _requestBuffer.WriteSpan.Slice(bufferOffset), out bytesWritten))
+                while (!HPackEncoder.EncodeHeader(name, value, _requestBuffer.WriteSpan, out bytesWritten))
                 {
                     GrowWriteBuffer();
                 }
 
-                bufferOffset += bytesWritten;
+                _requestBuffer.Commit(bytesWritten);
+
+                while (_requestBuffer.ReadSpan.Slice(state.CurrentFrameOffset).Length > FrameHeader.Size + FrameHeader.MaxLength)
+                {
+                    // We've exceeded the frame size limit.
+
+                    // Fill in the current frame header.
+                    WriteCurrentFrameHeader(ref state, FrameHeader.MaxLength, false);
+
+                    state.IsFirstFrame = false;
+                    state.CurrentFrameOffset += FrameHeader.Size + FrameHeader.MaxLength;
+
+                    // Reserve space for new frame header
+                    _requestBuffer.Commit(FrameHeader.Size);
+
+                    Span<byte> currentFrameSpan = _requestBuffer.ReadSpan.Slice(state.CurrentFrameOffset);
+
+                    // Shift the remainder down to make room for the new frame header.
+                    // We'll fill this in when the frame is complete.
+                    currentFrameSpan.Slice(0, currentFrameSpan.Length - FrameHeader.Size).CopyTo(currentFrameSpan.Slice(FrameHeader.Size));
+                }
             }
 
-            private void WriteHeaders(ref int bufferOffset, HttpHeaders headers)
+            private void WriteHeaders(ref HeaderEncodingState state, HttpHeaders headers)
             {
                 foreach (KeyValuePair<HeaderDescriptor, string[]> header in headers.GetHeaderDescriptorsAndValues())
                 {
@@ -723,17 +796,11 @@ namespace System.Net.Http
                     Debug.Assert(header.Value.Length > 0, "No values for header??");
                     for (int i = 0; i < header.Value.Length; i++)
                     {
-                        WriteHeader(ref bufferOffset, header.Key.Name, header.Value[i]);
+                        WriteHeader(ref state, header.Key.Name, header.Value[i]);
                     }
                 }
             }
 
-            // TODO: Enforce frame size limit.
-            // We need to detect when we have exceeded the frame size limit, then:
-            // (1) Send as much as we can in the current frame, without FrameFlags.EndHeaders
-            // (2) Start constructing a new CONTINUATION frame
-            // Also note that we can't send any other frames in between these, so we must 
-            // hold the connection's frame writer lock for the entire duration.
             private void WriteHeaders(HttpRequestMessage request)
             {
                 // TODO: Special header handling
@@ -742,15 +809,21 @@ namespace System.Net.Http
 
                 // TODO: Smart encoding for pseudo-headers
 
-                // Reserve space in buffer for frame header.  
-                // We will fill it in when we're done constructing the frame.
+                HeaderEncodingState state = new HeaderEncodingState() { IsFirstFrame = true, IsEmptyResponse = (request.Content == null), CurrentFrameOffset = 0 };
+
+                // Initialize the HEADERS frame header.
+                // We will write it to the buffer later, when the frame is complete.
+                FrameHeader currentFrameHeader = new FrameHeader(0, FrameType.Headers, (request.Content == null ? FrameFlags.EndStream : FrameFlags.None), _streamId);
+
+                // Reserve space for the frame header.
+                // We will fill it in later, when the frame is complete.
                 _requestBuffer.EnsureWriteSpace(FrameHeader.Size);
-                int bufferOffset = FrameHeader.Size;
+                _requestBuffer.Commit(FrameHeader.Size);
 
                 HttpMethod normalizedMethod = HttpMethod.Normalize(request.Method);
 
-                WriteHeader(ref bufferOffset, ":method", normalizedMethod.Method);
-                WriteHeader(ref bufferOffset, ":scheme", "https");
+                WriteHeader(ref state, ":method", normalizedMethod.Method);
+                WriteHeader(ref state, ":scheme", "https");
 
                 string authority;
                 if (request.HasHeaders && request.Headers.Host != null)
@@ -767,12 +840,12 @@ namespace System.Net.Http
                     }
                 }
 
-                WriteHeader(ref bufferOffset, ":authority", authority);
-                WriteHeader(ref bufferOffset, ":path", request.RequestUri.GetComponents(UriComponents.PathAndQuery | UriComponents.Fragment, UriFormat.UriEscaped));
+                WriteHeader(ref state, ":authority", authority);
+                WriteHeader(ref state, ":path", request.RequestUri.GetComponents(UriComponents.PathAndQuery | UriComponents.Fragment, UriFormat.UriEscaped));
 
                 if (request.HasHeaders)
                 {
-                    WriteHeaders(ref bufferOffset, request.Headers);
+                    WriteHeaders(ref state, request.Headers);
                 }
 
                 if (request.Content == null)
@@ -782,23 +855,16 @@ namespace System.Net.Http
                     if (normalizedMethod.MustHaveRequestBody)
                     {
                         // TODO: Optimize using static table
-                        WriteHeader(ref bufferOffset, "Content-Length", "0");
+                        WriteHeader(ref state, "Content-Length", "0");
                     }
                 }
                 else
                 {
-                    WriteHeaders(ref bufferOffset, request.Content.Headers);
+                    WriteHeaders(ref state, request.Content.Headers);
                 }
 
-                FrameFlags flags = FrameFlags.EndHeaders;
-                if (request.Content == null)
-                {
-                    flags |= FrameFlags.EndStream;
-                }
-
-                FrameHeader frameHeader = new FrameHeader(bufferOffset - FrameHeader.Size, FrameType.Headers, flags, _streamId);
-                frameHeader.WriteTo(_requestBuffer.WriteSpan);
-                _requestBuffer.Commit(bufferOffset);
+                // Update the last frame header and write it to the buffer.
+                WriteCurrentFrameHeader(ref state, _requestBuffer.ReadSpan.Slice(state.CurrentFrameOffset).Length - FrameHeader.Size, true);
             }
 
             public async Task<HttpResponseMessage> SendAsync(HttpRequestMessage request, CancellationToken cancellationToken)
@@ -844,6 +910,11 @@ namespace System.Net.Http
                 {
                     if (_responseComplete && _responseBuffer.ReadSpan.Length == 0)
                     {
+                        if (_responseAborted)
+                        {
+                            throw new IOException(SR.net_http_invalid_response);
+                        }
+
                         emptyResponse = true;
                     }
                 }
@@ -987,7 +1058,7 @@ namespace System.Net.Http
                 Debug.Assert(buffer.Length > 0);
 
                 int bytesToCopy = Math.Min(buffer.Length, _responseBuffer.ReadSpan.Length);
-                _responseBuffer.ReadSpan.CopyTo(buffer);
+                _responseBuffer.ReadSpan.Slice(0, bytesToCopy).CopyTo(buffer);
                 _responseBuffer.Consume(bytesToCopy);
                 return bytesToCopy;
             }
