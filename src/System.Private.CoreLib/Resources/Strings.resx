@@ -266,7 +266,7 @@
     <value>Delegate to an instance method cannot have null 'this'.</value>
   </data>
   <data name="Arg_DlgtTargMeth" xml:space="preserve">
-    <value>Cannot bind to the target method because its signature or security transparency is not compatible with that of the delegate type.</value>
+    <value>Cannot bind to the target method because its signature is not compatible with that of the delegate type.</value>
   </data>
   <data name="Arg_DlgtTypeMis" xml:space="preserve">
     <value>Delegates must be of the same type.</value>
@@ -2523,9 +2523,6 @@
   </data>
   <data name="InvalidOperation_ConstructorNotAllowedOnInterface" xml:space="preserve">
     <value>Interface cannot have constructors.</value>
-  </data>
-  <data name="InvalidOperation_CriticalTransparentAreMutuallyExclusive" xml:space="preserve">
-    <value>SecurityTransparent and SecurityCritical attributes cannot be applied to the assembly scope at the same time.</value>
   </data>
   <data name="InvalidOperation_DateTimeParsing" xml:space="preserve">
     <value>Internal Error in DateTime and Calendar operations.</value>
