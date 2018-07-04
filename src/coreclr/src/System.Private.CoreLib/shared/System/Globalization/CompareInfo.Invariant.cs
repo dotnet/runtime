@@ -18,7 +18,7 @@ namespace System.Globalization
             fixed (char* pSource = source) fixed (char* pValue = value)
             {
                 char* pSrc = &pSource[startIndex];
-                int index = InvariantFindString(pSrc, count, pValue, value.Length, ignoreCase, start : true);
+                int index = InvariantFindString(pSrc, count, pValue, value.Length, ignoreCase, fromBeginning : true);
                 if (index >= 0)
                 {
                     return index + startIndex;
@@ -27,7 +27,7 @@ namespace System.Globalization
             }
         }
 
-        internal static unsafe int InvariantIndexOf(ReadOnlySpan<char> source, ReadOnlySpan<char> value, bool ignoreCase)
+        internal static unsafe int InvariantIndexOf(ReadOnlySpan<char> source, ReadOnlySpan<char> value, bool ignoreCase, bool fromBeginning = true)
         {
             Debug.Assert(source.Length != 0);
             Debug.Assert(value.Length != 0);
@@ -35,7 +35,7 @@ namespace System.Globalization
             fixed (char* pSource = &MemoryMarshal.GetReference(source))
             fixed (char* pValue = &MemoryMarshal.GetReference(value))
             {
-                return InvariantFindString(pSource, source.Length, pValue, value.Length, ignoreCase, start: true);
+                return InvariantFindString(pSource, source.Length, pValue, value.Length, ignoreCase, fromBeginning);
             }
         }
 
@@ -48,7 +48,7 @@ namespace System.Globalization
             fixed (char* pSource = source) fixed (char* pValue = value)
             {
                 char* pSrc = &pSource[startIndex - count + 1];
-                int index = InvariantFindString(pSrc, count, pValue, value.Length, ignoreCase, start : false);
+                int index = InvariantFindString(pSrc, count, pValue, value.Length, ignoreCase, fromBeginning : false);
                 if (index >= 0)
                 {
                     return index + startIndex - count + 1;
@@ -57,7 +57,7 @@ namespace System.Globalization
             }
         }
 
-        private static unsafe int InvariantFindString(char* source, int sourceCount, char* value, int valueCount, bool ignoreCase, bool start)
+        private static unsafe int InvariantFindString(char* source, int sourceCount, char* value, int valueCount, bool ignoreCase, bool fromBeginning)
         {
             int ctrSource = 0;  // index value into source
             int ctrValue = 0;   // index value into value
@@ -72,7 +72,7 @@ namespace System.Globalization
 
             if (valueCount == 0)
             {
-                return start ? 0 : sourceCount - 1;
+                return fromBeginning ? 0 : sourceCount - 1;
             }
 
             if (sourceCount < valueCount)
@@ -80,7 +80,7 @@ namespace System.Globalization
                 return -1;
             }
 
-            if (start)
+            if (fromBeginning)
             {
                 lastSourceStart = sourceCount - valueCount;
                 if (ignoreCase)
