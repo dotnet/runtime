@@ -431,15 +431,6 @@ namespace System.Reflection.Emit
 
         public override MethodImplAttributes GetMethodImplementationFlags() { return m_dynMethod.GetMethodImplementationFlags(); }
 
-        //
-        // Security transparency accessors
-        //
-        // Since the dynamic method may not be JITed yet, we don't always have the runtime method handle
-        // which is needed to determine the official runtime transparency status of the dynamic method.  We
-        // fall back to saying that the dynamic method matches the transparency of its containing module
-        // until we get a JITed version, since dynamic methods cannot have attributes of their own.
-        //
-
         public override bool IsSecurityCritical
         {
             get { return true; }
