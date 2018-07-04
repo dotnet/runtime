@@ -939,7 +939,15 @@ namespace System.Globalization
             Debug.Assert(!_invariantMode);
             Debug.Assert(!source.IsEmpty);
             Debug.Assert(!value.IsEmpty);
-            return IndexOfOrdinalCore(source, value, ignoreCase);
+            return IndexOfOrdinalCore(source, value, ignoreCase, fromBeginning: true);
+        }
+
+        internal int LastIndexOfOrdinal(ReadOnlySpan<char> source, ReadOnlySpan<char> value, bool ignoreCase)
+        {
+            Debug.Assert(!_invariantMode);
+            Debug.Assert(!source.IsEmpty);
+            Debug.Assert(!value.IsEmpty);
+            return IndexOfOrdinalCore(source, value, ignoreCase, fromBeginning: false);
         }
 
         internal unsafe int IndexOf(ReadOnlySpan<char> source, ReadOnlySpan<char> value, CompareOptions options)
@@ -947,7 +955,15 @@ namespace System.Globalization
             Debug.Assert(!_invariantMode);
             Debug.Assert(!source.IsEmpty);
             Debug.Assert(!value.IsEmpty);
-            return IndexOfCore(source, value, options, null);
+            return IndexOfCore(source, value, options, null, fromBeginning: true);
+        }
+
+        internal unsafe int LastIndexOf(ReadOnlySpan<char> source, ReadOnlySpan<char> value, CompareOptions options)
+        {
+            Debug.Assert(!_invariantMode);
+            Debug.Assert(!source.IsEmpty);
+            Debug.Assert(!value.IsEmpty);
+            return IndexOfCore(source, value, options, null, fromBeginning: false);
         }
 
         // The following IndexOf overload is mainly used by String.Replace. This overload assumes the parameters are already validated
