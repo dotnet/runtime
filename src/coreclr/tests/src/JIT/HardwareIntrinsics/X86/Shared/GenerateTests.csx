@@ -786,6 +786,12 @@ private static readonly (string templateFileName, Dictionary<string, string> tem
     ("SimpleTernOpTest.template",      new Dictionary<string, string> { ["Isa"] = "Fma", ["LoadIsa"] = "Avx", ["Method"] = "MultiplySubtractNegated", ["RetVectorType"] = "Vector256", ["RetBaseType"] = "Single", ["Op1VectorType"] = "Vector256", ["Op1BaseType"] = "Single", ["Op2VectorType"] = "Vector256", ["Op2BaseType"] = "Single", ["Op3VectorType"] = "Vector256", ["Op3BaseType"] = "Single", ["LargestVectorSize"] = "32", ["NextValueOp1"] = "(float)(random.NextDouble())",  ["NextValueOp2"] = "(float)(random.NextDouble())",  ["NextValueOp3"] = "(float)(random.NextDouble())",  ["ValidateFirstResult"] = "BitConverter.SingleToInt32Bits(MathF.Round(-(firstOp[0] * secondOp[0]) - thirdOp[0], 3)) != BitConverter.SingleToInt32Bits(MathF.Round(result[0], 3))", ["ValidateRemainingResults"] = "BitConverter.SingleToInt32Bits(MathF.Round(-(firstOp[i] * secondOp[i]) - thirdOp[i], 3)) != BitConverter.SingleToInt32Bits(MathF.Round(result[i], 3))"}),
 };
 
+private static readonly (string templateFileName, Dictionary<string, string> templateData)[] Bmi1Inputs = new []
+{
+    ("ScalarUnOpTest.template", new Dictionary<string, string> { ["Isa"] = "Bmi1", ["Method"] = "TrailingZeroCount", ["RetBaseType"] = "UInt32", ["Op1BaseType"] = "UInt32", ["NextValueOp1"] = "(uint)(random.Next(0, int.MaxValue))", ["ValidateResult"] = "uint expectedResult = 0; for (int index = 0; ((data >> index) & 1) == 0; index++) { expectedResult++; } isUnexpectedResult = (expectedResult != result);" }),
+    ("ScalarUnOpTest.template", new Dictionary<string, string> { ["Isa"] = "Bmi1", ["Method"] = "TrailingZeroCount", ["RetBaseType"] = "UInt64", ["Op1BaseType"] = "UInt64", ["NextValueOp1"] = "(ulong)(random.Next(0, int.MaxValue))", ["ValidateResult"] = "ulong expectedResult = 0; for (int index = 0; ((data >> index) & 1) == 0; index++) { expectedResult++; } isUnexpectedResult = (expectedResult != result);" }),
+};
+
 private static void ProcessInputs(string groupName, (string templateFileName, Dictionary<string, string> templateData)[] inputs)
 {
     var testListFileName = Path.Combine("..", groupName, $"Program.{groupName}.cs");
@@ -876,3 +882,4 @@ ProcessInputs("Avx", AvxInputs);
 ProcessInputs("Avx2", Avx2Inputs);
 ProcessInputs("Fma_Vector128", Fma_Vector128Inputs);
 ProcessInputs("Fma_Vector256", Fma_Vector256Inputs);
+ProcessInputs("Bmi1", Bmi1Inputs);
