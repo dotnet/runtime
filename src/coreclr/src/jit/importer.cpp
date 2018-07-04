@@ -14381,10 +14381,13 @@ void Compiler::impImportBlockCode(BasicBlock* block)
                                 op1              = gtNewOperNode(GT_ADDR, TYP_I_IMPL, op1);
                                 convertedToLocal = true;
 
-                                // Ensure we have stack security for this method.
-                                // Reorder layout since the converted localloc is treated as an unsafe buffer.
-                                setNeedsGSSecurityCookie();
-                                compGSReorderStackLayout = true;
+                                if (!this->opts.compDbgEnC)
+                                {
+                                    // Ensure we have stack security for this method.
+                                    // Reorder layout since the converted localloc is treated as an unsafe buffer.
+                                    setNeedsGSSecurityCookie();
+                                    compGSReorderStackLayout = true;
+                                }
                             }
                         }
                     }
