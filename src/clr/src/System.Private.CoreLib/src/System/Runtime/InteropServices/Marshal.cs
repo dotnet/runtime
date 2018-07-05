@@ -484,7 +484,7 @@ namespace System.Runtime.InteropServices
 #if BIT64
             return (IntPtr)ReadInt64(ptr, ofs);
 #else // 32
-                return (IntPtr) ReadInt32(ptr, ofs);
+            return (IntPtr)ReadInt32(ptr, ofs);
 #endif
         }
 
@@ -493,7 +493,7 @@ namespace System.Runtime.InteropServices
 #if BIT64
             return (IntPtr)ReadInt64(ptr, ofs);
 #else // 32
-                return (IntPtr) ReadInt32(ptr, ofs);
+            return (IntPtr)ReadInt32(ptr, ofs);
 #endif
         }
 
@@ -502,7 +502,7 @@ namespace System.Runtime.InteropServices
 #if BIT64
             return (IntPtr)ReadInt64(ptr, 0);
 #else // 32
-                return (IntPtr) ReadInt32(ptr, 0);
+            return (IntPtr)ReadInt32(ptr, 0);
 #endif
         }
 
@@ -553,23 +553,22 @@ namespace System.Runtime.InteropServices
         // Read value from marshaled object (marshaled using AsAny)
         // It's quite slow and can return back dangling pointers
         // It's only there for backcompact
-        // I don't think we should spend time optimizing it
-        // People should really call the IntPtr overload instead
+        // People should instead use the IntPtr overloads
         //====================================================================
         private static unsafe T ReadValueSlow<T>(object ptr, int ofs, Func<IntPtr, int, T> readValueHelper)
         {
-            // We AV on desktop if passing NULL. So this is technically a breaking change but is an improvement
+            // Consumers of this method are documented to throw AccessViolationException on any AV
             if (ptr == null)
-                throw new ArgumentNullException(nameof(ptr));
+                throw new AccessViolationException();
 
             int dwFlags = 
                 (int)AsAnyMarshaler.AsAnyFlags.In | 
                 (int)AsAnyMarshaler.AsAnyFlags.IsAnsi | 
                 (int)AsAnyMarshaler.AsAnyFlags.IsBestFit;
 
-            MngdNativeArrayMarshaler.MarshalerState nativeArrayMarshalerState = new MngdNativeArrayMarshaler.MarshalerState();                
+            MngdNativeArrayMarshaler.MarshalerState nativeArrayMarshalerState = new MngdNativeArrayMarshaler.MarshalerState();
             AsAnyMarshaler marshaler = new AsAnyMarshaler(new IntPtr(&nativeArrayMarshalerState));
-                
+
             IntPtr pNativeHome = IntPtr.Zero;
 
             try
@@ -580,10 +579,8 @@ namespace System.Runtime.InteropServices
             finally
             {
                 marshaler.ClearNative(pNativeHome);
-            }    
+            }
         }
-
-
 
         //====================================================================
         // Write to memory
@@ -704,7 +701,7 @@ namespace System.Runtime.InteropServices
 #if BIT64
             WriteInt64(ptr, ofs, (long)val);
 #else // 32
-                WriteInt32(ptr, ofs, (int)val);
+            WriteInt32(ptr, ofs, (int)val);
 #endif
         }
 
@@ -713,7 +710,7 @@ namespace System.Runtime.InteropServices
 #if BIT64
             WriteInt64(ptr, ofs, (long)val);
 #else // 32
-                WriteInt32(ptr, ofs, (int)val);
+            WriteInt32(ptr, ofs, (int)val);
 #endif
         }
 
@@ -722,7 +719,7 @@ namespace System.Runtime.InteropServices
 #if BIT64
             WriteInt64(ptr, 0, (long)val);
 #else // 32
-                WriteInt32(ptr, 0, (int)val);
+            WriteInt32(ptr, 0, (int)val);
 #endif
         }
 
@@ -770,25 +767,25 @@ namespace System.Runtime.InteropServices
         //====================================================================
         // Write value into marshaled object (marshaled using AsAny) and
         // propagate the value back
-        // It's quite slow and is only there for backcompact
-        // I don't think we should spend time optimizing it
-        // People should really call the IntPtr overload instead
+        // It's quite slow and can return back dangling pointers
+        // It's only there for backcompact
+        // People should instead use the IntPtr overloads
         //====================================================================
         private static unsafe void WriteValueSlow<T>(object ptr, int ofs, T val, Action<IntPtr, int, T> writeValueHelper)
         {
-            // We AV on desktop if passing NULL. So this is technically a breaking change but is an improvement
+            // Consumers of this method are documented to throw AccessViolationException on any AV
             if (ptr == null)
-                throw new ArgumentNullException(nameof(ptr));
-                            
+                throw new AccessViolationException();
+
             int dwFlags = 
                 (int)AsAnyMarshaler.AsAnyFlags.In | 
                 (int)AsAnyMarshaler.AsAnyFlags.Out | 
                 (int)AsAnyMarshaler.AsAnyFlags.IsAnsi | 
                 (int)AsAnyMarshaler.AsAnyFlags.IsBestFit;
 
-            MngdNativeArrayMarshaler.MarshalerState nativeArrayMarshalerState = new MngdNativeArrayMarshaler.MarshalerState();                
+            MngdNativeArrayMarshaler.MarshalerState nativeArrayMarshalerState = new MngdNativeArrayMarshaler.MarshalerState();
             AsAnyMarshaler marshaler = new AsAnyMarshaler(new IntPtr(&nativeArrayMarshalerState));
-                
+
             IntPtr pNativeHome = IntPtr.Zero;
 
             try
@@ -800,7 +797,7 @@ namespace System.Runtime.InteropServices
             finally
             {
                 marshaler.ClearNative(pNativeHome);
-            }            
+            }
         }
 
         //====================================================================

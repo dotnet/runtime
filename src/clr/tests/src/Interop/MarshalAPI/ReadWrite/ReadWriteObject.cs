@@ -37,15 +37,15 @@ class Test
 
     static void TestNegativeCases()
     {
-        Assert.Throws<ArgumentNullException>(() => { Marshal.WriteByte(null, 0, 0); });
-        Assert.Throws<ArgumentNullException>(() => { Marshal.WriteInt16(null, 0, 0); });
-        Assert.Throws<ArgumentNullException>(() => { Marshal.WriteInt32(null, 0, 0); });
-        Assert.Throws<ArgumentNullException>(() => { Marshal.WriteInt64(null, 0, 0); });
-        Assert.Throws<ArgumentNullException>(() => { Marshal.WriteIntPtr(null, 0, IntPtr.Zero); });
-        Assert.Throws<ArgumentNullException>(() => { Marshal.ReadByte(null, 0); });
-        Assert.Throws<ArgumentNullException>(() => { Marshal.ReadInt16(null, 0); });
-        Assert.Throws<ArgumentNullException>(() => { Marshal.ReadInt32(null, 0); });
-        Assert.Throws<ArgumentNullException>(() => { Marshal.ReadIntPtr(null, 0); });
+        Assert.Throws<AccessViolationException>(() => { Marshal.WriteByte(null, 0, 0); });
+        Assert.Throws<AccessViolationException>(() => { Marshal.WriteInt16(null, 0, 0); });
+        Assert.Throws<AccessViolationException>(() => { Marshal.WriteInt32(null, 0, 0); });
+        Assert.Throws<AccessViolationException>(() => { Marshal.WriteInt64(null, 0, 0); });
+        Assert.Throws<AccessViolationException>(() => { Marshal.WriteIntPtr(null, 0, IntPtr.Zero); });
+        Assert.Throws<AccessViolationException>(() => { Marshal.ReadByte(null, 0); });
+        Assert.Throws<AccessViolationException>(() => { Marshal.ReadInt16(null, 0); });
+        Assert.Throws<AccessViolationException>(() => { Marshal.ReadInt32(null, 0); });
+        Assert.Throws<AccessViolationException>(() => { Marshal.ReadIntPtr(null, 0); });
     }
 
     static void TestBlittableStruct()
