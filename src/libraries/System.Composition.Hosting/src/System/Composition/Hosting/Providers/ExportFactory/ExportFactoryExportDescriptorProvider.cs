@@ -7,7 +7,6 @@ using System.Reflection;
 using System.Composition.Hosting.Core;
 using System.Collections.Generic;
 using System.Composition.Hosting.Util;
-using Microsoft.Internal;
 
 namespace System.Composition.Hosting.Providers.ExportFactory
 {

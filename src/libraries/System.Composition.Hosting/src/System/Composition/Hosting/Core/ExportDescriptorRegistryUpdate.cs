@@ -3,9 +3,9 @@
 // See the LICENSE file in the project root for more information.
 
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.Linq;
 using System.Text;
-using Microsoft.Internal;
 
 namespace System.Composition.Hosting.Core
 {
@@ -61,7 +61,9 @@ namespace System.Composition.Hosting.Core
                 message.AppendLine();
                 message.Append(DescribeCompositionStack(dependency, checking));
 
-                throw ThrowHelper.CompositionException(message.ToString());
+                var ex = new CompositionFailedException(message.ToString());
+                Debug.WriteLine(SR.Diagnostic_ThrowingException, ex.ToString());
+                throw ex;
             }
 
             if (@checked.Contains(dependency.Target))
@@ -96,7 +98,10 @@ namespace System.Composition.Hosting.Core
                         message.AppendFormat(SR.ExportDescriptor_UnsupportedCycle, dependency.Target.Origin);
                         message.AppendLine();
                         message.Append(DescribeCompositionStack(dependency, checking));
-                        throw ThrowHelper.CompositionException(message.ToString());
+
+                        var ex = new CompositionFailedException(message.ToString());
+                        Debug.WriteLine(SR.Diagnostic_ThrowingException, ex.ToString());
+                        throw ex;
                     }
 
                     if (!step.IsPrerequisite)
