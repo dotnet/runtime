@@ -5,14 +5,9 @@
     <ProjectGuid>{E3663E26-6819-4997-B372-94454DB4D60E}</ProjectGuid>
     <AssemblyName>System.ComponentModel.Composition.Registration</AssemblyName>
     <GeneratePlatformNotSupportedAssemblyMessage Condition="'$(TargetGroup)' == 'netstandard'">SR.PlatformNotSupported_ComponentModel_Composition_Registration</GeneratePlatformNotSupportedAssemblyMessage>
+    <Configurations>netcoreapp-Debug;netcoreapp-Release;netstandard-Debug;netstandard-Release;uap-Debug;uap-Release</Configurations>
   </PropertyGroup>
   <!-- Default configurations to help VS understand the options -->
-  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'uap-Debug|AnyCPU'" />
-  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'uap-Release|AnyCPU'" />
-  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'netcoreapp-Debug|AnyCPU'" />
-  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'netcoreapp-Release|AnyCPU'" />
-  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'netstandard-Debug|AnyCPU'" />
-  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'netstandard-Release|AnyCPU'" />
   <ItemGroup Condition="'$(TargetGroup)' != 'netstandard'">
     <Compile Include="Properties\InternalsVisibleTo.cs" />
     <Compile Include="System\ComponentModel\Composition\Registration\ExportBuilder.cs" />
