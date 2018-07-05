@@ -100,7 +100,7 @@
   <data name="Diagnostic_InternalExceptionMessage" xml:space="preserve">
     <value>Internal error occurred. Additional information: '{0}'.</value>
   </data>
-  <data name="Trace_Level_Not_Enabled" xml:space="preserve">
+  <data name="Diagnostic_TraceUnnecessaryWork" xml:space="preserve">
     <value>To avoid unnecessary work when a trace level has not been enabled, check CanWriteXXX before calling this method.</value>
   </data>
   <data name="ArgumentException_EmptyString" xml:space="preserve">
