@@ -59,9 +59,7 @@ LOCAL_LABEL(\__PInvokeStubFuncName\()_0):
         mov                 x2, \HiddenArg 
 
         // x1 = VaSigCookie
-        .ifnc \VASigCookieReg, x1
         mov                 x1, \VASigCookieReg
-        .endif
 
         // x0 = pTransitionBlock
         add                 x0, sp, #__PWTB_TransitionBlock      
@@ -90,7 +88,6 @@ LOCAL_LABEL(\__PInvokeStubFuncName\()_0):
 
 // ------------------------------------------------------------------
 // VarargPInvokeStub & VarargPInvokeGenILStub
-// There is a separate stub when the method has a hidden return buffer arg.
 //
 // in:
 // x0 = VASigCookie*
@@ -108,13 +105,3 @@ PINVOKE_STUB VarargPInvokeStub, VarargPInvokeGenILStub, VarargPInvokeStubWorker,
 // x12 = Unmanaged target
 //
 PINVOKE_STUB GenericPInvokeCalliHelper, GenericPInvokeCalliGenILStub, GenericPInvokeCalliStubWorker, x15, x12, 1, 1
-
-// ------------------------------------------------------------------
-// VarargPInvokeStub_RetBuffArg & VarargPInvokeGenILStub_RetBuffArg
-// Vararg PInvoke Stub when the method has a hidden return buffer arg
-//
-// in:
-// x1 = VASigCookie*
-// x12 = MethodDesc*       
-// 
-PINVOKE_STUB VarargPInvokeStub_RetBuffArg, VarargPInvokeGenILStub_RetBuffArg, VarargPInvokeStubWorker, x1, x12, 0

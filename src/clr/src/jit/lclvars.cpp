@@ -5912,13 +5912,14 @@ void Compiler::lvaAssignVirtualFrameOffsetsToLocals()
                 }
 
 #ifdef _TARGET_ARM64_
-                if (info.compIsVarArgs)
+                if (info.compIsVarArgs && varDsc->lvArgReg != theFixedRetBuffArgNum())
                 {
                     // Stack offset to varargs (parameters) should point to home area which will be preallocated.
                     varDsc->lvStkOffs =
                         -initialStkOffs + genMapIntRegNumToRegArgNum(varDsc->GetArgReg()) * REGSIZE_BYTES;
                     continue;
                 }
+
 #endif
 
 #ifdef _TARGET_ARM_
