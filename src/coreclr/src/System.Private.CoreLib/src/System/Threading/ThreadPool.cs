@@ -697,7 +697,7 @@ namespace System.Threading
             // if we're in the process of shutting down or unloading the AD.  In those cases, the work won't
             // execute anyway.  And there are subtle race conditions involved there that would lead us to do the wrong
             // thing anyway.  So we'll only clean up if this is a "normal" finalization.
-            if (!(Environment.HasShutdownStarted || AppDomain.CurrentDomain.IsFinalizingForUnload()))
+            if (!Environment.HasShutdownStarted)
                 CleanUp();
         }
     }
@@ -902,7 +902,7 @@ namespace System.Threading
         ~QueueUserWorkItemCallbackBase()
         {
             Debug.Assert(
-                executed != 0 || Environment.HasShutdownStarted || AppDomain.CurrentDomain.IsFinalizingForUnload(),
+                executed != 0 || Environment.HasShutdownStarted,
                 "A QueueUserWorkItemCallback was never called!");
         }
 

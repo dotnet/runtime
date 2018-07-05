@@ -13,32 +13,23 @@
 // Disable the "reference to volatile field not treated as volatile" error.
 #pragma warning disable 0420
 
+using System.Collections.Generic;
+using System.Collections.ObjectModel;
+using System.Diagnostics;
+using System.Runtime.ExceptionServices;
+
 namespace System.Threading.Tasks
 {
-    using System;
-    using System.Collections.Generic;
-    using System.Collections.ObjectModel;
-    using System.Diagnostics;
-    using System.Runtime.ExceptionServices;
-    using System.Security;
-
     /// <summary>
     /// An exception holder manages a list of exceptions for one particular task.
     /// It offers the ability to aggregate, but more importantly, also offers intrinsic
     /// support for propagating unhandled exceptions that are never observed. It does
-    /// this by aggregating and throwing if the holder is ever GC'd without the holder's
-    /// contents ever having been requested (e.g. by a Task.Wait, Task.get_Exception, etc).
-    /// This behavior is prominent in .NET 4 but is suppressed by default beyond that release.
+    /// this by aggregating and calling UnobservedTaskException event event if the holder 
+    /// is ever GC'd without the holder's contents ever having been requested 
+    /// (e.g. by a Task.Wait, Task.get_Exception, etc).
     /// </summary>
     internal class TaskExceptionHolder
     {
-        /// <summary>Whether we should propagate exceptions on the finalizer.</summary>
-        private readonly static bool s_failFastOnUnobservedException = ShouldFailFastOnUnobservedException();
-        /// <summary>Whether the AppDomain has started to unload.</summary>
-        private static volatile bool s_domainUnloadStarted;
-        /// <summary>An event handler used to notify of domain unload.</summary>
-        private static volatile EventHandler s_adUnloadEventHandler;
-
         /// <summary>The task with which this holder is associated.</summary>
         private readonly Task m_task;
         /// <summary>
@@ -59,28 +50,6 @@ namespace System.Threading.Tasks
         {
             Debug.Assert(task != null, "Expected a non-null task.");
             m_task = task;
-            EnsureADUnloadCallbackRegistered();
-        }
-
-        private static bool ShouldFailFastOnUnobservedException()
-        {
-            return false;
-        }
-
-        private static void EnsureADUnloadCallbackRegistered()
-        {
-            if (s_adUnloadEventHandler == null &&
-                Interlocked.CompareExchange(ref s_adUnloadEventHandler,
-                                             AppDomainUnloadCallback,
-                                             null) == null)
-            {
-                AppDomain.CurrentDomain.DomainUnload += s_adUnloadEventHandler;
-            }
-        }
-
-        private static void AppDomainUnloadCallback(object sender, EventArgs e)
-        {
-            s_domainUnloadStarted = true;
         }
 
         /// <summary>
@@ -92,8 +61,7 @@ namespace System.Threading.Tasks
             // We need to do this filtering because all TaskExceptionHolders will be finalized during shutdown or unload
             // regardles of reachability of the task (i.e. even if the user code was about to observe the task's exception),
             // which can otherwise lead to spurious crashes during shutdown.
-            if (m_faultExceptions != null && !m_isHandled &&
-                !Environment.HasShutdownStarted && !AppDomain.CurrentDomain.IsFinalizingForUnload() && !s_domainUnloadStarted)
+            if (m_faultExceptions != null && !m_isHandled && !Environment.HasShutdownStarted)
             {
                 // We don't want to crash the finalizer thread if any ThreadAbortExceptions 
                 // occur in the list or in any nested AggregateExceptions.  
@@ -122,22 +90,12 @@ namespace System.Threading.Tasks
                 // other finalizer, and the Task was finalized before the holder, the holder
                 // will have been marked as handled before even getting here.
 
-                // Give users a chance to keep this exception from crashing the process
-
-                // First, publish the unobserved exception and allow users to observe it
+                // Publish the unobserved exception and allow users to observe it
                 AggregateException exceptionToThrow = new AggregateException(
                     SR.TaskExceptionHolder_UnhandledException,
                     m_faultExceptions);
                 UnobservedTaskExceptionEventArgs ueea = new UnobservedTaskExceptionEventArgs(exceptionToThrow);
                 TaskScheduler.PublishUnobservedTaskException(m_task, ueea);
-
-                // Now, if we are still unobserved and we're configured to crash on unobserved, throw the exception.
-                // We need to publish the event above even if we're not going to crash, hence
-                // why this check doesn't come at the beginning of the method.
-                if (s_failFastOnUnobservedException && !ueea.m_observed)
-                {
-                    throw exceptionToThrow;
-                }
             }
         }
 

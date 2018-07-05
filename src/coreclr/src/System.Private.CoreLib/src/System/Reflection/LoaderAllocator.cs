@@ -43,10 +43,9 @@ namespace System.Reflection
 
             // Assemblies and LoaderAllocators will be cleaned up during AppDomain shutdown in
             // unmanaged code
-            // So it is ok to skip reregistration and cleanup for finalization during appdomain shutdown.
+            // So it is ok to skip reregistration and cleanup for finalization during shutdown.
             // We also avoid early finalization of LoaderAllocatorScout due to AD unload when the object was inside DelayedFinalizationList.
-            if (!Environment.HasShutdownStarted &&
-                !AppDomain.CurrentDomain.IsFinalizingForUnload())
+            if (!Environment.HasShutdownStarted)
             {
                 // Destroy returns false if the managed LoaderAllocator is still alive.
                 if (!Destroy(m_nativeLoaderAllocator))

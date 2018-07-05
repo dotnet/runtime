@@ -33,7 +33,6 @@ public:
     static FCDECL1(INT32, GetId, AppDomainBaseObject* refThisUNSAFE);
     static FCDECL1(INT32, GetIdForUnload, AppDomainBaseObject* refDomainUNSAFE);
     static FCDECL1(FC_BOOL_RET, IsDomainIdValid, INT32 dwId);
-    static FCDECL1(FC_BOOL_RET, IsFinalizingForUnload, AppDomainBaseObject* refThisUNSAFE);
     static FCDECL1(void, ForceToSharedDomain, Object* pObjectUNSAFE);
     static FCDECL1(LPVOID,  GetFusionContext, AppDomainBaseObject* refThis);
     static FCDECL2(Object*, IsStringInterned, AppDomainBaseObject* refThis, StringObject* pString);
