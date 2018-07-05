@@ -6105,7 +6105,7 @@ GenTree* Compiler::gtNewZeroConNode(var_types type)
             break;
 
         default:
-            assert(!"Bad type");
+            noway_assert(!"Bad type in gtNewZeroConNode");
             zero = nullptr;
             break;
     }
@@ -6114,30 +6114,31 @@ GenTree* Compiler::gtNewZeroConNode(var_types type)
 
 GenTree* Compiler::gtNewOneConNode(var_types type)
 {
+    GenTree* one;
     switch (type)
     {
         case TYP_INT:
         case TYP_UINT:
-            return gtNewIconNode(1);
+            one = gtNewIconNode(1);
+            break;
 
         case TYP_LONG:
         case TYP_ULONG:
-            return gtNewLconNode(1);
+            one = gtNewLconNode(1);
+            break;
 
         case TYP_FLOAT:
-        {
-            GenTree* one = gtNewDconNode(1.0);
-            one->gtType  = type;
-            return one;
-        }
-
         case TYP_DOUBLE:
-            return gtNewDconNode(1.0);
+            one         = gtNewDconNode(1.0);
+            one->gtType = type;
+            break;
 
         default:
-            assert(!"Bad type");
-            return nullptr;
+            noway_assert(!"Bad type in gtNewOneConNode");
+            one = nullptr;
+            break;
     }
+    return one;
 }
 
 #ifdef FEATURE_SIMD
