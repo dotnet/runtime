@@ -9,6 +9,21 @@ namespace System.Composition.Diagnostics
     // This enum is a ushort deliberately, the maximum value of a trace id is 65535.
     internal enum CompositionTraceId : ushort
     {
+        // Rejection
+
+        Rejection_DefinitionRejected = 1,
+        Rejection_DefinitionResurrected = 2,
+
+        // Discovery
+
+        Discovery_AssemblyLoadFailed = 3,
+        Discovery_DefinitionMarkedWithPartNotDiscoverableAttribute = 4,
+        Discovery_DefinitionMismatchedExportArity = 5,
+        Discovery_DefinitionContainsNoExports = 6,
+        Discovery_MemberMarkedWithMultipleImportAndImportMany = 7,
+
+        // Registration
+
         Registration_ConstructorConventionOverridden = 101,
         Registration_TypeExportConventionOverridden = 102,
         Registration_MemberExportConventionOverridden = 103,

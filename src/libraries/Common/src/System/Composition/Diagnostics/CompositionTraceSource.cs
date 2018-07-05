@@ -18,6 +18,11 @@ namespace System.Composition.Diagnostics
             get { return s_source.CanWriteWarning; }
         }
 
+        public static bool CanWriteError
+        {
+            get { return s_source.CanWriteError; }
+        }
+
         public static void WriteInformation(CompositionTraceId traceId, string format, params object[] arguments)
         {
             EnsureEnabled(CanWriteInformation);
@@ -30,6 +35,13 @@ namespace System.Composition.Diagnostics
             EnsureEnabled(CanWriteWarning);
 
             s_source.WriteWarning(traceId, format, arguments);
+        }
+
+        public static void WriteError(CompositionTraceId traceId, string format, params object[] arguments)
+        {
+            EnsureEnabled(CanWriteError);
+
+            s_source.WriteError(traceId, format, arguments);
         }
 
         private static void EnsureEnabled(bool condition)
