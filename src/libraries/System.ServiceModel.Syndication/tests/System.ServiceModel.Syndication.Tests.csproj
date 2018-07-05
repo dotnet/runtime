@@ -4,10 +4,46 @@
     <Configurations>netcoreapp-Debug;netcoreapp-Release;netstandard-Debug;netstandard-Release</Configurations>
   </PropertyGroup>
   <ItemGroup>
-    <Compile Include="$(MsBuildThisFileDirectory)**\*.cs" Exclude="$(MsBuildThisFileDirectory)netcoreapp\**\*.cs" />
+    <Compile Include="BasicScenarioTests.cs" />
+    <Compile Include="System\ServiceModel\Syndication\Rss20ItemFormatterTests.cs" />
+    <Compile Include="System\ServiceModel\Syndication\Atom10ItemFormatterTests.cs" />
+    <Compile Include="System\ServiceModel\Syndication\Atom10FeedFormatterTests.cs" />
+    <Compile Include="System\ServiceModel\Syndication\SyndicationFeedFormatterTests.cs" />
+    <Compile Include="System\ServiceModel\Syndication\SyndicationItemFormatterTests.cs" />
+    <Compile Include="System\ServiceModel\Syndication\SyndicationFeedTests.cs" />
+    <Compile Include="Utils\CompareHelper.cs" />
+    <Compile Include="Utils\ThrowingXmlReader.cs" />
+    <Compile Include="Utils\XmlDiff.cs" />
+    <Compile Include="Utils\XmlDiffDocument.cs" />
+    <Compile Include="Utils\XmlDiffOption.cs" />
+    <Compile Include="System\ServiceModel\Syndication\AtomPub10ServiceDocumentFormatterTests.cs" />
+    <Compile Include="System\ServiceModel\Syndication\AtomPub10CategoriesDocumentFormatterTests.cs" />
+    <Compile Include="System\ServiceModel\Syndication\CategoriesDocumentFormatterTests.cs" />
+    <Compile Include="System\ServiceModel\Syndication\ServiceDocumentFormatterTests.cs" />
+    <Compile Include="System\ServiceModel\Syndication\ServiceDocumentTests.cs" />
+    <Compile Include="System\ServiceModel\Syndication\ReferencedCategoriesDocumentTests.cs" />
+    <Compile Include="System\ServiceModel\Syndication\InlineCategoriesDocumentTests.cs" />
+    <Compile Include="System\ServiceModel\Syndication\CategoriesDocumentTests.cs" />
+    <Compile Include="System\ServiceModel\Syndication\SyndicationContentTests.cs" />
+    <Compile Include="System\ServiceModel\Syndication\SyndicationElementExtensionCollectionTests.cs" />
+    <Compile Include="System\ServiceModel\Syndication\SyndicationElementExtensionTests.cs" />
+    <Compile Include="System\ServiceModel\Syndication\SyndicationItemTests.cs" />
+    <Compile Include="System\ServiceModel\Syndication\SyndicationCategoryTests.cs" />
+    <Compile Include="System\ServiceModel\Syndication\XmlSyndicationContentTests.cs" />
+    <Compile Include="System\ServiceModel\Syndication\UrlSyndicationContentTests.cs" />
+    <Compile Include="System\ServiceModel\Syndication\TextSyndicationContentTests.cs" />
+    <Compile Include="System\ServiceModel\Syndication\SyndicationPersonTests.cs" />
+    <Compile Include="System\ServiceModel\Syndication\SyndicationLinkTests.cs" />
+    <Compile Include="System\ServiceModel\Syndication\ResourceCollectionInfoTests.cs" />
+    <Compile Include="System\ServiceModel\Syndication\SyndicationVersionsTests.cs" />
+    <Compile Include="System\ServiceModel\Syndication\WorkspaceTests.cs" />
   </ItemGroup>
   <ItemGroup Condition="'$(TargetGroup)' == 'netcoreapp'">
-    <Compile Include="$(MsBuildThisFileDirectory)netcoreapp\**\*.cs" />
+    <Compile Include="$(MsBuildThisFileDirectory)netcoreapp\BasicScenarioTests.netcoreapp.cs" />
+    <Compile Include="System\ServiceModel\Syndication\SyndicationFeedTests.netcoreapp.cs" />
+    <Compile Include="System\ServiceModel\Syndication\SyndicationTextInputTests.cs" />
+    <Compile Include="System\ServiceModel\Syndication\XmlDateTimeDataTests.cs" />
+    <Compile Include="System\ServiceModel\Syndication\XmlUriDataTests.cs" />
   </ItemGroup>
   <ItemGroup>
     <Content Include="$(MsBuildThisFileDirectory)\TestFeeds\**\*.xml">

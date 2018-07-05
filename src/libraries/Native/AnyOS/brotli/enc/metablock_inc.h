@@ -67,7 +67,7 @@ static void FN(InitBlockSplitter)(
       split->lengths, split->lengths_alloc_size, max_num_blocks);
   if (BROTLI_IS_OOM(m)) return;
   self->split_->num_blocks = max_num_blocks;
-  assert(*histograms == 0);
+  BROTLI_DCHECK(*histograms == 0);
   *histograms_size = max_num_types;
   *histograms = BROTLI_ALLOC(m, HistogramType, *histograms_size);
   self->histograms_ = *histograms;

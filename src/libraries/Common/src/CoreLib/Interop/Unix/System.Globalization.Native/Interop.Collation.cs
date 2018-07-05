@@ -21,12 +21,10 @@ internal static partial class Interop
         internal static extern unsafe int CompareString(SafeSortHandle sortHandle, char* lpStr1, int cwStr1Len, char* lpStr2, int cwStr2Len, CompareOptions options);
 
         [DllImport(Libraries.GlobalizationNative, CharSet = CharSet.Unicode, EntryPoint = "GlobalizationNative_IndexOf")]
-        internal static extern unsafe int IndexOf(SafeSortHandle sortHandle, string target, int cwTargetLength, char* pSource, int cwSourceLength, CompareOptions options, int* matchLengthPtr);
-        [DllImport(Libraries.GlobalizationNative, CharSet = CharSet.Unicode, EntryPoint = "GlobalizationNative_IndexOf")]
         internal static extern unsafe int IndexOf(SafeSortHandle sortHandle, char* target, int cwTargetLength, char* pSource, int cwSourceLength, CompareOptions options, int* matchLengthPtr);
 
         [DllImport(Libraries.GlobalizationNative, CharSet = CharSet.Unicode, EntryPoint = "GlobalizationNative_LastIndexOf")]
-        internal static extern unsafe int LastIndexOf(SafeSortHandle sortHandle, string target, int cwTargetLength, char* pSource, int cwSourceLength, CompareOptions options);
+        internal static extern unsafe int LastIndexOf(SafeSortHandle sortHandle, char* target, int cwTargetLength, char* pSource, int cwSourceLength, CompareOptions options);
 
         [DllImport(Libraries.GlobalizationNative, CharSet = CharSet.Unicode, EntryPoint = "GlobalizationNative_IndexOfOrdinalIgnoreCase")]
         internal static extern unsafe int IndexOfOrdinalIgnoreCase(string target, int cwTargetLength, char* pSource, int cwSourceLength, bool findLast);

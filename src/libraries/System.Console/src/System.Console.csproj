@@ -1,4 +1,4 @@
-<Project Sdk="Microsoft.NET.Sdk">
+﻿<Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
     <ProjectGuid>{F9DF2357-81B4-4317-908E-512DA9395583}</ProjectGuid>
     <RootNamespace>System.Console</RootNamespace>
@@ -19,7 +19,6 @@
     <Compile Include="System\ConsoleModifiers.cs" />
     <Compile Include="System\IO\ConsoleStream.cs" />
     <Compile Include="System\IO\SyncTextReader.cs" />
-    <Compile Include="System\IO\SyncTextWriter.cs" />
     <Compile Include="System\IO\Error.cs" />
     <Compile Include="$(CommonPath)\System\Text\ConsoleEncoding.cs">
       <Link>Common\System\Text\ConsoleEncoding.cs</Link>

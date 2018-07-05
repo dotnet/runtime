@@ -9,7 +9,7 @@ using Microsoft.Internal;
 
 namespace System.ComponentModel
 {
-    internal static class ExceptionBuilder // UNDONE combine with other one
+    internal static class ExceptionBuilder
     {
         public static Exception CreateDiscoveryException(string messageFormat, params string[] arguments)
         {

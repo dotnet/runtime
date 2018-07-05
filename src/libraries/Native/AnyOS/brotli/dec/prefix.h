@@ -5,8 +5,7 @@
 */
 
 /* Lookup tables to map prefix codes to value ranges. This is used during
-   decoding of the block lengths, literal insertion lengths and copy lengths.
-*/
+   decoding of the block lengths, literal insertion lengths and copy lengths. */
 
 #ifndef BROTLI_DEC_PREFIX_H_
 #define BROTLI_DEC_PREFIX_H_
@@ -14,8 +13,8 @@
 #include "../common/constants.h"
 #include <brotli/types.h>
 
-/* Represents the range of values belonging to a prefix code: */
-/* [offset, offset + 2^nbits) */
+/* Represents the range of values belonging to a prefix code:
+   [offset, offset + 2^nbits) */
 struct PrefixCodeRange {
   uint16_t offset;
   uint8_t nbits;

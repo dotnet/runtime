@@ -7,7 +7,7 @@
     <Compile Include="System.Reflection.Emit.Lightweight.cs" />
   </ItemGroup>
   <ItemGroup>
-    <ProjectReference Include="..\..\System.Runtime\ref\System.Runtime.csproj" />
+    <ProjectReference Include="..\..\System.Runtime\ref\System.Runtime.csproj" Condition="'$(TargetGroup)' != 'netstandard'" />
     <ProjectReference Include="..\..\System.Reflection.Emit.ILGeneration\ref\System.Reflection.Emit.ILGeneration.csproj" />
   </ItemGroup>
 </Project>

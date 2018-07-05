@@ -8,8 +8,8 @@
 
 #include "./bit_reader.h"
 
+#include "../common/platform.h"
 #include <brotli/types.h>
-#include "./port.h"
 
 #if defined(__cplusplus) || defined(c_plusplus)
 extern "C" {

@@ -187,5 +187,8 @@ namespace System.Security.Principal
             token.Dispose();
             return isMember;
         }
+
+        // This is called by AppDomain.GetThreadPrincipal() via reflection.
+        private static IPrincipal GetDefaultInstance() => new WindowsPrincipal(WindowsIdentity.GetCurrent());
     }
 }

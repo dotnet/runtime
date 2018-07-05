@@ -10,7 +10,7 @@
 #define BROTLI_ENC_ENTROPY_ENCODE_STATIC_H_
 
 #include "../common/constants.h"
-#include <brotli/port.h>
+#include "../common/platform.h"
 #include <brotli/types.h>
 #include "./write_bits.h"
 
@@ -83,7 +83,7 @@ static const uint32_t kCodeLengthBits[18] = {
 static BROTLI_INLINE void StoreStaticCodeLengthCode(
     size_t* storage_ix, uint8_t* storage) {
   BrotliWriteBits(
-      40, BROTLI_MAKE_UINT64_T(0x0000ffU, 0x55555554U), storage_ix, storage);
+      40, BROTLI_MAKE_UINT64_T(0x0000FFu, 0x55555554u), storage_ix, storage);
 }
 
 static const uint64_t kZeroRepsBits[BROTLI_NUM_COMMAND_SYMBOLS] = {
@@ -529,7 +529,7 @@ static const uint16_t kStaticDistanceCodeBits[64] = {
 
 static BROTLI_INLINE void StoreStaticDistanceHuffmanTree(
     size_t* storage_ix, uint8_t* storage) {
-  BrotliWriteBits(28, 0x0369dc03U, storage_ix, storage);
+  BrotliWriteBits(28, 0x0369DC03u, storage_ix, storage);
 }
 
 #if defined(__cplusplus) || defined(c_plusplus)

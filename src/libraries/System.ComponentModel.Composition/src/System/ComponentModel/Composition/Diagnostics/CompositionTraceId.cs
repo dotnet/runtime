@@ -14,6 +14,8 @@ namespace System.ComponentModel.Composition.Diagnostics
         Rejection_DefinitionRejected = 1,
         Rejection_DefinitionResurrected = 2,
 
+        // Discovery
+
         Discovery_AssemblyLoadFailed = 3,
         Discovery_DefinitionMarkedWithPartNotDiscoverableAttribute = 4,
         Discovery_DefinitionMismatchedExportArity = 5,

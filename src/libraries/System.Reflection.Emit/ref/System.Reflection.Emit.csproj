@@ -5,10 +5,18 @@
   </PropertyGroup>
   <ItemGroup>
     <Compile Include="System.Reflection.Emit.cs" />
+    <Compile Include="System.Reflection.Emit.netcore.cs" Condition="'$(TargetGroup)' == 'netcoreapp' OR '$(TargetGroup)' == 'uap'" />
   </ItemGroup>
-  <ItemGroup>
+  <ItemGroup Condition="'$(TargetGroup)' == 'netcoreapp' OR '$(TargetGroup)' == 'uap'">
     <ProjectReference Include="..\..\System.Runtime\ref\System.Runtime.csproj" />
     <ProjectReference Include="..\..\System.Reflection.Primitives\ref\System.Reflection.Primitives.csproj" />
+  </ItemGroup>
+  <ItemGroup Condition="'$(TargetGroup)' == 'uap10.0.16299'">
+    <Reference Include="netstandard" />
+    <Reference Include="System.Runtime" />
+    <Reference Include="System.Reflection.Primitives" />
+  </ItemGroup>
+  <ItemGroup>
     <ProjectReference Include="..\..\System.Reflection.Emit.ILGeneration\ref\System.Reflection.Emit.ILGeneration.csproj" />
   </ItemGroup>
 </Project>

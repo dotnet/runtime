@@ -4,11 +4,6 @@
 
 namespace System.ComponentModel.Composition
 {
-    public interface ITrans_RecompositionTest_RelationshipView
-    {
-        string Relationship { get; }
-    }
-
     public interface ITrans_StronglyTypedStructure
     {
         string String1 { get; }
