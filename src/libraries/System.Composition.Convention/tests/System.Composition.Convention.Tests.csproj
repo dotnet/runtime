@@ -3,18 +3,13 @@
   <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.props))\dir.props" />
   <PropertyGroup>
     <ProjectGuid>{17DBE1D4-FCB5-4D55-805C-C4A22EE8C032}</ProjectGuid>
-    <RootNamespace>ConventionsUnitTests</RootNamespace>
     <AssemblyName>System.Composition.Convention.Tests</AssemblyName>
   </PropertyGroup>
-  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'netcoreapp-Debug|AnyCPU'" />
-  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'netcoreapp-Release|AnyCPU'" />
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'netstandard-Debug|AnyCPU'" />
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'netstandard-Release|AnyCPU'" />
   <ItemGroup>
-    <Compile Include="..\..\System.Composition\tests\Util\AssertX.cs">
-      <Link>Util\AssertX.cs</Link>
-    </Compile>
     <Compile Include="AttributedModelConventionExtensions.cs" />
     <Compile Include="ConventionBuilderTests.cs" />
-    <Compile Include="ExceptionAssert.cs" />
     <Compile Include="ExportBuilderTests.cs" />
     <Compile Include="ExportBuilderUnitTests.cs" />
     <Compile Include="ExportInterfacesContractExclusionTests.cs" />

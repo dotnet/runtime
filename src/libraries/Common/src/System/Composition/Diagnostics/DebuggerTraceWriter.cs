@@ -2,17 +2,15 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
-#if !FEATURE_TRACING
-using System;
 using System.Diagnostics;
 using System.Globalization;
 using System.Text;
 
-namespace Microsoft.Composition.Diagnostics
+namespace System.Composition.Diagnostics
 {
     internal sealed class DebuggerTraceWriter : TraceWriter
     {
-        private static readonly string s_sourceName = "System.Composition";
+        private static readonly string s_sourceName = typeof(DebuggerTraceWriter).Assembly.GetName().Name;
 
         public override bool CanWriteInformation
         {
@@ -21,12 +19,12 @@ namespace Microsoft.Composition.Diagnostics
 
         public override bool CanWriteWarning
         {
-            get { return false; /* Debugger.IsLogging(); */ }
+            get { return Debugger.IsLogging(); }
         }
 
         public override bool CanWriteError
         {
-            get { return false; /* return Debugger.IsLogging(); */ }
+            get { return Debugger.IsLogging(); }
         }
 
         public override void WriteInformation(CompositionTraceId traceId, string format, params object[] arguments)
@@ -46,20 +44,21 @@ namespace Microsoft.Composition.Diagnostics
 
         private static void WriteEvent(TraceEventType eventType, CompositionTraceId traceId, string format, params object[] arguments)
         {
-            if (true /* !Debugger.IsLogging() */)
+            if (!Debugger.IsLogging())
             {
                 return;
             }
-            //            string logMessage = CreateLogMessage(eventType, traceId, format, arguments);
-            /*Debugger.Log(0, null, logMessage);*/
+
+            string logMessage = CreateLogMessage(eventType, traceId, format, arguments);
+            Debugger.Log(0, null, logMessage);
         }
 
-        internal static string CreateLogMessage(TraceEventType eventType, CompositionTraceId traceId, string format, params object[] arguments)
+        private static string CreateLogMessage(TraceEventType eventType, CompositionTraceId traceId, string format, params object[] arguments)
         {
             StringBuilder messageBuilder = new StringBuilder();
 
             // Format taken from TraceListener.TraceEvent in full framework
-            messageBuilder.AppendFormat(CultureInfo.InvariantCulture, "{0} {1}: {2} : ",
+            messageBuilder.AppendFormat(CultureInfo.InvariantCulture, "{0} {1}: {2} : ", 
                 s_sourceName, eventType.ToString(), (int)traceId);
 
             if (arguments == null)
@@ -76,8 +75,7 @@ namespace Microsoft.Composition.Diagnostics
             return messageBuilder.ToString();
         }
 
-        // Copied from TraceEventType in full framework
-        internal enum TraceEventType
+        public enum TraceEventType
         {
             Error = 2,
             Warning = 4,
@@ -85,5 +83,3 @@ namespace Microsoft.Composition.Diagnostics
         }
     }
 }
-
-#endif //!FEATURE_TRACING

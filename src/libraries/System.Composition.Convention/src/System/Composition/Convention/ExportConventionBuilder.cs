@@ -41,11 +41,7 @@ namespace System.Composition.Convention
         /// <returns>An export builder allowing further configuration.</returns>
         public ExportConventionBuilder AsContractType(Type type)
         {
-            if (type == null)
-            {
-                throw new ArgumentNullException(nameof(type));
-            }
-            _contractType = type;
+            _contractType = type ?? throw new ArgumentNullException(nameof(type));
             return this;
         }
 
@@ -75,11 +71,7 @@ namespace System.Composition.Convention
         /// <returns>An export builder allowing further configuration.</returns>
         public ExportConventionBuilder AsContractName(Func<Type, string> getContractNameFromPartType)
         {
-            if (getContractNameFromPartType == null)
-            {
-                throw new ArgumentNullException(nameof(getContractNameFromPartType));
-            }
-            _getContractNameFromPartType = getContractNameFromPartType;
+            _getContractNameFromPartType = getContractNameFromPartType ?? throw new ArgumentNullException(nameof(getContractNameFromPartType));
             return this;
         }
 
@@ -151,7 +143,7 @@ namespace System.Composition.Convention
             //Add metadata attributes from direct specification
             if (_metadataItems != null)
             {
-                foreach (var item in _metadataItems)
+                foreach (Tuple<string, object> item in _metadataItems)
                 {
                     attributes.Add(new ExportMetadataAttribute(item.Item1, item.Item2));
                 }
@@ -160,7 +152,7 @@ namespace System.Composition.Convention
             //Add metadata attributes from func specification
             if (_metadataItemFuncs != null)
             {
-                foreach (var item in _metadataItemFuncs)
+                foreach (Tuple<string, Func<Type, object>> item in _metadataItemFuncs)
                 {
                     var name = item.Item1;
                     var value = (item.Item2 != null) ? item.Item2(type) : null;
