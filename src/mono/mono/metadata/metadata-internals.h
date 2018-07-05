@@ -152,8 +152,7 @@ typedef struct {
 	GHashTable *delegate_invoke_cache;
 	GHashTable *delegate_begin_invoke_cache;
 	GHashTable *delegate_end_invoke_cache;
-	GHashTable *runtime_invoke_cache;
-	GHashTable *runtime_invoke_vtype_cache;
+	GHashTable *runtime_invoke_signature_cache;
 	GHashTable *runtime_invoke_sig_cache;
 
 	/*
@@ -165,7 +164,7 @@ typedef struct {
 	 * indexed by MonoMethod pointers
 	 * Protected by the marshal lock
 	 */
-	GHashTable *runtime_invoke_direct_cache;
+	GHashTable *runtime_invoke_method_cache;
 	GHashTable *managed_wrapper_cache;
 
 	GHashTable *native_wrapper_cache;
@@ -377,7 +376,6 @@ struct _MonoImage {
 	/*
 	 * indexed by MonoMethod pointers 
 	 */
-	GHashTable *runtime_invoke_vcall_cache;
 	GHashTable *wrapper_param_names;
 	GHashTable *array_accessor_cache;
 

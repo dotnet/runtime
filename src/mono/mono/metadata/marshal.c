@@ -2510,6 +2510,54 @@ runtime_invoke_signature_equal (MonoMethodSignature *sig1, MonoMethodSignature *
 		return mono_metadata_signature_equal (sig1, sig2);
 }
 
+struct _MonoWrapperMethodCacheKey {
+	MonoMethod *method;
+	gboolean virtual_;
+	gboolean need_direct_wrapper;
+};
+
+struct _MonoWrapperSignatureCacheKey {
+	MonoMethodSignature *signature;
+	gboolean valuetype;
+};
+
+typedef struct _MonoWrapperMethodCacheKey MonoWrapperMethodCacheKey;
+typedef struct _MonoWrapperSignatureCacheKey MonoWrapperSignatureCacheKey;
+
+static guint
+wrapper_cache_method_key_hash (MonoWrapperMethodCacheKey *key)
+{
+	return mono_aligned_addr_hash (key->method) ^ (((!!key->virtual_) << 17) | ((!!key->need_direct_wrapper) << 19) * 17);
+}
+
+static guint
+wrapper_cache_signature_key_hash (MonoWrapperSignatureCacheKey *key)
+{
+	return mono_signature_hash (key->signature) ^ (((!!key->valuetype) << 18) * 17);
+}
+
+static gboolean
+wrapper_cache_method_key_equal (MonoWrapperMethodCacheKey *key1, MonoWrapperMethodCacheKey *key2)
+{
+	if (key1->virtual_ != key2->virtual_ || key1->need_direct_wrapper != key2->need_direct_wrapper)
+		return FALSE;
+	return key1->method == key2->method;
+}
+
+static gboolean
+wrapper_cache_signature_key_equal (MonoWrapperSignatureCacheKey *key1, MonoWrapperSignatureCacheKey *key2)
+{
+	if (key1->valuetype != key2->valuetype)
+		return FALSE;
+	return runtime_invoke_signature_equal (key1->signature, key2->signature);
+}
+
+static gboolean
+wrapper_cache_method_matches_data (gpointer key, gpointer value, gpointer user_data)
+{
+	MonoWrapperMethodCacheKey *mkey = (MonoWrapperMethodCacheKey *) key;
+	return mkey->method == (MonoMethod *) user_data;
+}
 
 /**
  * mono_marshal_get_runtime_invoke:
@@ -2528,7 +2576,8 @@ mono_marshal_get_runtime_invoke_full (MonoMethod *method, gboolean virtual_, gbo
 {
 	MonoMethodSignature *sig, *csig, *callsig;
 	MonoMethodBuilder *mb;
-	GHashTable *cache = NULL;
+	GHashTable *method_cache = NULL, *sig_cache;
+	GHashTable **cache_table = NULL;
 	MonoClass *target_klass;
 	MonoMethod *res = NULL;
 	static MonoMethodSignature *cctor_signature = NULL;
@@ -2536,6 +2585,9 @@ mono_marshal_get_runtime_invoke_full (MonoMethod *method, gboolean virtual_, gbo
 	char *name;
 	const char *param_names [16];
 	WrapperInfo *info;
+	MonoWrapperMethodCacheKey *method_key;
+	MonoWrapperMethodCacheKey method_key_lookup_only = { .method = method, .virtual_ = virtual_, .need_direct_wrapper = need_direct_wrapper };
+	method_key = &method_key_lookup_only;
 
 	g_assert (method);
 
@@ -2549,16 +2601,10 @@ mono_marshal_get_runtime_invoke_full (MonoMethod *method, gboolean virtual_, gbo
 		finalize_signature->hasthis = 1;
 	}
 
-	/* 
-	 * Use a separate cache indexed by methods to speed things up and to avoid the
-	 * boundless mempool growth caused by the signature_dup stuff below.
-	 */
-	if (virtual_)
-		cache = get_cache (&get_method_image (method)->runtime_invoke_vcall_cache, mono_aligned_addr_hash, NULL);
-	else
-		cache = get_cache (&mono_method_get_wrapper_cache (method)->runtime_invoke_direct_cache, mono_aligned_addr_hash, NULL);
+	cache_table = &mono_method_get_wrapper_cache (method)->runtime_invoke_method_cache;
+	method_cache = get_cache (cache_table, (GHashFunc) wrapper_cache_method_key_hash, (GCompareFunc) wrapper_cache_method_key_equal);
 
-	res = mono_marshal_find_in_cache (cache, method);
+	res = mono_marshal_find_in_cache (method_cache, method_key);
 	if (res)
 		return res;
 		
@@ -2586,25 +2632,21 @@ mono_marshal_get_runtime_invoke_full (MonoMethod *method, gboolean virtual_, gbo
 		target_klass = mono_defaults.object_class;
 	}
 
-	if (need_direct_wrapper) {
-		/* Already searched at the start */
+	if (need_direct_wrapper || virtual_) {
+		/* Already searched at the start. We cannot cache those wrappers based
+		 * on signatures because they contain a reference to the method */
 	} else {
 		MonoMethodSignature *tmp_sig;
 
 		callsig = mono_marshal_get_runtime_invoke_sig (callsig);
-		GHashTable **cache_table = NULL;
+		MonoWrapperSignatureCacheKey sig_key = { .signature = callsig, .valuetype = m_class_is_valuetype (method->klass)};
 
-		if (m_class_is_valuetype (method->klass) && mono_method_signature (method)->hasthis)
-			cache_table = &mono_method_get_wrapper_cache (method)->runtime_invoke_vtype_cache;
-		else
-			cache_table = &mono_method_get_wrapper_cache (method)->runtime_invoke_cache;
-
-		cache = get_cache (cache_table, (GHashFunc)mono_signature_hash,
-							   (GCompareFunc)runtime_invoke_signature_equal);
+		cache_table = &mono_method_get_wrapper_cache (method)->runtime_invoke_signature_cache;
+		sig_cache = get_cache (cache_table, (GHashFunc) wrapper_cache_signature_key_hash, (GCompareFunc) wrapper_cache_signature_key_equal);
 
 		/* from mono_marshal_find_in_cache */
 		mono_marshal_lock ();
-		res = (MonoMethod *)g_hash_table_lookup (cache, callsig);
+		res = (MonoMethod *)g_hash_table_lookup (sig_cache, &sig_key);
 		mono_marshal_unlock ();
 
 		if (res) {
@@ -2617,7 +2659,7 @@ mono_marshal_get_runtime_invoke_full (MonoMethod *method, gboolean virtual_, gbo
 		callsig = mono_metadata_signature_dup_full (m_class_get_image (target_klass), callsig);
 		g_free (tmp_sig);
 	}
-	
+
 	csig = mono_metadata_signature_alloc (m_class_get_image (target_klass), 4);
 
 	MonoType *object_type = mono_get_object_type ();
@@ -2648,15 +2690,22 @@ mono_marshal_get_runtime_invoke_full (MonoMethod *method, gboolean virtual_, gbo
 
 	get_marshal_cb ()->emit_runtime_invoke_body (mb, param_names, m_class_get_image (target_klass), method, sig, callsig, virtual_, need_direct_wrapper);
 
-	if (need_direct_wrapper) {
+	method_key = g_new (MonoWrapperMethodCacheKey, 1);
+	memcpy (method_key, &method_key_lookup_only, sizeof (MonoWrapperMethodCacheKey));
+
+	if (need_direct_wrapper || virtual_) {
 		get_marshal_cb ()->mb_skip_visibility (mb);
 		info = mono_wrapper_info_create (mb, virtual_ ? WRAPPER_SUBTYPE_RUNTIME_INVOKE_VIRTUAL : WRAPPER_SUBTYPE_RUNTIME_INVOKE_DIRECT);
 		info->d.runtime_invoke.method = method;
-		res = mono_mb_create_and_cache_full (cache, method, mb, csig, sig->param_count + 16, info, NULL);
+		res = mono_mb_create_and_cache_full (method_cache, method_key, mb, csig, sig->param_count + 16, info, NULL);
 	} else {
+		MonoWrapperSignatureCacheKey *sig_key = g_new0 (MonoWrapperSignatureCacheKey, 1);
+		sig_key->signature = callsig;
+		sig_key->valuetype = m_class_is_valuetype (method->klass);
+
 		/* taken from mono_mb_create_and_cache */
 		mono_marshal_lock ();
-		res = (MonoMethod *)g_hash_table_lookup (cache, callsig);
+		res = (MonoMethod *)g_hash_table_lookup (sig_cache, sig_key);
 		mono_marshal_unlock ();
 
 		info = mono_wrapper_info_create (mb, WRAPPER_SUBTYPE_RUNTIME_INVOKE_NORMAL);
@@ -2668,19 +2717,20 @@ mono_marshal_get_runtime_invoke_full (MonoMethod *method, gboolean virtual_, gbo
 			newm = mono_mb_create (mb, csig, sig->param_count + 16, info);
 
 			mono_marshal_lock ();
-			res = (MonoMethod *)g_hash_table_lookup (cache, callsig);
+			res = (MonoMethod *)g_hash_table_lookup (sig_cache, sig_key);
 			if (!res) {
-				GHashTable *direct_cache;
 				res = newm;
-				g_hash_table_insert (cache, callsig, res);
-				/* Can't insert it into wrapper_hash since the key is a signature */
-				direct_cache = mono_method_get_wrapper_cache (method)->runtime_invoke_direct_cache;
-
-				g_hash_table_insert (direct_cache, method, res);
+				g_hash_table_insert (sig_cache, sig_key, res);
+				g_hash_table_insert (method_cache, method_key, res);
 			} else {
 				mono_free_method (newm);
+				g_free (sig_key);
+				g_free (method_key);
 			}
 			mono_marshal_unlock ();
+		} else {
+			g_free (sig_key);
+			g_free (method_key);
 		}
 
 		/* end mono_mb_create_and_cache */
@@ -6197,8 +6247,8 @@ mono_marshal_free_dynamic_wrappers (MonoMethod *method)
 	 * FIXME: We currently leak the wrappers. Freeing them would be tricky as
 	 * they could be shared with other methods ?
 	 */
-	if (image->wrapper_caches.runtime_invoke_direct_cache)
-		g_hash_table_remove (image->wrapper_caches.runtime_invoke_direct_cache, method);
+	if (image->wrapper_caches.runtime_invoke_method_cache)
+		g_hash_table_foreach_remove (image->wrapper_caches.runtime_invoke_method_cache, wrapper_cache_method_matches_data, method);
 	if (image->wrapper_caches.delegate_abstract_invoke_cache)
 		g_hash_table_foreach_remove (image->wrapper_caches.delegate_abstract_invoke_cache, signature_pointer_pair_matches_pointer, method);
 	// FIXME: Need to clear the caches in other images as well
