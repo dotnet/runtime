@@ -15,8 +15,8 @@ once before you can iterate and work on a given library project.
 - Build product
  - Build src\src.builds which builds all the source library projects. For source library project information see [src](#src).
 - Sign product
- - Build src\sign.builds
-//**CONSIDER**: We should make this as part of the src.builds file instead of a separate .builds file.
+ - Build src\sign.proj
+//**CONSIDER**: We should make this as part of the src.builds file instead of a separate project file.
 
 ## Behind the scenes with build-test.cmd/sh
 - build-test.cmd cannot be ran successfully until build.cmd has been ran at least once for a `BuildConfiguration`.

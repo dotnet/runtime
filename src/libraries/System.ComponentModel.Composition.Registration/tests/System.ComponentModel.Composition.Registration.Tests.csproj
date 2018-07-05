@@ -1,0 +1,34 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project ToolsVersion="14.0" DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.props))\dir.props" />
+  <!-- TODO: Add netfx configuration after OOB package bug is fixed: https://github.com/dotnet/corefx/issues/23889 -->
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'netcoreapp-Debug|AnyCPU'" />
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'netcoreapp-Release|AnyCPU'" />
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'uap-Debug|AnyCPU'" />
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'uap-Release|AnyCPU'" />
+  <PropertyGroup>
+    <ProjectGuid>{0F8CFFA3-6E16-4642-82C1-289D95338D7C}</ProjectGuid>
+  </PropertyGroup>
+  <ItemGroup>
+    <!-- Some internal types are needed, so we reference the implementation assembly, rather than the reference assembly. -->
+    <TargetingPackExclusions Include="System.ComponentModel.Composition.Registration" />
+    <ReferenceFromRuntime Include="System.ComponentModel.Composition.Registration" />
+  </ItemGroup>
+  <ItemGroup>
+    <Compile Include="System\ComponentModel\Composition\Registration\ExportBuilderTests.cs" />
+    <Compile Include="System\ComponentModel\Composition\Registration\ExportBuilderUnitTests.cs" />
+    <Compile Include="System\ComponentModel\Composition\Registration\ExportInterfacesContractExclusionTests.cs" />
+    <Compile Include="System\ComponentModel\Composition\Registration\ImportBuilderTests.cs" />
+    <Compile Include="System\ComponentModel\Composition\Registration\PartBuilderInheritanceTests.cs" />
+    <Compile Include="System\ComponentModel\Composition\Registration\PartBuilderInterfaceTests.cs" />
+    <Compile Include="System\ComponentModel\Composition\Registration\PartBuilderOfTInheritanceTests.cs" />
+    <Compile Include="System\ComponentModel\Composition\Registration\PartBuilderOfTTests.cs" />
+    <Compile Include="System\ComponentModel\Composition\Registration\PartBuilderTests.cs" />
+    <Compile Include="System\ComponentModel\Composition\Registration\PartBuilderUnitTests.cs" />
+    <Compile Include="System\ComponentModel\Composition\Registration\RegistrationBuilderAttributedOverrideUnitTests.cs" />
+    <Compile Include="System\ComponentModel\Composition\Registration\RegistrationBuilderExportFuncTests.cs" />
+    <Compile Include="System\ComponentModel\Composition\Registration\RegistrationBuilderTests.cs" />
+    <Compile Include="System\ComponentModel\Composition\Registration\RegistrationContextUnitTests.cs" />
+  </ItemGroup>
+  <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.targets))\dir.targets" />
+</Project>

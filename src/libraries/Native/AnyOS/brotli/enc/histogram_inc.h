@@ -33,7 +33,7 @@ static BROTLI_INLINE void FN(HistogramAdd)(FN(Histogram)* self, size_t val) {
 }
 
 static BROTLI_INLINE void FN(HistogramAddVector)(FN(Histogram)* self,
-    const DataType *p, size_t n) {
+    const DataType* p, size_t n) {
   self->total_count_ += n;
   n += 1;
   while (--n) ++self->data_[*p++];

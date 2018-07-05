@@ -41,7 +41,7 @@ typedef struct BrotliDictionary {
   const uint8_t* data;
 } BrotliDictionary;
 
-BROTLI_COMMON_API extern const BrotliDictionary* BrotliGetDictionary(void);
+BROTLI_COMMON_API const BrotliDictionary* BrotliGetDictionary(void);
 
 /**
  * Sets dictionary data.

@@ -13,6 +13,53 @@ namespace System.Net.Sockets.Tests
 {
     public partial class ExecutionContextFlowTest : FileCleanupTestBase
     {
+        [OuterLoop("Relies on finalization")]
+        [Fact]
+        public void ExecutionContext_NotCachedInSocketAsyncEventArgs()
+        {
+            using (var listener = new Socket(AddressFamily.InterNetwork, SocketType.Stream, ProtocolType.Tcp))
+            using (var client = new Socket(AddressFamily.InterNetwork, SocketType.Stream, ProtocolType.Tcp))
+            {
+                listener.Bind(new IPEndPoint(IPAddress.Loopback, 0));
+                listener.Listen(1);
+
+                client.Connect(listener.LocalEndPoint);
+                using (Socket server = listener.Accept())
+                using (var saea = new SocketAsyncEventArgs())
+                {
+                    var receiveCompleted = new ManualResetEventSlim();
+                    saea.Completed += (_, __) => receiveCompleted.Set();
+                    saea.SetBuffer(new byte[1]);
+
+                    var ecDropped = new ManualResetEventSlim();
+                    var al = CreateAsyncLocalWithSetWhenFinalized(ecDropped);
+                    Assert.True(client.ReceiveAsync(saea));
+                    al.Value = null;
+
+                    server.Send(new byte[1]);
+                    Assert.True(receiveCompleted.Wait(TestSettings.PassingTestTimeout));
+
+                    for (int i = 0; i < 3; i++)
+                    {
+                        GC.Collect();
+                        GC.WaitForPendingFinalizers();
+                    }
+
+                    Assert.True(ecDropped.Wait(TestSettings.PassingTestTimeout));
+                }
+            }
+        }
+
+        [MethodImpl(MethodImplOptions.NoInlining)]
+        private static AsyncLocal<object> CreateAsyncLocalWithSetWhenFinalized(ManualResetEventSlim ecDropped) =>
+            new AsyncLocal<object>() { Value = new SetOnFinalized { _setWhenFinalized = ecDropped } };
+
+        private sealed class SetOnFinalized
+        {
+            internal ManualResetEventSlim _setWhenFinalized;
+            ~SetOnFinalized() => _setWhenFinalized.Set();
+        }
+
         [Fact]
         public Task ExecutionContext_FlowsOnlyOnceAcrossAsyncOperations()
         {

@@ -34,11 +34,11 @@ typedef struct BrotliDecoderStateStruct BrotliDecoderState;
 typedef enum {
   /** Decoding error, e.g. corrupted input or memory allocation problem. */
   BROTLI_DECODER_RESULT_ERROR = 0,
-  /** Decoding successfully completed */
+  /** Decoding successfully completed. */
   BROTLI_DECODER_RESULT_SUCCESS = 1,
-  /** Partially done; should be called again with more input */
+  /** Partially done; should be called again with more input. */
   BROTLI_DECODER_RESULT_NEEDS_MORE_INPUT = 2,
-  /** Partially done; should be called again with more output */
+  /** Partially done; should be called again with more output. */
   BROTLI_DECODER_RESULT_NEEDS_MORE_OUTPUT = 3
 } BrotliDecoderResult;
 
@@ -83,10 +83,10 @@ typedef enum {
   BROTLI_ERROR_CODE(_ERROR_FORMAT_, WINDOW_BITS, -13) SEPARATOR            \
   BROTLI_ERROR_CODE(_ERROR_FORMAT_, PADDING_1, -14) SEPARATOR              \
   BROTLI_ERROR_CODE(_ERROR_FORMAT_, PADDING_2, -15) SEPARATOR              \
+  BROTLI_ERROR_CODE(_ERROR_FORMAT_, DISTANCE, -16) SEPARATOR               \
                                                                            \
-  /* -16..-17 codes are reserved */                                        \
+  /* -17..-18 codes are reserved */                                        \
                                                                            \
-  BROTLI_ERROR_CODE(_ERROR_, COMPOUND_DICTIONARY, -18) SEPARATOR           \
   BROTLI_ERROR_CODE(_ERROR_, DICTIONARY_NOT_SET, -19) SEPARATOR            \
   BROTLI_ERROR_CODE(_ERROR_, INVALID_ARGUMENTS, -20) SEPARATOR             \
                                                                            \
@@ -135,7 +135,11 @@ typedef enum BrotliDecoderParameter {
    * Ring buffer is allocated according to window size, despite the real size of
    * the content.
    */
-  BROTLI_DECODER_PARAM_DISABLE_RING_BUFFER_REALLOCATION = 0
+  BROTLI_DECODER_PARAM_DISABLE_RING_BUFFER_REALLOCATION = 0,
+  /**
+   * Flag that determines if "Large Window Brotli" is used.
+   */
+  BROTLI_DECODER_PARAM_LARGE_WINDOW = 1
 } BrotliDecoderParameter;
 
 /**
@@ -159,10 +163,11 @@ BROTLI_DEC_API BROTLI_BOOL BrotliDecoderSetParameter(
  *
  * @p alloc_func and @p free_func @b MUST be both zero or both non-zero. In the
  * case they are both zero, default memory allocators are used. @p opaque is
- * passed to @p alloc_func and @p free_func when they are called.
+ * passed to @p alloc_func and @p free_func when they are called. @p free_func
+ * has to return without doing anything when asked to free a NULL pointer.
  *
  * @param alloc_func custom memory allocation function
- * @param free_func custom memory fee function
+ * @param free_func custom memory free function
  * @param opaque custom memory manager handle
  * @returns @c 0 if instance can not be allocated or initialized
  * @returns pointer to initialized ::BrotliDecoderState otherwise

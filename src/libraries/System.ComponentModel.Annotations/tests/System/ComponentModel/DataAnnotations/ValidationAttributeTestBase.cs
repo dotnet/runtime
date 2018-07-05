@@ -3,12 +3,13 @@
 // See the LICENSE file in the project root for more information.
 
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.Linq;
 using Xunit;
 
 namespace System.ComponentModel.DataAnnotations.Tests
 {
-    public abstract class ValidationAttributeTestBase
+    public abstract class ValidationAttributeTestBase : RemoteExecutorTestBase
     {
         protected abstract IEnumerable<TestCase> ValidValues();
         protected abstract IEnumerable<TestCase> InvalidValues();

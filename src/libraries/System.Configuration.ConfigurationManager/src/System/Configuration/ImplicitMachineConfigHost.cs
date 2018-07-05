@@ -23,14 +23,14 @@ namespace System.Configuration
             out string locationConfigPath, IInternalConfigRoot configRoot, params object[] hostInitConfigurationParams)
         {
             // Stash the filemap so we can see if the machine config was explicitly specified
-            _fileMap = (ConfigurationFileMap)hostInitConfigurationParams[0];
+            _fileMap = hostInitConfigurationParams[0] as ConfigurationFileMap;
             base.InitForConfiguration(ref locationSubPath, out configPath, out locationConfigPath, configRoot, hostInitConfigurationParams);
         }
 
         public override void Init(IInternalConfigRoot configRoot, params object[] hostInitParams)
         {
             // Stash the filemap so we can see if the machine config was explicitly specified
-            _fileMap = (ConfigurationFileMap)hostInitParams[0];
+            _fileMap = hostInitParams[0] as ConfigurationFileMap;
             base.Init(configRoot, hostInitParams);
         }
 

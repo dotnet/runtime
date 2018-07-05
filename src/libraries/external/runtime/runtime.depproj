@@ -16,7 +16,9 @@
   </PropertyGroup>
   <ItemGroup Condition="'$(TargetGroup)'=='uapaot'  Or '$(TargetGroup)' == 'uap10.0.16299aot'">
     <PackageReference Include="Microsoft.TargetingPack.Private.NETNative">
-      <Version>1.1.0-$(ProjectNTfsExpectedPrerelease)</Version>
+      <Version Condition="'$(TargetGroup)'=='uapaot'">1.1.0-$(ProjectNTfsExpectedPrerelease)</Version>
+      <!-- Following is version used in release/uwp6.0 -->
+      <Version Condition="'$(TargetGroup)'=='uap10.0.16299aot'">1.1.0-rel-25728-00</Version>
     </PackageReference>
     <FileToExclude Include="System.Private.CoreLib.Augments" />
     <FileToExclude Include="System.Private.CoreLib.DynamicDelegate" />
@@ -29,6 +31,8 @@
     </PackageReference>
     <PackageReference Include="Microsoft.NETCore.Runtime.CoreCLR">
       <Version>$(MicrosoftNETCoreRuntimeCoreCLRPackageVersion)</Version>
+      <!-- Following is version used in release/uwp6.0 -->
+      <Version Condition="'$(TargetGroup)'=='uap10.0.16299'">2.1.0-b-uwp6-25707-02</Version>
     </PackageReference>
     <PackageReference Include="Microsoft.NETCore.TestHost">
       <Version>$(MicrosoftNETCoreRuntimeCoreCLRPackageVersion)</Version>
