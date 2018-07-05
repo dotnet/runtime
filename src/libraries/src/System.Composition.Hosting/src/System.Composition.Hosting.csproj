@@ -4,21 +4,10 @@
   <PropertyGroup>
     <ProjectGuid>{2B8FECC6-34A1-48FE-BA75-99572D2D6DB2}</ProjectGuid>
     <AssemblyName>System.Composition.Hosting</AssemblyName>
-    <BlockReflectionAttribute>false</BlockReflectionAttribute>
-    <PackageTargetFramework Condition="'$(TargetGroup)' == 'netstandard1.0'">netstandard1.0;portable-net45+win8+wp8+wpa81</PackageTargetFramework>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'netstandard-Debug|AnyCPU'" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'netstandard-Release|AnyCPU'" />
-  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'netstandard1.0-Debug|AnyCPU'" />
-  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'netstandard1.0-Release|AnyCPU'" />
   <ItemGroup>
-    <ProjectReference Include="..\..\System.Composition.Runtime\src\System.Composition.Runtime.csproj">
-      <Project>{2711dfd2-8541-4628-bc53-eb784a14cdcf}</Project>
-      <Name>System.Composition.Runtime</Name>
-    </ProjectReference>
-  </ItemGroup>
-  <ItemGroup>
-    <Compile Include="Microsoft\Internal\ThrowHelper.cs" />
     <Compile Include="System\Composition\Hosting\CompositionHost.cs" />
     <Compile Include="System\Composition\Hosting\Core\CompositeActivator.cs" />
     <Compile Include="System\Composition\Hosting\Core\CompositionDependency.cs" />
@@ -46,20 +35,11 @@
     <Compile Include="System\Composition\Hosting\Util\MethodInfoExtensions.cs" />
     <Compile Include="System\Composition\Hosting\Util\SmallSparseInitonlyArray.cs" />
   </ItemGroup>
-  <ItemGroup Condition="'$(TargetGroup)' == 'netstandard1.0'">
-    <Reference Include="System.Collections" />
-    <Reference Include="System.Diagnostics.Contracts" />
-    <Reference Include="System.Diagnostics.Debug" />
-    <Reference Include="System.Diagnostics.Tools" />
-    <Reference Include="System.Globalization" />
-    <Reference Include="System.Linq" />
-    <Reference Include="System.Linq.Expressions" />
-    <Reference Include="System.ObjectModel" />
-    <Reference Include="System.Reflection" />
-    <Reference Include="System.Reflection.Extensions" />
-    <Reference Include="System.Resources.ResourceManager" />
-    <Reference Include="System.Runtime" />
-    <Reference Include="System.Threading" />
+  <ItemGroup>
+    <ProjectReference Include="..\..\System.Composition.Runtime\src\System.Composition.Runtime.csproj">
+      <Project>{2711dfd2-8541-4628-bc53-eb784a14cdcf}</Project>
+      <Name>System.Composition.Runtime</Name>
+    </ProjectReference>
   </ItemGroup>
   <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.targets))\dir.targets" />
 </Project>

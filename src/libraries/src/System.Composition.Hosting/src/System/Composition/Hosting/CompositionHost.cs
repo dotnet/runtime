@@ -10,8 +10,6 @@ using System.Composition.Hosting.Providers.ImportMany;
 using System.Composition.Hosting.Providers.Lazy;
 using System.Linq;
 
-using Microsoft.Internal;
-
 namespace System.Composition.Hosting
 {
     /// <summary>

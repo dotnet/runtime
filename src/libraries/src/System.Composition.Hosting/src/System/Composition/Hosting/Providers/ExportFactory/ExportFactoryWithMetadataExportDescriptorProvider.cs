@@ -8,7 +8,6 @@ using System.Composition.Hosting.Core;
 using System.Linq;
 using System.Collections.Generic;
 using System.Composition.Hosting.Providers.Metadata;
-using Microsoft.Internal;
 
 namespace System.Composition.Hosting.Providers.ExportFactory
 {
