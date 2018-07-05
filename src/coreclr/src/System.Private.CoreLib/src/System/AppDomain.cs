@@ -267,11 +267,6 @@ namespace System
             return nGetAssemblies(forIntrospection);
         }
 
-        // this is true when we've just started going through the finalizers and are forcing objects to finalize
-        // so must be aware that certain infrastructure may have gone away
-        [MethodImpl(MethodImplOptions.InternalCall)]
-        public extern bool IsFinalizingForUnload();
-
         [MethodImpl(MethodImplOptions.InternalCall)]
         internal static extern void PublishAnonymouslyHostedDynamicMethodsAssembly(RuntimeAssembly assemblyHandle);
 

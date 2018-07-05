@@ -650,7 +650,7 @@ namespace System.Threading
             // Note that in either case, the Timer still won't fire, because ThreadPool threads won't be
             // allowed to run in this AppDomain.
             //
-            if (Environment.HasShutdownStarted || AppDomain.CurrentDomain.IsFinalizingForUnload())
+            if (Environment.HasShutdownStarted)
                 return;
 
             m_timer.Close();

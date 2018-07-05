@@ -419,22 +419,6 @@ FCIMPL1(Object*, AppDomainNative::GetDynamicDir, AppDomainBaseObject* refThisUNS
 }
 FCIMPLEND
 
-FCIMPL1(FC_BOOL_RET, AppDomainNative::IsFinalizingForUnload, AppDomainBaseObject* refThisUNSAFE)
-{
-    FCALL_CONTRACT;
-
-    BOOL            retVal = FALSE;
-    APPDOMAINREF    refThis = (APPDOMAINREF) refThisUNSAFE;
-    HELPER_METHOD_FRAME_BEGIN_RET_1(refThis);
-
-    AppDomain* pApp = ValidateArg(refThis);
-    retVal = pApp->IsFinalizing();
-
-    HELPER_METHOD_FRAME_END();
-    FC_RETURN_BOOL(retVal);
-}
-FCIMPLEND
-
 FCIMPL2(StringObject*, AppDomainNative::nApplyPolicy, AppDomainBaseObject* refThisUNSAFE, AssemblyNameBaseObject* refAssemblyNameUNSAFE)
 {
     FCALL_CONTRACT;
