@@ -2599,11 +2599,25 @@ inline unsigned Compiler::compMapILargNum(unsigned ILargNum)
     return (ILargNum);
 }
 
-// For ARM varargs, all arguments go in integer registers, so swizzle the type
+//------------------------------------------------------------------------
+// Compiler::mangleVarArgsType: Retype float types to their corresponding
+//                            : int/long types.
+//
+// Notes:
+//
+// The mangling of types will only occur for incoming vararg fixed arguments
+// on windows arm|64 or on armel (softFP).
+//
+// NO-OP for all other cases.
+//
 inline var_types Compiler::mangleVarArgsType(var_types type)
 {
-#ifdef _TARGET_ARMARCH_
-    if (info.compIsVarArgs || opts.compUseSoftFP)
+#if defined(_TARGET_ARMARCH_)
+    if (opts.compUseSoftFP
+#if defined(_TARGET_WINDOWS_)
+        || info.compIsVarArgs
+#endif // defined(_TARGET_WINDOWS_)
+        )
     {
         switch (type)
         {
@@ -2615,7 +2629,7 @@ inline var_types Compiler::mangleVarArgsType(var_types type)
                 break;
         }
     }
-#endif // _TARGET_ARMARCH_
+#endif // defined(_TARGET_ARMARCH_)
     return type;
 }
 
