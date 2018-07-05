@@ -121,9 +121,9 @@ The current Docker tag being used by the CI can be found in the `getDockerImageN
 
 Libunwind issue
 ---------------
-Libunwind-arm requires fixes that are not included in Ubuntu 14.04, yet. The fix allows libunwind-arm not to break when it is ordered to access unaccessible memory locations.
+ARM libunwind versions before 1.3 require a fix. The fix allows libunwind not to break when it is ordered to access unaccessible memory locations. See [this](https://github.com/dotnet/coreclr/pull/3923) issue for history.
 
-First, import the patch from the libunwind upstream: http://git.savannah.gnu.org/gitweb/?p=libunwind.git;a=commit;h=770152268807e460184b4152e23aba9c86601090
+If required, first import the patch from the libunwind upstream: http://git.savannah.gnu.org/gitweb/?p=libunwind.git;a=commit;h=770152268807e460184b4152e23aba9c86601090.
 
 Then, expand the coverage of the upstream patch by:
 
