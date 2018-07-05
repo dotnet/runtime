@@ -982,17 +982,19 @@
     "System.Composition": {
       "StableVersions": [
         "1.0.31",
-        "1.1.0"
+        "1.1.0",
+        "1.2.0"
       ],
-      "BaselineVersion": "1.1.0",
+      "BaselineVersion": "1.2.0",
       "InboxOn": {}
     },
     "System.Composition.AttributedModel": {
       "StableVersions": [
         "1.0.31",
-        "1.1.0"
+        "1.1.0",
+        "1.2.0"
       ],
-      "BaselineVersion": "1.1.0",
+      "BaselineVersion": "1.2.0",
       "InboxOn": {},
       "AssemblyVersionInPackageVersion": {
         "1.0.31.0": "1.0.31",
@@ -1004,9 +1006,10 @@
     "System.Composition.Convention": {
       "StableVersions": [
         "1.0.31",
-        "1.1.0"
+        "1.1.0",
+        "1.2.0"
       ],
-      "BaselineVersion": "1.1.0",
+      "BaselineVersion": "1.2.0",
       "InboxOn": {},
       "AssemblyVersionInPackageVersion": {
         "1.0.31.0": "1.0.31",
@@ -1018,9 +1021,10 @@
     "System.Composition.Hosting": {
       "StableVersions": [
         "1.0.31",
-        "1.1.0"
+        "1.1.0",
+        "1.2.0"
       ],
-      "BaselineVersion": "1.1.0",
+      "BaselineVersion": "1.2.0",
       "InboxOn": {},
       "AssemblyVersionInPackageVersion": {
         "1.0.31.0": "1.0.31",
@@ -1032,9 +1036,10 @@
     "System.Composition.Runtime": {
       "StableVersions": [
         "1.0.31",
-        "1.1.0"
+        "1.1.0",
+        "1.2.0"
       ],
-      "BaselineVersion": "1.1.0",
+      "BaselineVersion": "1.2.0",
       "InboxOn": {},
       "AssemblyVersionInPackageVersion": {
         "1.0.31.0": "1.0.31",
@@ -1046,9 +1051,10 @@
     "System.Composition.TypedParts": {
       "StableVersions": [
         "1.0.31",
-        "1.1.0"
+        "1.1.0",
+        "1.2.0"
       ],
-      "BaselineVersion": "1.1.0",
+      "BaselineVersion": "1.2.0",
       "InboxOn": {},
       "AssemblyVersionInPackageVersion": {
         "1.0.31.0": "1.0.31",
