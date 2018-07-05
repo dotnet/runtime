@@ -97,4 +97,7 @@
   <data name="PlatformNotSupported_ComponentModel_Composition_Registration" xml:space="preserve">
     <value>System.ComponentModel.Composition.Registration APIs are not supported on this platform.</value>
   </data>
+  <data name="Registration_OnSatisfiedImportNotificationOverridden" xml:space="preserve">
+    <value>A OnSatisfiedImports specification convention that would apply to Type '{0}' has been overridden by attributes applied in the source file or by a prior convention.</value>
+  </data>
 </root>

@@ -3,53 +3,38 @@
   <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.props))\dir.props" />
   <PropertyGroup>
     <ProjectGuid>{E6592FAD-10B5-4B56-9287-D72DD136992F}</ProjectGuid>
-    <AppDesignerFolder>Properties</AppDesignerFolder>
     <AssemblyName>System.Composition.Convention</AssemblyName>
-    <DefineConstants Condition="'$(TargetGroup)' == 'netstandard1.0'">$(DefineConstants);netstandard10</DefineConstants>
-    <PackageTargetFramework Condition="'$(TargetGroup)' == 'netstandard1.0'">netstandard1.0;portable-net45+win8+wp8+wpa81</PackageTargetFramework>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'netstandard-Debug|AnyCPU'" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'netstandard-Release|AnyCPU'" />
-  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'netstandard1.0-Debug|AnyCPU'" />
-  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'netstandard1.0-Release|AnyCPU'" />
   <ItemGroup>
-    <Compile Include="Microsoft\Composition\Diagnostics\CompositionTrace.cs" />
-    <Compile Include="Microsoft\Composition\Diagnostics\CompositionTraceId.cs" />
-    <Compile Include="Microsoft\Composition\Diagnostics\CompositionTraceSource.cs" />
-    <Compile Include="Microsoft\Composition\Diagnostics\DebuggerTraceWriter.cs" />
-    <Compile Include="Microsoft\Composition\Diagnostics\TraceSourceTraceWriter.cs" />
-    <Compile Include="Microsoft\Composition\Diagnostics\TraceWriter.cs" />
-    <Compile Include="Microsoft\Internal\AttributeServices.cs" />
-    <Compile Include="Microsoft\Internal\ReflectionServices.cs" />
     <Compile Include="System\Composition\Convention\ConventionBuilder.cs" />
     <Compile Include="System\Composition\Convention\ExportConventionBuilder.cs" />
     <Compile Include="System\Composition\Convention\ImportConventionBuilder.cs" />
     <Compile Include="System\Composition\Convention\ParameterImportConventionBuilder.cs" />
     <Compile Include="System\Composition\Convention\PartConventionBuilder.cs" />
     <Compile Include="System\Composition\Convention\PartConventionBuilderOfT.cs" />
-    <Compile Include="System\Composition\ExceptionBuilder.cs" />
-  </ItemGroup>
-  <ItemGroup>
+    <Compile Include="$(CommonPath)\System\Composition\Diagnostics\CompositionTrace.cs">
+      <Link>Common\System\Composition\Diagnostics\CompositionTrace.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)\System\Composition\Diagnostics\CompositionTraceId.cs">
+      <Link>Common\System\Composition\Diagnostics\CompositionTraceId.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)\System\Composition\Diagnostics\CompositionTraceSource.cs">
+      <Link>Common\System\Composition\Diagnostics\CompositionTraceSource.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)\System\Composition\Diagnostics\DebuggerTraceWriter.cs">
+      <Link>Common\System\Composition\Diagnostics\DebuggerTraceWriter.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)\System\Composition\Diagnostics\TraceWriter.cs">
+      <Link>Common\System\Composition\Diagnostics\TraceWriter.cs</Link>
+    </Compile>
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\..\System.Composition.AttributedModel\src\System.Composition.AttributedModel.csproj">
       <Project>{c6257381-c624-494a-a9d9-5586e60856ea}</Project>
       <Name>System.Composition.AttributedModel</Name>
     </ProjectReference>
-  </ItemGroup>
-  <ItemGroup Condition="'$(TargetGroup)' == 'netstandard1.0'">
-    <Reference Include="System.Collections" />
-    <Reference Include="System.Diagnostics.Contracts" />
-    <Reference Include="System.Diagnostics.Debug" />
-    <Reference Include="System.Diagnostics.Tools" />
-    <Reference Include="System.Globalization" />
-    <Reference Include="System.Linq" />
-    <Reference Include="System.Linq.Expressions" />
-    <Reference Include="System.Reflection" />
-    <Reference Include="System.Reflection.Extensions" />
-    <Reference Include="System.Resources.ResourceManager" />
-    <Reference Include="System.Runtime" />
-    <Reference Include="System.Threading" />
   </ItemGroup>
   <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.targets))\dir.targets" />
 </Project>
