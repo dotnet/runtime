@@ -20,7 +20,7 @@ static BROTLI_INLINE size_t FN(HashTypeLength)(void) { return 8; }
 static BROTLI_INLINE size_t FN(StoreLookahead)(void) { return 8; }
 
 /* HashBytes is the function that chooses the bucket to place the address in. */
-static BROTLI_INLINE uint32_t FN(HashBytes)(const uint8_t *data,
+static BROTLI_INLINE uint32_t FN(HashBytes)(const uint8_t* data,
                                             const uint64_t mask,
                                             const int shift) {
   const uint64_t h = (BROTLI_UNALIGNED_LOAD64LE(data) & mask) * kHashMul64Long;
@@ -105,7 +105,7 @@ static BROTLI_INLINE size_t FN(HashMemAllocInBytes)(
 
 /* Look at 4 bytes at &data[ix & mask].
    Compute a hash from these, and store the value of ix at that position. */
-static BROTLI_INLINE void FN(Store)(HasherHandle handle, const uint8_t *data,
+static BROTLI_INLINE void FN(Store)(HasherHandle handle, const uint8_t* data,
     const size_t mask, const size_t ix) {
   HashLongestMatch* self = FN(Self)(handle);
   uint16_t* num = FN(Num)(self);
@@ -119,7 +119,7 @@ static BROTLI_INLINE void FN(Store)(HasherHandle handle, const uint8_t *data,
 }
 
 static BROTLI_INLINE void FN(StoreRange)(HasherHandle handle,
-    const uint8_t *data, const size_t mask, const size_t ix_start,
+    const uint8_t* data, const size_t mask, const size_t ix_start,
     const size_t ix_end) {
   size_t i;
   for (i = ix_start; i < ix_end; ++i) {
@@ -158,11 +158,11 @@ static BROTLI_INLINE void FN(PrepareDistanceCache)(
    Writes the best match into |out|.
    |out|->score is updated only if a better match is found. */
 static BROTLI_INLINE void FN(FindLongestMatch)(HasherHandle handle,
-    const BrotliDictionary* dictionary, const uint16_t* dictionary_hash,
+    const BrotliEncoderDictionary* dictionary,
     const uint8_t* BROTLI_RESTRICT data, const size_t ring_buffer_mask,
     const int* BROTLI_RESTRICT distance_cache, const size_t cur_ix,
     const size_t max_length, const size_t max_backward, const size_t gap,
-    HasherSearchResult* BROTLI_RESTRICT out) {
+    const size_t max_distance, HasherSearchResult* BROTLI_RESTRICT out) {
   HasherCommon* common = GetHasherCommon(handle);
   HashLongestMatch* self = FN(Self)(handle);
   uint16_t* num = FN(Num)(self);
@@ -257,9 +257,9 @@ static BROTLI_INLINE void FN(FindLongestMatch)(HasherHandle handle,
     ++num[key];
   }
   if (min_score == out->score) {
-    SearchInStaticDictionary(dictionary, dictionary_hash,
-        handle, &data[cur_ix_masked], max_length, max_backward + gap, out,
-        BROTLI_FALSE);
+    SearchInStaticDictionary(dictionary,
+        handle, &data[cur_ix_masked], max_length, max_backward + gap,
+        max_distance, out, BROTLI_FALSE);
   }
 }
 

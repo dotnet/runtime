@@ -15,6 +15,7 @@
 #include <string.h>  /* memcmp, memcpy, memset */
 
 #include "../common/constants.h"
+#include "../common/platform.h"
 #include <brotli/types.h>
 #include "./bit_cost.h"
 #include "./brotli_bit_stream.h"
@@ -22,9 +23,7 @@
 #include "./fast_log.h"
 #include "./find_match_length.h"
 #include "./memory.h"
-#include "./port.h"
 #include "./write_bits.h"
-
 
 #if defined(__cplusplus) || defined(c_plusplus)
 extern "C" {
@@ -38,28 +37,31 @@ extern "C" {
    * There is no effort to ensure that it is a prime, the oddity is enough
      for this use.
    * The number has been tuned heuristically against compression benchmarks. */
-static const uint32_t kHashMul32 = 0x1e35a7bd;
+static const uint32_t kHashMul32 = 0x1E35A7BD;
 
-static BROTLI_INLINE uint32_t Hash(const uint8_t* p, size_t shift) {
-  const uint64_t h = (BROTLI_UNALIGNED_LOAD64LE(p) << 16) * kHashMul32;
+static BROTLI_INLINE uint32_t Hash(const uint8_t* p,
+    size_t shift, size_t length) {
+  const uint64_t h =
+      (BROTLI_UNALIGNED_LOAD64LE(p) << ((8 - length) * 8)) * kHashMul32;
   return (uint32_t)(h >> shift);
 }
 
-static BROTLI_INLINE uint32_t HashBytesAtOffset(
-    uint64_t v, int offset, size_t shift) {
-  assert(offset >= 0);
-  assert(offset <= 2);
+static BROTLI_INLINE uint32_t HashBytesAtOffset(uint64_t v, size_t offset,
+    size_t shift, size_t length) {
+  BROTLI_DCHECK(offset <= 8 - length);
   {
-    const uint64_t h = ((v >> (8 * offset)) << 16) * kHashMul32;
+    const uint64_t h = ((v >> (8 * offset)) << ((8 - length) * 8)) * kHashMul32;
     return (uint32_t)(h >> shift);
   }
 }
 
-static BROTLI_INLINE BROTLI_BOOL IsMatch(const uint8_t* p1, const uint8_t* p2) {
-  return TO_BROTLI_BOOL(
-      BROTLI_UNALIGNED_LOAD32(p1) == BROTLI_UNALIGNED_LOAD32(p2) &&
-      p1[4] == p2[4] &&
-      p1[5] == p2[5]);
+static BROTLI_INLINE BROTLI_BOOL IsMatch(const uint8_t* p1, const uint8_t* p2,
+    size_t length) {
+  if (BrotliUnalignedRead32(p1) == BrotliUnalignedRead32(p2)) {
+    if (length == 4) return BROTLI_TRUE;
+    return TO_BROTLI_BOOL(p1[4] == p2[4] && p1[5] == p2[5]);
+  }
+  return BROTLI_FALSE;
 }
 
 /* Builds a command and distance prefix code (each 64 symbols) into "depth" and
@@ -236,7 +238,8 @@ static void BrotliStoreMetaBlockHeader(
 
 static BROTLI_INLINE void CreateCommands(const uint8_t* input,
     size_t block_size, size_t input_size, const uint8_t* base_ip, int* table,
-    size_t table_bits, uint8_t** literals, uint32_t** commands) {
+    size_t table_bits, size_t min_match,
+    uint8_t** literals, uint32_t** commands) {
   /* "ip" is the input pointer. */
   const uint8_t* ip = input;
   const size_t shift = 64u - table_bits;
@@ -248,19 +251,18 @@ static BROTLI_INLINE void CreateCommands(const uint8_t* input,
 
   int last_distance = -1;
   const size_t kInputMarginBytes = BROTLI_WINDOW_GAP;
-  const size_t kMinMatchLen = 6;
 
   if (BROTLI_PREDICT_TRUE(block_size >= kInputMarginBytes)) {
     /* For the last block, we need to keep a 16 bytes margin so that we can be
        sure that all distances are at most window size - 16.
        For all other blocks, we only need to keep a margin of 5 bytes so that
        we don't go over the block size with a copy. */
-    const size_t len_limit = BROTLI_MIN(size_t, block_size - kMinMatchLen,
+    const size_t len_limit = BROTLI_MIN(size_t, block_size - min_match,
                                         input_size - kInputMarginBytes);
     const uint8_t* ip_limit = input + len_limit;
 
     uint32_t next_hash;
-    for (next_hash = Hash(++ip, shift); ; ) {
+    for (next_hash = Hash(++ip, shift, min_match); ; ) {
       /* Step 1: Scan forward in the input looking for a 6-byte-long match.
          If we get close to exhausting the input then goto emit_remainder.
 
@@ -281,31 +283,31 @@ static BROTLI_INLINE void CreateCommands(const uint8_t* input,
       const uint8_t* next_ip = ip;
       const uint8_t* candidate;
 
-      assert(next_emit < ip);
+      BROTLI_DCHECK(next_emit < ip);
 trawl:
       do {
         uint32_t hash = next_hash;
         uint32_t bytes_between_hash_lookups = skip++ >> 5;
         ip = next_ip;
-        assert(hash == Hash(ip, shift));
+        BROTLI_DCHECK(hash == Hash(ip, shift, min_match));
         next_ip = ip + bytes_between_hash_lookups;
         if (BROTLI_PREDICT_FALSE(next_ip > ip_limit)) {
           goto emit_remainder;
         }
-        next_hash = Hash(next_ip, shift);
+        next_hash = Hash(next_ip, shift, min_match);
         candidate = ip - last_distance;
-        if (IsMatch(ip, candidate)) {
+        if (IsMatch(ip, candidate, min_match)) {
           if (BROTLI_PREDICT_TRUE(candidate < ip)) {
             table[hash] = (int)(ip - base_ip);
             break;
           }
         }
         candidate = base_ip + table[hash];
-        assert(candidate >= base_ip);
-        assert(candidate < ip);
+        BROTLI_DCHECK(candidate >= base_ip);
+        BROTLI_DCHECK(candidate < ip);
 
         table[hash] = (int)(ip - base_ip);
-      } while (BROTLI_PREDICT_TRUE(!IsMatch(ip, candidate)));
+      } while (BROTLI_PREDICT_TRUE(!IsMatch(ip, candidate, min_match)));
 
       /* Check copy distance. If candidate is not feasible, continue search.
          Checking is done outside of hot loop to reduce overhead. */
@@ -320,12 +322,13 @@ trawl:
         /* We have a 6-byte match at ip, and we need to emit bytes in
            [next_emit, ip). */
         const uint8_t* base = ip;
-        size_t matched = 6 + FindMatchLengthWithLimit(
-            candidate + 6, ip + 6, (size_t)(ip_end - ip) - 6);
+        size_t matched = min_match + FindMatchLengthWithLimit(
+            candidate + min_match, ip + min_match,
+            (size_t)(ip_end - ip) - min_match);
         int distance = (int)(base - candidate);  /* > 0 */
         int insert = (int)(base - next_emit);
         ip += matched;
-        assert(0 == memcmp(base, candidate, matched));
+        BROTLI_DCHECK(0 == memcmp(base, candidate, matched));
         EmitInsertLen((uint32_t)insert, commands);
         memcpy(*literals, next_emit, (size_t)insert);
         *literals += insert;
@@ -346,35 +349,50 @@ trawl:
           /* We could immediately start working at ip now, but to improve
              compression we first update "table" with the hashes of some
              positions within the last copy. */
-          uint64_t input_bytes = BROTLI_UNALIGNED_LOAD64LE(ip - 5);
-          uint32_t prev_hash = HashBytesAtOffset(input_bytes, 0, shift);
+          uint64_t input_bytes;
           uint32_t cur_hash;
-          table[prev_hash] = (int)(ip - base_ip - 5);
-          prev_hash = HashBytesAtOffset(input_bytes, 1, shift);
-          table[prev_hash] = (int)(ip - base_ip - 4);
-          prev_hash = HashBytesAtOffset(input_bytes, 2, shift);
-          table[prev_hash] = (int)(ip - base_ip - 3);
-          input_bytes = BROTLI_UNALIGNED_LOAD64LE(ip - 2);
-          cur_hash = HashBytesAtOffset(input_bytes, 2, shift);
-          prev_hash = HashBytesAtOffset(input_bytes, 0, shift);
-          table[prev_hash] = (int)(ip - base_ip - 2);
-          prev_hash = HashBytesAtOffset(input_bytes, 1, shift);
-          table[prev_hash] = (int)(ip - base_ip - 1);
+          uint32_t prev_hash;
+          if (min_match == 4) {
+            input_bytes = BROTLI_UNALIGNED_LOAD64LE(ip - 3);
+            cur_hash = HashBytesAtOffset(input_bytes, 3, shift, min_match);
+            prev_hash = HashBytesAtOffset(input_bytes, 0, shift, min_match);
+            table[prev_hash] = (int)(ip - base_ip - 3);
+            prev_hash = HashBytesAtOffset(input_bytes, 1, shift, min_match);
+            table[prev_hash] = (int)(ip - base_ip - 2);
+            prev_hash = HashBytesAtOffset(input_bytes, 0, shift, min_match);
+            table[prev_hash] = (int)(ip - base_ip - 1);
+          } else {
+            input_bytes = BROTLI_UNALIGNED_LOAD64LE(ip - 5);
+            prev_hash = HashBytesAtOffset(input_bytes, 0, shift, min_match);
+            table[prev_hash] = (int)(ip - base_ip - 5);
+            prev_hash = HashBytesAtOffset(input_bytes, 1, shift, min_match);
+            table[prev_hash] = (int)(ip - base_ip - 4);
+            prev_hash = HashBytesAtOffset(input_bytes, 2, shift, min_match);
+            table[prev_hash] = (int)(ip - base_ip - 3);
+            input_bytes = BROTLI_UNALIGNED_LOAD64LE(ip - 2);
+            cur_hash = HashBytesAtOffset(input_bytes, 2, shift, min_match);
+            prev_hash = HashBytesAtOffset(input_bytes, 0, shift, min_match);
+            table[prev_hash] = (int)(ip - base_ip - 2);
+            prev_hash = HashBytesAtOffset(input_bytes, 1, shift, min_match);
+            table[prev_hash] = (int)(ip - base_ip - 1);
+          }
 
           candidate = base_ip + table[cur_hash];
           table[cur_hash] = (int)(ip - base_ip);
         }
       }
 
-      while (ip - candidate <= MAX_DISTANCE && IsMatch(ip, candidate)) {
+      while (ip - candidate <= MAX_DISTANCE &&
+          IsMatch(ip, candidate, min_match)) {
         /* We have a 6-byte match at ip, and no need to emit any
            literal bytes prior to ip. */
         const uint8_t* base = ip;
-        size_t matched = 6 + FindMatchLengthWithLimit(
-            candidate + 6, ip + 6, (size_t)(ip_end - ip) - 6);
+        size_t matched = min_match + FindMatchLengthWithLimit(
+            candidate + min_match, ip + min_match,
+            (size_t)(ip_end - ip) - min_match);
         ip += matched;
         last_distance = (int)(base - candidate);  /* > 0 */
-        assert(0 == memcmp(base, candidate, matched));
+        BROTLI_DCHECK(0 == memcmp(base, candidate, matched));
         EmitCopyLen(matched, commands);
         EmitDistance((uint32_t)last_distance, commands);
 
@@ -386,32 +404,45 @@ trawl:
           /* We could immediately start working at ip now, but to improve
              compression we first update "table" with the hashes of some
              positions within the last copy. */
-          uint64_t input_bytes = BROTLI_UNALIGNED_LOAD64LE(ip - 5);
-          uint32_t prev_hash = HashBytesAtOffset(input_bytes, 0, shift);
+          uint64_t input_bytes;
           uint32_t cur_hash;
-          table[prev_hash] = (int)(ip - base_ip - 5);
-          prev_hash = HashBytesAtOffset(input_bytes, 1, shift);
-          table[prev_hash] = (int)(ip - base_ip - 4);
-          prev_hash = HashBytesAtOffset(input_bytes, 2, shift);
-          table[prev_hash] = (int)(ip - base_ip - 3);
-          input_bytes = BROTLI_UNALIGNED_LOAD64LE(ip - 2);
-          cur_hash = HashBytesAtOffset(input_bytes, 2, shift);
-          prev_hash = HashBytesAtOffset(input_bytes, 0, shift);
-          table[prev_hash] = (int)(ip - base_ip - 2);
-          prev_hash = HashBytesAtOffset(input_bytes, 1, shift);
-          table[prev_hash] = (int)(ip - base_ip - 1);
+          uint32_t prev_hash;
+          if (min_match == 4) {
+            input_bytes = BROTLI_UNALIGNED_LOAD64LE(ip - 3);
+            cur_hash = HashBytesAtOffset(input_bytes, 3, shift, min_match);
+            prev_hash = HashBytesAtOffset(input_bytes, 0, shift, min_match);
+            table[prev_hash] = (int)(ip - base_ip - 3);
+            prev_hash = HashBytesAtOffset(input_bytes, 1, shift, min_match);
+            table[prev_hash] = (int)(ip - base_ip - 2);
+            prev_hash = HashBytesAtOffset(input_bytes, 2, shift, min_match);
+            table[prev_hash] = (int)(ip - base_ip - 1);
+          } else {
+            input_bytes = BROTLI_UNALIGNED_LOAD64LE(ip - 5);
+            prev_hash = HashBytesAtOffset(input_bytes, 0, shift, min_match);
+            table[prev_hash] = (int)(ip - base_ip - 5);
+            prev_hash = HashBytesAtOffset(input_bytes, 1, shift, min_match);
+            table[prev_hash] = (int)(ip - base_ip - 4);
+            prev_hash = HashBytesAtOffset(input_bytes, 2, shift, min_match);
+            table[prev_hash] = (int)(ip - base_ip - 3);
+            input_bytes = BROTLI_UNALIGNED_LOAD64LE(ip - 2);
+            cur_hash = HashBytesAtOffset(input_bytes, 2, shift, min_match);
+            prev_hash = HashBytesAtOffset(input_bytes, 0, shift, min_match);
+            table[prev_hash] = (int)(ip - base_ip - 2);
+            prev_hash = HashBytesAtOffset(input_bytes, 1, shift, min_match);
+            table[prev_hash] = (int)(ip - base_ip - 1);
+          }
 
           candidate = base_ip + table[cur_hash];
           table[cur_hash] = (int)(ip - base_ip);
         }
       }
 
-      next_hash = Hash(++ip, shift);
+      next_hash = Hash(++ip, shift, min_match);
     }
   }
 
 emit_remainder:
-  assert(next_emit <= ip_end);
+  BROTLI_DCHECK(next_emit <= ip_end);
   /* Emit the remaining bytes as literals. */
   if (next_emit < ip_end) {
     const uint32_t insert = (uint32_t)(ip_end - next_emit);
@@ -457,7 +488,7 @@ static void StoreCommands(MemoryManager* m,
 
   for (i = 0; i < num_commands; ++i) {
     const uint32_t code = commands[i] & 0xFF;
-    assert(code < 128);
+    BROTLI_DCHECK(code < 128);
     ++cmd_histo[code];
   }
   cmd_histo[1] += 1;
@@ -471,7 +502,7 @@ static void StoreCommands(MemoryManager* m,
     const uint32_t cmd = commands[i];
     const uint32_t code = cmd & 0xFF;
     const uint32_t extra = cmd >> 8;
-    assert(code < 128);
+    BROTLI_DCHECK(code < 128);
     BrotliWriteBits(cmd_depths[code], cmd_bits[code], storage_ix, storage);
     BrotliWriteBits(kNumExtraBits[code], extra, storage_ix, storage);
     if (code < 24) {
@@ -526,7 +557,8 @@ static void EmitUncompressedMetaBlock(const uint8_t* input, size_t input_size,
 static BROTLI_INLINE void BrotliCompressFragmentTwoPassImpl(
     MemoryManager* m, const uint8_t* input, size_t input_size,
     BROTLI_BOOL is_last, uint32_t* command_buf, uint8_t* literal_buf,
-    int* table, size_t table_bits, size_t* storage_ix, uint8_t* storage) {
+    int* table, size_t table_bits, size_t min_match,
+    size_t* storage_ix, uint8_t* storage) {
   /* Save the start of the first block for position and distance computations.
   */
   const uint8_t* base_ip = input;
@@ -538,8 +570,8 @@ static BROTLI_INLINE void BrotliCompressFragmentTwoPassImpl(
     uint32_t* commands = command_buf;
     uint8_t* literals = literal_buf;
     size_t num_literals;
-    CreateCommands(input, block_size, input_size, base_ip, table, table_bits,
-                   &literals, &commands);
+    CreateCommands(input, block_size, input_size, base_ip, table,
+                   table_bits, min_match, &literals, &commands);
     num_literals = (size_t)(literals - literal_buf);
     if (ShouldCompress(input, block_size, num_literals)) {
       const size_t num_commands = (size_t)(commands - command_buf);
@@ -568,8 +600,9 @@ static BROTLI_NOINLINE void BrotliCompressFragmentTwoPassImpl ## B(            \
     MemoryManager* m, const uint8_t* input, size_t input_size,                 \
     BROTLI_BOOL is_last, uint32_t* command_buf, uint8_t* literal_buf,          \
     int* table, size_t* storage_ix, uint8_t* storage) {                        \
+  size_t min_match = (B <= 15) ? 4 : 6;                                        \
   BrotliCompressFragmentTwoPassImpl(m, input, input_size, is_last, command_buf,\
-      literal_buf, table, B, storage_ix, storage);                             \
+      literal_buf, table, B, min_match, storage_ix, storage);                  \
 }
 FOR_TABLE_BITS_(BAKE_METHOD_PARAM_)
 #undef BAKE_METHOD_PARAM_
@@ -589,7 +622,7 @@ void BrotliCompressFragmentTwoPass(
       break;
     FOR_TABLE_BITS_(CASE_)
 #undef CASE_
-    default: assert(0); break;
+    default: BROTLI_DCHECK(0); break;
   }
 
   /* If output is larger than single uncompressed block, rewrite it. */

@@ -5,8 +5,9 @@
   </PropertyGroup>
   <ItemGroup>
     <Compile Include="System.Reflection.Emit.ILGeneration.cs" />
+    <Compile Condition="'$(TargetGroup)' == 'netcoreapp' OR '$(TargetGroup)' == 'uap'" Include="System.Reflection.Emit.ILGeneration.netcore.cs" />
   </ItemGroup>
-  <ItemGroup>
+  <ItemGroup Condition="'$(TargetGroup)' != 'netstandard'">
     <ProjectReference Include="..\..\System.Runtime\ref\System.Runtime.csproj" />
     <ProjectReference Include="..\..\System.Runtime.InteropServices\ref\System.Runtime.InteropServices.csproj" />
     <ProjectReference Include="..\..\System.Reflection\ref\System.Reflection.csproj" />

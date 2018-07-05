@@ -112,16 +112,16 @@ namespace System.Text.RegularExpressions
             internalMatchTimeout = matchTimeout;
 
             // Cache handling. Try to look up this regex in the cache.
-            string cultureKey = (options & RegexOptions.CultureInvariant) != 0 ?
-                    CultureInfo.InvariantCulture.ToString() :
-                    CultureInfo.CurrentCulture.ToString();                        
-            var key = new CachedCodeEntryKey(options, cultureKey, pattern);
+            CultureInfo culture = (options & RegexOptions.CultureInvariant) != 0 ?
+                CultureInfo.InvariantCulture :
+                CultureInfo.CurrentCulture;
+            var key = new CachedCodeEntryKey(options, culture.ToString(), pattern);
             CachedCodeEntry cached = GetCachedCode(key, false);
 
             if (cached == null)
             {
                 // Parse the input
-                RegexTree tree = RegexParser.Parse(pattern, roptions);
+                RegexTree tree = RegexParser.Parse(pattern, roptions, culture);
 
                 // Extract the relevant information
                 capnames = tree.CapNames;

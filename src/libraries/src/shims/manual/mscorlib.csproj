@@ -7,4 +7,24 @@
     <Compile Include="mscorlib.forwards.cs" />
     <ReferencePath Include="$(_RuntimePath)System.*.dll;$(_RuntimePath)Microsoft.*.dll" Exclude="$(_RuntimePath)Microsoft.Diagnostics.Tracing.TraceEvent.dll;$(_RuntimePath)Microsoft.DiaSymReader.Native.*.dll" />
   </ItemGroup>
+  <ItemGroup>
+    <SeedTypePreference Include="System.Reflection.Emit.AssemblyBuilder" Assembly="System.Reflection.Emit" />
+    <SeedTypePreference Include="System.Reflection.Emit.AssemblyBuilderAccess" Assembly="System.Reflection.Emit" />
+    <SeedTypePreference Include="System.Reflection.Emit.ConstructorBuilder" Assembly="System.Reflection.Emit" />
+    <SeedTypePreference Include="System.Reflection.Emit.CustomAttributeBuilder" Assembly="System.Reflection.Emit.ILGeneration" />
+    <SeedTypePreference Include="System.Reflection.Emit.DynamicMethod" Assembly="System.Reflection.Emit.Lightweight" />
+    <SeedTypePreference Include="System.Reflection.Emit.EnumBuilder" Assembly="System.Reflection.Emit" />
+    <SeedTypePreference Include="System.Reflection.Emit.EventBuilder" Assembly="System.Reflection.Emit" />
+    <SeedTypePreference Include="System.Reflection.Emit.FieldBuilder" Assembly="System.Reflection.Emit" />
+    <SeedTypePreference Include="System.Reflection.Emit.GenericTypeParameterBuilder" Assembly="System.Reflection.Emit" />
+    <SeedTypePreference Include="System.Reflection.Emit.ILGenerator" Assembly="System.Reflection.Emit.ILGeneration" />
+    <SeedTypePreference Include="System.Reflection.Emit.Label" Assembly="System.Reflection.Emit.ILGeneration" />
+    <SeedTypePreference Include="System.Reflection.Emit.LocalBuilder" Assembly="System.Reflection.Emit.ILGeneration" />
+    <SeedTypePreference Include="System.Reflection.Emit.MethodBuilder" Assembly="System.Reflection.Emit" />
+    <SeedTypePreference Include="System.Reflection.Emit.ModuleBuilder" Assembly="System.Reflection.Emit" />
+    <SeedTypePreference Include="System.Reflection.Emit.ParameterBuilder" Assembly="System.Reflection.Emit.ILGeneration" />
+    <SeedTypePreference Include="System.Reflection.Emit.PropertyBuilder" Assembly="System.Reflection.Emit" />
+    <SeedTypePreference Include="System.Reflection.Emit.SignatureHelper" Assembly="System.Reflection.Emit.ILGeneration" />
+    <SeedTypePreference Include="System.Reflection.Emit.TypeBuilder" Assembly="System.Reflection.Emit" />
+  </ItemGroup>
 </Project>

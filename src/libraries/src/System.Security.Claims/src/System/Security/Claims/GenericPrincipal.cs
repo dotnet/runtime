@@ -84,5 +84,8 @@ namespace System.Security.Principal
             // it may be the case a ClaimsIdentity was passed in as the IIdentity which may have contained claims, they need to be checked.
             return base.IsInRole(role);
         }
+
+        // This is called by AppDomain.GetThreadPrincipal() via reflection.
+        private static IPrincipal GetDefaultInstance() => new GenericPrincipal(new GenericIdentity(string.Empty), new string[] { string.Empty });
     }
 }

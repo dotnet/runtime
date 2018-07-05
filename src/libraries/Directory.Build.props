@@ -165,6 +165,9 @@
   <PropertyGroup>
     <TargetsNetCoreApp Condition="$(TargetGroup.StartsWith('netcoreapp'))">true</TargetsNetCoreApp>
     <TargetsUap Condition="$(TargetGroup.StartsWith('uap'))">true</TargetsUap>
+    <TargetsNetStandard Condition="$(TargetGroup.StartsWith('netstandard'))">true</TargetsNetStandard>
+    <TargetsNetCoreApp Condition="$(TargetGroup.StartsWith('netcoreapp'))">true</TargetsNetCoreApp>
+    <TargetsAot Condition="$(TargetGroup.EndsWith('aot'))">true</TargetsAot>
     <TargetsNetFx Condition="$(TargetGroup.StartsWith('net4')) OR '$(TargetGroup)' == 'netfx'">true</TargetsNetFx>
   </PropertyGroup>
 
@@ -311,6 +314,9 @@
     <PackagesBasePath Condition="'$(PackagesBasePath)'==''">$(BinDir)$(OSPlatformConfig)</PackagesBasePath>
     <PackageOutputPath Condition="'$(PackageOutputPath)'==''">$(PackageOutputRoot)$(ConfigurationGroup)/</PackageOutputPath>
     <SymbolPackageOutputPath Condition="'$(SymbolPackageOutputPath)'==''">$(PackageOutputPath)symbols/</SymbolPackageOutputPath>
+
+    <!-- interop is not available on NETStandard1.0 -->
+    <IncludeDllSafeSearchPathAttribute Condition="'$(TargetGroup)' == 'netstandard1.0'">false</IncludeDllSafeSearchPathAttribute>
   </PropertyGroup>
 
   <!-- Set up default paths for reference assemblies -->
@@ -330,7 +336,7 @@
   </PropertyGroup>
 
   <PropertyGroup>
-    <OptionalToolingJsonPath>$(ProjectDir)\external\test-runtime\optional.json</OptionalToolingJsonPath>
+    <OptionalToolingProjectPath>$(ProjectDir)\external\test-runtime\optional.csproj</OptionalToolingProjectPath>
   </PropertyGroup>
 
   <PropertyGroup>

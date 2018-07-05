@@ -9,9 +9,9 @@
 
 #include "./literal_cost.h"
 
+#include "../common/platform.h"
 #include <brotli/types.h>
 #include "./fast_log.h"
-#include "./port.h"
 #include "./utf8_util.h"
 
 #if defined(__cplusplus) || defined(c_plusplus)
@@ -25,7 +25,7 @@ static size_t UTF8Position(size_t last, size_t c, size_t clamp) {
     return BROTLI_MIN(size_t, 1, clamp);
   } else {
     /* Let's decide over the last byte if this ends the sequence. */
-    if (last < 0xe0) {
+    if (last < 0xE0) {
       return 0;  /* Completed two or three byte coding. */
     } else {  /* Next one is the 'Byte 3' of utf-8 encoding. */
       return BROTLI_MIN(size_t, 2, clamp);
@@ -34,7 +34,7 @@ static size_t UTF8Position(size_t last, size_t c, size_t clamp) {
 }
 
 static size_t DecideMultiByteStatsLevel(size_t pos, size_t len, size_t mask,
-                                        const uint8_t *data) {
+                                        const uint8_t* data) {
   size_t counts[3] = { 0 };
   size_t max_utf8 = 1;  /* should be 2, but 1 compresses better. */
   size_t last_c = 0;
@@ -54,7 +54,7 @@ static size_t DecideMultiByteStatsLevel(size_t pos, size_t len, size_t mask,
 }
 
 static void EstimateBitCostsForLiteralsUTF8(size_t pos, size_t len, size_t mask,
-                                            const uint8_t *data, float *cost) {
+                                            const uint8_t* data, float* cost) {
   /* max_utf8 is 0 (normal ASCII single byte modeling),
      1 (for 2-byte UTF-8 modeling), or 2 (for 3-byte UTF-8 modeling). */
   const size_t max_utf8 = DecideMultiByteStatsLevel(pos, len, mask, data);
@@ -125,7 +125,7 @@ static void EstimateBitCostsForLiteralsUTF8(size_t pos, size_t len, size_t mask,
 }
 
 void BrotliEstimateBitCostsForLiterals(size_t pos, size_t len, size_t mask,
-                                       const uint8_t *data, float *cost) {
+                                       const uint8_t* data, float* cost) {
   if (BrotliIsMostlyUTF8(data, pos, mask, len, kMinUTF8Ratio)) {
     EstimateBitCostsForLiteralsUTF8(pos, len, mask, data, cost);
     return;
