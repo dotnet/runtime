@@ -30,6 +30,8 @@ namespace System
 
         public string RelativeSearchPath => null;
 
+        public AppDomainSetup SetupInformation => new AppDomainSetup();
+
         public event UnhandledExceptionEventHandler UnhandledException
         {
             add { AppContext.UnhandledException += value; }
