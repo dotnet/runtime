@@ -84,7 +84,7 @@ static const uint32_t ten_to_ten_div_4 = 2500000000U;
 typedef union {
 	uint64_t int64;
 	struct {
-#if BYTE_ORDER == G_BIG_ENDIAN
+#if G_BYTE_ORDER == G_BIG_ENDIAN
         uint32_t Hi;
         uint32_t Lo;
 #else
@@ -169,14 +169,8 @@ static const DECOVFL power_overflow[] = {
 };
 
 #define UInt32x32To64(a, b) ((uint64_t)((uint32_t)(a)) * (uint64_t)((uint32_t)(b)))
-#if G_BYTE_ORDER != G_LITTLE_ENDIAN
-/* hacky endian swap where losing the other end is OK, since we truncate to 32bit */
-#define Div64by32(num, den) ((uint32_t) (((uint64_t)(num) / (uint32_t)(den)) >> 32) )
-#define Mod64by32(num, den) ((uint32_t) (((uint64_t)(num) % (uint32_t)(den)) >> 32) )
-#else
 #define Div64by32(num, den) ((uint32_t)((uint64_t)(num) / (uint32_t)(den)))
 #define Mod64by32(num, den) ((uint32_t)((uint64_t)(num) % (uint32_t)(den)))
-#endif
 
 static double
 fnDblPower10(int ix)
