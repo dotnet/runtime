@@ -45,11 +45,6 @@ __PInvokeStubFuncName SETS "$FuncPrefix":CC:"Stub"
 __PInvokeGenStubFuncName SETS "$FuncPrefix":CC:"GenILStub"
 __PInvokeStubWorkerName SETS "$FuncPrefix":CC:"StubWorker"
 
-       IF "$VASigCookieReg" == "x1"
-__PInvokeStubFuncName SETS "$__PInvokeStubFuncName":CC:"_RetBuffArg"
-__PInvokeGenStubFuncName SETS "$__PInvokeGenStubFuncName":CC:"_RetBuffArg"
-        ENDIF
-
         NESTED_ENTRY $__PInvokeStubFuncName
 
         ; get the stub
@@ -84,9 +79,7 @@ __PInvokeGenStubFuncName SETS "$__PInvokeGenStubFuncName":CC:"_RetBuffArg"
         mov                 x2, $HiddenArg 
 
         ; x1 = VaSigCookie
-        IF "$VASigCookieReg" != "x1"
         mov                 x1, $VASigCookieReg
-        ENDIF
 
         ; x0 = pTransitionBlock
         add                 x0, sp, #__PWTB_TransitionBlock
@@ -118,7 +111,6 @@ __PInvokeGenStubFuncName SETS "$__PInvokeGenStubFuncName":CC:"_RetBuffArg"
 
 ; ------------------------------------------------------------------
 ; VarargPInvokeStub & VarargPInvokeGenILStub
-; There is a separate stub when the method has a hidden return buffer arg.
 ;
 ; in:
 ; x0 = VASigCookie*
@@ -136,16 +128,6 @@ __PInvokeGenStubFuncName SETS "$__PInvokeGenStubFuncName":CC:"_RetBuffArg"
 ; x12 = Unmanaged target
 ;
         PINVOKE_STUB GenericPInvokeCalli, x15, x12, {true}
-
-; ------------------------------------------------------------------
-; VarargPInvokeStub_RetBuffArg & VarargPInvokeGenILStub_RetBuffArg
-; Vararg PInvoke Stub when the method has a hidden return buffer arg
-;
-; in:
-; x1 = VASigCookie*
-; x12 = MethodDesc*       
-; 
-        PINVOKE_STUB VarargPInvoke, x1, x12, {false}
 
 
 ; Must be at very end of file 
