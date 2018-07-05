@@ -9,7 +9,7 @@
     <DefineConstants Condition="'$(TargetGroup)'!='netcoreapp' AND '$(TargetGroup)'!='uap' AND '$(TargetGroup)'!='net462'">$(DefineConstants);NO_DSA_AVAILABLE</DefineConstants>
     <DefineConstants Condition="'$(HaveCertificateCreation)'!='true'">$(DefineConstants);NO_EPHEMERALKEYSET_AVAILABLE</DefineConstants>
     <DefineConstants Condition="'$(TargetGroup)'=='netcoreapp' OR '$(TargetGroup)'=='uap'">$(DefineConstants);HAVE_THUMBPRINT_OVERLOADS</DefineConstants>
-    <Configurations>netcoreapp-OSX-Debug;netcoreapp-OSX-Release;netcoreapp-Unix-Debug;netcoreapp-Unix-Release;netcoreapp-Windows_NT-Debug;netcoreapp-Windows_NT-Release;uap-Windows_NT-Debug;uap-Windows_NT-Release</Configurations>
+    <Configurations>netcoreapp-OSX-Debug;netcoreapp-OSX-Release;netcoreapp-Unix-Debug;netcoreapp-Unix-Release;netcoreapp-Windows_NT-Debug;netcoreapp-Windows_NT-Release;netstandard-Debug;netstandard-Release;uap-Windows_NT-Debug;uap-Windows_NT-Release</Configurations>
   </PropertyGroup>
   <ItemGroup>
     <Compile Include="Cert.cs" />
