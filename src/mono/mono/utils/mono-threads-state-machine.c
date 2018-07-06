@@ -580,11 +580,11 @@ retry_state_change:
 	UNWRAP_THREAD_STATE (raw_state, cur_state, suspend_count, info);
 	switch (cur_state) {
 	case STATE_RUNNING: //thread already in runnable state
-		trace_state_change_with_func ("ABORT_BLOCKING", info, raw_state, cur_state, 0, func);
+		trace_state_change_sigsafe ("ABORT_BLOCKING", info, raw_state, cur_state, 0, func);
 		return AbortBlockingIgnore;
 
 	case STATE_ASYNC_SUSPEND_REQUESTED: //thread is runnable and have a pending suspend
-		trace_state_change_with_func ("ABORT_BLOCKING", info, raw_state, cur_state, 0, func);
+		trace_state_change_sigsafe ("ABORT_BLOCKING", info, raw_state, cur_state, 0, func);
 		return AbortBlockingIgnoreAndPoll;
 
 	case STATE_BLOCKING:
