@@ -152,7 +152,7 @@ namespace System.Net.Http
                             break;
 
                         case FrameType.Data:
-                            ProcessDataFrame(frameHeader);
+                            await ProcessDataFrame(frameHeader).ConfigureAwait(false);
                             break;
 
                         case FrameType.Settings:
@@ -171,12 +171,13 @@ namespace System.Net.Http
                             ProcessWindowUpdateFrame(frameHeader);
                             break;
 
+                        case FrameType.RstStream:
+                            ProcessRstStreamFrame(frameHeader);
+                            break;
+
                         case FrameType.GoAway:
                             ProcessGoAwayFrame(frameHeader);
                             break;
-
-                        case FrameType.RstStream:       // TODO
-                            throw new NotImplementedException();
 
                         case FrameType.PushPromise:     // Should not happen, since we disable this in our initial SETTINGS (TODO: We aren't currently, but we should)
                         case FrameType.Continuation:    // Should only be received while processing headers in ProcessHeadersFrame
@@ -191,6 +192,8 @@ namespace System.Net.Http
             }
         }
 
+        // Note, this will return null for a streamId that's not in use.
+        // Callers must check for this and send a RST_STREAM or ignore as appropriate.
         private Http2Stream GetStream(int streamId)
         {
             if (streamId <= 0)
@@ -202,11 +205,24 @@ namespace System.Net.Http
             {
                 if (!_httpStreams.TryGetValue(streamId, out Http2Stream http2Stream))
                 {
-                    throw new Http2ProtocolException(Http2ProtocolErrorCode.ProtocolError);
+                    return null;
                 }
 
                 return http2Stream;
             }
+        }
+
+        private async Task SendRstStreamFrameAsync(int streamId, Http2ProtocolErrorCode errorCode)
+        {
+            WriteFrameHeader(new FrameHeader(FrameHeader.RstStreamLength, FrameType.RstStream, FrameFlags.None, streamId));
+
+            _outgoingBuffer.WriteSpan[0] = (byte)(((int)errorCode & 0xFF000000) >> 24);
+            _outgoingBuffer.WriteSpan[1] = (byte)(((int)errorCode & 0x00FF0000) >> 16);
+            _outgoingBuffer.WriteSpan[2] = (byte)(((int)errorCode & 0x0000FF00) >> 8);
+            _outgoingBuffer.WriteSpan[3] = (byte)((int)errorCode & 0x000000FF);
+            _outgoingBuffer.Commit(FrameHeader.RstStreamLength);
+
+            await FlushOutgoingBytesAsync().ConfigureAwait(false);
         }
 
         private async Task ProcessHeadersFrame(FrameHeader frameHeader)
@@ -217,6 +233,12 @@ namespace System.Net.Http
 
             int streamId = frameHeader.StreamId;
             Http2Stream http2Stream = GetStream(streamId);
+            if (http2Stream == null)
+            {
+                _incomingBuffer.Consume(frameHeader.Length);
+                await SendRstStreamFrameAsync(streamId, Http2ProtocolErrorCode.StreamClosed);
+                return;
+            }
 
             // TODO: Figure out how to cache this delegate.
             // Probably want to pass a state object to Decode.
@@ -282,11 +304,16 @@ namespace System.Net.Http
             return frameData;
         }
 
-        private void ProcessDataFrame(FrameHeader frameHeader)
+        private Task ProcessDataFrame(FrameHeader frameHeader)
         {
             Debug.Assert(frameHeader.Type == FrameType.Data);
 
             Http2Stream http2Stream = GetStream(frameHeader.StreamId);
+            if (http2Stream == null)
+            {
+                _incomingBuffer.Consume(frameHeader.Length);
+                return SendRstStreamFrameAsync(frameHeader.StreamId, Http2ProtocolErrorCode.StreamClosed);
+            }
 
             ReadOnlySpan<byte> frameData = GetFrameData(_incomingBuffer.ReadSpan.Slice(0, frameHeader.Length), hasPad: frameHeader.PaddedFlag, hasPriority: false);
 
@@ -300,6 +327,8 @@ namespace System.Net.Http
             {
                 RemoveStream(http2Stream);
             }
+
+            return Task.CompletedTask;
         }
 
         private async Task ProcessSettingsFrame(FrameHeader frameHeader)
@@ -408,6 +437,36 @@ namespace System.Net.Http
             }
 
             // TODO: Window accounting
+
+            _incomingBuffer.Consume(frameHeader.Length);
+        }
+
+        private void ProcessRstStreamFrame(FrameHeader frameHeader)
+        {
+            Debug.Assert(frameHeader.Type == FrameType.RstStream);
+
+            if (frameHeader.Length != FrameHeader.RstStreamLength)
+            {
+                throw new Http2ProtocolException(Http2ProtocolErrorCode.FrameSizeError);
+            }
+
+            if (frameHeader.StreamId == 0)
+            {
+                throw new Http2ProtocolException(Http2ProtocolErrorCode.ProtocolError);
+            }
+
+            Http2Stream http2Stream = GetStream(frameHeader.StreamId);
+            if (http2Stream == null)
+            {
+                // Ignore invalid stream ID, as per RFC
+                _incomingBuffer.Consume(frameHeader.Length);
+                return;
+            }
+
+            // CONSIDER: We ignore the error code in the RST_STREAM frame.
+            // We could read this and report it to the user as part of the request exception.
+
+            http2Stream.OnResponseAbort();
 
             _incomingBuffer.Consume(frameHeader.Length);
         }
@@ -539,6 +598,7 @@ namespace System.Net.Http
             public const int PriorityInfoLength = 5;       // for both PRIORITY frame and priority info within HEADERS
             public const int PingLength = 8;
             public const int WindowUpdateLength = 4;
+            public const int RstStreamLength = 4;
             public const int GoAwayMinLength = 8;
 
             public FrameHeader(int length, FrameType type, FrameFlags flags, int streamId)
