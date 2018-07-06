@@ -30,8 +30,6 @@ namespace System.Runtime.Versioning
             return MakeVersionSafeName(name, from, to, null);
         }
 
-        [ResourceExposure(ResourceScope.None)]
-        [ResourceConsumption(ResourceScope.Process, ResourceScope.Process)]
         public static string MakeVersionSafeName(string name, ResourceScope from, ResourceScope to, Type type)
         {
             ResourceScope fromResType = from & ResTypeMask;

@@ -516,9 +516,6 @@ namespace System.Xml
             return Task.CompletedTask;
         }
 
-        // SxS: This function calls ValidateElement on XmlSchemaValidator which is annotated with ResourceExposure attribute.
-        // Since the resource names (namespace location) are not provided directly by the user (they are read from the source
-        // document) and the function does not expose any resources it is fine to suppress the SxS warning.
         private async Task ProcessElementEventAsync()
         {
             if (_processInlineSchema && IsXSDRoot(_coreReader.LocalName, _coreReader.NamespaceURI) && _coreReader.Depth > 0)

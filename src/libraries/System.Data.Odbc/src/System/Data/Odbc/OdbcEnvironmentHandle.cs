@@ -9,9 +9,6 @@ namespace System.Data.Odbc
 {
     internal sealed class OdbcEnvironmentHandle : OdbcHandle
     {
-        // SxS: this method uses SQLSetEnvAttr to setup ODBC environment handle settings. Environment handle is safe in SxS.
-        [ResourceExposure(ResourceScope.None)]
-        [ResourceConsumption(ResourceScope.Process, ResourceScope.Process)]
         internal OdbcEnvironmentHandle() : base(ODBC32.SQL_HANDLE.ENV, null)
         {
             ODBC32.RetCode retcode;
