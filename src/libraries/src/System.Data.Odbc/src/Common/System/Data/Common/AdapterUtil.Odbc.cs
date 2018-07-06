@@ -650,8 +650,6 @@ namespace System.Data.Common
         }
 
 
-        [ResourceExposure(ResourceScope.Machine)]
-        [ResourceConsumption(ResourceScope.Machine)]
         internal static string GetFullPath(string filename)
         { // MDAC 77686
             return Path.GetFullPath(filename);

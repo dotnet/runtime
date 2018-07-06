@@ -33,7 +33,7 @@ static int32_t GetMountInfo(MountPointFound onFound)
 #else
     struct statvfs* mounts = NULL;
 #endif
-    int count = getmntinfo(&mounts, 0);
+    int count = getmntinfo(&mounts, MNT_WAIT);
     for (int32_t i = 0; i < count; i++)
     {
         onFound(mounts[i].f_mntonname);

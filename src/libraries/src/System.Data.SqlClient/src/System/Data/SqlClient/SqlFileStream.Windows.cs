@@ -125,7 +125,6 @@ namespace System.Data.SqlTypes
                 AssertPathFormat(_m_path);
                 return _m_path;
             }
-            [ResourceConsumption(ResourceScope.Machine, ResourceScope.Machine)]
             private set
             {
                 // should be validated by callers of this method
@@ -180,7 +179,6 @@ namespace System.Data.SqlTypes
             }
         }
 
-        [ComVisible(false)]
         public override bool CanTimeout
         {
             get
@@ -232,7 +230,6 @@ namespace System.Data.SqlTypes
             }
         }
 
-        [ComVisible(false)]
         public override int ReadTimeout
         {
             get
@@ -251,7 +248,6 @@ namespace System.Data.SqlTypes
             }
         }
 
-        [ComVisible(false)]
         public override int WriteTimeout
         {
             get
@@ -405,7 +401,6 @@ namespace System.Data.SqlTypes
             Debug.Assert(path.StartsWith(@"\\", StringComparison.OrdinalIgnoreCase));
         }
 
-        [ResourceConsumption(ResourceScope.Machine)]
         static private string GetFullPathInternal(string path)
         {
             //-----------------------------------------------------------------
@@ -439,8 +434,6 @@ namespace System.Data.SqlTypes
             return path;
         }
 
-        // SxS: SQL File Stream is a database resource, not a local machine one
-        [ResourceConsumption(ResourceScope.Machine, ResourceScope.Machine)]
         private unsafe void OpenSqlFileStream
             (
                 string sPath,
