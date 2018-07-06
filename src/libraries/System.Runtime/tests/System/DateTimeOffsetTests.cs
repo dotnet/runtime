@@ -4,6 +4,7 @@
 
 using System.Collections.Generic;
 using System.Globalization;
+using System.Linq;
 using System.Threading;
 using Xunit;
 
@@ -855,6 +856,44 @@ namespace System.Tests
             Assert.Equal(0, result.Second);
         }
 
+        public static IEnumerable<object[]> StandardFormatSpecifiers() =>
+            DateTimeTests.StandardFormatSpecifiers()
+            .Where(a => !a[0].Equals("U")); // "U" isn't supported by DateTimeOffset
+
+        [Theory]
+        [MemberData(nameof(StandardFormatSpecifiers))]
+        public static void ParseExact_ToStringThenParseExactRoundtrip_Success(string standardFormat)
+        {
+            var r = new Random(42);
+            for (int i = 0; i < 200; i++) // test with a bunch of random dates
+            {
+                DateTimeOffset dt = new DateTimeOffset(
+                    DateTimeOffset.MinValue.Ticks + (long)(r.NextDouble() * (DateTimeOffset.MaxValue.Ticks - DateTimeOffset.MinValue.Ticks)),
+                    new TimeSpan(r.Next(-13, 13), r.Next(0, 60), 0));
+                try
+                {
+                    string expected = dt.ToString(standardFormat);
+
+                    Assert.Equal(expected, DateTimeOffset.ParseExact(expected, standardFormat, null).ToString(standardFormat));
+                    Assert.Equal(expected, DateTimeOffset.ParseExact(expected, standardFormat, null, DateTimeStyles.None).ToString(standardFormat));
+                    Assert.Equal(expected, DateTimeOffset.ParseExact(expected, new[] { standardFormat }, null, DateTimeStyles.None).ToString(standardFormat));
+                    Assert.Equal(expected, DateTimeOffset.ParseExact(expected, new[] { standardFormat }, null, DateTimeStyles.AllowWhiteSpaces).ToString(standardFormat));
+
+                    Assert.True(DateTimeOffset.TryParseExact(expected, standardFormat, null, DateTimeStyles.None, out DateTimeOffset actual));
+                    Assert.Equal(expected, actual.ToString(standardFormat));
+                    Assert.True(DateTimeOffset.TryParseExact(expected, new[] { standardFormat }, null, DateTimeStyles.None, out actual));
+                    Assert.Equal(expected, actual.ToString(standardFormat));
+
+                    // Should also parse with Parse, though may not round trip exactly
+                    DateTimeOffset.Parse(expected);
+                }
+                catch (Exception e)
+                {
+                    throw new Exception(dt.DateTime.Ticks + ":" + dt.Offset.Ticks, e);
+                }
+            }
+        }
+
         [Fact]
         public static void ParseExact_String_String_FormatProvider()
         {
@@ -885,51 +924,103 @@ namespace System.Tests
             Assert.Equal(expectedString, result.ToString("g"));
         }
 
-        [Theory, MemberData(nameof(Format_String_TestData_O))]
-        public static void ParseExact_String_String_FormatProvider_DateTimeStyles_O(DateTimeOffset dt, string expected)
+        [Theory]
+        [MemberData(nameof(ParseExact_TestData_O))]
+        public static void ParseExact_String_String_FormatProvider_DateTimeStyles_O(DateTimeOffset dt, string input)
         {
-            string actual = dt.ToString("o");
-            Assert.Equal(expected, actual);
+            string expectedString = dt.ToString("o");
 
-            DateTimeOffset result = DateTimeOffset.ParseExact(actual, "o", null, DateTimeStyles.None);
-            Assert.Equal(expected, result.ToString("o"));
+            Assert.Equal(expectedString, DateTimeOffset.ParseExact(input, "o", null).ToString("o"));
+            Assert.Equal(expectedString, DateTimeOffset.ParseExact(input, "o", null, DateTimeStyles.None).ToString("o"));
+
+            const string Whitespace = " \t\r\n ";
+            Assert.Equal(expectedString, DateTimeOffset.ParseExact(Whitespace + input, "o", null, DateTimeStyles.AllowLeadingWhite).ToString("o"));
+            Assert.Equal(expectedString, DateTimeOffset.ParseExact(input + Whitespace, "o", null, DateTimeStyles.AllowTrailingWhite).ToString("o"));
+            Assert.Equal(expectedString, DateTimeOffset.ParseExact(
+                Whitespace +
+                input +
+                Whitespace, "o", null, DateTimeStyles.AllowLeadingWhite | DateTimeStyles.AllowTrailingWhite).ToString("o"));
+            Assert.Equal(expectedString, DateTimeOffset.ParseExact(
+                input.Substring(0, 27) +
+                Whitespace +
+                input.Substring(27), "o", null, DateTimeStyles.AllowInnerWhite).ToString("o"));
+            Assert.Equal(expectedString, DateTimeOffset.ParseExact(
+                Whitespace +
+                input.Substring(0, 27) +
+                Whitespace +
+                input.Substring(27) +
+                Whitespace, "o", null, DateTimeStyles.AllowWhiteSpaces).ToString("o"));
         }
 
-        public static IEnumerable<object[]> Format_String_TestData_O()
+        public static IEnumerable<object[]> ParseExact_TestData_O()
         {
-            yield return new object[] { DateTimeOffset.MaxValue, "9999-12-31T23:59:59.9999999+00:00" };
-            yield return new object[] { DateTimeOffset.MinValue, "0001-01-01T00:00:00.0000000+00:00" };
-            yield return new object[] { new DateTimeOffset(1906, 8, 15, 7, 24, 5, 300, new TimeSpan(0, 0, 0)), "1906-08-15T07:24:05.3000000+00:00" };
-            yield return new object[] { new DateTimeOffset(1906, 8, 15, 7, 24, 5, 300, new TimeSpan(7, 30, 0)), "1906-08-15T07:24:05.3000000+07:30" };
+            foreach (TimeSpan offset in new[] { TimeSpan.Zero, new TimeSpan(-1, 23, 0), new TimeSpan(7, 0, 0) })
+            {
+                var dto = new DateTimeOffset(new DateTime(1234567891234567891, DateTimeKind.Unspecified), offset);
+                yield return new object[] { dto, dto.ToString("o") };
+
+                yield return new object[] { DateTimeOffset.MinValue, DateTimeOffset.MinValue.ToString("o") };
+                yield return new object[] { DateTimeOffset.MaxValue, DateTimeOffset.MaxValue.ToString("o") };
+            }
         }
 
-        [Theory, MemberData(nameof(Format_String_TestData_R))]
-        public static void ParseExact_String_String_FormatProvider_DateTimeStyles_R(DateTimeOffset dt, string expected)
+        [Theory]
+        [MemberData(nameof(ParseExact_TestData_InvalidData_O))]
+        public static void ParseExact_InvalidData_O(string invalidString)
         {
-            string actual = dt.ToString("r");
-            Assert.Equal(expected, actual);
-
-            DateTimeOffset result = DateTimeOffset.ParseExact(actual, "r", null, DateTimeStyles.None);
-            Assert.Equal(expected, result.ToString("r"));
+            Assert.Throws<FormatException>(() => DateTimeOffset.ParseExact(invalidString, "o", null));
+            Assert.Throws<FormatException>(() => DateTimeOffset.ParseExact(invalidString, "o", null, DateTimeStyles.None));
+            Assert.Throws<FormatException>(() => DateTimeOffset.ParseExact(invalidString, new string[] { "o" }, null, DateTimeStyles.None));
         }
 
-        public static IEnumerable<object[]> Format_String_TestData_R()
+        public static IEnumerable<object[]> ParseExact_TestData_InvalidData_O() =>
+            DateTimeTests.ParseExact_TestData_InvalidData_O();
+
+        [Theory]
+        [MemberData(nameof(ParseExact_TestData_R))]
+        public static void ParseExact_String_String_FormatProvider_DateTimeStyles_R(DateTimeOffset dt, string input)
         {
-            yield return new object[] { DateTimeOffset.MaxValue, "Fri, 31 Dec 9999 23:59:59 GMT" };
-            yield return new object[] { DateTimeOffset.MinValue, "Mon, 01 Jan 0001 00:00:00 GMT" };
-            yield return new object[] { new DateTimeOffset(1906, 8, 15, 7, 24, 5, 300, new TimeSpan(0, 0, 0)), "Wed, 15 Aug 1906 07:24:05 GMT" };
-            yield return new object[] { new DateTimeOffset(1906, 8, 15, 7, 24, 5, 300, new TimeSpan(7, 30, 0)), "Tue, 14 Aug 1906 23:54:05 GMT" };
+            Assert.Equal(dt.ToString("r"), DateTimeOffset.ParseExact(input, "r", null).ToString("r"));
+            Assert.Equal(dt.ToString("r"), DateTimeOffset.ParseExact(input, "r", null, DateTimeStyles.None).ToString("r"));
+
+            const string Whitespace = " \t\r\n ";
+            Assert.Equal(dt.ToString("r"), DateTimeOffset.ParseExact(Whitespace + input, "r", null, DateTimeStyles.AllowLeadingWhite).ToString("r"));
+            Assert.Equal(dt.ToString("r"), DateTimeOffset.ParseExact(input + Whitespace, "r", null, DateTimeStyles.AllowTrailingWhite).ToString("r"));
+            Assert.Equal(dt.ToString("r"), DateTimeOffset.ParseExact(
+                Whitespace +
+                input +
+                Whitespace, "r", null, DateTimeStyles.AllowLeadingWhite | DateTimeStyles.AllowTrailingWhite).ToString("r"));
+            Assert.Equal(dt.ToString("r"), DateTimeOffset.ParseExact(
+                input.Substring(0, 4) +
+                Whitespace +
+                input.Substring(4), "r", null, DateTimeStyles.AllowInnerWhite).ToString("r"));
+            Assert.Equal(dt.ToString("r"), DateTimeOffset.ParseExact(
+                Whitespace +
+                input.Substring(0, 4) +
+                Whitespace +
+                input.Substring(4) +
+                Whitespace, "r", null, DateTimeStyles.AllowWhiteSpaces).ToString("r"));
         }
 
-        [Fact]
-        public static void ParseExact_String_String_FormatProvider_DateTimeStyles_R()
+        public static IEnumerable<object[]> ParseExact_TestData_R()
         {
-            DateTimeOffset expected = DateTimeOffset.MaxValue;
-            string expectedString = expected.ToString("r");
-
-            DateTimeOffset result = DateTimeOffset.ParseExact(expectedString, "r", null, DateTimeStyles.None);
-            Assert.Equal(expectedString, result.ToString("r"));
+            foreach (object[] dateTimeData in DateTimeTests.ParseExact_TestData_R())
+            {
+                yield return new object[] { new DateTimeOffset((DateTime)dateTimeData[0], TimeSpan.Zero), (string)dateTimeData[1] };
+            }
         }
+
+        [Theory]
+        [MemberData(nameof(ParseExact_TestData_InvalidData_R))]
+        public static void ParseExact_InvalidData_R(string invalidString)
+        {
+            Assert.Throws<FormatException>(() => DateTimeOffset.ParseExact(invalidString, "r", null));
+            Assert.Throws<FormatException>(() => DateTimeOffset.ParseExact(invalidString, "r", null, DateTimeStyles.None));
+            Assert.Throws<FormatException>(() => DateTimeOffset.ParseExact(invalidString, new string[] { "r" }, null, DateTimeStyles.None));
+        }
+
+        public static IEnumerable<object[]> ParseExact_TestData_InvalidData_R() =>
+            DateTimeTests.ParseExact_TestData_InvalidData_R();
 
         [Fact]
         public static void ParseExact_String_String_FormatProvider_DateTimeStyles_CustomFormatProvider()
