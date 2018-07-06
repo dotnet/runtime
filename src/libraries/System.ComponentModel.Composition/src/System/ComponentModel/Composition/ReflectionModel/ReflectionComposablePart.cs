@@ -403,7 +403,10 @@ namespace System.ComponentModel.Composition.ReflectionModel
                     throw new ArgumentException(SR.Argument_ExportsTooMany, nameof(exports));
 
                 default:
-                    Assumes.IsTrue(result == ExportCardinalityCheckResult.Match);
+                    if(result != ExportCardinalityCheckResult.Match)
+                    {
+                        throw new Exception(SR.Diagnostic_InternalExceptionMessage);
+                    }
                     break;
             }
         }

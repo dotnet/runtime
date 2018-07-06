@@ -19,12 +19,12 @@
     <PackageReference Include="System.CodeDom" Version="$(CoreFxPackageVersion)" />
     <PackageReference Include="System.Collections.Immutable" Version="1.4.0-$(CoreFxExpectedPrerelease)" />
     <PackageReference Include="System.ComponentModel.Annotations" Version="$(CoreFxPackageVersion)" />
-    <PackageReference Include="System.Composition" Version="1.1.0-$(CoreFxExpectedPrerelease)" />
-    <PackageReference Include="System.Composition.AttributedModel" Version="1.1.0-$(CoreFxExpectedPrerelease)" />
-    <PackageReference Include="System.Composition.Convention" Version="1.1.0-$(CoreFxExpectedPrerelease)" />
-    <PackageReference Include="System.Composition.Hosting" Version="1.1.0-$(CoreFxExpectedPrerelease)" />
-    <PackageReference Include="System.Composition.Runtime" Version="1.1.0-$(CoreFxExpectedPrerelease)" />
-    <PackageReference Include="System.Composition.TypedParts" Version="1.1.0-$(CoreFxExpectedPrerelease)" />
+    <PackageReference Include="System.Composition" Version="1.2.0-$(CoreFxExpectedPrerelease)" />
+    <PackageReference Include="System.Composition.AttributedModel" Version="1.2.0-$(CoreFxExpectedPrerelease)" />
+    <PackageReference Include="System.Composition.Convention" Version="1.2.0-$(CoreFxExpectedPrerelease)" />
+    <PackageReference Include="System.Composition.Hosting" Version="1.2.0-$(CoreFxExpectedPrerelease)" />
+    <PackageReference Include="System.Composition.Runtime" Version="1.2.0-$(CoreFxExpectedPrerelease)" />
+    <PackageReference Include="System.Composition.TypedParts" Version="1.2.0-$(CoreFxExpectedPrerelease)" />
     <PackageReference Include="System.Configuration.ConfigurationManager" Version="$(CoreFxPackageVersion)" />
     <PackageReference Include="System.Data.SqlClient" Version="$(CoreFxPackageVersion)" />
     <PackageReference Include="System.Diagnostics.DiagnosticSource" Version="$(CoreFxPackageVersion)" />

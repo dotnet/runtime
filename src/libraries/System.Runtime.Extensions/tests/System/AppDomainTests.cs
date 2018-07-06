@@ -12,7 +12,7 @@ using Xunit;
 
 namespace System.Tests
 {
-    public class AppDomainTests : RemoteExecutorTestBase
+    public partial class AppDomainTests : RemoteExecutorTestBase
     {
         [Fact]
         public void CurrentDomain_Not_Null()

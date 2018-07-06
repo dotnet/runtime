@@ -4,7 +4,6 @@
 
 using System.Collections.Generic;
 using System.ComponentModel.Composition.Primitives;
-using Microsoft.Internal;
 using Microsoft.Internal.Collections;
 
 namespace System.ComponentModel.Composition.ReflectionModel
@@ -36,7 +35,10 @@ namespace System.ComponentModel.Composition.ReflectionModel
 
         public ImportType(Type type, ImportCardinality cardinality)
         {
-            Assumes.NotNull(type);
+            if (type == null)
+            {
+                throw new ArgumentNullException(nameof(type));
+            }
 
             _type = type;
             Type contractType = type;
@@ -72,7 +74,10 @@ namespace System.ComponentModel.Composition.ReflectionModel
         {
             get
             {
-                Assumes.IsTrue(!_isOpenGeneric);
+                if (_isOpenGeneric)
+                {
+                    throw new Exception(SR.Diagnostic_InternalExceptionMessage);
+                }
                 return _castSingleValue;
             }
         }
@@ -106,8 +111,15 @@ namespace System.ComponentModel.Composition.ReflectionModel
 
         public static bool IsDescendentOf(Type type, Type baseType)
         {
-            Assumes.NotNull(type);
-            Assumes.NotNull(baseType);
+            if (type == null)
+            {
+                throw new ArgumentNullException(nameof(type));
+            }
+
+            if (baseType == null)
+            {
+                throw new ArgumentNullException(nameof(baseType));
+            }
 
             if (!baseType.IsGenericTypeDefinition)
             {

@@ -20,7 +20,11 @@ namespace System.ComponentModel.Composition.Hosting
 
         internal CompositionService(ComposablePartCatalog composablePartCatalog)
         {
-            Assumes.NotNull(composablePartCatalog);
+            if (composablePartCatalog == null)
+            {
+                throw new ArgumentNullException(nameof(composablePartCatalog));
+            }
+
             _notifyCatalog = composablePartCatalog as INotifyComposablePartCatalogChanged;
             try
             {
@@ -47,13 +51,19 @@ namespace System.ComponentModel.Composition.Hosting
         public void SatisfyImportsOnce(ComposablePart part)
         {
             Requires.NotNull(part, nameof(part));
-            Assumes.NotNull(_compositionContainer);
+            if(_compositionContainer == null)
+            {
+                throw new Exception(SR.Diagnostic_InternalExceptionMessage);
+            }
             _compositionContainer.SatisfyImportsOnce(part);
         }
 
         public void Dispose()
         {
-            Assumes.NotNull(_compositionContainer);
+            if (_compositionContainer == null)
+            {
+                throw new Exception(SR.Diagnostic_InternalExceptionMessage);
+            }
             
             // Delegates are cool there is no concern if you try to remove an item from them and they don't exist
             if (_notifyCatalog != null)

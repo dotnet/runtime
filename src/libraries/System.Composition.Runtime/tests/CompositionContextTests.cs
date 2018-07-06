@@ -7,7 +7,7 @@ using System.Composition.Hosting;
 using System.Composition.Hosting.Core;
 using Xunit;
 
-namespace System.Composition.Tests
+namespace System.Composition.Runtime.Tests
 {
     public class CompositionContextTests
     {

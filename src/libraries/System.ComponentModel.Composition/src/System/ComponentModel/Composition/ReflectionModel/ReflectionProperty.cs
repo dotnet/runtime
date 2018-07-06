@@ -22,7 +22,10 @@ namespace System.ComponentModel.Composition.ReflectionModel
 
         public ReflectionProperty(MethodInfo getMethod, MethodInfo setMethod)
         {
-            Assumes.IsTrue(getMethod != null || setMethod != null);
+            if (getMethod == null && setMethod == null)
+            {
+                throw new Exception(SR.Diagnostic_InternalExceptionMessage);
+            }
 
             _getMethod = getMethod;
             _setMethod = setMethod;
@@ -61,7 +64,11 @@ namespace System.ComponentModel.Composition.ReflectionModel
 
                 string name = method.Name;
 
-                Assumes.IsTrue(name.Length > 4);
+                if (name.Length <= 4)
+                {
+                    throw new Exception(SR.Diagnostic_InternalExceptionMessage);
+                }
+
 
                 // Remove 'get_' or 'set_'
                 return name.Substring(4);
@@ -94,8 +101,10 @@ namespace System.ComponentModel.Composition.ReflectionModel
 
                 ParameterInfo[] parameters = UnderlyingSetMethod.GetParameters();
 
-                Assumes.IsTrue(parameters.Length > 0);
-
+                if (parameters.Length == 0)
+                {
+                    throw new Exception(SR.Diagnostic_InternalExceptionMessage);
+                }
                 return parameters[parameters.Length - 1].ParameterType;
             }
         }
@@ -107,15 +116,20 @@ namespace System.ComponentModel.Composition.ReflectionModel
 
         public override object GetValue(object instance)
         {
-            Assumes.NotNull(_getMethod);
+            if (_getMethod == null)
+            {
+                throw new Exception(SR.Diagnostic_InternalExceptionMessage);
+            }
 
             return UnderlyingGetMethod.SafeInvoke(instance);
         }
 
         public override void SetValue(object instance, object value)
         {
-            Assumes.NotNull(_setMethod);
-
+            if (_setMethod == null)
+            {
+                throw new Exception(SR.Diagnostic_InternalExceptionMessage);
+            }
             UnderlyingSetMethod.SafeInvoke(instance, value);
         }
 

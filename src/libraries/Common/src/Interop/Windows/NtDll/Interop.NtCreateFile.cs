@@ -33,7 +33,9 @@ internal partial class Interop
             System.IO.FileShare shareAccess = System.IO.FileShare.ReadWrite | System.IO.FileShare.Delete,
             System.IO.FileAttributes fileAttributes = 0,
             CreateOptions createOptions = CreateOptions.FILE_SYNCHRONOUS_IO_NONALERT,
-            ObjectAttributes objectAttributes = ObjectAttributes.OBJ_CASE_INSENSITIVE)
+            ObjectAttributes objectAttributes = ObjectAttributes.OBJ_CASE_INSENSITIVE,
+            void* eaBuffer = null,
+            uint eaLength = 0)
         {
             fixed (char* c = &MemoryMarshal.GetReference(path))
             {
@@ -55,19 +57,23 @@ internal partial class Interop
                     ref attributes,
                     out IO_STATUS_BLOCK statusBlock,
                     AllocationSize: null,
-                    FileAttributes: fileAttributes,
-                    ShareAccess: shareAccess,
-                    CreateDisposition: createDisposition,
-                    CreateOptions: createOptions,
-                    EaBuffer: null,
-                    EaLength: 0);
+                    fileAttributes,
+                    shareAccess,
+                    createDisposition,
+                    createOptions,
+                    eaBuffer,
+                    eaLength);
 
                 return (status, handle);
             }
         }
 
-        // https://msdn.microsoft.com/en-us/library/windows/hardware/ff557749.aspx
-        public unsafe struct OBJECT_ATTRIBUTES
+        /// <summary>
+        /// <a href="https://msdn.microsoft.com/en-us/library/windows/hardware/ff557749.aspx">OBJECT_ATTRIBUTES</a> structure.
+        /// The OBJECT_ATTRIBUTES structure specifies attributes that can be applied to objects or object handles by routines 
+        /// that create objects and/or return handles to objects.
+        /// </summary>
+        internal unsafe struct OBJECT_ATTRIBUTES
         {
             public uint Length;
 
@@ -157,7 +163,7 @@ internal partial class Interop
         }
 
         /// <summary>
-        /// File creation disposition when calling directly to NT apis.
+        /// File creation disposition when calling directly to NT APIs.
         /// </summary>
         public enum CreateDisposition : uint
         {

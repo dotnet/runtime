@@ -44,7 +44,11 @@ namespace System.ComponentModel.Composition
 
         internal static string GetTypeIdentity(Type type, bool formatGenericName)
         {
-            Assumes.NotNull(type);
+            if(type == null)
+            {
+                throw new ArgumentNullException(nameof(type));
+            }
+
             string typeIdentity = null;
 
             if (!TypeIdentityCache.TryGetValue(type, out typeIdentity))
@@ -68,7 +72,10 @@ namespace System.ComponentModel.Composition
                     typeIdentity = typeIdentityStringBuilder.ToString();
                 }
 
-                Assumes.IsTrue(!string.IsNullOrEmpty(typeIdentity));
+                if(string.IsNullOrEmpty(typeIdentity))
+                {
+                    throw new Exception(SR.Diagnostic_InternalExceptionMessage);
+                }
                 TypeIdentityCache.Add(type, typeIdentity);
             }
 
@@ -126,7 +133,10 @@ namespace System.ComponentModel.Composition
                 //
                 Queue<Type> genericTypeArguments = new Queue<Type>(type.GetGenericArguments());
                 WriteGenericType(typeName, type, type.IsGenericTypeDefinition, genericTypeArguments, formatGenericName);
-                Assumes.IsTrue(genericTypeArguments.Count == 0, "Expecting genericTypeArguments queue to be empty.");
+                if(genericTypeArguments.Count != 0) 
+                {
+                    throw new Exception(SR.Expecting_Empty_Queue);
+                }
             }
             else
             {
@@ -239,7 +249,10 @@ namespace System.ComponentModel.Composition
             //
             // Writes generic type name, e.g. generic name and generic arguments
             //
-            Assumes.IsTrue(type.IsGenericType, "Expecting type to be a generic type");
+            if(!type.IsGenericType) 
+            {
+                throw new Exception(SR.Expecting_Generic_Type);
+            }
             int genericArity = GetGenericArity(type);
             string genericTypeName = FindGenericTypeName(type.GetGenericTypeDefinition().Name);
             typeName.Append(genericTypeName);
@@ -258,7 +271,10 @@ namespace System.ComponentModel.Composition
             typeName.Append(ContractNameGenericOpeningBracket);
             for (int i = 0; i < argumentsCount; i++)
             {
-                Assumes.IsTrue(genericTypeArguments.Count > 0, "Expecting genericTypeArguments to contain at least one Type");
+                if(genericTypeArguments.Count == 0)
+                {
+                    throw new Exception(SR.Expecting_AtleastOne_Type);
+                }
                 Type genericTypeArgument = genericTypeArguments.Dequeue();
                 WriteTypeArgument(typeName, isDefinition, genericTypeArgument, formatGenericName);
             }
@@ -292,7 +308,10 @@ namespace System.ComponentModel.Composition
             typeName.Append(customKeyword);
             Queue<Type> typeArguments = new Queue<Type>(types);
             WriteTypeArgumentsString(typeName, types.Length, false, typeArguments, formatGenericName);
-            Assumes.IsTrue(typeArguments.Count == 0, "Expecting genericTypeArguments queue to be empty.");
+            if(typeArguments.Count != 0) 
+            {
+                throw new Exception(SR.Expecting_Empty_Queue);
+            }
         }
 
         private static Type FindArrayElementType(Type type)
@@ -333,7 +352,10 @@ namespace System.ComponentModel.Composition
             int delclaringTypeGenericArguments = type.DeclaringType.GetGenericArguments().Length;
             int typeGenericArguments = type.GetGenericArguments().Length;
 
-            Assumes.IsTrue(typeGenericArguments >= delclaringTypeGenericArguments);
+            if(typeGenericArguments < delclaringTypeGenericArguments)
+            {
+                throw new Exception(SR.Diagnostic_InternalExceptionMessage);
+            }
 
             return typeGenericArguments - delclaringTypeGenericArguments;
         }

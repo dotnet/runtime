@@ -8,7 +8,6 @@ using System.ComponentModel.Composition.Primitives;
 using System.Diagnostics;
 using System.Globalization;
 using System.Linq;
-using System.Runtime.Serialization;
 using System.Text;
 using Microsoft.Internal;
 using Microsoft.Internal.Collections;
@@ -193,8 +192,10 @@ namespace System.ComponentModel.Composition
             }
             else
             {
-                Assumes.IsTrue(errorsCount == 1);
-                Assumes.IsTrue(pathCount == 1);
+                if(errorsCount != 1 || pathCount != 1)
+                {
+                    throw new Exception(SR.Diagnostic_InternalExceptionMessage);
+                }
 
                 // The composition produced a single composition error. The root cause is provided below.
                 writer.AppendFormat(

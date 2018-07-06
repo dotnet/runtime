@@ -4,7 +4,6 @@
 
 using System.Collections.Generic;
 using System.Threading;
-using Microsoft.Internal;
 
 namespace System.Composition.Hosting.Core
 {
@@ -31,8 +30,15 @@ namespace System.Composition.Hosting.Core
         /// <returns>The composed object graph.</returns>
         public static object Run(LifetimeContext outermostLifetimeContext, CompositeActivator compositionRootActivator)
         {
-            Requires.NotNull(outermostLifetimeContext, nameof(outermostLifetimeContext));
-            Requires.NotNull(compositionRootActivator, nameof(compositionRootActivator));
+            if (outermostLifetimeContext == null)
+            {
+                throw new ArgumentNullException(nameof(outermostLifetimeContext));
+            }
+
+            if (compositionRootActivator == null)
+            {
+                throw new ArgumentNullException(nameof(compositionRootActivator));
+            }
 
             using (var operation = new CompositionOperation())
             {
@@ -65,7 +71,10 @@ namespace System.Composition.Hosting.Core
         /// <param name="action">Action to run.</param>
         public void AddPostCompositionAction(Action action)
         {
-            Requires.NotNull(action, nameof(action));
+            if (action == null)
+            {
+                throw new ArgumentNullException(nameof(action));
+            }
 
             if (_postCompositionActions == null)
                 _postCompositionActions = new List<Action>();
@@ -75,7 +84,10 @@ namespace System.Composition.Hosting.Core
 
         internal void EnterSharingLock(object sharingLock)
         {
-            Assumes.NotNull(sharingLock, "Sharing lock is required");
+            if (sharingLock == null)
+            {
+                throw new ArgumentException(SR.Sharing_Lock_Required);
+            }
 
             if (_sharingLock == null)
             {
@@ -83,7 +95,10 @@ namespace System.Composition.Hosting.Core
                 Monitor.Enter(sharingLock);
             }
 
-            Assumes.IsTrue(_sharingLock == sharingLock, "Sharing lock already taken in this operation.");
+            if (_sharingLock != sharingLock)
+            {
+                throw new Exception(SR.Sharing_Lock_Taken);
+            }
         }
 
         private void Complete()

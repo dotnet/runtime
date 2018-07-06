@@ -2,14 +2,9 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
-using System;
-using System.Collections;
 using System.Collections.Generic;
-using System.Composition;
 using System.Linq;
 using System.Reflection;
-using System.Text;
-using Microsoft.Internal;
 
 namespace System.Composition.Convention
 {
@@ -36,7 +31,14 @@ namespace System.Composition.Convention
         /// <returns>An import builder allowing further configuration.</returns>
         public ImportConventionBuilder AsContractName(string contractName)
         {
-            Requires.NotNullOrEmpty(contractName, nameof(contractName));
+            if (contractName == null)
+            {
+                throw new ArgumentNullException(nameof(contractName));
+            }
+            if(contractName.Length == 0)
+            {
+                throw new ArgumentException(SR.Format(SR.ArgumentException_EmptyString, nameof(contractName)), nameof(contractName));
+            }
             _contractName = contractName;
             return this;
         }
@@ -48,8 +50,7 @@ namespace System.Composition.Convention
         /// <returns>An export builder allowing further configuration.</returns>
         public ImportConventionBuilder AsContractName(Func<Type, string> getContractNameFromPartType)
         {
-            Requires.NotNull(getContractNameFromPartType, nameof(getContractNameFromPartType));
-            _getContractNameFromPartType = getContractNameFromPartType;
+            _getContractNameFromPartType = getContractNameFromPartType ?? throw new ArgumentNullException(nameof(getContractNameFromPartType));
             return this;
         }
 
@@ -92,7 +93,14 @@ namespace System.Composition.Convention
         /// <returns>An import builder allowing further configuration.</returns>
         public ImportConventionBuilder AddMetadataConstraint(string name, object value)
         {
-            Requires.NotNullOrEmpty(name, nameof(name));
+            if (name == null)
+            {
+                throw new ArgumentNullException(nameof(name));
+            }
+            if (name.Length == 0)
+            {
+                throw new ArgumentException(SR.Format(SR.ArgumentException_EmptyString, nameof(name)), nameof(name));
+            }
             if (_metadataConstraintItems == null)
             {
                 _metadataConstraintItems = new List<Tuple<string, object>>();
@@ -109,8 +117,19 @@ namespace System.Composition.Convention
         /// <returns>An export builder allowing further configuration.</returns>
         public ImportConventionBuilder AddMetadataConstraint(string name, Func<Type, object> getConstraintValueFromPartType)
         {
-            Requires.NotNullOrEmpty(name, nameof(name));
-            Requires.NotNull(getConstraintValueFromPartType, nameof(getConstraintValueFromPartType));
+            if (name == null)
+            {
+                throw new ArgumentNullException(nameof(name));
+            }
+            if (name.Length == 0)
+            {
+                throw new ArgumentException(SR.Format(SR.ArgumentException_EmptyString, nameof(name)), nameof(name));
+            }
+
+            if(getConstraintValueFromPartType == null)
+            {
+                throw new ArgumentNullException(nameof(getConstraintValueFromPartType));
+            }
 
             if (_metadataConstraintItemFuncs == null)
             {
@@ -149,7 +168,7 @@ namespace System.Composition.Convention
             //Add metadata attributes from direct specification
             if (_metadataConstraintItems != null)
             {
-                foreach (var item in _metadataConstraintItems)
+                foreach (Tuple<string, object> item in _metadataConstraintItems)
                 {
                     attributes.Add(new ImportMetadataConstraintAttribute(item.Item1, item.Item2));
                 }
@@ -158,7 +177,7 @@ namespace System.Composition.Convention
             //Add metadata attributes from func specification
             if (_metadataConstraintItemFuncs != null)
             {
-                foreach (var item in _metadataConstraintItemFuncs)
+                foreach (Tuple<string, Func<Type, object>> item in _metadataConstraintItemFuncs)
                 {
                     var name = item.Item1;
                     var value = (item.Item2 != null) ? item.Item2(type) : null;
