@@ -564,6 +564,15 @@ INST3(vfnmsub213ss,   "fmnsub213ss",   0, IUM_WR, 0, 0, BAD_CODE,     BAD_CODE, 
 INST3(vfnmsub231ss,   "fmnsub231ss",   0, IUM_WR, 0, 0, BAD_CODE,     BAD_CODE, SSE38(0xBF))   //
 INST3(LAST_FMA_INSTRUCTION, "LAST_FMA_INSTRUCTION",  0, IUM_WR, 0, 0, BAD_CODE, BAD_CODE, BAD_CODE)
 
+// BMI1
+INST3(FIRST_BMI_INSTRUCTION, "FIRST_BMI_INSTRUCTION",  0, IUM_WR, 0, 0, BAD_CODE, BAD_CODE, BAD_CODE)
+INST3(andn,           "andn",          0, IUM_WR, 0, 0, BAD_CODE,     BAD_CODE, SSE38(0xF2))   // Logical AND NOT
+INST3(blsi,           "blsi",          0, IUM_WR, 0, 0, BAD_CODE,     BAD_CODE, SSE38(0xF3))   // Extract Lowest Set Isolated Bit
+INST3(blsmsk,         "blsmsk",        0, IUM_WR, 0, 0, BAD_CODE,     BAD_CODE, SSE38(0xF3))   // Get Mask Up to Lowest Set Bit
+INST3(blsr,           "blsr",          0, IUM_WR, 0, 0, BAD_CODE,     BAD_CODE, SSE38(0xF3))   // Reset Lowest Set Bit
+
+INST3(LAST_BMI_INSTRUCTION, "LAST_BMI_INSTRUCTION",  0, IUM_WR, 0, 0, BAD_CODE, BAD_CODE, BAD_CODE)
+
 INST3(LAST_AVX_INSTRUCTION, "LAST_AVX_INSTRUCTION",  0, IUM_WR, 0, 0, BAD_CODE, BAD_CODE, BAD_CODE)
 
 // Scalar instructions in SSE4.2
