@@ -409,7 +409,7 @@ class Constants {
 
     // This is the set of architectures
     // Some of these are pseudo-architectures:
-    //    armem -- ARM builds/runs using an emulator. Used for Ubuntu/Ubuntu16.04/Tizen runs.
+    //    armem -- ARM builds/runs using an emulator. Used for Tizen runs.
     //    x86_arm_altjit -- ARM runs on x86 using the ARM altjit
     //    x64_arm64_altjit -- ARM64 runs on x64 using the ARM64 altjit
     def static architectureList = ['arm', 'armem', 'x86_arm_altjit', 'x64_arm64_altjit', 'arm64', 'x64', 'x86']
@@ -554,7 +554,6 @@ def static setMachineAffinity(def job, def os, def architecture, def options = n
     assert architecture instanceof String
 
     def armArches = ['arm', 'armem', 'arm64']
-    def supportedArmLinuxOs = ['Ubuntu', 'Ubuntu16.04', 'Tizen']
 
     if (!(architecture in armArches)) {
         assert options == null
@@ -582,7 +581,7 @@ def static setMachineAffinity(def job, def os, def architecture, def options = n
     // Ubuntu
     //
     // Arm32 emulator (Build, Test) -> arm-cross-latest
-    //       |-> os in supportedArmLinuxOs && (architecture == "armem")
+    //       |-> os == "Tizen" && (architecture == "armem")
     //
     // Arm32 hardware (Flow) -> Ubuntu 16.04 latest-or-auto (don't use limited arm hardware)
     //       |-> os == "Ubuntu" && (architecture == "arm") && options['is_flow_job'] == true
@@ -611,10 +610,9 @@ def static setMachineAffinity(def job, def os, def architecture, def options = n
         }
     } else {
         assert os != 'Windows_NT'
-        assert os in supportedArmLinuxOs
 
         if (architecture == 'arm64') {
-            assert (architecture == 'arm64') && (os == 'Ubuntu')
+            assert os == 'Ubuntu'
             def isFlow  = (options != null) && (options['is_flow_job'] == true)
             def isBuild = (options != null) && (options['is_build_job'] == true)
             if (isFlow || isBuild) {
@@ -632,13 +630,15 @@ def static setMachineAffinity(def job, def os, def architecture, def options = n
             }
         }
         else if (architecture == 'armem') {
-            // arm emulator (Ubuntu/Ubuntu16.04/Tizen). Build and test on same machine,
+            // arm emulator (Tizen). Build and test on same machine,
             // using Docker.
+            assert os == 'Tizen'
             Utilities.setMachineAffinity(job, 'Ubuntu', 'arm-cross-latest')
         }
         else {
             // arm Ubuntu on hardware.
-            assert (architecture == 'arm') && (os == 'Ubuntu')
+            assert architecture == 'arm'
+            assert os == 'Ubuntu'
             def isFlow  = (options != null) && (options['is_flow_job'] == true)
             def isBuild = (options != null) && (options['is_build_job'] == true)
             if (isFlow || isBuild) {
@@ -1012,13 +1012,7 @@ def static getDockerImageName(def architecture, def os, def isBuild) {
             return "hseok82/dotnet-buildtools-prereqs:ubuntu-16.04-crossx86-ef0ac75-20175511035548"
         }
         else if (architecture == 'armem') {
-            if (os == 'Ubuntu') {
-                return "microsoft/dotnet-buildtools-prereqs:ubuntu-14.04-cross-e435274-20180405193556"
-            }
-            else if (os == 'Ubuntu16.04') {
-                return "microsoft/dotnet-buildtools-prereqs:ubuntu-16.04-cross-e435274-20180404203310"
-            }
-            else if (os == 'Tizen') {
+            if (os == 'Tizen') {
                 return "tizendotnet/dotnet-buildtools-prereqs:ubuntu-16.04-cross-e435274-20180426002255-tizen-rootfs-5.0m1"
             }
         }
@@ -1101,13 +1095,8 @@ def static getJobName(def configuration, def architecture, def os, def scenario,
             break
         case 'armem':
             // These are cross builds
-            if (os == 'Tizen') {
-                // ABI: softfp
-                baseName = 'armel_cross_' + configuration.toLowerCase() + '_' + os.toLowerCase()
-            }
-            else {
-                baseName = architecture.toLowerCase() + '_cross_' + configuration.toLowerCase() + '_' + os.toLowerCase()
-            }
+            assert os == 'Tizen'
+            baseName = 'armel_cross_' + configuration.toLowerCase() + '_' + os.toLowerCase()
             break
         case 'arm':
             baseName = architecture.toLowerCase() + '_cross_' + configuration.toLowerCase() + '_' + os.toLowerCase()
@@ -1791,16 +1780,8 @@ def static addTriggers(def job, def branch, def isPR, def architecture, def os, 
             }
 
             switch (os) {
-                case 'Ubuntu':
-                case 'Ubuntu16.04':
-                    assert scenario != 'innerloop'
-                    Utilities.addGithubPRTriggerForBranch(job, branch, "${os} ${architecture} Cross ${configuration} Build",
-                            "(?i).*test\\W+${os}\\W+${architecture}\\W+Cross\\W+${configuration}\\W+Build.*")
-                    break
-
                 case 'Tizen':
                     architecture = 'armel'
-
                     if (scenario == 'innerloop') {
                         if (configuration == 'Checked') {
                             Utilities.addGithubPRTriggerForBranch(job, branch, "${os} ${architecture} Cross ${configuration} Innerloop Build and Test")
@@ -2442,19 +2423,11 @@ def static calculateBuildCommands(def newJob, def scenario, def branch, def isPR
                     }
                     break
                 case 'armem':
-                    // Emulator cross builds for ARM runs on Ubuntu, Ubuntu16.04 and Tizen currently
-                    assert (os == 'Ubuntu') || (os == 'Ubuntu16.04') || (os == 'Tizen')
+                    // Emulator cross builds for ARM runs on Tizen currently
+                    assert os == 'Tizen'
 
-                    // default values for Ubuntu
-                    def arm_abi = "arm"
-                    def linuxCodeName = "trusty"
-                    if (os == 'Ubuntu16.04') {
-                        linuxCodeName = "xenial"
-                    }
-                    else if (os == 'Tizen') {
-                        arm_abi = "armel"
-                        linuxCodeName = "tizen"
-                    }
+                    def arm_abi = "armel"
+                    def linuxCodeName = "tizen"
 
                     // Unzip the Windows test binaries first. Exit with 0
                     buildCommands += "unzip -q -o ./bin/tests/tests.zip -d ./bin/tests/Windows_NT.x64.${configuration} || exit 0"
@@ -2462,14 +2435,6 @@ def static calculateBuildCommands(def newJob, def scenario, def branch, def isPR
                     // Unpack the corefx binaries
                     buildCommands += "mkdir ./bin/CoreFxBinDir"
                     buildCommands += "tar -xf ./bin/build.tar.gz -C ./bin/CoreFxBinDir"
-                    if (os != 'Tizen') {
-                        buildCommands += "chmod a+x ./bin/CoreFxBinDir/corerun"
-                    }
-                    // Test environment emulation using docker and qemu has some problem to use lttng library.
-                    // We should remove libcoreclrtraceptprovider.so to avoid test hang.
-                    if (os == 'Ubuntu') {
-                        buildCommands += "rm -f -v ./bin/CoreFxBinDir/libcoreclrtraceptprovider.so"
-                    }
 
                     // Call the ARM CI script to cross build and test using docker
                     buildCommands += """./tests/scripts/arm32_ci_script.sh \\
@@ -2609,7 +2574,7 @@ def static shouldGenerateJob(def scenario, def isPR, def architecture, def confi
             }
             break
         case 'armem':
-            if ((os != 'Ubuntu') && (os != 'Ubuntu16.04') && (os != 'Tizen')) {
+            if (os != 'Tizen') {
                 return false
             }
             break
@@ -2879,7 +2844,7 @@ Constants.allScenarios.each { scenario ->
                     // Copy Windows build test binaries and corefx build artifacts for Linux cross build for armem.
                     // We don't use a flow job for this, but we do depend on there being existing builds with these
                     // artifacts produced.
-                    if (architecture == 'armem' && (os == 'Ubuntu' || os == 'Ubuntu16.04' || os == 'Tizen')) {
+                    if ((architecture == 'armem') && (os == 'Tizen')) {
                         // Define the Windows Tests and Corefx build job names
                         def lowerConfiguration = configuration.toLowerCase()
                         def WindowsTestsName = projectFolder + '/' +
@@ -2890,12 +2855,8 @@ Constants.allScenarios.each { scenario ->
                         def corefxFolder = Utilities.getFolderName('dotnet/corefx') + '/' +
                                            Utilities.getFolderName(fxBranch)
 
-                        def arm_abi = 'arm'
-                        def corefx_os = 'linux'
-                        if (os == 'Tizen') {
-                            arm_abi = 'armel'
-                            corefx_os = 'tizen'
-                        }
+                        def arm_abi = 'armel'
+                        def corefx_os = 'tizen'
 
                         // Let's use release CoreFX to test checked CoreCLR,
                         // because we do not generate checked CoreFX in CoreFX CI yet.
