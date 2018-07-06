@@ -421,19 +421,19 @@ namespace System.Management
             MSHLFLAGS_NOPING         = 3
         }
 
-        [ResourceExposure( ResourceScope.None),DllImport("ole32.dll", PreserveSig=false)]
+        [DllImport("ole32.dll", PreserveSig=false)]
         static extern System.Runtime.InteropServices.ComTypes.IStream CreateStreamOnHGlobal(IntPtr hGlobal, int fDeleteOnRelease);
 
-        [ResourceExposure( ResourceScope.None),DllImport("ole32.dll", PreserveSig=false)]
+        [DllImport("ole32.dll", PreserveSig=false)]
         static extern IntPtr GetHGlobalFromStream([In] System.Runtime.InteropServices.ComTypes.IStream pstm);
 
-        [ResourceExposure( ResourceScope.None),DllImport("kernel32.dll", PreserveSig=true)]
+        [DllImport("kernel32.dll", PreserveSig=true)]
         static extern IntPtr GlobalLock([In] IntPtr hGlobal);
 
-        [ResourceExposure( ResourceScope.None),DllImport("kernel32.dll", PreserveSig=true)]
+        [DllImport("kernel32.dll", PreserveSig=true)]
         static extern int GlobalUnlock([In] IntPtr pData);
 
-        [ResourceExposure( ResourceScope.None),DllImport("ole32.dll", PreserveSig=false)]
+        [DllImport("ole32.dll", PreserveSig=false)]
         static extern void CoMarshalInterface(
             [In] System.Runtime.InteropServices.ComTypes.IStream pStm,        //Pointer to the stream used for marshaling
             [In] ref Guid riid,          //Reference to the identifier of the 
@@ -443,7 +443,7 @@ namespace System.Management
             [In] uint mshlflags       //Reason for marshaling
             );
 
-        [ResourceExposure( ResourceScope.None),DllImport("ole32.dll", PreserveSig=false)]
+        [DllImport("ole32.dll", PreserveSig=false)]
         static extern IntPtr CoUnmarshalInterface(
             [In] System.Runtime.InteropServices.ComTypes.IStream pStm,  //Pointer to the stream
             [In] ref Guid riid     //Reference to the identifier of the interface
@@ -1912,7 +1912,7 @@ namespace System.Management
 
 
         // Import of CoGetObjectContext
-        [ResourceExposure( ResourceScope.None), DllImport("ole32.dll")]
+        [ DllImport("ole32.dll")]
         static extern int CoGetObjectContext([In] ref Guid riid, [Out] out IntPtr pUnk);
 
         // A variable that is initialized once to tell us if we are on

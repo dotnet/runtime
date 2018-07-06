@@ -632,6 +632,130 @@
         "fedora-x64-corert"
       ]
     },
+    "freebsd": {
+      "#import": [
+        "unix"
+      ]
+    },
+    "freebsd-corert": {
+      "#import": [
+        "freebsd",
+        "unix-corert"
+      ]
+    },
+    "freebsd-x64": {
+      "#import": [
+        "freebsd",
+        "unix-x64"
+      ]
+    },
+    "freebsd-x64-corert": {
+      "#import": [
+        "freebsd-corert",
+        "freebsd-x64",
+        "unix-x64-corert"
+      ]
+    },
+    "freebsd.11": {
+      "#import": [
+        "freebsd"
+      ]
+    },
+    "freebsd.11-corert": {
+      "#import": [
+        "freebsd.11",
+        "freebsd-corert"
+      ]
+    },
+    "freebsd.11-x64": {
+      "#import": [
+        "freebsd.11",
+        "freebsd-x64"
+      ]
+    },
+    "freebsd.11-x64-corert": {
+      "#import": [
+        "freebsd.11-corert",
+        "freebsd.11-x64",
+        "freebsd.11",
+        "freebsd-x64-corert"
+      ]
+    },
+    "freebsd.11.0": {
+      "#import": [
+        "freebsd.11"
+      ]
+    },
+    "freebsd.11.0-corert": {
+      "#import": [
+        "freebsd.11.0",
+        "freebsd.11-corert"
+      ]
+    },
+    "freebsd.11.0-x64": {
+      "#import": [
+        "freebsd.11.0",
+        "freebsd.11-x64"
+      ]
+    },
+    "freebsd.11.0-x64-corert": {
+      "#import": [
+        "freebsd.11.0-corert",
+        "freebsd.11.0-x64",
+        "freebsd.11.0",
+        "freebsd.11-x64-corert"
+      ]
+    },
+    "freebsd.11.1": {
+      "#import": [
+        "freebsd.11.0"
+      ]
+    },
+    "freebsd.11.1-corert": {
+      "#import": [
+        "freebsd.11.1",
+        "freebsd.11.0-corert"
+      ]
+    },
+    "freebsd.11.1-x64": {
+      "#import": [
+        "freebsd.11.1",
+        "freebsd.11.0-x64"
+      ]
+    },
+    "freebsd.11.1-x64-corert": {
+      "#import": [
+        "freebsd.11.1-corert",
+        "freebsd.11.1-x64",
+        "freebsd.11.1",
+        "freebsd.11.0-x64-corert"
+      ]
+    },
+    "freebsd.11.2": {
+      "#import": [
+        "freebsd.11.1"
+      ]
+    },
+    "freebsd.11.2-corert": {
+      "#import": [
+        "freebsd.11.2",
+        "freebsd.11.1-corert"
+      ]
+    },
+    "freebsd.11.2-x64": {
+      "#import": [
+        "freebsd.11.2",
+        "freebsd.11.1-x64"
+      ]
+    },
+    "freebsd.11.2-x64-corert": {
+      "#import": [
+        "freebsd.11.2-corert",
+        "freebsd.11.2-x64",
+        "freebsd.11.2",
+        "freebsd.11.1-x64-corert"
+      ]
+    },
     "gentoo": {
       "#import": [
         "linux"
