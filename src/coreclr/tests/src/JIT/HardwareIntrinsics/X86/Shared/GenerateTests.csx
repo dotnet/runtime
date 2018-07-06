@@ -800,6 +800,97 @@ private static readonly (string templateFileName, Dictionary<string, string> tem
     ("ScalarUnOpTest.template",  new Dictionary<string, string> { ["Isa"] = "Bmi1", ["Method"] = "TrailingZeroCount",       ["RetBaseType"] = "UInt64", ["Op1BaseType"] = "UInt64",                             ["NextValueOp1"] = "(ulong)(random.Next(0, int.MaxValue))",                                                             ["ValidateResult"] = "ulong expectedResult = 0; for (int index = 0; ((data >> index) & 1) == 0; index++) { expectedResult++; } isUnexpectedResult = (expectedResult != result);" }),
 };
 
+private const string ValidateBmi2ParallelBitComment = @"
+// The validation logic defined here for Bmi2.ParallelBitDeposit and Bmi2.ParallelBitExtract is
+// based on the 'Operation' pseudo-code defined for the pdep and pext instruction in the 'Intel®
+// 64 and IA-32 Architectures Software Developer’s Manual; Volume 2 (2A, 2B, 2C & 2D): Instruction
+// Set Reference, A-Z'
+";
+
+private const string ValidateBmi2ParallelBitDepositUInt32 = ValidateBmi2ParallelBitComment + @"
+uint temp = left;
+uint mask = right;
+uint dest = 0;
+byte m = 0, k = 0;
+
+while (m < 32)
+{
+    if (((mask >> m) & 1) == 1) // Extract bit at index m of mask
+    {
+        dest |= (((temp >> k) & 1) << m); // Extract bit at index k of temp and insert to index m of dest
+        k++;
+    }
+    m++;
+}
+
+isUnexpectedResult = (dest != result);
+";
+
+private const string ValidateBmi2ParallelBitDepositUInt64 = ValidateBmi2ParallelBitComment + @"
+ulong temp = left;
+ulong mask = right;
+ulong dest = 0;
+byte m = 0, k = 0;
+
+while (m < 64)
+{
+    if (((mask >> m) & 1) == 1) // Extract bit at index m of mask
+    {
+        dest |= (((temp >> k) & 1) << m); // Extract bit at index k of temp and insert to index m of dest
+        k++;
+    }
+    m++;
+}
+
+isUnexpectedResult = (dest != result);
+";
+
+private const string ValidateBmi2ParallelBitExtractUInt32 = ValidateBmi2ParallelBitComment + @"
+uint temp = left;
+uint mask = right;
+uint dest = 0;
+byte m = 0, k = 0;
+
+while (m < 32)
+{
+    if (((mask >> m) & 1) == 1) // Extract bit at index m of mask
+    {
+        dest |= (((temp >> m) & 1) << k); // Extract bit at index m of temp and insert to index k of dest
+        k++;
+    }
+    m++;
+}
+
+isUnexpectedResult = (dest != result);
+";
+
+private const string ValidateBmi2ParallelBitExtractUInt64 = ValidateBmi2ParallelBitComment + @"
+ulong temp = left;
+ulong mask = right;
+ulong dest = 0;
+byte m = 0, k = 0;
+
+while (m < 64)
+{
+    if (((mask >> m) & 1) == 1) // Extract bit at index m of mask
+    {
+        dest |= (((temp >> m) & 1) << k); // Extract bit at index m of temp and insert to index k of dest
+        k++;
+    }
+    m++;
+}
+
+isUnexpectedResult = (dest != result);
+";
+
+private static readonly (string templateFileName, Dictionary<string, string> templateData)[] Bmi2Inputs = new []
+{
+    ("ScalarBinOpTest.template", new Dictionary<string, string> { ["Isa"] = "Bmi2", ["Method"] = "ParallelBitDeposit", ["RetBaseType"] = "UInt32", ["Op1BaseType"] = "UInt32", ["Op2BaseType"] = "UInt32", ["NextValueOp1"] = "(uint)(random.Next(0, int.MaxValue))",  ["NextValueOp2"] = "(uint)(random.Next(0, int.MaxValue))",  ["ValidateResult"] = ValidateBmi2ParallelBitDepositUInt32 }),
+    ("ScalarBinOpTest.template", new Dictionary<string, string> { ["Isa"] = "Bmi2", ["Method"] = "ParallelBitDeposit", ["RetBaseType"] = "UInt64", ["Op1BaseType"] = "UInt64", ["Op2BaseType"] = "UInt64", ["NextValueOp1"] = "(ulong)(random.Next(0, int.MaxValue))", ["NextValueOp2"] = "(ulong)(random.Next(0, int.MaxValue))", ["ValidateResult"] = ValidateBmi2ParallelBitDepositUInt64 }),
+    ("ScalarBinOpTest.template", new Dictionary<string, string> { ["Isa"] = "Bmi2", ["Method"] = "ParallelBitExtract", ["RetBaseType"] = "UInt32", ["Op1BaseType"] = "UInt32", ["Op2BaseType"] = "UInt32", ["NextValueOp1"] = "(uint)(random.Next(0, int.MaxValue))",  ["NextValueOp2"] = "(uint)(random.Next(0, int.MaxValue))",  ["ValidateResult"] = ValidateBmi2ParallelBitExtractUInt32 }),
+    ("ScalarBinOpTest.template", new Dictionary<string, string> { ["Isa"] = "Bmi2", ["Method"] = "ParallelBitExtract", ["RetBaseType"] = "UInt64", ["Op1BaseType"] = "UInt64", ["Op2BaseType"] = "UInt64", ["NextValueOp1"] = "(ulong)(random.Next(0, int.MaxValue))", ["NextValueOp2"] = "(ulong)(random.Next(0, int.MaxValue))", ["ValidateResult"] = ValidateBmi2ParallelBitExtractUInt64 }),
+};
+
 private static void ProcessInputs(string groupName, (string templateFileName, Dictionary<string, string> templateData)[] inputs)
 {
     var testListFileName = Path.Combine("..", groupName, $"Program.{groupName}.cs");
@@ -891,3 +982,4 @@ ProcessInputs("Avx2", Avx2Inputs);
 ProcessInputs("Fma_Vector128", Fma_Vector128Inputs);
 ProcessInputs("Fma_Vector256", Fma_Vector256Inputs);
 ProcessInputs("Bmi1", Bmi1Inputs);
+ProcessInputs("Bmi2", Bmi2Inputs);
