@@ -1291,6 +1291,19 @@ GenTree* Compiler::impBMI1Intrinsic(NamedIntrinsic        intrinsic,
 
     switch (intrinsic)
     {
+        case NI_BMI1_AndNot:
+        {
+            assert(sig->numArgs == 2);
+
+            GenTree*  op2      = impPopStack().val;
+            GenTree*  op1      = impPopStack().val;
+
+            return gtNewScalarHWIntrinsicNode(callType, op1, op2, intrinsic);
+        }
+
+        case NI_BMI1_ExtractLowestSetBit:
+        case NI_BMI1_GetMaskUpToLowestSetBit:
+        case NI_BMI1_ResetLowestSetBit:
         case NI_BMI1_TrailingZeroCount:
         {
             assert(sig->numArgs == 1);
