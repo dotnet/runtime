@@ -301,6 +301,21 @@
     <ClCompile Include="$(MonoSourceLocation)\mono\utils\mono-threads.c">
       <Filter>Source Files$(MonoUtilsFilterSubFolder)\common</Filter>
     </ClCompile>
+    <ClInclude Include="$(MonoSourceLocation)\mono\utils\mono-utility-thread.h">
+      <Filter>Header Files$(MonoUtilsFilterSubFolder)\common</Filter>
+    </ClInclude>
+    <ClInclude Include="$(MonoSourceLocation)\mono\utils\mono-flight-recorder.h">
+      <Filter>Header Files$(MonoUtilsFilterSubFolder)\common</Filter>
+    </ClInclude>
+    <ClCompile Include="$(MonoSourceLocation)\mono\utils\mono-flight-recorder.c">
+      <Filter>Source Files$(MonoUtilsFilterSubFolder)\common</Filter>
+    </ClCompile>
+    <ClCompile Include="$(MonoSourceLocation)\mono\utils\mono-utility-thread.c">
+      <Filter>Source Files$(MonoUtilsFilterSubFolder)\common</Filter>
+    </ClCompile>
+    <ClCompile Include="$(MonoSourceLocation)\mono\utils\mono-log-flight-recorder.c">
+      <Filter>Source Files$(MonoUtilsFilterSubFolder)\common</Filter>
+    </ClCompile>
     <ClCompile Include="$(MonoSourceLocation)\mono\utils\mono-threads-state-machine.c">
       <Filter>Source Files$(MonoUtilsFilterSubFolder)\common</Filter>
     </ClCompile>

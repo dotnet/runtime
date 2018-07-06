@@ -179,6 +179,8 @@ monoutils_sources = \
 	mono-threads-api.h	\
 	mono-threads-coop.c	\
 	mono-threads-coop.h	\
+	mono-utility-thread.c	\
+	mono-utility-thread.h	\
 	mono-tls.h	\
 	mono-tls.c	\
 	mono-utils-debug.c \

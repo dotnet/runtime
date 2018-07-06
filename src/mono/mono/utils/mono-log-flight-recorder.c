@@ -12,7 +12,7 @@
 #include <config.h>
 #include "mono-logger-internals.h"
 #include <mono/utils/mono-flight-recorder.h>
-#include <mono/utils/mono-threads.h>
+#include <mono/utils/mono-utility-thread.h>
 
 #define MAX_RECORDER_LOG_LEN 500
 #define MAX_RECORDER_MSG_LEN 500

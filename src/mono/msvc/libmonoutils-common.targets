@@ -117,6 +117,11 @@
     <ClInclude Include="$(MonoSourceLocation)\mono\utils\lock-free-array-queue.h" />
     <ClCompile Include="$(MonoSourceLocation)\mono\utils\mono-linked-list-set.c" />
     <ClInclude Include="$(MonoSourceLocation)\mono\utils\mono-linked-list-set.h" />
+    <ClCompile Include="$(MonoSourceLocation)\mono\utils\mono-flight-recorder.c" />
+    <ClInclude Include="$(MonoSourceLocation)\mono\utils\mono-flight-recorder.h" />
+    <ClInclude Include="$(MonoSourceLocation)\mono\utils\mono-utility-thread.h" />
+    <ClCompile Include="$(MonoSourceLocation)\mono\utils\mono-utility-thread.c" />
+    <ClCompile Include="$(MonoSourceLocation)\mono\utils\mono-log-flight-recorder.c" />
     <ClCompile Include="$(MonoSourceLocation)\mono\utils\mono-threads.c" />
     <ClCompile Include="$(MonoSourceLocation)\mono\utils\mono-threads-state-machine.c" />
     <ClCompile Include="$(MonoSourceLocation)\mono\utils\mono-threads-posix.c">

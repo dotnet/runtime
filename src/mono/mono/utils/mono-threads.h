@@ -719,40 +719,4 @@ typedef void (*background_job_cb)(void);
 void mono_threads_schedule_background_job (background_job_cb cb);
 #endif
 
-typedef struct {
-	void (*early_init) (gpointer *state_ptr);
-	void (*init) (gpointer *state_ptr);
-	void (*command) (gpointer state_ptr, gpointer message_ptr, gboolean at_shutdown);
-	void (*cleanup) (gpointer state_ptr);
-} MonoUtilityThreadCallbacks;
-
-typedef struct {
-	MonoNativeThreadId thread_id;
-
-	MonoLockFreeQueue work_queue;
-	MonoSemType work_queue_sem;
-	gboolean run_thread;
-
-	MonoLockFreeAllocator message_allocator;
-	MonoLockFreeAllocSizeClass message_size_class;
-
-	size_t message_block_size;
-	size_t payload_size;
-
-	gpointer state_ptr;
-	MonoUtilityThreadCallbacks callbacks;
-} MonoUtilityThread;
-
-MonoUtilityThread *
-mono_utility_thread_launch (size_t payload_size, MonoUtilityThreadCallbacks *callbacks, MonoMemAccountType accountType);
-
-void
-mono_utility_thread_send (MonoUtilityThread *thread, gpointer message);
-
-gboolean
-mono_utility_thread_send_sync (MonoUtilityThread *thread, gpointer message);
-
-void
-mono_utility_thread_stop (MonoUtilityThread *thread);
-
 #endif /* __MONO_THREADS_H__ */
