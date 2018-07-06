@@ -114,12 +114,12 @@ mono_utility_thread_send (MonoUtilityThread *thread, gpointer message)
 {
 	int small_id = mono_thread_info_get_small_id ();
 	if (small_id < 0) {
-#if 1
+#if MONO_PRINT_DROPPED_MESSAGES
 		fprintf (stderr, "Dropping message send because thread not attached yet\n");
 #endif
 		return;
 	} else if (!thread->run_thread) {
-#if 1
+#if MONO_PRINT_DROPPED_MESSAGES
 		fprintf (stderr, "Dropping message send because thread killed\n");
 #endif
 		return;
@@ -137,12 +137,12 @@ mono_utility_thread_send_sync (MonoUtilityThread *thread, gpointer message)
 {
 	int small_id = mono_thread_info_get_small_id ();
 	if (small_id < 0) {
-#if 1
+#if MONO_PRINT_DROPPED_MESSAGES
 		fprintf (stderr, "Dropping message send because thread not attached yet\n");
 #endif
 		return FALSE;
 	} else if (!thread->run_thread) {
-#if 1
+#if MONO_PRINT_DROPPED_MESSAGES
 		fprintf (stderr, "Dropping message send because thread killed\n");
 #endif
 		return FALSE;
@@ -161,7 +161,6 @@ mono_utility_thread_send_sync (MonoUtilityThread *thread, gpointer message)
 	mono_utility_thread_send_internal (thread, entry);
 
 	while (thread->run_thread && !done) {
-		fprintf (stderr, "Waited on logger thread sem\n");
 		// After returns, the entry is filled out with results
 		gboolean timedout = mono_os_sem_timedwait (&sem, 1000, MONO_SEM_FLAGS_NONE) == MONO_SEM_TIMEDWAIT_RET_TIMEDOUT;
 		if (!timedout)
@@ -180,7 +179,7 @@ mono_utility_thread_stop (MonoUtilityThread *thread)
 {
 	int small_id = mono_thread_info_get_small_id ();
 	if (small_id < 0) {
-#if 1
+#if MONO_PRINT_DROPPED_MESSAGES
 		fprintf (stderr, "Dropping attempt to stop thread, calling thread not attached yet\n");
 #endif
 		return;

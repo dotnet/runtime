@@ -61,18 +61,20 @@ handle_command (gpointer state, gpointer payload, gboolean at_shutdown)
 	case MONO_FLIGHT_RECORDER_APPEND:
 		mono_flight_recorder_append (recorder, &entry->message);
 
-		/*fprintf (stderr, "Log received append\n");*/
-#if 1
-		/*LogMessage messages [MAX_RECORDER_LOG_LEN];*/
-		/*LogQueueDumpRequest dump;*/
-		/*dump.messages = (LogMessage *) messages;*/
-		/*dump.num_messages = 0;*/
-		/*dump.max_num_messages = MAX_RECORDER_LOG_LEN;*/
-		/*mono_log_dump_recorder_internal (recorder, &dump);*/
-		/*fprintf (stderr, "%zu messages\n", dump.num_messages);*/
+#if 0
+		// Dump all messages on each append. This is an aggressive, slow
+		// debugging method. 
 
-		/*for (int i=0; i < dump.num_messages; i++)*/
-			/*fprintf (stderr, "\t(%d): %s\n", i, dump.messages [i].message);*/
+		LogMessage messages [MAX_RECORDER_LOG_LEN];
+		LogQueueDumpRequest dump;
+		dump.messages = (LogMessage *) messages;
+		dump.num_messages = 0;
+		dump.max_num_messages = MAX_RECORDER_LOG_LEN;
+		mono_log_dump_recorder_internal (recorder, &dump);
+		fprintf (stderr, "%zu messages\n", dump.num_messages);
+
+		for (int i=0; i < dump.num_messages; i++)
+			fprintf (stderr, "\t(%d): %s\n", i, dump.messages [i].message);
 #endif
 
 		break;
@@ -124,7 +126,7 @@ mono_log_write_recorder (const char *log_domain, GLogLevelFlags level, mono_bool
 {
 	int small_id = mono_thread_info_get_small_id ();
 	if (small_id < 0) {
-#if 1
+#if MONO_PRINT_DROPPED_MESSAGES
 		fprintf (stderr, "Dropping message because thread not attached yet:\n\t%s\n", message);
 #endif
 		return;
@@ -133,7 +135,7 @@ mono_log_write_recorder (const char *log_domain, GLogLevelFlags level, mono_bool
 		mono_log_dump_recorder ();
 		abort();
 	} else if (!logger_thread->run_thread) {
-#if 1
+#if MONO_PRINT_DROPPED_MESSAGES
 		fprintf (stderr, "Dropping message because thread killed:\n\t%s\n", message);
 #endif
 		return;
@@ -155,7 +157,7 @@ mono_log_close_recorder (void)
 {
 	int small_id = mono_thread_info_get_small_id ();
 	if (small_id < 0) {
-#if 1
+#if MONO_PRINT_DROPPED_MESSAGES
 		fprintf (stderr, "Dropping attempt to close recorder, thread not attached yet\n");
 #endif
 		return;
@@ -177,7 +179,7 @@ mono_log_dump_recorder (void)
 {
 	int small_id = mono_thread_info_get_small_id ();
 	if (small_id < 0) {
-#if 1
+#if MONO_PRINT_DROPPED_MESSAGES
 		fprintf (stderr, "Dropping attempt to dump recorder, thread not attached yet\n");
 #endif
 		return;

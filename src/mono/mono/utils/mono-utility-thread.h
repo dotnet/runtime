@@ -17,6 +17,8 @@
 #include <mono/utils/lock-free-alloc.h>
 #include <mono/utils/mono-os-semaphore.h>
 
+#define MONO_PRINT_DROPPED_MESSAGES 0
+
 typedef struct {
 	void (*early_init) (gpointer *state_ptr);
 	void (*init) (gpointer *state_ptr);
