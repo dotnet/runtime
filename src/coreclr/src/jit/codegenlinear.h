@@ -117,7 +117,7 @@ void genHWIntrinsic(GenTreeHWIntrinsic* node);
 #if defined(_TARGET_XARCH_)
 void genHWIntrinsic_R_RM(GenTreeHWIntrinsic* node, instruction ins, emitAttr attr);
 void genHWIntrinsic_R_RM_I(GenTreeHWIntrinsic* node, instruction ins, int8_t ival);
-void genHWIntrinsic_R_R_RM(GenTreeHWIntrinsic* node, instruction ins);
+void genHWIntrinsic_R_R_RM(GenTreeHWIntrinsic* node, instruction ins, emitAttr attr);
 void genHWIntrinsic_R_R_RM_I(GenTreeHWIntrinsic* node, instruction ins, int8_t ival);
 void genHWIntrinsic_R_R_RM_R(GenTreeHWIntrinsic* node, instruction ins);
 void genHWIntrinsic_R_R_R_RM(
