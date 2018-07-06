@@ -4306,6 +4306,7 @@ typedef struct {
 static _wapi_drive_type _wapi_drive_types[] = {
 #if HOST_DARWIN
 	{ DRIVE_REMOTE, "afp" },
+	{ DRIVE_REMOTE, "afpfs" },
 	{ DRIVE_REMOTE, "autofs" },
 	{ DRIVE_CDROM, "cddafs" },
 	{ DRIVE_CDROM, "cd9660" },
