@@ -23,11 +23,9 @@ WARNING:   When setting properties based on their current state (for example:
   <Target Name="GetJitDisasmBashScript"
           Returns="$(JitDisasmBashScript)">
     <PropertyGroup>
-      <InputAssemblyName Condition="('$(CLRTestKind)' == 'RunOnly') and ('$(RunningOnUnix)' == 'true')">$([MSBuild]::MakeRelative($(OutputPath.Replace("/","\\")), $(_CLRTestToRunFileFullPath.Replace("/","\\"))).Replace("\\","/"))</InputAssemblyName>
-      <InputAssemblyName Condition="('$(CLRTestKind)' == 'RunOnly') and ('$(RunningOnUnix)' != 'true')">$([MSBuild]::MakeRelative($(OutputPath), $(_CLRTestToRunFileFullPath)).Replace("\","/"))</InputAssemblyName>
+      <InputAssemblyName Condition="'$(CLRTestKind)' == 'RunOnly'">$([MSBuild]::MakeRelative($(OutputPath), $(_CLRTestToRunFileFullPath)).Replace("\","/"))</InputAssemblyName>
       <InputAssemblyName Condition="'$(CLRTestKind)' == 'BuildAndRun'">$(MSBuildProjectName).exe</InputAssemblyName>
-      <JitDisasmOut Condition="'$(RunningOnUnix)' == 'true'">$([MSBuild]::MakeRelative($(OutputPath.Replace("/","\\")), $(BaseOutputPathWithConfig.Replace("/","\\"))dasm\$(BuildProjectRelativeDir.Replace("/","\\"))).Replace("\\","/"))</JitDisasmOut>
-      <JitDisasmOut Condition="'$(RunningOnUnix)' != 'true'">$([MSBuild]::MakeRelative($(OutputPath), $(BaseOutputPathWithConfig)dasm\$(BuildProjectRelativeDir)).Replace("\","/"))</JitDisasmOut>
+      <JitDisasmOut>$([MSBuild]::MakeRelative($(OutputPath), $(BaseOutputPathWithConfig)dasm\$(BuildProjectRelativeDir)).Replace("\","/"))</JitDisasmOut>
       <JitDisasmBashScript>
 <![CDATA[
 # JitDisasm Script
@@ -50,11 +48,9 @@ fi
   <Target Name="GetJitDisasmBatchScript"
           Returns="$(JitDisasmBatchScript)">
     <PropertyGroup>
-      <InputAssemblyName Condition="('$(CLRTestKind)' == 'RunOnly') and ('$(RunningOnUnix)' == 'true')">$([MSBuild]::MakeRelative($(OutputPath.Replace("/","\\")), $(_CLRTestToRunFileFullPath.Replace("/","\\"))).Replace("\\","/"))</InputAssemblyName>
-      <InputAssemblyName Condition="('$(CLRTestKind)' == 'RunOnly') and ('$(RunningOnUnix)' != 'true')">$([MSBuild]::MakeRelative($(OutputPath), $(_CLRTestToRunFileFullPath)))</InputAssemblyName>
+      <InputAssemblyName Condition="'$(CLRTestKind)' == 'RunOnly'">$([MSBuild]::MakeRelative($(OutputPath), $(_CLRTestToRunFileFullPath)))</InputAssemblyName>
       <InputAssemblyName Condition="'$(CLRTestKind)' == 'BuildAndRun'">$(MSBuildProjectName).exe</InputAssemblyName>
-      <JitDisasmOut Condition="'$(RunningOnUnix)' == 'true'">$([MSBuild]::MakeRelative($(OutputPath.Replace("/","\\")), $(BaseOutputPathWithConfig.Replace("/","\\"))dasm\$(BuildProjectRelativeDir.Replace("/","\\"))).Replace("\\","/"))</JitDisasmOut>
-      <JitDisasmOut Condition="'$(RunningOnUnix)' != 'true'">$([MSBuild]::MakeRelative($(OutputPath), $(BaseOutputPathWithConfig)dasm\$(BuildProjectRelativeDir)))</JitDisasmOut>
+      <JitDisasmOut>$([MSBuild]::MakeRelative($(OutputPath), $(BaseOutputPathWithConfig)dasm\$(BuildProjectRelativeDir)))</JitDisasmOut>
       <JitDisasmBatchScript>
 <![CDATA[
 REM JitDisasm Script
@@ -76,8 +72,7 @@ if defined RunningJitDisasm (
       Name="GetIlasmRoundTripBashScript"
       Returns="$(IlasmRoundTripBashScript)">
     <PropertyGroup>
-      <InputAssemblyName Condition="('$(CLRTestKind)' == 'RunOnly') and ('$(RunningOnUnix)' == 'true')">$([MSBuild]::MakeRelative($(OutputPath.Replace("/","\\")), $(_CLRTestToRunFileFullPath.Replace("/","\\"))).Replace("\\","/"))</InputAssemblyName>
-      <InputAssemblyName Condition="('$(CLRTestKind)' == 'RunOnly') and ('$(RunningOnUnix)' != 'true')">$([MSBuild]::MakeRelative($(OutputPath), $(_CLRTestToRunFileFullPath)).Replace("\","/"))</InputAssemblyName>
+      <InputAssemblyName Condition="'$(CLRTestKind)' == 'RunOnly'">$([MSBuild]::MakeRelative($(OutputPath), $(_CLRTestToRunFileFullPath)).Replace("\","/"))</InputAssemblyName>
       <InputAssemblyName Condition="'$(CLRTestKind)' == 'BuildAndRun'">$(MSBuildProjectName).exe</InputAssemblyName>
       <DisassemblyName>$(MSBuildProjectName).dasm.il</DisassemblyName>
       <TargetAssemblyName>$(MSBuildProjectName).asm.exe</TargetAssemblyName>
