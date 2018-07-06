@@ -28,11 +28,13 @@
       <Imports>Unix</Imports>
       <TargetsUnix>true</TargetsUnix>
       <TargetsFreeBSD>true</TargetsFreeBSD>
+      <PackageTargetRuntime>freebsd</PackageTargetRuntime>
     </OSGroups>
     <OSGroups Include="NetBSD">
       <Imports>Unix</Imports>
       <TargetsUnix>true</TargetsUnix>
       <TargetsNetBSD>true</TargetsNetBSD>
+      <PackageTargetRuntime>netbsd</PackageTargetRuntime>
     </OSGroups>
     <OSGroups Include="AnyOS" />
   </ItemGroup>
