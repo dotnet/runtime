@@ -38,7 +38,18 @@ In order to get clang-3.9, llvm-3.9 and lldb-3.9 on Ubuntu 14.04, we need to add
     ~$ wget -O - http://llvm.org/apt/llvm-snapshot.gpg.key | sudo apt-key add -
     ~$ sudo apt-get update
 
-Note: ARM clang has a known issue with CompareExchange ([#15074](https://github.com/dotnet/coreclr/issues/15074)), so for ARM you must use clang-4.0 or higher. The official build uses clang-5.0.
+Note: ARM clang has a known issue with CompareExchange
+([#15074](https://github.com/dotnet/coreclr/issues/15074)), so for ARM you must
+use clang-4.0 or higher.  Moreover, when building with clang-5.0, the
+following errors occur:
+
+```
+coreclr/src/debug/inc/arm/primitives.h:66:1: error: __declspec attribute 'selectany' is
+      not supported [-Werror,-Wignored-attributes]
+```
+
+This is fixed in clang-5.0.2, which can be installed from the apt
+repository listed below.
 
 For other version of Debian/Ubuntu, please visit http://apt.llvm.org/.
 
