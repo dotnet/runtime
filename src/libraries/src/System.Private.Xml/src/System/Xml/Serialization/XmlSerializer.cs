@@ -805,8 +805,6 @@ namespace System.Xml.Serialization
         }
 
 #if !FEATURE_SERIALIZATION_UAPAOT
-        [ResourceConsumption(ResourceScope.Machine, ResourceScope.Machine)]
-        [ResourceExposure(ResourceScope.None)]
         internal static bool GenerateSerializer(Type[] types, XmlMapping[] mappings, Stream stream)
         {
             if (types == null || types.Length == 0)

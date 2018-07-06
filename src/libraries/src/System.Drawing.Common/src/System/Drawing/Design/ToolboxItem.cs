@@ -66,8 +66,6 @@ namespace System.Drawing.Design {
         /// <devdoc>
         ///    Initializes a new instance of the ToolboxItem class using the specified type.
         /// </devdoc>
-        [ResourceExposure(ResourceScope.Process)]
-        [ResourceConsumption(ResourceScope.Process)]
         public ToolboxItem(Type toolType) : this() {
             Initialize(toolType);
         }
@@ -558,8 +556,6 @@ namespace System.Drawing.Design {
         ///     to the designer host's set of references.
         /// </devdoc>        
         [SuppressMessage("Microsoft.Reliability", "CA2001:AvoidCallingProblematicMethods")]
-        [ResourceExposure(ResourceScope.None)]
-        [ResourceConsumption(ResourceScope.Machine, ResourceScope.Machine)]
         protected virtual Type GetType(IDesignerHost host, AssemblyName assemblyName, string typeName, bool reference) {
             ITypeResolutionService ts = null;
             Type type = null;
@@ -693,8 +689,6 @@ namespace System.Drawing.Design {
         /// <devdoc>
         ///     Initializes a toolbox item with a given type.  A locked toolbox item cannot be initialized.
         /// </devdoc>
-        [ResourceExposure(ResourceScope.Process | ResourceScope.Machine)]
-        [ResourceConsumption(ResourceScope.Process | ResourceScope.Machine)]
         public virtual void Initialize(Type type) {
             CheckUnlocked();
             
