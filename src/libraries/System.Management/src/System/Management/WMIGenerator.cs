@@ -190,7 +190,6 @@ namespace System.Management
         /// <param name="lang">The language to generate in.</param>
         /// <param name="FilePath">The path to the file where the generated code should be stored.</param>
         /// <param name="Namespace">The .NET namespace into which the class is generated.</param>
-        [ResourceExposure(ResourceScope.None),ResourceConsumption(ResourceScope.Machine,ResourceScope.Machine)]
         public bool GenerateCode(CodeLanguage lang ,string filePath,string netNamespace)
         {
             // check for proper arguments
