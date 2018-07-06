@@ -8,75 +8,75 @@ namespace System.Net.Http
 {
     // Warning: Mutable struct!
     // The purpose of this struct is to simplify buffer management.
-    // It manages a "read position" and a "write position" into a single array buffer,
-    // and provides some support for resizing/shifting the buffer when necessary.
+    // It manages a sliding buffer where bytes can be added at the end and removed at the beginning.
+    // [ActiveSpan/Memory] contains the current buffer contents; these bytes will be preserved
+    // (copied, if necessary) on any call to EnsureAvailableBytes.
+    // [AvailableSpan/Memory] contains the available bytes past the end of the current content,
+    // and can be written to in order to add data to the end of the buffer.
+    // Commit(byteCount) will extend the ActiveSpan by [byteCount] bytes into the AvailableSpan.
+    // Discard(byteCount) will discard [byteCount] bytes as the beginning of the ActiveSpan.
 
-    // Invariants:
-    // 0 <= _readPosition <= _writePosition <= bytes.Length
-    // Bytes between _writePosition and bytes.Length are available to write to.
-    // Bytes between _readPosition and _writePosition are available to read from.
-    // Bytes between 0 and _readPosition are dead, and should be ignored.
     internal struct ArrayBuffer
     {
         private byte[] _bytes;
-        private int _readPosition;
-        private int _writePosition;
+        private int _activeStart;
+        private int _availableStart;
+
+        // Invariants:
+        // 0 <= _activeStart <= _availableStart <= bytes.Length
 
         public ArrayBuffer(int initialSize)
         {
             _bytes = new byte[initialSize];
 
-            _readPosition = 0;
-            _writePosition = 0;
+            _activeStart = 0;
+            _availableStart = 0;
         }
 
-        public Span<byte> ReadSpan => new Span<byte>(_bytes, _readPosition, _writePosition - _readPosition);
-        public Span<byte> WriteSpan => new Span<byte>(_bytes, _writePosition, _bytes.Length - _writePosition);
-        public Memory<byte> ReadMemory => new Memory<byte>(_bytes, _readPosition, _writePosition - _readPosition);
-        public Memory<byte> WriteMemory => new Memory<byte>(_bytes, _writePosition, _bytes.Length - _writePosition);
-        public int BufferSize => _bytes.Length;
+        public Span<byte> ActiveSpan => new Span<byte>(_bytes, _activeStart, _availableStart - _activeStart);
+        public Span<byte> AvailableSpan => new Span<byte>(_bytes, _availableStart, _bytes.Length - _availableStart);
+        public Memory<byte> ActiveMemory => new Memory<byte>(_bytes, _activeStart, _availableStart - _activeStart);
+        public Memory<byte> AvailableMemory => new Memory<byte>(_bytes, _availableStart, _bytes.Length - _availableStart);
 
-        // Advance the read position.
-        public void Consume(int byteCount)
+        public void Discard(int byteCount)
         {
-            Debug.Assert(byteCount <= ReadSpan.Length);
-            _readPosition += byteCount;
+            Debug.Assert(byteCount <= ActiveSpan.Length);
+            _activeStart += byteCount;
 
-            if (_readPosition == _writePosition)
+            if (_activeStart == _availableStart)
             {
-                _readPosition = 0;
-                _writePosition = 0;
+                _activeStart = 0;
+                _availableStart = 0;
             }
         }
 
-        // Advance the write position.
         public void Commit(int byteCount)
         {
-            Debug.Assert(byteCount <= WriteSpan.Length);
-            _writePosition += byteCount;
+            Debug.Assert(byteCount <= AvailableSpan.Length);
+            _availableStart += byteCount;
         }
 
         // Ensure at least [byteCount] bytes to write to.
-        public void EnsureWriteSpace(int byteCount)
+        public void EnsureAvailableSpace(int byteCount)
         {
-            if (byteCount <= WriteSpan.Length)
+            if (byteCount <= AvailableSpan.Length)
             {
                 return;
             }
 
-            int totalFree = _readPosition + WriteSpan.Length;
+            int totalFree = _activeStart + AvailableSpan.Length;
             if (byteCount <= totalFree)
             {
                 // We can free up enough space by just shifting the bytes down, so do so.
-                Buffer.BlockCopy(_bytes, _readPosition, _bytes, 0, ReadSpan.Length);
-                _writePosition = ReadSpan.Length;
-                _readPosition = 0;
-                Debug.Assert(byteCount <= WriteSpan.Length);
+                Buffer.BlockCopy(_bytes, _activeStart, _bytes, 0, ActiveSpan.Length);
+                _availableStart = ActiveSpan.Length;
+                _activeStart = 0;
+                Debug.Assert(byteCount <= AvailableSpan.Length);
                 return;
             }
 
             // Double the size of the buffer until we have enough space.
-            int desiredSize = ReadSpan.Length + byteCount;
+            int desiredSize = ActiveSpan.Length + byteCount;
             int newSize = _bytes.Length;
             do
             {
@@ -85,16 +85,16 @@ namespace System.Net.Http
 
             byte[] newBytes = new byte[newSize];
 
-            if (ReadSpan.Length != 0)
+            if (ActiveSpan.Length != 0)
             {
-                Buffer.BlockCopy(_bytes, _readPosition, newBytes, 0, ReadSpan.Length);
+                Buffer.BlockCopy(_bytes, _activeStart, newBytes, 0, ActiveSpan.Length);
             }
 
-            _writePosition = ReadSpan.Length;
-            _readPosition = 0;
+            _availableStart = ActiveSpan.Length;
+            _activeStart = 0;
             _bytes = newBytes;
 
-            Debug.Assert(byteCount <= WriteSpan.Length);
+            Debug.Assert(byteCount <= AvailableSpan.Length);
         }
     }
 }
