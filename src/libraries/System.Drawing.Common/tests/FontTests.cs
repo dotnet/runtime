@@ -796,16 +796,16 @@ namespace System.Drawing.Tests
 
         [ActiveIssue(20884, TestPlatforms.AnyUnix)]
         [ConditionalFact(Helpers.GdiplusIsAvailable)]
-        [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework, "Throws an AccessViolationException in the .NET Framework.")]
-        public void ToLogFont_NullLogFont_ThrowsArgumentNullException()
+        [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework, "Exception is wrapped in a TargetInvocationException in the .NET Framework.")]
+        public void ToLogFont_NullLogFont_ThrowsAccessViolationException()
         {
             using (FontFamily family = FontFamily.GenericMonospace)
             using (var font = new Font(family, 10))
             using (var image = new Bitmap(10, 10))
             using (Graphics graphics = Graphics.FromImage(image))
             {
-                AssertExtensions.Throws<ArgumentNullException>("ptr", () => font.ToLogFont(null));
-                AssertExtensions.Throws<ArgumentNullException>("ptr", () => font.ToLogFont(null, graphics));
+                Assert.Throws<AccessViolationException>(() => font.ToLogFont(null));
+                Assert.Throws<AccessViolationException>(() => font.ToLogFont(null, graphics));
             }
         }
 
