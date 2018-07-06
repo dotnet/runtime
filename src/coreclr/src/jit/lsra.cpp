@@ -6446,6 +6446,7 @@ void LinearScan::updateMaxSpill(RefPosition* refPosition)
                 {
                     typ = treeNode->AsPutArgSplit()->GetRegType(refPosition->getMultiRegIdx());
                 }
+#if !defined(_TARGET_64BIT_)
                 else if (treeNode->OperIsPutArgReg())
                 {
                     // For double arg regs, the type is changed to long since they must be passed via `r0-r3`.
@@ -6453,6 +6454,7 @@ void LinearScan::updateMaxSpill(RefPosition* refPosition)
                     var_types typNode = treeNode->TypeGet();
                     typ               = (typNode == TYP_LONG) ? TYP_INT : typNode;
                 }
+#endif // !_TARGET_64BIT_
 #endif // FEATURE_ARG_SPLIT
                 else
                 {
