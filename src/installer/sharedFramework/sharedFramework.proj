@@ -123,6 +123,7 @@
       <SharedFrameworkDepsFile>$(SharedFrameworkNameAndVersionRoot)\$(SharedFrameworkName).deps.json</SharedFrameworkDepsFile>
       <RuntimeGraphGeneratorRuntime Condition="'$(OSGroup)'=='Windows_NT'">win</RuntimeGraphGeneratorRuntime>
       <RuntimeGraphGeneratorRuntime Condition="'$(OSGroup)'=='OSX'">osx</RuntimeGraphGeneratorRuntime>
+      <RuntimeGraphGeneratorRuntime Condition="'$(OSGroup)'=='FreeBSD'">freebsd</RuntimeGraphGeneratorRuntime>
       <RuntimeGraphGeneratorRuntime Condition="'$(RuntimeGraphGeneratorRuntime)'==''">linux</RuntimeGraphGeneratorRuntime>
     </PropertyGroup>
 
