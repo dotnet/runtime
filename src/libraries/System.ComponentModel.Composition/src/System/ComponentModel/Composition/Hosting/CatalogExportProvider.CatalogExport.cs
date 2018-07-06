@@ -5,7 +5,6 @@
 using System.ComponentModel.Composition.Primitives;
 using System.Diagnostics.CodeAnalysis;
 using System.Threading;
-using Microsoft.Internal;
 
 namespace System.ComponentModel.Composition.Hosting
 {
@@ -100,14 +99,19 @@ namespace System.ComponentModel.Composition.Hosting
 
                     case CreationPolicy.NonShared:
                         {
-                            Assumes.IsTrue(importPolicy != CreationPolicy.Shared);
+                            if (importPolicy == CreationPolicy.Shared)
+                            {
+                                throw new Exception(SR.Diagnostic_InternalExceptionMessage);
+                            }
                             return false;
                         }
 
                     default:
                         {
-                            Assumes.IsTrue(partPolicy == CreationPolicy.Shared);
-                            Assumes.IsTrue(importPolicy != CreationPolicy.NonShared);
+                            if (partPolicy != CreationPolicy.Shared || importPolicy == CreationPolicy.NonShared)
+                            {
+                                throw new Exception(SR.Diagnostic_InternalExceptionMessage);
+                            }
                             return true;
                         }
                 }

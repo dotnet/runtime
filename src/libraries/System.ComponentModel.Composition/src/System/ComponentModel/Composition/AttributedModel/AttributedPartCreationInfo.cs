@@ -3,7 +3,7 @@
 // See the LICENSE file in the project root for more information.
 
 using System.Collections.Generic;
-using System.ComponentModel.Composition.Diagnostics;
+using System.Composition.Diagnostics;
 using System.ComponentModel.Composition.Hosting;
 using System.ComponentModel.Composition.Primitives;
 using System.ComponentModel.Composition.ReflectionModel;
@@ -27,7 +27,10 @@ namespace System.ComponentModel.Composition.AttributedModel
 
         public AttributedPartCreationInfo(Type type, PartCreationPolicyAttribute partCreationPolicy, bool ignoreConstructorImports, ICompositionElement origin)
         {
-            Assumes.NotNull(type);
+            if (type == null)
+            {
+                throw new ArgumentNullException(nameof(type));
+            }
 
             _type = type;
             _ignoreConstructorImports = ignoreConstructorImports;
@@ -187,7 +190,10 @@ namespace System.ComponentModel.Composition.AttributedModel
 
         private static ConstructorInfo SelectPartConstructor(Type type)
         {
-            Assumes.NotNull(type);
+            if (type == null)
+            {
+                throw new ArgumentNullException(nameof(type));
+            }
 
             if (type.IsAbstract)
             {

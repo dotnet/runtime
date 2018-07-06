@@ -95,6 +95,26 @@ namespace Microsoft.Internal
                 throw new ArgumentException(string.Format(CultureInfo.CurrentCulture, SR.ArgumentOutOfRange_InvalidEnumInSet, parameterName, value, enumFlagSet.ToString()), parameterName);
             }
             Contract.EndContractBlock();
-        }        
+        }
+
+        public static void NotNull<T>(T value, string parameterName)
+            where T : class
+        {
+            if (value == null)
+            {
+                throw new ArgumentNullException(parameterName);
+            }
+        }
+
+        public static void NotNullOrEmpty(string value, string parameterName)
+        {
+            NotNull(value, parameterName);
+
+            if (value.Length == 0)
+            {
+                throw new ArgumentException(string.Format(CultureInfo.CurrentCulture, SR.ArgumentException_EmptyString, parameterName), parameterName);
+            }
+        }
+
     }
 }

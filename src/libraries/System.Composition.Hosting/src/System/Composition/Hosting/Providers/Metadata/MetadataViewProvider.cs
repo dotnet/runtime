@@ -4,10 +4,10 @@
 
 using System.Collections.Generic;
 using System.ComponentModel;
+using System.Diagnostics;
 using System.Linq;
 using System.Linq.Expressions;
 using System.Reflection;
-using Microsoft.Internal;
 
 namespace System.Composition.Hosting.Providers.Metadata
 {
@@ -85,7 +85,9 @@ namespace System.Composition.Hosting.Providers.Metadata
 
             // This could be significantly improved by describing the target metadata property.
             var message = SR.Format(SR.MetadataViewProvider_MissingMetadata, name);
-            throw ThrowHelper.CompositionException(message);
+            var ex = new CompositionFailedException(message);
+            Debug.WriteLine(SR.Diagnostic_ThrowingException, ex.ToString());
+            throw ex;
         }
     }
 }

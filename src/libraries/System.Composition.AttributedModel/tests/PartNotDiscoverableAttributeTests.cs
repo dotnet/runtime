@@ -4,7 +4,7 @@
 
 using Xunit;
 
-namespace System.Composition.Tests
+namespace System.Composition.AttributeModel.Tests
 {
     public class PartNotDiscoverableAttributeTests
     {

@@ -2,17 +2,12 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
-using System;
 using System.Collections.Generic;
-using System.Composition;
-using System.Composition.Convention;
-using System.Composition.Convention.UnitTests;
 using System.Linq;
 using System.Reflection;
-using System.Text;
 using Xunit;
 
-namespace System.Composition.Convention
+namespace System.Composition.Convention.Tests
 {
     public class ExportBuilderUnitTests
     {
@@ -26,7 +21,7 @@ namespace System.Composition.Convention
             var builder = new ConventionBuilder();
             builder.ForType<CFoo>().Export<IFoo>();
 
-            var exports = builder.GetDeclaredAttributes(typeof(CFoo), typeof(CFoo).GetTypeInfo()).Where<Attribute>(e => e is ExportAttribute).Cast<ExportAttribute>();
+            IEnumerable<ExportAttribute> exports = builder.GetDeclaredAttributes(typeof(CFoo), typeof(CFoo).GetTypeInfo()).Where<Attribute>(e => e is ExportAttribute).Cast<ExportAttribute>();
             Assert.Equal(1, exports.Count());
             Assert.Equal(exports.First().ContractType, typeof(IFoo));
         }
@@ -37,7 +32,7 @@ namespace System.Composition.Convention
             var builder = new ConventionBuilder();
             builder.ForType(typeof(CFoo)).Export((c) => c.AsContractType(typeof(IFoo)));
 
-            var exports = builder.GetDeclaredAttributes(typeof(CFoo), typeof(CFoo).GetTypeInfo()).Where<Attribute>(e => e is ExportAttribute).Cast<ExportAttribute>();
+            IEnumerable<ExportAttribute> exports = builder.GetDeclaredAttributes(typeof(CFoo), typeof(CFoo).GetTypeInfo()).Where<Attribute>(e => e is ExportAttribute).Cast<ExportAttribute>();
             Assert.Equal(1, exports.Count());
             Assert.Equal(exports.First().ContractType, typeof(IFoo));
         }
@@ -46,13 +41,13 @@ namespace System.Composition.Convention
         public void ExportBuilderApiTestsNull_ShouldThrowArgumentNull()
         {
             var builder = new ConventionBuilder();
-            ExceptionAssert.ThrownMessageContains<ArgumentNullException>("contractName", () => builder.ForTypesMatching((t) => true).Export(c => c.AsContractName(null as string)));
-            ExceptionAssert.ThrownMessageContains<ArgumentException>("contractName", () => builder.ForTypesMatching((t) => true).Export(c => c.AsContractName("")));
-            ExceptionAssert.ThrownMessageContains<ArgumentNullException>("getContractNameFromPartType", () => builder.ForTypesMatching((t) => true).Export(c => c.AsContractName(null as Func<Type, string>)));
-            ExceptionAssert.ThrownMessageContains<ArgumentNullException>("type", () => builder.ForTypesMatching((t) => true).Export(c => c.AsContractType(null as Type)));
-            ExceptionAssert.ThrownMessageContains<ArgumentNullException>("name", () => builder.ForTypesMatching((t) => true).Export(c => c.AddMetadata(null as string, null as object)));
-            ExceptionAssert.ThrownMessageContains<ArgumentNullException>("name", () => builder.ForTypesMatching((t) => true).Export(c => c.AddMetadata(null as string, null as Func<Type, object>)));
-            ExceptionAssert.ThrownMessageContains<ArgumentNullException>("getValueFromPartType", () => builder.ForTypesMatching((t) => true).Export(c => c.AddMetadata("name", null as Func<Type, object>)));
+            AssertExtensions.Throws<ArgumentNullException>("contractName", () => builder.ForTypesMatching((t) => true).Export(c => c.AsContractName(null as string)));
+            AssertExtensions.Throws<ArgumentException>("contractName", () => builder.ForTypesMatching((t) => true).Export(c => c.AsContractName("")));
+            AssertExtensions.Throws<ArgumentNullException>("getContractNameFromPartType", () => builder.ForTypesMatching((t) => true).Export(c => c.AsContractName(null as Func<Type, string>)));
+            AssertExtensions.Throws<ArgumentNullException>("type", () => builder.ForTypesMatching((t) => true).Export(c => c.AsContractType(null as Type)));
+            AssertExtensions.Throws<ArgumentNullException>("name", () => builder.ForTypesMatching((t) => true).Export(c => c.AddMetadata(null as string, null as object)));
+            AssertExtensions.Throws<ArgumentNullException>("name", () => builder.ForTypesMatching((t) => true).Export(c => c.AddMetadata(null as string, null as Func<Type, object>)));
+            AssertExtensions.Throws<ArgumentNullException>("getValueFromPartType", () => builder.ForTypesMatching((t) => true).Export(c => c.AddMetadata("name", null as Func<Type, object>)));
         }
     }
 }

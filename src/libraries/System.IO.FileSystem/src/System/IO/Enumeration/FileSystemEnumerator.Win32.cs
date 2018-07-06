@@ -49,7 +49,7 @@ namespace System.IO.Enumeration
             }
         }
 
-        private IntPtr CreateRelativeDirectoryHandle(ReadOnlySpan<char> relativePath, string fullPath)
+        private unsafe IntPtr CreateRelativeDirectoryHandle(ReadOnlySpan<char> relativePath, string fullPath)
         {
             (int status, IntPtr handle) = Interop.NtDll.CreateFile(
                 relativePath,

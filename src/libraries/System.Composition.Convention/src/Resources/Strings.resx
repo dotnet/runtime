@@ -97,4 +97,13 @@
   <data name="Registration_OnSatisfiedImportNotificationOverridden" xml:space="preserve">
     <value>A OnSatisfiedImports specification convention that would apply to Type '{0}' has been overridden by attributes applied in the source file or by a prior convention.</value>
   </data>
+  <data name="Diagnostic_InternalExceptionMessage" xml:space="preserve">
+    <value>Internal error occurred. Additional information: '{0}'.</value>
+  </data>
+  <data name="Diagnostic_TraceUnnecessaryWork" xml:space="preserve">
+    <value>To avoid unnecessary work when a trace level has not been enabled, check CanWriteXXX before calling this method.</value>
+  </data>
+  <data name="ArgumentException_EmptyString" xml:space="preserve">
+    <value>'{0}' cannot be an empty string ("").</value>
+  </data>
 </root>
