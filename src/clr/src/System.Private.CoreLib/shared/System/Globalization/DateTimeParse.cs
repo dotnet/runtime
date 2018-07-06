@@ -2719,7 +2719,7 @@ new DS[] { DS.ERROR, DS.TX_NNN,  DS.TX_NNN,  DS.TX_NNN,  DS.ERROR,   DS.ERROR,  
 
             result.parsedDate = time;
 
-            if (!DetermineTimeZoneAdjustments(ref str, ref result, styles, bTimeOnly))
+            if (!DetermineTimeZoneAdjustments(ref result, styles, bTimeOnly))
             {
                 TPTraceExit("0120 (DetermineTimeZoneAdjustments)", dps);
                 return false;
@@ -2730,13 +2730,13 @@ new DS[] { DS.ERROR, DS.TX_NNN,  DS.TX_NNN,  DS.TX_NNN,  DS.ERROR,   DS.ERROR,  
 
 
         // Handles time zone adjustments and sets DateTimeKind values as required by the styles
-        private static bool DetermineTimeZoneAdjustments(ref __DTString str, ref DateTimeResult result, DateTimeStyles styles, bool bTimeOnly)
+        private static bool DetermineTimeZoneAdjustments(ref DateTimeResult result, DateTimeStyles styles, bool bTimeOnly)
         {
             if ((result.flags & ParseFlags.CaptureOffset) != 0)
             {
                 // This is a DateTimeOffset parse, so the offset will actually be captured directly, and
                 // no adjustment is required in most cases
-                return DateTimeOffsetTimeZonePostProcessing(ref str, ref result, styles);
+                return DateTimeOffsetTimeZonePostProcessing(ref result, styles);
             }
             else
             {
@@ -2808,7 +2808,7 @@ new DS[] { DS.ERROR, DS.TX_NNN,  DS.TX_NNN,  DS.TX_NNN,  DS.ERROR,   DS.ERROR,  
         }
 
         // Apply validation and adjustments specific to DateTimeOffset
-        private static bool DateTimeOffsetTimeZonePostProcessing(ref __DTString str, ref DateTimeResult result, DateTimeStyles styles)
+        private static bool DateTimeOffsetTimeZonePostProcessing(ref DateTimeResult result, DateTimeStyles styles)
         {
             // For DateTimeOffset, default to the Utc or Local offset when an offset was not specified by
             // the input string.
@@ -3061,7 +3061,7 @@ new DS[] { DS.ERROR, DS.TX_NNN,  DS.TX_NNN,  DS.TX_NNN,  DS.ERROR,   DS.ERROR,  
 
             time = time.AddTicks((long)Math.Round(partSecond * Calendar.TicksPerSecond));
             result.parsedDate = time;
-            if (!DetermineTimeZoneAdjustments(ref str, ref result, styles, false))
+            if (!DetermineTimeZoneAdjustments(ref result, styles, false))
             {
                 return false;
             }
@@ -3782,18 +3782,14 @@ new DS[] { DS.ERROR, DS.TX_NNN,  DS.TX_NNN,  DS.TX_NNN,  DS.ERROR,   DS.ERROR,  
             //
             switch (format[0])
             {
+                case 's':       // Sortable format (in local time)
                 case 'o':
                 case 'O':       // Round Trip Format
-                    parseInfo.calendar = GregorianCalendar.GetDefaultInstance();
-                    dtfi = DateTimeFormatInfo.InvariantInfo;
+                    ConfigureFormatOS(ref dtfi, ref parseInfo);
                     break;
                 case 'r':
                 case 'R':       // RFC 1123 Standard.  (in Universal time)
                     ConfigureFormatR(ref dtfi, ref parseInfo, ref result);
-                    break;
-                case 's':       // Sortable format (in local time)
-                    dtfi = DateTimeFormatInfo.InvariantInfo;
-                    parseInfo.calendar = GregorianCalendar.GetDefaultInstance();
                     break;
                 case 'u':       // Universal time format in sortable format.
                     parseInfo.calendar = GregorianCalendar.GetDefaultInstance();
@@ -3832,7 +3828,13 @@ new DS[] { DS.ERROR, DS.TX_NNN,  DS.TX_NNN,  DS.TX_NNN,  DS.ERROR,   DS.ERROR,  
                 result.flags |= ParseFlags.Rfc1123Pattern;
             }
         }
-        
+
+        private static void ConfigureFormatOS(ref DateTimeFormatInfo dtfi, ref ParsingInfo parseInfo)
+        {
+            parseInfo.calendar = GregorianCalendar.GetDefaultInstance();
+            dtfi = DateTimeFormatInfo.InvariantInfo;
+        }
+
         // Given a specified format character, parse and update the parsing result.
         //
         private static bool ParseByFormat(
@@ -4454,6 +4456,11 @@ new DS[] { DS.ERROR, DS.TX_NNN,  DS.TX_NNN,  DS.TX_NNN,  DS.ERROR,   DS.ERROR,  
                         case 'r':
                             ConfigureFormatR(ref dtfi, ref parseInfo, ref result);
                             return ParseFormatR(s, ref parseInfo, ref result);
+
+                        case 'O':
+                        case 'o':
+                            ConfigureFormatOS(ref dtfi, ref parseInfo);
+                            return ParseFormatO(s, ref parseInfo, ref result);
                     }
                 }
 
@@ -4629,7 +4636,7 @@ new DS[] { DS.ERROR, DS.TX_NNN,  DS.TX_NNN,  DS.TX_NNN,  DS.ERROR,   DS.ERROR,  
             }
 
 
-            if (!DetermineTimeZoneAdjustments(ref str, ref result, styles, bTimeOnly))
+            if (!DetermineTimeZoneAdjustments(ref result, styles, bTimeOnly))
             {
                 return false;
             }
@@ -4829,6 +4836,215 @@ new DS[] { DS.ERROR, DS.TX_NNN,  DS.TX_NNN,  DS.TX_NNN,  DS.ERROR,   DS.ERROR,  
             }
 
             return true;
+        }
+
+        private static bool ParseFormatO(ReadOnlySpan<char> source, ref ParsingInfo parseInfo, ref DateTimeResult result)
+        {
+            // Examples:
+            // 2017-06-12T05:30:45.7680000        (interpreted as local time wrt to current time zone)
+            // 2017-06-12T05:30:45.7680000Z       (Z is short for "+00:00" but also distinguishes DateTimeKind.Utc from DateTimeKind.Local)
+            // 2017-06-12T05:30:45.7680000-7:00   (special-case of one-digit offset hour)
+            // 2017-06-12T05:30:45.7680000-07:00
+
+            if ((uint)source.Length < 27 ||
+                source[4] != '-' ||
+                source[7] != '-' ||
+                source[10] != 'T' ||
+                source[13] != ':' ||
+                source[16] != ':' ||
+                source[19] != '.')
+            {
+                result.SetBadDateTimeFailure();
+                return false;
+            }
+
+            int year;
+            {
+                uint y1 = (uint)(source[0] - '0'), y2 = (uint)(source[1] - '0'), y3 = (uint)(source[2] - '0'), y4 = (uint)(source[3] - '0');
+
+                if (y1 > 9 || y2 > 9 || y3 > 9 || y4 > 9)
+                {
+                    result.SetBadDateTimeFailure();
+                    return false;
+                }
+
+                year = (int)(y1*1000 + y2*100 + y3*10 + y4);
+            }
+
+            int month;
+            {
+                uint m1 = (uint)(source[5] - '0'), m2 = (uint)(source[6] - '0');
+
+                if (m1 > 9 || m2 > 9)
+                {
+                    result.SetBadDateTimeFailure();
+                    return false;
+                }
+
+                month = (int)(m1*10 + m2);
+            }
+
+            int day;
+            {
+                uint d1 = (uint)(source[8] - '0'), d2 = (uint)(source[9] - '0');
+
+                if (d1 > 9 || d2 > 9)
+                {
+                    result.SetBadDateTimeFailure();
+                    return false;
+                }
+
+                day = (int)(d1*10 + d2);
+            }
+
+            int hour;
+            {
+                uint h1 = (uint)(source[11] - '0'), h2 = (uint)(source[12] - '0');
+
+                if (h1 > 9 || h2 > 9)
+                {
+                    result.SetBadDateTimeFailure();
+                    return false;
+                }
+
+                hour = (int)(h1*10 + h2);
+            }
+
+            int minute;
+            {
+                uint m1 = (uint)(source[14] - '0'), m2 = (uint)(source[15] - '0');
+
+                if (m1 > 9 || m2 > 9)
+                {
+                    result.SetBadDateTimeFailure();
+                    return false;
+                }
+
+                minute = (int)(m1*10 + m2);
+            }
+
+            int second;
+            {
+                uint s1 = (uint)(source[17] - '0'), s2 = (uint)(source[18] - '0');
+
+                if (s1 > 9 || s2 > 9)
+                {
+                    result.SetBadDateTimeFailure();
+                    return false;
+                }
+
+                second = (int)(s1*10 + s2);
+            }
+
+            double fraction;
+            {
+                uint f1 = (uint)(source[20] - '0');
+                uint f2 = (uint)(source[21] - '0');
+                uint f3 = (uint)(source[22] - '0');
+                uint f4 = (uint)(source[23] - '0');
+                uint f5 = (uint)(source[24] - '0');
+                uint f6 = (uint)(source[25] - '0');
+                uint f7 = (uint)(source[26] - '0');
+
+                if (f1 > 9 || f2 > 9 || f3 > 9 || f4 > 9 || f5 > 9 || f6 > 9 || f7 > 9)
+                {
+                    result.SetBadDateTimeFailure();
+                    return false;
+                }
+
+                fraction = (f1*1000000 + f2*100000 + f3*10000 + f4*1000 + f5*100 + f6*10 + f7) / 10000000.0;
+            }
+
+            if (!DateTime.TryCreate(year, month, day, hour, minute, second, 0, out DateTime dateTime))
+            {
+                result.SetBadDateTimeFailure();
+                return false;
+            }
+            result.parsedDate = dateTime.AddTicks((long)Math.Round(fraction * Calendar.TicksPerSecond));
+
+            if ((uint)source.Length > 27)
+            {
+                char offsetChar = source[27];
+                switch (offsetChar)
+                {
+                    case 'Z':
+                        if (source.Length != 28)
+                        {
+                            result.SetBadDateTimeFailure();
+                            return false;
+                        }
+                        result.flags |= ParseFlags.TimeZoneUsed | ParseFlags.TimeZoneUtc;
+                        break;
+
+                    case '+':
+                    case '-':
+                        int offsetHours, colonIndex;
+
+                        if ((uint)source.Length == 33)
+                        {
+                            uint oh1 = (uint)(source[28] - '0'), oh2 = (uint)(source[29] - '0');
+
+                            if (oh1 > 9 || oh2 > 9)
+                            {
+                                result.SetBadDateTimeFailure();
+                                return false;
+                            }
+
+                            offsetHours = (int)(oh1 * 10 + oh2);
+                            colonIndex = 30;
+                        }
+                        else if ((uint)source.Length == 32) // special-case allowed for compat: only one offset hour digit
+                        {
+                            offsetHours = source[28] - '0';
+
+                            if ((uint)offsetHours > 9)
+                            {
+                                result.SetBadDateTimeFailure();
+                                return false;
+                            }
+
+                            colonIndex = 29;
+                        }
+                        else
+                        {
+                            result.SetBadDateTimeFailure();
+                            return false;
+                        }
+
+                        if (source[colonIndex] != ':')
+                        {
+                            result.SetBadDateTimeFailure();
+                            return false;
+                        }
+
+                        int offsetMinutes;
+                        {
+                            uint om1 = (uint)(source[colonIndex + 1] - '0'), om2 = (uint)(source[colonIndex + 2] - '0');
+
+                            if (om1 > 9 || om2 > 9)
+                            {
+                                result.SetBadDateTimeFailure();
+                                return false;
+                            }
+
+                            offsetMinutes = (int)(om1*10 + om2);
+                        }
+
+                        result.flags |= ParseFlags.TimeZoneUsed;
+                        result.timeZoneOffset = new TimeSpan(offsetHours, offsetMinutes, 0);
+                        if (offsetChar == '-')
+                        {
+                            result.timeZoneOffset = result.timeZoneOffset.Negate();
+                        }
+                        break;
+
+                    default:
+                        result.SetBadDateTimeFailure();
+                        return false;
+                }
+            }
+
+            return DetermineTimeZoneAdjustments(ref result, DateTimeStyles.None, bTimeOnly: false);
         }
 
         private static Exception GetDateTimeParseException(ref DateTimeResult result)
