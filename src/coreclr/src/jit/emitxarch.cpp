@@ -217,6 +217,8 @@ bool emitter::IsDstDstSrcAVXInstruction(instruction ins)
         case INS_pcmpgtd:
         case INS_pcmpgtq:
         case INS_pcmpgtw:
+        case INS_pdep:
+        case INS_pext:
         case INS_phaddd:
         case INS_phaddsw:
         case INS_phaddw:
@@ -620,6 +622,8 @@ bool TakesRexWPrefix(instruction ins, emitAttr attr)
             case INS_mov_xmm2i:
             case INS_mov_i2xmm:
             case INS_movnti:
+            case INS_pdep:
+            case INS_pext:
                 return true;
             default:
                 return false;
@@ -850,7 +854,33 @@ unsigned emitter::emitOutputRexOrVexPrefixIfNeeded(instruction ins, BYTE* dst, c
                 switch (sizePrefix)
                 {
                     case 0x66:
-                        vexPrefix |= IsBMIInstruction(ins) ? 0x00 : 0x01;
+                        if (IsBMIInstruction(ins))
+                        {
+                            switch (ins)
+                            {
+                                case INS_pdep:
+                                {
+                                    vexPrefix |= 0x03;
+                                    break;
+                                }
+
+                                case INS_pext:
+                                {
+                                    vexPrefix |= 0x02;
+                                    break;
+                                }
+
+                                default:
+                                {
+                                    vexPrefix |= 0x00;
+                                    break;
+                                }
+                            }
+                        }
+                        else
+                        {
+                            vexPrefix |= 0x01;
+                        }
                         break;
                     case 0xF3:
                         vexPrefix |= 0x02;
