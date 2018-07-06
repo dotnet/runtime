@@ -17,6 +17,7 @@ namespace BasicEventSourceTests
         /// <summary>
         /// Test the 
         /// </summary>
+        [ActiveIssue(30876)]
         [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotWindowsNanoServer))] // ActiveIssue: https://github.com/dotnet/corefx/issues/29754
         [SkipOnTargetFramework(TargetFrameworkMonikers.UapAot, "Depends on inspecting IL at runtime.")]
         public void Test_BadEventSource_MismatchedIds_WithEtwListener()
