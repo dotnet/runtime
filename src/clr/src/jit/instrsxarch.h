@@ -571,6 +571,9 @@ INST3(blsi,           "blsi",          0, IUM_WR, 0, 0, BAD_CODE,     BAD_CODE, 
 INST3(blsmsk,         "blsmsk",        0, IUM_WR, 0, 0, BAD_CODE,     BAD_CODE, SSE38(0xF3))   // Get Mask Up to Lowest Set Bit
 INST3(blsr,           "blsr",          0, IUM_WR, 0, 0, BAD_CODE,     BAD_CODE, SSE38(0xF3))   // Reset Lowest Set Bit
 
+// BMI2
+INST3(pdep,           "pdep",          0, IUM_WR, 0, 0, BAD_CODE,     BAD_CODE, SSE38(0xF5))   // Parallel Bits Deposit
+INST3(pext,           "pext",          0, IUM_WR, 0, 0, BAD_CODE,     BAD_CODE, SSE38(0xF5))   // Parallel Bits Extract
 INST3(LAST_BMI_INSTRUCTION, "LAST_BMI_INSTRUCTION",  0, IUM_WR, 0, 0, BAD_CODE, BAD_CODE, BAD_CODE)
 
 INST3(LAST_AVX_INSTRUCTION, "LAST_AVX_INSTRUCTION",  0, IUM_WR, 0, 0, BAD_CODE, BAD_CODE, BAD_CODE)
