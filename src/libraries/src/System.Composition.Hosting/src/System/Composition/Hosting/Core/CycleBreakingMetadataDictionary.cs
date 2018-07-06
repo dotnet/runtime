@@ -3,7 +3,7 @@
 // See the LICENSE file in the project root for more information.
 
 using System.Collections.Generic;
-using Microsoft.Internal;
+using System.Diagnostics;
 
 namespace System.Composition.Hosting.Core
 {
@@ -21,7 +21,11 @@ namespace System.Composition.Hosting.Core
             get
             {
                 if (!_exportDescriptor.IsValueCreated)
-                    throw ThrowHelper.NotImplemented_MetadataCycles();
+                {
+                    var ex = new NotImplementedException(SR.NotImplemented_MetadataCycles);
+                    Debug.WriteLine(SR.Diagnostic_ThrowingException, ex.ToString());
+                    throw ex;
+                }
 
                 return _exportDescriptor.Value.Metadata;
             }

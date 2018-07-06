@@ -1,17 +1,12 @@
 <Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
     <ProjectGuid>{17DBE1D4-FCB5-4D55-805C-C4A22EE8C032}</ProjectGuid>
-    <RootNamespace>ConventionsUnitTests</RootNamespace>
     <AssemblyName>System.Composition.Convention.Tests</AssemblyName>
-    <Configurations>netcoreapp-Debug;netcoreapp-Release</Configurations>
+    <Configurations>netstandard-Debug;netstandard-Release</Configurations>
   </PropertyGroup>
   <ItemGroup>
-    <Compile Include="..\..\System.Composition\tests\Util\AssertX.cs">
-      <Link>Util\AssertX.cs</Link>
-    </Compile>
     <Compile Include="AttributedModelConventionExtensions.cs" />
     <Compile Include="ConventionBuilderTests.cs" />
-    <Compile Include="ExceptionAssert.cs" />
     <Compile Include="ExportBuilderTests.cs" />
     <Compile Include="ExportBuilderUnitTests.cs" />
     <Compile Include="ExportInterfacesContractExclusionTests.cs" />

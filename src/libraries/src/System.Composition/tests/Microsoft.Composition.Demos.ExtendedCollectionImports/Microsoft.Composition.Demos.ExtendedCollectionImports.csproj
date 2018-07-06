@@ -1,0 +1,18 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <ProjectGuid>{44C7E52C-3873-4C64-875C-8A23A8376D60}</ProjectGuid>
+    <AssemblyName>Microsoft.Composition.Demos.ExtendedCollectionImports</AssemblyName>
+    <Configurations>netstandard-Debug;netstandard-Release</Configurations>
+  </PropertyGroup>
+  <ItemGroup>
+    <Compile Include="AssemblyInfo.cs" />
+    <Compile Include="Dictionaries\DictionaryExportDescriptorProvider.cs" />
+    <Compile Include="Util\Formatters.cs" />
+    <Compile Include="OrderedImportManyAttribute.cs" />
+    <Compile Include="OrderedCollections\OrderedImportManyExportDescriptorProvider.cs" />
+    <Compile Include="KeyByMetadataAttribute.cs" />
+    <Compile Include="$(CommonPath)\System\Diagnostics\CodeAnalysis\ExcludeFromCodeCoverageAssemblyAttribute.cs">
+      <Link>Common\System\Diagnostics\CodeAnalysis\ExcludeFromCodeCoverageAssemblyAttribute.cs</Link>
+    </Compile>
+  </ItemGroup>
+</Project>

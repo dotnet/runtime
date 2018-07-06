@@ -3,11 +3,10 @@
 // See the LICENSE file in the project root for more information.
 
 using System.Collections.Generic;
-using System.Composition.Convention.UnitTests;
 using System.Reflection;
 using Xunit;
 
-namespace System.Composition.Convention
+namespace System.Composition.Convention.Tests
 {
     public class PartBuilderInheritanceTests
     {
@@ -90,8 +89,8 @@ namespace System.Composition.Convention
 
         private static Attribute GetAttributeFromMember(ConventionBuilder builder, Type type, string member)
         {
-            var pi = type.GetRuntimeProperty(member);
-            var list = builder.GetDeclaredAttributes(type, pi);
+            PropertyInfo pi = type.GetRuntimeProperty(member);
+            Attribute[] list = builder.GetDeclaredAttributes(type, pi);
             return list[0] as Attribute;
         }
     }

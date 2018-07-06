@@ -2,7 +2,6 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
-using Microsoft.Internal;
 using System.Collections.Generic;
 using System.Composition.Hosting.Core;
 using System.Reflection;
@@ -17,7 +16,7 @@ namespace System.Composition.TypedParts.ActivationFeatures
         /// <summary>
         /// A constant shared for subclass use.
         /// </summary>
-        protected static readonly CompositionDependency[] NoDependencies = EmptyArray<CompositionDependency>.Value;
+        protected static readonly CompositionDependency[] NoDependencies = Array.Empty<CompositionDependency>();
 
         /// <summary>
         /// Participate in the activator creation process.
