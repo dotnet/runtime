@@ -63,7 +63,7 @@ static MonoCodeManagerCallbacks code_manager_callbacks;
 #define ARCH_MAP_FLAGS 0
 #endif
 
-#define MONO_PROT_RWX (MONO_MMAP_READ|MONO_MMAP_WRITE|MONO_MMAP_EXEC)
+#define MONO_PROT_RWX (MONO_MMAP_READ|MONO_MMAP_WRITE|MONO_MMAP_EXEC|MONO_MMAP_JIT)
 
 typedef struct _CodeChunck CodeChunk;
 

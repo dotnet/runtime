@@ -19,6 +19,9 @@
 #if HAVE_SYS_MMAN_H
 #include <sys/mman.h>
 #endif
+#ifdef HAVE_SYS_SYSCTL_H
+#include <sys/sysctl.h>
+#endif
 #ifdef HAVE_SIGNAL_H
 #include <signal.h>
 #endif
@@ -197,6 +200,29 @@ prot_from_flags (int flags)
 	return prot;
 }
 
+#if defined(__APPLE__)
+
+#define DARWIN_VERSION_MOJAVE 18
+
+static guint32
+get_darwin_version (void)
+{
+	static guint32 version;
+
+	/* This doesn't need locking */
+	if (!version) {
+		char str[256] = {0};
+		size_t size = sizeof(str);
+		int err = sysctlbyname("kern.osrelease", str, &size, NULL, 0);
+		g_assert (err == 0);
+		err = sscanf (str, "%d", &version);
+		g_assert (err == 1);
+		g_assert (version > 0);
+	}
+	return version;
+}
+#endif
+
 /**
  * mono_valloc:
  * \param addr memory address
@@ -224,6 +250,13 @@ mono_valloc (void *addr, size_t length, int flags, MonoMemAccountType type)
 		mflags |= MAP_FIXED;
 	if (flags & MONO_MMAP_32BIT)
 		mflags |= MAP_32BIT;
+#if defined(__APPLE__) && defined(MAP_JIT)
+	if (flags & MONO_MMAP_JIT) {
+		if (get_darwin_version () >= DARWIN_VERSION_MOJAVE) {
+			mflags |= MAP_JIT;
+		}
+	}
+#endif
 
 	mflags |= MAP_ANONYMOUS;
 	mflags |= MAP_PRIVATE;
