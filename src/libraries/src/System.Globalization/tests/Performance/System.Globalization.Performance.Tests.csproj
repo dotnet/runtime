@@ -5,6 +5,7 @@
     <Configurations>netcoreapp-Debug;netcoreapp-Release</Configurations>
   </PropertyGroup>
   <ItemGroup>
+    <Compile Include="Perf.CompareInfo.cs" />
     <Compile Include="Perf.CultureInfo.cs" />
     <Compile Include="Perf.DateTimeCultureInfo.cs" />
     <Compile Include="Perf.NumberCultureInfo.cs" />
