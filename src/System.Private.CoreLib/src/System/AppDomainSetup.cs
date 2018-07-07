@@ -2,23 +2,13 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
-/*=============================================================================
-**
-** 
-** Purpose: Defines the settings that the loader uses to find assemblies in an
-**          AppDomain
-**
-**
-=============================================================================*/
+using System.Collections.Generic;
+using System.Reflection;
+using System.Runtime.Versioning;
+using System.IO;
+
 namespace System
 {
-    using System.Text;
-    using System.Runtime.InteropServices;
-    using System.Security;
-    using Path = System.IO.Path;
-    using System.Diagnostics;
-    using System.Collections.Generic;
-
     internal sealed class AppDomainSetup
     {
         internal enum LoaderInformation
@@ -160,14 +150,9 @@ namespace System
             }
         }
 
-        // A target Framework moniker, in a format parsible by the FrameworkName class.
-        public string TargetFrameworkName
-        {
-            get
-            {
-                return null;
-            }
-        }
+        // The Target framework is not the framework that the process is actually running on.
+        // It is the value read from the TargetFrameworkAttribute on the .exe that started the process.
+        public string TargetFrameworkName => Assembly.GetEntryAssembly()?.GetCustomAttribute<TargetFrameworkAttribute>()?.FrameworkName;
 
         public string ApplicationName
         {
