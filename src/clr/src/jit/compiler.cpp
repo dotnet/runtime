@@ -2367,14 +2367,18 @@ static bool configEnableISA(InstructionSet isa)
             return false;
     }
 #else
-    // We have a retail config switch that can disable AVX/FMA/AVX2 instructions
-    if ((isa == InstructionSet_AVX) || (isa == InstructionSet_FMA) || (isa == InstructionSet_AVX2))
+    // We have a retail config switch that can disable instruction sets reliant on the VEX encoding
+    switch (isa)
     {
-        return JitConfig.EnableAVX() != 0;
-    }
-    else
-    {
-        return true;
+        case InstructionSet_AVX:
+        case InstructionSet_FMA:
+        case InstructionSet_AVX2:
+        case InstructionSet_BMI1:
+        case InstructionSet_BMI2:
+            return JitConfig.EnableAVX() != 0;
+
+        default:
+            return true;
     }
 #endif
 }
@@ -2437,20 +2441,6 @@ void Compiler::compSetProcessor()
                 opts.setSupportedISA(InstructionSet_AES);
             }
         }
-        if (jitFlags.IsSet(JitFlags::JIT_FLAG_USE_BMI1))
-        {
-            if (configEnableISA(InstructionSet_BMI1))
-            {
-                opts.setSupportedISA(InstructionSet_BMI1);
-            }
-        }
-        if (jitFlags.IsSet(JitFlags::JIT_FLAG_USE_BMI2))
-        {
-            if (configEnableISA(InstructionSet_BMI2))
-            {
-                opts.setSupportedISA(InstructionSet_BMI2);
-            }
-        }
         if (jitFlags.IsSet(JitFlags::JIT_FLAG_USE_LZCNT))
         {
             if (configEnableISA(InstructionSet_LZCNT))
@@ -2508,7 +2498,7 @@ void Compiler::compSetProcessor()
             }
         }
 
-        // There are currently two sets of flags that control AVX, FMA, and AVX2 support:
+        // There are currently two sets of flags that control instruction sets that require the VEX encoding:
         // These are the general EnableAVX flag and the individual ISA flags. We need to
         // check both for any given isa.
         if (JitConfig.EnableAVX())
@@ -2532,6 +2522,20 @@ void Compiler::compSetProcessor()
                 if (configEnableISA(InstructionSet_AVX2))
                 {
                     opts.setSupportedISA(InstructionSet_AVX2);
+                }
+            }
+            if (jitFlags.IsSet(JitFlags::JIT_FLAG_USE_BMI1))
+            {
+                if (configEnableISA(InstructionSet_BMI1))
+                {
+                    opts.setSupportedISA(InstructionSet_BMI1);
+                }
+            }
+            if (jitFlags.IsSet(JitFlags::JIT_FLAG_USE_BMI2))
+            {
+                if (configEnableISA(InstructionSet_BMI2))
+                {
+                    opts.setSupportedISA(InstructionSet_BMI2);
                 }
             }
         }
