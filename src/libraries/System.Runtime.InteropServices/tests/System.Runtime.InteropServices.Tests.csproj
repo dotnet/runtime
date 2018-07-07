@@ -14,6 +14,8 @@
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'netstandard-Release|AnyCPU'" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'uap-Windows_NT-Debug|AnyCPU'" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'uap-Windows_NT-Release|AnyCPU'" />
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'netcoreapp-Unix-Debug|AnyCPU'" />
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'netcoreapp-Unix-Release|AnyCPU'" />
   <ItemGroup>
     <Compile Include="System\Runtime\CompilerServices\IUnknownConstantAttributeTests.cs" />
     <Compile Include="System\Runtime\InteropServices\AllowReversePInvokeCallsAttributeTests.cs" />
@@ -53,6 +55,32 @@
     <Compile Include="System\Runtime\InteropServices\MarshalAsAttributeTests.cs" />
     <Compile Include="System\Runtime\InteropServices\MarshalTests.cs" />
     <Compile Include="System\Runtime\InteropServices\MarshalTests.Windows.cs" Condition="'$(TargetsWindows)' == 'true'" />
+    <Compile Include="System\Runtime\InteropServices\Marshal\Copy\ByteArrayTests.cs" />
+    <Compile Include="System\Runtime\InteropServices\Marshal\Copy\CharArrayTests.cs" />
+    <Compile Include="System\Runtime\InteropServices\Marshal\Copy\DoubleArrayTests.cs" />
+    <Compile Include="System\Runtime\InteropServices\Marshal\Copy\Int16ArrayTests.cs" />
+    <Compile Include="System\Runtime\InteropServices\Marshal\Copy\Int32ArrayTests.cs" />
+    <Compile Include="System\Runtime\InteropServices\Marshal\Copy\Int64ArrayTests.cs" />
+    <Compile Include="System\Runtime\InteropServices\Marshal\Copy\IntPtrArrayTests.cs" />
+    <Compile Include="System\Runtime\InteropServices\Marshal\Copy\SingleArrayTests.cs" />
+    <Compile Include="System\Runtime\InteropServices\Marshal\DestroyStructureTests.cs" />
+    <Compile Include="System\Runtime\InteropServices\Marshal\PtrToStructureTests.cs" />
+    <Compile Include="System\Runtime\InteropServices\Marshal\PtrToStringTests.cs" />
+    <Compile Include="System\Runtime\InteropServices\Marshal\SizeOfTests.cs" />
+    <Compile Include="System\Runtime\InteropServices\Marshal\GetExceptionForHRTests.cs" />
+    <Compile Include="System\Runtime\InteropServices\Marshal\GetNativeVariantForObjectTests.cs" />
+    <Compile Include="System\Runtime\InteropServices\Marshal\GetObjectForNativeVariantTests.cs" />
+    <Compile Include="System\Runtime\InteropServices\Marshal\GetObjectsForNativeVariantsTests.cs" />
+    <Compile Include="System\Runtime\InteropServices\Marshal\OffsetOfTests.cs" />
+    <Compile Include="System\Runtime\InteropServices\Marshal\ReadWrite\ByteTests.cs" />
+    <Compile Include="System\Runtime\InteropServices\Marshal\ReadWrite\Int16Tests.cs" />
+    <Compile Include="System\Runtime\InteropServices\Marshal\ReadWrite\Int32Tests.cs" />
+    <Compile Include="System\Runtime\InteropServices\Marshal\ReadWrite\Int64Tests.cs" />
+    <Compile Include="System\Runtime\InteropServices\Marshal\ReadWrite\IntPtrTests.cs" />
+    <Compile Include="System\Runtime\InteropServices\Marshal\ReadWrite\ObjectTests.cs" />
+    <Compile Include="System\Runtime\InteropServices\Marshal\StringMarshalingTests.cs" />
+    <Compile Include="System\Runtime\InteropServices\Marshal\StructureToPtrTests.cs" />
+    <Compile Include="System\Runtime\InteropServices\Marshal\UnsafeAddrOfPinnedArrayElementTests.cs" />
     <Compile Condition="'$(TargetGroup)' != 'uap'" Include="System\Runtime\InteropServices\PrimaryInteropAssemblyAttributeTests.cs" />
     <Compile Include="System\Runtime\InteropServices\ProgIdAttributeTests.cs" />
     <Compile Include="System\Runtime\InteropServices\RuntimeEnvironmentTests.cs" />
