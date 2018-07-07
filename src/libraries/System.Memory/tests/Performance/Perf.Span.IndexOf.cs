@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
+using System.Collections.Generic;
 using System.Runtime.InteropServices;
 using Microsoft.Xunit.Performance;
 using Xunit;
@@ -162,6 +163,51 @@ namespace System.Memory.Tests
                 }
             }
             Assert.Equal(size / 2, index);
+        }
+
+        private static string GenerateInputString(char source, int count, char replaceChar, int replacePos)
+        {
+            char[] str = new char[count];
+            for (int i = 0; i < count; i++)
+            {
+                str[i] = replaceChar;
+            }
+            str[replacePos] = replaceChar;
+
+            return new string(str);
+        }
+
+        public static IEnumerable<object[]> s_indexTestData = new List<object[]>
+        {
+            new object[] { "string1", "string2", StringComparison.InvariantCulture },
+            new object[] { "foobardzsdzs", "rddzs", StringComparison.InvariantCulture },
+            new object[] { "StrIng", "string", StringComparison.OrdinalIgnoreCase },
+            new object[] { "\u3060", "\u305F", StringComparison.InvariantCulture },
+            new object[] { "ABCDE", "c", StringComparison.InvariantCultureIgnoreCase },
+            new object[] { "More Test's", "Tests", StringComparison.OrdinalIgnoreCase },
+            new object[] { "Hello WorldbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbareallyreallylongHello WorldbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbareallyreallylongHello Worldbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbareallyreallylong!xyz", "~", StringComparison.Ordinal },
+            new object[] { "Hello WorldbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbareallyreallylongHello WorldbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbareallyreallylongHello Worldbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbareallyreallylong!xyz", "w", StringComparison.OrdinalIgnoreCase },
+            new object[] { "Hello Worldbbbbbbbbbbbbbbcbbbbbbbbbbbbbbbbbbba!", "y", StringComparison.Ordinal },
+            new object[] { GenerateInputString('A', 10, '5', 5), "5", StringComparison.InvariantCulture },
+            new object[] { GenerateInputString('A', 100, 'X', 70), "x", StringComparison.InvariantCultureIgnoreCase },
+            new object[] { GenerateInputString('A', 100, 'X', 70), "x", StringComparison.OrdinalIgnoreCase },
+            new object[] { GenerateInputString('A', 1000, 'X', 500), "X", StringComparison.Ordinal },
+            new object[] { GenerateInputString('\u3060', 1000, 'x', 500), "x", StringComparison.Ordinal },
+            new object[] { GenerateInputString('\u3060', 100, '\u3059', 50), "\u3059", StringComparison.Ordinal }
+        };
+
+        [Benchmark]
+        [MemberData(nameof(s_indexTestData))]
+        public void SpanIndexOfSpanComparison(string input, string value, StringComparison comparisonType)
+        {
+            ReadOnlySpan<char> inputSpan = input.AsSpan();
+            ReadOnlySpan<char> valueSpan = value.AsSpan();
+
+            foreach (BenchmarkIteration iteration in Benchmark.Iterations)
+                using (iteration.StartMeasurement())
+                {
+                    inputSpan.IndexOf(valueSpan, comparisonType);
+                }
         }
     }
 }
