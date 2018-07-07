@@ -1,4 +1,4 @@
-@if not defined __echo @echo off
+@if not defined _echo @echo off
 rem
 rem This file invokes cmake and generates the build system for windows.
 
@@ -22,8 +22,8 @@ set __CmakeGenerator=Visual Studio
 if /i "%__VSVersion%" == "vs2017" (set __CmakeGenerator=%__CmakeGenerator% 15 2017)
 if /i "%__VSVersion%" == "vs2015" (set __CmakeGenerator=%__CmakeGenerator% 14 2015)
 if /i "%__Arch%" == "x64" (set __CmakeGenerator=%__CmakeGenerator% Win64)
-if /i "%__Arch%" == "arm64" (set __CmakeGenerator=%__CmakeGenerator% Win64)
 if /i "%__Arch%" == "arm" (set __CmakeGenerator=%__CmakeGenerator% ARM)
+if /i "%__Arch%" == "arm64" (set __ExtraCmakeParams=%__ExtraCmakeParams% -A ARM64)
 
 if /i "%__NMakeMakefiles%" == "1" (set __CmakeGenerator=NMake Makefiles)
 
