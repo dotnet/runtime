@@ -173,7 +173,6 @@ if /i "%1" == "-pgoinstrument"       (set __PgoInstrument=1&set processedArgs=!p
 if /i "%1" == "-enforcepgo"          (set __EnforcePgo=1&set processedArgs=!processedArgs! %1&shift&goto Arg_Loop)
 if /i "%1" == "-nopgooptimize"       (set __PgoOptimize=0&set processedArgs=!processedArgs! %1&shift&goto Arg_Loop)
 if /i "%1" == "-ibcinstrument"       (set __IbcTuning=/Tuning&set processedArgs=!processedArgs! %1&shift&goto Arg_Loop)
-if /i "%1" == "-toolset_dir"         (set __ToolsetDir=%2&set __PassThroughArgs=%__PassThroughArgs% %2&set processedArgs=!processedArgs! %1 %2&shift&shift&goto Arg_Loop)
 if /i "%1" == "-crossgenaltjit"      (set __CrossgenAltJit=%2&set processedArgs=!processedArgs! %1 %2&shift&shift&goto Arg_Loop)
 
 REM TODO these are deprecated remove them eventually
@@ -197,7 +196,6 @@ if /i "%1" == "pgoinstrument"       (set __PgoInstrument=1&set processedArgs=!pr
 if /i "%1" == "nopgooptimize"       (set __PgoOptimize=0&set processedArgs=!processedArgs! %1&shift&goto Arg_Loop)
 if /i "%1" == "enforcepgo"          (set __EnforcePgo=1&set processedArgs=!processedArgs! %1&shift&goto Arg_Loop)
 if /i "%1" == "ibcinstrument"       (set __IbcTuning=/Tuning&set processedArgs=!processedArgs! %1&shift&goto Arg_Loop)
-if /i "%1" == "toolset_dir"         (set __ToolsetDir=%2&set __PassThroughArgs=%__PassThroughArgs% %2&set processedArgs=!processedArgs! %1 %2&shift&shift&goto Arg_Loop)
 
 if [!processedArgs!]==[] (
   set __UnprocessedBuildArgs=%__args%
@@ -327,7 +325,7 @@ REM ============================================================================
 
 @if defined _echo @echo on
 
-@call %__ProjectDir%\run.cmd build -Project=%__ProjectDir%\build.proj -generateHeaderWindows -NativeVersionHeaderFile="%__RootBinDir%\obj\_version.h" %__RunArgs% %__UnprocessedBuildArgs%
+call %__ProjectDir%\run.cmd build -Project=%__ProjectDir%\build.proj -generateHeaderWindows -NativeVersionHeaderFile="%__RootBinDir%\obj\_version.h" %__RunArgs% %__UnprocessedBuildArgs%
 
 REM =========================================================================================
 REM ===
@@ -337,7 +335,7 @@ REM ============================================================================
 
 if %__RestoreOptData% EQU 1 if %__BuildTypeRelease% EQU 1 (
     echo %__MsgPrefix%Restoring the OptimizationData Package
-    @call %__ProjectDir%\run.cmd build -optdata %__RunArgs% %__UnprocessedBuildArgs%
+    call %__ProjectDir%\run.cmd build -optdata %__RunArgs% %__UnprocessedBuildArgs%
     if not !errorlevel! == 0 (
         echo %__MsgPrefix%Error: Failed to restore the optimization data package.
         exit /b 1
@@ -430,16 +428,6 @@ if %__BuildNative% EQU 1 (
 
     echo %__MsgPrefix%Commencing build of native components for %__BuildOS%.%__BuildArch%.%__BuildType%
 
-    set __NativePlatformArgs=-platform=%__BuildArch%
-    if not "%__ToolsetDir%" == "" ( set __NativePlatformArgs=-useEnv )
-
-    if not "%__ToolsetDir%" == "" (
-        rem arm64 builds currently use private toolset which has not been released yet
-        REM TODO, remove once the toolset is open.
-        call :PrivateToolSet
-        goto GenVSSolution
-    )
-
     :: Set the environment for the native build
     set __VCBuildArch=x86_amd64
     if /i "%__BuildArch%" == "x86" ( set __VCBuildArch=x86 )
@@ -466,7 +454,6 @@ if %__BuildNative% EQU 1 (
     )
     if not exist "!VSINSTALLDIR!DIA SDK" goto NoDIA
 
-:GenVSSolution
     if defined __SkipConfigure goto SkipConfigure
 
     echo %__MsgPrefix%Regenerating the Visual Studio solution
@@ -493,7 +480,7 @@ if %__BuildNative% EQU 1 (
     set __MsbuildWrn=/flp1:WarningsOnly;LogFile=!__BuildWrn!
     set __MsbuildErr=/flp2:ErrorsOnly;LogFile=!__BuildErr!
 
-    @call %__ProjectDir%\run.cmd build -Project=%__IntermediatesDir%\install.vcxproj -MsBuildLog=!__MsbuildLog! -MsBuildWrn=!__MsbuildWrn! -MsBuildErr=!__MsbuildErr! -configuration=%__BuildType% %__NativePlatformArgs% %__RunArgs% -MSBuildNodeCount="/m:2" %__UnprocessedBuildArgs%
+    call %__ProjectDir%\run.cmd build -Project=%__IntermediatesDir%\install.vcxproj -MsBuildLog=!__MsbuildLog! -MsBuildWrn=!__MsbuildWrn! -MsBuildErr=!__MsbuildErr! -configuration=%__BuildType% -platform=%__BuildArch% %__RunArgs% -MSBuildNodeCount="/m:2" %__UnprocessedBuildArgs%
 
     if not !errorlevel! == 0 (
         echo %__MsgPrefix%Error: native component build failed. Refer to the build log files for details:
@@ -555,7 +542,7 @@ if /i "%__DoCrossArchBuild%"=="1" (
     set __MsbuildWrn=/flp1:WarningsOnly;LogFile=!__BuildWrn!
     set __MsbuildErr=/flp2:ErrorsOnly;LogFile=!__BuildErr!
 
-    @call %__ProjectDir%\run.cmd build -Project=%__CrossCompIntermediatesDir%\install.vcxproj -configuration=%__BuildType% -platform=%__CrossArch% -MsBuildLog=!__MsbuildLog! -MsBuildWrn=!__MsbuildWrn! -MsBuildErr=!__MsbuildErr! %__RunArgs% -MSBuildNodeCount="/m:2" %__UnprocessedBuildArgs%
+    call %__ProjectDir%\run.cmd build -Project=%__CrossCompIntermediatesDir%\install.vcxproj -configuration=%__BuildType% -platform=%__CrossArch% -MsBuildLog=!__MsbuildLog! -MsBuildWrn=!__MsbuildWrn! -MsBuildErr=!__MsbuildErr! %__RunArgs% -MSBuildNodeCount="/m:2" %__UnprocessedBuildArgs%
 
     if not !errorlevel! == 0 (
         echo %__MsgPrefix%Error: cross-arch components build failed. Refer to the build log files for details:
@@ -614,7 +601,7 @@ if %__BuildCoreLib% EQU 1 (
     set __MsbuildWrn=/flp1:WarningsOnly;LogFile=!__BuildWrn!
     set __MsbuildErr=/flp2:ErrorsOnly;LogFile=!__BuildErr!
 
-    @call %__ProjectDir%\run.cmd build -Project=%__ProjectDir%\build.proj -MsBuildLog=!__MsbuildLog! -MsBuildWrn=!__MsbuildWrn! -MsBuildErr=!__MsbuildErr! !__nugetBuildArgs! %__RunArgs% !__ExtraBuildArgs! %__UnprocessedBuildArgs%
+    call %__ProjectDir%\run.cmd build -Project=%__ProjectDir%\build.proj -MsBuildLog=!__MsbuildLog! -MsBuildWrn=!__MsbuildWrn! -MsBuildErr=!__MsbuildErr! !__nugetBuildArgs! %__RunArgs% !__ExtraBuildArgs! %__UnprocessedBuildArgs%
 
     if not !errorlevel! == 0 (
         echo %__MsgPrefix%Error: System.Private.CoreLib build failed. Refer to the build log files for details:
@@ -718,7 +705,7 @@ if %__BuildPackages% EQU 1 (
     set __MsbuildErr=/flp2:ErrorsOnly;LogFile=!__BuildErr!
 
     REM The conditions as to what to build are captured in the builds file.
-    @call %__ProjectDir%\run.cmd build -Project=%__SourceDir%\.nuget\packages.builds -platform=%__BuildArch% -MsBuildLog=!__MsbuildLog! -MsBuildWrn=!__MsbuildWrn! -MsBuildErr=!__MsbuildErr! %__RunArgs% %__UnprocessedBuildArgs%
+    call %__ProjectDir%\run.cmd build -Project=%__SourceDir%\.nuget\packages.builds -platform=%__BuildArch% -MsBuildLog=!__MsbuildLog! -MsBuildWrn=!__MsbuildWrn! -MsBuildErr=!__MsbuildErr! %__RunArgs% %__UnprocessedBuildArgs%
 
     if not !errorlevel! == 0 (
         echo %__MsgPrefix%Error: Nuget package generation failed build failed. Refer to the build log files for details:
@@ -741,12 +728,6 @@ REM ============================================================================
 if %__BuildTests% EQU 1 (
     echo %__MsgPrefix%Commencing build of tests for %__BuildOS%.%__BuildArch%.%__BuildType%
 
-    REM Construct the arguments to pass to the test build script.
-
-    rem arm64 builds currently use private toolset which has not been released yet
-    REM TODO, remove once the toolset is open.
-    if not "%__ToolsetDir%" == "" call :PrivateToolSet
-
     set NEXTCMD=call %__ProjectDir%\build-test.cmd %__BuildArch% %__BuildType% %__UnprocessedBuildArgs%
     echo %__MsgPrefix%!NEXTCMD!
     !NEXTCMD!
@@ -757,12 +738,6 @@ if %__BuildTests% EQU 1 (
     )
 ) else if %__GenerateLayout% EQU 1 (
     echo %__MsgPrefix%Generating layout for %__BuildOS%.%__BuildArch%.%__BuildType%
-
-    REM Construct the arguments to pass to the runtest build script.
-
-    rem arm64 builds currently use private toolset which has not been released yet
-    REM TODO, remove once the toolset is open.
-    if not "%__ToolsetDir%" == "" call :PrivateToolSet
 
     set NEXTCMD=call %__ProjectDir%\tests\runtest.cmd %__BuildArch% %__BuildType% GenerateLayoutOnly %__UnprocessedBuildArgs%
     echo %__MsgPrefix%!NEXTCMD!
@@ -890,7 +865,6 @@ echo     or -windowsmscorlib. If one of these is passed, only System.Private.Cor
 echo     for the specified platform ^(FreeBSD, Linux, NetBSD, OS X or Windows,
 echo     respectively^).
 echo     add nativemscorlib to go further and build the native image for designated mscorlib.
-echo -toolset_dir ^<dir^> : set the toolset directory -- Arm64 use only. Required for Arm64 builds.
 echo -nopgooptimize: do not use profile guided optimizations.
 echo -enforcepgo: verify after the build that PGO was used for key DLLs, and fail the build if not
 echo -pgoinstrument: generate instrumented code for profile guided optimization enabled binaries.
@@ -932,32 +906,3 @@ echo Visual Studio Express does not include the DIA SDK. ^
 You need Visual Studio 2015 or 2017 (Community is free).
 echo See: https://github.com/dotnet/coreclr/blob/master/Documentation/project-docs/developer-guide.md#prerequisites
 exit /b 1
-
-:PrivateToolSet
-
-echo %__MsgPrefix%Setting up the usage of __ToolsetDir:%__ToolsetDir%
-
-if /i "%__ToolsetDir%" == "" (
-    echo %__MsgPrefix%Error: A toolset directory is required for the Arm64 Windows build. Use the toolset_dir argument.
-    exit /b 1
-)
-
-if not exist "%__ToolsetDir%"\buildenv_arm64.cmd goto :Not_EWDK
-call "%__ToolsetDir%"\buildenv_arm64.cmd
-exit /b 0
-
-:Not_EWDK
-set PATH=%__ToolsetDir%\VC_sdk\bin;%PATH%
-set LIB=%__ToolsetDir%\VC_sdk\lib\arm64;%__ToolsetDir%\sdpublic\sdk\lib\arm64
-set INCLUDE=^
-%__ToolsetDir%\VC_sdk\inc;^
-%__ToolsetDir%\sdpublic\sdk\inc;^
-%__ToolsetDir%\sdpublic\shared\inc;^
-%__ToolsetDir%\sdpublic\shared\inc\minwin;^
-%__ToolsetDir%\sdpublic\sdk\inc\ucrt;^
-%__ToolsetDir%\sdpublic\sdk\inc\minwin;^
-%__ToolsetDir%\sdpublic\sdk\inc\mincore;^
-%__ToolsetDir%\sdpublic\sdk\inc\abi;^
-%__ToolsetDir%\sdpublic\sdk\inc\clientcore;^
-%__ToolsetDir%\diasdk\include
-exit /b 0

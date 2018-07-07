@@ -66,6 +66,24 @@ if (WIN32)
       # Enable generic assembly compilation to avoid CMake generate VS proj files that explicitly
       # use ml[64].exe as the assembler.
       enable_language(ASM)
+    elseif(CLR_CMAKE_HOST_ARCH STREQUAL arm64)
+
+      # Confirm that Windows SDK is present
+      if(NOT DEFINED CMAKE_VS_WINDOWS_TARGET_PLATFORM_VERSION OR CMAKE_VS_WINDOWS_TARGET_PLATFORM_VERSION STREQUAL "" )
+	      message(FATAL_ERROR "Windows SDK is required for the ARM64 build.")
+      else()
+	      message("Using Windows SDK version ${CMAKE_VS_WINDOWS_TARGET_PLATFORM_VERSION}")
+      endif()
+
+      # Explicitly specify the assembler to be used for Arm64 compile
+      file(TO_CMAKE_PATH "$ENV{VCToolsInstallDir}\\bin\\HostX86\\arm64\\armasm64.exe" CMAKE_ASM_COMPILER)
+
+      set(CMAKE_ASM_MASM_COMPILER ${CMAKE_ASM_COMPILER})
+      message("CMAKE_ASM_MASM_COMPILER explicitly set to: ${CMAKE_ASM_MASM_COMPILER}")
+
+      # Enable generic assembly compilation to avoid CMake generate VS proj files that explicitly
+      # use ml[64].exe as the assembler.
+      enable_language(ASM)
     else()
       enable_language(ASM_MASM)
     endif()
@@ -74,16 +92,6 @@ if (WIN32)
     find_program(MC mc)
     if (MC STREQUAL "MC-NOTFOUND")
         message(FATAL_ERROR "MC not found")
-    endif()
-
-    if (CLR_CMAKE_HOST_ARCH STREQUAL arm64)
-      # CMAKE_CXX_COMPILER will default to the compiler installed with
-      # Visual studio. Overwrite it to the compiler on the path.
-      # TODO, remove when cmake generator supports Arm64 as a target.
-      find_program(PATH_CXX_COMPILER cl)
-      set(CMAKE_CXX_COMPILER ${PATH_CXX_COMPILER})
-      message("Overwriting the CMAKE_CXX_COMPILER.")
-      message(CMAKE_CXX_COMPILER found:${CMAKE_CXX_COMPILER})
     endif()
 
 else (WIN32)
@@ -375,13 +383,6 @@ if (WIN32)
   set(CMAKE_SHARED_LINKER_FLAGS_RELWITHDEBINFO "${CMAKE_SHARED_LINKER_FLAGS_RELWITHDEBINFO} /LTCG /OPT:REF /OPT:ICF ${NO_INCREMENTAL_LINKER_FLAGS}")
   set(CMAKE_STATIC_LINKER_FLAGS_RELWITHDEBINFO "${CMAKE_STATIC_LINKER_FLAGS_RELWITHDEBINFO} /LTCG")
   set(CMAKE_EXE_LINKER_FLAGS_RELWITHDEBINFO "${CMAKE_EXE_LINKER_FLAGS_RELWITHDEBINFO} /LTCG /OPT:REF /OPT:ICF ${NO_INCREMENTAL_LINKER_FLAGS}")
-
-  # Temporary until cmake has VS generators for arm64
-  if(CLR_CMAKE_PLATFORM_ARCH_ARM64)
-    set(CMAKE_SHARED_LINKER_FLAGS "${CMAKE_SHARED_LINKER_FLAGS} /machine:arm64")
-    set(CMAKE_STATIC_LINKER_FLAGS "${CMAKE_STATIC_LINKER_FLAGS} /machine:arm64")
-    set(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} /machine:arm64")
-  endif(CLR_CMAKE_PLATFORM_ARCH_ARM64)
 
   # Force uCRT to be dynamically linked for Release build
   set(CMAKE_SHARED_LINKER_FLAGS_RELEASE "${CMAKE_SHARED_LINKER_FLAGS_RELEASE} /NODEFAULTLIB:libucrt.lib /DEFAULTLIB:ucrt.lib")
