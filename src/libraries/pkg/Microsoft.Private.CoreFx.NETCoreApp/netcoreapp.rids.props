@@ -28,5 +28,8 @@
     <OfficialBuildRID Include="tizen.4.0.0-armel">
       <Platform>armel</Platform>
     </OfficialBuildRID>
+    <OfficialBuildRID Include="tizen.5.0.0-armel">
+      <Platform>armel</Platform>
+    </OfficialBuildRID>
   </ItemGroup>
 </Project>
