@@ -1249,7 +1249,7 @@ void DebuggerRCThread::MainLoop()
         {
             LOG((LF_CORDB, LL_INFO1000, "DRCT::ML:: straggler event set.\n"));
             
-            ThreadStore::LockThreadStore();
+            ThreadStoreLockHolder tsl;
             Debugger::DebuggerLockHolder debugLockHolder(m_debugger);
             // Make sure that we're still synchronizing...
             if (m_debugger->IsSynchronizing())
@@ -1260,17 +1260,16 @@ void DebuggerRCThread::MainLoop()
 
                 //
                 // Skip waiting the first time and just give it a go.  Note: Implicit
-                // release of the lock, because we are leaving its scope.
+                // release of the debugger and thread store lock, because we are leaving its scope.
                 //
-                ThreadStore::UnlockThreadStore();
                 goto LWaitTimedOut;
             }
 #ifdef LOGGING
             else
                 LOG((LF_CORDB, LL_INFO1000, "DRCT::ML:: told to wait, but not syncing anymore.\n"));
 #endif
-            ThreadStore::UnlockThreadStore();
             // dbgLockHolder goes out of scope - implicit Release
+            // tsl goes out of scope - implicit Release
          }
         else if (dwWaitResult == WAIT_TIMEOUT)
         {

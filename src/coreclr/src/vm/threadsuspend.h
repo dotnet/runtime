@@ -263,4 +263,21 @@ private:
     static LONG m_DebugWillSyncCount;
 };
 
+// void(*)(BOOL,ThreadSuspend::SUSPEND_REASON)
+
+class ThreadStoreLockHolderWithSuspendReason
+{
+public:
+    ThreadStoreLockHolderWithSuspendReason(ThreadSuspend::SUSPEND_REASON reason)
+    {
+        ThreadSuspend::LockThreadStore(reason);
+    }
+    ~ThreadStoreLockHolderWithSuspendReason()
+    {
+        ThreadSuspend::UnlockThreadStore();
+    }
+private:
+    ThreadSuspend::SUSPEND_REASON m_reason;
+};
+
 #endif // _THREAD_SUSPEND_H_
