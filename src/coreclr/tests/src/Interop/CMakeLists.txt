@@ -1,11 +1,10 @@
-
 if(WIN32)
-    if(CLR_CMAKE_HOST_ARCH STREQUAL arm)
+    if((CLR_CMAKE_HOST_ARCH STREQUAL arm) OR (CLR_CMAKE_HOST_ARCH STREQUAL arm64))
         list(APPEND LINK_LIBRARIES_ADDITIONAL
             ole32.lib
             advapi32.lib
         )
-    endif(CLR_CMAKE_HOST_ARCH STREQUAL arm)
+    endif()
 endif(WIN32)
 
 # Consumed by native test assets

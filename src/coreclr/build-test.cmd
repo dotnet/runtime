@@ -82,7 +82,6 @@ if /i "%1" == "checked"               (set __BuildType=Checked&set processedArgs
 if /i "%1" == "skipmanaged"           (set __SkipManaged=1&set processedArgs=!processedArgs! %1&shift&goto Arg_Loop)
 if /i "%1" == "skipnative"            (set __SkipNative=1&set processedArgs=!processedArgs! %1&shift&goto Arg_Loop)
 if /i "%1" == "buildtesthostonly"     (set __SkipNative=1&set __SkipManaged=1&set processedArgs=!processedArgs! %1&shift&goto Arg_Loop)
-if /i "%1" == "toolset_dir"           (set __ToolsetDir=%2&set __PassThroughArgs=%__PassThroughArgs% %2&set processedArgs=!processedArgs! %1 %2&shift&shift&goto Arg_Loop)
 if /i "%1" == "buildagainstpackages"  (set __ZipTests=1&set __BuildAgainstPackagesArg=-BuildTestsAgainstPackages&set __BuildAgainstPackagesMsbuildArg=/p:BuildTestsAgainstPackages=true&set processedArgs=!processedArgs! %1&shift&goto Arg_Loop)
 if /i "%1" == "skiprestorepackages"   (set __SkipRestorePackages=1&set processedArgs=!processedArgs! %1&shift&goto Arg_Loop)
 if /i "%1" == "ziptests"              (set __ZipTests=1&set processedArgs=!processedArgs! %1&shift&goto Arg_Loop)
@@ -119,12 +118,6 @@ if defined __BuildAgainstPackagesArg (
 set __RunArgs=-BuildOS=%__BuildOS% -BuildType=%__BuildType% -BuildArch=%__BuildArch%
 REM As we move from buildtools to arcade, __RunArgs should be replaced with __msbuildArgs
 set __msbuildArgs=/p:__BuildOS=%__BuildOS% /p:__BuildType=%__BuildType% /p:__BuildArch=%__BuildArch%
-
-if defined __ToolsetDir (
-    rem arm64 builds currently use private toolset which has not been released yet
-    REM TODO, remove once the toolset is open.
-    call :PrivateToolSet
-)
 
 echo %__MsgPrefix%Commencing CoreCLR repo test build
 
@@ -188,11 +181,6 @@ REM ============================================================================
 
 echo %__MsgPrefix%Commencing build of native test components for %__BuildArch%/%__BuildType%
 
-if defined __ToolsetDir (
-    echo %__MsgPrefix%ToolsetDir is defined to be %__ToolsetDir%
-    goto GenVSSolution :: Private ToolSet is Defined
-)
-
 :: Set the environment for the native build
 echo %__MsgPrefix%Using environment: "%__VCToolsRoot%\vcvarsall.bat" %__VCBuildArch%
 call                                 "%__VCToolsRoot%\vcvarsall.bat" %__VCBuildArch%
@@ -204,8 +192,6 @@ if not defined VSINSTALLDIR (
 )
 if not exist "%VSINSTALLDIR%DIA SDK" goto NoDIA
 
-:GenVSSolution
-
 pushd "%__NativeTestIntermediatesDir%"
 call "%__SourceDir%\pal\tools\gen-buildsys-win.bat" ""%__ProjectFilesDir%"" %__VSVersion% %__BuildArch%
 @if defined _echo @echo on
@@ -216,14 +202,6 @@ if not exist "%__NativeTestIntermediatesDir%\install.vcxproj" (
     exit /b 1
 )
 
-set __msbuildNativeArgs=-configuration=%__BuildType%
-
-if defined __ToolsetDir (
-    set __msbuildNativeArgs=%__msbuildNativeArgs% -UseEnv
-) else (
-    set __msbuildNativeArgs=%__msbuildNativeArgs% -platform=%__BuildArch%
-)
-
 set __BuildLogRootName=Tests_Native
 set __BuildLog=%__LogsDir%\%__BuildLogRootName%_%__BuildOS%__%__BuildArch%__%__BuildType%.log
 set __BuildWrn=%__LogsDir%\%__BuildLogRootName%_%__BuildOS%__%__BuildArch%__%__BuildType%.wrn
@@ -232,7 +210,7 @@ set __msbuildLog=/flp:Verbosity=normal;LogFile="%__BuildLog%"
 set __msbuildWrn=/flp1:WarningsOnly;LogFile="%__BuildWrn%"
 set __msbuildErr=/flp2:ErrorsOnly;LogFile="%__BuildErr%"
 
-call "%__ProjectDir%\run.cmd" build -Project="%__NativeTestIntermediatesDir%\install.vcxproj" -MsBuildLog=!__msbuildLog! -MsBuildWrn=!__msbuildWrn! -MsBuildErr=!__msbuildErr! %__msbuildNativeArgs% %__RunArgs% %__PriorityArg% %__PassThroughArg% %__unprocessedBuildArgs%
+call "%__ProjectDir%\run.cmd" build -Project="%__NativeTestIntermediatesDir%\install.vcxproj" -MsBuildLog=!__msbuildLog! -MsBuildWrn=!__msbuildWrn! -MsBuildErr=!__msbuildErr! -configuration=%__BuildType% -platform=%__BuildArch% %__RunArgs% %__PriorityArg% %__PassThroughArg% %__unprocessedBuildArgs%
 if errorlevel 1 (
     echo %__MsgPrefix%Error: build failed. Refer to the build log files for details:
     echo     %__BuildLog%
@@ -500,15 +478,21 @@ exit /b 0
 
 :Usage
 echo.
+echo Build the CoreCLR tests.
+echo.
 echo Usage:
 echo     %0 [option1] [option2] ...
 echo All arguments are optional. Options are case-insensitive. The options are:
 echo.
 echo. -? -h -help: view this message.
-echo Build architecture: -buildArch: only x64 is currently allowed ^(default: x64^).
-echo Build type: -buildType: one of Debug, Checked, Release ^(default: Debug^).
+echo Build architecture: one of x64, x86, arm, arm64 ^(default: x64^).
+echo Build type: one of Debug, Checked, Release ^(default: Debug^).
+echo skipmanaged: skip the managed tests build
+echo skipnative: skip the native tests build
+echo buildtesthostonly: build the CoreFX testhost only
 echo buildagainstpackages: builds tests against restored packages, instead of against a built product.
-echo runtimeid ^<ID^>: Builds a test overlay for the specified OS (Only supported when building against packages). Supported IDs are:
+echo skiprestorepackages: skip package restore
+echo runtimeid ^<ID^>: Builds a test overlay for the specified OS ^(Only supported when building against packages^). Supported IDs are:
 echo     alpine.3.4.3-x64: Builds overlay for Alpine 3.4.3
 echo     debian.8-x64: Builds overlay for Debian 8
 echo     fedora.24-x64: Builds overlay for Fedora 24
@@ -524,7 +508,8 @@ echo     win-x64: Builds overlay for portable Windows
 echo     win7-x64: Builds overlay for Windows 7
 echo ziptests: zips CoreCLR tests and Core_Root for a Helix run
 echo crossgen: Precompiles the framework managed assemblies
-echo Exclude- Optional parameter - specify location of default exclusion file (defaults to tests\issues.targets if not specified)
+echo targetsNonWindows:
+echo Exclude- Optional parameter - specify location of default exclusion file ^(defaults to tests\issues.targets if not specified^)
 echo     Set to "" to disable default exclusion file.
 echo -- ... : all arguments following this tag will be passed directly to msbuild.
 echo -priority=^<N^> : specify a set of test that will be built and run, with priority N.
@@ -544,36 +529,6 @@ echo Visual Studio Express does not include the DIA SDK. ^
 You need Visual Studio 2015 or 2017 (Community is free).
 echo See: https://github.com/dotnet/coreclr/blob/master/Documentation/project-docs/developer-guide.md#prerequisites
 exit /b 1
-
-
-:PrivateToolSet
-
-echo %__MsgPrefix%Setting up the usage of __ToolsetDir:%__ToolsetDir%
-
-if /i "%__ToolsetDir%" == "" (
-    echo %__MsgPrefix%Error: A toolset directory is required for the Arm64 Windows build. Use the toolset_dir argument.
-    exit /b 1
-)
-
-if not exist "%__ToolsetDir%"\buildenv_arm64.cmd goto :Not_EWDK
-call "%__ToolsetDir%"\buildenv_arm64.cmd
-exit /b 0
-
-:Not_EWDK
-set PATH=%__ToolsetDir%\VC_sdk\bin;%PATH%
-set LIB=%__ToolsetDir%\VC_sdk\lib\arm64;%__ToolsetDir%\sdpublic\sdk\lib\arm64
-set INCLUDE=^
-%__ToolsetDir%\VC_sdk\inc;^
-%__ToolsetDir%\sdpublic\sdk\inc;^
-%__ToolsetDir%\sdpublic\shared\inc;^
-%__ToolsetDir%\sdpublic\shared\inc\minwin;^
-%__ToolsetDir%\sdpublic\sdk\inc\ucrt;^
-%__ToolsetDir%\sdpublic\sdk\inc\minwin;^
-%__ToolsetDir%\sdpublic\sdk\inc\mincore;^
-%__ToolsetDir%\sdpublic\sdk\inc\abi;^
-%__ToolsetDir%\sdpublic\sdk\inc\clientcore;^
-%__ToolsetDir%\diasdk\include
-exit /b 0
 
 :PrecompileFX
 for %%F in (%CORE_ROOT%\*.dll) do call :PrecompileAssembly "%%F" %%~nF%%~xF
