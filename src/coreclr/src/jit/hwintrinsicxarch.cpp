@@ -1295,8 +1295,8 @@ GenTree* Compiler::impBMI1Intrinsic(NamedIntrinsic        intrinsic,
         {
             assert(sig->numArgs == 2);
 
-            GenTree*  op2      = impPopStack().val;
-            GenTree*  op1      = impPopStack().val;
+            GenTree* op2 = impPopStack().val;
+            GenTree* op1 = impPopStack().val;
 
             return gtNewScalarHWIntrinsicNode(callType, op1, op2, intrinsic);
         }

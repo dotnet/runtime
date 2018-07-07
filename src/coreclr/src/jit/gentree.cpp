@@ -17512,11 +17512,8 @@ GenTreeHWIntrinsic* Compiler::gtNewScalarHWIntrinsicNode(var_types      type,
     return new (this, GT_HWIntrinsic) GenTreeHWIntrinsic(type, op1, op2, hwIntrinsicID, TYP_UNKNOWN, 0);
 }
 
-GenTreeHWIntrinsic* Compiler::gtNewScalarHWIntrinsicNode(var_types      type,
-                                                         GenTree*       op1,
-                                                         GenTree*       op2,
-                                                         GenTree*       op3,
-                                                         NamedIntrinsic hwIntrinsicID)
+GenTreeHWIntrinsic* Compiler::gtNewScalarHWIntrinsicNode(
+    var_types type, GenTree* op1, GenTree* op2, GenTree* op3, NamedIntrinsic hwIntrinsicID)
 {
     SetOpLclRelatedToSIMDIntrinsic(op1);
     SetOpLclRelatedToSIMDIntrinsic(op2);

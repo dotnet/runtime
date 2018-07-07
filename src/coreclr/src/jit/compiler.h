@@ -2172,11 +2172,8 @@ public:
                                                    GenTree*       op1,
                                                    GenTree*       op2,
                                                    NamedIntrinsic hwIntrinsicID);
-    GenTreeHWIntrinsic* gtNewScalarHWIntrinsicNode(var_types      type,
-                                                   GenTree*       op1,
-                                                   GenTree*       op2,
-                                                   GenTree*       op3,
-                                                   NamedIntrinsic hwIntrinsicID);
+    GenTreeHWIntrinsic* gtNewScalarHWIntrinsicNode(
+        var_types type, GenTree* op1, GenTree* op2, GenTree* op3, NamedIntrinsic hwIntrinsicID);
     GenTree* gtNewMustThrowException(unsigned helper, var_types type, CORINFO_CLASS_HANDLE clsHnd);
     CORINFO_CLASS_HANDLE gtGetStructHandleForHWSIMD(var_types simdType, var_types simdBaseType);
 #endif // FEATURE_HW_INTRINSICS
