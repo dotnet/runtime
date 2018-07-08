@@ -29,15 +29,15 @@ namespace System.Runtime.InteropServices.Tests
         [ActiveIssue(30830, TargetFrameworkMonikers.NetFramework)]
         public void NullValueArguments_ThrowsArgumentNullException()
         {
-            AssertExtensions.Throws<ArgumentNullException>("ptr", () => { Marshal.WriteByte(null, 0, 0); });
-            AssertExtensions.Throws<ArgumentNullException>("ptr", () => { Marshal.WriteInt16(null, 0, 0); });
-            AssertExtensions.Throws<ArgumentNullException>("ptr", () => { Marshal.WriteInt32(null, 0, 0); });
-            AssertExtensions.Throws<ArgumentNullException>("ptr", () => { Marshal.WriteInt64(null, 0, 0); });
-            AssertExtensions.Throws<ArgumentNullException>("ptr", () => { Marshal.WriteIntPtr(null, 0, IntPtr.Zero); });
-            AssertExtensions.Throws<ArgumentNullException>("ptr", () => { Marshal.ReadByte(null, 0); });
-            AssertExtensions.Throws<ArgumentNullException>("ptr", () => { Marshal.ReadInt16(null, 0); });
-            AssertExtensions.Throws<ArgumentNullException>("ptr", () => { Marshal.ReadInt32(null, 0); });
-            AssertExtensions.Throws<ArgumentNullException>("ptr", () => { Marshal.ReadIntPtr(null, 0); });
+            Assert.Throws<AccessViolationException>(() => { Marshal.WriteByte(null, 0, 0); });
+            Assert.Throws<AccessViolationException>(() => { Marshal.WriteInt16(null, 0, 0); });
+            Assert.Throws<AccessViolationException>(() => { Marshal.WriteInt32(null, 0, 0); });
+            Assert.Throws<AccessViolationException>(() => { Marshal.WriteInt64(null, 0, 0); });
+            Assert.Throws<AccessViolationException>(() => { Marshal.WriteIntPtr(null, 0, IntPtr.Zero); });
+            Assert.Throws<AccessViolationException>(() => { Marshal.ReadByte(null, 0); });
+            Assert.Throws<AccessViolationException>(() => { Marshal.ReadInt16(null, 0); });
+            Assert.Throws<AccessViolationException>(() => { Marshal.ReadInt32(null, 0); });
+            Assert.Throws<AccessViolationException>(() => { Marshal.ReadIntPtr(null, 0); });
         }
 
         [Fact]
