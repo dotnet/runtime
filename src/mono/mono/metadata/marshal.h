@@ -746,10 +746,10 @@ int
 ves_icall_System_Runtime_InteropServices_Marshal_ReleaseInternal (gpointer pUnk);
 
 void*
-ves_icall_System_Runtime_InteropServices_Marshal_GetIUnknownForObjectInternal (MonoObject* object);
+ves_icall_System_Runtime_InteropServices_Marshal_GetIUnknownForObjectInternal (MonoObjectHandle object, MonoError *error);
 
-MonoObject*
-ves_icall_System_Runtime_InteropServices_Marshal_GetObjectForCCW (void* pUnk);
+MonoObjectHandle
+ves_icall_System_Runtime_InteropServices_Marshal_GetObjectForCCW (void* pUnk, MonoError *error);
 
 void*
 ves_icall_System_Runtime_InteropServices_Marshal_GetIDispatchForObjectInternal (MonoObjectHandle object, MonoError *error);

@@ -175,6 +175,9 @@ cominterop_get_ccw_checked (MonoObject *object, MonoClass *itf, MonoError *error
 static MonoObject*
 cominterop_get_ccw_object (MonoCCWInterface* ccw_entry, gboolean verify);
 
+static MonoObjectHandle
+cominterop_get_ccw_object_handle (MonoCCWInterface* ccw_entry, gboolean verify);
+
 /* SAFEARRAY marshalling */
 static gboolean
 mono_marshal_safearray_begin (gpointer safearray, MonoArray **result, gpointer *indices, gpointer empty, gpointer parameter, gboolean allocateNewArray);
@@ -1627,25 +1630,17 @@ cominterop_get_idispatch_for_object (MonoObject* object, MonoError *error)
 }
 
 void*
-ves_icall_System_Runtime_InteropServices_Marshal_GetIUnknownForObjectInternal (MonoObject* object)
+ves_icall_System_Runtime_InteropServices_Marshal_GetIUnknownForObjectInternal (MonoObjectHandle object, MonoError *error)
 {
-	ERROR_DECL (error);
-	return mono_cominterop_get_com_interface_internal (TRUE, object, NULL, error);
+	return mono_cominterop_get_com_interface_internal (TRUE, MONO_HANDLE_RAW (object), NULL, error);
 }
 
-MonoObject*
-ves_icall_System_Runtime_InteropServices_Marshal_GetObjectForCCW (void* pUnk)
+MonoObjectHandle
+ves_icall_System_Runtime_InteropServices_Marshal_GetObjectForCCW (void* pUnk, MonoError *error)
 {
 #ifndef DISABLE_COM
-	MonoObject* object = NULL;
-
-	if (!pUnk)
-		return NULL;
-
 	/* see if it is a CCW */
-	object = cominterop_get_ccw_object ((MonoCCWInterface*)pUnk, TRUE);
-
-	return object;
+	return pUnk ? cominterop_get_ccw_object_handle ((MonoCCWInterface*)pUnk, TRUE) : NULL_HANDLE;
 #else
 	g_assert_not_reached ();
 #endif
@@ -1884,26 +1879,28 @@ ves_icall_Mono_Interop_ComInteropProxy_FindProxy (gpointer pUnk, MonoError *erro
  *
  * Returns: the corresponding object for the CCW
  */
+static MonoObjectHandle
+cominterop_get_ccw_object_handle (MonoCCWInterface* ccw_entry, gboolean verify)
+{
+	/* no CCW's exist yet */
+	if (!ccw_interface_hash)
+		return NULL_HANDLE;
+
+	MonoCCW * const ccw = verify ? (MonoCCW *)g_hash_table_lookup (ccw_interface_hash, ccw_entry) : ccw_entry->ccw;
+	g_assert (verify || ccw);
+	return ccw ? mono_gchandle_get_target_handle (ccw->gc_handle) : NULL_HANDLE;
+}
+
 static MonoObject*
 cominterop_get_ccw_object (MonoCCWInterface* ccw_entry, gboolean verify)
 {
-	MonoCCW *ccw = NULL;
-
 	/* no CCW's exist yet */
 	if (!ccw_interface_hash)
 		return NULL;
 
-	if (verify) {
-		ccw = (MonoCCW *)g_hash_table_lookup (ccw_interface_hash, ccw_entry);
-	}
-	else {
-		ccw = ccw_entry->ccw;
-		g_assert (ccw);
-	}
-	if (ccw)
-		return mono_gchandle_get_target (ccw->gc_handle);
-	else
-		return NULL;
+	MonoCCW * const ccw = verify ? (MonoCCW *)g_hash_table_lookup (ccw_interface_hash, ccw_entry) : ccw_entry->ccw;
+	g_assert (verify || ccw);
+	return ccw ? mono_gchandle_get_target (ccw->gc_handle) : NULL;
 }
 
 static void
@@ -3755,8 +3752,6 @@ mono_cominterop_get_com_interface_internal (gboolean icall, MonoObject *object, 
 		if (icall)
 			ic = mono_class_get_iunknown_class ();
 		void* ccw_entry = cominterop_get_ccw_checked (object, ic, error);
-		if (icall)
-			mono_error_set_pending_exception (error);
 		return ccw_entry;
 	}
 #else
