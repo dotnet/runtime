@@ -188,7 +188,7 @@ namespace System
 
             if (value.Length == 0)
             {
-                return 0;
+                return span.Length - 1;
             }
 
             if (span.Length == 0)
