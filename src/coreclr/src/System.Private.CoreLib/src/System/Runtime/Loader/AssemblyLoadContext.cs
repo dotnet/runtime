@@ -69,8 +69,8 @@ namespace System.Runtime.Loader
             return AppDomain.CurrentDomain.GetAssemblies(false);
         }
 
-        // These are helpers that can be used by AssemblyLoadContext derivations.
-        // They are used to load assemblies in DefaultContext.
+        // These methods load assemblies into the current AssemblyLoadContext 
+        // They may be used in the implementation of an AssemblyLoadContext derivation
         public Assembly LoadFromAssemblyPath(string assemblyPath)
         {
             if (assemblyPath == null)
