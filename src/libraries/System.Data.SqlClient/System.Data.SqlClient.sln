@@ -1,78 +1,78 @@
 Microsoft Visual Studio Solution File, Format Version 12.00
-# Visual Studio 14
-VisualStudioVersion = 14.0.25420.1
+# Visual Studio 15
+VisualStudioVersion = 15.0.27213.1
 MinimumVisualStudioVersion = 10.0.40219.1
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "System.Data.SqlClient.Tests", "tests\FunctionalTests\System.Data.SqlClient.Tests.csproj", "{F3E72F35-0351-4D67-9388-725BCAD807BA}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "System.Data.SqlClient.Tests", "tests\FunctionalTests\System.Data.SqlClient.Tests.csproj", "{F3E72F35-0351-4D67-9388-725BCAD807BA}"
 	ProjectSection(ProjectDependencies) = postProject
 		{D4550556-4745-457F-BA8F-3EBF3836D6B4} = {D4550556-4745-457F-BA8F-3EBF3836D6B4}
 	EndProjectSection
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Address", "tests\ManualTests\SQL\UdtTest\UDTs\Address\Address.csproj", "{D1392B54-998A-4F27-BC17-4CE149117BCC}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Address", "tests\ManualTests\SQL\UdtTest\UDTs\Address\Address.csproj", "{D1392B54-998A-4F27-BC17-4CE149117BCC}"
 	ProjectSection(ProjectDependencies) = postProject
 		{D4550556-4745-457F-BA8F-3EBF3836D6B4} = {D4550556-4745-457F-BA8F-3EBF3836D6B4}
 	EndProjectSection
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Circle", "tests\ManualTests\SQL\UdtTest\UDTs\Circle\Circle.csproj", "{6C88F00F-9597-43AD-9E5F-9B344DA3B16F}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Circle", "tests\ManualTests\SQL\UdtTest\UDTs\Circle\Circle.csproj", "{6C88F00F-9597-43AD-9E5F-9B344DA3B16F}"
 	ProjectSection(ProjectDependencies) = postProject
 		{D4550556-4745-457F-BA8F-3EBF3836D6B4} = {D4550556-4745-457F-BA8F-3EBF3836D6B4}
 	EndProjectSection
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Shapes", "tests\ManualTests\SQL\UdtTest\UDTs\Shapes\Shapes.csproj", "{B73A7063-37C3-415D-AD53-BB3DA20ABD6E}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Shapes", "tests\ManualTests\SQL\UdtTest\UDTs\Shapes\Shapes.csproj", "{B73A7063-37C3-415D-AD53-BB3DA20ABD6E}"
 	ProjectSection(ProjectDependencies) = postProject
 		{D4550556-4745-457F-BA8F-3EBF3836D6B4} = {D4550556-4745-457F-BA8F-3EBF3836D6B4}
 	EndProjectSection
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Utf8String", "tests\ManualTests\SQL\UdtTest\UDTs\Utf8String\Utf8String.csproj", "{E0A6BB21-574B-43D9-890D-6E1144F2EE9E}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Utf8String", "tests\ManualTests\SQL\UdtTest\UDTs\Utf8String\Utf8String.csproj", "{E0A6BB21-574B-43D9-890D-6E1144F2EE9E}"
 	ProjectSection(ProjectDependencies) = postProject
 		{D4550556-4745-457F-BA8F-3EBF3836D6B4} = {D4550556-4745-457F-BA8F-3EBF3836D6B4}
 	EndProjectSection
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "System.Data.SqlClient.ManualTesting.Tests", "tests\ManualTests\System.Data.SqlClient.ManualTesting.Tests.csproj", "{45DB5F86-7AE3-45C6-870D-F9357B66BDB5}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "System.Data.SqlClient.ManualTesting.Tests", "tests\ManualTests\System.Data.SqlClient.ManualTesting.Tests.csproj", "{45DB5F86-7AE3-45C6-870D-F9357B66BDB5}"
 	ProjectSection(ProjectDependencies) = postProject
 		{D4550556-4745-457F-BA8F-3EBF3836D6B4} = {D4550556-4745-457F-BA8F-3EBF3836D6B4}
 	EndProjectSection
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "IMonitorLoader", "tests\StressTests\IMonitorLoader\IMonitorLoader.csproj", "{AF78BA88-6428-47EA-8682-442DAF8E9656}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "IMonitorLoader", "tests\StressTests\IMonitorLoader\IMonitorLoader.csproj", "{AF78BA88-6428-47EA-8682-442DAF8E9656}"
 	ProjectSection(ProjectDependencies) = postProject
 		{D4550556-4745-457F-BA8F-3EBF3836D6B4} = {D4550556-4745-457F-BA8F-3EBF3836D6B4}
 	EndProjectSection
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "System.Data.SqlClient.Stress.Tests", "tests\StressTests\System.Data.SqlClient.Stress.Tests\System.Data.SqlClient.Stress.Tests.csproj", "{B94B8E6D-3E41-4046-B758-4A2E281F74EE}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "System.Data.SqlClient.Stress.Tests", "tests\StressTests\System.Data.SqlClient.Stress.Tests\System.Data.SqlClient.Stress.Tests.csproj", "{B94B8E6D-3E41-4046-B758-4A2E281F74EE}"
 	ProjectSection(ProjectDependencies) = postProject
 		{D4550556-4745-457F-BA8F-3EBF3836D6B4} = {D4550556-4745-457F-BA8F-3EBF3836D6B4}
 	EndProjectSection
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "System.Data.StressFramework", "tests\StressTests\System.Data.StressFramework\System.Data.StressFramework.csproj", "{518A4E22-0144-4699-80AE-757B744E8E38}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "System.Data.StressFramework", "tests\StressTests\System.Data.StressFramework\System.Data.StressFramework.csproj", "{518A4E22-0144-4699-80AE-757B744E8E38}"
 	ProjectSection(ProjectDependencies) = postProject
 		{D4550556-4745-457F-BA8F-3EBF3836D6B4} = {D4550556-4745-457F-BA8F-3EBF3836D6B4}
 	EndProjectSection
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "System.Data.StressRunner", "tests\StressTests\System.Data.StressRunner\System.Data.StressRunner.csproj", "{529B187A-DE4F-4F4D-9FBB-D3D416FDB683}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "System.Data.StressRunner", "tests\StressTests\System.Data.StressRunner\System.Data.StressRunner.csproj", "{529B187A-DE4F-4F4D-9FBB-D3D416FDB683}"
 	ProjectSection(ProjectDependencies) = postProject
 		{D4550556-4745-457F-BA8F-3EBF3836D6B4} = {D4550556-4745-457F-BA8F-3EBF3836D6B4}
 	EndProjectSection
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "TDS.EndPoint", "tests\Tools\TDS\TDS.EndPoint\TDS.EndPoint.csproj", "{1FF891B4-D3DE-4CCE-887C-CB48F5351A45}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "TDS.EndPoint", "tests\Tools\TDS\TDS.EndPoint\TDS.EndPoint.csproj", "{1FF891B4-D3DE-4CCE-887C-CB48F5351A45}"
 	ProjectSection(ProjectDependencies) = postProject
 		{D4550556-4745-457F-BA8F-3EBF3836D6B4} = {D4550556-4745-457F-BA8F-3EBF3836D6B4}
 	EndProjectSection
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "TDS.Servers", "tests\Tools\TDS\TDS.Servers\TDS.Servers.csproj", "{978063D3-FBB5-4E10-8C45-67C90BE1B931}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "TDS.Servers", "tests\Tools\TDS\TDS.Servers\TDS.Servers.csproj", "{978063D3-FBB5-4E10-8C45-67C90BE1B931}"
 	ProjectSection(ProjectDependencies) = postProject
 		{D4550556-4745-457F-BA8F-3EBF3836D6B4} = {D4550556-4745-457F-BA8F-3EBF3836D6B4}
 	EndProjectSection
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "TDS", "tests\Tools\TDS\TDS\TDS.csproj", "{8DC9D1A0-351B-47BC-A90F-B9DA542550E9}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "TDS", "tests\Tools\TDS\TDS\TDS.csproj", "{8DC9D1A0-351B-47BC-A90F-B9DA542550E9}"
 	ProjectSection(ProjectDependencies) = postProject
 		{D4550556-4745-457F-BA8F-3EBF3836D6B4} = {D4550556-4745-457F-BA8F-3EBF3836D6B4}
 	EndProjectSection
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "System.Data.SqlClient", "src\System.Data.SqlClient.csproj", "{D4550556-4745-457F-BA8F-3EBF3836D6B4}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "System.Data.SqlClient", "src\System.Data.SqlClient.csproj", "{D4550556-4745-457F-BA8F-3EBF3836D6B4}"
 	ProjectSection(ProjectDependencies) = postProject
 		{D58E8D2B-3331-4660-8DFB-512D66F8EC63} = {D58E8D2B-3331-4660-8DFB-512D66F8EC63}
 	EndProjectSection
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "System.Data.SqlClient", "ref\System.Data.SqlClient.csproj", "{D58E8D2B-3331-4660-8DFB-512D66F8EC63}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "System.Data.SqlClient", "ref\System.Data.SqlClient.csproj", "{D58E8D2B-3331-4660-8DFB-512D66F8EC63}"
 EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "tests", "tests", "{1A2F9F4A-A032-433E-B914-ADD5992BB178}"
 EndProject
@@ -106,10 +106,10 @@ Global
 		{E0A6BB21-574B-43D9-890D-6E1144F2EE9E}.Debug|Any CPU.Build.0 = netstandard-Debug|Any CPU
 		{E0A6BB21-574B-43D9-890D-6E1144F2EE9E}.Release|Any CPU.ActiveCfg = netstandard-Release|Any CPU
 		{E0A6BB21-574B-43D9-890D-6E1144F2EE9E}.Release|Any CPU.Build.0 = netstandard-Release|Any CPU
-		{45DB5F86-7AE3-45C6-870D-F9357B66BDB5}.Debug|Any CPU.ActiveCfg = netstandard-Debug|Any CPU
-		{45DB5F86-7AE3-45C6-870D-F9357B66BDB5}.Debug|Any CPU.Build.0 = netstandard-Debug|Any CPU
-		{45DB5F86-7AE3-45C6-870D-F9357B66BDB5}.Release|Any CPU.ActiveCfg = netstandard-Release|Any CPU
-		{45DB5F86-7AE3-45C6-870D-F9357B66BDB5}.Release|Any CPU.Build.0 = netstandard-Release|Any CPU
+		{45DB5F86-7AE3-45C6-870D-F9357B66BDB5}.Debug|Any CPU.ActiveCfg = netcoreapp-Debug|Any CPU
+		{45DB5F86-7AE3-45C6-870D-F9357B66BDB5}.Debug|Any CPU.Build.0 = netcoreapp-Debug|Any CPU
+		{45DB5F86-7AE3-45C6-870D-F9357B66BDB5}.Release|Any CPU.ActiveCfg = netcoreapp-Release|Any CPU
+		{45DB5F86-7AE3-45C6-870D-F9357B66BDB5}.Release|Any CPU.Build.0 = netcoreapp-Release|Any CPU
 		{AF78BA88-6428-47EA-8682-442DAF8E9656}.Debug|Any CPU.ActiveCfg = netstandard-Windows_NT-Debug|Any CPU
 		{AF78BA88-6428-47EA-8682-442DAF8E9656}.Debug|Any CPU.Build.0 = netstandard-Windows_NT-Debug|Any CPU
 		{AF78BA88-6428-47EA-8682-442DAF8E9656}.Release|Any CPU.ActiveCfg = netstandard-Windows_NT-Release|Any CPU
@@ -138,14 +138,14 @@ Global
 		{8DC9D1A0-351B-47BC-A90F-B9DA542550E9}.Debug|Any CPU.Build.0 = netstandard-Windows_NT-Debug|Any CPU
 		{8DC9D1A0-351B-47BC-A90F-B9DA542550E9}.Release|Any CPU.ActiveCfg = netstandard-Windows_NT-Release|Any CPU
 		{8DC9D1A0-351B-47BC-A90F-B9DA542550E9}.Release|Any CPU.Build.0 = netstandard-Windows_NT-Release|Any CPU
-		{D4550556-4745-457F-BA8F-3EBF3836D6B4}.Debug|Any CPU.ActiveCfg = netstandard-Windows_NT-Debug|Any CPU
-		{D4550556-4745-457F-BA8F-3EBF3836D6B4}.Debug|Any CPU.Build.0 = netstandard-Windows_NT-Debug|Any CPU
-		{D4550556-4745-457F-BA8F-3EBF3836D6B4}.Release|Any CPU.ActiveCfg = netstandard-Windows_NT-Release|Any CPU
-		{D4550556-4745-457F-BA8F-3EBF3836D6B4}.Release|Any CPU.Build.0 = netstandard-Windows_NT-Release|Any CPU
-		{D58E8D2B-3331-4660-8DFB-512D66F8EC63}.Debug|Any CPU.ActiveCfg = netstandard-Debug|Any CPU
-		{D58E8D2B-3331-4660-8DFB-512D66F8EC63}.Debug|Any CPU.Build.0 = netstandard-Debug|Any CPU
-		{D58E8D2B-3331-4660-8DFB-512D66F8EC63}.Release|Any CPU.ActiveCfg = netstandard-Release|Any CPU
-		{D58E8D2B-3331-4660-8DFB-512D66F8EC63}.Release|Any CPU.Build.0 = netstandard-Release|Any CPU
+		{D4550556-4745-457F-BA8F-3EBF3836D6B4}.Debug|Any CPU.ActiveCfg = netcoreapp-Windows_NT-Debug|Any CPU
+		{D4550556-4745-457F-BA8F-3EBF3836D6B4}.Debug|Any CPU.Build.0 = netcoreapp-Windows_NT-Debug|Any CPU
+		{D4550556-4745-457F-BA8F-3EBF3836D6B4}.Release|Any CPU.ActiveCfg = netcoreapp-Windows_NT-Release|Any CPU
+		{D4550556-4745-457F-BA8F-3EBF3836D6B4}.Release|Any CPU.Build.0 = netcoreapp-Windows_NT-Release|Any CPU
+		{D58E8D2B-3331-4660-8DFB-512D66F8EC63}.Debug|Any CPU.ActiveCfg = netcoreapp-Debug|Any CPU
+		{D58E8D2B-3331-4660-8DFB-512D66F8EC63}.Debug|Any CPU.Build.0 = netcoreapp-Debug|Any CPU
+		{D58E8D2B-3331-4660-8DFB-512D66F8EC63}.Release|Any CPU.ActiveCfg = netcoreapp-Release|Any CPU
+		{D58E8D2B-3331-4660-8DFB-512D66F8EC63}.Release|Any CPU.Build.0 = netcoreapp-Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
@@ -166,5 +166,8 @@ Global
 		{8DC9D1A0-351B-47BC-A90F-B9DA542550E9} = {1A2F9F4A-A032-433E-B914-ADD5992BB178}
 		{D4550556-4745-457F-BA8F-3EBF3836D6B4} = {E107E9C1-E893-4E87-987E-04EF0DCEAEFD}
 		{D58E8D2B-3331-4660-8DFB-512D66F8EC63} = {2E666815-2EDB-464B-9DF6-380BF4789AD4}
+	EndGlobalSection
+	GlobalSection(ExtensibilityGlobals) = postSolution
+		SolutionGuid = {D25C803E-4BF4-4DC3-BCD4-F9E7C193FF4D}
 	EndGlobalSection
 EndGlobal

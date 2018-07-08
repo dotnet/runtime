@@ -1,18 +1,18 @@
 Microsoft Visual Studio Solution File, Format Version 12.00
-# Visual Studio 14
-VisualStudioVersion = 14.0.25420.1
+# Visual Studio 15
+VisualStudioVersion = 15.0.27213.1
 MinimumVisualStudioVersion = 10.0.40219.1
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "System.IO.FileSystem.Primitives.Tests", "tests\System.IO.FileSystem.Primitives.Tests.csproj", "{2EF7EFA5-F171-4CAB-8A29-32833949FD87}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "System.IO.FileSystem.Primitives.Tests", "tests\System.IO.FileSystem.Primitives.Tests.csproj", "{2EF7EFA5-F171-4CAB-8A29-32833949FD87}"
 	ProjectSection(ProjectDependencies) = postProject
 		{6C05678E-394C-4CFF-B453-A18E28C8F2C3} = {6C05678E-394C-4CFF-B453-A18E28C8F2C3}
 	EndProjectSection
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "System.IO.FileSystem.Primitives", "src\System.IO.FileSystem.Primitives.csproj", "{6C05678E-394C-4CFF-B453-A18E28C8F2C3}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "System.IO.FileSystem.Primitives", "src\System.IO.FileSystem.Primitives.csproj", "{6C05678E-394C-4CFF-B453-A18E28C8F2C3}"
 	ProjectSection(ProjectDependencies) = postProject
 		{45201E24-47CD-47AE-9350-B48C3FBE74EC} = {45201E24-47CD-47AE-9350-B48C3FBE74EC}
 	EndProjectSection
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "System.IO.FileSystem.Primitives", "ref\System.IO.FileSystem.Primitives.csproj", "{45201E24-47CD-47AE-9350-B48C3FBE74EC}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "System.IO.FileSystem.Primitives", "ref\System.IO.FileSystem.Primitives.csproj", "{45201E24-47CD-47AE-9350-B48C3FBE74EC}"
 EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "tests", "tests", "{1A2F9F4A-A032-433E-B914-ADD5992BB178}"
 EndProject
@@ -46,5 +46,8 @@ Global
 		{2EF7EFA5-F171-4CAB-8A29-32833949FD87} = {1A2F9F4A-A032-433E-B914-ADD5992BB178}
 		{6C05678E-394C-4CFF-B453-A18E28C8F2C3} = {E107E9C1-E893-4E87-987E-04EF0DCEAEFD}
 		{45201E24-47CD-47AE-9350-B48C3FBE74EC} = {2E666815-2EDB-464B-9DF6-380BF4789AD4}
+	EndGlobalSection
+	GlobalSection(ExtensibilityGlobals) = postSolution
+		SolutionGuid = {878FD5EE-DBF9-4BE8-AAD0-ECE24BE09931}
 	EndGlobalSection
 EndGlobal

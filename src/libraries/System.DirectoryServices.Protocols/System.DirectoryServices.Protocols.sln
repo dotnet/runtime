@@ -1,18 +1,18 @@
 Microsoft Visual Studio Solution File, Format Version 12.00
-# Visual Studio 14
-VisualStudioVersion = 14.0.25420.1
+# Visual Studio 15
+VisualStudioVersion = 15.0.27213.1
 MinimumVisualStudioVersion = 10.0.40219.1
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "System.DirectoryServices.Protocols.Tests", "tests\System.DirectoryServices.Protocols.Tests.csproj", "{6638C675-CD62-408F-AB3B-AAFD8A906A96}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "System.DirectoryServices.Protocols.Tests", "tests\System.DirectoryServices.Protocols.Tests.csproj", "{6638C675-CD62-408F-AB3B-AAFD8A906A96}"
 	ProjectSection(ProjectDependencies) = postProject
 		{135980AC-4583-44EC-894E-CB3B1A481920} = {135980AC-4583-44EC-894E-CB3B1A481920}
 	EndProjectSection
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "System.DirectoryServices.Protocols", "src\System.DirectoryServices.Protocols.csproj", "{135980AC-4583-44EC-894E-CB3B1A481920}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "System.DirectoryServices.Protocols", "src\System.DirectoryServices.Protocols.csproj", "{135980AC-4583-44EC-894E-CB3B1A481920}"
 	ProjectSection(ProjectDependencies) = postProject
 		{7DEA4539-9A0D-4801-B229-3824710EBCEE} = {7DEA4539-9A0D-4801-B229-3824710EBCEE}
 	EndProjectSection
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "System.DirectoryServices.Protocols", "ref\System.DirectoryServices.Protocols.csproj", "{7DEA4539-9A0D-4801-B229-3824710EBCEE}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "System.DirectoryServices.Protocols", "ref\System.DirectoryServices.Protocols.csproj", "{7DEA4539-9A0D-4801-B229-3824710EBCEE}"
 EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "tests", "tests", "{1A2F9F4A-A032-433E-B914-ADD5992BB178}"
 EndProject
@@ -46,5 +46,8 @@ Global
 		{6638C675-CD62-408F-AB3B-AAFD8A906A96} = {1A2F9F4A-A032-433E-B914-ADD5992BB178}
 		{135980AC-4583-44EC-894E-CB3B1A481920} = {E107E9C1-E893-4E87-987E-04EF0DCEAEFD}
 		{7DEA4539-9A0D-4801-B229-3824710EBCEE} = {2E666815-2EDB-464B-9DF6-380BF4789AD4}
+	EndGlobalSection
+	GlobalSection(ExtensibilityGlobals) = postSolution
+		SolutionGuid = {DBE446A9-A8D4-47DC-AF12-E8FA5BF9685C}
 	EndGlobalSection
 EndGlobal

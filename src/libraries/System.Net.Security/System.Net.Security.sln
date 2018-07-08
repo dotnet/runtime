@@ -1,23 +1,23 @@
 Microsoft Visual Studio Solution File, Format Version 12.00
-# Visual Studio 14
-VisualStudioVersion = 14.0.25420.1
+# Visual Studio 15
+VisualStudioVersion = 15.0.27213.1
 MinimumVisualStudioVersion = 10.0.40219.1
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "System.Net.Security.Tests", "tests\FunctionalTests\System.Net.Security.Tests.csproj", "{A55A2B9A-830F-4330-A0E7-02A9FB30ABD2}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "System.Net.Security.Tests", "tests\FunctionalTests\System.Net.Security.Tests.csproj", "{A55A2B9A-830F-4330-A0E7-02A9FB30ABD2}"
 	ProjectSection(ProjectDependencies) = postProject
 		{89F37791-6254-4D60-AB96-ACD3CCA0E771} = {89F37791-6254-4D60-AB96-ACD3CCA0E771}
 	EndProjectSection
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "System.Net.Security.Unit.Tests", "tests\UnitTests\System.Net.Security.Unit.Tests.csproj", "{0D174EA9-9E61-4519-8D31-7BD2331A1982}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "System.Net.Security.Unit.Tests", "tests\UnitTests\System.Net.Security.Unit.Tests.csproj", "{0D174EA9-9E61-4519-8D31-7BD2331A1982}"
 	ProjectSection(ProjectDependencies) = postProject
 		{89F37791-6254-4D60-AB96-ACD3CCA0E771} = {89F37791-6254-4D60-AB96-ACD3CCA0E771}
 	EndProjectSection
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "System.Net.Security", "src\System.Net.Security.csproj", "{89F37791-6254-4D60-AB96-ACD3CCA0E771}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "System.Net.Security", "src\System.Net.Security.csproj", "{89F37791-6254-4D60-AB96-ACD3CCA0E771}"
 	ProjectSection(ProjectDependencies) = postProject
 		{A7488FC0-9A8F-4EF9-BC3E-C5EBA47E13F8} = {A7488FC0-9A8F-4EF9-BC3E-C5EBA47E13F8}
 	EndProjectSection
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "System.Net.Security", "ref\System.Net.Security.csproj", "{A7488FC0-9A8F-4EF9-BC3E-C5EBA47E13F8}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "System.Net.Security", "ref\System.Net.Security.csproj", "{A7488FC0-9A8F-4EF9-BC3E-C5EBA47E13F8}"
 EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "tests", "tests", "{1A2F9F4A-A032-433E-B914-ADD5992BB178}"
 EndProject
@@ -56,5 +56,8 @@ Global
 		{0D174EA9-9E61-4519-8D31-7BD2331A1982} = {1A2F9F4A-A032-433E-B914-ADD5992BB178}
 		{89F37791-6254-4D60-AB96-ACD3CCA0E771} = {E107E9C1-E893-4E87-987E-04EF0DCEAEFD}
 		{A7488FC0-9A8F-4EF9-BC3E-C5EBA47E13F8} = {2E666815-2EDB-464B-9DF6-380BF4789AD4}
+	EndGlobalSection
+	GlobalSection(ExtensibilityGlobals) = postSolution
+		SolutionGuid = {5681D01F-0E3B-4BB3-9251-B78F91819933}
 	EndGlobalSection
 EndGlobal

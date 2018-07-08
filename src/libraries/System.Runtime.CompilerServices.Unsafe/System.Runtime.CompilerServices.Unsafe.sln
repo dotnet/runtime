@@ -1,18 +1,18 @@
 Microsoft Visual Studio Solution File, Format Version 12.00
-# Visual Studio 14
-VisualStudioVersion = 14.0.25420.1
+# Visual Studio 15
+VisualStudioVersion = 15.0.27213.1
 MinimumVisualStudioVersion = 10.0.40219.1
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "System.Runtime.CompilerServices.Unsafe.Tests", "tests\System.Runtime.CompilerServices.Unsafe.Tests.csproj", "{8012DD70-A6D7-45C0-BC8E-DFFB48D86E08}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "System.Runtime.CompilerServices.Unsafe.Tests", "tests\System.Runtime.CompilerServices.Unsafe.Tests.csproj", "{8012DD70-A6D7-45C0-BC8E-DFFB48D86E08}"
 	ProjectSection(ProjectDependencies) = postProject
 		{04BA3E3C-6979-4792-B19E-C797AD607F42} = {04BA3E3C-6979-4792-B19E-C797AD607F42}
 	EndProjectSection
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "System.Runtime.CompilerServices.Unsafe", "src\System.Runtime.CompilerServices.Unsafe.ilproj", "{04BA3E3C-6979-4792-B19E-C797AD607F42}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "System.Runtime.CompilerServices.Unsafe", "src\System.Runtime.CompilerServices.Unsafe.ilproj", "{04BA3E3C-6979-4792-B19E-C797AD607F42}"
 	ProjectSection(ProjectDependencies) = postProject
 		{649A377C-1E07-4105-B01F-7F1044D3356C} = {649A377C-1E07-4105-B01F-7F1044D3356C}
 	EndProjectSection
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "System.Runtime.CompilerServices.Unsafe", "ref\System.Runtime.CompilerServices.Unsafe.csproj", "{649A377C-1E07-4105-B01F-7F1044D3356C}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "System.Runtime.CompilerServices.Unsafe", "ref\System.Runtime.CompilerServices.Unsafe.csproj", "{649A377C-1E07-4105-B01F-7F1044D3356C}"
 EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "tests", "tests", "{1A2F9F4A-A032-433E-B914-ADD5992BB178}"
 EndProject
@@ -46,5 +46,8 @@ Global
 		{8012DD70-A6D7-45C0-BC8E-DFFB48D86E08} = {1A2F9F4A-A032-433E-B914-ADD5992BB178}
 		{04BA3E3C-6979-4792-B19E-C797AD607F42} = {E107E9C1-E893-4E87-987E-04EF0DCEAEFD}
 		{649A377C-1E07-4105-B01F-7F1044D3356C} = {2E666815-2EDB-464B-9DF6-380BF4789AD4}
+	EndGlobalSection
+	GlobalSection(ExtensibilityGlobals) = postSolution
+		SolutionGuid = {7008F50A-EE83-4217-8180-F76C648F682F}
 	EndGlobalSection
 EndGlobal
