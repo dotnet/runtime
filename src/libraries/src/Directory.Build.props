@@ -1,0 +1,16 @@
+<?xml version="1.0" encoding="utf-8"?>
+<Project ToolsVersion="14.0" DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <Import Project="..\Directory.Build.props" />
+  <PropertyGroup>
+    <EnableDefaultItems>false</EnableDefaultItems>
+    <DisableImplicitFrameworkDefines>true</DisableImplicitFrameworkDefines>
+    <DisableImplicitConfigurationDefines>true</DisableImplicitConfigurationDefines>
+    
+    <!--
+    The Microsoft.NET.Sdk defaults the AssemblySearchPaths earlier than buildtools, so default
+    the correct search paths here. We are rather restrictive by design - only ref assemblies should
+    be resolved by default.
+    -->
+    <AssemblySearchPaths>$(AssemblySearchPaths);$(RefPath);{RawFileName}</AssemblySearchPaths>
+  </PropertyGroup>
+</Project> 

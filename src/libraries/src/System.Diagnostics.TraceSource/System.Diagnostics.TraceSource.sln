@@ -1,18 +1,18 @@
 Microsoft Visual Studio Solution File, Format Version 12.00
-# Visual Studio 14
-VisualStudioVersion = 14.0.25420.1
+# Visual Studio 15
+VisualStudioVersion = 15.0.27213.1
 MinimumVisualStudioVersion = 10.0.40219.1
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "System.Diagnostics.TraceSource.Tests", "tests\System.Diagnostics.TraceSource.Tests.csproj", "{7B32D24D-969A-4F7F-8461-B43E15E5D553}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "System.Diagnostics.TraceSource.Tests", "tests\System.Diagnostics.TraceSource.Tests.csproj", "{7B32D24D-969A-4F7F-8461-B43E15E5D553}"
 	ProjectSection(ProjectDependencies) = postProject
 		{5380420C-EB1D-4C53-9CFC-916578C18334} = {5380420C-EB1D-4C53-9CFC-916578C18334}
 	EndProjectSection
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "System.Diagnostics.TraceSource", "src\System.Diagnostics.TraceSource.csproj", "{5380420C-EB1D-4C53-9CFC-916578C18334}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "System.Diagnostics.TraceSource", "src\System.Diagnostics.TraceSource.csproj", "{5380420C-EB1D-4C53-9CFC-916578C18334}"
 	ProjectSection(ProjectDependencies) = postProject
 		{6E515D9C-A5C2-4716-96A1-4716F007267D} = {6E515D9C-A5C2-4716-96A1-4716F007267D}
 	EndProjectSection
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "System.Diagnostics.TraceSource", "ref\System.Diagnostics.TraceSource.csproj", "{6E515D9C-A5C2-4716-96A1-4716F007267D}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "System.Diagnostics.TraceSource", "ref\System.Diagnostics.TraceSource.csproj", "{6E515D9C-A5C2-4716-96A1-4716F007267D}"
 EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "tests", "tests", "{1A2F9F4A-A032-433E-B914-ADD5992BB178}"
 EndProject
@@ -26,10 +26,10 @@ Global
 		Release|Any CPU = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(ProjectConfigurationPlatforms) = postSolution
-		{7B32D24D-969A-4F7F-8461-B43E15E5D553}.Debug|Any CPU.ActiveCfg = netstandard-Windows_NT-Debug|Any CPU
-		{7B32D24D-969A-4F7F-8461-B43E15E5D553}.Debug|Any CPU.Build.0 = netstandard-Windows_NT-Debug|Any CPU
-		{7B32D24D-969A-4F7F-8461-B43E15E5D553}.Release|Any CPU.ActiveCfg = netstandard-Windows_NT-Release|Any CPU
-		{7B32D24D-969A-4F7F-8461-B43E15E5D553}.Release|Any CPU.Build.0 = netstandard-Windows_NT-Release|Any CPU
+		{7B32D24D-969A-4F7F-8461-B43E15E5D553}.Debug|Any CPU.ActiveCfg = netcoreapp-Windows_NT-Debug|Any CPU
+		{7B32D24D-969A-4F7F-8461-B43E15E5D553}.Debug|Any CPU.Build.0 = netcoreapp-Windows_NT-Debug|Any CPU
+		{7B32D24D-969A-4F7F-8461-B43E15E5D553}.Release|Any CPU.ActiveCfg = netcoreapp-Windows_NT-Release|Any CPU
+		{7B32D24D-969A-4F7F-8461-B43E15E5D553}.Release|Any CPU.Build.0 = netcoreapp-Windows_NT-Release|Any CPU
 		{5380420C-EB1D-4C53-9CFC-916578C18334}.Debug|Any CPU.ActiveCfg = netcoreapp-Windows_NT-Debug|Any CPU
 		{5380420C-EB1D-4C53-9CFC-916578C18334}.Debug|Any CPU.Build.0 = netcoreapp-Windows_NT-Debug|Any CPU
 		{5380420C-EB1D-4C53-9CFC-916578C18334}.Release|Any CPU.ActiveCfg = netcoreapp-Windows_NT-Release|Any CPU
@@ -46,5 +46,8 @@ Global
 		{7B32D24D-969A-4F7F-8461-B43E15E5D553} = {1A2F9F4A-A032-433E-B914-ADD5992BB178}
 		{5380420C-EB1D-4C53-9CFC-916578C18334} = {E107E9C1-E893-4E87-987E-04EF0DCEAEFD}
 		{6E515D9C-A5C2-4716-96A1-4716F007267D} = {2E666815-2EDB-464B-9DF6-380BF4789AD4}
+	EndGlobalSection
+	GlobalSection(ExtensibilityGlobals) = postSolution
+		SolutionGuid = {124F2F18-059D-4341-9BAF-7C33A33838B4}
 	EndGlobalSection
 EndGlobal

@@ -1,23 +1,23 @@
 Microsoft Visual Studio Solution File, Format Version 12.00
-# Visual Studio 14
-VisualStudioVersion = 14.0.25420.1
+# Visual Studio 15
+VisualStudioVersion = 15.0.27213.1
 MinimumVisualStudioVersion = 10.0.40219.1
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "System.Threading.Tests", "tests\System.Threading.Tests.csproj", "{18EF66B3-51EE-46D8-B283-1CB6A1197813}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "System.Threading.Tests", "tests\System.Threading.Tests.csproj", "{18EF66B3-51EE-46D8-B283-1CB6A1197813}"
 	ProjectSection(ProjectDependencies) = postProject
 		{604027F5-1DFC-42F4-B4FE-61F8789BA647} = {604027F5-1DFC-42F4-B4FE-61F8789BA647}
 	EndProjectSection
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "System.Threading.Performance.Tests", "tests\Performance\System.Threading.Performance.Tests.csproj", "{7AB03FFA-7D4D-4248-9702-3D2785859C18}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "System.Threading.Performance.Tests", "tests\Performance\System.Threading.Performance.Tests.csproj", "{7AB03FFA-7D4D-4248-9702-3D2785859C18}"
 	ProjectSection(ProjectDependencies) = postProject
 		{604027F5-1DFC-42F4-B4FE-61F8789BA647} = {604027F5-1DFC-42F4-B4FE-61F8789BA647}
 	EndProjectSection
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "System.Threading", "src\System.Threading.csproj", "{604027F5-1DFC-42F4-B4FE-61F8789BA647}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "System.Threading", "src\System.Threading.csproj", "{604027F5-1DFC-42F4-B4FE-61F8789BA647}"
 	ProjectSection(ProjectDependencies) = postProject
 		{F59F13CA-829A-4D02-9A1D-E40E61257177} = {F59F13CA-829A-4D02-9A1D-E40E61257177}
 	EndProjectSection
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "System.Threading", "ref\System.Threading.csproj", "{F59F13CA-829A-4D02-9A1D-E40E61257177}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "System.Threading", "ref\System.Threading.csproj", "{F59F13CA-829A-4D02-9A1D-E40E61257177}"
 EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "tests", "tests", "{1A2F9F4A-A032-433E-B914-ADD5992BB178}"
 EndProject
@@ -56,5 +56,8 @@ Global
 		{7AB03FFA-7D4D-4248-9702-3D2785859C18} = {1A2F9F4A-A032-433E-B914-ADD5992BB178}
 		{604027F5-1DFC-42F4-B4FE-61F8789BA647} = {E107E9C1-E893-4E87-987E-04EF0DCEAEFD}
 		{F59F13CA-829A-4D02-9A1D-E40E61257177} = {2E666815-2EDB-464B-9DF6-380BF4789AD4}
+	EndGlobalSection
+	GlobalSection(ExtensibilityGlobals) = postSolution
+		SolutionGuid = {6CD053C6-9C97-470C-AD05-3EDD28D57C55}
 	EndGlobalSection
 EndGlobal
