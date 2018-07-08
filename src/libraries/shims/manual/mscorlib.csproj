@@ -1,16 +1,11 @@
-﻿<?xml version="1.0" encoding="utf-8"?>
-<Project ToolsVersion="12.0" DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
-  <Import Project="dir.props" />
+<Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
     <ProjectGuid>{CEAE2042-461E-490A-974C-AD7FBD4E294E}</ProjectGuid>
+    <Configurations>Debug;Release</Configurations>
   </PropertyGroup>
-  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'Debug|AnyCPU'" />
-  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'Release|AnyCPU'" />
   <ItemGroup>
     <Compile Include="mscorlib.forwards.cs" />
-    <ReferencePath
-      Include="$(_RuntimePath)System.*.dll;$(_RuntimePath)Microsoft.*.dll"
-      Exclude="$(_RuntimePath)Microsoft.Diagnostics.Tracing.TraceEvent.dll;$(_RuntimePath)Microsoft.DiaSymReader.Native.*.dll" />
+    <ReferencePath Include="$(_RuntimePath)System.*.dll;$(_RuntimePath)Microsoft.*.dll" Exclude="$(_RuntimePath)Microsoft.Diagnostics.Tracing.TraceEvent.dll;$(_RuntimePath)Microsoft.DiaSymReader.Native.*.dll" />
   </ItemGroup>
   <ItemGroup>
     <SeedTypePreference Include="System.Reflection.Emit.AssemblyBuilder" Assembly="System.Reflection.Emit" />
@@ -32,5 +27,4 @@
     <SeedTypePreference Include="System.Reflection.Emit.SignatureHelper" Assembly="System.Reflection.Emit.ILGeneration" />
     <SeedTypePreference Include="System.Reflection.Emit.TypeBuilder" Assembly="System.Reflection.Emit" />
   </ItemGroup>
-  <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.targets))\dir.targets" />
 </Project>

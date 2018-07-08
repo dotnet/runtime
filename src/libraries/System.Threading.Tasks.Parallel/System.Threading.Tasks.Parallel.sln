@@ -1,18 +1,18 @@
 Microsoft Visual Studio Solution File, Format Version 12.00
-# Visual Studio 14
-VisualStudioVersion = 14.0.25420.1
+# Visual Studio 15
+VisualStudioVersion = 15.0.27213.1
 MinimumVisualStudioVersion = 10.0.40219.1
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "System.Threading.Tasks.Parallel.Tests", "tests\System.Threading.Tasks.Parallel.Tests.csproj", "{DE29C320-2ECA-43FD-9F41-6F4F6C6BACD5}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "System.Threading.Tasks.Parallel.Tests", "tests\System.Threading.Tasks.Parallel.Tests.csproj", "{DE29C320-2ECA-43FD-9F41-6F4F6C6BACD5}"
 	ProjectSection(ProjectDependencies) = postProject
 		{A6BA5DF2-772E-4DA1-BC2D-89FF4A21EE4F} = {A6BA5DF2-772E-4DA1-BC2D-89FF4A21EE4F}
 	EndProjectSection
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "System.Threading.Tasks.Parallel", "src\System.Threading.Tasks.Parallel.csproj", "{A6BA5DF2-772E-4DA1-BC2D-89FF4A21EE4F}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "System.Threading.Tasks.Parallel", "src\System.Threading.Tasks.Parallel.csproj", "{A6BA5DF2-772E-4DA1-BC2D-89FF4A21EE4F}"
 	ProjectSection(ProjectDependencies) = postProject
 		{E7ACD1F9-E309-4AAB-93D3-6A68FC32236B} = {E7ACD1F9-E309-4AAB-93D3-6A68FC32236B}
 	EndProjectSection
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "System.Threading.Tasks.Parallel", "ref\System.Threading.Tasks.Parallel.csproj", "{E7ACD1F9-E309-4AAB-93D3-6A68FC32236B}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "System.Threading.Tasks.Parallel", "ref\System.Threading.Tasks.Parallel.csproj", "{E7ACD1F9-E309-4AAB-93D3-6A68FC32236B}"
 EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "tests", "tests", "{1A2F9F4A-A032-433E-B914-ADD5992BB178}"
 EndProject
@@ -46,5 +46,8 @@ Global
 		{DE29C320-2ECA-43FD-9F41-6F4F6C6BACD5} = {1A2F9F4A-A032-433E-B914-ADD5992BB178}
 		{A6BA5DF2-772E-4DA1-BC2D-89FF4A21EE4F} = {E107E9C1-E893-4E87-987E-04EF0DCEAEFD}
 		{E7ACD1F9-E309-4AAB-93D3-6A68FC32236B} = {2E666815-2EDB-464B-9DF6-380BF4789AD4}
+	EndGlobalSection
+	GlobalSection(ExtensibilityGlobals) = postSolution
+		SolutionGuid = {0B571221-DD38-4278-AF88-FAC082DBDDED}
 	EndGlobalSection
 EndGlobal

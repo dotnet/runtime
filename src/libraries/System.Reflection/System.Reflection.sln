@@ -1,83 +1,83 @@
 Microsoft Visual Studio Solution File, Format Version 12.00
-# Visual Studio 14
-VisualStudioVersion = 14.0.25420.1
+# Visual Studio 15
+VisualStudioVersion = 15.0.27213.1
 MinimumVisualStudioVersion = 10.0.40219.1
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "System.Reflection.Tests", "tests\System.Reflection.Tests.csproj", "{B027C72E-F04E-42E0-A7F7-993AEF8400D2}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "System.Reflection.Tests", "tests\System.Reflection.Tests.csproj", "{B027C72E-F04E-42E0-A7F7-993AEF8400D2}"
 	ProjectSection(ProjectDependencies) = postProject
 		{68F87E68-E13F-4354-A6D6-B44727FE53EE} = {68F87E68-E13F-4354-A6D6-B44727FE53EE}
 	EndProjectSection
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "System.Reflection.Tests.Assembly_0_0_0_0", "tests\AssemblyVersion\System.Reflection.Tests.Assembly_0_0_0_0.csproj", "{5B003EB4-DD06-4BC6-B2E9-A9F0E445CB86}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "System.Reflection.Tests.Assembly_0_0_0_0", "tests\AssemblyVersion\System.Reflection.Tests.Assembly_0_0_0_0.csproj", "{5B003EB4-DD06-4BC6-B2E9-A9F0E445CB86}"
 	ProjectSection(ProjectDependencies) = postProject
 		{68F87E68-E13F-4354-A6D6-B44727FE53EE} = {68F87E68-E13F-4354-A6D6-B44727FE53EE}
 	EndProjectSection
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "System.Reflection.Tests.Assembly_1_0_0_0", "tests\AssemblyVersion\System.Reflection.Tests.Assembly_1_0_0_0.csproj", "{80696796-DE63-42CA-ACB0-A83E5AA7AE06}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "System.Reflection.Tests.Assembly_1_0_0_0", "tests\AssemblyVersion\System.Reflection.Tests.Assembly_1_0_0_0.csproj", "{80696796-DE63-42CA-ACB0-A83E5AA7AE06}"
 	ProjectSection(ProjectDependencies) = postProject
 		{68F87E68-E13F-4354-A6D6-B44727FE53EE} = {68F87E68-E13F-4354-A6D6-B44727FE53EE}
 	EndProjectSection
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "System.Reflection.Tests.Assembly_1_1_0_0", "tests\AssemblyVersion\System.Reflection.Tests.Assembly_1_1_0_0.csproj", "{E28C7916-1BCE-434A-B045-9F755A00A7C4}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "System.Reflection.Tests.Assembly_1_1_0_0", "tests\AssemblyVersion\System.Reflection.Tests.Assembly_1_1_0_0.csproj", "{E28C7916-1BCE-434A-B045-9F755A00A7C4}"
 	ProjectSection(ProjectDependencies) = postProject
 		{68F87E68-E13F-4354-A6D6-B44727FE53EE} = {68F87E68-E13F-4354-A6D6-B44727FE53EE}
 	EndProjectSection
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "System.Reflection.Tests.Assembly_1_1_1_0", "tests\AssemblyVersion\System.Reflection.Tests.Assembly_1_1_1_0.csproj", "{0AC47423-D050-46D4-8C4C-E2D44102FAB6}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "System.Reflection.Tests.Assembly_1_1_1_0", "tests\AssemblyVersion\System.Reflection.Tests.Assembly_1_1_1_0.csproj", "{0AC47423-D050-46D4-8C4C-E2D44102FAB6}"
 	ProjectSection(ProjectDependencies) = postProject
 		{68F87E68-E13F-4354-A6D6-B44727FE53EE} = {68F87E68-E13F-4354-A6D6-B44727FE53EE}
 	EndProjectSection
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "System.Reflection.Tests.Assembly_1_1_1_2", "tests\AssemblyVersion\System.Reflection.Tests.Assembly_1_1_1_2.csproj", "{652B7191-D7FE-4889-8E45-1AF7739C0EAD}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "System.Reflection.Tests.Assembly_1_1_1_2", "tests\AssemblyVersion\System.Reflection.Tests.Assembly_1_1_1_2.csproj", "{652B7191-D7FE-4889-8E45-1AF7739C0EAD}"
 	ProjectSection(ProjectDependencies) = postProject
 		{68F87E68-E13F-4354-A6D6-B44727FE53EE} = {68F87E68-E13F-4354-A6D6-B44727FE53EE}
 	EndProjectSection
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "System.Reflection.Tests.Assembly_1_1_1_3", "tests\AssemblyVersion\System.Reflection.Tests.Assembly_1_1_1_3.csproj", "{072D1E70-A0A4-44AB-92B8-2F6B772626CC}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "System.Reflection.Tests.Assembly_1_1_1_3", "tests\AssemblyVersion\System.Reflection.Tests.Assembly_1_1_1_3.csproj", "{072D1E70-A0A4-44AB-92B8-2F6B772626CC}"
 	ProjectSection(ProjectDependencies) = postProject
 		{68F87E68-E13F-4354-A6D6-B44727FE53EE} = {68F87E68-E13F-4354-A6D6-B44727FE53EE}
 	EndProjectSection
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "System.Reflection.Tests.Assembly_1_1_2_0", "tests\AssemblyVersion\System.Reflection.Tests.Assembly_1_1_2_0.csproj", "{3E30213F-6E59-4BE8-BF4A-64D2AAED5B2E}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "System.Reflection.Tests.Assembly_1_1_2_0", "tests\AssemblyVersion\System.Reflection.Tests.Assembly_1_1_2_0.csproj", "{3E30213F-6E59-4BE8-BF4A-64D2AAED5B2E}"
 	ProjectSection(ProjectDependencies) = postProject
 		{68F87E68-E13F-4354-A6D6-B44727FE53EE} = {68F87E68-E13F-4354-A6D6-B44727FE53EE}
 	EndProjectSection
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "System.Reflection.Tests.Assembly_1_1_3_0", "tests\AssemblyVersion\System.Reflection.Tests.Assembly_1_1_3_0.csproj", "{02758899-6A37-4FF1-B765-F1C38B40BC9C}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "System.Reflection.Tests.Assembly_1_1_3_0", "tests\AssemblyVersion\System.Reflection.Tests.Assembly_1_1_3_0.csproj", "{02758899-6A37-4FF1-B765-F1C38B40BC9C}"
 	ProjectSection(ProjectDependencies) = postProject
 		{68F87E68-E13F-4354-A6D6-B44727FE53EE} = {68F87E68-E13F-4354-A6D6-B44727FE53EE}
 	EndProjectSection
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "System.Reflection.Tests.Assembly_1_2_0_0", "tests\AssemblyVersion\System.Reflection.Tests.Assembly_1_2_0_0.csproj", "{510CC907-F5AA-432D-AEEB-14A10AE3F811}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "System.Reflection.Tests.Assembly_1_2_0_0", "tests\AssemblyVersion\System.Reflection.Tests.Assembly_1_2_0_0.csproj", "{510CC907-F5AA-432D-AEEB-14A10AE3F811}"
 	ProjectSection(ProjectDependencies) = postProject
 		{68F87E68-E13F-4354-A6D6-B44727FE53EE} = {68F87E68-E13F-4354-A6D6-B44727FE53EE}
 	EndProjectSection
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "System.Reflection.Tests.Assembly_1_3_0_0", "tests\AssemblyVersion\System.Reflection.Tests.Assembly_1_3_0_0.csproj", "{68AD3675-F57E-4FB3-9943-49E602678BCA}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "System.Reflection.Tests.Assembly_1_3_0_0", "tests\AssemblyVersion\System.Reflection.Tests.Assembly_1_3_0_0.csproj", "{68AD3675-F57E-4FB3-9943-49E602678BCA}"
 	ProjectSection(ProjectDependencies) = postProject
 		{68F87E68-E13F-4354-A6D6-B44727FE53EE} = {68F87E68-E13F-4354-A6D6-B44727FE53EE}
 	EndProjectSection
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "System.Reflection.Tests.Assembly_3_0_0_0", "tests\AssemblyVersion\System.Reflection.Tests.Assembly_3_0_0_0.csproj", "{42E66302-6F46-47BE-936B-4264DFD6004F}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "System.Reflection.Tests.Assembly_3_0_0_0", "tests\AssemblyVersion\System.Reflection.Tests.Assembly_3_0_0_0.csproj", "{42E66302-6F46-47BE-936B-4264DFD6004F}"
 	ProjectSection(ProjectDependencies) = postProject
 		{68F87E68-E13F-4354-A6D6-B44727FE53EE} = {68F87E68-E13F-4354-A6D6-B44727FE53EE}
 	EndProjectSection
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "System.Reflection.CoreCLR.Tests", "tests\CoreCLR\System.Reflection.CoreCLR.Tests.csproj", "{C8049356-559D-4F34-AC17-56F3AE62C897}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "System.Reflection.CoreCLR.Tests", "tests\CoreCLR\System.Reflection.CoreCLR.Tests.csproj", "{C8049356-559D-4F34-AC17-56F3AE62C897}"
 	ProjectSection(ProjectDependencies) = postProject
 		{68F87E68-E13F-4354-A6D6-B44727FE53EE} = {68F87E68-E13F-4354-A6D6-B44727FE53EE}
 	EndProjectSection
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "System.Reflection.TestExe", "tests\TestExe\System.Reflection.TestExe.csproj", "{8C19B991-41E9-4B38-9602-E19375397F1D}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "System.Reflection.TestExe", "tests\TestExe\System.Reflection.TestExe.csproj", "{8C19B991-41E9-4B38-9602-E19375397F1D}"
 	ProjectSection(ProjectDependencies) = postProject
 		{68F87E68-E13F-4354-A6D6-B44727FE53EE} = {68F87E68-E13F-4354-A6D6-B44727FE53EE}
 	EndProjectSection
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "System.Reflection", "src\System.Reflection.csproj", "{68F87E68-E13F-4354-A6D6-B44727FE53EE}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "System.Reflection", "src\System.Reflection.csproj", "{68F87E68-E13F-4354-A6D6-B44727FE53EE}"
 	ProjectSection(ProjectDependencies) = postProject
 		{23B83DCB-45FD-4C8F-A6FB-C6799FB52BA6} = {23B83DCB-45FD-4C8F-A6FB-C6799FB52BA6}
 	EndProjectSection
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "System.Reflection", "ref\System.Reflection.csproj", "{23B83DCB-45FD-4C8F-A6FB-C6799FB52BA6}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "System.Reflection", "ref\System.Reflection.csproj", "{23B83DCB-45FD-4C8F-A6FB-C6799FB52BA6}"
 EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "tests", "tests", "{1A2F9F4A-A032-433E-B914-ADD5992BB178}"
 EndProject
@@ -176,5 +176,8 @@ Global
 		{8C19B991-41E9-4B38-9602-E19375397F1D} = {1A2F9F4A-A032-433E-B914-ADD5992BB178}
 		{68F87E68-E13F-4354-A6D6-B44727FE53EE} = {E107E9C1-E893-4E87-987E-04EF0DCEAEFD}
 		{23B83DCB-45FD-4C8F-A6FB-C6799FB52BA6} = {2E666815-2EDB-464B-9DF6-380BF4789AD4}
+	EndGlobalSection
+	GlobalSection(ExtensibilityGlobals) = postSolution
+		SolutionGuid = {B5B0C0E5-87B2-4FEB-8411-A1843B24537E}
 	EndGlobalSection
 EndGlobal

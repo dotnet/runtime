@@ -9,12 +9,12 @@
       netfx;
     </BuildConfigurations>
   </PropertyGroup>
-  <Import Project="..\dir.props" />
+  <Import Project="..\Directory.Build.props" />
   <Target Name="Build" DependsOnTargets="BinPlace" />
   <Target Name="Clean" />
   <Target Name="Rebuild" DependsOnTargets="Clean;Build" />
 
-  <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.targets))\dir.targets" />
+  <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), Directory.Build.targets))\Directory.Build.targets" />
 
   <Target Name="GetBinPlaceItems">
     <ItemGroup>

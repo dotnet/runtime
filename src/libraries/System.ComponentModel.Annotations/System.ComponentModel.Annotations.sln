@@ -1,18 +1,18 @@
 Microsoft Visual Studio Solution File, Format Version 12.00
-# Visual Studio 14
-VisualStudioVersion = 14.0.25420.1
+# Visual Studio 15
+VisualStudioVersion = 15.0.27213.1
 MinimumVisualStudioVersion = 10.0.40219.1
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "System.ComponentModel.Annotations.Tests", "tests\System.ComponentModel.Annotations.Tests.csproj", "{6E48765E-D6AC-4A79-9C2E-B5EE67EEDECF}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "System.ComponentModel.Annotations.Tests", "tests\System.ComponentModel.Annotations.Tests.csproj", "{6E48765E-D6AC-4A79-9C2E-B5EE67EEDECF}"
 	ProjectSection(ProjectDependencies) = postProject
 		{4266D58F-EB60-46C2-BA81-3ABDE759A7D5} = {4266D58F-EB60-46C2-BA81-3ABDE759A7D5}
 	EndProjectSection
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "System.ComponentModel.Annotations", "src\System.ComponentModel.Annotations.csproj", "{4266D58F-EB60-46C2-BA81-3ABDE759A7D5}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "System.ComponentModel.Annotations", "src\System.ComponentModel.Annotations.csproj", "{4266D58F-EB60-46C2-BA81-3ABDE759A7D5}"
 	ProjectSection(ProjectDependencies) = postProject
 		{C4D6F1F4-DC7E-4756-9A88-171A8B1F1E26} = {C4D6F1F4-DC7E-4756-9A88-171A8B1F1E26}
 	EndProjectSection
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "System.ComponentModel.Annotations", "ref\System.ComponentModel.Annotations.csproj", "{C4D6F1F4-DC7E-4756-9A88-171A8B1F1E26}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "System.ComponentModel.Annotations", "ref\System.ComponentModel.Annotations.csproj", "{C4D6F1F4-DC7E-4756-9A88-171A8B1F1E26}"
 EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "tests", "tests", "{1A2F9F4A-A032-433E-B914-ADD5992BB178}"
 EndProject
@@ -46,5 +46,8 @@ Global
 		{6E48765E-D6AC-4A79-9C2E-B5EE67EEDECF} = {1A2F9F4A-A032-433E-B914-ADD5992BB178}
 		{4266D58F-EB60-46C2-BA81-3ABDE759A7D5} = {E107E9C1-E893-4E87-987E-04EF0DCEAEFD}
 		{C4D6F1F4-DC7E-4756-9A88-171A8B1F1E26} = {2E666815-2EDB-464B-9DF6-380BF4789AD4}
+	EndGlobalSection
+	GlobalSection(ExtensibilityGlobals) = postSolution
+		SolutionGuid = {609A6C56-3EE1-4E65-AD40-CA3A0D32B2DD}
 	EndGlobalSection
 EndGlobal

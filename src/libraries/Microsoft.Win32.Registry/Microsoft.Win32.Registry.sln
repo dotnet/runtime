@@ -1,18 +1,18 @@
 Microsoft Visual Studio Solution File, Format Version 12.00
-# Visual Studio 14
-VisualStudioVersion = 14.0.25420.1
+# Visual Studio 15
+VisualStudioVersion = 15.0.27213.1
 MinimumVisualStudioVersion = 10.0.40219.1
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Microsoft.Win32.Registry.Tests", "tests\Microsoft.Win32.Registry.Tests.csproj", "{20A2BA2C-5517-483F-8FFE-643441A59852}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Microsoft.Win32.Registry.Tests", "tests\Microsoft.Win32.Registry.Tests.csproj", "{20A2BA2C-5517-483F-8FFE-643441A59852}"
 	ProjectSection(ProjectDependencies) = postProject
 		{D3F18ACC-D327-4ABB-BA6C-E9C34A041B2F} = {D3F18ACC-D327-4ABB-BA6C-E9C34A041B2F}
 	EndProjectSection
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Microsoft.Win32.Registry", "src\Microsoft.Win32.Registry.csproj", "{D3F18ACC-D327-4ABB-BA6C-E9C34A041B2F}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Microsoft.Win32.Registry", "src\Microsoft.Win32.Registry.csproj", "{D3F18ACC-D327-4ABB-BA6C-E9C34A041B2F}"
 	ProjectSection(ProjectDependencies) = postProject
 		{EEC02D4E-217E-4B4D-A7DA-5038FAD44A18} = {EEC02D4E-217E-4B4D-A7DA-5038FAD44A18}
 	EndProjectSection
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Microsoft.Win32.Registry", "ref\Microsoft.Win32.Registry.csproj", "{EEC02D4E-217E-4B4D-A7DA-5038FAD44A18}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Microsoft.Win32.Registry", "ref\Microsoft.Win32.Registry.csproj", "{EEC02D4E-217E-4B4D-A7DA-5038FAD44A18}"
 EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "tests", "tests", "{1A2F9F4A-A032-433E-B914-ADD5992BB178}"
 EndProject
@@ -46,5 +46,8 @@ Global
 		{20A2BA2C-5517-483F-8FFE-643441A59852} = {1A2F9F4A-A032-433E-B914-ADD5992BB178}
 		{D3F18ACC-D327-4ABB-BA6C-E9C34A041B2F} = {E107E9C1-E893-4E87-987E-04EF0DCEAEFD}
 		{EEC02D4E-217E-4B4D-A7DA-5038FAD44A18} = {2E666815-2EDB-464B-9DF6-380BF4789AD4}
+	EndGlobalSection
+	GlobalSection(ExtensibilityGlobals) = postSolution
+		SolutionGuid = {1ED9DC79-D6FD-4791-A7D5-C09573807723}
 	EndGlobalSection
 EndGlobal

@@ -1,18 +1,18 @@
 Microsoft Visual Studio Solution File, Format Version 12.00
-# Visual Studio 14
-VisualStudioVersion = 14.0.25420.1
+# Visual Studio 15
+VisualStudioVersion = 15.0.27213.1
 MinimumVisualStudioVersion = 10.0.40219.1
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "System.Security.Cryptography.Xml.Tests", "tests\System.Security.Cryptography.Xml.Tests.csproj", "{4A85232C-E914-4E06-8542-26DAF4B22D60}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "System.Security.Cryptography.Xml.Tests", "tests\System.Security.Cryptography.Xml.Tests.csproj", "{4A85232C-E914-4E06-8542-26DAF4B22D60}"
 	ProjectSection(ProjectDependencies) = postProject
 		{0544EAE3-0CF2-4EA6-93BE-A9FF8B52724A} = {0544EAE3-0CF2-4EA6-93BE-A9FF8B52724A}
 	EndProjectSection
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "System.Security.Cryptography.Xml", "src\System.Security.Cryptography.Xml.csproj", "{0544EAE3-0CF2-4EA6-93BE-A9FF8B52724A}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "System.Security.Cryptography.Xml", "src\System.Security.Cryptography.Xml.csproj", "{0544EAE3-0CF2-4EA6-93BE-A9FF8B52724A}"
 	ProjectSection(ProjectDependencies) = postProject
 		{C7266957-DB20-4250-9C2E-E1FF83EDBD71} = {C7266957-DB20-4250-9C2E-E1FF83EDBD71}
 	EndProjectSection
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "System.Security.Cryptography.Xml", "ref\System.Security.Cryptography.Xml.csproj", "{C7266957-DB20-4250-9C2E-E1FF83EDBD71}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "System.Security.Cryptography.Xml", "ref\System.Security.Cryptography.Xml.csproj", "{C7266957-DB20-4250-9C2E-E1FF83EDBD71}"
 EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "tests", "tests", "{1A2F9F4A-A032-433E-B914-ADD5992BB178}"
 EndProject
@@ -26,10 +26,10 @@ Global
 		Release|Any CPU = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(ProjectConfigurationPlatforms) = postSolution
-		{4A85232C-E914-4E06-8542-26DAF4B22D60}.Debug|Any CPU.ActiveCfg = netstandard-Debug|Any CPU
-		{4A85232C-E914-4E06-8542-26DAF4B22D60}.Debug|Any CPU.Build.0 = netstandard-Debug|Any CPU
-		{4A85232C-E914-4E06-8542-26DAF4B22D60}.Release|Any CPU.ActiveCfg = netstandard-Release|Any CPU
-		{4A85232C-E914-4E06-8542-26DAF4B22D60}.Release|Any CPU.Build.0 = netstandard-Release|Any CPU
+		{4A85232C-E914-4E06-8542-26DAF4B22D60}.Debug|Any CPU.ActiveCfg = netcoreapp-Debug|Any CPU
+		{4A85232C-E914-4E06-8542-26DAF4B22D60}.Debug|Any CPU.Build.0 = netcoreapp-Debug|Any CPU
+		{4A85232C-E914-4E06-8542-26DAF4B22D60}.Release|Any CPU.ActiveCfg = netcoreapp-Release|Any CPU
+		{4A85232C-E914-4E06-8542-26DAF4B22D60}.Release|Any CPU.Build.0 = netcoreapp-Release|Any CPU
 		{0544EAE3-0CF2-4EA6-93BE-A9FF8B52724A}.Debug|Any CPU.ActiveCfg = netstandard-Debug|Any CPU
 		{0544EAE3-0CF2-4EA6-93BE-A9FF8B52724A}.Debug|Any CPU.Build.0 = netstandard-Debug|Any CPU
 		{0544EAE3-0CF2-4EA6-93BE-A9FF8B52724A}.Release|Any CPU.ActiveCfg = netstandard-Release|Any CPU
@@ -46,5 +46,8 @@ Global
 		{4A85232C-E914-4E06-8542-26DAF4B22D60} = {1A2F9F4A-A032-433E-B914-ADD5992BB178}
 		{0544EAE3-0CF2-4EA6-93BE-A9FF8B52724A} = {E107E9C1-E893-4E87-987E-04EF0DCEAEFD}
 		{C7266957-DB20-4250-9C2E-E1FF83EDBD71} = {2E666815-2EDB-464B-9DF6-380BF4789AD4}
+	EndGlobalSection
+	GlobalSection(ExtensibilityGlobals) = postSolution
+		SolutionGuid = {53A61DC6-1798-4086-97EA-EBBF9FE9D6D1}
 	EndGlobalSection
 EndGlobal

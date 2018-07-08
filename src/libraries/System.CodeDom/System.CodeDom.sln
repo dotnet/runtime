@@ -1,18 +1,18 @@
 Microsoft Visual Studio Solution File, Format Version 12.00
-# Visual Studio 14
-VisualStudioVersion = 14.0.25420.1
+# Visual Studio 15
+VisualStudioVersion = 15.0.27213.1
 MinimumVisualStudioVersion = 10.0.40219.1
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "System.CodeDom.Tests", "tests\System.CodeDom.Tests.csproj", "{0D1E2954-A5C7-4B8C-932A-31EB4A96A726}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "System.CodeDom.Tests", "tests\System.CodeDom.Tests.csproj", "{0D1E2954-A5C7-4B8C-932A-31EB4A96A726}"
 	ProjectSection(ProjectDependencies) = postProject
 		{53D09AF4-0C13-4197-B8AD-9746F0374E88} = {53D09AF4-0C13-4197-B8AD-9746F0374E88}
 	EndProjectSection
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "System.CodeDom", "src\System.CodeDom.csproj", "{53D09AF4-0C13-4197-B8AD-9746F0374E88}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "System.CodeDom", "src\System.CodeDom.csproj", "{53D09AF4-0C13-4197-B8AD-9746F0374E88}"
 	ProjectSection(ProjectDependencies) = postProject
 		{4CF42F1E-B5AC-4834-AE24-A1F285091377} = {4CF42F1E-B5AC-4834-AE24-A1F285091377}
 	EndProjectSection
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "System.CodeDom", "ref\System.CodeDom.csproj", "{4CF42F1E-B5AC-4834-AE24-A1F285091377}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "System.CodeDom", "ref\System.CodeDom.csproj", "{4CF42F1E-B5AC-4834-AE24-A1F285091377}"
 EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "tests", "tests", "{1A2F9F4A-A032-433E-B914-ADD5992BB178}"
 EndProject
@@ -46,5 +46,8 @@ Global
 		{0D1E2954-A5C7-4B8C-932A-31EB4A96A726} = {1A2F9F4A-A032-433E-B914-ADD5992BB178}
 		{53D09AF4-0C13-4197-B8AD-9746F0374E88} = {E107E9C1-E893-4E87-987E-04EF0DCEAEFD}
 		{4CF42F1E-B5AC-4834-AE24-A1F285091377} = {2E666815-2EDB-464B-9DF6-380BF4789AD4}
+	EndGlobalSection
+	GlobalSection(ExtensibilityGlobals) = postSolution
+		SolutionGuid = {760BBC5B-7FAC-4F92-BAEC-0C02486CD300}
 	EndGlobalSection
 EndGlobal
