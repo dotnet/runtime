@@ -1364,15 +1364,6 @@ mono_arch_cpu_optimizations (guint32 *exclude_mask)
 		*exclude_mask |= MONO_OPT_CMOV;
 	}
 
-#ifdef TARGET_WIN32
-	/* The current SIMD doesn't support the argument used by a LD_ADDR to be of type OP_VTARG_ADDR. */
-	/* This will now be used for value types > 8 or of size 3,5,6,7 as dictated by windows x64 value type ABI. */
-	/* Since OP_VTARG_ADDR needs to be resolved in mono_spill_global_vars and the SIMD implementation optimize */
-	/* away the LD_ADDR in load_simd_vreg, that will cause an error in mono_spill_global_vars since incorrect opcode */
-	/* will now have a reference to an argument that won't be fully decomposed. */
-	*exclude_mask |= MONO_OPT_SIMD;
-#endif
-
 	return opts;
 }
 

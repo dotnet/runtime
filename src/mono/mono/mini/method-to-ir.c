@@ -6421,8 +6421,12 @@ emit_setret (MonoCompile *cfg, MonoInst *val)
 		} else {
 			EMIT_NEW_RETLOADA (cfg, ret_addr);
 
-			EMIT_NEW_STORE_MEMBASE (cfg, ins, OP_STOREV_MEMBASE, ret_addr->dreg, 0, val->dreg);
-			ins->klass = mono_class_from_mono_type (ret_type);
+			MonoClass *ret_class = mono_class_from_mono_type (ret_type);
+			if (MONO_CLASS_IS_SIMD (cfg, ret_class))
+				EMIT_NEW_STORE_MEMBASE (cfg, ins, OP_STOREX_MEMBASE, ret_addr->dreg, 0, val->dreg);
+			else
+				EMIT_NEW_STORE_MEMBASE (cfg, ins, OP_STOREV_MEMBASE, ret_addr->dreg, 0, val->dreg);
+			ins->klass = ret_class;
 		}
 	} else {
 #ifdef MONO_ARCH_SOFT_FLOAT_FALLBACK
@@ -9929,6 +9933,7 @@ calli_end:
 
 					MONO_EMIT_NULL_CHECK (cfg, sp [0]->dreg, foffset > mono_target_pagesize ());
 
+#ifdef MONO_ARCH_SIMD_INTRINSICS
 					if (sp [0]->opcode == OP_LDADDR && m_class_is_simd_type (klass) && cfg->opt & MONO_OPT_SIMD) {
 						ins = mono_emit_simd_field_load (cfg, field, sp [0]);
 						if (ins) {
@@ -9936,6 +9941,7 @@ calli_end:
 							goto field_access_end;
 						}
 					}
+#endif
 
 					MonoInst *field_add_inst = sp [0];
 					if (mini_is_gsharedvt_klass (klass)) {
@@ -12452,7 +12458,7 @@ mono_handle_global_vregs (MonoCompile *cfg)
 	vreg_to_bb = (gint32 *)mono_mempool_alloc0 (cfg->mempool, sizeof (gint32*) * cfg->next_vreg + 1);
 
 #ifdef MONO_ARCH_SIMD_INTRINSICS
-	if (cfg->uses_simd_intrinsics)
+	if (cfg->uses_simd_intrinsics & MONO_CFG_USES_SIMD_INTRINSICS_SIMPLIFY_INDIRECTION)
 		mono_simd_simplify_indirection (cfg);
 #endif
 

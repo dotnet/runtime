@@ -35,6 +35,12 @@ SET MONO_TEST_PATH=%MONO_TEST_BUILD_DIR%
 SET FULLAOT_DIR=%MONO_WINAOT_BUILD_DIR%
 SET MONO_PATH=%FULLAOT_DIR%
 
+REM When building Full AOT using net_4x BCL Mono SIMD tests are available.
+SET MONO_ENABLE_SIMD_TESTS=0
+IF /i %MONO_BCL_PATH% == %MONO_WINAOT_BCL_PATH% (
+	SET MONO_ENABLE_SIMD_TESTS=1
+)
+
 REM Debug output options.
 
 REM SET MONO_LOG_LEVEL=debug
@@ -51,17 +57,22 @@ System.Numerics.dll ^
 System.Numerics.Vectors.dll ^
 System.Xml.dll ^
 System.Security.dll ^
-Mono.Simd.dll ^
 Mono.Security.dll ^
 I18N.dll ^
 I18N.West.dll ^
 MemoryIntrinsics.dll
 
+IF %MONO_ENABLE_SIMD_TESTS% == 1 (
+	SET FULLAOT_BCL_LIBS=^
+	%FULLAOT_BCL_LIBS% ^
+	System.Configuration.dll ^
+	Mono.Simd.dll
+)
+
 SET FULLAOT_TEST_LIBS=^
 TestDriver.dll ^
 generics-variant-types.dll
 
-REM basic-simd.exe not in full AOT profile on Windows.
 SET FULLAOT_RUNTIME_TESTS=^
 basic.exe ^
 basic-float.exe ^
@@ -80,6 +91,12 @@ aot-tests.exe ^
 ratests.exe ^
 unaligned.exe ^
 builtin-types.exe
+
+IF %MONO_ENABLE_SIMD_TESTS% == 1 (
+	SET FULLAOT_RUNTIME_TESTS=^
+	%FULLAOT_RUNTIME_TESTS% ^
+	basic-simd.exe
+)
 
 SET FULLAOT_LIBS=
 

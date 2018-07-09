@@ -1214,6 +1214,9 @@ mono_decompose_vtype_opts (MonoCompile *cfg)
 			restart = FALSE;
 
 			for (ins = bb->code; ins; ins = ins->next) {
+#ifdef MONO_ARCH_SIMD_INTRINSICS
+				mono_simd_decompose_intrinsic (cfg, bb, ins);
+#endif
 				switch (ins->opcode) {
 				case OP_VMOVE: {
 					g_assert (ins->klass);
