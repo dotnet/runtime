@@ -168,6 +168,14 @@
     <Compile Include="LinkXml\Dependencies\EmbeddedLinkXmlPreservesAdditionalAssemblyWithOverriddenMethod\Library1.cs" />
     <Compile Include="LinkXml\Dependencies\EmbeddedLinkXmlPreservesAdditionalAssemblyWithOverriddenMethod\Library2.cs" />
     <Compile Include="LinkXml\EmbeddedLinkXmlPreservesAdditionalAssemblyWithOverriddenMethod.cs" />
+    <Compile Include="LinkXml\FeatureExclude\OnAssembly.cs" />
+    <Compile Include="LinkXml\FeatureExclude\OnEvent.cs" />
+    <Compile Include="LinkXml\FeatureExclude\OnField.cs" />
+    <Compile Include="LinkXml\FeatureExclude\OnMethod.cs" />
+    <Compile Include="LinkXml\FeatureExclude\OnProperty.cs" />
+    <Compile Include="LinkXml\FeatureExclude\OnType.cs" />
+    <Compile Include="LinkXml\FeatureExclude\Dependencies\OnAssembly_Lib1.cs" />
+    <Compile Include="LinkXml\FeatureExclude\Dependencies\OnAssembly_Lib2.cs" />
     <Compile Include="LinkXml\UnusedAssemblyWithNoDefinedPreserveHasAllTypesPreserved.cs" />
     <Compile Include="LinkXml\UnusedEventPreservedByLinkXmlIsKept.cs" />
     <Compile Include="LinkXml\UnusedGenericTypeWithPreserveAllHasAllMembersPreserved.cs" />
@@ -338,7 +346,6 @@
     <Compile Include="Symbols\ReferenceWithMdb.cs" />
     <Compile Include="Symbols\ReferenceWithMdbAndSymbolLinkingEnabled.cs" />
     <Compile Include="Advanced\PreserveDependencyMethod.cs" />
-    <Compile Include="LinkXml\FeatureExcludedSimpleType.cs" />
   </ItemGroup>
   <ItemGroup>
     <Content Include="Attributes\OnlyKeepUsed\UnusedAttributePreservedViaLinkXmlIsKept.xml" />
@@ -346,6 +353,12 @@
     <Content Include="LinkXml\CanPreserveAnExportedType.xml" />
     <Content Include="LinkXml\CanPreserveExportedTypesUsingRegex.xml" />
     <Content Include="LinkXml\Dependencies\EmbeddedLinkXmlPreservesAdditionalAssemblyWithOverriddenMethod\Library1.xml" />
+    <Content Include="LinkXml\FeatureExclude\OnAssembly.xml" />
+    <Content Include="LinkXml\FeatureExclude\OnEvent.xml" />
+    <Content Include="LinkXml\FeatureExclude\OnField.xml" />
+    <Content Include="LinkXml\FeatureExclude\OnMethod.xml" />
+    <Content Include="LinkXml\FeatureExclude\OnProperty.xml" />
+    <Content Include="LinkXml\FeatureExclude\OnType.xml" />
     <Content Include="LinkXml\TypeWithPreserveFieldsHasBackingFieldsOfPropertiesRemoved.xml" />
     <Content Include="LinkXml\UnusedAssemblyWithNoDefinedPreserveHasAllTypesPreserved.xml" />
     <Content Include="LinkXml\UnusedEventPreservedByLinkXmlIsKept.xml" />
@@ -378,7 +391,6 @@
     <Content Include="TestFramework\Dependencies\VerifyResourceInAssemblyAttributesBehavior.txt" />
     <Content Include="LinkXml\PreserveBackingFieldWhenPropertyIsKept.xml" />
     <Content Include="TypeForwarding\TypeForwarderOnlyAssemblyCanBePreservedViaLinkXml.xml" />
-    <Content Include="LinkXml\FeatureExcludedSimpleType.xml" />
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\Mono.Linker.Tests.Cases.Expectations\Mono.Linker.Tests.Cases.Expectations.csproj">
