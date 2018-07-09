@@ -2141,7 +2141,9 @@ StackWalkAction DebuggerWalkStack(Thread *thread,
 
         result = g_pEEInterface->StackWalkFramesEx(thread, &data.regDisplay,
                                                    DebuggerWalkStackProc,
-                                                   &data, flags | HANDLESKIPPEDFRAMES | NOTIFY_ON_U2M_TRANSITIONS | ALLOW_ASYNC_STACK_WALK);
+                                                   &data,
+                                                   flags | HANDLESKIPPEDFRAMES | NOTIFY_ON_U2M_TRANSITIONS |
+                                                   ALLOW_ASYNC_STACK_WALK | SKIP_GSCOOKIE_CHECK);
     }
     else
     {
