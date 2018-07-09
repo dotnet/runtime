@@ -1,16 +1,6 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
-#pragma warning disable 0420
-
-// =+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+
-//
-// SlimManualResetEvent.cs
-//
-//
-// An manual-reset event that mixes a little spinning with a true Win32 event.
-//
-// =-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
 
 using System.Diagnostics;
 
@@ -265,7 +255,7 @@ namespace System.Threading
             if (Interlocked.CompareExchange(ref m_eventObj, newEventObj, null) != null)
             {
                 // Someone else set the value due to a race condition. Destroy the garbage event.
-                newEventObj.Close();
+                newEventObj.Dispose();
 
                 return false;
             }
@@ -342,7 +332,7 @@ namespace System.Threading
                 // necessary.  However, the coding pattern { event.Wait(); event.Dispose() } is
                 // quite common, and we must support it.  If the waiter woke up and disposed of
                 // the event object before the setter has finished, however, we would try to set a
-                // now-disposed Win32 event.  Crash!  To deal with this race condition, we use a lock to
+                // now-disposed Win32 event. Crash! To deal with this race condition, we use a lock to
                 // protect access to the event object when setting and disposing of it.  We also
                 // double-check that the event has not become null in the meantime when in the lock.
 
@@ -438,7 +428,7 @@ namespace System.Threading
         /// false.</returns>
         /// <exception cref="T:System.ArgumentOutOfRangeException"><paramref name="timeout"/> is a negative
         /// number other than -1 milliseconds, which represents an infinite time-out -or- timeout is greater
-        /// than <see cref="System.int.MaxValue"/>.</exception>
+        /// than <see cref="System.Int32.MaxValue"/>.</exception>
         /// <exception cref="T:System.InvalidOperationException">
         /// The maximum number of waiters has been exceeded.
         /// </exception>
@@ -467,7 +457,7 @@ namespace System.Threading
         /// false.</returns>
         /// <exception cref="T:System.ArgumentOutOfRangeException"><paramref name="timeout"/> is a negative
         /// number other than -1 milliseconds, which represents an infinite time-out -or- timeout is greater
-        /// than <see cref="System.int.MaxValue"/>.</exception>
+        /// than <see cref="System.Int32.MaxValue"/>.</exception>
         /// <exception cref="T:System.Threading.OperationCanceledException"><paramref
         /// name="cancellationToken"/> was canceled.</exception>
         /// <exception cref="T:System.InvalidOperationException">
@@ -622,7 +612,6 @@ namespace System.Threading
                                 // Clean up: we're done waiting.
                                 Waiters = Waiters - 1;
                             }
-
                             // Now just loop back around, and the right thing will happen.  Either:
                             //     1. We had a spurious wake-up due to some other wait being canceled via a different cancellationToken (rewait)
                             // or  2. the wait was successful. (the loop will break)
@@ -672,7 +661,7 @@ namespace System.Threading
                 {
                     lock (eventObj)
                     {
-                        eventObj.Close();
+                        eventObj.Dispose();
                         m_eventObj = null;
                     }
                 }
