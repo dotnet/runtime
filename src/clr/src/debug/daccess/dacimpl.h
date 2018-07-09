@@ -2005,7 +2005,7 @@ private:
         mCurr = &mHead;
         
         // Walk the stack, set mEnumerated to true to ensure we don't do it again.
-        unsigned int flagsStackWalk = ALLOW_INVALID_OBJECTS|ALLOW_ASYNC_STACK_WALK;
+        unsigned int flagsStackWalk = ALLOW_INVALID_OBJECTS|ALLOW_ASYNC_STACK_WALK|SKIP_GSCOOKIE_CHECK;
 #if defined(WIN64EXCEPTIONS)
         flagsStackWalk |= GC_FUNCLET_REFERENCE_REPORTING;
 #endif // defined(WIN64EXCEPTIONS)
