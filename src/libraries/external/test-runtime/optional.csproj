@@ -1,5 +1,4 @@
 <Project Sdk="Microsoft.NET.Sdk">
-  <Import Project="..\..\dependencies.props" />
   <PropertyGroup>
     <TargetFramework>net45</TargetFramework>
   </PropertyGroup>
