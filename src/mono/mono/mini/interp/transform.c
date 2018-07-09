@@ -2924,8 +2924,33 @@ generate (MonoMethod *method, MonoMethodHeader *header, InterpMethod *rtm, unsig
 
 				PUSH_TYPE (td, stack_type [mint_type (m_class_get_byval_arg (klass))], klass);
 			} else {
-				ADD_CODE(td, MINT_NEWOBJ);
-				ADD_CODE(td, get_data_item_index (td, mono_interp_get_imethod (domain, m, error)));
+				if (m_class_get_parent (klass) == mono_defaults.array_class) {
+					ADD_CODE(td, MINT_NEWOBJ_ARRAY);
+					ADD_CODE(td, get_data_item_index (td, mono_interp_get_imethod (domain, m, error)));
+					ADD_CODE(td, csignature->param_count);
+				} else if (klass != mono_defaults.string_class &&
+						!mono_class_is_marshalbyref (klass) &&
+						!mono_class_has_finalizer (klass) &&
+						!m_class_has_weak_fields (klass)) {
+					if (!m_class_is_valuetype (klass))
+						ADD_CODE(td, MINT_NEWOBJ_FAST);
+					else if (mint_type (m_class_get_byval_arg (klass)) == MINT_TYPE_VT)
+						ADD_CODE(td, MINT_NEWOBJ_VTST_FAST);
+					else
+						ADD_CODE(td, MINT_NEWOBJ_VT_FAST);
+
+					ADD_CODE(td, get_data_item_index (td, mono_interp_get_imethod (domain, m, error)));
+					ADD_CODE(td, csignature->param_count);
+
+					if (!m_class_is_valuetype (klass)) {
+						MonoVTable *vtable = mono_class_vtable_checked (domain, klass, error);
+						goto_if_nok (error, exit);
+						ADD_CODE(td, get_data_item_index (td, vtable));
+					}
+				} else {
+					ADD_CODE(td, MINT_NEWOBJ);
+					ADD_CODE(td, get_data_item_index (td, mono_interp_get_imethod (domain, m, error)));
+				}
 				goto_if_nok (error, exit);
 
 				if (mint_type (m_class_get_byval_arg (klass)) == MINT_TYPE_VT) {
