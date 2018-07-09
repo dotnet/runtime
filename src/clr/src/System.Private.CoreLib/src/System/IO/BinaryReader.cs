@@ -151,7 +151,78 @@ namespace System.IO
             {
                 throw Error.GetFileNotOpen();
             }
-            return InternalReadOneChar();
+
+            int charsRead = 0;
+            int numBytes = 0;
+            long posSav = posSav = 0;
+
+            if (_stream.CanSeek)
+            {
+                posSav = _stream.Position;
+            }
+
+            if (_charBytes == null)
+            {
+                _charBytes = new byte[MaxCharBytesSize]; //REVIEW: We need at most 2 bytes/char here? 
+            }
+            if (_singleChar == null)
+            {
+                _singleChar = new char[1];
+            }
+
+            while (charsRead == 0)
+            {
+                // We really want to know what the minimum number of bytes per char
+                // is for our encoding.  Otherwise for UnicodeEncoding we'd have to
+                // do ~1+log(n) reads to read n characters.
+                // Assume 1 byte can be 1 char unless _2BytesPerChar is true.
+                numBytes = _2BytesPerChar ? 2 : 1;
+
+                int r = _stream.ReadByte();
+                _charBytes[0] = (byte)r;
+                if (r == -1)
+                {
+                    numBytes = 0;
+                }
+                if (numBytes == 2)
+                {
+                    r = _stream.ReadByte();
+                    _charBytes[1] = (byte)r;
+                    if (r == -1)
+                    {
+                        numBytes = 1;
+                    }
+                }
+
+                if (numBytes == 0)
+                {
+                    return -1;
+                }
+
+                Debug.Assert(numBytes == 1 || numBytes == 2, "BinaryReader::ReadOneChar assumes it's reading one or 2 bytes only.");
+
+                try
+                {
+                    charsRead = _decoder.GetChars(_charBytes, 0, numBytes, _singleChar, 0);
+                }
+                catch
+                {
+                    // Handle surrogate char 
+
+                    if (_stream.CanSeek)
+                    {
+                        _stream.Seek((posSav - _stream.Position), SeekOrigin.Current);
+                    }
+                    // else - we can't do much here
+
+                    throw;
+                }
+
+                Debug.Assert(charsRead < 2, "BinaryReader::ReadOneChar - assuming we only got 0 or 1 char, not 2!");
+            }
+            if (charsRead == 0)
+                return -1;
+            return _singleChar[0];
         }
 
         public virtual bool ReadBoolean()
@@ -480,87 +551,6 @@ namespace System.IO
             // we may have read fewer than the number of characters requested if end of stream reached 
             // or if the encoding makes the char count too big for the buffer (e.g. fallback sequence)
             return (buffer.Length - charsRemaining);
-        }
-
-        private int InternalReadOneChar()
-        {
-            // I know having a separate InternalReadOneChar method seems a little 
-            // redundant, but this makes a scenario like the security parser code
-            // 20% faster, in addition to the optimizations for UnicodeEncoding I
-            // put in InternalReadChars.   
-            int charsRead = 0;
-            int numBytes = 0;
-            long posSav = posSav = 0;
-
-            if (_stream.CanSeek)
-            {
-                posSav = _stream.Position;
-            }
-
-            if (_charBytes == null)
-            {
-                _charBytes = new byte[MaxCharBytesSize]; //REVIEW: We need at most 2 bytes/char here? 
-            }
-            if (_singleChar == null)
-            {
-                _singleChar = new char[1];
-            }
-
-            while (charsRead == 0)
-            {
-                // We really want to know what the minimum number of bytes per char
-                // is for our encoding.  Otherwise for UnicodeEncoding we'd have to
-                // do ~1+log(n) reads to read n characters.
-                // Assume 1 byte can be 1 char unless _2BytesPerChar is true.
-                numBytes = _2BytesPerChar ? 2 : 1;
-
-                int r = _stream.ReadByte();
-                _charBytes[0] = (byte)r;
-                if (r == -1)
-                {
-                    numBytes = 0;
-                }
-                if (numBytes == 2)
-                {
-                    r = _stream.ReadByte();
-                    _charBytes[1] = (byte)r;
-                    if (r == -1)
-                    {
-                        numBytes = 1;
-                    }
-                }
-
-                if (numBytes == 0)
-                {
-                    // Console.WriteLine("Found no bytes.  We're outta here.");
-                    return -1;
-                }
-
-                Debug.Assert(numBytes == 1 || numBytes == 2, "BinaryReader::InternalReadOneChar assumes it's reading one or 2 bytes only.");
-
-                try
-                {
-                    charsRead = _decoder.GetChars(_charBytes, 0, numBytes, _singleChar, 0);
-                }
-                catch
-                {
-                    // Handle surrogate char 
-
-                    if (_stream.CanSeek)
-                    {
-                        _stream.Seek((posSav - _stream.Position), SeekOrigin.Current);
-                    }
-                    // else - we can't do much here
-
-                    throw;
-                }
-
-                Debug.Assert(charsRead < 2, "InternalReadOneChar - assuming we only got 0 or 1 char, not 2!");
-                //                Console.WriteLine("That became: " + charsRead + " characters.");
-            }
-            if (charsRead == 0)
-                return -1;
-            return _singleChar[0];
         }
 
         public virtual char[] ReadChars(int count)
