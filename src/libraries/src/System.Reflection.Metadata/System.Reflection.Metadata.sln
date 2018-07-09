@@ -1,18 +1,18 @@
 Microsoft Visual Studio Solution File, Format Version 12.00
-# Visual Studio 14
-VisualStudioVersion = 14.0.25420.1
+# Visual Studio 15
+VisualStudioVersion = 15.0.27213.1
 MinimumVisualStudioVersion = 10.0.40219.1
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "System.Reflection.Metadata.Tests", "tests\System.Reflection.Metadata.Tests.csproj", "{7061832A-E8CF-4AB6-A8DC-44D2F5A43A13}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "System.Reflection.Metadata.Tests", "tests\System.Reflection.Metadata.Tests.csproj", "{7061832A-E8CF-4AB6-A8DC-44D2F5A43A13}"
 	ProjectSection(ProjectDependencies) = postProject
 		{F3E433C8-352F-4944-BF7F-765CE435370D} = {F3E433C8-352F-4944-BF7F-765CE435370D}
 	EndProjectSection
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "System.Reflection.Metadata", "src\System.Reflection.Metadata.csproj", "{F3E433C8-352F-4944-BF7F-765CE435370D}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "System.Reflection.Metadata", "src\System.Reflection.Metadata.csproj", "{F3E433C8-352F-4944-BF7F-765CE435370D}"
 	ProjectSection(ProjectDependencies) = postProject
 		{69B25962-B4C2-4295-8809-5653CD03FC75} = {69B25962-B4C2-4295-8809-5653CD03FC75}
 	EndProjectSection
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "System.Reflection.Metadata", "ref\System.Reflection.Metadata.csproj", "{69B25962-B4C2-4295-8809-5653CD03FC75}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "System.Reflection.Metadata", "ref\System.Reflection.Metadata.csproj", "{69B25962-B4C2-4295-8809-5653CD03FC75}"
 EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "tests", "tests", "{1A2F9F4A-A032-433E-B914-ADD5992BB178}"
 EndProject
@@ -46,5 +46,8 @@ Global
 		{7061832A-E8CF-4AB6-A8DC-44D2F5A43A13} = {1A2F9F4A-A032-433E-B914-ADD5992BB178}
 		{F3E433C8-352F-4944-BF7F-765CE435370D} = {E107E9C1-E893-4E87-987E-04EF0DCEAEFD}
 		{69B25962-B4C2-4295-8809-5653CD03FC75} = {2E666815-2EDB-464B-9DF6-380BF4789AD4}
+	EndGlobalSection
+	GlobalSection(ExtensibilityGlobals) = postSolution
+		SolutionGuid = {F6593193-C664-402E-987E-54EDBA862D77}
 	EndGlobalSection
 EndGlobal

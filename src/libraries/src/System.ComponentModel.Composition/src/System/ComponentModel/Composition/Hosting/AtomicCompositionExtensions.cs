@@ -2,7 +2,6 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
-using Microsoft.Internal;
 
 namespace System.ComponentModel.Composition.Hosting
 {
@@ -10,7 +9,10 @@ namespace System.ComponentModel.Composition.Hosting
     {
         internal static T GetValueAllowNull<T>(this AtomicComposition atomicComposition, T defaultResultAndKey) where T : class
         {
-            Assumes.NotNull(defaultResultAndKey);
+            if (defaultResultAndKey == null)
+            {
+                throw new ArgumentNullException(nameof(defaultResultAndKey));
+            }
 
             return GetValueAllowNull<T>(atomicComposition, defaultResultAndKey, defaultResultAndKey);
         }
@@ -28,7 +30,10 @@ namespace System.ComponentModel.Composition.Hosting
 
         internal static void AddRevertActionAllowNull(this AtomicComposition atomicComposition, Action action)
         {
-            Assumes.NotNull(action);
+            if (action == null)
+            {
+                throw new ArgumentNullException(nameof(action));
+            }
 
             if (atomicComposition == null)
             {
@@ -42,7 +47,10 @@ namespace System.ComponentModel.Composition.Hosting
 
         internal static void AddCompleteActionAllowNull(this AtomicComposition atomicComposition, Action action)
         {
-            Assumes.NotNull(action);
+            if (action == null)
+            {
+                throw new ArgumentNullException(nameof(action));
+            }
 
             if (atomicComposition == null)
             {

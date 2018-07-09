@@ -29,7 +29,10 @@ namespace System.ComponentModel.Composition
 
         public ReflectionContext CreateReflectionContext()
         {
-            Assumes.NotNull<Type>(_reflectionContextType);
+            if (_reflectionContextType == null)
+            {
+                throw new ArgumentNullException(nameof(_reflectionContextType));
+            }
 
             if (!_reflectionContextType.IsPublic)
             {

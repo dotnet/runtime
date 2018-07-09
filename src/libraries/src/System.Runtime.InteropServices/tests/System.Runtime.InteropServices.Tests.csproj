@@ -1,19 +1,10 @@
-﻿<?xml version="1.0" encoding="utf-8"?>
-<Project ToolsVersion="14.0" DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
-  <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.props))\dir.props" />
+<Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
     <ProjectGuid>{A824F4CD-935B-4496-A1B2-C3664936DA7B}</ProjectGuid>
     <DefineConstants Condition="'$(TargetGroup)'=='netcoreapp'">$(DefineConstants);netcoreapp</DefineConstants>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
+    <Configurations>netcoreapp-Windows_NT-Debug;netcoreapp-Windows_NT-Release;netfx-Windows_NT-Debug;netfx-Windows_NT-Release;netstandard-Debug;netstandard-Release;uap-Windows_NT-Debug;uap-Windows_NT-Release</Configurations>
   </PropertyGroup>
-  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'netcoreapp-Windows_NT-Debug|AnyCPU'" />
-  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'netcoreapp-Windows_NT-Release|AnyCPU'" />
-  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'netfx-Windows_NT-Debug|AnyCPU'" />
-  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'netfx-Windows_NT-Release|AnyCPU'" />
-  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'netstandard-Debug|AnyCPU'" />
-  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'netstandard-Release|AnyCPU'" />
-  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'uap-Windows_NT-Debug|AnyCPU'" />
-  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'uap-Windows_NT-Release|AnyCPU'" />
   <ItemGroup>
     <Compile Include="System\Runtime\CompilerServices\IUnknownConstantAttributeTests.cs" />
     <Compile Include="System\Runtime\InteropServices\AllowReversePInvokeCallsAttributeTests.cs" />
@@ -53,6 +44,32 @@
     <Compile Include="System\Runtime\InteropServices\MarshalAsAttributeTests.cs" />
     <Compile Include="System\Runtime\InteropServices\MarshalTests.cs" />
     <Compile Include="System\Runtime\InteropServices\MarshalTests.Windows.cs" Condition="'$(TargetsWindows)' == 'true'" />
+    <Compile Include="System\Runtime\InteropServices\Marshal\Copy\ByteArrayTests.cs" />
+    <Compile Include="System\Runtime\InteropServices\Marshal\Copy\CharArrayTests.cs" />
+    <Compile Include="System\Runtime\InteropServices\Marshal\Copy\DoubleArrayTests.cs" />
+    <Compile Include="System\Runtime\InteropServices\Marshal\Copy\Int16ArrayTests.cs" />
+    <Compile Include="System\Runtime\InteropServices\Marshal\Copy\Int32ArrayTests.cs" />
+    <Compile Include="System\Runtime\InteropServices\Marshal\Copy\Int64ArrayTests.cs" />
+    <Compile Include="System\Runtime\InteropServices\Marshal\Copy\IntPtrArrayTests.cs" />
+    <Compile Include="System\Runtime\InteropServices\Marshal\Copy\SingleArrayTests.cs" />
+    <Compile Include="System\Runtime\InteropServices\Marshal\DestroyStructureTests.cs" />
+    <Compile Include="System\Runtime\InteropServices\Marshal\PtrToStructureTests.cs" />
+    <Compile Include="System\Runtime\InteropServices\Marshal\PtrToStringTests.cs" />
+    <Compile Include="System\Runtime\InteropServices\Marshal\SizeOfTests.cs" />
+    <Compile Include="System\Runtime\InteropServices\Marshal\GetExceptionForHRTests.cs" />
+    <Compile Include="System\Runtime\InteropServices\Marshal\GetNativeVariantForObjectTests.cs" />
+    <Compile Include="System\Runtime\InteropServices\Marshal\GetObjectForNativeVariantTests.cs" />
+    <Compile Include="System\Runtime\InteropServices\Marshal\GetObjectsForNativeVariantsTests.cs" />
+    <Compile Include="System\Runtime\InteropServices\Marshal\OffsetOfTests.cs" />
+    <Compile Include="System\Runtime\InteropServices\Marshal\ReadWrite\ByteTests.cs" />
+    <Compile Include="System\Runtime\InteropServices\Marshal\ReadWrite\Int16Tests.cs" />
+    <Compile Include="System\Runtime\InteropServices\Marshal\ReadWrite\Int32Tests.cs" />
+    <Compile Include="System\Runtime\InteropServices\Marshal\ReadWrite\Int64Tests.cs" />
+    <Compile Include="System\Runtime\InteropServices\Marshal\ReadWrite\IntPtrTests.cs" />
+    <Compile Include="System\Runtime\InteropServices\Marshal\ReadWrite\ObjectTests.cs" />
+    <Compile Include="System\Runtime\InteropServices\Marshal\StringMarshalingTests.cs" />
+    <Compile Include="System\Runtime\InteropServices\Marshal\StructureToPtrTests.cs" />
+    <Compile Include="System\Runtime\InteropServices\Marshal\UnsafeAddrOfPinnedArrayElementTests.cs" />
     <Compile Condition="'$(TargetGroup)' != 'uap'" Include="System\Runtime\InteropServices\PrimaryInteropAssemblyAttributeTests.cs" />
     <Compile Include="System\Runtime\InteropServices\ProgIdAttributeTests.cs" />
     <Compile Include="System\Runtime\InteropServices\RuntimeEnvironmentTests.cs" />
@@ -73,5 +90,4 @@
     <Compile Include="System\Runtime\InteropServices\TypeLibVarAttributeTests.cs" />
     <Compile Include="System\Runtime\InteropServices\TypeLibVersionAttributeTests.cs" />
   </ItemGroup>
-  <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.targets))\dir.targets" />
 </Project>

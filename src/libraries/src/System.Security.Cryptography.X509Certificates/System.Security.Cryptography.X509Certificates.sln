@@ -1,18 +1,18 @@
 Microsoft Visual Studio Solution File, Format Version 12.00
-# Visual Studio 14
-VisualStudioVersion = 14.0.25420.1
+# Visual Studio 15
+VisualStudioVersion = 15.0.27213.1
 MinimumVisualStudioVersion = 10.0.40219.1
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "System.Security.Cryptography.X509Certificates.Tests", "tests\System.Security.Cryptography.X509Certificates.Tests.csproj", "{A28B0064-EFB2-4B77-B97C-DECF5DAB074E}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "System.Security.Cryptography.X509Certificates.Tests", "tests\System.Security.Cryptography.X509Certificates.Tests.csproj", "{A28B0064-EFB2-4B77-B97C-DECF5DAB074E}"
 	ProjectSection(ProjectDependencies) = postProject
 		{6F8576C2-6CD0-4DF3-8394-00B002D82E40} = {6F8576C2-6CD0-4DF3-8394-00B002D82E40}
 	EndProjectSection
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "System.Security.Cryptography.X509Certificates", "src\System.Security.Cryptography.X509Certificates.csproj", "{6F8576C2-6CD0-4DF3-8394-00B002D82E40}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "System.Security.Cryptography.X509Certificates", "src\System.Security.Cryptography.X509Certificates.csproj", "{6F8576C2-6CD0-4DF3-8394-00B002D82E40}"
 	ProjectSection(ProjectDependencies) = postProject
 		{B37248D0-B191-4971-AD50-01CFEDF1E09B} = {B37248D0-B191-4971-AD50-01CFEDF1E09B}
 	EndProjectSection
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "System.Security.Cryptography.X509Certificates", "ref\System.Security.Cryptography.X509Certificates.csproj", "{B37248D0-B191-4971-AD50-01CFEDF1E09B}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "System.Security.Cryptography.X509Certificates", "ref\System.Security.Cryptography.X509Certificates.csproj", "{B37248D0-B191-4971-AD50-01CFEDF1E09B}"
 EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "tests", "tests", "{1A2F9F4A-A032-433E-B914-ADD5992BB178}"
 EndProject
@@ -46,5 +46,8 @@ Global
 		{A28B0064-EFB2-4B77-B97C-DECF5DAB074E} = {1A2F9F4A-A032-433E-B914-ADD5992BB178}
 		{6F8576C2-6CD0-4DF3-8394-00B002D82E40} = {E107E9C1-E893-4E87-987E-04EF0DCEAEFD}
 		{B37248D0-B191-4971-AD50-01CFEDF1E09B} = {2E666815-2EDB-464B-9DF6-380BF4789AD4}
+	EndGlobalSection
+	GlobalSection(ExtensibilityGlobals) = postSolution
+		SolutionGuid = {F153909E-6E31-4502-B353-AAA99D13C50D}
 	EndGlobalSection
 EndGlobal

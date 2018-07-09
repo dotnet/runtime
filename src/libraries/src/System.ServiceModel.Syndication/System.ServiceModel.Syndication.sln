@@ -1,18 +1,18 @@
 Microsoft Visual Studio Solution File, Format Version 12.00
-# Visual Studio 14
-VisualStudioVersion = 14.0.25420.1
+# Visual Studio 15
+VisualStudioVersion = 15.0.27213.1
 MinimumVisualStudioVersion = 10.0.40219.1
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "System.ServiceModel.Syndication.Tests", "tests\System.ServiceModel.Syndication.Tests.csproj", "{A622B2C0-DD74-4218-9CF0-F9B2E52F4E91}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "System.ServiceModel.Syndication.Tests", "tests\System.ServiceModel.Syndication.Tests.csproj", "{A622B2C0-DD74-4218-9CF0-F9B2E52F4E91}"
 	ProjectSection(ProjectDependencies) = postProject
 		{C2AB129B-E3EC-465B-B1B7-0F7D414B1E74} = {C2AB129B-E3EC-465B-B1B7-0F7D414B1E74}
 	EndProjectSection
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "System.ServiceModel.Syndication", "src\System.ServiceModel.Syndication.csproj", "{C2AB129B-E3EC-465B-B1B7-0F7D414B1E74}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "System.ServiceModel.Syndication", "src\System.ServiceModel.Syndication.csproj", "{C2AB129B-E3EC-465B-B1B7-0F7D414B1E74}"
 	ProjectSection(ProjectDependencies) = postProject
 		{E81F4C7C-2000-4449-BEE6-B2E84DE218F7} = {E81F4C7C-2000-4449-BEE6-B2E84DE218F7}
 	EndProjectSection
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "System.ServiceModel.Syndication", "ref\System.ServiceModel.Syndication.csproj", "{E81F4C7C-2000-4449-BEE6-B2E84DE218F7}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "System.ServiceModel.Syndication", "ref\System.ServiceModel.Syndication.csproj", "{E81F4C7C-2000-4449-BEE6-B2E84DE218F7}"
 EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "tests", "tests", "{1A2F9F4A-A032-433E-B914-ADD5992BB178}"
 EndProject
@@ -46,5 +46,8 @@ Global
 		{A622B2C0-DD74-4218-9CF0-F9B2E52F4E91} = {1A2F9F4A-A032-433E-B914-ADD5992BB178}
 		{C2AB129B-E3EC-465B-B1B7-0F7D414B1E74} = {E107E9C1-E893-4E87-987E-04EF0DCEAEFD}
 		{E81F4C7C-2000-4449-BEE6-B2E84DE218F7} = {2E666815-2EDB-464B-9DF6-380BF4789AD4}
+	EndGlobalSection
+	GlobalSection(ExtensibilityGlobals) = postSolution
+		SolutionGuid = {319A2B28-47E4-4311-B070-1F9EF259506B}
 	EndGlobalSection
 EndGlobal

@@ -1,23 +1,23 @@
 Microsoft Visual Studio Solution File, Format Version 12.00
-# Visual Studio 14
-VisualStudioVersion = 14.0.25420.1
+# Visual Studio 15
+VisualStudioVersion = 15.0.27213.1
 MinimumVisualStudioVersion = 10.0.40219.1
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "System.Net.Http.WinHttpHandler.Functional.Tests", "tests\FunctionalTests\System.Net.Http.WinHttpHandler.Functional.Tests.csproj", "{17D5CC82-F72C-4DD2-B6DB-DE7FB2F19C34}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "System.Net.Http.WinHttpHandler.Functional.Tests", "tests\FunctionalTests\System.Net.Http.WinHttpHandler.Functional.Tests.csproj", "{17D5CC82-F72C-4DD2-B6DB-DE7FB2F19C34}"
 	ProjectSection(ProjectDependencies) = postProject
 		{F75E3008-0562-42DF-BE72-C1384F12157E} = {F75E3008-0562-42DF-BE72-C1384F12157E}
 	EndProjectSection
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "System.Net.Http.WinHttpHandler.Unit.Tests", "tests\UnitTests\System.Net.Http.WinHttpHandler.Unit.Tests.csproj", "{A2ECDEDB-12B7-402C-9230-152B7601179F}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "System.Net.Http.WinHttpHandler.Unit.Tests", "tests\UnitTests\System.Net.Http.WinHttpHandler.Unit.Tests.csproj", "{A2ECDEDB-12B7-402C-9230-152B7601179F}"
 	ProjectSection(ProjectDependencies) = postProject
 		{F75E3008-0562-42DF-BE72-C1384F12157E} = {F75E3008-0562-42DF-BE72-C1384F12157E}
 	EndProjectSection
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "System.Net.Http.WinHttpHandler", "src\System.Net.Http.WinHttpHandler.csproj", "{F75E3008-0562-42DF-BE72-C1384F12157E}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "System.Net.Http.WinHttpHandler", "src\System.Net.Http.WinHttpHandler.csproj", "{F75E3008-0562-42DF-BE72-C1384F12157E}"
 	ProjectSection(ProjectDependencies) = postProject
 		{8C9AABA7-A8F0-4A5A-8A5F-65A0EFC03483} = {8C9AABA7-A8F0-4A5A-8A5F-65A0EFC03483}
 	EndProjectSection
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "System.Net.Http.WinHttpHandler", "ref\System.Net.Http.WinHttpHandler.csproj", "{8C9AABA7-A8F0-4A5A-8A5F-65A0EFC03483}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "System.Net.Http.WinHttpHandler", "ref\System.Net.Http.WinHttpHandler.csproj", "{8C9AABA7-A8F0-4A5A-8A5F-65A0EFC03483}"
 EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "tests", "tests", "{1A2F9F4A-A032-433E-B914-ADD5992BB178}"
 EndProject
@@ -56,5 +56,8 @@ Global
 		{A2ECDEDB-12B7-402C-9230-152B7601179F} = {1A2F9F4A-A032-433E-B914-ADD5992BB178}
 		{F75E3008-0562-42DF-BE72-C1384F12157E} = {E107E9C1-E893-4E87-987E-04EF0DCEAEFD}
 		{8C9AABA7-A8F0-4A5A-8A5F-65A0EFC03483} = {2E666815-2EDB-464B-9DF6-380BF4789AD4}
+	EndGlobalSection
+	GlobalSection(ExtensibilityGlobals) = postSolution
+		SolutionGuid = {5537B438-75BD-458F-A470-C34DA2A3720F}
 	EndGlobalSection
 EndGlobal

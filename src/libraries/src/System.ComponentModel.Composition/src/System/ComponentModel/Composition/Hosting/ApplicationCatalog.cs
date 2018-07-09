@@ -74,7 +74,10 @@ namespace System.ComponentModel.Composition.Hosting
                         if(_innerCatalog == null)
                         {
                             var location = AppDomain.CurrentDomain.BaseDirectory;
-                            Assumes.NotNull(location);
+                            if(location == null)
+                            {
+                                throw new Exception(SR.Diagnostic_InternalExceptionMessage);
+                            }
         
                             var catalogs = new List<ComposablePartCatalog>();
                             catalogs.Add(CreateCatalog(location, "*.exe"));

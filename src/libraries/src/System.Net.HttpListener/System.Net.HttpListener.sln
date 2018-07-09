@@ -1,18 +1,18 @@
 Microsoft Visual Studio Solution File, Format Version 12.00
-# Visual Studio 14
-VisualStudioVersion = 14.0.25420.1
+# Visual Studio 15
+VisualStudioVersion = 15.0.27213.1
 MinimumVisualStudioVersion = 10.0.40219.1
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "System.Net.HttpListener.Tests", "tests\System.Net.HttpListener.Tests.csproj", "{851A40FE-7F07-415D-8592-5FE2096E84D3}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "System.Net.HttpListener.Tests", "tests\System.Net.HttpListener.Tests.csproj", "{851A40FE-7F07-415D-8592-5FE2096E84D3}"
 	ProjectSection(ProjectDependencies) = postProject
 		{31E8D18B-9E7D-4924-AFD8-5BD8D75C31FB} = {31E8D18B-9E7D-4924-AFD8-5BD8D75C31FB}
 	EndProjectSection
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "System.Net.HttpListener", "src\System.Net.HttpListener.csproj", "{31E8D18B-9E7D-4924-AFD8-5BD8D75C31FB}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "System.Net.HttpListener", "src\System.Net.HttpListener.csproj", "{31E8D18B-9E7D-4924-AFD8-5BD8D75C31FB}"
 	ProjectSection(ProjectDependencies) = postProject
 		{41899248-F846-4F88-91A1-01B037F93BF3} = {41899248-F846-4F88-91A1-01B037F93BF3}
 	EndProjectSection
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "System.Net.HttpListener", "ref\System.Net.HttpListener.csproj", "{41899248-F846-4F88-91A1-01B037F93BF3}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "System.Net.HttpListener", "ref\System.Net.HttpListener.csproj", "{41899248-F846-4F88-91A1-01B037F93BF3}"
 EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "tests", "tests", "{1A2F9F4A-A032-433E-B914-ADD5992BB178}"
 EndProject
@@ -46,5 +46,8 @@ Global
 		{851A40FE-7F07-415D-8592-5FE2096E84D3} = {1A2F9F4A-A032-433E-B914-ADD5992BB178}
 		{31E8D18B-9E7D-4924-AFD8-5BD8D75C31FB} = {E107E9C1-E893-4E87-987E-04EF0DCEAEFD}
 		{41899248-F846-4F88-91A1-01B037F93BF3} = {2E666815-2EDB-464B-9DF6-380BF4789AD4}
+	EndGlobalSection
+	GlobalSection(ExtensibilityGlobals) = postSolution
+		SolutionGuid = {1E616CB8-18E3-46C0-B26F-25D094E2E5E0}
 	EndGlobalSection
 EndGlobal

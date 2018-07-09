@@ -3,11 +3,9 @@
 // See the LICENSE file in the project root for more information.
 
 using System.Collections.Generic;
-using System.ComponentModel.Composition.Diagnostics;
 using System.ComponentModel.Composition.Extensibility;
 using System.ComponentModel.Composition.Factories;
 using System.ComponentModel.Composition.Primitives;
-using System.Diagnostics;
 using System.Linq;
 using System.UnitTesting;
 using Microsoft.Internal;

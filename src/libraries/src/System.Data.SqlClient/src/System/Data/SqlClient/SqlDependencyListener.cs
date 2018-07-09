@@ -529,10 +529,6 @@ internal class SqlDependencyProcessDispatcher : MarshalByRefObject
             }
         }
 
-        // SxS: this method uses WindowsIdentity.Impersonate to impersonate the current thread with the
-        // credentials used to create this SqlConnectionContainer.
-        [ResourceExposure(ResourceScope.None)]
-        [ResourceConsumption(ResourceScope.Process, ResourceScope.Process)]
         private void Restart(object unused)
         { // Unused arg required by TimerCallback.
             try

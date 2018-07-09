@@ -1,28 +1,28 @@
 Microsoft Visual Studio Solution File, Format Version 12.00
-# Visual Studio 14
-VisualStudioVersion = 14.0.25420.1
+# Visual Studio 15
+VisualStudioVersion = 15.0.27213.1
 MinimumVisualStudioVersion = 10.0.40219.1
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "System.Console.Tests", "tests\System.Console.Tests.csproj", "{3ED7BCF1-34B9-49B7-9C25-0BC3304C0858}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "System.Console.Tests", "tests\System.Console.Tests.csproj", "{3ED7BCF1-34B9-49B7-9C25-0BC3304C0858}"
 	ProjectSection(ProjectDependencies) = postProject
 		{F9DF2357-81B4-4317-908E-512DA9395583} = {F9DF2357-81B4-4317-908E-512DA9395583}
 	EndProjectSection
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "System.Console.Manual.Tests", "tests\ManualTests\System.Console.Manual.Tests.csproj", "{99E5069D-241F-48A6-8F29-404B4AED72BF}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "System.Console.Manual.Tests", "tests\ManualTests\System.Console.Manual.Tests.csproj", "{99E5069D-241F-48A6-8F29-404B4AED72BF}"
 	ProjectSection(ProjectDependencies) = postProject
 		{F9DF2357-81B4-4317-908E-512DA9395583} = {F9DF2357-81B4-4317-908E-512DA9395583}
 	EndProjectSection
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "System.Console.Performance.Tests", "tests\Performance\System.Console.Performance.Tests.csproj", "{14BE0BA2-28BC-467A-AA76-C6B86D21FDAE}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "System.Console.Performance.Tests", "tests\Performance\System.Console.Performance.Tests.csproj", "{14BE0BA2-28BC-467A-AA76-C6B86D21FDAE}"
 	ProjectSection(ProjectDependencies) = postProject
 		{F9DF2357-81B4-4317-908E-512DA9395583} = {F9DF2357-81B4-4317-908E-512DA9395583}
 	EndProjectSection
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "System.Console", "src\System.Console.csproj", "{F9DF2357-81B4-4317-908E-512DA9395583}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "System.Console", "src\System.Console.csproj", "{F9DF2357-81B4-4317-908E-512DA9395583}"
 	ProjectSection(ProjectDependencies) = postProject
 		{9EB75B87-2BE5-48E5-8988-A0929CE6664E} = {9EB75B87-2BE5-48E5-8988-A0929CE6664E}
 	EndProjectSection
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "System.Console", "ref\System.Console.csproj", "{9EB75B87-2BE5-48E5-8988-A0929CE6664E}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "System.Console", "ref\System.Console.csproj", "{9EB75B87-2BE5-48E5-8988-A0929CE6664E}"
 EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "tests", "tests", "{1A2F9F4A-A032-433E-B914-ADD5992BB178}"
 EndProject
@@ -66,5 +66,8 @@ Global
 		{14BE0BA2-28BC-467A-AA76-C6B86D21FDAE} = {1A2F9F4A-A032-433E-B914-ADD5992BB178}
 		{F9DF2357-81B4-4317-908E-512DA9395583} = {E107E9C1-E893-4E87-987E-04EF0DCEAEFD}
 		{9EB75B87-2BE5-48E5-8988-A0929CE6664E} = {2E666815-2EDB-464B-9DF6-380BF4789AD4}
+	EndGlobalSection
+	GlobalSection(ExtensibilityGlobals) = postSolution
+		SolutionGuid = {2BF05491-08EF-445E-ADBA-4D0DF54C0B6A}
 	EndGlobalSection
 EndGlobal

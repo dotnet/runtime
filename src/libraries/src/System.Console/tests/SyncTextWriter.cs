@@ -3,6 +3,8 @@
 // See the LICENSE file in the project root for more information.
 
 using System;
+using System.Collections;
+using System.Collections.Generic;
 using System.IO;
 using System.Text;
 using System.Threading;
@@ -11,7 +13,6 @@ using Xunit;
 
 public class SyncTextWriter
 {
-
     [Fact]
     public void SyncTextWriterLockedOnThis()
     {
@@ -22,14 +23,16 @@ public class SyncTextWriter
             Console.SetOut(newWriter);
             TextWriter syncWriter = Console.Out;
 
-            bool called = false;
-            newWriter.Callback = _ =>
+            newWriter.Callback = () =>
             {
                 Assert.True(Monitor.IsEntered(syncWriter));
-                called = true;
             };
             Console.Write("c");
-            Assert.True(called);
+            Assert.True(newWriter.WriteCharCalled);
+
+            Console.Write("{0}", 32);
+            Assert.True(newWriter.WriteFormatCalled);
+
         }
         finally
         {
@@ -39,11 +42,24 @@ public class SyncTextWriter
 
     private sealed class CallbackTextWriter : TextWriter
     {
-        internal Action<char> Callback;
+        internal Action Callback;
+
+        public bool WriteCharCalled;
+        public bool WriteFormatCalled;
+
 
         public override Encoding Encoding { get { return Encoding.UTF8; } }
 
-        public override void Write(char value) { Callback(value); }
-    }
+        public override void Write(char value)
+        {
+            WriteCharCalled = true;
+            Callback();
+        }
 
+        public override void Write(string format, object arg0)
+        {
+            WriteFormatCalled = true;
+            Callback();
+        }
+    }
 }

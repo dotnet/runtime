@@ -1,13 +1,13 @@
 Microsoft Visual Studio Solution File, Format Version 12.00
-# Visual Studio 14
-VisualStudioVersion = 14.0.25420.1
+# Visual Studio 15
+VisualStudioVersion = 15.0.27213.1
 MinimumVisualStudioVersion = 10.0.40219.1
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "System.Text.Encodings.Web.Tests", "tests\System.Text.Encodings.Web.Tests.csproj", "{2337A55E-7077-4FBE-8132-2CD8DDC18671}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "System.Text.Encodings.Web.Tests", "tests\System.Text.Encodings.Web.Tests.csproj", "{2337A55E-7077-4FBE-8132-2CD8DDC18671}"
 	ProjectSection(ProjectDependencies) = postProject
 		{B7EDBF00-765A-48E8-B593-CD668288E274} = {B7EDBF00-765A-48E8-B593-CD668288E274}
 	EndProjectSection
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "System.Text.Encodings.Web", "src\System.Text.Encodings.Web.csproj", "{B7EDBF00-765A-48E8-B593-CD668288E274}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "System.Text.Encodings.Web", "src\System.Text.Encodings.Web.csproj", "{B7EDBF00-765A-48E8-B593-CD668288E274}"
 EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "tests", "tests", "{1A2F9F4A-A032-433E-B914-ADD5992BB178}"
 EndProject
@@ -34,5 +34,8 @@ Global
 	GlobalSection(NestedProjects) = preSolution
 		{2337A55E-7077-4FBE-8132-2CD8DDC18671} = {1A2F9F4A-A032-433E-B914-ADD5992BB178}
 		{B7EDBF00-765A-48E8-B593-CD668288E274} = {E107E9C1-E893-4E87-987E-04EF0DCEAEFD}
+	EndGlobalSection
+	GlobalSection(ExtensibilityGlobals) = postSolution
+		SolutionGuid = {2EFFAFC0-87C3-45D1-88AF-35F0AC866D70}
 	EndGlobalSection
 EndGlobal

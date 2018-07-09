@@ -18,7 +18,7 @@ namespace System.Threading.Threads.Tests
         public static string HostRunnerTest = HostRunner;
     }
 
-    public static partial class ThreadTests 
+    public static partial class ThreadTests
     {
         private const int UnexpectedTimeoutMilliseconds = ThreadTestHelpers.UnexpectedTimeoutMilliseconds;
         private const int ExpectedTimeoutMilliseconds = ThreadTestHelpers.ExpectedTimeoutMilliseconds;
@@ -1024,6 +1024,58 @@ namespace System.Threading.Threads.Tests
             Thread.SpinWait(0);
             Thread.SpinWait(1);
             Thread.Yield();
+        }
+
+        [Fact]
+        [PlatformSpecific(TestPlatforms.Windows)]
+        public static void WindowsPrincipalPolicyTest_Windows()
+        {
+            DummyClass.RemoteInvoke(() =>
+            {
+                    AppDomain.CurrentDomain.SetPrincipalPolicy(PrincipalPolicy.WindowsPrincipal);
+                    Assert.Equal(Environment.UserDomainName + @"\" + Environment.UserName, Thread.CurrentPrincipal.Identity.Name);
+            }).Dispose();
+                }
+
+        [Fact]
+        [PlatformSpecific(TestPlatforms.AnyUnix)]
+        public static void WindowsPrincipalPolicyTest_Unix()
+        {
+            DummyClass.RemoteInvoke(() =>
+            {
+                AppDomain.CurrentDomain.SetPrincipalPolicy(PrincipalPolicy.WindowsPrincipal);
+                Assert.Throws<PlatformNotSupportedException>(() => Thread.CurrentPrincipal);
+            }).Dispose();
+        }
+
+        [Fact]
+        public static void UnauthenticatedPrincipalTest()
+        {
+            DummyClass.RemoteInvoke(() =>
+            {
+                AppDomain.CurrentDomain.SetPrincipalPolicy(PrincipalPolicy.UnauthenticatedPrincipal);
+                Assert.Equal(string.Empty, Thread.CurrentPrincipal.Identity.Name);
+            }).Dispose();
+        }
+
+        [Fact]
+        [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework, "Default principal policy on .Net Framework is Unauthenticated Principal")]
+        public static void DefaultPrincipalPolicyTest()
+        {
+            DummyClass.RemoteInvoke(() =>
+            {
+                Assert.Null(Thread.CurrentPrincipal);
+            }).Dispose();
+        }
+
+        [Fact]
+        [SkipOnTargetFramework(~TargetFrameworkMonikers.NetFramework, "Default principal policy on .Net Core is No Principal")]
+        public static void DefaultPrincipalPolicyTest_Desktop()
+        {
+            DummyClass.RemoteInvoke(() =>
+            {
+                Assert.Equal(string.Empty, Thread.CurrentPrincipal.Identity.Name);
+            }).Dispose();
         }
     }
 }

@@ -238,6 +238,7 @@ endfunction()
 include(configure.cmake)
 
 add_subdirectory(System.IO.Compression.Native)
+add_subdirectory(System.IO.Ports.Native)
 
 add_compile_options(-Weverything)
 

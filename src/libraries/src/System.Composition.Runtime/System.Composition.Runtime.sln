@@ -1,13 +1,13 @@
 Microsoft Visual Studio Solution File, Format Version 12.00
-# Visual Studio 14
-VisualStudioVersion = 14.0.25420.1
+# Visual Studio 15
+VisualStudioVersion = 15.0.27213.1
 MinimumVisualStudioVersion = 10.0.40219.1
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "System.Composition.Runtime.Tests", "tests\System.Composition.Runtime.Tests.csproj", "{3B6042E6-9765-4A03-9089-92050100C85E}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "System.Composition.Runtime.Tests", "tests\System.Composition.Runtime.Tests.csproj", "{3B6042E6-9765-4A03-9089-92050100C85E}"
 	ProjectSection(ProjectDependencies) = postProject
 		{2711DFD2-8541-4628-BC53-EB784A14CDCF} = {2711DFD2-8541-4628-BC53-EB784A14CDCF}
 	EndProjectSection
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "System.Composition.Runtime", "src\System.Composition.Runtime.csproj", "{2711DFD2-8541-4628-BC53-EB784A14CDCF}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "System.Composition.Runtime", "src\System.Composition.Runtime.csproj", "{2711DFD2-8541-4628-BC53-EB784A14CDCF}"
 EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "tests", "tests", "{1A2F9F4A-A032-433E-B914-ADD5992BB178}"
 EndProject
@@ -34,5 +34,8 @@ Global
 	GlobalSection(NestedProjects) = preSolution
 		{3B6042E6-9765-4A03-9089-92050100C85E} = {1A2F9F4A-A032-433E-B914-ADD5992BB178}
 		{2711DFD2-8541-4628-BC53-EB784A14CDCF} = {E107E9C1-E893-4E87-987E-04EF0DCEAEFD}
+	EndGlobalSection
+	GlobalSection(ExtensibilityGlobals) = postSolution
+		SolutionGuid = {7483F39D-92EE-4290-AA6A-6DCE79DA2791}
 	EndGlobalSection
 EndGlobal

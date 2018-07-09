@@ -4,13 +4,12 @@
 
 #pragma warning disable CS0067 // events are declared but not used
 
-using System;
-using System.Collections.Generic;
 using System.Reflection;
 using System.Runtime.ExceptionServices;
 using System.Runtime.Loader;
 using System.IO;
 using System.Security.Principal;
+using System.Threading;
 
 namespace System
 {
@@ -19,6 +18,9 @@ namespace System
         private static readonly AppDomain s_domain = new AppDomain();
         private readonly object _forLock = new object();
         private IPrincipal _defaultPrincipal;
+        private PrincipalPolicy _principalPolicy = PrincipalPolicy.NoPrincipal;
+        private Func<IPrincipal> s_getWindowsPrincipal;
+        private Func<IPrincipal> s_getUnauthenticatedPrincipal;
 
         private AppDomain() { }
 
@@ -27,6 +29,8 @@ namespace System
         public string BaseDirectory => AppContext.BaseDirectory;
 
         public string RelativeSearchPath => null;
+
+        public AppDomainSetup SetupInformation => new AppDomainSetup();
 
         public event UnhandledExceptionEventHandler UnhandledException
         {
@@ -58,12 +62,12 @@ namespace System
 
         public event EventHandler<FirstChanceExceptionEventArgs> FirstChanceException
         {
-            add 
-            { 
+            add
+            {
 #if uapaot
                 AppContext.SetAppDomain(this);
 #endif
-                AppContext.FirstChanceException += value; 
+                AppContext.FirstChanceException += value;
             }
             remove { AppContext.FirstChanceException -= value; }
         }
@@ -133,7 +137,7 @@ namespace System
                 {
                     throw;
                 }
-                
+
                 // We are catching the TIE here and throws the inner exception only,
                 // this is needed to have a consistent exception story with desktop clr
                 ExceptionDispatchInfo.Throw(targetInvocationException.InnerException);
@@ -261,7 +265,10 @@ namespace System
             remove { AssemblyLoadContext.ResourceResolve -= value; }
         }
 
-        public void SetPrincipalPolicy(PrincipalPolicy policy) { }
+        public void SetPrincipalPolicy(PrincipalPolicy policy)
+        {
+            _principalPolicy = policy;
+        }
 
         public void SetThreadPrincipal(IPrincipal principal)
         {
@@ -279,6 +286,40 @@ namespace System
                 }
                 _defaultPrincipal = principal;
             }
+        }
+
+        public IPrincipal GetThreadPrincipal()
+        {
+            IPrincipal principal = _defaultPrincipal;
+            if (principal == null)
+            {
+                switch (_principalPolicy)
+                {
+                    case PrincipalPolicy.UnauthenticatedPrincipal:
+                        if (s_getUnauthenticatedPrincipal == null)
+                        {
+                            Type type = Type.GetType("System.Security.Principal.GenericPrincipal, System.Security.Claims", throwOnError: true);
+                            Volatile.Write(ref s_getUnauthenticatedPrincipal, (Func<IPrincipal>)Delegate.CreateDelegate(typeof(Func<IPrincipal>), type, "GetDefaultInstance"));
+                        }
+
+                        principal = s_getUnauthenticatedPrincipal();
+                        break;
+
+                    case PrincipalPolicy.WindowsPrincipal:
+                        if (s_getWindowsPrincipal == null)
+                        {
+                            Type type = Type.GetType("System.Security.Principal.WindowsPrincipal, System.Security.Principal.Windows", throwOnError: true);
+                            Volatile.Write(ref s_getWindowsPrincipal,
+                                (Func<IPrincipal>)Delegate.CreateDelegate(typeof(Func<IPrincipal>), type, "GetDefaultInstance", ignoreCase: false, throwOnBindFailure: false)
+                                ?? throw new PlatformNotSupportedException(SR.PlatformNotSupported_Principal));
+                        }
+
+                        principal = s_getWindowsPrincipal();
+                        break;
+                }
+            }
+
+            return principal;
         }
     }
 }

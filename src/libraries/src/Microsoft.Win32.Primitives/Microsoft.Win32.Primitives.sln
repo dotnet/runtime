@@ -1,18 +1,18 @@
 Microsoft Visual Studio Solution File, Format Version 12.00
-# Visual Studio 14
-VisualStudioVersion = 14.0.25420.1
+# Visual Studio 15
+VisualStudioVersion = 15.0.27213.1
 MinimumVisualStudioVersion = 10.0.40219.1
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Microsoft.Win32.Primitives.Tests", "tests\Microsoft.Win32.Primitives.Tests.csproj", "{3B17C130-FF2C-4B41-82C6-FADF4ED7FDA0}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Microsoft.Win32.Primitives.Tests", "tests\Microsoft.Win32.Primitives.Tests.csproj", "{3B17C130-FF2C-4B41-82C6-FADF4ED7FDA0}"
 	ProjectSection(ProjectDependencies) = postProject
 		{8FFE99C0-22F8-4462-B839-970EAC1B3472} = {8FFE99C0-22F8-4462-B839-970EAC1B3472}
 	EndProjectSection
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Microsoft.Win32.Primitives", "src\Microsoft.Win32.Primitives.csproj", "{8FFE99C0-22F8-4462-B839-970EAC1B3472}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Microsoft.Win32.Primitives", "src\Microsoft.Win32.Primitives.csproj", "{8FFE99C0-22F8-4462-B839-970EAC1B3472}"
 	ProjectSection(ProjectDependencies) = postProject
 		{4DB14BDE-4B2C-4F08-9FE9-789BFE78F3ED} = {4DB14BDE-4B2C-4F08-9FE9-789BFE78F3ED}
 	EndProjectSection
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Microsoft.Win32.Primitives", "ref\Microsoft.Win32.Primitives.csproj", "{4DB14BDE-4B2C-4F08-9FE9-789BFE78F3ED}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Microsoft.Win32.Primitives", "ref\Microsoft.Win32.Primitives.csproj", "{4DB14BDE-4B2C-4F08-9FE9-789BFE78F3ED}"
 EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "tests", "tests", "{1A2F9F4A-A032-433E-B914-ADD5992BB178}"
 EndProject
@@ -46,5 +46,8 @@ Global
 		{3B17C130-FF2C-4B41-82C6-FADF4ED7FDA0} = {1A2F9F4A-A032-433E-B914-ADD5992BB178}
 		{8FFE99C0-22F8-4462-B839-970EAC1B3472} = {E107E9C1-E893-4E87-987E-04EF0DCEAEFD}
 		{4DB14BDE-4B2C-4F08-9FE9-789BFE78F3ED} = {2E666815-2EDB-464B-9DF6-380BF4789AD4}
+	EndGlobalSection
+	GlobalSection(ExtensibilityGlobals) = postSolution
+		SolutionGuid = {904B2FDB-F1D7-4CE0-B0CD-FFDF8C51FDF8}
 	EndGlobalSection
 EndGlobal

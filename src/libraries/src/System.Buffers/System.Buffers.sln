@@ -1,18 +1,18 @@
 Microsoft Visual Studio Solution File, Format Version 12.00
-# Visual Studio 14
-VisualStudioVersion = 14.0.25420.1
+# Visual Studio 15
+VisualStudioVersion = 15.0.27213.1
 MinimumVisualStudioVersion = 10.0.40219.1
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "System.Buffers.Tests", "tests\System.Buffers.Tests.csproj", "{62E2AD5F-C8D0-45FB-B6A5-AED2C77F198C}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "System.Buffers.Tests", "tests\System.Buffers.Tests.csproj", "{62E2AD5F-C8D0-45FB-B6A5-AED2C77F198C}"
 	ProjectSection(ProjectDependencies) = postProject
 		{2ADDB484-6F57-4D71-A3FE-A57EC6329A2B} = {2ADDB484-6F57-4D71-A3FE-A57EC6329A2B}
 	EndProjectSection
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "System.Buffers", "src\System.Buffers.csproj", "{2ADDB484-6F57-4D71-A3FE-A57EC6329A2B}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "System.Buffers", "src\System.Buffers.csproj", "{2ADDB484-6F57-4D71-A3FE-A57EC6329A2B}"
 	ProjectSection(ProjectDependencies) = postProject
 		{11AE73F7-3532-47B9-8FF6-B4F22D76456C} = {11AE73F7-3532-47B9-8FF6-B4F22D76456C}
 	EndProjectSection
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "System.Buffers", "ref\System.Buffers.csproj", "{11AE73F7-3532-47B9-8FF6-B4F22D76456C}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "System.Buffers", "ref\System.Buffers.csproj", "{11AE73F7-3532-47B9-8FF6-B4F22D76456C}"
 EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "tests", "tests", "{1A2F9F4A-A032-433E-B914-ADD5992BB178}"
 EndProject
@@ -46,5 +46,8 @@ Global
 		{62E2AD5F-C8D0-45FB-B6A5-AED2C77F198C} = {1A2F9F4A-A032-433E-B914-ADD5992BB178}
 		{2ADDB484-6F57-4D71-A3FE-A57EC6329A2B} = {E107E9C1-E893-4E87-987E-04EF0DCEAEFD}
 		{11AE73F7-3532-47B9-8FF6-B4F22D76456C} = {2E666815-2EDB-464B-9DF6-380BF4789AD4}
+	EndGlobalSection
+	GlobalSection(ExtensibilityGlobals) = postSolution
+		SolutionGuid = {D6CF83FE-C3D4-4A79-AF98-CF4037328049}
 	EndGlobalSection
 EndGlobal

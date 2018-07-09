@@ -1,0 +1,66 @@
+<?xml version="1.0" encoding="utf-8"?>
+<Project InitialTargets="AddSkipGetTargetFrameworkToProjectReferences">
+  <PropertyGroup>
+    <ErrorIfBuildToolsRestoredFromIndividualProject Condition="!Exists('$(ToolsDir)')">true</ErrorIfBuildToolsRestoredFromIndividualProject>
+
+    <!-- Reset these properties back to blank, since they are defaulted by Microsoft.NET.Sdk -->
+    <FileAlignment Condition="'$(FileAlignment)' == '512'"></FileAlignment>
+    <ErrorReport Condition="'$(ErrorReport)' == 'prompt'"></ErrorReport>
+    <Deterministic></Deterministic>
+    <WarningsAsErrors Condition="'$(WarningsAsErrors)' == 'NU1605'"></WarningsAsErrors>
+  </PropertyGroup>
+
+  <Import Project="..\Directory.Build.targets" />
+  
+  <Target Name="_CheckForInvalidConfigurationAndPlatform" />
+  <Target Name="_CheckForUnsupportedTargetFramework" />
+  <Target Name="RunResolvePackageDependencies" />
+  <Target Name="AddSkipGetTargetFrameworkToProjectReferences" Condition="'@(ProjectReference)' != ''">
+    <ItemGroup>
+      <ProjectReference>
+        <SkipGetTargetFrameworkProperties>true</SkipGetTargetFrameworkProperties>
+      </ProjectReference>
+    </ItemGroup>
+  </Target>
+
+  <PropertyGroup>
+    <!--
+    Hack workaround to skip the GenerateCompiledExpressionsTempFile target in
+    Microsoft.WorkflowBuildExtensions.targets target that always runs in VS
+    -->
+    <GenerateCompiledExpressionsTempFilePathForEditing></GenerateCompiledExpressionsTempFilePathForEditing>
+  </PropertyGroup>
+  
+  <!--
+  Hack workaround for not restoring each project. Instead, we turn off all the targets
+  that require a `project.assets.json`, since ours will be empty anyway.
+  -->
+  <Target Name="_ClearResolvePackageAssets"
+          BeforeTargets="AssignProjectConfiguration">
+
+    <PropertyGroup>
+      <ResolvePackageDependenciesForBuildDependsOn></ResolvePackageDependenciesForBuildDependsOn>
+    </PropertyGroup>
+
+  </Target>
+
+  <!-- Returns the assembly version of the project for consumption
+       by the NuGet package generation -->
+  <Target Name="GetAssemblyVersion"
+          Returns="$(AssemblyVersion)"/>
+
+  <!-- Returns the generated documentation file for consumption
+       by the NuGet package generation -->
+  <Target Name="GetDocumentationFile"
+          Returns="$(DocumentationFile)"/>
+
+  <Target Name="DumpTargets" BeforeTargets="ResolveProjectReferences">
+    <Message Text="DumpTargets> $(OutputPath), C=[$(Configuration)], CG=[$(ConfigurationGroup)], OG=[$(OSGroup)], TG=[$(TargetGroup)]" Importance="Low" />
+  </Target>
+
+  <PropertyGroup>
+    <!-- Workaround https://github.com/dotnet/project-system/issues/3670 by setting TargetFramework expicitly -->
+    <!-- This property is set late in the project evaluation so other properties don't try to use it. -->
+    <TargetFramework>$(TargetGroup)</TargetFramework>
+  </PropertyGroup>
+</Project> 

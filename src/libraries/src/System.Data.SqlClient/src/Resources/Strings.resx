@@ -1317,4 +1317,19 @@
   <data name="SQL_ParsingErrorAuthLibraryType" xml:space="preserve"> 
     <value>Internal connection fatal error. Error state: {0}, Authentication Library Type: {1}.</value>
   </data>
+  <data name="SqlFileStream_InvalidPath" xml:space="preserve">
+    <value>The path name is not valid.</value>
+  </data>
+  <data name="SqlFileStream_PathNotValidDiskResource" xml:space="preserve">
+    <value>The path name is invalid or does not point to a disk file.</value>
+  </data>
+  <data name="SqlFileStream_FileAlreadyInTransaction" xml:space="preserve">
+    <value>The process cannot access the file specified because it has been opened in another transaction.</value>
+  </data>
+  <data name="SqlFileStream_InvalidParameter" xml:space="preserve">
+    <value>An invalid parameter was passed to the function.</value>
+  </data>
+  <data name="SqlFileStream_NotSupported" xml:space="preserve">
+    <value>SqlFileStream is not supported on this platform.</value>
+  </data>
 </root>

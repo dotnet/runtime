@@ -1,18 +1,15 @@
-﻿<?xml version="1.0" encoding="utf-8"?>
-<Project ToolsVersion="14.0" DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
-  <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.props))\dir.props" />
+<Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
     <ProjectGuid>{0657A043-0AEE-445E-9BE4-0B3A9D80318F}</ProjectGuid>
     <DefineConstants Condition="'$(TargetGroup)' == 'netcoreapp'">$(DefineConstants);FEATURE_ETLEVENTS</DefineConstants>
     <DefineConstants Condition="'$(TargetGroup)' == 'netcoreapp'">$(DefineConstants);FEATURE_EVENTCOUNTER_DISPOSE</DefineConstants>
     <DefineConstants>$(DefineConstants);USE_MDT_EVENTSOURCE</DefineConstants>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
+    <Configurations>netfx-Debug;netfx-Release</Configurations>
   </PropertyGroup>
   <PropertyGroup>
     <SDTTestDir>..\..\System.Diagnostics.Tracing\tests</SDTTestDir>
   </PropertyGroup>
-  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'netfx-Debug|AnyCPU'" />
-  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'netfx-Release|AnyCPU'" />
   <ItemGroup>
     <Compile Include="$(SDTTestDir)\BasicEventSourceTest\Harness\EventTestHarness.cs" />
     <Compile Include="$(SDTTestDir)\BasicEventSourceTest\FuzzyTests.cs" />
@@ -40,5 +37,4 @@
     <Compile Include="$(SDTTestDir)\CustomEventSources\UseAbstractEventSource.cs" />
     <Compile Include="$(SDTTestDir)\CustomEventSources\UseInterfaceEventSource.cs" />
   </ItemGroup>
-  <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.targets))\dir.targets" />
 </Project>
