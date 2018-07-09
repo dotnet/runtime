@@ -842,7 +842,7 @@ ves_array_set (InterpFrame *frame)
 	}
 
 	gint32 esize = mono_array_element_size (ac);
-	gpointer ea = mono_array_addr_with_size (ao, esize, pos);
+	gpointer ea = mono_array_addr_with_size_fast (ao, esize, pos);
 
 	MonoType *mt = mono_method_signature (frame->imethod->method)->params [m_class_get_rank (ac)];
 	stackval_to_data (mt, &sp [m_class_get_rank (ac)], ea, FALSE);
@@ -864,7 +864,7 @@ ves_array_get (InterpFrame *frame, gboolean safe)
 		return;
 
 	gint32 esize = mono_array_element_size (ac);
-	gpointer ea = mono_array_addr_with_size (ao, esize, pos);
+	gpointer ea = mono_array_addr_with_size_fast (ao, esize, pos);
 
 	MonoType *mt = mono_method_signature (frame->imethod->method)->ret;
 	stackval_from_data (mt, frame->retval, ea, FALSE);
@@ -887,7 +887,7 @@ ves_array_element_address (InterpFrame *frame, MonoClass *required_type, MonoArr
 		return NULL;
 	}
 	gint32 esize = mono_array_element_size (ac);
-	return mono_array_addr_with_size (ao, esize, pos);
+	return mono_array_addr_with_size_fast (ao, esize, pos);
 }
 
 static MonoPIFunc mono_interp_to_native_trampoline = NULL;
@@ -1466,11 +1466,11 @@ get_trace_ips (MonoDomain *domain, InterpFrame *top)
 
 	for (i = 0, inv = top; inv; inv = inv->parent)
 		if (inv->imethod != NULL) {
-			mono_array_set (res, gpointer, i, inv->imethod);
+			mono_array_set_fast (res, gpointer, i, inv->imethod);
 			++i;
-			mono_array_set (res, gpointer, i, (gpointer)inv->ip);
+			mono_array_set_fast (res, gpointer, i, (gpointer)inv->ip);
 			++i;
-			mono_array_set (res, gpointer, i, NULL);
+			mono_array_set_fast (res, gpointer, i, NULL);
 			++i;
 		}
 
@@ -4294,7 +4294,7 @@ interp_exec_method_full (InterpFrame *frame, ThreadContext *context, guint16 *st
 			o = sp [-1].data.p;
 			if (!o)
 				THROW_EX (mono_get_exception_null_reference (), ip);
-			sp [-1].data.nati = mono_array_length ((MonoArray *)o);
+			sp [-1].data.nati = mono_array_length_fast ((MonoArray *)o);
 			++ip;
 			MINT_IN_BREAK;
 		MINT_IN_CASE(MINT_GETCHR) {
@@ -4363,7 +4363,7 @@ interp_exec_method_full (InterpFrame *frame, ThreadContext *context, guint16 *st
 				THROW_EX (mono_get_exception_null_reference (), ip);
 
 			aindex = sp [1].data.i;
-			if (aindex >= mono_array_length (o))
+			if (aindex >= mono_array_length_fast (o))
 				THROW_EX (mono_get_exception_index_out_of_range (), ip);
 
 			/*
@@ -4371,42 +4371,42 @@ interp_exec_method_full (InterpFrame *frame, ThreadContext *context, guint16 *st
 			 */
 			switch (*ip) {
 			case MINT_LDELEM_I1:
-				sp [0].data.i = mono_array_get (o, gint8, aindex);
+				sp [0].data.i = mono_array_get_fast (o, gint8, aindex);
 				break;
 			case MINT_LDELEM_U1:
-				sp [0].data.i = mono_array_get (o, guint8, aindex);
+				sp [0].data.i = mono_array_get_fast (o, guint8, aindex);
 				break;
 			case MINT_LDELEM_I2:
-				sp [0].data.i = mono_array_get (o, gint16, aindex);
+				sp [0].data.i = mono_array_get_fast (o, gint16, aindex);
 				break;
 			case MINT_LDELEM_U2:
-				sp [0].data.i = mono_array_get (o, guint16, aindex);
+				sp [0].data.i = mono_array_get_fast (o, guint16, aindex);
 				break;
 			case MINT_LDELEM_I:
-				sp [0].data.nati = mono_array_get (o, mono_i, aindex);
+				sp [0].data.nati = mono_array_get_fast (o, mono_i, aindex);
 				break;
 			case MINT_LDELEM_I4:
-				sp [0].data.i = mono_array_get (o, gint32, aindex);
+				sp [0].data.i = mono_array_get_fast (o, gint32, aindex);
 				break;
 			case MINT_LDELEM_U4:
-				sp [0].data.i = mono_array_get (o, guint32, aindex);
+				sp [0].data.i = mono_array_get_fast (o, guint32, aindex);
 				break;
 			case MINT_LDELEM_I8:
-				sp [0].data.l = mono_array_get (o, guint64, aindex);
+				sp [0].data.l = mono_array_get_fast (o, guint64, aindex);
 				break;
 			case MINT_LDELEM_R4:
-				sp [0].data.f = mono_array_get (o, float, aindex);
+				sp [0].data.f = mono_array_get_fast (o, float, aindex);
 				break;
 			case MINT_LDELEM_R8:
-				sp [0].data.f = mono_array_get (o, double, aindex);
+				sp [0].data.f = mono_array_get_fast (o, double, aindex);
 				break;
 			case MINT_LDELEM_REF:
-				sp [0].data.p = mono_array_get (o, gpointer, aindex);
+				sp [0].data.p = mono_array_get_fast (o, gpointer, aindex);
 				break;
 			case MINT_LDELEM_VT: {
 				MonoClass *klass_vt = rtm->data_items [*(guint16 *) (ip + 1)];
 				i32 = READ32 (ip + 2);
-				char *src_addr = mono_array_addr_with_size ((MonoArray *) o, i32, aindex);
+				char *src_addr = mono_array_addr_with_size_fast ((MonoArray *) o, i32, aindex);
 				sp [0].data.vt = vt_sp;
 				stackval_from_data (m_class_get_byval_arg (klass_vt), sp, src_addr, FALSE);
 				vt_sp += ALIGN_TO (i32, MINT_VT_ALIGNMENT);
@@ -4441,49 +4441,49 @@ interp_exec_method_full (InterpFrame *frame, ThreadContext *context, guint16 *st
 				THROW_EX (mono_get_exception_null_reference (), ip);
 
 			aindex = sp [1].data.i;
-			if (aindex >= mono_array_length ((MonoArray *)o))
+			if (aindex >= mono_array_length_fast ((MonoArray *)o))
 				THROW_EX (mono_get_exception_index_out_of_range (), ip);
 
 			switch (*ip) {
 			case MINT_STELEM_I:
-				mono_array_set ((MonoArray *)o, mono_i, aindex, sp [2].data.nati);
+				mono_array_set_fast ((MonoArray *)o, mono_i, aindex, sp [2].data.nati);
 				break;
 			case MINT_STELEM_I1:
-				mono_array_set ((MonoArray *)o, gint8, aindex, sp [2].data.i);
+				mono_array_set_fast ((MonoArray *)o, gint8, aindex, sp [2].data.i);
 				break;
 			case MINT_STELEM_U1:
-				mono_array_set ((MonoArray *) o, guint8, aindex, sp [2].data.i);
+				mono_array_set_fast ((MonoArray *) o, guint8, aindex, sp [2].data.i);
 				break;
 			case MINT_STELEM_I2:
-				mono_array_set ((MonoArray *)o, gint16, aindex, sp [2].data.i);
+				mono_array_set_fast ((MonoArray *)o, gint16, aindex, sp [2].data.i);
 				break;
 			case MINT_STELEM_U2:
-				mono_array_set ((MonoArray *)o, guint16, aindex, sp [2].data.i);
+				mono_array_set_fast ((MonoArray *)o, guint16, aindex, sp [2].data.i);
 				break;
 			case MINT_STELEM_I4:
-				mono_array_set ((MonoArray *)o, gint32, aindex, sp [2].data.i);
+				mono_array_set_fast ((MonoArray *)o, gint32, aindex, sp [2].data.i);
 				break;
 			case MINT_STELEM_I8:
-				mono_array_set ((MonoArray *)o, gint64, aindex, sp [2].data.l);
+				mono_array_set_fast ((MonoArray *)o, gint64, aindex, sp [2].data.l);
 				break;
 			case MINT_STELEM_R4:
-				mono_array_set ((MonoArray *)o, float, aindex, sp [2].data.f);
+				mono_array_set_fast ((MonoArray *)o, float, aindex, sp [2].data.f);
 				break;
 			case MINT_STELEM_R8:
-				mono_array_set ((MonoArray *)o, double, aindex, sp [2].data.f);
+				mono_array_set_fast ((MonoArray *)o, double, aindex, sp [2].data.f);
 				break;
 			case MINT_STELEM_REF: {
 				MonoObject *isinst_obj = mono_object_isinst_checked (sp [2].data.p, m_class_get_element_class (mono_object_class (o)), error);
 				mono_error_cleanup (error); /* FIXME: don't swallow the error */
 				if (sp [2].data.p && !isinst_obj)
 					THROW_EX (mono_get_exception_array_type_mismatch (), ip);
-				mono_array_setref ((MonoArray *) o, aindex, sp [2].data.p);
+				mono_array_setref_fast ((MonoArray *) o, aindex, sp [2].data.p);
 				break;
 			}
 			case MINT_STELEM_VT: {
 				MonoClass *klass_vt = rtm->data_items [*(guint16 *) (ip + 1)];
 				i32 = READ32 (ip + 2);
-				char *dst_addr = mono_array_addr_with_size ((MonoArray *) o, i32, aindex);
+				char *dst_addr = mono_array_addr_with_size_fast ((MonoArray *) o, i32, aindex);
 
 				stackval_to_data (m_class_get_byval_arg (klass_vt), &sp [2], dst_addr, FALSE);
 				vt_sp -= ALIGN_TO (i32, MINT_VT_ALIGNMENT);
