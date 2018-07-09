@@ -1,38 +1,38 @@
 Microsoft Visual Studio Solution File, Format Version 12.00
-# Visual Studio 14
-VisualStudioVersion = 14.0.25420.1
+# Visual Studio 15
+VisualStudioVersion = 15.0.27213.1
 MinimumVisualStudioVersion = 10.0.40219.1
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "System.Runtime.Loader.Tests", "tests\System.Runtime.Loader.Tests.csproj", "{701CB3BC-00DC-435D-BDE4-C5FC29A708A7}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "System.Runtime.Loader.Tests", "tests\System.Runtime.Loader.Tests.csproj", "{701CB3BC-00DC-435D-BDE4-C5FC29A708A7}"
 	ProjectSection(ProjectDependencies) = postProject
 		{485A65F0-51C9-4B95-A7A8-A4860C231E67} = {485A65F0-51C9-4B95-A7A8-A4860C231E67}
 	EndProjectSection
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "System.Runtime.Loader.DefaultContext.Tests", "tests\DefaultContext\System.Runtime.Loader.DefaultContext.Tests.csproj", "{701CB3BC-00DC-435D-BDE4-C5FC29A708A8}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "System.Runtime.Loader.DefaultContext.Tests", "tests\DefaultContext\System.Runtime.Loader.DefaultContext.Tests.csproj", "{701CB3BC-00DC-435D-BDE4-C5FC29A708A8}"
 	ProjectSection(ProjectDependencies) = postProject
 		{485A65F0-51C9-4B95-A7A8-A4860C231E67} = {485A65F0-51C9-4B95-A7A8-A4860C231E67}
 	EndProjectSection
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "System.Runtime.Loader.RefEmitLoadContext.Tests", "tests\RefEmitLoadContext\System.Runtime.Loader.RefEmitLoadContext.Tests.csproj", "{701CB3BC-00DC-435D-BDE4-C5FC29A708A9}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "System.Runtime.Loader.RefEmitLoadContext.Tests", "tests\RefEmitLoadContext\System.Runtime.Loader.RefEmitLoadContext.Tests.csproj", "{701CB3BC-00DC-435D-BDE4-C5FC29A708A9}"
 	ProjectSection(ProjectDependencies) = postProject
 		{485A65F0-51C9-4B95-A7A8-A4860C231E67} = {485A65F0-51C9-4B95-A7A8-A4860C231E67}
 	EndProjectSection
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "System.Runtime.Loader.Noop.Assembly", "tests\System.Runtime.Loader.Noop.Assembly\System.Runtime.Loader.Noop.Assembly.csproj", "{396D6EBF-60BD-4DAF-8783-FB403E070A57}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "System.Runtime.Loader.Noop.Assembly", "tests\System.Runtime.Loader.Noop.Assembly\System.Runtime.Loader.Noop.Assembly.csproj", "{396D6EBF-60BD-4DAF-8783-FB403E070A57}"
 	ProjectSection(ProjectDependencies) = postProject
 		{485A65F0-51C9-4B95-A7A8-A4860C231E67} = {485A65F0-51C9-4B95-A7A8-A4860C231E67}
 	EndProjectSection
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "System.Runtime.Loader.Test.Assembly", "tests\System.Runtime.Loader.Test.Assembly\System.Runtime.Loader.Test.Assembly.csproj", "{E3C33774-AA3D-4CED-A7A6-BDF9A7F100DF}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "System.Runtime.Loader.Test.Assembly", "tests\System.Runtime.Loader.Test.Assembly\System.Runtime.Loader.Test.Assembly.csproj", "{E3C33774-AA3D-4CED-A7A6-BDF9A7F100DF}"
 	ProjectSection(ProjectDependencies) = postProject
 		{485A65F0-51C9-4B95-A7A8-A4860C231E67} = {485A65F0-51C9-4B95-A7A8-A4860C231E67}
 	EndProjectSection
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "System.Runtime.Loader", "src\System.Runtime.Loader.csproj", "{485A65F0-51C9-4B95-A7A8-A4860C231E67}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "System.Runtime.Loader", "src\System.Runtime.Loader.csproj", "{485A65F0-51C9-4B95-A7A8-A4860C231E67}"
 	ProjectSection(ProjectDependencies) = postProject
 		{FB507A82-ACDD-4809-A030-6F9372A71194} = {FB507A82-ACDD-4809-A030-6F9372A71194}
 	EndProjectSection
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "System.Runtime.Loader", "ref\System.Runtime.Loader.csproj", "{FB507A82-ACDD-4809-A030-6F9372A71194}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "System.Runtime.Loader", "ref\System.Runtime.Loader.csproj", "{FB507A82-ACDD-4809-A030-6F9372A71194}"
 EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "tests", "tests", "{1A2F9F4A-A032-433E-B914-ADD5992BB178}"
 EndProject
@@ -86,5 +86,8 @@ Global
 		{E3C33774-AA3D-4CED-A7A6-BDF9A7F100DF} = {1A2F9F4A-A032-433E-B914-ADD5992BB178}
 		{485A65F0-51C9-4B95-A7A8-A4860C231E67} = {E107E9C1-E893-4E87-987E-04EF0DCEAEFD}
 		{FB507A82-ACDD-4809-A030-6F9372A71194} = {2E666815-2EDB-464B-9DF6-380BF4789AD4}
+	EndGlobalSection
+	GlobalSection(ExtensibilityGlobals) = postSolution
+		SolutionGuid = {8A93F75F-A61A-4F0E-9929-65775CFDEB09}
 	EndGlobalSection
 EndGlobal

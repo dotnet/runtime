@@ -10,8 +10,6 @@ using System.Composition.Hosting.Providers.ImportMany;
 using System.Composition.Hosting.Providers.Lazy;
 using System.Linq;
 
-using Microsoft.Internal;
-
 namespace System.Composition.Hosting
 {
     /// <summary>
@@ -20,13 +18,16 @@ namespace System.Composition.Hosting
     /// </summary>
     public sealed class CompositionHost : CompositionContext, IDisposable
     {
-        private static readonly string[] s_noBoundaries = EmptyArray<string>.Value;
+        private static readonly string[] s_noBoundaries = Array.Empty<string>();
 
         private readonly LifetimeContext _rootLifetimeContext;
 
         private CompositionHost(LifetimeContext rootLifetimeContext)
         {
-            Requires.NotNull(rootLifetimeContext, nameof(rootLifetimeContext));
+            if(rootLifetimeContext == null)
+            {
+                throw new ArgumentNullException(nameof(rootLifetimeContext));
+            }
 
             _rootLifetimeContext = rootLifetimeContext;
         }
@@ -46,7 +47,10 @@ namespace System.Composition.Hosting
         /// <returns>The container as an <see cref="CompositionHost"/>.</returns>
         public static CompositionHost CreateCompositionHost(IEnumerable<ExportDescriptorProvider> providers)
         {
-            Requires.NotNull(providers, nameof(providers));
+            if (providers == null)
+            {
+                throw new ArgumentNullException(nameof(providers));
+            }
 
             var allProviders = new ExportDescriptorProvider[] {
                 new LazyExportDescriptorProvider(),

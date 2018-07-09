@@ -1,18 +1,18 @@
 Microsoft Visual Studio Solution File, Format Version 12.00
-# Visual Studio 14
-VisualStudioVersion = 14.0.25420.1
+# Visual Studio 15
+VisualStudioVersion = 15.0.27213.1
 MinimumVisualStudioVersion = 10.0.40219.1
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "System.Drawing.Primitives.Tests", "tests\System.Drawing.Primitives.Tests.csproj", "{CF54638C-A382-4A78-9AD6-2304CEEFEB01}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "System.Drawing.Primitives.Tests", "tests\System.Drawing.Primitives.Tests.csproj", "{CF54638C-A382-4A78-9AD6-2304CEEFEB01}"
 	ProjectSection(ProjectDependencies) = postProject
 		{8F472B93-574C-4AEC-9D28-6C2360A55BBF} = {8F472B93-574C-4AEC-9D28-6C2360A55BBF}
 	EndProjectSection
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "System.Drawing.Primitives", "src\System.Drawing.Primitives.csproj", "{8F472B93-574C-4AEC-9D28-6C2360A55BBF}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "System.Drawing.Primitives", "src\System.Drawing.Primitives.csproj", "{8F472B93-574C-4AEC-9D28-6C2360A55BBF}"
 	ProjectSection(ProjectDependencies) = postProject
 		{10F74537-6423-48F5-A7F3-4DE94E42AF8F} = {10F74537-6423-48F5-A7F3-4DE94E42AF8F}
 	EndProjectSection
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "System.Drawing.Primitives", "ref\System.Drawing.Primitives.csproj", "{10F74537-6423-48F5-A7F3-4DE94E42AF8F}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "System.Drawing.Primitives", "ref\System.Drawing.Primitives.csproj", "{10F74537-6423-48F5-A7F3-4DE94E42AF8F}"
 EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "tests", "tests", "{1A2F9F4A-A032-433E-B914-ADD5992BB178}"
 EndProject
@@ -46,5 +46,8 @@ Global
 		{CF54638C-A382-4A78-9AD6-2304CEEFEB01} = {1A2F9F4A-A032-433E-B914-ADD5992BB178}
 		{8F472B93-574C-4AEC-9D28-6C2360A55BBF} = {E107E9C1-E893-4E87-987E-04EF0DCEAEFD}
 		{10F74537-6423-48F5-A7F3-4DE94E42AF8F} = {2E666815-2EDB-464B-9DF6-380BF4789AD4}
+	EndGlobalSection
+	GlobalSection(ExtensibilityGlobals) = postSolution
+		SolutionGuid = {B9974179-A25A-4E7A-A743-D4562E707796}
 	EndGlobalSection
 EndGlobal

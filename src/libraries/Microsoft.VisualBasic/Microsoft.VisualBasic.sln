@@ -1,18 +1,18 @@
 Microsoft Visual Studio Solution File, Format Version 12.00
-# Visual Studio 14
-VisualStudioVersion = 14.0.25420.1
+# Visual Studio 15
+VisualStudioVersion = 15.0.27213.1
 MinimumVisualStudioVersion = 10.0.40219.1
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Microsoft.VisualBasic.Tests", "tests\Microsoft.VisualBasic.Tests.csproj", "{325260D6-D5DD-4E06-9DA2-9AF2AD9DE8C8}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Microsoft.VisualBasic.Tests", "tests\Microsoft.VisualBasic.Tests.csproj", "{325260D6-D5DD-4E06-9DA2-9AF2AD9DE8C8}"
 	ProjectSection(ProjectDependencies) = postProject
 		{FE25D593-8029-4726-ABC2-944522B5BE04} = {FE25D593-8029-4726-ABC2-944522B5BE04}
 	EndProjectSection
 EndProject
-Project("{F184B08F-C81C-45F6-A57F-5ABD9991F28F}") = "Microsoft.VisualBasic", "src\Microsoft.VisualBasic.vbproj", "{FE25D593-8029-4726-ABC2-944522B5BE04}"
+Project("{778DAE3C-4631-46EA-AA77-85C1314464D9}") = "Microsoft.VisualBasic", "src\Microsoft.VisualBasic.vbproj", "{FE25D593-8029-4726-ABC2-944522B5BE04}"
 	ProjectSection(ProjectDependencies) = postProject
 		{83AAB173-0A5E-4F7A-A1B4-D847F6D49B5F} = {83AAB173-0A5E-4F7A-A1B4-D847F6D49B5F}
 	EndProjectSection
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Microsoft.VisualBasic", "ref\Microsoft.VisualBasic.csproj", "{83AAB173-0A5E-4F7A-A1B4-D847F6D49B5F}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Microsoft.VisualBasic", "ref\Microsoft.VisualBasic.csproj", "{83AAB173-0A5E-4F7A-A1B4-D847F6D49B5F}"
 EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "tests", "tests", "{1A2F9F4A-A032-433E-B914-ADD5992BB178}"
 EndProject
@@ -46,5 +46,8 @@ Global
 		{325260D6-D5DD-4E06-9DA2-9AF2AD9DE8C8} = {1A2F9F4A-A032-433E-B914-ADD5992BB178}
 		{FE25D593-8029-4726-ABC2-944522B5BE04} = {E107E9C1-E893-4E87-987E-04EF0DCEAEFD}
 		{83AAB173-0A5E-4F7A-A1B4-D847F6D49B5F} = {2E666815-2EDB-464B-9DF6-380BF4789AD4}
+	EndGlobalSection
+	GlobalSection(ExtensibilityGlobals) = postSolution
+		SolutionGuid = {74F5467E-B312-4311-8819-8C5A1CA4EADC}
 	EndGlobalSection
 EndGlobal

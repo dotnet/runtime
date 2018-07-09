@@ -1,18 +1,18 @@
 Microsoft Visual Studio Solution File, Format Version 12.00
-# Visual Studio 14
-VisualStudioVersion = 14.0.25420.1
+# Visual Studio 15
+VisualStudioVersion = 15.0.27213.1
 MinimumVisualStudioVersion = 10.0.40219.1
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "System.Security.Permissions.Tests", "tests\System.Security.Permissions.Tests.csproj", "{7517F1E9-EEB4-4676-A054-CE4A44A66B66}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "System.Security.Permissions.Tests", "tests\System.Security.Permissions.Tests.csproj", "{7517F1E9-EEB4-4676-A054-CE4A44A66B66}"
 	ProjectSection(ProjectDependencies) = postProject
 		{07390899-C8F6-4E83-A3A9-6867B8CB46A0} = {07390899-C8F6-4E83-A3A9-6867B8CB46A0}
 	EndProjectSection
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "System.Security.Permissions", "src\System.Security.Permissions.csproj", "{07390899-C8F6-4E83-A3A9-6867B8CB46A0}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "System.Security.Permissions", "src\System.Security.Permissions.csproj", "{07390899-C8F6-4E83-A3A9-6867B8CB46A0}"
 	ProjectSection(ProjectDependencies) = postProject
 		{07CAF142-B259-418E-86EF-C4BD8B50253E} = {07CAF142-B259-418E-86EF-C4BD8B50253E}
 	EndProjectSection
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "System.Security.Permissions", "ref\System.Security.Permissions.csproj", "{07CAF142-B259-418E-86EF-C4BD8B50253E}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "System.Security.Permissions", "ref\System.Security.Permissions.csproj", "{07CAF142-B259-418E-86EF-C4BD8B50253E}"
 EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "tests", "tests", "{1A2F9F4A-A032-433E-B914-ADD5992BB178}"
 EndProject
@@ -46,5 +46,8 @@ Global
 		{7517F1E9-EEB4-4676-A054-CE4A44A66B66} = {1A2F9F4A-A032-433E-B914-ADD5992BB178}
 		{07390899-C8F6-4E83-A3A9-6867B8CB46A0} = {E107E9C1-E893-4E87-987E-04EF0DCEAEFD}
 		{07CAF142-B259-418E-86EF-C4BD8B50253E} = {2E666815-2EDB-464B-9DF6-380BF4789AD4}
+	EndGlobalSection
+	GlobalSection(ExtensibilityGlobals) = postSolution
+		SolutionGuid = {4BAFEB16-A9FB-4A42-BA81-FDEF4EFF0E36}
 	EndGlobalSection
 EndGlobal

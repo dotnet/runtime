@@ -1,18 +1,18 @@
 Microsoft Visual Studio Solution File, Format Version 12.00
-# Visual Studio 14
-VisualStudioVersion = 14.0.25420.1
+# Visual Studio 15
+VisualStudioVersion = 15.0.27213.1
 MinimumVisualStudioVersion = 10.0.40219.1
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "System.Threading.Tasks.Tests", "tests\System.Threading.Tasks.Tests.csproj", "{B6C09633-D161-499A-8FE1-46B2D53A16E7}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "System.Threading.Tasks.Tests", "tests\System.Threading.Tasks.Tests.csproj", "{B6C09633-D161-499A-8FE1-46B2D53A16E7}"
 	ProjectSection(ProjectDependencies) = postProject
 		{3BCAEAA6-3A29-49EC-B334-6E7BE8BE9ABA} = {3BCAEAA6-3A29-49EC-B334-6E7BE8BE9ABA}
 	EndProjectSection
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "System.Threading.Tasks", "src\System.Threading.Tasks.csproj", "{3BCAEAA6-3A29-49EC-B334-6E7BE8BE9ABA}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "System.Threading.Tasks", "src\System.Threading.Tasks.csproj", "{3BCAEAA6-3A29-49EC-B334-6E7BE8BE9ABA}"
 	ProjectSection(ProjectDependencies) = postProject
 		{27675CCE-B6F9-4E2F-9BF2-5E623173BD5C} = {27675CCE-B6F9-4E2F-9BF2-5E623173BD5C}
 	EndProjectSection
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "System.Threading.Tasks", "ref\System.Threading.Tasks.csproj", "{27675CCE-B6F9-4E2F-9BF2-5E623173BD5C}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "System.Threading.Tasks", "ref\System.Threading.Tasks.csproj", "{27675CCE-B6F9-4E2F-9BF2-5E623173BD5C}"
 EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "tests", "tests", "{1A2F9F4A-A032-433E-B914-ADD5992BB178}"
 EndProject
@@ -46,5 +46,8 @@ Global
 		{B6C09633-D161-499A-8FE1-46B2D53A16E7} = {1A2F9F4A-A032-433E-B914-ADD5992BB178}
 		{3BCAEAA6-3A29-49EC-B334-6E7BE8BE9ABA} = {E107E9C1-E893-4E87-987E-04EF0DCEAEFD}
 		{27675CCE-B6F9-4E2F-9BF2-5E623173BD5C} = {2E666815-2EDB-464B-9DF6-380BF4789AD4}
+	EndGlobalSection
+	GlobalSection(ExtensibilityGlobals) = postSolution
+		SolutionGuid = {E29CD540-DB19-424E-8A06-E98AE46DBB22}
 	EndGlobalSection
 EndGlobal

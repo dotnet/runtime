@@ -1,18 +1,18 @@
 Microsoft Visual Studio Solution File, Format Version 12.00
-# Visual Studio 14
-VisualStudioVersion = 14.0.25420.1
+# Visual Studio 15
+VisualStudioVersion = 15.0.27213.1
 MinimumVisualStudioVersion = 10.0.40219.1
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "System.Net.WebSockets.WebSocketProtocol.Tests", "tests\System.Net.WebSockets.WebSocketProtocol.Tests.csproj", "{CF73547B-07D2-4290-A14A-CA2A354F4D21}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "System.Net.WebSockets.WebSocketProtocol.Tests", "tests\System.Net.WebSockets.WebSocketProtocol.Tests.csproj", "{CF73547B-07D2-4290-A14A-CA2A354F4D21}"
 	ProjectSection(ProjectDependencies) = postProject
 		{747BE014-7C1D-4460-95AF-B41C35717165} = {747BE014-7C1D-4460-95AF-B41C35717165}
 	EndProjectSection
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "System.Net.WebSockets.WebSocketProtocol", "src\System.Net.WebSockets.WebSocketProtocol.csproj", "{747BE014-7C1D-4460-95AF-B41C35717165}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "System.Net.WebSockets.WebSocketProtocol", "src\System.Net.WebSockets.WebSocketProtocol.csproj", "{747BE014-7C1D-4460-95AF-B41C35717165}"
 	ProjectSection(ProjectDependencies) = postProject
 		{203345A4-0E3B-43C1-ADEB-FF493E578063} = {203345A4-0E3B-43C1-ADEB-FF493E578063}
 	EndProjectSection
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "System.Net.WebSockets.WebSocketProtocol", "ref\System.Net.WebSockets.WebSocketProtocol.csproj", "{203345A4-0E3B-43C1-ADEB-FF493E578063}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "System.Net.WebSockets.WebSocketProtocol", "ref\System.Net.WebSockets.WebSocketProtocol.csproj", "{203345A4-0E3B-43C1-ADEB-FF493E578063}"
 EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "tests", "tests", "{1A2F9F4A-A032-433E-B914-ADD5992BB178}"
 EndProject
@@ -46,5 +46,8 @@ Global
 		{CF73547B-07D2-4290-A14A-CA2A354F4D21} = {1A2F9F4A-A032-433E-B914-ADD5992BB178}
 		{747BE014-7C1D-4460-95AF-B41C35717165} = {E107E9C1-E893-4E87-987E-04EF0DCEAEFD}
 		{203345A4-0E3B-43C1-ADEB-FF493E578063} = {2E666815-2EDB-464B-9DF6-380BF4789AD4}
+	EndGlobalSection
+	GlobalSection(ExtensibilityGlobals) = postSolution
+		SolutionGuid = {4F6D2B92-3839-4CC5-90AE-515946FB09D7}
 	EndGlobalSection
 EndGlobal

@@ -115,7 +115,7 @@ namespace System
 
         private static TextWriter CreateOutputWriter(Stream outputStream)
         {
-            return SyncTextWriter.GetSynchronizedTextWriter(outputStream == Stream.Null ?
+            return TextWriter.Synchronized(outputStream == Stream.Null ?
                 StreamWriter.Null :
                 new StreamWriter(
                     stream: outputStream,
@@ -408,7 +408,7 @@ namespace System
         public static void SetOut(TextWriter newOut)
         {
             CheckNonNull(newOut, nameof(newOut));
-            newOut = SyncTextWriter.GetSynchronizedTextWriter(newOut);
+            newOut = TextWriter.Synchronized(newOut);
             Volatile.Write(ref s_isOutTextWriterRedirected, true);
 
             lock (InternalSyncObject)
@@ -420,7 +420,7 @@ namespace System
         public static void SetError(TextWriter newError)
         {
             CheckNonNull(newError, nameof(newError));
-            newError = SyncTextWriter.GetSynchronizedTextWriter(newError);
+            newError = TextWriter.Synchronized(newError);
             Volatile.Write(ref s_isErrorTextWriterRedirected, true);
 
             lock (InternalSyncObject)

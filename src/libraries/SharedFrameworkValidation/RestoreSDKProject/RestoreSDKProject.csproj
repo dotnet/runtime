@@ -1,6 +1,4 @@
 <Project Sdk="Microsoft.NET.Sdk">
-  <PropertyGroup>
-    <TargetFramework>netcoreapp2.0</TargetFramework>
     <RuntimeFrameworkVersion>$(_RuntimeFrameworkVersion)</RuntimeFrameworkVersion>
     <CoreFxPackageVersion>4.4.0-$(CoreFxExpectedPrerelease)</CoreFxPackageVersion>
     <RuntimeIdentifier>$(_PackageRID)</RuntimeIdentifier>
@@ -21,12 +19,12 @@
     <PackageReference Include="System.CodeDom" Version="$(CoreFxPackageVersion)" />
     <PackageReference Include="System.Collections.Immutable" Version="1.4.0-$(CoreFxExpectedPrerelease)" />
     <PackageReference Include="System.ComponentModel.Annotations" Version="$(CoreFxPackageVersion)" />
-    <PackageReference Include="System.Composition" Version="1.1.0-$(CoreFxExpectedPrerelease)" />
-    <PackageReference Include="System.Composition.AttributedModel" Version="1.1.0-$(CoreFxExpectedPrerelease)" />
-    <PackageReference Include="System.Composition.Convention" Version="1.1.0-$(CoreFxExpectedPrerelease)" />
-    <PackageReference Include="System.Composition.Hosting" Version="1.1.0-$(CoreFxExpectedPrerelease)" />
-    <PackageReference Include="System.Composition.Runtime" Version="1.1.0-$(CoreFxExpectedPrerelease)" />
-    <PackageReference Include="System.Composition.TypedParts" Version="1.1.0-$(CoreFxExpectedPrerelease)" />
+    <PackageReference Include="System.Composition" Version="1.2.0-$(CoreFxExpectedPrerelease)" />
+    <PackageReference Include="System.Composition.AttributedModel" Version="1.2.0-$(CoreFxExpectedPrerelease)" />
+    <PackageReference Include="System.Composition.Convention" Version="1.2.0-$(CoreFxExpectedPrerelease)" />
+    <PackageReference Include="System.Composition.Hosting" Version="1.2.0-$(CoreFxExpectedPrerelease)" />
+    <PackageReference Include="System.Composition.Runtime" Version="1.2.0-$(CoreFxExpectedPrerelease)" />
+    <PackageReference Include="System.Composition.TypedParts" Version="1.2.0-$(CoreFxExpectedPrerelease)" />
     <PackageReference Include="System.Configuration.ConfigurationManager" Version="$(CoreFxPackageVersion)" />
     <PackageReference Include="System.Data.SqlClient" Version="$(CoreFxPackageVersion)" />
     <PackageReference Include="System.Diagnostics.DiagnosticSource" Version="$(CoreFxPackageVersion)" />
@@ -62,5 +60,4 @@
     <Copy SourceFiles="%(ReferencePath.Identity)" DestinationFolder="$(_MetaPackageDestinationFolder)" />
   </Target>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'Debug|AnyCPU'" />
-  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'Release|AnyCPU'" />
 </Project>

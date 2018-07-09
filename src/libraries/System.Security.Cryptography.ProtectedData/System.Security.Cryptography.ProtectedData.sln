@@ -1,18 +1,18 @@
 Microsoft Visual Studio Solution File, Format Version 12.00
-# Visual Studio 14
-VisualStudioVersion = 14.0.25420.1
+# Visual Studio 15
+VisualStudioVersion = 15.0.27213.1
 MinimumVisualStudioVersion = 10.0.40219.1
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "System.Security.Cryptography.ProtectedData.Tests", "tests\System.Security.Cryptography.ProtectedData.Tests.csproj", "{749ED7AD-E3C1-4611-99BD-C5D4B3934B3A}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "System.Security.Cryptography.ProtectedData.Tests", "tests\System.Security.Cryptography.ProtectedData.Tests.csproj", "{749ED7AD-E3C1-4611-99BD-C5D4B3934B3A}"
 	ProjectSection(ProjectDependencies) = postProject
 		{FB39F994-1504-4B96-9588-E0385D3B73F1} = {FB39F994-1504-4B96-9588-E0385D3B73F1}
 	EndProjectSection
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "System.Security.Cryptography.ProtectedData", "src\System.Security.Cryptography.ProtectedData.csproj", "{FB39F994-1504-4B96-9588-E0385D3B73F1}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "System.Security.Cryptography.ProtectedData", "src\System.Security.Cryptography.ProtectedData.csproj", "{FB39F994-1504-4B96-9588-E0385D3B73F1}"
 	ProjectSection(ProjectDependencies) = postProject
 		{28AA66B1-615B-462F-BD63-DC0A20052998} = {28AA66B1-615B-462F-BD63-DC0A20052998}
 	EndProjectSection
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "System.Security.Cryptography.ProtectedData", "ref\System.Security.Cryptography.ProtectedData.csproj", "{28AA66B1-615B-462F-BD63-DC0A20052998}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "System.Security.Cryptography.ProtectedData", "ref\System.Security.Cryptography.ProtectedData.csproj", "{28AA66B1-615B-462F-BD63-DC0A20052998}"
 EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "tests", "tests", "{1A2F9F4A-A032-433E-B914-ADD5992BB178}"
 EndProject
@@ -46,5 +46,8 @@ Global
 		{749ED7AD-E3C1-4611-99BD-C5D4B3934B3A} = {1A2F9F4A-A032-433E-B914-ADD5992BB178}
 		{FB39F994-1504-4B96-9588-E0385D3B73F1} = {E107E9C1-E893-4E87-987E-04EF0DCEAEFD}
 		{28AA66B1-615B-462F-BD63-DC0A20052998} = {2E666815-2EDB-464B-9DF6-380BF4789AD4}
+	EndGlobalSection
+	GlobalSection(ExtensibilityGlobals) = postSolution
+		SolutionGuid = {69CE1761-488C-47EA-BDAD-8A34ED736BE8}
 	EndGlobalSection
 EndGlobal

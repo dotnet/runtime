@@ -1,13 +1,13 @@
 Microsoft Visual Studio Solution File, Format Version 12.00
-# Visual Studio 14
-VisualStudioVersion = 14.0.25420.1
+# Visual Studio 15
+VisualStudioVersion = 15.0.27213.1
 MinimumVisualStudioVersion = 10.0.40219.1
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "System.Security.Principal", "src\System.Security.Principal.csproj", "{FBE16BC8-AE2D-422C-861E-861814F53AF7}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "System.Security.Principal", "src\System.Security.Principal.csproj", "{FBE16BC8-AE2D-422C-861E-861814F53AF7}"
 	ProjectSection(ProjectDependencies) = postProject
 		{06ECBECD-4100-474D-8F3C-21A0F66A92A6} = {06ECBECD-4100-474D-8F3C-21A0F66A92A6}
 	EndProjectSection
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "System.Security.Principal", "ref\System.Security.Principal.csproj", "{06ECBECD-4100-474D-8F3C-21A0F66A92A6}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "System.Security.Principal", "ref\System.Security.Principal.csproj", "{06ECBECD-4100-474D-8F3C-21A0F66A92A6}"
 EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "src", "src", "{E107E9C1-E893-4E87-987E-04EF0DCEAEFD}"
 EndProject
@@ -34,5 +34,8 @@ Global
 	GlobalSection(NestedProjects) = preSolution
 		{FBE16BC8-AE2D-422C-861E-861814F53AF7} = {E107E9C1-E893-4E87-987E-04EF0DCEAEFD}
 		{06ECBECD-4100-474D-8F3C-21A0F66A92A6} = {2E666815-2EDB-464B-9DF6-380BF4789AD4}
+	EndGlobalSection
+	GlobalSection(ExtensibilityGlobals) = postSolution
+		SolutionGuid = {49140E8F-6265-4A9D-A373-0B83BAB2D6EF}
 	EndGlobalSection
 EndGlobal

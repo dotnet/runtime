@@ -4,7 +4,6 @@
 
 using System.Collections.Generic;
 using System.Linq;
-using Microsoft.Internal;
 
 namespace System.Composition.Hosting.Core
 {
@@ -13,7 +12,7 @@ namespace System.Composition.Hosting.Core
     // providers, with providers being removed from the list before querying.
     internal class UpdateResult
     {
-        private static readonly ExportDescriptorPromise[] s_noPromises = EmptyArray<ExportDescriptorPromise>.Value;
+        private static readonly ExportDescriptorPromise[] s_noPromises = Array.Empty<ExportDescriptorPromise>();
 
         private readonly Queue<ExportDescriptorProvider> _remainingProviders;
         private readonly IList<ExportDescriptorPromise> _providedDescriptors = new List<ExportDescriptorPromise>();
@@ -46,7 +45,10 @@ namespace System.Composition.Hosting.Core
         {
             if (_results == null)
             {
-                Assumes.IsTrue(_remainingProviders.Count == 0, "Providers remain to be queried.");
+                if(_remainingProviders.Count != 0)
+                {
+                    throw new Exception(SR.Providers_Remain_To_Be_Queried);
+                }
 
                 if (_providedDescriptors.Count == 0)
                     _results = s_noPromises;

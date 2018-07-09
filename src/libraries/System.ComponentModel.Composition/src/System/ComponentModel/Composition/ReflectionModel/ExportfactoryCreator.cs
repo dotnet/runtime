@@ -4,7 +4,6 @@
 
 using System.ComponentModel.Composition.Primitives;
 using System.Reflection;
-using Microsoft.Internal;
 
 namespace System.ComponentModel.Composition.ReflectionModel
 {
@@ -17,7 +16,10 @@ namespace System.ComponentModel.Composition.ReflectionModel
 
         public ExportFactoryCreator(Type exportFactoryType)
         {
-            Assumes.NotNull(exportFactoryType);
+            if(exportFactoryType == null)
+            {
+                throw new ArgumentNullException(nameof(exportFactoryType));
+            }
 
             _exportFactoryType = exportFactoryType;
         }
@@ -34,7 +36,11 @@ namespace System.ComponentModel.Composition.ReflectionModel
                 genericMethod = _createStronglyTypedExportFactoryOfTM.MakeGenericMethod(exportType, metadataViewType);
             }
 
-            Assumes.NotNull(genericMethod);
+            if(genericMethod == null)
+            {
+                throw new Exception(SR.Diagnostic_InternalExceptionMessage);
+            }
+            
             Func<Export, object> exportFactoryFactory = (Func<Export, object>)Delegate.CreateDelegate(typeof(Func<Export, object>), this, genericMethod);
             return (e) => exportFactoryFactory.Invoke(e);
         }

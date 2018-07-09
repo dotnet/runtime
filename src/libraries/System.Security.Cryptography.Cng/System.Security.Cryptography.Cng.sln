@@ -1,18 +1,18 @@
 Microsoft Visual Studio Solution File, Format Version 12.00
-# Visual Studio 14
-VisualStudioVersion = 14.0.25420.1
+# Visual Studio 15
+VisualStudioVersion = 15.0.27213.1
 MinimumVisualStudioVersion = 10.0.40219.1
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "System.Security.Cryptography.Cng.Tests", "tests\System.Security.Cryptography.Cng.Tests.csproj", "{FF53459F-66F7-4F00-8D36-DF440CE18419}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "System.Security.Cryptography.Cng.Tests", "tests\System.Security.Cryptography.Cng.Tests.csproj", "{FF53459F-66F7-4F00-8D36-DF440CE18419}"
 	ProjectSection(ProjectDependencies) = postProject
 		{4C1BD451-6A99-45E7-9339-79C77C42EE9E} = {4C1BD451-6A99-45E7-9339-79C77C42EE9E}
 	EndProjectSection
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "System.Security.Cryptography.Cng", "src\System.Security.Cryptography.Cng.csproj", "{4C1BD451-6A99-45E7-9339-79C77C42EE9E}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "System.Security.Cryptography.Cng", "src\System.Security.Cryptography.Cng.csproj", "{4C1BD451-6A99-45E7-9339-79C77C42EE9E}"
 	ProjectSection(ProjectDependencies) = postProject
 		{9FD12550-3A7C-49D3-9A1E-C4B7410989DD} = {9FD12550-3A7C-49D3-9A1E-C4B7410989DD}
 	EndProjectSection
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "System.Security.Cryptography.Cng", "ref\System.Security.Cryptography.Cng.csproj", "{9FD12550-3A7C-49D3-9A1E-C4B7410989DD}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "System.Security.Cryptography.Cng", "ref\System.Security.Cryptography.Cng.csproj", "{9FD12550-3A7C-49D3-9A1E-C4B7410989DD}"
 EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "tests", "tests", "{1A2F9F4A-A032-433E-B914-ADD5992BB178}"
 EndProject
@@ -46,5 +46,8 @@ Global
 		{FF53459F-66F7-4F00-8D36-DF440CE18419} = {1A2F9F4A-A032-433E-B914-ADD5992BB178}
 		{4C1BD451-6A99-45E7-9339-79C77C42EE9E} = {E107E9C1-E893-4E87-987E-04EF0DCEAEFD}
 		{9FD12550-3A7C-49D3-9A1E-C4B7410989DD} = {2E666815-2EDB-464B-9DF6-380BF4789AD4}
+	EndGlobalSection
+	GlobalSection(ExtensibilityGlobals) = postSolution
+		SolutionGuid = {946D0BC8-AC86-4941-8E28-FC386E071E93}
 	EndGlobalSection
 EndGlobal

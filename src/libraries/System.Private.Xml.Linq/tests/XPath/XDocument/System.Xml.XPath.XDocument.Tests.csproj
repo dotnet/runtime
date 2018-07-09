@@ -1,14 +1,11 @@
-﻿<?xml version="1.0" encoding="utf-8"?>
-<Project ToolsVersion="14.0" DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
-  <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.props))\dir.props" />
+<Project Sdk="Microsoft.NET.Sdk">
   <Import Project="$(CommonTestPath)\Tests.props" />
   <PropertyGroup>
     <ProjectGuid>{10D52320-17B7-476E-BBD2-A1064DD38CBF}</ProjectGuid>
     <RootNamespace>System.Xml.XPath.XDocument.Tests</RootNamespace>
     <CommonPathXPath>$(CommonPath)\System\Xml\XPath</CommonPathXPath>
+    <Configurations>Debug;Release</Configurations>
   </PropertyGroup>
-  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'Debug|AnyCPU'" />
-  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'Release|AnyCPU'" />
   <ItemGroup>
     <!-- XPath.XDocument navigator -->
     <Compile Include="CreateNavigatorComparer.cs" />
@@ -198,5 +195,4 @@
       <Link>TestData\xpC001.xml</Link>
     </EmbeddedResource>
   </ItemGroup>
-  <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.targets))\dir.targets" />
 </Project>

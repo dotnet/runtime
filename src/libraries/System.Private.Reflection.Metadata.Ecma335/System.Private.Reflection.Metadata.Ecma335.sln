@@ -1,8 +1,8 @@
 Microsoft Visual Studio Solution File, Format Version 12.00
-# Visual Studio 14
-VisualStudioVersion = 14.0.25420.1
+# Visual Studio 15
+VisualStudioVersion = 15.0.27213.1
 MinimumVisualStudioVersion = 10.0.40219.1
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "System.Private.Reflection.Metadata.Ecma335", "src\System.Private.Reflection.Metadata.Ecma335.csproj", "{3A8B2CAD-6FFD-4A37-A53A-0F2D5EF99164}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "System.Private.Reflection.Metadata.Ecma335", "src\System.Private.Reflection.Metadata.Ecma335.csproj", "{3A8B2CAD-6FFD-4A37-A53A-0F2D5EF99164}"
 EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "src", "src", "{E107E9C1-E893-4E87-987E-04EF0DCEAEFD}"
 EndProject
@@ -22,5 +22,8 @@ Global
 	EndGlobalSection
 	GlobalSection(NestedProjects) = preSolution
 		{3A8B2CAD-6FFD-4A37-A53A-0F2D5EF99164} = {E107E9C1-E893-4E87-987E-04EF0DCEAEFD}
+	EndGlobalSection
+	GlobalSection(ExtensibilityGlobals) = postSolution
+		SolutionGuid = {C4B0E076-BCEB-409B-9B5F-5585B781CD37}
 	EndGlobalSection
 EndGlobal

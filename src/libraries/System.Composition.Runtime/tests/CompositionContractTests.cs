@@ -3,11 +3,12 @@
 // See the LICENSE file in the project root for more information.
 
 using System.Collections.Generic;
+using System.Composition.Hosting.Core;
 using System.Globalization;
 using System.Reflection;
 using Xunit;
 
-namespace System.Composition.Hosting.Core.Tests
+namespace System.Composition.Runtime.Tests
 {
     public class CompositionContractTests
     {

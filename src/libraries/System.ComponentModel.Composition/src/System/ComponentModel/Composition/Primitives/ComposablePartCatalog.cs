@@ -64,7 +64,10 @@ namespace System.ComponentModel.Composition.Primitives
 #pragma warning disable 420
                     Interlocked.CompareExchange(ref _queryableParts, p, null);
 #pragma warning restore 420
-                    Assumes.NotNull(_queryableParts);
+                    if (_queryableParts == null)
+                    {
+                        throw new Exception(SR.Diagnostic_InternalExceptionMessage);
+                    }
                 }
                 return _queryableParts;
             }

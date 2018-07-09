@@ -20,7 +20,10 @@ namespace System.ComponentModel.Composition.ReflectionModel
         public ImportingMember(ContractBasedImportDefinition definition, ReflectionWritableMember member, ImportType importType)
             : base(definition, importType)
         {
-            Assumes.NotNull(definition, member);
+            if (member == null)
+            {
+                throw new ArgumentNullException(nameof(member));
+            }
 
             _member = member;
         }
@@ -105,7 +108,10 @@ namespace System.ComponentModel.Composition.ReflectionModel
 
         private void SetCollectionMemberValue(object instance, IEnumerable values)
         {
-            Assumes.NotNull(values);
+            if (values == null)
+            {
+                throw new ArgumentNullException(nameof(values));
+            }
 
             ICollection<object> collection = null;
             Type itemType = CollectionServices.GetCollectionElementType(ImportType.ActualType);
@@ -120,7 +126,10 @@ namespace System.ComponentModel.Composition.ReflectionModel
 
         private ICollection<object> GetNormalizedCollection(Type itemType, object instance)
         {
-            Assumes.NotNull(itemType);
+            if (itemType == null)
+            {
+                throw new ArgumentNullException(nameof(itemType));
+            }
 
             object collectionObject = null;
 
@@ -215,7 +224,15 @@ namespace System.ComponentModel.Composition.ReflectionModel
         [SuppressMessage("Microsoft.Design", "CA1031:DoNotCatchGeneralExceptionTypes")]
         private void PopulateCollection(ICollection<object> collection, IEnumerable values)
         {
-            Assumes.NotNull(collection, values);
+            if (collection == null)
+            {
+                throw new ArgumentNullException(nameof(collection));
+            }
+
+            if (values == null)
+            {
+                throw new ArgumentNullException(nameof(values));
+            }
 
             try
             {

@@ -1,18 +1,18 @@
 Microsoft Visual Studio Solution File, Format Version 12.00
-# Visual Studio 14
-VisualStudioVersion = 14.0.25420.1
+# Visual Studio 15
+VisualStudioVersion = 15.0.27213.1
 MinimumVisualStudioVersion = 10.0.40219.1
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "System.Runtime.CompilerServices.VisualC.Tests", "tests\System.Runtime.CompilerServices.VisualC.Tests.csproj", "{057BF9A0-199B-4EB5-85D5-84982259C7BC}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "System.Runtime.CompilerServices.VisualC.Tests", "tests\System.Runtime.CompilerServices.VisualC.Tests.csproj", "{057BF9A0-199B-4EB5-85D5-84982259C7BC}"
 	ProjectSection(ProjectDependencies) = postProject
 		{F8C8FBFC-CA6E-4BDA-A1B3-FA4E17C10D9E} = {F8C8FBFC-CA6E-4BDA-A1B3-FA4E17C10D9E}
 	EndProjectSection
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "System.Runtime.CompilerServices.VisualC", "src\System.Runtime.CompilerServices.VisualC.csproj", "{F8C8FBFC-CA6E-4BDA-A1B3-FA4E17C10D9E}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "System.Runtime.CompilerServices.VisualC", "src\System.Runtime.CompilerServices.VisualC.csproj", "{F8C8FBFC-CA6E-4BDA-A1B3-FA4E17C10D9E}"
 	ProjectSection(ProjectDependencies) = postProject
 		{2122228D-ADAD-43D8-BC56-6A061DE8B25C} = {2122228D-ADAD-43D8-BC56-6A061DE8B25C}
 	EndProjectSection
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "System.Runtime.CompilerServices.VisualC", "ref\System.Runtime.CompilerServices.VisualC.csproj", "{2122228D-ADAD-43D8-BC56-6A061DE8B25C}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "System.Runtime.CompilerServices.VisualC", "ref\System.Runtime.CompilerServices.VisualC.csproj", "{2122228D-ADAD-43D8-BC56-6A061DE8B25C}"
 EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "tests", "tests", "{1A2F9F4A-A032-433E-B914-ADD5992BB178}"
 EndProject
@@ -46,5 +46,8 @@ Global
 		{057BF9A0-199B-4EB5-85D5-84982259C7BC} = {1A2F9F4A-A032-433E-B914-ADD5992BB178}
 		{F8C8FBFC-CA6E-4BDA-A1B3-FA4E17C10D9E} = {E107E9C1-E893-4E87-987E-04EF0DCEAEFD}
 		{2122228D-ADAD-43D8-BC56-6A061DE8B25C} = {2E666815-2EDB-464B-9DF6-380BF4789AD4}
+	EndGlobalSection
+	GlobalSection(ExtensibilityGlobals) = postSolution
+		SolutionGuid = {AE3AA6A2-75B8-4797-81D2-A1B475D1D5C4}
 	EndGlobalSection
 EndGlobal

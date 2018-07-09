@@ -1,18 +1,18 @@
 Microsoft Visual Studio Solution File, Format Version 12.00
-# Visual Studio 14
-VisualStudioVersion = 14.0.25420.1
+# Visual Studio 15
+VisualStudioVersion = 15.0.27213.1
 MinimumVisualStudioVersion = 10.0.40219.1
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "System.Dynamic.Runtime.Tests", "tests\System.Dynamic.Runtime.Tests.csproj", "{0BFD6D9F-DF9E-4B17-8ED4-29437AE5B04A}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "System.Dynamic.Runtime.Tests", "tests\System.Dynamic.Runtime.Tests.csproj", "{0BFD6D9F-DF9E-4B17-8ED4-29437AE5B04A}"
 	ProjectSection(ProjectDependencies) = postProject
 		{C4E89B8C-07DB-40CA-8C99-82A23E8F5F39} = {C4E89B8C-07DB-40CA-8C99-82A23E8F5F39}
 	EndProjectSection
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "System.Dynamic.Runtime", "src\System.Dynamic.Runtime.csproj", "{C4E89B8C-07DB-40CA-8C99-82A23E8F5F39}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "System.Dynamic.Runtime", "src\System.Dynamic.Runtime.csproj", "{C4E89B8C-07DB-40CA-8C99-82A23E8F5F39}"
 	ProjectSection(ProjectDependencies) = postProject
 		{4E604291-4118-4CD6-B790-BA5F4F8C1A18} = {4E604291-4118-4CD6-B790-BA5F4F8C1A18}
 	EndProjectSection
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "System.Dynamic.Runtime", "ref\System.Dynamic.Runtime.csproj", "{4E604291-4118-4CD6-B790-BA5F4F8C1A18}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "System.Dynamic.Runtime", "ref\System.Dynamic.Runtime.csproj", "{4E604291-4118-4CD6-B790-BA5F4F8C1A18}"
 EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "tests", "tests", "{1A2F9F4A-A032-433E-B914-ADD5992BB178}"
 EndProject
@@ -46,5 +46,8 @@ Global
 		{0BFD6D9F-DF9E-4B17-8ED4-29437AE5B04A} = {1A2F9F4A-A032-433E-B914-ADD5992BB178}
 		{C4E89B8C-07DB-40CA-8C99-82A23E8F5F39} = {E107E9C1-E893-4E87-987E-04EF0DCEAEFD}
 		{4E604291-4118-4CD6-B790-BA5F4F8C1A18} = {2E666815-2EDB-464B-9DF6-380BF4789AD4}
+	EndGlobalSection
+	GlobalSection(ExtensibilityGlobals) = postSolution
+		SolutionGuid = {C0D76504-56B2-45C0-9822-E933DE54D878}
 	EndGlobalSection
 EndGlobal
