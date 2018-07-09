@@ -74,6 +74,7 @@ monoutils_sources = \
 	mono-log-posix.c	\
 	mono-log-android.c \
 	mono-log-darwin.c \
+	mono-log-flight-recorder.c \
 	mono-merp.c	\
 	mono-merp.h	\
 	mono-state.h	\
@@ -92,6 +93,8 @@ monoutils_sources = \
 	mono-mmap-windows-internals.h	\
 	mono-os-mutex.h		\
 	mono-os-mutex.c		\
+	mono-flight-recorder.h		\
+	mono-flight-recorder.c		\
 	mono-os-wait.h \
 	mono-coop-mutex.h		\
 	mono-once.h		\
@@ -176,6 +179,8 @@ monoutils_sources = \
 	mono-threads-api.h	\
 	mono-threads-coop.c	\
 	mono-threads-coop.h	\
+	mono-utility-thread.c	\
+	mono-utility-thread.h	\
 	mono-tls.h	\
 	mono-tls.c	\
 	mono-utils-debug.c \

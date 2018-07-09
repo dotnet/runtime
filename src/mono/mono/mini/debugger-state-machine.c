@@ -17,6 +17,21 @@
 #include <mono/metadata/object-internals.h>
 #include <mono/mini/mini-runtime.h>
 #include <mono/mini/debugger-engine.h>
+#include <mono/utils/mono-coop-mutex.h>
+#include <mono/utils/mono-flight-recorder.h>
+
+static const char *
+mono_debug_log_thread_state_to_string (MonoDebuggerThreadState state)
+{
+	switch (state) {
+	case MONO_DEBUGGER_SUSPENDED: return "suspended";
+	case MONO_DEBUGGER_RESUMED: return "resumed";
+	case MONO_DEBUGGER_TERMINATED: return "terminated";
+	case MONO_DEBUGGER_STARTED: return "started";
+	default:
+		g_assert_not_reached ();
+	}
+}
 
 typedef enum {
 	DEBUG_LOG_ILLEGAL = 0x0,
@@ -27,31 +42,16 @@ typedef enum {
 	DEBUG_LOG_EXIT = 0x5
 } MonoDebugLogKind;
 
+// Number of messages
+#define MONO_MAX_DEBUGGER_LOG_LEN 65
+// Length of each message
+#define MONO_MAX_DEBUGGER_MSG_LEN 200
+
 typedef struct {
 	MonoDebugLogKind kind;
-
 	intptr_t tid;
-	const char *message;
-
-	long counter; // The number of logs allocated
+	char message [MONO_MAX_DEBUGGER_MSG_LEN];
 } MonoDebugLogItem;
-
-typedef struct {
-	intptr_t cursor;
-	intptr_t max_size;
-	MonoDebugLogItem *items;
-} MonoDebuggerLog;
-
-typedef struct {
-	intptr_t lowest_index;
-	intptr_t highest_index;
-} MonoDebuggerLogIter;
-
-static MonoDebuggerLog *debugger_log;
-
-#define MAX_DEBUGGER_LOG_LEN 65
-#define MONO_DEBUGGER_LOG_UNINIT -1
-#define MAX_LOGGED_BREAKPOINTS 128
 
 static const char *
 mono_debug_log_kind_to_string (MonoDebugLogKind kind)
@@ -67,206 +67,164 @@ mono_debug_log_kind_to_string (MonoDebugLogKind kind)
 	}
 }
 
-static const char *
-mono_debug_log_thread_state_to_string (MonoDebuggerThreadState state)
-{
-	switch (state) {
-	case MONO_DEBUGGER_SUSPENDED: return "suspended";
-	case MONO_DEBUGGER_RESUMED: return "resumed";
-	case MONO_DEBUGGER_TERMINATED: return "terminated";
-	case MONO_DEBUGGER_STARTED: return "started";
-	default:
-		g_assert_not_reached ();
-	}
-}
-
-static MonoCoopMutex debugger_log_mutex;
+#define MONO_DEBUGGER_LOG_FREED -1
+static MonoFlightRecorder *debugger_log;
 static GPtrArray *breakpoint_copy;
 
 void
 mono_debugger_log_init (void)
 {
-	if (debugger_log == GINT_TO_POINTER (MONO_DEBUGGER_LOG_UNINIT))
+	if (debugger_log == GINT_TO_POINTER (MONO_DEBUGGER_LOG_FREED))
 		g_error ("Attempted to initialize debugger log after cleanup");
 
-	debugger_log = g_malloc0 (sizeof (MonoDebuggerLog));
-	debugger_log->max_size = MAX_DEBUGGER_LOG_LEN;
-	debugger_log->cursor = MONO_DEBUGGER_LOG_UNINIT;
-	debugger_log->items = g_malloc0 (sizeof (MonoDebugLogItem) * debugger_log->max_size);
-
-	mono_coop_mutex_init (&debugger_log_mutex);
+	debugger_log = mono_flight_recorder_init (MONO_MAX_DEBUGGER_LOG_LEN, sizeof (MonoDebugLogItem));
 	breakpoint_copy = g_ptr_array_new ();
 }
 
 void
 mono_debugger_log_free (void)
 {
-	mono_coop_mutex_lock (&debugger_log_mutex);
-	g_free (debugger_log->items);
-	g_free (debugger_log);
-	debugger_log = GINT_TO_POINTER (MONO_DEBUGGER_LOG_UNINIT);
-	mono_coop_mutex_unlock (&debugger_log_mutex);
-}
+	MonoFlightRecorder *log = debugger_log;
+	debugger_log = GINT_TO_POINTER (MONO_DEBUGGER_LOG_FREED);
 
-static void
-debugger_log_append (MonoDebugLogKind kind, intptr_t tid, const char *message)
-{
-	MonoDebugLogItem *item, *old_item;
-
-	if (!debugger_log || (debugger_log == GINT_TO_POINTER (MONO_DEBUGGER_LOG_UNINIT)))
-		mono_debugger_log_init ();
-
-	mono_coop_mutex_lock (&debugger_log_mutex);
-
-	if (debugger_log->cursor == MONO_DEBUGGER_LOG_UNINIT) {
-		item = &debugger_log->items [0];
-		item->counter = 0;
-	} else {
-		// We have a ring buffer
-		old_item = &debugger_log->items [debugger_log->cursor % debugger_log->max_size];
-		item = &debugger_log->items [(debugger_log->cursor + 1) % debugger_log->max_size];
-		item->counter = old_item->counter + 1;
-	}
-
-	debugger_log->cursor++;
-
-	item->tid = tid;
-	item->kind = kind;
-	item->message = message;
-
-#if 0
-	MOSTLY_ASYNC_SAFE_PRINTF ("DEBUGGER LOG (%zu): (%s:0x%x:%s) \n", item->counter, mono_debug_log_kind_to_string (item->kind), item->tid, item->message);
-#endif
-
-	mono_coop_mutex_unlock (&debugger_log_mutex);
-}
-
-static void
-debugger_log_iter_init (MonoDebuggerLogIter *iter) 
-{
-	// Make sure we are initialized
-	g_assert (debugger_log->max_size > 0);
-
-	if (debugger_log->cursor == MONO_DEBUGGER_LOG_UNINIT) {
-		iter->lowest_index = MONO_DEBUGGER_LOG_UNINIT; 
-		iter->highest_index = MONO_DEBUGGER_LOG_UNINIT;
-	} else if (debugger_log->cursor >= debugger_log->max_size) {
-		// Ring buffer has wrapped around
-		// So the item *after* the highest index is the lowest index
-		iter->highest_index = (debugger_log->cursor + 1) % debugger_log->max_size;
-		iter->lowest_index = (iter->highest_index + 1) % debugger_log->max_size;
-	} else {
-		iter->lowest_index = 0;
-		iter->highest_index = debugger_log->cursor;
-	}
-}
-
-static void
-debugger_log_iter_destroy (MonoDebuggerLogIter *iter) 
-{
-	return;
-}
-
-static gboolean
-debugger_log_iter_next (MonoDebuggerLogIter *iter, MonoDebugLogItem **item)
-{
-	if (iter->lowest_index == MONO_DEBUGGER_LOG_UNINIT)
-		return FALSE;
-
-	if (iter->lowest_index == iter->highest_index)
-		return FALSE;
-
-	if (iter->lowest_index == MONO_DEBUGGER_LOG_UNINIT)
-		return FALSE;
-
-	g_assert (iter->lowest_index >= 0);
-	g_assert (iter->lowest_index < debugger_log->max_size);
-
-	*item = &debugger_log->items [iter->lowest_index];
-	iter->lowest_index++;
-
-	if (iter->lowest_index >= debugger_log->max_size)
-		iter->lowest_index = iter->lowest_index % debugger_log->max_size;
-
-	return TRUE;
+	mono_memory_barrier ();
+	mono_flight_recorder_free (log);
 }
 
 void
 mono_debugger_log_command (const char *command_set, const char *command, guint8 *buf, int len)
 {
+	if (debugger_log == GINT_TO_POINTER (MONO_DEBUGGER_LOG_FREED))
+		return;
+
 	// FIXME: print the array in a format that can be decoded / printed?
 	char *msg = g_strdup_printf ("Command Logged: %s %s Response: %d", command_set, command, len);
-	debugger_log_append (DEBUG_LOG_COMMAND, 0x0, msg);
+	MonoDebugLogItem payload;
+	payload.kind = DEBUG_LOG_COMMAND;
+	payload.tid = 0x0;
+	g_snprintf ((gchar *) &payload.message, MONO_MAX_DEBUGGER_MSG_LEN, msg);
+	mono_flight_recorder_append (debugger_log, &payload);
 }
 
 void
 mono_debugger_log_event (DebuggerTlsData *tls, const char *event, guint8 *buf, int len)
 {
+	if (debugger_log == GINT_TO_POINTER (MONO_DEBUGGER_LOG_FREED))
+		return;
+
 	// FIXME: print the array in a format that can be decoded / printed?
 	intptr_t tid = mono_debugger_tls_thread_id (tls);
 	char *msg = g_strdup_printf ("Event logged of type %s Response: %d", event, len);
-	debugger_log_append (DEBUG_LOG_EVENT, tid, msg);
+	MonoDebugLogItem payload;
+	payload.kind = DEBUG_LOG_EVENT;
+	payload.tid = tid;
+	g_snprintf ((gchar *) &payload.message, MONO_MAX_DEBUGGER_MSG_LEN, msg);
+	mono_flight_recorder_append (debugger_log, &payload);
 }
 
 void
 mono_debugger_log_exit (int exit_code)
 {
+	if (debugger_log == GINT_TO_POINTER (MONO_DEBUGGER_LOG_FREED))
+		return;
+
 	char *msg = g_strdup_printf ("Exited with code %d", exit_code);
-	debugger_log_append (DEBUG_LOG_EXIT, 0x0, msg);
+	MonoDebugLogItem payload;
+	payload.kind = DEBUG_LOG_EXIT;
+	payload.tid = 0x0;
+	g_snprintf ((gchar *) &payload.message, MONO_MAX_DEBUGGER_MSG_LEN, msg);
+	mono_flight_recorder_append (debugger_log, &payload);
 }
 
 void
 mono_debugger_log_add_bp (gpointer bp, MonoMethod *method, long il_offset)
 {
-	mono_coop_mutex_lock (&debugger_log_mutex);
+	if (debugger_log == GINT_TO_POINTER (MONO_DEBUGGER_LOG_FREED))
+		return;
+
+	MonoCoopMutex *debugger_log_mutex = mono_flight_recorder_mutex (debugger_log);
+	mono_coop_mutex_lock (debugger_log_mutex);
 	g_ptr_array_add (breakpoint_copy, bp);
-	mono_coop_mutex_unlock (&debugger_log_mutex);
+	mono_coop_mutex_unlock (debugger_log_mutex);
 
 	char *msg = g_strdup_printf ("Add breakpoint %s %lu", method ? mono_method_full_name (method, TRUE) : "No method", il_offset);
-	debugger_log_append (DEBUG_LOG_BREAKPOINT, 0x0, msg);
+	MonoDebugLogItem payload;
+	payload.kind = DEBUG_LOG_BREAKPOINT;
+	payload.tid = 0x0;
+	g_snprintf ((gchar *) &payload.message, MONO_MAX_DEBUGGER_MSG_LEN, msg);
+	mono_flight_recorder_append (debugger_log, &payload);
 }
 
 void
 mono_debugger_log_remove_bp (gpointer bp, MonoMethod *method, long il_offset)
 {
-	mono_coop_mutex_lock (&debugger_log_mutex);
+	if (debugger_log == GINT_TO_POINTER (MONO_DEBUGGER_LOG_FREED))
+		return;
+
+	MonoCoopMutex *debugger_log_mutex = mono_flight_recorder_mutex (debugger_log);
+	mono_coop_mutex_lock (debugger_log_mutex);
 	g_ptr_array_remove (breakpoint_copy, bp);
-	mono_coop_mutex_unlock (&debugger_log_mutex);
+	mono_coop_mutex_unlock (debugger_log_mutex);
 
 	char *msg = g_strdup_printf ("Remove breakpoint %s %lu", method ? mono_method_full_name (method, TRUE) : "No method", il_offset);
-	debugger_log_append (DEBUG_LOG_BREAKPOINT, 0x0, msg);
+	MonoDebugLogItem payload;
+	payload.kind = DEBUG_LOG_BREAKPOINT;
+	payload.tid = 0x0;
+	g_snprintf ((gchar *) &payload.message, MONO_MAX_DEBUGGER_MSG_LEN, msg);
+	mono_flight_recorder_append (debugger_log, &payload);
 }
 
 void
 mono_debugger_log_bp_hit (DebuggerTlsData *tls, MonoMethod *method, long il_offset)
 {
+	if (debugger_log == GINT_TO_POINTER (MONO_DEBUGGER_LOG_FREED))
+		return;
+
 	intptr_t tid = mono_debugger_tls_thread_id (tls);
 	char *msg = g_strdup_printf ("Hit breakpoint %s %lu", method ? mono_method_full_name (method, TRUE) : "No method", il_offset);
-	debugger_log_append (DEBUG_LOG_BREAKPOINT, tid, msg);
+	MonoDebugLogItem payload;
+	payload.kind = DEBUG_LOG_BREAKPOINT;
+	payload.tid = tid;
+	g_snprintf ((gchar *) &payload.message, MONO_MAX_DEBUGGER_MSG_LEN, msg);
+	mono_flight_recorder_append (debugger_log, &payload);
 }
 
 void
 mono_debugger_log_resume (DebuggerTlsData *tls)
 {
+	if (debugger_log == GINT_TO_POINTER (MONO_DEBUGGER_LOG_FREED))
+		return;
+
 	intptr_t tid = mono_debugger_tls_thread_id (tls);
 	MonoDebuggerThreadState prev_state = mono_debugger_get_thread_state (tls);
 	g_assert (prev_state == MONO_DEBUGGER_SUSPENDED || prev_state == MONO_DEBUGGER_STARTED);
 	mono_debugger_set_thread_state (tls, prev_state, MONO_DEBUGGER_RESUMED);
 
 	char *msg = g_strdup_printf ("Resuming 0x%x from state %s", tid, mono_debug_log_thread_state_to_string (prev_state));
-	debugger_log_append (DEBUG_LOG_STATE_CHANGE, tid, msg);
+	MonoDebugLogItem payload;
+	payload.kind = DEBUG_LOG_STATE_CHANGE;
+	payload.tid = tid;
+	g_snprintf ((gchar *) &payload.message, MONO_MAX_DEBUGGER_MSG_LEN, msg);
+	mono_flight_recorder_append (debugger_log, &payload);
 }
 
 void
 mono_debugger_log_suspend (DebuggerTlsData *tls)
 {
+	if (debugger_log == GINT_TO_POINTER (MONO_DEBUGGER_LOG_FREED))
+		return;
+
 	intptr_t tid = mono_debugger_tls_thread_id (tls);
 	MonoDebuggerThreadState prev_state = mono_debugger_get_thread_state (tls);
 	g_assert (prev_state == MONO_DEBUGGER_RESUMED || prev_state == MONO_DEBUGGER_STARTED);
 	mono_debugger_set_thread_state (tls, prev_state, MONO_DEBUGGER_SUSPENDED);
 
 	char *msg = g_strdup_printf ("Suspending 0x%x from state %s", tid, mono_debug_log_thread_state_to_string (prev_state));
-	debugger_log_append (DEBUG_LOG_STATE_CHANGE, tid, msg);
+	MonoDebugLogItem payload;
+	payload.kind = DEBUG_LOG_STATE_CHANGE;
+	payload.tid = tid;
+	g_snprintf ((gchar *) &payload.message, MONO_MAX_DEBUGGER_MSG_LEN, msg);
+	mono_flight_recorder_append (debugger_log, &payload);
 }
 
 typedef struct {
@@ -306,10 +264,11 @@ dump_thread_state (gpointer key, gpointer value, gpointer user_data)
 void
 mono_debugger_state (JsonWriter *writer)
 {
-	if (!debugger_log || debugger_log == GINT_TO_POINTER (MONO_DEBUGGER_LOG_UNINIT))
+	if (debugger_log == GINT_TO_POINTER (MONO_DEBUGGER_LOG_FREED))
 		return;
 
-	mono_coop_mutex_lock (&debugger_log_mutex);
+	MonoCoopMutex *debugger_log_mutex = mono_flight_recorder_mutex (debugger_log);
+	mono_coop_mutex_lock (debugger_log_mutex);
 	mono_json_writer_object_begin(writer);
 
 	mono_json_writer_indent (writer);
@@ -367,17 +326,18 @@ mono_debugger_state (JsonWriter *writer)
 	}
 
 	// Log history
-	MonoDebuggerLogIter diter;
-	MonoDebugLogItem *item;
-	debugger_log_iter_init (&diter);
+	MonoFlightRecorderIter diter;
+	mono_flight_recorder_iter_init (debugger_log, &diter);
 
 	mono_json_writer_indent (writer);
 	mono_json_writer_object_key(writer, "debugger_history");
 	mono_json_writer_array_begin (writer);
 
 	gboolean first = TRUE;
+	MonoDebugLogItem item;
+	MonoFlightRecorderHeader header;
 
-	while (debugger_log_iter_next (&diter, &item)) {
+	while (mono_flight_recorder_iter_next (&diter, &header, (gpointer *) &item)) {
 		if (!first)
 			mono_json_writer_printf (writer, ",\n");
 		else
@@ -388,19 +348,19 @@ mono_debugger_state (JsonWriter *writer)
 
 		mono_json_writer_indent (writer);
 		mono_json_writer_object_key(writer, "kind");
-		mono_json_writer_printf (writer, "\"%s\",\n", mono_debug_log_kind_to_string (item->kind));
+		mono_json_writer_printf (writer, "\"%s\",\n", mono_debug_log_kind_to_string (item.kind));
 
 		mono_json_writer_indent (writer);
 		mono_json_writer_object_key(writer, "tid");
-		mono_json_writer_printf (writer, "\"0x%x\",\n", item->tid);
+		mono_json_writer_printf (writer, "\"0x%x\",\n", item.tid);
 
 		mono_json_writer_indent (writer);
 		mono_json_writer_object_key(writer, "message");
-		mono_json_writer_printf (writer, "\"%s\",\n", item->message);
+		mono_json_writer_printf (writer, "\"%s\",\n", item.message);
 
 		mono_json_writer_indent (writer);
 		mono_json_writer_object_key(writer, "counter");
-		mono_json_writer_printf (writer, "\"%d\"\n", item->counter);
+		mono_json_writer_printf (writer, "\"%d\"\n", header.counter);
 
 		mono_json_writer_indent_pop (writer);
 		mono_json_writer_indent (writer);
@@ -413,7 +373,7 @@ mono_debugger_state (JsonWriter *writer)
 	mono_json_writer_array_end (writer);
 	mono_json_writer_printf (writer, ",\n");
 
-	debugger_log_iter_destroy (&diter);
+	mono_flight_recorder_iter_destroy (&diter);
 
 	// Log client/connection state
 	gboolean disconnected = mono_debugger_is_disconnected ();
@@ -429,13 +389,13 @@ mono_debugger_state (JsonWriter *writer)
 	mono_json_writer_indent (writer);
 	mono_json_writer_object_end (writer);
 
-	mono_coop_mutex_unlock (&debugger_log_mutex);
+	mono_coop_mutex_unlock (debugger_log_mutex);
 }
 
 char *
 mono_debugger_state_str (void)
 {
-	if (!debugger_log || debugger_log == GINT_TO_POINTER (MONO_DEBUGGER_LOG_UNINIT))
+	if (debugger_log == GINT_TO_POINTER (MONO_DEBUGGER_LOG_FREED))
 		return NULL;
 
 	JsonWriter writer;

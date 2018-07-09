@@ -14,6 +14,8 @@
 #include <mono/utils/mono-os-semaphore.h>
 #include <mono/utils/mono-stack-unwinding.h>
 #include <mono/utils/mono-linked-list-set.h>
+#include <mono/utils/lock-free-alloc.h>
+#include <mono/utils/lock-free-queue.h>
 #include <mono/utils/mono-tls.h>
 #include <mono/utils/mono-coop-semaphore.h>
 #include <mono/utils/os-event.h>
@@ -363,12 +365,19 @@ mono_thread_info_set_tid (THREAD_INFO_TYPE *info, MonoNativeThreadId tid)
 	((MonoThreadInfo*) info)->node.key = (uintptr_t) MONO_NATIVE_THREAD_ID_TO_UINT (tid);
 }
 
+
 /*
  * @thread_info_size is sizeof (GcThreadInfo), a struct the GC defines to make it possible to have
  * a single block with info from both camps. 
  */
 void
 mono_thread_info_init (size_t thread_info_size);
+
+/*
+ * Wait for the above mono_thread_info_init to be called
+ */
+void
+mono_thread_info_wait_inited (void);
 
 void
 mono_thread_info_callbacks_init (MonoThreadInfoCallbacks *callbacks);
