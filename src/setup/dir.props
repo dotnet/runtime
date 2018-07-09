@@ -435,15 +435,6 @@
   </PropertyGroup>
 
   <PropertyGroup>
-    <SharedHostDebPkgName>dotnet-host</SharedHostDebPkgName>
-    <SharedHostDebPkgName>$(SharedHostDebPkgName.ToLower())</SharedHostDebPkgName>
-    <HostFxrDebPkgName>$(DotnetHostFxrString)$(HostResolverVersion)</HostFxrDebPkgName>
-    <HostFxrDebPkgName>$(HostFxrDebPkgName.ToLower())</HostFxrDebPkgName>
-    <SharedFxDebPkgName>$(DotnetRuntimeString)$(SharedFrameworkNugetVersion)</SharedFxDebPkgName>
-    <SharedFxDebPkgName>$(SharedFxDebPkgName.ToLower())</SharedFxDebPkgName>
-    <RuntimeDependenciesDebPkgName>$(DotnetRuntimeDependenciesPackageString)$(ProductVersion)</RuntimeDependenciesDebPkgName>
-    <RuntimeDependenciesDebPkgName>$(RuntimeDependenciesDebPkgName.ToLower())</RuntimeDependenciesDebPkgName>
-
    <HostPackageVersion>$(HostVersion)</HostPackageVersion>
    <HostPackageRelease>1</HostPackageRelease>
    <HostResolverPackageVersion>$(HostResolverVersion)</HostResolverPackageVersion>
@@ -456,22 +447,15 @@
    <RuntimeDepsRpmPackageRelease>1</RuntimeDepsRpmPackageRelease>
   </PropertyGroup>
 
-  <PropertyGroup Condition="'$(BuildUpgradeableLinuxPackages)' == 'true'">
+  <PropertyGroup Condition="'$(InstallerExtension)' == '.deb' or '$(InstallerExtension)' == '.rpm' ">
+
     <PackageNameSuffix>$(MajorVersion).$(MinorVersion)</PackageNameSuffix>
-    <InstallerNameSuffix>-upgrade</InstallerNameSuffix>
 
-    <SharedHostInstallerFile Condition="'$(InstallerExtension)' == '.deb' or '$(InstallerExtension)' == '.rpm' ">$(SharedHostInstallerStart)$(SharedFrameworkNugetVersion)-$(TargetArchitecture)$(InstallerNameSuffix)$(InstallerExtension)</SharedHostInstallerFile>
-    <HostFxrInstallerFile Condition="'$(InstallerExtension)' == '.deb' or '$(InstallerExtension)' == '.rpm'">$(HostFxrInstallerStart)$(HostResolverVersion)-$(TargetArchitecture)$(InstallerNameSuffix)$(InstallerExtension)</HostFxrInstallerFile>
-    <SharedFrameworkInstallerFile Condition="'$(InstallerExtension)' == '.deb' or '$(InstallerExtension)' == '.rpm'">$(SharedFrameworkInstallerStart)$(SharedFrameworkNugetVersion)-$(TargetArchitecture)$(InstallerNameSuffix)$(InstallerExtension)</SharedFrameworkInstallerFile>
+    <SharedHostInstallerFile Condition="'$(InstallerExtension)' == '.deb' or '$(InstallerExtension)' == '.rpm' ">$(SharedHostInstallerStart)$(SharedFrameworkNugetVersion)-$(TargetArchitecture)$(InstallerExtension)</SharedHostInstallerFile>
+    <HostFxrInstallerFile Condition="'$(InstallerExtension)' == '.deb' or '$(InstallerExtension)' == '.rpm'">$(HostFxrInstallerStart)$(HostResolverVersion)-$(TargetArchitecture)$(InstallerExtension)</HostFxrInstallerFile>
+    <SharedFrameworkInstallerFile Condition="'$(InstallerExtension)' == '.deb' or '$(InstallerExtension)' == '.rpm'">$(SharedFrameworkInstallerStart)$(SharedFrameworkNugetVersion)-$(TargetArchitecture)$(InstallerExtension)</SharedFrameworkInstallerFile>
+    <DotnetRuntimeDependenciesPackageInstallerFile>$(DotnetRuntimeDependenciesPackageInstallerStart)$(ProductMoniker)$(InstallerExtension)</DotnetRuntimeDependenciesPackageInstallerFile>
 
-    <DotnetRuntimeDependenciesPackageInstallerFile>$(DotnetRuntimeDependenciesPackageInstallerStart)$(ProductMoniker)$(InstallerNameSuffix)$(InstallerExtension)</DotnetRuntimeDependenciesPackageInstallerFile>
-
-    <HostFxrDebPkgName>$(DotnetHostFxrString)$(PackageNameSuffix)</HostFxrDebPkgName>
-    <HostFxrDebPkgName>$(HostFxrDebPkgName.ToLower())</HostFxrDebPkgName>
-    <SharedFxDebPkgName>$(DotnetRuntimeString)$(PackageNameSuffix)</SharedFxDebPkgName>
-    <SharedFxDebPkgName>$(SharedFxDebPkgName.ToLower())</SharedFxDebPkgName>
-    <RuntimeDependenciesDebPkgName>$(DotnetRuntimeDependenciesPackageString)$(PackageNameSuffix)</RuntimeDependenciesDebPkgName>
-    <RuntimeDependenciesDebPkgName>$(RuntimeDependenciesDebPkgName.ToLower())</RuntimeDependenciesDebPkgName>
   </PropertyGroup>
 
   <PropertyGroup Condition="'$(UsingNETSdkCompiler)' != 'true'">
