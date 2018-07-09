@@ -562,7 +562,6 @@ namespace System.Runtime.Caching
         //    internal int Result;
         //}
 
-        [ResourceExposure(ResourceScope.None)]
         static bool DoAssert(string message) {
             if (!s_assert) {
                 return false;
@@ -749,7 +748,6 @@ A=Exit process R=Debug I=Continue";
         //      * Else display a dialog box asking the user to Abort, Retry (break), or Ignore
         //
         [Conditional("DEBUG")]
-        [ResourceExposure(ResourceScope.None)]
         internal static void Assert(bool assertion)
         {
 #if DEBUG
@@ -766,7 +764,6 @@ A=Exit process R=Debug I=Continue";
         // Like Assert, but the assertion is always considered to be false.
         //
         [Conditional("DEBUG")]
-        [ResourceExposure(ResourceScope.None)]
         internal static void Fail(string message)
         {
 #if DEBUG
@@ -779,7 +776,6 @@ A=Exit process R=Debug I=Continue";
         // Note that the tag needn't be an exact match.
         //
         [SuppressMessage("Microsoft.Performance", "CA1811:AvoidUncalledPrivateCode", Justification = "Grandfathered suppression from original caching code checkin")]
-        [ResourceExposure(ResourceScope.None)]
         internal static bool IsTagEnabled(string tagName)
         {
 #if DEBUG
@@ -795,7 +791,6 @@ A=Exit process R=Debug I=Continue";
         // This function chekcs for an exact match.
         //
         [SuppressMessage("Microsoft.Performance", "CA1811:AvoidUncalledPrivateCode", Justification = "Grandfathered suppression from original caching code checkin")]
-        [ResourceExposure(ResourceScope.None)]
         internal static bool IsTagPresent(string tagName)
         {
 #if DEBUG
@@ -810,7 +805,6 @@ A=Exit process R=Debug I=Continue";
         // Breaks into the debugger, or launches one if not yet attached.
         //
         [Conditional("DEBUG")]
-        [ResourceExposure(ResourceScope.None)]
         internal static void Break()
         {
 #if DEBUG
@@ -873,7 +867,6 @@ A=Exit process R=Debug I=Continue";
         // Use Debug.Validate(tagName, obj) for that purpose.
         //
         [Conditional("DEBUG")]
-        [ResourceExposure(ResourceScope.None)]
         internal static void Validate(object obj)
         {
 #if DEBUG
@@ -904,7 +897,6 @@ A=Exit process R=Debug I=Continue";
         // An Assertion is made if the validation fails.
         //
         [Conditional("DEBUG")]
-        [ResourceExposure(ResourceScope.None)]
         internal static void Validate(string tagName, object obj)
         {
 #if DEBUG

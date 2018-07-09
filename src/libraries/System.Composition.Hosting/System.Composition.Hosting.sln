@@ -1,13 +1,13 @@
 Microsoft Visual Studio Solution File, Format Version 12.00
-# Visual Studio 14
-VisualStudioVersion = 14.0.25420.1
+# Visual Studio 15
+VisualStudioVersion = 15.0.27213.1
 MinimumVisualStudioVersion = 10.0.40219.1
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "System.Composition.Hosting.Tests", "tests\System.Composition.Hosting.Tests.csproj", "{52BE9F68-69EC-44AA-806E-11EFB57D9B4B}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "System.Composition.Hosting.Tests", "tests\System.Composition.Hosting.Tests.csproj", "{52BE9F68-69EC-44AA-806E-11EFB57D9B4B}"
 	ProjectSection(ProjectDependencies) = postProject
 		{2B8FECC6-34A1-48FE-BA75-99572D2D6DB2} = {2B8FECC6-34A1-48FE-BA75-99572D2D6DB2}
 	EndProjectSection
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "System.Composition.Hosting", "src\System.Composition.Hosting.csproj", "{2B8FECC6-34A1-48FE-BA75-99572D2D6DB2}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "System.Composition.Hosting", "src\System.Composition.Hosting.csproj", "{2B8FECC6-34A1-48FE-BA75-99572D2D6DB2}"
 EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "tests", "tests", "{1A2F9F4A-A032-433E-B914-ADD5992BB178}"
 EndProject
@@ -34,5 +34,8 @@ Global
 	GlobalSection(NestedProjects) = preSolution
 		{52BE9F68-69EC-44AA-806E-11EFB57D9B4B} = {1A2F9F4A-A032-433E-B914-ADD5992BB178}
 		{2B8FECC6-34A1-48FE-BA75-99572D2D6DB2} = {E107E9C1-E893-4E87-987E-04EF0DCEAEFD}
+	EndGlobalSection
+	GlobalSection(ExtensibilityGlobals) = postSolution
+		SolutionGuid = {4D9B75F6-D7E6-4E2C-BFDE-72F227FE7117}
 	EndGlobalSection
 EndGlobal

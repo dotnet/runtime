@@ -4,8 +4,8 @@
 
 using System.Collections.Generic;
 using System.Composition.Hosting.Util;
+using System.Diagnostics;
 using System.Threading;
-using Microsoft.Internal;
 
 namespace System.Composition.Hosting.Core
 {
@@ -92,7 +92,10 @@ namespace System.Composition.Hosting.Core
 
             // To generate acceptable error messages here we're going to need to pass in a description
             // of the component, or otherwise find a way to get one.
-            throw ThrowHelper.CompositionException(SR.Format(SR.Component_NotCreatableOutsideSharingBoundary, sharingBoundary));
+            string message = SR.Format(SR.Component_NotCreatableOutsideSharingBoundary, sharingBoundary);
+            var ex = new CompositionFailedException(message);
+            Debug.WriteLine(SR.Diagnostic_ThrowingException, ex.ToString());
+            throw ex;
         }
 
         /// <summary>

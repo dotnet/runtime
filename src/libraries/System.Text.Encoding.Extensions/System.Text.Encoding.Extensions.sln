@@ -1,18 +1,18 @@
 Microsoft Visual Studio Solution File, Format Version 12.00
-# Visual Studio 14
-VisualStudioVersion = 14.0.25420.1
+# Visual Studio 15
+VisualStudioVersion = 15.0.27213.1
 MinimumVisualStudioVersion = 10.0.40219.1
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "System.Text.Encoding.Extensions.Tests", "tests\System.Text.Encoding.Extensions.Tests.csproj", "{037D5B14-EEE1-43C4-8AA8-9F276C0C10CF}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "System.Text.Encoding.Extensions.Tests", "tests\System.Text.Encoding.Extensions.Tests.csproj", "{037D5B14-EEE1-43C4-8AA8-9F276C0C10CF}"
 	ProjectSection(ProjectDependencies) = postProject
 		{72BFA60D-4F91-4F84-AC6A-910B587DA1BF} = {72BFA60D-4F91-4F84-AC6A-910B587DA1BF}
 	EndProjectSection
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "System.Text.Encoding.Extensions", "src\System.Text.Encoding.Extensions.csproj", "{72BFA60D-4F91-4F84-AC6A-910B587DA1BF}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "System.Text.Encoding.Extensions", "src\System.Text.Encoding.Extensions.csproj", "{72BFA60D-4F91-4F84-AC6A-910B587DA1BF}"
 	ProjectSection(ProjectDependencies) = postProject
 		{45ED5323-5E2F-445F-B305-21B3044C87B6} = {45ED5323-5E2F-445F-B305-21B3044C87B6}
 	EndProjectSection
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "System.Text.Encoding.Extensions", "ref\System.Text.Encoding.Extensions.csproj", "{45ED5323-5E2F-445F-B305-21B3044C87B6}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "System.Text.Encoding.Extensions", "ref\System.Text.Encoding.Extensions.csproj", "{45ED5323-5E2F-445F-B305-21B3044C87B6}"
 EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "tests", "tests", "{1A2F9F4A-A032-433E-B914-ADD5992BB178}"
 EndProject
@@ -46,5 +46,8 @@ Global
 		{037D5B14-EEE1-43C4-8AA8-9F276C0C10CF} = {1A2F9F4A-A032-433E-B914-ADD5992BB178}
 		{72BFA60D-4F91-4F84-AC6A-910B587DA1BF} = {E107E9C1-E893-4E87-987E-04EF0DCEAEFD}
 		{45ED5323-5E2F-445F-B305-21B3044C87B6} = {2E666815-2EDB-464B-9DF6-380BF4789AD4}
+	EndGlobalSection
+	GlobalSection(ExtensibilityGlobals) = postSolution
+		SolutionGuid = {5EC1F05F-F1D8-473F-8913-4A49F1C4ACE5}
 	EndGlobalSection
 EndGlobal

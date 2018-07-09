@@ -1,13 +1,13 @@
 Microsoft Visual Studio Solution File, Format Version 12.00
-# Visual Studio 14
-VisualStudioVersion = 14.0.25420.1
+# Visual Studio 15
+VisualStudioVersion = 15.0.27213.1
 MinimumVisualStudioVersion = 10.0.40219.1
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "System.Composition.TypedParts.Tests", "tests\System.Composition.TypedParts.Tests.csproj", "{8D1CB149-B52E-472B-A91F-DF1C77D8BA46}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "System.Composition.TypedParts.Tests", "tests\System.Composition.TypedParts.Tests.csproj", "{8D1CB149-B52E-472B-A91F-DF1C77D8BA46}"
 	ProjectSection(ProjectDependencies) = postProject
 		{B4B5E15C-E6B9-48EA-94C2-F067484D4D3E} = {B4B5E15C-E6B9-48EA-94C2-F067484D4D3E}
 	EndProjectSection
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "System.Composition.TypedParts", "src\System.Composition.TypedParts.csproj", "{B4B5E15C-E6B9-48EA-94C2-F067484D4D3E}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "System.Composition.TypedParts", "src\System.Composition.TypedParts.csproj", "{B4B5E15C-E6B9-48EA-94C2-F067484D4D3E}"
 EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "tests", "tests", "{1A2F9F4A-A032-433E-B914-ADD5992BB178}"
 EndProject
@@ -34,5 +34,8 @@ Global
 	GlobalSection(NestedProjects) = preSolution
 		{8D1CB149-B52E-472B-A91F-DF1C77D8BA46} = {1A2F9F4A-A032-433E-B914-ADD5992BB178}
 		{B4B5E15C-E6B9-48EA-94C2-F067484D4D3E} = {E107E9C1-E893-4E87-987E-04EF0DCEAEFD}
+	EndGlobalSection
+	GlobalSection(ExtensibilityGlobals) = postSolution
+		SolutionGuid = {3373081C-C3A1-450B-9D5C-FB892CD08D8B}
 	EndGlobalSection
 EndGlobal

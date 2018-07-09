@@ -1,12 +1,7 @@
-﻿<?xml version="1.0" encoding="utf-8"?>
-<Project ToolsVersion="14.0" DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
-  <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.props))\dir.props" />
+<Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
     <ProjectGuid>{CB11B315-2567-4574-977D-89E3135243C4}</ProjectGuid>
-  </PropertyGroup>
-  <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Debug|AnyCPU' ">
-  </PropertyGroup>
-  <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Release|AnyCPU' ">
+    <Configurations>Debug;Release</Configurations>
   </PropertyGroup>
   <ItemGroup>
     <Compile Include="StreamExtensions.cs" />
@@ -18,5 +13,4 @@
     <ProjectReference Include="$(CommonTestPath)\System\Xml\ModuleCore\ModuleCore.csproj" />
     <ProjectReference Include="..\XDocument.Common\XDocument.Common.csproj" />
   </ItemGroup>
-  <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.targets))\dir.targets" />
 </Project>

@@ -3,9 +3,9 @@
 // See the LICENSE file in the project root for more information.
 
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.Linq;
 using System.Text;
-using Microsoft.Internal;
 
 namespace System.Composition.Hosting.Core
 {
@@ -15,7 +15,7 @@ namespace System.Composition.Hosting.Core
         private readonly ExportDescriptorProvider[] _exportDescriptorProviders;
         private readonly IDictionary<CompositionContract, UpdateResult> _updateResults = new Dictionary<CompositionContract, UpdateResult>();
 
-        private static readonly CompositionDependency[] s_noDependenciesValue = EmptyArray<CompositionDependency>.Value;
+        private static readonly CompositionDependency[] s_noDependenciesValue = Array.Empty<CompositionDependency>();
         private static readonly Func<CompositionDependency[]> s_noDependencies = () => s_noDependenciesValue;
 
         private bool _updateFinished;
@@ -61,7 +61,9 @@ namespace System.Composition.Hosting.Core
                 message.AppendLine();
                 message.Append(DescribeCompositionStack(dependency, checking));
 
-                throw ThrowHelper.CompositionException(message.ToString());
+                var ex = new CompositionFailedException(message.ToString());
+                Debug.WriteLine(SR.Diagnostic_ThrowingException, ex.ToString());
+                throw ex;
             }
 
             if (@checked.Contains(dependency.Target))
@@ -96,7 +98,10 @@ namespace System.Composition.Hosting.Core
                         message.AppendFormat(SR.ExportDescriptor_UnsupportedCycle, dependency.Target.Origin);
                         message.AppendLine();
                         message.Append(DescribeCompositionStack(dependency, checking));
-                        throw ThrowHelper.CompositionException(message.ToString());
+
+                        var ex = new CompositionFailedException(message.ToString());
+                        Debug.WriteLine(SR.Diagnostic_ThrowingException, ex.ToString());
+                        throw ex;
                     }
 
                     if (!step.IsPrerequisite)
@@ -128,8 +133,10 @@ namespace System.Composition.Hosting.Core
 
         protected override IEnumerable<ExportDescriptorPromise> GetPromises(CompositionContract contract)
         {
-            Assumes.IsTrue(!_updateFinished, "Update is finished - dependencies should have been requested earlier.");
-
+            if (_updateFinished)
+            {
+                throw new Exception(SR.Dependencies_Should_Be_Requested_Earlier);
+            }
             ExportDescriptor[] definitions;
             if (_partDefinitions.TryGetValue(contract, out definitions))
                 return definitions.Select(d => new ExportDescriptorPromise(contract, "Preexisting", false, s_noDependencies, _ => d)).ToArray();

@@ -6,7 +6,6 @@ using System.ComponentModel.Composition.Primitives;
 using System.Globalization;
 using System.Reflection;
 using System.Threading;
-using Microsoft.Internal;
 
 namespace System.ComponentModel.Composition.ReflectionModel
 {
@@ -19,7 +18,15 @@ namespace System.ComponentModel.Composition.ReflectionModel
 
         public ExportingMember(ExportDefinition definition, ReflectionMember member)
         {
-            Assumes.NotNull(definition, member);
+            if(definition == null)
+            {
+                throw new ArgumentNullException(nameof(definition));
+            }
+
+            if(member == null)
+            {
+                throw new ArgumentNullException(nameof(member));
+            }
 
             _definition = definition;
             _member = member;

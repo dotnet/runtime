@@ -1,18 +1,11 @@
-﻿<?xml version="1.0" encoding="utf-8"?>
-<Project ToolsVersion="14.0" DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
-  <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.props))\dir.props" />
+<Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
     <ProjectGuid>{EA610394-CBA3-4E5C-B3DB-AAEA7F640E89}</ProjectGuid>
     <AssemblyName>System.Collections.Concurrent</AssemblyName>
     <RootNamespace>System.Collections.Concurrent</RootNamespace>
     <IsPartialFacadeAssembly>true</IsPartialFacadeAssembly>
+    <Configurations>netcoreapp-Unix-Debug;netcoreapp-Unix-Release;netcoreapp-Windows_NT-Debug;netcoreapp-Windows_NT-Release;uap-Windows_NT-Debug;uap-Windows_NT-Release</Configurations>
   </PropertyGroup>
-  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'netcoreapp-Unix-Debug|AnyCPU'" />
-  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'netcoreapp-Unix-Release|AnyCPU'" />
-  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'netcoreapp-Windows_NT-Debug|AnyCPU'" />
-  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'netcoreapp-Windows_NT-Release|AnyCPU'" />
-  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'uap-Windows_NT-Debug|AnyCPU'" />
-  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'uap-Windows_NT-Release|AnyCPU'" />
   <ItemGroup>
     <Compile Include="System\Collections\Concurrent\BlockingCollection.cs" />
     <Compile Include="System\Collections\Concurrent\CDSCollectionETWBCLProvider.cs" />
@@ -29,7 +22,7 @@
   </ItemGroup>
   <ItemGroup>
     <ReferenceFromRuntime Include="System.Private.CoreLib" />
-    <ProjectReference Include="..\..\System.Collections\src\System.Collections.csproj" />    
+    <ProjectReference Include="..\..\System.Collections\src\System.Collections.csproj" />
     <ProjectReference Include="..\..\System.Diagnostics.Debug\src\System.Diagnostics.Debug.csproj" />
     <ProjectReference Include="..\..\System.Diagnostics.Tools\src\System.Diagnostics.Tools.csproj" />
     <ProjectReference Include="..\..\System.Diagnostics.Tracing\src\System.Diagnostics.Tracing.csproj" />
@@ -39,5 +32,4 @@
     <ProjectReference Include="..\..\System.Threading\src\System.Threading.csproj" />
     <ProjectReference Include="..\..\System.Threading.Tasks\src\System.Threading.Tasks.csproj" />
   </ItemGroup>
-  <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.targets))\dir.targets" />
 </Project>

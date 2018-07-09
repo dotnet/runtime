@@ -5,7 +5,6 @@
 using System.Collections.Generic;
 using System.ComponentModel.Composition.Primitives;
 using System.Linq;
-using Microsoft.Internal;
 
 namespace System.ComponentModel.Composition.Hosting
 {
@@ -19,9 +18,15 @@ namespace System.ComponentModel.Composition.Hosting
 
             public DependenciesTraversal(FilteredCatalog catalog, Func<ImportDefinition, bool> importFilter)
             {
-                Assumes.NotNull(catalog);
-                Assumes.NotNull(importFilter);
+                if (catalog == null)
+                {
+                    throw new ArgumentNullException(nameof(catalog));
+                }
 
+                if (importFilter == null)
+                {
+                    throw new ArgumentNullException(nameof(importFilter));
+                }
                 _parts = catalog._innerCatalog;
                 _importFilter = importFilter;
             }

@@ -27,7 +27,10 @@ namespace System.ComponentModel.Composition.ReflectionModel
             {
                 case MemberTypes.Property:
                     PropertyInfo property = (PropertyInfo)member;
-                    Assumes.NotNull(property);
+                    if (property == null)
+                    {
+                        throw new Exception(SR.Diagnostic_InternalExceptionMessage);
+                    }
                     _accessors = new MemberInfo[] { property.GetGetMethod(true), property.GetSetMethod(true) };
                     break;
                 case MemberTypes.Event:
@@ -97,8 +100,10 @@ namespace System.ComponentModel.Composition.ReflectionModel
             }
             else
             {
-                Assumes.NotNull(_accessors);
-                Assumes.NotNull(_accessors[0]);
+                if(_accessors == null || _accessors[0] == null)
+                {
+                    throw new Exception(SR.Diagnostic_InternalExceptionMessage);
+                }
                 return MemberType.GetHashCode() ^ _accessors[0].GetHashCode();
             }
         }
@@ -120,8 +125,10 @@ namespace System.ComponentModel.Composition.ReflectionModel
             }
 
             // we are dealing with explicitly passed accessors in both cases
-            Assumes.NotNull(_accessors);
-            Assumes.NotNull(that._accessors);
+            if(_accessors == null || that._accessors == null)
+            {
+                throw new Exception(SR.Diagnostic_InternalExceptionMessage);
+            }
             return _accessors.SequenceEqual(that._accessors);
         }
 

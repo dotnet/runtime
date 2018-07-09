@@ -1,18 +1,18 @@
 Microsoft Visual Studio Solution File, Format Version 12.00
-# Visual Studio 14
-VisualStudioVersion = 14.0.25420.1
+# Visual Studio 15
+VisualStudioVersion = 15.0.27213.1
 MinimumVisualStudioVersion = 10.0.40219.1
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Microsoft.Win32.Registry.AccessControl.Tests", "tests\Microsoft.Win32.Registry.AccessControl.Tests.csproj", "{C2B7761E-A4C0-4285-8B83-CC426A1494FA}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Microsoft.Win32.Registry.AccessControl.Tests", "tests\Microsoft.Win32.Registry.AccessControl.Tests.csproj", "{C2B7761E-A4C0-4285-8B83-CC426A1494FA}"
 	ProjectSection(ProjectDependencies) = postProject
 		{0E23F29E-6BB0-4B94-A5DA-B5E50601E0F2} = {0E23F29E-6BB0-4B94-A5DA-B5E50601E0F2}
 	EndProjectSection
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Microsoft.Win32.Registry.AccessControl", "src\Microsoft.Win32.Registry.AccessControl.csproj", "{0E23F29E-6BB0-4B94-A5DA-B5E50601E0F2}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Microsoft.Win32.Registry.AccessControl", "src\Microsoft.Win32.Registry.AccessControl.csproj", "{0E23F29E-6BB0-4B94-A5DA-B5E50601E0F2}"
 	ProjectSection(ProjectDependencies) = postProject
 		{389CCAC2-E1C2-4185-AC01-2035CB99B5ED} = {389CCAC2-E1C2-4185-AC01-2035CB99B5ED}
 	EndProjectSection
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Microsoft.Win32.Registry.AccessControl", "ref\Microsoft.Win32.Registry.AccessControl.csproj", "{389CCAC2-E1C2-4185-AC01-2035CB99B5ED}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Microsoft.Win32.Registry.AccessControl", "ref\Microsoft.Win32.Registry.AccessControl.csproj", "{389CCAC2-E1C2-4185-AC01-2035CB99B5ED}"
 EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "tests", "tests", "{1A2F9F4A-A032-433E-B914-ADD5992BB178}"
 EndProject
@@ -46,5 +46,8 @@ Global
 		{C2B7761E-A4C0-4285-8B83-CC426A1494FA} = {1A2F9F4A-A032-433E-B914-ADD5992BB178}
 		{0E23F29E-6BB0-4B94-A5DA-B5E50601E0F2} = {E107E9C1-E893-4E87-987E-04EF0DCEAEFD}
 		{389CCAC2-E1C2-4185-AC01-2035CB99B5ED} = {2E666815-2EDB-464B-9DF6-380BF4789AD4}
+	EndGlobalSection
+	GlobalSection(ExtensibilityGlobals) = postSolution
+		SolutionGuid = {E2062894-CBCC-49AF-9508-20D203AE3880}
 	EndGlobalSection
 EndGlobal

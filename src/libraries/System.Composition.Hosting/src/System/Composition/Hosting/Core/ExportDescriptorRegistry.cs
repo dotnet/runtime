@@ -3,7 +3,7 @@
 // See the LICENSE file in the project root for more information.
 
 using System.Collections.Generic;
-using Microsoft.Internal;
+using System.Diagnostics;
 
 namespace System.Composition.Hosting.Core
 {
@@ -47,7 +47,11 @@ namespace System.Composition.Hosting.Core
             // This check is duplicated in the update process- the update operation will catch
             // cardinality violations in advance of this in all but a few very rare scenarios.
             if (allForExport.Length != 1)
-                throw ThrowHelper.CardinalityMismatch_TooManyExports(exportKey.ToString());
+            {
+                var ex = new CompositionFailedException(SR.Format(SR.CardinalityMismatch_TooManyExports, exportKey.ToString()));
+                Debug.WriteLine(SR.Diagnostic_ThrowingException, ex.ToString());
+                throw ex;
+            }
 
             defaultForExport = allForExport[0];
             return true;

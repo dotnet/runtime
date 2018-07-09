@@ -1,13 +1,13 @@
 Microsoft Visual Studio Solution File, Format Version 12.00
-# Visual Studio 14
-VisualStudioVersion = 14.0.25420.1
+# Visual Studio 15
+VisualStudioVersion = 15.0.27213.1
 MinimumVisualStudioVersion = 10.0.40219.1
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "System.Composition.Convention.Tests", "tests\System.Composition.Convention.Tests.csproj", "{17DBE1D4-FCB5-4D55-805C-C4A22EE8C032}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "System.Composition.Convention.Tests", "tests\System.Composition.Convention.Tests.csproj", "{17DBE1D4-FCB5-4D55-805C-C4A22EE8C032}"
 	ProjectSection(ProjectDependencies) = postProject
 		{E6592FAD-10B5-4B56-9287-D72DD136992F} = {E6592FAD-10B5-4B56-9287-D72DD136992F}
 	EndProjectSection
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "System.Composition.Convention", "src\System.Composition.Convention.csproj", "{E6592FAD-10B5-4B56-9287-D72DD136992F}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "System.Composition.Convention", "src\System.Composition.Convention.csproj", "{E6592FAD-10B5-4B56-9287-D72DD136992F}"
 EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "tests", "tests", "{1A2F9F4A-A032-433E-B914-ADD5992BB178}"
 EndProject
@@ -19,10 +19,10 @@ Global
 		Release|Any CPU = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(ProjectConfigurationPlatforms) = postSolution
-		{17DBE1D4-FCB5-4D55-805C-C4A22EE8C032}.Debug|Any CPU.ActiveCfg = netcoreapp-Debug|Any CPU
-		{17DBE1D4-FCB5-4D55-805C-C4A22EE8C032}.Debug|Any CPU.Build.0 = netcoreapp-Debug|Any CPU
-		{17DBE1D4-FCB5-4D55-805C-C4A22EE8C032}.Release|Any CPU.ActiveCfg = netcoreapp-Release|Any CPU
-		{17DBE1D4-FCB5-4D55-805C-C4A22EE8C032}.Release|Any CPU.Build.0 = netcoreapp-Release|Any CPU
+		{17DBE1D4-FCB5-4D55-805C-C4A22EE8C032}.Debug|Any CPU.ActiveCfg = netstandard-Debug|Any CPU
+		{17DBE1D4-FCB5-4D55-805C-C4A22EE8C032}.Debug|Any CPU.Build.0 = netstandard-Debug|Any CPU
+		{17DBE1D4-FCB5-4D55-805C-C4A22EE8C032}.Release|Any CPU.ActiveCfg = netstandard-Release|Any CPU
+		{17DBE1D4-FCB5-4D55-805C-C4A22EE8C032}.Release|Any CPU.Build.0 = netstandard-Release|Any CPU
 		{E6592FAD-10B5-4B56-9287-D72DD136992F}.Debug|Any CPU.ActiveCfg = netstandard-Debug|Any CPU
 		{E6592FAD-10B5-4B56-9287-D72DD136992F}.Debug|Any CPU.Build.0 = netstandard-Debug|Any CPU
 		{E6592FAD-10B5-4B56-9287-D72DD136992F}.Release|Any CPU.ActiveCfg = netstandard-Release|Any CPU
@@ -34,5 +34,8 @@ Global
 	GlobalSection(NestedProjects) = preSolution
 		{17DBE1D4-FCB5-4D55-805C-C4A22EE8C032} = {1A2F9F4A-A032-433E-B914-ADD5992BB178}
 		{E6592FAD-10B5-4B56-9287-D72DD136992F} = {E107E9C1-E893-4E87-987E-04EF0DCEAEFD}
+	EndGlobalSection
+	GlobalSection(ExtensibilityGlobals) = postSolution
+		SolutionGuid = {65F903CD-B6E3-4982-BBB1-515753763974}
 	EndGlobalSection
 EndGlobal

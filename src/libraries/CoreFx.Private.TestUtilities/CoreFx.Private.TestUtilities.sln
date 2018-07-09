@@ -1,18 +1,18 @@
 Microsoft Visual Studio Solution File, Format Version 12.00
-# Visual Studio 14
-VisualStudioVersion = 14.0.25420.1
+# Visual Studio 15
+VisualStudioVersion = 15.0.27213.1
 MinimumVisualStudioVersion = 10.0.40219.1
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "CoreFx.Private.TestUtilities.Tests", "tests\CoreFx.Private.TestUtilities.Tests.csproj", "{5E0DB390-A45E-41BE-8304-B840327FE597}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "CoreFx.Private.TestUtilities.Tests", "tests\CoreFx.Private.TestUtilities.Tests.csproj", "{5E0DB390-A45E-41BE-8304-B840327FE597}"
 	ProjectSection(ProjectDependencies) = postProject
 		{EBDB0247-CA43-4226-B7A1-8FEF21061D09} = {EBDB0247-CA43-4226-B7A1-8FEF21061D09}
 	EndProjectSection
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "CoreFx.Private.TestUtilities", "src\CoreFx.Private.TestUtilities.csproj", "{EBDB0247-CA43-4226-B7A1-8FEF21061D09}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "CoreFx.Private.TestUtilities", "src\CoreFx.Private.TestUtilities.csproj", "{EBDB0247-CA43-4226-B7A1-8FEF21061D09}"
 	ProjectSection(ProjectDependencies) = postProject
 		{E2E59C98-998F-9965-991D-99411166AF6F} = {E2E59C98-998F-9965-991D-99411166AF6F}
 	EndProjectSection
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "CoreFx.Private.TestUtilities", "ref\CoreFx.Private.TestUtilities.csproj", "{E2E59C98-998F-9965-991D-99411166AF6F}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "CoreFx.Private.TestUtilities", "ref\CoreFx.Private.TestUtilities.csproj", "{E2E59C98-998F-9965-991D-99411166AF6F}"
 EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "tests", "tests", "{1A2F9F4A-A032-433E-B914-ADD5992BB178}"
 EndProject
@@ -46,5 +46,8 @@ Global
 		{5E0DB390-A45E-41BE-8304-B840327FE597} = {1A2F9F4A-A032-433E-B914-ADD5992BB178}
 		{EBDB0247-CA43-4226-B7A1-8FEF21061D09} = {E107E9C1-E893-4E87-987E-04EF0DCEAEFD}
 		{E2E59C98-998F-9965-991D-99411166AF6F} = {2E666815-2EDB-464B-9DF6-380BF4789AD4}
+	EndGlobalSection
+	GlobalSection(ExtensibilityGlobals) = postSolution
+		SolutionGuid = {6EDCA7D5-885F-44E6-9098-1396FD41C96E}
 	EndGlobalSection
 EndGlobal

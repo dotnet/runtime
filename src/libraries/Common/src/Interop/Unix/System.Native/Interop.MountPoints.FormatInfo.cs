@@ -4,20 +4,32 @@
 
 using System;
 using System.IO;
-using System.Collections.Generic;
 using System.Runtime.InteropServices;
 
 internal static partial class Interop
 {
     internal static partial class Sys
     {
+#if DEBUG
+        static Sys()
+        {
+            foreach (string name in Enum.GetNames(typeof(UnixFileSystemTypes)))
+            {
+                System.Diagnostics.Debug.Assert(GetDriveType(name) != DriveType.Unknown,
+                    $"Expected {nameof(UnixFileSystemTypes)}.{name} to have an entry in {nameof(GetDriveType)}.");
+            }
+        }
+#endif
+
         private const int MountPointFormatBufferSizeInBytes = 32;
 
         /// <summary>
         /// Internal FileSystem names and magic numbers taken from man(2) statfs
         /// </summary>
         /// <remarks>
-        /// These value names MUST be kept in sync with those in GetDriveType below
+        /// These value names MUST be kept in sync with those in GetDriveType below,
+        /// where this enum must be a subset of the GetDriveType list, with the enum
+        /// values here exactly matching a string there.
         /// </remarks>
         internal enum UnixFileSystemTypes : long
         {
@@ -27,6 +39,7 @@ internal static partial class Interop
             anoninode = 0x09041934,
             aufs = 0x61756673,
             autofs = 0x0187,
+            autofs4 = 0x6D4A556D,
             befs = 0x42465331,
             bdevfs = 0x62646576,
             bfs = 0x1BADFACE,
@@ -37,12 +50,14 @@ internal static partial class Interop
             cifs = 0xFF534D42,
             coda = 0x73757245,
             coherent = 0x012FF7B7,
+            configfs = 0x62656570,
             cramfs = 0x28CD3D45,
             debugfs = 0x64626720,
             devfs = 0x1373,
             devpts = 0x1CD1,
             ecryptfs = 0xF15F,
             efs = 0x00414A53,
+            exofs = 0x5DF5,
             ext = 0x137D,
             ext2_old = 0xEF51,
             ext2 = 0xEF53,
@@ -50,12 +65,15 @@ internal static partial class Interop
             ext4 = 0xEF53,
             fat = 0x4006,
             fhgfs = 0x19830326,
+            fuse = 0x65735546,
             fuseblk = 0x65735546,
             fusectl = 0x65735543,
             futexfs = 0x0BAD1DEA,
             gfsgfs2 = 0x1161970,
+            gfs2 = 0x01161970,
             gpfs = 0x47504653,
             hfs = 0x4244,
+            hfsplus = 0x482B,
             hpfs = 0xF995E849,
             hugetlbfs = 0x958458F6,
             inodefs = 0x11307854,
@@ -67,6 +85,7 @@ internal static partial class Interop
             jffs2 = 0x72B6,
             jfs = 0x3153464A,
             kafs = 0x6B414653,
+            logfs = 0xC97E8168,
             lustre = 0x0BD00BD0,
             minix_old = 0x137F, /* orig. minix */
             minix = 0x138F, /* 30 char minix */
@@ -82,6 +101,7 @@ internal static partial class Interop
             ntfs = 0x5346544E,
             openprom = 0x9FA1,
             ocfs2 = 0x7461636F,
+            omfs = 0xC2993D87,
             overlay = 0x794C7630,
             overlayfs = 0x794C764F,
             panfs = 0xAAD7AAEA,
@@ -94,6 +114,7 @@ internal static partial class Interop
             reiserfs = 0x52654973,
             romfs = 0x7275,
             rpc_pipefs = 0x67596969,
+            samba = 0x517B,
             securityfs = 0x73636673,
             selinux = 0xF97CFF8C,
             smb = 0x517B,
@@ -103,9 +124,11 @@ internal static partial class Interop
             sysv2 = 0x012FF7B6,
             sysv4 = 0x012FF7B5,
             tmpfs = 0x01021994,
+            ubifs = 0x24051905,
             udf = 0x15013346,
             ufs = 0x00011954,
-            // ufs = 0x54190100, // byteswapped
+            ufscigam = 0x54190100, // ufs byteswapped
+            ufs2 = 0x19540119,
             usbdevice = 0x9FA2,
             v9fs = 0x01021997,
             vmhgfs = 0xBACBACBC,
@@ -179,15 +202,18 @@ internal static partial class Interop
         private static DriveType GetDriveType(string fileSystemName)
         {
             // This list is based primarily on "man fs", "man mount", "mntent.h", "/proc/filesystems", coreutils "stat.c",
-            // and "wiki.debian.org/FileSystem". It can be extended over time as we 
-            // find additional file systems that should be recognized as a particular drive type.
+            // and "wiki.debian.org/FileSystem". It can be extended over time as we find additional file systems that should
+            // be recognized as a particular drive type.
             switch (fileSystemName)
             {
+                case "cddafs":
+                case "cd9660":
                 case "iso":
                 case "isofs":
                 case "iso9660":
                 case "fuseiso":
                 case "fuseiso9660":
+                case "udf":
                 case "umview-mod-umfuseiso9660":
                     return DriveType.CDRom;
 
@@ -197,7 +223,6 @@ internal static partial class Interop
                 case "anoninode":
                 case "anon-inode FS":
                 case "apfs":
-                case "autofs":
                 case "balloon-kvm-fs":
                 case "bdevfs":
                 case "befs":
@@ -206,15 +231,12 @@ internal static partial class Interop
                 case "btrfs":
                 case "btrfs_test":
                 case "cgroup2fs":
-                case "cgroupfs":
                 case "coh":
-                case "cramfs":
-                case "cramfs-wend":
                 case "daxfs":
                 case "drvfs":
-                case "ecryptfs":
                 case "efivarfs":
                 case "efs":
+                case "exfat":
                 case "exofs":
                 case "ext":
                 case "ext2":
@@ -227,7 +249,6 @@ internal static partial class Interop
                 case "fat":
                 case "fuseext2":
                 case "fusefat":
-                case "futexfs":
                 case "hfs":
                 case "hfs+":
                 case "hfsplus":
@@ -250,15 +271,16 @@ internal static partial class Interop
                 case "minix_old":
                 case "minix2":
                 case "minix2v2":
+                case "minix2 v2":
                 case "minix3":
                 case "mlfs":
                 case "msdos":
                 case "nilfs":
                 case "nsfs":
                 case "ntfs":
+                case "ntfs-3g":
                 case "ocfs2":
                 case "omfs":
-                case "openprom":
                 case "overlay":
                 case "overlayfs":
                 case "pstorefs":
@@ -266,25 +288,24 @@ internal static partial class Interop
                 case "qnx6":
                 case "reiserfs":
                 case "rpc_pipefs":
-                case "selinux":
                 case "smackfs":
                 case "squashfs":
                 case "swap":
-                case "sysfs":
                 case "sysv":
                 case "sysv2":
                 case "sysv4":
                 case "tracefs":
                 case "ubifs":
-                case "udf":
                 case "ufs":
+                case "ufscigam":
+                case "ufs2":
                 case "umsdos":
                 case "umview-mod-umfuseext2":
-                case "usbdevfs":
                 case "v9fs":
+                case "vxfs":
+                case "vxfs_olt":
                 case "vzfs":
                 case "wslfs":
-                case "xenfs":
                 case "xenix":
                 case "xfs":
                 case "xia":
@@ -297,8 +318,11 @@ internal static partial class Interop
 
                 case "9p":
                 case "acfs":
+                case "afp":
+                case "afpfs":
                 case "afs":
                 case "aufs":
+                case "autofs":
                 case "autofs4":
                 case "beaglefs":
                 case "ceph":
@@ -308,8 +332,12 @@ internal static partial class Interop
                 case "curlftpfs":
                 case "davfs2":
                 case "dlm":
+                case "ecryptfs":
+                case "eCryptfs":
                 case "fhgfs":
                 case "flickrfs":
+                case "ftp":
+                case "fuse":
                 case "fuseblk":
                 case "fusedav":
                 case "fusesmb":
@@ -322,8 +350,10 @@ internal static partial class Interop
                 case "ibrix":
                 case "k-afs":
                 case "kafs":
+                case "kbfuse":
                 case "ltspfs":
                 case "lustre":
+                case "ncp":
                 case "ncpfs":
                 case "nfs":
                 case "nfs4":
@@ -333,23 +363,29 @@ internal static partial class Interop
                 case "panfs":
                 case "prl_fs":
                 case "s3ql":
+                case "samba":
                 case "smb":
                 case "smb2":
                 case "smbfs":
                 case "snfs":
                 case "sshfs":
                 case "vmhgfs":
-                case "vxfs":
+                case "webdav":
                 case "wikipediafs":
+                case "xenfs":
                     return DriveType.Network;
 
+                case "anon_inode":
                 case "anon_inodefs":
                 case "aptfs":
                 case "avfs":
                 case "bdev":
                 case "binfmt_misc":
                 case "cgroup":
+                case "cgroupfs":
                 case "configfs":
+                case "cramfs":
+                case "cramfs-wend":
                 case "cryptkeeper":
                 case "cpuset":
                 case "debugfs":
@@ -357,15 +393,18 @@ internal static partial class Interop
                 case "devpts":
                 case "devtmpfs":
                 case "encfs":
-                case "fuse":
+                case "fdesc":
                 case "fuse.gvfsd-fuse":
                 case "fusectl":
+                case "futexfs":
                 case "hugetlbfs":
                 case "libpam-encfs":
                 case "ibpam-mount":
                 case "mtpfs":
                 case "mythtvfs":
                 case "mqueue":
+                case "openprom":
+                case "openpromfs":
                 case "pipefs":
                 case "plptools":
                 case "proc":
@@ -376,8 +415,13 @@ internal static partial class Interop
                 case "romfs":
                 case "rootfs":
                 case "securityfs":
+                case "selinux":
+                case "selinuxfs":
                 case "sockfs":
+                case "sysfs":
                 case "tmpfs":
+                case "usbdev":
+                case "usbdevfs":
                     return DriveType.Ram;
 
                 case "gphotofs":
