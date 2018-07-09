@@ -67,6 +67,10 @@ function print_usage {
     echo '                                     is zero when launching this script. This option is intended for use in CI.'
     echo '  --xunitOutputPath=<path>         : Create xUnit XML report at the specifed path (default: <test root>/coreclrtests.xml)'
     echo ''
+    echo 'CoreFX Test Options '
+    echo '  --corefxtests                    : Runs CoreFX tests'
+    echo '  --corefxtestsall                 : Runs all available CoreFX tests'
+    echo ''
     echo 'Runtime Code Coverage options:'
     echo '  --coreclr-coverage               : Optional argument to get coreclr code coverage reports'
     echo '  --coreclr-objs=<path>            : Location of root of the object directory'
@@ -1167,6 +1171,12 @@ do
             ;;
         --runcrossgentests)
             export RunCrossGen=1
+            ;;
+        --corefxtests)
+            exit 0
+            ;;
+        --corefxtestsall)
+            exit 0
             ;;
         --sequential)
             ((maxProcesses = 1))
