@@ -774,9 +774,12 @@ jit_call_supported (MonoMethod *method, MonoMethodSignature *sig)
 	if (method->string_ctor)
 		return FALSE;
 
-	if (mono_aot_only && m_class_get_image (method->klass)->aot_module)
-		/* The AOTed version of the called method is assumed to be available in full-aot mode */
-		return TRUE;
+	if (mono_aot_only && m_class_get_image (method->klass)->aot_module) {
+		ERROR_DECL (error);
+		gpointer addr = mono_jit_compile_method_jit_only (method, error);
+		if (addr && mono_error_ok (error))
+			return TRUE;
+	}
 
 	for (l = mono_interp_jit_classes; l; l = l->next) {
 		char *class_name = l->data;

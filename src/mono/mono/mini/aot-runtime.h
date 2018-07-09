@@ -11,7 +11,7 @@
 #include "mini.h"
 
 /* Version number of the AOT file format */
-#define MONO_AOT_FILE_VERSION 145
+#define MONO_AOT_FILE_VERSION 146
 
 #define MONO_AOT_TRAMP_PAGE_SIZE 16384
 
@@ -69,6 +69,7 @@ typedef enum {
 	MONO_AOT_FILE_FLAG_SAFEPOINTS = 32,
 	MONO_AOT_FILE_FLAG_SEPARATE_DATA = 64,
 	MONO_AOT_FILE_FLAG_EAGER_LOAD = 128,
+	MONO_AOT_FILE_FLAG_INTERP = 256,
 } MonoAotFileFlags;
 
 typedef enum {
@@ -168,6 +169,8 @@ typedef struct MonoAotFileInfo
 	guint32 plt_size;
 	/* Number of methods */
 	guint32 nmethods;
+	/* Number of extra methods */
+	guint32 nextra_methods;
 	/* A union of MonoAotFileFlags */
 	guint32 flags;
 	/* Optimization flags used to compile the module */

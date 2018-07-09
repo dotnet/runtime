@@ -2144,7 +2144,7 @@ compile_special (MonoMethod *method, MonoDomain *target_domain, MonoError *error
 				mono_lookup_pinvoke_call (method, NULL, NULL);
 		}
 		nm = mono_marshal_get_native_wrapper (method, TRUE, mono_aot_only);
-		gpointer compiled_method = mono_compile_method_checked (nm, error);
+		gpointer compiled_method = mono_jit_compile_method_jit_only (nm, error);
 		return_val_if_nok (error, NULL);
 		code = mono_get_addr_from_ftnptr (compiled_method);
 		jinfo = mono_jit_info_table_find (target_domain, code);
@@ -2176,19 +2176,24 @@ compile_special (MonoMethod *method, MonoDomain *target_domain, MonoError *error
 			} else if (*name == 'I' && (strcmp (name, "Invoke") == 0)) {
 				if (mono_llvm_only) {
 					nm = mono_marshal_get_delegate_invoke (method, NULL);
-					gpointer compiled_ptr = mono_compile_method_checked (nm, error);
+					gpointer compiled_ptr = mono_jit_compile_method_jit_only (nm, error);
 					mono_error_assert_ok (error);
 					return mono_get_addr_from_ftnptr (compiled_ptr);
 				}
+
+				/* HACK: missing gsharedvt_out wrappers to do transition to del tramp in interp-only mode */
+				if (mono_use_interpreter)
+					return NULL;
+
 				return mono_create_delegate_trampoline (target_domain, method->klass);
 			} else if (*name == 'B' && (strcmp (name, "BeginInvoke") == 0)) {
 				nm = mono_marshal_get_delegate_begin_invoke (method);
-				gpointer compiled_ptr = mono_compile_method_checked (nm, error);
+				gpointer compiled_ptr = mono_jit_compile_method_jit_only (nm, error);
 				mono_error_assert_ok (error);
 				return mono_get_addr_from_ftnptr (compiled_ptr);
 			} else if (*name == 'E' && (strcmp (name, "EndInvoke") == 0)) {
 				nm = mono_marshal_get_delegate_end_invoke (method);
-				gpointer compiled_ptr = mono_compile_method_checked (nm, error);
+				gpointer compiled_ptr = mono_jit_compile_method_jit_only (nm, error);
 				mono_error_assert_ok (error);
 				return mono_get_addr_from_ftnptr (compiled_ptr);
 			}
@@ -2372,7 +2377,7 @@ lookup_start:
 	if (!code)
 		code = compile_special (method, target_domain, error);
 
-	if (!code && mono_aot_only && mono_use_interpreter && method->wrapper_type != MONO_WRAPPER_UNKNOWN)
+	if (!jit_only && !code && mono_aot_only && mono_use_interpreter && method->wrapper_type != MONO_WRAPPER_UNKNOWN)
 		code = mini_get_interp_callbacks ()->create_method_pointer (method, error);
 
 	if (!code) {
@@ -2661,17 +2666,19 @@ typedef struct {
 	MonoClass *ret_box_class;
 	MonoMethodSignature *sig;
 	gboolean gsharedvt_invoke;
+	gboolean use_interp;
 	gpointer *wrapper_arg;
 } RuntimeInvokeInfo;
 
 static RuntimeInvokeInfo*
-create_runtime_invoke_info (MonoDomain *domain, MonoMethod *method, gpointer compiled_method, gboolean callee_gsharedvt, MonoError *error)
+create_runtime_invoke_info (MonoDomain *domain, MonoMethod *method, gpointer compiled_method, gboolean callee_gsharedvt, gboolean use_interp, MonoError *error)
 {
 	MonoMethod *invoke;
 	RuntimeInvokeInfo *info;
 
 	info = g_new0 (RuntimeInvokeInfo, 1);
 	info->compiled_method = compiled_method;
+	info->use_interp = use_interp;
 	if (mono_llvm_only && method->string_ctor)
 		info->sig = mono_marshal_get_string_ctor_signature (method);
 	else
@@ -2953,27 +2960,33 @@ mono_jit_runtime_invoke (MonoMethod *method, void *obj, void **params, MonoObjec
 			}
 		}
 
+		gboolean use_interp = FALSE;
+
 		if (callee) {
-			compiled_method = mono_jit_compile_method (callee, error);
+			compiled_method = mono_jit_compile_method_jit_only (callee, error);
 			if (!compiled_method) {
 				g_assert (!mono_error_ok (error));
-				return NULL;
-			}
 
-			if (mono_llvm_only) {
-				ji = mini_jit_info_table_find (mono_domain_get (), (char *)mono_get_addr_from_ftnptr (compiled_method), NULL);
-				callee_gsharedvt = mini_jit_info_is_gsharedvt (ji);
-				if (callee_gsharedvt)
-					callee_gsharedvt = mini_is_gsharedvt_variable_signature (mono_method_signature (jinfo_get_method (ji)));
-			}
+				if (mono_use_interpreter)
+					use_interp = TRUE;
+				else
+					return NULL;
+			} else {
+				if (mono_llvm_only) {
+					ji = mini_jit_info_table_find (mono_domain_get (), (char *)mono_get_addr_from_ftnptr (compiled_method), NULL);
+					callee_gsharedvt = mini_jit_info_is_gsharedvt (ji);
+					if (callee_gsharedvt)
+						callee_gsharedvt = mini_is_gsharedvt_variable_signature (mono_method_signature (jinfo_get_method (ji)));
+				}
 
-			if (!callee_gsharedvt)
-				compiled_method = mini_add_method_trampoline (callee, compiled_method, mono_method_needs_static_rgctx_invoke (callee, TRUE), FALSE);
+				if (!callee_gsharedvt)
+					compiled_method = mini_add_method_trampoline (callee, compiled_method, mono_method_needs_static_rgctx_invoke (callee, TRUE), FALSE);
+			}
 		} else {
 			compiled_method = NULL;
 		}
 
-		info = create_runtime_invoke_info (domain, method, compiled_method, callee_gsharedvt, error);
+		info = create_runtime_invoke_info (domain, method, compiled_method, callee_gsharedvt, use_interp, error);
 		if (!mono_error_ok (error))
 			return NULL;
 
@@ -3009,20 +3022,29 @@ mono_jit_runtime_invoke (MonoMethod *method, void *obj, void **params, MonoObjec
 		*exc = NULL;
 
 #ifdef MONO_ARCH_DYN_CALL_SUPPORTED
+	static RuntimeInvokeDynamicFunction dyn_runtime_invoke = NULL;
+	if (info->dyn_call_info) {
+		if (!dyn_runtime_invoke) {
+			mono_domain_lock (domain);
+
+			invoke = mono_marshal_get_runtime_invoke_dynamic ();
+			dyn_runtime_invoke = (RuntimeInvokeDynamicFunction)mono_jit_compile_method_jit_only (invoke, error);
+			if (!dyn_runtime_invoke && mono_use_interpreter) {
+				info->use_interp = TRUE;
+				info->dyn_call_info = NULL;
+			} else if (!mono_error_ok (error)) {
+				mono_domain_unlock (domain);
+				return NULL;
+			}
+			mono_domain_unlock (domain);
+		}
+	}
 	if (info->dyn_call_info) {
 		MonoMethodSignature *sig = mono_method_signature (method);
 		gpointer *args;
-		static RuntimeInvokeDynamicFunction dyn_runtime_invoke;
 		int i, pindex, buf_size;
 		guint8 *buf;
 		guint8 retval [256];
-
-		if (!dyn_runtime_invoke) {
-			invoke = mono_marshal_get_runtime_invoke_dynamic ();
-			dyn_runtime_invoke = (RuntimeInvokeDynamicFunction)mono_jit_compile_method (invoke, error);
-			if (!mono_error_ok (error))
-				return NULL;
-		}
 
 		/* Convert the arguments to the format expected by start_dyn_call () */
 		args = (void **)g_alloca ((sig->param_count + sig->hasthis) * sizeof (gpointer));
@@ -3063,6 +3085,11 @@ mono_jit_runtime_invoke (MonoMethod *method, void *obj, void **params, MonoObjec
 			return *(MonoObject**)retval;
 	}
 #endif
+
+	if (info->use_interp) {
+		error_init (error);
+		return mini_get_interp_callbacks ()->runtime_invoke (method, obj, params, exc, error);
+	}
 
 	MonoObject *result;
 
