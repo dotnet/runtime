@@ -17,7 +17,7 @@ namespace Microsoft.Win32.SafeHandles
 
         private IntPtr CreateHandle(SecureString password)
         {
-            return SecureStringMarshal.SecureStringToGlobalAllocUnicode(password);
+            return Marshal.SecureStringToGlobalAllocUnicode(password);
         }
 
         private void FreeHandle()
