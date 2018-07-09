@@ -1087,7 +1087,7 @@ file_read(FileHandle *filehandle, gpointer buffer, guint32 numbytes, guint32 *by
 }
 
 static gboolean
-file_write(FileHandle *filehandle, gconstpointer buffer, guint32 numbytes, guint32 *byteswritten)
+file_write (FileHandle *filehandle, gpointer buffer, guint32 numbytes, guint32 *byteswritten)
 {
 	gint ret;
 	off_t current_pos = 0;
@@ -1607,7 +1607,7 @@ console_read(FileHandle *filehandle, gpointer buffer, guint32 numbytes, guint32 
 }
 
 static gboolean
-console_write(FileHandle *filehandle, gconstpointer buffer, guint32 numbytes, guint32 *byteswritten)
+console_write (FileHandle *filehandle, gpointer buffer, guint32 numbytes, guint32 *byteswritten)
 {
 	gint ret;
 	MonoThreadInfo *info = mono_thread_info_current ();
@@ -1695,7 +1695,7 @@ pipe_read (FileHandle *filehandle, gpointer buffer, guint32 numbytes, guint32 *b
 }
 
 static gboolean
-pipe_write(FileHandle *filehandle, gconstpointer buffer, guint32 numbytes, guint32 *byteswritten)
+pipe_write (FileHandle *filehandle, gpointer buffer, guint32 numbytes, guint32 *byteswritten)
 {
 	gint ret;
 	MonoThreadInfo *info = mono_thread_info_current ();
@@ -2654,66 +2654,51 @@ mono_w32file_get_std_handle (gint stdhandle)
 	return GINT_TO_POINTER (fd);
 }
 
-gboolean
-mono_w32file_read (gpointer handle, gpointer buffer, guint32 numbytes, guint32 *bytesread)
+static gboolean
+mono_w32file_read_or_write (gboolean read, gpointer handle, gpointer buffer, guint32 numbytes, guint32 *bytesread, gint32 *win32error)
 {
 	FileHandle *filehandle;
-	gboolean ret;
+	gboolean ret = FALSE;
 
-	if (!mono_fdhandle_lookup_and_ref(GPOINTER_TO_INT(handle), (MonoFDHandle**) &filehandle)) {
+	gboolean const ref = mono_fdhandle_lookup_and_ref(GPOINTER_TO_INT(handle), (MonoFDHandle**) &filehandle);
+	if (!ref) {
 		mono_w32error_set_last (ERROR_INVALID_HANDLE);
-		return FALSE;
+		goto exit;
 	}
 
 	switch (((MonoFDHandle*) filehandle)->type) {
 	case MONO_FDTYPE_FILE:
-		ret = file_read(filehandle, buffer, numbytes, bytesread);
+		ret = (read ? file_read : file_write) (filehandle, buffer, numbytes, bytesread);
 		break;
 	case MONO_FDTYPE_CONSOLE:
-		ret = console_read(filehandle, buffer, numbytes, bytesread);
+		ret = (read ? console_read : console_write) (filehandle, buffer, numbytes, bytesread);
 		break;
 	case MONO_FDTYPE_PIPE:
-		ret = pipe_read(filehandle, buffer, numbytes, bytesread);
+		ret = (read ? pipe_read : pipe_write) (filehandle, buffer, numbytes, bytesread);
 		break;
 	default:
 		mono_w32error_set_last (ERROR_INVALID_HANDLE);
-		mono_fdhandle_unref ((MonoFDHandle*) filehandle);
-		return FALSE;
+		break;
 	}
 
-	mono_fdhandle_unref ((MonoFDHandle*) filehandle);
+exit:
+	if (ref)
+		mono_fdhandle_unref ((MonoFDHandle*) filehandle);
+	if (!ret)
+		*win32error = mono_w32error_get_last ();
 	return ret;
 }
 
 gboolean
-mono_w32file_write (gpointer handle, gconstpointer buffer, guint32 numbytes, guint32 *byteswritten)
+mono_w32file_read (gpointer handle, gpointer buffer, guint32 numbytes, guint32 *bytesread, gint32 *win32error)
 {
-	FileHandle *filehandle;
-	gboolean ret;
+	return mono_w32file_read_or_write (TRUE, handle, buffer, numbytes, bytesread, win32error);
+}
 
-	if (!mono_fdhandle_lookup_and_ref(GPOINTER_TO_INT(handle), (MonoFDHandle**) &filehandle)) {
-		mono_w32error_set_last (ERROR_INVALID_HANDLE);
-		return FALSE;
-	}
-
-	switch (((MonoFDHandle*) filehandle)->type) {
-	case MONO_FDTYPE_FILE:
-		ret = file_write(filehandle, buffer, numbytes, byteswritten);
-		break;
-	case MONO_FDTYPE_CONSOLE:
-		ret = console_write(filehandle, buffer, numbytes, byteswritten);
-		break;
-	case MONO_FDTYPE_PIPE:
-		ret = pipe_write(filehandle, buffer, numbytes, byteswritten);
-		break;
-	default:
-		mono_w32error_set_last (ERROR_INVALID_HANDLE);
-		mono_fdhandle_unref ((MonoFDHandle*) filehandle);
-		return FALSE;
-	}
-
-	mono_fdhandle_unref ((MonoFDHandle*) filehandle);
-	return ret;
+gboolean
+mono_w32file_write (gpointer handle, gconstpointer buffer, guint32 numbytes, guint32 *byteswritten, gint32 *win32error)
+{
+	return mono_w32file_read_or_write (FALSE, handle, (gpointer)buffer, numbytes, byteswritten, win32error);
 }
 
 gboolean

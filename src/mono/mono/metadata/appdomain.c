@@ -1799,7 +1799,7 @@ shadow_copy_create_ini (const char *shadow, const char *filename)
 	guint16 *u16_ini;
 	gboolean result;
 	guint32 n;
-	HANDLE *handle;
+	HANDLE handle;
 	gchar *full_path;
 
 	dir_name = g_path_get_dirname (shadow);
@@ -1815,14 +1815,15 @@ shadow_copy_create_ini (const char *shadow, const char *filename)
 	if (!u16_ini) {
 		return FALSE;
 	}
-	handle = (void **)mono_w32file_create (u16_ini, GENERIC_WRITE, FILE_SHARE_READ|FILE_SHARE_WRITE, CREATE_NEW, FileAttributes_Normal);
+	handle = mono_w32file_create (u16_ini, GENERIC_WRITE, FILE_SHARE_READ|FILE_SHARE_WRITE, CREATE_NEW, FileAttributes_Normal);
 	g_free (u16_ini);
 	if (handle == INVALID_HANDLE_VALUE) {
 		return FALSE;
 	}
 
 	full_path = mono_path_resolve_symlinks (filename);
-	result = mono_w32file_write (handle, full_path, strlen (full_path), &n);
+	gint32 win32error = 0;
+	result = mono_w32file_write (handle, full_path, strlen (full_path), &n, &win32error);
 	g_free (full_path);
 	mono_w32file_close (handle);
 	return result;

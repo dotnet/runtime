@@ -83,21 +83,25 @@ mono_w32file_delete (const gunichar2 *name)
 }
 
 gboolean
-mono_w32file_read(gpointer handle, gpointer buffer, guint32 numbytes, guint32 *bytesread)
+mono_w32file_read(gpointer handle, gpointer buffer, guint32 numbytes, guint32 *bytesread, gint32 *win32error)
 {
 	gboolean res;
 	MONO_ENTER_GC_SAFE;
 	res = ReadFile (handle, buffer, numbytes, (PDWORD)bytesread, NULL);
+	if (!res)
+		*win32error = GetLastError ();
 	MONO_EXIT_GC_SAFE;
 	return res;
 }
 
 gboolean
-mono_w32file_write (gpointer handle, gconstpointer buffer, guint32 numbytes, guint32 *byteswritten)
+mono_w32file_write (gpointer handle, gconstpointer buffer, guint32 numbytes, guint32 *byteswritten, gint32 *win32error)
 {
 	gboolean res;
 	MONO_ENTER_GC_SAFE;
 	res = WriteFile (handle, buffer, numbytes, (PDWORD)byteswritten, NULL);
+	if (!res)
+		*win32error = GetLastError ();
 	MONO_EXIT_GC_SAFE;
 	return res;
 }
