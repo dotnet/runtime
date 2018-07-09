@@ -302,7 +302,7 @@ namespace System.Globalization
                                     source.AsSpan(0, sourcePos).CopyTo(new Span<char>(pResult, sourcePos));
                                 }
 
-                                // And store the current character, upper-cased.
+                                // And store the current character, lower-cased.
                                 char* d = pResult + sourcePos;
                                 *d++ = (char)(c | 0x20);
                                 sourcePos++;
