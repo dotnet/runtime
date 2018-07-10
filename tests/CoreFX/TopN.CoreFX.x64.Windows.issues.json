@@ -60,6 +60,10 @@
                 {
                     "name": "System.Drawing.Tests.Graphics_DrawLineTests.DrawLines_PointFs",
                     "reason": "Xunit.Sdk.EqualException Assert.Equal() Failure\\r\\nExpected: Byte[] [142, 194, 251, 180, 222, ...]\\r\\nActual:   Byte[] [212, 29, 140, 217, 143, ...]"
+                },
+                {
+                    "name": "System.Drawing.Tests.FontTests.ToLogFont_NullLogFont_ThrowsArgumentNullException",
+                    "reason": "Xunit.Sdk.ThrowsException Assert.Throws() Failure\\r\\nExpected: typeof(System.ArgumentNullException)\\r\\nActual:   typeof(System.AccessViolationException): Attempted to read or write protected memory. This is often an indication that other memory is corrupt."
                 }
             ]
         }
