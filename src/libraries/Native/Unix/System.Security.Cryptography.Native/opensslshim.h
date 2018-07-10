@@ -242,11 +242,8 @@ void SSL_get0_alpn_selected(const SSL* ssl, const unsigned char** protocol, unsi
     PER_FUNCTION_BLOCK(PKCS12_create, true) \
     PER_FUNCTION_BLOCK(PKCS12_free, true) \
     PER_FUNCTION_BLOCK(PKCS12_parse, true) \
-    PER_FUNCTION_BLOCK(PKCS7_add_certificate, true) \
-    PER_FUNCTION_BLOCK(PKCS7_content_new, true) \
+    PER_FUNCTION_BLOCK(PKCS7_sign, true) \
     PER_FUNCTION_BLOCK(PKCS7_free, true) \
-    PER_FUNCTION_BLOCK(PKCS7_new, true) \
-    PER_FUNCTION_BLOCK(PKCS7_set_type, true) \
     PER_FUNCTION_BLOCK(RAND_bytes, true) \
     PER_FUNCTION_BLOCK(RAND_poll, true) \
     PER_FUNCTION_BLOCK(RSA_free, true) \
@@ -542,11 +539,8 @@ FOR_ALL_OPENSSL_FUNCTIONS
 #define PKCS12_create PKCS12_create_ptr
 #define PKCS12_free PKCS12_free_ptr
 #define PKCS12_parse PKCS12_parse_ptr
-#define PKCS7_add_certificate PKCS7_add_certificate_ptr
-#define PKCS7_content_new PKCS7_content_new_ptr
+#define PKCS7_sign PKCS7_sign_ptr
 #define PKCS7_free PKCS7_free_ptr
-#define PKCS7_new PKCS7_new_ptr
-#define PKCS7_set_type PKCS7_set_type_ptr
 #define RAND_bytes RAND_bytes_ptr
 #define RAND_poll RAND_poll_ptr
 #define RSA_free RSA_free_ptr
