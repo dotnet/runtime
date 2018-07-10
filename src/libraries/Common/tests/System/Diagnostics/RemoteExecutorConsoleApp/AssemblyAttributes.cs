@@ -3,3 +3,4 @@
 // See the LICENSE file in the project root for more information.
 
 [assembly: System.Diagnostics.CodeAnalysis.ExcludeFromCodeCoverageAssembly]
+[assembly: System.Runtime.Versioning.TargetFrameworkAttribute("DUMMY-TFA,Version=v0.0.1")]
