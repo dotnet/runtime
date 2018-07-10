@@ -7,7 +7,7 @@
       netstandard1.2;
       netstandard1.3;
       netstandard;
-      netfx-Windows_NT;
+      net461-Windows_NT;
       netcoreapp;
       netcoreapp-Unix;
       netcoreapp-Windows_NT;
@@ -16,6 +16,7 @@
     </PackageConfigurations>
     <BuildConfigurations>
       $(PackageConfigurations)
+      netfx-Windows_NT;
     </BuildConfigurations>
   </PropertyGroup>
 </Project>

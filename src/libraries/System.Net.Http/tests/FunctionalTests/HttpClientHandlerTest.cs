@@ -2663,6 +2663,7 @@ namespace System.Net.Http.Functional.Tests
         [Theory]
         [InlineData(false)]
         [InlineData(true)]
+        [ActiveIssue("https://github.com/dotnet/corefx/issues/28882", TargetFrameworkMonikers.NetFramework)]
         public async Task PostAsync_ThrowFromContentCopy_RequestFails(bool syncFailure)
         {
             await LoopbackServer.CreateServerAsync(async (server, uri) =>
@@ -2761,6 +2762,7 @@ namespace System.Net.Http.Functional.Tests
 
         [OuterLoop("Uses external server")]
         [Theory, MemberData(nameof(EchoServers))] // NOTE: will not work for in-box System.Net.Http.dll due to disposal of request content
+        [ActiveIssue("https://github.com/dotnet/corefx/issues/28882", TargetFrameworkMonikers.NetFramework)]
         public async Task PostAsync_ReuseRequestContent_Success(Uri remoteServer)
         {
             const string ContentString = "This is the content string.";

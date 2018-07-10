@@ -186,6 +186,7 @@ namespace System.Net.Http.Functional.Tests
         }
 
         [Fact]
+        [ActiveIssue(28882, TargetFrameworkMonikers.NetFramework)]
         public async Task ReadAsStreamAsync_LargeContent_AllBytesRead()
         {
             var form = new MultipartFormDataContent();
@@ -302,6 +303,7 @@ namespace System.Net.Http.Functional.Tests
         }
 
         [Fact]
+        [ActiveIssue(28882, TargetFrameworkMonikers.NetFramework)]
         public async Task ReadAsStreamAsync_InvalidArgs_Throw()
         {
             var mc = new MultipartContent();
@@ -354,6 +356,7 @@ namespace System.Net.Http.Functional.Tests
         }
 
         [Fact]
+        [ActiveIssue(28882, TargetFrameworkMonikers.NetFramework)]
         public async Task ReadAsStreamAsync_CreateContentReadStreamAsyncThrows_ExceptionStoredInTask()
         {
             var mc = new MultipartContent();

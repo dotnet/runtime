@@ -3,13 +3,14 @@
   <PropertyGroup>
     <PackageConfigurations>
       netcoreapp;
-      netfx;
+      net461;
       netstandard;
       net462;
       net47;
     </PackageConfigurations>
     <BuildConfigurations>
       $(PackageConfigurations)
+      netfx;
       uap;
     </BuildConfigurations>
   </PropertyGroup>
