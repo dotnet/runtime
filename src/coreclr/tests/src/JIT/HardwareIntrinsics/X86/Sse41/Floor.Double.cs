@@ -100,7 +100,7 @@ namespace JIT.HardwareIntrinsics.X86
                 var testStruct = new TestStruct();
                 var random = new Random();
 
-                for (var i = 0; i < Op1ElementCount; i++) { _data[i] = (double)(random.NextDouble()); }
+                for (var i = 0; i < Op1ElementCount; i++) { _data[i] = TestLibrary.Generator.GetDouble(); }
                 Unsafe.CopyBlockUnaligned(ref Unsafe.As<Vector128<Double>, byte>(ref testStruct._fld), ref Unsafe.As<Double, byte>(ref _data[0]), (uint)Unsafe.SizeOf<Vector128<Double>>());
 
                 return testStruct;
@@ -132,7 +132,7 @@ namespace JIT.HardwareIntrinsics.X86
         {
             var random = new Random();
 
-            for (var i = 0; i < Op1ElementCount; i++) { _data[i] = (double)(random.NextDouble()); }
+            for (var i = 0; i < Op1ElementCount; i++) { _data[i] = TestLibrary.Generator.GetDouble(); }
             Unsafe.CopyBlockUnaligned(ref Unsafe.As<Vector128<Double>, byte>(ref _clsVar), ref Unsafe.As<Double, byte>(ref _data[0]), (uint)Unsafe.SizeOf<Vector128<Double>>());
         }
 
@@ -142,10 +142,10 @@ namespace JIT.HardwareIntrinsics.X86
 
             var random = new Random();
 
-            for (var i = 0; i < Op1ElementCount; i++) { _data[i] = (double)(random.NextDouble()); }
+            for (var i = 0; i < Op1ElementCount; i++) { _data[i] = TestLibrary.Generator.GetDouble(); }
             Unsafe.CopyBlockUnaligned(ref Unsafe.As<Vector128<Double>, byte>(ref _fld), ref Unsafe.As<Double, byte>(ref _data[0]), (uint)Unsafe.SizeOf<Vector128<Double>>());
 
-            for (var i = 0; i < Op1ElementCount; i++) { _data[i] = (double)(random.NextDouble()); }
+            for (var i = 0; i < Op1ElementCount; i++) { _data[i] = TestLibrary.Generator.GetDouble(); }
             _dataTable = new SimpleUnaryOpTest__DataTable<Double, Double>(_data, new Double[RetElementCount], LargestVectorSize);
         }
 
