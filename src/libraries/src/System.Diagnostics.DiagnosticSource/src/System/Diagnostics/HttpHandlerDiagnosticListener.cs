@@ -653,11 +653,12 @@ namespace System.Diagnostics
         {
             if (request.AllowAutoRedirect)
             {
-                if (statusCode == HttpStatusCode.Ambiguous       ||  // 300
-                    statusCode == HttpStatusCode.Moved           ||  // 301
-                    statusCode == HttpStatusCode.Redirect        ||  // 302
-                    statusCode == HttpStatusCode.RedirectMethod  ||  // 303
-                    statusCode == HttpStatusCode.RedirectKeepVerb)   // 307
+                if (statusCode == HttpStatusCode.Ambiguous        ||  // 300
+                    statusCode == HttpStatusCode.Moved            ||  // 301
+                    statusCode == HttpStatusCode.Redirect         ||  // 302
+                    statusCode == HttpStatusCode.RedirectMethod   ||  // 303
+                    statusCode == HttpStatusCode.RedirectKeepVerb ||  // 307
+                    (int)statusCode == 308) // 308 Permanent Redirect is not in netfx yet, and so has to be specified this way.
                 {
                     return s_autoRedirectsAccessor(request) >= request.MaximumAutomaticRedirections;
                 }
