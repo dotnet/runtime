@@ -14,13 +14,9 @@
 **
 ============================================================*/
 
-using System;
-using System.Runtime;
+using System.Diagnostics;
 using System.Runtime.InteropServices;
 using System.Text;
-using System.Globalization;
-using System.Diagnostics;
-using System.Security;
 
 namespace System.IO
 {
@@ -220,8 +216,7 @@ namespace System.IO
 
                 Debug.Assert(charsRead < 2, "BinaryReader::ReadOneChar - assuming we only got 0 or 1 char, not 2!");
             }
-            if (charsRead == 0)
-                return -1;
+            Debug.Assert(charsRead > 0);
             return _singleChar[0];
         }
 
@@ -484,15 +479,10 @@ namespace System.IO
                 // do ~1+log(n) reads to read n characters.
                 numBytes = charsRemaining;
 
-                // special case for DecoderNLS subclasses when there is a hanging byte from the previous loop
-                DecoderNLS decoder = _decoder as DecoderNLS;
-                if (decoder != null && decoder.HasState && numBytes > 1)
-                {
-                    numBytes -= 1;
-                }
-
                 if (_2BytesPerChar)
+                {
                     numBytes <<= 1;
+                }
                 if (numBytes > MaxCharBytesSize)
                 {
                     numBytes = MaxCharBytesSize;
