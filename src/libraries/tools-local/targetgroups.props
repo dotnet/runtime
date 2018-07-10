@@ -195,19 +195,11 @@
       <Imports>net46</Imports>
       <CompatibleWith>netstandard</CompatibleWith>
     </TargetGroups>
-    <!-- netfx is an alias for net461 since that's our primary target as it added ns2.0 support -->
-    <TargetGroups Include="netfx">
-      <TargetingPackNugetPackageId>Microsoft.TargetingPack.NETFramework.v4.6.1</TargetingPackNugetPackageId>
-      <NuGetTargetMoniker>.NETFramework,Version=v4.6.1</NuGetTargetMoniker>
-      <NuGetTargetMonikerShort>net461</NuGetTargetMonikerShort>
-      <Imports>net461</Imports>
-      <CompatibleWith>netstandard</CompatibleWith>
-    </TargetGroups>
     <TargetGroups Include="net462">
       <TargetingPackNugetPackageId>Microsoft.TargetingPack.NETFramework.v4.6.2</TargetingPackNugetPackageId>
       <NuGetTargetMoniker>.NETFramework,Version=v4.6.2</NuGetTargetMoniker>
       <NuGetTargetMonikerShort>net462</NuGetTargetMonikerShort>
-      <Imports>netfx</Imports>
+      <Imports>net461</Imports>
       <CompatibleWith>netstandard</CompatibleWith>
     </TargetGroups>
     <TargetGroups Include="net463">
@@ -229,6 +221,21 @@
       <NuGetTargetMoniker>.NETFramework,Version=v4.7.1</NuGetTargetMoniker>
       <NuGetTargetMonikerShort>net471</NuGetTargetMonikerShort>
       <Imports>net47</Imports>
+      <CompatibleWith>netstandard</CompatibleWith>
+    </TargetGroups>
+    <TargetGroups Include="net472">
+      <TargetingPackNugetPackageId>Microsoft.TargetingPack.NETFramework.v4.7.2</TargetingPackNugetPackageId>
+      <NuGetTargetMoniker>.NETFramework,Version=v4.7.2</NuGetTargetMoniker>
+      <NuGetTargetMonikerShort>net472</NuGetTargetMonikerShort>
+      <Imports>net471</Imports>
+      <CompatibleWith>netstandard</CompatibleWith>
+    </TargetGroups>
+    <!-- netfx is an alias for net472 -->
+    <TargetGroups Include="netfx">
+      <TargetingPackNugetPackageId>Microsoft.TargetingPack.NETFramework.v4.7.2</TargetingPackNugetPackageId>
+      <NuGetTargetMoniker>.NETFramework,Version=v4.7.2</NuGetTargetMoniker>
+      <NuGetTargetMonikerShort>net472</NuGetTargetMonikerShort>
+      <Imports>net472</Imports>
       <CompatibleWith>netstandard</CompatibleWith>
     </TargetGroups>
     <TargetGroups Include="win8">

@@ -5,7 +5,7 @@
     <!-- Must match version supported by frameworks which support 4.0.* inbox.
          Can be removed when API is added and this assembly is versioned to 4.1.* -->
     <AssemblyVersion Condition="'$(TargetsNetFx)' != 'true' and '$(TargetGroup)' != 'portable_net40+sl4+win8+wp8'">4.0.3.0</AssemblyVersion>
-    <Configurations>net47-Debug;net47-Release;netcoreapp-Debug;netcoreapp-Release;netfx-Debug;netfx-Release;portable_net40+sl4+win8+wp8-Debug;portable_net40+sl4+win8+wp8-Release;uap-Debug;uap-Release</Configurations>
+    <Configurations>net461-Debug;net461-Release;net47-Debug;net47-Release;netcoreapp-Debug;netcoreapp-Release;portable_net40+sl4+win8+wp8-Debug;portable_net40+sl4+win8+wp8-Release;uap-Debug;uap-Release</Configurations>
   </PropertyGroup>
   <!-- Default configurations to help VS understand the options -->
   <ItemGroup Condition="'$(TargetGroup)' != 'netcoreapp' And '$(TargetGroup)' != 'uap' And '$(TargetGroup)' != 'net47'">
@@ -25,7 +25,7 @@
   <ItemGroup Condition="'$(TargetGroup)' == 'netstandard1.0'">
     <Reference Include="System.Runtime" />
   </ItemGroup>
-  <ItemGroup Condition="'$(TargetGroup)' == 'portable_net40+sl4+win8+wp8' or '$(TargetGroup)' == 'netfx' or '$(TargetGroup)' == 'net47'">
+  <ItemGroup Condition="'$(TargetGroup)' == 'portable_net40+sl4+win8+wp8' or '$(TargetGroup)' == 'net461' or '$(TargetGroup)' == 'net47'">
     <Reference Include="mscorlib" />
     <Reference Include="System" />
     <Reference Include="System.Core" />
