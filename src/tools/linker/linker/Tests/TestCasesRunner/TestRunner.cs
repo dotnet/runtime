@@ -1,4 +1,5 @@
-﻿using System.Linq;
+﻿using System;
+using System.Linq;
 using System.Threading.Tasks;
 using Mono.Cecil;
 using Mono.Linker.Tests.TestCases;
@@ -55,8 +56,8 @@ namespace Mono.Linker.Tests.TestCasesRunner {
 			var inputTask = Task.Run(() => inputCompiler.CompileTestIn (sandbox.InputDirectory, assemblyName, sourceFiles, commonReferences, mainAssemblyReferences, null, resources, additionalArguments));
 			var expectationsTask = Task.Run(() => expectationsCompiler.CompileTestIn (sandbox.ExpectationsDirectory, assemblyName, sourceFiles, expectationsCommonReferences, expectationsMainAssemblyReferences, new[] {"INCLUDE_EXPECTATIONS"}, resources, additionalArguments));
 
-			var inputAssemblyPath = inputTask.Result;
-			var expectationsAssemblyPath = expectationsTask.Result;
+			var inputAssemblyPath = GetResultOfTaskThatMakesNUnitAssertions (inputTask);
+			var expectationsAssemblyPath = GetResultOfTaskThatMakesNUnitAssertions (expectationsTask);
 			return new ManagedCompilationResult (inputAssemblyPath, expectationsAssemblyPath);
 		}
 
@@ -92,6 +93,23 @@ namespace Mono.Linker.Tests.TestCasesRunner {
 
 		protected virtual void AddAdditionalLinkOptions (LinkerArgumentBuilder builder, TestCaseMetadaProvider metadataProvider)
 		{
+		}
+
+		private T GetResultOfTaskThatMakesNUnitAssertions<T> (Task<T> task)
+		{
+			try {
+				return task.Result;
+			} catch (AggregateException e) {
+				if (e.InnerException != null) {
+					if (e.InnerException is AssertionException
+					|| e.InnerException is SuccessException
+					|| e.InnerException is IgnoreException
+					|| e.InnerException is InconclusiveException)
+						throw e.InnerException;
+				}
+				
+				throw;
+			}
 		}
 	}
 }
