@@ -33,6 +33,11 @@ namespace Internal.Cryptography.Pal
                         case Oids.RsaRsa:
                             return new RSAImplementation.RSASecurityTransforms(key);
                         case Oids.DsaDsa:
+                            if (key.IsInvalid) 
+                            {
+                                // SecCertificateCopyKey returns null for DSA, so fall back to manually building it.
+                                return DecodeDsaPublicKey(encodedKeyValue, encodedParameters);
+                            } 
                             return new DSAImplementation.DSASecurityTransforms(key);
                         case Oids.Ecc:
                             return new ECDsaImplementation.ECDsaSecurityTransforms(key);

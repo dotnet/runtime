@@ -25,9 +25,6 @@ set(NATIVECRYPTO_SOURCES
     pal_x509chain.c
 )
 
-# Temporary workaround for dotnet/corefx issue #30599
-add_compile_options(-Wno-deprecated-declarations)
-
 add_library(System.Security.Cryptography.Native.Apple
     SHARED
     ${NATIVECRYPTO_SOURCES}
