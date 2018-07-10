@@ -6719,17 +6719,18 @@ START:
         }
         finallyErrorTrap()
         {
-            // Add a dummy touch to pComp so that it is kept alive, and is easy to get to
-            // during debugging since all other data can be obtained through it.
+            Compiler* pCompiler = pParamOuter->pComp;
+
+            // If OOM is thrown when allocating memory for a pComp, we will end up here.
+            // For this case, pComp and also pCompiler will be a nullptr
             //
-            if (pParamOuter->pComp) // If OOM is thrown when allocating memory for pComp, we will end up here.
-                                    // In that case, pComp is still NULL.
+            if (pCompiler != nullptr)
             {
-                pParamOuter->pComp->info.compCode = nullptr;
+                pCompiler->info.compCode = nullptr;
 
                 // pop the compiler off the TLS stack only if it was linked above
-                assert(JitTls::GetCompiler() == pParamOuter->pComp);
-                JitTls::SetCompiler(JitTls::GetCompiler()->prevCompiler);
+                assert(JitTls::GetCompiler() == pCompiler);
+                JitTls::SetCompiler(pCompiler->prevCompiler);
             }
 
             if (pParamOuter->inlineInfo == nullptr)
