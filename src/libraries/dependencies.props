@@ -13,8 +13,8 @@
     <CoreClrCurrentRef>cfe1f24607775daaa7b1b21604b0c3087d693ce1</CoreClrCurrentRef>
     <CoreSetupCurrentRef>cfe1f24607775daaa7b1b21604b0c3087d693ce1</CoreSetupCurrentRef>
     <ExternalCurrentRef>96dc7805f5df4a70a55783964ce69dcd91bfca80</ExternalCurrentRef>
-    <ProjectNTfsCurrentRef>d052ea58f4257a40e68864c844a391c4e61d02ef</ProjectNTfsCurrentRef>
-    <ProjectNTfsTestILCCurrentRef>d052ea58f4257a40e68864c844a391c4e61d02ef</ProjectNTfsTestILCCurrentRef>
+    <ProjectNTfsCurrentRef>e8050cf08a4f099b75be3a596c1f80d358c3e45d</ProjectNTfsCurrentRef>
+    <ProjectNTfsTestILCCurrentRef>e8050cf08a4f099b75be3a596c1f80d358c3e45d</ProjectNTfsTestILCCurrentRef>
     <SniCurrentRef>8bd1ec5fac9f0eec34ff6b34b1d878b4359e02dd</SniCurrentRef>
     <StandardCurrentRef>9004703a1923e5c5582ceb8d79712df777412446</StandardCurrentRef>
     <BuildToolsCurrentRef>cfe1f24607775daaa7b1b21604b0c3087d693ce1</BuildToolsCurrentRef>
@@ -34,9 +34,9 @@
     <CoreFxExpectedPrerelease>preview1-26708-04</CoreFxExpectedPrerelease>
     <MicrosoftNETCorePlatformsPackageVersion>3.0.0-preview1-26708-04</MicrosoftNETCorePlatformsPackageVersion>
     <MicrosoftNETCoreRuntimeCoreCLRPackageVersion>3.0.0-preview1-26710-01</MicrosoftNETCoreRuntimeCoreCLRPackageVersion>
-    <ProjectNTfsExpectedPrerelease>beta-26709-00</ProjectNTfsExpectedPrerelease>
-    <ProjectNTfsTestILCExpectedPrerelease>beta-26709-00</ProjectNTfsTestILCExpectedPrerelease>
-    <ProjectNTfsTestILCPackageVersion>1.0.0-beta-26709-00</ProjectNTfsTestILCPackageVersion>
+    <ProjectNTfsExpectedPrerelease>beta-26710-00</ProjectNTfsExpectedPrerelease>
+    <ProjectNTfsTestILCExpectedPrerelease>beta-26710-00</ProjectNTfsTestILCExpectedPrerelease>
+    <ProjectNTfsTestILCPackageVersion>1.0.0-beta-26710-00</ProjectNTfsTestILCPackageVersion>
     <MicrosoftNETCoreDotNetHostPackageVersion>3.0.0-preview1-26709-03</MicrosoftNETCoreDotNetHostPackageVersion>
     <MicrosoftNETCoreDotNetHostPolicyPackageVersion>3.0.0-preview1-26709-03</MicrosoftNETCoreDotNetHostPolicyPackageVersion>
     <MicrosoftNETCoreAppPackageVersion>3.0.0-preview1-26709-03</MicrosoftNETCoreAppPackageVersion>
