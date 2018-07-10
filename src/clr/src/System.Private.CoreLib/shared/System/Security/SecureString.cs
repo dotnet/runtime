@@ -156,6 +156,23 @@ namespace System.Security
             }
         }
 
+        private void EnsureNotDisposed()
+        {
+            if (_buffer == null)
+            {
+                throw new ObjectDisposedException(GetType().Name);
+            }
+        }
+
+        internal IntPtr MarshalToBSTR()
+        {
+            lock (_methodLock)
+            {
+                EnsureNotDisposed();
+                return MarshalToBSTRCore();
+            }
+        }
+
         internal unsafe IntPtr MarshalToString(bool globalAlloc, bool unicode)
         {
             lock (_methodLock)
