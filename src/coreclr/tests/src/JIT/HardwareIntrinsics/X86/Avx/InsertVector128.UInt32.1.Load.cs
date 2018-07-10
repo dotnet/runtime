@@ -23,7 +23,7 @@ namespace JIT.HardwareIntrinsics.X86
     {
         private static void InsertVector128UInt321Load()
         {
-            var test = new SimpleBinaryOpTest__InsertVector128UInt321Load();
+            var test = new InsertLoadTest__InsertVector128UInt321();
 
             if (test.IsSupported)
             {
@@ -66,11 +66,17 @@ namespace JIT.HardwareIntrinsics.X86
                     test.RunLclVarScenario_LoadAligned();
                 }
 
-                // Validates passing the field of a local works
-                test.RunLclFldScenario();
+                // Validates passing the field of a local class works
+                test.RunClassLclFldScenario();
 
-                // Validates passing an instance member works
-                test.RunFldScenario();
+                // Validates passing an instance member of a class works
+                test.RunClassFldScenario();
+
+                // Validates passing the field of a local struct works
+                test.RunStructLclFldScenario();
+
+                // Validates passing an instance member of a struct works
+                test.RunStructFldScenario();
             }
             else
             {
@@ -85,8 +91,35 @@ namespace JIT.HardwareIntrinsics.X86
         }
     }
 
-    public sealed unsafe class SimpleBinaryOpTest__InsertVector128UInt321Load
+    public sealed unsafe class InsertLoadTest__InsertVector128UInt321
     {
+        private struct TestStruct
+        {
+            public Vector256<UInt32> _fld1;
+            public Vector128<UInt32> _fld2;
+
+            public static TestStruct Create()
+            {
+                var testStruct = new TestStruct();
+                var random = new Random();
+
+                for (var i = 0; i < Op1ElementCount; i++) { _data1[i] = (uint)(random.Next(0, int.MaxValue)); }
+                Unsafe.CopyBlockUnaligned(ref Unsafe.As<Vector256<UInt32>, byte>(ref testStruct._fld1), ref Unsafe.As<UInt32, byte>(ref _data1[0]), (uint)Unsafe.SizeOf<Vector256<UInt32>>());
+                for (var i = 0; i < Op2ElementCount; i++) { _data2[i] = (uint)(random.Next(0,int.MaxValue)); }
+                Unsafe.CopyBlockUnaligned(ref Unsafe.As<Vector128<UInt32>, byte>(ref testStruct._fld2), ref Unsafe.As<UInt32, byte>(ref _data2[0]), (uint)Unsafe.SizeOf<Vector128<UInt32>>());
+
+                return testStruct;
+            }
+
+            public void RunStructFldScenario(InsertLoadTest__InsertVector128UInt321 testClass)
+            {
+                var result = Avx.InsertVector128(_fld1, (UInt32*)testClass._dataTable.inArray2Ptr, 1);
+
+                Unsafe.Write(testClass._dataTable.outArrayPtr, result);
+                testClass.ValidateResult(_fld1, (UInt32*)testClass._dataTable.inArray2Ptr, testClass._dataTable.outArrayPtr);
+            }
+        }
+
         private static readonly int LargestVectorSize = 32;
 
         private static readonly int Op1ElementCount = Unsafe.SizeOf<Vector256<UInt32>>() / sizeof(UInt32);
@@ -104,7 +137,7 @@ namespace JIT.HardwareIntrinsics.X86
 
         private SimpleBinaryOpTest__DataTable<UInt32, UInt32, UInt32> _dataTable;
 
-        static SimpleBinaryOpTest__InsertVector128UInt321Load()
+        static InsertLoadTest__InsertVector128UInt321()
         {
             var random = new Random();
 
@@ -114,7 +147,7 @@ namespace JIT.HardwareIntrinsics.X86
             Unsafe.CopyBlockUnaligned(ref Unsafe.As<Vector128<UInt32>, byte>(ref _clsVar2), ref Unsafe.As<UInt32, byte>(ref _data2[0]), (uint)Unsafe.SizeOf<Vector128<UInt32>>());
         }
 
-        public SimpleBinaryOpTest__InsertVector128UInt321Load()
+        public InsertLoadTest__InsertVector128UInt321()
         {
             Succeeded = true;
 
@@ -251,21 +284,36 @@ namespace JIT.HardwareIntrinsics.X86
             ValidateResult(left, right, _dataTable.outArrayPtr);
         }
 
-        public void RunLclFldScenario()
+        public void RunClassLclFldScenario()
         {
-            var test = new SimpleBinaryOpTest__InsertVector128UInt321Load();
+            var test = new InsertLoadTest__InsertVector128UInt321();
             var result = Avx.InsertVector128(test._fld1, (UInt32*)(_dataTable.inArray2Ptr), 1);
 
             Unsafe.Write(_dataTable.outArrayPtr, result);
             ValidateResult(test._fld1, (UInt32*)(_dataTable.inArray2Ptr), _dataTable.outArrayPtr);
         }
 
-        public void RunFldScenario()
+        public void RunClassFldScenario()
         {
             var result = Avx.InsertVector128(_fld1, (UInt32*)(_dataTable.inArray2Ptr), 1);
 
             Unsafe.Write(_dataTable.outArrayPtr, result);
             ValidateResult(_fld1, (UInt32*)(_dataTable.inArray2Ptr), _dataTable.outArrayPtr);
+        }
+
+        public void RunStructLclFldScenario()
+        {
+            var test = TestStruct.Create();
+            var result = Avx.InsertVector128(test._fld1, (UInt32*)(_dataTable.inArray2Ptr), 1);
+
+            Unsafe.Write(_dataTable.outArrayPtr, result);
+            ValidateResult(test._fld1, (UInt32*)(_dataTable.inArray2Ptr), _dataTable.outArrayPtr);
+        }
+
+        public void RunStructFldScenario()
+        {
+            var test = TestStruct.Create();
+            test.RunStructFldScenario(this);
         }
 
         public void RunUnsupportedScenario()
