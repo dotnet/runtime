@@ -5983,7 +5983,7 @@ mono_threads_summarize (MonoContext *ctx, gchar **out, MonoStackHash *hashes)
 
 	MonoNativeThreadId current = mono_native_thread_id_get ();
 
-	MOSTLY_ASYNC_SAFE_PRINTF("Entering thread summarizer from %zu\n", current);
+	MOSTLY_ASYNC_SAFE_PRINTF("Entering thread summarizer from %zx\n", current);
 
 	if (not_started) {
 		// Setup state
@@ -6039,7 +6039,7 @@ mono_threads_summarize (MonoContext *ctx, gchar **out, MonoStackHash *hashes)
 				sleep (1);
 				mono_memory_barrier ();
 				const char *name = thread_summary_state_to_str (summarizing_thread_state);
-				MOSTLY_ASYNC_SAFE_PRINTF("Waiting for signalled thread %zu to collect stacktrace. Status: %s\n", tid, name);
+				MOSTLY_ASYNC_SAFE_PRINTF("Waiting for signalled thread %zx to collect stacktrace. Status: %s\n", tid, name);
 				count--;
 			}
 			if (count == 0) {
@@ -6072,7 +6072,7 @@ mono_threads_summarize (MonoContext *ctx, gchar **out, MonoStackHash *hashes)
 					MOSTLY_ASYNC_SAFE_PRINTF("Timed out, thread did not respond to signal\n");
 
 					MonoNativeThreadId old_val = mono_atomic_cas_ptr ((gpointer) &summarizing_thread, NULL /* set */, GINT_TO_POINTER(tid) /* compare */);
-					g_assertf (tid == old_val, "Attempting to abandon dumping of thread %zu, and thread changed to %zu.", tid, old_val);
+					g_assertf (tid == old_val, "Attempting to abandon dumping of thread %zx, and thread changed to %zx.", tid, old_val);
 
 					gint32 timeout_abort_state = mono_atomic_cas_i32(&summarizing_thread_state, MONO_SUMMARY_EMPTY /* set */, MONO_SUMMARY_EXPECT /* compare */);
 					g_assertf (timeout_abort_state == MONO_SUMMARY_EXPECT, "Thread state changed during timeout abort", NULL);
@@ -6091,7 +6091,7 @@ mono_threads_summarize (MonoContext *ctx, gchar **out, MonoStackHash *hashes)
 
 	mono_memory_barrier ();
 
-	MOSTLY_ASYNC_SAFE_PRINTF("Self-reporting for thread %zu. Registered summarizing thread right now is %zu\n", current, summarizing_thread);
+	MOSTLY_ASYNC_SAFE_PRINTF("Self-reporting for thread %zx. Registered summarizing thread right now is %zx\n", current, summarizing_thread);
 	g_assert (current == summarizing_thread);
 
 	if (!not_started) {
