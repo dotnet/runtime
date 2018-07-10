@@ -24,8 +24,6 @@ win32_sources = \
 
 platform_sources = $(win32_sources)
 
-glib_libs = $(top_builddir)/mono/eglib/libeglib.la
-
 # Use -m here. This will use / as directory separator (C:/WINNT).
 # The files that use MONO_ASSEMBLIES and/or MONO_CFG_DIR replace the
 # / by \ if running under WIN32.
@@ -63,6 +61,8 @@ unix_sources = \
 
 platform_sources = $(unix_sources)
 endif
+
+glib_libs = $(top_builddir)/mono/eglib/libeglib.la
 
 if HOST_ANDROID
 platform_sources += ../../support/libm/complex.c
