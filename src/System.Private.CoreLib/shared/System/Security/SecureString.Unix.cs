@@ -70,14 +70,6 @@ namespace System.Security
             }
         }
 
-        private void EnsureNotDisposed()
-        {
-            if (_buffer == null)
-            {
-                throw new ObjectDisposedException(GetType().Name);
-            }
-        }
-
         private void ClearCore()
         {
             _decryptedLength = 0;
@@ -143,7 +135,7 @@ namespace System.Security
             _buffer.Write((ulong)(index * sizeof(char)), c);
         }
 
-        internal unsafe IntPtr MarshalToBSTR()
+        internal unsafe IntPtr MarshalToBSTRCore()
         {
             int length = _decryptedLength;
             IntPtr ptr = IntPtr.Zero;
