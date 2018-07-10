@@ -156,19 +156,16 @@ namespace System
         //
         public Decimal(int value)
         {
-            //  JIT today can't inline methods that contains "starg" opcode.
-            //  For more details, see DevDiv Bugs 81184: x86 JIT CQ: Removing the inline striction of "starg".
-            int value_copy = value;
-            if (value_copy >= 0)
+            if (value >= 0)
             {
                 flags = 0;
             }
             else
             {
                 flags = SignMask;
-                value_copy = -value_copy;
+                value = -value;
             }
-            lo = value_copy;
+            lo = value;
             mid = 0;
             hi = 0;
         }
@@ -188,20 +185,17 @@ namespace System
         //
         public Decimal(long value)
         {
-            //  JIT today can't inline methods that contains "starg" opcode.
-            //  For more details, see DevDiv Bugs 81184: x86 JIT CQ: Removing the inline striction of "starg".
-            long value_copy = value;
-            if (value_copy >= 0)
+            if (value >= 0)
             {
                 flags = 0;
             }
             else
             {
                 flags = SignMask;
-                value_copy = -value_copy;
+                value = -value;
             }
-            lo = (int)value_copy;
-            mid = (int)(value_copy >> 32);
+            lo = (int)value;
+            mid = (int)(value >> 32);
             hi = 0;
         }
 
@@ -267,15 +261,6 @@ namespace System
         //
         public Decimal(int[] bits)
         {
-            lo = 0;
-            mid = 0;
-            hi = 0;
-            flags = 0;
-            SetBits(bits);
-        }
-
-        private void SetBits(int[] bits)
-        {
             if (bits == null)
                 throw new ArgumentNullException(nameof(bits));
             if (bits.Length == 4)
@@ -313,7 +298,8 @@ namespace System
             // OnSerializing is called before serialization of an object
             try
             {
-                SetBits(GetBits(this));
+                // Run the constructor to validate the decimal
+                new decimal(lo, mid, hi, flags);
             }
             catch (ArgumentException e)
             {
@@ -327,7 +313,8 @@ namespace System
             // This callback method performs decimal validation after being deserialized.
             try
             {
-                SetBits(GetBits(this));
+                // Run the constructor to validate the decimal
+                new decimal(lo, mid, hi, flags);
             }
             catch (ArgumentException e)
             {
