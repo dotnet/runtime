@@ -32,22 +32,27 @@ namespace R2RDump
 
         public struct ImportSectionEntry
         {
+            public int StartOffset { get; set; }
             public long Section { get; set; }
             public uint SignatureRVA { get; set; }
-            public uint Signature { get; set; }
-            public ImportSectionEntry(long section, uint signatureRVA, uint signature)
+            public byte[] SignatureSample { get; set; }
+            public ImportSectionEntry(int startOffset, long section, uint signatureRVA, byte[] signatureSample)
             {
+                StartOffset = startOffset;
                 Section = section;
                 SignatureRVA = signatureRVA;
-                Signature = signature;
+                SignatureSample = signatureSample;
             }
 
             public override string ToString()
             {
                 StringBuilder sb = new StringBuilder();
-                sb.AppendLine($"\tSection: 0x{Section:X8} ({Section})");
-                sb.AppendLine($"\tSignatureRVA: 0x{SignatureRVA:X8} ({SignatureRVA})");
-                sb.AppendLine($"\tSection: 0x{Signature:X8} ({Signature})");
+                sb.Append($@"+{StartOffset:X4}  Section: 0x{Section:X8}  SignatureRVA: 0x{SignatureRVA:X8}  ");
+                foreach (byte b in SignatureSample)
+                {
+                    sb.AppendFormat("{0:X2} ", b);
+                }
+                sb.Append("...");
                 return sb.ToString();
             }
         }
