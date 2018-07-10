@@ -75,7 +75,7 @@ def targetGroupOsMapInnerloop = ['netcoreapp': ['Windows_NT', 'Ubuntu14.04', 'Ub
         // Archive results.
         Utilities.addArchival(newJob, '**/coverage/*,msbuild.log')
         // Timeout. Code coverage runs take longer, so we set the timeout to be longer.
-        Utilities.setJobTimeout(newJob, 720)
+        Utilities.setJobTimeout(newJob, 300)
         // Set triggers
         if (isPR) {
             if (!isLocal) {
