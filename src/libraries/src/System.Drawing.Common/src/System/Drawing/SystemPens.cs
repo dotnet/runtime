@@ -3,6 +3,7 @@
 // See the LICENSE file in the project root for more information.
 
 using System.Diagnostics;
+using Gdip = System.Drawing.SafeNativeMethods.Gdip;
 
 namespace System.Drawing
 {
@@ -61,11 +62,11 @@ namespace System.Drawing
                 throw new ArgumentException(SR.Format(SR.ColorNotSystemColor, c.ToString()));
             }
 
-            Pen[] systemPens = (Pen[])SafeNativeMethods.Gdip.ThreadData[s_systemPensKey];
+            Pen[] systemPens = (Pen[])Gdip.ThreadData[s_systemPensKey];
             if (systemPens == null)
             {
                 systemPens = new Pen[(int)KnownColor.WindowText + (int)KnownColor.MenuHighlight - (int)KnownColor.YellowGreen];
-                SafeNativeMethods.Gdip.ThreadData[s_systemPensKey] = systemPens;
+                Gdip.ThreadData[s_systemPensKey] = systemPens;
             }
 
             int idx = (int)c.ToKnownColor();

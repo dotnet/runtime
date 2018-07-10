@@ -7,6 +7,7 @@ using System.Diagnostics;
 using System.Globalization;
 using System.Runtime.InteropServices;
 using System.Runtime.Serialization;
+using Gdip = System.Drawing.SafeNativeMethods.Gdip;
 
 namespace System.Drawing
 {
@@ -157,9 +158,9 @@ namespace System.Drawing
 #if DEBUG
                     int status =
 #endif
-                    SafeNativeMethods.Gdip.GdipDeleteFont(new HandleRef(this, _nativeFont));
+                    Gdip.GdipDeleteFont(new HandleRef(this, _nativeFont));
 #if DEBUG
-                    Debug.Assert(status == SafeNativeMethods.Gdip.Ok, "GDI+ returned an error status: " + status.ToString(CultureInfo.InvariantCulture));
+                    Debug.Assert(status == Gdip.Ok, "GDI+ returned an error status: " + status.ToString(CultureInfo.InvariantCulture));
 #endif
                 }
                 catch (Exception ex) when (!ClientUtils.IsCriticalException(ex))
@@ -183,8 +184,8 @@ namespace System.Drawing
             }
 
             float height;
-            int status = SafeNativeMethods.Gdip.GdipGetFontHeight(new HandleRef(this, NativeFont), new HandleRef(graphics, graphics.NativeGraphics), out height);
-            SafeNativeMethods.Gdip.CheckStatus(status);
+            int status = Gdip.GdipGetFontHeight(new HandleRef(this, NativeFont), new HandleRef(graphics, graphics.NativeGraphics), out height);
+            Gdip.CheckStatus(status);
 
             return height;
         }
@@ -192,8 +193,8 @@ namespace System.Drawing
         public float GetHeight(float dpi)
         {
             float size;
-            int status = SafeNativeMethods.Gdip.GdipGetFontHeightGivenDPI(new HandleRef(this, NativeFont), dpi, out size);
-            SafeNativeMethods.Gdip.CheckStatus(status);
+            int status = Gdip.GdipGetFontHeightGivenDPI(new HandleRef(this, NativeFont), dpi, out size);
+            Gdip.CheckStatus(status);
             return size;
         }
 
