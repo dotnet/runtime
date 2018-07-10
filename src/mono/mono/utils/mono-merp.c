@@ -111,6 +111,7 @@ typedef struct {
 	const char *appSignature; 
 	const char *appVersion;
 	const char *merpGUIPath; 
+	const char *eventType;
 	gboolean log;
 } MerpOptions;
 
@@ -342,7 +343,7 @@ mono_init_merp (const intptr_t crashed_pid, const char *signal, MonoStackHash *h
 	merp->systemManufacturer = "apple";
 	get_apple_model ((char *) merp->systemModel, sizeof (merp->systemModel));
 
-	merp->eventType = "MonoAppCrash";
+	merp->eventType = config.eventType;
 
 	merp->hashes = *hashes;
 }
@@ -534,11 +535,12 @@ mono_merp_disable (void)
 	g_free ((char*)config.appSignature);
 	g_free ((char*)config.appVersion);
 	g_free ((char*)config.merpGUIPath);
+	g_free ((char*)config.eventType);
 	memset (&config, 0, sizeof (config));
 }
 
 void
-mono_merp_enable (const char *appBundleID, const char *appSignature, const char *appVersion, const char *merpGUIPath)
+mono_merp_enable (const char *appBundleID, const char *appSignature, const char *appVersion, const char *merpGUIPath, const char *eventType)
 {
 	g_assert (!config.enable_merp);
 
@@ -546,6 +548,7 @@ mono_merp_enable (const char *appBundleID, const char *appSignature, const char 
 	config.appSignature = g_strdup (appSignature);
 	config.appVersion = g_strdup (appVersion);
 	config.merpGUIPath = g_strdup (merpGUIPath);
+	config.eventType = g_strdup (eventType);
 
 	config.log = g_getenv ("MONO_MERP_VERBOSE") != NULL;
 
