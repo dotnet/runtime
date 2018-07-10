@@ -15,6 +15,7 @@
 MONO_API void mono_pal_init (void);
 
 extern void mono_marshal_set_last_error (void);
+extern int32_t SystemNative_Read(intptr_t fd, void* buffer, int32_t bufferSize);
 gint32 ves_icall_Interop_Sys_Read (intptr_t fd, gchar* buffer, gint32 count);
 
 #if defined(__APPLE__)
