@@ -89,6 +89,11 @@ namespace Internal.Cryptography.Pal
                 return OpenKeychain(SharedSystemKeychainPath, openFlags);
             }
 
+            public static AppleKeychainStore CreateOrOpenKeychain(string keychainPath, OpenFlags openFlags)
+            {
+                return new AppleKeychainStore(Interop.AppleCrypto.CreateOrOpenKeychain(keychainPath, !openFlags.HasFlag(OpenFlags.OpenExistingOnly)), openFlags);
+            }
+
             private static AppleKeychainStore OpenKeychain(string keychainPath, OpenFlags openFlags)
             {
                 return new AppleKeychainStore(Interop.AppleCrypto.SecKeychainOpen(keychainPath), openFlags);
