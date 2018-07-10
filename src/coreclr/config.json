@@ -312,6 +312,12 @@
       "values": [ true, false ],
       "defaultValue": false
     },
+    "BuildManagedTools": {
+      "description": "",
+      "valueType": "property",
+      "values": [ true, false ],
+      "defaultValue": true
+    },
     "SignType": {
       "description": "Sets the SignType.",
       "valueType": "property",
