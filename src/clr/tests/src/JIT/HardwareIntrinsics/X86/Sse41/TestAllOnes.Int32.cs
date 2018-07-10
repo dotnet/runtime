@@ -22,7 +22,7 @@ namespace JIT.HardwareIntrinsics.X86
     {
         private static void TestAllOnesInt32()
         {
-            var test = new BooleanComparisonOpTest__TestAllOnesInt32();
+            var test = new BooleanUnaryOpTest__TestAllOnesInt32();
 
             if (test.IsSupported)
             {
@@ -65,11 +65,17 @@ namespace JIT.HardwareIntrinsics.X86
                     test.RunLclVarScenario_LoadAligned();
                 }
 
-                // Validates passing the field of a local works
-                test.RunLclFldScenario();
+                // Validates passing the field of a local class works
+                test.RunClassLclFldScenario();
 
-                // Validates passing an instance member works
-                test.RunFldScenario();
+                // Validates passing an instance member of a class works
+                test.RunClassFldScenario();
+
+                // Validates passing the field of a local struct works
+                test.RunStructLclFldScenario();
+
+                // Validates passing an instance member of a struct works
+                test.RunStructFldScenario();
             }
             else
             {
@@ -84,8 +90,30 @@ namespace JIT.HardwareIntrinsics.X86
         }
     }
 
-    public sealed unsafe class BooleanComparisonOpTest__TestAllOnesInt32
+    public sealed unsafe class BooleanUnaryOpTest__TestAllOnesInt32
     {
+        private struct TestStruct
+        {
+            public Vector128<Int32> _fld;
+
+            public static TestStruct Create()
+            {
+                var testStruct = new TestStruct();
+                var random = new Random();
+
+                for (var i = 0; i < Op1ElementCount; i++) { _data[i] = (int)(random.Next(int.MinValue, int.MaxValue)); }
+                Unsafe.CopyBlockUnaligned(ref Unsafe.As<Vector128<Int32>, byte>(ref testStruct._fld), ref Unsafe.As<Int32, byte>(ref _data[0]), (uint)Unsafe.SizeOf<Vector128<Int32>>());
+
+                return testStruct;
+            }
+
+            public void RunStructFldScenario(BooleanUnaryOpTest__TestAllOnesInt32 testClass)
+            {
+                var result = Sse41.TestAllOnes(_fld);
+                testClass.ValidateResult(_fld, result);
+            }
+        }
+
         private static readonly int LargestVectorSize = 16;
 
         private static readonly int Op1ElementCount = Unsafe.SizeOf<Vector128<Int32>>() / sizeof(Int32);
@@ -98,7 +126,7 @@ namespace JIT.HardwareIntrinsics.X86
 
         private BooleanUnaryOpTest__DataTable<Int32> _dataTable;
 
-        static BooleanComparisonOpTest__TestAllOnesInt32()
+        static BooleanUnaryOpTest__TestAllOnesInt32()
         {
             var random = new Random();
 
@@ -106,7 +134,7 @@ namespace JIT.HardwareIntrinsics.X86
             Unsafe.CopyBlockUnaligned(ref Unsafe.As<Vector128<Int32>, byte>(ref _clsVar), ref Unsafe.As<Int32, byte>(ref _data[0]), (uint)Unsafe.SizeOf<Vector128<Int32>>());
         }
 
-        public BooleanComparisonOpTest__TestAllOnesInt32()
+        public BooleanUnaryOpTest__TestAllOnesInt32()
         {
             Succeeded = true;
 
@@ -213,19 +241,32 @@ namespace JIT.HardwareIntrinsics.X86
             ValidateResult(value, result);
         }
 
-        public void RunLclFldScenario()
+        public void RunClassLclFldScenario()
         {
-            var test = new BooleanComparisonOpTest__TestAllOnesInt32();
+            var test = new BooleanUnaryOpTest__TestAllOnesInt32();
             var result = Sse41.TestAllOnes(test._fld);
 
             ValidateResult(test._fld, result);
         }
 
-        public void RunFldScenario()
+        public void RunClassFldScenario()
         {
             var result = Sse41.TestAllOnes(_fld);
 
             ValidateResult(_fld, result);
+        }
+
+        public void RunStructLclFldScenario()
+        {
+            var test = TestStruct.Create();
+            var result = Sse41.TestAllOnes(test._fld);
+            ValidateResult(test._fld, result);
+        }
+
+        public void RunStructFldScenario()
+        {
+            var test = TestStruct.Create();
+            test.RunStructFldScenario(this);
         }
 
         public void RunUnsupportedScenario()

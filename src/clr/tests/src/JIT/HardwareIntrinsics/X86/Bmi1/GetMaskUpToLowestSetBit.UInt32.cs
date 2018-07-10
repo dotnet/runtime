@@ -37,11 +37,17 @@ namespace JIT.HardwareIntrinsics.X86
                 // Validates passing a local works, using Unsafe.ReadUnaligned
                 test.RunLclVarScenario_UnsafeRead();
 
-                // Validates passing the field of a local works
-                test.RunLclFldScenario();
+                // Validates passing the field of a local class works
+                test.RunClassLclFldScenario();
 
-                // Validates passing an instance member works
-                test.RunFldScenario();
+                // Validates passing an instance member of a class works
+                test.RunClassFldScenario();
+
+                // Validates passing the field of a local struct works
+                test.RunStructLclFldScenario();
+
+                // Validates passing an instance member of a struct works
+                test.RunStructFldScenario();
             }
             else
             {
@@ -58,6 +64,26 @@ namespace JIT.HardwareIntrinsics.X86
 
     public sealed unsafe class ScalarUnaryOpTest__GetMaskUpToLowestSetBitUInt32
     {
+        private struct TestStruct
+        {
+            public UInt32 _fld;
+
+            public static TestStruct Create()
+            {
+                var testStruct = new TestStruct();
+                var random = new Random();
+
+                testStruct._fld = (uint)(random.Next(0, int.MaxValue));
+                return testStruct;
+            }
+
+            public void RunStructFldScenario(ScalarUnaryOpTest__GetMaskUpToLowestSetBitUInt32 testClass)
+            {
+                var result = Bmi1.GetMaskUpToLowestSetBit(_fld);
+                testClass.ValidateResult(_fld, result);
+            }
+        }
+
         private static UInt32 _data;
 
         private static UInt32 _clsVar;
@@ -120,7 +146,7 @@ namespace JIT.HardwareIntrinsics.X86
             ValidateResult(data, result);
         }
 
-        public void RunLclFldScenario()
+        public void RunClassLclFldScenario()
         {
             var test = new ScalarUnaryOpTest__GetMaskUpToLowestSetBitUInt32();
             var result = Bmi1.GetMaskUpToLowestSetBit(test._fld);
@@ -128,10 +154,24 @@ namespace JIT.HardwareIntrinsics.X86
             ValidateResult(test._fld, result);
         }
 
-        public void RunFldScenario()
+        public void RunClassFldScenario()
         {
             var result = Bmi1.GetMaskUpToLowestSetBit(_fld);
             ValidateResult(_fld, result);
+        }
+
+        public void RunStructLclFldScenario()
+        {
+            var test = TestStruct.Create();
+            var result = Bmi1.GetMaskUpToLowestSetBit(test._fld);
+
+            ValidateResult(test._fld, result);
+        }
+
+        public void RunStructFldScenario()
+        {
+            var test = TestStruct.Create();
+            test.RunStructFldScenario(this);
         }
 
         public void RunUnsupportedScenario()
