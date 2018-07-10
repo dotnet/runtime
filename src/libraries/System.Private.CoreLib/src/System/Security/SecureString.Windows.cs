@@ -6,7 +6,6 @@ using System.Diagnostics;
 using System.Runtime;
 using System.Runtime.InteropServices;
 using System.Security.Cryptography;
-using Microsoft.Win32;
 
 namespace System.Security
 {
@@ -145,7 +144,7 @@ namespace System.Security
             }
         }
 
-        internal unsafe IntPtr MarshalToBSTR()
+        internal unsafe IntPtr MarshalToBSTRCore()
         {
             int length = _decryptedLength;
             IntPtr ptr = IntPtr.Zero;
@@ -230,14 +229,6 @@ namespace System.Security
                 }
             }
             return result;
-        }
-
-        private void EnsureNotDisposed()
-        {
-            if (_buffer == null)
-            {
-                throw new ObjectDisposedException(GetType().Name);
-            }
         }
 
         // -----------------------------
