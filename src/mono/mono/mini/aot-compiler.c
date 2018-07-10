@@ -3751,7 +3751,7 @@ add_method_with_index (MonoAotCompile *acfg, MonoMethod *method, int index, gboo
 
 	if (method->wrapper_type || extra) {
 		int token = mono_metadata_token_index (method->token) - 1;
-		if (token >= 0)
+		if (token < 0)
 			acfg->nextra_methods++;
 		g_ptr_array_add (acfg->extra_methods, method);
 	}

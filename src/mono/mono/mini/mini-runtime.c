@@ -2765,6 +2765,9 @@ create_runtime_invoke_info (MonoDomain *domain, MonoMethod *method, gpointer com
 		break;
 	}
 
+	if (info->use_interp)
+		return info;
+
 	if (!info->dyn_call_info) {
 		if (mono_llvm_only) {
 #ifndef MONO_ARCH_GSHAREDVT_SUPPORTED
