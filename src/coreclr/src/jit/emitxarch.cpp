@@ -4512,10 +4512,13 @@ void emitter::emitIns_R_R_S_I(
 //    opReg encoded in imm[7:4]
 static int encodeXmmRegAsIval(regNumber opReg)
 {
-    assert(opReg >= XMMBASE);
     // AVX/AVX2 supports 4-reg format for vblendvps/vblendvpd/vpblendvb,
     // which encodes the fourth register into imm8[7:4]
-    return (opReg - XMMBASE) << 4;
+    assert(opReg >= XMMBASE);
+    int ival = (opReg - XMMBASE) << 4;
+
+    assert((ival >= 0) && (ival <= 255));
+    return (int8_t)ival;
 }
 
 //------------------------------------------------------------------------
