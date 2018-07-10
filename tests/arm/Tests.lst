@@ -2001,7 +2001,7 @@ RelativePath=Loader\classloader\TypeGeneratorTests\TypeGeneratorTest772\Generate
 WorkingDir=Loader\classloader\TypeGeneratorTests\TypeGeneratorTest772\Generated772
 Expected=0
 MaxAllowedDurationSeconds=600
-Categories=EXPECTED_FAIL;13731;Pri1
+Categories=EXPECTED_PASS;Pri1
 HostStyle=0
 
 [_il_dbgldc_mul.cmd_252]
@@ -5705,7 +5705,7 @@ RelativePath=CoreMangLib\cti\system\reflection\emit\opcodes\OpCodesLdc_I4_3\OpCo
 WorkingDir=CoreMangLib\cti\system\reflection\emit\opcodes\OpCodesLdc_I4_3
 Expected=0
 MaxAllowedDurationSeconds=600
-Categories=EXPECTED_FAIL;13731;Pri1
+Categories=EXPECTED_PASS;Pri1
 HostStyle=0
 
 [_relnative.cmd_718]
@@ -13185,7 +13185,7 @@ RelativePath=Loader\classloader\TypeGeneratorTests\TypeGeneratorTest759\Generate
 WorkingDir=Loader\classloader\TypeGeneratorTests\TypeGeneratorTest759\Generated759
 Expected=0
 MaxAllowedDurationSeconds=600
-Categories=EXPECTED_FAIL;13731;Pri1
+Categories=EXPECTED_PASS;Pri1
 HostStyle=0
 
 [GCSimulator_26.cmd_1659]
@@ -17897,7 +17897,7 @@ RelativePath=Loader\classloader\TypeGeneratorTests\TypeGeneratorTest1387\Generat
 WorkingDir=Loader\classloader\TypeGeneratorTests\TypeGeneratorTest1387\Generated1387
 Expected=0
 MaxAllowedDurationSeconds=600
-Categories=EXPECTED_FAIL;13731;Pri1
+Categories=EXPECTED_PASS;Pri1
 HostStyle=0
 
 [_il_dbgtest_2b.cmd_2249]
@@ -22169,7 +22169,7 @@ RelativePath=JIT\Methodical\explicit\rotate\_relrotarg_valref\_relrotarg_valref.
 WorkingDir=JIT\Methodical\explicit\rotate\_relrotarg_valref
 Expected=0
 MaxAllowedDurationSeconds=600
-Categories=EXPECTED_FAIL;13731
+Categories=EXPECTED_PASS
 HostStyle=0
 
 [r8rem_cs_r.cmd_2785]
@@ -27033,7 +27033,7 @@ RelativePath=Loader\classloader\regressions\dev10_720779\dev10_720779\dev10_7207
 WorkingDir=Loader\classloader\regressions\dev10_720779\dev10_720779
 Expected=0
 MaxAllowedDurationSeconds=600
-Categories=EXPECTED_FAIL;13731;Pri1
+Categories=EXPECTED_PASS;Pri1
 HostStyle=0
 
 [StringConcat4.cmd_3396]
@@ -33401,7 +33401,7 @@ RelativePath=baseservices\exceptions\regressions\whidbeym3.3\302680\302680\30268
 WorkingDir=baseservices\exceptions\regressions\whidbeym3.3\302680\302680
 Expected=0
 MaxAllowedDurationSeconds=600
-Categories=EXPECTED_FAIL;13731;Pri1
+Categories=EXPECTED_PASS;Pri1
 HostStyle=0
 
 [lim_002.cmd_4194]
@@ -35609,7 +35609,7 @@ RelativePath=Loader\classloader\TypeGeneratorTests\TypeGeneratorTest1219\Generat
 WorkingDir=Loader\classloader\TypeGeneratorTests\TypeGeneratorTest1219\Generated1219
 Expected=0
 MaxAllowedDurationSeconds=600
-Categories=EXPECTED_FAIL;13731;Pri1
+Categories=EXPECTED_PASS;Pri1
 HostStyle=0
 
 [instance_equalnull_class01.cmd_4470]
@@ -35921,7 +35921,7 @@ RelativePath=JIT\Regression\CLR-x86-JIT\V1-M12-Beta2\b52840\b52840\b52840.cmd
 WorkingDir=JIT\Regression\CLR-x86-JIT\V1-M12-Beta2\b52840\b52840
 Expected=0
 MaxAllowedDurationSeconds=600
-Categories=EXPECTED_FAIL;13731
+Categories=EXPECTED_PASS
 HostStyle=0
 
 [gcincatch_r.cmd_4509]
@@ -36705,7 +36705,7 @@ RelativePath=JIT\Methodical\tailcall\_il_relcompat_i_u2\_il_relcompat_i_u2.cmd
 WorkingDir=JIT\Methodical\tailcall\_il_relcompat_i_u2
 Expected=0
 MaxAllowedDurationSeconds=600
-Categories=EXPECTED_FAIL;13731;Pri1
+Categories=EXPECTED_PASS;Pri1
 HostStyle=0
 
 [SByteEquals2.cmd_4607]
@@ -36745,7 +36745,7 @@ RelativePath=JIT\jit64\regress\vsw\373472\test\test.cmd
 WorkingDir=JIT\jit64\regress\vsw\373472\test
 Expected=0
 MaxAllowedDurationSeconds=600
-Categories=EXPECTED_FAIL;13731
+Categories=EXPECTED_PASS
 HostStyle=0
 
 [specific_struct_instance01.cmd_4612]
@@ -37233,7 +37233,7 @@ RelativePath=JIT\Regression\Dev11\External\dev11_239804\ShowLocallocAlignment\Sh
 WorkingDir=JIT\Regression\Dev11\External\dev11_239804\ShowLocallocAlignment
 Expected=0
 MaxAllowedDurationSeconds=600
-Categories=EXPECTED_FAIL;13731;Pri1
+Categories=EXPECTED_PASS;Pri1
 HostStyle=0
 
 [JTrueGeDbl.cmd_4673]
@@ -37465,7 +37465,7 @@ RelativePath=Loader\classloader\TypeGeneratorTests\TypeGeneratorTest1493\Generat
 WorkingDir=Loader\classloader\TypeGeneratorTests\TypeGeneratorTest1493\Generated1493
 Expected=0
 MaxAllowedDurationSeconds=600
-Categories=EXPECTED_FAIL;13731;Pri1
+Categories=EXPECTED_PASS;Pri1
 HostStyle=0
 
 [Double_No_Op_cs_r.cmd_4702]
@@ -47889,7 +47889,7 @@ RelativePath=JIT\Regression\CLR-x86-JIT\V1-M12-Beta2\b77713\b77713\b77713.cmd
 WorkingDir=JIT\Regression\CLR-x86-JIT\V1-M12-Beta2\b77713\b77713
 Expected=0
 MaxAllowedDurationSeconds=600
-Categories=EXPECTED_FAIL;13731;Pri1
+Categories=EXPECTED_PASS;Pri1
 HostStyle=0
 
 [invocation_do.cmd_6009]
@@ -53641,7 +53641,7 @@ RelativePath=CoreMangLib\cti\system\collections\generic\dictionary\DictionaryICo
 WorkingDir=CoreMangLib\cti\system\collections\generic\dictionary\DictionaryICollectionIsReadOnly2
 Expected=0
 MaxAllowedDurationSeconds=600
-Categories=EXPECTED_FAIL;13731;Pri1
+Categories=EXPECTED_PASS;Pri1
 HostStyle=0
 
 [PulseNull.cmd_6730]
@@ -62177,7 +62177,7 @@ RelativePath=JIT\Regression\CLR-x86-JIT\V1-M11-Beta1\b47610\b47610\b47610.cmd
 WorkingDir=JIT\Regression\CLR-x86-JIT\V1-M11-Beta1\b47610\b47610
 Expected=0
 MaxAllowedDurationSeconds=600
-Categories=EXPECTED_FAIL;13731;Pri1
+Categories=EXPECTED_PASS;Pri1
 HostStyle=0
 
 [b92713.cmd_7805]
@@ -70961,7 +70961,7 @@ RelativePath=CoreMangLib\cti\system\runtime\interopservices\safehandle\SafeHandl
 WorkingDir=CoreMangLib\cti\system\runtime\interopservices\safehandle\SafeHandleHandle_PSC
 Expected=0
 MaxAllowedDurationSeconds=600
-Categories=EXPECTED_FAIL;13731;Pri1
+Categories=EXPECTED_PASS;Pri1
 HostStyle=0
 
 [b62498.cmd_8908]
@@ -71801,7 +71801,7 @@ RelativePath=Loader\classloader\TypeGeneratorTests\TypeGeneratorTest574\Generate
 WorkingDir=Loader\classloader\TypeGeneratorTests\TypeGeneratorTest574\Generated574
 Expected=0
 MaxAllowedDurationSeconds=600
-Categories=EXPECTED_FAIL;13731;Pri1
+Categories=EXPECTED_PASS;Pri1
 HostStyle=0
 
 [_il_relisinst_calli.cmd_9013]
@@ -83585,7 +83585,7 @@ RelativePath=JIT\Methodical\Boxing\misc\_dbgenum_cs\_dbgenum_cs.cmd
 WorkingDir=JIT\Methodical\Boxing\misc\_dbgenum_cs
 Expected=0
 MaxAllowedDurationSeconds=600
-Categories=EXPECTED_FAIL;13731
+Categories=EXPECTED_PASS
 HostStyle=0
 
 [throwinnestedtryfinally_d.cmd_10500]
@@ -83657,7 +83657,7 @@ RelativePath=Loader\classloader\TypeGeneratorTests\TypeGeneratorTest323\Generate
 WorkingDir=Loader\classloader\TypeGeneratorTests\TypeGeneratorTest323\Generated323
 Expected=0
 MaxAllowedDurationSeconds=600
-Categories=EXPECTED_FAIL;13731;Pri1
+Categories=EXPECTED_PASS;Pri1
 HostStyle=0
 
 [ListInsertRange.cmd_10510]
@@ -86449,7 +86449,7 @@ RelativePath=JIT\IL_Conformance\Old\Conformance_Base\ldarg_r4\ldarg_r4.cmd
 WorkingDir=JIT\IL_Conformance\Old\Conformance_Base\ldarg_r4
 Expected=0
 MaxAllowedDurationSeconds=600
-Categories=EXPECTED_FAIL;13731;Pri1
+Categories=EXPECTED_PASS;Pri1
 HostStyle=0
 
 [Class2_ImplicitOverrideVirtual.cmd_10859]
@@ -87561,7 +87561,7 @@ RelativePath=JIT\Methodical\Invoke\fptr\_speed_relrecurse\_speed_relrecurse.cmd
 WorkingDir=JIT\Methodical\Invoke\fptr\_speed_relrecurse
 Expected=0
 MaxAllowedDurationSeconds=600
-Categories=EXPECTED_FAIL;13731;Pri1
+Categories=EXPECTED_PASS;Pri1
 HostStyle=0
 
 [jaggedarr_cs_d.cmd_10999]
@@ -88777,7 +88777,7 @@ RelativePath=CoreMangLib\cti\system\convert\ConvertToInt32_5\ConvertToInt32_5.cm
 WorkingDir=CoreMangLib\cti\system\convert\ConvertToInt32_5
 Expected=0
 MaxAllowedDurationSeconds=600
-Categories=EXPECTED_FAIL;13731;Pri1
+Categories=EXPECTED_PASS;Pri1
 HostStyle=0
 
 [Generated1317.cmd_11153]
