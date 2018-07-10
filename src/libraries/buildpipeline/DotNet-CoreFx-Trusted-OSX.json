@@ -273,6 +273,7 @@
       "continueOnError": true,
       "displayName": "run end.sh",
       "timeoutInMinutes": 0,
+      "condition": "always()",
       "alwaysRun": true,
       "task": {
         "id": "10f1f9a1-74b0-47ab-87bf-e3c9c68e8b0d",
