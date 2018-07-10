@@ -289,7 +289,6 @@ namespace R2RDump
                         }
                         foreach (R2RImportSection.ImportSectionEntry entry in importSection.Entries)
                         {
-                            _writer.WriteLine();
                             _writer.WriteLine(entry.ToString());
                         }
                         _writer.WriteLine();

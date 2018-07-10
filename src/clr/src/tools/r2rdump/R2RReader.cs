@@ -32,6 +32,32 @@ namespace R2RDump
         E15 = 15,
     }
 
+    /// <summary>
+    /// This structure represents a single precode fixup cell decoded from the
+    /// nibble-oriented per-method fixup blob. Each method entrypoint fixup
+    /// represents an array of cells that must be fixed up before the method
+    /// can start executing.
+    /// </summary>
+    public struct FixupCell
+    {
+        /// <summary>
+        /// Zero-based index of the import table within the import tables section.
+        /// </summary>
+        public uint TableIndex;
+
+        /// <summary>
+        /// Zero-based offset of the entry in the import table; it must be a multiple
+        /// of the target architecture pointer size.
+        /// </summary>
+        public uint CellOffset;
+
+        public FixupCell(uint tableIndex, uint cellOffset)
+        {
+            TableIndex = tableIndex;
+            CellOffset = cellOffset;
+        }
+    }
+
     public class R2RReader
     {
         private readonly PEReader _peReader;
@@ -181,7 +207,10 @@ namespace R2RDump
                 int offset = 0;
                 if (methodEntryPoints.TryGetAt(Image, rid - 1, ref offset))
                 {
-                    R2RMethod method = new R2RMethod(_mdReader, rid, GetEntryPointIdFromOffset(offset), null, null);
+                    int runtimeFunctionId;
+                    FixupCell[] fixups;
+                    GetEntryPointInfoFromOffset(offset, out runtimeFunctionId, out fixups);
+                    R2RMethod method = new R2RMethod(_mdReader, rid, runtimeFunctionId, null, null, fixups);
 
                     if (method.EntryPointRuntimeFunctionId < 0 || method.EntryPointRuntimeFunctionId >= isEntryPoint.Length)
                     {
@@ -227,8 +256,10 @@ namespace R2RDump
                         }
                     }
 
-                    int id = GetEntryPointIdFromOffset((int)curParser.Offset);
-                    R2RMethod method = new R2RMethod(_mdReader, rid, id, args, tokens);
+                    int runtimeFunctionId;
+                    FixupCell[] fixups;
+                    GetEntryPointInfoFromOffset((int)curParser.Offset, out runtimeFunctionId, out fixups);
+                    R2RMethod method = new R2RMethod(_mdReader, rid, runtimeFunctionId, args, tokens, fixups);
                     if (method.EntryPointRuntimeFunctionId >= 0 && method.EntryPointRuntimeFunctionId < isEntryPoint.Length)
                     {
                         isEntryPoint[method.EntryPointRuntimeFunctionId] = true;
@@ -331,6 +362,7 @@ namespace R2RDump
             {
                 int rva = NativeReader.ReadInt32(Image, ref offset);
                 int sectionOffset = GetOffset(rva);
+                int startOffset = sectionOffset;
                 int size = NativeReader.ReadInt32(Image, ref offset);
                 R2RImportSection.CorCompileImportFlags flags = (R2RImportSection.CorCompileImportFlags)NativeReader.ReadUInt16(Image, ref offset);
                 byte type = NativeReader.ReadByte(Image, ref offset);
@@ -357,11 +389,14 @@ namespace R2RDump
                             uint sigRva = 0;
                             while (sigRva != firstSigRva)
                             {
+                                int entryOffset = sectionOffset - startOffset;
                                 sigRva = NativeReader.ReadUInt32(Image, ref signatureOffset);
                                 long section = NativeReader.ReadInt64(Image, ref sectionOffset);
                                 int sigOff = GetOffset((int)sigRva);
-                                uint signature = NativeReader.ReadUInt32(Image, ref sigOff);
-                                entries.Add(new R2RImportSection.ImportSectionEntry(section, sigRva, signature));
+                                int sigSampleLength = Math.Min(8, Image.Length - sigOff);
+                                byte[] signatureSample = new byte[sigSampleLength];
+                                Array.Copy(Image, sigOff, signatureSample, 0, sigSampleLength);
+                                entries.Add(new R2RImportSection.ImportSectionEntry(entryOffset, section, sigRva, signatureSample));
                             }
                         }
                         break;
@@ -369,11 +404,14 @@ namespace R2RDump
                     case R2RImportSection.CorCompileImportFlags.CORCOMPILE_IMPORT_FLAGS_PCODE:
                         for (int i = 0; i < entryCount; i++)
                         {
+                            int entryOffset = sectionOffset - startOffset;
                             long section = NativeReader.ReadInt64(Image, ref sectionOffset);
                             uint sigRva = NativeReader.ReadUInt32(Image, ref signatureOffset);
                             int sigOff = GetOffset((int)sigRva);
-                            uint signature = NativeReader.ReadUInt32(Image, ref sigOff);
-                            entries.Add(new R2RImportSection.ImportSectionEntry(section, sigRva, signature));
+                            int sigSampleLength = Math.Min(8, Image.Length - sigOff);
+                            byte[] signatureSample = new byte[sigSampleLength];
+                            Array.Copy(Image, sigOff, signatureSample, 0, sigSampleLength);
+                            entries.Add(new R2RImportSection.ImportSectionEntry(entryOffset, section, sigRva, signatureSample));
                         }
                         break;
                 }
@@ -424,8 +462,10 @@ namespace R2RDump
         /// <summary>
         /// Reads the method entrypoint from the offset. Used for non-generic methods
         /// </summary>
-        private int GetEntryPointIdFromOffset(int offset)
+        private void GetEntryPointInfoFromOffset(int offset, out int runtimeFunctionIndex, out FixupCell[] fixupCells)
         {
+            fixupCells = null;
+
             // get the id of the entry point runtime function from the MethodEntryPoints NativeArray
             uint id = 0; // the RUNTIME_FUNCTIONS index
             offset = (int)NativeReader.DecodeUnsigned(Image, (uint)offset, ref id);
@@ -437,7 +477,8 @@ namespace R2RDump
                     NativeReader.DecodeUnsigned(Image, (uint)offset, ref val);
                     offset -= (int)val;
                 }
-                // TODO: Dump fixups
+
+                fixupCells = DecodeFixupCells(offset);
 
                 id >>= 2;
             }
@@ -446,7 +487,45 @@ namespace R2RDump
                 id >>= 1;
             }
 
-            return (int)id;
+            runtimeFunctionIndex = (int)id;
+        }
+
+        private FixupCell[] DecodeFixupCells(int offset)
+        {
+            List<FixupCell> cells = new List<FixupCell>();
+            NibbleReader reader = new NibbleReader(Image, offset);
+
+            // The following algorithm has been loosely ported from CoreCLR,
+            // src\vm\ceeload.inl, BOOL Module::FixupDelayListAux
+            uint curTableIndex = reader.ReadUInt();
+
+            while (true)
+            {
+                uint fixupIndex = reader.ReadUInt(); // Accumulate the real rva from the delta encoded rva
+
+                while (true)
+                {
+                    cells.Add(new FixupCell(curTableIndex, fixupIndex));
+
+                    uint delta = reader.ReadUInt();
+
+                    // Delta of 0 means end of entries in this table
+                    if (delta == 0)
+                        break;
+
+                    fixupIndex += delta;
+                }
+
+                uint tableIndex = reader.ReadUInt();
+
+                if (tableIndex == 0)
+                    break;
+
+                curTableIndex = curTableIndex + tableIndex;
+
+            } // Done with all entries in this table
+
+            return cells.ToArray();
         }
     }
 }
