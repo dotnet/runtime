@@ -64,11 +64,17 @@ namespace JIT.HardwareIntrinsics.X86
                     test.RunLclVarScenario_LoadAligned();
                 }
 
-                // Validates passing the field of a local works
-                test.RunLclFldScenario();
+                // Validates passing the field of a local class works
+                test.RunClassLclFldScenario();
 
-                // Validates passing an instance member works
-                test.RunFldScenario();
+                // Validates passing an instance member of a class works
+                test.RunClassFldScenario();
+
+                // Validates passing the field of a local struct works
+                test.RunStructLclFldScenario();
+
+                // Validates passing an instance member of a struct works
+                test.RunStructFldScenario();
             }
             else
             {
@@ -85,6 +91,36 @@ namespace JIT.HardwareIntrinsics.X86
 
     public sealed unsafe class SimpleTernaryOpTest__MultiplyAddScalarSingle
     {
+        private struct TestStruct
+        {
+            public Vector128<Single> _fld1;
+            public Vector128<Single> _fld2;
+            public Vector128<Single> _fld3;
+
+            public static TestStruct Create()
+            {
+                var testStruct = new TestStruct();
+                var random = new Random();
+
+                for (var i = 0; i < Op1ElementCount; i++) { _data1[i] = (float)(random.NextDouble()); }
+                Unsafe.CopyBlockUnaligned(ref Unsafe.As<Vector128<Single>, byte>(ref testStruct._fld1), ref Unsafe.As<Single, byte>(ref _data1[0]), (uint)Unsafe.SizeOf<Vector128<Single>>());
+                for (var i = 0; i < Op2ElementCount; i++) { _data2[i] = (float)(random.NextDouble()); }
+                Unsafe.CopyBlockUnaligned(ref Unsafe.As<Vector128<Single>, byte>(ref testStruct._fld2), ref Unsafe.As<Single, byte>(ref _data2[0]), (uint)Unsafe.SizeOf<Vector128<Single>>());
+                for (var i = 0; i < Op3ElementCount; i++) { _data3[i] = (float)(random.NextDouble()); }
+                Unsafe.CopyBlockUnaligned(ref Unsafe.As<Vector128<Single>, byte>(ref _clsVar3), ref Unsafe.As<Single, byte>(ref _data3[0]), (uint)Unsafe.SizeOf<Vector128<Single>>());
+
+                return testStruct;
+            }
+
+            public void RunStructFldScenario(SimpleTernaryOpTest__MultiplyAddScalarSingle testClass)
+            {
+                var result = Fma.MultiplyAddScalar(_fld1, _fld2, _fld3);
+
+                Unsafe.Write(testClass._dataTable.outArrayPtr, result);
+                testClass.ValidateResult(_fld1, _fld2, _fld3, testClass._dataTable.outArrayPtr);
+            }
+        }
+
         private static readonly int LargestVectorSize = 16;
 
         private static readonly int Op1ElementCount = Unsafe.SizeOf<Vector128<Single>>() / sizeof(Single);
@@ -261,7 +297,7 @@ namespace JIT.HardwareIntrinsics.X86
             ValidateResult(firstOp, secondOp, thirdOp, _dataTable.outArrayPtr);
         }
 
-        public void RunLclFldScenario()
+        public void RunClassLclFldScenario()
         {
             var test = new SimpleTernaryOpTest__MultiplyAddScalarSingle();
             var result = Fma.MultiplyAddScalar(test._fld1, test._fld2, test._fld3);
@@ -270,12 +306,27 @@ namespace JIT.HardwareIntrinsics.X86
             ValidateResult(test._fld1, test._fld2, test._fld3, _dataTable.outArrayPtr);
         }
 
-        public void RunFldScenario()
+        public void RunClassFldScenario()
         {
             var result = Fma.MultiplyAddScalar(_fld1, _fld2, _fld3);
 
             Unsafe.Write(_dataTable.outArrayPtr, result);
             ValidateResult(_fld1, _fld2, _fld3, _dataTable.outArrayPtr);
+        }
+
+        public void RunStructLclFldScenario()
+        {
+            var test = TestStruct.Create();
+            var result = Fma.MultiplyAddScalar(test._fld1, test._fld2, test._fld3);
+
+            Unsafe.Write(_dataTable.outArrayPtr, result);
+            ValidateResult(test._fld1, test._fld2, test._fld3, _dataTable.outArrayPtr);
+        }
+
+        public void RunStructFldScenario()
+        {
+            var test = TestStruct.Create();
+            test.RunStructFldScenario(this);
         }
 
         public void RunUnsupportedScenario()

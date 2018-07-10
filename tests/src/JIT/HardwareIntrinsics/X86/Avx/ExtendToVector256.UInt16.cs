@@ -21,7 +21,7 @@ namespace JIT.HardwareIntrinsics.X86
     {
         private static void ExtendToVector256UInt16()
         {
-            var test = new SimpleUnaryOpTest__ExtendToVector256UInt16();
+            var test = new GenericUnaryOpTest__ExtendToVector256UInt16();
 
             if (test.IsSupported)
             {
@@ -64,11 +64,17 @@ namespace JIT.HardwareIntrinsics.X86
                     test.RunLclVarScenario_LoadAligned();
                 }
 
-                // Validates passing the field of a local works
-                test.RunLclFldScenario();
+                // Validates passing the field of a local class works
+                test.RunClassLclFldScenario();
 
-                // Validates passing an instance member works
-                test.RunFldScenario();
+                // Validates passing an instance member of a class works
+                test.RunClassFldScenario();
+
+                // Validates passing the field of a local struct works
+                test.RunStructLclFldScenario();
+
+                // Validates passing an instance member of a struct works
+                test.RunStructFldScenario();
             }
             else
             {
@@ -83,8 +89,32 @@ namespace JIT.HardwareIntrinsics.X86
         }
     }
 
-    public sealed unsafe class SimpleUnaryOpTest__ExtendToVector256UInt16
+    public sealed unsafe class GenericUnaryOpTest__ExtendToVector256UInt16
     {
+        private struct TestStruct
+        {
+            public Vector128<UInt16> _fld;
+
+            public static TestStruct Create()
+            {
+                var testStruct = new TestStruct();
+                var random = new Random();
+
+                for (var i = 0; i < Op1ElementCount; i++) { _data[i] = (ushort)(random.Next(0, ushort.MaxValue)); }
+                Unsafe.CopyBlockUnaligned(ref Unsafe.As<Vector128<UInt16>, byte>(ref testStruct._fld), ref Unsafe.As<UInt16, byte>(ref _data[0]), (uint)Unsafe.SizeOf<Vector128<UInt16>>());
+
+                return testStruct;
+            }
+
+            public void RunStructFldScenario(GenericUnaryOpTest__ExtendToVector256UInt16 testClass)
+            {
+                var result = Avx.ExtendToVector256<UInt16>(_fld);
+
+                Unsafe.Write(testClass._dataTable.outArrayPtr, result);
+                testClass.ValidateResult(_fld, testClass._dataTable.outArrayPtr);
+            }
+        }
+
         private static readonly int LargestVectorSize = 32;
 
         private static readonly int Op1ElementCount = Unsafe.SizeOf<Vector128<UInt16>>() / sizeof(UInt16);
@@ -98,7 +128,7 @@ namespace JIT.HardwareIntrinsics.X86
 
         private SimpleUnaryOpTest__DataTable<UInt16, UInt16> _dataTable;
 
-        static SimpleUnaryOpTest__ExtendToVector256UInt16()
+        static GenericUnaryOpTest__ExtendToVector256UInt16()
         {
             var random = new Random();
 
@@ -106,7 +136,7 @@ namespace JIT.HardwareIntrinsics.X86
             Unsafe.CopyBlockUnaligned(ref Unsafe.As<Vector128<UInt16>, byte>(ref _clsVar), ref Unsafe.As<UInt16, byte>(ref _data[0]), (uint)Unsafe.SizeOf<Vector128<UInt16>>());
         }
 
-        public SimpleUnaryOpTest__ExtendToVector256UInt16()
+        public GenericUnaryOpTest__ExtendToVector256UInt16()
         {
             Succeeded = true;
 
@@ -226,21 +256,36 @@ namespace JIT.HardwareIntrinsics.X86
             ValidateResult(firstOp, _dataTable.outArrayPtr);
         }
 
-        public void RunLclFldScenario()
+        public void RunClassLclFldScenario()
         {
-            var test = new SimpleUnaryOpTest__ExtendToVector256UInt16();
+            var test = new GenericUnaryOpTest__ExtendToVector256UInt16();
             var result = Avx.ExtendToVector256<UInt16>(test._fld);
 
             Unsafe.Write(_dataTable.outArrayPtr, result);
             ValidateResult(test._fld, _dataTable.outArrayPtr);
         }
 
-        public void RunFldScenario()
+        public void RunClassFldScenario()
         {
             var result = Avx.ExtendToVector256<UInt16>(_fld);
 
             Unsafe.Write(_dataTable.outArrayPtr, result);
             ValidateResult(_fld, _dataTable.outArrayPtr);
+        }
+
+        public void RunStructLclFldScenario()
+        {
+            var test = TestStruct.Create();
+            var result = Avx.ExtendToVector256(test._fld);
+
+            Unsafe.Write(_dataTable.outArrayPtr, result);
+            ValidateResult(test._fld, _dataTable.outArrayPtr);
+        }
+
+        public void RunStructFldScenario()
+        {
+            var test = TestStruct.Create();
+            test.RunStructFldScenario(this);
         }
 
         public void RunUnsupportedScenario()
