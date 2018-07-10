@@ -217,6 +217,7 @@
     <Compile Include="$(MSBuildThisFileDirectory)System\InvalidOperationException.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\InvalidProgramException.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\InvalidTimeZoneException.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)System\IO\BinaryReader.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\IO\BinaryWriter.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\IO\DirectoryNotFoundException.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\IO\EncodingCache.cs" />
