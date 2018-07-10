@@ -92,6 +92,7 @@ namespace System.Net.Http
                 case HttpStatusCode.SeeOther:
                 case HttpStatusCode.TemporaryRedirect:
                 case HttpStatusCode.MultipleChoices:
+                case HttpStatusCode.PermanentRedirect:
                     break;
 
                 default:
