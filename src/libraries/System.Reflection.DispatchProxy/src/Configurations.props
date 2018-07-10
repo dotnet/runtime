@@ -2,7 +2,7 @@
 <Project ToolsVersion="14.0" DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
   <PropertyGroup>
     <PackageConfigurations>
-      netfx;
+      net461;
       netstandard;
       netcoreapp2.0;
       uap10.0.16299-Windows_NT;
@@ -13,6 +13,7 @@
       netcoreapp;
       uap-Windows_NT;
       uapaot-Windows_NT;
+	  netfx;
     </BuildConfigurations>
   </PropertyGroup>
 </Project>
