@@ -67,6 +67,13 @@ int32_t AppleCryptoNative_SecKeychainOpen(const char* pszKeychainPath, SecKeycha
     return SecKeychainOpen(pszKeychainPath, pKeychainOut);
 }
 
+int32_t AppleCryptoNative_SecKeychainUnlock(SecKeychainRef keychain,
+                                            uint32_t passphraseLength,
+                                            const uint8_t* passphraseUtf8)
+{
+    return SecKeychainUnlock(keychain, passphraseLength, passphraseUtf8, true);
+}
+
 int32_t AppleCryptoNative_SetKeychainNeverLock(SecKeychainRef keychain)
 {
     SecKeychainSettings settings = {

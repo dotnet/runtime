@@ -61,4 +61,7 @@
   <data name="PersistedFiles_NoHomeDirectory" xml:space="preserve">
     <value>The home directory of the current user could not be determined.</value>
   </data>
+  <data name="Cryptography_Unmapped_System_Typed_Error" xml:space="preserve">
+    <value>The system cryptographic library returned error '{0}' of type '{1}'</value>
+  </data>
 </root>
