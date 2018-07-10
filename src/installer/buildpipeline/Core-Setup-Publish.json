@@ -315,6 +315,7 @@
       "continueOnError": true,
       "alwaysRun": true,
       "displayName": "run end.ps1",
+      "condition":"always()",
       "timeoutInMinutes": 0,
       "task": {
         "id": "e213ff0f-5d5c-4791-802d-52ea3e7be1f1",
