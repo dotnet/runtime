@@ -21,35 +21,33 @@ namespace JIT.HardwareIntrinsics.X86
     {
         private static void {Method}{RetBaseType}()
         {
-            bool skipIf32Bit = (typeof({Op1BaseType}) == typeof(Int64)) ||
-                               (typeof({Op1BaseType}) == typeof(UInt64));
-
-            if (skipIf32Bit && !Environment.Is64BitProcess)
-            {
-                return;
-            }
-
             var test = new ScalarSimdUnaryOpTest__{Method}{RetBaseType}();
 
             if (test.IsSupported)
             {
                 // Validates basic functionality works
-                test.RunBasicScenario();
+                test.RunBasicScenario_UnsafeRead();
 
                 // Validates calling via reflection works
-                test.RunReflectionScenario();
+                test.RunReflectionScenario_UnsafeRead();
 
                 // Validates passing a static member works
                 test.RunClsVarScenario();
 
                 // Validates passing a local works
-                test.RunLclVarScenario();
+                test.RunLclVarScenario_UnsafeRead();
 
-                // Validates passing the field of a local works
-                test.RunLclFldScenario();
+                // Validates passing the field of a local class works
+                test.RunClassLclFldScenario();
 
-                // Validates passing an instance member works
-                test.RunFldScenario();
+                // Validates passing an instance member of a class works
+                test.RunClassFldScenario();
+
+                // Validates passing the field of a local struct works
+                test.RunStructLclFldScenario();
+
+                // Validates passing an instance member of a struct works
+                test.RunStructFldScenario();
             }
             else
             {
@@ -66,11 +64,33 @@ namespace JIT.HardwareIntrinsics.X86
 
     public sealed unsafe class ScalarSimdUnaryOpTest__{Method}{RetBaseType}
     {
+        private struct TestStruct
+        {
+            public {Op1BaseType} _fld;
+
+            public static TestStruct Create()
+            {
+                var testStruct = new TestStruct();
+                var random = new Random();
+
+                testStruct._fld = {NextValueOp1};
+                return testStruct;
+            }
+
+            public void RunStructFldScenario(ScalarSimdUnaryOpTest__{Method}{RetBaseType} testClass)
+            {
+                var result = {Isa}.{Method}(_fld);
+
+                Unsafe.Write(testClass._dataTable.outArrayPtr, result);
+                testClass.ValidateResult(_fld, testClass._dataTable.outArrayPtr);
+            }
+        }
+
         private static readonly int LargestVectorSize = {LargestVectorSize};
 
         private static readonly int RetElementCount = Unsafe.SizeOf<{RetVectorType}<{RetBaseType}>>() / sizeof({RetBaseType});
 
-        private static readonly Random Random = new Random();
+        private static {Op1BaseType} _data;
 
         private static {Op1BaseType} _clsVar;
 
@@ -80,6 +100,7 @@ namespace JIT.HardwareIntrinsics.X86
 
         static ScalarSimdUnaryOpTest__{Method}{RetBaseType}()
         {
+            var random = new Random();
             _clsVar = {NextValueOp1};
         }
 
@@ -87,33 +108,35 @@ namespace JIT.HardwareIntrinsics.X86
         {
             Succeeded = true;
 
+            var random = new Random();
             _fld = {NextValueOp1};
+            _data = {NextValueOp1};
             _dataTable = new ScalarSimdUnaryOpTest__DataTable<{RetBaseType}>(new {RetBaseType}[RetElementCount], LargestVectorSize);
         }
 
-        public bool IsSupported => {Isa}.IsSupported;
+        public bool IsSupported => {Isa}.IsSupported && (Environment.Is64BitProcess || ((typeof({RetBaseType}) != typeof(long)) && (typeof({RetBaseType}) != typeof(ulong))));
 
         public bool Succeeded { get; set; }
 
-        public void RunBasicScenario()
+        public void RunBasicScenario_UnsafeRead()
         {
-            var firstOp = {NextValueOp1};
             var result = {Isa}.{Method}(
-                firstOp
+                Unsafe.ReadUnaligned<{Op1BaseType}>(ref Unsafe.As<{Op1BaseType}, byte>(ref _data))
             );
 
             Unsafe.Write(_dataTable.outArrayPtr, result);
-            ValidateResult(firstOp, _dataTable.outArrayPtr);
+            ValidateResult(_data, _dataTable.outArrayPtr);
         }
 
-        public void RunReflectionScenario()
+        public void RunReflectionScenario_UnsafeRead()
         {
-            var firstOp = {NextValueOp1};
-            var method = typeof({Isa}).GetMethod(nameof({Isa}.{Method}), new Type[] { typeof({Op1BaseType}) });
-            var result = method.Invoke(null, new object[] { firstOp });
+            var result = typeof({Isa}).GetMethod(nameof({Isa}.{Method}), new Type[] { typeof({Op1BaseType}) })
+                                     .Invoke(null, new object[] {
+                                        Unsafe.ReadUnaligned<{Op1BaseType}>(ref Unsafe.As<{Op1BaseType}, byte>(ref _data))
+                                     });
 
             Unsafe.Write(_dataTable.outArrayPtr, ({RetVectorType}<{RetBaseType}>)(result));
-            ValidateResult(firstOp, _dataTable.outArrayPtr);
+            ValidateResult(_data, _dataTable.outArrayPtr);
         }
 
         public void RunClsVarScenario()
@@ -126,16 +149,16 @@ namespace JIT.HardwareIntrinsics.X86
             ValidateResult(_clsVar, _dataTable.outArrayPtr);
         }
 
-        public void RunLclVarScenario()
+        public void RunLclVarScenario_UnsafeRead()
         {
-            var firstOp = {NextValueOp1};
-            var result = {Isa}.{Method}(firstOp);
+            var data = Unsafe.ReadUnaligned<{Op1BaseType}>(ref Unsafe.As<{Op1BaseType}, byte>(ref _data));
+            var result = {Isa}.{Method}(data);
 
             Unsafe.Write(_dataTable.outArrayPtr, result);
-            ValidateResult(firstOp, _dataTable.outArrayPtr);
+            ValidateResult(data, _dataTable.outArrayPtr);
         }
 
-        public void RunLclFldScenario()
+        public void RunClassLclFldScenario()
         {
             var test = new ScalarSimdUnaryOpTest__{Method}{RetBaseType}();
             var result = {Isa}.{Method}(test._fld);
@@ -144,12 +167,27 @@ namespace JIT.HardwareIntrinsics.X86
             ValidateResult(test._fld, _dataTable.outArrayPtr);
         }
 
-        public void RunFldScenario()
+        public void RunClassFldScenario()
         {
             var result = {Isa}.{Method}(_fld);
 
             Unsafe.Write(_dataTable.outArrayPtr, result);
             ValidateResult(_fld, _dataTable.outArrayPtr);
+        }
+
+        public void RunStructLclFldScenario()
+        {
+            var test = TestStruct.Create();
+            var result = {Isa}.{Method}(test._fld);
+
+            Unsafe.Write(_dataTable.outArrayPtr, result);
+            ValidateResult(test._fld, _dataTable.outArrayPtr);
+        }
+
+        public void RunStructFldScenario()
+        {
+            var test = TestStruct.Create();
+            test.RunStructFldScenario(this);
         }
 
         public void RunUnsupportedScenario()
@@ -158,7 +196,7 @@ namespace JIT.HardwareIntrinsics.X86
 
             try
             {
-                RunBasicScenario();
+                RunBasicScenario_UnsafeRead();
             }
             catch (PlatformNotSupportedException)
             {
