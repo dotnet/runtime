@@ -23,7 +23,7 @@ namespace JIT.HardwareIntrinsics.X86
     {
         private static void {Method}{RetBaseType}{Imm}Load()
         {
-            var test = new SimpleBinaryOpTest__{Method}{RetBaseType}{Imm}Load();
+            var test = new InsertLoadTest__{Method}{RetBaseType}{Imm}();
 
             if (test.IsSupported)
             {
@@ -66,11 +66,17 @@ namespace JIT.HardwareIntrinsics.X86
                     test.RunLclVarScenario_LoadAligned();
                 }
 
-                // Validates passing the field of a local works
-                test.RunLclFldScenario();
+                // Validates passing the field of a local class works
+                test.RunClassLclFldScenario();
 
-                // Validates passing an instance member works
-                test.RunFldScenario();
+                // Validates passing an instance member of a class works
+                test.RunClassFldScenario();
+
+                // Validates passing the field of a local struct works
+                test.RunStructLclFldScenario();
+
+                // Validates passing an instance member of a struct works
+                test.RunStructFldScenario();
             }
             else
             {
@@ -85,8 +91,35 @@ namespace JIT.HardwareIntrinsics.X86
         }
     }
 
-    public sealed unsafe class SimpleBinaryOpTest__{Method}{RetBaseType}{Imm}Load
+    public sealed unsafe class InsertLoadTest__{Method}{RetBaseType}{Imm}
     {
+        private struct TestStruct
+        {
+            public {Op1VectorType}<{Op1BaseType}> _fld1;
+            public {Op2VectorType}<{Op2BaseType}> _fld2;
+
+            public static TestStruct Create()
+            {
+                var testStruct = new TestStruct();
+                var random = new Random();
+
+                for (var i = 0; i < Op1ElementCount; i++) { _data1[i] = {NextValueOp1}; }
+                Unsafe.CopyBlockUnaligned(ref Unsafe.As<{Op1VectorType}<{Op1BaseType}>, byte>(ref testStruct._fld1), ref Unsafe.As<{Op1BaseType}, byte>(ref _data1[0]), (uint)Unsafe.SizeOf<{Op1VectorType}<{Op1BaseType}>>());
+                for (var i = 0; i < Op2ElementCount; i++) { _data2[i] = {NextValueOp2}; }
+                Unsafe.CopyBlockUnaligned(ref Unsafe.As<{Op2VectorType}<{Op2BaseType}>, byte>(ref testStruct._fld2), ref Unsafe.As<{Op2BaseType}, byte>(ref _data2[0]), (uint)Unsafe.SizeOf<{Op2VectorType}<{Op2BaseType}>>());
+
+                return testStruct;
+            }
+
+            public void RunStructFldScenario(InsertLoadTest__{Method}{RetBaseType}{Imm} testClass)
+            {
+                var result = {Isa}.{Method}(_fld1, ({Op2BaseType}*)testClass._dataTable.inArray2Ptr, {Imm});
+
+                Unsafe.Write(testClass._dataTable.outArrayPtr, result);
+                testClass.ValidateResult(_fld1, ({Op2BaseType}*)testClass._dataTable.inArray2Ptr, testClass._dataTable.outArrayPtr);
+            }
+        }
+
         private static readonly int LargestVectorSize = {LargestVectorSize};
 
         private static readonly int Op1ElementCount = Unsafe.SizeOf<{Op1VectorType}<{Op1BaseType}>>() / sizeof({Op1BaseType});
@@ -104,7 +137,7 @@ namespace JIT.HardwareIntrinsics.X86
 
         private SimpleBinaryOpTest__DataTable<{RetBaseType}, {Op1BaseType}, {Op2BaseType}> _dataTable;
 
-        static SimpleBinaryOpTest__{Method}{RetBaseType}{Imm}Load()
+        static InsertLoadTest__{Method}{RetBaseType}{Imm}()
         {
             var random = new Random();
 
@@ -114,7 +147,7 @@ namespace JIT.HardwareIntrinsics.X86
             Unsafe.CopyBlockUnaligned(ref Unsafe.As<{Op2VectorType}<{Op2BaseType}>, byte>(ref _clsVar2), ref Unsafe.As<{Op2BaseType}, byte>(ref _data2[0]), (uint)Unsafe.SizeOf<{Op2VectorType}<{Op2BaseType}>>());
         }
 
-        public SimpleBinaryOpTest__{Method}{RetBaseType}{Imm}Load()
+        public InsertLoadTest__{Method}{RetBaseType}{Imm}()
         {
             Succeeded = true;
 
@@ -251,21 +284,36 @@ namespace JIT.HardwareIntrinsics.X86
             ValidateResult(left, right, _dataTable.outArrayPtr);
         }
 
-        public void RunLclFldScenario()
+        public void RunClassLclFldScenario()
         {
-            var test = new SimpleBinaryOpTest__{Method}{RetBaseType}{Imm}Load();
+            var test = new InsertLoadTest__{Method}{RetBaseType}{Imm}();
             var result = {Isa}.{Method}(test._fld1, ({Op2BaseType}*)(_dataTable.inArray2Ptr), {Imm});
 
             Unsafe.Write(_dataTable.outArrayPtr, result);
             ValidateResult(test._fld1, ({Op2BaseType}*)(_dataTable.inArray2Ptr), _dataTable.outArrayPtr);
         }
 
-        public void RunFldScenario()
+        public void RunClassFldScenario()
         {
             var result = {Isa}.{Method}(_fld1, ({Op2BaseType}*)(_dataTable.inArray2Ptr), {Imm});
 
             Unsafe.Write(_dataTable.outArrayPtr, result);
             ValidateResult(_fld1, ({Op2BaseType}*)(_dataTable.inArray2Ptr), _dataTable.outArrayPtr);
+        }
+
+        public void RunStructLclFldScenario()
+        {
+            var test = TestStruct.Create();
+            var result = {Isa}.{Method}(test._fld1, ({Op2BaseType}*)(_dataTable.inArray2Ptr), {Imm});
+
+            Unsafe.Write(_dataTable.outArrayPtr, result);
+            ValidateResult(test._fld1, ({Op2BaseType}*)(_dataTable.inArray2Ptr), _dataTable.outArrayPtr);
+        }
+
+        public void RunStructFldScenario()
+        {
+            var test = TestStruct.Create();
+            test.RunStructFldScenario(this);
         }
 
         public void RunUnsupportedScenario()

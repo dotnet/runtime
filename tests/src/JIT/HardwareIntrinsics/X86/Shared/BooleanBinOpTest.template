@@ -64,11 +64,17 @@ namespace JIT.HardwareIntrinsics.X86
                     test.RunLclVarScenario_LoadAligned();
                 }
 
-                // Validates passing the field of a local works
-                test.RunLclFldScenario();
+                // Validates passing the field of a local class works
+                test.RunClassLclFldScenario();
 
-                // Validates passing an instance member works
-                test.RunFldScenario();
+                // Validates passing an instance member of a class works
+                test.RunClassFldScenario();
+
+                // Validates passing the field of a local struct works
+                test.RunStructLclFldScenario();
+
+                // Validates passing an instance member of a struct works
+                test.RunStructFldScenario();
             }
             else
             {
@@ -85,6 +91,31 @@ namespace JIT.HardwareIntrinsics.X86
 
     public sealed unsafe class BooleanBinaryOpTest__{Method}{RetBaseType}
     {
+        private struct TestStruct
+        {
+            public {Op1VectorType}<{Op1BaseType}> _fld1;
+            public {Op2VectorType}<{Op2BaseType}> _fld2;
+
+            public static TestStruct Create()
+            {
+                var testStruct = new TestStruct();
+                var random = new Random();
+
+                for (var i = 0; i < Op1ElementCount; i++) { _data1[i] = {NextValueOp1}; }
+                Unsafe.CopyBlockUnaligned(ref Unsafe.As<{Op1VectorType}<{Op1BaseType}>, byte>(ref testStruct._fld1), ref Unsafe.As<{Op1BaseType}, byte>(ref _data1[0]), (uint)Unsafe.SizeOf<{Op1VectorType}<{Op1BaseType}>>());
+                for (var i = 0; i < Op2ElementCount; i++) { _data2[i] = {NextValueOp2}; }
+                Unsafe.CopyBlockUnaligned(ref Unsafe.As<{Op2VectorType}<{Op2BaseType}>, byte>(ref testStruct._fld2), ref Unsafe.As<{Op2BaseType}, byte>(ref _data2[0]), (uint)Unsafe.SizeOf<{Op2VectorType}<{Op2BaseType}>>());
+
+                return testStruct;
+            }
+
+            public void RunStructFldScenario(BooleanBinaryOpTest__{Method}{RetBaseType} testClass)
+            {
+                var result = {Isa}.{Method}(_fld1, _fld2);
+                testClass.ValidateResult(_fld1, _fld2, result);
+            }
+        }
+
         private static readonly int LargestVectorSize = {LargestVectorSize};
 
         private static readonly int Op1ElementCount = Unsafe.SizeOf<{Op1VectorType}<{Op1BaseType}>>() / sizeof({Op1BaseType});
@@ -164,7 +195,7 @@ namespace JIT.HardwareIntrinsics.X86
         public void RunReflectionScenario_UnsafeRead()
         {
             var method = typeof({Isa}).GetMethod(nameof({Isa}.{Method}), new Type[] { typeof({Op1VectorType}<{Op1BaseType}>), typeof({Op2VectorType}<{Op2BaseType}>) });
-            
+
             if (method != null)
             {
                 var result = method.Invoke(null, new object[] {
@@ -179,7 +210,7 @@ namespace JIT.HardwareIntrinsics.X86
         public void RunReflectionScenario_Load()
         {
             var method = typeof({Isa}).GetMethod(nameof({Isa}.{Method}), new Type[] { typeof({Op1VectorType}<{Op1BaseType}>), typeof({Op2VectorType}<{Op2BaseType}>) });
-            
+
             if (method != null)
             {
                 var result = method.Invoke(null, new object[] {
@@ -194,7 +225,7 @@ namespace JIT.HardwareIntrinsics.X86
         public void RunReflectionScenario_LoadAligned()
         {
             var method = typeof({Isa}).GetMethod(nameof({Isa}.{Method}), new Type[] { typeof({Op1VectorType}<{Op1BaseType}>), typeof({Op2VectorType}<{Op2BaseType}>) });
-            
+
             if (method != null)
             {
                 var result = method.Invoke(null, new object[] {
@@ -243,7 +274,7 @@ namespace JIT.HardwareIntrinsics.X86
             ValidateResult(left, right, result);
         }
 
-        public void RunLclFldScenario()
+        public void RunClassLclFldScenario()
         {
             var test = new BooleanBinaryOpTest__{Method}{RetBaseType}();
             var result = {Isa}.{Method}(test._fld1, test._fld2);
@@ -251,11 +282,24 @@ namespace JIT.HardwareIntrinsics.X86
             ValidateResult(test._fld1, test._fld2, result);
         }
 
-        public void RunFldScenario()
+        public void RunClassFldScenario()
         {
             var result = {Isa}.{Method}(_fld1, _fld2);
 
             ValidateResult(_fld1, _fld2, result);
+        }
+
+        public void RunStructLclFldScenario()
+        {
+            var test = TestStruct.Create();
+            var result = {Isa}.{Method}(test._fld1, test._fld2);
+            ValidateResult(test._fld1, test._fld2, result);
+        }
+
+        public void RunStructFldScenario()
+        {
+            var test = TestStruct.Create();
+            test.RunStructFldScenario(this);
         }
 
         public void RunUnsupportedScenario()
