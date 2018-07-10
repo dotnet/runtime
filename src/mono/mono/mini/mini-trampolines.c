@@ -160,7 +160,7 @@ mono_create_ftnptr_arg_trampoline (gpointer arg, gpointer addr)
 	gpointer res;
 #ifdef MONO_ARCH_HAVE_FTNPTR_ARG_TRAMPOLINE
 	if (mono_aot_only)
-		g_error ("FIXME");
+		res = mono_aot_get_ftnptr_arg_trampoline (arg, addr);
 	else
 		res = mono_arch_get_ftnptr_arg_trampoline (arg, addr);
 #else

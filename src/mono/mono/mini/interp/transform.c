@@ -2215,12 +2215,11 @@ generate (MonoMethod *method, MonoMethodHeader *header, InterpMethod *rtm, unsig
 				if (mint_type (ult) == MINT_TYPE_VT) {
 					MonoClass *klass = mono_class_from_mono_type (ult);
 					vt_size = mono_class_value_size (klass, NULL);
-					vt_size = ALIGN_TO (vt_size, MINT_VT_ALIGNMENT);
 				}
 			}
 			if (td->sp > td->stack)
 				g_warning ("%s: CEE_RET: more values on stack: %d", mono_method_full_name (td->method, TRUE), td->sp - td->stack);
-			if (td->vt_sp != vt_size)
+			if (td->vt_sp != ALIGN_TO (vt_size, MINT_VT_ALIGNMENT))
 				g_error ("%s: CEE_RET: value type stack: %d vs. %d", mono_method_full_name (td->method, TRUE), td->vt_sp, vt_size);
 
 			if (sym_seq_points) {
