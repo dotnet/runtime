@@ -63,7 +63,8 @@ namespace System.Net.Http.Functional.Tests
             new object[] { 301 },
             new object[] { 302 },
             new object[] { 303 },
-            new object[] { 307 }
+            new object[] { 307 },
+            new object[] { 308 }
         };
 
         public static readonly object[][] RedirectStatusCodesOldMethodsNewMethods = {
@@ -86,6 +87,10 @@ namespace System.Net.Http.Functional.Tests
             new object[] { 307, "GET", "GET" },
             new object[] { 307, "POST", "POST" },
             new object[] { 307, "HEAD", "HEAD" },
+
+            new object[] { 308, "GET", "GET" },
+            new object[] { 308, "POST", "POST" },
+            new object[] { 308, "HEAD", "HEAD" },
         };
 
         // Standard HTTP methods defined in RFC7231: http://tools.ietf.org/html/rfc7231#section-4.3
@@ -256,6 +261,12 @@ namespace System.Net.Http.Functional.Tests
         [Theory, MemberData(nameof(RedirectStatusCodes))]
         public async Task DefaultHeaders_SetCredentials_ClearedOnRedirect(int statusCode)
         {
+            if (statusCode == 308 && (PlatformDetection.IsFullFramework || IsWinHttpHandler && PlatformDetection.WindowsVersion < 10))
+            {
+                // 308 redirects are not supported on old versions of WinHttp, or on .NET Framework.
+                return;
+            }
+
             HttpClientHandler handler = CreateHttpClientHandler();
             using (var client = new HttpClient(handler))
             {
@@ -811,6 +822,12 @@ namespace System.Net.Http.Functional.Tests
         [Theory, MemberData(nameof(RedirectStatusCodes))]
         public async Task GetAsync_AllowAutoRedirectFalse_RedirectFromHttpToHttp_StatusCodeRedirect(int statusCode)
         {
+            if (statusCode == 308 && (PlatformDetection.IsFullFramework || IsWinHttpHandler && PlatformDetection.WindowsVersion < 10))
+            {
+                // 308 redirects are not supported on old versions of WinHttp, or on .NET Framework.
+                return;
+            }
+
             HttpClientHandler handler = CreateHttpClientHandler();
             handler.AllowAutoRedirect = false;
             using (var client = new HttpClient(handler))
@@ -838,6 +855,12 @@ namespace System.Net.Http.Functional.Tests
                 // Known behavior: curl does not change method to "GET"
                 // https://github.com/dotnet/corefx/issues/26434
                 newMethod = "POST";
+            }
+
+            if (statusCode == 308 && (PlatformDetection.IsFullFramework || IsWinHttpHandler && PlatformDetection.WindowsVersion < 10))
+            {
+                // 308 redirects are not supported on old versions of WinHttp, or on .NET Framework.
+                return;
             }
 
             HttpClientHandler handler = CreateHttpClientHandler();
@@ -959,6 +982,12 @@ namespace System.Net.Http.Functional.Tests
         [Theory, MemberData(nameof(RedirectStatusCodes))]
         public async Task GetAsync_AllowAutoRedirectTrue_RedirectFromHttpToHttp_StatusCodeOK(int statusCode)
         {
+            if (statusCode == 308 && (PlatformDetection.IsFullFramework || IsWinHttpHandler && PlatformDetection.WindowsVersion < 10))
+            {
+                // 308 redirects are not supported on old versions of WinHttp, or on .NET Framework.
+                return;
+            }
+
             HttpClientHandler handler = CreateHttpClientHandler();
             handler.AllowAutoRedirect = true;
             using (var client = new HttpClient(handler))
@@ -1312,6 +1341,12 @@ namespace System.Net.Http.Functional.Tests
         [Theory, MemberData(nameof(RedirectStatusCodes))]
         public async Task GetAsync_CredentialIsCredentialCacheUriRedirect_StatusCodeOK(int statusCode)
         {
+            if (statusCode == 308 && (PlatformDetection.IsFullFramework || IsWinHttpHandler && PlatformDetection.WindowsVersion < 10))
+            {
+                // 308 redirects are not supported on old versions of WinHttp, or on .NET Framework.
+                return;
+            }
+
             Uri uri = Configuration.Http.BasicAuthUriForCreds(secure: false, userName: Username, password: Password);
             Uri redirectUri = Configuration.Http.RedirectUriForCreds(
                 secure: false,
