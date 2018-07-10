@@ -6,6 +6,7 @@ using System.Diagnostics;
 using System.Globalization;
 using System.Runtime.InteropServices;
 using System.Security;
+using Gdip = System.Drawing.SafeNativeMethods.Gdip;
 
 namespace System.Drawing.Drawing2D
 {
@@ -23,12 +24,12 @@ namespace System.Drawing.Drawing2D
 
         protected override bool ReleaseHandle()
         {
-            int status = SafeNativeMethods.Gdip.Ok;
+            int status = Gdip.Ok;
             if (!IsInvalid)
             {
                 try
                 {
-                    status = SafeNativeMethods.Gdip.GdipDeleteCustomLineCap(new HandleRef(this, handle));
+                    status = Gdip.GdipDeleteCustomLineCap(new HandleRef(this, handle));
                 }
                 catch (Exception ex)
                 {
@@ -43,9 +44,9 @@ namespace System.Drawing.Drawing2D
                 {
                     handle = IntPtr.Zero;
                 }
-                Debug.Assert(status == SafeNativeMethods.Gdip.Ok, "GDI+ returned an error status: " + status.ToString(CultureInfo.InvariantCulture));
+                Debug.Assert(status == Gdip.Ok, "GDI+ returned an error status: " + status.ToString(CultureInfo.InvariantCulture));
             }
-            return status == SafeNativeMethods.Gdip.Ok;
+            return status == Gdip.Ok;
         }
 
         public override bool IsInvalid => handle == IntPtr.Zero;

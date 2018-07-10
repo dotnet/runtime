@@ -3,6 +3,7 @@
 // See the LICENSE file in the project root for more information.
 
 using System.Runtime.InteropServices;
+using Gdip = System.Drawing.SafeNativeMethods.Gdip;
 
 namespace System.Drawing.Drawing2D
 {
@@ -15,8 +16,8 @@ namespace System.Drawing.Drawing2D
         public AdjustableArrowCap(float width, float height, bool isFilled)
         {
             IntPtr nativeCap;
-            int status = SafeNativeMethods.Gdip.GdipCreateAdjustableArrowCap(height, width, isFilled, out nativeCap);
-            SafeNativeMethods.Gdip.CheckStatus(status);
+            int status = Gdip.GdipCreateAdjustableArrowCap(height, width, isFilled, out nativeCap);
+            Gdip.CheckStatus(status);
             SetNativeLineCap(nativeCap);
         }
 
@@ -24,14 +25,14 @@ namespace System.Drawing.Drawing2D
         {
             get
             {
-                int status = SafeNativeMethods.Gdip.GdipGetAdjustableArrowCapHeight(new HandleRef(this, nativeCap), out float height);
-                SafeNativeMethods.Gdip.CheckStatus(status);
+                int status = Gdip.GdipGetAdjustableArrowCapHeight(new HandleRef(this, nativeCap), out float height);
+                Gdip.CheckStatus(status);
                 return height;
             }
             set
             {
-                int status = SafeNativeMethods.Gdip.GdipSetAdjustableArrowCapHeight(new HandleRef(this, nativeCap), value);
-                SafeNativeMethods.Gdip.CheckStatus(status);
+                int status = Gdip.GdipSetAdjustableArrowCapHeight(new HandleRef(this, nativeCap), value);
+                Gdip.CheckStatus(status);
             }
         }
 
@@ -39,14 +40,14 @@ namespace System.Drawing.Drawing2D
         {
             get
             {
-                int status = SafeNativeMethods.Gdip.GdipGetAdjustableArrowCapWidth(new HandleRef(this, nativeCap), out float width);
-                SafeNativeMethods.Gdip.CheckStatus(status);
+                int status = Gdip.GdipGetAdjustableArrowCapWidth(new HandleRef(this, nativeCap), out float width);
+                Gdip.CheckStatus(status);
                 return width;
             }
             set
             {
-                int status = SafeNativeMethods.Gdip.GdipSetAdjustableArrowCapWidth(new HandleRef(this, nativeCap), value);
-                SafeNativeMethods.Gdip.CheckStatus(status);
+                int status = Gdip.GdipSetAdjustableArrowCapWidth(new HandleRef(this, nativeCap), value);
+                Gdip.CheckStatus(status);
             }
         }
 
@@ -54,14 +55,14 @@ namespace System.Drawing.Drawing2D
         {
             get
             {
-                int status = SafeNativeMethods.Gdip.GdipGetAdjustableArrowCapMiddleInset(new HandleRef(this, nativeCap), out float middleInset);
-                SafeNativeMethods.Gdip.CheckStatus(status);
+                int status = Gdip.GdipGetAdjustableArrowCapMiddleInset(new HandleRef(this, nativeCap), out float middleInset);
+                Gdip.CheckStatus(status);
                 return middleInset;
             }
             set
             {
-                int status = SafeNativeMethods.Gdip.GdipSetAdjustableArrowCapMiddleInset(new HandleRef(this, nativeCap), value);
-                SafeNativeMethods.Gdip.CheckStatus(status);
+                int status = Gdip.GdipSetAdjustableArrowCapMiddleInset(new HandleRef(this, nativeCap), value);
+                Gdip.CheckStatus(status);
             }
         }
 
@@ -69,14 +70,14 @@ namespace System.Drawing.Drawing2D
         {
             get
             {
-                int status = SafeNativeMethods.Gdip.GdipGetAdjustableArrowCapFillState(new HandleRef(this, nativeCap), out bool isFilled);
-                SafeNativeMethods.Gdip.CheckStatus(status);
+                int status = Gdip.GdipGetAdjustableArrowCapFillState(new HandleRef(this, nativeCap), out bool isFilled);
+                Gdip.CheckStatus(status);
                 return isFilled;
             }
             set
             {
-                int status = SafeNativeMethods.Gdip.GdipSetAdjustableArrowCapFillState(new HandleRef(this, nativeCap), value);
-                SafeNativeMethods.Gdip.CheckStatus(status);
+                int status = Gdip.GdipSetAdjustableArrowCapFillState(new HandleRef(this, nativeCap), value);
+                Gdip.CheckStatus(status);
             }
         }
     }

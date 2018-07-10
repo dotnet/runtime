@@ -7,6 +7,7 @@ using System.Drawing.Imaging;
 using System.IO;
 using System.Runtime.InteropServices;
 using System.Runtime.Serialization;
+using Gdip = System.Drawing.SafeNativeMethods.Gdip;
 
 namespace System.Drawing
 {
@@ -89,8 +90,8 @@ namespace System.Drawing
                 float width;
                 float height;
 
-                int status = SafeNativeMethods.Gdip.GdipGetImageDimension(new HandleRef(this, nativeImage), out width, out height);
-                SafeNativeMethods.Gdip.CheckStatus(status);
+                int status = Gdip.GdipGetImageDimension(new HandleRef(this, nativeImage), out width, out height);
+                Gdip.CheckStatus(status);
 
                 return new SizeF(width, height);
             }
@@ -113,8 +114,8 @@ namespace System.Drawing
             {
                 int width;
 
-                int status = SafeNativeMethods.Gdip.GdipGetImageWidth(new HandleRef(this, nativeImage), out width);
-                SafeNativeMethods.Gdip.CheckStatus(status);
+                int status = Gdip.GdipGetImageWidth(new HandleRef(this, nativeImage), out width);
+                Gdip.CheckStatus(status);
 
                 return width;
             }
@@ -132,8 +133,8 @@ namespace System.Drawing
             {
                 int height;
 
-                int status = SafeNativeMethods.Gdip.GdipGetImageHeight(new HandleRef(this, nativeImage), out height);
-                SafeNativeMethods.Gdip.CheckStatus(status);
+                int status = Gdip.GdipGetImageHeight(new HandleRef(this, nativeImage), out height);
+                Gdip.CheckStatus(status);
 
                 return height;
             }
@@ -148,8 +149,8 @@ namespace System.Drawing
             {
                 float horzRes;
 
-                int status = SafeNativeMethods.Gdip.GdipGetImageHorizontalResolution(new HandleRef(this, nativeImage), out horzRes);
-                SafeNativeMethods.Gdip.CheckStatus(status);
+                int status = Gdip.GdipGetImageHorizontalResolution(new HandleRef(this, nativeImage), out horzRes);
+                Gdip.CheckStatus(status);
 
                 return horzRes;
             }
@@ -164,8 +165,8 @@ namespace System.Drawing
             {
                 float vertRes;
 
-                int status = SafeNativeMethods.Gdip.GdipGetImageVerticalResolution(new HandleRef(this, nativeImage), out vertRes);
-                SafeNativeMethods.Gdip.CheckStatus(status);
+                int status = Gdip.GdipGetImageVerticalResolution(new HandleRef(this, nativeImage), out vertRes);
+                Gdip.CheckStatus(status);
 
                 return vertRes;
             }
@@ -181,8 +182,8 @@ namespace System.Drawing
             {
                 int flags;
 
-                int status = SafeNativeMethods.Gdip.GdipGetImageFlags(new HandleRef(this, nativeImage), out flags);
-                SafeNativeMethods.Gdip.CheckStatus(status);
+                int status = Gdip.GdipGetImageFlags(new HandleRef(this, nativeImage), out flags);
+                Gdip.CheckStatus(status);
 
                 return flags;
             }
@@ -197,8 +198,8 @@ namespace System.Drawing
             {
                 Guid guid = new Guid();
 
-                int status = SafeNativeMethods.Gdip.GdipGetImageRawFormat(new HandleRef(this, nativeImage), ref guid);
-                SafeNativeMethods.Gdip.CheckStatus(status);
+                int status = Gdip.GdipGetImageRawFormat(new HandleRef(this, nativeImage), ref guid);
+                Gdip.CheckStatus(status);
 
                 return new ImageFormat(guid);
             }
@@ -213,9 +214,9 @@ namespace System.Drawing
             {
                 int format;
 
-                int status = SafeNativeMethods.Gdip.GdipGetImagePixelFormat(new HandleRef(this, nativeImage), out format);
+                int status = Gdip.GdipGetImagePixelFormat(new HandleRef(this, nativeImage), out format);
 
-                if (status != SafeNativeMethods.Gdip.Ok)
+                if (status != Gdip.Ok)
                     return PixelFormat.Undefined;
                 else
                     return (PixelFormat)format;
@@ -230,8 +231,8 @@ namespace System.Drawing
             int[] count = new int[] { 0 };
 
             Guid dimensionID = dimension.Guid;
-            int status = SafeNativeMethods.Gdip.GdipImageGetFrameCount(new HandleRef(this, nativeImage), ref dimensionID, count);
-            SafeNativeMethods.Gdip.CheckStatus(status);
+            int status = Gdip.GdipImageGetFrameCount(new HandleRef(this, nativeImage), ref dimensionID, count);
+            Gdip.CheckStatus(status);
 
             return count[0];
         }
@@ -244,16 +245,16 @@ namespace System.Drawing
             int[] count = new int[] { 0 };
 
             Guid dimensionID = dimension.Guid;
-            int status = SafeNativeMethods.Gdip.GdipImageSelectActiveFrame(new HandleRef(this, nativeImage), ref dimensionID, frameIndex);
-            SafeNativeMethods.Gdip.CheckStatus(status);
+            int status = Gdip.GdipImageSelectActiveFrame(new HandleRef(this, nativeImage), ref dimensionID, frameIndex);
+            Gdip.CheckStatus(status);
 
             return count[0];
         }
 
         public void RotateFlip(RotateFlipType rotateFlipType)
         {
-            int status = SafeNativeMethods.Gdip.GdipImageRotateFlip(new HandleRef(this, nativeImage), unchecked((int)rotateFlipType));
-            SafeNativeMethods.Gdip.CheckStatus(status);
+            int status = Gdip.GdipImageRotateFlip(new HandleRef(this, nativeImage), unchecked((int)rotateFlipType));
+            Gdip.CheckStatus(status);
         }
 
         /// <summary>
@@ -261,8 +262,8 @@ namespace System.Drawing
         /// </summary>
         public void RemovePropertyItem(int propid)
         {
-            int status = SafeNativeMethods.Gdip.GdipRemovePropertyItem(new HandleRef(this, nativeImage), propid);
-            SafeNativeMethods.Gdip.CheckStatus(status);
+            int status = Gdip.GdipRemovePropertyItem(new HandleRef(this, nativeImage), propid);
+            Gdip.CheckStatus(status);
         }
 
         /// <summary>
@@ -276,8 +277,8 @@ namespace System.Drawing
         public static Bitmap FromHbitmap(IntPtr hbitmap, IntPtr hpalette)
         {
             IntPtr bitmap = IntPtr.Zero;
-            int status = SafeNativeMethods.Gdip.GdipCreateBitmapFromHBITMAP(new HandleRef(null, hbitmap), new HandleRef(null, hpalette), out bitmap);
-            SafeNativeMethods.Gdip.CheckStatus(status);
+            int status = Gdip.GdipCreateBitmapFromHBITMAP(new HandleRef(null, hbitmap), new HandleRef(null, hpalette), out bitmap);
+            Gdip.CheckStatus(status);
 
             return new Bitmap(bitmap);
         }
