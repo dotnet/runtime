@@ -10,7 +10,7 @@
   -->
   <PropertyGroup>
     <CoreFxCurrentRef>1a5cddbe89755d37fab51953d81b86e0415f2979</CoreFxCurrentRef>
-    <CoreClrCurrentRef>cfe1f24607775daaa7b1b21604b0c3087d693ce1</CoreClrCurrentRef>
+    <CoreClrCurrentRef>47f9931dc1d5123e6faac6ee73b40306be9daa9f</CoreClrCurrentRef>
     <CoreSetupCurrentRef>cfe1f24607775daaa7b1b21604b0c3087d693ce1</CoreSetupCurrentRef>
     <ExternalCurrentRef>96dc7805f5df4a70a55783964ce69dcd91bfca80</ExternalCurrentRef>
     <ProjectNTfsCurrentRef>e8050cf08a4f099b75be3a596c1f80d358c3e45d</ProjectNTfsCurrentRef>
@@ -33,7 +33,7 @@
   <PropertyGroup>
     <CoreFxExpectedPrerelease>preview1-26708-04</CoreFxExpectedPrerelease>
     <MicrosoftNETCorePlatformsPackageVersion>3.0.0-preview1-26708-04</MicrosoftNETCorePlatformsPackageVersion>
-    <MicrosoftNETCoreRuntimeCoreCLRPackageVersion>3.0.0-preview1-26710-01</MicrosoftNETCoreRuntimeCoreCLRPackageVersion>
+    <MicrosoftNETCoreRuntimeCoreCLRPackageVersion>3.0.0-preview1-26710-05</MicrosoftNETCoreRuntimeCoreCLRPackageVersion>
     <ProjectNTfsExpectedPrerelease>beta-26710-00</ProjectNTfsExpectedPrerelease>
     <ProjectNTfsTestILCExpectedPrerelease>beta-26710-00</ProjectNTfsTestILCExpectedPrerelease>
     <ProjectNTfsTestILCPackageVersion>1.0.0-beta-26710-00</ProjectNTfsTestILCPackageVersion>
