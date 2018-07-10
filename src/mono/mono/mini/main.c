@@ -295,10 +295,15 @@ probe_embedded (const char *program, int *ref_argc, char **ref_argv [])
 		item_size = STREAM_INT (p);
 		p += 4;
 		
-		if (mapaddress == NULL){
-			mapaddress = mono_file_map (directory_location-offset, MONO_MMAP_READ | MONO_MMAP_PRIVATE, fd, offset, &maphandle);
-			if (mapaddress == NULL){
-				perror ("Error mapping file");
+		if (mapaddress == NULL) {
+			char *error_message = NULL;
+			mapaddress = mono_file_map_error (directory_location - offset, MONO_MMAP_READ | MONO_MMAP_PRIVATE,
+				fd, offset, &maphandle, program, &error_message);
+			if (mapaddress == NULL) {
+				if (error_message)
+					fprintf (stderr, "Error mapping file: %s\n", error_message);
+				else
+					perror ("Error mapping file");
 				exit (1);
 			}
 			baseline = offset;

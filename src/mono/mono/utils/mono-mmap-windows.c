@@ -18,7 +18,7 @@
 #include <mono/utils/mono-counters.h>
 #include <io.h>
 
-static void *malloced_shared_area = NULL;
+static void *malloced_shared_area;
 
 int
 mono_pagesize (void)
@@ -66,13 +66,13 @@ mono_mmap_win_prot_from_flags (int flags)
 void*
 mono_valloc (void *addr, size_t length, int flags, MonoMemAccountType type)
 {
+	if (!mono_valloc_can_alloc (length))
+		return NULL;
+
 	void *ptr;
 	int mflags = MEM_RESERVE|MEM_COMMIT;
 	int prot = mono_mmap_win_prot_from_flags (flags);
 	/* translate the flags */
-
-	if (!mono_valloc_can_alloc (length))
-		return NULL;
 
 	ptr = VirtualAlloc (addr, length, mflags, prot);
 
@@ -122,14 +122,26 @@ mono_vfree (void *addr, size_t length, MonoMemAccountType type)
 	return 0;
 }
 
-#if G_HAVE_API_SUPPORT(HAVE_CLASSIC_WINAPI_SUPPORT)
-void*
-mono_file_map (size_t length, int flags, int fd, guint64 offset, void **ret_handle)
+#if G_HAVE_API_SUPPORT(HAVE_CLASSIC_WINAPI_SUPPORT) || G_HAVE_API_SUPPORT(HAVE_UWP_WINAPI_SUPPORT)
+
+static void
+remove_trailing_whitespace_utf16 (wchar_t *s)
 {
-	void *ptr;
-	int mflags = 0;
-	HANDLE file, mapping;
-	int prot = mono_mmap_win_prot_from_flags (flags);
+	gsize length = wcslen (s);
+	gsize const original_length = length;
+	while (length > 0 && iswspace (s [length - 1]))
+		--length;
+	if (length != original_length)
+		s [length] = 0;
+}
+
+void*
+mono_file_map_error (size_t length, int flags, int fd, guint64 offset, void **ret_handle,
+	const char *filepath, char **error_message)
+{
+	void *ptr = NULL;
+	HANDLE mapping = NULL;
+	int const prot = mono_mmap_win_prot_from_flags (flags);
 	/* translate the flags */
 	/*if (flags & MONO_MMAP_PRIVATE)
 		mflags |= MAP_PRIVATE;
@@ -141,36 +153,73 @@ mono_file_map (size_t length, int flags, int fd, guint64 offset, void **ret_hand
 		mflags |= MAP_FIXED;
 	if (flags & MONO_MMAP_32BIT)
 		mflags |= MAP_32BIT;*/
+	int const mflags = (flags & MONO_MMAP_WRITE) ? FILE_MAP_COPY : FILE_MAP_READ;
+	HANDLE const file = (HANDLE)_get_osfhandle (fd);
+	const char *failed_function = NULL;
 
-	mflags = FILE_MAP_READ;
-	if (flags & MONO_MMAP_WRITE)
-		mflags = FILE_MAP_COPY;
+#if G_HAVE_API_SUPPORT(HAVE_CLASSIC_WINAPI_SUPPORT)
 
-	file = (HANDLE) _get_osfhandle (fd);
-
-	mapping = CreateFileMapping (file, NULL, prot, 0, 0, NULL);
-
+	failed_function = "CreateFileMapping";
+	mapping = CreateFileMappingW (file, NULL, prot, (DWORD)(length >> 31 >> 1), (DWORD)length, NULL);
 	if (mapping == NULL)
-		return NULL;
+		goto exit;
 
-	ptr = MapViewOfFile (mapping, mflags, 0, offset, length);
+	failed_function = "MapViewOfFile";
+	ptr = MapViewOfFile (mapping, mflags, (DWORD)(offset >> 32), (DWORD)offset, length);
+	if (ptr == NULL)
+		goto exit;
 
-	if (ptr == NULL) {
-		CloseHandle (mapping);
-		return NULL;
+#elif G_HAVE_API_SUPPORT(HAVE_UWP_WINAPI_SUPPORT)
+
+	failed_function = "CreateFileMappingFromApp";
+	mapping = CreateFileMappingFromApp (file, NULL, prot, length, NULL);
+	if (mapping == NULL)
+		goto exit;
+
+	failed_function = "MapViewOfFileFromApp";
+	ptr = MapViewOfFileFromApp (mapping, mflags, offset, length);
+	if (ptr == NULL)
+		goto exit;
+
+#else
+#error unknown Windows variant
+#endif
+
+exit:
+	if (!ptr && (mapping || error_message)) {
+		int const win32_error = GetLastError ();
+		if (mapping)
+			CloseHandle (mapping);
+		if (error_message) {
+			WCHAR win32_error_string [100] = { 0 }; // FIXME LocalFree not initially in UWP but it is now.
+			FormatMessageW (FORMAT_MESSAGE_IGNORE_INSERTS | FORMAT_MESSAGE_FROM_SYSTEM,
+				0, win32_error, 0, win32_error_string, 99, NULL);
+			// Win32 error messages end with an unsightly newline.
+			remove_trailing_whitespace_utf16 (win32_error_string);
+			*error_message = g_strdup_printf ("%s failed file:%s length:0x%IX offset:0x%I64X function:%s error:%ls(0x%X)\n",
+				__func__, filepath ? filepath : "", length, offset, failed_function, win32_error_string, win32_error);
+		}
+		SetLastError (win32_error);
 	}
-	*ret_handle = (void*)mapping;
+	*ret_handle = mapping;
 	return ptr;
+}
+
+void*
+mono_file_map (size_t length, int flags, int fd, guint64 offset, void **ret_handle)
+{
+	return mono_file_map_error (length, flags, fd, offset, ret_handle, NULL, NULL);
 }
 
 int
 mono_file_unmap (void *addr, void *handle)
 {
 	UnmapViewOfFile (addr);
-	CloseHandle ((HANDLE)handle);
+	CloseHandle (handle);
 	return 0;
 }
-#endif /* G_HAVE_API_SUPPORT(HAVE_CLASSIC_WINAPI_SUPPORT) */
+
+#endif // G_HAVE_API_SUPPORT(HAVE_CLASSIC_WINAPI_SUPPORT) || G_HAVE_API_SUPPORT(HAVE_UWP_WINAPI_SUPPORT)
 
 int
 mono_mprotect (void *addr, size_t length, int flags)
@@ -220,4 +269,4 @@ mono_shared_area_instances (void **array, int count)
 	return 0;
 }
 
-#endif
+#endif // HOST_WIN32

@@ -339,6 +339,13 @@ mono_file_map (size_t length, int flags, int fd, guint64 offset, void **ret_hand
 	return ptr;
 }
 
+void*
+mono_file_map_error (size_t length, int flags, int fd, guint64 offset, void **ret_handle,
+	const char *filepath, char **error_message)
+{
+	return mono_file_map (length, flags, fd, offset, ret_handle);
+}
+
 /**
  * mono_file_unmap:
  * \param addr memory address returned by mono_file_map ()
