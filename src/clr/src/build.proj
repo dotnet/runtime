@@ -26,6 +26,13 @@
     <CoreLibPDBPath>$(BinDir)System.Private.CoreLib.pdb</CoreLibPDBPath>
   </PropertyGroup>
 
+  <Target Name="RestoreAndBuildR2RDumpPackages" Condition="'$(DotNetBuildFromSource)' != 'true' AND '$(BuildManagedTools)' == 'true'" BeforeTargets="Build">
+    <Exec Command="$(DotnetRestoreCommand) tools/r2rdump/R2RDump.csproj"
+          StandardOutputImportance="Low" />
+    <Exec Command="$(DotnetToolCommand) build tools/r2rdump/R2RDump.csproj"
+          StandardOutputImportance="Low" />
+  </Target>
+
   <Target Name="CopyCoreLib" AfterTargets="Build">
     <Copy Condition="Exists($(CoreLibPath))"
         SourceFiles="@(ILToCopy)"
