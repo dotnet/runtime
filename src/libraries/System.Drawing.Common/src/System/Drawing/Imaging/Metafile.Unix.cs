@@ -35,6 +35,7 @@ using System.IO;
 using System.Reflection;
 using System.ComponentModel;
 using System.Runtime.InteropServices;
+using Gdip = System.Drawing.SafeNativeMethods.Gdip;
 
 namespace System.Drawing.Imaging
 {
@@ -63,9 +64,9 @@ namespace System.Drawing.Imaging
             // With libgdiplus we use a custom API for this, because there's no easy way
             // to get the Stream down to libgdiplus. So, we wrap the stream with a set of delegates.
             GdiPlusStreamHelper sh = new GdiPlusStreamHelper(stream, false);
-            status = SafeNativeMethods.Gdip.GdipCreateMetafileFromDelegate_linux(sh.GetHeaderDelegate, sh.GetBytesDelegate,
+            status = Gdip.GdipCreateMetafileFromDelegate_linux(sh.GetHeaderDelegate, sh.GetBytesDelegate,
                 sh.PutBytesDelegate, sh.SeekDelegate, sh.CloseDelegate, sh.SizeDelegate, out nativeImage);
-            SafeNativeMethods.Gdip.CheckStatus(status);
+            Gdip.CheckStatus(status);
         }
 
         public Metafile(string filename)
@@ -73,16 +74,16 @@ namespace System.Drawing.Imaging
             // Called in order to emulate exception behavior from netfx related to invalid file paths.
             Path.GetFullPath(filename);
 
-            int status = SafeNativeMethods.Gdip.GdipCreateMetafileFromFile(filename, out nativeImage);
-            if (status == SafeNativeMethods.Gdip.GenericError)
+            int status = Gdip.GdipCreateMetafileFromFile(filename, out nativeImage);
+            if (status == Gdip.GenericError)
                 throw new ExternalException("Couldn't load specified file.");
-            SafeNativeMethods.Gdip.CheckStatus(status);
+            Gdip.CheckStatus(status);
         }
 
         public Metafile(IntPtr henhmetafile, bool deleteEmf)
         {
-            int status = SafeNativeMethods.Gdip.GdipCreateMetafileFromEmf(henhmetafile, deleteEmf, out nativeImage);
-            SafeNativeMethods.Gdip.CheckStatus(status);
+            int status = Gdip.GdipCreateMetafileFromEmf(henhmetafile, deleteEmf, out nativeImage);
+            Gdip.CheckStatus(status);
         }
 
         public Metafile(IntPtr referenceHdc, EmfType emfType) :
@@ -102,8 +103,8 @@ namespace System.Drawing.Imaging
 
         public Metafile(IntPtr hmetafile, WmfPlaceableFileHeader wmfHeader)
         {
-            int status = SafeNativeMethods.Gdip.GdipCreateMetafileFromEmf(hmetafile, false, out nativeImage);
-            SafeNativeMethods.Gdip.CheckStatus(status);
+            int status = Gdip.GdipCreateMetafileFromEmf(hmetafile, false, out nativeImage);
+            Gdip.CheckStatus(status);
         }
 
         public Metafile(Stream stream, IntPtr referenceHdc) :
@@ -134,8 +135,8 @@ namespace System.Drawing.Imaging
 
         public Metafile(IntPtr hmetafile, WmfPlaceableFileHeader wmfHeader, bool deleteWmf)
         {
-            int status = SafeNativeMethods.Gdip.GdipCreateMetafileFromEmf(hmetafile, deleteWmf, out nativeImage);
-            SafeNativeMethods.Gdip.CheckStatus(status);
+            int status = Gdip.GdipCreateMetafileFromEmf(hmetafile, deleteWmf, out nativeImage);
+            Gdip.CheckStatus(status);
         }
 
         public Metafile(Stream stream, IntPtr referenceHdc, EmfType type) :
@@ -211,17 +212,17 @@ namespace System.Drawing.Imaging
         public Metafile(IntPtr referenceHdc, Rectangle frameRect, MetafileFrameUnit frameUnit, EmfType type,
             string desc)
         {
-            int status = SafeNativeMethods.Gdip.GdipRecordMetafileI(referenceHdc, type, ref frameRect, frameUnit,
+            int status = Gdip.GdipRecordMetafileI(referenceHdc, type, ref frameRect, frameUnit,
                 desc, out nativeImage);
-            SafeNativeMethods.Gdip.CheckStatus(status);
+            Gdip.CheckStatus(status);
         }
 
         public Metafile(IntPtr referenceHdc, RectangleF frameRect, MetafileFrameUnit frameUnit, EmfType type,
             string description)
         {
-            int status = SafeNativeMethods.Gdip.GdipRecordMetafile(referenceHdc, type, ref frameRect, frameUnit,
+            int status = Gdip.GdipRecordMetafile(referenceHdc, type, ref frameRect, frameUnit,
                 description, out nativeImage);
-            SafeNativeMethods.Gdip.CheckStatus(status);
+            Gdip.CheckStatus(status);
         }
 
         public Metafile(Stream stream, IntPtr referenceHdc, Rectangle frameRect, MetafileFrameUnit frameUnit,
@@ -261,14 +262,14 @@ namespace System.Drawing.Imaging
             if (stream == null)
                 throw new NullReferenceException(nameof(stream));
 
-            int status = SafeNativeMethods.Gdip.NotImplemented;
+            int status = Gdip.NotImplemented;
             // With libgdiplus we use a custom API for this, because there's no easy way
             // to get the Stream down to libgdiplus. So, we wrap the stream with a set of delegates.
             GdiPlusStreamHelper sh = new GdiPlusStreamHelper(stream, false);
-            status = SafeNativeMethods.Gdip.GdipRecordMetafileFromDelegateI_linux(sh.GetHeaderDelegate, sh.GetBytesDelegate,
+            status = Gdip.GdipRecordMetafileFromDelegateI_linux(sh.GetHeaderDelegate, sh.GetBytesDelegate,
                 sh.PutBytesDelegate, sh.SeekDelegate, sh.CloseDelegate, sh.SizeDelegate, referenceHdc,
                 type, ref frameRect, frameUnit, description, out nativeImage);
-            SafeNativeMethods.Gdip.CheckStatus(status);
+            Gdip.CheckStatus(status);
         }
 
         public Metafile(Stream stream, IntPtr referenceHdc, RectangleF frameRect, MetafileFrameUnit frameUnit,
@@ -277,14 +278,14 @@ namespace System.Drawing.Imaging
             if (stream == null)
                 throw new NullReferenceException(nameof(stream));
 
-            int status = SafeNativeMethods.Gdip.NotImplemented;
+            int status = Gdip.NotImplemented;
             // With libgdiplus we use a custom API for this, because there's no easy way
             // to get the Stream down to libgdiplus. So, we wrap the stream with a set of delegates.
             GdiPlusStreamHelper sh = new GdiPlusStreamHelper(stream, false);
-            status = SafeNativeMethods.Gdip.GdipRecordMetafileFromDelegate_linux(sh.GetHeaderDelegate, sh.GetBytesDelegate,
+            status = Gdip.GdipRecordMetafileFromDelegate_linux(sh.GetHeaderDelegate, sh.GetBytesDelegate,
                 sh.PutBytesDelegate, sh.SeekDelegate, sh.CloseDelegate, sh.SizeDelegate, referenceHdc,
                 type, ref frameRect, frameUnit, description, out nativeImage);
-            SafeNativeMethods.Gdip.CheckStatus(status);
+            Gdip.CheckStatus(status);
         }
 
         public Metafile(string fileName, IntPtr referenceHdc, Rectangle frameRect, MetafileFrameUnit frameUnit,
@@ -293,9 +294,9 @@ namespace System.Drawing.Imaging
             // Called in order to emulate exception behavior from netfx related to invalid file paths.
             Path.GetFullPath(fileName);
 
-            int status = SafeNativeMethods.Gdip.GdipRecordMetafileFileNameI(fileName, referenceHdc, type, ref frameRect,
+            int status = Gdip.GdipRecordMetafileFileNameI(fileName, referenceHdc, type, ref frameRect,
                 frameUnit, description, out nativeImage);
-            SafeNativeMethods.Gdip.CheckStatus(status);
+            Gdip.CheckStatus(status);
         }
 
         public Metafile(string fileName, IntPtr referenceHdc, RectangleF frameRect, MetafileFrameUnit frameUnit,
@@ -304,9 +305,9 @@ namespace System.Drawing.Imaging
             // Called in order to emulate exception behavior from netfx related to invalid file paths.
             Path.GetFullPath(fileName);
 
-            int status = SafeNativeMethods.Gdip.GdipRecordMetafileFileName(fileName, referenceHdc, type, ref frameRect, frameUnit,
+            int status = Gdip.GdipRecordMetafileFileName(fileName, referenceHdc, type, ref frameRect, frameUnit,
                 description, out nativeImage);
-            SafeNativeMethods.Gdip.CheckStatus(status);
+            Gdip.CheckStatus(status);
         }
 
         // methods
@@ -321,8 +322,8 @@ namespace System.Drawing.Imaging
             IntPtr header = Marshal.AllocHGlobal(Marshal.SizeOf(typeof(MetafileHeader)));
             try
             {
-                int status = SafeNativeMethods.Gdip.GdipGetMetafileHeaderFromMetafile(nativeImage, header);
-                SafeNativeMethods.Gdip.CheckStatus(status);
+                int status = Gdip.GdipGetMetafileHeaderFromMetafile(nativeImage, header);
+                Gdip.CheckStatus(status);
                 return new MetafileHeader(header);
             }
             finally
@@ -336,8 +337,8 @@ namespace System.Drawing.Imaging
             IntPtr header = Marshal.AllocHGlobal(Marshal.SizeOf(typeof(MetafileHeader)));
             try
             {
-                int status = SafeNativeMethods.Gdip.GdipGetMetafileHeaderFromEmf(henhmetafile, header);
-                SafeNativeMethods.Gdip.CheckStatus(status);
+                int status = Gdip.GdipGetMetafileHeaderFromEmf(henhmetafile, header);
+                Gdip.CheckStatus(status);
                 return new MetafileHeader(header);
             }
             finally
@@ -358,10 +359,10 @@ namespace System.Drawing.Imaging
                 // With libgdiplus we use a custom API for this, because there's no easy way
                 // to get the Stream down to libgdiplus. So, we wrap the stream with a set of delegates.
                 GdiPlusStreamHelper sh = new GdiPlusStreamHelper(stream, false);
-                status = SafeNativeMethods.Gdip.GdipGetMetafileHeaderFromDelegate_linux(sh.GetHeaderDelegate,
+                status = Gdip.GdipGetMetafileHeaderFromDelegate_linux(sh.GetHeaderDelegate,
                     sh.GetBytesDelegate, sh.PutBytesDelegate, sh.SeekDelegate, sh.CloseDelegate,
                     sh.SizeDelegate, header);
-                SafeNativeMethods.Gdip.CheckStatus(status);
+                Gdip.CheckStatus(status);
                 return new MetafileHeader(header);
             }
             finally
@@ -378,8 +379,8 @@ namespace System.Drawing.Imaging
             IntPtr header = Marshal.AllocHGlobal(Marshal.SizeOf(typeof(MetafileHeader)));
             try
             {
-                int status = SafeNativeMethods.Gdip.GdipGetMetafileHeaderFromFile(fileName, header);
-                SafeNativeMethods.Gdip.CheckStatus(status);
+                int status = Gdip.GdipGetMetafileHeaderFromFile(fileName, header);
+                Gdip.CheckStatus(status);
                 return new MetafileHeader(header);
             }
             finally
@@ -393,8 +394,8 @@ namespace System.Drawing.Imaging
             IntPtr header = Marshal.AllocHGlobal(Marshal.SizeOf(typeof(MetafileHeader)));
             try
             {
-                int status = SafeNativeMethods.Gdip.GdipGetMetafileHeaderFromEmf(hmetafile, header);
-                SafeNativeMethods.Gdip.CheckStatus(status);
+                int status = Gdip.GdipGetMetafileHeaderFromEmf(hmetafile, header);
+                Gdip.CheckStatus(status);
                 return new MetafileHeader(header);
             }
             finally
@@ -405,8 +406,8 @@ namespace System.Drawing.Imaging
 
         public void PlayRecord(EmfPlusRecordType recordType, int flags, int dataSize, byte[] data)
         {
-            int status = SafeNativeMethods.Gdip.GdipPlayMetafileRecord(nativeImage, recordType, flags, dataSize, data);
-            SafeNativeMethods.Gdip.CheckStatus(status);
+            int status = Gdip.GdipPlayMetafileRecord(nativeImage, recordType, flags, dataSize, data);
+            Gdip.CheckStatus(status);
         }
     }
 }

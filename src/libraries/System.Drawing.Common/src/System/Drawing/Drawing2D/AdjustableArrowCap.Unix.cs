@@ -3,6 +3,7 @@
 // See the LICENSE file in the project root for more information.
 
 using System.Runtime.InteropServices;
+using Gdip = System.Drawing.SafeNativeMethods.Gdip;
 
 namespace System.Drawing.Drawing2D
 {
@@ -11,8 +12,8 @@ namespace System.Drawing.Drawing2D
         internal override object CoreClone()
         {
             IntPtr clonedCap;
-            int status = SafeNativeMethods.Gdip.GdipCloneCustomLineCap(new HandleRef(this, nativeCap), out clonedCap);
-            SafeNativeMethods.Gdip.CheckStatus(status);
+            int status = Gdip.GdipCloneCustomLineCap(new HandleRef(this, nativeCap), out clonedCap);
+            Gdip.CheckStatus(status);
 
             return new AdjustableArrowCap(clonedCap);
         }

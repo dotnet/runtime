@@ -3,6 +3,7 @@
 // See the LICENSE file in the project root for more information.
 
 using System.Runtime.InteropServices;
+using Gdip = System.Drawing.SafeNativeMethods.Gdip;
 
 namespace System.Drawing.Drawing2D
 {    
@@ -10,12 +11,12 @@ namespace System.Drawing.Drawing2D
     {
         internal static CustomLineCap CreateCustomLineCapObject(IntPtr cap)
         {
-            int status = SafeNativeMethods.Gdip.GdipGetCustomLineCapType(new HandleRef(null, cap), out CustomLineCapType capType);
+            int status = Gdip.GdipGetCustomLineCapType(new HandleRef(null, cap), out CustomLineCapType capType);
 
-            if (status != SafeNativeMethods.Gdip.Ok)
+            if (status != Gdip.Ok)
             {
-                SafeNativeMethods.Gdip.GdipDeleteCustomLineCap(new HandleRef(null, cap));
-                throw SafeNativeMethods.Gdip.StatusException(status);
+                Gdip.GdipDeleteCustomLineCap(new HandleRef(null, cap));
+                throw Gdip.StatusException(status);
             }
 
             switch (capType)
@@ -27,8 +28,8 @@ namespace System.Drawing.Drawing2D
                     return new AdjustableArrowCap(cap);
             }
 
-            SafeNativeMethods.Gdip.GdipDeleteCustomLineCap(new HandleRef(null, cap));
-            throw SafeNativeMethods.Gdip.StatusException(SafeNativeMethods.Gdip.NotImplemented);
+            Gdip.GdipDeleteCustomLineCap(new HandleRef(null, cap));
+            throw Gdip.StatusException(Gdip.NotImplemented);
         }
     }
 }

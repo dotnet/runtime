@@ -4,6 +4,7 @@
 
 using System.Diagnostics;
 using System.Runtime.InteropServices;
+using Gdip = System.Drawing.SafeNativeMethods.Gdip;
 
 namespace System.Drawing.Text
 {
@@ -36,21 +37,21 @@ namespace System.Drawing.Text
             get
             {
                 int numSought = 0;
-                int status = SafeNativeMethods.Gdip.GdipGetFontCollectionFamilyCount(new HandleRef(this, _nativeFontCollection), out numSought);
-                SafeNativeMethods.Gdip.CheckStatus(status);
+                int status = Gdip.GdipGetFontCollectionFamilyCount(new HandleRef(this, _nativeFontCollection), out numSought);
+                Gdip.CheckStatus(status);
 
                 var gpfamilies = new IntPtr[numSought];
                 int numFound = 0;
-                status = SafeNativeMethods.Gdip.GdipGetFontCollectionFamilyList(new HandleRef(this, _nativeFontCollection), numSought, gpfamilies,
+                status = Gdip.GdipGetFontCollectionFamilyList(new HandleRef(this, _nativeFontCollection), numSought, gpfamilies,
                                                              out numFound);
-                SafeNativeMethods.Gdip.CheckStatus(status);
+                Gdip.CheckStatus(status);
 
                 Debug.Assert(numSought == numFound, "GDI+ can't give a straight answer about how many fonts there are");
                 var families = new FontFamily[numFound];
                 for (int f = 0; f < numFound; f++)
                 {
                     IntPtr native;
-                    SafeNativeMethods.Gdip.GdipCloneFontFamily(new HandleRef(null, gpfamilies[f]), out native);
+                    Gdip.GdipCloneFontFamily(new HandleRef(null, gpfamilies[f]), out native);
                     families[f] = new FontFamily(native);
                 }
 

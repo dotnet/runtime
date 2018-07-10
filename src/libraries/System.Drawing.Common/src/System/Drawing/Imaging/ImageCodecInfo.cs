@@ -3,6 +3,7 @@
 // See the LICENSE file in the project root for more information.
 
 using System.Runtime.InteropServices;
+using Gdip = System.Drawing.SafeNativeMethods.Gdip;
 
 namespace System.Drawing.Imaging
 {
@@ -107,22 +108,22 @@ namespace System.Drawing.Imaging
             int numDecoders;
             int size;
 
-            int status = SafeNativeMethods.Gdip.GdipGetImageDecodersSize(out numDecoders, out size);
+            int status = Gdip.GdipGetImageDecodersSize(out numDecoders, out size);
 
-            if (status != SafeNativeMethods.Gdip.Ok)
+            if (status != Gdip.Ok)
             {
-                throw SafeNativeMethods.Gdip.StatusException(status);
+                throw Gdip.StatusException(status);
             }
 
             IntPtr memory = Marshal.AllocHGlobal(size);
 
             try
             {
-                status = SafeNativeMethods.Gdip.GdipGetImageDecoders(numDecoders, size, memory);
+                status = Gdip.GdipGetImageDecoders(numDecoders, size, memory);
 
-                if (status != SafeNativeMethods.Gdip.Ok)
+                if (status != Gdip.Ok)
                 {
-                    throw SafeNativeMethods.Gdip.StatusException(status);
+                    throw Gdip.StatusException(status);
                 }
 
                 imageCodecs = ImageCodecInfo.ConvertFromMemory(memory, numDecoders);
@@ -141,22 +142,22 @@ namespace System.Drawing.Imaging
             int numEncoders;
             int size;
 
-            int status = SafeNativeMethods.Gdip.GdipGetImageEncodersSize(out numEncoders, out size);
+            int status = Gdip.GdipGetImageEncodersSize(out numEncoders, out size);
 
-            if (status != SafeNativeMethods.Gdip.Ok)
+            if (status != Gdip.Ok)
             {
-                throw SafeNativeMethods.Gdip.StatusException(status);
+                throw Gdip.StatusException(status);
             }
 
             IntPtr memory = Marshal.AllocHGlobal(size);
 
             try
             {
-                status = SafeNativeMethods.Gdip.GdipGetImageEncoders(numEncoders, size, memory);
+                status = Gdip.GdipGetImageEncoders(numEncoders, size, memory);
 
-                if (status != SafeNativeMethods.Gdip.Ok)
+                if (status != Gdip.Ok)
                 {
-                    throw SafeNativeMethods.Gdip.StatusException(status);
+                    throw Gdip.StatusException(status);
                 }
 
                 imageCodecs = ImageCodecInfo.ConvertFromMemory(memory, numEncoders);

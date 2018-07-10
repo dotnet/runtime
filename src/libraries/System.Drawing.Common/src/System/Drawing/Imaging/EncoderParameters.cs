@@ -3,6 +3,7 @@
 // See the LICENSE file in the project root for more information.
 
 using System.Runtime.InteropServices;
+using Gdip = System.Drawing.SafeNativeMethods.Gdip;
 
 namespace System.Drawing.Imaging
 {
@@ -60,7 +61,7 @@ namespace System.Drawing.Imaging
 
             if (memory == IntPtr.Zero)
             {
-                throw SafeNativeMethods.Gdip.StatusException(SafeNativeMethods.Gdip.OutOfMemory);
+                throw Gdip.StatusException(Gdip.OutOfMemory);
             }
 
             Marshal.WriteIntPtr(memory, (IntPtr)length);
@@ -83,7 +84,7 @@ namespace System.Drawing.Imaging
         {
             if (memory == IntPtr.Zero)
             {
-                throw SafeNativeMethods.Gdip.StatusException(SafeNativeMethods.Gdip.InvalidParameter);
+                throw Gdip.StatusException(Gdip.InvalidParameter);
             }
 
             int count = Marshal.ReadIntPtr(memory).ToInt32();
