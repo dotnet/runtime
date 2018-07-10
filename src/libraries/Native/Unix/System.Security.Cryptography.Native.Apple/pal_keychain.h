@@ -62,6 +62,15 @@ pKeychainOut: Receives the SecKeychainRef for the named keychain.
 DLLEXPORT int32_t AppleCryptoNative_SecKeychainOpen(const char* pszKeychainPath, SecKeychainRef* pKeychainOut);
 
 /*
+Unlock an opened keychain with a given (UTF-8 encoded) lock passphrase.
+
+Returns the result of SecKeychainUnlock.
+*/
+DLLEXPORT int32_t AppleCryptoNative_SecKeychainUnlock(SecKeychainRef keychain,
+                                                      uint32_t passphraseLength,
+                                                      const uint8_t* passphraseUtf8);
+
+/*
 Set a keychain to never (automatically) lock.
 
 Returns the result of SecKeychainSetSettings to a never-auto-lock policy.
