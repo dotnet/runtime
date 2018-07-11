@@ -3,6 +3,7 @@
 // See the LICENSE file in the project root for more information.
 
 using System.Runtime.InteropServices;
+using Gdip = System.Drawing.SafeNativeMethods.Gdip;
 
 namespace System.Drawing.Imaging
 {
@@ -94,7 +95,7 @@ namespace System.Drawing.Imaging
         public bool IsWmf()
         {
             if ((wmf == null) && (emf == null))
-                throw SafeNativeMethods.Gdip.StatusException(SafeNativeMethods.Gdip.InvalidParameter);
+                throw Gdip.StatusException(Gdip.InvalidParameter);
 
             if ((wmf != null) &&
                 ((wmf.type == MetafileType.Wmf) ||
@@ -110,7 +111,7 @@ namespace System.Drawing.Imaging
         public bool IsWmfPlaceable()
         {
             if (wmf == null && emf == null)
-                throw SafeNativeMethods.Gdip.StatusException(SafeNativeMethods.Gdip.InvalidParameter);
+                throw Gdip.StatusException(Gdip.InvalidParameter);
 
             return ((wmf != null) && (wmf.type == MetafileType.WmfPlaceable));
         }
@@ -121,7 +122,7 @@ namespace System.Drawing.Imaging
         public bool IsEmf()
         {
             if (wmf == null && emf == null)
-                throw SafeNativeMethods.Gdip.StatusException(SafeNativeMethods.Gdip.InvalidParameter);
+                throw Gdip.StatusException(Gdip.InvalidParameter);
 
             return ((emf != null) && (emf.type == MetafileType.Emf));
         }
@@ -133,7 +134,7 @@ namespace System.Drawing.Imaging
         public bool IsEmfOrEmfPlus()
         {
             if (wmf == null && emf == null)
-                throw SafeNativeMethods.Gdip.StatusException(SafeNativeMethods.Gdip.InvalidParameter);
+                throw Gdip.StatusException(Gdip.InvalidParameter);
 
             return ((emf != null) && (emf.type >= MetafileType.Emf));
         }
@@ -145,7 +146,7 @@ namespace System.Drawing.Imaging
         public bool IsEmfPlus()
         {
             if (wmf == null && emf == null)
-                throw SafeNativeMethods.Gdip.StatusException(SafeNativeMethods.Gdip.InvalidParameter);
+                throw Gdip.StatusException(Gdip.InvalidParameter);
 
             return ((emf != null) && (emf.type >= MetafileType.EmfPlusOnly));
         }
@@ -157,7 +158,7 @@ namespace System.Drawing.Imaging
         public bool IsEmfPlusDual()
         {
             if (wmf == null && emf == null)
-                throw SafeNativeMethods.Gdip.StatusException(SafeNativeMethods.Gdip.InvalidParameter);
+                throw Gdip.StatusException(Gdip.InvalidParameter);
 
             return ((emf != null) && (emf.type == MetafileType.EmfPlusDual));
         }
@@ -169,7 +170,7 @@ namespace System.Drawing.Imaging
         public bool IsEmfPlusOnly()
         {
             if (wmf == null && emf == null)
-                throw SafeNativeMethods.Gdip.StatusException(SafeNativeMethods.Gdip.InvalidParameter);
+                throw Gdip.StatusException(Gdip.InvalidParameter);
 
             return ((emf != null) && (emf.type == MetafileType.EmfPlusOnly));
         }
@@ -191,7 +192,7 @@ namespace System.Drawing.Imaging
             get
             {
                 if (wmf == null)
-                    throw SafeNativeMethods.Gdip.StatusException(SafeNativeMethods.Gdip.InvalidParameter);
+                    throw Gdip.StatusException(Gdip.InvalidParameter);
 
                 return wmf.WmfHeader;
             }
@@ -205,7 +206,7 @@ namespace System.Drawing.Imaging
             get
             {
                 if (wmf == null && emf == null)
-                    throw SafeNativeMethods.Gdip.StatusException(SafeNativeMethods.Gdip.InvalidParameter);
+                    throw Gdip.StatusException(Gdip.InvalidParameter);
 
                 return IsWmf() ? wmf.EmfPlusHeaderSize : emf.EmfPlusHeaderSize;
             }
@@ -219,7 +220,7 @@ namespace System.Drawing.Imaging
             get
             {
                 if (wmf == null && emf == null)
-                    throw SafeNativeMethods.Gdip.StatusException(SafeNativeMethods.Gdip.InvalidParameter);
+                    throw Gdip.StatusException(Gdip.InvalidParameter);
 
                 return IsWmf() ? wmf.LogicalDpiX : emf.LogicalDpiX;
             }
@@ -233,7 +234,7 @@ namespace System.Drawing.Imaging
             get
             {
                 if (wmf == null && emf == null)
-                    throw SafeNativeMethods.Gdip.StatusException(SafeNativeMethods.Gdip.InvalidParameter);
+                    throw Gdip.StatusException(Gdip.InvalidParameter);
 
                 return IsWmf() ? wmf.LogicalDpiY : emf.LogicalDpiX;
             }

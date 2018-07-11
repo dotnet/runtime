@@ -123,7 +123,36 @@ namespace Internal.Cryptography.Pal
             FindCore(cert => cert.NotAfter < normalized);
         }
 
-        protected abstract string DerStringToManagedString(byte[] anyString);
+        private string DerStringToManagedString(byte[] anyString)
+        {
+            DerSequenceReader reader = DerSequenceReader.CreateForPayload(anyString);
+
+            var tag = (DerSequenceReader.DerTag)reader.PeekTag();
+            string value = null;
+
+            switch (tag)
+            {
+                case DerSequenceReader.DerTag.BMPString:
+                    value = reader.ReadBMPString();
+                    break;
+                case DerSequenceReader.DerTag.IA5String:
+                    value = reader.ReadIA5String();
+                    break;
+                case DerSequenceReader.DerTag.PrintableString:
+                    value = reader.ReadPrintableString();
+                    break;
+                case DerSequenceReader.DerTag.UTF8String:
+                    value = reader.ReadUtf8String();
+                    break;
+                case DerSequenceReader.DerTag.T61String:
+                    value = reader.ReadT61String();
+                    break;
+
+                // Ignore anything we don't know how to read.
+            }
+
+            return value;
+        }
 
         public void FindByTemplateName(string templateName)
         {

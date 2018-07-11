@@ -4,6 +4,7 @@
 
 using System.Runtime.InteropServices;
 using System.Diagnostics;
+using Gdip = System.Drawing.SafeNativeMethods.Gdip;
 
 namespace System.Drawing.Drawing2D
 {
@@ -21,8 +22,8 @@ namespace System.Drawing.Drawing2D
             }
 
             IntPtr nativeBrush;
-            int status = SafeNativeMethods.Gdip.GdipCreateHatchBrush(unchecked((int)hatchstyle), foreColor.ToArgb(), backColor.ToArgb(), out nativeBrush);
-            SafeNativeMethods.Gdip.CheckStatus(status);
+            int status = Gdip.GdipCreateHatchBrush(unchecked((int)hatchstyle), foreColor.ToArgb(), backColor.ToArgb(), out nativeBrush);
+            Gdip.CheckStatus(status);
 
             SetNativeBrushInternal(nativeBrush);
         }
@@ -36,8 +37,8 @@ namespace System.Drawing.Drawing2D
         public override object Clone()
         {
             IntPtr clonedBrush = IntPtr.Zero;
-            int status = SafeNativeMethods.Gdip.GdipCloneBrush(new HandleRef(this, NativeBrush), out clonedBrush);
-            SafeNativeMethods.Gdip.CheckStatus(status);
+            int status = Gdip.GdipCloneBrush(new HandleRef(this, NativeBrush), out clonedBrush);
+            Gdip.CheckStatus(status);
 
             return new HatchBrush(clonedBrush);
         }
@@ -47,8 +48,8 @@ namespace System.Drawing.Drawing2D
             get
             {
                 int hatchStyle;
-                int status = SafeNativeMethods.Gdip.GdipGetHatchStyle(new HandleRef(this, NativeBrush), out hatchStyle);
-                SafeNativeMethods.Gdip.CheckStatus(status);
+                int status = Gdip.GdipGetHatchStyle(new HandleRef(this, NativeBrush), out hatchStyle);
+                Gdip.CheckStatus(status);
 
                 return (HatchStyle)hatchStyle;
             }
@@ -59,8 +60,8 @@ namespace System.Drawing.Drawing2D
             get
             {
                 int foregroundArgb;
-                int status = SafeNativeMethods.Gdip.GdipGetHatchForegroundColor(new HandleRef(this, NativeBrush), out foregroundArgb);
-                SafeNativeMethods.Gdip.CheckStatus(status);
+                int status = Gdip.GdipGetHatchForegroundColor(new HandleRef(this, NativeBrush), out foregroundArgb);
+                Gdip.CheckStatus(status);
 
                 return Color.FromArgb(foregroundArgb);
             }
@@ -71,8 +72,8 @@ namespace System.Drawing.Drawing2D
             get
             {
                 int backgroundArgb;
-                int status = SafeNativeMethods.Gdip.GdipGetHatchBackgroundColor(new HandleRef(this, NativeBrush), out backgroundArgb);
-                SafeNativeMethods.Gdip.CheckStatus(status);
+                int status = Gdip.GdipGetHatchBackgroundColor(new HandleRef(this, NativeBrush), out backgroundArgb);
+                Gdip.CheckStatus(status);
 
                 return Color.FromArgb(backgroundArgb);
             }

@@ -24,22 +24,9 @@ PKCS7* CryptoNative_D2IPkcs7Bio(BIO* bp)
     return d2i_PKCS7_bio(bp, NULL);
 }
 
-PKCS7* CryptoNative_Pkcs7CreateSigned()
+PKCS7* CryptoNative_Pkcs7CreateCertificateCollection(X509Stack* certs)
 {
-    PKCS7* pkcs7 = PKCS7_new();
-
-    if (pkcs7 == NULL)
-    {
-        return NULL;
-    }
-
-    if (!PKCS7_set_type(pkcs7, NID_pkcs7_signed) || !PKCS7_content_new(pkcs7, NID_pkcs7_data))
-    {
-        PKCS7_free(pkcs7);
-        return NULL;
-    }
-
-    return pkcs7;
+    return PKCS7_sign(NULL, NULL, certs, NULL, PKCS7_PARTIAL);
 }
 
 void CryptoNative_Pkcs7Destroy(PKCS7* p7)
@@ -68,16 +55,6 @@ int32_t CryptoNative_GetPkcs7Certificates(PKCS7* p7, X509Stack** certs)
     }
 
     return 0;
-}
-
-int32_t CryptoNative_Pkcs7AddCertificate(PKCS7* p7, X509* x509)
-{
-    if (p7 == NULL || x509 == NULL)
-    {
-        return 0;
-    }
-
-    return PKCS7_add_certificate(p7, x509);
 }
 
 int32_t CryptoNative_GetPkcs7DerSize(PKCS7* p7)

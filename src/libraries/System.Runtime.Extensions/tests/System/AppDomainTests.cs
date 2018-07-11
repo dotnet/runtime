@@ -39,6 +39,14 @@ namespace System.Tests
         } 
 
         [Fact]
+        public void TargetFrameworkTest()
+        {
+            RemoteInvoke(() => {
+                Assert.Contains("DUMMY-TFA", AppContext.TargetFrameworkName);
+            }).Dispose();
+        }
+
+        [Fact]
         public void UnhandledException_Add_Remove()
         {
             RemoteInvoke(() => {

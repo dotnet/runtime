@@ -7,21 +7,15 @@
     <BinPlaceRuntime>true</BinPlaceRuntime>
     <NuGetDeploySourceItem>Reference</NuGetDeploySourceItem>
     <NETStandardSupportPackageId>NETStandard.Library.NETFramework</NETStandardSupportPackageId>
-    <NETStandardSupportPackageVersion>2.0.0-preview2-25405-01</NETStandardSupportPackageVersion>
+    <NETStandardSupportPackageVersion>2.0.1-servicing-26011-01</NETStandardSupportPackageVersion>
     <NETStandardSupportRoot>$(PackagesDir)$(NETStandardSupportPackageId.ToLower())\$(NETStandardSupportPackageVersion)\build</NETStandardSupportRoot>
-    <AddNetStandardSupportPackage Condition="'$(TargetGroup)' == 'netfx' OR '$(TargetGroup)' == 'net461' OR '$(TargetGroup)' == 'net462' OR '$(TargetGroup)' == 'net47'">true</AddNetStandardSupportPackage>
-    <!-- temporary until we can get an updated 4.7.1 targeting pack -->
-    <AddNetStandardSupportPackage Condition="'$(TargetGroup)' == '471' ">true</AddNetStandardSupportPackage>
+    <AddNetStandardSupportPackage Condition="'$(TargetGroup)' == 'net461' OR '$(TargetGroup)' == 'net462' OR '$(TargetGroup)' == 'net47'">true</AddNetStandardSupportPackage>
   </PropertyGroup>
   <PropertyGroup Condition="'$(TargetsNetFx)' != 'true'">
-    <!-- For things not .NETFramework we need the net461 targeting pack to generate facades -->
-    <NuGetTargetMoniker>.NETFramework,Version=v4.6.1</NuGetTargetMoniker>
-    <NuGetTargetMonikerShort>net461</NuGetTargetMonikerShort>
-    <TargetingPackNugetPackageId>Microsoft.TargetingPack.NETFramework.v4.6.1</TargetingPackNugetPackageId>
-  </PropertyGroup>
-  <PropertyGroup Condition="'$(TargetingPackNugetPackageId)' == 'Microsoft.TargetingPack.NETFramework.v4.7.1'">
-    <!-- Missing 4.7.1 targeting pack, use 4.7 for now -->
-    <TargetingPackNugetPackageId>Microsoft.TargetingPack.NETFramework.v4.7</TargetingPackNugetPackageId>
+    <!-- For things not .NETFramework we need the net471 targeting pack to generate facades -->
+    <NuGetTargetMoniker>.NETFramework,Version=v4.7.2</NuGetTargetMoniker>
+    <NuGetTargetMonikerShort>net472</NuGetTargetMonikerShort>
+    <TargetingPackNugetPackageId>Microsoft.TargetingPack.NETFramework.v4.7.2</TargetingPackNugetPackageId>
   </PropertyGroup>
 
   <ItemGroup>
@@ -34,21 +28,16 @@
     <BinPlaceConfiguration  Condition="'$(TargetsNetFx)' == 'true'" Include="$(Configuration)">
       <RefPath>$(RefPath)</RefPath>
     </BinPlaceConfiguration>
-
-    <!-- For the netfx targetgroup, binplace NetStandardSupportLibs to runtime / test-runtime-->
-    <BinPlaceConfiguration  Condition="'$(TargetGroup)' == 'netfx'" Include="$(Configuration)">
-      <ItemName>NetStandardSupportLib</ItemName>
-      <RuntimePath>$(TestHostRootPath)</RuntimePath>
-    </BinPlaceConfiguration>
-    <BinPlaceConfiguration  Condition="'$(TargetGroup)' == 'netfx'" Include="$(Configuration)">
-      <ItemName>NetStandardSupportLib</ItemName>
-      <RuntimePath>$(RuntimePath)</RuntimePath>
-    </BinPlaceConfiguration>
   </ItemGroup>
+
+  <PropertyGroup>
+    <_TargetingPackVersion>1.0.1</_TargetingPackVersion>
+    <_TargetingPackVersion Condition="'$(TargetingPackNugetPackageId)' == 'Microsoft.TargetingPack.NETFramework.v4.7.1' OR '$(TargetingPackNugetPackageId)' == 'Microsoft.TargetingPack.NETFramework.v4.7.2'">1.0.0</_TargetingPackVersion>
+  </PropertyGroup>
 
   <ItemGroup>
     <PackageReference Include="$(TargetingPackNugetPackageId)">
-      <Version>1.0.1</Version>
+      <Version >$(_TargetingPackVersion)</Version>
     </PackageReference>
     <PackageReference Include="$(NETStandardSupportPackageId)" Condition="'$(AddNetStandardSupportPackage)' == 'true'">
       <Version>$(NETStandardSupportPackageVersion)</Version>
@@ -63,22 +52,13 @@
           Condition="'$(AddNetStandardSupportPackage)' == 'true'">
     <ItemGroup>
       <_netStandardReference Condition="'$(TargetGroup)' != 'net461' AND '$(TargetGroup)' != 'net462'"
-                             Include="$(NETStandardSupportRoot)\net47\ref\*.dll" 
-                             Exclude="@(_netStandardReference->'$(NETStandardSupportRoot)\net47\ref\%(FileName).dll')" />
+                             Include="$(NETStandardSupportRoot)\net47\lib\*.dll"
+                             Exclude="@(_netStandardReference->'$(NETStandardSupportRoot)\net47\lib\%(FileName).dll')" />
       <_netStandardReference Condition="'$(TargetGroup)' != 'net461'"
-                             Include="$(NETStandardSupportRoot)\net462\ref\*.dll" 
-                             Exclude="@(_netStandardReference->'$(NETStandardSupportRoot)\net462\ref\%(FileName).dll')" />
-      <_netStandardReference Include="$(NETStandardSupportRoot)\net461\ref\*.dll" 
-                             Exclude="@(_netStandardReference->'$(NETStandardSupportRoot)\net461\ref\%(FileName).dll')" />
-
-      <NetStandardSupportLib Condition="'$(TargetGroup)' != 'net461' AND '$(TargetGroup)' != 'net462'"
-                             Include="$(NETStandardSupportRoot)\net47\lib\*.dll" 
-                             Exclude="@(NetStandardSupportLib->'$(NETStandardSupportRoot)\net47\lib\%(FileName).dll')" />
-      <NetStandardSupportLib Condition="'$(TargetGroup)' != 'net461'"
-                             Include="$(NETStandardSupportRoot)\net462\lib\*.dll" 
-                             Exclude="@(NetStandardSupportLib->'$(NETStandardSupportRoot)\net462\lib\%(FileName).dll')" />
-      <NetStandardSupportLib Include="$(NETStandardSupportRoot)\net461\lib\*.dll" 
-                             Exclude="@(NetStandardSupportLib->'$(NETStandardSupportRoot)\net461\lib\%(FileName).dll')" />
+                             Include="$(NETStandardSupportRoot)\net462\lib\*.dll"
+                             Exclude="@(_netStandardReference->'$(NETStandardSupportRoot)\net462\lib\%(FileName).dll')" />
+      <_netStandardReference Include="$(NETStandardSupportRoot)\net461\lib\*.dll"
+                             Exclude="@(_netStandardReference->'$(NETStandardSupportRoot)\net461\lib\%(FileName).dll')" />
 
       <_netStandardReference>
         <Private>False</Private>

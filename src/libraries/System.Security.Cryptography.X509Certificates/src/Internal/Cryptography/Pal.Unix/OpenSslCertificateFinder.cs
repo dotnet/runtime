@@ -13,11 +13,6 @@ namespace Internal.Cryptography.Pal
         {
         }
 
-        protected override string DerStringToManagedString(byte[] anyString)
-        {
-            return Interop.Crypto.DerStringToManagedString(anyString);
-        }
-
         protected override byte[] GetSubjectPublicKeyInfo(X509Certificate2 cert)
         {
             OpenSslX509CertificateReader certPal = (OpenSslX509CertificateReader)cert.Pal;

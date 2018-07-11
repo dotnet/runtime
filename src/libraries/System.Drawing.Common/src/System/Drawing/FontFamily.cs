@@ -7,7 +7,7 @@ using System.Diagnostics.CodeAnalysis;
 using System.Drawing.Text;
 using System.Globalization;
 using System.Runtime.InteropServices;
-using System.Text;
+using Gdip = System.Drawing.SafeNativeMethods.Gdip;
 
 namespace System.Drawing
 {
@@ -73,9 +73,9 @@ namespace System.Drawing
             IntPtr fontfamily = IntPtr.Zero;
             IntPtr nativeFontCollection = (fontCollection == null) ? IntPtr.Zero : fontCollection._nativeFontCollection;
 
-            int status = SafeNativeMethods.Gdip.GdipCreateFontFamilyFromName(name, new HandleRef(fontCollection, nativeFontCollection), out fontfamily);
+            int status = Gdip.GdipCreateFontFamilyFromName(name, new HandleRef(fontCollection, nativeFontCollection), out fontfamily);
 
-            if (status != SafeNativeMethods.Gdip.Ok)
+            if (status != Gdip.Ok)
             {
                 if (_createDefaultOnFail)
                 {
@@ -84,17 +84,17 @@ namespace System.Drawing
                 else
                 {
                     // Special case this incredibly common error message to give more information.
-                    if (status == SafeNativeMethods.Gdip.FontFamilyNotFound)
+                    if (status == Gdip.FontFamilyNotFound)
                     {
                         throw new ArgumentException(SR.Format(SR.GdiplusFontFamilyNotFound, name));
                     }
-                    else if (status == SafeNativeMethods.Gdip.NotTrueTypeFont)
+                    else if (status == Gdip.NotTrueTypeFont)
                     {
                         throw new ArgumentException(SR.Format(SR.GdiplusNotTrueTypeFont, name));
                     }
                     else
                     {
-                        throw SafeNativeMethods.Gdip.StatusException(status);
+                        throw Gdip.StatusException(status);
                     }
                 }
             }
@@ -113,17 +113,17 @@ namespace System.Drawing
             switch (genericFamily)
             {
                 case GenericFontFamilies.Serif:
-                    status = SafeNativeMethods.Gdip.GdipGetGenericFontFamilySerif(out nativeFamily);
+                    status = Gdip.GdipGetGenericFontFamilySerif(out nativeFamily);
                     break;
                 case GenericFontFamilies.SansSerif:
-                    status = SafeNativeMethods.Gdip.GdipGetGenericFontFamilySansSerif(out nativeFamily);
+                    status = Gdip.GdipGetGenericFontFamilySansSerif(out nativeFamily);
                     break;
                 case GenericFontFamilies.Monospace:
                 default:
-                    status = SafeNativeMethods.Gdip.GdipGetGenericFontFamilyMonospace(out nativeFamily);
+                    status = Gdip.GdipGetGenericFontFamilyMonospace(out nativeFamily);
                     break;
             }
-            SafeNativeMethods.Gdip.CheckStatus(status);
+            Gdip.CheckStatus(status);
 
             SetNativeFamily(nativeFamily);
         }
@@ -162,9 +162,9 @@ namespace System.Drawing
 #if DEBUG
                     int status =
 #endif
-                    SafeNativeMethods.Gdip.GdipDeleteFontFamily(new HandleRef(this, _nativeFamily));
+                    Gdip.GdipDeleteFontFamily(new HandleRef(this, _nativeFamily));
 #if DEBUG
-                    Debug.Assert(status == SafeNativeMethods.Gdip.Ok, "GDI+ returned an error status: " + status.ToString(CultureInfo.InvariantCulture));
+                    Debug.Assert(status == Gdip.Ok, "GDI+ returned an error status: " + status.ToString(CultureInfo.InvariantCulture));
 #endif
                 }
                 catch (Exception ex) when (!ClientUtils.IsCriticalException(ex))
@@ -188,8 +188,8 @@ namespace System.Drawing
         public unsafe string GetName(int language)
         {
             char* name = stackalloc char[32]; // LF_FACESIZE is 32
-            int status = SafeNativeMethods.Gdip.GdipGetFamilyName(new HandleRef(this, NativeFamily), name, language);
-            SafeNativeMethods.Gdip.CheckStatus(status);
+            int status = Gdip.GdipGetFamilyName(new HandleRef(this, NativeFamily), name, language);
+            Gdip.CheckStatus(status);
             return Marshal.PtrToStringUni((IntPtr)name);
         }
 
@@ -207,8 +207,8 @@ namespace System.Drawing
         private static IntPtr GetGdipGenericSansSerif()
         {
             IntPtr nativeFamily = IntPtr.Zero;
-            int status = SafeNativeMethods.Gdip.GdipGetGenericFontFamilySansSerif(out nativeFamily);
-            SafeNativeMethods.Gdip.CheckStatus(status);
+            int status = Gdip.GdipGetGenericFontFamilySansSerif(out nativeFamily);
+            Gdip.CheckStatus(status);
 
             return nativeFamily;
         }
@@ -243,8 +243,8 @@ namespace System.Drawing
         public bool IsStyleAvailable(FontStyle style)
         {
             int bresult;
-            int status = SafeNativeMethods.Gdip.GdipIsStyleAvailable(new HandleRef(this, NativeFamily), style, out bresult);
-            SafeNativeMethods.Gdip.CheckStatus(status);
+            int status = Gdip.GdipIsStyleAvailable(new HandleRef(this, NativeFamily), style, out bresult);
+            Gdip.CheckStatus(status);
 
             return bresult != 0;
         }
@@ -255,8 +255,8 @@ namespace System.Drawing
         public int GetEmHeight(FontStyle style)
         {
             int result = 0;
-            int status = SafeNativeMethods.Gdip.GdipGetEmHeight(new HandleRef(this, NativeFamily), style, out result);
-            SafeNativeMethods.Gdip.CheckStatus(status);
+            int status = Gdip.GdipGetEmHeight(new HandleRef(this, NativeFamily), style, out result);
+            Gdip.CheckStatus(status);
 
             return result;
         }
@@ -267,8 +267,8 @@ namespace System.Drawing
         public int GetCellAscent(FontStyle style)
         {
             int result = 0;
-            int status = SafeNativeMethods.Gdip.GdipGetCellAscent(new HandleRef(this, NativeFamily), style, out result);
-            SafeNativeMethods.Gdip.CheckStatus(status);
+            int status = Gdip.GdipGetCellAscent(new HandleRef(this, NativeFamily), style, out result);
+            Gdip.CheckStatus(status);
 
             return result;
         }
@@ -279,8 +279,8 @@ namespace System.Drawing
         public int GetCellDescent(FontStyle style)
         {
             int result = 0;
-            int status = SafeNativeMethods.Gdip.GdipGetCellDescent(new HandleRef(this, NativeFamily), style, out result);
-            SafeNativeMethods.Gdip.CheckStatus(status);
+            int status = Gdip.GdipGetCellDescent(new HandleRef(this, NativeFamily), style, out result);
+            Gdip.CheckStatus(status);
 
             return result;
         }
@@ -292,8 +292,8 @@ namespace System.Drawing
         public int GetLineSpacing(FontStyle style)
         {
             int result = 0;
-            int status = SafeNativeMethods.Gdip.GdipGetLineSpacing(new HandleRef(this, NativeFamily), style, out result);
-            SafeNativeMethods.Gdip.CheckStatus(status);
+            int status = Gdip.GdipGetLineSpacing(new HandleRef(this, NativeFamily), style, out result);
+            Gdip.CheckStatus(status);
 
             return result;
         }

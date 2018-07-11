@@ -244,8 +244,9 @@ The LocalMachine\My store is System.keychain.
 The CurrentUser\Root store on macOS is an interpretation of the SecTrustSettings results for the user trust domain.
 The LocalMachine\Root store on macOS is an interpretation of the SecTrustSettings results for the admin and system trust domains.
 The CurrentUser\Disallowed and LocalMachine\Disallowed stores are interpretations of the appropriate SecTrustSettings results for certificates whose trust is set to Always Deny.
-Keychain creation on macOS requires more input than is captured with the X509Store API, so attempting to create a new store will fail with a `PlatformNotSupportedException`.
-If a keychain is opened by P/Invoke to SecKeychainOpen, the resulting `IntPtr` can be passed to `new X509Store(IntPtr)` to obtain a read/write-capable store (subject to the current user's permissions).
+Custom store creation on macOS with the X509Store API is supported only for CurrentUser location. It will create a new keychain with no password in the user's keychain
+directory (~/Library/Keychains). To create a keychain with password a P/Invoke to SecKeychainCreate could be used. Similarly, SecKeychainOpen could be used to open keychains
+in different locations. The resulting `IntPtr` can be passed to `new X509Store(IntPtr)` to obtain a read/write-capable store (subject to the current user's permissions).
 
 ### X509Chain
 

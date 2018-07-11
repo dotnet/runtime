@@ -5,6 +5,7 @@
 using System.Diagnostics;
 using System.IO;
 using DpiHelper = System.Windows.Forms.DpiHelper;
+using Gdip = System.Drawing.SafeNativeMethods.Gdip;
 
 namespace System.Drawing
 {
@@ -338,7 +339,7 @@ namespace System.Drawing
         static ToolboxBitmapAttribute()
         {
             // When we call Gdip.DummyFunction, JIT will make sure Gdip..cctor will be called.
-            SafeNativeMethods.Gdip.DummyFunction();
+            Gdip.DummyFunction();
             
             Stream stream = BitmapSelector.GetResourceStream(typeof(ToolboxBitmapAttribute), "DefaultComponent.bmp");
             Debug.Assert(stream != null, "DefaultComponent.bmp must be present as an embedded resource.");

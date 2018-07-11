@@ -1182,6 +1182,19 @@ namespace System.Security.Cryptography.Asn1
             WriteUtcTimeCore(tag.AsPrimitive(), value);
         }
 
+        public void WriteUtcTime(DateTimeOffset value, int minLegalYear)
+        {
+            // ensure that value is bounded within a century
+            if (minLegalYear <= value.Year && value.Year < minLegalYear + 100)
+            {
+                WriteUtcTime(value);
+            }
+            else
+            {
+                throw new ArgumentOutOfRangeException(nameof(value));
+            }
+        }
+
         // T-REC-X.680-201508 sec 47
         // T-REC-X.690-201508 sec 11.8
         private void WriteUtcTimeCore(Asn1Tag tag, DateTimeOffset value)

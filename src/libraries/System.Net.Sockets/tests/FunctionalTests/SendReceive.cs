@@ -787,6 +787,7 @@ namespace System.Net.Sockets.Tests
 
         [OuterLoop] // TODO: Issue #11345
         [Fact]
+        [ActiveIssue(28882, TargetFrameworkMonikers.NetFramework)]
         public async Task SendRecv_DisposeDuringPendingReceive_ThrowsSocketException()
         {
             if (UsesSync) return; // if sync, can't guarantee call will have been initiated by time of disposal
