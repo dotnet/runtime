@@ -68,75 +68,79 @@ class Constants {
     // need to be set to actually enable that stress mode.  The key of the map is the stress mode and
     // the values are the environment variables
     def static jitStressModeScenarios = [
-               'minopts'                        : ['COMPlus_JITMinOpts' : '1'],
-               'tieredcompilation'              : ['COMPlus_EXPERIMENTAL_TieredCompilation' : '1'],
-               'forcerelocs'                    : ['COMPlus_ForceRelocs' : '1'],
-               'jitstress1'                     : ['COMPlus_JitStress' : '1'],
-               'jitstress2'                     : ['COMPlus_JitStress' : '2'],
-               'jitstressregs1'                 : ['COMPlus_JitStressRegs' : '1'],
-               'jitstressregs2'                 : ['COMPlus_JitStressRegs' : '2'],
-               'jitstressregs3'                 : ['COMPlus_JitStressRegs' : '3'],
-               'jitstressregs4'                 : ['COMPlus_JitStressRegs' : '4'],
-               'jitstressregs8'                 : ['COMPlus_JitStressRegs' : '8'],
-               'jitstressregs0x10'              : ['COMPlus_JitStressRegs' : '0x10'],
-               'jitstressregs0x80'              : ['COMPlus_JitStressRegs' : '0x80'],
-               'jitstressregs0x1000'            : ['COMPlus_JitStressRegs' : '0x1000'],
-               'jitstress2_jitstressregs1'      : ['COMPlus_JitStress' : '2', 'COMPlus_JitStressRegs' : '1'],
-               'jitstress2_jitstressregs2'      : ['COMPlus_JitStress' : '2', 'COMPlus_JitStressRegs' : '2'],
-               'jitstress2_jitstressregs3'      : ['COMPlus_JitStress' : '2', 'COMPlus_JitStressRegs' : '3'],
-               'jitstress2_jitstressregs4'      : ['COMPlus_JitStress' : '2', 'COMPlus_JitStressRegs' : '4'],
-               'jitstress2_jitstressregs8'      : ['COMPlus_JitStress' : '2', 'COMPlus_JitStressRegs' : '8'],
-               'jitstress2_jitstressregs0x10'   : ['COMPlus_JitStress' : '2', 'COMPlus_JitStressRegs' : '0x10'],
-               'jitstress2_jitstressregs0x80'   : ['COMPlus_JitStress' : '2', 'COMPlus_JitStressRegs' : '0x80'],
-               'jitstress2_jitstressregs0x1000' : ['COMPlus_JitStress' : '2', 'COMPlus_JitStressRegs' : '0x1000'],
-               'tailcallstress'                 : ['COMPlus_TailcallStress' : '1'],
-               'jitsse2only'                    : ['COMPlus_EnableAVX' : '0', 'COMPlus_EnableSSE3_4' : '0'],
-               'jitnosimd'                      : ['COMPlus_FeatureSIMD' : '0'],
-               'jitincompletehwintrinsic'       : ['COMPlus_EnableIncompleteISAClass' : '1'],
-               'jitx86hwintrinsicnoavx'         : ['COMPlus_EnableIncompleteISAClass' : '1', 'COMPlus_EnableAVX' : '0'], // testing the legacy SSE encoding
-               'jitx86hwintrinsicnoavx2'        : ['COMPlus_EnableIncompleteISAClass' : '1', 'COMPlus_EnableAVX2' : '0'], // testing SNB/IVB
-               'jitx86hwintrinsicnosimd'        : ['COMPlus_EnableIncompleteISAClass' : '1', 'COMPlus_FeatureSIMD' : '0'], // match "jitnosimd", may need to remove after decoupling HW intrinsic from FeatureSIMD
-               'jitnox86hwintrinsic'            : ['COMPlus_EnableIncompleteISAClass' : '1', 'COMPlus_EnableSSE' : '0' , 'COMPlus_EnableSSE2' : '0' , 'COMPlus_EnableSSE3' : '0' , 'COMPlus_EnableSSSE3' : '0' , 'COMPlus_EnableSSE41' : '0' , 'COMPlus_EnableSSE42' : '0' , 'COMPlus_EnableAVX' : '0' , 'COMPlus_EnableAVX2' : '0' , 'COMPlus_EnableAES' : '0' , 'COMPlus_EnableBMI1' : '0' , 'COMPlus_EnableBMI2' : '0' , 'COMPlus_EnableFMA' : '0' , 'COMPlus_EnableLZCNT' : '0' , 'COMPlus_EnablePCLMULQDQ' : '0' , 'COMPlus_EnablePOPCNT' : '0'],
-               'corefx_baseline'                : [ : ], // corefx baseline
-               'corefx_minopts'                 : ['COMPlus_JITMinOpts' : '1'],
-               'corefx_tieredcompilation'       : ['COMPlus_EXPERIMENTAL_TieredCompilation' : '1'],
-               'corefx_jitstress1'              : ['COMPlus_JitStress' : '1'],
-               'corefx_jitstress2'              : ['COMPlus_JitStress' : '2'],
-               'corefx_jitstressregs1'          : ['COMPlus_JitStressRegs' : '1'],
-               'corefx_jitstressregs2'          : ['COMPlus_JitStressRegs' : '2'],
-               'corefx_jitstressregs3'          : ['COMPlus_JitStressRegs' : '3'],
-               'corefx_jitstressregs4'          : ['COMPlus_JitStressRegs' : '4'],
-               'corefx_jitstressregs8'          : ['COMPlus_JitStressRegs' : '8'],
-               'corefx_jitstressregs0x10'       : ['COMPlus_JitStressRegs' : '0x10'],
-               'corefx_jitstressregs0x80'       : ['COMPlus_JitStressRegs' : '0x80'],
-               'corefx_jitstressregs0x1000'     : ['COMPlus_JitStressRegs' : '0x1000'],
-               'gcstress0x3'                    : ['COMPlus_GCStress' : '0x3'],
-               'gcstress0xc'                    : ['COMPlus_GCStress' : '0xC'],
-               'zapdisable'                     : ['COMPlus_ZapDisable' : '1', 'COMPlus_ReadyToRun' : '0'],
-               'heapverify1'                    : ['COMPlus_HeapVerify' : '1'],
-               'gcstress0xc_zapdisable'             : ['COMPlus_GCStress' : '0xC', 'COMPlus_ZapDisable' : '1', 'COMPlus_ReadyToRun' : '0'],
-               'gcstress0xc_zapdisable_jitstress2'  : ['COMPlus_GCStress' : '0xC', 'COMPlus_ZapDisable' : '1', 'COMPlus_ReadyToRun' : '0', 'COMPlus_JitStress'  : '2'],
-               'gcstress0xc_zapdisable_heapverify1' : ['COMPlus_GCStress' : '0xC', 'COMPlus_ZapDisable' : '1', 'COMPlus_ReadyToRun' : '0', 'COMPlus_HeapVerify' : '1'],
-               'gcstress0xc_jitstress1'             : ['COMPlus_GCStress' : '0xC', 'COMPlus_JitStress'  : '1'],
-               'gcstress0xc_jitstress2'             : ['COMPlus_GCStress' : '0xC', 'COMPlus_JitStress'  : '2'],
-               'gcstress0xc_minopts_heapverify1'    : ['COMPlus_GCStress' : '0xC', 'COMPlus_JITMinOpts' : '1', 'COMPlus_HeapVerify' : '1']
+               'minopts'                        : ['COMPlus_TieredCompilation' : '0', 'COMPlus_JITMinOpts' : '1'],
+               'tieredcompilation'              : ['COMPlus_TieredCompilation' : '1'],
+               'forcerelocs'                    : ['COMPlus_TieredCompilation' : '0', 'COMPlus_ForceRelocs' : '1'],
+               'jitstress1'                     : ['COMPlus_TieredCompilation' : '0', 'COMPlus_JitStress' : '1'],
+               'jitstress2'                     : ['COMPlus_TieredCompilation' : '0', 'COMPlus_JitStress' : '2'],
+               'jitstress1_tiered'              : ['COMPlus_TieredCompilation' : '1', 'COMPlus_JitStress' : '1'],
+               'jitstress2_tiered'              : ['COMPlus_TieredCompilation' : '1', 'COMPlus_JitStress' : '2'],
+               'jitstressregs1'                 : ['COMPlus_TieredCompilation' : '0', 'COMPlus_JitStressRegs' : '1'],
+               'jitstressregs2'                 : ['COMPlus_TieredCompilation' : '0', 'COMPlus_JitStressRegs' : '2'],
+               'jitstressregs3'                 : ['COMPlus_TieredCompilation' : '0', 'COMPlus_JitStressRegs' : '3'],
+               'jitstressregs4'                 : ['COMPlus_TieredCompilation' : '0', 'COMPlus_JitStressRegs' : '4'],
+               'jitstressregs8'                 : ['COMPlus_TieredCompilation' : '0', 'COMPlus_JitStressRegs' : '8'],
+               'jitstressregs0x10'              : ['COMPlus_TieredCompilation' : '0', 'COMPlus_JitStressRegs' : '0x10'],
+               'jitstressregs0x80'              : ['COMPlus_TieredCompilation' : '0', 'COMPlus_JitStressRegs' : '0x80'],
+               'jitstressregs0x1000'            : ['COMPlus_TieredCompilation' : '0', 'COMPlus_JitStressRegs' : '0x1000'],
+               'jitstress2_jitstressregs1'      : ['COMPlus_TieredCompilation' : '0', 'COMPlus_JitStress' : '2', 'COMPlus_JitStressRegs' : '1'],
+               'jitstress2_jitstressregs2'      : ['COMPlus_TieredCompilation' : '0', 'COMPlus_JitStress' : '2', 'COMPlus_JitStressRegs' : '2'],
+               'jitstress2_jitstressregs3'      : ['COMPlus_TieredCompilation' : '0', 'COMPlus_JitStress' : '2', 'COMPlus_JitStressRegs' : '3'],
+               'jitstress2_jitstressregs4'      : ['COMPlus_TieredCompilation' : '0', 'COMPlus_JitStress' : '2', 'COMPlus_JitStressRegs' : '4'],
+               'jitstress2_jitstressregs8'      : ['COMPlus_TieredCompilation' : '0', 'COMPlus_JitStress' : '2', 'COMPlus_JitStressRegs' : '8'],
+               'jitstress2_jitstressregs0x10'   : ['COMPlus_TieredCompilation' : '0', 'COMPlus_JitStress' : '2', 'COMPlus_JitStressRegs' : '0x10'],
+               'jitstress2_jitstressregs0x80'   : ['COMPlus_TieredCompilation' : '0', 'COMPlus_JitStress' : '2', 'COMPlus_JitStressRegs' : '0x80'],
+               'jitstress2_jitstressregs0x1000' : ['COMPlus_TieredCompilation' : '0', 'COMPlus_JitStress' : '2', 'COMPlus_JitStressRegs' : '0x1000'],
+               'tailcallstress'                 : ['COMPlus_TieredCompilation' : '0', 'COMPlus_TailcallStress' : '1'],
+               'jitsse2only'                    : ['COMPlus_TieredCompilation' : '0', 'COMPlus_EnableAVX' : '0', 'COMPlus_EnableSSE3_4' : '0'],
+               'jitnosimd'                      : ['COMPlus_TieredCompilation' : '0', 'COMPlus_FeatureSIMD' : '0'],
+               'jitincompletehwintrinsic'       : ['COMPlus_TieredCompilation' : '0', 'COMPlus_EnableIncompleteISAClass' : '1'],
+               'jitx86hwintrinsicnoavx'         : ['COMPlus_TieredCompilation' : '0', 'COMPlus_EnableIncompleteISAClass' : '1', 'COMPlus_EnableAVX' : '0'], // testing the legacy SSE encoding
+               'jitx86hwintrinsicnoavx2'        : ['COMPlus_TieredCompilation' : '0', 'COMPlus_EnableIncompleteISAClass' : '1', 'COMPlus_EnableAVX2' : '0'], // testing SNB/IVB
+               'jitx86hwintrinsicnosimd'        : ['COMPlus_TieredCompilation' : '0', 'COMPlus_EnableIncompleteISAClass' : '1', 'COMPlus_FeatureSIMD' : '0'], // match "jitnosimd", may need to remove after decoupling HW intrinsic from FeatureSIMD
+               'jitnox86hwintrinsic'            : ['COMPlus_TieredCompilation' : '0', 'COMPlus_EnableIncompleteISAClass' : '1', 'COMPlus_EnableSSE' : '0' , 'COMPlus_EnableSSE2' : '0' , 'COMPlus_EnableSSE3' : '0' , 'COMPlus_EnableSSSE3' : '0' , 'COMPlus_EnableSSE41' : '0' , 'COMPlus_EnableSSE42' : '0' , 'COMPlus_EnableAVX' : '0' , 'COMPlus_EnableAVX2' : '0' , 'COMPlus_EnableAES' : '0' , 'COMPlus_EnableBMI1' : '0' , 'COMPlus_EnableBMI2' : '0' , 'COMPlus_EnableFMA' : '0' , 'COMPlus_EnableLZCNT' : '0' , 'COMPlus_EnablePCLMULQDQ' : '0' , 'COMPlus_EnablePOPCNT' : '0'],
+               'corefx_baseline'                : ['COMPlus_TieredCompilation' : '0'], // corefx baseline
+               'corefx_minopts'                 : ['COMPlus_TieredCompilation' : '0', 'COMPlus_JITMinOpts' : '1'],
+               'corefx_tieredcompilation'       : ['COMPlus_TieredCompilation' : '1'],
+               'corefx_jitstress1'              : ['COMPlus_TieredCompilation' : '0', 'COMPlus_JitStress' : '1'],
+               'corefx_jitstress2'              : ['COMPlus_TieredCompilation' : '0', 'COMPlus_JitStress' : '2'],
+               'corefx_jitstressregs1'          : ['COMPlus_TieredCompilation' : '0', 'COMPlus_JitStressRegs' : '1'],
+               'corefx_jitstressregs2'          : ['COMPlus_TieredCompilation' : '0', 'COMPlus_JitStressRegs' : '2'],
+               'corefx_jitstressregs3'          : ['COMPlus_TieredCompilation' : '0', 'COMPlus_JitStressRegs' : '3'],
+               'corefx_jitstressregs4'          : ['COMPlus_TieredCompilation' : '0', 'COMPlus_JitStressRegs' : '4'],
+               'corefx_jitstressregs8'          : ['COMPlus_TieredCompilation' : '0', 'COMPlus_JitStressRegs' : '8'],
+               'corefx_jitstressregs0x10'       : ['COMPlus_TieredCompilation' : '0', 'COMPlus_JitStressRegs' : '0x10'],
+               'corefx_jitstressregs0x80'       : ['COMPlus_TieredCompilation' : '0', 'COMPlus_JitStressRegs' : '0x80'],
+               'corefx_jitstressregs0x1000'     : ['COMPlus_TieredCompilation' : '0', 'COMPlus_JitStressRegs' : '0x1000'],
+               'gcstress0x3'                    : ['COMPlus_TieredCompilation' : '0', 'COMPlus_GCStress' : '0x3'],
+               'gcstress0xc'                    : ['COMPlus_TieredCompilation' : '0', 'COMPlus_GCStress' : '0xC'],
+               'zapdisable'                     : ['COMPlus_TieredCompilation' : '0', 'COMPlus_ZapDisable' : '1', 'COMPlus_ReadyToRun' : '0'],
+               'heapverify1'                    : ['COMPlus_TieredCompilation' : '0', 'COMPlus_HeapVerify' : '1'],
+               'gcstress0xc_zapdisable'             : ['COMPlus_TieredCompilation' : '0', 'COMPlus_GCStress' : '0xC', 'COMPlus_ZapDisable' : '1', 'COMPlus_ReadyToRun' : '0'],
+               'gcstress0xc_zapdisable_jitstress2'  : ['COMPlus_TieredCompilation' : '0', 'COMPlus_GCStress' : '0xC', 'COMPlus_ZapDisable' : '1', 'COMPlus_ReadyToRun' : '0', 'COMPlus_JitStress'  : '2'],
+               'gcstress0xc_zapdisable_heapverify1' : ['COMPlus_TieredCompilation' : '0', 'COMPlus_GCStress' : '0xC', 'COMPlus_ZapDisable' : '1', 'COMPlus_ReadyToRun' : '0', 'COMPlus_HeapVerify' : '1'],
+               'gcstress0xc_jitstress1'             : ['COMPlus_TieredCompilation' : '0', 'COMPlus_GCStress' : '0xC', 'COMPlus_JitStress'  : '1'],
+               'gcstress0xc_jitstress2'             : ['COMPlus_TieredCompilation' : '0', 'COMPlus_GCStress' : '0xC', 'COMPlus_JitStress'  : '2'],
+               'gcstress0xc_minopts_heapverify1'    : ['COMPlus_TieredCompilation' : '0', 'COMPlus_GCStress' : '0xC', 'COMPlus_JITMinOpts' : '1', 'COMPlus_HeapVerify' : '1']
     ]
 
     // This is a set of ReadyToRun stress scenarios
     def static r2rStressScenarios = [
-               'r2r_jitstress1'             : ["COMPlus_JitStress": "1"],
-               'r2r_jitstress2'             : ["COMPlus_JitStress": "2"],
-               'r2r_jitstressregs1'         : ["COMPlus_JitStressRegs": "1"],
-               'r2r_jitstressregs2'         : ["COMPlus_JitStressRegs": "2"],
-               'r2r_jitstressregs3'         : ["COMPlus_JitStressRegs": "3"],
-               'r2r_jitstressregs4'         : ["COMPlus_JitStressRegs": "4"],
-               'r2r_jitstressregs8'         : ["COMPlus_JitStressRegs": "8"],
-               'r2r_jitstressregs0x10'      : ["COMPlus_JitStressRegs": "0x10"],
-               'r2r_jitstressregs0x80'      : ["COMPlus_JitStressRegs": "0x80"],
-               'r2r_jitstressregs0x1000'    : ["COMPlus_JitStressRegs": "0x1000"],
-               'r2r_jitminopts'             : ["COMPlus_JITMinOpts": "1"], 
-               'r2r_jitforcerelocs'         : ["COMPlus_ForceRelocs": "1"],
-               'r2r_gcstress15'             : ["COMPlus_GCStress": "0xF"]
+               'r2r_jitstress1'             : ['COMPlus_TieredCompilation' : '0', "COMPlus_JitStress": "1"],
+               'r2r_jitstress2'             : ['COMPlus_TieredCompilation' : '0', "COMPlus_JitStress": "2"],
+               'r2r_jitstress1_tiered'      : ['COMPlus_TieredCompilation' : '1', "COMPlus_JitStress": "1"],
+               'r2r_jitstress2_tiered'      : ['COMPlus_TieredCompilation' : '1', "COMPlus_JitStress": "2"],
+               'r2r_jitstressregs1'         : ['COMPlus_TieredCompilation' : '0', "COMPlus_JitStressRegs": "1"],
+               'r2r_jitstressregs2'         : ['COMPlus_TieredCompilation' : '0', "COMPlus_JitStressRegs": "2"],
+               'r2r_jitstressregs3'         : ['COMPlus_TieredCompilation' : '0', "COMPlus_JitStressRegs": "3"],
+               'r2r_jitstressregs4'         : ['COMPlus_TieredCompilation' : '0', "COMPlus_JitStressRegs": "4"],
+               'r2r_jitstressregs8'         : ['COMPlus_TieredCompilation' : '0', "COMPlus_JitStressRegs": "8"],
+               'r2r_jitstressregs0x10'      : ['COMPlus_TieredCompilation' : '0', "COMPlus_JitStressRegs": "0x10"],
+               'r2r_jitstressregs0x80'      : ['COMPlus_TieredCompilation' : '0', "COMPlus_JitStressRegs": "0x80"],
+               'r2r_jitstressregs0x1000'    : ['COMPlus_TieredCompilation' : '0', "COMPlus_JitStressRegs": "0x1000"],
+               'r2r_jitminopts'             : ['COMPlus_TieredCompilation' : '0', "COMPlus_JITMinOpts": "1"], 
+               'r2r_jitforcerelocs'         : ['COMPlus_TieredCompilation' : '0', "COMPlus_ForceRelocs": "1"],
+               'r2r_gcstress15'             : ['COMPlus_TieredCompilation' : '0', "COMPlus_GCStress": "0xF"]
     ]
 
     // This is the basic set of scenarios
@@ -237,6 +241,8 @@ class Constants {
                // 'illink'
                'r2r_jitstress1':                         ["R2R_FAIL", "R2R_EXCLUDE", "JITSTRESS_FAIL", "JITSTRESS_EXCLUDE"],
                'r2r_jitstress2':                         ["R2R_FAIL", "R2R_EXCLUDE", "JITSTRESS_FAIL", "JITSTRESS_EXCLUDE"],
+               'r2r_jitstress1_tiered':                  ["R2R_FAIL", "R2R_EXCLUDE", "JITSTRESS_FAIL", "JITSTRESS_EXCLUDE"],
+               'r2r_jitstress2_tiered':                  ["R2R_FAIL", "R2R_EXCLUDE", "JITSTRESS_FAIL", "JITSTRESS_EXCLUDE"],
                'r2r_jitstressregs1':                     ["R2R_FAIL", "R2R_EXCLUDE", "JITSTRESS_FAIL", "JITSTRESS_EXCLUDE"],
                'r2r_jitstressregs2':                     ["R2R_FAIL", "R2R_EXCLUDE", "JITSTRESS_FAIL", "JITSTRESS_EXCLUDE"],
                'r2r_jitstressregs3':                     ["R2R_FAIL", "R2R_EXCLUDE", "JITSTRESS_FAIL", "JITSTRESS_EXCLUDE"],
@@ -253,6 +259,8 @@ class Constants {
                'forcerelocs':                            [],
                'jitstress1':                             ["JITSTRESS_FAIL", "JITSTRESS_EXCLUDE"],
                'jitstress2':                             ["JITSTRESS_FAIL", "JITSTRESS_EXCLUDE"],
+               'jitstress1_tiered':                      ["JITSTRESS_FAIL", "JITSTRESS_EXCLUDE"],
+               'jitstress2_tiered':                      ["JITSTRESS_FAIL", "JITSTRESS_EXCLUDE"],
                'jitstressregs1':                         ["JITSTRESS_FAIL", "JITSTRESS_EXCLUDE"],
                'jitstressregs2':                         ["JITSTRESS_FAIL", "JITSTRESS_EXCLUDE"],
                'jitstressregs3':                         ["JITSTRESS_FAIL", "JITSTRESS_EXCLUDE"],
@@ -340,6 +348,8 @@ class Constants {
                // 'illink'
                'r2r_jitstress1',
                'r2r_jitstress2',
+               'r2r_jitstress1_tiered',
+               'r2r_jitstress2_tiered',
                'r2r_jitstressregs1',
                'r2r_jitstressregs2',
                'r2r_jitstressregs3',
@@ -356,6 +366,8 @@ class Constants {
                'forcerelocs',
                'jitstress1',
                'jitstress2',
+               'jitstress1_tiered',
+               'jitstress2_tiered',
                'jitstressregs1',
                'jitstressregs2',
                'jitstressregs3',
@@ -1234,6 +1246,8 @@ def static addNonPRTriggers(def job, def branch, def isPR, def architecture, def
             break
         case 'r2r_jitstress1':
         case 'r2r_jitstress2':
+        case 'r2r_jitstress1_tiered':
+        case 'r2r_jitstress2_tiered':
         case 'r2r_jitstressregs1':
         case 'r2r_jitstressregs2':
         case 'r2r_jitstressregs3':
@@ -1342,9 +1356,12 @@ def static addNonPRTriggers(def job, def branch, def isPR, def architecture, def
         case 'jitstressregs0x80':
         case 'jitstressregs0x1000':
         case 'minopts':
+        case 'tieredcompilation':
         case 'forcerelocs':
         case 'jitstress1':
         case 'jitstress2':
+        case 'jitstress1_tiered':
+        case 'jitstress2_tiered':
         case 'jitstress2_jitstressregs1':
         case 'jitstress2_jitstressregs2':
         case 'jitstress2_jitstressregs3':
@@ -1363,6 +1380,7 @@ def static addNonPRTriggers(def job, def branch, def isPR, def architecture, def
         case 'jitx86hwintrinsicnosimd':
         case 'corefx_baseline':
         case 'corefx_minopts':
+        case 'corefx_tieredcompilation':
         case 'corefx_jitstress1':
         case 'corefx_jitstress2':
         case 'corefx_jitstressregs1':
@@ -1446,11 +1464,6 @@ def static addNonPRTriggers(def job, def branch, def isPR, def architecture, def
                     addPeriodicTriggerHelper(job, '@daily')
                 }
             }
-            break
-        
-        case 'tieredcompilation':
-        case 'corefx_tieredcompilation':
-            // No periodic jobs just yet, still testing
             break
 
         default:
@@ -3155,6 +3168,12 @@ def static CreateOtherTestJob(def dslFactory, def project, def branch, def archi
             testOpts += ' --jitstress=1'
         }
         else if (scenario == 'r2r_jitstress2') {
+            testOpts += ' --jitstress=2'
+        }
+        else if (scenario == 'r2r_jitstress1_tiered') {
+            testOpts += ' --jitstress=1'
+        }
+        else if (scenario == 'r2r_jitstress2_tiered') {
             testOpts += ' --jitstress=2'
         }
         else if (scenario == 'r2r_jitstressregs1') {
