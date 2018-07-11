@@ -4113,9 +4113,6 @@ private:
 
     // controls how metadata updated in the target is handled
     WriteableMetadataUpdateMode m_writableMetadataUpdateMode;
-
-    // TODO: Comments
-    bool                  m_isBlockedOnGarbageCollectionEvent;
 };
 
 // Some IMDArocess APIs are supported as interop-only.
