@@ -320,6 +320,7 @@
       "enabled": true,
       "continueOnError": true,
       "displayName": "run end.sh",
+      "condition": "always()",
       "timeoutInMinutes": 0,
       "alwaysRun": true,
       "task": {
