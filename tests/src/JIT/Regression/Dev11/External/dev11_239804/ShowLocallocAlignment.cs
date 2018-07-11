@@ -2,8 +2,17 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
+// Check that localloc return properly aligned memory.
+// The JIT guarantees that the localloc return value is at least as aligned as the platform stack alignment, which is:
+//   x86 Windows: 4 bytes
+//   x86 Linux: 16 bytes
+//   x64: 16 bytes
+//   arm32: 8 bytes
+//   arm64: 16 bytes
+
 using System;
 using System.Runtime.CompilerServices;
+using System.Runtime.InteropServices;
 
 namespace ShowLocallocAlignment
 {
@@ -37,10 +46,21 @@ namespace ShowLocallocAlignment
         {
             UInt64 address1;
             UInt64 address2;
+            UInt64 required_alignment;
             bool fAligned1;
             bool fAligned2;
             void* ptr1;
             void* ptr2;
+
+            required_alignment = 16; // Default to the biggest alignment required
+            if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows) && (RuntimeInformation.ProcessArchitecture == Architecture.X86))
+            {
+                required_alignment = 4;
+            }
+            else if (RuntimeInformation.ProcessArchitecture == Architecture.Arm)
+            {
+                required_alignment = 8;
+            }
 
             ptr1 = App.SnapLocallocBufferAddress1(1, 2, 3, 4, 5, 6);
             ptr2 = App.SnapLocallocBufferAddress2(1, 2, 3, 4, 5, 6);
@@ -48,17 +68,19 @@ namespace ShowLocallocAlignment
             address1 = unchecked((UInt64)(new IntPtr(ptr1)).ToInt64());
             address2 = unchecked((UInt64)(new IntPtr(ptr2)).ToInt64());
 
-            fAligned1 = ((address1 % 8) == 0);
-            fAligned2 = ((address2 % 8) == 0);
+            fAligned1 = ((address1 % required_alignment) == 0);
+            fAligned2 = ((address2 % required_alignment) == 0);
 
             Console.Write(
                 "\r\n" +
                 "Address1: {0} ({1:x16})\r\n" +
                 "Address2: {2} ({3:x16})\r\n" +
+                "Required alignment: {4}\r\n" +
                 "\r\n",
 
                 (fAligned1 ? "Aligned" : "Misaligned"), address1,
-                (fAligned2 ? "Aligned" : "Misaligned"), address2
+                (fAligned2 ? "Aligned" : "Misaligned"), address2,
+                required_alignment
             );
 
             if (fAligned1 && fAligned2)
