@@ -6,7 +6,6 @@
 #include "pal_utilities.h"
 #include "pal_safecrt.h"
 #include "openssl.h"
-#include "opensslshim.h"
 
 #include <assert.h>
 #include <limits.h>
@@ -1400,15 +1399,14 @@ done:
 
 /*
 Function:
-SSLEayVersion
+SSLeay (OpenSSL_version_num for OpenSSL 1.1+)
 
 Gets the version of openssl library.
 
 Return values:
-Textual description of the version on success.
-"not available" string on failure.
+Version number as MNNFFRBB (major minor fix final beta/patch)
 */
-char* CryptoNative_SSLEayVersion()
+uint32_t CryptoNative_OpenSslVersionNumber()
 {
-    return strdup(SSLeay_version(SSLEAY_VERSION));
+    return (uint32_t)SSLeay();
 }

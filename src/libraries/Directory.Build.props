@@ -320,15 +320,6 @@
     <IncludeDllSafeSearchPathAttribute Condition="'$(TargetGroup)' == 'netstandard1.0'">false</IncludeDllSafeSearchPathAttribute>
   </PropertyGroup>
 
-  <!-- Set up default paths for reference assemblies -->
-  <PropertyGroup Condition="'$(IsReferenceAssembly)'=='true'">
-    <!-- Create a common root output directory for all reference assemblies -->
-    <ReferenceAssemblyOutputPath Condition="'$(ReferenceAssemblyOutputPath)' == ''">$(BaseOutputPath)ref/</ReferenceAssemblyOutputPath>
-    <TargetOutputRelPath Condition="'$(IsCompatAssembly)'=='true'">$(TargetOutputRelPath)Compat/</TargetOutputRelPath>
-    <OutputPath>$(ReferenceAssemblyOutputPath)$(MSBuildProjectName)/$(TargetOutputRelPath)</OutputPath>
-    <IntermediateOutputPath>$(BaseIntermediateOutputPath)ref/$(AssemblyName)/$(TargetOutputRelPath)</IntermediateOutputPath>
-  </PropertyGroup>
-
   <!-- Properties related to multi-file mode for ILC tests -->
   <PropertyGroup Condition="'$(TargetGroup)' == 'uapaot'">
     <!-- Only enable multi-file for Release-x64 and Debug-x86 for now -->

@@ -19,7 +19,6 @@ include_directories(${OPENSSL_INCLUDE_DIR})
 set(NATIVECRYPTO_SOURCES
     openssl.c
     pal_asn1.c
-    pal_asn1_print.c
     pal_bignum.c
     pal_bio.c
     pal_dsa.c

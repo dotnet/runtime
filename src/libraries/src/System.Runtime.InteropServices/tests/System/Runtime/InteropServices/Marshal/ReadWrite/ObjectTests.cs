@@ -26,8 +26,8 @@ namespace System.Runtime.InteropServices.Tests
     public class ObjectTests
     {
         [Fact]
-        [ActiveIssue(30830, TargetFrameworkMonikers.NetFramework)]
-        public void NullValueArguments_ThrowsArgumentNullException()
+        [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework, "Exception is wrapped in a TargetInvocationException in the .NET Framework.")]
+        public void NullValueArguments_ThrowsAccessViolationException()
         {
             Assert.Throws<AccessViolationException>(() => { Marshal.WriteByte(null, 0, 0); });
             Assert.Throws<AccessViolationException>(() => { Marshal.WriteInt16(null, 0, 0); });

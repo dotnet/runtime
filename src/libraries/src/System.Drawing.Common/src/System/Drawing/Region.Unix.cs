@@ -5,6 +5,7 @@
 using System.Drawing.Drawing2D;
 using System.Drawing.Internal;
 using System.Runtime.InteropServices;
+using Gdip = System.Drawing.SafeNativeMethods.Gdip;
 
 namespace System.Drawing
 {
@@ -18,8 +19,8 @@ namespace System.Drawing
             }
 
             // for libgdiplus HRGN == GpRegion*, and we check the return code
-            int status = SafeNativeMethods.Gdip.GdipDeleteRegion(new HandleRef(this, regionHandle));
-            SafeNativeMethods.Gdip.CheckStatus(status);
+            int status = Gdip.GdipDeleteRegion(new HandleRef(this, regionHandle));
+            Gdip.CheckStatus(status);
         }
     }
 }

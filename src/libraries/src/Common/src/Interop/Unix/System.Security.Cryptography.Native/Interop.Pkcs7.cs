@@ -19,8 +19,8 @@ internal static partial class Interop
         [DllImport(Libraries.CryptoNative, EntryPoint = "CryptoNative_D2IPkcs7Bio")]
         internal static extern SafePkcs7Handle D2IPkcs7Bio(SafeBioHandle bp);
 
-        [DllImport(Libraries.CryptoNative, EntryPoint = "CryptoNative_Pkcs7CreateSigned")]
-        internal static extern SafePkcs7Handle Pkcs7CreateSigned();
+        [DllImport(Libraries.CryptoNative, EntryPoint = "CryptoNative_Pkcs7CreateCertificateCollection")]
+        internal static extern SafePkcs7Handle Pkcs7CreateCertificateCollection(SafeX509StackHandle certs);
 
         [DllImport(Libraries.CryptoNative, EntryPoint = "CryptoNative_Pkcs7Destroy")]
         internal static extern void Pkcs7Destroy(IntPtr p7);

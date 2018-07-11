@@ -4,7 +4,7 @@
     <PackageConfigurations>
       portable_net40+sl4+win8+wp8;
       netstandard1.0;
-      netfx;
+      net461;
       net47;
     </PackageConfigurations>
     <BuildConfigurations>
@@ -12,6 +12,7 @@
       netcoreapp;
       uap-Windows_NT;
       _netcoreapp2.0;
+      _netfx;
     </BuildConfigurations>
   </PropertyGroup>
 </Project>

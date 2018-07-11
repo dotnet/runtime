@@ -7,7 +7,7 @@
     <!-- this library depends on Ref.Emit which is not available for netstandard -->
     <GeneratePlatformNotSupportedAssemblyMessage Condition="'$(TargetGroup)' == 'netstandard'">SR.PlatformNotSupported_ReflectionDispatchProxy</GeneratePlatformNotSupportedAssemblyMessage>
     <ResourcesSourceOutputDirectory Condition="'$(TargetGroup)' == 'uapaot' OR '$(TargetGroup)' == 'uap10.0.16299aot'">None</ResourcesSourceOutputDirectory>
-    <Configurations>netcoreapp-Debug;netcoreapp-Release;netcoreapp2.0-Debug;netcoreapp2.0-Release;netfx-Debug;netfx-Release;netstandard-Debug;netstandard-Release;uap-Windows_NT-Debug;uap-Windows_NT-Release;uap10.0.16299-Windows_NT-Debug;uap10.0.16299-Windows_NT-Release;uap10.0.16299aot-Windows_NT-Debug;uap10.0.16299aot-Windows_NT-Release;uapaot-Windows_NT-Debug;uapaot-Windows_NT-Release</Configurations>
+    <Configurations>net461-Debug;net461-Release;netcoreapp-Debug;netcoreapp-Release;netcoreapp2.0-Debug;netcoreapp2.0-Release;netfx-Debug;netfx-Release;netstandard-Debug;netstandard-Release;uap-Windows_NT-Debug;uap-Windows_NT-Release;uap10.0.16299-Windows_NT-Debug;uap10.0.16299-Windows_NT-Release;uap10.0.16299aot-Windows_NT-Debug;uap10.0.16299aot-Windows_NT-Release;uapaot-Windows_NT-Debug;uapaot-Windows_NT-Release</Configurations>
   </PropertyGroup>
   <ItemGroup Condition="'$(IsPartialFacadeAssembly)' != 'true' AND '$(TargetGroup)' != 'netstandard'">
     <Compile Include="System\Reflection\DispatchProxy.cs" />
@@ -16,7 +16,7 @@
       <Link>Common\System\Reflection\Emit\IgnoreAccessChecksToAttributeBuilder.cs</Link>
     </Compile>
   </ItemGroup>
-  <ItemGroup Condition="'$(TargetGroup)' == 'netfx'">
+  <ItemGroup Condition="'$(TargetsNetFx)' == 'true'">
     <Reference Include="mscorlib" />
     <Reference Include="System" />
     <Reference Include="System.Core" />
@@ -25,7 +25,7 @@
     <ReferenceFromRuntime Include="System.Private.Interop" />
     <ReferenceFromRuntime Include="System.Private.CoreLib" />
   </ItemGroup>
-  <ItemGroup Condition="'$(IsPartialFacadeAssembly)' != 'true' AND '$(TargetGroup)' != 'netstandard' AND '$(TargetGroup)' != 'netfx'">
+  <ItemGroup Condition="'$(IsPartialFacadeAssembly)' != 'true' AND '$(TargetGroup)' != 'netstandard' AND '$(TargetsNetFx)' != 'true'">
     <Reference Include="System.Collections" />
     <Reference Include="System.Diagnostics.Debug" />
     <Reference Include="System.Linq" />

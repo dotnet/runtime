@@ -1,6 +1,7 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
+using Gdip = System.Drawing.SafeNativeMethods.Gdip;
 
 namespace System.Drawing.Text
 {
@@ -14,8 +15,8 @@ namespace System.Drawing.Text
         /// </summary>
         public InstalledFontCollection() : base()
         {
-            int status = SafeNativeMethods.Gdip.GdipNewInstalledFontCollection(out _nativeFontCollection);
-            SafeNativeMethods.Gdip.CheckStatus(status);
+            int status = Gdip.GdipNewInstalledFontCollection(out _nativeFontCollection);
+            Gdip.CheckStatus(status);
         }
     }
 }

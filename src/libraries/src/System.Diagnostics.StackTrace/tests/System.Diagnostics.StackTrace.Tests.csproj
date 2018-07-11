@@ -1,7 +1,7 @@
 <Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
     <ProjectGuid>{297A9116-1005-499D-A895-2063D03E4C94}</ProjectGuid>
-    <Configurations>netfx-Debug;netfx-Release;netstandard-Debug;netstandard-Release</Configurations>
+    <Configurations>netstandard-Debug;netstandard-Release</Configurations>
   </PropertyGroup>
   <ItemGroup>
     <Compile Include="StackTraceTests.cs" />
@@ -10,9 +10,6 @@
     <Compile Include="SymLanguageVendorTests.cs" />
     <Compile Include="SymbolTokenTests.cs" />
     <Compile Include="StackFrameTests.cs" />
-    <Compile Include="StackFrameExtensionsTests.cs" Condition="'$(TargetGroup)' != 'netfx'" />
-  </ItemGroup>
-  <ItemGroup Condition="'$(TargetGroup)' == 'netfx'">
-    <ReferenceFromRuntime Include="System.Runtime.InteropServices.RuntimeInformation" />
+    <Compile Include="StackFrameExtensionsTests.cs" />
   </ItemGroup>
 </Project>

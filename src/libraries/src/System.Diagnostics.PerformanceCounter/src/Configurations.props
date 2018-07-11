@@ -4,11 +4,12 @@
     <PackageConfigurations>
       netcoreapp2.0-Windows_NT;
       netstandard;
-      netfx;
+      net461;
     </PackageConfigurations>
     <BuildConfigurations>
       $(PackageConfigurations)
       netcoreapp-Windows_NT;
+      netfx;
     </BuildConfigurations>
   </PropertyGroup>
 </Project>
