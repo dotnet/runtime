@@ -6280,11 +6280,7 @@ mono_icall_end (MonoThreadInfo *info, HandleStackMark *stackmark, MonoError *err
 MonoObjectHandle
 mono_icall_handle_new (gpointer rawobj)
 {
-#ifdef MONO_HANDLE_TRACK_OWNER
-	return MONO_HANDLE_NEW (MonoObject, (MonoObject*)rawobj, "<marshal args>");
-#else
 	return MONO_HANDLE_NEW (MonoObject, (MonoObject*)rawobj);
-#endif
 }
 
 gpointer
