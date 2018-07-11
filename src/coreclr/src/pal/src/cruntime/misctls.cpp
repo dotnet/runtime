@@ -127,8 +127,3 @@ done:
 
     return retval;
 }
-
-UINT GetExponent(double d)
-{
-    return (*((UINT*)&d + 1) >> 20) & 0x000007ff;
-}

@@ -941,33 +941,20 @@ namespace System
         private static bool NumberBufferToDouble(ref NumberBuffer number, ref double value)
         {
             double d = NumberToDouble(ref number);
-            uint e = DoubleHelper.Exponent(d);
-            ulong m = DoubleHelper.Mantissa(d);
-
-            if (e == 0x7FF)
+            if (!Double.IsFinite(d))
             {
+                value = default;
                 return false;
             }
 
-            if (e == 0 && m == 0)
+            if (d == 0.0)
             {
-                d = 0;
+                // normalize -0.0 to 0.0
+                d = 0.0;
             }
 
             value = d;
             return true;
-        }
-
-        private static class DoubleHelper
-        {
-            public static unsafe uint Exponent(double d) =>
-                (*((uint*)&d + 1) >> 20) & 0x000007ff;
-
-            public static unsafe ulong Mantissa(double d) =>
-                *((ulong*)&d) & 0x000fffffffffffff;
-
-            public static unsafe bool Sign(double d) =>
-                (*((uint*)&d + 1) >> 31) != 0;
         }
     }
 }
