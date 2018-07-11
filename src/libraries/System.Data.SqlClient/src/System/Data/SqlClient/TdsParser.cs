@@ -2287,7 +2287,6 @@ namespace System.Data.SqlClient
                             {
                                 _defaultEncoding = Encoding.UTF8;
                                 _defaultCollation = env.newCollation;
-                                _defaultLCID = env.newCollation.LCID;
                             }
                             else
                             {
