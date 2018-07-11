@@ -72,8 +72,7 @@ namespace System
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static unsafe bool IsNegative(float f)
         {
-            var bits = unchecked((uint)BitConverter.SingleToInt32Bits(f));
-            return (bits & 0x80000000) == 0x80000000;
+            return BitConverter.SingleToInt32Bits(f) < 0;
         }
 
         /// <summary>Determines whether the specified value is negative infinity.</summary>
