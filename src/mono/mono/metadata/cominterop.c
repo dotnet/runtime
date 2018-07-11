@@ -2685,8 +2685,12 @@ init_com_provider_ms (void)
 	MonoDl *module = NULL;
 	const char* scope = "liboleaut32.so";
 
-	if (initialized)
+	if (initialized) {
+		// Barrier here prevents reads of sys_alloc_string_len_ms etc.
+		// from being reordered before initialized.
+		mono_memory_barrier ();
 		return TRUE;
+	}
 
 	module = mono_dl_open(scope, MONO_DL_LAZY, &error_msg);
 	if (error_msg) {
@@ -2764,6 +2768,7 @@ init_com_provider_ms (void)
 		return FALSE;
 	}
 
+	mono_memory_barrier ();
 	initialized = TRUE;
 	return TRUE;
 }
