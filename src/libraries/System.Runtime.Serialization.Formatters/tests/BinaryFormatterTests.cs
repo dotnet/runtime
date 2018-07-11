@@ -96,6 +96,12 @@ namespace System.Runtime.Serialization.Formatters.Tests
                     BinaryFormatterHelpers.ToBase64String(obj, FormatterAssemblyStyle.Full));
             }
 
+            // Check if the passed in value in a serialization entry is assignable by the passed in type.
+            if (obj is ISerializable customSerializableObj && HasObjectTypeIntegrity(customSerializableObj))
+            {
+                CheckObjectTypeIntegrity(customSerializableObj);
+            }
+
             SanityCheckBlob(obj, blobs);
 
             // SqlException, ReflectionTypeLoadException and LicenseException aren't deserializable from Desktop --> Core.
@@ -530,6 +536,26 @@ namespace System.Runtime.Serialization.Formatters.Tests
             Assert.True(objType.IsGenericType, $"Type `{objType.FullName}` must be generic.");
             Assert.Equal("System.Collections.Generic.ObjectEqualityComparer`1", objType.GetGenericTypeDefinition().FullName);
             Assert.Equal(obj.GetType().GetGenericArguments()[0], objType.GetGenericArguments()[0]);
+        }
+
+        private static bool HasObjectTypeIntegrity(ISerializable serializable)
+        {
+            return !PlatformDetection.IsFullFramework ||
+                !(serializable is NotFiniteNumberException);
+        }
+
+        private static void CheckObjectTypeIntegrity(ISerializable serializable)
+        {
+            SerializationInfo testData = new SerializationInfo(serializable.GetType(), new FormatterConverter());
+            serializable.GetObjectData(testData, new StreamingContext(StreamingContextStates.Other));
+
+            foreach (SerializationEntry entry in testData)
+            {
+                if (entry.Value != null)
+                {
+                    Assert.IsAssignableFrom(entry.ObjectType, entry.Value);
+                }
+            }
         }
 
         private static void SanityCheckBlob(object obj, TypeSerializableValue[] blobs)

@@ -11,8 +11,8 @@ internal static partial class Interop
     {
         private static Version s_opensslVersion;
 
-        [DllImport(Libraries.CryptoNative, EntryPoint = "CryptoNative_SSLEayVersion")]
-        private static extern string OpenSslVersionDescription();
+        [DllImport(Libraries.CryptoNative, EntryPoint = "CryptoNative_OpenSslVersionNumber")]
+        private static extern uint OpenSslVersionNumber();
 
         internal static Version OpenSslVersion
         {
@@ -20,13 +20,8 @@ internal static partial class Interop
             {
                 if (s_opensslVersion == null)
                 {
-                    const string OpenSSL = "OpenSSL ";
-
-                    // Skip OpenSSL part, and get the version string of format x.y.z
-                    if (!Version.TryParse(OpenSslVersionDescription().AsSpan(OpenSSL.Length, 5).ToString(), out s_opensslVersion))
-                    {
-                        s_opensslVersion = new Version(0, 0, 0);
-                    }
+                    uint versionNumber = OpenSslVersionNumber();
+                    s_opensslVersion = new Version((int)(versionNumber >> 28), (int)((versionNumber >> 20) & 0xff), (int)((versionNumber >> 12) & 0xff));
                 }
 
                 return s_opensslVersion;

@@ -30,6 +30,7 @@ namespace System.Net.Http.Functional.Tests
         [Theory]
         [InlineData(0)]
         [InlineData(-1)]
+        [ActiveIssue(28882, TargetFrameworkMonikers.NetFramework)]
         public void Set_InvalidValues_Throws(int invalidValue)
         {
             using (HttpClientHandler handler = CreateHttpClientHandler())

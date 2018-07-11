@@ -767,6 +767,10 @@ namespace System.Runtime.InteropServices
         public SafeArrayTypeMismatchException(string message) { }
         public SafeArrayTypeMismatchException(string message, System.Exception inner) { }
     }
+    public partial class StandardOleMarshalObject : MarshalByRefObject
+    {
+        protected StandardOleMarshalObject() { }
+    }
     public abstract partial class SafeBuffer : Microsoft.Win32.SafeHandles.SafeHandleZeroOrMinusOneIsInvalid
     {
         protected SafeBuffer(bool ownsHandle) : base(default(bool)) { }

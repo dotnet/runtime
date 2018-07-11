@@ -207,6 +207,7 @@ namespace System.Net.Http.Functional.Tests
         }
 
         [Fact]
+        [ActiveIssue(28882, TargetFrameworkMonikers.NetFramework)]
         public async Task GetContentAsync_NullResponseContent_ReturnsDefaultValue()
         {
             using (var client = new HttpClient(new CustomResponseHandler((r,c) => Task.FromResult(new HttpResponseMessage() { Content = null }))))
@@ -342,6 +343,7 @@ namespace System.Net.Http.Functional.Tests
         }
 
         [Fact]
+        [ActiveIssue(28882, TargetFrameworkMonikers.NetFramework)]
         public async Task SendAsync_RequestContentNotDisposed()
         {
             var content = new ByteArrayContent(new byte[1]);

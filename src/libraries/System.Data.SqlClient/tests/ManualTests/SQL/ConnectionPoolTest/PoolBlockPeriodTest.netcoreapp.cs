@@ -9,22 +9,30 @@ namespace System.Data.SqlClient.ManualTesting.Tests
 {
     public class PoolBlockPeriodTest
     {
-        private static readonly string _sampleAzureEndpoint = "nonexistance.database.windows.net";
-        private static readonly string _policyKeyword = "PoolBlockingPeriod";
-        private const int connectionTimeout = 15;
-        private const int compareMargin = 2;
+        private const string AzureEndpointSample = "nonexistent.database.windows.net";
+        private const string AzureChinaEnpointSample = "nonexistent.database.chinacloudapi.cn";
+        private const string AzureUSGovernmentEndpointSample = "nonexistent.database.usgovcloudapi.net";
+        private const string AzureGermanEndpointSample = "nonexistent.database.cloudapi.de";
+        private const string AzureEndpointMixedCaseSample = "nonexistent.database.WINDOWS.net";
+        private const string NonExistentServer = "nonexistentserver";
+        private const string PolicyKeyword = "PoolBlockingPeriod";
+        private const string PortNumber = "1234";
+        private const string InstanceName = "InstanceName";
+        private const int ConnectionTimeout = 15;
+        private const int CompareMargin = 2;
+        private static bool AreConnectionStringsSetup() => DataTestUtility.AreConnStringsSetup();
 
-        [Theory]
-        [InlineData("Azure with Default Policy must Disable blocking (.database.windows.net)", new object[] { "nonexistance.database.windows.net" })]
-        [InlineData("Azure with Default Policy must Disable blocking (.database.chinacloudapi.cn)", new object[] { "nonexistance.database.chinacloudapi.cn" })]
-        [InlineData("Azure with Default Policy must Disable blocking (.database.usgovcloudapi.net)", new object[] { "nonexistance.database.usgovcloudapi.net" })]
-        [InlineData("Azure with Default Policy must Disable blocking (.database.cloudapi.de)", new object[] { "nonexistance.database.cloudapi.de" })]
-        [InlineData("Azure with Default Policy must Disable blocking (MIXED CASES) (.database.WINDOWS.net)", new object[] { "nonexistance.database.WINDOWS.net" })]
-        [InlineData("Azure with Default Policy must Disable blocking (PORT) (.database.WINDOWS.net,1234)", new object[] { "nonexistance.database.WINDOWS.net,1234" })]
-        [InlineData("Azure with Default Policy must Disable blocking (INSTANCE NAME) (.database.WINDOWS.net,1234\\INSTANCE_NAME)", new object[] { "nonexistance.database.WINDOWS.net,1234\\INSTANCE_NAME" })]
-        [InlineData("Azure with Auto Policy must Disable Blocking", new object[] { "nonexistance.database.windows.net", PoolBlockingPeriod.Auto })]
-        [InlineData("Azure with Always Policy must Enable Blocking", new object[] { "nonexistance.database.windows.net", PoolBlockingPeriod.AlwaysBlock })]
-        [InlineData("Azure with Never Policy must Disable Blocking", new object[] { "nonexistance.database.windows.net", PoolBlockingPeriod.NeverBlock })]
+        [ConditionalTheory(nameof(AreConnectionStringsSetup))]
+        [InlineData("Azure with Default Policy must Disable blocking (*.database.windows.net)", new object[] { AzureEndpointSample })]
+        [InlineData("Azure with Default Policy must Disable blocking (*.database.chinacloudapi.cn)", new object[] { AzureChinaEnpointSample })]
+        [InlineData("Azure with Default Policy must Disable blocking (*.database.usgovcloudapi.net)", new object[] { AzureUSGovernmentEndpointSample })]
+        [InlineData("Azure with Default Policy must Disable blocking (*.database.cloudapi.de)", new object[] { AzureGermanEndpointSample })]
+        [InlineData("Azure with Default Policy must Disable blocking (MIXED CASES) (*.database.WINDOWS.net)", new object[] { AzureEndpointMixedCaseSample })]
+        [InlineData("Azure with Default Policy must Disable blocking (PORT) (*.database.WINDOWS.net,1234)", new object[] { AzureEndpointMixedCaseSample + "," + PortNumber })]
+        [InlineData("Azure with Default Policy must Disable blocking (INSTANCE NAME) (*.database.WINDOWS.net,1234\\InstanceName)", new object[] { AzureEndpointMixedCaseSample + "," + PortNumber + "\\" + InstanceName })]
+        [InlineData("Azure with Auto Policy must Disable Blocking", new object[] { AzureEndpointSample, PoolBlockingPeriod.Auto })]
+        [InlineData("Azure with Always Policy must Enable Blocking", new object[] { AzureEndpointSample, PoolBlockingPeriod.AlwaysBlock })]
+        [InlineData("Azure with Never Policy must Disable Blocking", new object[] { AzureEndpointSample, PoolBlockingPeriod.NeverBlock })]
         public void TestAzureBlockingPeriod(string description, object[] Params)
         {
             string serverName = Params[0] as string;
@@ -38,13 +46,13 @@ namespace System.Data.SqlClient.ManualTesting.Tests
             PoolBlockingPeriodAzureTest(connString, policy);
         }
 
-        [Theory]
-        [InlineData("NonAzure with Default Policy must Enable blocking", new object[] { "nonexistanceserver" })]
-        [InlineData("NonAzure with Auto Policy must Enable Blocking", new object[] { "nonexistanceserver", PoolBlockingPeriod.Auto })]
-        [InlineData("NonAzure with Always Policy must Enable Blocking", new object[] { "nonexistanceserver", PoolBlockingPeriod.AlwaysBlock })]
-        [InlineData("NonAzure with Never Policy must Disable Blocking", new object[] { "nonexistanceserver", PoolBlockingPeriod.NeverBlock })]
-        [InlineData("NonAzure (which contains azure endpoint - nonexistance.WINDOWS.net) with Default Policy must Enable Blocking", new object[] { "nonexistance.windows.net" })]
-        [InlineData("NonAzure (which contains azure endpoint - nonexistance.database.WINDOWS.net.else) with Default Policy must Enable Blocking", new object[] { "nonexistance.database.windows.net.else" })]
+        [ConditionalTheory(nameof(AreConnectionStringsSetup))]
+        [InlineData("NonAzure with Default Policy must Enable blocking", new object[] { NonExistentServer })]
+        [InlineData("NonAzure with Auto Policy must Enable Blocking", new object[] { NonExistentServer, PoolBlockingPeriod.Auto })]
+        [InlineData("NonAzure with Always Policy must Enable Blocking", new object[] { NonExistentServer, PoolBlockingPeriod.AlwaysBlock })]
+        [InlineData("NonAzure with Never Policy must Disable Blocking", new object[] { NonExistentServer, PoolBlockingPeriod.NeverBlock })]
+        [InlineData("NonAzure (which contains azure endpoint - nonexistent.WINDOWS.net) with Default Policy must Enable Blocking", new object[] { "nonexistent.windows.net" })]
+        [InlineData("NonAzure (which contains azure endpoint - nonexistent.database.windows.net.else) with Default Policy must Enable Blocking", new object[] { "nonexistent.database.windows.net.else" })]
         public void TestNonAzureBlockingPeriod(string description, object[] Params)
         {
             string serverName = Params[0] as string;
@@ -59,19 +67,15 @@ namespace System.Data.SqlClient.ManualTesting.Tests
             PoolBlockingPeriodNonAzureTest(connString, policy);
         }
 
-        [Theory]
-        [InlineData("Test policy with Auto (lowercase)", new object[] { "auto" })]
-        [InlineData("Test policy with Auto (miXedcase)", new object[] { "auTo" })]
-        [InlineData("Test policy with Auto (Pascalcase)", new object[] { "Auto" })]
-        [InlineData("Test policy with Always (lowercase)", new object[] { "alwaysblock" })]
-        [InlineData("Test policy with Always (miXedcase)", new object[] { "aLwAysBlock" })]
-        [InlineData("Test policy with Always (Pascalcase)", new object[] { "AlwaysBlock" })]
-        [InlineData("Test policy with Never (lowercase)", new object[] { "neverblock" })]
-        [InlineData("Test policy with Never (miXedcase)", new object[] { "neVeRblock" })]
-        [InlineData("Test policy with Never (Pascalcase)", new object[] { "NeverBlock" })]
-        public void TestSetPolicyWithVariations(string description, object[] Params)
+        [ConditionalTheory(nameof(AreConnectionStringsSetup))]
+        [InlineData("Test policy with Auto (lowercase)", "auto")]
+        [InlineData("Test policy with Auto (PascalCase)", "Auto")]
+        [InlineData("Test policy with Always (lowercase)", "alwaysblock")]
+        [InlineData("Test policy with Always (PascalCase)", "AlwaysBlock")]
+        [InlineData("Test policy with Never (lowercase)", "neverblock")]
+        [InlineData("Test policy with Never (PascalCase)", "NeverBlock")]
+        public void TestSetPolicyWithVariations(string description, string policyString)
         {
-            string policyString = Params[0] as string;
             PoolBlockingPeriod? policy = null;
             if (policyString.ToLower().Contains("auto"))
             {
@@ -85,7 +89,7 @@ namespace System.Data.SqlClient.ManualTesting.Tests
             {
                 policy = PoolBlockingPeriod.NeverBlock;
             }
-            string connString = $"{CreateConnectionString(_sampleAzureEndpoint, null)};{_policyKeyword}={policyString}";
+            string connString = $"{CreateConnectionString(AzureEndpointSample, null)};{PolicyKeyword}={policyString}";
             PoolBlockingPeriodAzureTest(connString, policy);
         }
 
@@ -97,10 +101,10 @@ namespace System.Data.SqlClient.ManualTesting.Tests
             {
                 case PoolBlockingPeriod.Auto:
                 case PoolBlockingPeriod.AlwaysBlock:
-                    Assert.InRange(secondErrorTimeInSecs, 0, firstErrorTimeInSecs + compareMargin);
+                    Assert.InRange(secondErrorTimeInSecs, 0, firstErrorTimeInSecs + CompareMargin);
                     break;
                 case PoolBlockingPeriod.NeverBlock:
-                    Assert.InRange(secondErrorTimeInSecs, 1, 2*connectionTimeout);
+                    Assert.InRange(secondErrorTimeInSecs, 1, 2 * ConnectionTimeout);
                     break;
             }
         }
@@ -112,11 +116,11 @@ namespace System.Data.SqlClient.ManualTesting.Tests
             switch (policy)
             {
                 case PoolBlockingPeriod.AlwaysBlock:
-                    Assert.InRange(secondErrorTimeInSecs, 0, firstErrorTimeInSecs + compareMargin);
+                    Assert.InRange(secondErrorTimeInSecs, 0, firstErrorTimeInSecs + CompareMargin);
                     break;
                 case PoolBlockingPeriod.Auto:
                 case PoolBlockingPeriod.NeverBlock:
-                    Assert.InRange(secondErrorTimeInSecs, 1, 2*connectionTimeout);
+                    Assert.InRange(secondErrorTimeInSecs, 1, 2 * ConnectionTimeout);
                     break;
             }
         }

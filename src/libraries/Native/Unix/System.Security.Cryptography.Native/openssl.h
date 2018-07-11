@@ -6,8 +6,7 @@
 #pragma once
 
 #include "pal_compiler.h"
-#include <openssl/x509.h>
-#include <openssl/x509v3.h>
+#include "opensslshim.h"
 
 DLLEXPORT int32_t CryptoNative_GetX509Thumbprint(X509* x509, uint8_t* pBuf, int32_t cBuf);
 
@@ -67,4 +66,4 @@ DLLEXPORT int32_t CryptoNative_LookupFriendlyNameByOid(const char* oidValue, con
 
 DLLEXPORT int32_t CryptoNative_EnsureOpenSslInitialized(void);
 
-DLLEXPORT char* CryptoNative_SSLEayVersion(void);
+DLLEXPORT uint32_t CryptoNative_OpenSslVersionNumber(void);

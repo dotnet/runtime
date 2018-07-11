@@ -36,6 +36,7 @@ using System.Diagnostics;
 using System.Text;
 using System.IO;
 using System.Collections.Specialized;
+using Gdip = System.Drawing.SafeNativeMethods.Gdip;
 
 namespace System.Drawing.Printing
 {
@@ -881,7 +882,7 @@ namespace System.Drawing.Printing
 
         internal static bool EndPage(GraphicsPrinter gr)
         {
-            SafeNativeMethods.Gdip.GdipGetPostScriptSavePage(gr.Hdc);
+            Gdip.GdipGetPostScriptSavePage(gr.Hdc);
             return true;
         }
 
@@ -915,7 +916,7 @@ namespace System.Drawing.Printing
                 height = psize.Height;
             }
 
-            SafeNativeMethods.Gdip.GdipGetPostScriptGraphicsContext(name,
+            Gdip.GdipGetPostScriptGraphicsContext(name,
                 width * 72 / 100,
                 height * 72 / 100,
                 default_page_settings.PrinterResolution.X,

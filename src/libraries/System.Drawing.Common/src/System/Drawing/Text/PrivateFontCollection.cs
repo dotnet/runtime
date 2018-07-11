@@ -6,6 +6,7 @@ using System.Diagnostics;
 using System.Runtime.InteropServices;
 using System.Globalization;
 using System.IO;
+using Gdip = System.Drawing.SafeNativeMethods.Gdip;
 
 namespace System.Drawing.Text
 {
@@ -19,8 +20,8 @@ namespace System.Drawing.Text
         /// </summary>
         public PrivateFontCollection() : base()
         {
-            int status = SafeNativeMethods.Gdip.GdipNewPrivateFontCollection(out _nativeFontCollection);
-            SafeNativeMethods.Gdip.CheckStatus(status);
+            int status = Gdip.GdipNewPrivateFontCollection(out _nativeFontCollection);
+            Gdip.CheckStatus(status);
         }
 
         /// <summary>
@@ -35,9 +36,9 @@ namespace System.Drawing.Text
 #if DEBUG
                     int status =
 #endif
-                    SafeNativeMethods.Gdip.GdipDeletePrivateFontCollection(ref _nativeFontCollection);
+                    Gdip.GdipDeletePrivateFontCollection(ref _nativeFontCollection);
 #if DEBUG
-                    Debug.Assert(status == SafeNativeMethods.Gdip.Ok, "GDI+ returned an error status: " + status.ToString(CultureInfo.InvariantCulture));
+                    Debug.Assert(status == Gdip.Ok, "GDI+ returned an error status: " + status.ToString(CultureInfo.InvariantCulture));
 #endif        
                 }
                 catch (Exception ex) when (!ClientUtils.IsSecurityOrCriticalException(ex))
@@ -79,8 +80,8 @@ namespace System.Drawing.Text
                 throw new FileNotFoundException();
             }
 
-            int status = SafeNativeMethods.Gdip.GdipPrivateAddFontFile(new HandleRef(this, _nativeFontCollection), fullPath);
-            SafeNativeMethods.Gdip.CheckStatus(status);
+            int status = Gdip.GdipPrivateAddFontFile(new HandleRef(this, _nativeFontCollection), fullPath);
+            Gdip.CheckStatus(status);
 
             // Register private font with GDI as well so pure GDI-based controls (TextBox, Button for instance) can access it.
             // This is a no-op on Unix which has GDI+ (libgdiplus), not GDI; and we don't have System.Windows.Forms
@@ -93,8 +94,8 @@ namespace System.Drawing.Text
         /// </summary>
         public void AddMemoryFont(IntPtr memory, int length)
         {
-            int status = SafeNativeMethods.Gdip.GdipPrivateAddMemoryFont(new HandleRef(this, _nativeFontCollection), new HandleRef(null, memory), length);
-            SafeNativeMethods.Gdip.CheckStatus(status);
+            int status = Gdip.GdipPrivateAddMemoryFont(new HandleRef(this, _nativeFontCollection), new HandleRef(null, memory), length);
+            Gdip.CheckStatus(status);
         }
     }
 }

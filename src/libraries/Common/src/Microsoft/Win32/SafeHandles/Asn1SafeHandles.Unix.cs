@@ -68,34 +68,6 @@ namespace Microsoft.Win32.SafeHandles
         }
     }
 
-    internal sealed class SafeAsn1StringHandle : SafeHandle
-    {
-        private SafeAsn1StringHandle() :
-            base(IntPtr.Zero, ownsHandle: true)
-        {
-        }
-
-        protected override bool ReleaseHandle()
-        {
-            Interop.Crypto.Asn1StringFree(handle);
-            SetHandle(IntPtr.Zero);
-            return true;
-        }
-
-        public override bool IsInvalid
-        {
-            get { return handle == IntPtr.Zero; }
-        }
-    }
-
-    internal sealed class SafeSharedAsn1StringHandle : SafeInteriorHandle
-    {
-        private SafeSharedAsn1StringHandle() :
-            base(IntPtr.Zero, ownsHandle: true)
-        {
-        }
-    }
-
     internal sealed class SafeSharedAsn1IntegerHandle : SafeInteriorHandle
     {
         private SafeSharedAsn1IntegerHandle() :

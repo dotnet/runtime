@@ -4,6 +4,7 @@
 
 using System.Drawing.Drawing2D;
 using System.Runtime.InteropServices;
+using Gdip = System.Drawing.SafeNativeMethods.Gdip;
 
 namespace System.Drawing
 {
@@ -17,8 +18,8 @@ namespace System.Drawing
             get
             {
                 IntPtr lineCap = IntPtr.Zero;
-                int status = SafeNativeMethods.Gdip.GdipGetPenCustomStartCap(new HandleRef(this, NativePen), out lineCap);
-                SafeNativeMethods.Gdip.CheckStatus(status);
+                int status = Gdip.GdipGetPenCustomStartCap(new HandleRef(this, NativePen), out lineCap);
+                Gdip.CheckStatus(status);
 
                 return CustomLineCap.CreateCustomLineCapObject(lineCap);
             }
@@ -29,9 +30,9 @@ namespace System.Drawing
                     throw new ArgumentException(SR.Format(SR.CantChangeImmutableObjects, nameof(Pen)));
                 }
 
-                int status = SafeNativeMethods.Gdip.GdipSetPenCustomStartCap(new HandleRef(this, NativePen),
+                int status = Gdip.GdipSetPenCustomStartCap(new HandleRef(this, NativePen),
                                                               new HandleRef(value, (value == null) ? IntPtr.Zero : value.nativeCap));
-                SafeNativeMethods.Gdip.CheckStatus(status);
+                Gdip.CheckStatus(status);
             }
         }
 
@@ -43,8 +44,8 @@ namespace System.Drawing
             get
             {
                 IntPtr lineCap = IntPtr.Zero;
-                int status = SafeNativeMethods.Gdip.GdipGetPenCustomEndCap(new HandleRef(this, NativePen), out lineCap);
-                SafeNativeMethods.Gdip.CheckStatus(status);
+                int status = Gdip.GdipGetPenCustomEndCap(new HandleRef(this, NativePen), out lineCap);
+                Gdip.CheckStatus(status);
                 return CustomLineCap.CreateCustomLineCapObject(lineCap);
             }
             set
@@ -54,10 +55,10 @@ namespace System.Drawing
                     throw new ArgumentException(SR.Format(SR.CantChangeImmutableObjects, nameof(Pen)));
                 }
 
-                int status = SafeNativeMethods.Gdip.GdipSetPenCustomEndCap(
+                int status = Gdip.GdipSetPenCustomEndCap(
                     new HandleRef(this, NativePen),
                     new HandleRef(value, (value == null) ? IntPtr.Zero : value.nativeCap));
-                SafeNativeMethods.Gdip.CheckStatus(status);
+                Gdip.CheckStatus(status);
             }
         }
     }
