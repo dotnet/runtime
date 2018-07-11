@@ -293,6 +293,9 @@ bool emitter::IsDstDstSrcAVXInstruction(instruction ins)
         case INS_unpcklps:
         case INS_unpckhpd:
         case INS_unpcklpd:
+        case INS_vblendvps:
+        case INS_vblendvpd:
+        case INS_vpblendvb:
         case INS_vfmadd132pd:
         case INS_vfmadd213pd:
         case INS_vfmadd231pd:
@@ -9382,7 +9385,8 @@ BYTE* emitter::emitOutputAM(BYTE* dst, instrDesc* id, code_t code, CnsVal* addc)
         {
             regNumber src1 = id->idReg2();
 
-            if ((id->idInsFmt() != IF_RWR_RRD_ARD) && (id->idInsFmt() != IF_RWR_RRD_ARD_CNS))
+            if ((id->idInsFmt() != IF_RWR_RRD_ARD) && (id->idInsFmt() != IF_RWR_RRD_ARD_CNS) &&
+                (id->idInsFmt() != IF_RWR_RRD_ARD_RRD))
             {
                 src1 = id->idReg1();
             }
