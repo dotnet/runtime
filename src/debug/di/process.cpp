@@ -6510,12 +6510,7 @@ HRESULT CordbProcess::GetThreadContext(DWORD threadID, ULONG32 contextSize, BYTE
                 *pContext = *managedContext;
             }
         }
-        EX_CATCH
-        {
-            hr = E_FAIL;
-        }
-        EX_END_CATCH(SwallowAllExceptions)
-
+        EX_CATCH_HRESULT(hr)
         return hr;
     }
 }
