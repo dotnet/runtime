@@ -1231,7 +1231,7 @@ BOOL StackFrameIterator::Init(Thread *    pThread,
     }
     INDEBUG(m_pRealStartFrame = m_crawl.pFrame);
 
-    if (m_crawl.pFrame != FRAME_TOP)
+    if (m_crawl.pFrame != FRAME_TOP && !(m_flags & SKIP_GSCOOKIE_CHECK))
     {
         m_crawl.SetCurGSCookie(Frame::SafeGetGSCookiePtr(m_crawl.pFrame));
     }
@@ -1324,7 +1324,7 @@ BOOL StackFrameIterator::ResetRegDisp(PREGDISPLAY pRegDisp,
         _ASSERTE(m_crawl.pFrame != NULL);
     }
 
-    if (m_crawl.pFrame != FRAME_TOP)
+    if (m_crawl.pFrame != FRAME_TOP && !(m_flags & SKIP_GSCOOKIE_CHECK))
     {
         m_crawl.SetCurGSCookie(Frame::SafeGetGSCookiePtr(m_crawl.pFrame));
     }
@@ -3151,7 +3151,7 @@ void StackFrameIterator::PreProcessingForManagedFrames(void)
                                                         &m_crawl.codeManState);
 #endif // !DACCESS_COMPILE
 
-    if (m_pCachedGSCookie)
+    if (!(m_flags & SKIP_GSCOOKIE_CHECK) && m_pCachedGSCookie)
     {
         m_crawl.SetCurGSCookie(m_pCachedGSCookie);
     }
