@@ -30,6 +30,8 @@ namespace System.Security.Cryptography.Pkcs
         public Oid Oid { get; set; }
 
         public int KeyLength { get; set; }
+
+        public byte[] Parameters { get; set; } = Array.Empty<byte>();
     }
 }
 
