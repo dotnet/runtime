@@ -791,7 +791,7 @@ jit_call_supported (MonoMethod *method, MonoMethodSignature *sig)
 	 * GSharedTests::call_async @ 16 "pop" || frame #20: 0x00000001027f187c test-Mono.Runtime.Tests`interp_exec_method_full(frame=0x000000016eee00d0, context=0x00000001c405e990, start_with_ip=0x0000000000000000, filter_exception=0x0000000000000000, exit_at_finally=-1, base_frame=0x0000000000000000) at interp.c:2909
 	 * GSharedTests::test_0_async_call_from_generic @ 8 "ldc.i4.0" || frame #21: 0x00000001027f187c test-Mono.Runtime.Tests`interp_exec_method_full(frame=0x000000016eee14f0, context=0x00000001c405e990, start_with_ip=0x0000000000000000, filter_exception=0x0000000000000000, exit_at_finally=-1, base_frame=0x0000000000000000) at interp.c:2909
 	 */
-	if (!strcmp (method->klass->name, "AsyncMethodBuilderCore"))
+	if (!strcmp (m_class_get_name (method->klass), "AsyncMethodBuilderCore"))
 		return FALSE;
 
 	if (mono_aot_only && m_class_get_image (method->klass)->aot_module) {
