@@ -1887,11 +1887,33 @@ void CodeGen::genAvxOrAvx2Intrinsic(GenTreeHWIntrinsic* node)
 
     if ((op1 != nullptr) && !op1->OperIsList())
     {
+        op1Reg = op1->gtRegNum;
         genConsumeOperands(node);
     }
 
     switch (intrinsicId)
     {
+        case NI_AVX2_ConvertToDouble:
+        {
+            assert(op2 == nullptr);
+            if (op1Reg != targetReg)
+            {
+                instruction ins = HWIntrinsicInfo::lookupIns(intrinsicId, baseType);
+                emit->emitIns_R_R(ins, emitTypeSize(targetType), targetReg, op1Reg);
+            }
+            break;
+        }
+
+        case NI_AVX2_ConvertToInt32:
+        case NI_AVX2_ConvertToUInt32:
+        {
+            assert(op2 == nullptr);
+            assert((baseType == TYP_INT) || (baseType == TYP_UINT));
+            instruction ins = HWIntrinsicInfo::lookupIns(intrinsicId, baseType);
+            emit->emitIns_R_R(ins, emitActualTypeSize(baseType), op1Reg, targetReg);
+            break;
+        }
+
         case NI_AVX_SetZeroVector256:
         {
             assert(op1 == nullptr);
@@ -1913,7 +1935,6 @@ void CodeGen::genAvxOrAvx2Intrinsic(GenTreeHWIntrinsic* node)
         {
             assert(op1 != nullptr);
             assert(op2 == nullptr);
-            op1Reg = op1->gtRegNum;
             if (varTypeIsIntegral(baseType))
             {
                 // If the argument is a integer, it needs to be moved into a XMM register
@@ -1977,7 +1998,6 @@ void CodeGen::genAvxOrAvx2Intrinsic(GenTreeHWIntrinsic* node)
             // to ensure that Bits MAXVL-1:128 are zeroed.
 
             assert(op2 == nullptr);
-            regNumber op1Reg = op1->gtRegNum;
             emit->emitIns_R_R(ins, emitTypeSize(TYP_SIMD16), targetReg, op1Reg);
             break;
         }
@@ -1985,8 +2005,6 @@ void CodeGen::genAvxOrAvx2Intrinsic(GenTreeHWIntrinsic* node)
         case NI_AVX_GetLowerHalf:
         {
             assert(op2 == nullptr);
-            regNumber op1Reg = op1->gtRegNum;
-
             if (op1Reg != targetReg)
             {
                 emit->emitIns_R_R(ins, emitTypeSize(TYP_SIMD32), targetReg, op1Reg);
@@ -2027,7 +2045,6 @@ void CodeGen::genAvxOrAvx2Intrinsic(GenTreeHWIntrinsic* node)
             if (numArgs == 2)
             {
                 assert(intrinsicId == NI_AVX_ExtractVector128 || NI_AVX_ExtractVector128);
-                op1Reg = op1->gtRegNum;
                 op2Reg = op2->gtRegNum;
                 lastOp = op2;
             }
