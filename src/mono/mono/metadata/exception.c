@@ -1217,6 +1217,9 @@ mono_error_raise_exception_deprecated (MonoError *target_error)
 gboolean
 mono_error_set_pending_exception (MonoError *error)
 {
+	if (is_ok (error))
+		return FALSE;
+
 	HANDLE_FUNCTION_ENTER ();
 
 	MonoExceptionHandle ex = mono_error_convert_to_exception_handle (error);
