@@ -926,6 +926,9 @@ interp_transform_call (TransformData *td, MonoMethod *method, MonoMethod *target
 	if (target_method) {
 		const char *tm = target_method->name;
 		int type_index = mono_class_get_magic_index (target_method->klass);
+		gboolean in_corlib = m_class_get_image (target_method->klass) == mono_defaults.corlib;
+		const char *klass_name_space = m_class_get_name_space (target_method->klass);
+		const char *klass_name = m_class_get_name (target_method->klass);
 
 		if (target_method->klass == mono_defaults.string_class) {
 			if (tm [0] == 'g') {
@@ -1079,13 +1082,15 @@ interp_transform_call (TransformData *td, MonoMethod *method, MonoMethod *target
 			} else if (!strcmp (tm, "Address")) {
 				op = readonly ? MINT_LDELEMA : MINT_LDELEMA_TC;
 			}
-		} else if (m_class_get_image (target_method->klass) == mono_defaults.corlib &&
-				(strcmp (m_class_get_name_space (target_method->klass), "System.Diagnostics") == 0) &&
-				(strcmp (m_class_get_name (target_method->klass), "Debugger") == 0)) {
+		} else if (in_corlib &&
+				   !strcmp (klass_name_space, "System.Diagnostics") &&
+				   !strcmp (klass_name, "Debugger")) {
 			if (!strcmp (tm, "Break") && csignature->param_count == 0) {
 				if (mini_should_insert_breakpoint (method))
 					op = MINT_BREAK;
 			}
+		} else if (in_corlib && !strcmp (klass_name_space, "System") && !strcmp (klass_name, "ByReference`1")) {
+			op = MINT_INTRINS_BYREFERENCE_GET_VALUE;
 		}
 	}
 no_intrinsic:
@@ -2930,6 +2935,13 @@ generate (MonoMethod *method, MonoMethodHeader *header, InterpMethod *rtm, unsig
 					ADD_CODE(td, MINT_NEWOBJ_ARRAY);
 					ADD_CODE(td, get_data_item_index (td, mono_interp_get_imethod (domain, m, error)));
 					ADD_CODE(td, csignature->param_count);
+				} else if (m_class_get_image (klass) == mono_defaults.corlib &&
+						!strcmp (m_class_get_name (m->klass), "ByReference`1") &&
+						!strcmp (m->name, ".ctor")) {
+					/* public ByReference(ref T value) */
+					g_assert (csignature->hasthis && csignature->param_count == 1);
+					ADD_CODE(td, MINT_INTRINS_BYREFERENCE_CTOR);
+					ADD_CODE(td, get_data_item_index (td, mono_interp_get_imethod (domain, m, error)));
 				} else if (klass != mono_defaults.string_class &&
 						!mono_class_is_marshalbyref (klass) &&
 						!mono_class_has_finalizer (klass) &&

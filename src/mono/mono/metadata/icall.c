@@ -837,6 +837,27 @@ ves_icall_System_Array_SetGenericValueImpl (MonoArray *arr, guint32 pos, gpointe
 }
 
 ICALL_EXPORT void
+ves_icall_System_Runtime_RuntimeImports_Memmove (guint8 *destination, guint8 *source, guint byte_count)
+{
+	mono_gc_memmove_atomic (destination, source, byte_count);
+}
+
+ICALL_EXPORT void
+ves_icall_System_Runtime_RuntimeImports_Memmove_wbarrier (guint8 *destination, guint8 *source, guint len, MonoType *type)
+{
+	if (MONO_TYPE_IS_REFERENCE (type))
+		mono_gc_wbarrier_arrayref_copy (destination, source, len);
+	else
+		mono_gc_wbarrier_value_copy (destination, source, len, mono_class_from_mono_type (type));
+}
+
+ICALL_EXPORT void
+ves_icall_System_Runtime_RuntimeImports_ZeroMemory (guint8 *p, guint byte_length)
+{
+	memset (p, 0, byte_length);
+}
+
+ICALL_EXPORT void
 ves_icall_System_Runtime_CompilerServices_RuntimeHelpers_InitializeArray (MonoArrayHandle array, MonoClassField *field_handle, MonoError *error)
 {
 	error_init (error);

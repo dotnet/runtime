@@ -74,6 +74,7 @@ mini_emit_inst_for_ctor (MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSignat
 	gboolean in_corlib = cmethod_klass_image == mono_defaults.corlib;
 	MonoInst *ins = NULL;
 
+	/* Required intrinsics are always used even with -O=-intrins */
 	if (in_corlib &&
 		!strcmp (cmethod_klass_name_space, "System") &&
 		!strcmp (cmethod_klass_name, "ByReference`1")) {
@@ -83,6 +84,13 @@ mini_emit_inst_for_ctor (MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSignat
 		return ins;
 	}
 
+	ins = mono_emit_native_types_intrinsics (cfg, cmethod, fsig, args);
+	if (ins)
+		return ins;
+
+	if (!(cfg->opt & MONO_OPT_INTRINS))
+		return NULL;
+
 #ifdef MONO_ARCH_SIMD_INTRINSICS
 	if (cfg->opt & MONO_OPT_SIMD) {
 		ins = mono_emit_simd_intrinsics (cfg, cmethod, fsig, args);
@@ -91,7 +99,7 @@ mini_emit_inst_for_ctor (MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSignat
 	}
 #endif
 
-	return mono_emit_native_types_intrinsics (cfg, cmethod, fsig, args);
+	return NULL;
 }
 
 static MonoInst*
@@ -257,6 +265,20 @@ mini_emit_inst_for_method (MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSign
 	const char* cmethod_klass_name = m_class_get_name (cmethod->klass);
 	MonoImage *cmethod_klass_image = m_class_get_image (cmethod->klass);
 	gboolean in_corlib = cmethod_klass_image == mono_defaults.corlib;
+
+	/* Required intrinsics are always used even with -O=-intrins */
+	if (in_corlib &&
+		!strcmp (cmethod_klass_name_space, "System") &&
+		!strcmp (cmethod_klass_name, "ByReference`1") &&
+		!strcmp (cmethod->name, "get_Value")) {
+		g_assert (fsig->hasthis && fsig->param_count == 0);
+		int dreg = alloc_preg (cfg);
+		EMIT_NEW_LOAD_MEMBASE (cfg, ins, OP_LOAD_MEMBASE, dreg, args [0]->dreg, 0);
+		return ins;
+	}
+
+	if (!(cfg->opt & MONO_OPT_INTRINS))
+		return NULL;
 
 	if (cmethod->klass == mono_defaults.string_class) {
 		if (strcmp (cmethod->name, "get_Chars") == 0 && fsig->param_count + fsig->hasthis == 2) {
@@ -1204,14 +1226,6 @@ mini_emit_inst_for_method (MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSign
 		args [1]->opcode = OP_ICONST;
 		ins = mini_handle_enum_has_flag (cfg, args [0]->klass, NULL, args [0]->sreg1, args [1]);
 		NULLIFY_INS (args [0]);
-		return ins;
-	} else if (in_corlib &&
-			   !strcmp (cmethod_klass_name_space, "System") &&
-			   !strcmp (cmethod_klass_name, "ByReference`1") &&
-			   !strcmp (cmethod->name, "get_Value")) {
-		g_assert (fsig->hasthis && fsig->param_count == 0);
-		int dreg = alloc_preg (cfg);
-		EMIT_NEW_LOAD_MEMBASE (cfg, ins, OP_LOAD_MEMBASE, dreg, args [0]->dreg, 0);
 		return ins;
 	} else if (in_corlib &&
 			   !strcmp (cmethod_klass_name_space, "System") &&

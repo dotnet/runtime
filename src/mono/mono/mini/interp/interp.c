@@ -3880,6 +3880,41 @@ interp_exec_method_full (InterpFrame *frame, ThreadContext *context, guint16 *st
 
 			MINT_IN_BREAK;
 		}
+		MINT_IN_CASE(MINT_INTRINS_BYREFERENCE_CTOR) {
+			MonoClass *newobj_class;
+			MonoMethodSignature *csig;
+			stackval valuetype_this;
+			guint32 token;
+			stackval retval;
+
+			frame->ip = ip;
+			token = * (guint16 *)(ip + 1);
+			ip += 2;
+
+			InterpMethod *cmethod = rtm->data_items [token];
+			csig = mono_method_signature (cmethod->method);
+			newobj_class = cmethod->method->klass;
+
+			g_assert (csig->hasthis);
+			sp -= csig->param_count;
+
+			gpointer arg0 = sp [0].data.p;
+
+			gpointer *byreference_this = (gpointer*)vt_sp;
+			*byreference_this = arg0;
+
+			/* Followed by a VTRESULT opcode which will push the result on the stack */
+			++sp;
+			MINT_IN_BREAK;
+			break;
+		}
+		MINT_IN_CASE(MINT_INTRINS_BYREFERENCE_GET_VALUE) {
+			gpointer *byreference_this = (gpointer*)sp [-1].data.p;
+			sp [-1].data.p = *byreference_this;
+			++ip;
+			MINT_IN_BREAK;
+			break;
+		}
 		MINT_IN_CASE(MINT_CASTCLASS)
 			c = rtm->data_items [*(guint16 *)(ip + 1)];
 			if ((o = sp [-1].data.p)) {
