@@ -283,7 +283,7 @@ int LinearScan::BuildCall(GenTreeCall* call)
             assert(regCount == curArgTabEntry->numRegs);
             for (unsigned int i = 0; i < regCount; i++)
             {
-                BuildUse(argNode, genRegMask(argNode->gtRegNum), i);
+                BuildUse(argNode, genRegMask(argNode->AsPutArgSplit()->GetRegNumByIdx(i)), i);
             }
             srcCount += regCount;
         }
