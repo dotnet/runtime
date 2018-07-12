@@ -2,6 +2,7 @@
 using System.Linq;
 using System.Threading.Tasks;
 using Mono.Cecil;
+using Mono.Linker.Tests.Extensions;
 using Mono.Linker.Tests.TestCases;
 using NUnit.Framework;
 
@@ -56,8 +57,25 @@ namespace Mono.Linker.Tests.TestCasesRunner {
 			var inputTask = Task.Run(() => inputCompiler.CompileTestIn (sandbox.InputDirectory, assemblyName, sourceFiles, commonReferences, mainAssemblyReferences, null, resources, additionalArguments));
 			var expectationsTask = Task.Run(() => expectationsCompiler.CompileTestIn (sandbox.ExpectationsDirectory, assemblyName, sourceFiles, expectationsCommonReferences, expectationsMainAssemblyReferences, new[] {"INCLUDE_EXPECTATIONS"}, resources, additionalArguments));
 
-			var inputAssemblyPath = GetResultOfTaskThatMakesNUnitAssertions (inputTask);
-			var expectationsAssemblyPath = GetResultOfTaskThatMakesNUnitAssertions (expectationsTask);
+			NPath inputAssemblyPath = null;
+			NPath expectationsAssemblyPath = null;
+			try {
+				inputAssemblyPath = GetResultOfTaskThatMakesNUnitAssertions (inputTask);
+				expectationsAssemblyPath = GetResultOfTaskThatMakesNUnitAssertions (expectationsTask);
+			} catch (Exception) {
+				// If completing the input assembly task threw, we need to wait for the expectations task to complete before continuing
+				// otherwise we could set the next test up for a race condition with the expectations compiliation over access to the sandbox directory
+				if (inputAssemblyPath == null && expectationsAssemblyPath == null)
+				{
+					try {
+						expectationsTask.Wait ();
+					} catch (Exception) {
+						// Don't care, we want to throw the first exception
+					}
+				}
+				
+				throw;
+			}
 			return new ManagedCompilationResult (inputAssemblyPath, expectationsAssemblyPath);
 		}
 
