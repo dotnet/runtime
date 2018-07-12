@@ -1055,13 +1055,17 @@ GenTree* Lowering::NewPutArg(GenTreeCall* call, GenTree* arg, fgArgTabEntry* inf
         putArg = new (comp, GT_PUTARG_SPLIT)
             GenTreePutArgSplit(arg, info->slotNum PUT_STRUCT_ARG_STK_ONLY_ARG(info->numSlots), info->numRegs,
                                call->IsFastTailCall(), call);
-        putArg->gtRegNum = info->regNum;
 
         // If struct argument is morphed to GT_FIELD_LIST node(s),
         // we can know GC info by type of each GT_FIELD_LIST node.
         // So we skip setting GC Pointer info.
         //
         GenTreePutArgSplit* argSplit = putArg->AsPutArgSplit();
+        for (unsigned regIndex = 0; regIndex < info->numRegs; regIndex++)
+        {
+            argSplit->SetRegNumByIdx(info->getRegNum(regIndex), regIndex);
+        }
+
         if (arg->OperGet() == GT_OBJ)
         {
             BYTE*       gcLayout = nullptr;

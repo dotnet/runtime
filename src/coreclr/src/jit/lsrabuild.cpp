@@ -401,7 +401,7 @@ void LinearScan::applyCalleeSaveHeuristics(RefPosition* rp)
 //    incorrectly allocate that register.
 //    TODO-CQ: This means that we may often require a copy at the use of this node's result.
 //    This case could be moved to BuildRefPositionsForNode, at the point where the def RefPosition is
-//    created, causing a RefTypeFixedRef to be added at that location. This, however, results in
+//    created, causing a RefTypeFixedReg to be added at that location. This, however, results in
 //    more PhysReg RefPositions (a throughput impact), and a large number of diffs that require
 //    further analysis to determine benefit.
 //    See Issue #11274.
@@ -516,12 +516,16 @@ RefPosition* LinearScan::newRefPosition(
 {
     RefPosition* newRP = newRefPositionRaw(theLocation, theTreeNode, theRefType);
 
-    newRP->setReg(getRegisterRecord(reg));
+    RegRecord* regRecord = getRegisterRecord(reg);
+    newRP->setReg(regRecord);
     newRP->registerAssignment = mask;
 
     newRP->setMultiRegIdx(0);
     newRP->setAllocateIfProfitable(false);
 
+    // We can't have two RefPositions on a RegRecord at the same location, unless they are different types.
+    assert((regRecord->lastRefPosition == nullptr) || (regRecord->lastRefPosition->nodeLocation < theLocation) ||
+           (regRecord->lastRefPosition->refType != theRefType));
     associateRefPosWithInterval(newRP);
 
     DBEXEC(VERBOSE, newRP->dump());
@@ -579,8 +583,9 @@ RefPosition* LinearScan::newRefPosition(Interval*    theInterval,
     bool insertFixedRef  = false;
     if (isFixedRegister)
     {
-        // Insert a RefTypeFixedReg for any normal def or use (not ParamDef or BB)
-        if (theRefType == RefTypeUse || theRefType == RefTypeDef)
+        // Insert a RefTypeFixedReg for any normal def or use (not ParamDef or BB),
+        // but not an internal use (it will already have a FixedRef for the def).
+        if ((theRefType == RefTypeDef) || ((theRefType == RefTypeUse) && !theInterval->isInternal))
         {
             insertFixedRef = true;
         }
@@ -2322,6 +2327,12 @@ RefPosition* LinearScan::BuildDef(GenTree* tree, regMaskTP dstCandidates, int mu
 {
     assert(!tree->isContained());
     RegisterType type = getDefType(tree);
+
+    if (dstCandidates != RBM_NONE)
+    {
+        assert((tree->gtRegNum == REG_NA) || (dstCandidates == genRegMask(tree->GetRegByIndex(multiRegIdx))));
+    }
+
 #ifdef FEATURE_MULTIREG_ARGS_OR_RET
     if (tree->TypeGet() == TYP_STRUCT)
     {
@@ -2501,10 +2512,6 @@ RefPosition* LinearScan::BuildUse(GenTree* operand, regMaskTP candidates, int mu
     Interval* interval;
     bool      regOptional = operand->IsRegOptional();
 
-    if (operand->gtRegNum != REG_NA)
-    {
-        candidates = genRegMask(operand->gtRegNum);
-    }
     if (isCandidateLocalRef(operand))
     {
         interval = getIntervalForLocalVarNode(operand->AsLclVarCommon());
