@@ -58,6 +58,7 @@ namespace Microsoft.CSharp.RuntimeBinder.Tests
         }
 
         [Fact]
+        [ActiveIssue(31032, TargetFrameworkMonikers.NetFramework)]
         public void FailBindOnlyVarargsAvailable()
         {
             dynamic d = new HasVarargs();
@@ -73,6 +74,7 @@ namespace Microsoft.CSharp.RuntimeBinder.Tests
         }
 
         [Fact]
+        [ActiveIssue(31032, TargetFrameworkMonikers.NetFramework)]
         public void CorrectNullaryOverload()
         {
             dynamic d = new HasVarargs();
@@ -80,6 +82,7 @@ namespace Microsoft.CSharp.RuntimeBinder.Tests
         }
 
         [Fact]
+        [ActiveIssue(31032, TargetFrameworkMonikers.NetFramework)]
         public void CorrectUnaryOverload()
         {
             dynamic d = new HasVarargs();
@@ -94,6 +97,7 @@ namespace Microsoft.CSharp.RuntimeBinder.Tests
         }
 
         [Fact]
+        [ActiveIssue(31032, TargetFrameworkMonikers.NetFramework)]
         public void CorrectBinaryOverload()
         {
             dynamic d = new HasVarargs();
@@ -102,6 +106,7 @@ namespace Microsoft.CSharp.RuntimeBinder.Tests
         }
 
         [Fact]
+        [ActiveIssue(31032, TargetFrameworkMonikers.NetFramework)]
         public void CorrectCtor()
         {
             dynamic d = 19;

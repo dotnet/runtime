@@ -13,6 +13,7 @@ using Xunit;
 
 namespace Microsoft.CSharp.RuntimeBinder.Tests
 {
+    [ActiveIssue(31032, TargetFrameworkMonikers.NetFramework)]
     public class RuntimeBinderTests
     {
         [Fact]

@@ -79,6 +79,7 @@ namespace Microsoft.CSharp.RuntimeBinder.Tests
         }
 
         [Fact]
+        [ActiveIssue(31032, TargetFrameworkMonikers.NetFramework)]
         public void ClassInterfaceExplicitConversion()
         {
             AssertExplicitConvert(new SealedClass(), default(IInterface), ExpectedConversionResult.CompileError);
@@ -109,6 +110,7 @@ namespace Microsoft.CSharp.RuntimeBinder.Tests
         }
 
         [Fact]
+        [ActiveIssue(31032, TargetFrameworkMonikers.NetFramework)]
         public void ClassInterfaceArrayElementExplicitConversions()
         {
             AssertExplicitConvert(new SealedClass[0], default(IInterface[]), ExpectedConversionResult.CompileError);
@@ -129,6 +131,7 @@ namespace Microsoft.CSharp.RuntimeBinder.Tests
         }
 
         [Fact]
+        [ActiveIssue(31032, TargetFrameworkMonikers.NetFramework)]
         public void ClassInterfaceArrayIListElementExplicitConversions()
         {
             AssertExplicitConvert(new SealedClass[0], default(IList<IInterface>), ExpectedConversionResult.CompileError);

@@ -104,6 +104,7 @@ namespace Microsoft.CSharp.RuntimeBinder.Tests
         [MemberData(nameof(Int64TestOnesComplements))]
         [MemberData(nameof(UInt64TestUnaryPluses))]
         [MemberData(nameof(UInt64TestOnesComplements))]
+        [ActiveIssue(31032, TargetFrameworkMonikers.NetFramework)]
         public void ConstantExpressions(object x, ExpressionType type, object result, bool shouldSucceedChecked)
         {
             var callsite = GetUnaryOperationCallSite(type, false, true);

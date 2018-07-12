@@ -9,6 +9,7 @@ using Xunit;
 
 namespace Microsoft.CSharp.RuntimeBinder.Tests
 {
+    [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework, "It is asserting for exception messages and they vary in between .NET Core and NETFX")]
     public class NamedArgumentTests
     {
         public class TypeWithMethods

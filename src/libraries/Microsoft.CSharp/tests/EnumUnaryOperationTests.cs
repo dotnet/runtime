@@ -115,6 +115,7 @@ namespace Microsoft.CSharp.RuntimeBinder.Tests
         [MemberData(nameof(Int32Enums))]
         [MemberData(nameof(UInt32Enums))]
         [MemberData(nameof(Int64Enums))]
+        [ActiveIssue(31032, TargetFrameworkMonikers.NetFramework)]
         public void ConstantEnumOnesComplement(object operand, object result)
         {
             CallSite<Func<CallSite, object, object>> cs = CallSite<Func<CallSite, object, object>>.Create(
@@ -130,6 +131,7 @@ namespace Microsoft.CSharp.RuntimeBinder.Tests
         [MemberData(nameof(Int32Enums))]
         [MemberData(nameof(UInt32Enums))]
         [MemberData(nameof(Int64Enums))]
+        [ActiveIssue(31032, TargetFrameworkMonikers.NetFramework)]
         public void ConstantCheckedEnumOnesComplement(object operand, object result)
         {
             CallSite<Func<CallSite, object, object>> cs = CallSite<Func<CallSite, object, object>>.Create(
