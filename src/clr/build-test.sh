@@ -187,7 +187,23 @@ generate_layout()
     if [ ! -f "${__BuildToolsDir}/Microsoft.CSharp.targets" ]; then
         ln -s "${__BuildToolsDir}/Microsoft.CSharp.Targets" "${__BuildToolsDir}/Microsoft.CSharp.targets"
     fi
+
 }
+
+generate_testhost()
+{
+    export TEST_HOST=$xUnitTestBinBase/testhost
+
+    if [ -d "${TEST_HOST}" ]; then
+        rm -rf $TEST_HOST
+    fi
+
+    echo "${__MsgPrefix}Creating test overlay..."    
+    mkdir -p $TEST_HOST
+
+    build_Tests_internal "Tests_Generate_TestHost" "${__ProjectDir}/tests/runtest.proj" "-testHost" "Creating test host"
+}
+
 
 build_Tests()
 {
@@ -510,6 +526,7 @@ __RunTests=0
 __RebuildTests=0
 __BuildTestWrappers=0
 __GenerateLayoutOnly=
+__GenerateTestHostOnly=
 __priority1=
 CORE_ROOT=
 
@@ -641,11 +658,9 @@ while :; do
         generatelayoutonly)
             __GenerateLayoutOnly=1
             ;;
-
         generatetesthostonly)
-            exit 0
+            __GenerateTestHostOnly=1
             ;;
-
         buildagainstpackages)
             __BuildAgainstPackagesArg=1
             ;;
@@ -745,14 +760,21 @@ fi
 # Specify path to be set for CMAKE_INSTALL_PREFIX.
 # This is where all built CoreClr libraries will copied to.
 export __CMakeBinDir="$__BinDir"
+if [ [ ! -d "$__BinDir" ] || [ ! -d "$__BinDir/bin" ] ]; then
+    if [ [ -z "$__GenerateLayoutOnly" ] && [ -z "$__GenerateTestHostOnly" ] ]; then
 
-if [ ! -d "$__BinDir" ] || [ ! -d "$__BinDir/bin" ]; then
-
-    echo "Cannot find build directory for the CoreCLR Product or native tests."
-    echo "Please make sure CoreCLR and native tests are built before building managed tests."
-    echo "Example use: './build.sh $__BuildArch $__BuildType' without -skiptests switch"
+        echo "Cannot find build directory for the CoreCLR native tests."
+        echo "Please make sure native tests are built before building managed tests."
+        echo "Example use: './build.sh $__BuildArch $__BuildType' without -skiptests switch"
+    else
+        echo "Cannot find build directory for the CoreCLR Product."
+        echo "Please make sure CoreCLR and native tests are built before building managed tests."
+        echo "Example use: './build.sh $__BuildArch $__BuildType' "
+        fi
     exit 1
 fi
+
+
 
 # Configure environment if we are doing a cross compile.
 if [ $__CrossBuild == 1 ]; then
@@ -770,12 +792,17 @@ initTargetDistroRid
 __CoreClrVersion=1.1.0
 __sharedFxDir=$__BuildToolsDir/dotnetcli/shared/Microsoft.NETCore.App/$__CoreClrVersion/
 
-echo "Building Tests..."
 
-if [ -z "$__GenerateLayoutOnly" ]; then
+if [[ (-z "$__GenerateLayoutOnly") && (-z "$__GenerateTestHostOnly") ]]; then
+    echo "Building Tests..."
     build_Tests
 else
+    echo "Generating test layout..."
     generate_layout
+    if [ ! -z "$__GenerateTestHostOnly" ]; then
+        echo "Generating test host..."        
+        generate_testhost
+    fi
 fi
 
 if [ $? -ne 0 ]; then
