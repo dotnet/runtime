@@ -5782,6 +5782,13 @@ bool Compiler::optNarrowTree(GenTree* tree, var_types srct, var_types dstt, Valu
             case GT_IND:
 
             NARROW_IND:
+
+                if ((dstSize > genTypeSize(tree->gtType)) &&
+                    (varTypeIsUnsigned(dstt) && !varTypeIsUnsigned(tree->gtType)))
+                {
+                    return false;
+                }
+
                 /* Simply change the type of the tree */
 
                 if (doit && (dstSize <= genTypeSize(tree->gtType)))
@@ -5839,9 +5846,11 @@ bool Compiler::optNarrowTree(GenTree* tree, var_types srct, var_types dstt, Valu
                     {
                         dstt = genSignedType(dstt);
 
-                        if (oprSize == dstSize)
+                        if ((oprSize == dstSize) &&
+                            ((varTypeIsUnsigned(dstt) == varTypeIsUnsigned(oprt)) || !varTypeIsSmall(dstt)))
                         {
-                            // Same size: change the CAST into a NOP
+                            // Same size and there is no signedness mismatch for small types: change the CAST
+                            // into a NOP
                             tree->ChangeOper(GT_NOP);
                             tree->gtType     = dstt;
                             tree->gtOp.gtOp2 = nullptr;
@@ -5849,8 +5858,7 @@ bool Compiler::optNarrowTree(GenTree* tree, var_types srct, var_types dstt, Valu
                         }
                         else
                         {
-                            // oprSize is smaller
-                            assert(oprSize < dstSize);
+                            // oprSize is smaller or there is a signedness mismatch for small types
 
                             // Change the CastToType in the GT_CAST node
                             tree->CastToType() = dstt;
