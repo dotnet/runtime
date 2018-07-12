@@ -2281,17 +2281,17 @@ namespace System.Data.SqlClient
                             {
                                 return false;
                             }
+                            
+                            // Give the parser the new collation values in case parameters don't specify one
+                            _defaultCollation = env.newCollation;
 
                             // UTF8 collation
                             if ((env.newCollation.info & TdsEnums.UTF8_IN_TDSCOLLATION) == TdsEnums.UTF8_IN_TDSCOLLATION)
                             {
                                 _defaultEncoding = Encoding.UTF8;
-                                _defaultCollation = env.newCollation;
                             }
                             else
                             {
-                                // give the parser the new collation values in case parameters don't specify one
-                                _defaultCollation = env.newCollation;
                                 int newCodePage = GetCodePage(env.newCollation, stateObj);
                                 if (newCodePage != _defaultCodePage)
                                 {
@@ -3263,7 +3263,7 @@ namespace System.Data.SqlClient
                 {
                     int codePage = GetCodePage(rec.collation, stateObj);
 
-                    // if the column lcid is the same as the default, use the default encoder
+                    // If the column lcid is the same as the default, use the default encoder
                     if (codePage == _defaultCodePage)
                     {
                         rec.codePage = _defaultCodePage;
