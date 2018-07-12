@@ -3857,7 +3857,7 @@ RelativePath=baseservices\threading\regressions\beta2\437044\437044.cmd
 WorkingDir=baseservices\threading\regressions\beta2\437044
 Expected=0
 MaxAllowedDurationSeconds=600
-Categories=EXPECTED_PASS;Pri1
+Categories=EXPECTED_PASS;Pri1;15381;GCSTRESS_EXCLUDE
 HostStyle=0
 
 [test489437.cmd_482]
@@ -5289,7 +5289,7 @@ RelativePath=CoreMangLib\cti\system\array\ArraySort3b\ArraySort3b.cmd
 WorkingDir=CoreMangLib\cti\system\array\ArraySort3b
 Expected=0
 MaxAllowedDurationSeconds=600
-Categories=Pri1;RT;EXPECTED_PASS
+Categories=Pri1;RT;EXPECTED_PASS;15381;GCSTRESS_EXCLUDE
 HostStyle=0
 
 [ArraySort4.cmd_663]
@@ -17993,7 +17993,7 @@ RelativePath=CoreMangLib\cti\system\string\StringCompare9\StringCompare9.cmd
 WorkingDir=CoreMangLib\cti\system\string\StringCompare9
 Expected=0
 MaxAllowedDurationSeconds=600
-Categories=Pri1;RT;EXPECTED_PASS
+Categories=Pri1;RT;EXPECTED_PASS;15381;GCSTRESS_EXCLUDE
 HostStyle=0
 
 [StringCompareOrdinal1.cmd_2464]
@@ -18137,7 +18137,7 @@ RelativePath=CoreMangLib\cti\system\string\StringEquals6\StringEquals6.cmd
 WorkingDir=CoreMangLib\cti\system\string\StringEquals6
 Expected=0
 MaxAllowedDurationSeconds=600
-Categories=Pri1;RT;EXPECTED_PASS
+Categories=Pri1;RT;EXPECTED_PASS;15381;GCSTRESS_EXCLUDE
 HostStyle=0
 
 [StringFormat1.cmd_2482]
@@ -57961,7 +57961,7 @@ RelativePath=JIT\Methodical\refany\_speed_dbgstress1\_speed_dbgstress1.cmd
 WorkingDir=JIT\Methodical\refany\_speed_dbgstress1
 Expected=0
 MaxAllowedDurationSeconds=600
-Categories=EXPECTED_PASS
+Categories=EXPECTED_PASS;15381;GCSTRESS_EXCLUDE
 HostStyle=0
 
 [_speed_dbgstress3.cmd_7563]
@@ -68593,7 +68593,7 @@ RelativePath=JIT\Regression\CLR-x86-JIT\V2.0-Beta2\b426654\b426654\b426654.cmd
 WorkingDir=JIT\Regression\CLR-x86-JIT\V2.0-Beta2\b426654\b426654
 Expected=0
 MaxAllowedDurationSeconds=600
-Categories=EXPECTED_PASS
+Categories=EXPECTED_PASS;15381;GCSTRESS_EXCLUDE
 HostStyle=0
 
 [b441487.cmd_8927]
