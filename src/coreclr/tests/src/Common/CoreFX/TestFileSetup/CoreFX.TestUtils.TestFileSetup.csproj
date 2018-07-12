@@ -1,6 +1,7 @@
 <Project Sdk="Microsoft.NET.Sdk">
   <Import Project="..\..\..\..\..\dependencies.props" />
   <PropertyGroup>
+    <GenerateAssemblyInfo>false</GenerateAssemblyInfo>
     <SystemCommandLineVersion>0.1.0-e160909-1</SystemCommandLineVersion>
     <NewtonsoftJsonVersion>11.0.2</NewtonsoftJsonVersion>
     <NewtonsoftJsonSchemaVersion>3.0.10</NewtonsoftJsonSchemaVersion>

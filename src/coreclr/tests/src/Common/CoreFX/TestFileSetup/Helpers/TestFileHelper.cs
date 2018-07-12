@@ -248,7 +248,7 @@ namespace CoreFX.TestUtils.TestFileSetup.Helpers
                 // Check URL for validity
                 if (!Uri.IsWellFormedUriString(payloadUri, UriKind.Absolute))
                     continue;
-
+                Console.WriteLine("Downloading " + testName + " from " + payloadUri);
                 // Download tests from specified URL
                 using (var response = await HttpClient.GetStreamAsync(payloadUri))
                 {

@@ -1,48 +1,208 @@
-// The expected format of this file can be found at https://github.com/dotnet/coreclr/blob/master/Documentation/building/testing-with-corefx.md
 [
     {
-        "name": "System.Collections.Tests",
+        "name": "System.Diagnostics.DiagnosticSource.Tests",
+        "enabled": true,
         "exclusions": {
             "namespaces": null,
             "classes": null,
             "methods": [
                 {
-                    "name": "System.Collections.Tests.SortedList_Generic_Tests_string_string.ICollection_Generic_Remove_DefaultValueContainedInCollection",
-                    "reason": "Exclusion Sample"
+                    "name": "System.Diagnostics.Tests.DiagnosticSourceEventSourceBridgeTests.TestShortcutKeywords",
+                    "reason": "Xunit.Sdk.EqualException Assert.Equal() Failure\\n          ↓ (pos 0)\\nExpected: Activity1Start\\nActual:   Event\\n          ↑ (pos 0)"
                 }
             ]
         }
     },
     {
-        "name": "System.Runtime.Extensions.Tests",
+        "name": "System.Diagnostics.Tracing.Tests",
+        "enabled": true,
         "exclusions": {
             "namespaces": null,
             "classes": null,
-            "methods": []
+            "methods": [
+                {
+                    "name": "BasicEventSourceTests.TestsUserErrors.Test_BadEventSource_MismatchedIds",
+                    "reason": "Xunit.Sdk.EqualException Assert.Equal() Failure\\nExpected: 2\\nActual:   1"
+                }
+            ]
         }
     },
     {
-        "name": "System.Runtime.Tests",
+        "name": "System.Drawing.Common.Tests",
+        "enabled": true,
         "exclusions": {
             "namespaces": null,
             "classes": null,
-            "methods": []
+            "methods": [
+                {
+                    "name": "System.Drawing.Tests.GraphicsTests.InterpolationMode_SetInvalid_ThrowsInvalidEnumArgumentException",
+                    "reason": "Xunit.Sdk.ThrowsException Assert.Throws() Failure\\nExpected: typeof(System.ComponentModel.InvalidEnumArgumentException)\\nActual:   typeof(System.ComponentModel.InvalidEnumArgumentException): The value of argument 'value' (-2) is invalid for Enum type 'InterpolationMode'.\\nParameter name: value"
+                },
+                {
+                    "name": "System.Drawing.Tests.GraphicsTests.CompositingQuality_SetInvalid_ThrowsInvalidEnumArgumentException",
+                    "reason": "Xunit.Sdk.ThrowsException Assert.Throws() Failure\\nExpected: typeof(System.ComponentModel.InvalidEnumArgumentException)\\nActual:   typeof(System.ComponentModel.InvalidEnumArgumentException): The value of argument 'value' (-2) is invalid for Enum type 'CompositingQuality'.\\nParameter name: value"
+                },
+                {
+                    "name": "System.Drawing.Tests.GraphicsTests.PixelOffsetMode_SetInvalid_ThrowsInvalidEnumArgumentException",
+                    "reason": "Xunit.Sdk.ThrowsException Assert.Throws() Failure\\nExpected: typeof(System.ComponentModel.InvalidEnumArgumentException)\\nActual:   typeof(System.ComponentModel.InvalidEnumArgumentException): The value of argument 'value' (-2) is invalid for Enum type 'PixelOffsetMode'.\\nParameter name: value"
+                },
+                {
+                    "name": "System.Drawing.Tests.GraphicsTests.PageUnit_SetInvalid_ThrowsInvalidEnumArgumentException",
+                    "reason": "Xunit.Sdk.ThrowsException Assert.Throws() Failure\\nExpected: typeof(System.ComponentModel.InvalidEnumArgumentException)\\nActual:   typeof(System.ComponentModel.InvalidEnumArgumentException): The value of argument 'value' (-1) is invalid for Enum type 'GraphicsUnit'.\\nParameter name: value"
+                },
+                {
+                    "name": "System.Drawing.Tests.GraphicsTests.SmoothingMode_SetInvalid_ThrowsInvalidEnumArgumentException",
+                    "reason": "Xunit.Sdk.ThrowsException Assert.Throws() Failure\\nExpected: typeof(System.ComponentModel.InvalidEnumArgumentException)\\nActual:   typeof(System.ComponentModel.InvalidEnumArgumentException): The value of argument 'value' (-2) is invalid for Enum type 'SmoothingMode'.\\nParameter name: value"
+                },
+                {
+                    "name": "System.Drawing.Tests.GraphicsTests.CompositingMode_SetInvalid_ThrowsInvalidEnumArgumentException",
+                    "reason": "Xunit.Sdk.ThrowsException Assert.Throws() Failure\\nExpected: typeof(System.ComponentModel.InvalidEnumArgumentException)\\nActual:   typeof(System.ComponentModel.InvalidEnumArgumentException): The value of argument 'value' (-1) is invalid for Enum type 'CompositingMode'.\\nParameter name: value"
+                },
+                {
+                    "name": "System.Drawing.Tests.GraphicsTests.TextRenderingHint_SetInvalid_ThrowsInvalidEnumArgumentException",
+                    "reason": "Xunit.Sdk.ThrowsException Assert.Throws() Failure\\nExpected: typeof(System.ComponentModel.InvalidEnumArgumentException)\\nActual:   typeof(System.ComponentModel.InvalidEnumArgumentException): The value of argument 'value' (-1) is invalid for Enum type 'TextRenderingHint'.\\nParameter name: value"
+                }
+            ]
         }
     },
     {
-        "name": "System.Threading.Tasks.Tests",
+        "name": "System.IO.Pipes.Tests",
+        "enabled": true,
         "exclusions": {
             "namespaces": null,
             "classes": null,
-            "methods": []
+            "methods": [
+                {
+                    "name": "System.IO.Pipes.Tests.NamedPipeTest_Simple_ServerInOutRead_ClientInOutWrite.Server_ReadWriteCancelledToken_Throws_OperationCanceledException",
+                    "reason": "https://github.com/dotnet/corefx/issues/16934"
+                },
+                {
+                    "name": "System.IO.Pipes.Tests.NamedPipeTest_Simple_ServerInOutWrite_ClientInOutRead.Server_ReadWriteCancelledToken_Throws_OperationCanceledException",
+                    "reason": "https://github.com/dotnet/corefx/issues/16934"
+                },
+                {
+                    "name": "System.IO.Pipes.Tests.NamedPipeTest_Simple_ServerInOut_ClientIn.Server_ReadWriteCancelledToken_Throws_OperationCanceledException",
+                    "reason": "https://github.com/dotnet/corefx/issues/16934"
+                },
+                {
+                    "name": "System.IO.Pipes.Tests.NamedPipeTest_Simple_ServerInOut_ClientOut.Server_ReadWriteCancelledToken_Throws_OperationCanceledException",
+                    "reason": "https://github.com/dotnet/corefx/issues/16934"
+                },
+                {
+                    "name": "System.IO.Pipes.Tests.NamedPipeTest_Simple_ServerOut_ClientIn.Server_ReadWriteCancelledToken_Throws_OperationCanceledException",
+                    "reason": "https://github.com/dotnet/corefx/issues/16934"
+                },
+                {
+                    "name": "System.IO.Pipes.Tests.NamedPipeTest_Simple_ServerIn_ClientOut.Server_ReadWriteCancelledToken_Throws_OperationCanceledException",
+                    "reason": "https://github.com/dotnet/corefx/issues/16934"
+                },
+                {
+                    "name": "System.IO.Pipes.Tests.NamedPipeTest_Simple_ServerInOutRead_ClientInOutWrite.Client_ReadWriteCancelledToken_Throws_OperationCanceledException",
+                    "reason": "https://github.com/dotnet/corefx/issues/16934"
+                },
+                {
+                    "name": "System.IO.Pipes.Tests.NamedPipeTest_Simple_ServerInOutWrite_ClientInOutRead.Client_ReadWriteCancelledToken_Throws_OperationCanceledException",
+                    "reason": "https://github.com/dotnet/corefx/issues/16934"
+                },
+                {
+                    "name": "System.IO.Pipes.Tests.NamedPipeTest_Simple_ServerInOut_ClientIn.Client_ReadWriteCancelledToken_Throws_OperationCanceledException",
+                    "reason": "https://github.com/dotnet/corefx/issues/16934"
+                },
+                {
+                    "name": "System.IO.Pipes.Tests.NamedPipeTest_Simple_ServerInOut_ClientOut.Client_ReadWriteCancelledToken_Throws_OperationCanceledException",
+                    "reason": "https://github.com/dotnet/corefx/issues/16934"
+                },
+                {
+                    "name": "System.IO.Pipes.Tests.NamedPipeTest_Simple_ServerOut_ClientIn.Client_ReadWriteCancelledToken_Throws_OperationCanceledException",
+                    "reason": "https://github.com/dotnet/corefx/issues/16934"
+                },
+                {
+                    "name": "System.IO.Pipes.Tests.NamedPipeTest_Simple_ServerIn_ClientOut.Client_ReadWriteCancelledToken_Throws_OperationCanceledException",
+                    "reason": "https://github.com/dotnet/corefx/issues/16934"
+                }
+            ]
+        }
+    },
+    {
+        "name": "System.Net.Http.Functional.Tests",
+        "enabled": true,
+        "exclusions": {
+            "namespaces": null,
+            "classes": null,
+            "methods": [
+                {
+                    "name": "System.Net.Http.Functional.Tests.PlatformHandler_DiagnosticsTest.SendAsync_ExpectedDiagnosticSourceActivityLogging",
+                    "reason": "System.Diagnostics.RemoteExecutorTestBase+RemoteInvokeHandle+RemoteExecutionException System.Diagnostics.RemoteExecutorTestBase+RemoteInvokeHandle+RemoteExecutionException : Remote process failed with an unhandled exception."
+                },
+                {
+                    "name": "System.Net.Http.Functional.Tests.SocketsHttpHandler_DiagnosticsTest.SendAsync_ExpectedDiagnosticSourceActivityLogging",
+                    "reason": "System.Diagnostics.RemoteExecutorTestBase+RemoteInvokeHandle+RemoteExecutionException System.Diagnostics.RemoteExecutorTestBase+RemoteInvokeHandle+RemoteExecutionException : Remote process failed with an unhandled exception."
+                }
+            ]
+        }
+    },
+    {
+        "name": "System.Net.HttpListener.Tests",
+        "enabled": true,
+        "exclusions": {
+            "namespaces": null,
+            "classes": null,
+            "methods": [
+                {
+                    "name": "System.Net.Tests.HttpRequestStreamTests.Read_NullBuffer_ThrowsArgumentNullException",
+                    "reason": "Xunit.Sdk.ThrowsException Assert.Throws() Failure\\nExpected: typeof(System.ArgumentNullException)\\nActual:   typeof(System.NullReferenceException): Object reference not set to an instance of an object."
+                },
+                {
+                    "name": "System.Net.Tests.HttpResponseStreamTests.Write_NullBuffer_ThrowsArgumentNullException",
+                    "reason": "Xunit.Sdk.ThrowsException Assert.Throws() Failure\\nExpected: typeof(System.ArgumentNullException)\\nActual:   typeof(System.NullReferenceException): Object reference not set to an instance of an object."
+                }
+            ]
+        }
+    },
+    {
+        "name": "System.Security.Cryptography.X509Certificates.Tests",
+        "enabled": true,
+        "exclusions": {
+            "namespaces": null,
+            "classes": null,
+            "methods": [
+                {
+                    "name": "System.Security.Cryptography.X509Certificates.Tests.X509StoreTests.Constructor_DefaultStoreName",
+                    "reason": "Assert.Equal() Failure ↓ (pos 1) Expected: My Actual:   MY ↑ (pos 1)"
+                }
+            ]
         }
     },
     {
         "name": "System.Threading.Tests",
+        "enabled": true,
         "exclusions": {
             "namespaces": null,
             "classes": null,
-            "methods": []
+            "methods": [
+                {
+                    "name": "System.Threading.Tests.EventWaitHandleTests.Ctor_InvalidMode",
+                    "reason": "Assert.Equal() Failure Expected: (null) Actual:   mode"
+                }
+            ]
+        }
+    },
+    {
+        "name": "System.Xml.Xsl.XslTransformApi.Tests",
+        "enabled": true,
+        "exclusions": {
+            "namespaces": null,
+            "classes": null,
+            "methods": [
+                {
+                    "name": "System.Xml.Tests.CXmlResolverTest.TC_AbsolutePath_Transform",
+                    "reason": "Xunit.Sdk.TrueException Assert.True() Failure\\nExpected: True\\nActual:   False"
+                },
+                {
+                    "name": "System.Xml.Tests.CTransformResolverTest.TC_AbsolutePath_Transform",
+                    "reason": "Xunit.Sdk.TrueException Assert.True() Failure\\nExpected: True\\nActual:   False"
+                }
+            ]
         }
     }
 ]

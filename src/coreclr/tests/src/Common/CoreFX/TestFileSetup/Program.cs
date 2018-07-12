@@ -17,7 +17,7 @@ namespace CoreFX.TestUtils.TestFileSetup
     /// <summary>
     /// This is a driver class, which downloads archived CoreFX test assemblies from a specified URL, lays out their contents
     /// and subsequently runs them in parallel. 
-    /// This is invoked from .tests\runtests.cmd and depends on a test host (CoreCLR components with a dotnet executable) being present
+    /// This is invoked from .tests/runtests.[cmd|sh] and depends on a test host (CoreCLR components with a dotnet executable) being present
     /// </summary>
     public class Program
     {
@@ -60,10 +60,7 @@ namespace CoreFX.TestUtils.TestFileSetup
                 
                 // Only run tests if the relevant commandline switch is passed
                 if (runSpecifiedTests || runAllTests)
-                {
                     exitCode = RunTests();
-
-                }
             }
             catch (AggregateException e)
             {
@@ -95,6 +92,7 @@ namespace CoreFX.TestUtils.TestFileSetup
                     {
                         exitCode = ExitCode.UnknownError;
                     }
+                    
                     return false;
                 });
             }
