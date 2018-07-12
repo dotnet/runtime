@@ -426,7 +426,6 @@
     <Compile Include="System\Xml\Serialization\XmlAttributeOverrides.cs" />
     <Compile Include="System\Xml\Serialization\XmlAttributes.cs" />
     <Compile Include="System\Xml\Serialization\XmlChoiceIdentifierAttribute.cs" />
-    <Compile Include="System\Xml\Serialization\XmlCountingReader.cs" />
     <Compile Include="System\Xml\Serialization\Xmlcustomformatter.cs" />
     <Compile Include="System\Xml\Serialization\XmlElementAttribute.cs" />
     <Compile Include="System\Xml\Serialization\XmlElementAttributes.cs" />

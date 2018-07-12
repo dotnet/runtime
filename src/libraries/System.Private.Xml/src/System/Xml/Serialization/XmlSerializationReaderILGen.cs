@@ -424,10 +424,9 @@ namespace System.Xml.Serialization
             ilg.Stloc(localP);
             InitializeValueTypes("p", mappings);
 
-            int wrapperLoopIndex = 0;
             if (hasWrapperElement)
             {
-                wrapperLoopIndex = WriteWhileNotLoopStart();
+                WriteWhileNotLoopStart();
                 WriteIsStartTag(element.Name, element.Form == XmlSchemaForm.Qualified ? element.Namespace : "");
             }
 
@@ -579,7 +578,7 @@ namespace System.Xml.Serialization
                 ilg.Ldc(0);
                 ilg.Stloc(typeof(int), "state");
             }
-            int loopIndex = WriteWhileNotLoopStart();
+            WriteWhileNotLoopStart();
 
             string unknownNode = "UnknownNode((object)p, " + ExpectedElements(members) + ");";
             WriteMemberElements(members, unknownNode, unknownNode, anyElement, anyText);
@@ -588,7 +587,7 @@ namespace System.Xml.Serialization
             ilg.Call(XmlSerializationReader_get_Reader);
             ilg.Call(XmlReader_MoveToContent);
             ilg.Pop();
-            WriteWhileLoopEnd(loopIndex);
+            WriteWhileLoopEnd();
 
             WriteMemberEnd(textOrArrayMembers);
 
@@ -609,7 +608,7 @@ namespace System.Xml.Serialization
                 ilg.Call(XmlSerializationReader_get_Reader);
                 ilg.Call(XmlReader_MoveToContent);
                 ilg.Pop();
-                WriteWhileLoopEnd(wrapperLoopIndex);
+                WriteWhileLoopEnd();
             }
 
             ilg.Ldloc(ilg.GetLocal("p"));
@@ -1653,7 +1652,7 @@ namespace System.Xml.Serialization
                     ilg.Ldc(0);
                     ilg.Stloc(typeof(int), "state");
                 }
-                int loopIndex = WriteWhileNotLoopStart();
+                WriteWhileNotLoopStart();
                 string unknownNode = "UnknownNode((object)o, " + ExpectedElements(allMembers) + ");";
                 WriteMemberElements(allMembers, unknownNode, unknownNode, anyElement, anyText);
                 MethodInfo XmlReader_MoveToContent = typeof(XmlReader).GetMethod(
@@ -1666,7 +1665,7 @@ namespace System.Xml.Serialization
                 ilg.Call(XmlReader_MoveToContent);
                 ilg.Pop();
 
-                WriteWhileLoopEnd(loopIndex);
+                WriteWhileLoopEnd();
                 WriteMemberEnd(arraysToSet);
 
                 MethodInfo XmlSerializationReader_ReadEndElement = typeof(XmlSerializationReader).GetMethod(
@@ -2922,7 +2921,7 @@ namespace System.Xml.Serialization
             ilg.Ldarg(0);
             ilg.Call(XmlSerializationReader_get_Reader);
             ilg.Call(XmlReader_ReadStartElement);
-            int loopIndex = WriteWhileNotLoopStart();
+            WriteWhileNotLoopStart();
 
             string unknownNode = "UnknownNode(null, " + ExpectedElements(members) + ");";
             WriteMemberElements(members, unknownNode, unknownNode, null, null);
@@ -2936,7 +2935,7 @@ namespace System.Xml.Serialization
             ilg.Call(XmlReader_MoveToContent);
             ilg.Pop();
 
-            WriteWhileLoopEnd(loopIndex);
+            WriteWhileLoopEnd();
             MethodInfo XmlSerializationReader_ReadEndElement = typeof(XmlSerializationReader).GetMethod(
                 "ReadEndElement",
                 CodeGenerator.InstanceBindingFlags,
@@ -3305,7 +3304,7 @@ namespace System.Xml.Serialization
             }
         }
 
-        private int WriteWhileNotLoopStart()
+        private void WriteWhileNotLoopStart()
         {
             MethodInfo XmlSerializationReader_get_Reader = typeof(XmlSerializationReader).GetMethod(
                 "get_Reader",
@@ -3321,14 +3320,11 @@ namespace System.Xml.Serialization
             ilg.Call(XmlSerializationReader_get_Reader);
             ilg.Call(XmlReader_MoveToContent);
             ilg.Pop();
-            int loopIndex = WriteWhileLoopStartCheck();
             ilg.WhileBegin();
-            return loopIndex;
         }
 
-        private void WriteWhileLoopEnd(int loopIndex)
+        private void WriteWhileLoopEnd()
         {
-            WriteWhileLoopEndCheck(loopIndex);
             ilg.WhileBeginCondition();
             {
                 int XmlNodeType_None = 0;
@@ -3364,35 +3360,6 @@ namespace System.Xml.Serialization
             }
             ilg.WhileEndCondition();
             ilg.WhileEnd();
-        }
-
-        private int WriteWhileLoopStartCheck()
-        {
-            MethodInfo XmlSerializationReader_get_ReaderCount = typeof(XmlSerializationReader).GetMethod(
-                "get_ReaderCount",
-                CodeGenerator.InstanceBindingFlags,
-                Array.Empty<Type>()
-                );
-            ilg.Ldc(0);
-            ilg.Stloc(typeof(int), string.Format(CultureInfo.InvariantCulture, "whileIterations{0}", _nextWhileLoopIndex));
-            ilg.Ldarg(0);
-            ilg.Call(XmlSerializationReader_get_ReaderCount);
-            ilg.Stloc(typeof(int), string.Format(CultureInfo.InvariantCulture, "readerCount{0}", _nextWhileLoopIndex));
-            return _nextWhileLoopIndex++;
-        }
-
-        private void WriteWhileLoopEndCheck(int loopIndex)
-        {
-            Type refIntType = Type.GetType("System.Int32&");
-            MethodInfo XmlSerializationReader_CheckReaderCount = typeof(XmlSerializationReader).GetMethod(
-               "CheckReaderCount",
-               CodeGenerator.InstanceBindingFlags,
-               new Type[] { refIntType, refIntType }
-               );
-            ilg.Ldarg(0);
-            ilg.Ldloca(ilg.GetLocal(string.Format(CultureInfo.InvariantCulture, "whileIterations{0}", loopIndex)));
-            ilg.Ldloca(ilg.GetLocal(string.Format(CultureInfo.InvariantCulture, "readerCount{0}", loopIndex)));
-            ilg.Call(XmlSerializationReader_CheckReaderCount);
         }
 
         private void WriteParamsRead(int length)
