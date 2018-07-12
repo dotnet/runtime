@@ -411,14 +411,18 @@ namespace $([System.String]::Copy($(Category)).Replace(".","_").Replace("\","").
 
     <PropertyGroup Condition="'$(OSGroup)'=='Windows_NT'">
       <HostFxrFileName>hostfxr</HostFxrFileName>
-      <DotnetExecutableName>dotnet.exe</DotnetExecutableName>
       <HostFxrFileExtension>dll</HostFxrFileExtension>
+      <DotnetExecutableName>dotnet.exe</DotnetExecutableName>
+      <HostPolicyFileName>hostpolicy</HostPolicyFileName>
+      <HostPolicyExtension>dll</HostPolicyExtension>
     </PropertyGroup>
     
     <PropertyGroup Condition="'$(OSGroup)'!='Windows_NT'">
       <HostFxrFileName>libhostfxr</HostFxrFileName>
       <HostFxrFileExtension Condition="'$(OSGroup)' == 'Linux' Or '$(OSGroup)' == 'FreeBSD'">so</HostFxrFileExtension>
       <HostFxrFileExtension Condition="$(OSGroup) =='OSX'">dylib</HostFxrFileExtension>
+      <HostPolicyFileName>libhostpolicy</HostPolicyFileName>
+      <HostPolicyExtension>$(HostFxrFileExtension)</HostPolicyExtension>
       <DotnetExecutableName>dotnet</DotnetExecutableName>
     </PropertyGroup>
     
@@ -432,7 +436,7 @@ namespace $([System.String]::Copy($(Category)).Replace(".","_").Replace("\","").
       <CoreCLRBinaries Include="$(CORE_ROOT)\**\*.*" Exclude="$(CORE_ROOT)\**\@(NetCoreAppPackagedAssemblies -> '%(Identity)' )" />
       <HostFxFile Include="$(ToolsDir)\dotnetcli\**\$(HostFxrFileName).$(HostFxrFileExtension)" />
       <DotnetExe Include="$(ToolsDir)\dotnetcli\$(DotnetExecutableName)" />
-      <HostPolicyFile Include="$(ToolsDir)\dotnetcli\**\hostpolicy.dll" />
+      <HostPolicyFile Include="$(ToolsDir)\dotnetcli\**\$(HostPolicyFileName).$(HostPolicyExtension)" />
     </ItemGroup>
 
     <Copy SourceFiles="@(HostFxFile)"
