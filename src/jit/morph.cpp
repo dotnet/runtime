@@ -532,7 +532,7 @@ OPTIMIZECAST:
     /* Just in case new side effects were introduced */
     tree->gtFlags |= (oper->gtFlags & GTF_ALL_EFFECT);
 
-    if (!gtIsActiveCSE_Candidate(tree)) // tree cannot be a CSE candidate
+    if (!gtIsActiveCSE_Candidate(tree) && !gtIsActiveCSE_Candidate(oper))
     {
         srcType = oper->TypeGet();
 
@@ -753,6 +753,7 @@ OPTIMIZECAST:
     return tree;
 
 REMOVE_CAST:
+    oper->SetVNsFromNode(tree);
 
     /* Here we've eliminated the cast, so just return it's operand */
     assert(!gtIsActiveCSE_Candidate(tree)); // tree cannot be a CSE candidate
