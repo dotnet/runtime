@@ -10,7 +10,7 @@ namespace System.IO.Tests
 {
     public abstract class BaseGetSetTimes<T> : FileSystemTest
     {
-        private const string HFS = "hfs";
+        protected const string HFS = "hfs";
         public delegate void SetTime(T item, DateTime time);
         public delegate DateTime GetTime(T item);
 
