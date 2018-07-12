@@ -439,6 +439,7 @@ namespace Microsoft.CSharp.RuntimeBinder.Tests
         }
 
         [Fact]
+        [ActiveIssue(31032, TargetFrameworkMonikers.NetFramework)]
         public void TryInvokeOrAccessNestedClassAsMember()
         {
             dynamic dFirst = new Outer.Inner();
@@ -455,6 +456,7 @@ namespace Microsoft.CSharp.RuntimeBinder.Tests
         }
 
         [Fact]
+        [ActiveIssue(31032, TargetFrameworkMonikers.NetFramework)]
         public void TryInvokeTypeParameterAsMember()
         {
             dynamic d = new List<int>();
@@ -483,6 +485,7 @@ namespace Microsoft.CSharp.RuntimeBinder.Tests
         }
 
         [Fact]
+        [ActiveIssue(31032, TargetFrameworkMonikers.NetFramework)]
         public void AccessMethodHiddenByNested()
         {
             dynamic dFirst = new DerivedOuterHidingMethod.Inner();

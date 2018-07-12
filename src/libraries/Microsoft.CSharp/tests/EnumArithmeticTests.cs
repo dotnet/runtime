@@ -239,6 +239,7 @@ namespace Microsoft.CSharp.RuntimeBinder.Tests
         }
 
         [Theory, MemberData(nameof(ByteEnumAdditions))]
+        [ActiveIssue(31032, TargetFrameworkMonikers.NetFramework)]
         public void LiftedEnumAddition(ByteEnum? enumVal, byte? integralVal, ByteEnum expected)
         {
             dynamic d = enumVal;
@@ -258,6 +259,7 @@ namespace Microsoft.CSharp.RuntimeBinder.Tests
         }
 
         [Theory, MemberData(nameof(SByteEnumAdditions))]
+        [ActiveIssue(31032, TargetFrameworkMonikers.NetFramework)]
         public void LiftedEnumAddition(SByteEnum? enumVal, sbyte? integralVal, SByteEnum expected)
         {
             dynamic d = enumVal;
@@ -426,6 +428,7 @@ namespace Microsoft.CSharp.RuntimeBinder.Tests
         [MemberData(nameof(UInt32EnumSubtractions))]
         [MemberData(nameof(Int64EnumSubtractions))]
         [MemberData(nameof(UInt64EnumSubtractions))]
+        [ActiveIssue(31032, TargetFrameworkMonikers.NetFramework)]
         public void EnumSubtraction(dynamic enumVal, dynamic integralVal, object enMinusIn, object inMinusEn)
         {
             object result = unchecked(enumVal - integralVal);
@@ -437,6 +440,7 @@ namespace Microsoft.CSharp.RuntimeBinder.Tests
         }
 
         [Theory, MemberData(nameof(ByteEnumSubtractions))]
+        [ActiveIssue(31032, TargetFrameworkMonikers.NetFramework)]
         public void LiftedEnumSubtraction(ByteEnum? enumVal, byte? integralVal, ByteEnum? enMinusIn, ByteEnum? inMinusEn)
         {
             dynamic d = enumVal;
@@ -456,6 +460,7 @@ namespace Microsoft.CSharp.RuntimeBinder.Tests
         }
 
         [Theory, MemberData(nameof(SByteEnumSubtractions))]
+        [ActiveIssue(31032, TargetFrameworkMonikers.NetFramework)]
         public void LiftedEnumSubtraction(SByteEnum? enumVal, sbyte? integralVal, SByteEnum? enMinusIn, SByteEnum? inMinusEn)
         {
             dynamic d = enumVal;
@@ -589,6 +594,7 @@ namespace Microsoft.CSharp.RuntimeBinder.Tests
         }
 
         [Theory, MemberData(nameof(ByteEnumSelfSubtraction))]
+        [ActiveIssue(31032, TargetFrameworkMonikers.NetFramework)]
         public void EnumSubtraction(ByteEnum? x, ByteEnum? y, byte expected, bool overflows)
         {
             dynamic d = x;
@@ -608,6 +614,7 @@ namespace Microsoft.CSharp.RuntimeBinder.Tests
         }
 
         [Theory, MemberData(nameof(SByteEnumSelfSubtraction))]
+        [ActiveIssue(31032, TargetFrameworkMonikers.NetFramework)]
         public void EnumSubtraction(SByteEnum? x, SByteEnum? y, sbyte expected, bool overflows)
         {
             dynamic d = x;
@@ -749,6 +756,7 @@ namespace Microsoft.CSharp.RuntimeBinder.Tests
         [MemberData(nameof(UInt32EnumValueArguments))]
         [MemberData(nameof(Int64EnumValueArguments))]
         [MemberData(nameof(UInt64EnumValueArguments))]
+        [ActiveIssue(31032, TargetFrameworkMonikers.NetFramework)]
         public void WithLiteralNull(dynamic value)
         {
             object result = value + null;
@@ -780,6 +788,7 @@ namespace Microsoft.CSharp.RuntimeBinder.Tests
         }
 
         [Theory, MemberData(nameof(ByteEnumValueArguments))]
+        [ActiveIssue(31032, TargetFrameworkMonikers.NetFramework)]
         public void WithTypedNullNullableByte(dynamic value)
         {
             object result = value + (byte?)null;
@@ -793,6 +802,7 @@ namespace Microsoft.CSharp.RuntimeBinder.Tests
         }
 
         [Theory, MemberData(nameof(SByteEnumValueArguments))]
+        [ActiveIssue(31032, TargetFrameworkMonikers.NetFramework)]
         public void WithTypedNullNullableSByte(dynamic value)
         {
             object result = value + (sbyte?)null;
