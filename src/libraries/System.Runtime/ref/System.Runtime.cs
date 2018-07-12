@@ -7676,6 +7676,7 @@ namespace System.Threading
         public override bool Equals(object obj) { throw null; }
         public bool Equals(System.Threading.CancellationTokenRegistration other) { throw null; }
         public override int GetHashCode() { throw null; }
+        public bool Unregister() { throw null; }
         public static bool operator ==(System.Threading.CancellationTokenRegistration left, System.Threading.CancellationTokenRegistration right) { throw null; }
         public static bool operator !=(System.Threading.CancellationTokenRegistration left, System.Threading.CancellationTokenRegistration right) { throw null; }
     }
