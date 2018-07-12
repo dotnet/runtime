@@ -340,6 +340,7 @@ namespace Microsoft.CSharp.RuntimeBinder.Tests
         }
 
         [Fact]
+        [ActiveIssue(31032, TargetFrameworkMonikers.NetFramework)]
         public void ArraysToInterfaces()
         {
             int[] intArray = {1, 2, 3};
