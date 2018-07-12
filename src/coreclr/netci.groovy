@@ -386,7 +386,90 @@ class Constants {
                'jitstress2_jitstressregs0x1000',
                'tailcallstress',
                // 'jitsse2only'                          // Only relevant to xarch
-               // 'jitnosimd'
+               // 'jitnosimd'                            // Only interesting on platforms where SIMD support exists.
+               // 'jitincompletehwintrinsic'
+               // 'jitx86hwintrinsicnoavx'
+               // 'jitx86hwintrinsicnoavx2'
+               // 'jitx86hwintrinsicnosimd'
+               // 'jitnox86hwintrinsic'
+               'corefx_baseline',
+               'corefx_minopts',
+               'corefx_tieredcompilation',
+               'corefx_jitstress1',
+               'corefx_jitstress2',
+               'corefx_jitstressregs1',
+               'corefx_jitstressregs2',
+               'corefx_jitstressregs3',
+               'corefx_jitstressregs4',
+               'corefx_jitstressregs8',
+               'corefx_jitstressregs0x10',
+               'corefx_jitstressregs0x80',
+               'corefx_jitstressregs0x1000',
+               'gcstress0x3',
+               'gcstress0xc',
+               'zapdisable',
+               'heapverify1',
+               'gcstress0xc_zapdisable',
+               'gcstress0xc_zapdisable_jitstress2',
+               'gcstress0xc_zapdisable_heapverify1',
+               'gcstress0xc_jitstress1',
+               'gcstress0xc_jitstress2',
+               'gcstress0xc_minopts_heapverify1'
+    ]
+
+    def static validLinuxArm64Scenarios = [
+               'innerloop',
+               'normal',
+               // 'ilrt'
+               'r2r',
+               // 'longgc'
+               // 'formatting'
+               // 'gcsimulator'
+               // 'jitdiff'
+               // 'standalone_gc'
+               // 'gc_reliability_framework'
+               // 'illink'
+               'r2r_jitstress1',
+               'r2r_jitstress2',
+               'r2r_jitstress1_tiered',
+               'r2r_jitstress2_tiered',
+               'r2r_jitstressregs1',
+               'r2r_jitstressregs2',
+               'r2r_jitstressregs3',
+               'r2r_jitstressregs4',
+               'r2r_jitstressregs8',
+               'r2r_jitstressregs0x10',
+               'r2r_jitstressregs0x80',
+               'r2r_jitstressregs0x1000',
+               'r2r_jitminopts',
+               'r2r_jitforcerelocs',
+               'r2r_gcstress15',
+               'minopts',
+               'tieredcompilation',
+               'forcerelocs',
+               'jitstress1',
+               'jitstress2',
+               'jitstress1_tiered',
+               'jitstress2_tiered',
+               'jitstressregs1',
+               'jitstressregs2',
+               'jitstressregs3',
+               'jitstressregs4',
+               'jitstressregs8',
+               'jitstressregs0x10',
+               'jitstressregs0x80',
+               'jitstressregs0x1000',
+               'jitstress2_jitstressregs1',
+               'jitstress2_jitstressregs2',
+               'jitstress2_jitstressregs3',
+               'jitstress2_jitstressregs4',
+               'jitstress2_jitstressregs8',
+               'jitstress2_jitstressregs0x10',
+               'jitstress2_jitstressregs0x80',
+               'jitstress2_jitstressregs0x1000',
+               'tailcallstress',
+               // 'jitsse2only'                         // Only relevant to xarch
+               'jitnosimd',                             // Only interesting on platforms where SIMD support exists.
                // 'jitincompletehwintrinsic'
                // 'jitx86hwintrinsicnoavx'
                // 'jitx86hwintrinsicnoavx2'
@@ -3569,7 +3652,7 @@ def static shouldGenerateFlowJob(def scenario, def isPR, def architecture, def c
     else {
         // Non-Windows
         if (architecture == 'arm64') {
-            if (!(scenario in Constants.validLinuxArmScenarios)) {
+            if (!(scenario in Constants.validLinuxArm64Scenarios)) {
                 return false
             }
         }
