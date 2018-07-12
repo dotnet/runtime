@@ -1278,18 +1278,18 @@ int32_t SystemNative_CopyFile(intptr_t sourceFd, intptr_t destinationFd)
 #if HAVE_FUTIMES
         struct timeval origTimes[2];
         origTimes[0].tv_sec = sourceStat.st_atime;
-        origTimes[0].tv_usec = 0;
+        origTimes[0].tv_usec = ST_ATIME_NSEC(&sourceStat) / 1000;
         origTimes[1].tv_sec = sourceStat.st_mtime;
-        origTimes[1].tv_usec = 0;
+        origTimes[1].tv_usec = ST_MTIME_NSEC(&sourceStat) / 1000;
         while ((ret = futimes(outFd, origTimes)) < 0 && errno == EINTR);
 #elif HAVE_FUTIMENS
         // futimes is not a POSIX function, and not available on Android,
         // but futimens is
         struct timespec origTimes[2];
         origTimes[0].tv_sec = (time_t)sourceStat.st_atime;
-        origTimes[0].tv_nsec = 0;
+        origTimes[0].tv_nsec = ST_ATIME_NSEC(&sourceStat);
         origTimes[1].tv_sec = (time_t)sourceStat.st_mtime;
-        origTimes[1].tv_nsec = 0;
+        origTimes[1].tv_nsec = ST_MTIME_NSEC(&sourceStat);
         while ((ret = futimens(outFd, origTimes)) < 0 && errno == EINTR);
 #endif
     }
