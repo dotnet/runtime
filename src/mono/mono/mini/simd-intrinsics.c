@@ -799,7 +799,7 @@ mono_simd_simplify_indirection (MonoCompile *cfg)
 				MONO_INST_NEW (cfg, tmp, OP_XZERO);
 				tmp->dreg = var->dreg;
 				tmp->type = STACK_VTYPE;
-		        tmp->klass = var->klass;
+				tmp->klass = var->klass;
 				mono_bblock_insert_before_ins (target_bb [var->dreg], ins, tmp);
 				break;
 			}
@@ -816,6 +816,96 @@ mono_simd_simplify_indirection (MonoCompile *cfg)
 	g_free (vreg_flags);
 	g_free (target_bb);
 }
+
+static gboolean
+decompose_vtype_opt_uses_simd_intrinsics (MonoCompile *cfg, MonoInst *ins)
+{
+	if (cfg->uses_simd_intrinsics & MONO_CFG_USES_SIMD_INTRINSICS_DECOMPOSE_VTYPE)
+		return TRUE;
+
+	switch (ins->opcode) {
+	case OP_XMOVE:
+	case OP_XZERO:
+	case OP_LOADX_MEMBASE:
+	case OP_LOADX_ALIGNED_MEMBASE:
+	case OP_STOREX_MEMBASE:
+	case OP_STOREX_ALIGNED_MEMBASE_REG:
+		return TRUE;
+	default:
+		return FALSE;
+	}
+}
+
+static void
+decompose_vtype_opt_load_arg (MonoCompile *cfg, MonoBasicBlock *bb, MonoInst *ins, guint32 *sreg)
+{
+	MonoInst *src_var = get_vreg_to_inst (cfg, *sreg);
+	if (src_var && src_var->opcode == OP_ARG && src_var->klass && MONO_CLASS_IS_SIMD (cfg, src_var->klass)) {
+		MonoInst *varload_ins, *load_ins;
+		NEW_VARLOADA (cfg, varload_ins, src_var, src_var->inst_vtype);
+		mono_bblock_insert_before_ins (bb, ins, varload_ins);
+		MONO_INST_NEW (cfg, load_ins, OP_LOADX_MEMBASE);
+		load_ins->klass = src_var->klass;
+		load_ins->type = STACK_VTYPE;
+		load_ins->sreg1 = varload_ins->dreg;
+		load_ins->dreg = alloc_xreg (cfg);
+		mono_bblock_insert_after_ins (bb, varload_ins, load_ins);
+		*sreg = load_ins->dreg;
+	}
+}
+
+/*
+* Windows x64 value type ABI uses reg/stack references (ArgValuetypeAddrInIReg/ArgValuetypeAddrOnStack)
+* for function arguments. When using SIMD intrinsics arguments optimized into OP_ARG needs to be decomposed
+* into correspondig SIMD LOADX/STOREX instructions.
+*/
+#if defined(TARGET_WIN32) && defined(TARGET_AMD64)
+void
+mono_simd_decompose_intrinsic (MonoCompile *cfg, MonoBasicBlock *bb, MonoInst *ins)
+{
+	if (cfg->opt & MONO_OPT_SIMD && decompose_vtype_opt_uses_simd_intrinsics (cfg, ins)) {
+		decompose_vtype_opt_load_arg (cfg, bb, ins, &(ins->sreg1));
+		decompose_vtype_opt_load_arg (cfg, bb, ins, &(ins->sreg2));
+		decompose_vtype_opt_load_arg (cfg, bb, ins, &(ins->sreg3));
+		MonoInst *dest_var = get_vreg_to_inst (cfg, ins->dreg);
+		if (dest_var && dest_var->opcode == OP_ARG && dest_var->klass && MONO_CLASS_IS_SIMD (cfg, dest_var->klass)) {
+			MonoInst *varload_ins, *store_ins;
+			ins->dreg = alloc_xreg (cfg);
+			NEW_VARLOADA (cfg, varload_ins, dest_var, dest_var->inst_vtype);
+			mono_bblock_insert_after_ins (bb, ins, varload_ins);
+			MONO_INST_NEW (cfg, store_ins, OP_STOREX_MEMBASE);
+			store_ins->klass = dest_var->klass;
+			store_ins->type = STACK_VTYPE;
+			store_ins->sreg1 = ins->dreg;
+			store_ins->dreg = varload_ins->dreg;
+			mono_bblock_insert_after_ins (bb, varload_ins, store_ins);
+		}
+	}
+}
+
+void
+mono_simd_decompose_intrinsics (MonoCompile *cfg)
+{
+	MonoBasicBlock *bb;
+	MonoInst *ins;
+
+	for (bb = cfg->bb_entry; bb; bb = bb->next_bb) {
+		for (ins = bb->code; ins; ins = ins->next) {
+			mono_simd_decompose_intrinsic (cfg, bb, ins);
+		}
+	}
+}
+#else
+void
+mono_simd_decompose_intrinsic (MonoCompile *cfg, MonoBasicBlock *bb, MonoInst *ins)
+{
+}
+
+void
+mono_simd_decompose_intrinsics (MonoCompile *cfg)
+{
+}
+#endif /*defined(TARGET_WIN32) && defined(TARGET_AMD64)*/
 
 /*
  * This function expect that src be a value.
@@ -1478,7 +1568,7 @@ simd_intrinsic_emit_long_getter (const SimdIntrinsic *intrinsic, MonoCompile *cf
 		ins->backend.spill_var = get_double_spill_area (cfg);
 	} else {
 		ins->type = STACK_I8;
-		ins->dreg = alloc_lreg (cfg);		
+		ins->dreg = alloc_lreg (cfg);
 	}
 	MONO_ADD_INS (cfg->cbb, ins);
 
@@ -1490,7 +1580,7 @@ simd_intrinsic_emit_ctor (const SimdIntrinsic *intrinsic, MonoCompile *cfg, Mono
 {
 	MonoInst *ins = NULL;
 	int i, addr_reg;
-	gboolean is_ldaddr = args [0]->opcode == OP_LDADDR;
+	gboolean is_ldaddr = (args [0]->opcode == OP_LDADDR && args [0]->inst_left->opcode != OP_ARG);
 	MonoMethodSignature *sig = mono_method_signature (cmethod);
 	int store_op = mono_type_to_store_membase (cfg, sig->params [0]);
 	int arg_size = mono_type_size (sig->params [0], &i);
@@ -1516,7 +1606,6 @@ simd_intrinsic_emit_ctor (const SimdIntrinsic *intrinsic, MonoCompile *cfg, Mono
 		ins->sreg1 = args [1]->dreg;
 		ins->type = STACK_VTYPE;
 		ins->dreg = dreg;
-
 		MONO_ADD_INS (cfg->cbb, ins);
 		if (sig->params [0]->type == MONO_TYPE_R4)
 			ins->backend.spill_var = mini_get_int_to_float_spill_area (cfg);
@@ -1984,54 +2073,90 @@ MonoInst*
 mono_emit_simd_intrinsics (MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSignature *fsig, MonoInst **args)
 {
 	const char *class_name;
+	MonoInst *simd_inst = NULL;
 
-	if (is_sys_numerics_assembly (m_class_get_image (cmethod->klass)->assembly))
-		return emit_sys_numerics_intrinsics (cfg, cmethod, fsig, args);
+	if (is_sys_numerics_assembly (m_class_get_image (cmethod->klass)->assembly)) {
+		simd_inst = emit_sys_numerics_intrinsics (cfg, cmethod, fsig, args);
+		goto on_exit;
+	}
 
-	if (is_sys_numerics_vectors_assembly (m_class_get_image (cmethod->klass)->assembly))
-		return emit_sys_numerics_vectors_intrinsics (cfg, cmethod, fsig, args);
+	if (is_sys_numerics_vectors_assembly (m_class_get_image (cmethod->klass)->assembly)) {
+		simd_inst = emit_sys_numerics_vectors_intrinsics (cfg, cmethod, fsig, args);
+		goto on_exit;
+	}
 
 	if (strcmp ("Mono.Simd", m_class_get_image (cmethod->klass)->assembly->aname.name) ||
-	    strcmp ("Mono.Simd", m_class_get_name_space (cmethod->klass)))
-		return NULL;
+	    strcmp ("Mono.Simd", m_class_get_name_space (cmethod->klass))) {
+		goto on_exit;
+	}
 
 	class_name = m_class_get_name (cmethod->klass);
-	if (!strcmp ("SimdRuntime", class_name))
-		return emit_simd_runtime_intrinsics (cfg, cmethod, fsig, args);
+	if (!strcmp ("SimdRuntime", class_name)) {
+		simd_inst = emit_simd_runtime_intrinsics (cfg, cmethod, fsig, args);
+		goto on_exit;
+	}
 
-	if (!strcmp ("ArrayExtensions", class_name))
-		return emit_array_extension_intrinsics (cfg, cmethod, fsig, args);
+	if (!strcmp ("ArrayExtensions", class_name)) {
+		simd_inst = emit_array_extension_intrinsics (cfg, cmethod, fsig, args);
+		goto on_exit;
+	}
 	
 	if (!strcmp ("VectorOperations", class_name)) {
 		if (!(cmethod->flags & METHOD_ATTRIBUTE_STATIC))
-			return NULL;
+			goto on_exit;
 		class_name = m_class_get_name (mono_class_from_mono_type (mono_method_signature (cmethod)->params [0]));
 	} else if (!m_class_is_simd_type (cmethod->klass))
-		return NULL;
+		goto on_exit;
 
-	cfg->uses_simd_intrinsics = 1;
-	if (!strcmp ("Vector2d", class_name))
-		return emit_intrinsics (cfg, cmethod, fsig, args, vector2d_intrinsics, sizeof (vector2d_intrinsics) / sizeof (SimdIntrinsic));
-	if (!strcmp ("Vector4f", class_name))
-		return emit_intrinsics (cfg, cmethod, fsig, args, vector4f_intrinsics, sizeof (vector4f_intrinsics) / sizeof (SimdIntrinsic));
-	if (!strcmp ("Vector2ul", class_name))
-		return emit_intrinsics (cfg, cmethod, fsig, args, vector2ul_intrinsics, sizeof (vector2ul_intrinsics) / sizeof (SimdIntrinsic));
-	if (!strcmp ("Vector2l", class_name))
-		return emit_intrinsics (cfg, cmethod, fsig, args, vector2l_intrinsics, sizeof (vector2l_intrinsics) / sizeof (SimdIntrinsic));
-	if (!strcmp ("Vector4ui", class_name))
-		return emit_intrinsics (cfg, cmethod, fsig, args, vector4ui_intrinsics, sizeof (vector4ui_intrinsics) / sizeof (SimdIntrinsic));
-	if (!strcmp ("Vector4i", class_name))
-		return emit_intrinsics (cfg, cmethod, fsig, args, vector4i_intrinsics, sizeof (vector4i_intrinsics) / sizeof (SimdIntrinsic));
-	if (!strcmp ("Vector8us", class_name))
-		return emit_intrinsics (cfg, cmethod, fsig, args, vector8us_intrinsics, sizeof (vector8us_intrinsics) / sizeof (SimdIntrinsic));
-	if (!strcmp ("Vector8s", class_name))
-		return emit_intrinsics (cfg, cmethod, fsig, args, vector8s_intrinsics, sizeof (vector8s_intrinsics) / sizeof (SimdIntrinsic));
-	if (!strcmp ("Vector16b", class_name))
-		return emit_intrinsics (cfg, cmethod, fsig, args, vector16b_intrinsics, sizeof (vector16b_intrinsics) / sizeof (SimdIntrinsic));
-	if (!strcmp ("Vector16sb", class_name))
-		return emit_intrinsics (cfg, cmethod, fsig, args, vector16sb_intrinsics, sizeof (vector16sb_intrinsics) / sizeof (SimdIntrinsic));
+	cfg->uses_simd_intrinsics |= MONO_CFG_USES_SIMD_INTRINSICS_SIMPLIFY_INDIRECTION;
+	if (!strcmp ("Vector2d", class_name)) {
+		simd_inst = emit_intrinsics (cfg, cmethod, fsig, args, vector2d_intrinsics, sizeof (vector2d_intrinsics) / sizeof (SimdIntrinsic));
+		goto on_exit;
+	}
+	if (!strcmp ("Vector4f", class_name)) {
+		simd_inst = emit_intrinsics (cfg, cmethod, fsig, args, vector4f_intrinsics, sizeof (vector4f_intrinsics) / sizeof (SimdIntrinsic));
+		goto on_exit;
+	}
+	if (!strcmp ("Vector2ul", class_name)) {
+		simd_inst = emit_intrinsics (cfg, cmethod, fsig, args, vector2ul_intrinsics, sizeof (vector2ul_intrinsics) / sizeof (SimdIntrinsic));
+		goto on_exit;
+	}
+	if (!strcmp ("Vector2l", class_name)) {
+		simd_inst = emit_intrinsics (cfg, cmethod, fsig, args, vector2l_intrinsics, sizeof (vector2l_intrinsics) / sizeof (SimdIntrinsic));
+		goto on_exit;
+	}
+	if (!strcmp ("Vector4ui", class_name)) {
+		simd_inst = emit_intrinsics (cfg, cmethod, fsig, args, vector4ui_intrinsics, sizeof (vector4ui_intrinsics) / sizeof (SimdIntrinsic));
+		goto on_exit;
+	}
+	if (!strcmp ("Vector4i", class_name)) {
+		simd_inst = emit_intrinsics (cfg, cmethod, fsig, args, vector4i_intrinsics, sizeof (vector4i_intrinsics) / sizeof (SimdIntrinsic));
+		goto on_exit;
+	}
+	if (!strcmp ("Vector8us", class_name)) {
+		simd_inst = emit_intrinsics (cfg, cmethod, fsig, args, vector8us_intrinsics, sizeof (vector8us_intrinsics) / sizeof (SimdIntrinsic));
+		goto on_exit;
+	}
+	if (!strcmp ("Vector8s", class_name)) {
+		simd_inst = emit_intrinsics (cfg, cmethod, fsig, args, vector8s_intrinsics, sizeof (vector8s_intrinsics) / sizeof (SimdIntrinsic));
+		goto on_exit;
+	}
+	if (!strcmp ("Vector16b", class_name)) {
+		simd_inst = emit_intrinsics (cfg, cmethod, fsig, args, vector16b_intrinsics, sizeof (vector16b_intrinsics) / sizeof (SimdIntrinsic));
+		goto on_exit;
+	}
+	if (!strcmp ("Vector16sb", class_name)) {
+		simd_inst = emit_intrinsics (cfg, cmethod, fsig, args, vector16sb_intrinsics, sizeof (vector16sb_intrinsics) / sizeof (SimdIntrinsic));
+		goto on_exit;
+	}
 
-	return NULL;
+on_exit:
+	if (simd_inst != NULL) {
+		cfg->uses_simd_intrinsics |= MONO_CFG_USES_SIMD_INTRINSICS;
+		cfg->uses_simd_intrinsics |= MONO_CFG_USES_SIMD_INTRINSICS_DECOMPOSE_VTYPE;
+	}
+
+	return simd_inst;
 }
 
 static void
@@ -2490,6 +2615,8 @@ emit_sys_numerics_vectors_intrinsics (MonoCompile *cfg, MonoMethod *cmethod, Mon
 MonoInst*
 mono_emit_simd_field_load (MonoCompile *cfg, MonoClassField *field, MonoInst *addr)
 {
+	MonoInst * simd_inst = NULL;
+
 	if (is_sys_numerics_assembly (m_class_get_image (field->parent)->assembly)) {
 		int index = -1;
 
@@ -2511,20 +2638,20 @@ mono_emit_simd_field_load (MonoCompile *cfg, MonoClassField *field, MonoInst *ad
 			if (cfg->verbose_level > 1)
 				printf ("  SIMD intrinsic field access: %s\n", field->name);
 
-			return simd_intrinsic_emit_getter_op (cfg, index, field->parent, mono_field_get_type (field), addr);
+			simd_inst = simd_intrinsic_emit_getter_op (cfg, index, field->parent, mono_field_get_type (field), addr);
+			goto on_exit;
 		}
 	}
-	return NULL;
+
+on_exit:
+
+	if (simd_inst != NULL) {
+		cfg->uses_simd_intrinsics |= MONO_CFG_USES_SIMD_INTRINSICS;
+		cfg->uses_simd_intrinsics |= MONO_CFG_USES_SIMD_INTRINSICS_DECOMPOSE_VTYPE;
+	}
+
+	return simd_inst;
 }
 
 #endif /* DISABLE_JIT */
-
-#else
-
-MonoInst*
-mono_emit_simd_field_load (MonoCompile *cfg, MonoClassField *field, MonoInst *addr)
-{
-	return NULL;
-}
-
 #endif /* MONO_ARCH_SIMD_INTRINSICS */

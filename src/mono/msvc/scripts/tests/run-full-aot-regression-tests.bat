@@ -18,11 +18,13 @@ IF NOT ERRORLEVEL == 0 (
 SET FULLAOT_DIR=%MONO_WINAOT_BUILD_DIR%
 SET MONO_PATH=%FULLAOT_DIR%
 
-SET RUN_TARGET=%1
+REM When building Full AOT using net_4x BCL Mono SIMD tests are available.
+SET MONO_ENABLE_SIMD_TESTS=0
+IF /i %MONO_BCL_PATH% == %MONO_WINAOT_BCL_PATH% (
+	SET MONO_ENABLE_SIMD_TESTS=1
+)
 
-REM %FULLAOT_DIR%\basic-simd.exe not in full AOT profile on Windows.
-
-IF /i "all" == "%RUN_TARGET%" (
+IF /i "all" == "%1" (
 	SET RUN_TARGET=%FULLAOT_DIR%\basic.exe ^
 	%FULLAOT_DIR%\basic-float.exe ^
 	%FULLAOT_DIR%\basic-long.exe ^
@@ -36,12 +38,21 @@ IF /i "all" == "%RUN_TARGET%" (
 	%FULLAOT_DIR%\generics.exe ^
 	%FULLAOT_DIR%\aot-tests.exe ^
 	%FULLAOT_DIR%\gshared.exe ^
+	%FULLAOT_DIR%\basic-vectors.exe ^
 	%FULLAOT_DIR%\ratests.exe ^
 	%FULLAOT_DIR%\unaligned.exe ^
 	%FULLAOT_DIR%\builtin-types.exe
 ) ELSE (
-	IF NOT EXIST %RUN_TARGET% (
+	IF NOT EXIST %1 (
 		SET RUN_TARGET=%FULLAOT_DIR%\%1
+	)
+)
+
+IF /i "all" == "%1" (
+	IF %MONO_ENABLE_SIMD_TESTS% == 1 (
+		SET RUN_TARGET=^
+		%RUN_TARGET% ^
+		%FULLAOT_DIR%\basic-simd.exe
 	)
 )
 
