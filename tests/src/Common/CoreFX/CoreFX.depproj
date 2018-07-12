@@ -16,6 +16,7 @@
       <XUnitAbstractionsVersion>2.0.1</XUnitAbstractionsVersion>
       <CoreFXXUnitPackageVersion>2.2.0-beta2-build3300</CoreFXXUnitPackageVersion>
       <MicrosoftDiagnosticsTracingTraceVentVersion>2.0.19</MicrosoftDiagnosticsTracingTraceVentVersion>
+      <MicrosoftDotnetPlatformAbstractionsVersion>2.1.0</MicrosoftDotnetPlatformAbstractionsVersion>
   </PropertyGroup>
 
   <!-- Switch RuntimeIdentifier according to currently running OSGroup -->
@@ -167,6 +168,13 @@
       <Version>$(MicrosoftDiagnosticsTracingTraceVentVersion)</Version>
     </PackageReference>
   </ItemGroup>
+  
+  <ItemGroup Condition="'$(OSGroup)' != 'Windows_NT'">
+    <PackageReference Include="Microsoft.DotNet.PlatformAbstractions">
+      <Version>$(MicrosoftDotnetPlatformAbstractionsVersion)</Version>
+    </PackageReference>
+  </ItemGroup>
+  
   <ItemGroup>
     <PackageToInclude Include="@(PackageReference -> '%(Identity)' )"/>
   </ItemGroup>

@@ -1,1 +1,1 @@
-https://cloudcijobs.blob.core.windows.net/corertci/TestList_OSX.json
+https://cloudcijobs.blob.core.windows.net/coreclrci/CoreFXArchives_OSX/TestList.json
