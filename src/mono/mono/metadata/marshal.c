@@ -5381,16 +5381,15 @@ mono_marshal_alloc_hglobal (size_t size)
 #endif
 
 void*
-ves_icall_System_Runtime_InteropServices_Marshal_AllocHGlobal (gpointer size)
+ves_icall_System_Runtime_InteropServices_Marshal_AllocHGlobal (gsize size)
 {
 	gpointer res;
-	size_t s = (size_t)size;
 
-	if (s == 0)
+	if (size == 0)
 		/* This returns a valid pointer for size 0 on MS.NET */
-		s = 4;
+		size = 4;
 
-	res = mono_marshal_alloc_hglobal (s);
+	res = mono_marshal_alloc_hglobal (size);
 
 	if (!res)
 		mono_set_pending_exception (mono_domain_get ()->out_of_memory_ex);
@@ -5407,17 +5406,16 @@ mono_marshal_realloc_hglobal (gpointer ptr, size_t size)
 #endif
 
 gpointer
-ves_icall_System_Runtime_InteropServices_Marshal_ReAllocHGlobal (gpointer ptr, gpointer size)
+ves_icall_System_Runtime_InteropServices_Marshal_ReAllocHGlobal (gpointer ptr, gsize size)
 {
 	gpointer res;
-	size_t s = (size_t)size;
 
 	if (ptr == NULL) {
 		mono_set_pending_exception (mono_domain_get ()->out_of_memory_ex);
 		return NULL;
 	}
 
-	res = mono_marshal_realloc_hglobal (ptr, s);
+	res = mono_marshal_realloc_hglobal (ptr, size);
 
 	if (!res)
 		mono_set_pending_exception (mono_domain_get ()->out_of_memory_ex);

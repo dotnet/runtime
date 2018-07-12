@@ -344,7 +344,7 @@ gpointer
 mono_string_to_ansibstr (MonoString *string_obj);
 
 gpointer
-mono_ptr_to_bstr (gpointer ptr, int slen);
+mono_ptr_to_bstr (gconstpointer ptr, int slen);
 
 gpointer
 mono_string_to_bstr(MonoString* str);
@@ -716,10 +716,10 @@ gpointer
 ves_icall_System_Runtime_InteropServices_Marshal_ReAllocCoTaskMem (gpointer ptr, int size);
 
 void*
-ves_icall_System_Runtime_InteropServices_Marshal_AllocHGlobal (gpointer size);
+ves_icall_System_Runtime_InteropServices_Marshal_AllocHGlobal (gsize size);
 
 gpointer 
-ves_icall_System_Runtime_InteropServices_Marshal_ReAllocHGlobal (gpointer ptr, gpointer size);
+ves_icall_System_Runtime_InteropServices_Marshal_ReAllocHGlobal (gpointer ptr, gsize size);
 
 void
 ves_icall_System_Runtime_InteropServices_Marshal_FreeHGlobal (void *ptr);
@@ -740,7 +740,7 @@ int
 ves_icall_System_Runtime_InteropServices_Marshal_AddRefInternal (gpointer pUnk);
 
 int
-ves_icall_System_Runtime_InteropServices_Marshal_QueryInterfaceInternal (gpointer pUnk, gpointer riid, gpointer* ppv);
+ves_icall_System_Runtime_InteropServices_Marshal_QueryInterfaceInternal (gpointer pUnk, gconstpointer riid, gpointer* ppv);
 
 int
 ves_icall_System_Runtime_InteropServices_Marshal_ReleaseInternal (gpointer pUnk);

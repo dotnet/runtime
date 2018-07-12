@@ -63,7 +63,7 @@ MonoString *
 mono_string_from_bstr_icall (gpointer bstr);
 
 MonoString *
-mono_string_from_bstr_checked (gpointer bstr, MonoError *error);
+mono_string_from_bstr_checked (const gunichar2* bstr, MonoError *error);
 
 MONO_API void 
 mono_free_bstr (gpointer bstr);
