@@ -2386,6 +2386,7 @@ bool Lowering::IsContainableHWIntrinsicOp(GenTreeHWIntrinsic* containingNode, Ge
                 case NI_AVX_InsertVector128:
                 case NI_AVX_Permute:
                 case NI_AVX_Permute2x128:
+                case NI_AVX2_Blend:
                 case NI_AVX2_InsertVector128:
                 case NI_AVX2_Permute2x128:
                 case NI_AVX2_ShiftLeftLogical:
@@ -2629,6 +2630,8 @@ void Lowering::ContainCheckHWIntrinsic(GenTreeHWIntrinsic* node)
                     case NI_SSE2_ConvertToInt64:
                     case NI_SSE2_ConvertToUInt32:
                     case NI_SSE2_ConvertToUInt64:
+                    case NI_AVX2_ConvertToInt32:
+                    case NI_AVX2_ConvertToUInt32:
                     {
                         if (varTypeIsIntegral(baseType))
                         {
@@ -2958,6 +2961,7 @@ void Lowering::ContainCheckHWIntrinsic(GenTreeHWIntrinsic* node)
                         case NI_AVX_Insert:
                         case NI_AVX_Permute2x128:
                         case NI_AVX_Shuffle:
+                        case NI_AVX2_Blend:
                         case NI_AVX2_Permute2x128:
                         {
                             if (IsContainableHWIntrinsicOp(node, op2, &supportsRegOptional))
