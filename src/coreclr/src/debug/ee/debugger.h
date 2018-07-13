@@ -1891,7 +1891,7 @@ public:
     void ThreadStarted(Thread* pRuntimeThread);
     void DetachThread(Thread *pRuntimeThread);
 
-    BOOL SuspendComplete();
+    BOOL SuspendComplete(bool lite = false);
 
     void LoadModule(Module* pRuntimeModule,
                     LPCWSTR pszModuleName,
@@ -2335,7 +2335,7 @@ public:
     void LockForEventSending(DebuggerLockHolder *dbgLockHolder);
     void UnlockFromEventSending(DebuggerLockHolder *dbgLockHolder);
     void SyncAllThreads(DebuggerLockHolder *dbgLockHolder);
-    void SendSyncCompleteIPCEvent();
+    void SendSyncCompleteIPCEvent(bool lite = false);
 
     // Helper for sending a single pre-baked IPC event and blocking on the continue.
     // See definition of SENDIPCEVENT_BEGIN for usage pattern.

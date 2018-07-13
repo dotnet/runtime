@@ -5206,24 +5206,34 @@ HRESULT Debugger::MapPatchToDJI( DebuggerControllerPatch *dcp,DebuggerJitInfo *d
 //
 // SendSyncCompleteIPCEvent sends a Sync Complete event to the Right Side.
 //
-void Debugger::SendSyncCompleteIPCEvent()
+void Debugger::SendSyncCompleteIPCEvent(bool lite)
 {
     CONTRACTL
     {
         SO_NOT_MAINLINE;
         NOTHROW;
-        GC_NOTRIGGER;
+        if (lite) { GC_NOTRIGGER; } else { GC_TRIGGERS; }
         PRECONDITION(ThreadHoldsLock());
 
         // Anyone sending the synccomplete must hold the TSL.
         PRECONDITION(ThreadStore::HoldingThreadStore() || g_fProcessDetach);
 
         // The sync complete is now only sent on a helper thread.
-        PRECONDITION(ThisIsHelperThreadWorker());
+        if (!lite)
+        {
+            PRECONDITION(ThisIsHelperThreadWorker());
+        }
         MODE_COOPERATIVE;
 
         // We had better be trapping Runtime threads and not stopped yet.
-        PRECONDITION(m_stopped && m_trappingRuntimeThreads);
+        if (lite)
+        {
+            PRECONDITION(m_stopped);
+        }
+        else
+        {
+            PRECONDITION(m_stopped && m_trappingRuntimeThreads);
+        }
     }
     CONTRACTL_END;
 
@@ -6011,7 +6021,6 @@ void Debugger::BeforeGarbageCollection()
     {
         Debugger::DebuggerLockHolder dbgLockHolder(this);
 
-        this->m_stopped = true;
         this->m_isBlockedOnGarbageCollectionEvent = true;
 
         DebuggerIPCEvent* ipce1 = m_pRCThread->GetIPCEventSendBuffer();
@@ -6021,11 +6030,7 @@ void Debugger::BeforeGarbageCollection()
             pThread->GetDomain());
 
         m_pRCThread->SendIPCEvent();
-
-        DebuggerIPCEvent* ipce2 = m_pRCThread->GetIPCEventSendBuffer();
-        InitIPCEvent(ipce2, DB_IPCE_SYNC_COMPLETE);
-
-        m_pRCThread->SendIPCEvent();
+        this->SuspendComplete(true);
     }
 
     WaitForSingleObject(this->GetGarbageCollectionBlockerEvent(), INFINITE);
@@ -6054,7 +6059,6 @@ void Debugger::AfterGarbageCollection()
     {
         Debugger::DebuggerLockHolder dbgLockHolder(this);
 
-        this->m_stopped = true;
         this->m_isBlockedOnGarbageCollectionEvent = true;
 
         DebuggerIPCEvent* ipce1 = m_pRCThread->GetIPCEventSendBuffer();
@@ -6064,11 +6068,7 @@ void Debugger::AfterGarbageCollection()
             pThread->GetDomain());
 
         m_pRCThread->SendIPCEvent();
-
-        DebuggerIPCEvent* ipce2 = m_pRCThread->GetIPCEventSendBuffer();
-        InitIPCEvent(ipce2, DB_IPCE_SYNC_COMPLETE);
-
-        m_pRCThread->SendIPCEvent();
+        this->SuspendComplete(true);
     }
 
     WaitForSingleObject(this->GetGarbageCollectionBlockerEvent(), INFINITE);
@@ -9285,13 +9285,12 @@ void Debugger::DetachThread(Thread *pRuntimeThread)
 // SuspendComplete is called when the last Runtime thread reaches a safe point in response to having its trap flags set.
 // This may be called on either the real helper thread or someone doing helper thread duty.
 //
-BOOL Debugger::SuspendComplete()
+BOOL Debugger::SuspendComplete(bool lite)
 {
     CONTRACTL
     {
         NOTHROW;
-        GC_TRIGGERS;
-
+        if (lite) { GC_NOTRIGGER; } else { GC_TRIGGERS; }
         // This will is conceptually mode-cooperative.
         // But we haven't marked the runtime as stopped yet (m_stopped), so the contract
         // subsystem doesn't realize it yet.
@@ -9313,15 +9312,22 @@ BOOL Debugger::SuspendComplete()
     // We can't throw here (we're in the middle of the runtime suspension logic).
     // But things below us throw. So we catch the exception, but then what state are we in?
 
-    _ASSERTE((!g_pEEInterface->GetThread() || !g_pEEInterface->GetThread()->m_fPreemptiveGCDisabled) || g_fInControlC);
-    _ASSERTE(ThisIsHelperThreadWorker());
+    if (!lite) {_ASSERTE((!g_pEEInterface->GetThread() || !g_pEEInterface->GetThread()->m_fPreemptiveGCDisabled) || g_fInControlC); }
+    if (!lite) { _ASSERTE(ThisIsHelperThreadWorker()); }
 
     STRESS_LOG0(LF_CORDB, LL_INFO10000, "D::SC: suspension complete\n");
 
     // We have suspended runtime.
 
     // We're stopped now. Marking m_stopped allows us to use MODE_COOPERATIVE contracts.
-    _ASSERTE(!m_stopped && m_trappingRuntimeThreads);
+    if (lite)
+    {
+        _ASSERTE(!m_stopped);
+    }
+    else
+    {
+        _ASSERTE(!m_stopped && m_trappingRuntimeThreads);
+    }
     m_stopped = true;
 
 
@@ -9330,7 +9336,7 @@ BOOL Debugger::SuspendComplete()
         // If we fail to send the SyncComplete, what do we do?
         CONTRACT_VIOLATION(ThrowsViolation);
 
-        SendSyncCompleteIPCEvent(); // sets m_stopped = true...
+        SendSyncCompleteIPCEvent(lite); // sets m_stopped = true...
     }
 
     // Everything in the next scope is meant to mimic what we do UnlockForEventSending minus EnableEventHandling.
