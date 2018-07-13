@@ -12,5 +12,4 @@ System.Management.Tests              # https://github.com/dotnet/coreclr/issues/
 System.Net.HttpListener.Tests        # https://github.com/dotnet/coreclr/issues/17584
 System.Runtime.Numerics.Tests        # https://github.com/dotnet/coreclr/issues/18362 -- JitStress=1 JitStress=2
 System.Runtime.Tests                 # https://github.com/dotnet/coreclr/issues/17585
-System.Security.Cryptography.X509Certificates.Tests # https://github.com/dotnet/coreclr/issues/17801
 System.Text.RegularExpressions.Tests # https://github.com/dotnet/coreclr/issues/17754 -- timeout -- JitMinOpts only
