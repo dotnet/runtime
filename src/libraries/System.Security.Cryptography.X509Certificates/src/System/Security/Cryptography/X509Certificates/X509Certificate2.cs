@@ -327,8 +327,7 @@ namespace System.Security.Cryptography.X509Certificates
         {
             get
             {
-                byte[] thumbPrint = GetCertHash();
-                return thumbPrint.ToHexStringUpper();
+                return GetCertHashString();
             }
         }
 
