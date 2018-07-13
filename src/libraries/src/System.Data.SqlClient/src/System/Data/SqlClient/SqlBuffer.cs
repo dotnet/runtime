@@ -14,7 +14,7 @@ using System.Runtime.InteropServices;
 
 namespace System.Data.SqlClient
 {
-    internal sealed class SqlBuffer
+    internal sealed partial class SqlBuffer
     {
         internal enum StorageType
         {
@@ -1109,7 +1109,11 @@ namespace System.Data.SqlClient
             _isNull = false;
         }
 
+#if netcoreapp
+        private static void FillInTimeInfo(ref TimeInfo timeInfo, ReadOnlySpan<byte> timeBytes, int length, byte scale)
+#else
         private static void FillInTimeInfo(ref TimeInfo timeInfo, byte[] timeBytes, int length, byte scale)
+#endif
         {
             Debug.Assert(3 <= length && length <= 5, "invalid data length for timeInfo: " + length);
             Debug.Assert(0 <= scale && scale <= 7, "invalid scale: " + scale);

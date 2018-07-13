@@ -20,7 +20,7 @@ namespace System.Data.SqlClient
         internal long _value;
     }
 
-    internal abstract class TdsParserStateObject
+    internal abstract partial class TdsParserStateObject
     {
         private const int AttentionTimeoutSeconds = 5;
 
