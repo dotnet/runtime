@@ -94,7 +94,7 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation.ArgValidation
             dotnet.Exec("--fx-version")
                 .CaptureStdOut()
                 .CaptureStdErr()
-                .Execute()
+                .Execute(fExpectedToFail: true)
                 .Should()
                 .Fail()
                 .And
