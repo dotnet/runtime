@@ -20,18 +20,9 @@ struct CnsVal
 
 insSize emitInsSize(insFormat insFmt);
 
-BYTE* emitOutputAM(BYTE* dst, instrDesc* id, code_t code, CnsVal* addc = NULL);
-BYTE* emitOutputSV(BYTE* dst, instrDesc* id, code_t code, CnsVal* addc = NULL);
-BYTE* emitOutputCV(BYTE* dst, instrDesc* id, code_t code, CnsVal* addc = NULL);
-
-BYTE* emitOutputR(BYTE* dst, instrDesc* id);
-BYTE* emitOutputRI(BYTE* dst, instrDesc* id);
-BYTE* emitOutputRR(BYTE* dst, instrDesc* id);
-BYTE* emitOutputIV(BYTE* dst, instrDesc* id);
 #ifdef FEATURE_ITINSTRUCTION
 BYTE* emitOutputIT(BYTE* dst, instruction ins, insFormat fmt, code_t condcode);
 #endif // FEATURE_ITINSTRUCTION
-BYTE* emitOutputNOP(BYTE* dst, instruction ins, insFormat fmt);
 
 BYTE* emitOutputLJ(insGroup* ig, BYTE* dst, instrDesc* id);
 BYTE* emitOutputShortBranch(BYTE* dst, instruction ins, insFormat fmt, ssize_t distVal, instrDescJmp* id);
@@ -45,17 +36,13 @@ static unsigned emitOutput_Thumb2Instr(BYTE* dst, code_t code);
 
 #ifdef DEBUG
 
-const char* emitFPregName(unsigned reg, bool varName = true);
-
 void emitDispInst(instruction ins, insFlags flags);
-void emitDispReloc(int value, bool addComma);
 void emitDispImm(int imm, bool addComma, bool alwaysHex = false);
 void emitDispCond(int cond);
 void emitDispShiftOpts(insOpts opt);
 void emitDispRegmask(int imm, bool encodedPC_LR);
 void emitDispRegRange(regNumber reg, int len, emitAttr attr);
 void emitDispReg(regNumber reg, emitAttr attr, bool addComma);
-void emitDispFloatReg(regNumber reg, emitAttr attr, bool addComma);
 void emitDispAddrR(regNumber reg, emitAttr attr);
 void emitDispAddrRI(regNumber reg, int imm, emitAttr attr);
 void emitDispAddrRR(regNumber reg1, regNumber reg2, emitAttr attr);
@@ -87,19 +74,11 @@ void emitDispIns(instrDesc* id,
 /************************************************************************/
 
 private:
-instrDesc* emitNewInstrAmd(emitAttr attr, int dsp);
-instrDesc* emitNewInstrAmdCns(emitAttr attr, int dsp, int cns);
-
 instrDesc* emitNewInstrCallDir(
     int argCnt, VARSET_VALARG_TP GCvars, regMaskTP gcrefRegs, regMaskTP byrefRegs, emitAttr retSize);
 
 instrDesc* emitNewInstrCallInd(
     int argCnt, ssize_t disp, VARSET_VALARG_TP GCvars, regMaskTP gcrefRegs, regMaskTP byrefRegs, emitAttr retSize);
-
-void emitGetInsCns(instrDesc* id, CnsVal* cv);
-int emitGetInsAmdCns(instrDesc* id, CnsVal* cv);
-void emitGetInsDcmCns(instrDesc* id, CnsVal* cv);
-int emitGetInsAmdAny(instrDesc* id);
 
 /************************************************************************/
 /*               Private helpers for instruction output                 */
@@ -119,28 +98,7 @@ emitter::code_t emitInsCode(instruction ins, insFormat fmt);
 void emitInsLoadStoreOp(instruction ins, emitAttr attr, regNumber dataReg, GenTreeIndir* indir);
 void emitInsLoadStoreOp(instruction ins, emitAttr attr, regNumber dataReg, GenTreeIndir* indir, int offset);
 
-/*****************************************************************************
-*
-*  Convert between an index scale in bytes to a smaller encoding used for
-*  storage in instruction descriptors.
-*/
-
-inline emitter::opSize emitEncodeScale(size_t scale)
-{
-    assert(scale == 1 || scale == 2 || scale == 4 || scale == 8);
-
-    return emitSizeEncode[scale - 1];
-}
-
-inline emitAttr emitDecodeScale(unsigned ensz)
-{
-    assert(ensz < 4);
-
-    return emitter::emitSizeDecode[ensz];
-}
-
 static bool isModImmConst(int imm);
-
 static int encodeModImmConst(int imm);
 
 static int insUnscaleImm(int imm, emitAttr size);
@@ -324,7 +282,7 @@ void emitIns_R_C(instruction ins, emitAttr attr, regNumber reg, CORINFO_FIELD_HA
 
 void emitIns_C_R(instruction ins, emitAttr attr, CORINFO_FIELD_HANDLE fldHnd, regNumber reg, int offs);
 
-void emitIns_C_I(instruction ins, emitAttr attr, CORINFO_FIELD_HANDLE fdlHnd, ssize_t offs, ssize_t val);
+void emitIns_C_I(instruction ins, emitAttr attr, CORINFO_FIELD_HANDLE fdlHnd, int offs, ssize_t val);
 
 void emitIns_R_L(instruction ins, emitAttr attr, BasicBlock* dst, regNumber reg);
 

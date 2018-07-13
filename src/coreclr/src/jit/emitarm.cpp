@@ -5455,20 +5455,6 @@ BYTE* emitter::emitOutputIT(BYTE* dst, instruction ins, insFormat fmt, code_t co
 #endif // FEATURE_ITINSTRUCTION
 
 /*****************************************************************************
- *
- *  Output a 32-bit nop instruction.
- */
-
-BYTE* emitter::emitOutputNOP(BYTE* dst, instruction ins, insFormat fmt)
-{
-    code_t code = emitInsCode(ins, fmt);
-
-    dst += emitOutput_Thumb2Instr(dst, code);
-
-    return dst;
-}
-
-/*****************************************************************************
 *
  *  Append the machine code corresponding to the given instruction descriptor
  *  to the code block at '*dp'; the base of the code block is 'bp', and 'ig'
@@ -6457,27 +6443,6 @@ void emitter::emitDispInst(instruction ins, insFlags flags)
     } while (len < 8);
 }
 
-/*****************************************************************************
- *
- *  Display an reloc value
- *  If we are formatting for an assembly listing don't print the hex value
- *  since it will prevent us from doing assembly diffs
- */
-void emitter::emitDispReloc(int value, bool addComma)
-{
-    if (emitComp->opts.disAsm)
-    {
-        printf("(reloc)");
-    }
-    else
-    {
-        printf("(reloc 0x%x)", dspPtr(value));
-    }
-
-    if (addComma)
-        printf(", ");
-}
-
 #define STRICT_ARM_ASM 0
 
 /*****************************************************************************
@@ -6624,10 +6589,6 @@ void emitter::emitDispReg(regNumber reg, emitAttr attr, bool addComma)
 
     if (addComma)
         printf(", ");
-}
-
-void emitter::emitDispFloatReg(regNumber reg, emitAttr attr, bool addComma)
-{
 }
 
 /*****************************************************************************
