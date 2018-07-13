@@ -66,6 +66,7 @@ namespace System
         public static bool IsNotArmProcess { get { throw null; } }
         public static bool IsNotFedoraOrRedHatFamily { get { throw null; } }
         public static bool IsNotMacOsHighSierraOrHigher { get { throw null; } }
+        public static bool IsNotNetNative { get { throw null; } }
         public static bool IsNotNetNativeRunningAsConsoleApp { get { throw null; } }
         public static bool IsNotOneCoreUAP { get { throw null; } }
         public static bool IsNotWindows8x { get { throw null; } }
