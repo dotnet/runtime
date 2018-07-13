@@ -7,13 +7,22 @@
 #include "trace.h"
 #include "breadcrumbs.h"
 
-breadcrumb_writer_t::breadcrumb_writer_t(const std::unordered_set<pal::string_t>* files)
+breadcrumb_writer_t::breadcrumb_writer_t(bool enabled, const std::unordered_set<pal::string_t>* files)
     : m_status(false)
+    , m_enabled(enabled)
     , m_files(files)
 {
-    if (!pal::get_default_breadcrumb_store(&m_breadcrumb_store))
+    if (enabled && !pal::get_default_breadcrumb_store(&m_breadcrumb_store))
     {
         m_breadcrumb_store.clear();
+    }
+}
+
+breadcrumb_writer_t::~breadcrumb_writer_t()
+{
+    if (m_enabled)
+    {
+        end_write();
     }
 }
 
@@ -21,22 +30,25 @@ breadcrumb_writer_t::breadcrumb_writer_t(const std::unordered_set<pal::string_t>
 // thread to write breadcrumbs.
 void breadcrumb_writer_t::begin_write()
 {
-    trace::verbose(_X("--- Begin breadcrumb write"));
-    if (m_breadcrumb_store.empty())
+    if (m_enabled)
     {
-        trace::verbose(_X("Breadcrumb store was not obtained... skipping write."));
-        m_status = false;
-        return;
-    }
+        trace::verbose(_X("--- Begin breadcrumb write"));
+        if (m_breadcrumb_store.empty())
+        {
+            trace::verbose(_X("Breadcrumb store was not obtained... skipping write."));
+            m_status = false;
+            return;
+        }
 
-    trace::verbose(_X("Number of breadcrumb files to write is %d"), m_files->size());
-    if (m_files->empty())
-    {
-        m_status = true;
-        return;
+        trace::verbose(_X("Number of breadcrumb files to write is %d"), m_files->size());
+        if (m_files->empty())
+        {
+            m_status = true;
+            return;
+        }
+        m_thread = std::thread(write_worker_callback, this);
+        trace::verbose(_X("Breadcrumbs will be written using a background thread"));
     }
-    m_thread = std::thread(write_worker_callback, this);
-    trace::verbose(_X("Breadcrumbs will be written using a background thread"));
 }
 
 // Write the breadcrumbs. This method should be called
@@ -88,4 +100,3 @@ bool breadcrumb_writer_t::end_write()
     trace::verbose(_X("--- End breadcrumb write %d"), m_status);
     return m_status;
 }
-
