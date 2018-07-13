@@ -4540,9 +4540,15 @@ namespace System.Data.SqlClient
 
         private bool TryReadSqlDateTime(SqlBuffer value, byte tdsType, int length, byte scale, TdsParserStateObject stateObj)
         {
+#if netcoreapp
+            Span<byte> datetimeBuffer = length <= 10 ? stackalloc byte[length] : new byte[length];
+
+            if (!stateObj.TryReadByteArray(datetimeBuffer, length))
+#else
             byte[] datetimeBuffer = new byte[length];
 
             if (!stateObj.TryReadByteArray(datetimeBuffer, 0, length))
+#endif
             {
                 return false;
             }
