@@ -2434,10 +2434,9 @@ def static calculateBuildCommands(def newJob, def scenario, def branch, def isPR
                             buildCommands += "./tests/runtest.sh --corefxtestsall --testHostDir=\${WORKSPACE}/bin/tests/${osGroup}.${architecture}.${configuration}/testhost/ --coreclr-src=\${WORKSPACE}"
                             
                             break
-                            // TODO - uncomment once https://github.com/dotnet/coreclr/pull/18753 has been merged
                             // Archive and process (only) the test results
-                            // Utilities.addArchival(newJob, "bin/Logs/**/testResults.xml")
-                            // Utilities.addXUnitDotNETResults(newJob, "bin/Logs/**/testResults.xml")
+                            Utilities.addArchival(newJob, "bin/Logs/**/testResults.xml")
+                            Utilities.addXUnitDotNETResults(newJob, "bin/Logs/**/testResults.xml")
                         }
                         else {
                             // Corefx stress testing
