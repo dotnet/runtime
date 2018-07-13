@@ -20,10 +20,10 @@ if(WIN32)
 
     set(CURRENT_BINARY_DIR_FOR_CONFIG ${CMAKE_CURRENT_BINARY_DIR}/${CMAKE_CFG_INTDIR})
 
-    #Preprocess exports definition file
+    # Preprocess exports definition file
     preprocess_def_file(${CMAKE_CURRENT_SOURCE_DIR}/${DEF_SOURCES} ${CURRENT_BINARY_DIR_FOR_CONFIG}/mscordac.def)
 
-    #create target to add file dependency on mscordac.def
+    # Create target to add file dependency on mscordac.def
     add_custom_target(mscordaccore_def DEPENDS ${CURRENT_BINARY_DIR_FOR_CONFIG}/mscordac.def)
 
     # No library groups for Win32
@@ -32,7 +32,50 @@ if(WIN32)
 else(WIN32)
     set(DEF_SOURCES ${CMAKE_CURRENT_SOURCE_DIR}/mscordac_unixexports.src)
     set(EXPORTS_FILE ${CMAKE_CURRENT_BINARY_DIR}/mscordac.exports)
-    generate_exports_file(${DEF_SOURCES} ${EXPORTS_FILE})
+
+    # Add dependency on export file
+    add_custom_target(mscordaccore_exports DEPENDS ${EXPORTS_FILE})
+
+    if(CLR_CMAKE_PLATFORM_DARWIN)
+        generate_exports_file(${DEF_SOURCES} ${EXPORTS_FILE})
+    endif(CLR_CMAKE_PLATFORM_DARWIN)
+
+    if(CLR_CMAKE_PLATFORM_LINUX)
+
+        # Generate DAC export file with the DAC_ prefix
+        generate_exports_file_prefix(${DEF_SOURCES} ${EXPORTS_FILE} DAC_)
+
+        set(REDEFINES_FILE_AWK_SCRIPT ${CMAKE_SOURCE_DIR}/generateredefinesfile.awk)
+
+        if (CLR_CMAKE_PLATFORM_ARCH_ARM OR CLR_CMAKE_PLATFORM_ARCH_ARM64)
+            set(JUMP_INSTRUCTION b)
+        else()
+            set(JUMP_INSTRUCTION jmp)
+        endif()
+
+        # Generate the palredefines.inc file to map from the imported prefixed APIs (foo to DAC_foo)
+        set(PAL_REDEFINES_INC ${GENERATED_INCLUDE_DIR}/palredefines.inc)
+        add_custom_command(
+            OUTPUT ${PAL_REDEFINES_INC}
+            COMMAND ${AWK} -f ${REDEFINES_FILE_AWK_SCRIPT} -v jump=${JUMP_INSTRUCTION} -v prefix2=DAC_ ${DEF_SOURCES} > ${PAL_REDEFINES_INC}
+            DEPENDS ${DEF_SOURCES} ${REDEFINES_FILE_AWK_SCRIPT}
+            COMMENT "Generating PAL redefines file -> ${PAL_REDEFINES_INC}"
+        )
+        add_custom_target(pal_redefines_file DEPENDS ${PAL_REDEFINES_INC})
+
+        # Generate the libredefines.inc file for the DAC to export the prefixed APIs (DAC_foo to foo)
+        set(LIB_REDEFINES_INC ${GENERATED_INCLUDE_DIR}/libredefines.inc)
+        add_custom_command(
+            OUTPUT ${LIB_REDEFINES_INC}
+            COMMAND ${AWK} -f ${REDEFINES_FILE_AWK_SCRIPT} -v jump=${JUMP_INSTRUCTION} -v prefix1=DAC_ ${DEF_SOURCES} > ${LIB_REDEFINES_INC}
+            DEPENDS ${DEF_SOURCES} ${REDEFINES_FILE_AWK_SCRIPT}
+            COMMENT "Generating DAC export redefines file -> ${LIB_REDEFINES_INC}"
+        )
+        add_custom_target(lib_redefines_inc DEPENDS ${LIB_REDEFINES_INC})
+
+        # Add lib redefines file to DAC
+        list(APPEND CLR_DAC_SOURCES libredefines.S)
+    endif(CLR_CMAKE_PLATFORM_LINUX)
 endif(WIN32)
 
 if(CLR_CMAKE_PLATFORM_LINUX OR CLR_CMAKE_PLATFORM_FREEBSD OR CLR_CMAKE_PLATFORM_NETBSD)
@@ -64,10 +107,12 @@ _add_library(mscordacobj OBJECT mscordac.cpp)
 
 add_library_clr(mscordaccore SHARED ${CLR_DAC_SOURCES} $<TARGET_OBJECTS:mscordacobj>)
 
-if(CLR_CMAKE_PLATFORM_UNIX)
-    add_custom_target(mscordaccore_exports DEPENDS ${EXPORTS_FILE})
-    add_dependencies(mscordaccore mscordaccore_exports)
+if(CLR_CMAKE_PLATFORM_LINUX)
+    add_dependencies(mscordaccore lib_redefines_inc)
+endif(CLR_CMAKE_PLATFORM_LINUX)
 
+if(CLR_CMAKE_PLATFORM_UNIX)
+    add_dependencies(mscordaccore mscordaccore_exports)
     set_property(TARGET mscordaccore APPEND_STRING PROPERTY LINK_FLAGS ${EXPORTS_LINKER_OPTION})
     set_property(TARGET mscordaccore APPEND_STRING PROPERTY LINK_DEPENDS ${EXPORTS_FILE})
 endif(CLR_CMAKE_PLATFORM_UNIX)
