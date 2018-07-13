@@ -538,7 +538,7 @@ namespace System.Threading.Tasks.Dataflow
                 }
                 else
                 {
-                    lock (ParallelSourceLock) // don't hold lock while enumerating
+                    lock (ParallelSourceLock)
                     {
                         foreach (TOutput item in outputItems)
                             _source.AddMessage(item);
