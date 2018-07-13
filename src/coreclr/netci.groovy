@@ -2730,9 +2730,28 @@ def static shouldGenerateJob(def scenario, def isPR, def architecture, def confi
         if (os != 'Windows_NT') {
             return false
         }
-        // Stress scenarios only run with Checked builds, not Release (they would work with Debug, but be slow).
-        if ((configuration != 'Checked') && isR2RStressScenario(scenario)) {
-            return false
+
+        if (isR2RBaselineScenario(scenario)) {
+            // no need for Debug scenario; Checked is sufficient
+            if (configuration != 'Checked' && configuration != 'Release') {
+                return false
+            }
+        }
+        else if (isR2RStressScenario(scenario)) {
+            // Stress scenarios only run with Checked builds, not Release (they would work with Debug, but be slow).
+            if (configuration != 'Checked') {
+                return false
+            }
+        }
+
+        switch (architecture) {
+            case 'arm':
+            case 'arm64':
+                // Windows arm/arm64 ready-to-run jobs use flow jobs and test jobs, but depend on "normal" (not R2R specific) build jobs.
+                return false
+
+            default:
+                break
         }
     }
     else {
