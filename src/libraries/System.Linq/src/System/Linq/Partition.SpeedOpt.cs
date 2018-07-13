@@ -10,74 +10,6 @@ using System.Diagnostics.CodeAnalysis;
 namespace System.Linq
 {
     /// <summary>
-    /// An iterator that can produce an array or <see cref="List{TElement}"/> through an optimized path.
-    /// </summary>
-    internal interface IIListProvider<TElement> : IEnumerable<TElement>
-    {
-        /// <summary>
-        /// Produce an array of the sequence through an optimized path.
-        /// </summary>
-        /// <returns>The array.</returns>
-        TElement[] ToArray();
-
-        /// <summary>
-        /// Produce a <see cref="List{TElement}"/> of the sequence through an optimized path.
-        /// </summary>
-        /// <returns>The <see cref="List{TElement}"/>.</returns>
-        List<TElement> ToList();
-
-        /// <summary>
-        /// Returns the count of elements in the sequence.
-        /// </summary>
-        /// <param name="onlyIfCheap">If true then the count should only be calculated if doing
-        /// so is quick (sure or likely to be constant time), otherwise -1 should be returned.</param>
-        /// <returns>The number of elements.</returns>
-        int GetCount(bool onlyIfCheap);
-    }
-
-    /// <summary>
-    /// An iterator that supports random access and can produce a partial sequence of its items through an optimized path.
-    /// </summary>
-    internal interface IPartition<TElement> : IIListProvider<TElement>
-    {
-        /// <summary>
-        /// Creates a new partition that skips the specified number of elements from this sequence.
-        /// </summary>
-        /// <param name="count">The number of elements to skip.</param>
-        /// <returns>An <see cref="IPartition{TElement}"/> with the first <paramref name="count"/> items removed.</returns>
-        IPartition<TElement> Skip(int count);
-
-        /// <summary>
-        /// Creates a new partition that takes the specified number of elements from this sequence.
-        /// </summary>
-        /// <param name="count">The number of elements to take.</param>
-        /// <returns>An <see cref="IPartition{TElement}"/> with only the first <paramref name="count"/> items.</returns>
-        IPartition<TElement> Take(int count);
-
-        /// <summary>
-        /// Gets the item associated with a 0-based index in this sequence.
-        /// </summary>
-        /// <param name="index">The 0-based index to access.</param>
-        /// <param name="found"><c>true</c> if the sequence contains an element at that index, <c>false</c> otherwise.</param>
-        /// <returns>The element if <paramref name="found"/> is <c>true</c>, otherwise, the default value of <see cref="TElement"/>.</returns>
-        TElement TryGetElementAt(int index, out bool found);
-
-        /// <summary>
-        /// Gets the first item in this sequence.
-        /// </summary>
-        /// <param name="found"><c>true</c> if the sequence contains an element, <c>false</c> otherwise.</param>
-        /// <returns>The element if <paramref name="found"/> is <c>true</c>, otherwise, the default value of <see cref="TElement"/>.</returns>
-        TElement TryGetFirst(out bool found);
-
-        /// <summary>
-        /// Gets the last item in this sequence.
-        /// </summary>
-        /// <param name="found"><c>true</c> if the sequence contains an element, <c>false</c> otherwise.</param>
-        /// <returns>The element if <paramref name="found"/> is <c>true</c>, otherwise, the default value of <see cref="TElement"/>.</returns>
-        TElement TryGetLast(out bool found);
-    }
-
-    /// <summary>
     /// Represents an enumerable with zero elements.
     /// </summary>
     /// <typeparam name="TElement">The element type.</typeparam>
@@ -108,7 +40,10 @@ namespace System.Linq
         [ExcludeFromCodeCoverage] // Shouldn't be called, and as undefined can return or throw anything anyway.
         object IEnumerator.Current => default(TElement);
 
-        void IEnumerator.Reset() => throw Error.NotSupported();
+        void IEnumerator.Reset()
+        {
+            // Do nothing.
+        }
 
         void IDisposable.Dispose()
         {

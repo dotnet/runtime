@@ -31,7 +31,7 @@ namespace System.Linq
         /// An iterator that yields distinct values from two or more <see cref="IEnumerable{TSource}"/>.
         /// </summary>
         /// <typeparam name="TSource">The type of the source enumerables.</typeparam>
-        private abstract class UnionIterator<TSource> : Iterator<TSource>, IIListProvider<TSource>
+        private abstract partial class UnionIterator<TSource> : Iterator<TSource>
         {
             internal readonly IEqualityComparer<TSource> _comparer;
             private IEnumerator<TSource> _enumerator;
@@ -131,27 +131,6 @@ namespace System.Linq
                 Dispose();
                 return false;
             }
-
-            private Set<TSource> FillSet()
-            {
-                Set<TSource> set = new Set<TSource>(_comparer);
-                for (int index = 0; ; ++index)
-                {
-                    IEnumerable<TSource> enumerable = GetEnumerable(index);
-                    if (enumerable == null)
-                    {
-                        return set;
-                    }
-
-                    set.UnionWith(enumerable);
-                }
-            }
-
-            public TSource[] ToArray() => FillSet().ToArray();
-
-            public List<TSource> ToList() => FillSet().ToList();
-
-            public int GetCount(bool onlyIfCheap) => onlyIfCheap ? -1 : FillSet().Count;
         }
         
         /// <summary>

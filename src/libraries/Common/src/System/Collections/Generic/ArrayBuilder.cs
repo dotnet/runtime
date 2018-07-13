@@ -37,6 +37,9 @@ namespace System.Collections.Generic
         /// </summary>
         public int Capacity => _array?.Length ?? 0;
 
+        /// <summary>Gets the current underlying array.</summary>
+        public T[] Buffer => _array;
+
         /// <summary>
         /// Gets the number of items in the array currently in use.
         /// </summary>
@@ -52,11 +55,6 @@ namespace System.Collections.Generic
             {
                 Debug.Assert(index >= 0 && index < _count);
                 return _array[index];
-            }
-            set
-            {
-                Debug.Assert(index >= 0 && index < _count);
-                _array[index] = value;
             }
         }
 

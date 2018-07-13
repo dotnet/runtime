@@ -226,7 +226,7 @@ namespace System.Linq.Tests
         }
 
         [Fact]
-        [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework, "This fails with an OOM with the full .NET Framework, as it iterates through the large array. See https://github.com/dotnet/corefx/pull/6821.")]
+        [SkipOnTargetFramework(~TargetFrameworkMonikers.Netcoreapp, "This fails with an OOM, as it iterates through the large array. See https://github.com/dotnet/corefx/pull/6821.")]
         public void TakeAndSkip_DoesntIterateRangeUnlessNecessary()
         {
             Assert.Empty(Enumerable.Range(0, int.MaxValue).Take(int.MaxValue).OrderBy(i => i).Skip(int.MaxValue - 4).Skip(15));

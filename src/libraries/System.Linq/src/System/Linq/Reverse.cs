@@ -2,7 +2,6 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
-using System.Collections;
 using System.Collections.Generic;
 using System.Diagnostics;
 
@@ -24,7 +23,7 @@ namespace System.Linq
         /// An iterator that yields the items of an <see cref="IEnumerable{TSource}"/> in reverse.
         /// </summary>
         /// <typeparam name="TSource">The type of the source enumerable.</typeparam>
-        private sealed class ReverseIterator<TSource> : Iterator<TSource>, IIListProvider<TSource>
+        private sealed partial class ReverseIterator<TSource> : Iterator<TSource>
         {
             private readonly IEnumerable<TSource> _source;
             private TSource[] _buffer;
@@ -83,43 +82,6 @@ namespace System.Linq
             {
                 _buffer = null; // Just in case this ends up being long-lived, allow the memory to be reclaimed.
                 base.Dispose();
-            }
-
-            public TSource[] ToArray()
-            {
-                TSource[] array = _source.ToArray();
-                Array.Reverse(array);
-                return array;
-            }
-
-            public List<TSource> ToList()
-            {
-                List<TSource> list = _source.ToList();
-                list.Reverse();
-                return list;
-            }
-
-            public int GetCount(bool onlyIfCheap)
-            {
-                if (onlyIfCheap)
-                {
-                    switch (_source)
-                    {
-                        case IIListProvider<TSource> listProv:
-                            return listProv.GetCount(onlyIfCheap: true);
-
-                        case ICollection<TSource> colT:
-                            return colT.Count;
-
-                        case ICollection col:
-                            return col.Count;
-
-                        default:
-                            return -1;
-                    }
-                }
-
-                return _source.Count();
             }
         }
     }

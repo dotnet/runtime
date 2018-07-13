@@ -25,7 +25,7 @@ namespace System.Linq
         /// An iterator that yields the distinct values in an <see cref="IEnumerable{TSource}"/>.
         /// </summary>
         /// <typeparam name="TSource">The type of the source enumerable.</typeparam>
-        private sealed class DistinctIterator<TSource> : Iterator<TSource>, IIListProvider<TSource>
+        private sealed partial class DistinctIterator<TSource> : Iterator<TSource>
         {
             private readonly IEnumerable<TSource> _source;
             private readonly IEqualityComparer<TSource> _comparer;
@@ -88,19 +88,6 @@ namespace System.Linq
 
                 base.Dispose();
             }
-
-            private Set<TSource> FillSet()
-            {
-                Set<TSource> set = new Set<TSource>(_comparer);
-                set.UnionWith(_source);
-                return set;
-            }
-
-            public TSource[] ToArray() => FillSet().ToArray();
-
-            public List<TSource> ToList() => FillSet().ToList();
-
-            public int GetCount(bool onlyIfCheap) => onlyIfCheap ? -1 : FillSet().Count;
         }
     }
 }
