@@ -207,7 +207,7 @@ namespace CorUnix
     {
         friend
             PAL_ERROR
-            CorUnix::InternalCreateThread(
+            InternalCreateThread(
                 CPalThread *,
                 LPSECURITY_ATTRIBUTES,
                 DWORD,
@@ -250,8 +250,6 @@ namespace CorUnix
                 HANDLE *phThread
                 );
 
-        friend CatchHardwareExceptionHolder;
-        
     private:
 
         CPalThread *m_pNext;
@@ -550,6 +548,18 @@ namespace CorUnix
         IsHardwareExceptionsEnabled()
         {
             return m_hardwareExceptionHolderCount > 0;
+        }
+
+        inline void
+        IncrementHardwareExceptionHolderCount()
+        {
+            ++m_hardwareExceptionHolderCount;
+        }
+
+        inline void
+        DecrementHardwareExceptionHolderCount()
+        {
+            --m_hardwareExceptionHolderCount;
         }
 
         LPTHREAD_START_ROUTINE

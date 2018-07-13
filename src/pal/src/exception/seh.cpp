@@ -364,16 +364,22 @@ PAL_ERROR SEHDisable(CPalThread *pthrCurrent)
 
 --*/
 
-CatchHardwareExceptionHolder::CatchHardwareExceptionHolder()
+extern "C" 
+void 
+PALAPI
+PAL_CatchHardwareExceptionHolderEnter()
 {
     CPalThread *pThread = InternalGetCurrentThread();
-    ++pThread->m_hardwareExceptionHolderCount;
+    pThread->IncrementHardwareExceptionHolderCount();
 }
 
-CatchHardwareExceptionHolder::~CatchHardwareExceptionHolder()
+extern "C"
+void
+PALAPI
+PAL_CatchHardwareExceptionHolderExit()
 {
     CPalThread *pThread = InternalGetCurrentThread();
-    --pThread->m_hardwareExceptionHolderCount;
+    pThread->DecrementHardwareExceptionHolderCount();
 }
 
 bool CatchHardwareExceptionHolder::IsEnabled()
@@ -395,30 +401,12 @@ __declspec(thread)
 #endif // !__llvm__
 static NativeExceptionHolderBase *t_nativeExceptionHolderHead = nullptr;
 
-NativeExceptionHolderBase::NativeExceptionHolderBase()
+extern "C"
+NativeExceptionHolderBase **
+PALAPI
+PAL_GetNativeExceptionHolderHead()
 {
-    m_head = nullptr;
-    m_next = nullptr;
-}
-
-NativeExceptionHolderBase::~NativeExceptionHolderBase()
-{
-    // Only destroy if Push was called
-    if (m_head != nullptr)
-    {
-        *m_head = m_next;
-        m_head = nullptr;
-        m_next = nullptr;
-    }
-}
-
-void 
-NativeExceptionHolderBase::Push()
-{
-    NativeExceptionHolderBase **head = &t_nativeExceptionHolderHead;
-    m_head = head;
-    m_next = *head;
-    *head = this;
+    return &t_nativeExceptionHolderHead;
 }
 
 NativeExceptionHolderBase *

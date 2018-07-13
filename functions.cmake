@@ -107,6 +107,27 @@ function(generate_exports_file)
                               PROPERTIES GENERATED TRUE)
 endfunction()
 
+function(generate_exports_file_prefix inputFilename outputFilename prefix)
+
+  if(CMAKE_SYSTEM_NAME STREQUAL Darwin)
+    set(AWK_SCRIPT generateexportedsymbols.awk)
+  else()
+    set(AWK_SCRIPT generateversionscript.awk)
+    if (NOT ${prefix} STREQUAL "")
+        set(AWK_VARS ${AWK_VARS} -v prefix=${prefix})
+    endif()
+  endif(CMAKE_SYSTEM_NAME STREQUAL Darwin)
+
+  add_custom_command(
+    OUTPUT ${outputFilename}
+    COMMAND ${AWK} -f ${CMAKE_SOURCE_DIR}/${AWK_SCRIPT} ${AWK_VARS} ${inputFilename} >${outputFilename}
+    DEPENDS ${inputFilename} ${CMAKE_SOURCE_DIR}/${AWK_SCRIPT}
+    COMMENT "Generating exports file ${outputFilename}"
+  )
+  set_source_files_properties(${outputFilename}
+                              PROPERTIES GENERATED TRUE)
+endfunction()
+
 function(add_precompiled_header header cppFile targetSources)
   if(MSVC)
     set(precompiledBinary "${CMAKE_CURRENT_BINARY_DIR}/${CMAKE_CFG_INTDIR}/stdafx.pch")
