@@ -17,10 +17,10 @@ namespace System
         public static bool IsNetfx472OrNewer => false;
 
 
-        [DllImport("libc", ExactSpelling = true, CharSet = CharSet.Ansi, CallingConvention = CallingConvention.Cdecl)]
+        [DllImport("libc", CharSet = CharSet.Ansi, CallingConvention = CallingConvention.Cdecl)]
         private static extern IntPtr gnu_get_libc_release();
 
-        [DllImport("libc", ExactSpelling = true, CharSet = CharSet.Ansi, CallingConvention = CallingConvention.Cdecl)]
+        [DllImport("libc", CharSet = CharSet.Ansi, CallingConvention = CallingConvention.Cdecl)]
         private static extern IntPtr gnu_get_libc_version();
 
         /// <summary>
