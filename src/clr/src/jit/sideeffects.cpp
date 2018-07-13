@@ -165,7 +165,7 @@ AliasSet::NodeInfo::NodeInfo(Compiler* compiler, GenTree* node)
         isWrite = true;
         node    = node->gtGetOp1();
     }
-    else if (node->OperIsStore() || node->OperIsAtomicOp())
+    else if (node->OperIsStore())
     {
         isWrite = true;
     }
