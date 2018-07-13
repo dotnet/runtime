@@ -171,31 +171,35 @@ namespace System.Tests
 
         public static IEnumerable<object[]> Parse_Valid_TestData()
         {
-            NumberStyles defaultStyle = NumberStyles.Integer;
-            NumberFormatInfo emptyFormat = new NumberFormatInfo();
+            // Reuse all Int32 test data
+            foreach (object[] objs in Int32Tests.Parse_Valid_TestData())
+            {
+                bool unsigned = (((NumberStyles)objs[1]) & NumberStyles.HexNumber) == NumberStyles.HexNumber;
+                yield return new object[] { objs[0], objs[1], objs[2], unsigned ? (long)(uint)(int)objs[3] : (long)(int)objs[3] };
+            }
 
-            NumberFormatInfo customFormat = new NumberFormatInfo();
-            customFormat.CurrencySymbol = "$";
+            // All lengths
+            foreach (bool neg in new[] { false, true })
+            {
+                string s = neg ? "-" : "";
+                long result = 0;
+                for (int i = 1; i <= 19; i++)
+                {
+                    result = result * 10 + (i % 10);
+                    s += (i % 10).ToString();
+                    yield return new object[] { s, NumberStyles.Integer, null, neg ? result*-1 : result };
+                }
+            }
 
-            yield return new object[] { "-9223372036854775808", defaultStyle, null, -9223372036854775808 };
-            yield return new object[] { "-123", defaultStyle, null, (long)-123 };
-            yield return new object[] { "0", defaultStyle, null, (long)0 };
-            yield return new object[] { "123", defaultStyle, null, (long)123 };
-            yield return new object[] { "+123", defaultStyle, null, (long)123 };
-            yield return new object[] { "  123  ", defaultStyle, null, (long)123 };
-            yield return new object[] { "9223372036854775807", defaultStyle, null, 9223372036854775807 };
-
-            yield return new object[] { "123", NumberStyles.HexNumber, null, (long)0x123 };
-            yield return new object[] { "abc", NumberStyles.HexNumber, null, (long)0xabc };
-            yield return new object[] { "ABC", NumberStyles.HexNumber, null, (long)0xabc };
-            yield return new object[] { "1000", NumberStyles.AllowThousands, null, (long)1000 };
-            yield return new object[] { "(123)", NumberStyles.AllowParentheses, null, (long)-123 }; // Parentheses = negative
-
-            yield return new object[] { "123", defaultStyle, emptyFormat, (long)123 };
-
-            yield return new object[] { "123", NumberStyles.Any, emptyFormat, (long)123 };
-            yield return new object[] { "12", NumberStyles.HexNumber, emptyFormat, (long)0x12 };
-            yield return new object[] { "$1,000", NumberStyles.Currency, customFormat, (long)1000 };
+            // And test boundary conditions for Int64
+            yield return new object[] { "-9223372036854775808", NumberStyles.Integer, null, -9223372036854775808 };
+            yield return new object[] { "9223372036854775807", NumberStyles.Integer, null, 9223372036854775807 };
+            yield return new object[] { "   -9223372036854775808   ", NumberStyles.Integer, null, -9223372036854775808 };
+            yield return new object[] { "   +9223372036854775807   ", NumberStyles.Integer, null, 9223372036854775807 };
+            yield return new object[] { "7FFFFFFFFFFFFFFF", NumberStyles.HexNumber, null, long.MaxValue };
+            yield return new object[] { "8000000000000000", NumberStyles.HexNumber, null, long.MinValue };
+            yield return new object[] { "FFFFFFFFFFFFFFFF", NumberStyles.HexNumber, null, -1 };
+            yield return new object[] { "   FFFFFFFFFFFFFFFF  ", NumberStyles.HexNumber, null, -1 };
         }
 
         [Theory]
@@ -232,38 +236,27 @@ namespace System.Tests
 
         public static IEnumerable<object[]> Parse_Invalid_TestData()
         {
-            NumberStyles defaultStyle = NumberStyles.Integer;
+            // Reuse all Int32 test data, except for those that would be validating Int32 overflows,
+            // since many of those will succeed for Int64.
+            foreach (object[] objs in Int32Tests.Parse_Invalid_TestData())
+            {
+                if ((Type)objs[3] == typeof(OverflowException)) continue;
+                yield return objs;
+            }
 
-            NumberFormatInfo customFormat = new NumberFormatInfo();
-            customFormat.CurrencySymbol = "$";
-            customFormat.NumberDecimalSeparator = ".";
-
-            yield return new object[] { null, defaultStyle, null, typeof(ArgumentNullException) };
-            yield return new object[] { "", defaultStyle, null, typeof(FormatException) };
-            yield return new object[] { " \t \n \r ", defaultStyle, null, typeof(FormatException) };
-            yield return new object[] { "Garbage", defaultStyle, null, typeof(FormatException) };
-
-            yield return new object[] { "abc", defaultStyle, null, typeof(FormatException) }; // Hex value
-            yield return new object[] { "1E23", defaultStyle, null, typeof(FormatException) }; // Exponent
-            yield return new object[] { "(123)", defaultStyle, null, typeof(FormatException) }; // Parentheses
-            yield return new object[] { 1000.ToString("C0"), defaultStyle, null, typeof(FormatException) }; // Currency
-            yield return new object[] { 1000.ToString("N0"), defaultStyle, null, typeof(FormatException) }; // Thousands
-            yield return new object[] { 678.90.ToString("F2"), defaultStyle, null, typeof(FormatException) }; // Decimal
-            yield return new object[] { "+-123", defaultStyle, null, typeof(FormatException) };
-            yield return new object[] { "-+123", defaultStyle, null, typeof(FormatException) };
-            yield return new object[] { "+abc", NumberStyles.HexNumber, null, typeof(FormatException) };
-            yield return new object[] { "-abc", NumberStyles.HexNumber, null, typeof(FormatException) };
-
-            yield return new object[] { "- 123", defaultStyle, null, typeof(FormatException) };
-            yield return new object[] { "+ 123", defaultStyle, null, typeof(FormatException) };
-
-            yield return new object[] { "abc", NumberStyles.None, null, typeof(FormatException) }; // Hex value
-            yield return new object[] { "  123  ", NumberStyles.None, null, typeof(FormatException) }; // Trailing and leading whitespace
-
-            yield return new object[] { "67.90", defaultStyle, customFormat, typeof(FormatException) }; // Decimal
-
-            yield return new object[] { "-9223372036854775809", defaultStyle, null, typeof(OverflowException) }; // < min value
-            yield return new object[] { "9223372036854775808", defaultStyle, null, typeof(OverflowException) }; // > max value
+            // Then also validate Int64 boundary conditions for overflows.
+            yield return new object[] { "10000000000000000", NumberStyles.HexNumber, null, typeof(OverflowException) };
+            yield return new object[] { "-9223372036854775809", NumberStyles.Integer, null, typeof(OverflowException) };
+            yield return new object[] { "9223372036854775808", NumberStyles.Integer, null, typeof(OverflowException) };
+            yield return new object[] { "9223372036854775817", NumberStyles.Integer, null, typeof(OverflowException) };
+            yield return new object[] { "10000000000000000000", NumberStyles.Integer, null, typeof(OverflowException) };
+            yield return new object[] { "-10000000000000000000", NumberStyles.Integer, null, typeof(OverflowException) };
+            yield return new object[] { "922337203685477580a", NumberStyles.Integer, null, typeof(FormatException) };
+            yield return new object[] { "922337203685477580 a", NumberStyles.Integer, null, typeof(FormatException) };
+            yield return new object[] { "100000000000000000a", NumberStyles.Integer, null, typeof(FormatException) };
+            yield return new object[] { "1000000000000000000a", NumberStyles.Integer, null, typeof(FormatException) };
+            yield return new object[] { "100000000000000000 a", NumberStyles.Integer, null, typeof(FormatException) };
+            yield return new object[] { "1000000000000000000 a", NumberStyles.Integer, null, typeof(FormatException) };
         }
 
         [Theory]
