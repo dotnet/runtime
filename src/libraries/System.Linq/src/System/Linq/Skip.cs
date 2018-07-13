@@ -32,12 +32,7 @@ namespace System.Linq
                 return partition.Skip(count);
             }
 
-            if (source is IList<TSource> sourceList)
-            {
-                return new ListPartition<TSource>(sourceList, count, int.MaxValue);
-            }
-
-            return new EnumerablePartition<TSource>(source, count, -1);
+            return SkipIterator(source, count);
         }
 
         public static IEnumerable<TSource> SkipWhile<TSource>(this IEnumerable<TSource> source, Func<TSource, bool> predicate)
