@@ -17,5 +17,31 @@ namespace System.Runtime.InteropServices.Tests
             Exception ex = Marshal.GetExceptionForHR(err);
             Assert.Equal(err, ex.HResult);
         }
+
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotWindowsNanoServer))]
+        public void GetExceptionForHR_ThrowExceptionForHR_ThrowsSameException()
+        {
+            const int ErrorCode = unchecked((int)0x80131D0B);
+            COMException getHRException = Marshal.GetExceptionForHR(ErrorCode) as COMException;
+            Assert.Equal(ErrorCode, getHRException.HResult);
+            try
+            {
+                Marshal.ThrowExceptionForHR(ErrorCode);
+            }
+            catch (COMException e)
+            {
+                Assert.Equal(ErrorCode, e.HResult);
+                Assert.Equal(e.HResult, getHRException.HResult);
+            }
+        }
+
+        [Theory]
+        [InlineData(0)]
+        [InlineData(1)]
+        public void GetExceptionForHR_InvalidHR_ReturnsNull(int errorCode)
+        {
+            Assert.Null(Marshal.GetExceptionForHR(errorCode));
+            Assert.Null(Marshal.GetExceptionForHR(errorCode, IntPtr.Zero));
+        }
     }
 }

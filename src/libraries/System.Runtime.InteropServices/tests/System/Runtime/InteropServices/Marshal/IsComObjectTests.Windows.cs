@@ -3,13 +3,14 @@
 // See the LICENSE file in the project root for more information.
 
 using System.Collections.Generic;
+using System.Runtime.InteropServices.Tests.Common;
 using Xunit;
 
-namespace System.Runtime.InteropServices
+namespace System.Runtime.InteropServices.Tests
 {
-    public partial class MarshalTests
+    public partial class IsComObjectTests
     {
-        public static IEnumerable<object[]> IsComImport_Windows_ReturnsExpected()
+        public static IEnumerable<object[]> IsComObject_Windows_TestData()
         {
             yield return new object[] { new ComImportObject(), true };
             yield return new object[] { new SubComImportObject(), true };
@@ -18,27 +19,11 @@ namespace System.Runtime.InteropServices
         }
 
         [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsNotWindowsNanoServer))]
-        [MemberData(nameof(IsComImport_Windows_ReturnsExpected))]
+        [MemberData(nameof(IsComObject_Windows_TestData))]
         [SkipOnTargetFramework(TargetFrameworkMonikers.Uap, "Not approved COM object for app")]
         public void IsComObject_Windows_ReturnsExpected(object value, bool expected)
         {
             Assert.Equal(expected, Marshal.IsComObject(value));
         }
     }
-
-    [ComImport]
-    [Guid("927971f5-0939-11d1-8be1-00c04fd8d503")]
-    public interface IComImportObject { }
-
-    public class InterfaceComImportObject : IComImportObject { }
-
-    [ComImport]
-    [Guid("927971f5-0939-11d1-8be1-00c04fd8d503")]
-    public class InterfaceAndComImportObject : IComImportObject { }
-
-    [ComImport]
-    [Guid("927971f5-0939-11d1-8be1-00c04fd8d503")]
-    public class ComImportObject { }
-
-    public class SubComImportObject : ComImportObject { }
 }

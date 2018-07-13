@@ -23,13 +23,6 @@ namespace System.Runtime.InteropServices.Tests
         }
 
         [Fact]
-        public void PtrToStringAuto()
-        {
-            AssertExtensions.Throws<ArgumentNullException>("ptr", () => Marshal.PtrToStringAuto(IntPtr.Zero, 123));
-            Assert.Throws<ArgumentException>(() => Marshal.PtrToStringAuto(new IntPtr(123), -77));
-        }
-
-        [Fact]
         public void PtrToStringBSTR()
         {
             AssertExtensions.Throws<ArgumentNullException>("ptr", () => Marshal.PtrToStringBSTR(IntPtr.Zero));

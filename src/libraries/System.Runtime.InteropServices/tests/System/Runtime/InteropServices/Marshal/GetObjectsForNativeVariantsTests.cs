@@ -57,15 +57,6 @@ namespace System.Runtime.InteropServices.Tests
             [FieldOffset(0)] public decimal m_decimal;
         }
 #pragma warning disable 618
-
-        [Fact]
-        [PlatformSpecific(TestPlatforms.Windows)]
-        public static void NullParameter()
-        {
-            AssertExtensions.Throws<ArgumentNullException>("aSrcNativeVariant", () => Marshal.GetObjectsForNativeVariants(IntPtr.Zero, 10));
-            Assert.Throws<ArgumentOutOfRangeException>("cVars", () => Marshal.GetObjectsForNativeVariants<int>(new IntPtr(100), -1));
-        }
-
         [Fact]
         [PlatformSpecific(TestPlatforms.Windows)]
         public void SByteType()
@@ -286,6 +277,29 @@ namespace System.Runtime.InteropServices.Tests
             }
         }
 
+        [Fact]
+        [PlatformSpecific(TestPlatforms.AnyUnix)]
+        public static void GetObjectsForNativeVariants_Unix_ThrowsPlatformNotSupportedException()
+        {
+            Assert.Throws<PlatformNotSupportedException>(() => Marshal.GetObjectsForNativeVariants(IntPtr.Zero, 10));
+            Assert.Throws<PlatformNotSupportedException>(() => Marshal.GetObjectsForNativeVariants<int>(IntPtr.Zero, 10));
+        }
+
+        [Fact]
+        [PlatformSpecific(TestPlatforms.Windows)]
+        public static void GetObjectsForNativeVariants_ZeroPointer_ThrowsArgumentNullException()
+        {
+            AssertExtensions.Throws<ArgumentNullException>("aSrcNativeVariant", () => Marshal.GetObjectsForNativeVariants(IntPtr.Zero, 10));
+            AssertExtensions.Throws<ArgumentNullException>("aSrcNativeVariant", () => Marshal.GetObjectsForNativeVariants<int>(IntPtr.Zero, 10));
+        }
+
+        [Fact]
+        [PlatformSpecific(TestPlatforms.Windows)]
+        public static void GetObjectsForNativeVariants_NegativeCount_ThrowsArgumentOutOfRangeException()
+        {
+            AssertExtensions.Throws<ArgumentOutOfRangeException>("cVars", () => Marshal.GetObjectsForNativeVariants((IntPtr)1, -1));
+            AssertExtensions.Throws<ArgumentOutOfRangeException>("cVars", () => Marshal.GetObjectsForNativeVariants<int>((IntPtr)1, -1));
+        }
 #pragma warning restore 618
     }
 }
