@@ -12540,6 +12540,8 @@ void Compiler::impImportBlockCode(BasicBlock* block)
 
                     if (varTypeIsStruct(op1))
                     {
+                        JITDUMP("\n ... CEE_POP struct ...\n");
+                        DISPTREE(op1);
 #ifdef UNIX_AMD64_ABI
                         // Non-calls, such as obj or ret_expr, have to go through this.
                         // Calls with large struct return value have to go through this.
@@ -12549,7 +12551,20 @@ void Compiler::impImportBlockCode(BasicBlock* block)
                             op1->AsCall()->gtCallType == CT_HELPER)
 #endif // UNIX_AMD64_ABI
                         {
-                            op1 = impGetStructAddr(op1, clsHnd, (unsigned)CHECK_SPILL_ALL, false);
+                            // If the value being produced comes from loading
+                            // via an underlying address, just null check the address.
+                            if (op1->OperIs(GT_FIELD, GT_IND, GT_OBJ))
+                            {
+                                op1->ChangeOper(GT_NULLCHECK);
+                                op1->gtType = TYP_BYTE;
+                            }
+                            else
+                            {
+                                op1 = impGetStructAddr(op1, clsHnd, (unsigned)CHECK_SPILL_ALL, false);
+                            }
+
+                            JITDUMP("\n ... optimized to ...\n");
+                            DISPTREE(op1);
                         }
                     }
 
