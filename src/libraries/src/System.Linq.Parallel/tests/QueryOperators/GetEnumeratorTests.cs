@@ -27,7 +27,11 @@ namespace System.Linq.Parallel.Tests
 
             if (labeled.ToString().StartsWith("Enumerable.Range") || labeled.ToString().StartsWith("Partitioner"))
             {
-                Assert.Throws<NotSupportedException>(() => enumerator.Reset());
+                if (count > 0)
+                {
+                    Assert.Throws<NotSupportedException>(() => enumerator.Reset());
+                }
+                // Reset behavior is undefined, and for count == 0, some singletons throw while others are nops.
             }
             else
             {
@@ -65,7 +69,11 @@ namespace System.Linq.Parallel.Tests
 
             if (labeled.ToString().StartsWith("Enumerable.Range") || labeled.ToString().StartsWith("Partitioner"))
             {
-                Assert.Throws<NotSupportedException>(() => enumerator.Reset());
+                if (count > 0)
+                {
+                    Assert.Throws<NotSupportedException>(() => enumerator.Reset());
+                }
+                // Reset behavior is undefined, and for count == 0, some singletons throw while others are nops.
             }
             else
             {
