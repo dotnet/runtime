@@ -86,7 +86,7 @@
     <PropertyGroup>
       <TestArgs>--no-restore $(MSBuildPassThroughPropertyList)</TestArgs>
       <IsCrossArch Condition="'$(TargetArchitecture)' == 'arm' or '$(TargetArchitecture)' == 'arm64' or '$(TargetArchitecture)' == 'armel'">true</IsCrossArch>
-      <TestResultsXml>$(TestsOutputDir)$(TestProjectFilename)-testResults.trx</TestResultsXml>
+      <TestResultsXml>$(SystemPathTestsOutputDir)$(TestProjectFilename)-testResults.trx</TestResultsXml>
     </PropertyGroup>
     <Exec Command="$(DotnetToolCommand) test $(TestArgs) --logger &quot;trx;LogFileName=$(TestResultsXml)&quot;"
           WorkingDirectory="$(TestWorkingDirectory)"
