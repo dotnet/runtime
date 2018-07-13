@@ -816,23 +816,22 @@ ves_array_calculate_index (MonoArray *ao, stackval *sp, InterpFrame *frame, gboo
 }
 
 static void
-ves_array_set (InterpFrame *frame)
+ves_array_set (InterpFrame *frame, stackval *sp, MonoMethodSignature *sig)
 {
-	stackval *sp = frame->stack_args + 1;
-
-	MonoObject *o = frame->stack_args->data.p;
+	MonoObject *o = sp->data.p;
 	MonoArray *ao = (MonoArray *) o;
 	MonoClass *ac = o->vtable->klass;
 
 	g_assert (m_class_get_rank (ac) >= 1);
 
-	gint32 pos = ves_array_calculate_index (ao, sp, frame, TRUE);
+	gint32 pos = ves_array_calculate_index (ao, sp + 1, frame, TRUE);
 	if (frame->ex)
 		return;
 
-	if (sp [m_class_get_rank (ac)].data.p && !m_class_is_valuetype (m_class_get_element_class (mono_object_class (o)))) {
+	int val_index = 1 + m_class_get_rank (ac);
+	if (sp [val_index].data.p && !m_class_is_valuetype (m_class_get_element_class (mono_object_class (o)))) {
 		ERROR_DECL (error);
-		MonoObject *isinst = mono_object_isinst_checked (sp [m_class_get_rank (ac)].data.p, m_class_get_element_class (mono_object_class (o)), error);
+		MonoObject *isinst = mono_object_isinst_checked (sp [val_index].data.p, m_class_get_element_class (mono_object_class (o)), error);
 		mono_error_cleanup (error);
 		if (!isinst) {
 			frame->ex = mono_get_exception_array_type_mismatch ();
@@ -844,30 +843,28 @@ ves_array_set (InterpFrame *frame)
 	gint32 esize = mono_array_element_size (ac);
 	gpointer ea = mono_array_addr_with_size_fast (ao, esize, pos);
 
-	MonoType *mt = mono_method_signature (frame->imethod->method)->params [m_class_get_rank (ac)];
-	stackval_to_data (mt, &sp [m_class_get_rank (ac)], ea, FALSE);
+	MonoType *mt = sig->params [m_class_get_rank (ac)];
+	stackval_to_data (mt, &sp [val_index], ea, FALSE);
 }
 
 static void
-ves_array_get (InterpFrame *frame, gboolean safe)
+ves_array_get (InterpFrame *frame, stackval *sp, stackval *retval, MonoMethodSignature *sig, gboolean safe)
 {
-	stackval *sp = frame->stack_args + 1;
-
-	MonoObject *o = frame->stack_args->data.p;
+	MonoObject *o = sp->data.p;
 	MonoArray *ao = (MonoArray *) o;
 	MonoClass *ac = o->vtable->klass;
 
 	g_assert (m_class_get_rank (ac) >= 1);
 
-	gint32 pos = ves_array_calculate_index (ao, sp, frame, safe);
+	gint32 pos = ves_array_calculate_index (ao, sp + 1, frame, safe);
 	if (frame->ex)
 		return;
 
 	gint32 esize = mono_array_element_size (ac);
 	gpointer ea = mono_array_addr_with_size_fast (ao, esize, pos);
 
-	MonoType *mt = mono_method_signature (frame->imethod->method)->ret;
-	stackval_from_data (mt, frame->retval, ea, FALSE);
+	MonoType *mt = sig->ret;
+	stackval_from_data (mt, retval, ea, FALSE);
 }
 
 static gpointer
@@ -1291,37 +1288,34 @@ interp_delegate_ctor (MonoObjectHandle this_obj, MonoObjectHandle target, gpoint
  * provided by the runtime and is primarily used for the methods of delegates.
  */
 static MONO_NEVER_INLINE void
-ves_imethod (InterpFrame *frame, ThreadContext *context)
+ves_imethod (InterpFrame *frame, MonoMethod *method, MonoMethodSignature *sig, stackval *sp, stackval *retval)
 {
-	MonoMethod *method = frame->imethod->method;
 	const char *name = method->name;
-	MonoObject *obj = (MonoObject*) frame->stack_args->data.p;
-
 	mono_class_init (method->klass);
 
 	if (method->klass == mono_defaults.array_class) {
-		if (!strcmp (method->name, "UnsafeMov")) {
+		if (!strcmp (name, "UnsafeMov")) {
 			/* TODO: layout checks */
-			MonoType *mt = mono_method_signature (method)->ret;
-			stackval_from_data (mt, frame->retval, (char *) frame->stack_args, FALSE);
+			stackval_from_data (sig->ret, retval, (char*) sp, FALSE);
 			return;
 		}
-		if (!strcmp (method->name, "UnsafeLoad")) {
-			ves_array_get (frame, FALSE);
+		if (!strcmp (name, "UnsafeLoad")) {
+			ves_array_get (frame, sp, retval, sig, FALSE);
 			return;
 		}
 	} else if (mini_class_is_system_array (method->klass)) {
+		MonoObject *obj = (MonoObject*) sp->data.p;
 		if (!obj) {
 			frame->ex = mono_get_exception_null_reference ();
 			FILL_IN_TRACE (frame->ex, frame);
 			return;
 		}
 		if (*name == 'S' && (strcmp (name, "Set") == 0)) {
-			ves_array_set (frame);
+			ves_array_set (frame, sp, sig);
 			return;
 		}
 		if (*name == 'G' && (strcmp (name, "Get") == 0)) {
-			ves_array_get (frame, TRUE);
+			ves_array_get (frame, sp, retval, sig, TRUE);
 			return;
 		}
 	}
@@ -2989,14 +2983,29 @@ interp_exec_method_full (InterpFrame *frame, ThreadContext *context, guint16 *st
 
 			MINT_IN_BREAK;
 		}
-		MINT_IN_CASE(MINT_CALLRUN)
-			ves_imethod (frame, context);
-			if (frame->ex) {
-				MonoException *fex = frame->ex;
-				//frame = frame->parent;
-				THROW_EX (fex, frame->ip);
+		MINT_IN_CASE(MINT_CALLRUN) {
+			MonoMethod *target_method = (MonoMethod*) rtm->data_items [* (guint16 *)(ip + 1)];
+			MonoMethodSignature *sig = (MonoMethodSignature*) rtm->data_items [* (guint16 *)(ip + 2)];
+			stackval *retval;
+
+			sp->data.p = vt_sp;
+			retval = sp;
+
+			sp -= sig->param_count;
+			if (sig->hasthis)
+				sp--;
+
+			ves_imethod (frame, target_method, sig, sp, retval);
+			if (frame->ex)
+				THROW_EX (frame->ex, ip);
+
+			if (sig->ret->type != MONO_TYPE_VOID) {
+				*sp = *retval;
+                                sp++;
 			}
-			goto exit_frame;
+			ip += 3;
+			MINT_IN_BREAK;
+		}
 		MINT_IN_CASE(MINT_RET)
 			--sp;
 			*frame->retval = *sp;

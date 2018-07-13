@@ -272,7 +272,7 @@ OPDEF(MINT_CALLI, "calli", 2, MintOpMethodToken)
 OPDEF(MINT_CALLI_NAT, "calli.nat", 2, MintOpMethodToken) 
 OPDEF(MINT_JMP, "jmp", 2, MintOpMethodToken) 
 
-OPDEF(MINT_CALLRUN, "callrun", 1, MintOpNoArgs)
+OPDEF(MINT_CALLRUN, "callrun", 3, MintOpNoArgs)
 
 OPDEF(MINT_ENDFILTER, "endfilter", 1, MintOpNoArgs)
 

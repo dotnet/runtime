@@ -1034,6 +1034,10 @@ interp_handle_intrinsics (TransformData *td, MonoMethod *target_method, MonoMeth
 			*op = MINT_LDLEN;
 		} else if (!strcmp (tm, "Address")) {
 			*op = readonly ? MINT_LDELEMA : MINT_LDELEMA_TC;
+		} else if (!strcmp (tm, "UnsafeMov") || !strcmp (tm, "UnsafeLoad") || !strcmp (tm, "Set") || !strcmp (tm, "Get")) {
+			*op = MINT_CALLRUN;
+		} else if (!strcmp (tm, "UnsafeStore")) {
+			g_error ("TODO ArrayClass::UnsafeStore");
 		}
 	} else if (in_corlib &&
 			!strcmp (klass_name_space, "System.Diagnostics") &&
@@ -1347,6 +1351,11 @@ interp_transform_call (TransformData *td, MonoMethod *method, MonoMethod *target
 		if (op == MINT_LDELEMA || op == MINT_LDELEMA_TC) {
 			ADD_CODE (td, get_data_item_index (td, target_method->klass));
 			ADD_CODE (td, 1 + m_class_get_rank (target_method->klass));
+		}
+
+		if (op == MINT_CALLRUN) {
+			ADD_CODE (td, get_data_item_index (td, target_method));
+			ADD_CODE (td, get_data_item_index (td, mono_method_signature (target_method)));
 		}
 	} else if (!calli && !is_virtual && jit_call_supported (target_method, csignature)) {
 		ADD_CODE(td, MINT_JIT_CALL);
@@ -4779,10 +4788,8 @@ mono_interp_transform_method (InterpMethod *imethod, ThreadContext *context, Mon
 					nm = mono_marshal_get_delegate_end_invoke (method);
 				}
 			}
-			if (nm == NULL) {
-				imethod->code = g_malloc(sizeof(short));
-				imethod->code[0] = MINT_CALLRUN;
-			}
+			if (nm == NULL)
+				g_assert_not_reached ();
 		}
 		if (nm == NULL) {
 			imethod->stack_size = sizeof (stackval); /* for tracing */
@@ -4796,22 +4803,6 @@ mono_interp_transform_method (InterpMethod *imethod, ThreadContext *context, Mon
 		header = interp_method_get_header (nm, error);
 		mono_os_mutex_unlock (&calc_section);
 		return_if_nok (error);
-	} else if (method->klass == mono_defaults.array_class) {
-		if (!strcmp (method->name, "UnsafeMov") || !strcmp (method->name, "UnsafeLoad")) {
-			mono_os_mutex_lock (&calc_section);
-			if (!imethod->transformed) {
-				imethod->code = g_malloc (sizeof (short));
-				imethod->code[0] = MINT_CALLRUN;
-				imethod->stack_size = sizeof (stackval); /* for tracing */
-				imethod->alloca_size = imethod->stack_size;
-				imethod->transformed = TRUE;
-			}
-			mono_os_mutex_unlock (&calc_section);
-			MONO_PROFILER_RAISE (jit_done, (method, NULL));
-			return;
-		} else if (!strcmp (method->name, "UnsafeStore")) {
-			g_error ("TODO ArrayClass::UnsafeStore");
-		}
 	}
 
 	if (!header) {
