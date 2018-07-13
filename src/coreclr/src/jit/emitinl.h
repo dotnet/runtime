@@ -118,6 +118,8 @@ inline regNumber emitter::inst3opImulReg(instruction ins)
  *  get stored in different places within the instruction descriptor.
  */
 
+#ifdef _TARGET_XARCH_
+
 inline ssize_t emitter::emitGetInsAmd(instrDesc* id)
 {
     return id->idIsLargeDsp() ? ((instrDescAmd*)id)->idaAmdVal : id->idAddr()->iiaAddrMode.amDisp;
@@ -219,6 +221,8 @@ inline ssize_t emitter::emitGetInsAmdAny(instrDesc* id)
 
     return id->idAddr()->iiaAddrMode.amDisp;
 }
+
+#endif // _TARGET_XARCH_
 
 /*****************************************************************************
  *
