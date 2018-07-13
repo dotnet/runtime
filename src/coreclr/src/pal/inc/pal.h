@@ -5030,6 +5030,16 @@ PALAPI
 PAL_SetTerminationRequestHandler(
     IN PTERMINATION_REQUEST_HANDLER terminationRequestHandler);
 
+PALIMPORT
+VOID
+PALAPI
+PAL_CatchHardwareExceptionHolderEnter();
+
+PALIMPORT
+VOID
+PALAPI
+PAL_CatchHardwareExceptionHolderExit();
+
 //
 // This holder is used to indicate that a hardware
 // exception should be raised as a C++ exception
@@ -5038,9 +5048,15 @@ PAL_SetTerminationRequestHandler(
 class CatchHardwareExceptionHolder
 {
 public:
-    CatchHardwareExceptionHolder();
+    CatchHardwareExceptionHolder()
+    {
+        PAL_CatchHardwareExceptionHolderEnter();
+    }
 
-    ~CatchHardwareExceptionHolder();
+    ~CatchHardwareExceptionHolder()
+    {
+        PAL_CatchHardwareExceptionHolderExit();
+    }
 
     static bool IsEnabled();
 };
@@ -5057,6 +5073,13 @@ public:
 #endif // FEATURE_ENABLE_HARDWARE_EXCEPTIONS
 
 #ifdef FEATURE_PAL_SXS
+
+class NativeExceptionHolderBase;
+
+PALIMPORT
+NativeExceptionHolderBase **
+PALAPI
+PAL_GetNativeExceptionHolderHead();
 
 extern "C++" {
 
@@ -5076,9 +5099,22 @@ class NativeExceptionHolderBase
     NativeExceptionHolderBase *m_next;
 
 protected:
-    NativeExceptionHolderBase();
+    NativeExceptionHolderBase()
+    {
+        m_head = nullptr;
+        m_next = nullptr;
+    }
 
-    ~NativeExceptionHolderBase();
+    ~NativeExceptionHolderBase()
+    {
+        // Only destroy if Push was called
+        if (m_head != nullptr)
+        {
+            *m_head = m_next;
+            m_head = nullptr;
+            m_next = nullptr;
+        }
+    }
 
 public:
     // Calls the holder's filter handler.
@@ -5087,7 +5123,13 @@ public:
     // Adds the holder to the "stack" of holders. This is done explicitly instead
     // of in the constructor was to avoid the mess of move constructors combined
     // with return value optimization (in CreateHolder).
-    void Push();
+    void Push()
+    {
+        NativeExceptionHolderBase **head = PAL_GetNativeExceptionHolderHead();
+        m_head = head;
+        m_next = *head;
+        *head = this;
+    }
 
     // Given the currentHolder and locals stack range find the next holder starting with this one
     // To find the first holder, pass nullptr as the currentHolder.
