@@ -21721,7 +21721,7 @@ RelativePath=GC\Features\LOHCompaction\lohcompactapi\lohcompactapi.cmd
 WorkingDir=GC\Features\LOHCompaction\lohcompactapi
 Expected=0
 MaxAllowedDurationSeconds=600
-Categories=UNSTABLE;EXPECTED_PASS
+Categories=UNSTABLE;EXPECTED_PASS;LONG_RUNNING
 HostStyle=0
 
 [lohcompactapi2.cmd_2949]
@@ -90585,7 +90585,7 @@ RelativePath=GC\API\NoGCRegion\NoGC\NoGC.cmd
 WorkingDir=GC\API\NoGCRegion\NoGC
 Expected=0
 MaxAllowedDurationSeconds=600
-Categories=EXPECTED_PASS;NEW;GCSTRESS_EXCLUDE
+Categories=EXPECTED_PASS;NEW;GCSTRESS_EXCLUDE;LONG_RUNNING
 HostStyle=0
 
 [DevDiv_397793.cmd_11701]
@@ -91857,7 +91857,7 @@ RelativePath=GC\API\GC\GetAllocatedBytesForCurrentThread\GetAllocatedBytesForCur
 WorkingDir=GC\API\GC\GetAllocatedBytesForCurrentThread
 Expected=0
 MaxAllowedDurationSeconds=600
-Categories=EXPECTED_PASS;NEW
+Categories=EXPECTED_PASS;NEW;LONG_RUNNING
 HostStyle=0
 
 [VectorRet_ro.cmd_11860]
@@ -93553,7 +93553,7 @@ RelativePath=JIT\HardwareIntrinsics\Arm64\Simd\Simd.cmd
 WorkingDir=JIT\HardwareIntrinsics\Arm64\Simd
 Expected=0
 MaxAllowedDurationSeconds=600
-Categories=EXPECTED_PASS;NEW
+Categories=EXPECTED_FAIL;18895;NEW
 HostStyle=0
 
 [Sqrt_r.cmd_12072]
