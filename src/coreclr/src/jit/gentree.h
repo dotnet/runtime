@@ -1463,17 +1463,6 @@ public:
 
     bool OperIsImplicitIndir() const;
 
-    bool OperIsStore() const
-    {
-        return OperIsStore(gtOper);
-    }
-
-    static bool OperIsStore(genTreeOps gtOper)
-    {
-        return (gtOper == GT_STOREIND || gtOper == GT_STORE_LCL_VAR || gtOper == GT_STORE_LCL_FLD ||
-                gtOper == GT_STORE_BLK || gtOper == GT_STORE_OBJ || gtOper == GT_STORE_DYN_BLK);
-    }
-
     static bool OperIsAtomicOp(genTreeOps gtOper)
     {
         return (gtOper == GT_XADD || gtOper == GT_XCHG || gtOper == GT_LOCKADD || gtOper == GT_CMPXCHG);
@@ -1482,6 +1471,17 @@ public:
     bool OperIsAtomicOp() const
     {
         return OperIsAtomicOp(gtOper);
+    }
+
+    bool OperIsStore() const
+    {
+        return OperIsStore(gtOper);
+    }
+
+    static bool OperIsStore(genTreeOps gtOper)
+    {
+        return (gtOper == GT_STOREIND || gtOper == GT_STORE_LCL_VAR || gtOper == GT_STORE_LCL_FLD ||
+                OperIsStoreBlk(gtOper) || OperIsAtomicOp(gtOper));
     }
 
     // This is here for cleaner FEATURE_SIMD #ifdefs.
