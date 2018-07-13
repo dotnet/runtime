@@ -5,7 +5,7 @@
 #include "pal_ecc_import_export.h"
 #include "pal_utilities.h"
 
-static ECCurveType MethodToCurveType(EC_METHOD* method)
+static ECCurveType MethodToCurveType(const EC_METHOD* method)
 {
     if (method == EC_GFp_mont_method())
         return PrimeMontgomery;
@@ -52,9 +52,9 @@ ECCurveType CryptoNative_EcKeyGetCurveType(
 int32_t CryptoNative_GetECKeyParameters(
     const EC_KEY* key,
     int32_t includePrivate,
-    BIGNUM** qx, int32_t* cbQx,
-    BIGNUM** qy, int32_t* cbQy,
-    BIGNUM** d, int32_t* cbD)
+    const BIGNUM** qx, int32_t* cbQx,
+    const BIGNUM** qy, int32_t* cbQy,
+    const BIGNUM** d, int32_t* cbD)
 {
     // Verify the out parameters. Note out parameters used to minimize pinvoke calls.
     if (!key ||
@@ -146,17 +146,17 @@ int32_t CryptoNative_GetECCurveParameters(
     const EC_KEY* key,
     int32_t includePrivate,
     ECCurveType* curveType,
-    BIGNUM** qx, int32_t* cbQx,
-    BIGNUM** qy, int32_t* cbQy,
-    BIGNUM** d, int32_t* cbD,
-    BIGNUM** p, int32_t* cbP,
-    BIGNUM** a, int32_t* cbA,
-    BIGNUM** b, int32_t* cbB,
-    BIGNUM** gx, int32_t* cbGx,
-    BIGNUM** gy, int32_t* cbGy,
-    BIGNUM** order, int32_t* cbOrder,
-    BIGNUM** cofactor, int32_t* cbCofactor,
-    BIGNUM** seed, int32_t* cbSeed)
+    const BIGNUM** qx, int32_t* cbQx,
+    const BIGNUM** qy, int32_t* cbQy,
+    const BIGNUM** d, int32_t* cbD,
+    const BIGNUM** p, int32_t* cbP,
+    const BIGNUM** a, int32_t* cbA,
+    const BIGNUM** b, int32_t* cbB,
+    const BIGNUM** gx, int32_t* cbGx,
+    const BIGNUM** gy, int32_t* cbGy,
+    const BIGNUM** order, int32_t* cbOrder,
+    const BIGNUM** cofactor, int32_t* cbCofactor,
+    const BIGNUM** seed, int32_t* cbSeed)
 {
     // Get the public key parameters first in case any of its 'out' parameters are not initialized
     int32_t rc = CryptoNative_GetECKeyParameters(key, includePrivate, qx, cbQx, qy, cbQy, d, cbD);
@@ -186,9 +186,9 @@ int32_t CryptoNative_GetECCurveParameters(
         return 0;
     }
 
-    EC_GROUP* group = NULL;
-    EC_POINT* G = NULL;
-    EC_METHOD* curveMethod = NULL;
+    const EC_GROUP* group = NULL;
+    const EC_POINT* G = NULL;
+    const EC_METHOD* curveMethod = NULL;
     BIGNUM* xBn = NULL;
     BIGNUM* yBn = NULL;
     BIGNUM* pBn = NULL;
