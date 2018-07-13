@@ -5,6 +5,15 @@
 using System.IO;
 using System.Threading;
 
+// The CODEDOM check is here to support frameworks that may not have fully 
+// incorporated all of corefx, but want to use System.Configuration.ConfigurationManager. 
+// TempFileCollection was moved in corefx. 
+#if CODEDOM
+using System.CodeDom.Compiler;
+#else
+using System.IO.Internal;
+#endif
+
 namespace System.Configuration.Internal
 {
     internal class WriteFileContext
@@ -13,14 +22,14 @@ namespace System.Configuration.Internal
         private const int SavingRetryInterval = 100;    // 100 milliseconds
         private readonly string _templateFilename;
 
-        private IO.Internal.TempFileCollection _tempFiles;
+        private TempFileCollection _tempFiles;
 
         internal WriteFileContext(string filename, string templateFilename)
         {
             string directoryname = UrlPath.GetDirectoryOrRootName(filename);
 
             _templateFilename = templateFilename;
-            _tempFiles = new IO.Internal.TempFileCollection(directoryname);
+            _tempFiles = new TempFileCollection(directoryname);
             try
             {
                 TempNewFilename = _tempFiles.AddExtension("newcfg");
