@@ -67,9 +67,6 @@ void emitDispIns(instrDesc* id,
 /************************************************************************/
 
 private:
-instrDesc* emitNewInstrAmd(emitAttr attr, int dsp);
-instrDesc* emitNewInstrAmdCns(emitAttr attr, int dsp, int cns);
-
 instrDesc* emitNewInstrCallDir(int              argCnt,
                                VARSET_VALARG_TP GCvars,
                                regMaskTP        gcrefRegs,
@@ -84,11 +81,6 @@ instrDesc* emitNewInstrCallInd(int              argCnt,
                                regMaskTP        byrefRegs,
                                emitAttr         retSize,
                                emitAttr         secondRetSize);
-
-void emitGetInsCns(instrDesc* id, CnsVal* cv);
-ssize_t emitGetInsAmdCns(instrDesc* id, CnsVal* cv);
-void emitGetInsDcmCns(instrDesc* id, CnsVal* cv);
-ssize_t emitGetInsAmdAny(instrDesc* id);
 
 /************************************************************************/
 /*               Private helpers for instruction output                 */
