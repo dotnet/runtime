@@ -6538,28 +6538,36 @@ mono_string_new_len (MonoDomain *domain, const char *text, guint length)
  * \returns A newly created string object which contains \p text. On
  * failure returns NULL and sets \p error.
  */
-MonoString*
-mono_string_new_len_checked (MonoDomain *domain, const char *text, guint length, MonoError *error)
+MonoStringHandle
+mono_string_new_utf8_len_handle (MonoDomain *domain, const char *text, guint length, MonoError *error)
 {
 	MONO_REQ_GC_UNSAFE_MODE;
 
 	error_init (error);
 
 	GError *eg_error = NULL;
-	MonoString *o = NULL;
+	MonoStringHandle o = NULL_HANDLE_STRING;
 	guint16 *ut = NULL;
 	glong items_written;
 
 	ut = eg_utf8_to_utf16_with_nuls (text, length, NULL, &items_written, &eg_error);
 
 	if (!eg_error)
-		o = mono_string_new_utf16_checked (domain, ut, items_written, error);
+		o = mono_string_new_utf16_handle (domain, ut, items_written, error);
 	else 
 		g_error_free (eg_error);
 
 	g_free (ut);
 
 	return o;
+}
+
+MonoString*
+mono_string_new_len_checked (MonoDomain *domain, const char *text, guint length, MonoError *error)
+{
+	HANDLE_FUNCTION_ENTER ();
+	error_init (error);
+	HANDLE_FUNCTION_RETURN_OBJ (mono_string_new_utf8_len_handle (domain, text, length, error));
 }
 
 static MonoString*
@@ -7406,7 +7414,7 @@ mono_ldstr_utf8 (MonoImage *image, guint32 idx, MonoError *error)
 		g_error_free (gerror);
 		return NULL;
 	}
-	/* g_utf16_to_utf8  may not be able to complete the conversion (e.g. NULL values were found, #335488) */
+	/* g_utf16_to_utf8 may not be able to complete the conversion (e.g. NULL values were found, #335488) */
 	if (len2 > written) {
 		/* allocate the total length and copy the part of the string that has been converted */
 		char *as2 = (char *)g_malloc0 (len2);
@@ -7467,7 +7475,7 @@ mono_utf16_to_utf8 (const gunichar2 *s, gsize slength, MonoError *error)
 		g_error_free (gerror);
 		return NULL;
 	}
-	/* g_utf16_to_utf8  may not be able to complete the conversion (e.g. NULL values were found, #335488) */
+	/* g_utf16_to_utf8 may not be able to complete the conversion (e.g. NULL values were found, #335488) */
 	if (slength > written) {
 		/* allocate the total length and copy the part of the string that has been converted */
 		char *as2 = (char *)g_malloc0 (slength);
@@ -7532,7 +7540,7 @@ mono_string_to_utf8_ignore (MonoString *s)
 
 	as = g_utf16_to_utf8 (mono_string_chars (s), s->length, NULL, &written, NULL);
 
-	/* g_utf16_to_utf8  may not be able to complete the conversion (e.g. NULL values were found, #335488) */
+	/* g_utf16_to_utf8 may not be able to complete the conversion (e.g. NULL values were found, #335488) */
 	if (s->length > written) {
 		/* allocate the total length and copy the part of the string that has been converted */
 		char *as2 = (char *)g_malloc0 (s->length);
@@ -7610,7 +7618,7 @@ mono_string_from_utf16 (gunichar2 *data)
  * \returns a \c MonoString. On failure sets \p error and returns NULL.
  */
 MonoString *
-mono_string_from_utf16_checked (gunichar2 *data, MonoError *error)
+mono_string_from_utf16_checked (const gunichar2 *data, MonoError *error)
 {
 
 	MONO_REQ_GC_UNSAFE_MODE;
@@ -7634,7 +7642,7 @@ mono_string_from_utf16_checked (gunichar2 *data, MonoError *error)
  * \returns a \c MonoString.
  */
 MonoString *
-mono_string_from_utf32 (mono_unichar4 *data)
+mono_string_from_utf32 (/*const*/ mono_unichar4 *data)
 {
 	ERROR_DECL (error);
 	MonoString *result = mono_string_from_utf32_checked (data, error);
@@ -7650,7 +7658,7 @@ mono_string_from_utf32 (mono_unichar4 *data)
  * \returns a \c MonoString. On failure returns NULL and sets \p error.
  */
 MonoString *
-mono_string_from_utf32_checked (mono_unichar4 *data, MonoError *error)
+mono_string_from_utf32_checked (const mono_unichar4 *data, MonoError *error)
 {
 	MONO_REQ_GC_UNSAFE_MODE;
 

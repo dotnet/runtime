@@ -171,11 +171,11 @@ mono_string_to_utf32	    (MonoString *string_obj);
 
 MONO_RT_EXTERNAL_ONLY
 MONO_API MonoString *
-mono_string_from_utf16	    (mono_unichar2 *data);
+mono_string_from_utf16	    (/*const*/ mono_unichar2 *data);
 
 MONO_RT_EXTERNAL_ONLY
 MONO_API MonoString *
-mono_string_from_utf32	    (mono_unichar4 *data);
+mono_string_from_utf32	    (/*const*/ mono_unichar4 *data);
 
 MONO_API mono_bool
 mono_string_equal           (MonoString *s1, MonoString *s2);
@@ -195,7 +195,7 @@ MONO_API MonoObject *
 mono_value_box		    (MonoDomain *domain, MonoClass *klass, void* val);
 
 MONO_API void
-mono_value_copy             (void* dest, void* src, MonoClass *klass);
+mono_value_copy             (void* dest, /*const*/ void* src, MonoClass *klass);
 
 MONO_API void
 mono_value_copy_array       (MonoArray *dest, int dest_idx, void* src, int count);

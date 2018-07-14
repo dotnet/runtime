@@ -508,6 +508,12 @@ mono_gchandle_get_target_handle (uint32_t gchandle)
 	return MONO_HANDLE_NEW (MonoObject, mono_gchandle_get_target (gchandle));
 }
 
+gboolean
+mono_gchandle_target_equal (uint32_t gchandle, MonoObjectHandle equal)
+{
+	return mono_gchandle_get_target (gchandle) == MONO_HANDLE_RAW (equal);
+}
+
 gpointer
 mono_array_handle_pin_with_size (MonoArrayHandle handle, int size, uintptr_t idx, uint32_t *gchandle)
 {

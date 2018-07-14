@@ -180,7 +180,7 @@ mono_object_isinst_icall (MonoObject *obj, MonoClass *klass)
 }
 
 MonoString*
-ves_icall_mono_string_from_utf16 (gunichar2 *data)
+ves_icall_mono_string_from_utf16 (const gunichar2 *data)
 {
 	ERROR_DECL (error);
 	MonoString *result = mono_string_from_utf16_checked (data, error);
@@ -220,7 +220,6 @@ mono_marshal_init (void)
 		mono_coop_mutex_init_recursive (&marshal_mutex);
 		marshal_mutex_initialized = TRUE;
 
-		register_icall (ves_icall_System_Threading_Thread_ResetAbort, "ves_icall_System_Threading_Thread_ResetAbort", "void", TRUE);
 		register_icall (mono_marshal_string_to_utf16, "mono_marshal_string_to_utf16", "ptr obj", FALSE);
 		register_icall (mono_marshal_string_to_utf16_copy, "mono_marshal_string_to_utf16_copy", "ptr obj", FALSE);
 		register_icall (mono_string_to_utf16, "mono_string_to_utf16", "ptr obj", FALSE);
@@ -845,19 +844,16 @@ mono_string_builder_new (int starting_string_length)
 }
 
 static void
-mono_string_utf16_to_builder_copy (MonoStringBuilder *sb, gunichar2 *text, size_t string_len)
+mono_string_utf16_to_builder_copy (MonoStringBuilder *sb, const gunichar2 *text, size_t string_len)
 {
 	gunichar2 *charDst = (gunichar2 *)sb->chunkChars->vector;
-	gunichar2 *charSrc = (gunichar2 *)text;
-	memcpy (charDst, charSrc, sizeof (gunichar2) * string_len);
+	memcpy (charDst, text, sizeof (gunichar2) * string_len);
 
 	sb->chunkLength = string_len;
-
-	return;
 }
 
 MonoStringBuilder *
-mono_string_utf16_to_builder2 (gunichar2 *text)
+mono_string_utf16_to_builder2 (const gunichar2 *text)
 {
 	if (!text)
 		return NULL;
@@ -872,7 +868,7 @@ mono_string_utf16_to_builder2 (gunichar2 *text)
 }
 
 void
-mono_string_utf8_to_builder (MonoStringBuilder *sb, char *text)
+mono_string_utf8_to_builder (MonoStringBuilder *sb, const char *text)
 {
 	if (!sb || !text)
 		return;
@@ -895,7 +891,7 @@ mono_string_utf8_to_builder (MonoStringBuilder *sb, char *text)
 }
 
 MonoStringBuilder *
-mono_string_utf8_to_builder2 (char *text)
+mono_string_utf8_to_builder2 (const char *text)
 {
 	if (!text)
 		return NULL;
@@ -908,7 +904,7 @@ mono_string_utf8_to_builder2 (char *text)
 }
 
 void
-mono_string_utf16_to_builder (MonoStringBuilder *sb, gunichar2 *text)
+mono_string_utf16_to_builder (MonoStringBuilder *sb, const gunichar2 *text)
 {
 	if (!sb || !text)
 		return;
@@ -1030,15 +1026,24 @@ mono_string_builder_to_utf16 (MonoStringBuilder *sb)
 }
 
 #ifndef HOST_WIN32
+
 /* This is a JIT icall, it sets the pending exception and returns NULL on error. */
 gpointer
-mono_string_to_utf8str (MonoString *s)
+mono_string_to_utf8str (MonoString *s_raw)
 {
+	HANDLE_FUNCTION_ENTER ();
 	ERROR_DECL (error);
-	char *result = mono_string_to_utf8_checked (s, error);
+	MONO_HANDLE_DCL (MonoString, s);
+	gpointer result = mono_string_handle_to_utf8 (s, error);
 	mono_error_set_pending_exception (error);
-	return result;
+	HANDLE_FUNCTION_RETURN_VAL (result);
 }
+
+
+#else
+
+// Win32 version uses CoTaskMemAlloc.
+
 #endif
 
 gpointer
@@ -4850,11 +4855,10 @@ ves_icall_marshal_alloc (gsize size)
 }
 
 #ifndef HOST_WIN32
-static inline void
+static void
 mono_marshal_free_co_task_mem (void *ptr)
 {
 	g_free (ptr);
-	return;
 }
 #endif
 
@@ -4879,8 +4883,7 @@ mono_marshal_free_array (gpointer *ptr, int size)
 		return;
 
 	for (i = 0; i < size; i++)
-		if (ptr [i])
-			g_free (ptr [i]);
+		g_free (ptr [i]);
 }
 
 void *
@@ -4890,22 +4893,39 @@ mono_marshal_string_to_utf16 (MonoString *s)
 }
 
 /* This is a JIT icall, it sets the pending exception and returns NULL on error. */
-void *
-mono_marshal_string_to_utf16_copy (MonoString *s)
+static void *
+mono_marshal_string_to_utf16_copy_handle (MonoStringHandle s, MonoError *error)
 {
-	if (s == NULL) {
+	if (MONO_HANDLE_IS_NULL (s))
 		return NULL;
-	} else {
-		ERROR_DECL (error);
-		gunichar2 *res = (gunichar2 *)mono_marshal_alloc ((mono_string_length (s) * 2) + 2, error);
-		if (!mono_error_ok (error)) {
-			mono_error_set_pending_exception (error);
-			return NULL;
-		}
-		memcpy (res, mono_string_chars (s), mono_string_length (s) * 2);
-		res [mono_string_length (s)] = 0;
-		return res;
+
+	gsize const length = mono_string_handle_length (s);
+	gunichar2 *res = (gunichar2 *)mono_marshal_alloc ((length + 1) * sizeof (*res), error);
+	return_val_if_nok (error, NULL);
+	uint32_t gchandle = 0;
+	memcpy (res, mono_string_handle_pin_chars (s, &gchandle), length * sizeof (*res));
+	mono_gchandle_free (gchandle);
+	res [length] = 0;
+	return res;
+}
+
+/* This is a JIT icall, it sets the pending exception and returns NULL on error. */
+void *
+mono_marshal_string_to_utf16_copy (MonoString *s_raw)
+{
+	if (!s_raw)
+		return NULL;
+
+	HANDLE_FUNCTION_ENTER ();
+	ERROR_DECL (error);
+	MONO_HANDLE_DCL (MonoString, s);
+
+	gpointer res = mono_marshal_string_to_utf16_copy_handle (s, error);
+	if (!mono_error_ok (error)) {
+		mono_error_set_pending_exception (error);
+		res = NULL;
 	}
+	HANDLE_FUNCTION_RETURN_VAL (res);
 }
 
 /**
@@ -4938,183 +4958,130 @@ mono_marshal_set_last_error_windows (int error)
 #endif
 }
 
-void
-ves_icall_System_Runtime_InteropServices_Marshal_copy_to_unmanaged (MonoArray *src, gint32 start_index,
-								    gpointer dest, gint32 length)
+static gsize
+copy_managed_common (MonoArrayHandle managed, gconstpointer native, gint32 start_index,
+		gint32 length, gpointer *managed_addr, guint32 *gchandle, MonoError *error)
 {
-	ERROR_DECL (error);
-	int element_size;
-	void *source_addr;
+	MONO_CHECK_ARG_NULL_HANDLE (managed, 0);
+	MONO_CHECK_ARG_NULL (native, 0);
 
-	MONO_CHECK_ARG_NULL (src,);
-	MONO_CHECK_ARG_NULL (dest,);
+	MonoClass *klass = mono_handle_class (managed);
 
-	if (m_class_get_rank (mono_object_class (&src->obj)) != 1) {
+	// FIXME? move checks to managed
+	if (m_class_get_rank (klass) != 1) {
 		mono_error_set_argument (error, "array", "array is multi-dimensional");
-		mono_error_set_pending_exception (error);
-		return;
+		return 0;
 	}
 	if (start_index < 0) {
 		mono_error_set_argument (error, "startIndex", "Must be >= 0");
-		mono_error_set_pending_exception (error);
-		return;
+		return 0;
 	}
 	if (length < 0) {
 		mono_error_set_argument (error, "length", "Must be >= 0");
-		mono_error_set_pending_exception (error);
-		return;
+		return 0;
 	}
-	if (start_index + length > mono_array_length (src)) {
+	if (start_index + length > mono_array_handle_length (managed)) {
 		mono_error_set_argument (error, "length", "start_index + length > array length");
-		mono_error_set_pending_exception (error);
-		return;
+		return 0;
 	}
 
-	element_size = mono_array_element_size (src->obj.vtable->klass);
+	gsize const element_size = mono_array_element_size (klass);
 
-	/* no references should be involved */
-	source_addr = mono_array_addr_with_size_fast (src, element_size, start_index);
+	// Handle generic arrays, which do not allow fixed.
+	if (!*managed_addr)
+		*managed_addr = mono_array_handle_pin_with_size (managed, element_size, start_index, gchandle);
 
-	memcpy (dest, source_addr, length * element_size);
+	return element_size * length;
 }
 
 void
-ves_icall_System_Runtime_InteropServices_Marshal_copy_from_unmanaged (gpointer src, gint32 start_index,
-								      MonoArray *dest, gint32 length)
+ves_icall_System_Runtime_InteropServices_Marshal_copy_to_unmanaged (MonoArrayHandle src, gint32 start_index,
+		gpointer dest, gint32 length, gconstpointer managed_source_addr, MonoError *error)
 {
-	int element_size;
-	void *dest_addr;
-	ERROR_DECL (error);
+	guint32 gchandle = 0;
+	gsize const bytes = copy_managed_common (src, dest, start_index, length, (gpointer*)&managed_source_addr, &gchandle, error);
+	if (bytes)
+		memmove (dest, managed_source_addr, bytes); // no references should be involved
+	mono_gchandle_free (gchandle);
+}
 
-	MONO_CHECK_ARG_NULL (src,);
-	MONO_CHECK_ARG_NULL (dest,);
-
-	if (m_class_get_rank (mono_object_class (&dest->obj)) != 1) {
-		mono_error_set_argument (error, "array", "array is multi-dimensional");
-		mono_error_set_pending_exception (error);
-		return;
-	}
-	if (start_index < 0) {
-		mono_error_set_argument (error, "startIndex", "Must be >= 0");
-		mono_error_set_pending_exception (error);
-		return;
-	}
-	if (length < 0) {
-		mono_error_set_argument (error, "length", "Must be >= 0");
-		mono_error_set_pending_exception (error);
-		return;
-	}
-	if (start_index + length > mono_array_length (dest)) {
-		ERROR_DECL (error);
-		mono_error_set_argument (error, "length", "start_index + length > array length");
-		mono_error_set_pending_exception (error);
-		return;
-	}
-	element_size = mono_array_element_size (dest->obj.vtable->klass);
-	  
-	/* no references should be involved */
-	dest_addr = mono_array_addr_with_size_fast (dest, element_size, start_index);
-
-	memcpy (dest_addr, src, length * element_size);
+void
+ves_icall_System_Runtime_InteropServices_Marshal_copy_from_unmanaged (gconstpointer src, gint32 start_index,
+		MonoArrayHandle dest, gint32 length, gpointer managed_dest_addr, MonoError *error)
+{
+	guint32 gchandle = 0;
+	gsize const bytes = copy_managed_common (dest, src, start_index, length, &managed_dest_addr, &gchandle, error);
+	if (bytes)
+		memmove (managed_dest_addr, src, bytes); // no references should be involved
+	mono_gchandle_free (gchandle);
 }
 
 MonoStringHandle
-ves_icall_System_Runtime_InteropServices_Marshal_PtrToStringAnsi (char *ptr, MonoError *error)
+ves_icall_System_Runtime_InteropServices_Marshal_PtrToStringAnsi (const char *ptr, MonoError *error)
 {
-	error_init (error);
-	if (ptr == NULL)
-		return MONO_HANDLE_CAST (MonoString, NULL_HANDLE);
-	else
-		return mono_string_new_handle (mono_domain_get (), ptr, error);
+	if (!ptr)
+		return NULL_HANDLE_STRING;
+	return mono_string_new_handle (mono_domain_get (), ptr, error);
 }
 
-MonoString *
-ves_icall_System_Runtime_InteropServices_Marshal_PtrToStringAnsi_len (char *ptr, gint32 len)
+MonoStringHandle
+ves_icall_System_Runtime_InteropServices_Marshal_PtrToStringAnsi_len (const char *ptr, gint32 len, MonoError *error)
 {
-	ERROR_DECL (error);
-	MonoString *result = NULL;
-	error_init (error);
-	if (ptr == NULL)
+	if (!ptr) {
 		mono_error_set_argument_null (error, "ptr", "");
-	else
-		result = mono_string_new_len_checked (mono_domain_get (), ptr, len, error);
-	mono_error_set_pending_exception (error);
-	return result;
+		return NULL_HANDLE_STRING;
+	}
+	return mono_string_new_utf8_len_handle (mono_domain_get (), ptr, len, error);
 }
 
-MonoString *
-ves_icall_System_Runtime_InteropServices_Marshal_PtrToStringUni (guint16 *ptr)
+MonoStringHandle
+ves_icall_System_Runtime_InteropServices_Marshal_PtrToStringUni (const guint16 *ptr, MonoError *error)
 {
-	ERROR_DECL (error);
-	MonoString *res = NULL;
-	MonoDomain *domain = mono_domain_get (); 
-	int len = 0;
-	guint16 *t = ptr;
+	gsize len = 0;
+	const guint16 *t = ptr;
 
-	if (ptr == NULL)
-		return NULL;
+	if (!ptr)
+		return NULL_HANDLE_STRING;
 
 	while (*t++)
 		len++;
 
-	res = mono_string_new_utf16_checked (domain, ptr, len, error);
-	if (!mono_error_ok (error)) {
-		mono_error_set_pending_exception (error);
-		return NULL;
-	}
+	MonoStringHandle res = mono_string_new_utf16_handle (mono_domain_get (), ptr, len, error);
+	return_val_if_nok (error, NULL_HANDLE_STRING);
+
 	return res;
 }
 
-MonoString *
-ves_icall_System_Runtime_InteropServices_Marshal_PtrToStringUni_len (guint16 *ptr, gint32 len)
+MonoStringHandle
+ves_icall_System_Runtime_InteropServices_Marshal_PtrToStringUni_len (const guint16 *ptr, gint32 len, MonoError *error)
 {
-	ERROR_DECL (error);
-	MonoString *res = NULL;
-	MonoDomain *domain = mono_domain_get (); 
-
-	error_init (error);
-
-	if (ptr == NULL) {
-		res = NULL;
+	if (!ptr) {
 		mono_error_set_argument_null (error, "ptr", "");
-	} else {
-		res = mono_string_new_utf16_checked (domain, ptr, len, error);
+		return NULL_HANDLE_STRING;
 	}
-
-	if (!mono_error_ok (error))
-		mono_error_set_pending_exception (error);
-	return res;
+	return mono_string_new_utf16_handle (mono_domain_get (), ptr, len, error);
 }
 
 guint32 
 ves_icall_System_Runtime_InteropServices_Marshal_GetLastWin32Error (void)
 {
-	return (GPOINTER_TO_INT (mono_native_tls_get_value (last_error_tls_id)));
+	return GPOINTER_TO_INT (mono_native_tls_get_value (last_error_tls_id));
 }
 
 guint32 
 ves_icall_System_Runtime_InteropServices_Marshal_SizeOf (MonoReflectionTypeHandle rtype, MonoError *error)
 {
-	MonoClass *klass;
-	MonoType *type;
-	guint32 layout, align;
-	gint32 result;
-
-	error_init (error);
-
 	if (MONO_HANDLE_IS_NULL (rtype)) {
 		mono_error_set_argument_null (error, "type", "");
 		return 0;
 	}
 
-	type = MONO_HANDLE_GETVAL (rtype, type);
-	klass = mono_class_from_mono_type (type);
-	if (!mono_class_init (klass)) {
-		mono_error_set_for_class_failure (error, klass);
+	MonoType * const type = MONO_HANDLE_GETVAL (rtype, type);
+	MonoClass * const klass = mono_class_from_mono_type (type);
+	if (!mono_class_init_checked (klass, error))
 		return 0;
-	}
 
-	layout = (mono_class_get_flags (klass) & TYPE_ATTRIBUTE_LAYOUT_MASK);
+	guint32 const layout = (mono_class_get_flags (klass) & TYPE_ATTRIBUTE_LAYOUT_MASK);
 
 	if (type->type == MONO_TYPE_PTR || type->type == MONO_TYPE_FNPTR) {
 		return sizeof (gpointer);
@@ -5123,99 +5090,69 @@ ves_icall_System_Runtime_InteropServices_Marshal_SizeOf (MonoReflectionTypeHandl
 		return 0;
 	}
 
-	result = mono_marshal_type_size (type, NULL, &align, FALSE, m_class_is_unicode (klass));
-	return (guint32)result;
+	guint32 align;
+	return (guint32)mono_marshal_type_size (type, NULL, &align, FALSE, m_class_is_unicode (klass));
 }
 
 void
-ves_icall_System_Runtime_InteropServices_Marshal_StructureToPtr (MonoObject *obj, gpointer dst, MonoBoolean delete_old)
+ves_icall_System_Runtime_InteropServices_Marshal_StructureToPtr (MonoObjectHandle obj, gpointer dst, MonoBoolean delete_old, MonoError *error)
 {
-	ERROR_DECL (error);
-	MonoMethod *method;
-	gpointer pa [3];
-
-	MONO_CHECK_ARG_NULL (obj,);
+	MONO_CHECK_ARG_NULL_HANDLE (obj,);
 	MONO_CHECK_ARG_NULL (dst,);
 
-	method = mono_marshal_get_struct_to_ptr (obj->vtable->klass);
+	MonoMethod *method = mono_marshal_get_struct_to_ptr (mono_handle_class (obj));
 
-	pa [0] = obj;
-	pa [1] = &dst;
-	pa [2] = &delete_old;
+	gpointer pa [ ] = { MONO_HANDLE_RAW (obj), &dst, &delete_old };
 
-	mono_runtime_invoke_checked (method, NULL, pa, error);
-	if (!mono_error_ok (error))
-		mono_error_set_pending_exception (error);
+	mono_runtime_invoke_handle (method, NULL_HANDLE, pa, error);
 }
 
 static void
-ptr_to_structure (gpointer src, MonoObject *dst, MonoError *error)
+ptr_to_structure (gconstpointer src, MonoObjectHandle dst, MonoError *error)
 {
-	MonoMethod *method;
-	gpointer pa [2];
+	MonoMethod *method = mono_marshal_get_ptr_to_struct (mono_handle_class (dst));
 
-	error_init (error);
+	gpointer pa [ ] = { &src, MONO_HANDLE_RAW (dst) };
 
-	method = mono_marshal_get_ptr_to_struct (dst->vtable->klass);
-
-	pa [0] = &src;
-	pa [1] = dst;
-
+	// FIXMEcoop? mono_runtime_invoke_handle causes a GC assertion failure in marshal2 with interpreter
 	mono_runtime_invoke_checked (method, NULL, pa, error);
 }
 
 void
-ves_icall_System_Runtime_InteropServices_Marshal_PtrToStructure (gpointer src, MonoObject *dst)
+ves_icall_System_Runtime_InteropServices_Marshal_PtrToStructure (gconstpointer src, MonoObjectHandle dst, MonoError *error)
 {
 	MonoType *t;
-	ERROR_DECL (error);
 
 	MONO_CHECK_ARG_NULL (src,);
-	MONO_CHECK_ARG_NULL (dst,);
+	MONO_CHECK_ARG_NULL_HANDLE (dst,);
 	
-	t = mono_type_get_underlying_type (mono_class_get_type (dst->vtable->klass));
+	t = mono_type_get_underlying_type (mono_class_get_type (mono_handle_class (dst)));
 
 	if (t->type == MONO_TYPE_VALUETYPE) {
 		mono_error_set_argument (error, "dst", "Destination is a boxed value type.");
-		mono_error_set_pending_exception (error);
 		return;
 	}
 
 	ptr_to_structure (src, dst, error);
-	if (!mono_error_ok (error))
-		mono_error_set_pending_exception (error);
 }
 
-MonoObject *
-ves_icall_System_Runtime_InteropServices_Marshal_PtrToStructure_type (gpointer src, MonoReflectionType *type)
+MonoObjectHandle
+ves_icall_System_Runtime_InteropServices_Marshal_PtrToStructure_type (gconstpointer src, MonoReflectionTypeHandle type, MonoError *error)
 {
-	ERROR_DECL (error);
-	MonoClass *klass;
-	MonoDomain *domain = mono_domain_get (); 
-	MonoObject *res;
-
 	if (src == NULL)
-		return NULL;
-	MONO_CHECK_ARG_NULL (type, NULL);
+		return NULL_HANDLE;
 
-	klass = mono_class_from_mono_type (type->type);
-	if (!mono_class_init (klass)) {
-		mono_error_set_for_class_failure (error, klass);
-		mono_error_set_pending_exception (error);
-		return NULL;
-	}
+	MONO_CHECK_ARG_NULL_HANDLE (type, NULL_HANDLE);
 
-	res = mono_object_new_checked (domain, klass, error);
-	if (!mono_error_ok (error)) {
-		mono_error_set_pending_exception (error);
-		return NULL;
-	}
+	MonoClass *klass = mono_class_from_mono_type_handle (type);
+	if (!mono_class_init_checked (klass, error))
+		return NULL_HANDLE;
+
+	MonoObjectHandle res = mono_object_new_handle (mono_domain_get (), klass, error);
+	return_val_if_nok (error, NULL_HANDLE);
 
 	ptr_to_structure (src, res, error);
-	if (!mono_error_ok (error)) {
-		mono_error_set_pending_exception (error);
-		return NULL;
-	}
+	return_val_if_nok (error, NULL_HANDLE);
 
 	return res;
 }
@@ -5238,10 +5175,8 @@ ves_icall_System_Runtime_InteropServices_Marshal_OffsetOf (MonoReflectionTypeHan
 
 	MonoType *type = MONO_HANDLE_GETVAL (ref_type, type);
 	MonoClass *klass = mono_class_from_mono_type (type);
-	if (!mono_class_init (klass)) {
-		mono_error_set_for_class_failure (error, klass);
+	if (!mono_class_init_checked (klass, error))
 		return 0;
-	}
 
 	int match_index = -1;
 	while (klass && match_index == -1) {
@@ -5277,27 +5212,22 @@ ves_icall_System_Runtime_InteropServices_Marshal_OffsetOf (MonoReflectionTypeHan
 }
 
 #ifndef HOST_WIN32
-gpointer
-ves_icall_System_Runtime_InteropServices_Marshal_StringToHGlobalAnsi (MonoString *string)
+char*
+ves_icall_System_Runtime_InteropServices_Marshal_StringToHGlobalAnsi (const gunichar2 *s, int length, MonoError *error)
 {
-	ERROR_DECL (error);
-	char *ret = mono_string_to_utf8_checked (string, error);
-	mono_error_set_pending_exception (error);
-	return ret;
+	return mono_utf16_to_utf8 (s, length, error);
 }
 
-gpointer
-ves_icall_System_Runtime_InteropServices_Marshal_StringToHGlobalUni (MonoString *string)
+gunichar2*
+ves_icall_System_Runtime_InteropServices_Marshal_StringToHGlobalUni (const gunichar2 *s, int length, MonoError *error)
 {
-	if (string == NULL)
+	if (!s)
 		return NULL;
-	else {
-		gunichar2 *res = (gunichar2 *)g_malloc ((mono_string_length (string) + 1) * 2);
 
-		memcpy (res, mono_string_chars (string), mono_string_length (string) * 2);
-		res [mono_string_length (string)] = 0;
-		return res;
-	}
+	gunichar2 *res = g_new (gunichar2, length + 1);
+	memcpy (res, s, length * sizeof (*res));
+	res [length] = 0;
+	return res;
 }
 #endif /* !HOST_WIN32 */
 
@@ -5354,20 +5284,14 @@ mono_struct_delete_old (MonoClass *klass, char *ptr)
 }
 
 void
-ves_icall_System_Runtime_InteropServices_Marshal_DestroyStructure (gpointer src, MonoReflectionType *type)
+ves_icall_System_Runtime_InteropServices_Marshal_DestroyStructure (gpointer src, MonoReflectionTypeHandle type, MonoError *error)
 {
-	MonoClass *klass;
-
 	MONO_CHECK_ARG_NULL (src,);
-	MONO_CHECK_ARG_NULL (type,);
+	MONO_CHECK_ARG_NULL_HANDLE (type,);
 
-	klass = mono_class_from_mono_type (type->type);
-	if (!mono_class_init (klass)) {
-		ERROR_DECL (error);
-		mono_error_set_for_class_failure (error, klass);
-		mono_error_set_pending_exception (error);
+	MonoClass *klass = mono_class_from_mono_type_handle (type);
+	if (!mono_class_init_checked (klass, error))
 		return;
-	}
 
 	mono_struct_delete_old (klass, (char *)src);
 }
@@ -5381,7 +5305,7 @@ mono_marshal_alloc_hglobal (size_t size)
 #endif
 
 void*
-ves_icall_System_Runtime_InteropServices_Marshal_AllocHGlobal (gsize size)
+ves_icall_System_Runtime_InteropServices_Marshal_AllocHGlobal (gsize size, MonoError *error)
 {
 	gpointer res;
 
@@ -5406,16 +5330,14 @@ mono_marshal_realloc_hglobal (gpointer ptr, size_t size)
 #endif
 
 gpointer
-ves_icall_System_Runtime_InteropServices_Marshal_ReAllocHGlobal (gpointer ptr, gsize size)
+ves_icall_System_Runtime_InteropServices_Marshal_ReAllocHGlobal (gpointer ptr, gsize size, MonoError *error)
 {
-	gpointer res;
-
 	if (ptr == NULL) {
 		mono_set_pending_exception (mono_domain_get ()->out_of_memory_ex);
 		return NULL;
 	}
 
-	res = mono_marshal_realloc_hglobal (ptr, size);
+	gpointer const res = mono_marshal_realloc_hglobal (ptr, size);
 
 	if (!res)
 		mono_set_pending_exception (mono_domain_get ()->out_of_memory_ex);
@@ -5428,18 +5350,17 @@ static inline void
 mono_marshal_free_hglobal (gpointer ptr)
 {
 	g_free (ptr);
-	return;
 }
 #endif
 
 void
-ves_icall_System_Runtime_InteropServices_Marshal_FreeHGlobal (void *ptr)
+ves_icall_System_Runtime_InteropServices_Marshal_FreeHGlobal (void *ptr, MonoError *error)
 {
 	mono_marshal_free_hglobal (ptr);
 }
 
 void*
-ves_icall_System_Runtime_InteropServices_Marshal_AllocCoTaskMem (int size)
+ves_icall_System_Runtime_InteropServices_Marshal_AllocCoTaskMem (int size, MonoError *error)
 {
 	void *res = mono_marshal_alloc_co_task_mem (size);
 
@@ -5450,7 +5371,7 @@ ves_icall_System_Runtime_InteropServices_Marshal_AllocCoTaskMem (int size)
 }
 
 void*
-ves_icall_System_Runtime_InteropServices_Marshal_AllocCoTaskMemSize (gulong size)
+ves_icall_System_Runtime_InteropServices_Marshal_AllocCoTaskMemSize (gulong size, MonoError *error)
 {
 	void *res = mono_marshal_alloc_co_task_mem (size);
 
@@ -5461,7 +5382,7 @@ ves_icall_System_Runtime_InteropServices_Marshal_AllocCoTaskMemSize (gulong size
 }
 
 void
-ves_icall_System_Runtime_InteropServices_Marshal_FreeCoTaskMem (void *ptr)
+ves_icall_System_Runtime_InteropServices_Marshal_FreeCoTaskMem (void *ptr, MonoError *error)
 {
 	mono_marshal_free_co_task_mem (ptr);
 }
@@ -5475,7 +5396,7 @@ mono_marshal_realloc_co_task_mem (gpointer ptr, size_t size)
 #endif
 
 gpointer
-ves_icall_System_Runtime_InteropServices_Marshal_ReAllocCoTaskMem (gpointer ptr, int size)
+ves_icall_System_Runtime_InteropServices_Marshal_ReAllocCoTaskMem (gpointer ptr, int size, MonoError *error)
 {
 	void *res = mono_marshal_realloc_co_task_mem (ptr, size);
 
@@ -5495,12 +5416,9 @@ ves_icall_System_Runtime_InteropServices_Marshal_UnsafeAddrOfPinnedArrayElement 
 MonoDelegateHandle
 ves_icall_System_Runtime_InteropServices_Marshal_GetDelegateForFunctionPointerInternal (void *ftn, MonoReflectionTypeHandle type, MonoError *error)
 {
-	error_init (error);
 	MonoClass *klass = mono_type_get_class (MONO_HANDLE_GETVAL (type, type));
-	if (!mono_class_init (klass)) {
-		mono_error_set_for_class_failure (error, klass);
+	if (!mono_class_init_checked (klass, error))
 		return MONO_HANDLE_CAST (MonoDelegate, NULL_HANDLE);
-	}
 
 	return mono_ftnptr_to_delegate_handle (klass, ftn, error);
 }
@@ -5508,7 +5426,6 @@ ves_icall_System_Runtime_InteropServices_Marshal_GetDelegateForFunctionPointerIn
 gpointer
 ves_icall_System_Runtime_InteropServices_Marshal_GetFunctionPointerForDelegateInternal (MonoDelegateHandle delegate, MonoError *error)
 {
-	error_init (error);
 	return mono_delegate_handle_to_ftnptr (delegate, error);
 }
 
@@ -5909,17 +5826,13 @@ mono_marshal_type_size (MonoType *type, MonoMarshalSpec *mspec, guint32 *align,
  * mono_marshal_asany:
  * This is a JIT icall, it sets the pending exception and returns NULL on error.
  */
-gpointer
-mono_marshal_asany (MonoObject *o, MonoMarshalNative string_encoding, int param_attrs)
+static gpointer
+mono_marshal_asany_handle (MonoObjectHandle o, MonoMarshalNative string_encoding, int param_attrs, MonoError *error)
 {
-	ERROR_DECL (error);
-	MonoType *t;
-	MonoClass *klass;
-
-	if (o == NULL)
+	if (MONO_HANDLE_IS_NULL (o))
 		return NULL;
 
-	t = m_class_get_byval_arg (mono_object_class (o));
+	MonoType *t = m_class_get_byval_arg (mono_handle_class (o));
 	switch (t->type) {
 	case MONO_TYPE_I4:
 	case MONO_TYPE_U4:
@@ -5934,16 +5847,15 @@ mono_marshal_asany (MonoObject *o, MonoMarshalNative string_encoding, int param_
 	case MONO_TYPE_U8:
 	case MONO_TYPE_R4:
 	case MONO_TYPE_R8:
-		return mono_object_unbox (o);
-		break;
+		return mono_handle_unbox_unsafe (o);
 	case MONO_TYPE_STRING:
 		switch (string_encoding) {
 		case MONO_NATIVE_LPWSTR:
-			return mono_marshal_string_to_utf16_copy ((MonoString*)o);
+			return mono_marshal_string_to_utf16_copy_handle (MONO_HANDLE_CAST (MonoString, o), error);
 		case MONO_NATIVE_LPSTR:
 		case MONO_NATIVE_UTF8STR:
 			// Same code path, because in Mono, we treated strings as Utf8
-			return mono_string_to_utf8str ((MonoString*)o);
+			return mono_string_handle_to_utf8 (MONO_HANDLE_CAST (MonoString, o), error);
 		default:
 			g_warning ("marshaling conversion %d not implemented", string_encoding);
 			g_assert_not_reached ();
@@ -5951,37 +5863,25 @@ mono_marshal_asany (MonoObject *o, MonoMarshalNative string_encoding, int param_
 		break;
 	case MONO_TYPE_CLASS:
 	case MONO_TYPE_VALUETYPE: {
-		MonoMethod *method;
-		gpointer pa [3];
-		gpointer res;
-		MonoBoolean delete_old = FALSE;
 
-		klass = t->data.klass;
+		MonoClass *klass = t->data.klass;
 
 		if (mono_class_is_auto_layout (klass))
 			break;
 
 		if (m_class_is_valuetype (klass) && (mono_class_is_explicit_layout (klass) || m_class_is_blittable (klass) || m_class_is_enumtype (klass)))
-			return mono_object_unbox (o);
+			return mono_handle_unbox_unsafe (o);
 
-		res = mono_marshal_alloc (mono_class_native_size (klass, NULL), error);
-		if (!mono_error_ok (error)) {
-			mono_error_set_pending_exception (error);
-			return NULL;
-		}
+		gpointer res = mono_marshal_alloc (mono_class_native_size (klass, NULL), error);
+		return_val_if_nok (error, NULL);
 
 		if (!((param_attrs & PARAM_ATTRIBUTE_OUT) && !(param_attrs & PARAM_ATTRIBUTE_IN))) {
-			method = mono_marshal_get_struct_to_ptr (o->vtable->klass);
+			MonoMethod *method = mono_marshal_get_struct_to_ptr (mono_handle_class (o));
+			MonoBoolean delete_old = FALSE;
+			gpointer pa [ ] = { MONO_HANDLE_RAW (o), &res, &delete_old };
 
-			pa [0] = o;
-			pa [1] = &res;
-			pa [2] = &delete_old;
-
-			mono_runtime_invoke_checked (method, NULL, pa, error);
-			if (!mono_error_ok (error)) {
-				mono_error_set_pending_exception (error);
-				return NULL;
-			}
+			mono_runtime_invoke_handle (method, NULL_HANDLE, pa, error);
+			return_val_if_nok (error, NULL);
 		}
 
 		return res;
@@ -5990,8 +5890,20 @@ mono_marshal_asany (MonoObject *o, MonoMarshalNative string_encoding, int param_
 		break;
 	}
 	mono_error_set_argument (error, "", "No PInvoke conversion exists for value passed to Object-typed parameter.");
-	mono_error_set_pending_exception (error);
 	return NULL;
+}
+
+gpointer
+mono_marshal_asany (MonoObject *o_raw, MonoMarshalNative string_encoding, int param_attrs)
+{
+	if (!o_raw)
+		return NULL;
+	HANDLE_FUNCTION_ENTER ();
+	ERROR_DECL (error);
+	MONO_HANDLE_DCL (MonoObject, o);
+	gpointer result = mono_marshal_asany_handle (o, string_encoding, param_attrs, error);
+	mono_error_set_pending_exception (error);
+	HANDLE_FUNCTION_RETURN_VAL (result);
 }
 
 /**
@@ -6067,7 +5979,7 @@ emit_generic_array_helper_noilgen (MonoMethodBuilder *mb, MonoMethod *method, Mo
  * The wrapper routes calls to METHOD, which is one of the InternalArray_ methods in Array.
  */
 MonoMethod *
-mono_marshal_get_generic_array_helper (MonoClass *klass, gchar *name, MonoMethod *method)
+mono_marshal_get_generic_array_helper (MonoClass *klass, const gchar *name, MonoMethod *method)
 {
 	MonoMethodSignature *sig, *csig;
 	MonoMethodBuilder *mb;
@@ -6374,4 +6286,3 @@ get_marshal_cb (void)
 	}
 	return &marshal_cb;
 }
-
