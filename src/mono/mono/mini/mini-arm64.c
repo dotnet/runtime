@@ -4536,7 +4536,7 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 		}
 
 		case OP_CHECK_THIS:
-			arm_ldrx (code, ARMREG_LR, sreg1, 0);
+			arm_ldrb (code, ARMREG_LR, sreg1, 0);
 			break;
 		case OP_NOT_NULL:
 		case OP_NOT_REACHED:
