@@ -796,7 +796,6 @@ namespace System.Collections.Generic
                         }
                         _freeList = i;
                         _freeCount++;
-                        _version++;
                         return true;
                     }
 
@@ -865,7 +864,6 @@ namespace System.Collections.Generic
                         }
                         _freeList = i;
                         _freeCount++;
-                        _version++;
                         return true;
                     }
 
