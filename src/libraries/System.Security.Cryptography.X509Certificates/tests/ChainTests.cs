@@ -633,6 +633,16 @@ namespace System.Security.Cryptography.X509Certificates.Tests
         }
 
         [Fact]
+        public static void BuildChainInvalidValues()
+        {
+            using (var chain = X509Chain.Create())
+            {
+                AssertExtensions.Throws<ArgumentException>("certificate", () => chain.Build(null));
+                AssertExtensions.Throws<ArgumentException>("certificate", () => chain.Build(new X509Certificate2()));
+            }
+        }
+
+        [Fact]
         public static void InvalidSelfSignedSignature()
         {
             X509ChainStatusFlags expectedFlags;
