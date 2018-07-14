@@ -334,52 +334,11 @@ namespace System.Security.Cryptography
             AsnWriter pkcs8Writer,
             PbeParameters pbeParameters)
         {
-            System.Text.Encoding encoding = System.Text.Encoding.UTF8;
-            int requiredBytes = encoding.GetByteCount(password);
-            Span<byte> passwordBytes = stackalloc byte[0];
-            byte[] rentedPasswordBytes;
-
-            if (requiredBytes > 128)
-            {
-                rentedPasswordBytes = ArrayPool<byte>.Shared.Rent(requiredBytes);
-                passwordBytes = rentedPasswordBytes;
-            }
-            else
-            {
-                rentedPasswordBytes = Array.Empty<byte>();
-                passwordBytes = stackalloc byte[requiredBytes];
-            }
-
-            fixed (byte* bytePtr = rentedPasswordBytes)
-            {
-                try
-                {
-                    int written = encoding.GetBytes(password, passwordBytes);
-
-                    if (written != requiredBytes)
-                    {
-                        Debug.Fail("UTF8 encoding length changed between size and convert");
-                        throw new CryptographicException();
-                    }
-
-                    passwordBytes = passwordBytes.Slice(0, written);
-
-                    return WriteEncryptedPkcs8(
-                        password,
-                        passwordBytes,
-                        pkcs8Writer,
-                        pbeParameters);
-                }
-                finally
-                {
-                    CryptographicOperations.ZeroMemory(passwordBytes);
-
-                    if (rentedPasswordBytes.Length > 0)
-                    {
-                        ArrayPool<byte>.Shared.Return(rentedPasswordBytes);
-                    }
-                }
-            }
+            return WriteEncryptedPkcs8(
+                password,
+                ReadOnlySpan<byte>.Empty,
+                pkcs8Writer,
+                pbeParameters);
         }
 
         internal static AsnWriter WriteEncryptedPkcs8(

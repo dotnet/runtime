@@ -52,6 +52,11 @@ namespace System.Security.Cryptography
                         pvBuffer = stringHandle.DangerousGetHandle(),
                     };
 
+                    if (buffers[0].pvBuffer == IntPtr.Zero)
+                    {
+                        buffers[0].cbBuffer = 0;
+                    }
+
                     Interop.NCrypt.NCryptBufferDesc desc = new Interop.NCrypt.NCryptBufferDesc
                     {
                         cBuffers = 1,
@@ -288,6 +293,11 @@ namespace System.Security.Cryptography
                         cbBuffer = checked(2 * (password.Length + 1)),
                         pvBuffer = stringHandle.DangerousGetHandle(),
                     };
+
+                    if (buffers[0].pvBuffer == IntPtr.Zero)
+                    {
+                        buffers[0].cbBuffer = 0;
+                    }
 
                     buffers[1] = new Interop.NCrypt.NCryptBuffer
                     {

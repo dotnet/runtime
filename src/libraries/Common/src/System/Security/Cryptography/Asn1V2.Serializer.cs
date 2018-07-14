@@ -502,7 +502,7 @@ namespace System.Security.Cryptography.Asn1
             {
                 return (obj, writer) =>
                 {
-                    using (AsnWriter tmp = new AsnWriter(AsnEncodingRules.DER))
+                    using (AsnWriter tmp = new AsnWriter(writer.RuleSet))
                     {
                         serializer(obj, tmp);
 
