@@ -306,8 +306,27 @@
     <Compile Include="$(CommonPath)\System\Security\Cryptography\Pkcs12Kdf.cs">
       <Link>Common\System\Security\Cryptography\Pkcs12Kdf.cs</Link>
     </Compile>
+    <Compile Include="System\Security\Cryptography\Pkcs\Asn1\CertBagAsn.cs" />
+    <Compile Include="System\Security\Cryptography\Pkcs\Asn1\DigestInfoAsn.cs" />
+    <Compile Include="System\Security\Cryptography\Pkcs\Asn1\EncryptedDataAsn.cs" />
+    <Compile Include="System\Security\Cryptography\Pkcs\Asn1\MacData.cs" />
+    <Compile Include="System\Security\Cryptography\Pkcs\Asn1\PfxAsn.cs" />
+    <Compile Include="System\Security\Cryptography\Pkcs\Asn1\SafeBagAsn.cs" />
+    <Compile Include="System\Security\Cryptography\Pkcs\Asn1\SecretBagAsn.cs" />
     <Compile Include="System\Security\Cryptography\Pkcs\CmsSignature.DSA.cs" />
+    <Compile Include="System\Security\Cryptography\Pkcs\Pkcs12Builder.cs" />
+    <Compile Include="System\Security\Cryptography\Pkcs\Pkcs12CertBag.cs" />
+    <Compile Include="System\Security\Cryptography\Pkcs\Pkcs12ConfidentialityMode.cs" />
+    <Compile Include="System\Security\Cryptography\Pkcs\Pkcs12Info.cs" />
+    <Compile Include="System\Security\Cryptography\Pkcs\Pkcs12IntegrityMode.cs" />
+    <Compile Include="System\Security\Cryptography\Pkcs\Pkcs12KeyBag.cs" />
+    <Compile Include="System\Security\Cryptography\Pkcs\Pkcs12SafeBag.cs" />
+    <Compile Include="System\Security\Cryptography\Pkcs\Pkcs12SafeContents.cs" />
+    <Compile Include="System\Security\Cryptography\Pkcs\Pkcs12SafeContentsBag.cs" />
+    <Compile Include="System\Security\Cryptography\Pkcs\Pkcs12SecretBag.cs" />
+    <Compile Include="System\Security\Cryptography\Pkcs\Pkcs12ShroudedKeyBag.cs" />
     <Compile Include="System\Security\Cryptography\Pkcs\Pkcs8PrivateKeyInfo.cs" />
+    <Compile Include="System\Security\Cryptography\Pkcs\Pkcs9LocalKeyId.cs" />
     <Compile Include="System\Security\Cryptography\Pkcs\Rfc3161RequestResponseStatus.cs" />
     <Compile Include="System\Security\Cryptography\Pkcs\Rfc3161TimestampRequest.cs" />
     <Compile Include="System\Security\Cryptography\Pkcs\Rfc3161TimestampToken.cs" />

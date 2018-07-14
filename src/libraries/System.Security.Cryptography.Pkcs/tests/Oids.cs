@@ -2,12 +2,6 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
-using System;
-using System.Text;
-using System.Diagnostics;
-
-using Test.Cryptography;
-
 namespace System.Security.Cryptography.Pkcs.Tests
 {
     internal static class Oids
@@ -33,6 +27,8 @@ namespace System.Security.Cryptography.Pkcs.Tests
         public const string MessageDigest = "1.2.840.113549.1.9.4";
         public const string DocumentName = "1.3.6.1.4.1.311.88.2.1";
         public const string CounterSigner = "1.2.840.113549.1.9.6";
+        public const string FriendlyName = "1.2.840.113549.1.9.20";
+        public const string LocalKeyId = "1.2.840.113549.1.9.21";
 
 
         // Key wrap algorithms
@@ -46,6 +42,9 @@ namespace System.Security.Cryptography.Pkcs.Tests
         public const string Pkcs7SignedEnveloped = "1.2.840.113549.1.7.4";
         public const string Pkcs7Hashed = "1.2.840.113549.1.7.5";
         public const string Pkcs7Encrypted = "1.2.840.113549.1.7.6";
+
+        // PKCS12 bag types
+        public const string CertBag = "1.2.840.113549.1.12.10.1.3";
 
         // X509 extensions
         public const string SubjectKeyIdentifier = "2.5.29.14";
