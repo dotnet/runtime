@@ -7,13 +7,14 @@ using System.Diagnostics;
 using System.Security.Cryptography;
 using System.Security.Cryptography.Asn1;
 using System.Security.Cryptography.Pkcs;
-using System.Security.Cryptography.Pkcs.Asn1;
 using System.Security.Cryptography.X509Certificates;
 
 namespace Internal.Cryptography.Pal.AnyOS
 {
     internal sealed partial class ManagedPkcsPal : PkcsPal
     {
+        internal new static readonly ManagedPkcsPal Instance = new ManagedPkcsPal();
+
         public override void AddCertsFromStoreForDecryption(X509Certificate2Collection certs)
         {
             certs.AddRange(Helpers.GetStoreCertificates(StoreName.My, StoreLocation.CurrentUser, openExistingOnly: false));
