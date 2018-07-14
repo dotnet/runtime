@@ -37,9 +37,9 @@ unsafe struct A<T>
     static public int f1 (int counter, long initial_stack, long current_stack)
     {
 	int local;
-	object a = new T[101];
 	if (counter > 0)
 	    return f2 (counter - 1, initial_stack, (long)&local);
+	object a = new T[10];
 	return check ((long)&local, current_stack);
     }
 
@@ -47,9 +47,9 @@ unsafe struct A<T>
     static public int f2 (int counter, long initial_stack, long current_stack)
     {
 	int local;
-	object a = new T[101];
 	if (counter > 0)
 	    return f1 (counter - 1, initial_stack, (long)&local);
+	object a = new T[11];
 	return check ((long)&local, current_stack);
     }
 }

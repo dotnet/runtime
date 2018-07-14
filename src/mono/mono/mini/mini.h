@@ -2469,6 +2469,17 @@ MONO_API gboolean mono_breakpoint_clean_code (guint8 *method_start, guint8 *code
 MonoCallSpec *mono_trace_set_options           (const char *options);
 gboolean       mono_trace_eval                  (MonoMethod *method);
 
+gboolean
+mono_tailcall_print_enabled (void);
+
+void
+mono_tailcall_print (const char *format, ...);
+
+gboolean
+mono_is_supported_tailcall_helper (gboolean value, const char *svalue);
+
+#define IS_SUPPORTED_TAILCALL(x) (mono_is_supported_tailcall_helper((x), #x))
+
 extern void
 mono_perform_abc_removal (MonoCompile *cfg);
 extern void

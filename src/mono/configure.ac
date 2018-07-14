@@ -4264,6 +4264,14 @@ esac
 #WASM hack
 fi
 
+MONO_ARCH_GSHAREDVT_SUPPORTED=0
+case "$HOST" in
+X86 | AMD64 | ARM | ARM64)
+	MONO_ARCH_GSHAREDVT_SUPPORTED=1 # keep in sync with mini-{x86,amd64,arm,arm64}.h
+	;;
+esac
+
+AM_CONDITIONAL(MONO_ARCH_GSHAREDVT_SUPPORTED, test $MONO_ARCH_GSHAREDVT_SUPPORTED = 1)
 
 dnl *************
 dnl *** VTUNE ***
