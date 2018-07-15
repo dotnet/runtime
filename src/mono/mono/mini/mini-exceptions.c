@@ -1513,13 +1513,7 @@ ves_icall_get_frame_info (gint32 skip, MonoBoolean need_file_info,
 			case FRAME_TYPE_MANAGED_TO_NATIVE:
 			case FRAME_TYPE_DEBUGGER_INVOKE:
 			case FRAME_TYPE_TRAMPOLINE:
-				continue;
 			case FRAME_TYPE_INTERP_TO_MANAGED:
-				if (!ji) {
-					/* gsharedvt_out_sig_wrapper from interp2jit transition */
-					skip--;
-					break;
-				}
 				continue;
 			case FRAME_TYPE_INTERP:
 			case FRAME_TYPE_MANAGED:
