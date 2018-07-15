@@ -88,7 +88,16 @@ namespace System.Threading
         /// for here.
         /// </remarks>
         internal static readonly int SpinCountforSpinBeforeWait = PlatformHelper.IsSingleProcessor ? 1 : 35;
-        internal const int Sleep1ThresholdForSpinBeforeWait = 40; // should be greater than SpinCountforSpinBeforeWait
+
+        /// <summary>
+        /// Typically, Sleep(1) should not be issued for a spin-wait before a proper wait because it is usually more beneficial
+        /// to just issue the proper wait. For longer spin-waits (when the spin count is configurable), this value may be used as
+        /// a threshold for issuing Sleep(1).
+        /// </summary>
+        /// <remarks>
+        /// Should be greater than <see cref="SpinCountforSpinBeforeWait"/> so that Sleep(1) would not be used by default.
+        /// </remarks>
+        internal const int Sleep1ThresholdForLongSpinBeforeWait = 40;
 
         // The number of times we've spun already.
         private int _count;
@@ -127,12 +136,42 @@ namespace System.Threading
         /// </remarks>
         public void SpinOnce()
         {
-            SpinOnce(DefaultSleep1Threshold);
+            SpinOnceCore(DefaultSleep1Threshold);
         }
 
-        internal void SpinOnce(int sleep1Threshold)
+        /// <summary>
+        /// Performs a single spin.
+        /// </summary>
+        /// <param name="sleep1Threshold">
+        /// A minimum spin count after which <code>Thread.Sleep(1)</code> may be used. A value of <code>-1</code> may be used to
+        /// disable the use of <code>Thread.Sleep(1)</code>.
+        /// </param>
+        /// <exception cref="ArgumentOutOfRangeException">
+        /// <paramref name="sleep1Threshold"/> is less than <code>-1</code>.
+        /// </exception>
+        /// <remarks>
+        /// This is typically called in a loop, and may change in behavior based on the number of times a
+        /// <see cref="SpinOnce"/> has been called thus far on this instance.
+        /// </remarks>
+        public void SpinOnce(int sleep1Threshold)
         {
-            Debug.Assert(sleep1Threshold >= YieldThreshold || PlatformHelper.IsSingleProcessor); // so that NextSpinWillYield behaves as requested
+            if (sleep1Threshold < -1)
+            {
+                throw new ArgumentOutOfRangeException(nameof(sleep1Threshold), sleep1Threshold, SR.ArgumentOutOfRange_NeedNonNegOrNegative1);
+            }
+
+            if (sleep1Threshold >= 0 && sleep1Threshold < YieldThreshold)
+            {
+                sleep1Threshold = YieldThreshold;
+            }
+
+            SpinOnceCore(sleep1Threshold);
+        }
+
+        private void SpinOnceCore(int sleep1Threshold)
+        {
+            Debug.Assert(sleep1Threshold >= -1);
+            Debug.Assert(sleep1Threshold < 0 || sleep1Threshold >= YieldThreshold);
 
             // (_count - YieldThreshold) % 2 == 0: The purpose of this check is to interleave Thread.Yield/Sleep(0) with
             // Thread.SpinWait. Otherwise, the following issues occur:
@@ -145,7 +184,7 @@ namespace System.Threading
             //     contention), they may switch between one another, delaying work that can make progress.
             if ((
                     _count >= YieldThreshold &&
-                    (_count >= sleep1Threshold || (_count - YieldThreshold) % 2 == 0)
+                    ((_count >= sleep1Threshold && sleep1Threshold >= 0) || (_count - YieldThreshold) % 2 == 0)
                 ) ||
                 PlatformHelper.IsSingleProcessor)
             {
@@ -164,7 +203,7 @@ namespace System.Threading
                 // configured to use the (default) coarse-grained system timer.
                 //
 
-                if (_count >= sleep1Threshold)
+                if (_count >= sleep1Threshold && sleep1Threshold >= 0)
                 {
                     RuntimeThread.Sleep(1);
                 }
