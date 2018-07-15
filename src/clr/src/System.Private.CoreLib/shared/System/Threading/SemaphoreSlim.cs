@@ -345,12 +345,11 @@ namespace System.Threading
                     // spin, contention, etc. The usual number of spin iterations that would otherwise be used here is increased to
                     // lessen that extra expense of doing a proper wait.
                     int spinCount = SpinWait.SpinCountforSpinBeforeWait * 4;
-                    const int Sleep1Threshold = SpinWait.Sleep1ThresholdForSpinBeforeWait * 4;
 
                     var spinner = new SpinWait();
                     while (spinner.Count < spinCount)
                     {
-                        spinner.SpinOnce(Sleep1Threshold);
+                        spinner.SpinOnce(sleep1Threshold: -1);
 
                         if (m_currentCount != 0)
                         {

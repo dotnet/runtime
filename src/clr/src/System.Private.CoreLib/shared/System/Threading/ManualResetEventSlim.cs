@@ -551,7 +551,7 @@ namespace System.Threading
                 var spinner = new SpinWait();
                 while (spinner.Count < spinCount)
                 {
-                    spinner.SpinOnce(SpinWait.Sleep1ThresholdForSpinBeforeWait);
+                    spinner.SpinOnce(SpinWait.Sleep1ThresholdForLongSpinBeforeWait);
 
                     if (IsSet)
                     {
