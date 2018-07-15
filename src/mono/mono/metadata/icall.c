@@ -115,6 +115,36 @@
 #pragma GCC diagnostic ignored "-Wmissing-prototypes"
 #endif
 
+//#define MONO_DEBUG_ICALLARRAY
+
+#ifdef MONO_DEBUG_ICALLARRAY
+
+static char debug_icallarray; // 0:uninitialized 1:true 2:false
+
+static gboolean
+icallarray_print_enabled (void)
+{
+	if (!debug_icallarray)
+		debug_icallarray = MONO_TRACE_IS_TRACED (G_LOG_LEVEL_DEBUG, MONO_TRACE_ICALLARRAY) ? 1 : 2;
+	return debug_icallarray == 1;
+}
+
+static void
+icallarray_print (const char *format, ...)
+{
+	if (!icallarray_print_enabled ())
+		return;
+	va_list args;
+	va_start (args, format);
+	g_printv (format, args);
+	va_end (args);
+}
+
+#else
+#define icallarray_print_enabled() (FALSE)
+#define icallarray_print(...) /* nothing */
+#endif
+
 extern MonoStringHandle ves_icall_System_Environment_GetOSVersionString (MonoError *error);
 
 ICALL_EXPORT MonoReflectionAssemblyHandle ves_icall_System_Reflection_Assembly_GetCallingAssembly (MonoError *error);
@@ -153,84 +183,72 @@ mono_icall_get_file_path_prefix (const gchar *path)
 }
 #endif /* HOST_WIN32 */
 
-ICALL_EXPORT MonoObject *
-ves_icall_System_Array_GetValueImpl (MonoArray *arr, guint32 pos)
+ICALL_EXPORT MonoObjectHandle
+ves_icall_System_Array_GetValueImpl (MonoArrayHandle array, guint32 pos, MonoError *error)
 {
-	ERROR_DECL (error);
-	MonoClass *ac;
-	gint32 esize;
-	gpointer *ea;
-	MonoObject *result = NULL;
+	MonoClass * const array_class = mono_handle_class (array);
+	MonoClass * const element_class = m_class_get_element_class (array_class);
 
-	ac = (MonoClass *)arr->obj.vtable->klass;
-
-	esize = mono_array_element_size (ac);
-	ea = (gpointer*)((char*)arr->vector + (pos * esize));
-
-	MonoClass *ac_element_class = m_class_get_element_class (ac);
-	if (m_class_is_valuetype (ac_element_class)) {
-		result = mono_value_box_checked (arr->obj.vtable->domain, ac_element_class, ea, error);
-		mono_error_set_pending_exception (error);
-	} else
-		result = (MonoObject *)*ea;
+	if (m_class_is_valuetype (element_class)) {
+		gsize element_size = mono_array_element_size (array_class);
+		gpointer element_address = mono_array_addr_with_size_fast (MONO_HANDLE_RAW (array), element_size, (gsize)pos);
+		return mono_value_box_handle (MONO_HANDLE_DOMAIN (array), element_class, element_address, error);
+	}
+	MonoObjectHandle result = mono_new_null ();
+	mono_handle_array_getref (result, array, pos);
 	return result;
 }
 
-ICALL_EXPORT MonoObject *
-ves_icall_System_Array_GetValue (MonoArray *arr, MonoArray *idxs)
+ICALL_EXPORT MonoObjectHandle
+ves_icall_System_Array_GetValue (MonoArrayHandle arr, MonoArrayHandle indices, MonoError *error)
 {
-	MonoClass *ac, *ic;
-	MonoArray *io;
-	gint32 i, pos, *ind;
-	ERROR_DECL (error);
+	MONO_CHECK_ARG_NULL_HANDLE (indices, NULL_HANDLE);
 
-	MONO_CHECK_ARG_NULL (idxs, NULL);
+	MonoClass * const indices_class = mono_handle_class (indices);
+	MonoClass * const array_class = mono_handle_class (arr);
 
-	io = idxs;
-	ic = (MonoClass *)io->obj.vtable->klass;
-	
-	ac = (MonoClass *)arr->obj.vtable->klass;
+	g_assert (m_class_get_rank (indices_class) == 1);
 
-	g_assert (m_class_get_rank (ic) == 1);
-	if (io->bounds != NULL || io->max_length !=  m_class_get_rank (ac)) {
+	if (MONO_HANDLE_GETVAL (indices, bounds) || MONO_HANDLE_GETVAL (indices, max_length) != m_class_get_rank (array_class)) {
 		mono_error_set_argument (error, NULL, NULL);
-		mono_error_set_pending_exception (error);
-		return NULL;
+		return NULL_HANDLE;
 	}
 
-	ind = (gint32 *)io->vector;
+	gint32 index = 0;
 
-	if (arr->bounds == NULL) {
-		if (*ind < 0 || *ind >= arr->max_length) {
+	if (!MONO_HANDLE_GETVAL (arr, bounds)) {
+		MONO_HANDLE_ARRAY_GETVAL (index, indices, gint32, 0);
+		if (index < 0 || index >= MONO_HANDLE_GETVAL (arr, max_length)) {
 			mono_error_set_index_out_of_range (error);
-			mono_error_set_pending_exception (error);
-			return NULL;
+			return NULL_HANDLE;
 		}
 
-		return ves_icall_System_Array_GetValueImpl (arr, *ind);
+		return ves_icall_System_Array_GetValueImpl (arr, index, error);
 	}
 	
-	for (i = 0; i < m_class_get_rank (ac); i++) {
-		if ((ind [i] < arr->bounds [i].lower_bound) ||
-		    (ind [i] >=  (mono_array_lower_bound_t)arr->bounds [i].length + arr->bounds [i].lower_bound)) {
+	for (gint32 i = 0; i < m_class_get_rank (array_class); i++) {
+		MONO_HANDLE_ARRAY_GETVAL (index, indices, gint32, i);
+		if ((index < MONO_HANDLE_GETVAL (arr, bounds [i].lower_bound)) ||
+		    (index >= (mono_array_lower_bound_t)MONO_HANDLE_GETVAL (arr, bounds [i].length) + MONO_HANDLE_GETVAL (arr, bounds [i].lower_bound))) {
 			mono_error_set_index_out_of_range (error);
-			mono_error_set_pending_exception (error);
-			return NULL;
+			return NULL_HANDLE;
 		}
 	}
 
-	pos = ind [0] - arr->bounds [0].lower_bound;
-	for (i = 1; i < m_class_get_rank (ac); i++)
-		pos = pos * arr->bounds [i].length + ind [i] - 
-			arr->bounds [i].lower_bound;
+	MONO_HANDLE_ARRAY_GETVAL (index, indices, gint32, 0);
+	gint32 pos = index - MONO_HANDLE_GETVAL (arr, bounds [0].lower_bound);
+	for (gint32 i = 1; i < m_class_get_rank (array_class); i++) {
+		MONO_HANDLE_ARRAY_GETVAL (index, indices, gint32, i);
+		pos = pos * MONO_HANDLE_GETVAL (arr, bounds [i].length) + index -
+			MONO_HANDLE_GETVAL (arr, bounds [i].lower_bound);
+	}
 
-	return ves_icall_System_Array_GetValueImpl (arr, pos);
+	return ves_icall_System_Array_GetValueImpl (arr, pos, error);
 }
 
 ICALL_EXPORT void
 ves_icall_System_Array_SetValueImpl (MonoArrayHandle arr, MonoObjectHandle value, guint32 pos, MonoError *error)
 {
-	error_init (error);
 	array_set_value_impl (arr, value, pos, error);
 }
 
@@ -536,6 +554,8 @@ ICALL_EXPORT void
 ves_icall_System_Array_SetValue (MonoArrayHandle arr, MonoObjectHandle value,
 				 MonoArrayHandle idxs, MonoError *error)
 {
+	icallarray_print ("%s\n", __func__);
+
 	MonoArrayBounds dim;
 	MonoClass *ac, *ic;
 	gint32 idx;
@@ -579,7 +599,6 @@ ves_icall_System_Array_SetValue (MonoArrayHandle arr, MonoObjectHandle value,
 		}
 	}
 
-
 	MONO_HANDLE_ARRAY_GETVAL  (idx, idxs, gint32, 0);
 	mono_handle_array_get_bounds_dim (arr, 0, &dim);
 	pos = idx - dim.lower_bound;
@@ -592,141 +611,128 @@ ves_icall_System_Array_SetValue (MonoArrayHandle arr, MonoObjectHandle value,
 	array_set_value_impl (arr, value, pos, error);
 }
 
-ICALL_EXPORT MonoArray *
-ves_icall_System_Array_CreateInstanceImpl (MonoReflectionType *type, MonoArray *lengths, MonoArray *bounds)
+ICALL_EXPORT MonoArrayHandle
+ves_icall_System_Array_CreateInstanceImpl (MonoReflectionTypeHandle type, MonoArrayHandle lengths, MonoArrayHandle bounds, MonoError *error)
 {
-	ERROR_DECL (error);
-	MonoClass *aklass, *klass;
-	MonoArray *array;
-	uintptr_t *sizes, i;
-	gboolean bounded = FALSE;
+	// FIXME? fixed could be used for lengths, bounds.
 
-	MONO_CHECK_ARG_NULL (type, NULL);
-	MONO_CHECK_ARG_NULL (lengths, NULL);
+	icallarray_print ("%s type:%p length:%p bounds:%p\n", __func__, type, lengths, bounds);
 
-	MONO_CHECK_ARG (lengths, mono_array_length (lengths) > 0, NULL);
-	if (bounds)
-		MONO_CHECK_ARG (bounds, mono_array_length (lengths) == mono_array_length (bounds), NULL);
+	MONO_CHECK_ARG_NULL_HANDLE (type, NULL_HANDLE_ARRAY);
+	MONO_CHECK_ARG_NULL_HANDLE (lengths, NULL_HANDLE_ARRAY);
 
-	for (i = 0; i < mono_array_length (lengths); i++) {
-		if (mono_array_get (lengths, gint32, i) < 0) {
+	MONO_CHECK_ARG (lengths, mono_array_handle_length (lengths) > 0, NULL_HANDLE_ARRAY);
+	if (!MONO_HANDLE_IS_NULL (bounds))
+		MONO_CHECK_ARG (bounds, mono_array_handle_length (lengths) == mono_array_handle_length (bounds), NULL_HANDLE_ARRAY);
+
+	for (uintptr_t i = 0; i < mono_array_handle_length (lengths); ++i) {
+		gint32 length = 0;
+		MONO_HANDLE_ARRAY_GETVAL (length, lengths, gint32, i);
+		if (length < 0) {
 			mono_error_set_argument_out_of_range (error, NULL);
-			mono_error_set_pending_exception (error);
-			return NULL;
+			return NULL_HANDLE_ARRAY;
 		}
 	}
 
-	klass = mono_class_from_mono_type (type->type);
-	mono_class_init_checked (klass, error);
-	if (mono_error_set_pending_exception (error))
-		return NULL;
+	MonoClass *klass = mono_class_from_mono_type (MONO_HANDLE_GETVAL (type, type));
+	if (!mono_class_init_checked (klass, error))
+		return NULL_HANDLE_ARRAY;
 
 	if (m_class_get_byval_arg (m_class_get_element_class (klass))->type == MONO_TYPE_VOID) {
 		mono_error_set_not_supported (error, "Arrays of System.Void are not supported.");
-		mono_error_set_pending_exception (error);
-		return NULL;
+		return NULL_HANDLE_ARRAY;
 	}
 
-	if (bounds && (mono_array_length (bounds) == 1) && (mono_array_get (bounds, gint32, 0) != 0))
-		/* vectors are not the same as one dimensional arrays with no-zero bounds */
-		bounded = TRUE;
-	else
-		bounded = FALSE;
+	/* vectors are not the same as one dimensional arrays with non-zero bounds */
+	gboolean bounded = FALSE;
+	if (!MONO_HANDLE_IS_NULL (bounds) && mono_array_handle_length (bounds) == 1) {
+		gint32 bound0 = 0;
+		MONO_HANDLE_ARRAY_GETVAL (bound0, bounds, gint32, 0);
+		bounded = bound0 != 0;
+	}
 
-	aklass = mono_class_create_bounded_array (klass, mono_array_length (lengths), bounded);
+	MonoClass * const aklass = mono_class_create_bounded_array (klass, mono_array_handle_length (lengths), bounded);
+	uintptr_t const aklass_rank = m_class_get_rank (aklass);
+	uintptr_t * const sizes = (uintptr_t *)alloca (aklass_rank * sizeof (uintptr_t));
+	intptr_t * const lower_bounds = (intptr_t *)alloca (aklass_rank * sizeof (intptr_t));
 
-	uintptr_t aklass_rank = m_class_get_rank (aklass);
-	sizes = (uintptr_t *)alloca (aklass_rank * sizeof(intptr_t) * 2);
-	for (i = 0; i < aklass_rank; ++i) {
-		sizes [i] = mono_array_get (lengths, guint32, i);
-		if (bounds)
-			sizes [i + aklass_rank] = mono_array_get (bounds, gint32, i);
+	// Copy lengths and lower_bounds from gint32 to [u]intptr_t.
+
+	for (uintptr_t i = 0; i < aklass_rank; ++i) {
+		MONO_HANDLE_ARRAY_GETVAL (sizes [i], lengths, gint32, i);
+		if (!MONO_HANDLE_IS_NULL (bounds))
+			MONO_HANDLE_ARRAY_GETVAL (lower_bounds [i], bounds, gint32, i);
 		else
-			sizes [i + aklass_rank] = 0;
+			lower_bounds [i] = 0;
 	}
 
-	array = mono_array_new_full_checked (mono_object_domain (type), aklass, sizes, (intptr_t*)sizes + aklass_rank, error);
-	mono_error_set_pending_exception (error);
-
-	return array;
+	return mono_array_new_full_handle (MONO_HANDLE_DOMAIN (type), aklass, sizes, lower_bounds, error);
 }
 
 ICALL_EXPORT gint32 
-ves_icall_System_Array_GetRank (MonoObject *arr)
+ves_icall_System_Array_GetRank (MonoObjectHandle arr, MonoError *error)
 {
-	return m_class_get_rank (mono_object_class (arr));
+	gint32 const result = m_class_get_rank (mono_handle_class (arr));
+
+	icallarray_print ("%s arr:%p res:%d\n", __func__, MONO_HANDLE_RAW (arr), result);
+
+	return result;
+}
+
+static mono_array_size_t
+mono_array_get_length (MonoArrayHandle arr, gint32 dimension, MonoError *error)
+{
+	if (dimension < 0 || dimension >= m_class_get_rank (mono_handle_class (arr))) {
+		mono_error_set_index_out_of_range (error);
+		return 0;
+	}
+
+	return MONO_HANDLE_GETVAL (arr, bounds) ? MONO_HANDLE_GETVAL (arr, bounds [dimension].length)
+						: MONO_HANDLE_GETVAL (arr, max_length);
 }
 
 ICALL_EXPORT gint32
-ves_icall_System_Array_GetLength (MonoArray *arr, gint32 dimension)
+ves_icall_System_Array_GetLength (MonoArrayHandle arr, gint32 dimension, MonoError *error)
 {
-	gint32 rank = m_class_get_rank (mono_object_class (&arr->obj));
-	uintptr_t length;
-	ERROR_DECL (error);
+	icallarray_print ("%s arr:%p dimension:%d\n", __func__, MONO_HANDLE_RAW (arr), (int)dimension);
 
-	if ((dimension < 0) || (dimension >= rank)) {
-		mono_error_set_index_out_of_range (error);
-		mono_error_set_pending_exception (error);
-		return 0;
-	}
-	
-	if (arr->bounds == NULL)
-		length = arr->max_length;
-	else
-		length = arr->bounds [dimension].length;
-
-#ifdef MONO_BIG_ARRAYS
+	mono_array_size_t const length = mono_array_get_length (arr, dimension, error);
 	if (length > G_MAXINT32) {
-		ERROR_DECL (error);
 		mono_error_set_overflow (error);
-		mono_error_set_pending_exception (error);
 		return 0;
 	}
-#endif
-	return length;
+	return (gint32)length;
 }
 
 ICALL_EXPORT gint64
-ves_icall_System_Array_GetLongLength (MonoArray *arr, gint32 dimension)
+ves_icall_System_Array_GetLongLength (MonoArrayHandle arr, gint32 dimension, MonoError *error)
 {
-	gint32 rank = m_class_get_rank (mono_object_class (&arr->obj));
+	icallarray_print ("%s arr:%p dimension:%d\n", __func__, MONO_HANDLE_RAW (arr), (int)dimension);
 
-	if ((dimension < 0) || (dimension >= rank)) {
-		ERROR_DECL (error);
-		mono_error_set_index_out_of_range (error);
-		mono_error_set_pending_exception (error);
-		return 0;
-	}
-	
-	if (arr->bounds == NULL)
- 		return arr->max_length;
- 	
- 	return arr->bounds [dimension].length;
+	return (gint64)mono_array_get_length (arr, dimension, error);
 }
 
 ICALL_EXPORT gint32
-ves_icall_System_Array_GetLowerBound (MonoArray *arr, gint32 dimension)
+ves_icall_System_Array_GetLowerBound (MonoArrayHandle arr, gint32 dimension, MonoError *error)
 {
-	gint32 rank = m_class_get_rank (mono_object_class (&arr->obj));
+	icallarray_print ("%s arr:%p dimension:%d\n", __func__, MONO_HANDLE_RAW (arr), (int)dimension);
 
-	if ((dimension < 0) || (dimension >= rank)) {
-		ERROR_DECL (error);
+	if (dimension < 0 || dimension >= m_class_get_rank (mono_handle_class (arr))) {
 		mono_error_set_index_out_of_range (error);
-		mono_error_set_pending_exception (error);
 		return 0;
 	}
-	
-	if (arr->bounds == NULL)
-		return 0;
-	
-	return arr->bounds [dimension].lower_bound;
+
+	return MONO_HANDLE_GETVAL (arr, bounds) ? MONO_HANDLE_GETVAL (arr, bounds [dimension].lower_bound)
+						: 0;
 }
 
 ICALL_EXPORT void
-ves_icall_System_Array_ClearInternal (MonoArray *arr, int idx, int length)
+ves_icall_System_Array_ClearInternal (MonoArrayHandle arr, int idx, int length, MonoError *error)
 {
-	int sz = mono_array_element_size (mono_object_class (arr));
-	mono_gc_bzero_atomic (mono_array_addr_with_size_fast (arr, sz, idx), length * sz);
+	icallarray_print ("%s arr:%p idx:%d len:%d\n", __func__, MONO_HANDLE_RAW (arr), (int)idx, (int)length);
+
+	int sz = mono_array_element_size (mono_handle_class (arr));
+	mono_gc_bzero_atomic (mono_array_addr_with_size_fast (MONO_HANDLE_RAW (arr), sz, idx), length * sz);
 }
 
 
@@ -798,11 +804,17 @@ ves_icall_System_Array_FastCopy (MonoArray *source, int source_idx, MonoArray* d
 ICALL_EXPORT void
 ves_icall_System_Array_GetGenericValueImpl (MonoArray *arr, guint32 pos, gpointer value)
 {
+	// Generic ref/out parameters are not supported by HANDLES(), so NOHANDLES().
+
+	icallarray_print ("%s arr:%p pos:%u value:%p\n", __func__, arr, pos, value);
+
+	MONO_REQ_GC_UNSAFE_MODE;	// because of gpointer value
+
 	MonoClass *ac;
 	gint32 esize;
 	gpointer *ea;
 
-	ac = (MonoClass *)arr->obj.vtable->klass;
+	ac = mono_object_class (arr);
 
 	esize = mono_array_element_size (ac);
 	ea = (gpointer*)((char*)arr->vector + (pos * esize));
@@ -813,11 +825,17 @@ ves_icall_System_Array_GetGenericValueImpl (MonoArray *arr, guint32 pos, gpointe
 ICALL_EXPORT void
 ves_icall_System_Array_SetGenericValueImpl (MonoArray *arr, guint32 pos, gpointer value)
 {
+	// Generic ref/out parameters are not supported by HANDLES(), so NOHANDLES().
+
+	icallarray_print ("%s arr:%p pos:%u value:%p\n", __func__, arr, pos, value);
+
+	MONO_REQ_GC_UNSAFE_MODE;	// because of gpointer value
+
 	MonoClass *ac, *ec;
 	gint32 esize;
 	gpointer *ea;
 
-	ac = (MonoClass *)arr->obj.vtable->klass;
+	ac = mono_object_class (arr);
 	ec = m_class_get_element_class (ac);
 
 	esize = mono_array_element_size (ac);
@@ -860,8 +878,6 @@ ves_icall_System_Runtime_RuntimeImports_ZeroMemory (guint8 *p, guint byte_length
 ICALL_EXPORT void
 ves_icall_System_Runtime_CompilerServices_RuntimeHelpers_InitializeArray (MonoArrayHandle array, MonoClassField *field_handle, MonoError *error)
 {
-	error_init (error);
-
 	MonoClass *klass = mono_handle_class (array);
 	guint32 size = mono_array_element_size (klass);
 	MonoType *type = mono_type_get_underlying_type (m_class_get_byval_arg (m_class_get_element_class (klass)));
@@ -872,7 +888,6 @@ ves_icall_System_Runtime_CompilerServices_RuntimeHelpers_InitializeArray (MonoAr
 		mono_error_set_argument (error, "array", "Cannot initialize array of non-primitive type");
 		return;
 	}
-
 
 	MonoType *field_type = mono_field_get_type_checked (field_handle, error);
 	if (!field_type)
@@ -1653,7 +1668,7 @@ handle_enum:
 		return TYPECODE_OBJECT;
 	case MONO_TYPE_CLASS:
 		{
-			MonoClass *klass =  type->data.klass;
+			MonoClass *klass = type->data.klass;
 			if (m_class_get_image (klass) == mono_defaults.corlib && strcmp (m_class_get_name_space (klass), "System") == 0) {
 				if (strcmp (m_class_get_name (klass), "DBNull") == 0)
 					return TYPECODE_DBNULL;
@@ -2327,7 +2342,7 @@ ves_icall_MonoPropertyInfo_get_property_info (MonoReflectionPropertyHandle prope
 		if (pproperty->set &&
 		    (((pproperty->set->flags & METHOD_ATTRIBUTE_MEMBER_ACCESS_MASK) != METHOD_ATTRIBUTE_PRIVATE) ||
 		     pproperty->set->klass == property_klass)) {
-			rm =  mono_method_get_object_handle (domain, pproperty->set, property_klass, error);
+			rm = mono_method_get_object_handle (domain, pproperty->set, property_klass, error);
 			return_if_nok (error);
 		} else {
 			rm = MONO_HANDLE_NEW (MonoReflectionMethod, NULL);
@@ -3406,7 +3421,7 @@ internal_execute_field_getter (MonoDomain *domain, MonoObject *this_arg, MonoArr
 		MonoClassField* field = mono_class_get_field_from_name_full (k, str, NULL);
 		if (field) {
 			g_free (str);
-			MonoClass *field_klass =  mono_class_from_mono_type (field->type);
+			MonoClass *field_klass = mono_class_from_mono_type (field->type);
 			MonoObject *result;
 			if (m_class_is_valuetype (field_klass)) {
 				result = mono_value_box_checked (domain, field_klass, (char *)this_arg + field->offset, error);
@@ -3454,7 +3469,7 @@ internal_execute_field_setter (MonoDomain *domain, MonoObject *this_arg, MonoArr
 		MonoClassField* field = mono_class_get_field_from_name_full (k, str, NULL);
 		if (field) {
 			g_free (str);
-			MonoClass *field_klass =  mono_class_from_mono_type (field->type);
+			MonoClass *field_klass = mono_class_from_mono_type (field->type);
 			MonoObject *val = (MonoObject *)mono_array_get (params, gpointer, 2);
 
 			if (m_class_is_valuetype (field_klass)) {
@@ -6218,7 +6233,7 @@ ves_icall_RuntimeType_make_array_type (MonoReflectionTypeHandle ref_type, int ra
 		return MONO_HANDLE_CAST (MonoReflectionType, NULL_HANDLE);
 
 	MonoClass *aklass;
-	if (rank == 0) //single dimentional array
+	if (rank == 0) //single dimension array
 		aklass = mono_class_create_array (klass, 1);
 	else
 		aklass = mono_class_create_bounded_array (klass, rank, TRUE);
@@ -8424,4 +8439,3 @@ mono_register_jit_icall (gconstpointer func, const char *name, MonoMethodSignatu
 {
 	return mono_register_jit_icall_full (func, name, sig, no_wrapper, NULL);
 }
-

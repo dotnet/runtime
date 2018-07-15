@@ -23,6 +23,24 @@ check-local:
 	$(MAKE) runtest-gac-loading || ok=false; \
 	$$ok
 
+BUILT_SOURCES =
+
+ARRAY_COOP_CS=\
+	array-coop-bigvt.cs     \
+	array-coop-int.cs       \
+	array-coop-smallvt.cs
+
+BUILT_SOURCES += $(ARRAY_COOP_CS)
+
+array-coop-bigvt.cs: array-coop-bigvt.sh array-coop-1.cs array-coop-2.cs
+	 . $(srcdir)/array-coop-bigvt.sh $(srcdir) > $@
+
+array-coop-smallvt.cs: array-coop-smallvt.sh array-coop-1.cs array-coop-2.cs
+	 . $(srcdir)/array-coop-smallvt.sh $(srcdir) > $@
+
+array-coop-int.cs: array-coop-int.sh array-coop-1.cs array-coop-2.cs
+	 . $(srcdir)/array-coop-int.sh $(srcdir) > $@
+
 # These are not actually tests, but they are source files part of another test.
 TAILCALL_DISABLED_TESTS_COMPILE = \
 	tailcall/coreclr/JIT/opt/Tailcall/TailcallVerifyTransparentLibraryWithPrefix.exe \
@@ -240,6 +258,7 @@ TESTS_CS_SRC=		\
 	generic-unloading-sub.2.cs	\
 	create-instance.cs	\
 	bug-2907.cs		\
+	$(ARRAY_COOP_CS)	\
 	array-init.cs		\
 	arraylist.cs		\
 	assembly-load-remap.cs	\
@@ -1806,6 +1825,9 @@ endif
 
 EXTRA_DIST=test-driver test-runner.cs $(TESTS_CS_SRC) $(TESTS_IL_SRC) \
 	$(TESTS_BENCH_SRC) $(TESTS_STRESS_SRC) stress-runner.pl \
+	array-coop-1.cs array-coop-2.cs \
+	array-coop-bigvt.cs array-coop-int.cs array-coop-smallvt.cs \
+	array-coop-bigvt.sh array-coop-smallvt.sh array-coop-int.sh \
 	$(TEST_TAILCALL_CS_SRC) \
 	$(TEST_TAILCALL_IL_SRC)
 

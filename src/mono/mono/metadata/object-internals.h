@@ -53,10 +53,9 @@
 	}							\
 } while (0)
 
-
 /* Use this as MONO_CHECK_NULL (arg,) in functions returning void */
 #define MONO_CHECK_NULL(arg, retval) do { 			\
-	if (G_UNLIKELY (arg == NULL))				\
+	if (!(arg))						\
 	{							\
 		ERROR_DECL (error);				\
 		mono_error_set_null_reference (error);		\
@@ -194,10 +193,8 @@ mono_handle_array_has_bounds (MonoArrayHandle arr)
 static inline void
 mono_handle_array_get_bounds_dim (MonoArrayHandle arr, gint32 dim, MonoArrayBounds *bounds)
 {
-	MonoArrayBounds *src = MONO_HANDLE_GETVAL (arr, bounds);
-	memcpy (bounds, &src[dim], sizeof (MonoArrayBounds));
+	*bounds = MONO_HANDLE_GETVAL (arr, bounds [dim]);
 }
-
 
 typedef struct {
 	MonoObject obj;
