@@ -35,6 +35,10 @@
     <Compile Include="Add.UInt16.cs" />
     <Compile Include="Add.UInt32.cs" />
     <Compile Include="Add.UInt64.cs" />
+    <Compile Include="AlignRight.SByte.5.cs" />
+    <Compile Include="AlignRight.SByte.27.cs" />
+    <Compile Include="AlignRight.SByte.228.cs" />
+    <Compile Include="AlignRight.SByte.250.cs" />
     <Compile Include="And.Byte.cs" />
     <Compile Include="And.Int16.cs" />
     <Compile Include="And.Int32.cs" />
@@ -53,6 +57,22 @@
     <Compile Include="AndNot.UInt64.cs" />
     <Compile Include="Average.Byte.cs" />
     <Compile Include="Average.UInt16.cs" />
+    <Compile Include="Blend.Int16.1.cs" />
+    <Compile Include="Blend.Int16.2.cs" />
+    <Compile Include="Blend.Int16.4.cs" />
+    <Compile Include="Blend.Int16.85.cs" />
+    <Compile Include="Blend.UInt16.1.cs" />
+    <Compile Include="Blend.UInt16.2.cs" />
+    <Compile Include="Blend.UInt16.4.cs" />
+    <Compile Include="Blend.UInt16.85.cs" />
+    <Compile Include="Blend.Int32.1.cs" />
+    <Compile Include="Blend.Int32.2.cs" />
+    <Compile Include="Blend.Int32.4.cs" />
+    <Compile Include="Blend.Int32.85.cs" />
+    <Compile Include="Blend.UInt32.1.cs" />
+    <Compile Include="Blend.UInt32.2.cs" />
+    <Compile Include="Blend.UInt32.4.cs" />
+    <Compile Include="Blend.UInt32.85.cs" />
     <Compile Include="BlendVariable.Byte.cs" />
     <Compile Include="BlendVariable.SByte.cs" />
     <Compile Include="BroadcastScalarToVector128.Byte.cs" />
@@ -87,6 +107,9 @@
     <Compile Include="CompareGreaterThan.Int32.cs" />
     <Compile Include="CompareGreaterThan.Int64.cs" />
     <Compile Include="CompareGreaterThan.SByte.cs" />
+    <Compile Include="ConvertToDouble.Double.cs" />
+    <Compile Include="ConvertToInt32.Int32.cs" />
+    <Compile Include="ConvertToUInt32.UInt32.cs" />
     <Compile Include="ExtractVector128.Byte.1.cs" />
     <Compile Include="ExtractVector128.SByte.1.cs" />
     <Compile Include="ExtractVector128.Int16.1.cs" />
@@ -205,9 +228,10 @@
     <Compile Include="Xor.UInt64.cs" />
     <Compile Include="Program.Avx2.cs" />
     <Compile Include="..\Shared\Program.cs" />
-    <Compile Include="..\Shared\SimpleBinOpTest_DataTable.cs" />    
-    <Compile Include="..\Shared\SimpleTernOpTest_DataTable.cs" />  
+    <Compile Include="..\Shared\SimpleBinOpTest_DataTable.cs" />
+    <Compile Include="..\Shared\SimpleTernOpTest_DataTable.cs" />
     <Compile Include="..\Shared\SimpleUnOpTest_DataTable.cs" />
+    <Compile Include="..\Shared\SimdScalarUnOpTest_DataTable.cs" />
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="../../../../Common/CoreCLRTestLibrary/CoreCLRTestLibrary.csproj" />
