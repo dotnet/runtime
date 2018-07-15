@@ -1993,39 +1993,6 @@
   <data name="ConcurrentCollection_SyncRoot_NotSupported" xml:space="preserve">
     <value>The SyncRoot property may not be used for the synchronization of concurrent collections.</value>
   </data>
-  <data name="event_Barrier_PhaseFinished" xml:space="preserve">
-    <value>Barrier finishing phase {1}.</value>
-  </data>
-  <data name="event_ConcurrentBag_TryPeekSteals" xml:space="preserve">
-    <value>ConcurrentBag stealing in TryPeek.</value>
-  </data>
-  <data name="event_ConcurrentBag_TryTakeSteals" xml:space="preserve">
-    <value>ConcurrentBag stealing in TryTake.</value>
-  </data>
-  <data name="event_ConcurrentStack_FastPopFailed" xml:space="preserve">
-    <value>Pop from ConcurrentStack spun {0} time(s).</value>
-  </data>
-  <data name="event_ConcurrentStack_FastPushFailed" xml:space="preserve">
-    <value>Push to ConcurrentStack spun {0} time(s).</value>
-  </data>
-  <data name="event_ParallelFork" xml:space="preserve">
-    <value>Task {1} entering fork/join {2}.</value>
-  </data>
-  <data name="event_ParallelInvokeBegin" xml:space="preserve">
-    <value>Beginning ParallelInvoke {2} from Task {1} for {4} actions.</value>
-  </data>
-  <data name="event_ParallelInvokeEnd" xml:space="preserve">
-    <value>Ending ParallelInvoke {2}.</value>
-  </data>
-  <data name="event_ParallelJoin" xml:space="preserve">
-    <value>Task {1} leaving fork/join {2}.</value>
-  </data>
-  <data name="event_ParallelLoopBegin" xml:space="preserve">
-    <value>Beginning {3} loop {2} from Task {1}.</value>
-  </data>
-  <data name="event_ParallelLoopEnd" xml:space="preserve">
-    <value>Ending loop {2} after {3} iterations.</value>
-  </data>
   <data name="event_SpinLock_FastPathFailed" xml:space="preserve">
     <value>SpinLock beginning to spin.</value>
   </data>
