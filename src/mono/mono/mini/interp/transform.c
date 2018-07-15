@@ -1052,6 +1052,21 @@ interp_handle_intrinsics (TransformData *td, MonoMethod *target_method, MonoMeth
 	return FALSE;
 }
 
+static MonoMethod*
+interp_transform_internal_calls (MonoMethod *method, MonoMethod *target_method, MonoMethodSignature *csignature, gboolean is_virtual)
+{
+	if (method->wrapper_type == MONO_WRAPPER_NONE && target_method != NULL) {
+		if (target_method->flags & METHOD_ATTRIBUTE_PINVOKE_IMPL)
+			target_method = mono_marshal_get_native_wrapper (target_method, FALSE, FALSE);
+		if (!is_virtual && target_method->iflags & METHOD_IMPL_ATTRIBUTE_SYNCHRONIZED)
+			target_method = mono_marshal_get_synchronized_wrapper (target_method);
+
+		if (target_method->iflags & METHOD_IMPL_ATTRIBUTE_INTERNAL_CALL && !is_virtual && !mono_class_is_marshalbyref (target_method->klass) && m_class_get_rank (target_method->klass) == 0)
+			target_method = mono_marshal_get_native_wrapper (target_method, TRUE, FALSE);
+	}
+	return target_method;
+}
+
 static void
 interp_transform_call (TransformData *td, MonoMethod *method, MonoMethod *target_method, MonoDomain *domain, MonoGenericContext *generic_context, unsigned char *is_bb_start, int body_start_offset, MonoClass *constrained_class, gboolean readonly, MonoError *error, gboolean check_visibility)
 {
@@ -1268,12 +1283,8 @@ interp_transform_call (TransformData *td, MonoMethod *method, MonoMethod *target
 			}
 		}
 	}
-	if (method->wrapper_type == MONO_WRAPPER_NONE && target_method != NULL) {
-		if (target_method->flags & METHOD_ATTRIBUTE_PINVOKE_IMPL)
-			target_method = mono_marshal_get_native_wrapper (target_method, FALSE, FALSE);
-		if (!is_virtual && target_method->iflags & METHOD_IMPL_ATTRIBUTE_SYNCHRONIZED)
-			target_method = mono_marshal_get_synchronized_wrapper (target_method);
-	}
+
+	target_method = interp_transform_internal_calls (method, target_method, csignature, is_virtual);
 
 	if (csignature->call_convention == MONO_CALL_VARARG) {
 		csignature = mono_method_get_signature_checked (target_method, image, token, generic_context, error);
