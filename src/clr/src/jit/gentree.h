@@ -6030,16 +6030,18 @@ inline regNumber GenTree::GetRegByIndex(int regIndex)
         return AsCall()->GetRegNumByIdx(regIndex);
     }
 
+#if defined(_TARGET_ARMARCH_)
+    if (OperIsPutArgSplit())
+    {
+        return AsPutArgSplit()->GetRegNumByIdx(regIndex);
+    }
+#endif
 #if defined(_TARGET_ARM_)
     if (OperIsMultiRegOp())
     {
         return AsMultiRegOp()->GetRegNumByIdx(regIndex);
     }
-    else if (OperIsPutArgSplit())
-    {
-        return AsPutArgSplit()->GetRegNumByIdx(regIndex);
-    }
-    else if (OperIs(GT_COPY, GT_RELOAD))
+    if (OperIs(GT_COPY, GT_RELOAD))
     {
         return AsCopyOrReload()->GetRegNumByIdx(regIndex);
     }
