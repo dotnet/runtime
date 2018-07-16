@@ -395,7 +395,90 @@ class Constants {
                'jitstress2_jitstressregs0x1000',
                'tailcallstress',
                // 'jitsse2only'                          // Only relevant to xarch
-               // 'jitnosimd'
+               // 'jitnosimd'                            // Only interesting on platforms where SIMD support exists.
+               // 'jitincompletehwintrinsic'
+               // 'jitx86hwintrinsicnoavx'
+               // 'jitx86hwintrinsicnoavx2'
+               // 'jitx86hwintrinsicnosimd'
+               // 'jitnox86hwintrinsic'
+               'corefx_baseline',
+               'corefx_minopts',
+               'corefx_tieredcompilation',
+               'corefx_jitstress1',
+               'corefx_jitstress2',
+               'corefx_jitstressregs1',
+               'corefx_jitstressregs2',
+               'corefx_jitstressregs3',
+               'corefx_jitstressregs4',
+               'corefx_jitstressregs8',
+               'corefx_jitstressregs0x10',
+               'corefx_jitstressregs0x80',
+               'corefx_jitstressregs0x1000',
+               'gcstress0x3',
+               'gcstress0xc',
+               'zapdisable',
+               'heapverify1',
+               'gcstress0xc_zapdisable',
+               'gcstress0xc_zapdisable_jitstress2',
+               'gcstress0xc_zapdisable_heapverify1',
+               'gcstress0xc_jitstress1',
+               'gcstress0xc_jitstress2',
+               'gcstress0xc_minopts_heapverify1'
+    ]
+
+    def static validLinuxArm64Scenarios = [
+               'innerloop',
+               'normal',
+               // 'ilrt'
+               'r2r',
+               // 'longgc'
+               // 'formatting'
+               // 'gcsimulator'
+               // 'jitdiff'
+               // 'standalone_gc'
+               // 'gc_reliability_framework'
+               // 'illink'
+               'r2r_jitstress1',
+               'r2r_jitstress2',
+               'r2r_jitstress1_tiered',
+               'r2r_jitstress2_tiered',
+               'r2r_jitstressregs1',
+               'r2r_jitstressregs2',
+               'r2r_jitstressregs3',
+               'r2r_jitstressregs4',
+               'r2r_jitstressregs8',
+               'r2r_jitstressregs0x10',
+               'r2r_jitstressregs0x80',
+               'r2r_jitstressregs0x1000',
+               'r2r_jitminopts',
+               'r2r_jitforcerelocs',
+               'r2r_gcstress15',
+               'minopts',
+               'tieredcompilation',
+               'forcerelocs',
+               'jitstress1',
+               'jitstress2',
+               'jitstress1_tiered',
+               'jitstress2_tiered',
+               'jitstressregs1',
+               'jitstressregs2',
+               'jitstressregs3',
+               'jitstressregs4',
+               'jitstressregs8',
+               'jitstressregs0x10',
+               'jitstressregs0x80',
+               'jitstressregs0x1000',
+               'jitstress2_jitstressregs1',
+               'jitstress2_jitstressregs2',
+               'jitstress2_jitstressregs3',
+               'jitstress2_jitstressregs4',
+               'jitstress2_jitstressregs8',
+               'jitstress2_jitstressregs0x10',
+               'jitstress2_jitstressregs0x80',
+               'jitstress2_jitstressregs0x1000',
+               'tailcallstress',
+               // 'jitsse2only'                         // Only relevant to xarch
+               'jitnosimd',                             // Only interesting on platforms where SIMD support exists.
                // 'jitincompletehwintrinsic'
                // 'jitx86hwintrinsicnoavx'
                // 'jitx86hwintrinsicnoavx2'
@@ -1583,10 +1666,9 @@ def static addTriggers(def job, def branch, def isPR, def architecture, def os, 
                         Utilities.addGithubPRTriggerForBranch(job, branch, "${os} ${architecture} ${configuration} via ILLink", "(?i).*test\\W+${os}\\W+${architecture}\\W+${configuration}\\W+${scenario}.*")
                         break
                     }
-
-                    else  if (scenario == 'corefx_innerloop') {
+                    else if (scenario == 'corefx_innerloop') {
                         if (configuration == 'Checked') {
-                            Utilities.addGithubPRTriggerForBranch(job, branch, "${os} ${architecture} ${configuration} CoreFX Tests")                                
+                            Utilities.addGithubPRTriggerForBranch(job, branch, "${os} ${architecture} ${configuration} CoreFX Tests")
                         }
                         else {
                             Utilities.addGithubPRTriggerForBranch(job, branch, "${os} ${architecture} ${configuration} CoreFX Tests", "(?i).*test\\W+${os}\\W+${architecture}\\W+${configuration}\\W+CoreFX Tests.*")
@@ -1657,7 +1739,7 @@ def static addTriggers(def job, def branch, def isPR, def architecture, def os, 
 
                         case 'corefx_innerloop':
                             if (configuration == 'Checked') {
-                                Utilities.addGithubPRTriggerForBranch(job, branch, "${os} ${architecture} ${configuration} CoreFX Tests")                                
+                                Utilities.addGithubPRTriggerForBranch(job, branch, "${os} ${architecture} ${configuration} CoreFX Tests")
                             }
                             break
 
@@ -1787,7 +1869,7 @@ def static addTriggers(def job, def branch, def isPR, def architecture, def os, 
                             break
                         case 'corefx_innerloop':
                             if (configuration == 'Checked') {
-                                Utilities.addGithubPRTriggerForBranch(job, branch, "${os} ${architecture} ${configuration} CoreFX Tests")                                
+                                Utilities.addGithubPRTriggerForBranch(job, branch, "${os} ${architecture} ${configuration} CoreFX Tests")
                             }
                             break
 
@@ -2270,22 +2352,21 @@ def static calculateBuildCommands(def newJob, def scenario, def branch, def isPR
                                 // Archive and process (only) the test results
                                 Utilities.addArchival(newJob, "bin/Logs/**/testResults.xml")
                                 Utilities.addXUnitDotNETResults(newJob, "bin/Logs/**/testResults.xml")
-
                             }
                             else {
-                              def workspaceRelativeFxRoot = "_/fx"
-                              def absoluteFxRoot = "%WORKSPACE%\\_\\fx"
-                              def fxBranch = getFxBranch(branch)
+                                def workspaceRelativeFxRoot = "_/fx"
+                                def absoluteFxRoot = "%WORKSPACE%\\_\\fx"
+                                def fxBranch = getFxBranch(branch)
 
-                              buildCommands += "python -u %WORKSPACE%\\tests\\scripts\\run-corefx-tests.py -arch ${arch} -ci_arch ${architecture} -build_type ${configuration} -fx_root ${absoluteFxRoot} -fx_branch ${fxBranch} -env_script ${envScriptPath}"
+                                buildCommands += "python -u %WORKSPACE%\\tests\\scripts\\run-corefx-tests.py -arch ${arch} -ci_arch ${architecture} -build_type ${configuration} -fx_root ${absoluteFxRoot} -fx_branch ${fxBranch} -env_script ${envScriptPath}"
 
-                              // Archive and process (only) the test results
-                              Utilities.addArchival(newJob, "${workspaceRelativeFxRoot}/bin/**/testResults.xml")
-                              Utilities.addXUnitDotNETResults(newJob, "${workspaceRelativeFxRoot}/bin/**/testResults.xml")
+                                // Archive and process (only) the test results
+                                Utilities.addArchival(newJob, "${workspaceRelativeFxRoot}/bin/**/testResults.xml")
+                                Utilities.addXUnitDotNETResults(newJob, "${workspaceRelativeFxRoot}/bin/**/testResults.xml")
 
-                              //Archive additional build stuff to diagnose why my attempt at fault injection isn't causing CI to fail
-                              Utilities.addArchival(newJob, "SetStressModes.bat", "", true, false)
-                              Utilities.addArchival(newJob, "${workspaceRelativeFxRoot}/bin/testhost/**", "", true, false)
+                                //Archive additional build stuff to diagnose why my attempt at fault injection isn't causing CI to fail
+                                Utilities.addArchival(newJob, "SetStressModes.bat", "", true, false)
+                                Utilities.addArchival(newJob, "${workspaceRelativeFxRoot}/bin/testhost/**", "", true, false)
                             }
                         }
                         else if (isGcReliabilityFramework(scenario)) {
@@ -2331,32 +2412,26 @@ def static calculateBuildCommands(def newJob, def scenario, def branch, def isPR
                     }
                     break
                 case 'arm':
+                case 'arm64':
                     assert isArmWindowsScenario(scenario)
 
-                    def buildArchitecture = 'arm'
                     def buildOpts = ''
 
+                    if (architecture == 'arm64') {
+                        buildOpts += " toolset_dir C:\\ats2"
+                    }
+
                     if (doCoreFxTesting) {
-                        // We shouldn't need to build the tests. However, run-corefx-tests.py currently depends on having the restored corefx
-                        // package available, to determine the correct corefx version git commit hash, and we need to build the tests before
-                        // running "tests\\runtest.cmd GenerateLayoutOnly". So build the pri-0 tests to make this happen.
-                        //
-                        // buildOpts += ' skiptests';
-                        buildOpts += " -priority=0"
+                        buildOpts += ' skiptests'
                     } else {
                         buildOpts += " -priority=${priority}"
                     }
 
                     // This is now a build only job. Do not run tests. Use the flow job.
-                    buildCommands += "set __TestIntermediateDir=int&&build.cmd ${lowerConfiguration} ${buildArchitecture} ${buildOpts}"
+                    buildCommands += "set __TestIntermediateDir=int&&build.cmd ${lowerConfiguration} ${architecture} ${buildOpts}"
 
                     if (doCoreFxTesting) {
                         assert isBuildOnly
-                        assert architecture == 'arm'
-
-                        // Generate the test layout because it restores the corefx package which allows run-corefx-tests.py
-                        // to determine the correct matching corefx version git commit hash.
-                        buildCommands += "tests\\runtest.cmd ${lowerConfiguration} ${architecture} GenerateLayoutOnly"
 
                         // Set the stress mode variables; this is incorporated into the generated CoreFx RunTests.cmd files.
                         def envScriptPath = ''
@@ -2372,10 +2447,15 @@ def static calculateBuildCommands(def newJob, def scenario, def branch, def isPR
                         def absoluteFxRoot = "%WORKSPACE%\\_\\fx"
                         def fxBranch = getFxBranch(branch)
 
-                        buildCommands += "python -u %WORKSPACE%\\tests\\scripts\\run-corefx-tests.py -arch ${architecture} -ci_arch ${architecture} -build_type ${configuration} -fx_root ${absoluteFxRoot} -fx_branch ${fxBranch} -env_script ${envScriptPath} -no_run_tests"
+                        def toolsetDirOpt = ''
+                        if (architecture == 'arm64') {
+                            toolsetDirOpt = "-toolset_dir C:\\ats2"
+                        }
+
+                        buildCommands += "python -u %WORKSPACE%\\tests\\scripts\\run-corefx-tests.py -arch ${architecture} -ci_arch ${architecture} -build_type ${configuration} -fx_root ${absoluteFxRoot} -fx_branch ${fxBranch} -env_script ${envScriptPath} -no_run_tests ${toolsetDirOpt}"
 
                         // Zip up the CoreFx runtime and tests. We don't need the CoreCLR binaries; they have been copied to the CoreFX tree.
-                        buildCommands += "powershell -NoProfile -Command \"Add-Type -Assembly 'System.IO.Compression.FileSystem'; [System.IO.Compression.ZipFile]::CreateFromDirectory('${workspaceRelativeFxRootWin}\\bin\\testhost\\netcoreapp-Windows_NT-Release-arm', '${workspaceRelativeFxRootWin}\\fxruntime.zip')\"";
+                        buildCommands += "powershell -NoProfile -Command \"Add-Type -Assembly 'System.IO.Compression.FileSystem'; [System.IO.Compression.ZipFile]::CreateFromDirectory('${workspaceRelativeFxRootWin}\\bin\\testhost\\netcoreapp-Windows_NT-Release-${architecture}', '${workspaceRelativeFxRootWin}\\fxruntime.zip')\"";
                         buildCommands += "powershell -NoProfile -Command \"Add-Type -Assembly 'System.IO.Compression.FileSystem'; [System.IO.Compression.ZipFile]::CreateFromDirectory('${workspaceRelativeFxRootWin}\\bin\\tests', '${workspaceRelativeFxRootWin}\\fxtests.zip')\"";
 
                         Utilities.addArchival(newJob, "${workspaceRelativeFxRootLinux}/fxruntime.zip")
@@ -2383,24 +2463,11 @@ def static calculateBuildCommands(def newJob, def scenario, def branch, def isPR
                     } else {
                         // Zip up the tests directory so that we don't use so much space/time copying
                         // 10s of thousands of files around.
-                        buildCommands += "powershell -NoProfile -Command \"Add-Type -Assembly 'System.IO.Compression.FileSystem'; [System.IO.Compression.ZipFile]::CreateFromDirectory('.\\bin\\tests\\${osGroup}.${buildArchitecture}.${configuration}', '.\\bin\\tests\\tests.zip')\"";
+                        buildCommands += "powershell -NoProfile -Command \"Add-Type -Assembly 'System.IO.Compression.FileSystem'; [System.IO.Compression.ZipFile]::CreateFromDirectory('.\\bin\\tests\\${osGroup}.${architecture}.${configuration}', '.\\bin\\tests\\tests.zip')\"";
 
                         // Add archival.
                         Utilities.addArchival(newJob, "bin/Product/**,bin/tests/tests.zip", "bin/Product/**/.nuget/**")
                     }
-                    break
-                case 'arm64':
-                    assert isArmWindowsScenario(scenario)
-
-                    // This is now a build only job. Do not run tests. Use the flow job.
-                    buildCommands += "set __TestIntermediateDir=int&&build.cmd ${lowerConfiguration} ${architecture} toolset_dir C:\\ats2 -priority=${priority}"
-
-                    // Zip up the tests directory so that we don't use so much space/time copying
-                    // 10s of thousands of files around.
-                    buildCommands += "powershell -NoProfile -Command \"Add-Type -Assembly 'System.IO.Compression.FileSystem'; [System.IO.Compression.ZipFile]::CreateFromDirectory('.\\bin\\tests\\${osGroup}.${architecture}.${configuration}', '.\\bin\\tests\\tests.zip')\"";
-
-                    // Add archival.
-                    Utilities.addArchival(newJob, "bin/Product/**,bin/tests/tests.zip", "bin/Product/**/.nuget/**")
                     break
                 default:
                     println("Unknown architecture: ${architecture}");
@@ -2458,7 +2525,7 @@ def static calculateBuildCommands(def newJob, def scenario, def branch, def isPR
                         Utilities.addXUnitDotNETResults(newJob, '**/pal_tests.xml')
                     }
                     else {
-                        if(scenario == 'corefx_innerloop') {
+                        if (scenario == 'corefx_innerloop') {
                             assert os == 'Ubuntu' || 'OSX10.12'
                             assert architecture == 'x64'
 
@@ -2683,7 +2750,8 @@ def static shouldGenerateJob(def scenario, def isPR, def architecture, def confi
     if (isBuildOnly) {
         switch (architecture) {
             case 'arm':
-                // We use build only jobs for Windows arm cross-compilation corefx testing, so we need to generate builds for that.
+            case 'arm64':
+                // We use build only jobs for Windows arm/arm64 cross-compilation corefx testing, so we need to generate builds for that.
                 if (!isCoreFxScenario(scenario)) {
                     return false
                 }
@@ -2725,7 +2793,7 @@ def static shouldGenerateJob(def scenario, def isPR, def architecture, def confi
                 break
 
             case 'arm':
-                // We use build only jobs for Windows arm cross-compilation corefx testing, so we need to generate builds for that.
+                // We use build only jobs for Windows arm/arm64 cross-compilation corefx testing, so we need to generate builds for that.
                 // No "regular" Windows arm corefx jobs, e.g.
                 // For Ubuntu arm corefx testing, we use regular jobs (not "build only" since only Windows has "build only", and
                 // the Ubuntu arm "regular" jobs don't run tests anyway).
@@ -2743,7 +2811,9 @@ def static shouldGenerateJob(def scenario, def isPR, def architecture, def confi
 
             case 'arm64':
                 if (os == 'Windows_NT') {
-                    return false
+                    if (! (isBuildOnly && isCoreFxScenario(scenario)) ) {
+                        return false
+                    }
                 }
                 else {
                     if (!isCoreFxScenario(scenario)) {
@@ -3033,20 +3103,20 @@ def static CreateWindowsArmTestJob(def dslFactory, def project, def architecture
 
             if (isCoreFxScenario(scenario)) {
 
-                // Only arm supported for corefx testing now.
-                assert architecture == 'arm'
+                // Only arm/arm64 supported for corefx testing now.
+                assert architecture == 'arm' || architecture == 'arm64'
 
                 // Unzip CoreFx runtime
-                batchFile("powershell -NoProfile -Command \"Add-Type -Assembly 'System.IO.Compression.FileSystem'; [System.IO.Compression.ZipFile]::ExtractToDirectory('_\\fx\\fxruntime.zip', '_\\fx\\bin\\testhost\\netcoreapp-Windows_NT-Release-arm')\"")
+                batchFile("powershell -NoProfile -Command \"Add-Type -Assembly 'System.IO.Compression.FileSystem'; [System.IO.Compression.ZipFile]::ExtractToDirectory('_\\fx\\fxruntime.zip', '_\\fx\\bin\\testhost\\netcoreapp-Windows_NT-Release-${architecture}')\"")
 
                 // Unzip CoreFx tests.
                 batchFile("powershell -NoProfile -Command \"Add-Type -Assembly 'System.IO.Compression.FileSystem'; [System.IO.Compression.ZipFile]::ExtractToDirectory('_\\fx\\fxtests.zip', '_\\fx\\bin\\tests')\"")
 
                 // Add the script to run the corefx tests
-                def corefx_runtime_path   = "%WORKSPACE%\\_\\fx\\bin\\testhost\\netcoreapp-Windows_NT-Release-arm"
+                def corefx_runtime_path   = "%WORKSPACE%\\_\\fx\\bin\\testhost\\netcoreapp-Windows_NT-Release-${architecture}"
                 def corefx_tests_dir      = "%WORKSPACE%\\_\\fx\\bin\\tests"
-                def corefx_exclusion_file = "%WORKSPACE%\\tests\\arm\\corefx_test_exclusions.txt"
-                batchFile("call %WORKSPACE%\\tests\\scripts\\run-corefx-tests.bat ${corefx_runtime_path} ${corefx_tests_dir} ${corefx_exclusion_file}")
+                def corefx_exclusion_file = "%WORKSPACE%\\tests\\${architecture}\\corefx_test_exclusions.txt"
+                batchFile("call %WORKSPACE%\\tests\\scripts\\run-corefx-tests.bat ${corefx_runtime_path} ${corefx_tests_dir} ${corefx_exclusion_file} ${architecture}")
 
             } else { // !isCoreFxScenario(scenario)
 
@@ -3612,7 +3682,7 @@ def static shouldGenerateFlowJob(def scenario, def isPR, def architecture, def c
     else {
         // Non-Windows
         if (architecture == 'arm64') {
-            if (!(scenario in Constants.validLinuxArmScenarios)) {
+            if (!(scenario in Constants.validLinuxArm64Scenarios)) {
                 return false
             }
         }
@@ -3661,11 +3731,6 @@ def static shouldGenerateFlowJob(def scenario, def isPR, def architecture, def c
 
     if (isJitStressScenario(scenario)) {
         if (configuration != 'Checked') {
-            return false
-        }
-
-        // On Windows, CoreFx tests currently not implemented for ARM64.
-        if (isCoreFxScenario(scenario) && (os == 'Windows_NT') && (architecture == 'arm64')) {
             return false
         }
     }
