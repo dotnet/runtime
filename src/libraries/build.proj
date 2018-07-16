@@ -42,7 +42,7 @@
     <GenerateConfigurationProps Properties="@(Property)" PropertyValues="@(PropertyValue)" PropsFolder="$(BuildConfigurationFolder)" />
   </Target>
 
-  <Target Name="Sync" DependsOnTargets="GenerateConfigurationProperties">
+  <Target Name="Sync" DependsOnTargets="$(TraversalBuildDependsOn)">
     <ItemGroup>
       <ExternalProject Include="external\dir.proj" />
     </ItemGroup>
