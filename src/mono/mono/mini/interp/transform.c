@@ -851,12 +851,8 @@ interp_generate_mae_throw (TransformData *td, MonoMethod *method, MonoMethod *ta
 	ADD_CODE (td, get_data_item_index (td, target_method));
 	PUSH_SIMPLE_TYPE (td, STACK_TYPE_I);
 
-	ADD_CODE (td, MINT_LDFTN);
+	ADD_CODE (td, MINT_ICALL_PP_V);
 	ADD_CODE (td, get_data_item_index (td, (gpointer)info->func));
-	PUSH_SIMPLE_TYPE (td, STACK_TYPE_I);
-
-	ADD_CODE (td, MINT_CALLI_NAT);
-	ADD_CODE (td, get_data_item_index (td, info->sig));
 }
 
 static MonoMethodHeader*
