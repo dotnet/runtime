@@ -153,7 +153,7 @@ extern int mono_interp_traceopt;
 extern GSList *mono_interp_jit_classes;
 
 void
-mono_interp_transform_method (InterpMethod *imethod, ThreadContext *context, InterpFrame *frame, MonoError *error);
+mono_interp_transform_method (InterpMethod *imethod, ThreadContext *context, MonoError *error);
 
 void
 mono_interp_transform_init (void);

@@ -1321,6 +1321,16 @@ no_intrinsic:
 	} else
 		is_void = TRUE;
 
+	/* We need to convert delegate invoke to a indirect call on the interp_invoke_impl field */
+	if (target_method && m_class_get_parent (target_method->klass) == mono_defaults.multicastdelegate_class) {
+		const char *name = target_method->name;
+		if (*name == 'I' && (strcmp (name, "Invoke") == 0)) {
+			calli = TRUE;
+			ADD_CODE (td, MINT_LD_DELEGATE_INVOKE_IMPL);
+			ADD_CODE (td, csignature->param_count + 1);
+		}
+	}
+
 	if (op >= 0) {
 		ADD_CODE (td, op);
 #if SIZEOF_VOID_P == 8
@@ -4680,7 +4690,7 @@ mono_interp_transform_init (void)
 }
 
 void
-mono_interp_transform_method (InterpMethod *imethod, ThreadContext *context, InterpFrame *frame, MonoError *error)
+mono_interp_transform_method (InterpMethod *imethod, ThreadContext *context, MonoError *error)
 {
 	int i, align, size, offset;
 	MonoMethod *method = imethod->method;
@@ -4749,11 +4759,13 @@ mono_interp_transform_method (InterpMethod *imethod, ThreadContext *context, Int
 					nm = mono_marshal_get_icall_wrapper (mi->sig, wrapper_name, mi->func, TRUE);
 					g_free (wrapper_name);
 				} else if (*name == 'I' && (strcmp (name, "Invoke") == 0)) {
-					MonoDelegate *del = frame->stack_args [0].data.p;
-					if (del && del->method && del->method->flags & METHOD_ATTRIBUTE_STATIC)
-						nm = mono_marshal_get_delegate_invoke (method, del);
-					else
-						nm = mono_marshal_get_delegate_invoke (method, NULL);
+					/*
+					 * Handled when transforming caller.
+					 *
+					 * FIXME Resolve other calls in interp_transform_call instead of here
+					 * since changing the called method on the spot might trigger issues
+					 */
+					g_assert_not_reached ();
 				} else if (*name == 'B' && (strcmp (name, "BeginInvoke") == 0)) {
 					nm = mono_marshal_get_delegate_begin_invoke (method);
 				} else if (*name == 'E' && (strcmp (name, "EndInvoke") == 0)) {

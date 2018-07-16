@@ -829,6 +829,8 @@ struct _MonoDelegate {
 	 */
 	guint8 **method_code;
 	gpointer interp_method;
+	/* Interp method that is executed when invoking the delegate */
+	gpointer interp_invoke_impl;
 	MonoReflectionMethod *method_info;
 	MonoReflectionMethod *original_method_info;
 	MonoObject *data;

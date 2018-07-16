@@ -1216,19 +1216,45 @@ ves_pinvoke_method (InterpFrame *frame, MonoMethodSignature *sig, MonoFuncV addr
 static void
 interp_init_delegate (MonoDelegate *del)
 {
+	MonoMethod *method;
+	MonoMethod *invoke = mono_get_delegate_invoke (mono_object_class (del));
+	ERROR_DECL (error);
+
 	if (del->interp_method) {
 		/* Delegate created by a call to ves_icall_mono_delegate_ctor_interp () */
 		del->method = ((InterpMethod *)del->interp_method)->method;
 	} else if (del->method) {
 		/* Delegate created dynamically */
-		ERROR_DECL (error);
 		del->interp_method = mono_interp_get_imethod (del->object.vtable->domain, del->method, error);
-		mono_error_assert_ok (error);
 	} else {
 		/* Created from JITted code */
 		g_assert (del->method_ptr);
 		del->interp_method = lookup_method_pointer (del->method_ptr);
 		g_assert (del->interp_method);
+	}
+
+	method = ((InterpMethod*)del->interp_method)->method;
+	if (del->target &&
+			method &&
+			method->flags & METHOD_ATTRIBUTE_VIRTUAL &&
+			method->flags & METHOD_ATTRIBUTE_ABSTRACT &&
+			mono_class_is_abstract (method->klass))
+		del->interp_method = get_virtual_method ((InterpMethod*)del->interp_method, del->target);
+
+	method = ((InterpMethod*)del->interp_method)->method;
+	if (method && m_class_get_parent (method->klass) == mono_defaults.multicastdelegate_class) {
+		const char *name = method->name;
+		if (*name == 'I' && (strcmp (name, "Invoke") == 0)) {
+			/*
+			 * When invoking the delegate interp_method is executed directly. If it's an
+			 * invoke make sure we replace it with the appropriate delegate invoke wrapper.
+			 *
+			 * FIXME We should do this later, when we also know the delegate on which the
+			 * target method is called.
+			 */
+			del->interp_method = mono_interp_get_imethod (del->object.vtable->domain, mono_marshal_get_delegate_invoke (method, NULL), error);
+			mono_error_assert_ok (error);
+		}
 	}
 }
 
@@ -1239,6 +1265,16 @@ interp_delegate_ctor (MonoObjectHandle this_obj, MonoObjectHandle target, gpoint
 	 * addr is the result of an LDFTN opcode, i.e. an InterpMethod
 	 */
 	InterpMethod *imethod = (InterpMethod*)addr;
+
+	if (!(imethod->method->flags & METHOD_ATTRIBUTE_STATIC)) {
+		MonoMethod *invoke = mono_get_delegate_invoke (mono_handle_class (this_obj));
+		/* virtual invoke delegates must not have null check */
+		if (mono_method_signature (imethod->method)->param_count == mono_method_signature (invoke)->param_count
+				&& MONO_HANDLE_IS_NULL (target)) {
+			mono_error_set_argument (error, "this", "Delegate to an instance method cannot have null 'this'");
+			return;
+		}
+	}
 
 	g_assert (imethod->method);
 	gpointer entry = mini_get_interp_callbacks ()->create_method_pointer (imethod->method, error);
@@ -2078,7 +2114,7 @@ do_transform_method (InterpFrame *frame, ThreadContext *context)
 	if (push_lmf)
 		interp_push_lmf (&ext, frame->parent);
 
-	mono_interp_transform_method (frame->imethod, context, frame, error);
+	mono_interp_transform_method (frame->imethod, context, error);
 	frame->ex = mono_error_convert_to_exception (error);
 
 	if (push_lmf)
@@ -2727,7 +2763,7 @@ interp_exec_method_full (InterpFrame *frame, ThreadContext *context, guint16 *st
 				ERROR_DECL (error);
 
 				frame->ip = ip;
-				mono_interp_transform_method (new_method, context, NULL, error);
+				mono_interp_transform_method (new_method, context, error);
 				frame->ex = mono_error_convert_to_exception (error);
 				if (frame->ex)
 					goto exit_frame;
@@ -5365,6 +5401,25 @@ interp_exec_method_full (InterpFrame *frame, ThreadContext *context, guint16 *st
 		   ip += 1;
 		   MINT_IN_BREAK;
 	   }
+		MINT_IN_CASE(MINT_LD_DELEGATE_INVOKE_IMPL) {
+			MonoDelegate *del;
+			int n = *(guint16*)(ip + 1);
+			del = (MonoDelegate*)sp [-n].data.p;
+			if (!del->interp_invoke_impl) {
+				/*
+				 * First time we are called. Set up the invoke wrapper. We might be able to do this
+				 * in ctor but we would need to handle AllocDelegateLike_internal separately
+				 */
+				ERROR_DECL (error);
+				MonoMethod *invoke = mono_get_delegate_invoke (del->object.vtable->klass);
+				del->interp_invoke_impl = mono_interp_get_imethod (del->object.vtable->domain, mono_marshal_get_delegate_invoke (invoke, del), error);
+				mono_error_assert_ok (error);
+			}
+			sp ++;
+			sp [-1].data.p = del->interp_invoke_impl;
+			ip += 2;
+			MINT_IN_BREAK;
+		}
 		MINT_IN_DEFAULT
 			g_print ("Unimplemented opcode: %04x %s at 0x%x\n", *ip, mono_interp_opname[*ip], ip-rtm->code);
 			THROW_EX (mono_get_exception_execution_engine ("Unimplemented opcode"), ip);
