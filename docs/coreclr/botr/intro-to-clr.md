@@ -53,19 +53,17 @@ It is this dedication to ease of use (which goes hand in hand with simplicity of
 
 The runtime has many features, so it is useful to categorize them as follows:
 
-1. Fundamental features – Features that have broad impact on the design of other features.  These include:
-  a. Garbage Collection
-  b. Memory Safety and Type Safety
-  c. High level support for programming languages.
-
-2. Secondary features – Features enabled by the fundamental features that may not be required by many useful programs:
-  a. Program isolation with AppDomains
-  b. Program Security and sandboxing
-
-3. Other Features – Features that all runtime environments need but that do not leverage the fundamental features of the CLR.  Instead, they are the result of the desire to create a complete programming environment.  Among them are:
-  a. Versioning
-  b. Debugging/Profiling
-  c. Interoperation
+1. **Fundamental features** – Features that have broad impact on the design of other features.  These include:
+    1. Garbage Collection
+    2. Memory Safety and Type Safety
+    3. High level support for programming languages.
+2. **Secondary features** – Features enabled by the fundamental features that may not be required by many useful programs:
+    1. Program isolation with AppDomains
+    2. Program Security and sandboxing
+3. **Other Features** – Features that all runtime environments need but that do not leverage the fundamental features of the CLR.  Instead, they are the result of the desire to create a complete programming environment.  Among them are:
+    1. Versioning
+    2. Debugging/Profiling
+    3. Interoperation
 
 ## The CLR Garbage Collector (GC)
 
