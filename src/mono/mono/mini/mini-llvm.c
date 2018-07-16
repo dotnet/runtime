@@ -1022,6 +1022,14 @@ set_preserveall_cc (LLVMValueRef func)
 #endif
 }
 
+static void
+set_call_preserveall_cc (LLVMValueRef func)
+{
+#ifndef TARGET_WATCHOS
+	mono_llvm_set_call_preserveall_cc (func);
+#endif
+}
+
 /*
  * get_bb:
  *
@@ -2849,7 +2857,7 @@ emit_init_method (EmitContext *ctx)
 	 * This enables llvm to keep arguments in their original registers/
 	 * scratch registers, since the call will not clobber them.
 	 */
-	mono_llvm_set_call_preserveall_cc (call);
+	set_call_preserveall_cc (call);
 
 	LLVMBuildBr (builder, inited_bb);
 	ctx->bblocks [cfg->bb_entry->block_num].end_bblock = inited_bb;
@@ -3567,7 +3575,7 @@ process_call (EmitContext *ctx, MonoBasicBlock *bb, LLVMBuilderRef *builder_ref,
 	if (!sig->pinvoke && !cfg->llvm_only)
 		LLVMSetInstructionCallConv (lcall, LLVMMono1CallConv);
 	if (preserveall)
-		mono_llvm_set_call_preserveall_cc (lcall);
+		set_call_preserveall_cc (lcall);
 
 	if (cinfo->ret.storage == LLVMArgVtypeByRef)
 		mono_llvm_add_instr_attr (lcall, 1 + cinfo->vret_arg_pindex, LLVM_ATTR_STRUCT_RET);
