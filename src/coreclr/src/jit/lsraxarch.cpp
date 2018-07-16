@@ -964,6 +964,7 @@ int LinearScan::BuildShiftRotate(GenTree* tree)
         if (!shiftBy->isContained())
         {
             srcCount += BuildDelayFreeUses(shiftBy, RBM_RCX);
+            buildKillPositionsForNode(tree, currentLoc + 1, RBM_RCX);
         }
         BuildDef(tree, dstCandidates);
     }
@@ -972,6 +973,7 @@ int LinearScan::BuildShiftRotate(GenTree* tree)
         if (!shiftBy->isContained())
         {
             srcCount += BuildOperandUses(shiftBy, RBM_RCX);
+            buildKillPositionsForNode(tree, currentLoc + 1, RBM_RCX);
         }
     }
     return srcCount;
