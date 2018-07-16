@@ -1828,6 +1828,7 @@ EXTRA_DIST=test-driver test-runner.cs $(TESTS_CS_SRC) $(TESTS_IL_SRC) \
 	array-coop-1.cs array-coop-2.cs \
 	array-coop-bigvt.cs array-coop-int.cs array-coop-smallvt.cs \
 	array-coop-bigvt.sh array-coop-smallvt.sh array-coop-int.sh \
+	tailcall-interface-conservestack.il tailcall/fsharp-deeptail.il \
 	$(TEST_TAILCALL_CS_SRC) \
 	$(TEST_TAILCALL_IL_SRC)
 
