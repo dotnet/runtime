@@ -1031,6 +1031,7 @@ private:
 
     // Helpers for getKillSetForNode().
     regMaskTP getKillSetForStoreInd(GenTreeStoreInd* tree);
+    regMaskTP getKillSetForShiftRotate(GenTreeOp* tree);
     regMaskTP getKillSetForMul(GenTreeOp* tree);
     regMaskTP getKillSetForCall(GenTreeCall* call);
     regMaskTP getKillSetForModDiv(GenTreeOp* tree);
