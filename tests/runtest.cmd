@@ -329,7 +329,7 @@ if defined __GenerateTestHostOnly (
 if not exist %_CoreFXTestHost%\dotnet.exe echo CoreFX test host not found, please run runtest.cmd again && exit /b 1
 
 set /p _CoreFXTestRemoteURL=< "%__ProjectFilesDir%\CoreFX\CoreFXTestListURL.txt"
-if not defined __CoreFXTestList ( set __CoreFXTestList=%__ProjectFilesDir%\CoreFX\TopN.CoreFX.x64.Windows.issues.json )
+if not defined __CoreFXTestList ( set __CoreFXTestList=%__ProjectFilesDir%\CoreFX\CoreFX.issues.json )
 
 
 set _CoreFXTestExecutable=xunit.console.netcore.exe

@@ -465,7 +465,7 @@ function create_testhost
     local coreFXTestBinariesOutputPath=${__CoreFXTestDir}/tests_downloaded
     
     if [ -z $CoreFXTestList]; then
-        local CoreFXTestList="${coreClrSrcTestDir}/CoreFX/TopN.CoreFX.x64.Unix.issues.json"
+        local CoreFXTestList="${coreClrSrcTestDir}/CoreFX/CoreFX.issues.json"
     fi
 
     case "${OSName}" in
