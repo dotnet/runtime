@@ -479,10 +479,10 @@ mono_thread_info_tls_set (THREAD_INFO_TYPE *info, MonoTlsKey key, gpointer value
 void
 mono_thread_info_exit (gsize exit_code);
 
-void
+MONO_PAL_API void
 mono_thread_info_install_interrupt (void (*callback) (gpointer data), gpointer data, gboolean *interrupted);
 
-void
+MONO_PAL_API void
 mono_thread_info_uninstall_interrupt (gboolean *interrupted);
 
 MonoThreadInfoInterruptToken*
