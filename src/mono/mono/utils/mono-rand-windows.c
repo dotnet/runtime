@@ -15,12 +15,10 @@
 #include <bcrypt.h>
 #include <limits.h>
 
-// FIXME Waiting for Unity et. al. to drop Vista support.
-#if _WIN32_WINNT >= 0x0601 // Windows 7 and UWP
-#define WIN7_OR_NEWER 1
+// This implementation requires Windows 7 or newer.
+
 #define BCRYPT_USE_SYSTEM_PREFERRED_RNG 0x00000002
 const static char mono_rand_provider [ ] = "BCryptGenRandom";
-#endif
 
 /**
  * mono_rand_open:
@@ -45,17 +43,8 @@ mono_rand_open (void)
 gpointer
 mono_rand_init (const guchar *seed, gssize seed_size)
 {
-#if WIN7_OR_NEWER
 	// NULL will be interpreted as failure; return arbitrary nonzero pointer
 	return (gpointer)mono_rand_provider;
-#else
-	BCRYPT_ALG_HANDLE provider = 0;
-
-	if (!BCRYPT_SUCCESS (BCryptOpenAlgorithmProvider (&provider, BCRYPT_RNG_ALGORITHM, NULL, 0)))
-		provider = 0;
-
-	return (gpointer)provider;
-#endif
 }
 
 /**
@@ -73,25 +62,16 @@ mono_rand_try_get_bytes (gpointer *handle, guchar *buffer, gssize buffer_size, M
 	g_assert (buffer || !buffer_size);
 	error_init (error);
 	g_assert (handle);
-	if (!*handle)
+	gpointer const handle_value = *handle;
+	g_assert (handle_value == 0 || handle_value == mono_rand_provider);
+	if (!handle_value)
 		return FALSE;
-#if WIN7_OR_NEWER
-	g_assert (*handle == mono_rand_provider);
-	BCRYPT_ALG_HANDLE const algorithm = 0;
-	ULONG const flags = BCRYPT_USE_SYSTEM_PREFERRED_RNG;
-#else
-	BCRYPT_ALG_HANDLE const algorithm = (BCRYPT_ALG_HANDLE)*handle;
-	ULONG const flags = 0;
-#endif
 	while (buffer_size > 0) {
 		ULONG const size = (ULONG)MIN (buffer_size, ULONG_MAX);
-		NTSTATUS const status = BCryptGenRandom (algorithm, buffer, size, flags);
+		NTSTATUS const status = BCryptGenRandom (0, buffer, size, BCRYPT_USE_SYSTEM_PREFERRED_RNG);
 		if (!BCRYPT_SUCCESS (status)) {
 			mono_error_set_execution_engine (error, "Failed to gen random bytes (%ld)", status);
-#if !WIN7_OR_NEWER
-			// failure, close provider
-			BCryptCloseAlgorithmProvider (algorithm, 0);
-#endif
+			// failure, clear provider for future attempts
 			*handle = 0;
 			return FALSE;
 		}
@@ -109,11 +89,6 @@ mono_rand_try_get_bytes (gpointer *handle, guchar *buffer, gssize buffer_size, M
 void
 mono_rand_close (gpointer handle)
 {
-#if WIN7_OR_NEWER
 	g_assert (handle == 0 || handle == mono_rand_provider);
-#else
-	if (handle)
-		BCryptCloseAlgorithmProvider ((BCRYPT_ALG_HANDLE)handle, 0);
-#endif
 }
 #endif /* HOST_WIN32 */

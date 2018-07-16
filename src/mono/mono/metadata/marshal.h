@@ -21,6 +21,9 @@
 #include <mono/metadata/remoting.h>
 #include <mono/utils/mono-error.h>
 
+typedef gunichar2 *mono_bstr;
+typedef const gunichar2 *mono_bstr_const;
+
 #define mono_marshal_find_bitfield_offset(type, elem, byte_offset, bitmask) \
 	do { \
 		type tmp; \
@@ -343,8 +346,8 @@ mono_type_native_stack_size (MonoType *type, guint32 *alignment);
 gpointer
 mono_string_to_ansibstr (MonoString *string_obj);
 
-gpointer
-mono_ptr_to_bstr (gpointer ptr, int slen);
+mono_bstr
+mono_ptr_to_bstr (const gunichar2* ptr, int slen);
 
 gpointer
 mono_string_to_bstr(MonoString* str);
@@ -363,7 +366,7 @@ mono_free_lparray (MonoArray *array, gpointer* nativeArray);
 void
 mono_marshal_ftnptr_eh_callback (guint32 gchandle);
 
-void
+MONO_PAL_API void
 mono_marshal_set_last_error (void);
 
 guint
@@ -477,7 +480,7 @@ MonoMethod *
 mono_marshal_get_array_accessor_wrapper (MonoMethod *method);
 
 MonoMethod *
-mono_marshal_get_generic_array_helper (MonoClass *klass, gchar *name, MonoMethod *method);
+mono_marshal_get_generic_array_helper (MonoClass *klass, const gchar *name, MonoMethod *method);
 
 MonoMethod *
 mono_marshal_get_thunk_invoke_wrapper (MonoMethod *method);
@@ -515,7 +518,7 @@ void
 mono_cominterop_release_all_rcws (void); 
 
 MonoString*
-ves_icall_mono_string_from_utf16 (gunichar2 *data);
+ves_icall_mono_string_from_utf16 (const gunichar2 *data);
 
 char*
 ves_icall_mono_string_to_utf8 (MonoString *str);
@@ -538,10 +541,10 @@ mono_string_to_utf8str (MonoString *string_obj);
 #endif
 
 MonoStringBuilder *
-mono_string_utf8_to_builder2 (char *text);
+mono_string_utf8_to_builder2 (const char *text);
 
 MonoStringBuilder *
-mono_string_utf16_to_builder2 (gunichar2 *text);
+mono_string_utf16_to_builder2 (const gunichar2 *text);
 
 gchar*
 mono_string_builder_to_utf8 (MonoStringBuilder *sb);
@@ -550,10 +553,10 @@ gunichar2*
 mono_string_builder_to_utf16 (MonoStringBuilder *sb);
 
 void
-mono_string_utf8_to_builder (MonoStringBuilder *sb, char *text);
+mono_string_utf8_to_builder (MonoStringBuilder *sb, const char *text);
 
 void
-mono_string_utf16_to_builder (MonoStringBuilder *sb, gunichar2 *text);
+mono_string_utf16_to_builder (MonoStringBuilder *sb, const gunichar2 *text);
 
 void
 mono_string_to_byvalstr (gpointer dst, MonoString *src, int size);
@@ -645,27 +648,27 @@ void*
 ves_icall_marshal_alloc (gsize size);
 
 void
-ves_icall_System_Runtime_InteropServices_Marshal_copy_to_unmanaged (MonoArray *src, gint32 start_index,
-								    gpointer dest, gint32 length);
+ves_icall_System_Runtime_InteropServices_Marshal_copy_to_unmanaged (MonoArrayHandle src, gint32 start_index,
+		gpointer dest, gint32 length, gconstpointer managed_source_addr, MonoError *error);
 
 void
-ves_icall_System_Runtime_InteropServices_Marshal_copy_from_unmanaged (gpointer src, gint32 start_index,
-								      MonoArray *dest, gint32 length);
+ves_icall_System_Runtime_InteropServices_Marshal_copy_from_unmanaged (gconstpointer src, gint32 start_index,
+	MonoArrayHandle dest, gint32 length, gpointer managed_dest_addr, MonoError *error);
 
 MonoStringHandle
-ves_icall_System_Runtime_InteropServices_Marshal_PtrToStringAnsi (char *ptr, MonoError *error);
+ves_icall_System_Runtime_InteropServices_Marshal_PtrToStringAnsi (const char *ptr, MonoError *error);
 
-MonoString *
-ves_icall_System_Runtime_InteropServices_Marshal_PtrToStringAnsi_len (char *ptr, gint32 len);
+MonoStringHandle
+ves_icall_System_Runtime_InteropServices_Marshal_PtrToStringAnsi_len (const char *ptr, gint32 len, MonoError *error);
 
-MonoString *
-ves_icall_System_Runtime_InteropServices_Marshal_PtrToStringUni (guint16 *ptr);
+MonoStringHandle
+ves_icall_System_Runtime_InteropServices_Marshal_PtrToStringUni (const guint16 *ptr, MonoError *error);
 
-MonoString *
-ves_icall_System_Runtime_InteropServices_Marshal_PtrToStringUni_len (guint16 *ptr, gint32 len);
+MonoStringHandle
+ves_icall_System_Runtime_InteropServices_Marshal_PtrToStringUni_len (const guint16 *ptr, gint32 len, MonoError *error);
 
-MonoString *
-ves_icall_System_Runtime_InteropServices_Marshal_PtrToStringBSTR (gpointer ptr);
+MonoStringHandle
+ves_icall_System_Runtime_InteropServices_Marshal_PtrToStringBSTR (mono_bstr_const ptr, MonoError *error);
 
 guint32
 ves_icall_System_Runtime_InteropServices_Marshal_GetComSlotForMethodInfoInternal (MonoReflectionMethodHandle m, MonoError *error);
@@ -677,55 +680,52 @@ guint32
 ves_icall_System_Runtime_InteropServices_Marshal_SizeOf (MonoReflectionTypeHandle rtype, MonoError *error);
 
 void
-ves_icall_System_Runtime_InteropServices_Marshal_StructureToPtr (MonoObject *obj, gpointer dst, MonoBoolean delete_old);
+ves_icall_System_Runtime_InteropServices_Marshal_StructureToPtr (MonoObjectHandle obj, gpointer dst, MonoBoolean delete_old, MonoError *error);
 
 void
-ves_icall_System_Runtime_InteropServices_Marshal_PtrToStructure (gpointer src, MonoObject *dst);
+ves_icall_System_Runtime_InteropServices_Marshal_PtrToStructure (gconstpointer src, MonoObjectHandle dst, MonoError *error);
 
-MonoObject *
-ves_icall_System_Runtime_InteropServices_Marshal_PtrToStructure_type (gpointer src, MonoReflectionType *type);
+MonoObjectHandle
+ves_icall_System_Runtime_InteropServices_Marshal_PtrToStructure_type (gconstpointer src, MonoReflectionTypeHandle type, MonoError *error);
 
 int
 ves_icall_System_Runtime_InteropServices_Marshal_OffsetOf (MonoReflectionTypeHandle type, MonoStringHandle field_name, MonoError *error);
 
-gpointer
-ves_icall_System_Runtime_InteropServices_Marshal_StringToBSTR (MonoString *string);
+mono_bstr
+ves_icall_System_Runtime_InteropServices_Marshal_BufferToBSTR (const gunichar2 *ptr, int len, MonoError *error);
 
-gpointer
-ves_icall_System_Runtime_InteropServices_Marshal_BufferToBSTR (MonoArray *ptr, int len);
+char*
+ves_icall_System_Runtime_InteropServices_Marshal_StringToHGlobalAnsi (const gunichar2 *s, int length, MonoError *error);
 
-gpointer
-ves_icall_System_Runtime_InteropServices_Marshal_StringToHGlobalAnsi (MonoString *string);
-
-gpointer
-ves_icall_System_Runtime_InteropServices_Marshal_StringToHGlobalUni (MonoString *string);
+gunichar2*
+ves_icall_System_Runtime_InteropServices_Marshal_StringToHGlobalUni (const gunichar2 *s, int length, MonoError *error);
 
 void
-ves_icall_System_Runtime_InteropServices_Marshal_DestroyStructure (gpointer src, MonoReflectionType *type);
+ves_icall_System_Runtime_InteropServices_Marshal_DestroyStructure (gpointer src, MonoReflectionTypeHandle type, MonoError *error);
 
 void*
-ves_icall_System_Runtime_InteropServices_Marshal_AllocCoTaskMem (int size);
+ves_icall_System_Runtime_InteropServices_Marshal_AllocCoTaskMem (int size, MonoError *error);
 
 void*
-ves_icall_System_Runtime_InteropServices_Marshal_AllocCoTaskMemSize (gulong size);
+ves_icall_System_Runtime_InteropServices_Marshal_AllocCoTaskMemSize (gulong size, MonoError *error);
 
 void
-ves_icall_System_Runtime_InteropServices_Marshal_FreeCoTaskMem (void *ptr);
+ves_icall_System_Runtime_InteropServices_Marshal_FreeCoTaskMem (void *ptr, MonoError *error);
 
 gpointer 
-ves_icall_System_Runtime_InteropServices_Marshal_ReAllocCoTaskMem (gpointer ptr, int size);
+ves_icall_System_Runtime_InteropServices_Marshal_ReAllocCoTaskMem (gpointer ptr, int size, MonoError *error);
 
 void*
-ves_icall_System_Runtime_InteropServices_Marshal_AllocHGlobal (gpointer size);
+ves_icall_System_Runtime_InteropServices_Marshal_AllocHGlobal (gsize size, MonoError *error);
 
 gpointer 
-ves_icall_System_Runtime_InteropServices_Marshal_ReAllocHGlobal (gpointer ptr, gpointer size);
+ves_icall_System_Runtime_InteropServices_Marshal_ReAllocHGlobal (gpointer ptr, gsize size, MonoError *error);
 
 void
-ves_icall_System_Runtime_InteropServices_Marshal_FreeHGlobal (void *ptr);
+ves_icall_System_Runtime_InteropServices_Marshal_FreeHGlobal (void *ptr, MonoError *error);
 
 void
-ves_icall_System_Runtime_InteropServices_Marshal_FreeBSTR (void *ptr);
+ves_icall_System_Runtime_InteropServices_Marshal_FreeBSTR (mono_bstr_const ptr, MonoError *error);
 
 void*
 ves_icall_System_Runtime_InteropServices_Marshal_UnsafeAddrOfPinnedArrayElement (MonoArray *arrayobj, int index);
@@ -740,7 +740,7 @@ int
 ves_icall_System_Runtime_InteropServices_Marshal_AddRefInternal (gpointer pUnk);
 
 int
-ves_icall_System_Runtime_InteropServices_Marshal_QueryInterfaceInternal (gpointer pUnk, gpointer riid, gpointer* ppv);
+ves_icall_System_Runtime_InteropServices_Marshal_QueryInterfaceInternal (gpointer pUnk, gconstpointer riid, gpointer* ppv);
 
 int
 ves_icall_System_Runtime_InteropServices_Marshal_ReleaseInternal (gpointer pUnk);
@@ -758,7 +758,7 @@ void*
 ves_icall_System_Runtime_InteropServices_Marshal_GetCCW (MonoObjectHandle object, MonoReflectionTypeHandle type, MonoError *error);
 
 MonoBoolean
-ves_icall_System_Runtime_InteropServices_Marshal_IsComObject (MonoObject* object);
+ves_icall_System_Runtime_InteropServices_Marshal_IsComObject (MonoObjectHandle object, MonoError *error);
 
 gint32
 ves_icall_System_Runtime_InteropServices_Marshal_ReleaseComObjectInternal (MonoObject* object);

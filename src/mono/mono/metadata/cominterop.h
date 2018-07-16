@@ -57,16 +57,13 @@ mono_cominterop_emit_marshal_safearray (EmitMarshalContext *m, int argnum,
 
 MONO_RT_EXTERNAL_ONLY
 MONO_API MonoString * 
-mono_string_from_bstr (gpointer bstr);
+mono_string_from_bstr (/*mono_bstr*/gpointer bstr);
 
 MonoString *
-mono_string_from_bstr_icall (gpointer bstr);
-
-MonoString *
-mono_string_from_bstr_checked (gpointer bstr, MonoError *error);
+mono_string_from_bstr_icall (mono_bstr_const bstr);
 
 MONO_API void 
-mono_free_bstr (gpointer bstr);
+mono_free_bstr (/*mono_bstr_const*/gpointer bstr);
 
 MonoClass*
 mono_class_try_get_com_object_class (void);

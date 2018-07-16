@@ -25,7 +25,7 @@
 #define MONO_CHECK_ARG(arg, expr, retval) do {				\
 	if (G_UNLIKELY (!(expr)))					\
 	{								\
-		if (arg) {} /* check if the name exists */		\
+		if (0) { (void)(arg); } /* check if the name exists */	\
 		ERROR_DECL (error);					\
 		mono_error_set_argument_format (error, #arg, "assertion `%s' failed", #expr); \
 		mono_error_set_pending_exception (error);		\
@@ -35,9 +35,8 @@
 
 /* Use this as MONO_CHECK_ARG_NULL (arg,) in functions returning void */
 #define MONO_CHECK_ARG_NULL(arg, retval) do { 			\
-	if (G_UNLIKELY (arg == NULL))				\
+	if (G_UNLIKELY (!(arg)))				\
 	{							\
-		if (arg) {} /* check if the name exists */	\
 		ERROR_DECL (error);				\
 		mono_error_set_argument_null (error, #arg, "");	\
 		mono_error_set_pending_exception (error);	\
@@ -45,9 +44,18 @@
 	}							\
 } while (0)
 
+/* Use this as MONO_CHECK_ARG_NULL_HANDLE (arg,) in functions returning void */
+#define MONO_CHECK_ARG_NULL_HANDLE(arg, retval) do { 		\
+	if (MONO_HANDLE_IS_NULL (arg))				\
+	{							\
+		mono_error_set_argument_null (error, #arg, "");	\
+		return retval;					\
+	}							\
+} while (0)
+
 /* Use this as MONO_CHECK_NULL (arg,) in functions returning void */
 #define MONO_CHECK_NULL(arg, retval) do { 			\
-	if (G_UNLIKELY (arg == NULL))				\
+	if (!(arg))						\
 	{							\
 		ERROR_DECL (error);				\
 		mono_error_set_null_reference (error);		\
@@ -185,10 +193,8 @@ mono_handle_array_has_bounds (MonoArrayHandle arr)
 static inline void
 mono_handle_array_get_bounds_dim (MonoArrayHandle arr, gint32 dim, MonoArrayBounds *bounds)
 {
-	MonoArrayBounds *src = MONO_HANDLE_GETVAL (arr, bounds);
-	memcpy (bounds, &src[dim], sizeof (MonoArrayBounds));
+	*bounds = MONO_HANDLE_GETVAL (arr, bounds [dim]);
 }
-
 
 typedef struct {
 	MonoObject obj;
@@ -1912,11 +1918,14 @@ mono_string_new_utf16_checked (MonoDomain *domain, const guint16 *text, gint32 l
 MonoStringHandle
 mono_string_new_utf16_handle (MonoDomain *domain, const guint16 *text, gint32 len, MonoError *error);
 
-MonoString *
-mono_string_from_utf16_checked (mono_unichar2 *data, MonoError *error);
+MonoStringHandle
+mono_string_new_utf8_len_handle (MonoDomain *domain, const char *text, guint length, MonoError *error);
 
 MonoString *
-mono_string_from_utf32_checked (mono_unichar4 *data, MonoError *error);
+mono_string_from_utf16_checked (const mono_unichar2 *data, MonoError *error);
+
+MonoString *
+mono_string_from_utf32_checked (const mono_unichar4 *data, MonoError *error);
 
 char*
 mono_ldstr_utf8 (MonoImage *image, guint32 idx, MonoError *error);

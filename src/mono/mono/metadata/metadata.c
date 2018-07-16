@@ -6257,6 +6257,9 @@ mono_metadata_parse_marshal_spec_full (MonoImage *image, MonoImage *parent_image
 void 
 mono_metadata_free_marshal_spec (MonoMarshalSpec *spec)
 {
+	if (!spec)
+		return;
+
 	if (spec->native == MONO_NATIVE_CUSTOM) {
 		g_free (spec->data.custom_data.custom_name);
 		g_free (spec->data.custom_data.cookie);

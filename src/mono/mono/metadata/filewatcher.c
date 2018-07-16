@@ -63,7 +63,9 @@ ves_icall_System_IO_FSW_SupportsFSW (void)
 	if (getenv ("MONO_DARWIN_USE_KQUEUE_FSW"))
 		return 3; /* kqueue */
 	else
-		return 6; /* FSEvent */
+		return 6; /* CoreFX */
+#elif defined(HAVE_SYS_INOTIFY_H) && !defined(TARGET_ANDROID)
+	return 6; /* CoreFX */
 #elif HAVE_KQUEUE
 	return 3; /* kqueue */
 #else
@@ -72,11 +74,13 @@ ves_icall_System_IO_FSW_SupportsFSW (void)
 	int inotify_instance;
 	char *err;
 
+#if defined (TARGET_ANDROID)
 	inotify_instance = ves_icall_System_IO_InotifyWatcher_GetInotifyInstance ();
 	if (inotify_instance != -1) {
 		close (inotify_instance);
 		return 5; /* inotify */
 	}
+#endif
 
 	fam_module = mono_dl_open ("libgamin-1.so", MONO_DL_LAZY, NULL);
 	if (fam_module == NULL) {
@@ -85,14 +89,14 @@ ves_icall_System_IO_FSW_SupportsFSW (void)
 	}
 
 	if (fam_module == NULL)
-		return 0;
+		return 0; /* DefaultWatcher */
 
 	err = mono_dl_symbol (fam_module, "FAMNextEvent", (gpointer *) &FAMNextEvent);
 	g_free (err);
 	if (FAMNextEvent == NULL)
 		return 0;
 
-	return lib_used;
+	return lib_used; /* DefaultWatcher */
 #endif
 }
 
@@ -132,6 +136,7 @@ ves_icall_System_IO_FAMW_InternalFAMNextEvent (gpointer conn,
 }
 #endif
 
+#if defined(TARGET_ANDROID)
 #ifndef HAVE_SYS_INOTIFY_H
 int ves_icall_System_IO_InotifyWatcher_GetInotifyInstance ()
 {
@@ -213,6 +218,7 @@ ves_icall_System_IO_InotifyWatcher_RemoveWatch (int fd, gint32 watch_descriptor)
 	return inotify_rm_watch (fd, watch_descriptor);
 }
 #endif
+#endif
 
 #if HAVE_KQUEUE
 
@@ -265,34 +271,6 @@ ves_icall_System_IO_KqueueMonitor_kevent_notimeout (int *kq_ptr, gpointer change
 
 #endif /* #if HAVE_KQUEUE */
 
-#if defined(__APPLE__)
-
-#include <CoreFoundation/CFRunLoop.h>
-
-static void
-interrupt_CFRunLoop (gpointer data)
-{
-	g_assert (data);
-	CFRunLoopStop(data);
-}
-
-void
-ves_icall_CoreFX_Interop_RunLoop_CFRunLoopRun (void)
-{
-	gpointer runloop_ref = CFRunLoopGetCurrent();
-	gboolean interrupted;
-	mono_thread_info_install_interrupt (interrupt_CFRunLoop, runloop_ref, &interrupted);
-
-	if (interrupted)
-		return;
-
-	MONO_ENTER_GC_SAFE;
-	CFRunLoopRun();
-	MONO_EXIT_GC_SAFE;
-
-	mono_thread_info_uninstall_interrupt (&interrupted);
-}
-
 #ifdef HOST_IOS
 
 MONO_API char* SystemNative_RealPath(const char* path)
@@ -307,5 +285,3 @@ MONO_API void SystemNative_Sync(void)
 }
 
 #endif // HOST_IOS
-
-#endif /* #if defined(__APPLE__) */
