@@ -201,8 +201,9 @@ namespace System.Data.SqlClient
         // Feature Extension
         public const byte FEATUREEXT_TERMINATOR = 0xFF;
         public const byte FEATUREEXT_SRECOVERY = 0x01;
-        public const byte FEATUREEXT_GLOBALTRANSACTIONS = 0x05;
         public const byte FEATUREEXT_FEDAUTH = 0x02;
+        public const byte FEATUREEXT_GLOBALTRANSACTIONS = 0x05;
+        public const byte FEATUREEXT_UTF8SUPPORT = 0x0A;
 
         [Flags]
         public enum FeatureExtension : uint
@@ -210,8 +211,11 @@ namespace System.Data.SqlClient
             None = 0,
             SessionRecovery = 1,
             FedAuth = 2,
-            GlobalTransactions = 8,
+            GlobalTransactions = 16,
+            UTF8Support = 512,
         }
+
+        public const uint UTF8_IN_TDSCOLLATION = 0x4000000;
 
         public const byte FEDAUTHLIB_LIVEID = 0X00;
         public const byte FEDAUTHLIB_SECURITYTOKEN = 0x01;
