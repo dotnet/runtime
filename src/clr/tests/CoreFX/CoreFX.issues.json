@@ -1,4 +1,22 @@
-[
+﻿[
+    {
+        "name": "System.Console.Tests",
+        "enabled": true,
+        "exclusions": {
+            "namespaces": null,
+            "classes": null,
+            "methods": [
+                {
+                    "name": "WindowAndCursorProps.SetWindowPosition_GetWindowPosition_ReturnsExpected",
+                    "reason": "Xunit.Sdk.EqualException Assert.Equal() Failure\\r\\n          ↓ (pos 0)\\r\\nExpected: top\\r\\nActual:   left\\r\\n          ↑ (pos 0)"
+                },
+                {
+                    "name": "WindowAndCursorProps.GetCursorPosition",
+                    "reason": "Xunit.Sdk.EqualException Assert.Equal() Failure\\r\\nExpected: 12\\r\\nActual:   13"
+                }
+            ]
+        }
+    },
     {
         "name": "System.Diagnostics.DiagnosticSource.Tests",
         "enabled": true,
@@ -61,8 +79,47 @@
                 {
                     "name": "System.Drawing.Tests.GraphicsTests.TextRenderingHint_SetInvalid_ThrowsInvalidEnumArgumentException",
                     "reason": "Xunit.Sdk.ThrowsException Assert.Throws() Failure\\nExpected: typeof(System.ComponentModel.InvalidEnumArgumentException)\\nActual:   typeof(System.ComponentModel.InvalidEnumArgumentException): The value of argument 'value' (-1) is invalid for Enum type 'TextRenderingHint'.\\nParameter name: value"
+                },
+                {
+                    "name": "System.Drawing.Tests.Graphics_DrawBezierTests.DrawBezier_PointFs",
+                    "reason": "Xunit.Sdk.EqualException Assert.Equal() Failure\\r\\nExpected: Byte[] [208, 0, 8, 33, 6, ...]\\r\\nActual:   Byte[] [153, 27, 131, 228, 197, ...]"
+                },
+                {
+                    "name": "System.Drawing.Tests.Graphics_DrawLineTests.DrawLines_PointFs",
+                    "reason": "Xunit.Sdk.EqualException Assert.Equal() Failure\\r\\nExpected: Byte[] [142, 194, 251, 180, 222, ...]\\r\\nActual:   Byte[] [212, 29, 140, 217, 143, ...]"
+                },
+                {
+                    "name": "System.Drawing.Tests.FontTests.ToLogFont_NullLogFont_ThrowsArgumentNullException",
+                    "reason": "Xunit.Sdk.ThrowsException Assert.Throws() Failure\\r\\nExpected: typeof(System.ArgumentNullException)\\r\\nActual:   typeof(System.AccessViolationException): Attempted to read or write protected memory. This is often an indication that other memory is corrupt."
                 }
             ]
+        }
+    },
+    {
+        "name": "System.Data.SqlClient.ManualTesting.Tests",
+        "enabled": false,
+        "exclusions": {
+            "namespaces": null,
+            "classes": null,
+            "methods": null
+        }
+    },
+    {
+        "name": "System.Data.SqlClient.Stress.Tests",
+        "enabled": false,
+        "exclusions": {
+            "namespaces": null,
+            "classes": null,
+            "methods": null
+        }
+    },
+    {
+        "name": "System.Data.SqlClient.Tests",
+        "enabled": false,
+        "exclusions": {
+            "namespaces": null,
+            "classes": null,
+            "methods": null
         }
     },
     {
@@ -310,6 +367,63 @@
                     "reason": "Assert.All() Failure: 1 out of 4 items in the collection did not pass.\r\n"
                 }
             ]
+        }
+    },
+    {
+        "name": "System.Linq.Parallel.Tests",
+        "enabled": true,
+        "exclusions": {
+            "namespaces": null,
+            "classes": null,
+            "methods": [
+                {
+                    "name": "System.Linq.Parallel.Tests.GetEnumeratorTests.GetEnumerator",
+                    "reason": "outdated"
+                },
+                {
+                    "name": "System.Linq.Parallel.Tests.GetEnumeratorTests.GetEnumerator_Unordered",
+                    "reason": "outdated"
+                }
+            ]
+        }
+    },
+    {
+        "name": "System.Linq.Tests",
+        "enabled": true,
+        "exclusions": {
+            "namespaces": null,
+            "classes": null,
+            "methods": [
+                {
+                    "name": "System.Linq.Tests.EmptyEnumerableTest.CastToIListGeneric",
+                    "reason": "outdated"
+                },
+                {
+                    "name": "System.Linq.Tests.EmptyEnumerableTest.EmptyEnumerableIsIndeedEmpty",
+                    "reason": "outdated"
+                },
+                {
+                    "name": "System.Linq.Tests.EmptyEnumerableTest.CastToArray",
+                    "reason": "outdated"
+                },
+                {
+                    "name": "System.Linq.Tests.EmptyEnumerableTest.CastToIList",
+                    "reason": "outdated"
+                },
+                {
+                    "name": "System.Linq.Tests.EmptyPartitionTests.CantResetEnumerator",
+                    "reason": "outdated"
+                },
+            ]
+        }
+    },
+    {
+        "name": "System.ComponentModel.Composition",
+        "enabled": false,
+        "exclusions": {
+            "namespaces": null,
+            "classes": null,
+            "methods": null
         }
     }
 ]
