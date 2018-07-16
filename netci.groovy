@@ -69,7 +69,9 @@ class Constants {
     // the values are the environment variables
     def static jitStressModeScenarios = [
                'minopts'                        : ['COMPlus_TieredCompilation' : '0', 'COMPlus_JITMinOpts' : '1'],
-               'tieredcompilation'              : ['COMPlus_TieredCompilation' : '1'],
+               'tieredcompilation'              : ['COMPlus_TieredCompilation' : '1'], // this can be removed once tiered compilation is on by default
+               'no_tiered_compilation'          : ['COMPlus_TieredCompilation' : '0'],
+               'no_tiered_compilation_innerloop': ['COMPlus_TieredCompilation' : '0'],
                'forcerelocs'                    : ['COMPlus_TieredCompilation' : '0', 'COMPlus_ForceRelocs' : '1'],
                'jitstress1'                     : ['COMPlus_TieredCompilation' : '0', 'COMPlus_JitStress' : '1'],
                'jitstress2'                     : ['COMPlus_TieredCompilation' : '0', 'COMPlus_JitStress' : '2'],
@@ -101,7 +103,7 @@ class Constants {
                'jitnox86hwintrinsic'            : ['COMPlus_TieredCompilation' : '0', 'COMPlus_EnableIncompleteISAClass' : '1', 'COMPlus_EnableSSE' : '0' , 'COMPlus_EnableSSE2' : '0' , 'COMPlus_EnableSSE3' : '0' , 'COMPlus_EnableSSSE3' : '0' , 'COMPlus_EnableSSE41' : '0' , 'COMPlus_EnableSSE42' : '0' , 'COMPlus_EnableAVX' : '0' , 'COMPlus_EnableAVX2' : '0' , 'COMPlus_EnableAES' : '0' , 'COMPlus_EnableBMI1' : '0' , 'COMPlus_EnableBMI2' : '0' , 'COMPlus_EnableFMA' : '0' , 'COMPlus_EnableLZCNT' : '0' , 'COMPlus_EnablePCLMULQDQ' : '0' , 'COMPlus_EnablePOPCNT' : '0'],
                'corefx_baseline'                : ['COMPlus_TieredCompilation' : '0'], // corefx baseline
                'corefx_minopts'                 : ['COMPlus_TieredCompilation' : '0', 'COMPlus_JITMinOpts' : '1'],
-               'corefx_tieredcompilation'       : ['COMPlus_TieredCompilation' : '1'],
+               'corefx_tieredcompilation'       : ['COMPlus_TieredCompilation' : '1'],  // this can be removed once tiered compilation is on by default
                'corefx_jitstress1'              : ['COMPlus_TieredCompilation' : '0', 'COMPlus_JitStress' : '1'],
                'corefx_jitstress2'              : ['COMPlus_TieredCompilation' : '0', 'COMPlus_JitStress' : '2'],
                'corefx_jitstressregs1'          : ['COMPlus_TieredCompilation' : '0', 'COMPlus_JitStressRegs' : '1'],
@@ -140,7 +142,8 @@ class Constants {
                'r2r_jitstressregs0x1000'    : ['COMPlus_TieredCompilation' : '0', "COMPlus_JitStressRegs": "0x1000"],
                'r2r_jitminopts'             : ['COMPlus_TieredCompilation' : '0', "COMPlus_JITMinOpts": "1"], 
                'r2r_jitforcerelocs'         : ['COMPlus_TieredCompilation' : '0', "COMPlus_ForceRelocs": "1"],
-               'r2r_gcstress15'             : ['COMPlus_TieredCompilation' : '0', "COMPlus_GCStress": "0xF"]
+               'r2r_gcstress15'             : ['COMPlus_TieredCompilation' : '0', "COMPlus_GCStress": "0xF"],
+               'r2r_no_tiered_compilation'  : ['COMPlus_TieredCompilation' : '0'],
     ]
 
     // This is the basic set of scenarios
@@ -254,8 +257,11 @@ class Constants {
                'r2r_jitminopts':                         ["R2R_FAIL", "R2R_EXCLUDE", "JITSTRESS_FAIL", "JITSTRESS_EXCLUDE", "MINOPTS_FAIL", "MINOPTS_EXCLUDE"],
                'r2r_jitforcerelocs':                     ["R2R_FAIL", "R2R_EXCLUDE", "JITSTRESS_FAIL", "JITSTRESS_EXCLUDE"],
                'r2r_gcstress15':                         ["R2R_FAIL", "R2R_EXCLUDE", "JITSTRESS_FAIL", "JITSTRESS_EXCLUDE", "GCSTRESS_FAIL", "GCSTRESS_EXCLUDE"],
+               'r2r_no_tiered_compilation':              ["R2R_FAIL", "R2R_EXCLUDE"],
                'minopts':                                ["MINOPTS_FAIL", "MINOPTS_EXCLUDE"],
                'tieredcompilation':                      [],
+               'no_tiered_compilation':                  [],
+               'no_tiered_compilation_innerloop':        [],
                'forcerelocs':                            [],
                'jitstress1':                             ["JITSTRESS_FAIL", "JITSTRESS_EXCLUDE"],
                'jitstress2':                             ["JITSTRESS_FAIL", "JITSTRESS_EXCLUDE"],
@@ -361,8 +367,11 @@ class Constants {
                'r2r_jitminopts',
                'r2r_jitforcerelocs',
                'r2r_gcstress15',
+               'r2r_no_tiered_compilation',
                'minopts',
                'tieredcompilation',
+               'no_tiered_compilation',
+               'no_tiered_compilation_innerloop',
                'forcerelocs',
                'jitstress1',
                'jitstress2',
@@ -799,6 +808,12 @@ def static isValidPrTriggeredInnerLoopJob(os, architecture, configuration, isBui
     return true
 }
 
+// This means the job builds and runs the 'Pri0' test set. This does not mean the job is 
+// scheduled with a default PR trigger despite the correlation being true at the moment.
+def static isPri0TestScenario(def scenario) {
+    return (scenario == 'innerloop' || scenario == 'no_tiered_compilation_innerloop')
+}
+
 def static getFxBranch(def branch) {
     def fxBranch = branch
     // Map 'dev/unix_test_workflow' to 'master' so we can test CoreFX jobs in the CoreCLR dev/unix_test_workflow
@@ -812,11 +827,9 @@ def static getFxBranch(def branch) {
 def static setJobTimeout(newJob, isPR, architecture, configuration, scenario, isBuildOnly) {
     // 2 hours (120 minutes) is the default timeout
     def timeout = 120
-    def innerLoop = (scenario == "innerloop")
 
-    if (!innerLoop) {
-        // Pri-1 test builds take a long time. Default PR jobs are Pri-0; everything else is Pri-1
-        // (see calculateBuildCommands()). So up the Pri-1 build jobs timeout.
+    if (!isPri0TestScenario(scenario)) {
+        // Pri-1 test builds take a long time (see calculateBuildCommands()). So up the Pri-1 build jobs timeout.
         timeout = 240
     }
 
@@ -1142,6 +1155,7 @@ def static addNonPRTriggers(def job, def branch, def isPR, def architecture, def
     // Check scenario.
     switch (scenario) {
         case 'innerloop':
+        case 'no_tiered_compilation_innerloop':
             break
         case 'normal':
             switch (architecture) {
@@ -1259,6 +1273,7 @@ def static addNonPRTriggers(def job, def branch, def isPR, def architecture, def
         case 'r2r_jitminopts':
         case 'r2r_jitforcerelocs':
         case 'r2r_gcstress15':
+        case 'r2r_no_tiered_compilation':
             assert !(os in bidailyCrossList)
 
             // GCStress=C is currently not supported on OS X
@@ -1357,6 +1372,7 @@ def static addNonPRTriggers(def job, def branch, def isPR, def architecture, def
         case 'jitstressregs0x1000':
         case 'minopts':
         case 'tieredcompilation':
+        case 'no_tiered_compilation':
         case 'forcerelocs':
         case 'jitstress1':
         case 'jitstress2':
@@ -1715,6 +1731,14 @@ def static addTriggers(def job, def branch, def isPR, def architecture, def os, 
                                 Utilities.addGithubPRTriggerForBranch(job, branch, "${os} ${architecture} ${configuration} Innerloop Build and Test")
                             }
                             break
+                        //no_tiered_compilation_innerloop will be added as default once it is confirmed working
+                        //case 'no_tiered_compilation_innerloop':
+                        //    // Default trigger
+                        //    if (configuration == 'Checked') {
+                        //        def displayStr = getStressModeDisplayName(scenario)
+                        //        Utilities.addGithubPRTriggerForBranch(job, branch, "${os} ${architecture} ${configuration} Build and Test (Jit - ${displayStr})")
+                        //    }
+                        //    break
 
                         case 'normal':
                             if (configuration == 'Checked') {
@@ -1858,7 +1882,8 @@ def static addTriggers(def job, def branch, def isPR, def architecture, def os, 
 
             switch (os) {
                 case 'Ubuntu':
-                    if (scenario == 'innerloop') {
+                //no_tiered_compilation_innerloop will be added as default once it is confirmed working
+                    if (scenario == 'innerloop' /*|| scenario == 'no_tiered_compilation_innerloop'*/) {
                         if (configuration == 'Checked') {
                             Utilities.addGithubPRTriggerForBranch(job, branch, contextString)
                         }
@@ -1997,6 +2022,14 @@ def static addTriggers(def job, def branch, def isPR, def architecture, def os, 
                     }
                     break
 
+                //no_tiered_compilation_innerloop will be added as default once it is confirmed working
+                //case 'no_tiered_compilation_innerloop':
+                //    if (configuration == 'Checked') {
+                //        def displayStr = getStressModeDisplayName(scenario)
+                //        Utilities.addGithubPRTriggerForBranch(job, branch, "${os} ${architecture} ${configuration} Build and Test (Jit - ${displayStr})")
+                //    }
+                //    break
+
                 case 'normal':
                     if (configuration == 'Checked') {
                         Utilities.addGithubPRTriggerForBranch(job, branch, "${os} ${architecture} ${configuration} Build and Test",
@@ -2088,7 +2121,7 @@ def static calculateBuildCommands(def newJob, def scenario, def branch, def isPR
     def lowerConfiguration = configuration.toLowerCase()
 
     def priority = '1'
-    if (scenario == 'innerloop') {
+    if (isPri0TestScenario(scenario)) {
         priority = '0'
     }
 
@@ -2594,7 +2627,6 @@ def static calculateBuildCommands(def newJob, def scenario, def branch, def isPR
 def static shouldGenerateJob(def scenario, def isPR, def architecture, def configuration, def os, def isBuildOnly)
 {
     // The "innerloop" (Pri-0 testing) scenario is only available as PR triggered.
-    // All other scenarios do Pri-1 testing.
     if (scenario == 'innerloop' && !isPR) {
         return false
     }
@@ -3092,8 +3124,7 @@ def static CreateWindowsArmTestJob(def dslFactory, def project, def architecture
                     addArchSpecificExclude(architecture, excludeTag)
                 }
 
-                // Innerloop jobs run Pri-0 tests; everyone else runs Pri-1.
-                if (scenario == 'innerloop') {
+                if (isPri0TestScenario(scenario)) {
                     addExclude("pri1")
                 }
 
@@ -3524,7 +3555,6 @@ build(params + [CORECLR_BUILD: coreclrBuildJob.build.number,
 def static shouldGenerateFlowJob(def scenario, def isPR, def architecture, def configuration, def os)
 {
     // The "innerloop" (Pri-0 testing) scenario is only available as PR triggered.
-    // All other scenarios do Pri-1 testing.
     if (scenario == 'innerloop' && !isPR) {
         return false
     }
@@ -3721,7 +3751,7 @@ Constants.allScenarios.each { scenario ->
 
                     // Figure out the job name of the CoreCLR build the test will depend on.
 
-                    def inputCoreCLRBuildScenario = scenario == 'innerloop' ? 'innerloop' : 'normal'
+                    def inputCoreCLRBuildScenario = isPri0TestScenario(scenario) ? 'innerloop' : 'normal'
                     def inputCoreCLRBuildIsBuildOnly = false
                     if (doCoreFxTesting) {
                         // Every CoreFx test depends on its own unique build.
@@ -3744,7 +3774,7 @@ Constants.allScenarios.each { scenario ->
                     def inputTestsBuildName = null
 
                     if (!windowsArmJob && !doCoreFxTesting) {
-                        def testBuildScenario = scenario == 'innerloop' ? 'innerloop' : 'normal'
+                        def testBuildScenario = isPri0TestScenario(scenario) ? 'innerloop' : 'normal'
 
                         def inputTestsBuildArch = architecture
                         if (architecture == "arm64") {
