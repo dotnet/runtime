@@ -418,7 +418,7 @@
         }
     },
     {
-        "name": "System.ComponentModel.Composition",
+        "name": "System.ComponentModel.Composition.Tests",
         "enabled": false,
         "exclusions": {
             "namespaces": null,
