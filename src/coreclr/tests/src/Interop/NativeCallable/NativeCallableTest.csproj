@@ -27,6 +27,7 @@
   </ItemGroup>
   <ItemGroup>
     <Compile Include="NativeCallableTest.cs" />
+    <Compile Include="..\common\Assertion.cs" />
   </ItemGroup>
   <ItemGroup>
     <!-- This is needed to make sure native binary gets installed in the right location -->
