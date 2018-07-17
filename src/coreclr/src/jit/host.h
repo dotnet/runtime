@@ -52,8 +52,6 @@ extern "C" void __cdecl assertAbort(const char* why, const char* file, unsigned 
 #define _HOST_H_
 /*****************************************************************************/
 
-const size_t OS_page_size = (4 * 1024);
-
 extern FILE* jitstdout;
 
 inline FILE* procstdout()

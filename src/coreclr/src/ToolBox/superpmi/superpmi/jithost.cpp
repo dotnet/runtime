@@ -51,12 +51,12 @@ JitHost::JitHost(JitInstance& jitInstance) : jitInstance(jitInstance)
 {
 }
 
-void* JitHost::allocateMemory(size_t size, bool usePageAllocator)
+void* JitHost::allocateMemory(size_t size)
 {
     return InitIEEMemoryManager(&jitInstance)->ClrVirtualAlloc(nullptr, size, 0, 0);
 }
 
-void JitHost::freeMemory(void* block, bool usePageAllocator)
+void JitHost::freeMemory(void* block)
 {
     InitIEEMemoryManager(&jitInstance)->ClrVirtualFree(block, 0, 0);
 }

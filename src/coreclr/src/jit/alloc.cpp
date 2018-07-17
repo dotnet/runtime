@@ -9,110 +9,6 @@
 #endif // defined(_MSC_VER)
 
 //------------------------------------------------------------------------
-// SinglePagePool: Manage a single, default-sized page pool for ArenaAllocator.
-//
-//    Allocating a page is slightly costly as it involves the JIT host and
-//    possibly the operating system as well. This pool avoids allocation
-//    in many cases (i.e. for all non-concurrent method compilations).
-//
-class ArenaAllocator::SinglePagePool
-{
-    // The page maintained by this pool
-    PageDescriptor* m_page;
-    // The page available for allocation (either m_page or &m_shutdownPage if shutdown was called)
-    PageDescriptor* m_availablePage;
-    // A dummy page that is made available during shutdown
-    PageDescriptor m_shutdownPage;
-
-public:
-    // Attempt to acquire the page managed by this pool.
-    PageDescriptor* tryAcquirePage(IEEMemoryManager* memoryManager)
-    {
-        assert(memoryManager != nullptr);
-
-        PageDescriptor* page = InterlockedExchangeT(&m_availablePage, nullptr);
-        if ((page != nullptr) && (page->m_memoryManager != memoryManager))
-        {
-            // The pool page belongs to a different memory manager, release it.
-            releasePage(page, page->m_memoryManager);
-            page = nullptr;
-        }
-
-        assert((page == nullptr) || isPoolPage(page));
-
-        return page;
-    }
-
-    // Attempt to pool the specified page.
-    void tryPoolPage(PageDescriptor* page)
-    {
-        assert(page != &m_shutdownPage);
-
-        // Try to pool this page, give up if another thread has already pooled a page.
-        InterlockedCompareExchangeT(&m_page, page, nullptr);
-    }
-
-    // Check if a page is pooled.
-    bool isEmpty()
-    {
-        return (m_page == nullptr);
-    }
-
-    // Check if the specified page is pooled.
-    bool isPoolPage(PageDescriptor* page)
-    {
-        return (m_page == page);
-    }
-
-    // Release the specified page.
-    PageDescriptor* releasePage(PageDescriptor* page, IEEMemoryManager* memoryManager)
-    {
-        // tryAcquirePage may end up releasing the shutdown page if shutdown was called.
-        assert((page == &m_shutdownPage) || isPoolPage(page));
-        assert((page == &m_shutdownPage) || (memoryManager != nullptr));
-
-        // Normally m_availablePage should be null when releasePage is called but it can
-        // be the shutdown page if shutdown is called while the pool page is in use.
-        assert((m_availablePage == nullptr) || (m_availablePage == &m_shutdownPage));
-
-        PageDescriptor* next = page->m_next;
-        // Update the page's memory manager (replaces m_next that's not needed in this state).
-        page->m_memoryManager = memoryManager;
-        // Try to make the page available. This will fail if the pool was shutdown
-        // and then we need to free the page here.
-        PageDescriptor* shutdownPage = InterlockedCompareExchangeT(&m_availablePage, page, nullptr);
-        if (shutdownPage != nullptr)
-        {
-            assert(shutdownPage == &m_shutdownPage);
-            freeHostMemory(memoryManager, page);
-        }
-
-        // Return the next page for caller's convenience.
-        return next;
-    }
-
-    // Free the pooled page.
-    void shutdown()
-    {
-        // If the pool page is available then acquire it now so it can be freed.
-        // Also make the shutdown page available so that:
-        // - tryAcquirePage won't be return it because it has a null memory manager
-        // - releasePage won't be able to make the pool page available and instead will free it
-        PageDescriptor* page = InterlockedExchangeT(&m_availablePage, &m_shutdownPage);
-
-        assert(page != &m_shutdownPage);
-        assert((page == nullptr) || isPoolPage(page));
-
-        if ((page != nullptr) && (page->m_memoryManager != nullptr))
-        {
-            freeHostMemory(page->m_memoryManager, page);
-        }
-    }
-};
-
-ArenaAllocator::SinglePagePool ArenaAllocator::s_pagePool = {};
-
-//------------------------------------------------------------------------
 // ArenaAllocator::bypassHostAllocator:
 //    Indicates whether or not the ArenaAllocator should bypass the JIT
 //    host when allocating memory for arena pages.
@@ -147,37 +43,12 @@ size_t ArenaAllocator::getDefaultPageSize()
 // ArenaAllocator::ArenaAllocator:
 //    Default-constructs an arena allocator.
 ArenaAllocator::ArenaAllocator()
-    : m_memoryManager(nullptr)
-    , m_firstPage(nullptr)
-    , m_lastPage(nullptr)
-    , m_nextFreeByte(nullptr)
-    , m_lastFreeByte(nullptr)
+    : m_firstPage(nullptr), m_lastPage(nullptr), m_nextFreeByte(nullptr), m_lastFreeByte(nullptr)
 {
-    assert(!isInitialized());
-}
-
-//------------------------------------------------------------------------
-// ArenaAllocator::initialize:
-//    Initializes the arena allocator.
-//
-// Arguments:
-//    memoryManager - The `IEEMemoryManager` instance that will be used to
-//                    allocate memory for arena pages.
-void ArenaAllocator::initialize(IEEMemoryManager* memoryManager)
-{
-    assert(!isInitialized());
-    m_memoryManager = memoryManager;
-    assert(isInitialized());
-
 #if MEASURE_MEM_ALLOC
     memset(&m_stats, 0, sizeof(m_stats));
     memset(&m_statsAllocators, 0, sizeof(m_statsAllocators));
 #endif // MEASURE_MEM_ALLOC
-}
-
-bool ArenaAllocator::isInitialized()
-{
-    return m_memoryManager != nullptr;
 }
 
 //------------------------------------------------------------------------
@@ -192,8 +63,6 @@ bool ArenaAllocator::isInitialized()
 //    A pointer to the first usable byte of the newly allocated page.
 void* ArenaAllocator::allocateNewPage(size_t size)
 {
-    assert(isInitialized());
-
     size_t pageSize = sizeof(PageDescriptor) + size;
 
     // Check for integer overflow
@@ -212,45 +81,22 @@ void* ArenaAllocator::allocateNewPage(size_t size)
         m_lastPage->m_usedBytes = m_nextFreeByte - m_lastPage->m_contents;
     }
 
-    PageDescriptor* newPage        = nullptr;
-    bool            tryPoolNewPage = false;
+    PageDescriptor* newPage = nullptr;
 
     if (!bypassHostAllocator())
     {
-        // Round to the nearest multiple of OS page size
+        // Round to the nearest multiple of default page size
         pageSize = roundUp(pageSize, DEFAULT_PAGE_SIZE);
-
-        // If this is the first time we allocate a page then try to use the pool page.
-        if ((m_firstPage == nullptr) && (pageSize == DEFAULT_PAGE_SIZE))
-        {
-            newPage = s_pagePool.tryAcquirePage(m_memoryManager);
-
-            if (newPage == nullptr)
-            {
-                // If there's no pool page yet then try to pool the newly allocated page.
-                tryPoolNewPage = s_pagePool.isEmpty();
-            }
-            else
-            {
-                assert(newPage->m_memoryManager == m_memoryManager);
-                assert(newPage->m_pageBytes == DEFAULT_PAGE_SIZE);
-            }
-        }
     }
 
     if (newPage == nullptr)
     {
         // Allocate the new page
-        newPage = static_cast<PageDescriptor*>(allocateHostMemory(m_memoryManager, pageSize));
+        newPage = static_cast<PageDescriptor*>(allocateHostMemory(pageSize, &pageSize));
 
         if (newPage == nullptr)
         {
             NOMEM();
-        }
-
-        if (tryPoolNewPage)
-        {
-            s_pagePool.tryPoolPage(newPage);
         }
     }
 
@@ -285,31 +131,20 @@ void* ArenaAllocator::allocateNewPage(size_t size)
 //    Performs any necessary teardown for an `ArenaAllocator`.
 void ArenaAllocator::destroy()
 {
-    assert(isInitialized());
-
     PageDescriptor* page = m_firstPage;
-
-    // If the first page is the pool page then return it to the pool.
-    if ((page != nullptr) && s_pagePool.isPoolPage(page))
-    {
-        page = s_pagePool.releasePage(page, m_memoryManager);
-    }
 
     // Free all of the allocated pages
     for (PageDescriptor* next; page != nullptr; page = next)
     {
-        assert(!s_pagePool.isPoolPage(page));
         next = page->m_next;
-        freeHostMemory(m_memoryManager, page);
+        freeHostMemory(page, page->m_pageBytes);
     }
 
     // Clear out the allocator's fields
-    m_memoryManager = nullptr;
-    m_firstPage     = nullptr;
-    m_lastPage      = nullptr;
-    m_nextFreeByte  = nullptr;
-    m_lastFreeByte  = nullptr;
-    assert(!isInitialized());
+    m_firstPage    = nullptr;
+    m_lastPage     = nullptr;
+    m_nextFreeByte = nullptr;
+    m_lastFreeByte = nullptr;
 }
 
 // The debug version of the allocator may allocate directly from the
@@ -329,25 +164,21 @@ void ArenaAllocator::destroy()
 //
 // Arguments:
 //    size - The number of bytes to allocate.
+//    pActualSize - The number of byte actually allocated.
 //
 // Return Value:
 //    A pointer to the allocated memory.
-void* ArenaAllocator::allocateHostMemory(IEEMemoryManager* memoryManager, size_t size)
+void* ArenaAllocator::allocateHostMemory(size_t size, size_t* pActualSize)
 {
-    assert(memoryManager != nullptr);
-
 #if defined(DEBUG)
     if (bypassHostAllocator())
     {
+        *pActualSize = size;
         return ::HeapAlloc(GetProcessHeap(), 0, size);
     }
-    else
-    {
-        return ClrAllocInProcessHeap(0, S_SIZE_T(size));
-    }
-#else  // defined(DEBUG)
-    return memoryManager->ClrVirtualAlloc(nullptr, size, MEM_COMMIT, PAGE_READWRITE);
 #endif // !defined(DEBUG)
+
+    return g_jitHost->allocateSlab(size, pActualSize);
 }
 
 //------------------------------------------------------------------------
@@ -356,22 +187,17 @@ void* ArenaAllocator::allocateHostMemory(IEEMemoryManager* memoryManager, size_t
 //
 // Arguments:
 //    block - A pointer to the memory to free.
-void ArenaAllocator::freeHostMemory(IEEMemoryManager* memoryManager, void* block)
+void ArenaAllocator::freeHostMemory(void* block, size_t size)
 {
-    assert(memoryManager != nullptr);
-
 #if defined(DEBUG)
     if (bypassHostAllocator())
     {
         ::HeapFree(GetProcessHeap(), 0, block);
+        return;
     }
-    else
-    {
-        ClrFreeInProcessHeap(0, block);
-    }
-#else  // defined(DEBUG)
-    memoryManager->ClrVirtualFree(block, 0, MEM_RELEASE);
 #endif // !defined(DEBUG)
+
+    g_jitHost->freeSlab(block, size);
 }
 
 //------------------------------------------------------------------------
@@ -383,8 +209,6 @@ void ArenaAllocator::freeHostMemory(IEEMemoryManager* memoryManager, void* block
 //    See above.
 size_t ArenaAllocator::getTotalBytesAllocated()
 {
-    assert(isInitialized());
-
     size_t bytes = 0;
     for (PageDescriptor* page = m_firstPage; page != nullptr; page = page->m_next)
     {
@@ -411,8 +235,6 @@ size_t ArenaAllocator::getTotalBytesAllocated()
 //    that are unused across all area pages.
 size_t ArenaAllocator::getTotalBytesUsed()
 {
-    assert(isInitialized());
-
     if (m_lastPage != nullptr)
     {
         m_lastPage->m_usedBytes = m_nextFreeByte - m_lastPage->m_contents;
@@ -425,14 +247,6 @@ size_t ArenaAllocator::getTotalBytesUsed()
     }
 
     return bytes;
-}
-
-//------------------------------------------------------------------------
-// ArenaAllocator::shutdown:
-//    Performs any necessary teardown for the arena allocator subsystem.
-void ArenaAllocator::shutdown()
-{
-    s_pagePool.shutdown();
 }
 
 #if MEASURE_MEM_ALLOC

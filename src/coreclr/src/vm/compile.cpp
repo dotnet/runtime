@@ -68,6 +68,7 @@
 
 #include "versionresilienthashcode.h"
 #include "inlinetracking.h"
+#include "jithost.h"
 
 #ifdef CROSSGEN_COMPILE
 CompilationDomain * theDomain;
@@ -1110,6 +1111,11 @@ void CEECompileInfo::CompressDebugInfo(
     STANDARD_VM_CONTRACT;
 
     CompressDebugInfo::CompressBoundariesAndVars(pOffsetMapping, iOffsetMapping, pNativeVarInfo, iNativeVarInfo, pDebugInfoBuffer, NULL);
+}
+
+ICorJitHost* CEECompileInfo::GetJitHost()
+{
+    return JitHost::getJitHost();
 }
 
 HRESULT CEECompileInfo::GetBaseJitFlags(

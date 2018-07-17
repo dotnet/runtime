@@ -23,15 +23,11 @@
 // against the interface declaration.
 
 public:
-// Allocate memory of the given size in bytes. All bytes of the returned block
-// must be initialized to zero. If `usePageAllocator` is true, the implementation
-// should use an allocator that deals in OS pages if one exists.
-void* allocateMemory(size_t size, bool usePageAllocator = false);
+// Allocate memory of the given size in bytes.
+void* allocateMemory(size_t size);
 
-// Frees memory previous obtained by a call to `ICorJitHost::allocateMemory`. The
-// value of the `usePageAllocator` parameter must match the value that was
-// provided to the call to used to allocate the memory.
-void freeMemory(void* block, bool usePageAllocator = false);
+// Frees memory previous obtained by a call to `ICorJitHost::allocateMemory`.
+void freeMemory(void* block);
 
 // Return an integer config value for the given key, if any exists.
 int getIntConfigValue(const wchar_t* name, int defaultValue);

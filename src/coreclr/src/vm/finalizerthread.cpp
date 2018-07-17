@@ -7,11 +7,11 @@
 
 #include "finalizerthread.h"
 #include "threadsuspend.h"
+#include "jithost.h"
 
 #ifdef FEATURE_COMINTEROP
 #include "runtimecallablewrapper.h"
 #endif
-
 
 #ifdef FEATURE_PROFAPI_ATTACH_DETACH 
 #include "profattach.h"
@@ -582,6 +582,8 @@ VOID FinalizerThread::FinalizerThreadWorker(void *args)
             if (GetFinalizerThread()->SetThreadPriority(THREAD_PRIORITY_HIGHEST))
                 bPriorityBoosted = TRUE;
         }
+
+        JitHost::Reclaim();
 
         GetFinalizerThread()->DisablePreemptiveGC();
 
