@@ -53,9 +53,19 @@ namespace Microsoft.VisualBasic
     public sealed partial class Strings
     {
         internal Strings() { }
+        public static int Asc(char String) { throw null; }
+        public static int Asc(string String) { throw null; }
         public static int AscW(char String) { throw null; }
         public static int AscW(string String) { throw null; }
+        public static char Chr(int CharCode) { throw null; }
         public static char ChrW(int CharCode) { throw null; }
+        public static string Left(string str, int Length) { throw null; }
+        public static string LTrim(string str) { throw null; }
+        public static string Mid(string str, int Start) { throw null; }
+        public static string Mid(string str, int Start, int Length) { throw null; }
+        public static string Right(string str, int Length) { throw null; }
+        public static string RTrim(string str) { throw null; }
+        public static string Trim(string str) { throw null; }
     }
 }
 namespace Microsoft.VisualBasic.CompilerServices
