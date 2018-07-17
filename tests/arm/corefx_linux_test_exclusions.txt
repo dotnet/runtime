@@ -9,6 +9,4 @@ System.Linq.Expressions.Tests        # https://github.com/dotnet/corefx/issues/2
 System.Management.Tests              # https://github.com/dotnet/coreclr/issues/16001
 System.Net.Http.Functional.Tests     # https://github.com/dotnet/coreclr/issues/17739
 System.Net.NameResolution.Pal.Tests  # https://github.com/dotnet/coreclr/issues/17740
-System.Net.NetworkInformation.Functional.Tests # https://github.com/dotnet/coreclr/issues/17753 -- segmentation fault
-System.Net.Sockets.Tests             # https://github.com/dotnet/coreclr/issues/17753 -- segmentation fault
 System.Text.RegularExpressions.Tests # https://github.com/dotnet/coreclr/issues/17754 -- timeout -- JitMinOpts only
