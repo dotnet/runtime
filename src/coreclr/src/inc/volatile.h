@@ -474,32 +474,6 @@ public:
     }
 };
 
-
-//
-// Warning: workaround
-// 
-// At the bottom of this file, we are going to #define the "volatile" keyword such that it is illegal
-// to use it.  Unfortunately, VC++ uses the volatile keyword in stddef.h, in the definition of "offsetof".
-// GCC does not use volatile in its definition.
-// 
-// To get around this, we include stddef.h here (even if we're on GCC, for consistency).  We then need
-// to redefine offsetof such that it does not use volatile, if we're building with VC++.
-//
-#include <stddef.h>
-#ifdef _MSC_VER
-#undef offsetof
-#ifdef  _WIN64
-#define offsetof(s,m)   (size_t)( (ptrdiff_t)&reinterpret_cast<const char&>((((s *)0)->m)) )
-#else
-#define offsetof(s,m)   (size_t)&reinterpret_cast<const char&>((((s *)0)->m))
-#endif //_WIN64
-
-// These also use volatile, so we'll include them here.
-//#include <intrin.h>
-//#include <memory>
-
-#endif //_MSC_VER
-
 //
 // From here on out, we ban the use of the "volatile" keyword.  If you found this while trying to define
 // a volatile variable, go to the top of this file and start reading.

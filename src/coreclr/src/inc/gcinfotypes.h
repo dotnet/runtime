@@ -331,9 +331,6 @@ inline const char *ReturnKindToString(ReturnKind returnKind)
 
 // we use offsetof to get the offset of a field
 #include <stddef.h> // offsetof
-#ifndef offsetof
-#define offsetof(s,m)   ((size_t)&(((s *)0)->m))
-#endif
 
 enum infoHdrAdjustConstants {
     // Constants
