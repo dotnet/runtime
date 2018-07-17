@@ -143,7 +143,7 @@ namespace System.Net.Http
             {
                 while (true)
                 {
-                    FrameHeader frameHeader = await ReadFrameAsync();
+                    FrameHeader frameHeader = await ReadFrameAsync().ConfigureAwait(false);
 
                     switch (frameHeader.Type)
                     {
@@ -543,13 +543,9 @@ namespace System.Net.Http
             Debug.Assert(Monitor.IsEntered(_syncObject));
 
             // Check if dictionary has become empty
-            using (Dictionary<int, Http2Stream>.Enumerator enumerator = _httpStreams.GetEnumerator())
+            if (_httpStreams.Count != 0)
             {
-                if (enumerator.MoveNext())
-                {
-                    // Not empty
-                    return;
-                }
+                return;
             }
 
             // Do shutdown.
@@ -1225,6 +1221,8 @@ namespace System.Net.Http
             }
 
             public override ValueTask WriteAsync(ReadOnlyMemory<byte> destination, CancellationToken cancellationToken) => throw new NotSupportedException();
+
+            public override Task FlushAsync(CancellationToken cancellationToken) => throw new NotSupportedException();
         }
 
         // TODO: Should this be public?

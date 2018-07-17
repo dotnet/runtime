@@ -11,8 +11,6 @@ namespace System.Net.Http
 {
     internal partial class HttpConnection
     {
-        // TODO: This becomes BaseReadOnlyStream (or rather, gets refactored)
-
         internal abstract class HttpContentReadStream : HttpContentStream
         {
             private int _disposed; // 0==no, 1==yes
@@ -25,6 +23,8 @@ namespace System.Net.Http
             public sealed override bool CanWrite => false;
 
             public sealed override ValueTask WriteAsync(ReadOnlyMemory<byte> destination, CancellationToken cancellationToken) => throw new NotSupportedException();
+
+            public override Task FlushAsync(CancellationToken cancellationToken) => throw new NotSupportedException();
 
             public virtual bool NeedsDrain => false;
 

@@ -28,5 +28,7 @@ namespace System.Net.Http
             new ValueTask<int>(0);
 
         public override ValueTask WriteAsync(ReadOnlyMemory<byte> destination, CancellationToken cancellationToken) => throw new NotSupportedException();
+
+        public override Task FlushAsync(CancellationToken cancellationToken) => throw new NotSupportedException();
     }
 } 

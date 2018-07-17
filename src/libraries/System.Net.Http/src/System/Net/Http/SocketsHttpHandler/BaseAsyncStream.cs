@@ -114,5 +114,6 @@ namespace System.Net.Http
 
         public abstract override ValueTask<int> ReadAsync(Memory<byte> buffer, CancellationToken cancellationToken);
         public abstract override ValueTask WriteAsync(ReadOnlyMemory<byte> destination, CancellationToken cancellationToken);
+        public abstract override Task FlushAsync(CancellationToken cancellationToken);
     }
 }

@@ -1412,7 +1412,7 @@ namespace System.Net.Http.Functional.Tests
         public async Task GetAsync_LargeRequestHeader_HeadersAndValuesSent(Uri uri)
         {
             // Unfortunately, our remote servers seem to have pretty strict limits (around 16K?)
-            // on the totaly size of the request header.
+            // on the total size of the request header.
             // TODO: Figure out how to reconfigure remote endpoints to allow larger request headers,
             // and then increase the limits in this test.
 
