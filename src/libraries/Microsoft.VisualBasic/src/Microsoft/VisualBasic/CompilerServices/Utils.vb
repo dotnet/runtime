@@ -6,6 +6,7 @@ Imports System
 Imports System.Diagnostics
 Imports System.Linq
 Imports System.Linq.Expressions
+Imports System.Text
 Imports System.Reflection
 
 Namespace Global.Microsoft.VisualBasic.CompilerServices
@@ -52,6 +53,15 @@ Namespace Global.Microsoft.VisualBasic.CompilerServices
             End If
             Return aryDest
         End Function
+
+        Friend Shared Function GetFileIOEncoding() As Encoding
+            Return System.Text.Encoding.Default
+        End Function
+
+        Friend Shared Function GetLocaleCodePage() As Integer
+            Return System.Threading.Thread.CurrentThread.CurrentCulture.TextInfo.ANSICodePage
+        End Function
+
     End Class
 
     Friend Module ReflectionExtensions
