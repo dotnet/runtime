@@ -171,18 +171,19 @@ namespace System.Collections.Tests
                     casted[CreateTKey(541)] = CreateTValue(12);
                     return true;
                 };
-                yield return (IEnumerable<KeyValuePair<TKey, TValue>> enumerable) =>
-                {
-                    IDictionary<TKey, TValue> casted = ((IDictionary<TKey, TValue>)enumerable);
-                    if (casted.Count() > 0)
-                    {
-                        var keys = casted.Keys.GetEnumerator();
-                        keys.MoveNext();
-                        casted.Remove(keys.Current);
-                        return true;
-                    }
-                    return false;
-                };
+                //// [ActiveIssue(31112)]
+                //yield return (IEnumerable<KeyValuePair<TKey, TValue>> enumerable) =>
+                //{
+                //    IDictionary<TKey, TValue> casted = ((IDictionary<TKey, TValue>)enumerable);
+                //    if (casted.Count() > 0)
+                //    {
+                //        var keys = casted.Keys.GetEnumerator();
+                //        keys.MoveNext();
+                //        casted.Remove(keys.Current);
+                //        return true;
+                //    }
+                //    return false;
+                //};
                 yield return (IEnumerable<KeyValuePair<TKey, TValue>> enumerable) =>
                 {
                     IDictionary<TKey, TValue> casted = ((IDictionary<TKey, TValue>)enumerable);
