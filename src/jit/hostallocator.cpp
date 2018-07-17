@@ -8,11 +8,11 @@
 void* HostAllocator::allocateHostMemory(size_t size)
 {
     assert(g_jitHost != nullptr);
-    return g_jitHost->allocateMemory(size, false);
+    return g_jitHost->allocateMemory(size);
 }
 
 void HostAllocator::freeHostMemory(void* p)
 {
     assert(g_jitHost != nullptr);
-    g_jitHost->freeMemory(p, false);
+    g_jitHost->freeMemory(p);
 }

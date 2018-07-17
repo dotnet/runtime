@@ -35,7 +35,6 @@ typedef unsigned int TARGET_POINTER_TYPE;
 
 #include "utilcode.h"
 #include "corjit.h"
-#include "jithost.h"
 #include "corcompile.h"
 #include "iceefilegen.h"
 #include "corpriv.h"

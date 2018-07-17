@@ -14,14 +14,14 @@ JitHost::JitHost(ICorJitHost* wrappedHost) : wrappedHost(wrappedHost)
 {
 }
 
-void* JitHost::allocateMemory(size_t size, bool usePageAllocator)
+void* JitHost::allocateMemory(size_t size)
 {
-    return wrappedHost->allocateMemory(size, usePageAllocator);
+    return wrappedHost->allocateMemory(size);
 }
 
-void JitHost::freeMemory(void* block, bool usePageAllocator)
+void JitHost::freeMemory(void* block)
 {
-    return wrappedHost->freeMemory(block, usePageAllocator);
+    return wrappedHost->freeMemory(block);
 }
 
 int JitHost::getIntConfigValue(const wchar_t* key, int defaultValue)

@@ -525,7 +525,7 @@ void Zapper::LoadAndInitializeJITForNgen(LPCWSTR pwzJitName, OUT HINSTANCE* phJi
     pJitStartup jitStartupFn = (pJitStartup)GetProcAddress(*phJit, "jitStartup");
     if (jitStartupFn != nullptr)
     {
-        jitStartupFn(JitHost::getJitHost());
+        jitStartupFn(m_pEECompileInfo->GetJitHost());
     }
 
     //get the appropriate compiler interface
@@ -599,7 +599,7 @@ void Zapper::InitEE(BOOL fForceDebug, BOOL fForceProfile, BOOL fForceInstrument)
     //
 
 #ifdef FEATURE_MERGE_JIT_AND_ENGINE
-    jitStartup(JitHost::getJitHost());
+    jitStartup(m_pEECompileInfo->GetJitHost());
     m_pJitCompiler = getJit();
 
     if (m_pJitCompiler == NULL)
