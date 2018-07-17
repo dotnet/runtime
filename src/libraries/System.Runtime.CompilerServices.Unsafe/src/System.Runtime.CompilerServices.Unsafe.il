@@ -303,6 +303,15 @@
         ret
   } // end of method Unsafe::As
 
+  .method public hidebysig static !!T& Unbox<valuetype .ctor ([CORE_ASSEMBLY]System.ValueType) T> (object 'box') cil managed aggressiveinlining
+  {
+        .custom instance void System.Runtime.Versioning.NonVersionableAttribute::.ctor() = ( 01 00 00 00 )
+        .maxstack 1
+        ldarg.0
+        unbox !!T
+        ret
+  } // end of method Unsafe::Unbox
+
   .method public hidebysig static !!T& Add<T>(!!T& source, int32 elementOffset) cil managed aggressiveinlining
   {
         .custom instance void System.Runtime.Versioning.NonVersionableAttribute::.ctor() = ( 01 00 00 00 )
