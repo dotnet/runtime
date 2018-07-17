@@ -413,7 +413,7 @@
                 {
                     "name": "System.Linq.Tests.EmptyPartitionTests.CantResetEnumerator",
                     "reason": "outdated"
-                },
+                }
             ]
         }
     },
@@ -424,6 +424,24 @@
             "namespaces": null,
             "classes": null,
             "methods": null
+        }
+    },
+    {
+        "name": "Microsoft.VisualBasic.Tests",
+        "enabled": true,
+        "exclusions": {
+            "namespaces": null,
+            "classes": null,
+            "methods": [
+                {
+                    "name": "Microsoft.VisualBasic.Tests.StringsTests.ChrW_CharCodeOutOfRange_ThrowsArgumentException",
+                    "reason": "outdated"
+                },
+                {
+                    "name": "Microsoft.VisualBasic.Tests.StringsTests.AscW_NullOrEmpty_ThrowsArgumentException",
+                    "reason": "outdated"
+                }
+            ]
         }
     }
 ]
