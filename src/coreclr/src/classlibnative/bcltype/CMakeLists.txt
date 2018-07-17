@@ -8,8 +8,6 @@ set(BCLTYPE_SOURCES
     arraynative.cpp
     arrayhelpers.cpp
     bignum.cpp
-    currency.cpp
-    decimal.cpp
     diyfp.cpp
     grisu3.cpp
     number.cpp

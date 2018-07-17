@@ -3770,11 +3770,7 @@ void OleVariant::MarshalCurrencyVariantOleToCom(VARIANT *pOleVariant,
     DECIMAL DecVal;
 
     // Convert the currency to a decimal.
-    HRESULT hr = VarDecFromCy(V_CY(pOleVariant), &DecVal);
-    IfFailThrow(hr);
-
-    if (FAILED(DecimalCanonicalize(&DecVal)))
-        COMPlusThrow(kOverflowException, W("Overflow_Currency"));
+    VarDecFromCyCanonicalize(V_CY(pOleVariant), &DecVal);
 
     // Store the value into the unboxes decimal and store the decimal in the variant.
     *(DECIMAL *) pDecimalRef->UnBox() = DecVal;   
@@ -3822,11 +3818,7 @@ void OleVariant::MarshalCurrencyVariantOleRefToCom(VARIANT *pOleVariant,
     DECIMAL DecVal;
 
     // Convert the currency to a decimal.
-    HRESULT hr = VarDecFromCy(*V_CYREF(pOleVariant), &DecVal);
-    IfFailThrow(hr);
-
-    if (FAILED(DecimalCanonicalize(&DecVal)))
-        COMPlusThrow(kOverflowException, W("Overflow_Currency"));
+    VarDecFromCyCanonicalize(*V_CYREF(pOleVariant), &DecVal);
 
     // Store the value into the unboxes decimal and store the decimal in the variant.
     *(DECIMAL *) pDecimalRef->UnBox() = DecVal;   
@@ -3856,11 +3848,7 @@ void OleVariant::MarshalCurrencyArrayOleToCom(void *oleArray, BASEARRAYREF *pCom
 
     while (pOle < pOleEnd)
     {
-        IfFailThrow(VarDecFromCy(*pOle++, pCom));
-        if (FAILED(DecimalCanonicalize(pCom)))
-            COMPlusThrow(kOverflowException, W("Overflow_Currency"));
-
-        pCom++;
+        VarDecFromCyCanonicalize(*pOle++, pCom++);
     }
 }
 

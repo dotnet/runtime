@@ -4200,12 +4200,7 @@ VOID FieldMarshaler_Currency::ScalarUpdateCLRImpl(const VOID *pNative, LPVOID pC
     // no need to switch to preemptive mode because it's very primitive operaion, doesn't take 
     // long and is guaranteed not to call 3rd party code. 
     // But if we do need to switch to preemptive mode, we can't pass the managed pointer to native code directly
-    HRESULT hr = VarDecFromCy( *(CURRENCY*)pNative, (DECIMAL *)pCLR );
-    if (FAILED(hr))
-        COMPlusThrowHR(hr);
-
-    if (FAILED(DecimalCanonicalize((DECIMAL*)pCLR)))
-        COMPlusThrow(kOverflowException, W("Overflow_Currency"));
+    VarDecFromCyCanonicalize( *(CURRENCY*)pNative, (DECIMAL *)pCLR );
 }
 
 VOID FieldMarshaler_DateTimeOffset::ScalarUpdateNativeImpl(LPVOID pCLR, LPVOID pNative) const

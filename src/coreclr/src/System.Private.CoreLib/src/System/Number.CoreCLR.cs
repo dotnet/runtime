@@ -13,8 +13,5 @@ namespace System
 
         [MethodImpl(MethodImplOptions.InternalCall)]
         public static extern double NumberToDouble(ref NumberBuffer number);
-
-        [MethodImpl(MethodImplOptions.InternalCall)]
-        public static extern bool NumberBufferToDecimal(ref NumberBuffer number, ref decimal value);
     }
 }
