@@ -1208,7 +1208,6 @@ static void
 interp_init_delegate (MonoDelegate *del)
 {
 	MonoMethod *method;
-	MonoMethod *invoke = mono_get_delegate_invoke (mono_object_class (del));
 	ERROR_DECL (error);
 
 	if (del->interp_method) {
