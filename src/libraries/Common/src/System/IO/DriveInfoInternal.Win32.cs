@@ -30,7 +30,7 @@ namespace System.IO
             }
 
             string[] result = new string[count];
-            char[] root = new char[] { 'A', ':', '\\' };
+            Span<char> root = stackalloc char[] { 'A', ':', '\\' };
             d = (uint)drives;
             count = 0;
             while (d != 0)
