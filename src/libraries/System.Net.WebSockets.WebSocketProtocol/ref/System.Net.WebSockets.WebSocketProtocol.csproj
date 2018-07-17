@@ -7,6 +7,6 @@
     <Compile Include="System.Net.WebSockets.WebSocketProtocol.cs" />
   </ItemGroup>
   <ItemGroup>
-    <ProjectReference Include="..\..\System.Memory\ref\System.Memory.csproj" />
+    <Reference Include="System.Memory" />
   </ItemGroup>
 </Project>

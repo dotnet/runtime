@@ -5,9 +5,7 @@
 using System.Diagnostics;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
-#if !FEATURE_PORTABLE_SPAN
 using Internal.Runtime.CompilerServices;
-#endif // FEATURE_PORTABLE_SPAN
 
 namespace System.Buffers
 {
@@ -24,11 +22,7 @@ namespace System.Buffers
         /// <summary>
         /// Returns empty <see cref="ReadOnlySequence{T}"/>
         /// </summary>
-#if FEATURE_PORTABLE_SPAN
-        public static readonly ReadOnlySequence<T> Empty = new ReadOnlySequence<T>(SpanHelpers.PerTypeValues<T>.EmptyArray);
-#else
         public static readonly ReadOnlySequence<T> Empty = new ReadOnlySequence<T>(Array.Empty<T>());
-#endif // FEATURE_PORTABLE_SPAN
 
         /// <summary>
         /// Length of the <see cref="ReadOnlySequence{T}"/>.
@@ -454,11 +448,7 @@ namespace System.Buffers
 
                 if (Length < int.MaxValue)
                 {
-#if !FEATURE_PORTABLE_SPAN
                     return string.Create((int)Length, charSequence, (span, sequence) => sequence.CopyTo(span)); 
-#else
-                    return new string(charSequence.ToArray());
-#endif
                 }
             }
 
