@@ -1095,13 +1095,6 @@ void EEStartupHelper(COINITIEE fFlags)
 
 #ifndef CROSSGEN_COMPILE
 
-#ifdef FEATURE_TIERED_COMPILATION
-        if (g_pConfig->TieredCompilation())
-        {
-            SystemDomain::System()->DefaultDomain()->GetTieredCompilationManager()->InitiateTier1CountingDelay();
-        }
-#endif
-
 #ifdef _DEBUG
 
         //if g_fEEStarted was false when we loaded the System Module, we did not run ExpandAll on it.  In

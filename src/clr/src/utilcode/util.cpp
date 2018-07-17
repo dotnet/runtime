@@ -852,13 +852,14 @@ BYTE * ClrVirtualAllocWithinRange(const BYTE *pMinAddr,
 }
 #endif
 
-/*static*/ BOOL  CPUGroupInfo::m_enableGCCPUGroups = FALSE;
-/*static*/ BOOL  CPUGroupInfo::m_threadUseAllCpuGroups = FALSE;
-/*static*/ WORD  CPUGroupInfo::m_nGroups = 0;
-/*static*/ WORD  CPUGroupInfo::m_nProcessors = 0;
-/*static*/ WORD  CPUGroupInfo::m_initialGroup = 0;
+/*static*/ BOOL CPUGroupInfo::m_enableGCCPUGroups = FALSE;
+/*static*/ BOOL CPUGroupInfo::m_threadUseAllCpuGroups = FALSE;
+/*static*/ WORD CPUGroupInfo::m_nGroups = 0;
+/*static*/ WORD CPUGroupInfo::m_nProcessors = 0;
+/*static*/ WORD CPUGroupInfo::m_initialGroup = 0;
 /*static*/ CPU_Group_Info *CPUGroupInfo::m_CPUGroupInfoArray = NULL;
-/*static*/ LONG   CPUGroupInfo::m_initialization = 0;
+/*static*/ LONG CPUGroupInfo::m_initialization = 0;
+/*static*/ bool CPUGroupInfo::s_hadSingleProcessorAtStartup = false;
 
 // Check and setup function pointers for >64 LP Support
 /*static*/ BOOL CPUGroupInfo::InitCPUGroupInfoAPI()
@@ -1066,6 +1067,18 @@ DWORD LCM(DWORD u, DWORD v)
 	m_enableGCCPUGroups = enableGCCPUGroups && hasMultipleGroups;
 	m_threadUseAllCpuGroups = threadUseAllCpuGroups && hasMultipleGroups;
 #endif // _TARGET_AMD64_ || _TARGET_ARM64_
+
+    // Determine if the process is affinitized to a single processor (or if the system has a single processor)
+    DWORD_PTR processAffinityMask, systemAffinityMask;
+    if (GetProcessAffinityMask(GetCurrentProcess(), &processAffinityMask, &systemAffinityMask))
+    {
+        processAffinityMask &= systemAffinityMask;
+        if (processAffinityMask != 0 && // only one CPU group is involved
+            (processAffinityMask & (processAffinityMask - 1)) == 0) // only one bit is set
+        {
+            s_hadSingleProcessorAtStartup = true;
+        }
+    }
 }
 
 /*static*/ BOOL CPUGroupInfo::IsInitialized()
