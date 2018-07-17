@@ -29,12 +29,7 @@ private:
 
     struct PageDescriptor
     {
-        union {
-            // Used when the page is allocated
-            PageDescriptor* m_next;
-            // Used by the pooled page when available
-            IEEMemoryManager* m_memoryManager;
-        };
+        PageDescriptor* m_next;
 
         size_t m_pageBytes; // # of bytes allocated
         size_t m_usedBytes; // # of bytes actually used. (This is only valid when we've allocated a new page.)
@@ -43,18 +38,10 @@ private:
         BYTE m_contents[];
     };
 
-    // Anything less than 64K leaves VM holes since the OS allocates address space in this size.
-    // Thus if we want to make this smaller, we need to do a reserve / commit scheme
     enum
     {
-        DEFAULT_PAGE_SIZE = 16 * OS_page_size,
+        DEFAULT_PAGE_SIZE = 0x10000,
     };
-
-    class SinglePagePool;
-
-    static SinglePagePool s_pagePool;
-
-    IEEMemoryManager* m_memoryManager;
 
     PageDescriptor* m_firstPage;
     PageDescriptor* m_lastPage;
@@ -63,12 +50,10 @@ private:
     BYTE* m_nextFreeByte;
     BYTE* m_lastFreeByte;
 
-    bool isInitialized();
-
     void* allocateNewPage(size_t size);
 
-    static void* allocateHostMemory(IEEMemoryManager* memoryManager, size_t size);
-    static void freeHostMemory(IEEMemoryManager* memoryManager, void* block);
+    static void* allocateHostMemory(size_t size, size_t* pActualSize);
+    static void freeHostMemory(void* block, size_t size);
 
 #if MEASURE_MEM_ALLOC
     struct MemStats
@@ -151,8 +136,6 @@ public:
 public:
     ArenaAllocator();
 
-    void initialize(IEEMemoryManager* memoryManager);
-
     // NOTE: it would be nice to have a destructor on this type to ensure that any value that
     //       goes out of scope is either uninitialized or has been torn down via a call to
     //       destroy(), but this interacts badly in methods that use SEH. #3058 tracks
@@ -168,8 +151,6 @@ public:
 
     static bool   bypassHostAllocator();
     static size_t getDefaultPageSize();
-
-    static void shutdown();
 };
 
 //------------------------------------------------------------------------
@@ -190,7 +171,6 @@ public:
 //
 inline void* ArenaAllocator::allocateMemory(size_t size)
 {
-    assert(isInitialized());
     assert(size != 0);
 
     // Ensure that we always allocate in pointer sized increments.

@@ -175,6 +175,7 @@
 #include "finalizerthread.h"
 #include "threadsuspend.h"
 #include "disassembler.h"
+#include "jithost.h"
 
 #ifndef FEATURE_PAL
 #include "dwreport.h"
@@ -907,6 +908,8 @@ void EEStartupHelper(COINITIEE fFlags)
         COMDelegate::Init();
 
         ExecutionManager::Init();
+
+        JitHost::Init();
 
 #ifndef CROSSGEN_COMPILE
 

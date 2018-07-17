@@ -355,6 +355,8 @@ class CEECompileInfo : public ICorCompileInfo
             IN  CORINFO_METHOD_HANDLE    hMethod,
             OUT CORJIT_FLAGS            *pFlags);
 
+    ICorJitHost* GetJitHost();
+
     void* GetStubSize(void *pStubAddress, DWORD *pSizeToCopy);
 
     HRESULT GetStubClone(void *pStub, BYTE *pBuffer, DWORD dwBufferSize);

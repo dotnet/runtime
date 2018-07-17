@@ -1449,8 +1449,6 @@ void Compiler::compShutdown()
     DisplayNowayAssertMap();
 #endif // MEASURE_NOWAY
 
-    ArenaAllocator::shutdown();
-
     /* Shut down the emitter */
 
     emitter::emitDone();
@@ -6623,7 +6621,6 @@ START:
     }
     else
     {
-        alloc.initialize(compHnd->getMemoryManager());
         pAlloc = &alloc;
     }
 

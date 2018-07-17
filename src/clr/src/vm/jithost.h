@@ -9,20 +9,41 @@
 class JitHost : public ICorJitHost
 {
 private:
-    static JitHost theJitHost;
+    static JitHost s_theJitHost;
+
+    struct Slab
+    {
+        Slab * pNext;
+        size_t size;
+        Thread* affinity;
+    };
+
+    CrstStatic m_jitSlabAllocatorCrst;
+    Slab* m_pCurrentCachedList;
+    Slab* m_pPreviousCachedList;
+    size_t m_totalCached;
+    DWORD m_lastFlush;
 
     JitHost() {}
     JitHost(const JitHost& other) = delete;
     JitHost& operator=(const JitHost& other) = delete;
 
+    void init();
+    void reclaim();
+
 public:
-    virtual void* allocateMemory(size_t size, bool usePageAllocator);
-    virtual void freeMemory(void* block, bool usePageAllocator);
+    virtual void* allocateMemory(size_t size);
+    virtual void freeMemory(void* block);
     virtual int getIntConfigValue(const wchar_t* name, int defaultValue);
     virtual const wchar_t* getStringConfigValue(const wchar_t* name);
     virtual void freeStringConfigValue(const wchar_t* value);
+    virtual void* allocateSlab(size_t size, size_t* pActualSize);
+    virtual void freeSlab(void* slab, size_t actualSize);
 
-    static ICorJitHost* getJitHost();
+    static void Init() { s_theJitHost.init(); }
+    static void Reclaim() { s_theJitHost.reclaim(); }
+
+    static ICorJitHost* getJitHost() { return &s_theJitHost; }
 };
 
 #endif // __JITHOST_H__

@@ -45,6 +45,7 @@ set(VM_CROSSGEN_SOURCES
     ../invokeutil.cpp
     ../inlinetracking.cpp
     ../contractimpl.cpp
+    ../jithost.cpp
     ../jitinterface.cpp
     ../loaderallocator.cpp
     ../memberload.cpp

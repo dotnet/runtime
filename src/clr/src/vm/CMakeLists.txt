@@ -81,6 +81,7 @@ set(VM_SOURCES_DAC_AND_WKS_COMMON
     ilstubresolver.cpp
     inlinetracking.cpp
     instmethhash.cpp
+    jithost.cpp
     jitinterface.cpp
     loaderallocator.cpp
     memberload.cpp

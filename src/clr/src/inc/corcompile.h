@@ -1746,6 +1746,8 @@ class ICorCompileInfo
             IN  CORINFO_METHOD_HANDLE   hMethod,
             OUT CORJIT_FLAGS           *pFlags) = 0;
 
+    virtual ICorJitHost* GetJitHost() = 0;
+
     // needed for stubs to obtain the number of bytes to copy into the native image
     // return the beginning of the stub and the size to copy (in bytes)
     virtual void* GetStubSize(void *pStubAddress, DWORD *pSizeToCopy) = 0;
