@@ -785,7 +785,7 @@ bool EventPipe::WalkManagedStackForThread(Thread *pThread, StackContents &stackC
     StackWalkAction swaRet = pThread->StackWalkFrames(
         (PSTACKWALKFRAMESCALLBACK) &StackWalkCallback,
         &stackContents,
-        ALLOW_ASYNC_STACK_WALK | FUNCTIONSONLY | HANDLESKIPPEDFRAMES);
+        ALLOW_ASYNC_STACK_WALK | FUNCTIONSONLY | HANDLESKIPPEDFRAMES | ALLOW_INVALID_OBJECTS);
 
     return ((swaRet == SWA_DONE) || (swaRet == SWA_CONTINUE));
 }
