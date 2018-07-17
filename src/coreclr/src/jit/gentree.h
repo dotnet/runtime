@@ -6030,7 +6030,7 @@ inline regNumber GenTree::GetRegByIndex(int regIndex)
         return AsCall()->GetRegNumByIdx(regIndex);
     }
 
-#if defined(_TARGET_ARMARCH_)
+#if FEATURE_ARG_SPLIT
     if (OperIsPutArgSplit())
     {
         return AsPutArgSplit()->GetRegNumByIdx(regIndex);
