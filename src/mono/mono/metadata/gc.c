@@ -394,8 +394,15 @@ object_register_finalizer (MonoObject *obj, void (*callback)(void *, void*))
 void
 mono_object_register_finalizer_handle (MonoObjectHandle obj)
 {
-	/* g_print ("Registered finalizer on %p %s.%s\n", obj, mono_object_class (obj)->name_space, mono_object_class (obj)->name); */
+	/* g_print ("Registered finalizer on %p %s.%s\n", obj, mono_handle_class (obj)->name_space, mono_handle_class (obj)->name); */
 	object_register_finalizer (MONO_HANDLE_RAW (obj), mono_gc_run_finalize);
+}
+
+static void
+mono_object_unregister_finalizer_handle (MonoObjectHandle obj)
+{
+	/* g_print ("Unregistered finalizer on %p %s.%s\n", obj, mono_handle_class (obj)->name_space, mono_handle_class (obj)->name); */
+	object_register_finalizer (MONO_HANDLE_RAW (obj), NULL);
 }
 
 void
@@ -531,13 +538,13 @@ done:
 }
 
 void
-ves_icall_System_GC_InternalCollect (int generation)
+ves_icall_System_GC_InternalCollect (int generation, MonoError *error)
 {
 	mono_gc_collect (generation);
 }
 
 gint64
-ves_icall_System_GC_GetTotalMemory (MonoBoolean forceCollection)
+ves_icall_System_GC_GetTotalMemory (MonoBoolean forceCollection, MonoError *error)
 {
 	if (forceCollection)
 		mono_gc_collect (mono_gc_max_generation ());
@@ -545,7 +552,7 @@ ves_icall_System_GC_GetTotalMemory (MonoBoolean forceCollection)
 }
 
 void
-ves_icall_System_GC_KeepAlive (MonoObject *obj)
+ves_icall_System_GC_KeepAlive (MonoObjectHandle obj, MonoError *error)
 {
 	/*
 	 * Does nothing.
@@ -553,34 +560,34 @@ ves_icall_System_GC_KeepAlive (MonoObject *obj)
 }
 
 void
-ves_icall_System_GC_ReRegisterForFinalize (MonoObject *obj)
+ves_icall_System_GC_ReRegisterForFinalize (MonoObjectHandle obj, MonoError *error)
 {
-	MONO_CHECK_ARG_NULL (obj,);
+	MONO_CHECK_ARG_NULL_HANDLE (obj,);
 
-	object_register_finalizer (obj, mono_gc_run_finalize);
+	mono_object_register_finalizer_handle (obj);
 }
 
 void
-ves_icall_System_GC_SuppressFinalize (MonoObject *obj)
+ves_icall_System_GC_SuppressFinalize (MonoObjectHandle obj, MonoError *error)
 {
-	MONO_CHECK_ARG_NULL (obj,);
+	MONO_CHECK_ARG_NULL_HANDLE (obj,);
 
 	/* delegates have no finalizers, but we register them to deal with the
 	 * unmanaged->managed trampoline. We don't let the user suppress it
 	 * otherwise we'd leak it.
 	 */
-	if (m_class_is_delegate (mono_object_class (obj)))
+	if (m_class_is_delegate (mono_handle_class (obj)))
 		return;
 
 	/* FIXME: Need to handle case where obj has COM Callable Wrapper
 	 * generated for it that needs cleaned up, but user wants to suppress
 	 * their derived object finalizer. */
 
-	object_register_finalizer (obj, NULL);
+	mono_object_unregister_finalizer_handle (obj);
 }
 
 void
-ves_icall_System_GC_WaitForPendingFinalizers (void)
+ves_icall_System_GC_WaitForPendingFinalizers (MonoError *error)
 {
 	if (mono_gc_is_null ())
 		return;
@@ -622,48 +629,44 @@ ves_icall_System_GC_WaitForPendingFinalizers (void)
 }
 
 void
-ves_icall_System_GC_register_ephemeron_array (MonoObject *array)
+ves_icall_System_GC_register_ephemeron_array (MonoObjectHandle array, MonoError *error)
 {
-#ifdef HAVE_SGEN_GC
-	if (!mono_gc_ephemeron_array_add (array)) {
-		mono_set_pending_exception (mono_object_domain (array)->out_of_memory_ex);
-		return;
-	}
-#endif
+	if (!mono_gc_ephemeron_array_add (MONO_HANDLE_RAW (array)))
+		mono_error_set_exception_instance (error, MONO_HANDLE_DOMAIN (array)->out_of_memory_ex);
 }
 
-MonoObject*
-ves_icall_System_GC_get_ephemeron_tombstone (void)
+MonoObjectHandle
+ves_icall_System_GC_get_ephemeron_tombstone (MonoError *error)
 {
-	return mono_domain_get ()->ephemeron_tombstone;
+	return MONO_HANDLE_NEW (MonoObject, mono_domain_get ()->ephemeron_tombstone);
 }
 
-MonoObject *
-ves_icall_System_GCHandle_GetTarget (guint32 handle)
+MonoObjectHandle
+ves_icall_System_GCHandle_GetTarget (guint32 handle, MonoError *error)
 {
-	return mono_gchandle_get_target (handle);
+	return mono_gchandle_get_target_handle (handle);
 }
 
 /*
  * if type == -1, change the target of the handle, otherwise allocate a new handle.
  */
 guint32
-ves_icall_System_GCHandle_GetTargetHandle (MonoObject *obj, guint32 handle, gint32 type)
+ves_icall_System_GCHandle_GetTargetHandle (MonoObjectHandle obj, guint32 handle, gint32 type, MonoError *error)
 {
 	if (type == -1) {
-		mono_gchandle_set_target (handle, obj);
+		mono_gchandle_set_target_handle (handle, obj);
 		/* the handle doesn't change */
 		return handle;
 	}
 	switch (type) {
 	case HANDLE_WEAK:
-		return mono_gchandle_new_weakref (obj, FALSE);
+		return mono_gchandle_new_weakref_from_handle (obj);
 	case HANDLE_WEAK_TRACK:
-		return mono_gchandle_new_weakref (obj, TRUE);
+		return mono_gchandle_new_weakref_from_handle_track_resurrection (obj);
 	case HANDLE_NORMAL:
-		return mono_gchandle_new (obj, FALSE);
+		return mono_gchandle_from_handle (obj, FALSE);
 	case HANDLE_PINNED:
-		return mono_gchandle_new (obj, TRUE);
+		return mono_gchandle_from_handle (obj, TRUE);
 	default:
 		g_assert_not_reached ();
 	}
@@ -671,14 +674,16 @@ ves_icall_System_GCHandle_GetTargetHandle (MonoObject *obj, guint32 handle, gint
 }
 
 void
-ves_icall_System_GCHandle_FreeHandle (guint32 handle)
+ves_icall_System_GCHandle_FreeHandle (guint32 handle, MonoError *error)
 {
 	mono_gchandle_free (handle);
 }
 
 gpointer
-ves_icall_System_GCHandle_GetAddrOfPinnedObject (guint32 handle)
+ves_icall_System_GCHandle_GetAddrOfPinnedObject (guint32 handle, MonoError *error)
 {
+	// Handles seem to only be in the way here, and the object is pinned.
+
 	MonoObject *obj;
 
 	if (MONO_GC_HANDLE_TYPE (handle) != HANDLE_PINNED)
@@ -686,6 +691,11 @@ ves_icall_System_GCHandle_GetAddrOfPinnedObject (guint32 handle)
 	obj = mono_gchandle_get_target (handle);
 	if (obj) {
 		MonoClass *klass = mono_object_class (obj);
+
+		// FIXME This would be a good place for
+		// object->GetAddrOfPinnedObject()
+		// or klass->GetAddrOfPinnedObject(obj);
+
 		if (klass == mono_defaults.string_class) {
 			return mono_string_chars ((MonoString*)obj);
 		} else if (m_class_get_rank (klass)) {
@@ -702,7 +712,7 @@ ves_icall_System_GCHandle_GetAddrOfPinnedObject (guint32 handle)
 }
 
 MonoBoolean
-mono_gc_GCHandle_CheckCurrentDomain (guint32 gchandle)
+ves_icall_System_GCHandle_CheckCurrentDomain (guint32 gchandle, MonoError *error)
 {
 	return mono_gchandle_is_in_domain (gchandle, mono_domain_get ());
 }

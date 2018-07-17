@@ -57,23 +57,45 @@
 #define IS_GC_REFERENCE(class,t) (mono_gc_is_moving () ? FALSE : ((t)->type == MONO_TYPE_U && (class)->image == mono_defaults.corlib))
 
 void   mono_object_register_finalizer               (MonoObject  *obj);
+
 void
 mono_object_register_finalizer_handle (MonoObjectHandle obj);
 
-void   ves_icall_System_GC_InternalCollect          (int          generation);
-gint64 ves_icall_System_GC_GetTotalMemory           (MonoBoolean  forceCollection);
-void   ves_icall_System_GC_KeepAlive                (MonoObject  *obj);
-void   ves_icall_System_GC_ReRegisterForFinalize    (MonoObject  *obj);
-void   ves_icall_System_GC_SuppressFinalize         (MonoObject  *obj);
-void   ves_icall_System_GC_WaitForPendingFinalizers (void);
+void
+ves_icall_System_GC_InternalCollect (int generation, MonoError *error);
 
-MonoObject *ves_icall_System_GCHandle_GetTarget (guint32 handle);
-guint32     ves_icall_System_GCHandle_GetTargetHandle (MonoObject *obj, guint32 handle, gint32 type);
-void        ves_icall_System_GCHandle_FreeHandle (guint32 handle);
-gpointer    ves_icall_System_GCHandle_GetAddrOfPinnedObject (guint32 handle);
-void        ves_icall_System_GC_register_ephemeron_array (MonoObject *array);
-MonoObject  *ves_icall_System_GC_get_ephemeron_tombstone (void);
+gint64
+ves_icall_System_GC_GetTotalMemory (MonoBoolean forceCollection, MonoError *error);
 
+void
+ves_icall_System_GC_KeepAlive (MonoObjectHandle obj, MonoError *error);
+
+void
+ves_icall_System_GC_ReRegisterForFinalize (MonoObjectHandle obj, MonoError *error);
+
+void
+ves_icall_System_GC_SuppressFinalize (MonoObjectHandle obj, MonoError *error);
+
+void
+ves_icall_System_GC_WaitForPendingFinalizers (MonoError *error);
+
+MonoObjectHandle
+ves_icall_System_GCHandle_GetTarget (guint32 handle, MonoError *error);
+
+guint32
+ves_icall_System_GCHandle_GetTargetHandle (MonoObjectHandle obj, guint32 handle, gint32 type, MonoError *error);
+
+void
+ves_icall_System_GCHandle_FreeHandle (guint32 handle, MonoError *error);
+
+gpointer
+ves_icall_System_GCHandle_GetAddrOfPinnedObject (guint32 handle, MonoError *error);
+
+void
+ves_icall_System_GC_register_ephemeron_array (MonoObjectHandle array, MonoError *error);
+
+MonoObjectHandle
+ves_icall_System_GC_get_ephemeron_tombstone (MonoError *error);
 
 extern void mono_gc_init (void);
 extern void mono_gc_base_init (void);
@@ -102,7 +124,7 @@ void mono_gchandle_set_target (guint32 gchandle, MonoObject *obj);
 gboolean    mono_gc_ephemeron_array_add (MonoObject *obj);
 
 MonoBoolean
-mono_gc_GCHandle_CheckCurrentDomain (guint32 gchandle);
+ves_icall_System_GCHandle_CheckCurrentDomain (guint32 gchandle, MonoError *error);
 
 /* User defined marking function */
 /* It should work like this:

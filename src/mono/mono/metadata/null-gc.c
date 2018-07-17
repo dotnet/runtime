@@ -574,6 +574,12 @@ mono_gc_pending_finalizers (void)
 	return FALSE;
 }
 
+gboolean
+mono_gc_ephemeron_array_add (MonoObject *obj)
+{
+	return TRUE;
+}
+
 #else
 
 MONO_EMPTY_SOURCE_FILE (null_gc);

@@ -8439,3 +8439,27 @@ mono_register_jit_icall (gconstpointer func, const char *name, MonoMethodSignatu
 {
 	return mono_register_jit_icall_full (func, name, sig, no_wrapper, NULL);
 }
+
+ICALL_EXPORT int
+ves_icall_System_GC_GetCollectionCount (int generation, MonoError *error)
+{
+	return mono_gc_collection_count (generation);
+}
+
+ICALL_EXPORT int
+ves_icall_System_GC_GetGeneration (MonoObjectHandle object, MonoError *error)
+{
+	return mono_gc_get_generation (MONO_HANDLE_RAW (object));
+}
+
+ICALL_EXPORT int
+ves_icall_System_GC_GetMaxGeneration (MonoError *error)
+{
+	return mono_gc_max_generation ();
+}
+
+ICALL_EXPORT void
+ves_icall_System_GC_RecordPressure (gint64 value, MonoError *error)
+{
+	mono_gc_add_memory_pressure (value);
+}

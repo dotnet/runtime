@@ -545,5 +545,11 @@ mono_array_handle_memcpy_refs (MonoArrayHandle dest, uintptr_t dest_idx, MonoArr
 gboolean
 mono_handle_stack_is_empty (HandleStack *stack)
 {
-	return (stack->top == stack->bottom && stack->top->size == 0);
+	return stack->top == stack->bottom && stack->top->size == 0;
+}
+
+void
+mono_gchandle_set_target_handle (guint32 gchandle, MonoObjectHandle obj)
+{
+	mono_gchandle_set_target (gchandle, MONO_HANDLE_RAW (obj));
 }

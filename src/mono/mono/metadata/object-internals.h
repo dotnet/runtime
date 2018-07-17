@@ -46,7 +46,7 @@
 
 /* Use this as MONO_CHECK_ARG_NULL_HANDLE (arg,) in functions returning void */
 #define MONO_CHECK_ARG_NULL_HANDLE(arg, retval) do { 		\
-	if (MONO_HANDLE_IS_NULL (arg))				\
+	if (G_UNLIKELY (MONO_HANDLE_IS_NULL (arg)))		\
 	{							\
 		mono_error_set_argument_null (error, #arg, "");	\
 		return retval;					\
@@ -55,7 +55,7 @@
 
 /* Use this as MONO_CHECK_NULL (arg,) in functions returning void */
 #define MONO_CHECK_NULL(arg, retval) do { 			\
-	if (!(arg))						\
+	if (G_UNLIKELY (!(arg)))				\
 	{							\
 		ERROR_DECL (error);				\
 		mono_error_set_null_reference (error);		\

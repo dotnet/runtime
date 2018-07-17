@@ -2042,6 +2042,12 @@ mono_gc_register_obj_with_weak_fields (void *obj)
 	g_error ("Weak fields not supported by boehm gc");
 }
 
+gboolean
+mono_gc_ephemeron_array_add (MonoObject *obj)
+{
+	return TRUE;
+}
+
 #else
 
 MONO_EMPTY_SOURCE_FILE (boehm_gc);
