@@ -77,7 +77,6 @@ namespace System.Data.SqlClient
             }
 
             AssertValidState();
-
             return true;
         }
     }
