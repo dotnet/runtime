@@ -110,7 +110,6 @@ namespace System.Net.Http
                     Debug.Assert(port != 0);
                     Debug.Assert(sslHostName == null);
                     Debug.Assert(proxyUri != null);
-                    Debug.Assert(proxyUri.IdnHost == host && proxyUri.Port == port);
                     break;
 
                 default:
