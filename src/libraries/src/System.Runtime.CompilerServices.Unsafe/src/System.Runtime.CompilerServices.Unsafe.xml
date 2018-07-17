@@ -121,6 +121,14 @@
             <param name="source">The reference to reinterpret.</param>
             <returns>A reference to a value of type <typeparamref name="TTo"/>.</returns>
         </member>
+        <member name="M:System.Runtime.CompilerServices.Unsafe.Unbox``1(System.Object)">
+            <summary>
+            Returns a reference to the value type contained with the specified box object.
+            </summary>
+            <typeparam name="T">The type of the value type contained within the box.</typeparam>
+            <param name="box">The boxed value type.</param>
+            <returns>A reference to a value of type <typeparamref name="T"/> in the box object.</returns>
+        </member>
         <member name="M:System.Runtime.CompilerServices.Unsafe.Add``1(``0@,System.Int32)">
             <summary>
             Adds an element offset to the given reference.
