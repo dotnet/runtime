@@ -209,5 +209,19 @@ namespace System.Memory.Tests
                     inputSpan.IndexOf(valueSpan, comparisonType);
                 }
         }
+
+        [Benchmark]
+        [MemberData(nameof(s_indexTestData))]
+        public void SpanLastIndexOfSpanComparison(string input, string value, StringComparison comparisonType)
+        {
+            ReadOnlySpan<char> inputSpan = input.AsSpan();
+            ReadOnlySpan<char> valueSpan = value.AsSpan();
+
+            foreach (BenchmarkIteration iteration in Benchmark.Iterations)
+                using (iteration.StartMeasurement())
+                {
+                    inputSpan.LastIndexOf(valueSpan, comparisonType);
+                }
+        }
     }
 }

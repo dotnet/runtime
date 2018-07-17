@@ -4,12 +4,7 @@
 
 using System.Diagnostics;
 using System.Buffers.Text;
-
-#if !netstandard
 using Internal.Runtime.CompilerServices;
-#else
-using System.Runtime.CompilerServices;
-#endif
 
 //
 // This code is copied almost verbatim from the same-named file in CoreRT with mechanical changes to Span-ify it.
