@@ -698,8 +698,24 @@ mono_gchandle_from_handle (MonoObjectHandle handle, mono_bool pinned);
 MonoObjectHandle
 mono_gchandle_get_target_handle (uint32_t gchandle);
 
-gboolean
-mono_gchandle_target_equal (uint32_t gchandle, MonoObjectHandle equal);
+static inline gboolean
+mono_gchandle_target_equal (uint32_t gchandle, MonoObjectHandle equal)
+{
+	// This function serves to reduce coop handle creation.
+	MONO_HANDLE_SUPPRESS_SCOPE (1);
+	return mono_gchandle_get_target (gchandle) == MONO_HANDLE_RAW (equal);
+}
+
+static inline void
+mono_gchandle_target_is_null_or_equal (uint32_t gchandle, MonoObjectHandle equal, gboolean *is_null,
+	gboolean *is_equal)
+{
+	// This function serves to reduce coop handle creation.
+	MONO_HANDLE_SUPPRESS_SCOPE (1);
+	MonoObject *target = mono_gchandle_get_target (gchandle);
+	*is_null = target == NULL;
+	*is_equal = target == MONO_HANDLE_RAW (equal);
+}
 
 void
 mono_array_handle_memcpy_refs (MonoArrayHandle dest, uintptr_t dest_idx, MonoArrayHandle src, uintptr_t src_idx, uintptr_t len);

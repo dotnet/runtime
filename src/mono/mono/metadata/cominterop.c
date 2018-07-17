@@ -190,7 +190,7 @@ static MonoObject*
 cominterop_get_ccw_object (MonoCCWInterface* ccw_entry, gboolean verify);
 
 static MonoObjectHandle
-cominterop_get_ccw_object_handle (MonoCCWInterface* ccw_entry, gboolean verify);
+cominterop_get_ccw_handle (MonoCCWInterface* ccw_entry, gboolean verify);
 
 /* SAFEARRAY marshalling */
 static gboolean
@@ -1638,7 +1638,7 @@ ves_icall_System_Runtime_InteropServices_Marshal_GetObjectForCCW (void* pUnk, Mo
 {
 #ifndef DISABLE_COM
 	/* see if it is a CCW */
-	return pUnk ? cominterop_get_ccw_object_handle ((MonoCCWInterface*)pUnk, TRUE) : NULL_HANDLE;
+	return pUnk ? cominterop_get_ccw_handle ((MonoCCWInterface*)pUnk, TRUE) : NULL_HANDLE;
 #else
 	g_assert_not_reached ();
 #endif
@@ -1890,6 +1890,8 @@ ves_icall_Mono_Interop_ComInteropProxy_FindProxy (gpointer pUnk, MonoError *erro
 #endif
 }
 
+typedef guint32 gchandle_t; // FIXME use this more
+
 /**
  * cominterop_get_ccw_object:
  * @ccw_entry: a pointer to the CCWEntry
@@ -1897,28 +1899,30 @@ ves_icall_Mono_Interop_ComInteropProxy_FindProxy (gpointer pUnk, MonoError *erro
  *
  * Returns: the corresponding object for the CCW
  */
-static MonoObjectHandle
-cominterop_get_ccw_object_handle (MonoCCWInterface* ccw_entry, gboolean verify)
+static gchandle_t
+cominterop_get_ccw_gchandle (MonoCCWInterface* ccw_entry, gboolean verify)
 {
 	/* no CCW's exist yet */
 	if (!ccw_interface_hash)
-		return NULL_HANDLE;
+		return 0;
 
 	MonoCCW * const ccw = verify ? (MonoCCW *)g_hash_table_lookup (ccw_interface_hash, ccw_entry) : ccw_entry->ccw;
 	g_assert (verify || ccw);
-	return ccw ? mono_gchandle_get_target_handle (ccw->gc_handle) : NULL_HANDLE;
+	return ccw ? ccw->gc_handle : 0;
+}
+
+static MonoObjectHandle
+cominterop_get_ccw_handle (MonoCCWInterface* ccw_entry, gboolean verify)
+{
+	gchandle_t const gchandle = cominterop_get_ccw_gchandle (ccw_entry, verify);
+	return gchandle ? mono_gchandle_get_target_handle (gchandle) : NULL_HANDLE;
 }
 
 static MonoObject*
 cominterop_get_ccw_object (MonoCCWInterface* ccw_entry, gboolean verify)
 {
-	/* no CCW's exist yet */
-	if (!ccw_interface_hash)
-		return NULL;
-
-	MonoCCW * const ccw = verify ? (MonoCCW *)g_hash_table_lookup (ccw_interface_hash, ccw_entry) : ccw_entry->ccw;
-	g_assert (verify || ccw);
-	return ccw ? mono_gchandle_get_target (ccw->gc_handle) : NULL;
+	gchandle_t const gchandle = cominterop_get_ccw_gchandle (ccw_entry, verify);
+	return gchandle ? mono_gchandle_get_target (gchandle) : NULL;
 }
 
 static void
@@ -2204,49 +2208,6 @@ mono_marshal_free_ccw_entry (gpointer key, gpointer value, gpointer user_data)
  * \param object the mono object
  * \returns whether the object had a CCW
  */
-static GList*
-mono_marshal_free_ccw_handle_loop (MonoObjectHandle object, GList **ccw_list, GList *ccw_list_item)
-// Function to move handle creation out of loop.
-{
-	HANDLE_FUNCTION_ENTER ();
-
-	MonoCCW* ccw_iter = (MonoCCW *)ccw_list_item->data;
-	MonoObjectHandle handle_target = mono_gchandle_get_target_handle (ccw_iter->gc_handle);
-
-	/* Looks like the GC NULLs the weakref handle target before running the
-	 * finalizer. So if we get a NULL target, destroy the CCW as well.
-	 * Unless looking up the object from the CCW shows it not the right object.
-	*/
-	// FIXME handle creation should be avoidable here, or use stack-based handles for performance
-	gboolean destroy_ccw = MONO_HANDLE_IS_NULL (handle_target) || MONO_HANDLE_RAW (handle_target) == MONO_HANDLE_RAW (object);
-	if (MONO_HANDLE_IS_NULL (handle_target)) {
-		MonoCCWInterface* ccw_entry = (MonoCCWInterface *)g_hash_table_lookup (ccw_iter->vtable_hash, mono_class_get_iunknown_class ());
-		if (!(ccw_entry && MONO_HANDLE_RAW (object) == cominterop_get_ccw_object (ccw_entry, FALSE)))
-			destroy_ccw = FALSE;
-	}
-
-	if (destroy_ccw) {
-		/* remove all interfaces */
-		g_hash_table_foreach_remove (ccw_iter->vtable_hash, mono_marshal_free_ccw_entry, NULL);
-		g_hash_table_destroy (ccw_iter->vtable_hash);
-
-		/* get next before we delete */
-		ccw_list_item = g_list_next (ccw_list_item);
-
-		/* remove ccw from list */
-		*ccw_list = g_list_remove (*ccw_list, ccw_iter);
-#ifdef HOST_WIN32
-		if (ccw_iter->free_marshaler)
-			ves_icall_System_Runtime_InteropServices_Marshal_ReleaseInternal (ccw_iter->free_marshaler);
-#endif
-		g_free (ccw_iter);
-	}
-	else
-		ccw_list_item = g_list_next (ccw_list_item);
-
-	HANDLE_FUNCTION_RETURN_VAL (ccw_list_item);
-}
-
 static gboolean
 mono_marshal_free_ccw_handle (MonoObjectHandle object)
 {
@@ -2264,8 +2225,41 @@ mono_marshal_free_ccw_handle (MonoObjectHandle object)
 	/* need to cache orig list address to remove from hash_table if empty */
 	GList * const ccw_list_orig = ccw_list;
 
-	for (GList* ccw_list_item = ccw_list; ccw_list_item; ccw_list_item = mono_marshal_free_ccw_handle_loop (object, &ccw_list, ccw_list_item)) {
-		// nothing
+	for (GList* ccw_list_item = ccw_list; ccw_list_item; ) {
+		MonoCCW* ccw_iter = (MonoCCW *)ccw_list_item->data;
+		gboolean is_null = FALSE;
+		gboolean is_equal = FALSE;
+		mono_gchandle_target_is_null_or_equal (ccw_iter->gc_handle, object, &is_null, &is_equal);
+
+		/* Looks like the GC NULLs the weakref handle target before running the
+		 * finalizer. So if we get a NULL target, destroy the CCW as well.
+		 * Unless looking up the object from the CCW shows it not the right object.
+		*/
+		gboolean destroy_ccw = is_null || is_equal;
+		if (is_null) {
+			MonoCCWInterface* ccw_entry = (MonoCCWInterface *)g_hash_table_lookup (ccw_iter->vtable_hash, mono_class_get_iunknown_class ());
+			gchandle_t gchandle = 0;
+			if (!(ccw_entry && (gchandle = cominterop_get_ccw_gchandle (ccw_entry, FALSE)) && mono_gchandle_target_equal (gchandle, object)))
+				destroy_ccw = FALSE;
+		}
+		if (destroy_ccw) {
+			/* remove all interfaces */
+			g_hash_table_foreach_remove (ccw_iter->vtable_hash, mono_marshal_free_ccw_entry, NULL);
+			g_hash_table_destroy (ccw_iter->vtable_hash);
+
+			/* get next before we delete */
+			ccw_list_item = g_list_next (ccw_list_item);
+
+			/* remove ccw from list */
+			ccw_list = g_list_remove (ccw_list, ccw_iter);
+#ifdef HOST_WIN32
+			if (ccw_iter->free_marshaler)
+				ves_icall_System_Runtime_InteropServices_Marshal_ReleaseInternal (ccw_iter->free_marshaler);
+#endif
+			g_free (ccw_iter);
+		}
+		else
+			ccw_list_item = g_list_next (ccw_list_item);
 	}
 
 	/* if list is empty remove original address from hash */
