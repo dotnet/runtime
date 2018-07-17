@@ -41,8 +41,6 @@
 #include "comsynchronizable.h"
 #include "floatdouble.h"
 #include "floatsingle.h"
-#include "decimal.h"
-#include "currency.h"
 #include "comdatetime.h"
 #include "number.h"
 #include "compatibilityswitch.h"

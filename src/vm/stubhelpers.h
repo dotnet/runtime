@@ -99,7 +99,6 @@ public:
 
     static FCDECL3(void*,           CreateCustomMarshalerHelper, MethodDesc* pMD, mdToken paramToken, TypeHandle hndManagedType);
 
-    static FCDECL1(void,            DecimalCanonicalizeInternal, DECIMAL *pDec);
     static FCDECL3(void,            FmtClassUpdateNativeInternal, Object* pObjUNSAFE, BYTE* pbNative, OBJECTREF *ppCleanupWorkListOnStack);
     static FCDECL2(void,            FmtClassUpdateCLRInternal, Object* pObjUNSAFE, BYTE* pbNative);
     static FCDECL2(void,            LayoutDestroyNativeInternal, BYTE* pbNative, MethodTable* pMT);

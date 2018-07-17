@@ -11,7 +11,6 @@
 #include "excep.h"
 #include "number.h"
 #include "string.h"
-#include "decimal.h"
 #include "bignum.h"
 #include "grisu3.h"
 #include "fp.h"
@@ -1278,6 +1277,7 @@ STRINGREF NumberToString(NUMBER* number, wchar format, int nMaxDigits, NUMFMTREF
     */
 
     _ASSERTE(numfmt != NULL);
+    _ASSERTE(!bDecimal);
     UINT64 newBufferLen = MIN_BUFFER_SIZE;
 
     CQuickBytesSpecifySize<LARGE_BUFFER_SIZE * sizeof(WCHAR)> buf;
@@ -1441,15 +1441,8 @@ STRINGREF NumberToString(NUMBER* number, wchar format, int nMaxDigits, NUMFMTREF
         {
             bool enableRounding = true;
             if (nMaxDigits < 1) {
-                if (bDecimal && (nMaxDigits == -1)) { // Default to 29 digits precision only for G formatting without a precision specifier
-                    // This ensures that the PAL code pads out to the correct place even when we use the default precision
-                    nMaxDigits = nMinDigits = DECIMAL_PRECISION;
-                    enableRounding = false;  // Turn off rounding for ECMA compliance to output trailing 0's after decimal as significant
-                }
-                else {
-                    // This ensures that the PAL code pads out to the correct place even when we use the default precision
-                    nMaxDigits = nMinDigits = number->precision;
-                }
+                // This ensures that the PAL code pads out to the correct place even when we use the default precision
+                nMaxDigits = nMinDigits = number->precision;
             }
             else
                 nMinDigits=nMaxDigits;
@@ -1471,11 +1464,6 @@ STRINGREF NumberToString(NUMBER* number, wchar format, int nMaxDigits, NUMFMTREF
 
             if (enableRounding) // Don't round for G formatting without precision
                 RoundNumber(number, nMaxDigits); // This also fixes up the minus zero case
-            else {
-                if (bDecimal && ((GetDigitsBuffer(number))[0] == 0)) { // Minus zero should be formatted as 0
-                    number->sign = 0;
-                }
-            }
             if (number->sign) {
                 AddStringRef(&dst, sNegative);
             }
@@ -1998,13 +1986,5 @@ FCIMPL1(double, COMNumber::NumberToDoubleFC, NUMBER* number)
     double d = 0;
     NumberToDouble(number, &d);
     return d;
-}
-FCIMPLEND
-
-FCIMPL2(FC_BOOL_RET, COMNumber::NumberBufferToDecimal, NUMBER* number, DECIMAL* value)
-{
-    FCALL_CONTRACT;
-
-    FC_RETURN_BOOL(COMDecimal::NumberToDecimal(number, value) != 0);
 }
 FCIMPLEND

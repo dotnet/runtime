@@ -1696,17 +1696,6 @@ FCIMPL1(Object*, StubHelpers::AllocateInternal, EnregisteredTypeHandle pRegister
 }
 FCIMPLEND
 
-FCIMPL1(void, StubHelpers::DecimalCanonicalizeInternal, DECIMAL *pDec)
-{
-    FCALL_CONTRACT;
-
-    if (FAILED(DecimalCanonicalize(pDec)))
-    {
-        FCThrowResVoid(kOverflowException, W("Overflow_Currency"));
-    }
-}
-FCIMPLEND
-
 FCIMPL1(int, StubHelpers::AnsiStrlen, __in_z char* pszStr)
 {
     FCALL_CONTRACT;

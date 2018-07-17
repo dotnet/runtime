@@ -33,7 +33,6 @@ class COMNumber
 public:
     static FCDECL3_VII(void, DoubleToNumberFC, double value, int precision, NUMBER* number);
     static FCDECL1(double, NumberToDoubleFC, NUMBER* number);
-    static FCDECL2(FC_BOOL_RET, NumberBufferToDecimal, NUMBER* number, DECIMAL* value);
     
     static wchar_t* Int32ToDecChars(__in wchar_t* p, unsigned int value, int digits);
 };

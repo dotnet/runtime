@@ -1057,55 +1057,36 @@ inline int CountBits(int iNum)
 
 #include "bitposition.h"
 
-// Used to remove trailing zeros from Decimal types.
-// NOTE: Assumes hi32 bits are empty (used for conversions from Cy->Dec)
-inline HRESULT DecimalCanonicalize(DECIMAL* dec)
+// Convert the currency to a decimal and canonicalize.
+inline void VarDecFromCyCanonicalize(CY cyIn, DECIMAL* dec)
 {
     WRAPPER_NO_CONTRACT;
 
-    // Clear the VARENUM field
-    (*(USHORT*)dec) = 0;
-
-    // Remove trailing zeros:
-    DECIMAL temp;
-    DECIMAL templast;
-    temp = templast = *dec;
-
-    // Ensure the hi 32 bits are empty (should be if we came from a currency)
-    if ((DECIMAL_HI32(temp) != 0) || (DECIMAL_SCALE(temp) > 4))
-        return DISP_E_OVERFLOW;
-
-    // Return immediately if dec represents a zero.
-    if (DECIMAL_LO32(temp) == 0 && DECIMAL_MID32(temp) == 0)
-        return S_OK;
-
-    // Compare to the original to see if we've
-    // lost non-zero digits (and make sure we don't overflow the scale BYTE)
-
-#ifdef _PREFAST_
-#pragma warning(push)
-#pragma warning(disable:6219) // "Suppress PREFast warning about Implicit cast between semantically different integer types" 
-#endif
-    while ((DECIMAL_SCALE(temp) <= 4) && (VARCMP_EQ == VarDecCmp(dec, &temp)))
+    (*(ULONG*)dec) = 0;
+    DECIMAL_HI32(*dec) = 0;
+    if (cyIn.int64 == 0) // For compatibility, a currency of 0 emits the Decimal "0.0000" (scale set to 4).
     {
-
-#ifdef _PREFAST_
-#pragma warning(pop)
-#endif
-        templast = temp;
-
-        // Remove the last digit and normalize.  Ignore temp.Hi32
-        // as Currency values will have a max of 64 bits of data.
-        DECIMAL_SCALE(temp)--;
-        UINT64 temp64 = (((UINT64) DECIMAL_MID32(temp)) << 32) + DECIMAL_LO32(temp);
-        temp64 /= 10;
-
-        DECIMAL_MID32(temp) = (ULONG)(temp64 >> 32);
-        DECIMAL_LO32(temp) = (ULONG)temp64;
+        DECIMAL_SCALE(*dec) = 4;
+        DECIMAL_LO32(*dec) = 0;
+        DECIMAL_MID32(*dec) = 0;
+        return;
     }
-    *dec = templast;
 
-    return S_OK;
+    if (cyIn.int64 < 0) {
+        DECIMAL_SIGN(*dec) = DECIMAL_NEG;
+        cyIn.int64 = -cyIn.int64;
+    }
+
+    BYTE scale = 4;
+    ULONGLONG absoluteCy = (ULONGLONG)cyIn.int64;
+    while (scale != 0 && ((absoluteCy % 10) == 0))
+    {
+        scale--;
+        absoluteCy /= 10;
+    }
+    DECIMAL_SCALE(*dec) = scale;
+    DECIMAL_LO32(*dec) = (ULONG)absoluteCy;
+    DECIMAL_MID32(*dec) = (ULONG)(absoluteCy >> 32);
 }
 
 //*****************************************************************************

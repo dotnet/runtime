@@ -1695,9 +1695,6 @@ namespace System.StubHelpers
         internal static extern unsafe int strlen(sbyte* ptr);
 
         [MethodImplAttribute(MethodImplOptions.InternalCall)]
-        internal static extern void DecimalCanonicalizeInternal(ref decimal dec);
-
-        [MethodImplAttribute(MethodImplOptions.InternalCall)]
         internal static extern unsafe void FmtClassUpdateNativeInternal(object obj, byte* pNative, ref CleanupWorkList pCleanupWorkList);
         [MethodImplAttribute(MethodImplOptions.InternalCall)]
         internal static extern unsafe void FmtClassUpdateCLRInternal(object obj, byte* pNative);
