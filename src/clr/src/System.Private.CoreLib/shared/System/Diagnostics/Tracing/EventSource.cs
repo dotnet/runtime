@@ -4049,6 +4049,8 @@ namespace System.Diagnostics.Tracing
                 if (!s_EventSourceShutdownRegistered)
                 {
                     s_EventSourceShutdownRegistered = true;
+                    AppDomain.CurrentDomain.ProcessExit += DisposeOnShutdown;
+                    AppDomain.CurrentDomain.DomainUnload += DisposeOnShutdown;
                 }
 
 
