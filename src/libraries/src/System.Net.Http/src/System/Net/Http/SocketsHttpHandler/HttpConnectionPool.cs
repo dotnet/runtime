@@ -372,6 +372,12 @@ namespace System.Net.Http
                     if (sslStream.NegotiatedApplicationProtocol == SslApplicationProtocol.Http2)
                     {
                         // The server accepted our request for HTTP2.
+
+                        if (sslStream.SslProtocol < SslProtocols.Tls12)
+                        {
+                            throw new HttpRequestException(SR.net_http_invalid_response);
+                        }
+
                         http2Connection = new Http2Connection(this, sslStream);
                         await http2Connection.SetupAsync().ConfigureAwait(false);
 
