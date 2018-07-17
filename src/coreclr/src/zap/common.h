@@ -13,11 +13,11 @@
 #define __COMMON_H__
 
 #include <stdint.h>
+#include <stddef.h>
 #include <winwrap.h>
 #include <windows.h>
 #include <stdlib.h>
 #include <objbase.h>
-#include <stddef.h>
 #include <float.h>
 #include <limits.h>
 
