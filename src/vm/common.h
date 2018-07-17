@@ -66,6 +66,7 @@
 
 
 #include <stdint.h>
+#include <stddef.h>
 #include <winwrap.h>
 
 

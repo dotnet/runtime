@@ -21,6 +21,7 @@
 
 #define USE_COM_CONTEXT_DEF
 
+#include <stddef.h>
 #include <stdint.h>
 #include <windows.h>
 
