@@ -1332,11 +1332,6 @@ void ILCurrencyMarshaler::EmitConvertContentsNativeToCLR(ILCodeStream* pslILEmit
     EmitLoadNativeValue(pslILEmit);
 
     pslILEmit->EmitCALL(METHOD__DECIMAL__CURRENCY_CTOR, 2, 0);
-
-    EmitLoadManagedHomeAddr(pslILEmit);
-
-    // static void System.StubHelpers.DecimalCanonicalizeInternal(ref Decimal dec);
-    pslILEmit->EmitCALL(METHOD__STUBHELPERS__DECIMAL_CANONICALIZE_INTERNAL, 1, 0);
 }    
 
 

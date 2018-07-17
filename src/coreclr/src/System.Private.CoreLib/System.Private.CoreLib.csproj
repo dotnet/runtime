@@ -267,8 +267,6 @@
     <Compile Include="$(BclSourcesRoot)\System\BadImageFormatException.CoreCLR.cs" />
     <Compile Include="$(BclSourcesRoot)\System\Buffer.cs" />
     <Compile Include="$(BclSourcesRoot)\System\Currency.cs" />
-    <Compile Include="$(BclSourcesRoot)\System\Decimal.cs" />
-    <Compile Include="$(BclSourcesRoot)\System\Decimal.DecCalc.cs" />
     <Compile Include="$(BclSourcesRoot)\System\DefaultBinder.CanConvert.cs" />
     <Compile Include="$(BclSourcesRoot)\System\Enum.cs" />
     <Compile Include="$(BclSourcesRoot)\System\Environment.cs" />

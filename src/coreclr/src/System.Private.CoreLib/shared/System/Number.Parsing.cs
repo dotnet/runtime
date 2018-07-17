@@ -1466,6 +1466,83 @@ namespace System
             return result;
         }
 
+        private static unsafe bool NumberBufferToDecimal(ref NumberBuffer number, ref decimal value)
+        {
+            decimal d = new decimal();
+
+            char* p = number.digits;
+            int e = number.scale;
+            if (*p == 0)
+            {
+                // To avoid risking an app-compat issue with pre 4.5 (where some app was illegally using Reflection to examine the internal scale bits), we'll only force
+                // the scale to 0 if the scale was previously positive (previously, such cases were unparsable to a bug.)
+                if (e > 0)
+                {
+                    e = 0;
+                }
+            }
+            else
+            {
+                if (e > DecimalPrecision)
+                    return false;
+
+                while (((e > 0) || ((*p != 0) && (e > -28))) &&
+                       ((d.High < 0x19999999) || ((d.High == 0x19999999) &&
+                                                  ((d.Mid < 0x99999999) || ((d.Mid == 0x99999999) &&
+                                                                            ((d.Low < 0x99999999) || ((d.Low == 0x99999999) &&
+                                                                                                      (*p <= '5'))))))))
+                {
+                    decimal.DecMul10(ref d);
+                    if (*p != 0)
+                        decimal.DecAddInt32(ref d, (uint)(*p++ - '0'));
+                    e--;
+                }
+
+                if (*p++ >= '5')
+                {
+                    bool round = true;
+                    if ((*(p - 1) == '5') && ((*(p - 2) % 2) == 0))
+                    {
+                        // Check if previous digit is even, only if the when we are unsure whether hows to do
+                        // Banker's rounding. For digits > 5 we will be roundinp up anyway.
+                        int count = 20; // Look at the next 20 digits to check to round
+                        while ((*p == '0') && (count != 0))
+                        {
+                            p++;
+                            count--;
+                        }
+                        if ((*p == '\0') || (count == 0))
+                            round = false;// Do nothing
+                    }
+
+                    if (round)
+                    {
+                        decimal.DecAddInt32(ref d, 1);
+                        if ((d.High | d.Mid | d.Low) == 0)
+                        {
+                            d = new decimal(unchecked((int)0x9999999A), unchecked((int)0x99999999), 0x19999999, false, 0);
+                            e++;
+                        }
+                    }
+                }
+            }
+
+            if (e > 0)
+                return false;
+
+            if (e <= -DecimalPrecision)
+            {
+                // Parsing a large scale zero can give you more precision than fits in the decimal.
+                // This should only happen for actual zeros or very small numbers that round to zero.
+                value = new decimal(0, 0, 0, number.sign, DecimalPrecision - 1);
+            }
+            else
+            {
+                value = new decimal((int)d.Low, (int)d.Mid, (int)d.High, number.sign, (byte)-e);
+            }
+            return true;
+        }
+
         internal static double ParseDouble(ReadOnlySpan<char> value, NumberStyles styles, NumberFormatInfo info)
         {
             NumberBuffer number = default;
