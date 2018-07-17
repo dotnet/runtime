@@ -309,9 +309,6 @@ typedef enum CorOpenFlagsInternal
 #endif
 
 // %%Classes: ----------------------------------------------------------------
-#ifndef offsetof
-#define offsetof(s,f)   ((ULONG)(&((s*)0)->f))
-#endif
 #ifndef lengthof
 #define lengthof(rg)    (sizeof(rg)/sizeof(rg[0]))
 #endif

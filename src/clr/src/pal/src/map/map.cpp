@@ -31,6 +31,7 @@ Abstract:
 #include "pal/file.hpp"
 #include "pal/malloc.hpp"
 
+#include <stddef.h>
 #include <sys/stat.h>
 #include <sys/types.h>
 #include <sys/mman.h>

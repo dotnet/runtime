@@ -1963,9 +1963,6 @@ struct DelegateCtorArgs
 
 // use offsetof to get the offset of the fields above
 #include <stddef.h> // offsetof
-#ifndef offsetof
-#define offsetof(s,m)   ((size_t)&(((s *)0)->m))
-#endif
 
 // Guard-stack cookie for preventing against stack buffer overruns
 typedef SIZE_T GSCookie;
