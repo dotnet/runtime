@@ -6,6 +6,7 @@ using Xunit;
 
 namespace System.Runtime.InteropServices.Tests
 {
+    [SkipOnTargetFramework(TargetFrameworkMonikers.Uap, "GetNativeVariantForObject() not supported on UWP")]
     public class GetNativeVariantForObjectTests
     {
         internal struct Variant
