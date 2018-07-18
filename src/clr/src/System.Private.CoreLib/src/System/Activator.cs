@@ -149,11 +149,7 @@ namespace System
             }
 
             if (type == null)
-            {
-                // It's classic managed type (not WinRT type)
-                if (assembly == null)
-                    return null;
-
+            {                
                 type = assembly.GetType(typeName, true /*throwOnError*/, ignoreCase);
             }
 
