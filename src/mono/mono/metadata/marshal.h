@@ -737,13 +737,13 @@ gpointer
 ves_icall_System_Runtime_InteropServices_Marshal_GetFunctionPointerForDelegateInternal (MonoDelegateHandle delegate, MonoError *error);
 
 int
-ves_icall_System_Runtime_InteropServices_Marshal_AddRefInternal (gpointer pUnk);
+ves_icall_System_Runtime_InteropServices_Marshal_AddRefInternal (MonoIUnknown *pUnk, MonoError *error);
 
 int
-ves_icall_System_Runtime_InteropServices_Marshal_QueryInterfaceInternal (gpointer pUnk, gconstpointer riid, gpointer* ppv);
+ves_icall_System_Runtime_InteropServices_Marshal_QueryInterfaceInternal (MonoIUnknown *pUnk, gconstpointer riid, gpointer* ppv, MonoError *error);
 
 int
-ves_icall_System_Runtime_InteropServices_Marshal_ReleaseInternal (gpointer pUnk);
+ves_icall_System_Runtime_InteropServices_Marshal_ReleaseInternal (MonoIUnknown *pUnk, MonoError *error);
 
 void*
 ves_icall_System_Runtime_InteropServices_Marshal_GetIUnknownForObjectInternal (MonoObjectHandle object, MonoError *error);
@@ -761,13 +761,16 @@ MonoBoolean
 ves_icall_System_Runtime_InteropServices_Marshal_IsComObject (MonoObjectHandle object, MonoError *error);
 
 gint32
-ves_icall_System_Runtime_InteropServices_Marshal_ReleaseComObjectInternal (MonoObject* object);
+ves_icall_System_Runtime_InteropServices_Marshal_ReleaseComObjectInternal (MonoObjectHandle object, MonoError *error);
 
 MonoObjectHandle
 ves_icall_System_ComObject_CreateRCW (MonoReflectionTypeHandle ref_type, MonoError *error);
 
 void
-ves_icall_System_ComObject_ReleaseInterfaces(MonoComObject* obj);
+mono_System_ComObject_ReleaseInterfaces (MonoComObjectHandle obj);
+
+void
+ves_icall_System_ComObject_ReleaseInterfaces (MonoComObjectHandle obj, MonoError *error);
 
 gpointer
 ves_icall_System_ComObject_GetInterfaceInternal (MonoComObjectHandle obj, MonoReflectionTypeHandle ref_type, MonoBoolean throw_exception, MonoError *error);

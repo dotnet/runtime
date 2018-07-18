@@ -335,9 +335,31 @@ typedef struct {
 /* Safely access System.Runtime.Remoting.Proxies.RealProxy from native code */
 TYPED_HANDLE_DECL (MonoRealProxy);
 
+typedef struct _MonoIUnknown MonoIUnknown;
+typedef struct _MonoIUnknownVTable MonoIUnknownVTable;
+
+/* STDCALL on windows, CDECL everywhere else to work with XPCOM and MainWin COM */
+#ifdef HOST_WIN32
+#define STDCALL __stdcall
+#else
+#define STDCALL
+#endif
+
+struct _MonoIUnknownVTable
+{
+	int (STDCALL *QueryInterface)(MonoIUnknown *pUnk, gconstpointer riid, gpointer* ppv);
+	int (STDCALL *AddRef)(MonoIUnknown *pUnk);
+	int (STDCALL *Release)(MonoIUnknown *pUnk);
+};
+
+struct _MonoIUnknown
+{
+	MonoIUnknownVTable const * const vtable;
+};
+
 typedef struct {
 	MonoMarshalByRefObject object;
-	gpointer iunknown;
+	MonoIUnknown *iunknown;
 	GHashTable* itf_hash;
 	MonoObject *synchronization_context;
 } MonoComObject;
@@ -405,6 +427,8 @@ typedef enum {
 	MONO_THREAD_FLAG_APPDOMAIN_ABORT = 4, // Current requested abort originates from appdomain unload
 } MonoThreadFlags;
 
+struct _MonoThreadInfo;
+
 struct _MonoInternalThread {
 	MonoObject  obj;
 	volatile int lock_thread_id; /* to be used as the pre-shifted thread id in thin locks. Used for appdomain_ref push/pop */
@@ -419,7 +443,7 @@ struct _MonoInternalThread {
 	guint64 tid;	/* This is accessed as a gsize in the code (so it can hold a 64bit pointer on systems that need it), but needs to reserve 64 bits of space on all machines as it corresponds to a field in managed code */
 	gsize debugger_thread; // FIXME switch to bool as soon as CI testing with corlib version bump works
 	gpointer *static_data;
-	void *thread_info; /*This is MonoThreadInfo*, but to simplify dependencies, let's make it a void* here. */
+	struct _MonoThreadInfo *thread_info;
 	MonoAppContext *current_appcontext;
 	MonoThread *root_domain_thread;
 	MonoObject *_serialized_principal;

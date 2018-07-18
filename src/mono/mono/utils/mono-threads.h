@@ -177,7 +177,7 @@ typedef enum {
 	MONO_THREAD_INFO_FLAGS_NO_SAMPLE = 2,
 } MonoThreadInfoFlags;
 
-typedef struct {
+typedef struct _MonoThreadInfo {
 	MonoLinkedListSetNode node;
 	guint32 small_id; /*Used by hazard pointers */
 	MonoNativeThreadHandle native_handle; /* Valid on mach, android and Windows */

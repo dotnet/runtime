@@ -49,6 +49,34 @@
 #include "mono/metadata/cominterop-win32-internals.h"
 #endif
 
+#ifndef DISABLE_COM
+
+static int
+mono_IUnknown_QueryInterface (MonoIUnknown *pUnk, gconstpointer riid, gpointer* ppv)
+{
+	g_assert (pUnk);
+	return pUnk->vtable->QueryInterface (pUnk, riid, ppv);
+}
+
+static int
+mono_IUnknown_AddRef (MonoIUnknown *pUnk)
+{
+	// The return value is a reference count, generally transient, generally not to be used, except for debugging,
+	// or to assert that it is > 0.
+	g_assert (pUnk);
+	return pUnk->vtable->AddRef (pUnk);
+}
+
+static int
+mono_IUnknown_Release (MonoIUnknown *pUnk)
+{
+	// Release is like free -- null is silently ignored.
+	// Also, the return value is a reference count, generally transient, generally not to be used, except for debugging.
+	return pUnk ? pUnk->vtable->Release (pUnk) : 0;
+}
+
+#endif
+
 /*
 Code shared between the DISABLE_COM and !DISABLE_COM
 */
@@ -116,13 +144,6 @@ enum {
 #define mono_cominterop_unlock() mono_os_mutex_unlock (&cominterop_mutex)
 static mono_mutex_t cominterop_mutex;
 
-/* STDCALL on windows, CDECL everywhere else to work with XPCOM and MainWin COM */
-#ifdef HOST_WIN32
-#define STDCALL __stdcall
-#else
-#define STDCALL
-#endif
-
 GENERATE_GET_CLASS_WITH_CACHE (interop_proxy, "Mono.Interop", "ComInteropProxy")
 GENERATE_GET_CLASS_WITH_CACHE (idispatch,     "Mono.Interop", "IDispatch")
 GENERATE_GET_CLASS_WITH_CACHE (iunknown,      "Mono.Interop", "IUnknown")
@@ -143,7 +164,7 @@ typedef struct {
 	guint32 gc_handle;
 	GHashTable* vtable_hash;
 #ifdef  HOST_WIN32
-	gpointer free_marshaler;
+	MonoIUnknown *free_marshaler; // actually IMarshal
 #endif
 } MonoCCW;
 
@@ -572,7 +593,8 @@ cominterop_get_interface_checked (MonoComObjectHandle obj, MonoClass* ic, MonoEr
 	guint8 iid [16];
 	gboolean const found = cominterop_class_guid (ic, iid);
 	g_assert (found);
-	int const hr = ves_icall_System_Runtime_InteropServices_Marshal_QueryInterfaceInternal (MONO_HANDLE_GETVAL (obj, iunknown), iid, &itf);
+	g_assert (MONO_HANDLE_GETVAL (obj, iunknown));
+	int const hr = mono_IUnknown_QueryInterface (MONO_HANDLE_GETVAL (obj, iunknown), iid, &itf);
 	if (hr < 0) {
 		g_assert (!itf);
 		cominterop_set_hr_error (error, hr);
@@ -1580,13 +1602,6 @@ mono_cominterop_emit_marshal_com_interface (EmitMarshalContext *m, int argnum,
 	return conv_arg;
 }
 
-typedef struct
-{
-	int (STDCALL *QueryInterface)(gpointer pUnk, gconstpointer riid, gpointer* ppv);
-	int (STDCALL *AddRef)(gpointer pUnk);
-	int (STDCALL *Release)(gpointer pUnk);
-} MonoIUnknown;
-
 #define MONO_S_OK 0x00000000L
 #define MONO_E_NOINTERFACE 0x80004002L
 #define MONO_E_NOTIMPL 0x80004001L
@@ -1595,24 +1610,22 @@ typedef struct
 #define MONO_E_DISPID_UNKNOWN      (gint32)-1
 
 int
-ves_icall_System_Runtime_InteropServices_Marshal_AddRefInternal (gpointer pUnk)
+ves_icall_System_Runtime_InteropServices_Marshal_AddRefInternal (MonoIUnknown *pUnk, MonoError *error)
 {
-	g_assert (pUnk);
-	return (*(MonoIUnknown**)pUnk)->AddRef(pUnk);
+	return mono_IUnknown_AddRef (pUnk);
 }
 
 int
-ves_icall_System_Runtime_InteropServices_Marshal_QueryInterfaceInternal (gpointer pUnk, gconstpointer riid, gpointer* ppv)
+ves_icall_System_Runtime_InteropServices_Marshal_QueryInterfaceInternal (MonoIUnknown *pUnk, gconstpointer riid, gpointer* ppv, MonoError *error)
 {
-	g_assert (pUnk);
-	return (*(MonoIUnknown**)pUnk)->QueryInterface(pUnk, riid, ppv);
+	return mono_IUnknown_QueryInterface (pUnk, riid, ppv);
 }
 
 int
-ves_icall_System_Runtime_InteropServices_Marshal_ReleaseInternal (gpointer pUnk)
+ves_icall_System_Runtime_InteropServices_Marshal_ReleaseInternal (MonoIUnknown *pUnk, MonoError *error)
 {
 	g_assert (pUnk);
-	return (*(MonoIUnknown**)pUnk)->Release(pUnk);
+	return mono_IUnknown_Release (pUnk);
 }
 
 static gboolean
@@ -1697,28 +1710,26 @@ ves_icall_System_Runtime_InteropServices_Marshal_IsComObject (MonoObjectHandle o
 }
 
 gint32
-ves_icall_System_Runtime_InteropServices_Marshal_ReleaseComObjectInternal (MonoObject* object)
-// FIXMEcoop
+ves_icall_System_Runtime_InteropServices_Marshal_ReleaseComObjectInternal (MonoObjectHandle object, MonoError *error)
 {
 #ifndef DISABLE_COM
-	MonoComInteropProxy* proxy = NULL;
-	gint32 ref_count = 0;
+	g_assert (!MONO_HANDLE_IS_NULL (object));
 
-	g_assert (object);
-	g_assert (cominterop_object_is_rcw (object));
+	MonoRealProxyHandle real_proxy;
+	gboolean const is_rcw = cominterop_object_is_rcw_handle (object, &real_proxy);
+	g_assert (is_rcw);
 
-	proxy = (MonoComInteropProxy*)((MonoTransparentProxy*)object)->rp;
-	g_assert (proxy);
+	MonoComInteropProxyHandle proxy = MONO_HANDLE_CAST (MonoComInteropProxy, real_proxy);
+	g_assert (!MONO_HANDLE_IS_NULL (proxy));
 
-	if (proxy->ref_count == 0)
+	if (MONO_HANDLE_GETVAL (proxy, ref_count) == 0)
 		return -1;
 
-	ref_count = mono_atomic_dec_i32 (&proxy->ref_count);
-
+	gint32 ref_count = mono_atomic_dec_i32 (&MONO_HANDLE_GETVAL (proxy, ref_count));
 	g_assert (ref_count >= 0);
 
 	if (ref_count == 0)
-		ves_icall_System_ComObject_ReleaseInterfaces (proxy->com_object);
+		mono_System_ComObject_ReleaseInterfaces (MONO_HANDLE_NEW_GET (MonoComObject, proxy, com_object));
 
 	return ref_count;
 #else
@@ -1760,32 +1771,36 @@ ves_icall_System_ComObject_CreateRCW (MonoReflectionTypeHandle ref_type, MonoErr
 static gboolean    
 cominterop_rcw_interface_finalizer (gpointer key, gpointer value, gpointer user_data)
 {
-	ves_icall_System_Runtime_InteropServices_Marshal_ReleaseInternal (value);
+	mono_IUnknown_Release ((MonoIUnknown*)value);
 	return TRUE;
 }
 
 void
-ves_icall_System_ComObject_ReleaseInterfaces (MonoComObject* obj)
-// FIXMEcoop
+mono_System_ComObject_ReleaseInterfaces (MonoComObjectHandle obj)
 {
-	g_assert (obj);
-	if (!obj->itf_hash)
+	g_assert (!MONO_HANDLE_IS_NULL (obj));
+	if (!MONO_HANDLE_GETVAL (obj, itf_hash))
 		return;
 
-	guint32 gchandle = 0;
 	mono_cominterop_lock ();
-	gchandle = GPOINTER_TO_UINT (g_hash_table_lookup (rcw_hash, obj->iunknown));
+	guint32 const gchandle = GPOINTER_TO_UINT (g_hash_table_lookup (rcw_hash, MONO_HANDLE_GETVAL (obj, iunknown)));
 	if (gchandle) {
 		mono_gchandle_free (gchandle);
-		g_hash_table_remove (rcw_hash, obj->iunknown);
+		g_hash_table_remove (rcw_hash, MONO_HANDLE_GETVAL (obj, iunknown));
 	}
 
-	g_hash_table_foreach_remove (obj->itf_hash, cominterop_rcw_interface_finalizer, NULL);
-	g_hash_table_destroy (obj->itf_hash);
-	ves_icall_System_Runtime_InteropServices_Marshal_ReleaseInternal (obj->iunknown);
-	obj->iunknown = NULL;
-	obj->itf_hash = NULL;
+	g_hash_table_foreach_remove (MONO_HANDLE_GETVAL (obj, itf_hash), cominterop_rcw_interface_finalizer, NULL);
+	g_hash_table_destroy (MONO_HANDLE_GETVAL (obj, itf_hash));
+	mono_IUnknown_Release (MONO_HANDLE_GETVAL (obj, iunknown));
+	MONO_HANDLE_SETVAL (obj, iunknown, MonoIUnknown*, NULL);
+	MONO_HANDLE_SETVAL (obj, itf_hash, GHashTable*, NULL);
 	mono_cominterop_unlock ();
+}
+
+void
+ves_icall_System_ComObject_ReleaseInterfaces (MonoComObjectHandle obj, MonoError *error)
+{
+	mono_System_ComObject_ReleaseInterfaces (obj);
 }
 
 static gboolean    
@@ -1802,8 +1817,7 @@ cominterop_rcw_finalizer (gpointer key, gpointer value, gpointer user_data)
 				g_hash_table_foreach_remove (proxy->com_object->itf_hash, cominterop_rcw_interface_finalizer, NULL);
 				g_hash_table_destroy (proxy->com_object->itf_hash);
 			}
-			if (proxy->com_object->iunknown)
-				ves_icall_System_Runtime_InteropServices_Marshal_ReleaseInternal (proxy->com_object->iunknown);
+			mono_IUnknown_Release (proxy->com_object->iunknown);
 			proxy->com_object->iunknown = NULL;
 			proxy->com_object->itf_hash = NULL;
 		}
@@ -2253,8 +2267,7 @@ mono_marshal_free_ccw_handle (MonoObjectHandle object)
 			/* remove ccw from list */
 			ccw_list = g_list_remove (ccw_list, ccw_iter);
 #ifdef HOST_WIN32
-			if (ccw_iter->free_marshaler)
-				ves_icall_System_Runtime_InteropServices_Marshal_ReleaseInternal (ccw_iter->free_marshaler);
+			mono_IUnknown_Release (ccw_iter->free_marshaler);
 #endif
 			g_free (ccw_iter);
 		}
@@ -2486,11 +2499,9 @@ cominterop_ccw_getfreethreadedmarshaler (MonoCCW* ccw, MonoObjectHandle object, 
 		return_val_if_nok (error, MONO_E_NOINTERFACE);
 		int const ret = CoCreateFreeThreadedMarshaler (tunk, (LPUNKNOWN*)&ccw->free_marshaler);
 	}
-		
-	if (!ccw->free_marshaler)
-		return MONO_E_NOINTERFACE;
 
-	return ves_icall_System_Runtime_InteropServices_Marshal_QueryInterfaceInternal (ccw->free_marshaler, &MONO_IID_IMarshal, ppv);
+	return ccw->free_marshaler ? mono_IUnknown_QueryInterface (ccw->free_marshaler, &MONO_IID_IMarshal, ppv)
+				   : MONO_E_NOINTERFACE;
 }
 #endif
 
@@ -2848,6 +2859,7 @@ mono_string_from_bstr_checked (mono_bstr_const bstr, MonoError *error)
 		gunichar2* utf16 = g_ucs4_to_utf16 ((const gunichar *)bstr, sys_string_len_ms (bstr), NULL, &written, NULL);
 		MonoStringHandle res = mono_string_new_utf16_handle (mono_domain_get (), utf16, written, error);
 		g_free (utf16);
+		return res;
 	} else {
 		g_assert_not_reached ();
 	}
@@ -3574,21 +3586,21 @@ mono_marshal_free_ccw (MonoObject* object)
 }
 
 int
-ves_icall_System_Runtime_InteropServices_Marshal_AddRefInternal (gpointer pUnk)
+ves_icall_System_Runtime_InteropServices_Marshal_AddRefInternal (MonoIUnknown *pUnk, MonoError *error)
 {
 	g_assert_not_reached ();
 	return 0;
 }
 
 int
-ves_icall_System_Runtime_InteropServices_Marshal_ReleaseInternal (gpointer pUnk)
+ves_icall_System_Runtime_InteropServices_Marshal_ReleaseInternal (MonoIUnknown *pUnk, MonoError *error)
 {
 	g_assert_not_reached ();
 	return 0;
 }
 
 int
-ves_icall_System_Runtime_InteropServices_Marshal_QueryInterfaceInternal (gpointer pUnk, gconstpointer riid, gpointer* ppv)
+ves_icall_System_Runtime_InteropServices_Marshal_QueryInterfaceInternal (MonoIUnknown *pUnk, gconstpointer riid, gpointer* ppv, MonoError *error)
 {
 	g_assert_not_reached ();
 	return 0;

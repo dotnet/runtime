@@ -864,7 +864,7 @@ mono_thread_detach_internal (MonoInternalThread *thread)
 	g_assert (thread != NULL);
 	SET_CURRENT_OBJECT (thread);
 
-	info = (MonoThreadInfo*) thread->thread_info;
+	info = thread->thread_info;
 	g_assert (info);
 
 	THREAD_DEBUG (g_message ("%s: mono_thread_detach for %p (%"G_GSIZE_FORMAT")", __func__, thread, (gsize)thread->tid));
@@ -5586,10 +5586,10 @@ threads_add_unique_joinable_thread_nolock (gpointer tid)
 }
 
 void
-mono_threads_add_joinable_runtime_thread (gpointer thread_info)
+mono_threads_add_joinable_runtime_thread (MonoThreadInfo *thread_info)
 {
 	g_assert (thread_info);
-	MonoThreadInfo *mono_thread_info = (MonoThreadInfo*)thread_info;
+	MonoThreadInfo *mono_thread_info = thread_info;
 
 	if (mono_thread_info->runtime_thread) {
 		gpointer tid = (gpointer)(MONO_UINT_TO_NATIVE_THREAD_ID (mono_thread_info_get_tid (mono_thread_info)));
@@ -5869,7 +5869,7 @@ mono_thread_internal_describe (MonoInternalThread *internal, GString *text)
 
 	if (internal->thread_info) {
 		g_string_append (text, ", state : ");
-		mono_thread_info_describe_interrupt_token ((MonoThreadInfo*) internal->thread_info, text);
+		mono_thread_info_describe_interrupt_token (internal->thread_info, text);
 	}
 
 	if (internal->owned_mutexes) {
@@ -6014,7 +6014,7 @@ mono_threads_summarize (MonoContext *ctx, gchar **out, MonoStackHash *hashes)
 				continue;
 
 			// Request every other thread dumps themselves before us
-			MonoThreadInfo *info = (MonoThreadInfo*) thread_array [i]->thread_info;
+			MonoThreadInfo *info = thread_array [i]->thread_info;
 
 			mono_memory_barrier ();
 			size_t old_num_summarized = num_threads_summarized;
