@@ -5,6 +5,7 @@
 using System;
 using System.Collections.Generic;
 using System.Text;
+using System.Xml.Serialization;
 
 namespace R2RDump
 {
@@ -28,6 +29,7 @@ namespace R2RDump
         /// <summary>
         /// The ReadyToRun section type
         /// </summary>
+        [XmlAttribute("Index")]
         public SectionType Type { get; set; }
 
         /// <summary>

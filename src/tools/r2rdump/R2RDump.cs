@@ -12,7 +12,7 @@ using System.Xml.Serialization;
 
 namespace R2RDump
 {
-    abstract class Dumper
+    public abstract class Dumper
     {
         internal R2RReader _r2r;
         internal bool _raw;
@@ -95,12 +95,13 @@ namespace R2RDump
 
             if (verbose)
             {
-                _raw = true;
                 _disasm = true;
                 _unwind = true;
                 _gc = true;
                 _sectionContents = true;
             }
+
+            _disasm = false; // TODO: this requires the coredistools nuget package with the most recent changes
 
             return argSyntax;
         }
@@ -368,11 +369,11 @@ namespace R2RDump
                 return 0;
             }
 
-            if (_inputFilenames.Count == 0)
-                throw new ArgumentException("Input filename must be specified (--in <file>)");
-
             try
             {
+                if (_inputFilenames.Count == 0)
+                    throw new ArgumentException("Input filename must be specified (--in <file>)");
+
                 foreach (string filename in _inputFilenames)
                 {
                     R2RReader r2r = new R2RReader(filename);
@@ -402,6 +403,22 @@ namespace R2RDump
             catch (Exception e)
             {
                 Console.WriteLine("Error: " + e.ToString());
+                if (e is ArgumentException)
+                {
+                    Console.WriteLine();
+                    Console.WriteLine(syntax.GetHelpText());
+                }
+                if (_xml)
+                {
+                    XmlDocument document = new XmlDocument();
+                    XmlNode node = document.CreateNode("element", "Error", "");
+                    node.InnerText = e.Message;
+                    document.AppendChild(node);
+                    if (_writer != null)
+                    {
+                        document.Save(_writer);
+                    }
+                }
                 return 1;
             }
             finally

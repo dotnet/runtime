@@ -10,7 +10,7 @@ using System.Text;
 
 namespace R2RDump
 {
-    class CoreDisTools
+    public class CoreDisTools
     {
         private const string _dll = "coredistools.dll";
 

@@ -6,6 +6,7 @@ using System;
 using System.Collections.Generic;
 using System.Reflection.PortableExecutable;
 using System.Text;
+using System.Xml.Serialization;
 
 namespace R2RDump
 {
@@ -13,12 +14,15 @@ namespace R2RDump
     {
         public struct GcSlot
         {
+            [XmlAttribute("Index")]
+            public int Index { get; set; }
             public int RegisterNumber { get; set; }
             public GcStackSlot StackSlot { get; set; }
             public GcSlotFlags Flags { get; set; }
 
-            public GcSlot(int registerNumber, GcStackSlot stack, GcSlotFlags flags, bool isUntracked = false)
+            public GcSlot(int index, int registerNumber, GcStackSlot stack, GcSlotFlags flags, bool isUntracked = false)
             {
+                Index = index;
                 RegisterNumber = registerNumber;
                 StackSlot = stack;
                 if (isUntracked)
@@ -107,7 +111,7 @@ namespace R2RDump
             // We certainly predecode the first register
             uint regNum = NativeReader.DecodeVarLengthUnsigned(image, gcInfoTypes.REGISTER_ENCBASE, ref bitOffset);
             GcSlotFlags flags = (GcSlotFlags)NativeReader.ReadBits(image, 2, ref bitOffset);
-            GcSlots.Add(new GcSlot((int)regNum, null, flags));
+            GcSlots.Add(new GcSlot(GcSlots.Count, (int)regNum, null, flags));
 
             for (int i = 1; i < NumRegisters; i++)
             {
@@ -121,7 +125,7 @@ namespace R2RDump
                     uint regDelta = NativeReader.DecodeVarLengthUnsigned(image, gcInfoTypes.REGISTER_DELTA_ENCBASE, ref bitOffset) + 1;
                     regNum += regDelta;
                 }
-                GcSlots.Add(new GcSlot((int)regNum, null, flags));
+                GcSlots.Add(new GcSlot(GcSlots.Count, (int)regNum, null, flags));
             }
         }
 
@@ -132,7 +136,7 @@ namespace R2RDump
             int normSpOffset = NativeReader.DecodeVarLengthSigned(image, gcInfoTypes.STACK_SLOT_ENCBASE, ref bitOffset);
             int spOffset = gcInfoTypes.DenormalizeStackSlot(normSpOffset);
             GcSlotFlags flags = (GcSlotFlags)NativeReader.ReadBits(image, 2, ref bitOffset);
-            GcSlots.Add(new GcSlot(-1, new GcStackSlot(spOffset, spBase), flags, isUntracked));
+            GcSlots.Add(new GcSlot(GcSlots.Count, -1, new GcStackSlot(spOffset, spBase), flags, isUntracked));
 
             for (int i = 1; i < nSlots; i++)
             {
@@ -149,7 +153,7 @@ namespace R2RDump
                     normSpOffset += normSpOffsetDelta;
                     spOffset = gcInfoTypes.DenormalizeStackSlot(normSpOffset);
                 }
-                GcSlots.Add(new GcSlot(-1, new GcStackSlot(spOffset, spBase), flags, isUntracked));
+                GcSlots.Add(new GcSlot(GcSlots.Count, -1, new GcStackSlot(spOffset, spBase), flags, isUntracked));
             }
         }
     }
