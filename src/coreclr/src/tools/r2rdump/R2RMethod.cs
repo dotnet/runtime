@@ -23,6 +23,7 @@ namespace R2RDump
         /// <summary>
         /// The index of the runtime function
         /// </summary>
+        [XmlAttribute("Index")]
         public int Id { get; set; }
 
         /// <summary>
@@ -128,6 +129,7 @@ namespace R2RDump
         /// <summary>
         /// The row id of the method
         /// </summary>
+        [XmlAttribute("Index")]
         public uint Rid { get; set; }
 
         /// <summary>

@@ -34,10 +34,13 @@ namespace R2RDump
 
         public struct InterruptibleRange
         {
+            [XmlAttribute("Index")]
+            public uint Index { get; set; }
             public uint StartOffset { get; set; }
             public uint StopOffset { get; set; }
-            public InterruptibleRange(uint start, uint stop)
+            public InterruptibleRange(uint index, uint start, uint stop)
             {
+                Index = index;
                 StartOffset = start;
                 StopOffset = stop;
             }
@@ -45,6 +48,7 @@ namespace R2RDump
 
         public class GcTransition
         {
+            [XmlAttribute("Index")]
             public int CodeOffset { get; set; }
             public int SlotId { get; set; }
             public bool IsLive { get; set; }
@@ -90,6 +94,18 @@ namespace R2RDump
             }
         }
 
+        public struct SafePointOffset
+        {
+            [XmlAttribute("Index")]
+            public int Index { get; set; }
+            public uint Value { get; set; }
+            public SafePointOffset(int index, uint value)
+            {
+                Index = index;
+                Value = value;
+            }
+        }
+
         private const int GCINFO_VERSION = 2;
         private const int MIN_GCINFO_VERSION_WITH_RETURN_KIND = 2;
         private const int MIN_GCINFO_VERSION_WITH_REV_PINVOKE_FRAME = 2;
@@ -122,7 +138,7 @@ namespace R2RDump
         public uint SizeOfStackOutgoingAndScratchArea { get; set; }
         public uint NumSafePoints { get; set; }
         public uint NumInterruptibleRanges { get; set; }
-        public List<uint> SafePointOffsets { get; set; }
+        public List<SafePointOffset> SafePointOffsets { get; set; }
         public List<InterruptibleRange> InterruptibleRanges { get; set; }
         public GcSlotTable SlotTable { get; set; }
         public int Size { get; set; }
@@ -294,9 +310,9 @@ namespace R2RDump
             sb.AppendLine($"\tNumSafePoints: {NumSafePoints}");
             sb.AppendLine($"\tNumInterruptibleRanges: {NumInterruptibleRanges}");
             sb.AppendLine($"\tSafePointOffsets:");
-            foreach (uint offset in SafePointOffsets)
+            foreach (SafePointOffset offset in SafePointOffsets)
             {
-                sb.AppendLine($"\t\t{offset}");
+                sb.AppendLine($"\t\t{offset.Value}");
             }
             sb.AppendLine($"\tInterruptibleRanges:");
             foreach (InterruptibleRange range in InterruptibleRanges)
@@ -342,14 +358,14 @@ namespace R2RDump
             _wantsReportOnlyLeaf = ((headerFlags & GcInfoHeaderFlags.GC_INFO_WANTS_REPORT_ONLY_LEAF) != 0);
         }
 
-        private List<uint> EnumerateSafePoints(byte[] image, ref int bitOffset)
+        private List<SafePointOffset> EnumerateSafePoints(byte[] image, ref int bitOffset)
         {
-            List<uint> safePoints = new List<uint>();
+            List<SafePointOffset> safePoints = new List<SafePointOffset>();
             uint numBitsPerOffset = GcInfoTypes.CeilOfLog2(CodeLength);
             for (int i = 0; i < NumSafePoints; i++)
             {
                 uint normOffset = (uint)NativeReader.ReadBits(image, (int)numBitsPerOffset, ref bitOffset);
-                safePoints.Add(normOffset);
+                safePoints.Add(new SafePointOffset(i, normOffset));
             }
             return safePoints;
         }
@@ -366,7 +382,7 @@ namespace R2RDump
 
                 uint rangeStartOffset = lastinterruptibleRangeStopOffset + normStartDelta;
                 uint rangeStopOffset = rangeStartOffset + normStopDelta;
-                ranges.Add(new InterruptibleRange(rangeStartOffset, rangeStopOffset));
+                ranges.Add(new InterruptibleRange(i, rangeStartOffset, rangeStopOffset));
 
                 lastinterruptibleRangeStopOffset = rangeStopOffset;
             }
