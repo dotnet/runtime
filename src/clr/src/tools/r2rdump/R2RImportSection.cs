@@ -6,6 +6,7 @@ using System;
 using System.Collections.Generic;
 using System.Reflection.PortableExecutable;
 using System.Text;
+using System.Xml.Serialization;
 
 namespace R2RDump
 {
@@ -34,6 +35,7 @@ namespace R2RDump
         {
             public int StartOffset { get; set; }
             public long Section { get; set; }
+            [XmlAttribute("Index")]
             public uint SignatureRVA { get; set; }
             public byte[] SignatureSample { get; set; }
             public ImportSectionEntry(int startOffset, long section, uint signatureRVA, byte[] signatureSample)
@@ -60,6 +62,7 @@ namespace R2RDump
         /// <summary>
         /// Section containing values to be fixed up
         /// </summary>
+        [XmlAttribute("Index")]
         public int SectionRVA { get; set; }
         public int SectionSize { get; set; }
 
