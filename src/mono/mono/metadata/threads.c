@@ -5768,7 +5768,7 @@ mono_threads_attach_coop_internal (MonoDomain *domain, gpointer *cookie, MonoSta
 			*cookie = mono_threads_enter_gc_unsafe_region_cookie ();
 		} else {
 			/* thread state (BLOCKING|RUNNING) -> RUNNING */
-			*cookie = mono_threads_enter_gc_unsafe_region_internal (stackdata);
+			*cookie = mono_threads_enter_gc_unsafe_region_unbalanced_internal (stackdata);
 		}
 	}
 
@@ -5810,7 +5810,7 @@ mono_threads_detach_coop_internal (MonoDomain *orig, gpointer cookie, MonoStackD
 	if (mono_threads_is_blocking_transition_enabled ()) {
 		/* it won't do anything if cookie is NULL
 		 * thread state RUNNING -> (RUNNING|BLOCKING) */
-		mono_threads_exit_gc_unsafe_region_internal (cookie, stackdata);
+		mono_threads_exit_gc_unsafe_region_unbalanced_internal (cookie, stackdata);
 	}
 
 	if (orig != domain) {
