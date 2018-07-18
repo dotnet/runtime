@@ -173,8 +173,8 @@ get_merp_exctype (MERPExcType exc)
 		case MERP_EXC_HANG: 
 			return "0x02000000";
 		case MERP_EXC_NONE:
-			// Exception type is optional
-			return "";
+			// Exception type documented as optional, not optional
+			g_assert_not_reached ();
 		default:
 			g_assert_not_reached ();
 	}
@@ -194,6 +194,11 @@ parse_exception_type (const char *signal)
 
 	if (!strcmp (signal, "SIGABRT"))
 		return MERP_EXC_SIGABRT;
+
+	// Force quit == hang?
+	// We need a default for this
+	if (!strcmp (signal, "SIGTERM"))
+		return MERP_EXC_HANG;
 
 	// FIXME: There are no other such signal
 	// strings passed to mono_handle_native_crash at the

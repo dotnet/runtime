@@ -234,12 +234,20 @@ MONO_SIG_HANDLER_FUNC (static, sigterm_signal_handler)
 	// die. The dump ends with the exit(1) below
 	MonoContext mctx;
 	gchar *output = NULL;
+	MonoStackHash hashes;
 	mono_sigctx_to_monoctx (ctx, &mctx);
-	if (!mono_threads_summarize (&mctx, &output, NULL))
+	if (!mono_threads_summarize (&mctx, &output, &hashes))
 		g_assert_not_reached ();
 
-	// Only the dumping-supervisor thread exits mono_thread_summarize
-	MOSTLY_ASYNC_SAFE_PRINTF("Unhandled exception dump: \n######\n%s\n######\n", output);
+	if (mono_merp_enabled ()) {
+		pid_t crashed_pid = getpid ();
+		char *full_version = mono_get_runtime_build_info ();
+		mono_merp_invoke (crashed_pid, "SIGTERM", output, &hashes, full_version);
+	} else {
+		// Only the dumping-supervisor thread exits mono_thread_summarize
+		MOSTLY_ASYNC_SAFE_PRINTF("Unhandled exception dump: \n######\n%s\n######\n", output);
+		sleep (3);
+	}
 
 	mono_chain_signal (MONO_SIG_HANDLER_PARAMS);
 	exit (1);
