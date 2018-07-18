@@ -1,3 +1,4 @@
+@ECHO off
 SetLocal
 
 SET CONFIG_H="%~dp0..\config.h"

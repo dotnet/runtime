@@ -25,7 +25,7 @@ public enum Target {
 	Library, Exe, Module, WinExe
 }
 
-class SlnGenerator {
+public class SlnGenerator {
 	public static readonly string NewLine = "\r\n"; //Environment.NewLine; // "\n"; 
 	public SlnGenerator (string slnVersion)
 	{
@@ -53,8 +53,11 @@ class SlnGenerator {
 		"net_4_x"
 	};
 
-	const string jay_vcxproj_guid = "{5D485D32-3B9F-4287-AB24-C8DA5B89F537}";
-	const string jay_sln_guid = "{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}";
+	public const string csproj_type_guid = "{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}";
+	public const string vcxproj_type_guid = "{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}";
+
+	public const string jay_vcxproj_guid = "{5D485D32-3B9F-4287-AB24-C8DA5B89F537}";
+	public const string genconsts_csproj_guid = "{702AE2C0-71DD-4112-9A06-E4FABCA59986}";
 
 	public static Dictionary<string, HashSet<string>> profilesByGuid = new Dictionary<string, HashSet<string>> ();
 	public List<MsbuildGenerator.VsCsproj> libraries = new List<MsbuildGenerator.VsCsproj> ();
@@ -103,6 +106,7 @@ class SlnGenerator {
 		var relativePath = MsbuildGenerator.GetRelativePath (slnFullPath, fullProjPath);
 
 		var dependencyGuids = new string[0];
+
 		if (proj.preBuildEvent.Contains ("jay"))
 			dependencyGuids = new [] { jay_vcxproj_guid };
 
@@ -115,10 +119,10 @@ class SlnGenerator {
 		if (dependencyGuids.Length > 0)
 			Console.WriteLine ($"Project {fullProjPath} has {dependencyGuids.Length} dependencies: {string.Join(", ", dependencyGuids)}");
 
-		WriteProjectReference(sln, "{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}", proj.library, relativePath, proj.projectGuid, dependencyGuids);
+		WriteProjectReference(sln, csproj_type_guid, proj.library, relativePath, proj.projectGuid, dependencyGuids);
 	}
 
-	private void WriteProjectConfigurationPlatforms (StreamWriter sln, string guid, string defaultPlatform)
+	private void WriteProjectConfigurationPlatforms (StreamWriter sln, string guid, string defaultPlatform, bool forceBuild)
 	{
 		var fallbackProfileNames = new List<string> ();
 
@@ -136,8 +140,7 @@ class SlnGenerator {
 			) {
 				fallbackProfileNames.Add (platformToBuild);
 				platformToBuild = defaultPlatform;
-				// HACK: Force build for C++ executables like jay ('Win32') but not for managed assemblies
-				isBuildEnabled = (defaultPlatform == "Win32");
+				isBuildEnabled = forceBuild;
 			}
 
 			sln.WriteLine ("\t\t{0}.Debug|{1}.ActiveCfg = Debug|{2}", guid, profile, platformToBuild);
@@ -161,7 +164,10 @@ class SlnGenerator {
 			sln.WriteLine (header);
 
 			// Manually insert jay's vcxproj. We depend on jay.exe to perform build steps later.
-			WriteProjectReference (sln, jay_sln_guid, "jay", "mcs/jay/jay.vcxproj", jay_vcxproj_guid, null);
+			WriteProjectReference (sln, vcxproj_type_guid, "jay", "mcs/jay/jay.vcxproj", jay_vcxproj_guid, null);
+
+			// Manually insert genconsts. This is used to generate Consts.cs.
+			WriteProjectReference (sln, csproj_type_guid, "genconsts", "msvc/scripts/genconsts.csproj", genconsts_csproj_guid, null);
 
 			foreach (var proj in libraries) {
 				WriteProjectReference (sln, fullPath, proj);
@@ -181,11 +187,12 @@ class SlnGenerator {
 
 			sln.WriteLine ("\tGlobalSection(ProjectConfigurationPlatforms) = postSolution");
 
-			// Manually insert jay's configurations because they are different
-			WriteProjectConfigurationPlatforms (sln, jay_vcxproj_guid, "Win32");
+			// Manually insert configurations for jay and genconsts
+			WriteProjectConfigurationPlatforms (sln, jay_vcxproj_guid, "Win32", true);
+			WriteProjectConfigurationPlatforms (sln, genconsts_csproj_guid, "x86", true);
 
 			foreach (var proj in libraries) {
-				WriteProjectConfigurationPlatforms (sln, proj.projectGuid, "net_4_x");
+				WriteProjectConfigurationPlatforms (sln, proj.projectGuid, "net_4_x", false);
 			}
 
 			sln.WriteLine ("\tEndGlobalSection");
@@ -206,7 +213,7 @@ class SlnGenerator {
 	public int Count { get { return libraries.Count; } }
 }
 
-class MsbuildGenerator {
+public class MsbuildGenerator {
 	static readonly string NewLine = SlnGenerator.NewLine;
 	static XmlNamespaceManager xmlns;
 
@@ -222,6 +229,7 @@ class MsbuildGenerator {
 	};
 
 	public static readonly (string, string[])[] fixed_dependencies = new [] {
+		("corlib/corlib.csproj", new [] { SlnGenerator.genconsts_csproj_guid }),
 		("class/System.Web/System.Web.csproj", new [] { culevel_guid })
 	};
 
