@@ -12,10 +12,12 @@
     <OutputPath>.\</OutputPath>
     <ProjectGuid>{702AE2C0-71DD-4112-9A06-E4FABCA59986}</ProjectGuid>
     <RunPostBuildEvent>Always</RunPostBuildEvent>
+  </PropertyGroup>
+  <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
+  <PropertyGroup>
     <PostBuildEvent>cd $(MSBuildProjectDirectory)
 $(TargetPath)</PostBuildEvent>
   </PropertyGroup>
-  <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
   <ItemGroup>
     <Compile Include="genconsts.cs" />
     <Reference Include="System" />
