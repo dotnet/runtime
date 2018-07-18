@@ -687,7 +687,7 @@ CorUnix::InternalCreateFile(
     
     /* make file descriptor close-on-exec; inheritable handles will get
       "uncloseonexeced" in CreateProcess if they are actually being inherited*/
-    if(-1 == fcntl(filed,F_SETFD,1))
+    if(-1 == fcntl(filed,F_SETFD, FD_CLOEXEC))
     {
         ASSERT("can't set close-on-exec flag; fcntl() failed. errno is %d "
              "(%s)\n", errno, strerror(errno));
