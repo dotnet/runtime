@@ -278,7 +278,7 @@ dump_method (gpointer key, gpointer value, gpointer userdata)
 	image_name = mono_image_get_name (image);
 
 	method_signature = mono_signature_get_desc (mono_method_signature (method), TRUE);
-	class_name = parse_generic_type_names (mono_type_get_name (mono_class_get_type (klass)));
+	class_name = parse_generic_type_names (mono_type_get_name (m_class_get_byval_arg (klass)));
 	method_name = mono_method_get_name (method);
 
 	if (coverage_profiler.data->len != 0) {
@@ -353,7 +353,7 @@ dump_classes_for_image (gpointer key, gpointer value, gpointer userdata)
 	if (!image_name || strcmp (image_name, mono_image_get_name (((MonoImage*) userdata))) != 0)
 		return;
 
-	class_name = mono_type_get_name (mono_class_get_type (klass));
+	class_name = mono_type_get_name (m_class_get_byval_arg (klass));
 
 	number_of_methods = mono_class_num_methods (klass);
 
@@ -484,7 +484,7 @@ consider_class (MonoImage *image, MonoClass *klass)
 		if (mono_conc_hashtable_lookup (coverage_profiler.filtered_classes, klass))
 			return FALSE;
 
-		char *classname = mono_type_get_name (mono_class_get_type (klass));
+		char *classname = mono_type_get_name (m_class_get_byval_arg (klass));
 		char *fqn = g_strdup_printf ("[%s]%s", mono_image_get_name (image), classname);
 
 		// Check positive filters first

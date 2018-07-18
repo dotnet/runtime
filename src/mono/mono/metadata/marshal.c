@@ -5126,7 +5126,7 @@ ves_icall_System_Runtime_InteropServices_Marshal_PtrToStructure (gconstpointer s
 	MONO_CHECK_ARG_NULL (src,);
 	MONO_CHECK_ARG_NULL_HANDLE (dst,);
 	
-	t = mono_type_get_underlying_type (mono_class_get_type (mono_handle_class (dst)));
+	t = mono_type_get_underlying_type (m_class_get_byval_arg (mono_handle_class (dst)));
 
 	if (t->type == MONO_TYPE_VALUETYPE) {
 		mono_error_set_argument (error, "dst", "Destination is a boxed value type.");

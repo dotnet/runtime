@@ -2288,7 +2288,7 @@ handle_type:
 		} else {
 			g_error ("unhandled type in custom attr");
 		}
-		str = type_get_qualified_name (mono_class_get_type(klass), NULL);
+		str = type_get_qualified_name (m_class_get_byval_arg (klass), NULL);
 		slen = strlen (str);
 		if ((p-buffer) + 10 + slen >= *buflen) {
 			char *newbuf;

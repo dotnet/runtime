@@ -158,10 +158,13 @@ mono_debug_init (MonoDebugFormat format)
 void
 mono_debug_open_image_from_memory (MonoImage *image, const guint8 *raw_contents, int size)
 {
+	MONO_ENTER_GC_UNSAFE;
 	if (!mono_debug_initialized)
-		return;
+		goto leave;
 
 	mono_debug_open_image (image, raw_contents, size);
+leave:
+	MONO_EXIT_GC_UNSAFE;
 }
 
 void

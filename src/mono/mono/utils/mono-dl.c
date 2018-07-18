@@ -13,6 +13,7 @@
 #include "mono/utils/mono-dl.h"
 #include "mono/utils/mono-embed.h"
 #include "mono/utils/mono-path.h"
+#include "mono/utils/mono-threads-api.h"
 
 #include <stdlib.h>
 #include <stdio.h>
@@ -337,10 +338,10 @@ mono_dl_build_path (const char *directory, const char *name, void **iter)
 MonoDlFallbackHandler *
 mono_dl_fallback_register (MonoDlFallbackLoad load_func, MonoDlFallbackSymbol symbol_func, MonoDlFallbackClose close_func, void *user_data)
 {
-	MonoDlFallbackHandler *handler;
-	
-	g_return_val_if_fail (load_func != NULL, NULL);
-	g_return_val_if_fail (symbol_func != NULL, NULL);
+	MonoDlFallbackHandler *handler = NULL;
+	MONO_ENTER_GC_UNSAFE;
+	if (load_func == NULL || symbol_func == NULL)
+		goto leave;
 
 	handler = g_new (MonoDlFallbackHandler, 1);
 	handler->load_func = load_func;
@@ -350,6 +351,8 @@ mono_dl_fallback_register (MonoDlFallbackLoad load_func, MonoDlFallbackSymbol sy
 
 	fallback_handlers = g_slist_prepend (fallback_handlers, handler);
 	
+leave:
+	MONO_EXIT_GC_UNSAFE;
 	return handler;
 }
 

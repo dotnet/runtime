@@ -125,6 +125,7 @@ static void mono_runtime_walk_stack_with_ctx (MonoJitStackWalk func, MonoContext
 static gboolean mono_current_thread_has_handle_block_guard (void);
 static gboolean mono_install_handler_block_guard (MonoThreadUnwindState *ctx);
 static void mono_uninstall_current_handler_block_guard (void);
+static gboolean mono_exception_walk_trace_internal (MonoException *ex, MonoExceptionFrameWalk func, gpointer user_data);
 
 #ifdef TARGET_OSX
 static void mono_summarize_stack (MonoDomain *domain, MonoThreadSummary *out, MonoContext *crash_ctx);
@@ -888,6 +889,14 @@ get_method_from_stack_frame (MonoJitInfo *ji, gpointer generic_info)
 gboolean
 mono_exception_walk_trace (MonoException *ex, MonoExceptionFrameWalk func, gpointer user_data)
 {
+	MONO_ENTER_GC_UNSAFE;
+	mono_exception_walk_trace_internal (ex, func, user_data);
+	MONO_EXIT_GC_UNSAFE;
+}
+
+gboolean
+mono_exception_walk_trace_internal (MonoException *ex, MonoExceptionFrameWalk func, gpointer user_data)
+{
 	MONO_REQ_GC_UNSAFE_MODE;
 
 	MonoDomain *domain = mono_domain_get ();
@@ -907,7 +916,11 @@ mono_exception_walk_trace (MonoException *ex, MonoExceptionFrameWalk func, gpoin
 		MonoJitInfo *ji = mono_jit_info_table_find (domain, ip);
 
 		if (ji == NULL) {
-			if (func (NULL, ip, 0, FALSE, user_data))
+			gboolean r;
+			MONO_ENTER_GC_SAFE;
+			r = func (NULL, ip, 0, FALSE, user_data);
+			MONO_EXIT_GC_SAFE;
+			if (r)
 				return TRUE;
 		} else {
 			MonoMethod *method = get_method_from_stack_frame (ji, generic_info);

@@ -1817,7 +1817,7 @@ class_loaded (MonoProfiler *prof, MonoClass *klass)
 	char *name;
 
 	if (mono_atomic_load_i32 (&log_profiler.runtime_inited))
-		name = mono_type_get_name (mono_class_get_type (klass));
+		name = mono_type_get_name (m_class_get_byval_arg (klass));
 	else
 		name = type_name (klass);
 

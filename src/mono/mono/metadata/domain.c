@@ -966,6 +966,7 @@ mono_domain_set_internal (MonoDomain *domain)
 void
 mono_domain_foreach (MonoDomainFunc func, gpointer user_data)
 {
+	MONO_ENTER_GC_UNSAFE;
 	int i, size;
 	MonoDomain **copy;
 
@@ -986,6 +987,7 @@ mono_domain_foreach (MonoDomainFunc func, gpointer user_data)
 	}
 
 	gc_free_fixed_non_heap_list (copy);
+	MONO_EXIT_GC_UNSAFE;
 }
 
 /* FIXME: maybe we should integrate this with mono_assembly_open? */
@@ -1268,13 +1270,14 @@ mono_domain_get_by_id (gint32 domainid)
 {
 	MonoDomain * domain;
 
+	MONO_ENTER_GC_UNSAFE;
 	mono_appdomains_lock ();
 	if (domainid < appdomain_list_size)
 		domain = appdomains_list [domainid];
 	else
 		domain = NULL;
 	mono_appdomains_unlock ();
-
+	MONO_EXIT_GC_UNSAFE;
 	return domain;
 }
 

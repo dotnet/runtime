@@ -494,9 +494,12 @@ MonoDomain *
 mono_domain_create_appdomain (char *friendly_name, char *configuration_file)
 {
 	HANDLE_FUNCTION_ENTER ();
+	MonoDomain *domain;
+	MONO_ENTER_GC_UNSAFE;
 	ERROR_DECL (error);
-	MonoDomain *domain = mono_domain_create_appdomain_checked (friendly_name, configuration_file, error);
+	domain = mono_domain_create_appdomain_checked (friendly_name, configuration_file, error);
 	mono_error_cleanup (error);
+	MONO_EXIT_GC_UNSAFE;
 	HANDLE_FUNCTION_RETURN_VAL (domain);
 }
 
@@ -2033,8 +2036,11 @@ MonoDomain *
 mono_domain_from_appdomain (MonoAppDomain *appdomain_raw)
 {
 	HANDLE_FUNCTION_ENTER ();
+	MonoDomain *result;
+	MONO_ENTER_GC_UNSAFE;
 	MONO_HANDLE_DCL (MonoAppDomain, appdomain);
-	MonoDomain *result = mono_domain_from_appdomain_handle (appdomain);
+	result = mono_domain_from_appdomain_handle (appdomain);
+	MONO_EXIT_GC_UNSAFE;
 	HANDLE_FUNCTION_RETURN_VAL (result);
 }
 
@@ -2828,8 +2834,10 @@ failure:
 void
 mono_domain_unload (MonoDomain *domain)
 {
+	MONO_ENTER_GC_UNSAFE;
 	MonoObject *exc = NULL;
 	mono_domain_try_unload (domain, &exc);
+	MONO_EXIT_GC_UNSAFE;
 }
 
 static MonoThreadInfoWaitRet

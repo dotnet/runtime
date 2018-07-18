@@ -1557,7 +1557,7 @@ ves_icall_System_Type_internal_from_handle (MonoType *handle, MonoError *error)
 ICALL_EXPORT MonoType*
 ves_icall_Mono_RuntimeClassHandle_GetTypeFromClass (MonoClass *klass, MonoError *error)
 {
-	return mono_class_get_type (klass);
+	return m_class_get_byval_arg (klass);
 }
 
 ICALL_EXPORT void
