@@ -28,6 +28,19 @@ namespace System.Security.Cryptography.Pkcs.Tests
         }
 
         [Fact]
+        public static void InputDateTimeAsWindowsFileTimeBefore1601()
+        {
+            DateTime dt = new DateTime(1600, 12, 31, 11, 59, 59, DateTimeKind.Utc);
+            AssertExtensions.Throws<CryptographicException, ArgumentOutOfRangeException>(() => new Pkcs9SigningTime(dt));
+        }
+
+        [Fact]
+        public static void Pkcs9SigningTime_DateTimeMinValue()
+        {
+            AssertExtensions.Throws<CryptographicException, ArgumentOutOfRangeException>(() => new Pkcs9SigningTime(DateTime.MinValue));
+        }
+
+        [Fact]
         public static void InputDateTimeAsX509TimeBefore1950_Utc()
         {
             DateTime dt = new DateTime(1949, 12, 31, 23, 59, 59, DateTimeKind.Utc);
