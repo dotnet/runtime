@@ -54,7 +54,16 @@ namespace Internal.Cryptography.Pal.Windows
 
         public sealed override byte[] EncodeUtcTime(DateTime utcTime)
         {
-            long ft = utcTime.ToFileTimeUtc();
+            long ft;
+            try 
+            {
+                ft = utcTime.ToFileTimeUtc();
+            }
+            catch (ArgumentException ex)
+            {
+                throw new CryptographicException(ex.Message, ex);
+            }
+
             unsafe
             {
                 return Interop.Crypt32.CryptEncodeObjectToByteArray(CryptDecodeObjectStructType.PKCS_UTC_TIME, &ft);
