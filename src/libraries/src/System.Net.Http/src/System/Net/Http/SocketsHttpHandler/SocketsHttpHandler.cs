@@ -270,6 +270,22 @@ namespace System.Net.Http
             }
         }
 
+        // Internal for now, until API is approved (#30527)
+        internal Version MaxHttpVersion
+        {
+            get => _settings._maxHttpVersion;
+            set
+            {
+                if (value != HttpVersion.Version11 && value != HttpVersion.Version20)
+                {
+                    throw new ArgumentOutOfRangeException(nameof(value));
+                }
+
+                CheckDisposedOrStarted();
+                _settings._maxHttpVersion = value;
+            }
+        }
+
         public IDictionary<string, object> Properties =>
             _settings._properties ?? (_settings._properties = new Dictionary<string, object>());
 
