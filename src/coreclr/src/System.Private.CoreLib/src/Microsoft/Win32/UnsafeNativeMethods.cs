@@ -189,7 +189,7 @@ namespace Microsoft.Win32
         }
 
 #if FEATURE_COMINTEROP
-        [DllImport("combase.dll", PreserveSig = true)]
+        [DllImport("api-ms-win-core-winrt-l1-1-0.dll", PreserveSig = true)]
         internal static extern int RoGetActivationFactory(
             [MarshalAs(UnmanagedType.HString)] string activatableClassId,
             [In] ref Guid iid,
