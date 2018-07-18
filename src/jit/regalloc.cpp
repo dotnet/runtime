@@ -295,7 +295,7 @@ void Compiler::raMarkStkVars()
             goto NOT_STK;
         }
         /* Unused variables typically don't get any frame space */
-        else if (varDsc->lvRefCnt == 0)
+        else if (varDsc->lvRefCnt() == 0)
         {
             bool needSlot = false;
 
@@ -344,7 +344,7 @@ void Compiler::raMarkStkVars()
 
                 if (lvaTypeIsGC(lclNum))
                 {
-                    varDsc->lvRefCnt = 1;
+                    varDsc->setLvRefCnt(1);
                 }
 
                 if (!varDsc->lvIsParam)
@@ -404,7 +404,7 @@ void Compiler::raMarkStkVars()
 
         // It must be in a register, on frame, or have zero references.
 
-        noway_assert(varDsc->lvIsInReg() || varDsc->lvOnFrame || varDsc->lvRefCnt == 0);
+        noway_assert(varDsc->lvIsInReg() || varDsc->lvOnFrame || varDsc->lvRefCnt() == 0);
 
         // We can't have both lvRegister and lvOnFrame
         noway_assert(!varDsc->lvRegister || !varDsc->lvOnFrame);
@@ -424,7 +424,7 @@ void Compiler::raMarkStkVars()
         {
             if (!varDsc->lvPromoted && !varDsc->lvIsStructField)
             {
-                noway_assert(varDsc->lvRefCnt == 0 && !varDsc->lvRegister && !varDsc->lvOnFrame);
+                noway_assert(varDsc->lvRefCnt() == 0 && !varDsc->lvRegister && !varDsc->lvOnFrame);
             }
         }
 #endif

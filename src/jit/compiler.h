@@ -591,15 +591,65 @@ public:
     regMaskSmall lvPrefReg; // set of regs it prefers to live in
 
     unsigned short lvVarIndex; // variable tracking index
-    unsigned short lvRefCnt;   // unweighted (real) reference count.  For implicit by reference
+
+private:
+    unsigned short m_lvRefCnt; // unweighted (real) reference count.  For implicit by reference
                                // parameters, this gets hijacked from fgMarkImplicitByRefArgs
                                // through fgMarkDemotedImplicitByRefArgs, to provide a static
                                // appearance count (computed during address-exposed analysis)
                                // that fgMakeOutgoingStructArgCopy consults during global morph
                                // to determine if eliding its copy is legal.
-    unsigned lvRefCntWtd;      // weighted reference count
-    int      lvStkOffs;        // stack offset of home
-    unsigned lvExactSize;      // (exact) size of the type in bytes
+    unsigned m_lvRefCntWtd;    // weighted reference count
+
+public:
+    unsigned short lvRefCnt() const
+    {
+        return m_lvRefCnt;
+    }
+
+    void incLvRefCnt(unsigned short delta)
+    {
+        unsigned short oldRefCnt = m_lvRefCnt;
+        m_lvRefCnt += delta;
+        assert(m_lvRefCnt >= oldRefCnt);
+    }
+
+    void decLvRefCnt(unsigned short delta)
+    {
+        assert(m_lvRefCnt >= delta);
+        m_lvRefCnt -= delta;
+    }
+
+    void setLvRefCnt(unsigned short newValue)
+    {
+        m_lvRefCnt = newValue;
+    }
+
+    unsigned lvRefCntWtd() const
+    {
+        return m_lvRefCntWtd;
+    }
+
+    void incLvRefCntWtd(unsigned delta)
+    {
+        unsigned oldRefCntWtd = m_lvRefCntWtd;
+        m_lvRefCntWtd += delta;
+        assert(m_lvRefCntWtd >= oldRefCntWtd);
+    }
+
+    void decLvRefCntWtd(unsigned delta)
+    {
+        assert(m_lvRefCntWtd >= delta);
+        m_lvRefCntWtd -= delta;
+    }
+
+    void setLvRefCntWtd(unsigned newValue)
+    {
+        m_lvRefCntWtd = newValue;
+    }
+
+    int      lvStkOffs;   // stack offset of home
+    unsigned lvExactSize; // (exact) size of the type in bytes
 
     // Is this a promoted struct?
     // This method returns true only for structs (including SIMD structs), not for

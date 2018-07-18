@@ -479,10 +479,10 @@ GenTree* Lowering::LowerSwitch(GenTree* node)
         // the result of the child subtree to a temp.
         GenTree* rhs = node->gtOp.gtOp1;
 
-        unsigned lclNum                 = comp->lvaGrabTemp(true DEBUGARG("Lowering is creating a new local variable"));
-        comp->lvaSortAgain              = true;
-        comp->lvaTable[lclNum].lvType   = rhs->TypeGet();
-        comp->lvaTable[lclNum].lvRefCnt = 1;
+        unsigned lclNum               = comp->lvaGrabTemp(true DEBUGARG("Lowering is creating a new local variable"));
+        comp->lvaSortAgain            = true;
+        comp->lvaTable[lclNum].lvType = rhs->TypeGet();
+        comp->lvaTable[lclNum].setLvRefCnt(1);
 
         GenTreeLclVar* store =
             new (comp, GT_STORE_LCL_VAR) GenTreeLclVar(GT_STORE_LCL_VAR, rhs->TypeGet(), lclNum, BAD_IL_OFFSET);
@@ -2052,9 +2052,9 @@ void Lowering::LowerFastTailCall(GenTreeCall* call)
                         tmpLclNum = comp->lvaGrabTemp(
                             true DEBUGARG("Fast tail call lowering is creating a new local variable"));
 
-                        comp->lvaSortAgain                          = true;
-                        comp->lvaTable[tmpLclNum].lvType            = tmpType;
-                        comp->lvaTable[tmpLclNum].lvRefCnt          = 1;
+                        comp->lvaSortAgain               = true;
+                        comp->lvaTable[tmpLclNum].lvType = tmpType;
+                        comp->lvaTable[tmpLclNum].setLvRefCnt(1);
                         comp->lvaTable[tmpLclNum].lvDoNotEnregister = comp->lvaTable[lcl->gtLclNum].lvDoNotEnregister;
                     }
 

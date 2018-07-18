@@ -4656,7 +4656,7 @@ unsigned emitter::emitEndCodeGen(Compiler* comp,
 
                 assert(!dsc->lvRegister);
                 assert(dsc->lvTracked);
-                assert(dsc->lvRefCnt != 0);
+                assert(dsc->lvRefCnt() != 0);
 
                 assert(dsc->TypeGet() == TYP_REF || dsc->TypeGet() == TYP_BYREF);
 
