@@ -15,21 +15,14 @@ namespace System.Runtime.InteropServices.Tests
             Assert.Throws<PlatformNotSupportedException>(() => Marshal.BindToMoniker(null));
         }
 
-        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsNotNetNative), nameof(PlatformDetection.IsNotWindowsNanoServer))]
+        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsNotNetNative))]
         [PlatformSpecific(TestPlatforms.Windows)]
         [InlineData(null)]
         [InlineData("")]
-        public void BindToMoniker_NullOrEmptyMonikerName_ThrowsAnyException(string monikerName)
+        [InlineData("invalidName")]
+        public void BindToMoniker_InvalidArgument_ThrowsAnyException(string monikerName)
         {
             Assert.ThrowsAny<Exception>(() => Marshal.BindToMoniker(monikerName));
-        }
-
-        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsNotNetNative))]
-        [PlatformSpecific(TestPlatforms.Windows)]
-        [InlineData("name")]
-        public void BindToMoniker_InvalidMonikerName_ThrowsCOMException(string monikerName)
-        {
-            Assert.Throws<COMException>(() => Marshal.BindToMoniker(monikerName));
         }
     }
 }
