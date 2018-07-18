@@ -6,19 +6,13 @@ using System.Collections.Generic;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 
-#if !netstandard
 using Internal.Runtime.CompilerServices;
-#endif
 
-#if netstandard
-using nuint = System.NUInt;
-#else
 #if BIT64
 using nuint = System.UInt64;
 #else
 using nuint = System.UInt32;
 #endif // BIT64
-#endif // netstandard
 
 namespace System
 {
@@ -1360,26 +1354,25 @@ namespace System
         {
             if (typeof(T) == typeof(byte) || typeof(T) == typeof(sbyte))
             {
-                // The cast to nuint is not redundant on netstandard. Do not remove it.
-                size = (nuint)sizeof(byte);
+                size = sizeof(byte);
                 return true;
             }
 
             if (typeof(T) == typeof(char) || typeof(T) == typeof(short) || typeof(T) == typeof(ushort))
             {
-                size = (nuint)sizeof(char);
+                size = sizeof(char);
                 return true;
             }
 
             if (typeof(T) == typeof(int) || typeof(T) == typeof(uint))
             {
-                size = (nuint)sizeof(int);
+                size = sizeof(int);
                 return true;
             }
 
             if (typeof(T) == typeof(long) || typeof(T) == typeof(ulong))
             {
-                size = (nuint)sizeof(long);
+                size = sizeof(long);
                 return true;
             }
 
