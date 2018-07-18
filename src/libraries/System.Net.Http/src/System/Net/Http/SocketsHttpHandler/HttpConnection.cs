@@ -17,7 +17,7 @@ using System.Threading.Tasks;
 
 namespace System.Net.Http
 {
-    internal partial class HttpConnection : IDisposable
+    internal partial class HttpConnection : HttpConnectionBase, IDisposable
     {
         /// <summary>Default size of the read buffer used for the connection.</summary>
         private const int InitialReadBufferSize =
@@ -196,26 +196,6 @@ namespace System.Net.Http
             // We couldn't get the lock, which means it must already be held
             // by someone else who will consume the task.
             return null;
-        }
-
-        public bool IsNewConnection
-        {
-            get
-            {
-                // This is only valid when we are not actually processing a request.
-                Debug.Assert(_currentRequest == null);
-                return (_readAheadTask == null);
-            }
-        }
-
-        public bool CanRetry
-        {
-            get
-            {
-                // Should only be called when we have been disposed.
-                Debug.Assert(_disposed != 0);
-                return _canRetry;
-            }
         }
 
         public DateTimeOffset CreationTime { get; } = DateTimeOffset.UtcNow;
@@ -441,7 +421,7 @@ namespace System.Net.Http
                 {
                     // Write out Content-Length: 0 header to indicate no body,
                     // unless this is a method that never has a body.
-                    if (!ReferenceEquals(normalizedMethod, HttpMethod.Get) && !ReferenceEquals(normalizedMethod, HttpMethod.Head) && !ReferenceEquals(normalizedMethod, HttpMethod.Connect))
+                    if (normalizedMethod.MustHaveRequestBody)
                     {
                         await WriteBytesAsync(s_contentLength0NewlineAsciiBytes).ConfigureAwait(false);
                     }
@@ -603,7 +583,7 @@ namespace System.Net.Http
                 CancellationHelper.ThrowIfCancellationRequested(cancellationToken); // in case cancellation may have disposed of the stream
 
                 // Create the response stream.
-                HttpContentStream responseStream;
+                Stream responseStream;
                 if (ReferenceEquals(normalizedMethod, HttpMethod.Head) || response.StatusCode == HttpStatusCode.NoContent || response.StatusCode == HttpStatusCode.NotModified)
                 {
                     responseStream = EmptyReadStream.Instance;
@@ -683,11 +663,16 @@ namespace System.Net.Http
                     // original information as the inner exception, for diagnostic purposes.
                     throw CancellationHelper.CreateOperationCanceledException(error, cancellationToken);
                 }
-                else if (error is InvalidOperationException || error is IOException)
+                else if (error is InvalidOperationException)
                 {
-                    // If it's an InvalidOperationException or an IOException, for consistency
-                    // with other handlers we wrap the exception in an HttpRequestException.
+                    // For consistency with other handlers we wrap the exception in an HttpRequestException.
                     throw new HttpRequestException(SR.net_http_client_execution_error, error);
+                }
+                else if (error is IOException ioe)
+                {
+                    // For consistency with other handlers we wrap the exception in an HttpRequestException.
+                    // If the request is retryable, indicate that on the exception.
+                    throw new HttpRequestException(SR.net_http_client_execution_error, ioe, _canRetry);
                 }
                 else
                 {
@@ -707,7 +692,7 @@ namespace System.Net.Http
             return SendAsyncCore(request, cancellationToken);
         }
 
-        public Task<HttpResponseMessage> SendAsync(HttpRequestMessage request, bool doRequestAuth, CancellationToken cancellationToken)
+        private Task<HttpResponseMessage> SendAsyncInternal(HttpRequestMessage request, bool doRequestAuth, CancellationToken cancellationToken)
         {
             if (doRequestAuth && _pool.Settings._credentials != null)
             {
@@ -715,6 +700,19 @@ namespace System.Net.Http
             }
 
             return SendWithNtProxyAuthAsync(request, cancellationToken);
+        }
+
+        public sealed override async Task<HttpResponseMessage> SendAsync(HttpRequestMessage request, bool doRequestAuth, CancellationToken cancellationToken)
+        {
+            Acquire();
+            try
+            {
+                return await SendAsyncInternal(request, doRequestAuth, cancellationToken).ConfigureAwait(false);
+            }
+            finally
+            {
+                Release();
+            }
         }
 
         private HttpContentWriteStream CreateRequestContentStream(HttpRequestMessage request)
@@ -1472,7 +1470,7 @@ namespace System.Net.Http
             }
         }
 
-        public void Acquire()
+        private void Acquire()
         {
             Debug.Assert(_currentRequest == null);
             Debug.Assert(!_inUse);
@@ -1480,7 +1478,7 @@ namespace System.Net.Http
             _inUse = true;
         }
 
-        public void Release()
+        private void Release()
         {
             Debug.Assert(_inUse);
 
@@ -1532,9 +1530,12 @@ namespace System.Net.Http
                 throw new HttpRequestException(SR.net_http_authconnectionfailure);
             }
 
-            HttpContentReadStream responseStream = (HttpContentReadStream)await response.Content.ReadAsStreamAsync().ConfigureAwait(false);
+            Stream stream = await response.Content.ReadAsStreamAsync().ConfigureAwait(false);
+            HttpContentReadStream responseStream = stream as HttpContentReadStream;
 
-            if (responseStream.NeedsDrain)
+            Debug.Assert(responseStream != null || stream is EmptyReadStream);
+
+            if (responseStream != null && responseStream.NeedsDrain)
             {
                 Debug.Assert(response.RequestMessage == _currentRequest);
 
