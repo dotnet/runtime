@@ -361,20 +361,36 @@ def main(args):
 
     # If we're doing altjit testing, then don't run any tests that don't work with altjit.
     if ci_arch is not None and (ci_arch == 'x86_arm_altjit' or ci_arch == 'x64_arm64_altjit'):
-        # The property value we need to specify is a semicolon separated list of two values,
-        # so the two values must be enclosed in double quotes. Without the quotes, msbuild
-        # thinks the item after the semicolon is a different named property. Also, the double
-        # quotes need preceeding backslashes or else run.exe (invoked from build-tests.cmd)
-        # will eat them. They need to be double backslashes so Python preserves the backslashes.
-        without_categories = '/p:WithoutCategories=\\"IgnoreForCI;XsltcExeRequired\\"'
+        # The property value we need to specify for the WithoutCategories property is a semicolon
+        # separated list of two values, so the two values must be enclosed in double quotes, namely:
+        #
+        #  /p:WithoutCategories="IgnoreForCI;XsltcExeRequired"
+        #
+        # Without the quotes, msbuild interprets the semicolon as separating two name/value pairs,
+        # which is incorrect (and causes an error).
+        #
+        # If we pass this on the command-line, it requires an extraordinary number of backslashes
+        # to prevent special Python, dotnet CLI, CMD, and other command-line processing, as the command
+        # filters through batch files, the RUN tool, dotnet CLI, and finally gets to msbuild. To avoid
+        # this, and make it simpler and hopefully more resilient to scripting changes, we create an
+        # msbuild response file with the required text and pass the response file on to msbuild.
+
+        without_categories_filename = os.path.join(fx_root, 'msbuild_commands.rsp')
+        without_categories_string = '/p:WithoutCategories="IgnoreForCI;XsltcExeRequired"'
+        with open(without_categories_filename, "w") as without_categories_file:
+            without_categories_file.write(without_categories_string)
+        without_categories = "-- @%s" % without_categories_filename
+
+        log('Response file %s contents:' % without_categories_filename)
+        log('%s' % without_categories_string)
+        log('[end response file contents]')
     else:
-        without_categories = '/p:WithoutCategories=IgnoreForCI'
+        without_categories = '-- /p:WithoutCategories=IgnoreForCI'
 
     command = ' '.join((
         command,
         config_args,
         '-SkipTests' if no_run_tests else '',
-        '--',
         without_categories
     ))
 
