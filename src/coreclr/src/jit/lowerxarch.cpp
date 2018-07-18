@@ -1338,7 +1338,7 @@ GenTree* Lowering::PreferredRegOptionalOperand(GenTree* tree)
             // weight as reg optional.
             // If either is not tracked, it may be that it was introduced after liveness
             // was run, in which case we will always prefer op1 (should we use raw refcnt??).
-            if (v1->lvTracked && v2->lvTracked && (v1->lvRefCntWtd >= v2->lvRefCntWtd))
+            if (v1->lvTracked && v2->lvTracked && (v1->lvRefCntWtd() >= v2->lvRefCntWtd()))
             {
                 preferredOp = op2;
             }

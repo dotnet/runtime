@@ -475,7 +475,7 @@ void CodeGen::siBeginBlock(BasicBlock* block)
             // So we need to check if this tracked variable is actually used.
             if (!compiler->lvaTable[varNum].lvIsInReg() && !compiler->lvaTable[varNum].lvOnFrame)
             {
-                assert(compiler->lvaTable[varNum].lvRefCnt == 0);
+                assert(compiler->lvaTable[varNum].lvRefCnt() == 0);
                 continue;
             }
 

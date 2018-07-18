@@ -1327,7 +1327,7 @@ public:
 
         for (lclNum = 0, varDsc = m_pCompiler->lvaTable; lclNum < m_pCompiler->lvaCount; lclNum++, varDsc++)
         {
-            if (varDsc->lvRefCnt == 0)
+            if (varDsc->lvRefCnt() == 0)
             {
                 continue;
             }
@@ -1368,7 +1368,7 @@ public:
                 // will consider this LclVar as being enregistered.
                 // Now we reduce the remaining regAvailEstimate by
                 // an appropriate amount.
-                if (varDsc->lvRefCnt <= 2)
+                if (varDsc->lvRefCnt() <= 2)
                 {
                     // a single use single def LclVar only uses 1
                     regAvailEstimate -= 1;
@@ -1435,22 +1435,22 @@ public:
             {
                 if (CodeOptKind() == Compiler::SMALL_CODE)
                 {
-                    aggressiveRefCnt = varDsc->lvRefCnt + BB_UNITY_WEIGHT;
+                    aggressiveRefCnt = varDsc->lvRefCnt() + BB_UNITY_WEIGHT;
                 }
                 else
                 {
-                    aggressiveRefCnt = varDsc->lvRefCntWtd + BB_UNITY_WEIGHT;
+                    aggressiveRefCnt = varDsc->lvRefCntWtd() + BB_UNITY_WEIGHT;
                 }
             }
             if ((moderateRefCnt == 0) && (enregCount > ((CNT_CALLEE_ENREG * 3) + (CNT_CALLEE_TRASH * 2))))
             {
                 if (CodeOptKind() == Compiler::SMALL_CODE)
                 {
-                    moderateRefCnt = varDsc->lvRefCnt;
+                    moderateRefCnt = varDsc->lvRefCnt();
                 }
                 else
                 {
-                    moderateRefCnt = varDsc->lvRefCntWtd;
+                    moderateRefCnt = varDsc->lvRefCntWtd();
                 }
             }
         }

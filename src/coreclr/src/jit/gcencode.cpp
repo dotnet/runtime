@@ -2240,7 +2240,7 @@ size_t GCInfo::gcMakeRegPtrTable(BYTE* dest, int mask, const InfoHdr& header, un
                             /* If this non-enregistered pointer arg is never
                              * used, we don't need to report it
                              */
-                            assert(varDsc->lvRefCnt == 0); // This assert is currently a known issue for X86-RyuJit
+                            assert(varDsc->lvRefCnt() == 0); // This assert is currently a known issue for X86-RyuJit
                             continue;
                         }
                         else if (varDsc->lvIsRegArg && varDsc->lvTracked)
@@ -4220,7 +4220,7 @@ void GCInfo::gcMakeRegPtrTable(
                     {
                         // If this non-enregistered pointer arg is never
                         // used, we don't need to report it.
-                        assert(varDsc->lvRefCnt == 0);
+                        assert(varDsc->lvRefCnt() == 0);
                         continue;
                     }
                     else if (varDsc->lvIsRegArg && varDsc->lvTracked)

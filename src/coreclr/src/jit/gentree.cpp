@@ -2983,7 +2983,7 @@ bool Compiler::gtIsLikelyRegVar(GenTree* tree)
         return false;
     }
 
-    if (varDsc->lvRefCntWtd < (BB_UNITY_WEIGHT * 3))
+    if (varDsc->lvRefCntWtd() < (BB_UNITY_WEIGHT * 3))
     {
         return false;
     }

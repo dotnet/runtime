@@ -2338,7 +2338,7 @@ void fgArgInfo::EvalArgsToTemps()
                         // We'll reference this temporary variable just once
                         // when we perform the function call after
                         // setting up this argument.
-                        varDsc->lvRefCnt = 1;
+                        varDsc->setLvRefCnt(1);
                     }
 
                     var_types lclVarType = genActualType(argx->gtType);
@@ -5224,9 +5224,9 @@ void Compiler::fgMakeOutgoingStructArgCopy(GenTreeCall*         call,
             // on the caller's frame. If an argument lives on the caller caller's frame, it may get
             // overwritten if that frame is reused for the tail call. Therefore, we should always copy
             // struct parameters if they are passed as arguments to a tail call.
-            if (!call->IsTailCallViaHelper() && (varDsc->lvRefCnt == 1) && !fgMightHaveLoop())
+            if (!call->IsTailCallViaHelper() && (varDsc->lvRefCnt() == 1) && !fgMightHaveLoop())
             {
-                varDsc->lvRefCnt = 0;
+                varDsc->setLvRefCnt(0);
                 args->gtOp.gtOp1 = lcl;
                 fp->node         = lcl;
 
@@ -12576,11 +12576,11 @@ DONE_MORPHING_CHILDREN:
                     // And then emitter::emitEndCodeGen will assert in the following line:
                     //        noway_assert( dsc->lvTracked);
                     // </BUGNUM>
-                    noway_assert(varDsc->lvRefCnt == 0 || // lvRefCnt may not have been set yet.
-                                 varDsc->lvRefCnt == 2    // Or, we assume this tmp should only be used here,
-                                                          // and it only shows up twice.
+                    noway_assert(varDsc->lvRefCnt() == 0 || // lvRefCnt may not have been set yet.
+                                 varDsc->lvRefCnt() == 2    // Or, we assume this tmp should only be used here,
+                                                            // and it only shows up twice.
                                  );
-                    lvaTable[lclNum].lvRefCnt = 0;
+                    lvaTable[lclNum].setLvRefCnt(0);
                     lvaTable[lclNum].lvaResetSortAgainFlag(this);
                 }
 
@@ -17342,8 +17342,8 @@ Compiler::fgWalkResult Compiler::fgMorphStructField(GenTree* tree, fgWalkData* f
                     // chance, so have to check now.
                     JITDUMP(
                         "Incrementing ref count from %d to %d for V%02d in fgMorphStructField for promoted struct\n",
-                        varDsc->lvRefCnt, varDsc->lvRefCnt + 1, lclNum);
-                    varDsc->lvRefCnt++;
+                        varDsc->lvRefCnt(), varDsc->lvRefCnt() + 1, lclNum);
+                    varDsc->incLvRefCnt(1);
                 }
 
                 tree->SetOper(GT_LCL_VAR);
@@ -17433,8 +17433,8 @@ Compiler::fgWalkResult Compiler::fgMorphStructField(GenTree* tree, fgWalkData* f
                     // lclVars, but here we're about to return SKIP_SUBTREES and rob it of the
                     // chance, so have to check now.
                     JITDUMP("Incrementing ref count from %d to %d for V%02d in fgMorphStructField for normed struct\n",
-                            varDsc->lvRefCnt, varDsc->lvRefCnt + 1, lclNum);
-                    varDsc->lvRefCnt++;
+                            varDsc->lvRefCnt(), varDsc->lvRefCnt() + 1, lclNum);
+                    varDsc->incLvRefCnt(1);
                 }
 
                 tree->ChangeOper(GT_LCL_VAR);
@@ -17590,7 +17590,7 @@ void Compiler::fgMarkImplicitByRefArgs()
                 // appearance of implicit-by-ref param so that call arg morphing can do an
                 // optimization for single-use implicit-by-ref params whose single use is as
                 // an outgoing call argument.
-                varDsc->lvRefCnt = 0;
+                varDsc->setLvRefCnt(0);
             }
         }
     }
@@ -17677,7 +17677,7 @@ void Compiler::fgRetypeImplicitByRefArgs()
                 // parameter if it weren't promoted at all (otherwise the initialization
                 // of the new temp would just be a needless memcpy at method entry).
                 bool undoPromotion = (lvaGetPromotionType(newVarDsc) == PROMOTION_TYPE_DEPENDENT) ||
-                                     (varDsc->lvRefCnt <= varDsc->lvFieldCnt);
+                                     (varDsc->lvRefCnt() <= varDsc->lvFieldCnt);
 
                 if (!undoPromotion)
                 {
@@ -17715,7 +17715,7 @@ void Compiler::fgRetypeImplicitByRefArgs()
                         // to the implicit byref parameter when morphing calls that pass the implicit byref
                         // out as an outgoing argument value, but that doesn't pertain to this field local
                         // which is now a field of a non-arg local.
-                        fieldVarDsc->lvRefCnt = 0;
+                        fieldVarDsc->setLvRefCnt(0);
                     }
 
                     fieldVarDsc->lvIsParam = false;
@@ -17832,12 +17832,12 @@ void Compiler::fgMarkDemotedImplicitByRefArgs()
                 // call morphing could identify single-use implicit byrefs; we're done with
                 // that, and want it to be in its default state of zero when we go to set
                 // real ref counts for all variables.
-                varDsc->lvRefCnt = 0;
+                varDsc->setLvRefCnt(0);
 
                 // The temp struct is now unused; set flags appropriately so that we
                 // won't allocate space for it on the stack.
-                LclVarDsc* structVarDsc     = &lvaTable[structLclNum];
-                structVarDsc->lvRefCnt      = 0;
+                LclVarDsc* structVarDsc = &lvaTable[structLclNum];
+                structVarDsc->setLvRefCnt(0);
                 structVarDsc->lvAddrExposed = false;
 #ifdef DEBUG
                 structVarDsc->lvUnusedStruct = true;
@@ -17856,7 +17856,7 @@ void Compiler::fgMarkDemotedImplicitByRefArgs()
 
                     // The field local is now unused; set flags appropriately so that
                     // we won't allocate stack space for it.
-                    fieldVarDsc->lvRefCnt      = 0;
+                    fieldVarDsc->setLvRefCnt(0);
                     fieldVarDsc->lvAddrExposed = false;
                 }
             }
@@ -18251,10 +18251,10 @@ Compiler::fgWalkResult Compiler::fgMarkAddrTakenLocalsPreCB(GenTree** pTree, fgW
                 // checks the ref counts for implicit byref params when deciding if it's legal
                 // to elide certain copies of them.
                 LclVarDsc* varDsc = &comp->lvaTable[lclNum];
-                JITDUMP("Incrementing ref count from %d to %d for V%02d in fgMorphStructField\n", varDsc->lvRefCnt,
-                        varDsc->lvRefCnt + 1, lclNum);
+                JITDUMP("Incrementing ref count from %d to %d for V%02d in fgMorphStructField\n", varDsc->lvRefCnt(),
+                        varDsc->lvRefCnt() + 1, lclNum);
 
-                varDsc->lvRefCnt++;
+                varDsc->incLvRefCnt(1);
             }
             // This recognizes certain forms, and does all the work.  In that case, returns WALK_SKIP_SUBTREES,
             // else WALK_CONTINUE.  We do the same here.
@@ -18289,10 +18289,10 @@ Compiler::fgWalkResult Compiler::fgMarkAddrTakenLocalsPreCB(GenTree** pTree, fgW
                 // byref (here during address-exposed analysis); fgMakeOutgoingStructArgCopy
                 // checks the ref counts for implicit byref params when deciding if it's legal
                 // to elide certain copies of them.
-                JITDUMP("Incrementing ref count from %d to %d for V%02d in fgMorphStructField\n", varDsc->lvRefCnt,
-                        varDsc->lvRefCnt + 1, lclNum);
+                JITDUMP("Incrementing ref count from %d to %d for V%02d in fgMorphStructField\n", varDsc->lvRefCnt(),
+                        varDsc->lvRefCnt() + 1, lclNum);
 
-                varDsc->lvRefCnt++;
+                varDsc->incLvRefCnt(1);
             }
 
             if (axc == AXC_Addr || axc == AXC_AddrWide)

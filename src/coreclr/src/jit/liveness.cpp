@@ -31,11 +31,11 @@ void Compiler::fgMarkUseDef(GenTreeLclVarCommon* tree)
     LclVarDsc* const varDsc = &lvaTable[lclNum];
 
     // We should never encounter a reference to a lclVar that has a zero refCnt.
-    if (varDsc->lvRefCnt == 0 && (!varTypeIsPromotable(varDsc) || !varDsc->lvPromoted))
+    if (varDsc->lvRefCnt() == 0 && (!varTypeIsPromotable(varDsc) || !varDsc->lvPromoted))
     {
         JITDUMP("Found reference to V%02u with zero refCnt.\n", lclNum);
         assert(!"We should never encounter a reference to a lclVar that has a zero refCnt.");
-        varDsc->lvRefCnt = 1;
+        varDsc->setLvRefCnt(1);
     }
 
     const bool isDef = (tree->gtFlags & GTF_VAR_DEF) != 0;
@@ -1047,9 +1047,9 @@ void Compiler::fgExtendDbgLifetimes()
     unsigned lclNum = 0;
     for (LclVarDsc *varDsc = lvaTable; lclNum < lvaCount; lclNum++, varDsc++)
     {
-        if (varDsc->lvRefCnt == 0 && varDsc->lvIsRegArg)
+        if (varDsc->lvRefCnt() == 0 && varDsc->lvIsRegArg)
         {
-            varDsc->lvRefCnt = 1;
+            varDsc->setLvRefCnt(1);
         }
     }
 

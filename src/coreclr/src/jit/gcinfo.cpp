@@ -427,7 +427,7 @@ void GCInfo::gcCountForHeader(UNALIGNED unsigned int* untrackedCount, UNALIGNED 
                         /* If this non-enregistered pointer arg is never
                          * used, we don't need to report it
                          */
-                        assert(varDsc->lvRefCnt == 0);
+                        assert(varDsc->lvRefCnt() == 0);
                         continue;
                     }
                     else if (varDsc->lvIsRegArg && varDsc->lvTracked)
