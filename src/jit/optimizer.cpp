@@ -5711,74 +5711,32 @@ bool Compiler::optNarrowTree(GenTree* tree, var_types srct, var_types dstt, Valu
         switch (tree->gtOper)
         {
             case GT_AND:
-                noway_assert(genActualType(tree->gtType) == genActualType(op1->gtType));
                 noway_assert(genActualType(tree->gtType) == genActualType(op2->gtType));
 
-                GenTree* opToNarrow;
-                opToNarrow = nullptr;
-                GenTree** otherOpPtr;
-                otherOpPtr = nullptr;
-                bool canNotNarrowOperand;
-                canNotNarrowOperand = false;
-
-                // If 'dstt' is unsigned and one of the operands can be narrowed into 'dsst',
-                // the result of the GT_AND will also fit into 'dstt' and can be narrowed.
-                // The same is true if one of the operands is an int const and can be narrowed into 'dsst'.
-                if (!gtIsActiveCSE_Candidate(op2) && ((op2->gtOper == GT_CNS_INT) || varTypeIsUnsigned(dstt)))
+                // Is op2 a small constant than can be narrowed into dstt?
+                // if so the result of the GT_AND will also fit into 'dstt' and can be narrowed
+                if ((op2->gtOper == GT_CNS_INT) && optNarrowTree(op2, srct, dstt, NoVNPair, false))
                 {
-                    if (optNarrowTree(op2, srct, dstt, NoVNPair, false))
-                    {
-                        opToNarrow = op2;
-                        otherOpPtr = &tree->gtOp.gtOp1;
-                    }
-                    else
-                    {
-                        canNotNarrowOperand = true;
-                    }
-                }
-
-                if ((opToNarrow == nullptr) && !gtIsActiveCSE_Candidate(op1) &&
-                    ((op1->gtOper == GT_CNS_INT) || varTypeIsUnsigned(dstt)))
-                {
-                    if (optNarrowTree(op1, srct, dstt, NoVNPair, false))
-                    {
-                        opToNarrow = op1;
-                        otherOpPtr = &tree->gtOp.gtOp2;
-                    }
-                    else
-                    {
-                        canNotNarrowOperand = true;
-                    }
-                }
-
-                if (opToNarrow != nullptr)
-                {
-                    // We will change the type of the tree and narrow opToNarrow
+                    // We will change the type of the tree and narrow op2
                     //
                     if (doit)
                     {
                         tree->gtType = genActualType(dstt);
                         tree->SetVNs(vnpNarrow);
 
-                        optNarrowTree(opToNarrow, srct, dstt, NoVNPair, true);
-                        // We may also need to cast away the upper bits of *otherOpPtr
+                        optNarrowTree(op2, srct, dstt, NoVNPair, true);
+                        // We may also need to cast away the upper bits of op1
                         if (srcSize == 8)
                         {
                             assert(tree->gtType == TYP_INT);
-                            GenTree* castOp = gtNewCastNode(TYP_INT, op1, false, TYP_INT);
+                            op1 = gtNewCastNode(TYP_INT, op1, false, TYP_INT);
 #ifdef DEBUG
-                            castOp->gtDebugFlags |= GTF_DEBUG_NODE_MORPHED;
+                            op1->gtDebugFlags |= GTF_DEBUG_NODE_MORPHED;
 #endif
-                            *otherOpPtr = castOp;
+                            tree->gtOp.gtOp1 = op1;
                         }
                     }
                     return true;
-                }
-
-                if (canNotNarrowOperand)
-                {
-                    noway_assert(doit == false);
-                    return false;
                 }
 
                 goto COMMON_BINOP;
@@ -5795,9 +5753,10 @@ bool Compiler::optNarrowTree(GenTree* tree, var_types srct, var_types dstt, Valu
 
             case GT_OR:
             case GT_XOR:
+            COMMON_BINOP:
                 noway_assert(genActualType(tree->gtType) == genActualType(op1->gtType));
                 noway_assert(genActualType(tree->gtType) == genActualType(op2->gtType));
-            COMMON_BINOP:
+
                 if (gtIsActiveCSE_Candidate(op1) || gtIsActiveCSE_Candidate(op2) ||
                     !optNarrowTree(op1, srct, dstt, NoVNPair, doit) || !optNarrowTree(op2, srct, dstt, NoVNPair, doit))
                 {
