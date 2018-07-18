@@ -7,9 +7,7 @@ using System.Runtime.CompilerServices;
 using System.Collections.Generic;
 using System.Diagnostics;
 
-#if !netstandard
 using Internal.Runtime.CompilerServices;
-#endif
 
 namespace System.Runtime.InteropServices
 {
@@ -43,11 +41,7 @@ namespace System.Runtime.InteropServices
 
             if ((length & ReadOnlyMemory<T>.RemoveFlagsBitMask) == 0)
             {
-#if FEATURE_PORTABLE_SPAN
-                segment = new ArraySegment<T>(SpanHelpers.PerTypeValues<T>.EmptyArray);
-#else
                 segment = ArraySegment<T>.Empty;
-#endif // FEATURE_PORTABLE_SPAN
                 return true;
             }
 
@@ -147,17 +141,10 @@ namespace System.Runtime.InteropServices
         public static T Read<T>(ReadOnlySpan<byte> source)
             where T : struct
         {
-#if netstandard
-            if (SpanHelpers.IsReferenceOrContainsReferences<T>())
-            {
-                ThrowHelper.ThrowArgumentException_InvalidTypeWithPointersNotSupported(typeof(T));
-            }
-#else
             if (RuntimeHelpers.IsReferenceOrContainsReferences<T>())
             {
                 ThrowHelper.ThrowInvalidTypeWithPointersNotSupported(typeof(T));
             }
-#endif
             if (Unsafe.SizeOf<T>() > source.Length)
             {
                 ThrowHelper.ThrowArgumentOutOfRangeException(ExceptionArgument.length);
@@ -173,17 +160,10 @@ namespace System.Runtime.InteropServices
         public static bool TryRead<T>(ReadOnlySpan<byte> source, out T value)
             where T : struct
         {
-#if netstandard
-            if (SpanHelpers.IsReferenceOrContainsReferences<T>())
-            {
-                ThrowHelper.ThrowArgumentException_InvalidTypeWithPointersNotSupported(typeof(T));
-            }
-#else
             if (RuntimeHelpers.IsReferenceOrContainsReferences<T>())
             {
                 ThrowHelper.ThrowInvalidTypeWithPointersNotSupported(typeof(T));
             }
-#endif
             if (Unsafe.SizeOf<T>() > (uint)source.Length)
             {
                 value = default;
@@ -200,17 +180,10 @@ namespace System.Runtime.InteropServices
         public static void Write<T>(Span<byte> destination, ref T value)
             where T : struct
         {
-#if netstandard
-            if (SpanHelpers.IsReferenceOrContainsReferences<T>())
-            {
-                ThrowHelper.ThrowArgumentException_InvalidTypeWithPointersNotSupported(typeof(T));
-            }
-#else
             if (RuntimeHelpers.IsReferenceOrContainsReferences<T>())
             {
                 ThrowHelper.ThrowInvalidTypeWithPointersNotSupported(typeof(T));
             }
-#endif
             if ((uint)Unsafe.SizeOf<T>() > (uint)destination.Length)
             {
                 ThrowHelper.ThrowArgumentOutOfRangeException(ExceptionArgument.length);
@@ -226,17 +199,10 @@ namespace System.Runtime.InteropServices
         public static bool TryWrite<T>(Span<byte> destination, ref T value)
             where T : struct
         {
-#if netstandard
-            if (SpanHelpers.IsReferenceOrContainsReferences<T>())
-            {
-                ThrowHelper.ThrowArgumentException_InvalidTypeWithPointersNotSupported(typeof(T));
-            }
-#else
             if (RuntimeHelpers.IsReferenceOrContainsReferences<T>())
             {
                 ThrowHelper.ThrowInvalidTypeWithPointersNotSupported(typeof(T));
             }
-#endif
             if (Unsafe.SizeOf<T>() > (uint)destination.Length)
             {
                 return false;
