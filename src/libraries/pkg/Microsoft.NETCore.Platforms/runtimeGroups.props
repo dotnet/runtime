@@ -43,7 +43,7 @@
     <RuntimeGroup Include="fedora">
       <Parent>linux</Parent>
       <Architectures>x64</Architectures>
-      <Versions>23;24;25;26;27;28</Versions>
+      <Versions>23;24;25;26;27;28;29</Versions>
       <TreatVersionsAsCompatible>false</TreatVersionsAsCompatible>
     </RuntimeGroup>
 
@@ -72,7 +72,7 @@
     <RuntimeGroup Include="ol">
       <Parent>rhel</Parent>
       <Architectures>x64</Architectures>
-      <Versions>7;7.0;7.1;7.2;7.3;7.4</Versions>
+      <Versions>7;7.0;7.1;7.2;7.3;7.4;7.5;7.6</Versions>
       <ApplyVersionsToParent>true</ApplyVersionsToParent>
     </RuntimeGroup>
 
@@ -106,7 +106,7 @@
     <RuntimeGroup Include="rhel">
       <Parent>linux</Parent>
       <Architectures>x64</Architectures>
-      <Versions>7;7.0;7.1;7.2;7.3;7.4</Versions>
+      <Versions>7;7.0;7.1;7.2;7.3;7.4;7.5;7.6</Versions>
     </RuntimeGroup>
 
     <RuntimeGroup Include="sles">
