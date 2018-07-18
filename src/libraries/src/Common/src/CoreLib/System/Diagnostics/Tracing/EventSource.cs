@@ -4049,7 +4049,12 @@ namespace System.Diagnostics.Tracing
                 if (!s_EventSourceShutdownRegistered)
                 {
                     s_EventSourceShutdownRegistered = true;
+#if ES_BUILD_PN
                     AppContext.ProcessExit += DisposeOnShutdown;
+#else
+                    AppDomain.CurrentDomain.ProcessExit += DisposeOnShutdown;
+                    AppDomain.CurrentDomain.DomainUnload += DisposeOnShutdown;
+#endif
                 }
 
 
