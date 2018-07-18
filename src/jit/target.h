@@ -1286,9 +1286,12 @@ typedef unsigned char   regNumberSmall;
   #define RBM_ALLFLOAT            (RBM_FLT_CALLEE_SAVED | RBM_FLT_CALLEE_TRASH)
   #define RBM_ALLDOUBLE            RBM_ALLFLOAT
 
-  #define REG_VAR_ORDER            REG_R9,REG_R10,REG_R11,REG_R12,REG_R13,REG_R14,REG_R15,\
-                                   REG_R8,REG_R7,REG_R6,REG_R5,REG_R4,REG_R3,REG_R2,REG_R1,REG_R0,\
-                                   REG_R19,REG_R20,REG_R21,REG_R22,REG_R23,REG_R24,REG_R25,REG_R26,REG_R27,REG_R28,\
+  // REG_VAR_ORDER is: (CALLEE_TRASH & ~CALLEE_TRASH_NOGC), CALLEE_TRASH_NOGC, CALLEE_SAVED
+  #define REG_VAR_ORDER            REG_R0, REG_R1, REG_R2, REG_R3, REG_R4, REG_R5, \
+                                   REG_R6, REG_R7, REG_R8, REG_R9, REG_R10,        \
+                                   REG_R11, REG_R13, REG_R14,                      \
+                                   REG_R12, REG_R15, REG_IP0, REG_IP1,             \
+                                   REG_CALLEE_SAVED_ORDER
 
   #define REG_VAR_ORDER_FLT        REG_V16, REG_V17, REG_V18, REG_V19, \
                                    REG_V20, REG_V21, REG_V22, REG_V23, \
@@ -1373,7 +1376,7 @@ typedef unsigned char   regNumberSmall;
   #define REG_WRITE_BARRIER_SRC_BYREF    REG_R13
   #define RBM_WRITE_BARRIER_SRC_BYREF    RBM_R13
 
-  #define RBM_CALLEE_TRASH_NOGC          (RBM_R12|RBM_R15|RBM_IP1|RBM_DEFAULT_HELPER_CALL_TARGET)
+  #define RBM_CALLEE_TRASH_NOGC          (RBM_R12|RBM_R15|RBM_IP0|RBM_IP1|RBM_DEFAULT_HELPER_CALL_TARGET)
 
   // Registers killed by CORINFO_HELP_ASSIGN_REF and CORINFO_HELP_CHECKED_ASSIGN_REF.
   #define RBM_CALLEE_TRASH_WRITEBARRIER         (RBM_R14|RBM_CALLEE_TRASH_NOGC)
