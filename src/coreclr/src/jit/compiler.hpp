@@ -1798,8 +1798,8 @@ inline unsigned Compiler::lvaGrabTempWithImplicitUse(bool shortLifetime DEBUGARG
     lvaSetVarAddrExposed(lclNum);
 
     // We need lvRefCnt to be non-zero to prevent various asserts from firing.
-    varDsc->lvRefCnt    = 1;
-    varDsc->lvRefCntWtd = BB_UNITY_WEIGHT;
+    varDsc->setLvRefCnt(1);
+    varDsc->setLvRefCntWtd(BB_UNITY_WEIGHT);
 
     return lclNum;
 }
@@ -1819,9 +1819,9 @@ inline void LclVarDsc::lvaResetSortAgainFlag(Compiler* comp)
         comp->lvaSortAgain = true;
     }
     /* Set weighted ref count to zero if  ref count is zero */
-    if (lvRefCnt == 0)
+    if (lvRefCnt() == 0)
     {
-        lvRefCntWtd = 0;
+        setLvRefCntWtd(0);
     }
 }
 
@@ -1844,17 +1844,17 @@ inline void LclVarDsc::decRefCnts(BasicBlock::weight_t weight, Compiler* comp, b
     //
     if (lvType != TYP_STRUCT || promotionType != Compiler::PROMOTION_TYPE_INDEPENDENT)
     {
-        assert(lvRefCnt); // Can't decrement below zero
+        assert(lvRefCnt()); // Can't decrement below zero
 
         // TODO: Well, the assert above could be bogus.
         // If lvRefCnt has overflowed before, then might drop to 0.
         // Therefore we do need the following check to keep lvRefCnt from underflow:
-        if (lvRefCnt > 0)
+        if (lvRefCnt() > 0)
         {
             //
             // Decrement lvRefCnt
             //
-            lvRefCnt--;
+            decLvRefCnt(1);
 
             //
             // Decrement lvRefCntWtd
@@ -1866,13 +1866,13 @@ inline void LclVarDsc::decRefCnts(BasicBlock::weight_t weight, Compiler* comp, b
                     weight *= 2;
                 }
 
-                if (lvRefCntWtd <= weight)
+                if (lvRefCntWtd() <= weight)
                 { // Can't go below zero
-                    lvRefCntWtd = 0;
+                    setLvRefCntWtd(0);
                 }
                 else
                 {
-                    lvRefCntWtd -= weight;
+                    decLvRefCntWtd(weight);
                 }
             }
         }
@@ -1910,7 +1910,8 @@ inline void LclVarDsc::decRefCnts(BasicBlock::weight_t weight, Compiler* comp, b
     {
         unsigned varNum = (unsigned)(this - comp->lvaTable);
         assert(&comp->lvaTable[varNum] == this);
-        printf("New refCnts for V%02u: refCnt = %2u, refCntWtd = %s\n", varNum, lvRefCnt, refCntWtd2str(lvRefCntWtd));
+        printf("New refCnts for V%02u: refCnt = %2u, refCntWtd = %s\n", varNum, lvRefCnt(),
+               refCntWtd2str(lvRefCntWtd()));
     }
 #endif
 }
@@ -1936,10 +1937,10 @@ inline void LclVarDsc::incRefCnts(BasicBlock::weight_t weight, Compiler* comp, b
         //
         // Increment lvRefCnt
         //
-        int newRefCnt = lvRefCnt + 1;
+        int newRefCnt = lvRefCnt() + 1;
         if (newRefCnt == (unsigned short)newRefCnt) // lvRefCnt is an "unsigned short". Don't overflow it.
         {
-            lvRefCnt = (unsigned short)newRefCnt;
+            setLvRefCnt((unsigned short)newRefCnt);
         }
 
         // This fires when an uninitialize value for 'weight' is used (see lvaMarkRefsWeight)
@@ -1956,14 +1957,14 @@ inline void LclVarDsc::incRefCnts(BasicBlock::weight_t weight, Compiler* comp, b
                 weight *= 2;
             }
 
-            unsigned newWeight = lvRefCntWtd + weight;
-            if (newWeight >= lvRefCntWtd)
+            unsigned newWeight = lvRefCntWtd() + weight;
+            if (newWeight >= lvRefCntWtd())
             { // lvRefCntWtd is an "unsigned".  Don't overflow it
-                lvRefCntWtd = newWeight;
+                setLvRefCntWtd(newWeight);
             }
             else
             { // On overflow we assign ULONG_MAX
-                lvRefCntWtd = ULONG_MAX;
+                setLvRefCntWtd(ULONG_MAX);
             }
         }
     }
@@ -2000,7 +2001,8 @@ inline void LclVarDsc::incRefCnts(BasicBlock::weight_t weight, Compiler* comp, b
     {
         unsigned varNum = (unsigned)(this - comp->lvaTable);
         assert(&comp->lvaTable[varNum] == this);
-        printf("New refCnts for V%02u: refCnt = %2u, refCntWtd = %s\n", varNum, lvRefCnt, refCntWtd2str(lvRefCntWtd));
+        printf("New refCnts for V%02u: refCnt = %2u, refCntWtd = %s\n", varNum, lvRefCnt(),
+               refCntWtd2str(lvRefCntWtd()));
     }
 #endif
 }

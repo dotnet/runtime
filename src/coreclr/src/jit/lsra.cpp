@@ -180,7 +180,7 @@ unsigned LinearScan::getWeight(RefPosition* refPos)
             // ref position.
             GenTreeLclVarCommon* lclCommon = treeNode->AsLclVarCommon();
             LclVarDsc*           varDsc    = &(compiler->lvaTable[lclCommon->gtLclNum]);
-            weight                         = varDsc->lvRefCntWtd;
+            weight                         = varDsc->lvRefCntWtd();
             if (refPos->getInterval()->isSpilled)
             {
                 // Decrease the weight if the interval has already been spilled.
@@ -1390,9 +1390,9 @@ bool LinearScan::isRegCandidate(LclVarDsc* varDsc)
     }
 
     // Don't enregister if the ref count is zero.
-    if (varDsc->lvRefCnt == 0)
+    if (varDsc->lvRefCnt() == 0)
     {
-        varDsc->lvRefCntWtd = 0;
+        varDsc->setLvRefCntWtd(0);
         return false;
     }
 
@@ -1615,22 +1615,22 @@ void LinearScan::identifyCandidates()
         {
             if (varDsc->lvIsParam && !varDsc->lvIsRegArg)
             {
-                refCntStkParam += varDsc->lvRefCnt;
+                refCntStkParam += varDsc->lvRefCnt();
             }
             else if (!isRegCandidate(varDsc) || varDsc->lvDoNotEnregister)
             {
-                refCntStk += varDsc->lvRefCnt;
+                refCntStk += varDsc->lvRefCnt();
                 if ((varDsc->lvType == TYP_DOUBLE) ||
                     ((varTypeIsStruct(varDsc) && varDsc->lvStructDoubleAlign &&
                       (compiler->lvaGetPromotionType(varDsc) != Compiler::PROMOTION_TYPE_INDEPENDENT))))
                 {
-                    refCntWtdStkDbl += varDsc->lvRefCntWtd;
+                    refCntWtdStkDbl += varDsc->lvRefCntWtd();
                 }
             }
             else
             {
-                refCntReg += varDsc->lvRefCnt;
-                refCntWtdReg += varDsc->lvRefCntWtd;
+                refCntReg += varDsc->lvRefCnt();
+                refCntWtdReg += varDsc->lvRefCntWtd();
             }
         }
 #endif // DOUBLE_ALIGN
@@ -1682,7 +1682,7 @@ void LinearScan::identifyCandidates()
             {
                 largeVectorVarCount++;
                 VarSetOps::AddElemD(compiler, largeVectorVars, varDsc->lvVarIndex);
-                unsigned refCntWtd = varDsc->lvRefCntWtd;
+                unsigned refCntWtd = varDsc->lvRefCntWtd();
                 if (refCntWtd >= thresholdLargeVectorRefCntWtd)
                 {
                     VarSetOps::AddElemD(compiler, largeVectorCalleeSaveCandidateVars, varDsc->lvVarIndex);
@@ -1693,7 +1693,7 @@ void LinearScan::identifyCandidates()
                 if (regType(type) == FloatRegisterType)
             {
                 floatVarCount++;
-                unsigned refCntWtd = varDsc->lvRefCntWtd;
+                unsigned refCntWtd = varDsc->lvRefCntWtd();
                 if (varDsc->lvIsRegArg)
                 {
                     // Don't count the initial reference for register params.  In those cases,
@@ -5223,7 +5223,7 @@ void LinearScan::allocateRegisters()
                 // inserting a store.
                 LclVarDsc* varDsc = currentInterval->getLocalVar(compiler);
                 assert(varDsc != nullptr);
-                if (refType == RefTypeParamDef && varDsc->lvRefCntWtd <= BB_UNITY_WEIGHT)
+                if (refType == RefTypeParamDef && varDsc->lvRefCntWtd() <= BB_UNITY_WEIGHT)
                 {
                     INDEBUG(dumpLsraAllocationEvent(LSRA_EVENT_NO_ENTRY_REG_ALLOCATED, currentInterval));
                     didDump  = true;
@@ -6922,7 +6922,7 @@ void LinearScan::resolveRegisters()
                     {
                         // Dead interval
                         varDsc->lvLRACandidate = false;
-                        if (varDsc->lvRefCnt == 0)
+                        if (varDsc->lvRefCnt() == 0)
                         {
                             varDsc->lvOnFrame = false;
                         }

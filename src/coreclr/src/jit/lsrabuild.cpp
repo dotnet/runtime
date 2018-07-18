@@ -1934,7 +1934,7 @@ void LinearScan::buildIntervals()
         // Use lvRefCnt instead of checking bbLiveIn because if it's volatile we
         // won't have done dataflow on it, but it needs to be marked as live-in so
         // it will get saved in the prolog.
-        if (!compiler->compJmpOpUsed && argDsc->lvRefCnt == 0 && !compiler->opts.compDbgCode)
+        if (!compiler->compJmpOpUsed && argDsc->lvRefCnt() == 0 && !compiler->opts.compDbgCode)
         {
             continue;
         }
@@ -1976,7 +1976,7 @@ void LinearScan::buildIntervals()
         else
         {
             // We can overwrite the register (i.e. codegen saves it on entry)
-            assert(argDsc->lvRefCnt == 0 || !argDsc->lvIsRegArg || argDsc->lvDoNotEnregister ||
+            assert(argDsc->lvRefCnt() == 0 || !argDsc->lvIsRegArg || argDsc->lvDoNotEnregister ||
                    !argDsc->lvLRACandidate || (varTypeIsFloating(argDsc->TypeGet()) && compiler->opts.compDbgCode));
         }
     }

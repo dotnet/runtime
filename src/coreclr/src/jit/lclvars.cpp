@@ -2070,7 +2070,7 @@ void Compiler::lvaPromoteLongVars()
     {
         LclVarDsc* varDsc = &lvaTable[lclNum];
         if (!varTypeIsLong(varDsc) || varDsc->lvDoNotEnregister || varDsc->lvIsMultiRegArgOrRet() ||
-            (varDsc->lvRefCnt == 0) || varDsc->lvIsStructField || (fgNoStructPromotion && varDsc->lvIsParam))
+            (varDsc->lvRefCnt() == 0) || varDsc->lvIsStructField || (fgNoStructPromotion && varDsc->lvIsParam))
         {
             continue;
         }
@@ -3005,8 +3005,8 @@ int __cdecl Compiler::RefCntCmp(const void* op1, const void* op2)
         return (dsc2->lvTracked) ? +1 : -1;
     }
 
-    unsigned weight1 = dsc1->lvRefCnt;
-    unsigned weight2 = dsc2->lvRefCnt;
+    unsigned weight1 = dsc1->lvRefCnt();
+    unsigned weight2 = dsc2->lvRefCnt();
 
 #ifndef _TARGET_ARM_
     // ARM-TODO: this was disabled for ARM under !FEATURE_FP_REGALLOC; it was probably a left-over from
@@ -3039,7 +3039,7 @@ int __cdecl Compiler::RefCntCmp(const void* op1, const void* op2)
 
     /* The unweighted ref counts were the same */
     /* If the weighted ref counts are different then use their difference */
-    diff = dsc2->lvRefCntWtd - dsc1->lvRefCntWtd;
+    diff = dsc2->lvRefCntWtd() - dsc1->lvRefCntWtd();
 
     if (diff != 0)
     {
@@ -3145,8 +3145,8 @@ int __cdecl Compiler::WtdRefCntCmp(const void* op1, const void* op2)
         return (dsc2->lvTracked) ? +1 : -1;
     }
 
-    unsigned weight1 = dsc1->lvRefCntWtd;
-    unsigned weight2 = dsc2->lvRefCntWtd;
+    unsigned weight1 = dsc1->lvRefCntWtd();
+    unsigned weight2 = dsc2->lvRefCntWtd();
 
 #ifndef _TARGET_ARM_
     // ARM-TODO: this was disabled for ARM under !FEATURE_FP_REGALLOC; it was probably a left-over from
@@ -3209,7 +3209,7 @@ int __cdecl Compiler::WtdRefCntCmp(const void* op1, const void* op2)
     // Otherwise, we have equal weighted ref counts.
 
     /* If the unweighted ref counts are different then use their difference */
-    int diff = (int)dsc2->lvRefCnt - (int)dsc1->lvRefCnt;
+    int diff = (int)dsc2->lvRefCnt() - (int)dsc1->lvRefCnt();
 
     if (diff != 0)
     {
@@ -3288,12 +3288,12 @@ void Compiler::lvaDumpRefCounts()
 
         for (unsigned lclNum = 0; lclNum < lvaCount; lclNum++)
         {
-            unsigned refCnt = lvaRefSorted[lclNum]->lvRefCnt;
+            unsigned refCnt = lvaRefSorted[lclNum]->lvRefCnt();
             if (refCnt == 0)
             {
                 break;
             }
-            unsigned refCntWtd = lvaRefSorted[lclNum]->lvRefCntWtd;
+            unsigned refCntWtd = lvaRefSorted[lclNum]->lvRefCntWtd();
 
             printf("   ");
             gtDispLclVar((unsigned)(lvaRefSorted[lclNum] - lvaTable));
@@ -3374,11 +3374,11 @@ void Compiler::lvaSortByRefCount()
         varDsc->lvTracked = 1;
 
         /* If the ref count is zero */
-        if (varDsc->lvRefCnt == 0)
+        if (varDsc->lvRefCnt() == 0)
         {
             /* Zero ref count, make this untracked */
-            varDsc->lvTracked   = 0;
-            varDsc->lvRefCntWtd = 0;
+            varDsc->lvTracked = 0;
+            varDsc->setLvRefCntWtd(0);
         }
 
 #if !defined(_TARGET_64BIT_)
@@ -3527,7 +3527,7 @@ void Compiler::lvaSortByRefCount()
         varDsc = lvaRefSorted[lclNum];
         if (varDsc->lvTracked)
         {
-            noway_assert(varDsc->lvRefCnt > 0);
+            noway_assert(varDsc->lvRefCnt() > 0);
 
             /* This variable will be tracked - assign it an index */
 
@@ -4028,8 +4028,8 @@ void Compiler::lvaMarkLocalVars()
 
             /* Set the refCnt, it is used in the prolog and return block(s) */
 
-            lvaTable[info.compLvFrameListRoot].lvRefCnt    = 2;
-            lvaTable[info.compLvFrameListRoot].lvRefCntWtd = 2 * BB_UNITY_WEIGHT;
+            lvaTable[info.compLvFrameListRoot].setLvRefCnt(2);
+            lvaTable[info.compLvFrameListRoot].setLvRefCntWtd(2 * BB_UNITY_WEIGHT);
         }
     }
 
@@ -4132,7 +4132,7 @@ void Compiler::lvaMarkLocalVars()
             break; // early exit for loop
         }
 
-        if ((varDsc->lvIsRegArg) && (varDsc->lvRefCnt > 0))
+        if ((varDsc->lvIsRegArg) && (varDsc->lvRefCnt() > 0))
         {
             // Fix 388376 ARM JitStress WP7
             varDsc->incRefCnts(BB_UNITY_WEIGHT, this);
@@ -4148,16 +4148,16 @@ void Compiler::lvaMarkLocalVars()
     }
 #endif
 
-    if (lvaKeepAliveAndReportThis() && lvaTable[0].lvRefCnt == 0)
+    if (lvaKeepAliveAndReportThis() && lvaTable[0].lvRefCnt() == 0)
     {
-        lvaTable[0].lvRefCnt = 1;
+        lvaTable[0].setLvRefCnt(1);
         // This isn't strictly needed as we will make a copy of the param-type-arg
         // in the prolog. However, this ensures that the LclVarDsc corresponding to
         // info.compTypeCtxtArg is valid.
     }
-    else if (lvaReportParamTypeArg() && lvaTable[info.compTypeCtxtArg].lvRefCnt == 0)
+    else if (lvaReportParamTypeArg() && lvaTable[info.compTypeCtxtArg].lvRefCnt() == 0)
     {
-        lvaTable[info.compTypeCtxtArg].lvRefCnt = 1;
+        lvaTable[info.compTypeCtxtArg].setLvRefCnt(1);
     }
 
     lvaLocalVarRefCounted = true;
@@ -4180,8 +4180,8 @@ void Compiler::lvaAllocOutgoingArgSpaceVar()
 
         /* Set the refCnts */
 
-        lvaTable[lvaOutgoingArgSpaceVar].lvRefCnt    = 1;
-        lvaTable[lvaOutgoingArgSpaceVar].lvRefCntWtd = BB_UNITY_WEIGHT;
+        lvaTable[lvaOutgoingArgSpaceVar].setLvRefCnt(1);
+        lvaTable[lvaOutgoingArgSpaceVar].setLvRefCntWtd(BB_UNITY_WEIGHT);
     }
 
     noway_assert(lvaOutgoingArgSpaceVar >= info.compLocalsCount && lvaOutgoingArgSpaceVar < lvaCount);
@@ -6480,7 +6480,7 @@ void Compiler::lvaAssignFrameOffsetsToPromotedStructs()
                 else
                 {
                     varDsc->lvOnFrame = false;
-                    noway_assert(varDsc->lvRefCnt == 0);
+                    noway_assert(varDsc->lvRefCnt() == 0);
                 }
             }
         }
@@ -6702,7 +6702,7 @@ void Compiler::lvaDumpEntry(unsigned lclNum, FrameLayoutState curState, size_t r
     }
     else
     {
-        if (varDsc->lvRefCnt == 0)
+        if (varDsc->lvRefCnt() == 0)
         {
             // Print this with a special indicator that the variable is unused. Even though the
             // variable itself is unused, it might be a struct that is promoted, so seeing it
@@ -6737,7 +6737,7 @@ void Compiler::lvaDumpEntry(unsigned lclNum, FrameLayoutState curState, size_t r
             printf("    ]");
         }
 
-        printf(" (%3u,%*s)", varDsc->lvRefCnt, (int)refCntWtdWidth, refCntWtd2str(varDsc->lvRefCntWtd));
+        printf(" (%3u,%*s)", varDsc->lvRefCnt(), (int)refCntWtdWidth, refCntWtd2str(varDsc->lvRefCntWtd()));
 
         printf(" %7s ", varTypeName(type));
         if (genTypeSize(type) == 0)
@@ -6750,7 +6750,7 @@ void Compiler::lvaDumpEntry(unsigned lclNum, FrameLayoutState curState, size_t r
         }
 
         // The register or stack location field is 11 characters wide.
-        if (varDsc->lvRefCnt == 0)
+        if (varDsc->lvRefCnt() == 0)
         {
             printf("zero-ref   ");
         }
@@ -6987,7 +6987,7 @@ void Compiler::lvaTableDump(FrameLayoutState curState)
     {
         for (lclNum = 0, varDsc = lvaTable; lclNum < lvaCount; lclNum++, varDsc++)
         {
-            size_t width = strlen(refCntWtd2str(varDsc->lvRefCntWtd));
+            size_t width = strlen(refCntWtd2str(varDsc->lvRefCntWtd()));
             if (width > refCntWtdWidth)
             {
                 refCntWtdWidth = width;
