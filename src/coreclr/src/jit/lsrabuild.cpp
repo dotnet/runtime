@@ -250,8 +250,8 @@ void LinearScan::resolveConflictingDefAndUse(Interval* interval, RefPosition* de
     RegRecord*   useRegRecord     = nullptr;
     regNumber    defReg           = REG_NA;
     regNumber    useReg           = REG_NA;
-    bool         defRegConflict   = false;
-    bool         useRegConflict   = false;
+    bool         defRegConflict   = ((defRegAssignment & useRegAssignment) == RBM_NONE);
+    bool         useRegConflict   = defRegConflict;
 
     // If the useRefPosition is a "delayRegFree", we can't change the registerAssignment
     // on it, or we will fail to ensure that the fixedReg is busy at the time the target
@@ -263,7 +263,7 @@ void LinearScan::resolveConflictingDefAndUse(Interval* interval, RefPosition* de
     {
         INDEBUG(dumpLsraAllocationEvent(LSRA_EVENT_DEFUSE_FIXED_DELAY_USE));
     }
-    if (defRefPosition->isFixedRegRef)
+    if (defRefPosition->isFixedRegRef && !defRegConflict)
     {
         defReg       = defRefPosition->assignedReg();
         defRegRecord = getRegisterRecord(defReg);
@@ -287,7 +287,7 @@ void LinearScan::resolveConflictingDefAndUse(Interval* interval, RefPosition* de
             }
         }
     }
-    if (useRefPosition->isFixedRegRef)
+    if (useRefPosition->isFixedRegRef && !useRegConflict)
     {
         useReg                               = useRefPosition->assignedReg();
         useRegRecord                         = getRegisterRecord(useReg);
@@ -768,6 +768,28 @@ regMaskTP LinearScan::getKillSetForStoreInd(GenTreeStoreInd* tree)
 }
 
 //------------------------------------------------------------------------
+// getKillSetForShiftRotate: Determine the liveness kill set for a shift or rotate node.
+//
+// Arguments:
+//    shiftNode - the shift or rotate node
+//
+// Return Value:    a register mask of the registers killed
+//
+regMaskTP LinearScan::getKillSetForShiftRotate(GenTreeOp* shiftNode)
+{
+    regMaskTP killMask = RBM_NONE;
+#ifdef _TARGET_XARCH_
+    assert(shiftNode->OperIsShiftOrRotate());
+    GenTree* shiftBy = shiftNode->gtGetOp2();
+    if (!shiftBy->isContained())
+    {
+        killMask = RBM_RCX;
+    }
+#endif // _TARGET_XARCH_
+    return killMask;
+}
+
+//------------------------------------------------------------------------
 // getKillSetForMul: Determine the liveness kill set for a multiply node.
 //
 // Arguments:
@@ -1011,6 +1033,18 @@ regMaskTP LinearScan::getKillSetForNode(GenTree* tree)
     regMaskTP killMask = RBM_NONE;
     switch (tree->OperGet())
     {
+        case GT_LSH:
+        case GT_RSH:
+        case GT_RSZ:
+        case GT_ROL:
+        case GT_ROR:
+#ifdef _TARGET_X86_
+        case GT_LSH_HI:
+        case GT_RSH_LO:
+#endif
+            killMask = getKillSetForShiftRotate(tree->AsOp());
+            break;
+
         case GT_MUL:
         case GT_MULHI:
 #if !defined(_TARGET_64BIT_)
