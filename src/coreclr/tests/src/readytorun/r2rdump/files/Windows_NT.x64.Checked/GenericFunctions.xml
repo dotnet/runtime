@@ -1,0 +1,494 @@
+<?xml version="1.0" encoding="utf-8"?>
+<R2RDump>
+  <R2RReader xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:xsd="http://www.w3.org/2001/XMLSchema">
+    <Filename>GenericFunctions.ni.dll</Filename>
+    <IsR2R>true</IsR2R>
+    <Machine>Amd64</Machine>
+    <ImageBase>6891812028416</ImageBase>
+  </R2RReader>
+  <Header>
+    <R2RHeader xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:xsd="http://www.w3.org/2001/XMLSchema">
+      <RelativeVirtualAddress>8984</RelativeVirtualAddress>
+      <Size>112</Size>
+      <SignatureString>RTR</SignatureString>
+      <Signature>5395538</Signature>
+      <MajorVersion>2</MajorVersion>
+      <MinorVersion>2</MinorVersion>
+      <Flags>3</Flags>
+    </R2RHeader>
+  </Header>
+  <Sections>
+    <Count>8</Count>
+    <Section Index="READYTORUN_SECTION_COMPILER_IDENTIFIER">
+      <R2RSection xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:xsd="http://www.w3.org/2001/XMLSchema" Index="READYTORUN_SECTION_COMPILER_IDENTIFIER">
+        <RelativeVirtualAddress>9156</RelativeVirtualAddress>
+        <Size>37</Size>
+      </R2RSection>
+      <Contents>
+        <CompilerIdentifier>CoreCLR 4.5.30319.0 __BUILDMACHINE__</CompilerIdentifier>
+      </Contents>
+    </Section>
+    <Section Index="READYTORUN_SECTION_IMPORT_SECTIONS">
+      <R2RSection xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:xsd="http://www.w3.org/2001/XMLSchema" Index="READYTORUN_SECTION_IMPORT_SECTIONS">
+        <RelativeVirtualAddress>9096</RelativeVirtualAddress>
+        <Size>60</Size>
+      </R2RSection>
+      <Contents>
+        <R2RImportSection xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:xsd="http://www.w3.org/2001/XMLSchema" Index="4096">
+          <SectionSize>24</SectionSize>
+          <Flags>CORCOMPILE_IMPORT_FLAGS_EAGER</Flags>
+          <Type>CORCOMPILE_IMPORT_TYPE_UNKNOWN</Type>
+          <EntrySize>0</EntrySize>
+          <SignatureRVA>9284</SignatureRVA>
+          <Entries>
+            <ImportSectionEntry Index="9296">
+              <StartOffset>0</StartOffset>
+              <Section>0</Section>
+              <SignatureSample>GgEagPAaEP8=</SignatureSample>
+            </ImportSectionEntry>
+          </Entries>
+          <AuxiliaryDataRVA>0</AuxiliaryDataRVA>
+        </R2RImportSection>
+        <ImportSectionEntry xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:xsd="http://www.w3.org/2001/XMLSchema" Index="9296">
+          <StartOffset>0</StartOffset>
+          <Section>0</Section>
+          <SignatureSample>GgEagPAaEP8=</SignatureSample>
+        </ImportSectionEntry>
+        <R2RImportSection xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:xsd="http://www.w3.org/2001/XMLSchema" Index="4120">
+          <SectionSize>8</SectionSize>
+          <Flags>CORCOMPILE_IMPORT_FLAGS_PCODE</Flags>
+          <Type>CORCOMPILE_IMPORT_TYPE_UNKNOWN</Type>
+          <EntrySize>8</EntrySize>
+          <SignatureRVA>9392</SignatureRVA>
+          <Entries>
+            <ImportSectionEntry Index="10676">
+              <StartOffset>0</StartOffset>
+              <Section>6891812037725</Section>
+              <SignatureSample>HBIMEBEIAAA=</SignatureSample>
+            </ImportSectionEntry>
+          </Entries>
+          <AuxiliaryDataRVA>0</AuxiliaryDataRVA>
+        </R2RImportSection>
+        <ImportSectionEntry xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:xsd="http://www.w3.org/2001/XMLSchema" Index="10676">
+          <StartOffset>0</StartOffset>
+          <Section>6891812037725</Section>
+          <SignatureSample>HBIMEBEIAAA=</SignatureSample>
+        </ImportSectionEntry>
+        <R2RImportSection xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:xsd="http://www.w3.org/2001/XMLSchema" Index="4128">
+          <SectionSize>8</SectionSize>
+          <Flags>CORCOMPILE_IMPORT_FLAGS_UNKNOWN</Flags>
+          <Type>CORCOMPILE_IMPORT_TYPE_UNKNOWN</Type>
+          <EntrySize>0</EntrySize>
+          <SignatureRVA>10672</SignatureRVA>
+          <Entries />
+          <AuxiliaryDataRVA>0</AuxiliaryDataRVA>
+        </R2RImportSection>
+      </Contents>
+    </Section>
+    <Section Index="READYTORUN_SECTION_RUNTIME_FUNCTIONS">
+      <R2RSection xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:xsd="http://www.w3.org/2001/XMLSchema" Index="READYTORUN_SECTION_RUNTIME_FUNCTIONS">
+        <RelativeVirtualAddress>9328</RelativeVirtualAddress>
+        <Size>60</Size>
+      </R2RSection>
+      <Contents>
+        <id0 Index="0">0x000028E0</id0>
+        <id1 Index="1">0x000028E8</id1>
+        <id2 Index="2">0x00002970</id2>
+        <id3 Index="3">0x000028F0</id3>
+        <id4 Index="4">0x000028F9</id4>
+        <id5 Index="5">0x0000297C</id5>
+        <id6 Index="6">0x00002900</id6>
+        <id7 Index="7">0x00002909</id7>
+        <id8 Index="8">0x00002988</id8>
+        <id9 Index="9">0x00002910</id9>
+        <id10 Index="10">0x0000292F</id10>
+        <id11 Index="11">0x00002994</id11>
+        <id12 Index="12">0x00002930</id12>
+        <id13 Index="13">0x00002936</id13>
+        <id14 Index="14">0x000029A4</id14>
+      </Contents>
+    </Section>
+    <Section Index="READYTORUN_SECTION_METHODDEF_ENTRYPOINTS">
+      <R2RSection xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:xsd="http://www.w3.org/2001/XMLSchema" Index="READYTORUN_SECTION_METHODDEF_ENTRYPOINTS">
+        <RelativeVirtualAddress>10552</RelativeVirtualAddress>
+        <Size>14</Size>
+      </R2RSection>
+      <Contents />
+    </Section>
+    <Section Index="READYTORUN_SECTION_DEBUG_INFO">
+      <R2RSection xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:xsd="http://www.w3.org/2001/XMLSchema" Index="READYTORUN_SECTION_DEBUG_INFO">
+        <RelativeVirtualAddress>10688</RelativeVirtualAddress>
+        <Size>87</Size>
+      </R2RSection>
+      <Contents />
+    </Section>
+    <Section Index="READYTORUN_SECTION_AVAILABLE_TYPES">
+      <R2RSection xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:xsd="http://www.w3.org/2001/XMLSchema" Index="READYTORUN_SECTION_AVAILABLE_TYPES">
+        <RelativeVirtualAddress>10592</RelativeVirtualAddress>
+        <Size>15</Size>
+      </R2RSection>
+      <Contents>
+        <AvailableType Index="0">GenericFunctions.GenericFunctions</AvailableType>
+        <AvailableType Index="1">.&lt;Module&gt;</AvailableType>
+        <AvailableType Index="2">GenericFunctions.UserDefinedStruct</AvailableType>
+        <AvailableType Index="3">GenericFunctions.UserDefinedClass</AvailableType>
+      </Contents>
+    </Section>
+    <Section Index="READYTORUN_SECTION_INSTANCE_METHOD_ENTRYPOINTS">
+      <R2RSection xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:xsd="http://www.w3.org/2001/XMLSchema" Index="READYTORUN_SECTION_INSTANCE_METHOD_ENTRYPOINTS">
+        <RelativeVirtualAddress>10566</RelativeVirtualAddress>
+        <Size>11</Size>
+      </R2RSection>
+      <Contents />
+    </Section>
+    <Section Index="READYTORUN_SECTION_INLINING_INFO">
+      <R2RSection xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:xsd="http://www.w3.org/2001/XMLSchema" Index="READYTORUN_SECTION_INLINING_INFO">
+        <RelativeVirtualAddress>10776</RelativeVirtualAddress>
+        <Size>41</Size>
+      </R2RSection>
+      <Contents />
+    </Section>
+  </Sections>
+  <Methods>
+    <Count>5</Count>
+    <Method Index="1">
+      <R2RMethod xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:xsd="http://www.w3.org/2001/XMLSchema" Index="1">
+        <Name>.ctor</Name>
+        <SignatureString>GenericFunctions.UserDefinedStruct..ctor(Int32)</SignatureString>
+        <IsGeneric>false</IsGeneric>
+        <DeclaringType>GenericFunctions.UserDefinedStruct</DeclaringType>
+        <Token>100663297</Token>
+        <EntryPointRuntimeFunctionId>0</EntryPointRuntimeFunctionId>
+      </R2RMethod>
+      <GcInfo>
+        <GcInfo xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:xsd="http://www.w3.org/2001/XMLSchema">
+          <Version>2</Version>
+          <CodeLength>8</CodeLength>
+          <ReturnKind>RT_Scalar</ReturnKind>
+          <ValidRangeStart>0</ValidRangeStart>
+          <ValidRangeEnd>0</ValidRangeEnd>
+          <SecurityObjectStackSlot>-1</SecurityObjectStackSlot>
+          <GSCookieStackSlot>-1</GSCookieStackSlot>
+          <PSPSymStackSlot>-1</PSPSymStackSlot>
+          <GenericsInstContextStackSlot>-1</GenericsInstContextStackSlot>
+          <StackBaseRegister>4294967295</StackBaseRegister>
+          <SizeOfEditAndContinuePreservedArea>4294967295</SizeOfEditAndContinuePreservedArea>
+          <ReversePInvokeFrameStackSlot>-1</ReversePInvokeFrameStackSlot>
+          <SizeOfStackOutgoingAndScratchArea>0</SizeOfStackOutgoingAndScratchArea>
+          <NumSafePoints>0</NumSafePoints>
+          <NumInterruptibleRanges>0</NumInterruptibleRanges>
+          <SafePointOffsets />
+          <InterruptibleRanges />
+          <SlotTable>
+            <NumRegisters>0</NumRegisters>
+            <NumStackSlots>0</NumStackSlots>
+            <NumUntracked>0</NumUntracked>
+            <NumSlots>0</NumSlots>
+            <GcSlots />
+          </SlotTable>
+          <Size>22</Size>
+          <Offset>3448</Offset>
+        </GcInfo>
+      </GcInfo>
+      <RuntimeFunctions>
+        <RuntimeFunction>
+          <MethodRid>1</MethodRid>
+          <RuntimeFunction xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:xsd="http://www.w3.org/2001/XMLSchema" Index="0">
+            <StartAddress>10464</StartAddress>
+            <Size>8</Size>
+            <UnwindRVA>10608</UnwindRVA>
+            <CodeOffset>0</CodeOffset>
+          </RuntimeFunction>
+          <UnwindInfo>
+            <UnwindInfo xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:xsd="http://www.w3.org/2001/XMLSchema">
+              <Version>1</Version>
+              <Flags>3</Flags>
+              <SizeOfProlog>0</SizeOfProlog>
+              <CountOfUnwindCodes>0</CountOfUnwindCodes>
+              <FrameRegister>EAX</FrameRegister>
+              <FrameOffset>0</FrameOffset>
+              <UnwindCode />
+              <PersonalityRoutineRVA>9303</PersonalityRoutineRVA>
+              <Size>8</Size>
+            </UnwindInfo>
+          </UnwindInfo>
+        </RuntimeFunction>
+      </RuntimeFunctions>
+    </Method>
+    <Method Index="2">
+      <R2RMethod xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:xsd="http://www.w3.org/2001/XMLSchema" Index="2">
+        <Name>.ctor</Name>
+        <SignatureString>GenericFunctions.UserDefinedClass..ctor(Int32)</SignatureString>
+        <IsGeneric>false</IsGeneric>
+        <DeclaringType>GenericFunctions.UserDefinedClass</DeclaringType>
+        <Token>100663298</Token>
+        <EntryPointRuntimeFunctionId>1</EntryPointRuntimeFunctionId>
+      </R2RMethod>
+      <GcInfo>
+        <GcInfo xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:xsd="http://www.w3.org/2001/XMLSchema">
+          <Version>2</Version>
+          <CodeLength>9</CodeLength>
+          <ReturnKind>RT_Scalar</ReturnKind>
+          <ValidRangeStart>0</ValidRangeStart>
+          <ValidRangeEnd>0</ValidRangeEnd>
+          <SecurityObjectStackSlot>-1</SecurityObjectStackSlot>
+          <GSCookieStackSlot>-1</GSCookieStackSlot>
+          <PSPSymStackSlot>-1</PSPSymStackSlot>
+          <GenericsInstContextStackSlot>-1</GenericsInstContextStackSlot>
+          <StackBaseRegister>4294967295</StackBaseRegister>
+          <SizeOfEditAndContinuePreservedArea>4294967295</SizeOfEditAndContinuePreservedArea>
+          <ReversePInvokeFrameStackSlot>-1</ReversePInvokeFrameStackSlot>
+          <SizeOfStackOutgoingAndScratchArea>0</SizeOfStackOutgoingAndScratchArea>
+          <NumSafePoints>0</NumSafePoints>
+          <NumInterruptibleRanges>0</NumInterruptibleRanges>
+          <SafePointOffsets />
+          <InterruptibleRanges />
+          <SlotTable>
+            <NumRegisters>0</NumRegisters>
+            <NumStackSlots>0</NumStackSlots>
+            <NumUntracked>0</NumUntracked>
+            <NumSlots>0</NumSlots>
+            <GcSlots />
+          </SlotTable>
+          <Size>22</Size>
+          <Offset>3460</Offset>
+        </GcInfo>
+      </GcInfo>
+      <RuntimeFunctions>
+        <RuntimeFunction>
+          <MethodRid>2</MethodRid>
+          <RuntimeFunction xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:xsd="http://www.w3.org/2001/XMLSchema" Index="1">
+            <StartAddress>10480</StartAddress>
+            <Size>9</Size>
+            <UnwindRVA>10620</UnwindRVA>
+            <CodeOffset>0</CodeOffset>
+          </RuntimeFunction>
+          <UnwindInfo>
+            <UnwindInfo xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:xsd="http://www.w3.org/2001/XMLSchema">
+              <Version>1</Version>
+              <Flags>3</Flags>
+              <SizeOfProlog>0</SizeOfProlog>
+              <CountOfUnwindCodes>0</CountOfUnwindCodes>
+              <FrameRegister>EAX</FrameRegister>
+              <FrameOffset>0</FrameOffset>
+              <UnwindCode />
+              <PersonalityRoutineRVA>9303</PersonalityRoutineRVA>
+              <Size>8</Size>
+            </UnwindInfo>
+          </UnwindInfo>
+        </RuntimeFunction>
+      </RuntimeFunctions>
+    </Method>
+    <Method Index="4">
+      <R2RMethod xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:xsd="http://www.w3.org/2001/XMLSchema" Index="4">
+        <Name>Main</Name>
+        <SignatureString>GenericFunctions.GenericFunctions.Main(String[])</SignatureString>
+        <IsGeneric>false</IsGeneric>
+        <DeclaringType>GenericFunctions.GenericFunctions</DeclaringType>
+        <Token>100663300</Token>
+        <EntryPointRuntimeFunctionId>3</EntryPointRuntimeFunctionId>
+        <Fixups>
+          <FixupCell>
+            <TableIndex>2</TableIndex>
+            <CellOffset>0</CellOffset>
+          </FixupCell>
+        </Fixups>
+      </R2RMethod>
+      <GcInfo>
+        <GcInfo xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:xsd="http://www.w3.org/2001/XMLSchema">
+          <Version>2</Version>
+          <CodeLength>31</CodeLength>
+          <ReturnKind>RT_Scalar</ReturnKind>
+          <ValidRangeStart>0</ValidRangeStart>
+          <ValidRangeEnd>0</ValidRangeEnd>
+          <SecurityObjectStackSlot>-1</SecurityObjectStackSlot>
+          <GSCookieStackSlot>-1</GSCookieStackSlot>
+          <PSPSymStackSlot>-1</PSPSymStackSlot>
+          <GenericsInstContextStackSlot>-1</GenericsInstContextStackSlot>
+          <StackBaseRegister>4294967295</StackBaseRegister>
+          <SizeOfEditAndContinuePreservedArea>4294967295</SizeOfEditAndContinuePreservedArea>
+          <ReversePInvokeFrameStackSlot>-1</ReversePInvokeFrameStackSlot>
+          <SizeOfStackOutgoingAndScratchArea>0</SizeOfStackOutgoingAndScratchArea>
+          <NumSafePoints>1</NumSafePoints>
+          <NumInterruptibleRanges>0</NumInterruptibleRanges>
+          <SafePointOffsets>
+            <SafePointOffset Index="0">
+              <Value>18</Value>
+            </SafePointOffset>
+          </SafePointOffsets>
+          <InterruptibleRanges />
+          <SlotTable>
+            <NumRegisters>0</NumRegisters>
+            <NumStackSlots>0</NumStackSlots>
+            <NumUntracked>0</NumUntracked>
+            <NumSlots>0</NumSlots>
+            <GcSlots />
+          </SlotTable>
+          <Size>32</Size>
+          <Offset>3488</Offset>
+        </GcInfo>
+      </GcInfo>
+      <RuntimeFunctions>
+        <RuntimeFunction>
+          <MethodRid>4</MethodRid>
+          <RuntimeFunction xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:xsd="http://www.w3.org/2001/XMLSchema" Index="3">
+            <StartAddress>10512</StartAddress>
+            <Size>31</Size>
+            <UnwindRVA>10644</UnwindRVA>
+            <CodeOffset>0</CodeOffset>
+          </RuntimeFunction>
+          <UnwindInfo>
+            <UnwindInfo xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:xsd="http://www.w3.org/2001/XMLSchema">
+              <Version>1</Version>
+              <Flags>3</Flags>
+              <SizeOfProlog>4</SizeOfProlog>
+              <CountOfUnwindCodes>1</CountOfUnwindCodes>
+              <FrameRegister>EAX</FrameRegister>
+              <FrameOffset>0</FrameOffset>
+              <UnwindCode>
+                <UnwindCode Index="0">
+                  <CodeOffset>4</CodeOffset>
+                  <UnwindOp>UWOP_ALLOC_SMALL</UnwindOp>
+                  <OpInfo>4</OpInfo>
+                  <OffsetLow>4</OffsetLow>
+                  <OffsetHigh>4</OffsetHigh>
+                  <FrameOffset>16900</FrameOffset>
+                </UnwindCode>
+              </UnwindCode>
+              <PersonalityRoutineRVA>609681408</PersonalityRoutineRVA>
+              <Size>12</Size>
+            </UnwindInfo>
+          </UnwindInfo>
+        </RuntimeFunction>
+      </RuntimeFunctions>
+    </Method>
+    <Method Index="5">
+      <R2RMethod xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:xsd="http://www.w3.org/2001/XMLSchema" Index="5">
+        <Name>.ctor</Name>
+        <SignatureString>GenericFunctions.GenericFunctions..ctor()</SignatureString>
+        <IsGeneric>false</IsGeneric>
+        <DeclaringType>GenericFunctions.GenericFunctions</DeclaringType>
+        <Token>100663301</Token>
+        <EntryPointRuntimeFunctionId>4</EntryPointRuntimeFunctionId>
+      </R2RMethod>
+      <GcInfo>
+        <GcInfo xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:xsd="http://www.w3.org/2001/XMLSchema">
+          <Version>2</Version>
+          <CodeLength>6</CodeLength>
+          <ReturnKind>RT_Scalar</ReturnKind>
+          <ValidRangeStart>0</ValidRangeStart>
+          <ValidRangeEnd>0</ValidRangeEnd>
+          <SecurityObjectStackSlot>-1</SecurityObjectStackSlot>
+          <GSCookieStackSlot>-1</GSCookieStackSlot>
+          <PSPSymStackSlot>-1</PSPSymStackSlot>
+          <GenericsInstContextStackSlot>-1</GenericsInstContextStackSlot>
+          <StackBaseRegister>4294967295</StackBaseRegister>
+          <SizeOfEditAndContinuePreservedArea>4294967295</SizeOfEditAndContinuePreservedArea>
+          <ReversePInvokeFrameStackSlot>-1</ReversePInvokeFrameStackSlot>
+          <SizeOfStackOutgoingAndScratchArea>0</SizeOfStackOutgoingAndScratchArea>
+          <NumSafePoints>0</NumSafePoints>
+          <NumInterruptibleRanges>0</NumInterruptibleRanges>
+          <SafePointOffsets />
+          <InterruptibleRanges />
+          <SlotTable>
+            <NumRegisters>0</NumRegisters>
+            <NumStackSlots>0</NumStackSlots>
+            <NumUntracked>0</NumUntracked>
+            <NumSlots>0</NumSlots>
+            <GcSlots />
+          </SlotTable>
+          <Size>22</Size>
+          <Offset>3500</Offset>
+        </GcInfo>
+      </GcInfo>
+      <RuntimeFunctions>
+        <RuntimeFunction>
+          <MethodRid>5</MethodRid>
+          <RuntimeFunction xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:xsd="http://www.w3.org/2001/XMLSchema" Index="4">
+            <StartAddress>10544</StartAddress>
+            <Size>6</Size>
+            <UnwindRVA>10660</UnwindRVA>
+            <CodeOffset>0</CodeOffset>
+          </RuntimeFunction>
+          <UnwindInfo>
+            <UnwindInfo xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:xsd="http://www.w3.org/2001/XMLSchema">
+              <Version>1</Version>
+              <Flags>3</Flags>
+              <SizeOfProlog>0</SizeOfProlog>
+              <CountOfUnwindCodes>0</CountOfUnwindCodes>
+              <FrameRegister>EAX</FrameRegister>
+              <FrameOffset>0</FrameOffset>
+              <UnwindCode />
+              <PersonalityRoutineRVA>9303</PersonalityRoutineRVA>
+              <Size>8</Size>
+            </UnwindInfo>
+          </UnwindInfo>
+        </RuntimeFunction>
+      </RuntimeFunctions>
+    </Method>
+    <Method Index="3">
+      <R2RMethod xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:xsd="http://www.w3.org/2001/XMLSchema" Index="3">
+        <Name>GenericFunction</Name>
+        <SignatureString>GenericFunctions.GenericFunctions.GenericFunction&lt;__Canon, __Canon&gt;(__Canon, __Canon)</SignatureString>
+        <IsGeneric>true</IsGeneric>
+        <DeclaringType>GenericFunctions.GenericFunctions</DeclaringType>
+        <Token>100663299</Token>
+        <EntryPointRuntimeFunctionId>2</EntryPointRuntimeFunctionId>
+      </R2RMethod>
+      <GcInfo>
+        <GcInfo xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:xsd="http://www.w3.org/2001/XMLSchema">
+          <Version>2</Version>
+          <CodeLength>9</CodeLength>
+          <ReturnKind>RT_Object</ReturnKind>
+          <ValidRangeStart>0</ValidRangeStart>
+          <ValidRangeEnd>0</ValidRangeEnd>
+          <SecurityObjectStackSlot>-1</SecurityObjectStackSlot>
+          <GSCookieStackSlot>-1</GSCookieStackSlot>
+          <PSPSymStackSlot>-1</PSPSymStackSlot>
+          <GenericsInstContextStackSlot>-1</GenericsInstContextStackSlot>
+          <StackBaseRegister>4294967295</StackBaseRegister>
+          <SizeOfEditAndContinuePreservedArea>4294967295</SizeOfEditAndContinuePreservedArea>
+          <ReversePInvokeFrameStackSlot>-1</ReversePInvokeFrameStackSlot>
+          <SizeOfStackOutgoingAndScratchArea>0</SizeOfStackOutgoingAndScratchArea>
+          <NumSafePoints>0</NumSafePoints>
+          <NumInterruptibleRanges>0</NumInterruptibleRanges>
+          <SafePointOffsets />
+          <InterruptibleRanges />
+          <SlotTable>
+            <NumRegisters>0</NumRegisters>
+            <NumStackSlots>0</NumStackSlots>
+            <NumUntracked>0</NumUntracked>
+            <NumSlots>0</NumSlots>
+            <GcSlots />
+          </SlotTable>
+          <Size>22</Size>
+          <Offset>3472</Offset>
+        </GcInfo>
+      </GcInfo>
+      <RuntimeFunctions>
+        <RuntimeFunction>
+          <MethodRid>3</MethodRid>
+          <RuntimeFunction xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:xsd="http://www.w3.org/2001/XMLSchema" Index="2">
+            <StartAddress>10496</StartAddress>
+            <Size>9</Size>
+            <UnwindRVA>10632</UnwindRVA>
+            <CodeOffset>0</CodeOffset>
+          </RuntimeFunction>
+          <UnwindInfo>
+            <UnwindInfo xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:xsd="http://www.w3.org/2001/XMLSchema">
+              <Version>1</Version>
+              <Flags>3</Flags>
+              <SizeOfProlog>0</SizeOfProlog>
+              <CountOfUnwindCodes>0</CountOfUnwindCodes>
+              <FrameRegister>EAX</FrameRegister>
+              <FrameOffset>0</FrameOffset>
+              <UnwindCode />
+              <PersonalityRoutineRVA>9303</PersonalityRoutineRVA>
+              <Size>8</Size>
+            </UnwindInfo>
+          </UnwindInfo>
+        </RuntimeFunction>
+      </RuntimeFunctions>
+    </Method>
+  </Methods>
+</R2RDump>
