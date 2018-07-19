@@ -2,55 +2,41 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
-/*============================================================
-**
-**
-**
-** __ComObject is the root class for all COM wrappers.  This class
-** defines only the basics. This class is used for wrapping COM objects
-** accessed from COM+
-**
-** 
-===========================================================*/
-
-using System;
 using System.Collections;
-using System.Threading;
 using System.Runtime.InteropServices;
 using System.Runtime.InteropServices.WindowsRuntime;
-using System.Runtime.CompilerServices;
 using System.Reflection;
 
 namespace System
 {
+    /// <summary>
+    /// __ComObject is the root class for all COM wrappers. This class defines only
+    /// the basics. This class is used for wrapping COM objects accessed from managed.
+    /// </summary>
     internal class __ComObject : MarshalByRefObject
     {
-        private Hashtable m_ObjectToDataMap;
+        private Hashtable m_ObjectToDataMap; // Do not rename (runtime relies on this name).
 
-        /*============================================================
-        ** default constructor
-        ** can't instantiate this directly
-        =============================================================*/
+        /// <summary>
+        /// Default constructor - can't instantiate this directly.
+        /// </summary>
         protected __ComObject()
         {
         }
 
-        //====================================================================
-        // Overrides ToString() to make sure we call to IStringable if the 
-        // COM object implements it in the case of weakly typed RCWs
-        //====================================================================
+        /// <summary>
+        /// Overrides ToString() to make sure we call to IStringable if the COM
+        /// object implements it in the case of weakly typed RCWs
+        /// </summary>
         public override string ToString()
         {
-            //
             // Only do the IStringable cast when running under AppX for better compat
             // Otherwise we could do a IStringable cast in classic apps which could introduce
-            // a thread transition which would lead to deadlock
-            //
+            // a thread transition which would lead to deadlock.
             if (AppDomain.IsAppXModel())
             {
                 // Check whether the type implements IStringable.
-                IStringable stringableType = this as IStringable;
-                if (stringableType != null)
+                if (this is IStringable stringableType)
                 {
                     return stringableType.ToString();
                 }
@@ -59,10 +45,9 @@ namespace System
             return base.ToString();
         }
 
-        //====================================================================
-        // This method retrieves the data associated with the specified
-        // key if any such data exists for the current __ComObject.
-        //====================================================================
+        /// <summary>
+        /// Retrieves the data associated with the specified if such data exists.
+        /// </summary>
         internal object GetData(object key)
         {
             object data = null;
@@ -81,10 +66,9 @@ namespace System
             return data;
         }
 
-        //====================================================================
-        // This method sets the data for the specified key on the current 
-        // __ComObject.
-        //====================================================================
+        /// <summary>
+        /// Sets the data for the specified key on the current __ComObject.
+        /// </summary>
         internal bool SetData(object key, object data)
         {
             bool bAdded = false;
@@ -94,7 +78,9 @@ namespace System
             {
                 // If the map hasn't been allocated yet, allocate it.
                 if (m_ObjectToDataMap == null)
+                {
                     m_ObjectToDataMap = new Hashtable();
+                }
 
                 // If there isn't already data in the map then add it.
                 if (m_ObjectToDataMap[key] == null)
@@ -107,10 +93,9 @@ namespace System
             return bAdded;
         }
 
-        //====================================================================
-        // This method is called from within the EE and releases all the 
-        // cached data for the __ComObject.
-        //====================================================================
+        /// <summary>
+        /// Called from within the EE and releases all the cached data for the __ComObject.
+        /// </summary>
         internal void ReleaseAllData()
         {
             // Synchronize access to the map.
@@ -125,13 +110,11 @@ namespace System
                         // We are fine for now as object[] doesn't implement IDisposable nor derive from __ComObject
 
                         // If the object implements IDisposable, then call Dispose on it.
-                        IDisposable DisposableObj = o as IDisposable;
-                        if (DisposableObj != null)
+                        if (o is IDisposable DisposableObj)
                             DisposableObj.Dispose();
 
                         // If the object is a derived from __ComObject, then call Marshal.ReleaseComObject on it.
-                        __ComObject ComObj = o as __ComObject;
-                        if (ComObj != null)
+                        if (o is __ComObject ComObj)
                             Marshal.ReleaseComObject(ComObj);
                     }
 
@@ -140,32 +123,26 @@ namespace System
                 }
             }
         }
-
-        //====================================================================
-        // This method is called from within the EE and is used to handle
-        // calls on methods of event interfaces.
-        //====================================================================
+        
+        /// <summary>
+        /// Called from within the EE and is used to handle calls on methods of event interfaces.
+        /// </summary>
         internal object GetEventProvider(RuntimeType t)
         {
             // Check to see if we already have a cached event provider for this type.
-            object EvProvider = GetData(t);
+            object provider = GetData(t);
+            if (provider != null)
+            {
+                return provider;
+            }
 
             // If we don't then we need to create one.
-            if (EvProvider == null)
-                EvProvider = CreateEventProvider(t);
-
-            return EvProvider;
+            return CreateEventProvider(t);
         }
 
-        internal int ReleaseSelf()
-        {
-            return Marshal.InternalReleaseComObject(this);
-        }
+        internal int ReleaseSelf() => Marshal.InternalReleaseComObject(this);
 
-        internal void FinalReleaseSelf()
-        {
-            Marshal.InternalFinalReleaseComObject(this);
-        }
+        internal void FinalReleaseSelf() => Marshal.InternalFinalReleaseComObject(this);
 
         private object CreateEventProvider(RuntimeType t)
         {
@@ -176,9 +153,10 @@ namespace System
             if (!SetData(t, EvProvider))
             {
                 // Dispose the event provider if it implements IDisposable.
-                IDisposable DisposableEvProv = EvProvider as IDisposable;
-                if (DisposableEvProv != null)
+                if (EvProvider is IDisposable DisposableEvProv)
+                {
                     DisposableEvProv.Dispose();
+                }
 
                 // Another thead already cached the wrapper so use that one instead.
                 EvProvider = GetData(t);

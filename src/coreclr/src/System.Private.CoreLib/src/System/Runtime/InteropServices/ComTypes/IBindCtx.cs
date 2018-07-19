@@ -2,21 +2,9 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
-/*=============================================================================
-**
-**
-**
-** Purpose: IBindCtx interface definition.
-**
-**
-=============================================================================*/
-
-using System;
-
 namespace System.Runtime.InteropServices.ComTypes
 {
     [StructLayout(LayoutKind.Sequential)]
-
     public struct BIND_OPTS
     {
         public int cbStruct;
@@ -26,7 +14,7 @@ namespace System.Runtime.InteropServices.ComTypes
     }
 
     [Guid("0000000e-0000-0000-C000-000000000046")]
-    [InterfaceTypeAttribute(ComInterfaceType.InterfaceIsIUnknown)]
+    [InterfaceType(ComInterfaceType.InterfaceIsIUnknown)]
     [ComImport]
     public interface IBindCtx
     {

@@ -2,13 +2,6 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
-////////////////////////////////////////////////////////////////////////////////
-////////////////////////////////////////////////////////////////////////////////
-
-using System;
-using System.Reflection;
-using System.Diagnostics;
-
 namespace System.Runtime.InteropServices
 {
     [AttributeUsage(AttributeTargets.Interface | AttributeTargets.Enum | AttributeTargets.Struct | AttributeTargets.Delegate, AllowMultiple = false, Inherited = false)]
@@ -38,11 +31,13 @@ namespace System.Runtime.InteropServices
     public sealed class DispIdAttribute : Attribute
     {
         internal int _val;
+
         public DispIdAttribute(int dispId)
         {
             _val = dispId;
         }
-        public int Value { get { return _val; } }
+
+        public int Value => _val;
     }
 
     public enum ComInterfaceType
@@ -58,15 +53,18 @@ namespace System.Runtime.InteropServices
     public sealed class InterfaceTypeAttribute : Attribute
     {
         internal ComInterfaceType _val;
+
         public InterfaceTypeAttribute(ComInterfaceType interfaceType)
         {
             _val = interfaceType;
         }
+
         public InterfaceTypeAttribute(short interfaceType)
         {
             _val = (ComInterfaceType)interfaceType;
         }
-        public ComInterfaceType Value { get { return _val; } }
+
+        public ComInterfaceType Value => _val;
     }
 
     [AttributeUsage(AttributeTargets.Class, Inherited = false)]
@@ -79,7 +77,7 @@ namespace System.Runtime.InteropServices
             _val = defaultInterface;
         }
 
-        public Type Value { get { return _val; } }
+        public Type Value => _val;
     }
 
     public enum ClassInterfaceType
@@ -93,64 +91,77 @@ namespace System.Runtime.InteropServices
     public sealed class ClassInterfaceAttribute : Attribute
     {
         internal ClassInterfaceType _val;
+
         public ClassInterfaceAttribute(ClassInterfaceType classInterfaceType)
         {
             _val = classInterfaceType;
         }
+
         public ClassInterfaceAttribute(short classInterfaceType)
         {
             _val = (ClassInterfaceType)classInterfaceType;
         }
-        public ClassInterfaceType Value { get { return _val; } }
+
+        public ClassInterfaceType Value => _val;
     }
 
     [AttributeUsage(AttributeTargets.Method, Inherited = false)]
     public sealed class LCIDConversionAttribute : Attribute
     {
         internal int _val;
+
         public LCIDConversionAttribute(int lcid)
         {
             _val = lcid;
         }
-        public int Value { get { return _val; } }
+
+        public int Value => _val;
     }
 
     [AttributeUsage(AttributeTargets.Class, Inherited = false)]
     public sealed class ProgIdAttribute : Attribute
     {
         internal string _val;
+
         public ProgIdAttribute(string progId)
         {
             _val = progId;
         }
-        public string Value { get { return _val; } }
+
+        public string Value => _val;
     }
 
     [AttributeUsage(AttributeTargets.Class, Inherited = true)]
     public sealed class ComSourceInterfacesAttribute : Attribute
     {
         internal string _val;
+
         public ComSourceInterfacesAttribute(string sourceInterfaces)
         {
             _val = sourceInterfaces;
         }
+
         public ComSourceInterfacesAttribute(Type sourceInterface)
         {
             _val = sourceInterface.FullName;
         }
+    
         public ComSourceInterfacesAttribute(Type sourceInterface1, Type sourceInterface2)
         {
             _val = sourceInterface1.FullName + "\0" + sourceInterface2.FullName;
         }
+
         public ComSourceInterfacesAttribute(Type sourceInterface1, Type sourceInterface2, Type sourceInterface3)
         {
             _val = sourceInterface1.FullName + "\0" + sourceInterface2.FullName + "\0" + sourceInterface3.FullName;
         }
+
         public ComSourceInterfacesAttribute(Type sourceInterface1, Type sourceInterface2, Type sourceInterface3, Type sourceInterface4)
         {
             _val = sourceInterface1.FullName + "\0" + sourceInterface2.FullName + "\0" + sourceInterface3.FullName + "\0" + sourceInterface4.FullName;
         }
-        public string Value { get { return _val; } }
+
+        public string Value => _val;
     }
 
     [AttributeUsage(AttributeTargets.Class | AttributeTargets.Interface, Inherited = false)]
@@ -171,7 +182,6 @@ namespace System.Runtime.InteropServices
             _CoClass = coClass;
         }
 
-        public Type CoClass { get { return _CoClass; } }
+        public Type CoClass => _CoClass;
     }
 }
-
