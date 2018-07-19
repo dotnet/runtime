@@ -7,7 +7,7 @@ using System.Text;
 using System.Security;
 using System.Runtime.InteropServices;
 
-namespace COMLib2
+namespace NETServer
 {
     [Guid("00020404-0000-0000-C000-000000000046")]
     [InterfaceTypeAttribute(ComInterfaceType.InterfaceIsIUnknown)]
