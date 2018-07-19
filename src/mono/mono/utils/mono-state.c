@@ -275,11 +275,11 @@ mono_native_state_add_version (JsonWriter *writer)
 
 	mono_json_writer_indent (writer);
 	mono_json_writer_object_key(writer, "tlc");
-#ifdef HAVE_KW_THREAD
+#ifdef MONO_KEYWORD_THREAD
 	mono_json_writer_printf (writer, "\"__thread\",\n");
 #else
 	mono_json_writer_printf (writer, "\"normal\",\n");
-#endif /* HAVE_KW_THREAD */
+#endif /* MONO_KEYWORD_THREAD */
 
 	mono_json_writer_indent (writer);
 	mono_json_writer_object_key(writer, "sigsgev");

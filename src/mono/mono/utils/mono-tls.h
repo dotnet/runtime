@@ -28,10 +28,6 @@ typedef enum {
 	TLS_KEY_NUM = 5
 } MonoTlsKey;
 
-#ifdef HAVE_KW_THREAD
-#define USE_KW_THREAD
-#endif
-
 #ifdef HOST_WIN32
 
 #include <windows.h>

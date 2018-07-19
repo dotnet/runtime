@@ -1526,11 +1526,11 @@ mono_get_version_info (void)
 	GString *output;
 	output = g_string_new ("");
 
-#ifdef HAVE_KW_THREAD
+#ifdef MONO_KEYWORD_THREAD
 	g_string_append_printf (output, "\tTLS:           __thread\n");
 #else
 	g_string_append_printf (output, "\tTLS:           \n");
-#endif /* HAVE_KW_THREAD */
+#endif /* MONO_KEYWORD_THREAD */
 
 #ifdef MONO_ARCH_SIGSEGV_ON_ALTSTACK
 	g_string_append_printf (output, "\tSIGSEGV:       altstack\n");

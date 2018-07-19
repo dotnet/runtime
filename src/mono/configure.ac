@@ -4751,7 +4751,7 @@ fi
 AM_CONDITIONAL(DISABLE_ICALL_TABLES, test x$icall_tables = xno)
 
 if test "x$with_tls" = "x__thread"; then
-	AC_DEFINE(HAVE_KW_THREAD, 1, [Have __thread keyword])
+	AC_DEFINE(MONO_KEYWORD_THREAD, __thread, [Have __thread keyword])
 	# Pass the information to libgc
 	CPPFLAGS="$CPPFLAGS -DUSE_COMPILER_TLS"
 	AC_MSG_CHECKING(if the tls_model attribute is supported)

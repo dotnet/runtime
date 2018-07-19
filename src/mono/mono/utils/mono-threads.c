@@ -65,8 +65,8 @@ static size_t thread_info_size;
 static MonoThreadInfoCallbacks threads_callbacks;
 static MonoThreadInfoRuntimeCallbacks runtime_callbacks;
 static MonoNativeTlsKey thread_info_key, thread_exited_key;
-#ifdef HAVE_KW_THREAD
-static __thread gint32 tls_small_id = -1;
+#ifdef MONO_KEYWORD_THREAD
+static MONO_KEYWORD_THREAD gint32 tls_small_id = -1;
 #else
 static MonoNativeTlsKey small_id_key;
 #endif
@@ -406,7 +406,7 @@ mono_thread_info_register_small_id (void)
 		return small_id;
 
 	small_id = mono_thread_small_id_alloc ();
-#ifdef HAVE_KW_THREAD
+#ifdef MONO_KEYWORD_THREAD
 	tls_small_id = small_id;
 #else
 	mono_native_tls_set_value (small_id_key, GUINT_TO_POINTER (small_id + 1));
@@ -521,7 +521,7 @@ unregister_thread (void *arg)
 	 * TLS destruction order is not reliable so small_id might be cleaned up
 	 * before us.
 	 */
-#ifndef HAVE_KW_THREAD
+#ifndef MONO_KEYWORD_THREAD
 	mono_native_tls_set_value (small_id_key, GUINT_TO_POINTER (info->small_id + 1));
 #endif
 
@@ -640,7 +640,7 @@ mono_thread_info_current (void)
 int
 mono_thread_info_get_small_id (void)
 {
-#ifdef HAVE_KW_THREAD
+#ifdef MONO_KEYWORD_THREAD
 	return tls_small_id;
 #else
 	gpointer val = mono_native_tls_get_value (small_id_key);
@@ -886,7 +886,7 @@ mono_thread_info_init (size_t info_size)
 
 	g_assert (res);
 
-#ifndef HAVE_KW_THREAD
+#ifndef MONO_KEYWORD_THREAD
 	res = mono_native_tls_alloc (&small_id_key, NULL);
 #endif
 	g_assert (res);
