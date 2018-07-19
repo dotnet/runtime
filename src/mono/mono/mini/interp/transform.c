@@ -1044,6 +1044,44 @@ interp_handle_intrinsics (TransformData *td, MonoMethod *target_method, MonoMeth
 		}
 	} else if (in_corlib && !strcmp (klass_name_space, "System") && !strcmp (klass_name, "ByReference`1")) {
 		*op = MINT_INTRINS_BYREFERENCE_GET_VALUE;
+	} else if (in_corlib && !strcmp (klass_name_space, "System") && (!strcmp (klass_name, "Span`1") || !strcmp (klass_name, "ReadOnlySpan`1"))) {
+		if (!strcmp (tm, "get_Item")) {
+			MonoGenericClass *gclass = mono_class_get_generic_class (target_method->klass);
+			MonoClass *param_class = mono_class_from_mono_type (gclass->context.class_inst->type_argv [0]);
+
+			if (!mini_is_gsharedvt_variable_klass (param_class)) {
+				MonoClassField *length_field = mono_class_get_field_from_name_full (target_method->klass, "_length", NULL);
+				g_assert (length_field);
+				int offset_length = length_field->offset - sizeof (MonoObject);
+
+				MonoClassField *ptr_field = mono_class_get_field_from_name_full (target_method->klass, "_pointer", NULL);
+				g_assert (ptr_field);
+				int offset_pointer = ptr_field->offset - sizeof (MonoObject);
+
+				int size = mono_class_array_element_size (param_class);
+				ADD_CODE (td, MINT_GETITEM_SPAN);
+				ADD_CODE (td, size);
+				ADD_CODE (td, offset_length);
+				ADD_CODE (td, offset_pointer);
+
+				SET_SIMPLE_TYPE (td->sp - 1, STACK_TYPE_MP);
+				td->sp -= 1;
+				td->ip += 5;
+				return TRUE;
+			}
+		} else if (!strcmp (tm, "get_Length")) {
+			MonoClassField *length_field = mono_class_get_field_from_name_full (target_method->klass, "_length", NULL);
+			g_assert (length_field);
+			int offset_length = length_field->offset - sizeof (MonoObject);
+			ADD_CODE (td, MINT_LDLEN_SPAN);
+			ADD_CODE (td, offset_length);
+#if SIZEOF_VOID_P == 8
+			ADD_CODE (td, MINT_CONV_I4_I8);
+#endif
+			SET_SIMPLE_TYPE (td->sp - 1, STACK_TYPE_I4);
+			td->ip += 5;
+			return TRUE;
+		}
 	}
 	return FALSE;
 }

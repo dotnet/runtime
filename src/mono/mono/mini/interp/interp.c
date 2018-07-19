@@ -4368,6 +4368,16 @@ interp_exec_method_full (InterpFrame *frame, ThreadContext *context, guint16 *st
 			sp [-1].data.nati = mono_array_length_fast ((MonoArray *)o);
 			++ip;
 			MINT_IN_BREAK;
+		MINT_IN_CASE(MINT_LDLEN_SPAN) {
+			o = sp [-1].data.p;
+			int offset_length = (int) *(gint16 *) (ip + 1);
+			if (!o)
+				THROW_EX (mono_get_exception_null_reference (), ip);
+			mono_array_size_t *element = (mono_array_size_t *) ((guint8 *) o + offset_length);
+			sp [-1].data.nati = *element;
+			ip += 2;
+			MINT_IN_BREAK;
+		}
 		MINT_IN_CASE(MINT_GETCHR) {
 			MonoString *s;
 			s = sp [-2].data.p;
@@ -4379,6 +4389,27 @@ interp_exec_method_full (InterpFrame *frame, ThreadContext *context, guint16 *st
 			--sp;
 			sp [-1].data.i = mono_string_chars(s)[i32];
 			++ip;
+			MINT_IN_BREAK;
+		}
+		MINT_IN_CASE(MINT_GETITEM_SPAN) {
+			guint8 *span = (guint8 *) sp [-2].data.p;
+			int index = sp [-1].data.i;
+			int element_size = (int) *(gint16 *) (ip + 1);
+			int offset_length = (int) *(gint16 *) (ip + 2);
+			int offset_pointer = (int) *(gint16 *) (ip + 3);
+			sp--;
+
+			if (!span)
+				THROW_EX (mono_get_exception_null_reference (), ip);
+
+			mono_array_size_t length = *(mono_array_size_t *) (span + offset_length);
+			if (index < 0 || index > length)
+				THROW_EX (mono_get_exception_index_out_of_range (), ip);
+
+			gpointer pointer = *(gpointer *)(span + offset_pointer);
+			sp [-1].data.p = (guint8 *) pointer + index * element_size;
+
+			ip += 4;
 			MINT_IN_BREAK;
 		}
 		MINT_IN_CASE(MINT_STRLEN)

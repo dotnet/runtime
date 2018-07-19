@@ -329,6 +329,9 @@ OPDEF(MINT_STELEM_REF, "stelem.ref", 1, MintOpNoArgs)
 OPDEF(MINT_STELEM_VT, "stelem.vt", 4, MintOpShortAndInt)
 
 OPDEF(MINT_LDLEN, "ldlen", 1, MintOpNoArgs)
+OPDEF(MINT_LDLEN_SPAN, "ldlen.span", 2, MintOpShortInt)
+
+OPDEF(MINT_GETITEM_SPAN, "getitem.span", 4, MintOpShortAndInt)
 
 OPDEF(MINT_ADD_I4, "add.i4", 1, MintOpNoArgs)
 OPDEF(MINT_ADD_I8, "add.i8", 1, MintOpNoArgs)
