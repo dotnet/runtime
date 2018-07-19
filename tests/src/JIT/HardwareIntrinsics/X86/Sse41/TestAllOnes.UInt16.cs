@@ -314,10 +314,10 @@ namespace JIT.HardwareIntrinsics.X86
             {
                 Succeeded = false;
 
-                Console.WriteLine($"{nameof(Sse41)}.{nameof(Sse41.TestAllOnes)}<UInt16>(Vector128<UInt16>): {method} failed:");
-                Console.WriteLine($"    value: ({string.Join(", ", value)})");
-                Console.WriteLine($"  result: ({string.Join(", ", result)})");
-                Console.WriteLine();
+                TestLibrary.TestFramework.LogInformation($"{nameof(Sse41)}.{nameof(Sse41.TestAllOnes)}<UInt16>(Vector128<UInt16>): {method} failed:");
+                TestLibrary.TestFramework.LogInformation($"    value: ({string.Join(", ", value)})");
+                TestLibrary.TestFramework.LogInformation($"  result: ({string.Join(", ", result)})");
+                TestLibrary.TestFramework.LogInformation(string.Empty);
             }
         }
     }
