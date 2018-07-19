@@ -8574,6 +8574,22 @@ TP_RESULT DebuggerFuncEvalComplete::TriggerPatch(DebuggerControllerPatch *patch,
 
     // Restore the thread's context to what it was before we hijacked it for this func eval.
     CONTEXT *pCtx = GetManagedLiveCtx(thread);
+    // TODO: Support other architectures
+#ifdef _TARGET_X86_
+    m_pDE->m_context.Dr0 = pCtx->Dr0;
+    m_pDE->m_context.Dr1 = pCtx->Dr1;
+    m_pDE->m_context.Dr2 = pCtx->Dr2;
+    m_pDE->m_context.Dr3 = pCtx->Dr3;
+    m_pDE->m_context.Dr6 = pCtx->Dr6;
+    m_pDE->m_context.Dr7 = pCtx->Dr7;
+#elif defined(_TARGET_AMD64_)
+    m_pDE->m_context.Dr0 = pCtx->Dr0;
+    m_pDE->m_context.Dr1 = pCtx->Dr1;
+    m_pDE->m_context.Dr2 = pCtx->Dr2;
+    m_pDE->m_context.Dr3 = pCtx->Dr3;
+    m_pDE->m_context.Dr6 = pCtx->Dr6;
+    m_pDE->m_context.Dr7 = pCtx->Dr7;
+#endif
     CORDbgCopyThreadContext(reinterpret_cast<DT_CONTEXT *>(pCtx), 
                             reinterpret_cast<DT_CONTEXT *>(&(m_pDE->m_context)));
 
