@@ -9,12 +9,6 @@ namespace System.Data.SqlClient.ManualTesting.Tests
 {
     public class Helpers
     {
-        public static int Execute(DbCommand cmd, string strText)
-        {
-            cmd.CommandText = strText;
-            return cmd.ExecuteNonQuery();
-        }
-
         internal static void ProcessCommandBatch(Type connType, string constr, string[] batch)
         {
             if (batch.Length > 0)
