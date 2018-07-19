@@ -151,15 +151,16 @@ int main ()
 		if (t->name.length() == 0)
 			continue;
 		//printf("%s\n", t->name.c_str());
-		ofstream output(("tailcall/fsharp-deeptail/" + t->name + ".il").c_str());
+		FILE* output = fopen(("tailcall/fsharp-deeptail/" + t->name + ".il").c_str(), "w");
 		for (strings_t::const_iterator a = prefix.begin(); a != prefix.end(); ++a)
-			output << a->c_str () << endl;
-		output << endl;
+			fprintf(output, "%s\n", a->c_str());
+		fputs("\n", output);
 		for (strings_t::const_iterator a = t->content.begin(); a != t->content.end(); ++a)
-			output << a->c_str () << endl;
-		output << endl;
+			fprintf(output, "%s\n", a->c_str());
+		fputs("\n", output);
 		for (strings_t::const_iterator a = suffix.begin(); a != suffix.end(); ++a)
-			output << a->c_str () << endl;
+			fprintf(output, "%s\n", a->c_str());
+		fclose(output);
 	}
 #if 0
 	for (names_t::const_iterator t = names.begin(); t != names.end(); ++t)

@@ -75,14 +75,15 @@ int main()
 		char buffer[99];
 		sprintf(buffer, "%d", ++i);
 		//printf("%s\n", buffer);
-		ofstream output((string("tailcall/interface-conservestack/") + buffer + ".il").c_str());
+		FILE* output = fopen((string("tailcall/interface-conservestack/") + buffer + ".il").c_str(), "w");
 		for (strings_t::const_iterator s = prefix.begin(); s != prefix.end(); ++s)
-			output << *s << endl;
-		output << endl;
+			fprintf(output, "%s\n", s->c_str());
+		fputs("\n", output);
 		for (strings_t::const_iterator s = test->content.begin(); s != test->content.end(); ++s)
-			output << *s << endl;
-		output << endl;
+			fprintf(output, "%s\n", s->c_str());
+		fputs("\n", output);
 		for (strings_t::const_iterator s = suffix.begin(); s != suffix.end(); ++s)
-			output << *s << endl;
+			fprintf(output, "%s\n", s->c_str());
+		fclose(output);
 	}
 }
