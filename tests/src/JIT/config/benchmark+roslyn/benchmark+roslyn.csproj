@@ -82,8 +82,8 @@
     <PackageReference Include="xunit">
       <Version>$(XunitPackageVersion)</Version>
     </PackageReference>
-    <PackageReference Include="xunit.console.netcore">
-      <Version>$(XunitConsoleNetcorePackageVersion)</Version>
+    <PackageReference Include="xunit.runner.console">
+      <Version>$(XunitPackageVersion)</Version>
     </PackageReference>
     <PackageReference Include="xunit.runner.utility">
       <Version>$(XunitPackageVersion)</Version>

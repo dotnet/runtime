@@ -127,7 +127,7 @@ public static class SeekUnroll
     // Entrypoint for xunit-perf to call the benchmark
     [Benchmark]
     [MemberData(nameof(ArrayedBoxedIndicesToTest))]
-    public static bool Test(object boxedIndex)
+    public static bool TestWithXunit(object boxedIndex)
     {
         return Test((int)boxedIndex, true);
     }

@@ -1,8 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
 <Project ToolsVersion="12.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
 
-  <UsingTask AssemblyFile="$(PackagesDir)xunit.runner.msbuild\$(XunitPackageVersion)\build\portable-net45+win8+wp8+wpa81\xunit.runner.msbuild.dll" TaskName="Xunit.Runner.MSBuild.xunit" />
-  
   <ItemGroup>
     <_SkipTestAssemblies Include="$(SkipTestAssemblies)" />
   </ItemGroup>
@@ -26,10 +24,6 @@
     <Message Text= "_SkipTestAssemblies= @(_SkipTestAssemblies -> '$(TestAssemblyDir)%(Identity)\%(Identity).XUnitWrapper.dll')"/>
   </Target>
 
-  <UsingTask
-    AssemblyFile="$(SourceDir)\packages\xunit.runner.msbuild\$(XunitPackageVersion)\build\portable-net45+win8+wp8+wpa81\xunit.runner.msbuild.dll"
-    TaskName="Xunit.Runner.MSBuild.xunit" />
-
    <Target Name="RunTests"
           DependsOnTargets="FindTestDirectories"
           Condition="'$(SkipTests)' != 'True'">
@@ -37,20 +31,28 @@
 
     <PropertyGroup>
       <ExcludeTraits Condition="'$(ExcludeTraits)'==''">category=outerloop;category=failing</ExcludeTraits>
-      <ParallelRun Condition="'$(ParallelRun)'==''">true</ParallelRun>
+      <ParallelRun Condition="'$(ParallelRun)'==''">all</ParallelRun>
     </PropertyGroup>
     <ItemGroup>
       <IncludeTraitsItems Include="$(IncludeTraits)" />
       <ExcludeTraitsItems Include="$(ExcludeTraits)" />
     </ItemGroup>
 
-    <xunit Assemblies="@(TestAssemblies)"
-      ParallelizeAssemblies="$(ParallelRun)"
-      ParallelizeTestCollections="$(ParallelRun)"
-      Html="$(__TestRunHtmlLog)"
-      Xml="$(__TestRunXmlLog)"
-      IncludeTraits="@(IncludeTraitsItems)"
-      ExcludeTraits="@(ExcludeTraitsItems)" /> 
+    <Error Condition="'$(CORE_ROOT)' == ''" Text="CORE_ROOT is not set." />
+    <PropertyGroup>
+      <XunitConsoleRunner>$(CORE_ROOT)\xunit.console.dll</XunitConsoleRunner>
+
+      <XunitArgs>-parallel $(ParallelRun)</XunitArgs>
+      <XunitArgs>$(XunitArgs) -html $(__TestRunHtmlLog)</XunitArgs>
+      <XunitArgs>$(XunitArgs) -xml $(__TestRunXmlLog)</XunitArgs>
+      <XunitArgs>$(XunitArgs) @(IncludeTraitsItems->'-trait %(Identity)', ' ')</XunitArgs>
+      <XunitArgs>$(XunitArgs) @(ExcludeTraitsItems->'-notrait %(Identity)', ' ')</XunitArgs>
+
+      <CorerunExecutable Condition="'$(RunningOnUnix)' == 'true'">$(CORE_ROOT)\corerun</CorerunExecutable>
+      <CorerunExecutable Condition="'$(RunningOnUnix)' != 'true'">$(CORE_ROOT)\corerun.exe</CorerunExecutable>
+      <XunitCommandLine>$(CorerunExecutable) $(XunitConsoleRunner) @(TestAssemblies->'%(Identity)', ' ') $(XunitArgs)</XunitCommandLine>
+    </PropertyGroup>
+    <Exec Command="$(XunitCommandLine)" />
 
   </Target>
 
