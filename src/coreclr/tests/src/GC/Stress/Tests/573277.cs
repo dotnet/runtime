@@ -10,10 +10,6 @@ using System.Security;
 using System.Collections.Generic;
 using System.Threading;
 
-#if WINCORESYS
-[assembly:AllowPartiallyTrustedCallers]
-#endif
-
 public class Test
 {
     public static bool fail = false;
