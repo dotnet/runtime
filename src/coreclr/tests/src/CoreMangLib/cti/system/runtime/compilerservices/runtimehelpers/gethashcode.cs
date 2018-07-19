@@ -6,9 +6,6 @@ using System.Security;
 using System.Runtime.CompilerServices;
 using TestLibrary;
 
-#if WINCORESYS
-[assembly: AllowPartiallyTrustedCallers]
-#endif
 // Class has two fields, x and y; we consider two instances to be equal (Equals returns true,
 //  and GetHashCode returns the same for both instances) iff x==x and y==y
 class ClassWithEquivalence
