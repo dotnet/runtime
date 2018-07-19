@@ -212,6 +212,50 @@ namespace System.Runtime.InteropServices
         }
 
         /// <summary>
+        /// Re-interprets a span of bytes as a reference to structure of type T.
+        /// The type may not contain pointers or references. This is checked at runtime in order to preserve type safety.
+        /// </summary>
+        /// <remarks>
+        /// Supported only for platforms that support misaligned memory access or when the memory block is aligned by other means.
+        /// </remarks>
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static ref T AsRef<T>(Span<byte> span)
+            where T : struct
+        {
+            if (RuntimeHelpers.IsReferenceOrContainsReferences<T>())
+            {
+                ThrowHelper.ThrowInvalidTypeWithPointersNotSupported(typeof(T));
+            }
+            if (Unsafe.SizeOf<T>() > (uint)span.Length)
+            {
+                ThrowHelper.ThrowArgumentOutOfRangeException(ExceptionArgument.length);
+            }
+            return ref Unsafe.As<byte, T>(ref GetReference(span));
+        }
+
+        /// <summary>
+        /// Re-interprets a span of bytes as a reference to structure of type T.
+        /// The type may not contain pointers or references. This is checked at runtime in order to preserve type safety.
+        /// </summary>
+        /// <remarks>
+        /// Supported only for platforms that support misaligned memory access or when the memory block is aligned by other means.
+        /// </remarks>
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static ref readonly T AsRef<T>(ReadOnlySpan<byte> span)
+            where T : struct
+        {
+            if (RuntimeHelpers.IsReferenceOrContainsReferences<T>())
+            {
+                ThrowHelper.ThrowInvalidTypeWithPointersNotSupported(typeof(T));
+            }
+            if (Unsafe.SizeOf<T>() > (uint)span.Length)
+            {
+                ThrowHelper.ThrowArgumentOutOfRangeException(ExceptionArgument.length);
+            }
+            return ref Unsafe.As<byte, T>(ref GetReference(span));
+        }
+
+        /// <summary>
         /// Creates a new memory over the portion of the pre-pinned target array beginning
         /// at 'start' index and ending at 'end' index (exclusive).
         /// </summary>
