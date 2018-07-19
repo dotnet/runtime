@@ -5,10 +5,6 @@ using System;
 using System.Security;
 using System.Threading;
 
-#if WINCORESYS
-[assembly:AllowPartiallyTrustedCallers]
-#endif
-
 public class CS_ThreadPoolNullChecks {
 	public static void EventSig(Object state, bool wasSignalled) {
 		Console.WriteLine("In EventSig: {0}.", Thread.CurrentThread.GetHashCode());

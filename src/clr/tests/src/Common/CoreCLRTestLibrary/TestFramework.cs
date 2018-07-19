@@ -9,6 +9,8 @@ namespace TestLibrary
 {
     public static class TestFramework
     {
+        private const int DEFAULT_SEED = 20010415;
+
         public static void LogInformation(string str)
         {
             Logging.WriteLine(str);
@@ -24,25 +26,24 @@ namespace TestLibrary
 
         public static void BeginTestCase(string title)
         {
-            int seed;
-#if WINCORESYS
-            seed = 20010415;
-#else
-            Random rand = new Random();
+            int seed = DEFAULT_SEED;
 
             if (Environment.GetEnvironmentVariable("CORECLR_SEED") != null)
             {
-                try
+                string CORECLR_SEED = Environment.GetEnvironmentVariable("CORECLR_SEED");
+
+                if (!int.TryParse(CORECLR_SEED, out seed))
                 {
-                    seed = int.Parse(Environment.GetEnvironmentVariable("CORECLR_SEED"));
+                    if (string.Equals(CORECLR_SEED, "random", StringComparison.OrdinalIgnoreCase))
+                    {
+                        seed = new Random().Next();
+                    }
+                    else
+                    {
+                        seed = DEFAULT_SEED;
+                    }
                 }
-                catch (FormatException) { seed = rand.Next(); }
             }
-            else
-            {
-                seed = rand.Next();
-            }
-#endif
 
             Generator.m_rand = new Random(seed);
 
