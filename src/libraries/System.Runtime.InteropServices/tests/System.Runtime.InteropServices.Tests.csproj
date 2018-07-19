@@ -85,8 +85,13 @@
     <Compile Include="System\Runtime\InteropServices\Marshal\SecureStringToGlobalAllocUnicodeTests.cs" />
     <Compile Include="System\Runtime\InteropServices\Marshal\SetComObjectDataTests.cs" />
     <Compile Include="System\Runtime\InteropServices\Marshal\SizeOfTests.cs" />
-    <Compile Include="System\Runtime\InteropServices\Marshal\StringToCoTaskMemUTF8Tests.cs" Condition="'$(TargetGroup)' == 'netcoreapp'" />
+    <Compile Include="System\Runtime\InteropServices\Marshal\StringToBSTRTests.cs" />
+    <Compile Include="System\Runtime\InteropServices\Marshal\StringToCoTaskMemAnsiTests.cs" />
     <Compile Include="System\Runtime\InteropServices\Marshal\StringToCoTaskMemAutoTests.cs" />
+    <Compile Include="System\Runtime\InteropServices\Marshal\StringToCoTaskMemUniTests.cs" />
+    <Compile Include="System\Runtime\InteropServices\Marshal\StringToCoTaskMemUTF8Tests.cs" Condition="'$(TargetGroup)' == 'netcoreapp'" />
+    <Compile Include="System\Runtime\InteropServices\Marshal\StringToHGlobalAnsiTests.cs" />
+    <Compile Include="System\Runtime\InteropServices\Marshal\StringToHGlobalUniTests.cs" />
     <Compile Include="System\Runtime\InteropServices\Marshal\StringToHGlobalAutoTests.cs" />
     <Compile Include="System\Runtime\InteropServices\Marshal\OffsetOfTests.cs" />
     <Compile Include="System\Runtime\InteropServices\Marshal\PrelinkTests.cs" />

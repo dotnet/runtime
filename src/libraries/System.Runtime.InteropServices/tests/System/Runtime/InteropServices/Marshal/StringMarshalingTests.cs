@@ -26,15 +26,15 @@ namespace System.Runtime.InteropServices.Tests
         {
             foreach (String ts in TestStrings)
             {
-                IntPtr BStr = Marshal.StringToBSTR(ts);
+                IntPtr ptr = Marshal.StringToBSTR(ts);
                 try
                 {
-                    String str = Marshal.PtrToStringBSTR(BStr);
+                    String str = Marshal.PtrToStringBSTR(ptr);
                     Assert.Equal(ts, str);
                 }
                 finally
                 {
-                    Marshal.FreeBSTR(BStr);
+                    Marshal.FreeBSTR(ptr);
                 }
             }
         }
