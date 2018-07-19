@@ -217,6 +217,40 @@
         }
     },
     {
+        "name": "System.Runtime.InteropServices.Tests",
+        "enabled": true,
+        "exclusions": {
+            "namespaces": null,
+            "classes": null,
+            "methods": [
+                {
+                    "name": "System.Runtime.InteropServices.MarshalTests.SetComObjectData",
+                    "reason": "outdated"
+                },
+                {
+                    "name": "System.Runtime.InteropServices.MarshalTests.GetComObjectData",
+                    "reason": "outdated"
+                },
+                {
+                    "name": "System.Runtime.InteropServices.Tests.ComAwareEventInfoTests.AddEventHandler_DispIdAttribute_ThrowsPlatformNotSupportedException",
+                    "reason": "outdated"
+                },
+                {
+                    "name": "System.Runtime.InteropServices.Tests.ComEventsHelperTests.Remove_NonNullRcw_ThrowsPlatformNotSupportedException",
+                    "reason": "outdated"
+                },
+                {
+                    "name": "System.Runtime.InteropServices.Tests.ComEventsHelperTests.AddEventHandler_DispIdAttribute_ThrowsPlatformNotSupportedException",
+                    "reason": "outdated"
+                },
+                {
+                    "name": "System.Runtime.InteropServices.Tests.ComEventsHelperTests.Combine_NonNullRcw_ThrowsPlatformNotSupportedException",
+                    "reason": "outdated"
+                },
+            ]
+        }
+    },
+    {
         "name": "System.Security.Cryptography.X509Certificates.Tests",
         "enabled": true,
         "exclusions": {

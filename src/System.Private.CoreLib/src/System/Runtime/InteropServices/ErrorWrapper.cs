@@ -2,20 +2,11 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
-/*=============================================================================
-**
-**
-**
-** Purpose: Wrapper that is converted to a variant with VT_ERROR.
-**
-**
-=============================================================================*/
-
-
-using System;
-
 namespace System.Runtime.InteropServices
 {
+    /// <summary>
+    /// Wrapper that is converted to a variant with VT_ERROR.
+    /// </summary>
     public sealed class ErrorWrapper
     {
         public ErrorWrapper(int errorCode)
@@ -26,7 +17,10 @@ namespace System.Runtime.InteropServices
         public ErrorWrapper(object errorCode)
         {
             if (!(errorCode is int))
+            {
                 throw new ArgumentException(SR.Arg_MustBeInt32, nameof(errorCode));
+            }
+
             m_ErrorCode = (int)errorCode;
         }
 
@@ -35,13 +29,7 @@ namespace System.Runtime.InteropServices
             m_ErrorCode = Marshal.GetHRForException(e);
         }
 
-        public int ErrorCode
-        {
-            get
-            {
-                return m_ErrorCode;
-            }
-        }
+        public int ErrorCode => m_ErrorCode;
 
         private int m_ErrorCode;
     }
