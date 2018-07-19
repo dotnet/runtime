@@ -99,7 +99,6 @@ AGAIN:
             break;
         case InlineR: {
             __int64 d = GET_UNALIGNED_VAL64(instrPtr); instrPtr +=8;
-            instrPtr += 8;
             args->r = *((double*) (&d));
             } break;
         case InlineSwitch:
