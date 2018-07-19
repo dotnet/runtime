@@ -1235,6 +1235,12 @@ def static addNonPRTriggers(def job, def branch, def isPR, def architecture, def
          return
     }
 
+    // Ubuntu x86 CI jobs are failing. Disable non-PR triggered jobs to avoid these constant failures
+    // until this is fixed. Tracked by https://github.com/dotnet/coreclr/issues/19003.
+    if (architecture == 'x86' && os == 'Ubuntu') {
+        return
+    }
+
     // Check scenario.
     switch (scenario) {
         case 'innerloop':
@@ -3427,6 +3433,7 @@ def static CreateOtherTestJob(def dslFactory, def project, def branch, def archi
                     }
                 }
 
+                shell("mkdir ./bin/CoreFxBinDir")
                 shell("tar -xf ./bin/CoreFxNative/bin/build.tar.gz -C ./bin/CoreFxBinDir")
             }
 
