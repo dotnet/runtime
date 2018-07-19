@@ -1819,14 +1819,13 @@ def static addTriggers(def job, def branch, def isPR, def architecture, def os, 
                                 Utilities.addGithubPRTriggerForBranch(job, branch, "${os} ${architecture} ${configuration} Innerloop Build and Test")
                             }
                             break
-                        //no_tiered_compilation_innerloop will be added as default once it is confirmed working
-                        //case 'no_tiered_compilation_innerloop':
-                        //    // Default trigger
-                        //    if (configuration == 'Checked') {
-                        //        def displayStr = getStressModeDisplayName(scenario)
-                        //        Utilities.addGithubPRTriggerForBranch(job, branch, "${os} ${architecture} ${configuration} Build and Test (Jit - ${displayStr})")
-                        //    }
-                        //    break
+                        case 'no_tiered_compilation_innerloop':
+                            // Default trigger
+                            if (configuration == 'Checked') {
+                                def displayStr = getStressModeDisplayName(scenario)
+                                Utilities.addGithubPRTriggerForBranch(job, branch, "${os} ${architecture} ${configuration} Innerloop Build and Test (Jit - ${displayStr})")
+                            }
+                            break
 
                         case 'normal':
                             if (configuration == 'Checked') {
@@ -1970,8 +1969,7 @@ def static addTriggers(def job, def branch, def isPR, def architecture, def os, 
 
             switch (os) {
                 case 'Ubuntu':
-                //no_tiered_compilation_innerloop will be added as default once it is confirmed working
-                    if (scenario == 'innerloop' /*|| scenario == 'no_tiered_compilation_innerloop'*/) {
+                    if (scenario == 'innerloop' || scenario == 'no_tiered_compilation_innerloop') {
                         if (configuration == 'Checked') {
                             Utilities.addGithubPRTriggerForBranch(job, branch, contextString)
                         }
@@ -2110,13 +2108,12 @@ def static addTriggers(def job, def branch, def isPR, def architecture, def os, 
                     }
                     break
 
-                //no_tiered_compilation_innerloop will be added as default once it is confirmed working
-                //case 'no_tiered_compilation_innerloop':
-                //    if (configuration == 'Checked') {
-                //        def displayStr = getStressModeDisplayName(scenario)
-                //        Utilities.addGithubPRTriggerForBranch(job, branch, "${os} ${architecture} ${configuration} Build and Test (Jit - ${displayStr})")
-                //    }
-                //    break
+                case 'no_tiered_compilation_innerloop':
+                    if (configuration == 'Checked') {
+                        def displayStr = getStressModeDisplayName(scenario)
+                        Utilities.addGithubPRTriggerForBranch(job, branch, "${os} ${architecture} ${configuration} Innerloop Build and Test (Jit - ${displayStr})")
+                    }
+                    break
 
                 case 'normal':
                     if (configuration == 'Checked') {
