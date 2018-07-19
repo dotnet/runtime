@@ -2,21 +2,10 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
-/*=============================================================================
-**
-**
-**
-** Purpose: IEnumMoniker interface definition.
-**
-**
-=============================================================================*/
-
-using System;
-
 namespace System.Runtime.InteropServices.ComTypes
 {
     [Guid("00000102-0000-0000-C000-000000000046")]
-    [InterfaceTypeAttribute(ComInterfaceType.InterfaceIsIUnknown)]
+    [InterfaceType(ComInterfaceType.InterfaceIsIUnknown)]
     [ComImport]
     public interface IEnumMoniker
     {

@@ -2,17 +2,6 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
-/*=============================================================================
-**
-**
-**
-** Purpose: ITypeLib interface definition.
-**
-**
-=============================================================================*/
-
-using System;
-
 namespace System.Runtime.InteropServices.ComTypes
 {
     public enum SYSKIND
@@ -23,7 +12,7 @@ namespace System.Runtime.InteropServices.ComTypes
         SYS_WIN64 = SYS_MAC + 1
     }
 
-    [Flags()]
+    [Flags]
     public enum LIBFLAGS : short
     {
         LIBFLAG_FRESTRICTED = 0x1,
@@ -44,7 +33,7 @@ namespace System.Runtime.InteropServices.ComTypes
     }
 
     [Guid("00020402-0000-0000-C000-000000000046")]
-    [InterfaceTypeAttribute(ComInterfaceType.InterfaceIsIUnknown)]
+    [InterfaceType(ComInterfaceType.InterfaceIsIUnknown)]
     [ComImport]
     public interface ITypeLib
     {

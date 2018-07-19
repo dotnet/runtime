@@ -2,20 +2,11 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
-/*=============================================================================
-**
-**
-**
-** Purpose: Wrapper that is converted to a variant with VT_BYREF | VT_VARIANT.
-**
-**
-=============================================================================*/
-
-
-using System;
-
 namespace System.Runtime.InteropServices
 {
+    /// <summary>
+    /// Wrapper that is converted to a variant with VT_BYREF | VT_VARIANT.
+    /// </summary>
     public sealed class VariantWrapper
     {
         public VariantWrapper(object obj)
@@ -23,13 +14,7 @@ namespace System.Runtime.InteropServices
             m_WrappedObject = obj;
         }
 
-        public object WrappedObject
-        {
-            get
-            {
-                return m_WrappedObject;
-            }
-        }
+        public object WrappedObject => m_WrappedObject;
 
         private object m_WrappedObject;
     }

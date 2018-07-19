@@ -2,21 +2,10 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
-/*=============================================================================
-**
-**
-**
-** Purpose: ITypeLib2 interface definition.
-**
-**
-=============================================================================*/
-
-using System;
-
 namespace System.Runtime.InteropServices.ComTypes
 {
     [Guid("00020411-0000-0000-C000-000000000046")]
-    [InterfaceTypeAttribute(ComInterfaceType.InterfaceIsIUnknown)]
+    [InterfaceType(ComInterfaceType.InterfaceIsIUnknown)]
     [ComImport]
     public interface ITypeLib2 : ITypeLib
     {

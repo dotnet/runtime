@@ -2,8 +2,6 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
-//
-
 using System;
 
 namespace System.Runtime.InteropServices.WindowsRuntime
@@ -19,10 +17,7 @@ namespace System.Runtime.InteropServices.WindowsRuntime
             m_defaultInterface = defaultInterface;
         }
 
-        public Type DefaultInterface
-        {
-            get { return m_defaultInterface; }
-        }
+        public Type DefaultInterface => m_defaultInterface;
     }
 
     // WindowsRuntimeImport is a pseudo custom attribute which causes us to emit the tdWindowsRuntime bit
@@ -34,8 +29,7 @@ namespace System.Runtime.InteropServices.WindowsRuntime
     [AttributeUsage(AttributeTargets.Class | AttributeTargets.Interface | AttributeTargets.Enum | AttributeTargets.Struct | AttributeTargets.Delegate, Inherited = false)]
     internal sealed class WindowsRuntimeImportAttribute : Attribute
     {
-        internal WindowsRuntimeImportAttribute()
-        { }
+        internal WindowsRuntimeImportAttribute() { }
     }
 
     // This attribute is applied to class interfaces in a generated projection assembly.  It is used by Visual Studio
@@ -53,30 +47,15 @@ namespace System.Runtime.InteropServices.WindowsRuntime
             m_revisionVersion = revisionVersion;
         }
 
-        public Type InterfaceType
-        {
-            get { return m_interfaceType; }
-        }
+        public Type InterfaceType => m_interfaceType;
 
-        public byte MajorVersion
-        {
-            get { return m_majorVersion; }
-        }
+        public byte MajorVersion => m_majorVersion;
 
-        public byte MinorVersion
-        {
-            get { return m_minorVersion; }
-        }
+        public byte MinorVersion => m_minorVersion;
 
-        public byte BuildVersion
-        {
-            get { return m_buildVersion; }
-        }
+        public byte BuildVersion => m_buildVersion;
 
-        public byte RevisionVersion
-        {
-            get { return m_revisionVersion; }
-        }
+        public byte RevisionVersion => m_revisionVersion;
 
         private Type m_interfaceType;
         private byte m_majorVersion;
@@ -99,8 +78,6 @@ namespace System.Runtime.InteropServices.WindowsRuntime
         public WriteOnlyArrayAttribute() { }
     }
 
-
-
     // This attribute is applied on the return value to specify the name of the return value. 
     // In WindowsRuntime all parameters including return value need to have unique names.
     // This is essential in JS as one of the ways to get at the results of a method in JavaScript is via a Dictionary object keyed by parameter name.
@@ -108,14 +85,12 @@ namespace System.Runtime.InteropServices.WindowsRuntime
     public sealed class ReturnValueNameAttribute : Attribute
     {
         private string m_Name;
+
         public ReturnValueNameAttribute(string name)
         {
             m_Name = name;
         }
 
-        public string Name
-        {
-            get { return m_Name; }
-        }
+        public string Name => m_Name;
     }
 }

@@ -4,26 +4,26 @@
 
 // Dummy implementations of non-portable interop methods that just throw PlatformNotSupportedException
 
+using System.Reflection;
+using System.Runtime.InteropServices.ComTypes;
+
 namespace System.Runtime.InteropServices
 {
-    public  static partial class Marshal
+    public static partial class Marshal
     {
         public static int GetHRForException(Exception e)
         {
             return (e != null) ? e.HResult : 0;
         }
 
-        public static int AddRef(System.IntPtr pUnk)
+        public static int AddRef(IntPtr pUnk)
         {
             throw new PlatformNotSupportedException(SR.PlatformNotSupported_ComInterop);
         }
 
-        public static bool AreComObjectsAvailableForCleanup()
-        { 
-            return false;
-        }
+        public static bool AreComObjectsAvailableForCleanup() => false;
 
-        public static System.IntPtr CreateAggregatedObject(System.IntPtr pOuter, object o)
+        public static IntPtr CreateAggregatedObject(IntPtr pOuter, object o)
         {
             throw new PlatformNotSupportedException(SR.PlatformNotSupported_ComInterop);
         }
@@ -32,18 +32,18 @@ namespace System.Runtime.InteropServices
         {
             throw new PlatformNotSupportedException(SR.PlatformNotSupported_ComInterop);
         }
-        
+
         public static void CleanupUnusedObjectsInCurrentContext()
         {
-           return;
+            return;
         }
 
-        public static System.IntPtr CreateAggregatedObject<T>(System.IntPtr pOuter, T o)
+        public static IntPtr CreateAggregatedObject<T>(IntPtr pOuter, T o)
         {
             throw new PlatformNotSupportedException(SR.PlatformNotSupported_ComInterop);
         }
 
-        public static object CreateWrapperOfType(object o, System.Type t)
+        public static object CreateWrapperOfType(object o, Type t)
         {
             throw new PlatformNotSupportedException(SR.PlatformNotSupported_ComInterop);
         }
@@ -56,98 +56,104 @@ namespace System.Runtime.InteropServices
         public static void ChangeWrapperHandleStrength(Object otp, bool fIsWeak)
         {
             throw new PlatformNotSupportedException(SR.PlatformNotSupported_ComInterop);
-        }           
+        }
 
         public static int FinalReleaseComObject(object o)
         {
             throw new PlatformNotSupportedException(SR.PlatformNotSupported_ComInterop);
         }
 
-        public static System.IntPtr GetComInterfaceForObject(object o, System.Type T)
+        public static IntPtr GetComInterfaceForObject(object o, Type T)
         {
             throw new PlatformNotSupportedException(SR.PlatformNotSupported_ComInterop);
         }
 
-        public static System.IntPtr GetComInterfaceForObject(object o, System.Type T, System.Runtime.InteropServices.CustomQueryInterfaceMode mode)
+        public static IntPtr GetComInterfaceForObject(object o, Type T, CustomQueryInterfaceMode mode)
         {
             throw new PlatformNotSupportedException(SR.PlatformNotSupported_ComInterop);
         }
 
-        public static System.IntPtr GetComInterfaceForObject<T, TInterface>(T o)
+        public static IntPtr GetComInterfaceForObject<T, TInterface>(T o)
         {
             throw new PlatformNotSupportedException(SR.PlatformNotSupported_ComInterop);
         }
 
-        public static System.IntPtr GetHINSTANCE(System.Reflection.Module m)
+        public static object GetComObjectData(object obj, object key)
+        {
+            throw new PlatformNotSupportedException(SR.PlatformNotSupported_ComInterop);
+        }
+
+        public static IntPtr GetHINSTANCE(Module m)
         {
             if (m == null)
             {
                 throw new ArgumentNullException(nameof(m));
             }
-            return (System.IntPtr) (-1);
+
+            return (IntPtr) (-1);
         }           
 
-        public static System.IntPtr GetIUnknownForObject(object o)
+        public static IntPtr GetIUnknownForObject(object o)
         {
             throw new PlatformNotSupportedException(SR.PlatformNotSupported_ComInterop);
         }
 
-        public static void GetNativeVariantForObject(object obj, System.IntPtr pDstNativeVariant)
+        public static void GetNativeVariantForObject(object obj, IntPtr pDstNativeVariant)
         {
             throw new PlatformNotSupportedException(SR.PlatformNotSupported_ComInterop);
         }
 
-        public static void GetNativeVariantForObject<T>(T obj, System.IntPtr pDstNativeVariant)
+        public static void GetNativeVariantForObject<T>(T obj, IntPtr pDstNativeVariant)
         {
             throw new PlatformNotSupportedException(SR.PlatformNotSupported_ComInterop);
         }
 
-        public static Object GetTypedObjectForIUnknown(System.IntPtr pUnk, System.Type t)
+        public static Object GetTypedObjectForIUnknown(IntPtr pUnk, Type t)
         {
             throw new PlatformNotSupportedException(SR.PlatformNotSupported_ComInterop);
         }
 
-        public static object GetObjectForIUnknown(System.IntPtr pUnk)
+        public static object GetObjectForIUnknown(IntPtr pUnk)
         {
             throw new PlatformNotSupportedException(SR.PlatformNotSupported_ComInterop);
         }
 
-        public static object GetObjectForNativeVariant(System.IntPtr pSrcNativeVariant)
+        public static object GetObjectForNativeVariant(IntPtr pSrcNativeVariant)
         {
             throw new PlatformNotSupportedException(SR.PlatformNotSupported_ComInterop);
         }
 
-        public static T GetObjectForNativeVariant<T>(System.IntPtr pSrcNativeVariant)
+        public static T GetObjectForNativeVariant<T>(IntPtr pSrcNativeVariant)
         {
             throw new PlatformNotSupportedException(SR.PlatformNotSupported_ComInterop);
         }
 
-        public static object[] GetObjectsForNativeVariants(System.IntPtr aSrcNativeVariant, int cVars)
+        public static object[] GetObjectsForNativeVariants(IntPtr aSrcNativeVariant, int cVars)
         {
             throw new PlatformNotSupportedException(SR.PlatformNotSupported_ComInterop);
         }
 
-        public static T[] GetObjectsForNativeVariants<T>(System.IntPtr aSrcNativeVariant, int cVars)
+        public static T[] GetObjectsForNativeVariants<T>(IntPtr aSrcNativeVariant, int cVars)
         {
             throw new PlatformNotSupportedException(SR.PlatformNotSupported_ComInterop);
         }
 
-        public static int GetStartComSlot(System.Type t)
+        public static int GetStartComSlot(Type t)
         {
             throw new PlatformNotSupportedException(SR.PlatformNotSupported_ComInterop);
         }
 
-        public static System.Type GetTypeFromCLSID(System.Guid clsid) 
+        public static Type GetTypeFromCLSID(Guid clsid) 
         {
             throw new PlatformNotSupportedException(SR.PlatformNotSupported_ComInterop);
         }
 
-        public static string GetTypeInfoName(System.Runtime.InteropServices.ComTypes.ITypeInfo typeInfo)
+        public static string GetTypeInfoName(ITypeInfo typeInfo)
         {
             throw new PlatformNotSupportedException(SR.PlatformNotSupported_ComInterop);
         }
 
-        public static object GetUniqueObjectForIUnknown(System.IntPtr unknown)
+        public static object GetUniqueObjectForIUnknown(IntPtr unknown)
         {
             throw new PlatformNotSupportedException(SR.PlatformNotSupported_ComInterop);
         }
@@ -162,17 +168,22 @@ namespace System.Runtime.InteropServices
             return false;
         }
 
-        public static int QueryInterface(System.IntPtr pUnk, ref System.Guid iid, out System.IntPtr ppv)
+        public static int QueryInterface(IntPtr pUnk, ref Guid iid, out IntPtr ppv)
         {
             throw new PlatformNotSupportedException(SR.PlatformNotSupported_ComInterop);
         }
 
-        public static int Release(System.IntPtr pUnk)
+        public static int Release(IntPtr pUnk)
         {
             throw new PlatformNotSupportedException(SR.PlatformNotSupported_ComInterop);
         }
 
         public static int ReleaseComObject(object o)
+        {
+            throw new PlatformNotSupportedException(SR.PlatformNotSupported_ComInterop);
+        }
+
+        public static bool SetComObjectData(object obj, object key, object data)
         {
             throw new PlatformNotSupportedException(SR.PlatformNotSupported_ComInterop);
         }
@@ -185,26 +196,19 @@ namespace System.Runtime.InteropServices
             throw new PlatformNotSupportedException(SR.PlatformNotSupported_ComInterop);
         }
 
-        public object WrappedObject
-        {
-            get
-            {
-                throw new PlatformNotSupportedException(SR.PlatformNotSupported_ComInterop);
-            }
-        }
+        public object WrappedObject => throw new PlatformNotSupportedException(SR.PlatformNotSupported_ComInterop);
     }
 
     public static class ComEventsHelper
     {
-        public static void Combine(object rcw, System.Guid iid, int dispid, System.Delegate d)
+        public static void Combine(object rcw, Guid iid, int dispid, Delegate d)
         {
             throw new PlatformNotSupportedException(SR.PlatformNotSupported_ComInterop);
         }
 
-        public static System.Delegate Remove(object rcw, System.Guid iid, int dispid, System.Delegate d)
+        public static Delegate Remove(object rcw, Guid iid, int dispid, Delegate d)
         {
             throw new PlatformNotSupportedException(SR.PlatformNotSupported_ComInterop);
         }
     }
 }
-

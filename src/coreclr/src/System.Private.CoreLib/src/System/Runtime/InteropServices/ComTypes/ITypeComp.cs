@@ -2,17 +2,6 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
-/*=============================================================================
-**
-**
-**
-** Purpose: ITypeComp interface definition.
-**
-**
-=============================================================================*/
-
-using System;
-
 namespace System.Runtime.InteropServices.ComTypes
 {
     public enum DESCKIND
@@ -26,7 +15,6 @@ namespace System.Runtime.InteropServices.ComTypes
     }
 
     [StructLayout(LayoutKind.Explicit, CharSet = CharSet.Unicode)]
-
     public struct BINDPTR
     {
         [FieldOffset(0)]
@@ -38,7 +26,7 @@ namespace System.Runtime.InteropServices.ComTypes
     }
 
     [Guid("00020403-0000-0000-C000-000000000046")]
-    [InterfaceTypeAttribute(ComInterfaceType.InterfaceIsIUnknown)]
+    [InterfaceType(ComInterfaceType.InterfaceIsIUnknown)]
     [ComImport]
     public interface ITypeComp
     {

@@ -2,20 +2,12 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
-////////////////////////////////////////////////////////////////////////////////
-////////////////////////////////////////////////////////////////////////////////
-//
-// PInvokeMap is an enum that defines the PInvoke attributes.  These
-//  values are defined in CorHdr.h.
-//
-//
-
-using System.Runtime.InteropServices;
-using System;
-
 namespace System.Runtime.InteropServices
 {
-    // This Enum matchs the CorPinvokeMap defined in CorHdr.h
+    /// <summary>
+    /// An enum that defines the PInvoke attributes. These values
+    /// values are defined in and must match CorHdr.h.
+    /// </summary>
     internal enum PInvokeMap
     {
         NoMangle = 0x0001,   // Pinvoke is to use the member name as specified.
