@@ -31,7 +31,6 @@
     <RestoreProjects Include="$(MSBuildThisFileDirectory)src\JIT\config\benchmark+serialize\benchmark+serialize.csproj" />
     <RestoreProjects Include="$(MSBuildThisFileDirectory)src\JIT\config\benchmark\benchmark.csproj" />
     <RestoreProjects Include="$(MSBuildThisFileDirectory)src\performance\performance.csproj" />
-    <RestoreProjects Include="$(MSBuildThisFileDirectory)src\TestWrappersConfig\TestWrappersConfig.csproj" />
   </ItemGroup>
 
   <Target Name="BuildTargetingPack" AfterTargets="BatchRestorePackages" Condition="$(__SkipTargetingPackBuild) != 'true'">

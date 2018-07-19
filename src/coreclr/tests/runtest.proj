@@ -6,7 +6,6 @@
   <PropertyGroup>
     <XunitTestBinBase Condition="'$(XunitTestBinBase)'==''" >$(BaseOutputPathWithConfig)</XunitTestBinBase>
     <XunitWrapperGeneratedCSDirBase>$(XunitTestBinBase)\TestWrappers\</XunitWrapperGeneratedCSDirBase>
-    <XunitWrapperOutputIntermediatedDirBase>$(XunitTestBinBase)\Tests\</XunitWrapperOutputIntermediatedDirBase>
     <MSBuildEnableAllPropertyFunctions>1</MSBuildEnableAllPropertyFunctions>
   </PropertyGroup>
 
@@ -75,63 +74,34 @@ $(_XunitEpilog)
       </_XunitWrapperGen>
       <XunitWrapperGenCsProj>
         <![CDATA[
-<?xml version="1.0" encoding="utf-8"?>
-<Project ToolsVersion="12.0" DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+<Project>
 
-  <Import Project="$(SourceDir)dir.props" />
+  <Import Project="$(ProjectDir)dir.sdkbuild.props" />
+
   <PropertyGroup>
-    <Configuration Condition=" '%24(Configuration)' == '' ">Debug</Configuration>
-    <Platform Condition=" '%24(Platform)' == '' ">AnyCPU</Platform>
-    <AssemblyName>$(XunitWrapper)</AssemblyName>
-    <SchemaVersion>2.0</SchemaVersion>
-    <ProjectGuid>{95DFC527-4DC1-495E-97D7-E94EE1F7140D}</ProjectGuid>
-    <OutputType>Library</OutputType>
-    <TargetFrameworkIdentifier Condition ="('$(BuildTestsAgainstPackages)' != 'true') And ('$(BuildOS)' == 'Windows_NT')">.NETFramework</TargetFrameworkIdentifier>
-    <TargetFrameworkVersion Condition ="('$(BuildTestsAgainstPackages)' != 'true') And ('$(BuildOS)' == 'Windows_NT')">v4.5</TargetFrameworkVersion>
-    <NugetTargetMonikerShort Condition ="'$(BuildTestsAgainstPackages)' != 'true'">net45</NugetTargetMonikerShort>
-    <IsXunitWrapperProject>true</IsXunitWrapperProject>
-    <SkipSigning>true</SkipSigning>
-    <ProjectTypeGuids>{786C830F-07A1-408B-BD7F-6EE04809D6DB}%3B{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}</ProjectTypeGuids>
-    <SolutionDir Condition="%24(SolutionDir) == '' Or %24(SolutionDir) == '*Undefined*'">..\..\</SolutionDir>
-    <CLRTestKind>BuildOnly</CLRTestKind>
-    <IsTestProject>true</IsTestProject>
+    <OutputPath>$(XUnitTestBinBase)\$(CategoryWithSlash)</OutputPath>
   </PropertyGroup>
-  <!-- Default configurations to help VS understand the configurations -->
-  <PropertyGroup Condition=" '%24(Configuration)|%24(Platform)' == 'Debug|AnyCPU' ">
-  </PropertyGroup>
-  <PropertyGroup Condition=" '%24(Configuration)|%24(Platform)' == 'Release|AnyCPU' ">
-  </PropertyGroup>
+
+  <Import Sdk="Microsoft.NET.Sdk" Project="Sdk.props" />
+
   <ItemGroup>
     <Compile Include="$(XunitWrapper).cs" />
   </ItemGroup>
+
   <ItemGroup>
-    <Service Include="{82A7F48D-3B50-4B1E-B82E-3ADA8210C358}" />
-  </ItemGroup>
-   <ItemGroup>
-    <ProjectReference Include="$(SourceDir)Common\Desktop.Coreclr.TestWrapper\Desktop.Coreclr.TestWrapper.csproj" Condition="('$(BuildTestsAgainstPackages)' != 'true') And ('$(BuildOS)' == 'Windows_NT')">
-      <Project>{8ffe99c0-22f8-4462-b839-970eac1b3472}</Project>
-      <Name>coreclr</Name>
-    </ProjectReference>
-    <ProjectReference Include="$(SourceDir)Common\Coreclr.TestWrapper\Coreclr.TestWrapper.csproj" Condition="('$(BuildTestsAgainstPackages)' == 'true') Or ('$(BuildOS)' != 'Windows_NT')">
-      <Project>{8ffe99c0-22f8-4462-b839-970eac1b3472}</Project>
-      <Name>coreclr</Name>
-    </ProjectReference>
+    <ProjectReference Include="$(SourceDir)Common\Coreclr.TestWrapper\Coreclr.TestWrapper.csproj" />
   </ItemGroup>
 
   <ItemGroup>
-    <Reference Include="System" />
-    <Reference Include="System.Runtime" />
-    <Reference Include="mscorlib" />
+    <PackageReference Include="xunit" Version="$(XunitPackageVersion)" />
+    <PackageReference Include="xunit.runner.console" Version="$(XunitPackageVersion)" />
   </ItemGroup>
-  <Import Project="$(SourceDir)dir.targets" />
-  <PropertyGroup>
-    <OutDir>$(XunitTestBinBase)\$(CategoryWithSlash)\</OutDir>
-    <ProjectAssetsFile Condition="'$(BuildTestsAgainstPackages)' != 'true'">%24(TestWrappersPackagesConfigFileDirectory)obj/project.assets.json</ProjectAssetsFile>
-  </PropertyGroup>
+
+  <Import Sdk="Microsoft.NET.Sdk" Project="Sdk.targets" />
+
 </Project>
-        ]]>
+]]>
       </XunitWrapperGenCsProj>
-
     </PropertyGroup>
 
     <!-- <Exec Command="md" -->
@@ -151,7 +121,7 @@ $(_XunitEpilog)
   </Target>
 
   <Target Name="BuildXunitWrapper">
-    <MSBuild Projects="$(XunitWrapperSrcDir)\$(XunitWrapper).csproj"/>
+    <MSBuild Projects="$(XunitWrapperSrcDir)\$(XunitWrapper).csproj" Targets="Restore;Build" />
   </Target>
 
   <Target Name="CreateXunitFacts">
@@ -166,7 +136,6 @@ $(_XunitEpilog)
       <Category Condition="'$(RunningOnUnix)' == 'true'" >$([System.String]::Copy('$(CategoryWithSlash)').Replace('/','.'))</Category>
       <XunitWrapper>$(Category).XUnitWrapper</XunitWrapper>
       <XunitWrapperSrcDir>$(XunitWrapperGeneratedCSDirBase)$(Category)</XunitWrapperSrcDir>
-      <XunitWrapperOutputDir>$(XunitWrapperOutputIntermediatedDirBase)$(Category)</XunitWrapperOutputDir>
     </PropertyGroup>
     <PropertyGroup>
       <_XunitProlog Condition=" '$(_XunitProlog)'=='' ">
@@ -191,7 +160,7 @@ namespace $([System.String]::Copy($(Category)).Replace(".","_").Replace("\","").
             {
                 reportBase = System.Environment.GetEnvironmentVariable(%22XunitTestReportDirBase%22)%3B
                 testBinaryBase = System.IO.Path.GetDirectoryName(new Uri(Assembly.GetExecutingAssembly().CodeBase).LocalPath)%3B
-                coreRoot = System.IO.Path.GetFullPath(System.Environment.GetEnvironmentVariable(%22CORE_ROOT%22))%3B
+                coreRoot = System.Environment.GetEnvironmentVariable(%22CORE_ROOT%22)%3B
 
                 if (String.IsNullOrEmpty(reportBase)) {
                     reportBase = System.IO.Path.Combine(testBinaryBase, "Reports")%3B
@@ -204,6 +173,8 @@ namespace $([System.String]::Copy($(Category)).Replace(".","_").Replace("\","").
                 if (String.IsNullOrEmpty(coreRoot)) {
                     throw new ArgumentException("Environment variable CORE_ROOT is not set")%3B
                 }
+
+                coreRoot = System.IO.Path.GetFullPath(coreRoot)%3B
 
                 string operatingSystem = System.Environment.GetEnvironmentVariable("OS")%3B
                 runningInWindows = (operatingSystem != null && operatingSystem.StartsWith("Windows"))%3B
@@ -258,7 +229,7 @@ namespace $([System.String]::Copy($(Category)).Replace(".","_").Replace("\","").
                 try
                 {
                   CoreclrTestWrapperLib wrapper = new CoreclrTestWrapperLib()%3B
-                  string testSubfolder = @"\$(Category)\$([System.String]::Copy('%(AllCMDs.RelativeDir)').Replace("$(_CMDDIR)\",''))"%3B
+                  string testSubfolder = @"\$(Category)\$([System.String]::Copy('%(AllCMDs.RelativeDir)').Replace("$(_CMDDIR)$([System.IO.Path]::DirectorySeparatorChar)",''))"%3B
                   outputFile = System.IO.Path.GetFullPath(_Global.reportBase + testSubfolder + @"%(AllCMDs.FileName).output.txt")%3B
                   errorFile = System.IO.Path.GetFullPath(_Global.reportBase + testSubfolder + @"%(AllCMDs.FileName).error.txt")%3B
                   testExecutable = System.IO.Path.GetFullPath(_Global.testBinaryBase + @"$([System.String]::Copy('%(AllCMDs.FullPath)').Replace("$(_CMDDIR)",''))")%3B
@@ -301,7 +272,7 @@ namespace $([System.String]::Copy($(Category)).Replace(".","_").Replace("\","").
                         outputText = "Unable to read output file: " + outputFile%3B
                     }
 
-                    string msg = infraEx != null ? "Test Infrastructure Failure: " + infraEx.Message
+                    string msg = infraEx != null ? "Test Infrastructure Failure: " + infraEx.ToString()
                                                  : sErrorText + "\n\n" +
                                                    "Return code:      " + ret + "\n" +
                                                    "Raw output file:      " + outputFile + "\n" +
@@ -329,7 +300,8 @@ namespace $([System.String]::Copy($(Category)).Replace(".","_").Replace("\","").
 
   <Target Name="GetListOfTestCmds">
     <ItemGroup>
-      <AllRunnableTestPaths Include="$(XunitTestBinBase)\**\*.cmd" />
+      <AllRunnableTestPaths Include="$(XunitTestBinBase)\**\*.cmd" Condition="'$(BuildOS)' == 'Windows_NT'" />
+      <AllRunnableTestPaths Include="$(XunitTestBinBase)\**\*.sh" Condition="'$(BuildOS)' != 'Windows_NT'" />
     </ItemGroup>
   </Target>
 
@@ -430,10 +402,13 @@ namespace $([System.String]::Copy($(Category)).Replace(".","_").Replace("\","").
       <!-- Workaround for packages on which Microsoft.NetCoreApp expresses a dependency 
       The <PackageToInclude> element doesn't allow a version to be specified and we end up with clashing assembly versions in Core_Root-->
       <NetCoreAppPackagedAssemblies Include="System.Text.Encoding.CodePages.dll"/>
+      <!-- Use xunit dependencies defined in CoreFX.depproj instead of conflicting versions from test dependencies. -->
+      <TestDependenciesToExclude Include="$(CORE_ROOT)\**\xunit*"/>
+      <CoreCLRBinariesToExclude Include="@(NetCoreAppPackagedAssemblies);@(TestDependenciesToExclude -> '%(Identity)')" />
     </ItemGroup>
 
     <ItemGroup>
-      <CoreCLRBinaries Include="$(CORE_ROOT)\**\*.*" Exclude="$(CORE_ROOT)\**\@(NetCoreAppPackagedAssemblies -> '%(Identity)' )" />
+      <CoreCLRBinaries Include="$(CORE_ROOT)\**\*.*" Exclude="$(CORE_ROOT)\**\@(CoreCLRBinariesToExclude -> '%(Identity)' )" />
       <HostFxFile Include="$(ToolsDir)\dotnetcli\**\$(HostFxrFileName).$(HostFxrFileExtension)" />
       <DotnetExe Include="$(ToolsDir)\dotnetcli\$(DotnetExecutableName)" />
       <HostPolicyFile Include="$(ToolsDir)\dotnetcli\**\$(HostPolicyFileName).$(HostPolicyExtension)" />
@@ -502,6 +477,6 @@ namespace $([System.String]::Copy($(Category)).Replace(".","_").Replace("\","").
   </Target>
 
   <Target Name="Clean">
-    <RemoveDir Condition=" '$(BuildWrappers)'=='true'" Directories="$(XunitWrapperGeneratedCSDirBase);$(XunitWrapperOutputIntermediatedDirBase)" ContinueOnError="WarnAndContinue" />
+    <RemoveDir Condition=" '$(BuildWrappers)'=='true'" Directories="$(XunitWrapperGeneratedCSDirBase);" ContinueOnError="WarnAndContinue" />
   </Target>
 </Project>

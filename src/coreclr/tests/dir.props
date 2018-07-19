@@ -34,7 +34,6 @@
     <BuildToolsTargets45>$(BuildToolsTargetsDesktop)</BuildToolsTargets45>
     <RunningOnUnix Condition="('$(RunningOnUnix)' == '') And ('$(MSBuildRuntimeType)' == 'Core') And ('$(OS)'!='Windows_NT')">true</RunningOnUnix>
     <UseBuildTools>true</UseBuildTools>
-    <UseBuildTools Condition="'$(OS)'=='Windows_NT' And '$(RunningOnCore)' == 'true'">false</UseBuildTools>
   </PropertyGroup>  
 
   <!-- Common repo directories -->
@@ -47,7 +46,6 @@
     <DotnetCliPath Condition="'$(DotnetCliPath)'==''">$(ToolsDir)dotnetcli\</DotnetCliPath>
     <BuildToolsTaskDir Condition="'$(BuildToolsTargets45)' == 'true'">$(ToolsDir)net46\</BuildToolsTaskDir>
     <OverrideToolHost Condition="'$(OS)' != 'Windows_NT'">$(DotnetCliPath)dotnet</OverrideToolHost>
-    <CSharpCoreTargetsPath Condition="('$(BuildToolsTargetsDesktop)' != 'true') And ('$(UseBuildTools)'=='true')">$(ToolsDir)\Microsoft.CSharp.Core.targets</CSharpCoreTargetsPath>
     <!-- We don't use any of MSBuild's resolution logic for resolving the framework, so just set these two properties to any folder that exists to skip
          the GenerateReferenceAssemblyPaths task (not target) and to prevent it from outputting a warning (MSB3644). -->
     <_TargetFrameworkDirectories Condition="'$(BuildToolsTargetsDesktop)' != 'true'">$(MSBuildThisFileDirectory)/Documentation</_TargetFrameworkDirectories>
@@ -105,8 +103,7 @@
   </PropertyGroup>
 
   <!-- Use Roslyn Compilers to build -->
-  <Import Project="$(RoslynPropsFile)" Condition="'$(RunningOnUnix)'!='true' and Exists('$(RoslynPropsFile)') and '$(UseRoslynCompilers)'!='false' and '$(RoslynIncompatibleMsbuildVersion)' != 'true'" />
-  <Import Project="$(RoslynPropsFile)" Condition="'$(RunningOnUnix)'=='true' and Exists('$(RoslynPropsFile)') and '$(RoslynIncompatibleMsbuildVersion)' != 'true'" />
+  <Import Project="$(RoslynPropsFile)" Condition="Exists('$(RoslynPropsFile)') and '$(RoslynIncompatibleMsbuildVersion)' != 'true'" />
 
   <PropertyGroup Condition="'$(BuildAllProjects)'=='true'">
     <!-- When we do a traversal build we get all packages up front, don't restore them again -->

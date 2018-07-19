@@ -14,8 +14,8 @@
     <PackageReference Include="Microsoft.DotNet.xunit.performance">
       <Version>1.0.0-alpha-build0040</Version>
     </PackageReference>
-    <PackageReference Include="xunit.console.netcore">
-      <Version>1.0.2-prerelease-00177</Version>
+    <PackageReference Include="xunit.runner.console">
+      <Version>$(XunitPackageVersion)</Version>
     </PackageReference>
     <PackageReference Include="Microsoft.DotNet.BuildTools.TestSuite">
       <Version>1.0.0-prerelease-00629-04</Version>
