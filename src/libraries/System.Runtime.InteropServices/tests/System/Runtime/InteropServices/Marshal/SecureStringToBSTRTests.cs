@@ -24,14 +24,15 @@ namespace System.Runtime.InteropServices.Tests
         {
             using (SecureString secureString = ToSecureString(data))
             {
-                IntPtr bstr = Marshal.SecureStringToBSTR(secureString);
+                IntPtr ptr = Marshal.SecureStringToBSTR(secureString);
                 try
                 {
-                    Assert.Equal(data, Marshal.PtrToStringBSTR(bstr));
+                    Assert.NotEqual(IntPtr.Zero, ptr);
+                    Assert.Equal(data, Marshal.PtrToStringBSTR(ptr));
                 }
                 finally
                 {
-                    Marshal.ZeroFreeBSTR(bstr);
+                    Marshal.ZeroFreeBSTR(ptr);
                 }
             }
         }
