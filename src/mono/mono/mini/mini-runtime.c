@@ -2181,7 +2181,7 @@ compile_special (MonoMethod *method, MonoDomain *target_domain, MonoError *error
 				if (mono_llvm_only) {
 					nm = mono_marshal_get_delegate_invoke (method, NULL);
 					gpointer compiled_ptr = mono_jit_compile_method_jit_only (nm, error);
-					mono_error_assert_ok (error);
+					return_val_if_nok (error, NULL);
 					return mono_get_addr_from_ftnptr (compiled_ptr);
 				}
 
@@ -2193,12 +2193,12 @@ compile_special (MonoMethod *method, MonoDomain *target_domain, MonoError *error
 			} else if (*name == 'B' && (strcmp (name, "BeginInvoke") == 0)) {
 				nm = mono_marshal_get_delegate_begin_invoke (method);
 				gpointer compiled_ptr = mono_jit_compile_method_jit_only (nm, error);
-				mono_error_assert_ok (error);
+				return_val_if_nok (error, NULL);
 				return mono_get_addr_from_ftnptr (compiled_ptr);
 			} else if (*name == 'E' && (strcmp (name, "EndInvoke") == 0)) {
 				nm = mono_marshal_get_delegate_end_invoke (method);
 				gpointer compiled_ptr = mono_jit_compile_method_jit_only (nm, error);
-				mono_error_assert_ok (error);
+				return_val_if_nok (error, NULL);
 				return mono_get_addr_from_ftnptr (compiled_ptr);
 			}
 		}
