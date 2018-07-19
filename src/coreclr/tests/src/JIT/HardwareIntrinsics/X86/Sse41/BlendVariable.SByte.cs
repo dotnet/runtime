@@ -393,12 +393,12 @@ namespace JIT.HardwareIntrinsics.X86
 
             if (!Succeeded)
             {
-                Console.WriteLine($"{nameof(Sse41)}.{nameof(Sse41.BlendVariable)}<SByte>(Vector128<SByte>, Vector128<SByte>, Vector128<SByte>): {method} failed:");
-                Console.WriteLine($"   firstOp: ({string.Join(", ", firstOp)})");
-                Console.WriteLine($"  secondOp: ({string.Join(", ", secondOp)})");
-                Console.WriteLine($"   thirdOp: ({string.Join(", ", thirdOp)})");
-                Console.WriteLine($"    result: ({string.Join(", ", result)})");
-                Console.WriteLine();
+                TestLibrary.TestFramework.LogInformation($"{nameof(Sse41)}.{nameof(Sse41.BlendVariable)}<SByte>(Vector128<SByte>, Vector128<SByte>, Vector128<SByte>): {method} failed:");
+                TestLibrary.TestFramework.LogInformation($"   firstOp: ({string.Join(", ", firstOp)})");
+                TestLibrary.TestFramework.LogInformation($"  secondOp: ({string.Join(", ", secondOp)})");
+                TestLibrary.TestFramework.LogInformation($"   thirdOp: ({string.Join(", ", thirdOp)})");
+                TestLibrary.TestFramework.LogInformation($"    result: ({string.Join(", ", result)})");
+                TestLibrary.TestFramework.LogInformation(string.Empty);
             }
         }
     }

@@ -232,11 +232,11 @@ isUnexpectedResult = (dest != result);
 
             if (isUnexpectedResult)
             {
-                Console.WriteLine($"{nameof(Bmi2)}.{nameof(Bmi2.ParallelBitExtract)}<UInt32>(UInt32, UInt32): ParallelBitExtract failed:");
-                Console.WriteLine($"    left: {left}");
-                Console.WriteLine($"   right: {right}");
-                Console.WriteLine($"  result: {result}");
-                Console.WriteLine();
+                TestLibrary.TestFramework.LogInformation($"{nameof(Bmi2)}.{nameof(Bmi2.ParallelBitExtract)}<UInt32>(UInt32, UInt32): ParallelBitExtract failed:");
+                TestLibrary.TestFramework.LogInformation($"    left: {left}");
+                TestLibrary.TestFramework.LogInformation($"   right: {right}");
+                TestLibrary.TestFramework.LogInformation($"  result: {result}");
+                TestLibrary.TestFramework.LogInformation(string.Empty);
             }
         }
     }
