@@ -2,20 +2,12 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
-
-using System;
 using System.Runtime.CompilerServices;
-using System.Runtime.Versioning;
 
 namespace System.Runtime.InteropServices
 {
     public struct ArrayWithOffset
     {
-        //private ArrayWithOffset()
-        //{
-        //    throw new Exception();
-        //}
-
         public ArrayWithOffset(object array, int offset)
         {
             m_array = array;
@@ -24,27 +16,15 @@ namespace System.Runtime.InteropServices
             m_count = CalculateCount();
         }
 
-        public object GetArray()
-        {
-            return m_array;
-        }
+        public object GetArray() => m_array;
 
-        public int GetOffset()
-        {
-            return m_offset;
-        }
+        public int GetOffset() => m_offset;
 
-        public override int GetHashCode()
-        {
-            return m_count + m_offset;
-        }
+        public override int GetHashCode() => m_count + m_offset;
 
         public override bool Equals(object obj)
         {
-            if (obj is ArrayWithOffset)
-                return Equals((ArrayWithOffset)obj);
-            else
-                return false;
+            return obj is ArrayWithOffset && Equals((ArrayWithOffset)obj);
         }
 
         public bool Equals(ArrayWithOffset obj)
@@ -62,7 +42,7 @@ namespace System.Runtime.InteropServices
             return !(a == b);
         }
 
-        [MethodImplAttribute(MethodImplOptions.InternalCall)]
+        [MethodImpl(MethodImplOptions.InternalCall)]
         private extern int CalculateCount();
 
         private object m_array;

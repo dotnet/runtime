@@ -2,21 +2,9 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
-/*=============================================================================
-**
-**
-**
-** Purpose: IMoniker interface definition.
-**
-**
-=============================================================================*/
-
-using System;
-
 namespace System.Runtime.InteropServices.ComTypes
 {
     [StructLayout(LayoutKind.Sequential)]
-
     public struct FILETIME
     {
         public int dwLowDateTime;
@@ -24,7 +12,7 @@ namespace System.Runtime.InteropServices.ComTypes
     }
 
     [Guid("0000000f-0000-0000-C000-000000000046")]
-    [InterfaceTypeAttribute(ComInterfaceType.InterfaceIsIUnknown)]
+    [InterfaceType(ComInterfaceType.InterfaceIsIUnknown)]
     [ComImport]
     public interface IMoniker
     {

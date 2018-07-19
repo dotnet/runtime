@@ -2,27 +2,19 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
-/*=============================================================================
-**
-**
-**
-** Purpose: Exception class for all errors from COM Interop where we don't
-** recognize the HResult.
-**
-**
-=============================================================================*/
-
-using System;
+using System.Runtime.CompilerServices;
 using System.Runtime.Serialization;
 using System.Globalization;
-using System.Security;
-using Microsoft.Win32;
 
 namespace System.Runtime.InteropServices
 {
     // Exception for COM Interop errors where we don't recognize the HResult.
+    /// <summary>
+    /// Exception class for all errors from COM Interop where we don't
+    /// recognize the HResult.
+    /// </summary>
     [Serializable]
-    [System.Runtime.CompilerServices.TypeForwardedFrom("mscorlib, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089")]
+    [TypeForwardedFrom("mscorlib, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089")]
     public class COMException : ExternalException
     {
         public COMException()

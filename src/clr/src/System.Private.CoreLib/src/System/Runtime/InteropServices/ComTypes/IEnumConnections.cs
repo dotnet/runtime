@@ -2,21 +2,9 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
-/*=============================================================================
-**
-**
-**
-** Purpose: IEnumConnections interface definition.
-**
-**
-=============================================================================*/
-
-using System;
-
 namespace System.Runtime.InteropServices.ComTypes
 {
     [StructLayout(LayoutKind.Sequential, CharSet = CharSet.Unicode)]
-
     public struct CONNECTDATA
     {
         [MarshalAs(UnmanagedType.Interface)]
@@ -25,7 +13,7 @@ namespace System.Runtime.InteropServices.ComTypes
     }
 
     [Guid("B196B287-BAB4-101A-B69C-00AA00341D07")]
-    [InterfaceTypeAttribute(ComInterfaceType.InterfaceIsIUnknown)]
+    [InterfaceType(ComInterfaceType.InterfaceIsIUnknown)]
     [ComImport]
     public interface IEnumConnections
     {

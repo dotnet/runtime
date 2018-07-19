@@ -2,21 +2,10 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
-/*=============================================================================
-**
-**
-**
-** Purpose: ITypeInfo2 interface definition.
-**
-**
-=============================================================================*/
-
-using System;
-
 namespace System.Runtime.InteropServices.ComTypes
 {
     [Guid("00020412-0000-0000-C000-000000000046")]
-    [InterfaceTypeAttribute(ComInterfaceType.InterfaceIsIUnknown)]
+    [InterfaceType(ComInterfaceType.InterfaceIsIUnknown)]
     [ComImport]
     public interface ITypeInfo2 : ITypeInfo
     {
@@ -51,7 +40,7 @@ namespace System.Runtime.InteropServices.ComTypes
         void GetParamCustData(int indexFunc, int indexParam, ref Guid guid, out object pVarVal);
         void GetVarCustData(int index, ref Guid guid, out object pVarVal);
         void GetImplTypeCustData(int index, ref Guid guid, out object pVarVal);
-        [LCIDConversionAttribute(1)]
+        [LCIDConversion(1)]
         void GetDocumentation2(int memid, out string pbstrHelpString, out int pdwHelpStringContext, out string pbstrHelpStringDll);
         void GetAllCustData(IntPtr pCustData);
         void GetAllFuncCustData(int index, IntPtr pCustData);
