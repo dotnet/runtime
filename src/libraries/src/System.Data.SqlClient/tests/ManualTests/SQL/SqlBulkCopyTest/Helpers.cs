@@ -55,6 +55,19 @@ namespace System.Data.SqlClient.ManualTesting.Tests
             return cmd.ExecuteNonQuery();
         }
 
+        public static int TryExecuteNonQueryAzure(string strConnectionString, string strCommand, int commandTimeout = 60)
+        {
+            using (SqlConnection connection = new SqlConnection(strConnectionString))
+            using (SqlCommand command = connection.CreateCommand())
+            {
+                connection.Open();
+                // We need to increase CommandTimeout else you might see the following error:
+                // "Timeout expired. The timeout period elapsed prior to completion of the operation or the server is not responding."
+                command.CommandTimeout = commandTimeout;
+                return Helpers.TryExecute(command, strCommand);
+            }
+        }
+
         public static bool VerifyResults(DbConnection conn, string dstTable, int expectedColumns, int expectedRows)
         {
             using (DbCommand cmd = conn.CreateCommand())

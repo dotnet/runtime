@@ -10,7 +10,7 @@ namespace System.Data.SqlClient.ManualTesting.Tests
     public class AADAccessTokenTest
     {
         private static bool IsAccessTokenSetup() => DataTestUtility.IsAccessTokenSetup();
-        private static bool IsAzureServer() => DataTestUtility.IsAzureSqlServer(GetDataSource());
+        private static bool IsAzureServer() => DataTestUtility.IsAzureSqlServer(DataTestUtility.GetDataSource(DataTestUtility.TcpConnStr));
 
         [ConditionalFact(nameof(IsAccessTokenSetup), nameof(IsAzureServer))]
         public static void AccessTokenTest()
@@ -20,15 +20,6 @@ namespace System.Data.SqlClient.ManualTesting.Tests
                 connection.AccessToken = DataTestUtility.getAccessToken();
                 connection.Open();
             }
-        }
-
-        private static string GetDataSource()
-        {
-            // Obtain Data source from connection string
-            string tcpConnStr = DataTestUtility.TcpConnStr.Replace(" ", string.Empty);
-            Regex regex = new Regex("DataSource=(.*?);");
-            Match match = regex.Match(tcpConnStr);
-            return match.Groups[1].ToString();
         }
     }
 }

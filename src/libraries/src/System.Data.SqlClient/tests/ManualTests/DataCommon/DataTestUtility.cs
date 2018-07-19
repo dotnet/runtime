@@ -292,5 +292,19 @@ namespace System.Data.SqlClient.ManualTesting.Tests
             }
             return result;
         }
+
+        /// <summary>
+        /// This method creates a new SqlConnection object and uses the SqlConnection.DataSource 
+        /// property to return the SQL Server Instance name.
+        /// </summary>
+        /// <param name="connectionString"></param>
+        /// <returns> Returns SQL Server name </returns>
+        public static string GetDataSource(string connectionString)
+        {
+            using (SqlConnection connection = new SqlConnection(connectionString))
+            {
+                return connection.DataSource;
+            }
+        }
     }
 }
