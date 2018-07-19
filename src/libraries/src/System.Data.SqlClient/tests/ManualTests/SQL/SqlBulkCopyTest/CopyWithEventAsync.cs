@@ -46,7 +46,7 @@ namespace System.Data.SqlClient.ManualTesting.Tests
 
                 try
                 {
-                    Helpers.Execute(dstCmd, "create table " + dstTable + " (orderid int, customerid nchar(5), rdate datetime, freight money, shipname nvarchar(40))");
+                    Helpers.TryExecute(dstCmd, "create table " + dstTable + " (orderid int, customerid nchar(5), rdate datetime, freight money, shipname nvarchar(40))");
 
                     using (SqlConnection srcConn = new SqlConnection(srcConstr))
                     using (SqlCommand srcCmd = new SqlCommand("select top 100 * from orders", srcConn))
