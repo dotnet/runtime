@@ -848,48 +848,136 @@ namespace System.Tests
 
         public static IEnumerable<object[]> ToString_MemberData()
         {
-            var input = new TimeSpan(123456789101112);
+            CultureInfo invariantInfo = CultureInfo.InvariantCulture;
+            CultureInfo commaSeparatorInfo = new CultureInfo("fr-FR");
+            commaSeparatorInfo.NumberFormat.NegativeSign = "!@#!@#"; // validate this is ignored
 
-            yield return new object[] { input, null, "142.21:21:18.9101112" };
-            yield return new object[] { input, "c", "142.21:21:18.9101112" };
-            yield return new object[] { input, "t", "142.21:21:18.9101112" };
-            yield return new object[] { input, "T", "142.21:21:18.9101112" };
-            yield return new object[] { input, "g", "142:21:21:18.9101112" };
-            yield return new object[] { input, "%d", "142" };
-            yield return new object[] { input, "dd", "142" };
-            yield return new object[] { input, "%h", "21" };
-            yield return new object[] { input, "hh", "21" };
-            yield return new object[] { input, "%m", "21" };
-            yield return new object[] { input, "mm", "21" };
-            yield return new object[] { input, "%s", "18" };
-            yield return new object[] { input, "ss", "18" };
-            yield return new object[] { input, "%f", "9" };
-            yield return new object[] { input, "ff", "91" };
-            yield return new object[] { input, "fff", "910" };
-            yield return new object[] { input, "ffff", "9101" };
-            yield return new object[] { input, "fffff", "91011" };
-            yield return new object[] { input, "ffffff", "910111" };
-            yield return new object[] { input, "fffffff", "9101112" };
-            yield return new object[] { input, "dd\\.ss", "142.18" };
+            var input = new TimeSpan(123456789101112);
+            yield return new object[] { input, "%d", invariantInfo, "142" };
+            yield return new object[] { input, "dd", invariantInfo, "142" };
+            yield return new object[] { input, "%h", invariantInfo, "21" };
+            yield return new object[] { input, "hh", invariantInfo, "21" };
+            yield return new object[] { input, "%m", invariantInfo, "21" };
+            yield return new object[] { input, "mm", invariantInfo, "21" };
+            yield return new object[] { input, "%s", invariantInfo, "18" };
+            yield return new object[] { input, "ss", invariantInfo, "18" };
+            yield return new object[] { input, "%f", invariantInfo, "9" };
+            yield return new object[] { input, "ff", invariantInfo, "91" };
+            yield return new object[] { input, "fff", invariantInfo, "910" };
+            yield return new object[] { input, "ffff", invariantInfo, "9101" };
+            yield return new object[] { input, "fffff", invariantInfo, "91011" };
+            yield return new object[] { input, "ffffff", invariantInfo, "910111" };
+            yield return new object[] { input, "fffffff", invariantInfo, "9101112" };
+            yield return new object[] { input, "%F", invariantInfo, "9" };
+            yield return new object[] { input, "FF", invariantInfo, "91" };
+            yield return new object[] { input, "FFF", invariantInfo, "91" };
+            yield return new object[] { input, "FFFF", invariantInfo, "9101" };
+            yield return new object[] { input, "FFFFF", invariantInfo, "91011" };
+            yield return new object[] { input, "FFFFFF", invariantInfo, "910111" };
+            yield return new object[] { input, "FFFFFFF", invariantInfo, "9101112" };
+            yield return new object[] { input, "dd\\.ss", invariantInfo, "142.18" };
+            yield return new object[] { input, "dd\\.ss", commaSeparatorInfo, "142.18" };
+            yield return new object[] { input, "dddddd\\.ss", invariantInfo, "000142.18" };
+
+            // constant/invariant format
+            foreach (CultureInfo info in new[] { null, invariantInfo, commaSeparatorInfo }) // validate that culture is ignored
+            {
+                foreach (string constFormat in new[] { null, "c", "t", "T" })
+                {
+                    yield return new object[] { input, constFormat, info, "142.21:21:18.9101112" };
+                    yield return new object[] { TimeSpan.Zero, constFormat, info, "00:00:00" };
+                    yield return new object[] { new TimeSpan(1), constFormat, info, "00:00:00.0000001" };
+                    yield return new object[] { new TimeSpan(-1), constFormat, info, "-00:00:00.0000001" };
+                    yield return new object[] { TimeSpan.MaxValue, constFormat, info, "10675199.02:48:05.4775807" };
+                    yield return new object[] { TimeSpan.MinValue, constFormat, info, "-10675199.02:48:05.4775808" };
+                    yield return new object[] { new TimeSpan(1, 2, 3), constFormat, info, "01:02:03" };
+                    yield return new object[] { -new TimeSpan(1, 2, 3), constFormat, info, "-01:02:03" };
+                    yield return new object[] { new TimeSpan(12, 34, 56), constFormat, info, "12:34:56" };
+                    yield return new object[] { new TimeSpan(12, 34, 56, 23), constFormat, info, "13.10:56:23" };
+                    yield return new object[] { new TimeSpan(12, 34, 56, 23, 45), constFormat, info, "13.10:56:23.0450000" };
+                    yield return new object[] { new TimeSpan(0, 23, 59, 59, 999), constFormat, info, "23:59:59.9990000" };
+                }
+            }
+
+            // general short format, invariant culture
+            yield return new object[] { input, "g", invariantInfo, "142:21:21:18.9101112" };
+            yield return new object[] { TimeSpan.Zero, "g", invariantInfo, "0:00:00" };
+            yield return new object[] { new TimeSpan(1), "g", invariantInfo, "0:00:00.0000001" };
+            yield return new object[] { new TimeSpan(-1), "g", invariantInfo, "-0:00:00.0000001" };
+            yield return new object[] { TimeSpan.MaxValue, "g", invariantInfo, "10675199:2:48:05.4775807" };
+            yield return new object[] { TimeSpan.MinValue, "g", invariantInfo, "-10675199:2:48:05.4775808" };
+            yield return new object[] { new TimeSpan(1, 2, 3), "g", invariantInfo, "1:02:03" };
+            yield return new object[] { -new TimeSpan(1, 2, 3), "g", invariantInfo, "-1:02:03" };
+            yield return new object[] { new TimeSpan(12, 34, 56), "g", invariantInfo, "12:34:56" };
+            yield return new object[] { new TimeSpan(12, 34, 56, 23), "g", invariantInfo, "13:10:56:23" };
+            yield return new object[] { new TimeSpan(12, 34, 56, 23, 45), "g", invariantInfo, "13:10:56:23.045" };
+            yield return new object[] { new TimeSpan(0, 23, 59, 59, 999), "g", invariantInfo, "23:59:59.999" };
+
+            // general short format, NumberDecimalSeparator used
+            yield return new object[] { input, "g", commaSeparatorInfo, "142:21:21:18,9101112" };
+            yield return new object[] { TimeSpan.Zero, "g", commaSeparatorInfo, "0:00:00" };
+            yield return new object[] { new TimeSpan(1), "g", commaSeparatorInfo, "0:00:00,0000001" };
+            yield return new object[] { new TimeSpan(-1), "g", commaSeparatorInfo, "-0:00:00,0000001" };
+            yield return new object[] { TimeSpan.MaxValue, "g", commaSeparatorInfo, "10675199:2:48:05,4775807" };
+            yield return new object[] { TimeSpan.MinValue, "g", commaSeparatorInfo, "-10675199:2:48:05,4775808" };
+            yield return new object[] { new TimeSpan(1, 2, 3), "g", commaSeparatorInfo, "1:02:03" };
+            yield return new object[] { -new TimeSpan(1, 2, 3), "g", commaSeparatorInfo, "-1:02:03" };
+            yield return new object[] { new TimeSpan(12, 34, 56), "g", commaSeparatorInfo, "12:34:56" };
+            yield return new object[] { new TimeSpan(12, 34, 56, 23), "g", commaSeparatorInfo, "13:10:56:23" };
+            yield return new object[] { new TimeSpan(12, 34, 56, 23, 45), "g", commaSeparatorInfo, "13:10:56:23,045" };
+            yield return new object[] { new TimeSpan(0, 23, 59, 59, 999), "g", commaSeparatorInfo, "23:59:59,999" };
+
+            // general long format, invariant culture
+            yield return new object[] { input, "G", invariantInfo, "142:21:21:18.9101112" };
+            yield return new object[] { TimeSpan.Zero, "G", invariantInfo, "0:00:00:00.0000000" };
+            yield return new object[] { new TimeSpan(1), "G", invariantInfo, "0:00:00:00.0000001" };
+            yield return new object[] { new TimeSpan(-1), "G", invariantInfo, "-0:00:00:00.0000001" };
+            yield return new object[] { TimeSpan.MaxValue, "G", invariantInfo, "10675199:02:48:05.4775807" };
+            yield return new object[] { TimeSpan.MinValue, "G", invariantInfo, "-10675199:02:48:05.4775808" };
+            yield return new object[] { new TimeSpan(1, 2, 3), "G", invariantInfo, "0:01:02:03.0000000" };
+            yield return new object[] { -new TimeSpan(1, 2, 3), "G", invariantInfo, "-0:01:02:03.0000000" };
+            yield return new object[] { new TimeSpan(12, 34, 56), "G", invariantInfo, "0:12:34:56.0000000" };
+            yield return new object[] { new TimeSpan(12, 34, 56, 23), "G", invariantInfo, "13:10:56:23.0000000" };
+            yield return new object[] { new TimeSpan(12, 34, 56, 23, 45), "G", invariantInfo, "13:10:56:23.0450000" };
+            yield return new object[] { new TimeSpan(0, 23, 59, 59, 999), "G", invariantInfo, "0:23:59:59.9990000" };
+
+            // general long format, NumberDecimalSeparator used
+            yield return new object[] { input, "G", commaSeparatorInfo, "142:21:21:18,9101112" };
+            yield return new object[] { TimeSpan.Zero, "G", commaSeparatorInfo, "0:00:00:00,0000000" };
+            yield return new object[] { new TimeSpan(1), "G", commaSeparatorInfo, "0:00:00:00,0000001" };
+            yield return new object[] { new TimeSpan(-1), "G", commaSeparatorInfo, "-0:00:00:00,0000001" };
+            yield return new object[] { TimeSpan.MaxValue, "G", commaSeparatorInfo, "10675199:02:48:05,4775807" };
+            yield return new object[] { TimeSpan.MinValue, "G", commaSeparatorInfo, "-10675199:02:48:05,4775808" };
+            yield return new object[] { new TimeSpan(1, 2, 3), "G", commaSeparatorInfo, "0:01:02:03,0000000" };
+            yield return new object[] { -new TimeSpan(1, 2, 3), "G", commaSeparatorInfo, "-0:01:02:03,0000000" };
+            yield return new object[] { new TimeSpan(12, 34, 56), "G", commaSeparatorInfo, "0:12:34:56,0000000" };
+            yield return new object[] { new TimeSpan(12, 34, 56, 23), "G", commaSeparatorInfo, "13:10:56:23,0000000" };
+            yield return new object[] { new TimeSpan(12, 34, 56, 23, 45), "G", commaSeparatorInfo, "13:10:56:23,0450000" };
+            yield return new object[] { new TimeSpan(0, 23, 59, 59, 999), "G", commaSeparatorInfo, "0:23:59:59,9990000" };
         }
 
         [Theory]
         [MemberData(nameof(ToString_MemberData))]
-        public static void ToString_Valid(TimeSpan input, string format, string expected)
+        public static void ToString_Valid(TimeSpan input, string format, CultureInfo info, string expected)
         {
-            Assert.Equal(expected, input.ToString(format, CultureInfo.InvariantCulture));
-            if (format == null)
+            Assert.Equal(expected, input.ToString(format, info));
+            if (info == null)
             {
-                Assert.Equal(expected, input.ToString());
+                Assert.Equal(expected, input.ToString(format));
+                if (format == null)
+                {
+                    Assert.Equal(expected, input.ToString());
+                }
             }
         }
 
-        [Fact]
-        public static void ToString_InvalidFormat_ThrowsFormatException()
+        [Theory]
+        [InlineData("y")]
+        [InlineData("cc")]
+        [InlineData("F")]
+        public static void ToString_InvalidFormat_ThrowsFormatException(string invalidFormat)
         {
-            var timeSpan = new TimeSpan();
-            Assert.Throws<FormatException>(() => timeSpan.ToString("y")); // Invalid format
-            Assert.Throws<FormatException>(() => timeSpan.ToString("cc")); // Invalid format
+            Assert.Throws<FormatException>(() => new TimeSpan().ToString(invalidFormat));
         }
 
         private static void VerifyTimeSpan(TimeSpan timeSpan, int days, int hours, int minutes, int seconds, int milliseconds)

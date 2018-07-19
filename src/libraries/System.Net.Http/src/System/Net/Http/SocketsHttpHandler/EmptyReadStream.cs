@@ -7,26 +7,28 @@ using System.Threading.Tasks;
 
 namespace System.Net.Http
 {
-    internal partial class HttpConnection : IDisposable
+    internal sealed class EmptyReadStream : BaseAsyncStream
     {
-        private sealed class EmptyReadStream : HttpContentReadStream
-        {
-            private readonly static Task<int> s_zeroTask = Task.FromResult(0);
+        internal static EmptyReadStream Instance { get; } = new EmptyReadStream();
 
-            internal static EmptyReadStream Instance { get; } = new EmptyReadStream();
+        private EmptyReadStream() { }
 
-            private EmptyReadStream() : base(null) { }
+        public override bool CanRead => true;
+        public override bool CanWrite => false;
 
-            protected override void Dispose(bool disposing) {  /* nop */ }
-            public override void Close() { /* nop */ }
+        protected override void Dispose(bool disposing) {  /* nop */ }
+        public override void Close() { /* nop */ }
 
-            public override int ReadByte() => -1;
+        public override int ReadByte() => -1;
 
-            public override int Read(Span<byte> buffer) => 0;
+        public override int Read(Span<byte> buffer) => 0;
 
-            public override ValueTask<int> ReadAsync(Memory<byte> buffer, CancellationToken cancellationToken) =>
-                cancellationToken.IsCancellationRequested ? new ValueTask<int>(Task.FromCanceled<int>(cancellationToken)) :
-                new ValueTask<int>(0);
-        }
+        public override ValueTask<int> ReadAsync(Memory<byte> buffer, CancellationToken cancellationToken) =>
+            cancellationToken.IsCancellationRequested ? new ValueTask<int>(Task.FromCanceled<int>(cancellationToken)) :
+            new ValueTask<int>(0);
+
+        public override ValueTask WriteAsync(ReadOnlyMemory<byte> destination, CancellationToken cancellationToken) => throw new NotSupportedException();
+
+        public override Task FlushAsync(CancellationToken cancellationToken) => throw new NotSupportedException();
     }
-}
+} 

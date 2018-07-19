@@ -20,7 +20,9 @@
     <Compile Include="$(CommonTestPath)\Performance\BenchmarkFilter.cs">
       <Link>Common\Performance\BenchmarkFilter.cs</Link>
     </Compile>
-    <Compile Include="..\Helpers.cs" />
+    <Compile Include="$(CommonTestPath)\System\Drawing\Helpers.cs">
+      <Link>Common\System\Drawing\Helpers.cs</Link>
+    </Compile>
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="$(CommonPath)\..\perf\PerfRunner\PerfRunner.csproj">
