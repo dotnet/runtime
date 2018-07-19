@@ -11,9 +11,9 @@ namespace System.Runtime.InteropServices.Tests
         [Theory]
         [InlineData(unchecked((int)0x80020006))]
         [InlineData(unchecked((int)0x80020101))]
-        [ActiveIssue(30866)]
         public void GetExceptionForHR_EqualsErrorCode(int err)
         {
+            ClearCurrentIErrorInfo();
             Exception ex = Marshal.GetExceptionForHR(err);
             Assert.Equal(err, ex.HResult);
         }
@@ -22,7 +22,9 @@ namespace System.Runtime.InteropServices.Tests
         public void GetExceptionForHR_ThrowExceptionForHR_ThrowsSameException()
         {
             const int ErrorCode = unchecked((int)0x80131D0B);
-            COMException getHRException = Marshal.GetExceptionForHR(ErrorCode) as COMException;
+
+            ClearCurrentIErrorInfo();
+            var getHRException = (COMException)Marshal.GetExceptionForHR(ErrorCode);
             Assert.Equal(ErrorCode, getHRException.HResult);
             try
             {
@@ -42,6 +44,14 @@ namespace System.Runtime.InteropServices.Tests
         {
             Assert.Null(Marshal.GetExceptionForHR(errorCode));
             Assert.Null(Marshal.GetExceptionForHR(errorCode, IntPtr.Zero));
+        }
+
+        private static void ClearCurrentIErrorInfo()
+        {
+            // Ensure that if the thread's current IErrorInfo
+            // is set during a run that it is thrown away prior
+            // to interpreting the HRESULT.
+            Marshal.GetExceptionForHR(unchecked((int)0x80040001));
         }
     }
 }

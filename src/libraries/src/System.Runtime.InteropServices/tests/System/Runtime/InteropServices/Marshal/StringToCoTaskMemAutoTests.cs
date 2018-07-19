@@ -14,14 +14,14 @@ namespace System.Runtime.InteropServices.Tests
         public void StringToCoTaskMemAuto_NonNullString_Roundtrips(string s)
         {
             IntPtr ptr = Marshal.StringToCoTaskMemAuto(s);
-
             try
             {
+                Assert.NotEqual(IntPtr.Zero, ptr);
+
                 // Make sure the native memory is correctly laid out.
                 for (int i = 0; i < s.Length; i++)
                 {
-                    char c = (char)Marshal.ReadInt16(IntPtr.Add(ptr, i << 1));
-                    Assert.Equal(s[i], c);
+                    Assert.Equal(s[i], (char)Marshal.ReadInt16(IntPtr.Add(ptr, i << 1)));
                 }
 
                 // Make sure the memory roundtrips.

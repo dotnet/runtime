@@ -15,7 +15,6 @@
         </Type>
         <Type Name="ReflectionXmlSerializationReaderHelper" Dynamic="Required All" />
       </Namespace>
-      <Namespace Name="System.Xml.Schema" Dynamic="Public" />
     </Assembly>
     <Namespace Name="System.Collections">
       <Type Name="IEnumerable" Dynamic="Required All" />

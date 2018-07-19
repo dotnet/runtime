@@ -65,6 +65,9 @@
     <PackageReference Include="OpenCover">
       <Version>4.6.519</Version>
     </PackageReference>
+    <PackageReference Include="coverlet.msbuild">
+      <Version>2.1.1</Version>
+    </PackageReference>
     <PackageReference Include="ReportGenerator">
       <Version>3.0.1</Version>
     </PackageReference>

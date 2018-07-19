@@ -293,6 +293,12 @@
         "4.0.1.0": "4.6.0"
       }
     },
+    "System.Windows.Extensions": {
+      "InboxOn": {},
+      "AssemblyVersionInPackageVersion": {
+        "4.0.0.0": "4.6.0"
+      }
+    },
     "Microsoft.Windows.Compatibility": {
       "InboxOn": {}
     },
@@ -1668,6 +1674,12 @@
       "AssemblyVersionInPackageVersion": {
         "4.0.0.0": "4.5.0",
         "4.0.1.0": "4.6.0"
+      }
+    },
+    "System.Drawing.Design.Primitives": {
+      "InboxOn": {},
+      "AssemblyVersionInPackageVersion": {
+        "4.0.0.0": "4.6.0"
       }
     },
     "System.Drawing.Design": {

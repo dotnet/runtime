@@ -10,126 +10,680 @@ using Xunit;
 
 internal class Outside
 {
-    public class Inside { }
+    public class Inside
+    {
+        public void GenericMethod<T>() { }
+        public void TwoGenericMethod<T, U>() { }
+    }
+
+    public void GenericMethod<T>() { }
+    public void TwoGenericMethod<T, U>() { }
 }
 
 internal class Outside<T>
 {
-    public class Inside<U> { }
+    public class Inside<U>
+    {
+        public void GenericMethod<V>() { }
+        public void TwoGenericMethod<V, W>() { }
+    }
+
+    public void GenericMethod<U>() { }
+    public void TwoGenericMethod<U, V>() { }
 }
 
 namespace System.Tests
 {
     public class TypeTests
     {
+        public static IEnumerable<object[]> DeclaringType_TestData()
+        {
+            // Primitives.
+            yield return new object[] { typeof(int), null };
+            yield return new object[] { typeof(int).MakeByRefType(), null };
+            yield return new object[] { typeof(int).MakePointerType(), null };
+
+            // Arrays.
+            yield return new object[] { typeof(int[]), null };
+            yield return new object[] { typeof(int[,]), null };
+            yield return new object[] { typeof(int[][]), null };
+            yield return new object[] { typeof(Array), null };
+            yield return new object[] { typeof(Outside.Inside[]), null };
+            yield return new object[] { typeof(Outside<int>.Inside<double>[]), null };
+
+            // Classes.
+            yield return new object[] { typeof(TypedReference), null };
+
+            // Generic type parameters from a type.
+            yield return new object[] { typeof(Outside<>).GetTypeInfo().GenericTypeParameters[0], typeof(Outside<>) };
+            yield return new object[] { typeof(Outside<>.Inside<>).GetTypeInfo().GenericTypeParameters[0], typeof(Outside<>.Inside<>) };
+        
+            // Generic type parameters from a method.
+            yield return new object[] { typeof(Outside<>).GetMethod(nameof(Outside<string>.GenericMethod)).GetGenericArguments()[0], typeof(Outside<>) };
+            yield return new object[] { typeof(Outside<string>).GetMethod(nameof(Outside<string>.GenericMethod)).GetGenericArguments()[0], typeof(Outside<>) };
+            yield return new object[] { typeof(Outside<>.Inside<>).GetMethod(nameof(Outside<string>.Inside<int>.GenericMethod)).GetGenericArguments()[0], typeof(Outside<>.Inside<>) };
+            yield return new object[] { typeof(Outside<string>.Inside<int>).GetMethod(nameof(Outside<string>.Inside<int>.GenericMethod)).GetGenericArguments()[0], typeof(Outside<>.Inside<>) };
+        
+            // Nested.
+            yield return new object[] { typeof(Outside.Inside), typeof(Outside) };
+            yield return new object[] { typeof(Outside<int>.Inside<double>), typeof(Outside<>) };
+            yield return new object[] { typeof(Outside<>.Inside<>), typeof(Outside<>) };
+        }
+
         [Theory]
-        [InlineData(typeof(int), null)]
-        [InlineData(typeof(int[]), null)]
-        [InlineData(typeof(Outside.Inside), typeof(Outside))]
-        [InlineData(typeof(Outside.Inside[]), null)]
-        [InlineData(typeof(Outside<int>), null)]
-        [InlineData(typeof(Outside<int>.Inside<double>), typeof(Outside<>))]
-        public static void DeclaringType(Type t, Type expected)
+        [MemberData(nameof(DeclaringType_TestData))]
+        public void DeclaringType_Invoke_ReturnsExpected(Type t, Type expected)
         {
             Assert.Equal(expected, t.DeclaringType);
         }
 
+        [Fact]
+        public void FilterName_Get_ReturnsExpected()
+        {
+            Assert.NotNull(Type.FilterName);
+            Assert.Same(Type.FilterName, Type.FilterName);
+            Assert.NotSame(Type.FilterName, Type.FilterNameIgnoreCase);
+        }
+
         [Theory]
-        [InlineData(typeof(int))]
-        [InlineData(typeof(int[]))]
-        [InlineData(typeof(IList<int>))]
-        [InlineData(typeof(IList<>))]
-        public static void GenericParameterPosition_Invalid(Type t)
+        [InlineData("FilterName_Invoke_DelegateFiltersExpectedMembers", true)]
+        [InlineData("     FilterName_Invoke_DelegateFiltersExpectedMembers   ", true)]
+        [InlineData("*", true)]
+        [InlineData("     *   ", true)]
+        [InlineData("     Filter*   ", true)]
+        [InlineData("     Filter*   ", true)]
+        [InlineData("FilterName_Invoke_DelegateFiltersExpectedMembe*", true)]
+        [InlineData("FilterName_Invoke_DelegateFiltersExpectedMember*", true)]
+        [InlineData("filterName_Invoke_DelegateFiltersExpectedMembers", false)]
+        [InlineData("filterName_Invoke_DelegateFiltersExpectedMembers", false)]
+        [InlineData("FilterName_Invoke_DelegateFiltersExpectedMemberss*", false)]
+        [InlineData("FilterName", false)]
+        [InlineData("*FilterName", false)]
+        [InlineData("", false)]
+        [InlineData("     ", false)]
+        public void FilterName_Invoke_DelegateFiltersExpectedMembers(string filterCriteria, bool expected)
+        {
+            MethodInfo mi = typeof(TypeTests).GetMethod(nameof(FilterName_Invoke_DelegateFiltersExpectedMembers));
+            Assert.Equal(expected, Type.FilterName(mi, filterCriteria));
+        }
+
+        [Fact]
+        public void FilterName_InvalidFilterCriteria_ThrowsInvalidFilterCriteriaException()
+        {
+            MethodInfo mi = typeof(TypeTests).GetMethod(nameof(FilterName_Invoke_DelegateFiltersExpectedMembers));
+            Assert.Throws<InvalidFilterCriteriaException>(() => Type.FilterName(mi, null));
+            Assert.Throws<InvalidFilterCriteriaException>(() => Type.FilterName(mi, new object()));
+        }
+
+        [Fact]
+        public void FilterNameIgnoreCase_Get_ReturnsExpected()
+        {
+            Assert.NotNull(Type.FilterNameIgnoreCase);
+            Assert.Same(Type.FilterNameIgnoreCase, Type.FilterNameIgnoreCase);
+            Assert.NotSame(Type.FilterNameIgnoreCase, Type.FilterName);
+        }
+
+        [Theory]
+        [InlineData("FilterNameIgnoreCase_Invoke_DelegateFiltersExpectedMembers", true)]
+        [InlineData("filternameignorecase_invoke_delegatefiltersexpectedmembers", true)]
+        [InlineData("     filterNameIgnoreCase_Invoke_DelegateFiltersexpectedMembers   ", true)]
+        [InlineData("*", true)]
+        [InlineData("     *   ", true)]
+        [InlineData("     fIlTeR*   ", true)]
+        [InlineData("FilterNameIgnoreCase_invoke_delegateFiltersExpectedMembe*", true)]
+        [InlineData("FilterNameIgnoreCase_invoke_delegateFiltersExpectedMember*", true)]
+        [InlineData("filterName_Invoke_DelegateFiltersExpectedMembers", false)]
+        [InlineData("filterNameIgnoreCase_Invoke_DelegateFiltersExpectedMemberss", false)]
+        [InlineData("FilterNameIgnoreCase_Invoke_DelegateFiltersExpectedMemberss*", false)]
+        [InlineData("filterNameIgnoreCase", false)]
+        [InlineData("*FilterNameIgnoreCase", false)]
+        [InlineData("", false)]
+        [InlineData("     ", false)]
+        public void FilterNameIgnoreCase_Invoke_DelegateFiltersExpectedMembers(string filterCriteria, bool expected)
+        {
+            MethodInfo mi = typeof(TypeTests).GetMethod(nameof(FilterNameIgnoreCase_Invoke_DelegateFiltersExpectedMembers));
+            Assert.Equal(expected, Type.FilterNameIgnoreCase(mi, filterCriteria));
+        }
+
+        [Fact]
+        public void FilterNameIgnoreCase_InvalidFilterCriteria_ThrowsInvalidFilterCriteriaException()
+        {
+            MethodInfo mi = typeof(TypeTests).GetMethod(nameof(FilterName_Invoke_DelegateFiltersExpectedMembers));
+            Assert.Throws<InvalidFilterCriteriaException>(() => Type.FilterNameIgnoreCase(mi, null));
+            Assert.Throws<InvalidFilterCriteriaException>(() => Type.FilterNameIgnoreCase(mi, new object()));
+        }
+
+        public static IEnumerable<object[]> FindMembers_TestData()
+        {
+            yield return new object[] { MemberTypes.Method, BindingFlags.Public | BindingFlags.Instance, Type.FilterName, "HelloWorld", 0 };
+            yield return new object[] { MemberTypes.Method, BindingFlags.Public | BindingFlags.Instance, Type.FilterName, "FilterName_Invoke_DelegateFiltersExpectedMembers", 1 };
+            yield return new object[] { MemberTypes.Method, BindingFlags.Public | BindingFlags.Instance, Type.FilterName, "FilterName_Invoke_Delegate*", 1 };
+            yield return new object[] { MemberTypes.Method, BindingFlags.Public | BindingFlags.Instance, Type.FilterName, "filterName_Invoke_Delegate*", 0 };
+
+            yield return new object[] { MemberTypes.Method, BindingFlags.Public | BindingFlags.Instance, Type.FilterNameIgnoreCase, "HelloWorld", 0 };
+            yield return new object[] { MemberTypes.Method, BindingFlags.Public | BindingFlags.Instance, Type.FilterNameIgnoreCase, "FilterName_Invoke_DelegateFiltersExpectedMembers", 1 };
+            yield return new object[] { MemberTypes.Method, BindingFlags.Public | BindingFlags.Instance, Type.FilterNameIgnoreCase, "FilterName_Invoke_Delegate*", 1 };
+            yield return new object[] { MemberTypes.Method, BindingFlags.Public | BindingFlags.Instance, Type.FilterNameIgnoreCase, "filterName_Invoke_Delegate*", 1 };
+        }
+
+        [Theory]
+        [MemberData(nameof(FindMembers_TestData))]
+        public void FindMembers_Invoke_ReturnsExpected(MemberTypes memberType, BindingFlags bindingAttr, MemberFilter filter, object filterCriteria, int expectedLength)
+        {
+            Assert.Equal(expectedLength, typeof(TypeTests).FindMembers(memberType, bindingAttr, filter, filterCriteria).Length);
+        }
+
+        public static IEnumerable<object[]> GenericParameterPosition_Valid_TestData()
+        {
+            yield return new object[] { typeof(GenericClass<,>).GetTypeInfo().GenericTypeParameters[0], 0 };
+            yield return new object[] { typeof(GenericClass<,>).GetTypeInfo().GenericTypeParameters[1], 1 };
+
+            yield return new object[] { typeof(Outside<>.Inside<>).GetTypeInfo().GenericTypeParameters[0], 0 };
+            yield return new object[] { typeof(Outside<>.Inside<>).GetTypeInfo().GenericTypeParameters[1], 1 };
+
+            yield return new object[] { typeof(Outside<>).GetMethod(nameof(Outside<string>.TwoGenericMethod)).GetGenericArguments()[0], 0 };
+            yield return new object[] { typeof(Outside<>).GetMethod(nameof(Outside<string>.TwoGenericMethod)).GetGenericArguments()[1], 1 };
+        }
+
+        [Theory]
+        [MemberData(nameof(GenericParameterPosition_Valid_TestData))]
+        public void GenericParameterPosition_ValidParameter_ReturnsExpected(Type t, int expected)
+        {
+            Assert.Equal(expected, t.GenericParameterPosition);
+        }
+
+        public static IEnumerable<object[]> GenericParameterPosition_Invalid_TestData()
+        {
+            // Primitives.
+            yield return new object[] { typeof(int) };
+            yield return new object[] { typeof(int).MakeByRefType() };
+            yield return new object[] { typeof(int).MakePointerType() };
+
+            // Arrays.
+            yield return new object[] { typeof(int[]) };
+            yield return new object[] { typeof(int[,]) };
+            yield return new object[] { typeof(int[][]) };
+            yield return new object[] { typeof(Outside.Inside[]) };
+            yield return new object[] { typeof(Outside<int>.Inside<double>[]) };
+            yield return new object[] { typeof(Array) };
+
+            // Classes.
+            yield return new object[] { typeof(NonGenericClass) };
+            yield return new object[] { typeof(NonGenericSubClassOfGeneric) };
+            yield return new object[] { typeof(TypedReference) };
+            yield return new object[] { typeof(GenericClass<string>) };
+            yield return new object[] { typeof(GenericClass<>) };
+            yield return new object[] { typeof(NonGenericSubClassOfGeneric) };
+
+            // Structs.
+            yield return new object[] { typeof(NonGenericStruct) };
+            yield return new object[] { typeof(RefStruct) };
+            yield return new object[] { typeof(GenericStruct<string>) };
+            yield return new object[] { typeof(GenericStruct<>) };
+
+            // Interfaces.
+            yield return new object[] { typeof(NonGenericInterface) };
+            yield return new object[] { typeof(GenericInterface<string>) };
+            yield return new object[] { typeof(GenericInterface<>) };
+
+            // Generic Parameters.
+            yield return new object[] { typeof(Outside<string>).GetTypeInfo().GenericTypeArguments[0] };
+
+            // Nested.
+            yield return new object[] { typeof(Outside.Inside) };
+            yield return new object[] { typeof(Outside<int>.Inside<double>) };
+            yield return new object[] { typeof(Outside<>.Inside<>) };
+        }
+
+        [Theory]
+        [MemberData(nameof(GenericParameterPosition_Invalid_TestData))]
+        public void GenericParameterPosition_NotGenericParameter_ThrowsInvalidOperationException(Type t)
         {
             Assert.Throws<InvalidOperationException>(() => t.GenericParameterPosition);
         }
 
-        [Theory]
-        [InlineData(typeof(int), new Type[0])]
-        [InlineData(typeof(IDictionary<int, string>), new[] { typeof(int), typeof(string) })]
-        [InlineData(typeof(IList<int>), new[] { typeof(int) })]
-        [InlineData(typeof(IList<>), new Type[0])]
-        public static void GenericTypeArguments(Type t, Type[] expected)
+        public static IEnumerable<object[]> GenericTypeArguments_TestData()
         {
-            Type[] result = t.GenericTypeArguments;
-            Assert.Equal(expected.Length, result.Length);
-            for (int i = 0; i < expected.Length; i++)
-            {
-                Assert.Equal(expected[i], result[i]);
-            }
+            // Primitives.
+            yield return new object[] { typeof(int), new Type[0] };
+            yield return new object[] { typeof(int).MakeByRefType(), new Type[0] };
+            yield return new object[] { typeof(int).MakePointerType(), new Type[0] };
+
+            // Arrays.
+            yield return new object[] { typeof(int[]), new Type[0] };
+            yield return new object[] { typeof(int[,]), new Type[0] };
+            yield return new object[] { typeof(int[][]), new Type[0] };
+            yield return new object[] { typeof(Outside.Inside[]), new Type[0] };
+            yield return new object[] { typeof(Outside<int>.Inside<double>[]), new Type[0] };
+            yield return new object[] { typeof(Array), new Type[0] };
+
+            // Classes.
+            yield return new object[] { typeof(NonGenericClass), new Type[0] };
+            yield return new object[] { typeof(NonGenericSubClassOfGeneric), new Type[0] };
+            yield return new object[] { typeof(TypedReference), new Type[0] };
+            yield return new object[] { typeof(GenericClass<string>), new Type[] { typeof(string) } };
+            yield return new object[] { typeof(GenericClass<int, string>), new Type[] { typeof(int), typeof(string) } };
+            yield return new object[] { typeof(GenericClass<>), new Type[0] };
+            yield return new object[] { typeof(NonGenericSubClassOfGeneric), new Type[0] };
+
+            // Structs.
+            yield return new object[] { typeof(NonGenericStruct), new Type[0] };
+            yield return new object[] { typeof(RefStruct), new Type[0] };
+            yield return new object[] { typeof(GenericStruct<string>), new Type[] { typeof(string) } };
+            yield return new object[] { typeof(GenericStruct<int, string>), new Type[] { typeof(int), typeof(string) } };
+            yield return new object[] { typeof(GenericStruct<>), new Type[0] };
+
+            // Interfaces.
+            yield return new object[] { typeof(NonGenericInterface), new Type[0] };
+            yield return new object[] { typeof(GenericInterface<string>), new Type[] { typeof(string) } };
+            yield return new object[] { typeof(GenericInterface<int, string>), new Type[] { typeof(int), typeof(string) } };
+            yield return new object[] { typeof(GenericInterface<>), new Type[0] };
+
+            // Generic Parameters.
+            yield return new object[] { typeof(Outside<>).GetTypeInfo().GenericTypeParameters[0], new Type[0] };
+            yield return new object[] { typeof(Outside<string>).GetTypeInfo().GenericTypeArguments[0], new Type[0] };
+            yield return new object[] { typeof(Outside<>).GetMethod(nameof(Outside<string>.GenericMethod)).GetGenericArguments()[0], new Type[0] };
+
+            // Nested.
+            yield return new object[] { typeof(Outside.Inside), new Type[0] };
+            yield return new object[] { typeof(Outside<int>.Inside<double>), new Type[] { typeof(int), typeof(double) } };
+            yield return new object[] { typeof(Outside<>.Inside<>), new Type[0] };
         }
 
         [Theory]
-        [InlineData(typeof(int), false)]
-        [InlineData(typeof(int[]), true)]
-        [InlineData(typeof(IList<int>), false)]
-        [InlineData(typeof(IList<>), false)]
-        public static void HasElementType(Type t, bool expected)
+        [MemberData(nameof(GenericTypeArguments_TestData))]
+        public void GenericTypeArguments_Get_ReturnsExpected(Type t, Type[] expected)
+        {
+            Assert.Equal(expected, t.GenericTypeArguments);
+        }
+
+        public static IEnumerable<object[]> HasElementType_TestData()
+        {
+            // Primitives.
+            yield return new object[] { typeof(int), false };
+            yield return new object[] { typeof(int).MakeByRefType(), true };
+            yield return new object[] { typeof(int).MakePointerType(), true };
+
+            // Arrays.
+            yield return new object[] { typeof(int[]), true };
+            yield return new object[] { typeof(int[,]), true };
+            yield return new object[] { typeof(int[][]), true };
+            yield return new object[] { typeof(Outside.Inside[]), true };
+            yield return new object[] { typeof(Outside<int>.Inside<double>[]), true };
+            yield return new object[] { typeof(Array), false };
+
+            // Classes.
+            yield return new object[] { typeof(NonGenericClass), false };
+            yield return new object[] { typeof(NonGenericSubClassOfNonGeneric), false };
+            yield return new object[] { typeof(TypedReference), false };
+            yield return new object[] { typeof(GenericClass<string>), false };
+            yield return new object[] { typeof(GenericClass<int, string>), false };
+            yield return new object[] { typeof(GenericClass<>), false };
+            yield return new object[] { typeof(NonGenericSubClassOfGeneric), false };
+
+            // Structs.
+            yield return new object[] { typeof(NonGenericStruct), false };
+            yield return new object[] { typeof(RefStruct), false };
+            yield return new object[] { typeof(GenericStruct<string>), false };
+            yield return new object[] { typeof(GenericStruct<int, string>), false };
+            yield return new object[] { typeof(GenericStruct<>), false };
+
+            // Interfaces.
+            yield return new object[] { typeof(NonGenericInterface), false };
+            yield return new object[] { typeof(GenericInterface<string>), false };
+            yield return new object[] { typeof(GenericInterface<int, string>), false };
+            yield return new object[] { typeof(GenericInterface<>), false };
+
+            // Generic Parameters.
+            yield return new object[] { typeof(Outside<>).GetTypeInfo().GenericTypeParameters[0], false };
+            yield return new object[] { typeof(Outside<string>).GetTypeInfo().GenericTypeArguments[0], false };
+            yield return new object[] { typeof(Outside<>).GetMethod(nameof(Outside<string>.GenericMethod)).GetGenericArguments()[0], false };
+
+            // Nested.
+            yield return new object[] { typeof(Outside.Inside), false };
+            yield return new object[] { typeof(Outside<int>.Inside<double>), false };
+            yield return new object[] { typeof(Outside<>.Inside<>), false };
+        }
+
+        [Theory]
+        [MemberData(nameof(HasElementType_TestData))]
+        public void HasElementType_Get_ReturnsExpected(Type t, bool expected)
         {
             Assert.Equal(expected, t.HasElementType);
         }
 
+        public static IEnumerable<object[]> IsArray_TestData()
+        {
+            // Primitives.
+            yield return new object[] { typeof(int), false };
+            yield return new object[] { typeof(int).MakeByRefType(), false };
+            yield return new object[] { typeof(int).MakePointerType(), false };
+
+            // Arrays.
+            yield return new object[] { typeof(int[]), true };
+            yield return new object[] { typeof(int[,]), true };
+            yield return new object[] { typeof(int[][]), true };
+            yield return new object[] { typeof(Outside.Inside[]), true };
+            yield return new object[] { typeof(Outside<int>.Inside<double>[]), true };
+            yield return new object[] { typeof(Array), false };
+
+            // Classes.
+            yield return new object[] { typeof(NonGenericClass), false };
+            yield return new object[] { typeof(NonGenericSubClassOfNonGeneric), false };
+            yield return new object[] { typeof(TypedReference), false };
+            yield return new object[] { typeof(GenericClass<string>), false };
+            yield return new object[] { typeof(GenericClass<int, string>), false };
+            yield return new object[] { typeof(GenericClass<>), false };
+            yield return new object[] { typeof(NonGenericSubClassOfGeneric), false };
+
+            // Structs.
+            yield return new object[] { typeof(NonGenericStruct), false };
+            yield return new object[] { typeof(RefStruct), false };
+            yield return new object[] { typeof(GenericStruct<string>), false };
+            yield return new object[] { typeof(GenericStruct<int, string>), false };
+            yield return new object[] { typeof(GenericStruct<>), false };
+
+            // Interfaces.
+            yield return new object[] { typeof(NonGenericInterface), false };
+            yield return new object[] { typeof(GenericInterface<string>), false };
+            yield return new object[] { typeof(GenericInterface<int, string>), false };
+            yield return new object[] { typeof(GenericInterface<>), false };
+
+            // Generic Parameters.
+            yield return new object[] { typeof(Outside<>).GetTypeInfo().GenericTypeParameters[0], false };
+            yield return new object[] { typeof(Outside<string>).GetTypeInfo().GenericTypeArguments[0], false };
+            yield return new object[] { typeof(Outside<>).GetMethod(nameof(Outside<string>.GenericMethod)).GetGenericArguments()[0], false };
+        
+            // Nested.
+            yield return new object[] { typeof(Outside.Inside), false };
+            yield return new object[] { typeof(Outside<int>.Inside<double>), false };
+            yield return new object[] { typeof(Outside<>.Inside<>), false };
+        }
+
         [Theory]
-        [InlineData(typeof(int), false)]
-        [InlineData(typeof(int[]), true)]
-        [InlineData(typeof(IList<int>), false)]
-        [InlineData(typeof(IList<>), false)]
-        public static void IsArray(Type t, bool expected)
+        [MemberData(nameof(IsArray_TestData))]
+        public void IsArray_Get_ReturnsExpected(Type t, bool expected)
         {
             Assert.Equal(expected, t.IsArray);
         }
 
+        public static IEnumerable<object[]> IsByRef_TestData()
+        {
+            // Primitives.
+            yield return new object[] { typeof(int), false };
+            yield return new object[] { typeof(int).MakeByRefType(), true };
+            yield return new object[] { typeof(int).MakePointerType(), false };
+
+            // Arrays.
+            yield return new object[] { typeof(int[]), false };
+            yield return new object[] { typeof(int[,]), false };
+            yield return new object[] { typeof(int[][]), false };
+            yield return new object[] { typeof(Outside.Inside[]), false };
+            yield return new object[] { typeof(Outside<int>.Inside<double>[]), false };
+            yield return new object[] { typeof(Array), false };
+
+            // Classes.
+            yield return new object[] { typeof(NonGenericClass), false };
+            yield return new object[] { typeof(NonGenericSubClassOfNonGeneric), false };
+            yield return new object[] { typeof(TypedReference), false };
+            yield return new object[] { typeof(GenericClass<string>), false };
+            yield return new object[] { typeof(GenericClass<int, string>), false };
+            yield return new object[] { typeof(GenericClass<>), false };
+            yield return new object[] { typeof(NonGenericSubClassOfGeneric), false };
+
+            // Structs.
+            yield return new object[] { typeof(NonGenericStruct), false };
+            yield return new object[] { typeof(RefStruct), false };
+            yield return new object[] { typeof(GenericStruct<string>), false };
+            yield return new object[] { typeof(GenericStruct<int, string>), false };
+            yield return new object[] { typeof(GenericStruct<>), false };
+
+            // Interfaces.
+            yield return new object[] { typeof(NonGenericInterface), false };
+            yield return new object[] { typeof(GenericInterface<string>), false };
+            yield return new object[] { typeof(GenericInterface<int, string>), false };
+            yield return new object[] { typeof(GenericInterface<>), false };
+
+            // Generic Parameters.
+            yield return new object[] { typeof(Outside<>).GetTypeInfo().GenericTypeParameters[0], false };
+            yield return new object[] { typeof(Outside<string>).GetTypeInfo().GenericTypeArguments[0], false };
+            yield return new object[] { typeof(Outside<>).GetMethod(nameof(Outside<string>.GenericMethod)).GetGenericArguments()[0], false };
+        
+            // Nested.
+            yield return new object[] { typeof(Outside.Inside), false };
+            yield return new object[] { typeof(Outside<int>.Inside<double>), false };
+            yield return new object[] { typeof(Outside<>.Inside<>), false };
+        }
+
         [Theory]
-        [InlineData(typeof(int), false)]
-        [InlineData(typeof(int[]), false)]
-        [InlineData(typeof(IList<int>), false)]
-        [InlineData(typeof(IList<>), false)]
-        public static void IsByRef(Type t, bool expected)
+        [MemberData(nameof(IsByRef_TestData))]
+        public void IsByRef_Get_ReturnsExpected(Type t, bool expected)
         {
             Assert.Equal(expected, t.IsByRef);
-            Assert.True(t.MakeByRefType().IsByRef);
+            if (!t.IsByRef && t != typeof(TypedReference))
+            {
+                Assert.True(t.MakeByRefType().IsByRef);
+            }
+        }
+
+        public static IEnumerable<object[]> IsPointer_TestData()
+        {
+            // Primitives.
+            yield return new object[] { typeof(int), false };
+            yield return new object[] { typeof(int).MakeByRefType(), false };
+            yield return new object[] { typeof(int).MakePointerType(), true };
+
+            // Arrays.
+            yield return new object[] { typeof(int[]), false };
+            yield return new object[] { typeof(int[,]), false };
+            yield return new object[] { typeof(int[][]), false };
+            yield return new object[] { typeof(Outside.Inside[]), false };
+            yield return new object[] { typeof(Outside<int>.Inside<double>[]), false };
+            yield return new object[] { typeof(Array), false };
+
+            // Interfaces.
+            yield return new object[] { typeof(NonGenericClass), false };
+            yield return new object[] { typeof(NonGenericSubClassOfNonGeneric), false };
+            yield return new object[] { typeof(TypedReference), false };
+            yield return new object[] { typeof(GenericClass<string>), false };
+            yield return new object[] { typeof(GenericClass<int, string>), false };
+            yield return new object[] { typeof(GenericClass<>), false };
+            yield return new object[] { typeof(NonGenericSubClassOfGeneric), false };
+
+            // Structs.
+            yield return new object[] { typeof(NonGenericStruct), false };
+            yield return new object[] { typeof(RefStruct), false };
+            yield return new object[] { typeof(GenericStruct<string>), false };
+            yield return new object[] { typeof(GenericStruct<int, string>), false };
+            yield return new object[] { typeof(GenericStruct<>), false };
+
+            // Interfaces.
+            yield return new object[] { typeof(NonGenericInterface), false };
+            yield return new object[] { typeof(GenericInterface<string>), false };
+            yield return new object[] { typeof(GenericInterface<int, string>), false };
+            yield return new object[] { typeof(GenericInterface<>), false };
+
+            // Generic Parameters.
+            yield return new object[] { typeof(Outside<>).GetTypeInfo().GenericTypeParameters[0], false };
+            yield return new object[] { typeof(Outside<string>).GetTypeInfo().GenericTypeArguments[0], false };
+            yield return new object[] { typeof(Outside<>).GetMethod(nameof(Outside<string>.GenericMethod)).GetGenericArguments()[0], false };
+
+            // Nested.
+            yield return new object[] { typeof(Outside.Inside), false };
+            yield return new object[] { typeof(Outside<int>.Inside<double>), false };
+            yield return new object[] { typeof(Outside<>.Inside<>), false };
         }
 
         [Theory]
-        [InlineData(typeof(int), false)]
-        [InlineData(typeof(int[]), false)]
-        [InlineData(typeof(IList<int>), false)]
-        [InlineData(typeof(IList<>), false)]
-        [InlineData(typeof(int*), true)]
-        public static void IsPointer(Type t, bool expected)
+        [MemberData(nameof(IsPointer_TestData))]
+        public void IsPointer_Get_ReturnsExpected(Type t, bool expected)
         {
             Assert.Equal(expected, t.IsPointer);
-            Assert.True(t.MakePointerType().IsPointer);
+            if (!t.IsByRef && t != typeof(TypedReference))
+            {
+                Assert.True(t.MakePointerType().IsPointer);
+            }
+        }
+
+        public static IEnumerable<object[]> IsConstructedGenericType_TestData()
+        {
+            // Primitives.
+            yield return new object[] { typeof(int), false };
+            yield return new object[] { typeof(int).MakeByRefType(), false };
+            yield return new object[] { typeof(int).MakePointerType(), false };
+            yield return new object[] { typeof(int[]), false };
+            yield return new object[] { typeof(int[,]), false };
+            yield return new object[] { typeof(int[][]), false };
+            yield return new object[] { typeof(Outside.Inside[]), false };
+            yield return new object[] { typeof(Outside<int>.Inside<double>[]), false };
+            yield return new object[] { typeof(Array), false };
+
+            // Classes.
+            yield return new object[] { typeof(NonGenericClass), false };
+            yield return new object[] { typeof(NonGenericSubClassOfNonGeneric), false };
+            yield return new object[] { typeof(TypedReference), false };
+            yield return new object[] { typeof(GenericClass<string>), true };
+            yield return new object[] { typeof(GenericClass<int, string>), true };
+            yield return new object[] { typeof(GenericClass<>), false };
+            yield return new object[] { typeof(NonGenericSubClassOfGeneric), false };
+
+            // Structs.
+            yield return new object[] { typeof(NonGenericStruct), false };
+            yield return new object[] { typeof(RefStruct), false };
+            yield return new object[] { typeof(GenericStruct<string>), true };
+            yield return new object[] { typeof(GenericStruct<int, string>), true };
+            yield return new object[] { typeof(GenericStruct<>), false };
+
+            // Interfaces.
+            yield return new object[] { typeof(NonGenericInterface), false };
+            yield return new object[] { typeof(GenericInterface<string>), true };
+            yield return new object[] { typeof(GenericInterface<int, string>), true };
+            yield return new object[] { typeof(GenericInterface<>), false };
+
+            // Generic Parameters.
+            yield return new object[] { typeof(Outside<>).GetTypeInfo().GenericTypeParameters[0], false };
+            yield return new object[] { typeof(Outside<string>).GetTypeInfo().GenericTypeArguments[0], false };
+            yield return new object[] { typeof(Outside<>).GetMethod(nameof(Outside<string>.GenericMethod)).GetGenericArguments()[0], false };
+
+            // Nested.
+            yield return new object[] { typeof(Outside.Inside), false };
+            yield return new object[] { typeof(Outside<int>.Inside<double>), true };
+            yield return new object[] { typeof(Outside<>.Inside<>), false };
         }
 
         [Theory]
-        [InlineData(typeof(int), false)]
-        [InlineData(typeof(int[]), false)]
-        [InlineData(typeof(IList<int>), true)]
-        [InlineData(typeof(IList<>), false)]
-        public static void IsConstructedGenericType(Type t, bool expected)
+        [MemberData(nameof(IsConstructedGenericType_TestData))]
+        public void IsConstructedGenericType_Get_ReturnsExpected(Type t, bool expected)
         {
             Assert.Equal(expected, t.IsConstructedGenericType);
         }
 
+        public static IEnumerable<object[]> IsGenericParameter_TestData()
+        {
+            // Primitives.
+            yield return new object[] { typeof(int), false };
+            yield return new object[] { typeof(int).MakeByRefType(), false };
+            yield return new object[] { typeof(int).MakePointerType(), false };
+
+            // Arrays.
+            yield return new object[] { typeof(int[]), false };
+            yield return new object[] { typeof(int[,]), false };
+            yield return new object[] { typeof(int[][]), false };
+            yield return new object[] { typeof(Outside.Inside[]), false };
+            yield return new object[] { typeof(Outside<int>.Inside<double>[]), false };
+            yield return new object[] { typeof(Array), false };
+
+            // Classes.
+            yield return new object[] { typeof(NonGenericClass), false };
+            yield return new object[] { typeof(NonGenericSubClassOfNonGeneric), false };
+            yield return new object[] { typeof(TypedReference), false };
+            yield return new object[] { typeof(GenericClass<string>), false };
+            yield return new object[] { typeof(GenericClass<int, string>), false };
+            yield return new object[] { typeof(GenericClass<>), false };
+            yield return new object[] { typeof(NonGenericSubClassOfGeneric), false };
+
+            // Structs.
+            yield return new object[] { typeof(NonGenericStruct), false };
+            yield return new object[] { typeof(RefStruct), false };
+            yield return new object[] { typeof(GenericStruct<string>), false };
+            yield return new object[] { typeof(GenericStruct<int, string>), false };
+            yield return new object[] { typeof(GenericStruct<>), false };
+
+            // Interfaces.
+            yield return new object[] { typeof(NonGenericInterface), false };
+            yield return new object[] { typeof(GenericInterface<string>), false };
+            yield return new object[] { typeof(GenericInterface<int, string>), false };
+            yield return new object[] { typeof(GenericInterface<>), false };
+
+            // Generic Parameters.
+            yield return new object[] { typeof(Outside<>).GetTypeInfo().GenericTypeParameters[0], true };
+            yield return new object[] { typeof(Outside<string>).GetTypeInfo().GenericTypeArguments[0], false };
+            yield return new object[] { typeof(Outside<>).GetMethod(nameof(Outside<string>.GenericMethod)).GetGenericArguments()[0], true };
+
+            // Nested.
+            yield return new object[] { typeof(Outside.Inside), false };
+            yield return new object[] { typeof(Outside<int>.Inside<double>), false };
+            yield return new object[] { typeof(Outside<>.Inside<>), false };
+        }
+
         [Theory]
-        [InlineData(typeof(int), false)]
-        [InlineData(typeof(int[]), false)]
-        [InlineData(typeof(IList<int>), false)]
-        [InlineData(typeof(IList<>), false)]
-        public static void IsGenericParameter(Type t, bool expected)
+        [MemberData(nameof(IsGenericParameter_TestData))]
+        public void IsGenericParameter_Get_ReturnsExpected(Type t, bool expected)
         {
             Assert.Equal(expected, t.IsGenericParameter);
         }
 
+        public static IEnumerable<object[]> IsNested_TestData()
+        {
+            // Primitives.
+            yield return new object[] { typeof(int), false };
+            yield return new object[] { typeof(int).MakeByRefType(), false };
+            yield return new object[] { typeof(int).MakePointerType(), false };
+
+            // Arrays.
+            yield return new object[] { typeof(int[]), false };
+            yield return new object[] { typeof(int[,]), false };
+            yield return new object[] { typeof(int[][]), false };
+            yield return new object[] { typeof(Outside.Inside[]), false };
+            yield return new object[] { typeof(Outside<int>.Inside<double>[]), false };
+            yield return new object[] { typeof(Array), false };
+
+            // Classes.
+            yield return new object[] { typeof(NonGenericClass), false };
+            yield return new object[] { typeof(NonGenericSubClassOfNonGeneric), false };
+            yield return new object[] { typeof(TypedReference), false };
+            yield return new object[] { typeof(GenericClass<string>), false };
+            yield return new object[] { typeof(GenericClass<int, string>), false };
+            yield return new object[] { typeof(GenericClass<>), false };
+            yield return new object[] { typeof(NonGenericSubClassOfGeneric), false };
+
+            // Structs.
+            yield return new object[] { typeof(NonGenericStruct), false };
+            yield return new object[] { typeof(RefStruct), false };
+            yield return new object[] { typeof(GenericStruct<string>), false };
+            yield return new object[] { typeof(GenericStruct<int, string>), false };
+            yield return new object[] { typeof(GenericStruct<>), false };
+
+            // Interfaces.
+            yield return new object[] { typeof(NonGenericInterface), false };
+            yield return new object[] { typeof(GenericInterface<string>), false };
+            yield return new object[] { typeof(GenericInterface<int, string>), false };
+            yield return new object[] { typeof(GenericInterface<>), false };
+
+            // Generic Parameters.
+            yield return new object[] { typeof(Outside<>).GetTypeInfo().GenericTypeParameters[0], true };
+            yield return new object[] { typeof(Outside<string>).GetTypeInfo().GenericTypeArguments[0], false };
+            yield return new object[] { typeof(Outside<>).GetMethod(nameof(Outside<string>.GenericMethod)).GetGenericArguments()[0], true };
+
+            // Nested.
+            yield return new object[] { typeof(Outside.Inside), true };
+            yield return new object[] { typeof(Outside<int>.Inside<double>), true };
+            yield return new object[] { typeof(Outside<>.Inside<>), true };
+        }
+
         [Theory]
-        [InlineData(typeof(int), false)]
-        [InlineData(typeof(int[]), false)]
-        [InlineData(typeof(Outside.Inside), true)]
-        [InlineData(typeof(Outside.Inside[]), false)]
-        [InlineData(typeof(Outside<int>), false)]
-        [InlineData(typeof(Outside<int>.Inside<double>), true)]
-        public static void IsNested(Type t, bool expected)
+        [MemberData(nameof(IsNested_TestData))]
+        public void IsNested_Get_ReturnsExpected(Type t, bool expected)
         {
             Assert.Equal(expected, t.IsNested);
         }
@@ -138,7 +692,7 @@ namespace System.Tests
         [InlineData(typeof(int), typeof(int))]
         [InlineData(typeof(int[]), typeof(int[]))]
         [InlineData(typeof(Outside<int>), typeof(Outside<int>))]
-        public static void TypeHandle(Type t1, Type t2)
+        public void TypeHandle(Type t1, Type t2)
         {
             RuntimeTypeHandle r1 = t1.TypeHandle;
             RuntimeTypeHandle r2 = t2.TypeHandle;
@@ -149,7 +703,7 @@ namespace System.Tests
         }
 
         [Fact]
-        public static void GetTypeFromDefaultHandle()
+        public void GetTypeFromDefaultHandle()
         {
             Assert.Null(Type.GetTypeFromHandle(default(RuntimeTypeHandle)));
         }
@@ -157,7 +711,7 @@ namespace System.Tests
         [Theory]
         [InlineData(typeof(int[]), 1)]
         [InlineData(typeof(int[,,]), 3)]
-        public static void GetArrayRank(Type t, int expected)
+        public void GetArrayRank_Get_ReturnsExpected(Type t, int expected)
         {
             Assert.Equal(expected, t.GetArrayRank());
         }
@@ -166,26 +720,51 @@ namespace System.Tests
         [InlineData(typeof(int))]
         [InlineData(typeof(IList<int>))]
         [InlineData(typeof(IList<>))]
-        public static void GetArrayRank_Invalid(Type t)
+        public void GetArrayRank_NonArrayType_ThrowsArgumentException(Type t)
         {
             AssertExtensions.Throws<ArgumentException>(null, () => t.GetArrayRank());
         }
+        
+        public static IEnumerable<object[]> GetElementType_TestData()
+        {
+            // Primitives.
+            yield return new object[] { typeof(int), null };
+            yield return new object[] { typeof(int).MakeByRefType(), typeof(int) };
+            yield return new object[] { typeof(int).MakePointerType(), typeof(int) };
+
+            // Classes.
+            yield return new object[] { typeof(GenericClass<string>), null };
+            yield return new object[] { typeof(GenericClass<>), null };
+            
+            // Arrays.
+            yield return new object[] { typeof(int[]), typeof(int) };
+            yield return new object[] { typeof(int[,]), typeof(int) };
+            yield return new object[] { typeof(int[][]), typeof(int[]) };
+            yield return new object[] { typeof(Outside.Inside[]), typeof(Outside.Inside) };
+            yield return new object[] { typeof(Outside<int>.Inside<double>[]), typeof(Outside<int>.Inside<double>) };
+            yield return new object[] { typeof(Array), null };
+
+            // Nested.
+            yield return new object[] { typeof(Outside.Inside), null };
+            yield return new object[] { typeof(Outside<int>.Inside<double>), null };
+            yield return new object[] { typeof(Outside<>.Inside<>), null };
+        }
 
         [Theory]
-        [InlineData(typeof(int), null)]
+        [MemberData(nameof(GetElementType_TestData))]
         [InlineData(typeof(Outside.Inside), null)]
         [InlineData(typeof(int[]), typeof(int))]
         [InlineData(typeof(Outside<int>.Inside<double>[]), typeof(Outside<int>.Inside<double>))]
         [InlineData(typeof(Outside<int>), null)]
         [InlineData(typeof(Outside<int>.Inside<double>), null)]
-        public static void GetElementType(Type t, Type expected)
+        public void GetElementType_Get_ReturnsExpected(Type t, Type expected)
         {
             Assert.Equal(expected, t.GetElementType());
         }
 
         [Theory]
         [InlineData(typeof(int), typeof(int[]))]
-        public static void MakeArrayType(Type t, Type tArrayExpected)
+        public void MakeArrayType_Invoke_ReturnsExpected(Type t, Type tArrayExpected)
         {
             Type tArray = t.MakeArrayType();
 
@@ -202,7 +781,7 @@ namespace System.Tests
 
         [Theory]
         [InlineData(typeof(int))]
-        public static void MakeByRefType(Type t)
+        public void MakeByRefType_Invoke_ReturnsExpected(Type t)
         {
             Type tRef1 = t.MakeByRefType();
             Type tRef2 = t.MakeByRefType();
@@ -229,13 +808,10 @@ namespace System.Tests
         [InlineData("Outside[,,]", typeof(Outside[,,]))]
         [InlineData("Outside[][]", typeof(Outside[][]))]
         [InlineData("Outside`1[System.Nullable`1[System.Boolean]]", typeof(Outside<bool?>))]
-        public static void GetTypeByName(string typeName, Type expectedType)
+        public void GetTypeByName_ValidType_ReturnsExpected(string typeName, Type expectedType)
         {
-            Type t = Type.GetType(typeName, throwOnError: false, ignoreCase: false);
-            Assert.Equal(expectedType, t);
-
-            t = Type.GetType(typeName.ToLower(), throwOnError: false, ignoreCase: true);
-            Assert.Equal(expectedType, t);
+            Assert.Equal(expectedType, Type.GetType(typeName, throwOnError: false, ignoreCase: false));
+            Assert.Equal(expectedType, Type.GetType(typeName.ToLower(), throwOnError: false, ignoreCase: true));
         }
 
         [Theory]
@@ -245,12 +821,11 @@ namespace System.Tests
         [InlineData("System.Int32[,*,]", typeof(ArgumentException), false)]
         [InlineData("Outside`2", typeof(TypeLoadException), false)]
         [InlineData("Outside`1[System.Boolean, System.Int32]", typeof(ArgumentException), true)]
-        public static void GetTypeByName_Invalid(string typeName, Type expectedException, bool alwaysThrowsException)
+        public void GetTypeByName_Invalid(string typeName, Type expectedException, bool alwaysThrowsException)
         {
             if (!alwaysThrowsException)
             {
-                Type t = Type.GetType(typeName, throwOnError: false, ignoreCase: false);
-                Assert.Null(t);
+                Assert.Null(Type.GetType(typeName, throwOnError: false, ignoreCase: false));
             }
 
             Assert.Throws(expectedException, () => Type.GetType(typeName, throwOnError: true, ignoreCase: false));
@@ -258,7 +833,7 @@ namespace System.Tests
 
         [Fact]
         [SkipOnTargetFramework(TargetFrameworkMonikers.UapAot, "Stackwalking is not supported on UaoAot")]
-        public static void GetTypeByName_ViaReflection()
+        public void GetTypeByName_InvokeViaReflection_Success()
         {
             MethodInfo method = typeof(Type).GetMethod("GetType", new[] { typeof(string) });
             object result = method.Invoke(null, new object[] { "System.Tests.TypeTests" });
@@ -266,9 +841,9 @@ namespace System.Tests
         }
 
         [Fact]
-        public static void Delimiter()
+        public void Delimiter()
         {
-            Assert.NotNull(Type.Delimiter);
+            Assert.Equal('.', Type.Delimiter);
         }
 
         [Theory]
@@ -293,12 +868,12 @@ namespace System.Tests
         [InlineData(typeof(ushort), TypeCode.UInt16)]
         [InlineData(typeof(uint), TypeCode.UInt32)]
         [InlineData(typeof(ulong), TypeCode.UInt64)]
-        public static void GetTypeCode(Type t, TypeCode typeCode)
+        public void GetTypeCode_ValidType_ReturnsExpected(Type t, TypeCode typeCode)
         {
             Assert.Equal(typeCode, Type.GetTypeCode(t));
         }
 
-        public static void ReflectionOnlyGetType()
+        public void ReflectionOnlyGetType()
         {
             AssertExtensions.Throws<ArgumentNullException>("typeName", () => Type.ReflectionOnlyGetType(null, true, false));
             Assert.Throws<TypeLoadException>(() => Type.ReflectionOnlyGetType("", true, true));
@@ -324,7 +899,7 @@ namespace System.Tests
                                  assem.GetType(name, false, ignore);
         [Fact]
         [SkipOnTargetFramework(TargetFrameworkMonikers.UapAot, "Assembly.LoadFrom() is not supported on UapAot")]
-        public static void GetTypeByName()
+        public void GetTypeByName()
         {
             RemoteInvokeOptions options = new RemoteInvokeOptions();
             RemoteInvoke(() =>
@@ -366,7 +941,7 @@ namespace System.Tests
 
         [Fact]
         [SkipOnTargetFramework(TargetFrameworkMonikers.UapAot, "Assembly.LoadFrom() is not supported on UapAot")]
-        public static void GetTypeByNameCaseSensitiveTypeloadFailure()
+        public void GetTypeByNameCaseSensitiveTypeloadFailure()
         {
             RemoteInvokeOptions options = new RemoteInvokeOptions();
             RemoteInvoke(() =>
@@ -397,7 +972,7 @@ namespace System.Tests
 
         [Fact]
         [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework)]
-        public static void IsContextful()
+        public void IsContextful()
         {
             Assert.True(!typeof(TypeTestsExtended).IsContextful);
             Assert.True(!typeof(ContextBoundClass).IsContextful);
@@ -439,7 +1014,7 @@ namespace System.Tests
         [Theory]
         [MemberData(nameof(GetInterfaceMap_TestData))]
         [SkipOnTargetFramework(TargetFrameworkMonikers.UapAot, "Type.GetInterfaceMap() is not supported on UapAot")]
-        public static void GetInterfaceMap(Type interfaceType, Type classType, Tuple<MethodInfo, MethodInfo>[] expectedMap)
+        public void GetInterfaceMap(Type interfaceType, Type classType, Tuple<MethodInfo, MethodInfo>[] expectedMap)
         {
             InterfaceMapping actualMapping = classType.GetInterfaceMap(interfaceType);
 
@@ -486,4 +1061,26 @@ namespace System.Tests
         }
 #endregion
     }
+
+    public class NonGenericClass { }
+
+    public class NonGenericSubClassOfNonGeneric : NonGenericClass { }
+
+    public class GenericClass<T> { }
+
+    public class NonGenericSubClassOfGeneric : GenericClass<string> { }
+
+    public class GenericClass<T, U> { }
+    public abstract class AbstractClass { }
+
+    public struct NonGenericStruct { }
+
+    public ref struct RefStruct { }
+
+    public struct GenericStruct<T> { }
+    public struct GenericStruct<T, U> { }
+
+    public interface NonGenericInterface { }
+    public interface GenericInterface<T> { }
+    public interface GenericInterface<T, U> { }
 }

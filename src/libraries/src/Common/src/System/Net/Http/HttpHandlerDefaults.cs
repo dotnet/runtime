@@ -28,5 +28,6 @@ namespace System.Net.Http
         public static readonly TimeSpan DefaultPooledConnectionIdleTimeout = TimeSpan.FromMinutes(2);
         public static readonly TimeSpan DefaultExpect100ContinueTimeout = TimeSpan.FromSeconds(1);
         public static readonly TimeSpan DefaultConnectTimeout = Timeout.InfiniteTimeSpan;
+        public static readonly Version DefaultMaxHttpVersion = HttpVersion.Version11;
     }
 }

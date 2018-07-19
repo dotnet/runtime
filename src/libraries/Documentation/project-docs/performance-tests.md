@@ -17,7 +17,11 @@ Performance test files (if present) are stored within a library's ```tests/Perfo
 
 **Note: Because build-tests.cmd/sh runs tests concurrently, do not use it for executing performance tests.**
 
-The results files will be dropped in corefx/bin/tests/FLAVOR/TESTLIBRARY/TARGETFRAMEWORK.  The console output will also specify the location of these files. 
+The results files will be dropped in corefx/bin/tests/FLAVOR/TESTLIBRARY/TARGETFRAMEWORK.  The console output will also specify the location of these files.
+
+**Getting memory usage**
+
+To see memory usage as well as time, add the following property to the command lines above: `/p:CollectFlags=stopwatch+gcapi`.
 
 Adding New Performance Tests
 -----------

@@ -29,9 +29,15 @@
   <Import Project="$(ToolsDir)clean.targets" />
 
   <PropertyGroup>
-    <TraversalBuildDependsOn>
+    <PrebuildSetupTargets>
       GenerateConfigurationProperties;
-      CreateOrUpdateCurrentVersionFile;
+      CreateOrUpdateCurrentVersionFile
+    </PrebuildSetupTargets>
+  </PropertyGroup>
+
+  <PropertyGroup>
+    <TraversalBuildDependsOn>
+      $(PrebuildSetupTargets);
       $(TraversalBuildDependsOn);
     </TraversalBuildDependsOn>
   </PropertyGroup>
@@ -42,7 +48,7 @@
     <GenerateConfigurationProps Properties="@(Property)" PropertyValues="@(PropertyValue)" PropsFolder="$(BuildConfigurationFolder)" />
   </Target>
 
-  <Target Name="Sync" DependsOnTargets="GenerateConfigurationProperties">
+  <Target Name="Sync" DependsOnTargets="$(PrebuildSetupTargets)">
     <ItemGroup>
       <ExternalProject Include="external\dir.proj" />
     </ItemGroup>
