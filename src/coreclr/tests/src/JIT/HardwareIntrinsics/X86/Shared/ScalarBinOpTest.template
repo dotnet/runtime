@@ -210,11 +210,11 @@ namespace JIT.HardwareIntrinsics.X86
 
             if (isUnexpectedResult)
             {
-                Console.WriteLine($"{nameof({Isa})}.{nameof({Isa}.{Method})}<{RetBaseType}>({Op1BaseType}, {Op2BaseType}): {Method} failed:");
-                Console.WriteLine($"    left: {left}");
-                Console.WriteLine($"   right: {right}");
-                Console.WriteLine($"  result: {result}");
-                Console.WriteLine();
+                TestLibrary.TestFramework.LogInformation($"{nameof({Isa})}.{nameof({Isa}.{Method})}<{RetBaseType}>({Op1BaseType}, {Op2BaseType}): {Method} failed:");
+                TestLibrary.TestFramework.LogInformation($"    left: {left}");
+                TestLibrary.TestFramework.LogInformation($"   right: {right}");
+                TestLibrary.TestFramework.LogInformation($"  result: {result}");
+                TestLibrary.TestFramework.LogInformation(string.Empty);
             }
         }
     }
