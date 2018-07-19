@@ -1,0 +1,27 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <OutputType>Library</OutputType>
+    <ProjectGuid>{200739A3-BFCB-4AFD-BB04-2C55F12C7801}</ProjectGuid>
+    <Configurations>netcoreapp-Debug;netcoreapp-Release</Configurations>
+  </PropertyGroup>
+  <ItemGroup>
+    <Compile Include="AssemblyRef.cs" />
+    <Compile Include="System\Drawing\Design\IPropertyValueUIService.cs" />
+    <Compile Include="System\Drawing\Design\PaintValueEventArgs.cs" />
+    <Compile Include="System\Drawing\Design\PropertyValueUIItem.cs" />
+    <Compile Include="System\Drawing\Design\PropertyValueUIItemInvokeHandler.cs" />
+    <Compile Include="System\Drawing\Design\PropertyValueUIHandler.cs" />
+    <Compile Include="System\Drawing\Design\UITypeEditor.cs" />
+    <Compile Include="System\Drawing\Design\UITypeEditorEditStyle.cs" />
+  </ItemGroup>
+  <ItemGroup>
+    <Reference Include="System.ComponentModel" />
+    <Reference Include="System.ComponentModel.TypeConverter" />
+    <Reference Include="System.Diagnostics.Tools" />
+    <Reference Include="System.Drawing.Common" />
+    <Reference Include="System.Drawing.Primitives" />
+    <Reference Include="System.Resources.ResourceManager" />
+    <Reference Include="System.Runtime" />
+    <Reference Include="System.Runtime.Extensions" />
+  </ItemGroup>
+</Project>

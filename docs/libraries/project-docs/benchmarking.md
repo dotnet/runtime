@@ -16,7 +16,7 @@ See [BenchmarkDotNet](http://benchmarkdotnet.org/Guides/GettingStarted.htm) docu
 For benchmarking .NET Core 2.0 applications you only need the .NET Core 2.0 SDK installed: https://www.microsoft.com/net/download/windows. Make sure that your `TargetFramework` property in your csproj is set to `netcoreapp2.0` and follow the official BenchmarkDotNet instructions: http://benchmarkdotnet.org.
 
 # Benchmarking .NET Core 2.1 applications
-Make sure to download the .NET Core 2.1 SDK zip archive (https://github.com/dotnet/core-setup#daily-builds) and extract it somewhere locally, e.g.: `C:\dotnet-nightly\`.
+Make sure to download the .NET Core 2.1 SDK zip archive (https://github.com/dotnet/core-sdk#installers-and-binaries) and extract it somewhere locally, e.g.: `C:\dotnet-nightly\`.
 
 For the sake of this tutorial we won't modify the `PATH` variable and instead always explicitly call the `dotnet.exe` from the downloaded SDK folder.
 

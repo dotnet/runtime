@@ -9,74 +9,69 @@ using System.Threading.Tasks;
 
 namespace System.Net.Http
 {
-    internal partial class HttpConnection : IDisposable
+    internal sealed class HttpConnectionResponseContent : HttpContent
     {
-        private sealed class HttpConnectionResponseContent : HttpContent
+        private Stream _stream;
+        private bool _consumedStream;
+
+        public void SetStream(Stream stream)
         {
-            private HttpContentStream _stream;
-            private bool _consumedStream;
+            Debug.Assert(stream != null);
+            Debug.Assert(stream.CanRead);
+            Debug.Assert(!_consumedStream);
 
-            public void SetStream(HttpContentStream stream)
+            _stream = stream;
+        }
+
+        private Stream ConsumeStream()
+        {
+            if (_consumedStream || _stream == null)
             {
-                Debug.Assert(stream != null);
-                Debug.Assert(stream.CanRead);
-                Debug.Assert(!_consumedStream);
-
-                _stream = stream;
+                throw new InvalidOperationException(SR.net_http_content_stream_already_read);
             }
+            _consumedStream = true;
 
-            internal bool IsEmpty => (_stream == EmptyReadStream.Instance);
+            return _stream;
+        }
 
-            private HttpContentStream ConsumeStream()
+        protected sealed override Task SerializeToStreamAsync(Stream stream, TransportContext context) =>
+            SerializeToStreamAsync(stream, context, CancellationToken.None);
+
+        internal sealed override async Task SerializeToStreamAsync(Stream stream, TransportContext context, CancellationToken cancellationToken)
+        {
+            Debug.Assert(stream != null);
+
+            using (Stream contentStream = ConsumeStream())
             {
-                if (_consumedStream || _stream == null)
+                const int BufferSize = 8192;
+                await contentStream.CopyToAsync(stream, BufferSize, cancellationToken).ConfigureAwait(false);
+            }
+        }
+
+        protected internal sealed override bool TryComputeLength(out long length)
+        {
+            length = 0;
+            return false;
+        }
+
+        protected sealed override Task<Stream> CreateContentReadStreamAsync() =>
+            Task.FromResult<Stream>(ConsumeStream());
+
+        internal sealed override Stream TryCreateContentReadStream() =>
+            ConsumeStream();
+
+        protected sealed override void Dispose(bool disposing)
+        {
+            if (disposing)
+            {
+                if (_stream != null)
                 {
-                    throw new InvalidOperationException(SR.net_http_content_stream_already_read);
-                }
-                _consumedStream = true;
-
-                return _stream;
-            }
-
-            protected sealed override Task SerializeToStreamAsync(Stream stream, TransportContext context) =>
-                SerializeToStreamAsync(stream, context, CancellationToken.None);
-
-            internal sealed override async Task SerializeToStreamAsync(Stream stream, TransportContext context, CancellationToken cancellationToken)
-            {
-                Debug.Assert(stream != null);
-
-                using (HttpContentStream contentStream = ConsumeStream())
-                {
-                    const int BufferSize = 8192;
-                    await contentStream.CopyToAsync(stream, BufferSize, cancellationToken).ConfigureAwait(false);
+                    _stream.Dispose();
+                    _stream = null;
                 }
             }
 
-            protected internal sealed override bool TryComputeLength(out long length)
-            {
-                length = 0;
-                return false;
-            }
-
-            protected sealed override Task<Stream> CreateContentReadStreamAsync() =>
-                Task.FromResult<Stream>(ConsumeStream());
-
-            internal sealed override Stream TryCreateContentReadStream() =>
-                ConsumeStream();
-
-            protected sealed override void Dispose(bool disposing)
-            {
-                if (disposing)
-                {
-                    if (_stream != null)
-                    {
-                        _stream.Dispose();
-                        _stream = null;
-                    }
-                }
-
-                base.Dispose(disposing);
-            }
+            base.Dispose(disposing);
         }
     }
 }
