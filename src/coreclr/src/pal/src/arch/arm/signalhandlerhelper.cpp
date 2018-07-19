@@ -59,7 +59,7 @@ void ExecuteHandlerOnOriginalStack(int code, siginfo_t *siginfo, void *context, 
 #else
     size_t size = ALIGN_UP(sizeof(ucontext->uc_mcontext), 8);
     sp -= size / sizeof(size_t);
-    *(sigcontext *)sp = ucontext->uc_mcontext;
+    *(mcontext_t *)sp = ucontext->uc_mcontext;
 #endif
 
     // Switch the current context to the signal_handler_worker and the original stack
