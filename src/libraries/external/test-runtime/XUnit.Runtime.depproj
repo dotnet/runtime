@@ -15,6 +15,9 @@
     <NuGetTargetMonikerShort Condition="'$(TargetGroup)' == 'uapaot'">netstandard2.0</NuGetTargetMonikerShort>
     <NuGetTargetMoniker Condition="'$(TargetGroup)' == 'uap'">.NETStandard,Version=v2.0</NuGetTargetMoniker>
     <NuGetTargetMonikerShort Condition="'$(TargetGroup)' == 'uap'">netstandard2.0</NuGetTargetMonikerShort>
+    <!-- Coverlet related properties -->
+    <CoverletPackageId>coverlet.msbuild</CoverletPackageId>
+    <CoverletPackageVersion>2.1.1</CoverletPackageVersion>
     <!-- Don't warn if some dependencies were rolled forward -->
     <NoWarn>$(NoWarn);NU1603</NoWarn>
   </PropertyGroup>
@@ -65,8 +68,8 @@
     <PackageReference Include="OpenCover">
       <Version>4.6.519</Version>
     </PackageReference>
-    <PackageReference Include="coverlet.msbuild">
-      <Version>2.1.1</Version>
+    <PackageReference Include="$(CoverletPackageId)">
+      <Version>$(CoverletPackageVersion)</Version>
     </PackageReference>
     <PackageReference Include="ReportGenerator">
       <Version>3.0.1</Version>
@@ -232,5 +235,21 @@
         <NuGetPackageVersion>$(XUnitPackageVersion)</NuGetPackageVersion>
       </ReferenceCopyLocalPaths>
     </ItemGroup>
-</Target>
+  </Target>
+
+  <Target Name="AddCoverletDependencies" BeforeTargets="ResolveReferences" >
+    <Error Condition="!Exists('$(PackagesDir)$(CoverletPackageId)/$(CoverletPackageVersion)/build/netstandard2.0/coverlet.tracker.dll')"
+            Text="Error: looks the package $(PackagesDir)$(CoverletPackageId)/$(CoverletPackageVersion) not restored or missing coverlet.tracker.dll."
+    />
+    <ItemGroup>
+      <ReferenceCopyLocalPaths
+        Include="$(PackagesDir)$(CoverletPackageId)/$(CoverletPackageVersion)/build/netstandard2.0/coverlet.tracker.dll"
+      >
+        <Private>false</Private>
+        <NuGetPackageId>$(CoverletPackageId)</NuGetPackageId>
+        <NuGetPackageVersion>$(CoverletPackageVersion)</NuGetPackageVersion>
+      </ReferenceCopyLocalPaths>
+    </ItemGroup>
+  </Target>
+
 </Project>
