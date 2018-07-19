@@ -9,10 +9,6 @@ using System;
 using System.Threading;
 using System.Security;
 
-#if WINCORESYS
-[assembly: AllowPartiallyTrustedCallers]
-#endif
-
 internal class Mainy
 {
     public static void DoWork()

@@ -6,9 +6,6 @@
 using System;
 using System.Security;
 
-#if WINCORESYS
-[assembly: AllowPartiallyTrustedCallers]
-#endif
 public class Watcher
 {
     public static bool f_hasRun = false;

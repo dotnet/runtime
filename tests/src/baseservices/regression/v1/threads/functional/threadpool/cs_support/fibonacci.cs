@@ -11,9 +11,6 @@ using System;
 using System.Threading;
 using System.Security;
 
-#if WINCORESYS
-[assembly: AllowPartiallyTrustedCallers]
-#endif
 namespace ThreadPool_Test {
 	public class Fibonacci {
 		private	int		fibnumber;
