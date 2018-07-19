@@ -38,7 +38,7 @@
     Inputs="@(XunitDlls)"
     Outputs="$(TestWorkingDir)archive\**" >
     
-    <Copy SourceFiles="$(CORE_ROOT)\xunit.console.netcore.exe"
+    <Copy SourceFiles="$(CORE_ROOT)\xunit.console.dll"
           DestinationFolder="%(XunitDlls.RootDir)%(XunitDlls.Directory)"
     />
     <Message Text="Deleting '.requires_signing' files to avoid file name lengths exceeding MAX_PATH" Importance="Low" />
@@ -85,8 +85,8 @@ set CORE_ROOT=%HELIX_CORRELATION_PAYLOAD%
 $(CmdCrossgenVar)
 
 ECHO BEGIN EXECUTION
-ECHO %HELIX_CORRELATION_PAYLOAD%\CoreRun.exe %HELIX_WORKITEM_PAYLOAD%\xunit.console.netcore.exe %HELIX_WORKITEM_PAYLOAD%\$(ProjectName) -noshadow -xml testResults.xml -notrait category=outerloop -notrait category=failing
-%HELIX_CORRELATION_PAYLOAD%\CoreRun.exe %HELIX_WORKITEM_PAYLOAD%\xunit.console.netcore.exe %HELIX_WORKITEM_PAYLOAD%\$(ProjectName) -noshadow -xml testResults.xml -notrait category=outerloop -notrait category=failing
+ECHO %HELIX_CORRELATION_PAYLOAD%\CoreRun.exe %HELIX_WORKITEM_PAYLOAD%\xunit.console.dll %HELIX_WORKITEM_PAYLOAD%\$(ProjectName) -noshadow -xml testResults.xml -notrait category=outerloop -notrait category=failing
+%HELIX_CORRELATION_PAYLOAD%\CoreRun.exe %HELIX_WORKITEM_PAYLOAD%\xunit.console.dll %HELIX_WORKITEM_PAYLOAD%\$(ProjectName) -noshadow -xml testResults.xml -notrait category=outerloop -notrait category=failing
 
 echo Finished running tests. Exit code = %ERRORLEVEL%
 EXIT /B %ERRORLEVEL%
@@ -149,8 +149,8 @@ EXIT /B %ERRORLEVEL%
       <WrapperShContents Condition="'$(Crossgen)' == 'true'">$(WrapperShContents)%0a</WrapperShContents>
 
       <WrapperShContents>$(WrapperShContents)echo BEGIN EXECUTION%0a</WrapperShContents>
-      <WrapperShContents>$(WrapperShContents)echo "%24{HELIX_CORRELATION_PAYLOAD}/corerun" %24HELIX_WORKITEM_PAYLOAD/xunit.console.netcore.exe %24HELIX_WORKITEM_PAYLOAD/$(ProjectName) -noshadow -xml testResults.xml -notrait category=outerloop -notrait category=failing%0a</WrapperShContents>
-      <WrapperShContents>$(WrapperShContents)"%24{HELIX_CORRELATION_PAYLOAD}/corerun" %24HELIX_WORKITEM_PAYLOAD/xunit.console.netcore.exe %24HELIX_WORKITEM_PAYLOAD/$(ProjectName) -noshadow -xml testResults.xml -notrait category=outerloop -notrait category=failing%0a</WrapperShContents>
+      <WrapperShContents>$(WrapperShContents)echo "%24{HELIX_CORRELATION_PAYLOAD}/corerun" %24HELIX_WORKITEM_PAYLOAD/xunit.console.dll %24HELIX_WORKITEM_PAYLOAD/$(ProjectName) -noshadow -xml testResults.xml -notrait category=outerloop -notrait category=failing%0a</WrapperShContents>
+      <WrapperShContents>$(WrapperShContents)"%24{HELIX_CORRELATION_PAYLOAD}/corerun" %24HELIX_WORKITEM_PAYLOAD/xunit.console.dll %24HELIX_WORKITEM_PAYLOAD/$(ProjectName) -noshadow -xml testResults.xml -notrait category=outerloop -notrait category=failing%0a</WrapperShContents>
       <WrapperShContents>$(WrapperShContents)ErrorLevel=%24%3F%0a</WrapperShContents>
       <WrapperShContents>$(WrapperShContents)%0a</WrapperShContents>
       <WrapperShContents>$(WrapperShContents)echo Finished running tests. Exit code = %24ErrorLevel%0a</WrapperShContents>

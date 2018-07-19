@@ -125,7 +125,7 @@
       },
       "inputs": {
         "filename": "build-test.cmd",
-        "arguments": "$(ParentBuildType) $(Architecture) buildagainstpackages runtimeid $(Rid) $(TargetsNonWindowsArg)$(CrossgenArg)-OfficialBuildId=$(ParentOfficialBuildId) -OverwriteCoreClrPackageVersion -Priority=$(Priority) -- /p:IntermediateAzureFeed=$(IntermediateAzureFeed)",
+        "arguments": "$(ParentBuildType) $(Architecture) buildagainstpackages runtimeid $(Rid) $(TargetsNonWindowsArg) $(CrossgenArg) -Priority=$(Priority) -- /p:OfficialBuildId=$(ParentOfficialBuildId) /p:OverwriteCoreClrPackageVersion=true /p:IntermediateAzureFeed=$(IntermediateAzureFeed)",
         "workingFolder": "",
         "failOnStandardError": "false"
       }

@@ -1,0 +1,36 @@
+<Project DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+
+  <!-- This file contains build properties that apply to product
+       projects and test projects. It's imported by
+       tests/dir.common.props, and the global dir.props. -->
+
+  <PropertyGroup>
+    <CoreclrDir>$(MSBuildThisFileDirectory)</CoreclrDir>
+    <PackagesDir>$(CoreclrDir)/packages</PackagesDir>
+  </PropertyGroup>
+
+  <!-- Set default Configuration and Platform -->
+  <PropertyGroup>
+    <BuildArch>$(__BuildArch)</BuildArch>
+    <BuildArch Condition="'$(__BuildArch)'==''">x64</BuildArch>
+    <BuildArch Condition="'$(__BuildArch)' == 'amd64'">x64</BuildArch>
+
+    <BuildType>$(__BuildType)</BuildType>
+    <BuildType Condition="'$(__BuildType)'==''">Debug</BuildType>
+    <BuildType Condition="'$(__BuildType)' == 'debug'">Debug</BuildType>
+    <BuildType Condition="'$(__BuildType)' == 'release'">Release</BuildType>
+    <BuildType Condition="'$(__BuildType)' == 'checked'">Checked</BuildType>
+
+    <BuildOS>$(__BuildOS)</BuildOS>
+    <BuildOS Condition="'$(__BuildOS)' == ''">Windows_NT</BuildOS>
+
+    <Configuration Condition="'$(Configuration)' == ''">$(BuildType)</Configuration>
+    <Platform Condition="'$(Platform)' == ''">$(BuildArch)</Platform>
+  </PropertyGroup>
+
+  <PropertyGroup>
+    <RestorePackagesPath>$(PackagesDir)</RestorePackagesPath>
+  </PropertyGroup>
+
+
+</Project>

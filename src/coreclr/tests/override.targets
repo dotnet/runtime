@@ -3,10 +3,6 @@
     Overrides for all other targets (including build tools) can go in this file.
   -->
 
-  <!-- Contains overrides for the nuget reference resolution.  The regular nuget reference resolution will not
-       copy references local, which we need in order to correctly execute the xunit project -->
-  <Import Project="xunitwrapper.targets" Condition="'$(IsXunitWrapperProject)'=='true'" />
-
   <!-- Override the AddDesignTimeFacadeReferences target to add the ability to reference System.Private.CoreLib.
        Some tests use functionality not available in the portable reference assemblies.
        For portability reasons it's generally a good idea to reference the facades instead of the
