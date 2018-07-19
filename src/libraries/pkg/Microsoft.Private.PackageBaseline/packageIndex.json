@@ -1670,6 +1670,12 @@
         "4.0.1.0": "4.6.0"
       }
     },
+    "System.Drawing.Design.Primitives": {
+      "InboxOn": {},
+      "AssemblyVersionInPackageVersion": {
+        "4.0.0.0": "4.6.0"
+      }
+    },
     "System.Drawing.Design": {
       "InboxOn": {
         "net45": "4.0.0.0"
