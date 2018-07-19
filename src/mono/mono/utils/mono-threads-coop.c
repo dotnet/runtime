@@ -508,14 +508,18 @@ mono_threads_assert_gc_unsafe_region (void)
 	MONO_REQ_GC_UNSAFE_MODE;
 }
 
+/* -1 and 0 also used:
+ * -1 means uninitialized
+ * 0 means unset
+ */
 typedef enum {
-	MONO_THREADS_SUSPEND_FULL_PREEMPTIVE = 0,
+	MONO_THREADS_SUSPEND_FULL_PREEMPTIVE = 1,
 	MONO_THREADS_SUSPEND_FULL_COOP,
 	MONO_THREADS_SUSPEND_HYBRID
 } MonoThreadsSuspendPolicy;
 
 static MonoThreadsSuspendPolicy
-mono_threads_suspend_policy (void)
+threads_suspend_policy_default (void)
 {
 #if defined (ENABLE_COOP_SUSPEND)
 	return MONO_THREADS_SUSPEND_FULL_COOP;
@@ -523,19 +527,42 @@ mono_threads_suspend_policy (void)
 #if defined (ENABLE_HYBRID_SUSPEND)
 	return MONO_THREADS_SUSPEND_HYBRID;
 #else
+	return 0; /* unset */
+#endif
+#endif
+}
+
+static MonoThreadsSuspendPolicy
+threads_suspend_policy_getenv_compat (void)
+{
+	MonoThreadsSuspendPolicy policy = 0;
+	if (g_hasenv ("MONO_ENABLE_COOP") || g_hasenv ("MONO_ENABLE_COOP_SUSPEND")) {
+		g_assertf (!g_hasenv ("MONO_ENABLE_HYBRID_SUSPEND"), "Environment variables set to enable both hybrid and cooperative suspend simultaneously");
+		policy = MONO_THREADS_SUSPEND_FULL_COOP;
+	} else if (g_hasenv ("MONO_ENABLE_HYBRID_SUSPEND"))
+		policy = MONO_THREADS_SUSPEND_HYBRID;
+	return policy;
+}
+
+static MonoThreadsSuspendPolicy
+mono_threads_suspend_policy (void)
+{
 	static MonoThreadsSuspendPolicy policy = -1;
 	if (G_UNLIKELY (policy == -1)) {
-		if (g_hasenv ("MONO_ENABLE_COOP") || g_hasenv ("MONO_ENABLE_COOP_SUSPEND")) {
-			g_assertf (!g_hasenv ("MONO_ENABLE_HYBRID_SUSPEND"), "Environment variables set to enable both hybrid and cooperative suspend simultaneously");
-			policy = MONO_THREADS_SUSPEND_FULL_COOP;
-		} else if (g_hasenv ("MONO_ENABLE_HYBRID_SUSPEND"))
-			policy = MONO_THREADS_SUSPEND_HYBRID;
+		// thread suspend policy:
+		// if there's a compiled-in default, use it.
+		// otherwise if one of the old environment variables is set, use that.
+		// otherwise use full preemptive suspend.
+		MonoThreadsSuspendPolicy default_policy = threads_suspend_policy_default ();
+		MonoThreadsSuspendPolicy env_compat_policy = threads_suspend_policy_getenv_compat ();
+		if (default_policy)
+			policy = default_policy;
+		else if (env_compat_policy)
+			policy = env_compat_policy;
 		else
 			policy = MONO_THREADS_SUSPEND_FULL_PREEMPTIVE;
+		g_assert (policy > 0);
 	}
-	return policy;
-#endif
-#endif
 }
 
 const char*
