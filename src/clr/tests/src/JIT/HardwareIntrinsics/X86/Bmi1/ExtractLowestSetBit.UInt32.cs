@@ -196,10 +196,10 @@ namespace JIT.HardwareIntrinsics.X86
 
             if (isUnexpectedResult)
             {
-                Console.WriteLine($"{nameof(Bmi1)}.{nameof(Bmi1.ExtractLowestSetBit)}<UInt32>(UInt32): ExtractLowestSetBit failed:");
-                Console.WriteLine($"    data: {data}");
-                Console.WriteLine($"  result: {result}");
-                Console.WriteLine();
+                TestLibrary.TestFramework.LogInformation($"{nameof(Bmi1)}.{nameof(Bmi1.ExtractLowestSetBit)}<UInt32>(UInt32): ExtractLowestSetBit failed:");
+                TestLibrary.TestFramework.LogInformation($"    data: {data}");
+                TestLibrary.TestFramework.LogInformation($"  result: {result}");
+                TestLibrary.TestFramework.LogInformation(string.Empty);
             }
         }
     }
