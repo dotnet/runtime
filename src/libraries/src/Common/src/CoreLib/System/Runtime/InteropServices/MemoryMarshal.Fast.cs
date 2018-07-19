@@ -102,7 +102,7 @@ namespace System.Runtime.InteropServices
         /// These types may not contain pointers or references. This is checked at runtime in order to preserve type safety.
         /// </summary>
         /// <remarks>
-        /// Supported only for platforms that support misaligned memory access.
+        /// Supported only for platforms that support misaligned memory access or when the memory block is aligned by other means.
         /// </remarks>
         /// <param name="span">The source slice, of type <typeparamref name="TFrom"/>.</param>
         /// <exception cref="System.ArgumentException">
@@ -157,7 +157,7 @@ namespace System.Runtime.InteropServices
         /// These types may not contain pointers or references. This is checked at runtime in order to preserve type safety.
         /// </summary>
         /// <remarks>
-        /// Supported only for platforms that support misaligned memory access.
+        /// Supported only for platforms that support misaligned memory access or when the memory block is aligned by other means.
         /// </remarks>
         /// <param name="span">The source slice, of type <typeparamref name="TFrom"/>.</param>
         /// <exception cref="System.ArgumentException">
