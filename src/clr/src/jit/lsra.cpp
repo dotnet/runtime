@@ -3366,15 +3366,8 @@ bool LinearScan::isSpillCandidate(Interval*     current,
 #endif
     {
         RefPosition* nextPhysRegPosition = physRegRecord->getNextRefPosition();
-#ifdef _TARGET_ARM64_
-        // On ARM64, we may need to actually allocate IP0 and IP1 in some cases, but we don't include it in
-        // the allocation order for tryAllocateFreeReg.
-        if ((physRegRecord->regNum != REG_IP0) && (physRegRecord->regNum != REG_IP1))
-#endif // _TARGET_ARM64_
-        {
-            assert((nextPhysRegPosition != nullptr) && (nextPhysRegPosition->nodeLocation == refLocation) &&
-                   (candidateBit != refPosition->registerAssignment));
-        }
+        assert((nextPhysRegPosition != nullptr) && (nextPhysRegPosition->nodeLocation == refLocation) &&
+               (candidateBit != refPosition->registerAssignment));
         return false;
     }
 
