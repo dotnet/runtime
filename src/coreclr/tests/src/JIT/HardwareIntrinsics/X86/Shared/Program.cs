@@ -3,8 +3,8 @@
 // See the LICENSE file in the project root for more information.
 
 using System;
-using System.Linq;
 using System.Collections.Generic;
+using System.Linq;
 
 namespace JIT.HardwareIntrinsics.X86
 {
@@ -21,7 +21,7 @@ namespace JIT.HardwareIntrinsics.X86
 
             foreach (string testToRun in GetTestsToRun(args))
             {
-                Console.WriteLine($"Running {testToRun} test...");
+                TestLibrary.TestFramework.BeginTestCase(testToRun);
 
                 try
                 {
@@ -29,9 +29,12 @@ namespace JIT.HardwareIntrinsics.X86
                 }
                 catch (Exception e)
                 {
-                    Console.WriteLine($"Error: {e.Message}");
+                    TestLibrary.TestFramework.LogError(e.GetType().ToString(), e.Message);
+                    TestLibrary.TestFramework.LogVerbose(e.StackTrace);
                     isPassing = false;
                 }
+
+                TestLibrary.TestFramework.EndTestCase();
             }
 
             return isPassing ? PASS : FAIL;
@@ -63,7 +66,7 @@ namespace JIT.HardwareIntrinsics.X86
 
         private static void PrintUsage()
         {
-            Console.WriteLine($@"Usage:
+            TestLibrary.TestFramework.LogInformation($@"Usage:
 {Environment.GetCommandLineArgs()[0]} [testName]
 
   [testName]: The name of the function to test.
@@ -73,7 +76,7 @@ namespace JIT.HardwareIntrinsics.X86
   Available Test Names:");
             foreach (string testName in TestList.Keys)
             {
-                Console.WriteLine($"    {testName}");
+                TestLibrary.TestFramework.LogInformation($"    {testName}");
             }
 
             Environment.Exit(FAIL);
