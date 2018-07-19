@@ -1,0 +1,28 @@
+<Project xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <Import Project="../dir.common.props" />
+
+  <!-- This file contains common build properties for projects under
+       the test tree, and also generated test projects in
+       bin/tests. It currently has only those properties that are
+       shared between buildtools test projects and SDK-style test
+       projects. Eventually every test project should build using the
+       SDK. Some test projects still bypass this by importing
+       tests/dir.props directly - these should eventually go away. -->
+
+  <PropertyGroup>
+    <OSPlatformConfig>$(BuildOS).$(Platform).$(Configuration)</OSPlatformConfig>
+
+    <TestSrcDir>$(CoreclrDir)/tests/src</TestSrcDir>
+    <BuildProjectRelativeDir>$([System.String]::Copy('$(MSBuildProjectDirectary)').Replace($(TestSrcDir),''))/$(MSBuildProjectName)</BuildProjectRelativeDir>
+
+    <!-- BaseIntermediateOutputPath is used by the SDK as the location
+         for the lock file, and props/targets from nuget packages. -->
+    <BaseIntermediateOutputPath>$(CoreclrDir)/bin/tests/obj/$(OSPlatformConfig)/Managed/$(BuildProjectRelativeDir)</BaseIntermediateOutputPath>
+    <IntermediateOutputPath>$(BaseIntermediateOutputPath)</IntermediateOutputPath>
+
+    <BaseOutputPath>$(CoreclrDir)/bin/tests/$(OSPlatformConfig)/$(BuildProjectRelativeDir)</BaseOutputPath>
+    <OutputPath>$(BaseOutputPath)</OutputPath>
+
+  </PropertyGroup>
+
+</Project>

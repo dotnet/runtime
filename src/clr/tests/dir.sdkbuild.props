@@ -1,0 +1,14 @@
+<Project>
+  <Import Project="dir.common.props" />
+
+  <!-- This file contains build properties that apply only to
+       SDK-style test projects. Properties that are shared between SDK
+       and buildtools projects should go in dir.common.props. -->
+
+  <PropertyGroup>
+    <TargetFramework>netcoreapp2.0</TargetFramework>
+    <AppendTargetFrameworkToOutputPath>false</AppendTargetFrameworkToOutputPath>
+    <EnableDefaultCompileItems>false</EnableDefaultCompileItems>
+  </PropertyGroup>
+
+</Project>
