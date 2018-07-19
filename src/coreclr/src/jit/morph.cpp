@@ -2759,6 +2759,8 @@ GenTreeCall* Compiler::fgMorphArgs(GenTreeCall* call)
     bool     callHasRetBuffArg       = call->HasRetBufArg();
     bool     callIsVararg            = call->IsVarargs();
 
+    JITDUMP("%sMorphing args for %d.%s:\n", (reMorphing) ? "Re" : "", call->gtTreeID, GenTree::OpName(call->gtOper));
+
 #ifdef _TARGET_UNIX_
     if (callIsVararg)
     {
