@@ -19,7 +19,7 @@ namespace NetClient
             }
             catch (Exception e)
             {
-                Console.WriteLine($"Test Failure: {e.Message}\n{e.StackTrace}");
+                Console.WriteLine($"Test Failure: {e}");
                 return 101;
             }
 
