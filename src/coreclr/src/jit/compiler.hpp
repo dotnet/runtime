@@ -1797,9 +1797,8 @@ inline unsigned Compiler::lvaGrabTempWithImplicitUse(bool shortLifetime DEBUGARG
     // address-exposed -- DoNotEnregister should suffice?
     lvaSetVarAddrExposed(lclNum);
 
-    // We need lvRefCnt to be non-zero to prevent various asserts from firing.
-    varDsc->setLvRefCnt(1);
-    varDsc->setLvRefCntWtd(BB_UNITY_WEIGHT);
+    // Note the implicit use
+    varDsc->lvImplicitlyReferenced = 1;
 
     return lclNum;
 }
