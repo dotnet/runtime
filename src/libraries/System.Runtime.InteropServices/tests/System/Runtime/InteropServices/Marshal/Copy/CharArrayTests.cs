@@ -8,33 +8,70 @@ namespace System.Runtime.InteropServices.Tests
 {
     public class CharArrayTests
     {
-        public static readonly object[][] ArrayData =
-        {
-            new object[] { new char[] { 'a', 'b', 'c', 'd', 'e', 'f', 'g', 'h', 'i', 'j' } }
-        };
-
         [Theory]
-        [MemberData(nameof(ArrayData))]
-        public void NullValueArguments_ThrowsArgumentNullException(char[] TestArray)
+        [InlineData(new char[] { 'a', 'b', 'c', 'd', 'e', 'f', 'g', 'h', 'i', 'j' })]
+        public void CopyTo_Roundtrip_MatchesOriginalInput(char[] values)
         {
-            char[] array = null;
-            AssertExtensions.Throws<ArgumentNullException>("destination", () => Marshal.Copy(TestArray, 0, IntPtr.Zero, 0));
-            AssertExtensions.Throws<ArgumentNullException>("source", () => Marshal.Copy(array, 0, new IntPtr(1), 0));
-            AssertExtensions.Throws<ArgumentNullException>("destination", () => Marshal.Copy(new IntPtr(1), array, 0, 0));
-            AssertExtensions.Throws<ArgumentNullException>("source", () => Marshal.Copy(IntPtr.Zero, TestArray, 0, 0));
-        }
-
-        [Theory]
-        [MemberData(nameof(ArrayData))]
-        public void OutOfRangeArguments_ThrowsArgumentOutOfRangeException(char[] TestArray)
-        {
-            int sizeOfArray = sizeof(char) * TestArray.Length;
+            int sizeOfArray = sizeof(char) * values.Length;
             IntPtr ptr = Marshal.AllocCoTaskMem(sizeOfArray);
             try
             {
-                Assert.Throws<ArgumentOutOfRangeException>(() => Marshal.Copy(TestArray, 0, ptr, TestArray.Length + 1));
-                Assert.Throws<ArgumentOutOfRangeException>(() => Marshal.Copy(TestArray, TestArray.Length + 1, ptr, 1));
-                Assert.Throws<ArgumentOutOfRangeException>(() => Marshal.Copy(TestArray, 2, ptr, TestArray.Length));
+                Marshal.Copy(values, 0, ptr, values.Length);
+
+                char[] array1 = new char[values.Length];
+                Marshal.Copy(ptr, array1, 0, values.Length);
+                Assert.Equal<char>(values, array1);
+
+                Marshal.Copy(values, 2, ptr, values.Length - 4);
+                char[] array2 = new char[values.Length];
+                Marshal.Copy(ptr, array2, 2, values.Length - 4);
+                Assert.Equal<char>(values.AsSpan(2, values.Length - 4).ToArray(), array2.AsSpan(2, values.Length - 4).ToArray());
+            }
+            finally
+            {
+                Marshal.FreeCoTaskMem(ptr);
+            }
+        }
+
+        [Fact]
+        public void CopyTo_NullDestination_ThrowsArgumentNullException()
+        {
+            AssertExtensions.Throws<ArgumentNullException>("destination", () => Marshal.Copy(new char[10], 0, IntPtr.Zero, 0));
+            AssertExtensions.Throws<ArgumentNullException>("destination", () => Marshal.Copy(new IntPtr(1), (char[])null, 0, 0));
+        }
+
+        [Fact]
+        public void CopyTo_NullSource_ThrowsArgumentNullException()
+        {
+            AssertExtensions.Throws<ArgumentNullException>("source", () => Marshal.Copy((char[])null, 0, new IntPtr(1), 0));
+            AssertExtensions.Throws<ArgumentNullException>("source", () => Marshal.Copy(IntPtr.Zero, new char[10], 0, 0));
+        }
+
+        [Fact]
+        public void CopyTo_NegativeStartIndex_ThrowsArgumentOutOfRangeException()
+        {
+            char[] array = new char[10];
+            IntPtr ptr = Marshal.AllocCoTaskMem(sizeof(char) * array.Length);
+            try
+            {
+                AssertExtensions.Throws<ArgumentOutOfRangeException>(null, () => Marshal.Copy(array, -1, ptr, 10));
+                AssertExtensions.Throws<ArgumentOutOfRangeException>("startIndex", () => Marshal.Copy(ptr, array, -1, 10));
+            }
+            finally
+            {
+                Marshal.FreeCoTaskMem(ptr);
+            }
+        }
+
+        [Fact]
+        public void CopyTo_NegativeLength_ThrowsArgumentOutOfRangeException()
+        {
+            char[] array = new char[10];
+            IntPtr ptr = Marshal.AllocCoTaskMem(sizeof(char) * array.Length);
+            try
+            {
+                AssertExtensions.Throws<ArgumentOutOfRangeException>(null, () => Marshal.Copy(array, 0, ptr, -1));
+                AssertExtensions.Throws<ArgumentOutOfRangeException>("length", () => Marshal.Copy(ptr, array, 0, -1));
             }
             finally
             {
@@ -43,23 +80,17 @@ namespace System.Runtime.InteropServices.Tests
         }
 
         [Theory]
-        [MemberData(nameof(ArrayData))]
-        public void CopyRoundTrip_MatchesOriginalArray(char[] TestArray)
+        [InlineData(0, 11)]
+        [InlineData(11, 1)]
+        [InlineData(2, 10)]
+        public void CopyTo_InvalidStartIndexLength_ThrowsArgumentOutOfRangeException(int startIndex, int length)
         {
-            int sizeOfArray = sizeof(char) * TestArray.Length;
-            IntPtr ptr = Marshal.AllocCoTaskMem(sizeOfArray);
+            char[] array = new char[10];
+            IntPtr ptr = Marshal.AllocCoTaskMem(sizeof(char) * array.Length);
             try
             {
-                Marshal.Copy(TestArray, 0, ptr, TestArray.Length);
-
-                char[] array1 = new char[TestArray.Length];
-                Marshal.Copy(ptr, array1, 0, TestArray.Length);
-                Assert.Equal<char>(TestArray, array1);
-
-                Marshal.Copy(TestArray, 2, ptr, TestArray.Length - 4);
-                char[] array2 = new char[TestArray.Length];
-                Marshal.Copy(ptr, array2, 2, TestArray.Length - 4);
-                Assert.Equal<char>(TestArray.AsSpan(2, TestArray.Length - 4).ToArray(), array2.AsSpan(2, TestArray.Length - 4).ToArray());
+                AssertExtensions.Throws<ArgumentOutOfRangeException>(null, () => Marshal.Copy(array, startIndex, ptr, length));
+                AssertExtensions.Throws<ArgumentOutOfRangeException>(null, () => Marshal.Copy(ptr, array, startIndex, length));
             }
             finally
             {
