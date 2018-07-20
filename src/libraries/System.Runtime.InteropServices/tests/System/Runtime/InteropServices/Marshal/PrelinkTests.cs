@@ -36,7 +36,7 @@ namespace System.Runtime.InteropServices.Tests
         [Fact]
         public void Prelink_NonRuntimeMethod_ThrowsArgumentException()
         {
-            AssertExtensions.Throws<ArgumentException>(null, () => Marshal.Prelink(new NonRuntimeMethodInfo()));
+            AssertExtensions.Throws<ArgumentException>("m", null, () => Marshal.Prelink(new NonRuntimeMethodInfo()));
         }
         
         public class NonRuntimeMethodInfo : MethodInfo
