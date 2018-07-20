@@ -42,6 +42,10 @@ namespace System.Net.Security
             EncryptionPolicy = sslServerAuthenticationOptions.EncryptionPolicy;
             IsServer = true;
             RemoteCertRequired = sslServerAuthenticationOptions.ClientCertificateRequired;
+            if (NetEventSource.IsEnabled)
+            {
+                NetEventSource.Info(this, $"Server RemoteCertRequired: {RemoteCertRequired}.");
+            }
             RemoteCertificateValidationCallback = sslServerAuthenticationOptions.RemoteCertificateValidationCallback;
             TargetHost = string.Empty;
 
