@@ -636,14 +636,25 @@ mono_threads_is_cooperative_suspension_enabled (void)
 gboolean
 mono_threads_is_blocking_transition_enabled (void)
 {
-#if defined(ENABLE_COOP_SUSPEND) || defined(ENABLE_HYBRID_SUSPEND)
-	return TRUE;
-#else
 	static int is_blocking_transition_enabled = -1;
-	if (G_UNLIKELY (is_blocking_transition_enabled == -1))
-		is_blocking_transition_enabled = (g_hasenv ("MONO_ENABLE_COOP") || g_hasenv ("MONO_ENABLE_COOP_SUSPEND") || g_hasenv ("MONO_ENABLE_HYBRID_SUSPEND") || g_hasenv ("MONO_ENABLE_BLOCKING_TRANSITION")) ? 1 : 0;
+	if (G_UNLIKELY (is_blocking_transition_enabled == -1)) {
+		if (g_hasenv ("MONO_ENABLE_BLOCKING_TRANSITION"))
+			is_blocking_transition_enabled = 1;
+		else {
+			switch (mono_threads_suspend_policy ()) {
+			case MONO_THREADS_SUSPEND_FULL_COOP:
+			case MONO_THREADS_SUSPEND_HYBRID:
+				is_blocking_transition_enabled = 1;
+				break;
+			case MONO_THREADS_SUSPEND_FULL_PREEMPTIVE:
+				is_blocking_transition_enabled = 0;
+				break;
+			default:
+				g_assert_not_reached ();
+			}
+		}
+	}
 	return is_blocking_transition_enabled == 1;
-#endif
 }
 
 gboolean
