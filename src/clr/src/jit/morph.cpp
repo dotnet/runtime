@@ -5294,10 +5294,6 @@ void Compiler::fgMakeOutgoingStructArgCopy(GenTreeCall*         call,
     GenTree* dest = gtNewLclvNode(tmp, lvaTable[tmp].lvType);
     dest->gtFlags |= (GTF_DONT_CSE | GTF_VAR_DEF); // This is a def of the local, "entire" by construction.
 
-    // TODO-Cleanup: This probably shouldn't be done here because arg morphing is done prior
-    // to ref counting of the lclVars.
-    lvaTable[tmp].incRefCnts(compCurBB->getBBWeight(this), this);
-
     if (argx->gtOper == GT_OBJ)
     {
         argx->gtFlags &= ~(GTF_ALL_EFFECT) | (argx->AsBlk()->Addr()->gtFlags & GTF_ALL_EFFECT);
