@@ -1,4 +1,4 @@
-<Project Sdk="Microsoft.NET.Sdk">
+﻿<Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
     <OutputType>Library</OutputType>
     <ProjectGuid>{191B3618-FECD-4ABD-9D6B-5AC90DC33621}</ProjectGuid>
@@ -276,6 +276,24 @@
     <Compile Include="$(CommonPath)\System\Runtime\InteropServices\FunctionWrapper.Windows.cs">
       <Link>Common\System\Runtime\InteropServices\FunctionWrapper.Windows.cs</Link>
     </Compile>
+    <Compile Include="$(CommonPath)\Interop\Windows\Ole32\Interop.IStream.cs">
+      <Link>Common\Interop\Windows\Ole32\Interop.IStream.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)\Interop\Windows\Ole32\Interop.STATSTG.cs">
+      <Link>Common\Interop\Windows\Ole32\Interop.STATSTG.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)\Interop\Windows\Ole32\Interop.STGTY.cs">
+      <Link>Common\Interop\Windows\Ole32\Interop.STGTY.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)\Interop\Windows\Ole32\Interop.STATFLAG.cs">
+      <Link>Common\Interop\Windows\Ole32\Interop.STATFLAG.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)\Interop\Windows\Ole32\Interop.STGM.cs">
+      <Link>Common\Interop\Windows\Ole32\Interop.STGM.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)\Interop\Windows\Interop.HRESULT.cs">
+      <Link>Common\Interop\Windows\Interop.HRESULT.cs</Link>
+    </Compile>
   </ItemGroup>
   <ItemGroup Condition="$(TargetGroup.StartsWith('netcoreapp')) AND '$(TargetsUnix)' == 'true'">
     <!-- Unix-specific -->
@@ -339,6 +357,7 @@
   <ItemGroup Condition="'$(TargetsNetFx)' != 'true'">
     <Reference Include="Microsoft.Win32.Primitives" />
     <Reference Condition="'$(TargetsWindows)' == 'true'" Include="Microsoft.Win32.SystemEvents" />
+    <Reference Include="System.Buffers" />
     <Reference Include="System.Collections" />
     <Reference Include="System.Collections.NonGeneric" />
     <Reference Include="System.Collections.Specialized" />
@@ -348,6 +367,7 @@
     <Reference Include="System.Diagnostics.TraceSource" />
     <Reference Include="System.Drawing.Primitives" />
     <Reference Include="System.IO.FileSystem" />
+    <Reference Include="System.Memory" />
     <Reference Include="System.Resources.ResourceManager" />
     <Reference Include="System.Runtime" />
     <Reference Include="System.Runtime.Extensions" />

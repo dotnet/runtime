@@ -2,279 +2,239 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
+using System.Buffers;
 using System.IO;
 using System.Runtime.InteropServices;
-using System.Security.Permissions;
 
 namespace System.Drawing.Internal
 {
-    internal class GPStream : UnsafeNativeMethods.IStream
+    internal sealed class GPStream : Interop.Ole32.IStream
     {
-        protected Stream dataStream;
+        private Stream _dataStream;
 
         // to support seeking ahead of the stream length...
         private long _virtualPosition = -1;
 
-        internal GPStream(Stream stream)
+        internal GPStream(Stream stream, bool makeSeekable = true)
         {
-            if (!stream.CanSeek)
+            if (makeSeekable && !stream.CanSeek)
             {
-                const int ReadBlock = 256;
-                byte[] bytes = new byte[ReadBlock];
-                int readLen;
-                int current = 0;
-                do
-                {
-                    if (bytes.Length < current + ReadBlock)
-                    {
-                        byte[] newData = new byte[bytes.Length * 2];
-                        Array.Copy(bytes, newData, bytes.Length);
-                        bytes = newData;
-                    }
-
-                    readLen = stream.Read(bytes, current, ReadBlock);
-                    current += readLen;
-                } while (readLen != 0);
-
-                dataStream = new MemoryStream(bytes);
+                // Copy to a memory stream so we can seek
+                MemoryStream memoryStream = new MemoryStream();
+                stream.CopyTo(memoryStream);
+                _dataStream = memoryStream;
             }
             else
             {
-                dataStream = stream;
+                _dataStream = stream;
             }
         }
 
         private void ActualizeVirtualPosition()
         {
             if (_virtualPosition == -1)
-            {
                 return;
-            }
 
-            if (_virtualPosition > dataStream.Length)
-            {
-                dataStream.SetLength(_virtualPosition);
-            }
+            if (_virtualPosition > _dataStream.Length)
+                _dataStream.SetLength(_virtualPosition);
 
-            dataStream.Position = _virtualPosition;
+            _dataStream.Position = _virtualPosition;
 
             _virtualPosition = -1;
         }
 
-        public virtual UnsafeNativeMethods.IStream Clone()
+        public Interop.Ole32.IStream Clone()
         {
-            NotImplemented();
-            return null;
+            // The cloned object should have the same current "position"
+            return new GPStream(_dataStream)
+            {
+                _virtualPosition = _virtualPosition
+            };
         }
 
-        public virtual void Commit(int grfCommitFlags)
+        public void Commit(uint grfCommitFlags)
         {
-            dataStream.Flush();
+            _dataStream.Flush();
+
             // Extend the length of the file if needed.
             ActualizeVirtualPosition();
         }
 
-        public virtual long CopyTo(UnsafeNativeMethods.IStream pstm, long cb, long[] pcbRead)
+        public unsafe void CopyTo(Interop.Ole32.IStream pstm, ulong cb, ulong* pcbRead, ulong* pcbWritten)
         {
-            int bufsize = 4096; // one page
-            IntPtr buffer = Marshal.AllocHGlobal(bufsize);
-            if (buffer == IntPtr.Zero)
-            {
-                throw new OutOfMemoryException();
-            }
+            byte[] buffer = ArrayPool<byte>.Shared.Rent(4096);
 
-            long written = 0;
-            try
+            ulong remaining = cb;
+            ulong totalWritten = 0;
+            ulong totalRead = 0;
+
+            fixed (byte* b = buffer)
             {
-                while (written < cb)
+                while (remaining > 0)
                 {
-                    int toRead = bufsize;
-                    if (written + toRead > cb)
-                    {
-                        toRead = (int)(cb - written);
-                    }
+                    uint read = remaining < (ulong)buffer.Length ? (uint)remaining : (uint)buffer.Length;
+                    Read(b, read, &read);
+                    remaining -= read;
+                    totalRead += read;
 
-                    int read = Read(buffer, toRead);
                     if (read == 0)
                     {
                         break;
                     }
 
-                    if (pstm.Write(buffer, read) != read)
-                    {
-                        throw EFail("Wrote an incorrect number of bytes");
-                    }
-
-                    written += read;
+                    uint written;
+                    pstm.Write(b, read, &written);
+                    totalWritten += written;
                 }
             }
-            finally
-            {
-                Marshal.FreeHGlobal(buffer);
-            }
-            if (pcbRead != null && pcbRead.Length > 0)
-            {
-                pcbRead[0] = written;
-            }
 
-            return written;
+            ArrayPool<byte>.Shared.Return(buffer);
+
+            if (pcbRead != null)
+                *pcbRead = totalRead;
+
+            if (pcbWritten != null)
+                *pcbWritten = totalWritten;
         }
 
-        public virtual void LockRegion(long libOffset, long cb, int dwLockType)
-        {
-        }
-
-        protected static ExternalException EFail(string msg)
-        {
-            throw new ExternalException(msg, SafeNativeMethods.E_FAIL);
-        }
-
-        protected static void NotImplemented()
-        {
-            throw new ExternalException(SR.Format(SR.NotImplemented), SafeNativeMethods.E_NOTIMPL);
-        }
-
-        public virtual int Read(IntPtr buf, int length)
-        {
-            byte[] buffer = new byte[length];
-            int count = Read(buffer, length);
-            Marshal.Copy(buffer, 0, buf, length);
-            return count;
-        }
-
-        public virtual int Read(byte[] buffer, int length)
+        public unsafe void Read(byte* pv, uint cb, uint* pcbRead)
         {
             ActualizeVirtualPosition();
-            return dataStream.Read(buffer, 0, length);
+
+            // Stream Span API isn't available in 2.0
+#if netcoreapp20
+            byte[] buffer = ArrayPool<byte>.Shared.Rent(4096);
+            int read = _dataStream.Read(buffer, 0, checked((int)cb));
+            Marshal.Copy(buffer, 0, (IntPtr)pv, read);
+            ArrayPool<byte>.Shared.Return(buffer);
+#else
+            Span<byte> buffer = new Span<byte>(pv, checked((int)cb));
+            int read = _dataStream.Read(buffer);
+#endif
+            if (pcbRead != null)
+                *pcbRead = (uint)read;
         }
 
-        public virtual void Revert() => NotImplemented();
-
-        public virtual long Seek(long offset, int origin)
+        public void Revert()
         {
-            long pos = _virtualPosition;
+            // We never report ourselves as Transacted, so we can just ignore this.
+        }
+
+        public unsafe void Seek(long dlibMove, SeekOrigin dwOrigin, ulong* plibNewPosition)
+        {
+            long position = _virtualPosition;
             if (_virtualPosition == -1)
             {
-                pos = dataStream.Position;
+                position = _dataStream.Position;
             }
 
-            long len = dataStream.Length;
-            switch (origin)
+            long length = _dataStream.Length;
+            switch (dwOrigin)
             {
-                case SafeNativeMethods.StreamConsts.STREAM_SEEK_SET:
-                    if (offset <= len)
+                case SeekOrigin.Begin:
+                    if (dlibMove <= length)
                     {
-                        dataStream.Position = offset;
+                        _dataStream.Position = dlibMove;
                         _virtualPosition = -1;
                     }
                     else
                     {
-                        _virtualPosition = offset;
+                        _virtualPosition = dlibMove;
                     }
                     break;
-                case SafeNativeMethods.StreamConsts.STREAM_SEEK_END:
-                    if (offset <= 0)
+                case SeekOrigin.End:
+                    if (dlibMove <= 0)
                     {
-                        dataStream.Position = len + offset;
+                        _dataStream.Position = length + dlibMove;
                         _virtualPosition = -1;
                     }
                     else
                     {
-                        _virtualPosition = len + offset;
+                        _virtualPosition = length + dlibMove;
                     }
                     break;
-                case SafeNativeMethods.StreamConsts.STREAM_SEEK_CUR:
-                    if (offset + pos <= len)
+                case SeekOrigin.Current:
+                    if (dlibMove + position <= length)
                     {
-                        dataStream.Position = pos + offset;
+                        _dataStream.Position = position + dlibMove;
                         _virtualPosition = -1;
                     }
                     else
                     {
-                        _virtualPosition = offset + pos;
+                        _virtualPosition = dlibMove + position;
                     }
                     break;
             }
+
+            if (plibNewPosition == null)
+                return;
 
             if (_virtualPosition != -1)
             {
-                return _virtualPosition;
+                *plibNewPosition = (ulong)_virtualPosition;
             }
             else
             {
-                return dataStream.Position;
+                *plibNewPosition = (ulong)_dataStream.Position;
             }
         }
 
-        public virtual void SetSize(long value) => dataStream.SetLength(value);
-
-        public void Stat(IntPtr pstatstg, int grfStatFlag)
+        public void SetSize(ulong value)
         {
-            var stats = new STATSTG { cbSize = dataStream.Length };
-            Marshal.StructureToPtr(stats, pstatstg, true);
+            _dataStream.SetLength(checked((long)value));
         }
 
-        public virtual void UnlockRegion(long libOffset, long cb, int dwLockType)
+        public void Stat(out Interop.Ole32.STATSTG pstatstg, Interop.Ole32.STATFLAG grfStatFlag)
         {
+            pstatstg = new Interop.Ole32.STATSTG
+            {
+                cbSize = (ulong)_dataStream.Length,
+                type = Interop.Ole32.STGTY.STGTY_STREAM,
+
+                // Default read/write access is STGM_READ, which == 0
+                grfMode = _dataStream.CanWrite
+                    ? _dataStream.CanRead
+                        ? Interop.Ole32.STGM.STGM_READWRITE
+                        : Interop.Ole32.STGM.STGM_WRITE
+                    : Interop.Ole32.STGM.Default
+            };
+
+            if (grfStatFlag == Interop.Ole32.STATFLAG.STATFLAG_DEFAULT)
+            {
+                // Caller wants a name
+                pstatstg.AllocName(_dataStream is FileStream fs ? fs.Name : _dataStream.ToString());
+            }
         }
 
-        public virtual int Write(IntPtr buf, int length)
-        {
-            byte[] buffer = new byte[length];
-            Marshal.Copy(buf, buffer, 0, length);
-            return Write(buffer, length);
-        }
-
-        public virtual int Write(byte[] buffer, int length)
+        public unsafe void Write(byte* pv, uint cb, uint* pcbWritten)
         {
             ActualizeVirtualPosition();
-            dataStream.Write(buffer, 0, length);
-            return length;
+
+            // Stream Span API isn't available in 2.0
+#if netcoreapp20
+            byte[] buffer = ArrayPool<byte>.Shared.Rent(4096);
+            Marshal.Copy((IntPtr)pv, buffer, 0, (int)cb);
+            _dataStream.Write(buffer, 0, (int)cb);
+            ArrayPool<byte>.Shared.Return(buffer);
+#else
+            Span<byte> buffer = new Span<byte>(pv, checked((int)cb));
+            _dataStream.Write(buffer);
+#endif
+
+            if (pcbWritten != null)
+                *pcbWritten = cb;
         }
 
-        [StructLayout(LayoutKind.Sequential)]
-        public class STATSTG
+        public Interop.HRESULT LockRegion(ulong libOffset, ulong cb, uint dwLockType)
         {
-            public IntPtr pwcsName = IntPtr.Zero;
-            public int type;
-            [MarshalAs(UnmanagedType.I8)]
-            public long cbSize;
-            [MarshalAs(UnmanagedType.I8)]
-            public long mtime;
-            [MarshalAs(UnmanagedType.I8)]
-            public long ctime;
-            [MarshalAs(UnmanagedType.I8)]
-            public long atime;
-            [MarshalAs(UnmanagedType.I4)]
-            public int grfMode;
-            [MarshalAs(UnmanagedType.I4)]
-            public int grfLocksSupported;
+            // Documented way to say we don't support locking
+            return Interop.HRESULT.STG_E_INVALIDFUNCTION;
+        }
 
-            public int clsid_data1;
-            [MarshalAs(UnmanagedType.I2)]
-            public short clsid_data2;
-            [MarshalAs(UnmanagedType.I2)]
-            public short clsid_data3;
-            [MarshalAs(UnmanagedType.U1)]
-            public byte clsid_b0;
-            [MarshalAs(UnmanagedType.U1)]
-            public byte clsid_b1;
-            [MarshalAs(UnmanagedType.U1)]
-            public byte clsid_b2;
-            [MarshalAs(UnmanagedType.U1)]
-            public byte clsid_b3;
-            [MarshalAs(UnmanagedType.U1)]
-            public byte clsid_b4;
-            [MarshalAs(UnmanagedType.U1)]
-            public byte clsid_b5;
-            [MarshalAs(UnmanagedType.U1)]
-            public byte clsid_b6;
-            [MarshalAs(UnmanagedType.U1)]
-            public byte clsid_b7;
-            [MarshalAs(UnmanagedType.I4)]
-            public int grfStateBits;
-            [MarshalAs(UnmanagedType.I4)]
-            public int reserved;
+        public Interop.HRESULT UnlockRegion(ulong libOffset, ulong cb, uint dwLockType)
+        {
+            // Documented way to say we don't support locking
+            return Interop.HRESULT.STG_E_INVALIDFUNCTION;
         }
     }
 }

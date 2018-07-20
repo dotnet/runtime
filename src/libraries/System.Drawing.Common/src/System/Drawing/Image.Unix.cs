@@ -444,21 +444,6 @@ namespace System.Drawing
         }
 
         [Browsable(false)]
-        public Guid[] FrameDimensionsList
-        {
-            get
-            {
-                uint found;
-                int status = Gdip.GdipImageGetFrameDimensionsCount(nativeImage, out found);
-                Gdip.CheckStatus(status);
-                Guid[] guid = new Guid[found];
-                status = Gdip.GdipImageGetFrameDimensionsList(nativeImage, guid, found);
-                Gdip.CheckStatus(status);
-                return guid;
-            }
-        }
-
-        [Browsable(false)]
         public ColorPalette Palette
         {
             get
