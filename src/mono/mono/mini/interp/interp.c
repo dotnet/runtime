@@ -3921,9 +3921,7 @@ interp_exec_method_full (InterpFrame *frame, ThreadContext *context, guint16 *st
 		MINT_IN_CASE(MINT_INTRINS_BYREFERENCE_CTOR) {
 			MonoClass *newobj_class;
 			MonoMethodSignature *csig;
-			stackval valuetype_this;
 			guint32 token;
-			stackval retval;
 
 			frame->ip = ip;
 			token = * (guint16 *)(ip + 1);

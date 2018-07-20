@@ -1351,10 +1351,14 @@ interp_transform_call (TransformData *td, MonoMethod *method, MonoMethod *target
 
 	if (op >= 0) {
 		ADD_CODE (td, op);
-#if SIZEOF_VOID_P == 8
-		if (op == MINT_LDLEN)
-			ADD_CODE (td, MINT_CONV_I4_I8);
+
+		if (op == MINT_LDLEN) {
+#ifdef MONO_BIG_ARRAYS
+			SET_SIMPLE_TYPE (td->sp - 1, STACK_TYPE_I8);
+#else
+			SET_SIMPLE_TYPE (td->sp - 1, STACK_TYPE_I4);
 #endif
+		}
 		if (op == MINT_LDELEMA || op == MINT_LDELEMA_TC) {
 			ADD_CODE (td, get_data_item_index (td, target_method->klass));
 			ADD_CODE (td, 1 + m_class_get_rank (target_method->klass));
@@ -3517,7 +3521,11 @@ generate (MonoMethod *method, MonoMethodHeader *header, InterpMethod *rtm, unsig
 		case CEE_LDLEN:
 			CHECK_STACK (td, 1);
 			SIMPLE_OP (td, MINT_LDLEN);
-			SET_SIMPLE_TYPE(td->sp - 1, STACK_TYPE_I);
+#ifdef MONO_BIG_ARRAYS
+			SET_SIMPLE_TYPE (td->sp - 1, STACK_TYPE_I8);
+#else
+			SET_SIMPLE_TYPE (td->sp - 1, STACK_TYPE_I4);
+#endif
 			break;
 		case CEE_LDELEMA:
 			CHECK_STACK (td, 2);
