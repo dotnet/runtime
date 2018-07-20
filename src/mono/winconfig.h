@@ -21,9 +21,9 @@
 
 #include <SDKDDKVer.h>
 
-#if _WIN32_WINNT < 0x0600
-#error "Mono requires Windows Vista or later"
-#endif /* _WIN32_WINNT < 0x0600 */
+#if _WIN32_WINNT < 0x0601
+#error "Mono requires Windows 7 or later."
+#endif /* _WIN32_WINNT < 0x0601 */
 
 #ifndef HAVE_WINAPI_FAMILY_SUPPORT
 
