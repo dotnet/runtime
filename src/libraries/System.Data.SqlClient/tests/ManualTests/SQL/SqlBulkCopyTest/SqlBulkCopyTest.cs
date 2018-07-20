@@ -10,7 +10,7 @@ namespace System.Data.SqlClient.ManualTesting.Tests
     {
         private string srcConstr = null;
         private string dstConstr = null;
-        private static bool IsAzureServer() => DataTestUtility.IsAzureSqlServer(DataTestUtility.GetDataSource(DataTestUtility.TcpConnStr));
+        private static bool IsAzureServer() => DataTestUtility.IsAzureSqlServer(new SqlConnectionStringBuilder((DataTestUtility.TcpConnStr)).DataSource);
         private static bool AreConnectionStringsSetup() => DataTestUtility.AreConnStringsSetup();
 
         public SqlBulkCopyTest()

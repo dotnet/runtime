@@ -49,7 +49,7 @@ namespace System.Data.SqlClient.ManualTesting.Tests
             return cmd.ExecuteNonQuery();
         }
 
-        public static int TryExecuteNonQueryAzure(string strConnectionString, string strCommand, int commandTimeout = 60)
+        public static int ExecuteNonQueryAzure(string strConnectionString, string strCommand, int commandTimeout = 60)
         {
             using (SqlConnection connection = new SqlConnection(strConnectionString))
             using (SqlCommand command = connection.CreateCommand())
