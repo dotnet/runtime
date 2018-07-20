@@ -25,6 +25,10 @@
     <Project Include="Microsoft.NETCore.ILDAsm\Microsoft.NETCore.ILDAsm.builds" />
   </ItemGroup>
 
+  <ItemGroup Condition="'$(BuildIdentityPackage)' == 'true'">
+    <Project Include="Microsoft.NET.Sdk.IL\Microsoft.NET.Sdk.IL.pkgproj" />
+  </ItemGroup>
+
   <Import Project="$(ToolsDir)versioning.targets" />
   <!-- Make sure we create version.txt file since it will be packaged -->
   <Target Name="EnsureVersionInfoFileExists" BeforeTargets="Build" DependsOnTargets="CreateVersionInfoFile" />
