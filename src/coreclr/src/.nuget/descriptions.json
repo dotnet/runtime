@@ -40,6 +40,11 @@
         "CommonTypes": [ ]
     },
     {
+        "Name": "Microsoft.NET.Sdk.IL",
+        "Description": "Provides support for building IL projects.",
+        "CommonTypes": [ ]
+    },
+    {
 	"Name": "Microsoft.NETCore.Native",
 	"Description": "Native shims for .NET Core runtime",
 	"CommonTypes": [ ]
