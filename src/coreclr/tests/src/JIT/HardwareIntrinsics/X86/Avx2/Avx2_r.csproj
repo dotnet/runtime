@@ -233,9 +233,6 @@
     <Compile Include="..\Shared\SimpleUnOpTest_DataTable.cs" />
     <Compile Include="..\Shared\SimdScalarUnOpTest_DataTable.cs" />
   </ItemGroup>
-  <ItemGroup>
-    <ProjectReference Include="../../../../Common/CoreCLRTestLibrary/CoreCLRTestLibrary.csproj" />
-  </ItemGroup>
   <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.targets))\dir.targets" />
   <PropertyGroup Condition=" '$(MsBuildProjectDirOverride)' != '' "></PropertyGroup>
 </Project>
