@@ -8381,8 +8381,8 @@ void emitter::emitDispIns(
                 // Munge any pointers if we want diff-able disassembly
                 if (emitComp->opts.disDiffable)
                 {
-                    ssize_t top12bits = (val >> 20);
-                    if ((top12bits != 0) && (top12bits != -1))
+                    ssize_t top14bits = (val >> 18);
+                    if ((top14bits != 0) && (top14bits != -1))
                     {
                         val = 0xD1FFAB1E;
                     }
