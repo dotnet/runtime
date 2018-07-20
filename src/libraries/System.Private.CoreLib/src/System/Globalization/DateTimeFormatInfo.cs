@@ -2010,6 +2010,25 @@ namespace System.Globalization
         }
 
         //
+        // Decimal separator used by positive TimeSpan pattern
+        //
+        private string _decimalSeparator;
+        internal string DecimalSeparator
+        {
+            get
+            {
+                if (_decimalSeparator == null)
+                {
+                    CultureData cultureDataWithoutUserOverrides = _cultureData.UseUserOverride ?
+                        CultureData.GetCultureData(_cultureData.CultureName, false) :
+                        _cultureData;
+                    _decimalSeparator = new NumberFormatInfo(cultureDataWithoutUserOverrides).NumberDecimalSeparator;
+                }
+                return _decimalSeparator;
+            }
+        }
+
+        //
         // Positive TimeSpan Pattern
         //
         private string _fullTimeSpanPositivePattern;
@@ -2019,14 +2038,7 @@ namespace System.Globalization
             {
                 if (_fullTimeSpanPositivePattern == null)
                 {
-                    CultureData cultureDataWithoutUserOverrides;
-                    if (_cultureData.UseUserOverride)
-                        cultureDataWithoutUserOverrides = CultureData.GetCultureData(_cultureData.CultureName, false);
-                    else
-                        cultureDataWithoutUserOverrides = _cultureData;
-                    string decimalSeparator = new NumberFormatInfo(cultureDataWithoutUserOverrides).NumberDecimalSeparator;
-
-                    _fullTimeSpanPositivePattern = "d':'h':'mm':'ss'" + decimalSeparator + "'FFFFFFF";
+                    _fullTimeSpanPositivePattern = "d':'h':'mm':'ss'" + DecimalSeparator + "'FFFFFFF";
                 }
                 return _fullTimeSpanPositivePattern;
             }
