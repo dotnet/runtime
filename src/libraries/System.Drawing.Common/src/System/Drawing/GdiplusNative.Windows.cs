@@ -111,8 +111,6 @@ namespace System.Drawing
                 GdipGetImageThumbnail_ptr = FunctionWrapper.Load<GdipGetImageThumbnail_delegate>(s_gdipModule, "GdipGetImageThumbnail", LibraryName);
                 GdipGetEncoderParameterListSize_ptr = FunctionWrapper.Load<GdipGetEncoderParameterListSize_delegate>(s_gdipModule, "GdipGetEncoderParameterListSize", LibraryName);
                 GdipGetEncoderParameterList_ptr = FunctionWrapper.Load<GdipGetEncoderParameterList_delegate>(s_gdipModule, "GdipGetEncoderParameterList", LibraryName);
-                GdipImageGetFrameDimensionsCount_ptr = FunctionWrapper.Load<GdipImageGetFrameDimensionsCount_delegate>(s_gdipModule, "GdipImageGetFrameDimensionsCount", LibraryName);
-                GdipImageGetFrameDimensionsList_ptr = FunctionWrapper.Load<GdipImageGetFrameDimensionsList_delegate>(s_gdipModule, "GdipImageGetFrameDimensionsList", LibraryName);
                 GdipGetImagePalette_ptr = FunctionWrapper.Load<GdipGetImagePalette_delegate>(s_gdipModule, "GdipGetImagePalette", LibraryName);
                 GdipSetImagePalette_ptr = FunctionWrapper.Load<GdipSetImagePalette_delegate>(s_gdipModule, "GdipSetImagePalette", LibraryName);
                 GdipGetImagePaletteSize_ptr = FunctionWrapper.Load<GdipGetImagePaletteSize_delegate>(s_gdipModule, "GdipGetImagePaletteSize", LibraryName);
@@ -232,6 +230,8 @@ namespace System.Drawing
                 GdipDrawString_ptr = FunctionWrapper.Load<GdipDrawString_delegate>(s_gdipModule, "GdipDrawString", LibraryName);
                 GdipMeasureString_ptr = FunctionWrapper.Load<GdipMeasureString_delegate>(s_gdipModule, "GdipMeasureString", LibraryName);
                 GdipMeasureCharacterRanges_ptr = FunctionWrapper.Load<GdipMeasureCharacterRanges_delegate>(s_gdipModule, "GdipMeasureCharacterRanges", LibraryName);
+                GdipCreateBitmapFromStream_ptr = FunctionWrapper.Load<GdipCreateBitmapFromStream_delegate>(s_gdipModule, "GdipCreateBitmapFromStream", LibraryName);
+                GdipCreateBitmapFromStreamICM_ptr = FunctionWrapper.Load<GdipCreateBitmapFromStreamICM_delegate>(s_gdipModule, "GdipCreateBitmapFromStreamICM", LibraryName);
             }
 
             // Imported functions
@@ -488,17 +488,17 @@ namespace System.Drawing
             private static FunctionWrapper<GdipDeleteBrush_delegate> GdipDeleteBrush_ptr;
             internal static int IntGdipDeleteBrush(HandleRef brush) => GdipDeleteBrush_ptr.Delegate(brush);
 
-            private delegate int GdipLoadImageFromStream_delegate(UnsafeNativeMethods.IStream stream, out IntPtr image);
+            private delegate int GdipLoadImageFromStream_delegate(Interop.Ole32.IStream stream, out IntPtr image);
             private static FunctionWrapper<GdipLoadImageFromStream_delegate> GdipLoadImageFromStream_ptr;
-            internal static int GdipLoadImageFromStream(UnsafeNativeMethods.IStream stream, out IntPtr image) => GdipLoadImageFromStream_ptr.Delegate(stream, out image);
+            internal static int GdipLoadImageFromStream(Interop.Ole32.IStream stream, out IntPtr image) => GdipLoadImageFromStream_ptr.Delegate(stream, out image);
 
             private delegate int GdipLoadImageFromFile_delegate([MarshalAs(UnmanagedType.LPWStr)]string filename, out IntPtr image);
             private static FunctionWrapper<GdipLoadImageFromFile_delegate> GdipLoadImageFromFile_ptr;
             internal static int GdipLoadImageFromFile(string filename, out IntPtr image) => GdipLoadImageFromFile_ptr.Delegate(filename, out image);
 
-            private delegate int GdipLoadImageFromStreamICM_delegate(UnsafeNativeMethods.IStream stream, out IntPtr image);
+            private delegate int GdipLoadImageFromStreamICM_delegate(Interop.Ole32.IStream stream, out IntPtr image);
             private static FunctionWrapper<GdipLoadImageFromStreamICM_delegate> GdipLoadImageFromStreamICM_ptr;
-            internal static int GdipLoadImageFromStreamICM(UnsafeNativeMethods.IStream stream, out IntPtr image) => GdipLoadImageFromStreamICM_ptr.Delegate(stream, out image);
+            internal static int GdipLoadImageFromStreamICM(Interop.Ole32.IStream stream, out IntPtr image) => GdipLoadImageFromStreamICM_ptr.Delegate(stream, out image);
 
             private delegate int GdipLoadImageFromFileICM_delegate([MarshalAs(UnmanagedType.LPWStr)]string filename, out IntPtr image);
             private static FunctionWrapper<GdipLoadImageFromFileICM_delegate> GdipLoadImageFromFileICM_ptr;
@@ -516,9 +516,9 @@ namespace System.Drawing
             private static FunctionWrapper<GdipSaveImageToFile_delegate> GdipSaveImageToFile_ptr;
             internal static int GdipSaveImageToFile(HandleRef image, string filename, ref Guid classId, HandleRef encoderParams) => GdipSaveImageToFile_ptr.Delegate(image, filename, ref classId, encoderParams);
 
-            private delegate int GdipSaveImageToStream_delegate(HandleRef image, UnsafeNativeMethods.IStream stream, ref Guid classId, HandleRef encoderParams);
+            private delegate int GdipSaveImageToStream_delegate(HandleRef image, Interop.Ole32.IStream stream, ref Guid classId, HandleRef encoderParams);
             private static FunctionWrapper<GdipSaveImageToStream_delegate> GdipSaveImageToStream_ptr;
-            internal static int GdipSaveImageToStream(HandleRef image, UnsafeNativeMethods.IStream stream, ref Guid classId, HandleRef encoderParams) => GdipSaveImageToStream_ptr.Delegate(image, stream, ref classId, encoderParams);
+            internal static int GdipSaveImageToStream(HandleRef image, Interop.Ole32.IStream stream, ref Guid classId, HandleRef encoderParams) => GdipSaveImageToStream_ptr.Delegate(image, stream, ref classId, encoderParams);
 
             private delegate int GdipSaveAdd_delegate(HandleRef image, HandleRef encoderParams);
             private static FunctionWrapper<GdipSaveAdd_delegate> GdipSaveAdd_ptr;
@@ -551,14 +551,6 @@ namespace System.Drawing
             private delegate int GdipGetEncoderParameterList_delegate(HandleRef image, ref Guid clsid, int size, IntPtr buffer);
             private static FunctionWrapper<GdipGetEncoderParameterList_delegate> GdipGetEncoderParameterList_ptr;
             internal static int GdipGetEncoderParameterList(HandleRef image, ref Guid clsid, int size, IntPtr buffer) => GdipGetEncoderParameterList_ptr.Delegate(image, ref clsid, size, buffer);
-
-            private delegate int GdipImageGetFrameDimensionsCount_delegate(HandleRef image, out int count);
-            private static FunctionWrapper<GdipImageGetFrameDimensionsCount_delegate> GdipImageGetFrameDimensionsCount_ptr;
-            internal static int GdipImageGetFrameDimensionsCount(HandleRef image, out int count) => GdipImageGetFrameDimensionsCount_ptr.Delegate(image, out count);
-
-            private delegate int GdipImageGetFrameDimensionsList_delegate(HandleRef image, IntPtr buffer, int count);
-            private static FunctionWrapper<GdipImageGetFrameDimensionsList_delegate> GdipImageGetFrameDimensionsList_ptr;
-            internal static int GdipImageGetFrameDimensionsList(HandleRef image, IntPtr buffer, int count) => GdipImageGetFrameDimensionsList_ptr.Delegate(image, buffer, count);
 
             private delegate int GdipGetImagePalette_delegate(HandleRef image, IntPtr palette, int size);
             private static FunctionWrapper<GdipGetImagePalette_delegate> GdipGetImagePalette_ptr;
@@ -944,9 +936,9 @@ namespace System.Drawing
             private static FunctionWrapper<GdipGetMetafileHeaderFromFile_delegate> GdipGetMetafileHeaderFromFile_ptr;
             internal static int GdipGetMetafileHeaderFromFile(string filename, IntPtr header) => GdipGetMetafileHeaderFromFile_ptr.Delegate(filename, header);
 
-            private delegate int GdipGetMetafileHeaderFromStream_delegate(UnsafeNativeMethods.IStream stream, IntPtr header);
+            private delegate int GdipGetMetafileHeaderFromStream_delegate(Interop.Ole32.IStream stream, IntPtr header);
             private static FunctionWrapper<GdipGetMetafileHeaderFromStream_delegate> GdipGetMetafileHeaderFromStream_ptr;
-            internal static int GdipGetMetafileHeaderFromStream(UnsafeNativeMethods.IStream stream, IntPtr header) => GdipGetMetafileHeaderFromStream_ptr.Delegate(stream, header);
+            internal static int GdipGetMetafileHeaderFromStream(Interop.Ole32.IStream stream, IntPtr header) => GdipGetMetafileHeaderFromStream_ptr.Delegate(stream, header);
 
             private delegate int GdipGetMetafileHeaderFromMetafile_delegate(HandleRef metafile, IntPtr header);
             private static FunctionWrapper<GdipGetMetafileHeaderFromMetafile_delegate> GdipGetMetafileHeaderFromMetafile_ptr;
@@ -968,9 +960,9 @@ namespace System.Drawing
             private static FunctionWrapper<GdipCreateMetafileFromFile_delegate> GdipCreateMetafileFromFile_ptr;
             internal static int GdipCreateMetafileFromFile(string file, out IntPtr metafile) => GdipCreateMetafileFromFile_ptr.Delegate(file, out metafile);
 
-            private delegate int GdipCreateMetafileFromStream_delegate(UnsafeNativeMethods.IStream stream, out IntPtr metafile);
+            private delegate int GdipCreateMetafileFromStream_delegate(Interop.Ole32.IStream stream, out IntPtr metafile);
             private static FunctionWrapper<GdipCreateMetafileFromStream_delegate> GdipCreateMetafileFromStream_ptr;
-            internal static int GdipCreateMetafileFromStream(UnsafeNativeMethods.IStream stream, out IntPtr metafile) => GdipCreateMetafileFromStream_ptr.Delegate(stream, out metafile);
+            internal static int GdipCreateMetafileFromStream(Interop.Ole32.IStream stream, out IntPtr metafile) => GdipCreateMetafileFromStream_ptr.Delegate(stream, out metafile);
 
             private delegate int GdipRecordMetafile_delegate(HandleRef referenceHdc, EmfType emfType, ref RectangleF frameRect, MetafileFrameUnit frameUnit, [MarshalAs(UnmanagedType.LPWStr)]string description, out IntPtr metafile);
             private static FunctionWrapper<GdipRecordMetafile_delegate> GdipRecordMetafile_ptr;
@@ -996,17 +988,17 @@ namespace System.Drawing
             private static FunctionWrapper<GdipRecordMetafileFileNameI_delegate> GdipRecordMetafileFileNameI_ptr;
             internal static int GdipRecordMetafileFileNameI(string fileName, HandleRef referenceHdc, EmfType emfType, ref Rectangle frameRect, MetafileFrameUnit frameUnit, string description, out IntPtr metafile) => GdipRecordMetafileFileNameI_ptr.Delegate(fileName, referenceHdc, emfType, ref frameRect, frameUnit, description, out metafile);
 
-            private delegate int GdipRecordMetafileStream_delegate(UnsafeNativeMethods.IStream stream, HandleRef referenceHdc, EmfType emfType, ref RectangleF frameRect, MetafileFrameUnit frameUnit, [MarshalAs(UnmanagedType.LPWStr)]string description, out IntPtr metafile);
+            private delegate int GdipRecordMetafileStream_delegate(Interop.Ole32.IStream stream, HandleRef referenceHdc, EmfType emfType, ref RectangleF frameRect, MetafileFrameUnit frameUnit, [MarshalAs(UnmanagedType.LPWStr)]string description, out IntPtr metafile);
             private static FunctionWrapper<GdipRecordMetafileStream_delegate> GdipRecordMetafileStream_ptr;
-            internal static int GdipRecordMetafileStream(UnsafeNativeMethods.IStream stream, HandleRef referenceHdc, EmfType emfType, ref RectangleF frameRect, MetafileFrameUnit frameUnit, [MarshalAs(UnmanagedType.LPWStr)]string description, out IntPtr metafile) => GdipRecordMetafileStream_ptr.Delegate(stream, referenceHdc, emfType, ref frameRect, frameUnit, description, out metafile);
+            internal static int GdipRecordMetafileStream(Interop.Ole32.IStream stream, HandleRef referenceHdc, EmfType emfType, ref RectangleF frameRect, MetafileFrameUnit frameUnit, [MarshalAs(UnmanagedType.LPWStr)]string description, out IntPtr metafile) => GdipRecordMetafileStream_ptr.Delegate(stream, referenceHdc, emfType, ref frameRect, frameUnit, description, out metafile);
 
-            private delegate int GdipRecordMetafileStream2_delegate(UnsafeNativeMethods.IStream stream, HandleRef referenceHdc, EmfType emfType, HandleRef pframeRect, MetafileFrameUnit frameUnit, [MarshalAs(UnmanagedType.LPWStr)]string description, out IntPtr metafile);
+            private delegate int GdipRecordMetafileStream2_delegate(Interop.Ole32.IStream stream, HandleRef referenceHdc, EmfType emfType, HandleRef pframeRect, MetafileFrameUnit frameUnit, [MarshalAs(UnmanagedType.LPWStr)]string description, out IntPtr metafile);
             private static FunctionWrapper<GdipRecordMetafileStream2_delegate> GdipRecordMetafileStream2_ptr;
-            internal static int GdipRecordMetafileStream(UnsafeNativeMethods.IStream stream, HandleRef referenceHdc, EmfType emfType, HandleRef pframeRect, MetafileFrameUnit frameUnit, string description, out IntPtr metafile) => GdipRecordMetafileStream2_ptr.Delegate(stream, referenceHdc, emfType, pframeRect, frameUnit, description, out metafile);
+            internal static int GdipRecordMetafileStream(Interop.Ole32.IStream stream, HandleRef referenceHdc, EmfType emfType, HandleRef pframeRect, MetafileFrameUnit frameUnit, string description, out IntPtr metafile) => GdipRecordMetafileStream2_ptr.Delegate(stream, referenceHdc, emfType, pframeRect, frameUnit, description, out metafile);
 
-            private delegate int GdipRecordMetafileStreamI_delegate(UnsafeNativeMethods.IStream stream, HandleRef referenceHdc, EmfType emfType, ref Rectangle frameRect, MetafileFrameUnit frameUnit, [MarshalAs(UnmanagedType.LPWStr)]string description, out IntPtr metafile);
+            private delegate int GdipRecordMetafileStreamI_delegate(Interop.Ole32.IStream stream, HandleRef referenceHdc, EmfType emfType, ref Rectangle frameRect, MetafileFrameUnit frameUnit, [MarshalAs(UnmanagedType.LPWStr)]string description, out IntPtr metafile);
             private static FunctionWrapper<GdipRecordMetafileStreamI_delegate> GdipRecordMetafileStreamI_ptr;
-            internal static int GdipRecordMetafileStreamI(UnsafeNativeMethods.IStream stream, HandleRef referenceHdc, EmfType emfType, ref Rectangle frameRect, MetafileFrameUnit frameUnit, string description, out IntPtr metafile) => GdipRecordMetafileStreamI_ptr.Delegate(stream, referenceHdc, emfType, ref frameRect, frameUnit, description, out metafile);
+            internal static int GdipRecordMetafileStreamI(Interop.Ole32.IStream stream, HandleRef referenceHdc, EmfType emfType, ref Rectangle frameRect, MetafileFrameUnit frameUnit, string description, out IntPtr metafile) => GdipRecordMetafileStreamI_ptr.Delegate(stream, referenceHdc, emfType, ref frameRect, frameUnit, description, out metafile);
 
             private delegate int GdipComment_delegate(HandleRef graphics, int sizeData, byte[] data);
             private static FunctionWrapper<GdipComment_delegate> GdipComment_ptr;
@@ -1033,6 +1025,14 @@ namespace System.Drawing
             private delegate int GdipMeasureCharacterRanges_delegate(HandleRef graphics, [MarshalAs(UnmanagedType.LPWStr)]string textString, int length, HandleRef font, ref RectangleF layoutRect, HandleRef stringFormat, int characterCount, [In] [Out] IntPtr[] region);
             private static FunctionWrapper<GdipMeasureCharacterRanges_delegate> GdipMeasureCharacterRanges_ptr;
             internal static int GdipMeasureCharacterRanges(HandleRef graphics, string textString, int length, HandleRef font, ref RectangleF layoutRect, HandleRef stringFormat, int characterCount, [In] [Out] IntPtr[] region) => GdipMeasureCharacterRanges_ptr.Delegate(graphics, textString, length, font, ref layoutRect, stringFormat, characterCount, region);
+
+            private delegate int GdipCreateBitmapFromStream_delegate(Interop.Ole32.IStream stream, out IntPtr bitmap);
+            private static FunctionWrapper<GdipCreateBitmapFromStream_delegate> GdipCreateBitmapFromStream_ptr;
+            internal static int GdipCreateBitmapFromStream(Interop.Ole32.IStream stream, out IntPtr bitmap) => GdipCreateBitmapFromStream_ptr.Delegate(stream, out bitmap);
+
+            private delegate int GdipCreateBitmapFromStreamICM_delegate(Interop.Ole32.IStream stream, out IntPtr bitmap);
+            private static FunctionWrapper<GdipCreateBitmapFromStreamICM_delegate> GdipCreateBitmapFromStreamICM_ptr;
+            internal static int GdipCreateBitmapFromStreamICM(Interop.Ole32.IStream stream, out IntPtr bitmap) => GdipCreateBitmapFromStreamICM_ptr.Delegate(stream, out bitmap);
         }
     }
 }

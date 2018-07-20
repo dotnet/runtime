@@ -328,7 +328,7 @@ namespace System.Drawing
                 {
                     Gdip.CheckStatus(Gdip.GdipSaveImageToStream(
                         new HandleRef(this, nativeImage),
-                        new UnsafeNativeMethods.ComStreamFromDataStream(stream),
+                        new GPStream(stream),
                         ref g,
                         new HandleRef(encoderParams, encoderParamsMemory)));
                 }
@@ -476,48 +476,6 @@ namespace System.Drawing
                 callbackData));
 
             return CreateImageObject(thumbImage);
-        }
-
-        // Multi-frame support
-
-        /// <summary>
-        /// Gets an array of GUIDs that represent the dimensions of frames within this <see cref='Image'/>.
-        /// </summary>
-        [Browsable(false)]
-        public Guid[] FrameDimensionsList
-        {
-            get
-            {
-                Gdip.CheckStatus(Gdip.GdipImageGetFrameDimensionsCount(new HandleRef(this, nativeImage), out int count));
-
-                Debug.Assert(count >= 0, "FrameDimensionsList returns bad count");
-                if (count <= 0)
-                    return Array.Empty<Guid>();
-
-                int size = Marshal.SizeOf(typeof(Guid));
-
-                IntPtr buffer = Marshal.AllocHGlobal(checked(size * count));
-                if (buffer == IntPtr.Zero)
-                    throw Gdip.StatusException(Gdip.OutOfMemory);
-
-                Guid[] guids = new Guid[count];
-
-                try
-                {
-                    Gdip.CheckStatus(Gdip.GdipImageGetFrameDimensionsList(new HandleRef(this, nativeImage), buffer, count));
-
-                    for (int i = 0; i < count; i++)
-                    {
-                        guids[i] = (Guid)Marshal.PtrToStructure((IntPtr)((long)buffer + size * i), typeof(Guid));
-                    }
-                }
-                finally
-                {
-                    Marshal.FreeHGlobal(buffer);
-                }
-
-                return guids;
-            }
         }
 
         /// <summary>
