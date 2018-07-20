@@ -195,9 +195,6 @@
     <Compile Include="..\Shared\ScalarSimdUnOpTest_DataTable.cs" />
     <Compile Include="Sse2Verify.cs" />
   </ItemGroup>
-  <ItemGroup>
-    <ProjectReference Include="../../../../Common/CoreCLRTestLibrary/CoreCLRTestLibrary.csproj" />
-  </ItemGroup>
   <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.targets))\dir.targets" />
   <PropertyGroup Condition=" '$(MsBuildProjectDirOverride)' != '' "></PropertyGroup>
 </Project>
