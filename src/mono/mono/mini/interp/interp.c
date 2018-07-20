@@ -3443,14 +3443,14 @@ interp_exec_method_full (InterpFrame *frame, ThreadContext *context, guint16 *st
 		MINT_IN_CASE(MINT_DIV_I4)
 			if (sp [-1].data.i == 0)
 				THROW_EX (mono_get_exception_divide_by_zero (), ip);
-			if (sp [-1].data.i == (-1))
+			if (sp [-1].data.i == (-1) && sp [-2].data.i == G_MININT32)
 				THROW_EX (mono_get_exception_overflow (), ip);
 			BINOP(i, /);
 			MINT_IN_BREAK;
 		MINT_IN_CASE(MINT_DIV_I8)
 			if (sp [-1].data.l == 0)
 				THROW_EX (mono_get_exception_divide_by_zero (), ip);
-			if (sp [-1].data.l == (-1))
+			if (sp [-1].data.l == (-1) && sp [-2].data.l == G_MININT64)
 				THROW_EX (mono_get_exception_overflow (), ip);
 			BINOP(l, /);
 			MINT_IN_BREAK;
@@ -3475,14 +3475,14 @@ interp_exec_method_full (InterpFrame *frame, ThreadContext *context, guint16 *st
 		MINT_IN_CASE(MINT_REM_I4)
 			if (sp [-1].data.i == 0)
 				THROW_EX (mono_get_exception_divide_by_zero (), ip);
-			if (sp [-1].data.i == (-1))
+			if (sp [-1].data.i == (-1) && sp [-2].data.i == G_MININT32)
 				THROW_EX (mono_get_exception_overflow (), ip);
 			BINOP(i, %);
 			MINT_IN_BREAK;
 		MINT_IN_CASE(MINT_REM_I8)
 			if (sp [-1].data.l == 0)
 				THROW_EX (mono_get_exception_divide_by_zero (), ip);
-			if (sp [-1].data.l == (-1))
+			if (sp [-1].data.l == (-1) && sp [-2].data.l == G_MININT64)
 				THROW_EX (mono_get_exception_overflow (), ip);
 			BINOP(l, %);
 			MINT_IN_BREAK;
