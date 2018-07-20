@@ -242,36 +242,5 @@ namespace System.Buffers.Text
         }
 
         #endregion Math Helper methods
-
-        #region Character counting helper methods
-
-        // Counts the number of trailing '0' digits in a decimal numnber.
-        // e.g., value =      0 => retVal = 0, valueWithoutTrailingZeros = 0
-        //       value =   1234 => retVal = 0, valueWithoutTrailingZeros = 1234
-        //       value = 320900 => retVal = 2, valueWithoutTrailingZeros = 3209
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static int CountDecimalTrailingZeros(uint value, out uint valueWithoutTrailingZeros)
-        {
-            int zeroCount = 0;
-
-            if (value != 0)
-            {
-                while (true)
-                {
-                    uint temp = DivMod(value, 10, out uint modulus);
-                    if (modulus != 0)
-                    {
-                        break;
-                    }
-                    value = temp;
-                    zeroCount++;
-                }
-            }
-
-            valueWithoutTrailingZeros = value;
-            return zeroCount;
-        }
-
-        #endregion Character counting helper methods
     }
 }
