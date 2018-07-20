@@ -3,6 +3,7 @@
 // See the LICENSE file in the project root for more information.
 
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.Linq;
 using System.Security.Cryptography.Asn1;
 using System.Security.Cryptography.Pkcs.Asn1;
@@ -471,12 +472,24 @@ namespace System.Security.Cryptography.Pkcs
 
         public void CheckHash()
         {
-            IncrementalHash hasher = PrepareDigest();
-            byte[] expectedSignature = hasher.GetHashAndReset();
-
-            if (!_signature.Span.SequenceEqual(expectedSignature))
+            if (!CheckHash(compatMode: false) && !CheckHash(compatMode: true))
             {
                 throw new CryptographicException(SR.Cryptography_BadSignature);
+            }
+        }
+
+        private bool CheckHash(bool compatMode)
+        {
+            using (IncrementalHash hasher = PrepareDigest(compatMode))
+            {
+                if (hasher == null)
+                {
+                    Debug.Assert(compatMode, $"{nameof(PrepareDigest)} returned null for the primary check");
+                    return false;
+                }
+
+                byte[] expectedSignature = hasher.GetHashAndReset();
+                return _signature.Span.SequenceEqual(expectedSignature);
             }
         }
 
@@ -542,7 +555,7 @@ namespace System.Security.Cryptography.Pkcs
             return match;
         }
 
-        private IncrementalHash PrepareDigest()
+        private IncrementalHash PrepareDigest(bool compatMode)
         {
             HashAlgorithmName hashAlgorithmName = GetDigestAlgorithm();
 
@@ -586,7 +599,19 @@ namespace System.Security.Cryptography.Pkcs
 
                 using (AsnWriter writer = new AsnWriter(AsnEncodingRules.DER))
                 {
-                    writer.PushSetOf();
+                    // Some CMS implementations exist which do not sort the attributes prior to
+                    // generating the signature.  While they are not, technically, validly signed,
+                    // Windows and OpenSSL both support trying in the document order rather than
+                    // a sorted order.  To accomplish this we will build as a SEQUENCE OF, but feed
+                    // the SET OF into the hasher.
+                    if (compatMode)
+                    {
+                        writer.PushSequence();
+                    }
+                    else
+                    {
+                        writer.PushSetOf();
+                    }
 
                     foreach (AttributeAsn attr in _signedAttributes)
                     {
@@ -615,9 +640,38 @@ namespace System.Security.Cryptography.Pkcs
                         }
                     }
 
-                    writer.PopSetOf();
-                    Helpers.DigestWriter(hasher, writer);
+                    if (compatMode)
+                    {
+                        writer.PopSequence();
+
+#if netcoreapp
+                        Span<byte> setOfTag = stackalloc byte[1];
+                        setOfTag[0] = 0x31;
+
+                        hasher.AppendData(setOfTag);
+                        hasher.AppendData(writer.EncodeAsSpan().Slice(1));
+#else
+                        byte[] encoded = writer.Encode();
+                        encoded[0] = 0x31;
+                        hasher.AppendData(encoded);
+#endif
+                    }
+                    else
+                    {
+                        writer.PopSetOf();
+
+#if netcoreapp
+                        hasher.AppendData(writer.EncodeAsSpan());
+#else
+                        hasher.AppendData(writer.Encode());
+#endif
+                    }
                 }
+            }
+            else if (compatMode)
+            {
+                // If there were no signed attributes there's nothing to be compatible about.
+                return null;
             }
 
             if (invalid)
@@ -633,7 +687,6 @@ namespace System.Security.Cryptography.Pkcs
             X509Certificate2 certificate,
             bool verifySignatureOnly)
         {
-            IncrementalHash hasher = PrepareDigest();
             CmsSignature signatureProcessor = CmsSignature.ResolveAndVerifyKeyType(SignatureAlgorithm.Value, key: null);
 
             if (signatureProcessor == null)
@@ -641,32 +694,9 @@ namespace System.Security.Cryptography.Pkcs
                 throw new CryptographicException(SR.Cryptography_Cms_UnknownAlgorithm, SignatureAlgorithm.Value);
             }
 
-#if netcoreapp
-            // SHA-2-512 is the biggest digest type we know about.
-            Span<byte> digestValue = stackalloc byte[512 / 8];
-            ReadOnlySpan<byte> digest = digestValue;
-            ReadOnlyMemory<byte> signature = _signature;
-
-            if (hasher.TryGetHashAndReset(digestValue, out int bytesWritten))
-            {
-                digest = digestValue.Slice(0, bytesWritten);
-            }
-            else
-            {
-                digest = hasher.GetHashAndReset();
-            }
-#else
-            byte[] digest = hasher.GetHashAndReset();
-            byte[] signature = _signature.ToArray();
-#endif
-
-            bool signatureValid = signatureProcessor.VerifySignature(
-                digest,
-                signature,
-                DigestAlgorithm.Value,
-                hasher.AlgorithmName,
-                _signatureAlgorithmParameters,
-                certificate);
+            bool signatureValid =
+                VerifySignature(signatureProcessor, certificate, compatMode: false) ||
+                VerifySignature(signatureProcessor, certificate, compatMode: true);
 
             if (!signatureValid)
             {
@@ -707,6 +737,48 @@ namespace System.Security.Cryptography.Pkcs
                         }
                     }
                 }
+            }
+        }
+
+        private bool VerifySignature(
+            CmsSignature signatureProcessor,
+            X509Certificate2 certificate,
+            bool compatMode)
+        {
+            using (IncrementalHash hasher = PrepareDigest(compatMode))
+            {
+                if (hasher == null)
+                {
+                    Debug.Assert(compatMode, $"{nameof(PrepareDigest)} returned null for the primary check");
+                    return false;
+                }
+
+#if netcoreapp
+                // SHA-2-512 is the biggest digest type we know about.
+                Span<byte> digestValue = stackalloc byte[512 / 8];
+                ReadOnlySpan<byte> digest = digestValue;
+                ReadOnlyMemory<byte> signature = _signature;
+
+                if (hasher.TryGetHashAndReset(digestValue, out int bytesWritten))
+                {
+                    digest = digestValue.Slice(0, bytesWritten);
+                }
+                else
+                {
+                    digest = hasher.GetHashAndReset();
+                }
+#else
+                byte[] digest = hasher.GetHashAndReset();
+                byte[] signature = _signature.ToArray();
+#endif
+
+                return signatureProcessor.VerifySignature(
+                    digest,
+                    signature,
+                    DigestAlgorithm.Value,
+                    hasher.AlgorithmName,
+                    _signatureAlgorithmParameters,
+                    certificate);
             }
         }
 
