@@ -72,7 +72,6 @@ namespace JIT.HardwareIntrinsics.X86
             public static TestStruct Create()
             {
                 var testStruct = new TestStruct();
-                var random = new Random();
 
                 testStruct._fld1 = {NextValueOp1};
                 testStruct._fld2 = {NextValueOp2};
@@ -98,7 +97,6 @@ namespace JIT.HardwareIntrinsics.X86
 
         static ScalarBinaryOpTest__{Method}{RetBaseType}()
         {
-            var random = new Random();
             _clsVar1 = {NextValueOp1};
             _clsVar2 = {NextValueOp2};
         }
@@ -106,8 +104,6 @@ namespace JIT.HardwareIntrinsics.X86
         public ScalarBinaryOpTest__{Method}{RetBaseType}()
         {
             Succeeded = true;
-
-            var random = new Random();
 
             _fld1 = {NextValueOp1};
             _fld2 = {NextValueOp2};
