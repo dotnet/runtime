@@ -81,3 +81,31 @@ Some of the libraries for which contracts and tests live in the corefx repo are 
 The build and test projects take care of copying assemblies and PDBs as needed for coverage runs. The resulting code coverage report should now also include details for System.Private.CoreLib.
 
 Note: as of 10/2017 OpenCover, the default coverage tool, requires PDBs to be Windows PDBs - the needed conversions are automatically performed by coverage runs. You can determine if it is a Windows PDB by doing 'more System.Private.CoreLib.pdb',  if it begins with 'Microsoft C/C++ MSF 7.00' it is a Windows PDB.  If you need a Windows PDB the Pdb2Pdb tool will convert (or you can do a msbuild /t:rebuild /p:DebugType=full).
+
+## Cross-platform Coverage 
+As of 07/2018 CoreFx is only able to get coverage information on Windows. To correct this we are experimenting with [coverlet](https://github.com/tonerdo/coverlet).
+
+### Know Issues ###
+
+1. Instrumenting "System.Private.CoreLib" is causing test to crash (both on Windows and Unix).
+
+### Windows Instructions ###
+On Windows by default coverage runs will use OpenCover instead of coverlet, use the build property `UseCoverlet` to change this default. Currently the use of `dotnet msbuild` is required to avoid a problem with one of the coverlet dependencies. Here is the command:
+
+```
+dotnet msbuild /t:RebuildAndTest /p:Coverage=True /p:UseCoverlet=True
+``` 
+
+### Unix Instructions ###
+On Unix just specifying `/p:Coverage=True` triggers the usage of coverlet. However, in order to generate the html report a few setup steps are needed.
+
+1. Install the [dotnet/cli global tool reportgenerator](https://www.nuget.org/packages/dotnet-reportgenerator-globaltool), add it to the PATH if not automatically added by dotnet/cli (it can be only for the current session)
+2. On Linux install the Arial font required for report generation: `sudo apt-get install ttf-mscorefonts-installer`
+
+After that you request a coverage run using either `dotnet msbuild` or the `msbuild.sh` from a test folder, e.g.:
+
+```
+dotnet msbuild /t:RebuildAndTest /p:Coverage=True
+```
+
+Open index.htm located at bin/tests/coverage to see the results of the coverage run.
