@@ -5524,13 +5524,6 @@ SLOT* ComCallWrapperTemplate::GetVTableSlot(ULONG index)
     RETURN m_rgpIPtr[index];
 }
 
-BOOL ComCallWrapperTemplate::HasInvisibleParent()
-{
-    LIMITED_METHOD_CONTRACT;
-
-    return (m_flags & enum_InvisibleParent);
-}
-
 // Determines whether the template is for a type that cannot be safely marshalled to 
 // an out of proc COM client
 BOOL ComCallWrapperTemplate::IsSafeTypeForMarshalling()
@@ -5652,7 +5645,7 @@ DefaultInterfaceType ComCallWrapperTemplate::GetDefaultInterface(MethodTable **p
     }
 
     *ppDefaultItf = m_pDefaultItf;
-    return (DefaultInterfaceType)(m_flags & enum_DefaultInterfaceType);
+    return (DefaultInterfaceType)(m_flags & enum_DefaultInterfaceTypeMask);
 }
 
 //--------------------------------------------------------------------------
