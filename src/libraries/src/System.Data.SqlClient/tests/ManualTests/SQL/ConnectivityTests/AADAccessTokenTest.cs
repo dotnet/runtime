@@ -9,7 +9,7 @@ namespace System.Data.SqlClient.ManualTesting.Tests
     public class AADAccessTokenTest
     {
         private static bool IsAccessTokenSetup() => DataTestUtility.IsAccessTokenSetup();
-        private static bool IsAzureServer() => DataTestUtility.IsAzureSqlServer(DataTestUtility.GetDataSource(DataTestUtility.TcpConnStr));
+        private static bool IsAzureServer() => DataTestUtility.IsAzureSqlServer(new SqlConnectionStringBuilder((DataTestUtility.TcpConnStr)).DataSource);
 
         [ConditionalFact(nameof(IsAccessTokenSetup), nameof(IsAzureServer))]
         public static void AccessTokenTest()
