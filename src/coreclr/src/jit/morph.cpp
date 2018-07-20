@@ -8066,7 +8066,7 @@ void Compiler::fgMorphRecursiveFastTailCallIntoLoop(BasicBlock* block, GenTreeCa
                 {
                     GenTree* lcl  = gtNewLclvNode(varNum, lclType);
                     GenTree* init = nullptr;
-                    if (lclType == TYP_STRUCT)
+                    if (varTypeIsStruct(lclType))
                     {
                         const bool isVolatile  = false;
                         const bool isCopyBlock = false;
