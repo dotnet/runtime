@@ -1,0 +1,94 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+***********************************************************************************************
+Microsoft.NET.Sdk.IL.targets
+
+WARNING:  DO NOT MODIFY this file unless you are knowledgeable about MSBuild and have
+          created a backup copy.  Incorrect changes to this file will make it
+          impossible to load or build your projects from the command-line or the IDE.
+
+Copyright (c) .NET Foundation. All rights reserved. 
+***********************************************************************************************
+-->
+<Project xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+
+  <PropertyGroup>
+    <MSBuildAllProjects>$(MSBuildThisFileFullPath);$(MSBuildAllProjects)</MSBuildAllProjects>
+    <DefaultLanguageSourceExtension>.il</DefaultLanguageSourceExtension>
+    <Language>IL</Language>
+    <TargetRuntime>Managed</TargetRuntime>
+  </PropertyGroup>
+
+  <PropertyGroup>
+    <_OSPlatform Condition="$([MSBuild]::IsOSPlatform('windows'))">win</_OSPlatform>
+    <_OSPlatform Condition="$([MSBuild]::IsOSPlatform('linux'))">linux</_OSPlatform>
+    <_OSPlatform Condition="$([MSBuild]::IsOSPlatform('osx'))">osx</_OSPlatform>
+    <_OSArchitecture>$([System.Runtime.InteropServices.RuntimeInformation]::OSArchitecture)</_OSArchitecture>
+
+    <MicrosoftNetCoreIlasmPackageRuntimeId Condition="'$(MicrosoftNetCoreIlasmPackageRuntimeId)' == ''">$(_OSPlatform)-$(_OSArchitecture.ToLower())</MicrosoftNetCoreIlasmPackageRuntimeId>
+    <MicrosoftNetCoreIlasmPackageVersion Condition="'$(MicrosoftNetCoreIlasmPackageVersion)' == ''">3.0.0</MicrosoftNetCoreIlasmPackageVersion>
+    <MicrosoftNetCoreIlasmPackageName>runtime.$(MicrosoftNetCoreIlasmPackageRuntimeId).microsoft.netcore.ilasm</MicrosoftNetCoreIlasmPackageName>
+    <MicrosoftNetCoreRuntimeCoreClrPackageName>runtime.$(MicrosoftNetCoreIlasmPackageRuntimeId).microsoft.netcore.runtime.coreclr</MicrosoftNetCoreRuntimeCoreClrPackageName>
+
+    <ToolsDir Condition="'$(ToolsDir)' == ''">$([System.IO.Path]::Combine($([System.IO.Path]::GetTempPath()), $([System.IO.Path]::GetRandomFileName())))</ToolsDir>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="$(MicrosoftNetCoreIlasmPackageName)" Version="$(MicrosoftNetCoreIlasmPackageVersion)" PrivateAssets="all" IsImplicitlyDefined="true" />
+    <PackageReference Include="$(MicrosoftNetCoreRuntimeCoreClrPackageName)" Version="$(MicrosoftNetCoreIlasmPackageVersion)" PrivateAssets="all" IsImplicitlyDefined="true" />
+  </ItemGroup>
+
+  <PropertyGroup>
+    <CreateManifestResourceNamesDependsOn></CreateManifestResourceNamesDependsOn>
+  </PropertyGroup>
+
+  <Target Name="CreateManifestResourceNames"
+          Condition="'@(EmbeddedResource)' != ''"
+          DependsOnTargets="$(CreateManifestResourceNamesDependsOn)">
+    <!-- Required by Microsoft.Common.targets -->
+  </Target>
+
+  <Target Name="CoreCompile"
+          Inputs="$(MSBuildAllProjects);
+                  @(Compile)"
+          Outputs="@(IntermediateAssembly)"
+          Returns=""
+          DependsOnTargets="$(CoreCompileDependsOn)">
+    <ItemGroup>
+      <_IlasmSourceFiles Include="$(NuGetPackageRoot)\$(MicrosoftNetCoreIlasmPackageName)\$(MicrosoftNetCoreIlasmPackageVersion)\runtimes\$(MicrosoftNetCoreIlasmPackageRuntimeId)\native\**\*" />
+      <_IlasmSourceFiles Include="$(NuGetPackageRoot)\$(MicrosoftNetCoreRuntimeCoreClrPackageName)\$(MicrosoftNetCoreIlasmPackageVersion)\runtimes\$(MicrosoftNetCoreIlasmPackageRuntimeId)\native\**\*" />
+    </ItemGroup>
+
+    <PropertyGroup>
+      <_IlasmDir>$(ToolsDir)\ilasm</_IlasmDir>
+
+      <_OutputTypeArgument Condition="'$(OutputType)' == 'Library'">-DLL</_OutputTypeArgument>
+      <_OutputTypeArgument Condition="'$(OutputType)' == 'Exe'">-EXE</_OutputTypeArgument>
+
+      <_KeyFileArgument Condition="'$(KeyOriginatorFile)' != ''">-KEY=$(KeyOriginatorFile)</_KeyFileArgument>
+
+      <_IlasmSwitches>-QUIET -NOLOGO</_IlasmSwitches> 
+      <_IlasmSwitches Condition="'$(FoldIdenticalMethods)' == 'True'">$(_IlasmSwitches) -FOLD</_IlasmSwitches>
+      <_IlasmSwitches Condition="'$(SizeOfStackReserve)' != ''">$(_IlasmSwitches) -STACK=$(SizeOfStackReserve)</_IlasmSwitches>
+      <_IlasmSwitches Condition="'$(DebugType)' == 'Full'">$(_IlasmSwitches) -DEBUG</_IlasmSwitches>
+      <_IlasmSwitches Condition="'$(DebugType)' == 'Impl'">$(_IlasmSwitches) -DEBUG=IMPL</_IlasmSwitches>
+      <_IlasmSwitches Condition="'$(DebugType)' == 'PdbOnly'">$(_IlasmSwitches) -DEBUG=OPT</_IlasmSwitches>
+      <_IlasmSwitches Condition="'$(Optimize)' == 'True'">$(_IlasmSwitches) -OPTIMIZE</_IlasmSwitches>
+    </PropertyGroup>
+
+    <!-- Having to copy these binaries is really inefficient. https://github.com/dotnet/coreclr/issues/18892 tracks making the ilasm tool self-contained  -->
+    <MakeDir Directories="$(_IlasmDir)" />
+    <Copy DestinationFolder="$(_IlasmDir)" SourceFiles="@(_IlasmSourceFiles)" />
+
+    <Exec Command="$(_IlasmDir)\ilasm $(_IlasmSwitches) $(_OutputTypeArgument) $(IlasmFlags) -OUTPUT=@(IntermediateAssembly) $(_KeyFileArgument) @(Compile, ' ')">
+      <Output TaskParameter="ExitCode" PropertyName="_ILAsmExitCode" />
+    </Exec>
+
+    <Error Text="ILAsm failed" Condition="'$(_ILAsmExitCode)' != '0'" />
+
+    <CallTarget Targets="$(TargetsTriggeredByCompilation)" Condition="'$(TargetsTriggeredByCompilation)' != ''"/>
+  </Target>
+
+  <Import Project="$(MSBuildToolsPath)\Microsoft.Common.targets" />
+
+</Project>
