@@ -666,7 +666,7 @@ public:
 
     void AllocateVirtualSections();
 
-    HANDLE SaveImage(LPCWSTR wszOutputFileName, CORCOMPILE_NGEN_SIGNATURE * pNativeImageSig);
+    HANDLE SaveImage(LPCWSTR wszOutputFileName, LPCWSTR wszDllPath, CORCOMPILE_NGEN_SIGNATURE * pNativeImageSig);
 
     void Preload();
     void LinkPreload();
