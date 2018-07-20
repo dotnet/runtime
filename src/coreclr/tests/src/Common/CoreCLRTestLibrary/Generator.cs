@@ -86,6 +86,30 @@ namespace TestLibrary
             return iVal;
         }
 
+        // returns a UInt64 between 0 and UInt64.MaxValue
+        public static UInt64 GetUInt64(Int32 new_seed)
+        {
+            Seed = new_seed;
+            return GetUInt64();
+        }
+        public static UInt64 GetUInt64()
+        {
+            byte[] buffer = new byte[8];
+            UInt64 iVal;
+
+            GetBytes(buffer);
+
+            // convert to UInt64
+            iVal = 0;
+            for (int i = 0; i < buffer.Length; i++)
+            {
+                iVal |= ((UInt64)buffer[i] << (i * 8));
+            }
+
+            TestFramework.LogVerbose("Random UInt64 produced: " + iVal.ToString());
+            return iVal;
+        }
+
         // returns a non-negative Int32 between 0 and Int32.MaxValue
         public static Int32 GetInt32(Int32 new_seed)
         {
@@ -97,6 +121,30 @@ namespace TestLibrary
             Int32 i = m_rand.Next();
             TestFramework.LogVerbose("Random Int32 produced: " + i.ToString());
             return i;
+        }
+
+        // returns a UInt32 between 0 and UInt32.MaxValue
+        public static UInt32 GetUInt32(Int32 new_seed)
+        {
+            Seed = new_seed;
+            return GetUInt32();
+        }
+        public static UInt32 GetUInt32()
+        {
+            byte[] buffer = new byte[4];
+            UInt32 iVal;
+
+            GetBytes(buffer);
+
+            // convert to UInt32
+            iVal = 0;
+            for (int i = 0; i < buffer.Length; i++)
+            {
+                iVal |= ((UInt32)buffer[i] << (i * 4));
+            }
+
+            TestFramework.LogVerbose("Random UInt32 produced: " + iVal.ToString());
+            return iVal;
         }
 
         // returns a non-negative Int16 between 0 and Int16.MaxValue
@@ -112,6 +160,19 @@ namespace TestLibrary
             return i;
         }
 
+        // returns a UInt16 between 0 and UInt16.MaxValue
+        public static UInt16 GetUInt16(Int32 new_seed)
+        {
+            Seed = new_seed;
+            return GetUInt16();
+        }
+        public static UInt16 GetUInt16()
+        {
+            UInt16 i = Convert.ToUInt16(m_rand.Next() % (1 + UInt16.MaxValue));
+            TestFramework.LogVerbose("Random UInt16 produced: " + i.ToString());
+            return i;
+        }
+
         // returns a non-negative Byte between 0 and Byte.MaxValue
         public static Byte GetByte(Int32 new_seed)
         {
@@ -122,6 +183,19 @@ namespace TestLibrary
         {
             Byte i = Convert.ToByte(m_rand.Next() % (1 + Byte.MaxValue));
             TestFramework.LogVerbose("Random Byte produced: " + i.ToString());
+            return i;
+        }
+
+        // returns a non-negative SByte between 0 and SByte.MaxValue
+        public static SByte GetSByte(Int32 new_seed)
+        {
+            Seed = new_seed;
+            return GetSByte();
+        }
+        public static SByte GetSByte()
+        {
+            SByte i = Convert.ToSByte(m_rand.Next() % (1 + SByte.MaxValue));
+            TestFramework.LogVerbose("Random SByte produced: " + i.ToString());
             return i;
         }
 
