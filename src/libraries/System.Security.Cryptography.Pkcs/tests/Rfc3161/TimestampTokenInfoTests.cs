@@ -15,6 +15,7 @@ namespace System.Security.Cryptography.Pkcs.Tests
         [Theory]
         [InlineData(nameof(TimestampTokenTestData.FreeTsaDotOrg1))]
         [InlineData(nameof(TimestampTokenTestData.Symantec1))]
+        [InlineData(nameof(TimestampTokenTestData.DigiCert1))]
         public static void CreateFromParameters(string testDataName)
         {
             TimestampTokenTestData testData = TimestampTokenTestData.GetTestData(testDataName);
@@ -124,6 +125,8 @@ namespace System.Security.Cryptography.Pkcs.Tests
         [InlineData(nameof(TimestampTokenTestData.FreeTsaDotOrg1), true)]
         [InlineData(nameof(TimestampTokenTestData.Symantec1), false)]
         [InlineData(nameof(TimestampTokenTestData.Symantec1), true)]
+        [InlineData(nameof(TimestampTokenTestData.DigiCert1), false)]
+        [InlineData(nameof(TimestampTokenTestData.DigiCert1), true)]
         public static void CreateFromValue(string testDataName, bool viaTry)
         {
             TimestampTokenTestData testData = TimestampTokenTestData.GetTestData(testDataName);

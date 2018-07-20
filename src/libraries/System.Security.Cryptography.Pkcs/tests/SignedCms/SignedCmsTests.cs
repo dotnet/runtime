@@ -1010,6 +1010,16 @@ namespace System.Security.Cryptography.Pkcs.Tests
             Assert.Equal(contentHex, signedCms.ContentInfo.Content.ByteArrayToHex());
         }
 
+        [Fact]
+        public static void VerifyUnsortedAttributeSignature()
+        {
+            SignedCms cms = new SignedCms();
+            cms.Decode(SignedDocuments.DigiCertTimeStampToken);
+
+            // Assert.NoThrows
+            cms.CheckSignature(true);
+        }
+
         [Theory]
         [InlineData(null, "0102", Oids.Pkcs7Data)]
         [InlineData(null, "010100", Oids.Pkcs7Data)]

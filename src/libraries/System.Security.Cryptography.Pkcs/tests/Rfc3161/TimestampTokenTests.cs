@@ -14,6 +14,7 @@ namespace System.Security.Cryptography.Pkcs.Tests
         [Theory]
         [InlineData(nameof(TimestampTokenTestData.FreeTsaDotOrg1))]
         [InlineData(nameof(TimestampTokenTestData.Symantec1))]
+        [InlineData(nameof(TimestampTokenTestData.DigiCert1))]
         public static void ParseDocument(string testDataName)
         {
             TimestampTokenTestData testData = TimestampTokenTestData.GetTestData(testDataName);
@@ -24,6 +25,7 @@ namespace System.Security.Cryptography.Pkcs.Tests
         [Theory]
         [InlineData(nameof(TimestampTokenTestData.FreeTsaDotOrg1))]
         [InlineData(nameof(TimestampTokenTestData.Symantec1))]
+        [InlineData(nameof(TimestampTokenTestData.DigiCert1))]
         public static void ParseDocument_ExcessData(string testDataName)
         {
             TimestampTokenTestData testData = TimestampTokenTestData.GetTestData(testDataName);

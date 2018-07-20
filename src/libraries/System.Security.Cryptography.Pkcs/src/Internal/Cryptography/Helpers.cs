@@ -432,15 +432,6 @@ namespace Internal.Cryptography
             }
         }
 
-        internal static void DigestWriter(IncrementalHash hasher, AsnWriter writer)
-        {
-#if netcoreapp
-            hasher.AppendData(writer.EncodeAsSpan());
-#else
-            hasher.AppendData(writer.Encode());
-#endif
-        }
-
         internal static byte[] OneShot(this ICryptoTransform transform, byte[] data)
         {
             return OneShot(transform, data, 0, data.Length);
