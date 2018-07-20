@@ -150,7 +150,7 @@ namespace System.Net.Security.Tests
 
                 var clientOptions = new HttpsTestClient.Options(new IPEndPoint(IPAddress.Loopback, server.Port));
                 clientOptions.ServerName = serverOptions.ServerCertificate.GetNameInfo(X509NameType.SimpleName, false);
-                clientOptions.ClientCertificate = Configuration.Certificates.GetSelfSignedClientCertificate(); ;
+                clientOptions.ClientCertificate = Configuration.Certificates.GetSelfSignedClientCertificate();
 
                 var client = new HttpsTestClient(clientOptions);
 

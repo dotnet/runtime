@@ -526,6 +526,10 @@ namespace System.Net.Security
                 {
                     NetEventSource.Log.FindingMatchingCerts(this);
                 }
+                else
+                {
+                    NetEventSource.Info(this, "No client certificate to choose from");
+                }
             }
 
             //
@@ -1005,7 +1009,7 @@ namespace System.Net.Security
                 if (remoteCertificateEx == null)
                 {
                     if (NetEventSource.IsEnabled)
-                        NetEventSource.Exit(this, "(no remote cert)", !_sslAuthenticationOptions.RemoteCertRequired);
+                        NetEventSource.Exit(this, $"No remote certificate received. RemoteCertRequired: {RemoteCertRequired}");
                     sslPolicyErrors |= SslPolicyErrors.RemoteCertificateNotAvailable;
                 }
                 else
