@@ -26,7 +26,7 @@ Note: The CoreCLR must be built prior to building an individual test. See first 
   * Projects are auto-generated when the `build-test.sh`/`build-test.cmd` script is run
 * Managed Test: Invoke MSBuild on the project directly
   * Non-Windows - All of the necessary tools to build are under `coreclr/Tools`. It is possible to use `coreclr/Tools/MSBuild.dll` as you would normally use MSBuild with a few caveats. The `coreclr/Tools/msbuild.sh` script exists to make the call shorter.
-    * **Note:** Passing `/p:__BuildOs=`[`OSX`|`Linux`] is required. Otherwise the following error will occur: `error MSB4801: The task factory "CodeTaskFactory" could not be loaded because this version of MSBuild does not support it.`
+    * **Note:** Passing `/p:__BuildOs=`[`OSX`|`Linux`] is required.
   * Windows - Use Visual Studio Developer command prompt
 
 ### Examples
