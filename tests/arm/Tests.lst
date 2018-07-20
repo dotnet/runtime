@@ -94364,14 +94364,6 @@ MaxAllowedDurationSeconds=600
 Categories=EXPECTED_PASS;NEW;EXCLUDED
 HostStyle=0
 
-[ClassicCOMUnitTest.cmd_11855]
-RelativePath=Interop\ClassicCOM\ClassicCOMUnitTest\ClassicCOMUnitTest.cmd
-WorkingDir=Interop\ClassicCOM\ClassicCOMUnitTest
-Expected=0
-MaxAllowedDurationSeconds=600
-Categories=EXPECTED_PASS;NEW
-HostStyle=0
-
 [Matrix4x4_ro.cmd_11856]
 RelativePath=JIT\SIMD\Matrix4x4_ro\Matrix4x4_ro.cmd
 WorkingDir=JIT\SIMD\Matrix4x4_ro
