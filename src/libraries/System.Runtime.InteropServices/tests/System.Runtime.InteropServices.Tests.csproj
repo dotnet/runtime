@@ -101,7 +101,6 @@
     <Compile Include="System\Runtime\InteropServices\Marshal\ReadWrite\Int32Tests.cs" />
     <Compile Include="System\Runtime\InteropServices\Marshal\ReadWrite\Int64Tests.cs" />
     <Compile Include="System\Runtime\InteropServices\Marshal\ReadWrite\IntPtrTests.cs" />
-    <Compile Include="System\Runtime\InteropServices\Marshal\ReadWrite\ObjectTests.cs" />
     <Compile Include="System\Runtime\InteropServices\Marshal\StringMarshalingTests.cs" />
     <Compile Include="System\Runtime\InteropServices\Marshal\StructureToPtrTests.cs" />
     <Compile Include="System\Runtime\InteropServices\Marshal\UnsafeAddrOfPinnedArrayElementTests.cs" />
