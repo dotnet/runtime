@@ -22,7 +22,7 @@ namespace System.Data.SqlClient.ManualTesting.Tests
                Console.WriteLine($"Creating Table {s_tableName}");
 #endif
                 // Setup Azure Table
-                Helpers.TryExecuteNonQueryAzure(s_connectionString, s_createTableCmd, s_commandTimeout);
+                Helpers.ExecuteNonQueryAzure(s_connectionString, s_createTableCmd, s_commandTimeout);
                 using (var txScope = new TransactionScope())
                 {
                     BulkCopy(s_connectionString);
@@ -40,7 +40,7 @@ namespace System.Data.SqlClient.ManualTesting.Tests
                 Console.WriteLine($"Dropping Table {s_tableName}");
 #endif
                 // Drop Azure Table
-                Helpers.TryExecuteNonQueryAzure(s_connectionString, "DROP TABLE " + s_tableName, s_commandTimeout);
+                Helpers.ExecuteNonQueryAzure(s_connectionString, "DROP TABLE " + s_tableName, s_commandTimeout);
             }
         }
 
