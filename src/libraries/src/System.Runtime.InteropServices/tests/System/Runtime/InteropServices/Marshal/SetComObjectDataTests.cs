@@ -27,6 +27,7 @@ namespace System.Runtime.InteropServices.Tests
 
         [Fact]
         [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework, "Marshal.SetComObjectData is not implemented in .NET Core.")]
+        [ActiveIssue(31214)]
         public void SetComObjectData_NetCore_ThrowsPlatformNotSupportedException()
         {
             Assert.Throws<PlatformNotSupportedException>(() => Marshal.SetComObjectData(null, null, null));
