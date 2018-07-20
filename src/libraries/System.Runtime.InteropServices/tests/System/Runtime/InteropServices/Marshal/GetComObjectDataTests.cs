@@ -24,6 +24,7 @@ namespace System.Runtime.InteropServices.Tests
 
         [Fact]
         [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework, "Marshal.GetComObjectData is not implemented in .NET Core.")]
+        [ActiveIssue(31214)]
         public void GetComObjectData_NetCore_ThrowsPlatformNotSupportedException()
         {
             Assert.Throws<PlatformNotSupportedException>(() => Marshal.GetComObjectData(null, null));
