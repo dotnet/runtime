@@ -1,39 +1,39 @@
 Building and running tests on Windows
 =====================================
 
-**Building Tests**        
+## Building Tests
 
 To build the tests simply navigate to the tests directory above the repo and run,
 
     C:\git\coreclr>build-test.cmd
 
-*Cleaning Tests*
+## Cleaning Tests
 
 **Note:** Cleaning should be done before all tests to be sure that the test assets are initialized correctly. To do a clean build of the tests, in a clean command prompt, issue the following command: 
 
     C:\git\coreclr>build-test.cmd -rebuild
 
-*Building tests that will be precompiled*
+## Building Tests that will be precompiled
 
     C:\git\coreclr>build-test.cmd crossgen
 
-This will use crossgen.exe to precompile the test executables before they are executed.
+This will use `crossgen.exe` to precompile the test executables before they are executed.
 
-*Building Other Priority Tests*
+## Building Other Priority Tests
 
     C:\git\coreclr>build-test.cmd -priority=2
 
-The number '2' is just an example. The default value (if no priority is specified) is 0. To clarify, if '2' is specified, all tests with CLRTestPriorty 0, 1 AND 2 will be built and consequently run.
+The number '2' is just an example. The default value (if no priority is specified) is 0. To clarify, if '2' is specified, all tests with CLRTestPriorty 0, 1 **and** 2 will be built and consequently run.
 
-**Example**
+## Examples
 
 To run a clean, priority 1, crossgen test pass:
 
     C:\git\coreclr>build-test.cmd -rebuild crossgen -priority=1
 
-**buildtest /?** will list additional supported parameters.
+`build-test.cmd /?` - will list additional supported parameters.
 
-**Building Individual Tests**
+### Building Individual Tests
 
 Note: buildtest.cmd or build.cmd skipnative skipmscorlib needs to be run atleast once
 
@@ -41,66 +41,41 @@ Note: buildtest.cmd or build.cmd skipnative skipmscorlib needs to be run atleast
   
 * Managed Test: You can invoke msbuild on the project directly from Visual Studio Command Prompt.
 
-**Running Tests**
+### Running Tests
 
-**runtest /?** will list supported parameters.
+`runtest.cmd /?` - will list supported parameters.
 
 For example to run all of the tests using your checked build:
 
-`<repo_root>\tests\runtest.cmd checked`
+     <repo_root>\tests\runtest.cmd -checked
 
 This will generate a report named as `TestRun_<arch>_<flavor>.html` (e.g. `TestRun_Windows_NT__x64__Checked.html`) in the subdirectory `<repo_root>\bin\Logs`. Any tests that failed will be listed in `TestRunResults_Windows_NT__x64__Checked.err`.
 
-**Investigating Test Failures**
+### Investigating Test Failures
 
 Upon completing a test run, you may find one or more tests have failed.
 
-The output of the Test will be available in Test reports directory, but the default the directory would be something like is `<repo_root>\bin\tests\Windows_NT.x64.Checked\Reports\Exceptions\Finalization`.  
+The output of the Test will be available in Test reports directory, but the default the directory would be something like is `<repo_root>\bin\tests\Windows_NT.x64.Checked\Reports\Exceptions\Finalization`.
 
 There are 2 files of interest: 
 
 - `Finalizer.output.txt` - Contains all the information logged by the test.
 - `Finalizer.error.txt`  - Contains the information reported by CoreRun.exe (which executed the test) when the test process crashes.
 
-**Rerunning a failed test**
+### Rerunning a failed test
 
 If you wish to re-run a failed test, please follow the following steps:
 
 1. Set an environment variable, `CORE_ROOT`, pointing to the path to product binaries that was passed to runtest.cmd.
 For example using a checked build the location would be: `<repo_root>\bin\tests\Windows_NT.x64.Checked\Tests\Core_Root`
 
-2. Next, run the failed test, the command to which is also present in the test report for a failed test. It will be something like `<repo_root>\bin\tests\Windows_NT.x64.Checked\Exceptions\Finalization\Finalizer.cmd`.
+1. Next, run the failed test, the command to which is also present in the test report for a failed test. It will be something like `<repo_root>\bin\tests\Windows_NT.x64.Checked\Exceptions\Finalization\Finalizer.cmd`.
 
 If you wish to run the test under a debugger (e.g. [WinDbg](http://msdn.microsoft.com/en-us/library/windows/hardware/ff551063(v=vs.85).aspx)), append `-debug <debuggerFullPath>` to the test command. For example:
 
      <repo_root>\bin\tests\Windows_NT.x64.Checked\Exceptions\Finalization\Finalizer.cmd -debug <debuggerFullPath>
-    
-**Modifying a test**
+
+### Modifying a test
 
 If test changes are needed, make the change and build the test project. This will binplace the binaries in test binaries folder (e.g. `<repo_root>\bin\tests\Windows_NT.x64.Checked\Exceptions\Finalization`). At this point, follow the steps to re-run a failed test to re-run the modified test.
 
-**Authoring Tests (in VS)**
-
-
-1. Use an existing test such as `<repo_root>\tests\src\Exceptions\Finalization\Finalizer.csproj` as a template and copy it to a new folder under `<repo_root>\tests\src`.
-2. Be sure that the AssemblyName has been removed (this causes confusion with the way tests are generally handled behind the scenes by the build system). 
-3. [Assign a CLRTestKind/CLRTestPriority.](test-configuration.md)
-4. Add source files to this newly added project.
-5. Indicate the success of the test by returning `100`.
-6. Add any other projects as a dependency, if needed.
-7. Build the test.
-8. Follow the steps to re-run a failed test to validate the new test.
-
-Note:
-
-1. You can disable building of a test per architecture or configuration by using DisableProjectBuild tag in the project. for example:
-
-  ```xml
-  <PropertyGroup>
-    <DisableProjectBuild Condition=" '$(Platform)' == 'arm64' ">true</DisableProjectBuild>
-  </PropertyGroup>
-  ```
-
-2. To add Nuget/MyGet references use this (project file)[https://github.com/dotnet/coreclr/blob/master/tests/src/Common/test_dependencies/test_dependencies.csproj].
-
-3. To build against the mscorlib facade add `<ReferenceLocalMscorlib>true</ReferenceLocalMscorlib>` to your project.
