@@ -71,9 +71,8 @@ namespace JIT.HardwareIntrinsics.X86
             public static TestStruct Create()
             {
                 var testStruct = new TestStruct();
-                var random = new Random();
 
-                testStruct._fld = (uint)(random.Next(0, int.MaxValue));
+                testStruct._fld = TestLibrary.Generator.GetUInt32();
                 return testStruct;
             }
 
@@ -92,18 +91,16 @@ namespace JIT.HardwareIntrinsics.X86
 
         static ScalarUnaryOpTest__GetMaskUpToLowestSetBitUInt32()
         {
-            var random = new Random();
-            _clsVar = (uint)(random.Next(0, int.MaxValue));
+            _clsVar = TestLibrary.Generator.GetUInt32();
         }
 
         public ScalarUnaryOpTest__GetMaskUpToLowestSetBitUInt32()
         {
             Succeeded = true;
 
-            var random = new Random();
             
-            _fld = (uint)(random.Next(0, int.MaxValue));
-            _data = (uint)(random.Next(0, int.MaxValue));
+            _fld = TestLibrary.Generator.GetUInt32();
+            _data = TestLibrary.Generator.GetUInt32();
         }
 
         public bool IsSupported => Bmi1.IsSupported && (Environment.Is64BitProcess || ((typeof(UInt32) != typeof(long)) && (typeof(UInt32) != typeof(ulong))));

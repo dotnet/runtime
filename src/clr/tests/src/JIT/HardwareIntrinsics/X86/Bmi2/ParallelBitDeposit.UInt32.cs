@@ -72,10 +72,9 @@ namespace JIT.HardwareIntrinsics.X86
             public static TestStruct Create()
             {
                 var testStruct = new TestStruct();
-                var random = new Random();
 
-                testStruct._fld1 = (uint)(random.Next(0, int.MaxValue));
-                testStruct._fld2 = (uint)(random.Next(0, int.MaxValue));
+                testStruct._fld1 = TestLibrary.Generator.GetUInt32();
+                testStruct._fld2 = TestLibrary.Generator.GetUInt32();
 
                 return testStruct;
             }
@@ -98,22 +97,19 @@ namespace JIT.HardwareIntrinsics.X86
 
         static ScalarBinaryOpTest__ParallelBitDepositUInt32()
         {
-            var random = new Random();
-            _clsVar1 = (uint)(random.Next(0, int.MaxValue));
-            _clsVar2 = (uint)(random.Next(0, int.MaxValue));
+            _clsVar1 = TestLibrary.Generator.GetUInt32();
+            _clsVar2 = TestLibrary.Generator.GetUInt32();
         }
 
         public ScalarBinaryOpTest__ParallelBitDepositUInt32()
         {
             Succeeded = true;
 
-            var random = new Random();
+            _fld1 = TestLibrary.Generator.GetUInt32();
+            _fld2 = TestLibrary.Generator.GetUInt32();
 
-            _fld1 = (uint)(random.Next(0, int.MaxValue));
-            _fld2 = (uint)(random.Next(0, int.MaxValue));
-
-            _data1 = (uint)(random.Next(0, int.MaxValue));
-            _data2 = (uint)(random.Next(0, int.MaxValue));
+            _data1 = TestLibrary.Generator.GetUInt32();
+            _data2 = TestLibrary.Generator.GetUInt32();
         }
 
         public bool IsSupported => Bmi2.IsSupported && (Environment.Is64BitProcess || ((typeof(UInt32) != typeof(long)) && (typeof(UInt32) != typeof(ulong))));

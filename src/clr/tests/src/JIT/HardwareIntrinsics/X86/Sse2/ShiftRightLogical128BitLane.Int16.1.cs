@@ -98,7 +98,6 @@ namespace JIT.HardwareIntrinsics.X86
             public static TestStruct Create()
             {
                 var testStruct = new TestStruct();
-                var random = new Random();
 
                 for (var i = 0; i < Op1ElementCount; i++) { _data[i] = (short)8; }
                 Unsafe.CopyBlockUnaligned(ref Unsafe.As<Vector128<Int16>, byte>(ref testStruct._fld), ref Unsafe.As<Int16, byte>(ref _data[0]), (uint)Unsafe.SizeOf<Vector128<Int16>>());
@@ -130,8 +129,6 @@ namespace JIT.HardwareIntrinsics.X86
 
         static ImmUnaryOpTest__ShiftRightLogical128BitLaneInt161()
         {
-            var random = new Random();
-
             for (var i = 0; i < Op1ElementCount; i++) { _data[i] = (short)8; }
             Unsafe.CopyBlockUnaligned(ref Unsafe.As<Vector128<Int16>, byte>(ref _clsVar), ref Unsafe.As<Int16, byte>(ref _data[0]), (uint)Unsafe.SizeOf<Vector128<Int16>>());
         }
@@ -139,8 +136,6 @@ namespace JIT.HardwareIntrinsics.X86
         public ImmUnaryOpTest__ShiftRightLogical128BitLaneInt161()
         {
             Succeeded = true;
-
-            var random = new Random();
 
             for (var i = 0; i < Op1ElementCount; i++) { _data[i] = (short)8; }
             Unsafe.CopyBlockUnaligned(ref Unsafe.As<Vector128<Int16>, byte>(ref _fld), ref Unsafe.As<Int16, byte>(ref _data[0]), (uint)Unsafe.SizeOf<Vector128<Int16>>());
