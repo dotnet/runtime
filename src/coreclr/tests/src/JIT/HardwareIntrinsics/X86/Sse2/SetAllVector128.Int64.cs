@@ -71,9 +71,8 @@ namespace JIT.HardwareIntrinsics.X86
             public static TestStruct Create()
             {
                 var testStruct = new TestStruct();
-                var random = new Random();
 
-                testStruct._fld = (long)(random.Next(int.MinValue, int.MaxValue));
+                testStruct._fld = TestLibrary.Generator.GetInt64();
                 return testStruct;
             }
 
@@ -100,17 +99,15 @@ namespace JIT.HardwareIntrinsics.X86
 
         static ScalarSimdUnaryOpTest__SetAllVector128Int64()
         {
-            var random = new Random();
-            _clsVar = (long)(random.Next(int.MinValue, int.MaxValue));
+            _clsVar = TestLibrary.Generator.GetInt64();
         }
 
         public ScalarSimdUnaryOpTest__SetAllVector128Int64()
         {
             Succeeded = true;
 
-            var random = new Random();
-            _fld = (long)(random.Next(int.MinValue, int.MaxValue));
-            _data = (long)(random.Next(int.MinValue, int.MaxValue));
+            _fld = TestLibrary.Generator.GetInt64();
+            _data = TestLibrary.Generator.GetInt64();
             _dataTable = new ScalarSimdUnaryOpTest__DataTable<Int64>(new Int64[RetElementCount], LargestVectorSize);
         }
 
