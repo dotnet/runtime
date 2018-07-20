@@ -1075,9 +1075,6 @@ interp_handle_intrinsics (TransformData *td, MonoMethod *target_method, MonoMeth
 			int offset_length = length_field->offset - sizeof (MonoObject);
 			ADD_CODE (td, MINT_LDLEN_SPAN);
 			ADD_CODE (td, offset_length);
-#if SIZEOF_VOID_P == 8
-			ADD_CODE (td, MINT_CONV_I4_I8);
-#endif
 			SET_SIMPLE_TYPE (td->sp - 1, STACK_TYPE_I4);
 			td->ip += 5;
 			return TRUE;
