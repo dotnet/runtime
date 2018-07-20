@@ -120,7 +120,7 @@ namespace System.Globalization
             Span<char> destination = maxLength < 128 ?
                 stackalloc char[maxLength] :
                 new char[maxLength]; // the chances of needing this case are almost 0, as DecimalSeparator.Length will basically always == 1
-            TryFormatStandard(value, format, dtfi.DecimalSeparator, destination, out int charsWritten);
+            TryFormatStandard(value, format, decimalSeparator, destination, out int charsWritten);
             return new string(destination.Slice(0, charsWritten));
         }
 
