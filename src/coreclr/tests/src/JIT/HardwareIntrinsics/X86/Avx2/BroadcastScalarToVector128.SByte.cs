@@ -98,9 +98,8 @@ namespace JIT.HardwareIntrinsics.X86
             public static TestStruct Create()
             {
                 var testStruct = new TestStruct();
-                var random = new Random();
 
-                for (var i = 0; i < Op1ElementCount; i++) { _data[i] = (sbyte)(random.Next(0, sbyte.MaxValue)); }
+                for (var i = 0; i < Op1ElementCount; i++) { _data[i] = TestLibrary.Generator.GetSByte(); }
                 Unsafe.CopyBlockUnaligned(ref Unsafe.As<Vector128<SByte>, byte>(ref testStruct._fld), ref Unsafe.As<SByte, byte>(ref _data[0]), (uint)Unsafe.SizeOf<Vector128<SByte>>());
 
                 return testStruct;
@@ -130,9 +129,7 @@ namespace JIT.HardwareIntrinsics.X86
 
         static GenericUnaryOpTest__BroadcastScalarToVector128SByte()
         {
-            var random = new Random();
-
-            for (var i = 0; i < Op1ElementCount; i++) { _data[i] = (sbyte)(random.Next(0, sbyte.MaxValue)); }
+            for (var i = 0; i < Op1ElementCount; i++) { _data[i] = TestLibrary.Generator.GetSByte(); }
             Unsafe.CopyBlockUnaligned(ref Unsafe.As<Vector128<SByte>, byte>(ref _clsVar), ref Unsafe.As<SByte, byte>(ref _data[0]), (uint)Unsafe.SizeOf<Vector128<SByte>>());
         }
 
@@ -140,12 +137,10 @@ namespace JIT.HardwareIntrinsics.X86
         {
             Succeeded = true;
 
-            var random = new Random();
-
-            for (var i = 0; i < Op1ElementCount; i++) { _data[i] = (sbyte)(random.Next(0, sbyte.MaxValue)); }
+            for (var i = 0; i < Op1ElementCount; i++) { _data[i] = TestLibrary.Generator.GetSByte(); }
             Unsafe.CopyBlockUnaligned(ref Unsafe.As<Vector128<SByte>, byte>(ref _fld), ref Unsafe.As<SByte, byte>(ref _data[0]), (uint)Unsafe.SizeOf<Vector128<SByte>>());
 
-            for (var i = 0; i < Op1ElementCount; i++) { _data[i] = (sbyte)(random.Next(0, sbyte.MaxValue)); }
+            for (var i = 0; i < Op1ElementCount; i++) { _data[i] = TestLibrary.Generator.GetSByte(); }
             _dataTable = new SimpleUnaryOpTest__DataTable<SByte, SByte>(_data, new SByte[RetElementCount], LargestVectorSize);
         }
 

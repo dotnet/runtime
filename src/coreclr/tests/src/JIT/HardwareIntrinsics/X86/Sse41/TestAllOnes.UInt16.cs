@@ -99,9 +99,8 @@ namespace JIT.HardwareIntrinsics.X86
             public static TestStruct Create()
             {
                 var testStruct = new TestStruct();
-                var random = new Random();
 
-                for (var i = 0; i < Op1ElementCount; i++) { _data[i] = (ushort)(random.Next(0, ushort.MaxValue)); }
+                for (var i = 0; i < Op1ElementCount; i++) { _data[i] = TestLibrary.Generator.GetUInt16(); }
                 Unsafe.CopyBlockUnaligned(ref Unsafe.As<Vector128<UInt16>, byte>(ref testStruct._fld), ref Unsafe.As<UInt16, byte>(ref _data[0]), (uint)Unsafe.SizeOf<Vector128<UInt16>>());
 
                 return testStruct;
@@ -128,9 +127,7 @@ namespace JIT.HardwareIntrinsics.X86
 
         static BooleanUnaryOpTest__TestAllOnesUInt16()
         {
-            var random = new Random();
-
-            for (var i = 0; i < Op1ElementCount; i++) { _data[i] = (ushort)(random.Next(0, ushort.MaxValue)); }
+            for (var i = 0; i < Op1ElementCount; i++) { _data[i] = TestLibrary.Generator.GetUInt16(); }
             Unsafe.CopyBlockUnaligned(ref Unsafe.As<Vector128<UInt16>, byte>(ref _clsVar), ref Unsafe.As<UInt16, byte>(ref _data[0]), (uint)Unsafe.SizeOf<Vector128<UInt16>>());
         }
 
@@ -138,12 +135,10 @@ namespace JIT.HardwareIntrinsics.X86
         {
             Succeeded = true;
 
-            var random = new Random();
-
-            for (var i = 0; i < Op1ElementCount; i++) { _data[i] = (ushort)(random.Next(0, ushort.MaxValue)); }
+            for (var i = 0; i < Op1ElementCount; i++) { _data[i] = TestLibrary.Generator.GetUInt16(); }
             Unsafe.CopyBlockUnaligned(ref Unsafe.As<Vector128<UInt16>, byte>(ref _fld), ref Unsafe.As<UInt16, byte>(ref _data[0]), (uint)Unsafe.SizeOf<Vector128<UInt16>>());
 
-            for (var i = 0; i < Op1ElementCount; i++) { _data[i] = (ushort)(random.Next(0, ushort.MaxValue)); }
+            for (var i = 0; i < Op1ElementCount; i++) { _data[i] = TestLibrary.Generator.GetUInt16(); }
             _dataTable = new BooleanUnaryOpTest__DataTable<UInt16>(_data, LargestVectorSize);
         }
 

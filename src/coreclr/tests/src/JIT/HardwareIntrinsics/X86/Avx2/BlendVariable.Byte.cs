@@ -100,11 +100,10 @@ namespace JIT.HardwareIntrinsics.X86
             public static TestStruct Create()
             {
                 var testStruct = new TestStruct();
-                var random = new Random();
 
-                for (var i = 0; i < Op1ElementCount; i++) { _data1[i] = (byte)(random.Next(0, byte.MaxValue)); }
+                for (var i = 0; i < Op1ElementCount; i++) { _data1[i] = TestLibrary.Generator.GetByte(); }
                 Unsafe.CopyBlockUnaligned(ref Unsafe.As<Vector256<Byte>, byte>(ref testStruct._fld1), ref Unsafe.As<Byte, byte>(ref _data1[0]), (uint)Unsafe.SizeOf<Vector256<Byte>>());
-                for (var i = 0; i < Op2ElementCount; i++) { _data2[i] = (byte)(random.Next(0, byte.MaxValue)); }
+                for (var i = 0; i < Op2ElementCount; i++) { _data2[i] = TestLibrary.Generator.GetByte(); }
                 Unsafe.CopyBlockUnaligned(ref Unsafe.As<Vector256<Byte>, byte>(ref testStruct._fld2), ref Unsafe.As<Byte, byte>(ref _data2[0]), (uint)Unsafe.SizeOf<Vector256<Byte>>());
                 for (var i = 0; i < Op3ElementCount; i++) { _data3[i] = (byte)(((i % 2) == 0) ? 128 : 1); }
                 Unsafe.CopyBlockUnaligned(ref Unsafe.As<Vector256<Byte>, byte>(ref _clsVar3), ref Unsafe.As<Byte, byte>(ref _data3[0]), (uint)Unsafe.SizeOf<Vector256<Byte>>());
@@ -144,11 +143,9 @@ namespace JIT.HardwareIntrinsics.X86
 
         static SimpleTernaryOpTest__BlendVariableByte()
         {
-            var random = new Random();
-
-            for (var i = 0; i < Op1ElementCount; i++) { _data1[i] = (byte)(random.Next(0, byte.MaxValue)); }
+            for (var i = 0; i < Op1ElementCount; i++) { _data1[i] = TestLibrary.Generator.GetByte(); }
             Unsafe.CopyBlockUnaligned(ref Unsafe.As<Vector256<Byte>, byte>(ref _clsVar1), ref Unsafe.As<Byte, byte>(ref _data1[0]), (uint)Unsafe.SizeOf<Vector256<Byte>>());
-            for (var i = 0; i < Op2ElementCount; i++) { _data2[i] = (byte)(random.Next(0, byte.MaxValue)); }
+            for (var i = 0; i < Op2ElementCount; i++) { _data2[i] = TestLibrary.Generator.GetByte(); }
             Unsafe.CopyBlockUnaligned(ref Unsafe.As<Vector256<Byte>, byte>(ref _clsVar2), ref Unsafe.As<Byte, byte>(ref _data2[0]), (uint)Unsafe.SizeOf<Vector256<Byte>>());
             for (var i = 0; i < Op3ElementCount; i++) { _data3[i] = (byte)(((i % 2) == 0) ? 128 : 1); }
             Unsafe.CopyBlockUnaligned(ref Unsafe.As<Vector256<Byte>, byte>(ref _clsVar3), ref Unsafe.As<Byte, byte>(ref _data3[0]), (uint)Unsafe.SizeOf<Vector256<Byte>>());
@@ -158,17 +155,15 @@ namespace JIT.HardwareIntrinsics.X86
         {
             Succeeded = true;
 
-            var random = new Random();
-
-            for (var i = 0; i < Op1ElementCount; i++) { _data1[i] = (byte)(random.Next(0, byte.MaxValue)); }
+            for (var i = 0; i < Op1ElementCount; i++) { _data1[i] = TestLibrary.Generator.GetByte(); }
             Unsafe.CopyBlockUnaligned(ref Unsafe.As<Vector256<Byte>, byte>(ref _fld1), ref Unsafe.As<Byte, byte>(ref _data1[0]), (uint)Unsafe.SizeOf<Vector256<Byte>>());
-            for (var i = 0; i < Op2ElementCount; i++) { _data2[i] = (byte)(random.Next(0, byte.MaxValue)); }
+            for (var i = 0; i < Op2ElementCount; i++) { _data2[i] = TestLibrary.Generator.GetByte(); }
             Unsafe.CopyBlockUnaligned(ref Unsafe.As<Vector256<Byte>, byte>(ref _fld2), ref Unsafe.As<Byte, byte>(ref _data2[0]), (uint)Unsafe.SizeOf<Vector256<Byte>>());
             for (var i = 0; i < Op3ElementCount; i++) { _data3[i] = (byte)(((i % 2) == 0) ? 128 : 1); }
             Unsafe.CopyBlockUnaligned(ref Unsafe.As<Vector256<Byte>, byte>(ref _fld3), ref Unsafe.As<Byte, byte>(ref _data3[0]), (uint)Unsafe.SizeOf<Vector256<Byte>>());
 
-            for (var i = 0; i < Op1ElementCount; i++) { _data1[i] = (byte)(random.Next(0, byte.MaxValue)); }
-            for (var i = 0; i < Op2ElementCount; i++) { _data2[i] = (byte)(random.Next(0, byte.MaxValue)); }
+            for (var i = 0; i < Op1ElementCount; i++) { _data1[i] = TestLibrary.Generator.GetByte(); }
+            for (var i = 0; i < Op2ElementCount; i++) { _data2[i] = TestLibrary.Generator.GetByte(); }
             for (var i = 0; i < Op3ElementCount; i++) { _data3[i] = (byte)(((i % 2) == 0) ? 128 : 1); }
             _dataTable = new SimpleTernaryOpTest__DataTable<Byte, Byte, Byte, Byte>(_data1, _data2, _data3, new Byte[RetElementCount], LargestVectorSize);
         }
