@@ -40,14 +40,14 @@ class C
 
 		try {
 			try {
-				int.Parse (null);
+				double.Parse ("foo");
 			} catch (Exception) {
 				throw;
 			}
 		} catch (Exception ex) {
 			int frames = FrameCount (ex);
-			if (frames != 4)
-				throw new Exception (String.Format("Exception carried {0} frames along with it when it should have reported four.", frames));
+			if (frames != 3)
+				throw new Exception (String.Format("Exception carried {0} frames along with it when it should have reported three.", frames));
 		}
 
 		try {
