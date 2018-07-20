@@ -4026,10 +4026,8 @@ void Compiler::lvaMarkLocalVars()
 
             lvaTable[info.compLvFrameListRoot].lvType = TYP_I_IMPL;
 
-            /* Set the refCnt, it is used in the prolog and return block(s) */
-
-            lvaTable[info.compLvFrameListRoot].setLvRefCnt(2);
-            lvaTable[info.compLvFrameListRoot].setLvRefCntWtd(2 * BB_UNITY_WEIGHT);
+            // This local has implicit prolog and epilog references
+            lvaTable[info.compLvFrameListRoot].lvImplicitlyReferenced = 1;
         }
     }
 
@@ -4148,16 +4146,16 @@ void Compiler::lvaMarkLocalVars()
     }
 #endif
 
-    if (lvaKeepAliveAndReportThis() && lvaTable[0].lvRefCnt() == 0)
+    if (lvaKeepAliveAndReportThis())
     {
-        lvaTable[0].setLvRefCnt(1);
+        lvaTable[0].lvImplicitlyReferenced = 1;
         // This isn't strictly needed as we will make a copy of the param-type-arg
         // in the prolog. However, this ensures that the LclVarDsc corresponding to
         // info.compTypeCtxtArg is valid.
     }
-    else if (lvaReportParamTypeArg() && lvaTable[info.compTypeCtxtArg].lvRefCnt() == 0)
+    else if (lvaReportParamTypeArg())
     {
-        lvaTable[info.compTypeCtxtArg].setLvRefCnt(1);
+        lvaTable[info.compTypeCtxtArg].lvImplicitlyReferenced = 1;
     }
 
     lvaLocalVarRefCounted = true;
@@ -4176,12 +4174,8 @@ void Compiler::lvaAllocOutgoingArgSpaceVar()
     {
         lvaOutgoingArgSpaceVar = lvaGrabTemp(false DEBUGARG("OutgoingArgSpace"));
 
-        lvaTable[lvaOutgoingArgSpaceVar].lvType = TYP_LCLBLK;
-
-        /* Set the refCnts */
-
-        lvaTable[lvaOutgoingArgSpaceVar].setLvRefCnt(1);
-        lvaTable[lvaOutgoingArgSpaceVar].setLvRefCntWtd(BB_UNITY_WEIGHT);
+        lvaTable[lvaOutgoingArgSpaceVar].lvType                 = TYP_LCLBLK;
+        lvaTable[lvaOutgoingArgSpaceVar].lvImplicitlyReferenced = 1;
     }
 
     noway_assert(lvaOutgoingArgSpaceVar >= info.compLocalsCount && lvaOutgoingArgSpaceVar < lvaCount);

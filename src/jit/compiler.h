@@ -307,6 +307,9 @@ public:
     unsigned char lvClassInfoUpdated : 1; // true if this var has updated class handle or exactness
 #endif
 
+    unsigned char lvImplicitlyReferenced : 1; // true if there are non-IR references to this local (prolog, epilog, gc,
+                                              // eh)
+
     union {
         unsigned lvFieldLclStart; // The index of the local var representing the first field in the promoted struct
                                   // local.  For implicit byref parameters, this gets hijacked between
@@ -604,6 +607,11 @@ private:
 public:
     unsigned short lvRefCnt() const
     {
+        if (lvImplicitlyReferenced && (m_lvRefCnt == 0))
+        {
+            return 1;
+        }
+
         return m_lvRefCnt;
     }
 
@@ -627,6 +635,11 @@ public:
 
     unsigned lvRefCntWtd() const
     {
+        if (lvImplicitlyReferenced && (m_lvRefCntWtd == 0))
+        {
+            return BB_UNITY_WEIGHT;
+        }
+
         return m_lvRefCntWtd;
     }
 

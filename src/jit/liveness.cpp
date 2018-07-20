@@ -1047,9 +1047,14 @@ void Compiler::fgExtendDbgLifetimes()
     unsigned lclNum = 0;
     for (LclVarDsc *varDsc = lvaTable; lclNum < lvaCount; lclNum++, varDsc++)
     {
-        if (varDsc->lvRefCnt() == 0 && varDsc->lvIsRegArg)
+        if (lclNum >= info.compArgsCount)
         {
-            varDsc->setLvRefCnt(1);
+            break; // early exit for loop
+        }
+
+        if (varDsc->lvIsRegArg)
+        {
+            varDsc->lvImplicitlyReferenced = true;
         }
     }
 
