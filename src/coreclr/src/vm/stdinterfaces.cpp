@@ -239,12 +239,7 @@ Unknown_QueryInterface_Internal(ComCallWrapper* pWrap, IUnknown* pUnk, REFIID ri
         // If we haven't found the IP or if we haven't looked yet (because we aren't
         // being aggregated), now look on the managed object to see if it supports the interface.
         if (pDestItf == NULL)
-        {
             pDestItf = ComCallWrapper::GetComIPFromCCW(pWrap, riid, NULL, GetComIPFromCCW::CheckVisibility);
-            if (pDestItf == NULL)
-            {
-            }
-        }
 
 ErrExit:
         // If we succeeded in obtaining the requested IP then return S_OK.
