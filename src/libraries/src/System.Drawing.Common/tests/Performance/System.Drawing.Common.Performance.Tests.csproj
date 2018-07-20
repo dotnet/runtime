@@ -8,6 +8,7 @@
   </PropertyGroup>
   <ItemGroup>
     <Compile Include="CustomAssemblyAttributes.cs" />
+    <Compile Include="Perf_Image_Load.cs" />
     <Compile Include="Perf_Graphics_DrawBeziers.cs" />
     <Compile Include="Perf_Graphics_Transforms.cs" />
     <ProjectReference Include="$(CommonTestPath)\System\Diagnostics\RemoteExecutorConsoleApp\RemoteExecutorConsoleApp.csproj">
