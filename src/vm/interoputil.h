@@ -357,14 +357,6 @@ BOOL IsMethodVisibleFromCom(MethodDesc *pMD);
 //---------------------------------------------------------------------------
 // This method determines if a type is visible from COM or not based on 
 // its visibility. This version of the method works with a type handle.
-// This version will ignore a type's generic attributes.
-//
-// This API should *never* be called directly!!!
-BOOL SpecialIsGenericTypeVisibleFromCom(TypeHandle hndType);
-
-//---------------------------------------------------------------------------
-// This method determines if a type is visible from COM or not based on 
-// its visibility. This version of the method works with a type handle.
 BOOL IsTypeVisibleFromCom(TypeHandle hndType);
 
 //---------------------------------------------------------------------------

@@ -388,7 +388,6 @@ public:
     ComMethodTable* GetBasicComMT();
     ULONG           GetNumInterfaces();
     SLOT*           GetVTableSlot(ULONG index);
-    BOOL            HasInvisibleParent();
     void            CheckParentComVisibility(BOOL fForIDispatch);
     BOOL            CheckParentComVisibilityNoThrow(BOOL fForIDispatch);
     
@@ -401,6 +400,12 @@ public:
     MethodDesc * GetICustomQueryInterfaceGetInterfaceMD();
 
     IIDToInterfaceTemplateCache *GetOrCreateIIDToInterfaceTemplateCache();
+
+    BOOL HasInvisibleParent()
+    {
+        LIMITED_METHOD_CONTRACT;
+        return (m_flags & enum_InvisibleParent);
+    }
 
     BOOL SupportsICustomQueryInterface()
     {
@@ -465,27 +470,6 @@ public:
     static ComCallWrapperTemplate *CreateTemplateForInterface(MethodTable *pItfMT);
 
 private:
-    
-    enum ComCallWrapperTemplateFlags
-    {
-        // first 3 bits are interpreted as DefaultInterfaceType
-        enum_DefaultInterfaceType             = 0x7,
-        enum_DefaultInterfaceTypeComputed     = 0x10,
-
-        enum_InvisibleParent                  = 0x20,
-        enum_ImplementsICustomQueryInterface  = 0x40,
-        enum_SupportsIInspectable             = 0x80,
-        enum_SupportsIClassX                  = 0x100,
-
-        enum_SupportsVariantInterface         = 0x200, // this is a template for a class that implements an interface with variance
-        enum_RepresentsVariantInterface       = 0x400, // this is a template for an interface with variance
-
-        enum_UseOleAutDispatchImpl            = 0x800, // the class is decorated with IDispatchImplAttribute(CompatibleImpl)
-
-        enum_ImplementsIMarshal               = 0x1000, // the class implements a managed interface with Guid == IID_IMarshal
-
-        enum_IsSafeTypeForMarshalling         = 0x2000, // The class can be safely marshalled out of process via DCOM
-    };
 
     // Hide the constructor
     ComCallWrapperTemplate();
@@ -512,6 +496,27 @@ private:
     MethodTable*                            m_pWinRTRuntimeClass;
     ComMethodTable*                         m_pClassComMT;
     ComMethodTable*                         m_pBasicComMT;
+
+    enum
+    {
+        // first 3 bits are interpreted as DefaultInterfaceType
+        enum_DefaultInterfaceTypeMask         = 0x7,
+        enum_DefaultInterfaceTypeComputed     = 0x10,
+
+        enum_InvisibleParent                  = 0x20,
+        enum_ImplementsICustomQueryInterface  = 0x40,
+        enum_SupportsIInspectable             = 0x80,
+        enum_SupportsIClassX                  = 0x100,
+
+        enum_SupportsVariantInterface         = 0x200, // this is a template for a class that implements an interface with variance
+        enum_RepresentsVariantInterface       = 0x400, // this is a template for an interface with variance
+
+        enum_UseOleAutDispatchImpl            = 0x800, // the class is decorated with IDispatchImplAttribute(CompatibleImpl)
+
+        enum_ImplementsIMarshal               = 0x1000, // the class implements a managed interface with Guid == IID_IMarshal
+
+        enum_IsSafeTypeForMarshalling         = 0x2000, // The class can be safely marshalled out of process via DCOM
+    };
     DWORD                                   m_flags;
     MethodDesc*                             m_pICustomQueryInterfaceGetInterfaceMD;
     Volatile<IIDToInterfaceTemplateCache *> m_pIIDToInterfaceTemplateCache;
