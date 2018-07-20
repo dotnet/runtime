@@ -13,9 +13,9 @@ internal partial class Interop
             uint dwCounterType,
             uint dwFormat,
             ref long pTimeBase,
-            Interop.Kernel32.PerformanceCounterOptions.PDH_RAW_COUNTER pRawValue1,
-            Interop.Kernel32.PerformanceCounterOptions.PDH_RAW_COUNTER pRawValue2,
-            Interop.Kernel32.PerformanceCounterOptions.PDH_FMT_COUNTERVALUE pFmtValue
+            ref Interop.Kernel32.PerformanceCounterOptions.PDH_RAW_COUNTER pRawValue1,
+            ref Interop.Kernel32.PerformanceCounterOptions.PDH_RAW_COUNTER pRawValue2,
+            ref Interop.Kernel32.PerformanceCounterOptions.PDH_FMT_COUNTERVALUE pFmtValue
         );
     }
 }
