@@ -1457,6 +1457,7 @@ void Zapper::CompileAssembly(CORCOMPILE_NGEN_SIGNATURE * pNativeImageSig)
     DefineOutputAssembly(strAssemblyName, &hashAlgId);
 
     SString strNativeImagePath;
+    SString strNativeImageTempPath;
     HANDLE hFile = INVALID_HANDLE_VALUE;
     StackSArray<HANDLE> hFiles;
 
@@ -1505,7 +1506,10 @@ void Zapper::CompileAssembly(CORCOMPILE_NGEN_SIGNATURE * pNativeImageSig)
 
         pAssemblyModule->SetPdbFileName(SString(strAssemblyName, SL(W(".ni.pdb"))));
 
-        hFile = pAssemblyModule->SaveImage(strNativeImagePath.GetUnicode(), pNativeImageSig);
+        strNativeImageTempPath = strNativeImagePath;
+        strNativeImageTempPath.Append(W(".tmp"));
+
+        hFile = pAssemblyModule->SaveImage(strNativeImageTempPath.GetUnicode(), strNativeImagePath.GetUnicode(), pNativeImageSig);
     }
 
     // Throw away the assembly if we have hit fatal error during compilation
@@ -1518,6 +1522,11 @@ void Zapper::CompileAssembly(CORCOMPILE_NGEN_SIGNATURE * pNativeImageSig)
     for (SArray<HANDLE>::Iterator i = hFiles.Begin(); i != hFiles.End(); ++i)
     {
         CloseHandle(*i);
+    }
+
+    if (!WszMoveFileEx(strNativeImageTempPath.GetUnicode(), strNativeImagePath.GetUnicode(), MOVEFILE_REPLACE_EXISTING))
+    {
+        ThrowLastError();
     }
 
     if (!m_pOpt->m_silent)
