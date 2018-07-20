@@ -71,7 +71,6 @@ namespace JIT.HardwareIntrinsics.X86
             public static TestStruct Create()
             {
                 var testStruct = new TestStruct();
-                var random = new Random();
 
                 testStruct._fld = {NextValueOp1};
                 return testStruct;
@@ -92,7 +91,6 @@ namespace JIT.HardwareIntrinsics.X86
 
         static ScalarUnaryOpTest__{Method}{RetBaseType}()
         {
-            var random = new Random();
             _clsVar = {NextValueOp1};
         }
 
@@ -100,7 +98,6 @@ namespace JIT.HardwareIntrinsics.X86
         {
             Succeeded = true;
 
-            var random = new Random();
             
             _fld = {NextValueOp1};
             _data = {NextValueOp1};
