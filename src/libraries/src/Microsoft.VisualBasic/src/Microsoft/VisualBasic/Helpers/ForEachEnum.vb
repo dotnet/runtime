@@ -1,4 +1,6 @@
-' Copyright (c) Microsoft Corporation.  All rights reserved.
+' Licensed to the .NET Foundation under one or more agreements.
+' The .NET Foundation licenses this file to you under the MIT license.
+' See the LICENSE file in the project root for more information.
 
 Imports System
 Imports System.Collections
@@ -10,13 +12,8 @@ Namespace Microsoft.VisualBasic
     'This is in the helpers directory but not in the compilerservices namespace
 
     'The ForEachEnum class is publicly exposed through Collection.GetEnumerator().
-#If TELESTO Then
-    Friend NotInheritable Class ForEachEnum 'FIXME: <System.ComponentModel.EditorBrowsableAttribute(System.ComponentModel.EditorBrowsableState.Never)> 
-#Else
-    <System.ComponentModel.EditorBrowsableAttribute(System.ComponentModel.EditorBrowsableState.Never)> _
+    <System.ComponentModel.EditorBrowsableAttribute(System.ComponentModel.EditorBrowsableState.Never)>
     Friend NotInheritable Class ForEachEnum
-#End If
-
         Implements IEnumerator
         Implements IDisposable
 
@@ -25,14 +22,6 @@ Namespace Microsoft.VisualBasic
         '              perf degrade.
 
         Private mDisposed As Boolean = False
-        Private Sub Dispose() Implements IDisposable.Dispose
-            If Not mDisposed Then
-                mCollectionObject.RemoveIterator(WeakRef)
-                mDisposed = True
-            End If
-            mCurrent = Nothing
-            mNext = Nothing
-        End Sub
 
         'The collection this enumerator is enumerating over
         Private mCollectionObject As Microsoft.VisualBasic.Collection
@@ -50,6 +39,15 @@ Namespace Microsoft.VisualBasic
         Private mAtBeginning As Boolean
 
         Friend WeakRef As WeakReference
+
+        Private Sub Dispose() Implements IDisposable.Dispose
+            If Not mDisposed Then
+                mCollectionObject.RemoveIterator(WeakRef)
+                mDisposed = True
+            End If
+            mCurrent = Nothing
+            mNext = Nothing
+        End Sub
 
         Public Sub New(ByVal coll As Microsoft.VisualBasic.Collection)
             MyBase.New()
@@ -113,20 +111,14 @@ Namespace Microsoft.VisualBasic
             Remove
         End Enum
 
-        'REVIEW VSW#395751 : This a public function on a friend class.  Does it need to be public?  How can the customer call this function today?  Latebinding/Reflection...
-
         'Adjusts the enumerator to account for newly-inserted or removed items in/from the collection.
         '  For insertion, this call must be made *after* the insertion has taken place.  For deletion, 
         '  this call must have been made before the next/prev pointers in the deleted node have been
         '  invalidated (they must still be pointing to the values before the deletion).
         Public Sub Adjust(ByVal Node As Collection.Node, ByVal Type As AdjustIndexType)
-            
+
             If Node Is Nothing Then
-#If TELESTO Then
-                Debug.Assert(False, "Node shouldn't be nothing")
-#Else
-                Debug.Fail("Node shouldn't be nothing")        
-#End If
+                Debug.Fail("Node shouldn't be nothing")
                 Exit Sub 'defensive
             End If
 
@@ -164,11 +156,7 @@ Namespace Microsoft.VisualBasic
                         mNext = mNext.m_Next
                     End If
                 Case Else
-#If TELESTO Then
-                    Debug.Assert(False, "Unexpected adjustment type in enumerator") ' Silverlight CLR does not have Debug.Fail.
-#Else
                     Debug.Fail("Unexpected adjustment type in enumerator")
-#End If
             End Select
         End Sub
 
@@ -181,4 +169,3 @@ Namespace Microsoft.VisualBasic
     End Class
 
 End Namespace
-

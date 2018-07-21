@@ -17,6 +17,7 @@
   </PropertyGroup>
   <ItemGroup>
     <Compile Include="Microsoft\VisualBasic\CallType.vb" />
+    <Compile Include="Microsoft\VisualBasic\Collection.vb" />
     <Compile Include="Microsoft\VisualBasic\ApplicationServices\StartupEventArgs.vb" />
     <Compile Include="Microsoft\VisualBasic\ApplicationServices\StartupNextInstanceEventArgs.vb" />
     <Compile Include="Microsoft\VisualBasic\ApplicationServices\UnhandledExceptionEventArgs.vb" />
@@ -47,6 +48,7 @@
     <Compile Include="Microsoft\VisualBasic\ComClassAttribute.vb" />
     <Compile Include="Microsoft\VisualBasic\Constants.vb" />
     <Compile Include="Microsoft\VisualBasic\ControlChars.vb" />
+    <Compile Include="Microsoft\VisualBasic\Helpers\ForEachEnum.vb" />
     <Compile Include="Microsoft\VisualBasic\CompilerServices\DoubleType.vb" />
     <Compile Include="Microsoft\VisualBasic\DateAndTime.vb" />
     <Compile Include="Microsoft\VisualBasic\HideModuleNameAttribute.vb" />
