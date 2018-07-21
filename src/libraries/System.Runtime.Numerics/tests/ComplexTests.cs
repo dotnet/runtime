@@ -782,8 +782,18 @@ namespace System.Numerics.Tests
             var dividend = new Complex(realLeft, imaginaryLeft);
             var divisor = realRight;
 
-            double expectedReal = dividend.Real / divisor;
-            double expectedImaginary = dividend.Imaginary / divisor;
+            Complex expected = dividend * Complex.Conjugate(new Complex(realRight, 0.0));
+            double expectedReal = expected.Real;
+            double expectedImaginary = expected.Imaginary;
+
+            if (!double.IsInfinity(expectedReal))
+            {
+                expectedReal = expectedReal / (divisor.Magnitude * divisor.Magnitude);
+            }
+            if (!double.IsInfinity(expectedImaginary))
+            {
+                expectedImaginary = expectedImaginary / (divisor.Magnitude * divisor.Magnitude);
+            }
 
             // Operator
             Complex result = dividend / divisor;
