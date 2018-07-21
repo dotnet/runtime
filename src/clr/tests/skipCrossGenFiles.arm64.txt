@@ -5,3 +5,4 @@ System.Net.Sockets.dll
 System.Net.Primitives.dll
 System.Private.CoreLib.dll
 xunit.performance.api.dll
+R2RDump.dll
