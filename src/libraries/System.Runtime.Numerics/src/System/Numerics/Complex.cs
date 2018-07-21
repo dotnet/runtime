@@ -178,6 +178,7 @@ namespace System.Numerics
             double c = right.m_real;
             double d = right.m_imaginary;
 
+            // Computing c * c + d * d will overflow even in cases where the actual result of the division does not overflow.
             if (Math.Abs(d) < Math.Abs(c))
             {
                 double doc = d / c;
@@ -202,6 +203,7 @@ namespace System.Numerics
             double c = right.m_real;
             double d = right.m_imaginary;
 
+            // Computing c * c + d * d will overflow even in cases where the actual result of the division does not overflow.
             if (Math.Abs(d) < Math.Abs(c))
             {
                 double doc = d / c;
