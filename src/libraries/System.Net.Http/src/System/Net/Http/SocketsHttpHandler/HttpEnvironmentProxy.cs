@@ -227,7 +227,18 @@ namespace System.Net.Http
             else
             {
                 host = value.Substring(0, separatorIndex);
-                if (!ushort.TryParse(value.AsSpan(separatorIndex + 1), out port))
+                int endIndex = separatorIndex + 1;
+                // Strip any trailing characters after port number.
+                while (endIndex < value.Length)
+                {
+                    if (!char.IsDigit(value[endIndex]))
+                    {
+                        break;
+                    }
+                    endIndex += 1;
+                }
+
+                if (!ushort.TryParse(value.AsSpan(separatorIndex + 1, endIndex - separatorIndex - 1), out port))
                 {
                     return null;
                 }
