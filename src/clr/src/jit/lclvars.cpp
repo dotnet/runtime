@@ -35,8 +35,7 @@ unsigned Compiler::s_lvaDoubleAlignedProcsCount = 0;
 void Compiler::lvaInit()
 {
     /* We haven't allocated stack variables yet */
-    lvaRefCountingStarted = false;
-    lvaLocalVarRefCounted = false;
+    lvaRefCountState = RCS_INVALID;
 
     lvaGenericsContextUseCount = 0;
 
@@ -2025,8 +2024,9 @@ void Compiler::lvaPromoteStructVar(unsigned lclNum, lvaStructPromotionInfo* Stru
             }
 #endif // FEATURE_MULTIREG_ARGS && defined(FEATURE_SIMD)
 
-            lvaMarkRefsWeight = BB_UNITY_WEIGHT;            // incRefCnts can use this compiler global variable
-            fieldVarDsc->incRefCnts(BB_UNITY_WEIGHT, this); // increment the ref count for prolog initialization
+            lvaMarkRefsWeight = BB_UNITY_WEIGHT; // incRefCnts can use this compiler global variable
+            fieldVarDsc->incRefCnts(BB_UNITY_WEIGHT, this,
+                                    RCS_EARLY); // increment the ref count for prolog initialization
         }
 #endif
 
@@ -2803,7 +2803,7 @@ BasicBlock::weight_t BasicBlock::getBBWeight(Compiler* comp)
 // Decrement the ref counts for all locals contained in the tree and its children.
 void Compiler::lvaRecursiveDecRefCounts(GenTree* tree)
 {
-    assert(lvaLocalVarRefCounted);
+    assert(lvaLocalVarRefCounted());
 
     // We could just use the recursive walker for all cases but that is a
     // fairly heavyweight thing to spin up when we're usually just handling a leaf.
@@ -2856,7 +2856,7 @@ void Compiler::lvaDecRefCnts(BasicBlock* block, GenTree* tree)
     unsigned   lclNum;
     LclVarDsc* varDsc;
 
-    noway_assert(lvaRefCountingStarted || lvaLocalVarRefCounted);
+    noway_assert(lvaLocalVarRefCounted());
 
     if ((tree->gtOper == GT_CALL) && (tree->gtFlags & GTF_CALL_UNMANAGED))
     {
@@ -2898,7 +2898,7 @@ void Compiler::lvaDecRefCnts(BasicBlock* block, GenTree* tree)
 // Increment the ref counts for all locals contained in the tree and its children.
 void Compiler::lvaRecursiveIncRefCounts(GenTree* tree)
 {
-    assert(lvaLocalVarRefCounted);
+    assert(lvaLocalVarRefCounted());
 
     // We could just use the recursive walker for all cases but that is a
     // fairly heavyweight thing to spin up when we're usually just handling a leaf.
@@ -2942,7 +2942,7 @@ void Compiler::lvaIncRefCnts(GenTree* tree)
     unsigned   lclNum;
     LclVarDsc* varDsc;
 
-    noway_assert(lvaRefCountingStarted || lvaLocalVarRefCounted);
+    noway_assert(lvaLocalVarRefCounted());
 
     if ((tree->gtOper == GT_CALL) && (tree->gtFlags & GTF_CALL_UNMANAGED))
     {
@@ -4107,9 +4107,10 @@ void Compiler::lvaMarkLocalVars()
         }
     }
 
-    /* Mark all local variable references */
+    // Ref counting is now enabled normally.
+    lvaRefCountState = RCS_NORMAL;
 
-    lvaRefCountingStarted = true;
+    /* Mark all local variable references */
     for (block = fgFirstBB; block; block = block->bbNext)
     {
         lvaMarkLocalVars(block);
@@ -4157,9 +4158,6 @@ void Compiler::lvaMarkLocalVars()
     {
         lvaTable[info.compTypeCtxtArg].lvImplicitlyReferenced = 1;
     }
-
-    lvaLocalVarRefCounted = true;
-    lvaRefCountingStarted = false;
 
     lvaSortByRefCount();
 }
