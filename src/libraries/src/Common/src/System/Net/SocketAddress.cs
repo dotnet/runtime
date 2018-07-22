@@ -30,6 +30,7 @@ namespace System.Net.Internals
 
         private const int MinSize = 2;
         private const int MaxSize = 32; // IrDA requires 32 bytes
+        private const int DataOffset = 2;
         private bool _changed = true;
         private int _hash;
 
@@ -230,9 +231,9 @@ namespace System.Net.Internals
         {
             var sb = new StringBuilder().Append(Family.ToString()).Append(':').Append(Size).Append(":{");
 
-            for (int i = SocketAddressPal.DataOffset; i < Size; i++)
+            for (int i = DataOffset; i < Size; i++)
             {
-                if (i > SocketAddressPal.DataOffset)
+                if (i > DataOffset)
                 {
                     sb.Append(',');
                 }

@@ -10,7 +10,6 @@ namespace System.Net
     {
         public const int IPv6AddressSize = 28;
         public const int IPv4AddressSize = 16;
-        public const int DataOffset = 2;
 
         public static unsafe AddressFamily GetAddressFamily(byte[] buffer)
         {
