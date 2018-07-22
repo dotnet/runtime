@@ -26,7 +26,7 @@ namespace System.Data.SqlClient.ManualTesting.Tests
         public InternalConnectionWrapper(SqlConnection connection, bool supportKillByTSql = false)
         {
             if (connection == null)
-                throw new ArgumentNullException("connection");
+                throw new ArgumentNullException(nameof(connection));
 
             _internalConnection = connection.GetInternalConnection();
             ConnectionString = connection.ConnectionString;
@@ -55,7 +55,7 @@ namespace System.Data.SqlClient.ManualTesting.Tests
         public bool IsInternalConnectionOf(SqlConnection connection)
         {
             if (connection == null)
-                throw new ArgumentNullException("connection");
+                throw new ArgumentNullException(nameof(connection));
 
             return (_internalConnection == connection.GetInternalConnection());
         }

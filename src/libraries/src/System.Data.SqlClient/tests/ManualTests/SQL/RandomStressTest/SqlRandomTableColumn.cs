@@ -31,7 +31,7 @@ namespace System.Data.SqlClient.ManualTesting.Tests
         {
             if (typeInfo == null)
             {
-                throw new ArgumentNullException("typeInfo");
+                throw new ArgumentNullException(nameof(typeInfo));
             }
 
             if ((options & SqlRandomColumnOptions.ColumnSet) != 0)

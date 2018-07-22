@@ -4069,7 +4069,7 @@ namespace System.Net.Sockets
             }
             if (e.RemoteEndPoint == null)
             {
-                throw new ArgumentNullException("RemoteEndPoint");
+                throw new ArgumentNullException(nameof(e.RemoteEndPoint));
             }
             if (!CanTryAddressFamily(e.RemoteEndPoint.AddressFamily))
             {
@@ -4122,7 +4122,7 @@ namespace System.Net.Sockets
             }
             if (e.RemoteEndPoint == null)
             {
-                throw new ArgumentNullException("RemoteEndPoint");
+                throw new ArgumentNullException(nameof(e.RemoteEndPoint));
             }
             if (!CanTryAddressFamily(e.RemoteEndPoint.AddressFamily))
             {

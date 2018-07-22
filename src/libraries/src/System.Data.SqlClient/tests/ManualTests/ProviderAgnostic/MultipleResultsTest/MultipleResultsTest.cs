@@ -307,7 +307,7 @@ namespace System.Data.SqlClient.ManualTesting.Tests
             internal CarriageReturnLineFeedReplacer(TextWriter output)
             {
                 if (output == null)
-                    throw new ArgumentNullException("output");
+                    throw new ArgumentNullException(nameof(output));
 
                 _output = output;
             }
