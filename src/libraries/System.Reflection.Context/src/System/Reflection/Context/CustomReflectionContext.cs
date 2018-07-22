@@ -23,7 +23,7 @@ namespace System.Reflection.Context
         
         protected CustomReflectionContext(ReflectionContext source)
         {
-            SourceContext = source ?? throw new ArgumentNullException("source");
+            SourceContext = source ?? throw new ArgumentNullException(nameof(source));
             _projector = new ReflectionContextProjector(this);
         }
 
@@ -31,7 +31,7 @@ namespace System.Reflection.Context
         {
             if (assembly == null)
             {
-                throw new ArgumentNullException("assembly");
+                throw new ArgumentNullException(nameof(assembly));
             }
 
             return _projector.ProjectAssemblyIfNeeded(assembly);
@@ -41,7 +41,7 @@ namespace System.Reflection.Context
         {
             if (type == null)
             {
-                throw new ArgumentNullException("type");
+                throw new ArgumentNullException(nameof(type));
             }
 
             return _projector.ProjectTypeIfNeeded(type);

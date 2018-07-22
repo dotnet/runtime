@@ -91,7 +91,7 @@ namespace Microsoft.SqlServer.TDS
             if (innerTDSStream == null)
             {
                 // We can't proceed without underlying stream
-                throw new ArgumentNullException("innerTDSStream", "Underlying TDS stream is required");
+                throw new ArgumentNullException(nameof(innerTDSStream), "Underlying TDS stream is required");
             }
 
             // Save transport stream

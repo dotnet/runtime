@@ -87,7 +87,7 @@ namespace Microsoft.SqlServer.TDS.EndPoint
             if (innerStream == null)
             {
                 // We can't proceed without underlying stream
-                throw new ArgumentNullException("innerStream", "Underlying stream is required");
+                throw new ArgumentNullException(nameof(innerStream), "Underlying stream is required");
             }
 
             // Save transport stream

@@ -416,7 +416,7 @@ namespace System
 
             uriString = serializationInfo.GetString("RelativeUri");  // Do not rename (binary serialization)
             if ((object)uriString == null)
-                throw new ArgumentNullException("uriString");
+                throw new ArgumentNullException(nameof(uriString));
 
             CreateThis(uriString, false, UriKind.Relative);
         }

@@ -53,7 +53,7 @@ namespace System.Data.SqlClient.ManualTesting.Tests.SystemDataInternals
         private static void VerifyObjectIsTdsParserStateObject(object stateObject)
         {
             if (stateObject == null)
-                throw new ArgumentNullException("stateObject");
+                throw new ArgumentNullException(nameof(stateObject));
             if (!s_tdsParserStateObjectManaged.IsInstanceOfType(stateObject))
                 throw new ArgumentException("Object provided was not a DbConnectionInternal", "internalConnection");
         }
