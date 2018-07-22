@@ -2983,6 +2983,15 @@ bool Compiler::gtIsLikelyRegVar(GenTree* tree)
         return false;
     }
 
+    // Be pessimistic if ref counts are not yet set up.
+    //
+    // Perhaps we should be optimistic though.
+    // See notes in GitHub issue 18969.
+    if (!lvaLocalVarRefCounted())
+    {
+        return false;
+    }
+
     if (varDsc->lvRefCntWtd() < (BB_UNITY_WEIGHT * 3))
     {
         return false;
@@ -12219,7 +12228,7 @@ GenTree* Compiler::gtFoldExprCompare(GenTree* tree)
         cons->gtNext = tree->gtNext;
         cons->gtPrev = tree->gtPrev;
     }
-    if (lvaLocalVarRefCounted)
+    if (lvaLocalVarRefCounted())
     {
         lvaRecursiveDecRefCounts(tree);
     }
@@ -12660,7 +12669,7 @@ GenTree* Compiler::gtFoldExprSpecial(GenTree* tree)
                 /* Multiply by zero - return the 'zero' node, but not if side effects */
                 if (!(op->gtFlags & GTF_SIDE_EFFECT))
                 {
-                    if (lvaLocalVarRefCounted)
+                    if (lvaLocalVarRefCounted())
                     {
                         lvaRecursiveDecRefCounts(op);
                     }
@@ -12692,7 +12701,7 @@ GenTree* Compiler::gtFoldExprSpecial(GenTree* tree)
 
                 if (!(op->gtFlags & GTF_SIDE_EFFECT))
                 {
-                    if (lvaLocalVarRefCounted)
+                    if (lvaLocalVarRefCounted())
                     {
                         lvaRecursiveDecRefCounts(op);
                     }
@@ -12732,7 +12741,7 @@ GenTree* Compiler::gtFoldExprSpecial(GenTree* tree)
 
                 if (!(op->gtFlags & GTF_SIDE_EFFECT))
                 {
-                    if (lvaLocalVarRefCounted)
+                    if (lvaLocalVarRefCounted())
                     {
                         lvaRecursiveDecRefCounts(op);
                     }
@@ -12755,7 +12764,7 @@ GenTree* Compiler::gtFoldExprSpecial(GenTree* tree)
                 }
                 else if (!(op->gtFlags & GTF_SIDE_EFFECT))
                 {
-                    if (lvaLocalVarRefCounted)
+                    if (lvaLocalVarRefCounted())
                     {
                         lvaRecursiveDecRefCounts(op);
                     }
@@ -12783,7 +12792,7 @@ GenTree* Compiler::gtFoldExprSpecial(GenTree* tree)
                 op         = op2->AsColon()->ElseNode();
                 opToDelete = op2->AsColon()->ThenNode();
             }
-            if (lvaLocalVarRefCounted)
+            if (lvaLocalVarRefCounted())
             {
                 lvaRecursiveDecRefCounts(opToDelete);
             }
