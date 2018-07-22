@@ -3836,7 +3836,7 @@ public class ImplementDictionary : IDictionary
     public bool IsFixedSize { get { return false; } }
     public void Remove(object key)
     {
-        if (key == null) throw new ArgumentNullException("key");
+        if (key == null) throw new ArgumentNullException(nameof(key));
         int index;
         if (TryGetIndexOfKey(key, out index))
         {
@@ -4143,7 +4143,7 @@ public class MyArgumentException : Exception, ISerializable
     {
         if (info == null)
         {
-            throw new ArgumentNullException("info");
+            throw new ArgumentNullException(nameof(info));
         }
 
         base.GetObjectData(info, context);

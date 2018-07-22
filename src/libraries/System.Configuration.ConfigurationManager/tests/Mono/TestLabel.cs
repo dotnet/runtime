@@ -57,7 +57,7 @@ namespace MonoTests.System.Configuration.Util
             if ((prefix == null) || (prefix.Equals(string.Empty)))
                 throw new ArgumentException("Cannot be null or empty.", "prefix");
             if (delimiter == null)
-                throw new ArgumentNullException("delimiter");
+                throw new ArgumentNullException(nameof(delimiter));
 
             scopes = new List<Scope>();
             scopes.Add(new Scope(prefix, style));

@@ -71,7 +71,7 @@ namespace System.Data.SqlClient.ManualTesting.Tests
         protected void ValidateColumnInfo(SqlRandomTableColumn columnInfo)
         {
             if (columnInfo == null)
-                throw new ArgumentNullException("columnInfo");
+                throw new ArgumentNullException(nameof(columnInfo));
 
             if (Type != columnInfo.Type)
                 throw new ArgumentException("Type mismatch");

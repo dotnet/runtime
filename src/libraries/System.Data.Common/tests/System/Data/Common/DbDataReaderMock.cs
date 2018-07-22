@@ -43,7 +43,7 @@ namespace System.Data.Tests.Common
         {
             if (testData == null)
             {
-                throw new ArgumentNullException("testData");
+                throw new ArgumentNullException(nameof(testData));
             }
 
             _testDataTable = testData;
