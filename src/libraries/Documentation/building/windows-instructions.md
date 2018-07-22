@@ -123,3 +123,5 @@ show up as red squiggles while writing code.  Such errors should, however, not a
 debug engine is a VS 2015 component.
 
 * If the Xamarin PCL profiles are installed, the build will fail due to [issue #449](https://github.com/dotnet/corefx/issues/449).  A possible workaround is listed [in the issue](https://github.com/dotnet/corefx/issues/449#issuecomment-95117040) itself.
+
+* If your build fails with "[...].dll - Access is denied" errors, it might be because Visual Studio/MSBuild is locking these files. Try shutting down `VBCSCompiler.exe`, `devenv.exe` and `MSBuild.exe` from the task manager before building again.
