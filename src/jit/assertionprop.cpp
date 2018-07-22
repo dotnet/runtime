@@ -2698,7 +2698,7 @@ GenTree* Compiler::optConstantAssertionProp(AssertionDsc* curAssertion,
         gtDispTree(newTree, nullptr, nullptr, true);
     }
 #endif
-    if (lvaLocalVarRefCounted)
+    if (lvaLocalVarRefCounted())
     {
         lvaTable[lclNum].decRefCnts(compCurBB->getBBWeight(this), this);
     }
@@ -2812,7 +2812,7 @@ GenTree* Compiler::optCopyAssertionProp(AssertionDsc* curAssertion,
     }
 
     // If global assertion prop, by now we should have ref counts, fix them.
-    if (lvaLocalVarRefCounted)
+    if (lvaLocalVarRefCounted())
     {
         lvaTable[lclNum].decRefCnts(compCurBB->getBBWeight(this), this);
         lvaTable[copyLclNum].incRefCnts(compCurBB->getBBWeight(this), this);

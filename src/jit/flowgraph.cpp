@@ -9686,7 +9686,7 @@ void Compiler::fgUpdateRefCntForClone(BasicBlock* addedToBlock, GenTree* clonedT
 {
     assert(clonedTree->gtOper != GT_STMT);
 
-    if (lvaLocalVarRefCounted)
+    if (lvaLocalVarRefCounted())
     {
         compCurBB = addedToBlock;
         IncLclVarRefCountsVisitor::WalkTree(this, clonedTree);
@@ -9698,7 +9698,7 @@ void Compiler::fgUpdateRefCntForClone(BasicBlock* addedToBlock, GenTree* clonedT
 
 void Compiler::fgUpdateRefCntForExtract(GenTree* wholeTree, GenTree* keptTree)
 {
-    if (lvaLocalVarRefCounted)
+    if (lvaLocalVarRefCounted())
     {
         /*  Update the refCnts of removed lcl vars - The problem is that
          *  we have to consider back the side effects trees so we first
