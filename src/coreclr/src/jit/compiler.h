@@ -183,6 +183,13 @@ public:
 
 typedef JitExpandArray<LclSsaVarDsc> PerSsaArray;
 
+enum RefCountState
+{
+    RCS_INVALID, // not valid to get/set ref counts
+    RCS_EARLY,   // early counts for struct promotion and struct passing
+    RCS_NORMAL,  // normal ref counts (from lvaMarkRefs onward)
+};
+
 class LclVarDsc
 {
 public:
@@ -602,64 +609,19 @@ private:
                                // appearance count (computed during address-exposed analysis)
                                // that fgMakeOutgoingStructArgCopy consults during global morph
                                // to determine if eliding its copy is legal.
-    unsigned m_lvRefCntWtd;    // weighted reference count
+
+    BasicBlock::weight_t m_lvRefCntWtd; // weighted reference count
 
 public:
-    unsigned short lvRefCnt() const
-    {
-        if (lvImplicitlyReferenced && (m_lvRefCnt == 0))
-        {
-            return 1;
-        }
+    unsigned short lvRefCnt(RefCountState state = RCS_NORMAL) const;
+    void incLvRefCnt(unsigned short delta, RefCountState state = RCS_NORMAL);
+    void decLvRefCnt(unsigned short delta, RefCountState state = RCS_NORMAL);
+    void setLvRefCnt(unsigned short newValue, RefCountState state = RCS_NORMAL);
 
-        return m_lvRefCnt;
-    }
-
-    void incLvRefCnt(unsigned short delta)
-    {
-        unsigned short oldRefCnt = m_lvRefCnt;
-        m_lvRefCnt += delta;
-        assert(m_lvRefCnt >= oldRefCnt);
-    }
-
-    void decLvRefCnt(unsigned short delta)
-    {
-        assert(m_lvRefCnt >= delta);
-        m_lvRefCnt -= delta;
-    }
-
-    void setLvRefCnt(unsigned short newValue)
-    {
-        m_lvRefCnt = newValue;
-    }
-
-    unsigned lvRefCntWtd() const
-    {
-        if (lvImplicitlyReferenced && (m_lvRefCntWtd == 0))
-        {
-            return BB_UNITY_WEIGHT;
-        }
-
-        return m_lvRefCntWtd;
-    }
-
-    void incLvRefCntWtd(unsigned delta)
-    {
-        unsigned oldRefCntWtd = m_lvRefCntWtd;
-        m_lvRefCntWtd += delta;
-        assert(m_lvRefCntWtd >= oldRefCntWtd);
-    }
-
-    void decLvRefCntWtd(unsigned delta)
-    {
-        assert(m_lvRefCntWtd >= delta);
-        m_lvRefCntWtd -= delta;
-    }
-
-    void setLvRefCntWtd(unsigned newValue)
-    {
-        m_lvRefCntWtd = newValue;
-    }
+    BasicBlock::weight_t lvRefCntWtd(RefCountState state = RCS_NORMAL) const;
+    void incLvRefCntWtd(BasicBlock::weight_t delta, RefCountState state = RCS_NORMAL);
+    void decLvRefCntWtd(BasicBlock::weight_t delta, RefCountState state = RCS_NORMAL);
+    void setLvRefCntWtd(BasicBlock::weight_t newValue, RefCountState state = RCS_NORMAL);
 
     int      lvStkOffs;   // stack offset of home
     unsigned lvExactSize; // (exact) size of the type in bytes
@@ -750,9 +712,15 @@ public:
                !(lvIsParam || lvAddrExposed || lvIsStructField);
     }
 
-    void lvaResetSortAgainFlag(Compiler* pComp);
-    void decRefCnts(BasicBlock::weight_t weight, Compiler* pComp, bool propagate = true);
-    void incRefCnts(BasicBlock::weight_t weight, Compiler* pComp, bool propagate = true);
+    void lvaResetSortAgainFlag(Compiler* pComp, RefCountState = RCS_NORMAL);
+    void decRefCnts(BasicBlock::weight_t weight,
+                    Compiler*            pComp,
+                    RefCountState        state     = RCS_NORMAL,
+                    bool                 propagate = true);
+    void incRefCnts(BasicBlock::weight_t weight,
+                    Compiler*            pComp,
+                    RefCountState        state     = RCS_NORMAL,
+                    bool                 propagate = true);
     void setPrefReg(regNumber regNum, Compiler* pComp);
     void addPrefReg(regMaskTP regMask, Compiler* pComp);
     bool IsFloatRegType() const
@@ -2567,11 +2535,16 @@ public:
     };
 
 public:
-    bool     lvaRefCountingStarted; // Set to true when we have started counting the local vars
-    bool     lvaLocalVarRefCounted; // Set to true after we have called lvaMarkLocalVars()
-    bool     lvaSortAgain;          // true: We need to sort the lvaTable
-    bool     lvaTrackedFixed;       // true: We cannot add new 'tracked' variable
-    unsigned lvaCount;              // total number of locals
+    RefCountState lvaRefCountState; // Current local ref count state
+
+    bool lvaLocalVarRefCounted() const
+    {
+        return lvaRefCountState == RCS_NORMAL;
+    }
+
+    bool     lvaSortAgain;    // true: We need to sort the lvaTable
+    bool     lvaTrackedFixed; // true: We cannot add new 'tracked' variable
+    unsigned lvaCount;        // total number of locals
 
     unsigned   lvaRefCount; // total number of references to locals
     LclVarDsc* lvaTable;    // variable descriptor table

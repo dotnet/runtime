@@ -7941,7 +7941,7 @@ Compiler::fgWalkResult Compiler::optRemoveTreeVisitor(GenTree** pTree, fgWalkDat
 
     // Look for any local variable references
 
-    if (tree->gtOper == GT_LCL_VAR && comp->lvaLocalVarRefCounted)
+    if (tree->gtOper == GT_LCL_VAR && comp->lvaLocalVarRefCounted())
     {
         unsigned   lclNum;
         LclVarDsc* varDsc;
