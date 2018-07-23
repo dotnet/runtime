@@ -207,7 +207,7 @@ namespace System.IO.Tests
         [Theory,
             MemberData(nameof(TestData_Wildcards)),
             MemberData(nameof(TestData_ExtendedWildcards))]
-        public void GetFullPath_Wildcards(char wildcard)
+        public void GetFullPath_Wildcards(string wildcard)
         {
             string path = Path.Combine(Path.GetTempPath(), Path.GetRandomFileName() + wildcard + "ing");
             Assert.Equal(path, Path.GetFullPath(path));
