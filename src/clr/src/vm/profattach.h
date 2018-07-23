@@ -18,6 +18,7 @@
 #define __PROF_ATTACH_H__
 
 #include "internalunknownimpl.h"
+#include "corprof.h"
 
 //---------------------------------------------------------------------------------------
 // Structure representing the runtime's version.  Used to negotiate versions between the
@@ -419,7 +420,5 @@ public:
         UINT cbClientData));
 };
 
-
-HRESULT ICLRProfilingGetClassObject(REFCLSID rclsid, REFIID riid, void **ppv);
 
 #endif // __PROF_ATTACH_H__

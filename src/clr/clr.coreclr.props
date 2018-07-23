@@ -32,5 +32,6 @@
     <FeatureCominteropApartmentSupport>true</FeatureCominteropApartmentSupport>
     <FeatureAppX>true</FeatureAppX>
     <FeatureWin32Registry>true</FeatureWin32Registry>
+    <FeatureProfAttach>true</FeatureProfAttach>
   </PropertyGroup>
 </Project>
