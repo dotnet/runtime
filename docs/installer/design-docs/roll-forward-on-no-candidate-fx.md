@@ -51,30 +51,40 @@ This means _preview_ is never rolled forward to _production_.
 
 ## Settings to control behavior
 ### applyPatches
-To disable the patch roll forward, specify the "applyPatches" property in the configuration file. If it is set to 'false' and the specified version is not found, then we fail.
+Once a compatible framework version is chosen as explained above, the latest patch is selected. To disable this, specify the "applyPatches" property in the configuration file.
 
 	For instance:
+
+	Patch roll forward: enabled
+	Desired version: 1.0.1
+	Available versions: 1.0.1, 1.0.2
+	Chosen version: 1.0.2
+	
+	Patch roll forward: disabled
+	Desired version: 1.0.1
+	Available versions: 1.0.1, 1.0.2
+	Chosen version: 1.0.1
 
 	Patch roll forward: disabled
 	Desired version: 1.0.1
 	Available versions: 1.0.2, 1.0.3
-	Chosen version: there is no compatible version available
+	Chosen version: 1.0.2
 
 ### --fx-version
 To specify the exact desired framework version, use the command line argument '--fx-version'. In this case, only the specified version will be accepted, even if patch roll forward is enabled. The expected behavior would be the same in the example above.
 
 ### Roll Forward in Absence of Candidate Fx
 
-"Roll Forward On No Candidate Fx" only applies to _production_ versions and is enabled by default for [minor], and be changed through:
+"Roll Forward On No Candidate Fx" only applies to _production_ versions and is enabled by default for [patch] and [minor], and be changed through:
 - Command line argument ('--roll-forward-on-no-candidate-fx' argument)
 - Runtime configuration file ('rollForwardOnNoCandidateFx' property)
 - DOTNET_ROLL_FORWARD_ON_NO_CANDIDATE_FX environment variable
 	
 The valid values:
 
-0) Off  (_do not roll forward on [major] or [minor]_)
-1) Roll forward on [minor]  (_this is the default value_)
-2) Roll forward on [major] and [minor]
+0) Off  (_do not roll forward_)
+1) Roll forward on [minor] and [patch]  (_this is the default value_)
+2) Roll forward on [major], [minor] and [patch]
 
 If this feature is enabled and no compatible framework version is found, we'll search for the nearest production version available. After locating it, a patch roll forward will be applied if enabled.
 ```
