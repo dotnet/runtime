@@ -104,8 +104,8 @@ namespace Microsoft.VisualBasic.Tests
             Assert.Throws<InvalidCastException>(() => coll.Add(item1, After: new object())); // After not in a string or int
             Assert.Throws<ArgumentOutOfRangeException>("Index", () => coll.Add(item1, Before: 5)); // Before not in range
             Assert.Throws<ArgumentOutOfRangeException>("Index", () => coll.Add(item1, After: 5)); // After not in range
-            Assert.Throws<ArgumentException>("Before", () => coll.Add(item1, Before: "Key5")); // Before not found
-            Assert.Throws<ArgumentException>("After", () => coll.Add(item1, After: "Key5")); // After not found
+            Assert.Throws<ArgumentException>(() => coll.Add(item1, Before: "Key5")); // Before not found
+            Assert.Throws<ArgumentException>(() => coll.Add(item1, After: "Key5")); // After not found
         }
 
         [Fact]
@@ -192,7 +192,7 @@ namespace Microsoft.VisualBasic.Tests
         {
             var coll = CreateKeyedCollection(10);
 
-            Assert.Throws<ArgumentException>("Key", () => coll.Remove("Key10"));
+            Assert.Throws<ArgumentException>(() => coll.Remove("Key10"));
         }
 
         [Fact]
@@ -298,7 +298,7 @@ namespace Microsoft.VisualBasic.Tests
         {
             Collection coll = CreateKeyedCollection(10);
 
-            Assert.Throws<ArgumentException>("Key", () => coll["Key20"]);
+            Assert.Throws<ArgumentException>(() => coll["Key20"]);
             Assert.Throws<IndexOutOfRangeException>(() => coll[(string)null]);
             Assert.Throws<IndexOutOfRangeException>(() => coll[(object)null]);
         }
@@ -355,9 +355,9 @@ namespace Microsoft.VisualBasic.Tests
             ICollection coll = CreateCollection(10);
             var fooArr = new Foo[10];
             // Index < 0
-            Assert.Throws<ArgumentException>("index", () => coll.CopyTo(fooArr, -1));
+            Assert.Throws<ArgumentException>(() => coll.CopyTo(fooArr, -1));
             // Index + fooArray.Length > coll.Count
-            Assert.Throws<ArgumentException>("index", () => coll.CopyTo(fooArr, 5));
+            Assert.Throws<ArgumentException>(() => coll.CopyTo(fooArr, 5));
         }
 
         [Fact]
