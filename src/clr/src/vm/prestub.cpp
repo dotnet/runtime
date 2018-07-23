@@ -315,10 +315,11 @@ PCODE MethodDesc::PrepareILBasedCode(PrepareCodeConfig* pConfig)
     {
         LOG((LF_CLASSLOADER, LL_INFO1000000,
             "    In PrepareILBasedCode, calling JitCompileCode\n"));
-        // Mark the code as hot in case the method ends up in the native image
-        g_IBCLogger.LogMethodCodeAccess(this);
         pCode = JitCompileCode(pConfig);
     }
+
+    // Mark the code as hot in case the method ends up in the native image
+    g_IBCLogger.LogMethodCodeAccess(this);
 
     return pCode;
 }
