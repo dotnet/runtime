@@ -13,9 +13,9 @@ using System.Xml.Serialization;
 
 namespace R2RDump
 {
-    public interface BaseUnwindInfo
+    public abstract class BaseUnwindInfo
     {
-
+        public int Size { get; set; }
     }
 
     public class RuntimeFunction
@@ -66,6 +66,10 @@ namespace R2RDump
             if (endRva != -1)
             {
                 Size = endRva - startRva;
+            }
+            else if (unwindInfo is x86.UnwindInfo)
+            {
+                Size = (int)((x86.UnwindInfo)unwindInfo).FunctionLength;
             }
             else if (gcInfo != null)
             {
