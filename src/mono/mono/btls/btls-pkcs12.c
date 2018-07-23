@@ -83,7 +83,18 @@ mono_btls_pkcs12_import (MonoBtlsPkcs12 *pkcs12, const void *data, int len, cons
 {
 	CBS cbs;
 	CBS_init (&cbs, data, len);
-	return PKCS12_get_key_and_certs (&pkcs12->private_key, pkcs12->certs, &cbs, password);
+	int ret;
+
+	ret = PKCS12_get_key_and_certs (&pkcs12->private_key, pkcs12->certs, &cbs, password);
+	if ((ret == 1) || (password && strlen (password) > 0))
+	return ret;
+
+	// When passed an empty password, we try both NULL and the empty string.
+	CBS_init (&cbs, data, len);
+	if (password)
+		return PKCS12_get_key_and_certs (&pkcs12->private_key, pkcs12->certs, &cbs, NULL);
+	else
+		return PKCS12_get_key_and_certs (&pkcs12->private_key, pkcs12->certs, &cbs, "");
 }
 
 MONO_API int
