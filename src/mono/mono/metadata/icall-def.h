@@ -193,23 +193,6 @@ HANDLES(ICALL(CONSOLE_5, "TtySetup", ves_icall_System_ConsoleDriver_TtySetup))
 ICALL_TYPE(DTIME, "System.DateTime", DTIME_1)
 ICALL(DTIME_1, "GetSystemTimeAsFileTime", mono_100ns_datetime)
 
-#ifndef DISABLE_DECIMAL
-ICALL_TYPE(DECIMAL, "System.Decimal", DECIMAL_1)
-NOHANDLES(ICALL(DECIMAL_1, ".ctor(double)", mono_decimal_init_double))
-NOHANDLES(ICALL(DECIMAL_2, ".ctor(single)", mono_decimal_init_single))
-NOHANDLES(ICALL(DECIMAL_3, "FCallAddSub(System.Decimal&,System.Decimal&,byte)", mono_decimal_addsub))
-NOHANDLES(ICALL(DECIMAL_4, "FCallCompare", mono_decimal_compare))
-NOHANDLES(ICALL(DECIMAL_5, "FCallDivide", mono_decimal_divide))
-NOHANDLES(ICALL(DECIMAL_6, "FCallFloor", mono_decimal_floor))
-NOHANDLES(ICALL(DECIMAL_7, "FCallMultiply", mono_decimal_multiply))
-NOHANDLES(ICALL(DECIMAL_8, "FCallRound", mono_decimal_round))
-NOHANDLES(ICALL(DECIMAL_9, "FCallToInt32", mono_decimal_to_int32))
-NOHANDLES(ICALL(DECIMAL_10, "FCallTruncate", mono_decimal_truncate))
-NOHANDLES(ICALL(DECIMAL_11, "GetHashCode", mono_decimal_get_hash_code))
-NOHANDLES(ICALL(DECIMAL_12, "ToDouble", mono_decimal_to_double))
-NOHANDLES(ICALL(DECIMAL_13, "ToSingle", mono_decimal_to_float))
-#endif
-
 ICALL_TYPE(DELEGATE, "System.Delegate", DELEGATE_1)
 HANDLES(ICALL(DELEGATE_1, "AllocDelegateLike_internal", ves_icall_System_Delegate_AllocDelegateLike_internal))
 HANDLES(ICALL(DELEGATE_2, "CreateDelegate_internal", ves_icall_System_Delegate_CreateDelegate_internal))
@@ -514,10 +497,6 @@ HANDLES(ICALL(SOCK_21a, "cancel_blocking_socket_operation", ves_icall_cancel_blo
 ICALL_TYPE(SOCKEX, "System.Net.Sockets.SocketException", SOCKEX_1)
 ICALL(SOCKEX_1, "WSAGetLastError_internal", ves_icall_System_Net_Sockets_SocketException_WSAGetLastError_internal)
 #endif /* !DISABLE_SOCKETS */
-
-ICALL_TYPE(NUMBER, "System.Number", NUMBER_1)
-ICALL(NUMBER_1, "NumberBufferToDecimal", mono_decimal_from_number)
-ICALL(NUMBER_2, "NumberBufferToDouble", mono_double_from_number)
 
 ICALL_TYPE(NUMBER_FORMATTER, "System.NumberFormatter", NUMBER_FORMATTER_1)
 ICALL(NUMBER_FORMATTER_1, "GetFormatterTables", ves_icall_System_NumberFormatter_GetFormatterTables)

@@ -85,12 +85,6 @@
     <ClCompile Include="$(MonoSourceLocation)\mono\metadata\debug-mono-ppdb.c">
       <Filter>Source Files$(MonoRuntimeFilterSubFolder)\common</Filter>
     </ClCompile>
-    <ClCompile Include="$(MonoSourceLocation)\mono\metadata\decimal-ms.c">
-      <Filter>Source Files$(MonoRuntimeFilterSubFolder)\common</Filter>
-    </ClCompile>
-    <ClInclude Include="$(MonoSourceLocation)\mono\metadata\decimal-ms.h">
-      <Filter>Header Files$(MonoRuntimeFilterSubFolder)\common</Filter>
-    </ClInclude>
     <ClInclude Include="$(MonoSourceLocation)\mono\metadata\domain-internals.h">
       <Filter>Header Files$(MonoRuntimeFilterSubFolder)\common</Filter>
     </ClInclude>
@@ -277,9 +271,6 @@
     <ClInclude Include="$(MonoSourceLocation)\mono\metadata\number-formatter.h">
       <Filter>Header Files$(MonoRuntimeFilterSubFolder)\common</Filter>
     </ClInclude>
-    <ClCompile Include="$(MonoSourceLocation)\mono\metadata\number-ms.c">
-      <Filter>Source Files$(MonoRuntimeFilterSubFolder)\common</Filter>
-    </ClCompile>
     <ClInclude Include="$(MonoSourceLocation)\mono\metadata\number-ms.h">
       <Filter>Header Files$(MonoRuntimeFilterSubFolder)\common</Filter>
     </ClInclude>

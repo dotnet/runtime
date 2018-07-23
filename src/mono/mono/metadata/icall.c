@@ -103,9 +103,6 @@
 #include <mono/utils/mono-merp.h>
 #include <mono/utils/mono-logger-internals.h>
 
-#include "decimal-ms.h"
-#include "number-ms.h"
-
 #if !defined(HOST_WIN32) && defined(HAVE_SYS_UTSNAME_H)
 #include <sys/utsname.h>
 #endif

@@ -244,8 +244,6 @@ common_sources = \
 	debug-mono-symfile.c	\
 	debug-mono-ppdb.h	\
 	debug-mono-ppdb.c	\
-	decimal-ms.c		\
-	decimal-ms.h		\
 	domain-internals.h	\
 	environment.c		\
 	environment.h		\
@@ -305,8 +303,7 @@ common_sources = \
 	monitor.h		\
 	normalization-tables.h	\
 	number-formatter.h	\
-	number-ms.c		\
-	number-ms.h		\
+	number-ms.h             \
 	object.c	\
 	object-forward.h	\
 	object-internals.h	\

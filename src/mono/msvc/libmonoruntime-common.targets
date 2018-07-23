@@ -32,8 +32,6 @@
     <ClCompile Include="$(MonoSourceLocation)\mono\metadata\debug-mono-symfile.c" />
     <ClInclude Include="$(MonoSourceLocation)\mono\metadata\debug-mono-ppdb.h" />
     <ClCompile Include="$(MonoSourceLocation)\mono\metadata\debug-mono-ppdb.c" />
-    <ClCompile Include="$(MonoSourceLocation)\mono\metadata\decimal-ms.c" />
-    <ClInclude Include="$(MonoSourceLocation)\mono\metadata\decimal-ms.h" />
     <ClInclude Include="$(MonoSourceLocation)\mono\metadata\domain-internals.h" />
     <ClCompile Include="$(MonoSourceLocation)\mono\metadata\environment.c" />
     <ClCompile Include="$(MonoSourceLocation)\mono\metadata\exception.c" />
@@ -98,7 +96,6 @@
     <ClInclude Include="$(MonoSourceLocation)\mono\metadata\monitor.h" />
     <ClInclude Include="$(MonoSourceLocation)\mono\metadata\normalization-tables.h" />
     <ClInclude Include="$(MonoSourceLocation)\mono\metadata\number-formatter.h" />
-    <ClCompile Include="$(MonoSourceLocation)\mono\metadata\number-ms.c" />
     <ClInclude Include="$(MonoSourceLocation)\mono\metadata\number-ms.h" />
     <ClCompile Include="$(MonoSourceLocation)\mono\metadata\object.c" />
     <ClInclude Include="$(MonoSourceLocation)\mono\metadata\object-internals.h" />
