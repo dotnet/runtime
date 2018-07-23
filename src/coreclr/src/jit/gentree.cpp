@@ -14947,6 +14947,13 @@ bool Compiler::gtNodeHasSideEffects(GenTree* tree, unsigned flags)
 {
     if (flags & GTF_ASG)
     {
+        // TODO-Cleanup: This only checks for GT_ASG but according to OperRequiresAsgFlag there
+        // are many more opers that are considered to have an assignment side effect: atomic ops
+        // (GT_CMPXCHG & co.), GT_MEMORYBARRIER (not classified as an atomic op) and HW intrinsic
+        // memory stores. Atomic ops have special handling in gtExtractSideEffList but the others
+        // will simply be dropped is they are ever subject to an "extract side effects" operation.
+        // It is possible that the reason no bugs have yet been observed in this area is that the
+        // other nodes are likely to always be tree roots.
         if (tree->OperIsAssignment())
         {
             return true;
@@ -15113,157 +15120,125 @@ GenTree* Compiler::gtBuildCommaList(GenTree* list, GenTree* expr)
     }
 }
 
-/*****************************************************************************
- *
- *  Extracts side effects from the given expression
- *  and appends them to a given list (actually a GT_COMMA list)
- *  If ignore root is specified, the method doesn't treat the top
- *  level tree node as having side-effect.
- */
-
+//------------------------------------------------------------------------
+// gtExtractSideEffList: Extracts side effects from the given expression.
+//
+// Arguments:
+//    expr       - the expression tree to extract side effects from
+//    pList      - pointer to a (possibly null) GT_COMMA list that
+//                 will contain the extracted side effects
+//    flags      - side effect flags to be considered
+//    ignoreRoot - ignore side effects on the expression root node
+//
+// Notes:
+//    Side effects are prepended to the GT_COMMA list such that op1 of
+//    each comma node holds the side effect tree and op2 points to the
+//    next comma node. The original side effect execution order is preserved.
+//
 void Compiler::gtExtractSideEffList(GenTree*  expr,
                                     GenTree** pList,
                                     unsigned  flags /* = GTF_SIDE_EFFECT*/,
                                     bool      ignoreRoot /* = false */)
 {
-    assert(expr);
-    assert(expr->gtOper != GT_STMT);
-
-    /* If no side effect in the expression return */
-
-    if (!gtTreeHasSideEffects(expr, flags))
+    class SideEffectExtractor final : public GenTreeVisitor<SideEffectExtractor>
     {
-        return;
-    }
+    public:
+        const unsigned       m_flags;
+        ArrayStack<GenTree*> m_sideEffects;
 
-    genTreeOps oper = expr->OperGet();
-    unsigned   kind = expr->OperKind();
-
-    // Look for any side effects that we care about
-    //
-    if (!ignoreRoot && gtNodeHasSideEffects(expr, flags))
-    {
-        // Add the side effect to the list and return
-        //
-        *pList = gtBuildCommaList(*pList, expr);
-        return;
-    }
-
-    if (kind & GTK_LEAF)
-    {
-        return;
-    }
-
-    if (oper == GT_LOCKADD || oper == GT_XADD || oper == GT_XCHG || oper == GT_CMPXCHG)
-    {
-        // These operations are kind of important to keep
-        *pList = gtBuildCommaList(*pList, expr);
-        return;
-    }
-
-    if (kind & GTK_SMPOP)
-    {
-        GenTree* op1 = expr->gtOp.gtOp1;
-        GenTree* op2 = expr->gtGetOp2IfPresent();
-
-        if (flags & GTF_EXCEPT)
+        enum
         {
-            // Special case - GT_ADDR of GT_IND nodes of TYP_STRUCT
-            // have to be kept together
+            DoPreOrder        = true,
+            UseExecutionOrder = true
+        };
 
-            if (oper == GT_ADDR && op1->OperIsIndir() && op1->gtType == TYP_STRUCT)
+        SideEffectExtractor(Compiler* compiler, unsigned flags)
+            : GenTreeVisitor(compiler), m_flags(flags), m_sideEffects(compiler->getAllocator(CMK_SideEffects))
+        {
+        }
+
+        fgWalkResult PreOrderVisit(GenTree** use, GenTree* user)
+        {
+            GenTree* node = *use;
+
+            if (!m_compiler->gtTreeHasSideEffects(node, m_flags))
             {
-                *pList = gtBuildCommaList(*pList, expr);
+                return Compiler::WALK_SKIP_SUBTREES;
+            }
 
-#ifdef DEBUG
-                if (verbose)
+            if (m_compiler->gtNodeHasSideEffects(node, m_flags))
+            {
+                m_sideEffects.Push(node);
+                return Compiler::WALK_SKIP_SUBTREES;
+            }
+
+            // TODO-Cleanup: These have GTF_ASG set but for some reason gtNodeHasSideEffects ignores
+            // them. See the related gtNodeHasSideEffects comment as well.
+            // Also, these nodes must always be preserved, no matter what side effect flags are passed
+            // in. But then it should never be the case that gtExtractSideEffList gets called without
+            // specifying GTF_ASG so there doesn't seem to be any reason to be inconsistent with
+            // gtNodeHasSideEffects and make this check unconditionally.
+            if (node->OperIsAtomicOp())
+            {
+                m_sideEffects.Push(node);
+                return Compiler::WALK_SKIP_SUBTREES;
+            }
+
+            if ((m_flags & GTF_EXCEPT) != 0)
+            {
+                // Special case - GT_ADDR of GT_IND nodes of TYP_STRUCT have to be kept together.
+                if (node->OperIs(GT_ADDR) && node->gtGetOp1()->OperIsIndir() &&
+                    (node->gtGetOp1()->TypeGet() == TYP_STRUCT))
                 {
-                    printf("Keep the GT_ADDR and GT_IND together:\n");
-                }
+#ifdef DEBUG
+                    if (m_compiler->verbose)
+                    {
+                        printf("Keep the GT_ADDR and GT_IND together:\n");
+                    }
 #endif
-                return;
+                    m_sideEffects.Push(node);
+                    return Compiler::WALK_SKIP_SUBTREES;
+                }
             }
+
+            // Generally all GT_CALL nodes are considered to have side-effects.
+            // So if we get here it must be a helper call that we decided it does
+            // not have side effects that we needed to keep.
+            assert(!node->OperIs(GT_CALL) || (node->AsCall()->gtCallType == CT_HELPER));
+
+            return Compiler::WALK_CONTINUE;
         }
+    };
 
-        /* Continue searching for side effects in the subtrees of the expression
-         * NOTE: Be careful to preserve the right ordering - side effects are prepended
-         * to the list */
+    assert(!expr->OperIs(GT_STMT));
 
-        /* Continue searching for side effects in the subtrees of the expression
-         * NOTE: Be careful to preserve the right ordering
-         * as side effects are prepended to the list */
+    SideEffectExtractor extractor(this, flags);
 
-        if (expr->gtFlags & GTF_REVERSE_OPS)
-        {
-            assert(oper != GT_COMMA);
-            if (op1)
-            {
-                gtExtractSideEffList(op1, pList, flags);
-            }
-            if (op2)
-            {
-                gtExtractSideEffList(op2, pList, flags);
-            }
-        }
-        else
-        {
-            if (op2)
-            {
-                gtExtractSideEffList(op2, pList, flags);
-            }
-            if (op1)
-            {
-                gtExtractSideEffList(op1, pList, flags);
-            }
-        }
-    }
-
-    if (expr->OperGet() == GT_CALL)
+    if (ignoreRoot)
     {
-        // Generally all GT_CALL nodes are considered to have side-effects.
-        // So if we get here it must be a Helper call that we decided does
-        // not have side effects that we needed to keep
-        //
-        assert(expr->gtCall.gtCallType == CT_HELPER);
-
-        // We can remove this Helper call, but there still could be
-        // side-effects in the arguments that we may need to keep
-        //
-        GenTree* args;
-        for (args = expr->gtCall.gtCallArgs; args; args = args->gtOp.gtOp2)
+        for (GenTree* op : expr->Operands())
         {
-            assert(args->OperIsList());
-            gtExtractSideEffList(args->Current(), pList, flags);
-        }
-        for (args = expr->gtCall.gtCallLateArgs; args; args = args->gtOp.gtOp2)
-        {
-            assert(args->OperIsList());
-            gtExtractSideEffList(args->Current(), pList, flags);
+            extractor.WalkTree(&op, nullptr);
         }
     }
-
-    if (expr->OperGet() == GT_ARR_BOUNDS_CHECK
-#ifdef FEATURE_SIMD
-        || expr->OperGet() == GT_SIMD_CHK
-#endif // FEATURE_SIMD
-#ifdef FEATURE_HW_INTRINSICS
-        || expr->OperGet() == GT_HW_INTRINSIC_CHK
-#endif // FEATURE_HW_INTRINSICS
-        )
+    else
     {
-        gtExtractSideEffList(expr->AsBoundsChk()->gtIndex, pList, flags);
-        gtExtractSideEffList(expr->AsBoundsChk()->gtArrLen, pList, flags);
+        extractor.WalkTree(&expr, nullptr);
     }
 
-    if (expr->OperGet() == GT_DYN_BLK || expr->OperGet() == GT_STORE_DYN_BLK)
+    GenTree* list = *pList;
+
+    // The extractor returns side effects in execution order but gtBuildCommaList prepends
+    // to the comma-based side effect list so we have to build the list in reverse order.
+    // This is also why the list cannot be built while traversing the tree.
+    // The number of side effects is usually small (<= 4), less than the ArrayStack's
+    // built-in size, so memory allocation is avoided.
+    while (extractor.m_sideEffects.Height() > 0)
     {
-        if (expr->AsDynBlk()->Data() != nullptr)
-        {
-            gtExtractSideEffList(expr->AsDynBlk()->Data(), pList, flags);
-        }
-        gtExtractSideEffList(expr->AsDynBlk()->Addr(), pList, flags);
-        gtExtractSideEffList(expr->AsDynBlk()->gtDynamicSize, pList, flags);
+        list = gtBuildCommaList(list, extractor.m_sideEffects.Pop());
     }
+
+    *pList = list;
 }
 
 /*****************************************************************************
