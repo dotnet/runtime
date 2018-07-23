@@ -4,6 +4,12 @@ using Mono.Linker.Tests.Extensions;
 namespace Mono.Linker.Tests.TestCasesRunner {
 	public class LinkerArgumentBuilder {
 		private readonly List<string> _arguments = new List<string> ();
+		private readonly TestCaseMetadaProvider _metadaProvider;
+
+		public LinkerArgumentBuilder (TestCaseMetadaProvider metadaProvider)
+		{
+			_metadaProvider = metadaProvider;
+		}
 
 		public virtual void AddSearchDirectory (NPath directory)
 		{
@@ -32,6 +38,12 @@ namespace Mono.Linker.Tests.TestCasesRunner {
 		public virtual void LinkFromAssembly (string fileName)
 		{
 			Append ("-a");
+			Append (fileName);
+		}
+		
+		public virtual void LinkFromPublicAndFamily (string fileName)
+		{
+			Append ("-r");
 			Append (fileName);
 		}
 
@@ -105,6 +117,14 @@ namespace Mono.Linker.Tests.TestCasesRunner {
 				foreach (var val in values)
 					Append (val);
 			}
+		}
+		
+		public virtual void ProcessTestInputAssembly (NPath inputAssemblyPath)
+		{
+			if (_metadaProvider.LinkPublicAndFamily ())
+				LinkFromPublicAndFamily (inputAssemblyPath.ToString ());
+			else
+				LinkFromAssembly (inputAssemblyPath.ToString ());
 		}
 
 		public virtual void ProcessOptions (TestCaseLinkerOptions options)

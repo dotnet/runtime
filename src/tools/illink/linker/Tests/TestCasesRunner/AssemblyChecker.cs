@@ -81,7 +81,7 @@ namespace Mono.Linker.Tests.TestCasesRunner {
 			//
 			bool expectedKept =
 				original.HasAttributeDerivedFrom (nameof (KeptAttribute)) ||
-				(linked != null && linkedModule.Assembly.EntryPoint.DeclaringType == linked) ||
+				(linked != null && linkedModule.Assembly.EntryPoint?.DeclaringType == linked) ||
 				original.AllMembers ().Any (l => l.HasAttribute (nameof (KeptAttribute)));
 
 			if (!expectedKept) {

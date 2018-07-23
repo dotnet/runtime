@@ -101,6 +101,12 @@ namespace Mono.Linker.Tests.TestCases
 		{
 			Run (testCase);
 		}
+		
+		[TestCaseSource (typeof (TestDatabase), nameof (TestDatabase.LibrariesTests))]
+		public void LibrariesTests (TestCase testCase)
+		{
+			Run (testCase);
+		}
 
 		protected virtual void Run (TestCase testCase)
 		{

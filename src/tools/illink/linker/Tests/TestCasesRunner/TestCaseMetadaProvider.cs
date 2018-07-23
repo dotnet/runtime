@@ -140,9 +140,18 @@ namespace Mono.Linker.Tests.TestCasesRunner {
 				yield return (string) attr.ConstructorArguments.First ().Value;
 		}
 
+		public virtual bool LinkPublicAndFamily()
+		{
+			return _testCaseTypeDefinition.CustomAttributes
+				.FirstOrDefault (attr => attr.AttributeType.Name == nameof (SetupLinkerLinkPublicAndFamilyAttribute)) != null;
+		}
+
 		public virtual string GetAssemblyName ()
 		{
-			return GetOptionAttributeValue (nameof (SetupCompileAssemblyNameAttribute), "test.exe");
+			var asLibraryAttribute = _testCaseTypeDefinition.CustomAttributes
+				.FirstOrDefault (attr => attr.AttributeType.Name == nameof (SetupCompileAsLibraryAttribute));
+			var defaultName = asLibraryAttribute == null ? "test.exe" : "test.dll";
+			return GetOptionAttributeValue (nameof (SetupCompileAssemblyNameAttribute), defaultName);
 		}
 
 		public virtual string GetCSharpCompilerToUse ()
