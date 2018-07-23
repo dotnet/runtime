@@ -311,14 +311,15 @@ namespace System
 
         public static string NewLine => "\n";
 
-        private static Lazy<OperatingSystem> s_osVersion = new Lazy<OperatingSystem>(() =>
+        private static Lazy<OperatingSystem> s_osVersion = new Lazy<OperatingSystem>(GetOperatingSystem(Interop.Sys.GetUnixRelease()));
+
+        private static OperatingSystem GetOperatingSystem(string release)
         {
             int major = 0, minor = 0, build = 0, revision = 0;
 
-            // Get the uname's utsname.release.  Then parse it for the first four numbers found.
+            // Parse the uname's utsname.release for the first four numbers found.
             // This isn't perfect, but Version already doesn't map exactly to all possible release
-            // formats, e.g. 
-            string release = Interop.Sys.GetUnixRelease();
+            // formats, e.g. 2.6.19-1.2895.fc6
             if (release != null)
             {
                 int i = 0;
@@ -331,7 +332,7 @@ namespace System
             // For compatibility reasons with Mono, PlatformID.Unix is returned on MacOSX. PlatformID.MacOSX
             // is hidden from the editor and shouldn't be used.
             return new OperatingSystem(PlatformID.Unix, new Version(major, minor, build, revision));
-        });
+        }
 
         private static int FindAndParseNextNumber(string text, ref int pos)
         {
@@ -350,12 +351,22 @@ namespace System
             for (; pos < text.Length; pos++)
             {
                 char c = text[pos];
-                if ('0' <= c && c <= '9')
+                if ('0' > c || c > '9')
+                    break;
+
+                try
                 {
-                    num = (num * 10) + (c - '0');
+                    num = checked((num * 10) + (c - '0'));
                 }
-                else break;
+                // Integer overflow can occur for example with:
+                //     Linux nelknet 4.15.0-24201807041620-generic
+                // To form a valid Version, num must be positive.
+                catch (OverflowException)
+                {
+                    return int.MaxValue;
+                }
             }
+
             return num;
         }
 
