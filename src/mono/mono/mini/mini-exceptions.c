@@ -889,9 +889,12 @@ get_method_from_stack_frame (MonoJitInfo *ji, gpointer generic_info)
 gboolean
 mono_exception_walk_trace (MonoException *ex, MonoExceptionFrameWalk func, gpointer user_data)
 {
+	gboolean res;
+
 	MONO_ENTER_GC_UNSAFE;
-	mono_exception_walk_trace_internal (ex, func, user_data);
+	res = mono_exception_walk_trace_internal (ex, func, user_data);
 	MONO_EXIT_GC_UNSAFE;
+	return res;
 }
 
 gboolean
