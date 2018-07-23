@@ -23,9 +23,9 @@ namespace Mono.Linker.Tests.TestCasesRunner {
 			return new TestCaseMetadaProvider (testCase, fullTestCaseAssemblyDefinition);
 		}
 
-		public virtual LinkerArgumentBuilder CreateLinkerArgumentBuilder ()
+		public virtual LinkerArgumentBuilder CreateLinkerArgumentBuilder (TestCaseMetadaProvider metadataProvider)
 		{
-			return new LinkerArgumentBuilder ();
+			return new LinkerArgumentBuilder (metadataProvider);
 		}
 	}
 }

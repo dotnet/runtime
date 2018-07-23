@@ -86,7 +86,7 @@ namespace Mono.Linker.Tests.TestCasesRunner {
 		private LinkedTestCaseResult Link (TestCase testCase, TestCaseSandbox sandbox, ManagedCompilationResult compilationResult, TestCaseMetadaProvider metadataProvider)
 		{
 			var linker = _factory.CreateLinker ();
-			var builder = _factory.CreateLinkerArgumentBuilder ();
+			var builder = _factory.CreateLinkerArgumentBuilder (metadataProvider);
 			var caseDefinedOptions = metadataProvider.GetLinkerOptions ();
 
 			builder.AddOutputDirectory (sandbox.OutputDirectory);
@@ -101,8 +101,7 @@ namespace Mono.Linker.Tests.TestCasesRunner {
 
 			AddAdditionalLinkOptions (builder, metadataProvider);
 
-			// TODO: Should be overridable
-			builder.LinkFromAssembly (compilationResult.InputAssemblyPath.ToString ());
+			builder.ProcessTestInputAssembly (compilationResult.InputAssemblyPath);
 
 			linker.Link (builder.ToArgs ());
 

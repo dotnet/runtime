@@ -159,6 +159,8 @@
     <Compile Include="Basic\UsedStructIsKept.cs" />
     <Compile Include="CoreLink\CanIncludeI18nAssemblies.cs" />
     <Compile Include="CoreLink\NoSecurityPlusOnlyKeepUsedRemovesAllSecurityAttributesFromCoreLibraries.cs" />
+    <Compile Include="Libraries\CanLinkPublicApisOfLibrary.cs" />
+    <Compile Include="Libraries\DefaultLibraryLinkBehavior.cs" />
     <Compile Include="LinkXml\CanPreserveTypesUsingRegex.cs" />
     <Compile Include="LinkXml\CanPreserveAnExportedType.cs" />
     <None Include="LinkXml\Dependencies\CanPreserveAnExportedType_Forwarder.cs" />
