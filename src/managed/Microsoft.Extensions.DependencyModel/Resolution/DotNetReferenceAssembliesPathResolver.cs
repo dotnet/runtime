@@ -9,9 +9,9 @@ namespace Microsoft.Extensions.DependencyModel.Resolution
     {
         public static readonly string DotNetReferenceAssembliesPathEnv = "DOTNET_REFERENCE_ASSEMBLIES_PATH";
 
-        internal static string Resolve(IEnvironment envirnment, IFileSystem fileSystem)
+        internal static string Resolve(IEnvironment environment, IFileSystem fileSystem)
         {
-            var path = envirnment.GetEnvironmentVariable(DotNetReferenceAssembliesPathEnv);
+            var path = environment.GetEnvironmentVariable(DotNetReferenceAssembliesPathEnv);
             if (!string.IsNullOrEmpty(path))
             {
                 return path;
