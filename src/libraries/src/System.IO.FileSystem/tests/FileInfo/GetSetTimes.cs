@@ -67,55 +67,41 @@ namespace System.IO.Tests
                 DateTimeKind.Utc);
         }
 
-        [Fact]
+        [ConditionalFact(nameof(isNotHFS))]
         public void CopyToMillisecondPresent()
         {
-            FileInfo input = new FileInfo(Path.Combine(TestDirectory, GetTestFileName()));
-            input.Create().Dispose();
-
-            string driveFormat = new DriveInfo(input.DirectoryName).DriveFormat;
-            if (!driveFormat.Equals(HFS, StringComparison.InvariantCultureIgnoreCase))
+            FileInfo input = new FileInfo(GetTestFilePath());
+            for (int i = 0; i < 5; i++)
             {
-                for (int i = 0; i < 5; i++)
-                {
-                    if (input.LastWriteTime.Millisecond != 0)
-                        break;
+                input.Create().Dispose();
+                if (input.LastWriteTime.Millisecond != 0)
+                    break;
 
-                    // This case should only happen 1/1000 times, unless the OS/Filesystem does
-                    // not support millisecond granularity.
+                // This case should only happen 1/1000 times, unless the OS/Filesystem does
+                // not support millisecond granularity.
 
-                    // If it's 1/1000, or low granularity, this may help:
-                    Thread.Sleep(1234);
-                    input = new FileInfo(Path.Combine(TestDirectory, GetTestFileName()));
-                    input.Create().Dispose();
-                }
-
-                FileInfo output = new FileInfo(Path.Combine(TestDirectory, GetTestFileName(), input.Name));
-                Assert.Equal(0, output.LastWriteTime.Millisecond);
-                output.Directory.Create();
-                output = input.CopyTo(output.FullName, true);
-
-                Assert.NotEqual(0, input.LastWriteTime.Millisecond);
-                Assert.NotEqual(0, output.LastWriteTime.Millisecond);
+                // If it's 1/1000, or low granularity, this may help:
+                Thread.Sleep(1234);
             }
+
+            FileInfo output = new FileInfo(Path.Combine(GetTestFilePath(), input.Name));
+            Assert.Equal(0, output.LastWriteTime.Millisecond);
+            output.Directory.Create();
+            output = input.CopyTo(output.FullName, true);
+            Assert.NotEqual(0, input.LastWriteTime.Millisecond);
+            Assert.NotEqual(0, output.LastWriteTime.Millisecond);
         }
 
-        [Fact]
-        [PlatformSpecific(TestPlatforms.OSX)]
+        [ConditionalFact(nameof(isHFS))]
         public void CopyToMillisecondPresent_HFS()
         {
-            FileInfo input = new FileInfo(Path.Combine(TestDirectory, GetTestFileName()));
+            FileInfo input = new FileInfo(GetTestFilePath());
             input.Create().Dispose();
-            FileInfo output = new FileInfo(Path.Combine(TestDirectory, GetTestFileName(), input.Name));
-
-            string driveFormat = new DriveInfo(input.DirectoryName).DriveFormat;
-            if (driveFormat.Equals(HFS, StringComparison.InvariantCultureIgnoreCase))
-            {             
-                output.Directory.Create();
-                output = input.CopyTo(output.FullName, true);
-                Assert.Equal(0, input.LastWriteTime.Millisecond);
-                Assert.Equal(0, output.LastWriteTime.Millisecond);
-            }
+            FileInfo output = new FileInfo(Path.Combine(GetTestFilePath(), input.Name));
+            output.Directory.Create();
+            output = input.CopyTo(output.FullName, true);
+            Assert.Equal(0, input.LastWriteTime.Millisecond);
+            Assert.Equal(0, output.LastWriteTime.Millisecond);
         }
 
         [Fact]
