@@ -442,14 +442,16 @@ namespace System.Security.Cryptography.X509Certificates
         public virtual byte[] GetSerialNumber()
         {
             ThrowIfInvalid();
-
-            return GetRawSerialNumber().CloneByteArray();
+            byte[] serialNumber = GetRawSerialNumber().CloneByteArray();
+            // PAL always returns big-endian, GetSerialNumber returns little-endian
+            Array.Reverse(serialNumber);
+            return serialNumber;
         }
 
         public virtual string GetSerialNumberString()
         {
             ThrowIfInvalid();
-
+            // PAL always returns big-endian, GetSerialNumberString returns big-endian too
             return GetRawSerialNumber().ToHexStringUpper();
         }
 

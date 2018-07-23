@@ -102,12 +102,7 @@ namespace Internal.Cryptography.Pal
             {
                 using (SafeSharedAsn1IntegerHandle serialNumber = Interop.Crypto.X509GetSerialNumber(_cert))
                 {
-                    byte[] serial = Interop.Crypto.GetAsn1IntegerBytes(serialNumber);
-
-                    // Windows returns this in BigInteger Little-Endian,
-                    // OpenSSL returns this in BigInteger Big-Endian.
-                    Array.Reverse(serial);
-                    return serial;
+                    return Interop.Crypto.GetAsn1IntegerBytes(serialNumber);
                 }
             }
         }

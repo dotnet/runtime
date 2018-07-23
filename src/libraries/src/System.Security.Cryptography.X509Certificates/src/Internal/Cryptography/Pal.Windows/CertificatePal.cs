@@ -199,6 +199,7 @@ namespace Internal.Cryptography.Pal
                 {
                     CERT_CONTEXT* pCertContext = _certContext.CertContext;
                     byte[] serialNumber = pCertContext->pCertInfo->SerialNumber.ToByteArray();
+                    Array.Reverse(serialNumber);
                     GC.KeepAlive(this);
                     return serialNumber;
                 }
