@@ -135,11 +135,9 @@ void InteropSyncBlockInfo::FreeUMEntryThunkOrInterceptStub()
         {
 #if defined(_TARGET_X86_)
             Stub *pInterceptStub = GetInterceptStub();
-
             if (pInterceptStub != NULL)
             {
-                // There may be multiple chained stubs, i.e. host hook stub calling MDA stack
-                // imbalance stub, and the following DecRef will free all of them.
+                // There may be multiple chained stubs
                 pInterceptStub->DecRef();
             }
 #else // _TARGET_X86_
