@@ -148,6 +148,8 @@ Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "tests", "tests", "{1A2F9F4A
 EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "src", "src", "{E107E9C1-E893-4E87-987E-04EF0DCEAEFD}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "System.Xml.XmlNodeReader.Tests", "tests\XmlNodeReader\System.Xml.XmlNodeReader.Tests\System.Xml.XmlNodeReader.Tests.csproj", "{6C6F323D-054E-4723-9DEA-1C5E1E45DF88}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -270,6 +272,10 @@ Global
 		{C427CE0D-0740-41F3-9C3A-552BEA3DDB0D}.Debug|Any CPU.Build.0 = netcoreapp-Windows_NT-Debug|Any CPU
 		{C427CE0D-0740-41F3-9C3A-552BEA3DDB0D}.Release|Any CPU.ActiveCfg = netcoreapp-Windows_NT-Release|Any CPU
 		{C427CE0D-0740-41F3-9C3A-552BEA3DDB0D}.Release|Any CPU.Build.0 = netcoreapp-Windows_NT-Release|Any CPU
+		{6C6F323D-054E-4723-9DEA-1C5E1E45DF88}.Debug|Any CPU.ActiveCfg = netstandard-Debug|Any CPU
+		{6C6F323D-054E-4723-9DEA-1C5E1E45DF88}.Debug|Any CPU.Build.0 = netstandard-Debug|Any CPU
+		{6C6F323D-054E-4723-9DEA-1C5E1E45DF88}.Release|Any CPU.ActiveCfg = netstandard-Release|Any CPU
+		{6C6F323D-054E-4723-9DEA-1C5E1E45DF88}.Release|Any CPU.Build.0 = netstandard-Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
@@ -304,6 +310,7 @@ Global
 		{59B2167E-E2D6-4E7E-AFFE-4060E1F3843C} = {1A2F9F4A-A032-433E-B914-ADD5992BB178}
 		{ACF79A18-2655-452C-B4AC-10125F0AD7A8} = {1A2F9F4A-A032-433E-B914-ADD5992BB178}
 		{C427CE0D-0740-41F3-9C3A-552BEA3DDB0D} = {E107E9C1-E893-4E87-987E-04EF0DCEAEFD}
+		{6C6F323D-054E-4723-9DEA-1C5E1E45DF88} = {1A2F9F4A-A032-433E-B914-ADD5992BB178}
 	EndGlobalSection
 	GlobalSection(ExtensibilityGlobals) = postSolution
 		SolutionGuid = {B6F8C99E-5430-4B46-8FCE-7AAAAEBA6A0C}
