@@ -26,11 +26,16 @@ namespace System.Security.Cryptography.X509Certificates.Tests
         public static void X509CertTest()
         {
             string certSubject = @"CN=Microsoft Corporate Root Authority, OU=ITG, O=Microsoft, L=Redmond, S=WA, C=US, E=pkit@microsoft.com";
+            string certSubjectObsolete = @"E=pkit@microsoft.com, C=US, S=WA, L=Redmond, O=Microsoft, OU=ITG, CN=Microsoft Corporate Root Authority";
 
             using (X509Certificate cert = new X509Certificate(Path.Combine("TestData", "microsoft.cer")))
             {
                 Assert.Equal(certSubject, cert.Subject);
                 Assert.Equal(certSubject, cert.Issuer);
+#pragma warning disable CS0618 // Type or member is obsolete
+                Assert.Equal(certSubjectObsolete, cert.GetName());
+                Assert.Equal(certSubjectObsolete, cert.GetIssuerName());
+#pragma warning restore CS0618
 
                 int snlen = cert.GetSerialNumber().Length;
                 Assert.Equal(16, snlen);
