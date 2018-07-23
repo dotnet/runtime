@@ -66,6 +66,7 @@
     <Compile Include="System\Runtime\InteropServices\Marshal\GenerateGuidForTypeTests.Windows.cs" Condition="'$(TargetsWindows)' == 'true'" />
     <Compile Include="System\Runtime\InteropServices\Marshal\GenerateProgIdForTypeTests.cs" />
     <Compile Include="System\Runtime\InteropServices\Marshal\GenerateProgIdForTypeTests.Windows.cs" Condition="'$(TargetsWindows)' == 'true'" />
+    <Compile Include="System\Runtime\InteropServices\Marshal\GetExceptionCodeTests.cs" />
     <Compile Include="System\Runtime\InteropServices\Marshal\GetExceptionForHRTests.cs" />
     <Compile Include="System\Runtime\InteropServices\Marshal\GetComObjectDataTests.cs" />
     <Compile Include="System\Runtime\InteropServices\Marshal\GetDelegateForFunctionPointerTests.cs" />
@@ -104,6 +105,7 @@
     <Compile Include="System\Runtime\InteropServices\Marshal\OffsetOfTests.cs" />
     <Compile Include="System\Runtime\InteropServices\Marshal\PrelinkTests.cs" />
     <Compile Include="System\Runtime\InteropServices\Marshal\PrelinkAllTests.cs" />
+    <Compile Include="System\Runtime\InteropServices\Marshal\ThrowExceptionForHRTests.cs" />
     <Compile Include="System\Runtime\InteropServices\Marshal\ZeroFreeCoTaskMemAnsiTests.cs" />
     <Compile Include="System\Runtime\InteropServices\Marshal\ZeroFreeCoTaskMemUnicodeTests.cs" />
     <Compile Include="System\Runtime\InteropServices\Marshal\ZeroFreeCoTaskMemUTF8Tests.cs" Condition="'$(TargetGroup)' == 'netcoreapp'" />
