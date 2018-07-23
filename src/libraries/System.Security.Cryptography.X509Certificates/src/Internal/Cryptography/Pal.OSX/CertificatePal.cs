@@ -238,9 +238,7 @@ namespace Internal.Cryptography.Pal
             get
             {
                 EnsureCertData();
-                byte[] serial = _certData.SerialNumber;
-                Array.Reverse(serial);
-                return serial;
+                return _certData.SerialNumber;
             }
         }
 

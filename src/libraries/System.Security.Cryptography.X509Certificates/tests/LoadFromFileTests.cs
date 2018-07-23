@@ -37,17 +37,18 @@ namespace System.Security.Cryptography.X509Certificates.Tests
         }
 
         [Fact]
-        [ActiveIssue(30543, TargetFrameworkMonikers.NetFramework)]
         public static void TestSerial()
         {
-            string expectedSerialHex = "B00000000100DD9F3BD08B0AAF11B000000033";
-            byte[] expectedSerial = expectedSerialHex.HexToByteArray();
+            string expectedSerialHex = "33000000B011AF0A8BD03B9FDD0001000000B0";
+            byte[] expectedSerial = "B00000000100DD9F3BD08B0AAF11B000000033".HexToByteArray();
 
             using (X509Certificate2 c = LoadCertificateFromFile())
             {
                 byte[] serial = c.GetSerialNumber();
                 Assert.Equal(expectedSerial, serial);
                 string serialHex = c.GetSerialNumberString();
+                Assert.Equal(expectedSerialHex, serialHex);
+                serialHex = c.SerialNumber;
                 Assert.Equal(expectedSerialHex, serialHex);
             }
         }
