@@ -5078,6 +5078,8 @@ void Thread::CommitGCStressInstructionUpdate()
         *pbDestCode = *pbSrcCode;
 
 #endif
+
+        FlushInstructionCache(GetCurrentProcess(), (LPCVOID)pbDestCode, 4);
     }
 }
 
