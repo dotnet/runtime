@@ -87,9 +87,6 @@ cpp_quote("EXTERN_GUID(CLSID_CLRDebuggingLegacy, 0xDF8395B5, 0xA4BA, 0x450b, 0xA
 // CLSID CLRProfiling interface : uuid{BD097ED8-733E-43fe-8ED7-A95FF9A8448C}
 cpp_quote("EXTERN_GUID(CLSID_CLRProfiling, 0xbd097ed8, 0x733e, 0x43fe, 0x8e, 0xd7, 0xa9, 0x5f, 0xf9, 0xa8, 0x44, 0x8c);")
 
-// IID ICLRProfiling interface : uuid{B349ABE3-B56F-4689-BFCD-76BF39D888EA}
-cpp_quote("EXTERN_GUID(IID_ICLRProfiling, 0xb349abe3, 0xb56f, 0x4689, 0xbf, 0xcd, 0x76, 0xbf, 0x39, 0xd8, 0x88, 0xea);")
-
 // IID ICLRDebuggingLibraryProvider interface : uuid{3151C08D-4D09-4f9b-8838-2880BF18FE51}
 cpp_quote("EXTERN_GUID(IID_ICLRDebuggingLibraryProvider, 0x3151c08d, 0x4d09, 0x4f9b, 0x88, 0x38, 0x28, 0x80, 0xbf, 0x18, 0xfe, 0x51);")
 
@@ -332,27 +329,6 @@ interface ICLRMetaHostPolicy : IUnknown
         [in]  REFIID  riid,   // IID_ICLRRuntimeInfo
         [out, iid_is(riid), retval] LPVOID *ppRuntime);
 } // interface ICLRMetaHostPolicy
-
-/***************************************************************************************
- ** ICLRProfiling                                                                     **
- ** Activated using mscoree!CLRCreateInstance. Export AttachProfiler API to profilers **
- ***************************************************************************************/
-[
-    uuid(B349ABE3-B56F-4689-BFCD-76BF39D888EA),
-    version(1.0),
-    helpstring("CLR profiling interface for MetaHost interface"),
-    local
-]
-interface ICLRProfiling : IUnknown
-{
-    HRESULT AttachProfiler(
-        [in] DWORD dwProfileeProcessID,
-        [in] DWORD dwMillisecondsMax,                        // optional
-        [in] const CLSID * pClsidProfiler,
-        [in] LPCWSTR wszProfilerPath,                        // optional
-        [in, size_is(cbClientData)] void * pvClientData,     // optional
-        [in] UINT cbClientData);                             // optional
-}
 
 /*************************************************************************************
  ** This structure defines the version of a CLR for debugging purposes.             **
@@ -1099,7 +1075,6 @@ library CLRMetaHost
 {
     interface ICLRMetaHost;
     interface ICLRMetaHostPolicy;
-    interface ICLRProfiling;
     interface ICLRDebuggingLibraryProvider;
     interface ICLRDebugging;
     interface ICLRRuntimeInfo;
@@ -1130,7 +1105,6 @@ library CLRMetaHost
     
     // Scenario: Profiler attach for v4
     // ICLRMetaHost::EnumerateLoadedRuntimes
-    // ICLRRuntimeInfo::GetInterface(CLSID_CLRProfiling, IID_ICLRProfiling)
     
     // Scenario: An installer needs to modify configuration of supported runtimes
     // 1. ICLRMetaHost::EnumerateInstalledRuntimes
