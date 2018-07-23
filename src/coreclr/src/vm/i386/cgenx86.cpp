@@ -1048,7 +1048,7 @@ Stub *GenerateInitPInvokeFrameHelper()
 #ifdef MDA_SUPPORTED
 
 //-----------------------------------------------------------------------------
-Stub *NDirectMethodDesc::GenerateStubForMDA(LPVOID pNativeTarget, Stub *pInnerStub, BOOL fCalledByStub)
+Stub *NDirectMethodDesc::GenerateStubForMDA(LPVOID pNativeTarget, Stub *pInnerStub)
 {
     STANDARD_VM_CONTRACT;
 
@@ -1079,17 +1079,7 @@ Stub *NDirectMethodDesc::GenerateStubForMDA(LPVOID pNativeTarget, Stub *pInnerSt
     if (IsVarArgs())
     {
         // Re-push the return address as an argument to GetStackSizeForVarArgCall()
-        if (fCalledByStub)
-        {
-            // We will be called by another stub that doesn't know the stack size,
-            // so we need to skip a frame to get to the managed caller.
-            sl.X86EmitIndexRegLoad(kEAX, kEBP, 0);
-            sl.X86EmitIndexPush(kEAX, 4);
-        }
-        else
-        {
-            sl.X86EmitIndexPush(kEBP, 4);
-        }
+        sl.X86EmitIndexPush(kEBP, 4);
 
         // This will return the number of stack arguments (in DWORDs)
         sl.X86EmitCall(sl.NewExternalCodeLabel((LPVOID)GetStackSizeForVarArgCall), 4);

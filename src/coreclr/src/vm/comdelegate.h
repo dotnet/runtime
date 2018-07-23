@@ -117,7 +117,6 @@ public:
 #ifdef MDA_SUPPORTED
     static Stub *GenerateStubForMDA(MethodDesc *pInvokeMD, MethodDesc *pStubMD, LPVOID pNativeTarget, Stub *pInnerStub);
 #endif // MDA_SUPPORTED
-    static Stub *GenerateStubForHost(MethodDesc *pInvokeMD, MethodDesc *pStubMD, LPVOID pNativeTarget, Stub *pInnerStub);
 #endif // _TARGET_X86_
 
     static MethodDesc * __fastcall GetMethodDesc(OBJECTREF obj);
