@@ -9,55 +9,64 @@
     <NugetRuntimeIdentifier Condition="'$(ArchGroup)' == 'armel'">win10-arm</NugetRuntimeIdentifier>
     <RidSpecificAssets>true</RidSpecificAssets>
     <OutputPath>$(RuntimePath)</OutputPath>
-    <XUnitRunnerPackageId Condition="'$(TargetGroup)' != 'netfx'">xunit.console.netcore</XUnitRunnerPackageId>
-    <XUnitRunnerPackageId Condition="'$(TargetGroup)' == 'netfx'">xunit.runner.console</XUnitRunnerPackageId>
-    <NuGetTargetMoniker Condition="'$(TargetGroup)' == 'uapaot'">.NETStandard,Version=v2.0</NuGetTargetMoniker>
-    <NuGetTargetMonikerShort Condition="'$(TargetGroup)' == 'uapaot'">netstandard2.0</NuGetTargetMonikerShort>
-    <NuGetTargetMoniker Condition="'$(TargetGroup)' == 'uap'">.NETStandard,Version=v2.0</NuGetTargetMoniker>
-    <NuGetTargetMonikerShort Condition="'$(TargetGroup)' == 'uap'">netstandard2.0</NuGetTargetMonikerShort>
+    <XUnitRunnerPackageId>xunit.runner.console</XUnitRunnerPackageId>
+    <XUnitRunner>xunit.console</XUnitRunner>
+    <XUnitTestAdapterPackageId>xunit.runner.visualstudio</XUnitTestAdapterPackageId>
+    <XUnitAdapter Condition="'$(TargetGroup)' == 'netcoreapp'">xunit.runner.visualstudio.dotnetcore.testadapter</XUnitAdapter>
+    <XUnitAdapter Condition="'$(TargetGroup)' == 'uap' OR '$(TargetGroup)' == 'uapaot'">xunit.runner.visualstudio.uwp.testadapter</XUnitAdapter>
+    <XUnitAdapter Condition="'$(TargetGroup)' == 'netfx'">xunit.runner.visualstudio.testadapter</XUnitAdapter>
+    <TestPlatformHostPackageId>microsoft.testplatform.testhost</TestPlatformHostPackageId>
+    <TestPlatformHost>testhost</TestPlatformHost>
+    <NuGetTargetMoniker Condition="'$(TargetGroup)' == 'uap' OR '$(TargetGroup)' == 'uapaot'">.NETStandard,Version=v2.0</NuGetTargetMoniker>
+    <NuGetTargetMonikerShort Condition="'$(TargetGroup)' == 'uap' OR '$(TargetGroup)' == 'uapaot'">netstandard2.0</NuGetTargetMonikerShort>
     <!-- Coverlet related properties -->
     <CoverletPackageId>coverlet.msbuild</CoverletPackageId>
     <CoverletPackageVersion>2.2.1</CoverletPackageVersion>
+    <!-- In case the project language is not set -->
+    <Language Condition="'$(Language)' == ''">unknown</Language>
     <!-- Don't warn if some dependencies were rolled forward -->
     <NoWarn>$(NoWarn);NU1603</NoWarn>
   </PropertyGroup>
+  
   <ItemGroup>
-    <PackageReference Include="xunit.console.netcore">
-      <Version>$(AppXRunnerVersion)</Version>
+    <!-- xunit packages -->
+    <PackageReference Include="xunit">
+      <Version>$(XUnitPackageVersion)</Version>
     </PackageReference>
-    <PackageReference Include="Microsoft.DotNet.BuildTools.TestSuite">
-      <Version>$(XunitNetcoreExtensionsVersion)</Version>
+    <PackageReference Include="Microsoft.DotNet.XUnitExtensions">
+      <Version>$(MicrosoftDotNetXUnitExtensionsVersion)</Version>
     </PackageReference>
-    <PackageReference Include="Microsoft.xunit.netcore.extensions">
-      <Version>$(XunitNetcoreExtensionsVersion)</Version>
+    <!-- We don't use the default runner on uap -->
+    <PackageReference Condition="'$(TargetsUap)' != 'true'" Include="$(XUnitRunnerPackageId)">
+      <Version>$(XUnitPackageVersion)</Version>
     </PackageReference>
-    <PackageReference Include="xunit.performance.api">
-      <Version>$(XunitPerfAnalysisPackageVersion)</Version>
+    <PackageReference Include="$(XUnitTestAdapterPackageId)">
+      <Version>$(XUnitPackageVersion)</Version>
     </PackageReference>
-    <PackageReference Include="xunit.performance.core">
-      <Version>$(XunitPerfAnalysisPackageVersion)</Version>
+
+    <!-- Test SDK packages. -->
+    <PackageReference Condition="'$(TargetsNetFx)' != 'true'" Include="Microsoft.NET.Test.Sdk">
+      <Version>$(MicrosoftDotNetTestSdkVersion)</Version>
     </PackageReference>
-    <PackageReference Include="xunit.performance.execution">
-      <Version>$(XunitPerfAnalysisPackageVersion)</Version>
+     <PackageReference Condition="'$(TargetsNetFx)' != 'true'" Include="$(TestPlatformHostPackageId)">
+      <Version>$(MicrosoftDotNetTestSdkVersion)</Version>
     </PackageReference>
-    <PackageReference Include="xunit.performance.metrics">
-      <Version>$(XunitPerfAnalysisPackageVersion)</Version>
+    <PackageReference Condition="'$(TargetsNetFx)' != 'true'" Include="Microsoft.TestPlatform.ObjectModel">
+      <Version>$(MicrosoftDotNetTestSdkVersion)</Version>
     </PackageReference>
-    <PackageReference Include="Microsoft.Diagnostics.Tracing.TraceEvent">
-      <Version>$(TraceEventPackageVersion)</Version>
+    <PackageReference Condition="'$(TargetsNetCoreApp)' == 'true'" Include="Microsoft.Extensions.DependencyModel">
+      <Version>2.0.4</Version>
     </PackageReference>
+    <PackageReference Condition="'$(TargetsNetCoreApp)' == 'true' OR '$(TargetsNetFx)' == 'true'" Include="Microsoft.CodeCoverage">
+      <Version>$(MicrosoftDotNetTestSdkVersion)</Version>
+    </PackageReference>
+
     <!-- for callstack line numbers -->
     <PackageReference Include="Microsoft.DiaSymReader.Native">
       <Version>1.5.0</Version>
     </PackageReference>
-    <PackageReference Include="Microsoft.3rdpartytools.MarkdownLog">
-      <Version>0.10.0-alpha-experimental</Version>
-    </PackageReference>
     <PackageReference Condition="'$(TargetGroup)' != 'uapaot'" Include="Microsoft.DotNet.PlatformAbstractions">
       <Version>2.0.4</Version>
-    </PackageReference>
-    <PackageReference Include="CommandLineParser">
-      <Version>2.1.1-beta</Version>
     </PackageReference>
     <PackageReference Include="Newtonsoft.Json">
       <Version>9.0.1</Version>
@@ -74,6 +83,8 @@
     <PackageReference Include="ReportGenerator">
       <Version>3.0.1</Version>
     </PackageReference>
+
+    <!-- Test Data -->
     <PackageReference Include="System.IO.Compression.TestData">
       <Version>1.0.6-prerelease</Version>
     </PackageReference>
@@ -93,22 +104,61 @@
       <Version>1.0.2</Version>
     </PackageReference>
   </ItemGroup>
-  <ItemGroup Condition="'$(TargetGroup)' == 'netfx'">
-    <PackageReference Include="xunit.runner.console">
-      <Version>$(XUnitPackageVersion)</Version>
+
+    <!-- Perf testing -->
+  <ItemGroup Condition="'$(TargetGroup)' != 'uap' AND '$(TargetGroup)' != 'uapaot'">
+    <PackageReference Include="xunit.performance.api">
+      <Version>$(XUnitPerformancePackageVersion)</Version>
     </PackageReference>
+    <PackageReference Include="xunit.performance.core">
+      <Version>$(XUnitPerformancePackageVersion)</Version>
+    </PackageReference>
+    <PackageReference Include="xunit.performance.execution">
+      <Version>$(XUnitPerformancePackageVersion)</Version>
+    </PackageReference>
+    <PackageReference Include="xunit.performance.metrics">
+      <Version>$(XUnitPerformancePackageVersion)</Version>
+    </PackageReference>
+    <PackageReference Include="Microsoft.Diagnostics.Tracing.TraceEvent">
+      <Version>$(TraceEventPackageVersion)</Version>
+    </PackageReference>
+    <PackageReference Include="MarkdownLog.NS20">
+      <Version>0.10.1</Version>
+    </PackageReference>
+    <PackageReference Include="CommandLineParser.NS20">
+      <Version>2.3.1</Version>
+    </PackageReference>
+
+    <PackageToInclude Include="xunit.performance.core"/>
+    <PackageToInclude Include="xunit.performance.api"/>
+    <PackageToInclude Include="xunit.performance.execution"/>
+    <PackageToInclude Include="xunit.performance.metrics"/>
+    <PackageToInclude Include="Microsoft.Diagnostics.Tracing.TraceEvent"/>
+    <PackageToInclude Include="MarkdownLog.NS20"/>
+    <PackageToInclude Include="CommandLineParser.NS20" />
   </ItemGroup>
+
   <ItemGroup>
-    <PackageToInclude Include="Microsoft.DiaSymReader.Native"/>
-    <PackageToInclude Include="xunit.abstractions"/>
-    <PackageToInclude Include="xunit.assert"/>
-    <PackageToInclude Include="xunit.extensibility.core"/>
-    <PackageToInclude Include="xunit.extensibility.execution"/>
-    <PackageToInclude Include="xunit.runner.utility"/>
-    <PackageToInclude Include="Microsoft.xunit.netcore.extensions"/>
-    <PackageToInclude Include="Newtonsoft.Json"/>
+    <!-- xunit core -->
+    <PackageToInclude Include="xunit.abstractions" />
+    <PackageToInclude Include="xunit.assert" />
+    <PackageToInclude Include="xunit.extensibility.core" />
+    <PackageToInclude Include="xunit.extensibility.execution" />
+    <PackageToInclude Include="xunit.runner.utility" />
+    <PackageToInclude Include="Microsoft.DotNet.XUnitExtensions" />
+    <PackageToInclude Condition="'$(TargetsUap)' != 'true'" Include="$(XUnitRunnerPackageId)" />
+    <PackageToInclude Include="$(XUnitTestAdapterPackageId)" />
+    
+    <!-- test sdk -->
+    <PackageToInclude Condition="'$(TargetsNetFx)' != 'true'" Include="Microsoft.NET.Test.Sdk" />
+    <PackageToInclude Condition="'$(TargetsNetFx)' != 'true'" Include="Microsoft.TestPlatform.TestHost" />
+    <PackageToInclude Condition="'$(TargetsNetFx)' != 'true'" Include="Microsoft.TestPlatform.ObjectModel" />
+    <PackageToInclude Condition="'$(TargetsNetCoreApp)' == 'true'" Include="Microsoft.Extensions.DependencyModel" />
+    <PackageToInclude Condition="'$(TargetsNetCoreApp)' == 'true' OR '$(TargetsNetFx)' == 'true'" Include="Microsoft.CodeCoverage" />
+
+    <PackageToInclude Include="Microsoft.DiaSymReader.Native" />
+    <PackageToInclude Include="Newtonsoft.Json" />
     <PackageToInclude Condition="'$(TargetGroup)' != 'uapaot'" Include="Microsoft.DotNet.PlatformAbstractions" />
-    <PackageToInclude Include="$(XUnitRunnerPackageId)" />
   </ItemGroup>
 
   <!-- Ensure that the native components of TraceEvent are restored into the runtime directory so that TraceEvent can pinvoke into them. -->
@@ -128,10 +178,6 @@
       SkipUnchangedFiles="true" />
   </Target>
 
-  <PropertyGroup Condition="'$(TargetGroup)' == 'uap'">
-    <UAPToolsPackageVersion>1.0.17</UAPToolsPackageVersion>
-  </PropertyGroup>
-
   <ItemGroup Condition="'$(TargetGroup)' == 'uap'">
     <PackageReference Include="Microsoft.DotNet.UAP.TestTools">
       <Version>$(UAPToolsPackageVersion)</Version>
@@ -148,15 +194,6 @@
     <PackageToInclude Include="runtime.win-x86.runtime.native.System.Data.SqlClient.sni"/>
   </ItemGroup>
 
-  <ItemGroup Condition="'$(TargetGroup)' != 'uapaot'">
-    <PackageToInclude Include="xunit.performance.core"/>
-    <PackageToInclude Include="xunit.performance.api"/>
-    <PackageToInclude Include="xunit.performance.execution"/>
-    <PackageToInclude Include="xunit.performance.metrics"/>
-    <PackageToInclude Include="Microsoft.Diagnostics.Tracing.TraceEvent"/>
-    <PackageToInclude Include="Microsoft.3rdpartytools.MarkdownLog"/>
-    <PackageToInclude Include="CommandLineParser" />
-  </ItemGroup>
 
   <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), Directory.Build.targets))\Directory.Build.targets" />
 
@@ -221,17 +258,83 @@
 
   </Target>
 
-  <Target Name="AddXunitConsoleRunner" BeforeTargets="ResolveReferences" Condition="'$(TargetGroup)' == 'netfx'">
-    <Error Condition="!Exists('$(PackagesDir)$(XUnitRunnerPackageId)\$(XUnitPackageVersion)\tools\xunit.console.exe')"
-            Text="Error: looks the package $(PackagesDir)$(XUnitRunnerPackageId)\$(XUnitPackageVersion) not restored or missing xunit.console.exe."
+  <Target Name="AddTestPlatformDependenciesNetCore" BeforeTargets="ResolveReferences" Condition="'$(TargetGroup)' == 'netcoreapp'">
+    <Error Condition="!Exists('$(PackagesDir)$(XUnitRunnerPackageId)\$(XUnitPackageVersion)\tools\netcoreapp2.0\$(XUnitRunner).dll')"
+            Text="Error: looks the package $(PackagesDir)$(XUnitRunnerPackageId)\$(XUnitPackageVersion) not restored or missing $(XUnitRunner).dll."
+    />
+    <Error Condition="!Exists('$(PackagesDir)$(XUnitTestAdapterPackageId)\$(XUnitPackageVersion)\build\netcoreapp1.0\$(XUnitAdapter).dll')"
+            Text="Error: looks the package $(PackagesDir)$(XUnitTestAdapterPackageId)\$(XUnitPackageVersion) not restored or missing $(XUnitAdapter).dll."
+    />
+    <Error Condition="!Exists('$(PackagesDir)$(TestPlatformHostPackageId)\$(MicrosoftDotNetTestSdkVersion)\lib\netstandard1.5\$(TestPlatformHost).dll')"
+            Text="Error: looks the package $(PackagesDir)$(TestPlatformHostPackageId)\$(MicrosoftDotNetTestSdkVersion) not restored or missing $(TestPlatformHost).dll."
+    />
+    <ItemGroup>
+      <ReferenceCopyLocalPaths Include="$(PackagesDir)$(XUnitRunnerPackageId)\$(XUnitPackageVersion)\tools\netcoreapp2.0\*.*">
+        <Private>false</Private>
+        <NuGetPackageId>$(XUnitRunnerPackageId)</NuGetPackageId>
+        <NuGetPackageVersion>$(XUnitPackageVersion)</NuGetPackageVersion>
+      </ReferenceCopyLocalPaths>
+      <ReferenceCopyLocalPaths Include="$(PackagesDir)$(XUnitTestAdapterPackageId)\$(XUnitPackageVersion)\build\netcoreapp1.0\*.*">
+        <Private>false</Private>
+        <NuGetPackageId>$(XUnitTestAdapterPackageId)</NuGetPackageId>
+        <NuGetPackageVersion>$(XUnitPackageVersion)</NuGetPackageVersion>
+      </ReferenceCopyLocalPaths>
+      <ReferenceCopyLocalPaths Include="$(PackagesDir)$(TestPlatformHostPackageId)\$(MicrosoftDotNetTestSdkVersion)\lib\netstandard1.5\$(TestPlatformHost).dll">
+        <Private>false</Private>
+        <NuGetPackageId>$(TestPlatformHostPackageId)</NuGetPackageId>
+        <NuGetPackageVersion>$(MicrosoftDotNetTestSdkVersion)</NuGetPackageVersion>
+      </ReferenceCopyLocalPaths>
+    </ItemGroup>
+  </Target>
+
+  <Target Name="AddTestPlatformDependenciesUap" BeforeTargets="ResolveReferences" Condition="'$(TargetGroup)' == 'uap' OR '$(TargetGroup)' == 'uapaot'">
+    <Error Condition="'$(TargetGroup)' == 'uapaot' AND !Exists('$(PackagesDir)$(XUnitRunnerPackageId)\$(XUnitPackageVersion)\tools\netcoreapp2.0\$(XUnitRunner).dll')"
+            Text="Error: looks the package $(PackagesDir)$(XUnitRunnerPackageId)\$(XUnitPackageVersion) not restored or missing $(XUnitRunner).dll."
+    />
+    <Error Condition="!Exists('$(PackagesDir)$(XUnitTestAdapterPackageId)\$(XUnitPackageVersion)\build\uap10.0\$(XUnitAdapter).dll')"
+            Text="Error: looks the package $(PackagesDir)$(XUnitTestAdapterPackageId)\$(XUnitPackageVersion) not restored or missing $(XUnitAdapter).dll."
+    />
+    <Error Condition="!Exists('$(PackagesDir)$(TestPlatformHostPackageId)\$(MicrosoftDotNetTestSdkVersion)\lib\uap10.0\$(TestPlatformHost).dll')"
+            Text="Error: looks the package $(PackagesDir)$(TestPlatformHostPackageId)\$(MicrosoftDotNetTestSdkVersion) not restored or missing $(TestPlatformHost).dll."
+    />
+    <ItemGroup>
+      <ReferenceCopyLocalPaths Condition="'$(TargetGroup)' == 'uapaot'" Include="$(PackagesDir)$(XUnitRunnerPackageId)\$(XUnitPackageVersion)\tools\netcoreapp2.0\*.*">
+        <Private>false</Private>
+        <NuGetPackageId>$(XUnitRunnerPackageId)</NuGetPackageId>
+        <NuGetPackageVersion>$(XUnitPackageVersion)</NuGetPackageVersion>
+      </ReferenceCopyLocalPaths>
+      <ReferenceCopyLocalPaths Include="$(PackagesDir)$(XUnitTestAdapterPackageId)\$(XUnitPackageVersion)\build\uap10.0\*.dll">
+        <Private>false</Private>
+        <NuGetPackageId>$(XUnitTestAdapterPackageId)</NuGetPackageId>
+        <NuGetPackageVersion>$(XUnitPackageVersion)</NuGetPackageVersion>
+      </ReferenceCopyLocalPaths>
+      <ReferenceCopyLocalPaths Include="$(PackagesDir)$(TestPlatformHostPackageId)\$(MicrosoftDotNetTestSdkVersion)\lib\uap10.0\$(TestPlatformHost).dll">
+        <Private>false</Private>
+        <NuGetPackageId>$(TestPlatformHostPackageId)</NuGetPackageId>
+        <NuGetPackageVersion>$(MicrosoftDotNetTestSdkVersion)</NuGetPackageVersion>
+      </ReferenceCopyLocalPaths>
+    </ItemGroup>
+  </Target>
+
+  <Target Name="AddTestPlatformDependenciesNetfx" BeforeTargets="ResolveReferences" Condition="'$(TargetGroup)' == 'netfx'">
+    <Error Condition="!Exists('$(PackagesDir)$(XUnitRunnerPackageId)\$(XUnitPackageVersion)\tools\net472\$(XUnitRunner).exe')"
+            Text="Error: looks the package $(PackagesDir)$(XUnitRunnerPackageId)\$(XUnitPackageVersion) not restored or missing $(XUnitRunner).exe."
+    />
+    <Error Condition="!Exists('$(PackagesDir)$(XUnitTestAdapterPackageId)\$(XUnitPackageVersion)\build\_common\$(XUnitAdapter).dll')"
+            Text="Error: looks the package $(PackagesDir)$(XUnitTestAdapterPackageId)\$(XUnitPackageVersion) not restored or missing $(XUnitAdapter).dll."
     />
     <ItemGroup>
       <ReferenceCopyLocalPaths
-        Include="$(PackagesDir)$(XUnitRunnerPackageId)\$(XUnitPackageVersion)\tools\*.*"
-        Exclude="$(PackagesDir)$(XUnitRunnerPackageId)\$(XUnitPackageVersion)\tools\xunit.console.exe.config"
+        Include="$(PackagesDir)$(XUnitRunnerPackageId)\$(XUnitPackageVersion)\tools\net472\*.*"
+        Exclude="$(PackagesDir)$(XUnitRunnerPackageId)\$(XUnitPackageVersion)\tools\net472\xunit.console.*exe.config"
       >
         <Private>false</Private>
         <NuGetPackageId>$(XUnitRunnerPackageId)</NuGetPackageId>
+        <NuGetPackageVersion>$(XUnitPackageVersion)</NuGetPackageVersion>
+      </ReferenceCopyLocalPaths>
+      <ReferenceCopyLocalPaths Include="$(PackagesDir)$(XUnitTestAdapterPackageId)\$(XUnitPackageVersion)\build\_common\*.*">
+        <Private>false</Private>
+        <NuGetPackageId>$(XUnitTestAdapterPackageId)</NuGetPackageId>
         <NuGetPackageVersion>$(XUnitPackageVersion)</NuGetPackageVersion>
       </ReferenceCopyLocalPaths>
     </ItemGroup>

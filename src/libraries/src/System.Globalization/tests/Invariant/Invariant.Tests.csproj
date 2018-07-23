@@ -1,4 +1,4 @@
-<Project Sdk="Microsoft.NET.Sdk">
+﻿<Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
     <ProjectGuid>{9A8926D9-1D4C-4069-8965-A626F6CA8C29}</ProjectGuid>
     <Configurations>netcoreapp-Debug;netcoreapp-Release</Configurations>
@@ -12,11 +12,11 @@
   </PropertyGroup>
   <ItemGroup>
     <Compile Include="InvariantMode.cs" />
-    <Content Condition="'$(UsingCoverageDedicatedRuntime)'!='true'" Include="xunit.console.netcore.runtimeconfig.json">
+    <Content Condition="'$(UsingCoverageDedicatedRuntime)'!='true'" Include="xunit.console.runtimeconfig.json">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </Content>
     <!-- If using coverage dedicated runtime the proper runtimeconfig needs to be ussed -->
-    <Content Condition="'$(UsingCoverageDedicatedRuntime)'=='true'" Include="coverage/xunit.console.netcore.runtimeconfig.json">
+    <Content Condition="'$(UsingCoverageDedicatedRuntime)'=='true'" Include="coverage/xunit.console.runtimeconfig.json">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </Content>
   </ItemGroup>

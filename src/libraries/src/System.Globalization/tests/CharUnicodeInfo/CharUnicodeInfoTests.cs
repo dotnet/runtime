@@ -84,7 +84,7 @@ namespace System.Globalization.Tests
         }
 
         [Theory]
-        [InlineData("\uFFFF", -1)]
+        [InlineData('\uFFFF', -1)]
         public void GetNumericValue(char ch, double expected)
         {
             double actual = CharUnicodeInfo.GetNumericValue(ch);

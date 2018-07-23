@@ -5,7 +5,7 @@
   </PropertyGroup>
   <ItemGroup>
     <Compile Include="mscorlib.forwards.cs" />
-    <ReferencePath Include="$(_RuntimePath)System.*.dll;$(_RuntimePath)Microsoft.*.dll" Exclude="$(_RuntimePath)Microsoft.Diagnostics.Tracing.TraceEvent.dll;$(_RuntimePath)Microsoft.DiaSymReader.Native.*.dll" />
+    <ReferencePath Include="$(_RuntimePath)System.*.dll;$(_RuntimePath)Microsoft.*.dll" Exclude="$(_RuntimePath)Microsoft.Diagnostics.Tracing.TraceEvent.dll;$(_RuntimePath)Microsoft.DiaSymReader.Native.*.dll;$(_RuntimePath)Microsoft.TestPlatform.*.dll;$(_RuntimePath)Microsoft.VisualStudio.TestPlatform.*.dll;$(_RuntimePath)Microsoft.VisualStudio.CodeCoverage.Shim.dll;$(_RuntimePath)Microsoft.Extensions.DependencyModel.dll;$(_RuntimePath)Microsoft.DotNet.PlatformAbstractions.dll;$(_RuntimePath)Microsoft.Diagnostics.FastSerialization.dll;$(_RuntimePath)Microsoft.DotNet.XUnitExtensions.dll" />
   </ItemGroup>
   <ItemGroup>
     <SeedTypePreference Include="System.Reflection.Emit.AssemblyBuilder" Assembly="System.Reflection.Emit" />

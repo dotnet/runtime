@@ -1,4 +1,4 @@
-<Project Sdk="Microsoft.NET.Sdk">
+﻿<Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
     <AssemblyName>CoreFx.Private.TestUtilities</AssemblyName>
     <ProjectGuid>{EBDB0247-CA43-4226-B7A1-8FEF21061D09}</ProjectGuid>
@@ -94,7 +94,7 @@
     <Reference Include="System.ComponentModel.Primitives" />
     <Reference Include="System.Runtime.InteropServices" />
     <ReferenceFromRuntime Include="xunit.core" />
-    <ReferenceFromRuntime Include="Xunit.NetCore.Extensions" />
+    <ReferenceFromRuntime Include="Microsoft.DotNet.XUnitExtensions" />
     <ReferenceFromRuntime Include="xunit.assert" />
     <ReferenceFromRuntime Condition="'$(TargetGroup)' != 'uapaot'" Include="Microsoft.DotNet.PlatformAbstractions" />
   </ItemGroup>

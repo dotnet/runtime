@@ -1,12 +1,11 @@
 <Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
+    <ProjectGuid>{28EB14BE-3BC9-4543-ABA6-A932424DFBD0}</ProjectGuid>
+    <OutputType>Exe</OutputType>
+    <AssemblyName>System.Diagnostics.FileVersionInfo.TestAssembly</AssemblyName>
+    <GenerateAssemblyInfo>false</GenerateAssemblyInfo>
     <Configuration Condition="'$(Configuration)'==''">Windows_Debug</Configuration>
     <Configurations>netstandard-Debug;netstandard-Release</Configurations>
-  </PropertyGroup>
-  <PropertyGroup>
-    <AssemblyName>System.Diagnostics.FileVersionInfo.TestAssembly</AssemblyName>
-    <ProjectGuid>{28EB14BE-3BC9-4543-ABA6-A932424DFBD0}</ProjectGuid>
-    <GenerateAssemblyInfo>false</GenerateAssemblyInfo>
   </PropertyGroup>
   <!-- Compiled Source Files -->
   <ItemGroup>

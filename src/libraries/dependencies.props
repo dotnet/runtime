@@ -17,7 +17,7 @@
     <ProjectNTfsTestILCCurrentRef>5c21cc5e3582fcdb9e62598974045d17efffbc48</ProjectNTfsTestILCCurrentRef>
     <SniCurrentRef>8bd1ec5fac9f0eec34ff6b34b1d878b4359e02dd</SniCurrentRef>
     <StandardCurrentRef>9004703a1923e5c5582ceb8d79712df777412446</StandardCurrentRef>
-    <BuildToolsCurrentRef>e0c1d36d8a19fed21cadfff4890e027bd4c2c214</BuildToolsCurrentRef>
+    <BuildToolsCurrentRef>86816ae37b15ad3631014e96783a3fab70c0e912</BuildToolsCurrentRef>
   </PropertyGroup>
 
   <!-- Product dependency versions. -->
@@ -44,10 +44,13 @@
     <!-- CoreFX-built SNI identity package -->
     <RuntimeNativeSystemDataSqlClientSniPackageVersion>4.4.0</RuntimeNativeSystemDataSqlClientSniPackageVersion>
 
-    <AppXRunnerVersion>2.2.0-preview1-02915-01</AppXRunnerVersion>
-    <XunitPerfAnalysisPackageVersion>1.0.0-beta-build0019</XunitPerfAnalysisPackageVersion>
+    <!-- xunit test dependency version  -->
+    <MicrosoftDotNetTestSdkVersion>15.8.0</MicrosoftDotNetTestSdkVersion>
+    <XUnitPackageVersion>2.4.0</XUnitPackageVersion>
+    <XUnitPerformancePackageVersion>1.0.0-beta-build0020</XUnitPerformancePackageVersion>
     <TraceEventPackageVersion>2.0.5</TraceEventPackageVersion>
-    <XunitNetcoreExtensionsVersion>2.2.0-preview1-03116-01</XunitNetcoreExtensionsVersion>
+    <MicrosoftDotNetXUnitExtensionsVersion>2.4.0-prerelease-63123-07</MicrosoftDotNetXUnitExtensionsVersion>
+    <UAPToolsPackageVersion>1.0.19</UAPToolsPackageVersion>
 
     <!-- Roslyn optimization data package version -->
     <MicrosoftDotNetIBCMergePackageVersion>4.6.0-alpha-00001</MicrosoftDotNetIBCMergePackageVersion>
@@ -183,11 +186,6 @@
       <Path>$(MSBuildThisFileDirectory)tools-local/ILAsmVersion.txt</Path>
       <PackageId>Microsoft.NETCore.ILAsm</PackageId>
     </UpdateStep>
-    <XmlUpdateStep Include="BuildTools">
-       <Path>$(MSBuildThisFileFullPath)</Path>
-       <ElementName>XunitNetcoreExtensionsVersion</ElementName>
-       <PackageId>Microsoft.xunit.netcore.extensions</PackageId>
-     </XmlUpdateStep>
      <XmlUpdateStep Include="BuildTools">
        <Path>$(MSBuildThisFileFullPath)</Path>
        <ElementName>FeedTasksPackageVersion</ElementName>
@@ -196,7 +194,6 @@
   </ItemGroup>
 
   <PropertyGroup>
-    <XUnitPackageVersion>2.3.0-beta1-build3642</XUnitPackageVersion>
     <CompatibilityShimsPackageVersion>2.1.0</CompatibilityShimsPackageVersion>
   </PropertyGroup>
 
@@ -223,8 +220,12 @@
       <Version>$(XUnitPackageVersion)</Version>
     </StaticDependency>
 
-    <StaticDependency Include="Microsoft.xunit.netcore.extensions;Microsoft.DotNet.BuildTools.TestSuite">
-      <Version>$(XunitNetcoreExtensionsVersion)</Version>
+    <StaticDependency Include="Microsoft.DotNet.XUnitExtensions">
+      <Version>$(MicrosoftDotNetXUnitExtensionsVersion)</Version>
+    </StaticDependency>
+
+    <StaticDependency Include="Microsoft.NET.Test.Sdk">
+      <Version>$(MicrosoftDotNetTestSdkVersion)</Version>
     </StaticDependency>
 
     <PerformancePackDependency Include="xunit.performance.core" />
@@ -232,17 +233,12 @@
     <PerformancePackDependency Include="xunit.performance.execution" />
     <PerformancePackDependency Include="xunit.performance.metrics" />
     <StaticDependency Include="@(PerformancePackDependency)">
-      <Version>$(XunitPerfAnalysisPackageVersion)</Version>
+      <Version>$(XUnitPerformancePackageVersion)</Version>
     </StaticDependency>
 
     <DependencyBuildInfo Include="@(StaticDependency)">
       <PackageId>%(Identity)</PackageId>
       <UpdateStableVersions>true</UpdateStableVersions>
-    </DependencyBuildInfo>
-
-    <DependencyBuildInfo Include="uwpRunnerVersion">
-      <PackageId>microsoft.xunit.runner.uwp</PackageId>
-      <Version>$(AppXRunnerVersion)</Version>
     </DependencyBuildInfo>
   </ItemGroup>
 
