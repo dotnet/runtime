@@ -14,6 +14,12 @@
 #ifdef HAVE_SYS_STATVFS_H
 #include <sys/statvfs.h>
 #endif
+#ifdef HAVE_COPYFILE_H
+#include <copyfile.h>
+#  if !defined(COPYFILE_CLONE)
+#    #define COPYFILE_CLONE (1 << 24)
+#  endif
+#endif
 #if defined(HAVE_SYS_STATFS_H)
 #include <sys/statfs.h>
 #endif
@@ -934,6 +940,8 @@ static gboolean
 is_file_writable (struct stat *st, const gchar *path)
 {
 	gboolean ret;
+	gchar *located_path;
+
 #if __APPLE__
 	// OS X Finder "locked" or `ls -lO` "uchg".
 	// This only covers one of several cases where an OS X file could be unwritable through special flags.
@@ -953,12 +961,17 @@ is_file_writable (struct stat *st, const gchar *path)
 	if ((st->st_gid == getegid ()) && (st->st_mode & S_IWGRP))
 		return 1;
 
+	located_path = mono_portability_find_file (path, FALSE);
+
 	/* Fallback to using access(2). It's not ideal as it might not take into consideration euid/egid
 	 * but it's the only sane option we have on unix.
 	 */
 	MONO_ENTER_GC_SAFE;
-	ret = access (path, W_OK) == 0;
+	ret = access (located_path != NULL ? located_path : path, W_OK) == 0;
 	MONO_EXIT_GC_SAFE;
+
+	g_free (located_path);
+
 	return ret;
 }
 
@@ -2314,6 +2327,30 @@ write_file (gint src_fd, gint dest_fd, struct stat *st_src, gboolean report_erro
 	return TRUE ;
 }
 
+#if HAVE_COPYFILE_H
+static int
+_wapi_copyfile(const char *from, const char *to, copyfile_state_t state, copyfile_flags_t flags)
+{
+	gchar *located_from, *located_to;
+	int ret;
+
+	located_from = mono_portability_find_file (from, FALSE);
+	located_to = mono_portability_find_file (to, FALSE);
+
+	MONO_ENTER_GC_SAFE;
+	ret = copyfile (
+		located_from == NULL ? from : located_from,
+		located_to == NULL ? to : located_to,
+		state, flags);
+	MONO_EXIT_GC_SAFE;
+
+	g_free (located_from);
+	g_free (located_to);
+
+	return ret;
+}
+#endif
+
 static gboolean
 CopyFile (const gunichar2 *name, const gunichar2 *dest_name, gboolean fail_if_exists)
 {
@@ -2359,7 +2396,40 @@ CopyFile (const gunichar2 *name, const gunichar2 *dest_name, gboolean fail_if_ex
 		
 		return(FALSE);
 	}
-	
+
+#if HAVE_COPYFILE_H
+	if (!_wapi_stat (utf8_dest, &dest_st)) {
+		/* Before trying to open/create the dest, we need to report a 'file busy'
+		 * error if src and dest are actually the same file. We do the check here to take
+		 * advantage of the IOMAP capability */
+		if (!_wapi_stat (utf8_src, &st) && st.st_dev == dest_st.st_dev && st.st_ino == dest_st.st_ino) {
+			g_free (utf8_src);
+			g_free (utf8_dest);
+
+			mono_w32error_set_last (ERROR_SHARING_VIOLATION);
+			return (FALSE);
+		}
+
+		/* Also bail out if the destination is read-only (FIXME: path is not translated by mono_portability_find_file!) */
+		if (!is_file_writable (&dest_st, utf8_dest)) {
+			g_free (utf8_src);
+			g_free (utf8_dest);
+
+			mono_w32error_set_last (ERROR_ACCESS_DENIED);
+			return (FALSE);
+		}
+	}
+
+	ret = _wapi_copyfile (utf8_src, utf8_dest, NULL, COPYFILE_ALL | COPYFILE_CLONE | (fail_if_exists ? COPYFILE_EXCL : COPYFILE_UNLINK));
+	g_free (utf8_src);
+	g_free (utf8_dest);
+	if (ret != 0) {
+		_wapi_set_last_error_from_errno ();
+		return FALSE;
+	}
+
+	return TRUE;
+#else
 	src_fd = _wapi_open (utf8_src, O_RDONLY, 0);
 	if (src_fd < 0) {
 		_wapi_set_last_path_error_from_errno (NULL, utf8_src);
@@ -2400,7 +2470,7 @@ CopyFile (const gunichar2 *name, const gunichar2 *dest_name, gboolean fail_if_ex
 		mono_w32error_set_last (ERROR_SHARING_VIOLATION);
 		return (FALSE);
 	}
-	
+
 	if (fail_if_exists) {
 		dest_fd = _wapi_open (utf8_dest, O_WRONLY | O_CREAT | O_EXCL, st.st_mode);
 	} else {
@@ -2458,6 +2528,7 @@ CopyFile (const gunichar2 *name, const gunichar2 *dest_name, gboolean fail_if_ex
 	g_free (utf8_dest);
 
 	return ret;
+#endif
 }
 
 static gchar*
