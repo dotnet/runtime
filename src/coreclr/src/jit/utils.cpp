@@ -380,15 +380,6 @@ void dspRegMask(regMaskTP regMask, size_t minSiz)
         regPrev = regNum;
     }
 
-#if CPU_HAS_BYTE_REGS
-    if (regMask & RBM_BYTE_REG_FLAG)
-    {
-        const char* nam = "BYTE";
-        printf("%s%s", sep, nam);
-        minSiz -= (strlen(sep) + strlen(nam));
-    }
-#endif
-
     if (strlen(sep) > 0)
     {
         // We've already printed something.

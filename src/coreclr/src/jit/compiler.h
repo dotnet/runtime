@@ -598,8 +598,6 @@ public:
         return regMask;
     }
 
-    regMaskSmall lvPrefReg; // set of regs it prefers to live in
-
     unsigned short lvVarIndex; // variable tracking index
 
 private:
@@ -2971,16 +2969,9 @@ public:
     //=========================================================================
 
 protected:
-//---------------- Local variable ref-counting ----------------------------
+    //---------------- Local variable ref-counting ----------------------------
 
-#if ASSERTION_PROP
-    BasicBlock* lvaMarkRefsCurBlock;
-    GenTree*    lvaMarkRefsCurStmt;
-#endif
-    BasicBlock::weight_t lvaMarkRefsWeight;
-
-    void lvaMarkLclRefs(GenTree* tree);
-
+    void lvaMarkLclRefs(GenTree* tree, BasicBlock* block, GenTreeStmt* stmt);
     bool IsDominatedByExceptionalEntry(BasicBlock* block);
     void SetVolatileHint(LclVarDsc* varDsc);
 
