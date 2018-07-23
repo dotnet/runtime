@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
+using System.Collections.Generic;
 using Xunit;
 
 namespace System.Runtime.InteropServices.Tests
@@ -11,11 +12,42 @@ namespace System.Runtime.InteropServices.Tests
         [Theory]
         [InlineData(unchecked((int)0x80020006))]
         [InlineData(unchecked((int)0x80020101))]
-        public void GetExceptionForHR_EqualsErrorCode(int err)
+        public void GetExceptionForHR_NoErrorInfo_ReturnsValidException(int errorCode)
         {
             ClearCurrentIErrorInfo();
-            Exception ex = Marshal.GetExceptionForHR(err);
-            Assert.Equal(err, ex.HResult);
+
+            Exception ex = Assert.IsType<COMException>(Marshal.GetExceptionForHR(errorCode));
+            Assert.Equal(errorCode, ex.HResult);
+            Assert.Null(ex.InnerException);
+            Assert.Null(ex.HelpLink);
+            Assert.NotEmpty(ex.Message);
+            Assert.Null(ex.Source);
+            Assert.Null(ex.StackTrace);
+            Assert.Null(ex.TargetSite);
+        }
+
+        public static IEnumerable<object[]> GetExceptionForHR_ErrorInfo_TestData()
+        {
+            yield return new object[] { unchecked((int)0x80020006), IntPtr.Zero };
+            yield return new object[] { unchecked((int)0x80020101), IntPtr.Zero };
+            yield return new object[] { unchecked((int)0x80020006), (IntPtr)(-1) };
+            yield return new object[] { unchecked((int)0x80020101), (IntPtr)(-1) };
+        }
+
+        [Theory]
+        [MemberData(nameof(GetExceptionForHR_ErrorInfo_TestData))]
+        public void GetExceptionForHR_ErrorInfo_ReturnsValidException(int errorCode, IntPtr errorInfo)
+        {
+            ClearCurrentIErrorInfo();
+
+            Exception ex = Assert.IsType<COMException>(Marshal.GetExceptionForHR(errorCode, errorInfo));
+            Assert.Equal(errorCode, ex.HResult);
+            Assert.Null(ex.InnerException);
+            Assert.Null(ex.HelpLink);
+            Assert.NotEmpty(ex.Message);
+            Assert.Null(ex.Source);
+            Assert.Null(ex.StackTrace);
+            Assert.Null(ex.TargetSite);
         }
 
         [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotWindowsNanoServer))]
