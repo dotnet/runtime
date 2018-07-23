@@ -53,6 +53,7 @@ CompMemKindMacro(LoopHoist)
 CompMemKindMacro(Unknown)
 CompMemKindMacro(RangeCheck)
 CompMemKindMacro(CopyProp)
+CompMemKindMacro(SideEffects)
 //clang-format on
 
 #undef CompMemKindMacro
