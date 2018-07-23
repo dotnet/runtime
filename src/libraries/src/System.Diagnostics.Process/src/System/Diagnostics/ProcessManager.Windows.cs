@@ -378,28 +378,24 @@ namespace System.Diagnostics
             return processInfos;
         }
 
-        // TODO: Replace with https://github.com/dotnet/corefx/issues/30613
-        private static ref readonly T AsStruct<T>(ReadOnlySpan<byte> span) where T:struct
-            => ref MemoryMarshal.Cast<byte, T>(span)[0];
-
         private static ProcessInfo[] GetProcessInfos(PerformanceCounterLib library, int processIndex, int threadIndex, ReadOnlySpan<byte> data)
         {
             Dictionary<int, ProcessInfo> processInfos = new Dictionary<int, ProcessInfo>();
             List<ThreadInfo> threadInfos = new List<ThreadInfo>();
 
-            ref readonly PERF_DATA_BLOCK dataBlock = ref AsStruct<PERF_DATA_BLOCK>(data);
+            ref readonly PERF_DATA_BLOCK dataBlock = ref MemoryMarshal.AsRef<PERF_DATA_BLOCK>(data);
 
             int typePos = dataBlock.HeaderLength;
             for (int i = 0; i < dataBlock.NumObjectTypes; i++)
             {
-                ref readonly PERF_OBJECT_TYPE type = ref AsStruct<PERF_OBJECT_TYPE>(data.Slice(typePos));
+                ref readonly PERF_OBJECT_TYPE type = ref MemoryMarshal.AsRef<PERF_OBJECT_TYPE>(data.Slice(typePos));
 
                 PERF_COUNTER_DEFINITION[] counters = new PERF_COUNTER_DEFINITION[type.NumCounters];
 
                 int counterPos = typePos + type.HeaderLength;
                 for (int j = 0; j < type.NumCounters; j++)
                 {
-                    ref readonly PERF_COUNTER_DEFINITION counter = ref AsStruct<PERF_COUNTER_DEFINITION>(data.Slice(counterPos));
+                    ref readonly PERF_COUNTER_DEFINITION counter = ref MemoryMarshal.AsRef<PERF_COUNTER_DEFINITION>(data.Slice(counterPos));
 
                     string counterName = library.GetCounterName(counter.CounterNameTitleIndex);
 
@@ -415,7 +411,7 @@ namespace System.Diagnostics
                 int instancePos = typePos + type.DefinitionLength;
                 for (int j = 0; j < type.NumInstances; j++)
                 {
-                    ref readonly PERF_INSTANCE_DEFINITION instance = ref AsStruct<PERF_INSTANCE_DEFINITION>(data.Slice(instancePos));
+                    ref readonly PERF_INSTANCE_DEFINITION instance = ref MemoryMarshal.AsRef<PERF_INSTANCE_DEFINITION>(data.Slice(instancePos));
 
                     ReadOnlySpan<char> instanceName = PERF_INSTANCE_DEFINITION.GetName(in instance, data.Slice(instancePos));
 
@@ -464,7 +460,7 @@ namespace System.Diagnostics
 
                     instancePos += instance.ByteLength;
 
-                    instancePos += AsStruct<PERF_COUNTER_BLOCK>(data.Slice(instancePos)).ByteLength;
+                    instancePos += MemoryMarshal.AsRef<PERF_COUNTER_BLOCK>(data.Slice(instancePos)).ByteLength;
                 }
 
                 typePos += type.TotalByteLength;

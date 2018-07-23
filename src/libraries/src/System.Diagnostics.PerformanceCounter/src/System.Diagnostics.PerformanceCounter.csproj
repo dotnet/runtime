@@ -4,9 +4,9 @@
     <ProjectGuid>{9758106C-5D4E-475D-B5E7-B7ABC46B1DDA}</ProjectGuid>
     <RootNamespace>System.Diagnostics.PerformanceCounter</RootNamespace>
     <AssemblyName>System.Diagnostics.PerformanceCounter</AssemblyName>
-    <DefineConstants>$(DefineConstants);FEATURE_REGISTRY</DefineConstants>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
     <IsPartialFacadeAssembly Condition="'$(TargetsNetFx)' == 'true'">true</IsPartialFacadeAssembly>
+    <DefineConstants Condition="'$(TargetGroup)'=='netcoreapp'">$(DefineConstants);netcoreapp</DefineConstants>
     <GeneratePlatformNotSupportedAssemblyMessage Condition="'$(TargetGroup)' == 'netstandard'">SR.PlatformNotSupported_PerfCounters</GeneratePlatformNotSupportedAssemblyMessage>
     <UWPCompatible>false</UWPCompatible>
     <Configurations>net461-Debug;net461-Release;netcoreapp-Windows_NT-Debug;netcoreapp-Windows_NT-Release;netcoreapp2.0-Windows_NT-Debug;netcoreapp2.0-Windows_NT-Release;netfx-Debug;netfx-Release;netstandard-Debug;netstandard-Release</Configurations>
