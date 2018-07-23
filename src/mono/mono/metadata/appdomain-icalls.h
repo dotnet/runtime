@@ -111,9 +111,6 @@ ves_icall_System_AppDomain_InternalGetDefaultContext      (MonoError *error);
 MonoAppContextHandle
 ves_icall_System_AppDomain_InternalSetContext	   (MonoAppContextHandle mc, MonoError *error);
 
-gint32 
-ves_icall_System_AppDomain_GetIDFromDomain (MonoAppDomain * ad);
-
 MonoStringHandle
 ves_icall_System_AppDomain_InternalGetProcessGuid (MonoStringHandle newguid, MonoError *error);
 

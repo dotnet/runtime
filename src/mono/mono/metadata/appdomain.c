@@ -2523,12 +2523,6 @@ ves_icall_System_AppDomain_ExecuteAssembly (MonoAppDomainHandle ad,
 	return res;
 }
 
-gint32 
-ves_icall_System_AppDomain_GetIDFromDomain (MonoAppDomain * ad) 
-{
-	return ad->data->domain_id;
-}
-
 MonoAppDomainHandle
 ves_icall_System_AppDomain_InternalSetDomain (MonoAppDomainHandle ad, MonoError* error)
 {
