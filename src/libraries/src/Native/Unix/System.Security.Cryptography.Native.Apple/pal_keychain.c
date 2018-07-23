@@ -387,5 +387,6 @@ AppleCryptoNative_X509StoreRemoveCertificate(CFTypeRef certOrIdentity, SecKeycha
     }
 
     *pOSStatus = DeleteInKeychain(cert, keychain);
+    CFRelease(cert);
     return *pOSStatus == noErr;
 }
