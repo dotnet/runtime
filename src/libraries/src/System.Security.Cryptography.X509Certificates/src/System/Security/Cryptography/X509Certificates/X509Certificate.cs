@@ -464,13 +464,15 @@ namespace System.Security.Cryptography.X509Certificates
         [Obsolete("This method has been deprecated.  Please use the Subject property instead.  http://go.microsoft.com/fwlink/?linkid=14202")]
         public virtual string GetName()
         {
-            return Subject;
+            ThrowIfInvalid();
+            return Pal.SubjectName.Decode(X500DistinguishedNameFlags.None);
         }
 
         [Obsolete("This method has been deprecated.  Please use the Issuer property instead.  http://go.microsoft.com/fwlink/?linkid=14202")]
         public virtual string GetIssuerName()
         {
-            return Issuer;
+            ThrowIfInvalid();
+            return Pal.IssuerName.Decode(X500DistinguishedNameFlags.None);
         }
 
         public override string ToString()
