@@ -822,9 +822,6 @@ public:
     GCPollType GetGCPollType() { LIMITED_METHOD_CONTRACT; return iGCPollType; }
 
 #ifdef _DEBUG
-    BOOL ShouldGenerateStubForHost() const {LIMITED_METHOD_CONTRACT; return fGenerateStubForHost;}
-    void DisableGenerateStubForHost() {LIMITED_METHOD_CONTRACT; fGenerateStubForHost = FALSE;}
-
     DWORD GetHostTestADUnload() const {LIMITED_METHOD_CONTRACT; return testADUnload;}
 
     DWORD GetHostTestThreadAbort() const {LIMITED_METHOD_CONTRACT; return testThreadAbort;}
@@ -1103,7 +1100,6 @@ private: //----------------------------------------------------------------
     GCPollType iGCPollType;
 
 #ifdef _DEBUG
-    BOOL fGenerateStubForHost;
     DWORD fShouldInjectFault;
     DWORD testADUnload;
     DWORD testThreadAbort;

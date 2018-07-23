@@ -288,8 +288,7 @@ Name | Description | Type | Class | Default Value | Flags
 `EventPipeConfig` | Configuration for EventPipe. | `STRING` | `INTERNAL` |  | 
 `EventPipeOutputFile` | The full path including file name for the trace file that will be written when COMPlus_EnableEventPipe&=1 | `STRING` | `INTERNAL` |  | 
 `EventPipeRundown` | Enable/disable eventpipe rundown. | `DWORD` | `INTERNAL` | `1` | 
-`ExposeExceptionsInCOM` |  | `DWORD` | `INTERNAL` |  | 
-`GenerateStubForHost` | Forces the host hook stub to be built for all unmanaged calls, even when not running hosted. | `DWORD` | `INTERNAL` | `0` | 
+`ExposeExceptionsInCOM` |  | `DWORD` | `INTERNAL` |  |
 `InteropLogArguments` | Log all pinned arguments passed to an interop call | `DWORD` | `EXTERNAL` | `0` | 
 `InteropValidatePinnedObjects` | After returning from a managed-to-unmanaged interop call, validate GC heap around objects pinned by IL stubs. | `DWORD` | `UNSUPPORTED` | `0` | 
 `legacyComHierarchyVisibility` |  | `DWORD` | `EXTERNAL` |  | 
