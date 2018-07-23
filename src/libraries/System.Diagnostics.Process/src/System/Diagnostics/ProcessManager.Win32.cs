@@ -341,10 +341,6 @@ namespace System.Diagnostics
             }
         }
 
-        // TODO: Replace with https://github.com/dotnet/corefx/issues/30613
-        private static ref readonly T AsStruct<T>(ReadOnlySpan<byte> span) where T : struct
-            => ref MemoryMarshal.Cast<byte, T>(span)[0];
-
         private static unsafe ProcessInfo[] GetProcessInfos(ReadOnlySpan<byte> data, Predicate<int> processIdFilter)
         {
             // Use a dictionary to avoid duplicate entries if any
@@ -355,7 +351,7 @@ namespace System.Diagnostics
 
             while (true)
             {
-                ref readonly SystemProcessInformation pi = ref AsStruct<SystemProcessInformation>(data.Slice(processInformationOffset));
+                ref readonly SystemProcessInformation pi = ref MemoryMarshal.AsRef<SystemProcessInformation>(data.Slice(processInformationOffset));
 
                 // Process ID shouldn't overflow. OS API GetCurrentProcessID returns DWORD.
                 int processInfoProcessId = pi.UniqueProcessId.ToInt32();
@@ -405,7 +401,7 @@ namespace System.Diagnostics
                     int threadInformationOffset = processInformationOffset + sizeof(SystemProcessInformation);
                     for (int i = 0; i < pi.NumberOfThreads; i++)
                     {
-                        ref readonly SystemThreadInformation ti = ref AsStruct<SystemThreadInformation>(data.Slice(threadInformationOffset));
+                        ref readonly SystemThreadInformation ti = ref MemoryMarshal.AsRef<SystemThreadInformation>(data.Slice(threadInformationOffset));
 
                         ThreadInfo threadInfo = new ThreadInfo();
 

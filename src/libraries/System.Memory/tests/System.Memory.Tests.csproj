@@ -7,6 +7,8 @@
   </PropertyGroup>
   <ItemGroup Condition="'$(IncludePartialFacadeTests)' == 'true'">
     <!-- Tests specific to the fast span -->
+    <Compile Include="MemoryMarshal\AsRef.cs" />
+    <Compile Include="MemoryMarshal\AsReadOnlyRef.cs" />
     <Compile Include="MemoryMarshal\CreateSpan.cs" />
     <Compile Include="MemoryMarshal\CreateReadOnlySpan.cs" />
     <Compile Include="Span\Reflection.cs" />
