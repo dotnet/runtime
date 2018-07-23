@@ -1885,7 +1885,7 @@ inline void LclVarDsc::decRefCnts(BasicBlock::weight_t weight, Compiler* comp, R
         {
             for (unsigned i = lvFieldLclStart; i < lvFieldLclStart + lvFieldCnt; ++i)
             {
-                comp->lvaTable[i].decRefCnts(comp->lvaMarkRefsWeight, comp, state, false); // Don't propagate
+                comp->lvaTable[i].decRefCnts(weight, comp, state, false); // Don't propagate
             }
         }
     }
@@ -1898,7 +1898,7 @@ inline void LclVarDsc::decRefCnts(BasicBlock::weight_t weight, Compiler* comp, R
         assert(!parentvarDsc->lvRegStruct);
         if (promotionType == Compiler::PROMOTION_TYPE_DEPENDENT)
         {
-            parentvarDsc->decRefCnts(comp->lvaMarkRefsWeight, comp, state, false); // Don't propagate
+            parentvarDsc->decRefCnts(weight, comp, state, false); // Don't propagate
         }
     }
 
@@ -1942,7 +1942,7 @@ inline void LclVarDsc::incRefCnts(BasicBlock::weight_t weight, Compiler* comp, R
             setLvRefCnt((unsigned short)newRefCnt, state);
         }
 
-        // This fires when an uninitialize value for 'weight' is used (see lvaMarkRefsWeight)
+        // This fires when an uninitialize value for 'weight' is used
         assert(weight != 0xdddddddd);
         //
         // Increment lvRefCntWtd
@@ -1976,7 +1976,7 @@ inline void LclVarDsc::incRefCnts(BasicBlock::weight_t weight, Compiler* comp, R
         {
             for (unsigned i = lvFieldLclStart; i < lvFieldLclStart + lvFieldCnt; ++i)
             {
-                comp->lvaTable[i].incRefCnts(comp->lvaMarkRefsWeight, comp, state, false); // Don't propagate
+                comp->lvaTable[i].incRefCnts(weight, comp, state, false); // Don't propagate
             }
         }
     }
@@ -1989,7 +1989,7 @@ inline void LclVarDsc::incRefCnts(BasicBlock::weight_t weight, Compiler* comp, R
         assert(!parentvarDsc->lvRegStruct);
         if (promotionType == Compiler::PROMOTION_TYPE_DEPENDENT)
         {
-            parentvarDsc->incRefCnts(comp->lvaMarkRefsWeight, comp, state, false); // Don't propagate
+            parentvarDsc->incRefCnts(weight, comp, state, false); // Don't propagate
         }
     }
 
@@ -2004,108 +2004,6 @@ inline void LclVarDsc::incRefCnts(BasicBlock::weight_t weight, Compiler* comp, R
                refCntWtd2str(lvRefCntWtd(state)));
     }
 #endif
-}
-
-/*****************************************************************************
- *
- *  Set the lvPrefReg field to reg
- */
-
-inline void LclVarDsc::setPrefReg(regNumber regNum, Compiler* comp)
-{
-    regMaskTP regMask;
-    if (isFloatRegType(TypeGet()))
-    {
-        // Check for FP struct-promoted field being passed in integer register
-        //
-        if (!genIsValidFloatReg(regNum))
-        {
-            return;
-        }
-        regMask = genRegMaskFloat(regNum, TypeGet());
-    }
-    else
-    {
-        regMask = genRegMask(regNum);
-    }
-
-#ifdef _TARGET_ARM_
-    // Don't set a preferred register for a TYP_STRUCT that takes more than one register slot
-    if ((TypeGet() == TYP_STRUCT) && (lvSize() > REGSIZE_BYTES))
-        return;
-#endif
-
-    /* Only interested if we have a new register bit set */
-    if (lvPrefReg & regMask)
-    {
-        return;
-    }
-
-#ifdef DEBUG
-    if (comp->verbose)
-    {
-        if (lvPrefReg)
-        {
-            printf("Change preferred register for V%02u from ", this - comp->lvaTable);
-            dspRegMask(lvPrefReg);
-        }
-        else
-        {
-            printf("Set preferred register for V%02u", this - comp->lvaTable);
-        }
-        printf(" to ");
-        dspRegMask(regMask);
-        printf("\n");
-    }
-#endif
-
-    /* Overwrite the lvPrefReg field */
-
-    lvPrefReg = (regMaskSmall)regMask;
-}
-
-/*****************************************************************************
- *
- *  Add regMask to the lvPrefReg field
- */
-
-inline void LclVarDsc::addPrefReg(regMaskTP regMask, Compiler* comp)
-{
-    assert(regMask != RBM_NONE);
-
-#ifdef _TARGET_ARM_
-    // Don't set a preferred register for a TYP_STRUCT that takes more than one register slot
-    if ((lvType == TYP_STRUCT) && (lvSize() > REGSIZE_BYTES))
-        return;
-#endif
-
-    /* Only interested if we have a new register bit set */
-    if (lvPrefReg & regMask)
-    {
-        return;
-    }
-
-#ifdef DEBUG
-    if (comp->verbose)
-    {
-        if (lvPrefReg)
-        {
-            printf("Additional preferred register for V%02u from ", this - comp->lvaTable);
-            dspRegMask(lvPrefReg);
-        }
-        else
-        {
-            printf("Set preferred register for V%02u", this - comp->lvaTable);
-        }
-        printf(" to ");
-        dspRegMask(lvPrefReg | regMask);
-        printf("\n");
-    }
-#endif
-
-    /* Update the lvPrefReg field */
-
-    lvPrefReg |= regMask;
 }
 
 /*****************************************************************************

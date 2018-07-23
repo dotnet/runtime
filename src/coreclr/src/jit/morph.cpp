@@ -17735,7 +17735,6 @@ void Compiler::fgRetypeImplicitByRefArgs()
 #if FEATURE_MULTIREG_ARGS
                     fieldVarDsc->lvOtherArgReg = REG_NA;
 #endif
-                    fieldVarDsc->lvPrefReg = 0;
                 }
 
                 // Hijack lvFieldLclStart to record the new temp number.
