@@ -8465,17 +8465,6 @@ private:
                 comp->compFloatingPointUsed = true;
             }
 
-            if (!varTypeIsFloating(comp->info.compRetType))
-            {
-                returnLocalDsc.setPrefReg(REG_INTRET, comp);
-            }
-#ifdef REG_FLOATRET
-            else
-            {
-                returnLocalDsc.setPrefReg(REG_FLOATRET, comp);
-            }
-#endif
-
 #ifdef DEBUG
             // This temporary should not be converted to a double in stress mode,
             // because we introduce assigns to it after the stress conversion
@@ -8907,8 +8896,7 @@ void Compiler::fgAddInternal()
         lvaInlinedPInvokeFrameVar = lvaGrabTempWithImplicitUse(false DEBUGARG("Pinvoke FrameVar"));
 
         LclVarDsc* varDsc = &lvaTable[lvaInlinedPInvokeFrameVar];
-        varDsc->addPrefReg(RBM_PINVOKE_TCB, this);
-        varDsc->lvType = TYP_BLK;
+        varDsc->lvType    = TYP_BLK;
         // Make room for the inlined frame.
         varDsc->lvExactSize = eeGetEEInfo()->inlinedCallFrameInfo.size;
 #if FEATURE_FIXED_OUT_ARGS

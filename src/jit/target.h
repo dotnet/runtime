@@ -1588,12 +1588,9 @@ C_ASSERT((FEATURE_TAILCALL_OPT == 0) || (FEATURE_FASTTAILCALL == 1));
 #if CPU_HAS_BYTE_REGS
   #define RBM_BYTE_REGS           (RBM_EAX|RBM_ECX|RBM_EDX|RBM_EBX)
   #define RBM_NON_BYTE_REGS       (RBM_ESI|RBM_EDI)
-  // We reuse the ESP register as a flag for byteable registers in lvPrefReg
-  #define RBM_BYTE_REG_FLAG        RBM_ESP
 #else
   #define RBM_BYTE_REGS            RBM_ALLINT
   #define RBM_NON_BYTE_REGS        RBM_NONE
-  #define RBM_BYTE_REG_FLAG        RBM_NONE
 #endif
 // clang-format on
 
