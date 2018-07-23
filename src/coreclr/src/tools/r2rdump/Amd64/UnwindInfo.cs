@@ -62,7 +62,7 @@ namespace R2RDump.Amd64
         }
     }
 
-    public struct UnwindInfo : BaseUnwindInfo
+    public class UnwindInfo : BaseUnwindInfo
     {
         private const int _sizeofUnwindCode = 2;
         private const int _offsetofUnwindCode = 4;
@@ -75,7 +75,8 @@ namespace R2RDump.Amd64
         public byte FrameOffset { get; set; } //4 bits
         public UnwindCode[] UnwindCode { get; set; }
         public uint PersonalityRoutineRVA { get; set; }
-        public int Size { get; set; }
+
+        public UnwindInfo() { }
 
         public UnwindInfo(byte[] image, int offset)
         {

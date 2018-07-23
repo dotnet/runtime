@@ -304,5 +304,23 @@ namespace R2RDump
             }
             return data;
         }
+
+        /// <summary>
+        /// Based on decodeUnsigned in gcdecoder.cpp, used by the x86 gcdump and unwindinfo
+        /// </summary>
+        public static uint DecodeUnsignedGc(byte[] image, ref int start)
+        {
+            int size = 1;
+            byte data = image[start++];
+            uint value = (uint)data & 0x7f;
+            while ((data & 0x80) != 0)
+            {
+                size++;
+                data = image[start++];
+                value <<= 7;
+                value += (uint)data & 0x7f;
+            }
+            return value;
+        }
     }
 }
