@@ -59,13 +59,6 @@ typedef interface ICLRMetaHostPolicy ICLRMetaHostPolicy;
 #endif 	/* __ICLRMetaHostPolicy_FWD_DEFINED__ */
 
 
-#ifndef __ICLRProfiling_FWD_DEFINED__
-#define __ICLRProfiling_FWD_DEFINED__
-typedef interface ICLRProfiling ICLRProfiling;
-
-#endif 	/* __ICLRProfiling_FWD_DEFINED__ */
-
-
 #ifndef __ICLRDebuggingLibraryProvider_FWD_DEFINED__
 #define __ICLRDebuggingLibraryProvider_FWD_DEFINED__
 typedef interface ICLRDebuggingLibraryProvider ICLRDebuggingLibraryProvider;
@@ -129,13 +122,6 @@ typedef interface ICLRMetaHostPolicy ICLRMetaHostPolicy;
 #endif 	/* __ICLRMetaHostPolicy_FWD_DEFINED__ */
 
 
-#ifndef __ICLRProfiling_FWD_DEFINED__
-#define __ICLRProfiling_FWD_DEFINED__
-typedef interface ICLRProfiling ICLRProfiling;
-
-#endif 	/* __ICLRProfiling_FWD_DEFINED__ */
-
-
 #ifndef __ICLRDebuggingLibraryProvider_FWD_DEFINED__
 #define __ICLRDebuggingLibraryProvider_FWD_DEFINED__
 typedef interface ICLRDebuggingLibraryProvider ICLRDebuggingLibraryProvider;
@@ -194,7 +180,6 @@ EXTERN_GUID(IID_ICLRStrongName2, 0xC22ED5C5, 0x4B59, 0x4975, 0x90, 0xEB, 0x85, 0
 EXTERN_GUID(IID_ICLRStrongName3, 0x22c7089b, 0xbbd3, 0x414a, 0xb6, 0x98, 0x21, 0x0f, 0x26, 0x3f, 0x1f, 0xed);
 EXTERN_GUID(CLSID_CLRDebuggingLegacy, 0xDF8395B5, 0xA4BA, 0x450b, 0xA7, 0x7C, 0xA9, 0xA4, 0x77, 0x62, 0xC5, 0x20);
 EXTERN_GUID(CLSID_CLRProfiling, 0xbd097ed8, 0x733e, 0x43fe, 0x8e, 0xd7, 0xa9, 0x5f, 0xf9, 0xa8, 0x44, 0x8c);
-EXTERN_GUID(IID_ICLRProfiling, 0xb349abe3, 0xb56f, 0x4689, 0xbf, 0xcd, 0x76, 0xbf, 0x39, 0xd8, 0x88, 0xea);
 EXTERN_GUID(IID_ICLRDebuggingLibraryProvider, 0x3151c08d, 0x4d09, 0x4f9b, 0x88, 0x38, 0x28, 0x80, 0xbf, 0x18, 0xfe, 0x51);
 EXTERN_GUID(IID_ICLRDebuggingLibraryProvider2, 0xE04E2FF1, 0xDCFD, 0x45D5, 0xBC, 0xD1, 0x16, 0xFF, 0xF2, 0xFA, 0xF7, 0xBA);
 typedef HRESULT ( __stdcall *CLRCreateInstanceFnPtr )( 
@@ -505,96 +490,6 @@ EXTERN_C const IID IID_ICLRMetaHostPolicy;
 
 
 #endif 	/* __ICLRMetaHostPolicy_INTERFACE_DEFINED__ */
-
-
-#ifndef __ICLRProfiling_INTERFACE_DEFINED__
-#define __ICLRProfiling_INTERFACE_DEFINED__
-
-/* interface ICLRProfiling */
-/* [object][local][helpstring][version][uuid] */ 
-
-
-EXTERN_C const IID IID_ICLRProfiling;
-
-#if defined(__cplusplus) && !defined(CINTERFACE)
-    
-    MIDL_INTERFACE("B349ABE3-B56F-4689-BFCD-76BF39D888EA")
-    ICLRProfiling : public IUnknown
-    {
-    public:
-        virtual HRESULT STDMETHODCALLTYPE AttachProfiler( 
-            /* [in] */ DWORD dwProfileeProcessID,
-            /* [in] */ DWORD dwMillisecondsMax,
-            /* [in] */ const CLSID *pClsidProfiler,
-            /* [in] */ LPCWSTR wszProfilerPath,
-            /* [size_is][in] */ void *pvClientData,
-            /* [in] */ UINT cbClientData) = 0;
-        
-    };
-    
-    
-#else 	/* C style interface */
-
-    typedef struct ICLRProfilingVtbl
-    {
-        BEGIN_INTERFACE
-        
-        HRESULT ( STDMETHODCALLTYPE *QueryInterface )( 
-            ICLRProfiling * This,
-            /* [in] */ REFIID riid,
-            /* [annotation][iid_is][out] */ 
-            _COM_Outptr_  void **ppvObject);
-        
-        ULONG ( STDMETHODCALLTYPE *AddRef )( 
-            ICLRProfiling * This);
-        
-        ULONG ( STDMETHODCALLTYPE *Release )( 
-            ICLRProfiling * This);
-        
-        HRESULT ( STDMETHODCALLTYPE *AttachProfiler )( 
-            ICLRProfiling * This,
-            /* [in] */ DWORD dwProfileeProcessID,
-            /* [in] */ DWORD dwMillisecondsMax,
-            /* [in] */ const CLSID *pClsidProfiler,
-            /* [in] */ LPCWSTR wszProfilerPath,
-            /* [size_is][in] */ void *pvClientData,
-            /* [in] */ UINT cbClientData);
-        
-        END_INTERFACE
-    } ICLRProfilingVtbl;
-
-    interface ICLRProfiling
-    {
-        CONST_VTBL struct ICLRProfilingVtbl *lpVtbl;
-    };
-
-    
-
-#ifdef COBJMACROS
-
-
-#define ICLRProfiling_QueryInterface(This,riid,ppvObject)	\
-    ( (This)->lpVtbl -> QueryInterface(This,riid,ppvObject) ) 
-
-#define ICLRProfiling_AddRef(This)	\
-    ( (This)->lpVtbl -> AddRef(This) ) 
-
-#define ICLRProfiling_Release(This)	\
-    ( (This)->lpVtbl -> Release(This) ) 
-
-
-#define ICLRProfiling_AttachProfiler(This,dwProfileeProcessID,dwMillisecondsMax,pClsidProfiler,wszProfilerPath,pvClientData,cbClientData)	\
-    ( (This)->lpVtbl -> AttachProfiler(This,dwProfileeProcessID,dwMillisecondsMax,pClsidProfiler,wszProfilerPath,pvClientData,cbClientData) ) 
-
-#endif /* COBJMACROS */
-
-
-#endif 	/* C style interface */
-
-
-
-
-#endif 	/* __ICLRProfiling_INTERFACE_DEFINED__ */
 
 
 /* interface __MIDL_itf_metahost_0000_0003 */

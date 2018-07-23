@@ -16,6 +16,8 @@
 
 #include "profdetach.h"
 #include "profilinghelper.h"
+#include "profilinghelper.inl"
+#include "eetoprofinterfaceimpl.inl"
 
 // Class static member variables
 ProfilerDetachInfo ProfilingAPIDetach::s_profilerDetachInfo;
