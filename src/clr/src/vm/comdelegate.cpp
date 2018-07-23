@@ -1433,15 +1433,12 @@ OBJECTREF COMDelegate::ConvertToDelegate(LPVOID pCallback, MethodTable* pMT)
         MethodDesc *pStubMD = pClass->m_pForwardStubMD;
         _ASSERTE(pStubMD != NULL && pStubMD->IsILStub());
 
-
-#ifdef MDA_SUPPORTED
+#if defined(MDA_SUPPORTED)
         if (MDA_GET_ASSISTANT(PInvokeStackImbalance))
         {
             pInterceptStub = GenerateStubForMDA(pMD, pStubMD, pCallback, pInterceptStub);
         }
 #endif // MDA_SUPPORTED
-
-
     }
 
     if (pInterceptStub != NULL)
@@ -1454,7 +1451,7 @@ OBJECTREF COMDelegate::ConvertToDelegate(LPVOID pCallback, MethodTable* pMT)
     }
 
     GCPROTECT_END();
-#endif // defined(_TARGET_X86_)
+#endif // _TARGET_X86_
 
     return delObj;
 }

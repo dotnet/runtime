@@ -800,14 +800,6 @@ public:
             m_slIL.AdjustTargetStackDeltaForExtraParam();
         }
 
-#if defined(_TARGET_X86_)
-        // unmanaged CALLI will get an extra arg with the real target address if host hook is enabled
-        if (SF_IsCALLIStub(m_dwStubFlags) && NDirect::IsHostHookEnabled())
-        {
-            pcsMarshal->SetStubTargetArgType(ELEMENT_TYPE_I, false);
-        }
-#endif // _TARGET_X86_
-
         // Don't touch target signatures from this point on otherwise it messes up the
         // cache in ILStubState::GetStubTargetMethodSig.
 
@@ -1396,12 +1388,7 @@ public:
         BinderMethodID getCOMIPMethod;
         bool fDoPostCallIPCleanup = true;
 
-        if (!SF_IsNGENedStub(dwStubFlags) && NDirect::IsHostHookEnabled())
-        {
-            // always use the non-optimized helper if we are hosted
-            getCOMIPMethod = METHOD__STUBHELPERS__GET_COM_IP_FROM_RCW;
-        }
-        else if (SF_IsWinRTStub(dwStubFlags))
+        if (SF_IsWinRTStub(dwStubFlags))
         {
             // WinRT uses optimized helpers
             if (SF_IsWinRTSharedGenericStub(dwStubFlags))
@@ -5196,17 +5183,6 @@ MethodDesc* GetStubMethodDescFromInteropMethodDesc(MethodDesc* pMD, DWORD dwStub
         }
 #endif // MDA_SUPPORTED
 
-        if (NDirect::IsHostHookEnabled())
-        {
-            MethodTable *pMT = pMD->GetMethodTable();
-            if (pMT->IsProjectedFromWinRT() || pMT->IsWinRTRedirectedInterface(TypeHandle::Interop_ManagedToNative))
-            {
-                // WinRT NGENed stubs are optimized for the non-hosted scenario and
-                // must be rejected if we are hosted.
-                return NULL;
-            }
-        }
-
         if (fGcMdaEnabled)
             return NULL;
 
@@ -5229,13 +5205,6 @@ MethodDesc* GetStubMethodDescFromInteropMethodDesc(MethodDesc* pMD, DWORD dwStub
 #ifdef FEATURE_COMINTEROP
             if (SF_IsWinRTDelegateStub(dwStubFlags))
             {
-                if (NDirect::IsHostHookEnabled() && pMD->GetMethodTable()->IsProjectedFromWinRT())
-                {
-                    // WinRT NGENed stubs are optimized for the non-hosted scenario and
-                    // must be rejected if we are hosted.
-                    return NULL;
-                }
-
                 return pClass->m_pComPlusCallInfo->m_pStubMD.GetValueMaybeNull();
             }
             else
@@ -5592,33 +5561,13 @@ VOID NDirectMethodDesc::SetNDirectTarget(LPVOID pTarget)
 
     Stub *pInterceptStub = NULL;
 
-    BOOL fHook = FALSE;
-
-    // Host hooks are not supported for Mac CoreCLR.
-    if (NDirect::IsHostHookEnabled())
-    {
-#ifdef _WIN64
-        // we will call CallNeedsHostHook on every invocation for back compat
-        fHook = TRUE;
-#else // _WIN64
-        fHook = CallNeedsHostHook((size_t)pTarget);
-#endif // _WIN64
-
-#ifdef _DEBUG
-        if (g_pConfig->ShouldGenerateStubForHost())
-        {
-            fHook = TRUE;
-        }
-#endif
-    }
-
 #ifdef _TARGET_X86_
 
 
 #ifdef MDA_SUPPORTED
     if (!IsQCall() && MDA_GET_ASSISTANT(PInvokeStackImbalance))
     {
-        pInterceptStub = GenerateStubForMDA(pTarget, pInterceptStub, fHook);
+        pInterceptStub = GenerateStubForMDA(pTarget, pInterceptStub);
     }
 #endif // MDA_SUPPORTED
 
@@ -5630,7 +5579,7 @@ VOID NDirectMethodDesc::SetNDirectTarget(LPVOID pTarget)
     EnsureWritablePages(pWriteableData);
     g_IBCLogger.LogNDirectCodeAccess(this);
 
-    if (pInterceptStub != NULL WIN64_ONLY(|| fHook))
+    if (pInterceptStub != NULL)
     {
         ndirect.m_pNativeNDirectTarget = pTarget;
         

@@ -343,7 +343,6 @@ HRESULT EEConfig::Init()
     iGCPollType = GCPOLL_TYPE_DEFAULT;
 
 #ifdef _DEBUG
-    fGenerateStubForHost = FALSE;
     fShouldInjectFault = 0;
     testThreadAbort = 0;
     testADUnload = 0;
@@ -1171,9 +1170,7 @@ HRESULT EEConfig::sync()
     IfFailRet(ParseTypeList(wszPerfTypes, &pPerfTypesToLog));
 
     iPerfNumAllocsThreshold = CLRConfig::GetConfigValue(CLRConfig::INTERNAL_PerfNumAllocsThreshold);
-    iPerfAllocsSizeThreshold    = CLRConfig::GetConfigValue(CLRConfig::INTERNAL_PerfAllocsSizeThreshold);
-
-    fGenerateStubForHost = CLRConfig::GetConfigValue(CLRConfig::INTERNAL_GenerateStubForHost);
+    iPerfAllocsSizeThreshold = CLRConfig::GetConfigValue(CLRConfig::INTERNAL_PerfAllocsSizeThreshold);
 
     fShouldInjectFault = CLRConfig::GetConfigValue(CLRConfig::INTERNAL_InjectFault);
 

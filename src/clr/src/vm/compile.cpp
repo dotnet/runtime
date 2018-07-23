@@ -6980,11 +6980,6 @@ void CompilationDomain::Init()
 #endif
 
     SetCompilationDomain();
-
-
-#ifdef _DEBUG 
-    g_pConfig->DisableGenerateStubForHost();
-#endif
 }
 
 HRESULT CompilationDomain::AddDependencyEntry(PEAssembly *pFile,
