@@ -193,10 +193,16 @@
           <MethodRid>1</MethodRid>
           <RuntimeFunction xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:xsd="http://www.w3.org/2001/XMLSchema" Index="0">
             <StartAddress>10096</StartAddress>
-            <Size>0</Size>
+            <Size>20</Size>
             <UnwindRVA>10180</UnwindRVA>
             <CodeOffset>0</CodeOffset>
           </RuntimeFunction>
+          <UnwindInfo>
+            <UnwindInfo xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:xsd="http://www.w3.org/2001/XMLSchema">
+              <Size>4</Size>
+              <FunctionLength>20</FunctionLength>
+            </UnwindInfo>
+          </UnwindInfo>
         </RuntimeFunction>
       </RuntimeFunctions>
     </Method>
@@ -214,10 +220,16 @@
           <MethodRid>2</MethodRid>
           <RuntimeFunction xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:xsd="http://www.w3.org/2001/XMLSchema" Index="1">
             <StartAddress>10116</StartAddress>
-            <Size>0</Size>
+            <Size>6</Size>
             <UnwindRVA>10184</UnwindRVA>
             <CodeOffset>0</CodeOffset>
           </RuntimeFunction>
+          <UnwindInfo>
+            <UnwindInfo xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:xsd="http://www.w3.org/2001/XMLSchema">
+              <Size>4</Size>
+              <FunctionLength>6</FunctionLength>
+            </UnwindInfo>
+          </UnwindInfo>
         </RuntimeFunction>
       </RuntimeFunctions>
     </Method>

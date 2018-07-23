@@ -306,7 +306,15 @@ namespace R2RDump
                         unwindInfo = new Amd64.UnwindInfo(Image, unwindOffset);
                         if (isEntryPoint[runtimeFunctionId])
                         {
-                            gcInfo = new GcInfo(Image, unwindOffset + ((Amd64.UnwindInfo)unwindInfo).Size, Machine, R2RHeader.MajorVersion);
+                            gcInfo = new GcInfo(Image, unwindOffset + unwindInfo.Size, Machine, R2RHeader.MajorVersion);
+                        }
+                    }
+                    else if (Machine == Machine.I386)
+                    {
+                        unwindInfo = new x86.UnwindInfo(Image, unwindOffset);
+                        if (isEntryPoint[runtimeFunctionId])
+                        {
+                            //gcInfo = new GcInfo(Image, unwindOffset + unwindInfo.Size, Machine, R2RHeader.MajorVersion);
                         }
                     }
 
