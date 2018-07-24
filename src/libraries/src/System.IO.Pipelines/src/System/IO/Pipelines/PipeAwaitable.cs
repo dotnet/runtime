@@ -60,14 +60,23 @@ namespace System.IO.Pipelines
         public void Complete(out CompletionData completionData)
         {
             Action<object> currentCompletion = _completion;
+            object currentState = _completionState;
+
             _completion = s_awaitableIsCompleted;
+            _completionState = null;
 
             completionData = default;
-
+            
             if (!ReferenceEquals(currentCompletion, s_awaitableIsCompleted) &&
                 !ReferenceEquals(currentCompletion, s_awaitableIsNotCompleted))
             {
-                completionData = new CompletionData(currentCompletion, _completionState, _executionContext, _synchronizationContext);
+                completionData = new CompletionData(currentCompletion, currentState, _executionContext, _synchronizationContext);
+            }
+            else if (_canceledState == CanceledState.CancellationRequested)
+            {
+                // Make sure we won't reset the awaitable in ObserveCancellation
+                // If Complete happens in between Cancel and ObserveCancellation
+                _canceledState = CanceledState.CancellationPreRequested;
             }
         }
 
