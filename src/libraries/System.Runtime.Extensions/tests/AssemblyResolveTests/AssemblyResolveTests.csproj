@@ -6,6 +6,7 @@
   </PropertyGroup>
   <ItemGroup>
     <Compile Include="Class1.cs" />
+    <Compile Include="ClassesSample.cs" />
   </ItemGroup>
   <ItemGroup>
     <Compile Include="AssemblyAttributes.cs" />
