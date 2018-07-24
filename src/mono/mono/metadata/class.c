@@ -4809,6 +4809,7 @@ mono_field_get_flags (MonoClassField *field)
 guint32
 mono_field_get_offset (MonoClassField *field)
 {
+	mono_class_setup_fields(field->parent);
 	return field->offset;
 }
 
