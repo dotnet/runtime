@@ -1913,35 +1913,17 @@ process_create (const gunichar2 *appname, const gunichar2 *cmdline,
 	 * new process inherits the same environment.
 	 */
 	if (process_info->env_variables) {
-		gint i, str_length, var_length;
+		gint i;
 		MonoString *var;
-		gunichar2 *str;
 
 		/* +2: one for the process handle value, and the last one is NULL */
 		env_strings = g_new0 (gchar*, mono_array_length (process_info->env_variables) + 2);
 
-		str = NULL;
-		str_length = 0;
-
 		/* Copy each environ string into 'strings' turning it into utf8 (or the requested encoding) at the same time */
 		for (i = 0; i < mono_array_length (process_info->env_variables); ++i) {
 			var = mono_array_get (process_info->env_variables, MonoString*, i);
-			var_length = mono_string_length (var);
-
-			/* str is a null-terminated copy of var */
-
-			if (var_length + 1 > str_length) {
-				str_length = var_length + 1;
-				str = g_renew (gunichar2, str, str_length);
-			}
-
-			memcpy (str, mono_string_chars (var), var_length * sizeof (gunichar2));
-			str [var_length] = '\0';
-
-			env_strings [i] = mono_unicode_to_external (str);
+			env_strings [i] = mono_unicode_to_external (mono_string_chars (var));
 		}
-
-		g_free (str);
 	} else {
 		guint32 env_count;
 
