@@ -1,0 +1,1 @@
+# Settings for all Interop native assets
