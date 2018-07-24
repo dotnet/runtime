@@ -50,9 +50,24 @@
 
       <CorerunExecutable Condition="'$(RunningOnUnix)' == 'true'">$(CORE_ROOT)\corerun</CorerunExecutable>
       <CorerunExecutable Condition="'$(RunningOnUnix)' != 'true'">$(CORE_ROOT)\corerun.exe</CorerunExecutable>
+    </PropertyGroup>
+
+    <!-- Work around cmd command length limit by using relative paths
+         from working directory instead of full paths (see
+         https://github.com/Microsoft/msbuild/issues/2530) -->
+    <ItemGroup Condition="'$(RunningOnUnix)' != 'true'">
+      <_TestAssembliesRelative Include="@(TestAssemblies -> Replace('$(BaseOutputPathWithConfig)', '.\'))" />
+      <TestAssemblies Remove="@(TestAssemblies)" />
+      <TestAssemblies Include="@(_TestAssembliesRelative)" />
+    </ItemGroup>
+
+    <PropertyGroup>
       <XunitCommandLine>$(CorerunExecutable) $(XunitConsoleRunner) @(TestAssemblies->'%(Identity)', ' ') $(XunitArgs)</XunitCommandLine>
     </PropertyGroup>
-    <Exec Command="$(XunitCommandLine)" />
+
+    <Error Condition="$(XunitCommandLine.Length) > 8191" Text="Xunit command line is too long." />
+    <Exec Command="$(XunitCommandLine)"
+          WorkingDirectory="$(BaseOutputPathWithConfig)"/>
 
   </Target>
 
