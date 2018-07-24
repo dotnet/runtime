@@ -1140,6 +1140,8 @@ ves_icall_System_ValueType_Equals (MonoObject *this_obj, MonoObject *that, MonoA
 	gpointer iter;
 	int count = 0;
 
+	*fields = NULL;
+
 	MONO_CHECK_ARG_NULL (that, FALSE);
 
 	if (this_obj->vtable != that->vtable)
@@ -1156,7 +1158,6 @@ ves_icall_System_ValueType_Equals (MonoObject *this_obj, MonoObject *that, MonoA
 	 * managed side. This way, we can avoid costly reflection operations in 
 	 * managed code.
 	 */
-	*fields = NULL;
 	iter = NULL;
 	while ((field = mono_class_get_fields (klass, &iter))) {
 		if (field->type->attrs & FIELD_ATTRIBUTE_STATIC)
