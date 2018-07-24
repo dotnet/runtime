@@ -163,7 +163,13 @@ void DataTargetReader::Align(DWORD alignmentBytes)
 
 void DataTargetReader::AlignBase()
 {
+#ifdef _MSC_VER
+    // Windows MSVC compiler aligns structs based on the largest field size
     Align(m_currentStructureAlign);
+#else
+    // clang (on all platforms) aligns structs always on 4 byte boundaries
+    Align(4);
+#endif
 }
 
 HRESULT DataTargetReader::GetRemotePointerSize(ULONG32* pPointerSize)
