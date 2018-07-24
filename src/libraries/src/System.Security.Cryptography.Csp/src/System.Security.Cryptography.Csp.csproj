@@ -23,6 +23,9 @@
     <Compile Include="System\Security\Cryptography\SHA512CryptoServiceProvider.cs" />
     <Compile Include="System\Security\Cryptography\TripleDESCryptoServiceProvider.cs" />
     <Compile Include="Internal\Cryptography\Helpers.cs" />
+    <Compile Include="$(CommonPath)\Internal\Cryptography\Helpers.cs">
+      <Link>Internal\Cryptography\Helpers.cs</Link>
+    </Compile>
   </ItemGroup>
   <ItemGroup Condition="'$(TargetsUnix)' == 'true'">
     <Compile Include="System\Security\Cryptography\CapiHelper.Unix.cs" />
