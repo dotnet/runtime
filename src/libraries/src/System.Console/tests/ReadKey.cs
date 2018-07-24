@@ -37,6 +37,20 @@ public class ReadKey : RemoteExecutorTestBase
         Assert.Throws<ArgumentOutOfRangeException>(() => new ConsoleKeyInfo('\0', (ConsoleKey)256, false, false, false));
     }
 
+    [Fact]
+    [PlatformSpecific(TestPlatforms.AnyUnix)]
+    public void NumberLock_GetUnix_ThrowsPlatformNotSupportedException()
+    {
+        Assert.Throws<PlatformNotSupportedException>(() => Console.NumberLock);
+    }
+
+    [Fact]
+    [PlatformSpecific(TestPlatforms.AnyUnix)]
+    public void CapsLock_GetUnix_ThrowsPlatformNotSupportedException()
+    {
+        Assert.Throws<PlatformNotSupportedException>(() => Console.CapsLock);
+    }
+
     private static void RunRemote(Func<int> func, ProcessStartInfo psi = null)
     {
         var options = new RemoteInvokeOptions();
