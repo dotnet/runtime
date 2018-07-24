@@ -16,7 +16,7 @@ namespace Microsoft.VisualBasic
         Method = 1,
         Set = 8,
     }
-    public sealed partial class Collection : System.Collections.ICollection, System.Collections.IList, System.Runtime.Serialization.IDeserializationCallback, System.Runtime.Serialization.ISerializable
+    public sealed partial class Collection : System.Collections.ICollection, System.Collections.IList
     {
         public Collection() { }
         public int Count { get { throw null; } }
@@ -34,7 +34,6 @@ namespace Microsoft.VisualBasic
         public void Clear() { }
         public bool Contains(string Key) { throw null; }
         public System.Collections.IEnumerator GetEnumerator() { throw null; }
-        void System.Runtime.Serialization.ISerializable.GetObjectData(System.Runtime.Serialization.SerializationInfo info, System.Runtime.Serialization.StreamingContext context) { }
         void System.Collections.ICollection.CopyTo(System.Array array, int index) { }
         System.Collections.IEnumerator System.Collections.IEnumerable.GetEnumerator() { throw null; }
         int System.Collections.IList.Add(object value) { throw null; }
@@ -44,7 +43,6 @@ namespace Microsoft.VisualBasic
         void System.Collections.IList.Insert(int index, object value) { }
         void System.Collections.IList.Remove(object value) { }
         void System.Collections.IList.RemoveAt(int index) { }
-        void System.Runtime.Serialization.IDeserializationCallback.OnDeserialization(object sender) { }
         public void Remove(int Index) { }
         public void Remove(string Key) { }
     }
