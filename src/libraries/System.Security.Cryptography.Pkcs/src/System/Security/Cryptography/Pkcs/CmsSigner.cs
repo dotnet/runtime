@@ -169,13 +169,22 @@ namespace System.Security.Cryptography.Pkcs
                 }
 
                 // Use the serializer/deserializer to DER-normalize the attribute order.
-                newSignerInfo.SignedAttributes = Helpers.NormalizeSet(
+                SignedAttributesSet signedAttrsSet = new SignedAttributesSet();
+                signedAttrsSet.SignedAttributes = Helpers.NormalizeSet(
                     signedAttrs.ToArray(),
                     normalized =>
                     {
                         AsnReader reader = new AsnReader(normalized, AsnEncodingRules.DER);
                         hasher.AppendData(reader.PeekContentBytes().Span);
                     });
+
+                // Since this contains user data in a context where BER is permitted, use BER.
+                // There shouldn't be any observable difference here between BER and DER, though,
+                // since the top level fields were written by NormalizeSet.
+                using (AsnWriter attrsWriter = AsnSerializer.Serialize(signedAttrsSet, AsnEncodingRules.BER))
+                {
+                    newSignerInfo.SignedAttributes = attrsWriter.Encode();
+                }
 
                 dataHash = hasher.GetHashAndReset();
             }

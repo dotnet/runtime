@@ -21,6 +21,7 @@ namespace System.Security.Cryptography.Pkcs
 
         private readonly Oid _digestAlgorithm;
         private readonly AttributeAsn[] _signedAttributes;
+        private readonly ReadOnlyMemory<byte>? _signedAttributesMemory;
         private readonly Oid _signatureAlgorithm;
         private readonly ReadOnlyMemory<byte>? _signatureAlgorithmParameters;
         private readonly ReadOnlyMemory<byte> _signature;
@@ -37,11 +38,21 @@ namespace System.Security.Cryptography.Pkcs
             Version = parsedData.Version;
             SignerIdentifier = new SubjectIdentifier(parsedData.Sid);
             _digestAlgorithm = parsedData.DigestAlgorithm.Algorithm;
-            _signedAttributes = parsedData.SignedAttributes;
+            _signedAttributesMemory = parsedData.SignedAttributes;
             _signatureAlgorithm = parsedData.SignatureAlgorithm.Algorithm;
             _signatureAlgorithmParameters = parsedData.SignatureAlgorithm.Parameters;
             _signature = parsedData.SignatureValue;
             _unsignedAttributes = parsedData.UnsignedAttributes;
+
+            if (_signedAttributesMemory.HasValue)
+            {
+                SignedAttributesSet signedSet = AsnSerializer.Deserialize<SignedAttributesSet>(
+                    _signedAttributesMemory.Value,
+                    AsnEncodingRules.BER);
+
+                _signedAttributes = signedSet.SignedAttributes;
+                Debug.Assert(_signedAttributes != null);
+            }
 
             _document = ownerDocument;
         }
