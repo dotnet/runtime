@@ -4,10 +4,11 @@
 
 #pragma warning disable CS0067 // events are declared but not used
 
+using System.IO;
 using System.Reflection;
 using System.Runtime.ExceptionServices;
 using System.Runtime.Loader;
-using System.IO;
+using System.Runtime.Remoting;
 using System.Security.Principal;
 using System.Threading;
 
@@ -286,6 +287,115 @@ namespace System
                 }
                 _defaultPrincipal = principal;
             }
+        }
+
+        public ObjectHandle CreateInstance(string assemblyName, string typeName)
+        {
+            if (assemblyName == null)
+            {
+                throw new ArgumentNullException(nameof(assemblyName));
+            }
+
+            return Activator.CreateInstance(assemblyName, typeName);
+        }
+
+        public ObjectHandle CreateInstance(string assemblyName, string typeName, bool ignoreCase, BindingFlags bindingAttr, Binder binder, object[] args, System.Globalization.CultureInfo culture, object[] activationAttributes)
+        {
+            if (assemblyName == null)
+            {
+                throw new ArgumentNullException(nameof(assemblyName));
+            }
+
+            return Activator.CreateInstance(assemblyName,
+                                            typeName,
+                                            ignoreCase,
+                                            bindingAttr,
+                                            binder,
+                                            args,
+                                            culture,
+                                            activationAttributes);
+        }
+
+        public ObjectHandle CreateInstance(string assemblyName, string typeName, object[] activationAttributes)
+        {
+            if (assemblyName == null)
+            {
+                throw new ArgumentNullException(nameof(assemblyName));
+            }
+
+            return Activator.CreateInstance(assemblyName, typeName, activationAttributes);
+        }
+
+        public object CreateInstanceAndUnwrap(string assemblyName, string typeName)
+        {
+            ObjectHandle oh = CreateInstance(assemblyName, typeName);
+            return oh?.Unwrap();
+        }
+
+        public object CreateInstanceAndUnwrap(string assemblyName, string typeName, bool ignoreCase, BindingFlags bindingAttr, Binder binder, object[] args, System.Globalization.CultureInfo culture, object[] activationAttributes)
+        {
+            ObjectHandle oh = CreateInstance(assemblyName, 
+                                             typeName, 
+                                             ignoreCase, 
+                                             bindingAttr,
+                                             binder, 
+                                             args, 
+                                             culture, 
+                                             activationAttributes); 
+            return oh?.Unwrap();
+        }
+
+        public object CreateInstanceAndUnwrap(string assemblyName, string typeName, object[] activationAttributes)
+        {
+            ObjectHandle oh = CreateInstance(assemblyName, typeName, activationAttributes);            
+            return oh?.Unwrap();
+        }
+
+        public ObjectHandle CreateInstanceFrom(string assemblyFile, string typeName)
+        {
+            return Activator.CreateInstanceFrom(assemblyFile, typeName);
+        }
+
+        public ObjectHandle CreateInstanceFrom(string assemblyFile, string typeName, bool ignoreCase, BindingFlags bindingAttr, Binder binder, object[] args, System.Globalization.CultureInfo culture, object[] activationAttributes)
+        {
+            return Activator.CreateInstanceFrom(assemblyFile,
+                                                typeName,
+                                                ignoreCase,
+                                                bindingAttr,
+                                                binder,
+                                                args,
+                                                culture,
+                                                activationAttributes);
+        }
+
+        public ObjectHandle CreateInstanceFrom(string assemblyFile, string typeName, object[] activationAttributes)
+        {
+            return Activator.CreateInstanceFrom(assemblyFile, typeName, activationAttributes);
+        }
+
+        public object CreateInstanceFromAndUnwrap(string assemblyFile, string typeName)
+        {
+            ObjectHandle oh = CreateInstanceFrom(assemblyFile, typeName);
+            return oh?.Unwrap(); 
+        }
+
+        public object CreateInstanceFromAndUnwrap(string assemblyFile, string typeName, bool ignoreCase, BindingFlags bindingAttr, Binder binder, object[] args, System.Globalization.CultureInfo culture, object[] activationAttributes)
+        {
+            ObjectHandle oh = CreateInstanceFrom(assemblyFile, 
+                                                 typeName, 
+                                                 ignoreCase, 
+                                                 bindingAttr,
+                                                 binder, 
+                                                 args, 
+                                                 culture, 
+                                                 activationAttributes);
+            return oh?.Unwrap();
+        }
+
+        public object CreateInstanceFromAndUnwrap(string assemblyFile, string typeName, object[] activationAttributes)
+        {
+            ObjectHandle oh = CreateInstanceFrom(assemblyFile, typeName, activationAttributes);            
+            return oh?.Unwrap();
         }
 
         public IPrincipal GetThreadPrincipal()
