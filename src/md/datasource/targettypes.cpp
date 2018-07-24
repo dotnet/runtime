@@ -134,9 +134,12 @@ m_tableMax(0)
 HRESULT Target_MapSHash::ReadFrom(DataTargetReader & reader)
 {
     HRESULT hr = S_OK;
+    // Only the Windows MSVC compiler does this; not clang on Linux
+#ifdef _MSC_VER
     IfFailRet(reader.Skip8()); // this byte gets used by the base class even though it has no members
                                // I'm guessing this is so the 2nd base class (noncopyable) doesn't start at the same
                                // location, but I can't be sure. Whatever the cause, the layout skips a byte.
+#endif // _MSC_VER
     IfFailRet(reader.ReadPointer(&m_table));
     IfFailRet(reader.Read32(&m_tableSize));
     IfFailRet(reader.Read32(&m_tableCount));
