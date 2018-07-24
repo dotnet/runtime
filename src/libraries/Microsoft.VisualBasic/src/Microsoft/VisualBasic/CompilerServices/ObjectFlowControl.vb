@@ -3,6 +3,7 @@
 ' See the LICENSE file in the project root for more information.
 
 Imports System
+Imports System.ComponentModel
 Imports System.Diagnostics
 Imports System.Reflection
 
@@ -15,15 +16,16 @@ Namespace Microsoft.VisualBasic.CompilerServices
 
     '  Provides runtime support for loop iterators on various types such as 
     '  object, decimal, etc.
+    <EditorBrowsable(EditorBrowsableState.Never)>
     Public NotInheritable Class ObjectFlowControl
 
         Private Sub New()
         End Sub
 
-        Public Shared Sub CheckForSyncLockOnValueType(ByVal expression As Object)
-            If expression IsNot Nothing AndAlso expression.GetType.IsValueType() Then
+        Public Shared Sub CheckForSyncLockOnValueType(ByVal Expression As Object)
+            If Expression IsNot Nothing AndAlso Expression.GetType.IsValueType() Then
                 Throw New ArgumentException(
-                    GetResourceString(SR.SyncLockRequiresReferenceType1, VBFriendlyName(expression.GetType)))
+                    GetResourceString(SR.SyncLockRequiresReferenceType1, VBFriendlyName(Expression.GetType)))
             End If
         End Sub
 
@@ -130,25 +132,25 @@ Namespace Microsoft.VisualBasic.CompilerServices
                 Return operatorMethod
             End Function
 
-            Public Shared Function ForLoopInitObj(ByVal counter As Object, ByVal start As Object, ByVal limit As Object, ByVal stepValue As Object, ByRef loopForResult As Object, ByRef counterResult As Object) As Boolean
+            Public Shared Function ForLoopInitObj(ByVal Counter As Object, ByVal Start As Object, ByVal Limit As Object, ByVal StepValue As Object, ByRef LoopForResult As Object, ByRef CounterResult As Object) As Boolean
                 Dim loopFor As ForLoopControl
 
-                If (start Is Nothing) Then
+                If (Start Is Nothing) Then
                     Throw New ArgumentException(GetResourceString(SR.Argument_InvalidNullValue1, "Start"))
-                ElseIf (limit Is Nothing) Then
+                ElseIf (Limit Is Nothing) Then
                     Throw New ArgumentException(GetResourceString(SR.Argument_InvalidNullValue1, "Limit"))
-                ElseIf (stepValue Is Nothing) Then
+                ElseIf (StepValue Is Nothing) Then
                     Throw New ArgumentException(GetResourceString(SR.Argument_InvalidNullValue1, "Step"))
                 End If
 
-                Dim startType As Type = start.GetType()
-                Dim limitType As Type = limit.GetType()
-                Dim stepType As Type = stepValue.GetType()
+                Dim startType As Type = Start.GetType()
+                Dim limitType As Type = Limit.GetType()
+                Dim stepType As Type = StepValue.GetType()
 
                 Dim widestType As Type = GetWidestType(stepType, startType, limitType)
 
                 If widestType Is Nothing Then
-                    Throw New ArgumentException(GetResourceString(SR.ForLoop_CommonType3, VBFriendlyName(startType), VBFriendlyName(limitType), VBFriendlyName(stepValue)))
+                    Throw New ArgumentException(GetResourceString(SR.ForLoop_CommonType3, VBFriendlyName(startType), VBFriendlyName(limitType), VBFriendlyName(StepValue)))
                 End If
 
                 loopFor = New ForLoopControl
@@ -207,9 +209,9 @@ NotEnumType:
 
                 loopFor._widestTypeCode = widestTypeCode
 
-                loopFor._counter = ConvertLoopElement("Start", start, startType, loopFor._widestType)
-                loopFor._limit = ConvertLoopElement("Limit", limit, limitType, loopFor._widestType)
-                loopFor._stepValue = ConvertLoopElement("Step", stepValue, stepType, loopFor._widestType)
+                loopFor._counter = ConvertLoopElement("Start", Start, startType, loopFor._widestType)
+                loopFor._limit = ConvertLoopElement("Limit", Limit, limitType, loopFor._widestType)
+                loopFor._stepValue = ConvertLoopElement("Step", StepValue, stepType, loopFor._widestType)
 
                 ' Verify that the required operators are present.
                 If loopFor._useUserDefinedOperators Then
@@ -225,36 +227,36 @@ NotEnumType:
                         Operators.SubtractObject(loopFor._stepValue, loopFor._stepValue),
                         False)
 
-                loopForResult = loopFor
+                LoopForResult = loopFor
 
                 If Not loopFor._enumType Is Nothing Then
-                    counterResult = System.Enum.ToObject(loopFor._enumType, loopFor._counter)
+                    CounterResult = System.Enum.ToObject(loopFor._enumType, loopFor._counter)
                 Else
-                    counterResult = loopFor._counter
+                    CounterResult = loopFor._counter
                 End If
 
                 Return CheckContinueLoop(loopFor)
             End Function
 
-            Public Shared Function ForNextCheckObj(ByVal counter As Object, ByVal loopObj As Object, ByRef counterResult As Object) As Boolean
+            Public Shared Function ForNextCheckObj(ByVal Counter As Object, ByVal LoopObj As Object, ByRef CounterResult As Object) As Boolean
 
                 Dim loopFor As ForLoopControl
 
-                If loopObj Is Nothing Then
+                If LoopObj Is Nothing Then
                     Throw VbMakeIllegalForException()
                 End If
 
-                If counter Is Nothing Then
+                If Counter Is Nothing Then
                     Throw New NullReferenceException(GetResourceString(SR.Argument_InvalidNullValue1, "Counter"))
                 End If
 
-                loopFor = CType(loopObj, ForLoopControl)
+                loopFor = CType(LoopObj, ForLoopControl)
 
                 Dim needToChangeType As Boolean = False
 
                 If Not loopFor._useUserDefinedOperators Then
                     ' At this point, we know it's IConvertible
-                    Dim counterTypeCode As TypeCode = counter.GetType.GetTypeCode
+                    Dim counterTypeCode As TypeCode = Counter.GetType.GetTypeCode
 
                     If counterTypeCode <> loopFor._widestTypeCode OrElse counterTypeCode = TypeCode.String Then
                         If counterTypeCode = TypeCode.Object Then
@@ -275,7 +277,7 @@ NotEnumType:
                 End If
 
                 If needToChangeType OrElse loopFor._useUserDefinedOperators Then
-                    counter = ConvertLoopElement("Start", counter, counter.GetType(), loopFor._widestType)
+                    Counter = ConvertLoopElement("Start", Counter, Counter.GetType(), loopFor._widestType)
 
                     If Not loopFor._useUserDefinedOperators Then
                         loopFor._limit = ConvertLoopElement("Limit", loopFor._limit, loopFor._limit.GetType(), loopFor._widestType)
@@ -284,7 +286,7 @@ NotEnumType:
                 End If
 
                 If Not loopFor._useUserDefinedOperators Then
-                    loopFor._counter = Operators.AddObject(counter, loopFor._stepValue)
+                    loopFor._counter = Operators.AddObject(Counter, loopFor._stepValue)
 
                     Dim resultTypeCode As TypeCode = loopFor._counter.GetType.GetTypeCode ' CType(LoopFor.Counter, IConvertible).GetTypeCode()
 
@@ -306,7 +308,7 @@ NotEnumType:
                     loopFor._counter = Operators.InvokeUserDefinedOperator(
                         loopFor._operatorPlus,
                         True,
-                        counter,
+                        Counter,
                         loopFor._stepValue)
 
                     If loopFor._counter.GetType() IsNot loopFor._widestType Then
@@ -319,27 +321,27 @@ NotEnumType:
                 Return CheckContinueLoop(loopFor)
             End Function
 
-            Public Shared Function ForNextCheckR4(ByVal count As Single, ByVal limit As Single, ByVal stepValue As Single) As Boolean
+            Public Shared Function ForNextCheckR4(ByVal count As Single, ByVal limit As Single, ByVal StepValue As Single) As Boolean
                 'Important: a Zero step is considered Positive. This is consistent with integral For loops.
-                If stepValue >= 0 Then
+                If StepValue >= 0 Then
                     Return count <= limit
                 Else
                     Return count >= limit
                 End If
             End Function
 
-            Public Shared Function ForNextCheckR8(ByVal count As Double, ByVal limit As Double, ByVal stepValue As Double) As Boolean
+            Public Shared Function ForNextCheckR8(ByVal count As Double, ByVal limit As Double, ByVal StepValue As Double) As Boolean
                 'Important: a Zero step is considered Positive. This is consistent with integral For loops.
-                If stepValue >= 0 Then
+                If StepValue >= 0 Then
                     Return count <= limit
                 Else
                     Return count >= limit
                 End If
             End Function
 
-            Public Shared Function ForNextCheckDec(ByVal count As Decimal, ByVal limit As Decimal, ByVal stepValue As Decimal) As Boolean
+            Public Shared Function ForNextCheckDec(ByVal count As Decimal, ByVal limit As Decimal, ByVal StepValue As Decimal) As Boolean
                 'Important: a Zero step is considered Positive. This is consistent with integral For loops.
-                If stepValue >= 0 Then
+                If StepValue >= 0 Then
                     Return count <= limit
                 Else
                     Return count >= limit
