@@ -7,20 +7,15 @@ Imports System.Collections
 Imports System.Collections.Generic
 Imports System.Globalization
 Imports System.Diagnostics
-Imports System.Runtime.Serialization
-Imports System.Security
-Imports System.Security.Permissions
 Imports Microsoft.VisualBasic.CompilerServices
 Imports Microsoft.VisualBasic.CompilerServices.ExceptionUtils
 Imports Microsoft.VisualBasic.CompilerServices.Utils
 
 Namespace Microsoft.VisualBasic
 
-    <Serializable()>
     <DebuggerTypeProxy(GetType(Collection.CollectionDebugView))>
     <DebuggerDisplay("Count = {Count}")>
-    Public NotInheritable Class Collection : Implements ICollection, IList, ISerializable, IDeserializationCallback
-        Private m_DeserializationInfo As SerializationInfo
+    Public NotInheritable Class Collection : Implements ICollection, IList
         Private m_CultureInfo As CultureInfo 'The CultureInfo used for key comparisons
         Private m_KeyedNodesHash As Generic.Dictionary(Of String, Node) 'Hashtable mapping key (string) -> Node, contains only items added to the collection with a key
         Private m_ItemsList As FastList 'Doubly-linked list of Node containing all items in the collection
@@ -606,98 +601,6 @@ Namespace Microsoft.VisualBasic
         Private Function InternalItemsList() As FastList
             Return m_ItemsList
         End Function
-
-
-#Region "Serialization implementation"
-        Private Const SERIALIZATIONKEY_KEYS As String = "Keys"
-        Private Const SERIALIZATIONKEY_KEYSCOUNT As String = "KeysCount" 'Number of items with a user-defined key (not same as keys array length)
-        Private Const SERIALIZATIONKEY_VALUES As String = "Values"
-        Private Const SERIALIZATIONKEY_CULTUREINFO As String = "CultureInfo"
-
-        'DeSerialization constructor
-        Private Sub New(ByVal info As SerializationInfo, ByVal context As StreamingContext)
-            m_DeserializationInfo = info
-        End Sub
-
-        <SecurityCritical()>
-        Private Sub GetObjectData(ByVal info As SerializationInfo, ByVal context As StreamingContext) Implements ISerializable.GetObjectData
-            Dim keys(Me.Count - 1) As String
-            Dim values(Me.Count - 1) As Object
-            Dim node As Node = GetFirstListNode()
-            Dim index As Integer
-            Dim elementsWithKey As Integer = 0
-
-            While node IsNot Nothing
-                If node.m_Key IsNot Nothing Then
-                    elementsWithKey += 1
-                End If
-
-                keys(index) = node.m_Key
-                values(index) = node.m_Value
-
-                index += 1
-                node = node.m_Next
-            End While
-            Debug.Assert(index = Me.Count)
-            Debug.Assert(elementsWithKey <= Me.Count)
-
-            info.AddValue(SERIALIZATIONKEY_KEYS, keys, GetType(String()))
-            info.AddValue(SERIALIZATIONKEY_KEYSCOUNT, elementsWithKey, GetType(Int32))
-            info.AddValue(SERIALIZATIONKEY_VALUES, values, GetType(Object()))
-            info.AddValue(SERIALIZATIONKEY_CULTUREINFO, m_CultureInfo)
-        End Sub
-
-        Private Sub OnDeserialization(ByVal sender As Object) Implements IDeserializationCallback.OnDeserialization
-            Try
-                'Initialization using the saved culture info
-                Dim cultureInfo As CultureInfo = DirectCast(m_DeserializationInfo.GetValue(SERIALIZATIONKEY_CULTUREINFO, GetType(CultureInfo)), CultureInfo)
-                If cultureInfo Is Nothing Then
-                    Throw New SerializationException(SR.Serialization_MissingCultureInfo)
-                End If
-
-                'Validate the keys and values arrays
-                Dim keys() As String = DirectCast(m_DeserializationInfo.GetValue(SERIALIZATIONKEY_KEYS, GetType(String())), String())
-                Dim values() As Object = DirectCast(m_DeserializationInfo.GetValue(SERIALIZATIONKEY_VALUES, GetType(Object())), Object())
-
-                If keys Is Nothing Then
-                    Throw New SerializationException(SR.Serialization_MissingKeys)
-                End If
-
-                If values Is Nothing Then
-                    Throw New SerializationException(SR.Serialization_MissingValues)
-                End If
-
-                If keys.Length <> values.Length Then
-                    Throw New SerializationException(SR.Serialization_KeyValueDifferentSizes)
-                End If
-
-                'Get the number of elements that have an associated key (the Keys array contains an item for all elements, and if that
-                '  item doesn't have a key, that element in the array is Nothing, so Keys.Length isn't the same)
-                Dim elementsWithKey As Integer = m_DeserializationInfo.GetInt32(SERIALIZATIONKEY_KEYSCOUNT)
-
-                'It's okay if ElementsWithKey isn't in the deserialization info - we'll just assume a value of zero, which causes
-                '  us to not give a starting hash table capacity
-                If elementsWithKey < 0 OrElse elementsWithKey > keys.Length Then
-                    Debug.Assert(elementsWithKey >= 0, "Bad deserialization data?  ElementsWithKey is bad.  Ignoring and recovering because it's only an optimization anyway.")
-                    elementsWithKey = 0
-                End If
-
-                Initialize(cultureInfo, elementsWithKey) 'Giving the hash table the appropriate starting capacity should speed up hash insertions since it doesn't have to resize
-
-                'Add all elements to the collection.  We always insert to the end, which is fast and preserves our original order.
-                For Index As Integer = 0 To keys.Length - 1
-                    Me.Add(values(Index), keys(Index)) 'If Keys(Index) is Nothing, the value will be added without a key
-                Next
-                Debug.Assert(Me.Count = keys.Length)
-                m_DeserializationInfo = Nothing
-            Finally
-                If m_DeserializationInfo IsNot Nothing Then 'something bad happened - reset the collection to a pristine state so they don't access who knows what is left over in the collection
-                    m_DeserializationInfo = Nothing
-                    Me.Initialize(GetCultureInfo())
-                End If
-            End Try
-        End Sub
-#End Region
 
 #Region "Interface Implementation"
 

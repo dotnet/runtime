@@ -4,7 +4,6 @@
 
 using System;
 using System.Collections;
-using System.Runtime.Serialization.Formatters.Tests;
 using Xunit;
 
 namespace Microsoft.VisualBasic.Tests
@@ -414,16 +413,6 @@ namespace Microsoft.VisualBasic.Tests
             Assert.False(coll.IsFixedSize);
             Assert.False(coll.IsReadOnly);
             Assert.False(coll.IsSynchronized);
-        }
-
-        [ActiveIssue("CultureInfo is not serializable")]
-        [Fact]
-        public static void SerializeDeserialize()
-        {
-            Collection expected = CreateKeyedCollection(10);
-
-            IEnumerable actual = BinaryFormatterHelpers.Clone(expected);
-            Assert.Equal(expected, actual);
         }
 
         private class Foo
