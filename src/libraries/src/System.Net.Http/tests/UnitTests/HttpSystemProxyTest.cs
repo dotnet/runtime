@@ -65,6 +65,29 @@ namespace System.Net.Http.Tests
         }
 
         [Theory]
+        [InlineData("localhost:1234", "http://localhost:1234/")]
+        [InlineData("123.123.123.123", "http://123.123.123.123/")]
+        public void HttpProxy_SystemProxy_Loaded(string rawProxyString, string expectedUri)
+        {
+            RemoteInvoke((proxyString, expectedString) =>
+            {
+                IWebProxy p;
+
+                FakeRegistry.Reset();
+
+                FakeRegistry.WinInetProxySettings.Proxy = proxyString;
+                WinInetProxyHelper proxyHelper = new WinInetProxyHelper();
+
+                Assert.True(HttpSystemProxy.TryCreate(out p));
+                Assert.NotNull(p);
+                Assert.Equal(expectedString, p.GetProxy(new Uri(fooHttp)).ToString());
+                Assert.Equal(expectedString, p.GetProxy(new Uri(fooHttps)).ToString());
+
+                return SuccessExitCode;
+            }, rawProxyString, expectedUri).Dispose();
+        }
+
+        [Theory]
         [InlineData("http://localhost/", true)]
         [InlineData("http://127.0.0.1/", true)]
         [InlineData("http://128.0.0.1/", false)]
@@ -144,7 +167,6 @@ namespace System.Net.Http.Tests
         [InlineData("http://;")]
         [InlineData("http=;")]
         [InlineData("  ;  ")]
-        [InlineData("proxy.contoso.com")]
         public void HttpProxy_InvalidSystemProxy_Null(string rawProxyString)
         {
             RemoteInvoke((proxyString) =>
