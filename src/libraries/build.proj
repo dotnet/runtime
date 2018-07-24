@@ -64,6 +64,7 @@
       <_projectsToExcludeFromUpdate Include="$(MSBuildThisFileDirectory)src/SharedFrameworkValidation/**/*.csproj" />
       <_projectsToUpdate Include="$(MSBuildThisFileDirectory)src/**/*.*csproj" Exclude="@(_projectsToExcludeFromUpdate)" />
       <_projectsToUpdate Include="$(MSBuildThisFileDirectory)src/**/*.*ilproj" Exclude="@(_projectsToExcludeFromUpdate)" />
+      <_projectsToUpdate Include="$(MSBuildThisFileDirectory)src/**/*.*vbproj" Exclude="@(_projectsToExcludeFromUpdate)" />
       <_solutionsToUpdateFiles Include="$(MSBuildThisFileDirectory)src/*/Directory.Build.props" />
       <_solutionsToUpdate Include="@(_solutionsToUpdateFiles->'%(RootDir)%(Directory)')" Exclude="@(_solutionsToExcludeFromUpdate)" />
     </ItemGroup>
