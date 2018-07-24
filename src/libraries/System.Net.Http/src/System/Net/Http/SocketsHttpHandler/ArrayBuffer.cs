@@ -16,6 +16,8 @@ namespace System.Net.Http
     // Commit(byteCount) will extend the ActiveSpan by [byteCount] bytes into the AvailableSpan.
     // Discard(byteCount) will discard [byteCount] bytes as the beginning of the ActiveSpan.
 
+    // TODO: ISSUE 31300: Use ArrayPool to pool buffers.
+
     internal struct ArrayBuffer
     {
         private byte[] _bytes;
