@@ -14,18 +14,8 @@ using ErrorCode = Interop.NCrypt.ErrorCode;
 
 namespace Internal.Cryptography
 {
-    internal static class Helpers
+    internal static partial class Helpers
     {
-        public static byte[] CloneByteArray(this byte[] src)
-        {
-            if (src == null)
-            {
-                return null;
-            }
-
-            return (byte[])(src.Clone());
-        }
-
         public static bool UsesIv(this CipherMode cipherMode)
         {
             return cipherMode != CipherMode.ECB;

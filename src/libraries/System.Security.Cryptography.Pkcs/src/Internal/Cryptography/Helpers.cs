@@ -17,13 +17,8 @@ using X509IssuerSerial = System.Security.Cryptography.Xml.X509IssuerSerial;
 
 namespace Internal.Cryptography
 {
-    internal static class Helpers
+    internal static partial class Helpers
     {
-        public static byte[] CloneByteArray(this byte[] a)
-        {
-            return (byte[])(a.Clone());
-        }
-
 #if !netcoreapp
         // Compatibility API.
         internal static void AppendData(this IncrementalHash hasher, ReadOnlySpan<byte> data)
