@@ -5,9 +5,10 @@
 Option Strict On
 
 Imports System
+Imports System.Collections.Generic
+Imports System.ComponentModel
 Imports System.Diagnostics
 Imports System.Globalization
-Imports System.Collections.Generic
 Imports System.Reflection
 
 Imports Microsoft.VisualBasic.CompilerServices.ExceptionUtils
@@ -18,6 +19,7 @@ Imports Microsoft.VisualBasic.CompilerServices.Utils
 Namespace Microsoft.VisualBasic.CompilerServices
 
     ' Implements Object operators
+    <EditorBrowsable(EditorBrowsableState.Never)>
     Public NotInheritable Class Operators
 
         Friend Shared ReadOnly Boxed_ZeroDouble As Object = 0.0R
@@ -134,16 +136,16 @@ Namespace Microsoft.VisualBasic.CompilerServices
             Undefined
         End Enum
 
-        Public Shared Function CompareObjectEqual(ByVal left As Object, ByVal right As Object, ByVal textCompare As Boolean) As Object
-            Dim comparison As CompareClass = CompareObject2(left, right, textCompare)
+        Public Shared Function CompareObjectEqual(ByVal Left As Object, ByVal Right As Object, ByVal TextCompare As Boolean) As Object
+            Dim comparison As CompareClass = CompareObject2(Left, Right, TextCompare)
 
             Select Case comparison
                 Case CompareClass.Unordered
                     Return False
                 Case CompareClass.UserDefined
-                    Return InvokeUserDefinedOperator(UserDefinedOperator.Equal, left, right)
+                    Return InvokeUserDefinedOperator(UserDefinedOperator.Equal, Left, Right)
                 Case CompareClass.Undefined
-                    Throw GetNoValidOperatorException(UserDefinedOperator.Equal, left, right)
+                    Throw GetNoValidOperatorException(UserDefinedOperator.Equal, Left, Right)
                 Case Else
                     Debug.Assert(comparison = CompareClass.Less OrElse
                                  comparison = CompareClass.Equal OrElse
@@ -152,16 +154,16 @@ Namespace Microsoft.VisualBasic.CompilerServices
             End Select
         End Function
 
-        Public Shared Function ConditionalCompareObjectEqual(ByVal left As Object, ByVal right As Object, ByVal textCompare As Boolean) As Boolean
-            Dim comparison As CompareClass = CompareObject2(left, right, textCompare)
+        Public Shared Function ConditionalCompareObjectEqual(ByVal Left As Object, ByVal Right As Object, ByVal TextCompare As Boolean) As Boolean
+            Dim comparison As CompareClass = CompareObject2(Left, Right, TextCompare)
 
             Select Case comparison
                 Case CompareClass.Unordered
                     Return False
                 Case CompareClass.UserDefined
-                    Return CBool(InvokeUserDefinedOperator(UserDefinedOperator.Equal, left, right))
+                    Return CBool(InvokeUserDefinedOperator(UserDefinedOperator.Equal, Left, Right))
                 Case CompareClass.Undefined
-                    Throw GetNoValidOperatorException(UserDefinedOperator.Equal, left, right)
+                    Throw GetNoValidOperatorException(UserDefinedOperator.Equal, Left, Right)
                 Case Else
                     Debug.Assert(comparison = CompareClass.Less OrElse
                                  comparison = CompareClass.Equal OrElse
@@ -170,16 +172,16 @@ Namespace Microsoft.VisualBasic.CompilerServices
             End Select
         End Function
 
-        Public Shared Function CompareObjectNotEqual(ByVal left As Object, ByVal right As Object, ByVal textCompare As Boolean) As Object
-            Dim comparison As CompareClass = CompareObject2(left, right, textCompare)
+        Public Shared Function CompareObjectNotEqual(ByVal Left As Object, ByVal Right As Object, ByVal TextCompare As Boolean) As Object
+            Dim comparison As CompareClass = CompareObject2(Left, Right, TextCompare)
 
             Select Case comparison
                 Case CompareClass.Unordered
                     Return True
                 Case CompareClass.UserDefined
-                    Return InvokeUserDefinedOperator(UserDefinedOperator.NotEqual, left, right)
+                    Return InvokeUserDefinedOperator(UserDefinedOperator.NotEqual, Left, Right)
                 Case CompareClass.Undefined
-                    Throw GetNoValidOperatorException(UserDefinedOperator.NotEqual, left, right)
+                    Throw GetNoValidOperatorException(UserDefinedOperator.NotEqual, Left, Right)
                 Case Else
                     Debug.Assert(comparison = CompareClass.Less OrElse
                                  comparison = CompareClass.Equal OrElse
@@ -188,16 +190,16 @@ Namespace Microsoft.VisualBasic.CompilerServices
             End Select
         End Function
 
-        Public Shared Function ConditionalCompareObjectNotEqual(ByVal left As Object, ByVal right As Object, ByVal textCompare As Boolean) As Boolean
-            Dim comparison As CompareClass = CompareObject2(left, right, textCompare)
+        Public Shared Function ConditionalCompareObjectNotEqual(ByVal Left As Object, ByVal Right As Object, ByVal TextCompare As Boolean) As Boolean
+            Dim comparison As CompareClass = CompareObject2(Left, Right, TextCompare)
 
             Select Case comparison
                 Case CompareClass.Unordered
                     Return True
                 Case CompareClass.UserDefined
-                    Return CBool(InvokeUserDefinedOperator(UserDefinedOperator.NotEqual, left, right))
+                    Return CBool(InvokeUserDefinedOperator(UserDefinedOperator.NotEqual, Left, Right))
                 Case CompareClass.Undefined
-                    Throw GetNoValidOperatorException(UserDefinedOperator.NotEqual, left, right)
+                    Throw GetNoValidOperatorException(UserDefinedOperator.NotEqual, Left, Right)
                 Case Else
                     Debug.Assert(comparison = CompareClass.Less OrElse
                                  comparison = CompareClass.Equal OrElse
@@ -206,16 +208,16 @@ Namespace Microsoft.VisualBasic.CompilerServices
             End Select
         End Function
 
-        Public Shared Function CompareObjectLess(ByVal left As Object, ByVal right As Object, ByVal textCompare As Boolean) As Object
-            Dim comparison As CompareClass = CompareObject2(left, right, textCompare)
+        Public Shared Function CompareObjectLess(ByVal Left As Object, ByVal Right As Object, ByVal TextCompare As Boolean) As Object
+            Dim comparison As CompareClass = CompareObject2(Left, Right, TextCompare)
 
             Select Case comparison
                 Case CompareClass.Unordered
                     Return False
                 Case CompareClass.UserDefined
-                    Return InvokeUserDefinedOperator(UserDefinedOperator.Less, left, right)
+                    Return InvokeUserDefinedOperator(UserDefinedOperator.Less, Left, Right)
                 Case CompareClass.Undefined
-                    Throw GetNoValidOperatorException(UserDefinedOperator.Less, left, right)
+                    Throw GetNoValidOperatorException(UserDefinedOperator.Less, Left, Right)
                 Case Else
                     Debug.Assert(comparison = CompareClass.Less OrElse
                                  comparison = CompareClass.Equal OrElse
@@ -224,16 +226,16 @@ Namespace Microsoft.VisualBasic.CompilerServices
             End Select
         End Function
 
-        Public Shared Function ConditionalCompareObjectLess(ByVal left As Object, ByVal right As Object, ByVal textCompare As Boolean) As Boolean
-            Dim comparison As CompareClass = CompareObject2(left, right, textCompare)
+        Public Shared Function ConditionalCompareObjectLess(ByVal Left As Object, ByVal Right As Object, ByVal TextCompare As Boolean) As Boolean
+            Dim comparison As CompareClass = CompareObject2(Left, Right, TextCompare)
 
             Select Case comparison
                 Case CompareClass.Unordered
                     Return False
                 Case CompareClass.UserDefined
-                    Return CBool(InvokeUserDefinedOperator(UserDefinedOperator.Less, left, right))
+                    Return CBool(InvokeUserDefinedOperator(UserDefinedOperator.Less, Left, Right))
                 Case CompareClass.Undefined
-                    Throw GetNoValidOperatorException(UserDefinedOperator.Less, left, right)
+                    Throw GetNoValidOperatorException(UserDefinedOperator.Less, Left, Right)
                 Case Else
                     Debug.Assert(comparison = CompareClass.Less OrElse
                                  comparison = CompareClass.Equal OrElse
@@ -242,16 +244,16 @@ Namespace Microsoft.VisualBasic.CompilerServices
             End Select
         End Function
 
-        Public Shared Function CompareObjectLessEqual(ByVal left As Object, ByVal right As Object, ByVal textCompare As Boolean) As Object
-            Dim comparison As CompareClass = CompareObject2(left, right, textCompare)
+        Public Shared Function CompareObjectLessEqual(ByVal Left As Object, ByVal Right As Object, ByVal TextCompare As Boolean) As Object
+            Dim comparison As CompareClass = CompareObject2(Left, Right, TextCompare)
 
             Select Case comparison
                 Case CompareClass.Unordered
                     Return False
                 Case CompareClass.UserDefined
-                    Return InvokeUserDefinedOperator(UserDefinedOperator.LessEqual, left, right)
+                    Return InvokeUserDefinedOperator(UserDefinedOperator.LessEqual, Left, Right)
                 Case CompareClass.Undefined
-                    Throw GetNoValidOperatorException(UserDefinedOperator.LessEqual, left, right)
+                    Throw GetNoValidOperatorException(UserDefinedOperator.LessEqual, Left, Right)
                 Case Else
                     Debug.Assert(comparison = CompareClass.Less OrElse
                                  comparison = CompareClass.Equal OrElse
@@ -260,16 +262,16 @@ Namespace Microsoft.VisualBasic.CompilerServices
             End Select
         End Function
 
-        Public Shared Function ConditionalCompareObjectLessEqual(ByVal left As Object, ByVal right As Object, ByVal textCompare As Boolean) As Boolean
-            Dim comparison As CompareClass = CompareObject2(left, right, textCompare)
+        Public Shared Function ConditionalCompareObjectLessEqual(ByVal Left As Object, ByVal Right As Object, ByVal TextCompare As Boolean) As Boolean
+            Dim comparison As CompareClass = CompareObject2(Left, Right, TextCompare)
 
             Select Case comparison
                 Case CompareClass.Unordered
                     Return False
                 Case CompareClass.UserDefined
-                    Return CBool(InvokeUserDefinedOperator(UserDefinedOperator.LessEqual, left, right))
+                    Return CBool(InvokeUserDefinedOperator(UserDefinedOperator.LessEqual, Left, Right))
                 Case CompareClass.Undefined
-                    Throw GetNoValidOperatorException(UserDefinedOperator.LessEqual, left, right)
+                    Throw GetNoValidOperatorException(UserDefinedOperator.LessEqual, Left, Right)
                 Case Else
                     Debug.Assert(comparison = CompareClass.Less OrElse
                                  comparison = CompareClass.Equal OrElse
@@ -278,16 +280,16 @@ Namespace Microsoft.VisualBasic.CompilerServices
             End Select
         End Function
 
-        Public Shared Function CompareObjectGreaterEqual(ByVal left As Object, ByVal right As Object, ByVal textCompare As Boolean) As Object
-            Dim comparison As CompareClass = CompareObject2(left, right, textCompare)
+        Public Shared Function CompareObjectGreaterEqual(ByVal Left As Object, ByVal Right As Object, ByVal TextCompare As Boolean) As Object
+            Dim comparison As CompareClass = CompareObject2(Left, Right, TextCompare)
 
             Select Case comparison
                 Case CompareClass.Unordered
                     Return False
                 Case CompareClass.UserDefined
-                    Return InvokeUserDefinedOperator(UserDefinedOperator.GreaterEqual, left, right)
+                    Return InvokeUserDefinedOperator(UserDefinedOperator.GreaterEqual, Left, Right)
                 Case CompareClass.Undefined
-                    Throw GetNoValidOperatorException(UserDefinedOperator.GreaterEqual, left, right)
+                    Throw GetNoValidOperatorException(UserDefinedOperator.GreaterEqual, Left, Right)
                 Case Else
                     Debug.Assert(comparison = CompareClass.Less OrElse
                                  comparison = CompareClass.Equal OrElse
@@ -296,16 +298,16 @@ Namespace Microsoft.VisualBasic.CompilerServices
             End Select
         End Function
 
-        Public Shared Function ConditionalCompareObjectGreaterEqual(ByVal left As Object, ByVal right As Object, ByVal textCompare As Boolean) As Boolean
-            Dim comparison As CompareClass = CompareObject2(left, right, textCompare)
+        Public Shared Function ConditionalCompareObjectGreaterEqual(ByVal Left As Object, ByVal Right As Object, ByVal TextCompare As Boolean) As Boolean
+            Dim comparison As CompareClass = CompareObject2(Left, Right, TextCompare)
 
             Select Case comparison
                 Case CompareClass.Unordered
                     Return False
                 Case CompareClass.UserDefined
-                    Return CBool(InvokeUserDefinedOperator(UserDefinedOperator.GreaterEqual, left, right))
+                    Return CBool(InvokeUserDefinedOperator(UserDefinedOperator.GreaterEqual, Left, Right))
                 Case CompareClass.Undefined
-                    Throw GetNoValidOperatorException(UserDefinedOperator.GreaterEqual, left, right)
+                    Throw GetNoValidOperatorException(UserDefinedOperator.GreaterEqual, Left, Right)
                 Case Else
                     Debug.Assert(comparison = CompareClass.Less OrElse
                                  comparison = CompareClass.Equal OrElse
@@ -314,16 +316,16 @@ Namespace Microsoft.VisualBasic.CompilerServices
             End Select
         End Function
 
-        Public Shared Function CompareObjectGreater(ByVal left As Object, ByVal right As Object, ByVal textCompare As Boolean) As Object
-            Dim comparison As CompareClass = CompareObject2(left, right, textCompare)
+        Public Shared Function CompareObjectGreater(ByVal Left As Object, ByVal Right As Object, ByVal TextCompare As Boolean) As Object
+            Dim comparison As CompareClass = CompareObject2(Left, Right, TextCompare)
 
             Select Case comparison
                 Case CompareClass.Unordered
                     Return False
                 Case CompareClass.UserDefined
-                    Return InvokeUserDefinedOperator(UserDefinedOperator.Greater, left, right)
+                    Return InvokeUserDefinedOperator(UserDefinedOperator.Greater, Left, Right)
                 Case CompareClass.Undefined
-                    Throw GetNoValidOperatorException(UserDefinedOperator.Greater, left, right)
+                    Throw GetNoValidOperatorException(UserDefinedOperator.Greater, Left, Right)
                 Case Else
                     Debug.Assert(comparison = CompareClass.Less OrElse
                                  comparison = CompareClass.Equal OrElse
@@ -332,16 +334,16 @@ Namespace Microsoft.VisualBasic.CompilerServices
             End Select
         End Function
 
-        Public Shared Function ConditionalCompareObjectGreater(ByVal left As Object, ByVal right As Object, ByVal textCompare As Boolean) As Boolean
-            Dim comparison As CompareClass = CompareObject2(left, right, textCompare)
+        Public Shared Function ConditionalCompareObjectGreater(ByVal Left As Object, ByVal Right As Object, ByVal TextCompare As Boolean) As Boolean
+            Dim comparison As CompareClass = CompareObject2(Left, Right, TextCompare)
 
             Select Case comparison
                 Case CompareClass.Unordered
                     Return False
                 Case CompareClass.UserDefined
-                    Return CBool(InvokeUserDefinedOperator(UserDefinedOperator.Greater, left, right))
+                    Return CBool(InvokeUserDefinedOperator(UserDefinedOperator.Greater, Left, Right))
                 Case CompareClass.Undefined
-                    Throw GetNoValidOperatorException(UserDefinedOperator.Greater, left, right)
+                    Throw GetNoValidOperatorException(UserDefinedOperator.Greater, Left, Right)
                 Case Else
                     Debug.Assert(comparison = CompareClass.Less OrElse
                                  comparison = CompareClass.Equal OrElse
@@ -840,21 +842,21 @@ Namespace Microsoft.VisualBasic.CompilerServices
         End Function
 
         'String comparisons occur often enough that maybe the TextCompare should be broken out into two members that the compiler statically selects
-        Public Shared Function CompareString(ByVal left As String, ByVal right As String, ByVal textCompare As Boolean) As Integer
-            If left Is right Then
+        Public Shared Function CompareString(ByVal Left As String, ByVal Right As String, ByVal TextCompare As Boolean) As Integer
+            If Left Is Right Then
                 Return CompareClass.Equal
             End If
 
-            If left Is Nothing Then
-                If right.Length() = 0 Then
+            If Left Is Nothing Then
+                If Right.Length() = 0 Then
                     Return CompareClass.Equal
                 End If
 
                 Return CompareClass.Less
             End If
 
-            If right Is Nothing Then
-                If left.Length() = 0 Then
+            If Right Is Nothing Then
+                If Left.Length() = 0 Then
                     Return CompareClass.Equal
                 End If
 
@@ -863,10 +865,10 @@ Namespace Microsoft.VisualBasic.CompilerServices
 
             Dim result As Integer
 
-            If textCompare Then
-                result = GetCultureInfo().CompareInfo.Compare(left, right, OptionCompareTextFlags)
+            If TextCompare Then
+                result = GetCultureInfo().CompareInfo.Compare(Left, Right, OptionCompareTextFlags)
             Else
-                result = System.String.CompareOrdinal(left, right)
+                result = System.String.CompareOrdinal(Left, Right)
             End If
 
             'Normalize the result.
@@ -883,13 +885,13 @@ Namespace Microsoft.VisualBasic.CompilerServices
 
 #Region " Operator Unary Plus + "
 
-        Public Shared Function PlusObject(ByVal operand As Object) As Object
+        Public Shared Function PlusObject(ByVal Operand As Object) As Object
 
-            If operand Is Nothing Then
+            If Operand Is Nothing Then
                 Return Boxed_ZeroInteger
             End If
 
-            Dim typ As TypeCode = GetTypeCode(operand)
+            Dim typ As TypeCode = GetTypeCode(Operand)
 
 
             Select Case typ
@@ -898,66 +900,66 @@ Namespace Microsoft.VisualBasic.CompilerServices
                     Return Boxed_ZeroInteger
 
                 Case TypeCode.Boolean
-                    Return CShort(Convert.ToBoolean(operand))
+                    Return CShort(Convert.ToBoolean(Operand))
 
                 Case TypeCode.SByte
-                    Return Convert.ToSByte(operand)
+                    Return Convert.ToSByte(Operand)
 
                 Case TypeCode.Byte
-                    Return Convert.ToByte(operand)
+                    Return Convert.ToByte(Operand)
 
                 Case TypeCode.Int16
-                    Return Convert.ToInt16(operand)
+                    Return Convert.ToInt16(Operand)
 
                 Case TypeCode.UInt16
-                    Return Convert.ToUInt16(operand)
+                    Return Convert.ToUInt16(Operand)
 
                 Case TypeCode.Int32
-                    Return Convert.ToInt32(operand)
+                    Return Convert.ToInt32(Operand)
 
                 Case TypeCode.UInt32
-                    Return Convert.ToUInt32(operand)
+                    Return Convert.ToUInt32(Operand)
 
                 Case TypeCode.Int64
-                    Return Convert.ToInt64(operand)
+                    Return Convert.ToInt64(Operand)
 
                 Case TypeCode.UInt64
-                    Return Convert.ToUInt64(operand)
+                    Return Convert.ToUInt64(Operand)
 
                 Case TypeCode.Decimal,
                      TypeCode.Single,
                      TypeCode.Double
-                    Return operand
+                    Return Operand
 
                 Case TypeCode.DateTime,
                      TypeCode.Char
                 ' Fall through to error
 
                 Case TypeCode.String
-                    Return CDbl(Convert.ToString(operand))
+                    Return CDbl(Convert.ToString(Operand))
 
                 Case TypeCode.Object
-                    Return InvokeUserDefinedOperator(UserDefinedOperator.UnaryPlus, operand)
+                    Return InvokeUserDefinedOperator(UserDefinedOperator.UnaryPlus, Operand)
 
                 Case Else
                     ' Fall through to error
             End Select
 
-            Throw GetNoValidOperatorException(UserDefinedOperator.UnaryPlus, operand)
+            Throw GetNoValidOperatorException(UserDefinedOperator.UnaryPlus, Operand)
         End Function
 
 #End Region
 
 #Region " Operator Negate - "
 
-        Public Shared Function NegateObject(ByVal operand As Object) As Object
+        Public Shared Function NegateObject(ByVal Operand As Object) As Object
 
-            Dim tc As TypeCode = GetTypeCode(operand)
+            Dim tc As TypeCode = GetTypeCode(Operand)
 
-            If operand Is Nothing Then
+            If Operand Is Nothing Then
                 tc = TypeCode.Empty
             Else
-                tc = operand.GetType.GetTypeCode
+                tc = Operand.GetType.GetTypeCode
             End If
 
             Select Case tc
@@ -966,87 +968,87 @@ Namespace Microsoft.VisualBasic.CompilerServices
                     Return Boxed_ZeroInteger
 
                 Case TypeCode.Boolean
-                    If TypeOf operand Is Boolean Then
-                        Return NegateBoolean(DirectCast(operand, Boolean))
+                    If TypeOf Operand Is Boolean Then
+                        Return NegateBoolean(DirectCast(Operand, Boolean))
                     Else
-                        Return NegateBoolean(Convert.ToBoolean(operand))
+                        Return NegateBoolean(Convert.ToBoolean(Operand))
                     End If
 
                 Case TypeCode.SByte
-                    If TypeOf operand Is SByte Then
-                        Return NegateSByte(DirectCast(operand, SByte))
+                    If TypeOf Operand Is SByte Then
+                        Return NegateSByte(DirectCast(Operand, SByte))
                     Else
-                        Return NegateSByte(Convert.ToSByte(operand))
+                        Return NegateSByte(Convert.ToSByte(Operand))
                     End If
 
                 Case TypeCode.Byte
-                    If TypeOf operand Is Byte Then
-                        Return NegateByte(DirectCast(operand, Byte))
+                    If TypeOf Operand Is Byte Then
+                        Return NegateByte(DirectCast(Operand, Byte))
                     Else
-                        Return NegateByte(Convert.ToByte(operand))
+                        Return NegateByte(Convert.ToByte(Operand))
                     End If
 
                 Case TypeCode.Int16
-                    If TypeOf operand Is Int16 Then
-                        Return NegateInt16(DirectCast(operand, Int16))
+                    If TypeOf Operand Is Int16 Then
+                        Return NegateInt16(DirectCast(Operand, Int16))
                     Else
-                        Return NegateInt16(Convert.ToInt16(operand))
+                        Return NegateInt16(Convert.ToInt16(Operand))
                     End If
 
                 Case TypeCode.UInt16
-                    If TypeOf operand Is UInt16 Then
-                        Return NegateUInt16(DirectCast(operand, UInt16))
+                    If TypeOf Operand Is UInt16 Then
+                        Return NegateUInt16(DirectCast(Operand, UInt16))
                     Else
-                        Return NegateUInt16(Convert.ToUInt16(operand))
+                        Return NegateUInt16(Convert.ToUInt16(Operand))
                     End If
 
                 Case TypeCode.Int32
-                    If TypeOf operand Is Int32 Then
-                        Return NegateInt32(DirectCast(operand, Int32))
+                    If TypeOf Operand Is Int32 Then
+                        Return NegateInt32(DirectCast(Operand, Int32))
                     Else
-                        Return NegateInt32(Convert.ToInt32(operand))
+                        Return NegateInt32(Convert.ToInt32(Operand))
                     End If
 
                 Case TypeCode.UInt32
-                    If TypeOf operand Is UInt32 Then
-                        Return NegateUInt32(DirectCast(operand, UInt32))
+                    If TypeOf Operand Is UInt32 Then
+                        Return NegateUInt32(DirectCast(Operand, UInt32))
                     Else
-                        Return NegateUInt32(Convert.ToUInt32(operand))
+                        Return NegateUInt32(Convert.ToUInt32(Operand))
                     End If
 
                 Case TypeCode.Int64
-                    If TypeOf operand Is Int64 Then
-                        Return NegateInt64(DirectCast(operand, Int64))
+                    If TypeOf Operand Is Int64 Then
+                        Return NegateInt64(DirectCast(Operand, Int64))
                     Else
-                        Return NegateInt64(Convert.ToInt64(operand))
+                        Return NegateInt64(Convert.ToInt64(Operand))
                     End If
 
                 Case TypeCode.UInt64
-                    If TypeOf operand Is UInt64 Then
-                        Return NegateUInt64(DirectCast(operand, UInt64))
+                    If TypeOf Operand Is UInt64 Then
+                        Return NegateUInt64(DirectCast(Operand, UInt64))
                     Else
-                        Return NegateUInt64(Convert.ToUInt64(operand))
+                        Return NegateUInt64(Convert.ToUInt64(Operand))
                     End If
 
                 Case TypeCode.Decimal
-                    If TypeOf operand Is Decimal Then
-                        Return NegateDecimal(DirectCast(operand, Decimal))
+                    If TypeOf Operand Is Decimal Then
+                        Return NegateDecimal(DirectCast(Operand, Decimal))
                     Else
-                        Return NegateDecimal(Convert.ToDecimal(operand))
+                        Return NegateDecimal(Convert.ToDecimal(Operand))
                     End If
 
                 Case TypeCode.Single
-                    If TypeOf operand Is Single Then
-                        Return NegateSingle(DirectCast(operand, Single))
+                    If TypeOf Operand Is Single Then
+                        Return NegateSingle(DirectCast(Operand, Single))
                     Else
-                        Return NegateSingle(Convert.ToSingle(operand))
+                        Return NegateSingle(Convert.ToSingle(Operand))
                     End If
 
                 Case TypeCode.Double
-                    If TypeOf operand Is Double Then
-                        Return NegateDouble(DirectCast(operand, Double))
+                    If TypeOf Operand Is Double Then
+                        Return NegateDouble(DirectCast(Operand, Double))
                     Else
-                        Return NegateDouble(Convert.ToDouble(operand))
+                        Return NegateDouble(Convert.ToDouble(Operand))
                     End If
 
                 Case TypeCode.DateTime,
@@ -1054,22 +1056,22 @@ Namespace Microsoft.VisualBasic.CompilerServices
                 'Fall through to error.
 
                 Case TypeCode.String
-                    Dim stringOperand As String = TryCast(operand, String)
+                    Dim stringOperand As String = TryCast(Operand, String)
 
                     If stringOperand IsNot Nothing Then
                         Return NegateString(stringOperand)
                     Else
-                        Return NegateString(Convert.ToString(operand))
+                        Return NegateString(Convert.ToString(Operand))
                     End If
 
                 Case TypeCode.Object
-                    Return InvokeUserDefinedOperator(UserDefinedOperator.Negate, operand)
+                    Return InvokeUserDefinedOperator(UserDefinedOperator.Negate, Operand)
 
                 Case Else
                     'Fall through to error.
             End Select
 
-            Throw GetNoValidOperatorException(UserDefinedOperator.Negate, operand)
+            Throw GetNoValidOperatorException(UserDefinedOperator.Negate, Operand)
         End Function
 
         Private Shared Function NegateBoolean(ByVal operand As Boolean) As Object
@@ -1146,9 +1148,9 @@ Namespace Microsoft.VisualBasic.CompilerServices
 
 #Region " Operator Not "
 
-        Public Shared Function NotObject(ByVal operand As Object) As Object
+        Public Shared Function NotObject(ByVal Operand As Object) As Object
 
-            Dim tc As TypeCode = GetTypeCode(operand)
+            Dim tc As TypeCode = GetTypeCode(Operand)
 
             Select Case tc
 
@@ -1156,52 +1158,52 @@ Namespace Microsoft.VisualBasic.CompilerServices
                     Return Not 0I
 
                 Case TypeCode.Boolean
-                    Return NotBoolean(Convert.ToBoolean(operand))
+                    Return NotBoolean(Convert.ToBoolean(Operand))
 
                 Case TypeCode.SByte
-                    Return NotSByte(Convert.ToSByte(operand), operand.GetType())
+                    Return NotSByte(Convert.ToSByte(Operand), Operand.GetType())
 
                 Case TypeCode.Byte
-                    Return NotByte(Convert.ToByte(operand), operand.GetType())
+                    Return NotByte(Convert.ToByte(Operand), Operand.GetType())
 
                 Case TypeCode.Int16
-                    Return NotInt16(Convert.ToInt16(operand), operand.GetType())
+                    Return NotInt16(Convert.ToInt16(Operand), Operand.GetType())
 
                 Case TypeCode.UInt16
-                    Return NotUInt16(Convert.ToUInt16(operand), operand.GetType())
+                    Return NotUInt16(Convert.ToUInt16(Operand), Operand.GetType())
 
                 Case TypeCode.Int32
-                    Return NotInt32(Convert.ToInt32(operand), operand.GetType())
+                    Return NotInt32(Convert.ToInt32(Operand), Operand.GetType())
 
                 Case TypeCode.UInt32
-                    Return NotUInt32(Convert.ToUInt32(operand), operand.GetType())
+                    Return NotUInt32(Convert.ToUInt32(Operand), Operand.GetType())
 
                 Case TypeCode.Int64
-                    Return NotInt64(Convert.ToInt64(operand), operand.GetType())
+                    Return NotInt64(Convert.ToInt64(Operand), Operand.GetType())
 
                 Case TypeCode.UInt64
-                    Return NotUInt64(Convert.ToUInt64(operand), operand.GetType())
+                    Return NotUInt64(Convert.ToUInt64(Operand), Operand.GetType())
 
                 Case TypeCode.Decimal,
                      TypeCode.Single,
                      TypeCode.Double
-                    Return NotInt64(Convert.ToInt64(operand))
+                    Return NotInt64(Convert.ToInt64(Operand))
 
                 Case TypeCode.DateTime,
                      TypeCode.Char
                 'Fall through to error.
 
                 Case TypeCode.String
-                    Return NotInt64(CLng(Convert.ToString(operand)))
+                    Return NotInt64(CLng(Convert.ToString(Operand)))
 
                 Case TypeCode.Object
-                    Return InvokeUserDefinedOperator(UserDefinedOperator.Not, operand)
+                    Return InvokeUserDefinedOperator(UserDefinedOperator.Not, Operand)
 
                 Case Else
                     'Fall through to error.
             End Select
 
-            Throw GetNoValidOperatorException(UserDefinedOperator.Not, operand)
+            Throw GetNoValidOperatorException(UserDefinedOperator.Not, Operand)
         End Function
 
         Private Shared Function NotBoolean(ByVal operand As Boolean) As Object
@@ -1288,10 +1290,10 @@ Namespace Microsoft.VisualBasic.CompilerServices
 
 #Region " Operator And "
 
-        Public Shared Function AndObject(ByVal left As Object, ByVal right As Object) As Object
+        Public Shared Function AndObject(ByVal Left As Object, ByVal Right As Object) As Object
 
-            Dim tc1 As TypeCode = GetTypeCode(left)
-            Dim tc2 As TypeCode = GetTypeCode(right)
+            Dim tc1 As TypeCode = GetTypeCode(Left)
+            Dim tc2 As TypeCode = GetTypeCode(Right)
 
 
             Select Case tc1 * s_TCMAX + tc2
@@ -1305,58 +1307,58 @@ Namespace Microsoft.VisualBasic.CompilerServices
 
                 Case TypeCode.Empty * s_TCMAX + TypeCode.SByte,
                      TypeCode.SByte * s_TCMAX + TypeCode.Empty
-                    Return AndSByte(CSByte(0), CSByte(0), GetEnumResult(left, right))
+                    Return AndSByte(CSByte(0), CSByte(0), GetEnumResult(Left, Right))
 
                 Case TypeCode.Empty * s_TCMAX + TypeCode.Byte,
                      TypeCode.Byte * s_TCMAX + TypeCode.Empty
-                    Return AndByte(CByte(0), CByte(0), GetEnumResult(left, right))
+                    Return AndByte(CByte(0), CByte(0), GetEnumResult(Left, Right))
 
                 Case TypeCode.Empty * s_TCMAX + TypeCode.Int16,
                      TypeCode.Int16 * s_TCMAX + TypeCode.Empty
-                    Return AndInt16(0S, 0S, GetEnumResult(left, right))
+                    Return AndInt16(0S, 0S, GetEnumResult(Left, Right))
 
                 Case TypeCode.Empty * s_TCMAX + TypeCode.UInt16,
                      TypeCode.UInt16 * s_TCMAX + TypeCode.Empty
-                    Return AndUInt16(0US, 0US, GetEnumResult(left, right))
+                    Return AndUInt16(0US, 0US, GetEnumResult(Left, Right))
 
                 Case TypeCode.Empty * s_TCMAX + TypeCode.Int32,
                      TypeCode.Int32 * s_TCMAX + TypeCode.Empty
-                    Return AndInt32(0I, 0I, GetEnumResult(left, right))
+                    Return AndInt32(0I, 0I, GetEnumResult(Left, Right))
 
                 Case TypeCode.Empty * s_TCMAX + TypeCode.UInt32,
                      TypeCode.UInt32 * s_TCMAX + TypeCode.Empty
-                    Return AndUInt32(0UI, 0UI, GetEnumResult(left, right))
+                    Return AndUInt32(0UI, 0UI, GetEnumResult(Left, Right))
 
                 Case TypeCode.Empty * s_TCMAX + TypeCode.Int64,
                      TypeCode.Int64 * s_TCMAX + TypeCode.Empty
-                    Return AndInt64(0L, 0L, GetEnumResult(left, right))
+                    Return AndInt64(0L, 0L, GetEnumResult(Left, Right))
 
                 Case TypeCode.Empty * s_TCMAX + TypeCode.UInt64,
                      TypeCode.UInt64 * s_TCMAX + TypeCode.Empty
-                    Return AndUInt64(0UL, 0UL, GetEnumResult(left, right))
+                    Return AndUInt64(0UL, 0UL, GetEnumResult(Left, Right))
 
                 Case TypeCode.Empty * s_TCMAX + TypeCode.Decimal,
                      TypeCode.Empty * s_TCMAX + TypeCode.Single,
                      TypeCode.Empty * s_TCMAX + TypeCode.Double
-                    Return AndInt64(Nothing, Convert.ToInt64(right))
+                    Return AndInt64(Nothing, Convert.ToInt64(Right))
 
                 Case TypeCode.Empty * s_TCMAX + TypeCode.String
-                    Return AndInt64(Nothing, CLng(Convert.ToString(right)))
+                    Return AndInt64(Nothing, CLng(Convert.ToString(Right)))
 
 
                 Case TypeCode.Boolean * s_TCMAX + TypeCode.Boolean
-                    Return AndBoolean(Convert.ToBoolean(left), Convert.ToBoolean(right))
+                    Return AndBoolean(Convert.ToBoolean(Left), Convert.ToBoolean(Right))
 
                 Case TypeCode.Boolean * s_TCMAX + TypeCode.SByte
-                    Return AndSByte(ToVBBool(left), Convert.ToSByte(right))
+                    Return AndSByte(ToVBBool(Left), Convert.ToSByte(Right))
 
                 Case TypeCode.Boolean * s_TCMAX + TypeCode.Byte,
                      TypeCode.Boolean * s_TCMAX + TypeCode.Int16
-                    Return AndInt16(ToVBBool(left), Convert.ToInt16(right))
+                    Return AndInt16(ToVBBool(Left), Convert.ToInt16(Right))
 
                 Case TypeCode.Boolean * s_TCMAX + TypeCode.UInt16,
                      TypeCode.Boolean * s_TCMAX + TypeCode.Int32
-                    Return AndInt32(ToVBBool(left), Convert.ToInt32(right))
+                    Return AndInt32(ToVBBool(Left), Convert.ToInt32(Right))
 
                 Case TypeCode.Boolean * s_TCMAX + TypeCode.UInt32,
                      TypeCode.Boolean * s_TCMAX + TypeCode.Int64,
@@ -1365,16 +1367,16 @@ Namespace Microsoft.VisualBasic.CompilerServices
                      TypeCode.Boolean * s_TCMAX + TypeCode.Single,
                      TypeCode.Boolean * s_TCMAX + TypeCode.Double
 
-                    Return AndInt64(ToVBBool(left), Convert.ToInt64(right))
+                    Return AndInt64(ToVBBool(Left), Convert.ToInt64(Right))
 
                 Case TypeCode.Boolean * s_TCMAX + TypeCode.String
-                    Return AndBoolean(Convert.ToBoolean(left), CBool(Convert.ToString(right)))
+                    Return AndBoolean(Convert.ToBoolean(Left), CBool(Convert.ToString(Right)))
 
                 Case TypeCode.SByte * s_TCMAX + TypeCode.Boolean
-                    Return AndSByte(Convert.ToSByte(left), ToVBBool(right))
+                    Return AndSByte(Convert.ToSByte(Left), ToVBBool(Right))
 
                 Case TypeCode.SByte * s_TCMAX + TypeCode.SByte
-                    Return AndSByte(Convert.ToSByte(left), Convert.ToSByte(right), GetEnumResult(left, right))
+                    Return AndSByte(Convert.ToSByte(Left), Convert.ToSByte(Right), GetEnumResult(Left, Right))
 
                 Case TypeCode.SByte * s_TCMAX + TypeCode.Byte,
                      TypeCode.SByte * s_TCMAX + TypeCode.Int16,
@@ -1383,7 +1385,7 @@ Namespace Microsoft.VisualBasic.CompilerServices
                      TypeCode.Int16 * s_TCMAX + TypeCode.SByte,
                      TypeCode.Int16 * s_TCMAX + TypeCode.Byte
 
-                    Return AndInt16(Convert.ToInt16(left), Convert.ToInt16(right))
+                    Return AndInt16(Convert.ToInt16(Left), Convert.ToInt16(Right))
 
                 Case TypeCode.SByte * s_TCMAX + TypeCode.UInt16,
                      TypeCode.SByte * s_TCMAX + TypeCode.Int32,
@@ -1398,7 +1400,7 @@ Namespace Microsoft.VisualBasic.CompilerServices
                      TypeCode.Int32 * s_TCMAX + TypeCode.Int16,
                      TypeCode.Int32 * s_TCMAX + TypeCode.UInt16
 
-                    Return AndInt32(Convert.ToInt32(left), Convert.ToInt32(right))
+                    Return AndInt32(Convert.ToInt32(Left), Convert.ToInt32(Right))
 
                 Case TypeCode.SByte * s_TCMAX + TypeCode.UInt32,
                      TypeCode.SByte * s_TCMAX + TypeCode.Int64,
@@ -1484,7 +1486,7 @@ Namespace Microsoft.VisualBasic.CompilerServices
                      TypeCode.Double * s_TCMAX + TypeCode.Single,
                      TypeCode.Double * s_TCMAX + TypeCode.Double
 
-                    Return AndInt64(Convert.ToInt64(left), Convert.ToInt64(right))
+                    Return AndInt64(Convert.ToInt64(Left), Convert.ToInt64(Right))
 
                 Case TypeCode.SByte * s_TCMAX + TypeCode.String,
                      TypeCode.Byte * s_TCMAX + TypeCode.String,
@@ -1498,26 +1500,26 @@ Namespace Microsoft.VisualBasic.CompilerServices
                      TypeCode.Single * s_TCMAX + TypeCode.String,
                      TypeCode.Double * s_TCMAX + TypeCode.String
 
-                    Return AndInt64(Convert.ToInt64(left), CLng(Convert.ToString(right)))
+                    Return AndInt64(Convert.ToInt64(Left), CLng(Convert.ToString(Right)))
 
 
                 Case TypeCode.Byte * s_TCMAX + TypeCode.Boolean,
                      TypeCode.Int16 * s_TCMAX + TypeCode.Boolean
-                    Return AndInt16(Convert.ToInt16(left), ToVBBool(right))
+                    Return AndInt16(Convert.ToInt16(Left), ToVBBool(Right))
 
                 Case TypeCode.Byte * s_TCMAX + TypeCode.Byte
-                    Return AndByte(Convert.ToByte(left), Convert.ToByte(right), GetEnumResult(left, right))
+                    Return AndByte(Convert.ToByte(Left), Convert.ToByte(Right), GetEnumResult(Left, Right))
 
                 Case TypeCode.Byte * s_TCMAX + TypeCode.UInt16,
                      TypeCode.UInt16 * s_TCMAX + TypeCode.Byte
-                    Return AndUInt16(Convert.ToUInt16(left), Convert.ToUInt16(right))
+                    Return AndUInt16(Convert.ToUInt16(Left), Convert.ToUInt16(Right))
 
                 Case TypeCode.Byte * s_TCMAX + TypeCode.UInt32,
                      TypeCode.UInt16 * s_TCMAX + TypeCode.UInt32,
                      TypeCode.UInt32 * s_TCMAX + TypeCode.Byte,
                      TypeCode.UInt32 * s_TCMAX + TypeCode.UInt16
 
-                    Return AndUInt32(Convert.ToUInt32(left), Convert.ToUInt32(right))
+                    Return AndUInt32(Convert.ToUInt32(Left), Convert.ToUInt32(Right))
 
                 Case TypeCode.Byte * s_TCMAX + TypeCode.UInt64,
                      TypeCode.UInt16 * s_TCMAX + TypeCode.UInt64,
@@ -1526,23 +1528,23 @@ Namespace Microsoft.VisualBasic.CompilerServices
                      TypeCode.UInt64 * s_TCMAX + TypeCode.UInt16,
                      TypeCode.UInt64 * s_TCMAX + TypeCode.UInt32
 
-                    Return AndUInt64(Convert.ToUInt64(left), Convert.ToUInt64(right))
+                    Return AndUInt64(Convert.ToUInt64(Left), Convert.ToUInt64(Right))
 
 
                 Case TypeCode.Int16 * s_TCMAX + TypeCode.Int16
-                    Return AndInt16(Convert.ToInt16(left), Convert.ToInt16(right), GetEnumResult(left, right))
+                    Return AndInt16(Convert.ToInt16(Left), Convert.ToInt16(Right), GetEnumResult(Left, Right))
 
 
                 Case TypeCode.UInt16 * s_TCMAX + TypeCode.Boolean,
                      TypeCode.Int32 * s_TCMAX + TypeCode.Boolean
-                    Return AndInt32(Convert.ToInt32(left), ToVBBool(right))
+                    Return AndInt32(Convert.ToInt32(Left), ToVBBool(Right))
 
                 Case TypeCode.UInt16 * s_TCMAX + TypeCode.UInt16
-                    Return AndUInt16(Convert.ToUInt16(left), Convert.ToUInt16(right), GetEnumResult(left, right))
+                    Return AndUInt16(Convert.ToUInt16(Left), Convert.ToUInt16(Right), GetEnumResult(Left, Right))
 
 
                 Case TypeCode.Int32 * s_TCMAX + TypeCode.Int32
-                    Return AndInt32(Convert.ToInt32(left), Convert.ToInt32(right), GetEnumResult(left, right))
+                    Return AndInt32(Convert.ToInt32(Left), Convert.ToInt32(Right), GetEnumResult(Left, Right))
 
 
                 Case TypeCode.UInt32 * s_TCMAX + TypeCode.Boolean,
@@ -1551,31 +1553,31 @@ Namespace Microsoft.VisualBasic.CompilerServices
                      TypeCode.Decimal * s_TCMAX + TypeCode.Boolean,
                      TypeCode.Single * s_TCMAX + TypeCode.Boolean,
                      TypeCode.Double * s_TCMAX + TypeCode.Boolean
-                    Return AndInt64(Convert.ToInt64(left), ToVBBool(right))
+                    Return AndInt64(Convert.ToInt64(Left), ToVBBool(Right))
 
                 Case TypeCode.UInt32 * s_TCMAX + TypeCode.UInt32
-                    Return AndUInt32(Convert.ToUInt32(left), Convert.ToUInt32(right), GetEnumResult(left, right))
+                    Return AndUInt32(Convert.ToUInt32(Left), Convert.ToUInt32(Right), GetEnumResult(Left, Right))
 
 
                 Case TypeCode.Int64 * s_TCMAX + TypeCode.Int64
-                    Return AndInt64(Convert.ToInt64(left), Convert.ToInt64(right), GetEnumResult(left, right))
+                    Return AndInt64(Convert.ToInt64(Left), Convert.ToInt64(Right), GetEnumResult(Left, Right))
 
 
                 Case TypeCode.UInt64 * s_TCMAX + TypeCode.UInt64
-                    Return AndUInt64(Convert.ToUInt64(left), Convert.ToUInt64(right), GetEnumResult(left, right))
+                    Return AndUInt64(Convert.ToUInt64(Left), Convert.ToUInt64(Right), GetEnumResult(Left, Right))
 
 
                 Case TypeCode.Decimal * s_TCMAX + TypeCode.Empty,
                      TypeCode.Single * s_TCMAX + TypeCode.Empty,
                      TypeCode.Double * s_TCMAX + TypeCode.Empty
-                    Return AndInt64(Convert.ToInt64(left), Nothing)
+                    Return AndInt64(Convert.ToInt64(Left), Nothing)
 
 
                 Case TypeCode.String * s_TCMAX + TypeCode.Empty
-                    Return AndInt64(CLng(Convert.ToString(left)), Nothing)
+                    Return AndInt64(CLng(Convert.ToString(Left)), Nothing)
 
                 Case TypeCode.String * s_TCMAX + TypeCode.Boolean
-                    Return AndBoolean(CBool(Convert.ToString(left)), Convert.ToBoolean(right))
+                    Return AndBoolean(CBool(Convert.ToString(Left)), Convert.ToBoolean(Right))
 
                 Case TypeCode.String * s_TCMAX + TypeCode.SByte,
                      TypeCode.String * s_TCMAX + TypeCode.Byte,
@@ -1589,18 +1591,18 @@ Namespace Microsoft.VisualBasic.CompilerServices
                      TypeCode.String * s_TCMAX + TypeCode.Single,
                      TypeCode.String * s_TCMAX + TypeCode.Double
 
-                    Return AndInt64(CLng(Convert.ToString(left)), Convert.ToInt64(right))
+                    Return AndInt64(CLng(Convert.ToString(Left)), Convert.ToInt64(Right))
 
                 Case TypeCode.String * s_TCMAX + TypeCode.String
-                    Return AndInt64(CLng(Convert.ToString(left)), CLng(Convert.ToString(right)))
+                    Return AndInt64(CLng(Convert.ToString(Left)), CLng(Convert.ToString(Right)))
 
             End Select
 
             If tc1 = TypeCode.Object OrElse tc2 = TypeCode.Object Then
-                Return InvokeUserDefinedOperator(UserDefinedOperator.And, left, right)
+                Return InvokeUserDefinedOperator(UserDefinedOperator.And, Left, Right)
             End If
 
-            Throw GetNoValidOperatorException(UserDefinedOperator.And, left, right)
+            Throw GetNoValidOperatorException(UserDefinedOperator.And, Left, Right)
         End Function
 
         Private Shared Function AndBoolean(ByVal left As Boolean, ByVal right As Boolean) As Object
@@ -1667,10 +1669,10 @@ Namespace Microsoft.VisualBasic.CompilerServices
 
 #Region " Operator Or "
 
-        Public Shared Function OrObject(ByVal left As Object, ByVal right As Object) As Object
+        Public Shared Function OrObject(ByVal Left As Object, ByVal Right As Object) As Object
 
-            Dim tc1 As TypeCode = GetTypeCode(left)
-            Dim tc2 As TypeCode = GetTypeCode(right)
+            Dim tc1 As TypeCode = GetTypeCode(Left)
+            Dim tc2 As TypeCode = GetTypeCode(Right)
 
             Select Case tc1 * s_TCMAX + tc2
 
@@ -1678,7 +1680,7 @@ Namespace Microsoft.VisualBasic.CompilerServices
                     Return Boxed_ZeroInteger
 
                 Case TypeCode.Empty * s_TCMAX + TypeCode.Boolean
-                    Return OrBoolean(Nothing, Convert.ToBoolean(right))
+                    Return OrBoolean(Nothing, Convert.ToBoolean(Right))
 
                 Case TypeCode.Empty * s_TCMAX + TypeCode.SByte,
                      TypeCode.Empty * s_TCMAX + TypeCode.Byte,
@@ -1689,33 +1691,33 @@ Namespace Microsoft.VisualBasic.CompilerServices
                      TypeCode.Empty * s_TCMAX + TypeCode.Int64,
                      TypeCode.Empty * s_TCMAX + TypeCode.UInt64
 
-                    Return right
+                    Return Right
 
                 Case TypeCode.Empty * s_TCMAX + TypeCode.Decimal,
                      TypeCode.Empty * s_TCMAX + TypeCode.Single,
                      TypeCode.Empty * s_TCMAX + TypeCode.Double
-                    Return OrInt64(Nothing, Convert.ToInt64(right))
+                    Return OrInt64(Nothing, Convert.ToInt64(Right))
 
                 Case TypeCode.Empty * s_TCMAX + TypeCode.String
-                    Return OrInt64(Nothing, CLng(Convert.ToString(right)))
+                    Return OrInt64(Nothing, CLng(Convert.ToString(Right)))
 
 
                 Case TypeCode.Boolean * s_TCMAX + TypeCode.Empty
-                    Return OrBoolean(Convert.ToBoolean(left), Nothing)
+                    Return OrBoolean(Convert.ToBoolean(Left), Nothing)
 
                 Case TypeCode.Boolean * s_TCMAX + TypeCode.Boolean
-                    Return OrBoolean(Convert.ToBoolean(left), Convert.ToBoolean(right))
+                    Return OrBoolean(Convert.ToBoolean(Left), Convert.ToBoolean(Right))
 
                 Case TypeCode.Boolean * s_TCMAX + TypeCode.SByte
-                    Return OrSByte(ToVBBool(left), Convert.ToSByte(right))
+                    Return OrSByte(ToVBBool(Left), Convert.ToSByte(Right))
 
                 Case TypeCode.Boolean * s_TCMAX + TypeCode.Byte,
                      TypeCode.Boolean * s_TCMAX + TypeCode.Int16
-                    Return OrInt16(ToVBBool(left), Convert.ToInt16(right))
+                    Return OrInt16(ToVBBool(Left), Convert.ToInt16(Right))
 
                 Case TypeCode.Boolean * s_TCMAX + TypeCode.UInt16,
                      TypeCode.Boolean * s_TCMAX + TypeCode.Int32
-                    Return OrInt32(ToVBBool(left), Convert.ToInt32(right))
+                    Return OrInt32(ToVBBool(Left), Convert.ToInt32(Right))
 
                 Case TypeCode.Boolean * s_TCMAX + TypeCode.UInt32,
                      TypeCode.Boolean * s_TCMAX + TypeCode.Int64,
@@ -1724,10 +1726,10 @@ Namespace Microsoft.VisualBasic.CompilerServices
                      TypeCode.Boolean * s_TCMAX + TypeCode.Single,
                      TypeCode.Boolean * s_TCMAX + TypeCode.Double
 
-                    Return OrInt64(ToVBBool(left), Convert.ToInt64(right))
+                    Return OrInt64(ToVBBool(Left), Convert.ToInt64(Right))
 
                 Case TypeCode.Boolean * s_TCMAX + TypeCode.String
-                    Return OrBoolean(Convert.ToBoolean(left), CBool(Convert.ToString(right)))
+                    Return OrBoolean(Convert.ToBoolean(Left), CBool(Convert.ToString(Right)))
 
                 Case TypeCode.SByte * s_TCMAX + TypeCode.Empty,
                      TypeCode.Byte * s_TCMAX + TypeCode.Empty,
@@ -1738,13 +1740,13 @@ Namespace Microsoft.VisualBasic.CompilerServices
                      TypeCode.Int64 * s_TCMAX + TypeCode.Empty,
                      TypeCode.UInt64 * s_TCMAX + TypeCode.Empty
 
-                    Return left
+                    Return Left
 
                 Case TypeCode.SByte * s_TCMAX + TypeCode.Boolean
-                    Return OrSByte(Convert.ToSByte(left), ToVBBool(right))
+                    Return OrSByte(Convert.ToSByte(Left), ToVBBool(Right))
 
                 Case TypeCode.SByte * s_TCMAX + TypeCode.SByte
-                    Return OrSByte(Convert.ToSByte(left), Convert.ToSByte(right), GetEnumResult(left, right))
+                    Return OrSByte(Convert.ToSByte(Left), Convert.ToSByte(Right), GetEnumResult(Left, Right))
 
                 Case TypeCode.SByte * s_TCMAX + TypeCode.Byte,
                      TypeCode.SByte * s_TCMAX + TypeCode.Int16,
@@ -1753,7 +1755,7 @@ Namespace Microsoft.VisualBasic.CompilerServices
                      TypeCode.Int16 * s_TCMAX + TypeCode.SByte,
                      TypeCode.Int16 * s_TCMAX + TypeCode.Byte
 
-                    Return OrInt16(Convert.ToInt16(left), Convert.ToInt16(right))
+                    Return OrInt16(Convert.ToInt16(Left), Convert.ToInt16(Right))
 
                 Case TypeCode.SByte * s_TCMAX + TypeCode.UInt16,
                      TypeCode.SByte * s_TCMAX + TypeCode.Int32,
@@ -1768,7 +1770,7 @@ Namespace Microsoft.VisualBasic.CompilerServices
                      TypeCode.Int32 * s_TCMAX + TypeCode.Int16,
                      TypeCode.Int32 * s_TCMAX + TypeCode.UInt16
 
-                    Return OrInt32(Convert.ToInt32(left), Convert.ToInt32(right))
+                    Return OrInt32(Convert.ToInt32(Left), Convert.ToInt32(Right))
 
                 Case TypeCode.SByte * s_TCMAX + TypeCode.UInt32,
                      TypeCode.SByte * s_TCMAX + TypeCode.Int64,
@@ -1854,7 +1856,7 @@ Namespace Microsoft.VisualBasic.CompilerServices
                      TypeCode.Double * s_TCMAX + TypeCode.Single,
                      TypeCode.Double * s_TCMAX + TypeCode.Double
 
-                    Return OrInt64(Convert.ToInt64(left), Convert.ToInt64(right))
+                    Return OrInt64(Convert.ToInt64(Left), Convert.ToInt64(Right))
 
                 Case TypeCode.SByte * s_TCMAX + TypeCode.String,
                      TypeCode.Byte * s_TCMAX + TypeCode.String,
@@ -1868,26 +1870,26 @@ Namespace Microsoft.VisualBasic.CompilerServices
                      TypeCode.Single * s_TCMAX + TypeCode.String,
                      TypeCode.Double * s_TCMAX + TypeCode.String
 
-                    Return OrInt64(Convert.ToInt64(left), CLng(Convert.ToString(right)))
+                    Return OrInt64(Convert.ToInt64(Left), CLng(Convert.ToString(Right)))
 
 
                 Case TypeCode.Byte * s_TCMAX + TypeCode.Boolean,
                      TypeCode.Int16 * s_TCMAX + TypeCode.Boolean
-                    Return OrInt16(Convert.ToInt16(left), ToVBBool(right))
+                    Return OrInt16(Convert.ToInt16(Left), ToVBBool(Right))
 
                 Case TypeCode.Byte * s_TCMAX + TypeCode.Byte
-                    Return OrByte(Convert.ToByte(left), Convert.ToByte(right), GetEnumResult(left, right))
+                    Return OrByte(Convert.ToByte(Left), Convert.ToByte(Right), GetEnumResult(Left, Right))
 
                 Case TypeCode.Byte * s_TCMAX + TypeCode.UInt16,
                      TypeCode.UInt16 * s_TCMAX + TypeCode.Byte
-                    Return OrUInt16(Convert.ToUInt16(left), Convert.ToUInt16(right))
+                    Return OrUInt16(Convert.ToUInt16(Left), Convert.ToUInt16(Right))
 
                 Case TypeCode.Byte * s_TCMAX + TypeCode.UInt32,
                      TypeCode.UInt16 * s_TCMAX + TypeCode.UInt32,
                      TypeCode.UInt32 * s_TCMAX + TypeCode.Byte,
                      TypeCode.UInt32 * s_TCMAX + TypeCode.UInt16
 
-                    Return OrUInt32(Convert.ToUInt32(left), Convert.ToUInt32(right))
+                    Return OrUInt32(Convert.ToUInt32(Left), Convert.ToUInt32(Right))
 
                 Case TypeCode.Byte * s_TCMAX + TypeCode.UInt64,
                      TypeCode.UInt16 * s_TCMAX + TypeCode.UInt64,
@@ -1896,23 +1898,23 @@ Namespace Microsoft.VisualBasic.CompilerServices
                      TypeCode.UInt64 * s_TCMAX + TypeCode.UInt16,
                      TypeCode.UInt64 * s_TCMAX + TypeCode.UInt32
 
-                    Return OrUInt64(Convert.ToUInt64(left), Convert.ToUInt64(right))
+                    Return OrUInt64(Convert.ToUInt64(Left), Convert.ToUInt64(Right))
 
 
                 Case TypeCode.Int16 * s_TCMAX + TypeCode.Int16
-                    Return OrInt16(Convert.ToInt16(left), Convert.ToInt16(right), GetEnumResult(left, right))
+                    Return OrInt16(Convert.ToInt16(Left), Convert.ToInt16(Right), GetEnumResult(Left, Right))
 
 
                 Case TypeCode.UInt16 * s_TCMAX + TypeCode.Boolean,
                      TypeCode.Int32 * s_TCMAX + TypeCode.Boolean
-                    Return OrInt32(Convert.ToInt32(left), ToVBBool(right))
+                    Return OrInt32(Convert.ToInt32(Left), ToVBBool(Right))
 
                 Case TypeCode.UInt16 * s_TCMAX + TypeCode.UInt16
-                    Return OrUInt16(Convert.ToUInt16(left), Convert.ToUInt16(right), GetEnumResult(left, right))
+                    Return OrUInt16(Convert.ToUInt16(Left), Convert.ToUInt16(Right), GetEnumResult(Left, Right))
 
 
                 Case TypeCode.Int32 * s_TCMAX + TypeCode.Int32
-                    Return OrInt32(Convert.ToInt32(left), Convert.ToInt32(right), GetEnumResult(left, right))
+                    Return OrInt32(Convert.ToInt32(Left), Convert.ToInt32(Right), GetEnumResult(Left, Right))
 
 
                 Case TypeCode.UInt32 * s_TCMAX + TypeCode.Boolean,
@@ -1922,31 +1924,31 @@ Namespace Microsoft.VisualBasic.CompilerServices
                      TypeCode.Single * s_TCMAX + TypeCode.Boolean,
                      TypeCode.Double * s_TCMAX + TypeCode.Boolean
 
-                    Return OrInt64(Convert.ToInt64(left), ToVBBool(right))
+                    Return OrInt64(Convert.ToInt64(Left), ToVBBool(Right))
 
                 Case TypeCode.UInt32 * s_TCMAX + TypeCode.UInt32
-                    Return OrUInt32(Convert.ToUInt32(left), Convert.ToUInt32(right), GetEnumResult(left, right))
+                    Return OrUInt32(Convert.ToUInt32(Left), Convert.ToUInt32(Right), GetEnumResult(Left, Right))
 
 
                 Case TypeCode.Int64 * s_TCMAX + TypeCode.Int64
-                    Return OrInt64(Convert.ToInt64(left), Convert.ToInt64(right), GetEnumResult(left, right))
+                    Return OrInt64(Convert.ToInt64(Left), Convert.ToInt64(Right), GetEnumResult(Left, Right))
 
 
                 Case TypeCode.UInt64 * s_TCMAX + TypeCode.UInt64
-                    Return OrUInt64(Convert.ToUInt64(left), Convert.ToUInt64(right), GetEnumResult(left, right))
+                    Return OrUInt64(Convert.ToUInt64(Left), Convert.ToUInt64(Right), GetEnumResult(Left, Right))
 
 
                 Case TypeCode.Decimal * s_TCMAX + TypeCode.Empty,
                      TypeCode.Single * s_TCMAX + TypeCode.Empty,
                      TypeCode.Double * s_TCMAX + TypeCode.Empty
-                    Return OrInt64(Convert.ToInt64(left), Nothing)
+                    Return OrInt64(Convert.ToInt64(Left), Nothing)
 
 
                 Case TypeCode.String * s_TCMAX + TypeCode.Empty
-                    Return OrInt64(CLng(Convert.ToString(left)), Nothing)
+                    Return OrInt64(CLng(Convert.ToString(Left)), Nothing)
 
                 Case TypeCode.String * s_TCMAX + TypeCode.Boolean
-                    Return OrBoolean(CBool(Convert.ToString(left)), Convert.ToBoolean(right))
+                    Return OrBoolean(CBool(Convert.ToString(Left)), Convert.ToBoolean(Right))
 
                 Case TypeCode.String * s_TCMAX + TypeCode.SByte,
                      TypeCode.String * s_TCMAX + TypeCode.Byte,
@@ -1960,18 +1962,18 @@ Namespace Microsoft.VisualBasic.CompilerServices
                      TypeCode.String * s_TCMAX + TypeCode.Single,
                      TypeCode.String * s_TCMAX + TypeCode.Double
 
-                    Return OrInt64(CLng(Convert.ToString(left)), Convert.ToInt64(right))
+                    Return OrInt64(CLng(Convert.ToString(Left)), Convert.ToInt64(Right))
 
                 Case TypeCode.String * s_TCMAX + TypeCode.String
-                    Return OrInt64(CLng(Convert.ToString(left)), CLng(Convert.ToString(right)))
+                    Return OrInt64(CLng(Convert.ToString(Left)), CLng(Convert.ToString(Right)))
 
             End Select
 
             If tc1 = TypeCode.Object OrElse tc2 = TypeCode.Object Then
-                Return InvokeUserDefinedOperator(UserDefinedOperator.Or, left, right)
+                Return InvokeUserDefinedOperator(UserDefinedOperator.Or, Left, Right)
             End If
 
-            Throw GetNoValidOperatorException(UserDefinedOperator.Or, left, right)
+            Throw GetNoValidOperatorException(UserDefinedOperator.Or, Left, Right)
         End Function
 
         Private Shared Function OrBoolean(ByVal left As Boolean, ByVal right As Boolean) As Object
@@ -2038,10 +2040,10 @@ Namespace Microsoft.VisualBasic.CompilerServices
 
 #Region " Operator Xor "
 
-        Public Shared Function XorObject(ByVal left As Object, ByVal right As Object) As Object
+        Public Shared Function XorObject(ByVal Left As Object, ByVal Right As Object) As Object
 
-            Dim tc1 As TypeCode = GetTypeCode(left)
-            Dim tc2 As TypeCode = GetTypeCode(right)
+            Dim tc1 As TypeCode = GetTypeCode(Left)
+            Dim tc2 As TypeCode = GetTypeCode(Right)
 
             Select Case tc1 * s_TCMAX + tc2
 
@@ -2049,57 +2051,57 @@ Namespace Microsoft.VisualBasic.CompilerServices
                     Return Boxed_ZeroInteger
 
                 Case TypeCode.Empty * s_TCMAX + TypeCode.Boolean
-                    Return XorBoolean(Nothing, Convert.ToBoolean(right))
+                    Return XorBoolean(Nothing, Convert.ToBoolean(Right))
 
                 Case TypeCode.Empty * s_TCMAX + TypeCode.SByte
-                    Return XorSByte(Nothing, Convert.ToSByte(right), GetEnumResult(left, right))
+                    Return XorSByte(Nothing, Convert.ToSByte(Right), GetEnumResult(Left, Right))
 
                 Case TypeCode.Empty * s_TCMAX + TypeCode.Byte
-                    Return XorByte(Nothing, Convert.ToByte(right), GetEnumResult(left, right))
+                    Return XorByte(Nothing, Convert.ToByte(Right), GetEnumResult(Left, Right))
 
                 Case TypeCode.Empty * s_TCMAX + TypeCode.Int16
-                    Return XorInt16(Nothing, Convert.ToInt16(right), GetEnumResult(left, right))
+                    Return XorInt16(Nothing, Convert.ToInt16(Right), GetEnumResult(Left, Right))
 
                 Case TypeCode.Empty * s_TCMAX + TypeCode.UInt16
-                    Return XorUInt16(Nothing, Convert.ToUInt16(right), GetEnumResult(left, right))
+                    Return XorUInt16(Nothing, Convert.ToUInt16(Right), GetEnumResult(Left, Right))
 
                 Case TypeCode.Empty * s_TCMAX + TypeCode.Int32
-                    Return XorInt32(Nothing, Convert.ToInt32(right), GetEnumResult(left, right))
+                    Return XorInt32(Nothing, Convert.ToInt32(Right), GetEnumResult(Left, Right))
 
                 Case TypeCode.Empty * s_TCMAX + TypeCode.UInt32
-                    Return XorUInt32(Nothing, Convert.ToUInt32(right), GetEnumResult(left, right))
+                    Return XorUInt32(Nothing, Convert.ToUInt32(Right), GetEnumResult(Left, Right))
 
                 Case TypeCode.Empty * s_TCMAX + TypeCode.Int64
-                    Return XorInt64(Nothing, Convert.ToInt64(right), GetEnumResult(left, right))
+                    Return XorInt64(Nothing, Convert.ToInt64(Right), GetEnumResult(Left, Right))
 
                 Case TypeCode.Empty * s_TCMAX + TypeCode.UInt64
-                    Return XorUInt64(Nothing, Convert.ToUInt64(right), GetEnumResult(left, right))
+                    Return XorUInt64(Nothing, Convert.ToUInt64(Right), GetEnumResult(Left, Right))
 
                 Case TypeCode.Empty * s_TCMAX + TypeCode.Decimal,
                      TypeCode.Empty * s_TCMAX + TypeCode.Single,
                      TypeCode.Empty * s_TCMAX + TypeCode.Double
-                    Return XorInt64(Nothing, Convert.ToInt64(right))
+                    Return XorInt64(Nothing, Convert.ToInt64(Right))
 
                 Case TypeCode.Empty * s_TCMAX + TypeCode.String
-                    Return XorInt64(Nothing, CLng(Convert.ToString(right)))
+                    Return XorInt64(Nothing, CLng(Convert.ToString(Right)))
 
 
                 Case TypeCode.Boolean * s_TCMAX + TypeCode.Empty
-                    Return XorBoolean(Convert.ToBoolean(left), Nothing)
+                    Return XorBoolean(Convert.ToBoolean(Left), Nothing)
 
                 Case TypeCode.Boolean * s_TCMAX + TypeCode.Boolean
-                    Return XorBoolean(Convert.ToBoolean(left), Convert.ToBoolean(right))
+                    Return XorBoolean(Convert.ToBoolean(Left), Convert.ToBoolean(Right))
 
                 Case TypeCode.Boolean * s_TCMAX + TypeCode.SByte
-                    Return XorSByte(ToVBBool(left), Convert.ToSByte(right))
+                    Return XorSByte(ToVBBool(Left), Convert.ToSByte(Right))
 
                 Case TypeCode.Boolean * s_TCMAX + TypeCode.Byte,
                      TypeCode.Boolean * s_TCMAX + TypeCode.Int16
-                    Return XorInt16(ToVBBool(left), Convert.ToInt16(right))
+                    Return XorInt16(ToVBBool(Left), Convert.ToInt16(Right))
 
                 Case TypeCode.Boolean * s_TCMAX + TypeCode.UInt16,
                      TypeCode.Boolean * s_TCMAX + TypeCode.Int32
-                    Return XorInt32(ToVBBool(left), Convert.ToInt32(right))
+                    Return XorInt32(ToVBBool(Left), Convert.ToInt32(Right))
 
                 Case TypeCode.Boolean * s_TCMAX + TypeCode.UInt32,
                      TypeCode.Boolean * s_TCMAX + TypeCode.Int64,
@@ -2108,19 +2110,19 @@ Namespace Microsoft.VisualBasic.CompilerServices
                      TypeCode.Boolean * s_TCMAX + TypeCode.Single,
                      TypeCode.Boolean * s_TCMAX + TypeCode.Double
 
-                    Return XorInt64(ToVBBool(left), Convert.ToInt64(right))
+                    Return XorInt64(ToVBBool(Left), Convert.ToInt64(Right))
 
                 Case TypeCode.Boolean * s_TCMAX + TypeCode.String
-                    Return XorBoolean(Convert.ToBoolean(left), CBool(Convert.ToString(right)))
+                    Return XorBoolean(Convert.ToBoolean(Left), CBool(Convert.ToString(Right)))
 
                 Case TypeCode.SByte * s_TCMAX + TypeCode.Empty
-                    Return XorSByte(Convert.ToSByte(left), Nothing, GetEnumResult(left, right))
+                    Return XorSByte(Convert.ToSByte(Left), Nothing, GetEnumResult(Left, Right))
 
                 Case TypeCode.SByte * s_TCMAX + TypeCode.Boolean
-                    Return XorSByte(Convert.ToSByte(left), ToVBBool(right))
+                    Return XorSByte(Convert.ToSByte(Left), ToVBBool(Right))
 
                 Case TypeCode.SByte * s_TCMAX + TypeCode.SByte
-                    Return XorSByte(Convert.ToSByte(left), Convert.ToSByte(right), GetEnumResult(left, right))
+                    Return XorSByte(Convert.ToSByte(Left), Convert.ToSByte(Right), GetEnumResult(Left, Right))
 
                 Case TypeCode.SByte * s_TCMAX + TypeCode.Byte,
                      TypeCode.SByte * s_TCMAX + TypeCode.Int16,
@@ -2129,7 +2131,7 @@ Namespace Microsoft.VisualBasic.CompilerServices
                      TypeCode.Int16 * s_TCMAX + TypeCode.SByte,
                      TypeCode.Int16 * s_TCMAX + TypeCode.Byte
 
-                    Return XorInt16(Convert.ToInt16(left), Convert.ToInt16(right))
+                    Return XorInt16(Convert.ToInt16(Left), Convert.ToInt16(Right))
 
                 Case TypeCode.SByte * s_TCMAX + TypeCode.UInt16,
                      TypeCode.SByte * s_TCMAX + TypeCode.Int32,
@@ -2144,7 +2146,7 @@ Namespace Microsoft.VisualBasic.CompilerServices
                      TypeCode.Int32 * s_TCMAX + TypeCode.Int16,
                      TypeCode.Int32 * s_TCMAX + TypeCode.UInt16
 
-                    Return XorInt32(Convert.ToInt32(left), Convert.ToInt32(right))
+                    Return XorInt32(Convert.ToInt32(Left), Convert.ToInt32(Right))
 
                 Case TypeCode.SByte * s_TCMAX + TypeCode.UInt32,
                      TypeCode.SByte * s_TCMAX + TypeCode.Int64,
@@ -2230,7 +2232,7 @@ Namespace Microsoft.VisualBasic.CompilerServices
                      TypeCode.Double * s_TCMAX + TypeCode.Single,
                      TypeCode.Double * s_TCMAX + TypeCode.Double
 
-                    Return XorInt64(Convert.ToInt64(left), Convert.ToInt64(right))
+                    Return XorInt64(Convert.ToInt64(Left), Convert.ToInt64(Right))
 
                 Case TypeCode.SByte * s_TCMAX + TypeCode.String,
                      TypeCode.Byte * s_TCMAX + TypeCode.String,
@@ -2244,29 +2246,29 @@ Namespace Microsoft.VisualBasic.CompilerServices
                      TypeCode.Single * s_TCMAX + TypeCode.String,
                      TypeCode.Double * s_TCMAX + TypeCode.String
 
-                    Return XorInt64(Convert.ToInt64(left), CLng(Convert.ToString(right)))
+                    Return XorInt64(Convert.ToInt64(Left), CLng(Convert.ToString(Right)))
 
 
                 Case TypeCode.Byte * s_TCMAX + TypeCode.Empty
-                    Return XorByte(Convert.ToByte(left), Nothing, GetEnumResult(left, right))
+                    Return XorByte(Convert.ToByte(Left), Nothing, GetEnumResult(Left, Right))
 
                 Case TypeCode.Byte * s_TCMAX + TypeCode.Boolean,
                      TypeCode.Int16 * s_TCMAX + TypeCode.Boolean
-                    Return XorInt16(Convert.ToInt16(left), ToVBBool(right))
+                    Return XorInt16(Convert.ToInt16(Left), ToVBBool(Right))
 
                 Case TypeCode.Byte * s_TCMAX + TypeCode.Byte
-                    Return XorByte(Convert.ToByte(left), Convert.ToByte(right), GetEnumResult(left, right))
+                    Return XorByte(Convert.ToByte(Left), Convert.ToByte(Right), GetEnumResult(Left, Right))
 
                 Case TypeCode.Byte * s_TCMAX + TypeCode.UInt16,
                      TypeCode.UInt16 * s_TCMAX + TypeCode.Byte
-                    Return XorUInt16(Convert.ToUInt16(left), Convert.ToUInt16(right))
+                    Return XorUInt16(Convert.ToUInt16(Left), Convert.ToUInt16(Right))
 
                 Case TypeCode.Byte * s_TCMAX + TypeCode.UInt32,
                      TypeCode.UInt16 * s_TCMAX + TypeCode.UInt32,
                      TypeCode.UInt32 * s_TCMAX + TypeCode.Byte,
                      TypeCode.UInt32 * s_TCMAX + TypeCode.UInt16
 
-                    Return XorUInt32(Convert.ToUInt32(left), Convert.ToUInt32(right))
+                    Return XorUInt32(Convert.ToUInt32(Left), Convert.ToUInt32(Right))
 
                 Case TypeCode.Byte * s_TCMAX + TypeCode.UInt64,
                      TypeCode.UInt16 * s_TCMAX + TypeCode.UInt64,
@@ -2275,33 +2277,33 @@ Namespace Microsoft.VisualBasic.CompilerServices
                      TypeCode.UInt64 * s_TCMAX + TypeCode.UInt16,
                      TypeCode.UInt64 * s_TCMAX + TypeCode.UInt32
 
-                    Return XorUInt64(Convert.ToUInt64(left), Convert.ToUInt64(right))
+                    Return XorUInt64(Convert.ToUInt64(Left), Convert.ToUInt64(Right))
 
 
                 Case TypeCode.Int16 * s_TCMAX + TypeCode.Empty
-                    Return XorInt16(Convert.ToInt16(left), Nothing, GetEnumResult(left, right))
+                    Return XorInt16(Convert.ToInt16(Left), Nothing, GetEnumResult(Left, Right))
 
                 Case TypeCode.Int16 * s_TCMAX + TypeCode.Int16
-                    Return XorInt16(Convert.ToInt16(left), Convert.ToInt16(right), GetEnumResult(left, right))
+                    Return XorInt16(Convert.ToInt16(Left), Convert.ToInt16(Right), GetEnumResult(Left, Right))
 
                 Case TypeCode.UInt16 * s_TCMAX + TypeCode.Empty
-                    Return XorUInt16(Convert.ToUInt16(left), Nothing, GetEnumResult(left, right))
+                    Return XorUInt16(Convert.ToUInt16(Left), Nothing, GetEnumResult(Left, Right))
 
                 Case TypeCode.UInt16 * s_TCMAX + TypeCode.Boolean,
                      TypeCode.Int32 * s_TCMAX + TypeCode.Boolean
-                    Return XorInt32(Convert.ToInt32(left), ToVBBool(right))
+                    Return XorInt32(Convert.ToInt32(Left), ToVBBool(Right))
 
                 Case TypeCode.UInt16 * s_TCMAX + TypeCode.UInt16
-                    Return XorUInt16(Convert.ToUInt16(left), Convert.ToUInt16(right), GetEnumResult(left, right))
+                    Return XorUInt16(Convert.ToUInt16(Left), Convert.ToUInt16(Right), GetEnumResult(Left, Right))
 
                 Case TypeCode.Int32 * s_TCMAX + TypeCode.Empty
-                    Return XorInt32(Convert.ToInt32(left), Nothing, GetEnumResult(left, right))
+                    Return XorInt32(Convert.ToInt32(Left), Nothing, GetEnumResult(Left, Right))
 
                 Case TypeCode.Int32 * s_TCMAX + TypeCode.Int32
-                    Return XorInt32(Convert.ToInt32(left), Convert.ToInt32(right), GetEnumResult(left, right))
+                    Return XorInt32(Convert.ToInt32(Left), Convert.ToInt32(Right), GetEnumResult(Left, Right))
 
                 Case TypeCode.UInt32 * s_TCMAX + TypeCode.Empty
-                    Return XorUInt32(Convert.ToUInt32(left), Nothing, GetEnumResult(left, right))
+                    Return XorUInt32(Convert.ToUInt32(Left), Nothing, GetEnumResult(Left, Right))
 
                 Case TypeCode.UInt32 * s_TCMAX + TypeCode.Boolean,
                      TypeCode.Int64 * s_TCMAX + TypeCode.Boolean,
@@ -2310,35 +2312,35 @@ Namespace Microsoft.VisualBasic.CompilerServices
                      TypeCode.Single * s_TCMAX + TypeCode.Boolean,
                      TypeCode.Double * s_TCMAX + TypeCode.Boolean
 
-                    Return XorInt64(Convert.ToInt64(left), ToVBBool(right))
+                    Return XorInt64(Convert.ToInt64(Left), ToVBBool(Right))
 
                 Case TypeCode.UInt32 * s_TCMAX + TypeCode.UInt32
-                    Return XorUInt32(Convert.ToUInt32(left), Convert.ToUInt32(right), GetEnumResult(left, right))
+                    Return XorUInt32(Convert.ToUInt32(Left), Convert.ToUInt32(Right), GetEnumResult(Left, Right))
 
                 Case TypeCode.Int64 * s_TCMAX + TypeCode.Empty
-                    Return XorInt64(Convert.ToInt64(left), Nothing, GetEnumResult(left, right))
+                    Return XorInt64(Convert.ToInt64(Left), Nothing, GetEnumResult(Left, Right))
 
                 Case TypeCode.Int64 * s_TCMAX + TypeCode.Int64
-                    Return XorInt64(Convert.ToInt64(left), Convert.ToInt64(right), GetEnumResult(left, right))
+                    Return XorInt64(Convert.ToInt64(Left), Convert.ToInt64(Right), GetEnumResult(Left, Right))
 
                 Case TypeCode.UInt64 * s_TCMAX + TypeCode.Empty
-                    Return XorUInt64(Convert.ToUInt64(left), Nothing, GetEnumResult(left, right))
+                    Return XorUInt64(Convert.ToUInt64(Left), Nothing, GetEnumResult(Left, Right))
 
                 Case TypeCode.UInt64 * s_TCMAX + TypeCode.UInt64
-                    Return XorUInt64(Convert.ToUInt64(left), Convert.ToUInt64(right), GetEnumResult(left, right))
+                    Return XorUInt64(Convert.ToUInt64(Left), Convert.ToUInt64(Right), GetEnumResult(Left, Right))
 
 
                 Case TypeCode.Decimal * s_TCMAX + TypeCode.Empty,
                      TypeCode.Single * s_TCMAX + TypeCode.Empty,
                      TypeCode.Double * s_TCMAX + TypeCode.Empty
-                    Return XorInt64(Convert.ToInt64(left), Nothing)
+                    Return XorInt64(Convert.ToInt64(Left), Nothing)
 
 
                 Case TypeCode.String * s_TCMAX + TypeCode.Empty
-                    Return XorInt64(CLng(Convert.ToString(left)), Nothing)
+                    Return XorInt64(CLng(Convert.ToString(Left)), Nothing)
 
                 Case TypeCode.String * s_TCMAX + TypeCode.Boolean
-                    Return XorBoolean(CBool(Convert.ToString(left)), Convert.ToBoolean(right))
+                    Return XorBoolean(CBool(Convert.ToString(Left)), Convert.ToBoolean(Right))
 
                 Case TypeCode.String * s_TCMAX + TypeCode.SByte,
                      TypeCode.String * s_TCMAX + TypeCode.Byte,
@@ -2352,18 +2354,18 @@ Namespace Microsoft.VisualBasic.CompilerServices
                      TypeCode.String * s_TCMAX + TypeCode.Single,
                      TypeCode.String * s_TCMAX + TypeCode.Double
 
-                    Return XorInt64(CLng(Convert.ToString(left)), Convert.ToInt64(right))
+                    Return XorInt64(CLng(Convert.ToString(Left)), Convert.ToInt64(Right))
 
                 Case TypeCode.String * s_TCMAX + TypeCode.String
-                    Return XorInt64(CLng(Convert.ToString(left)), CLng(Convert.ToString(right)))
+                    Return XorInt64(CLng(Convert.ToString(Left)), CLng(Convert.ToString(Right)))
 
             End Select
 
             If tc1 = TypeCode.Object OrElse tc2 = TypeCode.Object Then
-                Return InvokeUserDefinedOperator(UserDefinedOperator.Xor, left, right)
+                Return InvokeUserDefinedOperator(UserDefinedOperator.Xor, Left, Right)
             End If
 
-            Throw GetNoValidOperatorException(UserDefinedOperator.Xor, left, right)
+            Throw GetNoValidOperatorException(UserDefinedOperator.Xor, Left, Right)
         End Function
 
         Private Shared Function XorBoolean(ByVal left As Boolean, ByVal right As Boolean) As Object
@@ -2430,31 +2432,31 @@ Namespace Microsoft.VisualBasic.CompilerServices
 
 #Region " Operator Plus + "
 
-        Public Shared Function AddObject(ByVal left As Object, ByVal right As Object) As Object
+        Public Shared Function AddObject(ByVal Left As Object, ByVal Right As Object) As Object
 
-            Dim tc1 As TypeCode = GetTypeCode(left)
-            Dim tc2 As TypeCode = GetTypeCode(right)
+            Dim tc1 As TypeCode = GetTypeCode(Left)
+            Dim tc2 As TypeCode = GetTypeCode(Right)
 
 
             'Special cases for Char()
             If tc1 = TypeCode.Object Then
-                Dim leftCharArray As Char() = TryCast(left, Char())
+                Dim leftCharArray As Char() = TryCast(Left, Char())
 
                 If leftCharArray IsNot Nothing Then
-                    If tc2 = TypeCode.String OrElse tc2 = TypeCode.Empty OrElse ((tc2 = TypeCode.Object) AndAlso (TypeOf right Is Char())) Then
+                    If tc2 = TypeCode.String OrElse tc2 = TypeCode.Empty OrElse ((tc2 = TypeCode.Object) AndAlso (TypeOf Right Is Char())) Then
                         'Treat Char() as String for these cases
-                        left = CStr(leftCharArray)
+                        Left = CStr(leftCharArray)
                         tc1 = TypeCode.String
                     End If
                 End If
             End If
 
             If (tc2 = TypeCode.Object) Then
-                Dim rightCharArray As Char() = TryCast(right, Char())
+                Dim rightCharArray As Char() = TryCast(Right, Char())
 
                 If rightCharArray IsNot Nothing Then
                     If tc1 = TypeCode.String OrElse tc1 = TypeCode.Empty Then
-                        right = CStr(rightCharArray)
+                        Right = CStr(rightCharArray)
                         tc2 = TypeCode.String
                     End If
                 End If
@@ -2467,88 +2469,88 @@ Namespace Microsoft.VisualBasic.CompilerServices
                     Return Boxed_ZeroInteger
 
                 Case TypeCode.Empty * s_TCMAX + TypeCode.Boolean
-                    Return AddInt16(Nothing, ToVBBool(right))
+                    Return AddInt16(Nothing, ToVBBool(Right))
 
                 Case TypeCode.Empty * s_TCMAX + TypeCode.SByte
-                    Return Convert.ToSByte(right)
+                    Return Convert.ToSByte(Right)
 
                 Case TypeCode.Empty * s_TCMAX + TypeCode.Byte
-                    Return Convert.ToByte(right)
+                    Return Convert.ToByte(Right)
 
                 Case TypeCode.Empty * s_TCMAX + TypeCode.Int16
-                    Return Convert.ToInt16(right)
+                    Return Convert.ToInt16(Right)
 
                 Case TypeCode.Empty * s_TCMAX + TypeCode.UInt16
-                    Return Convert.ToUInt16(right)
+                    Return Convert.ToUInt16(Right)
 
                 Case TypeCode.Empty * s_TCMAX + TypeCode.Int32
-                    Return Convert.ToInt32(right)
+                    Return Convert.ToInt32(Right)
 
                 Case TypeCode.Empty * s_TCMAX + TypeCode.UInt32
-                    Return Convert.ToUInt32(right)
+                    Return Convert.ToUInt32(Right)
 
                 Case TypeCode.Empty * s_TCMAX + TypeCode.Int64
-                    Return Convert.ToInt64(right)
+                    Return Convert.ToInt64(Right)
 
                 Case TypeCode.Empty * s_TCMAX + TypeCode.UInt64
-                    Return Convert.ToUInt64(right)
+                    Return Convert.ToUInt64(Right)
 
                 Case TypeCode.Empty * s_TCMAX + TypeCode.Decimal,
                      TypeCode.Empty * s_TCMAX + TypeCode.Single,
                      TypeCode.Empty * s_TCMAX + TypeCode.Double,
                      TypeCode.Empty * s_TCMAX + TypeCode.String
 
-                    Return right
+                    Return Right
 
                 Case TypeCode.Empty * s_TCMAX + TypeCode.DateTime
-                    Return AddString(CStr(CDate(Nothing)), CStr(Convert.ToDateTime(right)))
+                    Return AddString(CStr(CDate(Nothing)), CStr(Convert.ToDateTime(Right)))
 
                 Case TypeCode.Empty * s_TCMAX + TypeCode.Char
-                    Return AddString(ControlChars.NullChar, Convert.ToString(right))
+                    Return AddString(ControlChars.NullChar, Convert.ToString(Right))
 
                 Case TypeCode.Boolean * s_TCMAX + TypeCode.Empty
-                    Return AddInt16(ToVBBool(left), Nothing)
+                    Return AddInt16(ToVBBool(Left), Nothing)
 
                 Case TypeCode.Boolean * s_TCMAX + TypeCode.Boolean
-                    Return AddInt16(ToVBBool(left), ToVBBool(right))
+                    Return AddInt16(ToVBBool(Left), ToVBBool(Right))
 
                 Case TypeCode.Boolean * s_TCMAX + TypeCode.SByte
-                    Return AddSByte(ToVBBool(left), Convert.ToSByte(right))
+                    Return AddSByte(ToVBBool(Left), Convert.ToSByte(Right))
 
                 Case TypeCode.Boolean * s_TCMAX + TypeCode.Byte,
                      TypeCode.Boolean * s_TCMAX + TypeCode.Int16
-                    Return AddInt16(ToVBBool(left), Convert.ToInt16(right))
+                    Return AddInt16(ToVBBool(Left), Convert.ToInt16(Right))
 
                 Case TypeCode.Boolean * s_TCMAX + TypeCode.UInt16,
                      TypeCode.Boolean * s_TCMAX + TypeCode.Int32
-                    Return AddInt32(ToVBBool(left), Convert.ToInt32(right))
+                    Return AddInt32(ToVBBool(Left), Convert.ToInt32(Right))
 
                 Case TypeCode.Boolean * s_TCMAX + TypeCode.UInt32,
                      TypeCode.Boolean * s_TCMAX + TypeCode.Int64
-                    Return AddInt64(ToVBBool(left), Convert.ToInt64(right))
+                    Return AddInt64(ToVBBool(Left), Convert.ToInt64(Right))
 
                 Case TypeCode.Boolean * s_TCMAX + TypeCode.UInt64,
                      TypeCode.Boolean * s_TCMAX + TypeCode.Decimal
-                    Return AddDecimal(ToVBBool(left), Convert.ToDecimal(right))
+                    Return AddDecimal(ToVBBool(Left), Convert.ToDecimal(Right))
 
                 Case TypeCode.Boolean * s_TCMAX + TypeCode.Single
-                    Return AddSingle(ToVBBool(left), Convert.ToSingle(right))
+                    Return AddSingle(ToVBBool(Left), Convert.ToSingle(Right))
 
                 Case TypeCode.Boolean * s_TCMAX + TypeCode.Double
-                    Return AddDouble(ToVBBool(left), Convert.ToDouble(right))
+                    Return AddDouble(ToVBBool(Left), Convert.ToDouble(Right))
 
                 Case TypeCode.Boolean * s_TCMAX + TypeCode.String
-                    Return AddDouble(ToVBBool(left), CDbl(Convert.ToString(right)))
+                    Return AddDouble(ToVBBool(Left), CDbl(Convert.ToString(Right)))
 
 
                 Case TypeCode.SByte * s_TCMAX + TypeCode.Empty
-                    Return Convert.ToSByte(left)
+                    Return Convert.ToSByte(Left)
 
                 Case TypeCode.SByte * s_TCMAX + TypeCode.Boolean
-                    Return AddSByte(Convert.ToSByte(left), ToVBBool(right))
+                    Return AddSByte(Convert.ToSByte(Left), ToVBBool(Right))
 
                 Case TypeCode.SByte * s_TCMAX + TypeCode.SByte
-                    Return AddSByte(Convert.ToSByte(left), Convert.ToSByte(right))
+                    Return AddSByte(Convert.ToSByte(Left), Convert.ToSByte(Right))
 
                 Case TypeCode.SByte * s_TCMAX + TypeCode.Byte,
                      TypeCode.SByte * s_TCMAX + TypeCode.Int16,
@@ -2558,7 +2560,7 @@ Namespace Microsoft.VisualBasic.CompilerServices
                      TypeCode.Int16 * s_TCMAX + TypeCode.Byte,
                      TypeCode.Int16 * s_TCMAX + TypeCode.Int16
 
-                    Return AddInt16(Convert.ToInt16(left), Convert.ToInt16(right))
+                    Return AddInt16(Convert.ToInt16(Left), Convert.ToInt16(Right))
 
                 Case TypeCode.SByte * s_TCMAX + TypeCode.UInt16,
                      TypeCode.SByte * s_TCMAX + TypeCode.Int32,
@@ -2574,7 +2576,7 @@ Namespace Microsoft.VisualBasic.CompilerServices
                      TypeCode.Int32 * s_TCMAX + TypeCode.UInt16,
                      TypeCode.Int32 * s_TCMAX + TypeCode.Int32
 
-                    Return AddInt32(Convert.ToInt32(left), Convert.ToInt32(right))
+                    Return AddInt32(Convert.ToInt32(Left), Convert.ToInt32(Right))
 
                 Case TypeCode.SByte * s_TCMAX + TypeCode.UInt32,
                      TypeCode.SByte * s_TCMAX + TypeCode.Int64,
@@ -2596,7 +2598,7 @@ Namespace Microsoft.VisualBasic.CompilerServices
                      TypeCode.Int64 * s_TCMAX + TypeCode.UInt32,
                      TypeCode.Int64 * s_TCMAX + TypeCode.Int64
 
-                    Return AddInt64(Convert.ToInt64(left), Convert.ToInt64(right))
+                    Return AddInt64(Convert.ToInt64(Left), Convert.ToInt64(Right))
 
                 Case TypeCode.SByte * s_TCMAX + TypeCode.UInt64,
                      TypeCode.SByte * s_TCMAX + TypeCode.Decimal,
@@ -2624,7 +2626,7 @@ Namespace Microsoft.VisualBasic.CompilerServices
                      TypeCode.Decimal * s_TCMAX + TypeCode.UInt64,
                      TypeCode.Decimal * s_TCMAX + TypeCode.Decimal
 
-                    Return AddDecimal(left, right)
+                    Return AddDecimal(Left, Right)
 
                 Case TypeCode.SByte * s_TCMAX + TypeCode.Single,
                      TypeCode.Byte * s_TCMAX + TypeCode.Single,
@@ -2646,7 +2648,7 @@ Namespace Microsoft.VisualBasic.CompilerServices
                      TypeCode.Single * s_TCMAX + TypeCode.Decimal,
                      TypeCode.Single * s_TCMAX + TypeCode.Single
 
-                    Return AddSingle(Convert.ToSingle(left), Convert.ToSingle(right))
+                    Return AddSingle(Convert.ToSingle(Left), Convert.ToSingle(Right))
 
                 Case TypeCode.SByte * s_TCMAX + TypeCode.Double,
                      TypeCode.Byte * s_TCMAX + TypeCode.Double,
@@ -2670,7 +2672,7 @@ Namespace Microsoft.VisualBasic.CompilerServices
                      TypeCode.Double * s_TCMAX + TypeCode.Single,
                      TypeCode.Double * s_TCMAX + TypeCode.Double
 
-                    Return AddDouble(Convert.ToDouble(left), Convert.ToDouble(right))
+                    Return AddDouble(Convert.ToDouble(Left), Convert.ToDouble(Right))
 
                 Case TypeCode.SByte * s_TCMAX + TypeCode.String,
                      TypeCode.Byte * s_TCMAX + TypeCode.String,
@@ -2684,29 +2686,29 @@ Namespace Microsoft.VisualBasic.CompilerServices
                      TypeCode.Single * s_TCMAX + TypeCode.String,
                      TypeCode.Double * s_TCMAX + TypeCode.String
 
-                    Return AddDouble(Convert.ToDouble(left), CDbl(Convert.ToString(right)))
+                    Return AddDouble(Convert.ToDouble(Left), CDbl(Convert.ToString(Right)))
 
                 Case TypeCode.Byte * s_TCMAX + TypeCode.Empty
-                    Return Convert.ToByte(left)
+                    Return Convert.ToByte(Left)
 
                 Case TypeCode.Byte * s_TCMAX + TypeCode.Boolean,
                      TypeCode.Int16 * s_TCMAX + TypeCode.Boolean
-                    Return AddInt16(Convert.ToInt16(left), ToVBBool(right))
+                    Return AddInt16(Convert.ToInt16(Left), ToVBBool(Right))
 
                 Case TypeCode.Byte * s_TCMAX + TypeCode.Byte
-                    Return AddByte(Convert.ToByte(left), Convert.ToByte(right))
+                    Return AddByte(Convert.ToByte(Left), Convert.ToByte(Right))
 
                 Case TypeCode.Byte * s_TCMAX + TypeCode.UInt16,
                      TypeCode.UInt16 * s_TCMAX + TypeCode.Byte,
                      TypeCode.UInt16 * s_TCMAX + TypeCode.UInt16
-                    Return AddUInt16(Convert.ToUInt16(left), Convert.ToUInt16(right))
+                    Return AddUInt16(Convert.ToUInt16(Left), Convert.ToUInt16(Right))
 
                 Case TypeCode.Byte * s_TCMAX + TypeCode.UInt32,
                      TypeCode.UInt16 * s_TCMAX + TypeCode.UInt32,
                      TypeCode.UInt32 * s_TCMAX + TypeCode.Byte,
                      TypeCode.UInt32 * s_TCMAX + TypeCode.UInt16,
                      TypeCode.UInt32 * s_TCMAX + TypeCode.UInt32
-                    Return AddUInt32(Convert.ToUInt32(left), Convert.ToUInt32(right))
+                    Return AddUInt32(Convert.ToUInt32(Left), Convert.ToUInt32(Right))
 
                 Case TypeCode.Byte * s_TCMAX + TypeCode.UInt64,
                      TypeCode.UInt16 * s_TCMAX + TypeCode.UInt64,
@@ -2716,43 +2718,43 @@ Namespace Microsoft.VisualBasic.CompilerServices
                      TypeCode.UInt64 * s_TCMAX + TypeCode.UInt32,
                      TypeCode.UInt64 * s_TCMAX + TypeCode.UInt64
 
-                    Return AddUInt64(Convert.ToUInt64(left), Convert.ToUInt64(right))
+                    Return AddUInt64(Convert.ToUInt64(Left), Convert.ToUInt64(Right))
 
 
                 Case TypeCode.Int16 * s_TCMAX + TypeCode.Empty
-                    Return Convert.ToInt16(left)
+                    Return Convert.ToInt16(Left)
 
 
                 Case TypeCode.UInt16 * s_TCMAX + TypeCode.Empty
-                    Return Convert.ToUInt16(left)
+                    Return Convert.ToUInt16(Left)
 
                 Case TypeCode.UInt16 * s_TCMAX + TypeCode.Boolean,
                      TypeCode.Int32 * s_TCMAX + TypeCode.Boolean
-                    Return AddInt32(Convert.ToInt32(left), ToVBBool(right))
+                    Return AddInt32(Convert.ToInt32(Left), ToVBBool(Right))
 
 
                 Case TypeCode.Int32 * s_TCMAX + TypeCode.Empty
-                    Return Convert.ToInt32(left)
+                    Return Convert.ToInt32(Left)
 
 
                 Case TypeCode.UInt32 * s_TCMAX + TypeCode.Empty
-                    Return Convert.ToUInt32(left)
+                    Return Convert.ToUInt32(Left)
 
                 Case TypeCode.UInt32 * s_TCMAX + TypeCode.Boolean,
                      TypeCode.Int64 * s_TCMAX + TypeCode.Boolean
-                    Return AddInt64(Convert.ToInt64(left), ToVBBool(right))
+                    Return AddInt64(Convert.ToInt64(Left), ToVBBool(Right))
 
 
                 Case TypeCode.Int64 * s_TCMAX + TypeCode.Empty
-                    Return Convert.ToInt64(left)
+                    Return Convert.ToInt64(Left)
 
 
                 Case TypeCode.UInt64 * s_TCMAX + TypeCode.Empty
-                    Return Convert.ToUInt64(left)
+                    Return Convert.ToUInt64(Left)
 
                 Case TypeCode.UInt64 * s_TCMAX + TypeCode.Boolean,
                      TypeCode.Decimal * s_TCMAX + TypeCode.Boolean
-                    Return AddDecimal(left, ToVBBool(right))
+                    Return AddDecimal(Left, ToVBBool(Right))
 
 
                 Case TypeCode.Decimal * s_TCMAX + TypeCode.Empty,
@@ -2760,38 +2762,38 @@ Namespace Microsoft.VisualBasic.CompilerServices
                      TypeCode.Double * s_TCMAX + TypeCode.Empty,
                      TypeCode.String * s_TCMAX + TypeCode.Empty
 
-                    Return left
+                    Return Left
 
 
                 Case TypeCode.Single * s_TCMAX + TypeCode.Boolean
-                    Return AddSingle(Convert.ToSingle(left), ToVBBool(right))
+                    Return AddSingle(Convert.ToSingle(Left), ToVBBool(Right))
 
 
                 Case TypeCode.Double * s_TCMAX + TypeCode.Boolean
-                    Return AddDouble(Convert.ToDouble(left), ToVBBool(right))
+                    Return AddDouble(Convert.ToDouble(Left), ToVBBool(Right))
 
 
                 Case TypeCode.DateTime * s_TCMAX + TypeCode.Empty
-                    Return AddString(CStr(CDate(Nothing)), CStr(CDate(left)))
+                    Return AddString(CStr(CDate(Nothing)), CStr(CDate(Left)))
 
                 Case TypeCode.DateTime * s_TCMAX + TypeCode.DateTime
-                    Return AddString(CStr(Convert.ToDateTime(left)), CStr(Convert.ToDateTime(right)))
+                    Return AddString(CStr(Convert.ToDateTime(Left)), CStr(Convert.ToDateTime(Right)))
 
                 Case TypeCode.DateTime * s_TCMAX + TypeCode.String
-                    Return AddString(CStr(Convert.ToDateTime(left)), Convert.ToString(right))
+                    Return AddString(CStr(Convert.ToDateTime(Left)), Convert.ToString(Right))
 
 
                 Case TypeCode.Char * s_TCMAX + TypeCode.Empty
-                    Return AddString(Convert.ToString(left), ControlChars.NullChar)
+                    Return AddString(Convert.ToString(Left), ControlChars.NullChar)
 
                 Case TypeCode.Char * s_TCMAX + TypeCode.Char,
                      TypeCode.Char * s_TCMAX + TypeCode.String,
                      TypeCode.String * s_TCMAX + TypeCode.Char
-                    Return AddString(Convert.ToString(left), Convert.ToString(right))
+                    Return AddString(Convert.ToString(Left), Convert.ToString(Right))
 
 
                 Case TypeCode.String * s_TCMAX + TypeCode.Boolean
-                    Return AddDouble(CDbl(Convert.ToString(left)), ToVBBool(right))
+                    Return AddDouble(CDbl(Convert.ToString(Left)), ToVBBool(Right))
 
                 Case TypeCode.String * s_TCMAX + TypeCode.SByte,
                      TypeCode.String * s_TCMAX + TypeCode.Byte,
@@ -2805,23 +2807,23 @@ Namespace Microsoft.VisualBasic.CompilerServices
                      TypeCode.String * s_TCMAX + TypeCode.Single,
                      TypeCode.String * s_TCMAX + TypeCode.Double
 
-                    Return AddDouble(CDbl(Convert.ToString(left)), Convert.ToDouble(right))
+                    Return AddDouble(CDbl(Convert.ToString(Left)), Convert.ToDouble(Right))
 
                 Case TypeCode.String * s_TCMAX + TypeCode.DateTime
-                    Return AddString(Convert.ToString(left), CStr(Convert.ToDateTime(right)))
+                    Return AddString(Convert.ToString(Left), CStr(Convert.ToDateTime(Right)))
 
                 Case TypeCode.String * s_TCMAX + TypeCode.String
-                    Return AddString(Convert.ToString(left), Convert.ToString(right))
+                    Return AddString(Convert.ToString(Left), Convert.ToString(Right))
 
                 Case Else
 
             End Select
 
             If tc1 = TypeCode.Object OrElse tc2 = TypeCode.Object Then
-                Return InvokeUserDefinedOperator(UserDefinedOperator.Plus, left, right)
+                Return InvokeUserDefinedOperator(UserDefinedOperator.Plus, Left, Right)
             End If
 
-            Throw GetNoValidOperatorException(UserDefinedOperator.Plus, left, right)
+            Throw GetNoValidOperatorException(UserDefinedOperator.Plus, Left, Right)
         End Function
 
         Private Shared Function AddByte(ByVal left As Byte, ByVal right As Byte) As Object
@@ -2945,9 +2947,9 @@ Namespace Microsoft.VisualBasic.CompilerServices
 
 #Region " Operator Minus - "
 
-        Public Shared Function SubtractObject(ByVal left As Object, ByVal right As Object) As Object
-            Dim tc1 As TypeCode = GetTypeCode(left)
-            Dim tc2 As TypeCode = GetTypeCode(right)
+        Public Shared Function SubtractObject(ByVal Left As Object, ByVal Right As Object) As Object
+            Dim tc1 As TypeCode = GetTypeCode(Left)
+            Dim tc2 As TypeCode = GetTypeCode(Right)
 
             Select Case tc1 * s_TCMAX + tc2
 
@@ -2955,87 +2957,87 @@ Namespace Microsoft.VisualBasic.CompilerServices
                     Return Boxed_ZeroInteger
 
                 Case TypeCode.Empty * s_TCMAX + TypeCode.Boolean
-                    Return SubtractInt16(Nothing, ToVBBool(right))
+                    Return SubtractInt16(Nothing, ToVBBool(Right))
 
                 Case TypeCode.Empty * s_TCMAX + TypeCode.SByte
-                    Return SubtractSByte(Nothing, Convert.ToSByte(right))
+                    Return SubtractSByte(Nothing, Convert.ToSByte(Right))
 
                 Case TypeCode.Empty * s_TCMAX + TypeCode.Byte
-                    Return SubtractByte(Nothing, Convert.ToByte(right))
+                    Return SubtractByte(Nothing, Convert.ToByte(Right))
 
                 Case TypeCode.Empty * s_TCMAX + TypeCode.Int16
-                    Return SubtractInt16(Nothing, Convert.ToInt16(right))
+                    Return SubtractInt16(Nothing, Convert.ToInt16(Right))
 
                 Case TypeCode.Empty * s_TCMAX + TypeCode.UInt16
-                    Return SubtractUInt16(Nothing, Convert.ToUInt16(right))
+                    Return SubtractUInt16(Nothing, Convert.ToUInt16(Right))
 
                 Case TypeCode.Empty * s_TCMAX + TypeCode.Int32
-                    Return SubtractInt32(Nothing, Convert.ToInt32(right))
+                    Return SubtractInt32(Nothing, Convert.ToInt32(Right))
 
                 Case TypeCode.Empty * s_TCMAX + TypeCode.UInt32
-                    Return SubtractUInt32(Nothing, Convert.ToUInt32(right))
+                    Return SubtractUInt32(Nothing, Convert.ToUInt32(Right))
 
                 Case TypeCode.Empty * s_TCMAX + TypeCode.Int64
-                    Return SubtractInt64(Nothing, Convert.ToInt64(right))
+                    Return SubtractInt64(Nothing, Convert.ToInt64(Right))
 
                 Case TypeCode.Empty * s_TCMAX + TypeCode.UInt64
-                    Return SubtractUInt64(Nothing, Convert.ToUInt64(right))
+                    Return SubtractUInt64(Nothing, Convert.ToUInt64(Right))
 
                 Case TypeCode.Empty * s_TCMAX + TypeCode.Decimal
-                    Return SubtractDecimal(0D, right)
+                    Return SubtractDecimal(0D, Right)
 
                 Case TypeCode.Empty * s_TCMAX + TypeCode.Single
-                    Return SubtractSingle(Nothing, Convert.ToSingle(right))
+                    Return SubtractSingle(Nothing, Convert.ToSingle(Right))
 
                 Case TypeCode.Empty * s_TCMAX + TypeCode.Double
-                    Return SubtractDouble(Nothing, Convert.ToDouble(right))
+                    Return SubtractDouble(Nothing, Convert.ToDouble(Right))
 
                 Case TypeCode.Empty * s_TCMAX + TypeCode.String
-                    Return SubtractDouble(Nothing, CDbl(Convert.ToString(right)))
+                    Return SubtractDouble(Nothing, CDbl(Convert.ToString(Right)))
 
                 Case TypeCode.Boolean * s_TCMAX + TypeCode.Empty
-                    Return SubtractInt16(ToVBBool(left), Nothing)
+                    Return SubtractInt16(ToVBBool(Left), Nothing)
 
                 Case TypeCode.Boolean * s_TCMAX + TypeCode.Boolean
-                    Return SubtractInt16(ToVBBool(left), ToVBBool(right))
+                    Return SubtractInt16(ToVBBool(Left), ToVBBool(Right))
 
                 Case TypeCode.Boolean * s_TCMAX + TypeCode.SByte
-                    Return SubtractSByte(ToVBBool(left), Convert.ToSByte(right))
+                    Return SubtractSByte(ToVBBool(Left), Convert.ToSByte(Right))
 
                 Case TypeCode.Boolean * s_TCMAX + TypeCode.Byte,
                      TypeCode.Boolean * s_TCMAX + TypeCode.Int16
-                    Return SubtractInt16(ToVBBool(left), Convert.ToInt16(right))
+                    Return SubtractInt16(ToVBBool(Left), Convert.ToInt16(Right))
 
                 Case TypeCode.Boolean * s_TCMAX + TypeCode.UInt16,
                      TypeCode.Boolean * s_TCMAX + TypeCode.Int32
-                    Return SubtractInt32(ToVBBool(left), Convert.ToInt32(right))
+                    Return SubtractInt32(ToVBBool(Left), Convert.ToInt32(Right))
 
                 Case TypeCode.Boolean * s_TCMAX + TypeCode.UInt32,
                      TypeCode.Boolean * s_TCMAX + TypeCode.Int64
-                    Return SubtractInt64(ToVBBool(left), Convert.ToInt64(right))
+                    Return SubtractInt64(ToVBBool(Left), Convert.ToInt64(Right))
 
                 Case TypeCode.Boolean * s_TCMAX + TypeCode.UInt64,
                      TypeCode.Boolean * s_TCMAX + TypeCode.Decimal
-                    Return SubtractDecimal(ToVBBool(left), Convert.ToDecimal(right))
+                    Return SubtractDecimal(ToVBBool(Left), Convert.ToDecimal(Right))
 
                 Case TypeCode.Boolean * s_TCMAX + TypeCode.Single
-                    Return SubtractSingle(ToVBBool(left), Convert.ToSingle(right))
+                    Return SubtractSingle(ToVBBool(Left), Convert.ToSingle(Right))
 
                 Case TypeCode.Boolean * s_TCMAX + TypeCode.Double
-                    Return SubtractDouble(ToVBBool(left), Convert.ToDouble(right))
+                    Return SubtractDouble(ToVBBool(Left), Convert.ToDouble(Right))
 
                 Case TypeCode.Boolean * s_TCMAX + TypeCode.String
-                    Return SubtractDouble(ToVBBool(left), CDbl(Convert.ToString(right)))
+                    Return SubtractDouble(ToVBBool(Left), CDbl(Convert.ToString(Right)))
 
 
                 Case TypeCode.SByte * s_TCMAX + TypeCode.Empty
-                    Return Convert.ToSByte(left)
+                    Return Convert.ToSByte(Left)
 
                 Case TypeCode.SByte * s_TCMAX + TypeCode.Boolean
-                    Return SubtractSByte(Convert.ToSByte(left), ToVBBool(right))
+                    Return SubtractSByte(Convert.ToSByte(Left), ToVBBool(Right))
 
                 Case TypeCode.SByte * s_TCMAX + TypeCode.SByte
-                    Return SubtractSByte(Convert.ToSByte(left), Convert.ToSByte(right))
+                    Return SubtractSByte(Convert.ToSByte(Left), Convert.ToSByte(Right))
 
                 Case TypeCode.SByte * s_TCMAX + TypeCode.Byte,
                      TypeCode.SByte * s_TCMAX + TypeCode.Int16,
@@ -3045,7 +3047,7 @@ Namespace Microsoft.VisualBasic.CompilerServices
                      TypeCode.Int16 * s_TCMAX + TypeCode.Byte,
                      TypeCode.Int16 * s_TCMAX + TypeCode.Int16
 
-                    Return SubtractInt16(Convert.ToInt16(left), Convert.ToInt16(right))
+                    Return SubtractInt16(Convert.ToInt16(Left), Convert.ToInt16(Right))
 
                 Case TypeCode.SByte * s_TCMAX + TypeCode.UInt16,
                      TypeCode.SByte * s_TCMAX + TypeCode.Int32,
@@ -3061,7 +3063,7 @@ Namespace Microsoft.VisualBasic.CompilerServices
                      TypeCode.Int32 * s_TCMAX + TypeCode.UInt16,
                      TypeCode.Int32 * s_TCMAX + TypeCode.Int32
 
-                    Return SubtractInt32(Convert.ToInt32(left), Convert.ToInt32(right))
+                    Return SubtractInt32(Convert.ToInt32(Left), Convert.ToInt32(Right))
 
                 Case TypeCode.SByte * s_TCMAX + TypeCode.UInt32,
                      TypeCode.SByte * s_TCMAX + TypeCode.Int64,
@@ -3083,7 +3085,7 @@ Namespace Microsoft.VisualBasic.CompilerServices
                      TypeCode.Int64 * s_TCMAX + TypeCode.UInt32,
                      TypeCode.Int64 * s_TCMAX + TypeCode.Int64
 
-                    Return SubtractInt64(Convert.ToInt64(left), Convert.ToInt64(right))
+                    Return SubtractInt64(Convert.ToInt64(Left), Convert.ToInt64(Right))
 
                 Case TypeCode.SByte * s_TCMAX + TypeCode.UInt64,
                      TypeCode.SByte * s_TCMAX + TypeCode.Decimal,
@@ -3111,7 +3113,7 @@ Namespace Microsoft.VisualBasic.CompilerServices
                      TypeCode.Decimal * s_TCMAX + TypeCode.UInt64,
                      TypeCode.Decimal * s_TCMAX + TypeCode.Decimal
 
-                    Return SubtractDecimal(left, right)
+                    Return SubtractDecimal(Left, Right)
 
                 Case TypeCode.SByte * s_TCMAX + TypeCode.Single,
                      TypeCode.Byte * s_TCMAX + TypeCode.Single,
@@ -3133,7 +3135,7 @@ Namespace Microsoft.VisualBasic.CompilerServices
                      TypeCode.Single * s_TCMAX + TypeCode.Decimal,
                      TypeCode.Single * s_TCMAX + TypeCode.Single
 
-                    Return SubtractSingle(Convert.ToSingle(left), Convert.ToSingle(right))
+                    Return SubtractSingle(Convert.ToSingle(Left), Convert.ToSingle(Right))
 
                 Case TypeCode.SByte * s_TCMAX + TypeCode.Double,
                      TypeCode.Byte * s_TCMAX + TypeCode.Double,
@@ -3157,7 +3159,7 @@ Namespace Microsoft.VisualBasic.CompilerServices
                      TypeCode.Double * s_TCMAX + TypeCode.Single,
                      TypeCode.Double * s_TCMAX + TypeCode.Double
 
-                    Return SubtractDouble(Convert.ToDouble(left), Convert.ToDouble(right))
+                    Return SubtractDouble(Convert.ToDouble(Left), Convert.ToDouble(Right))
 
                 Case TypeCode.SByte * s_TCMAX + TypeCode.String,
                      TypeCode.Byte * s_TCMAX + TypeCode.String,
@@ -3171,30 +3173,30 @@ Namespace Microsoft.VisualBasic.CompilerServices
                      TypeCode.Single * s_TCMAX + TypeCode.String,
                      TypeCode.Double * s_TCMAX + TypeCode.String
 
-                    Return SubtractDouble(Convert.ToDouble(left), CDbl(Convert.ToString(right)))
+                    Return SubtractDouble(Convert.ToDouble(Left), CDbl(Convert.ToString(Right)))
 
 
                 Case TypeCode.Byte * s_TCMAX + TypeCode.Empty
-                    Return Convert.ToByte(left)
+                    Return Convert.ToByte(Left)
 
                 Case TypeCode.Byte * s_TCMAX + TypeCode.Boolean,
                      TypeCode.Int16 * s_TCMAX + TypeCode.Boolean
-                    Return SubtractInt16(Convert.ToInt16(left), ToVBBool(right))
+                    Return SubtractInt16(Convert.ToInt16(Left), ToVBBool(Right))
 
                 Case TypeCode.Byte * s_TCMAX + TypeCode.Byte
-                    Return SubtractByte(Convert.ToByte(left), Convert.ToByte(right))
+                    Return SubtractByte(Convert.ToByte(Left), Convert.ToByte(Right))
 
                 Case TypeCode.Byte * s_TCMAX + TypeCode.UInt16,
                      TypeCode.UInt16 * s_TCMAX + TypeCode.Byte,
                      TypeCode.UInt16 * s_TCMAX + TypeCode.UInt16
-                    Return SubtractUInt16(Convert.ToUInt16(left), Convert.ToUInt16(right))
+                    Return SubtractUInt16(Convert.ToUInt16(Left), Convert.ToUInt16(Right))
 
                 Case TypeCode.Byte * s_TCMAX + TypeCode.UInt32,
                      TypeCode.UInt16 * s_TCMAX + TypeCode.UInt32,
                      TypeCode.UInt32 * s_TCMAX + TypeCode.Byte,
                      TypeCode.UInt32 * s_TCMAX + TypeCode.UInt16,
                      TypeCode.UInt32 * s_TCMAX + TypeCode.UInt32
-                    Return SubtractUInt32(Convert.ToUInt32(left), Convert.ToUInt32(right))
+                    Return SubtractUInt32(Convert.ToUInt32(Left), Convert.ToUInt32(Right))
 
                 Case TypeCode.Byte * s_TCMAX + TypeCode.UInt64,
                      TypeCode.UInt16 * s_TCMAX + TypeCode.UInt64,
@@ -3204,59 +3206,59 @@ Namespace Microsoft.VisualBasic.CompilerServices
                      TypeCode.UInt64 * s_TCMAX + TypeCode.UInt32,
                      TypeCode.UInt64 * s_TCMAX + TypeCode.UInt64
 
-                    Return SubtractUInt64(Convert.ToUInt64(left), Convert.ToUInt64(right))
+                    Return SubtractUInt64(Convert.ToUInt64(Left), Convert.ToUInt64(Right))
 
 
                 Case TypeCode.Int16 * s_TCMAX + TypeCode.Empty
-                    Return Convert.ToInt16(left)
+                    Return Convert.ToInt16(Left)
 
                 Case TypeCode.UInt16 * s_TCMAX + TypeCode.Empty
-                    Return Convert.ToUInt16(left)
+                    Return Convert.ToUInt16(Left)
 
                 Case TypeCode.UInt16 * s_TCMAX + TypeCode.Boolean,
                      TypeCode.Int32 * s_TCMAX + TypeCode.Boolean
-                    Return SubtractInt32(Convert.ToInt32(left), ToVBBool(right))
+                    Return SubtractInt32(Convert.ToInt32(Left), ToVBBool(Right))
 
 
                 Case TypeCode.Int32 * s_TCMAX + TypeCode.Empty
-                    Return Convert.ToInt32(left)
+                    Return Convert.ToInt32(Left)
 
                 Case TypeCode.UInt32 * s_TCMAX + TypeCode.Empty
-                    Return Convert.ToUInt32(left)
+                    Return Convert.ToUInt32(Left)
 
                 Case TypeCode.UInt32 * s_TCMAX + TypeCode.Boolean,
                      TypeCode.Int64 * s_TCMAX + TypeCode.Boolean
-                    Return SubtractInt64(Convert.ToInt64(left), ToVBBool(right))
+                    Return SubtractInt64(Convert.ToInt64(Left), ToVBBool(Right))
 
 
                 Case TypeCode.Int64 * s_TCMAX + TypeCode.Empty
-                    Return Convert.ToInt64(left)
+                    Return Convert.ToInt64(Left)
 
                 Case TypeCode.UInt64 * s_TCMAX + TypeCode.Empty
-                    Return Convert.ToUInt64(left)
+                    Return Convert.ToUInt64(Left)
 
                 Case TypeCode.UInt64 * s_TCMAX + TypeCode.Boolean,
                      TypeCode.Decimal * s_TCMAX + TypeCode.Boolean
-                    Return SubtractDecimal(left, ToVBBool(right))
+                    Return SubtractDecimal(Left, ToVBBool(Right))
 
 
                 Case TypeCode.Decimal * s_TCMAX + TypeCode.Empty,
                      TypeCode.Single * s_TCMAX + TypeCode.Empty,
                      TypeCode.Double * s_TCMAX + TypeCode.Empty
-                    Return left
+                    Return Left
 
 
                 Case TypeCode.Single * s_TCMAX + TypeCode.Boolean
-                    Return SubtractSingle(Convert.ToSingle(left), ToVBBool(right))
+                    Return SubtractSingle(Convert.ToSingle(Left), ToVBBool(Right))
 
                 Case TypeCode.Double * s_TCMAX + TypeCode.Boolean
-                    Return SubtractDouble(Convert.ToDouble(left), ToVBBool(right))
+                    Return SubtractDouble(Convert.ToDouble(Left), ToVBBool(Right))
 
                 Case TypeCode.String * s_TCMAX + TypeCode.Empty
-                    Return CDbl(Convert.ToString(left))
+                    Return CDbl(Convert.ToString(Left))
 
                 Case TypeCode.String * s_TCMAX + TypeCode.Boolean
-                    Return SubtractDouble(CDbl(Convert.ToString(left)), ToVBBool(right))
+                    Return SubtractDouble(CDbl(Convert.ToString(Left)), ToVBBool(Right))
 
                 Case TypeCode.String * s_TCMAX + TypeCode.SByte,
                      TypeCode.String * s_TCMAX + TypeCode.Byte,
@@ -3270,10 +3272,10 @@ Namespace Microsoft.VisualBasic.CompilerServices
                      TypeCode.String * s_TCMAX + TypeCode.Single,
                      TypeCode.String * s_TCMAX + TypeCode.Double
 
-                    Return SubtractDouble(CDbl(Convert.ToString(left)), Convert.ToDouble(right))
+                    Return SubtractDouble(CDbl(Convert.ToString(Left)), Convert.ToDouble(Right))
 
                 Case TypeCode.String * s_TCMAX + TypeCode.String
-                    Return SubtractDouble(CDbl(Convert.ToString(left)), CDbl(Convert.ToString(right)))
+                    Return SubtractDouble(CDbl(Convert.ToString(Left)), CDbl(Convert.ToString(Right)))
 
                 Case Else
 
@@ -3284,10 +3286,10 @@ Namespace Microsoft.VisualBasic.CompilerServices
                (tc1 = TypeCode.DateTime AndAlso tc2 = TypeCode.Empty) OrElse
                (tc1 = TypeCode.Empty AndAlso tc2 = TypeCode.DateTime) Then
 
-                Return InvokeUserDefinedOperator(UserDefinedOperator.Minus, left, right)
+                Return InvokeUserDefinedOperator(UserDefinedOperator.Minus, Left, Right)
             End If
 
-            Throw GetNoValidOperatorException(UserDefinedOperator.Minus, left, right)
+            Throw GetNoValidOperatorException(UserDefinedOperator.Minus, Left, Right)
 
         End Function
 
@@ -3408,10 +3410,10 @@ Namespace Microsoft.VisualBasic.CompilerServices
 
 #Region " Operator Multiply * "
 
-        Public Shared Function MultiplyObject(ByVal left As Object, ByVal right As Object) As Object
+        Public Shared Function MultiplyObject(ByVal Left As Object, ByVal Right As Object) As Object
 
-            Dim tc1 As TypeCode = GetTypeCode(left)
-            Dim tc2 As TypeCode = GetTypeCode(right)
+            Dim tc1 As TypeCode = GetTypeCode(Left)
+            Dim tc2 As TypeCode = GetTypeCode(Right)
 
             Select Case tc1 * s_TCMAX + tc2
 
@@ -3463,45 +3465,45 @@ Namespace Microsoft.VisualBasic.CompilerServices
                     Return Boxed_ZeroDouble
 
                 Case TypeCode.Empty * s_TCMAX + TypeCode.String
-                    Return MultiplyDouble(Nothing, CDbl(Convert.ToString(right)))
+                    Return MultiplyDouble(Nothing, CDbl(Convert.ToString(Right)))
 
 
                 Case TypeCode.Boolean * s_TCMAX + TypeCode.Boolean
-                    Return MultiplyInt16(ToVBBool(left), ToVBBool(right))
+                    Return MultiplyInt16(ToVBBool(Left), ToVBBool(Right))
 
                 Case TypeCode.Boolean * s_TCMAX + TypeCode.SByte
-                    Return MultiplySByte(ToVBBool(left), Convert.ToSByte(right))
+                    Return MultiplySByte(ToVBBool(Left), Convert.ToSByte(Right))
 
                 Case TypeCode.Boolean * s_TCMAX + TypeCode.Byte,
                      TypeCode.Boolean * s_TCMAX + TypeCode.Int16
-                    Return MultiplyInt16(ToVBBool(left), Convert.ToInt16(right))
+                    Return MultiplyInt16(ToVBBool(Left), Convert.ToInt16(Right))
 
                 Case TypeCode.Boolean * s_TCMAX + TypeCode.UInt16,
                      TypeCode.Boolean * s_TCMAX + TypeCode.Int32
-                    Return MultiplyInt32(ToVBBool(left), Convert.ToInt32(right))
+                    Return MultiplyInt32(ToVBBool(Left), Convert.ToInt32(Right))
 
                 Case TypeCode.Boolean * s_TCMAX + TypeCode.UInt32,
                      TypeCode.Boolean * s_TCMAX + TypeCode.Int64
-                    Return MultiplyInt64(ToVBBool(left), Convert.ToInt64(right))
+                    Return MultiplyInt64(ToVBBool(Left), Convert.ToInt64(Right))
 
                 Case TypeCode.Boolean * s_TCMAX + TypeCode.UInt64,
                      TypeCode.Boolean * s_TCMAX + TypeCode.Decimal
-                    Return MultiplyDecimal(ToVBBool(left), Convert.ToDecimal(right))
+                    Return MultiplyDecimal(ToVBBool(Left), Convert.ToDecimal(Right))
 
                 Case TypeCode.Boolean * s_TCMAX + TypeCode.Single
-                    Return MultiplySingle(ToVBBool(left), Convert.ToSingle(right))
+                    Return MultiplySingle(ToVBBool(Left), Convert.ToSingle(Right))
 
                 Case TypeCode.Boolean * s_TCMAX + TypeCode.Double
-                    Return MultiplyDouble(ToVBBool(left), Convert.ToDouble(right))
+                    Return MultiplyDouble(ToVBBool(Left), Convert.ToDouble(Right))
 
                 Case TypeCode.Boolean * s_TCMAX + TypeCode.String
-                    Return MultiplyDouble(ToVBBool(left), CDbl(Convert.ToString(right)))
+                    Return MultiplyDouble(ToVBBool(Left), CDbl(Convert.ToString(Right)))
 
                 Case TypeCode.SByte * s_TCMAX + TypeCode.Boolean
-                    Return MultiplySByte(Convert.ToSByte(left), ToVBBool(right))
+                    Return MultiplySByte(Convert.ToSByte(Left), ToVBBool(Right))
 
                 Case TypeCode.SByte * s_TCMAX + TypeCode.SByte
-                    Return MultiplySByte(Convert.ToSByte(left), Convert.ToSByte(right))
+                    Return MultiplySByte(Convert.ToSByte(Left), Convert.ToSByte(Right))
 
                 Case TypeCode.SByte * s_TCMAX + TypeCode.Byte,
                      TypeCode.SByte * s_TCMAX + TypeCode.Int16,
@@ -3511,7 +3513,7 @@ Namespace Microsoft.VisualBasic.CompilerServices
                      TypeCode.Int16 * s_TCMAX + TypeCode.Byte,
                      TypeCode.Int16 * s_TCMAX + TypeCode.Int16
 
-                    Return MultiplyInt16(Convert.ToInt16(left), Convert.ToInt16(right))
+                    Return MultiplyInt16(Convert.ToInt16(Left), Convert.ToInt16(Right))
 
                 Case TypeCode.SByte * s_TCMAX + TypeCode.UInt16,
                      TypeCode.SByte * s_TCMAX + TypeCode.Int32,
@@ -3527,7 +3529,7 @@ Namespace Microsoft.VisualBasic.CompilerServices
                      TypeCode.Int32 * s_TCMAX + TypeCode.UInt16,
                      TypeCode.Int32 * s_TCMAX + TypeCode.Int32
 
-                    Return MultiplyInt32(Convert.ToInt32(left), Convert.ToInt32(right))
+                    Return MultiplyInt32(Convert.ToInt32(Left), Convert.ToInt32(Right))
 
                 Case TypeCode.SByte * s_TCMAX + TypeCode.UInt32,
                      TypeCode.SByte * s_TCMAX + TypeCode.Int64,
@@ -3549,7 +3551,7 @@ Namespace Microsoft.VisualBasic.CompilerServices
                      TypeCode.Int64 * s_TCMAX + TypeCode.UInt32,
                      TypeCode.Int64 * s_TCMAX + TypeCode.Int64
 
-                    Return MultiplyInt64(Convert.ToInt64(left), Convert.ToInt64(right))
+                    Return MultiplyInt64(Convert.ToInt64(Left), Convert.ToInt64(Right))
 
                 Case TypeCode.SByte * s_TCMAX + TypeCode.UInt64,
                      TypeCode.SByte * s_TCMAX + TypeCode.Decimal,
@@ -3577,7 +3579,7 @@ Namespace Microsoft.VisualBasic.CompilerServices
                      TypeCode.Decimal * s_TCMAX + TypeCode.UInt64,
                      TypeCode.Decimal * s_TCMAX + TypeCode.Decimal
 
-                    Return MultiplyDecimal(left, right)
+                    Return MultiplyDecimal(Left, Right)
 
                 Case TypeCode.SByte * s_TCMAX + TypeCode.Single,
                      TypeCode.Byte * s_TCMAX + TypeCode.Single,
@@ -3599,7 +3601,7 @@ Namespace Microsoft.VisualBasic.CompilerServices
                      TypeCode.Single * s_TCMAX + TypeCode.Decimal,
                      TypeCode.Single * s_TCMAX + TypeCode.Single
 
-                    Return MultiplySingle(Convert.ToSingle(left), Convert.ToSingle(right))
+                    Return MultiplySingle(Convert.ToSingle(Left), Convert.ToSingle(Right))
 
                 Case TypeCode.SByte * s_TCMAX + TypeCode.Double,
                      TypeCode.Byte * s_TCMAX + TypeCode.Double,
@@ -3623,7 +3625,7 @@ Namespace Microsoft.VisualBasic.CompilerServices
                      TypeCode.Double * s_TCMAX + TypeCode.Single,
                      TypeCode.Double * s_TCMAX + TypeCode.Double
 
-                    Return MultiplyDouble(Convert.ToDouble(left), Convert.ToDouble(right))
+                    Return MultiplyDouble(Convert.ToDouble(Left), Convert.ToDouble(Right))
 
                 Case TypeCode.SByte * s_TCMAX + TypeCode.String,
                      TypeCode.Byte * s_TCMAX + TypeCode.String,
@@ -3637,27 +3639,27 @@ Namespace Microsoft.VisualBasic.CompilerServices
                      TypeCode.Single * s_TCMAX + TypeCode.String,
                      TypeCode.Double * s_TCMAX + TypeCode.String
 
-                    Return MultiplyDouble(Convert.ToDouble(left), CDbl(Convert.ToString(right)))
+                    Return MultiplyDouble(Convert.ToDouble(Left), CDbl(Convert.ToString(Right)))
 
 
                 Case TypeCode.Byte * s_TCMAX + TypeCode.Boolean,
                      TypeCode.Int16 * s_TCMAX + TypeCode.Boolean
-                    Return MultiplyInt16(Convert.ToInt16(left), ToVBBool(right))
+                    Return MultiplyInt16(Convert.ToInt16(Left), ToVBBool(Right))
 
                 Case TypeCode.Byte * s_TCMAX + TypeCode.Byte
-                    Return MultiplyByte(Convert.ToByte(left), Convert.ToByte(right))
+                    Return MultiplyByte(Convert.ToByte(Left), Convert.ToByte(Right))
 
                 Case TypeCode.Byte * s_TCMAX + TypeCode.UInt16,
                      TypeCode.UInt16 * s_TCMAX + TypeCode.Byte,
                      TypeCode.UInt16 * s_TCMAX + TypeCode.UInt16
-                    Return MultiplyUInt16(Convert.ToUInt16(left), Convert.ToUInt16(right))
+                    Return MultiplyUInt16(Convert.ToUInt16(Left), Convert.ToUInt16(Right))
 
                 Case TypeCode.Byte * s_TCMAX + TypeCode.UInt32,
                      TypeCode.UInt16 * s_TCMAX + TypeCode.UInt32,
                      TypeCode.UInt32 * s_TCMAX + TypeCode.Byte,
                      TypeCode.UInt32 * s_TCMAX + TypeCode.UInt16,
                      TypeCode.UInt32 * s_TCMAX + TypeCode.UInt32
-                    Return MultiplyUInt32(Convert.ToUInt32(left), Convert.ToUInt32(right))
+                    Return MultiplyUInt32(Convert.ToUInt32(Left), Convert.ToUInt32(Right))
 
                 Case TypeCode.Byte * s_TCMAX + TypeCode.UInt64,
                      TypeCode.UInt16 * s_TCMAX + TypeCode.UInt64,
@@ -3667,35 +3669,35 @@ Namespace Microsoft.VisualBasic.CompilerServices
                      TypeCode.UInt64 * s_TCMAX + TypeCode.UInt32,
                      TypeCode.UInt64 * s_TCMAX + TypeCode.UInt64
 
-                    Return MultiplyUInt64(Convert.ToUInt64(left), Convert.ToUInt64(right))
+                    Return MultiplyUInt64(Convert.ToUInt64(Left), Convert.ToUInt64(Right))
 
 
                 Case TypeCode.UInt16 * s_TCMAX + TypeCode.Boolean,
                      TypeCode.Int32 * s_TCMAX + TypeCode.Boolean
-                    Return MultiplyInt32(Convert.ToInt32(left), ToVBBool(right))
+                    Return MultiplyInt32(Convert.ToInt32(Left), ToVBBool(Right))
 
                 Case TypeCode.UInt32 * s_TCMAX + TypeCode.Boolean,
                      TypeCode.Int64 * s_TCMAX + TypeCode.Boolean
-                    Return MultiplyInt64(Convert.ToInt64(left), ToVBBool(right))
+                    Return MultiplyInt64(Convert.ToInt64(Left), ToVBBool(Right))
 
 
                 Case TypeCode.UInt64 * s_TCMAX + TypeCode.Boolean,
                      TypeCode.Decimal * s_TCMAX + TypeCode.Boolean
-                    Return MultiplyDecimal(left, ToVBBool(right))
+                    Return MultiplyDecimal(Left, ToVBBool(Right))
 
                 Case TypeCode.Single * s_TCMAX + TypeCode.Boolean
-                    Return MultiplySingle(Convert.ToSingle(left), ToVBBool(right))
+                    Return MultiplySingle(Convert.ToSingle(Left), ToVBBool(Right))
 
 
                 Case TypeCode.Double * s_TCMAX + TypeCode.Boolean
-                    Return MultiplyDouble(Convert.ToDouble(left), ToVBBool(right))
+                    Return MultiplyDouble(Convert.ToDouble(Left), ToVBBool(Right))
 
 
                 Case TypeCode.String * s_TCMAX + TypeCode.Empty
-                    Return MultiplyDouble(CDbl(Convert.ToString(left)), Nothing)
+                    Return MultiplyDouble(CDbl(Convert.ToString(Left)), Nothing)
 
                 Case TypeCode.String * s_TCMAX + TypeCode.Boolean
-                    Return MultiplyDouble(CDbl(Convert.ToString(left)), ToVBBool(right))
+                    Return MultiplyDouble(CDbl(Convert.ToString(Left)), ToVBBool(Right))
 
                 Case TypeCode.String * s_TCMAX + TypeCode.SByte,
                      TypeCode.String * s_TCMAX + TypeCode.Byte,
@@ -3709,20 +3711,20 @@ Namespace Microsoft.VisualBasic.CompilerServices
                      TypeCode.String * s_TCMAX + TypeCode.Single,
                      TypeCode.String * s_TCMAX + TypeCode.Double
 
-                    Return MultiplyDouble(CDbl(Convert.ToString(left)), Convert.ToDouble(right))
+                    Return MultiplyDouble(CDbl(Convert.ToString(Left)), Convert.ToDouble(Right))
 
                 Case TypeCode.String * s_TCMAX + TypeCode.String
-                    Return MultiplyDouble(CDbl(Convert.ToString(left)), CDbl(Convert.ToString(right)))
+                    Return MultiplyDouble(CDbl(Convert.ToString(Left)), CDbl(Convert.ToString(Right)))
 
                 Case Else
 
             End Select
 
             If tc1 = TypeCode.Object OrElse tc2 = TypeCode.Object Then
-                Return InvokeUserDefinedOperator(UserDefinedOperator.Multiply, left, right)
+                Return InvokeUserDefinedOperator(UserDefinedOperator.Multiply, Left, Right)
             End If
 
-            Throw GetNoValidOperatorException(UserDefinedOperator.Multiply, left, right)
+            Throw GetNoValidOperatorException(UserDefinedOperator.Multiply, Left, Right)
 
         End Function
 
@@ -3862,10 +3864,10 @@ Namespace Microsoft.VisualBasic.CompilerServices
 
 #Region " Operator Divide / "
 
-        Public Shared Function DivideObject(ByVal left As Object, ByVal right As Object) As Object
+        Public Shared Function DivideObject(ByVal Left As Object, ByVal Right As Object) As Object
 
-            Dim tc1 As TypeCode = GetTypeCode(left)
-            Dim tc2 As TypeCode = GetTypeCode(right)
+            Dim tc1 As TypeCode = GetTypeCode(Left)
+            Dim tc2 As TypeCode = GetTypeCode(Right)
 
             Select Case tc1 * s_TCMAX + tc2
 
@@ -3873,7 +3875,7 @@ Namespace Microsoft.VisualBasic.CompilerServices
                     Return DivideDouble(Nothing, Nothing)
 
                 Case TypeCode.Empty * s_TCMAX + TypeCode.Boolean
-                    Return DivideDouble(Nothing, ToVBBool(right))
+                    Return DivideDouble(Nothing, ToVBBool(Right))
 
                 Case TypeCode.Empty * s_TCMAX + TypeCode.SByte,
                      TypeCode.Empty * s_TCMAX + TypeCode.Byte,
@@ -3884,23 +3886,23 @@ Namespace Microsoft.VisualBasic.CompilerServices
                      TypeCode.Empty * s_TCMAX + TypeCode.Int64,
                      TypeCode.Empty * s_TCMAX + TypeCode.UInt64,
                      TypeCode.Empty * s_TCMAX + TypeCode.Double
-                    Return DivideDouble(Nothing, Convert.ToDouble(right))
+                    Return DivideDouble(Nothing, Convert.ToDouble(Right))
 
                 Case TypeCode.Empty * s_TCMAX + TypeCode.Decimal
-                    Return DivideDecimal(0D, right)
+                    Return DivideDecimal(0D, Right)
 
                 Case TypeCode.Empty * s_TCMAX + TypeCode.Single
-                    Return DivideSingle(Nothing, Convert.ToSingle(right))
+                    Return DivideSingle(Nothing, Convert.ToSingle(Right))
 
                 Case TypeCode.Empty * s_TCMAX + TypeCode.String
-                    Return DivideDouble(Nothing, CDbl(Convert.ToString(right)))
+                    Return DivideDouble(Nothing, CDbl(Convert.ToString(Right)))
 
 
                 Case TypeCode.Boolean * s_TCMAX + TypeCode.Empty
-                    Return DivideDouble(ToVBBool(left), Nothing)
+                    Return DivideDouble(ToVBBool(Left), Nothing)
 
                 Case TypeCode.Boolean * s_TCMAX + TypeCode.Boolean
-                    Return DivideDouble(ToVBBool(left), ToVBBool(right))
+                    Return DivideDouble(ToVBBool(Left), ToVBBool(Right))
 
                 Case TypeCode.Boolean * s_TCMAX + TypeCode.SByte,
                      TypeCode.Boolean * s_TCMAX + TypeCode.Byte,
@@ -3911,16 +3913,16 @@ Namespace Microsoft.VisualBasic.CompilerServices
                      TypeCode.Boolean * s_TCMAX + TypeCode.Int64,
                      TypeCode.Boolean * s_TCMAX + TypeCode.UInt64,
                      TypeCode.Boolean * s_TCMAX + TypeCode.Double
-                    Return DivideDouble(ToVBBool(left), Convert.ToDouble(right))
+                    Return DivideDouble(ToVBBool(Left), Convert.ToDouble(Right))
 
                 Case TypeCode.Boolean * s_TCMAX + TypeCode.Decimal
-                    Return DivideDecimal(ToVBBool(left), right)
+                    Return DivideDecimal(ToVBBool(Left), Right)
 
                 Case TypeCode.Boolean * s_TCMAX + TypeCode.Single
-                    Return DivideSingle(ToVBBool(left), Convert.ToSingle(right))
+                    Return DivideSingle(ToVBBool(Left), Convert.ToSingle(Right))
 
                 Case TypeCode.Boolean * s_TCMAX + TypeCode.String
-                    Return DivideDouble(ToVBBool(left), CDbl(Convert.ToString(right)))
+                    Return DivideDouble(ToVBBool(Left), CDbl(Convert.ToString(Right)))
 
 
                 Case TypeCode.SByte * s_TCMAX + TypeCode.Empty,
@@ -3932,7 +3934,7 @@ Namespace Microsoft.VisualBasic.CompilerServices
                      TypeCode.Int64 * s_TCMAX + TypeCode.Empty,
                      TypeCode.UInt64 * s_TCMAX + TypeCode.Empty,
                      TypeCode.Double * s_TCMAX + TypeCode.Empty
-                    Return DivideDouble(Convert.ToDouble(left), Nothing)
+                    Return DivideDouble(Convert.ToDouble(Left), Nothing)
 
                 Case TypeCode.SByte * s_TCMAX + TypeCode.Boolean,
                      TypeCode.Byte * s_TCMAX + TypeCode.Boolean,
@@ -3943,7 +3945,7 @@ Namespace Microsoft.VisualBasic.CompilerServices
                      TypeCode.Int64 * s_TCMAX + TypeCode.Boolean,
                      TypeCode.UInt64 * s_TCMAX + TypeCode.Boolean,
                      TypeCode.Double * s_TCMAX + TypeCode.Boolean
-                    Return DivideDouble(Convert.ToDouble(left), ToVBBool(right))
+                    Return DivideDouble(Convert.ToDouble(Left), ToVBBool(Right))
 
                 Case TypeCode.SByte * s_TCMAX + TypeCode.SByte,
                      TypeCode.SByte * s_TCMAX + TypeCode.Byte,
@@ -4030,7 +4032,7 @@ Namespace Microsoft.VisualBasic.CompilerServices
                      TypeCode.Double * s_TCMAX + TypeCode.Decimal,
                      TypeCode.Double * s_TCMAX + TypeCode.Single,
                      TypeCode.Double * s_TCMAX + TypeCode.Double
-                    Return DivideDouble(Convert.ToDouble(left), Convert.ToDouble(right))
+                    Return DivideDouble(Convert.ToDouble(Left), Convert.ToDouble(Right))
 
                 Case TypeCode.SByte * s_TCMAX + TypeCode.Decimal,
                      TypeCode.Byte * s_TCMAX + TypeCode.Decimal,
@@ -4049,7 +4051,7 @@ Namespace Microsoft.VisualBasic.CompilerServices
                      TypeCode.Decimal * s_TCMAX + TypeCode.Int64,
                      TypeCode.Decimal * s_TCMAX + TypeCode.UInt64,
                      TypeCode.Decimal * s_TCMAX + TypeCode.Decimal
-                    Return DivideDecimal(left, right)
+                    Return DivideDecimal(Left, Right)
 
                 Case TypeCode.SByte * s_TCMAX + TypeCode.Single,
                      TypeCode.Byte * s_TCMAX + TypeCode.Single,
@@ -4070,7 +4072,7 @@ Namespace Microsoft.VisualBasic.CompilerServices
                      TypeCode.Single * s_TCMAX + TypeCode.UInt64,
                      TypeCode.Single * s_TCMAX + TypeCode.Decimal,
                      TypeCode.Single * s_TCMAX + TypeCode.Single
-                    Return DivideSingle(Convert.ToSingle(left), Convert.ToSingle(right))
+                    Return DivideSingle(Convert.ToSingle(Left), Convert.ToSingle(Right))
 
                 Case TypeCode.SByte * s_TCMAX + TypeCode.String,
                      TypeCode.Byte * s_TCMAX + TypeCode.String,
@@ -4083,28 +4085,28 @@ Namespace Microsoft.VisualBasic.CompilerServices
                      TypeCode.Decimal * s_TCMAX + TypeCode.String,
                      TypeCode.Single * s_TCMAX + TypeCode.String,
                      TypeCode.Double * s_TCMAX + TypeCode.String
-                    Return DivideDouble(Convert.ToDouble(left), CDbl(Convert.ToString(right)))
+                    Return DivideDouble(Convert.ToDouble(Left), CDbl(Convert.ToString(Right)))
 
 
                 Case TypeCode.Decimal * s_TCMAX + TypeCode.Empty
-                    Return DivideDecimal(left, 0D)
+                    Return DivideDecimal(Left, 0D)
 
                 Case TypeCode.Decimal * s_TCMAX + TypeCode.Boolean
-                    Return DivideDecimal(left, ToVBBool(right))
+                    Return DivideDecimal(Left, ToVBBool(Right))
 
 
                 Case TypeCode.Single * s_TCMAX + TypeCode.Empty
-                    Return DivideSingle(Convert.ToSingle(left), Nothing)
+                    Return DivideSingle(Convert.ToSingle(Left), Nothing)
 
                 Case TypeCode.Single * s_TCMAX + TypeCode.Boolean
-                    Return DivideSingle(Convert.ToSingle(left), ToVBBool(right))
+                    Return DivideSingle(Convert.ToSingle(Left), ToVBBool(Right))
 
 
                 Case TypeCode.String * s_TCMAX + TypeCode.Empty
-                    Return DivideDouble(CDbl(Convert.ToString(left)), Nothing)
+                    Return DivideDouble(CDbl(Convert.ToString(Left)), Nothing)
 
                 Case TypeCode.String * s_TCMAX + TypeCode.Boolean
-                    Return DivideDouble(CDbl(Convert.ToString(left)), ToVBBool(right))
+                    Return DivideDouble(CDbl(Convert.ToString(Left)), ToVBBool(Right))
 
                 Case TypeCode.String * s_TCMAX + TypeCode.SByte,
                      TypeCode.String * s_TCMAX + TypeCode.Byte,
@@ -4117,20 +4119,20 @@ Namespace Microsoft.VisualBasic.CompilerServices
                      TypeCode.String * s_TCMAX + TypeCode.Decimal,
                      TypeCode.String * s_TCMAX + TypeCode.Single,
                      TypeCode.String * s_TCMAX + TypeCode.Double
-                    Return DivideDouble(CDbl(Convert.ToString(left)), Convert.ToDouble(right))
+                    Return DivideDouble(CDbl(Convert.ToString(Left)), Convert.ToDouble(Right))
 
                 Case TypeCode.String * s_TCMAX + TypeCode.String
-                    Return DivideDouble(CDbl(Convert.ToString(left)), CDbl(Convert.ToString(right)))
+                    Return DivideDouble(CDbl(Convert.ToString(Left)), CDbl(Convert.ToString(Right)))
 
                 Case Else
 
             End Select
 
             If tc1 = TypeCode.Object OrElse tc2 = TypeCode.Object Then
-                Return InvokeUserDefinedOperator(UserDefinedOperator.Divide, left, right)
+                Return InvokeUserDefinedOperator(UserDefinedOperator.Divide, Left, Right)
             End If
 
-            Throw GetNoValidOperatorException(UserDefinedOperator.Divide, left, right)
+            Throw GetNoValidOperatorException(UserDefinedOperator.Divide, Left, Right)
 
         End Function
 
@@ -4168,10 +4170,10 @@ Namespace Microsoft.VisualBasic.CompilerServices
 
 #Region " Operator Power ^ "
 
-        Public Shared Function ExponentObject(ByVal left As Object, ByVal right As Object) As Object
+        Public Shared Function ExponentObject(ByVal Left As Object, ByVal Right As Object) As Object
 
-            Dim tc1 As TypeCode = GetTypeCode(left)
-            Dim tc2 As TypeCode = GetTypeCode(right)
+            Dim tc1 As TypeCode = GetTypeCode(Left)
+            Dim tc2 As TypeCode = GetTypeCode(Right)
 
             Dim leftValue As Double
             Dim rightValue As Double
@@ -4182,7 +4184,7 @@ Namespace Microsoft.VisualBasic.CompilerServices
                     leftValue = 0.0R
 
                 Case TypeCode.Boolean
-                    leftValue = ToVBBool(left)
+                    leftValue = ToVBBool(Left)
 
                 Case TypeCode.SByte,
                      TypeCode.Byte,
@@ -4195,18 +4197,18 @@ Namespace Microsoft.VisualBasic.CompilerServices
                      TypeCode.Decimal,
                      TypeCode.Single,
                      TypeCode.Double
-                    leftValue = Convert.ToDouble(left)
+                    leftValue = Convert.ToDouble(Left)
 
                 Case TypeCode.String
-                    leftValue = CDbl(Convert.ToString(left))
+                    leftValue = CDbl(Convert.ToString(Left))
 
                 Case TypeCode.Object
-                    Return InvokeUserDefinedOperator(UserDefinedOperator.Power, left, right)
+                    Return InvokeUserDefinedOperator(UserDefinedOperator.Power, Left, Right)
 
                 Case Else
                     'DateTime
                     'Char
-                    Throw GetNoValidOperatorException(UserDefinedOperator.Power, left, right)
+                    Throw GetNoValidOperatorException(UserDefinedOperator.Power, Left, Right)
             End Select
 
             Select Case tc2
@@ -4214,7 +4216,7 @@ Namespace Microsoft.VisualBasic.CompilerServices
                     rightValue = 0.0R
 
                 Case TypeCode.Boolean
-                    rightValue = ToVBBool(right)
+                    rightValue = ToVBBool(Right)
 
                 Case TypeCode.SByte,
                      TypeCode.Byte,
@@ -4227,18 +4229,18 @@ Namespace Microsoft.VisualBasic.CompilerServices
                      TypeCode.Decimal,
                      TypeCode.Single,
                      TypeCode.Double
-                    rightValue = Convert.ToDouble(right)
+                    rightValue = Convert.ToDouble(Right)
 
                 Case TypeCode.String
-                    rightValue = CDbl(Convert.ToString(right))
+                    rightValue = CDbl(Convert.ToString(Right))
 
                 Case TypeCode.Object
-                    Return InvokeUserDefinedOperator(UserDefinedOperator.Power, left, right)
+                    Return InvokeUserDefinedOperator(UserDefinedOperator.Power, Left, Right)
 
                 Case Else
                     'DateTime
                     'Char
-                    Throw GetNoValidOperatorException(UserDefinedOperator.Power, left, right)
+                    Throw GetNoValidOperatorException(UserDefinedOperator.Power, Left, Right)
             End Select
 
             Return leftValue ^ rightValue
@@ -4249,10 +4251,10 @@ Namespace Microsoft.VisualBasic.CompilerServices
 
 #Region " Operator Mod "
 
-        Public Shared Function ModObject(ByVal left As Object, ByVal right As Object) As Object
+        Public Shared Function ModObject(ByVal Left As Object, ByVal Right As Object) As Object
 
-            Dim tc1 As TypeCode = GetTypeCode(left)
-            Dim tc2 As TypeCode = GetTypeCode(right)
+            Dim tc1 As TypeCode = GetTypeCode(Left)
+            Dim tc2 As TypeCode = GetTypeCode(Right)
 
             Select Case tc1 * s_TCMAX + tc2
 
@@ -4260,88 +4262,88 @@ Namespace Microsoft.VisualBasic.CompilerServices
                     Return ModInt32(Nothing, Nothing)
 
                 Case TypeCode.Empty * s_TCMAX + TypeCode.Boolean
-                    Return ModInt16(Nothing, ToVBBool(right))
+                    Return ModInt16(Nothing, ToVBBool(Right))
 
                 Case TypeCode.Empty * s_TCMAX + TypeCode.SByte
-                    Return ModSByte(Nothing, Convert.ToSByte(right))
+                    Return ModSByte(Nothing, Convert.ToSByte(Right))
 
                 Case TypeCode.Empty * s_TCMAX + TypeCode.Byte
-                    Return ModByte(Nothing, Convert.ToByte(right))
+                    Return ModByte(Nothing, Convert.ToByte(Right))
 
                 Case TypeCode.Empty * s_TCMAX + TypeCode.Int16
-                    Return ModInt16(Nothing, Convert.ToInt16(right))
+                    Return ModInt16(Nothing, Convert.ToInt16(Right))
 
                 Case TypeCode.Empty * s_TCMAX + TypeCode.UInt16
-                    Return ModUInt16(Nothing, Convert.ToUInt16(right))
+                    Return ModUInt16(Nothing, Convert.ToUInt16(Right))
 
                 Case TypeCode.Empty * s_TCMAX + TypeCode.Int32
-                    Return ModInt32(Nothing, Convert.ToInt32(right))
+                    Return ModInt32(Nothing, Convert.ToInt32(Right))
 
                 Case TypeCode.Empty * s_TCMAX + TypeCode.UInt32
-                    Return ModUInt32(Nothing, Convert.ToUInt32(right))
+                    Return ModUInt32(Nothing, Convert.ToUInt32(Right))
 
                 Case TypeCode.Empty * s_TCMAX + TypeCode.Int64
-                    Return ModInt64(Nothing, Convert.ToInt64(right))
+                    Return ModInt64(Nothing, Convert.ToInt64(Right))
 
                 Case TypeCode.Empty * s_TCMAX + TypeCode.UInt64
-                    Return ModUInt64(Nothing, Convert.ToUInt64(right))
+                    Return ModUInt64(Nothing, Convert.ToUInt64(Right))
 
                 Case TypeCode.Empty * s_TCMAX + TypeCode.Decimal
-                    Return ModDecimal(0D, Convert.ToDecimal(right))
+                    Return ModDecimal(0D, Convert.ToDecimal(Right))
 
                 Case TypeCode.Empty * s_TCMAX + TypeCode.Single
-                    Return ModSingle(Nothing, Convert.ToSingle(right))
+                    Return ModSingle(Nothing, Convert.ToSingle(Right))
 
                 Case TypeCode.Empty * s_TCMAX + TypeCode.Double
-                    Return ModDouble(Nothing, Convert.ToDouble(right))
+                    Return ModDouble(Nothing, Convert.ToDouble(Right))
 
                 Case TypeCode.Empty * s_TCMAX + TypeCode.String
-                    Return ModDouble(Nothing, CDbl(Convert.ToString(right)))
+                    Return ModDouble(Nothing, CDbl(Convert.ToString(Right)))
 
 
                 Case TypeCode.Boolean * s_TCMAX + TypeCode.Empty
-                    Return ModInt16(ToVBBool(left), Nothing)
+                    Return ModInt16(ToVBBool(Left), Nothing)
 
                 Case TypeCode.Boolean * s_TCMAX + TypeCode.Boolean
-                    Return ModInt16(ToVBBool(left), ToVBBool(right))
+                    Return ModInt16(ToVBBool(Left), ToVBBool(Right))
 
                 Case TypeCode.Boolean * s_TCMAX + TypeCode.SByte
-                    Return ModSByte(ToVBBool(left), Convert.ToSByte(right))
+                    Return ModSByte(ToVBBool(Left), Convert.ToSByte(Right))
 
                 Case TypeCode.Boolean * s_TCMAX + TypeCode.Byte,
                      TypeCode.Boolean * s_TCMAX + TypeCode.Int16
-                    Return ModInt16(ToVBBool(left), Convert.ToInt16(right))
+                    Return ModInt16(ToVBBool(Left), Convert.ToInt16(Right))
 
                 Case TypeCode.Boolean * s_TCMAX + TypeCode.UInt16,
                      TypeCode.Boolean * s_TCMAX + TypeCode.Int32
-                    Return ModInt32(ToVBBool(left), Convert.ToInt32(right))
+                    Return ModInt32(ToVBBool(Left), Convert.ToInt32(Right))
 
                 Case TypeCode.Boolean * s_TCMAX + TypeCode.UInt32,
                      TypeCode.Boolean * s_TCMAX + TypeCode.Int64
-                    Return ModInt64(ToVBBool(left), Convert.ToInt64(right))
+                    Return ModInt64(ToVBBool(Left), Convert.ToInt64(Right))
 
                 Case TypeCode.Boolean * s_TCMAX + TypeCode.UInt64,
                      TypeCode.Boolean * s_TCMAX + TypeCode.Decimal
-                    Return ModDecimal(ToVBBool(left), Convert.ToDecimal(right))
+                    Return ModDecimal(ToVBBool(Left), Convert.ToDecimal(Right))
 
                 Case TypeCode.Boolean * s_TCMAX + TypeCode.Single
-                    Return ModSingle(ToVBBool(left), Convert.ToSingle(right))
+                    Return ModSingle(ToVBBool(Left), Convert.ToSingle(Right))
 
                 Case TypeCode.Boolean * s_TCMAX + TypeCode.Double
-                    Return ModDouble(ToVBBool(left), Convert.ToDouble(right))
+                    Return ModDouble(ToVBBool(Left), Convert.ToDouble(Right))
 
                 Case TypeCode.Boolean * s_TCMAX + TypeCode.String
-                    Return ModDouble(ToVBBool(left), CDbl(Convert.ToString(right)))
+                    Return ModDouble(ToVBBool(Left), CDbl(Convert.ToString(Right)))
 
 
                 Case TypeCode.SByte * s_TCMAX + TypeCode.Empty
-                    Return ModSByte(Convert.ToSByte(left), Nothing)
+                    Return ModSByte(Convert.ToSByte(Left), Nothing)
 
                 Case TypeCode.SByte * s_TCMAX + TypeCode.Boolean
-                    Return ModSByte(Convert.ToSByte(left), ToVBBool(right))
+                    Return ModSByte(Convert.ToSByte(Left), ToVBBool(Right))
 
                 Case TypeCode.SByte * s_TCMAX + TypeCode.SByte
-                    Return ModSByte(Convert.ToSByte(left), Convert.ToSByte(right))
+                    Return ModSByte(Convert.ToSByte(Left), Convert.ToSByte(Right))
 
                 Case TypeCode.SByte * s_TCMAX + TypeCode.Byte,
                      TypeCode.SByte * s_TCMAX + TypeCode.Int16,
@@ -4351,7 +4353,7 @@ Namespace Microsoft.VisualBasic.CompilerServices
                      TypeCode.Int16 * s_TCMAX + TypeCode.Byte,
                      TypeCode.Int16 * s_TCMAX + TypeCode.Int16
 
-                    Return ModInt16(Convert.ToInt16(left), Convert.ToInt16(right))
+                    Return ModInt16(Convert.ToInt16(Left), Convert.ToInt16(Right))
 
                 Case TypeCode.SByte * s_TCMAX + TypeCode.UInt16,
                      TypeCode.SByte * s_TCMAX + TypeCode.Int32,
@@ -4367,7 +4369,7 @@ Namespace Microsoft.VisualBasic.CompilerServices
                      TypeCode.Int32 * s_TCMAX + TypeCode.UInt16,
                      TypeCode.Int32 * s_TCMAX + TypeCode.Int32
 
-                    Return ModInt32(Convert.ToInt32(left), Convert.ToInt32(right))
+                    Return ModInt32(Convert.ToInt32(Left), Convert.ToInt32(Right))
 
                 Case TypeCode.SByte * s_TCMAX + TypeCode.UInt32,
                      TypeCode.SByte * s_TCMAX + TypeCode.Int64,
@@ -4389,7 +4391,7 @@ Namespace Microsoft.VisualBasic.CompilerServices
                      TypeCode.Int64 * s_TCMAX + TypeCode.UInt32,
                      TypeCode.Int64 * s_TCMAX + TypeCode.Int64
 
-                    Return ModInt64(Convert.ToInt64(left), Convert.ToInt64(right))
+                    Return ModInt64(Convert.ToInt64(Left), Convert.ToInt64(Right))
 
                 Case TypeCode.SByte * s_TCMAX + TypeCode.UInt64,
                      TypeCode.SByte * s_TCMAX + TypeCode.Decimal,
@@ -4417,7 +4419,7 @@ Namespace Microsoft.VisualBasic.CompilerServices
                      TypeCode.Decimal * s_TCMAX + TypeCode.UInt64,
                      TypeCode.Decimal * s_TCMAX + TypeCode.Decimal
 
-                    Return ModDecimal(left, right)
+                    Return ModDecimal(Left, Right)
 
                 Case TypeCode.SByte * s_TCMAX + TypeCode.Single,
                      TypeCode.Byte * s_TCMAX + TypeCode.Single,
@@ -4439,7 +4441,7 @@ Namespace Microsoft.VisualBasic.CompilerServices
                      TypeCode.Single * s_TCMAX + TypeCode.Decimal,
                      TypeCode.Single * s_TCMAX + TypeCode.Single
 
-                    Return ModSingle(Convert.ToSingle(left), Convert.ToSingle(right))
+                    Return ModSingle(Convert.ToSingle(Left), Convert.ToSingle(Right))
 
                 Case TypeCode.SByte * s_TCMAX + TypeCode.Double,
                      TypeCode.Byte * s_TCMAX + TypeCode.Double,
@@ -4463,7 +4465,7 @@ Namespace Microsoft.VisualBasic.CompilerServices
                      TypeCode.Double * s_TCMAX + TypeCode.Single,
                      TypeCode.Double * s_TCMAX + TypeCode.Double
 
-                    Return ModDouble(Convert.ToDouble(left), Convert.ToDouble(right))
+                    Return ModDouble(Convert.ToDouble(Left), Convert.ToDouble(Right))
 
                 Case TypeCode.SByte * s_TCMAX + TypeCode.String,
                      TypeCode.Byte * s_TCMAX + TypeCode.String,
@@ -4477,30 +4479,30 @@ Namespace Microsoft.VisualBasic.CompilerServices
                      TypeCode.Single * s_TCMAX + TypeCode.String,
                      TypeCode.Double * s_TCMAX + TypeCode.String
 
-                    Return ModDouble(Convert.ToDouble(left), CDbl(Convert.ToString(right)))
+                    Return ModDouble(Convert.ToDouble(Left), CDbl(Convert.ToString(Right)))
 
 
                 Case TypeCode.Byte * s_TCMAX + TypeCode.Empty
-                    Return ModByte(Convert.ToByte(left), Nothing)
+                    Return ModByte(Convert.ToByte(Left), Nothing)
 
                 Case TypeCode.Byte * s_TCMAX + TypeCode.Boolean,
                      TypeCode.Int16 * s_TCMAX + TypeCode.Boolean
-                    Return ModInt16(Convert.ToInt16(left), ToVBBool(right))
+                    Return ModInt16(Convert.ToInt16(Left), ToVBBool(Right))
 
                 Case TypeCode.Byte * s_TCMAX + TypeCode.Byte
-                    Return ModByte(Convert.ToByte(left), Convert.ToByte(right))
+                    Return ModByte(Convert.ToByte(Left), Convert.ToByte(Right))
 
                 Case TypeCode.Byte * s_TCMAX + TypeCode.UInt16,
                      TypeCode.UInt16 * s_TCMAX + TypeCode.Byte,
                      TypeCode.UInt16 * s_TCMAX + TypeCode.UInt16
-                    Return ModUInt16(Convert.ToUInt16(left), Convert.ToUInt16(right))
+                    Return ModUInt16(Convert.ToUInt16(Left), Convert.ToUInt16(Right))
 
                 Case TypeCode.Byte * s_TCMAX + TypeCode.UInt32,
                      TypeCode.UInt16 * s_TCMAX + TypeCode.UInt32,
                      TypeCode.UInt32 * s_TCMAX + TypeCode.Byte,
                      TypeCode.UInt32 * s_TCMAX + TypeCode.UInt16,
                      TypeCode.UInt32 * s_TCMAX + TypeCode.UInt32
-                    Return ModUInt32(Convert.ToUInt32(left), Convert.ToUInt32(right))
+                    Return ModUInt32(Convert.ToUInt32(Left), Convert.ToUInt32(Right))
 
                 Case TypeCode.Byte * s_TCMAX + TypeCode.UInt64,
                      TypeCode.UInt16 * s_TCMAX + TypeCode.UInt64,
@@ -4510,66 +4512,66 @@ Namespace Microsoft.VisualBasic.CompilerServices
                      TypeCode.UInt64 * s_TCMAX + TypeCode.UInt32,
                      TypeCode.UInt64 * s_TCMAX + TypeCode.UInt64
 
-                    Return ModUInt64(Convert.ToUInt64(left), Convert.ToUInt64(right))
+                    Return ModUInt64(Convert.ToUInt64(Left), Convert.ToUInt64(Right))
 
 
                 Case TypeCode.Int16 * s_TCMAX + TypeCode.Empty
-                    Return ModInt16(Convert.ToInt16(left), Nothing)
+                    Return ModInt16(Convert.ToInt16(Left), Nothing)
 
 
                 Case TypeCode.UInt16 * s_TCMAX + TypeCode.Empty
-                    Return ModUInt16(Convert.ToUInt16(left), Nothing)
+                    Return ModUInt16(Convert.ToUInt16(Left), Nothing)
 
                 Case TypeCode.UInt16 * s_TCMAX + TypeCode.Boolean,
                      TypeCode.Int32 * s_TCMAX + TypeCode.Boolean
-                    Return ModInt32(Convert.ToInt32(left), ToVBBool(right))
+                    Return ModInt32(Convert.ToInt32(Left), ToVBBool(Right))
 
 
                 Case TypeCode.Int32 * s_TCMAX + TypeCode.Empty
-                    Return ModInt32(Convert.ToInt32(left), Nothing)
+                    Return ModInt32(Convert.ToInt32(Left), Nothing)
 
                 Case TypeCode.UInt32 * s_TCMAX + TypeCode.Empty
-                    Return ModUInt32(Convert.ToUInt32(left), Nothing)
+                    Return ModUInt32(Convert.ToUInt32(Left), Nothing)
 
                 Case TypeCode.UInt32 * s_TCMAX + TypeCode.Boolean,
                      TypeCode.Int64 * s_TCMAX + TypeCode.Boolean
-                    Return ModInt64(Convert.ToInt64(left), ToVBBool(right))
+                    Return ModInt64(Convert.ToInt64(Left), ToVBBool(Right))
 
                 Case TypeCode.Int64 * s_TCMAX + TypeCode.Empty
-                    Return ModInt64(Convert.ToInt64(left), Nothing)
+                    Return ModInt64(Convert.ToInt64(Left), Nothing)
 
 
                 Case TypeCode.UInt64 * s_TCMAX + TypeCode.Empty
-                    Return ModUInt64(Convert.ToUInt64(left), Nothing)
+                    Return ModUInt64(Convert.ToUInt64(Left), Nothing)
 
                 Case TypeCode.UInt64 * s_TCMAX + TypeCode.Boolean,
                      TypeCode.Decimal * s_TCMAX + TypeCode.Boolean
-                    Return ModDecimal(left, ToVBBool(right))
+                    Return ModDecimal(Left, ToVBBool(Right))
 
 
                 Case TypeCode.Decimal * s_TCMAX + TypeCode.Empty
-                    Return ModDecimal(left, 0D)
+                    Return ModDecimal(Left, 0D)
 
 
                 Case TypeCode.Single * s_TCMAX + TypeCode.Empty
-                    Return ModSingle(Convert.ToSingle(left), Nothing)
+                    Return ModSingle(Convert.ToSingle(Left), Nothing)
 
                 Case TypeCode.Single * s_TCMAX + TypeCode.Boolean
-                    Return ModSingle(Convert.ToSingle(left), ToVBBool(right))
+                    Return ModSingle(Convert.ToSingle(Left), ToVBBool(Right))
 
 
                 Case TypeCode.Double * s_TCMAX + TypeCode.Empty
-                    Return ModDouble(Convert.ToDouble(left), Nothing)
+                    Return ModDouble(Convert.ToDouble(Left), Nothing)
 
                 Case TypeCode.Double * s_TCMAX + TypeCode.Boolean
-                    Return ModDouble(Convert.ToDouble(left), ToVBBool(right))
+                    Return ModDouble(Convert.ToDouble(Left), ToVBBool(Right))
 
 
                 Case TypeCode.String * s_TCMAX + TypeCode.Empty
-                    Return ModDouble(CDbl(Convert.ToString(left)), Nothing)
+                    Return ModDouble(CDbl(Convert.ToString(Left)), Nothing)
 
                 Case TypeCode.String * s_TCMAX + TypeCode.Boolean
-                    Return ModDouble(CDbl(Convert.ToString(left)), ToVBBool(right))
+                    Return ModDouble(CDbl(Convert.ToString(Left)), ToVBBool(Right))
 
                 Case TypeCode.String * s_TCMAX + TypeCode.SByte,
                      TypeCode.String * s_TCMAX + TypeCode.Byte,
@@ -4583,20 +4585,20 @@ Namespace Microsoft.VisualBasic.CompilerServices
                      TypeCode.String * s_TCMAX + TypeCode.Single,
                      TypeCode.String * s_TCMAX + TypeCode.Double
 
-                    Return ModDouble(CDbl(Convert.ToString(left)), Convert.ToDouble(right))
+                    Return ModDouble(CDbl(Convert.ToString(Left)), Convert.ToDouble(Right))
 
                 Case TypeCode.String * s_TCMAX + TypeCode.String
-                    Return ModDouble(CDbl(Convert.ToString(left)), CDbl(Convert.ToString(right)))
+                    Return ModDouble(CDbl(Convert.ToString(Left)), CDbl(Convert.ToString(Right)))
 
                 Case Else
 
             End Select
 
             If tc1 = TypeCode.Object OrElse tc2 = TypeCode.Object Then
-                Return InvokeUserDefinedOperator(UserDefinedOperator.Modulus, left, right)
+                Return InvokeUserDefinedOperator(UserDefinedOperator.Modulus, Left, Right)
             End If
 
-            Throw GetNoValidOperatorException(UserDefinedOperator.Modulus, left, right)
+            Throw GetNoValidOperatorException(UserDefinedOperator.Modulus, Left, Right)
         End Function
 
         Private Shared Function ModSByte(ByVal left As SByte, ByVal right As SByte) As Object
@@ -4669,10 +4671,10 @@ Namespace Microsoft.VisualBasic.CompilerServices
 
 #Region " Operator Integral Divide \ "
 
-        Public Shared Function IntDivideObject(ByVal left As Object, ByVal right As Object) As Object
+        Public Shared Function IntDivideObject(ByVal Left As Object, ByVal Right As Object) As Object
 
-            Dim tc1 As TypeCode = GetTypeCode(left)
-            Dim tc2 As TypeCode = GetTypeCode(right)
+            Dim tc1 As TypeCode = GetTypeCode(Left)
+            Dim tc2 As TypeCode = GetTypeCode(Right)
 
             Select Case tc1 * s_TCMAX + tc2
 
@@ -4680,57 +4682,57 @@ Namespace Microsoft.VisualBasic.CompilerServices
                     Return IntDivideInt32(Nothing, Nothing)
 
                 Case TypeCode.Empty * s_TCMAX + TypeCode.Boolean
-                    Return IntDivideInt16(Nothing, ToVBBool(right))
+                    Return IntDivideInt16(Nothing, ToVBBool(Right))
 
                 Case TypeCode.Empty * s_TCMAX + TypeCode.SByte
-                    Return IntDivideSByte(Nothing, Convert.ToSByte(right))
+                    Return IntDivideSByte(Nothing, Convert.ToSByte(Right))
 
                 Case TypeCode.Empty * s_TCMAX + TypeCode.Byte
-                    Return IntDivideByte(Nothing, Convert.ToByte(right))
+                    Return IntDivideByte(Nothing, Convert.ToByte(Right))
 
                 Case TypeCode.Empty * s_TCMAX + TypeCode.Int16
-                    Return IntDivideInt16(Nothing, Convert.ToInt16(right))
+                    Return IntDivideInt16(Nothing, Convert.ToInt16(Right))
 
                 Case TypeCode.Empty * s_TCMAX + TypeCode.UInt16
-                    Return IntDivideUInt16(Nothing, Convert.ToUInt16(right))
+                    Return IntDivideUInt16(Nothing, Convert.ToUInt16(Right))
 
                 Case TypeCode.Empty * s_TCMAX + TypeCode.Int32
-                    Return IntDivideInt32(Nothing, Convert.ToInt32(right))
+                    Return IntDivideInt32(Nothing, Convert.ToInt32(Right))
 
                 Case TypeCode.Empty * s_TCMAX + TypeCode.UInt32
-                    Return IntDivideUInt32(Nothing, Convert.ToUInt32(right))
+                    Return IntDivideUInt32(Nothing, Convert.ToUInt32(Right))
 
                 Case TypeCode.Empty * s_TCMAX + TypeCode.Int64
-                    Return IntDivideInt64(Nothing, Convert.ToInt64(right))
+                    Return IntDivideInt64(Nothing, Convert.ToInt64(Right))
 
                 Case TypeCode.Empty * s_TCMAX + TypeCode.UInt64
-                    Return IntDivideUInt64(Nothing, Convert.ToUInt64(right))
+                    Return IntDivideUInt64(Nothing, Convert.ToUInt64(Right))
 
                 Case TypeCode.Empty * s_TCMAX + TypeCode.Decimal,
                      TypeCode.Empty * s_TCMAX + TypeCode.Single,
                      TypeCode.Empty * s_TCMAX + TypeCode.Double
-                    Return IntDivideInt64(Nothing, Convert.ToInt64(right))
+                    Return IntDivideInt64(Nothing, Convert.ToInt64(Right))
 
                 Case TypeCode.Empty * s_TCMAX + TypeCode.String
-                    Return IntDivideInt64(Nothing, CLng(Convert.ToString(right)))
+                    Return IntDivideInt64(Nothing, CLng(Convert.ToString(Right)))
 
 
                 Case TypeCode.Boolean * s_TCMAX + TypeCode.Empty
-                    Return IntDivideInt16(ToVBBool(left), Nothing)
+                    Return IntDivideInt16(ToVBBool(Left), Nothing)
 
                 Case TypeCode.Boolean * s_TCMAX + TypeCode.Boolean
-                    Return IntDivideInt16(ToVBBool(left), ToVBBool(right))
+                    Return IntDivideInt16(ToVBBool(Left), ToVBBool(Right))
 
                 Case TypeCode.Boolean * s_TCMAX + TypeCode.SByte
-                    Return IntDivideSByte(ToVBBool(left), Convert.ToSByte(right))
+                    Return IntDivideSByte(ToVBBool(Left), Convert.ToSByte(Right))
 
                 Case TypeCode.Boolean * s_TCMAX + TypeCode.Byte,
                      TypeCode.Boolean * s_TCMAX + TypeCode.Int16
-                    Return IntDivideInt16(ToVBBool(left), Convert.ToInt16(right))
+                    Return IntDivideInt16(ToVBBool(Left), Convert.ToInt16(Right))
 
                 Case TypeCode.Boolean * s_TCMAX + TypeCode.UInt16,
                      TypeCode.Boolean * s_TCMAX + TypeCode.Int32
-                    Return IntDivideInt32(ToVBBool(left), Convert.ToInt32(right))
+                    Return IntDivideInt32(ToVBBool(Left), Convert.ToInt32(Right))
 
                 Case TypeCode.Boolean * s_TCMAX + TypeCode.UInt32,
                      TypeCode.Boolean * s_TCMAX + TypeCode.Int64,
@@ -4739,20 +4741,20 @@ Namespace Microsoft.VisualBasic.CompilerServices
                      TypeCode.Boolean * s_TCMAX + TypeCode.Single,
                      TypeCode.Boolean * s_TCMAX + TypeCode.Double
 
-                    Return IntDivideInt64(ToVBBool(left), Convert.ToInt64(right))
+                    Return IntDivideInt64(ToVBBool(Left), Convert.ToInt64(Right))
 
                 Case TypeCode.Boolean * s_TCMAX + TypeCode.String
-                    Return IntDivideInt64(ToVBBool(left), CLng(Convert.ToString(right)))
+                    Return IntDivideInt64(ToVBBool(Left), CLng(Convert.ToString(Right)))
 
 
                 Case TypeCode.SByte * s_TCMAX + TypeCode.Empty
-                    Return IntDivideSByte(Convert.ToSByte(left), Nothing)
+                    Return IntDivideSByte(Convert.ToSByte(Left), Nothing)
 
                 Case TypeCode.SByte * s_TCMAX + TypeCode.Boolean
-                    Return IntDivideSByte(Convert.ToSByte(left), ToVBBool(right))
+                    Return IntDivideSByte(Convert.ToSByte(Left), ToVBBool(Right))
 
                 Case TypeCode.SByte * s_TCMAX + TypeCode.SByte
-                    Return IntDivideSByte(Convert.ToSByte(left), Convert.ToSByte(right))
+                    Return IntDivideSByte(Convert.ToSByte(Left), Convert.ToSByte(Right))
 
                 Case TypeCode.SByte * s_TCMAX + TypeCode.Byte,
                      TypeCode.SByte * s_TCMAX + TypeCode.Int16,
@@ -4762,7 +4764,7 @@ Namespace Microsoft.VisualBasic.CompilerServices
                      TypeCode.Int16 * s_TCMAX + TypeCode.Byte,
                      TypeCode.Int16 * s_TCMAX + TypeCode.Int16
 
-                    Return IntDivideInt16(Convert.ToInt16(left), Convert.ToInt16(right))
+                    Return IntDivideInt16(Convert.ToInt16(Left), Convert.ToInt16(Right))
 
                 Case TypeCode.SByte * s_TCMAX + TypeCode.UInt16,
                      TypeCode.SByte * s_TCMAX + TypeCode.Int32,
@@ -4778,7 +4780,7 @@ Namespace Microsoft.VisualBasic.CompilerServices
                      TypeCode.Int32 * s_TCMAX + TypeCode.UInt16,
                      TypeCode.Int32 * s_TCMAX + TypeCode.Int32
 
-                    Return IntDivideInt32(Convert.ToInt32(left), Convert.ToInt32(right))
+                    Return IntDivideInt32(Convert.ToInt32(Left), Convert.ToInt32(Right))
 
                 Case TypeCode.SByte * s_TCMAX + TypeCode.UInt32,
                      TypeCode.SByte * s_TCMAX + TypeCode.Int64,
@@ -4865,7 +4867,7 @@ Namespace Microsoft.VisualBasic.CompilerServices
                      TypeCode.Double * s_TCMAX + TypeCode.Single,
                      TypeCode.Double * s_TCMAX + TypeCode.Double
 
-                    Return IntDivideInt64(Convert.ToInt64(left), Convert.ToInt64(right))
+                    Return IntDivideInt64(Convert.ToInt64(Left), Convert.ToInt64(Right))
 
                 Case TypeCode.SByte * s_TCMAX + TypeCode.String,
                      TypeCode.Byte * s_TCMAX + TypeCode.String,
@@ -4879,23 +4881,23 @@ Namespace Microsoft.VisualBasic.CompilerServices
                      TypeCode.Single * s_TCMAX + TypeCode.String,
                      TypeCode.Double * s_TCMAX + TypeCode.String
 
-                    Return IntDivideInt64(Convert.ToInt64(left), CLng(Convert.ToString(right)))
+                    Return IntDivideInt64(Convert.ToInt64(Left), CLng(Convert.ToString(Right)))
 
 
                 Case TypeCode.Byte * s_TCMAX + TypeCode.Empty
-                    Return IntDivideByte(Convert.ToByte(left), Nothing)
+                    Return IntDivideByte(Convert.ToByte(Left), Nothing)
 
                 Case TypeCode.Byte * s_TCMAX + TypeCode.Boolean,
                      TypeCode.Int16 * s_TCMAX + TypeCode.Boolean
-                    Return IntDivideInt16(Convert.ToInt16(left), ToVBBool(right))
+                    Return IntDivideInt16(Convert.ToInt16(Left), ToVBBool(Right))
 
                 Case TypeCode.Byte * s_TCMAX + TypeCode.Byte
-                    Return IntDivideByte(Convert.ToByte(left), Convert.ToByte(right))
+                    Return IntDivideByte(Convert.ToByte(Left), Convert.ToByte(Right))
 
                 Case TypeCode.Byte * s_TCMAX + TypeCode.UInt16,
                      TypeCode.UInt16 * s_TCMAX + TypeCode.Byte,
                      TypeCode.UInt16 * s_TCMAX + TypeCode.UInt16
-                    Return IntDivideUInt16(Convert.ToUInt16(left), Convert.ToUInt16(right))
+                    Return IntDivideUInt16(Convert.ToUInt16(Left), Convert.ToUInt16(Right))
 
                 Case TypeCode.Byte * s_TCMAX + TypeCode.UInt32,
                      TypeCode.UInt16 * s_TCMAX + TypeCode.UInt32,
@@ -4903,7 +4905,7 @@ Namespace Microsoft.VisualBasic.CompilerServices
                      TypeCode.UInt32 * s_TCMAX + TypeCode.UInt16,
                      TypeCode.UInt32 * s_TCMAX + TypeCode.UInt32
 
-                    Return IntDivideUInt32(Convert.ToUInt32(left), Convert.ToUInt32(right))
+                    Return IntDivideUInt32(Convert.ToUInt32(Left), Convert.ToUInt32(Right))
 
                 Case TypeCode.Byte * s_TCMAX + TypeCode.UInt64,
                      TypeCode.UInt16 * s_TCMAX + TypeCode.UInt64,
@@ -4913,27 +4915,27 @@ Namespace Microsoft.VisualBasic.CompilerServices
                      TypeCode.UInt64 * s_TCMAX + TypeCode.UInt32,
                      TypeCode.UInt64 * s_TCMAX + TypeCode.UInt64
 
-                    Return IntDivideUInt64(Convert.ToUInt64(left), Convert.ToUInt64(right))
+                    Return IntDivideUInt64(Convert.ToUInt64(Left), Convert.ToUInt64(Right))
 
 
                 Case TypeCode.Int16 * s_TCMAX + TypeCode.Empty
-                    Return IntDivideInt16(Convert.ToInt16(left), Nothing)
+                    Return IntDivideInt16(Convert.ToInt16(Left), Nothing)
 
 
                 Case TypeCode.UInt16 * s_TCMAX + TypeCode.Empty
-                    Return IntDivideUInt16(Convert.ToUInt16(left), Nothing)
+                    Return IntDivideUInt16(Convert.ToUInt16(Left), Nothing)
 
                 Case TypeCode.UInt16 * s_TCMAX + TypeCode.Boolean,
                      TypeCode.Int32 * s_TCMAX + TypeCode.Boolean
-                    Return IntDivideInt32(Convert.ToInt32(left), ToVBBool(right))
+                    Return IntDivideInt32(Convert.ToInt32(Left), ToVBBool(Right))
 
 
                 Case TypeCode.Int32 * s_TCMAX + TypeCode.Empty
-                    Return IntDivideInt32(Convert.ToInt32(left), Nothing)
+                    Return IntDivideInt32(Convert.ToInt32(Left), Nothing)
 
 
                 Case TypeCode.UInt32 * s_TCMAX + TypeCode.Empty
-                    Return IntDivideUInt32(Convert.ToUInt32(left), Nothing)
+                    Return IntDivideUInt32(Convert.ToUInt32(Left), Nothing)
 
                 Case TypeCode.UInt32 * s_TCMAX + TypeCode.Boolean,
                      TypeCode.Int64 * s_TCMAX + TypeCode.Boolean,
@@ -4942,28 +4944,28 @@ Namespace Microsoft.VisualBasic.CompilerServices
                      TypeCode.Single * s_TCMAX + TypeCode.Boolean,
                      TypeCode.Double * s_TCMAX + TypeCode.Boolean
 
-                    Return IntDivideInt64(Convert.ToInt64(left), ToVBBool(right))
+                    Return IntDivideInt64(Convert.ToInt64(Left), ToVBBool(Right))
 
 
                 Case TypeCode.Int64 * s_TCMAX + TypeCode.Empty
-                    Return IntDivideInt64(Convert.ToInt64(left), Nothing)
+                    Return IntDivideInt64(Convert.ToInt64(Left), Nothing)
 
 
                 Case TypeCode.UInt64 * s_TCMAX + TypeCode.Empty
-                    Return IntDivideUInt64(Convert.ToUInt64(left), Nothing)
+                    Return IntDivideUInt64(Convert.ToUInt64(Left), Nothing)
 
 
                 Case TypeCode.Decimal * s_TCMAX + TypeCode.Empty,
                      TypeCode.Single * s_TCMAX + TypeCode.Empty,
                      TypeCode.Double * s_TCMAX + TypeCode.Empty
-                    Return IntDivideInt64(Convert.ToInt64(left), Nothing)
+                    Return IntDivideInt64(Convert.ToInt64(Left), Nothing)
 
 
                 Case TypeCode.String * s_TCMAX + TypeCode.Empty
-                    Return IntDivideInt64(CLng(Convert.ToString(left)), Nothing)
+                    Return IntDivideInt64(CLng(Convert.ToString(Left)), Nothing)
 
                 Case TypeCode.String * s_TCMAX + TypeCode.Boolean
-                    Return IntDivideInt64(CLng(Convert.ToString(left)), ToVBBool(right))
+                    Return IntDivideInt64(CLng(Convert.ToString(Left)), ToVBBool(Right))
 
                 Case TypeCode.String * s_TCMAX + TypeCode.SByte,
                      TypeCode.String * s_TCMAX + TypeCode.Byte,
@@ -4977,18 +4979,18 @@ Namespace Microsoft.VisualBasic.CompilerServices
                      TypeCode.String * s_TCMAX + TypeCode.Single,
                      TypeCode.String * s_TCMAX + TypeCode.Double
 
-                    Return IntDivideInt64(CLng(Convert.ToString(left)), Convert.ToInt64(right))
+                    Return IntDivideInt64(CLng(Convert.ToString(Left)), Convert.ToInt64(Right))
 
                 Case TypeCode.String * s_TCMAX + TypeCode.String
-                    Return IntDivideInt64(CLng(Convert.ToString(left)), CLng(Convert.ToString(right)))
+                    Return IntDivideInt64(CLng(Convert.ToString(Left)), CLng(Convert.ToString(Right)))
 
             End Select
 
             If tc1 = TypeCode.Object OrElse tc2 = TypeCode.Object Then
-                Return InvokeUserDefinedOperator(UserDefinedOperator.IntegralDivide, left, right)
+                Return InvokeUserDefinedOperator(UserDefinedOperator.IntegralDivide, Left, Right)
             End If
 
-            Throw GetNoValidOperatorException(UserDefinedOperator.IntegralDivide, left, right)
+            Throw GetNoValidOperatorException(UserDefinedOperator.IntegralDivide, Left, Right)
         End Function
 
         Private Shared Function IntDivideSByte(ByVal left As SByte, ByVal right As SByte) As Object
@@ -5039,115 +5041,114 @@ Namespace Microsoft.VisualBasic.CompilerServices
 
 #Region " Operator Shift Left << "
 
-        Public Shared Function LeftShiftObject(ByVal operand As Object, ByVal amount As Object) As Object
+        Public Shared Function LeftShiftObject(ByVal Operand As Object, ByVal Amount As Object) As Object
 
-            Dim tc1 As TypeCode = GetTypeCode(operand)
-            Dim tc2 As TypeCode = GetTypeCode(amount)
+            Dim tc1 As TypeCode = GetTypeCode(Operand)
+            Dim tc2 As TypeCode = GetTypeCode(Amount)
 
 
             If tc1 = TypeCode.Object OrElse tc2 = TypeCode.Object Then
-                Return InvokeUserDefinedOperator(UserDefinedOperator.ShiftLeft, operand, amount)
+                Return InvokeUserDefinedOperator(UserDefinedOperator.ShiftLeft, Operand, Amount)
             End If
 
             Select Case tc1
                 Case TypeCode.Empty
-                    Return Nothing << CInt(amount)
+                    Return Nothing << CInt(Amount)
                 Case TypeCode.Boolean
-                    Return CShort(Convert.ToBoolean(operand)) << CInt(amount)
+                    Return CShort(Convert.ToBoolean(Operand)) << CInt(Amount)
                 Case TypeCode.SByte
-                    Return Convert.ToSByte(operand) << CInt(amount)
+                    Return Convert.ToSByte(Operand) << CInt(Amount)
                 Case TypeCode.Byte
-                    Return Convert.ToByte(operand) << CInt(amount)
+                    Return Convert.ToByte(Operand) << CInt(Amount)
                 Case TypeCode.Int16
-                    Return Convert.ToInt16(operand) << CInt(amount)
+                    Return Convert.ToInt16(Operand) << CInt(Amount)
                 Case TypeCode.UInt16
-                    Return Convert.ToUInt16(operand) << CInt(amount)
+                    Return Convert.ToUInt16(Operand) << CInt(Amount)
                 Case TypeCode.Int32
-                    Return Convert.ToInt32(operand) << CInt(amount)
+                    Return Convert.ToInt32(Operand) << CInt(Amount)
                 Case TypeCode.UInt32
-                    Return Convert.ToUInt32(operand) << CInt(amount)
+                    Return Convert.ToUInt32(Operand) << CInt(Amount)
                 Case TypeCode.Int64,
                      TypeCode.Single,
                      TypeCode.Double,
                      TypeCode.Decimal
-                    Return Convert.ToInt64(operand) << CInt(amount)
+                    Return Convert.ToInt64(Operand) << CInt(Amount)
                 Case TypeCode.UInt64
-                    Return Convert.ToUInt64(operand) << CInt(amount)
+                    Return Convert.ToUInt64(Operand) << CInt(Amount)
                 Case TypeCode.String
-                    Return CLng(Convert.ToString(operand)) << CInt(amount)
+                    Return CLng(Convert.ToString(Operand)) << CInt(Amount)
             End Select
 
-            Throw GetNoValidOperatorException(UserDefinedOperator.ShiftLeft, operand)
+            Throw GetNoValidOperatorException(UserDefinedOperator.ShiftLeft, Operand)
         End Function
 
 #End Region
 
 #Region " Operator Shift Right >> "
 
-        Public Shared Function RightShiftObject(ByVal operand As Object, ByVal amount As Object) As Object
+        Public Shared Function RightShiftObject(ByVal Operand As Object, ByVal Amount As Object) As Object
 
-            Dim tc1 As TypeCode = GetTypeCode(operand)
-            Dim tc2 As TypeCode = GetTypeCode(amount)
+            Dim tc1 As TypeCode = GetTypeCode(Operand)
+            Dim tc2 As TypeCode = GetTypeCode(Amount)
 
             If tc1 = TypeCode.Object OrElse tc2 = TypeCode.Object Then
-                Return InvokeUserDefinedOperator(UserDefinedOperator.ShiftRight, operand, amount)
+                Return InvokeUserDefinedOperator(UserDefinedOperator.ShiftRight, Operand, Amount)
             End If
 
             Select Case tc1
                 Case TypeCode.Empty
-                    Return Nothing >> CInt(amount)
+                    Return Nothing >> CInt(Amount)
                 Case TypeCode.Boolean
-                    Return CShort(Convert.ToBoolean(operand)) >> CInt(amount)
+                    Return CShort(Convert.ToBoolean(Operand)) >> CInt(Amount)
                 Case TypeCode.SByte
-                    Return Convert.ToSByte(operand) >> CInt(amount)
+                    Return Convert.ToSByte(Operand) >> CInt(Amount)
                 Case TypeCode.Byte
-                    Return Convert.ToByte(operand) >> CInt(amount)
+                    Return Convert.ToByte(Operand) >> CInt(Amount)
                 Case TypeCode.Int16
-                    Return Convert.ToInt16(operand) >> CInt(amount)
+                    Return Convert.ToInt16(Operand) >> CInt(Amount)
                 Case TypeCode.UInt16
-                    Return Convert.ToUInt16(operand) >> CInt(amount)
+                    Return Convert.ToUInt16(Operand) >> CInt(Amount)
                 Case TypeCode.Int32
-                    Return Convert.ToInt32(operand) >> CInt(amount)
+                    Return Convert.ToInt32(Operand) >> CInt(Amount)
                 Case TypeCode.UInt32
-                    Return Convert.ToUInt32(operand) >> CInt(amount)
+                    Return Convert.ToUInt32(Operand) >> CInt(Amount)
                 Case TypeCode.Int64,
                      TypeCode.Single,
                      TypeCode.Double,
                      TypeCode.Decimal
-                    Return Convert.ToInt64(operand) >> CInt(amount)
+                    Return Convert.ToInt64(Operand) >> CInt(Amount)
                 Case TypeCode.UInt64
-                    Return Convert.ToUInt64(operand) >> CInt(amount)
+                    Return Convert.ToUInt64(Operand) >> CInt(Amount)
                 Case TypeCode.String
-                    Return CLng(Convert.ToString(operand)) >> CInt(amount)
+                    Return CLng(Convert.ToString(Operand)) >> CInt(Amount)
             End Select
 
-            Throw GetNoValidOperatorException(UserDefinedOperator.ShiftRight, operand)
+            Throw GetNoValidOperatorException(UserDefinedOperator.ShiftRight, Operand)
         End Function
 
 #End Region
 
-
 #Region " Operator Concatenate & "
 
-        Public Shared Function ConcatenateObject(ByVal left As Object, ByVal right As Object) As Object
+        Public Shared Function ConcatenateObject(ByVal Left As Object, ByVal Right As Object) As Object
 
-            Dim tc1 As TypeCode = GetTypeCode(left)
-            Dim tc2 As TypeCode = GetTypeCode(right)
+            Dim tc1 As TypeCode = GetTypeCode(Left)
+            Dim tc2 As TypeCode = GetTypeCode(Right)
 
             'Special cases for Char()
-            If (tc1 = TypeCode.Object) AndAlso (TypeOf left Is Char()) Then
+            If (tc1 = TypeCode.Object) AndAlso (TypeOf Left Is Char()) Then
                 tc1 = TypeCode.String
             End If
 
-            If (tc2 = TypeCode.Object) AndAlso (TypeOf right Is Char()) Then
+            If (tc2 = TypeCode.Object) AndAlso (TypeOf Right Is Char()) Then
                 tc2 = TypeCode.String
             End If
 
             If tc1 = TypeCode.Object OrElse tc2 = TypeCode.Object Then
-                Return InvokeUserDefinedOperator(UserDefinedOperator.Concatenate, left, right)
+                Return InvokeUserDefinedOperator(UserDefinedOperator.Concatenate, Left, Right)
             End If
 
-            Return CStr(left) & CStr(right)
+            Return CStr(Left) & CStr(Right)
         End Function
 
 #End Region
