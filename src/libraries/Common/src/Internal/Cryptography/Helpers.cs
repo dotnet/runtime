@@ -8,7 +8,7 @@ using System.Security.Cryptography;
 
 namespace Internal.Cryptography
 {
-    internal static class Helpers
+    internal static partial class Helpers
     {
         public static byte[] CloneByteArray(this byte[] src)
         {
@@ -21,4 +21,3 @@ namespace Internal.Cryptography
         }
     }
 }
-

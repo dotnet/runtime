@@ -10,18 +10,8 @@ using System.Security.Cryptography.Asn1;
 
 namespace Internal.Cryptography
 {
-    internal static class Helpers
+    internal static partial class Helpers
     {
-        public static byte[] CloneByteArray(this byte[] src)
-        {
-            if (src == null)
-            {
-                return null;
-            }
-
-            return (byte[])(src.Clone());
-        }
-
         public static KeySizes[] CloneKeySizesArray(this KeySizes[] src)
         {
             return (KeySizes[])(src.Clone());
