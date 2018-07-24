@@ -962,6 +962,13 @@ EEToProfInterfaceImpl::~EEToProfInterfaceImpl()
             m_pCallback8 = NULL;
         }
 
+        if (m_pCallback9 != NULL)
+        {
+            REMOVE_STACK_GUARD_FOR_PROFILER_CALL;
+            m_pCallback9->Release();
+            m_pCallback9 = NULL;
+        }
+
         // Only unload the V4 profiler if this is not part of shutdown.  This protects
         // Whidbey profilers that aren't used to being FreeLibrary'd.
         if (fIsV4Profiler && !g_fEEShutDown)
