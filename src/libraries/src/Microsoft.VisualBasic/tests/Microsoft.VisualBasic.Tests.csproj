@@ -4,6 +4,19 @@
     <Configurations>netstandard-Debug;netstandard-Release</Configurations>
   </PropertyGroup>
   <ItemGroup>
+    <Compile Include="Microsoft/VisualBasic/ComClassAttributeTests.cs" />
+    <Compile Include="Microsoft/VisualBasic/HideModuleNameAttributeTests.cs" />
+    <Compile Include="Microsoft/VisualBasic/MyGroupCollectionAttributeTests.cs" />
+    <Compile Include="Microsoft/VisualBasic/VBFixedArrayAttributeTests.cs" />
+    <Compile Include="Microsoft/VisualBasic/VBFixedStringAttributeTests.cs" />
+    <Compile Include="Microsoft/VisualBasic/ApplicationServices/StartupEventArgsTests.cs" />
+    <Compile Include="Microsoft/VisualBasic/ApplicationServices/StartupNextInstanceEventArgsTests.cs" />
+    <Compile Include="Microsoft/VisualBasic/ApplicationServices/UnhandledExceptionEventArgsTests.cs" />
+    <Compile Include="Microsoft/VisualBasic/CompilerServices/DesignerGeneratedAttributeTests.cs" />
+    <Compile Include="Microsoft/VisualBasic/CompilerServices/OptionCompareAttributeTests.cs" />
+    <Compile Include="Microsoft/VisualBasic/CompilerServices/OptionTextAttributeTests.cs" />
+    <Compile Include="Microsoft/VisualBasic/CompilerServices/StandardModuleAttributeTests.cs" />
+    <Compile Include="Microsoft/VisualBasic/Devices/NetworkAvailableEventArgsTests.cs" />
     <Compile Include="ConversionsTests.cs" />
     <Compile Include="OperatorsTests.cs" />
     <Compile Include="UtilsTests.cs" />

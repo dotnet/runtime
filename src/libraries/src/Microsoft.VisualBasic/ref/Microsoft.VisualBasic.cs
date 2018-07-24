@@ -15,6 +15,18 @@ namespace Microsoft.VisualBasic
         Method = 1,
         Set = 8,
     }
+    [System.AttributeUsageAttribute((System.AttributeTargets)(4), Inherited=false, AllowMultiple=false)]
+    public sealed partial class ComClassAttribute : System.Attribute
+    {
+        public ComClassAttribute() { }
+        public ComClassAttribute(string _ClassID) { }
+        public ComClassAttribute(string _ClassID, string _InterfaceID) { }
+        public ComClassAttribute(string _ClassID, string _InterfaceID, string _EventId) { }
+        public string ClassID { get { throw null; } }
+        public string EventID { get { throw null; } }
+        public string InterfaceID { get { throw null; } }
+        public bool InterfaceShadows { get { throw null; } set { } }
+    }
     [Microsoft.VisualBasic.CompilerServices.StandardModuleAttribute]
     public sealed partial class Constants
     {
@@ -44,10 +56,21 @@ namespace Microsoft.VisualBasic
         public const char NullChar = '\0';
         public const char Quote = '"';
     }
-    [System.AttributeUsageAttribute((System.AttributeTargets)(4), AllowMultiple = false, Inherited = false)]
+    [System.AttributeUsageAttribute((System.AttributeTargets)(4), AllowMultiple=false, Inherited=false)]
+    [System.ComponentModel.EditorBrowsableAttribute((System.ComponentModel.EditorBrowsableState)(1))]
     public sealed partial class HideModuleNameAttribute : System.Attribute
     {
         public HideModuleNameAttribute() { }
+    }
+    [System.AttributeUsageAttribute((System.AttributeTargets)(4), AllowMultiple=false, Inherited=false)]
+    [System.ComponentModel.EditorBrowsableAttribute((System.ComponentModel.EditorBrowsableState)(2))]
+    public sealed partial class MyGroupCollectionAttribute : System.Attribute
+    {
+        public MyGroupCollectionAttribute(string typeToCollect, string createInstanceMethodName, string disposeInstanceMethodName, string defaultInstanceAlias) { }
+        public string CreateMethod { get { throw null; } }
+        public string DefaultInstanceAlias { get { throw null; } }
+        public string DisposeMethod { get { throw null; } }
+        public string MyGroupName { get { throw null; } }
     }
     [Microsoft.VisualBasic.CompilerServices.StandardModuleAttribute]
     public sealed partial class Strings
@@ -66,6 +89,41 @@ namespace Microsoft.VisualBasic
         public static string Right(string str, int Length) { throw null; }
         public static string RTrim(string str) { throw null; }
         public static string Trim(string str) { throw null; }
+    }
+    [System.AttributeUsageAttribute((System.AttributeTargets)(256), Inherited=false, AllowMultiple=false)]
+    public sealed partial class VBFixedArrayAttribute : System.Attribute
+    {
+        public VBFixedArrayAttribute(int UpperBound1) { }
+        public VBFixedArrayAttribute(int UpperBound1, int UpperBound2) { }
+        public int[] Bounds { get { throw null; } }
+        public int Length { get { throw null; } }
+    }
+    [System.AttributeUsageAttribute((System.AttributeTargets)(256), Inherited=false, AllowMultiple=false)]
+    public sealed partial class VBFixedStringAttribute : System.Attribute
+    {
+        public VBFixedStringAttribute(int Length) { }
+        public int Length { get { throw null; } }
+    }
+}
+namespace Microsoft.VisualBasic.ApplicationServices
+{
+    public partial class StartupEventArgs : System.ComponentModel.CancelEventArgs
+    {
+        public StartupEventArgs(System.Collections.ObjectModel.ReadOnlyCollection<string> args) { }
+        public System.Collections.ObjectModel.ReadOnlyCollection<string> CommandLine { get { throw null; } }
+    }
+    [System.ComponentModel.EditorBrowsableAttribute((System.ComponentModel.EditorBrowsableState)(2))]
+    public partial class StartupNextInstanceEventArgs : System.EventArgs
+    {
+        public StartupNextInstanceEventArgs(System.Collections.ObjectModel.ReadOnlyCollection<string> args, bool bringToForegroundFlag) { }
+        public bool BringToForeground { get { throw null; } set { } }
+        public System.Collections.ObjectModel.ReadOnlyCollection<string> CommandLine { get { throw null; } }
+    }
+    [System.ComponentModel.EditorBrowsableAttribute((System.ComponentModel.EditorBrowsableState)(2))]
+    public partial class UnhandledExceptionEventArgs : System.Threading.ThreadExceptionEventArgs
+    {
+        public UnhandledExceptionEventArgs(bool exitApplication, System.Exception exception) : base (default(System.Exception)) { }
+        public bool ExitApplication { get { throw null; } set { } }
     }
 }
 namespace Microsoft.VisualBasic.CompilerServices
@@ -131,7 +189,7 @@ namespace Microsoft.VisualBasic.CompilerServices
         [System.CLSCompliantAttribute(false)]
         public static ushort ToUShort(string Value) { throw null; }
     }
-    [System.AttributeUsageAttribute((System.AttributeTargets)(4), AllowMultiple = false, Inherited = false)]
+    [System.AttributeUsageAttribute((System.AttributeTargets)(4), AllowMultiple=false, Inherited=false)]
     [System.ComponentModel.EditorBrowsableAttribute((System.ComponentModel.EditorBrowsableState)(1))]
     public sealed partial class DesignerGeneratedAttribute : System.Attribute
     {
@@ -205,13 +263,13 @@ namespace Microsoft.VisualBasic.CompilerServices
         public static object SubtractObject(object Left, object Right) { throw null; }
         public static object XorObject(object Left, object Right) { throw null; }
     }
-    [System.AttributeUsageAttribute((System.AttributeTargets)(2048), Inherited = false, AllowMultiple = false)]
+    [System.AttributeUsageAttribute((System.AttributeTargets)(2048), Inherited=false, AllowMultiple=false)]
     [System.ComponentModel.EditorBrowsableAttribute((System.ComponentModel.EditorBrowsableState)(1))]
     public sealed partial class OptionCompareAttribute : System.Attribute
     {
         public OptionCompareAttribute() { }
     }
-    [System.AttributeUsageAttribute((System.AttributeTargets)(4), Inherited = false, AllowMultiple = false)]
+    [System.AttributeUsageAttribute((System.AttributeTargets)(4), Inherited=false, AllowMultiple=false)]
     [System.ComponentModel.EditorBrowsableAttribute((System.ComponentModel.EditorBrowsableState)(1))]
     public sealed partial class OptionTextAttribute : System.Attribute
     {
@@ -225,7 +283,7 @@ namespace Microsoft.VisualBasic.CompilerServices
         public static void SetProjectError(System.Exception ex) { }
         public static void SetProjectError(System.Exception ex, int lErl) { }
     }
-    [System.AttributeUsageAttribute((System.AttributeTargets)(4), Inherited = false, AllowMultiple = false)]
+    [System.AttributeUsageAttribute((System.AttributeTargets)(4), Inherited=false, AllowMultiple=false)]
     [System.ComponentModel.EditorBrowsableAttribute((System.ComponentModel.EditorBrowsableState)(1))]
     public sealed partial class StandardModuleAttribute : System.Attribute
     {
@@ -242,5 +300,13 @@ namespace Microsoft.VisualBasic.CompilerServices
     {
         internal Utils() { }
         public static System.Array CopyArray(System.Array arySrc, System.Array aryDest) { throw null; }
+    }
+}
+namespace Microsoft.VisualBasic.Devices
+{
+    public partial class NetworkAvailableEventArgs : System.EventArgs
+    {
+        public NetworkAvailableEventArgs(bool networkAvailable) { }
+        public bool IsNetworkAvailable { get { throw null; } }
     }
 }

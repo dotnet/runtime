@@ -21,6 +21,9 @@
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'netstandard1.3-Release|AnyCPU'" />
   <ItemGroup>
     <Compile Include="Microsoft\VisualBasic\CallType.vb" />
+    <Compile Include="Microsoft\VisualBasic\ApplicationServices\StartupEventArgs.vb" />
+    <Compile Include="Microsoft\VisualBasic\ApplicationServices\StartupNextInstanceEventArgs.vb" />
+    <Compile Include="Microsoft\VisualBasic\ApplicationServices\UnhandledExceptionEventArgs.vb" />
     <Compile Include="Microsoft\VisualBasic\CompilerServices\ConversionResolution.vb" />
     <Compile Include="Microsoft\VisualBasic\CompilerServices\Conversions.vb" />
     <Compile Include="Microsoft\VisualBasic\CompilerServices\DesignerGeneratedAttribute.vb" />
@@ -40,11 +43,16 @@
     <Compile Include="Microsoft\VisualBasic\CompilerServices\Symbols.vb" />
     <Compile Include="Microsoft\VisualBasic\CompilerServices\Utils.LateBinder.vb" />
     <Compile Include="Microsoft\VisualBasic\CompilerServices\Utils.vb" />
+    <Compile Include="Microsoft\VisualBasic\Devices\NetworkAvailableEventArgs.vb" />
+    <Compile Include="Microsoft\VisualBasic\ComClassAttribute.vb" />
     <Compile Include="Microsoft\VisualBasic\Constants.vb" />
     <Compile Include="Microsoft\VisualBasic\ControlChars.vb" />
     <Compile Include="Microsoft\VisualBasic\HideModuleNameAttribute.vb" />
     <Compile Include="Microsoft\VisualBasic\Interaction.vb" />
+    <Compile Include="Microsoft\VisualBasic\MyGroupCollectionAttribute.vb" />
     <Compile Include="Microsoft\VisualBasic\Strings.vb" />
+    <Compile Include="Microsoft\VisualBasic\VBFixedArrayAttribute.vb" />
+    <Compile Include="Microsoft\VisualBasic\VBFixedStringAttribute.vb" />
   </ItemGroup>
   <ItemGroup Condition="'$(TargetGroup)' == 'netstandard1.3'">
     <Reference Include="System.Runtime" />
