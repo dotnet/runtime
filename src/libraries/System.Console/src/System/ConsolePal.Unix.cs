@@ -240,13 +240,11 @@ namespace System
         public static int LargestWindowWidth
         {
             get { return WindowWidth; }
-            set { throw new PlatformNotSupportedException(); }
         }
 
         public static int LargestWindowHeight
         {
             get { return WindowHeight; }
-            set { throw new PlatformNotSupportedException(); }
         }
 
         public static int WindowLeft
