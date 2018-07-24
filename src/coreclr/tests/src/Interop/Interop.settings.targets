@@ -1,0 +1,15 @@
+<Project>
+  <!-- Properties for all Interop managed test assets -->
+  <PropertyGroup>
+    <TargetFramework>netcoreapp2.0</TargetFramework>
+  </PropertyGroup>
+
+  <!-- Environment properties -->
+  <PropertyGroup>
+  </PropertyGroup>
+
+  <!-- Required source files -->
+  <ItemGroup>
+    <Compile Include="$(MSBuildThisFileDirectory)\common\Assertion.cs"/>
+  </ItemGroup>
+</Project>

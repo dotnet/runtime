@@ -8,6 +8,9 @@ if(WIN32)
     endif(CLR_CMAKE_HOST_ARCH STREQUAL arm)
 endif(WIN32)
 
+# Consumed by native test assets
+SET(CLR_INTEROP_TEST_ROOT ${CMAKE_CURRENT_SOURCE_DIR})
+
 include_directories(common)
 add_subdirectory(NativeCallable)
 add_subdirectory(PrimitiveMarshalling/Bool)
