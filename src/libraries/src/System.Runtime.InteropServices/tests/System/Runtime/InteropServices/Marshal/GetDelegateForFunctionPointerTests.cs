@@ -28,6 +28,7 @@ namespace System.Runtime.InteropServices.Tests
         }
 
         [Fact]
+        [ActiveIssue(31271)]
         public void GetDelegateForFunctionPointer_CollectibleType_ReturnsExpected()
         {
             MethodInfo targetMethod = typeof(GetDelegateForFunctionPointerTests).GetMethod(nameof(Method));
