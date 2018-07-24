@@ -12,6 +12,7 @@ using Xunit;
 
 namespace System.Security.Cryptography.ProtectedDataTests
 {
+    [PlatformSpecific(TestPlatforms.Windows)]
     public static class ProtectedDataTests
     {
         [Fact]
