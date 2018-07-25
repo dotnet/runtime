@@ -21,9 +21,9 @@ namespace System.Data.SqlClient.ManualTesting.Tests
 
                 try
                 {
-                    Helpers.Execute(dstCmd, "CREATE TABLE [" + targetCustomerTable + "] ([CustomerID] [nchar] (5) COLLATE SQL_Latin1_General_CP1_CI_AS NOT NULL, CONSTRAINT [PK_" + targetCustomerTable + "] PRIMARY KEY CLUSTERED (CustomerID) ON [PRIMARY]) ON [PRIMARY]");
+                    Helpers.TryExecute(dstCmd, "CREATE TABLE [" + targetCustomerTable + "] ([CustomerID] [nchar] (5) COLLATE SQL_Latin1_General_CP1_CI_AS NOT NULL, CONSTRAINT [PK_" + targetCustomerTable + "] PRIMARY KEY CLUSTERED (CustomerID) ON [PRIMARY]) ON [PRIMARY]");
 
-                    Helpers.Execute(dstCmd,
+                    Helpers.TryExecute(dstCmd,
                         "CREATE TABLE [" + dstTable + "] (" +
                         "    [OrderID] [int] IDENTITY (1, 1) NOT NULL ," +
                         "    [CustomerID] [nchar] (5) COLLATE SQL_Latin1_General_CP1_CI_AS NULL ," +

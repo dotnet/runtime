@@ -17,7 +17,7 @@ namespace System.Data.SqlClient.ManualTesting.Tests
             {
                 dstConn.Open();
 
-                Helpers.Execute(dstCmd, "create table " + dstTable + " (col1 int, col2 varchar(7000))");
+                Helpers.TryExecute(dstCmd, "create table " + dstTable + " (col1 int, col2 varchar(7000))");
             }
 
             DoBulkCopy(constr, dstTable, 2);

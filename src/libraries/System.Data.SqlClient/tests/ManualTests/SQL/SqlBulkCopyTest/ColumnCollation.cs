@@ -16,7 +16,7 @@ namespace System.Data.SqlClient.ManualTesting.Tests
             {
                 dstConn.Open();
 
-                Helpers.Execute(dstCmd, "create table " + dstTable + " (name_jp varchar(20) collate Japanese_CI_AS, " +
+                Helpers.TryExecute(dstCmd, "create table " + dstTable + " (name_jp varchar(20) collate Japanese_CI_AS, " +
                     "name_ru varchar(20) collate Cyrillic_General_CI_AS)");
 
                 string s_jp = "江戸糸あやつり人形";
