@@ -20,9 +20,9 @@ namespace System.Data.SqlClient.ManualTesting.Tests
                 dstConn.Open();
                 try
                 {
-                    Helpers.Execute(dstCmd, "CREATE TABLE [" + targetCustomerTable + "] ([CustomerID] [nchar] (5) COLLATE SQL_Latin1_General_CP1_CI_AS NOT NULL, CONSTRAINT [PK_" + targetCustomerTable + "] PRIMARY KEY CLUSTERED (CustomerID) ON [PRIMARY]) ON [PRIMARY]");
+                    Helpers.TryExecute(dstCmd, "CREATE TABLE [" + targetCustomerTable + "] ([CustomerID] [nchar] (5) COLLATE SQL_Latin1_General_CP1_CI_AS NOT NULL, CONSTRAINT [PK_" + targetCustomerTable + "] PRIMARY KEY CLUSTERED (CustomerID) ON [PRIMARY]) ON [PRIMARY]");
 
-                    Helpers.Execute(dstCmd,
+                    Helpers.TryExecute(dstCmd,
                         "CREATE TABLE [" + targettable + "] ([OrderID] [int] NOT NULL , " +
                         " [CustomerID] [nchar] (5) COLLATE SQL_Latin1_General_CP1_CI_AS NULL , " +
                         " CONSTRAINT [PK_" + targettable + "] PRIMARY KEY  CLUSTERED " +
@@ -72,8 +72,8 @@ namespace System.Data.SqlClient.ManualTesting.Tests
                 }
                 finally
                 {
-                    Helpers.Execute(dstCmd, "drop table " + targettable);
-                    Helpers.Execute(dstCmd, "drop table " + targetCustomerTable);
+                    Helpers.TryExecute(dstCmd, "drop table " + targettable);
+                    Helpers.TryExecute(dstCmd, "drop table " + targetCustomerTable);
                 }
             }
         }
