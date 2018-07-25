@@ -73,6 +73,25 @@ namespace Microsoft.VisualBasic
         public string MyGroupName { get { throw null; } }
     }
     [Microsoft.VisualBasic.CompilerServices.StandardModuleAttribute]
+    public sealed partial class Information
+    {
+        internal Information() { }
+        public static bool IsArray(object VarName) { throw null; }
+        public static bool IsDate(object Expression) { throw null; }
+        public static bool IsDBNull(object Expression) { throw null; }
+        public static bool IsError(object Expression) { throw null; }
+        public static bool IsNothing(object Expression) { throw null; }
+        public static bool IsNumeric(object Expression) { throw null; }
+        public static bool IsReference(object Expression) { throw null; }
+        public static int LBound(System.Array Array, int Rank = 1) { throw null; }
+        public static int QBColor(int Color) { throw null; }
+        public static int RGB(int Red, int Green, int Blue) { throw null; }
+        public static string SystemTypeName(string VbName) { throw null; }
+        public static int UBound(System.Array Array, int Rank = 1) { throw null; }
+        public static VariantType VarType(object VarName) { throw null; }
+        public static string VbTypeName(string UrtName) { throw null; }
+    }
+    [Microsoft.VisualBasic.CompilerServices.StandardModuleAttribute]
     public sealed partial class Strings
     {
         internal Strings() { }
@@ -89,6 +108,29 @@ namespace Microsoft.VisualBasic
         public static string Right(string str, int Length) { throw null; }
         public static string RTrim(string str) { throw null; }
         public static string Trim(string str) { throw null; }
+    }
+    public enum VariantType
+    {
+        Array = 8192,
+        Boolean = 11,
+        Byte = 17,
+        Char = 18,
+        Currency = 6,
+        DataObject = 13,
+        Date = 7,
+        Decimal = 14,
+        Double = 5,
+        Empty = 0,
+        Error = 10,
+        Integer = 3,
+        Long = 20,
+        Null = 1,
+        Object = 9,
+        Short = 2,
+        Single = 4,
+        String = 8,
+        UserDefinedType = 36,
+        Variant = 12,
     }
     [System.AttributeUsageAttribute((System.AttributeTargets)(256), Inherited=false, AllowMultiple=false)]
     public sealed partial class VBFixedArrayAttribute : System.Attribute
@@ -189,11 +231,33 @@ namespace Microsoft.VisualBasic.CompilerServices
         [System.CLSCompliantAttribute(false)]
         public static ushort ToUShort(string Value) { throw null; }
     }
+    [System.ComponentModel.EditorBrowsableAttribute((System.ComponentModel.EditorBrowsableState)(1))]
+    public sealed partial class DecimalType
+    {
+        internal DecimalType() { }
+        public static decimal FromBoolean(bool Value) { throw null; }
+        public static decimal FromObject(object Value) { throw null; }
+        public static decimal FromObject(object Value, System.Globalization.NumberFormatInfo NumberFormat) { throw null; }
+        public static decimal FromString(string Value) { throw null; }
+        public static decimal FromString(string Value, System.Globalization.NumberFormatInfo NumberFormat) { throw null; }
+        public static decimal Parse(string Value, System.Globalization.NumberFormatInfo NumberFormat) { throw null; }
+    }
     [System.AttributeUsageAttribute((System.AttributeTargets)(4), AllowMultiple=false, Inherited=false)]
     [System.ComponentModel.EditorBrowsableAttribute((System.ComponentModel.EditorBrowsableState)(1))]
     public sealed partial class DesignerGeneratedAttribute : System.Attribute
     {
         public DesignerGeneratedAttribute() { }
+    }
+    [System.ComponentModel.EditorBrowsableAttribute((System.ComponentModel.EditorBrowsableState)(1))]
+    public sealed partial class DoubleType
+    {
+        internal DoubleType() { }
+        public static double FromObject(object Value) { throw null; }
+        public static double FromObject(object Value, System.Globalization.NumberFormatInfo NumberFormat) { throw null; }
+        public static double FromString(string Value) { throw null; }
+        public static double FromString(string Value, System.Globalization.NumberFormatInfo NumberFormat) { throw null; }
+        public static double Parse(string Value) { throw null; }
+        public static double Parse(string Value, System.Globalization.NumberFormatInfo NumberFormat) { throw null; }
     }
     [System.ComponentModel.EditorBrowsableAttribute((System.ComponentModel.EditorBrowsableState)(1))]
     public sealed partial class IncompleteInitialization : System.Exception
@@ -300,6 +364,14 @@ namespace Microsoft.VisualBasic.CompilerServices
     {
         internal Utils() { }
         public static System.Array CopyArray(System.Array arySrc, System.Array aryDest) { throw null; }
+    }
+    [System.ComponentModel.EditorBrowsableAttribute((System.ComponentModel.EditorBrowsableState)(1))]
+    public sealed partial class Versioned
+    {
+        internal Versioned() { }
+        public static bool IsNumeric(object Expression) { throw null; }
+        public static string SystemTypeName(string VbName) { throw null; }
+        public static string VbTypeName(string SystemName) { throw null; }
     }
 }
 namespace Microsoft.VisualBasic.Devices
