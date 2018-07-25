@@ -363,6 +363,7 @@ namespace System.Threading
         public bool NextSpinWillYield { get { throw null; } }
         public void Reset() { }
         public void SpinOnce() { }
+        public void SpinOnce(int sleep1Threshold) { }
         public static void SpinUntil(System.Func<bool> condition) { }
         public static bool SpinUntil(System.Func<bool> condition, int millisecondsTimeout) { throw null; }
         public static bool SpinUntil(System.Func<bool> condition, System.TimeSpan timeout) { throw null; }
