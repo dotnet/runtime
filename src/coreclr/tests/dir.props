@@ -8,6 +8,8 @@
     <OsEnvironment Condition="'$(OsEnvironment)'==''">$(OS)</OsEnvironment>
   </PropertyGroup>
   
+  <Import Project="dir.sdkbuild.props" Condition="'$(UsingMicrosoftNETSdk)' == 'true'"  />
+  
   <!-- Build Tools Versions -->
   <PropertyGroup>
     <RoslynVersion>1.0.0-rc3-20150510-01</RoslynVersion>

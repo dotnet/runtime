@@ -5,6 +5,11 @@
     <CLRTestKind Condition="'$(CLRTestKind)' == ''">BuildAndRun</CLRTestKind>
     <CLRTestPriority Condition="'$(CLRTestPriority)' == ''">0</CLRTestPriority>
   </PropertyGroup>
+  
+  <PropertyGroup Condition="'$(UsingMicrosoftNETSdk)' == 'true'">
+    <!-- Many parts of the tests expect the output file to be an exe. We override the extension to match here, but in future we should probably update the infrastructure to look for dlls -->
+    <TargetExt Condition="'$(OutputType)' == 'Exe' and '$(TargetExt)' == '.dll'">.exe</TargetExt>
+  </PropertyGroup>
 
   <!-- All CLRTests need to be of a certain "kind". These kinds are enumerated below.
   By default all tests are BuildAndRun. This means that the build system will Build them
@@ -70,27 +75,23 @@
   
   <Import Project="..\dir.targets" />
 
-  <Target Name="CreateManifestResourceNames" />
-  <Target Name="CoreCompile" />
-  
-  <!-- If we are a run-only, that depends on another project, this is the "Build" we use. I.e. build all dependency projects, absolutely.
-  -->
-
+  <!-- Determine if this project should be built or not -->
   <PropertyGroup> 
     <BuildAllProjects Condition=" '$(BuildAllProjects)' == ''">false</BuildAllProjects>
     <_WillCLRTestProjectBuild Condition="'$(_WillCLRTestProjectBuild)' == ''">false</_WillCLRTestProjectBuild>
     <_WillCLRTestProjectBuild Condition="'$(BuildAllProjects)' != true">true</_WillCLRTestProjectBuild>
     <_WillCLRTestProjectBuild Condition="'$(DisableProjectBuild)' != true And '$(BuildAllProjects)' == true And '$(CLRTestPriority)' &lt;= '$(CLRTestPriorityToBuild)'">true</_WillCLRTestProjectBuild>
   </PropertyGroup>
-
-  <Target Name="Build" Condition="('$(CLRTestKind)'=='RunOnly') And '$(_WillCLRTestProjectBuild)'">
-    <MSBuild Projects="@(ProjectReference)" />
-    <MakeDir Condition="'$(CLRTestKind)' == 'RunOnly'" ContinueOnError="false" Directories="$(OutputPath)" />
-  </Target>
+    
+  <!-- if we have determined that there is nothing to build, overwrite the build targets so that nothing happens -->
+  <Import Project="nobuild.targets" Condition="'$(_WillCLRTestProjectBuild)' == 'false'" />
+ 
+  <!-- RunOnly projects have a special build for dependent projects -->
+  <Import Project="runonly.targets" Condition="'$(CLRTestKind)' == 'RunOnly'" />
   
-  <!-- We will use an imported build here in the instance that we have source that we need to build, and we are the correct priority...OR if we are being asked to build for
+  <!-- We will use an imported build here in the instance that we're a non-sdk style project, have source that we need to build, and we are the correct priority...OR if we are being asked to build for
   a test with a higher priority. -->
-  <Import Project="$(ToolsDir)Build.Common.targets" Condition="('$(CLRTestKind)'!='RunOnly') And $(_CLRTestCompilesSource) And ('$(_WillCLRTestProjectBuild)')"/>
+  <Import Project="$(ToolsDir)Build.Common.targets" Condition="('$(UsingMicrosoftNETSdk)' != 'true') And ('$(CLRTestKind)'!='RunOnly') And $(_CLRTestCompilesSource) And ('$(_WillCLRTestProjectBuild)')"/>
 
 
   <Import Project="..\override.targets" Condition="Exists('..\override.targets')"/>
@@ -193,8 +194,8 @@
     <ProjectAssetsFile>$(SourceDir)Common\test_dependencies\obj\project.assets.json</ProjectAssetsFile>
   </PropertyGroup>
 
-  <PropertyGroup Condition="'$(ReferenceSystemPrivateCoreLib)' == 'true'">
-    <ProjectAssetsFile></ProjectAssetsFile >
+  <PropertyGroup Condition="'$(ReferenceSystemPrivateCoreLib)' == 'true' and '$(UsingMicrosoftNETSdk)' != 'true'">
+    <ProjectAssetsFile></ProjectAssetsFile>
   </PropertyGroup>
 
 </Project>

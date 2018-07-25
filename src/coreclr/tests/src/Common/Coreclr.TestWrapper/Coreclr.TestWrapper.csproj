@@ -1,5 +1,6 @@
 <Project>
 
+  <Import Project="$([MSBuild]::GetPathOfFileAbove('dependencies.props', '$(MSBuildThisFileDirectory)../'))" />
   <Import Project="$([MSBuild]::GetPathOfFileAbove('dir.sdkbuild.props', '$(MSBuildThisFileDirectory)../'))" />
 
   <Import Sdk="Microsoft.NET.Sdk" Project="Sdk.props" />
