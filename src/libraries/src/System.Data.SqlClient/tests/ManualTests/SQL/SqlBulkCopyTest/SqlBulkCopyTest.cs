@@ -10,6 +10,8 @@ namespace System.Data.SqlClient.ManualTesting.Tests
     {
         private string srcConstr = null;
         private string dstConstr = null;
+        private static bool IsAzureServer() => DataTestUtility.IsAzureSqlServer(new SqlConnectionStringBuilder((DataTestUtility.TcpConnStr)).DataSource);
+        private static bool AreConnectionStringsSetup() => DataTestUtility.AreConnStringsSetup();
 
         public SqlBulkCopyTest()
         {
@@ -21,6 +23,12 @@ namespace System.Data.SqlClient.ManualTesting.Tests
         {
             stringin += "_" + Guid.NewGuid().ToString().Replace('-', '_');
             return stringin;
+        }
+
+        [ConditionalFact(nameof(AreConnectionStringsSetup), nameof(IsAzureServer))]
+        public void AzureDistributedTransactionTest()
+        {
+            AzureDistributedTransaction.Test();
         }
 
         [CheckConnStrSetupFact]

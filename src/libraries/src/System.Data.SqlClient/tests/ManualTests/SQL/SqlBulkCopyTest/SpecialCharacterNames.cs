@@ -32,8 +32,8 @@ namespace System.Data.SqlClient.ManualTesting.Tests
 
                 try
                 {
-                    Helpers.Execute(dstCmd, "create schema " + dstschema);
-                    Helpers.Execute(dstCmd, "create table " + dstTable + " (orderid int, customerid nchar(5))");
+                    Helpers.TryExecute(dstCmd, "create schema " + dstschema);
+                    Helpers.TryExecute(dstCmd, "create table " + dstTable + " (orderid int, customerid nchar(5))");
 
                     using (SqlConnection srcConn = new SqlConnection(srcConstr))
                     using (SqlCommand srcCmd = new SqlCommand("select top 2 orderid, customerid from orders", srcConn))
