@@ -5,6 +5,7 @@
 Imports System
 Imports System.ComponentModel
 Imports System.Diagnostics
+Imports System.Globalization
 Imports System.Reflection
 
 Imports Microsoft.VisualBasic.CompilerServices.Symbols
@@ -762,6 +763,60 @@ MisMatch:
                 Throw ex
             End Try
         End Function
+
+        Friend Shared Function TryParseDouble(ByVal Value As String, ByRef Result As Double) As Boolean
+            Dim numberFormat As NumberFormatInfo
+            Dim normalizedNumberFormat As NumberFormatInfo
+            Dim culture As CultureInfo = GetCultureInfo()
+
+            numberFormat = culture.NumberFormat
+            normalizedNumberFormat = GetNormalizedNumberFormat(numberFormat)
+
+            Const flags As NumberStyles =
+                NumberStyles.AllowDecimalPoint Or
+                NumberStyles.AllowExponent Or
+                NumberStyles.AllowLeadingSign Or
+                NumberStyles.AllowLeadingWhite Or
+                NumberStyles.AllowThousands Or
+                NumberStyles.AllowTrailingSign Or
+                NumberStyles.AllowParentheses Or
+                NumberStyles.AllowTrailingWhite Or
+                NumberStyles.AllowCurrencySymbol
+
+            Value = ToHalfwidthNumbers(Value, culture)
+
+            ' The below code handles the 80% case efficiently and is inefficient only when the numeric and currency settings
+            ' are different
+
+            If numberFormat Is normalizedNumberFormat Then
+                Return System.Double.TryParse(Value, flags, normalizedNumberFormat, Result)
+            Else
+                Try
+                    ' Use numeric settings to parse
+                    ' Note that we use Parse instead of TryParse in order to distinguish whether the conversion failed
+                    ' due to FormatException or other exception like OverFlowException, etc.
+                    Result = System.Double.Parse(Value, flags, normalizedNumberFormat)
+                    Return True
+                Catch FormatEx As FormatException
+                    ' Use currency settings to parse
+                    Try
+                        Return System.Double.TryParse(Value, flags, numberFormat, Result)
+                    Catch ex As ArgumentException
+                        Return False
+                    End Try
+                Catch ex As StackOverflowException
+                    Throw ex
+                Catch ex As OutOfMemoryException
+                    Throw ex
+                Catch ex As System.Threading.ThreadAbortException
+                    Throw ex
+                Catch Ex As Exception
+                    Return False
+                End Try
+            End If
+
+        End Function
+
         Public Shared Function ToDate(Value As String) As Date
             Dim parsedDate As Global.System.DateTime
             Const parseStyle As Global.System.Globalization.DateTimeStyles =
@@ -786,6 +841,15 @@ MisMatch:
             End If
             Throw New Global.System.InvalidCastException()
         End Function
+
+        Friend Shared Function TryParseDate(ByVal Value As String, ByRef Result As System.DateTime) As Boolean
+            Const ParseStyle As DateTimeStyles =
+                    DateTimeStyles.AllowWhiteSpaces Or
+                    DateTimeStyles.NoCurrentDateDefault
+            Dim Culture As CultureInfo = GetCultureInfo()
+            Return System.DateTime.TryParse(ToHalfwidthNumbers(Value, Culture), Culture, ParseStyle, Result)
+        End Function
+
         Public Shared Function ToChar(Value As String) As Char
             If (Value Is Nothing) OrElse (Value.Length = 0) Then
                 Return Global.System.Convert.ToChar(0 And &HFFFFI)
