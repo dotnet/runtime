@@ -72,7 +72,7 @@ namespace Internal.Cryptography.Pal.Native
             }
             else
             {
-                Interop.crypt32.CertFreeCertificateContext(handle);
+                Interop.Crypt32.CertFreeCertificateContext(handle);
             }
 
             SetHandle(IntPtr.Zero);
