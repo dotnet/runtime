@@ -15128,52 +15128,92 @@ void Compiler::gtExtractSideEffList(GenTree*  expr,
         {
             GenTree* node = *use;
 
-            if (!m_compiler->gtTreeHasSideEffects(node, m_flags))
-            {
-                return Compiler::WALK_SKIP_SUBTREES;
-            }
+            bool treeHasSideEffects = m_compiler->gtTreeHasSideEffects(node, m_flags);
 
-            if (m_compiler->gtNodeHasSideEffects(node, m_flags))
+            if (treeHasSideEffects)
             {
-                m_sideEffects.Push(node);
-                return Compiler::WALK_SKIP_SUBTREES;
-            }
-
-            // TODO-Cleanup: These have GTF_ASG set but for some reason gtNodeHasSideEffects ignores
-            // them. See the related gtNodeHasSideEffects comment as well.
-            // Also, these nodes must always be preserved, no matter what side effect flags are passed
-            // in. But then it should never be the case that gtExtractSideEffList gets called without
-            // specifying GTF_ASG so there doesn't seem to be any reason to be inconsistent with
-            // gtNodeHasSideEffects and make this check unconditionally.
-            if (node->OperIsAtomicOp())
-            {
-                m_sideEffects.Push(node);
-                return Compiler::WALK_SKIP_SUBTREES;
-            }
-
-            if ((m_flags & GTF_EXCEPT) != 0)
-            {
-                // Special case - GT_ADDR of GT_IND nodes of TYP_STRUCT have to be kept together.
-                if (node->OperIs(GT_ADDR) && node->gtGetOp1()->OperIsIndir() &&
-                    (node->gtGetOp1()->TypeGet() == TYP_STRUCT))
+                if (m_compiler->gtNodeHasSideEffects(node, m_flags))
                 {
-#ifdef DEBUG
-                    if (m_compiler->verbose)
-                    {
-                        printf("Keep the GT_ADDR and GT_IND together:\n");
-                    }
-#endif
                     m_sideEffects.Push(node);
                     return Compiler::WALK_SKIP_SUBTREES;
                 }
+
+                // TODO-Cleanup: These have GTF_ASG set but for some reason gtNodeHasSideEffects ignores
+                // them. See the related gtNodeHasSideEffects comment as well.
+                // Also, these nodes must always be preserved, no matter what side effect flags are passed
+                // in. But then it should never be the case that gtExtractSideEffList gets called without
+                // specifying GTF_ASG so there doesn't seem to be any reason to be inconsistent with
+                // gtNodeHasSideEffects and make this check unconditionally.
+                if (node->OperIsAtomicOp())
+                {
+                    m_sideEffects.Push(node);
+                    return Compiler::WALK_SKIP_SUBTREES;
+                }
+
+                if ((m_flags & GTF_EXCEPT) != 0)
+                {
+                    // Special case - GT_ADDR of GT_IND nodes of TYP_STRUCT have to be kept together.
+                    if (node->OperIs(GT_ADDR) && node->gtGetOp1()->OperIsIndir() &&
+                        (node->gtGetOp1()->TypeGet() == TYP_STRUCT))
+                    {
+#ifdef DEBUG
+                        if (m_compiler->verbose)
+                        {
+                            printf("Keep the GT_ADDR and GT_IND together:\n");
+                        }
+#endif
+                        m_sideEffects.Push(node);
+                        return Compiler::WALK_SKIP_SUBTREES;
+                    }
+                }
+
+                // Generally all GT_CALL nodes are considered to have side-effects.
+                // So if we get here it must be a helper call that we decided it does
+                // not have side effects that we needed to keep.
+                assert(!node->OperIs(GT_CALL) || (node->AsCall()->gtCallType == CT_HELPER));
             }
 
-            // Generally all GT_CALL nodes are considered to have side-effects.
-            // So if we get here it must be a helper call that we decided it does
-            // not have side effects that we needed to keep.
-            assert(!node->OperIs(GT_CALL) || (node->AsCall()->gtCallType == CT_HELPER));
+            if ((m_flags & GTF_IS_IN_CSE) != 0)
+            {
+                // If we're doing CSE then we also need to unmark CSE nodes. This will fail for CSE defs,
+                // those need to be extracted as if they're side effects.
+                if (!UnmarkCSE(node))
+                {
+                    m_sideEffects.Push(node);
+                    return Compiler::WALK_SKIP_SUBTREES;
+                }
 
-            return Compiler::WALK_CONTINUE;
+                // The existence of CSE defs and uses is not propagated up the tree like side
+                // effects are. We need to continue visiting the tree as if it has side effects.
+                treeHasSideEffects = true;
+            }
+
+            return treeHasSideEffects ? Compiler::WALK_CONTINUE : Compiler::WALK_SKIP_SUBTREES;
+        }
+
+    private:
+        bool UnmarkCSE(GenTree* node)
+        {
+            assert(m_compiler->optValnumCSE_phase);
+
+            if (m_compiler->optUnmarkCSE(node))
+            {
+                // The call to optUnmarkCSE(node) should have cleared any CSE info.
+                assert(!IS_CSE_INDEX(node->gtCSEnum));
+                return true;
+            }
+            else
+            {
+                assert(IS_CSE_DEF(node->gtCSEnum));
+#ifdef DEBUG
+                if (m_compiler->verbose)
+                {
+                    printf("Preserving the CSE def #%02d at ", GET_CSE_INDEX(node->gtCSEnum));
+                    m_compiler->printTreeID(node);
+                }
+#endif
+                return false;
+            }
         }
     };
 
