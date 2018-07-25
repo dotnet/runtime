@@ -5,5 +5,6 @@
   </PropertyGroup>
   <ItemGroup Condition="'$(TargetsWindows)' == 'true'">
     <Compile Include="X509Certificate2UITests.cs" />
+    <Compile Include="X509Certificate2UIManualTests.cs" />
   </ItemGroup>
 </Project>

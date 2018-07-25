@@ -7,33 +7,40 @@ using Microsoft.Win32.SafeHandles;
 
 namespace System.Security.Cryptography.X509Certificates
 {
-    internal sealed class SafeCertContextHandle : SafeHandleZeroOrMinusOneIsInvalid
+    internal class SafeCertContextHandle : SafePointerHandle<SafeCertContextHandle>
     {
-        // 0 is an Invalid Handle
-        internal SafeCertContextHandle(IntPtr handle) : base(true)
+        protected override bool ReleaseHandle()
         {
-            SetHandle(handle);
+            bool success = Interop.Crypt32.CertFreeCertificateContext(handle);
+            return success;
         }
-
-        internal static SafeCertContextHandle InvalidHandle =>
-            SafeHandleCache<SafeCertContextHandle>.GetInvalidHandle(
-                () => new SafeCertContextHandle(IntPtr.Zero));
-
-        protected override bool ReleaseHandle() => Interop.Crypt32.CertFreeCertificateContext(handle);
     }
 
-    internal sealed class SafeCertStoreHandle : SafeHandleZeroOrMinusOneIsInvalid
+    internal sealed class SafeCertStoreHandle : SafePointerHandle<SafeCertStoreHandle>
     {
-        // 0 is an Invalid Handle
-        internal SafeCertStoreHandle(IntPtr handle) : base(true)
+        protected sealed override bool ReleaseHandle()
         {
-            SetHandle(handle);
+            bool success = Interop.Crypt32.CertCloseStore(handle, 0);
+            return success;
+        }
+    }
+
+    internal abstract class SafePointerHandle<T> : SafeHandle where T : SafeHandle, new()
+    {
+        protected SafePointerHandle(): base(IntPtr.Zero, true)
+        {
         }
 
-        internal static SafeCertStoreHandle InvalidHandle =>
-            SafeHandleCache<SafeCertStoreHandle>.GetInvalidHandle(
-                () => new SafeCertStoreHandle(IntPtr.Zero));
+        public sealed override bool IsInvalid => handle == IntPtr.Zero;
 
-        protected override bool ReleaseHandle() => Interop.Crypt32.CertCloseStore(handle, 0);
+        public static T InvalidHandle => SafeHandleCache<T>.GetInvalidHandle(() => new T());
+
+        protected override void Dispose(bool disposing)
+        {
+            if (!SafeHandleCache<T>.IsCachedInvalidHandle(this))
+            {
+                base.Dispose(disposing);
+            }
+        }
     }
 }
