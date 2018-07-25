@@ -7,6 +7,7 @@ using System.Collections.Generic;
 using System.Security.Cryptography;
 using System.Security.Cryptography.X509Certificates;
 using System.Text;
+using Microsoft.Win32.SafeHandles;
 
 namespace Internal.Cryptography
 {
@@ -39,5 +40,6 @@ namespace Internal.Cryptography
         ICertificatePal CopyWithPrivateKey(DSA privateKey);
         ICertificatePal CopyWithPrivateKey(ECDsa privateKey);
         ICertificatePal CopyWithPrivateKey(RSA privateKey);
+        byte[] Export(X509ContentType contentType, SafePasswordHandle password);
     }
 }
