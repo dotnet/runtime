@@ -3361,7 +3361,7 @@ mini_method_compile (MonoMethod *method, guint32 opts, MonoDomain *domain, JitFl
 	if (!verbose_method_inited) {
 		char *env = g_getenv ("MONO_VERBOSE_METHOD");
 		if (env != NULL)
-			verbose_method_names = g_strsplit (env, ",", -1);
+			verbose_method_names = g_strsplit (env, ";", -1);
 		
 		verbose_method_inited = TRUE;
 	}
