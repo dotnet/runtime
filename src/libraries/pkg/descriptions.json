@@ -2125,6 +2125,14 @@
     ]
   },
   {
+    "Name": "System.Windows.Extensions",
+    "Description": "Provides miscellaneous Windows-specific types",
+    "CommonTypes":[
+      "System.Security.Cryptography.X509Certificates.X509Certificate2UI",
+      "System.Security.Cryptography.X509Certificates.X509SelectionFlag"
+    ]
+  },
+  {
     "Name": "System.Private.Xml",
     "Description": "Provides a fast, non-cached, forward-only way to read and write Extensible Markup Language (XML) data.",
     "CommonTypes": [

@@ -293,12 +293,6 @@
         "4.0.1.0": "4.6.0"
       }
     },
-    "System.Windows.Extensions": {
-      "InboxOn": {},
-      "AssemblyVersionInPackageVersion": {
-        "4.0.0.0": "4.6.0"
-      }
-    },
     "Microsoft.Windows.Compatibility": {
       "InboxOn": {}
     },
@@ -5302,6 +5296,12 @@
     "System.Windows.Controls.Ribbon": {
       "InboxOn": {
         "net45": "4.0.0.0"
+      }
+    },
+    "System.Windows.Extensions": {
+      "InboxOn": {},
+      "AssemblyVersionInPackageVersion": {
+        "4.0.0.0": "4.6.0"
       }
     },
     "System.Windows.Forms": {
