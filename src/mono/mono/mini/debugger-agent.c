@@ -8932,7 +8932,12 @@ string_commands (int command, guint8 *p, guint8 *end, Buffer *buf)
 		} else {
 			ERROR_DECL (error);
 			s = mono_string_to_utf8_checked (str, error);
-			mono_error_assert_ok (error);
+			if (!mono_error_ok (error)) {
+				if (s)
+					g_free (s);
+
+				return ERR_INVALID_ARGUMENT;
+			}
 			buffer_add_string (buf, s);
 			g_free (s);
 		}
