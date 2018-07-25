@@ -706,7 +706,6 @@ public:
 // The only requirement of this flag is that it not overlap any of the
 // side-effect flags. The actual bit used is otherwise arbitrary.
 #define GTF_IS_IN_CSE GTF_BOOLEAN
-#define GTF_PERSISTENT_SIDE_EFFECTS_IN_CSE (GTF_ASG | GTF_CALL | GTF_IS_IN_CSE)
 
 // Can any side-effects be observed externally, say by a caller method?
 // For assignments, only assignments to global memory can be observed
