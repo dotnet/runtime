@@ -92,7 +92,7 @@
 
   <Target Name="Build" DependsOnTargets="RunApiCompat" />
   <Target Name="Clean">
-    <RemoveDir Directories="$(IntermediateOutputPath);$(GenFacadesOutputPath)" />
+    <RemoveDir Directories="$(BaseIntermediateOutputPath);$(GenFacadesOutputPath)" />
   </Target>
   <Target Name="Rebuild" DependsOnTargets="Clean;Build" />
 
