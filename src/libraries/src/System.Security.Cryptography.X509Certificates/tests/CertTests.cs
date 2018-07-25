@@ -5,6 +5,7 @@
 using System.Collections.Generic;
 using System.IO;
 using System.Runtime.InteropServices;
+using Test.Cryptography;
 using Xunit;
 using Xunit.Abstractions;
 
@@ -360,6 +361,26 @@ namespace System.Security.Cryptography.X509Certificates.Tests
                         throw;
                     }
                 }
+            }
+        }
+
+        [Fact]
+        public static void X509Certificate2WithT61String()
+        {
+            string certSubject = @"E=mabaul@microsoft.com, OU=Engineering, O=Xamarin, S=Massachusetts, C=US, CN=test-server.local";
+
+            using (var cert = new X509Certificate2(TestData.T61StringCertificate))
+            {
+                Assert.Equal(certSubject, cert.Subject);
+                Assert.Equal(certSubject, cert.Issuer);
+
+                Assert.Equal("9E7A5CCC9F951A8700", cert.GetSerialNumber().ByteArrayToHex());
+                Assert.Equal("1.2.840.113549.1.1.1", cert.GetKeyAlgorithm());
+
+                Assert.Equal(74, cert.GetPublicKey().Length);
+
+                Assert.Equal("test-server.local", cert.GetNameInfo(X509NameType.SimpleName, false));
+                Assert.Equal("mabaul@microsoft.com", cert.GetNameInfo(X509NameType.EmailName, false));
             }
         }
 
