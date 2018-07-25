@@ -18,6 +18,13 @@
     </ItemGroup>
   </Target>
 
+  <!-- Remove package references when referencing System.Private.CoreLib from SDK style project --> 
+  <Target Name="CleanResolvedCompileFileDefinitions"  AfterTargets="ResolvePackageAssets" Condition="'$(ReferenceSystemPrivateCoreLib)' == 'true' and '$(UsingMicrosoftNETSdk)' == 'true'" >
+    <ItemGroup>
+      <ResolvedCompileFileDefinitions Remove="@(ResolvedCompileFileDefinitions)" />
+    </ItemGroup>
+  </Target>
+  
   <PropertyGroup Condition="'$(TargetFrameworkIdentifier)' == '.NETFramework'">
     <!--
       Allow this project to setup the default target frameworks. Note this depends on the targeting packs that VS
