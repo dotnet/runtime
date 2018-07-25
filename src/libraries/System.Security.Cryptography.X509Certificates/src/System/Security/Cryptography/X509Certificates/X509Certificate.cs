@@ -283,9 +283,8 @@ namespace System.Security.Cryptography.X509Certificates
                 throw new CryptographicException(ErrorCode.E_POINTER);  // Not the greatest error, but needed for backward compat.
 
             using (var safePasswordHandle = new SafePasswordHandle(password))
-            using (IExportPal storePal = StorePal.FromCertificate(Pal))
             {
-                return storePal.Export(contentType, safePasswordHandle);
+                return Pal.Export(contentType, safePasswordHandle);
             }
         }
 
@@ -298,9 +297,8 @@ namespace System.Security.Cryptography.X509Certificates
                 throw new CryptographicException(ErrorCode.E_POINTER);  // Not the greatest error, but needed for backward compat.
 
             using (var safePasswordHandle = new SafePasswordHandle(password))
-            using (IExportPal storePal = StorePal.FromCertificate(Pal))
             {
-                return storePal.Export(contentType, safePasswordHandle);
+                return Pal.Export(contentType, safePasswordHandle);
             }
         }
 
