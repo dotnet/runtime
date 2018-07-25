@@ -373,18 +373,19 @@ namespace System.IO.Pipelines.Tests
                     var readTask = Pipe.Reader.ReadAsync();
 
                     // Signal writer to initiate a flush
-                    if (!readTask.IsCompleted)
+                    if (!readTask.IsCompleted || readTask.Result.IsCompleted)
                     {
                         resetEvent.Set();
                     }
 
                     var result = await readTask;
-                    resetEvent.Reset();
 
                     if (result.Buffer.IsEmpty)
                     {
                         return;
                     }
+
+                    resetEvent.Reset();
 
                     Pipe.Reader.AdvanceTo(result.Buffer.End);
                 }
@@ -394,6 +395,7 @@ namespace System.IO.Pipelines.Tests
             {
                 while (!writer.IsCompleted)
                 {
+                    resetEvent.WaitOne();
                     cancellationTokenSource.Cancel();
                 }
             });
