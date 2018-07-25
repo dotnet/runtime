@@ -72,39 +72,32 @@ ves_icall_System_Diagnostics_Process_GetProcess_internal (guint32 pid)
 
 #if G_HAVE_API_SUPPORT(HAVE_CLASSIC_WINAPI_SUPPORT)
 MonoBoolean
-ves_icall_System_Diagnostics_Process_ShellExecuteEx_internal (MonoW32ProcessStartInfo *proc_start_info, MonoW32ProcessInfo *process_info)
+ves_icall_System_Diagnostics_Process_ShellExecuteEx_internal (MonoW32ProcessStartInfoHandle proc_start_info, MonoW32ProcessInfo *process_info, MonoError *error)
 {
+	MonoCreateProcessCoop coop;
+	mono_createprocess_coop_init (&coop, proc_start_info, process_info);
+
 	SHELLEXECUTEINFO shellex = {0};
 	gboolean ret;
 
 	shellex.cbSize = sizeof(SHELLEXECUTEINFO);
 	shellex.fMask = (gulong)(SEE_MASK_FLAG_DDEWAIT | SEE_MASK_NOCLOSEPROCESS | SEE_MASK_UNICODE);
-	shellex.nShow = (gulong)proc_start_info->window_style;
+	shellex.nShow = (gulong)MONO_HANDLE_GETVAL (proc_start_info, window_style);
 	shellex.nShow = (gulong)((shellex.nShow == 0) ? 1 : (shellex.nShow == 1 ? 0 : shellex.nShow));
 
-	if (proc_start_info->filename != NULL) {
-		shellex.lpFile = mono_string_chars (proc_start_info->filename);
-	}
+	shellex.lpFile = coop.filename;
+	shellex.lpParameters = coop.arguments;
 
-	if (proc_start_info->arguments != NULL) {
-		shellex.lpParameters = mono_string_chars (proc_start_info->arguments);
-	}
+	if (coop.length.verb)
+		shellex.lpVerb = coop.verb;
 
-	if (proc_start_info->verb != NULL &&
-	    mono_string_length (proc_start_info->verb) != 0) {
-		shellex.lpVerb = mono_string_chars (proc_start_info->verb);
-	}
+	if (coop.length.working_directory)
+		shellex.lpDirectory = coop.working_directory;
 
-	if (proc_start_info->working_directory != NULL &&
-	    mono_string_length (proc_start_info->working_directory) != 0) {
-		shellex.lpDirectory = mono_string_chars (proc_start_info->working_directory);
-	}
-
-	if (proc_start_info->error_dialog) {	
-		shellex.hwnd = proc_start_info->error_dialog_parent_handle;
-	} else {
+	if (MONO_HANDLE_GETVAL (proc_start_info, error_dialog))
+		shellex.hwnd = MONO_HANDLE_GETVAL (proc_start_info, error_dialog_parent_handle);
+	else
 		shellex.fMask = (gulong)(shellex.fMask | SEE_MASK_FLAG_NO_UI);
-	}
 
 	ret = ShellExecuteEx (&shellex);
 	if (ret == FALSE) {
@@ -117,6 +110,8 @@ ves_icall_System_Diagnostics_Process_ShellExecuteEx_internal (MonoW32ProcessStar
 		process_info->pid = 0;
 #endif
 	}
+
+	mono_createprocess_coop_cleanup (&coop);
 
 	return ret;
 }
@@ -135,27 +130,28 @@ mono_process_init_startup_info (HANDLE stdin_handle, HANDLE stdout_handle, HANDL
 }
 
 static gboolean
-mono_process_create_process (MonoW32ProcessInfo *mono_process_info, MonoString *cmd, guint32 creation_flags,
-	gunichar2 *env_vars, gunichar2 *dir, STARTUPINFO *start_info, PROCESS_INFORMATION *process_info)
+mono_process_create_process (MonoCreateProcessCoop *coop, MonoW32ProcessInfo *mono_process_info,
+	MonoStringHandle cmd, guint32 creation_flags, gunichar2 *env_vars, gunichar2 *dir, STARTUPINFO *start_info,
+	PROCESS_INFORMATION *process_info)
 {
 	gboolean result = FALSE;
+	gchandle_t cmd_gchandle = 0;
+	gunichar2 *cmd_chars = MONO_HANDLE_IS_NULL (cmd) ? NULL : mono_string_handle_pin_chars (cmd, &cmd_gchandle);
 
-	if (mono_process_info->username) {
+	if (coop->username) {
 		guint32 logon_flags = mono_process_info->load_user_profile ? LOGON_WITH_PROFILE : 0;
 
-		result = CreateProcessWithLogonW (mono_string_chars (mono_process_info->username),
-						  mono_process_info->domain ? mono_string_chars (mono_process_info->domain) : NULL,
-						  (const gunichar2 *)mono_process_info->password,
+		result = CreateProcessWithLogonW (coop->username,
+						  coop->domain,
+						  mono_process_info->password,
 						  logon_flags,
 						  NULL,
-						  cmd ? mono_string_chars (cmd) : NULL,
+						  cmd_chars,
 						  creation_flags,
 						  env_vars, dir, start_info, process_info);
-
 	} else {
-
 		result = CreateProcessW (NULL,
-					cmd ? mono_string_chars (cmd): NULL,
+					cmd_chars,
 					NULL,
 					NULL,
 					TRUE,
@@ -164,8 +160,9 @@ mono_process_create_process (MonoW32ProcessInfo *mono_process_info, MonoString *
 					dir,
 					start_info,
 					process_info);
-
 	}
+
+	mono_gchandle_free (cmd_gchandle);
 
 	return result;
 }
@@ -202,118 +199,129 @@ process_quote_path (const gchar *path)
 static gboolean
 process_complete_path (const gunichar2 *appname, gchar **completed)
 {
-	gchar *utf8app, *utf8appmemory;
-	gchar *found;
+	// FIXME This function should stick to gunichar2.
+
+	char *utf8app;
+	char *utf8appmemory = NULL;
+	char *found = NULL;
+	gboolean result;
 
 	utf8appmemory = g_utf16_to_utf8 (appname, -1, NULL, NULL, NULL);
 	utf8app = process_unquote_application_name (utf8appmemory);
 
 	if (g_path_is_absolute (utf8app)) {
 		*completed = process_quote_path (utf8app);
-		g_free (utf8appmemory);
-		return TRUE;
+		result = TRUE;
+		goto exit;
 	}
 
 	if (g_file_test (utf8app, G_FILE_TEST_IS_EXECUTABLE) && !g_file_test (utf8app, G_FILE_TEST_IS_DIR)) {
 		*completed = process_quote_path (utf8app);
-		g_free (utf8appmemory);
-		return TRUE;
+		result = TRUE;
+		goto exit;
 	}
 	
 	found = g_find_program_in_path (utf8app);
 	if (found == NULL) {
 		*completed = NULL;
-		g_free (utf8appmemory);
-		return FALSE;
+		result = FALSE;
+		goto exit;
 	}
 
 	*completed = process_quote_path (found);
+exit:
 	g_free (found);
 	g_free (utf8appmemory);
-	return TRUE;
+	return result;
 }
 
 static gboolean
-process_get_shell_arguments (MonoW32ProcessStartInfo *proc_start_info, MonoString **cmd)
+process_get_shell_arguments (MonoCreateProcessCoop *proc_start_info, MonoStringHandle *cmd, MonoError *error)
 {
-	gchar		*spath = NULL;
-	gchar		*new_cmd, *cmd_utf8;
-	ERROR_DECL_VALUE (mono_error);
+	char *spath = NULL;
+	char *new_cmd = NULL;
+	char *cmd_utf8 = NULL;
 
-	*cmd = proc_start_info->arguments;
+	*cmd = proc_start_info->coophandle.arguments;
 
-	if (process_complete_path (mono_string_chars (proc_start_info->filename), &spath)) {
+	// FIXME There are excess utf8 <=> gunichar2 conversions here.
+	// We are either returning spath, or spath + " " + cmd.
+	// Just use gunichar2. Maybe move logic to C#.
+
+	if (process_complete_path (proc_start_info->filename, &spath)) {
 		/* Seems like our CreateProcess does not work as the windows one.
 		 * This hack is needed to deal with paths containing spaces */
-		if (*cmd) {
-			cmd_utf8 = mono_string_to_utf8_checked (*cmd, &mono_error);
-			if (!mono_error_set_pending_exception (&mono_error)) {
-				new_cmd = g_strdup_printf ("%s %s", spath, cmd_utf8);
-				*cmd = mono_string_new_wrapper (new_cmd);
-				g_free (cmd_utf8);
-				g_free (new_cmd);
-			} else {
-				*cmd = NULL;
-			}
+		if (!MONO_HANDLE_IS_NULL (*cmd)) {
+			cmd_utf8 = mono_string_handle_to_utf8 (*cmd, error);
+			goto_if_nok (error, error);
+			new_cmd = g_strdup_printf ("%s %s", spath, cmd_utf8);
+			*cmd = mono_string_new_utf8_len_handle (mono_domain_get (), new_cmd, strlen (new_cmd), error);
+			goto_if_nok (error, error);
 		}
 		else {
-			*cmd = mono_string_new_wrapper (spath);
+			*cmd = mono_string_new_utf8_len_handle (mono_domain_get (), spath, strlen (spath), error);
+			goto_if_nok (error, error);
 		}
-
-		g_free (spath);
 	}
 
-	return (*cmd != NULL) ? TRUE : FALSE;
+exit:
+	g_free (spath);
+	g_free (cmd_utf8);
+	g_free (new_cmd);
+	return !MONO_HANDLE_IS_NULL (*cmd);
+error:
+	*cmd = NULL_HANDLE_STRING;
+	goto exit;
 }
 
 MonoBoolean
-ves_icall_System_Diagnostics_Process_CreateProcess_internal (MonoW32ProcessStartInfo *proc_start_info, HANDLE stdin_handle,
-							     HANDLE stdout_handle, HANDLE stderr_handle, MonoW32ProcessInfo *process_info)
+ves_icall_System_Diagnostics_Process_CreateProcess_internal (MonoW32ProcessStartInfoHandle proc_start_info,
+	HANDLE stdin_handle, HANDLE stdout_handle, HANDLE stderr_handle, MonoW32ProcessInfo *process_info, MonoError *error)
 {
+	MonoCreateProcessCoop coop;
+	mono_createprocess_coop_init (&coop, proc_start_info, process_info);
+
 	gboolean ret;
-	gunichar2 *dir;
+	gunichar2 *dir = NULL;
 	STARTUPINFO startinfo={0};
 	PROCESS_INFORMATION procinfo;
 	gunichar2 *env_vars = NULL;
-	MonoString *cmd = NULL;
+	MonoStringHandle cmd = NULL_HANDLE_STRING;
 	guint32 creation_flags;
 
 	mono_process_init_startup_info (stdin_handle, stdout_handle, stderr_handle, &startinfo);
 
 	creation_flags = CREATE_UNICODE_ENVIRONMENT;
-	if (proc_start_info->create_no_window)
+	if (MONO_HANDLE_GETVAL (proc_start_info, create_no_window))
 		creation_flags |= CREATE_NO_WINDOW;
 	
-	if (process_get_shell_arguments (proc_start_info, &cmd) == FALSE) {
+	if (process_get_shell_arguments (&coop, &cmd, error) == FALSE) {
+		// FIXME This should be passed back separately.
 		process_info->pid = -ERROR_FILE_NOT_FOUND;
-		return FALSE;
+		ret = FALSE;
+		goto exit;
 	}
 
 	if (process_info->env_variables) {
-		gint i, len;
-		MonoString *var;
-		gunichar2 *str, *ptr;
+		MonoArrayHandle array = MONO_HANDLE_NEW (MonoArray, process_info->env_variables);
+		MonoStringHandle var = MONO_HANDLE_NEW (MonoString, NULL);
+		gsize const array_length = mono_array_handle_length (array);
+		gsize len = 1; // nul-terminated
 
-		len = 0;
-
-		for (i = 0; i < mono_array_length (process_info->env_variables); i++) {
-			var = mono_array_get (process_info->env_variables, MonoString*, i);
-
-			len += mono_string_length (var) * sizeof (gunichar2);
-
-			/* null-separated */
-			len += sizeof (gunichar2);
+		for (gsize i = 0; i < array_length; i++) {
+			MONO_HANDLE_ARRAY_GETREF (var, array, i);
+			len += mono_string_handle_length (var) + 1; // nul-separated
 		}
-		/* null-terminated */
-		len += sizeof (gunichar2);
 
-		env_vars = ptr = g_new0 (gunichar2, len);
+		gunichar2 *ptr = g_new0 (gunichar2, len);
+		env_vars = ptr;
 
-		for (i = 0; i < mono_array_length (process_info->env_variables); i++) {
-			var = mono_array_get (process_info->env_variables, MonoString*, i);
-
-			memcpy (ptr, mono_string_chars (var), mono_string_length (var) * sizeof (gunichar2));
-			ptr += mono_string_length (var);
+		for (gsize i = 0; i < array_length; i++) {
+			MONO_HANDLE_ARRAY_GETREF (var, array, i);
+			gchandle_t gchandle = 0;
+			memcpy (ptr, mono_string_handle_pin_chars (var, &gchandle), mono_string_handle_length (var) * sizeof (gunichar2));
+			mono_gchandle_free (gchandle);
+			ptr += mono_string_handle_length (var);
 			ptr += 1; // Skip over the null-separator
 		}
 	}
@@ -321,12 +329,10 @@ ves_icall_System_Diagnostics_Process_CreateProcess_internal (MonoW32ProcessStart
 	/* The default dir name is "".  Turn that into NULL to mean
 	 * "current directory"
 	 */
-	if (proc_start_info->working_directory == NULL || mono_string_length (proc_start_info->working_directory) == 0)
-		dir = NULL;
-	else
-		dir = mono_string_chars (proc_start_info->working_directory);
+	if (coop.length.working_directory)
+		dir = coop.working_directory;
 
-	ret = mono_process_create_process (process_info, cmd, creation_flags, env_vars, dir, &startinfo, &procinfo);
+	ret = mono_process_create_process (&coop, process_info, cmd, creation_flags, env_vars, dir, &startinfo, &procinfo);
 
 	g_free (env_vars);
 
@@ -337,9 +343,12 @@ ves_icall_System_Diagnostics_Process_CreateProcess_internal (MonoW32ProcessStart
 			CloseHandle (procinfo.hThread);
 		process_info->pid = procinfo.dwProcessId;
 	} else {
+		// FIXME This should be passed back separately.
 		process_info->pid = -GetLastError ();
 	}
-	
+
+exit:
+	mono_createprocess_coop_cleanup (&coop);
 	return ret;
 }
 

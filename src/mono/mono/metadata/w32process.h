@@ -19,6 +19,8 @@
 #endif
 
 #include <mono/metadata/object.h>
+#include "object-internals.h"
+#include "marshal.h"
 
 G_BEGIN_DECLS
 
@@ -38,7 +40,7 @@ typedef struct
 	MonoArray *env_variables;
 	MonoString *username;
 	MonoString *domain;
-	gpointer password; /* BSTR from SecureString in 2.0 profile */
+	mono_bstr password; /* BSTR from SecureString in 2.0 profile */
 	MonoBoolean load_user_profile;
 } MonoW32ProcessInfo;
 
@@ -53,20 +55,67 @@ typedef struct
 	MonoBoolean error_dialog;
 	gpointer error_dialog_parent_handle;
 	MonoBoolean use_shell_execute;
-	MonoString *username;
-	MonoString *domain;
-	MonoObject *password; /* SecureString in 2.0 profile, dummy in 1.x */
-	MonoString *password_in_clear_text;
-	MonoBoolean load_user_profile;
-	MonoBoolean redirect_standard_input;
-	MonoBoolean redirect_standard_output;
-	MonoBoolean redirect_standard_error;
-	MonoObject *encoding_stdout;
-	MonoObject *encoding_stderr;
+
+	MonoString *unused_username;
+	MonoString *unused_domain;
+	MonoObject *unused_password; /* SecureString in 2.0 profile, dummy in 1.x */
+	MonoString *unused_password_in_clear_text;
+	MonoBoolean unused_load_user_profile;
+	MonoBoolean unused_redirect_standard_input;
+	MonoBoolean unused_redirect_standard_output;
+	MonoBoolean unused_redirect_standard_error;
+	MonoObject *unused_encoding_stdout;
+	MonoObject *unused_encoding_stderr;
+
 	MonoBoolean create_no_window;
-	MonoObject *weak_parent_process;
-	MonoObject *envVars;
+
+	MonoObject *unused_weak_parent_process;
+	MonoObject *unused_envVars;
+
 } MonoW32ProcessStartInfo;
+
+TYPED_HANDLE_DECL (MonoW32ProcessStartInfo);
+
+typedef uint32_t gchandle_t; // FIXME use this more, make it typesafe.
+
+typedef struct _MonoCreateProcessCoop {
+	gunichar2 *filename;
+	gunichar2 *arguments;
+	gunichar2 *working_directory;
+	gunichar2 *verb;
+	gunichar2 *username;
+	gunichar2 *domain;
+	struct {
+		MonoStringHandle filename;
+		MonoStringHandle arguments;
+		MonoStringHandle working_directory;
+		MonoStringHandle verb;
+		MonoStringHandle username;
+		MonoStringHandle domain;
+	} coophandle;
+	struct {
+		gchandle_t filename;
+		gchandle_t arguments;
+		gchandle_t working_directory;
+		gchandle_t verb;
+		gchandle_t username;
+		gchandle_t domain;
+	} gchandle;
+	struct {
+		gsize filename;
+		gsize arguments;
+		gsize working_directory;
+		gsize verb;
+		gsize username;
+		gsize domain;
+	} length;
+} MonoCreateProcessCoop;
+
+void
+mono_createprocess_coop_init (MonoCreateProcessCoop *coop, MonoW32ProcessStartInfoHandle proc_start_info, MonoW32ProcessInfo *process_info);
+
+void
+mono_createprocess_coop_cleanup (MonoCreateProcessCoop *coop);
 
 void
 mono_w32process_init (void);
@@ -100,11 +149,11 @@ void
 ves_icall_System_Diagnostics_FileVersionInfo_GetVersionInfo_internal (MonoObject *this_obj, MonoString *filename);
 
 MonoBoolean
-ves_icall_System_Diagnostics_Process_ShellExecuteEx_internal (MonoW32ProcessStartInfo *proc_start_info, MonoW32ProcessInfo *process_handle);
+ves_icall_System_Diagnostics_Process_ShellExecuteEx_internal (MonoW32ProcessStartInfoHandle proc_start_info, MonoW32ProcessInfo *process_info, MonoError *error);
 
 MonoBoolean
-ves_icall_System_Diagnostics_Process_CreateProcess_internal (MonoW32ProcessStartInfo *proc_start_info, gpointer stdin_handle,
-	gpointer stdout_handle, gpointer stderr_handle, MonoW32ProcessInfo *process_handle);
+ves_icall_System_Diagnostics_Process_CreateProcess_internal (MonoW32ProcessStartInfoHandle proc_start_info, gpointer stdin_handle,
+	gpointer stdout_handle, gpointer stderr_handle, MonoW32ProcessInfo *process_handle, MonoError *error);
 
 MonoString*
 ves_icall_System_Diagnostics_Process_ProcessName_internal (gpointer process);

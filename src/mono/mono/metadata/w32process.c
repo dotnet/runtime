@@ -672,3 +672,48 @@ ves_icall_System_Diagnostics_Process_GetProcessData (int pid, gint32 data_type, 
 		*error = perror;
 	return res;
 }
+
+static void
+mono_pin_string (MonoStringHandle in_coophandle, MonoStringHandle *out_coophandle, gunichar2 **chars, gsize *length, gchandle_t *gchandle)
+{
+	*out_coophandle = in_coophandle;
+	if (!MONO_HANDLE_IS_NULL (in_coophandle)) {
+		*chars = mono_string_handle_pin_chars (in_coophandle, gchandle);
+		*length = mono_string_handle_length (in_coophandle);
+	}
+}
+
+void
+mono_createprocess_coop_init (MonoCreateProcessCoop *coop, MonoW32ProcessStartInfoHandle proc_start_info, MonoW32ProcessInfo *process_info)
+{
+	memset (coop, 0, sizeof (*coop));
+
+#define PIN_STRING(h, x) (mono_pin_string (h, &coop->coophandle.x, &coop->x, &coop->length.x, &coop->gchandle.x))
+
+#define PIN(x) PIN_STRING (MONO_HANDLE_NEW_GET (MonoString, proc_start_info, x), x)
+	PIN (filename);
+	PIN (arguments);
+	PIN (working_directory);
+	PIN (verb);
+#undef PIN
+#define PIN(x) PIN_STRING (MONO_HANDLE_NEW (MonoString, process_info->x), x)
+	PIN (username);
+	PIN (domain);
+#undef PIN
+}
+
+static void
+mono_unpin_array (gchandle_t *gchandles, gsize count)
+{
+	for (gsize i = 0; i < count; ++i) {
+		mono_gchandle_free (gchandles [i]);
+		gchandles [i] = 0;
+	}
+}
+
+void
+mono_createprocess_coop_cleanup (MonoCreateProcessCoop *coop)
+{
+	mono_unpin_array ((gchandle_t*)&coop->gchandle, sizeof (coop->gchandle) / sizeof (gchandle_t));
+	memset (coop, 0, sizeof (*coop));
+}

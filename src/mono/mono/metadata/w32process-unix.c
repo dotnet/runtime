@@ -47,6 +47,7 @@
 #include <utime.h>
 #endif
 
+#include <mono/metadata/object-internals.h>
 #include <mono/metadata/w32process.h>
 #include <mono/metadata/w32process-internals.h>
 #include <mono/metadata/w32process-unix-internals.h>
@@ -54,7 +55,6 @@
 #include <mono/metadata/class.h>
 #include <mono/metadata/class-internals.h>
 #include <mono/metadata/object.h>
-#include <mono/metadata/object-internals.h>
 #include <mono/metadata/metadata.h>
 #include <mono/metadata/metadata-internals.h>
 #include <mono/metadata/exception.h>
@@ -533,10 +533,8 @@ static MonoCoopMutex processes_mutex;
 static pid_t current_pid;
 static gpointer current_process;
 
-static const gunichar2 utf16_space_bytes [2] = { 0x20, 0 };
-static const gunichar2 *utf16_space = utf16_space_bytes;
-static const gunichar2 utf16_quote_bytes [2] = { 0x22, 0 };
-static const gunichar2 *utf16_quote = utf16_quote_bytes;
+static const gunichar2 utf16_space [2] = { 0x20, 0 };
+static const gunichar2 utf16_quote [2] = { 0x22, 0 };
 
 static MonoBoolean
 mono_get_exit_code_process (gpointer handle, gint32 *exitcode);
@@ -1855,9 +1853,9 @@ process_create (const gunichar2 *appname, const gunichar2 *cmdline,
 		newapp = mono_unicode_from_external (cli_launcher ? cli_launcher : "mono", &bytes_ignored);
 		if (newapp) {
 			if (appname)
-				newcmd = utf16_concat (utf16_quote, newapp, utf16_quote, utf16_space, appname, utf16_space, cmdline, NULL);
+				newcmd = utf16_concat (utf16_quote, newapp, utf16_quote, utf16_space, appname, utf16_space, cmdline, (const gunichar2 *)NULL);
 			else
-				newcmd = utf16_concat (utf16_quote, newapp, utf16_quote, utf16_space, cmdline, NULL);
+				newcmd = utf16_concat (utf16_quote, newapp, utf16_quote, utf16_space, cmdline, (const gunichar2 *)NULL);
 
 			g_free (newapp);
 
@@ -1913,25 +1911,28 @@ process_create (const gunichar2 *appname, const gunichar2 *cmdline,
 	 * new process inherits the same environment.
 	 */
 	if (process_info->env_variables) {
-		gint i;
-		MonoString *var;
+		MonoArrayHandle array = MONO_HANDLE_NEW (MonoArray, process_info->env_variables);
+		MonoStringHandle var = MONO_HANDLE_NEW (MonoString, NULL);
+		gsize const array_length = mono_array_handle_length (array);
 
 		/* +2: one for the process handle value, and the last one is NULL */
-		env_strings = g_new0 (gchar*, mono_array_length (process_info->env_variables) + 2);
+		// What "process handle value"?
+		env_strings = g_new0 (gchar*, array_length + 2);
 
 		/* Copy each environ string into 'strings' turning it into utf8 (or the requested encoding) at the same time */
-		for (i = 0; i < mono_array_length (process_info->env_variables); ++i) {
-			var = mono_array_get (process_info->env_variables, MonoString*, i);
-			env_strings [i] = mono_unicode_to_external (mono_string_chars (var));
+		for (gsize i = 0; i < array_length; ++i) {
+			MONO_HANDLE_ARRAY_GETREF (var, array, i);
+			gchandle_t gchandle = 0;
+			env_strings [i] = mono_unicode_to_external (mono_string_handle_pin_chars (var, &gchandle));
+			mono_gchandle_free (gchandle);
 		}
 	} else {
-		guint32 env_count;
-
-		env_count = 0;
+		gsize env_count = 0;
 		for (i = 0; environ[i] != NULL; i++)
 			env_count++;
 
 		/* +2: one for the process handle value, and the last one is NULL */
+		// What "process handle value"?
 		env_strings = g_new0 (gchar*, env_count + 2);
 
 		/* Copy each environ string into 'strings' turning it into utf8 (or the requested encoding) at the same time */
@@ -2063,20 +2064,13 @@ process_create (const gunichar2 *appname, const gunichar2 *cmdline,
 	}
 
 free_strings:
-	if (cmd)
-		g_free (cmd);
-	if (full_prog)
-		g_free (full_prog);
-	if (prog)
-		g_free (prog);
-	if (args)
-		g_free (args);
-	if (dir)
-		g_free (dir);
-	if (env_strings)
-		g_strfreev (env_strings);
-	if (argv)
-		g_strfreev (argv);
+	g_free (cmd);
+	g_free (full_prog);
+	g_free (prog);
+	g_free (args);
+	g_free (dir);
+	g_strfreev (env_strings);
+	g_strfreev (argv);
 
 	mono_trace (G_LOG_LEVEL_DEBUG, MONO_TRACE_IO_LAYER_PROCESS, "%s: returning handle %p for pid %d", __func__, handle, pid);
 
@@ -2091,32 +2085,30 @@ free_strings:
 }
 
 MonoBoolean
-ves_icall_System_Diagnostics_Process_ShellExecuteEx_internal (MonoW32ProcessStartInfo *proc_start_info, MonoW32ProcessInfo *process_info)
+ves_icall_System_Diagnostics_Process_ShellExecuteEx_internal (MonoW32ProcessStartInfoHandle proc_start_info, MonoW32ProcessInfo *process_info, MonoError *error)
 {
-	const gunichar2 *lpFile;
-	const gunichar2 *lpParameters;
-	const gunichar2 *lpDirectory;
-	gunichar2 *args;
+	MonoCreateProcessCoop coop;
+	mono_createprocess_coop_init (&coop, proc_start_info, process_info);
+
 	gboolean ret;
 	gboolean handler_needswait = FALSE;
 
-	if (!proc_start_info->filename) {
+	if (!coop.filename) {
 		/* w2k returns TRUE for this, for some reason. */
 		ret = TRUE;
 		goto done;
 	}
 
-	lpFile = proc_start_info->filename ? mono_string_chars (proc_start_info->filename) : NULL;
-	lpParameters = proc_start_info->arguments ? mono_string_chars (proc_start_info->arguments) : NULL;
-	lpDirectory = proc_start_info->working_directory && mono_string_length (proc_start_info->working_directory) != 0 ?
-		mono_string_chars (proc_start_info->working_directory) : NULL;
+	const gunichar2 *lpFile = coop.filename;
+	const gunichar2 *lpParameters = coop.arguments;
+	const gunichar2 *lpDirectory = coop.length.working_directory ? coop.working_directory : NULL;
 
 	/* Put both executable and parameters into the second argument
 	 * to process_create (), so it searches $PATH.  The conversion
 	 * into and back out of utf8 is because there is no
 	 * g_strdup_printf () equivalent for gunichar2 :-(
 	 */
-	args = utf16_concat (utf16_quote, lpFile, utf16_quote, lpParameters == NULL ? NULL : utf16_space, lpParameters, NULL);
+	gunichar2 *args = utf16_concat (utf16_quote, lpFile, utf16_quote, lpParameters ? utf16_space : NULL, lpParameters, (const gunichar2 *)NULL);
 	if (args == NULL) {
 		mono_w32error_set_last (ERROR_INVALID_DATA);
 		ret = FALSE;
@@ -2176,7 +2168,7 @@ ves_icall_System_Diagnostics_Process_ShellExecuteEx_internal (MonoW32ProcessStar
 		 * 371567.
 		 */
 		args = utf16_concat (handler_utf16, utf16_space, utf16_quote, lpFile, utf16_quote,
-			lpParameters == NULL ? NULL : utf16_space, lpParameters, NULL);
+			lpParameters ? utf16_space : NULL, lpParameters, (const gunichar2 *)NULL);
 		if (args == NULL) {
 			mono_w32error_set_last (ERROR_INVALID_DATA);
 			ret = FALSE;
@@ -2215,6 +2207,8 @@ done:
 #endif
 	}
 
+	mono_createprocess_coop_cleanup (&coop);
+
 	return ret;
 }
 
@@ -2222,44 +2216,46 @@ done:
 static gboolean
 process_get_complete_path (const gunichar2 *appname, gchar **completed)
 {
-	gchar *utf8app;
-	gchar *found;
+	char *found = NULL;
+	gboolean result = FALSE;
 
-	utf8app = g_utf16_to_utf8 (appname, -1, NULL, NULL, NULL);
+	char *utf8app = g_utf16_to_utf8 (appname, -1, NULL, NULL, NULL);
 
 	if (g_path_is_absolute (utf8app)) {
 		*completed = g_shell_quote (utf8app);
-		g_free (utf8app);
-		return TRUE;
+		result = TRUE;
+		goto exit;
 	}
 
 	if (g_file_test (utf8app, G_FILE_TEST_IS_EXECUTABLE) && !g_file_test (utf8app, G_FILE_TEST_IS_DIR)) {
 		*completed = g_shell_quote (utf8app);
-		g_free (utf8app);
-		return TRUE;
+		result = TRUE;
+		goto exit;
 	}
 	
 	found = g_find_program_in_path (utf8app);
 	if (found == NULL) {
 		*completed = NULL;
-		g_free (utf8app);
-		return FALSE;
+		result = FALSE;
+		goto exit;
 	}
 
 	*completed = g_shell_quote (found);
+	result = TRUE;
+exit:
 	g_free (found);
 	g_free (utf8app);
-	return TRUE;
+	return result;
 }
 
 static gboolean
-process_get_shell_arguments (MonoW32ProcessStartInfo *proc_start_info, gunichar2 **shell_path)
+process_get_shell_arguments (MonoCreateProcessCoop *coop, gunichar2 **shell_path)
 {
 	gchar *complete_path = NULL;
 
 	*shell_path = NULL;
 
-	if (process_get_complete_path (mono_string_chars (proc_start_info->filename), &complete_path)) {
+	if (process_get_complete_path (coop->filename, &complete_path)) {
 		*shell_path = g_utf8_to_utf16 (complete_path, -1, NULL, NULL, NULL);
 		g_free (complete_path);
 	}
@@ -2268,40 +2264,40 @@ process_get_shell_arguments (MonoW32ProcessStartInfo *proc_start_info, gunichar2
 }
 
 MonoBoolean
-ves_icall_System_Diagnostics_Process_CreateProcess_internal (MonoW32ProcessStartInfo *proc_start_info,
-	HANDLE stdin_handle, HANDLE stdout_handle, HANDLE stderr_handle, MonoW32ProcessInfo *process_info)
+ves_icall_System_Diagnostics_Process_CreateProcess_internal (MonoW32ProcessStartInfoHandle proc_start_info,
+	HANDLE stdin_handle, HANDLE stdout_handle, HANDLE stderr_handle, MonoW32ProcessInfo *process_info, MonoError *error)
 {
+	MonoCreateProcessCoop coop;
+	mono_createprocess_coop_init (&coop, proc_start_info, process_info);
+
 	gboolean ret;
-	gunichar2 *dir;
 	StartupHandles startup_handles;
 	gunichar2 *shell_path = NULL;
-	gunichar2 *args = NULL;
 
 	memset (&startup_handles, 0, sizeof (startup_handles));
 	startup_handles.input = stdin_handle;
 	startup_handles.output = stdout_handle;
 	startup_handles.error = stderr_handle;
 
-	if (!process_get_shell_arguments (proc_start_info, &shell_path)) {
+	if (!process_get_shell_arguments (&coop, &shell_path)) {
 		process_info->pid = -ERROR_FILE_NOT_FOUND;
-		return FALSE;
+		ret = FALSE;
+		goto exit;
 	}
 
-	args = proc_start_info->arguments && mono_string_length (proc_start_info->arguments) > 0 ?
-			mono_string_chars (proc_start_info->arguments): NULL;
+	gunichar2 *args = coop.length.arguments ? coop.arguments : NULL;
 
 	/* The default dir name is "".  Turn that into NULL to mean "current directory" */
-	dir = proc_start_info->working_directory && mono_string_length (proc_start_info->working_directory) > 0 ?
-			mono_string_chars (proc_start_info->working_directory) : NULL;
+	gunichar2 *dir = coop.length.working_directory ? coop.working_directory : NULL;
 
 	ret = process_create (shell_path, args, dir, &startup_handles, process_info);
-
-	if (shell_path != NULL)
-		g_free (shell_path);
 
 	if (!ret)
 		process_info->pid = -mono_w32error_get_last ();
 
+exit:
+	g_free (shell_path);
+	mono_createprocess_coop_cleanup (&coop);
 	return ret;
 }
 
