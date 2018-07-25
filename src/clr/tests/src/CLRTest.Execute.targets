@@ -33,44 +33,6 @@ This file contains the logic for providing Execution Script generation.
       <HasParam>false</HasParam>
     </CLRTestExecutionScriptArgument>
   </ItemDefinitionGroup>
-
-  <!--
-  TASK: GenerateParamList
-  This task takes a list of CLRTestExecutionScriptArgument items and
-  returns a string fit for the usage help message.
-  example:
-    [-arg1 param1] [-arg2] [-arg3 param3]
-  -->
-  <UsingTask
-    TaskName="GenerateParamList"
-    TaskFactory="CodeTaskFactory"
-    AssemblyFile="$(MSBuildToolsPath)\Microsoft.Build.Tasks.v4.0.dll">
-    <ParameterGroup>
-      <ArgumentItems ParameterType="Microsoft.Build.Framework.ITaskItem[]" Required="true"/>
-      <ParamList ParameterType="System.String" Output="true"/>
-    </ParameterGroup>
-    <Task>
-      <Reference Include="System.Core"/>
-      <Using Namespace="System"/>
-      <Using Namespace="System.Linq"/>
-      <Code Type="Fragment" Language="cs"><![CDATA[
-        Func<string, bool> parseBool = s =>
-          {
-            bool value;
-            var success = bool.TryParse(s, out value);
-            if (success)
-              return value;
-            return false;
-          };
-        var items = ArgumentItems.Select(i => new { Item=i, HasParam=parseBool(i.GetMetadata("HasParam"))});
-        var noArg = items.Where(i => !i.HasParam).Select(i => new { Identity=i.Item.ItemSpec});
-        var haveArg = items.Where(i => i.HasParam).Select(i => new { Identity=i.Item.ItemSpec, Name=i.Item.GetMetadata("ParamName")});
-        ParamList = haveArg.Aggregate("", (s,i) => string.Format("{0} [-{1} {2}]", s, i.Identity, i.Name)) +
-                      noArg.Aggregate("", (s,i) => string.Format("{0} [-{1}]", s, i.Identity));
-        ]]>
-      </Code>
-    </Task>
-  </UsingTask>
     
     <!--
   *******************************************************************************************

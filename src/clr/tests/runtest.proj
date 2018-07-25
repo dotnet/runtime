@@ -80,7 +80,8 @@ $(_XunitEpilog)
 
   <PropertyGroup>
     <OutputPath>$(XUnitTestBinBase)\$(CategoryWithSlash)</OutputPath>
-  </PropertyGroup>
+    <RuntimeFrameworkVersion>$(MicrosoftNETCoreRuntimeCoreCLRPackageVersion)</RuntimeFrameworkVersion>
+ </PropertyGroup>
 
   <Import Sdk="Microsoft.NET.Sdk" Project="Sdk.props" />
 
