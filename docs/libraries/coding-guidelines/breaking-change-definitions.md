@@ -9,12 +9,12 @@ A behavioral change represents changes to the behavior of a member. A behavioral
 Binary Compatibility  
 --------------------
 
-Refers to the ability of existing consumers of an API to be able to use a newer version without recompilation. By definition, if an assembly's public signatures have been removed, or altered so that consumers cannot no longer access the same interface exposed by the assembly, the change is said to be a _binary incompatible change_.
+Refers to the ability of existing consumers of an API to be able to use a newer version without recompilation. By definition, if an assembly's public signatures have been removed, or altered so that consumers can no longer access the same interface exposed by the assembly, the change is said to be a _binary incompatible change_.
 
 Source Compatibility
 --------------------
 
-Refers to the ability of existing consumers of an API to recompile against a newer version without any source changes. By definition, if a consumer needs to make changes to its code in order to for it build successfully against a newer version of an API, the change is said to be a _source incompatible change_.
+Refers to the ability of existing consumers of an API to recompile against a newer version without any source changes. By definition, if a consumer needs to make changes to its code in order for it to build successfully against a newer version of an API, the change is said to be a _source incompatible change_.
 
 Design-Time Compatibility  
 -------------------------
