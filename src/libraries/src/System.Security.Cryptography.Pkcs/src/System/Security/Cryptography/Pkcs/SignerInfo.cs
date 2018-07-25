@@ -178,10 +178,7 @@ namespace System.Security.Cryptography.Pkcs
                     AsnReader reader = new AsnReader(modifiedAttr.AttrValues, AsnEncodingRules.BER);
                     AsnReader collReader = reader.ReadSetOf();
 
-                    if (reader.HasData)
-                    {
-                        throw new CryptographicException(SR.Cryptography_Der_Invalid_Encoding);
-                    }
+                    reader.ThrowIfNotEmpty();
 
                     // re-add old values
                     while (collReader.HasData)
@@ -245,10 +242,7 @@ namespace System.Security.Cryptography.Pkcs
                     AsnReader reader = new AsnReader(attributeAsn.AttrValues, AsnEncodingRules.BER);
                     AsnReader collReader = reader.ReadSetOf();
 
-                    if (reader.HasData)
-                    {
-                        throw new CryptographicException(SR.Cryptography_Der_Invalid_Encoding);
-                    }
+                    reader.ThrowIfNotEmpty();
 
                     while (collReader.HasData)
                     {
@@ -377,10 +371,7 @@ namespace System.Security.Cryptography.Pkcs
                     AsnReader reader = new AsnReader(attributeAsn.AttrValues, AsnEncodingRules.BER);
                     AsnReader collReader = reader.ReadSetOf();
 
-                    if (reader.HasData)
-                    {
-                        throw new CryptographicException(SR.Cryptography_Der_Invalid_Encoding);
-                    }
+                    reader.ThrowIfNotEmpty();
 
                     int j = 0;
 
@@ -822,10 +813,7 @@ namespace System.Security.Cryptography.Pkcs
             AsnReader reader = new AsnReader(attrSetBytes, AsnEncodingRules.BER);
             AsnReader collReader = reader.ReadSetOf();
 
-            if (reader.HasData)
-            {
-                throw new CryptographicException(SR.Cryptography_Der_Invalid_Encoding);
-            }
+            reader.ThrowIfNotEmpty();
 
             AsnEncodedDataCollection valueColl = new AsnEncodedDataCollection();
 
@@ -856,10 +844,7 @@ namespace System.Security.Cryptography.Pkcs
             AsnReader reader = new AsnReader(attributeValues, AsnEncodingRules.BER);
             AsnReader collReader = reader.ReadSetOf();
 
-            if (reader.HasData)
-            {
-                throw new CryptographicException(SR.Cryptography_Der_Invalid_Encoding);
-            }
+            reader.ThrowIfNotEmpty();
 
             for (int i = 0; collReader.HasData; i++)
             {
@@ -907,10 +892,7 @@ namespace System.Security.Cryptography.Pkcs
                 AsnReader reader = new AsnReader(modifiedAttr.AttrValues, writer.RuleSet);
                 AsnReader collReader = reader.ReadSetOf();
 
-                if (reader.HasData)
-                {
-                    throw new CryptographicException(SR.Cryptography_Der_Invalid_Encoding);
-                }
+                reader.ThrowIfNotEmpty();
 
                 int i = 0;
 
