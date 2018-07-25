@@ -43,6 +43,8 @@ namespace System.Security.Cryptography
         public static void Fill(Span<byte> data) => throw null;
         public virtual void GetBytes(System.Span<byte> data) { }
         public virtual void GetNonZeroBytes(System.Span<byte> data) { }
+        public static int GetInt32(int fromInclusive, int toExclusive) { throw null; }
+        public static int GetInt32(int toExclusive) { throw null; }
     }
     public abstract partial class RSA : System.Security.Cryptography.AsymmetricAlgorithm
     {
