@@ -6,7 +6,7 @@ using Xunit;
 
 namespace System.Threading.Tests
 {
-    public static class SpinWaitTests
+    public static partial class SpinWaitTests
     {
         [Fact]
         public static void RunSpinWaitTests()
@@ -14,7 +14,7 @@ namespace System.Threading.Tests
             SpinWait spinner = new SpinWait();
 
             spinner.SpinOnce();
-            Assert.Equal(spinner.Count, 1);
+            Assert.Equal(1, spinner.Count);
         }
 
         [Fact]
