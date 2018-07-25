@@ -108,6 +108,9 @@
     <Compile Include="Internal\Cryptography\Pal.Windows\X509Pal.PublicKey.cs" />
     <Compile Include="Internal\Cryptography\Pal.Windows\X509Pal.X500DistinguishedName.cs" />
     <Compile Include="Microsoft\Win32\SafeHandles\SafePasswordHandle.Windows.cs" />
+    <Compile Include="$(CommonPath)\Interop\Windows\Crypt32\Interop.CertFreeCertificateContext.cs">
+      <Link>Common\Interop\Windows\Crypt32\Interop.CertFreeCertificateContext.cs</Link>
+    </Compile>
     <Compile Include="$(CommonPath)\Interop\Windows\Crypt32\Interop.FindOidInfo.cs">
       <Link>Common\Interop\Windows\Crypt32\Interop.FindOidInfo.cs</Link>
     </Compile>
