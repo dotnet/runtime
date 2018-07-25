@@ -2,6 +2,8 @@
   <PropertyGroup>
     <ProjectGuid>{F5E941C8-AF2F-47AB-A066-FF25470CE382}</ProjectGuid>
     <OutputType>Exe</OutputType>
+    <!-- To be consistent between netfx and others we override the SDK behavior which defaults to .dll -->
+    <TargetExt>.exe</TargetExt>
     <RootNamespace>PerfRunner</RootNamespace>
     <AssemblyName>PerfRunner</AssemblyName>
     <AutoGenerateBindingRedirects>true</AutoGenerateBindingRedirects>

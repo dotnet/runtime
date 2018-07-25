@@ -6,10 +6,14 @@
     <DisableImplicitFrameworkDefines>true</DisableImplicitFrameworkDefines>
     <DisableImplicitConfigurationDefines>true</DisableImplicitConfigurationDefines>
     
+    <!-- Disable code paths that require project.assets.json files to be present or to be computed. -->
+    <GenerateDependencyFile>false</GenerateDependencyFile>
+    <ComputeNETCoreBuildOutputFiles>false</ComputeNETCoreBuildOutputFiles>
+
     <!--
-    The Microsoft.NET.Sdk defaults the AssemblySearchPaths earlier than buildtools, so default
-    the correct search paths here. We are rather restrictive by design - only ref assemblies should
-    be resolved by default.
+      The Microsoft.NET.Sdk defaults the AssemblySearchPaths earlier than buildtools, so default
+      the correct search paths here. We are rather restrictive by design - only ref assemblies should
+      be resolved by default.
     -->
     <AssemblySearchPaths>$(AssemblySearchPaths);$(RefPath);{RawFileName}</AssemblySearchPaths>
   </PropertyGroup>
