@@ -220,5 +220,12 @@ ssize_t sendfile (int out_fd, int in_fd, __mono_off32_t* offset, size_t count);
 #endif /* __ANDROID_API__ < 21 */
 #endif /* HOST_ANDROID && ANDROID_UNIFIED_HEADERS */
 
-#endif /* __UTILS_MONO_COMPILER_H__*/
+#if defined (__clang__)
+#define MONO_ATTRIBUTE_NO_OPTIMIZE __attribute__((optnone))
+#elif __GNUC__ > 4 || (__GNUC__ == 4 && __GNUC_MINOR__ >= 4)
+#define MONO_ATTRIBUTE_NO_OPTIMIZE __attribute__((optimize("O0")))
+#else
+#define MONO_ATTRIBUTE_NO_OPTIMIZE /* nothing */
+#endif
 
+#endif /* __UTILS_MONO_COMPILER_H__*/
