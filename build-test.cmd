@@ -506,7 +506,7 @@ echo     ubuntu.16.04-x64: Builds overlay for Ubuntu 16.04
 echo     ubuntu.16.10-x64: Builds overlay for Ubuntu 16.10
 echo     win-x64: Builds overlay for portable Windows
 echo     win7-x64: Builds overlay for Windows 7
-echo ziptests: zips CoreCLR tests & Core_Root for a Helix run
+echo ziptests: zips CoreCLR tests and Core_Root for a Helix run
 echo crossgen: Precompiles the framework managed assemblies
 echo Exclude- Optional parameter - specify location of default exclusion file (defaults to tests\issues.targets if not specified)
 echo     Set to "" to disable default exclusion file.
