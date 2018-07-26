@@ -118,6 +118,8 @@ namespace System.Security.Cryptography.X509Certificates
             throw new PlatformNotSupportedException();
         }
 
+        internal new ICertificatePal Pal => (ICertificatePal)base.Pal;
+
         public bool Archived
         {
             get
