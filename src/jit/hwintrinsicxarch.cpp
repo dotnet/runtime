@@ -721,11 +721,8 @@ GenTree* Compiler::impHWIntrinsic(NamedIntrinsic        intrinsic,
             if (baseType == TYP_UNKNOWN) // the second argument is not a vector
             {
                 baseType = JITtype2varType(strip(info.compCompHnd->getArgType(sig, secondArg, &secondArgClass)));
-                assert(baseType != TYP_STRUCT);
             }
         }
-
-        assert(baseType != TYP_UNKNOWN);
     }
 
     if ((HWIntrinsicInfo::IsOneTypeGeneric(intrinsic) || HWIntrinsicInfo::IsTwoTypeGeneric(intrinsic)) &&
@@ -1204,15 +1201,22 @@ GenTree* Compiler::impAvxOrAvx2Intrinsic(NamedIntrinsic        intrinsic,
         case NI_AVX_SetAllVector256:
         {
             baseType = getBaseTypeOfSIMDType(sig->retTypeSigClass);
+            if (!varTypeIsArithmetic(baseType))
+            {
+                retNode = impUnsupportedHWIntrinsic(CORINFO_HELP_THROW_TYPE_NOT_SUPPORTED, method, sig, mustExpand);
+            }
 #ifdef _TARGET_X86_
             // TODO-XARCH: support long/ulong on 32-bit platfroms
-            if (varTypeIsLong(baseType))
+            else if (varTypeIsLong(baseType))
             {
                 return impUnsupportedHWIntrinsic(CORINFO_HELP_THROW_PLATFORM_NOT_SUPPORTED, method, sig, mustExpand);
             }
 #endif
-            GenTree* arg = impPopStack().val;
-            retNode      = gtNewSimdHWIntrinsicNode(TYP_SIMD32, arg, NI_AVX_SetAllVector256, baseType, 32);
+            else
+            {
+                GenTree* arg = impPopStack().val;
+                retNode      = gtNewSimdHWIntrinsicNode(TYP_SIMD32, arg, NI_AVX_SetAllVector256, baseType, 32);
+            }
             break;
         }
 
