@@ -10,16 +10,16 @@
   -->
   <PropertyGroup>
     <CoreFxCurrentRef>beaa7547d0fcc0acb8cdc178a0e5c5cbffe8c3ba</CoreFxCurrentRef>
-    <CoreClrCurrentRef>beaa7547d0fcc0acb8cdc178a0e5c5cbffe8c3ba</CoreClrCurrentRef>
+    <CoreClrCurrentRef>3b1a78e3781f81604ef29d159f2b78caf1d25cf2</CoreClrCurrentRef>
     <StandardCurrentRef>9beae4222a58a355e2107e99bdbcb8902c232c18</StandardCurrentRef>
-    <BuildToolsCurrentRef>eb1150daa4f3b3e1aa224e05880eb886f4510867</BuildToolsCurrentRef>
+    <BuildToolsCurrentRef>3b1a78e3781f81604ef29d159f2b78caf1d25cf2</BuildToolsCurrentRef>
   </PropertyGroup>
 
   <PropertyGroup>
     <MicrosoftNETCorePlatformsPackageVersion>3.0.0-preview1-26725-04</MicrosoftNETCorePlatformsPackageVersion>
     <MicrosoftNETCoreTargetsPackageVersion>2.0.0</MicrosoftNETCoreTargetsPackageVersion>
     <MicrosoftPrivateCoreFxNETCoreAppPackageVersion>4.6.0-preview1-26725-04</MicrosoftPrivateCoreFxNETCoreAppPackageVersion>
-    <MicrosoftNETCoreRuntimeCoreCLRPackageVersion>3.0.0-preview1-26725-05</MicrosoftNETCoreRuntimeCoreCLRPackageVersion>
+    <MicrosoftNETCoreRuntimeCoreCLRPackageVersion>3.0.0-preview1-26726-04</MicrosoftNETCoreRuntimeCoreCLRPackageVersion>
     <NETStandardLibraryPackageVersion>2.0.3</NETStandardLibraryPackageVersion>
     <MicrosoftDiaSymReaderNativePackageVersion>1.7.0</MicrosoftDiaSymReaderNativePackageVersion>
   </PropertyGroup>
@@ -44,7 +44,7 @@
   <!-- Package versions used as toolsets -->
   <PropertyGroup>
     <FeedTasksPackage>Microsoft.DotNet.Build.Tasks.Feed</FeedTasksPackage>
-    <FeedTasksPackageVersion>2.2.0-preview1-03020-01</FeedTasksPackageVersion>
+    <FeedTasksPackageVersion>2.2.0-preview1-03025-01</FeedTasksPackageVersion>
   </PropertyGroup>
 
   <!-- Publish symbol build task package -->
