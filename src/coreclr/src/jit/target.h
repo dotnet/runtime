@@ -340,12 +340,10 @@ typedef unsigned char   regNumberSmall;
   #define CODE_ALIGN               1       // code alignment requirement
 #if !defined(UNIX_X86_ABI)
   #define STACK_ALIGN              4       // stack alignment requirement
-  #define STACK_ALIGN_SHIFT        2       // Shift-right amount to convert stack size in bytes to size in DWORD_PTRs
-  #define STACK_ALIGN_SHIFT_ALL    2       // Shift-right amount to convert stack size in bytes to size in STACK_ALIGN units
+  #define STACK_ALIGN_SHIFT        2       // Shift-right amount to convert size in bytes to size in STACK_ALIGN units == log2(STACK_ALIGN)
 #else
   #define STACK_ALIGN              16      // stack alignment requirement
-  #define STACK_ALIGN_SHIFT        4       // Shift-right amount to convert stack size in bytes to size in DWORD_PTRs
-  #define STACK_ALIGN_SHIFT_ALL    4       // Shift-right amount to convert stack size in bytes to size in STACK_ALIGN units
+  #define STACK_ALIGN_SHIFT        4       // Shift-right amount to convert size in bytes to size in STACK_ALIGN units == log2(STACK_ALIGN)
 #endif // !UNIX_X86_ABI
 
   #define RBM_INT_CALLEE_SAVED    (RBM_EBX|RBM_ESI|RBM_EDI)
@@ -602,8 +600,7 @@ typedef unsigned char   regNumberSmall;
 
   #define CODE_ALIGN               1       // code alignment requirement
   #define STACK_ALIGN              16      // stack alignment requirement
-  #define STACK_ALIGN_SHIFT        3       // Shift-right amount to convert stack size in bytes to size in pointer sized words
-  #define STACK_ALIGN_SHIFT_ALL    4       // Shift-right amount to convert stack size in bytes to size in STACK_ALIGN units
+  #define STACK_ALIGN_SHIFT        4       // Shift-right amount to convert size in bytes to size in STACK_ALIGN units == log2(STACK_ALIGN)
 
 #if ETW_EBP_FRAMED
   #define RBM_ETW_FRAMED_EBP        RBM_NONE
@@ -958,7 +955,6 @@ typedef unsigned char   regNumberSmall;
 
   #define CODE_ALIGN               2       // code alignment requirement
   #define STACK_ALIGN              8       // stack alignment requirement
-  #define STACK_ALIGN_SHIFT        2       // Shift-right amount to convert stack size in bytes to size in DWORD_PTRs
 
   #define RBM_INT_CALLEE_SAVED    (RBM_R4|RBM_R5|RBM_R6|RBM_R7|RBM_R8|RBM_R9|RBM_R10)
   #define RBM_INT_CALLEE_TRASH    (RBM_R0|RBM_R1|RBM_R2|RBM_R3|RBM_R12|RBM_LR)
@@ -1266,7 +1262,6 @@ typedef unsigned char   regNumberSmall;
 
   #define CODE_ALIGN               4       // code alignment requirement
   #define STACK_ALIGN              16      // stack alignment requirement
-  #define STACK_ALIGN_SHIFT        3       // Shift-right amount to convert stack size in bytes to size in DWORD_PTRs
 
   #define RBM_INT_CALLEE_SAVED    (RBM_R19|RBM_R20|RBM_R21|RBM_R22|RBM_R23|RBM_R24|RBM_R25|RBM_R26|RBM_R27|RBM_R28)
   #define RBM_INT_CALLEE_TRASH    (RBM_R0|RBM_R1|RBM_R2|RBM_R3|RBM_R4|RBM_R5|RBM_R6|RBM_R7|RBM_R8|RBM_R9|RBM_R10|RBM_R11|RBM_R12|RBM_R13|RBM_R14|RBM_R15|RBM_IP0|RBM_IP1|RBM_LR)
