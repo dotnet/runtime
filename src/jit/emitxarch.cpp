@@ -1259,15 +1259,43 @@ bool emitter::emitInsCanOnlyWriteSSE2OrAVXReg(instrDesc* id)
 {
     instruction ins = id->idIns();
 
-    // The following SSE2 instructions write to a general purpose integer register.
-    if (!IsSSEOrAVXInstruction(ins) || ins == INS_mov_xmm2i || ins == INS_cvttsd2si || ins == INS_cvttss2si ||
-        ins == INS_cvtsd2si || ins == INS_cvtss2si || ins == INS_pmovmskb || ins == INS_pextrw || ins == INS_pextrb ||
-        ins == INS_pextrd || ins == INS_pextrq || ins == INS_extractps)
+    if (!IsSSEOrAVXInstruction(ins))
     {
         return false;
     }
 
-    return true;
+    switch (ins)
+    {
+        case INS_andn:
+        case INS_blsi:
+        case INS_blsmsk:
+        case INS_blsr:
+        case INS_cvttsd2si:
+        case INS_cvttss2si:
+        case INS_cvtsd2si:
+        case INS_cvtss2si:
+        case INS_extractps:
+        case INS_mov_xmm2i:
+        case INS_movmskpd:
+        case INS_movmskps:
+        case INS_pdep:
+        case INS_pext:
+        case INS_pmovmskb:
+        case INS_pextrb:
+        case INS_pextrd:
+        case INS_pextrq:
+        case INS_pextrw:
+        case INS_pextrw_sse41:
+        {
+            // These SSE instructions write to a general purpose integer register.
+            return false;
+        }
+
+        default:
+        {
+            return true;
+        }
+    }
 }
 
 /*****************************************************************************
@@ -10099,6 +10127,8 @@ DONE:
             switch (id->idInsFmt())
             {
                 case IF_RWR_ARD:
+                case IF_RRW_ARD:
+                case IF_RWR_RRD_ARD:
                     emitGCregDeadUpd(id->idReg1(), dst);
                     break;
                 default:
@@ -10522,6 +10552,7 @@ BYTE* emitter::emitOutputSV(BYTE* dst, instrDesc* id, code_t code, CnsVal* addc)
             {
                 case IF_RWR_SRD: // Register Write, Stack Read
                 case IF_RRW_SRD: // Register Read/Write, Stack Read
+                case IF_RWR_RRD_SRD:
                     emitGCregDeadUpd(id->idReg1(), dst);
                     break;
                 default:
@@ -10971,6 +11002,8 @@ BYTE* emitter::emitOutputCV(BYTE* dst, instrDesc* id, code_t code, CnsVal* addc)
             switch (id->idInsFmt())
             {
                 case IF_RWR_MRD:
+                case IF_RRW_MRD:
+                case IF_RWR_RRD_MRD:
                     emitGCregDeadUpd(id->idReg1(), dst);
                     break;
                 default:
@@ -11546,6 +11579,7 @@ BYTE* emitter::emitOutputRR(BYTE* dst, instrDesc* id)
 
                 case IF_RWR_RRD:
                 case IF_RRW_RRD:
+                case IF_RWR_RRD_RRD:
                     // INS_movxmm2i writes to reg2.
                     if (ins == INS_mov_xmm2i)
                     {
