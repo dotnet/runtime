@@ -1758,7 +1758,7 @@ interp_entry (InterpEntryData *data)
 }
 
 static MONO_NEVER_INLINE stackval *
-do_icall (ThreadContext *context, int op, stackval *sp, gpointer ptr)
+do_icall (ThreadContext *context, MonoMethodSignature *sig, int op, stackval *sp, gpointer ptr)
 {
 	MonoLMFExt ext;
 	interp_push_lmf (&ext, context->current_frame);
@@ -1792,22 +1792,10 @@ do_icall (ThreadContext *context, int op, stackval *sp, gpointer ptr)
 		func (sp [0].data.p, sp [1].data.p);
 		break;
 	}
-	case MINT_ICALL_PI_V: {
-		void (*func)(gpointer,int) = ptr;
-		sp -= 2;
-		func (sp [0].data.p, sp [1].data.i);
-		break;
-	}
 	case MINT_ICALL_PP_P: {
 		gpointer (*func)(gpointer,gpointer) = ptr;
 		--sp;
 		sp [-1].data.p = func (sp [-1].data.p, sp [0].data.p);
-		break;
-	}
-	case MINT_ICALL_PI_P: {
-		gpointer (*func)(gpointer,int) = ptr;
-		--sp;
-		sp [-1].data.p = func (sp [-1].data.p, sp [0].data.i);
 		break;
 	}
 	case MINT_ICALL_PPP_V: {
@@ -1816,27 +1804,55 @@ do_icall (ThreadContext *context, int op, stackval *sp, gpointer ptr)
 		func (sp [0].data.p, sp [1].data.p, sp [2].data.p);
 		break;
 	}
-	case MINT_ICALL_PPI_V: {
-		void (*func)(gpointer,gpointer,int) = ptr;
-		sp -= 3;
-		func (sp [0].data.p, sp [1].data.p, sp [2].data.i);
-		break;
-	}
-	case MINT_ICALL_PII_P: {
-		gpointer (*func)(gpointer,int,int) = ptr;
+	case MINT_ICALL_PPP_P: {
+		gpointer (*func)(gpointer,gpointer,gpointer) = ptr;
 		sp -= 2;
-		sp [-1].data.p = func (sp [-1].data.p, sp [0].data.i, sp [1].data.i);
+		sp [-1].data.p = func (sp [-1].data.p, sp [0].data.p, sp [1].data.p);
 		break;
 	}
-	case MINT_ICALL_PPII_V: {
-		gpointer (*func)(gpointer,gpointer,int,int) = ptr;
+	case MINT_ICALL_PPPP_V: {
+		void (*func)(gpointer,gpointer,gpointer,gpointer) = ptr;
 		sp -= 4;
-		func (sp [0].data.p, sp [1].data.p, sp [2].data.i, sp [3].data.i);
+		func (sp [0].data.p, sp [1].data.p, sp [2].data.p, sp [3].data.p);
+		break;
+	}
+	case MINT_ICALL_PPPP_P: {
+		gpointer (*func)(gpointer,gpointer,gpointer,gpointer) = ptr;
+		sp -= 3;
+		sp [-1].data.p = func (sp [-1].data.p, sp [0].data.p, sp [1].data.p, sp [2].data.p);
+		break;
+	}
+	case MINT_ICALL_PPPPP_V: {
+		void (*func)(gpointer,gpointer,gpointer,gpointer,gpointer) = ptr;
+		sp -= 5;
+		func (sp [0].data.p, sp [1].data.p, sp [2].data.p, sp [3].data.p, sp [4].data.p);
+		break;
+	}
+	case MINT_ICALL_PPPPP_P: {
+		gpointer (*func)(gpointer,gpointer,gpointer,gpointer,gpointer) = ptr;
+		sp -= 4;
+		sp [-1].data.p = func (sp [-1].data.p, sp [0].data.p, sp [1].data.p, sp [2].data.p, sp [3].data.p);
+		break;
+	}
+	case MINT_ICALL_PPPPPP_V: {
+		void (*func)(gpointer,gpointer,gpointer,gpointer,gpointer,gpointer) = ptr;
+		sp -= 6;
+		func (sp [0].data.p, sp [1].data.p, sp [2].data.p, sp [3].data.p, sp [4].data.p, sp [5].data.p);
+		break;
+	}
+	case MINT_ICALL_PPPPPP_P: {
+		gpointer (*func)(gpointer,gpointer,gpointer,gpointer,gpointer,gpointer) = ptr;
+		sp -= 5;
+		sp [-1].data.p = func (sp [-1].data.p, sp [0].data.p, sp [1].data.p, sp [2].data.p, sp [3].data.p, sp [4].data.p);
 		break;
 	}
 	default:
 		g_assert_not_reached ();
 	}
+
+	/* convert the native representation to the stackval representation */
+	if (sig)
+		stackval_from_data (sig->ret, &sp [-1], (char*) &sp [-1].data.p, sig->pinvoke);
 
 	interp_pop_lmf (&ext);
 	return sp;
@@ -2831,6 +2847,25 @@ interp_exec_method_full (InterpFrame *frame, ThreadContext *context, guint16 *st
 				*sp = *endsp;
 				sp++;
 			}
+			MINT_IN_BREAK;
+		}
+		MINT_IN_CASE(MINT_CALLI_NAT_FAST) {
+			gpointer target_ip = sp [-1].data.p;
+			MonoMethodSignature *csignature = rtm->data_items [* (guint16 *)(ip + 1)];
+			int opcode = *(guint16 *)(ip + 2);
+
+			sp--;
+			frame->ip = ip;
+
+			sp = do_icall (context, csignature, opcode, sp, target_ip);
+			EXCEPTION_CHECKPOINT;
+			if (context->has_resume_state) {
+				if (frame == context->handler_frame)
+					SET_RESUME_STATE (context);
+				else
+					goto exit_frame;
+			}
+			ip += 3;
 			MINT_IN_BREAK;
 		}
 		MINT_IN_CASE(MINT_CALLI_NAT) {
@@ -4887,7 +4922,7 @@ interp_exec_method_full (InterpFrame *frame, ThreadContext *context, guint16 *st
 				 * dummy frame that is stored in the lmf and serves as the transition frame
 				 */
 				context->current_frame = &child_frame;
-				do_icall (context, MINT_ICALL_V_P, &tmp_sp, mono_thread_get_undeniable_exception);
+				do_icall (context, NULL, MINT_ICALL_V_P, &tmp_sp, mono_thread_get_undeniable_exception);
 				context->current_frame = frame;
 
 				MonoException *abort_exc = (MonoException*)tmp_sp.data.p;
@@ -4908,15 +4943,17 @@ interp_exec_method_full (InterpFrame *frame, ThreadContext *context, guint16 *st
 		MINT_IN_CASE(MINT_ICALL_P_V) 
 		MINT_IN_CASE(MINT_ICALL_P_P)
 		MINT_IN_CASE(MINT_ICALL_PP_V)
-		MINT_IN_CASE(MINT_ICALL_PI_V)
 		MINT_IN_CASE(MINT_ICALL_PP_P)
-		MINT_IN_CASE(MINT_ICALL_PI_P)
 		MINT_IN_CASE(MINT_ICALL_PPP_V)
-		MINT_IN_CASE(MINT_ICALL_PPI_V)
-		MINT_IN_CASE(MINT_ICALL_PII_P)
-		MINT_IN_CASE(MINT_ICALL_PPII_V)
+		MINT_IN_CASE(MINT_ICALL_PPP_P)
+		MINT_IN_CASE(MINT_ICALL_PPPP_V)
+		MINT_IN_CASE(MINT_ICALL_PPPP_P)
+		MINT_IN_CASE(MINT_ICALL_PPPPP_V)
+		MINT_IN_CASE(MINT_ICALL_PPPPP_P)
+		MINT_IN_CASE(MINT_ICALL_PPPPPP_V)
+		MINT_IN_CASE(MINT_ICALL_PPPPPP_P)
 			frame->ip = ip;
-			sp = do_icall (context, *ip, sp, rtm->data_items [*(guint16 *)(ip + 1)]);
+			sp = do_icall (context, NULL, *ip, sp, rtm->data_items [*(guint16 *)(ip + 1)]);
 			EXCEPTION_CHECKPOINT;
 			if (context->has_resume_state) {
 				if (frame == context->handler_frame)

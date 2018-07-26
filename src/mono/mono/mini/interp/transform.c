@@ -1098,6 +1098,129 @@ interp_transform_internal_calls (MonoMethod *method, MonoMethod *target_method, 
 	return target_method;
 }
 
+static gboolean
+interp_type_as_ptr (MonoType *tp)
+{
+	if (MONO_TYPE_IS_POINTER (tp))
+		return TRUE;
+	if (MONO_TYPE_IS_REFERENCE (tp))
+		return TRUE;
+	if ((tp)->type == MONO_TYPE_I4)
+		return TRUE;
+#if SIZEOF_VOID_P == 8
+	if ((tp)->type == MONO_TYPE_I8)
+		return TRUE;
+#endif
+	if ((tp)->type == MONO_TYPE_BOOLEAN)
+		return TRUE;
+	if ((tp)->type == MONO_TYPE_CHAR)
+		return TRUE;
+	if ((tp)->type == MONO_TYPE_VALUETYPE && m_class_is_enumtype (tp->data.klass))
+		return TRUE;
+	return FALSE;
+}
+
+#define INTERP_TYPE_AS_PTR(tp) interp_type_as_ptr (tp)
+
+static int
+interp_icall_op_for_sig (MonoMethodSignature *sig)
+{
+	int op = -1;
+	switch (sig->param_count) {
+	case 0:
+		if (MONO_TYPE_IS_VOID (sig->ret))
+			op = MINT_ICALL_V_V;
+		else if (INTERP_TYPE_AS_PTR (sig->ret))
+			op = MINT_ICALL_V_P;
+		break;
+	case 1:
+		if (MONO_TYPE_IS_VOID (sig->ret)) {
+			if (INTERP_TYPE_AS_PTR (sig->params [0]))
+				op = MINT_ICALL_P_V;
+		} else if (INTERP_TYPE_AS_PTR (sig->ret)) {
+			if (INTERP_TYPE_AS_PTR (sig->params [0]))
+				op = MINT_ICALL_P_P;
+		}
+		break;
+	case 2:
+		if (MONO_TYPE_IS_VOID (sig->ret)) {
+			if (INTERP_TYPE_AS_PTR (sig->params [0]) &&
+					INTERP_TYPE_AS_PTR (sig->params [1]))
+				op = MINT_ICALL_PP_V;
+		} else if (INTERP_TYPE_AS_PTR (sig->ret)) {
+			if (INTERP_TYPE_AS_PTR (sig->params [0]) &&
+					INTERP_TYPE_AS_PTR (sig->params [1]))
+				op = MINT_ICALL_PP_P;
+		}
+		break;
+	case 3:
+		if (MONO_TYPE_IS_VOID (sig->ret)) {
+			if (INTERP_TYPE_AS_PTR (sig->params [0]) &&
+					INTERP_TYPE_AS_PTR (sig->params [1]) &&
+					INTERP_TYPE_AS_PTR (sig->params [2]))
+				op = MINT_ICALL_PPP_V;
+		} else if (INTERP_TYPE_AS_PTR (sig->ret)) {
+			if (INTERP_TYPE_AS_PTR (sig->params [0]) &&
+					INTERP_TYPE_AS_PTR (sig->params [1]) &&
+					INTERP_TYPE_AS_PTR (sig->params [2]))
+				op = MINT_ICALL_PPP_P;
+		}
+		break;
+	case 4:
+		if (MONO_TYPE_IS_VOID (sig->ret)) {
+			if (INTERP_TYPE_AS_PTR (sig->params [0]) &&
+					INTERP_TYPE_AS_PTR (sig->params [1]) &&
+					INTERP_TYPE_AS_PTR (sig->params [2]) &&
+					INTERP_TYPE_AS_PTR (sig->params [3]))
+				op = MINT_ICALL_PPPP_V;
+		} else if (INTERP_TYPE_AS_PTR (sig->ret)) {
+			if (INTERP_TYPE_AS_PTR (sig->params [0]) &&
+					INTERP_TYPE_AS_PTR (sig->params [1]) &&
+					INTERP_TYPE_AS_PTR (sig->params [2]) &&
+					INTERP_TYPE_AS_PTR (sig->params [3]))
+				op = MINT_ICALL_PPPP_P;
+		}
+		break;
+	case 5:
+		if (MONO_TYPE_IS_VOID (sig->ret)) {
+			if (INTERP_TYPE_AS_PTR (sig->params [0]) &&
+					INTERP_TYPE_AS_PTR (sig->params [1]) &&
+					INTERP_TYPE_AS_PTR (sig->params [2]) &&
+					INTERP_TYPE_AS_PTR (sig->params [3]) &&
+					INTERP_TYPE_AS_PTR (sig->params [4]))
+				op = MINT_ICALL_PPPPP_V;
+		} else if (INTERP_TYPE_AS_PTR (sig->ret)) {
+			if (INTERP_TYPE_AS_PTR (sig->params [0]) &&
+					INTERP_TYPE_AS_PTR (sig->params [1]) &&
+					INTERP_TYPE_AS_PTR (sig->params [2]) &&
+					INTERP_TYPE_AS_PTR (sig->params [3]) &&
+					INTERP_TYPE_AS_PTR (sig->params [4]))
+				op = MINT_ICALL_PPPPP_P;
+		}
+		break;
+	case 6:
+		if (MONO_TYPE_IS_VOID (sig->ret)) {
+			if (INTERP_TYPE_AS_PTR (sig->params [0]) &&
+					INTERP_TYPE_AS_PTR (sig->params [1]) &&
+					INTERP_TYPE_AS_PTR (sig->params [2]) &&
+					INTERP_TYPE_AS_PTR (sig->params [3]) &&
+					INTERP_TYPE_AS_PTR (sig->params [4]) &&
+					INTERP_TYPE_AS_PTR (sig->params [5]))
+				op = MINT_ICALL_PPPPPP_V;
+		} else if (INTERP_TYPE_AS_PTR (sig->ret)) {
+			if (INTERP_TYPE_AS_PTR (sig->params [0]) &&
+					INTERP_TYPE_AS_PTR (sig->params [1]) &&
+					INTERP_TYPE_AS_PTR (sig->params [2]) &&
+					INTERP_TYPE_AS_PTR (sig->params [3]) &&
+					INTERP_TYPE_AS_PTR (sig->params [4]) &&
+					INTERP_TYPE_AS_PTR (sig->params [5]))
+				op = MINT_ICALL_PPPPPP_P;
+		}
+		break;
+	}
+	return op;
+}
+
 static void
 interp_transform_call (TransformData *td, MonoMethod *method, MonoMethod *target_method, MonoDomain *domain, MonoGenericContext *generic_context, unsigned char *is_bb_start, int body_start_offset, MonoClass *constrained_class, gboolean readonly, MonoError *error, gboolean check_visibility)
 {
@@ -1408,8 +1531,11 @@ interp_transform_call (TransformData *td, MonoMethod *method, MonoMethod *target
 		ADD_CODE(td, get_data_item_index (td, (void *)mono_interp_get_imethod (domain, target_method, error)));
 		mono_error_assert_ok (error);
 	} else {
+		/* Try using fast icall path for simple signatures */
+		if (native && !method->dynamic)
+			op = interp_icall_op_for_sig (csignature);
 		if (calli)
-			ADD_CODE(td, native ? MINT_CALLI_NAT : MINT_CALLI);
+			ADD_CODE(td, native ? ((op != -1) ? MINT_CALLI_NAT_FAST : MINT_CALLI_NAT) : MINT_CALLI);
 		else if (is_virtual)
 			ADD_CODE(td, is_void ? MINT_VCALLVIRT : MINT_CALLVIRT);
 		else
@@ -1417,6 +1543,8 @@ interp_transform_call (TransformData *td, MonoMethod *method, MonoMethod *target
 
 		if (calli) {
 			ADD_CODE(td, get_data_item_index (td, (void *)csignature));
+			if (op != -1)
+				ADD_CODE (td, op);
 		} else {
 			ADD_CODE(td, get_data_item_index (td, (void *)mono_interp_get_imethod (domain, target_method, error)));
 			return_if_nok (error);
@@ -4186,6 +4314,7 @@ generate (MonoMethod *method, MonoMethodHeader *header, InterpMethod *rtm, unsig
 					guint32 token;
 					gpointer func;
 					MonoJitICallInfo *info;
+					int icall_op;
 
 					token = read32 (td->ip + 1);
 					td->ip += 5;
@@ -4194,52 +4323,10 @@ generate (MonoMethod *method, MonoMethodHeader *header, InterpMethod *rtm, unsig
 					g_assert (info);
 
 					CHECK_STACK (td, info->sig->param_count);
-					switch (info->sig->param_count) {
-					case 0:
-						if (MONO_TYPE_IS_VOID (info->sig->ret))
-							ADD_CODE (td,MINT_ICALL_V_V);
-						else
-							ADD_CODE (td, MINT_ICALL_V_P);
-						break;
-					case 1:
-						if (MONO_TYPE_IS_VOID (info->sig->ret))
-							ADD_CODE (td,MINT_ICALL_P_V);
-						else
-							ADD_CODE (td,MINT_ICALL_P_P);
-						break;
-					case 2:
-						if (MONO_TYPE_IS_VOID (info->sig->ret)) {
-							if (info->sig->params [1]->type == MONO_TYPE_I4)
-								ADD_CODE (td,MINT_ICALL_PI_V);
-							else
-								ADD_CODE (td,MINT_ICALL_PP_V);
-						} else {
-							if (info->sig->params [1]->type == MONO_TYPE_I4)
-								ADD_CODE (td,MINT_ICALL_PI_P);
-							else
-								ADD_CODE (td,MINT_ICALL_PP_P);
-						}
-						break;
-					case 3:
-						if (MONO_TYPE_IS_VOID (info->sig->ret)) {
-							if (info->sig->params [2]->type == MONO_TYPE_I4)
-								ADD_CODE (td,MINT_ICALL_PPI_V);
-							else
-								ADD_CODE (td,MINT_ICALL_PPP_V);
-						} else {
-							g_assert (info->sig->params [1]->type == MONO_TYPE_I4 && info->sig->params [2]->type == MONO_TYPE_I4);
-							ADD_CODE (td, MINT_ICALL_PII_P);
-						}
-						break;
-					case 4:
-						g_assert (MONO_TYPE_IS_VOID (info->sig->ret));
-						g_assert (info->sig->params [2]->type == MONO_TYPE_I4 && info->sig->params [3]->type == MONO_TYPE_I4);
-						ADD_CODE (td, MINT_ICALL_PPII_V);
-						break;
-					default:
-						g_assert_not_reached ();
-					}
+					icall_op = interp_icall_op_for_sig (info->sig);
+					g_assert (icall_op != -1);
 
+					ADD_CODE(td, icall_op);
 					ADD_CODE(td, get_data_item_index (td, func));
 					td->sp -= info->sig->param_count;
 
