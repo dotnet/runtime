@@ -1281,6 +1281,20 @@ public:
         return OperIsShift(OperGet());
     }
 
+    static bool OperIsShiftLong(genTreeOps gtOper)
+    {
+#ifdef _TARGET_64BIT_
+        return false;
+#else
+        return (gtOper == GT_LSH_HI) || (gtOper == GT_RSH_LO);
+#endif
+    }
+
+    bool OperIsShiftLong() const
+    {
+        return OperIsShiftLong(OperGet());
+    }
+
     static bool OperIsRotate(genTreeOps gtOper)
     {
         return (gtOper == GT_ROL) || (gtOper == GT_ROR);
@@ -1293,7 +1307,7 @@ public:
 
     static bool OperIsShiftOrRotate(genTreeOps gtOper)
     {
-        return OperIsShift(gtOper) || OperIsRotate(gtOper);
+        return OperIsShift(gtOper) || OperIsRotate(gtOper) || OperIsShiftLong(gtOper);
     }
 
     bool OperIsShiftOrRotate() const
