@@ -63,11 +63,11 @@ int LinearScan::BuildLclHeap(GenTree* tree)
         }
         else
         {
-            sizeVal                          = AlignUp(sizeVal, STACK_ALIGN);
-            size_t cntStackAlignedWidthItems = (sizeVal >> STACK_ALIGN_SHIFT);
+            sizeVal          = AlignUp(sizeVal, STACK_ALIGN);
+            size_t pushCount = sizeVal / REGSIZE_BYTES;
 
-            // For small allocations up to 4 store instructions
-            if (cntStackAlignedWidthItems <= 4)
+            // For small allocations we use up to 4 push instructions
+            if (pushCount <= 4)
             {
                 internalIntCount = 0;
             }

@@ -2241,13 +2241,15 @@ void CodeGen::genLclHeap(GenTree* tree)
         if (compiler->info.compInitMem)
         {
             // Convert the count from a count of bytes to a loop count. We will loop once per
-            // stack alignment size, so each loop will zero 4 bytes on x86 and 16 bytes on x64.
+            // stack alignment size, so each loop will zero 4 bytes on Windows/x86, and 16 bytes
+            // on x64 and Linux/x86.
+            //
             // Note that we zero a single reg-size word per iteration on x86, and 2 reg-size
             // words per iteration on x64. We will shift off all the stack alignment bits
             // added above, so there is no need for an 'and' instruction.
 
             // --- shr regCnt, 2 (or 4) ---
-            inst_RV_SH(INS_SHIFT_RIGHT_LOGICAL, EA_PTRSIZE, regCnt, STACK_ALIGN_SHIFT_ALL);
+            inst_RV_SH(INS_SHIFT_RIGHT_LOGICAL, EA_PTRSIZE, regCnt, STACK_ALIGN_SHIFT);
         }
         else
         {

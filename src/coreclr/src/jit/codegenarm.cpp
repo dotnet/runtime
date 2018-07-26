@@ -360,16 +360,19 @@ void CodeGen::genLclHeap(GenTree* tree)
         size_t amount = size->gtIntCon.gtIconVal;
         amount        = AlignUp(amount, STACK_ALIGN);
 
-        // For small allocations we will generate up to four stp instructions
-        size_t cntStackAlignedWidthItems = (amount >> STACK_ALIGN_SHIFT);
-        if (cntStackAlignedWidthItems <= 4)
+        // For small allocations we will generate up to four push instructions (either 2 or 4, exactly,
+        // since STACK_ALIGN is 8, and REGSIZE_BYTES is 4).
+        static_assert_no_msg(STACK_ALIGN == (REGSIZE_BYTES * 2));
+        assert(amount % REGSIZE_BYTES == 0);
+        size_t pushCount = amount / REGSIZE_BYTES;
+        if (pushCount <= 4)
         {
             instGen_Set_Reg_To_Zero(EA_PTRSIZE, regCnt);
 
-            while (cntStackAlignedWidthItems != 0)
+            while (pushCount != 0)
             {
                 inst_IV(INS_push, (unsigned)genRegMask(regCnt));
-                cntStackAlignedWidthItems -= 1;
+                pushCount -= 1;
             }
 
             goto ALLOC_DONE;
