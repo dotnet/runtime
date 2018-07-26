@@ -71,36 +71,37 @@ cd ~/corefx/bin/tests/System.Collections.Tests
 ~/coreclr/bin/tests/Linux.x64.Release/testhost/dotnet .\xunit.console.netcore.exe .\System.Collections.Tests.dll -notrait category=nonnetcoretests -notrait category=nonlinuxtests
 ```
 
-### CI Script
-CoreCLR has an alternative way to run CoreFX tests, built for PR CI jobs. 
+## CI Script
+CoreCLR has an alternative way to run CoreFX tests, built for PR CI jobs.
 
 To run tests against pre-built binaries you can execute the following from the CoreCLR repo root:
 
-#### Windows
+### Windows
 1. `.\build.cmd <arch> <build_type> skiptests`
 2. `.\build-test.cmd <arch> <build_type> buildtesthostonly` - generates the test host
 3. `.\tests\runtest.cmd <arch> <build_type> corefxtests|corefxtestsall` - runs CoreFX tests
 
-#### Linux and OSX
+### Linux and OSX
 1. `./build.sh <arch> <build_type> skiptests`
 2. `./build-test.sh <arch> <build_type>  generatetesthostonly`
 3. `./tests/runtest.sh  --corefxtests|--corefxtestsall --testHostDir=<path_to_testhost> --coreclr-src<path_to_coreclr>`
 
-CoreFXTests - runs all tests defined in TopN.Windows.CoreFX.issues.json or the test list specified with the argument `CoreFXTestList`
-CoreFXTestsAll - runs all tests available in the test list found at the URL in `.\coreclr\tests\CoreFX\CoreFXTestListURL.txt`.
-#### Linux - specific
++ CoreFXTests - runs all tests defined in TopN.Windows.CoreFX.issues.json or the test list specified with the argument `CoreFXTestList`
+
++ CoreFXTestsAll - runs all tests available in the test list found at the URL in `.\coreclr\tests\CoreFX\CoreFXTestListURL.txt`.
+### Linux - specific
 &lt;path_to_testhost&gt; - path to the coreclr test host built in step 2.
 &lt;path_to_coreclr&gt; - path to coreclr source 
 
 ### Helix Testing
 To use Helix-built binaries, substitute the URL in `.\coreclr\tests\CoreFX\CoreFXTestListURL.txt` with one acquired from a Helix test run and run the commands above.
 
-#### Workflow
+### Workflow
 The CoreFX tests CI jobs run against cached test binaries in blob storage. This means that tests might need to be disabled until the test binaries are refreshed as breaking changes are merged in both CoreCLR and CoreFX. If you suspect a test is not failing because of a functional regression, but rather because it's stale you can add it to either the [Windows](https://github.com/dotnet/coreclr/blob/master/tests/CoreFX/TopN.CoreFX.x64.Windows.issues.json) or [Unix](https://github.com/dotnet/coreclr/blob/master/tests/CoreFX/TopN.CoreFX.x64.Unix.issues.json) test exclusion lists.
 
-#### Test List Format
+### Test List Format
 The tests defined in TopN.Windows.CoreFX.issues.json or the test list specified with the argument `CoreFXTestList` should conform to the following format -
-```json
+```js
     {
         "name": "<Fully Qualified Assembly Name>", //e.g. System.Collections.Concurrent.Tests
         "enabled": true|false, // Defines whether a test assembly should be run. If set to false any tests with the same name will not be run even if corefxtestsall is specified
