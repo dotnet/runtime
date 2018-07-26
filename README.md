@@ -62,7 +62,7 @@ Daily Builds
 
 
 [win-x64-badge-master]: https://dotnetcli.blob.core.windows.net/dotnet/Runtime/master/sharedfx_win-x64_Release_version_badge.svg
-[win-x64-version-master]: https://dotnetcli.blob.core.windows.net/dotnet/Runtime/master/latest.sharedfx.win.x64.version
+[win-x64-version-master]: https://dotnetcli.blob.core.windows.net/dotnet/Runtime/master/latest.version
 [win-x64-installer-master]: https://dotnetcli.blob.core.windows.net/dotnet/Runtime/master/dotnet-runtime-latest-win-x64.exe
 [win-x64-installer-checksum-master]: https://dotnetclichecksums.blob.core.windows.net/dotnet/Runtime/master/dotnet-runtime-latest-win-x64.exe.sha512
 [win-x64-zip-master]: https://dotnetcli.blob.core.windows.net/dotnet/Runtime/master/dotnet-runtime-latest-win-x64.zip
@@ -70,7 +70,7 @@ Daily Builds
 [win-x64-symbols-zip-master]: https://dotnetcli.blob.core.windows.net/dotnet/Runtime/master/dotnet-runtime-symbols-latest-win-x64.zip
 
 [win-x64-badge-2.1.X]: https://dotnetcli.blob.core.windows.net/dotnet/Runtime/release/2.1/sharedfx_win-x64_Release_version_badge.svg
-[win-x64-version-2.1.X]: https://dotnetcli.blob.core.windows.net/dotnet/Runtime/release/2.1/latest.sharedfx.win.x64.version
+[win-x64-version-2.1.X]: https://dotnetcli.blob.core.windows.net/dotnet/Runtime/release/2.1/latest.version
 [win-x64-installer-2.1.X]: https://dotnetcli.blob.core.windows.net/dotnet/Runtime/release/2.1/dotnet-runtime-latest-win-x64.exe
 [win-x64-installer-checksum-2.1.X]: https://dotnetclichecksums.blob.core.windows.net/dotnet/Runtime/release/2.1/dotnet-runtime-latest-win-x64.exe.sha512
 [win-x64-zip-2.1.X]: https://dotnetcli.blob.core.windows.net/dotnet/Runtime/release/2.1/dotnet-runtime-latest-win-x64.zip
@@ -78,7 +78,7 @@ Daily Builds
 [win-x64-symbols-zip-2.1.X]: https://dotnetcli.blob.core.windows.net/dotnet/Runtime/release/2.1/dotnet-runtime-symbols-latest-win-x64.zip
 
 [win-x64-badge-2.0.X]: https://dotnetcli.blob.core.windows.net/dotnet/Runtime/release/2.0.0/sharedfx_win-x64_Release_version_badge.svg
-[win-x64-version-2.0.X]: https://dotnetcli.blob.core.windows.net/dotnet/Runtime/release/2.0.0/latest.sharedfx.win.x64.version
+[win-x64-version-2.0.X]: https://dotnetcli.blob.core.windows.net/dotnet/Runtime/release/2.0.0/latest.version
 [win-x64-installer-2.0.X]: https://dotnetcli.blob.core.windows.net/dotnet/Runtime/release/2.0.0/dotnet-runtime-latest-win-x64.exe
 [win-x64-installer-checksum-2.0.X]: https://dotnetclichecksums.blob.core.windows.net/dotnet/Runtime/release/2.0.0/dotnet-runtime-latest-win-x64.exe.sha512
 [win-x64-zip-2.0.X]: https://dotnetcli.blob.core.windows.net/dotnet/Runtime/release/2.0.0/dotnet-runtime-latest-win-x64.zip
@@ -97,7 +97,7 @@ Daily Builds
 
 
 [win-x86-badge-master]: https://dotnetcli.blob.core.windows.net/dotnet/Runtime/master/sharedfx_win-x86_Release_version_badge.svg
-[win-x86-version-master]: https://dotnetcli.blob.core.windows.net/dotnet/Runtime/master/latest.sharedfx.win.x86.version
+[win-x86-version-master]: https://dotnetcli.blob.core.windows.net/dotnet/Runtime/master/latest.version
 [win-x86-installer-master]: https://dotnetcli.blob.core.windows.net/dotnet/Runtime/master/dotnet-runtime-latest-win-x86.exe
 [win-x86-installer-checksum-master]: https://dotnetclichecksums.blob.core.windows.net/dotnet/Runtime/master/dotnet-runtime-latest-win-x86.exe.sha512
 [win-x86-zip-master]: https://dotnetcli.blob.core.windows.net/dotnet/Runtime/master/dotnet-runtime-latest-win-x86.zip
@@ -105,7 +105,7 @@ Daily Builds
 [win-x86-symbols-zip-master]: https://dotnetcli.blob.core.windows.net/dotnet/Runtime/master/dotnet-runtime-symbols-latest-win-x86.zip
 
 [win-x86-badge-2.1.X]: https://dotnetcli.blob.core.windows.net/dotnet/Runtime/release/2.1/sharedfx_win-x86_Release_version_badge.svg
-[win-x86-version-2.1.X]: https://dotnetcli.blob.core.windows.net/dotnet/Runtime/release/2.1/latest.sharedfx.win.x86.version
+[win-x86-version-2.1.X]: https://dotnetcli.blob.core.windows.net/dotnet/Runtime/release/2.1/latest.version
 [win-x86-installer-2.1.X]: https://dotnetcli.blob.core.windows.net/dotnet/Runtime/release/2.1/dotnet-runtime-latest-win-x86.exe
 [win-x86-installer-checksum-2.1.X]: https://dotnetclichecksums.blob.core.windows.net/dotnet/Runtime/release/2.1/dotnet-runtime-latest-win-x86.exe.sha512
 [win-x86-zip-2.1.X]: https://dotnetcli.blob.core.windows.net/dotnet/Runtime/release/2.1/dotnet-runtime-latest-win-x86.zip
@@ -113,7 +113,7 @@ Daily Builds
 [win-x86-symbols-zip-2.1.X]: https://dotnetcli.blob.core.windows.net/dotnet/Runtime/release/2.1/dotnet-runtime-symbols-latest-win-x86.zip
 
 [win-x86-badge-2.0.X]: https://dotnetcli.blob.core.windows.net/dotnet/Runtime/release/2.0.0/sharedfx_win-x86_Release_version_badge.svg
-[win-x86-version-2.0.X]: https://dotnetcli.blob.core.windows.net/dotnet/Runtime/release/2.0.0/latest.sharedfx.win.x86.version
+[win-x86-version-2.0.X]: https://dotnetcli.blob.core.windows.net/dotnet/Runtime/release/2.0.0/latest.version
 [win-x86-installer-2.0.X]: https://dotnetcli.blob.core.windows.net/dotnet/Runtime/release/2.0.0/dotnet-runtime-latest-win-x86.exe
 [win-x86-installer-checksum-2.0.X]: https://dotnetclichecksums.blob.core.windows.net/dotnet/Runtime/release/2.0.0/dotnet-runtime-latest-win-x86.exe.sha512
 [win-x86-zip-2.0.X]: https://dotnetcli.blob.core.windows.net/dotnet/Runtime/release/2.0.0/dotnet-runtime-latest-win-x86.zip
@@ -132,45 +132,45 @@ Daily Builds
 
 
 [win-arm-badge-master]: https://dotnetcli.blob.core.windows.net/dotnet/Runtime/master/sharedfx_win-arm_Release_version_badge.svg
-[win-arm-version-master]: https://dotnetcli.blob.core.windows.net/dotnet/Runtime/master/latest.sharedfx.win.arm.version
+[win-arm-version-master]: https://dotnetcli.blob.core.windows.net/dotnet/Runtime/master/latest.version
 [win-arm-zip-master]: https://dotnetcli.blob.core.windows.net/dotnet/Runtime/master/dotnet-runtime-latest-win-arm.zip
 [win-arm-zip-checksum-master]: https://dotnetclichecksums.blob.core.windows.net/dotnet/Runtime/master/dotnet-runtime-latest-win-arm.zip.sha512
 [win-arm-symbols-zip-master]: https://dotnetcli.blob.core.windows.net/dotnet/Runtime/master/dotnet-runtime-symbols-latest-win-arm.zip
 
 [win-arm-badge-2.1.X]: https://dotnetcli.blob.core.windows.net/dotnet/Runtime/release/2.1/sharedfx_win-arm_Release_version_badge.svg
-[win-arm-version-2.1.X]: https://dotnetcli.blob.core.windows.net/dotnet/Runtime/release/2.1/latest.sharedfx.win.arm.version
+[win-arm-version-2.1.X]: https://dotnetcli.blob.core.windows.net/dotnet/Runtime/release/2.1/latest.version
 [win-arm-zip-2.1.X]: https://dotnetcli.blob.core.windows.net/dotnet/Runtime/release/2.1/dotnet-runtime-latest-win-arm.zip
 [win-arm-zip-checksum-2.1.X]: https://dotnetclichecksums.blob.core.windows.net/dotnet/Runtime/release/2.1/dotnet-runtime-latest-win-arm.zip.sha512
 [win-arm-symbols-zip-2.1.X]: https://dotnetcli.blob.core.windows.net/dotnet/Runtime/release/2.1/dotnet-runtime-symbols-latest-win-arm.zip
 
 [win-arm-badge-2.0.X]: https://dotnetcli.blob.core.windows.net/dotnet/Runtime/release/2.0.0/sharedfx_win-arm_Release_version_badge.svg
-[win-arm-version-2.0.X]: https://dotnetcli.blob.core.windows.net/dotnet/Runtime/release/2.0.0/latest.sharedfx.win.arm.version
+[win-arm-version-2.0.X]: https://dotnetcli.blob.core.windows.net/dotnet/Runtime/release/2.0.0/latest.version
 [win-arm-zip-2.0.X]: https://dotnetcli.blob.core.windows.net/dotnet/Runtime/release/2.0.0/dotnet-runtime-latest-win-arm.zip
 [win-arm-zip-checksum-2.0.X]: https://dotnetclichecksums.blob.core.windows.net/dotnet/Runtime/release/2.0.0/dotnet-runtime-latest-win-arm.zip.sha512
 [win-arm-symbols-zip-2.0.X]: https://dotnetcli.blob.core.windows.net/dotnet/Runtime/release/2.0.0/dotnet-runtime-symbols-latest-win-arm.zip
 
 
 [win-arm64-badge-master]: https://dotnetcli.blob.core.windows.net/dotnet/Runtime/master/sharedfx_win-arm64_Release_version_badge.svg
-[win-arm64-version-master]: https://dotnetcli.blob.core.windows.net/dotnet/Runtime/master/latest.sharedfx.win.arm64.version
+[win-arm64-version-master]: https://dotnetcli.blob.core.windows.net/dotnet/Runtime/master/latest.version
 [win-arm64-zip-master]: https://dotnetcli.blob.core.windows.net/dotnet/Runtime/master/dotnet-runtime-latest-win-arm64.zip
 [win-arm64-zip-checksum-master]: https://dotnetclichecksums.blob.core.windows.net/dotnet/Runtime/master/dotnet-runtime-latest-win-arm64.zip.sha512
 [win-arm64-symbols-zip-master]: https://dotnetcli.blob.core.windows.net/dotnet/Runtime/master/dotnet-runtime-symbols-latest-win-arm64.zip
 
 [win-arm64-badge-2.1.X]: https://dotnetcli.blob.core.windows.net/dotnet/Runtime/release/2.1/sharedfx_win-arm64_Release_version_badge.svg
-[win-arm64-version-2.1.X]: https://dotnetcli.blob.core.windows.net/dotnet/Runtime/release/2.1/latest.sharedfx.win.arm64.version
+[win-arm64-version-2.1.X]: https://dotnetcli.blob.core.windows.net/dotnet/Runtime/release/2.1/latest.version
 [win-arm64-zip-2.1.X]: https://dotnetcli.blob.core.windows.net/dotnet/Runtime/release/2.1/dotnet-runtime-latest-win-arm64.zip
 [win-arm64-zip-checksum-2.1.X]: https://dotnetclichecksums.blob.core.windows.net/dotnet/Runtime/release/2.1/dotnet-runtime-latest-win-arm64.zip.sha512
 [win-arm64-symbols-zip-2.1.X]: https://dotnetcli.blob.core.windows.net/dotnet/Runtime/release/2.1/dotnet-runtime-symbols-latest-win-arm64.zip
 
 [win-arm64-badge-2.0.X]: https://dotnetcli.blob.core.windows.net/dotnet/Runtime/release/2.0.0/sharedfx_win-arm64_Release_version_badge.svg
-[win-arm64-version-2.0.X]: https://dotnetcli.blob.core.windows.net/dotnet/Runtime/release/2.0.0/latest.sharedfx.win.arm64.version
+[win-arm64-version-2.0.X]: https://dotnetcli.blob.core.windows.net/dotnet/Runtime/release/2.0.0/latest.version
 [win-arm64-zip-2.0.X]: https://dotnetcli.blob.core.windows.net/dotnet/Runtime/release/2.0.0/dotnet-runtime-latest-win-arm64.zip
 [win-arm64-zip-checksum-2.0.X]: https://dotnetclichecksums.blob.core.windows.net/dotnet/Runtime/release/2.0.0/dotnet-runtime-latest-win-arm64.zip.sha512
 [win-arm64-symbols-zip-2.0.X]: https://dotnetcli.blob.core.windows.net/dotnet/Runtime/release/2.0.0/dotnet-runtime-symbols-latest-win-arm64.zip
 
 
 [osx-badge-master]: https://dotnetcli.blob.core.windows.net/dotnet/Runtime/master/sharedfx_osx-x64_Release_version_badge.svg
-[osx-version-master]: https://dotnetcli.blob.core.windows.net/dotnet/Runtime/master/latest.sharedfx.osx.x64.version
+[osx-version-master]: https://dotnetcli.blob.core.windows.net/dotnet/Runtime/master/latest.version
 [osx-installer-master]: https://dotnetcli.blob.core.windows.net/dotnet/Runtime/master/dotnet-runtime-latest-osx-x64.pkg
 [osx-installer-checksum-master]: https://dotnetclichecksums.blob.core.windows.net/dotnet/Runtime/master/dotnet-runtime-latest-osx-x64.pkg.sha512
 [osx-targz-master]: https://dotnetcli.blob.core.windows.net/dotnet/Runtime/master/dotnet-runtime-latest-osx-x64.tar.gz
@@ -178,7 +178,7 @@ Daily Builds
 [osx-symbols-targz-master]: https://dotnetcli.blob.core.windows.net/dotnet/Runtime/master/dotnet-runtime-symbols-latest-osx-x64.tar.gz
 
 [osx-badge-2.1.X]: https://dotnetcli.blob.core.windows.net/dotnet/Runtime/release/2.1/sharedfx_osx-x64_Release_version_badge.svg
-[osx-version-2.1.X]: https://dotnetcli.blob.core.windows.net/dotnet/Runtime/release/2.1/latest.sharedfx.osx.x64.version
+[osx-version-2.1.X]: https://dotnetcli.blob.core.windows.net/dotnet/Runtime/release/2.1/latest.version
 [osx-installer-2.1.X]: https://dotnetcli.blob.core.windows.net/dotnet/Runtime/release/2.1/dotnet-runtime-latest-osx-x64.pkg
 [osx-installer-checksum-2.1.X]: https://dotnetclichecksums.blob.core.windows.net/dotnet/Runtime/release/2.1/dotnet-runtime-latest-osx-x64.pkg.sha512
 [osx-targz-2.1.X]: https://dotnetcli.blob.core.windows.net/dotnet/Runtime/release/2.1/dotnet-runtime-latest-osx-x64.tar.gz
@@ -186,7 +186,7 @@ Daily Builds
 [osx-symbols-targz-2.1.X]: https://dotnetcli.blob.core.windows.net/dotnet/Runtime/release/2.1/dotnet-runtime-symbols-latest-osx-x64.tar.gz
 
 [osx-badge-2.0.X]: https://dotnetcli.blob.core.windows.net/dotnet/Runtime/release/2.0.0/sharedfx_osx-x64_Release_version_badge.svg
-[osx-version-2.0.X]: https://dotnetcli.blob.core.windows.net/dotnet/Runtime/release/2.0.0/latest.sharedfx.osx.x64.version
+[osx-version-2.0.X]: https://dotnetcli.blob.core.windows.net/dotnet/Runtime/release/2.0.0/latest.version
 [osx-installer-2.0.X]: https://dotnetcli.blob.core.windows.net/dotnet/Runtime/release/2.0.0/dotnet-runtime-latest-osx-x64.pkg
 [osx-installer-checksum-2.0.X]: https://dotnetclichecksums.blob.core.windows.net/dotnet/Runtime/release/2.0.0/dotnet-runtime-latest-osx-x64.pkg.sha512
 [osx-targz-2.0.X]: https://dotnetcli.blob.core.windows.net/dotnet/Runtime/release/2.0.0/dotnet-runtime-latest-osx-x64.tar.gz
@@ -205,58 +205,58 @@ Daily Builds
 
 
 [linux-x64-badge-master]: https://dotnetcli.blob.core.windows.net/dotnet/Runtime/master/sharedfx_linux-x64_Release_version_badge.svg
-[linux-x64-version-master]: https://dotnetcli.blob.core.windows.net/dotnet/Runtime/master/latest.sharedfx.linux.x64.version
+[linux-x64-version-master]: https://dotnetcli.blob.core.windows.net/dotnet/Runtime/master/latest.version
 [linux-x64-targz-master]: https://dotnetcli.blob.core.windows.net/dotnet/Runtime/master/dotnet-runtime-latest-linux-x64.tar.gz
 [linux-x64-targz-checksum-master]: https://dotnetclichecksums.blob.core.windows.net/dotnet/Runtime/master/dotnet-runtime-latest-linux-x64.tar.gz.sha512
 [linux-x64-symbols-targz-master]: https://dotnetcli.blob.core.windows.net/dotnet/Runtime/master/dotnet-runtime-symbols-latest-linux-x64.tar.gz
 
 [linux-x64-badge-2.1.X]: https://dotnetcli.blob.core.windows.net/dotnet/Runtime/release/2.1/sharedfx_linux-x64_Release_version_badge.svg
-[linux-x64-version-2.1.X]: https://dotnetcli.blob.core.windows.net/dotnet/Runtime/release/2.1/latest.sharedfx.linux.x64.version
+[linux-x64-version-2.1.X]: https://dotnetcli.blob.core.windows.net/dotnet/Runtime/release/2.1/latest.version
 [linux-x64-targz-2.1.X]: https://dotnetcli.blob.core.windows.net/dotnet/Runtime/release/2.1/dotnet-runtime-latest-linux-x64.tar.gz
 [linux-x64-targz-checksum-2.1.X]: https://dotnetclichecksums.blob.core.windows.net/dotnet/Runtime/release/2.1/dotnet-runtime-latest-linux-x64.tar.gz.sha512
 [linux-x64-symbols-targz-2.1.X]: https://dotnetcli.blob.core.windows.net/dotnet/Runtime/release/2.1/dotnet-runtime-symbols-latest-linux-x64.tar.gz
 
 [linux-x64-badge-2.0.X]: https://dotnetcli.blob.core.windows.net/dotnet/Runtime/release/2.0.0/sharedfx_linux-x64_Release_version_badge.svg
-[linux-x64-version-2.0.X]: https://dotnetcli.blob.core.windows.net/dotnet/Runtime/release/2.0.0/latest.sharedfx.linux.x64.version
+[linux-x64-version-2.0.X]: https://dotnetcli.blob.core.windows.net/dotnet/Runtime/release/2.0.0/latest.version
 [linux-x64-targz-2.0.X]: https://dotnetcli.blob.core.windows.net/dotnet/Runtime/release/2.0.0/dotnet-runtime-latest-linux-x64.tar.gz
 [linux-x64-targz-checksum-2.0.X]: https://dotnetclichecksums.blob.core.windows.net/dotnet/Runtime/release/2.0.0/dotnet-runtime-latest-linux-x64.tar.gz.sha512
 [linux-x64-symbols-targz-2.0.X]: https://dotnetcli.blob.core.windows.net/dotnet/Runtime/release/2.0.0/dotnet-runtime-symbols-latest-linux-x64.tar.gz
 
 
 [linux-arm-badge-master]: https://dotnetcli.blob.core.windows.net/dotnet/Runtime/master/sharedfx_linux-arm_Release_version_badge.svg
-[linux-arm-version-master]: https://dotnetcli.blob.core.windows.net/dotnet/Runtime/master/latest.sharedfx.linux.arm.version
+[linux-arm-version-master]: https://dotnetcli.blob.core.windows.net/dotnet/Runtime/master/latest.version
 [linux-arm-targz-master]: https://dotnetcli.blob.core.windows.net/dotnet/Runtime/master/dotnet-runtime-latest-linux-arm.tar.gz
 [linux-arm-targz-checksum-master]: https://dotnetclichecksums.blob.core.windows.net/dotnet/Runtime/master/dotnet-runtime-latest-linux-arm.tar.gz.sha512
 [linux-arm-symbols-targz-master]: https://dotnetcli.blob.core.windows.net/dotnet/Runtime/master/dotnet-runtime-symbols-latest-linux-arm.tar.gz
 
 [linux-arm-badge-2.1.X]: https://dotnetcli.blob.core.windows.net/dotnet/Runtime/release/2.1/sharedfx_linux-arm_Release_version_badge.svg
-[linux-arm-version-2.1.X]: https://dotnetcli.blob.core.windows.net/dotnet/Runtime/release/2.1/latest.sharedfx.linux.arm.version
+[linux-arm-version-2.1.X]: https://dotnetcli.blob.core.windows.net/dotnet/Runtime/release/2.1/latest.version
 [linux-arm-targz-2.1.X]: https://dotnetcli.blob.core.windows.net/dotnet/Runtime/release/2.1/dotnet-runtime-latest-linux-arm.tar.gz
 [linux-arm-targz-checksum-2.1.X]: https://dotnetclichecksums.blob.core.windows.net/dotnet/Runtime/release/2.1/dotnet-runtime-latest-linux-arm.tar.gz.sha512
 [linux-arm-symbols-targz-2.1.X]: https://dotnetcli.blob.core.windows.net/dotnet/Runtime/release/2.1/dotnet-runtime-symbols-latest-linux-arm.tar.gz
 
 [linux-arm-badge-2.0.X]: https://dotnetcli.blob.core.windows.net/dotnet/Runtime/release/2.0.0/sharedfx_linux-arm_Release_version_badge.svg
-[linux-arm-version-2.0.X]: https://dotnetcli.blob.core.windows.net/dotnet/Runtime/release/2.0.0/latest.sharedfx.linux.arm.version
+[linux-arm-version-2.0.X]: https://dotnetcli.blob.core.windows.net/dotnet/Runtime/release/2.0.0/latest.version
 [linux-arm-targz-2.0.X]: https://dotnetcli.blob.core.windows.net/dotnet/Runtime/release/2.0.0/dotnet-runtime-latest-linux-arm.tar.gz
 [linux-arm-targz-checksum-2.0.X]: https://dotnetclichecksums.blob.core.windows.net/dotnet/Runtime/release/2.0.0/dotnet-runtime-latest-linux-arm.tar.gz.sha512
 [linux-arm-symbols-targz-2.0.X]: https://dotnetcli.blob.core.windows.net/dotnet/Runtime/release/2.0.0/dotnet-runtime-symbols-latest-linux-arm.tar.gz
 
 
 [linux-arm64-badge-master]: https://dotnetcli.blob.core.windows.net/dotnet/Runtime/master/sharedfx_linux-arm64_Release_version_badge.svg
-[linux-arm64-version-master]: https://dotnetcli.blob.core.windows.net/dotnet/Runtime/master/latest.sharedfx.linux.arm64.version
+[linux-arm64-version-master]: https://dotnetcli.blob.core.windows.net/dotnet/Runtime/master/latest.version
 [linux-arm64-targz-master]: https://dotnetcli.blob.core.windows.net/dotnet/Runtime/master/dotnet-runtime-latest-linux-arm64.tar.gz
 [linux-arm64-targz-checksum-master]: https://dotnetclichecksums.blob.core.windows.net/dotnet/Runtime/master/dotnet-runtime-latest-linux-arm64.tar.gz.sha512
 [linux-arm64-symbols-targz-master]: https://dotnetcli.blob.core.windows.net/dotnet/Runtime/master/dotnet-runtime-symbols-latest-linux-arm64.tar.gz
 
 [linux-arm64-badge-2.1.X]: https://dotnetcli.blob.core.windows.net/dotnet/Runtime/release/2.1/sharedfx_linux-arm64_Release_version_badge.svg
-[linux-arm64-version-2.1.X]: https://dotnetcli.blob.core.windows.net/dotnet/Runtime/release/2.1/latest.sharedfx.linux.arm64.version
+[linux-arm64-version-2.1.X]: https://dotnetcli.blob.core.windows.net/dotnet/Runtime/release/2.1/latest.version
 [linux-arm64-targz-2.1.X]: https://dotnetcli.blob.core.windows.net/dotnet/Runtime/release/2.1/dotnet-runtime-latest-linux-arm64.tar.gz
 [linux-arm64-targz-checksum-2.1.X]: https://dotnetclichecksums.blob.core.windows.net/dotnet/Runtime/release/2.1/dotnet-runtime-latest-linux-arm64.tar.gz.sha512
 [linux-arm64-symbols-targz-2.1.X]: https://dotnetcli.blob.core.windows.net/dotnet/Runtime/release/2.1/dotnet-runtime-symbols-latest-linux-arm64.tar.gz
 
 
 [ubuntu-14.04-badge-master]: https://dotnetcli.blob.core.windows.net/dotnet/Runtime/master/sharedfx_ubuntu.14.04-x64_Release_version_badge.svg
-[ubuntu-14.04-version-master]: https://dotnetcli.blob.core.windows.net/dotnet/Runtime/master/latest.sharedfx.ubuntu.x64.version
+[ubuntu-14.04-version-master]: https://dotnetcli.blob.core.windows.net/dotnet/Runtime/master/latest.version
 [ubuntu-14.04-runtime-deps-master]: https://dotnetcli.blob.core.windows.net/dotnet/Runtime/master/dotnet-runtime-deps-latest-ubuntu.14.04-x64.deb
 [ubuntu-14.04-runtime-deps-checksum-master]: https://dotnetclichecksums.blob.core.windows.net/dotnet/Runtime/master/dotnet-runtime-deps-latest-ubuntu.14.04-x64.deb.sha512
 [ubuntu-14.04-host-master]: https://dotnetcli.blob.core.windows.net/dotnet/Runtime/master/dotnet-host-latest-x64.deb
@@ -267,7 +267,7 @@ Daily Builds
 [ubuntu-14.04-sharedfx-checksum-master]: https://dotnetclichecksums.blob.core.windows.net/dotnet/Runtime/master/dotnet-runtime-latest-x64.deb.sha512
 
 [ubuntu-14.04-badge-2.1.X]: https://dotnetcli.blob.core.windows.net/dotnet/Runtime/release/2.1/sharedfx_ubuntu.14.04-x64_Release_version_badge.svg
-[ubuntu-14.04-version-2.1.X]: https://dotnetcli.blob.core.windows.net/dotnet/Runtime/release/2.1/latest.sharedfx.ubuntu.x64.version
+[ubuntu-14.04-version-2.1.X]: https://dotnetcli.blob.core.windows.net/dotnet/Runtime/release/2.1/latest.version
 [ubuntu-14.04-host-2.1.X]: https://dotnetcli.blob.core.windows.net/dotnet/Runtime/release/2.1/dotnet-host-latest-ubuntu.14.04-x64.deb
 [ubuntu-14.04-host-checksum-2.1.X]: https://dotnetclichecksums.blob.core.windows.net/dotnet/Runtime/release/2.1/dotnet-host-latest-ubuntu.14.04-x64.deb.sha512
 [ubuntu-14.04-hostfxr-2.1.X]: https://dotnetcli.blob.core.windows.net/dotnet/Runtime/release/2.1/dotnet-hostfxr-latest-ubuntu.14.04-x64.deb
@@ -276,7 +276,7 @@ Daily Builds
 [ubuntu-14.04-sharedfx-checksum-2.1.X]: https://dotnetclichecksums.blob.core.windows.net/dotnet/Runtime/release/2.1/dotnet-runtime-latest-ubuntu.14.04-x64.deb.sha512
 
 [ubuntu-14.04-badge-2.0.X]: https://dotnetcli.blob.core.windows.net/dotnet/Runtime/release/2.0.0/sharedfx_ubuntu.14.04-x64_Release_version_badge.svg
-[ubuntu-14.04-version-2.0.X]: https://dotnetcli.blob.core.windows.net/dotnet/Runtime/release/2.0.0/latest.sharedfx.ubuntu.x64.version
+[ubuntu-14.04-version-2.0.X]: https://dotnetcli.blob.core.windows.net/dotnet/Runtime/release/2.0.0/latest.version
 [ubuntu-14.04-host-2.0.X]: https://dotnetcli.blob.core.windows.net/dotnet/Runtime/release/2.0.0/dotnet-host-latest-ubuntu.14.04-x64.deb
 [ubuntu-14.04-host-checksum-2.0.X]: https://dotnetclichecksums.blob.core.windows.net/dotnet/Runtime/release/2.0.0/dotnet-host-latest-ubuntu.14.04-x64.deb.sha512
 [ubuntu-14.04-hostfxr-2.0.X]: https://dotnetcli.blob.core.windows.net/dotnet/Runtime/release/2.0.0/dotnet-hostfxr-latest-ubuntu.14.04-x64.deb
@@ -300,7 +300,7 @@ Daily Builds
 
 
 [ubuntu-16.04-badge-master]: https://dotnetcli.blob.core.windows.net/dotnet/Runtime/master/sharedfx_ubuntu.16.04-x64_Release_version_badge.svg
-[ubuntu-16.04-version-master]: https://dotnetcli.blob.core.windows.net/dotnet/Runtime/master/latest.sharedfx.ubuntu.16.04.x64.version
+[ubuntu-16.04-version-master]: https://dotnetcli.blob.core.windows.net/dotnet/Runtime/master/latest.version
 [ubuntu-16.04-host-master]: https://dotnetcli.blob.core.windows.net/dotnet/Runtime/master/dotnet-host-latest-x64.deb
 [ubuntu-16.04-runtime-deps-master]: https://dotnetcli.blob.core.windows.net/dotnet/Runtime/master/dotnet-runtime-deps-latest-ubuntu.16.04-x64.deb
 [ubuntu-16.04-runtime-deps-checksum-master]: https://dotnetclichecksums.blob.core.windows.net/dotnet/Runtime/master/dotnet-runtime-deps-latest-ubuntu.16.04-x64.deb.sha512
@@ -311,7 +311,7 @@ Daily Builds
 [ubuntu-16.04-sharedfx-checksum-master]: https://dotnetclichecksums.blob.core.windows.net/dotnet/Runtime/master/dotnet-runtime-latest-x64.deb.sha512
 
 [ubuntu-16.04-badge-2.1.X]: https://dotnetcli.blob.core.windows.net/dotnet/Runtime/release/2.1/sharedfx_ubuntu.16.04-x64_Release_version_badge.svg
-[ubuntu-16.04-version-2.1.X]: https://dotnetcli.blob.core.windows.net/dotnet/Runtime/release/2.1/latest.sharedfx.ubuntu.16.04.x64.version
+[ubuntu-16.04-version-2.1.X]: https://dotnetcli.blob.core.windows.net/dotnet/Runtime/release/2.1/latest.version
 [ubuntu-16.04-host-2.1.X]: https://dotnetcli.blob.core.windows.net/dotnet/Runtime/release/2.1/dotnet-host-latest-ubuntu.16.04-x64.deb
 [ubuntu-16.04-host-checksum-2.1.X]: https://dotnetclichecksums.blob.core.windows.net/dotnet/Runtime/release/2.1/dotnet-host-latest-ubuntu.16.04-x64.deb.sha512
 [ubuntu-16.04-hostfxr-2.1.X]: https://dotnetcli.blob.core.windows.net/dotnet/Runtime/release/2.1/dotnet-hostfxr-latest-ubuntu.16.04-x64.deb
@@ -320,7 +320,7 @@ Daily Builds
 [ubuntu-16.04-sharedfx-checksum-2.1.X]: https://dotnetclichecksums.blob.core.windows.net/dotnet/Runtime/release/2.1/dotnet-runtime-latest-ubuntu.16.04-x64.deb.sha512
 
 [ubuntu-16.04-badge-2.0.X]: https://dotnetcli.blob.core.windows.net/dotnet/Runtime/release/2.0.0/sharedfx_ubuntu.16.04-x64_Release_version_badge.svg
-[ubuntu-16.04-version-2.0.X]: https://dotnetcli.blob.core.windows.net/dotnet/Runtime/release/2.0.0/latest.sharedfx.ubuntu.16.04.x64.version
+[ubuntu-16.04-version-2.0.X]: https://dotnetcli.blob.core.windows.net/dotnet/Runtime/release/2.0.0/latest.version
 [ubuntu-16.04-host-2.0.X]: https://dotnetcli.blob.core.windows.net/dotnet/Runtime/release/2.0.0/dotnet-host-latest-ubuntu.16.04-x64.deb
 [ubuntu-16.04-host-checksum-2.0.X]: https://dotnetclichecksums.blob.core.windows.net/dotnet/Runtime/release/2.0.0/dotnet-host-latest-ubuntu.16.04-x64.deb.sha512
 [ubuntu-16.04-hostfxr-2.0.X]: https://dotnetcli.blob.core.windows.net/dotnet/Runtime/release/2.0.0/dotnet-hostfxr-latest-ubuntu.16.04-x64.deb
@@ -344,7 +344,7 @@ Daily Builds
 
 
 [ubuntu-17.10-badge-master]: https://dotnetcli.blob.core.windows.net/dotnet/Runtime/master/sharedfx_ubuntu.17.10-x64_Release_version_badge.svg
-[ubuntu-17.10-version-master]: https://dotnetcli.blob.core.windows.net/dotnet/Runtime/master/latest.sharedfx.ubuntu.17.10.x64.version
+[ubuntu-17.10-version-master]: https://dotnetcli.blob.core.windows.net/dotnet/Runtime/master/latest.version
 [ubuntu-17.10-runtime-deps-master]: https://dotnetcli.blob.core.windows.net/dotnet/Runtime/master/dotnet-runtime-deps-latest-ubuntu.17.10-x64.deb
 [ubuntu-17.10-runtime-deps-checksum-master]: https://dotnetclichecksums.blob.core.windows.net/dotnet/Runtime/master/dotnet-runtime-deps-latest-ubuntu.17.10-x64.deb.sha512
 [ubuntu-17.10-host-master]: https://dotnetcli.blob.core.windows.net/dotnet/Runtime/master/dotnet-host-latest-x64.deb
@@ -355,7 +355,7 @@ Daily Builds
 [ubuntu-17.10-sharedfx-checksum-master]: https://dotnetclichecksums.blob.core.windows.net/dotnet/Runtime/master/dotnet-runtime-latest-x64.deb.sha512
 
 [ubuntu-17.10-badge-2.1.X]: https://dotnetcli.blob.core.windows.net/dotnet/Runtime/release/2.1/sharedfx_ubuntu.17.10-x64_Release_version_badge.svg
-[ubuntu-17.10-version-2.1.X]: https://dotnetcli.blob.core.windows.net/dotnet/Runtime/release/2.1/latest.sharedfx.ubuntu.17.10.x64.version
+[ubuntu-17.10-version-2.1.X]: https://dotnetcli.blob.core.windows.net/dotnet/Runtime/release/2.1/latest.version
 [ubuntu-17.10-runtime-deps-2.1.X]: https://dotnetcli.blob.core.windows.net/dotnet/Runtime/release/2.1/dotnet-runtime-deps-latest-ubuntu.17.10-x64.deb
 [ubuntu-17.10-runtime-deps-checksum-2.1.X]: https://dotnetclichecksums.blob.core.windows.net/dotnet/Runtime/release/2.1/dotnet-runtime-deps-latest-ubuntu.17.10-x64.deb.sha512
 [ubuntu-17.10-host-2.1.X]: https://dotnetcli.blob.core.windows.net/dotnet/Runtime/release/2.1/dotnet-host-latest-x64.deb
@@ -367,7 +367,7 @@ Daily Builds
 
 
 [ubuntu-18.04-badge-master]: https://dotnetcli.blob.core.windows.net/dotnet/Runtime/master/sharedfx_ubuntu.18.04-x64_Release_version_badge.svg
-[ubuntu-18.04-version-master]: https://dotnetcli.blob.core.windows.net/dotnet/Runtime/master/latest.sharedfx.ubuntu.18.04.x64.version
+[ubuntu-18.04-version-master]: https://dotnetcli.blob.core.windows.net/dotnet/Runtime/master/latest.version
 [ubuntu-18.04-host-master]: https://dotnetcli.blob.core.windows.net/dotnet/Runtime/master/dotnet-host-latest-x64.deb
 [ubuntu-18.04-runtime-deps-master]: https://dotnetcli.blob.core.windows.net/dotnet/Runtime/master/dotnet-runtime-deps-latest-ubuntu.18.04-x64.deb
 [ubuntu-18.04-runtime-deps-checksum-master]: https://dotnetclichecksums.blob.core.windows.net/dotnet/Runtime/master/dotnet-runtime-deps-latest-ubuntu.18.04-x64.deb.sha512
@@ -378,7 +378,7 @@ Daily Builds
 [ubuntu-18.04-sharedfx-checksum-master]: https://dotnetclichecksums.blob.core.windows.net/dotnet/Runtime/master/dotnet-runtime-latest-x64.deb.sha512
 
 [ubuntu-18.04-badge-2.1.X]: https://dotnetcli.blob.core.windows.net/dotnet/Runtime/release/2.1/sharedfx_ubuntu.18.04-x64_Release_version_badge.svg
-[ubuntu-18.04-version-2.1.X]: https://dotnetcli.blob.core.windows.net/dotnet/Runtime/release/2.1/latest.sharedfx.ubuntu.18.04.x64.version
+[ubuntu-18.04-version-2.1.X]: https://dotnetcli.blob.core.windows.net/dotnet/Runtime/release/2.1/latest.version
 [ubuntu-18.04-host-2.1.X]: https://dotnetcli.blob.core.windows.net/dotnet/Runtime/release/2.1/dotnet-host-latest-x64.deb
 [ubuntu-18.04-runtime-deps-2.1.X]: https://dotnetcli.blob.core.windows.net/dotnet/Runtime/release/2.1/dotnet-runtime-deps-latest-ubuntu.18.04-x64.deb
 [ubuntu-18.04-runtime-deps-checksum-2.1.X]: https://dotnetclichecksums.blob.core.windows.net/dotnet/Runtime/release/2.1/dotnet-runtime-deps-latest-ubuntu.18.04-x64.deb.sha512
@@ -390,7 +390,7 @@ Daily Builds
 
 
 [debian-8.2-badge-master]: https://dotnetcli.blob.core.windows.net/dotnet/Runtime/master/sharedfx_debian.8-x64_Release_version_badge.svg
-[debian-8.2-version-master]: https://dotnetcli.blob.core.windows.net/dotnet/Runtime/master/latest.sharedfx.debian.8.x64.version
+[debian-8.2-version-master]: https://dotnetcli.blob.core.windows.net/dotnet/Runtime/master/latest.version
 [debian-8.2-runtime-deps-master]: https://dotnetcli.blob.core.windows.net/dotnet/Runtime/master/dotnet-runtime-deps-latest-debian.8-x64.deb
 [debian-8.2-runtime-deps-checksum-master]: https://dotnetclichecksums.blob.core.windows.net/dotnet/Runtime/master/dotnet-runtime-deps-latest-debian.8-x64.deb.sha512
 [debian-8.2-host-master]: https://dotnetcli.blob.core.windows.net/dotnet/Runtime/master/dotnet-host-latest-x64.deb
@@ -401,7 +401,7 @@ Daily Builds
 [debian-8.2-sharedfx-checksum-master]: https://dotnetclichecksums.blob.core.windows.net/dotnet/Runtime/master/dotnet-runtime-latest-x64.deb.sha512
 
 [debian-8.2-badge-2.1.X]: https://dotnetcli.blob.core.windows.net/dotnet/Runtime/release/2.1/sharedfx_debian.8-x64_Release_version_badge.svg
-[debian-8.2-version-2.1.X]: https://dotnetcli.blob.core.windows.net/dotnet/Runtime/release/2.1/latest.sharedfx.debian.8.x64.version
+[debian-8.2-version-2.1.X]: https://dotnetcli.blob.core.windows.net/dotnet/Runtime/release/2.1/latest.version
 [debian-8.2-runtime-deps-2.1.X]: https://dotnetcli.blob.core.windows.net/dotnet/Runtime/release/2.1/dotnet-runtime-deps-latest-debian.8-x64.deb
 [debian-8.2-runtime-deps-checksum-2.1.X]: https://dotnetclichecksums.blob.core.windows.net/dotnet/Runtime/release/2.1/dotnet-runtime-deps-latest-debian.8-x64.deb.sha512
 [debian-8.2-host-2.1.X]: https://dotnetcli.blob.core.windows.net/dotnet/Runtime/release/2.1/dotnet-host-latest-x64.deb
@@ -412,7 +412,7 @@ Daily Builds
 [debian-8.2-sharedfx-checksum-2.1.X]: https://dotnetclichecksums.blob.core.windows.net/dotnet/Runtime/release/2.1/dotnet-runtime-latest-x64.deb.sha512
 
 [debian-8.2-badge-2.0.X]: https://dotnetcli.blob.core.windows.net/dotnet/Runtime/release/2.0.0/sharedfx_debian.8-x64_Release_version_badge.svg
-[debian-8.2-version-2.0.X]: https://dotnetcli.blob.core.windows.net/dotnet/Runtime/release/2.0.0/latest.sharedfx.debian.8.x64.version
+[debian-8.2-version-2.0.X]: https://dotnetcli.blob.core.windows.net/dotnet/Runtime/release/2.0.0/latest.version
 [debian-8.2-host-2.0.X]: https://dotnetcli.blob.core.windows.net/dotnet/Runtime/release/2.0.0/dotnet-host-latest-debian.8-x64.deb
 [debian-8.2-host-checksum-2.0.X]: https://dotnetclichecksums.blob.core.windows.net/dotnet/Runtime/release/2.0.0/dotnet-host-latest-debian.8-x64.deb.sha512
 [debian-8.2-hostfxr-2.0.X]: https://dotnetcli.blob.core.windows.net/dotnet/Runtime/release/2.0.0/dotnet-hostfxr-latest-debian.8-x64.deb
@@ -436,7 +436,7 @@ Daily Builds
 
 
 [debian-9-badge-master]: https://dotnetcli.blob.core.windows.net/dotnet/Runtime/master/sharedfx_debian.9-x64_Release_version_badge.svg
-[debian-9-version-master]: https://dotnetcli.blob.core.windows.net/dotnet/Runtime/master/latest.sharedfx.debian.9.x64.version
+[debian-9-version-master]: https://dotnetcli.blob.core.windows.net/dotnet/Runtime/master/latest.version
 [debian-9-runtime-deps-master]: https://dotnetcli.blob.core.windows.net/dotnet/Runtime/master/dotnet-runtime-deps-latest-debian.9-x64.deb
 [debian-9-runtime-deps-checksum-master]: https://dotnetclichecksums.blob.core.windows.net/dotnet/Runtime/master/dotnet-runtime-deps-latest-debian.9-x64.deb.sha512
 [debian-9-host-master]: https://dotnetcli.blob.core.windows.net/dotnet/Runtime/master/dotnet-host-latest-x64.deb
@@ -447,7 +447,7 @@ Daily Builds
 [debian-9-sharedfx-checksum-master]: https://dotnetclichecksums.blob.core.windows.net/dotnet/Runtime/master/dotnet-runtime-latest-x64.deb.sha512
 
 [debian-9-badge-2.1.X]: https://dotnetcli.blob.core.windows.net/dotnet/Runtime/release/2.1/sharedfx_debian.9-x64_Release_version_badge.svg
-[debian-9-version-2.1.X]: https://dotnetcli.blob.core.windows.net/dotnet/Runtime/release/2.1/latest.sharedfx.debian.9.x64.version
+[debian-9-version-2.1.X]: https://dotnetcli.blob.core.windows.net/dotnet/Runtime/release/2.1/latest.version
 [debian-9-runtime-deps-2.1.X]: https://dotnetcli.blob.core.windows.net/dotnet/Runtime/release/2.1/dotnet-runtime-deps-latest-debian.9-x64.deb
 [debian-9-runtime-deps-checksum-2.1.X]: https://dotnetclichecksums.blob.core.windows.net/dotnet/Runtime/release/2.1/dotnet-runtime-deps-latest-debian.9-x64.deb.sha512
 [debian-9-host-2.1.X]: https://dotnetcli.blob.core.windows.net/dotnet/Runtime/release/2.1/dotnet-host-latest-x64.deb
@@ -459,7 +459,7 @@ Daily Builds
 
 
 [centos-7-badge-master]: https://dotnetcli.blob.core.windows.net/dotnet/Runtime/master/sharedfx_centos.7-x64_Release_version_badge.svg
-[centos-7-version-master]: https://dotnetcli.blob.core.windows.net/dotnet/Runtime/master/latest.sharedfx.centos.7.x64.version
+[centos-7-version-master]: https://dotnetcli.blob.core.windows.net/dotnet/Runtime/master/latest.version
 [centos-7-host-master]: https://dotnetcli.blob.core.windows.net/dotnet/Runtime/master/dotnet-host-latest-x64.rpm
 [centos-7-runtime-deps-master]: https://dotnetcli.blob.core.windows.net/dotnet/Runtime/master/dotnet-runtime-deps-latest-centos.7-x64.rpm
 [centos-7-runtime-deps-checksum-master]: https://dotnetclichecksums.blob.core.windows.net/dotnet/Runtime/master/dotnet-runtime-deps-latest-centos.7-x64.rpm.sha512
@@ -470,7 +470,7 @@ Daily Builds
 [centos-7-sharedfx-checksum-master]: https://dotnetclichecksums.blob.core.windows.net/dotnet/Runtime/master/dotnet-runtime-latest-x64.rpm.sha512
 
 [centos-7-badge-2.1.X]: https://dotnetcli.blob.core.windows.net/dotnet/Runtime/release/2.1/sharedfx_centos.7-x64_Release_version_badge.svg
-[centos-7-version-2.1.X]: https://dotnetcli.blob.core.windows.net/dotnet/Runtime/release/2.1/latest.sharedfx.centos.7.x64.version
+[centos-7-version-2.1.X]: https://dotnetcli.blob.core.windows.net/dotnet/Runtime/release/2.1/latest.version
 [centos-7-host-2.1.X]: https://dotnetcli.blob.core.windows.net/dotnet/Runtime/release/2.1/dotnet-host-latest-x64.rpm
 [centos-7-runtime-deps-2.1.X]: https://dotnetcli.blob.core.windows.net/dotnet/Runtime/release/2.1/dotnet-runtime-deps-latest-centos.7-x64.rpm
 [centos-7-runtime-deps-checksum-2.1.X]: https://dotnetclichecksums.blob.core.windows.net/dotnet/Runtime/release/2.1/dotnet-runtime-deps-latest-centos.7-x64.rpm.sha512
@@ -494,11 +494,11 @@ Daily Builds
 [rhel-6-targz-master]: https://dotnetcli.blob.core.windows.net/dotnet/Runtime/master/dotnet-runtime-latest-rhel.6-x64.tar.gz
 
 [rhel-6-badge-2.1.X]: https://dotnetcli.blob.core.windows.net/dotnet/Runtime/release/2.1/sharedfx_rhel.6-x64_Release_version_badge.svg
-[rhel-6-version-2.1.X]: https://dotnetcli.blob.core.windows.net/dotnet/Runtime/release/2.1/latest.sharedfx.rhel.6.x64.version
+[rhel-6-version-2.1.X]: https://dotnetcli.blob.core.windows.net/dotnet/Runtime/release/2.1/latest.version
 [rhel-6-targz-2.1.X]: https://dotnetcli.blob.core.windows.net/dotnet/Runtime/release/2.1/dotnet-runtime-latest-rhel.6-x64.tar.gz
 
 [rhel-6-badge-2.0.X]: https://dotnetcli.blob.core.windows.net/dotnet/Runtime/release/2.0.0/sharedfx_rhel.6-x64_Release_version_badge.svg
-[rhel-6-version-2.0.X]: https://dotnetcli.blob.core.windows.net/dotnet/Runtime/release/2.0.0/latest.sharedfx.rhel.6.x64.version
+[rhel-6-version-2.0.X]: https://dotnetcli.blob.core.windows.net/dotnet/Runtime/release/2.0.0/latest.version
 [rhel-6-targz-2.0.X]: https://dotnetcli.blob.core.windows.net/dotnet/Runtime/release/2.0.0/dotnet-runtime-latest-rhel.6-x64.tar.gz
 
 [rhel-badge-1.1.X]: https://dotnetcli.blob.core.windows.net/dotnet/release/1.1.0/Binaries/Latest/sharedfx_RHEL_x64_Release_version_badge.svg
@@ -511,7 +511,7 @@ Daily Builds
 
 
 [rhel7-badge-master]: https://dotnetcli.blob.core.windows.net/dotnet/Runtime/master/sharedfx_rhel.7-x64_Release_version_badge.svg
-[rhel7-version-master]: https://dotnetcli.blob.core.windows.net/dotnet/Runtime/master/latest.sharedfx.rhel.7.x64.version
+[rhel7-version-master]: https://dotnetcli.blob.core.windows.net/dotnet/Runtime/master/latest.version
 [rhel7-host-master]: https://dotnetcli.blob.core.windows.net/dotnet/Runtime/master/dotnet-host-latest-rhel.7-x64.rpm
 [rhel7-host-checksum-master]: https://dotnetclichecksums.blob.core.windows.net/dotnet/Runtime/master/dotnet-host-latest-rhel.7-x64.rpm.sha512
 [rhel7-hostfxr-master]: https://dotnetcli.blob.core.windows.net/dotnet/Runtime/master/dotnet-hostfxr-latest-rhel.7-x64.rpm
@@ -520,7 +520,7 @@ Daily Builds
 [rhel7-sharedfx-checksum-master]: https://dotnetclichecksums.blob.core.windows.net/dotnet/Runtime/master/dotnet-runtime-latest-rhel.7-x64.rpm.sha512
 
 [rhel7-badge-2.1.X]: https://dotnetcli.blob.core.windows.net/dotnet/Runtime/release/2.1/sharedfx_rhel.7-x64_Release_version_badge.svg
-[rhel7-version-2.1.X]: https://dotnetcli.blob.core.windows.net/dotnet/Runtime/release/2.1/latest.sharedfx.rhel.7.x64.version
+[rhel7-version-2.1.X]: https://dotnetcli.blob.core.windows.net/dotnet/Runtime/release/2.1/latest.version
 [rhel7-host-2.1.X]: https://dotnetcli.blob.core.windows.net/dotnet/Runtime/release/2.1/dotnet-host-latest-rhel.7-x64.rpm
 [rhel7-host-checksum-2.1.X]: https://dotnetclichecksums.blob.core.windows.net/dotnet/Runtime/release/2.1/dotnet-host-latest-rhel.7-x64.rpm.sha512
 [rhel7-hostfxr-2.1.X]: https://dotnetcli.blob.core.windows.net/dotnet/Runtime/release/2.1/dotnet-hostfxr-latest-rhel.7-x64.rpm
@@ -529,7 +529,7 @@ Daily Builds
 [rhel7-sharedfx-checksum-2.1.X]: https://dotnetclichecksums.blob.core.windows.net/dotnet/Runtime/release/2.1/dotnet-runtime-latest-rhel.7-x64.rpm.sha512
 
 [rhel7-badge-2.0.X]: https://dotnetcli.blob.core.windows.net/dotnet/Runtime/release/2.0.0/sharedfx_rhel.7-x64_Release_version_badge.svg
-[rhel7-version-2.0.X]: https://dotnetcli.blob.core.windows.net/dotnet/Runtime/release/2.0.0/latest.sharedfx.rhel.7.x64.version
+[rhel7-version-2.0.X]: https://dotnetcli.blob.core.windows.net/dotnet/Runtime/release/2.0.0/latest.version
 [rhel7-host-2.0.X]: https://dotnetcli.blob.core.windows.net/dotnet/Runtime/release/2.0.0/dotnet-host-latest-rhel.7-x64.rpm
 [rhel7-host-checksum-2.0.X]: https://dotnetclichecksums.blob.core.windows.net/dotnet/Runtime/release/2.0.0/dotnet-host-latest-rhel.7-x64.rpm.sha512
 [rhel7-hostfxr-2.0.X]: https://dotnetcli.blob.core.windows.net/dotnet/Runtime/release/2.0.0/dotnet-hostfxr-latest-rhel.7-x64.rpm
@@ -553,7 +553,7 @@ Daily Builds
 
 
 [fedora-27-badge-master]: https://dotnetcli.blob.core.windows.net/dotnet/Runtime/master/sharedfx_fedora.27-x64_Release_version_badge.svg
-[fedora-27-version-master]: https://dotnetcli.blob.core.windows.net/dotnet/Runtime/master/latest.sharedfx.fedora.27.x64.version
+[fedora-27-version-master]: https://dotnetcli.blob.core.windows.net/dotnet/Runtime/master/latest.version
 [fedora-27-host-master]: https://dotnetcli.blob.core.windows.net/dotnet/Runtime/master/dotnet-host-latest-x64.rpm
 [fedora-27-runtime-deps-master]: https://dotnetcli.blob.core.windows.net/dotnet/Runtime/master/dotnet-runtime-deps-latest-fedora.27-x64.rpm
 [fedora-27-runtime-deps-checksum-master]: https://dotnetclichecksums.blob.core.windows.net/dotnet/Runtime/master/dotnet-runtime-deps-latest-fedora.27-x64.rpm.sha512
@@ -564,7 +564,7 @@ Daily Builds
 [fedora-27-sharedfx-checksum-master]: https://dotnetclichecksums.blob.core.windows.net/dotnet/Runtime/master/dotnet-runtime-latest-x64.rpm.sha512
 
 [fedora-27-badge-2.1.X]: https://dotnetcli.blob.core.windows.net/dotnet/Runtime/release/2.1/sharedfx_fedora.27-x64_Release_version_badge.svg
-[fedora-27-version-2.1.X]: https://dotnetcli.blob.core.windows.net/dotnet/Runtime/release/2.1/latest.sharedfx.fedora.27.x64.version
+[fedora-27-version-2.1.X]: https://dotnetcli.blob.core.windows.net/dotnet/Runtime/release/2.1/latest.version
 [fedora-27-host-2.1.X]: https://dotnetcli.blob.core.windows.net/dotnet/Runtime/release/2.1/dotnet-host-latest-x64.rpm
 [fedora-27-runtime-deps-2.1.X]: https://dotnetcli.blob.core.windows.net/dotnet/Runtime/release/2.1/dotnet-runtime-deps-latest-fedora.27-x64.rpm
 [fedora-27-runtime-deps-checksum-2.1.X]: https://dotnetclichecksums.blob.core.windows.net/dotnet/Runtime/release/2.1/dotnet-runtime-deps-latest-fedora.27-x64.rpm.sha512
@@ -576,7 +576,7 @@ Daily Builds
 
 
 [sles-12-badge-master]: https://dotnetcli.blob.core.windows.net/dotnet/Runtime/master/sharedfx_sles.12-x64_Release_version_badge.svg
-[sles-12-version-master]: https://dotnetcli.blob.core.windows.net/dotnet/Runtime/master/latest.sharedfx.sles.12.x64.version
+[sles-12-version-master]: https://dotnetcli.blob.core.windows.net/dotnet/Runtime/master/latest.version
 [sles-12-host-master]: https://dotnetcli.blob.core.windows.net/dotnet/Runtime/master/dotnet-host-latest-x64.rpm
 [sles-12-runtime-deps-master]: https://dotnetcli.blob.core.windows.net/dotnet/Runtime/master/dotnet-runtime-deps-latest-sles.12-x64.rpm
 [sles-12-runtime-deps-checksum-master]: https://dotnetclichecksums.blob.core.windows.net/dotnet/Runtime/master/dotnet-runtime-deps-latest-sles.12-x64.rpm.sha512
@@ -587,7 +587,7 @@ Daily Builds
 [sles-12-sharedfx-checksum-master]: https://dotnetclichecksums.blob.core.windows.net/dotnet/Runtime/master/dotnet-runtime-latest-x64.rpm.sha512
 
 [sles-12-badge-2.1.X]: https://dotnetcli.blob.core.windows.net/dotnet/Runtime/release/2.1/sharedfx_sles.12-x64_Release_version_badge.svg
-[sles-12-version-2.1.X]: https://dotnetcli.blob.core.windows.net/dotnet/Runtime/release/2.1/latest.sharedfx.sles.12.x64.version
+[sles-12-version-2.1.X]: https://dotnetcli.blob.core.windows.net/dotnet/Runtime/release/2.1/latest.version
 [sles-12-host-2.1.X]: https://dotnetcli.blob.core.windows.net/dotnet/Runtime/release/2.1/dotnet-host-latest-x64.rpm
 [sles-12-runtime-deps-2.1.X]: https://dotnetcli.blob.core.windows.net/dotnet/Runtime/release/2.1/dotnet-runtime-deps-latest-sles.12-x64.rpm
 [sles-12-runtime-deps-checksum-2.1.X]: https://dotnetclichecksums.blob.core.windows.net/dotnet/Runtime/release/2.1/dotnet-runtime-deps-latest-sles.12-x64.rpm.sha512
@@ -599,7 +599,7 @@ Daily Builds
 
 
 [OpenSUSE-42-badge-master]: https://dotnetcli.blob.core.windows.net/dotnet/Runtime/master/sharedfx_opensuse.42-x64_Release_version_badge.svg
-[OpenSUSE-42-version-master]: https://dotnetcli.blob.core.windows.net/dotnet/Runtime/master/latest.sharedfx.opensuse.42.x64.version
+[OpenSUSE-42-version-master]: https://dotnetcli.blob.core.windows.net/dotnet/Runtime/master/latest.version
 [OpenSUSE-42-runtime-deps-master]: https://dotnetcli.blob.core.windows.net/dotnet/Runtime/master/dotnet-runtime-deps-latest-opensuse.42-x64.rpm
 [OpenSUSE-42-runtime-deps-checksum-master]: https://dotnetclichecksums.blob.core.windows.net/dotnet/Runtime/master/dotnet-runtime-deps-latest-opensuse.42-x64.rpm.sha512
 [OpenSUSE-42-host-master]: https://dotnetcli.blob.core.windows.net/dotnet/Runtime/master/dotnet-host-latest-opensuse.42-x64.rpm
@@ -610,7 +610,7 @@ Daily Builds
 [OpenSUSE-42-sharedfx-checksum-master]: https://dotnetclichecksums.blob.core.windows.net/dotnet/Runtime/master/dotnet-runtime-latest-opensuse.42-x64.rpm.sha512
 
 [OpenSUSE-42-badge-2.1.X]: https://dotnetcli.blob.core.windows.net/dotnet/Runtime/release/2.1/sharedfx_opensuse.42-x64_Release_version_badge.svg
-[OpenSUSE-42-version-2.1.X]: https://dotnetcli.blob.core.windows.net/dotnet/Runtime/release/2.1/latest.sharedfx.opensuse.42.x64.version
+[OpenSUSE-42-version-2.1.X]: https://dotnetcli.blob.core.windows.net/dotnet/Runtime/release/2.1/latest.version
 [OpenSUSE-42-runtime-deps-2.1.X]: https://dotnetcli.blob.core.windows.net/dotnet/Runtime/release/2.1/dotnet-runtime-deps-latest-opensuse.42-x64.rpm
 [OpenSUSE-42-runtime-deps-checksum-2.1.X]: https://dotnetclichecksums.blob.core.windows.net/dotnet/Runtime/release/2.1/dotnet-runtime-deps-latest-opensuse.42-x64.rpm.sha512
 [OpenSUSE-42-host-2.1.X]: https://dotnetcli.blob.core.windows.net/dotnet/Runtime/release/2.1/dotnet-host-latest-opensuse.42-x64.rpm
@@ -626,13 +626,13 @@ Daily Builds
 
 
 [linux-musl-x64-badge-master]: https://dotnetcli.blob.core.windows.net/dotnet/Runtime/master/sharedfx_linux-musl-x64_Release_version_badge.svg
-[linux-musl-x64-version-master]: https://dotnetcli.blob.core.windows.net/dotnet/Runtime/master/latest.sharedfx.linux-musl.x64.version
+[linux-musl-x64-version-master]: https://dotnetcli.blob.core.windows.net/dotnet/Runtime/master/latest.version
 [linux-musl-x64-targz-master]: https://dotnetcli.blob.core.windows.net/dotnet/Runtime/master/dotnet-runtime-latest-linux-musl-x64.tar.gz
 [linux-musl-x64-targz-checksum-master]: https://dotnetclichecksums.blob.core.windows.net/dotnet/Runtime/master/dotnet-runtime-latest-linux-musl-x64.tar.gz.sha512
 [linux-musl-x64-symbols-targz-master]: https://dotnetcli.blob.core.windows.net/dotnet/Runtime/master/dotnet-runtime-symbols-latest-linux-musl-x64.tar.gz
 
 [linux-musl-x64-badge-2.1.X]: https://dotnetcli.blob.core.windows.net/dotnet/Runtime/release/2.1/sharedfx_linux-musl-x64_Release_version_badge.svg
-[linux-musl-x64-version-2.1.X]: https://dotnetcli.blob.core.windows.net/dotnet/Runtime/release/2.1/latest.sharedfx.linux-musl.x64.version
+[linux-musl-x64-version-2.1.X]: https://dotnetcli.blob.core.windows.net/dotnet/Runtime/release/2.1/latest.version
 [linux-musl-x64-targz-2.1.X]: https://dotnetcli.blob.core.windows.net/dotnet/Runtime/release/2.1/dotnet-runtime-latest-linux-musl-x64.tar.gz
 [linux-musl-x64-targz-checksum-2.1.X]: https://dotnetclichecksums.blob.core.windows.net/dotnet/Runtime/release/2.1/dotnet-runtime-latest-linux-musl-x64.tar.gz.sha512
 [linux-musl-x64-symbols-targz-2.1.X]: https://dotnetcli.blob.core.windows.net/dotnet/Runtime/release/2.1/dotnet-runtime-symbols-latest-linux-musl-x64.tar.gz
