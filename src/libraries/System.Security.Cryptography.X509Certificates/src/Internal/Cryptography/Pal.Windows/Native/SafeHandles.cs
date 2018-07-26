@@ -203,7 +203,7 @@ namespace Internal.Cryptography.Pal.Native
     {
         protected sealed override bool ReleaseHandle()
         {
-            bool success = Interop.crypt32.CertCloseStore(handle, 0);
+            bool success = Interop.Crypt32.CertCloseStore(handle, 0);
             return success;
         }
     }
