@@ -1817,7 +1817,7 @@ RelativePath=baseservices\threading\generics\threadstart\GThread07\GThread07.cmd
 WorkingDir=baseservices\threading\generics\threadstart\GThread07
 Expected=0
 MaxAllowedDurationSeconds=600
-Categories=Pri1;RT;EXPECTED_FAIL;13796
+Categories=Pri1;RT;EXPECTED_PASS
 HostStyle=0
 
 [GThread08.cmd_227]
@@ -12801,7 +12801,7 @@ RelativePath=CoreMangLib\cti\system\math\MathRound3\MathRound3.cmd
 WorkingDir=CoreMangLib\cti\system\math\MathRound3
 Expected=0
 MaxAllowedDurationSeconds=600
-Categories=Pri1;RT;EXPECTED_FAIL;12549
+Categories=Pri1;RT;EXPECTED_PASS
 HostStyle=0
 
 [MathRound4.cmd_1804]
@@ -75729,7 +75729,7 @@ RelativePath=Regressions\coreclr\0416\hello\hello.cmd
 WorkingDir=Regressions\coreclr\0416\hello
 Expected=0
 MaxAllowedDurationSeconds=600
-Categories=Pri1;RT;EXPECTED_FAIL;13796
+Categories=Pri1;RT;EXPECTED_PASS
 HostStyle=0
 
 [test.cmd_9829]
@@ -75737,7 +75737,7 @@ RelativePath=Regressions\coreclr\0433\test\test.cmd
 WorkingDir=Regressions\coreclr\0433\test
 Expected=0
 MaxAllowedDurationSeconds=600
-Categories=EXPECTED_FAIL;Pri1;13796
+Categories=EXPECTED_PASS;Pri1
 HostStyle=0
 
 [test.cmd_9830]
@@ -75745,7 +75745,7 @@ RelativePath=Regressions\coreclr\0487\test\test.cmd
 WorkingDir=Regressions\coreclr\0487\test
 Expected=0
 MaxAllowedDurationSeconds=600
-Categories=EXPECTED_FAIL;Pri1;13796
+Categories=EXPECTED_PASS;Pri1
 HostStyle=0
 
 [Test570.cmd_9831]
@@ -88905,7 +88905,7 @@ RelativePath=JIT\Performance\CodeQuality\Span\SpanBench\SpanBench.cmd
 WorkingDir=JIT\Performance\CodeQuality\Span\SpanBench
 Expected=0
 MaxAllowedDurationSeconds=600
-Categories=EXPECTED_FAIL;NEW;12549
+Categories=EXPECTED_PASS;NEW
 HostStyle=0
 
 [Generated1202.cmd_11489]
@@ -90353,7 +90353,7 @@ RelativePath=JIT\Regression\JitBlue\GitHub_11408\GitHub_11408\GitHub_11408.cmd
 WorkingDir=JIT\Regression\JitBlue\GitHub_11408\GitHub_11408
 Expected=0
 MaxAllowedDurationSeconds=600
-Categories=EXPECTED_FAIL;13796;NEW
+Categories=EXPECTED_FAIL;11408;NEW
 HostStyle=0
 
 [LocallocCnstB5_PSP.cmd_11672]
@@ -90401,7 +90401,7 @@ RelativePath=JIT\Regression\JitBlue\GitHub_13404\GitHub_13404\GitHub_13404.cmd
 WorkingDir=JIT\Regression\JitBlue\GitHub_13404\GitHub_13404
 Expected=0
 MaxAllowedDurationSeconds=600
-Categories=EXPECTED_FAIL;13796;NEW
+Categories=EXPECTED_PASS;NEW
 HostStyle=0
 
 [GitHub_10215.cmd_11678]
