@@ -201,10 +201,13 @@ namespace Internal.Cryptography.Pal
             }
         }
 
-
         public string Issuer => IssuerName.Name;
 
         public string Subject => SubjectName.Name;
+
+        public string LegacyIssuer => IssuerName.Decode(X500DistinguishedNameFlags.None);
+
+        public string LegacySubject => SubjectName.Decode(X500DistinguishedNameFlags.None);
 
         public string KeyAlgorithm
         {

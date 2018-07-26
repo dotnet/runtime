@@ -58,21 +58,13 @@ namespace Internal.Cryptography.Pal
             get { return _certContext.DangerousGetHandle(); }
         }
 
-        public string Issuer
-        {
-            get
-            {
-                return GetIssuerOrSubject(issuer: true);
-            }
-        }
+        public string Issuer => GetIssuerOrSubject(issuer: true, reverse: true);
 
-        public string Subject
-        {
-            get
-            {
-                return GetIssuerOrSubject(issuer: false);
-            }
-        }
+        public string Subject => GetIssuerOrSubject(issuer: false, reverse: true);
+
+        public string LegacyIssuer => GetIssuerOrSubject(issuer: true, reverse: false);
+
+        public string LegacySubject => GetIssuerOrSubject(issuer: false, reverse: false);
 
         public byte[] Thumbprint
         {
@@ -525,12 +517,12 @@ namespace Internal.Cryptography.Pal
             }
         }
 
-        private unsafe string GetIssuerOrSubject(bool issuer) =>
+        private unsafe string GetIssuerOrSubject(bool issuer, bool reverse) =>
             Interop.crypt32.CertGetNameString(
                 _certContext,
                 CertNameType.CERT_NAME_RDN_TYPE,
                 issuer ? CertNameFlags.CERT_NAME_ISSUER_FLAG : CertNameFlags.None,
-                CertNameStringType.CERT_X500_NAME_STR | CertNameStringType.CERT_NAME_STR_REVERSE_FLAG);
+                CertNameStringType.CERT_X500_NAME_STR | (reverse ? CertNameStringType.CERT_NAME_STR_REVERSE_FLAG : 0));
 
         private CertificatePal(CertificatePal copyFrom)
         {
