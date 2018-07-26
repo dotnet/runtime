@@ -162,9 +162,7 @@ mono_btls_x509_get_serial_number (X509 *x509, char *buffer, int size, int mono_s
 		return 0;
 	}
 
-	for (idx = 0; idx < len; idx++) {
-		buffer [idx] = *(--p);
-	}
+	memcpy (buffer, temp, len);
 	buffer [len] = 0;
 
 	OPENSSL_free (temp);
