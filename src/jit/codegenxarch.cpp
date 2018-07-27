@@ -4133,7 +4133,7 @@ void CodeGen::genCodeForShiftRMW(GenTreeStoreInd* storeInd)
     GenTree* data = storeInd->Data();
     GenTree* addr = storeInd->Addr();
 
-    assert(data->OperIsShiftOrRotate());
+    assert(data->OperIsShift() || data->OperIsRotate());
 
     // This function only handles the RMW case.
     assert(data->gtOp.gtOp1->isUsedFromMemory());

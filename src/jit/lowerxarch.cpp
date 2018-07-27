@@ -1693,18 +1693,15 @@ void Lowering::ContainCheckMul(GenTreeOp* node)
 //
 void Lowering::ContainCheckShiftRotate(GenTreeOp* node)
 {
+    assert(node->OperIsShiftOrRotate());
 #ifdef _TARGET_X86_
     GenTree* source = node->gtOp1;
-    if (node->OperIs(GT_LSH_HI, GT_RSH_LO))
+    if (node->OperIsShiftLong())
     {
         assert(source->OperGet() == GT_LONG);
         MakeSrcContained(node, source);
     }
-    else
 #endif // !_TARGET_X86_
-    {
-        assert(node->OperIsShiftOrRotate());
-    }
 
     GenTree* shiftBy = node->gtOp2;
     if (IsContainableImmed(node, shiftBy) && (shiftBy->gtIntConCommon.IconValue() <= 255) &&
