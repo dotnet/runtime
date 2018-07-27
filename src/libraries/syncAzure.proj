@@ -4,7 +4,7 @@
 
   <PropertyGroup>
     <ContainerName>$(ContainerName.Replace(".","-"))</ContainerName>
-    <DownloadDirectory Condition="'$(DownloadDirectory)' == ''">$(PackagesDir)AzureTransfer</DownloadDirectory>
+    <DownloadDirectory Condition="'$(DownloadDirectory)' == ''">$(BinDir)AzureTransfer</DownloadDirectory>
   </PropertyGroup>
 
   <Import Project="$(ToolsDir)SyncCloudContent.targets" />

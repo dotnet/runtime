@@ -14,10 +14,13 @@
       <SignBuildArgs Include="/p:OfficialBuildId=$(OfficialBuildId)" />
       <SignBuildArgs Include="/p:SignType=$(SignType)" />
     </ItemGroup>
-    
+
+    <PropertyGroup>
+      <SetupVSToolsCmd>$(MSBuildThisFileDirectory)..\buildpipeline\setup-vs-tools.cmd</SetupVSToolsCmd>
+    </PropertyGroup>
+
     <!-- MicroBuild signing only supports being called from the full framework MSBuild -->
-    <!-- Use the msbuild.exe that is on the %PATH% from run.cmd -->
-    <Exec Command="msbuild.exe sign.builds @(SignBuildArgs, ' ')"
+    <Exec Command="call &quot;$(SetupVSToolsCmd)&quot; &amp;&amp; msbuild.exe sign.builds @(SignBuildArgs, ' ')"
           LogStandardErrorAsError="true" />
   </Target>
 

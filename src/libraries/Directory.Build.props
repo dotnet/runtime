@@ -5,7 +5,7 @@
     <EnableDefaultItems>false</EnableDefaultItems>
     <DisableImplicitFrameworkDefines>true</DisableImplicitFrameworkDefines>
     <DisableImplicitConfigurationDefines>true</DisableImplicitConfigurationDefines>
-    
+
     <!-- Disable code paths that require project.assets.json files to be present or to be computed. -->
     <GenerateDependencyFile>false</GenerateDependencyFile>
     <ComputeNETCoreBuildOutputFiles>false</ComputeNETCoreBuildOutputFiles>
@@ -18,4 +18,4 @@
     -->
     <AssemblySearchPaths>$(AssemblySearchPaths);$(RefPath);{RawFileName}</AssemblySearchPaths>
   </PropertyGroup>
-</Project> 
+</Project>

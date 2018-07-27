@@ -76,9 +76,9 @@
       "inputs": {
         "scriptType": "inlineScript",
         "scriptName": "",
-        "arguments": "$(PB_CloudDropAccountName) $(CloudDropAccessToken) $(PB_Label)",
+        "arguments": "$(PB_CloudDropAccountName) $(CloudDropAccessToken) $(PB_Label) $(DownloadDirectory)",
         "workingFolder": "$(Pipeline.SourcesDirectory)",
-        "inlineScript": "param($account, $token, $container)\n.\\sync.cmd -ab -- /v:D /p:CloudDropAccountName=$account /p:CloudDropAccessToken=$token /p:ContainerName=$container",
+        "inlineScript": "param($account, $token, $container, $downloadDir)\n./build.cmd -inittools; msbuild src/syncAzure.proj /v:D /p:CloudDropAccountName=$account /p:CloudDropAccessToken=$token /p:ContainerName=$container /p:DownloadDirectory=$downloadDir",
         "failOnStandardError": "false"
       }
     },
@@ -97,7 +97,7 @@
       },
       "inputs": {
         "filename": "msbuild",
-        "arguments": "src\\publish.proj /t:PublishSymbolsToAzureBlobFeed /p:PublishSymbols=\"true\" $(FeedPublishArguments)",
+        "arguments": "src\\publish.proj /t:PublishSymbolsToAzureBlobFeed /p:PublishSymbols=\"true\" $(FeedPublishArguments) /p:DownloadDirectory=$(DownloadDirectory)",
         "workingFolder": "$(Pipeline.SourcesDirectory)",
         "failOnStandardError": "false"
       }
@@ -117,7 +117,7 @@
       },
       "inputs": {
         "filename": "msbuild",
-        "arguments": "src\\publish.proj /v:D /t:PublishAllSymbols /p:SymbolServerPath=$(PB_MsdlSymbolServerPath) /p:SymbolServerPAT=$(PB_MsdlSymbolServerPAT) /p:SymbolExpirationInDays=$(PB_SymbolExpirationInDays) $(FeedPublishArguments)",
+        "arguments": "src\\publish.proj /v:D /t:PublishAllSymbols /p:SymbolServerPath=$(PB_MsdlSymbolServerPath) /p:SymbolServerPAT=$(PB_MsdlSymbolServerPAT) /p:SymbolExpirationInDays=$(PB_SymbolExpirationInDays) $(FeedPublishArguments) /p:DownloadDirectory=$(DownloadDirectory)",
         "workingFolder": "$(Pipeline.SourcesDirectory)",
         "failOnStandardError": "false"
       }
@@ -137,7 +137,7 @@
       },
       "inputs": {
         "filename": "msbuild",
-        "arguments": "src\\publish.proj /v:D /t:PublishAllSymbols /p:SymbolServerPath=$(PB_SymwebSymbolServerPath) /p:SymbolServerPAT=$(PB_SymwebSymbolServerPAT) /p:SymbolExpirationInDays=$(PB_SymbolExpirationInDays) $(FeedPublishArguments)",
+        "arguments": "src\\publish.proj /v:D /t:PublishAllSymbols /p:SymbolServerPath=$(PB_SymwebSymbolServerPath) /p:SymbolServerPAT=$(PB_SymwebSymbolServerPAT) /p:SymbolExpirationInDays=$(PB_SymbolExpirationInDays) $(FeedPublishArguments) /p:DownloadDirectory=$(DownloadDirectory)",
         "workingFolder": "$(Pipeline.SourcesDirectory)",
         "failOnStandardError": "false"
       }
@@ -252,8 +252,12 @@
       "value": null,
       "isSecret": true
     },
+    "DownloadDirectory": {
+      "value": "$(Pipeline.SourcesDirectory)\\bin\\AzureTransfer",
+      "allowOverride": true
+    },
     "AzureContainerSymbolPackageDirectory": {
-      "value": "$(Pipeline.SourcesDirectory)\\packages\\AzureTransfer\\$(PB_ConfigurationGroup)\\symbols",
+      "value": "$(DownloadDirectory)\\$(PB_ConfigurationGroup)\\symbols",
       "allowOverride": true
     },
     "OfficialBuildId": {
