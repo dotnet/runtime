@@ -8,7 +8,7 @@
 
 namespace System
 {
-    public partial class AppDomain : System.MarshalByRefObject
+    public sealed partial class AppDomain : System.MarshalByRefObject
     {
         private AppDomain() { }
         public static AppDomain CurrentDomain { get { throw null; } }
