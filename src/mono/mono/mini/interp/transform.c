@@ -264,7 +264,7 @@ grow_code (TransformData *td)
 	unsigned int old_ip_offset = td->new_ip - td->new_code;
 	unsigned int old_last_ip_offset = td->last_new_ip - td->new_code;
 	g_assert (old_ip_offset <= td->max_code_size);
-	td->new_code = g_realloc (td->new_code, (td->max_code_size *= 2) * sizeof (td->new_code [0]));
+	td->new_code = (guint16*)g_realloc (td->new_code, (td->max_code_size *= 2) * sizeof (td->new_code [0]));
 	td->new_code_end = td->new_code + td->max_code_size;
 	td->new_ip = td->new_code + old_ip_offset;
 	td->last_new_ip = td->new_code + old_last_ip_offset;
@@ -320,7 +320,7 @@ handle_branch (TransformData *td, int short_op, int long_op, int offset)
 	if (offset > 0 && td->stack_height [target] < 0) {
 		td->stack_height [target] = td->sp - td->stack;
 		if (td->stack_height [target] > 0)
-			td->stack_state [target] = g_memdup (td->stack, td->stack_height [target] * sizeof (td->stack [0]));
+			td->stack_state [target] = (StackInfo*)g_memdup (td->stack, td->stack_height [target] * sizeof (td->stack [0]));
 		td->vt_stack_size [target] = td->vt_sp;
 	}
 	if (offset < 0) {
@@ -332,7 +332,7 @@ handle_branch (TransformData *td, int short_op, int long_op, int offset)
 		if (td->header->code_size <= 25000) /* FIX to be precise somehow? */
 			shorten_branch = 1;
 
-		Reloc *reloc = mono_mempool_alloc0 (td->mempool, sizeof (Reloc));
+		Reloc *reloc = (Reloc*)mono_mempool_alloc0 (td->mempool, sizeof (Reloc));
 		if (shorten_branch) {
 			offset = 0xffff;
 			reloc->type = RELOC_SHORT_BRANCH;
@@ -469,7 +469,7 @@ can_store (int stack_type, int var_type)
 #define REALLOC_STACK(td, sppos) \
 	do { \
 		(td)->stack_capacity *= 2; \
-		(td)->stack = realloc ((td)->stack, (td)->stack_capacity * sizeof (td->stack [0])); \
+		(td)->stack = (StackInfo*)realloc ((td)->stack, (td)->stack_capacity * sizeof (td->stack [0])); \
 		(td)->sp = (td)->stack + sppos; \
 	} while (0);
 
@@ -747,7 +747,7 @@ get_data_item_index (TransformData *td, void *ptr)
 		return GPOINTER_TO_UINT (p) - 1;
 	if (td->max_data_items == td->n_data_items) {
 		td->max_data_items = td->n_data_items == 0 ? 16 : 2 * td->max_data_items;
-		td->data_items = g_realloc (td->data_items, td->max_data_items * sizeof(td->data_items [0]));
+		td->data_items = (gpointer*)g_realloc (td->data_items, td->max_data_items * sizeof(td->data_items [0]));
 	}
 	index = td->n_data_items;
 	td->data_items [index] = ptr;
@@ -802,7 +802,7 @@ jit_call_supported (MonoMethod *method, MonoMethodSignature *sig)
 	}
 
 	for (l = mono_interp_jit_classes; l; l = l->next) {
-		char *class_name = l->data;
+		const char *class_name = (const char*)l->data;
 		// FIXME: Namespaces
 		if (!strcmp (m_class_get_name (method->klass), class_name))
 			return TRUE;
@@ -1592,7 +1592,7 @@ get_bb (TransformData *td, InterpBasicBlock *cbb, unsigned char *ip)
 	InterpBasicBlock *bb = td->offset_to_bb [offset];
 
 	if (!bb) {
-		bb = mono_mempool_alloc0 (td->mempool, sizeof (InterpBasicBlock));
+		bb = (InterpBasicBlock*)mono_mempool_alloc0 (td->mempool, sizeof (InterpBasicBlock));
 		bb->ip = ip;
 		td->offset_to_bb [offset] = bb;
 
@@ -1621,7 +1621,7 @@ get_basic_blocks (TransformData *td)
 	const MonoOpcode *opcode;
 	InterpBasicBlock *cbb;
 
-	td->offset_to_bb = mono_mempool_alloc0 (td->mempool, sizeof (InterpBasicBlock*) * (end - start + 1));
+	td->offset_to_bb = (InterpBasicBlock**)mono_mempool_alloc0 (td->mempool, sizeof (InterpBasicBlock*) * (end - start + 1));
 	td->entry_bb = cbb = get_bb (td, NULL, start);
 
 	while (ip < end) {
@@ -1770,7 +1770,7 @@ insert_pred_seq_point (SeqPoint *last_sp, SeqPoint *sp, GSList **next)
 static void
 recursively_make_pred_seq_points (TransformData *td, InterpBasicBlock *bb)
 {
-	const gpointer MONO_SEQ_SEEN_LOOP = GINT_TO_POINTER(-1);
+	SeqPoint ** const MONO_SEQ_SEEN_LOOP = (SeqPoint**)GINT_TO_POINTER(-1);
 	GSList *l;
 
 	GArray *predecessors = g_array_new (FALSE, TRUE, sizeof (gpointer));
@@ -1780,7 +1780,7 @@ recursively_make_pred_seq_points (TransformData *td, InterpBasicBlock *bb)
 	bb->pred_seq_points = MONO_SEQ_SEEN_LOOP;
 
 	for (l = bb->preds; l; l = l->next) {
-		InterpBasicBlock *in_bb = l->data;
+		InterpBasicBlock *in_bb = (InterpBasicBlock*)l->data;
 
 		// This bb has the last seq point, append it and continue
 		if (in_bb->last_seq_point != NULL) {
@@ -1814,11 +1814,11 @@ recursively_make_pred_seq_points (TransformData *td, InterpBasicBlock *bb)
 	g_hash_table_destroy (seen);
 
 	if (predecessors->len != 0) {
-		bb->pred_seq_points = mono_mempool_alloc0 (td->mempool, sizeof (SeqPoint *) * predecessors->len);
+		bb->pred_seq_points = (SeqPoint**)mono_mempool_alloc0 (td->mempool, sizeof (SeqPoint *) * predecessors->len);
 		bb->num_pred_seq_points = predecessors->len;
 
 		for (int newer = 0; newer < bb->num_pred_seq_points; newer++) {
-			bb->pred_seq_points [newer] = g_array_index (predecessors, gpointer, newer);
+			bb->pred_seq_points [newer] = (SeqPoint*)g_array_index (predecessors, gpointer, newer);
 		}
 	}
 
@@ -1858,19 +1858,19 @@ save_seq_points (TransformData *td)
 	 * Similar to the code in mono_save_seq_point_info ().
 	 */
 	for (i = 0; i < td->seq_points->len; ++i) {
-		SeqPoint *sp = g_ptr_array_index (td->seq_points, i);
+		SeqPoint *sp = (SeqPoint*)g_ptr_array_index (td->seq_points, i);
 
 		/* Store the seq point index here temporarily */
 		sp->next_offset = i;
 	}
-	next = mono_mempool_alloc0 (td->mempool, sizeof (GList*) * td->seq_points->len);
+	next = (GSList**)mono_mempool_alloc0 (td->mempool, sizeof (GList*) * td->seq_points->len);
 	for (bblist = td->basic_blocks; bblist; bblist = bblist->next) {
-		InterpBasicBlock *bb = bblist->data;
+		InterpBasicBlock *bb = (InterpBasicBlock*)bblist->data;
 
 		GSList *bb_seq_points = g_slist_reverse (bb->seq_points);
 		SeqPoint *last = NULL;
 		for (GSList *l = bb_seq_points; l; l = l->next) {
-			SeqPoint *sp = l->data;
+			SeqPoint *sp = (SeqPoint*)l->data;
 
 			if (sp->il_offset == METHOD_ENTRY_IL_OFFSET || sp->il_offset == METHOD_EXIT_IL_OFFSET)
 				/* Used to implement method entry/exit events */
@@ -1933,7 +1933,7 @@ emit_seq_point (TransformData *td, int il_offset, InterpBasicBlock *cbb, gboolea
 {
 	SeqPoint *seqp;
 
-	seqp = mono_mempool_alloc0 (td->mempool, sizeof (SeqPoint));
+	seqp = (SeqPoint*)mono_mempool_alloc0 (td->mempool, sizeof (SeqPoint));
 	seqp->il_offset = il_offset;
 	seqp->native_offset = (guint8*)td->new_ip - (guint8*)td->new_code;
 	if (nonempty_stack)
@@ -2001,15 +2001,15 @@ generate (MonoMethod *method, MonoMethodHeader *header, InterpMethod *rtm, unsig
 	td->new_code = (unsigned short *)g_malloc(td->max_code_size * sizeof(gushort));
 	td->new_code_end = td->new_code + td->max_code_size;
 	td->mempool = mono_mempool_new ();
-	td->in_offsets = g_malloc0((header->code_size + 1) * sizeof(int));
-	td->stack_state = g_malloc0(header->code_size * sizeof(StackInfo *));
-	td->stack_height = g_malloc(header->code_size * sizeof(int));
-	td->vt_stack_size = g_malloc(header->code_size * sizeof(int));
+	td->in_offsets = (int*)g_malloc0((header->code_size + 1) * sizeof(int));
+	td->stack_state = (StackInfo**)g_malloc0(header->code_size * sizeof(StackInfo *));
+	td->stack_height = (int*)g_malloc(header->code_size * sizeof(int));
+	td->vt_stack_size = (int*)g_malloc(header->code_size * sizeof(int));
 	td->n_data_items = 0;
 	td->max_data_items = 0;
 	td->data_items = NULL;
 	td->data_hash = g_hash_table_new (NULL, NULL);
-	td->clause_indexes = g_malloc (header->code_size * sizeof (int));
+	td->clause_indexes = (int*)g_malloc (header->code_size * sizeof (int));
 	td->gen_sdb_seq_points = mini_debug_options.gen_sdb_seq_points;
 	td->seq_points = g_ptr_array_new ();
 	td->relocs = g_ptr_array_new ();
@@ -2078,7 +2078,7 @@ generate (MonoMethod *method, MonoMethodHeader *header, InterpMethod *rtm, unsig
 	td->new_ip = td->new_code;
 	td->last_new_ip = NULL;
 
-	td->stack = g_malloc0 ((header->max_stack + 1) * sizeof (td->stack [0]));
+	td->stack = (StackInfo*)g_malloc0 ((header->max_stack + 1) * sizeof (td->stack [0]));
 	td->stack_capacity = header->max_stack + 1;
 	td->sp = td->stack;
 	td->max_stack_height = 0;
@@ -2092,7 +2092,7 @@ generate (MonoMethod *method, MonoMethodHeader *header, InterpMethod *rtm, unsig
 		td->is_bb_start [c->handler_offset] = 1;
 
 		td->stack_height [c->handler_offset] = 1;
-		td->stack_state [c->handler_offset] = g_malloc0(sizeof(StackInfo));
+		td->stack_state [c->handler_offset] = (StackInfo*)g_malloc0(sizeof(StackInfo));
 		td->stack_state [c->handler_offset][0].type = STACK_TYPE_O;
 		td->stack_state [c->handler_offset][0].klass = NULL; /*FIX*/
 
@@ -2102,7 +2102,7 @@ generate (MonoMethod *method, MonoMethodHeader *header, InterpMethod *rtm, unsig
 			td->is_bb_start [c->data.filter_offset] = 1;
 
 			td->stack_height [c->data.filter_offset] = 1;
-			td->stack_state [c->data.filter_offset] = g_malloc0(sizeof(StackInfo));
+			td->stack_state [c->data.filter_offset] = (StackInfo*)g_malloc0(sizeof(StackInfo));
 			td->stack_state [c->data.filter_offset][0].type = STACK_TYPE_O;
 			td->stack_state [c->data.filter_offset][0].klass = NULL; /*FIX*/
 		}
@@ -2590,9 +2590,9 @@ generate (MonoMethod *method, MonoMethodHeader *header, InterpMethod *rtm, unsig
 					td->stack_height [target] = stack_height;
 					td->vt_stack_size [target] = td->vt_sp;
 					if (stack_height > 0)
-						td->stack_state [target] = g_memdup (td->stack, stack_height * sizeof (td->stack [0]));
+						td->stack_state [target] = (StackInfo*)g_memdup (td->stack, stack_height * sizeof (td->stack [0]));
 
-					Reloc *reloc = mono_mempool_alloc0 (td->mempool, sizeof (Reloc));
+					Reloc *reloc = (Reloc*)mono_mempool_alloc0 (td->mempool, sizeof (Reloc));
 					reloc->type = RELOC_SWITCH;
 					reloc->offset = td->new_ip - td->new_code;
 					reloc->target = target;
@@ -3526,7 +3526,7 @@ generate (MonoMethod *method, MonoMethodHeader *header, InterpMethod *rtm, unsig
 			PUSH_TYPE(td, stack_type [mt], klass);
 			break;
 		}
-		case CEE_STSFLD:
+		case CEE_STSFLD: {
 			CHECK_STACK (td, 1);
 			token = read32 (td->ip + 1);
 			field = interp_field_from_token (method, token, &klass, generic_context, error);
@@ -3549,6 +3549,7 @@ generate (MonoMethod *method, MonoMethodHeader *header, InterpMethod *rtm, unsig
 			td->ip += 5;
 			--td->sp;
 			break;
+		}
 		case CEE_STOBJ: {
 			int size;
 			token = read32 (td->ip + 1);
@@ -4203,7 +4204,7 @@ generate (MonoMethod *method, MonoMethodHeader *header, InterpMethod *rtm, unsig
 					handle = m_class_get_byval_arg ((MonoClass *) handle);
 
 				if (generic_context) {
-					handle = mono_class_inflate_generic_type_checked (handle, generic_context, error);
+					handle = mono_class_inflate_generic_type_checked ((MonoType*)handle, generic_context, error);
 					goto_if_nok (error, exit);
 				}
 			} else {
@@ -4714,7 +4715,7 @@ generate (MonoMethod *method, MonoMethodHeader *header, InterpMethod *rtm, unsig
 
 	/* Handle relocations */
 	for (int i = 0; i < td->relocs->len; ++i) {
-		Reloc *reloc = g_ptr_array_index (td->relocs, i);
+		Reloc *reloc = (Reloc*)g_ptr_array_index (td->relocs, i);
 
 		int offset = td->in_offsets [reloc->target] - reloc->offset;
 
@@ -4758,11 +4759,12 @@ generate (MonoMethod *method, MonoMethodHeader *header, InterpMethod *rtm, unsig
 	if (td->max_stack_height > header->max_stack * 3)
 		g_warning ("Excessive stack space usage for method %s, %d/%d", method->name, td->max_stack_height, header->max_stack);
 
-	int code_len = td->new_ip - td->new_code;
+	int code_len;
+	code_len = td->new_ip - td->new_code;
 
-	rtm->clauses = mono_domain_alloc0 (domain, header->num_clauses * sizeof (MonoExceptionClause));
+	rtm->clauses = (MonoExceptionClause*)mono_domain_alloc0 (domain, header->num_clauses * sizeof (MonoExceptionClause));
 	memcpy (rtm->clauses, header->clauses, header->num_clauses * sizeof(MonoExceptionClause));
-	rtm->code = mono_domain_alloc0 (domain, (td->new_ip - td->new_code) * sizeof (gushort));
+	rtm->code = (gushort*)mono_domain_alloc0 (domain, (td->new_ip - td->new_code) * sizeof (gushort));
 	memcpy (rtm->code, td->new_code, (td->new_ip - td->new_code) * sizeof(gushort));
 	g_free (td->new_code);
 	rtm->new_body_start = rtm->code + body_start_offset;
@@ -4784,18 +4786,20 @@ generate (MonoMethod *method, MonoMethodHeader *header, InterpMethod *rtm, unsig
 	rtm->vt_stack_size = td->max_vt_sp;
 	rtm->total_locals_size = td->total_locals_size;
 	rtm->alloca_size = rtm->total_locals_size + rtm->args_size + rtm->vt_stack_size + rtm->stack_size;
-	rtm->data_items = mono_domain_alloc0 (domain, td->n_data_items * sizeof (td->data_items [0]));
+	rtm->data_items = (gpointer*)mono_domain_alloc0 (domain, td->n_data_items * sizeof (td->data_items [0]));
 	memcpy (rtm->data_items, td->data_items, td->n_data_items * sizeof (td->data_items [0]));
 
 	/* Save debug info */
 	interp_save_debug_info (rtm, header, td, line_numbers);
 
 	/* Create a MonoJitInfo for the interpreted method by creating the interpreter IR as the native code. */
-	int jinfo_len = mono_jit_info_size (0, header->num_clauses, 0);
-	MonoJitInfo *jinfo = (MonoJitInfo *)mono_domain_alloc0 (domain, jinfo_len);
+	int jinfo_len;
+	jinfo_len = mono_jit_info_size ((MonoJitInfoFlags)0, header->num_clauses, 0);
+	MonoJitInfo *jinfo;
+	jinfo = (MonoJitInfo *)mono_domain_alloc0 (domain, jinfo_len);
 	jinfo->is_interp = 1;
 	rtm->jinfo = jinfo;
-	mono_jit_info_init (jinfo, method, (guint8*)rtm->code, code_len, 0, header->num_clauses, 0);
+	mono_jit_info_init (jinfo, method, (guint8*)rtm->code, code_len, (MonoJitInfoFlags)0, header->num_clauses, 0);
 	for (i = 0; i < jinfo->num_clauses; ++i) {
 		MonoJitExceptionInfo *ei = &jinfo->clauses [i];
 		MonoExceptionClause *c = rtm->clauses + i;
@@ -4953,7 +4957,7 @@ mono_interp_transform_method (InterpMethod *imethod, ThreadContext *context, Mon
 	ip = header->code;
 	end = ip + header->code_size;
 
-	is_bb_start = g_malloc0(header->code_size);
+	is_bb_start = (guint8*)g_malloc0(header->code_size);
 	is_bb_start [0] = 1;
 	while (ip < end) {
 		in = *ip;
@@ -5076,7 +5080,7 @@ mono_interp_transform_method (InterpMethod *imethod, ThreadContext *context, Mon
 	memcpy (&tmp_imethod, imethod, sizeof (InterpMethod));
 	imethod = &tmp_imethod;
 
-	imethod->local_offsets = g_malloc (header->num_locals * sizeof(guint32));
+	imethod->local_offsets = (guint32*)g_malloc (header->num_locals * sizeof(guint32));
 	offset = 0;
 	for (i = 0; i < header->num_locals; ++i) {
 		size = mono_type_size (header->locals [i], &align);
@@ -5087,7 +5091,7 @@ mono_interp_transform_method (InterpMethod *imethod, ThreadContext *context, Mon
 	}
 	offset = (offset + 7) & ~7;
 
-	imethod->exvar_offsets = g_malloc (header->num_clauses * sizeof (guint32));
+	imethod->exvar_offsets = (guint32*)g_malloc (header->num_clauses * sizeof (guint32));
 	for (i = 0; i < header->num_clauses; i++) {
 		imethod->exvar_offsets [i] = offset;
 		offset += sizeof (MonoObject*);
@@ -5097,7 +5101,7 @@ mono_interp_transform_method (InterpMethod *imethod, ThreadContext *context, Mon
 	imethod->locals_size = offset;
 	g_assert (imethod->locals_size < 65536);
 	offset = 0;
-	imethod->arg_offsets = g_malloc ((!!signature->hasthis + signature->param_count) * sizeof(guint32));
+	imethod->arg_offsets = (guint32*)g_malloc ((!!signature->hasthis + signature->param_count) * sizeof(guint32));
 
 	if (signature->hasthis) {
 		g_assert (!signature->pinvoke);

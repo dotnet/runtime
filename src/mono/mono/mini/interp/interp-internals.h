@@ -61,6 +61,7 @@ typedef struct {
 		} pair;
 		double f;
 		/* native size integer and pointer types */
+		MonoObject *o;
 		gpointer p;
 		mono_u nati;
 		gpointer vt;

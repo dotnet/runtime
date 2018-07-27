@@ -31,7 +31,7 @@ unsigned char mono_interp_oplen[] = {
 	d,
 MintOpArgType mono_interp_opargtype[] = {
 #include "mintops.def"
-	0
+	(MintOpArgType)0
 };
 #undef OPDEF
 
