@@ -7335,7 +7335,7 @@ MonoStringHandle
 mono_ldstr_handle (MonoDomain *domain, MonoImage *image, guint32 idx, MonoError *error)
 {
 	// FIXME invert mono_ldstr_handle and mono_ldstr_checked.
-	return MONO_HANDLE_NEW (MonoString, mono_ldstr_checked (mono_domain_get (), image, idx, error));
+	return MONO_HANDLE_NEW (MonoString, mono_ldstr_checked (domain, image, idx, error));
 }
 
 /**
