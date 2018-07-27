@@ -14,27 +14,17 @@ simpleDockerNode('microsoft/dotnet-buildtools-prereqs:centos-6-376e1a3-201743110
     }
 
     def logFolder = getLogFolder()
+    def commonprops = "--ci /p:ArchGroup=${params.AGroup} /p:ConfigurationGroup=${params.CGroup}"
 
-    stage ('Initialize tools') {
-        // Init tools
-        sh 'LD_LIBRARY_PATH=/usr/local/lib ./init-tools.sh'
-    }
-    stage ('Generate version assets') {
-        // Generate the version assets.  Do we need to even do this for non-official builds?
-        sh "LD_LIBRARY_PATH=/usr/local/lib ./build-managed.sh -runtimeos=rhel.6 -- /t:GenerateVersionSourceFile /p:GenerateVersionSourceFile=true /p:PortableBuild=false"
-    }
-    stage ('Sync') {
-        sh "LD_LIBRARY_PATH=/usr/local/lib ./sync.sh -p -runtimeos=rhel.6 -- /p:ArchGroup=x64 /p:PortableBuild=false"
-    }
     stage ('Build Product') {
-        sh "LD_LIBRARY_PATH=/usr/local/lib ./build.sh -buildArch=x64 -runtimeos=rhel.6 -${params.CGroup} -- /p:PortableBuild=false"
+        sh "LD_LIBRARY_PATH=/usr/local/lib ./build.sh ${commonprops} /p:RuntimeOS=rhel.6 /p:PortableBuild=false"
     }
     stage ('Build Tests') {
         def additionalArgs = ''
         if (params.TestOuter) {
-            additionalArgs = '-Outerloop'
+            additionalArgs = ' /p:OuterLoop=true'
         }
-        sh "LD_LIBRARY_PATH=/usr/local/lib ./build-tests.sh -buildArch=x64 -${params.CGroup} -SkipTests ${additionalArgs} -- /p:ArchiveTests=true /p:EnableDumpling=true /p:PortableBuild=false"
+        sh "LD_LIBRARY_PATH=/usr/local/lib ./build.sh -test ${commonprops} /p:SkipTests=true /p:ArchiveTests=true /p:EnableDumpling=true /p:PortableBuild=false${additionalArgs}"
     }
     stage ('Submit To Helix For Testing') {
         // Bind the credentials
@@ -48,7 +38,7 @@ simpleDockerNode('microsoft/dotnet-buildtools-prereqs:centos-6-376e1a3-201743110
             def helixCreator = getUser()
             // Target queues
             def targetHelixQueues = ['RedHat.69.Amd64.Open']
-            
+
             sh "LD_LIBRARY_PATH=/usr/local/lib ./Tools/msbuild.sh src/upload-tests.proj /p:ArchGroup=x64 /p:ConfigurationGroup=${params.CGroup} /p:TestProduct=corefx /p:TimeoutInSeconds=1200 /p:TargetOS=Linux /p:HelixJobType=test/functional/cli/ /p:HelixSource=${helixSource} /p:BuildMoniker=${helixBuild} /p:HelixCreator=${helixCreator} /p:CloudDropAccountName=dotnetbuilddrops /p:CloudResultsAccountName=dotnetjobresults /p:CloudDropAccessToken=\$CloudDropAccessToken /p:CloudResultsAccessToken=\$OutputCloudResultsAccessToken /p:HelixApiEndpoint=https://helix.dot.net/api/2017-04-14/jobs /p:TargetQueues=${targetHelixQueues.join('+')} /p:HelixLogFolder=${WORKSPACE}/${logFolder}/ /p:HelixCorrelationInfoFileName=SubmittedHelixRuns.txt"
 
             submittedHelixJson = readJSON file: "${logFolder}/SubmittedHelixRuns.txt"

@@ -28,7 +28,8 @@
   </Target>
 
   <PropertyGroup>
-    <PackageDownloadDirectory Condition="'$(DownloadDirectory)' == ''">$(PackagesDir)AzureTransfer\$(ConfigurationGroup)</PackageDownloadDirectory>
+    <DownloadDirectory Condition="'$(DownloadDirectory)' == ''">$(BinDir)AzureTransfer</DownloadDirectory>
+    <PackageDownloadDirectory>$(DownloadDirectory)\$(ConfigurationGroup)</PackageDownloadDirectory>
     <FinalPublishPattern>$(PackageDownloadDirectory)\**\*.nupkg</FinalPublishPattern>
     <FinalPublishPrivatePattern>$(PackageDownloadDirectory)\**\*Private*.nupkg</FinalPublishPrivatePattern>
     <FinalPublishExperimentalPattern>$(PackageDownloadDirectory)\**\*Experimental*.nupkg</FinalPublishExperimentalPattern>
@@ -43,6 +44,7 @@
         <Authenticode>NuGet</Authenticode>
       </FilesToSign>
     </ItemGroup>
+    <Error Condition="'@(FilesToSign)' == ''" Text="There are no package files to sign please check $(FinalPublishPattern) to see if the packages are setup there" />
     <Message Importance="High" Text="Attempting to sign package '%(FilesToSign.Identity)'" />
   </Target>
 
