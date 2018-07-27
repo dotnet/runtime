@@ -342,9 +342,7 @@ mono_init_merp (const intptr_t crashed_pid, const char *signal, MonoStackHash *h
 
 	merp->moduleOffset = 0;
 
-	ERROR_DECL (error);
-	merp->uiLidArg = ves_icall_System_Threading_Thread_current_lcid (error);
-	mono_error_assert_ok (error);
+	merp->uiLidArg = ves_icall_System_Threading_Thread_current_lcid ();
 
 	merp->osVersion = os_version_string ();
 

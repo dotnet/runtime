@@ -689,19 +689,19 @@ ves_icall_System_IO_MonoIO_SetFileTime (HANDLE handle, gint64 creation_time,
 }
 
 HANDLE 
-ves_icall_System_IO_MonoIO_get_ConsoleOutput ()
+ves_icall_System_IO_MonoIO_get_ConsoleOutput (void)
 {
 	return mono_w32file_get_console_output ();
 }
 
 HANDLE 
-ves_icall_System_IO_MonoIO_get_ConsoleInput ()
+ves_icall_System_IO_MonoIO_get_ConsoleInput (void)
 {
 	return mono_w32file_get_console_input ();
 }
 
 HANDLE 
-ves_icall_System_IO_MonoIO_get_ConsoleError ()
+ves_icall_System_IO_MonoIO_get_ConsoleError (void)
 {
 	return mono_w32file_get_console_error ();
 }
@@ -758,19 +758,19 @@ ves_icall_System_IO_MonoIO_DuplicateHandle (HANDLE source_process_handle, HANDLE
 
 #ifndef HOST_WIN32
 gunichar2 
-ves_icall_System_IO_MonoIO_get_VolumeSeparatorChar ()
+ves_icall_System_IO_MonoIO_get_VolumeSeparatorChar (void)
 {
 	return (gunichar2) '/';	/* forward slash */
 }
 
 gunichar2 
-ves_icall_System_IO_MonoIO_get_DirectorySeparatorChar ()
+ves_icall_System_IO_MonoIO_get_DirectorySeparatorChar (void)
 {
 	return (gunichar2) '/';	/* forward slash */
 }
 
 gunichar2 
-ves_icall_System_IO_MonoIO_get_AltDirectorySeparatorChar ()
+ves_icall_System_IO_MonoIO_get_AltDirectorySeparatorChar (void)
 {
 	if (IS_PORTABILITY_SET)
 		return (gunichar2) '\\';	/* backslash */
@@ -779,7 +779,7 @@ ves_icall_System_IO_MonoIO_get_AltDirectorySeparatorChar ()
 }
 
 gunichar2 
-ves_icall_System_IO_MonoIO_get_PathSeparator ()
+ves_icall_System_IO_MonoIO_get_PathSeparator (void)
 {
 	return (gunichar2) ':';	/* colon */
 }

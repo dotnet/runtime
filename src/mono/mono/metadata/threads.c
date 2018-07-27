@@ -1661,12 +1661,6 @@ ves_icall_System_Threading_Thread_GetDomainID (MonoError *error)
 	return mono_domain_get()->domain_id;
 }
 
-gboolean 
-ves_icall_System_Threading_Thread_Yield (MonoError *error)
-{
-	return mono_thread_info_yield ();
-}
-
 /*
  * mono_thread_get_name:
  *
