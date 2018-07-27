@@ -2475,7 +2475,7 @@ get_top_method_ji (gpointer ip, MonoDomain **domain, gpointer *out_ip)
 		MonoLMFExt *ext = (MonoLMFExt*)lmf;
 
 		g_assert (ext->interp_exit);
-		frame = ext->interp_exit_data;
+		frame = (MonoInterpFrameHandle*)ext->interp_exit_data;
 		ji = mini_get_interp_callbacks ()->frame_get_jit_info (frame);
 		if (domain)
 			*domain = mono_domain_get ();
@@ -2783,7 +2783,7 @@ process_suspend (DebuggerTlsData *tls, MonoContext *ctx)
 static gboolean
 try_process_suspend (void *the_tls, MonoContext *ctx)
 {
-	DebuggerTlsData *tls = the_tls;
+	DebuggerTlsData *tls = (DebuggerTlsData*)the_tls;
 
 	if (suspend_count > 0) {
 		/* Fastpath during invokes, see in process_suspend () */
@@ -3383,7 +3383,7 @@ dbg_path_get_basename (const char *filename)
 	/* From gpath.c */
 
 	/* No separator -> filename */
-	r = strrchr (filename, '\\');
+	r = (char*)strrchr (filename, '\\');
 	if (r == NULL)
 		return g_strdup (filename);
 
@@ -4216,7 +4216,7 @@ event_requests_cleanup (void)
 static void
 ss_calculate_framecount (void *the_tls, MonoContext *ctx, gboolean force_use_ctx, DbgEngineStackFrame ***frames, int *nframes)
 {
-	DebuggerTlsData *tls = the_tls;
+	DebuggerTlsData *tls = (DebuggerTlsData*)the_tls;
 
 	if (force_use_ctx || !tls->context.valid)
 		mono_thread_state_init_from_monoctx (&tls->context, ctx);
@@ -4235,7 +4235,7 @@ ss_calculate_framecount (void *the_tls, MonoContext *ctx, gboolean force_use_ctx
 static void
 ss_discard_frame_context (void *the_tls)
 {
-	DebuggerTlsData *tls = the_tls;
+	DebuggerTlsData *tls = (DebuggerTlsData*)the_tls;
 	tls->context.valid = FALSE;
 	tls->async_state.valid = FALSE;
 	invalidate_frames (tls);
@@ -4244,7 +4244,7 @@ ss_discard_frame_context (void *the_tls)
 static MonoContext*
 tls_get_restore_state (void *the_tls)
 {
-	DebuggerTlsData *tls = the_tls;
+	DebuggerTlsData *tls = (DebuggerTlsData*)the_tls;
 
 	return &tls->restore_state.ctx;
 }
@@ -4326,7 +4326,7 @@ get_async_method_builder (DbgEngineStackFrame *frame)
 	MonoObject *this_obj;
 	MonoClassField *builder_field;
 	gpointer builder;
-	guint8 *this_addr;
+	gpointer this_addr;
 
 	builder_field = mono_class_get_field_from_name_full (frame->method->klass, "<>t__builder", NULL);
 	g_assert (builder_field);
@@ -4429,7 +4429,7 @@ get_notify_debugger_of_wait_completion_method (void)
 static gboolean
 begin_breakpoint_processing (void *the_tls, MonoContext *ctx, MonoJitInfo *ji, gboolean from_signal)
 {
-	DebuggerTlsData *tls = the_tls;
+	DebuggerTlsData *tls = (DebuggerTlsData*)the_tls;
 
 	/*
 	 * Skip the instruction causing the breakpoint signal.
@@ -4468,7 +4468,7 @@ create_breakpoint_events (GPtrArray *ss_reqs, GPtrArray *bp_reqs, MonoJitInfo *j
 static void
 process_breakpoint_events (void *_evts, MonoMethod *method, MonoContext *ctx, int il_offset)
 {
-	BreakPointEvents *evts = _evts;
+	BreakPointEvents *evts = (BreakPointEvents*)_evts;
 	/*
 	 * FIXME: The first event will suspend, so the second will only be sent after the
 	 * resume.
@@ -4546,7 +4546,7 @@ debugger_agent_breakpoint_hit (void *sigctx)
 	 * problems, like the original signal is disabled, libgc can't handle altstack, etc.
 	 * So set up the signal context to return to the real breakpoint handler function.
 	 */
-	resume_from_signal_handler (sigctx, process_breakpoint_from_signal);
+	resume_from_signal_handler (sigctx, (gpointer)process_breakpoint_from_signal);
 }
 
 typedef struct {
@@ -4557,7 +4557,7 @@ typedef struct {
 static gboolean
 user_break_cb (StackFrameInfo *frame, MonoContext *ctx, gpointer user_data)
 {
-	UserBreakCbData *data = user_data;
+	UserBreakCbData *data = (UserBreakCbData*)user_data;
 
 	if (frame->type == FRAME_TYPE_INTERP_TO_MANAGED) {
 		data->found = TRUE;
@@ -4643,7 +4643,7 @@ debugger_agent_single_step_event (void *sigctx)
 		return;
 	}
 
-	resume_from_signal_handler (sigctx, process_single_step);
+	resume_from_signal_handler (sigctx, (gpointer)process_single_step);
 }
 
 static void
@@ -6319,7 +6319,7 @@ get_source_files_for_type (MonoClass *klass)
 			for (j = 0; j < source_file_list->len; ++j) {
 				sinfo = (MonoDebugSourceInfo *)g_ptr_array_index (source_file_list, j);
 				for (i = 0; i < files->len; ++i)
-					if (!strcmp (g_ptr_array_index (files, i), sinfo->source_file))
+					if (!strcmp ((const char*)g_ptr_array_index (files, i), (const char*)sinfo->source_file))
 						break;
 				if (i == files->len)
 					g_ptr_array_add (files, g_strdup (sinfo->source_file));
@@ -6346,8 +6346,8 @@ get_types (gpointer key, gpointer value, gpointer user_data)
 	gboolean type_resolve;
 	MonoType *t;
 	GSList *tmp;
-	MonoDomain *domain = key;
-	GetTypesArgs *ud = user_data;
+	MonoDomain *domain = (MonoDomain*)key;
+	GetTypesArgs *ud = (GetTypesArgs*)user_data;
 
 	mono_domain_assemblies_lock (domain);
 	for (tmp = domain->domain_assemblies; tmp; tmp = tmp->next) {
@@ -6382,8 +6382,8 @@ get_types_for_source_file (gpointer key, gpointer value, gpointer user_data)
 	MonoClass *klass = NULL;
 	GPtrArray *files = NULL;
 
-	GetTypesForSourceFileArgs *ud = user_data;
-	MonoDomain *domain = key;
+	GetTypesForSourceFileArgs *ud = (GetTypesForSourceFileArgs*)user_data;
+	MonoDomain *domain = (MonoDomain*)key;
 
 	AgentDomainInfo *info = (AgentDomainInfo *)domain_jit_info (domain)->agent_info;
 
@@ -6941,7 +6941,7 @@ event_commands (int command, guint8 *p, guint8 *end, Buffer *buf)
 				return err;
 			}
 
-			err = mono_de_ss_create (THREAD_TO_INTERNAL (step_thread), size, depth, filter, req);
+			err = (ErrorCode)mono_de_ss_create (THREAD_TO_INTERNAL (step_thread), size, depth, filter, req);
 			if (err != ERR_NONE) {
 				g_free (req);
 				return err;
@@ -8571,7 +8571,7 @@ thread_commands (int command, guint8 *p, guint8 *end, Buffer *buf)
 		DEBUG_PRINTF (1, "[dbg] Setting IP to %s:0x%0x(0x%0x)\n", tls->frames [0]->actual_method->name, (int)sp.il_offset, (int)sp.native_offset);
 
 		if (tls->frames [0]->de.ji->is_interp) {
-			MonoJitTlsData *jit_data = ((MonoThreadInfo*)thread->thread_info)->jit_data;
+			MonoJitTlsData *jit_data = (thread->thread_info)->jit_data;
 			mini_get_interp_callbacks ()->set_resume_state (jit_data, NULL, NULL, tls->frames [0]->interp_frame, (guint8*)tls->frames [0]->de.ji->code_start + sp.native_offset);
 		} else {
 			MONO_CONTEXT_SET_IP (&tls->restore_state.ctx, (guint8*)tls->frames [0]->de.ji->code_start + sp.native_offset);
@@ -8665,7 +8665,7 @@ frame_commands (int command, guint8 *p, guint8 *end, Buffer *buf)
 				if (frame->de.ji->is_interp) {
 					guint8 *addr;
 
-					addr = mini_get_interp_callbacks ()->frame_get_arg (frame->interp_frame, pos);
+					addr = (guint8*)mini_get_interp_callbacks ()->frame_get_arg (frame->interp_frame, pos);
 
 					buffer_add_value_full (buf, sig->params [pos], addr, frame->de.domain, FALSE, NULL);
 				} else {
@@ -8688,7 +8688,7 @@ frame_commands (int command, guint8 *p, guint8 *end, Buffer *buf)
 				if (frame->de.ji->is_interp) {
 					guint8 *addr;
 
-					addr = mini_get_interp_callbacks ()->frame_get_local (frame->interp_frame, pos);
+					addr = (guint8*)mini_get_interp_callbacks ()->frame_get_local (frame->interp_frame, pos);
 
 					buffer_add_value_full (buf, header->locals [pos], addr, frame->de.domain, FALSE, NULL);
 				} else {
@@ -8712,7 +8712,7 @@ frame_commands (int command, guint8 *p, guint8 *end, Buffer *buf)
 				if (frame->de.ji->is_interp) {
 					guint8 *addr;
 
-					addr = mini_get_interp_callbacks ()->frame_get_this (frame->interp_frame);
+					addr = (guint8*)mini_get_interp_callbacks ()->frame_get_this (frame->interp_frame);
 
 					buffer_add_value_full (buf, m_class_get_this_arg (frame->actual_method->klass), addr, frame->de.domain, FALSE, NULL);
 				} else {
@@ -8727,7 +8727,7 @@ frame_commands (int command, guint8 *p, guint8 *end, Buffer *buf)
 				if (frame->de.ji->is_interp) {
 					guint8 *addr;
 
-					addr = mini_get_interp_callbacks ()->frame_get_this (frame->interp_frame);
+					addr = (guint8*)mini_get_interp_callbacks ()->frame_get_this (frame->interp_frame);
 
 					buffer_add_value_full (buf, m_class_get_byval_arg (frame->api_method->klass), addr, frame->de.domain, FALSE, NULL);
 				} else {
@@ -8786,9 +8786,9 @@ frame_commands (int command, guint8 *p, guint8 *end, Buffer *buf)
 				guint8 *addr;
 
 				if (is_arg)
-					addr = mini_get_interp_callbacks ()->frame_get_arg (frame->interp_frame, pos);
+					addr = (guint8*)mini_get_interp_callbacks ()->frame_get_arg (frame->interp_frame, pos);
 				else
-					addr = mini_get_interp_callbacks ()->frame_get_local (frame->interp_frame, pos);
+					addr = (guint8*)mini_get_interp_callbacks ()->frame_get_local (frame->interp_frame, pos);
 				set_interp_var (t, addr, val_buf);
 			} else {
 				set_var (t, var, &frame->ctx, frame->de.domain, val_buf, frame->reg_locations, &tls->restore_state.ctx);
@@ -8819,7 +8819,7 @@ frame_commands (int command, guint8 *p, guint8 *end, Buffer *buf)
 		if (frame->de.ji->is_interp) {
 			guint8 *addr;
 
-			addr = mini_get_interp_callbacks ()->frame_get_this (frame->interp_frame);
+			addr = (guint8*)mini_get_interp_callbacks ()->frame_get_this (frame->interp_frame);
 			set_interp_var (m_class_get_this_arg (frame->actual_method->klass), addr, val_buf);
 		} else {
 			var = jit->this_var;
@@ -9064,7 +9064,7 @@ object_commands (int command, guint8 *p, guint8 *end, Buffer *buf)
 				buffer_add_value (buf, f->type, val, obj->vtable->domain);
 				g_free (val);
 			} else {
-				guint8 *field_value = NULL;
+				void *field_value = NULL;
 
 				if (remote_obj) {
 #ifndef DISABLE_REMOTING
