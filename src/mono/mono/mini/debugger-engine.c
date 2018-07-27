@@ -389,9 +389,9 @@ static void
 collect_domain_bp (gpointer key, gpointer value, gpointer user_data)
 {
 	GHashTableIter iter;
-	MonoDomain *domain = key;
+	MonoDomain *domain = (MonoDomain*)key;
 	MonoSeqPointInfo *seq_points;
-	CollectDomainData *ud = user_data;
+	CollectDomainData *ud = (CollectDomainData*)user_data;
 	MonoMethod *m;
 
 	mono_domain_lock (domain);
@@ -411,7 +411,7 @@ void
 mono_de_clear_all_breakpoints (void)
 {
 	while (breakpoints->len)
-		mono_de_clear_breakpoint (g_ptr_array_index (breakpoints, 0));
+		mono_de_clear_breakpoint ((MonoBreakpoint*)g_ptr_array_index (breakpoints, 0));
 }
 
 /*
@@ -650,7 +650,7 @@ get_top_method_ji (gpointer ip, MonoDomain **domain, gpointer *out_ip)
 		MonoLMFExt *ext = (MonoLMFExt*)lmf;
 
 		g_assert (ext->interp_exit);
-		frame = ext->interp_exit_data;
+		frame = (MonoInterpFrameHandle*)ext->interp_exit_data;
 		ji = mini_get_interp_callbacks ()->frame_get_jit_info (frame);
 		if (domain)
 			*domain = mono_domain_get ();
@@ -847,16 +847,17 @@ mono_de_process_single_step (void *tls, gboolean from_signal)
 		goto exit;
 
 	/* Start single stepping again from the current sequence point */
-	SingleStepArgs args = {
-		.method = method,
-		.ctx = ctx,
-		.tls = tls,
-		.step_to_catch = FALSE,
-		.sp = sp,
-		.info = info,
-		.frames = NULL,
-		.nframes = 0
-	};
+
+	SingleStepArgs args;
+	memset (&args, 0, sizeof (args));
+	args.method = method;
+	args.ctx = ctx;
+	args.tls = tls;
+	args.step_to_catch = FALSE;
+	args.sp = sp;
+	args.info = info;
+	args.frames = NULL;
+	args.nframes = 0;
 	mono_de_ss_start (ss_req, &args);
 
 	if ((ss_req->filter & STEP_FILTER_STATIC_CTOR) &&
@@ -872,7 +873,8 @@ mono_de_process_single_step (void *tls, gboolean from_signal)
 
 	g_ptr_array_add (reqs, ss_req->req);
 
-	void *bp_events = rt_callbacks.create_breakpoint_events (reqs, NULL, ji, EVENT_KIND_BREAKPOINT);
+	void *bp_events;
+	bp_events = rt_callbacks.create_breakpoint_events (reqs, NULL, ji, EVENT_KIND_BREAKPOINT);
 
 	g_ptr_array_free (reqs, TRUE);
 
@@ -1011,8 +1013,9 @@ mono_de_ss_update (SingleStepReq *req, MonoJitInfo *ji, SeqPoint *sp, void *tls,
 }
 
 void
-mono_de_process_breakpoint (void *tls, gboolean from_signal)
+mono_de_process_breakpoint (void *void_tls, gboolean from_signal)
 {
+	DebuggerTlsData *tls = (DebuggerTlsData*)void_tls;
 	MonoJitInfo *ji;
 	guint8 *ip;
 	int i;
@@ -1123,16 +1126,16 @@ mono_de_process_breakpoint (void *tls, gboolean from_signal)
 		if (hit)
 			g_ptr_array_add (ss_reqs, req);
 
-		SingleStepArgs args = {
-			.method = method,
-			.ctx = ctx,
-			.tls = tls,
-			.step_to_catch = FALSE,
-			.sp = sp,
-			.info = info,
-			.frames = NULL,
-			.nframes = 0
-		};
+		SingleStepArgs args;
+		memset (&args, 0, sizeof (args));
+		args.method = method;
+		args.ctx = ctx;
+		args.tls = tls;
+		args.step_to_catch = FALSE;
+		args.sp = sp;
+		args.info = info;
+		args.frames = NULL;
+		args.nframes = 0;
 		mono_de_ss_start (ss_req, &args);
 	}
 
