@@ -40,15 +40,10 @@ XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
 bool Lowering::IsCallTargetInRange(void* addr)
 {
 #ifdef _TARGET_ARM64_
-    // TODO-ARM64-CQ:  This is a workaround to unblock the JIT from getting calls working.
-    // Currently, we'll be generating calls using blr and manually loading an absolute
-    // call target in a register using a sequence of load immediate instructions.
-    //
-    // As you can expect, this is inefficient and it's not the recommended way as per the
-    // ARM64 ABI Manual but will get us getting things done for now.
-    // The work to get this right would be to implement PC-relative calls, the bl instruction
-    // can only address things -128 + 128MB away, so this will require getting some additional
-    // code to get jump thunks working.
+    // On arm64, we always assume a call target is in range and generate a 28-bit relative
+    // 'bl' instruction. If this isn't sufficient range, the VM will generate a jump stub when
+    // we call recordRelocation(). See the IMAGE_REL_ARM64_BRANCH26 case in jitinterface.cpp
+    // (for JIT) or zapinfo.cpp (for NGEN). If we cannot allocate a jump stub, it is fatal.
     return true;
 #elif defined(_TARGET_ARM_)
     return comp->codeGen->validImmForBL((ssize_t)addr);
