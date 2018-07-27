@@ -5,6 +5,5 @@
   </PropertyGroup>
   <ItemGroup>
     <Compile Include="System.Data.forwards.cs" />
-    <ReferencePath Include="$(_RuntimePath)System.*.dll;$(_RuntimePath)Microsoft.*.dll" Exclude="$(_RuntimePath)Microsoft.Diagnostics.Tracing.TraceEvent.dll;$(_RuntimePath)Microsoft.DiaSymReader.Native.*.dll;$(_RuntimePath)System.Data.dll" />
   </ItemGroup>
 </Project>

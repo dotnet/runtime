@@ -78,7 +78,7 @@ The managed components of CoreFX are architecture-independent and thus do not re
 
 Many of the managed binaries are also OS-independent, e.g. System.Linq.dll, while some are OS-specific, e.g. System.IO.FileSystem.dll, with different builds for Windows and Linux.
 
-    lgs@ubuntu ~/git/corefx/ $ ./build-managed.sh -debug -verbose
+    lgs@ubuntu ~/git/corefx/ $ ./build.sh -debug /p:BuildNative=false
 
 The output is at `bin/[BuildConfiguration]` where `BuildConfiguration` looks something like `netcoreapp-<OSGroup>-Debug-<Architecture>`. Ex: `bin/netcoreapp-Linux-Debug-x64`. For more details on the build configurations see [project-guidelines](../coding-guidelines/project-guidelines.md)
 
@@ -112,10 +112,10 @@ When building for a new architecture you will need to build the native pieces se
 
 Example building for armel
 ```
-build-native.sh -buildArch=armel
+src/Native/build-native.sh armel
 --> Output goes to bin/runtime/netcoreapp-Linux-Debug-armel
 
-build-managed.sh -buildArch=x64
+build /p:ArchGroup=x64 /p:BuildNative=false
 --> Output goes to bin/runtime/netcoreapp-Linux-Debug-x64
 ```
 

@@ -24,7 +24,7 @@
       <ExceptionForDepsJson Include="microsoft.netcore.app" />
 
       <!-- TODO: We should see about generating this from scratch instead of relying on a previous deps file as a template -->
-      <_sharedFrameworkDepsJson Include="$(ToolsDir)dotnetcli\shared\Microsoft.NETCore.App\*\Microsoft.NETCore.App.deps.json" />
+      <_sharedFrameworkDepsJson Include="$(DotNetRoot)shared\Microsoft.NETCore.App\*\Microsoft.NETCore.App.deps.json" />
     </ItemGroup>
 
     <PropertyGroup>
@@ -71,10 +71,14 @@
 
     <!-- Generate launch settings support files to enable VS debugging. -->
   <Target Name="GenerateLaunchSettingsFiles" BeforeTargets="BuildAllProjects" Condition="'$(GenerateLaunchSettings)' == 'true'">
+    <PropertyGroup>
+      <_TestProjectRootDir>$(SourceDir)</_TestProjectRootDir>
+      <_TestProjectRootDir Condition="'$(DirectoryToBuild)'!=''">$(DirectoryToBuild)</_TestProjectRootDir>
+    </PropertyGroup>
     <ItemGroup>
       <!-- Keep in sync with pattern for test projects in tests.builds -->
-      <TestProjects Include="$(SourceDir)*\tests\**\*.Tests.csproj" />
-      <TestProjects Include="$(SourceDir)*\tests\**\*.Tests.vbproj" />
+      <TestProjects Include="$(_TestProjectRootDir)*\tests\**\*.Tests.csproj" />
+      <TestProjects Include="$(_TestProjectRootDir)*\tests\**\*.Tests.vbproj" />
     </ItemGroup>
 
     <MSBuild Projects="@(TestProjects)"

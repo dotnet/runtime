@@ -141,4 +141,6 @@
   <Target Name="BuildAndTest" DependsOnTargets="Build;Test" />
   <Target Name="RebuildAndTest" DependsOnTargets="Rebuild;Test" />
   <Target Name="Test" />
+  <Target Name="Restore" />
+
 </Project>

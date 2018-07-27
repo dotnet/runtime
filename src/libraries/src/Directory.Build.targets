@@ -6,7 +6,6 @@
     <!-- Reset these properties back to blank, since they are defaulted by Microsoft.NET.Sdk -->
     <FileAlignment Condition="'$(FileAlignment)' == '512'"></FileAlignment>
     <ErrorReport Condition="'$(ErrorReport)' == 'prompt'"></ErrorReport>
-    <Deterministic></Deterministic>
     <WarningsAsErrors Condition="'$(WarningsAsErrors)' == 'NU1605'"></WarningsAsErrors>
   </PropertyGroup>
 

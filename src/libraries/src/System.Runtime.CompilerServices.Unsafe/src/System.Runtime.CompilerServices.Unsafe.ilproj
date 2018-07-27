@@ -31,7 +31,7 @@
     <PropertyGroup>
       <_IlasmDir>$(ToolsDir)\ilasm</_IlasmDir>
 
-      <_IldasmCommand>$(ToolsDir)ilasm/ildasm.exe</_IldasmCommand>
+      <_IldasmCommand>$(_IlasmDir)\ildasm.exe</_IldasmCommand>
       <_IldasmCommand>$(_IldasmCommand) $(ContractOutputPath)/$(MSBuildProjectName).dll</_IldasmCommand>
       <_IldasmCommand>$(_IldasmCommand) /OUT=$(IntermediateOutputPath)/$(MSBuildProjectName).ref.il</_IldasmCommand>
 

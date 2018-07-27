@@ -90,8 +90,8 @@
         "definitionType": "task"
       },
       "inputs": {
-        "filename": "sync.cmd",
-        "arguments": "-ab -AzureAccount=$(CloudDropAccountName) -AzureToken=$(CloudDropAccessToken) -Container=$(Container) -- /p:\"DownloadDirectory=$(Build.SourcesDirectory)\\$(DownloadDirectory)\" /verbosity:$(MSBuildVerbosity)",
+        "filename": "msbuild",
+        "arguments": "src/syncAzure.proj /flp:v=normal;LogFile=sync.log /p:CloudDropAccountName=$(CloudDropAccountName) /p:CloudDropAccessToken=$(CloudDropAccessToken) /p:ContainerName=$(Container) /p:\"DownloadDirectory=$(Build.SourcesDirectory)\\$(DownloadDirectory)\" /verbosity:$(MSBuildVerbosity)",
         "workingFolder": "",
         "failOnStandardError": "false"
       }
