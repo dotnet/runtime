@@ -23,6 +23,7 @@
     <Compile Include="Asn1\Reader\ReadOctetString.cs" />
     <Compile Include="Asn1\Reader\ReadSequence.cs" />
     <Compile Include="Asn1\Reader\ReadSetOf.cs" />
+    <Compile Include="Asn1\Reader\ReadT61String.cs" />
     <Compile Include="Asn1\Reader\ReadUtcTime.cs" />
     <Compile Include="Asn1\Reader\ReadUTF8String.cs" />
     <Compile Include="Asn1\Reader\ReaderStateTests.cs" />
