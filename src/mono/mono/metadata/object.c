@@ -7331,6 +7331,13 @@ mono_ldstr_checked (MonoDomain *domain, MonoImage *image, guint32 idx, MonoError
 	}
 }
 
+MonoStringHandle
+mono_ldstr_handle (MonoDomain *domain, MonoImage *image, guint32 idx, MonoError *error)
+{
+	// FIXME invert mono_ldstr_handle and mono_ldstr_checked.
+	return MONO_HANDLE_NEW (MonoString, mono_ldstr_checked (mono_domain_get (), image, index, error));
+}
+
 /**
  * mono_ldstr_metadata_sig
  * \param domain the domain for the string
