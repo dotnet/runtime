@@ -593,12 +593,12 @@ int LinearScan::BuildNode(GenTree* tree)
                     // Note: The Gentree node is not updated here as it is cheap to recompute stack aligned size.
                     // This should also help in debugging as we can examine the original size specified with
                     // localloc.
-                    sizeVal                          = AlignUp(sizeVal, STACK_ALIGN);
-                    size_t cntStackAlignedWidthItems = (sizeVal >> STACK_ALIGN_SHIFT);
+                    sizeVal         = AlignUp(sizeVal, STACK_ALIGN);
+                    size_t stpCount = sizeVal / (REGSIZE_BYTES * 2);
 
-                    // For small allocations upto 4 'stp' instructions (i.e. 64 bytes of localloc)
+                    // For small allocations up to 4 'stp' instructions (i.e. 16 to 64 bytes of localloc)
                     //
-                    if (cntStackAlignedWidthItems <= 4)
+                    if (stpCount <= 4)
                     {
                         // Need no internal registers
                     }
