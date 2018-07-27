@@ -1288,8 +1288,11 @@ void Lowering::LowerArg(GenTreeCall* call, GenTree** ppArg)
     // Assignments/stores at this level are not really placing an argument.
     // They are setting up temporary locals that will later be placed into
     // outgoing regs or stack.
-    if (arg->OperIsStore() || arg->IsArgPlaceHolderNode() || arg->IsNothingNode() || arg->OperIsCopyBlkOp())
+    // Note that atomic ops may be stores and still produce a value.
+    if (!arg->IsValue())
     {
+        assert((arg->OperIsStore() && !arg->IsValue()) || arg->IsArgPlaceHolderNode() || arg->IsNothingNode() ||
+               arg->OperIsCopyBlkOp());
         return;
     }
 
@@ -5297,8 +5300,10 @@ void Lowering::DoPhase()
 //
 void Lowering::CheckCallArg(GenTree* arg)
 {
-    if (arg->OperIsStore() || arg->IsArgPlaceHolderNode() || arg->IsNothingNode() || arg->OperIsCopyBlkOp())
+    if (!arg->IsValue() && !arg->OperIsPutArgStk())
     {
+        assert((arg->OperIsStore() && !arg->IsValue()) || arg->IsArgPlaceHolderNode() || arg->IsNothingNode() ||
+               arg->OperIsCopyBlkOp());
         return;
     }
 
