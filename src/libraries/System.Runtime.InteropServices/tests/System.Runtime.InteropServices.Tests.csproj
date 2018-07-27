@@ -68,6 +68,7 @@
     <Compile Include="System\Runtime\InteropServices\Marshal\GenerateProgIdForTypeTests.Windows.cs" Condition="'$(TargetsWindows)' == 'true'" />
     <Compile Include="System\Runtime\InteropServices\Marshal\GetExceptionCodeTests.cs" />
     <Compile Include="System\Runtime\InteropServices\Marshal\GetExceptionForHRTests.cs" />
+    <Compile Include="System\Runtime\InteropServices\Marshal\GetExceptionPointersTests.cs" />
     <Compile Include="System\Runtime\InteropServices\Marshal\GetComObjectDataTests.cs" />
     <Compile Include="System\Runtime\InteropServices\Marshal\GetDelegateForFunctionPointerTests.cs" />
     <Compile Include="System\Runtime\InteropServices\Marshal\GetFunctionPointerForDelegateTests.cs" />
