@@ -22,9 +22,6 @@
     <PackageReference Include="System.Security.Permissions">
       <Version>$(MicrosoftPrivateCoreFxNETCoreAppPackageVersion)</Version>
     </PackageReference>
-    <PackageReference Include="System.Runtime.Intrinsics.Experimental">
-      <Version>$(MicrosoftPrivateCoreFxNETCoreAppPackageVersion)</Version>
-    </PackageReference>
     <PackageReference Include="System.Diagnostics.EventLog">
       <Version>$(MicrosoftPrivateCoreFxNETCoreAppPackageVersion)</Version>
     </PackageReference>

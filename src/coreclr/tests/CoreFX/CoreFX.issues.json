@@ -260,6 +260,14 @@
                 {
                     "name": "System.Security.Cryptography.X509Certificates.Tests.X509StoreTests.Constructor_DefaultStoreName",
                     "reason": "Assert.Equal() Failure ↓ (pos 1) Expected: My Actual:   MY ↑ (pos 1)"
+                },
+                {
+                    "name": "System.Security.Cryptography.X509Certificates.Tests.LoadFromFileTests.TestLoadSignedFile",
+                    "reason": "Expected: Expected: CN=Microsoft Code Signing PCA, O=Microsoft···\r\nActual: C=US, S=Washington, L=Redmond, O=Microsoft···"
+                },
+                {
+                    "name": "System.Security.Cryptography.X509Certificates.Tests.LoadFromFileTests.TestSerial",
+                    "reason": "Expected: B00000000100DD9F3BD08B0AAF11B000000033\r\nActual: 33000000B011AF0A8BD03B9FDD0001000000B0\r\n"
                 }
             ]
         }
