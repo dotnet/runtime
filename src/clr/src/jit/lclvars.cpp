@@ -1656,6 +1656,18 @@ void Compiler::lvaCanPromoteStructType(CORINFO_CLASS_HANDLE    typeHnd,
                 // natural boundary.
                 if (fieldSize == 0 || fieldSize != TARGET_POINTER_SIZE || varTypeIsFloating(fieldVarType))
                 {
+                    JITDUMP("Promotion blocked: struct contains struct field with one field,"
+                            " but that field has invalid size or type");
+                    return;
+                }
+
+                // Insist this wrapped field occupy all of its parent storage.
+                unsigned innerStructSize = info.compCompHnd->getClassSize(pFieldInfo->fldTypeHnd);
+
+                if (fieldSize != innerStructSize)
+                {
+                    JITDUMP("Promotion blocked: struct contains struct field with one field,"
+                            " but that field is not the same size as its parent.");
                     return;
                 }
 
