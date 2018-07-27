@@ -694,6 +694,7 @@ void Lowering::ContainCheckMul(GenTreeOp* node)
 void Lowering::ContainCheckShiftRotate(GenTreeOp* node)
 {
     GenTree* shiftBy = node->gtOp2;
+    assert(node->OperIsShiftOrRotate());
 
 #ifdef _TARGET_ARM_
     GenTree* source = node->gtOp1;
@@ -702,9 +703,7 @@ void Lowering::ContainCheckShiftRotate(GenTreeOp* node)
         assert(source->OperGet() == GT_LONG);
         MakeSrcContained(node, source);
     }
-#else  // !_TARGET_ARM_
-    assert(node->OperIsShiftOrRotate());
-#endif // !_TARGET_ARM_
+#endif // _TARGET_ARM_
 
     if (shiftBy->IsCnsIntOrI())
     {
