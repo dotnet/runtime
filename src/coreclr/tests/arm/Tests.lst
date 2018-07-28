@@ -285,8 +285,8 @@ Categories=EXPECTED_PASS;Pri1
 HostStyle=0
 
 [FPAddConst.cmd_36]
-RelativePath=JIT\CodeGenBringUpTests\FPAddConst\FPAddConst.cmd
-WorkingDir=JIT\CodeGenBringUpTests\FPAddConst
+RelativePath=JIT\CodeGenBringUpTests\FPAddConst_ro\FPAddConst_ro.cmd
+WorkingDir=JIT\CodeGenBringUpTests\FPAddConst_ro
 Expected=0
 MaxAllowedDurationSeconds=600
 Categories=EXPECTED_PASS;Pri1
@@ -2277,8 +2277,8 @@ Categories=EXPECTED_PASS
 HostStyle=0
 
 [LocallocCnstB5.cmd_286]
-RelativePath=JIT\CodeGenBringUpTests\LocallocCnstB5\LocallocCnstB5.cmd
-WorkingDir=JIT\CodeGenBringUpTests\LocallocCnstB5
+RelativePath=JIT\CodeGenBringUpTests\LocallocCnstB5_ro\LocallocCnstB5_ro.cmd
+WorkingDir=JIT\CodeGenBringUpTests\LocallocCnstB5_ro
 Expected=0
 MaxAllowedDurationSeconds=600
 Categories=EXPECTED_PASS;Pri1
@@ -2573,8 +2573,8 @@ Categories=EXPECTED_PASS;Pri1
 HostStyle=0
 
 [DblMulConst.cmd_323]
-RelativePath=JIT\CodeGenBringUpTests\DblMulConst\DblMulConst.cmd
-WorkingDir=JIT\CodeGenBringUpTests\DblMulConst
+RelativePath=JIT\CodeGenBringUpTests\DblMulConst_ro\DblMulConst_ro.cmd
+WorkingDir=JIT\CodeGenBringUpTests\DblMulConst_ro
 Expected=0
 MaxAllowedDurationSeconds=600
 Categories=EXPECTED_PASS;Pri1
@@ -2981,8 +2981,8 @@ Categories=EXPECTED_PASS;Pri1
 HostStyle=0
 
 [LocallocB_N.cmd_374]
-RelativePath=JIT\CodeGenBringUpTests\LocallocB_N\LocallocB_N.cmd
-WorkingDir=JIT\CodeGenBringUpTests\LocallocB_N
+RelativePath=JIT\CodeGenBringUpTests\LocallocB_N_ro\LocallocB_N_ro.cmd
+WorkingDir=JIT\CodeGenBringUpTests\LocallocB_N_ro
 Expected=0
 MaxAllowedDurationSeconds=600
 Categories=EXPECTED_PASS;Pri1
@@ -3309,8 +3309,8 @@ Categories=EXPECTED_PASS;Pri1
 HostStyle=0
 
 [Ge1.cmd_415]
-RelativePath=JIT\CodeGenBringUpTests\Ge1\Ge1.cmd
-WorkingDir=JIT\CodeGenBringUpTests\Ge1
+RelativePath=JIT\CodeGenBringUpTests\Ge1_ro\Ge1_ro.cmd
+WorkingDir=JIT\CodeGenBringUpTests\Ge1_ro
 Expected=0
 MaxAllowedDurationSeconds=600
 Categories=EXPECTED_PASS;Pri1
@@ -3365,8 +3365,8 @@ Categories=EXPECTED_PASS;Pri1
 HostStyle=0
 
 [CnsBool.cmd_422]
-RelativePath=JIT\CodeGenBringUpTests\CnsBool\CnsBool.cmd
-WorkingDir=JIT\CodeGenBringUpTests\CnsBool
+RelativePath=JIT\CodeGenBringUpTests\CnsBool_ro\CnsBool_ro.cmd
+WorkingDir=JIT\CodeGenBringUpTests\CnsBool_ro
 Expected=0
 MaxAllowedDurationSeconds=600
 Categories=EXPECTED_PASS;Pri1
@@ -3717,8 +3717,8 @@ Categories=EXPECTED_PASS;Pri1
 HostStyle=0
 
 [JTrueGtDbl.cmd_466]
-RelativePath=JIT\CodeGenBringUpTests\JTrueGtDbl\JTrueGtDbl.cmd
-WorkingDir=JIT\CodeGenBringUpTests\JTrueGtDbl
+RelativePath=JIT\CodeGenBringUpTests\JTrueGtDbl_ro\JTrueGtDbl_ro.cmd
+WorkingDir=JIT\CodeGenBringUpTests\JTrueGtDbl_ro
 Expected=0
 MaxAllowedDurationSeconds=600
 Categories=EXPECTED_PASS;Pri1
@@ -3917,8 +3917,8 @@ Categories=EXPECTED_PASS;Pri1
 HostStyle=0
 
 [mul1.cmd_492]
-RelativePath=JIT\CodeGenBringUpTests\mul1\mul1.cmd
-WorkingDir=JIT\CodeGenBringUpTests\mul1
+RelativePath=JIT\CodeGenBringUpTests\mul1_ro\mul1_ro.cmd
+WorkingDir=JIT\CodeGenBringUpTests\mul1_ro
 Expected=0
 MaxAllowedDurationSeconds=600
 Categories=EXPECTED_PASS;Pri1
@@ -4437,8 +4437,8 @@ Categories=EXPECTED_PASS;Pri1
 HostStyle=0
 
 [NotAndNeg.cmd_558]
-RelativePath=JIT\CodeGenBringUpTests\NotAndNeg\NotAndNeg.cmd
-WorkingDir=JIT\CodeGenBringUpTests\NotAndNeg
+RelativePath=JIT\CodeGenBringUpTests\NotAndNeg_ro\NotAndNeg_ro.cmd
+WorkingDir=JIT\CodeGenBringUpTests\NotAndNeg_ro
 Expected=0
 MaxAllowedDurationSeconds=600
 Categories=EXPECTED_PASS;Pri1
@@ -5581,8 +5581,8 @@ Categories=EXPECTED_PASS;Pri1
 HostStyle=0
 
 [JTrueGeFP.cmd_702]
-RelativePath=JIT\CodeGenBringUpTests\JTrueGeFP\JTrueGeFP.cmd
-WorkingDir=JIT\CodeGenBringUpTests\JTrueGeFP
+RelativePath=JIT\CodeGenBringUpTests\JTrueGeFP_ro\JTrueGeFP_ro.cmd
+WorkingDir=JIT\CodeGenBringUpTests\JTrueGeFP_ro
 Expected=0
 MaxAllowedDurationSeconds=600
 Categories=EXPECTED_PASS;Pri1
@@ -6469,8 +6469,8 @@ Categories=EXPECTED_PASS;Pri1
 HostStyle=0
 
 [RightShiftRef.cmd_813]
-RelativePath=JIT\CodeGenBringUpTests\RightShiftRef\RightShiftRef.cmd
-WorkingDir=JIT\CodeGenBringUpTests\RightShiftRef
+RelativePath=JIT\CodeGenBringUpTests\RightShiftRef_ro\RightShiftRef_ro.cmd
+WorkingDir=JIT\CodeGenBringUpTests\RightShiftRef_ro
 Expected=0
 MaxAllowedDurationSeconds=600
 Categories=EXPECTED_PASS;Pri1
@@ -6805,8 +6805,8 @@ Categories=EXPECTED_PASS;Pri1
 HostStyle=0
 
 [FPConvDbl2Lng.cmd_855]
-RelativePath=JIT\CodeGenBringUpTests\FPConvDbl2Lng\FPConvDbl2Lng.cmd
-WorkingDir=JIT\CodeGenBringUpTests\FPConvDbl2Lng
+RelativePath=JIT\CodeGenBringUpTests\FPConvDbl2Lng_ro\FPConvDbl2Lng_ro.cmd
+WorkingDir=JIT\CodeGenBringUpTests\FPConvDbl2Lng_ro
 Expected=0
 MaxAllowedDurationSeconds=600
 Categories=EXPECTED_PASS;Pri1
@@ -7437,8 +7437,8 @@ Categories=EXPECTED_PASS;Pri1
 HostStyle=0
 
 [Jmp1.cmd_935]
-RelativePath=JIT\CodeGenBringUpTests\Jmp1\Jmp1.cmd
-WorkingDir=JIT\CodeGenBringUpTests\Jmp1
+RelativePath=JIT\CodeGenBringUpTests\Jmp1_ro\Jmp1_ro.cmd
+WorkingDir=JIT\CodeGenBringUpTests\Jmp1_ro
 Expected=0
 MaxAllowedDurationSeconds=600
 Categories=EXPECTED_PASS;Pri1
@@ -7629,8 +7629,8 @@ Categories=EXPECTED_PASS;Pri1
 HostStyle=0
 
 [And1.cmd_959]
-RelativePath=JIT\CodeGenBringUpTests\And1\And1.cmd
-WorkingDir=JIT\CodeGenBringUpTests\And1
+RelativePath=JIT\CodeGenBringUpTests\And1_ro\And1_ro.cmd
+WorkingDir=JIT\CodeGenBringUpTests\And1_ro
 Expected=0
 MaxAllowedDurationSeconds=600
 Categories=EXPECTED_PASS;Pri1
@@ -9077,8 +9077,8 @@ Categories=EXPECTED_PASS;Pri1
 HostStyle=0
 
 [JTrueGeInt1.cmd_1140]
-RelativePath=JIT\CodeGenBringUpTests\JTrueGeInt1\JTrueGeInt1.cmd
-WorkingDir=JIT\CodeGenBringUpTests\JTrueGeInt1
+RelativePath=JIT\CodeGenBringUpTests\JTrueGeInt1_ro\JTrueGeInt1_ro.cmd
+WorkingDir=JIT\CodeGenBringUpTests\JTrueGeInt1_ro
 Expected=0
 MaxAllowedDurationSeconds=600
 Categories=EXPECTED_PASS;Pri1
@@ -9581,8 +9581,8 @@ Categories=EXPECTED_PASS;Pri1
 HostStyle=0
 
 [AsgSub1.cmd_1203]
-RelativePath=JIT\CodeGenBringUpTests\AsgSub1\AsgSub1.cmd
-WorkingDir=JIT\CodeGenBringUpTests\AsgSub1
+RelativePath=JIT\CodeGenBringUpTests\AsgSub1_ro\AsgSub1_ro.cmd
+WorkingDir=JIT\CodeGenBringUpTests\AsgSub1_ro
 Expected=0
 MaxAllowedDurationSeconds=600
 Categories=EXPECTED_PASS;Pri1
@@ -10477,8 +10477,8 @@ Categories=EXPECTED_PASS;Pri1
 HostStyle=0
 
 [Array1.cmd_1317]
-RelativePath=JIT\CodeGenBringUpTests\Array1\Array1.cmd
-WorkingDir=JIT\CodeGenBringUpTests\Array1
+RelativePath=JIT\CodeGenBringUpTests\Array1_ro\Array1_ro.cmd
+WorkingDir=JIT\CodeGenBringUpTests\Array1_ro
 Expected=0
 MaxAllowedDurationSeconds=600
 Categories=EXPECTED_PASS;Pri1
@@ -11141,8 +11141,8 @@ Categories=EXPECTED_PASS
 HostStyle=0
 
 [IntConv.cmd_1400]
-RelativePath=JIT\CodeGenBringUpTests\IntConv\IntConv.cmd
-WorkingDir=JIT\CodeGenBringUpTests\IntConv
+RelativePath=JIT\CodeGenBringUpTests\IntConv_ro\IntConv_ro.cmd
+WorkingDir=JIT\CodeGenBringUpTests\IntConv_ro
 Expected=0
 MaxAllowedDurationSeconds=600
 Categories=EXPECTED_PASS;Pri1
@@ -12213,8 +12213,8 @@ Categories=EXPECTED_FAIL;EXCLUDED;ILLEGAL_IL_TAILCALL_POP_RET
 HostStyle=0
 
 [FPArea.cmd_1537]
-RelativePath=JIT\CodeGenBringUpTests\FPArea\FPArea.cmd
-WorkingDir=JIT\CodeGenBringUpTests\FPArea
+RelativePath=JIT\CodeGenBringUpTests\FPArea_ro\FPArea_ro.cmd
+WorkingDir=JIT\CodeGenBringUpTests\FPArea_ro
 Expected=0
 MaxAllowedDurationSeconds=600
 Categories=EXPECTED_PASS;Pri1
@@ -12357,8 +12357,8 @@ Categories=EXPECTED_PASS;Pri1
 HostStyle=0
 
 [FPSmall.cmd_1555]
-RelativePath=JIT\CodeGenBringUpTests\FPSmall\FPSmall.cmd
-WorkingDir=JIT\CodeGenBringUpTests\FPSmall
+RelativePath=JIT\CodeGenBringUpTests\FPSmall_ro\FPSmall_ro.cmd
+WorkingDir=JIT\CodeGenBringUpTests\FPSmall_ro
 Expected=0
 MaxAllowedDurationSeconds=600
 Categories=EXPECTED_PASS;Pri1
@@ -12773,8 +12773,8 @@ Categories=EXPECTED_PASS;Pri1
 HostStyle=0
 
 [FPError.cmd_1607]
-RelativePath=JIT\CodeGenBringUpTests\FPError\FPError.cmd
-WorkingDir=JIT\CodeGenBringUpTests\FPError
+RelativePath=JIT\CodeGenBringUpTests\FPError_ro\FPError_ro.cmd
+WorkingDir=JIT\CodeGenBringUpTests\FPError_ro
 Expected=0
 MaxAllowedDurationSeconds=600
 Categories=EXPECTED_PASS;Pri1
@@ -13061,8 +13061,8 @@ Categories=EXPECTED_PASS;Pri1
 HostStyle=0
 
 [IntArraySum.cmd_1643]
-RelativePath=JIT\CodeGenBringUpTests\IntArraySum\IntArraySum.cmd
-WorkingDir=JIT\CodeGenBringUpTests\IntArraySum
+RelativePath=JIT\CodeGenBringUpTests\IntArraySum_ro\IntArraySum_ro.cmd
+WorkingDir=JIT\CodeGenBringUpTests\IntArraySum_ro
 Expected=0
 MaxAllowedDurationSeconds=600
 Categories=EXPECTED_PASS;Pri1
@@ -14693,8 +14693,8 @@ Categories=EXPECTED_PASS;Pri1
 HostStyle=0
 
 [JTrue1.cmd_1848]
-RelativePath=JIT\CodeGenBringUpTests\JTrue1\JTrue1.cmd
-WorkingDir=JIT\CodeGenBringUpTests\JTrue1
+RelativePath=JIT\CodeGenBringUpTests\JTrue1_ro\JTrue1_ro.cmd
+WorkingDir=JIT\CodeGenBringUpTests\JTrue1_ro
 Expected=0
 MaxAllowedDurationSeconds=600
 Categories=EXPECTED_PASS;Pri1
@@ -15605,8 +15605,8 @@ Categories=EXPECTED_PASS;Pri1
 HostStyle=0
 
 [DblVar.cmd_1962]
-RelativePath=JIT\CodeGenBringUpTests\DblVar\DblVar.cmd
-WorkingDir=JIT\CodeGenBringUpTests\DblVar
+RelativePath=JIT\CodeGenBringUpTests\DblVar_ro\DblVar_ro.cmd
+WorkingDir=JIT\CodeGenBringUpTests\DblVar_ro
 Expected=0
 MaxAllowedDurationSeconds=600
 Categories=EXPECTED_PASS;Pri1
@@ -15757,8 +15757,8 @@ Categories=EXPECTED_PASS
 HostStyle=0
 
 [FPConvF2Lng.cmd_1981]
-RelativePath=JIT\CodeGenBringUpTests\FPConvF2Lng\FPConvF2Lng.cmd
-WorkingDir=JIT\CodeGenBringUpTests\FPConvF2Lng
+RelativePath=JIT\CodeGenBringUpTests\FPConvF2Lng_ro\FPConvF2Lng_ro.cmd
+WorkingDir=JIT\CodeGenBringUpTests\FPConvF2Lng_ro
 Expected=0
 MaxAllowedDurationSeconds=600
 Categories=EXPECTED_PASS;Pri1
@@ -16117,8 +16117,8 @@ Categories=EXPECTED_PASS;Pri1
 HostStyle=0
 
 [mul2.cmd_2026]
-RelativePath=JIT\CodeGenBringUpTests\mul2\mul2.cmd
-WorkingDir=JIT\CodeGenBringUpTests\mul2
+RelativePath=JIT\CodeGenBringUpTests\mul2_ro\mul2_ro.cmd
+WorkingDir=JIT\CodeGenBringUpTests\mul2_ro
 Expected=0
 MaxAllowedDurationSeconds=600
 Categories=EXPECTED_PASS;Pri1
@@ -16397,8 +16397,8 @@ Categories=EXPECTED_PASS;Pri1
 HostStyle=0
 
 [LocallocCnstB117_PSP.cmd_2061]
-RelativePath=JIT\CodeGenBringUpTests\LocallocCnstB117_PSP\LocallocCnstB117_PSP.cmd
-WorkingDir=JIT\CodeGenBringUpTests\LocallocCnstB117_PSP
+RelativePath=JIT\CodeGenBringUpTests\LocallocCnstB117_PSP_ro\LocallocCnstB117_PSP_ro.cmd
+WorkingDir=JIT\CodeGenBringUpTests\LocallocCnstB117_PSP_ro
 Expected=0
 MaxAllowedDurationSeconds=600
 Categories=EXPECTED_PASS;Pri1
@@ -16717,8 +16717,8 @@ Categories=EXPECTED_PASS;Pri1
 HostStyle=0
 
 [JTrueLeInt1.cmd_2101]
-RelativePath=JIT\CodeGenBringUpTests\JTrueLeInt1\JTrueLeInt1.cmd
-WorkingDir=JIT\CodeGenBringUpTests\JTrueLeInt1
+RelativePath=JIT\CodeGenBringUpTests\JTrueLeInt1_ro\JTrueLeInt1_ro.cmd
+WorkingDir=JIT\CodeGenBringUpTests\JTrueLeInt1_ro
 Expected=0
 MaxAllowedDurationSeconds=600
 Categories=EXPECTED_PASS;Pri1
@@ -17005,8 +17005,8 @@ Categories=EXPECTED_PASS;Pri1
 HostStyle=0
 
 [FPConvF2I.cmd_2137]
-RelativePath=JIT\CodeGenBringUpTests\FPConvF2I\FPConvF2I.cmd
-WorkingDir=JIT\CodeGenBringUpTests\FPConvF2I
+RelativePath=JIT\CodeGenBringUpTests\FPConvF2I_ro\FPConvF2I_ro.cmd
+WorkingDir=JIT\CodeGenBringUpTests\FPConvF2I_ro
 Expected=0
 MaxAllowedDurationSeconds=600
 Categories=EXPECTED_PASS;Pri1
@@ -17613,16 +17613,16 @@ Categories=EXPECTED_PASS;Pri1
 HostStyle=0
 
 [DblMul.cmd_2213]
-RelativePath=JIT\CodeGenBringUpTests\DblMul\DblMul.cmd
-WorkingDir=JIT\CodeGenBringUpTests\DblMul
+RelativePath=JIT\CodeGenBringUpTests\DblMul_ro\DblMul_ro.cmd
+WorkingDir=JIT\CodeGenBringUpTests\DblMul_ro
 Expected=0
 MaxAllowedDurationSeconds=600
 Categories=EXPECTED_PASS;Pri1
 HostStyle=0
 
 [JTrueGtFP.cmd_2214]
-RelativePath=JIT\CodeGenBringUpTests\JTrueGtFP\JTrueGtFP.cmd
-WorkingDir=JIT\CodeGenBringUpTests\JTrueGtFP
+RelativePath=JIT\CodeGenBringUpTests\JTrueGtFP_ro\JTrueGtFP_ro.cmd
+WorkingDir=JIT\CodeGenBringUpTests\JTrueGtFP_ro
 Expected=0
 MaxAllowedDurationSeconds=600
 Categories=EXPECTED_PASS;Pri1
@@ -17637,8 +17637,8 @@ Categories=EXPECTED_PASS;Pri1
 HostStyle=0
 
 [FPSubConst.cmd_2216]
-RelativePath=JIT\CodeGenBringUpTests\FPSubConst\FPSubConst.cmd
-WorkingDir=JIT\CodeGenBringUpTests\FPSubConst
+RelativePath=JIT\CodeGenBringUpTests\FPSubConst_ro\FPSubConst_ro.cmd
+WorkingDir=JIT\CodeGenBringUpTests\FPSubConst_ro
 Expected=0
 MaxAllowedDurationSeconds=600
 Categories=EXPECTED_PASS;Pri1
@@ -17733,8 +17733,8 @@ Categories=EXPECTED_PASS;Pri1
 HostStyle=0
 
 [Gcd.cmd_2228]
-RelativePath=JIT\CodeGenBringUpTests\Gcd\Gcd.cmd
-WorkingDir=JIT\CodeGenBringUpTests\Gcd
+RelativePath=JIT\CodeGenBringUpTests\Gcd_ro\Gcd_ro.cmd
+WorkingDir=JIT\CodeGenBringUpTests\Gcd_ro
 Expected=0
 MaxAllowedDurationSeconds=600
 Categories=EXPECTED_PASS;Pri1
@@ -19405,8 +19405,8 @@ Categories=EXPECTED_PASS;Pri1
 HostStyle=0
 
 [DblSub.cmd_2438]
-RelativePath=JIT\CodeGenBringUpTests\DblSub\DblSub.cmd
-WorkingDir=JIT\CodeGenBringUpTests\DblSub
+RelativePath=JIT\CodeGenBringUpTests\DblSub_ro\DblSub_ro.cmd
+WorkingDir=JIT\CodeGenBringUpTests\DblSub_ro
 Expected=0
 MaxAllowedDurationSeconds=600
 Categories=EXPECTED_PASS;Pri1
@@ -20605,8 +20605,8 @@ Categories=EXPECTED_PASS;Pri1
 HostStyle=0
 
 [JTrueNeInt1.cmd_2588]
-RelativePath=JIT\CodeGenBringUpTests\JTrueNeInt1\JTrueNeInt1.cmd
-WorkingDir=JIT\CodeGenBringUpTests\JTrueNeInt1
+RelativePath=JIT\CodeGenBringUpTests\JTrueNeInt1_ro\JTrueNeInt1_ro.cmd
+WorkingDir=JIT\CodeGenBringUpTests\JTrueNeInt1_ro
 Expected=0
 MaxAllowedDurationSeconds=600
 Categories=EXPECTED_PASS;Pri1
@@ -20645,8 +20645,8 @@ Categories=EXPECTED_PASS;Pri1
 HostStyle=0
 
 [DblDist.cmd_2593]
-RelativePath=JIT\CodeGenBringUpTests\DblDist\DblDist.cmd
-WorkingDir=JIT\CodeGenBringUpTests\DblDist
+RelativePath=JIT\CodeGenBringUpTests\DblDist_ro\DblDist_ro.cmd
+WorkingDir=JIT\CodeGenBringUpTests\DblDist_ro
 Expected=0
 MaxAllowedDurationSeconds=600
 Categories=EXPECTED_PASS;Pri1
@@ -20717,8 +20717,8 @@ Categories=EXPECTED_PASS;Pri1
 HostStyle=0
 
 [ArrayExc.cmd_2602]
-RelativePath=JIT\CodeGenBringUpTests\ArrayExc\ArrayExc.cmd
-WorkingDir=JIT\CodeGenBringUpTests\ArrayExc
+RelativePath=JIT\CodeGenBringUpTests\ArrayExc_ro\ArrayExc_ro.cmd
+WorkingDir=JIT\CodeGenBringUpTests\ArrayExc_ro
 Expected=0
 MaxAllowedDurationSeconds=600
 Categories=EXPECTED_PASS
@@ -20741,8 +20741,8 @@ Categories=EXPECTED_PASS
 HostStyle=0
 
 [JTrueEqDbl.cmd_2605]
-RelativePath=JIT\CodeGenBringUpTests\JTrueEqDbl\JTrueEqDbl.cmd
-WorkingDir=JIT\CodeGenBringUpTests\JTrueEqDbl
+RelativePath=JIT\CodeGenBringUpTests\JTrueEqDbl_ro\JTrueEqDbl_ro.cmd
+WorkingDir=JIT\CodeGenBringUpTests\JTrueEqDbl_ro
 Expected=0
 MaxAllowedDurationSeconds=600
 Categories=EXPECTED_PASS;Pri1
@@ -21037,8 +21037,8 @@ Categories=EXPECTED_PASS;Pri1
 HostStyle=0
 
 [addref.cmd_2643]
-RelativePath=JIT\CodeGenBringUpTests\addref\addref.cmd
-WorkingDir=JIT\CodeGenBringUpTests\addref
+RelativePath=JIT\CodeGenBringUpTests\addref_ro\addref_ro.cmd
+WorkingDir=JIT\CodeGenBringUpTests\addref_ro
 Expected=0
 MaxAllowedDurationSeconds=600
 Categories=EXPECTED_PASS;Pri1
@@ -21125,8 +21125,8 @@ Categories=EXPECTED_PASS
 HostStyle=0
 
 [JTrueEqInt1.cmd_2654]
-RelativePath=JIT\CodeGenBringUpTests\JTrueEqInt1\JTrueEqInt1.cmd
-WorkingDir=JIT\CodeGenBringUpTests\JTrueEqInt1
+RelativePath=JIT\CodeGenBringUpTests\JTrueEqInt1_ro\JTrueEqInt1_ro.cmd
+WorkingDir=JIT\CodeGenBringUpTests\JTrueEqInt1_ro
 Expected=0
 MaxAllowedDurationSeconds=600
 Categories=EXPECTED_PASS;Pri1
@@ -21485,8 +21485,8 @@ Categories=EXPECTED_PASS;Pri1
 HostStyle=0
 
 [FiboRec.cmd_2699]
-RelativePath=JIT\CodeGenBringUpTests\FiboRec\FiboRec.cmd
-WorkingDir=JIT\CodeGenBringUpTests\FiboRec
+RelativePath=JIT\CodeGenBringUpTests\FiboRec_ro\FiboRec_ro.cmd
+WorkingDir=JIT\CodeGenBringUpTests\FiboRec_ro
 Expected=0
 MaxAllowedDurationSeconds=600
 Categories=EXPECTED_PASS;Pri1
@@ -23845,8 +23845,8 @@ Categories=EXPECTED_PASS;Pri1
 HostStyle=0
 
 [JTrueLeDbl.cmd_2994]
-RelativePath=JIT\CodeGenBringUpTests\JTrueLeDbl\JTrueLeDbl.cmd
-WorkingDir=JIT\CodeGenBringUpTests\JTrueLeDbl
+RelativePath=JIT\CodeGenBringUpTests\JTrueLeDbl_ro\JTrueLeDbl_ro.cmd
+WorkingDir=JIT\CodeGenBringUpTests\JTrueLeDbl_ro
 Expected=0
 MaxAllowedDurationSeconds=600
 Categories=EXPECTED_PASS;Pri1
@@ -25125,8 +25125,8 @@ Categories=EXPECTED_PASS;Pri1
 HostStyle=0
 
 [DblAvg6.cmd_3155]
-RelativePath=JIT\CodeGenBringUpTests\DblAvg6\DblAvg6.cmd
-WorkingDir=JIT\CodeGenBringUpTests\DblAvg6
+RelativePath=JIT\CodeGenBringUpTests\DblAvg6_ro\DblAvg6_ro.cmd
+WorkingDir=JIT\CodeGenBringUpTests\DblAvg6_ro
 Expected=0
 MaxAllowedDurationSeconds=600
 Categories=EXPECTED_PASS;Pri1
@@ -25445,8 +25445,8 @@ Categories=EXPECTED_PASS
 HostStyle=0
 
 [JTrueNeFP.cmd_3195]
-RelativePath=JIT\CodeGenBringUpTests\JTrueNeFP\JTrueNeFP.cmd
-WorkingDir=JIT\CodeGenBringUpTests\JTrueNeFP
+RelativePath=JIT\CodeGenBringUpTests\JTrueNeFP_ro\JTrueNeFP_ro.cmd
+WorkingDir=JIT\CodeGenBringUpTests\JTrueNeFP_ro
 Expected=0
 MaxAllowedDurationSeconds=600
 Categories=EXPECTED_PASS;Pri1
@@ -26069,8 +26069,8 @@ Categories=EXPECTED_FAIL;4851;EXCLUDED;VERIFY;Pri1
 HostStyle=0
 
 [NegRMW.cmd_3273]
-RelativePath=JIT\CodeGenBringUpTests\NegRMW\NegRMW.cmd
-WorkingDir=JIT\CodeGenBringUpTests\NegRMW
+RelativePath=JIT\CodeGenBringUpTests\NegRMW_ro\NegRMW_ro.cmd
+WorkingDir=JIT\CodeGenBringUpTests\NegRMW_ro
 Expected=0
 MaxAllowedDurationSeconds=600
 Categories=EXPECTED_PASS;Pri1
@@ -27333,8 +27333,8 @@ Categories=EXPECTED_PASS;Pri1
 HostStyle=0
 
 [InstanceCalls.cmd_3433]
-RelativePath=JIT\CodeGenBringUpTests\InstanceCalls\InstanceCalls.cmd
-WorkingDir=JIT\CodeGenBringUpTests\InstanceCalls
+RelativePath=JIT\CodeGenBringUpTests\InstanceCalls_ro\InstanceCalls_ro.cmd
+WorkingDir=JIT\CodeGenBringUpTests\InstanceCalls_ro
 Expected=0
 MaxAllowedDurationSeconds=600
 Categories=EXPECTED_PASS;Pri1
@@ -27869,8 +27869,8 @@ Categories=EXPECTED_PASS;Pri1
 HostStyle=0
 
 [DblRem.cmd_3500]
-RelativePath=JIT\CodeGenBringUpTests\DblRem\DblRem.cmd
-WorkingDir=JIT\CodeGenBringUpTests\DblRem
+RelativePath=JIT\CodeGenBringUpTests\DblRem_ro\DblRem_ro.cmd
+WorkingDir=JIT\CodeGenBringUpTests\DblRem_ro
 Expected=0
 MaxAllowedDurationSeconds=600
 Categories=EXPECTED_PASS;Pri1
@@ -27997,8 +27997,8 @@ Categories=EXPECTED_PASS
 HostStyle=0
 
 [LocallocCnstB5001_PSP.cmd_3517]
-RelativePath=JIT\CodeGenBringUpTests\LocallocCnstB5001_PSP\LocallocCnstB5001_PSP.cmd
-WorkingDir=JIT\CodeGenBringUpTests\LocallocCnstB5001_PSP
+RelativePath=JIT\CodeGenBringUpTests\LocallocCnstB5001_PSP_ro\LocallocCnstB5001_PSP_ro.cmd
+WorkingDir=JIT\CodeGenBringUpTests\LocallocCnstB5001_PSP_ro
 Expected=0
 MaxAllowedDurationSeconds=600
 Categories=EXPECTED_PASS;Pri1
@@ -28053,8 +28053,8 @@ Categories=EXPECTED_PASS;Pri1
 HostStyle=0
 
 [Args5.cmd_3524]
-RelativePath=JIT\CodeGenBringUpTests\Args5\Args5.cmd
-WorkingDir=JIT\CodeGenBringUpTests\Args5
+RelativePath=JIT\CodeGenBringUpTests\Args5_ro\Args5_ro.cmd
+WorkingDir=JIT\CodeGenBringUpTests\Args5_ro
 Expected=0
 MaxAllowedDurationSeconds=600
 Categories=EXPECTED_PASS;Pri1
@@ -28189,8 +28189,8 @@ Categories=EXPECTED_PASS
 HostStyle=0
 
 [JTrueNeDbl.cmd_3541]
-RelativePath=JIT\CodeGenBringUpTests\JTrueNeDbl\JTrueNeDbl.cmd
-WorkingDir=JIT\CodeGenBringUpTests\JTrueNeDbl
+RelativePath=JIT\CodeGenBringUpTests\JTrueNeDbl_ro\JTrueNeDbl_ro.cmd
+WorkingDir=JIT\CodeGenBringUpTests\JTrueNeDbl_ro
 Expected=0
 MaxAllowedDurationSeconds=600
 Categories=EXPECTED_PASS;Pri1
@@ -29893,8 +29893,8 @@ Categories=EXPECTED_PASS;Pri1
 HostStyle=0
 
 [FPVar.cmd_3754]
-RelativePath=JIT\CodeGenBringUpTests\FPVar\FPVar.cmd
-WorkingDir=JIT\CodeGenBringUpTests\FPVar
+RelativePath=JIT\CodeGenBringUpTests\FPVar_ro\FPVar_ro.cmd
+WorkingDir=JIT\CodeGenBringUpTests\FPVar_ro
 Expected=0
 MaxAllowedDurationSeconds=600
 Categories=EXPECTED_PASS;Pri1
@@ -30261,8 +30261,8 @@ Categories=EXPECTED_PASS;Pri1
 HostStyle=0
 
 [DblAddConst.cmd_3800]
-RelativePath=JIT\CodeGenBringUpTests\DblAddConst\DblAddConst.cmd
-WorkingDir=JIT\CodeGenBringUpTests\DblAddConst
+RelativePath=JIT\CodeGenBringUpTests\DblAddConst_ro\DblAddConst_ro.cmd
+WorkingDir=JIT\CodeGenBringUpTests\DblAddConst_ro
 Expected=0
 MaxAllowedDurationSeconds=600
 Categories=EXPECTED_PASS;Pri1
@@ -30797,8 +30797,8 @@ Categories=EXPECTED_PASS;Pri1
 HostStyle=0
 
 [Array4.cmd_3867]
-RelativePath=JIT\CodeGenBringUpTests\Array4\Array4.cmd
-WorkingDir=JIT\CodeGenBringUpTests\Array4
+RelativePath=JIT\CodeGenBringUpTests\Array4_ro\Array4_ro.cmd
+WorkingDir=JIT\CodeGenBringUpTests\Array4_ro
 Expected=0
 MaxAllowedDurationSeconds=600
 Categories=EXPECTED_PASS;Pri1
@@ -31005,8 +31005,8 @@ Categories=EXPECTED_PASS;Pri1
 HostStyle=0
 
 [FPCall1.cmd_3893]
-RelativePath=JIT\CodeGenBringUpTests\FPCall1\FPCall1.cmd
-WorkingDir=JIT\CodeGenBringUpTests\FPCall1
+RelativePath=JIT\CodeGenBringUpTests\FPCall1_ro\FPCall1_ro.cmd
+WorkingDir=JIT\CodeGenBringUpTests\FPCall1_ro
 Expected=0
 MaxAllowedDurationSeconds=600
 Categories=EXPECTED_PASS;Pri1
@@ -31325,8 +31325,8 @@ Categories=EXPECTED_PASS;Pri1
 HostStyle=0
 
 [BinaryRMW.cmd_3933]
-RelativePath=JIT\CodeGenBringUpTests\BinaryRMW\BinaryRMW.cmd
-WorkingDir=JIT\CodeGenBringUpTests\BinaryRMW
+RelativePath=JIT\CodeGenBringUpTests\BinaryRMW_ro\BinaryRMW_ro.cmd
+WorkingDir=JIT\CodeGenBringUpTests\BinaryRMW_ro
 Expected=0
 MaxAllowedDurationSeconds=600
 Categories=EXPECTED_PASS;Pri1
@@ -31501,8 +31501,8 @@ Categories=EXPECTED_FAIL;2451;EXCLUDED;RVA_STATIC;Pri1
 HostStyle=0
 
 [mul4.cmd_3955]
-RelativePath=JIT\CodeGenBringUpTests\mul4\mul4.cmd
-WorkingDir=JIT\CodeGenBringUpTests\mul4
+RelativePath=JIT\CodeGenBringUpTests\mul4_ro\mul4_ro.cmd
+WorkingDir=JIT\CodeGenBringUpTests\mul4_ro
 Expected=0
 MaxAllowedDurationSeconds=600
 Categories=EXPECTED_PASS;Pri1
@@ -31629,8 +31629,8 @@ Categories=EXPECTED_PASS;Pri1
 HostStyle=0
 
 [rem1.cmd_3971]
-RelativePath=JIT\CodeGenBringUpTests\rem1\rem1.cmd
-WorkingDir=JIT\CodeGenBringUpTests\rem1
+RelativePath=JIT\CodeGenBringUpTests\rem1_ro\rem1_ro.cmd
+WorkingDir=JIT\CodeGenBringUpTests\rem1_ro
 Expected=0
 MaxAllowedDurationSeconds=600
 Categories=EXPECTED_PASS;Pri1
@@ -32085,8 +32085,8 @@ Categories=EXPECTED_PASS;Pri1
 HostStyle=0
 
 [LongArgsAndReturn.cmd_4028]
-RelativePath=JIT\CodeGenBringUpTests\LongArgsAndReturn\LongArgsAndReturn.cmd
-WorkingDir=JIT\CodeGenBringUpTests\LongArgsAndReturn
+RelativePath=JIT\CodeGenBringUpTests\LongArgsAndReturn_ro\LongArgsAndReturn_ro.cmd
+WorkingDir=JIT\CodeGenBringUpTests\LongArgsAndReturn_ro
 Expected=0
 MaxAllowedDurationSeconds=600
 Categories=EXPECTED_PASS;Pri1
@@ -33229,8 +33229,8 @@ Categories=EXPECTED_PASS;Pri1
 HostStyle=0
 
 [StructFldAddr.cmd_4172]
-RelativePath=JIT\CodeGenBringUpTests\StructFldAddr\StructFldAddr.cmd
-WorkingDir=JIT\CodeGenBringUpTests\StructFldAddr
+RelativePath=JIT\CodeGenBringUpTests\StructFldAddr_ro\StructFldAddr_ro.cmd
+WorkingDir=JIT\CodeGenBringUpTests\StructFldAddr_ro
 Expected=0
 MaxAllowedDurationSeconds=600
 Categories=EXPECTED_PASS;Pri1
@@ -33781,8 +33781,8 @@ Categories=EXPECTED_PASS;Pri1
 HostStyle=0
 
 [Gt1.cmd_4241]
-RelativePath=JIT\CodeGenBringUpTests\Gt1\Gt1.cmd
-WorkingDir=JIT\CodeGenBringUpTests\Gt1
+RelativePath=JIT\CodeGenBringUpTests\Gt1_ro\Gt1_ro.cmd
+WorkingDir=JIT\CodeGenBringUpTests\Gt1_ro
 Expected=0
 MaxAllowedDurationSeconds=600
 Categories=EXPECTED_PASS;Pri1
@@ -33981,8 +33981,8 @@ Categories=EXPECTED_PASS;Pri1
 HostStyle=0
 
 [LocallocCnstB5_PSP.cmd_4266]
-RelativePath=JIT\CodeGenBringUpTests\LocallocCnstB5_PSP\LocallocCnstB5_PSP.cmd
-WorkingDir=JIT\CodeGenBringUpTests\LocallocCnstB5_PSP
+RelativePath=JIT\CodeGenBringUpTests\LocallocCnstB5_PSP_ro\LocallocCnstB5_PSP_ro.cmd
+WorkingDir=JIT\CodeGenBringUpTests\LocallocCnstB5_PSP_ro
 Expected=0
 MaxAllowedDurationSeconds=600
 Categories=EXPECTED_PASS;Pri1
@@ -35141,8 +35141,8 @@ Categories=EXPECTED_PASS;Pri1
 HostStyle=0
 
 [Args4.cmd_4411]
-RelativePath=JIT\CodeGenBringUpTests\Args4\Args4.cmd
-WorkingDir=JIT\CodeGenBringUpTests\Args4
+RelativePath=JIT\CodeGenBringUpTests\Args4_ro\Args4_ro.cmd
+WorkingDir=JIT\CodeGenBringUpTests\Args4_ro
 Expected=0
 MaxAllowedDurationSeconds=600
 Categories=EXPECTED_PASS;Pri1
@@ -35333,8 +35333,8 @@ Categories=EXPECTED_PASS;Pri1
 HostStyle=0
 
 [JTrueEqFP.cmd_4435]
-RelativePath=JIT\CodeGenBringUpTests\JTrueEqFP\JTrueEqFP.cmd
-WorkingDir=JIT\CodeGenBringUpTests\JTrueEqFP
+RelativePath=JIT\CodeGenBringUpTests\JTrueEqFP_ro\JTrueEqFP_ro.cmd
+WorkingDir=JIT\CodeGenBringUpTests\JTrueEqFP_ro
 Expected=0
 MaxAllowedDurationSeconds=600
 Categories=EXPECTED_PASS;Pri1
@@ -35429,8 +35429,8 @@ Categories=EXPECTED_PASS;Pri1
 HostStyle=0
 
 [Xor1.cmd_4447]
-RelativePath=JIT\CodeGenBringUpTests\Xor1\Xor1.cmd
-WorkingDir=JIT\CodeGenBringUpTests\Xor1
+RelativePath=JIT\CodeGenBringUpTests\Xor1_ro\Xor1_ro.cmd
+WorkingDir=JIT\CodeGenBringUpTests\Xor1_ro
 Expected=0
 MaxAllowedDurationSeconds=600
 Categories=EXPECTED_PASS;Pri1
@@ -35549,8 +35549,8 @@ Categories=EXPECTED_PASS;Pri1
 HostStyle=0
 
 [JTrueLtFP.cmd_4462]
-RelativePath=JIT\CodeGenBringUpTests\JTrueLtFP\JTrueLtFP.cmd
-WorkingDir=JIT\CodeGenBringUpTests\JTrueLtFP
+RelativePath=JIT\CodeGenBringUpTests\JTrueLtFP_ro\JTrueLtFP_ro.cmd
+WorkingDir=JIT\CodeGenBringUpTests\JTrueLtFP_ro
 Expected=0
 MaxAllowedDurationSeconds=600
 Categories=EXPECTED_PASS;Pri1
@@ -35893,8 +35893,8 @@ Categories=EXPECTED_PASS;Pri1
 HostStyle=0
 
 [Array3.cmd_4505]
-RelativePath=JIT\CodeGenBringUpTests\Array3\Array3.cmd
-WorkingDir=JIT\CodeGenBringUpTests\Array3
+RelativePath=JIT\CodeGenBringUpTests\Array3_ro\Array3_ro.cmd
+WorkingDir=JIT\CodeGenBringUpTests\Array3_ro
 Expected=0
 MaxAllowedDurationSeconds=600
 Categories=EXPECTED_PASS;Pri1
@@ -36725,8 +36725,8 @@ Categories=EXPECTED_PASS;Pri1
 HostStyle=0
 
 [LocallocCnstB117.cmd_4609]
-RelativePath=JIT\CodeGenBringUpTests\LocallocCnstB117\LocallocCnstB117.cmd
-WorkingDir=JIT\CodeGenBringUpTests\LocallocCnstB117
+RelativePath=JIT\CodeGenBringUpTests\LocallocCnstB117_ro\LocallocCnstB117_ro.cmd
+WorkingDir=JIT\CodeGenBringUpTests\LocallocCnstB117_ro
 Expected=0
 MaxAllowedDurationSeconds=600
 Categories=EXPECTED_PASS;Pri1
@@ -36829,8 +36829,8 @@ Categories=EXPECTED_PASS;Pri1
 HostStyle=0
 
 [Le1.cmd_4622]
-RelativePath=JIT\CodeGenBringUpTests\Le1\Le1.cmd
-WorkingDir=JIT\CodeGenBringUpTests\Le1
+RelativePath=JIT\CodeGenBringUpTests\Le1_ro\Le1_ro.cmd
+WorkingDir=JIT\CodeGenBringUpTests\Le1_ro
 Expected=0
 MaxAllowedDurationSeconds=600
 Categories=EXPECTED_PASS;Pri1
@@ -37237,8 +37237,8 @@ Categories=EXPECTED_PASS;Pri1
 HostStyle=0
 
 [JTrueGeDbl.cmd_4673]
-RelativePath=JIT\CodeGenBringUpTests\JTrueGeDbl\JTrueGeDbl.cmd
-WorkingDir=JIT\CodeGenBringUpTests\JTrueGeDbl
+RelativePath=JIT\CodeGenBringUpTests\JTrueGeDbl_ro\JTrueGeDbl_ro.cmd
+WorkingDir=JIT\CodeGenBringUpTests\JTrueGeDbl_ro
 Expected=0
 MaxAllowedDurationSeconds=600
 Categories=EXPECTED_PASS;Pri1
@@ -37317,8 +37317,8 @@ Categories=EXPECTED_PASS;Pri1
 HostStyle=0
 
 [struct16args.cmd_4683]
-RelativePath=JIT\CodeGenBringUpTests\struct16args\struct16args.cmd
-WorkingDir=JIT\CodeGenBringUpTests\struct16args
+RelativePath=JIT\CodeGenBringUpTests\struct16args_ro\struct16args_ro.cmd
+WorkingDir=JIT\CodeGenBringUpTests\struct16args_ro
 Expected=0
 MaxAllowedDurationSeconds=600
 Categories=EXPECTED_PASS;Pri1
@@ -37573,8 +37573,8 @@ Categories=EXPECTED_PASS;Pri1
 HostStyle=0
 
 [Swap.cmd_4715]
-RelativePath=JIT\CodeGenBringUpTests\Swap\Swap.cmd
-WorkingDir=JIT\CodeGenBringUpTests\Swap
+RelativePath=JIT\CodeGenBringUpTests\Swap_ro\Swap_ro.cmd
+WorkingDir=JIT\CodeGenBringUpTests\Swap_ro
 Expected=0
 MaxAllowedDurationSeconds=600
 Categories=EXPECTED_PASS;Pri1
@@ -37885,8 +37885,8 @@ Categories=EXPECTED_PASS;Pri1
 HostStyle=0
 
 [StaticValueField.cmd_4754]
-RelativePath=JIT\CodeGenBringUpTests\StaticValueField\StaticValueField.cmd
-WorkingDir=JIT\CodeGenBringUpTests\StaticValueField
+RelativePath=JIT\CodeGenBringUpTests\StaticValueField_ro\StaticValueField_ro.cmd
+WorkingDir=JIT\CodeGenBringUpTests\StaticValueField_ro
 Expected=0
 MaxAllowedDurationSeconds=600
 Categories=EXPECTED_PASS;Pri1
@@ -38413,8 +38413,8 @@ Categories=EXPECTED_PASS;Pri1
 HostStyle=0
 
 [FPRoots.cmd_4820]
-RelativePath=JIT\CodeGenBringUpTests\FPRoots\FPRoots.cmd
-WorkingDir=JIT\CodeGenBringUpTests\FPRoots
+RelativePath=JIT\CodeGenBringUpTests\FPRoots_ro\FPRoots_ro.cmd
+WorkingDir=JIT\CodeGenBringUpTests\FPRoots_ro
 Expected=0
 MaxAllowedDurationSeconds=600
 Categories=EXPECTED_PASS;Pri1
@@ -38965,8 +38965,8 @@ Categories=EXPECTED_PASS;Pri1
 HostStyle=0
 
 [ArrayMD1.cmd_4889]
-RelativePath=JIT\CodeGenBringUpTests\ArrayMD1\ArrayMD1.cmd
-WorkingDir=JIT\CodeGenBringUpTests\ArrayMD1
+RelativePath=JIT\CodeGenBringUpTests\ArrayMD1_ro\ArrayMD1_ro.cmd
+WorkingDir=JIT\CodeGenBringUpTests\ArrayMD1_ro
 Expected=0
 MaxAllowedDurationSeconds=600
 Categories=EXPECTED_PASS;Pri1
@@ -39213,8 +39213,8 @@ Categories=EXPECTED_PASS;Pri1
 HostStyle=0
 
 [AsgAdd1.cmd_4920]
-RelativePath=JIT\CodeGenBringUpTests\AsgAdd1\AsgAdd1.cmd
-WorkingDir=JIT\CodeGenBringUpTests\AsgAdd1
+RelativePath=JIT\CodeGenBringUpTests\AsgAdd1_ro\AsgAdd1_ro.cmd
+WorkingDir=JIT\CodeGenBringUpTests\AsgAdd1_ro
 Expected=0
 MaxAllowedDurationSeconds=600
 Categories=EXPECTED_PASS;Pri1
@@ -39333,8 +39333,8 @@ Categories=EXPECTED_PASS;Pri1
 HostStyle=0
 
 [AsgAnd1.cmd_4935]
-RelativePath=JIT\CodeGenBringUpTests\AsgAnd1\AsgAnd1.cmd
-WorkingDir=JIT\CodeGenBringUpTests\AsgAnd1
+RelativePath=JIT\CodeGenBringUpTests\AsgAnd1_ro\AsgAnd1_ro.cmd
+WorkingDir=JIT\CodeGenBringUpTests\AsgAnd1_ro
 Expected=0
 MaxAllowedDurationSeconds=600
 Categories=EXPECTED_PASS;Pri1
@@ -39805,8 +39805,8 @@ Categories=EXPECTED_PASS
 HostStyle=0
 
 [Shift.cmd_4994]
-RelativePath=JIT\CodeGenBringUpTests\Shift\Shift.cmd
-WorkingDir=JIT\CodeGenBringUpTests\Shift
+RelativePath=JIT\CodeGenBringUpTests\Shift_ro\Shift_ro.cmd
+WorkingDir=JIT\CodeGenBringUpTests\Shift_ro
 Expected=0
 MaxAllowedDurationSeconds=600
 Categories=EXPECTED_PASS;Pri1
@@ -40405,8 +40405,8 @@ Categories=EXPECTED_PASS;Pri1
 HostStyle=0
 
 [Array2.cmd_5069]
-RelativePath=JIT\CodeGenBringUpTests\Array2\Array2.cmd
-WorkingDir=JIT\CodeGenBringUpTests\Array2
+RelativePath=JIT\CodeGenBringUpTests\Array2_ro\Array2_ro.cmd
+WorkingDir=JIT\CodeGenBringUpTests\Array2_ro
 Expected=0
 MaxAllowedDurationSeconds=600
 Categories=EXPECTED_PASS;Pri1
@@ -41213,8 +41213,8 @@ Categories=EXPECTED_PASS;Pri1
 HostStyle=0
 
 [Sub1.cmd_5170]
-RelativePath=JIT\CodeGenBringUpTests\Sub1\Sub1.cmd
-WorkingDir=JIT\CodeGenBringUpTests\Sub1
+RelativePath=JIT\CodeGenBringUpTests\Sub1_ro\Sub1_ro.cmd
+WorkingDir=JIT\CodeGenBringUpTests\Sub1_ro
 Expected=0
 MaxAllowedDurationSeconds=600
 Categories=EXPECTED_PASS;Pri1
@@ -41373,8 +41373,8 @@ Categories=EXPECTED_PASS;Pri1
 HostStyle=0
 
 [FactorialRec.cmd_5190]
-RelativePath=JIT\CodeGenBringUpTests\FactorialRec\FactorialRec.cmd
-WorkingDir=JIT\CodeGenBringUpTests\FactorialRec
+RelativePath=JIT\CodeGenBringUpTests\FactorialRec_ro\FactorialRec_ro.cmd
+WorkingDir=JIT\CodeGenBringUpTests\FactorialRec_ro
 Expected=0
 MaxAllowedDurationSeconds=600
 Categories=EXPECTED_PASS;Pri1
@@ -42173,8 +42173,8 @@ Categories=EXPECTED_PASS;Pri1
 HostStyle=0
 
 [AsgXor1.cmd_5291]
-RelativePath=JIT\CodeGenBringUpTests\AsgXor1\AsgXor1.cmd
-WorkingDir=JIT\CodeGenBringUpTests\AsgXor1
+RelativePath=JIT\CodeGenBringUpTests\AsgXor1_ro\AsgXor1_ro.cmd
+WorkingDir=JIT\CodeGenBringUpTests\AsgXor1_ro
 Expected=0
 MaxAllowedDurationSeconds=600
 Categories=EXPECTED_PASS;Pri1
@@ -42493,8 +42493,8 @@ Categories=EXPECTED_PASS;Pri1
 HostStyle=0
 
 [DblAvg2.cmd_5331]
-RelativePath=JIT\CodeGenBringUpTests\DblAvg2\DblAvg2.cmd
-WorkingDir=JIT\CodeGenBringUpTests\DblAvg2
+RelativePath=JIT\CodeGenBringUpTests\DblAvg2_ro\DblAvg2_ro.cmd
+WorkingDir=JIT\CodeGenBringUpTests\DblAvg2_ro
 Expected=0
 MaxAllowedDurationSeconds=600
 Categories=EXPECTED_PASS;Pri1
@@ -42581,8 +42581,8 @@ Categories=EXPECTED_PASS
 HostStyle=0
 
 [DblCall2.cmd_5342]
-RelativePath=JIT\CodeGenBringUpTests\DblCall2\DblCall2.cmd
-WorkingDir=JIT\CodeGenBringUpTests\DblCall2
+RelativePath=JIT\CodeGenBringUpTests\DblCall2_ro\DblCall2_ro.cmd
+WorkingDir=JIT\CodeGenBringUpTests\DblCall2_ro
 Expected=0
 MaxAllowedDurationSeconds=600
 Categories=EXPECTED_PASS;Pri1
@@ -44037,16 +44037,16 @@ Categories=EXPECTED_PASS
 HostStyle=0
 
 [LocallocCnstB1.cmd_5524]
-RelativePath=JIT\CodeGenBringUpTests\LocallocCnstB1\LocallocCnstB1.cmd
-WorkingDir=JIT\CodeGenBringUpTests\LocallocCnstB1
+RelativePath=JIT\CodeGenBringUpTests\LocallocCnstB1_ro\LocallocCnstB1_ro.cmd
+WorkingDir=JIT\CodeGenBringUpTests\LocallocCnstB1_ro
 Expected=0
 MaxAllowedDurationSeconds=600
 Categories=EXPECTED_PASS;Pri1
 HostStyle=0
 
 [NotRMW.cmd_5525]
-RelativePath=JIT\CodeGenBringUpTests\NotRMW\NotRMW.cmd
-WorkingDir=JIT\CodeGenBringUpTests\NotRMW
+RelativePath=JIT\CodeGenBringUpTests\NotRMW_ro\NotRMW_ro.cmd
+WorkingDir=JIT\CodeGenBringUpTests\NotRMW_ro
 Expected=0
 MaxAllowedDurationSeconds=600
 Categories=EXPECTED_PASS;Pri1
@@ -44533,8 +44533,8 @@ Categories=EXPECTED_PASS
 HostStyle=0
 
 [Unbox.cmd_5586]
-RelativePath=JIT\CodeGenBringUpTests\Unbox\Unbox.cmd
-WorkingDir=JIT\CodeGenBringUpTests\Unbox
+RelativePath=JIT\CodeGenBringUpTests\Unbox_ro\Unbox_ro.cmd
+WorkingDir=JIT\CodeGenBringUpTests\Unbox_ro
 Expected=0
 MaxAllowedDurationSeconds=600
 Categories=EXPECTED_PASS;Pri1
@@ -45101,8 +45101,8 @@ Categories=EXPECTED_PASS;Pri1
 HostStyle=0
 
 [DblAdd.cmd_5658]
-RelativePath=JIT\CodeGenBringUpTests\DblAdd\DblAdd.cmd
-WorkingDir=JIT\CodeGenBringUpTests\DblAdd
+RelativePath=JIT\CodeGenBringUpTests\DblAdd_ro\DblAdd_ro.cmd
+WorkingDir=JIT\CodeGenBringUpTests\DblAdd_ro
 Expected=0
 MaxAllowedDurationSeconds=600
 Categories=EXPECTED_PASS;Pri1
@@ -46677,8 +46677,8 @@ Categories=EXPECTED_PASS;Pri1
 HostStyle=0
 
 [Add1.cmd_5857]
-RelativePath=JIT\CodeGenBringUpTests\Add1\Add1.cmd
-WorkingDir=JIT\CodeGenBringUpTests\Add1
+RelativePath=JIT\CodeGenBringUpTests\Add1_ro\Add1_ro.cmd
+WorkingDir=JIT\CodeGenBringUpTests\Add1_ro
 Expected=0
 MaxAllowedDurationSeconds=600
 Categories=EXPECTED_PASS;Pri1
@@ -47341,8 +47341,8 @@ Categories=EXPECTED_PASS;Pri1
 HostStyle=0
 
 [UDivConst.cmd_5940]
-RelativePath=JIT\CodeGenBringUpTests\UDivConst\UDivConst.cmd
-WorkingDir=JIT\CodeGenBringUpTests\UDivConst
+RelativePath=JIT\CodeGenBringUpTests\UDivConst_ro\UDivConst_ro.cmd
+WorkingDir=JIT\CodeGenBringUpTests\UDivConst_ro
 Expected=0
 MaxAllowedDurationSeconds=600
 Categories=EXPECTED_PASS
@@ -47421,8 +47421,8 @@ Categories=EXPECTED_PASS;Pri1
 HostStyle=0
 
 [FPDiv.cmd_5950]
-RelativePath=JIT\CodeGenBringUpTests\FPDiv\FPDiv.cmd
-WorkingDir=JIT\CodeGenBringUpTests\FPDiv
+RelativePath=JIT\CodeGenBringUpTests\FPDiv_ro\FPDiv_ro.cmd
+WorkingDir=JIT\CodeGenBringUpTests\FPDiv_ro
 Expected=0
 MaxAllowedDurationSeconds=600
 Categories=EXPECTED_PASS;Pri1
@@ -47869,8 +47869,8 @@ Categories=EXPECTED_PASS;Pri1
 HostStyle=0
 
 [LeftShift.cmd_6006]
-RelativePath=JIT\CodeGenBringUpTests\LeftShift\LeftShift.cmd
-WorkingDir=JIT\CodeGenBringUpTests\LeftShift
+RelativePath=JIT\CodeGenBringUpTests\LeftShift_ro\LeftShift_ro.cmd
+WorkingDir=JIT\CodeGenBringUpTests\LeftShift_ro
 Expected=0
 MaxAllowedDurationSeconds=600
 Categories=EXPECTED_PASS;Pri1
@@ -49685,8 +49685,8 @@ Categories=EXPECTED_PASS;Pri1
 HostStyle=0
 
 [DblDiv.cmd_6235]
-RelativePath=JIT\CodeGenBringUpTests\DblDiv\DblDiv.cmd
-WorkingDir=JIT\CodeGenBringUpTests\DblDiv
+RelativePath=JIT\CodeGenBringUpTests\DblDiv_ro\DblDiv_ro.cmd
+WorkingDir=JIT\CodeGenBringUpTests\DblDiv_ro
 Expected=0
 MaxAllowedDurationSeconds=600
 Categories=EXPECTED_PASS;Pri1
@@ -49861,8 +49861,8 @@ Categories=EXPECTED_PASS
 HostStyle=0
 
 [StructInstMethod.cmd_6257]
-RelativePath=JIT\CodeGenBringUpTests\StructInstMethod\StructInstMethod.cmd
-WorkingDir=JIT\CodeGenBringUpTests\StructInstMethod
+RelativePath=JIT\CodeGenBringUpTests\StructInstMethod_ro\StructInstMethod_ro.cmd
+WorkingDir=JIT\CodeGenBringUpTests\StructInstMethod_ro
 Expected=0
 MaxAllowedDurationSeconds=600
 Categories=EXPECTED_PASS;Pri1
@@ -50365,8 +50365,8 @@ Categories=EXPECTED_PASS;Pri1
 HostStyle=0
 
 [FPDist.cmd_6320]
-RelativePath=JIT\CodeGenBringUpTests\FPDist\FPDist.cmd
-WorkingDir=JIT\CodeGenBringUpTests\FPDist
+RelativePath=JIT\CodeGenBringUpTests\FPDist_ro\FPDist_ro.cmd
+WorkingDir=JIT\CodeGenBringUpTests\FPDist_ro
 Expected=0
 MaxAllowedDurationSeconds=600
 Categories=EXPECTED_PASS;Pri1
@@ -50821,8 +50821,8 @@ Categories=EXPECTED_PASS;Pri1
 HostStyle=0
 
 [FPMath.cmd_6377]
-RelativePath=JIT\CodeGenBringUpTests\FPMath\FPMath.cmd
-WorkingDir=JIT\CodeGenBringUpTests\FPMath
+RelativePath=JIT\CodeGenBringUpTests\FPMath_ro\FPMath_ro.cmd
+WorkingDir=JIT\CodeGenBringUpTests\FPMath_ro
 Expected=0
 MaxAllowedDurationSeconds=600
 Categories=EXPECTED_PASS;Pri1
@@ -50877,8 +50877,8 @@ Categories=EXPECTED_PASS;Pri1
 HostStyle=0
 
 [CnsLng1.cmd_6384]
-RelativePath=JIT\CodeGenBringUpTests\CnsLng1\CnsLng1.cmd
-WorkingDir=JIT\CodeGenBringUpTests\CnsLng1
+RelativePath=JIT\CodeGenBringUpTests\CnsLng1_ro\CnsLng1_ro.cmd
+WorkingDir=JIT\CodeGenBringUpTests\CnsLng1_ro
 Expected=0
 MaxAllowedDurationSeconds=600
 Categories=EXPECTED_PASS;Pri1
@@ -51149,8 +51149,8 @@ Categories=EXPECTED_PASS;Pri1
 HostStyle=0
 
 [DblArea.cmd_6418]
-RelativePath=JIT\CodeGenBringUpTests\DblArea\DblArea.cmd
-WorkingDir=JIT\CodeGenBringUpTests\DblArea
+RelativePath=JIT\CodeGenBringUpTests\DblArea_ro\DblArea_ro.cmd
+WorkingDir=JIT\CodeGenBringUpTests\DblArea_ro
 Expected=0
 MaxAllowedDurationSeconds=600
 Categories=EXPECTED_PASS;Pri1
@@ -51333,8 +51333,8 @@ Categories=EXPECTED_PASS;Pri1
 HostStyle=0
 
 [FPCall2.cmd_6441]
-RelativePath=JIT\CodeGenBringUpTests\FPCall2\FPCall2.cmd
-WorkingDir=JIT\CodeGenBringUpTests\FPCall2
+RelativePath=JIT\CodeGenBringUpTests\FPCall2_ro\FPCall2_ro.cmd
+WorkingDir=JIT\CodeGenBringUpTests\FPCall2_ro
 Expected=0
 MaxAllowedDurationSeconds=600
 Categories=EXPECTED_PASS;Pri1
@@ -51637,8 +51637,8 @@ Categories=EXPECTED_PASS;Pri1
 HostStyle=0
 
 [divref.cmd_6479]
-RelativePath=JIT\CodeGenBringUpTests\divref\divref.cmd
-WorkingDir=JIT\CodeGenBringUpTests\divref
+RelativePath=JIT\CodeGenBringUpTests\divref_ro\divref_ro.cmd
+WorkingDir=JIT\CodeGenBringUpTests\divref_ro
 Expected=0
 MaxAllowedDurationSeconds=600
 Categories=EXPECTED_PASS;Pri1
@@ -51765,8 +51765,8 @@ Categories=EXPECTED_PASS;Pri1
 HostStyle=0
 
 [FPAdd.cmd_6495]
-RelativePath=JIT\CodeGenBringUpTests\FPAdd\FPAdd.cmd
-WorkingDir=JIT\CodeGenBringUpTests\FPAdd
+RelativePath=JIT\CodeGenBringUpTests\FPAdd_ro\FPAdd_ro.cmd
+WorkingDir=JIT\CodeGenBringUpTests\FPAdd_ro
 Expected=0
 MaxAllowedDurationSeconds=600
 Categories=EXPECTED_PASS;Pri1
@@ -52085,8 +52085,8 @@ Categories=EXPECTED_PASS;Pri1
 HostStyle=0
 
 [SubRef.cmd_6535]
-RelativePath=JIT\CodeGenBringUpTests\SubRef\SubRef.cmd
-WorkingDir=JIT\CodeGenBringUpTests\SubRef
+RelativePath=JIT\CodeGenBringUpTests\SubRef_ro\SubRef_ro.cmd
+WorkingDir=JIT\CodeGenBringUpTests\SubRef_ro
 Expected=0
 MaxAllowedDurationSeconds=600
 Categories=EXPECTED_PASS;Pri1
@@ -52165,8 +52165,8 @@ Categories=EXPECTED_PASS
 HostStyle=0
 
 [FPDivConst.cmd_6545]
-RelativePath=JIT\CodeGenBringUpTests\FPDivConst\FPDivConst.cmd
-WorkingDir=JIT\CodeGenBringUpTests\FPDivConst
+RelativePath=JIT\CodeGenBringUpTests\FPDivConst_ro\FPDivConst_ro.cmd
+WorkingDir=JIT\CodeGenBringUpTests\FPDivConst_ro
 Expected=0
 MaxAllowedDurationSeconds=600
 Categories=EXPECTED_PASS;Pri1
@@ -52717,8 +52717,8 @@ Categories=EXPECTED_PASS;Pri1
 HostStyle=0
 
 [JTrueLtDbl.cmd_6614]
-RelativePath=JIT\CodeGenBringUpTests\JTrueLtDbl\JTrueLtDbl.cmd
-WorkingDir=JIT\CodeGenBringUpTests\JTrueLtDbl
+RelativePath=JIT\CodeGenBringUpTests\JTrueLtDbl_ro\JTrueLtDbl_ro.cmd
+WorkingDir=JIT\CodeGenBringUpTests\JTrueLtDbl_ro
 Expected=0
 MaxAllowedDurationSeconds=600
 Categories=EXPECTED_PASS;Pri1
@@ -52757,8 +52757,8 @@ Categories=EXPECTED_PASS;Pri1
 HostStyle=0
 
 [LocallocCnstB1_PSP.cmd_6619]
-RelativePath=JIT\CodeGenBringUpTests\LocallocCnstB1_PSP\LocallocCnstB1_PSP.cmd
-WorkingDir=JIT\CodeGenBringUpTests\LocallocCnstB1_PSP
+RelativePath=JIT\CodeGenBringUpTests\LocallocCnstB1_PSP_ro\LocallocCnstB1_PSP_ro.cmd
+WorkingDir=JIT\CodeGenBringUpTests\LocallocCnstB1_PSP_ro
 Expected=0
 MaxAllowedDurationSeconds=600
 Categories=EXPECTED_PASS;Pri1
@@ -52877,8 +52877,8 @@ Categories=EXPECTED_FAIL;9462;EXCLUDED;VARARG;Pri1
 HostStyle=0
 
 [LngConv.cmd_6634]
-RelativePath=JIT\CodeGenBringUpTests\LngConv\LngConv.cmd
-WorkingDir=JIT\CodeGenBringUpTests\LngConv
+RelativePath=JIT\CodeGenBringUpTests\LngConv_ro\LngConv_ro.cmd
+WorkingDir=JIT\CodeGenBringUpTests\LngConv_ro
 Expected=0
 MaxAllowedDurationSeconds=600
 Categories=EXPECTED_PASS;Pri1
@@ -53205,8 +53205,8 @@ Categories=EXPECTED_PASS
 HostStyle=0
 
 [DblArray.cmd_6675]
-RelativePath=JIT\CodeGenBringUpTests\DblArray\DblArray.cmd
-WorkingDir=JIT\CodeGenBringUpTests\DblArray
+RelativePath=JIT\CodeGenBringUpTests\DblArray_ro\DblArray_ro.cmd
+WorkingDir=JIT\CodeGenBringUpTests\DblArray_ro
 Expected=0
 MaxAllowedDurationSeconds=600
 Categories=EXPECTED_PASS;Pri1
@@ -53469,8 +53469,8 @@ Categories=EXPECTED_PASS
 HostStyle=0
 
 [FPAvg6.cmd_6708]
-RelativePath=JIT\CodeGenBringUpTests\FPAvg6\FPAvg6.cmd
-WorkingDir=JIT\CodeGenBringUpTests\FPAvg6
+RelativePath=JIT\CodeGenBringUpTests\FPAvg6_ro\FPAvg6_ro.cmd
+WorkingDir=JIT\CodeGenBringUpTests\FPAvg6_ro
 Expected=0
 MaxAllowedDurationSeconds=600
 Categories=EXPECTED_PASS;Pri1
@@ -53741,8 +53741,8 @@ Categories=EXPECTED_PASS;Pri1
 HostStyle=0
 
 [Eq1.cmd_6742]
-RelativePath=JIT\CodeGenBringUpTests\Eq1\Eq1.cmd
-WorkingDir=JIT\CodeGenBringUpTests\Eq1
+RelativePath=JIT\CodeGenBringUpTests\Eq1_ro\Eq1_ro.cmd
+WorkingDir=JIT\CodeGenBringUpTests\Eq1_ro
 Expected=0
 MaxAllowedDurationSeconds=600
 Categories=EXPECTED_PASS;Pri1
@@ -54205,8 +54205,8 @@ Categories=EXPECTED_PASS;Pri1
 HostStyle=0
 
 [AndRef.cmd_6800]
-RelativePath=JIT\CodeGenBringUpTests\AndRef\AndRef.cmd
-WorkingDir=JIT\CodeGenBringUpTests\AndRef
+RelativePath=JIT\CodeGenBringUpTests\AndRef_ro\AndRef_ro.cmd
+WorkingDir=JIT\CodeGenBringUpTests\AndRef_ro
 Expected=0
 MaxAllowedDurationSeconds=600
 Categories=EXPECTED_PASS;Pri1
@@ -54693,8 +54693,8 @@ Categories=EXPECTED_PASS;Pri1
 HostStyle=0
 
 [ArrayMD2.cmd_6862]
-RelativePath=JIT\CodeGenBringUpTests\ArrayMD2\ArrayMD2.cmd
-WorkingDir=JIT\CodeGenBringUpTests\ArrayMD2
+RelativePath=JIT\CodeGenBringUpTests\ArrayMD2_ro\ArrayMD2_ro.cmd
+WorkingDir=JIT\CodeGenBringUpTests\ArrayMD2_ro
 Expected=0
 MaxAllowedDurationSeconds=600
 Categories=EXPECTED_PASS;Pri1
@@ -56941,8 +56941,8 @@ Categories=EXPECTED_PASS;Pri1
 HostStyle=0
 
 [FPRem.cmd_7147]
-RelativePath=JIT\CodeGenBringUpTests\FPRem\FPRem.cmd
-WorkingDir=JIT\CodeGenBringUpTests\FPRem
+RelativePath=JIT\CodeGenBringUpTests\FPRem_ro\FPRem_ro.cmd
+WorkingDir=JIT\CodeGenBringUpTests\FPRem_ro
 Expected=0
 MaxAllowedDurationSeconds=600
 Categories=EXPECTED_PASS;Pri1
@@ -57661,8 +57661,8 @@ Categories=EXPECTED_PASS;Pri1
 HostStyle=0
 
 [FPFillArray.cmd_7237]
-RelativePath=JIT\CodeGenBringUpTests\FPFillArray\FPFillArray.cmd
-WorkingDir=JIT\CodeGenBringUpTests\FPFillArray
+RelativePath=JIT\CodeGenBringUpTests\FPFillArray_ro\FPFillArray_ro.cmd
+WorkingDir=JIT\CodeGenBringUpTests\FPFillArray_ro
 Expected=0
 MaxAllowedDurationSeconds=600
 Categories=EXPECTED_PASS;Pri1
@@ -57813,8 +57813,8 @@ Categories=EXPECTED_PASS;Pri1
 HostStyle=0
 
 [ObjAlloc.cmd_7256]
-RelativePath=JIT\CodeGenBringUpTests\ObjAlloc\ObjAlloc.cmd
-WorkingDir=JIT\CodeGenBringUpTests\ObjAlloc
+RelativePath=JIT\CodeGenBringUpTests\ObjAlloc_ro\ObjAlloc_ro.cmd
+WorkingDir=JIT\CodeGenBringUpTests\ObjAlloc_ro
 Expected=0
 MaxAllowedDurationSeconds=600
 Categories=EXPECTED_PASS;Pri1
@@ -59917,8 +59917,8 @@ Categories=EXPECTED_PASS;Pri1
 HostStyle=0
 
 [FPMulConst.cmd_7520]
-RelativePath=JIT\CodeGenBringUpTests\FPMulConst\FPMulConst.cmd
-WorkingDir=JIT\CodeGenBringUpTests\FPMulConst
+RelativePath=JIT\CodeGenBringUpTests\FPMulConst_ro\FPMulConst_ro.cmd
+WorkingDir=JIT\CodeGenBringUpTests\FPMulConst_ro
 Expected=0
 MaxAllowedDurationSeconds=600
 Categories=EXPECTED_PASS;Pri1
@@ -61389,8 +61389,8 @@ Categories=EXPECTED_PASS;Pri1
 HostStyle=0
 
 [Rotate.cmd_7705]
-RelativePath=JIT\CodeGenBringUpTests\Rotate\Rotate.cmd
-WorkingDir=JIT\CodeGenBringUpTests\Rotate
+RelativePath=JIT\CodeGenBringUpTests\Rotate_ro\Rotate_ro.cmd
+WorkingDir=JIT\CodeGenBringUpTests\Rotate_ro
 Expected=0
 MaxAllowedDurationSeconds=600
 Categories=EXPECTED_PASS;Pri1
@@ -62077,8 +62077,8 @@ Categories=EXPECTED_PASS;Pri1
 HostStyle=0
 
 [Switch.cmd_7792]
-RelativePath=JIT\CodeGenBringUpTests\Switch\Switch.cmd
-WorkingDir=JIT\CodeGenBringUpTests\Switch
+RelativePath=JIT\CodeGenBringUpTests\Switch_ro\Switch_ro.cmd
+WorkingDir=JIT\CodeGenBringUpTests\Switch_ro
 Expected=0
 MaxAllowedDurationSeconds=600
 Categories=EXPECTED_PASS;Pri1
@@ -62109,8 +62109,8 @@ Categories=EXPECTED_PASS;Pri1
 HostStyle=0
 
 [LocallocLarge.cmd_7796]
-RelativePath=JIT\CodeGenBringUpTests\LocallocLarge\LocallocLarge.cmd
-WorkingDir=JIT\CodeGenBringUpTests\LocallocLarge
+RelativePath=JIT\CodeGenBringUpTests\LocallocLarge_ro\LocallocLarge_ro.cmd
+WorkingDir=JIT\CodeGenBringUpTests\LocallocLarge_ro
 Expected=0
 MaxAllowedDurationSeconds=600
 Categories=EXPECTED_PASS
@@ -62797,8 +62797,8 @@ Categories=EXPECTED_PASS
 HostStyle=0
 
 [FPNeg.cmd_7882]
-RelativePath=JIT\CodeGenBringUpTests\FPNeg\FPNeg.cmd
-WorkingDir=JIT\CodeGenBringUpTests\FPNeg
+RelativePath=JIT\CodeGenBringUpTests\FPNeg_ro\FPNeg_ro.cmd
+WorkingDir=JIT\CodeGenBringUpTests\FPNeg_ro
 Expected=0
 MaxAllowedDurationSeconds=600
 Categories=EXPECTED_PASS;Pri1
@@ -64565,8 +64565,8 @@ Categories=EXPECTED_PASS;Pri1
 HostStyle=0
 
 [InitObj.cmd_8105]
-RelativePath=JIT\CodeGenBringUpTests\InitObj\InitObj.cmd
-WorkingDir=JIT\CodeGenBringUpTests\InitObj
+RelativePath=JIT\CodeGenBringUpTests\InitObj_ro\InitObj_ro.cmd
+WorkingDir=JIT\CodeGenBringUpTests\InitObj_ro
 Expected=0
 MaxAllowedDurationSeconds=600
 Categories=EXPECTED_PASS;Pri1
@@ -64677,16 +64677,16 @@ Categories=EXPECTED_PASS;Pri1
 HostStyle=0
 
 [FPArray.cmd_8119]
-RelativePath=JIT\CodeGenBringUpTests\FPArray\FPArray.cmd
-WorkingDir=JIT\CodeGenBringUpTests\FPArray
+RelativePath=JIT\CodeGenBringUpTests\FPArray_ro\FPArray_ro.cmd
+WorkingDir=JIT\CodeGenBringUpTests\FPArray_ro
 Expected=0
 MaxAllowedDurationSeconds=600
 Categories=EXPECTED_PASS;Pri1
 HostStyle=0
 
 [Lt1.cmd_8120]
-RelativePath=JIT\CodeGenBringUpTests\Lt1\Lt1.cmd
-WorkingDir=JIT\CodeGenBringUpTests\Lt1
+RelativePath=JIT\CodeGenBringUpTests\Lt1_ro\Lt1_ro.cmd
+WorkingDir=JIT\CodeGenBringUpTests\Lt1_ro
 Expected=0
 MaxAllowedDurationSeconds=600
 Categories=EXPECTED_PASS;Pri1
@@ -64957,8 +64957,8 @@ Categories=EXPECTED_PASS;Pri1
 HostStyle=0
 
 [Or1.cmd_8154]
-RelativePath=JIT\CodeGenBringUpTests\Or1\Or1.cmd
-WorkingDir=JIT\CodeGenBringUpTests\Or1
+RelativePath=JIT\CodeGenBringUpTests\Or1_ro\Or1_ro.cmd
+WorkingDir=JIT\CodeGenBringUpTests\Or1_ro
 Expected=0
 MaxAllowedDurationSeconds=600
 Categories=EXPECTED_PASS;Pri1
@@ -65173,8 +65173,8 @@ Categories=EXPECTED_PASS;Pri1
 HostStyle=0
 
 [AsgOr1.cmd_8182]
-RelativePath=JIT\CodeGenBringUpTests\AsgOr1\AsgOr1.cmd
-WorkingDir=JIT\CodeGenBringUpTests\AsgOr1
+RelativePath=JIT\CodeGenBringUpTests\AsgOr1_ro\AsgOr1_ro.cmd
+WorkingDir=JIT\CodeGenBringUpTests\AsgOr1_ro
 Expected=0
 MaxAllowedDurationSeconds=600
 Categories=EXPECTED_PASS;Pri1
@@ -65413,8 +65413,8 @@ Categories=EXPECTED_PASS;Pri1
 HostStyle=0
 
 [Ind1.cmd_8212]
-RelativePath=JIT\CodeGenBringUpTests\Ind1\Ind1.cmd
-WorkingDir=JIT\CodeGenBringUpTests\Ind1
+RelativePath=JIT\CodeGenBringUpTests\Ind1_ro\Ind1_ro.cmd
+WorkingDir=JIT\CodeGenBringUpTests\Ind1_ro
 Expected=0
 MaxAllowedDurationSeconds=600
 Categories=EXPECTED_PASS;Pri1
@@ -65821,8 +65821,8 @@ Categories=EXPECTED_PASS;Pri1
 HostStyle=0
 
 [FPSub.cmd_8263]
-RelativePath=JIT\CodeGenBringUpTests\FPSub\FPSub.cmd
-WorkingDir=JIT\CodeGenBringUpTests\FPSub
+RelativePath=JIT\CodeGenBringUpTests\FPSub_ro\FPSub_ro.cmd
+WorkingDir=JIT\CodeGenBringUpTests\FPSub_ro
 Expected=0
 MaxAllowedDurationSeconds=600
 Categories=EXPECTED_PASS;Pri1
@@ -66773,8 +66773,8 @@ Categories=EXPECTED_PASS
 HostStyle=0
 
 [DblDivConst.cmd_8382]
-RelativePath=JIT\CodeGenBringUpTests\DblDivConst\DblDivConst.cmd
-WorkingDir=JIT\CodeGenBringUpTests\DblDivConst
+RelativePath=JIT\CodeGenBringUpTests\DblDivConst_ro\DblDivConst_ro.cmd
+WorkingDir=JIT\CodeGenBringUpTests\DblDivConst_ro
 Expected=0
 MaxAllowedDurationSeconds=600
 Categories=EXPECTED_PASS;Pri1
@@ -67381,8 +67381,8 @@ Categories=EXPECTED_PASS;Pri1
 HostStyle=0
 
 [OpMembersOfStructLocal.cmd_8458]
-RelativePath=JIT\CodeGenBringUpTests\OpMembersOfStructLocal\OpMembersOfStructLocal.cmd
-WorkingDir=JIT\CodeGenBringUpTests\OpMembersOfStructLocal
+RelativePath=JIT\CodeGenBringUpTests\OpMembersOfStructLocal_ro\OpMembersOfStructLocal_ro.cmd
+WorkingDir=JIT\CodeGenBringUpTests\OpMembersOfStructLocal_ro
 Expected=0
 MaxAllowedDurationSeconds=600
 Categories=EXPECTED_PASS;Pri1
@@ -68133,8 +68133,8 @@ Categories=EXPECTED_PASS;Pri1
 HostStyle=0
 
 [XorRef.cmd_8552]
-RelativePath=JIT\CodeGenBringUpTests\XorRef\XorRef.cmd
-WorkingDir=JIT\CodeGenBringUpTests\XorRef
+RelativePath=JIT\CodeGenBringUpTests\XorRef_ro\XorRef_ro.cmd
+WorkingDir=JIT\CodeGenBringUpTests\XorRef_ro
 Expected=0
 MaxAllowedDurationSeconds=600
 Categories=EXPECTED_PASS;Pri1
@@ -68149,8 +68149,8 @@ Categories=EXPECTED_PASS;Pri1
 HostStyle=0
 
 [DblFillArray.cmd_8554]
-RelativePath=JIT\CodeGenBringUpTests\DblFillArray\DblFillArray.cmd
-WorkingDir=JIT\CodeGenBringUpTests\DblFillArray
+RelativePath=JIT\CodeGenBringUpTests\DblFillArray_ro\DblFillArray_ro.cmd
+WorkingDir=JIT\CodeGenBringUpTests\DblFillArray_ro
 Expected=0
 MaxAllowedDurationSeconds=600
 Categories=EXPECTED_PASS;Pri1
@@ -68165,8 +68165,8 @@ Categories=EXPECTED_PASS
 HostStyle=0
 
 [DblRoots.cmd_8556]
-RelativePath=JIT\CodeGenBringUpTests\DblRoots\DblRoots.cmd
-WorkingDir=JIT\CodeGenBringUpTests\DblRoots
+RelativePath=JIT\CodeGenBringUpTests\DblRoots_ro\DblRoots_ro.cmd
+WorkingDir=JIT\CodeGenBringUpTests\DblRoots_ro
 Expected=0
 MaxAllowedDurationSeconds=600
 Categories=EXPECTED_PASS;Pri1
@@ -69245,8 +69245,8 @@ Categories=EXPECTED_PASS;Pri1
 HostStyle=0
 
 [FPMul.cmd_8691]
-RelativePath=JIT\CodeGenBringUpTests\FPMul\FPMul.cmd
-WorkingDir=JIT\CodeGenBringUpTests\FPMul
+RelativePath=JIT\CodeGenBringUpTests\FPMul_ro\FPMul_ro.cmd
+WorkingDir=JIT\CodeGenBringUpTests\FPMul_ro
 Expected=0
 MaxAllowedDurationSeconds=600
 Categories=EXPECTED_PASS;Pri1
@@ -69437,8 +69437,8 @@ Categories=EXPECTED_PASS;Pri1
 HostStyle=0
 
 [FPAvg2.cmd_8715]
-RelativePath=JIT\CodeGenBringUpTests\FPAvg2\FPAvg2.cmd
-WorkingDir=JIT\CodeGenBringUpTests\FPAvg2
+RelativePath=JIT\CodeGenBringUpTests\FPAvg2_ro\FPAvg2_ro.cmd
+WorkingDir=JIT\CodeGenBringUpTests\FPAvg2_ro
 Expected=0
 MaxAllowedDurationSeconds=600
 Categories=EXPECTED_PASS;Pri1
@@ -69557,8 +69557,8 @@ Categories=EXPECTED_PASS;Pri1
 HostStyle=0
 
 [Ne1.cmd_8730]
-RelativePath=JIT\CodeGenBringUpTests\Ne1\Ne1.cmd
-WorkingDir=JIT\CodeGenBringUpTests\Ne1
+RelativePath=JIT\CodeGenBringUpTests\Ne1_ro\Ne1_ro.cmd
+WorkingDir=JIT\CodeGenBringUpTests\Ne1_ro
 Expected=0
 MaxAllowedDurationSeconds=600
 Categories=EXPECTED_PASS;Pri1
@@ -69853,8 +69853,8 @@ Categories=EXPECTED_PASS
 HostStyle=0
 
 [JTrueGtInt1.cmd_8768]
-RelativePath=JIT\CodeGenBringUpTests\JTrueGtInt1\JTrueGtInt1.cmd
-WorkingDir=JIT\CodeGenBringUpTests\JTrueGtInt1
+RelativePath=JIT\CodeGenBringUpTests\JTrueGtInt1_ro\JTrueGtInt1_ro.cmd
+WorkingDir=JIT\CodeGenBringUpTests\JTrueGtInt1_ro
 Expected=0
 MaxAllowedDurationSeconds=600
 Categories=EXPECTED_PASS;Pri1
@@ -69901,8 +69901,8 @@ Categories=EXPECTED_PASS;Pri1
 HostStyle=0
 
 [FPConvI2F.cmd_8774]
-RelativePath=JIT\CodeGenBringUpTests\FPConvI2F\FPConvI2F.cmd
-WorkingDir=JIT\CodeGenBringUpTests\FPConvI2F
+RelativePath=JIT\CodeGenBringUpTests\FPConvI2F_ro\FPConvI2F_ro.cmd
+WorkingDir=JIT\CodeGenBringUpTests\FPConvI2F_ro
 Expected=0
 MaxAllowedDurationSeconds=600
 Categories=EXPECTED_PASS;Pri1
@@ -70509,8 +70509,8 @@ Categories=EXPECTED_PASS;Pri1
 HostStyle=0
 
 [Localloc.cmd_8851]
-RelativePath=JIT\CodeGenBringUpTests\Localloc\Localloc.cmd
-WorkingDir=JIT\CodeGenBringUpTests\Localloc
+RelativePath=JIT\CodeGenBringUpTests\Localloc_ro\Localloc_ro.cmd
+WorkingDir=JIT\CodeGenBringUpTests\Localloc_ro
 Expected=0
 MaxAllowedDurationSeconds=600
 Categories=EXPECTED_PASS
@@ -72565,8 +72565,8 @@ Categories=EXPECTED_PASS;Pri1
 HostStyle=0
 
 [StaticCalls.cmd_9108]
-RelativePath=JIT\CodeGenBringUpTests\StaticCalls\StaticCalls.cmd
-WorkingDir=JIT\CodeGenBringUpTests\StaticCalls
+RelativePath=JIT\CodeGenBringUpTests\StaticCalls_ro\StaticCalls_ro.cmd
+WorkingDir=JIT\CodeGenBringUpTests\StaticCalls_ro
 Expected=0
 MaxAllowedDurationSeconds=600
 Categories=EXPECTED_PASS;Pri1
@@ -72837,8 +72837,8 @@ Categories=EXPECTED_PASS;Pri1
 HostStyle=0
 
 [RecursiveTailCall.cmd_9142]
-RelativePath=JIT\CodeGenBringUpTests\RecursiveTailCall\RecursiveTailCall.cmd
-WorkingDir=JIT\CodeGenBringUpTests\RecursiveTailCall
+RelativePath=JIT\CodeGenBringUpTests\RecursiveTailCall_ro\RecursiveTailCall_ro.cmd
+WorkingDir=JIT\CodeGenBringUpTests\RecursiveTailCall_ro
 Expected=0
 MaxAllowedDurationSeconds=600
 Categories=EXPECTED_PASS;Pri1
@@ -73157,8 +73157,8 @@ Categories=EXPECTED_PASS;Pri1
 HostStyle=0
 
 [ModConst.cmd_9182]
-RelativePath=JIT\CodeGenBringUpTests\ModConst\ModConst.cmd
-WorkingDir=JIT\CodeGenBringUpTests\ModConst
+RelativePath=JIT\CodeGenBringUpTests\ModConst_ro\ModConst_ro.cmd
+WorkingDir=JIT\CodeGenBringUpTests\ModConst_ro
 Expected=0
 MaxAllowedDurationSeconds=600
 Categories=EXPECTED_PASS
@@ -74853,8 +74853,8 @@ Categories=EXPECTED_PASS;Pri1
 HostStyle=0
 
 [DblSubConst.cmd_9397]
-RelativePath=JIT\CodeGenBringUpTests\DblSubConst\DblSubConst.cmd
-WorkingDir=JIT\CodeGenBringUpTests\DblSubConst
+RelativePath=JIT\CodeGenBringUpTests\DblSubConst_ro\DblSubConst_ro.cmd
+WorkingDir=JIT\CodeGenBringUpTests\DblSubConst_ro
 Expected=0
 MaxAllowedDurationSeconds=600
 Categories=EXPECTED_PASS;Pri1
@@ -75069,8 +75069,8 @@ Categories=EXPECTED_PASS;Pri1
 HostStyle=0
 
 [LocallocCnstB5001.cmd_9424]
-RelativePath=JIT\CodeGenBringUpTests\LocallocCnstB5001\LocallocCnstB5001.cmd
-WorkingDir=JIT\CodeGenBringUpTests\LocallocCnstB5001
+RelativePath=JIT\CodeGenBringUpTests\LocallocCnstB5001_ro\LocallocCnstB5001_ro.cmd
+WorkingDir=JIT\CodeGenBringUpTests\LocallocCnstB5001_ro
 Expected=0
 MaxAllowedDurationSeconds=600
 Categories=EXPECTED_PASS;Pri1
@@ -76093,8 +76093,8 @@ Categories=EXPECTED_PASS;Pri1
 HostStyle=0
 
 [LocallocB_N_PSP.cmd_9556]
-RelativePath=JIT\CodeGenBringUpTests\LocallocB_N_PSP\LocallocB_N_PSP.cmd
-WorkingDir=JIT\CodeGenBringUpTests\LocallocB_N_PSP
+RelativePath=JIT\CodeGenBringUpTests\LocallocB_N_PSP_ro\LocallocB_N_PSP_ro.cmd
+WorkingDir=JIT\CodeGenBringUpTests\LocallocB_N_PSP_ro
 Expected=0
 MaxAllowedDurationSeconds=600
 Categories=EXPECTED_PASS;Pri1
@@ -76397,8 +76397,8 @@ Categories=EXPECTED_PASS;Pri1
 HostStyle=0
 
 [DblCall1.cmd_9594]
-RelativePath=JIT\CodeGenBringUpTests\DblCall1\DblCall1.cmd
-WorkingDir=JIT\CodeGenBringUpTests\DblCall1
+RelativePath=JIT\CodeGenBringUpTests\DblCall1_ro\DblCall1_ro.cmd
+WorkingDir=JIT\CodeGenBringUpTests\DblCall1_ro
 Expected=0
 MaxAllowedDurationSeconds=600
 Categories=EXPECTED_PASS;Pri1
@@ -76901,8 +76901,8 @@ Categories=EXPECTED_PASS;Pri1
 HostStyle=0
 
 [div1.cmd_9657]
-RelativePath=JIT\CodeGenBringUpTests\div1\div1.cmd
-WorkingDir=JIT\CodeGenBringUpTests\div1
+RelativePath=JIT\CodeGenBringUpTests\div1_ro\div1_ro.cmd
+WorkingDir=JIT\CodeGenBringUpTests\div1_ro
 Expected=0
 MaxAllowedDurationSeconds=600
 Categories=EXPECTED_PASS;Pri1
@@ -77037,8 +77037,8 @@ Categories=EXPECTED_PASS;Pri1
 HostStyle=0
 
 [JTrueLtInt1.cmd_9674]
-RelativePath=JIT\CodeGenBringUpTests\JTrueLtInt1\JTrueLtInt1.cmd
-WorkingDir=JIT\CodeGenBringUpTests\JTrueLtInt1
+RelativePath=JIT\CodeGenBringUpTests\JTrueLtInt1_ro\JTrueLtInt1_ro.cmd
+WorkingDir=JIT\CodeGenBringUpTests\JTrueLtInt1_ro
 Expected=0
 MaxAllowedDurationSeconds=600
 Categories=EXPECTED_PASS;Pri1
@@ -78157,8 +78157,8 @@ Categories=EXPECTED_PASS
 HostStyle=0
 
 [DivConst.cmd_9815]
-RelativePath=JIT\CodeGenBringUpTests\DivConst\DivConst.cmd
-WorkingDir=JIT\CodeGenBringUpTests\DivConst
+RelativePath=JIT\CodeGenBringUpTests\DivConst_ro\DivConst_ro.cmd
+WorkingDir=JIT\CodeGenBringUpTests\DivConst_ro
 Expected=0
 MaxAllowedDurationSeconds=600
 Categories=EXPECTED_PASS
@@ -78189,8 +78189,8 @@ Categories=EXPECTED_PASS;Pri1
 HostStyle=0
 
 [div2.cmd_9819]
-RelativePath=JIT\CodeGenBringUpTests\div2\div2.cmd
-WorkingDir=JIT\CodeGenBringUpTests\div2
+RelativePath=JIT\CodeGenBringUpTests\div2_ro\div2_ro.cmd
+WorkingDir=JIT\CodeGenBringUpTests\div2_ro
 Expected=0
 MaxAllowedDurationSeconds=600
 Categories=EXPECTED_PASS
@@ -78701,8 +78701,8 @@ Categories=EXPECTED_PASS;Pri1
 HostStyle=0
 
 [Call1.cmd_9883]
-RelativePath=JIT\CodeGenBringUpTests\Call1\Call1.cmd
-WorkingDir=JIT\CodeGenBringUpTests\Call1
+RelativePath=JIT\CodeGenBringUpTests\Call1_ro\Call1_ro.cmd
+WorkingDir=JIT\CodeGenBringUpTests\Call1_ro
 Expected=0
 MaxAllowedDurationSeconds=600
 Categories=EXPECTED_PASS;Pri1
@@ -80901,8 +80901,8 @@ Categories=EXPECTED_PASS;Pri1
 HostStyle=0
 
 [DblNeg.cmd_10162]
-RelativePath=JIT\CodeGenBringUpTests\DblNeg\DblNeg.cmd
-WorkingDir=JIT\CodeGenBringUpTests\DblNeg
+RelativePath=JIT\CodeGenBringUpTests\DblNeg_ro\DblNeg_ro.cmd
+WorkingDir=JIT\CodeGenBringUpTests\DblNeg_ro
 Expected=0
 MaxAllowedDurationSeconds=600
 Categories=EXPECTED_PASS;Pri1
@@ -82869,8 +82869,8 @@ Categories=EXPECTED_PASS;Pri1
 HostStyle=0
 
 [FPConvF2F.cmd_10410]
-RelativePath=JIT\CodeGenBringUpTests\FPConvF2F\FPConvF2F.cmd
-WorkingDir=JIT\CodeGenBringUpTests\FPConvF2F
+RelativePath=JIT\CodeGenBringUpTests\FPConvF2F_ro\FPConvF2F_ro.cmd
+WorkingDir=JIT\CodeGenBringUpTests\FPConvF2F_ro
 Expected=0
 MaxAllowedDurationSeconds=600
 Categories=EXPECTED_PASS;Pri1
@@ -83349,8 +83349,8 @@ Categories=EXPECTED_PASS;Pri1
 HostStyle=0
 
 [ArrayJagged.cmd_10470]
-RelativePath=JIT\CodeGenBringUpTests\ArrayJagged\ArrayJagged.cmd
-WorkingDir=JIT\CodeGenBringUpTests\ArrayJagged
+RelativePath=JIT\CodeGenBringUpTests\ArrayJagged_ro\ArrayJagged_ro.cmd
+WorkingDir=JIT\CodeGenBringUpTests\ArrayJagged_ro
 Expected=0
 MaxAllowedDurationSeconds=600
 Categories=EXPECTED_PASS;Pri1
@@ -84733,8 +84733,8 @@ Categories=EXPECTED_PASS;Pri1
 HostStyle=0
 
 [NestedCall.cmd_10644]
-RelativePath=JIT\CodeGenBringUpTests\NestedCall\NestedCall.cmd
-WorkingDir=JIT\CodeGenBringUpTests\NestedCall
+RelativePath=JIT\CodeGenBringUpTests\NestedCall_ro\NestedCall_ro.cmd
+WorkingDir=JIT\CodeGenBringUpTests\NestedCall_ro
 Expected=0
 MaxAllowedDurationSeconds=600
 Categories=EXPECTED_PASS;Pri1
@@ -84789,8 +84789,8 @@ Categories=EXPECTED_PASS;Pri1
 HostStyle=0
 
 [JTrueLeFP.cmd_10651]
-RelativePath=JIT\CodeGenBringUpTests\JTrueLeFP\JTrueLeFP.cmd
-WorkingDir=JIT\CodeGenBringUpTests\JTrueLeFP
+RelativePath=JIT\CodeGenBringUpTests\JTrueLeFP_ro\JTrueLeFP_ro.cmd
+WorkingDir=JIT\CodeGenBringUpTests\JTrueLeFP_ro
 Expected=0
 MaxAllowedDurationSeconds=600
 Categories=EXPECTED_PASS;Pri1
@@ -86989,8 +86989,8 @@ Categories=EXPECTED_PASS;Pri1
 HostStyle=0
 
 [mul3.cmd_10927]
-RelativePath=JIT\CodeGenBringUpTests\mul3\mul3.cmd
-WorkingDir=JIT\CodeGenBringUpTests\mul3
+RelativePath=JIT\CodeGenBringUpTests\mul3_ro\mul3_ro.cmd
+WorkingDir=JIT\CodeGenBringUpTests\mul3_ro
 Expected=0
 MaxAllowedDurationSeconds=600
 Categories=EXPECTED_PASS;Pri1
@@ -87461,8 +87461,8 @@ Categories=EXPECTED_PASS
 HostStyle=0
 
 [OrRef.cmd_10986]
-RelativePath=JIT\CodeGenBringUpTests\OrRef\OrRef.cmd
-WorkingDir=JIT\CodeGenBringUpTests\OrRef
+RelativePath=JIT\CodeGenBringUpTests\OrRef_ro\OrRef_ro.cmd
+WorkingDir=JIT\CodeGenBringUpTests\OrRef_ro
 Expected=0
 MaxAllowedDurationSeconds=600
 Categories=EXPECTED_PASS;Pri1
@@ -87949,8 +87949,8 @@ Categories=EXPECTED_PASS;Pri1
 HostStyle=0
 
 [ArrayObj.cmd_11047]
-RelativePath=JIT\CodeGenBringUpTests\ArrayObj\ArrayObj.cmd
-WorkingDir=JIT\CodeGenBringUpTests\ArrayObj
+RelativePath=JIT\CodeGenBringUpTests\ArrayObj_ro\ArrayObj_ro.cmd
+WorkingDir=JIT\CodeGenBringUpTests\ArrayObj_ro
 Expected=0
 MaxAllowedDurationSeconds=600
 Categories=EXPECTED_PASS;Pri1
@@ -88717,8 +88717,8 @@ Categories=EXPECTED_PASS;Pri1
 HostStyle=0
 
 [UModConst.cmd_11145]
-RelativePath=JIT\CodeGenBringUpTests\UModConst\UModConst.cmd
-WorkingDir=JIT\CodeGenBringUpTests\UModConst
+RelativePath=JIT\CodeGenBringUpTests\UModConst_ro\UModConst_ro.cmd
+WorkingDir=JIT\CodeGenBringUpTests\UModConst_ro
 Expected=0
 MaxAllowedDurationSeconds=600
 Categories=EXPECTED_PASS
@@ -89365,8 +89365,8 @@ Categories=EXPECTED_PASS;Pri1
 HostStyle=0
 
 [FibLoop.cmd_11227]
-RelativePath=JIT\CodeGenBringUpTests\FibLoop\FibLoop.cmd
-WorkingDir=JIT\CodeGenBringUpTests\FibLoop
+RelativePath=JIT\CodeGenBringUpTests\FibLoop_ro\FibLoop_ro.cmd
+WorkingDir=JIT\CodeGenBringUpTests\FibLoop_ro
 Expected=0
 MaxAllowedDurationSeconds=600
 Categories=EXPECTED_PASS;Pri1
@@ -91237,8 +91237,8 @@ Categories=EXPECTED_PASS;NEW;EXCLUDED
 HostStyle=0
 
 [StructReturn.cmd_11463]
-RelativePath=JIT\CodeGenBringUpTests\StructReturn\StructReturn.cmd
-WorkingDir=JIT\CodeGenBringUpTests\StructReturn
+RelativePath=JIT\CodeGenBringUpTests\StructReturn_ro\StructReturn_ro.cmd
+WorkingDir=JIT\CodeGenBringUpTests\StructReturn_ro
 Expected=0
 MaxAllowedDurationSeconds=600
 Categories=EXPECTED_PASS;Pri1;NEW
