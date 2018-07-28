@@ -112,6 +112,9 @@
     <Compile Include="$(CommonPath)\Interop\Windows\Crypt32\Interop.CertCloseStore.cs">
       <Link>Common\Interop\Windows\Crypt32\Interop.CertCloseStore.cs</Link>
     </Compile>
+    <Compile Include="$(CommonPath)\Interop\Windows\Crypt32\Interop.CryptMsgClose.cs">
+      <Link>Common\Interop\Windows\Crypt32\Interop.CryptMsgClose.cs</Link>
+    </Compile>
     <Compile Include="$(CommonPath)\Interop\Windows\Crypt32\Interop.CertFreeCertificateContext.cs">
       <Link>Common\Interop\Windows\Crypt32\Interop.CertFreeCertificateContext.cs</Link>
     </Compile>
