@@ -146,6 +146,14 @@ public:
         return (*this);
     }
 
+    basic_string<T>& operator+=(value_type _Ch)
+    {
+        size_type oldsize = size();         // doesn't include null terminator
+        m_string[oldsize] = _Ch; // Replace the null terminator with the new symbol.
+        m_string.push_back(T()); // Return the replaced terminator again.
+        return (*this);
+    }
+
     ~basic_string()
     {
         // vector destructor does all the work
@@ -155,6 +163,11 @@ public:
     {
         assert(m_string.size() > 0);
         return m_string.size() - 1;      // Don't report the null terminator.
+    }
+
+    size_t length() const
+    {
+        return size();
     }
 
     T& operator[](size_t iIndex)
