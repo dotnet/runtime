@@ -215,7 +215,7 @@ namespace Internal.Cryptography.Pal.Native
     {
         protected sealed override bool ReleaseHandle()
         {
-            bool success = Interop.crypt32.CryptMsgClose(handle);
+            bool success = Interop.Crypt32.CryptMsgClose(handle);
             return success;
         }
     }
