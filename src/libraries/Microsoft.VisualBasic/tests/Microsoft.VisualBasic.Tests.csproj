@@ -22,6 +22,7 @@
     <Compile Include="Microsoft/VisualBasic/Devices/NetworkAvailableEventArgsTests.cs" />
     <Compile Include="ConversionsTests.cs" />
     <Compile Include="OperatorsTests.cs" />
+    <Compile Include="DateAndTimeTests.cs" />
     <Compile Include="InformationTests.cs" />
     <Compile Include="UtilsTests.cs" />
     <Compile Include="StringsTests.cs" />

@@ -5,6 +5,8 @@
 // Changes to this file must follow the http://aka.ms/api-review process.
 // ------------------------------------------------------------------------------
 
+using System;
+
 namespace Microsoft.VisualBasic
 {
     public enum CallType
@@ -62,6 +64,13 @@ namespace Microsoft.VisualBasic
         public const char Tab = '\t';
         public const char VerticalTab = '\v';
         public ControlChars() { }
+    }
+    [Microsoft.VisualBasic.CompilerServices.StandardModuleAttribute]
+    public sealed partial class DateAndTime
+    {
+        internal DateAndTime() { }
+        public static DateTime Now { get; }
+        public static DateTime Today { get; }
     }
     [System.AttributeUsageAttribute((System.AttributeTargets)(4), AllowMultiple=false, Inherited=false)]
     [System.ComponentModel.EditorBrowsableAttribute((System.ComponentModel.EditorBrowsableState)(1))]
