@@ -116,7 +116,6 @@
     <Compile Include="Interop\Windows\Crypt32\Interop.CertContextPropId.cs" />
     <Compile Include="Interop\Windows\Crypt32\Interop.CertCreateCertificateContext.cs" />
     <Compile Include="Interop\Windows\Crypt32\Interop.CertDuplicateCertificateContext.cs" />
-    <Compile Include="Interop\Windows\Crypt32\Interop.CertFreeCertificateContext.cs" />
     <Compile Include="Interop\Windows\Crypt32\Interop.CertGetCertificateContextProperty.cs" />
     <Compile Include="Interop\Windows\Crypt32\Interop.CertGetPublicKeyLength.cs" />
     <Compile Include="Interop\Windows\Crypt32\Interop.CertIdChoice.cs" />
@@ -170,6 +169,9 @@
   <ItemGroup Condition="'$(TargetsWindows)' == 'true' AND '$(IsPartialFacadeAssembly)' != 'true'">
     <Compile Include="$(CommonPath)\Internal\Cryptography\Windows\CryptoThrowHelper.cs">
       <Link>Common\Internal\Cryptography\Windows\CryptoThrowHelper.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)\Interop\Windows\Crypt32\Interop.CertFreeCertificateContext.cs">
+      <Link>Common\Interop\Windows\Crypt32\Interop.CertFreeCertificateContext.cs</Link>
     </Compile>
     <Compile Include="$(CommonPath)\Interop\Windows\Crypt32\Interop.DATA_BLOB.cs">
       <Link>Common\Interop\Windows\Crypt32\Interop.DATA_BLOB.cs</Link>
