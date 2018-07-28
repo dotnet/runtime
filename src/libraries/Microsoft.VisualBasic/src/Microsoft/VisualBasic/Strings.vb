@@ -3,6 +3,7 @@
 ' See the LICENSE file in the project root for more information.
 
 Imports System
+Imports System.Globalization
 Imports System.Text
 Imports Microsoft.VisualBasic.CompilerServices
 Imports Microsoft.VisualBasic.CompilerServices.ExceptionUtils
@@ -140,6 +141,92 @@ Namespace Global.Microsoft.VisualBasic
                 Throw New ArgumentException(SR.Format(SR.Argument_RangeTwoBytes1, NameOf(CharCode)), NameOf(CharCode))
             End If
             Return Global.System.Convert.ToChar(CharCode And &HFFFFI)
+        End Function
+
+        '============================================================================
+        ' String manipulation functions.
+        '============================================================================
+        Public Function Filter(ByVal Source() As Object, ByVal Match As String, Optional ByVal Include As Boolean = True, <Microsoft.VisualBasic.CompilerServices.OptionCompareAttribute()> Optional ByVal [Compare] As CompareMethod = CompareMethod.Binary) As String()
+
+            Dim Size As Integer = UBound(Source)
+            Dim StringSource(Size) As String
+
+            Try
+                For i As Integer = 0 To Size
+                    StringSource(i) = CStr(Source(i))
+                Next i
+            Catch ex As StackOverflowException
+                Throw ex
+            Catch ex As OutOfMemoryException
+                Throw ex
+            Catch ex As System.Threading.ThreadAbortException
+                Throw ex
+            Catch
+                Throw New ArgumentException(SR.Format(SR.Argument_InvalidValueType2, NameOf(Source), "String"), NameOf(Source))
+            End Try
+
+            Return Filter(StringSource, Match, Include, [Compare])
+        End Function
+
+        Public Function Filter(ByVal Source() As String, ByVal Match As String, Optional ByVal Include As Boolean = True, <Microsoft.VisualBasic.CompilerServices.OptionCompareAttribute()> Optional ByVal [Compare] As CompareMethod = CompareMethod.Binary) As String()
+            Try
+                Dim TmpResult() As String
+                Dim lNumElements As Integer
+                Dim lSourceIndex As Integer
+                Dim lResultIndex As Integer
+                Dim sStringElement As String
+                Dim iFlags As CompareOptions
+                Dim CompInfo As CompareInfo
+                Dim Loc As CultureInfo
+
+                'Do error checking
+                If Source.Rank <> 1 Then
+                    Throw New ArgumentException(SR.Argument_RankEQOne1, NameOf(Source))
+                End If
+
+                If Match Is Nothing OrElse Match.Length = 0 Then
+                    Return Nothing
+                End If
+
+                lNumElements = Source.Length
+
+                'up the globalization info
+                Loc = GetCultureInfo()
+                CompInfo = Loc.CompareInfo
+
+                If [Compare] = CompareMethod.Text Then
+                    iFlags = CompareOptions.IgnoreCase
+                End If
+
+                'Compare each element and build the result array
+                ReDim TmpResult(lNumElements - 1)
+
+                For lSourceIndex = 0 To lNumElements - 1
+                    sStringElement = Source(lSourceIndex)
+
+                    If (sStringElement Is Nothing) Then
+                        'Skip
+                    ElseIf (CompInfo.IndexOf(sStringElement, Match, iFlags) >= 0) = Include Then
+                        TmpResult(lResultIndex) = sStringElement
+                        lResultIndex = lResultIndex + 1
+                    End If
+                Next lSourceIndex
+
+                If lResultIndex = 0 Then
+                    ReDim TmpResult(-1)
+                    Return TmpResult
+                End If
+
+                If lResultIndex = TmpResult.Length Then
+                    'No redim required
+                    Return TmpResult
+                End If
+
+                ReDim Preserve TmpResult(lResultIndex - 1)
+                Return TmpResult
+            Catch ex As Exception
+                Throw ex
+            End Try
         End Function
 
         '============================================================================

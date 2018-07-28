@@ -16,5 +16,9 @@ Namespace Global.Microsoft.VisualBasic
         Public Const vbVerticalTab As String = ChrW(11)
         Public Const vbNullChar As String = ChrW(0)
         Public Const vbNullString As String = Nothing
+
+        'vbCompareMethod enum values
+        Public Const vbBinaryCompare As CompareMethod = CompareMethod.Binary
+        Public Const vbTextCompare As CompareMethod = CompareMethod.Text
     End Module
 End Namespace
