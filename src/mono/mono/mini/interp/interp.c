@@ -1500,39 +1500,30 @@ get_trace_ips (MonoDomain *domain, InterpFrame *top)
 	return res;
 }
 
-
-#define MYGUINT64_MAX 18446744073709551615ULL
-#define MYGINT64_MAX 9223372036854775807LL
-#define MYGINT64_MIN (-MYGINT64_MAX -1LL)
-
-#define MYGUINT32_MAX 4294967295U
-#define MYGINT32_MAX 2147483647
-#define MYGINT32_MIN (-MYGINT32_MAX -1)
-	
 #define CHECK_ADD_OVERFLOW(a,b) \
-	(gint32)(b) >= 0 ? (gint32)(MYGINT32_MAX) - (gint32)(b) < (gint32)(a) ? -1 : 0	\
-	: (gint32)(MYGINT32_MIN) - (gint32)(b) > (gint32)(a) ? +1 : 0
+	(gint32)(b) >= 0 ? (gint32)(G_MAXINT32) - (gint32)(b) < (gint32)(a) ? -1 : 0	\
+	: (gint32)(G_MININT32) - (gint32)(b) > (gint32)(a) ? +1 : 0
 
 #define CHECK_SUB_OVERFLOW(a,b) \
-	(gint32)(b) < 0 ? (gint32)(MYGINT32_MAX) + (gint32)(b) < (gint32)(a) ? -1 : 0	\
-	: (gint32)(MYGINT32_MIN) + (gint32)(b) > (gint32)(a) ? +1 : 0
+	(gint32)(b) < 0 ? (gint32)(G_MAXINT32) + (gint32)(b) < (gint32)(a) ? -1 : 0	\
+	: (gint32)(G_MININT32) + (gint32)(b) > (gint32)(a) ? +1 : 0
 
 #define CHECK_ADD_OVERFLOW_UN(a,b) \
-	(guint32)(MYGUINT32_MAX) - (guint32)(b) < (guint32)(a) ? -1 : 0
+	(guint32)(G_MAXUINT32) - (guint32)(b) < (guint32)(a) ? -1 : 0
 
 #define CHECK_SUB_OVERFLOW_UN(a,b) \
 	(guint32)(a) < (guint32)(b) ? -1 : 0
 
 #define CHECK_ADD_OVERFLOW64(a,b) \
-	(gint64)(b) >= 0 ? (gint64)(MYGINT64_MAX) - (gint64)(b) < (gint64)(a) ? -1 : 0	\
-	: (gint64)(MYGINT64_MIN) - (gint64)(b) > (gint64)(a) ? +1 : 0
+	(gint64)(b) >= 0 ? (gint64)(G_MAXINT64) - (gint64)(b) < (gint64)(a) ? -1 : 0	\
+	: (gint64)(G_MININT64) - (gint64)(b) > (gint64)(a) ? +1 : 0
 
 #define CHECK_SUB_OVERFLOW64(a,b) \
-	(gint64)(b) < 0 ? (gint64)(MYGINT64_MAX) + (gint64)(b) < (gint64)(a) ? -1 : 0	\
-	: (gint64)(MYGINT64_MIN) + (gint64)(b) > (gint64)(a) ? +1 : 0
+	(gint64)(b) < 0 ? (gint64)(G_MAXINT64) + (gint64)(b) < (gint64)(a) ? -1 : 0	\
+	: (gint64)(G_MININT64) + (gint64)(b) > (gint64)(a) ? +1 : 0
 
 #define CHECK_ADD_OVERFLOW64_UN(a,b) \
-	(guint64)(MYGUINT64_MAX) - (guint64)(b) < (guint64)(a) ? -1 : 0
+	(guint64)(G_MAXUINT64) - (guint64)(b) < (guint64)(a) ? -1 : 0
 
 #define CHECK_SUB_OVERFLOW64_UN(a,b) \
 	(guint64)(a) < (guint64)(b) ? -1 : 0
@@ -1549,28 +1540,28 @@ get_trace_ips (MonoDomain *domain, InterpFrame *top)
 #define CHECK_MUL_OVERFLOW(a,b) \
 	((gint32)(a) == 0) || ((gint32)(b) == 0) ? 0 : \
 	(((gint32)(a) > 0) && ((gint32)(b) == -1)) ? FALSE : \
-	(((gint32)(a) < 0) && ((gint32)(b) == -1)) ? (a == - MYGINT32_MAX) : \
-	(((gint32)(a) > 0) && ((gint32)(b) > 0)) ? (gint32)(a) > ((MYGINT32_MAX) / (gint32)(b)) : \
-	(((gint32)(a) > 0) && ((gint32)(b) < 0)) ? (gint32)(a) > ((MYGINT32_MIN) / (gint32)(b)) : \
-	(((gint32)(a) < 0) && ((gint32)(b) > 0)) ? (gint32)(a) < ((MYGINT32_MIN) / (gint32)(b)) : \
-	(gint32)(a) < ((MYGINT32_MAX) / (gint32)(b))
+	(((gint32)(a) < 0) && ((gint32)(b) == -1)) ? (a == G_MININT32) : \
+	(((gint32)(a) > 0) && ((gint32)(b) > 0)) ? (gint32)(a) > ((G_MAXINT32) / (gint32)(b)) : \
+	(((gint32)(a) > 0) && ((gint32)(b) < 0)) ? (gint32)(a) > ((G_MININT32) / (gint32)(b)) : \
+	(((gint32)(a) < 0) && ((gint32)(b) > 0)) ? (gint32)(a) < ((G_MININT32) / (gint32)(b)) : \
+	(gint32)(a) < ((G_MAXINT32) / (gint32)(b))
 
 #define CHECK_MUL_OVERFLOW_UN(a,b) \
 	((guint32)(a) == 0) || ((guint32)(b) == 0) ? 0 : \
-	(guint32)(b) > ((MYGUINT32_MAX) / (guint32)(a))
+	(guint32)(b) > ((G_MAXUINT32) / (guint32)(a))
 
 #define CHECK_MUL_OVERFLOW64(a,b) \
 	((gint64)(a) == 0) || ((gint64)(b) == 0) ? 0 : \
 	(((gint64)(a) > 0) && ((gint64)(b) == -1)) ? FALSE : \
-	(((gint64)(a) < 0) && ((gint64)(b) == -1)) ? (a == - MYGINT64_MAX) : \
-	(((gint64)(a) > 0) && ((gint64)(b) > 0)) ? (gint64)(a) > ((MYGINT64_MAX) / (gint64)(b)) : \
-	(((gint64)(a) > 0) && ((gint64)(b) < 0)) ? (gint64)(a) > ((MYGINT64_MIN) / (gint64)(b)) : \
-	(((gint64)(a) < 0) && ((gint64)(b) > 0)) ? (gint64)(a) < ((MYGINT64_MIN) / (gint64)(b)) : \
-	(gint64)(a) < ((MYGINT64_MAX) / (gint64)(b))
+	(((gint64)(a) < 0) && ((gint64)(b) == -1)) ? (a == G_MININT64) : \
+	(((gint64)(a) > 0) && ((gint64)(b) > 0)) ? (gint64)(a) > ((G_MAXINT64) / (gint64)(b)) : \
+	(((gint64)(a) > 0) && ((gint64)(b) < 0)) ? (gint64)(a) > ((G_MININT64) / (gint64)(b)) : \
+	(((gint64)(a) < 0) && ((gint64)(b) > 0)) ? (gint64)(a) < ((G_MININT64) / (gint64)(b)) : \
+	(gint64)(a) < ((G_MAXINT64) / (gint64)(b))
 
 #define CHECK_MUL_OVERFLOW64_UN(a,b) \
 	((guint64)(a) == 0) || ((guint64)(b) == 0) ? 0 : \
-	(guint64)(b) > ((MYGUINT64_MAX) / (guint64)(a))
+	(guint64)(b) > ((G_MAXUINT64) / (guint64)(a))
 
 #if SIZEOF_VOID_P == 4
 #define CHECK_MUL_OVERFLOW_NAT(a,b) CHECK_MUL_OVERFLOW(a,b)
@@ -4346,9 +4337,9 @@ interp_exec_method_full (InterpFrame *frame, ThreadContext *context, guint16 *st
 			MINT_IN_BREAK;
 		}
 		MINT_IN_CASE(MINT_CONV_OVF_I4_UN_R8)
-			if (sp [-1].data.f < 0 || sp [-1].data.f > MYGUINT32_MAX)
+			if (sp [-1].data.f < 0 || sp [-1].data.f > G_MAXINT32)
 				THROW_EX (mono_get_exception_overflow (), ip);
-			sp [-1].data.i = (guint32)sp [-1].data.f;
+			sp [-1].data.i = (gint32)sp [-1].data.f;
 			++ip;
 			MINT_IN_BREAK;
 		MINT_IN_CASE(MINT_CONV_OVF_U8_I4)
@@ -4363,27 +4354,32 @@ interp_exec_method_full (InterpFrame *frame, ThreadContext *context, guint16 *st
 			++ip;
 			MINT_IN_BREAK;
 		MINT_IN_CASE(MINT_CONV_OVF_I8_U8)
-			if ((guint64) sp [-1].data.l > MYGINT64_MAX)
+			if ((guint64) sp [-1].data.l > G_MAXINT64)
 				THROW_EX (mono_get_exception_overflow (), ip);
 			++ip;
 			MINT_IN_BREAK;
 		MINT_IN_CASE(MINT_CONV_OVF_U8_R8)
-		MINT_IN_CASE(MINT_CONV_OVF_I8_UN_R8)
-			if (sp [-1].data.f < 0 || sp [-1].data.f > MYGINT64_MAX)
+			if (sp [-1].data.f < 0 || sp [-1].data.f > G_MAXUINT64)
 				THROW_EX (mono_get_exception_overflow (), ip);
 			sp [-1].data.l = (guint64)sp [-1].data.f;
 			++ip;
 			MINT_IN_BREAK;
+		MINT_IN_CASE(MINT_CONV_OVF_I8_UN_R8)
+			if (sp [-1].data.f < 0 || sp [-1].data.f > G_MAXINT64)
+				THROW_EX (mono_get_exception_overflow (), ip);
+			sp [-1].data.l = (gint64)sp [-1].data.f;
+			++ip;
+			MINT_IN_BREAK;
 		MINT_IN_CASE(MINT_CONV_OVF_I8_R8)
-			if (sp [-1].data.f < MYGINT64_MIN || sp [-1].data.f > MYGINT64_MAX)
+			if (sp [-1].data.f < G_MININT64 || sp [-1].data.f > G_MAXINT64)
 				THROW_EX (mono_get_exception_overflow (), ip);
 			sp [-1].data.l = (gint64)sp [-1].data.f;
 			++ip;
 			MINT_IN_BREAK;
 		MINT_IN_CASE(MINT_CONV_OVF_I4_UN_I8)
-			if ((mono_u)sp [-1].data.l > MYGUINT32_MAX)
+			if ((guint64)sp [-1].data.l > G_MAXINT32)
 				THROW_EX (mono_get_exception_overflow (), ip);
-			sp [-1].data.i = (mono_u)sp [-1].data.l;
+			sp [-1].data.i = (gint32)sp [-1].data.l;
 			++ip;
 			MINT_IN_BREAK;
 		MINT_IN_CASE(MINT_BOX) {
@@ -4664,19 +4660,19 @@ interp_exec_method_full (InterpFrame *frame, ThreadContext *context, guint16 *st
 			++ip;
 			MINT_IN_BREAK;
 		MINT_IN_CASE(MINT_CONV_OVF_I4_I8)
-			if (sp [-1].data.l < MYGINT32_MIN || sp [-1].data.l > MYGINT32_MAX)
+			if (sp [-1].data.l < G_MININT32 || sp [-1].data.l > G_MAXINT32)
 				THROW_EX (mono_get_exception_overflow (), ip);
 			sp [-1].data.i = (gint32) sp [-1].data.l;
 			++ip;
 			MINT_IN_BREAK;
 		MINT_IN_CASE(MINT_CONV_OVF_I4_U8)
-			if (sp [-1].data.l < 0 || sp [-1].data.l > MYGINT32_MAX)
+			if (sp [-1].data.l < 0 || sp [-1].data.l > G_MAXINT32)
 				THROW_EX (mono_get_exception_overflow (), ip);
 			sp [-1].data.i = (gint32) sp [-1].data.l;
 			++ip;
 			MINT_IN_BREAK;
 		MINT_IN_CASE(MINT_CONV_OVF_I4_R8)
-			if (sp [-1].data.f < MYGINT32_MIN || sp [-1].data.f > MYGINT32_MAX)
+			if (sp [-1].data.f < G_MININT32 || sp [-1].data.f > G_MAXINT32)
 				THROW_EX (mono_get_exception_overflow (), ip);
 			sp [-1].data.i = (gint32) sp [-1].data.f;
 			++ip;
@@ -4687,81 +4683,115 @@ interp_exec_method_full (InterpFrame *frame, ThreadContext *context, guint16 *st
 			++ip;
 			MINT_IN_BREAK;
 		MINT_IN_CASE(MINT_CONV_OVF_U4_I8)
-			if (sp [-1].data.l < 0 || sp [-1].data.l > MYGUINT32_MAX)
+			if (sp [-1].data.l < 0 || sp [-1].data.l > G_MAXUINT32)
 				THROW_EX (mono_get_exception_overflow (), ip);
 			sp [-1].data.i = (guint32) sp [-1].data.l;
 			++ip;
 			MINT_IN_BREAK;
 		MINT_IN_CASE(MINT_CONV_OVF_U4_R8)
-			if (sp [-1].data.f < 0 || sp [-1].data.f > MYGUINT32_MAX)
+			if (sp [-1].data.f < 0 || sp [-1].data.f > G_MAXUINT32)
 				THROW_EX (mono_get_exception_overflow (), ip);
 			sp [-1].data.i = (guint32) sp [-1].data.f;
 			++ip;
 			MINT_IN_BREAK;
 		MINT_IN_CASE(MINT_CONV_OVF_I2_I4)
-			if (sp [-1].data.i < -32768 || sp [-1].data.i > 32767)
+			if (sp [-1].data.i < G_MININT16 || sp [-1].data.i > G_MAXINT16)
+				THROW_EX (mono_get_exception_overflow (), ip);
+			++ip;
+			MINT_IN_BREAK;
+		MINT_IN_CASE(MINT_CONV_OVF_I2_U4)
+			if (sp [-1].data.i < 0 || sp [-1].data.i > G_MAXINT16)
 				THROW_EX (mono_get_exception_overflow (), ip);
 			++ip;
 			MINT_IN_BREAK;
 		MINT_IN_CASE(MINT_CONV_OVF_I2_I8)
-			if (sp [-1].data.l < -32768 || sp [-1].data.l > 32767)
+			if (sp [-1].data.l < G_MININT16 || sp [-1].data.l > G_MAXINT16)
+				THROW_EX (mono_get_exception_overflow (), ip);
+			sp [-1].data.i = (gint16) sp [-1].data.l;
+			++ip;
+			MINT_IN_BREAK;
+		MINT_IN_CASE(MINT_CONV_OVF_I2_U8)
+			if (sp [-1].data.l < 0 || sp [-1].data.l > G_MAXINT16)
 				THROW_EX (mono_get_exception_overflow (), ip);
 			sp [-1].data.i = (gint16) sp [-1].data.l;
 			++ip;
 			MINT_IN_BREAK;
 		MINT_IN_CASE(MINT_CONV_OVF_I2_R8)
-			if (sp [-1].data.f < -32768 || sp [-1].data.f > 32767)
+			if (sp [-1].data.f < G_MININT16 || sp [-1].data.f > G_MAXINT16)
+				THROW_EX (mono_get_exception_overflow (), ip);
+			sp [-1].data.i = (gint16) sp [-1].data.f;
+			++ip;
+			MINT_IN_BREAK;
+		MINT_IN_CASE(MINT_CONV_OVF_I2_UN_R8)
+			if (sp [-1].data.f < 0 || sp [-1].data.f > G_MAXINT16)
 				THROW_EX (mono_get_exception_overflow (), ip);
 			sp [-1].data.i = (gint16) sp [-1].data.f;
 			++ip;
 			MINT_IN_BREAK;
 		MINT_IN_CASE(MINT_CONV_OVF_U2_I4)
-			if (sp [-1].data.i < 0 || sp [-1].data.i > 65535)
+			if (sp [-1].data.i < 0 || sp [-1].data.i > G_MAXUINT16)
 				THROW_EX (mono_get_exception_overflow (), ip);
 			++ip;
 			MINT_IN_BREAK;
 		MINT_IN_CASE(MINT_CONV_OVF_U2_I8)
-			if (sp [-1].data.l < 0 || sp [-1].data.l > 65535)
+			if (sp [-1].data.l < 0 || sp [-1].data.l > G_MAXUINT16)
 				THROW_EX (mono_get_exception_overflow (), ip);
 			sp [-1].data.i = (guint16) sp [-1].data.l;
 			++ip;
 			MINT_IN_BREAK;
 		MINT_IN_CASE(MINT_CONV_OVF_U2_R8)
-			if (sp [-1].data.f < 0 || sp [-1].data.f > 65535)
+			if (sp [-1].data.f < 0 || sp [-1].data.f > G_MAXUINT16)
 				THROW_EX (mono_get_exception_overflow (), ip);
 			sp [-1].data.i = (guint16) sp [-1].data.f;
 			++ip;
 			MINT_IN_BREAK;
 		MINT_IN_CASE(MINT_CONV_OVF_I1_I4)
-			if (sp [-1].data.i < -128 || sp [-1].data.i > 127)
+			if (sp [-1].data.i < G_MININT8 || sp [-1].data.i > G_MAXINT8)
+				THROW_EX (mono_get_exception_overflow (), ip);
+			++ip;
+			MINT_IN_BREAK;
+		MINT_IN_CASE(MINT_CONV_OVF_I1_U4)
+			if (sp [-1].data.i < 0 || sp [-1].data.i > G_MAXINT8)
 				THROW_EX (mono_get_exception_overflow (), ip);
 			++ip;
 			MINT_IN_BREAK;
 		MINT_IN_CASE(MINT_CONV_OVF_I1_I8)
-			if (sp [-1].data.l < -128 || sp [-1].data.l > 127)
+			if (sp [-1].data.l < G_MININT8 || sp [-1].data.l > G_MAXINT8)
+				THROW_EX (mono_get_exception_overflow (), ip);
+			sp [-1].data.i = (gint8) sp [-1].data.l;
+			++ip;
+			MINT_IN_BREAK;
+		MINT_IN_CASE(MINT_CONV_OVF_I1_U8)
+			if (sp [-1].data.l < 0 || sp [-1].data.l > G_MAXINT8)
 				THROW_EX (mono_get_exception_overflow (), ip);
 			sp [-1].data.i = (gint8) sp [-1].data.l;
 			++ip;
 			MINT_IN_BREAK;
 		MINT_IN_CASE(MINT_CONV_OVF_I1_R8)
-			if (sp [-1].data.f < -128 || sp [-1].data.f > 127)
+			if (sp [-1].data.f < G_MININT8 || sp [-1].data.f > G_MAXINT8)
+				THROW_EX (mono_get_exception_overflow (), ip);
+			sp [-1].data.i = (gint8) sp [-1].data.f;
+			++ip;
+			MINT_IN_BREAK;
+		MINT_IN_CASE(MINT_CONV_OVF_I1_UN_R8)
+			if (sp [-1].data.f < 0 || sp [-1].data.f > G_MAXINT8)
 				THROW_EX (mono_get_exception_overflow (), ip);
 			sp [-1].data.i = (gint8) sp [-1].data.f;
 			++ip;
 			MINT_IN_BREAK;
 		MINT_IN_CASE(MINT_CONV_OVF_U1_I4)
-			if (sp [-1].data.i < 0 || sp [-1].data.i > 255)
+			if (sp [-1].data.i < 0 || sp [-1].data.i > G_MAXUINT8)
 				THROW_EX (mono_get_exception_overflow (), ip);
 			++ip;
 			MINT_IN_BREAK;
 		MINT_IN_CASE(MINT_CONV_OVF_U1_I8)
-			if (sp [-1].data.l < 0 || sp [-1].data.l > 255)
+			if (sp [-1].data.l < 0 || sp [-1].data.l > G_MAXUINT8)
 				THROW_EX (mono_get_exception_overflow (), ip);
 			sp [-1].data.i = (guint8) sp [-1].data.l;
 			++ip;
 			MINT_IN_BREAK;
 		MINT_IN_CASE(MINT_CONV_OVF_U1_R8)
-			if (sp [-1].data.f < 0 || sp [-1].data.f > 255)
+			if (sp [-1].data.f < 0 || sp [-1].data.f > G_MAXUINT8)
 				THROW_EX (mono_get_exception_overflow (), ip);
 			sp [-1].data.i = (guint8) sp [-1].data.f;
 			++ip;
