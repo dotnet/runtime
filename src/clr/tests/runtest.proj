@@ -258,7 +258,7 @@ namespace $([System.String]::Copy($(Category)).Replace(".","_").Replace("\","").
                     }
                     catch(Exception ex)
                     {
-                      sErrorText = "Unable to read error file: " + errorFile%3B
+                      sErrorText = $"Unable to read error file: {errorFile}\n{ex}"%3B
                     }
 
                     string outputText = null%3B
@@ -270,7 +270,7 @@ namespace $([System.String]::Copy($(Category)).Replace(".","_").Replace("\","").
                     }
                     catch(Exception ex)
                     {
-                        outputText = "Unable to read output file: " + outputFile%3B
+                        outputText = $"Unable to read error file: {outputFile}\n{ex}"%3B
                     }
 
                     string msg = infraEx != null ? "Test Infrastructure Failure: " + infraEx.ToString()
