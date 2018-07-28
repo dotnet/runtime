@@ -67,7 +67,7 @@ Namespace Global.Microsoft.VisualBasic
         Public Function Asc(ByVal [String] As String) As Integer
 
             If ([String] Is Nothing) OrElse ([String].Length = 0) Then
-                Throw New ArgumentException(SR.Argument_LengthGTZero1, NameOf([String]))
+                Throw New ArgumentException(SR.Format(SR.Argument_LengthGTZero1, NameOf([String])), NameOf([String]))
             End If
 
             Dim ch As Char = [String].Chars(0)
@@ -77,7 +77,7 @@ Namespace Global.Microsoft.VisualBasic
 
         Public Function AscW([String] As String) As Integer
             If ([String] Is Nothing) OrElse ([String].Length = 0) Then
-                Throw New Global.System.ArgumentException(SR.Argument_LengthGTZero1, NameOf([String]))
+                Throw New Global.System.ArgumentException(SR.Format(SR.Argument_LengthGTZero1, NameOf([String])), NameOf([String]))
             End If
             Return AscW([String].Chars(0))
         End Function
@@ -89,7 +89,7 @@ Namespace Global.Microsoft.VisualBasic
         Public Function Chr(ByVal CharCode As Integer) As Char
             ' Documentation claims that < 0 or > 255 gives an ArgumentException
             If CharCode < -32768 OrElse CharCode > 65535 Then
-                Throw New ArgumentException(SR.Argument_RangeTwoBytes1, NameOf(CharCode))
+                Throw New ArgumentException(SR.Format(SR.Argument_RangeTwoBytes1, NameOf(CharCode)), NameOf(CharCode))
             End If
 
             If CharCode >= 0 AndAlso CharCode <= 127 Then
@@ -137,7 +137,7 @@ Namespace Global.Microsoft.VisualBasic
 
         Public Function ChrW(CharCode As Integer) As Char
             If CharCode < -32768 OrElse CharCode > 65535 Then
-                Throw New ArgumentException(SR.Argument_RangeTwoBytes1, NameOf(CharCode))
+                Throw New ArgumentException(SR.Format(SR.Argument_RangeTwoBytes1, NameOf(CharCode)), NameOf(CharCode))
             End If
             Return Global.System.Convert.ToChar(CharCode And &HFFFFI)
         End Function
@@ -152,7 +152,7 @@ Namespace Global.Microsoft.VisualBasic
             '   returned computed string
             '-------------------------------------------------------------
             If Length < 0 Then
-                Throw New ArgumentException(SR.Argument_GEZero1, NameOf(Length))
+                Throw New ArgumentException(SR.Format(SR.Argument_GEZero1, NameOf(Length)), NameOf(Length))
             ElseIf Length = 0 OrElse [str] Is Nothing Then
                 Return ""
             Else
@@ -199,9 +199,9 @@ Namespace Global.Microsoft.VisualBasic
             '   return computed string
             '-------------------------------------------------------------
             If Start <= 0 Then
-                Throw New ArgumentException(SR.Argument_GTZero1, NameOf(Start))
+                Throw New ArgumentException(SR.Format(SR.Argument_GTZero1, NameOf(Start)), NameOf(Start))
             ElseIf Length < 0 Then
-                Throw New ArgumentException(SR.Argument_GEZero1, NameOf(Length))
+                Throw New ArgumentException(SR.Format(SR.Argument_GEZero1, NameOf(Length)), NameOf(Length))
             ElseIf Length = 0 OrElse [str] Is Nothing Then
                 Return ""
             End If
@@ -221,7 +221,7 @@ Namespace Global.Microsoft.VisualBasic
 
         Public Function Right(ByVal [str] As String, ByVal Length As Integer) As String
             If Length < 0 Then
-                Throw New ArgumentException(SR.Argument_GEZero1, NameOf(Length))
+                Throw New ArgumentException(SR.Format(SR.Argument_GEZero1, NameOf(Length)), NameOf(Length))
             End If
 
             If Length = 0 OrElse [str] Is Nothing Then
