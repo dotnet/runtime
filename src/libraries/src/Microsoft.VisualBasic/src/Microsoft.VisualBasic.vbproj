@@ -47,6 +47,7 @@
     <Compile Include="Microsoft\VisualBasic\Constants.vb" />
     <Compile Include="Microsoft\VisualBasic\ControlChars.vb" />
     <Compile Include="Microsoft\VisualBasic\CompilerServices\DoubleType.vb" />
+    <Compile Include="Microsoft\VisualBasic\DateAndTime.vb" />
     <Compile Include="Microsoft\VisualBasic\HideModuleNameAttribute.vb" />
     <Compile Include="Microsoft\VisualBasic\Information.vb" />
     <Compile Include="Microsoft\VisualBasic\Interaction.vb" />
