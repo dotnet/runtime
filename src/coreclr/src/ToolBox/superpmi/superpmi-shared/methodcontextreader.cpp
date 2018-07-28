@@ -116,6 +116,8 @@ MethodContextReader::MethodContextReader(
     {
         GetFileSizeEx(this->fileHandle, (PLARGE_INTEGER) & this->fileSize);
     }
+
+    ReadExcludedMethods(mchFileName);
 }
 
 MethodContextReader::~MethodContextReader()
@@ -130,6 +132,8 @@ MethodContextReader::~MethodContextReader()
     }
 
     CloseHandle(this->mutex);
+
+    CleanExcludedMethods();
 }
 
 bool MethodContextReader::AcquireLock()
@@ -476,4 +480,107 @@ MethodContextBuffer MethodContextReader::GetSpecificMethodContext(unsigned int m
         this->ReleaseLock();
         return MethodContextBuffer(-4);
     }
+}
+
+// Read the file with excluded methods hashes and save them.
+void MethodContextReader::ReadExcludedMethods(std::string mchFileName)
+{
+    excludedMethodsList = nullptr;
+
+    size_t suffix_offset = mchFileName.find_last_of('.');
+    if (suffix_offset == std::string::npos)
+    {
+        LogError("Failed to get file extension from %s", mchFileName.c_str());
+        return;
+    }
+    std::string suffix          = mchFileName.substr(suffix_offset);
+    std::string excludeFileName = MethodContextReader::CheckForPairedFile(mchFileName, suffix.c_str(), ".exc");
+
+    if (excludeFileName.empty())
+    {
+        return;
+    }
+    HANDLE excludeFileHandle = OpenFile(excludeFileName.c_str());
+    if (excludeFileHandle != INVALID_HANDLE_VALUE)
+    {
+        __int64 excludeFileSizeLong;
+        GetFileSizeEx(excludeFileHandle, (PLARGE_INTEGER)&excludeFileSizeLong);
+        unsigned excludeFileSize = (unsigned)excludeFileSizeLong;
+
+        char* buffer = new char[excludeFileSize + 1];
+        DWORD bytesRead;
+        bool  success = (ReadFile(excludeFileHandle, buffer, excludeFileSize, &bytesRead, NULL) == TRUE);
+        CloseHandle(excludeFileHandle);
+
+        if (!success || excludeFileSize != bytesRead)
+        {
+            LogError("Failed to read the exclude file.");
+            delete[] buffer;
+            return;
+        }
+
+        buffer[excludeFileSize] = 0;
+
+        int counter = 0;
+
+        char* curr = buffer;
+        while (*curr != 0)
+        {
+            while (isspace(*curr))
+            {
+                curr++;
+            }
+
+            std::string hash;
+            while (*curr != 0 && !isspace(*curr))
+            {
+                hash += *curr;
+                curr++;
+            }
+
+            if (hash.length() == MD5_HASH_BUFFER_SIZE - 1)
+            {
+                StringList* node    = new StringList();
+                node->hash          = hash;
+                node->next          = excludedMethodsList;
+                excludedMethodsList = node;
+                counter++;
+            }
+            else
+            {
+                LogInfo("The exclude file contains wrong values: %s.", hash.c_str());
+            }
+        }
+        delete[] buffer;
+        LogInfo("Exclude file %s contains %d methods.", excludeFileName.c_str(), counter);
+    }
+}
+
+// Free memory used for excluded methods.
+void MethodContextReader::CleanExcludedMethods()
+{
+    while (excludedMethodsList != nullptr)
+    {
+        StringList* next = excludedMethodsList->next;
+        delete excludedMethodsList;
+        excludedMethodsList = next;
+    }
+}
+
+// Return should this method context be excluded from the replay or not.
+bool MethodContextReader::IsMethodExcluded(MethodContext* mc)
+{
+    if (excludedMethodsList != nullptr)
+    {
+        char md5HashBuf[MD5_HASH_BUFFER_SIZE] = {0};
+        mc->dumpMethodMD5HashToBuffer(md5HashBuf, MD5_HASH_BUFFER_SIZE);
+        for (StringList* node = excludedMethodsList; node != nullptr; node = node->next)
+        {
+            if (strcmp(node->hash.c_str(), md5HashBuf) == 0)
+            {
+                return true;
+            }
+        }
+    }
+    return false;
 }
