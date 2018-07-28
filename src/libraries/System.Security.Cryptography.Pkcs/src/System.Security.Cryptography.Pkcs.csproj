@@ -151,7 +151,6 @@
     <Compile Include="Interop\Windows\Crypt32\Interop.CryptEncodeDecodeWrappers.cs" />
     <Compile Include="Interop\Windows\Crypt32\Interop.CryptEncodeObject.cs" />
     <Compile Include="Interop\Windows\Crypt32\Interop.CryptKeySpec.cs" />
-    <Compile Include="Interop\Windows\Crypt32\Interop.CryptMsgClose.cs" />
     <Compile Include="Interop\Windows\Crypt32\Interop.CryptMsgControl.cs" />
     <Compile Include="Interop\Windows\Crypt32\Interop.CryptMsgGetParam.cs" />
     <Compile Include="Interop\Windows\Crypt32\Interop.CryptMsgOpenToDecode.cs" />
@@ -172,6 +171,9 @@
     </Compile>
     <Compile Include="$(CommonPath)\Interop\Windows\Crypt32\Interop.CertFreeCertificateContext.cs">
       <Link>Common\Interop\Windows\Crypt32\Interop.CertFreeCertificateContext.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)\Interop\Windows\Crypt32\Interop.CryptMsgClose.cs">
+      <Link>Common\Interop\Windows\Crypt32\Interop.CryptMsgClose.cs</Link>
     </Compile>
     <Compile Include="$(CommonPath)\Interop\Windows\Crypt32\Interop.DATA_BLOB.cs">
       <Link>Common\Interop\Windows\Crypt32\Interop.DATA_BLOB.cs</Link>
