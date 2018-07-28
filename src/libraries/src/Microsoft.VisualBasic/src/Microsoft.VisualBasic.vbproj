@@ -41,6 +41,7 @@
     <Compile Include="Microsoft\VisualBasic\CompilerServices\Utils.LateBinder.vb" />
     <Compile Include="Microsoft\VisualBasic\CompilerServices\Utils.vb" />
     <Compile Include="Microsoft\VisualBasic\CompilerServices\Versioned.vb" />
+    <Compile Include="Microsoft\VisualBasic\Globals.vb" />
     <Compile Include="Microsoft\VisualBasic\Devices\NetworkAvailableEventArgs.vb" />
     <Compile Include="Microsoft\VisualBasic\ComClassAttribute.vb" />
     <Compile Include="Microsoft\VisualBasic\Constants.vb" />
