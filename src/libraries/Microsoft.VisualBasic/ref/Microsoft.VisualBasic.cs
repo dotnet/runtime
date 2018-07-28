@@ -14,6 +14,11 @@ namespace Microsoft.VisualBasic
         Method = 1,
         Set = 8,
     }
+    public enum CompareMethod
+    { 
+        Binary = 0,
+        Text = 1,
+    }
     [System.AttributeUsageAttribute((System.AttributeTargets)(4), Inherited=false, AllowMultiple=false)]
     public sealed partial class ComClassAttribute : System.Attribute
     {
@@ -41,6 +46,8 @@ namespace Microsoft.VisualBasic
         public const string vbNullString = null;
         public const string vbTab = "\t";
         public const string vbVerticalTab = "\v";
+        public const CompareMethod vbBinaryCompare = CompareMethod.Binary;
+        public const CompareMethod vbTextCompare = CompareMethod.Text;
     }
     public sealed partial class ControlChars
     {
@@ -101,6 +108,8 @@ namespace Microsoft.VisualBasic
         public static int AscW(string String) { throw null; }
         public static char Chr(int CharCode) { throw null; }
         public static char ChrW(int CharCode) { throw null; }
+        public static string[] Filter(object[] Source, string Match, bool Include = true, [Microsoft.VisualBasic.CompilerServices.OptionCompareAttribute] CompareMethod Compare = CompareMethod.Binary) { throw null; }
+        public static string[] Filter(string[] Source, string Match, bool Include = true, [Microsoft.VisualBasic.CompilerServices.OptionCompareAttribute] CompareMethod Compare = CompareMethod.Binary) { throw null; }
         public static string Left(string str, int Length) { throw null; }
         public static string LTrim(string str) { throw null; }
         public static string Mid(string str, int Start) { throw null; }

@@ -105,6 +105,82 @@ namespace Microsoft.VisualBasic.Tests
         }
 
         [Theory]
+        [InlineData(new string[] { }, null, null)]
+        [InlineData(new string[] { }, "", null)]
+        public void Filter_WhenNoMatchArgument_ReturnsNull(string[] source, string match, string[] expected)
+        {
+            Assert.Equal(expected, Strings.Filter(source, match));
+        }
+
+        [Theory]
+        [InlineData(new string[] { }, "a", new string[] { }, new string[] { })]
+        public void NoElements(string[] source, string match, string[] includeExpected, string[] excludeExpected)
+        {
+            Assert.Equal(includeExpected, Strings.Filter(source, match, Include: true));
+            Assert.Equal(excludeExpected, Strings.Filter(source, match, Include: false));
+        }
+
+        [Theory]
+        [InlineData(new string[] { }, "a", new string[] { }, new string[] { })]
+        [InlineData(new string[] { "a" }, "a", new string[] { "a" }, new string[] { })]
+        [InlineData(new string[] { "ab" }, "a", new string[] { "ab" }, new string[] { })]
+        [InlineData(new string[] { "ba" }, "a", new string[] { "ba" }, new string[] { })]
+        [InlineData(new string[] { "bab" }, "a", new string[] { "bab" }, new string[] { })]
+        [InlineData(new string[] { "b" }, "a", new string[] { }, new string[] { "b" })]
+        [InlineData(new string[] { "a" }, "ab", new string[] { }, new string[] { "a" })]
+        [InlineData(new string[] { "ab" }, "ab", new string[] { "ab" }, new string[] { })]
+        public void Filter_SingleElement(string[] source, string match, string[] includeExpected, string[] excludeExpected)
+        {
+            Assert.Equal(includeExpected, Strings.Filter(source, match, Include: true));
+            Assert.Equal(excludeExpected, Strings.Filter(source, match, Include: false));
+        }
+
+        [Theory]
+        [InlineData(new string[] { "A" }, "a", new string[] { }, new string[] { "A" })]
+        public void Filter_SingleElement_BinaryCompare(string[] source, string match, string[] includeExpected, string[] excludeExpected)
+        {
+            Assert.Equal(includeExpected, Strings.Filter(source, match, Include: true, Compare: CompareMethod.Binary));
+            Assert.Equal(excludeExpected, Strings.Filter(source, match, Include: false, Compare: CompareMethod.Binary));
+        }
+
+        [Theory]
+        [InlineData(new string[] { "A" }, "a", new string[] { "A" }, new string[] { })]
+        public void Filter_SingleElement_TextCompare(string[] source, string match, string[] includeExpected, string[] excludeExpected)
+        {
+            Assert.Equal(includeExpected, Strings.Filter(source, match, Include: true, Compare: CompareMethod.Text));
+            Assert.Equal(excludeExpected, Strings.Filter(source, match, Include: false, Compare: CompareMethod.Text));
+        }
+
+        [Theory]
+        [InlineData(new string[] { "a", "a" }, "a", new string[] { "a", "a" }, new string[] { })]
+        [InlineData(new string[] { "a", "b" }, "a", new string[] { "a" }, new string[] { "b" })]
+        [InlineData(new string[] { "b", "a" }, "a", new string[] { "a" }, new string[] { "b" })]
+        [InlineData(new string[] { "b", "b" }, "a", new string[] { }, new string[] { "b", "b" })]
+        public void Filter_MultipleElements(string[] source, string match, string[] includeExpected, string[] excludeExpected)
+        {
+            Assert.Equal(includeExpected, Strings.Filter(source, match, Include: true));
+            Assert.Equal(excludeExpected, Strings.Filter(source, match, Include: false));
+        }
+
+        [Fact]
+        public void Filter_Objects_WhenObjectCannotBeConvertedToString_ThrowsArgumentOutOfRangeException()
+        {
+            var source = new object[] { typeof(object) };
+            var match = "a";
+
+            AssertExtensions.Throws<ArgumentException>("Source", null, () => Strings.Filter(source, match));
+        }
+
+        [Theory]
+        [InlineData(new object[] { 42 }, "42", new string[] { "42" }, new string[] { })]
+        [InlineData(new object[] { true }, "True", new string[] { "True" }, new string[] { })]
+        public void Objects(object[] source, string match, string[] includeExpected, string[] excludeExpected)
+        {
+            Assert.Equal(includeExpected, Strings.Filter(source, match, Include: true));
+            Assert.Equal(excludeExpected, Strings.Filter(source, match, Include: false));
+        }
+
+        [Theory]
         [InlineData("a", -1)]
         public void Left_Invalid(string str, int length)
         {
