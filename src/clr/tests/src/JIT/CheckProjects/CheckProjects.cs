@@ -19,7 +19,6 @@ internal class ScanProjectFiles
     private static bool s_tryAndFix = true;
     private static int s_projCount = 0;
     private static int s_needsFixCount = 0;
-    private static int s_deferredFixCount = 0;
     private static int s_fixedCount = 0;
 
     private static int Main(string[] args)
@@ -93,8 +92,8 @@ internal class ScanProjectFiles
 
         }
 
-        Console.WriteLine("{0} projects, {1} needed fixes, {2} fixes deferred, {3} were fixed",
-            s_projCount, s_needsFixCount, s_deferredFixCount, s_fixedCount);
+        Console.WriteLine("{0} projects, {1} needed fixes, {2} were fixed",
+            s_projCount, s_needsFixCount, s_fixedCount);
 
         // Return error status if there are unfixed projects
         return (s_needsFixCount == 0 ? 100 : -1);
@@ -253,22 +252,9 @@ internal class ScanProjectFiles
                 needsFix = true;
             }
 
-            // If there is no debug type at all, we generally want to
-            // turn this into a release/optimize test. However for the
-            // CodeGenBringUpTests we want to introduce the full spectrum
-            // of flavors. We'll skip them for now.
-            bool isBringUp = projFile.Contains("CodeGenBringUpTests");
-
             if (needsFix)
             {
-                if (!isBringUp)
-                {
-                    s_needsFixCount++;
-                }
-                else
-                {
-                    s_deferredFixCount++;
-                }
+                s_needsFixCount++;
             }
 
             if (needsFix || !s_showNeedsFixOnly)
@@ -307,12 +293,6 @@ internal class ScanProjectFiles
             if (bestPropertyGroupNode == null)
             {
                 Console.WriteLine(".... no prop group, can't fix");
-                return false;
-            }
-
-            if (isBringUp)
-            {
-                Console.WriteLine("Bring up test, deferring fix");
                 return false;
             }
 
