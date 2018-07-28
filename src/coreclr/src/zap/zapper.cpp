@@ -1289,12 +1289,12 @@ void Zapper::InitializeCompilerFlags(CORCOMPILE_VERSION_INFO * pVersionInfo)
 
     switch (CPU_X86_FAMILY(pVersionInfo->cpuInfo.dwCPUType))
     {
-    case CPU_X86_PENTIUM_4:
-        m_pOpt->m_compilerFlags.Set(CORJIT_FLAGS::CORJIT_FLAG_TARGET_P4);
-        break;
+        case CPU_X86_PENTIUM_4:
+            m_pOpt->m_compilerFlags.Set(CORJIT_FLAGS::CORJIT_FLAG_TARGET_P4);
+            break;
 
-    default:
-        break;
+        default:
+            break;
     }
 
     if (CPU_X86_USE_CMOV(pVersionInfo->cpuInfo.dwFeatures))
