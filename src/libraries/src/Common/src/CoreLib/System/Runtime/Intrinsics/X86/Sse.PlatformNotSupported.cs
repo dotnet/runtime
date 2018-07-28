@@ -11,8 +11,10 @@ namespace System.Runtime.Intrinsics.X86
     /// This class provides access to Intel SSE hardware instructions via intrinsics
     /// </summary>
     [CLSCompliant(false)]
-    public static class Sse
+    public abstract class Sse
     {
+        internal Sse() { }
+
         public static bool IsSupported { get { return false; } }
 
         /// <summary>

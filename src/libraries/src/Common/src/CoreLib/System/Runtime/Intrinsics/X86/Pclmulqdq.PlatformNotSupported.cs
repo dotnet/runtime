@@ -11,9 +11,11 @@ namespace System.Runtime.Intrinsics.X86
     /// This class provides access to Intel PCLMULQDQ hardware instructions via intrinsics
     /// </summary>
     [CLSCompliant(false)]
-    public static class Pclmulqdq
+    public abstract class Pclmulqdq : Sse2
     {
-        public static bool IsSupported { get { return false; } }
+        internal Pclmulqdq() { }
+
+        public new static bool IsSupported { get { return false; } }
 
         /// <summary>
         /// __m128i _mm_clmulepi64_si128 (__m128i a, __m128i b, const int imm8)
