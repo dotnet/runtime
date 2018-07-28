@@ -11,8 +11,10 @@ namespace System.Runtime.Intrinsics.X86
     /// This class provides access to Intel BMI1 hardware instructions via intrinsics
     /// </summary>
     [CLSCompliant(false)]
-    public static class Bmi1
+    public abstract class Bmi1
     {
+        internal Bmi1() { }
+
         public static bool IsSupported { get { return false; } }
 
         /// <summary>
@@ -46,7 +48,7 @@ namespace System.Runtime.Intrinsics.X86
         ///   BEXTR r64a, reg/m64, r64b
         /// </summary>
         public static ulong BitFieldExtract(ulong value, ushort control) { throw new PlatformNotSupportedException(); }
-        
+
         /// <summary>
         /// unsigned int _blsi_u32 (unsigned int a)
         ///   BLSI reg, reg/m32
@@ -68,7 +70,7 @@ namespace System.Runtime.Intrinsics.X86
         ///   BLSMSK reg, reg/m64
         /// </summary>
         public static ulong GetMaskUpToLowestSetBit(ulong value) { throw new PlatformNotSupportedException(); }
-        
+
         /// <summary>
         /// unsigned int _blsr_u32 (unsigned int a)
         ///   BLSR reg, reg/m32

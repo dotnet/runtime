@@ -11,8 +11,10 @@ namespace System.Runtime.Intrinsics.X86
     /// This class provides access to Intel BMI2 hardware instructions via intrinsics
     /// </summary>
     [CLSCompliant(false)]
-    public static class Bmi2
+    public abstract class Bmi2
     {
+        internal Bmi2() { }
+
         public static bool IsSupported { get { return false; } }
 
         /// <summary>
@@ -57,6 +59,6 @@ namespace System.Runtime.Intrinsics.X86
         /// unsigned __int64 _pext_u64 (unsigned __int64 a, unsigned __int64 mask)
         ///   PEXT r64a, r64b, reg/m64
         /// </summary>
-        public static ulong ParallelBitExtract(ulong value, ulong mask) { throw new PlatformNotSupportedException(); }        
+        public static ulong ParallelBitExtract(ulong value, ulong mask) { throw new PlatformNotSupportedException(); }
     }
 }
