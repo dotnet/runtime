@@ -83,6 +83,13 @@ private:
     int Offset;
     int Increment;
 
+    struct StringList
+    {
+        StringList* next;
+        std::string hash;
+    };
+    StringList* excludedMethodsList;
+
     // Binary search to get this method number from the index
     // Returns -1 for not found, or -2 for not indexed
     __int64 GetOffset(unsigned int methodNumber);
@@ -114,6 +121,9 @@ private:
     // Do we have a valid index?
     bool hasIndex();
 
+    void ReadExcludedMethods(std::string mchFileName);
+    void CleanExcludedMethods();
+
 public:
     MethodContextReader(const char* inputFileName,
                         const int*  indexes    = nullptr,
@@ -137,11 +147,7 @@ public:
     }
 
     // Return should this method context be excluded from the replay or not.
-    bool IsMethodExcluded(MethodContext* mc)
-    {
-        // Right now it is just a stub.
-        return false;
-    }
+    bool IsMethodExcluded(MethodContext* mc);
 };
 #pragma pack(pop)
 
