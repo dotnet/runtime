@@ -12,9 +12,11 @@ namespace System.Runtime.Intrinsics.X86
     /// This class provides access to Intel AVX hardware instructions via intrinsics
     /// </summary>
     [CLSCompliant(false)]
-    public static class Avx
+    public abstract class Avx : Sse42
     {
-        public static bool IsSupported { get => IsSupported; }
+        internal Avx() { }
+
+        public new static bool IsSupported { get => IsSupported; }
 
         /// <summary>
         /// __m256 _mm256_add_ps (__m256 a, __m256 b)
@@ -468,7 +470,7 @@ namespace System.Runtime.Intrinsics.X86
                 return LoadVector256(buffer);
             }
         }
-        
+
         /// <summary>
         /// __m256i _mm256_insert_epi16 (__m256i a, __int16 i, const int index)
         ///   HELPER
@@ -516,7 +518,7 @@ namespace System.Runtime.Intrinsics.X86
                 return LoadVector256(buffer);
             }
         }
-        
+
         /// <summary>
         /// __m256i _mm256_insert_epi32 (__m256i a, __int32 i, const int index)
         ///   HELPER
