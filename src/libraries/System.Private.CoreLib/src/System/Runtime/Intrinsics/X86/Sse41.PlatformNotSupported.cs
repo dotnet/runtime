@@ -11,9 +11,11 @@ namespace System.Runtime.Intrinsics.X86
     /// This class provides access to Intel SSE4.1 hardware instructions via intrinsics
     /// </summary>
     [CLSCompliant(false)]
-    public static class Sse41
+    public abstract class Sse41 : Ssse3
     {
-        public static bool IsSupported { get { return false; } }
+        internal Sse41() { }
+
+        public new static bool IsSupported { get { return false; } }
 
         /// <summary>
         /// __m128i _mm_blend_epi16 (__m128i a, __m128i b, const int imm8)
