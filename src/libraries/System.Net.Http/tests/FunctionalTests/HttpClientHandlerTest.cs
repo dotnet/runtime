@@ -2729,7 +2729,6 @@ namespace System.Net.Http.Functional.Tests
         [Theory]
         [InlineData(false)]
         [InlineData(true)]
-        [ActiveIssue("https://github.com/dotnet/corefx/issues/28882", TargetFrameworkMonikers.NetFramework)]
         public async Task PostAsync_ThrowFromContentCopy_RequestFails(bool syncFailure)
         {
             await LoopbackServer.CreateServerAsync(async (server, uri) =>
@@ -2748,6 +2747,7 @@ namespace System.Net.Http.Functional.Tests
                         lengthFunc: () => 12345678,
                         positionGetFunc: () => 0,
                         canReadFunc: () => true,
+                        readFunc: (buffer, offset, count) => throw error,
                         readAsyncFunc: (buffer, offset, count, cancellationToken) => syncFailure ? throw error : Task.Delay(1).ContinueWith<int>(_ => throw error)));
 
                     if (PlatformDetection.IsUap)
