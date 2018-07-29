@@ -151,6 +151,13 @@ namespace System.Security.Cryptography.Cng.Tests
             }
         }
 
+        [Fact]
+        public static void HashAlgorithm_DefaultsToSha256()
+        {
+            using (var cng = new ECDsaCng())
+               Assert.Equal(CngAlgorithm.Sha256, cng.HashAlgorithm);
+        }
+
 #if netcoreapp
         [Fact]
         public static void TestPositive256WithBlob()
