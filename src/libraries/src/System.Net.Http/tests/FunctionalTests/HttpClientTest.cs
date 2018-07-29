@@ -207,13 +207,21 @@ namespace System.Net.Http.Functional.Tests
         }
 
         [Fact]
-        [ActiveIssue(28882, TargetFrameworkMonikers.NetFramework)]
         public async Task GetContentAsync_NullResponseContent_ReturnsDefaultValue()
         {
             using (var client = new HttpClient(new CustomResponseHandler((r,c) => Task.FromResult(new HttpResponseMessage() { Content = null }))))
             {
                 Assert.Same(string.Empty, await client.GetStringAsync(CreateFakeUri()));
-                Assert.Same(Array.Empty<byte>(), await client.GetByteArrayAsync(CreateFakeUri()));
+
+                if (PlatformDetection.IsFullFramework)
+                {
+                    Assert.Equal(Array.Empty<byte>(), await client.GetByteArrayAsync(CreateFakeUri()));
+                }
+                else
+                {
+                    Assert.Same(Array.Empty<byte>(), await client.GetByteArrayAsync(CreateFakeUri()));
+                }
+
                 Assert.Same(Stream.Null, await client.GetStreamAsync(CreateFakeUri()));
             }
         }
@@ -343,7 +351,7 @@ namespace System.Net.Http.Functional.Tests
         }
 
         [Fact]
-        [ActiveIssue(28882, TargetFrameworkMonikers.NetFramework)]
+        [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework, ".NET Framework disposes request content after send")]
         public async Task SendAsync_RequestContentNotDisposed()
         {
             var content = new ByteArrayContent(new byte[1]);
