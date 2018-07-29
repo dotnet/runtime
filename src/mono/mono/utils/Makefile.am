@@ -318,3 +318,5 @@ DIST_SUBDIRS = jemalloc
 if MONO_JEMALLOC_ENABLED
 SUBDIRS = jemalloc
 endif
+
+CFLAGS := $(filter-out @CXX_REMOVE_CFLAGS@, @CFLAGS@) @CXX_ADD_CFLAGS@

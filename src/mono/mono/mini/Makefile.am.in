@@ -1005,3 +1005,4 @@ Makefile.am: Makefile.am.in $(llvm_makefile_dep)
 
 endif
 
+CFLAGS := $(filter-out @CXX_REMOVE_CFLAGS@, @CFLAGS@) @CXX_ADD_CFLAGS@
