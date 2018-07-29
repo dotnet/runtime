@@ -1,6 +1,6 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
-    <ProjectGuid>{FE25D593-8029-4726-ABC2-944522B5BE04}</ProjectGuid>
+    <ProjectGuid>{a32671b6-5470-4f9c-9cd8-4094b9ab0799}</ProjectGuid>
     <NoVbRuntimeReference>true</NoVbRuntimeReference>
     <VBRuntime>None</VBRuntime>
     <OptionStrict>On</OptionStrict>
