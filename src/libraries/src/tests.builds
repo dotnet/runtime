@@ -32,6 +32,7 @@
   
   <ItemGroup Condition="'$(BuildAllConfigurations)' != 'true'">
     <Project Include="$(MSBuildThisFileDirectory)*\tests\**\*$(_ProjectPattern).csproj" Exclude="@(TestProjectExclusions)" />
+    <Project Include="$(MSBuildThisFileDirectory)*\tests\**\*$(_ProjectPattern).vbproj" Exclude="@(TestProjectExclusions)" />
   </ItemGroup>
 
   <ItemGroup Condition="'$(BuildAllConfigurations)' == 'true'">
