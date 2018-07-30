@@ -277,6 +277,9 @@
     <Compile Include="$(CommonPath)\System\Security\Cryptography\Asn1\SubjectPublicKeyInfoAsn.cs">
       <Link>Common\System\Security\Cryptography\Asn1\SubjectPublicKeyInfoAsn.cs</Link>
     </Compile>
+    <Compile Include="$(CommonPath)\System\Security\Cryptography\Asn1\X509ExtensionAsn.cs">
+      <Link>Common\System\Security\Cryptography\Asn1\X509ExtensionAsn.cs</Link>
+    </Compile>
     <Compile Include="System\Security\Cryptography\Pkcs\Asn1\CertificateChoiceAsn.cs" />
     <Compile Include="System\Security\Cryptography\Pkcs\Asn1\ContentInfoAsn.cs" />
     <Compile Include="System\Security\Cryptography\Pkcs\Asn1\EncapsulatedContentInfoAsn.cs" />
@@ -292,7 +295,6 @@
     <Compile Include="System\Security\Cryptography\Pkcs\Asn1\SignerIdentifierAsn.cs" />
     <Compile Include="System\Security\Cryptography\Pkcs\Asn1\SignerInfoAsn.cs" />
     <Compile Include="System\Security\Cryptography\Pkcs\Asn1\SigningCertificateAsn.cs" />
-    <Compile Include="System\Security\Cryptography\Pkcs\Asn1\X509ExtensionAsn.cs" />
     <Compile Include="System\Security\Cryptography\Pkcs\CmsSignature.cs" />
     <Compile Include="System\Security\Cryptography\Pkcs\CmsSignature.ECDsa.cs" />
     <Compile Include="System\Security\Cryptography\Pkcs\CmsSignature.RSA.cs" />

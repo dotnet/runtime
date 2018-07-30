@@ -3,11 +3,10 @@
 // See the LICENSE file in the project root for more information.
 
 using System.Runtime.InteropServices;
-using System.Security.Cryptography.Asn1;
 using System.Security.Cryptography.X509Certificates;
 using Internal.Cryptography;
 
-namespace System.Security.Cryptography.Pkcs.Asn1
+namespace System.Security.Cryptography.Asn1
 {
     [StructLayout(LayoutKind.Sequential)]
     internal struct X509ExtensionAsn
@@ -15,9 +14,7 @@ namespace System.Security.Cryptography.Pkcs.Asn1
         [ObjectIdentifier]
         internal string ExtnId;
 
-#pragma warning disable CS3016 // Arrays as attribute arguments is not CLS-compliant
         [DefaultValue(0x01, 0x01, 0x00)]
-#pragma warning restore CS3016 // Arrays as attribute arguments is not CLS-compliant
         internal bool Critical;
 
         [OctetString]

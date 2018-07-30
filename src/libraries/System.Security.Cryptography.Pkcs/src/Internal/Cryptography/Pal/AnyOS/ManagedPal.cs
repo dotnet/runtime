@@ -32,7 +32,33 @@ namespace Internal.Cryptography.Pal.AnyOS
 
         public override byte[] GetSubjectKeyIdentifier(X509Certificate2 certificate)
         {
-            return certificate.GetSubjectKeyIdentifier();
+            Debug.Assert(certificate != null);
+
+            X509Extension extension = certificate.Extensions[Oids.SubjectKeyIdentifier];
+
+            if (extension == null)
+            {
+                // Construct the value from the public key info.
+                extension = new X509SubjectKeyIdentifierExtension(
+                    certificate.PublicKey,
+                    X509SubjectKeyIdentifierHashAlgorithm.CapiSha1,
+                    false);
+            }
+
+            // Certificates are DER encoded.
+            AsnReader reader = new AsnReader(extension.RawData, AsnEncodingRules.DER);
+
+            if (reader.TryGetPrimitiveOctetStringBytes(out ReadOnlyMemory<byte> contents))
+            {
+                reader.ThrowIfNotEmpty();
+                return contents.ToArray();
+            }
+
+            // TryGetPrimitiveOctetStringBytes will have thrown if the next tag wasn't
+            // Universal (primitive) OCTET STRING, since we're in DER mode.
+            // So there's really no way we can get here.
+            Debug.Fail($"TryGetPrimitiveOctetStringBytes returned false in DER mode");
+            throw new CryptographicException(SR.Cryptography_Der_Invalid_Encoding);
         }
 
         public override T GetPrivateKeyForSigning<T>(X509Certificate2 certificate, bool silent)
