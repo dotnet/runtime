@@ -12,6 +12,7 @@
     <Project Include="netstandard/netstandard.depproj" />
     <Project Include="netfx/netfx.depproj" />
     <Project Include="runtime/runtime.depproj" />
+    <Project Include="tools/tools.depproj" />
     <Project Include="test-runtime/XUnit.Runtime.depproj"  Condition="'$(DotNetBuildFromSource)' != 'true'" />
     <Project Include="harvestPackages/harvestPackages.depproj" />
     <Project Include="binplacePackages/binplacePackages.depproj" />
