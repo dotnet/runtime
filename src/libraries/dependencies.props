@@ -34,6 +34,7 @@
     <CoreFxExpectedPrerelease>preview1-26824-01</CoreFxExpectedPrerelease>
     <MicrosoftNETCorePlatformsPackageVersion>3.0.0-preview1-26824-01</MicrosoftNETCorePlatformsPackageVersion>
     <MicrosoftNETCoreRuntimeCoreCLRPackageVersion>3.0.0-preview1-26824-01</MicrosoftNETCoreRuntimeCoreCLRPackageVersion>
+    <MicrosoftNetCoreIlasmPackageVersion>3.0.0-preview1-26824-01</MicrosoftNetCoreIlasmPackageVersion>
     <ProjectNTfsExpectedPrerelease>beta-26823-00</ProjectNTfsExpectedPrerelease>
     <ProjectNTfsTestILCExpectedPrerelease>beta-26823-00</ProjectNTfsTestILCExpectedPrerelease>
     <ProjectNTfsTestILCPackageVersion>1.0.0-beta-26823-00</ProjectNTfsTestILCPackageVersion>
@@ -136,6 +137,17 @@
       <ElementName>MicrosoftNETCoreRuntimeCoreCLRPackageVersion</ElementName>
       <PackageId>Microsoft.NETCore.Runtime.CoreCLR</PackageId>
     </XmlUpdateStep>
+    <XmlUpdateStep Include="CoreClr">
+      <Path>$(MSBuildThisFileFullPath)</Path>
+      <ElementName>MicrosoftNetCoreIlasmPackageVersion</ElementName>
+      <PackageId>Microsoft.NETCore.ILAsm</PackageId>
+    </XmlUpdateStep>
+    <UpdateStep Include="CoreCLR">
+      <UpdaterType>MSBuildSdk</UpdaterType>
+      <Path>$(MSBuildThisFileDirectory)global.json</Path>
+      <PackageId>Microsoft.NET.Sdk.IL</PackageId>
+      <MSBuildSdkName>Microsoft.NET.Sdk.IL</MSBuildSdkName>
+    </UpdateStep>
     <XmlUpdateStep Include="Standard">
       <Path>$(MSBuildThisFileFullPath)</Path>
       <ElementName>NETStandardLibraryPackageVersion</ElementName>
@@ -180,11 +192,6 @@
       <UpdaterType>File</UpdaterType>
       <Path>$(MSBuildThisFileDirectory)BuildToolsVersion.txt</Path>
       <PackageId>Microsoft.DotNet.BuildTools</PackageId>
-    </UpdateStep>
-    <UpdateStep Include="BuildTools">
-      <UpdaterType>File</UpdaterType>
-      <Path>$(MSBuildThisFileDirectory)tools-local/ILAsmVersion.txt</Path>
-      <PackageId>Microsoft.NETCore.ILAsm</PackageId>
     </UpdateStep>
      <XmlUpdateStep Include="BuildTools">
        <Path>$(MSBuildThisFileFullPath)</Path>

@@ -5,6 +5,5 @@
     <AssemblyVersion>4.0.5.0</AssemblyVersion>
     <AssemblyKey>MSFT</AssemblyKey>
     <IsUAP>true</IsUAP>
-    <LanguageTargets Condition="'$(MSBuildProjectExtension)' == '.ilproj'">$(ToolsDir)\IL.targets</LanguageTargets>
   </PropertyGroup>
 </Project>
