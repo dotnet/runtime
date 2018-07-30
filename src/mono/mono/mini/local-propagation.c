@@ -670,8 +670,7 @@ mono_local_cprop (MonoCompile *cfg)
 					if ((opcode2 != -1) && mono_arch_is_inst_imm (ins->opcode, opcode2, def->inst_c0) && ((srcindex == 1) || (ins->sreg2 == -1))) {
 						ins->opcode = opcode2;
 						if ((def->opcode == OP_I8CONST) && (sizeof (gpointer) == 4)) {
-							ins->inst_ls_word = def->inst_ls_word;
-							ins->inst_ms_word = def->inst_ms_word;
+							ins->inst_l = def->inst_l;
 						} else {
 							ins->inst_imm = def->inst_c0;
 						}

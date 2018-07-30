@@ -111,8 +111,6 @@
 #endif
 #define MINI_LS_WORD_OFFSET (MINI_LS_WORD_IDX * 4)
 #define MINI_MS_WORD_OFFSET (MINI_MS_WORD_IDX * 4)
-#define inst_ls_word data.op[MINI_LS_WORD_IDX].const_val
-#define inst_ms_word data.op[MINI_MS_WORD_IDX].const_val
 
 #define MONO_LVREG_LS(lvreg)	((lvreg) + 1)
 #define MONO_LVREG_MS(lvreg)	((lvreg) + 2)
@@ -850,6 +848,20 @@ enum {
 
 #define inst_phi_args   data.op[1].phi_args
 #define inst_eh_blocks	 data.op[1].exception_clauses
+
+/* Return the lower 32 bits of the 64 bit immediate in INS */
+static inline guint32
+ins_get_l_low (MonoInst *ins)
+{
+	return (guint32)(ins->data.i8const & 0xffffffff);
+}
+
+/* Return the higher 32 bits of the 64 bit immediate in INS */
+static inline guint32
+ins_get_l_high (MonoInst *ins)
+{
+	return (guint32)((ins->data.i8const >> 32) & 0xffffffff);
+}
 
 static inline void
 mono_inst_set_src_registers (MonoInst *ins, int *regs)

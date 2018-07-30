@@ -633,8 +633,8 @@ mono_decompose_long_opts (MonoCompile *cfg)
 
 			switch (tree->opcode) {
 			case OP_I8CONST:
-				MONO_EMIT_NEW_ICONST (cfg, MONO_LVREG_LS (tree->dreg), tree->inst_ls_word);
-				MONO_EMIT_NEW_ICONST (cfg, MONO_LVREG_MS (tree->dreg), tree->inst_ms_word);
+				MONO_EMIT_NEW_ICONST (cfg, MONO_LVREG_LS (tree->dreg), ins_get_l_low (tree));
+				MONO_EMIT_NEW_ICONST (cfg, MONO_LVREG_MS (tree->dreg), ins_get_l_high (tree));
 				break;
 			case OP_DUMMY_I8CONST:
 				MONO_EMIT_NEW_DUMMY_INIT (cfg, MONO_LVREG_LS (tree->dreg), OP_DUMMY_ICONST);
@@ -917,24 +917,24 @@ mono_decompose_long_opts (MonoCompile *cfg)
 				break;
 
 			case OP_LADD_IMM:
-				MONO_EMIT_NEW_BIALU_IMM (cfg, OP_ADDCC_IMM, MONO_LVREG_LS (tree->dreg), MONO_LVREG_LS (tree->sreg1), tree->inst_ls_word);
-				MONO_EMIT_NEW_BIALU_IMM (cfg, OP_ADC_IMM, MONO_LVREG_MS (tree->dreg), MONO_LVREG_MS (tree->sreg1), tree->inst_ms_word);
+				MONO_EMIT_NEW_BIALU_IMM (cfg, OP_ADDCC_IMM, MONO_LVREG_LS (tree->dreg), MONO_LVREG_LS (tree->sreg1), ins_get_l_low (tree));
+				MONO_EMIT_NEW_BIALU_IMM (cfg, OP_ADC_IMM, MONO_LVREG_MS (tree->dreg), MONO_LVREG_MS (tree->sreg1), ins_get_l_high (tree));
 				break;
 			case OP_LSUB_IMM:
-				MONO_EMIT_NEW_BIALU_IMM (cfg, OP_SUBCC_IMM, MONO_LVREG_LS (tree->dreg), MONO_LVREG_LS (tree->sreg1), tree->inst_ls_word);
-				MONO_EMIT_NEW_BIALU_IMM (cfg, OP_SBB_IMM, MONO_LVREG_MS (tree->dreg), MONO_LVREG_MS (tree->sreg1), tree->inst_ms_word);
+				MONO_EMIT_NEW_BIALU_IMM (cfg, OP_SUBCC_IMM, MONO_LVREG_LS (tree->dreg), MONO_LVREG_LS (tree->sreg1), ins_get_l_low (tree));
+				MONO_EMIT_NEW_BIALU_IMM (cfg, OP_SBB_IMM, MONO_LVREG_MS (tree->dreg), MONO_LVREG_MS (tree->sreg1), ins_get_l_high (tree));
 				break;
 			case OP_LAND_IMM:
-				MONO_EMIT_NEW_BIALU_IMM (cfg, OP_AND_IMM, MONO_LVREG_LS (tree->dreg), MONO_LVREG_LS (tree->sreg1), tree->inst_ls_word);
-				MONO_EMIT_NEW_BIALU_IMM (cfg, OP_AND_IMM, MONO_LVREG_MS (tree->dreg), MONO_LVREG_MS (tree->sreg1), tree->inst_ms_word);
+				MONO_EMIT_NEW_BIALU_IMM (cfg, OP_AND_IMM, MONO_LVREG_LS (tree->dreg), MONO_LVREG_LS (tree->sreg1), ins_get_l_low (tree));
+				MONO_EMIT_NEW_BIALU_IMM (cfg, OP_AND_IMM, MONO_LVREG_MS (tree->dreg), MONO_LVREG_MS (tree->sreg1), ins_get_l_high (tree));
 				break;
 			case OP_LOR_IMM:
-				MONO_EMIT_NEW_BIALU_IMM (cfg, OP_OR_IMM, MONO_LVREG_LS (tree->dreg), MONO_LVREG_LS (tree->sreg1), tree->inst_ls_word);
-				MONO_EMIT_NEW_BIALU_IMM (cfg, OP_OR_IMM, MONO_LVREG_MS (tree->dreg), MONO_LVREG_MS (tree->sreg1), tree->inst_ms_word);
+				MONO_EMIT_NEW_BIALU_IMM (cfg, OP_OR_IMM, MONO_LVREG_LS (tree->dreg), MONO_LVREG_LS (tree->sreg1), ins_get_l_low (tree));
+				MONO_EMIT_NEW_BIALU_IMM (cfg, OP_OR_IMM, MONO_LVREG_MS (tree->dreg), MONO_LVREG_MS (tree->sreg1), ins_get_l_high (tree));
 				break;
 			case OP_LXOR_IMM:
-				MONO_EMIT_NEW_BIALU_IMM (cfg, OP_XOR_IMM, MONO_LVREG_LS (tree->dreg), MONO_LVREG_LS (tree->sreg1), tree->inst_ls_word);
-				MONO_EMIT_NEW_BIALU_IMM (cfg, OP_XOR_IMM, MONO_LVREG_MS (tree->dreg), MONO_LVREG_MS (tree->sreg1), tree->inst_ms_word);
+				MONO_EMIT_NEW_BIALU_IMM (cfg, OP_XOR_IMM, MONO_LVREG_LS (tree->dreg), MONO_LVREG_LS (tree->sreg1), ins_get_l_low (tree));
+				MONO_EMIT_NEW_BIALU_IMM (cfg, OP_XOR_IMM, MONO_LVREG_MS (tree->dreg), MONO_LVREG_MS (tree->sreg1), ins_get_l_high (tree));
 				break;
 #ifdef TARGET_POWERPC
 /* FIXME This is normally handled in cprop. Proper fix or remove if no longer needed. */
@@ -1036,8 +1036,8 @@ mono_decompose_long_opts (MonoCompile *cfg)
 			/* Not yet used, since lcompare is decomposed before local cprop */
 			case OP_LCOMPARE_IMM: {
 				MonoInst *next = mono_inst_next (tree, FILTER_IL_SEQ_POINT);
-				guint32 low_imm = tree->inst_ls_word;
-				guint32 high_imm = tree->inst_ms_word;
+				guint32 low_imm = ins_get_l_low (tree);
+				guint32 high_imm = ins_get_l_high (tree);
 				int low_reg = MONO_LVREG_LS (tree->sreg1);
 				int high_reg = MONO_LVREG_MS (tree->sreg1);
 

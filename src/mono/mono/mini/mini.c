@@ -586,12 +586,12 @@ mono_decompose_op_imm (MonoCompile *cfg, MonoBasicBlock *bb, MonoInst *ins)
 
 		/* Load the 64bit constant using decomposed ops */
 		MONO_INST_NEW (cfg, temp, OP_ICONST);
-		temp->inst_c0 = ins->inst_ls_word;
+		temp->inst_c0 = ins_get_l_low (ins);
 		temp->dreg = MONO_LVREG_LS (dreg);
 		mono_bblock_insert_before_ins (bb, ins, temp);
 
 		MONO_INST_NEW (cfg, temp, OP_ICONST);
-		temp->inst_c0 = ins->inst_ms_word;
+		temp->inst_c0 = ins_get_l_high (ins);
 		temp->dreg = MONO_LVREG_MS (dreg);
 	} else {
 		dreg = mono_alloc_ireg (cfg);

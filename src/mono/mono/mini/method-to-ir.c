@@ -9027,12 +9027,11 @@ calli_end:
 #if SIZEOF_REGISTER == 8
 						ins->inst_imm = sp [1]->inst_l;
 #else
-						ins->inst_ls_word = sp [1]->inst_ls_word;
-						ins->inst_ms_word = sp [1]->inst_ms_word;
+						ins->inst_l = sp [1]->inst_l;
 #endif
-					}
-					else
+					} else {
 						ins->inst_imm = (gssize)(sp [1]->inst_c0);
+					}
 					ins->sreg2 = -1;
 
 					/* Might be followed by an instruction added by add_widen_op */
@@ -9069,11 +9068,10 @@ calli_end:
 				else
 					sp [-1]->inst_c0 = data;
 #else
-				sp [-1]->inst_ls_word = data;
 				if (il_op == MONO_CEE_CONV_U8)
-					sp [-1]->inst_ms_word = 0;
+					sp [-1]->inst_l = (guint32)data;
 				else
-					sp [-1]->inst_ms_word = (data < 0) ? -1 : 0;
+					sp [-1]->inst_l = data;
 #endif
 				sp [-1]->dreg = alloc_dreg (cfg, STACK_I8);
 			}
