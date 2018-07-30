@@ -200,7 +200,7 @@ namespace System.StubHelpers
 
         internal static unsafe void ConvertToManaged(StringBuilder sb, IntPtr pNative)
         {
-            if (pNative == null)
+            if (pNative == IntPtr.Zero)
                 return;
 
             int nbBytes = StubHelpers.strlen((sbyte*)pNative);
