@@ -5455,7 +5455,7 @@ namespace System.Diagnostics.Tracing
                     // write out each enum value 
                     FieldInfo[] staticFields = enumType.GetFields(BindingFlags.DeclaredOnly | BindingFlags.Public | BindingFlags.Static);
 
-                    // Empty map entries cause Windows to reject the whole manifest.  Avoid ths by only writting the 
+                    // Empty map entries cause Windows to reject the whole manifest.  Avoid this by only writting the 
                     // map header and trailer if we have a valid value entry.  
                     bool headerWriten = false;
                     foreach (FieldInfo staticField in staticFields)
