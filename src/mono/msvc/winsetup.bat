@@ -48,23 +48,18 @@ for /f "delims=. tokens=1-3" %%a in ('echo %MONO_VERSION%') do (
 :: configure.ac hardcodes this.
 set MONO_VERSION_PATCH=00
 
-:: Extract MONO_CORLIB_COUNTER from configure.ac.
-for /f "tokens=*" %%a in ('findstr /b /c:MONO_CORLIB_COUNTER= %CONFIGURE_AC%') do set %%a
+:: Extract MONO_CORLIB_VERSION from configure.ac.
+for /f "tokens=*" %%a in ('findstr /b /c:MONO_CORLIB_VERSION= %CONFIGURE_AC%') do set %%a
 
 :: Pad out version pieces to 2 characters with zeros on left.
-:: corlib_counter same but 3 characters.
 if "%MONO_VERSION_MAJOR:~1%" == "" set MONO_VERSION_MAJOR=0%MONO_VERSION_MAJOR%
 if "%MONO_VERSION_MINOR:~1%" == "" set MONO_VERSION_MINOR=0%MONO_VERSION_MINOR%
-if "%MONO_CORLIB_COUNTER:~2%" == "" set MONO_CORLIB_COUNTER=0%MONO_CORLIB_COUNTER%
-if "%MONO_CORLIB_COUNTER:~2%" == "" set MONO_CORLIB_COUNTER=0%MONO_CORLIB_COUNTER%
-
-set MONO_CORLIB_VERSION=1%MONO_VERSION_MAJOR%%MONO_VERSION_MINOR%%MONO_VERSION_PATCH%%MONO_CORLIB_COUNTER%
 
 :: Remove every define VERSION from config.h and add what we want.
 findstr /v /b /i /c:"#define PACKAGE_VERSION " /c:"#define VERSION " /c:"#define MONO_CORLIB_VERSION " %win_config_h% > %monotemp%
 echo #define PACKAGE_VERSION "%MONO_VERSION%" >> %monotemp%
 echo #define VERSION "%MONO_VERSION%" >> %monotemp%
-echo #define MONO_CORLIB_VERSION %MONO_CORLIB_VERSION% >> %monotemp%
+echo #define MONO_CORLIB_VERSION "%MONO_CORLIB_VERSION%" >> %monotemp%
 
 :: If the file is different, replace it.
 fc %monotemp% %config_h% >nul || move /y %monotemp% %config_h%

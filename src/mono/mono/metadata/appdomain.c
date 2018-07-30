@@ -343,16 +343,19 @@ mono_context_set_default_context (MonoDomain *domain)
 	HANDLE_FUNCTION_RETURN ();
 }
 
-static int
+static char*
 mono_get_corlib_version (void)
 {
+	// Return NULL for errors, including the old integer form, else
+	// a string to be passed to g_free (or typically just exit).
+
 	HANDLE_FUNCTION_ENTER ();
 	ERROR_DECL (error);
 
 	MonoClass *klass;
 	MonoClassField *field;
 	MonoObjectHandle value;
-	int result = - 1;
+	char *result = NULL;
 
 	klass = mono_class_load_from_name (mono_defaults.corlib, "System", "Environment");
 	mono_class_init (klass);
@@ -365,7 +368,12 @@ mono_get_corlib_version (void)
 
 	value = mono_static_field_get_value_handle (mono_domain_get (), field, error);
 	mono_error_assert_ok (error);
-	result = *(gint32*)mono_handle_unbox_unsafe (value);
+	klass = mono_handle_class (value);
+	if (klass != mono_defaults.string_class)
+		goto exit;
+
+	result = mono_string_handle_to_utf8 (MONO_HANDLE_CAST (MonoString, value), error);
+	mono_error_assert_ok (error);
 exit:
 	HANDLE_FUNCTION_RETURN_VAL (result);
 }
@@ -389,17 +397,30 @@ mono_check_corlib_version (void)
 static const char *
 mono_check_corlib_version_internal (void)
 {
-	int version = mono_get_corlib_version ();
-	if (version != MONO_CORLIB_VERSION)
-		return g_strdup_printf ("expected corlib version %d, found %d.", MONO_CORLIB_VERSION, version);
+	char *result = NULL;
+	char *version = mono_get_corlib_version ();
+	if (!version) {
+		result = g_strdup_printf ("expected corlib string (%s) but not found or not string", MONO_CORLIB_VERSION);
+		goto exit;
+	}
+	if (strcmp (version, MONO_CORLIB_VERSION) != 0) {
+		result = g_strdup_printf ("The runtime did not find the mscorlib.dll it expected. "
+					  "Expected interface version %s but found %s. Check that "
+					  "your runtime and class libraries are matching.",
+					  MONO_CORLIB_VERSION, version);
+		goto exit;
+	}
 
 	/* Check that the managed and unmanaged layout of MonoInternalThread matches */
-	guint32 native_offset = (guint32) MONO_STRUCT_OFFSET (MonoInternalThread, last);
-	guint32 managed_offset = mono_field_get_offset (mono_class_get_field_from_name_full (mono_defaults.internal_thread_class, "last", NULL));
+	guint32 native_offset;
+	guint32 managed_offset;
+	native_offset = (guint32) MONO_STRUCT_OFFSET (MonoInternalThread, last);
+	managed_offset = mono_field_get_offset (mono_class_get_field_from_name_full (mono_defaults.internal_thread_class, "last", NULL));
 	if (native_offset != managed_offset)
-		return g_strdup_printf ("expected InternalThread.last field offset %u, found %u. See InternalThread.last comment", native_offset, managed_offset);
-
-	return NULL;
+		result = g_strdup_printf ("expected InternalThread.last field offset %u, found %u. See InternalThread.last comment", native_offset, managed_offset);
+exit:
+	g_free (version);
+	return result;
 }
 
 /**

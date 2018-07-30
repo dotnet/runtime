@@ -61,11 +61,11 @@ public static class Program {
                     monoVersion += ".0";
 
                 Console.WriteLine ($"MONO_VERSION={monoVersion}");
-                m = Regex.Match (output, "MONO_CORLIB_VERSION=([0-9]+)");
+                m = Regex.Match (output, "MONO_CORLIB_VERSION=([^\\s]+)");
                 if (!m.Success)
                     return 1;
                 monoCorlibVersion = m.Groups[1].Value;
-                Console.WriteLine ($"MONO_CORLIB_VERSION={monoCorlibVersion}");
+                Console.WriteLine ($"MONO_CORLIB_VERSION=\"{monoCorlibVersion}\"");
             }
         }
 
