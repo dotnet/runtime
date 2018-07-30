@@ -95,9 +95,9 @@ namespace System.Collections.Tests
         /// <summary>
         /// Returns a set of ModifyEnumerable delegates that modify the enumerable passed to them.
         /// </summary>
-        protected override IEnumerable<ModifyEnumerable> ModifyEnumerables
+        protected override IEnumerable<ModifyEnumerable> GetModifyEnumerables(ModifyOperation operations)
         {
-            get
+            if ((operations & ModifyOperation.Add) == ModifyOperation.Add)
             {
                 yield return (IEnumerable enumerable) =>
                 {
@@ -109,6 +109,9 @@ namespace System.Collections.Tests
                     }
                     return false;
                 };
+            }
+            if ((operations & ModifyOperation.Insert) == ModifyOperation.Insert)
+            {
                 yield return (IEnumerable enumerable) =>
                 {
                     IList casted = ((IList)enumerable);
@@ -119,6 +122,7 @@ namespace System.Collections.Tests
                     }
                     return false;
                 };
+
                 yield return (IEnumerable enumerable) =>
                 {
                     IList casted = ((IList)enumerable);
@@ -129,7 +133,9 @@ namespace System.Collections.Tests
                     }
                     return false;
                 };
-
+            }
+            if ((operations & ModifyOperation.Remove) == ModifyOperation.Remove)
+            {
                 yield return (IEnumerable enumerable) =>
                 {
                     IList casted = ((IList)enumerable);
@@ -150,6 +156,9 @@ namespace System.Collections.Tests
                     }
                     return false;
                 };
+            }
+            if ((operations & ModifyOperation.Clear) == ModifyOperation.Clear)
+            {
                 yield return (IEnumerable enumerable) =>
                 {
                     IList casted = ((IList)enumerable);

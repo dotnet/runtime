@@ -18,7 +18,7 @@ namespace System.Collections.Concurrent.Tests
 {
     public abstract class ProducerConsumerCollectionTests : IEnumerable_Generic_Tests<int>
     {
-        protected override IEnumerable<ModifyEnumerable> ModifyEnumerables => new List<ModifyEnumerable>();
+        protected override IEnumerable<ModifyEnumerable> GetModifyEnumerables(ModifyOperation operations) => new List<ModifyEnumerable>();
         protected override int CreateT(int seed) => new Random(seed).Next();
         protected override EnumerableOrder Order => EnumerableOrder.Unspecified;
         protected override IEnumerable<int> GenericIEnumerableFactory(int count) => CreateProducerConsumerCollection(count);

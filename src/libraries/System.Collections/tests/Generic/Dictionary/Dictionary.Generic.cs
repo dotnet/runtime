@@ -6,7 +6,7 @@ using System.Collections.Generic;
 
 namespace System.Collections.Tests
 {
-    public class Dictionary_Generic_Tests_string_string : Dictionary_Generic_Tests<string, string>
+    public partial class Dictionary_Generic_Tests_string_string : Dictionary_Generic_Tests<string, string>
     {
         protected override KeyValuePair<string, string> CreateT(int seed)
         {
