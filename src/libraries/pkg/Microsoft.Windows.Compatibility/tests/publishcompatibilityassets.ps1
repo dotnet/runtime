@@ -26,6 +26,7 @@ function _getPackageVersion($packageName)
 $repoRoot = ((get-item $PSScriptRoot).parent.parent.parent.FullName);
 $dotnetPath = -join($repoRoot, "\Tools\dotnetcli\dotnet.exe")
 $csprojPath = -join($PSScriptRoot, "\", (Get-ChildItem $PSScriptRoot"\*.csproj" | Select-Object -ExpandProperty Name))
+$packagesCachePath = -join($repoRoot, "\packages")
 $localPackageSourcePath = -join($repoRoot, "\bin\packages\Debug\")
 
 if (!(Test-Path $localPackageSourcePath))
@@ -42,6 +43,9 @@ $restoreSources = -join("https://dotnet.myget.org/F/aspnetcore-dev/api/v3/index.
 
 $compatPackageVersion = _getPackageVersion "Microsoft.Windows.Compatibility"
 $privatePackageVersion = _getPackageVersion "Microsoft.Private.CoreFx.NETCoreApp"
+
+Write-Output "Calling dotnet restore"
+& $dotnetPath restore --packages $packagesCachePath /p:RestoreSources="$restoreSources" /p:TargetFramework=$targetFramework /p:CompatibilityPackageVersion=$compatPackageVersion /p:PrivateCorefxPackageVersion=$privatePackageVersion /p:RuntimeIdentifiers=$rid $csprojPath
 
 Write-Output "Calling dotnet publish"
 & $dotnetPath publish -r $rid /p:RestoreSources="$restoreSources" /p:TargetFramework=$targetFramework /p:CompatibilityPackageVersion=$compatPackageVersion /p:RuntimeFrameworkVersion=$runtimeFramework /p:PrivateCorefxPackageVersion=$privatePackageVersion /p:RuntimeIdentifiers=$rid $csprojPath
