@@ -10,7 +10,6 @@ if [ -z "${__BUILDTOOLS_SOURCE:-}" ]; then __BUILDTOOLS_SOURCE=https://dotnet.my
 export __BUILDTOOLS_USE_CSPROJ=true
 __BUILD_TOOLS_PACKAGE_VERSION=$(cat "$__scriptpath/BuildToolsVersion.txt" | sed 's/\r$//') # remove CR if mounted repo on Windows drive
 __DOTNET_TOOLS_VERSION=$(cat "$__scriptpath/DotnetCLIVersion.txt" | sed 's/\r$//') # remove CR if mounted repo on Windows drive
-__ILASM_VERSION=$(cat "$__scriptpath/tools-local/ILAsmVersion.txt" | sed 's/\r$//') # remove CR if mounted repo on Windows drive
 __BUILD_TOOLS_PATH="$__PACKAGES_DIR/microsoft.dotnet.buildtools/$__BUILD_TOOLS_PACKAGE_VERSION/lib"
 __INIT_TOOLS_RESTORE_PROJECT="$__scriptpath/init-tools.msbuild"
 __BUILD_TOOLS_SEMAPHORE="$__TOOLRUNTIME_DIR/$__BUILD_TOOLS_PACKAGE_VERSION/init-tools.complete"
@@ -155,20 +154,6 @@ if [ ! -e "$__BUILD_TOOLS_PATH" ]; then
         echo "ERROR: Could not restore build tools correctly." 1>&2
         display_error_message
     fi
-fi
-
-if [ -z "${__ILASM_RID-}" ]; then
-    __ILASM_RID=$__PKG_RID
-fi
-
-echo "Using RID $__ILASM_RID for BuildTools native tools"
-
-export ILASMCOMPILER_VERSION=$__ILASM_VERSION
-export NATIVE_TOOLS_RID=$__ILASM_RID
-
-if [ -n "${DotNetBootstrapCliTarPath-}" ]; then
-    # Assume ilasm is not in nuget yet when bootstrapping...
-    unset ILASMCOMPILER_VERSION
 fi
 
 echo "Initializing BuildTools..."
