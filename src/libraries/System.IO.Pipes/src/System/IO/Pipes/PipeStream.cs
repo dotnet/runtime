@@ -374,6 +374,13 @@ namespace System.IO.Pipes
             }
         }
 
+        public override Task FlushAsync(CancellationToken cancellationToken)
+        {
+            // Just throw exceptions -- we do no I/O in this method.
+            Flush();
+            return Task.CompletedTask;
+        }
+
         protected override void Dispose(bool disposing)
         {
             try
