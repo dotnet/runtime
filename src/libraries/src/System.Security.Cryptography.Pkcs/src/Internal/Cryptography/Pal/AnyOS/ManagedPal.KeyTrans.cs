@@ -110,7 +110,7 @@ namespace Internal.Cryptography.Pal.AnyOS
             }
         }
 
-        private static KeyTransRecipientInfoAsn MakeKtri(
+        private KeyTransRecipientInfoAsn MakeKtri(
             byte[] cek,
             CmsRecipient recipient,
             out bool v0Recipient)
@@ -120,7 +120,7 @@ namespace Internal.Cryptography.Pal.AnyOS
             if (recipient.RecipientIdentifierType == SubjectIdentifierType.SubjectKeyIdentifier)
             {
                 ktri.Version = 2;
-                ktri.Rid.SubjectKeyIdentifier = recipient.Certificate.GetSubjectKeyIdentifier();
+                ktri.Rid.SubjectKeyIdentifier = GetSubjectKeyIdentifier(recipient.Certificate);
             }
             else if (recipient.RecipientIdentifierType == SubjectIdentifierType.IssuerAndSerialNumber)
             {
