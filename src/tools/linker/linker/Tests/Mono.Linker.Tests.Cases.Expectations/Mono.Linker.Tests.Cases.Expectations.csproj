@@ -39,6 +39,7 @@
   <ItemGroup>
     <Compile Include="Assertions\BaseInAssemblyAttribute.cs" />
     <Compile Include="Assertions\IgnoreTestCaseAttribute.cs" />
+    <Compile Include="Assertions\KeptAllTypesAndMembersInAssemblyAttribute.cs" />
     <Compile Include="Assertions\KeptAssemblyAttribute.cs" />
     <Compile Include="Assertions\KeptAttribute.cs" />
     <Compile Include="Assertions\BaseExpectedLinkedBehaviorAttribute.cs" />
