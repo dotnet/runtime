@@ -5565,34 +5565,40 @@ namespace System.Diagnostics.Tracing
                 {
                     bool isbitmap = EventSource.GetCustomAttributeHelper(enumType, typeof(FlagsAttribute), flags) != null;
                     string mapKind = isbitmap ? "bitMap" : "valueMap";
-                    sb.Append("  <").Append(mapKind).Append(" name=\"").Append(enumType.Name).Append("\">").AppendLine();
 
                     // write out each enum value 
                     FieldInfo[] staticFields = enumType.GetFields(BindingFlags.DeclaredOnly | BindingFlags.Public | BindingFlags.Static);
+
+                    // Empty map entries cause Windows to reject the whole manifest.  Avoid ths by only writting the 
+                    // map header and trailer if we have a valid value entry.  
+                    bool headerWriten = false;
                     foreach (FieldInfo staticField in staticFields)
                     {
                         object constantValObj = staticField.GetRawConstantValue();
                         if (constantValObj != null)
                         {
-                            long hexValue;
-                            if (constantValObj is int)
-                                hexValue = ((int)constantValObj);
-                            else if (constantValObj is long)
-                                hexValue = ((long)constantValObj);
-                            else
-                                continue;
+                            long hexValue = Convert.ToInt64(constantValObj); // Handles all integer types.  
 
                             // ETW requires all bitmap values to be powers of 2.  Skip the ones that are not. 
                             // TODO: Warn people about the dropping of values. 
                             if (isbitmap && ((hexValue & (hexValue - 1)) != 0 || hexValue == 0))
                                 continue;
 
+                            // We have a valid value, write the header if we have not already.  
+                            if (!headerWriten)
+                            {
+                                sb.Append("  <").Append(mapKind).Append(" name=\"").Append(enumType.Name).Append("\">").AppendLine();
+                                headerWriten = true;
+                            }
+
                             sb.Append("   <map value=\"0x").Append(hexValue.ToString("x", CultureInfo.InvariantCulture)).Append("\"");
                             WriteMessageAttrib(sb, "map", enumType.Name + "." + staticField.Name, staticField.Name);
                             sb.Append("/>").AppendLine();
                         }
                     }
-                    sb.Append("  </").Append(mapKind).Append(">").AppendLine();
+
+                    if (headerWriten)
+                        sb.Append("  </").Append(mapKind).Append(">").AppendLine();
                 }
                 sb.Append(" </maps>").AppendLine();
             }
