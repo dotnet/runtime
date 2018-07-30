@@ -128,9 +128,9 @@ namespace System.Collections.Tests
         /// <summary>
         /// Returns a set of ModifyEnumerable delegates that modify the enumerable passed to them.
         /// </summary>
-        protected override IEnumerable<ModifyEnumerable> ModifyEnumerables
+        protected override IEnumerable<ModifyEnumerable> GetModifyEnumerables(ModifyOperation operations)
         {
-            get
+            if ((operations & ModifyOperation.Add) == ModifyOperation.Add)
             {
                 yield return (IEnumerable enumerable) =>
                 {
@@ -138,25 +138,33 @@ namespace System.Collections.Tests
                     casted.Add(CreateTKey(12), CreateTValue(5123));
                     return true;
                 };
+            }
+            if ((operations & ModifyOperation.Insert) == ModifyOperation.Insert)
+            {
                 yield return (IEnumerable enumerable) =>
                 {
                     IDictionary casted = ((IDictionary)enumerable);
                     casted[CreateTKey(541)] = CreateTValue(12);
                     return true;
                 };
-                //// [ActiveIssue(31112)]
-                //yield return (IEnumerable enumerable) =>
-                //{
-                //    IDictionary casted = ((IDictionary)enumerable);
-                //    if (casted.Count > 0)
-                //    {
-                //        var keys = casted.Keys.GetEnumerator();
-                //        keys.MoveNext();
-                //        casted.Remove(keys.Current);
-                //        return true;
-                //    }
-                //    return false;
-                //};
+            }
+            if ((operations & ModifyOperation.Remove) == ModifyOperation.Remove)
+            {
+                yield return (IEnumerable enumerable) =>
+                {
+                    IDictionary casted = ((IDictionary)enumerable);
+                    if (casted.Count > 0)
+                    {
+                        var keys = casted.Keys.GetEnumerator();
+                        keys.MoveNext();
+                        casted.Remove(keys.Current);
+                        return true;
+                    }
+                    return false;
+                };
+            }
+            if ((operations & ModifyOperation.Clear) == ModifyOperation.Clear)
+            {
                 yield return (IEnumerable enumerable) =>
                 {
                     IDictionary casted = ((IDictionary)enumerable);
@@ -786,7 +794,7 @@ namespace System.Collections.Tests
         [MemberData(nameof(ValidCollectionSizes))]
         public virtual void IDictionary_NonGeneric_IDictionaryEnumerator_Current_ModifiedDuringEnumeration_UndefinedBehavior(int count)
         {
-            Assert.All(ModifyEnumerables, ModifyEnumerable =>
+            Assert.All(GetModifyEnumerables(ModifyEnumeratorThrows), ModifyEnumerable =>
             {
                 object current, key, value, entry;
                 IDictionary enumerable = NonGenericIDictionaryFactory(count);
