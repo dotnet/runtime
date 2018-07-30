@@ -142,12 +142,20 @@ c_static_assert(GetHostErrorCodes_NO_DATA == NO_DATA);
 c_static_assert(GetHostErrorCodes_NO_ADDRESS == NO_ADDRESS);
 c_static_assert(sizeof(uint8_t) == sizeof(char)); // We make casts from uint8_t to char so make sure it's legal
 
+// sizeof_member(struct foo, bar) is not valid C++.
+// The fix is to remove struct. That is not valid C.
+// Use typedefs to make it valid C -- which are redundant but valid C++.
+typedef struct iovec iovec;
+typedef struct sockaddr sockaddr;
+typedef struct xsocket xsocket;
+typedef struct linger linger;
+
 // We require that IOVector have the same layout as iovec.
-c_static_assert(sizeof(IOVector) == sizeof(struct iovec));
-c_static_assert(sizeof_member(IOVector, Base) == sizeof_member(struct iovec, iov_base));
-c_static_assert(offsetof(IOVector, Base) == offsetof(struct iovec, iov_base));
-c_static_assert(sizeof_member(IOVector, Count) == sizeof_member(struct iovec, iov_len));
-c_static_assert(offsetof(IOVector, Count) == offsetof(struct iovec, iov_len));
+c_static_assert(sizeof(IOVector) == sizeof(iovec));
+c_static_assert(sizeof_member(IOVector, Base) == sizeof_member(iovec, iov_base));
+c_static_assert(offsetof(IOVector, Base) == offsetof(iovec, iov_base));
+c_static_assert(sizeof_member(IOVector, Count) == sizeof_member(iovec, iov_len));
+c_static_assert(offsetof(IOVector, Count) == offsetof(iovec, iov_len));
 
 #define Min(left,right) (((left) < (right)) ? (left) : (right))
 
@@ -438,8 +446,11 @@ int32_t SystemNative_GetHostName(uint8_t* name, int32_t nameLength)
     return gethostname((char*)name, unsignedSize);
 }
 
-static bool IsInBounds(const uint8_t* baseAddr, size_t len, const uint8_t* valueAddr, size_t valueSize)
+static bool IsInBounds(const void* void_baseAddr, size_t len, const void* void_valueAddr, size_t valueSize)
 {
+    const uint8_t* baseAddr = (const uint8_t*)void_baseAddr;
+    const uint8_t* valueAddr = (const uint8_t*)void_valueAddr;
+
     return valueAddr >= baseAddr && (valueAddr + valueSize) <= (baseAddr + len);
 }
 
@@ -519,7 +530,7 @@ int32_t SystemNative_GetAddressFamily(const uint8_t* socketAddress, int32_t sock
     }
 
     const struct sockaddr* sockAddr = (const struct sockaddr*)socketAddress;
-    if (!IsInBounds((const uint8_t*)sockAddr, (size_t)socketAddressLen, (const uint8_t*)&sockAddr->sa_family, sizeof_member(struct sockaddr, sa_family)))
+    if (!IsInBounds(sockAddr, (size_t)socketAddressLen, &sockAddr->sa_family, sizeof_member(sockaddr, sa_family)))
     {
         return Error_EFAULT;
     }
@@ -536,7 +547,7 @@ int32_t SystemNative_SetAddressFamily(uint8_t* socketAddress, int32_t socketAddr
 {
     struct sockaddr* sockAddr = (struct sockaddr*)socketAddress;
     if (sockAddr == NULL || socketAddressLen < 0 ||
-        !IsInBounds((const uint8_t*)sockAddr, (size_t)socketAddressLen, (const uint8_t*)&sockAddr->sa_family, sizeof_member(struct sockaddr, sa_family)))
+        !IsInBounds(sockAddr, (size_t)socketAddressLen, &sockAddr->sa_family, sizeof_member(sockaddr, sa_family)))
     {
         return Error_EFAULT;
     }
@@ -557,7 +568,7 @@ int32_t SystemNative_GetPort(const uint8_t* socketAddress, int32_t socketAddress
     }
 
     const struct sockaddr* sockAddr = (const struct sockaddr*)socketAddress;
-    if (!IsInBounds((const uint8_t*)sockAddr, (size_t)socketAddressLen, (const uint8_t*)&sockAddr->sa_family, sizeof_member(struct sockaddr, sa_family)))
+    if (!IsInBounds(sockAddr, (size_t)socketAddressLen, &sockAddr->sa_family, sizeof_member(sockaddr, sa_family)))
     {
         return Error_EFAULT;
     }
@@ -599,7 +610,7 @@ int32_t SystemNative_SetPort(uint8_t* socketAddress, int32_t socketAddressLen, u
     }
 
     const struct sockaddr* sockAddr = (const struct sockaddr*)socketAddress;
-    if (!IsInBounds((const uint8_t*)sockAddr, (size_t)socketAddressLen, (const uint8_t*)&sockAddr->sa_family, sizeof_member(struct sockaddr, sa_family)))
+    if (!IsInBounds(sockAddr, (size_t)socketAddressLen, &sockAddr->sa_family, sizeof_member(sockaddr, sa_family)))
     {
         return Error_EFAULT;
     }
@@ -642,7 +653,7 @@ int32_t SystemNative_GetIPv4Address(const uint8_t* socketAddress, int32_t socket
     }
 
     const struct sockaddr* sockAddr = (const struct sockaddr*)socketAddress;
-    if (!IsInBounds((const uint8_t*)sockAddr, (size_t)socketAddressLen, (const uint8_t*)&sockAddr->sa_family, sizeof_member(struct sockaddr, sa_family)))
+    if (!IsInBounds(sockAddr, (size_t)socketAddressLen, &sockAddr->sa_family, sizeof_member(sockaddr, sa_family)))
     {
         return Error_EFAULT;
     }
@@ -664,7 +675,7 @@ int32_t SystemNative_SetIPv4Address(uint8_t* socketAddress, int32_t socketAddres
     }
 
     struct sockaddr* sockAddr = (struct sockaddr*)socketAddress;
-    if (!IsInBounds((const uint8_t*)sockAddr, (size_t)socketAddressLen, (const uint8_t*)&sockAddr->sa_family, sizeof_member(struct sockaddr, sa_family)))
+    if (!IsInBounds(sockAddr, (size_t)socketAddressLen, &sockAddr->sa_family, sizeof_member(sockaddr, sa_family)))
     {
         return Error_EFAULT;
     }
@@ -691,7 +702,7 @@ int32_t SystemNative_GetIPv6Address(
     }
 
     const struct sockaddr* sockAddr = (const struct sockaddr*)socketAddress;
-    if (!IsInBounds((const uint8_t*)sockAddr, (size_t)socketAddressLen, (const uint8_t*)&sockAddr->sa_family, sizeof_member(struct sockaddr, sa_family)))
+    if (!IsInBounds(sockAddr, (size_t)socketAddressLen, &sockAddr->sa_family, sizeof_member(sockaddr, sa_family)))
     {
         return Error_EFAULT;
     }
@@ -718,7 +729,7 @@ SystemNative_SetIPv6Address(uint8_t* socketAddress, int32_t socketAddressLen, ui
     }
 
     struct sockaddr* sockAddr = (struct sockaddr*)socketAddress;
-    if (!IsInBounds((const uint8_t*)sockAddr, (size_t)socketAddressLen, (const uint8_t*)&sockAddr->sa_family, sizeof_member(struct sockaddr, sa_family)))
+    if (!IsInBounds(sockAddr, (size_t)socketAddressLen, &sockAddr->sa_family, sizeof_member(sockaddr, sa_family)))
     {
         return Error_EFAULT;
     }
@@ -1046,7 +1057,7 @@ int32_t SystemNative_SetIPv6MulticastOption(intptr_t socket, int32_t multicastOp
 static int32_t GetMaxLingerTime()
 {
     static volatile int32_t MaxLingerTime = -1;
-    c_static_assert(sizeof_member(struct xsocket, so_linger) == 2);
+    c_static_assert(sizeof_member(xsocket, so_linger) == 2);
 
     // OS X does not define the linger time in seconds by default, but in ticks.
     // Furthermore, when SO_LINGER_SEC is used, the value is simply scaled by
@@ -1075,7 +1086,7 @@ static int32_t GetMaxLingerTime()
     // 65535 (the maximum time for winsock) and the maximum signed value that
     // will fit in linger::l_linger.
 
-    return Min(65535U, (1U << (sizeof_member(struct linger, l_linger) * 8 - 1)) - 1);
+    return Min(65535U, (1U << (sizeof_member(linger, l_linger) * 8 - 1)) - 1);
 }
 #endif
 
