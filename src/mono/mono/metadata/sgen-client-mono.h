@@ -379,18 +379,18 @@ static void
 mono_binary_protocol_alloc_generic (gpointer obj, gpointer vtable, size_t size, gboolean pinned)
 {
 #ifdef ENABLE_DTRACE
-	const char *namespace = sgen_client_vtable_get_namespace (vtable);
+	const char *name_space = sgen_client_vtable_get_namespace (vtable);
 	const char *name = sgen_client_vtable_get_name (vtable);
 
 	if (sgen_ptr_in_nursery (obj)) {
 		if (G_UNLIKELY (MONO_GC_NURSERY_OBJ_ALLOC_ENABLED ()))
-			MONO_GC_NURSERY_OBJ_ALLOC ((mword)obj, size, namespace, name);
+			MONO_GC_NURSERY_OBJ_ALLOC ((mword)obj, size, name_space, name);
 	} else {
 		if (size > SGEN_MAX_SMALL_OBJ_SIZE) {
 			if (G_UNLIKELY (MONO_GC_MAJOR_OBJ_ALLOC_LARGE_ENABLED ()))
-				MONO_GC_MAJOR_OBJ_ALLOC_LARGE ((mword)obj, size, namespace, name);
+				MONO_GC_MAJOR_OBJ_ALLOC_LARGE ((mword)obj, size, name_space, name);
 		} else if (pinned) {
-			MONO_GC_MAJOR_OBJ_ALLOC_PINNED ((mword)obj, size, namespace, name);
+			MONO_GC_MAJOR_OBJ_ALLOC_PINNED ((mword)obj, size, name_space, name);
 		}
 	}
 #endif

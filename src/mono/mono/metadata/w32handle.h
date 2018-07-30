@@ -92,7 +92,7 @@ typedef struct
 	void (*details)(MonoW32Handle *handle_data);
 
 	/* Called to get the name of the handle type */
-	const gchar* (*typename) (void);
+	const char* (*type_name) (void);
 
 	/* Called to get the size of the handle type */
 	gsize (*typesize) (void);

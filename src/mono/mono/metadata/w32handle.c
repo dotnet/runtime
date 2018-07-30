@@ -399,18 +399,18 @@ done:
 static gboolean
 mono_w32handle_ref_core (MonoW32Handle *handle_data)
 {
-	guint old, new;
+	guint old, new_;
 
 	do {
 		old = handle_data->ref;
 		if (old == 0)
 			return FALSE;
 
-		new = old + 1;
-	} while (mono_atomic_cas_i32 ((gint32*) &handle_data->ref, (gint32)new, (gint32)old) != (gint32)old);
+		new_ = old + 1;
+	} while (mono_atomic_cas_i32 ((gint32*) &handle_data->ref, (gint32)new_, (gint32)old) != (gint32)old);
 
 	mono_trace (G_LOG_LEVEL_DEBUG, MONO_TRACE_IO_LAYER_HANDLE, "%s: ref %s handle %p, ref: %d -> %d",
-		__func__, mono_w32handle_ops_typename (handle_data->type), handle_data, old, new);
+		__func__, mono_w32handle_ops_typename (handle_data->type), handle_data, old, new_);
 
 	return TRUE;
 }
@@ -419,7 +419,7 @@ static gboolean
 mono_w32handle_unref_core (MonoW32Handle *handle_data)
 {
 	MonoW32Type type;
-	guint old, new;
+	guint old, new_;
 
 	type = handle_data->type;
 
@@ -428,16 +428,16 @@ mono_w32handle_unref_core (MonoW32Handle *handle_data)
 		if (!(old >= 1))
 			g_error ("%s: handle %p has ref %d, it should be >= 1", __func__, handle_data, old);
 
-		new = old - 1;
-	} while (mono_atomic_cas_i32 ((gint32*) &handle_data->ref, (gint32)new, (gint32)old) != (gint32)old);
+		new_ = old - 1;
+	} while (mono_atomic_cas_i32 ((gint32*) &handle_data->ref, (gint32)new_, (gint32)old) != (gint32)old);
 
 	/* handle_data might contain invalid data from now on, if
 	 * another thread is unref'ing this handle at the same time */
 
 	mono_trace (G_LOG_LEVEL_DEBUG, MONO_TRACE_IO_LAYER_HANDLE, "%s: unref %s handle %p, ref: %d -> %d destroy: %s",
-		__func__, mono_w32handle_ops_typename (type), handle_data, old, new, new == 0 ? "true" : "false");
+		__func__, mono_w32handle_ops_typename (type), handle_data, old, new_, new_ == 0 ? "true" : "false");
 
-	return new == 0;
+	return new_ == 0;
 }
 
 static void
@@ -529,8 +529,8 @@ static const gchar*
 mono_w32handle_ops_typename (MonoW32Type type)
 {
 	g_assert (handle_ops [type]);
-	g_assert (handle_ops [type]->typename);
-	return handle_ops [type]->typename ();
+	g_assert (handle_ops [type]->type_name);
+	return handle_ops [type]->type_name ();
 }
 
 static gsize

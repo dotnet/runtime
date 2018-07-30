@@ -4577,11 +4577,11 @@ ves_icall_System_Reflection_Assembly_InternalGetType (MonoReflectionAssemblyHand
 	if (!type) {
 		if (throwOnError) {
 			ERROR_DECL_VALUE (inner_error);
-			char *typename = mono_string_handle_to_utf8 (name, &inner_error);
+			char *type_name = mono_string_handle_to_utf8 (name, &inner_error);
 			mono_error_assert_ok (&inner_error);
 			MonoAssembly *assembly = MONO_HANDLE_GETVAL (assembly_h, assembly);
 			char *assmname = mono_stringify_assembly_name (&assembly->aname);
-			mono_error_set_type_load_name (error, typename, assmname, "%s", "");
+			mono_error_set_type_load_name (error, type_name, assmname, "%s", "");
 			goto fail;
 		}
 
