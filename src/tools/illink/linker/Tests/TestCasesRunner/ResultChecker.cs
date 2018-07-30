@@ -174,7 +174,14 @@ namespace Mono.Linker.Tests.TestCasesRunner {
 			try {
 				foreach (var assemblyName in checks.Keys) {
 					using (var linkedAssembly = ResolveLinkedAssembly (assemblyName)) {
-						foreach (var checkAttrInAssembly in checks [assemblyName]) {
+						foreach (var checkAttrInAssembly in checks [assemblyName])
+						{
+							var attributeTypeName = checkAttrInAssembly.AttributeType.Name;
+							if (attributeTypeName == nameof (KeptAllTypesAndMembersInAssemblyAttribute)) {
+								VerifyKeptAllTypesAndMembersInAssembly (linkedAssembly);
+								continue;
+							}
+
 							var expectedTypeName = checkAttrInAssembly.ConstructorArguments [1].Value.ToString ();
 							var linkedType = linkedAssembly.MainModule.GetType (expectedTypeName);
 
@@ -184,7 +191,7 @@ namespace Mono.Linker.Tests.TestCasesRunner {
 									?.Resolve ();
 							}
 
-							switch (checkAttrInAssembly.AttributeType.Name) {
+							switch (attributeTypeName) {
 							case nameof (RemovedTypeInAssemblyAttribute):
 								if (linkedType != null)
 									Assert.Fail ($"Type `{expectedTypeName}' should have been removed");
@@ -346,6 +353,32 @@ namespace Mono.Linker.Tests.TestCasesRunner {
 			var resourceName = inAssemblyAttribute.ConstructorArguments [1].Value.ToString ();
 
 			Assert.That (assembly.MainModule.Resources.Select (r => r.Name), Has.No.Member (resourceName));
+		}
+
+		void VerifyKeptAllTypesAndMembersInAssembly (AssemblyDefinition linked)
+		{
+			var original = ResolveOriginalsAssembly (linked.MainModule.Assembly.Name.Name);
+			
+			if (original == null)
+				Assert.Fail ($"Failed to resolve original assembly {linked.MainModule.Assembly.Name.Name}");
+			
+			var originalTypes = original.AllDefinedTypes ().ToDictionary (t => t.FullName);
+			var linkedTypes = linked.AllDefinedTypes ().ToDictionary (t => t.FullName);
+
+			var missingInLinked = originalTypes.Keys.Except (linkedTypes.Keys);
+			
+			Assert.That (missingInLinked, Is.Empty, $"Expected all types to exist in the linked assembly, but one or more were missing");
+
+			foreach (var originalKvp in originalTypes) {
+				var linkedType = linkedTypes [originalKvp.Key];
+
+				var originalMembers = originalKvp.Value.AllMembers ().Select (m => m.FullName);
+				var linkedMembers = linkedType.AllMembers ().Select (m => m.FullName);
+
+				var missingMembersInLinked = originalMembers.Except (linkedMembers);
+				
+				Assert.That (missingMembersInLinked, Is.Empty, $"Expected all members of `{originalKvp.Key}`to exist in the linked assembly, but one or more were missing");
+			}
 		}
 
 		protected TypeDefinition GetOriginalTypeFromInAssemblyAttribute (CustomAttribute inAssemblyAttribute)
