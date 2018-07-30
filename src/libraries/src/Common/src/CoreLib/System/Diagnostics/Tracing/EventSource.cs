@@ -5575,25 +5575,30 @@ namespace System.Diagnostics.Tracing
                     foreach (FieldInfo staticField in staticFields)
                     {
                         object constantValObj = staticField.GetRawConstantValue();
+
                         if (constantValObj != null)
                         {
-                            long hexValue = Convert.ToInt64(constantValObj); // Handles all integer types.  
-
-                            // ETW requires all bitmap values to be powers of 2.  Skip the ones that are not. 
-                            // TODO: Warn people about the dropping of values. 
-                            if (isbitmap && ((hexValue & (hexValue - 1)) != 0 || hexValue == 0))
-                                continue;
-
-                            // We have a valid value, write the header if we have not already.  
-                            if (!headerWriten)
+                            try
                             {
-                                sb.Append("  <").Append(mapKind).Append(" name=\"").Append(enumType.Name).Append("\">").AppendLine();
-                                headerWriten = true;
-                            }
+                                long hexValue = hexValue = Convert.ToInt64(constantValObj); // Handles all integer types.
 
-                            sb.Append("   <map value=\"0x").Append(hexValue.ToString("x", CultureInfo.InvariantCulture)).Append("\"");
-                            WriteMessageAttrib(sb, "map", enumType.Name + "." + staticField.Name, staticField.Name);
-                            sb.Append("/>").AppendLine();
+                                // ETW requires all bitmap values to be powers of 2.  Skip the ones that are not. 
+                                // TODO: Warn people about the dropping of values. 
+                                if (isbitmap && ((hexValue & (hexValue - 1)) != 0 || hexValue == 0))
+                                    continue;
+
+                                // We have a valid value, write the header if we have not already.  
+                                if (!headerWriten)
+                                {
+                                    sb.Append("  <").Append(mapKind).Append(" name=\"").Append(enumType.Name).Append("\">").AppendLine();
+                                    headerWriten = true;
+                                }
+
+                                sb.Append("   <map value=\"0x").Append(hexValue.ToString("x", CultureInfo.InvariantCulture)).Append("\"");
+                                WriteMessageAttrib(sb, "map", enumType.Name + "." + staticField.Name, staticField.Name);
+                                sb.Append("/>").AppendLine();
+                            }
+                            catch { }  
                         }
                     }
 
