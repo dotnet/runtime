@@ -10,6 +10,7 @@ namespace System.Runtime.Intrinsics.X86
     /// <summary>
     /// This class provides access to Intel FMA hardware instructions via intrinsics
     /// </summary>
+    [CLSCompliant(false)]
     public abstract class Fma : Avx
     {
         internal Fma() { }
