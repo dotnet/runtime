@@ -34,55 +34,68 @@
         <Size>60</Size>
       </R2RSection>
       <Contents>
-        <R2RImportSection xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:xsd="http://www.w3.org/2001/XMLSchema" Index="4096">
-          <SectionSize>24</SectionSize>
-          <Flags>CORCOMPILE_IMPORT_FLAGS_EAGER</Flags>
-          <Type>CORCOMPILE_IMPORT_TYPE_UNKNOWN</Type>
-          <EntrySize>0</EntrySize>
-          <SignatureRVA>9284</SignatureRVA>
-          <Entries>
-            <ImportSectionEntry Index="9296">
-              <StartOffset>0</StartOffset>
-              <Section>0</Section>
-              <SignatureSample>GgEagPAaEP8=</SignatureSample>
-            </ImportSectionEntry>
-          </Entries>
-          <AuxiliaryDataRVA>0</AuxiliaryDataRVA>
-        </R2RImportSection>
-        <ImportSectionEntry xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:xsd="http://www.w3.org/2001/XMLSchema" Index="9296">
-          <StartOffset>0</StartOffset>
-          <Section>0</Section>
-          <SignatureSample>GgEagPAaEP8=</SignatureSample>
-        </ImportSectionEntry>
-        <R2RImportSection xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:xsd="http://www.w3.org/2001/XMLSchema" Index="4120">
-          <SectionSize>8</SectionSize>
-          <Flags>CORCOMPILE_IMPORT_FLAGS_PCODE</Flags>
-          <Type>CORCOMPILE_IMPORT_TYPE_UNKNOWN</Type>
-          <EntrySize>8</EntrySize>
-          <SignatureRVA>9392</SignatureRVA>
-          <Entries>
-            <ImportSectionEntry Index="10676">
-              <StartOffset>0</StartOffset>
-              <Section>6891812037725</Section>
-              <SignatureSample>HBIMEBEIAAA=</SignatureSample>
-            </ImportSectionEntry>
-          </Entries>
-          <AuxiliaryDataRVA>0</AuxiliaryDataRVA>
-        </R2RImportSection>
-        <ImportSectionEntry xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:xsd="http://www.w3.org/2001/XMLSchema" Index="10676">
-          <StartOffset>0</StartOffset>
-          <Section>6891812037725</Section>
-          <SignatureSample>HBIMEBEIAAA=</SignatureSample>
-        </ImportSectionEntry>
-        <R2RImportSection xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:xsd="http://www.w3.org/2001/XMLSchema" Index="4128">
-          <SectionSize>8</SectionSize>
-          <Flags>CORCOMPILE_IMPORT_FLAGS_UNKNOWN</Flags>
-          <Type>CORCOMPILE_IMPORT_TYPE_UNKNOWN</Type>
-          <EntrySize>0</EntrySize>
-          <SignatureRVA>10672</SignatureRVA>
-          <Entries />
-          <AuxiliaryDataRVA>0</AuxiliaryDataRVA>
-        </R2RImportSection>
+        <ImportSection Index="0">
+          <R2RImportSection xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:xsd="http://www.w3.org/2001/XMLSchema" Index="0">
+            <SectionRVA>4096</SectionRVA>
+            <SectionSize>24</SectionSize>
+            <Flags>CORCOMPILE_IMPORT_FLAGS_EAGER</Flags>
+            <Type>CORCOMPILE_IMPORT_TYPE_UNKNOWN</Type>
+            <EntrySize>0</EntrySize>
+            <SignatureRVA>9284</SignatureRVA>
+            <Entries>
+              <ImportSectionEntry Index="0">
+                <StartOffset>0</StartOffset>
+                <Section>0</Section>
+                <SignatureRVA>9296</SignatureRVA>
+                <SignatureSample>GgEagPAaEP8=</SignatureSample>
+              </ImportSectionEntry>
+            </Entries>
+            <AuxiliaryDataRVA>0</AuxiliaryDataRVA>
+          </R2RImportSection>
+          <ImportSectionEntry xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:xsd="http://www.w3.org/2001/XMLSchema" Index="0">
+            <StartOffset>0</StartOffset>
+            <Section>0</Section>
+            <SignatureRVA>9296</SignatureRVA>
+            <SignatureSample>GgEagPAaEP8=</SignatureSample>
+          </ImportSectionEntry>
+        </ImportSection>
+        <ImportSection Index="1">
+          <R2RImportSection xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:xsd="http://www.w3.org/2001/XMLSchema" Index="1">
+            <SectionRVA>4120</SectionRVA>
+            <SectionSize>8</SectionSize>
+            <Flags>CORCOMPILE_IMPORT_FLAGS_PCODE</Flags>
+            <Type>CORCOMPILE_IMPORT_TYPE_UNKNOWN</Type>
+            <EntrySize>8</EntrySize>
+            <SignatureRVA>9392</SignatureRVA>
+            <Entries>
+              <ImportSectionEntry Index="0">
+                <StartOffset>0</StartOffset>
+                <Section>6891812037725</Section>
+                <SignatureRVA>10676</SignatureRVA>
+                <SignatureSample>HBIMEBEIAAA=</SignatureSample>
+              </ImportSectionEntry>
+            </Entries>
+            <AuxiliaryDataRVA>0</AuxiliaryDataRVA>
+          </R2RImportSection>
+          <ImportSectionEntry xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:xsd="http://www.w3.org/2001/XMLSchema" Index="0">
+            <StartOffset>0</StartOffset>
+            <Section>6891812037725</Section>
+            <SignatureRVA>10676</SignatureRVA>
+            <SignatureSample>HBIMEBEIAAA=</SignatureSample>
+          </ImportSectionEntry>
+        </ImportSection>
+        <ImportSection Index="2">
+          <R2RImportSection xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:xsd="http://www.w3.org/2001/XMLSchema" Index="2">
+            <SectionRVA>4128</SectionRVA>
+            <SectionSize>8</SectionSize>
+            <Flags>CORCOMPILE_IMPORT_FLAGS_UNKNOWN</Flags>
+            <Type>CORCOMPILE_IMPORT_TYPE_UNKNOWN</Type>
+            <EntrySize>0</EntrySize>
+            <SignatureRVA>10672</SignatureRVA>
+            <Entries />
+            <AuxiliaryDataRVA>0</AuxiliaryDataRVA>
+          </R2RImportSection>
+        </ImportSection>
       </Contents>
     </Section>
     <Section Index="READYTORUN_SECTION_RUNTIME_FUNCTIONS">
@@ -149,15 +162,15 @@
       <Contents />
     </Section>
   </Sections>
-  <Methods>
-    <Count>5</Count>
-    <Method Index="1">
-      <R2RMethod xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:xsd="http://www.w3.org/2001/XMLSchema" Index="1">
+  <Methods Count="5">
+    <Method Index="0">
+      <R2RMethod xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:xsd="http://www.w3.org/2001/XMLSchema" Index="0">
         <Name>.ctor</Name>
         <SignatureString>GenericFunctions.UserDefinedStruct..ctor(Int32)</SignatureString>
         <IsGeneric>false</IsGeneric>
         <DeclaringType>GenericFunctions.UserDefinedStruct</DeclaringType>
         <Token>100663297</Token>
+        <Rid>1</Rid>
         <EntryPointRuntimeFunctionId>0</EntryPointRuntimeFunctionId>
       </R2RMethod>
       <GcInfo>
@@ -191,7 +204,7 @@
         </GcInfo>
       </GcInfo>
       <RuntimeFunctions>
-        <RuntimeFunction>
+        <RuntimeFunction Index="0">
           <MethodRid>1</MethodRid>
           <RuntimeFunction xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:xsd="http://www.w3.org/2001/XMLSchema" Index="0">
             <StartAddress>10464</StartAddress>
@@ -201,6 +214,7 @@
           </RuntimeFunction>
           <UnwindInfo>
             <UnwindInfo xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:xsd="http://www.w3.org/2001/XMLSchema">
+              <Size>8</Size>
               <Version>1</Version>
               <Flags>3</Flags>
               <SizeOfProlog>0</SizeOfProlog>
@@ -209,19 +223,19 @@
               <FrameOffset>0</FrameOffset>
               <UnwindCode />
               <PersonalityRoutineRVA>9303</PersonalityRoutineRVA>
-              <Size>8</Size>
             </UnwindInfo>
           </UnwindInfo>
         </RuntimeFunction>
       </RuntimeFunctions>
     </Method>
-    <Method Index="2">
-      <R2RMethod xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:xsd="http://www.w3.org/2001/XMLSchema" Index="2">
+    <Method Index="1">
+      <R2RMethod xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:xsd="http://www.w3.org/2001/XMLSchema" Index="1">
         <Name>.ctor</Name>
         <SignatureString>GenericFunctions.UserDefinedClass..ctor(Int32)</SignatureString>
         <IsGeneric>false</IsGeneric>
         <DeclaringType>GenericFunctions.UserDefinedClass</DeclaringType>
         <Token>100663298</Token>
+        <Rid>2</Rid>
         <EntryPointRuntimeFunctionId>1</EntryPointRuntimeFunctionId>
       </R2RMethod>
       <GcInfo>
@@ -255,7 +269,7 @@
         </GcInfo>
       </GcInfo>
       <RuntimeFunctions>
-        <RuntimeFunction>
+        <RuntimeFunction Index="1">
           <MethodRid>2</MethodRid>
           <RuntimeFunction xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:xsd="http://www.w3.org/2001/XMLSchema" Index="1">
             <StartAddress>10480</StartAddress>
@@ -265,6 +279,7 @@
           </RuntimeFunction>
           <UnwindInfo>
             <UnwindInfo xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:xsd="http://www.w3.org/2001/XMLSchema">
+              <Size>8</Size>
               <Version>1</Version>
               <Flags>3</Flags>
               <SizeOfProlog>0</SizeOfProlog>
@@ -273,22 +288,22 @@
               <FrameOffset>0</FrameOffset>
               <UnwindCode />
               <PersonalityRoutineRVA>9303</PersonalityRoutineRVA>
-              <Size>8</Size>
             </UnwindInfo>
           </UnwindInfo>
         </RuntimeFunction>
       </RuntimeFunctions>
     </Method>
-    <Method Index="4">
-      <R2RMethod xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:xsd="http://www.w3.org/2001/XMLSchema" Index="4">
+    <Method Index="2">
+      <R2RMethod xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:xsd="http://www.w3.org/2001/XMLSchema" Index="2">
         <Name>Main</Name>
         <SignatureString>GenericFunctions.GenericFunctions.Main(String[])</SignatureString>
         <IsGeneric>false</IsGeneric>
         <DeclaringType>GenericFunctions.GenericFunctions</DeclaringType>
         <Token>100663300</Token>
+        <Rid>4</Rid>
         <EntryPointRuntimeFunctionId>3</EntryPointRuntimeFunctionId>
         <Fixups>
-          <FixupCell>
+          <FixupCell Index="0">
             <TableIndex>2</TableIndex>
             <CellOffset>0</CellOffset>
           </FixupCell>
@@ -329,7 +344,7 @@
         </GcInfo>
       </GcInfo>
       <RuntimeFunctions>
-        <RuntimeFunction>
+        <RuntimeFunction Index="3">
           <MethodRid>4</MethodRid>
           <RuntimeFunction xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:xsd="http://www.w3.org/2001/XMLSchema" Index="3">
             <StartAddress>10512</StartAddress>
@@ -339,6 +354,7 @@
           </RuntimeFunction>
           <UnwindInfo>
             <UnwindInfo xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:xsd="http://www.w3.org/2001/XMLSchema">
+              <Size>12</Size>
               <Version>1</Version>
               <Flags>3</Flags>
               <SizeOfProlog>4</SizeOfProlog>
@@ -356,19 +372,19 @@
                 </UnwindCode>
               </UnwindCode>
               <PersonalityRoutineRVA>609681408</PersonalityRoutineRVA>
-              <Size>12</Size>
             </UnwindInfo>
           </UnwindInfo>
         </RuntimeFunction>
       </RuntimeFunctions>
     </Method>
-    <Method Index="5">
-      <R2RMethod xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:xsd="http://www.w3.org/2001/XMLSchema" Index="5">
+    <Method Index="3">
+      <R2RMethod xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:xsd="http://www.w3.org/2001/XMLSchema" Index="3">
         <Name>.ctor</Name>
         <SignatureString>GenericFunctions.GenericFunctions..ctor()</SignatureString>
         <IsGeneric>false</IsGeneric>
         <DeclaringType>GenericFunctions.GenericFunctions</DeclaringType>
         <Token>100663301</Token>
+        <Rid>5</Rid>
         <EntryPointRuntimeFunctionId>4</EntryPointRuntimeFunctionId>
       </R2RMethod>
       <GcInfo>
@@ -402,7 +418,7 @@
         </GcInfo>
       </GcInfo>
       <RuntimeFunctions>
-        <RuntimeFunction>
+        <RuntimeFunction Index="4">
           <MethodRid>5</MethodRid>
           <RuntimeFunction xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:xsd="http://www.w3.org/2001/XMLSchema" Index="4">
             <StartAddress>10544</StartAddress>
@@ -412,6 +428,7 @@
           </RuntimeFunction>
           <UnwindInfo>
             <UnwindInfo xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:xsd="http://www.w3.org/2001/XMLSchema">
+              <Size>8</Size>
               <Version>1</Version>
               <Flags>3</Flags>
               <SizeOfProlog>0</SizeOfProlog>
@@ -420,19 +437,19 @@
               <FrameOffset>0</FrameOffset>
               <UnwindCode />
               <PersonalityRoutineRVA>9303</PersonalityRoutineRVA>
-              <Size>8</Size>
             </UnwindInfo>
           </UnwindInfo>
         </RuntimeFunction>
       </RuntimeFunctions>
     </Method>
-    <Method Index="3">
-      <R2RMethod xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:xsd="http://www.w3.org/2001/XMLSchema" Index="3">
+    <Method Index="4">
+      <R2RMethod xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:xsd="http://www.w3.org/2001/XMLSchema" Index="4">
         <Name>GenericFunction</Name>
         <SignatureString>GenericFunctions.GenericFunctions.GenericFunction&lt;__Canon, __Canon&gt;(__Canon, __Canon)</SignatureString>
         <IsGeneric>true</IsGeneric>
         <DeclaringType>GenericFunctions.GenericFunctions</DeclaringType>
         <Token>100663299</Token>
+        <Rid>3</Rid>
         <EntryPointRuntimeFunctionId>2</EntryPointRuntimeFunctionId>
       </R2RMethod>
       <GcInfo>
@@ -466,7 +483,7 @@
         </GcInfo>
       </GcInfo>
       <RuntimeFunctions>
-        <RuntimeFunction>
+        <RuntimeFunction Index="2">
           <MethodRid>3</MethodRid>
           <RuntimeFunction xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:xsd="http://www.w3.org/2001/XMLSchema" Index="2">
             <StartAddress>10496</StartAddress>
@@ -476,6 +493,7 @@
           </RuntimeFunction>
           <UnwindInfo>
             <UnwindInfo xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:xsd="http://www.w3.org/2001/XMLSchema">
+              <Size>8</Size>
               <Version>1</Version>
               <Flags>3</Flags>
               <SizeOfProlog>0</SizeOfProlog>
@@ -484,7 +502,6 @@
               <FrameOffset>0</FrameOffset>
               <UnwindCode />
               <PersonalityRoutineRVA>9303</PersonalityRoutineRVA>
-              <Size>8</Size>
             </UnwindInfo>
           </UnwindInfo>
         </RuntimeFunction>
