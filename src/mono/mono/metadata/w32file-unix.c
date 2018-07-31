@@ -2355,11 +2355,8 @@ static gboolean
 CopyFile (const gunichar2 *name, const gunichar2 *dest_name, gboolean fail_if_exists)
 {
 	gchar *utf8_src, *utf8_dest;
-	gint src_fd, dest_fd;
 	struct stat st, dest_st;
 	gboolean ret = TRUE;
-	gint ret_utime;
-	gint syscall_res;
 	
 	if(name==NULL) {
 		mono_trace (G_LOG_LEVEL_DEBUG, MONO_TRACE_IO_LAYER_FILE, "%s: name is NULL", __func__);
@@ -2430,6 +2427,10 @@ CopyFile (const gunichar2 *name, const gunichar2 *dest_name, gboolean fail_if_ex
 
 	return TRUE;
 #else
+	gint src_fd, dest_fd;
+	gint ret_utime;
+	gint syscall_res;
+
 	src_fd = _wapi_open (utf8_src, O_RDONLY, 0);
 	if (src_fd < 0) {
 		_wapi_set_last_path_error_from_errno (NULL, utf8_src);
