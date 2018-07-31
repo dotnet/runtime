@@ -177,42 +177,20 @@ namespace System.Drawing
             if (stream == null)
                 throw new ArgumentNullException(nameof(stream));
 
-            IntPtr imagePtr;
-            int st;
-
-            // Seeking required
-            if (!stream.CanSeek)
-            {
-                byte[] buffer = new byte[256];
-                int index = 0;
-                int count;
-
-                do
-                {
-                    if (buffer.Length < index + 256)
-                    {
-                        byte[] newBuffer = new byte[buffer.Length * 2];
-                        Array.Copy(buffer, newBuffer, buffer.Length);
-                        buffer = newBuffer;
-                    }
-                    count = stream.Read(buffer, index, 256);
-                    index += count;
-                }
-                while (count != 0);
-
-                stream = new MemoryStream(buffer, 0, index);
-            }
-
             // Unix, with libgdiplus
             // We use a custom API for this, because there's no easy way
             // to get the Stream down to libgdiplus.  So, we wrap the stream
             // with a set of delegates.
             GdiPlusStreamHelper sh = new GdiPlusStreamHelper(stream, true);
 
-            st = Gdip.GdipLoadImageFromDelegate_linux(sh.GetHeaderDelegate, sh.GetBytesDelegate,
-                sh.PutBytesDelegate, sh.SeekDelegate, sh.CloseDelegate, sh.SizeDelegate, out imagePtr);
+            int st = Gdip.GdipLoadImageFromDelegate_linux(sh.GetHeaderDelegate, sh.GetBytesDelegate,
+                sh.PutBytesDelegate, sh.SeekDelegate, sh.CloseDelegate, sh.SizeDelegate, out IntPtr imagePtr);
 
-            return st == Gdip.Ok ? imagePtr : IntPtr.Zero;
+            // Since we're just passing to native code the delegates inside the wrapper, we need to keep sh alive
+            // to avoid the object being collected and therefore the delegates would be collected as well.
+            GC.KeepAlive(sh);
+            Gdip.CheckStatus(st);
+            return imagePtr;
         }
 
         // non-static    
@@ -300,7 +278,7 @@ namespace System.Drawing
             return ThumbNail;
         }
 
-        internal ImageCodecInfo findEncoderForFormat(ImageFormat format)
+        internal ImageCodecInfo FindEncoderForFormat(ImageFormat format)
         {
             ImageCodecInfo[] encoders = ImageCodecInfo.GetImageEncoders();
             ImageCodecInfo encoder = null;
@@ -323,11 +301,11 @@ namespace System.Drawing
 
         public void Save(string filename, ImageFormat format)
         {
-            ImageCodecInfo encoder = findEncoderForFormat(format);
+            ImageCodecInfo encoder = FindEncoderForFormat(format);
             if (encoder == null)
             {
                 // second chance
-                encoder = findEncoderForFormat(RawFormat);
+                encoder = FindEncoderForFormat(RawFormat);
                 if (encoder == null)
                 {
                     string msg = string.Format("No codec available for saving format '{0}'.", format.Guid);
@@ -358,7 +336,7 @@ namespace System.Drawing
 
         public void Save(Stream stream, ImageFormat format)
         {
-            ImageCodecInfo encoder = findEncoderForFormat(format);
+            ImageCodecInfo encoder = FindEncoderForFormat(format);
 
             if (encoder == null)
                 throw new ArgumentException("No codec available for format:" + format.Guid);
@@ -382,6 +360,10 @@ namespace System.Drawing
                 GdiPlusStreamHelper sh = new GdiPlusStreamHelper(stream, false);
                 st = Gdip.GdipSaveImageToDelegate_linux(nativeImage, sh.GetBytesDelegate, sh.PutBytesDelegate,
                     sh.SeekDelegate, sh.CloseDelegate, sh.SizeDelegate, ref guid, nativeEncoderParams);
+
+                // Since we're just passing to native code the delegates inside the wrapper, we need to keep sh alive
+                // to avoid the object being collected and therefore the delegates would be collected as well.
+                GC.KeepAlive(sh);
             }
             finally
             {
