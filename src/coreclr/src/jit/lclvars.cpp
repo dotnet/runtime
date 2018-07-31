@@ -3643,6 +3643,26 @@ var_types LclVarDsc::lvaArgType()
 //
 // Notes:
 //     Invoked via the MarkLocalVarsVisitor
+//
+//     Primarily increments the regular and weighted local var ref
+//     counts for any local referred to directly by tree.
+//
+//     Also:
+//
+//     Accounts for implicit references to frame list root for
+//     pinvokes that will be expanded later.
+//
+//     Determines if locals of TYP_BOOL can safely be considered
+//     to hold only 0 or 1 or may have a broader range of true values.
+//
+//     Does some setup work for assertion prop, noting locals that are
+//     eligible for assertion prop, single defs, and tracking which blocks
+//     hold uses.
+//
+//     In checked builds:
+//
+//     Verifies that local accesses are consistenly typed.
+//     Verifies that casts remain in bounds.
 
 void Compiler::lvaMarkLclRefs(GenTree* tree, BasicBlock* block, GenTreeStmt* stmt)
 {
@@ -3869,10 +3889,15 @@ void Compiler::SetVolatileHint(LclVarDsc* varDsc)
     varDsc->lvVolatileHint = true;
 }
 
-/*****************************************************************************
- *
- *  Update the local variable reference counts for one basic block
- */
+//------------------------------------------------------------------------
+// lvaMarkLocalVars: update local var ref counts for IR in a basic block
+//
+// Arguments:
+//    block - the block in question
+//
+// Notes:
+//    Invokes lvaMarkLclRefs on each tree node for each
+//    statement in the block.
 
 void Compiler::lvaMarkLocalVars(BasicBlock* block)
 {
@@ -3911,37 +3936,29 @@ void Compiler::lvaMarkLocalVars(BasicBlock* block)
     }
 }
 
-/*****************************************************************************
- *
- *  Create the local variable table and compute local variable reference
- *  counts.
- */
+//------------------------------------------------------------------------
+// lvaMarkLocalVars: enable normal ref counting, compute initial counts, sort locals table
+//
+// Notes:
+//    Now behaves differently in minopts / debug. Instead of actually inspecting
+//    the IR and counting references, the jit assumes all locals are referenced
+//    and does not sort the locals table.
+//
+//    Also, when optimizing, lays the groundwork for assertion prop and more.
+//    See details in lvaMarkLclRefs.
 
 void Compiler::lvaMarkLocalVars()
 {
 
-#ifdef DEBUG
-    if (verbose)
-    {
-        printf("\n*************** In lvaMarkLocalVars()");
-    }
-#endif
+    JITDUMP("\n*************** In lvaMarkLocalVars()");
 
-    /* If there is a call to an unmanaged target, we already grabbed a
-       local slot for the current thread control block.
-     */
-
+    // If we have direct pinvokes, verify the frame list root local was set up properly
     if (info.compCallUnmanaged != 0)
     {
         assert((!opts.ShouldUsePInvokeHelpers()) || (info.compLvFrameListRoot == BAD_VAR_NUM));
         if (!opts.ShouldUsePInvokeHelpers())
         {
             noway_assert(info.compLvFrameListRoot >= info.compLocalsCount && info.compLvFrameListRoot < lvaCount);
-
-            lvaTable[info.compLvFrameListRoot].lvType = TYP_I_IMPL;
-
-            // This local has implicit prolog and epilog references
-            lvaTable[info.compLvFrameListRoot].lvImplicitlyReferenced = 1;
         }
     }
 
@@ -3997,47 +4014,68 @@ void Compiler::lvaMarkLocalVars()
         }
     }
 
-    BasicBlock* block;
+    // Ref counting is now enabled normally.
+    lvaRefCountState = RCS_NORMAL;
 
-#ifndef DEBUG
-    // Assign slot numbers to all variables.
-    // If compiler generated local variables, slot numbers will be
-    // invalid (out of range of info.compVarScopes).
+#if defined(DEBUG)
+    const bool setSlotNumbers = true;
+#else
+    const bool setSlotNumbers = opts.compScopeInfo && (info.compVarScopesCount > 0);
+#endif // defined(DEBUG)
 
-    // Also have to check if variable was not reallocated to another
-    // slot in which case we have to register the original slot #.
+    unsigned   lclNum = 0;
+    LclVarDsc* varDsc = nullptr;
 
-    // We don't need to do this for IL, but this keeps lvSlotNum consistent.
-
-    if (opts.compScopeInfo && (info.compVarScopesCount > 0))
-#endif
+    // Fast path for minopts and debug codegen.
+    //
+    // Mark all locals as implicitly referenced and untracked.
+    // Don't bother sorting.
+    if (opts.MinOpts() || opts.compDbgCode)
     {
-        unsigned   lclNum;
-        LclVarDsc* varDsc;
+        for (lclNum = 0, varDsc = lvaTable; lclNum < lvaCount; lclNum++, varDsc++)
+        {
+            // Using lvImplicitlyReferenced here ensures that we can't
+            // accidentally make locals be unreferenced later by decrementing
+            // the ref count to zero.
+            //
+            // If, in minopts/debug, we really want to allow locals to become
+            // unreferenced later, we'll have to explicitly clear this bit.
+            varDsc->setLvRefCnt(0);
+            varDsc->setLvRefCntWtd(0);
+            varDsc->lvImplicitlyReferenced = 1;
+            varDsc->lvTracked              = 0;
 
+            if (setSlotNumbers)
+            {
+                varDsc->lvSlotNum = lclNum;
+            }
+
+            // Assert that it's ok to bypass the type repair logic in lvaMarkLclRefs
+            assert((varDsc->lvType != TYP_UNDEF) && (varDsc->lvType != TYP_VOID) && (varDsc->lvType != TYP_UNKNOWN));
+        }
+
+        lvaCurEpoch++;
+        lvaTrackedCount             = 0;
+        lvaTrackedCountInSizeTUnits = 0;
+        return;
+    }
+
+    // Slower path for optimization.
+    if (setSlotNumbers)
+    {
         for (lclNum = 0, varDsc = lvaTable; lclNum < lvaCount; lclNum++, varDsc++)
         {
             varDsc->lvSlotNum = lclNum;
         }
     }
 
-    // Ref counting is now enabled normally.
-    lvaRefCountState = RCS_NORMAL;
-
-    /* Mark all local variable references */
-    for (block = fgFirstBB; block; block = block->bbNext)
+    // Mark all explicit local variable references
+    for (BasicBlock* block = fgFirstBB; block; block = block->bbNext)
     {
         lvaMarkLocalVars(block);
     }
 
-    /*  For incoming register arguments, if there are references in the body
-     *  then we will have to copy them to the final home in the prolog
-     *  This counts as an extra reference with a weight of 2
-     */
-
-    unsigned   lclNum;
-    LclVarDsc* varDsc;
-
+    // Bump ref counts for implicit prolog references
     for (lclNum = 0, varDsc = lvaTable; lclNum < lvaCount; lclNum++, varDsc++)
     {
         if (lclNum >= info.compArgsCount)
@@ -4054,11 +4092,10 @@ void Compiler::lvaMarkLocalVars()
     }
 
 #if ASSERTION_PROP
-    if (!opts.MinOpts() && !opts.compDbgCode)
-    {
-        // Note: optAddCopies() depends on lvaRefBlks, which is set in lvaMarkLocalVars(BasicBlock*), called above.
-        optAddCopies();
-    }
+    assert(!opts.MinOpts() && !opts.compDbgCode);
+
+    // Note: optAddCopies() depends on lvaRefBlks, which is set in lvaMarkLocalVars(BasicBlock*), called above.
+    optAddCopies();
 #endif
 
     if (lvaKeepAliveAndReportThis())

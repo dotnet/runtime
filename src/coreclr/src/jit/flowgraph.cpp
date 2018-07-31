@@ -8890,7 +8890,10 @@ void Compiler::fgAddInternal()
         // TCB variable if we're not using them.
         if (!opts.ShouldUsePInvokeHelpers())
         {
-            info.compLvFrameListRoot = lvaGrabTemp(false DEBUGARG("Pinvoke FrameListRoot"));
+            info.compLvFrameListRoot           = lvaGrabTemp(false DEBUGARG("Pinvoke FrameListRoot"));
+            LclVarDsc* rootVarDsc              = &lvaTable[info.compLvFrameListRoot];
+            rootVarDsc->lvType                 = TYP_I_IMPL;
+            rootVarDsc->lvImplicitlyReferenced = 1;
         }
 
         lvaInlinedPInvokeFrameVar = lvaGrabTempWithImplicitUse(false DEBUGARG("Pinvoke FrameVar"));
