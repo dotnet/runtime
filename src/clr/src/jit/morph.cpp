@@ -8162,11 +8162,12 @@ GenTree* Compiler::fgAssignRecursiveCallArgToCallerParam(GenTree*       arg,
             // The argument is not assigned to a temp. We need to create a new temp and insert an assignment.
             // TODO: we can avoid a temp assignment if we can prove that the argument tree
             // doesn't involve any caller parameters.
-            unsigned tmpNum        = lvaGrabTemp(true DEBUGARG("arg temp"));
-            GenTree* tempSrc       = arg;
-            GenTree* tempDest      = gtNewLclvNode(tmpNum, tempSrc->gtType);
-            GenTree* tmpAssignNode = gtNewAssignNode(tempDest, tempSrc);
-            GenTree* tmpAssignStmt = gtNewStmt(tmpAssignNode, callILOffset);
+            unsigned tmpNum         = lvaGrabTemp(true DEBUGARG("arg temp"));
+            lvaTable[tmpNum].lvType = arg->gtType;
+            GenTree* tempSrc        = arg;
+            GenTree* tempDest       = gtNewLclvNode(tmpNum, tempSrc->gtType);
+            GenTree* tmpAssignNode  = gtNewAssignNode(tempDest, tempSrc);
+            GenTree* tmpAssignStmt  = gtNewStmt(tmpAssignNode, callILOffset);
             fgInsertStmtBefore(block, tmpAssignmentInsertionPoint, tmpAssignStmt);
             argInTemp = gtNewLclvNode(tmpNum, tempSrc->gtType);
         }
