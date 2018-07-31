@@ -51,7 +51,7 @@ The order in which each layer's deps.json is processed is:
 
 Note that for an app, its probing path comes *after* the framework's, so intuitively it would appear that "framework wins" in collisions. However, because the app's deps.json is parsed *before* the framework's deps.json and because the app will likely reference an OOB package that the framework doesn't (because a framework, at least Microsoft.NETCore.App, has its own metapackage and does not reference OOB packages), the framework probing path never matches up in step 4 for the app's deps.json package\assembly entry, so it goes to the next probing path which is the app's and because the package matches the "app wins".
 
-## Proposed changes for 2.1
+## Changes for 2.1+
 Probe the app location before the framework's. This means flip (3) and (4) under **Probe Ordering** above and treat the app as the highest-level framework. The reason is that there may be frameworks that use OOB packages like apps, and we want to have "app wins" in non roll-forward cases.
 
 Replace step 3 under **Algorithm** above with:
