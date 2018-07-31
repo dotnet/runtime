@@ -17,7 +17,6 @@
 #include <aclapi.h>
 #include <hosting.h>
 
-#include "ipcmanagerinterface.h"
 #include "eemessagebox.h"
 #include "genericstackprobe.h"
 
@@ -196,46 +195,6 @@ HANDLE OpenWin32EventOrThrow(
     RETURN h;
 }
 
-//-----------------------------------------------------------------------------
-// Holder for IPC SecurityAttribute
-//-----------------------------------------------------------------------------
-IPCHostSecurityAttributeHolder::IPCHostSecurityAttributeHolder(DWORD pid)
-{
-    CONTRACTL
-    {
-        SO_INTOLERANT;
-        THROWS;
-        GC_NOTRIGGER;
-    }
-    CONTRACTL_END;
-
-    m_pSA = NULL;
-
-#ifdef FEATURE_IPCMAN
-    HRESULT hr = CCLRSecurityAttributeManager::GetHostSecurityAttributes(&m_pSA);
-    IfFailThrow(hr);
-
-    _ASSERTE(m_pSA != NULL);
-#endif // FEATURE_IPCMAN
-}
-
-SECURITY_ATTRIBUTES * IPCHostSecurityAttributeHolder::GetHostSA()
-{
-    LIMITED_METHOD_CONTRACT;
-    return m_pSA;
-}
-
-
-IPCHostSecurityAttributeHolder::~IPCHostSecurityAttributeHolder()
-{
-    LIMITED_METHOD_CONTRACT;
-
-#ifdef FEATURE_IPCMAN
-    CCLRSecurityAttributeManager::DestroyHostSecurityAttributes(m_pSA);
-#endif // FEATURE_IPCMAN
-}
-
-
 //---------------------------------------------------------------------------------------
 //
 // Init
@@ -333,11 +292,6 @@ HRESULT DebuggerIPCControlBlock::Init(
     return S_OK;
 }
 
-#ifdef FEATURE_IPCMAN
-extern CCLRSecurityAttributeManager s_CLRSecurityAttributeManager;
-#endif // FEATURE_IPCMAN
-
-
 void DebuggerRCThread::WatchForStragglers(void)
 {
     WRAPPER_NO_CONTRACT;
@@ -421,14 +375,12 @@ HRESULT DebuggerRCThread::Init(void)
     }
 #else //FEATURE_DBGIPC_TRANSPORT_VM 
 
-    IPCHostSecurityAttributeHolder sa(GetCurrentProcessId());
-
     // Create the events that the thread will need to receive events
     // from the out of process piece on the right side.
     // We will not fail out if CreateEvent fails for RSEA or RSER. Because
     // the worst case is that debugger cannot attach to debuggee.
     //
-    HandleHolder rightSideEventAvailable(WszCreateEvent(sa.GetHostSA(), (BOOL) kAutoResetEvent, FALSE, NULL));
+    HandleHolder rightSideEventAvailable(WszCreateEvent(NULL, (BOOL) kAutoResetEvent, FALSE, NULL));
 
     // Security fix:
     // We need to check the last error to see if the event was precreated or not
@@ -441,7 +393,7 @@ HRESULT DebuggerRCThread::Init(void)
         rightSideEventAvailable.Clear();
     }
 
-    HandleHolder rightSideEventRead(WszCreateEvent(sa.GetHostSA(), (BOOL) kAutoResetEvent, FALSE, NULL));
+    HandleHolder rightSideEventRead(WszCreateEvent(NULL, (BOOL) kAutoResetEvent, FALSE, NULL));
 
     // Security fix:
     // We need to check the last error to see if the event was precreated or not

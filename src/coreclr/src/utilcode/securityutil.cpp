@@ -10,7 +10,6 @@
 
 #include "securitywrapper.h"
 
-// This is defined in ipcmanagerinterface.h, but including that is problematic at the moment...
 // These are the right that we will give to the global section and global events used
 // in communicating between debugger and debugee
 //

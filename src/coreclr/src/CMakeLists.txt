@@ -83,10 +83,6 @@ add_subdirectory(unwinder)
 add_subdirectory(ildasm)
 add_subdirectory(ilasm)
 
-if(WIN32)
-  add_subdirectory(ipcman)
-endif(WIN32)
-
 if(CLR_CMAKE_PLATFORM_UNIX)
     add_subdirectory(palrt)
 endif(CLR_CMAKE_PLATFORM_UNIX)
