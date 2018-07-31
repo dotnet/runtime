@@ -203,9 +203,6 @@ enum
     APPX_FLAGS_INITIALIZED =        0x01,
 
     APPX_FLAGS_APPX_MODEL =         0x02,
-    APPX_FLAGS_APPX_DESIGN_MODE =   0x04,
-    APPX_FLAGS_APPX_MASK =          APPX_FLAGS_APPX_MODEL |
-                                    APPX_FLAGS_APPX_DESIGN_MODE,
 };
 
 // static
@@ -220,9 +217,6 @@ INT32 QCALLTYPE AppDomainNative::GetAppXFlags()
     if (AppX::IsAppXProcess())
     {
         flags |= APPX_FLAGS_APPX_MODEL;
-
-        if (AppX::IsAppXDesignMode())
-            flags |= APPX_FLAGS_APPX_DESIGN_MODE;
     }
 
     END_QCALL;
