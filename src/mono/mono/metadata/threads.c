@@ -3763,7 +3763,7 @@ get_thread_dump (MonoThreadInfo *info, gpointer ud)
 
 typedef struct {
 	int nthreads, max_threads;
-	MonoInternalThread **threads;
+	guint32 *threads;
 } CollectThreadsUserData;
 
 static void
@@ -3773,7 +3773,7 @@ collect_thread (gpointer key, gpointer value, gpointer user)
 	MonoInternalThread *thread = (MonoInternalThread *)value;
 
 	if (ud->nthreads < ud->max_threads)
-		ud->threads [ud->nthreads ++] = thread;
+		ud->threads [ud->nthreads ++] = mono_gchandle_new (&thread->obj, TRUE);
 }
 
 /*
@@ -3781,7 +3781,7 @@ collect_thread (gpointer key, gpointer value, gpointer user)
  * THREADS should be an array allocated on the stack.
  */
 static int
-collect_threads (MonoInternalThread **thread_array, int max_threads)
+collect_threads (guint32 *thread_handles, int max_threads)
 {
 	CollectThreadsUserData ud;
 
@@ -3791,7 +3791,7 @@ collect_threads (MonoInternalThread **thread_array, int max_threads)
 
 	memset (&ud, 0, sizeof (ud));
 	/* This array contains refs, but its on the stack, so its ok */
-	ud.threads = thread_array;
+	ud.threads = thread_handles;
 	ud.max_threads = max_threads;
 
 	mono_threads_lock ();
@@ -3889,7 +3889,7 @@ mono_threads_perform_thread_dump (void)
 {
 	FILE* output_file = NULL;
 	ThreadDumpUserData ud;
-	MonoInternalThread *thread_array [128];
+	guint32 thread_array [128];
 	int tindex, nthreads;
 
 	if (!thread_dump_requested)
@@ -3920,8 +3920,13 @@ mono_threads_perform_thread_dump (void)
 	ud.frames = g_new0 (MonoStackFrameInfo, 256);
 	ud.max_frames = 256;
 
-	for (tindex = 0; tindex < nthreads; ++tindex)
-		dump_thread (thread_array [tindex], &ud, output_file != NULL ? output_file : stdout);
+	for (tindex = 0; tindex < nthreads; ++tindex) {
+		guint32 handle = thread_array [tindex];
+		MonoInternalThread *thread = (MonoInternalThread *) mono_gchandle_get_target (handle);
+		dump_thread (thread, &ud, output_file != NULL ? output_file : stdout);
+		mono_gchandle_free (handle);
+	}
+
 	if (output_file != NULL) {
 		fclose (output_file);
 	}
@@ -3936,7 +3941,7 @@ mono_threads_get_thread_dump (MonoArray **out_threads, MonoArray **out_stack_fra
 {
 
 	ThreadDumpUserData ud;
-	MonoInternalThread *thread_array [128];
+	guint32 thread_array [128];
 	MonoDomain *domain = mono_domain_get ();
 	MonoDebugSourceLocation *location;
 	int tindex, nthreads;
@@ -3959,7 +3964,9 @@ mono_threads_get_thread_dump (MonoArray **out_threads, MonoArray **out_stack_fra
 	goto_if_nok (error, leave);
 
 	for (tindex = 0; tindex < nthreads; ++tindex) {
-		MonoInternalThread *thread = thread_array [tindex];
+		guint32 handle = thread_array [tindex];
+		MonoInternalThread *thread = (MonoInternalThread *) mono_gchandle_get_target (handle);
+
 		MonoArray *thread_frames;
 		int i;
 
@@ -4015,6 +4022,8 @@ mono_threads_get_thread_dump (MonoArray **out_threads, MonoArray **out_stack_fra
 			}
 			mono_array_setref (thread_frames, i, sf);
 		}
+
+		mono_gchandle_free (handle);
 	}
 
 leave:
@@ -5912,31 +5921,41 @@ static size_t num_threads_summarized = 0;
 
 // mono_thread_internal_current doesn't always work in signal
 // handler contexts. This does.
-static MonoInternalThread *
-find_missing_thread (MonoNativeThreadId id)
+static gboolean
+find_missing_thread (MonoNativeThreadId id, guint32 *out)
 {
-	MonoInternalThread *thread_array [128];
+	guint32 thread_array [128];
 	int nthreads = collect_threads (thread_array, 128);
+	gboolean success = FALSE;
 
 	for (int i=0; i < nthreads; i++) {
-		MonoNativeThreadId tid = thread_get_tid (thread_array [i]);
-		if (tid == id)
-			return thread_array [i];
+		guint32 handle = thread_array [i];
+		MonoInternalThread *thread = (MonoInternalThread *) mono_gchandle_get_target (handle);
+		MonoNativeThreadId tid = thread_get_tid (thread);
+		if (tid == id) {
+			*out = handle;
+			success = TRUE;
+		} else {
+			mono_gchandle_free (handle);
+		}
 	}
-	return NULL;
+
+	return success;
 }
 
 static gboolean
 mono_threads_summarize_one (MonoThreadSummary *out, MonoContext *ctx)
 {
 	MonoDomain *domain;
+	guint32 handle;
 
 	MonoNativeThreadId current = mono_native_thread_id_get();
-	MonoInternalThread *thread = find_missing_thread (current);
 
 	// Not one of ours
-	if (!thread)
+	if (!find_missing_thread (current, &handle))
 		return FALSE;
+
+	MonoInternalThread *thread = (MonoInternalThread *) mono_gchandle_get_target (handle);
 
 	memset (out, 0, sizeof (*out));
 	domain = thread->obj.vtable->domain;
@@ -5954,6 +5973,8 @@ mono_threads_summarize_one (MonoThreadSummary *out, MonoContext *ctx)
 	/*g_assert (out->num_frames > 0);*/
 	/*if (out->num_frames == 0)*/
 		/*return FALSE;*/
+
+	mono_gchandle_free (handle);
 
 	return TRUE;
 }
@@ -6010,7 +6031,7 @@ mono_threads_summarize (MonoContext *ctx, gchar **out, MonoStackHash *hashes)
 		//
 		// Thankfully the memory behind these pointers is always leaked,
 		// we never have dangling pointers.
-		MonoInternalThread *thread_array [128];
+		guint32 thread_array [128];
 		int nthreads = collect_threads (thread_array, 128);
 
 		if (nthreads == 0)
@@ -6021,12 +6042,15 @@ mono_threads_summarize (MonoContext *ctx, gchar **out, MonoStackHash *hashes)
 		sigaddset(&sigset, SIGTERM);
 
 		for (int i=0; i < nthreads; i++) {
-			MonoNativeThreadId tid = thread_get_tid (thread_array [i]);
+			guint32 handle = thread_array [i];
+			MonoInternalThread *thread = (MonoInternalThread *) mono_gchandle_get_target (handle);
+
+			MonoNativeThreadId tid = thread_get_tid (thread);
 			if (current == tid)
 				continue;
 
 			// Request every other thread dumps themselves before us
-			MonoThreadInfo *info = thread_array [i]->thread_info;
+			MonoThreadInfo *info = thread->thread_info;
 
 			mono_memory_barrier ();
 			size_t old_num_summarized = num_threads_summarized;
@@ -6054,6 +6078,10 @@ mono_threads_summarize (MonoContext *ctx, gchar **out, MonoStackHash *hashes)
 				MOSTLY_ASYNC_SAFE_PRINTF("Waiting for signalled thread %zx to collect stacktrace. Status: %s\n", tid, name);
 				count--;
 			}
+
+			// Free the gchandle; we're done waiting on this one, no matter how the waiting went.
+			mono_gchandle_free (handle);
+
 			if (count == 0) {
 				// After timeout
 				// Thread may have been in lock or something, may have died
