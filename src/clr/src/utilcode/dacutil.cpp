@@ -13,9 +13,6 @@
 #include <winwrap.h>
 #include <utilcode.h>
 #include <dacprivate.h>
-#ifdef FEATURE_IPCMAN
-#include <ipcmanagerinterface.h>
-#endif // FEATURE_IPCMAN
 
 //----------------------------------------------------------------------------
 //

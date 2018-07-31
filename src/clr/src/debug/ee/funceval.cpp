@@ -15,7 +15,6 @@
 
 #include "stdafx.h"
 #include "debugdebugger.h"
-#include "ipcmanagerinterface.h"
 #include "../inc/common.h"
 #include "perflog.h"
 #include "eeconfig.h" // This is here even for retail & free builds...

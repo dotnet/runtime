@@ -149,11 +149,6 @@ ETW::CEtwTracer * g_pEtwTracer = NULL;
 
 #endif // #ifndef DACCESS_COMPILE
 
-#ifdef FEATURE_IPCMAN
-// support for IPCManager 
-GPTR_IMPL(IPCWriterInterface, g_pIPCManagerInterface);
-#endif // FEATURE_IPCMAN
-
 //
 // Support for the COM+ Debugger.
 //
