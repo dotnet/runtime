@@ -94,7 +94,8 @@ namespace R2RDump
         internal override void DumpSection(R2RSection section, XmlNode parentNode)
         {
             XmlNode sectionNode = XmlDocument.CreateNode("element", "Section", "");
-            AddIndexAttribute(sectionNode, $"{section.Type}");
+            AddXMLAttribute(sectionNode, "Index", $"{section.Type}");
+
             parentNode.AppendChild(sectionNode);
             Serialize(section, sectionNode);
 
@@ -112,7 +113,7 @@ namespace R2RDump
         {
             XmlNode methodsNode = XmlDocument.CreateNode("element", "Methods", "");
             _rootNode.AppendChild(methodsNode);
-            AddXMLNode("Count", _r2r.R2RMethods.Count.ToString(), methodsNode);
+            AddXMLAttribute(methodsNode, "Count", _r2r.R2RMethods.Count.ToString());
             foreach (R2RMethod method in _r2r.R2RMethods)
             {
                 DumpMethod(method, methodsNode);
@@ -125,7 +126,7 @@ namespace R2RDump
         internal override void DumpMethod(R2RMethod method, XmlNode parentNode)
         {
             XmlNode methodNode = XmlDocument.CreateNode("element", "Method", "");
-            AddIndexAttribute(methodNode, $"{method.Rid}");
+            AddXMLAttribute(methodNode, "Index", $"{method.Index}");
             parentNode.AppendChild(methodNode);
             Serialize(method, methodNode);
 
@@ -162,6 +163,7 @@ namespace R2RDump
         internal override void DumpRuntimeFunction(RuntimeFunction rtf, XmlNode parentNode)
         {
             XmlNode rtfNode = XmlDocument.CreateNode("element", "RuntimeFunction", "");
+            AddXMLAttribute(rtfNode, "Index", $"{rtf.Id}");
             parentNode.AppendChild(rtfNode);
             AddXMLNode("MethodRid", rtf.Method.Rid.ToString(), rtfNode);
             Serialize(rtf, rtfNode);
@@ -269,25 +271,29 @@ namespace R2RDump
                 case R2RSection.SectionType.READYTORUN_SECTION_IMPORT_SECTIONS:
                     foreach (R2RImportSection importSection in _r2r.ImportSections)
                     {
-                        Serialize(importSection, contentsNode);
+                        XmlNode importSectionsNode = XmlDocument.CreateNode("element", "ImportSection", "");
+                        AddXMLAttribute(importSectionsNode, "Index", $"{importSection.Index}");
+                        contentsNode.AppendChild(importSectionsNode);
+
+                        Serialize(importSection, importSectionsNode);
                         if (_raw && importSection.Entries.Count != 0)
                         {
                             if (importSection.SectionRVA != 0)
                             {
-                                DumpBytes(importSection.SectionRVA, (uint)importSection.SectionSize, contentsNode, "SectionBytes");
+                                DumpBytes(importSection.SectionRVA, (uint)importSection.SectionSize, importSectionsNode, "SectionBytes");
                             }
                             if (importSection.SignatureRVA != 0)
                             {
-                                DumpBytes(importSection.SignatureRVA, (uint)importSection.Entries.Count * sizeof(int), contentsNode, "SignatureBytes");
+                                DumpBytes(importSection.SignatureRVA, (uint)importSection.Entries.Count * sizeof(int), importSectionsNode, "SignatureBytes");
                             }
                             if (importSection.AuxiliaryDataRVA != 0)
                             {
-                                DumpBytes(importSection.AuxiliaryDataRVA, (uint)importSection.AuxiliaryData.Size, contentsNode, "AuxiliaryDataBytes");
+                                DumpBytes(importSection.AuxiliaryDataRVA, (uint)importSection.AuxiliaryData.Size, importSectionsNode, "AuxiliaryDataBytes");
                             }
                         }
                         foreach (R2RImportSection.ImportSectionEntry entry in importSection.Entries)
                         {
-                            Serialize(entry, contentsNode);
+                            Serialize(entry, importSectionsNode);
                         }
                     }
                     break;
@@ -298,8 +304,8 @@ namespace R2RDump
         {
             XmlNode queryNode = XmlDocument.CreateNode("element", title, "");
             _rootNode.AppendChild(queryNode);
-            AddXMLNode("Query", q, queryNode);
-            AddXMLNode("Count", count.ToString(), queryNode);
+            AddXMLAttribute(queryNode, "Query", q);
+            AddXMLAttribute(queryNode, "Count", count.ToString());
             return queryNode;
         }
 
@@ -318,17 +324,17 @@ namespace R2RDump
             XmlNode node = XmlDocument.CreateNode("element", name, "");
             if (!index.Equals(""))
             {
-                AddIndexAttribute(node, index);
+                AddXMLAttribute(node, "Index", index);
             }
             parentNode.AppendChild(node);
             node.InnerText = contents;
             return node;
         }
 
-        private void AddIndexAttribute(XmlNode node, string index)
+        private void AddXMLAttribute(XmlNode node, string name, string value)
         {
-            XmlAttribute attr = XmlDocument.CreateAttribute("Index");
-            attr.Value = index;
+            XmlAttribute attr = XmlDocument.CreateAttribute(name);
+            attr.Value = value;
             node.Attributes.SetNamedItem(attr);
         }
     }

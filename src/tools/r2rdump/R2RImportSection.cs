@@ -33,13 +33,15 @@ namespace R2RDump
 
         public struct ImportSectionEntry
         {
+            [XmlAttribute("Index")]
+            public int Index { get; set; }
             public int StartOffset { get; set; }
             public long Section { get; set; }
-            [XmlAttribute("Index")]
             public uint SignatureRVA { get; set; }
             public byte[] SignatureSample { get; set; }
-            public ImportSectionEntry(int startOffset, long section, uint signatureRVA, byte[] signatureSample)
+            public ImportSectionEntry(int index, int startOffset, long section, uint signatureRVA, byte[] signatureSample)
             {
+                Index = index;
                 StartOffset = startOffset;
                 Section = section;
                 SignatureRVA = signatureRVA;
@@ -59,10 +61,12 @@ namespace R2RDump
             }
         }
 
+        [XmlAttribute("Index")]
+        public int Index { get; set; }
+
         /// <summary>
         /// Section containing values to be fixed up
         /// </summary>
-        [XmlAttribute("Index")]
         public int SectionRVA { get; set; }
         public int SectionSize { get; set; }
 
@@ -93,8 +97,9 @@ namespace R2RDump
         public int AuxiliaryDataRVA { get; set; }
         public GcInfo AuxiliaryData { get; set; }
 
-        public R2RImportSection(byte[] image, int rva, int size, CorCompileImportFlags flags, byte type, byte entrySize, int signatureRVA, List<ImportSectionEntry> entries, int auxDataRVA, int auxDataOffset, Machine machine, ushort majorVersion)
+        public R2RImportSection(int index, byte[] image, int rva, int size, CorCompileImportFlags flags, byte type, byte entrySize, int signatureRVA, List<ImportSectionEntry> entries, int auxDataRVA, int auxDataOffset, Machine machine, ushort majorVersion)
         {
+            Index = index;
             SectionRVA = rva;
             SectionSize = size;
             Flags = flags;
