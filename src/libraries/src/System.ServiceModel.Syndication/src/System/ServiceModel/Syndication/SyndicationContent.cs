@@ -89,12 +89,13 @@ namespace System.ServiceModel.Syndication
         {
             if (writer == null)
             {
-                throw DiagnosticUtility.ExceptionUtility.ThrowHelperArgumentNull(nameof(writer));
+                throw new ArgumentNullException(nameof(writer));
             }
             if (string.IsNullOrEmpty(outerElementName))
             {
                 throw new ArgumentException(SR.OuterElementNameNotSpecified, nameof(outerElementName));
             }
+
             writer.WriteStartElement(outerElementName, outerElementNamespace);
             writer.WriteAttributeString(Atom10Constants.TypeTag, string.Empty, this.Type);
             if (_attributeExtensions != null)
@@ -120,8 +121,9 @@ namespace System.ServiceModel.Syndication
         {
             if (source == null)
             {
-                throw DiagnosticUtility.ExceptionUtility.ThrowHelperArgumentNull(nameof(source));
+                throw new ArgumentNullException(nameof(source));
             }
+
             if (source._attributeExtensions != null)
             {
                 foreach (XmlQualifiedName key in source._attributeExtensions.Keys)

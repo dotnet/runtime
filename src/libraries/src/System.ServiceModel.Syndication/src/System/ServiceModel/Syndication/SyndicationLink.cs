@@ -31,13 +31,14 @@ namespace System.ServiceModel.Syndication
         {
             if (length < 0)
             {
-                throw DiagnosticUtility.ExceptionUtility.ThrowHelperError(new ArgumentOutOfRangeException(nameof(length)));
+                throw new ArgumentOutOfRangeException(nameof(length));
             }
             _baseUri = null;
             _uri = uri;
             _title = title;
             _relationshipType = relationshipType;
             _mediaType = mediaType;
+
             _length = length;
         }
 
@@ -50,8 +51,9 @@ namespace System.ServiceModel.Syndication
         {
             if (source == null)
             {
-                throw DiagnosticUtility.ExceptionUtility.ThrowHelperArgumentNull(nameof(source));
+                throw new ArgumentNullException(nameof(source));
             }
+
             _length = source._length;
             _mediaType = source._mediaType;
             _relationshipType = source._relationshipType;
@@ -84,8 +86,9 @@ namespace System.ServiceModel.Syndication
             {
                 if (value < 0)
                 {
-                    throw DiagnosticUtility.ExceptionUtility.ThrowHelperError(new ArgumentOutOfRangeException(nameof(value)));
+                    throw new ArgumentOutOfRangeException(nameof(value));
                 }
+
                 _length = value;
             }
         }
