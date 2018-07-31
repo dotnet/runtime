@@ -89,8 +89,9 @@ namespace System.ServiceModel.Syndication
         {
             if (source == null)
             {
-                throw DiagnosticUtility.ExceptionUtility.ThrowHelperArgumentNull(nameof(source));
+                throw new ArgumentNullException(nameof(source));
             }
+
             _authors = FeedUtils.ClonePersons(source._authors);
             _categories = FeedUtils.CloneCategories(source._categories);
             _contributors = FeedUtils.ClonePersons(source._contributors);
@@ -119,8 +120,9 @@ namespace System.ServiceModel.Syndication
             {
                 if (cloneItems)
                 {
-                    throw DiagnosticUtility.ExceptionUtility.ThrowHelperError(new InvalidOperationException(SR.Format(SR.UnbufferedItemsCannotBeCloned)));
+                    throw new InvalidOperationException(SR.UnbufferedItemsCannotBeCloned);
                 }
+
                 _items = source._items;
             }
         }
@@ -210,22 +212,8 @@ namespace System.ServiceModel.Syndication
 
         public IEnumerable<SyndicationItem> Items
         {
-            get
-            {
-                if (_items == null)
-                {
-                    _items = new NullNotAllowedCollection<SyndicationItem>();
-                }
-                return _items;
-            }
-            set
-            {
-                if (value == null)
-                {
-                    throw DiagnosticUtility.ExceptionUtility.ThrowHelperArgumentNull(nameof(value));
-                }
-                _items = value;
-            }
+            get =>_items ?? (_items = new NullNotAllowedCollection<SyndicationItem>());
+            set => _items = value ?? throw new ArgumentNullException(nameof(value));
         }
 
         public string Language
@@ -549,8 +537,9 @@ namespace System.ServiceModel.Syndication
         {
             if (reader == null)
             {
-                throw DiagnosticUtility.ExceptionUtility.ThrowHelperArgumentNull(nameof(reader));
+                throw new ArgumentNullException(nameof(reader));
             }
+
             Atom10FeedFormatter<TSyndicationFeed> atomSerializer = new Atom10FeedFormatter<TSyndicationFeed>();
             if (atomSerializer.CanRead(reader))
             {
@@ -563,7 +552,8 @@ namespace System.ServiceModel.Syndication
                 rssSerializer.ReadFrom(reader);
                 return rssSerializer.Feed as TSyndicationFeed;
             }
-            throw DiagnosticUtility.ExceptionUtility.ThrowHelperError(new XmlException(SR.Format(SR.UnknownFeedXml, reader.LocalName, reader.NamespaceURI)));
+
+            throw new XmlException(SR.Format(SR.UnknownFeedXml, reader.LocalName, reader.NamespaceURI));
         }
 
         public virtual SyndicationFeed Clone(bool cloneItems)

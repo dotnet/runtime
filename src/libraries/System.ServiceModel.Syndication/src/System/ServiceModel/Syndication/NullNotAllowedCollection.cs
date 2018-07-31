@@ -18,8 +18,9 @@ namespace System.ServiceModel.Syndication
         {
             if (item == null)
             {
-                throw DiagnosticUtility.ExceptionUtility.ThrowHelperArgumentNull(nameof(item));
+                throw new ArgumentNullException(nameof(item));
             }
+
             base.InsertItem(index, item);
         }
 
@@ -27,8 +28,9 @@ namespace System.ServiceModel.Syndication
         {
             if (item == null)
             {
-                throw DiagnosticUtility.ExceptionUtility.ThrowHelperArgumentNull(nameof(item));
+                throw new ArgumentNullException(nameof(item));
             }
+
             base.SetItem(index, item);
         }
     }
