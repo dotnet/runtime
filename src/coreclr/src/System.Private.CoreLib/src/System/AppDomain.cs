@@ -126,9 +126,6 @@ namespace System
             APPX_FLAGS_INITIALIZED = 0x01,
 
             APPX_FLAGS_APPX_MODEL = 0x02,
-            APPX_FLAGS_APPX_DESIGN_MODE = 0x04,
-            APPX_FLAGS_APPX_MASK = APPX_FLAGS_APPX_MODEL |
-                                            APPX_FLAGS_APPX_DESIGN_MODE,
         }
 
         private static APPX_FLAGS Flags
@@ -199,19 +196,6 @@ namespace System
         {
 #if FEATURE_APPX
             return (Flags & APPX_FLAGS.APPX_FLAGS_APPX_MODEL) != 0;
-#else
-            return false;
-#endif
-        }
-
-        /// <summary>
-        ///     Returns the setting of the AppXDevMode config switch.
-        /// </summary>
-        [Pure]
-        internal static bool IsAppXDesignMode()
-        {
-#if FEATURE_APPX
-            return (Flags & APPX_FLAGS.APPX_FLAGS_APPX_MASK) == (APPX_FLAGS.APPX_FLAGS_APPX_MODEL | APPX_FLAGS.APPX_FLAGS_APPX_DESIGN_MODE);
 #else
             return false;
 #endif
