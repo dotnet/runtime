@@ -883,25 +883,18 @@ namespace System.Diagnostics.Tracing
             {
                 if (data is System.Enum)
                 {
-                    Type underlyingType = Enum.GetUnderlyingType(data.GetType());
-                    if (underlyingType == typeof(int))
+                    try
                     {
-#if !ES_BUILD_PCL
-                        data = ((IConvertible)data).ToInt32(null);
-#else
-                        data = (int)data;
-#endif
+                        Type underlyingType = Enum.GetUnderlyingType(data.GetType());
+                        if (underlyingType == typeof(ulong))
+                            data = (ulong)data;
+                        else if (underlyingType == typeof(long))
+                            data = (long)data;
+                        else
+                            data = (int)Convert.ToInt64(data);  // This handles all int/uint or below (we treat them like 32 bit ints)   
                         goto Again;
                     }
-                    else if (underlyingType == typeof(long))
-                    {
-#if !ES_BUILD_PCL
-                        data = ((IConvertible)data).ToInt64(null);
-#else
-                        data = (long)data;
-#endif
-                        goto Again;
-                    }
+                    catch { }   // On wierd cases (e.g. enums of type double), give up and for compat simply tostring.  
                 }
 
                 // To our eyes, everything else is a just a string
