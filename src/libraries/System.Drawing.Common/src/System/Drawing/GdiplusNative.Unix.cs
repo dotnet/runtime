@@ -1090,10 +1090,10 @@ namespace System.Drawing
     }
 
     // These are unix-only
-    internal delegate int StreamGetHeaderDelegate(IntPtr buf, int bufsz);
-    internal delegate int StreamGetBytesDelegate(IntPtr buf, int bufsz, bool peek);
+    internal unsafe delegate int StreamGetHeaderDelegate(byte* buf, int bufsz);
+    internal unsafe delegate int StreamGetBytesDelegate(byte* buf, int bufsz, bool peek);
     internal delegate long StreamSeekDelegate(int offset, int whence);
-    internal delegate int StreamPutBytesDelegate(IntPtr buf, int bufsz);
+    internal unsafe delegate int StreamPutBytesDelegate(byte* buf, int bufsz);
     internal delegate void StreamCloseDelegate();
     internal delegate long StreamSizeDelegate();
 }
