@@ -838,26 +838,6 @@ namespace System.Resources
                         if (reswFilename == null)
                             reswFilename = string.Empty;
 
-                        WindowsRuntimeResourceManagerBase WRRM = null;
-                        bool bWRRM_Initialized = false;
-
-                        if (AppDomain.IsAppXDesignMode())
-                        {
-                            WRRM = GetWinRTResourceManager();
-                            try
-                            {
-                                PRIExceptionInfo exceptionInfo; // If the exception info is filled in, we will ignore it.
-                                bWRRM_Initialized = WRRM.Initialize(resourcesAssembly.Location, reswFilename, out exceptionInfo);
-                                bUsingSatelliteAssembliesUnderAppX = !bWRRM_Initialized;
-                            }
-                            catch (Exception e)
-                            {
-                                bUsingSatelliteAssembliesUnderAppX = true;
-                                if (e.IsTransient)
-                                    throw;
-                            }
-                        }
-
                         if (!bUsingSatelliteAssembliesUnderAppX)
                         {
                             _bUsingModernResourceManagement = !ShouldUseSatelliteAssemblyResourceLookupUnderAppX(resourcesAssembly);
@@ -865,9 +845,6 @@ namespace System.Resources
                             if (_bUsingModernResourceManagement)
                             {
                                 // Only now are we certain that we need the PRI file.
-
-                                // Note that if IsAppXDesignMode is false, we haven't checked if the PRI file exists.
-                                // This is by design. We will find out in the call to WindowsRuntimeResourceManager.Initialize below.
 
                                 // At this point it is important NOT to set _bUsingModernResourceManagement to false
                                 // if the PRI file does not exist because we are now certain we need to load PRI
@@ -877,66 +854,57 @@ namespace System.Resources
                                 // the MissingManifestResourceException from this function, but from GetString. See the
                                 // comment below on the reason for this.
 
-                                if (WRRM != null && bWRRM_Initialized)
+                                _WinRTResourceManager = GetWinRTResourceManager();
+
+                                try
                                 {
-                                    // Reuse the one successfully created earlier
-                                    _WinRTResourceManager = WRRM;
-                                    _PRIonAppXInitialized = true;
+                                    _PRIonAppXInitialized = _WinRTResourceManager.Initialize(resourcesAssembly.Location, reswFilename, out _PRIExceptionInfo);
+                                    // Note that _PRIExceptionInfo might be null - this is OK.
+                                    // In that case we will just throw the generic
+                                    // MissingManifestResource_NoPRIresources exception.
+                                    // See the implementation of GetString for more details.
                                 }
-                                else
+                                // We would like to be able to throw a MissingManifestResourceException here if PRI resources
+                                // could not be loaded for a recognized reason. However, the ResourceManager constructors
+                                // that call SetAppXConfiguration are not documented as throwing MissingManifestResourceException,
+                                // and since they are part of the portable profile, we cannot start throwing a new exception type
+                                // as that would break existing portable libraries. Hence we must save the exception information
+                                // now and throw the exception on the first call to GetString.
+                                catch (FileNotFoundException)
                                 {
-                                    _WinRTResourceManager = GetWinRTResourceManager();
-
-                                    try
-                                    {
-                                        _PRIonAppXInitialized = _WinRTResourceManager.Initialize(resourcesAssembly.Location, reswFilename, out _PRIExceptionInfo);
-                                        // Note that _PRIExceptionInfo might be null - this is OK.
-                                        // In that case we will just throw the generic
-                                        // MissingManifestResource_NoPRIresources exception.
-                                        // See the implementation of GetString for more details.
-                                    }
-                                    // We would like to be able to throw a MissingManifestResourceException here if PRI resources
-                                    // could not be loaded for a recognized reason. However, the ResourceManager constructors
-                                    // that call SetAppXConfiguration are not documented as throwing MissingManifestResourceException,
-                                    // and since they are part of the portable profile, we cannot start throwing a new exception type
-                                    // as that would break existing portable libraries. Hence we must save the exception information
-                                    // now and throw the exception on the first call to GetString.
-                                    catch (FileNotFoundException)
-                                    {
-                                        // We will throw MissingManifestResource_NoPRIresources from GetString
-                                        // when we see that _PRIonAppXInitialized is false.
-                                    }
-                                    catch (Exception e)
-                                    {
-                                        // ERROR_MRM_MAP_NOT_FOUND can be thrown by the call to ResourceManager.get_AllResourceMaps
-                                        // in WindowsRuntimeResourceManager.Initialize.
-                                        // In this case _PRIExceptionInfo is now null and we will just throw the generic
-                                        // MissingManifestResource_NoPRIresources exception.
-                                        // See the implementation of GetString for more details.
-                                        if (e.HResult != HResults.ERROR_MRM_MAP_NOT_FOUND)
-                                            throw; // Unexpected exception code. Bubble it up to the caller.
-                                    }
-
-                                    if (!_PRIonAppXInitialized)
-                                    {
-                                        _bUsingModernResourceManagement = false;
-                                    }
-                                    // Allow all other exception types to bubble up to the caller.
-
-                                    // Yes, this causes us to potentially throw exception types that are not documented.
-
-                                    // Ultimately the tradeoff is the following:
-                                    // -We could ignore unknown exceptions or rethrow them as inner exceptions
-                                    // of exceptions that the ResourceManager class is already documented as throwing.
-                                    // This would allow existing portable libraries to gracefully recover if they don't care
-                                    // too much about the ResourceManager object they are using. However it could
-                                    // mask potentially fatal errors that we are not aware of, such as a disk drive failing.
-
-
-                                    // The alternative, which we chose, is to throw unknown exceptions. This may tear
-                                    // down the process if the portable library and app don't expect this exception type.
-                                    // On the other hand, this won't mask potentially fatal errors we don't know about.
+                                    // We will throw MissingManifestResource_NoPRIresources from GetString
+                                    // when we see that _PRIonAppXInitialized is false.
                                 }
+                                catch (Exception e)
+                                {
+                                    // ERROR_MRM_MAP_NOT_FOUND can be thrown by the call to ResourceManager.get_AllResourceMaps
+                                    // in WindowsRuntimeResourceManager.Initialize.
+                                    // In this case _PRIExceptionInfo is now null and we will just throw the generic
+                                    // MissingManifestResource_NoPRIresources exception.
+                                    // See the implementation of GetString for more details.
+                                    if (e.HResult != HResults.ERROR_MRM_MAP_NOT_FOUND)
+                                        throw; // Unexpected exception code. Bubble it up to the caller.
+                                }
+
+                                if (!_PRIonAppXInitialized)
+                                {
+                                    _bUsingModernResourceManagement = false;
+                                }
+                                // Allow all other exception types to bubble up to the caller.
+
+                                // Yes, this causes us to potentially throw exception types that are not documented.
+
+                                // Ultimately the tradeoff is the following:
+                                // -We could ignore unknown exceptions or rethrow them as inner exceptions
+                                // of exceptions that the ResourceManager class is already documented as throwing.
+                                // This would allow existing portable libraries to gracefully recover if they don't care
+                                // too much about the ResourceManager object they are using. However it could
+                                // mask potentially fatal errors that we are not aware of, such as a disk drive failing.
+
+
+                                // The alternative, which we chose, is to throw unknown exceptions. This may tear
+                                // down the process if the portable library and app don't expect this exception type.
+                                // On the other hand, this won't mask potentially fatal errors we don't know about.
                             }
                         }
                     }
