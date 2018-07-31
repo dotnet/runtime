@@ -12,7 +12,6 @@
 
 #include "stdafx.h"
 #include "debugdebugger.h"
-#include "ipcmanagerinterface.h"
 #include "../inc/common.h"
 #include "perflog.h"
 #include "eeconfig.h" // This is here even for retail & free builds...
@@ -44,9 +43,6 @@
 #include "../../vm/rejit.h"
 
 #include "threadsuspend.h"
-
-class CCLRSecurityAttributeManager;
-extern CCLRSecurityAttributeManager s_CLRSecurityAttributeManager;
 
 
 #ifdef DEBUGGING_SUPPORTED
@@ -2038,11 +2034,7 @@ HRESULT Debugger::Startup(void)
         InitializeHijackFunctionAddress();
 
         // Also initialize the AppDomainEnumerationIPCBlock
-    #if !defined(FEATURE_IPCMAN) || defined(FEATURE_DBGIPC_TRANSPORT_VM)
         m_pAppDomainCB = new (nothrow) AppDomainEnumerationIPCBlock();
-    #else
-        m_pAppDomainCB = g_pIPCManagerInterface->GetAppDomainBlock();
-    #endif 
 
         if (m_pAppDomainCB == NULL)
         {

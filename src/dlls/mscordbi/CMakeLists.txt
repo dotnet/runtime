@@ -81,7 +81,6 @@ set(COREDBI_LIBRARIES
 
 if(WIN32)
     list(APPEND COREDBI_LIBRARIES
-        ipcmanager-staticcrt
         mdhotdata-staticcrt
         mdwinmd_dbi
         kernel32.lib
