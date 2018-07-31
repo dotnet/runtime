@@ -234,41 +234,6 @@ public:
 extern CCLRErrorReportingManager g_CLRErrorReportingManager;
 #endif // defined(FEATURE_WINDOWSPHONE)
 
-#ifdef FEATURE_IPCMAN
-// @TODO:: a-meicht
-// consolidate the following class with DebuggerManager.
-//
-class CCLRSecurityAttributeManager
-{
-public:
-
-    // Set ACL on shared section, events, and process
-    STDMETHODIMP SetDACL(PACL pacl);
-
-    // Returning the current ACL that CLR is using
-    STDMETHODIMP GetDACL(PACL *pacl);
-
-    static void ProcessInit();
-    static void ProcessCleanUp();
-
-    // retrieving Host security attribute setting. If host does not set it, default to
-    // our default policy.
-    static HRESULT GetHostSecurityAttributes(SECURITY_ATTRIBUTES **ppSA);
-    static void DestroyHostSecurityAttributes(SECURITY_ATTRIBUTES *pSA);
-
-    static CrstStatic          m_hostSAMutex;
-
-private:
-    static PACL                m_pACL;
-
-    // Security attributes cached for the current process.
-    static SECURITY_ATTRIBUTES m_hostSA;
-    static SECURITY_DESCRIPTOR m_hostSD;
-
-    static HRESULT CopyACL(PACL pAclOriginal, PACL ppAclNew);
-};
-#endif // FEATURE_IPCMAN
-
 class CorHost2 :
     public CorRuntimeHostBase
 #ifndef FEATURE_PAL    

@@ -3781,30 +3781,6 @@ HANDLE OpenWin32EventOrThrow(
     LPCWSTR lpName
 );
 
-// @todo - should this be moved into where we defined IPCWriterInterface?
-// Holder for security Attribute
-// Old code:
-// hr = g_pIPCManagerInterface->GetSecurityAttributes(GetCurrentProcessId(), &pSA);
-// .... foo(pSa)...
-// g_pIPCManagerInterface->DestroySecurityAttributes(pSA);
-//
-// new code:
-// {
-//  SAHolder x(g_pIPCManagerInterface, GetCurrentProcessId());
-//  .... foo(x.GetSA()) ..
-// } // calls dtor
-class IPCHostSecurityAttributeHolder
-{
-public:
-    IPCHostSecurityAttributeHolder(DWORD pid);
-    ~IPCHostSecurityAttributeHolder();
-
-    SECURITY_ATTRIBUTES * GetHostSA();
-
-protected:
-    SECURITY_ATTRIBUTES *m_pSA; // the resource we're protecting.
-};
-
 #define SENDIPCEVENT_RAW_BEGIN_EX(pDbgLockHolder, gcxStmt)      \
   {                                                             \
     Debugger::DebuggerLockHolder *__pDbgLockHolder = pDbgLockHolder; \

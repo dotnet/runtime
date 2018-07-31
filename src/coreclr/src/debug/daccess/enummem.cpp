@@ -18,7 +18,6 @@
 
 #include "typestring.h"
 #include "daccess.h"
-#include "ipcmanagerinterface.h"
 #include "binder.h"
 #include "win32threadpool.h"
 
@@ -171,26 +170,6 @@ HRESULT ClrDataAccess::EnumMemCLRHeapCrticalStatic(IN CLRDataEnumMemoryFlags fla
 #ifdef FEATURE_SVR_GC
     CATCH_ALL_EXCEPT_RETHROW_COR_E_OPERATIONCANCELLED( EnumSvrGlobalMemoryRegions(flags); );
 #endif
-
-#ifdef FEATURE_IPCMAN
-    //
-    // Write Out IPC Blocks
-    //
-    EX_TRY
-    {
-        g_pIPCManagerInterface.EnumMem();
-        if (g_pIPCManagerInterface.IsValid())
-        {
-            // write out the instance
-            DacEnumHostDPtrMem(g_pIPCManagerInterface);
-
-            // Then write out the public and private block
-            ReportMem(PTR_TO_TADDR(g_pIPCManagerInterface->GetBlockStart()), g_pIPCManagerInterface->GetBlockSize());
-            ReportMem(PTR_TO_TADDR(g_pIPCManagerInterface->GetBlockTableStart()), g_pIPCManagerInterface->GetBlockTableSize());
-        }
-    }
-    EX_CATCH_RETHROW_ONLY_COR_E_OPERATIONCANCELLED
-#endif // FEATURE_IPCMAN
 
     m_dumpStats.m_cbClrHeapStatics = m_cbMemoryReported - cbMemoryReported;
 

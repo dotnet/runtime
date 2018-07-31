@@ -35,10 +35,6 @@
 #include <cordbpriv.h>
 #include <dbgipcevents.h>
 
-#if !defined(FEATURE_DBGIPC_TRANSPORT_DI)
-#include <ipcmanagerinterface.h>
-#endif // !FEATURE_DBGIPC_TRANSPORT_DI
-
 #include "common.h"
 #include "primitives.h"
 

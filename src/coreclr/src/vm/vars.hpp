@@ -85,7 +85,6 @@ class MethodDesc;
 class SyncBlockCache;
 class SyncTableEntry;
 class ThreadStore;
-class IPCWriterInterface;
 namespace ETW { class CEtwTracer; };
 class DebugInterface;
 class DebugInfoManager;
@@ -437,12 +436,6 @@ GPTR_DECL(SyncTableEntry, g_pSyncTable);
 typedef DPTR(RCWCleanupList) PTR_RCWCleanupList;
 GPTR_DECL(RCWCleanupList,g_pRCWCleanupList);
 #endif // FEATURE_COMINTEROP
-
-#ifdef FEATURE_IPCMAN
-// support for IPCManager
-typedef DPTR(IPCWriterInterface) PTR_IPCWriterInterface;
-GPTR_DECL(IPCWriterInterface,  g_pIPCManagerInterface);
-#endif // FEATURE_IPCMAN
 
 // support for Event Tracing for Windows (ETW)
 EXTERN ETW::CEtwTracer* g_pEtwTracer;
