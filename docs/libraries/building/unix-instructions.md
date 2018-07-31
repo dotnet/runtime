@@ -56,9 +56,13 @@ Ubuntu 16.10 and Ubuntu 17.04 will require libicu57.
 
 `sudo apt-get install libunwind8 libicu55 curl`
 
-Ubuntu 18 will also need compatibility OpenSSL 1.0.x
+For Ubuntu 18.04, you will also need to replace libicu52 with libicu60 and install libssl1.0-dev_1.0.2n-1ubuntu5.1_amd64.deb with dpkg-deb.
 
-`sudo apt-get install libunwind8 libicu60 libssl1.0-dev curl`
+```sh
+sudo apt-get install libunwind8 libicu60 curl
+apt-get download libssl1.0-dev
+sudo dpkg-deb -X libssl1.0-dev_1.0.2n-1ubuntu5.1_amd64.deb /
+```
 
 In addition to the above packages, the runtime versions of the packages listed
 in the native section should also be installed (this happens automatically on
