@@ -6,7 +6,7 @@ namespace MultipleRuntimeFunctions
 {
     class MultipleRuntimeFunctions
     {
-        static void Main(string[] args)
+        static void MethodWithMultipleRuntimeFunctions()
         {
             try
             {
@@ -16,6 +16,11 @@ namespace MultipleRuntimeFunctions
             {
 
             }
+        }
+
+        static void Main(string[] args)
+        {
+            MethodWithMultipleRuntimeFunctions();
         }
     }
 }

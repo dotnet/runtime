@@ -107,6 +107,12 @@ namespace R2RDump
         MethodDefinition _methodDef;
 
         /// <summary>
+        /// An unique index for the method
+        /// </summary>
+        [XmlAttribute("Index")]
+        public int Index { get; set; }
+
+        /// <summary>
         /// The name of the method
         /// </summary>
         public string Name { get; set; }
@@ -133,7 +139,6 @@ namespace R2RDump
         /// <summary>
         /// The row id of the method
         /// </summary>
-        [XmlAttribute("Index")]
         public uint Rid { get; set; }
 
         /// <summary>
@@ -196,8 +201,9 @@ namespace R2RDump
         /// <summary>
         /// Extracts the method signature from the metadata by rid
         /// </summary>
-        public R2RMethod(MetadataReader mdReader, uint rid, int entryPointId, GenericElementTypes[] instanceArgs, uint[] tok, FixupCell[] fixups)
+        public R2RMethod(int index, MetadataReader mdReader, uint rid, int entryPointId, GenericElementTypes[] instanceArgs, uint[] tok, FixupCell[] fixups)
         {
+            Index = index;
             Token = _mdtMethodDef | rid;
             Rid = rid;
             EntryPointRuntimeFunctionId = entryPointId;
