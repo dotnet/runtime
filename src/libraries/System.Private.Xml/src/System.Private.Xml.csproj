@@ -740,6 +740,7 @@
     <Compile Include="$(CommonPath)\System\LocalAppContext.cs" />
     <Compile Include="System\Xml\Core\LocalAppContextSwitches.cs" />
     <Compile Include="$(CommonPath)\System\CSharpHelpers.cs" />
+    <Compile Include="$(CommonPath)\System\Runtime\CompilerServices\RemovableFeatureAttribute.cs" />
   </ItemGroup>
   <ItemGroup Condition="'$(TargetsWindows)'=='true'">
     <Compile Include="System\Xml\Xsl\Runtime\XmlCollation.Windows.cs" />
