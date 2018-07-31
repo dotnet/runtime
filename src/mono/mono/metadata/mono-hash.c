@@ -53,6 +53,9 @@ struct _MonoGHashTable {
 	const char *msg;
 };
 
+MonoGHashTable *
+mono_g_hash_table_new_type_internal (GHashFunc hash_func, GEqualFunc key_equal_func, MonoGHashGCType type, MonoGCRootSource source, void *key, const char *msg);
+
 #if UNUSED
 static gboolean
 test_prime (int x)
@@ -141,6 +144,18 @@ static inline int mono_g_hash_table_find_slot (MonoGHashTable *hash, const MonoO
 MonoGHashTable *
 mono_g_hash_table_new_type (GHashFunc hash_func, GEqualFunc key_equal_func, MonoGHashGCType type, MonoGCRootSource source, void *key, const char *msg)
 {
+	MonoGHashTable *result;
+	MONO_ENTER_GC_UNSAFE;
+	result = mono_g_hash_table_new_type_internal (hash_func, key_equal_func, type, source, key, msg);
+	MONO_EXIT_GC_UNSAFE;
+	return result;
+}
+
+
+MonoGHashTable *
+mono_g_hash_table_new_type_internal (GHashFunc hash_func, GEqualFunc key_equal_func, MonoGHashGCType type, MonoGCRootSource source, void *key, const char *msg)
+{
+	MONO_REQ_GC_UNSAFE_MODE;
 	MonoGHashTable *hash;
 
 	if (!hash_func)
@@ -434,6 +449,7 @@ mono_g_hash_table_destroy (MonoGHashTable *hash)
 static void
 mono_g_hash_table_insert_replace (MonoGHashTable *hash, gpointer key, gpointer value, gboolean replace)
 {
+	MONO_REQ_GC_UNSAFE_MODE;
 	int slot;
 	g_return_if_fail (hash != NULL);
 
@@ -464,7 +480,9 @@ mono_g_hash_table_insert_replace (MonoGHashTable *hash, gpointer key, gpointer v
 void
 mono_g_hash_table_insert (MonoGHashTable *h, gpointer k, gpointer v)
 {
+	MONO_ENTER_GC_UNSAFE;
 	mono_g_hash_table_insert_replace (h, k, v, FALSE);
+	MONO_EXIT_GC_UNSAFE;
 }
 
 /**

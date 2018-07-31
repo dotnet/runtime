@@ -2078,8 +2078,8 @@ foreach_override (gpointer key, gpointer value, gpointer user_data) {
 	MonoClass *override_class = mono_method_get_class (override);
 	
 	printf ("  Method '%s.%s:%s' has override '%s.%s:%s'\n",
-			mono_class_get_namespace (method_class), mono_class_get_name (method_class), mono_method_get_name (method),
-			mono_class_get_namespace (override_class), mono_class_get_name (override_class), mono_method_get_name (override));
+			m_class_get_name_space (method_class), m_class_get_name (method_class), mono_method_get_name (method),
+			m_class_get_name_space (override_class), m_class_get_name (override_class), mono_method_get_name (override));
 }
 static void
 print_overrides (GHashTable *override_map, const char *message) {
@@ -3810,7 +3810,7 @@ mono_class_layout_fields (MonoClass *klass, int base_instance_size, int packing_
 			gpointer iter = NULL;
 			guint32 first_field_idx = mono_class_get_first_field_idx (p);
 
-			while ((field = mono_class_get_fields (p, &iter))) {
+			while ((field = mono_class_get_fields_internal (p, &iter))) {
 				guint32 field_idx = first_field_idx + (field - p->fields);
 				if (MONO_TYPE_IS_REFERENCE (field->type) && mono_assembly_is_weak_field (p->image, field_idx + 1)) {
 					has_weak_fields = TRUE;

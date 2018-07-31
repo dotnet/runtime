@@ -4188,7 +4188,11 @@ mono_class_get_image (MonoClass *klass)
 MonoClass*
 mono_class_get_element_class (MonoClass *klass)
 {
-	return m_class_get_element_class (klass);
+	MonoClass *result;
+	MONO_ENTER_GC_UNSAFE;
+	result = m_class_get_element_class (klass);
+	MONO_EXIT_GC_UNSAFE;
+	return result;
 }
 
 /**
@@ -4203,7 +4207,11 @@ mono_class_get_element_class (MonoClass *klass)
 gboolean
 mono_class_is_valuetype (MonoClass *klass)
 {
-	return m_class_is_valuetype (klass);
+	gboolean result;
+	MONO_ENTER_GC_UNSAFE;
+	result = m_class_is_valuetype (klass);
+	MONO_EXIT_GC_UNSAFE;
+	return result;
 }
 
 /**
@@ -4217,7 +4225,11 @@ mono_class_is_valuetype (MonoClass *klass)
 gboolean
 mono_class_is_enum (MonoClass *klass)
 {
-	return m_class_is_enumtype (klass);
+	gboolean result;
+	MONO_ENTER_GC_UNSAFE;
+	result = m_class_is_enumtype (klass);
+	MONO_EXIT_GC_UNSAFE;
+	return result;
 }
 
 /**
@@ -4251,7 +4263,11 @@ mono_class_enum_basetype (MonoClass *klass)
 MonoClass*
 mono_class_get_parent (MonoClass *klass)
 {
-	return m_class_get_parent (klass);
+	MonoClass *result;
+	MONO_ENTER_GC_UNSAFE;
+	result = m_class_get_parent (klass);
+	MONO_EXIT_GC_UNSAFE;
+	return result;
 }
 
 /**
@@ -4291,7 +4307,11 @@ mono_class_get_rank (MonoClass *klass)
 const char*
 mono_class_get_name (MonoClass *klass)
 {
-	return m_class_get_name (klass);
+	const char *result;
+	MONO_ENTER_GC_UNSAFE;
+	result = m_class_get_name (klass);
+	MONO_EXIT_GC_UNSAFE;
+	return result;
 }
 
 /**
@@ -4303,7 +4323,10 @@ mono_class_get_name (MonoClass *klass)
 const char*
 mono_class_get_namespace (MonoClass *klass)
 {
-	return m_class_get_name_space (klass);
+	const char *result;
+	MONO_ENTER_GC_UNSAFE;
+	result = m_class_get_name_space (klass);
+	MONO_EXIT_GC_UNSAFE;
 }
 
 /**
@@ -4416,6 +4439,16 @@ mono_class_num_events (MonoClass *klass)
  */
 MonoClassField*
 mono_class_get_fields (MonoClass* klass, gpointer *iter)
+{
+	MonoClassField *result;
+	MONO_ENTER_GC_UNSAFE;
+	result = mono_class_get_fields_internal (klass, iter);
+	MONO_EXIT_GC_UNSAFE;
+	return result;
+}
+
+MonoClassField*
+mono_class_get_fields_internal (MonoClass *klass, gpointer *iter)
 {
 	MonoClassField* field;
 	if (!iter)
@@ -4669,7 +4702,11 @@ mono_class_get_nested_types (MonoClass* klass, gpointer *iter)
 mono_bool
 mono_class_is_delegate (MonoClass *klass)
 {
-	return m_class_is_delegate (klass);
+	mono_bool result;
+	MONO_ENTER_GC_UNSAFE;
+	result = m_class_is_delegate (klass);
+	MONO_EXIT_GC_UNSAFE;
+	return result;
 }
 
 /**
@@ -5671,7 +5708,7 @@ mono_class_is_valid_enum (MonoClass *klass)
 	if (!mono_class_is_auto_layout (klass))
 		return FALSE;
 
-	while ((field = mono_class_get_fields (klass, &iter))) {
+	while ((field = mono_class_get_fields_internal (klass, &iter))) {
 		if (!(field->type->attrs & FIELD_ATTRIBUTE_STATIC)) {
 			if (found_base_field)
 				return FALSE;

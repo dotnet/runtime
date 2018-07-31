@@ -402,7 +402,7 @@ collect_field_info_nested (MonoClass *klass, GArray *fields_array, int offset, g
 		MonoClassField *field;
 
 		iter = NULL;
-		while ((field = mono_class_get_fields (klass, &iter))) {
+		while ((field = mono_class_get_fields_internal (klass, &iter))) {
 			if (field->type->attrs & FIELD_ATTRIBUTE_STATIC)
 				continue;
 			if (MONO_TYPE_ISSTRUCT (field->type)) {

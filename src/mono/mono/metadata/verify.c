@@ -6207,9 +6207,9 @@ verify_class_for_overlapping_reference_fields (MonoClass *klass)
 
 
 	/*We must check for stuff overlapping reference fields.
-	  The outer loop uses mono_class_get_fields to ensure that MonoClass:fields get inited.
+	  The outer loop uses mono_class_get_fields_internal to ensure that MonoClass:fields get inited.
 	*/
-	while ((field = mono_class_get_fields (klass, &iter))) {
+	while ((field = mono_class_get_fields_internal (klass, &iter))) {
 		int fieldEnd = get_field_end (field);
 		gboolean is_valuetype = !MONO_TYPE_IS_REFERENCE (field->type);
 		++i;
@@ -6261,7 +6261,7 @@ verify_class_fields (MonoClass *klass)
 	if (mono_class_is_gtd (klass))
 		context = &mono_class_get_generic_container (klass)->context;
 
-	while ((field = mono_class_get_fields (klass, &iter)) != NULL) {
+	while ((field = mono_class_get_fields_internal (klass, &iter)) != NULL) {
 		if (!mono_type_is_valid_type_in_context (field->type, context)) {
 			g_hash_table_destroy (unique_fields);
 			return FALSE;
@@ -6306,7 +6306,7 @@ verify_valuetype_layout_with_target (MonoClass *klass, MonoClass *target_class)
 	if ((type >= MONO_TYPE_BOOLEAN && type <= MONO_TYPE_R8) || (type >= MONO_TYPE_I && type <= MONO_TYPE_U))
 		return TRUE;
 
-	while ((field = mono_class_get_fields (klass, &iter)) != NULL) {
+	while ((field = mono_class_get_fields_internal (klass, &iter)) != NULL) {
 		if (!field->type)
 			return FALSE;
 

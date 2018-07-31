@@ -4227,7 +4227,7 @@ mono_reflection_resolve_object (MonoImage *image, MonoObject *obj, MonoClass **h
 			MonoClassField *inflated_field;
 			gpointer iter = NULL;
 			mono_metadata_free_type (inflated);
-			while ((inflated_field = mono_class_get_fields (klass, &iter))) {
+			while ((inflated_field = mono_class_get_fields_internal (klass, &iter))) {
 				if (!strcmp (field->name, inflated_field->name))
 					break;
 			}

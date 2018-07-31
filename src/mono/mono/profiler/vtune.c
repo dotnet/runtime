@@ -84,7 +84,7 @@ method_jit_done (MonoProfiler *prof, MonoMethod *method, MonoJitInfo* jinfo)
 	MonoClass *klass = mono_method_get_class (method);
 	char *signature = mono_signature_get_desc (mono_method_signature (method), TRUE);
 	char *name = g_strdup_printf ("%s(%s)", mono_method_get_name (method), signature);
-	char *classname = g_strdup_printf ("%s%s%s", mono_class_get_namespace (klass), mono_class_get_namespace (klass)[0] != 0 ? "::" : "", mono_class_get_name (klass));
+	char *classname = g_strdup_printf ("%s%s%s", m_class_get_name_space (klass), m_class_get_name_space (klass)[0] != 0 ? "::" : "", m_class_get_name (klass));
 	gpointer code_start = mono_jit_info_get_code_start (jinfo);
 	int code_size = mono_jit_info_get_code_size (jinfo);
 

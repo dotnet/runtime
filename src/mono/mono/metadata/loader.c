@@ -78,6 +78,10 @@ static MonoNativeTlsKey loader_lock_nest_id;
 static void dllmap_cleanup (void);
 static void cached_module_cleanup(void);
 
+static void dllmap_insert_global (const char *dll, const char *func, const char *tdll, const char *tfunc);
+static void dllmap_insert_image (MonoImage *assembly, const char *dll, const char *func, const char *tdll, const char *tfun);
+
+
 /* Class lazy loading functions */
 GENERATE_GET_CLASS_WITH_CACHE (appdomain_unloaded_exception, "System", "AppDomainUnloadedException")
 
@@ -1051,11 +1055,22 @@ mono_dllmap_lookup (MonoImage *assembly, const char *dll, const char* func, cons
 void
 mono_dllmap_insert (MonoImage *assembly, const char *dll, const char *func, const char *tdll, const char *tfunc)
 {
+	if (!assembly)
+		dllmap_insert_global (dll, func, tdll, tfunc);
+	else {
+		MONO_ENTER_GC_UNSAFE;
+		dllmap_insert_image (assembly, dll, func, tdll, tfunc);
+		MONO_EXIT_GC_UNSAFE;
+	}
+}
+
+void
+dllmap_insert_global (const char *dll, const char *func, const char *tdll, const char *tfunc)
+{
 	MonoDllMap *entry;
 
-	mono_loader_init ();
+		mono_loader_init ();
 
-	if (!assembly) {
 		entry = (MonoDllMap *)g_malloc0 (sizeof (MonoDllMap));
 		entry->dll = dll? g_strdup (dll): NULL;
 		entry->target = tdll? g_strdup (tdll): NULL;
@@ -1066,7 +1081,16 @@ mono_dllmap_insert (MonoImage *assembly, const char *dll, const char *func, cons
 		entry->next = global_dll_map;
 		global_dll_map = entry;
 		global_loader_data_unlock ();
-	} else {
+}
+
+void
+dllmap_insert_image (MonoImage *assembly, const char *dll, const char *func, const char *tdll, const char *tfunc)
+{
+	MonoDllMap *entry;
+	g_assert (assembly != NULL);
+
+		mono_loader_init ();
+
 		entry = (MonoDllMap *)mono_image_alloc0 (assembly, sizeof (MonoDllMap));
 		entry->dll = dll? mono_image_strdup (assembly, dll): NULL;
 		entry->target = tdll? mono_image_strdup (assembly, tdll): NULL;
@@ -1077,7 +1101,6 @@ mono_dllmap_insert (MonoImage *assembly, const char *dll, const char *func, cons
 		entry->next = assembly->dll_map;
 		assembly->dll_map = entry;
 		mono_image_unlock (assembly);
-	}
 }
 
 static void

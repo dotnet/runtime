@@ -898,7 +898,7 @@ handle_enum:
 			break;
 		}
 		case MONO_TYPE_VALUETYPE:
-			if (mono_class_is_enum (sig->params [i]->data.klass)) {
+			if (m_class_is_enumtype (sig->params [i]->data.klass)) {
 				type = mono_class_enum_basetype (sig->params [i]->data.klass)->type;
 				goto handle_enum;
 			} else {

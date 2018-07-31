@@ -687,7 +687,7 @@ inflate_info (MonoRuntimeGenericContextInfoTemplate *oti, MonoGenericContext *co
 
 		mono_metadata_free_type (inflated_type);
 
-		mono_class_get_fields (inflated_class, &dummy);
+		mono_class_get_fields_internal (inflated_class, &dummy);
 		g_assert (m_class_get_fields (inflated_class));
 
 		return &m_class_get_fields (inflated_class) [i];

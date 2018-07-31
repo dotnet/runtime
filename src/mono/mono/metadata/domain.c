@@ -922,6 +922,7 @@ mono_domain_unset (void)
 void
 mono_domain_set_internal_with_options (MonoDomain *domain, gboolean migrate_exception)
 {
+	MONO_REQ_GC_UNSAFE_MODE;
 	MonoInternalThread *thread;
 
 	if (mono_domain_get () == domain)

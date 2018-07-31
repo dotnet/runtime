@@ -915,7 +915,7 @@ is_struct_returnable_via_regs  (MonoClass *klass, gboolean is_pinvoke)
 			return TRUE;
 		if (size > PPC_LARGEST_STRUCT_SIZE_TO_RETURN_VIA_REGISTERS)
 			return FALSE;
-		while ((f = mono_class_get_fields (klass, &iter))) {
+		while ((f = mono_class_get_fields_internal (klass, &iter))) {
 			if (!(f->type->attrs & FIELD_ATTRIBUTE_STATIC)) {
 				// TBD: Is there a better way to check for the basic types?
 				if (f->type->byref) {
@@ -990,7 +990,7 @@ has_only_a_r48_field (MonoClass *klass)
 	MonoClassField *f;
 	gboolean have_field = FALSE;
 	iter = NULL;
-	while ((f = mono_class_get_fields (klass, &iter))) {
+	while ((f = mono_class_get_fields_internal (klass, &iter))) {
 		if (!(f->type->attrs & FIELD_ATTRIBUTE_STATIC)) {
 			if (have_field)
 				return FALSE;

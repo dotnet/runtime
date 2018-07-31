@@ -819,7 +819,7 @@ compute_class_bitmap (MonoClass *klass, gsize *bitmap, int size, int offset, int
 
 	for (p = klass; p != NULL; p = m_class_get_parent (p)) {
 		gpointer iter = NULL;
-		while ((field = mono_class_get_fields (p, &iter))) {
+		while ((field = mono_class_get_fields_internal (p, &iter))) {
 			MonoType *type;
 
 			if (static_fields) {
@@ -934,7 +934,7 @@ compute_class_non_ref_bitmap (MonoClass *klass, gsize *bitmap, int size, int off
 
 	for (p = class; p != NULL; p = p->parent) {
 		gpointer iter = NULL;
-		while ((field = mono_class_get_fields (p, &iter))) {
+		while ((field = mono_class_get_fields_internal (p, &iter))) {
 			MonoType *type;
 
 			if (field->type->attrs & (FIELD_ATTRIBUTE_STATIC | FIELD_ATTRIBUTE_HAS_FIELD_RVA))
@@ -1132,7 +1132,7 @@ mono_class_compute_gc_descriptor (MonoClass *klass)
 
 					MonoClassField *p_fields = m_class_get_fields (p);
 					MonoImage *p_image = m_class_get_image (p);
-					while ((field = mono_class_get_fields (p, &iter))) {
+					while ((field = mono_class_get_fields_internal (p, &iter))) {
 						guint32 field_idx = first_field_idx + (field - p_fields);
 						if (MONO_TYPE_IS_REFERENCE (field->type) && mono_assembly_is_weak_field (p_image, field_idx + 1)) {
 							int pos = field->offset / sizeof (gpointer);
@@ -2082,7 +2082,7 @@ mono_class_create_runtime_vtable (MonoDomain *domain, MonoClass *klass, MonoErro
 	}
 
 	iter = NULL;
-	while ((field = mono_class_get_fields (klass, &iter))) {
+	while ((field = mono_class_get_fields_internal (klass, &iter))) {
 		if (!(field->type->attrs & FIELD_ATTRIBUTE_STATIC))
 			continue;
 		if (mono_field_is_deleted (field))
@@ -2519,7 +2519,7 @@ mono_class_has_special_static_fields (MonoClass *klass)
 	gpointer iter;
 
 	iter = NULL;
-	while ((field = mono_class_get_fields (klass, &iter))) {
+	while ((field = mono_class_get_fields_internal (klass, &iter))) {
 		g_assert (field->parent == klass);
 		if (mono_class_field_is_special_static (field))
 			return TRUE;
@@ -8173,7 +8173,7 @@ prepare_to_string_method (MonoObject *obj, void **target)
 	method = mono_object_get_virtual_method (obj, to_string);
 
 	// Unbox value type if needed
-	if (mono_class_is_valuetype (mono_method_get_class (method))) {
+	if (m_class_is_valuetype (mono_method_get_class (method))) {
 		*target = mono_object_unbox (obj);
 	}
 	return method;

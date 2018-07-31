@@ -1457,6 +1457,11 @@ mono_thread_detach_if_exiting (void)
 
 		thread = mono_thread_internal_current ();
 		if (thread) {
+			// Switch to GC Unsafe thread state before detaching;
+			// don't expect to undo this switch, hence unbalanced.
+			gpointer dummy;
+			(void) mono_threads_enter_gc_unsafe_region_unbalanced (&dummy);
+
 			mono_thread_detach_internal (thread);
 			mono_thread_info_detach ();
 			return TRUE;

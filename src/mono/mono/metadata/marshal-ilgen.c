@@ -6341,7 +6341,7 @@ emit_native_icall_wrapper_ilgen (MonoMethodBuilder *mb, MonoMethod *method, Mono
 		if (sig->hasthis) {
 			mono_mb_emit_byte (mb, CEE_LDARG_0);
 			/* TODO support adding wrappers to non-static struct methods */
-			g_assert (!mono_class_is_valuetype(mono_method_get_class (method)));
+			g_assert (!m_class_is_valuetype (mono_method_get_class (method)));
 			mono_mb_emit_icall (mb, mono_icall_handle_new);
 		}
 		for (int i = 0; i < sig->param_count; i++) {

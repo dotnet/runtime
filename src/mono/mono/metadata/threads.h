@@ -55,7 +55,7 @@ MONO_API void mono_threads_request_thread_dump (void);
 
 MONO_API mono_bool mono_thread_is_foreign (MonoThread *thread);
 
-extern MONO_API mono_bool mono_thread_detach_if_exiting (void);
+extern MONO_RT_EXTERNAL_ONLY MONO_API mono_bool mono_thread_detach_if_exiting (void);
 
 MONO_END_DECLS
 

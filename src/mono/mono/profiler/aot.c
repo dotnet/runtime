@@ -341,9 +341,9 @@ add_class (MonoProfiler *prof, MonoClass *klass)
 
 	MonoClass *klass_nested_in = mono_class_get_nesting_type (klass);
 	if (klass_nested_in)
-		name = g_strdup_printf ("%s.%s/%s", mono_class_get_namespace (klass_nested_in), mono_class_get_name (klass_nested_in), mono_class_get_name (klass));
+		name = g_strdup_printf ("%s.%s/%s", m_class_get_name_space (klass_nested_in), m_class_get_name (klass_nested_in), m_class_get_name (klass));
 	else
-		name = g_strdup_printf ("%s.%s", mono_class_get_namespace (klass), mono_class_get_name (klass));
+		name = g_strdup_printf ("%s.%s", m_class_get_name_space (klass), m_class_get_name (klass));
 
 	id = prof->id ++;
 	emit_record (prof, AOTPROF_RECORD_TYPE, id);

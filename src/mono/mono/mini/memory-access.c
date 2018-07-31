@@ -241,7 +241,7 @@ create_write_barrier_bitmap (MonoCompile *cfg, MonoClass *klass, unsigned *wb_bi
 	MonoClassField *field;
 	gpointer iter = NULL;
 
-	while ((field = mono_class_get_fields (klass, &iter))) {
+	while ((field = mono_class_get_fields_internal (klass, &iter))) {
 		int foffset;
 
 		if (field->type->attrs & FIELD_ATTRIBUTE_STATIC)

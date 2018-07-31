@@ -1210,6 +1210,9 @@ MonoType*
 mono_field_get_type_checked (MonoClassField *field, MonoError *error);
 
 MonoClassField*
+mono_class_get_fields_internal (MonoClass* klass, gpointer *iter);
+
+MonoClassField*
 mono_class_get_fields_lazy (MonoClass* klass, gpointer *iter);
 
 gboolean

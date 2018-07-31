@@ -1679,8 +1679,8 @@ push_nesting (char *p, MonoClass *klass)
 		*p++ = '/';
 		*p = 0;
 	}
-	name = mono_class_get_name (klass);
-	nspace = mono_class_get_namespace (klass);
+	name = m_class_get_name (klass);
+	nspace = m_class_get_name_space (klass);
 	if (*nspace) {
 		strcpy (p, nspace);
 		p += strlen (nspace);
