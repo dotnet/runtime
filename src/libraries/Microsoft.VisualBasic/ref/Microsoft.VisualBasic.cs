@@ -250,6 +250,13 @@ namespace Microsoft.VisualBasic.CompilerServices
         public static ushort ToUShort(string Value) { throw null; }
     }
     [System.ComponentModel.EditorBrowsableAttribute((System.ComponentModel.EditorBrowsableState)(1))]
+    public sealed partial class BooleanType
+    {
+        internal BooleanType() { }
+        public static Boolean FromObject(object Value) { throw null; }
+        public static Boolean FromString(string Value) { throw null; }
+    }
+    [System.ComponentModel.EditorBrowsableAttribute((System.ComponentModel.EditorBrowsableState)(1))]
     public sealed partial class DecimalType
     {
         internal DecimalType() { }

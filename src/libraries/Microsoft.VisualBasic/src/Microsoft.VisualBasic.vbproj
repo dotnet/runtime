@@ -20,6 +20,7 @@
     <Compile Include="Microsoft\VisualBasic\ApplicationServices\StartupEventArgs.vb" />
     <Compile Include="Microsoft\VisualBasic\ApplicationServices\StartupNextInstanceEventArgs.vb" />
     <Compile Include="Microsoft\VisualBasic\ApplicationServices\UnhandledExceptionEventArgs.vb" />
+    <Compile Include="Microsoft\VisualBasic\CompilerServices\BooleanType.vb" />
     <Compile Include="Microsoft\VisualBasic\CompilerServices\ConversionResolution.vb" />
     <Compile Include="Microsoft\VisualBasic\CompilerServices\Conversions.vb" />
     <Compile Include="Microsoft\VisualBasic\CompilerServices\DecimalType.vb" />
