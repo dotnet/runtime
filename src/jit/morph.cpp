@@ -4617,21 +4617,22 @@ GenTree* Compiler::fgMorphMultiregStructArg(GenTree* arg, fgArgTabEntry* fgEntry
 #endif
     {
         GenTreeLclVarCommon* lcl = nullptr;
+        GenTree* actualArg = arg->gtEffectiveVal();
 
-        if (arg->OperGet() == GT_OBJ)
+        if (actualArg->OperGet() == GT_OBJ)
         {
-            if (arg->gtGetOp1()->OperIs(GT_ADDR) && arg->gtGetOp1()->gtGetOp1()->OperIs(GT_LCL_VAR))
+            if (actualArg->gtGetOp1()->OperIs(GT_ADDR) && actualArg->gtGetOp1()->gtGetOp1()->OperIs(GT_LCL_VAR))
             {
-                lcl = arg->gtGetOp1()->gtGetOp1()->AsLclVarCommon();
+                lcl = actualArg->gtGetOp1()->gtGetOp1()->AsLclVarCommon();
             }
         }
         else
         {
-            assert(arg->OperGet() == GT_LCL_VAR);
+            assert(actualArg->OperGet() == GT_LCL_VAR);
 
             // We need to construct a `GT_OBJ` node for the argument,
             // so we need to get the address of the lclVar.
-            lcl = arg->AsLclVarCommon();
+            lcl = actualArg->AsLclVarCommon();
         }
         if (lcl != nullptr)
         {
@@ -4642,7 +4643,7 @@ GenTree* Compiler::fgMorphMultiregStructArg(GenTree* arg, fgArgTabEntry* fgEntry
             else if (arg->TypeGet() == TYP_STRUCT)
             {
                 // If this is a non-register struct, it must be referenced from memory.
-                if (!arg->OperIs(GT_OBJ))
+                if (!actualArg->OperIs(GT_OBJ))
                 {
                     // Create an Obj of the temp to use it as a call argument.
                     arg = gtNewOperNode(GT_ADDR, TYP_I_IMPL, arg);
