@@ -600,6 +600,10 @@ OPTIMIZECAST:
                             case GT_LCL_FLD:
                             case GT_ARR_ELEM:
                                 oper->gtType = dstType;
+                                // We're changing the type here so we need to update the VN;
+                                // in other cases we discard the cast without modifying oper
+                                // so the VN doesn't change.
+                                oper->SetVNsFromNode(tree);
                                 goto REMOVE_CAST;
                             default:
                                 break;
@@ -753,8 +757,6 @@ OPTIMIZECAST:
     return tree;
 
 REMOVE_CAST:
-    oper->SetVNsFromNode(tree);
-
     /* Here we've eliminated the cast, so just return it's operand */
     assert(!gtIsActiveCSE_Candidate(tree)); // tree cannot be a CSE candidate
 
