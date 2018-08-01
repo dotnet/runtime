@@ -3137,12 +3137,6 @@ namespace System.Net.Http.Functional.Tests
         [ConditionalTheory(nameof(IsWindows10Version1607OrGreater)), MemberData(nameof(Http2NoPushServers))]
         public async Task SendAsync_RequestVersion20_ResponseVersion20(Uri server)
         {
-            if (UseSocketsHttpHandler)
-            {
-                // TODO #23134: SocketsHttpHandler doesn't yet support HTTP/2.
-                return;
-            }
-
             _output.WriteLine(server.AbsoluteUri.ToString());
             var request = new HttpRequestMessage(HttpMethod.Get, server);
             request.Version = new Version(2, 0);
@@ -3150,6 +3144,7 @@ namespace System.Net.Http.Functional.Tests
             HttpClientHandler handler = CreateHttpClientHandler();
             using (var client = new HttpClient(handler))
             {
+                TestHelper.EnsureHttp2Feature(handler);
                 using (HttpResponseMessage response = await client.SendAsync(request))
                 {
                     Assert.Equal(HttpStatusCode.OK, response.StatusCode);
