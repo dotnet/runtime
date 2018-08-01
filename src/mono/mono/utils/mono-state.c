@@ -436,11 +436,15 @@ mono_native_state_add_prologue (JsonWriter *writer)
 		mono_json_writer_indent (writer);
 		mono_json_writer_object_key(writer, "assertion_message");
 
-		char *pos;
+		size_t length;
+		const char *pos;
 		if ((pos = strchr (assertion_msg, '\n')) != NULL)
-			*pos = '\0';
+			length = (size_t)(pos - assertion_msg);
+		else
+			length = strlen (assertion_msg);
+		length = MIN (length, INT_MAX);
 
-		mono_json_writer_printf (writer, "\"%s\",\n", assertion_msg);
+		mono_json_writer_printf (writer, "\"%.*s\",\n", (int)length, assertion_msg);
 	}
 
 	// Start threads array
