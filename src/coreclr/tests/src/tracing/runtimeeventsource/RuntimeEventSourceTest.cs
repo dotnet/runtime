@@ -1,9 +1,15 @@
+#define REFLECTION
+
 using System;
 using System.IO;
 using System.Diagnostics.Tracing;
 using System.Runtime.CompilerServices;
 using System.Threading;
 using Tracing.Tests.Common;
+
+#if REFLECTION
+using System.Reflection;
+#endif
 
 namespace Tracing.Tests
 {
@@ -76,7 +82,22 @@ namespace Tracing.Tests
 
         protected override void OnEventWritten(EventWrittenEventArgs eventData)
         {
-            Console.WriteLine($"[{m_name}] ID = {eventData.EventId} Name = {eventData.EventName}");
+            long osThreadId = -1;
+            DateTime timeStamp;
+#if REFLECTION
+            PropertyInfo threadProperty = typeof(EventWrittenEventArgs).GetProperty("OSThreadId");
+            MethodInfo threadMethod = threadProperty.GetGetMethod();
+            osThreadId = (long)threadMethod.Invoke(eventData, null);
+            PropertyInfo timeStampProperty = typeof(EventWrittenEventArgs).GetProperty("TimeStamp");
+            MethodInfo timeStampMethod = timeStampProperty.GetGetMethod();
+            timeStamp = (DateTime)timeStampMethod.Invoke(eventData, null);
+#endif
+
+            Console.WriteLine($"[{m_name}] ThreadID = {osThreadId} ID = {eventData.EventId} Name = {eventData.EventName}");
+            Console.WriteLine($"TimeStamp: {timeStamp.ToLocalTime()}");
+            Console.WriteLine($"LocalTime: {DateTime.Now}");
+            Console.WriteLine($"Difference: {DateTime.UtcNow - timeStamp}");
+            Assert.True("timeStamp < DateTime.UtcNow", timeStamp < DateTime.UtcNow);
             for (int i = 0; i < eventData.Payload.Count; i++)
             {
                 string payloadString = eventData.Payload[i] != null ? eventData.Payload[i].ToString() : string.Empty;

@@ -101,6 +101,7 @@ public:
     static FCDECL1(void,    SpinWait,                       int iterations);
     static BOOL QCALLTYPE YieldThread();
     static FCDECL0(Object*, GetCurrentThread);
+    static UINT64 QCALLTYPE GetCurrentOSThreadId();
     static FCDECL1(void,    Finalize,                       ThreadBaseObject* pThis);
 #ifdef FEATURE_COMINTEROP
     static FCDECL1(void,    DisableComObjectEagerCleanup,   ThreadBaseObject* pThis);

@@ -34,6 +34,12 @@ private:
     // This determines behavior within the system (e.g. policies around which events to drop, etc.)
     EventPipeSessionType m_sessionType;
 
+    // Start date and time in UTC.
+    FILETIME m_sessionStartTime;
+
+    // Start timestamp.
+    LARGE_INTEGER m_sessionStartTimeStamp;
+
 public:
 
     // TODO: This needs to be exposed via EventPipe::CreateSession() and EventPipe::DeleteSession() to avoid memory ownership issues.
@@ -74,6 +80,20 @@ public:
     {
         LIMITED_METHOD_CONTRACT;
         m_rundownEnabled = value;
+    }
+
+    // Get the session start time in UTC.
+    FILETIME GetStartTime() const
+    {
+        LIMITED_METHOD_CONTRACT;
+        return m_sessionStartTime;
+    }
+
+    // Get the session start timestamp.
+    LARGE_INTEGER GetStartTimeStamp() const
+    {
+        LIMITED_METHOD_CONTRACT;
+        return m_sessionStartTimeStamp;
     }
 
     // Enable all events.
