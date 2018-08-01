@@ -111,47 +111,45 @@
 class BitArray
 {
     friend class BitArrayIterator;
+    typedef uint32_t ChunkType;
+    static constexpr size_t NumBitsPerChunk = sizeof(ChunkType) * CHAR_BIT;
 public:
-    BitArray(IAllocator* pJitAllocator, size_t size_tCount)
+    BitArray(IAllocator* pJitAllocator, size_t numBits)
     {
-        m_pData = (size_t*)pJitAllocator->Alloc(size_tCount*sizeof(size_t));
-        m_pEndData = m_pData + size_tCount;
+        const size_t numChunks = (numBits + NumBitsPerChunk - 1) / NumBitsPerChunk;
+        m_pData = (ChunkType*)pJitAllocator->Alloc(sizeof(ChunkType) * numChunks);
+        m_pEndData = m_pData + numChunks;
 #ifdef MUST_CALL_IALLOCATOR_FREE
         m_pJitAllocator = pJitAllocator;
 #endif
     }
 
-    inline size_t* DataPtr()
-    {
-        return m_pData;
-    }
-    
     inline void SetBit( size_t pos )
     {
-        size_t element = pos / BITS_PER_SIZE_T;
-        int bpos = (int)(pos % BITS_PER_SIZE_T);
-        m_pData[element] |= ((size_t)1 << bpos);
+        size_t element = pos / NumBitsPerChunk;
+        int bpos = (int)(pos % NumBitsPerChunk);
+        m_pData[element] |= ((ChunkType)1 << bpos);
     }
 
     inline void ClearBit( size_t pos )
     {
-        size_t element = pos / BITS_PER_SIZE_T;
-        int bpos = (int)(pos % BITS_PER_SIZE_T);
-        m_pData[element] &= ~((size_t)1 << bpos);
+        size_t element = pos / NumBitsPerChunk;
+        int bpos = (int)(pos % NumBitsPerChunk);
+        m_pData[element] &= ~((ChunkType)1 << bpos);
     }
 
     inline void SetAll()
     {
-        size_t* ptr = m_pData;
+        ChunkType* ptr = m_pData;
         while(ptr < m_pEndData)
-            *(ptr++) = (size_t)(SSIZE_T)(-1);
+            *(ptr++) = ~(ChunkType)0;
     }
     
     inline void ClearAll()
     {
-        size_t* ptr = m_pData;
+        ChunkType* ptr = m_pData;
         while(ptr < m_pEndData)
-            *(ptr++) = (size_t) 0;
+            *(ptr++) = (ChunkType)0;
     }
     
     inline void WriteBit( size_t pos, BOOL val)
@@ -162,36 +160,35 @@ public:
             ClearBit(pos);
     }
     
-    inline size_t ReadBit( size_t pos ) const
+    inline uint32_t ReadBit( size_t pos ) const
     {
-        size_t element = pos / BITS_PER_SIZE_T;
-        int bpos = (int)(pos % BITS_PER_SIZE_T);
-        return (m_pData[element] & ((size_t)1 << bpos));
+        size_t element = pos / NumBitsPerChunk;
+        int bpos = (int)(pos % NumBitsPerChunk);
+        return (m_pData[element] & ((ChunkType)1 << bpos));
     }
 
     inline bool operator==(const BitArray &other) const
     {
         _ASSERTE(other.m_pEndData - other.m_pData == m_pEndData - m_pData);
-        size_t* dest = m_pData;
-        size_t* src = other.m_pData;
-        return 0 == memcmp(dest, src, (m_pEndData - m_pData) * sizeof(*m_pData));
+        ChunkType* dest = m_pData;
+        ChunkType* src = other.m_pData;
+        return 0 == memcmp(dest, src, (m_pEndData - m_pData) * sizeof(ChunkType));
     }
 
     inline int GetHashCode() const
     {
         const int* src = (const int*)m_pData;
         int result = *src++;
-        while(src < (const int*)m_pEndData)
+        while (src < (const int*)m_pEndData)
             result = _rotr(result, 5) ^ *src++;
-            
         return result;
     }
 
     inline BitArray& operator=(const BitArray &other)
     {
         _ASSERTE(other.m_pEndData - other.m_pData == m_pEndData - m_pData);
-        size_t* dest = m_pData;
-        size_t* src = other.m_pData;
+        ChunkType* dest = m_pData;
+        ChunkType* src = other.m_pData;
         while(dest < m_pEndData)
             *(dest++) = *(src++);
             
@@ -201,8 +198,8 @@ public:
     inline BitArray& operator|=(const BitArray &other)
     {
         _ASSERTE(other.m_pEndData - other.m_pData == m_pEndData - m_pData);
-        size_t* dest = m_pData;
-        size_t* src = other.m_pData;
+        ChunkType* dest = m_pData;
+        ChunkType* src = other.m_pData;
         while(dest < m_pEndData)
             *(dest++) |= *(src++);
             
@@ -222,8 +219,8 @@ public:
     }
 
 private:
-    size_t * m_pData;
-    size_t * m_pEndData;
+    ChunkType * m_pData;
+    ChunkType * m_pEndData;
 #ifdef MUST_CALL_IALLOCATOR_FREE
     IAllocator* m_pJitAllocator;
 #endif
@@ -917,21 +914,6 @@ void BitStreamWriter::MemoryBlockList::Dispose(IAllocator* allocator)
 #endif
 }
 
-void BitStreamWriter::Write(BitArray& a, UINT32 count)
-{
-    size_t* dataPtr = a.DataPtr();
-    for(;;)
-    {
-        if(count <= BITS_PER_SIZE_T)
-        {
-            Write(*dataPtr, count);
-            break;
-        }
-        Write(*(dataPtr++), BITS_PER_SIZE_T);
-        count -= BITS_PER_SIZE_T;
-    }   
-}
-
 void GcInfoEncoder::FinalizeSlotIds()
 {
 #ifdef _DEBUG
@@ -1180,9 +1162,8 @@ void GcInfoEncoder::Build()
         m_InterruptibleRanges.CopyTo(pRanges);
     }
 
-    int size_tCount = (m_NumSlots + BITS_PER_SIZE_T - 1) / BITS_PER_SIZE_T;
-    BitArray liveState(m_pAllocator, size_tCount);
-    BitArray couldBeLive(m_pAllocator, size_tCount);
+    BitArray liveState(m_pAllocator, m_NumSlots);
+    BitArray couldBeLive(m_pAllocator, m_NumSlots);
     liveState.ClearAll();
     couldBeLive.ClearAll();
 
@@ -1757,7 +1738,7 @@ void GcInfoEncoder::Build()
                     UINT32 liveStateOffset = 0;
                     if (!hashMap.Lookup(&liveState, &liveStateOffset))
                     {
-                        BitArray * newLiveState = new (m_pAllocator) BitArray(m_pAllocator, size_tCount);
+                        BitArray * newLiveState = new (m_pAllocator) BitArray(m_pAllocator, m_NumSlots);
                         *newLiveState = liveState;
                         hashMap.Set(newLiveState, (UINT32)(-1));
                     }
@@ -1785,7 +1766,7 @@ void GcInfoEncoder::Build()
                 UINT32 liveStateOffset = 0;
                 if (!hashMap.Lookup(&liveState, &liveStateOffset))
                 {
-                    BitArray * newLiveState = new (m_pAllocator) BitArray(m_pAllocator, size_tCount);
+                    BitArray * newLiveState = new (m_pAllocator) BitArray(m_pAllocator, m_NumSlots);
                     *newLiveState = liveState;
                     hashMap.Set(newLiveState, (UINT32)(-1));
                 }
@@ -1987,7 +1968,7 @@ void GcInfoEncoder::Build()
             LifetimeTransition *pFirstPreserved = pFirstAfterStart;
             for(UINT32 slotIndex = 0; slotIndex < m_NumSlots; slotIndex++)
             {
-                size_t isLive = liveState.ReadBit(slotIndex);
+                uint32_t isLive = liveState.ReadBit(slotIndex);
                 if(isLive != liveStateAtPrevRange.ReadBit(slotIndex))
                 {
                     pFirstPreserved--;
