@@ -2,7 +2,10 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
+
+.assembly extern mscorlib { auto }
 .assembly extern System.Private.CoreLib { auto }
+
 .assembly test { }
 
 .class auto Program extends [System.Private.CoreLib]System.Object
@@ -3022,7 +3025,7 @@
 
 FAIL:
     ldstr "FAILED"
-    call void Program::print(class [System.Private.CoreLib]System.String)    
+    call void Program::print(class [System.Private.CoreLib]System.String)
     ldc.i4 1
     ret
   }

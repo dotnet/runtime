@@ -3,7 +3,9 @@
 // See the LICENSE file in the project root for more information.
 
 
-.assembly extern mscorlib {}
+.assembly extern System.Runtime.Extensions { auto }
+.assembly extern mscorlib { auto }
+
 .assembly MCCTest {}
 .module mcc_i76.exe
 
@@ -12,11 +14,11 @@
 {
   .class MyClass
   {
-    .method assembly static pinvokeimpl("native_i7s" as "#1" stdcall) 
+    .method assembly static pinvokeimpl("native_i7s" as "#1" stdcall)
         valuetype MCCTest.VType7 Sum(unsigned int64, valuetype MCCTest.VType7, float64,	valuetype MCCTest.VType7, float32, valuetype MCCTest.VType7,
-									int32, valuetype MCCTest.VType7, unsigned int16, valuetype MCCTest.VType7, unsigned int32, valuetype MCCTest.VType7, 
-									float32, valuetype MCCTest.VType7, int64, valuetype MCCTest.VType7, float32, valuetype MCCTest.VType7,
-									float64, valuetype MCCTest.VType7, float32, valuetype MCCTest.VType7, int16, valuetype MCCTest.VType7) cil managed preservesig {
+                                    int32, valuetype MCCTest.VType7, unsigned int16, valuetype MCCTest.VType7, unsigned int32, valuetype MCCTest.VType7,
+                                    float32, valuetype MCCTest.VType7, int64, valuetype MCCTest.VType7, float32, valuetype MCCTest.VType7,
+                                    float64, valuetype MCCTest.VType7, float32, valuetype MCCTest.VType7, int16, valuetype MCCTest.VType7) cil managed preservesig {
     }
 
     .method private valuetype MCCTest.VType7 GetSum()
@@ -90,20 +92,20 @@
       conv.i2
       ldloc.s    v12
       tail.
-      call       valuetype MCCTest.VType7 MCCTest.MyClass::Sum(	unsigned int64,	valuetype MCCTest.VType7, 
-																float64,		valuetype MCCTest.VType7,
-																float32,		valuetype MCCTest.VType7,
-																int32,			valuetype MCCTest.VType7,
-																unsigned int16,	valuetype MCCTest.VType7,
-																unsigned int32,	valuetype MCCTest.VType7,
-																float32,		valuetype MCCTest.VType7,
-																int64,			valuetype MCCTest.VType7,
-																float32,		valuetype MCCTest.VType7,
-																float64,		valuetype MCCTest.VType7,
-																float32,		valuetype MCCTest.VType7,
-																int16,			valuetype MCCTest.VType7)
-		ret
-	}
+      call       valuetype MCCTest.VType7 MCCTest.MyClass::Sum(	unsigned int64,	valuetype MCCTest.VType7,
+                                                                float64,		valuetype MCCTest.VType7,
+                                                                float32,		valuetype MCCTest.VType7,
+                                                                int32,			valuetype MCCTest.VType7,
+                                                                unsigned int16,	valuetype MCCTest.VType7,
+                                                                unsigned int32,	valuetype MCCTest.VType7,
+                                                                float32,		valuetype MCCTest.VType7,
+                                                                int64,			valuetype MCCTest.VType7,
+                                                                float32,		valuetype MCCTest.VType7,
+                                                                float64,		valuetype MCCTest.VType7,
+                                                                float32,		valuetype MCCTest.VType7,
+                                                                int16,			valuetype MCCTest.VType7)
+        ret
+    }
 
     .method public specialname rtspecialname instance void  .ctor()
     {
@@ -122,10 +124,10 @@
         [1] valuetype MCCTest.VType7 res,
         [2] int32 rc
       )
-      
+
       newobj     instance void MCCTest.MyClass::.ctor()
       stloc.s    me
-      
+
       ldloc.s    me
       call   instance valuetype MCCTest.VType7 MCCTest.MyClass::GetSum()
       stloc.s    res
@@ -135,7 +137,7 @@
       ldc.i4     12
       call       int32 MCCTest.Common::CheckResult(valuetype MCCTest.VType7, int32)
       stloc.s    rc
-      
+
       ldloc.s    rc
       ret
     } // end of method MyClass::Main

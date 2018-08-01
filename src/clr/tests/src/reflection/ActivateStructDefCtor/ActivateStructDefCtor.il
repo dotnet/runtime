@@ -1,8 +1,12 @@
-.assembly extern mscorlib
-{
-  .publickeytoken = (B7 7A 5C 56 19 34 E0 89 )                         
-  .ver 2:0:0:0
-}
+// Licensed to the .NET Foundation under one or more agreements.
+// The .NET Foundation licenses this file to you under the MIT license.
+// See the LICENSE file in the project root for more information.
+
+
+.assembly extern System.Runtime { auto }
+.assembly extern mscorlib { auto }
+
+
 .assembly ActivateStructDefCtor
 {
 }
@@ -17,7 +21,7 @@
   {
     .field public int32 x
 
-    .method public hidebysig specialname rtspecialname 
+    .method public hidebysig specialname rtspecialname
             instance void  .ctor() cil managed
     {
       // Code size       8 (0x8)
@@ -93,7 +97,7 @@
     IL_0058:  ret
   } // end of method Program::Main
 
-  .method private hidebysig specialname rtspecialname static 
+  .method private hidebysig specialname rtspecialname static
           void  .cctor() cil managed
   {
     // Code size       15 (0xf)

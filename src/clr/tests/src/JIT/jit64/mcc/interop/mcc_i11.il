@@ -3,7 +3,9 @@
 // See the LICENSE file in the project root for more information.
 
 
-.assembly extern mscorlib {}
+.assembly extern System.Runtime.Extensions { auto }
+.assembly extern mscorlib { auto }
+
 .assembly MCCTest {}
 .module mcc_i11.exe
 
@@ -12,7 +14,7 @@
 {
   .class MyClass
   {
-    .method assembly static pinvokeimpl("native_i1c.dll" as "#1" cdecl) 
+    .method assembly static pinvokeimpl("native_i1c.dll" as "#1" cdecl)
        vararg valuetype MCCTest.VType1 Sum(float32) cil managed preservesig {
     }
 
@@ -24,7 +26,7 @@
         [0] valuetype MCCTest.VType1 res,
         [1] int32 rc
       )
-      
+
       ldc.r4     1
       ldc.r4     2
       ldc.r4     3
@@ -40,19 +42,19 @@
       ldc.r4     1
       neg
       ldftn      vararg valuetype MCCTest.VType1 MCCTest.MyClass::Sum(float32)
-      calli      vararg valuetype MCCTest.VType1(float32, ..., 
-													float32, 
-													float32, 
-													float32, 
-													float32, 
-													float32, 
-													float32, 
-													float32, 
-													float32, 
-													float32, 
-													float32, 
-													float32, 
-													float32)
+      calli      vararg valuetype MCCTest.VType1(float32, ...,
+                                                    float32,
+                                                    float32,
+                                                    float32,
+                                                    float32,
+                                                    float32,
+                                                    float32,
+                                                    float32,
+                                                    float32,
+                                                    float32,
+                                                    float32,
+                                                    float32,
+                                                    float32)
       stloc.s    res
 
       // Check Result
@@ -60,7 +62,7 @@
       ldc.i4     12
       call       int32 MCCTest.Common::CheckResult(valuetype MCCTest.VType1, int32)
       stloc.s    rc
-      
+
       ldloc.s    rc
       ret
     } // end of method MyClass::Main

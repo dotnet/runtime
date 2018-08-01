@@ -3,7 +3,9 @@
 // See the LICENSE file in the project root for more information.
 
 
-.assembly extern mscorlib {}
+.assembly extern System.Runtime.Extensions { auto }
+.assembly extern mscorlib { auto }
+
 .assembly MCCTest {}
 .module mcc_i07.exe
 
@@ -12,7 +14,7 @@
 {
   .class MyClass
   {
-    .method assembly static pinvokeimpl("native_i0s" as "#1" stdcall) 
+    .method assembly static pinvokeimpl("native_i0s" as "#1" stdcall)
         valuetype MCCTest.VType0 Sum(unsigned int64, unsigned int64, unsigned int64, unsigned int64, unsigned int64, unsigned int64, unsigned int64, unsigned int64, unsigned int64, unsigned int64, unsigned int64, unsigned int64) cil managed preservesig {
     }
 
@@ -31,26 +33,26 @@
       ldc.i8 10
       ldc.i8 11
       ldc.i8 12
-      call        valuetype MCCTest.VType0 MCCTest.MyClass::GetSum2(unsigned int64, 
-                                                                    unsigned int64, 
-                                                                    unsigned int64, 
-                                                                    unsigned int64, 
-                                                                    unsigned int64, 
-                                                                    unsigned int64, 
-                                                                    unsigned int64, 
-                                                                    unsigned int64, 
-                                                                    unsigned int64, 
-                                                                    unsigned int64, 
-                                                                    unsigned int64, 
+      call        valuetype MCCTest.VType0 MCCTest.MyClass::GetSum2(unsigned int64,
+                                                                    unsigned int64,
+                                                                    unsigned int64,
+                                                                    unsigned int64,
+                                                                    unsigned int64,
+                                                                    unsigned int64,
+                                                                    unsigned int64,
+                                                                    unsigned int64,
+                                                                    unsigned int64,
+                                                                    unsigned int64,
+                                                                    unsigned int64,
                                                                     unsigned int64)
-		ret
-	}
+        ret
+    }
 
     .method private static valuetype MCCTest.VType0 GetSum2(unsigned int64, unsigned int64, unsigned int64, unsigned int64, unsigned int64, unsigned int64, unsigned int64, unsigned int64, unsigned int64, unsigned int64, unsigned int64, unsigned int64)
     {
       jmp   valuetype MCCTest.VType0 MCCTest.MyClass::Sum(unsigned int64, unsigned int64, unsigned int64, unsigned int64, unsigned int64, unsigned int64, unsigned int64, unsigned int64, unsigned int64, unsigned int64, unsigned int64, unsigned int64)
     }
-    
+
     .method public specialname rtspecialname instance void  .ctor()
     {
       .maxstack  1
@@ -68,10 +70,10 @@
         [1] valuetype MCCTest.VType0 res,
         [2] int32 rc
       )
-      
+
       newobj     instance void MCCTest.MyClass::.ctor()
       stloc.s    me
-      
+
       ldloc.s    me
       call       instance valuetype MCCTest.VType0 MCCTest.MyClass::GetSum()
       stloc.s    res
@@ -81,7 +83,7 @@
       ldc.i4     12
       call       int32 MCCTest.Common::CheckResult(valuetype MCCTest.VType0, int32)
       stloc.s    rc
-      
+
       ldloc.s    rc
       ret
     } // end of method MyClass::Main

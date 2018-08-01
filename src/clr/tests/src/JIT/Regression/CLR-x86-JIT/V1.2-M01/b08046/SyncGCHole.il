@@ -2,27 +2,27 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
-.assembly extern System.Console
-{
-  .publickeytoken = (B0 3F 5F 7F 11 D5 0A 3A )
-  .ver 4:0:0:0
-}
-.assembly extern legacy library mscorlib {}
+
+.assembly extern System.Console { auto }
+.assembly extern System.Runtime.Extensions { auto }
+.assembly extern System.Threading.Thread { auto }
+.assembly extern legacy library mscorlib { auto }
+
 .assembly ExternalException {}
 .class private auto ansi beforefieldinit ExternalClass
        extends [mscorlib]System.Object
 {
   .field private class ExternalException ee
-  .method public hidebysig instance void 
-          ThrowException() cil managed synchronized 
+  .method public hidebysig instance void
+          ThrowException() cil managed synchronized
   {
     .maxstack  1
     IL_0000:  ldarg.0
     IL_0001:  ldfld      class ExternalException ExternalClass::ee
     IL_0006:  throw
-  } 
+  }
 
-  .method public hidebysig specialname rtspecialname 
+  .method public hidebysig specialname rtspecialname
           instance void  .ctor() cil managed
   {
     .maxstack  2
@@ -32,9 +32,9 @@
     IL_000b:  ldarg.0
     IL_000c:  call       instance void [mscorlib]System.Object::.ctor()
     IL_0011:  ret
-  } 
+  }
 
-} 
+}
 
 .class public auto ansi beforefieldinit ExternalException
        extends [mscorlib]System.Exception
@@ -64,15 +64,15 @@
       IL_001d:  callvirt   instance void [System.Threading.Thread]System.Threading.Thread::Start()
       IL_0022:  leave.s    IL_0031
 
-    }  
-    catch [mscorlib]System.Exception 
+    }
+    catch [mscorlib]System.Exception
     {
       IL_0024:  pop
       IL_0025:  ldstr      "Exception was caught in main"
       IL_002a:  call       void [System.Console]System.Console::WriteLine(string)
       IL_002f:  leave.s    IL_0031
 
-    }  
+    }
     IL_0031:  ldloc.2
     IL_0032:  ldc.i4.1
     IL_0033:  add
@@ -81,12 +81,12 @@
     IL_0036:  ldc.i4.s   10
     IL_0038:  blt.s      IL_000a
 
-    IL_003a:  call       int32 ['system.runtime.extensions']System.Environment::get_ExitCode()
-              call       void ['system.runtime.extensions']System.Environment::Exit(int32)
+    IL_003a:  call       int32 ['System.Runtime.Extensions']System.Environment::get_ExitCode()
+              call       void ['System.Runtime.Extensions']System.Environment::Exit(int32)
               ret
-  } 
+  }
 
-  .method public hidebysig instance void 
+  .method public hidebysig instance void
           runtest() cil managed
   {
     .maxstack  3
@@ -121,8 +121,8 @@
         IL_0015:  call       instance void ExternalException::recurse(int32)
         IL_001a:  leave.s    IL_002a
 
-      }  
-      catch [mscorlib]System.ArithmeticException 
+      }
+      catch [mscorlib]System.ArithmeticException
       {
         IL_001c:  pop
         IL_001d:  ldloc.0
@@ -131,8 +131,8 @@
         IL_0020:  stloc.0
         IL_0021:  leave.s    IL_0031
 
-      }  
-      catch ExternalException 
+      }
+      catch ExternalException
       {
         IL_0023:  pop
         IL_0024:  ldloc.0
@@ -141,10 +141,10 @@
         IL_0027:  stloc.0
         IL_0028:  leave.s    IL_0031
 
-      }  
+      }
       IL_002a:  leave.s    IL_0031
 
-    }  
+    }
     finally
     {
       IL_002c:  ldloc.0
@@ -152,7 +152,7 @@
       IL_002e:  add
       IL_002f:  stloc.0
       IL_0030:  endfinally
-    }  
+    }
     IL_0031:  ldloc.1
     IL_0032:  ldc.i4.1
     IL_0033:  add
@@ -174,16 +174,16 @@
       IL_0047:  ldstr      "TryCatch Test Passed"
       IL_004c:  call       void [System.Console]System.Console::WriteLine(string)
       IL_0051:  ldc.i4 100
-      IL_0052:  call       void [system.runtime.extensions]System.Environment::set_ExitCode(int32)
+      IL_0052:  call       void [System.Runtime.Extensions]System.Environment::set_ExitCode(int32)
       IL_0057:  leave.s    IL_0060
 
-    }  
+    }
     finally
     {
       IL_0059:  ldloc.2
       IL_005a:  call       void [mscorlib]System.Threading.Monitor::Exit(object)
       IL_005f:  endfinally
-    }  
+    }
     IL_0060:  br.s       IL_0089
 
     IL_0062:  ldarg.0
@@ -197,20 +197,20 @@
       IL_0074:  ldloc.0
       IL_0075:  call       void [System.Console]System.Console::WriteLine(int32)
       IL_007a:  ldc.i4.1
-      IL_007b:  call       void [system.runtime.extensions]System.Environment::set_ExitCode(int32)
+      IL_007b:  call       void [System.Runtime.Extensions]System.Environment::set_ExitCode(int32)
       IL_0080:  leave.s    IL_0089
 
-    }  
+    }
     finally
     {
       IL_0082:  ldloc.2
       IL_0083:  call       void [mscorlib]System.Threading.Monitor::Exit(object)
       IL_0088:  endfinally
-    }  
+    }
     IL_0089:  ret
-  } 
+  }
 
-  .method public hidebysig instance void 
+  .method public hidebysig instance void
           recurse(int32 counter) cil managed
   {
     .maxstack  3
@@ -234,14 +234,14 @@
     IL_001e:  starg.s    counter
     IL_0020:  call       instance void ExternalException::recurse(int32)
     IL_0025:  ret
-  } 
+  }
 
-  .method public hidebysig specialname rtspecialname 
+  .method public hidebysig specialname rtspecialname
           instance void  .ctor() cil managed
   {
     .maxstack  1
     IL_0000:  ldarg.0
     IL_0001:  call       instance void [mscorlib]System.Exception::.ctor()
     IL_0006:  ret
-  } 
+  }
 }

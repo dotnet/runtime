@@ -3,7 +3,9 @@
 // See the LICENSE file in the project root for more information.
 
 
-.assembly extern mscorlib {}
+.assembly extern System.Runtime.Extensions { auto }
+.assembly extern mscorlib { auto }
+
 .assembly MCCTest {}
 .module mcc_i55.exe
 
@@ -12,11 +14,11 @@
 {
   .class MyClass
   {
-    .method assembly static pinvokeimpl("native_i5s" as "#1" stdcall) 
+    .method assembly static pinvokeimpl("native_i5s" as "#1" stdcall)
         valuetype MCCTest.VType5 Sum(unsigned int64, valuetype MCCTest.VType5, float64,	valuetype MCCTest.VType5, float32, valuetype MCCTest.VType5,
-									int32, valuetype MCCTest.VType5, unsigned int16, valuetype MCCTest.VType5, unsigned int32, valuetype MCCTest.VType5, 
-									float32, valuetype MCCTest.VType5, int64, valuetype MCCTest.VType5, float32, valuetype MCCTest.VType5,
-									float64, valuetype MCCTest.VType5, float32, valuetype MCCTest.VType5, int16, valuetype MCCTest.VType5) cil managed preservesig {
+                                    int32, valuetype MCCTest.VType5, unsigned int16, valuetype MCCTest.VType5, unsigned int32, valuetype MCCTest.VType5,
+                                    float32, valuetype MCCTest.VType5, int64, valuetype MCCTest.VType5, float32, valuetype MCCTest.VType5,
+                                    float64, valuetype MCCTest.VType5, float32, valuetype MCCTest.VType5, int16, valuetype MCCTest.VType5) cil managed preservesig {
     }
 
     .method private static int32 Main(string[] args)
@@ -39,7 +41,7 @@
         [12] valuetype MCCTest.VType5 v12,
         [13] int32 rc
       )
-      
+
       // Initialize v1 thru v12
       ldloca.s   v1
       call       instance void MCCTest.VType5::Init()
@@ -65,7 +67,7 @@
       call       instance void MCCTest.VType5::Init()
       ldloca.s   v12
       call       instance void MCCTest.VType5::Init()
-      
+
       ldc.i8     1
       ldloc.s    v1
       ldc.r8     2
@@ -93,21 +95,21 @@
       conv.i2
       ldloc.s    v12
       ldftn      valuetype MCCTest.VType5 MCCTest.MyClass::Sum(unsigned int64, valuetype MCCTest.VType5, float64,	valuetype MCCTest.VType5, float32, valuetype MCCTest.VType5,
-									int32, valuetype MCCTest.VType5, unsigned int16, valuetype MCCTest.VType5, unsigned int32, valuetype MCCTest.VType5, 
-									float32, valuetype MCCTest.VType5, int64, valuetype MCCTest.VType5, float32, valuetype MCCTest.VType5,
-									float64, valuetype MCCTest.VType5, float32, valuetype MCCTest.VType5, int16, valuetype MCCTest.VType5)
-      calli       valuetype MCCTest.VType5(	unsigned int64,	valuetype MCCTest.VType5, 
-											float64,		valuetype MCCTest.VType5,
-											float32,		valuetype MCCTest.VType5,
-											int32,			valuetype MCCTest.VType5,
-											unsigned int16,	valuetype MCCTest.VType5,
-											unsigned int32,	valuetype MCCTest.VType5,
-											float32,		valuetype MCCTest.VType5,
-											int64,			valuetype MCCTest.VType5,
-											float32,		valuetype MCCTest.VType5,
-											float64,		valuetype MCCTest.VType5,
-											float32,		valuetype MCCTest.VType5,
-											int16,			valuetype MCCTest.VType5)
+                                    int32, valuetype MCCTest.VType5, unsigned int16, valuetype MCCTest.VType5, unsigned int32, valuetype MCCTest.VType5,
+                                    float32, valuetype MCCTest.VType5, int64, valuetype MCCTest.VType5, float32, valuetype MCCTest.VType5,
+                                    float64, valuetype MCCTest.VType5, float32, valuetype MCCTest.VType5, int16, valuetype MCCTest.VType5)
+      calli       valuetype MCCTest.VType5(	unsigned int64,	valuetype MCCTest.VType5,
+                                            float64,		valuetype MCCTest.VType5,
+                                            float32,		valuetype MCCTest.VType5,
+                                            int32,			valuetype MCCTest.VType5,
+                                            unsigned int16,	valuetype MCCTest.VType5,
+                                            unsigned int32,	valuetype MCCTest.VType5,
+                                            float32,		valuetype MCCTest.VType5,
+                                            int64,			valuetype MCCTest.VType5,
+                                            float32,		valuetype MCCTest.VType5,
+                                            float64,		valuetype MCCTest.VType5,
+                                            float32,		valuetype MCCTest.VType5,
+                                            int16,			valuetype MCCTest.VType5)
 
       stloc.s    res
 
@@ -116,7 +118,7 @@
       ldc.i4     12
       call       int32 MCCTest.Common::CheckResult(valuetype MCCTest.VType5, int32)
       stloc.s    rc
-      
+
       ldloc.s    rc
       ret
     } // end of method MyClass::Main

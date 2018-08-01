@@ -3,32 +3,23 @@
 // See the LICENSE file in the project root for more information.
 
 
-
-
 .module extern user32.dll
 .module extern kernel32
+.assembly extern System.Console { auto }
+.assembly extern System.Threading.Thread { auto }
+.assembly extern mscorlib { auto }
 
-.assembly extern System.Console
-{
-  .publickeytoken = (B0 3F 5F 7F 11 D5 0A 3A )
-  .ver 4:0:0:0
-}
-.assembly extern mscorlib
-{
-  .publickeytoken = (B7 7A 5C 56 19 34 E0 89 )                         
-  .ver 2:0:0:0
-}
 .assembly cs1
 {
-  .custom instance void [mscorlib]System.Runtime.CompilerServices.CompilationRelaxationsAttribute::.ctor(int32) = ( 01 00 08 00 00 00 00 00 ) 
+  .custom instance void [mscorlib]System.Runtime.CompilerServices.CompilationRelaxationsAttribute::.ctor(int32) = ( 01 00 08 00 00 00 00 00 )
   .hash algorithm 0x00008004
   .ver 0:0:0:0
 }
 .module cs1.exe
 .imagebase 0x00400000
 .file alignment 0x00000200
-.subsystem 0x0003       
-.corflags 0x00000001    
+.subsystem 0x0003
+.corflags 0x00000001
 
 
 
@@ -44,7 +35,7 @@
   .field private object modreq([mscorlib]System.Runtime.CompilerServices.IsVolatile) m_objVolatile
   .field private object[] m_objs
 
-  .method public hidebysig specialname rtspecialname 
+  .method public hidebysig specialname rtspecialname
           instance void  .ctor() cil managed
   {
     .maxstack  3
@@ -82,9 +73,9 @@
     IL_0048:  stfld      object modreq([mscorlib]System.Runtime.CompilerServices.IsVolatile) cs1::m_objVolatile
     IL_004d:  nop
     IL_004e:  ret
-  } 
+  }
 
-  .method public hidebysig instance void 
+  .method public hidebysig instance void
           CheckVal() cil managed noinlining
   {
     .maxstack  2
@@ -103,28 +94,28 @@
       IL_0007:  ldarg.0
       IL_0008:  ldfld      object cs1::m_obj
       IL_000d:  unbox      [mscorlib]System.Int32
-		ldc.i4 0
-		stind.i4
+        ldc.i4 0
+        stind.i4
 
       IL_0032:  ldarg.0
       IL_0033:  volatile.
       IL_0035:  ldfld      object modreq([mscorlib]System.Runtime.CompilerServices.IsVolatile) cs1::m_objVolatile
       IL_003a:  unbox      [mscorlib]System.Int32
-		ldc.i4 0
-		stind.i4
+        ldc.i4 0
+        stind.i4
 
       IL_005f:  nop
       IL_0060:  leave.s    IL_0067
 
-    }  
-    catch [mscorlib]System.InvalidCastException 
+    }
+    catch [mscorlib]System.InvalidCastException
     {
       IL_0062:  pop
       IL_0063:  nop
       IL_0064:  nop
       IL_0065:  leave.s    IL_0067
 
-    }  
+    }
     IL_0067:  nop
     IL_0068:  nop
     IL_0069:  ldloc.0
@@ -139,9 +130,9 @@
     IL_0077:  brtrue.s   IL_0005
 
     IL_0079:  ret
-  } 
+  }
 
-  .method private hidebysig instance void 
+  .method private hidebysig instance void
           Flip() cil managed
   {
     .maxstack  4
@@ -202,7 +193,7 @@
     IL_005b:  brtrue.s   IL_0005
 
     IL_005d:  ret
-  } 
+  }
 
   .method private hidebysig static void  SignalTimeUp(object stateInfo) cil managed
   {
@@ -211,7 +202,7 @@
     IL_0001:  ldc.i4.1
     IL_0002:  stsfld     bool cs1::s_timeUp
     IL_0007:  ret
-  } 
+  }
 
   .method public hidebysig static int32 Main(string[] args) cil managed
   {
@@ -221,7 +212,7 @@
              class [System.Threading.Thread]System.Threading.Thread V_1,
              class [mscorlib]System.Threading.Timer V_2,
              class [System.Threading.Thread]System.Threading.Thread V_flip
-		)
+        )
     IL_0000:  nop
     IL_0001:  newobj     instance void cs1::.ctor()
     IL_0006:  stloc.0
@@ -273,11 +264,11 @@
     IL_004e:  ldstr      "Test SUCCESS"
     IL_0053:  call       void [System.Console]System.Console::WriteLine(string)
 
-	ldc.i4 100
+    ldc.i4 100
     IL_0059:  ret
-  } 
+  }
 
-  .method private hidebysig specialname rtspecialname static 
+  .method private hidebysig specialname rtspecialname static
           void  .cctor() cil managed
   {
     .maxstack  8
@@ -290,6 +281,6 @@
     IL_0016:  ldc.i4.0
     IL_0017:  stsfld     bool cs1::s_timeUp
     IL_001c:  ret
-  } 
+  }
 
-} 
+}

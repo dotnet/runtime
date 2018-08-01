@@ -2,15 +2,11 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
-.assembly extern System.Console
-{
-  .publickeytoken = (B0 3F 5F 7F 11 D5 0A 3A )
-  .ver 4:0:0:0
-}
 
-.assembly extern mscorlib
-{
-}
+.assembly extern System.Console { auto }
+.assembly extern System.Threading.Thread { auto }
+.assembly extern mscorlib { auto }
+
 .assembly 'concur'// as "concur"
 {
 }
@@ -57,7 +53,7 @@
                 ldc.i4.0
                 volatile.
                 stsfld     bool  Test.App::signal
-      IL_001a:  ldloc.2     
+      IL_001a:  ldloc.2
       IL_001b:  call       instance void [System.Threading.Thread]System.Threading.Thread::Start()
       IL_0020:  ldc.r8     11.
       IL_0029:  stloc.s    V_5
@@ -147,7 +143,7 @@
       IL_00d2:  ret
     } // end of method 'App::Main'
 
-    .method public hidebysig specialname rtspecialname 
+    .method public hidebysig specialname rtspecialname
             instance void .ctor() il managed
     {
       .maxstack  8
