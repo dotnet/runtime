@@ -229,7 +229,6 @@ public class MsbuildGenerator {
 	};
 
 	public static readonly (string, string[])[] fixed_dependencies = new [] {
-		("corlib/corlib.csproj", new [] { SlnGenerator.genconsts_csproj_guid }),
 		("class/System.Web/System.Web.csproj", new [] { culevel_guid })
 	};
 
@@ -884,9 +883,22 @@ public class MsbuildGenerator {
 			}
 		).ToList ();
 
+
 		result.Append ($"  <ItemGroup>{NewLine}");
 		foreach (var file in commonFiles.OrderBy (f => f, StringComparer.Ordinal))
 			result.Append ($"    <Compile Include=\"{file}\" />{NewLine}");
+
+		if (commonFiles.Any (f => f.EndsWith("build\\common\\Consts.cs"))) {
+			var genconstsRelativePath = "$(SolutionDir)\\msvc\\scripts\\genconsts.csproj";
+			result.Append ($"    <ProjectReference Include=\"{genconstsRelativePath}\">{NewLine}");
+			result.Append ($"      <Name>genconsts</Name>");
+			result.Append ($"      <Project>{SlnGenerator.genconsts_csproj_guid}</Project>");
+			result.Append ($"      <ReferenceOutputAssembly>false</ReferenceOutputAssembly>");
+			result.Append ($"      <CopyToOutputDirectory>Never</CopyToOutputDirectory>");
+			result.Append ($"      <Private>False</Private>");
+			result.Append ($"    </ProjectReference>{NewLine}");			
+  		}
+  		
 		result.Append ($"  </ItemGroup>{NewLine}");
 
 		foreach (var set in targetFileSets) {
