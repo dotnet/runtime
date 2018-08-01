@@ -1933,12 +1933,12 @@ leave:
 }
 
 ICALL_EXPORT gint32
-ves_icall_MonoField_GetFieldOffset (MonoReflectionField *field)
+ves_icall_MonoField_GetFieldOffset (MonoReflectionFieldHandle field, MonoError *error)
 {
-	MonoClass *parent = field->field->parent;
-	mono_class_setup_fields (parent);
+	MonoClassField *class_field = MONO_HANDLE_GETVAL (field, field);
+	mono_class_setup_fields (class_field->parent);
 
-	return field->field->offset - sizeof (MonoObject);
+	return class_field->offset - sizeof (MonoObject);
 }
 
 ICALL_EXPORT MonoReflectionTypeHandle
