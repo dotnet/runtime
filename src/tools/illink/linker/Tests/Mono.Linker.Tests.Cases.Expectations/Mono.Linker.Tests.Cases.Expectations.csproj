@@ -47,6 +47,7 @@
     <Compile Include="Assertions\KeptDelegateCacheFieldAttribute.cs" />
     <Compile Include="Assertions\KeptEventAddMethodAttribute.cs" />
     <Compile Include="Assertions\KeptEventRemoveMethodAttribute.cs" />
+    <Compile Include="Assertions\KeptInitializerData.cs" />
     <Compile Include="Assertions\KeptMemberAttribute.cs" />
     <Compile Include="Assertions\KeptMemberInAssemblyAttribute.cs" />
     <Compile Include="Assertions\KeptResourceAttribute.cs" />

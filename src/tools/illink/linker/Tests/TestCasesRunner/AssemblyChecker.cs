@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using Mono.Cecil;
+using Mono.Cecil.Cil;
 using Mono.Linker.Tests.Cases.Expectations.Assertions;
 using Mono.Linker.Tests.Extensions;
 using NUnit.Framework;
@@ -14,6 +15,7 @@ namespace Mono.Linker.Tests.TestCasesRunner {
 		HashSet<string> linkedMembers;
 		HashSet<string> verifiedGeneratedFields = new HashSet<string> ();
 		HashSet<string> verifiedEventMethods = new HashSet<string>();
+		HashSet<string> verifiedGeneratedTypes = new HashSet<string> ();
 
 		public AssemblyChecker (AssemblyDefinition original, AssemblyDefinition linked)
 		{
@@ -71,6 +73,9 @@ namespace Mono.Linker.Tests.TestCasesRunner {
 
 		protected virtual void VerifyTypeDefinition (TypeDefinition original, TypeDefinition linked)
 		{
+			if (linked != null && verifiedGeneratedTypes.Contains (linked.FullName))
+				return;
+			
 			ModuleDefinition linkedModule = linked?.Module;
 
 			//
@@ -91,6 +96,11 @@ namespace Mono.Linker.Tests.TestCasesRunner {
 				return;
 			}
 
+			VerifyTypeDefinitionKept (original, linked);
+		}
+
+		protected virtual void VerifyTypeDefinitionKept (TypeDefinition original, TypeDefinition linked)
+		{
 			if (linked == null)
 				Assert.Fail ($"Type `{original}' should have been kept");
 
@@ -314,6 +324,7 @@ namespace Mono.Linker.Tests.TestCasesRunner {
 			VerifyCustomAttributes (src, linked);
 			VerifyParameters (src, linked);
 			VerifySecurityAttributes (src, linked);
+			VerifyArrayInitializers (src, linked);
 		}
 
 		void VerifyResources (AssemblyDefinition original, AssemblyDefinition linked)
@@ -374,6 +385,77 @@ namespace Mono.Linker.Tests.TestCasesRunner {
 			var linkedAttrs = FilterLinkedSecurityAttributes (linked).ToList ();
 
 			Assert.That (linkedAttrs, Is.EquivalentTo (expectedAttrs), $"Security attributes on `{src}' are not matching");
+		}
+
+		protected virtual void VerifyArrayInitializers (MethodDefinition src, MethodDefinition linked)
+		{
+			var expectedIndicies = GetCustomAttributeCtorValues<object> (src, nameof (KeptInitializerData))
+				.Cast<int> ()
+				.ToArray ();
+
+			var expectKeptAll = src.CustomAttributes.Any (attr => attr.AttributeType.Name == nameof (KeptInitializerData) && !attr.HasConstructorArguments);
+
+			if (expectedIndicies.Length == 0 && !expectKeptAll)
+				return;
+			
+			if (!src.HasBody)
+				Assert.Fail ($"`{nameof (KeptInitializerData)}` cannot be used on methods that don't have bodies");
+
+			var srcImplementationDetails = src.Module.Types.FirstOrDefault (t => string.IsNullOrEmpty (t.Namespace) && t.Name.StartsWith ("<PrivateImplementationDetails>"));
+			
+			if (srcImplementationDetails == null)
+				Assert.Fail ("Could not locate <PrivateImplementationDetails> in the original assembly.  Does your test use initializers?");
+
+			var linkedImplementationDetails = linked.Module.Types.FirstOrDefault (t => string.IsNullOrEmpty (t.Namespace) && t.Name.StartsWith ("<PrivateImplementationDetails>"));
+			
+			if (linkedImplementationDetails == null)
+				Assert.Fail ("Could not locate <PrivateImplementationDetails> in the linked assembly");
+			
+			var possibleInitializerFields = src.Body.Instructions
+				.Where (ins => IsLdtokenOnPrivateImplementationDetails (srcImplementationDetails, ins))
+				.Select (ins => ((FieldReference)ins.Operand).Resolve ())
+				.ToArray ();
+			
+			if (possibleInitializerFields.Length == 0)
+				Assert.Fail ($"`{src}` does not make use of any initializers");
+
+			if (expectKeptAll) {
+				foreach (var srcField in possibleInitializerFields) {
+					var linkedField = linkedImplementationDetails.Fields.FirstOrDefault (f => f.Name == srcField.Name);
+					VerifyInitializerField (srcField, linkedField);
+				}
+			} else {
+				foreach (var index in expectedIndicies) {
+					if (index < 0 || index > possibleInitializerFields.Length)
+						Assert.Fail($"Invalid expected index `{index}` in {src}.  Value must be between 0 and {expectedIndicies.Length}");
+
+					var srcField = possibleInitializerFields[index];
+					var linkedField = linkedImplementationDetails.Fields.FirstOrDefault (f => f.Name == srcField.Name);
+
+					VerifyInitializerField (srcField, linkedField);
+				}
+			}
+		}
+
+		void VerifyInitializerField (FieldDefinition src, FieldDefinition linked)
+		{
+			VerifyFieldKept (src, linked);
+			verifiedGeneratedFields.Add (linked.FullName);
+			linkedMembers.Remove (linked.FullName);
+			VerifyTypeDefinitionKept (src.FieldType.Resolve (), linked.FieldType.Resolve ());
+			linkedMembers.Remove (linked.FieldType.FullName);
+			linkedMembers.Remove (linked.DeclaringType.FullName);
+			verifiedGeneratedTypes.Add (linked.DeclaringType.FullName);
+		}
+
+		static bool IsLdtokenOnPrivateImplementationDetails (TypeDefinition privateImplementationDetails, Instruction instruction)
+		{
+			if (instruction.OpCode.Code == Code.Ldtoken && instruction.Operand is FieldReference field)
+			{
+				return field.DeclaringType.Resolve () == privateImplementationDetails;
+			}
+
+			return false;
 		}
 
 		/// <summary>

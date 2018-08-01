@@ -147,6 +147,7 @@
     <Compile Include="Basic\UnusedDelegateGetsRemoved.cs" />
     <Compile Include="Basic\UnusedEnumGetsRemoved.cs" />
     <Compile Include="Basic\UnusedEventGetsRemoved.cs" />
+    <Compile Include="Basic\InitializerForArrayIsKept.cs" />
     <Compile Include="Basic\UsedEnumIsKept.cs" />
     <Compile Include="Basic\UsedEventOnInterfaceIsKept.cs" />
     <Compile Include="Basic\UnusedFieldGetsRemoved.cs" />
@@ -241,6 +242,7 @@
     <Compile Include="Symbols\ReferenceWithPortablePdbCopyActionAndSymbolLinkingEnabled.cs" />
     <Compile Include="Symbols\ReferenceWithPortablePdbDeleteAction.cs" />
     <Compile Include="Symbols\ReferenceWithPortablePdbDeleteActionAndSymbolLinkingEnabled.cs" />
+    <Compile Include="TestFramework\CanCheckInitializersByIndex.cs" />
     <Compile Include="TestFramework\CanCompileILAssembly.cs" />
     <Compile Include="TestFramework\CanCompileReferencesUsingTypes.cs" />
     <Compile Include="TestFramework\CanCompileReferencesWithResources.cs" />
