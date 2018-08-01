@@ -678,6 +678,13 @@ bool ILCodeVersion::operator==(const ILCodeVersion & rhs) const
     }
 }
 
+BOOL ILCodeVersion::HasDefaultIL() const
+{
+    LIMITED_METHOD_CONTRACT;
+
+    return (m_storageKind == StorageKind::Synthetic) || (AsNode()->GetIL() == NULL);
+}
+
 BOOL ILCodeVersion::IsNull() const
 {
     LIMITED_METHOD_DAC_CONTRACT;
@@ -1987,7 +1994,7 @@ HRESULT CodeVersionManager::SetActiveILCodeVersions(ILCodeVersion* pActiveVersio
     CONTRACTL
     {
         NOTHROW;
-        GC_NOTRIGGER;
+        GC_TRIGGERS;
         MODE_PREEMPTIVE;
         CAN_TAKE_LOCK;
         PRECONDITION(CheckPointer(pActiveVersions));
@@ -2301,7 +2308,7 @@ HRESULT CodeVersionManager::EnumerateClosedMethodDescs(
     CONTRACTL
     {
         NOTHROW;
-        GC_NOTRIGGER;
+        GC_TRIGGERS;
         MODE_PREEMPTIVE;
         CAN_TAKE_LOCK;
         PRECONDITION(CheckPointer(pMD, NULL_OK));

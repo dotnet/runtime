@@ -70,6 +70,7 @@ public:
     BOOL IsLoadedViaAttach();
     HRESULT EnsureProfilerDetachable();
     void SetUnrevertiblyModifiedILFlag();
+    void SetModifiedRejitState();
 
     FunctionEnter *              GetEnterHook();
     FunctionLeave *              GetLeaveHook();
@@ -601,6 +602,9 @@ private:
     // Remembers whether the profiler used SetILFunctionBody() which modifies IL in a
     // way that cannot be reverted.  This prevents a detach from succeeding.
     BOOL                    m_fUnrevertiblyModifiedIL;
+
+    // Remember whether the profiler has enabled Rejit, and prevent detach if it has.
+    BOOL                    m_fModifiedRejitState;
     
     GCReferencesData * AllocateMovedReferencesData();
 

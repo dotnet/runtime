@@ -2583,7 +2583,7 @@ CodeHeader* EEJitManager::allocCode(MethodDesc* pMD, size_t blockSize, size_t re
     // redirect the rejit jmp-stamp at the top of the method from the prestub to the
     // rejitted code, or to reinstate original code on a revert).
     else if ((g_pConfig->GenOptimizeType() != OPT_SIZE) ||
-        ReJitManager::IsReJITEnabled())
+        pMD->IsVersionableWithJumpStamp())
     {
         alignment = max(alignment, 8);
     }

@@ -4382,11 +4382,14 @@ HRESULT ProfToEEInterfaceImpl::GetILFunctionBody(ModuleID    moduleId,
     }
     CONTRACTL_END;
 
-    PROFILER_TO_CLR_ENTRYPOINT_SYNC((LF_CORPROF, 
-                                     LL_INFO1000, 
-                                     "**PROF: GetILFunctionBody 0x%p, 0x%08x.\n",
-                                     moduleId, 
-                                     methodId));    
+    
+    PROFILER_TO_CLR_ENTRYPOINT_ASYNC_EX(
+        kP2EEAllowableAfterAttach,
+        (LF_CORPROF, 
+         LL_INFO1000, 
+         "**PROF: GetILFunctionBody 0x%p, 0x%08x.\n",
+         moduleId, 
+         methodId));    
 
     Module *    pModule;                // Working pointer for real class.
     ULONG       RVA;                    // Return RVA of the method body.
@@ -4510,7 +4513,7 @@ HRESULT ProfToEEInterfaceImpl::GetILFunctionBodyAllocator(ModuleID         modul
     CONTRACTL_END;
     
     PROFILER_TO_CLR_ENTRYPOINT_SYNC_EX(
-        kP2EETriggers,
+        kP2EEAllowableAfterAttach | kP2EETriggers,
         (LF_CORPROF, 
         LL_INFO1000, 
         "**PROF: GetILFunctionBodyAllocator 0x%p.\n", 
@@ -4565,7 +4568,7 @@ HRESULT ProfToEEInterfaceImpl::SetILFunctionBody(ModuleID    moduleId,
     CONTRACTL_END;
 
     PROFILER_TO_CLR_ENTRYPOINT_SYNC_EX(
-        kP2EETriggers,
+        kP2EEAllowableAfterAttach | kP2EETriggers,
         (LF_CORPROF, 
          LL_INFO1000, 
          "**PROF: SetILFunctionBody 0x%p, 0x%08x.\n",
@@ -4636,7 +4639,7 @@ HRESULT ProfToEEInterfaceImpl::SetILInstrumentedCodeMap(FunctionID functionId,
     CONTRACTL_END;
 
     PROFILER_TO_CLR_ENTRYPOINT_SYNC_EX(
-        kP2EETriggers,
+        kP2EEAllowableAfterAttach | kP2EETriggers,
         (LF_CORPROF, 
          LL_INFO1000, 
          "**PROF: SetILInstrumentedCodeMap 0x%p, %d.\n",
@@ -8481,10 +8484,12 @@ HRESULT ProfToEEInterfaceImpl::GetReJITIDs(
     }
     CONTRACTL_END;
 
-    PROFILER_TO_CLR_ENTRYPOINT_SYNC((LF_CORPROF, 
-                                    LL_INFO1000, 
-                                    "**PROF: GetReJITIDs 0x%p.\n", 
-                                     functionId));     
+    PROFILER_TO_CLR_ENTRYPOINT_SYNC_EX(
+        kP2EEAllowableAfterAttach,
+        (LF_CORPROF, 
+        LL_INFO1000, 
+        "**PROF: GetReJITIDs 0x%p.\n", 
+         functionId));     
 
     if (functionId == 0)
     {
@@ -8527,7 +8532,7 @@ HRESULT ProfToEEInterfaceImpl::RequestReJIT(ULONG       cFunctions,   // in
     CONTRACTL_END;
 
     PROFILER_TO_CLR_ENTRYPOINT_SYNC_EX(
-        kP2EETriggers,
+        kP2EETriggers | kP2EEAllowableAfterAttach,
         (LF_CORPROF, 
          LL_INFO1000, 
          "**PROF: RequestReJIT.\n"));
@@ -8584,7 +8589,7 @@ HRESULT ProfToEEInterfaceImpl::RequestRevert(ULONG       cFunctions,  // in
     CONTRACTL_END;
 
     PROFILER_TO_CLR_ENTRYPOINT_SYNC_EX(
-        kP2EETriggers,
+        kP2EEAllowableAfterAttach | kP2EETriggers,
         (LF_CORPROF, 
          LL_INFO1000, 
          "**PROF: RequestRevert.\n"));
