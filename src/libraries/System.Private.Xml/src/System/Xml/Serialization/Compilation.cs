@@ -697,8 +697,9 @@ namespace System.Xml.Serialization
                 TempAssembly tempAssembly;
                 if (_cache.TryGetValue(key, out tempAssembly) && tempAssembly == assembly)
                     return;
-                _cache = new Dictionary<TempAssemblyCacheKey, TempAssembly>(_cache); // clone
-                _cache[key] = assembly;
+                Dictionary<TempAssemblyCacheKey, TempAssembly> _copy = new Dictionary<TempAssemblyCacheKey, TempAssembly>(_cache); // clone
+                _copy[key] = assembly;
+                _cache = _copy;
             }
         }
     }
