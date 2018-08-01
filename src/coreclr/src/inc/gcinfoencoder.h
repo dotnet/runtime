@@ -199,7 +199,6 @@ public:
 
     // bit 0 is the least significative bit
     void Write( size_t data, UINT32 count );
-    void Write( BitArray& a, UINT32 count );
 
     inline size_t GetBitCount()
     {
