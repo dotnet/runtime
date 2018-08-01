@@ -8,11 +8,16 @@
     <BinPlaceRef>false</BinPlaceRef>
     <ProjectGuid>{4773F3C0-646E-4542-9FD5-D07A7737403A}</ProjectGuid>
     <Configurations>netcoreapp-Debug;netcoreapp-Release;uap-Debug;uap-Release</Configurations>
+    <DefineConstants Condition="'$(TargetGroup)' == 'netstandard1.0'">$(DefineConstants);NETSTANDARD10</DefineConstants>
+    <DefineConstants Condition="'$(TargetGroup)' == 'netstandard1.2'">$(DefineConstants);NETSTANDARD12</DefineConstants>
   </PropertyGroup>
   <ItemGroup>
     <Compile Include="TypeForwards.cs" />
   </ItemGroup>
-  <ItemGroup>
+  <ItemGroup Condition="'$(TargetGroup)' != 'netstandard1.0' and '$(TargetGroup)' != 'netstandard'">
     <ProjectReference Include="..\..\System.Runtime\ref\System.Runtime.csproj" />
+  </ItemGroup>
+  <ItemGroup Condition="'$(TargetGroup)' == 'netstandard1.0' or '$(TargetGroup)' == 'netstandard'">
+    <Reference Include="System.Runtime" />
   </ItemGroup>
 </Project>

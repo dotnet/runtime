@@ -19,7 +19,9 @@ using System.Runtime.CompilerServices;
 [assembly: TypeForwardedTo(typeof(System.IntPtr))]
 [assembly: TypeForwardedTo(typeof(System.MulticastDelegate))]
 [assembly: TypeForwardedTo(typeof(System.Object))]
+#if !NETSTANDARD10 && !NETSTANDARD12
 [assembly: TypeForwardedTo(typeof(System.Runtime.CompilerServices.IsConst))]
+#endif
 [assembly: TypeForwardedTo(typeof(System.Single))]
 [assembly: TypeForwardedTo(typeof(System.String))]
 [assembly: TypeForwardedTo(typeof(System.Type))]
