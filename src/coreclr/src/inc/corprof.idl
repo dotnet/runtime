@@ -587,7 +587,8 @@ typedef enum
                                           COR_PRF_MONITOR_SUSPENDS |
                                           COR_PRF_MONITOR_CLASS_LOADS |
                                           COR_PRF_MONITOR_EXCEPTIONS |
-                                          COR_PRF_MONITOR_JIT_COMPILATION,
+                                          COR_PRF_MONITOR_JIT_COMPILATION |
+                                          COR_PRF_ENABLE_REJIT,
 
     // MONITOR_IMMUTABLE represents all flags that may only be set during initialization.
     // Trying to change any of these flags elsewhere will result in a
@@ -596,7 +597,6 @@ typedef enum
                                           COR_PRF_MONITOR_REMOTING |
                                           COR_PRF_MONITOR_REMOTING_COOKIE |
                                           COR_PRF_MONITOR_REMOTING_ASYNC |
-                                          COR_PRF_ENABLE_REJIT |
                                           COR_PRF_ENABLE_INPROC_DEBUGGING |
                                           COR_PRF_ENABLE_JIT_MAPS |
                                           COR_PRF_DISABLE_OPTIMIZATIONS |

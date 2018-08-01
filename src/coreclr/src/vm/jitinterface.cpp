@@ -12398,7 +12398,7 @@ CorJitResult CallCompileMethodWithSEHWrapper(EEJitManager *jitMgr,
         flags.Set(CORJIT_FLAGS::CORJIT_FLAG_FRAMED);
     if (g_pConfig->JitAlignLoops())
         flags.Set(CORJIT_FLAGS::CORJIT_FLAG_ALIGN_LOOPS);
-    if (ReJitManager::IsReJITEnabled() || g_pConfig->AddRejitNops())
+    if (ftn->IsVersionableWithJumpStamp() || g_pConfig->AddRejitNops())
         flags.Set(CORJIT_FLAGS::CORJIT_FLAG_PROF_REJIT_NOPS);
 #ifdef _TARGET_X86_
     if (g_pConfig->PInvokeRestoreEsp(ftn->GetModule()->IsPreV4Assembly()))

@@ -135,6 +135,7 @@ public:
 
     bool operator==(const ILCodeVersion & rhs) const;
     bool operator!=(const ILCodeVersion & rhs) const;
+    BOOL HasDefaultIL() const;
     BOOL IsNull() const;
     BOOL IsDefaultVersion() const;
     PTR_Module GetModule() const;
