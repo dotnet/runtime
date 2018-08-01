@@ -2,19 +2,12 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
+
 .assembly Conv_ovf_u4_Bug {}
+.assembly extern System.Console { auto }
+.assembly extern System.Runtime.Extensions { auto }
+.assembly extern mscorlib { auto }
 
-
-.assembly extern System.Console
-{
-  .publickeytoken = (B0 3F 5F 7F 11 D5 0A 3A )
-  .ver 4:0:0:0
-}
-.assembly extern mscorlib
-{
-.publickeytoken = (B7 7A 5C 56 19 34 E0 89 )
-.ver 2:0:0:0
-}
 
 .method static public int32 main() il managed
 {
@@ -23,7 +16,7 @@
 
 .try
 {
-call int32 [system.runtime.extensions]System.Environment::get_TickCount()
+call int32 [System.Runtime.Extensions]System.Environment::get_TickCount()
 conv.i8
 ldc.i8 0x80000000
 or

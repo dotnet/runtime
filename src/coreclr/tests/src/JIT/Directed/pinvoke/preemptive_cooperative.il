@@ -3,24 +3,16 @@
 // See the LICENSE file in the project root for more information.
 
 
-
 .module extern kernel32.dll
+.assembly extern System.Console { auto }
+.assembly extern System.Threading.Thread { auto }
+.assembly extern mscorlib { auto }
 
-.assembly extern System.Console
-{
-  .publickeytoken = (B0 3F 5F 7F 11 D5 0A 3A )
-  .ver 4:0:0:0
-}
-.assembly extern mscorlib
-{
-  .publickeytoken = (B7 7A 5C 56 19 34 E0 89 )                         
-  .ver 4:0:0:0
-}
 .assembly preemptive_cooperative
 {
-  .custom instance void [mscorlib]System.Runtime.CompilerServices.CompilationRelaxationsAttribute::.ctor(int32) = ( 01 00 08 00 00 00 00 00 ) 
-  .custom instance void [mscorlib]System.Runtime.CompilerServices.RuntimeCompatibilityAttribute::.ctor() = ( 01 00 01 00 54 02 16 57 72 61 70 4E 6F 6E 45 78   
-                                                                                                             63 65 70 74 69 6F 6E 54 68 72 6F 77 73 01 )       
+  .custom instance void [mscorlib]System.Runtime.CompilerServices.CompilationRelaxationsAttribute::.ctor(int32) = ( 01 00 08 00 00 00 00 00 )
+  .custom instance void [mscorlib]System.Runtime.CompilerServices.RuntimeCompatibilityAttribute::.ctor() = ( 01 00 01 00 54 02 16 57 72 61 70 4E 6F 6E 45 78
+                                                                                                             63 65 70 74 69 6F 6E 54 68 72 6F 77 73 01 )
   .hash algorithm 0x00008004
   .ver 0:0:0:0
 }
@@ -28,8 +20,8 @@
 .imagebase 0x00400000
 .file alignment 0x00000200
 .stackreserve 0x00100000
-.subsystem 0x0003       
-.corflags 0x00000001    
+.subsystem 0x0003
+.corflags 0x00000001
 
 
 
@@ -39,7 +31,7 @@
   .field private static class [mscorlib]System.Threading.EventWaitHandle e1
   .field private static class [mscorlib]System.Threading.EventWaitHandle e2
   .field private static object modreq([mscorlib]System.Runtime.CompilerServices.IsVolatile) garbage
-  .method private hidebysig specialname rtspecialname 
+  .method private hidebysig specialname rtspecialname
           instance void  .ctor() cil managed
   {
     .maxstack  8
@@ -52,9 +44,9 @@
     IL_0012:  nop
     IL_0013:  nop
     IL_0014:  ret
-  } 
+  }
 
-  .method family hidebysig virtual instance void 
+  .method family hidebysig virtual instance void
           Finalize() cil managed
   {
     .maxstack  1
@@ -67,17 +59,17 @@
       IL_000c:  nop
       IL_000d:  leave.s    IL_0017
 
-    }  
+    }
     finally
     {
       IL_000f:  ldarg.0
       IL_0010:  call       instance void [mscorlib]System.Object::Finalize()
       IL_0015:  nop
       IL_0016:  endfinally
-    }  
+    }
     IL_0017:  nop
     IL_0018:  ret
-  } 
+  }
 
   .method private hidebysig static void  CreateGarbage() cil managed noinlining
   {
@@ -108,13 +100,13 @@
     IL_005a:  volatile.
     IL_005c:  stsfld     object modreq([mscorlib]System.Runtime.CompilerServices.IsVolatile) Repro::garbage
     IL_0061:  ret
-  } 
+  }
 
-  .method private hidebysig static pinvokeimpl("kernel32.dll" as "WaitForSingleObject" nomangle winapi) 
+  .method private hidebysig static pinvokeimpl("kernel32.dll" as "WaitForSingleObject" nomangle winapi)
           uint32 modopt([mscorlib]System.Runtime.CompilerServices.IsJitIntrinsic) atoi(native int handle,
                        uint32 dwMilliseconds) cil managed preservesig
   {
-    .custom instance void [mscorlib]System.Security.SuppressUnmanagedCodeSecurityAttribute::.ctor() = ( 01 00 00 00 ) 
+    .custom instance void [mscorlib]System.Security.SuppressUnmanagedCodeSecurityAttribute::.ctor() = ( 01 00 00 00 )
   }
   .method private hidebysig static void  GCHole() cil managed
   {
@@ -144,7 +136,7 @@
     IL_0040:  call       void [System.Console]System.Console::WriteLine(object)
     IL_0045:  nop
     IL_0046:  ret
-  } 
+  }
 
   .method private hidebysig static void  Trigger() cil managed
   {
@@ -171,9 +163,9 @@
     IL_003f:  callvirt   instance bool [mscorlib]System.Threading.EventWaitHandle::Set()
     IL_0044:  pop
     IL_0045:  ret
-  } 
+  }
 
-  .method private hidebysig static int32 
+  .method private hidebysig static int32
           Main() cil managed
   {
     .entrypoint
@@ -201,9 +193,9 @@
 
     IL_002c:  ldloc.1
     IL_002d:  ret
-  } 
+  }
 
-  .method private hidebysig specialname rtspecialname static 
+  .method private hidebysig specialname rtspecialname static
           void  .cctor() cil managed
   {
     .maxstack  8
@@ -221,6 +213,6 @@
     IL_0019:  volatile.
     IL_001b:  stsfld     object modreq([mscorlib]System.Runtime.CompilerServices.IsVolatile) Repro::garbage
     IL_0020:  ret
-  } 
+  }
 
-} 
+}

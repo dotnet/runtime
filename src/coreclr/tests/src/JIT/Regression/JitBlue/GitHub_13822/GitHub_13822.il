@@ -2,7 +2,9 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
-.assembly extern mscorlib {}
+
+.assembly extern mscorlib { auto }
+.assembly extern System.Private.CoreLib { auto }
 
 .assembly GitHub_13822
 {
@@ -20,7 +22,7 @@
   .field public int32 k
   .field public int32 l
 
-  .method public hidebysig specialname rtspecialname 
+  .method public hidebysig specialname rtspecialname
           instance void  .ctor(int32 i) cil managed aggressiveinlining
   {
     .maxstack  8
@@ -75,7 +77,7 @@
     L2:       ldarg.0
               ldc.i4.1
               add
-              call       int32 Test::A(int32)              
+              call       int32 Test::A(int32)
               ret
   } // end of method Test::A
 
@@ -86,7 +88,7 @@
               ret
   } // end of method Test::GetZero
 
-  .method public hidebysig specialname rtspecialname 
+  .method public hidebysig specialname rtspecialname
           instance void  .ctor() cil managed
   {
     // Code size       7 (0x7)

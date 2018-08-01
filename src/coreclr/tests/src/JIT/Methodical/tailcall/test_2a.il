@@ -2,12 +2,11 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
-.assembly extern mscorlib { }
-.assembly extern System.Console
-{
-  .publickeytoken = (B0 3F 5F 7F 11 D5 0A 3A )
-  .ver 4:0:0:0
-}
+
+.assembly extern System.Console { auto }
+.assembly extern System.Runtime.Extensions { auto }
+.assembly extern mscorlib { auto }
+
 .assembly test_2a { }
 .namespace JitTest
 {
@@ -22,7 +21,7 @@
       .maxstack  4
       .locals (int32 V_0)
       ldc.i4.1
-      call       void [system.runtime.extensions]System.Environment::set_ExitCode(int32)
+      call       void [System.Runtime.Extensions]System.Environment::set_ExitCode(int32)
       ldsfld     int32 JitTest.Test::n
       ldc.i4.1
       bne.un.s   IL_0047
@@ -62,7 +61,7 @@ IL_0047:
       br.s OUT
     } // end of method Test::Main
 
-    .method private hidebysig  specialname rtspecialname static 
+    .method private hidebysig  specialname rtspecialname static
             void .cctor() il managed
     {
       // Code size       14 (0xe)
@@ -74,7 +73,7 @@ IL_0047:
       IL_000d:  ret
     } // end of method Test::.cctor
 
-    .method public hidebysig  specialname rtspecialname 
+    .method public hidebysig  specialname rtspecialname
             instance void .ctor() il managed
     {
       // Code size       7 (0x7)
