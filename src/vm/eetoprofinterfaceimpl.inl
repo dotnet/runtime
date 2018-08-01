@@ -108,6 +108,12 @@ inline void EEToProfInterfaceImpl::SetUnrevertiblyModifiedILFlag()
     m_fUnrevertiblyModifiedIL = TRUE;
 }
 
+inline void EEToProfInterfaceImpl::SetModifiedRejitState()
+{
+    LIMITED_METHOD_CONTRACT;
+    m_fModifiedRejitState = TRUE;
+}
+
 inline FunctionEnter * EEToProfInterfaceImpl::GetEnterHook()
 {
     LIMITED_METHOD_CONTRACT;
