@@ -543,7 +543,7 @@
     <PropertyGroup>
       <CMakeDefinitionSaveFile>$(IntermediateOutputPath)..\cmake.definitions</CMakeDefinitionSaveFile>
     </PropertyGroup>
-    <Exec Command="python $(MSBuildThisFileDirectory)..\scripts\check-definitions.py &quot;$(CMakeDefinitionSaveFile)&quot; &quot;$(DefineConstants)&quot; &quot;$(IgnoreDefineConstants)&quot; " />
+    <Exec Command="&quot;$(PYTHON)&quot; $(MSBuildThisFileDirectory)..\scripts\check-definitions.py &quot;$(CMakeDefinitionSaveFile)&quot; &quot;$(DefineConstants)&quot; &quot;$(IgnoreDefineConstants)&quot; " />
   </Target>
   <PropertyGroup Condition="'$(BuildOS)' == 'Windows_NT'">
     <EnableDotnetAnalyzers Condition="'$(EnableDotnetAnalyzers)'==''">true</EnableDotnetAnalyzers>
