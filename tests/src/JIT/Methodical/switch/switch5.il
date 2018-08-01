@@ -1,13 +1,16 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
-// Stack implementation
 
-.assembly extern legacy library mscorlib {}
+
+// Stack implementation
+.assembly extern System.Runtime.Extensions { auto }
+.assembly extern legacy library mscorlib { auto }
+
 .assembly 'switch5'
 {
-  
-  
+
+
 }
 
 .module 'switch5.exe'
@@ -17,7 +20,7 @@
 {
   .field public int32[] Stack
   .field public int32 top
-  .method public hidebysig instance void 
+  .method public hidebysig instance void
           DoSwitch(int32 'value') il managed
   {
     .maxstack  2
@@ -28,7 +31,7 @@
     IL_0002:  ldloc.1
     IL_0003:  ldc.i4.1
     IL_0004:  sub
-    IL_0005:  switch     ( 
+    IL_0005:  switch     (
                           IL_0014,
                           IL_001d)
     IL_0012:  br.s       IL_0026
@@ -56,21 +59,21 @@
     IL_003c:  brtrue.s   IL_0051
 
     IL_003e:  ldc.i4.s   100
-    IL_0040:  call       void ['system.runtime.extensions']System.Environment::set_ExitCode(int32)
+    IL_0040:  call       void ['System.Runtime.Extensions']System.Environment::set_ExitCode(int32)
     IL_0045:  ldstr      "Test passed"
     IL_004a:  call       void ['mscorlib']System.Console::WriteLine(class System.String)
     IL_004f:  br.s       IL_0061
 
     IL_0051:  ldc.i4.1
-    IL_0052:  call       void ['system.runtime.extensions']System.Environment::set_ExitCode(int32)
+    IL_0052:  call       void ['System.Runtime.Extensions']System.Environment::set_ExitCode(int32)
     IL_0057:  ldstr      "Test failed"
     IL_005c:  call       void ['mscorlib']System.Console::WriteLine(class System.String)
     IL_0061:  br.s       IL_0063
 
     IL_0063:  ret
-  } 
+  }
 
-  .method public hidebysig instance void 
+  .method public hidebysig instance void
           push(int32 i) il managed
   {
     .maxstack  4
@@ -89,7 +92,7 @@
     IL_0017:  ldarg.1
     IL_0018:  stelem.i4
     IL_0019:  ret
-  } 
+  }
 
   .method public hidebysig instance int32
           'pop'() il managed
@@ -114,9 +117,9 @@
 
     IL_001b:  ldloc.0
     IL_001c:  ret
-  } 
+  }
 
-  .method public hidebysig specialname rtspecialname 
+  .method public hidebysig specialname rtspecialname
           instance void .ctor() il managed
   {
     .maxstack  8
@@ -130,9 +133,9 @@
     IL_0013:  ldarg.0
     IL_0014:  call       instance void ['mscorlib']System.Object::.ctor()
     IL_0019:  ret
-  } 
+  }
 
-} 
+}
 
 .class public auto ansi Test
        extends ['mscorlib']System.Object
@@ -156,9 +159,9 @@
     IL_001b:  ldloc.0
     IL_001c:  ldc.i4.3
     IL_001d:  call       instance void TestStack::DoSwitch(int32)
-    IL_0022:  call       int32 ['system.runtime.extensions']System.Environment::get_ExitCode()
-              call       void ['system.runtime.extensions']System.Environment::Exit(int32)
+    IL_0022:  call       int32 ['System.Runtime.Extensions']System.Environment::get_ExitCode()
+              call       void ['System.Runtime.Extensions']System.Environment::Exit(int32)
               ret
-  } 
+  }
 
-} 
+}

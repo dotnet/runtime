@@ -2,12 +2,15 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
+
+.assembly extern System.Console { auto }
 .assembly extern mscorlib { auto }
+
 .assembly GitHub_13501 { }
 
 .class private Program extends [mscorlib]System.Object
 {
-    .method hidebysig static int32 Main() cil managed 
+    .method hidebysig static int32 Main() cil managed
     {
         .entrypoint
         .maxstack 8
@@ -48,8 +51,8 @@
         ldc.i4 -1
         conv.u
         bne.un FAIL
-        
-    PASS: 
+
+    PASS:
         ldstr "PASS"
         call void [System.Console]System.Console::WriteLine(string)
         ldc.i4 100
@@ -60,7 +63,7 @@
         ldc.i4 1
         ret
     }
-  
+
     .method static native int Test_Cast_gtFoldExprConst(native int, bool) cil managed noinlining
     {
         .maxstack 4

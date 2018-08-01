@@ -3,27 +3,15 @@
 // See the LICENSE file in the project root for more information.
 
 
+.assembly extern System.Console { auto }
+.assembly extern System.Runtime.Extensions { auto }
+.assembly extern mscorlib { auto }
 
-
-
-
-.assembly extern System.Console
-{
-  .publickeytoken = (B0 3F 5F 7F 11 D5 0A 3A )
-  .ver 4:0:0:0
-}
-.assembly extern mscorlib
-{
-  .publickeytoken = (B7 7A 5C 56 19 34 E0 89 )                         
-  .hash = (5C EA 16 0E 69 C8 EE F2 C9 A5 6E 45 32 31 FA 61   
-           19 8E E7 4D )                                     
-  .ver 2:0:3600:0
-}
 .assembly tailcall
 {
 
 
-  .custom instance void [mscorlib]System.Runtime.CompilerServices.CompilationRelaxationsAttribute::.ctor(int32) = ( 01 00 08 00 00 00 00 00 ) 
+  .custom instance void [mscorlib]System.Runtime.CompilerServices.CompilationRelaxationsAttribute::.ctor(int32) = ( 01 00 08 00 00 00 00 00 )
   .hash algorithm 0x00008004
   .ver 0:0:0:0
 }
@@ -31,8 +19,8 @@
 .imagebase 0x00400000
 .file alignment 0x00000200
 .stackreserve 0x00100000
-.subsystem 0x0003       
-.corflags 0x00000001    
+.subsystem 0x0003
+.corflags 0x00000001
 
 
 
@@ -41,7 +29,7 @@
 {
   .field private static int32 MaxDepth
   .field private int32 'value'
-  .method public hidebysig instance int32 
+  .method public hidebysig instance int32
           Recurse1(int32 depth) cil managed
   {
     .maxstack  5
@@ -94,9 +82,9 @@ ret
 
     IL_004b:  ldloc.0
     IL_004c:  ret
-  } 
+  }
 
-  .method public hidebysig instance int32 
+  .method public hidebysig instance int32
           Recurse2(int32 depth,
                    object o1,
                    object o2) cil managed
@@ -120,7 +108,7 @@ ret
     IL_0016:  ldc.i4.s   100
     IL_0018:  bne.un.s   IL_0053
 
-    IL_001a:  call       string [system.runtime.extensions]System.Environment::get_StackTrace()
+    IL_001a:  call       string [System.Runtime.Extensions]System.Environment::get_StackTrace()
     IL_001f:  stloc.0
     IL_0020:  ldloc.0
     IL_0021:  ldstr      "Main"
@@ -136,7 +124,7 @@ ret
     IL_003e:  ldstr      "Test Failed"
     IL_0043:  call       void [System.Console]System.Console::WriteLine(string)
     IL_0048:  ldc.i4.0
-    IL_0049:  call       void [system.runtime.extensions]System.Environment::Exit(int32)
+    IL_0049:  call       void [System.Runtime.Extensions]System.Environment::Exit(int32)
     IL_004e:  call       void [mscorlib]System.GC::Collect()
     IL_0053:  ldarg.0
     IL_0054:  dup
@@ -161,9 +149,9 @@ ret
 
     IL_007b:  ldloc.1
     IL_007c:  ret
-  } 
+  }
 
-  .method public hidebysig newslot virtual 
+  .method public hidebysig newslot virtual
           instance int32  Recurse3(int32 depth) cil managed
   {
     .maxstack  5
@@ -212,9 +200,9 @@ ret
 
     IL_003f:  ldloc.0
     IL_0040:  ret
-  } 
+  }
 
-  .method public hidebysig newslot virtual 
+  .method public hidebysig newslot virtual
           instance int32  Recurse4(int32 depth,
                                    object o1,
                                    object o2) cil managed
@@ -239,7 +227,7 @@ ret
     IL_001b:  bne.un.s   IL_0056
 
     IL_001d:  call       void [mscorlib]System.GC::Collect()
-    IL_0022:  call       string [system.runtime.extensions]System.Environment::get_StackTrace()
+    IL_0022:  call       string [System.Runtime.Extensions]System.Environment::get_StackTrace()
     IL_0027:  stloc.0
     IL_0028:  ldloc.0
     IL_0029:  ldstr      "Main"
@@ -255,7 +243,7 @@ ret
     IL_0046:  ldstr      "Test Failed"
     IL_004b:  call       void [System.Console]System.Console::WriteLine(string)
     IL_0050:  ldc.i4.0
-    IL_0051:  call       void [system.runtime.extensions]System.Environment::Exit(int32)
+    IL_0051:  call       void [System.Runtime.Extensions]System.Environment::Exit(int32)
     IL_0056:  ldarg.0
     IL_0057:  dup
     IL_0058:  ldfld      int32 Class1::'value'
@@ -279,7 +267,7 @@ ret
 
     IL_007e:  ldloc.1
     IL_007f:  ret
-  } 
+  }
 
   .method public hidebysig static int32  Main() cil managed
   {
@@ -343,24 +331,24 @@ ret
 
     IL_007d:  ldloc.2
     IL_007e:  ret
-  } 
+  }
 
-  .method private hidebysig specialname rtspecialname static 
+  .method private hidebysig specialname rtspecialname static
           void  .cctor() cil managed
   {
     .maxstack  8
     IL_0000:  ldc.i4     0x2000
     IL_0005:  stsfld     int32 Class1::MaxDepth
     IL_000a:  ret
-  } 
+  }
 
-  .method public hidebysig specialname rtspecialname 
+  .method public hidebysig specialname rtspecialname
           instance void  .ctor() cil managed
   {
     .maxstack  8
     IL_0000:  ldarg.0
     IL_0001:  call       instance void [mscorlib]System.Object::.ctor()
     IL_0006:  ret
-  } 
+  }
 
-} 
+}

@@ -2,24 +2,15 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
-.assembly extern System.Private.CoreLib
-{
-  .publickeytoken = (7C EC 85 D7 BE A7 79 8E )                         // |.....y.
-  .ver 4:0:0:0
-}
-.assembly extern System.Numerics.Vectors
-{
-  .publickeytoken = (B0 3F 5F 7F 11 D5 0A 3A )                         // .?_....:
-  .ver 4:1:3:0
-}
-.assembly extern System.Runtime.CompilerServices.Unsafe
-{
-  .publickeytoken = (B0 3F 5F 7F 11 D5 0A 3A )                         // .?_....:
-  .ver 4:0:3:0
-}
+
+.assembly extern System.Private.CoreLib { auto }
+.assembly extern System.Numerics.Vectors { auto }
+.assembly extern System.Runtime.CompilerServices.Unsafe { auto }
+.assembly extern mscorlib { auto }
+
 .assembly GitHub_11804
 {
-  .custom instance void [System.Private.CoreLib]System.Runtime.CompilerServices.CompilationRelaxationsAttribute::.ctor(int32) = ( 01 00 08 00 00 00 00 00 ) 
+  .custom instance void [System.Private.CoreLib]System.Runtime.CompilerServices.CompilationRelaxationsAttribute::.ctor(int32) = ( 01 00 08 00 00 00 00 00 )
   .custom instance void [System.Private.CoreLib]System.Runtime.CompilerServices.RuntimeCompatibilityAttribute::.ctor() = ( 01 00 01 00 54 02 16 57 72 61 70 4E 6F 6E 45 78   // ....T..WrapNonEx
                                                                                                                            63 65 70 74 69 6F 6E 54 68 72 6F 77 73 01 )       // ceptionThrows.
 
@@ -39,7 +30,7 @@
 .class private abstract auto ansi sealed beforefieldinit C
        extends [System.Private.CoreLib]System.Object
 {
-  .method private hidebysig static int32 
+  .method private hidebysig static int32
           UnsafeGrab() cil managed noinlining
   {
     // Code size       18 (0x12)
@@ -54,7 +45,7 @@
     IL_0011:  ret
   } // end of method C::UnsafeGrab
 
-  .method private hidebysig static int32 
+  .method private hidebysig static int32
           IndexerGrab() cil managed noinlining
   {
     // Code size       18 (0x12)
@@ -69,7 +60,7 @@
     IL_0011:  ret
   } // end of method C::IndexerGrab
 
-  .method private hidebysig static int32 
+  .method private hidebysig static int32
           Main() cil managed
   {
     .entrypoint

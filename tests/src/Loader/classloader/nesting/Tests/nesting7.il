@@ -2,7 +2,10 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
-.assembly extern System.Console { }
+
+.assembly extern System.Console { auto }
+.assembly extern mscorlib { auto }
+
 // model revision #2
 // To compile: ilasm nesting7.il /err
 
@@ -11,7 +14,7 @@
 // Nesting module: PureManaged
 // Nesting location: MainModule
 
-// enclosing type 
+// enclosing type
 // kind: Interface
 // flag: abstract
 // visibility: private
@@ -20,7 +23,7 @@
 
 .class interface abstract private EnclType
 {
-  // nested type 
+  // nested type
   // kind: Delegate
   // flag: sealed
   // visibility: assembly
@@ -32,7 +35,7 @@
 
     // nested member visibility: assembly
 
-    .method assembly hidebysig specialname rtspecialname 
+    .method assembly hidebysig specialname rtspecialname
             instance void  .ctor(object 'object',
                                  native int 'method') runtime managed
     {}
@@ -41,7 +44,7 @@
             instance void  Invoke(int32 i) runtime managed
     {}
 
-    .method assembly hidebysig newslot virtual 
+    .method assembly hidebysig newslot virtual
             instance class [mscorlib]System.IAsyncResult
             BeginInvoke(int32 i,
                         class [mscorlib]System.AsyncCallback callback,
@@ -94,7 +97,7 @@
     ldarg.0
     ldftn      void class EnclType::DelegateFunction(int32)
     newobj     instance void class EnclType/NestedType::.ctor(object, native int)
-    
+
     stsfld     class EnclType/NestedType class EnclType::sNestClass
     ldsfld     class EnclType/NestedType class EnclType::sNestClass
     call       void class EnclType::TakesADelegate(class EnclType/NestedType)
@@ -122,7 +125,7 @@
     stloc.1
     leave.s    end
   }
-  catch [mscorlib]System.Exception 
+  catch [mscorlib]System.Exception
   {
     stloc.0
     ldstr      "{0}Caught unexpected exception."

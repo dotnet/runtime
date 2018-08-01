@@ -2,16 +2,11 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
-.assembly extern System.Console
-{
-  .publickeytoken = (B0 3F 5F 7F 11 D5 0A 3A )
-  .ver 4:0:0:0
-}
-.assembly extern mscorlib
-{
-  .publickeytoken = (B7 7A 5C 56 19 34 E0 89 )                         
-  .ver 2:0:3600:0
-}
+
+.assembly extern System.Console { auto }
+.assembly extern System.Runtime.Extensions { auto }
+.assembly extern mscorlib { auto }
+
 .assembly template
 {
   .custom instance void [mscorlib]System.Runtime.CompilerServices.CompilationRelaxationsAttribute::.ctor(int32) = ( 01 00 08 00 00 00 00 00 )
@@ -36,7 +31,7 @@
              int32 V_7)
     IL_0000:  ldc.i4.1
     IL_0001:  stloc.0
-    IL_0002:  ldftn       string[] [system.runtime.extensions]System.Environment::GetCommandLineArgs()
+    IL_0002:  ldftn       string[] [System.Runtime.Extensions]System.Environment::GetCommandLineArgs()
     IL_0003:  calli       string[]()
     IL_0007:  stloc.1
     IL_0008:  ldloc.1
@@ -177,7 +172,7 @@
 
     IL_00e9:  ldloc.s    V_4
     IL_00eb:  ret
-  } 
+  }
 
   .method public hidebysig specialname rtspecialname
           instance void  .ctor() cil managed
@@ -186,6 +181,6 @@
     IL_0000:  ldarg.0
     IL_0001:  call       instance void [mscorlib]System.Object::.ctor()
     IL_0006:  ret
-  } 
+  }
 
-} 
+}

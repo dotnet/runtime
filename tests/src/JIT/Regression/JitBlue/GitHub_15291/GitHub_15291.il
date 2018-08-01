@@ -2,19 +2,21 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
+
 // Test for casts of long shifts.
 //
 // Same test cases as in GitHub_15077, but without the extra
 // and masking done by CSC.
+.assembly extern System.Console { auto }
+.assembly extern System.Runtime { auto }
+.assembly extern mscorlib { auto }
 
-.assembly extern mscorlib {auto}
-.assembly extern System.Console {auto}
 .assembly GitHub_15219 {}
 
 .class private auto ansi beforefieldinit P
        extends [mscorlib]System.Object
 {
-  .method public hidebysig static uint32 
+  .method public hidebysig static uint32
           G32() cil managed noinlining
   {
     IL_0003:  ldc.i4.1
@@ -28,7 +30,7 @@
     IL_000e:  ret
   }
 
-  .method public hidebysig static uint32 
+  .method public hidebysig static uint32
           G31() cil managed noinlining
   {
     IL_0003:  ldc.i4.1
@@ -42,7 +44,7 @@
     IL_000e:  ret
   }
 
-  .method public hidebysig static uint32 
+  .method public hidebysig static uint32
           G64() cil managed noinlining
   {
     IL_0003:  ldc.i4.1
@@ -56,7 +58,7 @@
     IL_000e:  ret
   }
 
-  .method public hidebysig static uint32 
+  .method public hidebysig static uint32
           G63() cil managed noinlining
   {
     IL_0003:  ldc.i4.1
@@ -70,7 +72,7 @@
     IL_000e:  ret
   }
 
-  .method public hidebysig static uint32 
+  .method public hidebysig static uint32
           GM1() cil managed noinlining
   {
     IL_0002:  ldc.i4.1
@@ -84,7 +86,7 @@
     IL_000d:  ret
   }
 
-  .method public hidebysig static uint32 
+  .method public hidebysig static uint32
           Gx(int32 q) cil managed noinlining
   {
     IL_0000:  ldc.i4.1

@@ -2,17 +2,19 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
+
 //
 // Verifies that RuntimeFeature::IsSupported("DefaultImplementationsOfInterfaces") matches reality.
 // This needs to succeed no matter whether default interfaces are supported.
 //
+.assembly extern mscorlib { auto }
+.assembly extern System.Runtime { auto }
 
-.assembly extern System.Runtime{}
 .assembly DefaultImplementationsOfInterfaces{}
 
 .class interface private abstract auto ansi DefaultInterface
 {
-  .method public hidebysig newslot virtual 
+  .method public hidebysig newslot virtual
           instance void  Method() cil managed
   {
     .maxstack  8
@@ -39,7 +41,7 @@
       leave.s    Supports
 
     }
-    catch [System.Runtime]System.TypeLoadException 
+    catch [System.Runtime]System.TypeLoadException
     {
       pop
       leave.s    DoesNotSupport
@@ -54,7 +56,7 @@
     ret
   }
 
-.method private hidebysig static int32 
+.method private hidebysig static int32
         Main() cil managed
 {
     .entrypoint
