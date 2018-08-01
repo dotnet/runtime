@@ -3,7 +3,9 @@
 // See the LICENSE file in the project root for more information.
 
 
-.assembly extern mscorlib {}
+.assembly extern System.Runtime.Extensions { auto }
+.assembly extern mscorlib { auto }
+
 .assembly MCCTest {}
 .module mcc_i87.exe
 
@@ -12,11 +14,11 @@
 {
   .class MyClass
   {
-    .method assembly static pinvokeimpl("native_i8s" as "#1" stdcall) 
+    .method assembly static pinvokeimpl("native_i8s" as "#1" stdcall)
         valuetype MCCTest.VType8 Sum(unsigned int64, valuetype MCCTest.VType8, float64,	valuetype MCCTest.VType8, float32, valuetype MCCTest.VType8,
-									int32, valuetype MCCTest.VType8, unsigned int16, valuetype MCCTest.VType8, unsigned int32, valuetype MCCTest.VType8, 
-									float32, valuetype MCCTest.VType8, int64, valuetype MCCTest.VType8, float32, valuetype MCCTest.VType8,
-									float64, valuetype MCCTest.VType8, float32, valuetype MCCTest.VType8, int16, valuetype MCCTest.VType8) cil managed preservesig {
+                                    int32, valuetype MCCTest.VType8, unsigned int16, valuetype MCCTest.VType8, unsigned int32, valuetype MCCTest.VType8,
+                                    float32, valuetype MCCTest.VType8, int64, valuetype MCCTest.VType8, float32, valuetype MCCTest.VType8,
+                                    float64, valuetype MCCTest.VType8, float32, valuetype MCCTest.VType8, int16, valuetype MCCTest.VType8) cil managed preservesig {
     }
 
     .method private valuetype MCCTest.VType8 GetSum()
@@ -89,32 +91,32 @@
       ldc.i8     12
       conv.i2
       ldloc.s    v12
-      call       valuetype MCCTest.VType8 MCCTest.MyClass::GetSum2(	unsigned int64,	valuetype MCCTest.VType8, 
-																float64,		valuetype MCCTest.VType8,
-																float32,		valuetype MCCTest.VType8,
-																int32,			valuetype MCCTest.VType8,
-																unsigned int16,	valuetype MCCTest.VType8,
-																unsigned int32,	valuetype MCCTest.VType8,
-																float32,		valuetype MCCTest.VType8,
-																int64,			valuetype MCCTest.VType8,
-																float32,		valuetype MCCTest.VType8,
-																float64,		valuetype MCCTest.VType8,
-																float32,		valuetype MCCTest.VType8,
-																int16,			valuetype MCCTest.VType8)
-		ret
-	}
+      call       valuetype MCCTest.VType8 MCCTest.MyClass::GetSum2(	unsigned int64,	valuetype MCCTest.VType8,
+                                                                float64,		valuetype MCCTest.VType8,
+                                                                float32,		valuetype MCCTest.VType8,
+                                                                int32,			valuetype MCCTest.VType8,
+                                                                unsigned int16,	valuetype MCCTest.VType8,
+                                                                unsigned int32,	valuetype MCCTest.VType8,
+                                                                float32,		valuetype MCCTest.VType8,
+                                                                int64,			valuetype MCCTest.VType8,
+                                                                float32,		valuetype MCCTest.VType8,
+                                                                float64,		valuetype MCCTest.VType8,
+                                                                float32,		valuetype MCCTest.VType8,
+                                                                int16,			valuetype MCCTest.VType8)
+        ret
+    }
 
     .method private static valuetype MCCTest.VType8 GetSum2(unsigned int64, valuetype MCCTest.VType8, float64,	valuetype MCCTest.VType8, float32, valuetype MCCTest.VType8,
-									int32, valuetype MCCTest.VType8, unsigned int16, valuetype MCCTest.VType8, unsigned int32, valuetype MCCTest.VType8, 
-									float32, valuetype MCCTest.VType8, int64, valuetype MCCTest.VType8, float32, valuetype MCCTest.VType8,
-									float64, valuetype MCCTest.VType8, float32, valuetype MCCTest.VType8, int16, valuetype MCCTest.VType8)
+                                    int32, valuetype MCCTest.VType8, unsigned int16, valuetype MCCTest.VType8, unsigned int32, valuetype MCCTest.VType8,
+                                    float32, valuetype MCCTest.VType8, int64, valuetype MCCTest.VType8, float32, valuetype MCCTest.VType8,
+                                    float64, valuetype MCCTest.VType8, float32, valuetype MCCTest.VType8, int16, valuetype MCCTest.VType8)
     {
       jmp   valuetype MCCTest.VType8 MCCTest.MyClass::Sum(unsigned int64, valuetype MCCTest.VType8, float64,	valuetype MCCTest.VType8, float32, valuetype MCCTest.VType8,
-									int32, valuetype MCCTest.VType8, unsigned int16, valuetype MCCTest.VType8, unsigned int32, valuetype MCCTest.VType8, 
-									float32, valuetype MCCTest.VType8, int64, valuetype MCCTest.VType8, float32, valuetype MCCTest.VType8,
-									float64, valuetype MCCTest.VType8, float32, valuetype MCCTest.VType8, int16, valuetype MCCTest.VType8)
+                                    int32, valuetype MCCTest.VType8, unsigned int16, valuetype MCCTest.VType8, unsigned int32, valuetype MCCTest.VType8,
+                                    float32, valuetype MCCTest.VType8, int64, valuetype MCCTest.VType8, float32, valuetype MCCTest.VType8,
+                                    float64, valuetype MCCTest.VType8, float32, valuetype MCCTest.VType8, int16, valuetype MCCTest.VType8)
     }
-    
+
     .method public specialname rtspecialname instance void  .ctor()
     {
       .maxstack  1
@@ -132,10 +134,10 @@
         [1] valuetype MCCTest.VType8 res,
         [2] int32 rc
       )
-      
+
       newobj     instance void MCCTest.MyClass::.ctor()
       stloc.s    me
-      
+
       ldloc.s    me
       call   instance valuetype MCCTest.VType8 MCCTest.MyClass::GetSum()
       stloc.s    res
@@ -145,7 +147,7 @@
       ldc.i4     12
       call       int32 MCCTest.Common::CheckResult(valuetype MCCTest.VType8, int32)
       stloc.s    rc
-      
+
       ldloc.s    rc
       ret
     } // end of method MyClass::Main

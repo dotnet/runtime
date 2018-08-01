@@ -3,7 +3,9 @@
 // See the LICENSE file in the project root for more information.
 
 
-.assembly extern mscorlib {}
+.assembly extern System.Runtime.Extensions { auto }
+.assembly extern mscorlib { auto }
+
 .assembly MCCTest {}
 .module mcc_i16.exe
 
@@ -12,7 +14,7 @@
 {
   .class MyClass
   {
-    .method assembly static pinvokeimpl("native_i1s" as "#1" stdcall) 
+    .method assembly static pinvokeimpl("native_i1s" as "#1" stdcall)
         valuetype MCCTest.VType1 Sum(float32, float32, float32, float32, float32, float32, float32, float32, float32, float32, float32, float32) cil managed preservesig {
     }
 
@@ -32,20 +34,20 @@
       ldc.r4     11
       ldc.r4     12
       tail.
-      call       valuetype MCCTest.VType1 MCCTest.MyClass::Sum(float32, 
-                                                                float32, 
-                                                                float32, 
-                                                                float32, 
-                                                                float32, 
-                                                                float32, 
-                                                                float32, 
-                                                                float32, 
-                                                                float32, 
-                                                                float32, 
-                                                                float32, 
+      call       valuetype MCCTest.VType1 MCCTest.MyClass::Sum(float32,
+                                                                float32,
+                                                                float32,
+                                                                float32,
+                                                                float32,
+                                                                float32,
+                                                                float32,
+                                                                float32,
+                                                                float32,
+                                                                float32,
+                                                                float32,
                                                                 float32)
-		ret
-	}
+        ret
+    }
 
     .method public specialname rtspecialname instance void  .ctor()
     {
@@ -64,10 +66,10 @@
         [1] valuetype MCCTest.VType1 res,
         [2] int32 rc
       )
-      
+
       newobj     instance void MCCTest.MyClass::.ctor()
       stloc.s    me
-      
+
       ldloc.s    me
       call   instance valuetype MCCTest.VType1 MCCTest.MyClass::GetSum()
       stloc.s    res
@@ -77,7 +79,7 @@
       ldc.i4     12
       call       int32 MCCTest.Common::CheckResult(valuetype MCCTest.VType1, int32)
       stloc.s    rc
-      
+
       ldloc.s    rc
       ret
     } // end of method MyClass::Main

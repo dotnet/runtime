@@ -2,12 +2,11 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
-.assembly extern System.Console
-{
-  .publickeytoken = (B0 3F 5F 7F 11 D5 0A 3A )
-  .ver 4:0:0:0
-}
-.assembly extern mscorlib { }
+
+.assembly extern System.Console { auto }
+.assembly extern System.Runtime.Extensions { auto }
+.assembly extern mscorlib { auto }
+
 .assembly recurse_ep_void { }
 .namespace JitTest
 {
@@ -16,7 +15,7 @@
   {
     .field private static int32 m
     .field private static int32 n
-    .method private hidebysig static 
+    .method private hidebysig static
             void Main() il managed
     {
       .entrypoint
@@ -42,7 +41,7 @@
                                                                                class System.String)
       IL_0039:  call       void [System.Console]System.Console::WriteLine(class System.String)
       IL_003e:  ldc.i4     0x65
-      IL_0043:  call       void [system.runtime.extensions]System.Environment::Exit(int32)
+      IL_0043:  call       void [System.Runtime.Extensions]System.Environment::Exit(int32)
       IL_0048:  ret
 
       IL_0049:  ldsfld     int32 JitTest.Test::m
@@ -56,9 +55,9 @@
       IL_0061:  tail.
       IL_0063:  call       void JitTest.Test::Main()
       IL_0068:  ret
-    } 
+    }
 
-    .method private hidebysig specialname rtspecialname static 
+    .method private hidebysig specialname rtspecialname static
             void .cctor() il managed
     {
       .maxstack  8
@@ -67,17 +66,17 @@
       IL_0006:  ldc.i4.s   10
       IL_0008:  stsfld     int32 JitTest.Test::n
       IL_000d:  ret
-    } 
+    }
 
-    .method public hidebysig specialname rtspecialname 
+    .method public hidebysig specialname rtspecialname
             instance void .ctor() il managed
     {
       .maxstack  8
       IL_0000:  ldarg.0
       IL_0001:  call       instance void [mscorlib]System.Object::.ctor()
       IL_0006:  ret
-    } 
+    }
 
-  } 
+  }
 
-} 
+}

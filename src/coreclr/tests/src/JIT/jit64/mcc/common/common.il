@@ -2,12 +2,12 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
+
 // Metadata version: v2.0.50727
-.assembly extern mscorlib
-{
-  .publickeytoken = (B7 7A 5C 56 19 34 E0 89 )                         // .z\V.4..
-  .ver 2:0:0:0
-}
+.assembly extern mscorlib { auto }
+.assembly extern System.Runtime.Extensions { auto }
+
+
 .module common.netmodule
 // MVID: {8A774AEE-5C13-4F6C-8345-881D79617488}
 .imagebase 0x00400000
@@ -23,7 +23,7 @@
 .class public auto ansi beforefieldinit MCCTest.FormatUtils
        extends [mscorlib]System.Object
 {
-  .method public hidebysig static string 
+  .method public hidebysig static string
           GetPadding(int32 level) cil managed
   {
     // Code size       32 (0x20)
@@ -51,7 +51,7 @@
     IL_001f:  ret
   } // end of method FormatUtils::GetPadding
 
-  .method public hidebysig specialname rtspecialname 
+  .method public hidebysig specialname rtspecialname
           instance void  .ctor() cil managed
   {
     // Code size       7 (0x7)
@@ -66,7 +66,7 @@
 .class public auto ansi beforefieldinit MCCTest.ResultVerificationException
        extends [mscorlib]System.Exception
 {
-  .method public hidebysig specialname rtspecialname 
+  .method public hidebysig specialname rtspecialname
           instance void  .ctor(string fieldName,
                                int64 actual,
                                int64 expected) cil managed
@@ -88,7 +88,7 @@
     IL_000e:  ret
   } // end of method ResultVerificationException::.ctor
 
-  .method public hidebysig specialname rtspecialname 
+  .method public hidebysig specialname rtspecialname
           instance void  .ctor(string fieldName,
                                float64 actual,
                                float64 expected) cil managed
@@ -115,7 +115,7 @@
     IL_0021:  ret
   } // end of method ResultVerificationException::.ctor
 
-  .method public hidebysig specialname rtspecialname 
+  .method public hidebysig specialname rtspecialname
           instance void  .ctor(string fieldName,
                                class [mscorlib]System.Type 'type',
                                class MCCTest.ResultVerificationException innerException) cil managed
@@ -139,7 +139,7 @@
     IL_001b:  ret
   } // end of method ResultVerificationException::.ctor
 
-  .method public hidebysig specialname rtspecialname 
+  .method public hidebysig specialname rtspecialname
           instance void  .ctor(string message) cil managed
   {
     // Code size       12 (0xc)
@@ -155,7 +155,7 @@
     IL_000b:  ret
   } // end of method ResultVerificationException::.ctor
 
-  .method public hidebysig specialname rtspecialname 
+  .method public hidebysig specialname rtspecialname
           instance void  .ctor(string message,
                                class MCCTest.ResultVerificationException innerException) cil managed
   {
@@ -172,7 +172,7 @@
     IL_000b:  ret
   } // end of method ResultVerificationException::.ctor
 
-  .method public hidebysig instance string 
+  .method public hidebysig instance string
           GetMessage() cil managed
   {
     // Code size       13 (0xd)
@@ -189,7 +189,7 @@
     IL_000c:  ret
   } // end of method ResultVerificationException::GetMessage
 
-  .method public hidebysig instance string 
+  .method public hidebysig instance string
           GetMessage(int32 level) cil managed
   {
     // Code size       67 (0x43)
@@ -207,7 +207,7 @@
     IL_0015:  ldsfld     string [mscorlib]System.String::Empty
     IL_001a:  br.s       IL_0039
 
-    IL_001c:  call       string [system.runtime.extensions]System.Environment::get_NewLine()
+    IL_001c:  call       string [System.Runtime.Extensions]System.Environment::get_NewLine()
     IL_0021:  ldarg.0
     IL_0022:  call       instance class [mscorlib]System.Exception [mscorlib]System.Exception::get_InnerException()
     IL_0027:  castclass  MCCTest.ResultVerificationException
@@ -231,22 +231,22 @@
 
 .class interface public abstract auto ansi MCCTest.CType`1<T>
 {
-  .method public hidebysig newslot abstract virtual 
+  .method public hidebysig newslot abstract virtual
           instance void  Init(int32 count) cil managed
   {
   } // end of method CType`1::Init
 
-  .method public hidebysig newslot abstract virtual 
+  .method public hidebysig newslot abstract virtual
           instance void  Init() cil managed
   {
   } // end of method CType`1::Init
 
-  .method public hidebysig newslot abstract virtual 
+  .method public hidebysig newslot abstract virtual
           instance void  Zero() cil managed
   {
   } // end of method CType`1::Zero
 
-  .method public hidebysig newslot abstract virtual 
+  .method public hidebysig newslot abstract virtual
           instance void  Check(!T expected) cil managed
   {
   } // end of method CType`1::Check
@@ -262,7 +262,7 @@
   .field public float64 average
   .field public int64 dummy1
   .field public float64 dummy2
-  .method public hidebysig newslot virtual final 
+  .method public hidebysig newslot virtual final
           instance void  Init(int32 count) cil managed
   {
     // Code size       54 (0x36)
@@ -306,7 +306,7 @@
     IL_0035:  ret
   } // end of method VType0::Init
 
-  .method public hidebysig newslot virtual final 
+  .method public hidebysig newslot virtual final
           instance void  Init() cil managed
   {
     // Code size       10 (0xa)
@@ -319,7 +319,7 @@
     IL_0009:  ret
   } // end of method VType0::Init
 
-  .method public hidebysig newslot virtual final 
+  .method public hidebysig newslot virtual final
           instance void  Zero() cil managed
   {
     // Code size       10 (0xa)
@@ -332,7 +332,7 @@
     IL_0009:  ret
   } // end of method VType0::Zero
 
-  .method public hidebysig newslot virtual final 
+  .method public hidebysig newslot virtual final
           instance void  Check(valuetype MCCTest.VType0 expected) cil managed
   {
     // Code size       224 (0xe0)
@@ -444,7 +444,7 @@
     IL_00df:  ret
   } // end of method VType0::Check
 
-  .method public hidebysig instance string 
+  .method public hidebysig instance string
           Dump(int32 level) cil managed
   {
     // Code size       170 (0xaa)
@@ -522,7 +522,7 @@
     IL_00a9:  ret
   } // end of method VType0::Dump
 
-  .method public hidebysig instance string 
+  .method public hidebysig instance string
           Dump() cil managed
   {
     // Code size       13 (0xd)
@@ -563,7 +563,7 @@
   .field public float32 count5
   .field public float32 sum5
   .field public float32 average5
-  .method public hidebysig newslot virtual final 
+  .method public hidebysig newslot virtual final
           instance void  Init(int32 count) cil managed
   {
     // Code size       159 (0x9f)
@@ -652,7 +652,7 @@
     IL_009e:  ret
   } // end of method VType1::Init
 
-  .method public hidebysig newslot virtual final 
+  .method public hidebysig newslot virtual final
           instance void  Init() cil managed
   {
     // Code size       10 (0xa)
@@ -665,7 +665,7 @@
     IL_0009:  ret
   } // end of method VType1::Init
 
-  .method public hidebysig newslot virtual final 
+  .method public hidebysig newslot virtual final
           instance void  Zero() cil managed
   {
     // Code size       10 (0xa)
@@ -678,7 +678,7 @@
     IL_0009:  ret
   } // end of method VType1::Zero
 
-  .method public hidebysig newslot virtual final 
+  .method public hidebysig newslot virtual final
           instance void  Check(valuetype MCCTest.VType1 expected) cil managed
   {
     // Code size       830 (0x33e)
@@ -1084,7 +1084,7 @@
     IL_033d:  ret
   } // end of method VType1::Check
 
-  .method public hidebysig instance string 
+  .method public hidebysig instance string
           Dump(int32 level) cil managed
   {
     // Code size       547 (0x223)
@@ -1305,7 +1305,7 @@
     IL_0222:  ret
   } // end of method VType1::Dump
 
-  .method public hidebysig instance string 
+  .method public hidebysig instance string
           Dump() cil managed
   {
     // Code size       13 (0xd)
@@ -1336,7 +1336,7 @@
   .field public float32 f6
   .field public float64 f7
   .field public char f8
-  .method public hidebysig newslot virtual final 
+  .method public hidebysig newslot virtual final
           instance void  Init(int32 count) cil managed
   {
     // Code size       65 (0x41)
@@ -1376,7 +1376,7 @@
     IL_0040:  ret
   } // end of method VType2::Init
 
-  .method public hidebysig newslot virtual final 
+  .method public hidebysig newslot virtual final
           instance void  Init() cil managed
   {
     // Code size       10 (0xa)
@@ -1389,7 +1389,7 @@
     IL_0009:  ret
   } // end of method VType2::Init
 
-  .method public hidebysig newslot virtual final 
+  .method public hidebysig newslot virtual final
           instance void  Zero() cil managed
   {
     // Code size       10 (0xa)
@@ -1402,7 +1402,7 @@
     IL_0009:  ret
   } // end of method VType2::Zero
 
-  .method public hidebysig instance void 
+  .method public hidebysig instance void
           Add(valuetype MCCTest.VType2 val) cil managed
   {
     // Code size       164 (0xa4)
@@ -1469,7 +1469,7 @@
     IL_00a3:  ret
   } // end of method VType2::Add
 
-  .method public hidebysig newslot virtual final 
+  .method public hidebysig newslot virtual final
           instance void  Check(valuetype MCCTest.VType2 expected) cil managed
   {
     // Code size       364 (0x16c)
@@ -1649,7 +1649,7 @@
     IL_016b:  ret
   } // end of method VType2::Check
 
-  .method public hidebysig instance string 
+  .method public hidebysig instance string
           Dump(int32 level) cil managed
   {
     // Code size       257 (0x101)
@@ -1760,7 +1760,7 @@
     IL_0100:  ret
   } // end of method VType2::Dump
 
-  .method public hidebysig instance string 
+  .method public hidebysig instance string
           Dump() cil managed
   {
     // Code size       13 (0xd)
@@ -1791,7 +1791,7 @@
   .field public float32 f6
   .field public float32 f7
   .field public float32 f8
-  .method public hidebysig newslot virtual final 
+  .method public hidebysig newslot virtual final
           instance void  Init(int32 count) cil managed
   {
     // Code size       66 (0x42)
@@ -1832,7 +1832,7 @@
     IL_0041:  ret
   } // end of method VType3::Init
 
-  .method public hidebysig newslot virtual final 
+  .method public hidebysig newslot virtual final
           instance void  Init() cil managed
   {
     // Code size       10 (0xa)
@@ -1845,7 +1845,7 @@
     IL_0009:  ret
   } // end of method VType3::Init
 
-  .method public hidebysig newslot virtual final 
+  .method public hidebysig newslot virtual final
           instance void  Zero() cil managed
   {
     // Code size       10 (0xa)
@@ -1858,7 +1858,7 @@
     IL_0009:  ret
   } // end of method VType3::Zero
 
-  .method public hidebysig instance void 
+  .method public hidebysig instance void
           Add(valuetype MCCTest.VType3 val) cil managed
   {
     // Code size       162 (0xa2)
@@ -1923,7 +1923,7 @@
     IL_00a1:  ret
   } // end of method VType3::Add
 
-  .method public hidebysig newslot virtual final 
+  .method public hidebysig newslot virtual final
           instance void  Check(valuetype MCCTest.VType3 expected) cil managed
   {
     // Code size       370 (0x172)
@@ -2109,7 +2109,7 @@
     IL_0171:  ret
   } // end of method VType3::Check
 
-  .method public hidebysig instance string 
+  .method public hidebysig instance string
           Dump(int32 level) cil managed
   {
     // Code size       257 (0x101)
@@ -2220,7 +2220,7 @@
     IL_0100:  ret
   } // end of method VType3::Dump
 
-  .method public hidebysig instance string 
+  .method public hidebysig instance string
           Dump() cil managed
   {
     // Code size       13 (0xd)
@@ -2251,7 +2251,7 @@
   .field public float32 f6
   .field public float32 f7
   .field public float32 f8
-  .method public hidebysig newslot virtual final 
+  .method public hidebysig newslot virtual final
           instance void  Init(int32 count) cil managed
   {
     // Code size       66 (0x42)
@@ -2292,7 +2292,7 @@
     IL_0041:  ret
   } // end of method RType4::Init
 
-  .method public hidebysig newslot virtual final 
+  .method public hidebysig newslot virtual final
           instance void  Init() cil managed
   {
     // Code size       10 (0xa)
@@ -2305,7 +2305,7 @@
     IL_0009:  ret
   } // end of method RType4::Init
 
-  .method public hidebysig newslot virtual final 
+  .method public hidebysig newslot virtual final
           instance void  Zero() cil managed
   {
     // Code size       10 (0xa)
@@ -2318,7 +2318,7 @@
     IL_0009:  ret
   } // end of method RType4::Zero
 
-  .method public hidebysig instance void 
+  .method public hidebysig instance void
           Add(class MCCTest.RType4 val) cil managed
   {
     // Code size       154 (0x9a)
@@ -2383,7 +2383,7 @@
     IL_0099:  ret
   } // end of method RType4::Add
 
-  .method public hidebysig newslot virtual final 
+  .method public hidebysig newslot virtual final
           instance void  Check(class MCCTest.RType4 expected) cil managed
   {
     // Code size       354 (0x162)
@@ -2569,7 +2569,7 @@
     IL_0161:  ret
   } // end of method RType4::Check
 
-  .method public hidebysig instance string 
+  .method public hidebysig instance string
           Dump(int32 level) cil managed
   {
     // Code size       257 (0x101)
@@ -2680,7 +2680,7 @@
     IL_0100:  ret
   } // end of method RType4::Dump
 
-  .method public hidebysig instance string 
+  .method public hidebysig instance string
           Dump() cil managed
   {
     // Code size       13 (0xd)
@@ -2697,7 +2697,7 @@
     IL_000c:  ret
   } // end of method RType4::Dump
 
-  .method public hidebysig specialname rtspecialname 
+  .method public hidebysig specialname rtspecialname
           instance void  .ctor() cil managed
   {
     // Code size       7 (0x7)
@@ -2731,7 +2731,7 @@
   .field public int64 f16
   .field public int64 f17
   .field public int64 f18
-  .method public hidebysig newslot virtual final 
+  .method public hidebysig newslot virtual final
           instance void  Init(int32 count) cil managed
   {
     // Code size       146 (0x92)
@@ -2812,7 +2812,7 @@
     IL_0091:  ret
   } // end of method VType5::Init
 
-  .method public hidebysig newslot virtual final 
+  .method public hidebysig newslot virtual final
           instance void  Init() cil managed
   {
     // Code size       10 (0xa)
@@ -2825,7 +2825,7 @@
     IL_0009:  ret
   } // end of method VType5::Init
 
-  .method public hidebysig newslot virtual final 
+  .method public hidebysig newslot virtual final
           instance void  Zero() cil managed
   {
     // Code size       10 (0xa)
@@ -2838,7 +2838,7 @@
     IL_0009:  ret
   } // end of method VType5::Zero
 
-  .method public hidebysig instance void 
+  .method public hidebysig instance void
           Add(valuetype MCCTest.VType5 val) cil managed
   {
     // Code size       362 (0x16a)
@@ -2973,7 +2973,7 @@
     IL_0169:  ret
   } // end of method VType5::Add
 
-  .method public hidebysig newslot virtual final 
+  .method public hidebysig newslot virtual final
           instance void  Check(valuetype MCCTest.VType5 expected) cil managed
   {
     // Code size       794 (0x31a)
@@ -3343,7 +3343,7 @@
     IL_0319:  ret
   } // end of method VType5::Check
 
-  .method public hidebysig instance string 
+  .method public hidebysig instance string
           Dump(int32 level) cil managed
   {
     // Code size       547 (0x223)
@@ -3564,7 +3564,7 @@
     IL_0222:  ret
   } // end of method VType5::Dump
 
-  .method public hidebysig instance string 
+  .method public hidebysig instance string
           Dump() cil managed
   {
     // Code size       13 (0xd)
@@ -3616,7 +3616,7 @@
   .field public float64 f27
   .field public float64 f28
   .field public float64 f29
-  .method public hidebysig newslot virtual final 
+  .method public hidebysig newslot virtual final
           instance void  Init(int32 count) cil managed
   {
     // Code size       234 (0xea)
@@ -3741,7 +3741,7 @@
     IL_00e9:  ret
   } // end of method VType6::Init
 
-  .method public hidebysig newslot virtual final 
+  .method public hidebysig newslot virtual final
           instance void  Init() cil managed
   {
     // Code size       10 (0xa)
@@ -3754,7 +3754,7 @@
     IL_0009:  ret
   } // end of method VType6::Init
 
-  .method public hidebysig newslot virtual final 
+  .method public hidebysig newslot virtual final
           instance void  Zero() cil managed
   {
     // Code size       10 (0xa)
@@ -3767,7 +3767,7 @@
     IL_0009:  ret
   } // end of method VType6::Zero
 
-  .method public hidebysig instance void 
+  .method public hidebysig instance void
           Add(valuetype MCCTest.VType6 val) cil managed
   {
     // Code size       582 (0x246)
@@ -3979,7 +3979,7 @@
     IL_0245:  ret
   } // end of method VType6::Add
 
-  .method public hidebysig newslot virtual final 
+  .method public hidebysig newslot virtual final
           instance void  Check(valuetype MCCTest.VType6 expected) cil managed
   {
     // Code size       1278 (0x4fe)
@@ -4569,7 +4569,7 @@
     IL_04fd:  ret
   } // end of method VType6::Check
 
-  .method public hidebysig instance string 
+  .method public hidebysig instance string
           Dump(int32 level) cil managed
   {
     // Code size       866 (0x362)
@@ -4911,7 +4911,7 @@
     IL_0361:  ret
   } // end of method VType6::Dump
 
-  .method public hidebysig instance string 
+  .method public hidebysig instance string
           Dump() cil managed
   {
     // Code size       13 (0xd)
@@ -5191,7 +5191,7 @@
   .field public float64 f255
   .field public float64 f256
   .field public float64 f257
-  .method public hidebysig newslot virtual final 
+  .method public hidebysig newslot virtual final
           instance void  Init(int32 count) cil managed
   {
     // Code size       2058 (0x80a)
@@ -6228,7 +6228,7 @@
     IL_0809:  ret
   } // end of method VType7::Init
 
-  .method public hidebysig newslot virtual final 
+  .method public hidebysig newslot virtual final
           instance void  Init() cil managed
   {
     // Code size       10 (0xa)
@@ -6241,7 +6241,7 @@
     IL_0009:  ret
   } // end of method VType7::Init
 
-  .method public hidebysig newslot virtual final 
+  .method public hidebysig newslot virtual final
           instance void  Zero() cil managed
   {
     // Code size       10 (0xa)
@@ -6254,7 +6254,7 @@
     IL_0009:  ret
   } // end of method VType7::Zero
 
-  .method public hidebysig instance void 
+  .method public hidebysig instance void
           Add(valuetype MCCTest.VType7 val) cil managed
   {
     // Code size       5142 (0x1416)
@@ -8062,7 +8062,7 @@
     IL_1415:  ret
   } // end of method VType7::Add
 
-  .method public hidebysig newslot virtual final 
+  .method public hidebysig newslot virtual final
           instance void  Check(valuetype MCCTest.VType7 expected) cil managed
   {
     // Code size       11310 (0x2c2e)
@@ -13212,7 +13212,7 @@
     IL_2c2d:  ret
   } // end of method VType7::Check
 
-  .method public hidebysig instance string 
+  .method public hidebysig instance string
           Dump(int32 level) cil managed
   {
     // Code size       7478 (0x1d36)
@@ -16062,7 +16062,7 @@
     IL_1d35:  ret
   } // end of method VType7::Dump
 
-  .method public hidebysig instance string 
+  .method public hidebysig instance string
           Dump() cil managed
   {
     // Code size       13 (0xd)
@@ -16085,7 +16085,7 @@
        extends [mscorlib]System.ValueType
        implements class MCCTest.CType`1<valuetype MCCTest.VType8>
 {
-  .method public hidebysig newslot virtual final 
+  .method public hidebysig newslot virtual final
           instance void  Init(int32 count) cil managed
   {
     // Code size       2 (0x2)
@@ -16094,7 +16094,7 @@
     IL_0001:  ret
   } // end of method VType8::Init
 
-  .method public hidebysig newslot virtual final 
+  .method public hidebysig newslot virtual final
           instance void  Init() cil managed
   {
     // Code size       10 (0xa)
@@ -16107,7 +16107,7 @@
     IL_0009:  ret
   } // end of method VType8::Init
 
-  .method public hidebysig newslot virtual final 
+  .method public hidebysig newslot virtual final
           instance void  Zero() cil managed
   {
     // Code size       10 (0xa)
@@ -16120,7 +16120,7 @@
     IL_0009:  ret
   } // end of method VType8::Zero
 
-  .method public hidebysig instance void 
+  .method public hidebysig instance void
           Add(valuetype MCCTest.VType8 val) cil managed
   {
     // Code size       2 (0x2)
@@ -16129,7 +16129,7 @@
     IL_0001:  ret
   } // end of method VType8::Add
 
-  .method public hidebysig newslot virtual final 
+  .method public hidebysig newslot virtual final
           instance void  Check(valuetype MCCTest.VType8 expected) cil managed
   {
     // Code size       22 (0x16)
@@ -16149,7 +16149,7 @@
       IL_0007:  leave.s    IL_0014
 
     }  // end .try
-    catch MCCTest.ResultVerificationException 
+    catch MCCTest.ResultVerificationException
     {
       IL_0009:  stloc.2
       IL_000a:  nop
@@ -16166,7 +16166,7 @@
     IL_0015:  ret
   } // end of method VType8::Check
 
-  .method public hidebysig instance string 
+  .method public hidebysig instance string
           Dump(int32 level) cil managed
   {
     // Code size       25 (0x19)
@@ -16189,7 +16189,7 @@
     IL_0018:  ret
   } // end of method VType8::Dump
 
-  .method public hidebysig instance string 
+  .method public hidebysig instance string
           Dump() cil managed
   {
     // Code size       13 (0xd)
@@ -16213,7 +16213,7 @@
        implements class MCCTest.CType`1<valuetype MCCTest.VType9>
 {
   .field public float32 f1
-  .method public hidebysig newslot virtual final 
+  .method public hidebysig newslot virtual final
           instance void  Init(int32 count) cil managed
   {
     // Code size       10 (0xa)
@@ -16226,7 +16226,7 @@
     IL_0009:  ret
   } // end of method VType9::Init
 
-  .method public hidebysig newslot virtual final 
+  .method public hidebysig newslot virtual final
           instance void  Init() cil managed
   {
     // Code size       10 (0xa)
@@ -16239,7 +16239,7 @@
     IL_0009:  ret
   } // end of method VType9::Init
 
-  .method public hidebysig newslot virtual final 
+  .method public hidebysig newslot virtual final
           instance void  Zero() cil managed
   {
     // Code size       10 (0xa)
@@ -16252,7 +16252,7 @@
     IL_0009:  ret
   } // end of method VType9::Zero
 
-  .method public hidebysig instance void 
+  .method public hidebysig instance void
           Add(valuetype MCCTest.VType9 val) cil managed
   {
     // Code size       22 (0x16)
@@ -16268,7 +16268,7 @@
     IL_0015:  ret
   } // end of method VType9::Add
 
-  .method public hidebysig newslot virtual final 
+  .method public hidebysig newslot virtual final
           instance void  Check(valuetype MCCTest.VType9 expected) cil managed
   {
     // Code size       68 (0x44)
@@ -16311,7 +16311,7 @@
       IL_0035:  leave.s    IL_0042
 
     }  // end .try
-    catch MCCTest.ResultVerificationException 
+    catch MCCTest.ResultVerificationException
     {
       IL_0037:  stloc.2
       IL_0038:  nop
@@ -16328,7 +16328,7 @@
     IL_0043:  ret
   } // end of method VType9::Check
 
-  .method public hidebysig instance string 
+  .method public hidebysig instance string
           Dump(int32 level) cil managed
   {
     // Code size       54 (0x36)
@@ -16362,7 +16362,7 @@
     IL_0035:  ret
   } // end of method VType9::Dump
 
-  .method public hidebysig instance string 
+  .method public hidebysig instance string
           Dump() cil managed
   {
     // Code size       13 (0xd)
@@ -16398,7 +16398,7 @@
   .field public class MCCTest.RType4 f11
   .field public class MCCTest.RType4 f12
   .field public class MCCTest.RType4 f13
-  .method public hidebysig newslot virtual final 
+  .method public hidebysig newslot virtual final
           instance void  Init(int32 count) cil managed
   {
     // Code size       314 (0x13a)
@@ -16511,7 +16511,7 @@
     IL_0139:  ret
   } // end of method VTypeA::Init
 
-  .method public hidebysig newslot virtual final 
+  .method public hidebysig newslot virtual final
           instance void  Init() cil managed
   {
     // Code size       10 (0xa)
@@ -16524,7 +16524,7 @@
     IL_0009:  ret
   } // end of method VTypeA::Init
 
-  .method public hidebysig newslot virtual final 
+  .method public hidebysig newslot virtual final
           instance void  Zero() cil managed
   {
     // Code size       10 (0xa)
@@ -16537,7 +16537,7 @@
     IL_0009:  ret
   } // end of method VTypeA::Zero
 
-  .method public hidebysig instance void 
+  .method public hidebysig instance void
           Add(valuetype MCCTest.VTypeA val) cil managed
   {
     // Code size       249 (0xf9)
@@ -16624,7 +16624,7 @@
     IL_00f8:  ret
   } // end of method VTypeA::Add
 
-  .method public hidebysig newslot virtual final 
+  .method public hidebysig newslot virtual final
           instance void  Check(valuetype MCCTest.VTypeA expected) cil managed
   {
     // Code size       503 (0x1f7)
@@ -16800,7 +16800,7 @@
       IL_01e8:  leave.s    IL_01f5
 
     }  // end .try
-    catch MCCTest.ResultVerificationException 
+    catch MCCTest.ResultVerificationException
     {
       IL_01ea:  stloc.2
       IL_01eb:  nop
@@ -16817,7 +16817,7 @@
     IL_01f6:  ret
   } // end of method VTypeA::Check
 
-  .method public hidebysig instance string 
+  .method public hidebysig instance string
           Dump(int32 level) cil managed
   {
     // Code size       740 (0x2e4)
@@ -17113,7 +17113,7 @@
     IL_02e3:  ret
   } // end of method VTypeA::Dump
 
-  .method public hidebysig instance string 
+  .method public hidebysig instance string
           Dump() cil managed
   {
     // Code size       13 (0xd)
@@ -17155,7 +17155,7 @@
   .field public valuetype MCCTest.VType5 f17
   .field public valuetype MCCTest.VType5 f18
   .field public valuetype MCCTest.VType5 f19
-  .method public hidebysig newslot virtual final 
+  .method public hidebysig newslot virtual final
           instance void  Init(int32 count) cil managed
   {
     // Code size       249 (0xf9)
@@ -17259,7 +17259,7 @@
     IL_00f8:  ret
   } // end of method VTypeB::Init
 
-  .method public hidebysig newslot virtual final 
+  .method public hidebysig newslot virtual final
           instance void  Init() cil managed
   {
     // Code size       10 (0xa)
@@ -17272,7 +17272,7 @@
     IL_0009:  ret
   } // end of method VTypeB::Init
 
-  .method public hidebysig newslot virtual final 
+  .method public hidebysig newslot virtual final
           instance void  Zero() cil managed
   {
     // Code size       10 (0xa)
@@ -17285,7 +17285,7 @@
     IL_0009:  ret
   } // end of method VTypeB::Zero
 
-  .method public hidebysig instance void 
+  .method public hidebysig instance void
           Add(valuetype MCCTest.VTypeB val) cil managed
   {
     // Code size       363 (0x16b)
@@ -17408,7 +17408,7 @@
     IL_016a:  ret
   } // end of method VTypeB::Add
 
-  .method public hidebysig newslot virtual final 
+  .method public hidebysig newslot virtual final
           instance void  Check(valuetype MCCTest.VTypeB expected) cil managed
   {
     // Code size       820 (0x334)
@@ -17675,7 +17675,7 @@
       IL_0325:  leave.s    IL_0332
 
     }  // end .try
-    catch MCCTest.ResultVerificationException 
+    catch MCCTest.ResultVerificationException
     {
       IL_0327:  stloc.2
       IL_0328:  nop
@@ -17692,7 +17692,7 @@
     IL_0333:  ret
   } // end of method VTypeB::Check
 
-  .method public hidebysig instance string 
+  .method public hidebysig instance string
           Dump(int32 level) cil managed
   {
     // Code size       1165 (0x48d)
@@ -18133,7 +18133,7 @@
     IL_048c:  ret
   } // end of method VTypeB::Dump
 
-  .method public hidebysig instance string 
+  .method public hidebysig instance string
           Dump() cil managed
   {
     // Code size       13 (0xd)
@@ -18168,7 +18168,7 @@
   .field public class MCCTest.RType4 f10
   .field public valuetype MCCTest.VType5 f11
   .field public valuetype MCCTest.VType6 f12
-  .method public hidebysig newslot virtual final 
+  .method public hidebysig newslot virtual final
           instance void  Init(int32 count) cil managed
   {
     // Code size       202 (0xca)
@@ -18249,7 +18249,7 @@
     IL_00c9:  ret
   } // end of method VTypeC::Init
 
-  .method public hidebysig newslot virtual final 
+  .method public hidebysig newslot virtual final
           instance void  Init() cil managed
   {
     // Code size       10 (0xa)
@@ -18262,7 +18262,7 @@
     IL_0009:  ret
   } // end of method VTypeC::Init
 
-  .method public hidebysig newslot virtual final 
+  .method public hidebysig newslot virtual final
           instance void  Zero() cil managed
   {
     // Code size       10 (0xa)
@@ -18275,7 +18275,7 @@
     IL_0009:  ret
   } // end of method VTypeC::Zero
 
-  .method public hidebysig instance void 
+  .method public hidebysig instance void
           Add(valuetype MCCTest.VTypeC val) cil managed
   {
     // Code size       230 (0xe6)
@@ -18356,7 +18356,7 @@
     IL_00e5:  ret
   } // end of method VTypeC::Add
 
-  .method public hidebysig newslot virtual final 
+  .method public hidebysig newslot virtual final
           instance void  Check(valuetype MCCTest.VTypeC expected) cil managed
   {
     // Code size       506 (0x1fa)
@@ -18528,7 +18528,7 @@
       IL_01eb:  leave.s    IL_01f8
 
     }  // end .try
-    catch MCCTest.ResultVerificationException 
+    catch MCCTest.ResultVerificationException
     {
       IL_01ed:  stloc.2
       IL_01ee:  nop
@@ -18545,7 +18545,7 @@
     IL_01f9:  ret
   } // end of method VTypeC::Check
 
-  .method public hidebysig instance string 
+  .method public hidebysig instance string
           Dump(int32 level) cil managed
   {
     // Code size       725 (0x2d5)
@@ -18828,7 +18828,7 @@
     IL_02d4:  ret
   } // end of method VTypeC::Dump
 
-  .method public hidebysig instance string 
+  .method public hidebysig instance string
           Dump() cil managed
   {
     // Code size       13 (0xd)
@@ -18868,7 +18868,7 @@
   .field public class MCCTest.RType4 f15
   .field public valuetype MCCTest.VType7 f16
   .field public uint32 f17
-  .method public hidebysig newslot virtual final 
+  .method public hidebysig newslot virtual final
           instance void  Init(int32 count) cil managed
   {
     // Code size       230 (0xe6)
@@ -18965,7 +18965,7 @@
     IL_00e5:  ret
   } // end of method VTypeD::Init
 
-  .method public hidebysig newslot virtual final 
+  .method public hidebysig newslot virtual final
           instance void  Init() cil managed
   {
     // Code size       10 (0xa)
@@ -18978,7 +18978,7 @@
     IL_0009:  ret
   } // end of method VTypeD::Init
 
-  .method public hidebysig newslot virtual final 
+  .method public hidebysig newslot virtual final
           instance void  Zero() cil managed
   {
     // Code size       10 (0xa)
@@ -18991,7 +18991,7 @@
     IL_0009:  ret
   } // end of method VTypeD::Zero
 
-  .method public hidebysig instance void 
+  .method public hidebysig instance void
           Add(valuetype MCCTest.VTypeD val) cil managed
   {
     // Code size       333 (0x14d)
@@ -19110,7 +19110,7 @@
     IL_014c:  ret
   } // end of method VTypeD::Add
 
-  .method public hidebysig newslot virtual final 
+  .method public hidebysig newslot virtual final
           instance void  Check(valuetype MCCTest.VTypeD expected) cil managed
   {
     // Code size       742 (0x2e6)
@@ -19409,7 +19409,7 @@
       IL_02d7:  leave.s    IL_02e4
 
     }  // end .try
-    catch MCCTest.ResultVerificationException 
+    catch MCCTest.ResultVerificationException
     {
       IL_02d9:  stloc.2
       IL_02da:  nop
@@ -19426,7 +19426,7 @@
     IL_02e5:  ret
   } // end of method VTypeD::Check
 
-  .method public hidebysig instance string 
+  .method public hidebysig instance string
           Dump(int32 level) cil managed
   {
     // Code size       808 (0x328)
@@ -19742,7 +19742,7 @@
     IL_0327:  ret
   } // end of method VTypeD::Dump
 
-  .method public hidebysig instance string 
+  .method public hidebysig instance string
           Dump() cil managed
   {
     // Code size       13 (0xd)
@@ -19788,7 +19788,7 @@
   .field public valuetype MCCTest.VType9 f21
   .field public valuetype MCCTest.VTypeC f22
   .field public valuetype MCCTest.VType8 f23
-  .method public hidebysig newslot virtual final 
+  .method public hidebysig newslot virtual final
           instance void  Init(int32 count) cil managed
   {
     // Code size       276 (0x114)
@@ -19907,7 +19907,7 @@
     IL_0113:  ret
   } // end of method VTypeE::Init
 
-  .method public hidebysig newslot virtual final 
+  .method public hidebysig newslot virtual final
           instance void  Init() cil managed
   {
     // Code size       10 (0xa)
@@ -19920,7 +19920,7 @@
     IL_0009:  ret
   } // end of method VTypeE::Init
 
-  .method public hidebysig newslot virtual final 
+  .method public hidebysig newslot virtual final
           instance void  Zero() cil managed
   {
     // Code size       10 (0xa)
@@ -19933,7 +19933,7 @@
     IL_0009:  ret
   } // end of method VTypeE::Zero
 
-  .method public hidebysig instance void 
+  .method public hidebysig instance void
           Add(valuetype MCCTest.VTypeE val) cil managed
   {
     // Code size       448 (0x1c0)
@@ -20089,7 +20089,7 @@
     IL_01bf:  ret
   } // end of method VTypeE::Add
 
-  .method public hidebysig newslot virtual final 
+  .method public hidebysig newslot virtual final
           instance void  Check(valuetype MCCTest.VTypeE expected) cil managed
   {
     // Code size       1009 (0x3f1)
@@ -20469,7 +20469,7 @@
       IL_03e2:  leave.s    IL_03ef
 
     }  // end .try
-    catch MCCTest.ResultVerificationException 
+    catch MCCTest.ResultVerificationException
     {
       IL_03e4:  stloc.2
       IL_03e5:  nop
@@ -20486,7 +20486,7 @@
     IL_03f0:  ret
   } // end of method VTypeE::Check
 
-  .method public hidebysig instance string 
+  .method public hidebysig instance string
           Dump(int32 level) cil managed
   {
     // Code size       1183 (0x49f)
@@ -20937,7 +20937,7 @@
     IL_049e:  ret
   } // end of method VTypeE::Dump
 
-  .method public hidebysig instance string 
+  .method public hidebysig instance string
           Dump() cil managed
   {
     // Code size       13 (0xd)
@@ -21004,7 +21004,7 @@
   .field public char f42
   .field public valuetype MCCTest.VTypeB f43
   .field public valuetype MCCTest.VType8 f44
-  .method public hidebysig newslot virtual final 
+  .method public hidebysig newslot virtual final
           instance void  Init(int32 count) cil managed
   {
     // Code size       547 (0x223)
@@ -21230,7 +21230,7 @@
     IL_0222:  ret
   } // end of method VTypeF::Init
 
-  .method public hidebysig newslot virtual final 
+  .method public hidebysig newslot virtual final
           instance void  Init() cil managed
   {
     // Code size       10 (0xa)
@@ -21243,7 +21243,7 @@
     IL_0009:  ret
   } // end of method VTypeF::Init
 
-  .method public hidebysig newslot virtual final 
+  .method public hidebysig newslot virtual final
           instance void  Zero() cil managed
   {
     // Code size       10 (0xa)
@@ -21256,7 +21256,7 @@
     IL_0009:  ret
   } // end of method VTypeF::Zero
 
-  .method public hidebysig instance void 
+  .method public hidebysig instance void
           Add(valuetype MCCTest.VTypeF val) cil managed
   {
     // Code size       860 (0x35c)
@@ -21551,7 +21551,7 @@
     IL_035b:  ret
   } // end of method VTypeF::Add
 
-  .method public hidebysig newslot virtual final 
+  .method public hidebysig newslot virtual final
           instance void  Check(valuetype MCCTest.VTypeF expected) cil managed
   {
     // Code size       1901 (0x76d)
@@ -22275,7 +22275,7 @@
       IL_075e:  leave.s    IL_076b
 
     }  // end .try
-    catch MCCTest.ResultVerificationException 
+    catch MCCTest.ResultVerificationException
     {
       IL_0760:  stloc.2
       IL_0761:  nop
@@ -22292,7 +22292,7 @@
     IL_076c:  ret
   } // end of method VTypeF::Check
 
-  .method public hidebysig instance string 
+  .method public hidebysig instance string
           Dump(int32 level) cil managed
   {
     // Code size       2144 (0x860)
@@ -23102,7 +23102,7 @@
     IL_085f:  ret
   } // end of method VTypeF::Dump
 
-  .method public hidebysig instance string 
+  .method public hidebysig instance string
           Dump() cil managed
   {
     // Code size       13 (0xd)
@@ -23412,7 +23412,7 @@
     IL_000c:  ret
   } // end of method Common::CheckResult
 
-  .method public hidebysig specialname rtspecialname 
+  .method public hidebysig specialname rtspecialname
           instance void  .ctor() cil managed
   {
     // Code size       7 (0x7)
@@ -23477,7 +23477,7 @@
       IL_0054:  leave.s    IL_0072
 
     }  // end .try
-    catch MCCTest.ResultVerificationException 
+    catch MCCTest.ResultVerificationException
     {
       IL_0056:  stloc.2
       IL_0057:  nop
@@ -23501,7 +23501,7 @@
     IL_0078:  ret
   } // end of method Common2`1::CheckResult
 
-  .method public hidebysig specialname rtspecialname 
+  .method public hidebysig specialname rtspecialname
           instance void  .ctor() cil managed
   {
     // Code size       7 (0x7)

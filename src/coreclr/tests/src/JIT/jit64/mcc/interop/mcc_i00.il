@@ -2,7 +2,10 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
-.assembly extern mscorlib {}
+
+.assembly extern System.Runtime.Extensions { auto }
+.assembly extern mscorlib { auto }
+
 .assembly MCCTest {}
 .module mcc_i00.exe
 
@@ -11,7 +14,7 @@
 {
   .class MyClass
   {
-    .method assembly static pinvokeimpl("native_i0c" as "#1" cdecl) 
+    .method assembly static pinvokeimpl("native_i0c" as "#1" cdecl)
         vararg valuetype MCCTest.VType0 Sum(unsigned int64) cil managed preservesig {
     }
 
@@ -23,7 +26,7 @@
         [0] valuetype MCCTest.VType0 res,
         [1] int32 rc
       )
-      
+
       ldc.i8 1
       ldc.i8 2
       ldc.i8 3
@@ -38,19 +41,19 @@
       ldc.i8 12
       ldc.i8 1
       neg
-      call   vararg valuetype MCCTest.VType0 MCCTest.MyClass::Sum(unsigned int64, ..., 
-																	unsigned int64, 
-																	unsigned int64, 
-																	unsigned int64, 
-																	unsigned int64, 
-																	unsigned int64, 
-																	unsigned int64, 
-																	unsigned int64, 
-																	unsigned int64, 
-																	unsigned int64, 
-																	unsigned int64, 
-																	unsigned int64, 
-																	unsigned int64)
+      call   vararg valuetype MCCTest.VType0 MCCTest.MyClass::Sum(unsigned int64, ...,
+                                                                    unsigned int64,
+                                                                    unsigned int64,
+                                                                    unsigned int64,
+                                                                    unsigned int64,
+                                                                    unsigned int64,
+                                                                    unsigned int64,
+                                                                    unsigned int64,
+                                                                    unsigned int64,
+                                                                    unsigned int64,
+                                                                    unsigned int64,
+                                                                    unsigned int64,
+                                                                    unsigned int64)
 
       stloc.s    res
 
@@ -59,7 +62,7 @@
       ldc.i4     12
       call       int32 MCCTest.Common::CheckResult(valuetype MCCTest.VType0, int32)
       stloc.s    rc
-      
+
       ldloc.s    rc
       ret
     } // end of method MyClass::Main

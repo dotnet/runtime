@@ -1,18 +1,17 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
-// try --  catch in switch
 
-.assembly extern legacy library mscorlib {}
-.assembly extern System.Console
-{
-  .publickeytoken = (B0 3F 5F 7F 11 D5 0A 3A )
-  .ver 4:0:0:0
-}
+
+// try --  catch in switch
+.assembly extern System.Runtime.Extensions { auto }
+.assembly extern legacy library mscorlib { auto }
+.assembly extern System.Console { auto }
+
 .assembly 'switch6'
 {
-  
-  
+
+
 }
 
 .module 'switch6.exe'
@@ -48,8 +47,8 @@
       IL_0014:  stloc.1
       IL_0015:  leave.s    IL_0028
 
-    }  
-    catch ['mscorlib']System.Exception 
+    }
+    catch ['mscorlib']System.Exception
     {
       IL_0017:  stloc.2
       IL_0018:  ldstr      "Exception {0} caught"
@@ -60,7 +59,7 @@
       IL_0025:  stloc.1
       IL_0026:  leave.s    IL_0028
 
-    }  
+    }
     IL_0028:  br.s       IL_002c
 
     IL_002a:  br.s       IL_002c
@@ -70,17 +69,17 @@
     IL_002f:  bne.un.s   IL_0044
 
     IL_0031:  ldc.i4.s   100
-    IL_0033:  call       void ['system.runtime.extensions']System.Environment::set_ExitCode(int32)
+    IL_0033:  call       void ['System.Runtime.Extensions']System.Environment::set_ExitCode(int32)
     IL_0038:  ldstr      "Test passed"
     IL_003d:  call       void ['mscorlib']System.Console::WriteLine(class System.String)
     IL_0042:  br.s       IL_0054
 
     IL_0044:  ldc.i4.1
-    IL_0045:  call       void ['system.runtime.extensions']System.Environment::set_ExitCode(int32)
+    IL_0045:  call       void ['System.Runtime.Extensions']System.Environment::set_ExitCode(int32)
     IL_004a:  ldstr      "Test failed"
     IL_004f:  call       void ['mscorlib']System.Console::WriteLine(class System.String)
     IL_0054:  ret
-  } 
+  }
 
   .method public hidebysig static void Main() il managed
   {
@@ -88,9 +87,9 @@
     .maxstack  8
     IL_0000:  ldc.i4.1
     IL_0001:  call       void Test::DoSwitch(int32)
-    IL_0006:  call       int32 ['system.runtime.extensions']System.Environment::get_ExitCode()
-              call       void ['system.runtime.extensions']System.Environment::Exit(int32)
+    IL_0006:  call       int32 ['System.Runtime.Extensions']System.Environment::get_ExitCode()
+              call       void ['System.Runtime.Extensions']System.Environment::Exit(int32)
               ret
-  } 
+  }
 
-} 
+}

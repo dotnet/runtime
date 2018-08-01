@@ -2,9 +2,11 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
-// Test for remorphing subexpressions in casts of long shifts.
 
-.assembly extern System.Private.CoreLib {}
+// Test for remorphing subexpressions in casts of long shifts.
+.assembly extern System.Private.CoreLib { auto }
+.assembly extern mscorlib { auto }
+
 .assembly GitHub_15319_1 {}
 
 .class private auto ansi beforefieldinit Q
@@ -13,12 +15,12 @@
   .method public hidebysig static int32  P(int64 x) cil managed noinlining
   {
        ldarg.s      0x0
-       dup         
+       dup
        ldarg.s      0x0
-       clt         
-       shl         
+       clt
+       shl
        conv.i4
-       ret 
+       ret
   }
 
   .method public hidebysig static int32  Main(string[] args) cil managed
@@ -29,4 +31,4 @@
        call       int32 Q::P(int64)
        ret
   }
-} 
+}

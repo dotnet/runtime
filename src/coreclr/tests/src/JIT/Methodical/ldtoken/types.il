@@ -2,19 +2,18 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
-.assembly extern System.Console
-{
-  .publickeytoken = (B0 3F 5F 7F 11 D5 0A 3A )
-  .ver 4:0:0:0
-}
-.assembly extern mscorlib { }
+
+.assembly extern System.Runtime.Extensions { auto }
+.assembly extern System.Console { auto }
+.assembly extern mscorlib { auto }
+
 .assembly types { }
 .namespace JitTest
 {
   .class private auto ansi beforefieldinit Test
          extends [mscorlib]System.Object
   {
-    .method private hidebysig static void 
+    .method private hidebysig static void
             test_token(object boxed_vt,
                        valuetype [mscorlib]System.RuntimeTypeHandle vt) cil managed
     {
@@ -25,7 +24,7 @@
       call       class [mscorlib]System.Type [mscorlib]System.Type::GetTypeFromHandle(
       													valuetype [mscorlib]System.RuntimeTypeHandle)
       beq.s      IL_EXIT
-      
+
       ldstr      "Test failed on "
       ldarg.1
       call       class [mscorlib]System.Type [mscorlib]System.Type::GetTypeFromHandle(
@@ -34,7 +33,7 @@
       call       string [mscorlib]System.String::Concat(string, string)
       call       void [System.Console]System.Console::WriteLine(string)
       ldc.i4.s   101
-      call       void [system.runtime.extensions]System.Environment::Exit(int32)
+      call       void [System.Runtime.Extensions]System.Environment::Exit(int32)
       IL_EXIT:
       ret
     }
@@ -57,17 +56,17 @@
       box        [mscorlib]System.Int16
       ldtoken    [mscorlib]System.Int16
       call       void JitTest.Test::test_token(object, valuetype [mscorlib]System.RuntimeTypeHandle)
-      
+
       ldc.i4.1
       box        [mscorlib]System.UInt16
       ldtoken    [mscorlib]System.UInt16
       call       void JitTest.Test::test_token(object, valuetype [mscorlib]System.RuntimeTypeHandle)
-      
+
       ldc.i4.1
       box        [mscorlib]System.Int32
       ldtoken    [mscorlib]System.Int32
       call       void JitTest.Test::test_token(object, valuetype [mscorlib]System.RuntimeTypeHandle)
-      
+
       ldc.i4.1
       box        [mscorlib]System.UInt32
       ldtoken    [mscorlib]System.UInt32
@@ -77,22 +76,22 @@
       box        [mscorlib]System.Int64
       ldtoken    [mscorlib]System.Int64
       call       void JitTest.Test::test_token(object, valuetype [mscorlib]System.RuntimeTypeHandle)
-      
+
       ldc.i8 1
       box        [mscorlib]System.UInt64
       ldtoken    [mscorlib]System.UInt64
       call       void JitTest.Test::test_token(object, valuetype [mscorlib]System.RuntimeTypeHandle)
-      
+
       ldc.r8 1
       box        [mscorlib]System.Single
       ldtoken    [mscorlib]System.Single
       call       void JitTest.Test::test_token(object, valuetype [mscorlib]System.RuntimeTypeHandle)
-      
+
       ldc.r4 1
       box        [mscorlib]System.Double
       ldtoken    [mscorlib]System.Double
       call       void JitTest.Test::test_token(object, valuetype [mscorlib]System.RuntimeTypeHandle)
-      
+
       ldc.i4.1
       box        [mscorlib]System.IntPtr
       ldtoken    [mscorlib]System.IntPtr
@@ -102,7 +101,7 @@
       box        [mscorlib]System.UIntPtr
       ldtoken    [mscorlib]System.UIntPtr
       call       void JitTest.Test::test_token(object, valuetype [mscorlib]System.RuntimeTypeHandle)
-      
+
       ldc.i4.1
       box        [mscorlib]System.Boolean
       ldtoken    [mscorlib]System.Boolean
@@ -112,11 +111,11 @@
       box        [mscorlib]System.Char
       ldtoken    [mscorlib]System.Char
       call       void JitTest.Test::test_token(object, valuetype [mscorlib]System.RuntimeTypeHandle)
-		
+
       ldstr      "moo"
       ldtoken    [mscorlib]System.String
       call       void JitTest.Test::test_token(object, valuetype [mscorlib]System.RuntimeTypeHandle)
-      
+
       newobj     instance void [mscorlib]System.Object::.ctor()
       ldtoken    [mscorlib]System.Object
       call       void JitTest.Test::test_token(object, valuetype [mscorlib]System.RuntimeTypeHandle)
@@ -125,78 +124,78 @@
       newarr     int8
       ldtoken    int8[]
       call       void JitTest.Test::test_token(object, valuetype [mscorlib]System.RuntimeTypeHandle)
-      
+
       ldc.i4 10
       newarr     uint8
       ldtoken    uint8[]
       call       void JitTest.Test::test_token(object, valuetype [mscorlib]System.RuntimeTypeHandle)
-      
+
       ldc.i4 10
       newarr     int16
       ldtoken    int16[]
       call       void JitTest.Test::test_token(object, valuetype [mscorlib]System.RuntimeTypeHandle)
-      
+
       ldc.i4 10
       newarr     uint16
       ldtoken    uint16[]
       call       void JitTest.Test::test_token(object, valuetype [mscorlib]System.RuntimeTypeHandle)
-      
+
       ldc.i4 10
       newarr     int32
       ldtoken    int32[]
       call       void JitTest.Test::test_token(object, valuetype [mscorlib]System.RuntimeTypeHandle)
-      
+
       ldc.i4 10
       newarr     uint32
       ldtoken    uint32[]
       call       void JitTest.Test::test_token(object, valuetype [mscorlib]System.RuntimeTypeHandle)
-      
+
       ldc.i4 10
       newarr     int64
       ldtoken    int64[]
       call       void JitTest.Test::test_token(object, valuetype [mscorlib]System.RuntimeTypeHandle)
-      
+
       ldc.i4 10
       newarr     uint64
       ldtoken    uint64[]
       call       void JitTest.Test::test_token(object, valuetype [mscorlib]System.RuntimeTypeHandle)
-      
+
       ldc.i4 10
       newarr     native int
       ldtoken    native int[]
       call       void JitTest.Test::test_token(object, valuetype [mscorlib]System.RuntimeTypeHandle)
-      
+
       ldc.i4 10
       newarr     valuetype [mscorlib]System.UIntPtr
       ldtoken    valuetype [mscorlib]System.UIntPtr[]
       call       void JitTest.Test::test_token(object, valuetype [mscorlib]System.RuntimeTypeHandle)
-      
+
       ldc.i4 10
       newarr     bool
       ldtoken    bool[]
       call       void JitTest.Test::test_token(object, valuetype [mscorlib]System.RuntimeTypeHandle)
-      
+
       ldc.i4 10
       newarr     char
       ldtoken    char[]
       call       void JitTest.Test::test_token(object, valuetype [mscorlib]System.RuntimeTypeHandle)
-      
+
       ldc.i4 10
       newarr     object
       ldtoken    object[]
       call       void JitTest.Test::test_token(object, valuetype [mscorlib]System.RuntimeTypeHandle)
-      
+
       ldc.i4 10
       newarr     string
       ldtoken    string[]
       call       void JitTest.Test::test_token(object, valuetype [mscorlib]System.RuntimeTypeHandle)
-      
+
       ldstr      "Passed"
       call       void [System.Console]System.Console::WriteLine(string)
       ldc.i4.s   100
       ret
     }
-    .method public hidebysig specialname rtspecialname 
+    .method public hidebysig specialname rtspecialname
             instance void .ctor() cil managed
     {
       .maxstack  8

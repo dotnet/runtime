@@ -2,20 +2,13 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
-.assembly extern mscorlib
-{
-  .publickeytoken = (B7 7A 5C 56 19 34 E0 89 )                         // .z\V.4..
-  .ver 2:0:0:0
-}
 
+.assembly extern mscorlib { auto }
 .assembly moduleCctor {}
-.assembly extern FieldTypes 
-{
-  .publickeytoken = (C0 30 5C 36 38 0B A4 29 )                         // .0\68..)
-  .ver 0:0:0:0
-}
+.assembly extern FieldTypes { auto }
 
- .method private hidebysig specialname rtspecialname static 
+
+ .method private hidebysig specialname rtspecialname static
           void  .cctor() cil managed
   {
     .maxstack  8
@@ -34,41 +27,41 @@
 
 // =============== CLASS MEMBERS DECLARATION ===================
 .class public auto ansi beforefieldinit IntHolder
-	extends [mscorlib]System.Object
+    extends [mscorlib]System.Object
 {
-	// Fields
-	.field public static int32 val
+    // Fields
+    .field public static int32 val
 
-	// Methods
-	.method public hidebysig specialname rtspecialname 
-		instance void .ctor () cil managed 
-	{
-		// Method begins at RVA 0x2050
-		// Code size 8 (0x8)
-		.maxstack 8
+    // Methods
+    .method public hidebysig specialname rtspecialname
+        instance void .ctor () cil managed
+    {
+        // Method begins at RVA 0x2050
+        // Code size 8 (0x8)
+        .maxstack 8
 
-		IL_0000: ldarg.0
-		IL_0001: call instance void [mscorlib]System.Object::.ctor()
-		IL_0006: nop
-		IL_0007: ret
-	} // end of method IntHolder::.ctor
+        IL_0000: ldarg.0
+        IL_0001: call instance void [mscorlib]System.Object::.ctor()
+        IL_0006: nop
+        IL_0007: ret
+    } // end of method IntHolder::.ctor
 
-	.method private hidebysig specialname rtspecialname static 
-		void .cctor () cil managed 
-	{
-		// Method begins at RVA 0x2059
-		// Code size 7 (0x7)
-		.maxstack 8
+    .method private hidebysig specialname rtspecialname static
+        void .cctor () cil managed
+    {
+        // Method begins at RVA 0x2059
+        // Code size 7 (0x7)
+        .maxstack 8
 
-		IL_0000: ldc.i4.0
-		IL_0001: stsfld int32 IntHolder::val
-		IL_0006: ret
-	} // end of method IntHolder::.cctor
+        IL_0000: ldc.i4.0
+        IL_0001: stsfld int32 IntHolder::val
+        IL_0006: ret
+    } // end of method IntHolder::.cctor
 
-        .method public hidebysig static 
+        .method public hidebysig static
             void Assign (
                     int32 arg
-                    ) cil managed 
+                    ) cil managed
             {
                 // Method begins at RVA 0x2078
                 // Code size 8 (0x8)
@@ -79,10 +72,10 @@
                     IL_0002: stsfld int32 IntHolder::val
                     IL_0007: ret
             } // end of method IntHolder::Assign
-        .method public hidebysig static 
+        .method public hidebysig static
             void Check (
                     int32 arg
-                    ) cil managed 
+                    ) cil managed
             {
                 // Method begins at RVA 0x2050
                 // Code size 28 (0x1c)
