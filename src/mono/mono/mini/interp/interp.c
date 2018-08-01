@@ -4458,7 +4458,7 @@ interp_exec_method_full (InterpFrame *frame, ThreadContext *context, guint16 *st
 				THROW_EX (mono_get_exception_null_reference (), ip);
 
 			gint32 length = *(gint32 *) (span + offset_length);
-			if (index < 0 || index > length)
+			if (index < 0 || index >= length)
 				THROW_EX (mono_get_exception_index_out_of_range (), ip);
 
 			gpointer pointer = *(gpointer *)(span + offset_pointer);
