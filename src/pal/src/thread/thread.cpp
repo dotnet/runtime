@@ -399,6 +399,31 @@ GetCurrentThreadId(
     return dwThreadId;
 }
 
+/*++
+Function:
+  PAL_GetCurrentOSThreadId
+
+Returns the current thread's OS thread ID.
+This API is functionally equivalent to GetCurrentThreadId, but does not truncate the return value to 32-bits.
+This is needed to ensure that we can provide the correct OS thread ID on platforms such as OSX that have a 64-bit thread ID.
+--*/
+size_t
+PALAPI
+PAL_GetCurrentOSThreadId(
+            VOID)
+{
+    size_t threadId;
+
+    PERF_ENTRY(PAL_GetCurrentOSThreadId);
+    ENTRY("PAL_GetCurrentOSThreadId()\n");
+
+    threadId = THREADSilentGetCurrentThreadId();
+    
+    LOGEXIT("PAL_GetCurrentOSThreadId returns %p\n", threadId);    
+    PERF_EXIT(GetCurrentThreadId);
+    
+    return threadId;
+}
 
 
 /*++

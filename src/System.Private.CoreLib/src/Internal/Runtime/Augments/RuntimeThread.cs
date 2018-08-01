@@ -88,6 +88,19 @@ namespace Internal.Runtime.Augments
         private extern void SetPriorityNative(int priority);
 
         /*=========================================================================
+        ** Returns the operating system identifier for the current thread.
+        =========================================================================*/
+        internal static ulong CurrentOSThreadId
+        {
+            get
+            {
+                return GetCurrentOSThreadId();
+            }
+        }
+        [DllImport(JitHelpers.QCall)]
+        private static extern ulong GetCurrentOSThreadId();
+
+        /*=========================================================================
         ** Return the thread state as a consistent set of bits.  This is more
         ** general then IsAlive or IsBackground.
         =========================================================================*/

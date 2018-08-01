@@ -215,6 +215,8 @@ public:
     }
 };
 
+typedef UINT64 EventPipeSessionID;
+
 class EventPipe
 {
     // Declare friends.
@@ -236,14 +238,17 @@ class EventPipe
         static void EnableOnStartup();
 
         // Enable tracing via the event pipe.
-        static void Enable(
+        static EventPipeSessionID Enable(
             LPCWSTR strOutputPath,
             unsigned int circularBufferSizeInMB,
             EventPipeProviderConfiguration *pProviders,
             int numProviders);
 
         // Disable tracing via the event pipe.
-        static void Disable();
+        static void Disable(EventPipeSessionID id);
+
+        // Get the session for the specified session ID.
+        static EventPipeSession* GetSession(EventPipeSessionID id);
 
         // Specifies whether or not the event pipe is enabled.
         static bool Enabled();
@@ -288,7 +293,7 @@ class EventPipe
     private:
 
         // Enable the specified EventPipe session.
-        static void Enable(LPCWSTR strOutputPath, EventPipeSession *pSession);
+        static EventPipeSessionID Enable(LPCWSTR strOutputPath, EventPipeSession *pSession);
 
         // Get the EnableOnStartup configuration from environment.
         static void GetConfigurationFromEnvironment(SString &outputPath, EventPipeSession *pSession);
@@ -385,20 +390,34 @@ private:
     public:
         void *ProviderID;
         unsigned int EventID;
+        unsigned int ThreadID;
+        LARGE_INTEGER TimeStamp;
+        GUID ActivityId;
+        GUID RelatedActivityId;
         const BYTE *Payload;
         unsigned int PayloadLength;
     };
 
+    struct EventPipeSessionInfo
+    {
+    public:
+        FILETIME StartTimeAsUTCFileTime;
+        LARGE_INTEGER StartTimeStamp;
+        LARGE_INTEGER TimeStampFrequency;
+    };
+
 public:
 
-    static void QCALLTYPE Enable(
+    static UINT64 QCALLTYPE Enable(
         __in_z LPCWSTR outputFile,
         UINT32 circularBufferSizeInMB,
         INT64 profilerSamplingRateInNanoseconds,
         EventPipeProviderConfiguration *pProviders,
         INT32 numProviders);
 
-    static void QCALLTYPE Disable();
+    static void QCALLTYPE Disable(UINT64 sessionID);
+
+    static bool QCALLTYPE GetSessionInfo(UINT64 sessionID, EventPipeSessionInfo *pSessionInfo);
 
     static INT_PTR QCALLTYPE CreateProvider(
         __in_z LPCWSTR providerName,
