@@ -804,6 +804,27 @@ FCIMPL0(Object*, ThreadNative::GetCurrentThread)
 }
 FCIMPLEND
 
+UINT64 QCALLTYPE ThreadNative::GetCurrentOSThreadId()
+{
+    QCALL_CONTRACT;
+
+    // The Windows API GetCurrentThreadId returns a 32-bit integer thread ID.
+    // On some non-Windows platforms (e.g. OSX), the thread ID is a 64-bit value.
+    // We special case the API for non-Windows to get the 64-bit value and zero-extend
+    // the Windows value to return a single data type on all platforms.
+
+    UINT64 threadId;
+
+    BEGIN_QCALL;
+#ifndef FEATURE_PAL
+    threadId = (UINT64) GetCurrentThreadId();
+#else
+    threadId = (UINT64) PAL_GetCurrentOSThreadId();
+#endif
+    END_QCALL;
+
+    return threadId;
+}
 
 FCIMPL3(void, ThreadNative::SetStart, ThreadBaseObject* pThisUNSAFE, Object* pDelegateUNSAFE, INT32 iRequestedStackSize)
 {
