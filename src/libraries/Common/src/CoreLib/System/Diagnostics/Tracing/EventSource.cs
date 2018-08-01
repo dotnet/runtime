@@ -181,6 +181,7 @@ using System.Security.Permissions;
 using System.Text;
 using System.Threading;
 using Microsoft.Win32;
+using Internal.Runtime.Augments;
 
 #if ES_BUILD_STANDALONE
 using EventDescriptor = Microsoft.Diagnostics.Tracing.EventDescriptor;
@@ -194,10 +195,6 @@ using Microsoft.Reflection;
 using Contract = System.Diagnostics.Contracts.Contract;
 #else
 using Contract = Microsoft.Diagnostics.Contracts.Internal.Contract;
-#endif
-
-#if CORECLR || ES_BUILD_PN
-using Internal.Runtime.Augments;
 #endif
 
 #if ES_BUILD_STANDALONE
