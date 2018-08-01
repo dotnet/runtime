@@ -6,6 +6,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Net.NetworkInformation;
 using System.Net.Security;
+using System.Reflection;
 using System.Security.Cryptography;
 using System.Security.Cryptography.X509Certificates;
 using System.Text;
@@ -86,7 +87,7 @@ namespace System.Net.Http.Functional.Tests
             using (MD5 md5 = MD5.Create())
             {
                 return md5.ComputeHash(data);
-            }        
+            }
         }
 
         public static Task WhenAllCompletedOrAnyFailed(params Task[] tasks)
@@ -100,7 +101,7 @@ namespace System.Net.Http.Functional.Tests
         }
 
 #if netcoreapp
-       public static Func<HttpRequestMessage, X509Certificate2, X509Chain, SslPolicyErrors, bool> AllowAllCertificates = HttpClientHandler.DangerousAcceptAnyServerCertificateValidator;
+        public static Func<HttpRequestMessage, X509Certificate2, X509Chain, SslPolicyErrors, bool> AllowAllCertificates = HttpClientHandler.DangerousAcceptAnyServerCertificateValidator;
 #else
         public static Func<HttpRequestMessage, X509Certificate2, X509Chain, SslPolicyErrors, bool> AllowAllCertificates = (_, __, ___, ____) => true;
 #endif
@@ -108,12 +109,51 @@ namespace System.Net.Http.Functional.Tests
         public static IPAddress GetIPv6LinkLocalAddress() =>
             NetworkInterface
                 .GetAllNetworkInterfaces()
-                .Where(i => i.Description != "PANGP Virtual Ethernet Adapter")      // This is a VPN adapter, but is reported as a regular Ethernet interface with 
+                .Where(i => i.Description != "PANGP Virtual Ethernet Adapter")      // This is a VPN adapter, but is reported as a regular Ethernet interface with
                                                                                     // a valid link-local address, but the link-local address doesn't actually work.
                                                                                     // So just manually filter it out.
                 .SelectMany(i => i.GetIPProperties().UnicastAddresses)
                 .Select(a => a.Address)
                 .Where(a => a.IsIPv6LinkLocal)
                 .FirstOrDefault();
+
+        public static void EnsureHttp2Feature(HttpClientHandler handler)
+        {
+            // All .NET Core implementations of HttpClientHandler have HTTP/2 enabled by default except when using
+            // SocketsHttpHandler. Right now, the HTTP/2 feature is disabled on SocketsHttpHandler unless certain
+            // AppContext switches or environment variables are set. To help with testing, we can enable the HTTP/2
+            // feature for a specific handler instance by using reflection.
+            FieldInfo field_socketsHttpHandler = typeof(HttpClientHandler).GetField(
+                "_socketsHttpHandler",
+                BindingFlags.NonPublic | BindingFlags.Instance);
+            if (field_socketsHttpHandler == null)
+            {
+                // Not using .NET Core implementation, i.e. could be .NET Framework or UAP.
+                return;
+            }
+
+            object _socketsHttpHandler = field_socketsHttpHandler.GetValue(handler);
+            if (_socketsHttpHandler == null)
+            {
+                // Not using SocketsHttpHandler, i.e. using WinHttpHandler or CurlHandler.
+                return;
+            }
+
+            // Get HttpConnectionSettings object from SocketsHttpHandler.
+            Type type_SocketsHttpHandler = typeof(HttpClientHandler).Assembly.GetType("System.Net.Http.SocketsHttpHandler");
+            FieldInfo field_settings = type_SocketsHttpHandler.GetField(
+                "_settings",
+                BindingFlags.NonPublic | BindingFlags.Instance);
+            Assert.NotNull(field_settings);
+            object _settings = field_settings.GetValue(_socketsHttpHandler);
+            Assert.NotNull(_settings);
+
+            // Set _maxHttpVersion field to HTTP/2.0.
+            Type type_HttpConnectionSettings = typeof(HttpClientHandler).Assembly.GetType("System.Net.Http.HttpConnectionSettings");
+            FieldInfo field_maxHttpVersion = type_HttpConnectionSettings.GetField(
+                "_maxHttpVersion",
+                BindingFlags.NonPublic | BindingFlags.Instance);
+            field_maxHttpVersion.SetValue(_settings, new Version(2, 0));
+        }
     }
 }
