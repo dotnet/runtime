@@ -41,7 +41,7 @@ ECMA 335 - CLI
 
 **ECMA Technical Report 084: Information Derived from Partition IV XML File**
 
-- [ECMA TR/84 Report (PDF)](http://www.ecma-international.org/publications/files/ECMA-TR/TR-084.pdf)
+- [ECMA TR/84 Report (PDF)](http://www.ecma-international.org/publications/files/ECMA-TR/ECMA%20TR-084.pdf)
 - [ECMA TR/84 Tools and Source Code](http://www.ecma-international.org/publications/files/ECMA-TR/TR-084.zip)
 
 ECMA 372 - C++/CLI
