@@ -1,66 +1,63 @@
 if (WIN32)
 
-add_precompiled_header(stdafx.h ../stdafx.cpp CORDBEE_SOURCES_WKS)
+  add_precompiled_header(stdafx.h ../stdafx.cpp CORDBEE_SOURCES_WKS)
 
-get_include_directories(ASM_INCLUDE_DIRECTORIES)
-get_compile_definitions(ASM_DEFINITIONS)
-set(ASM_OPTIONS /c /Zi /W3 /errorReport:prompt)
+  get_include_directories(ASM_INCLUDE_DIRECTORIES)
+  get_compile_definitions(ASM_DEFINITIONS)
 
-if (CLR_CMAKE_PLATFORM_ARCH_I386)
-  list (APPEND ASM_OPTIONS /safeseh)
-endif (CLR_CMAKE_PLATFORM_ARCH_I386)
+  set(ASM_FILE ${CORDBEE_DIR}/${ARCH_SOURCES_DIR}/dbghelpers.asm)
 
-set(ASM_FILE ${CORDBEE_DIR}/${ARCH_SOURCES_DIR}/dbghelpers.asm)
-# asm files require preprocessing using cl.exe on arm64
-if(CLR_CMAKE_PLATFORM_ARCH_ARM64)
+  if(CLR_CMAKE_PLATFORM_ARCH_ARM OR CLR_CMAKE_PLATFORM_ARCH_ARM64)
+
     get_filename_component(name ${ASM_FILE} NAME_WE)
-    set(ASM_PREPROCESSED_FILE ${CMAKE_CURRENT_BINARY_DIR}/${name}.asm)
+    file(TO_CMAKE_PATH "${CMAKE_CURRENT_BINARY_DIR}/${name}.asm" ASM_PREPROCESSED_FILE)
     preprocess_def_file(${ASM_FILE} ${ASM_PREPROCESSED_FILE})
-    set(CORDBEE_SOURCES_WKS_PREPROCESSED_ASM  ${ASM_PREPROCESSED_FILE})
-    set_property(SOURCE ${CORDBEE_SOURCES_WKS_PREPROCESSED_ASM} PROPERTY COMPILE_DEFINITIONS ${ASM_DEFINITIONS})
-    set_property(SOURCE ${CORDBEE_SOURCES_WKS_PREPROCESSED_ASM} PROPERTY COMPILE_DEFINITIONS ${ASM_OPTIONS})
-    add_library_clr(cordbee_wks ${CORDBEE_SOURCES_WKS} ${CORDBEE_SOURCES_WKS_PREPROCESSED_ASM})
-elseif(CLR_CMAKE_PLATFORM_ARCH_ARM)
-    
-    # On Arm32 for Windows, use C++ compiler to process the .asm since it includes C-style headers.
-    set(DBGHELPERS_ASM ${CMAKE_CURRENT_BINARY_DIR}/dbghelpers.asm)
-    set(ASM_OPTIONS " -g ")
-    
-    preprocess_def_file(${ASM_FILE} ${DBGHELPERS_ASM})
-    
+
     # We do not pass any defines since we have already done pre-processing above
-    set (DBGHELPERS_ASM_CMDLINE "-o ${CMAKE_CURRENT_BINARY_DIR}/dbghelpers.obj ${DBGHELPERS_ASM}")
+    set (ASM_CMDLINE "-o ${CMAKE_CURRENT_BINARY_DIR}/${name}.obj ${ASM_PREPROCESSED_FILE}")
 
-    file(GENERATE OUTPUT "${CMAKE_CURRENT_BINARY_DIR}/runasm.cmd"
-                CONTENT "\"${CMAKE_ASM_MASM_COMPILER}\" ${ASM_OPTIONS} ${DBGHELPERS_ASM_CMDLINE}")
+    # Generate the batch file that will invoke the assembler
+    file(TO_CMAKE_PATH "${CMAKE_CURRENT_BINARY_DIR}/runasm_${name}.cmd" ASM_SCRIPT_FILE)
+
+    file(GENERATE OUTPUT "${ASM_SCRIPT_FILE}"
+         CONTENT "\"${CMAKE_ASM_MASM_COMPILER}\" -g ${ASM_CMDLINE}")
+
+    message("Generated  - ${ASM_SCRIPT_FILE}")
+
+    # Need to compile asm file using custom command as include directories are not provided to asm compiler
+    add_custom_command(OUTPUT ${CMAKE_CURRENT_BINARY_DIR}/${name}.obj
+                       COMMAND ${ASM_SCRIPT_FILE}
+                       DEPENDS ${ASM_PREPROCESSED_FILE}
+                       COMMENT "Assembling ${ASM_PREPROCESSED_FILE} - ${ASM_SCRIPT_FILE}")
+
+    add_library_clr(cordbee_wks ${CORDBEE_SOURCES_WKS} ${CMAKE_CURRENT_BINARY_DIR}/${name}.obj)
+
+  else ()
+
+    set(ASM_OPTIONS /c /Zi /W3 /errorReport:prompt)
+
+    if (CLR_CMAKE_PLATFORM_ARCH_I386)
+      list (APPEND ASM_OPTIONS /safeseh)
+    endif (CLR_CMAKE_PLATFORM_ARCH_I386)
 
     # Need to compile asm file using custom command as include directories are not provided to asm compiler
     add_custom_command(OUTPUT ${CMAKE_CURRENT_BINARY_DIR}/dbghelpers.obj
-                       COMMAND ${CMAKE_CURRENT_BINARY_DIR}/runasm.cmd
-                       DEPENDS ${DBGHELPERS_ASM}
-                       COMMENT "Compiling dbghelpers.asm - ${CMAKE_CURRENT_BINARY_DIR}/runasm.cmd")
-    add_library_clr(cordbee_wks ${CORDBEE_SOURCES_WKS} ${CMAKE_CURRENT_BINARY_DIR}/dbghelpers.obj)
-else ()
-
-    # Need to compile asm file using custom command as include directories are not provided to asm compiler
-    add_custom_command(OUTPUT ${CMAKE_CURRENT_BINARY_DIR}/dbghelpers.obj
-                         COMMAND ${CMAKE_ASM_MASM_COMPILER} ${ASM_INCLUDE_DIRECTORIES} ${ASM_DEFINITIONS} ${ASM_OPTIONS} /Fo${CMAKE_CURRENT_BINARY_DIR}/dbghelpers.obj /Ta${ASM_FILE}
-                         DEPENDS ${ASM_FILE}
-                         COMMENT "Compiling dbghelpers.asm")
+                       COMMAND ${CMAKE_ASM_MASM_COMPILER} ${ASM_INCLUDE_DIRECTORIES} ${ASM_DEFINITIONS} ${ASM_OPTIONS} /Fo${CMAKE_CURRENT_BINARY_DIR}/dbghelpers.obj /Ta${ASM_FILE}
+                       DEPENDS ${ASM_FILE}
+                       COMMENT "Compiling dbghelpers.asm")
 
     add_library_clr(cordbee_wks ${CORDBEE_SOURCES_WKS} ${CMAKE_CURRENT_BINARY_DIR}/dbghelpers.obj)
-endif(CLR_CMAKE_PLATFORM_ARCH_ARM64)
+
+  endif()
 
 else ()
 
-add_compile_options(-fPIC)
+  add_compile_options(-fPIC)
 
-if(CLR_CMAKE_PLATFORM_ARCH_AMD64 OR CLR_CMAKE_PLATFORM_ARCH_ARM OR CLR_CMAKE_PLATFORM_ARCH_ARM64 OR CLR_CMAKE_PLATFORM_ARCH_I386)
-  add_library_clr(cordbee_wks ${CORDBEE_SOURCES_WKS} ../${ARCH_SOURCES_DIR}/dbghelpers.S)
-elseif(CLR_CMAKE_PLATFORM_ARCH_ARM64)
-  add_library_clr(cordbee_wks ${CORDBEE_SOURCES_WKS} ../${ARCH_SOURCES_DIR}/dbghelpers.S)
-else()
-  message(FATAL_ERROR "Only ARM and AMD64 is supported")
-endif()
+  if(CLR_CMAKE_PLATFORM_ARCH_AMD64 OR CLR_CMAKE_PLATFORM_ARCH_ARM OR CLR_CMAKE_PLATFORM_ARCH_ARM64 OR CLR_CMAKE_PLATFORM_ARCH_I386)
+    add_library_clr(cordbee_wks ${CORDBEE_SOURCES_WKS} ../${ARCH_SOURCES_DIR}/dbghelpers.S)
+  else()
+    message(FATAL_ERROR "Unknown platform")
+  endif()
 
 endif (WIN32)
