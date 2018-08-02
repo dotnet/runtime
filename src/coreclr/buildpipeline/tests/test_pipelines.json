@@ -196,7 +196,7 @@
                 "Parameters": {
                 "HelixJobType": "test/functional/cli/",
                 "TargetsWindows": "false",
-                "Rid": "alpine.3.6",
+                "Rid": "linux-musl-x64",
                 "TargetQueues": "Alpine.36.Amd64",
                 "TestContainerSuffix": "alpine36",
                 "TargetsNonWindowsArg": "TargetsNonWindows "
@@ -213,7 +213,7 @@
                 "Parameters": {
                 "HelixJobType": "test/functional/r2r/cli/",
                 "TargetsWindows": "false",
-                "Rid": "alpine.3.6",
+                "Rid": "linux-musl-x64",
                 "TargetQueues": "Alpine.36.Amd64",
                 "TestContainerSuffix": "alpine36-r2r",
                 "CrossgenArg": "Crossgen ",
