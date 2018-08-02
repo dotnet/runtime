@@ -360,11 +360,11 @@ typedef interface ICorDebugProcess8 ICorDebugProcess8;
 #endif 	/* __ICorDebugProcess8_FWD_DEFINED__ */
 
 
-#ifndef __ICorDebugProcess9_FWD_DEFINED__
-#define __ICorDebugProcess9_FWD_DEFINED__
-typedef interface ICorDebugProcess9 ICorDebugProcess9;
+#ifndef __ICorDebugProcess10_FWD_DEFINED__
+#define __ICorDebugProcess10_FWD_DEFINED__
+typedef interface ICorDebugProcess10 ICorDebugProcess10;
 
-#endif 	/* __ICorDebugProcess9_FWD_DEFINED__ */
+#endif 	/* __ICorDebugProcess10_FWD_DEFINED__ */
 
 
 #ifndef __ICorDebugModuleDebugEvent_FWD_DEFINED__
@@ -7823,19 +7823,19 @@ EXTERN_C const IID IID_ICorDebugProcess8;
 #endif 	/* __ICorDebugProcess8_INTERFACE_DEFINED__ */
 
 
-#ifndef __ICorDebugProcess9_INTERFACE_DEFINED__
-#define __ICorDebugProcess9_INTERFACE_DEFINED__
+#ifndef __ICorDebugProcess10_INTERFACE_DEFINED__
+#define __ICorDebugProcess10_INTERFACE_DEFINED__
 
-/* interface ICorDebugProcess9 */
+/* interface ICorDebugProcess10 */
 /* [unique][uuid][local][object] */ 
 
 
-EXTERN_C const IID IID_ICorDebugProcess9;
+EXTERN_C const IID IID_ICorDebugProcess10;
 
 #if defined(__cplusplus) && !defined(CINTERFACE)
     
     MIDL_INTERFACE("8F378F6F-1017-4461-9890-ECF64C54079F")
-    ICorDebugProcess9 : public IUnknown
+    ICorDebugProcess10 : public IUnknown
     {
     public:
         virtual HRESULT STDMETHODCALLTYPE GetContainingObject( 
@@ -7847,33 +7847,33 @@ EXTERN_C const IID IID_ICorDebugProcess9;
     
 #else 	/* C style interface */
 
-    typedef struct ICorDebugProcess9Vtbl
+    typedef struct ICorDebugProcess10Vtbl
     {
         BEGIN_INTERFACE
         
         HRESULT ( STDMETHODCALLTYPE *QueryInterface )( 
-            ICorDebugProcess9 * This,
+            ICorDebugProcess10 * This,
             /* [in] */ REFIID riid,
             /* [annotation][iid_is][out] */ 
             _COM_Outptr_  void **ppvObject);
         
         ULONG ( STDMETHODCALLTYPE *AddRef )( 
-            ICorDebugProcess9 * This);
+            ICorDebugProcess10 * This);
         
         ULONG ( STDMETHODCALLTYPE *Release )( 
-            ICorDebugProcess9 * This);
+            ICorDebugProcess10 * This);
         
         HRESULT ( STDMETHODCALLTYPE *GetContainingObject )( 
-            ICorDebugProcess9 * This,
+            ICorDebugProcess10 * This,
             /* [in] */ CORDB_ADDRESS interiorPointer,
             /* [out] */ ICorDebugObjectValue **ppContainingObject);
         
         END_INTERFACE
-    } ICorDebugProcess9Vtbl;
+    } ICorDebugProcess10Vtbl;
 
-    interface ICorDebugProcess9
+    interface ICorDebugProcess10
     {
-        CONST_VTBL struct ICorDebugProcess9Vtbl *lpVtbl;
+        CONST_VTBL struct ICorDebugProcess10Vtbl *lpVtbl;
     };
 
     
@@ -7881,17 +7881,17 @@ EXTERN_C const IID IID_ICorDebugProcess9;
 #ifdef COBJMACROS
 
 
-#define ICorDebugProcess9_QueryInterface(This,riid,ppvObject)	\
+#define ICorDebugProcess10_QueryInterface(This,riid,ppvObject)	\
     ( (This)->lpVtbl -> QueryInterface(This,riid,ppvObject) ) 
 
-#define ICorDebugProcess9_AddRef(This)	\
+#define ICorDebugProcess10_AddRef(This)	\
     ( (This)->lpVtbl -> AddRef(This) ) 
 
-#define ICorDebugProcess9_Release(This)	\
+#define ICorDebugProcess10_Release(This)	\
     ( (This)->lpVtbl -> Release(This) ) 
 
 
-#define ICorDebugProcess9_GetContainingObject(This,interiorPointer,ppContainingObject)	\
+#define ICorDebugProcess10_GetContainingObject(This,interiorPointer,ppContainingObject)	\
     ( (This)->lpVtbl -> GetContainingObject(This,interiorPointer,ppContainingObject) ) 
 
 #endif /* COBJMACROS */
@@ -7902,7 +7902,7 @@ EXTERN_C const IID IID_ICorDebugProcess9;
 
 
 
-#endif 	/* __ICorDebugProcess9_INTERFACE_DEFINED__ */
+#endif 	/* __ICorDebugProcess10_INTERFACE_DEFINED__ */
 
 
 #ifndef __ICorDebugModuleDebugEvent_INTERFACE_DEFINED__
