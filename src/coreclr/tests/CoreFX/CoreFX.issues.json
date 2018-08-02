@@ -91,6 +91,14 @@
                 {
                     "name": "System.Drawing.Tests.FontTests.ToLogFont_NullLogFont_ThrowsArgumentNullException",
                     "reason": "Xunit.Sdk.ThrowsException Assert.Throws() Failure\\r\\nExpected: typeof(System.ArgumentNullException)\\r\\nActual:   typeof(System.AccessViolationException): Attempted to read or write protected memory. This is often an indication that other memory is corrupt."
+                },
+                {
+                    "name": "System.Drawing.Tests.Graphics_DrawBezierTests.DrawBezier_Point",
+                    "reason": "https://github.com/dotnet/corefx/issues/30180"
+                },
+                {
+                    "name": "System.Drawing.Tests.Graphics_DrawBezierTests.DrawBezier_Point",
+                    "reason": "https://github.com/dotnet/corefx/issues/30180"
                 }
             ]
         }
