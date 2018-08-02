@@ -92,5 +92,20 @@ namespace System.IO.Tests
                 });
             }
         }
+
+        [Fact]
+        public void SetLastWriteTimeMilliSec()
+        {
+            string firstFile = GetTestFilePath();
+            string secondFile = GetTestFilePath();
+
+            File.WriteAllText(firstFile, "");
+            File.WriteAllText(secondFile, "");
+
+            File.SetLastAccessTimeUtc(secondFile, DateTime.UtcNow);
+            long firstFileTicks = File.GetLastWriteTimeUtc(firstFile).Ticks;
+            long secondFileTicks = File.GetLastWriteTimeUtc(secondFile).Ticks;
+            Assert.True(firstFileTicks <= secondFileTicks, $"First File Ticks\t{firstFileTicks}\nSecond File Ticks\t{secondFileTicks}");
+        }
     }
 }
