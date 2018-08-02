@@ -276,118 +276,125 @@ def static getOSGroup(def os) {
     }
 }
 
-def static getFullPerfJobName(def project, def os, def isPR) {
-    return Utilities.getFullJobName(project, "perf_${os}", isPR)
+def static getFullPerfJobName(def project, def os, def arch, def isPR) {
+    return Utilities.getFullJobName(project, "perf_${os}_${arch}", isPR)
 }
 
 // Create the Linux/OSX/CentOS coreclr test leg for debug and release and each scenario
 [true, false].each { isPR ->
-    def fullBuildJobName = Utilities.getFullJobName(project, 'perf_linux_build', isPR)
-    def architecture = 'x64'
-    def configuration = 'Release'
+    ['x64'].each { architecture ->
+        def fullBuildJobName = Utilities.getFullJobName(project, "perf_linux_build", isPR)
+        def configuration = 'Release'
 
-    // Build has to happen on RHEL7.2 (that's where we produce the bits we ship)
-    ['RHEL7.2'].each { os ->
-        def newBuildJob = job(fullBuildJobName) {
-            steps {
-                shell("./build.sh verbose ${architecture} ${configuration}")
-                shell("./build-test.sh generatelayoutonly ${architecture} ${configuration}")
+        def crossCompile = ""
+        def crossLayout = ""
+        def python = "python3.5"
+
+        // Build has to happen on RHEL7.2 (that's where we produce the bits we ship)
+        ['RHEL7.2'].each { os ->
+            def newBuildJob = job(fullBuildJobName) {
+                steps {
+                    shell("./build.sh verbose ${architecture} ${configuration}${crossCompile}")
+                    shell("./build-test.sh generatelayoutonly ${architecture} ${configuration}${crossLayout}")
+                }
             }
+            Utilities.setMachineAffinity(newBuildJob, os, 'latest-or-auto')
+            Utilities.standardJobSetup(newBuildJob, project, isPR, "*/${branch}")
+            Utilities.addArchival(newBuildJob, "bin/Product/**,bin/obj/*/tests/**/*.dylib,bin/obj/*/tests/**/*.so,bin/tests/**", "bin/Product/**/.nuget/**")
         }
-        Utilities.setMachineAffinity(newBuildJob, os, 'latest-or-auto')
-        Utilities.standardJobSetup(newBuildJob, project, isPR, "*/${branch}")
-        Utilities.addArchival(newBuildJob, "bin/Product/**,bin/obj/*/tests/**/*.dylib,bin/obj/*/tests/**/*.so,bin/tests/**", "bin/Product/**/.nuget/**")
-    }
 
 
-    // Actual perf testing on the following OSes
-    def perfOSList = ['Ubuntu16.04']
-    perfOSList.each { os ->
-        def newJob = job(getFullPerfJobName(project, os, isPR)) {
+        // Actual perf testing on the following OSes
+        def perfOSList = ['Ubuntu16.04']
 
-            label('ubuntu_1604_clr_perf')
-            wrappers {
-                credentialsBinding {
-                    string('BV_UPLOAD_SAS_TOKEN', 'CoreCLR Perf BenchView Sas')
+        perfOSList.each { os ->
+            def newJob = job(getFullPerfJobName(project, os, architecture, isPR)) {
+
+                def machineLabel = 'ubuntu_1604_clr_perf'
+
+                label(machineLabel)
+                wrappers {
+                    credentialsBinding {
+                        string('BV_UPLOAD_SAS_TOKEN', 'CoreCLR Perf BenchView Sas')
+                    }
+                }
+
+                if (isPR) {
+                    parameters {
+                        stringParam('BenchviewCommitName', '\${ghprbPullTitle}', 'The name that you will be used to build the full title of a run in Benchview.  The final name will be of the form <branch> private BenchviewCommitName')
+                    }
+                }
+
+                parameters {
+                    // Cap the maximum number of iterations to 21.
+                    stringParam('XUNIT_PERFORMANCE_MAX_ITERATION', '21', 'Sets the number of iterations to twenty one.  We are doing this to limit the amount of data that we upload as 20 iterations is enough to get a good sample')
+                    stringParam('XUNIT_PERFORMANCE_MAX_ITERATION_INNER_SPECIFIED', '21', 'Sets the number of iterations to twenty one.  We are doing this to limit the amount of data that we upload as 20 iterations is enough to get a good sample')
+                    stringParam('PRODUCT_BUILD', '', 'Build number from which to copy down the CoreCLR Product binaries built for Linux')
+                }
+
+                def osGroup = getOSGroup(os)
+                def runType = isPR ? 'private' : 'rolling'
+                def benchViewName = isPR ? 'coreclr private \$BenchviewCommitName' : 'coreclr rolling \$GIT_BRANCH_WITHOUT_ORIGIN \$GIT_COMMIT'
+                def uploadString = '-uploadToBenchview'
+
+                def runXUnitCommonArgs = "-arch ${architecture} -os ${os} -configuration ${configuration} -stabilityPrefix \"taskset 0x00000002 nice --adjustment=-10\" -generateBenchviewData \"\${WORKSPACE}/tests/scripts/Microsoft.BenchView.JSONFormat/tools\" ${uploadString} -runtype ${runType} -outputdir \"\${WORKSPACE}/bin/sandbox_logs\""
+
+                steps {
+                    shell("./tests/scripts/perf-prep.sh --nocorefx")
+                    shell("./init-tools.sh")
+                    copyArtifacts(fullBuildJobName) {
+                        includePatterns("bin/**")
+                        buildSelector {
+                            buildNumber('\${PRODUCT_BUILD}')
+                        }
+                    }
+                    shell("GIT_BRANCH_WITHOUT_ORIGIN=\$(echo \$GIT_BRANCH | sed \"s/[^/]*\\/\\(.*\\)/\\1 /\")\n" +
+                    "${python} \"\${WORKSPACE}/tests/scripts/Microsoft.BenchView.JSONFormat/tools/submission-metadata.py\" --name \" ${benchViewName} \" --user-email \"dotnet-bot@microsoft.com\"\n" +
+                    "${python} \"\${WORKSPACE}/tests/scripts/Microsoft.BenchView.JSONFormat/tools/build.py\" git --branch \$GIT_BRANCH_WITHOUT_ORIGIN --type ${runType}")
+                    shell("""${python} ./tests/scripts/run-xunit-perf.py -testBinLoc bin/tests/Windows_NT.${architecture}.${configuration}/JIT/Performance/CodeQuality ${runXUnitCommonArgs}""")
                 }
             }
 
+            def archiveSettings = new ArchivalSettings()
+            archiveSettings.addFiles('bin/sandbox_logs/**/*_log.txt')
+            archiveSettings.addFiles('bin/sandbox_logs/**/*.csv')
+            archiveSettings.addFiles('bin/sandbox_logs/**/*.xml')
+            archiveSettings.addFiles('bin/sandbox_logs/**/*.log')
+            archiveSettings.addFiles('bin/sandbox_logs/**/*.md')
+            archiveSettings.addFiles('bin/sandbox_logs/**/*.etl')
+            archiveSettings.addFiles('machinedata.json')
+            archiveSettings.setAlwaysArchive()
+
+            Utilities.addArchival(newJob, archiveSettings)
+            Utilities.standardJobSetup(newJob, project, isPR, "*/${branch}")
+
+            // For perf, we need to keep the run results longer
+            newJob.with {
+                // Enable the log rotator
+                logRotator {
+                    artifactDaysToKeep(14)
+                    daysToKeep(30)
+                    artifactNumToKeep(100)
+                    numToKeep(200)
+                }
+                wrappers {
+                    timeout {
+                        absolute(240)
+                    }
+                }
+            }
+        } // os
+
+        def flowJobPerfRunList = perfOSList.collect { os ->
+            "{ build(params + [PRODUCT_BUILD: b.build.number], '${getFullPerfJobName(project, os, architecture, isPR)}') }"
+        }
+        def newFlowJob = buildFlowJob(Utilities.getFullJobName(project, "perf_linux_${architecture}_flow", isPR, '')) {
             if (isPR) {
                 parameters {
                     stringParam('BenchviewCommitName', '\${ghprbPullTitle}', 'The name that you will be used to build the full title of a run in Benchview.  The final name will be of the form <branch> private BenchviewCommitName')
                 }
             }
-
-            parameters {
-                // Cap the maximum number of iterations to 21.
-                stringParam('XUNIT_PERFORMANCE_MAX_ITERATION', '21', 'Sets the number of iterations to twenty one.  We are doing this to limit the amount of data that we upload as 20 iterations is enough to get a good sample')
-                stringParam('XUNIT_PERFORMANCE_MAX_ITERATION_INNER_SPECIFIED', '21', 'Sets the number of iterations to twenty one.  We are doing this to limit the amount of data that we upload as 20 iterations is enough to get a good sample')
-                stringParam('PRODUCT_BUILD', '', 'Build number from which to copy down the CoreCLR Product binaries built for Linux')
-            }
-
-            def osGroup = getOSGroup(os)
-            def runType = isPR ? 'private' : 'rolling'
-            def benchViewName = isPR ? 'coreclr private \$BenchviewCommitName' : 'coreclr rolling \$GIT_BRANCH_WITHOUT_ORIGIN \$GIT_COMMIT'
-            def uploadString = '-uploadToBenchview'
-
-            def runXUnitCommonArgs = "-arch ${architecture} -os ${os} -configuration ${configuration} -stabilityPrefix \"taskset 0x00000002 nice --adjustment=-10\" -generateBenchviewData \"\${WORKSPACE}/tests/scripts/Microsoft.BenchView.JSONFormat/tools\" ${uploadString} -runtype ${runType} -outputdir \"\${WORKSPACE}/bin/sandbox_logs\""
-
-            steps {
-                shell("./tests/scripts/perf-prep.sh --nocorefx")
-                shell("./init-tools.sh")
-                copyArtifacts(fullBuildJobName) {
-                    includePatterns("bin/**")
-                    buildSelector {
-                        buildNumber('\${PRODUCT_BUILD}')
-                    }
-                }
-                shell("GIT_BRANCH_WITHOUT_ORIGIN=\$(echo \$GIT_BRANCH | sed \"s/[^/]*\\/\\(.*\\)/\\1 /\")\n" +
-                "python3.5 \"\${WORKSPACE}/tests/scripts/Microsoft.BenchView.JSONFormat/tools/submission-metadata.py\" --name \" ${benchViewName} \" --user-email \"dotnet-bot@microsoft.com\"\n" +
-                "python3.5 \"\${WORKSPACE}/tests/scripts/Microsoft.BenchView.JSONFormat/tools/build.py\" git --branch \$GIT_BRANCH_WITHOUT_ORIGIN --type ${runType}")
-                shell("""python3 ./tests/scripts/run-xunit-perf.py -testBinLoc bin/tests/Windows_NT.${architecture}.${configuration}/JIT/Performance/CodeQuality ${runXUnitCommonArgs}""")
-            }
-        }
-
-        def archiveSettings = new ArchivalSettings()
-        archiveSettings.addFiles('bin/sandbox_logs/**/*_log.txt')
-        archiveSettings.addFiles('bin/sandbox_logs/**/*.csv')
-        archiveSettings.addFiles('bin/sandbox_logs/**/*.xml')
-        archiveSettings.addFiles('bin/sandbox_logs/**/*.log')
-        archiveSettings.addFiles('bin/sandbox_logs/**/*.md')
-        archiveSettings.addFiles('bin/sandbox_logs/**/*.etl')
-        archiveSettings.addFiles('machinedata.json')
-        archiveSettings.setAlwaysArchive()
-
-        Utilities.addArchival(newJob, archiveSettings)
-        Utilities.standardJobSetup(newJob, project, isPR, "*/${branch}")
-
-        // For perf, we need to keep the run results longer
-        newJob.with {
-            // Enable the log rotator
-            logRotator {
-                artifactDaysToKeep(14)
-                daysToKeep(30)
-                artifactNumToKeep(100)
-                numToKeep(200)
-            }
-            wrappers {
-                timeout {
-                    absolute(240)
-                }
-            }
-        }
-    } // os
-
-    def flowJobPerfRunList = perfOSList.collect { os ->
-        "{ build(params + [PRODUCT_BUILD: b.build.number], '${getFullPerfJobName(project, os, isPR)}') }"
-    }
-    def newFlowJob = buildFlowJob(Utilities.getFullJobName(project, "perf_linux_flow", isPR, '')) {
-        if (isPR) {
-            parameters {
-                stringParam('BenchviewCommitName', '\${ghprbPullTitle}', 'The name that you will be used to build the full title of a run in Benchview.  The final name will be of the form <branch> private BenchviewCommitName')
-            }
-        }
-        buildFlow("""
+            buildFlow("""
 // First, build the bits on RHEL7.2
 b = build(params, '${fullBuildJobName}')
 
@@ -396,169 +403,222 @@ parallel(
     ${flowJobPerfRunList.join(",\n    ")}
 )
 """)
-    }
+        }
 
-    Utilities.setMachineAffinity(newFlowJob, 'Windows_NT', 'latest-or-auto')
-    Utilities.standardJobSetup(newFlowJob, project, isPR, "*/${branch}")
+        Utilities.setMachineAffinity(newFlowJob, 'Windows_NT', 'latest-or-auto')
+        Utilities.standardJobSetup(newFlowJob, project, isPR, "*/${branch}")
 
-    if (isPR) {
-        TriggerBuilder builder = TriggerBuilder.triggerOnPullRequest()
-        builder.setGithubContext("Linux Perf Test Flow")
-        builder.triggerOnlyOnComment()
-        builder.setCustomTriggerPhrase("(?i).*test\\W+linux\\W+perf\\W+flow.*")
-        builder.triggerForBranch(branch)
-        builder.emitTrigger(newFlowJob)
-    }
-    else {
-        // Set a push trigger
-        TriggerBuilder builder = TriggerBuilder.triggerOnCommit()
-        builder.emitTrigger(newFlowJob)
-    }
-
+        if (isPR) {
+            TriggerBuilder builder = TriggerBuilder.triggerOnPullRequest()
+            builder.setGithubContext("Linux Perf Test Flow")
+            builder.triggerOnlyOnComment()
+            builder.setCustomTriggerPhrase("(?i).*test\\W+linux\\W+perf\\W+flow.*")
+            builder.triggerForBranch(branch)
+            builder.emitTrigger(newFlowJob)
+        }
+        else {
+            // Set a push trigger
+            TriggerBuilder builder = TriggerBuilder.triggerOnCommit()
+            builder.emitTrigger(newFlowJob)
+        }
+    } // architecture
 } // isPR
 
-def static getFullThroughputJobName(def project, def os, def isPR) {
-    return Utilities.getFullJobName(project, "perf_throughput_${os}", isPR)
+def static getDockerImageName(def architecture, def os, def isBuild) {
+    // We must change some docker private images to official later
+    if (isBuild) {
+        if (architecture == 'arm') {
+            if (os == 'Ubuntu') {
+                return "microsoft/dotnet-buildtools-prereqs:ubuntu-14.04-cross-e435274-20180426002420"
+            }
+        }
+    }
+    println("Unknown architecture to use docker: ${architecture} ${os}");
+    assert false
+}
+
+def static getFullThroughputJobName(def project, def os, def arch, def isPR) {
+    return Utilities.getFullJobName(project, "perf_throughput_${os}_${arch}", isPR)
 }
 
 // Create the Linux/OSX/CentOS coreclr test leg for debug and release and each scenario
 [true, false].each { isPR ->
-    def fullBuildJobName = Utilities.getFullJobName(project, 'perf_throughput_linux_build', isPR)
-    def architecture = 'x64'
-    def configuration = 'Release'
+    ['x64','arm'].each { architecture ->
+        def fullBuildJobName = Utilities.getFullJobName(project, "perf_throughput_linux_${architecture}_build", isPR)
+        def configuration = 'Release'
 
-    // Build has to happen on RHEL7.2 (that's where we produce the bits we ship)
-    ['RHEL7.2'].each { os ->
-        def newBuildJob = job(fullBuildJobName) {
-            steps {
-                shell("./build.sh verbose ${architecture} ${configuration}")
-            }
-        }
-        Utilities.setMachineAffinity(newBuildJob, os, 'latest-or-auto')
-        Utilities.standardJobSetup(newBuildJob, project, isPR, "*/${branch}")
-        Utilities.addArchival(newBuildJob, "bin/Product/**")
-    }
+        
+        def crossCompile = ""
+        def python = "python3.5"
 
-    // Actual perf testing on the following OSes
-    def throughputOSList = ['Ubuntu14.04']
-    def throughputOptLevelList = ['full_opt', 'min_opt']
+        if (architecture == "arm") {
+            python = "python3.6"
+            def buildCommands = []
+            def newBuildJob = job(fullBuildJobName) {
+                def additionalOpts = "-e CAC_ROOTFS_DIR=/crossrootfs/x86"
+                def dockerImage = getDockerImageName(architecture, 'Ubuntu', true)
+                def dockerCmd = "docker run -i --rm -v \${WORKSPACE}:\${WORKSPACE} -w \${WORKSPACE} -e ROOTFS_DIR=/crossrootfs/${architecture} ${additionalOpts} ${dockerImage} "
 
-    def throughputOSOptLevelList = []
-
-    throughputOSList.each { os ->
-        throughputOptLevelList.each { opt_level ->
-            throughputOSOptLevelList.add("${os}_${opt_level}")
-        }
-    }
-
-    throughputOSList.each { os ->
-        throughputOptLevelList.each { opt_level ->
-            def newJob = job(getFullThroughputJobName(project, "${os}_${opt_level}", isPR)) {
-
-                label('ubuntu_1604_clr_perf')
-                    wrappers {
-                        credentialsBinding {
-                            string('BV_UPLOAD_SAS_TOKEN', 'CoreCLR Perf BenchView Sas')
-                        }
-                    }
-
-                if (isPR) {
-                    parameters {
-                        stringParam('BenchviewCommitName', '\${ghprbPullTitle}', 'The name that will be used to build the full title of a run in Benchview.')
-                    }
-                }
-
-                parameters {
-                    stringParam('PRODUCT_BUILD', '', 'Build number from which to copy down the CoreCLR Product binaries built for Linux')
-                }
-
-                def osGroup = getOSGroup(os)
-                def runType = isPR ? 'private' : 'rolling'
-                def benchViewName = isPR ? 'coreclr-throughput private \$BenchviewCommitName' : 'coreclr-throughput rolling \$GIT_BRANCH_WITHOUT_ORIGIN \$GIT_COMMIT'
+                buildCommands += "${dockerCmd}\${WORKSPACE}/build.sh release ${architecture} cross crosscomponent"
 
                 steps {
-                    shell("bash ./tests/scripts/perf-prep.sh --throughput")
-                    shell("./init-tools.sh")
-                    copyArtifacts(fullBuildJobName) {
-                        includePatterns("bin/Product/**")
-                        buildSelector {
-                            buildNumber('\${PRODUCT_BUILD}')
-                        }
+                    buildCommands.each { buildCommand ->
+                        shell(buildCommand)
                     }
-                    shell("GIT_BRANCH_WITHOUT_ORIGIN=\$(echo \$GIT_BRANCH | sed \"s/[^/]*\\/\\(.*\\)/\\1 /\")\n" +
-                    "python3.5 \"\${WORKSPACE}/tests/scripts/Microsoft.BenchView.JSONFormat/tools/submission-metadata.py\" --name \" ${benchViewName} \" --user-email \"dotnet-bot@microsoft.com\"\n" +
-                    "python3.5 \"\${WORKSPACE}/tests/scripts/Microsoft.BenchView.JSONFormat/tools/build.py\" git --branch \$GIT_BRANCH_WITHOUT_ORIGIN --type ${runType}")
-                    shell("""python3.5 ./tests/scripts/run-throughput-perf.py \\
-                    -arch \"${architecture}\" \\
-                    -os \"${os}\" \\
-                    -configuration \"${configuration}\" \\
-                    -opt_level \"${opt_level}\" \\
-                    -clr_root \"\${WORKSPACE}\" \\
-                    -assembly_root \"\${WORKSPACE}/Microsoft.Benchview.ThroughputBenchmarks.${architecture}.Windows_NT/lib\" \\
-                    -run_type \"${runType}\" \\
-                    -benchview_path \"\${WORKSPACE}/tests/scripts/Microsoft.BenchView.JSONFormat/tools\"""")
+                }
+
+                publishers {
+                    azureVMAgentPostBuildAction {
+                        agentPostBuildAction('Delete agent after build execution (when idle).')
+                    }
                 }
             }
-
-            // Save machinedata.json to /artifact/bin/ Jenkins dir
-            def archiveSettings = new ArchivalSettings()
-            archiveSettings.addFiles('throughput-*.csv')
-            archiveSettings.addFiles('machinedata.json')
-            archiveSettings.setAlwaysArchive()
-            Utilities.addArchival(newJob, archiveSettings)
-
-            Utilities.standardJobSetup(newJob, project, isPR, "*/${branch}")
-
-            // For perf, we need to keep the run results longer
-            newJob.with {
-                // Enable the log rotator
-                logRotator {
-                    artifactDaysToKeep(7)
-                    daysToKeep(300)
-                    artifactNumToKeep(25)
-                    numToKeep(1000)
+            Utilities.setMachineAffinity(newBuildJob, "Ubuntu16.04", 'latest-or-auto')
+            Utilities.standardJobSetup(newBuildJob, project, isPR, "*/${branch}")
+            Utilities.addArchival(newBuildJob, "bin/Product/**")
+        }
+        else {
+            // Build has to happen on RHEL7.2 (that's where we produce the bits we ship)
+            ['RHEL7.2'].each { os ->
+                def newBuildJob = job(fullBuildJobName) {
+                    steps {
+                        shell("./build.sh verbose ${architecture} ${configuration}${crossCompile}")
+                    }
                 }
-            }
-        } // opt_level
-    } // os
-
-    def flowJobTPRunList = throughputOSOptLevelList.collect { os ->
-        "{ build(params + [PRODUCT_BUILD: b.build.number], '${getFullThroughputJobName(project, os, isPR)}') }"
-    }
-    def newFlowJob = buildFlowJob(Utilities.getFullJobName(project, "perf_throughput_linux_flow", isPR, '')) {
-        if (isPR) {
-            parameters {
-                stringParam('BenchviewCommitName', '\${ghprbPullTitle}', 'The name that you will be used to build the full title of a run in Benchview.  The final name will be of the form <branch> private BenchviewCommitName')
+                Utilities.setMachineAffinity(newBuildJob, os, 'latest-or-auto')
+                Utilities.standardJobSetup(newBuildJob, project, isPR, "*/${branch}")
+                Utilities.addArchival(newBuildJob, "bin/Product/**")
             }
         }
-        buildFlow("""
-// First, build the bits on RHEL7.2
-b = build(params, '${fullBuildJobName}')
 
-// Then, run the perf tests
-parallel(
-    ${flowJobTPRunList.join(",\n    ")}
-)
-""")
-    }
+        // Actual perf testing on the following OSes
+        def throughputOSList = ['Ubuntu16.04']
+        if (architecture == 'arm') {
+            throughputOSList = ['Ubuntu14.04']
+        }
+        def throughputOptLevelList = ['full_opt', 'min_opt']
 
-    Utilities.setMachineAffinity(newFlowJob, 'Windows_NT', 'latest-or-auto')
-    Utilities.standardJobSetup(newFlowJob, project, isPR, "*/${branch}")
+        def throughputOSOptLevelList = []
 
-    if (isPR) {
-        TriggerBuilder builder = TriggerBuilder.triggerOnPullRequest()
-        builder.setGithubContext("Linux Throughput Perf Test Flow")
-        builder.triggerOnlyOnComment()
-        builder.setCustomTriggerPhrase("(?i).*test\\W+linux\\W+throughput\\W+flow.*")
-        builder.triggerForBranch(branch)
-        builder.emitTrigger(newFlowJob)
-    }
-    else {
-        // Set a push trigger
-        TriggerBuilder builder = TriggerBuilder.triggerOnCommit()
-        builder.emitTrigger(newFlowJob)
-    }
+        throughputOSList.each { os ->
+            throughputOptLevelList.each { opt_level ->
+                throughputOSOptLevelList.add("${os}_${opt_level}")
+            }
+        }
 
+        throughputOSList.each { os ->
+            throughputOptLevelList.each { opt_level ->
+                def newJob = job(getFullThroughputJobName(project, "${os}_${opt_level}", architecture, isPR)) {
+
+                    def machineLabel = 'ubuntu_1604_clr_perf'
+                    if (architecture == 'arm') {
+                        machineLabel = 'ubuntu_1404_clr_perf_arm'
+                    }
+
+                    label(machineLabel)
+                        wrappers {
+                            credentialsBinding {
+                                string('BV_UPLOAD_SAS_TOKEN', 'CoreCLR Perf BenchView Sas')
+                            }
+                        }
+
+                    if (isPR) {
+                        parameters {
+                            stringParam('BenchviewCommitName', '\${ghprbPullTitle}', 'The name that will be used to build the full title of a run in Benchview.')
+                        }
+                    }
+
+                    parameters {
+                        stringParam('PRODUCT_BUILD', '', 'Build number from which to copy down the CoreCLR Product binaries built for Linux')
+                    }
+
+                    def osGroup = getOSGroup(os)
+                    def runType = isPR ? 'private' : 'rolling'
+                    def benchViewName = isPR ? 'coreclr-throughput private \$BenchviewCommitName' : 'coreclr-throughput rolling \$GIT_BRANCH_WITHOUT_ORIGIN \$GIT_COMMIT'
+                    def archString = architecture == 'arm' ? ' --arch=arm' : ''
+
+                    steps {
+                        shell("bash ./tests/scripts/perf-prep.sh --throughput${archString}")
+                        copyArtifacts(fullBuildJobName) {
+                            includePatterns("bin/Product/**")
+                            buildSelector {
+                                buildNumber('\${PRODUCT_BUILD}')
+                            }
+                        }
+                        shell("GIT_BRANCH_WITHOUT_ORIGIN=\$(echo \$GIT_BRANCH | sed \"s/[^/]*\\/\\(.*\\)/\\1 /\")\n" +
+                        "${python} \"\${WORKSPACE}/tests/scripts/Microsoft.BenchView.JSONFormat/tools/submission-metadata.py\" --name \" ${benchViewName} \" --user-email \"dotnet-bot@microsoft.com\"\n" +
+                        "${python} \"\${WORKSPACE}/tests/scripts/Microsoft.BenchView.JSONFormat/tools/build.py\" git --branch \$GIT_BRANCH_WITHOUT_ORIGIN --type ${runType}")
+                        shell("""${python} ./tests/scripts/run-throughput-perf.py \\
+                        -arch \"${architecture}\" \\
+                        -os \"${os}\" \\
+                        -configuration \"${configuration}\" \\
+                        -opt_level \"${opt_level}\" \\
+                        -clr_root \"\${WORKSPACE}\" \\
+                        -assembly_root \"\${WORKSPACE}/Microsoft.Benchview.ThroughputBenchmarks.x64.Windows_NT/lib\" \\
+                        -run_type \"${runType}\" \\
+                        -benchview_path \"\${WORKSPACE}/tests/scripts/Microsoft.BenchView.JSONFormat/tools\"""")
+                    }
+                }
+
+                // Save machinedata.json to /artifact/bin/ Jenkins dir
+                def archiveSettings = new ArchivalSettings()
+                archiveSettings.addFiles('throughput-*.csv')
+                archiveSettings.addFiles('machinedata.json')
+                archiveSettings.setAlwaysArchive()
+                Utilities.addArchival(newJob, archiveSettings)
+
+                Utilities.standardJobSetup(newJob, project, isPR, "*/${branch}")
+
+                // For perf, we need to keep the run results longer
+                newJob.with {
+                    // Enable the log rotator
+                    logRotator {
+                        artifactDaysToKeep(7)
+                        daysToKeep(300)
+                        artifactNumToKeep(25)
+                        numToKeep(1000)
+                    }
+                }
+            } // opt_level
+        } // os
+
+        def flowJobTPRunList = throughputOSOptLevelList.collect { os ->
+            "{ build(params + [PRODUCT_BUILD: b.build.number], '${getFullThroughputJobName(project, os, architecture, isPR)}') }"
+        }
+        def newFlowJob = buildFlowJob(Utilities.getFullJobName(project, "perf_throughput_linux_${architecture}_flow", isPR, '')) {
+            if (isPR) {
+                parameters {
+                    stringParam('BenchviewCommitName', '\${ghprbPullTitle}', 'The name that you will be used to build the full title of a run in Benchview.  The final name will be of the form <branch> private BenchviewCommitName')
+                }
+            }
+            buildFlow("""
+    // First, build the bits on RHEL7.2
+    b = build(params, '${fullBuildJobName}')
+
+    // Then, run the perf tests
+    parallel(
+        ${flowJobTPRunList.join(",\n    ")}
+    )
+    """)
+        }
+
+        Utilities.setMachineAffinity(newFlowJob, 'Windows_NT', 'latest-or-auto')
+        Utilities.standardJobSetup(newFlowJob, project, isPR, "*/${branch}")
+
+        if (isPR) {
+            TriggerBuilder builder = TriggerBuilder.triggerOnPullRequest()
+            builder.setGithubContext("Linux Throughput Perf Test Flow")
+            builder.triggerOnlyOnComment()
+            builder.setCustomTriggerPhrase("(?i).*test\\W+linux\\W+throughput\\W+flow.*")
+            builder.triggerForBranch(branch)
+            builder.emitTrigger(newFlowJob)
+        }
+        else {
+            // Set a push trigger
+            TriggerBuilder builder = TriggerBuilder.triggerOnCommit()
+            builder.emitTrigger(newFlowJob)
+        }
+    } // architecture
 } // isPR
 
 // Setup CoreCLR-Scenarios tests
