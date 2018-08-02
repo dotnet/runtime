@@ -4616,8 +4616,8 @@ GenTree* Compiler::fgMorphMultiregStructArg(GenTree* arg, fgArgTabEntry* fgEntry
     if (fgEntryPtr->regNum == REG_STK)
 #endif
     {
-        GenTreeLclVarCommon* lcl = nullptr;
-        GenTree* actualArg = arg->gtEffectiveVal();
+        GenTreeLclVarCommon* lcl       = nullptr;
+        GenTree*             actualArg = arg->gtEffectiveVal();
 
         if (actualArg->OperGet() == GT_OBJ)
         {
