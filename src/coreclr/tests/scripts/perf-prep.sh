@@ -41,6 +41,9 @@ do
         --nocorefx)
             nocorefx=1
             ;;
+        --arch=*)
+            perfArch=${i#*=}
+            ;;
         *)
             echo "Unknown switch: $i"
             print_usage
@@ -67,8 +70,13 @@ if [ ! -d "./tests/scripts/Microsoft.Benchview.JSONFormat" ]; then
 fi
 
 # Install python 3.5.2 to run machinedata.py for machine data collection
-python3 --version
-python3 ./tests/scripts/Microsoft.BenchView.JSONFormat/tools/machinedata.py
+if [ $perfArch == "arm" ]; then
+    python3.6 --version
+    python3.6 ./tests/scripts/Microsoft.BenchView.JSONFormat/tools/machinedata.py --machine-manufacturer NVIDIA
+else
+    python3 --version
+    python3 ./tests/scripts/Microsoft.BenchView.JSONFormat/tools/machinedata.py
+fi
 
 if [ $throughput -eq 1 ]; then
     # Download throughput benchmarks
