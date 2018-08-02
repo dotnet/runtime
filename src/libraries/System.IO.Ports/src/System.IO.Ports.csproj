@@ -132,6 +132,9 @@
     <Compile Include="$(CommonPath)\Interop\Windows\mincore\Interop.OpenCommPort.cs">
       <Link>Common\Interop\Windows\mincore\Interop.OpenCommPort.cs</Link>
     </Compile>
+    <Compile Include="$(CommonPath)\Interop\Windows\mincore\Interop.GetCommPorts.cs">
+      <Link>Common\Interop\Windows\mincore\Interop.GetCommPorts.cs</Link>
+    </Compile>
     <Compile Include="System\IO\Ports\SerialPort.Uap.cs" />
     <Compile Include="System\IO\Ports\SerialStream.Uap.cs" />
   </ItemGroup>
@@ -151,6 +154,7 @@
     <Reference Include="System.ComponentModel.Primitives" />
     <Reference Include="System.Diagnostics.Debug" />
     <Reference Include="System.Diagnostics.Tools" />
+    <Reference Include="System.Memory" />
     <Reference Include="System.Resources.ResourceManager" />
     <Reference Include="System.Runtime" />
     <Reference Include="System.Runtime.Extensions" />
