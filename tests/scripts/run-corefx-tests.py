@@ -70,7 +70,6 @@ parser.add_argument('-fx_branch', dest='fx_branch', default='master')
 parser.add_argument('-fx_commit', dest='fx_commit', default=None)
 parser.add_argument('-env_script', dest='env_script', default=None)
 parser.add_argument('-no_run_tests', dest='no_run_tests', action="store_true", default=False)
-parser.add_argument('-toolset_dir', dest='toolset_dir', default='c:\\ats2')
 
 
 ##########################################################################
@@ -82,7 +81,7 @@ def validate_args(args):
     Args:
         args (argparser.ArgumentParser): Args parsed by the argument parser.
     Returns:
-        (arch, ci_arch, build_type, clr_root, fx_root, fx_branch, fx_commit, env_script, no_run_tests, toolset_dir)
+        (arch, ci_arch, build_type, clr_root, fx_root, fx_branch, fx_commit, env_script, no_run_tests)
             (str, str, str, str, str, str, str, str, str)
     Notes:
     If the arguments are valid then return them all in a tuple. If not, raise
@@ -98,7 +97,6 @@ def validate_args(args):
     fx_commit = args.fx_commit
     env_script = args.env_script
     no_run_tests = args.no_run_tests
-    toolset_dir = args.toolset_dir
 
     def validate_arg(arg, check):
         """ Validate an individual arg
@@ -144,7 +142,7 @@ def validate_args(args):
         validate_arg(env_script, lambda item: os.path.isfile(env_script))
         env_script = os.path.abspath(env_script)
 
-    args = (arch, ci_arch, build_type, clr_root, fx_root, fx_branch, fx_commit, env_script, no_run_tests, toolset_dir)
+    args = (arch, ci_arch, build_type, clr_root, fx_root, fx_branch, fx_commit, env_script, no_run_tests)
 
     log('Configuration:')
     log(' arch: %s' % arch)
@@ -156,7 +154,6 @@ def validate_args(args):
     log(' fx_commit: %s' % fx_commit)
     log(' env_script: %s' % env_script)
     log(' no_run_tests: %s' % no_run_tests)
-    log(' toolset_dir: %s' % toolset_dir)
 
     return args
 
@@ -218,7 +215,7 @@ def main(args):
     global Unix_name_map
     global testing
 
-    arch, ci_arch, build_type, clr_root, fx_root, fx_branch, fx_commit, env_script, no_run_tests, toolset_dir = validate_args(
+    arch, ci_arch, build_type, clr_root, fx_root, fx_branch, fx_commit, env_script, no_run_tests = validate_args(
         args)
 
     clr_os = 'Windows_NT' if Is_windows else Unix_name_map[os.uname()[0]]
@@ -312,11 +309,6 @@ def main(args):
         # We need to pass "-cross", but we also pass "-portable", which build-native.sh normally
         # passes (there doesn't appear to be a way to pass these individually).
         build_native_args += ' -AdditionalArgs:"-portable -cross"'
-
-    if Is_windows and arch == 'arm64' :
-        # We need to pass toolsetDir to specify the arm64 private toolset.
-        # This is temporary, until private toolset is no longer used. So hard-code the CI toolset dir.
-        build_native_args += ' -ToolSetDir:"toolsetDir=%s"' % toolset_dir
 
     command = ' '.join(('build-native.cmd' if Is_windows else './build-native.sh',
                         config_args,
