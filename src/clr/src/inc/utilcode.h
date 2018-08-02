@@ -42,10 +42,6 @@
 
 #include "clrnt.h"
 
-// Values for the names of Watson
-const WCHAR kWatsonName1[] = W("drwatson");
-const WCHAR kWatsonName2[] = W("drwtsn32");
-
 #include "random.h"
 
 #define WINDOWS_KERNEL32_DLLNAME_A "kernel32"
@@ -136,17 +132,6 @@ typedef LPSTR   LPUTF8;
 #include "nsutilpriv.h"
 
 #include "stdmacros.h"
-
-/*
-// This is for WinCE
-#ifdef VERIFY
-#undef VERIFY
-#endif
-
-#ifdef _ASSERTE
-#undef _ASSERTE
-#endif
-*/
 
 //********** Macros. **********************************************************
 #ifndef FORCEINLINE
@@ -4236,7 +4221,6 @@ HRESULT validateTokenSig(
 // metadata contained in the image.
 //*****************************************************************************
 HRESULT GetImageRuntimeVersionString(PVOID pMetaData, LPCSTR* pString);
-void  AdjustImageRuntimeVersion (SString* pVersion);
 
 //*****************************************************************************
 // The registry keys and values that contain the information regarding
@@ -5004,85 +4988,6 @@ FORCEINLINE void HolderSysFreeString(BSTR str) { CONTRACT_VIOLATION(ThrowsViolat
 
 typedef Wrapper<BSTR, DoNothing, HolderSysFreeString> BSTRHolder;
 
-BOOL FileExists(LPCWSTR filename);
-
-
-// a class for general x.x version info
-class MajorMinorVersionInfo
-{
-protected:
-    WORD version[2];
-    BOOL bInitialized;
-public:
-    //cctors
-    MajorMinorVersionInfo() 
-    {
-        LIMITED_METHOD_CONTRACT;
-        bInitialized = FALSE;
-        ZeroMemory(version,sizeof(version));
-    };
-
-    MajorMinorVersionInfo(WORD wMajor, WORD wMinor) 
-    {
-        WRAPPER_NO_CONTRACT;
-        Init(wMajor,wMinor);
-    };
-
-    // getters
-    BOOL IsInitialized() const 
-    {
-        LIMITED_METHOD_CONTRACT;
-        return bInitialized;
-    };
-
-    WORD Major() const 
-    {
-        LIMITED_METHOD_CONTRACT;
-        return version[0];
-    };
-
-    WORD Minor() const 
-    {
-        LIMITED_METHOD_CONTRACT;
-        return version[1];
-    };
-
-    // setters
-    void Init(WORD wMajor, WORD wMinor) 
-    {
-        LIMITED_METHOD_CONTRACT;
-        version[0]=wMajor;
-        version[1]=wMinor;
-        bInitialized=TRUE;
-    };
-};
-
-// CLR runtime version info in Major/Minor form
-class RUNTIMEVERSIONINFO : public MajorMinorVersionInfo 
-{
-    static RUNTIMEVERSIONINFO notDefined;
-public:
-    // cctors
-    RUNTIMEVERSIONINFO() {};
-
-    RUNTIMEVERSIONINFO(WORD wMajor, WORD wMinor) : 
-      MajorMinorVersionInfo(wMajor,wMinor){};  
-
-    // CLR version specific helpers
-    BOOL IsPreWhidbey() const
-    {
-        WRAPPER_NO_CONTRACT;
-        return (Major() == 1) && (Minor() <= 1); 
-    }
-
-    static const RUNTIMEVERSIONINFO& NotApplicable()
-    {
-        LIMITED_METHOD_CONTRACT;
-        return notDefined;
-    }
-};
-
-
 // HMODULE_TGT represents a handle to a module in the target process.  In non-DAC builds this is identical
 // to HMODULE (HINSTANCE), which is the base address of the module.  In DAC builds this must be a target address,
 // and so is represented by TADDR. 
@@ -5153,9 +5058,6 @@ void OnUninitializedCoreClrCallbacks();
 BOOL IsProcessCorruptedStateException(DWORD dwExceptionCode, BOOL fCheckForSO = TRUE);
 
 #endif // FEATURE_CORRUPTING_EXCEPTIONS
-
-
-BOOL IsV2RuntimeLoaded(void);
 
 namespace UtilCode
 {
