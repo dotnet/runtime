@@ -1651,7 +1651,6 @@ void CodeGen::genSSE2Intrinsic(GenTreeHWIntrinsic* node)
 
         case NI_SSE2_SetZeroVector128:
         {
-            assert(baseType != TYP_FLOAT);
             assert(baseType >= TYP_BYTE && baseType <= TYP_DOUBLE);
             assert(op1 == nullptr);
             assert(op2 == nullptr);
