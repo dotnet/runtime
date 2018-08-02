@@ -5,22 +5,7 @@ if (WIN32)
   set_source_files_properties(../mscorlib.cpp PROPERTIES COMPILE_FLAGS "/Y-") 
 
   # asm files require preprocessing using cl.exe on arm32 and arm64
-  if(CLR_CMAKE_PLATFORM_ARCH_ARM64)
-
-      foreach(ASM_FILE ${VM_SOURCES_WKS_ARCH_ASM})
-
-          # Preprocess each asm source file
-          get_filename_component(name ${ASM_FILE} NAME_WE)
-          set(ASM_PREPROCESSED_FILE ${CMAKE_CURRENT_BINARY_DIR}/${name}.asm)
-          preprocess_def_file(${ASM_FILE} ${ASM_PREPROCESSED_FILE})
-
-          set(VM_SOURCES_WKS_ARM64_PREPROCESSED_ASM ${VM_SOURCES_WKS_ARM64_PREPROCESSED_ASM} ${ASM_PREPROCESSED_FILE})
-
-      endforeach()
-
-      set(VM_SOURCES_WKS_ARCH_ASM ${VM_SOURCES_WKS_ARM64_PREPROCESSED_ASM})
-
-  elseif(CLR_CMAKE_PLATFORM_ARCH_ARM)
+  if(CLR_CMAKE_PLATFORM_ARCH_ARM OR CLR_CMAKE_PLATFORM_ARCH_ARM64)
 
       get_include_directories_asm(ASM_INCLUDE_DIRECTORIES)
 
@@ -31,15 +16,14 @@ if (WIN32)
           file(TO_CMAKE_PATH "${CMAKE_CURRENT_BINARY_DIR}/${name}.asm" ASM_PREPROCESSED_FILE)
           preprocess_def_file(${ASM_FILE} ${ASM_PREPROCESSED_FILE})
 
-          # On Arm32, compile the preprocessed binary to .obj
           # We do not pass any defines since we have already done pre-processing above
           set (ASM_CMDLINE "-o ${CMAKE_CURRENT_BINARY_DIR}/${name}.obj ${ASM_PREPROCESSED_FILE}")
 
           # Generate the batch file that will invoke the assembler
-          file(TO_CMAKE_PATH "${CMAKE_CURRENT_BINARY_DIR}/runasm_${name}_${CMAKE_BUILD_TYPE}.cmd" ASM_SCRIPT_FILE)
+          file(TO_CMAKE_PATH "${CMAKE_CURRENT_BINARY_DIR}/runasm_${name}.cmd" ASM_SCRIPT_FILE)
 
           file(GENERATE OUTPUT "${ASM_SCRIPT_FILE}"
-                    CONTENT "\"${CMAKE_ASM_MASM_COMPILER}\" -g ${ASM_INCLUDE_DIRECTORIES} ${ASM_DEFINITIONS} ${ASM_CMDLINE}")
+               CONTENT "\"${CMAKE_ASM_MASM_COMPILER}\" -g ${ASM_INCLUDE_DIRECTORIES} ${ASM_CMDLINE}")
 
           message("Generated  - ${ASM_SCRIPT_FILE}")
 
@@ -57,7 +41,7 @@ if (WIN32)
 
       endforeach()
 
-  endif(CLR_CMAKE_PLATFORM_ARCH_ARM64)
+  endif()
 
 endif (WIN32)
 
@@ -65,7 +49,7 @@ add_library_clr(cee_wks ${VM_SOURCES_WKS} ${VM_SOURCES_WKS_ARCH_ASM})
 
 if (WIN32)
 
-  if(NOT CLR_CMAKE_PLATFORM_ARCH_ARM)
+  if(NOT CLR_CMAKE_PLATFORM_ARCH_ARM AND NOT CLR_CMAKE_PLATFORM_ARCH_ARM64)
     # Get the current list of definitions
     get_compile_definitions(DEFINITIONS)
 
@@ -118,6 +102,6 @@ if (WIN32)
 
     add_dependencies(cee_wks asmconstants_inc)
 
-  endif(NOT CLR_CMAKE_PLATFORM_ARCH_ARM)
+  endif(NOT CLR_CMAKE_PLATFORM_ARCH_ARM AND NOT CLR_CMAKE_PLATFORM_ARCH_ARM64)
 
 endif (WIN32)
