@@ -2684,6 +2684,12 @@ mono_gc_get_card_table (int *shift_bits, gpointer *mask)
 	return sgen_get_card_table_configuration (shift_bits, mask);
 }
 
+guint8*
+mono_gc_get_target_card_table (int *shift_bits, gpointer *mask)
+{
+	return sgen_get_target_card_table_configuration (shift_bits, mask);
+}
+
 gboolean
 mono_gc_card_table_nursery_check (void)
 {

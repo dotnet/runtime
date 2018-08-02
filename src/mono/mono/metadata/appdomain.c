@@ -1372,6 +1372,8 @@ mono_domain_fire_assembly_load (MonoAssembly *assembly, gpointer user_data)
 	if (!domain->domain)
 		/* This can happen during startup */
 		goto leave;
+	if (mono_runtime_get_no_exec ())
+		goto leave;
 #ifdef ASSEMBLY_LOAD_DEBUG
 	fprintf (stderr, "Loading %s into domain %s\n", assembly->aname.name, domain->friendly_name);
 #endif

@@ -26,6 +26,12 @@ typedef gint32 mgreg_t;
 typedef gint64 mgreg_t;
 #endif
 
+#if TARGET_SIZEOF_VOID_P == 4
+typedef gint32 target_mgreg_t;
+#else
+typedef gint64 target_mgreg_t;
+#endif
+
 /* Alignment for MonoArray.vector */
 #if defined(_AIX)
 /*

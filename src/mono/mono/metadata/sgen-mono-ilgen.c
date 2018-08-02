@@ -144,8 +144,8 @@ emit_nursery_check_ilgen (MonoMethodBuilder *mb, gboolean is_concurrent)
 	mono_mb_emit_icon (mb, CARD_BITS);
 	mono_mb_emit_byte (mb, CEE_SHR_UN);
 	mono_mb_emit_byte (mb, CEE_CONV_I);
-#ifdef SGEN_HAVE_OVERLAPPING_CARDS
-#if SIZEOF_VOID_P == 8
+#ifdef SGEN_TARGET_HAVE_OVERLAPPING_CARDS
+#if TARGET_SIZEOF_VOID_P == 8
 	mono_mb_emit_icon8 (mb, CARD_MASK);
 #else
 	mono_mb_emit_icon (mb, CARD_MASK);

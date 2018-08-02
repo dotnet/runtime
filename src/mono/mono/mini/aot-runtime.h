@@ -11,7 +11,7 @@
 #include "mini.h"
 
 /* Version number of the AOT file format */
-#define MONO_AOT_FILE_VERSION 146
+#define MONO_AOT_FILE_VERSION 147
 
 #define MONO_AOT_TRAMP_PAGE_SIZE 16384
 
@@ -182,8 +182,8 @@ typedef struct MonoAotFileInfo
 	/* Index of the blob entry holding the GC used by this module */
 	gint32 gc_name_index;
 	guint32 num_rgctx_fetch_trampolines;
-	/* These are used for sanity checking object layout problems when cross-compiling */
-	guint32 double_align, long_align, generic_tramp_num;
+	/* These are used for sanity checking when cross-compiling */
+	guint32 double_align, long_align, generic_tramp_num, card_table_shift_bits, card_table_mask;
 	/* The page size used by trampoline pages */
 	guint32 tramp_page_size;
 	/*

@@ -2172,9 +2172,15 @@ if (container_assm_name && !container_amodule) {
 	/* Sanity check */
 	align_double = MONO_ABI_ALIGNOF (double);
 	align_int64 = MONO_ABI_ALIGNOF (gint64);
+	int card_table_shift_bits = 0;
+	gpointer card_table_mask = NULL;
+	mono_gc_get_card_table (&card_table_shift_bits, &card_table_mask);
+
 	g_assert (info->double_align == align_double);
 	g_assert (info->long_align == align_int64);
 	g_assert (info->generic_tramp_num == MONO_TRAMPOLINE_NUM);
+	g_assert (info->card_table_shift_bits == card_table_shift_bits);
+	g_assert (info->card_table_mask == GPOINTER_TO_UINT (card_table_mask));
 
 	amodule = g_new0 (MonoAotModule, 1);
 	amodule->aot_name = found_aot_name;

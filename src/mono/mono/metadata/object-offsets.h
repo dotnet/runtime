@@ -171,6 +171,7 @@ DECL_OFFSET(MonoContinuation, return_sp)
 DECL_OFFSET(MonoContinuation, lmf)
 DECL_OFFSET(MonoContinuation, return_ip)
 
+DECL_OFFSET(MonoDelegateTrampInfo, method)
 DECL_OFFSET(MonoDelegateTrampInfo, invoke_impl)
 DECL_OFFSET(MonoDelegateTrampInfo, method_ptr)
 
@@ -283,6 +284,14 @@ DECL_OFFSET(CallContext, gregs)
 DECL_OFFSET(CallContext, fregs)
 DECL_OFFSET(CallContext, stack_size)
 DECL_OFFSET(CallContext, stack)
+#endif
+
+#if defined(TARGET_X86)
+DECL_OFFSET(GSharedVtCallInfo, stack_usage)
+DECL_OFFSET(GSharedVtCallInfo, vret_slot)
+DECL_OFFSET(GSharedVtCallInfo, vret_arg_slot)
+DECL_OFFSET(GSharedVtCallInfo, ret_marshal)
+DECL_OFFSET(GSharedVtCallInfo, gsharedvt_in)
 #endif
 
 DECL_OFFSET(MonoFtnDesc, arg)

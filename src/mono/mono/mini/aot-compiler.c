@@ -10391,9 +10391,21 @@ init_aot_file_info (MonoAotCompile *acfg, MonoAotFileInfo *info)
 		info->trampoline_size [i] = acfg->trampoline_size [i];
 	info->num_rgctx_fetch_trampolines = acfg->aot_opts.nrgctx_fetch_trampolines;
 
+	int card_table_shift_bits = 0;
+	gpointer card_table_mask = NULL;
+
+	mono_gc_get_target_card_table (&card_table_shift_bits, &card_table_mask);
+
+	/*
+	 * Sanity checking variables used to make sure the host and target
+	 * environment matches when cross compiling.
+	 */
 	info->double_align = MONO_ABI_ALIGNOF (double);
 	info->long_align = MONO_ABI_ALIGNOF (gint64);
 	info->generic_tramp_num = MONO_TRAMPOLINE_NUM;
+	info->card_table_shift_bits = card_table_shift_bits;
+	info->card_table_mask = GPOINTER_TO_UINT (card_table_mask);
+
 	info->tramp_page_size = acfg->tramp_page_size;
 	info->nshared_got_entries = acfg->nshared_got_entries;
 	for (i = 0; i < MONO_AOT_TRAMP_NUM; ++i)
@@ -10523,6 +10535,8 @@ emit_aot_file_info (MonoAotCompile *acfg, MonoAotFileInfo *info)
 	emit_int32 (acfg, info->double_align);
 	emit_int32 (acfg, info->long_align);
 	emit_int32 (acfg, info->generic_tramp_num);
+	emit_int32 (acfg, info->card_table_shift_bits);
+	emit_int32 (acfg, info->card_table_mask);
 	emit_int32 (acfg, info->tramp_page_size);
 	emit_int32 (acfg, info->nshared_got_entries);
 	emit_int32 (acfg, info->datafile_size);
@@ -11250,7 +11264,7 @@ compile_asm (MonoAotCompile *acfg)
 #define AS_OPTIONS "--64"
 #elif defined(TARGET_POWERPC64)
 #define AS_OPTIONS "-a64 -mppc64"
-#elif defined(sparc) && SIZEOF_VOID_P == 8
+#elif defined(sparc) && TARGET_SIZEOF_VOID_P == 8
 #define AS_OPTIONS "-xarch=v9"
 #elif defined(TARGET_X86) && defined(TARGET_MACH)
 #define AS_OPTIONS "-arch i386"

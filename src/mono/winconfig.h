@@ -668,8 +668,10 @@
 /* The size of a `void *', as computed by sizeof. */
 #ifdef _WIN64
 #define SIZEOF_VOID_P 8
+#define TARGET_SIZEOF_VOID_P 8
 #else
 #define SIZEOF_VOID_P 4
+#define TARGET_SIZEOF_VOID_P 4
 #endif
 
 #define SIZEOF_REGISTER SIZEOF_VOID_P

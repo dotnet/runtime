@@ -28,6 +28,7 @@ void sgen_card_table_update_mod_union (guint8 *dest, char *obj, mword obj_size, 
 void sgen_card_table_preclean_mod_union (guint8 *cards, guint8 *cards_preclean, size_t num_cards);
 
 guint8* sgen_get_card_table_configuration (int *shift_bits, gpointer *mask);
+guint8* sgen_get_target_card_table_configuration (int *shift_bits, gpointer *mask);
 
 void sgen_card_table_init (SgenRememberedSet *remset);
 
@@ -46,6 +47,10 @@ void sgen_card_table_init (SgenRememberedSet *remset);
 
 #if SIZEOF_VOID_P * 8 > CARD_TABLE_BITS
 #define SGEN_HAVE_OVERLAPPING_CARDS	1
+#endif
+
+#if TARGET_SIZEOF_VOID_P * 8 > CARD_TABLE_BITS
+#define SGEN_TARGET_HAVE_OVERLAPPING_CARDS	1
 #endif
 
 extern guint8 *sgen_cardtable;

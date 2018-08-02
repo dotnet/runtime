@@ -1413,6 +1413,14 @@ mono_gc_get_card_table (int *shift_bits, gpointer *card_mask)
 	return NULL;
 }
 
+guint8*
+mono_gc_get_target_card_table (int *shift_bits, gpointer *card_mask)
+{
+	*shift_bits = 0;
+	*card_mask = NULL;
+	return NULL;
+}
+
 gboolean
 mono_gc_card_table_nursery_check (void)
 {

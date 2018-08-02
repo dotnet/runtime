@@ -474,6 +474,26 @@ sgen_get_card_table_configuration (int *shift_bits, gpointer *mask)
 #endif
 }
 
+guint8*
+sgen_get_target_card_table_configuration (int *shift_bits, gpointer *mask)
+{
+#ifndef MANAGED_WBARRIER
+	return NULL;
+#else
+	if (!sgen_cardtable)
+		return NULL;
+
+	*shift_bits = CARD_BITS;
+#ifdef SGEN_TARGET_HAVE_OVERLAPPING_CARDS
+	*mask = (gpointer)CARD_MASK;
+#else
+	*mask = NULL;
+#endif
+
+	return sgen_cardtable;
+#endif
+}
+
 #if 0
 void
 sgen_card_table_dump_obj_card (GCObject *object, size_t size, void *dummy)

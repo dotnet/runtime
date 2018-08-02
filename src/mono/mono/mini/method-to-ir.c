@@ -2960,7 +2960,7 @@ mini_emit_write_barrier (MonoCompile *cfg, MonoInst *ptr, MonoInst *value)
 
 	//method->wrapper_type != MONO_WRAPPER_WRITE_BARRIER && !MONO_INS_IS_PCONST_NULL (sp [1])
 
-	card_table = mono_gc_get_card_table (&card_table_shift_bits, &card_table_mask);
+	card_table = mono_gc_get_target_card_table (&card_table_shift_bits, &card_table_mask);
 
 	mono_gc_get_nursery (&nursery_shift_bits, &nursery_size);
 
