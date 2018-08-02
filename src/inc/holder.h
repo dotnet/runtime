@@ -1295,50 +1295,6 @@ private:
 };
 #endif // !FEATURE_PAL
 
-//-----------------------------------------------------------------------------
-// Wrapper to suppress auto-destructor (UNDER CONSTRUCTION)
-// Usage:
-//
-//      BEGIN_MANUAL_HOLDER(NewArrayHolder<Foo>,  foo);
-//      ... use foo via ->
-//      END_MANUAL_HOLDER(foo);
-// 
-//-----------------------------------------------------------------------------
-
-template <typename TYPE, SIZE_T SIZE = sizeof(TYPE)>
-class NoAuto__DONTUSEDIRECTLY
-{
-  private:
-    BYTE hiddeninstance[SIZE];
-
-  public:
-    // Unfortunately, you can only use the default constructor
-    NoAuto__DONTUSEDIRECTLY()
-    {
-        new (hiddeninstance) TYPE ();
-    }
-
-    operator TYPE& () { return *(TYPE *)hiddeninstance; }
-    TYPE& operator->() { return *(TYPE *)hiddeninstance; }
-    TYPE& operator*() { return *(TYPE *)hiddeninstance; }
-
-    void Destructor() { (*(TYPE*)hiddeninstance)->TYPE::~TYPE(); }
-};
-
-#define BEGIN_MANUAL_HOLDER(_TYPE, _NAME)           \
-    {                                               \
-        NoAuto__DONTUSEDIRECTLY<_TYPE> _NAME;       \
-        __try                                       \
-        {
-
-#define END_MANUAL_HOLDER(_NAME)                    \
-        }                                           \
-        __finally                                   \
-        {                                           \
-            _NAME.Destructor();                     \
-        }                                           \
-    }
-
 //----------------------------------------------------------------------------
 //
 // External data access does not want certain holder implementations
