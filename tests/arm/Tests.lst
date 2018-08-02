@@ -15497,7 +15497,7 @@ RelativePath=GC\Features\Finalizer\finalizeother\finalizearraysleep\finalizearra
 WorkingDir=GC\Features\Finalizer\finalizeother\finalizearraysleep
 Expected=0
 MaxAllowedDurationSeconds=600
-Categories=EXPECTED_PASS;Pri1
+Categories=EXPECTED_PASS;Pri1;JITSTRESS_FAIL;19248
 HostStyle=0
 
 [_il_dbgindcall.cmd_1949]
@@ -26137,7 +26137,7 @@ RelativePath=JIT\Methodical\fp\exgen\10w250d_cs_ro\10w250d_cs_ro.cmd
 WorkingDir=JIT\Methodical\fp\exgen\10w250d_cs_ro
 Expected=0
 MaxAllowedDurationSeconds=600
-Categories=EXPECTED_PASS;Pri1
+Categories=EXPECTED_PASS;Pri1;JITSTRESS_FAIL;18986
 HostStyle=0
 
 [Generated1391.cmd_3284]
@@ -52921,7 +52921,7 @@ RelativePath=GC\Features\Finalizer\finalizeother\finalizearray\finalizearray.cmd
 WorkingDir=GC\Features\Finalizer\finalizeother\finalizearray
 Expected=0
 MaxAllowedDurationSeconds=600
-Categories=EXPECTED_PASS
+Categories=EXPECTED_PASS;JITSTRESS_FAIL;19248
 HostStyle=0
 
 [Generated635.cmd_6640]
@@ -54713,7 +54713,7 @@ RelativePath=JIT\Methodical\fp\exgen\10w5d_cs_ro\10w5d_cs_ro.cmd
 WorkingDir=JIT\Methodical\fp\exgen\10w5d_cs_ro
 Expected=0
 MaxAllowedDurationSeconds=600
-Categories=EXPECTED_PASS
+Categories=EXPECTED_PASS;JITSTRESS_FAIL;18986
 HostStyle=0
 
 [GCSimulator_353.cmd_6865]
@@ -62017,7 +62017,7 @@ RelativePath=JIT\Methodical\fp\exgen\10w5d_cs_do\10w5d_cs_do.cmd
 WorkingDir=JIT\Methodical\fp\exgen\10w5d_cs_do
 Expected=0
 MaxAllowedDurationSeconds=600
-Categories=EXPECTED_PASS
+Categories=EXPECTED_PASS;JITSTRESS_FAIL;18988
 HostStyle=0
 
 [b03995.cmd_7785]
