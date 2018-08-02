@@ -2923,7 +2923,7 @@ class CordbProcess :
     public ICorDebugProcess5,
     public ICorDebugProcess7,
     public ICorDebugProcess8,
-    public ICorDebugProcess9,
+    public ICorDebugProcess10,
     public IDacDbiInterface::IAllocator,
     public IDacDbiInterface::IMetaDataLookup,
     public IProcessShimHooks
@@ -3136,7 +3136,7 @@ public:
     COM_METHOD EnableExceptionCallbacksOutsideOfMyCode(BOOL enableExceptionsOutsideOfJMC);
 
     //-----------------------------------------------------------
-    // ICorDebugProcess9
+    // ICorDebugProcess10
     //-----------------------------------------------------------
     COM_METHOD GetContainingObject(CORDB_ADDRESS interiorPointer, ICorDebugObjectValue** ppContainingObject);
 

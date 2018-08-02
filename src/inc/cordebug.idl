@@ -3268,7 +3268,7 @@ interface ICorDebugProcess8 : IUnknown
     uuid(8F378F6F-1017-4461-9890-ECF64C54079F),
     pointer_default(unique)
 ]
-interface ICorDebugProcess9 : IUnknown
+interface ICorDebugProcess10 : IUnknown
 {
     HRESULT GetContainingObject([in] CORDB_ADDRESS interiorPointer, [out] ICorDebugObjectValue** ppContainingObject);
 }
