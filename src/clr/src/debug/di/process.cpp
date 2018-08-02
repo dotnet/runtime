@@ -2175,9 +2175,9 @@ HRESULT CordbProcess::QueryInterface(REFIID id, void **pInterface)
     {
         *pInterface = static_cast<ICorDebugProcess8*>(this);
     }
-    else if (id == IID_ICorDebugProcess9)
+    else if (id == IID_ICorDebugProcess10)
     {
-        *pInterface = static_cast<ICorDebugProcess9*>(this);
+        *pInterface = static_cast<ICorDebugProcess10*>(this);
     }
 #ifdef FEATURE_LEGACYNETCF_DBG_HOST_CONTROL
     else if (id == IID_ICorDebugLegacyNetCFHostCallbackInvoker_PrivateWindowsPhoneOnly)
