@@ -619,10 +619,11 @@ var_types RegSet::tmpNormalizeType(var_types type)
 {
     type = genActualType(type);
 
-#if defined(FEATURE_SIMD) && !defined(_TARGET_64BIT_)
-    // For SIMD on 32-bit platforms, we always spill SIMD12 to a 16-byte SIMD16 temp.
-    // This is because we don't have a single instruction to store 12 bytes. We also
-    // allocate non-argument locals as 16 bytes; see lvSize().
+#if defined(FEATURE_SIMD)
+    // We always spill SIMD12 to a 16-byte SIMD16 temp.
+    // This is because we don't have a single instruction to store 12 bytes, so we want
+    // to ensure that we always have the full 16 bytes for loading & storing the value.
+    // We also allocate non-argument locals as 16 bytes; see lvSize().
     if (type == TYP_SIMD12)
     {
         type = TYP_SIMD16;
