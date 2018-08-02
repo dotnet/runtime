@@ -4029,45 +4029,14 @@ void Compiler::lvaMarkLocalVars()
     const bool setSlotNumbers = opts.compScopeInfo && (info.compVarScopesCount > 0);
 #endif // defined(DEBUG)
 
-    unsigned   lclNum = 0;
-    LclVarDsc* varDsc = nullptr;
-
-    // Fast path for minopts and debug codegen.
-    //
-    // Mark all locals as implicitly referenced and untracked.
-    // Don't bother sorting.
-    if (opts.MinOpts() || opts.compDbgCode)
-    {
-        for (lclNum = 0, varDsc = lvaTable; lclNum < lvaCount; lclNum++, varDsc++)
-        {
-            // Using lvImplicitlyReferenced here ensures that we can't
-            // accidentally make locals be unreferenced later by decrementing
-            // the ref count to zero.
-            //
-            // If, in minopts/debug, we really want to allow locals to become
-            // unreferenced later, we'll have to explicitly clear this bit.
-            varDsc->setLvRefCnt(0);
-            varDsc->setLvRefCntWtd(0);
-            varDsc->lvImplicitlyReferenced = 1;
-            varDsc->lvTracked              = 0;
-
-            if (setSlotNumbers)
-            {
-                varDsc->lvSlotNum = lclNum;
-            }
-
-            // Assert that it's ok to bypass the type repair logic in lvaMarkLclRefs
-            assert((varDsc->lvType != TYP_UNDEF) && (varDsc->lvType != TYP_VOID) && (varDsc->lvType != TYP_UNKNOWN));
-        }
-
-        lvaCurEpoch++;
-        lvaTrackedCount             = 0;
-        lvaTrackedCountInSizeTUnits = 0;
-        return;
-    }
-
     const bool isRecompute = false;
     lvaComputeRefCounts(isRecompute, setSlotNumbers);
+
+    // If we're not optimizing, we're done.
+    if (opts.MinOpts() || opts.compDbgCode)
+    {
+        return;
+    }
 
 #if ASSERTION_PROP
     assert(!opts.MinOpts() && !opts.compDbgCode);
@@ -4104,13 +4073,72 @@ void Compiler::lvaMarkLocalVars()
 // Notes:
 //    Some implicit references are given actual counts or weight bumps here
 //    to match pre-existing behavior.
+//
+//    In fast-jitting modes where we don't ref count locals, this bypasses
+//    actual counting, and makes all locals implicitly referenced on first
+//    compute. It asserts all locals are implicitly referenced on recompute.
 
 void Compiler::lvaComputeRefCounts(bool isRecompute, bool setSlotNumbers)
 {
     unsigned   lclNum = 0;
     LclVarDsc* varDsc = nullptr;
 
-    // Reset all explicit ref counts and weights.
+    // Fast path for minopts and debug codegen.
+    //
+    // On first compute: mark all locals as implicitly referenced and untracked.
+    // On recompute: do nothing.
+    if (opts.MinOpts() || opts.compDbgCode)
+    {
+        if (isRecompute)
+        {
+
+#if defined(DEBUG)
+            // All local vars should be marked as implicitly referenced.
+            //
+            // This happens today for temps introduced after lvMarkRefs via
+            // incremental ref count updates. If/when we remove that we'll need
+            // to do something else to ensure late temps are considered.
+            for (lclNum = 0, varDsc = lvaTable; lclNum < lvaCount; lclNum++, varDsc++)
+            {
+                assert(varDsc->lvImplicitlyReferenced);
+            }
+#endif // defined (DEBUG)
+
+            return;
+        }
+
+        // First compute.
+        for (lclNum = 0, varDsc = lvaTable; lclNum < lvaCount; lclNum++, varDsc++)
+        {
+            // Using lvImplicitlyReferenced here ensures that we can't
+            // accidentally make locals be unreferenced later by decrementing
+            // the ref count to zero.
+            //
+            // If, in minopts/debug, we really want to allow locals to become
+            // unreferenced later, we'll have to explicitly clear this bit.
+            varDsc->setLvRefCnt(0);
+            varDsc->setLvRefCntWtd(0);
+            varDsc->lvImplicitlyReferenced = 1;
+            varDsc->lvTracked              = 0;
+
+            if (setSlotNumbers)
+            {
+                varDsc->lvSlotNum = lclNum;
+            }
+
+            // Assert that it's ok to bypass the type repair logic in lvaMarkLclRefs
+            assert((varDsc->lvType != TYP_UNDEF) && (varDsc->lvType != TYP_VOID) && (varDsc->lvType != TYP_UNKNOWN));
+        }
+
+        lvaCurEpoch++;
+        lvaTrackedCount             = 0;
+        lvaTrackedCountInSizeTUnits = 0;
+        return;
+    }
+
+    // Slower path we take when optimizing, to get accurate counts.
+    //
+    // First, reset all explicit ref counts and weights.
     for (lclNum = 0, varDsc = lvaTable; lclNum < lvaCount; lclNum++, varDsc++)
     {
         varDsc->setLvRefCnt(0);
@@ -4122,13 +4150,42 @@ void Compiler::lvaComputeRefCounts(bool isRecompute, bool setSlotNumbers)
         }
     }
 
-    // Account for all explicit local variable references
+    // Second, account for all explicit local variable references
     for (BasicBlock* block = fgFirstBB; block; block = block->bbNext)
     {
-        lvaMarkLocalVars(block, isRecompute);
+        if (block->IsLIR())
+        {
+            assert(isRecompute);
+
+            const BasicBlock::weight_t weight = block->getBBWeight(this);
+            for (GenTree* node : LIR::AsRange(block).NonPhiNodes())
+            {
+                switch (node->OperGet())
+                {
+                    case GT_LCL_VAR:
+                    case GT_LCL_FLD:
+                    case GT_LCL_VAR_ADDR:
+                    case GT_LCL_FLD_ADDR:
+                    case GT_STORE_LCL_VAR:
+                    case GT_STORE_LCL_FLD:
+                    {
+                        const unsigned lclNum = node->AsLclVarCommon()->gtLclNum;
+                        lvaTable[lclNum].incRefCnts(weight, this);
+                        break;
+                    }
+
+                    default:
+                        break;
+                }
+            }
+        }
+        else
+        {
+            lvaMarkLocalVars(block, isRecompute);
+        }
     }
 
-    // Bump ref counts for some implicit prolog references
+    // Third, bump ref counts for some implicit prolog references
     for (lclNum = 0, varDsc = lvaTable; lclNum < lvaCount; lclNum++, varDsc++)
     {
         // Todo: review justification for these count bumps.
