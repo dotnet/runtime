@@ -77,6 +77,7 @@
 #cmakedefine01 HAVE_CRT_EXTERNS_H
 #cmakedefine01 HAVE_GETDOMAINNAME
 #cmakedefine01 HAVE_UNAME
+#cmakedefine01 HAVE_UTIMENSAT
 #cmakedefine01 HAVE_FUTIMES
 #cmakedefine01 HAVE_FUTIMENS
 #cmakedefine01 HAVE_MKSTEMPS
