@@ -11,7 +11,6 @@ using Xunit;
 
 namespace System.IO.Ports.Tests
 {
-    [ActiveIssue("https://github.com/dotnet/corefx/issues/20588", TargetFrameworkMonikers.Uap)] // fails in both Uap and UapAot
     public class GetPortNames : PortsTest
     {
         #region Test Cases
