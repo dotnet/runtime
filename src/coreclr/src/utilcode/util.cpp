@@ -20,9 +20,6 @@
 #include "corinfo.h"
 #include "volatile.h"
 
-
-const char g_RTMVersion[]= "v1.0.3705";
-
 #ifndef DACCESS_COMPILE
 UINT32 g_nClrInstanceId = 0;
 #endif //!DACCESS_COMPILE
@@ -2193,66 +2190,6 @@ HRESULT validateTokenSig(
     return S_OK;
 }   // validateTokenSig()
 
-const CHAR g_VersionBase[] = "v1.";
-const CHAR g_DevelopmentVersion[] = "x86";
-const CHAR g_RetString[] = "retail";
-const CHAR g_ComplusString[] = "COMPLUS";
-
-const WCHAR g_VersionBaseW[] = W("v1.");
-const WCHAR g_DevelopmentVersionW[] = W("x86");
-const WCHAR g_RetStringW[] = W("retail");
-const WCHAR g_ComplusStringW[] = W("COMPLUS");
-
-//*****************************************************************************
-// Determine the version number of the runtime that was used to build the
-// specified image. The pMetadata pointer passed in is the pointer to the
-// metadata contained in the image.
-//*****************************************************************************
-static BOOL IsReallyRTM(LPCWSTR szVersion)
-{
-    LIMITED_METHOD_CONTRACT;
-    if (szVersion==NULL)
-        return FALSE;
-
-    size_t lgth = sizeof(g_VersionBaseW) / sizeof(WCHAR) - 1;
-    size_t foundLgth = wcslen(szVersion);
-
-    // Have normal version, v1.*
-    if ( (foundLgth >= lgth+2) &&
-         !wcsncmp(szVersion, g_VersionBaseW, lgth) ) {
-
-        // v1.0.* means RTM
-        if (szVersion[lgth+1] == W('.')) {
-            if (szVersion[lgth] == W('0'))
-               return TRUE;
-        }
-        
-        // Check for dev version (v1.x86ret, v1.x86fstchk...)
-        else if(!wcsncmp(szVersion+lgth, g_DevelopmentVersionW,
-                         (sizeof(g_DevelopmentVersionW) / sizeof(WCHAR) - 1)))
-            return TRUE;
-    }
-    // Some weird version...
-    else if( (!wcscmp(szVersion, g_RetStringW)) ||
-             (!wcscmp(szVersion, g_ComplusStringW)) )
-        return TRUE;
-    return FALSE;   
-}
-
-void AdjustImageRuntimeVersion(SString* pVersion)
-{
-    CONTRACTL
-    {
-        THROWS;
-    }
-    CONTRACTL_END;
-    
-    if (IsReallyRTM(*pVersion))
-    {
-        pVersion->SetANSI(g_RTMVersion);
-    }
-};
-
 HRESULT GetImageRuntimeVersionString(PVOID pMetaData, LPCSTR* pString)
 {
     CONTRACTL
@@ -2264,7 +2201,7 @@ HRESULT GetImageRuntimeVersionString(PVOID pMetaData, LPCSTR* pString)
     _ASSERTE(pString);
     STORAGESIGNATURE* pSig = (STORAGESIGNATURE*) pMetaData;
 
-    // Verify the signature. 
+    // Verify the signature.
 
     // If signature didn't match, you shouldn't be here.
     if (pSig->GetSignature() != STORAGE_MAGIC_SIG)
@@ -2279,32 +2216,6 @@ HRESULT GetImageRuntimeVersionString(PVOID pMetaData, LPCSTR* pString)
     
     // Header data starts after signature.
     *pString = (LPCSTR) pSig->pVersion;
-    if(*pString) {
-        size_t lgth = sizeof(g_VersionBase) / sizeof(char) - 1;
-        size_t foundLgth = strlen(*pString);
-
-        // Have normal version, v1.*
-        if ( (foundLgth >= lgth+2) &&
-             !strncmp(*pString, g_VersionBase, lgth) ) {
-
-            // v1.0.* means RTM
-            if ((*pString)[lgth+1] == '.') {
-                if ((*pString)[lgth] == '0')
-                    *pString = g_RTMVersion;
-            }
-            
-            // Check for dev version (v1.x86ret, v1.x86fstchk...)
-            else if(!strncmp(&(*pString)[lgth], g_DevelopmentVersion,
-                             (sizeof(g_DevelopmentVersion) / sizeof(char) - 1)))
-                *pString = g_RTMVersion;
-        }
-
-        // Some weird version...
-        else if( (!strcmp(*pString, g_RetString)) ||
-                 (!strcmp(*pString, g_ComplusString)) )
-            *pString = g_RTMVersion;
-    }
-
     return S_OK;
 }
 
@@ -3049,22 +2960,6 @@ LPWSTR *SegmentCommandLine(LPCWSTR lpCmdLine, DWORD *pNumArgs)
 Volatile<PVOID> ForbidCallsIntoHostOnThisThread::s_pvOwningFiber = NULL;
 
 //======================================================================
-
-BOOL FileExists(LPCWSTR filename)
-{
-    WIN32_FIND_DATA data;        
-    HANDLE h = WszFindFirstFile(filename, &data);
-    if (h == INVALID_HANDLE_VALUE)
-    {
-        return FALSE;
-    }
-
-    ::FindClose(h);
-
-    return TRUE;                
-}
-
-//======================================================================
 // This function returns true, if it can determine that the instruction pointer
 // refers to a code address that belongs in the range of the given image.
 // <TODO>@TODO: Merge with IsIPInModule from vm\util.hpp</TODO>
@@ -3214,14 +3109,6 @@ BOOL IsProcessCorruptedStateException(DWORD dwExceptionCode, BOOL fCheckForSO /*
 void EnableTerminationOnHeapCorruption()
 {
     HeapSetInformation(NULL, HeapEnableTerminationOnCorruption, NULL, 0);
-}
-
-RUNTIMEVERSIONINFO RUNTIMEVERSIONINFO::notDefined;
-
-BOOL IsV2RuntimeLoaded(void)
-{
-
-    return FALSE;
 }
 
 #ifdef FEATURE_COMINTEROP

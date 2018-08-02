@@ -1049,14 +1049,6 @@ HRESULT ProfilingAPIUtility::LoadProfiler(
 
         _ASSERTE(profilerCompatibilityFlag == kEnableV2Profiler);
 
-        // To prevent V2 profilers from AV, once a V2 profiler is already loaded by a V2 rutnime in the process, 
-        // V4 runtime will not try to load the V2 profiler again.
-        if (IsV2RuntimeLoaded())
-        {
-            LogProfInfo(IDS_PROF_V2PROFILER_ALREADY_LOADED, wszClsid);
-            return S_OK;
-        }
-
         LOG((LF_CORPROF, LL_INFO10, "**PROF: COMPlus_ProfAPI_ProfilerCompatibilitySetting is set to EnableV2Profiler. "
              "The configured V2 profiler is going to be initialized.\n"));
 
