@@ -280,8 +280,8 @@
     <Compile Include="$(CommonPath)\Interop\Unix\System.Native\Interop.RmDir.cs">
       <Link>Common\Interop\Unix\Interop.RmDir.cs</Link>
     </Compile>
-    <Compile Include="$(CommonPath)\Interop\Unix\System.Native\Interop.UTime.cs">
-      <Link>Common\Interop\Unix\Interop.UTime.cs</Link>
+    <Compile Include="$(CommonPath)\Interop\Unix\System.Native\Interop.UTimensat.cs">
+      <Link>Common\Interop\Unix\Interop.UTimensat.cs</Link>
     </Compile>
     <Compile Include="$(CommonPath)\CoreLib\System\IO\PathInternal.Unix.cs">
       <Link>Common\CoreLib\System\IO\PathInternal.Unix.cs</Link>

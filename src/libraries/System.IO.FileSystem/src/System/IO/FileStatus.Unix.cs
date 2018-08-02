@@ -2,6 +2,8 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
+using System.Runtime.InteropServices;
+
 namespace System.IO
 {
     internal struct FileStatus
@@ -199,11 +201,20 @@ namespace System.IO
             // force a refresh so that we have an up-to-date times for values not being overwritten
             _fileStatusInitialized = -1;
             EnsureStatInitialized(path);
-            Interop.Sys.UTimBuf buf;
-            // we use utime() not utimensat() so we drop the subsecond part
-            buf.AcTime = accessTime ?? _fileStatus.ATime;
-            buf.ModTime = writeTime ?? _fileStatus.MTime;
-            Interop.CheckIo(Interop.Sys.UTime(path, ref buf), path, InitiallyDirectory);
+
+            // we use utimes()/utimensat() to set the accessTime and writeTime
+            Span<Interop.Sys.TimeSpec> buf = stackalloc Interop.Sys.TimeSpec[2];
+
+            // setting second part
+            buf[0].TvSec = accessTime ?? _fileStatus.ATime;
+            buf[1].TvSec = writeTime ?? _fileStatus.MTime;
+
+            // setting nanosecond part
+            buf[0].TvNsec = accessTime == null ? _fileStatus.ATimeNsec : 0;
+            buf[1].TvNsec = writeTime == null ? _fileStatus.MTimeNsec : 0;
+
+            Interop.CheckIo(Interop.Sys.UTimensat(path, ref MemoryMarshal.GetReference(buf)), path, InitiallyDirectory);          
+
             _fileStatusInitialized = -1;
         }
 

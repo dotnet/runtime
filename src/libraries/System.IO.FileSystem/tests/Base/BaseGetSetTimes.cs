@@ -77,7 +77,7 @@ namespace System.IO.Tests
         }
 
         [ConditionalFact(nameof(isNotHFS))] // OSX HFS driver format does not support millisec granularity
-        public void TimesIncludeMillisecondPart_Unix()
+        public void TimesIncludeMillisecondPart()
         {
             T item = GetExistingItem();
             Assert.All(TimeFunctions(), (function) =>
@@ -109,7 +109,7 @@ namespace System.IO.Tests
         }
 
         [ConditionalFact(nameof(isHFS))]
-        public void TimesIncludeMillisecondPart_OSX()
+        public void TimesIncludeMillisecondPart_HFS()
         {
             T item = GetExistingItem();
             // OSX HFS driver format does not support millisec granularity

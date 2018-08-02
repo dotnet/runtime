@@ -403,6 +403,10 @@ check_function_exists(
     futimens
     HAVE_FUTIMENS)
 
+check_function_exists(
+    utimensat
+    HAVE_UTIMENSAT)
+
 set (PREVIOUS_CMAKE_REQUIRED_FLAGS ${CMAKE_REQUIRED_FLAGS})
 set (CMAKE_REQUIRED_FLAGS "-Werror -Wsign-conversion")
 
