@@ -268,6 +268,9 @@
     <Compile Include="$(CommonPath)\System\Security\Cryptography\Asn1\Pbkdf2SaltChoice.cs">
       <Link>Common\System\Security\Cryptography\Asn1\Pbkdf2SaltChoice.cs</Link>
     </Compile>
+    <Compile Include="$(CommonPath)\System\Security\Cryptography\Asn1\PssParamsAsn.cs">
+      <Link>Common\System\Security\Cryptography\Asn1\PssParamsAsn.cs</Link>
+    </Compile>
     <Compile Include="$(CommonPath)\System\Security\Cryptography\Asn1\PrivateKeyInfoAsn.cs">
       <Link>Common\System\Security\Cryptography\Asn1\PrivateKeyInfoAsn.cs</Link>
     </Compile>
@@ -286,7 +289,6 @@
     <Compile Include="System\Security\Cryptography\Pkcs\Asn1\GeneralName.cs" />
     <Compile Include="System\Security\Cryptography\Pkcs\Asn1\IssuerAndSerialNumberAsn.cs" />
     <Compile Include="System\Security\Cryptography\Pkcs\Asn1\MessageImprint.cs" />
-    <Compile Include="System\Security\Cryptography\Pkcs\Asn1\PssParamsAsn.cs" />
     <Compile Include="System\Security\Cryptography\Pkcs\Asn1\Rfc3161Accuracy.cs" />
     <Compile Include="System\Security\Cryptography\Pkcs\Asn1\Rfc3161TimeStampReq.cs" />
     <Compile Include="System\Security\Cryptography\Pkcs\Asn1\Rfc3161TimeStampResp.cs" />

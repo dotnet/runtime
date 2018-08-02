@@ -3,9 +3,8 @@
 // See the LICENSE file in the project root for more information.
 
 using System.Runtime.InteropServices;
-using System.Security.Cryptography.Asn1;
 
-namespace System.Security.Cryptography.Pkcs.Asn1
+namespace System.Security.Cryptography.Asn1
 {
     // https://tools.ietf.org/html/rfc8017#appendix-A.2.3
     //
@@ -32,10 +31,10 @@ namespace System.Security.Cryptography.Pkcs.Asn1
 
         [DefaultValue(0x02, 0x01, 0x14)]
         [ExpectedTag(2, ExplicitTag = true)]
-        public int SaltLength;
+        public uint SaltLength;
 
         [DefaultValue(0x02, 0x01, 0x01)]
         [ExpectedTag(3, ExplicitTag = true)]
-        public int TrailerField;
+        public uint TrailerField;
     }
 }

@@ -6,6 +6,8 @@ using System;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Globalization;
+using System.Security.Cryptography;
+using System.Security.Cryptography.Asn1;
 
 namespace Internal.Cryptography
 {
@@ -157,6 +159,53 @@ namespace Internal.Cryptography
             foreach (IDisposable disposable in disposables)
             {
                 disposable.Dispose();
+            }
+        }
+
+        public static void ValidateDer(ReadOnlyMemory<byte> encodedValue)
+        {
+            Asn1Tag tag;
+            AsnReader reader = new AsnReader(encodedValue, AsnEncodingRules.DER);
+
+            while (reader.HasData)
+            {
+                tag = reader.PeekTag();
+
+                // If the tag is in the UNIVERSAL class
+                //
+                // DER limits the constructed encoding to SEQUENCE and SET, as well as anything which gets
+                // a defined encoding as being an IMPLICIT SEQUENCE.
+                if (tag.TagClass == TagClass.Universal)
+                {
+                    switch ((UniversalTagNumber)tag.TagValue)
+                    {
+                        case UniversalTagNumber.External:
+                        case UniversalTagNumber.Embedded:
+                        case UniversalTagNumber.Sequence:
+                        case UniversalTagNumber.Set:
+                        case UniversalTagNumber.UnrestrictedCharacterString:
+                            if (!tag.IsConstructed)
+                            {
+                                throw new CryptographicException(SR.Cryptography_Der_Invalid_Encoding);
+                            }
+                            break;
+
+                        default:
+                            if (tag.IsConstructed)
+                            {
+                                throw new CryptographicException(SR.Cryptography_Der_Invalid_Encoding);
+                            }
+                            break;
+                    }
+                }
+
+                if (tag.IsConstructed)
+                {
+                    ValidateDer(reader.PeekContentBytes());
+                }
+
+                // Skip past the current value.
+                reader.GetEncodedValue();
             }
         }
     }
