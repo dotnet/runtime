@@ -552,11 +552,11 @@ DEFINE_FIELD_U(m_catchMetadataToken,       ExceptionHandlingClause,        m_cat
 DEFINE_FIELD_U(m_filterOffset,             ExceptionHandlingClause,        m_filterOffset)
 DEFINE_CLASS(EH_CLAUSE,             Reflection,             ExceptionHandlingClause)
 
-DEFINE_CLASS_U(Reflection,             LocalVariableInfo,          LocalVariableInfo)
-DEFINE_FIELD_U(m_type,                     LocalVariableInfo,        m_type)
-DEFINE_FIELD_U(m_isPinned,                 LocalVariableInfo,        m_bIsPinned)
-DEFINE_FIELD_U(m_localIndex,               LocalVariableInfo,        m_localIndex)
-DEFINE_CLASS(LOCAL_VARIABLE_INFO,   Reflection,             LocalVariableInfo)
+DEFINE_CLASS_U(Reflection,             RuntimeLocalVariableInfo,        RuntimeLocalVariableInfo)
+DEFINE_FIELD_U(_type,                  RuntimeLocalVariableInfo,        _type)
+DEFINE_FIELD_U(_localIndex,            RuntimeLocalVariableInfo,        _localIndex)
+DEFINE_FIELD_U(_isPinned,              RuntimeLocalVariableInfo,        _isPinned)
+DEFINE_CLASS(RUNTIME_LOCAL_VARIABLE_INFO,   Reflection,             RuntimeLocalVariableInfo)
 
 DEFINE_CLASS_U(Reflection,             MethodBody,                 MethodBody)
 DEFINE_FIELD_U(m_IL,                       MethodBody,         m_IL)
