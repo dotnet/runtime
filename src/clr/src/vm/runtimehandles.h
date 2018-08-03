@@ -32,16 +32,16 @@ typedef enum ReflectionCallConv {
 
 class ExceptionHandlingClause;
 class MethodBody;
-class LocalVariableInfo;
+class RuntimeLocalVariableInfo;
 
 #ifdef USE_CHECKED_OBJECTREFS
 typedef REF<ExceptionHandlingClause> EXCEPTIONHANDLINGCLAUSEREF;
 typedef REF<MethodBody> METHODBODYREF;
-typedef REF<LocalVariableInfo> LOCALVARIABLEINFOREF;
+typedef REF<RuntimeLocalVariableInfo> RUNTIMELOCALVARIABLEINFOREF;
 #else
 typedef DPTR(ExceptionHandlingClause) EXCEPTIONHANDLINGCLAUSEREF;
 typedef DPTR(MethodBody) METHODBODYREF;
-typedef DPTR(LocalVariableInfo) LOCALVARIABLEINFOREF;
+typedef DPTR(RuntimeLocalVariableInfo) RUNTIMELOCALVARIABLEINFOREF;
 #endif
 
 class ExceptionHandlingClause : Object 
@@ -80,28 +80,28 @@ public:
     CLR_BOOL m_initLocals;    
 };
 
-class LocalVariableInfo : Object
+class RuntimeLocalVariableInfo : Object
 {
 private:
     // Disallow creation and copy construction of these.
-    LocalVariableInfo() { }
-    LocalVariableInfo(LocalVariableInfo &r) { }    
+    RuntimeLocalVariableInfo() { }
+    RuntimeLocalVariableInfo(RuntimeLocalVariableInfo &r) { }    
 
 public:
 
     REFLECTCLASSBASEREF GetType()
     {
-        return (REFLECTCLASSBASEREF)m_type;
+        return (REFLECTCLASSBASEREF)_type;
     }
 
     void SetType(OBJECTREF type)
     {
-        SetObjectReference(&m_type, type, GetAppDomain());
+        SetObjectReference(&_type, type, GetAppDomain());
     }
 
-    OBJECTREF m_type;
-    INT32 m_bIsPinned;
-    INT32 m_localIndex;
+    OBJECTREF _type;
+    INT32 _localIndex;
+    CLR_BOOL _isPinned;
 };
 
 class MdUtf8String {
