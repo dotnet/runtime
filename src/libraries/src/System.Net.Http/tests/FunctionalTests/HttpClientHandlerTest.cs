@@ -1531,6 +1531,7 @@ namespace System.Net.Http.Functional.Tests
                     request.Headers.Add("Accept-Datetime", "Thu, 31 May 2007 20:35:00 GMT");
                     request.Headers.Add("Access-Control-Request-Method", "GET");
                     request.Headers.Add("Access-Control-Request-Headers", "GET");
+                    request.Headers.Add("Age", "12");
                     request.Headers.Authorization = new AuthenticationHeaderValue("Basic", "QWxhZGRpbjpvcGVuIHNlc2FtZQ==");
                     request.Headers.CacheControl = new CacheControlHeaderValue() { NoCache = true };
                     request.Headers.Connection.Add("close");
@@ -1605,6 +1606,7 @@ namespace System.Net.Http.Functional.Tests
                     Assert.Contains("Accept-Datetime: Thu, 31 May 2007 20:35:00 GMT", headersSet);
                     Assert.Contains("Access-Control-Request-Method: GET", headersSet);
                     Assert.Contains("Access-Control-Request-Headers: GET", headersSet);
+                    Assert.Contains("Age: 12", headersSet);
                     Assert.Contains("Authorization: Basic QWxhZGRpbjpvcGVuIHNlc2FtZQ==", headersSet);
                     Assert.Contains("Cache-Control: no-cache", headersSet);
                     Assert.Contains("Connection: close", headersSet, StringComparer.OrdinalIgnoreCase); // NetFxHandler uses "Close" vs "close"
@@ -1691,6 +1693,7 @@ namespace System.Net.Http.Functional.Tests
                     Assert.Contains("text/example;charset=utf-8", resp.Headers.GetValues("Accept-Patch"));
                     Assert.Contains("bytes", resp.Headers.AcceptRanges);
                     Assert.Equal(TimeSpan.FromSeconds(12), resp.Headers.Age.GetValueOrDefault());
+                    Assert.Contains("Bearer 63123a47139a49829bcd8d03005ca9d7", resp.Headers.GetValues("Authorization"));
                     Assert.Contains("GET", resp.Content.Headers.Allow);
                     Assert.Contains("HEAD", resp.Content.Headers.Allow);
                     Assert.Contains("http/1.1=\"http2.example.com:8001\"; ma=7200", resp.Headers.GetValues("Alt-Svc"));
@@ -1751,6 +1754,7 @@ namespace System.Net.Http.Functional.Tests
                 $"Accept-Patch:{fold} text/example;charset=utf-8{newline}" +
                 $"Accept-Ranges:{fold} bytes{newline}" +
                 $"Age: {fold}12{newline}" +
+                $"Authorization: Bearer 63123a47139a49829bcd8d03005ca9d7{newline}" +
                 $"Allow: {fold}GET, HEAD{newline}" +
                 $"Alt-Svc:{fold} http/1.1=\"http2.example.com:8001\"; ma=7200{newline}" +
                 $"Cache-Control: {fold}max-age=3600{newline}" +

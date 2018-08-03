@@ -928,7 +928,8 @@ namespace System.Net.Http
             }
             else
             {
-                response.Headers.TryAddWithoutValidation(descriptor, headerValue);
+                // Request headers returned on the response must be treated as custom headers
+                response.Headers.TryAddWithoutValidation(descriptor.HeaderType == HttpHeaderType.Request ? descriptor.AsCustomHeader() : descriptor, headerValue);
             }
         }
 
