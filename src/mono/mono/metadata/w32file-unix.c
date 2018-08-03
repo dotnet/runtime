@@ -4380,6 +4380,7 @@ static _wapi_drive_type _wapi_drive_types[] = {
 	{ DRIVE_REMOTE, "smbfs" },
 	{ DRIVE_FIXED, "udf" },
 	{ DRIVE_REMOTE, "webdav" },
+	{ DRIVE_FIXED, "ufsd_NTFS"},
 	{ DRIVE_UNKNOWN, NULL }
 #elif __linux__
 	{ DRIVE_FIXED, ADFS_SUPER_MAGIC, "adfs"},
