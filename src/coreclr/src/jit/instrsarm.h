@@ -205,6 +205,19 @@ INST4(pli,     "pli",    0,LD, IF_EN4B,  0xF990F000, 0xF910FC00,  0xF910F000,  0
                                    //  pli     [PC+-i12]         T2_K3     11111001U0011111 1111iiiiiiiiiiii   F91F F000           imm(+-4095)                          
 #endif // FEATURE_PLI_INSTRUCTION
 
+//    enum     name      FP LD/ST         Rd,i16     Rd,i16     Rd,i16     Rd,i16
+//                                        T2_N       T2_N1      T2_N2      T2_N3
+INST4(movt,    "movt",   0, 0, IF_EN4C,   0xF2C00000,0xF2C00000,0xF2C00000,0xF2C00000)
+                                           //  Rd,i16            T2_N      11110i101100iiii 0iiiddddiiiiiiii   F2C0 0000           imm(0-65535)
+                                           //  Rd,i16            T2_N1     11110i101100iiii 0iiiddddiiiiiiii   F2C0 0000           imm(0-65535)
+                                           //  Rd,i16            T2_N2     11110i101100iiii 0iiiddddiiiiiiii   F2C0 0000           imm(0-65535)
+                                           //  Rd,i16            T2_N3     11110i101100iiii 0iiiddddiiiiiiii   F2C0 0000           imm(0-65535)
+INST4(movw,    "movw",   0, 0, IF_EN4C,   0xF2400000,0xF2400000,0xF2400000,0xF2400000)
+                                           //  Rd,+i16           T2_N      11110i100100iiii 0iiiddddiiiiiiii   F240 0000           imm(0-65535)
+                                           //  Rd,+i16           T2_N1     11110i100100iiii 0iiiddddiiiiiiii   F240 0000           imm(0-65535)
+                                           //  Rd,+i16           T2_N2     11110i100100iiii 0iiiddddiiiiiiii   F240 0000           imm(0-65535)
+                                           //  Rd,+i16           T2_N3     11110i100100iiii 0iiiddddiiiiiiii   F240 0000           imm(0-65535)
+
 //    enum     name      FP LD/ST          Rdn, Rm    Rd,Rn,Rm,sh  Rd,Rn,i12 
 //                                          T1_E       T2_C0        T2_L0
 INST3(and,     "and",    0, 0, IF_EN3A,   0x4000,    0xEA000000,   0xF0000000)
@@ -271,20 +284,9 @@ INST3(pop,     "pop",    0, 0, IF_EN3D,   0xBC00,    0xF85D0B04,   0xE8BD0000)
                                    //  pop     rT                T2_E2     1111100001011101 tttt101100000100   F85D 0B04                              
                                    //  pop     <reglist16>       T2_I1     1110100010111101 PM0rrrrrrrrrrrrr   E8BD 0000                              
 
-//    enum     name      FP LD/ST         Rd,i16     Rd,i16     Rd,i16   
-//                                        T2_N       T2_N1      T2_N2
-INST3(movt,    "movt",   0, 0, IF_EN3E,   0xF2C00000,0xF2C00000,0xF2C00000)
-                                           //  Rd,i16            T2_N      11110i101100iiii 0iiiddddiiiiiiii   F2C0 0000           imm(0-65535)                          
-                                           //  Rd,i16            T2_N1     11110i101100iiii 0iiiddddiiiiiiii   F2C0 0000           imm(0-65535)                          
-                                           //  Rd,i16            T2_N2     11110i101100iiii 0iiiddddiiiiiiii   F2C0 0000           imm(0-65535)                          
-INST3(movw,    "movw",   0, 0, IF_EN3E,   0xF2400000,0xF2400000,0xF2400000)
-                                           //  Rd,+i16           T2_N      11110i100100iiii 0iiiddddiiiiiiii   F240 0000           imm(0-65535)                          
-                                           //  Rd,+i16           T2_N1     11110i100100iiii 0iiiddddiiiiiiii   F240 0000           imm(0-65535)                          
-                                           //  Rd,+i16           T2_N2     11110i100100iiii 0iiiddddiiiiiiii   F240 0000           imm(0-65535)                          
-
 //    enum     name      FP LD/ST         PC+-imm11 PC+-imm24   PC+-imm24
 //                                          T1_M      T2_J2       T2_J3
-INST3(b,       "b",      0, 0, IF_EN3F,   0xE000,   0xF0009000, 0xF0009000)
+INST3(b,       "b",      0, 0, IF_EN3E,   0xE000,   0xF0009000, 0xF0009000)
                                    //  b       PC+-i11            T1_M      11100iiiiiiiiiii                    E000                imm(-2048..2046)                          
                                    //  b       PC+-i24            T2_J2     11110Siiiiiiiiii 10j1jiiiiiiiiiii   F000 9000           imm(-16777216..16777214) (intra-procedure offset)
                                    //  b       PC+-i24            T2_J3     11110Siiiiiiiiii 10j1jiiiiiiiiiii   F000 9000           imm(-16777216..16777214) (inter-procedure offset)

@@ -57,12 +57,12 @@ IF_DEF(EN5A,        IS_NONE,               NONE)     // Instruction has 5 possib
 IF_DEF(EN5B,        IS_NONE,               NONE)     // Instruction has 5 possible encoding types, type B
 IF_DEF(EN4A,        IS_NONE,               NONE)     // Instruction has 4 possible encoding types, type A
 IF_DEF(EN4B,        IS_NONE,               NONE)     // Instruction has 4 possible encoding types, type B
+IF_DEF(EN4C,        IS_NONE,               NONE)     // Instruction has 4 possible encoding types, type C
 IF_DEF(EN3A,        IS_NONE,               NONE)     // Instruction has 3 possible encoding types, type A 
 IF_DEF(EN3B,        IS_NONE,               NONE)     // Instruction has 3 possible encoding types, type B 
 IF_DEF(EN3C,        IS_NONE,               NONE)     // Instruction has 3 possible encoding types, type C 
 IF_DEF(EN3D,        IS_NONE,               NONE)     // Instruction has 3 possible encoding types, type D 
 IF_DEF(EN3E,        IS_NONE,               NONE)     // Instruction has 3 possible encoding types, type E
-IF_DEF(EN3F,        IS_NONE,               NONE)     // Instruction has 3 possible encoding types, type F
 IF_DEF(EN2A,        IS_NONE,               NONE)     // Instruction has 2 possible encoding types, type A 
 IF_DEF(EN2B,        IS_NONE,               NONE)     // Instruction has 2 possible encoding types, type B 
 IF_DEF(EN2C,        IS_NONE,               NONE)     // Instruction has 2 possible encoding types, type C 
@@ -136,6 +136,7 @@ IF_DEF(T2_M1,       IS_NONE,               LBL )     // T2_M1   .....i..........
 IF_DEF(T2_N,        IS_NONE,               NONE)     // T2_N    .....i......iiii .iiiddddiiiiiiii       R1                 imm16    ; movw/movt
 IF_DEF(T2_N1,       IS_NONE,               JMP)      // T2_N1   .....i......iiii .iiiddddiiiiiiii       R1                 imm16    ; movw/movt of a code address
 IF_DEF(T2_N2,       IS_NONE,               NONE)     // T2_N2   .....i......iiii .iiiddddiiiiiiii       R1                 imm16    ; movw/movt of a data address
+IF_DEF(T2_N3,       IS_NONE,               NONE)     // T2_N3   .....i......iiii .iiiddddiiiiiiii       R1                 imm16    ; movw/movt (relocatable imm)
 IF_DEF(T2_VLDST,    IS_NONE,               NONE)     // T2_VLDST 11101101UD0Lnnnn dddd101Ziiiiiiii      D1  R2             imm(+-1020) 
 IF_DEF(T2_VFP2,     IS_NONE,               NONE)     // T2_VFP2  111011101D110--- dddd101Z--M0mmmm      D1  D2
 IF_DEF(T2_VFP3,     IS_NONE,               NONE)     // T2_VFP3  11101110-D--nnnn dddd101ZN-M0mmmm      D1  D2  D3
