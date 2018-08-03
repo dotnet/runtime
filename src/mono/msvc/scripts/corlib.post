@@ -1,0 +1,3 @@
+move $(TargetPath) $(TargetPath).tmp
+$(ProjectDir)\..\..\build\cil-stringreplacer.exe --mscorlib-debug $(TargetPath).tmp
+move $(TargetPath).tmp $(TargetPath)

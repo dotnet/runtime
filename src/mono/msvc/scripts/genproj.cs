@@ -58,6 +58,7 @@ public class SlnGenerator {
 
 	public const string jay_vcxproj_guid = "{5D485D32-3B9F-4287-AB24-C8DA5B89F537}";
 	public const string genconsts_csproj_guid = "{702AE2C0-71DD-4112-9A06-E4FABCA59986}";
+	public const string cilstringreplacer_csproj_guid = "{53C50FFA-8B39-4C70-8BA8-CAA70C41A47B}";
 
 	public static Dictionary<string, HashSet<string>> profilesByGuid = new Dictionary<string, HashSet<string>> ();
 	public List<MsbuildGenerator.VsCsproj> libraries = new List<MsbuildGenerator.VsCsproj> ();
@@ -169,6 +170,9 @@ public class SlnGenerator {
 			// Manually insert genconsts. This is used to generate Consts.cs.
 			WriteProjectReference (sln, csproj_type_guid, "genconsts", "msvc/scripts/genconsts.csproj", genconsts_csproj_guid, null);
 
+			// Manually insert cil-stringreplacer. We can't trivially do this through the order.xml flow and it has a custom csproj.
+			WriteProjectReference (sln, csproj_type_guid, "cil-stringreplacer", "mcs/tools/cil-stringreplacer/cil-stringreplacer.csproj", cilstringreplacer_csproj_guid, null);
+
 			foreach (var proj in libraries) {
 				WriteProjectReference (sln, fullPath, proj);
 			}
@@ -187,9 +191,10 @@ public class SlnGenerator {
 
 			sln.WriteLine ("\tGlobalSection(ProjectConfigurationPlatforms) = postSolution");
 
-			// Manually insert configurations for jay and genconsts
+			// Manually insert configurations for the special projects that always build
 			WriteProjectConfigurationPlatforms (sln, jay_vcxproj_guid, "Win32", true);
 			WriteProjectConfigurationPlatforms (sln, genconsts_csproj_guid, "x86", true);
+			WriteProjectConfigurationPlatforms (sln, cilstringreplacer_csproj_guid, "AnyCPU", true);
 
 			foreach (var proj in libraries) {
 				WriteProjectConfigurationPlatforms (sln, proj.projectGuid, "net_4_x", false);
@@ -229,7 +234,8 @@ public class MsbuildGenerator {
 	};
 
 	public static readonly (string, string[])[] fixed_dependencies = new [] {
-		("class/System.Web/System.Web.csproj", new [] { culevel_guid })
+		("class/System.Web/System.Web.csproj", new [] { culevel_guid }),
+		("class/corlib/corlib.csproj", new [] { SlnGenerator.cilstringreplacer_csproj_guid })
 	};
 
 	static void Usage ()
@@ -812,7 +818,7 @@ public class MsbuildGenerator {
 		var platformsFolder = Path.GetFullPath ("../../mcs/build/platforms");
 		var profilesFolder = Path.GetFullPath ("../../mcs/build/profiles");
 
-		SourcesParser.TraceLevel = 1;
+		SourcesParser.TraceLevel = 0;
 		return _SourcesParser = new SourcesParser (platformsFolder, profilesFolder);
 	}
 
@@ -847,7 +853,12 @@ public class MsbuildGenerator {
 		return src;
 	}
 
+	private bool IsValidProfile (string output_name, string profile) {
+		return SlnGenerator.profiles.Contains (profile);
+	}
+
 	private StringBuilder GenerateSourceItemGroups (
+		string output_name, 
 		string profile,
 		string sources_file_name,
 		string groupConditional
@@ -863,7 +874,7 @@ public class MsbuildGenerator {
 			return result;
 
 		var targetFileSets = (from target in parseResult.Targets
-			where (target.Key.profile == null) || SlnGenerator.profiles.Contains (target.Key.profile)
+			where (target.Key.profile == null) || IsValidProfile (output_name, target.Key.profile)
 			let matches = parseResult.GetMatches (target)
 				.Select (m => FixupSourceName (m.RelativePath))
 				.OrderBy (s => s, StringComparer.Ordinal)
@@ -1012,7 +1023,7 @@ public class MsbuildGenerator {
 		var sources = 
 			updatingExistingProject 
 				? new StringBuilder ()
-				: GenerateSourceItemGroups (profile, sources_file_name, groupConditional);
+				: GenerateSourceItemGroups (output_name, profile, sources_file_name, groupConditional);
 
 		//if (library == "corlib-build") // otherwise, does not compile on fx_version == 4.0
 		//{
