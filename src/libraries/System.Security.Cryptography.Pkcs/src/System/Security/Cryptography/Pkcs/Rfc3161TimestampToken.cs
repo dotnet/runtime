@@ -422,14 +422,14 @@ namespace System.Security.Cryptography.Pkcs
             string issuerDirectoryName,
             string serialNumber)
         {
-            GeneralName[] issuerNames = issuerSerial.Issuer;
+            GeneralNameAsn[] issuerNames = issuerSerial.Issuer;
 
             if (issuerNames == null || issuerNames.Length != 1)
             {
                 return false;
             }
 
-            GeneralName requiredName = issuerNames[0];
+            GeneralNameAsn requiredName = issuerNames[0];
 
             if (requiredName.DirectoryName == null)
             {
@@ -449,14 +449,14 @@ namespace System.Security.Cryptography.Pkcs
             ReadOnlySpan<byte> issuerDirectoryName,
             ReadOnlySpan<byte> serialNumber)
         {
-            GeneralName[] issuerNames = issuerSerial.Issuer;
+            GeneralNameAsn[] issuerNames = issuerSerial.Issuer;
 
             if (issuerNames == null || issuerNames.Length != 1)
             {
                 return false;
             }
 
-            GeneralName requiredName = issuerNames[0];
+            GeneralNameAsn requiredName = issuerNames[0];
 
             if (requiredName.DirectoryName == null)
             {
