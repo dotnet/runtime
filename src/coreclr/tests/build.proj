@@ -51,8 +51,8 @@
   </Target>
 
   <Target Name="RestorePackage">
-    <Exec Condition="'$(RunningOnCore)' == 'false'" Command="$(DotnetRestoreCommand) $(RestoreProj) $(PackageVersionArg)" StandardOutputImportance="Low" />
-    <Exec Condition="'$(RunningOnCore)' == 'true'"  Command="$(DotnetRestoreCommand) -r $(__DistroRid) $(RestoreProj) $(PackageVersionArg)" StandardOutputImportance="Low" />
+    <Exec Condition="'$(__DistroRid)' == ''" Command="$(DotnetRestoreCommand) $(RestoreProj) $(PackageVersionArg)" StandardOutputImportance="Low" />
+    <Exec Condition="'$(__DistroRid)' != ''" Command="$(DotnetRestoreCommand) -r $(__DistroRid) $(RestoreProj) $(PackageVersionArg)" StandardOutputImportance="Low" />
   </Target>
 
   <!-- Override RestorePackages from dir.traversal.targets and do a batch restore -->

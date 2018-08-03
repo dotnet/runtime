@@ -104,7 +104,10 @@ if [!processedArgs!]==[] (
 :ArgsDone
 
 @REM Special handling for -priority=N argument.
-if %__Priority% GTR 0 (set "__PriorityArg=-priority=%__Priority%")
+if %__Priority% GTR 0 (
+    set "__PriorityArg=-priority=%__Priority%"
+    set "__PriorityMsbuildArg=/p:priority=%__Priority%"
+)
 
 if defined __BuildAgainstPackagesArg (
     if not defined __RuntimeID (
@@ -117,7 +120,7 @@ if defined __BuildAgainstPackagesArg (
 
 set __RunArgs=-BuildOS=%__BuildOS% -BuildType=%__BuildType% -BuildArch=%__BuildArch%
 REM As we move from buildtools to arcade, __RunArgs should be replaced with __msbuildArgs
-set __msbuildArgs=/p:__BuildOS=%__BuildOS% /p:__BuildType=%__BuildType% /p:__BuildArch=%__BuildArch%
+set __msbuildArgs=/p:__BuildOS=%__BuildOS% /p:__BuildType=%__BuildType% /p:__BuildArch=%__BuildArch% /nologo /verbosity:minimal /clp:Summary
 
 echo %__MsgPrefix%Commencing CoreCLR repo test build
 
@@ -299,7 +302,7 @@ for /l %%G in (1, 1, %__BuildLoopCount%) do (
     set __msbuildErr=/flp2:ErrorsOnly;LogFile="%__BuildErr%";Append=!__AppendToLog!
 
     set TestBuildSlice=%%G
-    call "%__ProjectDir%\run.cmd" build -Project=%__ProjectDir%\tests\build.proj -MsBuildLog=!__msbuildLog! -MsBuildWrn=!__msbuildWrn! -MsBuildErr=!__msbuildErr! %__RunArgs% %__BuildAgainstPackagesArg% %__PriorityArg% %__PassThroughArg% %__unprocessedBuildArgs%
+    call %__DotnetHost% msbuild %__ProjectDir%\tests\build.proj !__msbuildLog! !__msbuildWrn! !__msbuildErr! %__msbuildArgs% %__BuildAgainstPackagesMsbuildArg% %__PriorityMsbuildArg% %__PassThroughArg% %__unprocessedBuildArgs%
 
     if errorlevel 1 (
         echo %__MsgPrefix%Error: build failed. Refer to the build log files for details:
