@@ -1,4 +1,4 @@
-These are the checked in build definitions used by BuildPipeline.
+These are the checked-in build definitions used by BuildPipeline.
 
 You may edit build steps, variables, and other artifacts of the definition directly to modify the BuildPipeline builds.
 
