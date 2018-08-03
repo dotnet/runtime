@@ -8,17 +8,10 @@ namespace System.Reflection
 {
     public class LocalVariableInfo
     {
-        #region Private Data Members
-        private RuntimeType m_type;
-        private int m_isPinned;
-        private int m_localIndex;
-        #endregion
-
-        #region Constructor
+        public virtual Type LocalType { get { Debug.Fail("type must be set!"); return null; } }
+        public virtual int LocalIndex => 0;
+        public virtual bool IsPinned => false;
         protected LocalVariableInfo() { }
-        #endregion
-
-        #region Object Overrides
         public override string ToString()
         {
             string toString = LocalType.ToString() + " (" + LocalIndex + ")";
@@ -28,13 +21,6 @@ namespace System.Reflection
 
             return toString;
         }
-        #endregion
-
-        #region Public Members
-        public virtual Type LocalType { get { Debug.Assert(m_type != null, "type must be set!"); return m_type; } }
-        public virtual bool IsPinned { get { return m_isPinned != 0; } }
-        public virtual int LocalIndex { get { return m_localIndex; } }
-        #endregion
     }
 }
 
