@@ -33,7 +33,8 @@ enum instruction : unsigned
     #define INST8(id, nm, fp, ldst, fmt, e1, e2, e3, e4, e5, e6, e7, e8    ) INS_##id,
     #define INST9(id, nm, fp, ldst, fmt, e1, e2, e3, e4, e5, e6, e7, e8, e9) INS_##id,
     #include "instrs.h"
-    #include "x86_instrs.h"
+
+    INS_lea,   // Not a real instruction. It is used for load the address of stack locals
 
 #elif defined(_TARGET_ARM64_)
     #define INST1(id, nm, fp, ldst, fmt, e1                                ) INS_##id,
