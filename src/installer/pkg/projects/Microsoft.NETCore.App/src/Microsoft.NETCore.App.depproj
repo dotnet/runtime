@@ -217,7 +217,7 @@
           Condition="'$(OSGroup)' != 'Windows_NT'" />
     <ItemGroup>
       <_filesToCrossGen Include="@(FilesToPackage)"
-                        Condition="'%(FilesToPackage.IsNative)' != 'true' AND '%(FileName)' != 'System.Private.CoreLib' AND '%(FileName)' != 'mscorlib' AND '%(Extension)' == '.dll'">
+                        Condition="'%(FilesToPackage.IsNative)' != 'true' AND '%(FileName)' != 'System.Private.CoreLib' AND '%(FileName)' != 'mscorlib' AND '%(FileName)' != 'System.Runtime.WindowsRuntime' AND '%(Extension)' == '.dll'">
         <CrossGenedDirectory>$(CrossGenOutputPath)/%(TargetPath)/</CrossGenedDirectory>
         <CrossGenedPath>$(CrossGenOutputPath)/%(TargetPath)/%(FileName)%(Extension)</CrossGenedPath>
         <CrossGenSymbolSemaphorePath>$(_crossGenIntermediatePath)/%(FileName).symbol.semaphore</CrossGenSymbolSemaphorePath>
