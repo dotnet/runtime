@@ -35,7 +35,7 @@ namespace System.Security.Cryptography.Pkcs.Asn1
     [StructLayout(LayoutKind.Sequential)]
     internal struct CadesIssuerSerial
     {
-        public GeneralName[] Issuer;
+        public GeneralNameAsn[] Issuer;
 
         [Integer]
         public ReadOnlyMemory<byte> SerialNumber;
@@ -66,7 +66,6 @@ namespace System.Security.Cryptography.Pkcs.Asn1
     {
         public EssCertIdV2[] Certs;
 
-
         [OptionalValue]
         public PolicyInformation[] Policies;
     }
@@ -74,10 +73,8 @@ namespace System.Security.Cryptography.Pkcs.Asn1
     [StructLayout(LayoutKind.Sequential)]
     internal sealed class EssCertIdV2
     {
-#pragma warning disable CS3016 // Arrays as attribute arguments is not CLS-compliant
         // SEQUENCE(OID(2.16.840.1.101.3.4.2.1))
         [DefaultValue(0x30, 0x0B, 0x06, 0x09, 0x60, 0x86, 0x48, 0x01, 0x65, 0x03, 0x04, 0x02, 0x01)]
-#pragma warning restore CS3016 // Arrays as attribute arguments is not CLS-compliant
         public AlgorithmIdentifierAsn HashAlgorithm;
 
         [OctetString]
