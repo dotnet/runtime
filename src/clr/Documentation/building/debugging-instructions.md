@@ -136,10 +136,12 @@ It is also possible to debug .NET Core crash dumps using lldb and SOS. In order 
 
 - The crash dump file. We have a service called "Dumpling" which collects, uploads, and archives crash dump files during all of our CI jobs and official builds.
 - On Linux, there is an utility called `createdump` (see [doc](https://github.com/dotnet/coreclr/blob/master/Documentation/botr/xplat-minidump-generation.md "doc")) that can be setup to generate core dumps when a managed app throws an unhandled exception or faults.
-- Matching coreclr/corefx runtime bits from the crash. To get these, you should either:
-  - Download the matching Jenkins archive onto your repro machine.
-  - Check out the coreclr and corefx repositories at the appropriate commit and re-build the necessary portions.
-  - You can also download the matching "symbols" nuget package from myget.org. There is a "Download Symbols" button in the myget UI for this purpose.
+- To get matching runtime and symbol binaries for the core dump use the symbol downloader CLI extension:
+  - Install the [.NET Core 2.1 SDK](https://www.microsoft.com/net/download/).
+  - Install the symbol downloader extension: `dotnet tool install -g dotnet-symbol`.
+  - Run `dotnet symbol coredump` to download the runtime binaries and symbols.
+  - Check out the coreclr and corefx repositories at the appropriate commit for the appropriate source.
+  - For more details see: [dotnet-symbol](https://github.com/dotnet/symstore/blob/master/src/dotnet-symbol/README.md).
 - lldb version 3.9. The SOS plugin (i.e. libsosplugin.so) provided is now built for lldb 3.9. In order to install lldb 3.9 just run the following commands:
 ```
 ~$ echo "deb http://llvm.org/apt/trusty/ llvm-toolchain-trusty-3.9 main" | sudo tee /etc/apt/sources.list.d/llvm.list
