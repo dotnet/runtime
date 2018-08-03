@@ -16,9 +16,8 @@ namespace System.Runtime.InteropServices
         {
         }
 
-        // 
         /// <summary>
-        /// Optional. If omitted , compiler will choose one for you.
+        /// Optional. If omitted, compiler will choose one for you.
         /// </summary>
         public CallingConvention CallingConvention;
 
