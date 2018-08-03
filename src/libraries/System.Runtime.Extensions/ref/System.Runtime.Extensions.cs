@@ -1757,6 +1757,14 @@ namespace System.Reflection
         public System.Reflection.AssemblyName GetAssemblyName(System.String assemblyFile) { throw null; }
     }
 }
+namespace System.Runtime
+{
+    public static class ProfileOptimization
+    {
+        public static void SetProfileRoot(string directoryPath) { throw null; }
+        public static void StartProfile(string profile) { throw null; }
+    }
+}
 namespace System.Runtime.Versioning
 {
     public sealed partial class FrameworkName : System.IEquatable<System.Runtime.Versioning.FrameworkName>
