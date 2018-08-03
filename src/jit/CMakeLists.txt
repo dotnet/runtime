@@ -95,7 +95,6 @@ if (WIN32)
     blockset.h
     codegen.h
     codegeninterface.h
-    codegenlinear.h
     compiler.h
     compiler.hpp
     compilerbitsettraits.h
@@ -186,7 +185,6 @@ if (WIN32)
     valuenumtype.h
     varset.h
     vartype.h
-    x86_instrs.h
   )
 endif(WIN32)
 
