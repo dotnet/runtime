@@ -137,6 +137,12 @@ size_t emitter::emitSizeOfInsDsc(instrDesc* id)
             break;
     }
 
+    if (id->idInsFmt() == IF_T2_N3)
+    {
+        assert((id->idIns() == INS_movw) || (id->idIns() == INS_movt));
+        return sizeof(instrDescReloc);
+    }
+
     if (id->idIsLargeCns())
     {
         if (id->idIsLargeDsp())
@@ -372,11 +378,17 @@ void emitter::emitInsSanityCheck(instrDesc* id)
 
         case IF_T2_N: // T2_N    .....i......iiii .iiiddddiiiiiiii       R1                 imm16
             assert(isGeneralRegister(id->idReg1()));
+            assert(!id->idIsReloc());
             break;
 
         case IF_T2_N2: // T2_N2   .....i......iiii .iiiddddiiiiiiii       R1                 imm16
             assert(isGeneralRegister(id->idReg1()));
             assert((size_t)emitGetInsSC(id) < emitDataSize());
+            break;
+
+        case IF_T2_N3: // T2_N3   .....i......iiii .iiiddddiiiiiiii       R1                 imm16
+            assert(isGeneralRegister(id->idReg1()));
+            assert(id->idIsReloc());
             break;
 
         case IF_T2_I1: // T2_I1   ................ rrrrrrrrrrrrrrrr                          imm16
@@ -541,6 +553,7 @@ bool emitter::emitInsMayWriteToGCReg(instrDesc* id)
         case IF_T2_N:
         case IF_T2_N1:
         case IF_T2_N2:
+        case IF_T2_N3:
         case IF_T2_VFP3:
         case IF_T2_VFP2:
         case IF_T2_VLDST:
@@ -899,12 +912,12 @@ emitter::code_t emitter::emitInsCode(instruction ins, insFormat fmt)
     const static insFormat formatEncode5B[5] = { IF_T1_E,  IF_T1_D0, IF_T1_J0, IF_T2_L2, IF_T2_C8 };
     const static insFormat formatEncode4A[4] = { IF_T1_E,  IF_T1_C,  IF_T2_C4, IF_T2_C2 };
     const static insFormat formatEncode4B[4] = { IF_T2_K2, IF_T2_H2, IF_T2_C7, IF_T2_K3 };
+    const static insFormat formatEncode4C[4] = { IF_T2_N,  IF_T2_N1, IF_T2_N2, IF_T2_N3 };
     const static insFormat formatEncode3A[3] = { IF_T1_E,  IF_T2_C0, IF_T2_L0 };
     const static insFormat formatEncode3B[3] = { IF_T1_E,  IF_T2_C8, IF_T2_L2 };
     const static insFormat formatEncode3C[3] = { IF_T1_E,  IF_T2_C1, IF_T2_L1 };
     const static insFormat formatEncode3D[3] = { IF_T1_L1, IF_T2_E2, IF_T2_I1 };
-    const static insFormat formatEncode3E[3] = { IF_T2_N,  IF_T2_N1, IF_T2_N2 };
-    const static insFormat formatEncode3F[3] = { IF_T1_M,  IF_T2_J2, IF_T2_J3 };
+    const static insFormat formatEncode3E[3] = { IF_T1_M,  IF_T2_J2, IF_T2_J3 };
     const static insFormat formatEncode2A[2] = { IF_T1_K,  IF_T2_J1 };
     const static insFormat formatEncode2B[2] = { IF_T1_D1, IF_T1_D2 };
     const static insFormat formatEncode2C[2] = { IF_T1_D2, IF_T2_J3 };
@@ -1009,6 +1022,17 @@ emitter::code_t emitter::emitInsCode(instruction ins, insFormat fmt)
             }
             break;
 
+        case IF_EN4C:
+            for (index = 0; index < 4; index++)
+            {
+                if (fmt == formatEncode4C[index])
+                {
+                    found = true;
+                    break;
+                }
+            }
+            break;
+
         case IF_EN3A:
             for (index = 0; index < 3; index++)
             {
@@ -1054,16 +1078,6 @@ emitter::code_t emitter::emitInsCode(instruction ins, insFormat fmt)
             for (index = 0; index < 3; index++)
             {
                 if (fmt == formatEncode3E[index])
-                {
-                    found = true;
-                    break;
-                }
-            }
-            break;
-        case IF_EN3F:
-            for (index = 0; index < 3; index++)
-            {
-                if (fmt == formatEncode3F[index])
                 {
                     found = true;
                     break;
@@ -1471,7 +1485,7 @@ void emitter::emitIns(instruction ins)
  *  Add an instruction with a single immediate value.
  */
 
-void emitter::emitIns_I(instruction ins, emitAttr attr, ssize_t imm)
+void emitter::emitIns_I(instruction ins, emitAttr attr, target_ssize_t imm)
 {
     insFormat fmt    = IF_NONE;
     bool      hasLR  = false;
@@ -1671,7 +1685,7 @@ void emitter::emitIns_R(instruction ins, emitAttr attr, regNumber reg)
  */
 
 void emitter::emitIns_R_I(
-    instruction ins, emitAttr attr, regNumber reg, ssize_t imm, insFlags flags /* = INS_FLAGS_DONT_CARE */)
+    instruction ins, emitAttr attr, regNumber reg, target_ssize_t imm, insFlags flags /* = INS_FLAGS_DONT_CARE */)
 
 {
     insFormat fmt = IF_NONE;
@@ -1857,11 +1871,13 @@ void emitter::emitIns_R_I(
 
         case INS_movw:
         case INS_movt:
+            assert(!EA_IS_RELOC(attr));
             assert(insDoesNotSetFlags(flags));
-            sf = INS_FLAGS_NOT_SET;
-            if ((imm & 0x0000ffff) == imm || EA_IS_RELOC(attr))
+
+            if ((imm & 0x0000ffff) == imm)
             {
                 fmt = IF_T2_N;
+                sf  = INS_FLAGS_NOT_SET;
             }
             else
             {
@@ -1961,6 +1977,27 @@ void emitter::emitIns_R_I(
     assert(sf != INS_FLAGS_DONT_CARE);
 
     instrDesc* id  = emitNewInstrSC(attr, imm);
+    insSize    isz = emitInsSize(fmt);
+
+    id->idIns(ins);
+    id->idInsFmt(fmt);
+    id->idInsSize(isz);
+    id->idInsFlags(sf);
+    id->idReg1(reg);
+
+    dispIns(id);
+    appendToCurIG(id);
+}
+
+void emitter::emitIns_MovRelocatableImmediate(instruction ins, emitAttr attr, regNumber reg, BYTE* addr)
+{
+    assert(EA_IS_RELOC(attr));
+    assert((ins == INS_movw) || (ins == INS_movt));
+
+    insFormat fmt = IF_T2_N3;
+    insFlags  sf  = INS_FLAGS_NOT_SET;
+
+    instrDesc* id  = emitNewInstrReloc(attr, addr);
     insSize    isz = emitInsSize(fmt);
 
     id->idIns(ins);
@@ -4906,6 +4943,24 @@ inline unsigned insEncodeBitFieldImm(int imm)
 
 /*****************************************************************************
  *
+ *  Returns an encoding for the immediate use by MOV/MOVW Thumb-2 encodings
+ */
+
+inline unsigned insEncodeImmT2_Mov(int imm)
+{
+    unsigned result;
+
+    assert((imm & 0x0000ffff) == imm);
+    result = (imm & 0x00ff);
+    result |= ((imm & 0x0700) << 4);
+    result |= ((imm & 0x0800) << 15);
+    result |= ((imm & 0xf000) << 4);
+
+    return result;
+}
+
+/*****************************************************************************
+ *
  *  Unscales the immediate based on the operand size in 'size'
  */
 /*static*/ int emitter::insUnscaleImm(int imm, emitAttr size)
@@ -5501,9 +5556,9 @@ size_t emitter::emitOutputInstr(insGroup* ig, instrDesc* id, BYTE** dp)
         case IF_T1_B: // T1_B    ........cccc....                                           cond
         {
             assert(id->idGCref() == GCT_NONE);
-            ssize_t condcode = emitGetInsSC(id);
-            dst              = emitOutputIT(dst, ins, fmt, condcode);
-            sz               = SMALL_IDSC_SIZE;
+            target_ssize_t condcode = emitGetInsSC(id);
+            dst                     = emitOutputIT(dst, ins, fmt, condcode);
+            sz                      = SMALL_IDSC_SIZE;
         }
         break;
 #endif // FEATURE_ITINSTRUCTION
@@ -5921,51 +5976,72 @@ size_t emitter::emitOutputInstr(insGroup* ig, instrDesc* id, BYTE** dp)
             dst += emitOutput_Thumb2Instr(dst, code);
             break;
 
-        case IF_T2_N:  // T2_N    .....i......iiii .iiiddddiiiiiiii       R1                 imm16
-        case IF_T2_N2: // T2_N2   .....i......iiii .iiiddddiiiiiiii       R1                 imm16
+        case IF_T2_N: // T2_N    .....i......iiii .iiiddddiiiiiiii       R1                 imm16
             sz   = emitGetInstrDescSizeSC(id);
             code = emitInsCode(ins, fmt);
             code |= insEncodeRegT2_D(id->idReg1());
             imm = emitGetInsSC(id);
-            if (fmt == IF_T2_N2)
+            if (id->idIsLclVar())
             {
-                assert(!id->idIsLclVar());
-                assert((ins == INS_movw) || (ins == INS_movt));
-                imm += (size_t)emitConsBlock;
-                if (!id->idIsCnsReloc() && !id->idIsDspReloc())
-                {
-                    goto SPLIT_IMM;
-                }
-            }
-            else if (id->idIsLclVar())
-            {
-            SPLIT_IMM:
                 if (ins == INS_movw)
                 {
                     imm &= 0xffff;
                 }
                 else
                 {
+                    assert(ins == INS_movt);
                     imm = (imm >> 16) & 0xffff;
                 }
             }
 
-            if (id->idIsCnsReloc() || id->idIsDspReloc())
+            assert(!id->idIsReloc());
+            code |= insEncodeImmT2_Mov(imm);
+            dst += emitOutput_Thumb2Instr(dst, code);
+            break;
+
+        case IF_T2_N2: // T2_N2   .....i......iiii .iiiddddiiiiiiii       R1                 imm16
+            sz   = emitGetInstrDescSizeSC(id);
+            code = emitInsCode(ins, fmt);
+            code |= insEncodeRegT2_D(id->idReg1());
+            imm  = emitGetInsSC(id);
+            addr = emitConsBlock + imm;
+            if (!id->idIsReloc())
+            {
+                assert(sizeof(size_t) == sizeof(target_size_t));
+                imm = (target_size_t)addr;
+                if (ins == INS_movw)
+                {
+                    imm &= 0xffff;
+                }
+                else
+                {
+                    assert(ins == INS_movt);
+                    imm = (imm >> 16) & 0xffff;
+                }
+                code |= insEncodeImmT2_Mov(imm);
+                dst += emitOutput_Thumb2Instr(dst, code);
+            }
+            else
             {
                 assert((ins == INS_movt) || (ins == INS_movw));
                 dst += emitOutput_Thumb2Instr(dst, code);
                 if ((ins == INS_movt) && emitComp->info.compMatchedVM)
-                    emitHandlePCRelativeMov32((void*)(dst - 8), (void*)imm);
+                    emitHandlePCRelativeMov32((void*)(dst - 8), addr);
             }
-            else
-            {
-                assert((imm & 0x0000ffff) == imm);
-                code |= (imm & 0x00ff);
-                code |= ((imm & 0x0700) << 4);
-                code |= ((imm & 0x0800) << 15);
-                code |= ((imm & 0xf000) << 4);
-                dst += emitOutput_Thumb2Instr(dst, code);
-            }
+            break;
+
+        case IF_T2_N3: // T2_N3   .....i......iiii .iiiddddiiiiiiii       R1                 imm16
+            sz   = sizeof(instrDescReloc);
+            code = emitInsCode(ins, fmt);
+            code |= insEncodeRegT2_D(id->idReg1());
+
+            assert((ins == INS_movt) || (ins == INS_movw));
+            assert(id->idIsReloc());
+
+            addr = emitGetInsRelocValue(id);
+            dst += emitOutput_Thumb2Instr(dst, code);
+            if ((ins == INS_movt) && emitComp->info.compMatchedVM)
+                emitHandlePCRelativeMov32((void*)(dst - 8), addr);
             break;
 
         case IF_T2_VFP3:
@@ -6466,6 +6542,15 @@ void emitter::emitDispImm(int imm, bool addComma, bool alwaysHex /* =false */)
 
 /*****************************************************************************
  *
+ *  Display a relocatable immediate value
+ */
+void emitter::emitDispReloc(BYTE* addr)
+{
+    printf("0x%p", dspPtr(addr));
+}
+
+/*****************************************************************************
+ *
  *  Display an arm condition for the IT instructions
  */
 void emitter::emitDispCond(int cond)
@@ -6861,21 +6946,23 @@ void emitter::emitDispInsHelp(
         case IF_T1_J0: // Reg, Imm
         case IF_T2_L1:
         case IF_T2_L2:
+            emitDispReg(id->idReg1(), attr, true);
+            imm = emitGetInsSC(id);
+            emitDispImm(imm, false, false);
+            break;
+
         case IF_T2_N:
             emitDispReg(id->idReg1(), attr, true);
             imm = emitGetInsSC(id);
-            if (fmt == IF_T2_N)
-            {
-                if (emitComp->opts.disDiffable)
-                    imm = 0xD1FF;
-                if (id->idIsCnsReloc() || id->idIsDspReloc())
-                {
-                    if (emitComp->opts.disDiffable)
-                        imm = 0xD1FFAB1E;
-                    printf("%s RELOC ", (id->idIns() == INS_movw) ? "LOW" : "HIGH");
-                }
-            }
-            emitDispImm(imm, false, (fmt == IF_T2_N));
+            if (emitComp->opts.disDiffable)
+                imm = 0xD1FF;
+            emitDispImm(imm, false, true);
+            break;
+
+        case IF_T2_N3:
+            emitDispReg(id->idReg1(), attr, true);
+            printf("%s RELOC ", (id->idIns() == INS_movw) ? "LOW" : "HIGH");
+            emitDispReloc(emitGetInsRelocValue(id));
             break;
 
         case IF_T2_N2:
@@ -7650,7 +7737,7 @@ regNumber emitter::emitInsBinary(instruction ins, emitAttr attr, GenTree* dst, G
 
     if (intConst)
     {
-        emitIns_R_I(ins, attr, dst->gtRegNum, intConst->IconValue());
+        emitIns_R_I(ins, attr, dst->gtRegNum, (target_ssize_t)intConst->IconValue());
         return dst->gtRegNum;
     }
     else
@@ -7737,7 +7824,7 @@ regNumber emitter::emitInsTernary(instruction ins, emitAttr attr, GenTree* dst, 
 
     if (intConst != nullptr)
     {
-        emitIns_R_R_I(ins, attr, dst->gtRegNum, nonIntReg->gtRegNum, intConst->IconValue(), flags);
+        emitIns_R_R_I(ins, attr, dst->gtRegNum, nonIntReg->gtRegNum, (target_ssize_t)intConst->IconValue(), flags);
     }
     else
     {

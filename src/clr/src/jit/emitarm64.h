@@ -16,12 +16,6 @@ static bool strictArmAsm;
 /*         Routines that compute the size of / encode instructions      */
 /************************************************************************/
 
-struct CnsVal
-{
-    ssize_t cnsVal;
-    bool    cnsReloc;
-};
-
 #ifdef DEBUG
 
 /************************************************************************/
@@ -32,7 +26,6 @@ const char* emitFPregName(unsigned reg, bool varName = true);
 const char* emitVectorRegName(regNumber reg);
 
 void emitDispInst(instruction ins);
-void emitDispReloc(int value, bool addComma);
 void emitDispImm(ssize_t imm, bool addComma, bool alwaysHex = false);
 void emitDispFloatZero();
 void emitDispFloatImm(ssize_t imm8);
