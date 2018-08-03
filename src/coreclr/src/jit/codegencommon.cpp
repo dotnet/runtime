@@ -5684,12 +5684,12 @@ void CodeGen::genMov32RelocatableDataLabel(unsigned value, regNumber reg)
  *
  * Move of relocatable immediate to register
  */
-void CodeGen::genMov32RelocatableImmediate(emitAttr size, size_t value, regNumber reg)
+void CodeGen::genMov32RelocatableImmediate(emitAttr size, BYTE* addr, regNumber reg)
 {
     _ASSERTE(EA_IS_RELOC(size));
 
-    getEmitter()->emitIns_R_I(INS_movw, size, reg, value);
-    getEmitter()->emitIns_R_I(INS_movt, size, reg, value);
+    getEmitter()->emitIns_MovRelocatableImmediate(INS_movw, size, reg, addr);
+    getEmitter()->emitIns_MovRelocatableImmediate(INS_movt, size, reg, addr);
 
     if (compiler->opts.jitFlags->IsSet(JitFlags::JIT_FLAG_RELATIVE_CODE_RELOCS))
     {

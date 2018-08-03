@@ -12,12 +12,6 @@ typedef unsigned int code_t;
 /*         Routines that compute the size of / encode instructions      */
 /************************************************************************/
 
-struct CnsVal
-{
-    int  cnsVal;
-    bool cnsReloc;
-};
-
 insSize emitInsSize(insFormat insFmt);
 
 #ifdef FEATURE_ITINSTRUCTION
@@ -38,6 +32,7 @@ static unsigned emitOutput_Thumb2Instr(BYTE* dst, code_t code);
 
 void emitDispInst(instruction ins, insFlags flags);
 void emitDispImm(int imm, bool addComma, bool alwaysHex = false);
+void emitDispReloc(BYTE* addr);
 void emitDispCond(int cond);
 void emitDispShiftOpts(insOpts opt);
 void emitDispRegmask(int imm, bool encodedPC_LR);
@@ -221,11 +216,13 @@ static bool emitIns_valid_imm_for_vldst_offset(int imm);
 
 void emitIns(instruction ins);
 
-void emitIns_I(instruction ins, emitAttr attr, ssize_t imm);
+void emitIns_I(instruction ins, emitAttr attr, target_ssize_t imm);
 
 void emitIns_R(instruction ins, emitAttr attr, regNumber reg);
 
-void emitIns_R_I(instruction ins, emitAttr attr, regNumber reg, ssize_t imm, insFlags flags = INS_FLAGS_DONT_CARE);
+void emitIns_R_I(
+    instruction ins, emitAttr attr, regNumber reg, target_ssize_t imm, insFlags flags = INS_FLAGS_DONT_CARE);
+void emitIns_MovRelocatableImmediate(instruction ins, emitAttr attr, regNumber reg, BYTE* addr);
 
 void emitIns_R_R(instruction ins, emitAttr attr, regNumber reg1, regNumber reg2, insFlags flags = INS_FLAGS_DONT_CARE);
 

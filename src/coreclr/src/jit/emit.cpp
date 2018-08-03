@@ -2150,7 +2150,7 @@ const emitAttr emitter::emitSizeDecode[emitter::OPSZ_COUNT] = {EA_1BYTE, EA_2BYT
  *  a displacement and a constant.
  */
 
-emitter::instrDesc* emitter::emitNewInstrCnsDsp(emitAttr size, ssize_t cns, int dsp)
+emitter::instrDesc* emitter::emitNewInstrCnsDsp(emitAttr size, target_ssize_t cns, int dsp)
 {
     if (dsp == 0)
     {
@@ -6697,7 +6697,7 @@ void emitter::emitNxtIG(bool emitAdd)
  *  emitGetInsSC: Get the instruction's constant value.
  */
 
-ssize_t emitter::emitGetInsSC(instrDesc* id)
+target_ssize_t emitter::emitGetInsSC(instrDesc* id)
 {
 #ifdef _TARGET_ARM_ // should it be _TARGET_ARMARCH_? Why do we need this? Note that on ARM64 we store scaled immediates
                     // for some formats
@@ -6733,6 +6733,15 @@ ssize_t emitter::emitGetInsSC(instrDesc* id)
         return id->idSmallCns();
     }
 }
+
+#ifdef _TARGET_ARM_
+
+BYTE* emitter::emitGetInsRelocValue(instrDesc* id)
+{
+    return ((instrDescReloc*)id)->idrRelocVal;
+}
+
+#endif // _TARGET_ARM_
 
 /*****************************************************************************/
 #if EMIT_TRACK_STACK_DEPTH
