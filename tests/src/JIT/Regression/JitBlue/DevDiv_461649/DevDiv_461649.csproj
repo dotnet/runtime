@@ -27,7 +27,6 @@
   </PropertyGroup>
   <ItemGroup>
     <Compile Include="$(MSBuildProjectName).cs" />
-    <Reference Include="System.Private.Xml" />
     <Content Include="Input.xml">
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>
     </Content>
