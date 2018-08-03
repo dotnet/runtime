@@ -48,9 +48,7 @@ namespace System.Security.Cryptography.Pkcs.Asn1
         [OptionalValue]
         internal Rfc3161Accuracy? Accuracy;
 
-#pragma warning disable CS3016 // Arrays as attribute arguments is not CLS-compliant
         [DefaultValue(0x01, 0x01, 0x00)]
-#pragma warning restore CS3016 // Arrays as attribute arguments is not CLS-compliant
         internal bool Ordering;
 
         [Integer]
@@ -59,7 +57,7 @@ namespace System.Security.Cryptography.Pkcs.Asn1
 
         [ExpectedTag(0, ExplicitTag = true)]
         [OptionalValue]
-        internal GeneralName? Tsa;
+        internal GeneralNameAsn? Tsa;
 
         [ExpectedTag(1)]
         [OptionalValue]

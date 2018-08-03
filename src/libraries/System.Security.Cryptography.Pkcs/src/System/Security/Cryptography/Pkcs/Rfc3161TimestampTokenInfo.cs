@@ -69,7 +69,7 @@ namespace System.Security.Cryptography.Pkcs
         {
             if (_tsaNameBytes == null)
             {
-                GeneralName? tsaName = _parsedData.Tsa;
+                GeneralNameAsn? tsaName = _parsedData.Tsa;
 
                 if (tsaName == null)
                 {
@@ -249,7 +249,7 @@ namespace System.Security.Cryptography.Pkcs
 
             if (tsaName != null)
             {
-                tstInfo.Tsa = AsnSerializer.Deserialize<GeneralName>(tsaName.Value, AsnEncodingRules.DER);
+                tstInfo.Tsa = AsnSerializer.Deserialize<GeneralNameAsn>(tsaName.Value, AsnEncodingRules.DER);
             }
 
             if (extensions != null)
