@@ -10,19 +10,19 @@ using System.Runtime.InteropServices;
 namespace System.Runtime.Intrinsics
 {
     [StructLayout(LayoutKind.Sequential, Size = 8)]
-    public struct Vector64<T> where T : struct
+    public readonly struct Vector64<T> where T : struct
     {
-         private int _dummy;
+         private readonly int _dummy;
     }
     [StructLayout(LayoutKind.Sequential, Size = 16)]
-    public struct Vector128<T> where T : struct
+    public readonly struct Vector128<T> where T : struct
     {
-         private int _dummy;
+         private readonly int _dummy;
     }
     [StructLayout(LayoutKind.Sequential, Size = 32)]
-    public struct Vector256<T> where T : struct
+    public readonly struct Vector256<T> where T : struct
     {
-         private int _dummy;
+         private readonly int _dummy;
     }
 }
 namespace System.Runtime.Intrinsics.Arm.Arm64
