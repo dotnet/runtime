@@ -5163,8 +5163,8 @@ mono_arch_emit_prolog (MonoCompile *cfg)
 	cfa_offset = 0;
 
 	// CFA = sp + 4
-	cfa_offset = sizeof (gpointer);
-	mono_emit_unwind_op_def_cfa (cfg, code, X86_ESP, sizeof (gpointer));
+	cfa_offset = 4;
+	mono_emit_unwind_op_def_cfa (cfg, code, X86_ESP, cfa_offset);
 	// IP saved at CFA - 4
 	/* There is no IP reg on x86 */
 	mono_emit_unwind_op_offset (cfg, code, X86_NREG, -cfa_offset);
@@ -5174,7 +5174,7 @@ mono_arch_emit_prolog (MonoCompile *cfg)
 
 	if (need_stack_frame) {
 		x86_push_reg (code, X86_EBP);
-		cfa_offset += sizeof (gpointer);
+		cfa_offset += 4;
 		mono_emit_unwind_op_def_cfa_offset (cfg, code, cfa_offset);
 		mono_emit_unwind_op_offset (cfg, code, X86_EBP, - cfa_offset);
 		x86_mov_reg_reg (code, X86_EBP, X86_ESP);
@@ -5195,7 +5195,7 @@ mono_arch_emit_prolog (MonoCompile *cfg)
 		if (cfg->used_int_regs & (1 << X86_EBX)) {
 			x86_push_reg (code, X86_EBX);
 			pos += 4;
-			cfa_offset += sizeof (gpointer);
+			cfa_offset += 4;
 			mono_emit_unwind_op_offset (cfg, code, X86_EBX, - cfa_offset);
 			/* These are handled automatically by the stack marking code */
 			mini_gc_set_slot_type_from_cfa (cfg, - cfa_offset, SLOT_NOREF);
@@ -5204,7 +5204,7 @@ mono_arch_emit_prolog (MonoCompile *cfg)
 		if (cfg->used_int_regs & (1 << X86_EDI)) {
 			x86_push_reg (code, X86_EDI);
 			pos += 4;
-			cfa_offset += sizeof (gpointer);
+			cfa_offset += 4;
 			mono_emit_unwind_op_offset (cfg, code, X86_EDI, - cfa_offset);
 			mini_gc_set_slot_type_from_cfa (cfg, - cfa_offset, SLOT_NOREF);
 		}
@@ -5212,7 +5212,7 @@ mono_arch_emit_prolog (MonoCompile *cfg)
 		if (cfg->used_int_regs & (1 << X86_ESI)) {
 			x86_push_reg (code, X86_ESI);
 			pos += 4;
-			cfa_offset += sizeof (gpointer);
+			cfa_offset += 4;
 			mono_emit_unwind_op_offset (cfg, code, X86_ESI, - cfa_offset);
 			mini_gc_set_slot_type_from_cfa (cfg, - cfa_offset, SLOT_NOREF);
 		}
@@ -5228,7 +5228,7 @@ mono_arch_emit_prolog (MonoCompile *cfg)
 		tot &= MONO_ARCH_FRAME_ALIGNMENT - 1;
 		if (tot) {
 			alloc_size += MONO_ARCH_FRAME_ALIGNMENT - tot;
-			for (i = 0; i < MONO_ARCH_FRAME_ALIGNMENT - tot; i += sizeof (mgreg_t))
+			for (i = 0; i < MONO_ARCH_FRAME_ALIGNMENT - tot; i += sizeof (target_mgreg_t))
 				mini_gc_set_slot_type_from_fp (cfg, - (alloc_size + pos - i), SLOT_NOREF);
 		}
 	}
@@ -5273,7 +5273,7 @@ mono_arch_emit_prolog (MonoCompile *cfg)
 	}
 #endif
 
-        /* compute max_offset in order to use short forward jumps */
+	/* compute max_offset in order to use short forward jumps */
 	max_offset = 0;
 	if (cfg->opt & MONO_OPT_BRANCH) {
 		for (bb = cfg->bb_entry; bb; bb = bb->next_bb) {
@@ -6079,10 +6079,10 @@ mono_arch_get_delegate_invoke_impls (void)
 	}
 
 	for (i = 0; i <= MAX_VIRTUAL_DELEGATE_OFFSET; ++i) {
-		get_delegate_virtual_invoke_impl (&info, TRUE, - i * SIZEOF_VOID_P);
+		get_delegate_virtual_invoke_impl (&info, TRUE, - i * TARGET_SIZEOF_VOID_P);
 		res = g_slist_prepend (res, info);
 
-		get_delegate_virtual_invoke_impl (&info, FALSE, i * SIZEOF_VOID_P);
+		get_delegate_virtual_invoke_impl (&info, FALSE, i * TARGET_SIZEOF_VOID_P);
 		res = g_slist_prepend (res, info);
 	}
 

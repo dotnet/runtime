@@ -397,6 +397,11 @@ mono_check_corlib_version (void)
 static const char *
 mono_check_corlib_version_internal (void)
 {
+#if defined(MONO_CROSS_COMPILE) && SIZEOF_VOID_P != TARGET_SIZEOF_VOID_P
+	/* Can't read the corlib version because we only have the target class layouts */
+	return NULL;
+#endif
+
 	char *result = NULL;
 	char *version = mono_get_corlib_version ();
 	if (!version) {

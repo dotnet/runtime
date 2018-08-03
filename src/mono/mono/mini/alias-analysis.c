@@ -21,7 +21,7 @@
 static gboolean
 is_int_stack_size (int type)
 {
-#if SIZEOF_VOID_P == 4
+#if TARGET_SIZEOF_VOID_P == 4
 	return type == STACK_I4 || type == STACK_MP;
 #else
 	return type == STACK_I4;
@@ -31,7 +31,7 @@ is_int_stack_size (int type)
 static gboolean
 is_long_stack_size (int type)
 {
-#if SIZEOF_VOID_P == 8
+#if TARGET_SIZEOF_VOID_P == 8
 	return type == STACK_I8 || type == STACK_MP;
 #else
 	return type == STACK_I8;
@@ -114,7 +114,7 @@ lower_store_imm (MonoCompile *cfg, MonoInst *store, MonoInst *ldaddr)
 		return FALSE;
 
 	switch (store->opcode) {
-#if SIZEOF_VOID_P == 4
+#if TARGET_SIZEOF_VOID_P == 4
 	case OP_STORE_MEMBASE_IMM:
 #endif
 	case OP_STOREI4_MEMBASE_IMM:
@@ -129,7 +129,7 @@ lower_store_imm (MonoCompile *cfg, MonoInst *store, MonoInst *ldaddr)
 		store->inst_c0 = store->inst_imm;
 		break;
 
-#if SIZEOF_VOID_P == 8
+#if TARGET_SIZEOF_VOID_P == 8
 	case OP_STORE_MEMBASE_IMM:
 #endif    
 	case OP_STOREI8_MEMBASE_IMM:

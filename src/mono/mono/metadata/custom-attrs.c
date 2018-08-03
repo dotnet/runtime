@@ -466,7 +466,7 @@ handle_enum:
 			obj = mono_object_new_checked (mono_domain_get (), subc, error);
 			g_assert (!m_class_has_references (subc));
 			if (is_ok (error))
-				mono_gc_memmove_atomic ((char*)obj + sizeof (MonoObject), val, mono_class_value_size (subc, NULL));
+				mono_gc_memmove_atomic (mono_object_get_data (obj), val, mono_class_value_size (subc, NULL));
 			g_assert (out_obj);
 			*out_obj = obj;
 		}

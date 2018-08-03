@@ -23,7 +23,7 @@
 
 #include "abcremoval.h"
 
-#if SIZEOF_VOID_P == 8
+#if TARGET_SIZEOF_VOID_P == 8
 #define OP_PCONST OP_I8CONST
 #else
 #define OP_PCONST OP_ICONST
@@ -1227,10 +1227,10 @@ type_to_value_kind (MonoType *type)
 		return MONO_UNSIGNED_INTEGER_VALUE_SIZE_4;
 		break;
 	case MONO_TYPE_I:
-		return (MonoIntegerValueKind)SIZEOF_VOID_P;
+		return (MonoIntegerValueKind)TARGET_SIZEOF_VOID_P;
 		break;
 	case MONO_TYPE_U:
-		return (MonoIntegerValueKind)(MONO_UNSIGNED_VALUE_FLAG | SIZEOF_VOID_P);
+		return (MonoIntegerValueKind)(MONO_UNSIGNED_VALUE_FLAG | TARGET_SIZEOF_VOID_P);
 		break;
 	case MONO_TYPE_I8:
 		return MONO_INTEGER_VALUE_SIZE_8;

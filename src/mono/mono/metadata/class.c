@@ -2003,33 +2003,6 @@ mono_class_min_align (MonoClass *klass)
 }
 
 /**
- * mono_class_value_size:
- * \param klass a class 
- *
- * This function is used for value types, and return the
- * space and the alignment to store that kind of value object.
- *
- * \returns the size of a value of kind \p klass
- */
-gint32
-mono_class_value_size (MonoClass *klass, guint32 *align)
-{
-	gint32 size;
-
-	/* fixme: check disable, because we still have external revereces to
-	 * mscorlib and Dummy Objects 
-	 */
-	/*g_assert (klass->valuetype);*/
-
-	size = mono_class_instance_size (klass) - sizeof (MonoObject);
-
-	if (align)
-		*align = m_class_get_min_align (klass);
-
-	return size;
-}
-
-/**
  * mono_class_data_size:
  * \param klass a class 
  * 
@@ -3976,7 +3949,7 @@ handle_enum:
 	case MONO_TYPE_OBJECT:
 	case MONO_TYPE_SZARRAY:
 	case MONO_TYPE_ARRAY: 
-		return sizeof (gpointer);
+		return TARGET_SIZEOF_VOID_P;
 	case MONO_TYPE_I8:
 	case MONO_TYPE_U8:
 	case MONO_TYPE_R8:
@@ -3987,7 +3960,7 @@ handle_enum:
 			klass = m_class_get_element_class (klass);
 			goto handle_enum;
 		}
-		return mono_class_instance_size (klass) - sizeof (MonoObject);
+		return mono_class_value_size (klass, NULL);
 	case MONO_TYPE_GENERICINST:
 		type = m_class_get_byval_arg (type->data.generic_class->container_class);
 		goto handle_enum;

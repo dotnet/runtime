@@ -13,6 +13,7 @@
 #include <mono/metadata/class-internals.h>
 #include <mono/metadata/threads-types.h>
 #include <mono/metadata/handle.h>
+#include <mono/metadata/abi-details.h>
 #include "mono/utils/mono-compiler.h"
 #include "mono/utils/mono-error.h"
 #include "mono/utils/mono-error-internals.h"
@@ -143,7 +144,7 @@ struct _MonoArray {
 	mono_64bitaligned_t vector [MONO_ZERO_LEN_ARRAY];
 };
 
-#define MONO_SIZEOF_MONO_ARRAY (sizeof (MonoArray) - MONO_ZERO_LEN_ARRAY * sizeof (mono_64bitaligned_t))
+#define MONO_SIZEOF_MONO_ARRAY (MONO_STRUCT_OFFSET (MonoArray, vector))
 
 struct _MonoString {
 	MonoObject object;
@@ -2082,5 +2083,11 @@ mono_class_get_virtual_method (MonoClass *klass, MonoMethod *method, gboolean is
 
 MonoStringHandle
 mono_string_empty_handle (MonoDomain *domain);
+
+gpointer
+mono_object_get_data (MonoObject *o);
+
+gpointer
+mono_vtype_get_field_addr (guint8 *vtype, MonoClassField *field);
 
 #endif /* __MONO_OBJECT_INTERNALS_H__ */

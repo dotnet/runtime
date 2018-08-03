@@ -87,6 +87,7 @@
 #include <mono/metadata/w32mutex.h>
 #include <mono/metadata/w32semaphore.h>
 #include <mono/metadata/w32event.h>
+#include <mono/metadata/abi-details.h>
 #include <mono/utils/monobitset.h>
 #include <mono/utils/mono-time.h>
 #include <mono/utils/mono-proclib.h>
@@ -367,7 +368,7 @@ array_set_value_impl (MonoArrayHandle arr, MonoObjectHandle value, guint32 pos, 
 
 	va = mono_object_handle_pin_unbox (value, &value_gchandle);
 
-	vsize = mono_class_instance_size (vc) - sizeof (MonoObject);
+	vsize = mono_class_value_size (vc, NULL);
 
 	if (et == MONO_TYPE_VALUETYPE && m_class_is_enumtype (m_class_get_byval_arg (ec)->data.klass))
 		et = mono_class_enum_basetype (m_class_get_byval_arg (ec)->data.klass)->type;
@@ -1150,7 +1151,7 @@ ves_icall_System_ValueType_Equals (MonoObject *this_obj, MonoObject *that, MonoA
 	klass = mono_object_class (this_obj);
 
 	if (m_class_is_enumtype (klass) && mono_class_enum_basetype (klass) && mono_class_enum_basetype (klass)->type == MONO_TYPE_I4)
-		return (*(gint32*)((guint8*)this_obj + sizeof (MonoObject)) == *(gint32*)((guint8*)that + sizeof (MonoObject)));
+		return *(gint32*)mono_object_get_data (this_obj) == *(gint32*)mono_object_get_data (that);
 
 	/*
 	 * Do the comparison for fields of primitive type and return a result if
@@ -1938,7 +1939,7 @@ ves_icall_MonoField_GetFieldOffset (MonoReflectionFieldHandle field, MonoError *
 	MonoClassField *class_field = MONO_HANDLE_GETVAL (field, field);
 	mono_class_setup_fields (class_field->parent);
 
-	return class_field->offset - sizeof (MonoObject);
+	return class_field->offset - MONO_ABI_SIZEOF (MonoObject);
 }
 
 ICALL_EXPORT MonoReflectionTypeHandle

@@ -262,14 +262,15 @@ mono_trace_enter_method (MonoMethod *method, char *ebp)
 			o = *arg_in_stack_slot(cpos, MonoObject *);
 			if (o) {
 				klass = o->vtable->klass;
-		    
+
+				gpointer data = mono_object_get_data (o);
 				if (klass == mono_defaults.string_class) {
 					char *as = string_to_utf8 ((MonoString*)o);
 
 					printf ("[STRING:%p:%s], ", o, as);
 					g_free (as);
 				} else if (klass == mono_defaults.int32_class) {
-					printf ("[INT32:%p:%d], ", o, *(gint32 *)((char *)o + sizeof (MonoObject)));
+					printf ("[INT32:%p:%d], ", o, *(gint32 *)data);
 				} else if (klass == mono_defaults.runtimetype_class) {
 					printf ("[TYPE:%s], ", mono_type_full_name (((MonoReflectionType*)o)->type));
 				} else
@@ -393,12 +394,13 @@ mono_trace_leave_method (MonoMethod *method, ...)
 		MonoObject *o = va_arg (ap, MonoObject *);
 
 		if (o) {
+			gpointer data = mono_object_get_data (o);
 			if (o->vtable->klass == mono_defaults.boolean_class) {
-				printf ("[BOOLEAN:%p:%d]", o, *((guint8 *)o + sizeof (MonoObject)));		
+				printf ("[BOOLEAN:%p:%d]", o, *(guint8 *)data);
 			} else if  (o->vtable->klass == mono_defaults.int32_class) {
-				printf ("[INT32:%p:%d]", o, *((gint32 *)((char *)o + sizeof (MonoObject))));	
+				printf ("[INT32:%p:%d]", o, *(gint32 *)data);
 			} else if  (o->vtable->klass == mono_defaults.int64_class) {
-				printf ("[INT64:%p:%lld]", o, (long long)*((gint64 *)((char *)o + sizeof (MonoObject))));	
+				printf ("[INT64:%p:%lld]", o, (long long)*(gint64 *)data);
 			} else
 				printf ("[%s.%s:%p]", m_class_get_name_space (mono_object_class (o)), m_class_get_name (mono_object_class (o)), o);
 		} else

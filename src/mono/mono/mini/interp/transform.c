@@ -18,6 +18,7 @@
 #include <mono/metadata/tabledefs.h>
 #include <mono/metadata/seq-points-data.h>
 #include <mono/metadata/mono-basic-block.h>
+#include <mono/metadata/abi-details.h>
 
 #include <mono/mini/mini.h>
 #include <mono/mini/mini-runtime.h>
@@ -3339,7 +3340,7 @@ generate (MonoMethod *method, MonoMethodHeader *header, InterpMethod *rtm, unsig
 #ifndef DISABLE_REMOTING
 			if (m_class_get_marshalbyref (klass) || mono_class_is_contextbound (klass) || klass == mono_defaults.marshalbyrefobject_class) {
 				g_assert (!is_static);
-				int offset = m_class_is_valuetype (klass) ? field->offset - sizeof (MonoObject) : field->offset;
+				int offset = m_class_is_valuetype (klass) ? field->offset - MONO_ABI_SIZEOF (MonoObject) : field->offset;
 
 				ADD_CODE (td, MINT_MONO_LDPTR);
 				ADD_CODE (td, get_data_item_index (td, klass));
@@ -3373,7 +3374,7 @@ generate (MonoMethod *method, MonoMethodHeader *header, InterpMethod *rtm, unsig
 						g_assert ((td->sp -1)->type == STACK_TYPE_MP);
 						ADD_CODE (td, MINT_LDFLDA_UNSAFE);
 					}
-					ADD_CODE (td, m_class_is_valuetype (klass) ? field->offset - sizeof (MonoObject) : field->offset);
+					ADD_CODE (td, m_class_is_valuetype (klass) ? field->offset - MONO_ABI_SIZEOF (MonoObject) : field->offset);
 				}
 				td->ip += 5;
 			}
@@ -3406,7 +3407,7 @@ generate (MonoMethod *method, MonoMethodHeader *header, InterpMethod *rtm, unsig
 					ADD_CODE (td, get_data_item_index (td, field));
 				} else {
 					ADD_CODE (td, MINT_LDFLD_I1 + mt - MINT_TYPE_I1);
-					ADD_CODE (td, m_class_is_valuetype (klass) ? field->offset - sizeof(MonoObject) : field->offset);
+					ADD_CODE (td, m_class_is_valuetype (klass) ? field->offset - MONO_ABI_SIZEOF (MonoObject) : field->offset);
 					if (mt == MINT_TYPE_VT)
 						ADD_CODE (td, get_data_item_index (td, field));
 				}
@@ -3473,7 +3474,7 @@ generate (MonoMethod *method, MonoMethodHeader *header, InterpMethod *rtm, unsig
 					goto_if_nok (error, exit);
 				} else {
 					ADD_CODE (td, MINT_STFLD_I1 + mt - MINT_TYPE_I1);
-					ADD_CODE (td, m_class_is_valuetype (klass) ? field->offset - sizeof(MonoObject) : field->offset);
+					ADD_CODE (td, m_class_is_valuetype (klass) ? field->offset - MONO_ABI_SIZEOF (MonoObject) : field->offset);
 					if (mt == MINT_TYPE_VT) {
 						ADD_CODE (td, get_data_item_index (td, field));
 

@@ -264,7 +264,7 @@ static guint8*
 emit_memcpy (guint8 *code, int size, int dreg, int doffset, int sreg, int soffset)
 {
 	/* we can use r0-r3, since this is called only for incoming args on the stack */
-	if (size > sizeof (gpointer) * 4) {
+	if (size > sizeof (target_mgreg_t) * 4) {
 		guint8 *start_loop;
 		code = emit_big_add (code, ARMREG_R0, sreg, soffset);
 		code = emit_big_add (code, ARMREG_R1, dreg, doffset);
@@ -451,7 +451,7 @@ emit_save_lmf (MonoCompile *cfg, guint8 *code, gint32 lmf_offset)
 	ARM_MOV_REG_REG (code, ARMREG_IP, ARMREG_PC);
 	ARM_STR_IMM (code, ARMREG_IP, ARMREG_R1, MONO_STRUCT_OFFSET (MonoLMF, ip));
 
-	for (i = 0; i < sizeof (MonoLMF); i += sizeof (mgreg_t))
+	for (i = 0; i < MONO_ABI_SIZEOF (MonoLMF); i += sizeof (mgreg_t))
 		mini_gc_set_slot_type_from_fp (cfg, lmf_offset + i, SLOT_NOREF);
 
 	return code;
@@ -587,14 +587,14 @@ mono_arch_get_argument_info (MonoMethodSignature *csig, int param_count, MonoJit
 
 	t = mini_get_underlying_type (csig->ret);
 	if (MONO_TYPE_ISSTRUCT (t)) {
-		frame_size += sizeof (gpointer);
+		frame_size += sizeof (target_mgreg_t);
 		offset += 4;
 	}
 
 	arg_info [0].offset = offset;
 
 	if (csig->hasthis) {
-		frame_size += sizeof (gpointer);
+		frame_size += sizeof (target_mgreg_t);
 		offset += 4;
 	}
 
@@ -1454,12 +1454,12 @@ get_call_info (MonoMemPool *mp, MonoMethodSignature *sig)
 		case MONO_TYPE_PTR:
 		case MONO_TYPE_FNPTR:
 		case MONO_TYPE_OBJECT:
-			cinfo->args [n].size = sizeof (gpointer);
+			cinfo->args [n].size = sizeof (target_mgreg_t);
 			add_general (&gr, &stack_size, ainfo, TRUE);
 			break;
 		case MONO_TYPE_GENERICINST:
 			if (!mono_type_generic_inst_is_valuetype (t)) {
-				cinfo->args [n].size = sizeof (gpointer);
+				cinfo->args [n].size = sizeof (target_mgreg_t);
 				add_general (&gr, &stack_size, ainfo, TRUE);
 				break;
 			}
@@ -1504,8 +1504,8 @@ get_call_info (MonoMemPool *mp, MonoMethodSignature *sig)
 			}
 
 			if (t->type == MONO_TYPE_TYPEDBYREF) {
-				size = sizeof (MonoTypedRef);
-				align = sizeof (gpointer);
+				size = MONO_ABI_SIZEOF (MonoTypedRef);
+				align = sizeof (target_mgreg_t);
 			} else {
 				MonoClass *klass = mono_class_from_mono_type (sig->params [i]);
 				if (is_pinvoke)
@@ -1537,9 +1537,9 @@ get_call_info (MonoMemPool *mp, MonoMethodSignature *sig)
 
 			align_size = size;
 			nwords = 0;
-			align_size += (sizeof (gpointer) - 1);
-			align_size &= ~(sizeof (gpointer) - 1);
-			nwords = (align_size + sizeof (gpointer) -1 ) / sizeof (gpointer);
+			align_size += (sizeof (target_mgreg_t) - 1);
+			align_size &= ~(sizeof (target_mgreg_t) - 1);
+			nwords = (align_size + sizeof (target_mgreg_t) -1 ) / sizeof (target_mgreg_t);
 			ainfo->storage = RegTypeStructByVal;
 			ainfo->struct_size = size;
 			ainfo->align = align;
@@ -1565,7 +1565,7 @@ get_call_info (MonoMemPool *mp, MonoMethodSignature *sig)
 
 			ainfo->offset = stack_size;
 			/*g_print ("offset for arg %d at %d\n", n, stack_size);*/
-			stack_size += nwords * sizeof (gpointer);
+			stack_size += nwords * sizeof (target_mgreg_t);
 			break;
 		}
 		case MONO_TYPE_U8:
@@ -1936,7 +1936,7 @@ mono_arch_allocate_vars (MonoCompile *cfg)
 
 	/* allow room for the vararg method args: void* and long/double */
 	if (mono_jit_trace_calls != NULL && mono_trace_eval (cfg->method))
-		cfg->param_area = MAX (cfg->param_area, sizeof (gpointer)*8);
+		cfg->param_area = MAX (cfg->param_area, sizeof (target_mgreg_t)*8);
 
 	header = cfg->header;
 
@@ -1989,14 +1989,14 @@ mono_arch_allocate_vars (MonoCompile *cfg)
 		cfg->ret->inst_basereg = cfg->frame_reg;
 		cfg->ret->inst_offset = offset;
 		if (cinfo->ret.storage == RegTypeStructByVal)
-			offset += cinfo->ret.nregs * sizeof (gpointer);
+			offset += cinfo->ret.nregs * sizeof (target_mgreg_t);
 		else
 			offset += 32;
 		break;
 	case RegTypeStructByAddr:
 		ins = cfg->vret_addr;
-		offset += sizeof(gpointer) - 1;
-		offset &= ~(sizeof(gpointer) - 1);
+		offset += sizeof (target_mgreg_t) - 1;
+		offset &= ~(sizeof (target_mgreg_t) - 1);
 		ins->inst_offset = offset;
 		ins->opcode = OP_REGOFFSET;
 		ins->inst_basereg = cfg->frame_reg;
@@ -2004,7 +2004,7 @@ mono_arch_allocate_vars (MonoCompile *cfg)
 			g_print ("vret_addr =");
 			mono_print_ins (cfg->vret_addr);
 		}
-		offset += sizeof(gpointer);
+		offset += sizeof (target_mgreg_t);
 		break;
 	default:
 		break;
@@ -2127,10 +2127,10 @@ mono_arch_allocate_vars (MonoCompile *cfg)
 		if (ins->opcode != OP_REGVAR) {
 			ins->opcode = OP_REGOFFSET;
 			ins->inst_basereg = cfg->frame_reg;
-			offset += sizeof (gpointer) - 1;
-			offset &= ~(sizeof (gpointer) - 1);
+			offset += sizeof (target_mgreg_t) - 1;
+			offset &= ~(sizeof (target_mgreg_t) - 1);
 			ins->inst_offset = offset;
-			offset += sizeof (gpointer);
+			offset += sizeof (target_mgreg_t);
 		}
 		curinst++;
 	}
@@ -2359,7 +2359,7 @@ mono_arch_get_llvm_call_info (MonoCompile *cfg, MonoMethodSignature *sig)
 				lainfo->nslots = ALIGN_TO (ainfo->struct_size, 8) / 8;
 				lainfo->esize = 8;
 			} else {
-				lainfo->nslots = ainfo->struct_size / sizeof (gpointer);
+				lainfo->nslots = ainfo->struct_size / sizeof (target_mgreg_t);
 				lainfo->esize = 4;
 			}
 			break;
@@ -2739,12 +2739,12 @@ mono_arch_emit_outarg_vt (MonoCompile *cfg, MonoInst *ins, MonoInst *src)
 				break;
 			}
 			mono_call_inst_add_outarg_reg (cfg, call, dreg, ainfo->reg + i, FALSE);
-			soffset += sizeof (gpointer);
-			struct_size -= sizeof (gpointer);
+			soffset += sizeof (target_mgreg_t);
+			struct_size -= sizeof (target_mgreg_t);
 		}
 		//g_print ("vt size: %d at R%d + %d\n", doffset, vt->inst_basereg, vt->inst_offset);
 		if (ovf_size != 0)
-			mini_emit_memcpy (cfg, ARMREG_SP, doffset, src->dreg, soffset, MIN (ovf_size * sizeof (gpointer), struct_size), struct_size < 4 ? 1 : 4);
+			mini_emit_memcpy (cfg, ARMREG_SP, doffset, src->dreg, soffset, MIN (ovf_size * sizeof (target_mgreg_t), struct_size), struct_size < 4 ? 1 : 4);
 		break;
 	}
 }
@@ -4150,7 +4150,10 @@ mono_arm_is_rotated_imm8 (guint32 val, gint *rot_amount)
 {
 	guint32 res, i;
 	for (i = 0; i < 31; i+= 2) {
-		res = (val << (32 - i)) | (val >> i);
+		if (i == 0)
+			res = val;
+		else
+			res = (val << (32 - i)) | (val >> i);
 		if (res & ~0xff)
 			continue;
 		*rot_amount = i? 32 - i: 0;
@@ -6354,7 +6357,7 @@ mono_arch_emit_prolog (MonoCompile *cfg)
 			}
 		}
 		g_assert (reg_offset == 4 * 10);
-		pos += sizeof (MonoLMF) - (4 * 10);
+		pos += MONO_ABI_SIZEOF (MonoLMF) - (4 * 10);
 		lmf_offset = pos;
 	}
 	alloc_size += pos;
@@ -6639,13 +6642,13 @@ mono_arch_emit_prolog (MonoCompile *cfg)
 						code = mono_arm_emit_load_imm (code, ARMREG_IP, doffset);
 						ARM_STR_REG_REG (code, ainfo->reg + cur_reg, inst->inst_basereg, ARMREG_IP);
 					}
-					soffset += sizeof (gpointer);
-					doffset += sizeof (gpointer);
+					soffset += sizeof (target_mgreg_t);
+					doffset += sizeof (target_mgreg_t);
 				}
 				if (ainfo->vtsize) {
 					/* FIXME: handle overrun! with struct sizes not multiple of 4 */
 					//g_print ("emit_memcpy (prev_sp_ofs: %d, ainfo->offset: %d, soffset: %d)\n", prev_sp_offset, ainfo->offset, soffset);
-					code = emit_memcpy (code, ainfo->vtsize * sizeof (gpointer), inst->inst_basereg, doffset, ARMREG_SP, prev_sp_offset + ainfo->offset);
+					code = emit_memcpy (code, ainfo->vtsize * sizeof (target_mgreg_t), inst->inst_basereg, doffset, ARMREG_SP, prev_sp_offset + ainfo->offset);
 				}
 				break;
 			}
@@ -6810,13 +6813,13 @@ mono_arch_emit_epilog (MonoCompile *cfg)
 	if (method->save_lmf) {
 		int lmf_offset, reg, sp_adj, regmask, nused_int_regs = 0;
 		/* all but r0-r3, sp and pc */
-		pos += sizeof (MonoLMF) - (MONO_ARM_NUM_SAVED_REGS * sizeof (mgreg_t));
+		pos += MONO_ABI_SIZEOF (MonoLMF) - (MONO_ARM_NUM_SAVED_REGS * sizeof (mgreg_t));
 		lmf_offset = pos;
 
 		code = emit_restore_lmf (cfg, code, cfg->stack_usage - lmf_offset);
 
 		/* This points to r4 inside MonoLMF->iregs */
-		sp_adj = (sizeof (MonoLMF) - MONO_ARM_NUM_SAVED_REGS * sizeof (mgreg_t));
+		sp_adj = (MONO_ABI_SIZEOF (MonoLMF) - MONO_ARM_NUM_SAVED_REGS * sizeof (mgreg_t));
 		reg = ARMREG_R4;
 		regmask = 0x9ff0; /* restore lr to pc */
 		/* Skip caller saved registers not used by the method */
@@ -6845,7 +6848,7 @@ mono_arch_emit_epilog (MonoCompile *cfg)
 			/* Restore saved r7, restore LR to PC */
 			/* Skip lr from the lmf */
 			mono_emit_unwind_op_def_cfa_offset (cfg, code, 3 * 4);
-			ARM_ADD_REG_IMM (code, ARMREG_SP, ARMREG_SP, sizeof (gpointer), 0);
+			ARM_ADD_REG_IMM (code, ARMREG_SP, ARMREG_SP, sizeof (target_mgreg_t), 0);
 			mono_emit_unwind_op_def_cfa_offset (cfg, code, 2 * 4);
 			ARM_POP (code, (1 << ARMREG_R7) | (1 << ARMREG_PC));
 		}
@@ -7175,7 +7178,7 @@ mono_arch_build_imt_trampoline (MonoVTable *vtable, MonoDomain *domain, MonoIMTC
 				target_code_ins = code;
 				ARM_LDR_IMM (code, ARMREG_R1, ARMREG_PC, 0);
 				/* Save it to the fourth slot */
-				ARM_STR_IMM (code, ARMREG_R1, ARMREG_SP, 3 * sizeof (gpointer));
+				ARM_STR_IMM (code, ARMREG_R1, ARMREG_SP, 3 * sizeof (target_mgreg_t));
 				/* Restore registers and branch */
 				ARM_POP4 (code, ARMREG_R0, ARMREG_R1, ARMREG_IP, ARMREG_PC);
 				
@@ -7194,7 +7197,7 @@ mono_arch_build_imt_trampoline (MonoVTable *vtable, MonoDomain *domain, MonoIMTC
 					ARM_LDR_IMM (code, ARMREG_R1, ARMREG_PC, 0);
 					ARM_LDR_REG_REG (code, ARMREG_R1, ARMREG_IP, ARMREG_R1);
 					/* Save it to the fourth slot */
-					ARM_STR_IMM (code, ARMREG_R1, ARMREG_SP, 3 * sizeof (gpointer));
+					ARM_STR_IMM (code, ARMREG_R1, ARMREG_SP, 3 * sizeof (target_mgreg_t));
 					/* Restore registers and branch */
 					ARM_POP4 (code, ARMREG_R0, ARMREG_R1, ARMREG_IP, ARMREG_PC);
 				
@@ -7203,7 +7206,7 @@ mono_arch_build_imt_trampoline (MonoVTable *vtable, MonoDomain *domain, MonoIMTC
 					ARM_POP2 (code, ARMREG_R0, ARMREG_R1);
 					if (large_offsets) {
 						mono_add_unwind_op_def_cfa_offset (unwind_ops, code, start, 2 * sizeof (mgreg_t));
-						ARM_ADD_REG_IMM8 (code, ARMREG_SP, ARMREG_SP, 2 * sizeof (gpointer));
+						ARM_ADD_REG_IMM8 (code, ARMREG_SP, ARMREG_SP, 2 * sizeof (target_mgreg_t));
 					}
 					mono_add_unwind_op_def_cfa_offset (unwind_ops, code, start, 0);
 					ARM_LDR_IMM (code, ARMREG_PC, ARMREG_IP, vtable_offset);
@@ -7217,7 +7220,7 @@ mono_arch_build_imt_trampoline (MonoVTable *vtable, MonoDomain *domain, MonoIMTC
 				/* Load target address */
 				ARM_LDR_IMM (code, ARMREG_R1, ARMREG_PC, 0);
 				/* Save it to the fourth slot */
-				ARM_STR_IMM (code, ARMREG_R1, ARMREG_SP, 3 * sizeof (gpointer));
+				ARM_STR_IMM (code, ARMREG_R1, ARMREG_SP, 3 * sizeof (target_mgreg_t));
 				/* Restore registers and branch */
 				ARM_POP4 (code, ARMREG_R0, ARMREG_R1, ARMREG_IP, ARMREG_PC);
 				

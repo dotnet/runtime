@@ -4336,8 +4336,7 @@ get_async_method_builder (DbgEngineStackFrame *frame)
 		return NULL;
 
 	if (m_class_is_valuetype (frame->method->klass)) {
-		guint8 *vtaddr = *(guint8**)this_addr;
-		builder = (char*)vtaddr + builder_field->offset - sizeof (MonoObject);
+		builder = mono_vtype_get_field_addr (*(guint8**)this_addr, builder_field);
 	} else {
 		this_obj = *(MonoObject**)this_addr;
 		builder = (char*)this_obj + builder_field->offset;
@@ -5254,7 +5253,7 @@ buffer_add_value_full (Buffer *buf, MonoType *t, void *addr, MonoDomain *domain,
 				continue;
 			if (mono_field_is_deleted (f))
 				continue;
-			buffer_add_value_full (buf, f->type, (guint8*)addr + f->offset - sizeof (MonoObject), domain, FALSE, parent_vtypes);
+			buffer_add_value_full (buf, f->type, mono_vtype_get_field_addr (addr, f), domain, FALSE, parent_vtypes);
 		}
 
 		if (boxed_vtype) {
@@ -5337,7 +5336,7 @@ decode_vtype (MonoType *t, MonoDomain *domain, guint8 *addr, guint8 *buf, guint8
 			continue;
 		if (mono_field_is_deleted (f))
 			continue;
-		err = decode_value (f->type, domain, (guint8*)addr + f->offset - sizeof (MonoObject), buf, &buf, limit);
+		err = decode_value (f->type, domain, mono_vtype_get_field_addr (addr, f), buf, &buf, limit);
 		if (err != ERR_NONE)
 			return err;
 		nfields --;

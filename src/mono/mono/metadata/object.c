@@ -42,6 +42,7 @@
 #include <mono/metadata/reflection-internals.h>
 #include <mono/metadata/w32event.h>
 #include <mono/metadata/custom-attrs-internals.h>
+#include <mono/metadata/abi-details.h>
 #include <mono/utils/strenc.h>
 #include <mono/utils/mono-counters.h>
 #include <mono/utils/mono-error-internals.h>
@@ -790,6 +791,8 @@ mono_runtime_free_method (MonoDomain *domain, MonoMethod *method)
 
 #define BITMAP_EL_SIZE (sizeof (gsize) * 8)
 
+#define MONO_OBJECT_HEADER_BITS (MONO_ABI_SIZEOF (MonoObject) / MONO_ABI_SIZEOF (gpointer))
+
 static gsize*
 compute_class_bitmap (MonoClass *klass, gsize *bitmap, int size, int offset, int *max_set, gboolean static_fields)
 {
@@ -798,12 +801,14 @@ compute_class_bitmap (MonoClass *klass, gsize *bitmap, int size, int offset, int
 	MonoClassField *field;
 	MonoClass *p;
 	guint32 pos;
-	int max_size;
+	int max_size, wordsize;
+
+	wordsize = TARGET_SIZEOF_VOID_P;
 
 	if (static_fields)
-		max_size = mono_class_data_size (klass) / sizeof (gpointer);
+		max_size = mono_class_data_size (klass) / wordsize;
 	else
-		max_size = m_class_get_instance_size (klass) / sizeof (gpointer);
+		max_size = m_class_get_instance_size (klass) / wordsize;
 	if (max_size > size) {
 		g_assert (offset <= 0);
 		bitmap = (gsize *)g_malloc0 ((max_size + BITMAP_EL_SIZE - 1) / BITMAP_EL_SIZE * sizeof (gsize));
@@ -839,7 +844,7 @@ compute_class_bitmap (MonoClass *klass, gsize *bitmap, int size, int offset, int
 				/* special static */
 				continue;
 
-			pos = field->offset / sizeof (gpointer);
+			pos = field->offset / TARGET_SIZEOF_VOID_P;
 			pos += offset;
 
 			type = mono_type_get_underlying_type (field->type);
@@ -854,7 +859,7 @@ compute_class_bitmap (MonoClass *klass, gsize *bitmap, int size, int offset, int
 			case MONO_TYPE_CLASS:
 			case MONO_TYPE_OBJECT:
 			case MONO_TYPE_ARRAY:
-				g_assert ((field->offset % sizeof(gpointer)) == 0);
+				g_assert ((field->offset % wordsize) == 0);
 
 				g_assert (pos < size || pos <= max_size);
 				bitmap [pos / BITMAP_EL_SIZE] |= ((gsize)1) << (pos % BITMAP_EL_SIZE);
@@ -862,7 +867,7 @@ compute_class_bitmap (MonoClass *klass, gsize *bitmap, int size, int offset, int
 				break;
 			case MONO_TYPE_GENERICINST:
 				if (!mono_type_generic_inst_is_valuetype (type)) {
-					g_assert ((field->offset % sizeof(gpointer)) == 0);
+					g_assert ((field->offset % wordsize) == 0);
 
 					bitmap [pos / BITMAP_EL_SIZE] |= ((gsize)1) << (pos % BITMAP_EL_SIZE);
 					*max_set = MAX (*max_set, pos);
@@ -874,7 +879,7 @@ compute_class_bitmap (MonoClass *klass, gsize *bitmap, int size, int offset, int
 				MonoClass *fclass = mono_class_from_mono_type (field->type);
 				if (m_class_has_references (fclass)) {
 					/* remove the object header */
-					compute_class_bitmap (fclass, bitmap, size, pos - (sizeof (MonoObject) / sizeof (gpointer)), max_set, FALSE);
+					compute_class_bitmap (fclass, bitmap, size, pos - MONO_OBJECT_HEADER_BITS, max_set, FALSE);
 				}
 				break;
 			}
@@ -926,9 +931,11 @@ compute_class_non_ref_bitmap (MonoClass *klass, gsize *bitmap, int size, int off
 	MonoClassField *field;
 	MonoClass *p;
 	guint32 pos, pos2;
-	int max_size;
+	int max_size, wordsize;
 
-	max_size = class->instance_size / sizeof (gpointer);
+	wordsize = TARGET_SIZEOF_VOID_P;
+
+	max_size = class->instance_size / wordsize;
 	if (max_size >= size)
 		bitmap = g_malloc0 (sizeof (gsize) * ((max_size) + 1));
 
@@ -943,7 +950,7 @@ compute_class_non_ref_bitmap (MonoClass *klass, gsize *bitmap, int size, int off
 			if (field->type->byref)
 				break;
 
-			pos = field->offset / sizeof (gpointer);
+			pos = field->offset / wordsize;
 			pos += offset;
 
 			type = mono_type_get_underlying_type (field->type);
@@ -957,8 +964,8 @@ compute_class_non_ref_bitmap (MonoClass *klass, gsize *bitmap, int size, int off
 			case MONO_TYPE_I8:
 			case MONO_TYPE_U8:
 			case MONO_TYPE_R8:
-				if ((((field->offset + 7) / sizeof (gpointer)) + offset) != pos) {
-					pos2 = ((field->offset + 7) / sizeof (gpointer)) + offset;
+				if ((((field->offset + 7) / wordsize) + offset) != pos) {
+					pos2 = ((field->offset + 7) / wordsize) + offset;
 					bitmap [pos2 / BITMAP_EL_SIZE] |= ((gsize)1) << (pos2 % BITMAP_EL_SIZE);
 				}
 				/* fall through */
@@ -971,16 +978,16 @@ compute_class_non_ref_bitmap (MonoClass *klass, gsize *bitmap, int size, int off
 			case MONO_TYPE_I4:
 			case MONO_TYPE_U4:
 			case MONO_TYPE_R4:
-				if ((((field->offset + 3) / sizeof (gpointer)) + offset) != pos) {
-					pos2 = ((field->offset + 3) / sizeof (gpointer)) + offset;
+				if ((((field->offset + 3) / wordsize) + offset) != pos) {
+					pos2 = ((field->offset + 3) / wordsize) + offset;
 					bitmap [pos2 / BITMAP_EL_SIZE] |= ((gsize)1) << (pos2 % BITMAP_EL_SIZE);
 				}
 				/* fall through */
 			case MONO_TYPE_CHAR:
 			case MONO_TYPE_I2:
 			case MONO_TYPE_U2:
-				if ((((field->offset + 1) / sizeof (gpointer)) + offset) != pos) {
-					pos2 = ((field->offset + 1) / sizeof (gpointer)) + offset;
+				if ((((field->offset + 1) / wordsize) + offset) != pos) {
+					pos2 = ((field->offset + 1) / wordsize) + offset;
 					bitmap [pos2 / BITMAP_EL_SIZE] |= ((gsize)1) << (pos2 % BITMAP_EL_SIZE);
 				}
 				/* fall through */
@@ -1004,7 +1011,7 @@ compute_class_non_ref_bitmap (MonoClass *klass, gsize *bitmap, int size, int off
 			case MONO_TYPE_VALUETYPE: {
 				MonoClass *fclass = mono_class_from_mono_type (field->type);
 				/* remove the object header */
-				compute_class_non_ref_bitmap (fclass, bitmap, size, pos - (sizeof (MonoObject) / sizeof (gpointer)));
+				compute_class_non_ref_bitmap (fclass, bitmap, size, pos - MONO_OBJECT_HEADER_BITS);
 				break;
 			}
 			default:
@@ -1103,7 +1110,7 @@ mono_class_compute_gc_descriptor (MonoClass *klass)
 				class->name_space, class->name);*/
 		} else {
 			/* remove the object header */
-			bitmap = mono_class_compute_bitmap (klass_element_class, default_bitmap, sizeof (default_bitmap) * 8, - (int)(sizeof (MonoObject) / sizeof (gpointer)), &max_set, FALSE);
+			bitmap = mono_class_compute_bitmap (klass_element_class, default_bitmap, sizeof (default_bitmap) * 8, - (int)(MONO_OBJECT_HEADER_BITS), &max_set, FALSE);
 			gc_descr = mono_gc_make_descr_for_array (m_class_get_byval_arg (klass)->type == MONO_TYPE_SZARRAY, bitmap, mono_array_element_size (klass) / sizeof (gpointer), mono_array_element_size (klass));
 			/*printf ("new vt array descriptor: 0x%x for %s.%s\n", class->gc_descr,
 				class->name_space, class->name);*/
@@ -2103,7 +2110,7 @@ mono_class_create_runtime_vtable (MonoDomain *domain, MonoClass *klass, MonoErro
 					bitmap = default_bitmap;
 				} else if (mono_type_is_struct (field->type)) {
 					fclass = mono_class_from_mono_type (field->type);
-					bitmap = compute_class_bitmap (fclass, default_bitmap, sizeof (default_bitmap) * 8, - (int)(sizeof (MonoObject) / sizeof (gpointer)), &max_set, FALSE);
+					bitmap = compute_class_bitmap (fclass, default_bitmap, sizeof (default_bitmap) * 8, - (int)(MONO_OBJECT_HEADER_BITS), &max_set, FALSE);
 					numbits = max_set + 1;
 				} else {
 					default_bitmap [0] = 0;
@@ -3116,7 +3123,7 @@ mono_runtime_invoke_checked (MonoMethod *method, void *obj, void **params, MonoE
 	MONO_REQ_GC_UNSAFE_MODE;
 
 	if (mono_runtime_get_no_exec ())
-		g_warning ("Invoking method '%s' when running in no-exec mode.\n", mono_method_full_name (method, TRUE));
+		g_error ("Invoking method '%s' when running in no-exec mode.\n", mono_method_full_name (method, TRUE));
 
 	return do_runtime_invoke (method, obj, params, NULL, error);
 }
@@ -3616,7 +3623,7 @@ mono_field_get_value_object_checked (MonoDomain *domain, MonoClassField *field, 
 
 	o = mono_object_new_checked (domain, klass, error);
 	return_val_if_nok (error, NULL);
-	v = ((gchar *) o) + sizeof (MonoObject);
+	v = (gpointer)mono_object_get_data (o);
 
 	if (is_literal) {
 		get_default_field_value (domain, field, v, error);
@@ -3910,6 +3917,22 @@ nullable_class_get_has_value_field (MonoClass *klass)
 	return &klass_fields [0];
 }
 
+static gpointer
+nullable_get_has_value_field_addr (guint8 *nullable, MonoClass *klass)
+{
+	MonoClassField *has_value_field = nullable_class_get_has_value_field (klass);
+
+	return mono_vtype_get_field_addr (nullable, has_value_field);
+}
+
+static gpointer
+nullable_get_value_field_addr (guint8 *nullable, MonoClass *klass)
+{
+	MonoClassField *has_value_field = nullable_class_get_value_field (klass);
+
+	return mono_vtype_get_field_addr (nullable, has_value_field);
+}
+
 /*
  * mono_nullable_init:
  * @buf: The nullable structure to initialize.
@@ -3930,18 +3953,17 @@ mono_nullable_init (guint8 *buf, MonoObject *value, MonoClass *klass)
 	MONO_REQ_GC_UNSAFE_MODE;
 
 	MonoClass *param_class = m_class_get_cast_class (klass);
+	gpointer has_value_field_addr = nullable_get_has_value_field_addr (buf, klass);
+	gpointer value_field_addr = nullable_get_value_field_addr (buf, klass);
 
-	MonoClassField *has_value_field = nullable_class_get_has_value_field (klass);
-	MonoClassField *value_field = nullable_class_get_value_field (klass);
-
-	*(guint8*)(buf + has_value_field->offset - sizeof (MonoObject)) = value ? 1 : 0;
+	*(guint8*)(has_value_field_addr) = value ? 1 : 0;
 	if (value) {
 		if (m_class_has_references (param_class))
-			mono_gc_wbarrier_value_copy (buf + value_field->offset - sizeof (MonoObject), mono_object_unbox (value), 1, param_class);
+			mono_gc_wbarrier_value_copy (value_field_addr, mono_object_unbox (value), 1, param_class);
 		else
-			mono_gc_memmove_atomic (buf + value_field->offset - sizeof (MonoObject), mono_object_unbox (value), mono_class_value_size (param_class, NULL));
+			mono_gc_memmove_atomic (value_field_addr, mono_object_unbox (value), mono_class_value_size (param_class, NULL));
 	} else {
-		mono_gc_bzero_atomic (buf + value_field->offset - sizeof (MonoObject), mono_class_value_size (param_class, NULL));
+		mono_gc_bzero_atomic (value_field_addr, mono_class_value_size (param_class, NULL));
 	}
 }
 
@@ -3965,25 +3987,22 @@ mono_nullable_init_from_handle (guint8 *buf, MonoObjectHandle value, MonoClass *
 	MONO_REQ_GC_UNSAFE_MODE;
 
 	MonoClass *param_class = m_class_get_cast_class (klass);
+	gpointer has_value_field_addr = nullable_get_has_value_field_addr (buf, klass);
+	gpointer value_field_addr = nullable_get_value_field_addr (buf, klass);
 
-	MonoClassField *has_value_field = nullable_class_get_has_value_field (klass);
-	MonoClassField *value_field = nullable_class_get_value_field (klass);
-
-	*(guint8*)(buf + has_value_field->offset - sizeof (MonoObject)) = MONO_HANDLE_IS_NULL  (value) ? 0 : 1;
+	*(guint8*)(has_value_field_addr) = MONO_HANDLE_IS_NULL  (value) ? 0 : 1;
 	if (!MONO_HANDLE_IS_NULL (value)) {
 		uint32_t value_gchandle = 0;
 		gpointer src = mono_object_handle_pin_unbox (value, &value_gchandle);
 		if (m_class_has_references (param_class))
-			mono_gc_wbarrier_value_copy (buf + value_field->offset - sizeof (MonoObject), src, 1, param_class);
+			mono_gc_wbarrier_value_copy (value_field_addr, src, 1, param_class);
 		else
-			mono_gc_memmove_atomic (buf + value_field->offset - sizeof (MonoObject), src, mono_class_value_size (param_class, NULL));
+			mono_gc_memmove_atomic (value_field_addr, src, mono_class_value_size (param_class, NULL));
 		mono_gchandle_free (value_gchandle);
 	} else {
-		mono_gc_bzero_atomic (buf + value_field->offset - sizeof (MonoObject), mono_class_value_size (param_class, NULL));
+		mono_gc_bzero_atomic (value_field_addr, mono_class_value_size (param_class, NULL));
 	}
 }
-
-
 
 /**
  * mono_nullable_box:
@@ -4002,17 +4021,16 @@ mono_nullable_box (gpointer vbuf, MonoClass *klass, MonoError *error)
 
 	error_init (error);
 	MonoClass *param_class = m_class_get_cast_class (klass);
+	gpointer has_value_field_addr = nullable_get_has_value_field_addr (buf, klass);
+	gpointer value_field_addr = nullable_get_value_field_addr (buf, klass);
 
-	MonoClassField *has_value_field = nullable_class_get_has_value_field (klass);
-	MonoClassField *value_field = nullable_class_get_value_field (klass);
-
-	if (*(guint8*)(buf + has_value_field->offset - sizeof (MonoObject))) {
+	if (*(guint8*)(has_value_field_addr)) {
 		MonoObject *o = mono_object_new_checked (mono_domain_get (), param_class, error);
 		return_val_if_nok (error, NULL);
 		if (m_class_has_references (param_class))
-			mono_gc_wbarrier_value_copy (mono_object_unbox (o), buf + value_field->offset - sizeof (MonoObject), 1, param_class);
+			mono_gc_wbarrier_value_copy (mono_object_unbox (o), value_field_addr, 1, param_class);
 		else
-			mono_gc_memmove_atomic (mono_object_unbox (o), buf + value_field->offset - sizeof (MonoObject), mono_class_value_size (param_class, NULL));
+			mono_gc_memmove_atomic (mono_object_unbox (o), value_field_addr, mono_class_value_size (param_class, NULL));
 		return o;
 	}
 	else
@@ -4930,7 +4948,7 @@ do_exec_main_checked (MonoMethod *method, MonoArray *args, MonoError *error)
 		MonoObject *res;
 		res = mono_runtime_invoke_checked (method, NULL, pa, error);
 		if (is_ok (error))
-			rval = *(guint32 *)((char *)res + sizeof (MonoObject));
+			rval = *(guint32 *)(mono_object_get_data (res));
 		else
 			rval = -1;
 		mono_environment_exitcode_set (rval);
@@ -4970,7 +4988,7 @@ do_try_exec_main (MonoMethod *method, MonoArray *args, MonoObject **exc)
 			mono_error_cleanup (&inner_error);
 
 		if (*exc == NULL)
-			rval = *(guint32 *)((char *)res + sizeof (MonoObject));
+			rval = *(guint32 *)(mono_object_get_data (res));
 		else
 			rval = -1;
 
@@ -5819,9 +5837,19 @@ mono_object_new_mature (MonoVTable *vtable, MonoError *error)
 {
 	MONO_REQ_GC_UNSAFE_MODE;
 
+	int size;
+
+	size = m_class_get_instance_size (vtable->klass);
+
+#if MONO_CROSS_COMPILE
+	/* In cross compile mode, we should only allocate thread objects */
+	/* The instance size refers to the target arch, this should be safe enough */
+	size *= 2;
+#endif
+
 	MonoObject *o;
 
-	o = mono_gc_alloc_mature (vtable, m_class_get_instance_size (vtable->klass));
+	o = mono_gc_alloc_mature (vtable, size);
 
 	return object_new_common_tail (o, vtable->klass, error);
 }
@@ -6765,30 +6793,32 @@ mono_value_box_handle (MonoDomain *domain, MonoClass *klass, gpointer value, Mon
 	return_val_if_nok (error, MONO_HANDLE_NEW (MonoObject, NULL));
 	res = MONO_HANDLE_RAW (res_handle);
 
-	size = size - sizeof (MonoObject);
+	size = size - MONO_ABI_SIZEOF (MonoObject);
+
+	guint8 *data = mono_object_get_data (res);
 
 	if (mono_gc_is_moving ()) {
 		g_assert (size == mono_class_value_size (klass, NULL));
-		mono_gc_wbarrier_value_copy ((char *)res + sizeof (MonoObject), value, 1, klass);
+		mono_gc_wbarrier_value_copy (data, value, 1, klass);
 	} else {
 #if NO_UNALIGNED_ACCESS
-		mono_gc_memmove_atomic ((char *)res + sizeof (MonoObject), value, size);
+		mono_gc_memmove_atomic (data, value, size);
 #else
 		switch (size) {
 		case 1:
-			*((guint8 *) res + sizeof (MonoObject)) = *(guint8 *) value;
+			*(guint8*)data = *(guint8 *) value;
 			break;
 		case 2:
-			*(guint16 *)((guint8 *) res + sizeof (MonoObject)) = *(guint16 *) value;
+			*(guint16 *)(data) = *(guint16 *) value;
 			break;
 		case 4:
-			*(guint32 *)((guint8 *) res + sizeof (MonoObject)) = *(guint32 *) value;
+			*(guint32 *)(data) = *(guint32 *) value;
 			break;
 		case 8:
-			*(guint64 *)((guint8 *) res + sizeof (MonoObject)) = *(guint64 *) value;
+			*(guint64 *)(data) = *(guint64 *) value;
 			break;
 		default:
-			mono_gc_memmove_atomic ((char *)res + sizeof (MonoObject), value, size);
+			mono_gc_memmove_atomic (data, value, size);
 		}
 #endif
 	}
@@ -6828,30 +6858,31 @@ mono_value_box_checked (MonoDomain *domain, MonoClass *klass, gpointer value, Mo
 	res = mono_object_new_alloc_specific_checked (vtable, error);
 	return_val_if_nok (error, NULL);
 
-	size = size - sizeof (MonoObject);
+	size = size - MONO_ABI_SIZEOF (MonoObject);
 
+	guint8 *data = mono_object_get_data (res);
 	if (mono_gc_is_moving ()) {
 		g_assert (size == mono_class_value_size (klass, NULL));
-		mono_gc_wbarrier_value_copy ((char *)res + sizeof (MonoObject), value, 1, klass);
+		mono_gc_wbarrier_value_copy (data, value, 1, klass);
 	} else {
 #if NO_UNALIGNED_ACCESS
-		mono_gc_memmove_atomic ((char *)res + sizeof (MonoObject), value, size);
+		mono_gc_memmove_atomic (data, value, size);
 #else
 		switch (size) {
 		case 1:
-			*((guint8 *) res + sizeof (MonoObject)) = *(guint8 *) value;
+			*(guint8 *)(data) = *(guint8 *) value;
 			break;
 		case 2:
-			*(guint16 *)((guint8 *) res + sizeof (MonoObject)) = *(guint16 *) value;
+			*(guint16 *)(data) = *(guint16 *) value;
 			break;
 		case 4:
-			*(guint32 *)((guint8 *) res + sizeof (MonoObject)) = *(guint32 *) value;
+			*(guint32 *)(data) = *(guint32 *) value;
 			break;
 		case 8:
-			*(guint64 *)((guint8 *) res + sizeof (MonoObject)) = *(guint64 *) value;
+			*(guint64 *)(data) = *(guint64 *) value;
 			break;
 		default:
-			mono_gc_memmove_atomic ((char *)res + sizeof (MonoObject), value, size);
+			mono_gc_memmove_atomic (data, value, size);
 		}
 #endif
 	}
@@ -6978,7 +7009,7 @@ mono_object_unbox (MonoObject *obj)
 
 	/* add assert for valuetypes? */
 	g_assert (m_class_is_valuetype (mono_object_class (obj)));
-	res = ((char*)obj) + sizeof (MonoObject);
+	res = mono_object_get_data (obj);
 	MONO_EXIT_GC_UNSAFE;
 	return res;
 }
@@ -8505,9 +8536,9 @@ mono_method_return_message_restore (MonoMethod *method, gpointer *params, MonoAr
 					MonoClass *klass = ((MonoObject*)arg)->vtable->klass;
 					size = mono_class_value_size (klass, NULL);
 					if (m_class_has_references (klass))
-						mono_gc_wbarrier_value_copy (*((gpointer *)params [i]), arg + sizeof (MonoObject), 1, klass);
+						mono_gc_wbarrier_value_copy (*((gpointer *)params [i]), mono_object_get_data ((MonoObject*)arg), 1, klass);
 					else
-						mono_gc_memmove_atomic (*((gpointer *)params [i]), arg + sizeof (MonoObject), size);
+						mono_gc_memmove_atomic (*((gpointer *)params [i]), mono_object_get_data ((MonoObject*)arg), size);
 				} else {
 					size = mono_class_value_size (mono_class_from_mono_type (pt), NULL);
 					mono_gc_bzero_atomic (*((gpointer *)params [i]), size);
@@ -8623,7 +8654,7 @@ mono_load_remote_field_checked (MonoObject *this_obj, MonoClass *klass, MonoClas
 	mono_gc_wbarrier_generic_store (res, mono_array_get (out_args, MonoObject *, 0));
 
 	if (m_class_is_valuetype (field_class)) {
-		return ((char *)*res) + sizeof (MonoObject);
+		return mono_object_get_data ((MonoObject*)*res);
 	} else
 		return res;
 }
@@ -8919,6 +8950,56 @@ mono_glist_to_array (GList *list, MonoClass *eclass, MonoError *error)
 
 	return res;
 }
+
+/**
+ * mono_class_value_size:
+ * \param klass a class
+ *
+ * This function is used for value types, and return the
+ * space and the alignment to store that kind of value object.
+ *
+ * \returns the size of a value of kind \p klass
+ */
+gint32
+mono_class_value_size (MonoClass *klass, guint32 *align)
+{
+	gint32 size;
+
+	/* fixme: check disable, because we still have external revereces to
+	 * mscorlib and Dummy Objects
+	 */
+	/*g_assert (klass->valuetype);*/
+
+	size = mono_class_instance_size (klass) - MONO_ABI_SIZEOF (MonoObject);
+
+	if (align)
+		*align = m_class_get_min_align (klass);
+
+	return size;
+}
+
+/*
+ * mono_object_get_data:
+ *
+ *   Return a pointer to the beginning of data inside a MonoObject.
+ */
+gpointer
+mono_object_get_data (MonoObject *o)
+{
+	return (guint8*)o + MONO_ABI_SIZEOF (MonoObject);
+}
+
+/*
+ * mono_vtype_get_field_addr:
+ *
+ *   Return the address of the FIELD in the valuetype VTYPE.
+ */
+gpointer
+mono_vtype_get_field_addr (guint8 *vtype, MonoClassField *field)
+{
+	return vtype + field->offset - MONO_ABI_SIZEOF (MonoObject);
+}
+
 
 #if NEVER_DEFINED
 /*

@@ -29,6 +29,7 @@
 #include "mono/metadata/object-internals.h"
 #include <mono/metadata/profiler-private.h>
 #include <mono/metadata/debug-helpers.h>
+#include <mono/metadata/abi-details.h>
 #include <mono/utils/mono-compiler.h>
 #include <mono/utils/mono-machine.h>
 #include <mono/utils/mono-stack-unwinding.h>
@@ -175,6 +176,15 @@ typedef struct {
  * FIXME This typedef exists only to avoid tons of code rewriting
  */
 typedef MonoStackFrameInfo StackFrameInfo;
+
+#ifndef MONO_CROSS_COMPILE
+/* Can't define these in object-offsets.h */
+#define MONO_SIZEOF_MonoMethodRuntimeGenericContext sizeof (MonoMethodRuntimeGenericContext)
+#define MONO_SIZEOF_MonoLMF sizeof (MonoLMF)
+#define MONO_SIZEOF_MonoTypedRef sizeof (MonoTypedRef)
+#define MONO_SIZEOF_CallContext sizeof (CallContext)
+#define MONO_SIZEOF_MonoContext sizeof (MonoContext)
+#endif
 
 #if 0
 #define mono_bitset_foreach_bit(set,b,n) \
@@ -671,9 +681,9 @@ struct MonoInst {
 			MonoInst *src;
 			MonoMethodVar *var;
 			mgreg_t const_val;
-#if (SIZEOF_REGISTER > SIZEOF_VOID_P) && (G_BYTE_ORDER == G_BIG_ENDIAN)
+#if (SIZEOF_REGISTER > TARGET_SIZEOF_VOID_P) && (G_BYTE_ORDER == G_BIG_ENDIAN)
 			struct {
-				gpointer p[SIZEOF_REGISTER/SIZEOF_VOID_P];
+				gpointer p[SIZEOF_REGISTER/TARGET_SIZEOF_VOID_P];
 			} pdata;
 #else
 			gpointer p;
@@ -816,9 +826,9 @@ enum {
 #define inst_c1 data.op[1].const_val
 #define inst_i0 data.op[0].src
 #define inst_i1 data.op[1].src
-#if (SIZEOF_REGISTER > SIZEOF_VOID_P) && (G_BYTE_ORDER == G_BIG_ENDIAN)
-#define inst_p0 data.op[0].pdata.p[SIZEOF_REGISTER/SIZEOF_VOID_P - 1]
-#define inst_p1 data.op[1].pdata.p[SIZEOF_REGISTER/SIZEOF_VOID_P - 1]
+#if (SIZEOF_REGISTER > TARGET_SIZEOF_VOID_P) && (G_BYTE_ORDER == G_BIG_ENDIAN)
+#define inst_p0 data.op[0].pdata.p[SIZEOF_REGISTER/TARGET_SIZEOF_VOID_P - 1]
+#define inst_p1 data.op[1].pdata.p[SIZEOF_REGISTER/TARGET_SIZEOF_VOID_P - 1]
 #else
 #define inst_p0 data.op[0].p
 #define inst_p1 data.op[1].p
@@ -1029,7 +1039,7 @@ typedef struct {
 	gpointer infos [MONO_ZERO_LEN_ARRAY];
 } MonoMethodRuntimeGenericContext;
 
-#define MONO_SIZEOF_METHOD_RUNTIME_GENERIC_CONTEXT (sizeof (MonoMethodRuntimeGenericContext) - MONO_ZERO_LEN_ARRAY * SIZEOF_VOID_P)
+#define MONO_SIZEOF_METHOD_RUNTIME_GENERIC_CONTEXT (MONO_ABI_SIZEOF (MonoMethodRuntimeGenericContext) - MONO_ZERO_LEN_ARRAY * TARGET_SIZEOF_VOID_P)
 
 #define MONO_RGCTX_SLOT_MAKE_RGCTX(i)	(i)
 #define MONO_RGCTX_SLOT_MAKE_MRGCTX(i)	((i) | 0x80000000)
@@ -1646,7 +1656,7 @@ enum {
 #undef MINI_OP
 #undef MINI_OP3
 
-#if SIZEOF_VOID_P == 8
+#if TARGET_SIZEOF_VOID_P == 8
 #define OP_PCONST OP_I8CONST
 #define OP_DUMMY_PCONST OP_DUMMY_I8CONST
 #define OP_PADD OP_LADD

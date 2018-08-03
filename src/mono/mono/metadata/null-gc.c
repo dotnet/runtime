@@ -14,6 +14,7 @@
 #include <mono/metadata/gc-internals.h>
 #include <mono/metadata/runtime.h>
 #include <mono/metadata/w32handle.h>
+#include <mono/metadata/abi-details.h>
 #include <mono/utils/atomic.h>
 #include <mono/utils/mono-threads.h>
 #include <mono/utils/mono-counters.h>
@@ -279,8 +280,8 @@ void
 mono_gc_wbarrier_object_copy (MonoObject* obj, MonoObject *src)
 {
 	/* do not copy the sync state */
-	mono_gc_memmove_aligned ((char*)obj + sizeof (MonoObject), (char*)src + sizeof (MonoObject),
-			mono_object_class (obj)->instance_size - sizeof (MonoObject));
+	mono_gc_memmove_aligned (mono_object_get_data (obj), (char*)src + MONO_ABI_SIZEOF (MonoObject),
+			mono_object_class (obj)->instance_size - MONO_ABI_SIZEOF (MonoObject));
 }
 
 gboolean

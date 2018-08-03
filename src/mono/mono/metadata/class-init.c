@@ -19,6 +19,7 @@
 #include <mono/metadata/security-core-clr.h>
 #include <mono/metadata/security-manager.h>
 #include <mono/metadata/verify-internals.h>
+#include <mono/metadata/abi-details.h>
 #include <mono/utils/checked-build.h>
 #include <mono/utils/mono-counters.h>
 #include <mono/utils/mono-error-internals.h>
@@ -275,7 +276,7 @@ mono_class_setup_fields (MonoClass *klass)
 			return;
 		instance_size = klass->parent->instance_size;
 	} else {
-		instance_size = sizeof (MonoObject);
+		instance_size = MONO_ABI_SIZEOF (MonoObject);
 	}
 
 	/* Get the real size */
@@ -616,7 +617,7 @@ mono_class_create_from_typedef (MonoImage *image, guint32 type_token, MonoError 
 
 	/* reserve space to store vector pointer in arrays */
 	if (mono_is_corlib_image (image) && !strcmp (nspace, "System") && !strcmp (name, "Array")) {
-		klass->instance_size += 2 * sizeof (gpointer);
+		klass->instance_size += 2 * TARGET_SIZEOF_VOID_P;
 		g_assert (mono_class_get_field_count (klass) == 0);
 	}
 
@@ -1173,7 +1174,7 @@ make_generic_param_class (MonoGenericParam *param)
 	 * This makes sure the the value size of this class is equal to the size of the types the gparam is
 	 * constrained to, the JIT depends on this.
 	 */
-	klass->instance_size = sizeof (MonoObject) + mono_type_stack_size_internal (m_class_get_byval_arg (klass), NULL, TRUE);
+	klass->instance_size = MONO_ABI_SIZEOF (MonoObject) + mono_type_stack_size_internal (m_class_get_byval_arg (klass), NULL, TRUE);
 	mono_memory_barrier ();
 	klass->size_inited = 1;
 
@@ -1288,7 +1289,7 @@ mono_class_create_ptr (MonoType *type)
 
 	result->image = el_class->image;
 	result->inited = TRUE;
-	result->instance_size = sizeof (MonoObject) + sizeof (gpointer);
+	result->instance_size = MONO_ABI_SIZEOF (MonoObject) + MONO_ABI_SIZEOF (gpointer);
 	result->min_align = sizeof (gpointer);
 	result->cast_class = result->element_class = el_class;
 	result->blittable = TRUE;
@@ -1359,7 +1360,7 @@ mono_class_create_fnptr (MonoMethodSignature *sig)
 	result->class_kind = MONO_CLASS_POINTER;
 
 	result->image = mono_defaults.corlib; /* need to fix... */
-	result->instance_size = sizeof (MonoObject) + sizeof (gpointer);
+	result->instance_size = MONO_ABI_SIZEOF (MonoObject) + MONO_ABI_SIZEOF (gpointer);
 	result->min_align = sizeof (gpointer);
 	result->cast_class = result->element_class = result;
 	result->this_arg.type = result->_byval_arg.type = MONO_TYPE_FNPTR;
@@ -3521,7 +3522,7 @@ mono_class_layout_fields (MonoClass *klass, int base_instance_size, int packing_
 				return;
 			real_size = klass->parent->instance_size;
 		} else {
-			real_size = sizeof (MonoObject);
+			real_size = MONO_ABI_SIZEOF (MonoObject);
 		}
 
 		for (pass = 0; pass < passes; ++pass) {
@@ -3550,7 +3551,7 @@ mono_class_layout_fields (MonoClass *klass, int base_instance_size, int packing_
 					}
 				}
 
-				if ((top == 1) && (instance_size == sizeof (MonoObject)) &&
+				if ((top == 1) && (instance_size == MONO_ABI_SIZEOF (MonoObject)) &&
 					(strcmp (mono_field_get_name (field), "$PRIVATE$") == 0)) {
 					/* This field is a hack inserted by MCS to empty structures */
 					continue;
@@ -3564,7 +3565,7 @@ mono_class_layout_fields (MonoClass *klass, int base_instance_size, int packing_
 				 * see bug #77788
 				 */
 				if (type_has_references (klass, ftype))
-					align = MAX (align, sizeof (gpointer));
+					align = MAX (align, TARGET_SIZEOF_VOID_P);
 
 				min_align = MAX (align, min_align);
 				field_offsets [i] = real_size;
@@ -3611,17 +3612,17 @@ mono_class_layout_fields (MonoClass *klass, int base_instance_size, int packing_
 
 			if (sre) {
 				/* Already set by typebuilder_setup_fields () */
-				field_offsets [i] = field->offset + sizeof (MonoObject);
+				field_offsets [i] = field->offset + MONO_ABI_SIZEOF (MonoObject);
 			} else {
 				int idx = first_field_idx + i;
 				guint32 offset;
 				mono_metadata_field_info (klass->image, idx, &offset, NULL, NULL);
-				field_offsets [i] = offset + sizeof (MonoObject);
+				field_offsets [i] = offset + MONO_ABI_SIZEOF (MonoObject);
 			}
 			ftype = mono_type_get_underlying_type (field->type);
 			ftype = mono_type_get_basic_type_from_generic (ftype);
 			if (type_has_references (klass, ftype)) {
-				if (field_offsets [i] % sizeof (gpointer)) {
+				if (field_offsets [i] % TARGET_SIZEOF_VOID_P) {
 					mono_class_set_type_load_failure (klass, "Reference typed field '%s' has explicit offset that is not pointer-size aligned.", field->name);
 				}
 			}
@@ -3633,7 +3634,7 @@ mono_class_layout_fields (MonoClass *klass, int base_instance_size, int packing_
 		}
 
 		if (klass->has_references) {
-			ref_bitmap = g_new0 (guint8, real_size / sizeof (gpointer));
+			ref_bitmap = g_new0 (guint8, real_size / TARGET_SIZEOF_VOID_P);
 
 			/* Check for overlapping reference and non-reference fields */
 			for (i = 0; i < top; i++) {
@@ -3647,7 +3648,7 @@ mono_class_layout_fields (MonoClass *klass, int base_instance_size, int packing_
 					continue;
 				ftype = mono_type_get_underlying_type (field->type);
 				if (MONO_TYPE_IS_REFERENCE (ftype))
-					ref_bitmap [field_offsets [i] / sizeof (gpointer)] = 1;
+					ref_bitmap [field_offsets [i] / TARGET_SIZEOF_VOID_P] = 1;
 			}
 			for (i = 0; i < top; i++) {
 				field = &klass->fields [i];
@@ -3659,7 +3660,7 @@ mono_class_layout_fields (MonoClass *klass, int base_instance_size, int packing_
 
 				// FIXME: Too much code does this
 #if 0
-				if (!MONO_TYPE_IS_REFERENCE (field->type) && ref_bitmap [field_offsets [i] / sizeof (gpointer)]) {
+				if (!MONO_TYPE_IS_REFERENCE (field->type) && ref_bitmap [field_offsets [i] / TARGET_SIZEOF_VOID_P]) {
 					mono_class_set_type_load_failure (klass, "Could not load type '%s' because it contains an object field at offset %d that is incorrectly aligned or overlapped by a non-object field.", klass->name, field_offsets [i]);
 				}
 #endif
@@ -3688,16 +3689,16 @@ mono_class_layout_fields (MonoClass *klass, int base_instance_size, int packing_
 		 * unaligned accesses otherwise. See #78990 for a testcase.
 		 */
 		if (mono_align_small_structs && top) {
-			if (instance_size <= sizeof (MonoObject) + sizeof (gpointer))
-				min_align = MAX (min_align, instance_size - sizeof (MonoObject));
+			if (instance_size <= MONO_ABI_SIZEOF (MonoObject) + MONO_ABI_SIZEOF (gpointer))
+				min_align = MAX (min_align, instance_size - MONO_ABI_SIZEOF (MonoObject));
 		}
 	}
 
 	MonoType *klass_byval_arg = m_class_get_byval_arg (klass);
 	if (klass_byval_arg->type == MONO_TYPE_VAR || klass_byval_arg->type == MONO_TYPE_MVAR)
-		instance_size = sizeof (MonoObject) + mono_type_stack_size_internal (klass_byval_arg, NULL, TRUE);
+		instance_size = MONO_ABI_SIZEOF (MonoObject) + mono_type_stack_size_internal (klass_byval_arg, NULL, TRUE);
 	else if (klass_byval_arg->type == MONO_TYPE_PTR)
-		instance_size = sizeof (MonoObject) + sizeof (gpointer);
+		instance_size = MONO_ABI_SIZEOF (MonoObject) + MONO_ABI_SIZEOF (gpointer);
 
 	if (klass_byval_arg->type == MONO_TYPE_SZARRAY || klass_byval_arg->type == MONO_TYPE_ARRAY)
 		element_size = mono_class_array_element_size (klass->element_class);
@@ -3791,7 +3792,7 @@ mono_class_layout_fields (MonoClass *klass, int base_instance_size, int packing_
 	}
 
 	/*valuetypes can't be neither bigger than 1Mb or empty. */
-	if (klass->valuetype && (klass->instance_size <= 0 || klass->instance_size > (0x100000 + sizeof (MonoObject)))) {
+	if (klass->valuetype && (klass->instance_size <= 0 || klass->instance_size > (0x100000 + MONO_ABI_SIZEOF (MonoObject)))) {
 		/* Special case compiler generated types */
 		/* Hard to check for [CompilerGenerated] here */
 		if (!strstr (klass->name, "StaticArrayInitTypeSize") && !strstr (klass->name, "$ArrayType"))
@@ -4397,7 +4398,7 @@ mono_class_setup_parent (MonoClass *klass, MonoClass *parent)
 	/* if root of the hierarchy */
 	if (system_namespace && !strcmp (klass->name, "Object")) {
 		klass->parent = NULL;
-		klass->instance_size = sizeof (MonoObject);
+		klass->instance_size = MONO_ABI_SIZEOF (MonoObject);
 		return;
 	}
 	if (!strcmp (klass->name, "<Module>")) {

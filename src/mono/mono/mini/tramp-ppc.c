@@ -95,12 +95,12 @@ mono_arch_get_unbox_trampoline (MonoMethod *m, gpointer addr)
 	mono_domain_unlock (domain);
 
 	if (short_branch) {
-		ppc_addi (code, this_pos, this_pos, sizeof (MonoObject));
+		ppc_addi (code, this_pos, this_pos, MONO_ABI_SIZEOF (MonoObject));
 		ppc_emit32 (code, short_branch);
 	} else {
 		ppc_load_ptr (code, ppc_r0, addr);
 		ppc_mtctr (code, ppc_r0);
-		ppc_addi (code, this_pos, this_pos, sizeof (MonoObject));
+		ppc_addi (code, this_pos, this_pos, MONO_ABI_SIZEOF (MonoObject));
 		ppc_bcctr (code, 20, 0);
 	}
 	mono_arch_flush_icache (start, code - start);

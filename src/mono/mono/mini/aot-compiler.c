@@ -218,6 +218,7 @@ typedef struct MonoAotOptions {
 	gboolean print_skipped_methods;
 	gboolean stats;
 	gboolean verbose;
+	gboolean deterministic;
 	char *tool_prefix;
 	char *ld_flags;
 	char *mtriple;
@@ -1161,7 +1162,7 @@ arm64_emit_load_got_slot (MonoAotCompile *acfg, int dreg, int got_slot)
 	g_assert (acfg->fp);
 	emit_unset_mode (acfg);
 	/* r16==ip0 */
-	offset = (int)(got_slot * sizeof (gpointer));
+	offset = (int)(got_slot * sizeof (target_mgreg_t));
 #ifdef TARGET_MACH
 	/* clang's integrated assembler */
 	fprintf (acfg->fp, "adrp x16, %s@PAGE+%d\n", acfg->got_symbol, offset & 0xfffff000);
@@ -1222,7 +1223,7 @@ arm64_emit_got_access (MonoAotCompile *acfg, guint8 *code, int got_slot, int *co
 static void
 arm64_emit_plt_entry (MonoAotCompile *acfg, const char *got_symbol, int offset, int info_offset)
 {
-	arm64_emit_load_got_slot (acfg, ARMREG_R16, offset / sizeof (gpointer));
+	arm64_emit_load_got_slot (acfg, ARMREG_R16, offset / sizeof (target_mgreg_t));
 	fprintf (acfg->fp, "br x16\n");
 	/* Used by mono_aot_get_plt_info_offset () */
 	fprintf (acfg->fp, "%s %d\n", acfg->inst_directive, info_offset);
@@ -1403,7 +1404,7 @@ static void
 arm64_emit_unbox_trampoline (MonoAotCompile *acfg, MonoCompile *cfg, MonoMethod *method, const char *call_target)
 {
 	emit_unset_mode (acfg);
-	fprintf (acfg->fp, "add x0, x0, %d\n", (int)(sizeof (MonoObject)));
+	fprintf (acfg->fp, "add x0, x0, %d\n", (int)(MONO_ABI_SIZEOF (MonoObject)));
 	fprintf (acfg->fp, "b %s\n", call_target);
 }
 
@@ -1608,20 +1609,20 @@ arch_emit_got_access (MonoAotCompile *acfg, const char *got_symbol, guint8 *code
 		dreg = ((code [2] >> 3) & 0x7) + (rex_r ? 8 : 0);
 
 		emit_unset_mode (acfg);
-		fprintf (acfg->fp, "mov %s+%d(%%rip), %s\n", got_symbol, (unsigned int) ((got_slot * sizeof (gpointer))), mono_arch_regname (dreg));
+		fprintf (acfg->fp, "mov %s+%d(%%rip), %s\n", got_symbol, (unsigned int) ((got_slot * sizeof (target_mgreg_t))), mono_arch_regname (dreg));
 		*code_size = 7;
 	} else {
 		emit_bytes (acfg, code, mono_arch_get_patch_offset (code));
-		emit_symbol_diff (acfg, got_symbol, ".", (unsigned int) ((got_slot * sizeof (gpointer)) - 4));
+		emit_symbol_diff (acfg, got_symbol, ".", (unsigned int) ((got_slot * sizeof (target_mgreg_t)) - 4));
 		*code_size = mono_arch_get_patch_offset (code) + 4;
 	}
 #elif defined(TARGET_X86)
 	emit_bytes (acfg, code, mono_arch_get_patch_offset (code));
-	emit_int32 (acfg, (unsigned int) ((got_slot * sizeof (gpointer))));
+	emit_int32 (acfg, (unsigned int) ((got_slot * sizeof (target_mgreg_t))));
 	*code_size = mono_arch_get_patch_offset (code) + 4;
 #elif defined(TARGET_ARM)
 	emit_bytes (acfg, code, mono_arch_get_patch_offset (code));
-	emit_symbol_diff (acfg, got_symbol, ".", (unsigned int) ((got_slot * sizeof (gpointer))) - 12);
+	emit_symbol_diff (acfg, got_symbol, ".", (unsigned int) ((got_slot * sizeof (target_mgreg_t))) - 12);
 	*code_size = mono_arch_get_patch_offset (code) + 4;
 #elif defined(TARGET_ARM64)
 	emit_bytes (acfg, code, mono_arch_get_patch_offset (code));
@@ -1632,7 +1633,7 @@ arch_emit_got_access (MonoAotCompile *acfg, const char *got_symbol, guint8 *code
 
 		emit_bytes (acfg, code, mono_arch_get_patch_offset (code));
 		code = buf;
-		ppc_load32 (code, ppc_r0, got_slot * sizeof (gpointer));
+		ppc_load32 (code, ppc_r0, got_slot * sizeof (target_mgreg_t));
 		g_assert (code - buf == 8);
 		emit_bytes (acfg, buf, code - buf);
 		*code_size = code - buf;
@@ -1722,7 +1723,7 @@ arch_emit_plt_entry (MonoAotCompile *acfg, const char *got_symbol, int offset, i
 		fprintf (acfg->fp, "add 11, 11, 30\n");
 		fprintf (acfg->fp, "%s 11, 0(11)\n", PPC_LD_OP);
 #ifdef PPC_USES_FUNCTION_DESCRIPTOR
-		fprintf (acfg->fp, "%s 2, %d(11)\n", PPC_LD_OP, (int)sizeof (gpointer));
+		fprintf (acfg->fp, "%s 2, %d(11)\n", PPC_LD_OP, (int)sizeof (target_mgreg_t));
 		fprintf (acfg->fp, "%s 11, 0(11)\n", PPC_LD_OP);
 #endif
 		fprintf (acfg->fp, "mtctr 11\n");
@@ -1927,7 +1928,7 @@ arch_emit_specific_trampoline_pages (MonoAotCompile *acfg)
 	ARM_B_COND (code, ARMCOND_EQ, 0);
 
 	/* Loop footer */
-	ARM_ADD_REG_IMM8 (code, ARMREG_R0, ARMREG_R0, sizeof (gpointer) * 2);
+	ARM_ADD_REG_IMM8 (code, ARMREG_R0, ARMREG_R0, sizeof (target_mgreg_t) * 2);
 	loop_branch_back = code;
 	ARM_B (code, 0);
 	arm_patch (loop_branch_back, loop_start);
@@ -2045,13 +2046,13 @@ arch_emit_specific_trampoline (MonoAotCompile *acfg, int offset, int *tramp_size
 	/* call *<offset>(%rip) */
 	if (acfg->llvm) {
 		emit_unset_mode (acfg);
-		fprintf (acfg->fp, "call *%s+%d(%%rip)\n", acfg->got_symbol, (int)(offset * sizeof (gpointer)));
+		fprintf (acfg->fp, "call *%s+%d(%%rip)\n", acfg->got_symbol, (int)(offset * sizeof (target_mgreg_t)));
 		emit_zero_bytes (acfg, 2);
 	} else {
 		emit_byte (acfg, '\x41');
 		emit_byte (acfg, '\xff');
 		emit_byte (acfg, '\x15');
-		emit_symbol_diff (acfg, acfg->got_symbol, ".", (offset * sizeof (gpointer)) - 4);
+		emit_symbol_diff (acfg, acfg->got_symbol, ".", (offset * sizeof (target_mgreg_t)) - 4);
 		emit_zero_bytes (acfg, 1);
 	}
 #elif defined(TARGET_ARM)
@@ -2076,8 +2077,8 @@ arch_emit_specific_trampoline (MonoAotCompile *acfg, int offset, int *tramp_size
 	 * Only one offset is needed, since the second one would be equal to the
 	 * first one.
 	 */
-	emit_symbol_diff (acfg, acfg->got_symbol, ".", (offset * sizeof (gpointer)) - 4 + 4);
-	//emit_symbol_diff (acfg, acfg->got_symbol, ".", ((offset + 1) * sizeof (gpointer)) - 4 + 8);
+	emit_symbol_diff (acfg, acfg->got_symbol, ".", (offset * sizeof (target_mgreg_t)) - 4 + 4);
+	//emit_symbol_diff (acfg, acfg->got_symbol, ".", ((offset + 1) * sizeof (target_mgreg_t)) - 4 + 8);
 #elif defined(TARGET_ARM64)
 	arm64_emit_specific_trampoline (acfg, offset, tramp_size);
 #elif defined(TARGET_POWERPC)
@@ -2095,10 +2096,10 @@ arch_emit_specific_trampoline (MonoAotCompile *acfg, int offset, int *tramp_size
 	 */
 	emit_unset_mode (acfg);
 	/* Load mscorlib got address */
-	fprintf (acfg->fp, "%s 0, %d(30)\n", PPC_LD_OP, (int)sizeof (gpointer));
+	fprintf (acfg->fp, "%s 0, %d(30)\n", PPC_LD_OP, (int)sizeof (target_mgreg_t));
 	/* Load generic trampoline address */
-	fprintf (acfg->fp, "lis 11, %d@h\n", (int)(offset * sizeof (gpointer)));
-	fprintf (acfg->fp, "ori 11, 11, %d@l\n", (int)(offset * sizeof (gpointer)));
+	fprintf (acfg->fp, "lis 11, %d@h\n", (int)(offset * sizeof (target_mgreg_t)));
+	fprintf (acfg->fp, "ori 11, 11, %d@l\n", (int)(offset * sizeof (target_mgreg_t)));
 	fprintf (acfg->fp, "%s 11, 11, 0\n", PPC_LDX_OP);
 #ifdef PPC_USES_FUNCTION_DESCRIPTOR
 	fprintf (acfg->fp, "%s 11, 0(11)\n", PPC_LD_OP);
@@ -2106,8 +2107,8 @@ arch_emit_specific_trampoline (MonoAotCompile *acfg, int offset, int *tramp_size
 	fprintf (acfg->fp, "mtctr 11\n");
 	/* Load trampoline argument */
 	/* On ppc, we pass it normally to the generic trampoline */
-	fprintf (acfg->fp, "lis 11, %d@h\n", (int)((offset + 1) * sizeof (gpointer)));
-	fprintf (acfg->fp, "ori 11, 11, %d@l\n", (int)((offset + 1) * sizeof (gpointer)));
+	fprintf (acfg->fp, "lis 11, %d@h\n", (int)((offset + 1) * sizeof (target_mgreg_t)));
+	fprintf (acfg->fp, "ori 11, 11, %d@l\n", (int)((offset + 1) * sizeof (target_mgreg_t)));
 	fprintf (acfg->fp, "%s 0, 11, 0\n", PPC_LDX_OP);
 	/* Branch to generic trampoline */
 	fprintf (acfg->fp, "bctr\n");
@@ -2127,11 +2128,11 @@ arch_emit_specific_trampoline (MonoAotCompile *acfg, int offset, int *tramp_size
 
 	code = buf;
 	/* Load mscorlib got address */
-	x86_mov_reg_membase (code, X86_ECX, MONO_ARCH_GOT_REG, sizeof (gpointer), 4);
+	x86_mov_reg_membase (code, X86_ECX, MONO_ARCH_GOT_REG, sizeof (target_mgreg_t), 4);
 	/* Push trampoline argument */
-	x86_push_membase (code, X86_ECX, (offset + 1) * sizeof (gpointer));
+	x86_push_membase (code, X86_ECX, (offset + 1) * sizeof (target_mgreg_t));
 	/* Load generic trampoline address */
-	x86_mov_reg_membase (code, X86_ECX, X86_ECX, offset * sizeof (gpointer), 4);
+	x86_mov_reg_membase (code, X86_ECX, X86_ECX, offset * sizeof (target_mgreg_t), 4);
 	/* Branch to generic trampoline */
 	x86_jump_reg (code, X86_ECX);
 
@@ -2160,7 +2161,7 @@ arch_emit_unbox_trampoline (MonoAotCompile *acfg, MonoCompile *cfg, MonoMethod *
 
 	this_reg = mono_arch_get_this_arg_reg (NULL);
 	code = buf;
-	amd64_alu_reg_imm (code, X86_ADD, this_reg, sizeof (MonoObject));
+	amd64_alu_reg_imm (code, X86_ADD, this_reg, MONO_ABI_SIZEOF (MonoObject));
 
 	emit_bytes (acfg, buf, code - buf);
 	/* jump <method> */
@@ -2178,7 +2179,7 @@ arch_emit_unbox_trampoline (MonoAotCompile *acfg, MonoCompile *cfg, MonoMethod *
 
 	code = buf;
 
-	x86_alu_membase_imm (code, X86_ADD, X86_ESP, this_pos, sizeof (MonoObject));
+	x86_alu_membase_imm (code, X86_ADD, X86_ESP, this_pos, MONO_ABI_SIZEOF (MonoObject));
 
 	emit_bytes (acfg, buf, code - buf);
 
@@ -2190,7 +2191,7 @@ arch_emit_unbox_trampoline (MonoAotCompile *acfg, MonoCompile *cfg, MonoMethod *
 	guint8 *code;
 
 	if (acfg->thumb_mixed && cfg->compile_llvm) {
-		fprintf (acfg->fp, "add r0, r0, #%d\n", (int)sizeof (MonoObject));
+		fprintf (acfg->fp, "add r0, r0, #%d\n", (int)MONO_ABI_SIZEOF (MonoObject));
 		fprintf (acfg->fp, "b %s\n", call_target);
 		fprintf (acfg->fp, ".arm\n");
 		fprintf (acfg->fp, ".align 2\n");
@@ -2199,7 +2200,7 @@ arch_emit_unbox_trampoline (MonoAotCompile *acfg, MonoCompile *cfg, MonoMethod *
 
 	code = buf;
 
-	ARM_ADD_REG_IMM8 (code, ARMREG_R0, ARMREG_R0, sizeof (MonoObject));
+	ARM_ADD_REG_IMM8 (code, ARMREG_R0, ARMREG_R0, MONO_ABI_SIZEOF (MonoObject));
 
 	emit_bytes (acfg, buf, code - buf);
 	/* jump to method */
@@ -2212,7 +2213,7 @@ arch_emit_unbox_trampoline (MonoAotCompile *acfg, MonoCompile *cfg, MonoMethod *
 #elif defined(TARGET_POWERPC)
 	int this_pos = 3;
 
-	fprintf (acfg->fp, "\n\taddi %d, %d, %d\n", this_pos, this_pos, (int)sizeof (MonoObject));
+	fprintf (acfg->fp, "\n\taddi %d, %d, %d\n", this_pos, this_pos, (int)MONO_ABI_SIZEOF (MonoObject));
 	fprintf (acfg->fp, "\n\tb %s\n", call_target);
 #else
 	g_assert_not_reached ();
@@ -2238,19 +2239,19 @@ arch_emit_static_rgctx_trampoline (MonoAotCompile *acfg, int offset, int *tramp_
 
 	if (acfg->llvm) {
 		emit_unset_mode (acfg);
-		fprintf (acfg->fp, "mov %s+%d(%%rip), %%r10\n", acfg->got_symbol, (int)(offset * sizeof (gpointer)));
-		fprintf (acfg->fp, "jmp *%s+%d(%%rip)\n", acfg->got_symbol, (int)((offset + 1) * sizeof (gpointer)));
+		fprintf (acfg->fp, "mov %s+%d(%%rip), %%r10\n", acfg->got_symbol, (int)(offset * sizeof (target_mgreg_t)));
+		fprintf (acfg->fp, "jmp *%s+%d(%%rip)\n", acfg->got_symbol, (int)((offset + 1) * sizeof (target_mgreg_t)));
 	} else {
 		/* mov <OFFSET>(%rip), %r10 */
 		emit_byte (acfg, '\x4d');
 		emit_byte (acfg, '\x8b');
 		emit_byte (acfg, '\x15');
-		emit_symbol_diff (acfg, acfg->got_symbol, ".", (offset * sizeof (gpointer)) - 4);
+		emit_symbol_diff (acfg, acfg->got_symbol, ".", (offset * sizeof (target_mgreg_t)) - 4);
 
 		/* jmp *<offset>(%rip) */
 		emit_byte (acfg, '\xff');
 		emit_byte (acfg, '\x25');
-		emit_symbol_diff (acfg, acfg->got_symbol, ".", ((offset + 1) * sizeof (gpointer)) - 4);
+		emit_symbol_diff (acfg, acfg->got_symbol, ".", ((offset + 1) * sizeof (target_mgreg_t)) - 4);
 	}
 #elif defined(TARGET_ARM)
 	guint8 buf [128];
@@ -2270,8 +2271,8 @@ arch_emit_static_rgctx_trampoline (MonoAotCompile *acfg, int offset, int *tramp_
 
 	/* Emit it */
 	emit_bytes (acfg, buf, code - buf);
-	emit_symbol_diff (acfg, acfg->got_symbol, ".", (offset * sizeof (gpointer)) - 4 + 8);
-	emit_symbol_diff (acfg, acfg->got_symbol, ".", ((offset + 1) * sizeof (gpointer)) - 4 + 4);
+	emit_symbol_diff (acfg, acfg->got_symbol, ".", (offset * sizeof (target_mgreg_t)) - 4 + 8);
+	emit_symbol_diff (acfg, acfg->got_symbol, ".", ((offset + 1) * sizeof (target_mgreg_t)) - 4 + 4);
 #elif defined(TARGET_ARM64)
 	arm64_emit_static_rgctx_trampoline (acfg, offset, tramp_size);
 #elif defined(TARGET_POWERPC)
@@ -2289,17 +2290,17 @@ arch_emit_static_rgctx_trampoline (MonoAotCompile *acfg, int offset, int *tramp_
 	 */
 	emit_unset_mode (acfg);
 	/* Load mscorlib got address */
-	fprintf (acfg->fp, "%s 0, %d(30)\n", PPC_LD_OP, (int)sizeof (gpointer));
+	fprintf (acfg->fp, "%s 0, %d(30)\n", PPC_LD_OP, (int)sizeof (target_mgreg_t));
 	/* Load rgctx */
-	fprintf (acfg->fp, "lis 11, %d@h\n", (int)(offset * sizeof (gpointer)));
-	fprintf (acfg->fp, "ori 11, 11, %d@l\n", (int)(offset * sizeof (gpointer)));
+	fprintf (acfg->fp, "lis 11, %d@h\n", (int)(offset * sizeof (target_mgreg_t)));
+	fprintf (acfg->fp, "ori 11, 11, %d@l\n", (int)(offset * sizeof (target_mgreg_t)));
 	fprintf (acfg->fp, "%s %d, 11, 0\n", PPC_LDX_OP, MONO_ARCH_RGCTX_REG);
 	/* Load target address */
-	fprintf (acfg->fp, "lis 11, %d@h\n", (int)((offset + 1) * sizeof (gpointer)));
-	fprintf (acfg->fp, "ori 11, 11, %d@l\n", (int)((offset + 1) * sizeof (gpointer)));
+	fprintf (acfg->fp, "lis 11, %d@h\n", (int)((offset + 1) * sizeof (target_mgreg_t)));
+	fprintf (acfg->fp, "ori 11, 11, %d@l\n", (int)((offset + 1) * sizeof (target_mgreg_t)));
 	fprintf (acfg->fp, "%s 11, 11, 0\n", PPC_LDX_OP);
 #ifdef PPC_USES_FUNCTION_DESCRIPTOR
-	fprintf (acfg->fp, "%s 2, %d(11)\n", PPC_LD_OP, (int)sizeof (gpointer));
+	fprintf (acfg->fp, "%s 2, %d(11)\n", PPC_LD_OP, (int)sizeof (target_mgreg_t));
 	fprintf (acfg->fp, "%s 11, 0(11)\n", PPC_LD_OP);
 #endif
 	fprintf (acfg->fp, "mtctr 11\n");
@@ -2322,11 +2323,11 @@ arch_emit_static_rgctx_trampoline (MonoAotCompile *acfg, int offset, int *tramp_
 
 	code = buf;
 	/* Load mscorlib got address */
-	x86_mov_reg_membase (code, X86_ECX, MONO_ARCH_GOT_REG, sizeof (gpointer), 4);
+	x86_mov_reg_membase (code, X86_ECX, MONO_ARCH_GOT_REG, sizeof (target_mgreg_t), 4);
 	/* Load arg */
-	x86_mov_reg_membase (code, MONO_ARCH_RGCTX_REG, X86_ECX, offset * sizeof (gpointer), 4);
+	x86_mov_reg_membase (code, MONO_ARCH_RGCTX_REG, X86_ECX, offset * sizeof (target_mgreg_t), 4);
 	/* Branch to the target address */
-	x86_jump_membase (code, X86_ECX, (offset + 1) * sizeof (gpointer));
+	x86_jump_membase (code, X86_ECX, (offset + 1) * sizeof (target_mgreg_t));
 
 	emit_bytes (acfg, buf, code - buf);
 
@@ -2368,7 +2369,7 @@ arch_emit_imt_trampoline (MonoAotCompile *acfg, int offset, int *tramp_size)
 
 	if (acfg->llvm) {
 		emit_unset_mode (acfg);
-		fprintf (acfg->fp, "mov %s+%d(%%rip), %s\n", acfg->got_symbol, (int)(offset * sizeof (gpointer)), mono_arch_regname (MONO_ARCH_IMT_SCRATCH_REG));
+		fprintf (acfg->fp, "mov %s+%d(%%rip), %s\n", acfg->got_symbol, (int)(offset * sizeof (target_mgreg_t)), mono_arch_regname (MONO_ARCH_IMT_SCRATCH_REG));
 	}
 
 	labels [0] = code;
@@ -2377,23 +2378,23 @@ arch_emit_imt_trampoline (MonoAotCompile *acfg, int offset, int *tramp_size)
 	amd64_branch8 (code, X86_CC_Z, 0, FALSE);
 
 	/* Check key */
-	amd64_alu_membase_reg_size (code, X86_CMP, MONO_ARCH_IMT_SCRATCH_REG, 0, MONO_ARCH_IMT_REG, sizeof (gpointer));
+	amd64_alu_membase_reg_size (code, X86_CMP, MONO_ARCH_IMT_SCRATCH_REG, 0, MONO_ARCH_IMT_REG, sizeof (target_mgreg_t));
 	labels [2] = code;
 	amd64_branch8 (code, X86_CC_Z, 0, FALSE);
 
 	/* Loop footer */
-	amd64_alu_reg_imm (code, X86_ADD, MONO_ARCH_IMT_SCRATCH_REG, 2 * sizeof (gpointer));
+	amd64_alu_reg_imm (code, X86_ADD, MONO_ARCH_IMT_SCRATCH_REG, 2 * sizeof (target_mgreg_t));
 	amd64_jump_code (code, labels [0]);
 
 	/* Match */
 	mono_amd64_patch (labels [2], code);
-	amd64_mov_reg_membase (code, MONO_ARCH_IMT_SCRATCH_REG, MONO_ARCH_IMT_SCRATCH_REG, sizeof (gpointer), sizeof (gpointer));
+	amd64_mov_reg_membase (code, MONO_ARCH_IMT_SCRATCH_REG, MONO_ARCH_IMT_SCRATCH_REG, sizeof (target_mgreg_t), sizeof (target_mgreg_t));
 	amd64_jump_membase (code, MONO_ARCH_IMT_SCRATCH_REG, 0);
 
 	/* No match */
 	mono_amd64_patch (labels [1], code);
 	/* Load fail tramp */
-	amd64_alu_reg_imm (code, X86_ADD, MONO_ARCH_IMT_SCRATCH_REG, sizeof (gpointer));
+	amd64_alu_reg_imm (code, X86_ADD, MONO_ARCH_IMT_SCRATCH_REG, sizeof (target_mgreg_t));
 	/* Check if there is a fail tramp */
 	amd64_alu_membase_imm (code, X86_CMP, MONO_ARCH_IMT_SCRATCH_REG, 0, 0);
 	labels [3] = code;
@@ -2411,7 +2412,7 @@ arch_emit_imt_trampoline (MonoAotCompile *acfg, int offset, int *tramp_size)
 		*(mov_buf_ptr)++ = (unsigned char)0x8b; /* mov opcode */
 		x86_address_byte (mov_buf_ptr, 0, MONO_ARCH_IMT_SCRATCH_REG & 0x7, 5);
 		emit_bytes (acfg, mov_buf, mov_buf_ptr - mov_buf);
-		emit_symbol_diff (acfg, acfg->got_symbol, ".", (offset * sizeof (gpointer)) - 4);
+		emit_symbol_diff (acfg, acfg->got_symbol, ".", (offset * sizeof (target_mgreg_t)) - 4);
 	}
 	emit_bytes (acfg, buf, code - buf);
 
@@ -2431,9 +2432,9 @@ arch_emit_imt_trampoline (MonoAotCompile *acfg, int offset, int *tramp_size)
 	x86_push_reg (code, X86_EAX);
 
 	/* Load mscorlib got address */
-	x86_mov_reg_membase (code, X86_EAX, MONO_ARCH_GOT_REG, sizeof (gpointer), 4);
+	x86_mov_reg_membase (code, X86_EAX, MONO_ARCH_GOT_REG, sizeof (target_mgreg_t), 4);
 	/* Load arg */
-	x86_mov_reg_membase (code, X86_EAX, X86_EAX, offset * sizeof (gpointer), 4);
+	x86_mov_reg_membase (code, X86_EAX, X86_EAX, offset * sizeof (target_mgreg_t), 4);
 
 	labels [0] = code;
 	x86_alu_membase_imm (code, X86_CMP, X86_EAX, 0, 0);
@@ -2446,12 +2447,12 @@ arch_emit_imt_trampoline (MonoAotCompile *acfg, int offset, int *tramp_size)
 	x86_branch8 (code, X86_CC_Z, FALSE, 0);
 
 	/* Loop footer */
-	x86_alu_reg_imm (code, X86_ADD, X86_EAX, 2 * sizeof (gpointer));
+	x86_alu_reg_imm (code, X86_ADD, X86_EAX, 2 * sizeof (target_mgreg_t));
 	x86_jump_code (code, labels [0]);
 
 	/* Match */
 	mono_x86_patch (labels [2], code);
-	x86_mov_reg_membase (code, X86_EAX, X86_EAX, sizeof (gpointer), 4);
+	x86_mov_reg_membase (code, X86_EAX, X86_EAX, sizeof (target_mgreg_t), 4);
 	x86_mov_reg_membase (code, X86_EAX, X86_EAX, 0, 4);
 	/* Save the target address to the temporary stack location */
 	x86_mov_membase_reg (code, X86_ESP, 4, X86_EAX, 4);
@@ -2463,7 +2464,7 @@ arch_emit_imt_trampoline (MonoAotCompile *acfg, int offset, int *tramp_size)
 	/* No match */
 	mono_x86_patch (labels [1], code);
 	/* Load fail tramp */
-	x86_mov_reg_membase (code, X86_EAX, X86_EAX, sizeof (gpointer), 4);
+	x86_mov_reg_membase (code, X86_EAX, X86_EAX, sizeof (target_mgreg_t), 4);
 	x86_alu_membase_imm (code, X86_CMP, X86_EAX, 0, 0);
 	labels [3] = code;
 	x86_branch8 (code, X86_CC_Z, FALSE, 0);
@@ -2509,7 +2510,7 @@ arch_emit_imt_trampoline (MonoAotCompile *acfg, int offset, int *tramp_size)
 	ARM_B_COND (code, ARMCOND_EQ, 0);
 
 	/* Loop footer */
-	ARM_ADD_REG_IMM8 (code, ARMREG_R0, ARMREG_R0, sizeof (gpointer) * 2);
+	ARM_ADD_REG_IMM8 (code, ARMREG_R0, ARMREG_R0, sizeof (target_mgreg_t) * 2);
 	labels [4] = code;
 	ARM_B (code, 0);
 	arm_patch (labels [4], labels [1]);
@@ -2534,7 +2535,7 @@ arch_emit_imt_trampoline (MonoAotCompile *acfg, int offset, int *tramp_size)
 	ARM_LDR_IMM (code2, ARMREG_R0, ARMREG_PC, (code - (labels [0] + 8)));
 
 	emit_bytes (acfg, buf, code - buf);
-	emit_symbol_diff (acfg, acfg->got_symbol, ".", (offset * sizeof (gpointer)) + (code - (labels [0] + 8)) - 4);
+	emit_symbol_diff (acfg, acfg->got_symbol, ".", (offset * sizeof (target_mgreg_t)) + (code - (labels [0] + 8)) - 4);
 
 	*tramp_size = code - buf + 4;
 #elif defined(TARGET_ARM64)
@@ -2546,32 +2547,32 @@ arch_emit_imt_trampoline (MonoAotCompile *acfg, int offset, int *tramp_size)
 	code = buf;
 
 	/* Load the mscorlib got address */
-	ppc_ldptr (code, ppc_r12, sizeof (gpointer), ppc_r30);
+	ppc_ldptr (code, ppc_r12, sizeof (target_mgreg_t), ppc_r30);
 	/* Load the parameter from the GOT */
-	ppc_load (code, ppc_r0, offset * sizeof (gpointer));
+	ppc_load (code, ppc_r0, offset * sizeof (target_mgreg_t));
 	ppc_ldptr_indexed (code, ppc_r12, ppc_r12, ppc_r0);
 
 	/* Load and check key */
 	labels [1] = code;
 	ppc_ldptr (code, ppc_r0, 0, ppc_r12);
-	ppc_cmp (code, 0, sizeof (gpointer) == 8 ? 1 : 0, ppc_r0, MONO_ARCH_IMT_REG);
+	ppc_cmp (code, 0, sizeof (target_mgreg_t) == 8 ? 1 : 0, ppc_r0, MONO_ARCH_IMT_REG);
 	labels [2] = code;
 	ppc_bc (code, PPC_BR_TRUE, PPC_BR_EQ, 0);
 
 	/* End-of-loop check */
-	ppc_cmpi (code, 0, sizeof (gpointer) == 8 ? 1 : 0, ppc_r0, 0);
+	ppc_cmpi (code, 0, sizeof (target_mgreg_t) == 8 ? 1 : 0, ppc_r0, 0);
 	labels [3] = code;
 	ppc_bc (code, PPC_BR_TRUE, PPC_BR_EQ, 0);
 
 	/* Loop footer */
-	ppc_addi (code, ppc_r12, ppc_r12, 2 * sizeof (gpointer));
+	ppc_addi (code, ppc_r12, ppc_r12, 2 * sizeof (target_mgreg_t));
 	labels [4] = code;
 	ppc_b (code, 0);
 	mono_ppc_patch (labels [4], labels [1]);
 
 	/* Match */
 	mono_ppc_patch (labels [2], code);
-	ppc_ldptr (code, ppc_r12, sizeof (gpointer), ppc_r12);
+	ppc_ldptr (code, ppc_r12, sizeof (target_mgreg_t), ppc_r12);
 	/* r12 now contains the value of the vtable slot */
 	/* this is not a function descriptor on ppc64 */
 	ppc_ldptr (code, ppc_r12, 0, ppc_r12);
@@ -2601,7 +2602,7 @@ amd64_emit_load_got_slot (MonoAotCompile *acfg, int dreg, int got_slot)
 	g_assert (acfg->fp);
 	emit_unset_mode (acfg);
 
-	fprintf (acfg->fp, "mov %s+%d(%%rip), %s\n", acfg->got_symbol, (unsigned int) ((got_slot * sizeof (gpointer))), mono_arch_regname (dreg));
+	fprintf (acfg->fp, "mov %s+%d(%%rip), %s\n", acfg->got_symbol, (unsigned int) ((got_slot * sizeof (target_mgreg_t))), mono_arch_regname (dreg));
 }
 
 #endif
@@ -2630,11 +2631,11 @@ arch_emit_gsharedvt_arg_trampoline (MonoAotCompile *acfg, int offset, int *tramp
 
 	code = buf;
 	/* Load mscorlib got address */
-	x86_mov_reg_membase (code, X86_ECX, MONO_ARCH_GOT_REG, sizeof (gpointer), 4);
+	x86_mov_reg_membase (code, X86_ECX, MONO_ARCH_GOT_REG, sizeof (target_mgreg_t), 4);
 	/* Load arg */
-	x86_mov_reg_membase (code, X86_EAX, X86_ECX, offset * sizeof (gpointer), 4);
+	x86_mov_reg_membase (code, X86_EAX, X86_ECX, offset * sizeof (target_mgreg_t), 4);
 	/* Branch to the target address */
-	x86_jump_membase (code, X86_ECX, (offset + 1) * sizeof (gpointer));
+	x86_jump_membase (code, X86_ECX, (offset + 1) * sizeof (target_mgreg_t));
 
 	emit_bytes (acfg, buf, code - buf);
 
@@ -2661,7 +2662,7 @@ arch_emit_gsharedvt_arg_trampoline (MonoAotCompile *acfg, int offset, int *tramp
 
 	/* Emit it */
 	emit_bytes (acfg, buf, code - buf);
-	emit_symbol_diff (acfg, acfg->got_symbol, ".", (offset * sizeof (gpointer)) + 4);
+	emit_symbol_diff (acfg, acfg->got_symbol, ".", (offset * sizeof (target_mgreg_t)) + 4);
 #elif defined(TARGET_ARM64)
 	arm64_emit_gsharedvt_arg_trampoline (acfg, offset, tramp_size);
 #elif defined (TARGET_AMD64)
@@ -2701,8 +2702,8 @@ arch_emit_ftnptr_arg_trampoline (MonoAotCompile *acfg, int offset, int *tramp_si
 
 	/* Emit it */
 	emit_bytes (acfg, buf, code - buf);
-	emit_symbol_diff (acfg, acfg->got_symbol, ".", ((offset + 1) * sizeof (gpointer)) + 12); // offset from ldr pc to addr
-	emit_symbol_diff (acfg, acfg->got_symbol, ".", (offset * sizeof (gpointer)) + 4); // offset from ldr pc to arg
+	emit_symbol_diff (acfg, acfg->got_symbol, ".", ((offset + 1) * sizeof (target_mgreg_t)) + 12); // offset from ldr pc to addr
+	emit_symbol_diff (acfg, acfg->got_symbol, ".", (offset * sizeof (target_mgreg_t)) + 4); // offset from ldr pc to arg
 #else
 	g_assert_not_reached ();
 #endif
@@ -6812,7 +6813,7 @@ emit_plt (MonoAotCompile *acfg)
 
 		emit_label (acfg, plt_entry->symbol);
 
-		arch_emit_plt_entry (acfg, acfg->got_symbol, (acfg->plt_got_offset_base + i) * sizeof (gpointer), acfg->plt_got_info_offsets [i]);
+		arch_emit_plt_entry (acfg, acfg->got_symbol, (acfg->plt_got_offset_base + i) * sizeof (target_mgreg_t), acfg->plt_got_info_offsets [i]);
 
 		if (debug_sym)
 			emit_symbol_size (acfg, debug_sym, ".");
@@ -6859,7 +6860,7 @@ emit_plt (MonoAotCompile *acfg)
 			if (acfg->llvm)
 				emit_global_inner (acfg, plt_entry->llvm_symbol, TRUE);
 
-			arch_emit_llvm_plt_entry (acfg, acfg->got_symbol, (acfg->plt_got_offset_base + i) * sizeof (gpointer), acfg->plt_got_info_offsets [i]);
+			arch_emit_llvm_plt_entry (acfg, acfg->got_symbol, (acfg->plt_got_offset_base + i) * sizeof (target_mgreg_t), acfg->plt_got_info_offsets [i]);
 
 			if (debug_sym) {
 				emit_symbol_size (acfg, debug_sym, ".");
@@ -7590,6 +7591,8 @@ mono_aot_parse_options (const char *aot_options, MonoAotOptions *opts)
 			opts->verbose = TRUE;
 		} else if (str_begins_with (arg, "llvmopts=")){
 			opts->llvm_opts = g_strdup (arg + strlen ("llvmopts="));
+		} else if (!strcmp (arg, "deterministic")) {
+			opts->deterministic = TRUE;
 		} else if (str_begins_with (arg, "help") || str_begins_with (arg, "?")) {
 			printf ("Supported options for --aot:\n");
 			printf ("    asmonly\n");
@@ -10168,7 +10171,7 @@ emit_got (MonoAotCompile *acfg)
 	emit_alignment (acfg, 8);
 	if (acfg->llvm)
 		emit_info_symbol (acfg, "jit_got", FALSE);
-	fprintf (acfg->fp, ".lcomm %s, %d\n", acfg->got_symbol, (int)(acfg->got_offset * sizeof (gpointer)));
+	fprintf (acfg->fp, ".lcomm %s, %d\n", acfg->got_symbol, (int)(acfg->got_offset * sizeof (target_mgreg_t)));
 #else
 	emit_section_change (acfg, ".bss", 0);
 	emit_alignment (acfg, 8);
@@ -10178,7 +10181,7 @@ emit_got (MonoAotCompile *acfg)
 	if (acfg->llvm)
 		emit_info_symbol (acfg, "jit_got", FALSE);
 	if (acfg->got_offset > 0)
-		emit_zero_bytes (acfg, (int)(acfg->got_offset * sizeof (gpointer)));
+		emit_zero_bytes (acfg, (int)(acfg->got_offset * sizeof (target_mgreg_t)));
 #endif
 
 	sprintf (symbol, "got_end");
@@ -10372,7 +10375,7 @@ init_aot_file_info (MonoAotCompile *acfg, MonoAotFileInfo *info)
 
 	info->version = MONO_AOT_FILE_VERSION;
 	info->plt_got_offset_base = acfg->plt_got_offset_base;
-	info->got_size = acfg->got_offset * sizeof (gpointer);
+	info->got_size = acfg->got_offset * sizeof (target_mgreg_t);
 	info->plt_size = acfg->plt_offset;
 	info->nmethods = acfg->nmethods;
 	info->nextra_methods = acfg->nextra_methods;
@@ -10556,7 +10559,7 @@ emit_aot_file_info (MonoAotCompile *acfg, MonoAotFileInfo *info)
 
 	if (acfg->aot_opts.static_link) {
 		emit_global_inner (acfg, acfg->static_linking_symbol, FALSE);
-		emit_alignment (acfg, sizeof (gpointer));
+		emit_alignment (acfg, sizeof (target_mgreg_t));
 		emit_label (acfg, acfg->static_linking_symbol);
 		emit_pointer_2 (acfg, acfg->user_symbol_prefix, "mono_aot_file_info");
 	}
@@ -11959,7 +11962,9 @@ acfg_create (MonoAssembly *ass, guint32 opts)
 	acfg->image = image;
 	acfg->opts = opts;
 	/* TODO: Write out set of SIMD instructions used, rather than just those available */
+#ifndef MONO_CROSS_COMPILE
 	acfg->simd_opts = mono_arch_cpu_enumerate_simd_versions ();
+#endif
 	acfg->mempool = mono_mempool_new ();
 	acfg->extra_methods = g_ptr_array_new ();
 	acfg->unwind_info_offsets = g_hash_table_new (NULL, NULL);
@@ -12662,7 +12667,8 @@ mono_compile_assembly (MonoAssembly *ass, guint32 opts, const char *aot_options,
 
 	aot_printf (acfg, "Mono Ahead of Time compiler - compiling assembly %s\n", image->name);
 
-	generate_aotid ((guint8*) &acfg->image->aotid);
+	if (!acfg->aot_opts.deterministic)
+		generate_aotid ((guint8*) &acfg->image->aotid);
 
 	char *aotid = mono_guid_to_string (acfg->image->aotid);
 	aot_printf (acfg, "AOTID %s\n", aotid);
@@ -13077,7 +13083,7 @@ mono_compile_assembly (MonoAssembly *ass, guint32 opts, const char *aot_options,
 				acfg->stats.plt_size ? (int)acfg->stats.plt_size : (int)acfg->plt_offset, acfg->stats.plt_size ? (int)(acfg->stats.plt_size * 100 / all_sizes) : 0,
 				(int)acfg->stats.got_info_size, (int)(acfg->stats.got_info_size * 100 / all_sizes),
 				(int)acfg->stats.offsets_size, (int)(acfg->stats.offsets_size * 100 / all_sizes),
-			(int)(acfg->got_offset * sizeof (gpointer)));
+			(int)(acfg->got_offset * sizeof (target_mgreg_t)));
 	aot_printf (acfg, "Compiled: %d/%d (%d%%)%s, No GOT slots: %d (%d%%), Direct calls: %d (%d%%)\n", 
 			acfg->stats.ccount, acfg->stats.mcount, acfg->stats.mcount ? (acfg->stats.ccount * 100) / acfg->stats.mcount : 100,
 			llvm_stats_msg,

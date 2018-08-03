@@ -209,7 +209,7 @@ mini_llvm_ins_info[] = {
 #undef MINI_OP
 #undef MINI_OP3
 
-#if SIZEOF_VOID_P == 4
+#if TARGET_SIZEOF_VOID_P == 4
 #define GET_LONG_IMM(ins) ((ins)->inst_l)
 #else
 #define GET_LONG_IMM(ins) ((ins)->inst_imm)
@@ -1324,7 +1324,7 @@ sig_to_llvm_sig_full (EmitContext *ctx, MonoMethodSignature *sig, LLVMCallInfo *
 	case LLVMArgVtypeAsScalar: {
 		int size = mono_class_value_size (mono_class_from_mono_type (rtype), NULL);
 		/* LLVM models this by returning an int */
-		if (size < SIZEOF_VOID_P) {
+		if (size < TARGET_SIZEOF_VOID_P) {
 			g_assert (cinfo->ret.nslots == 1);
 			ret_type = LLVMIntType (size * 8);
 		} else {
@@ -2908,7 +2908,7 @@ emit_unbox_tramp (EmitContext *ctx, const char *method_name, LLVMTypeRef method_
 			LLVMTypeRef arg_type = LLVMTypeOf (args [i]);
 
 			args [i] = LLVMBuildPtrToInt (builder, args [i], IntPtrType (), "");
-			args [i] = LLVMBuildAdd (builder, args [i], LLVMConstInt (IntPtrType (), sizeof (MonoObject), FALSE), "");
+			args [i] = LLVMBuildAdd (builder, args [i], LLVMConstInt (IntPtrType (), MONO_ABI_SIZEOF (MonoObject), FALSE), "");
 			args [i] = LLVMBuildIntToPtr (builder, args [i], arg_type, "");
 		}
 	}
@@ -3032,7 +3032,7 @@ emit_entry_bb (EmitContext *ctx, LLVMBuilderRef builder)
 			ctx->addresses [reg] = build_alloca (ctx, ainfo->type);
 
 			size = mono_class_value_size (mono_class_from_mono_type (ainfo->type), NULL);
-			if (size < SIZEOF_VOID_P) {
+			if (size < TARGET_SIZEOF_VOID_P) {
 				/* The upper bits of the registers might not be valid */
 				LLVMValueRef val = LLVMBuildExtractValue (builder, arg, 0, "");
 				LLVMValueRef dest = convert (ctx, ctx->addresses [reg], LLVMPointerType (LLVMIntType (size * 8), 0));
@@ -4319,7 +4319,7 @@ process_bb (EmitContext *ctx, MonoBasicBlock *bb)
 			values [ins->dreg] = LLVMConstInt (LLVMInt32Type (), ins->inst_c0, FALSE);
 			break;
 		case OP_I8CONST:
-#if SIZEOF_VOID_P == 4
+#if TARGET_SIZEOF_VOID_P == 4
 			values [ins->dreg] = LLVMConstInt (LLVMInt64Type (), GET_LONG_IMM (ins), FALSE);
 #else
 			values [ins->dreg] = LLVMConstInt (LLVMInt64Type (), (gint64)ins->inst_c0, FALSE);
@@ -4918,7 +4918,7 @@ process_bb (EmitContext *ctx, MonoBasicBlock *bb)
 				break;
 			builder = ctx->builder;
 
-#if SIZEOF_VOID_P == 4
+#if TARGET_SIZEOF_VOID_P == 4
 			if (ins->opcode == OP_LSHL_IMM || ins->opcode == OP_LSHR_IMM || ins->opcode == OP_LSHR_UN_IMM)
 				imm = LLVMConstInt (LLVMInt32Type (), ins->inst_imm, FALSE);
 #endif
@@ -5098,7 +5098,7 @@ process_bb (EmitContext *ctx, MonoBasicBlock *bb)
 		case OP_LCONV_TO_R_UN:
 			values [ins->dreg] = LLVMBuildUIToFP (builder, lhs, LLVMDoubleType (), dname);
 			break;
-#if SIZEOF_VOID_P == 4
+#if TARGET_SIZEOF_VOID_P == 4
 		case OP_LCONV_TO_U:
 #endif
 		case OP_LCONV_TO_I4:

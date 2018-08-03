@@ -34,6 +34,7 @@
 #include "mono/metadata/security-core-clr.h"
 #include "mono/metadata/tabledefs.h"
 #include "mono/metadata/tokentype.h"
+#include "mono/metadata/abi-details.h"
 #include "mono/utils/checked-build.h"
 #include "mono/utils/mono-digest.h"
 #include "mono/utils/w32api.h"
@@ -2103,7 +2104,7 @@ encode_cattr_value (MonoAssembly *assembly, char *buffer, char *p, char **retbuf
 		buffer = newbuf;
 	}
 	if (!argval)
-		argval = ((char*)arg + sizeof (MonoObject));
+		argval = mono_object_get_data (arg);
 	simple_type = type->type;
 handle_enum:
 	switch (simple_type) {
@@ -2615,7 +2616,7 @@ reflection_setup_internal_class_internal (MonoReflectionTypeBuilderHandle ref_tb
 	if ((!strcmp (klass->name, "ValueType") && !strcmp (klass->name_space, "System")) ||
 			(!strcmp (klass->name, "Object") && !strcmp (klass->name_space, "System")) ||
 			(!strcmp (klass->name, "Enum") && !strcmp (klass->name_space, "System"))) {
-		klass->instance_size = sizeof (MonoObject);
+		klass->instance_size = MONO_ABI_SIZEOF (MonoObject);
 		klass->size_inited = 1;
 		mono_class_setup_vtable_general (klass, NULL, 0, NULL);
 	}
@@ -3552,7 +3553,7 @@ typebuilder_setup_fields (MonoClass *klass, MonoError *error)
 			mono_class_init (klass->parent);
 		instance_size = klass->parent->instance_size;
 	} else {
-		instance_size = sizeof (MonoObject);
+		instance_size = MONO_ABI_SIZEOF (MonoObject);
 	}
 
 	int fcount = tb->num_fields;

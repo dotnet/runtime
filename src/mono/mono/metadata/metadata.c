@@ -5164,10 +5164,10 @@ mono_type_stack_size_internal (MonoType *t, int *align, gboolean allow_open)
 {
 	int tmp;
 	MonoTypeEnum simple_type;
-#if SIZEOF_VOID_P == SIZEOF_REGISTER
+#if TARGET_SIZEOF_VOID_P == SIZEOF_REGISTER
 	int stack_slot_size = MONO_ABI_SIZEOF (gpointer);
 	int stack_slot_align = MONO_ABI_ALIGNOF (gpointer);
-#elif SIZEOF_VOID_P < SIZEOF_REGISTER
+#elif TARGET_SIZEOF_VOID_P < SIZEOF_REGISTER
 	int stack_slot_size = SIZEOF_REGISTER;
 	int stack_slot_align = SIZEOF_REGISTER;
 #endif

@@ -708,7 +708,7 @@ ves_icall_System_GCHandle_GetAddrOfPinnedObject (guint32 handle, MonoError *erro
 			/* FIXME: missing !klass->blittable test, see bug #61134 */
 			if (mono_class_is_auto_layout (klass))
 				return (gpointer)-1;
-			return (char*)obj + sizeof (MonoObject);
+			return mono_object_get_data (obj);
 		}
 	}
 	return NULL;

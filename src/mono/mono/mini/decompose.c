@@ -38,20 +38,20 @@ decompose_long_opcode (MonoCompile *cfg, MonoInst *ins, MonoInst **repl_ins)
 		break;
 	case OP_LCONV_TO_I8:
 	case OP_LCONV_TO_U8:
-		if (SIZEOF_VOID_P == 4)
+		if (TARGET_SIZEOF_VOID_P == 4)
 			ins->opcode = OP_LMOVE;
 		else
 			ins->opcode = OP_MOVE;
 		break;
 	case OP_LCONV_TO_I:
-		if (SIZEOF_VOID_P == 4)
+		if (TARGET_SIZEOF_VOID_P == 4)
 			/* OP_LCONV_TO_I4 */
 			ins->opcode = OP_SEXT_I4;
 		else
 			ins->opcode = OP_MOVE;
 		break;
 	case OP_LCONV_TO_U:
-		if (SIZEOF_VOID_P == 4) {
+		if (TARGET_SIZEOF_VOID_P == 4) {
 			/* OP_LCONV_TO_U4 */
 			MONO_EMIT_NEW_BIALU_IMM (cfg, OP_ISHR_UN_IMM, ins->dreg, ins->sreg1, 0);
 			NULLIFY_INS (ins);
@@ -208,7 +208,7 @@ decompose_long_opcode (MonoCompile *cfg, MonoInst *ins, MonoInst **repl_ins)
 		NULLIFY_INS (ins);
 		break;
 	case OP_LCONV_TO_OVF_I4:
-#if SIZEOF_VOID_P == 4
+#if TARGET_SIZEOF_VOID_P == 4
 	case OP_LCONV_TO_OVF_I:
 #endif
 		MONO_EMIT_NEW_LCOMPARE_IMM (cfg, ins->sreg1, 0x7fffffff);
@@ -225,7 +225,7 @@ decompose_long_opcode (MonoCompile *cfg, MonoInst *ins, MonoInst **repl_ins)
 		NULLIFY_INS (ins);
 		break;
 	case OP_LCONV_TO_OVF_I4_UN:
-#if SIZEOF_VOID_P == 4
+#if TARGET_SIZEOF_VOID_P == 4
 	case OP_LCONV_TO_OVF_I_UN:
 #endif
 		MONO_EMIT_NEW_LCOMPARE_IMM (cfg, ins->sreg1, 0x7fffffff);
@@ -234,7 +234,7 @@ decompose_long_opcode (MonoCompile *cfg, MonoInst *ins, MonoInst **repl_ins)
 		NULLIFY_INS (ins);
 		break;
 	case OP_LCONV_TO_OVF_U4:
-#if SIZEOF_VOID_P == 4
+#if TARGET_SIZEOF_VOID_P == 4
 	case OP_LCONV_TO_OVF_U:
 #endif
 		MONO_EMIT_NEW_LCOMPARE_IMM (cfg, ins->sreg1, 0xffffffffUL);
@@ -245,7 +245,7 @@ decompose_long_opcode (MonoCompile *cfg, MonoInst *ins, MonoInst **repl_ins)
 		NULLIFY_INS (ins);
 		break;
 	case OP_LCONV_TO_OVF_U4_UN:
-#if SIZEOF_VOID_P == 4
+#if TARGET_SIZEOF_VOID_P == 4
 	case OP_LCONV_TO_OVF_U_UN:
 #endif
 		MONO_EMIT_NEW_LCOMPARE_IMM (cfg, ins->sreg1, 0xffffffff);
@@ -253,7 +253,7 @@ decompose_long_opcode (MonoCompile *cfg, MonoInst *ins, MonoInst **repl_ins)
 		MONO_EMIT_NEW_UNALU (cfg, OP_MOVE, ins->dreg, ins->sreg1);
 		NULLIFY_INS (ins);
 		break;
-#if SIZEOF_VOID_P == 8
+#if TARGET_SIZEOF_VOID_P == 8
 	case OP_LCONV_TO_OVF_I:
 	case OP_LCONV_TO_OVF_U_UN:
 #endif
@@ -261,7 +261,7 @@ decompose_long_opcode (MonoCompile *cfg, MonoInst *ins, MonoInst **repl_ins)
 	case OP_LCONV_TO_OVF_I8:
 		ins->opcode = OP_MOVE;
 		break;
-#if SIZEOF_VOID_P == 8
+#if TARGET_SIZEOF_VOID_P == 8
 	case OP_LCONV_TO_OVF_I_UN:
 #endif
 	case OP_LCONV_TO_OVF_I8_UN:
@@ -271,7 +271,7 @@ decompose_long_opcode (MonoCompile *cfg, MonoInst *ins, MonoInst **repl_ins)
 		NULLIFY_INS (ins);
 		break;
 	case OP_LCONV_TO_OVF_U8:
-#if SIZEOF_VOID_P == 8
+#if TARGET_SIZEOF_VOID_P == 8
 	case OP_LCONV_TO_OVF_U:
 #endif
 		MONO_EMIT_NEW_LCOMPARE_IMM (cfg, ins->sreg1, 0);
@@ -390,7 +390,7 @@ mono_decompose_opcode (MonoCompile *cfg, MonoInst *ins)
 		break;
 	case OP_ICONV_TO_OVF_U4:
 	case OP_ICONV_TO_OVF_I4_UN:
-#if SIZEOF_VOID_P == 4
+#if TARGET_SIZEOF_VOID_P == 4
 	case OP_ICONV_TO_OVF_U:
 	case OP_ICONV_TO_OVF_I_UN:
 #endif
@@ -403,21 +403,21 @@ mono_decompose_opcode (MonoCompile *cfg, MonoInst *ins)
 	case OP_ICONV_TO_U4:
 	case OP_ICONV_TO_OVF_I4:
 	case OP_ICONV_TO_OVF_U4_UN:
-#if SIZEOF_VOID_P == 4
+#if TARGET_SIZEOF_VOID_P == 4
 	case OP_ICONV_TO_OVF_I:
 	case OP_ICONV_TO_OVF_U_UN:
 #endif
 		ins->opcode = OP_MOVE;
 		break;
 	case OP_ICONV_TO_I:
-#if SIZEOF_VOID_P == 8
+#if TARGET_SIZEOF_VOID_P == 8
 		ins->opcode = OP_SEXT_I4;
 #else
 		ins->opcode = OP_MOVE;
 #endif
 		break;
 	case OP_ICONV_TO_U:
-#if SIZEOF_VOID_P == 8
+#if TARGET_SIZEOF_VOID_P == 8
 		ins->opcode = OP_ZEXT_I4;
 #else
 		ins->opcode = OP_MOVE;
@@ -470,7 +470,7 @@ mono_decompose_opcode (MonoCompile *cfg, MonoInst *ins)
 		}
 		break;
 
-#if SIZEOF_VOID_P == 8
+#if TARGET_SIZEOF_VOID_P == 8
 	case OP_LDIV:
 	case OP_LREM:
 	case OP_LDIV_UN:

@@ -162,8 +162,10 @@ parse_optimizations (guint32 opt, const char* p, gboolean cpu_opts)
 
 	/* call out to cpu detection code here that sets the defaults ... */
 	if (cpu_opts) {
+#ifndef MONO_CROSS_COMPILE
 		opt |= mono_arch_cpu_optimizations (&exclude);
 		opt &= ~exclude;
+#endif
 	}
 	if (!p)
 		return opt;
@@ -2254,10 +2256,7 @@ mono_main (int argc, char* argv[])
 		   fprintf (stderr, "This mono runtime is compiled for cross-compiling. Only the --aot option is supported.\n");
 		   exit (1);
        }
-#if SIZEOF_VOID_P == 8 && (defined(TARGET_ARM) || defined(TARGET_X86))
-       fprintf (stderr, "Can't cross-compile on 64-bit platforms to 32-bit architecture.\n");
-       exit (1);
-#elif SIZEOF_VOID_P == 4 && (defined(TARGET_ARM64) || defined(TARGET_AMD64))
+#if TARGET_SIZEOF_VOID_P == 4 && (defined(TARGET_ARM64) || defined(TARGET_AMD64))
        fprintf (stderr, "Can't cross-compile on 32-bit platforms to 64-bit architecture.\n");
        exit (1);
 #endif

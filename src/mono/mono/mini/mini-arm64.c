@@ -1145,7 +1145,7 @@ is_hfa (MonoType *t, int *out_nfields, int *out_esize, int *field_offsets)
 			prev_ftype = ftype;
 			for (i = 0; i < nested_nfields; ++i) {
 				if (nfields + i < 4)
-					field_offsets [nfields + i] = field->offset - sizeof (MonoObject) + nested_field_offsets [i];
+					field_offsets [nfields + i] = field->offset - MONO_ABI_SIZEOF (MonoObject) + nested_field_offsets [i];
 			}
 			nfields += nested_nfields;
 		} else {
@@ -1155,7 +1155,7 @@ is_hfa (MonoType *t, int *out_nfields, int *out_esize, int *field_offsets)
 				return FALSE;
 			prev_ftype = ftype;
 			if (nfields < 4)
-				field_offsets [nfields] = field->offset - sizeof (MonoObject);
+				field_offsets [nfields] = field->offset - MONO_ABI_SIZEOF (MonoObject);
 			nfields ++;
 		}
 	}

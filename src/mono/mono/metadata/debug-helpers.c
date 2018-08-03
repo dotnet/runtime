@@ -19,6 +19,7 @@
 #include "mono/metadata/debug-helpers.h"
 #include "mono/metadata/tabledefs.h"
 #include "mono/metadata/appdomain.h"
+#include "mono/metadata/abi-details.h"
 #ifdef MONO_CLASS_DEF_PRIVATE
 /* Rationale: we want the functions in this file to work even when everything
  * is broken.  They may be called from a debugger session, for example.  If
@@ -1134,7 +1135,7 @@ objval_describe (MonoClass *klass, const char *addr)
 	gssize type_offset = 0;
 
 	if (klass->valuetype)
-		type_offset = -sizeof (MonoObject);
+		type_offset = - MONO_ABI_SIZEOF (MonoObject);
 
 	for (p = klass; p != NULL; p = p->parent) {
 		gpointer iter = NULL;

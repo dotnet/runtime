@@ -30,6 +30,7 @@
 #include "metadata/sgen-mono-ilgen.h"
 #include "metadata/gc-internals.h"
 #include "metadata/handle.h"
+#include "metadata/abi-details.h"
 #include "utils/mono-memory-model.h"
 #include "utils/mono-logger-internals.h"
 #include "utils/mono-threads-coop.h"
@@ -118,7 +119,7 @@ mono_gc_wbarrier_value_copy (gpointer dest, gpointer src, int count, MonoClass *
 		int i;
 		for (i = 0; i < count; ++i) {
 			scan_object_for_binary_protocol_copy_wbarrier ((char*)dest + i * element_size,
-					(char*)src + i * element_size - sizeof (MonoObject),
+					(char*)src + i * element_size - MONO_ABI_SIZEOF (MonoObject),
 					(mword) klass->gc_descr);
 		}
 	}
@@ -142,8 +143,8 @@ mono_gc_wbarrier_object_copy (MonoObject* obj, MonoObject *src)
 	SGEN_ASSERT (6, !ptr_on_stack (obj), "Why is this called for a non-reference type?");
 	if (sgen_ptr_in_nursery (obj) || !SGEN_OBJECT_HAS_REFERENCES (src)) {
 		size = m_class_get_instance_size (mono_object_class (obj));
-		mono_gc_memmove_aligned ((char*)obj + sizeof (MonoObject), (char*)src + sizeof (MonoObject),
-				size - sizeof (MonoObject));
+		mono_gc_memmove_aligned ((char*)obj + MONO_ABI_SIZEOF (MonoObject), (char*)src + MONO_ABI_SIZEOF (MonoObject),
+				size - MONO_ABI_SIZEOF (MonoObject));
 		return;	
 	}
 

@@ -675,7 +675,7 @@ enum {
 	SECT_NUM
 };
 
-#if SIZEOF_VOID_P == 4
+#if TARGET_SIZEOF_VOID_P == 4
 
 typedef Elf32_Ehdr ElfHeader;
 typedef Elf32_Shdr ElfSectHeader;
@@ -707,15 +707,15 @@ typedef struct {
 
 static SectInfo section_info [] = {
 	{"", 0, 0, 0, 0},
-	{".hash", SHT_HASH, 4, 2, SIZEOF_VOID_P},
-	{".dynsym", SHT_DYNSYM, sizeof (ElfSymbol), 2, SIZEOF_VOID_P},
+	{".hash", SHT_HASH, 4, 2, TARGET_SIZEOF_VOID_P},
+	{".dynsym", SHT_DYNSYM, sizeof (ElfSymbol), 2, TARGET_SIZEOF_VOID_P},
 	{".dynstr", SHT_STRTAB, 0, 2, 1},
-	{".rel.dyn", SHT_REL, sizeof (ElfReloc), 2, SIZEOF_VOID_P},
-	{".rela.dyn", SHT_RELA, sizeof (ElfRelocA), 2, SIZEOF_VOID_P},
+	{".rel.dyn", SHT_REL, sizeof (ElfReloc), 2, TARGET_SIZEOF_VOID_P},
+	{".rela.dyn", SHT_RELA, sizeof (ElfRelocA), 2, TARGET_SIZEOF_VOID_P},
 	{".text", SHT_PROGBITS, 0, 6, 4096},
 	{".rodata", SHT_PROGBITS, 0, SHF_ALLOC, 4096},
-	{".dynamic", SHT_DYNAMIC, sizeof (ElfDynamic), 3, SIZEOF_VOID_P},
-	{".got.plt", SHT_PROGBITS, SIZEOF_VOID_P, 3, SIZEOF_VOID_P},
+	{".dynamic", SHT_DYNAMIC, sizeof (ElfDynamic), 3, TARGET_SIZEOF_VOID_P},
+	{".got.plt", SHT_PROGBITS, TARGET_SIZEOF_VOID_P, 3, TARGET_SIZEOF_VOID_P},
 	{".data", SHT_PROGBITS, 0, 3, 8},
 	{".bss", SHT_NOBITS, 0, 3, 8},
 	{".debug_frame", SHT_PROGBITS, 0, 0, 8},
@@ -724,7 +724,7 @@ static SectInfo section_info [] = {
 	{".debug_line", SHT_PROGBITS, 0, 0, 1},
 	{".debug_loc", SHT_PROGBITS, 0, 0, 1},
 	{".shstrtab", SHT_STRTAB, 0, 0, 1},
-	{".symtab", SHT_SYMTAB, sizeof (ElfSymbol), 0, SIZEOF_VOID_P},
+	{".symtab", SHT_SYMTAB, sizeof (ElfSymbol), 0, TARGET_SIZEOF_VOID_P},
 	{".strtab", SHT_STRTAB, 0, 0, 1}
 };
 
@@ -1247,8 +1247,8 @@ bin_writer_emit_writeout (MonoImageWriter *acfg)
 		secth [i].sh_flags = section_info [i].flags;
 		secth [i].sh_entsize = section_info [i].esize;
 	}
-	secth [SECT_DYNSYM].sh_info = SIZEOF_VOID_P == 4 ? 4 : 2;
-	secth [SECT_SYMTAB].sh_info = SIZEOF_VOID_P == 4 ? 20 : 17;
+	secth [SECT_DYNSYM].sh_info = TARGET_SIZEOF_VOID_P == 4 ? 4 : 2;
+	secth [SECT_SYMTAB].sh_info = TARGET_SIZEOF_VOID_P == 4 ? 20 : 17;
 	secth [SECT_HASH].sh_link = SECT_DYNSYM;
 	secth [SECT_DYNSYM].sh_link = SECT_DYNSTR;
 	secth [SECT_REL_DYN].sh_link = SECT_DYNSYM;
@@ -1359,7 +1359,7 @@ bin_writer_emit_writeout (MonoImageWriter *acfg)
 	virt_offset = ALIGN_TO (virt_offset, secth [SECT_GOT_PLT].sh_addralign);
 	secth [SECT_GOT_PLT].sh_addr = virt_offset;
 	secth [SECT_GOT_PLT].sh_offset = file_offset;
-	size = 3 * SIZEOF_VOID_P;
+	size = 3 * TARGET_SIZEOF_VOID_P;
 	secth [SECT_GOT_PLT].sh_size = size;
 	file_offset += size;
 	virt_offset += size;
@@ -1456,7 +1456,7 @@ bin_writer_emit_writeout (MonoImageWriter *acfg)
 	header.e_ident [EI_MAG1] = ELFMAG1;
 	header.e_ident [EI_MAG2] = ELFMAG2;
 	header.e_ident [EI_MAG3] = ELFMAG3;
-	header.e_ident [EI_CLASS] = SIZEOF_VOID_P == 4 ? ELFCLASS32 : ELFCLASS64;
+	header.e_ident [EI_CLASS] = TARGET_SIZEOF_VOID_P == 4 ? ELFCLASS32 : ELFCLASS64;
 	header.e_ident [EI_DATA] = ELFDATA2LSB;
 	header.e_ident [EI_VERSION] = EV_CURRENT;
 	header.e_ident [EI_OSABI] = ELFOSABI_NONE;
@@ -1547,14 +1547,14 @@ bin_writer_emit_writeout (MonoImageWriter *acfg)
 	progh [2].p_offset = secth [SECT_DYNAMIC].sh_offset;
 	progh [2].p_vaddr = progh [2].p_paddr = secth [SECT_DYNAMIC].sh_addr;
 	progh [2].p_filesz = progh [2].p_memsz = secth [SECT_DYNAMIC].sh_size;
-	progh [2].p_align = SIZEOF_VOID_P;
+	progh [2].p_align = TARGET_SIZEOF_VOID_P;
 	progh [2].p_flags = 6;
 
 	progh [3].p_type = PT_GNU_STACK;
 	progh [3].p_offset = secth [SECT_DYNAMIC].sh_offset;
 	progh [3].p_vaddr = progh [3].p_paddr = secth [SECT_DYNAMIC].sh_addr;
 	progh [3].p_filesz = progh [3].p_memsz = secth [SECT_DYNAMIC].sh_size;
-	progh [3].p_align = SIZEOF_VOID_P;
+	progh [3].p_align = TARGET_SIZEOF_VOID_P;
 	progh [3].p_flags = 6;
 
 	/* Compute the addresses of the bin sections, so relocation can be done */
@@ -1862,7 +1862,7 @@ static void
 asm_writer_emit_pointer (MonoImageWriter *acfg, const char *target)
 {
 	asm_writer_emit_unset_mode (acfg);
-	asm_writer_emit_alignment (acfg, sizeof (gpointer));
+	asm_writer_emit_alignment (acfg, sizeof (target_mgreg_t));
 	asm_writer_emit_pointer_unaligned (acfg, target);
 }
 

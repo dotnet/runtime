@@ -62,7 +62,7 @@ mono_arch_get_unbox_trampoline (MonoMethod *m, gpointer addr)
 
 	unwind_ops = mono_arch_get_cie_program ();
 
-	amd64_alu_reg_imm (code, X86_ADD, this_reg, sizeof (MonoObject));
+	amd64_alu_reg_imm (code, X86_ADD, this_reg, MONO_ABI_SIZEOF (MonoObject));
 	/* FIXME: Optimize this */
 	amd64_mov_reg_imm (code, AMD64_RAX, addr);
 	amd64_jump_reg (code, AMD64_RAX);

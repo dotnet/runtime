@@ -17,6 +17,7 @@
 #include <mono/metadata/method-builder-ilgen.h>
 #include <mono/metadata/method-builder-ilgen-internals.h>
 #include <mono/metadata/reflection-internals.h>
+#include <mono/metadata/abi-details.h>
 #include <mono/utils/mono-counters.h>
 #include <mono/utils/atomic.h>
 #include <mono/utils/unlocked.h>
@@ -1202,7 +1203,7 @@ get_wrapper_shared_type (MonoType *t)
 		mono_error_assert_ok (error); /* FIXME don't swallow the error */
 		return m_class_get_byval_arg (klass);
 	}
-#if SIZEOF_VOID_P == 8
+#if TARGET_SIZEOF_VOID_P == 8
 	case MONO_TYPE_I8:
 		return mono_get_int_type ();
 #endif
@@ -2041,7 +2042,7 @@ instantiate_info (MonoDomain *domain, MonoRuntimeGenericContextInfoTemplate *oti
 
 		/* The value is offset by 1 */
 		if (m_class_is_valuetype (field->parent) && !(field->type->attrs & FIELD_ATTRIBUTE_STATIC))
-			return GUINT_TO_POINTER (field->offset - sizeof (MonoObject) + 1);
+			return GUINT_TO_POINTER (field->offset - MONO_ABI_SIZEOF (MonoObject) + 1);
 		else
 			return GUINT_TO_POINTER (field->offset + 1);
 	}
@@ -2117,10 +2118,10 @@ instantiate_info (MonoDomain *domain, MonoRuntimeGenericContextInfoTemplate *oti
 				vcall_offset = MONO_GSHAREDVT_DEL_INVOKE_VT_OFFSET;
 			} else if (mono_class_is_interface (method->klass)) {
 				guint32 imt_slot = mono_method_get_imt_slot (method);
-				vcall_offset = ((gint32)imt_slot - MONO_IMT_SIZE) * SIZEOF_VOID_P;
+				vcall_offset = ((gint32)imt_slot - MONO_IMT_SIZE) * TARGET_SIZEOF_VOID_P;
 			} else {
 				vcall_offset = G_STRUCT_OFFSET (MonoVTable, vtable) +
-					((mono_method_get_vtable_index (method)) * (SIZEOF_VOID_P));
+					((mono_method_get_vtable_index (method)) * (TARGET_SIZEOF_VOID_P));
 			}
 		} else {
 			vcall_offset = -1;

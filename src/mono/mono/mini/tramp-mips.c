@@ -46,7 +46,7 @@ mono_arch_get_unbox_trampoline (MonoMethod *m, gpointer addr)
 
 	mips_load (code, mips_t9, addr);
 	/* The this pointer is kept in a0 */
-	mips_addiu (code, mips_a0, mips_a0, sizeof (MonoObject));
+	mips_addiu (code, mips_a0, mips_a0, MONO_ABI_SIZEOF (MonoObject));
 	mips_jr (code, mips_t9);
 	mips_nop (code);
 

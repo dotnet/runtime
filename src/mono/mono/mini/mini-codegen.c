@@ -567,6 +567,7 @@ mono_print_ins_index_strbuf (int i, MonoInst *ins)
 	case OP_IOR_IMM:
 	case OP_IXOR_IMM:
 	case OP_SUB_IMM:
+	case OP_MUL_IMM:
 	case OP_STORE_MEMBASE_IMM:
 		g_string_append_printf (sbuf, " [%d]", (int)ins->inst_imm);
 		break;

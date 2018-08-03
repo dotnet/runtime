@@ -306,7 +306,7 @@ struct MonoJumpInfo {
 	MonoJumpInfoType type;
 	union {
 		gconstpointer   target;
-#if SIZEOF_VOID_P == 8
+#if TARGET_SIZEOF_VOID_P == 8
 		gint64          offset;
 #else
 		int             offset;

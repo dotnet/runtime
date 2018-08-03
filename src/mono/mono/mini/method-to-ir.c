@@ -209,7 +209,7 @@ static GENERATE_GET_CLASS_WITH_CACHE (geqcomparer, "System.Collections.Generic",
 #define FREG 'f'
 #define VREG 'v'
 #define XREG 'x'
-#if SIZEOF_REGISTER == 8 && SIZEOF_REGISTER == SIZEOF_VOID_P
+#if SIZEOF_REGISTER == 8 && SIZEOF_REGISTER == TARGET_SIZEOF_VOID_P
 #define LREG IREG
 #else
 #define LREG 'l'
@@ -1040,7 +1040,7 @@ type_from_op (MonoCompile *cfg, MonoInst *ins, MonoInst *src1, MonoInst *src2)
 	case OP_LCOMPARE:
 	case OP_ICOMPARE:
 		ins->type = bin_comp_table [src1->type] [src2->type] ? STACK_I4: STACK_INV;
-		if ((src1->type == STACK_I8) || ((SIZEOF_VOID_P == 8) && ((src1->type == STACK_PTR) || (src1->type == STACK_OBJ) || (src1->type == STACK_MP))))
+		if ((src1->type == STACK_I8) || ((TARGET_SIZEOF_VOID_P == 8) && ((src1->type == STACK_PTR) || (src1->type == STACK_OBJ) || (src1->type == STACK_MP))))
 			ins->opcode = OP_LCOMPARE;
 		else if (src1->type == STACK_R4)
 			ins->opcode = OP_RCOMPARE;
@@ -1051,7 +1051,7 @@ type_from_op (MonoCompile *cfg, MonoInst *ins, MonoInst *src1, MonoInst *src2)
 		break;
 	case OP_ICOMPARE_IMM:
 		ins->type = bin_comp_table [src1->type] [src1->type] ? STACK_I4 : STACK_INV;
-		if ((src1->type == STACK_I8) || ((SIZEOF_VOID_P == 8) && ((src1->type == STACK_PTR) || (src1->type == STACK_OBJ) || (src1->type == STACK_MP))))
+		if ((src1->type == STACK_I8) || ((TARGET_SIZEOF_VOID_P == 8) && ((src1->type == STACK_PTR) || (src1->type == STACK_OBJ) || (src1->type == STACK_MP))))
 			ins->opcode = OP_LCOMPARE_IMM;		
 		break;
 	case MONO_CEE_BEQ:
@@ -1140,7 +1140,7 @@ type_from_op (MonoCompile *cfg, MonoInst *ins, MonoInst *src1, MonoInst *src2)
 		case STACK_PTR:
 		case STACK_MP:
 		case STACK_OBJ:
-#if SIZEOF_VOID_P == 8
+#if TARGET_SIZEOF_VOID_P == 8
 			ins->opcode = OP_LCONV_TO_U;
 #else
 			ins->opcode = OP_MOVE;
@@ -1153,7 +1153,7 @@ type_from_op (MonoCompile *cfg, MonoInst *ins, MonoInst *src1, MonoInst *src2)
 			ins->opcode = OP_FCONV_TO_U;
 			break;
 		case STACK_R4:
-			if (SIZEOF_VOID_P == 8)
+			if (TARGET_SIZEOF_VOID_P == 8)
 				ins->opcode = OP_RCONV_TO_U8;
 			else
 				ins->opcode = OP_RCONV_TO_U4;
@@ -2677,11 +2677,11 @@ mono_emit_method_call_full (MonoCompile *cfg, MonoMethod *method, MonoMethodSign
 				guint32 imt_slot = mono_method_get_imt_slot (method);
 				emit_imt_argument (cfg, call, call->method, imt_arg);
 				slot_reg = vtable_reg;
-				offset = ((gint32)imt_slot - MONO_IMT_SIZE) * SIZEOF_VOID_P;
+				offset = ((gint32)imt_slot - MONO_IMT_SIZE) * TARGET_SIZEOF_VOID_P;
 			} else {
 				slot_reg = vtable_reg;
 				offset = MONO_STRUCT_OFFSET (MonoVTable, vtable) +
-					((mono_method_get_vtable_index (method)) * (SIZEOF_VOID_P));
+					((mono_method_get_vtable_index (method)) * (TARGET_SIZEOF_VOID_P));
 				if (imt_arg) {
 					g_assert (mono_method_signature (method)->generic_param_count);
 					emit_imt_argument (cfg, call, call->method, imt_arg);
@@ -2816,7 +2816,7 @@ emit_llvmonly_calli (MonoCompile *cfg, MonoMethodSignature *fsig, MonoInst **arg
 	addr_reg = alloc_preg (cfg);
 	EMIT_NEW_LOAD_MEMBASE (cfg, call_target, OP_LOAD_MEMBASE, addr_reg, addr->dreg, 0);
 	arg_reg = alloc_preg (cfg);
-	MONO_EMIT_NEW_LOAD_MEMBASE (cfg, arg_reg, addr->dreg, sizeof (gpointer));
+	MONO_EMIT_NEW_LOAD_MEMBASE (cfg, arg_reg, addr->dreg, TARGET_SIZEOF_VOID_P);
 
 	return emit_extra_arg_calli (cfg, fsig, args, arg_reg, call_target);
 }
@@ -3044,7 +3044,7 @@ mini_emit_initobj (MonoCompile *cfg, MonoInst *dest, const guchar *ip, MonoClass
 
 	n = mono_class_value_size (klass, &align);
 
-	if (n <= sizeof (gpointer) * 8) {
+	if (n <= TARGET_SIZEOF_VOID_P * 8) {
 		mini_emit_memset (cfg, dest->dreg, 0, n, 0, align);
 	}
 	else {
@@ -3169,7 +3169,7 @@ emit_rgctx_fetch_inline (MonoCompile *cfg, MonoInst *rgctx, MonoJumpInfoRgctxEnt
 	mrgctx = MONO_RGCTX_SLOT_IS_MRGCTX (slot);
 	index = MONO_RGCTX_SLOT_INDEX (slot);
 	if (mrgctx)
-		index += MONO_SIZEOF_METHOD_RUNTIME_GENERIC_CONTEXT / sizeof (gpointer);
+		index += MONO_SIZEOF_METHOD_RUNTIME_GENERIC_CONTEXT / TARGET_SIZEOF_VOID_P;
 	for (depth = 0; ; ++depth) {
 		int size = mono_class_rgctx_get_array_size (depth, mrgctx);
 
@@ -3211,7 +3211,7 @@ emit_rgctx_fetch_inline (MonoCompile *cfg, MonoInst *rgctx, MonoJumpInfoRgctxEnt
 
 	/* fetch slot */
 	val_reg = alloc_preg (cfg);
-	MONO_EMIT_NEW_LOAD_MEMBASE (cfg, val_reg, rgctx_reg, (index + 1) * sizeof (gpointer));
+	MONO_EMIT_NEW_LOAD_MEMBASE (cfg, val_reg, rgctx_reg, (index + 1) * TARGET_SIZEOF_VOID_P);
 	/* is the slot null? */
 	MONO_EMIT_NEW_BIALU_IMM (cfg, OP_COMPARE_IMM, -1, val_reg, 0);
 	/* if yes, jump to actual trampoline */
@@ -3427,7 +3427,7 @@ emit_get_gsharedvt_info (MonoCompile *cfg, gpointer data, MonoRgctxInfoType rgct
 	idx = get_gsharedvt_info_slot (cfg, data, rgctx_type);
 	/* Load info->entries [idx] */
 	dreg = alloc_preg (cfg);
-	EMIT_NEW_LOAD_MEMBASE (cfg, ins, OP_LOAD_MEMBASE, dreg, cfg->gsharedvt_info_var->dreg, MONO_STRUCT_OFFSET (MonoGSharedVtMethodRuntimeInfo, entries) + (idx * sizeof (gpointer)));
+	EMIT_NEW_LOAD_MEMBASE (cfg, ins, OP_LOAD_MEMBASE, dreg, cfg->gsharedvt_info_var->dreg, MONO_STRUCT_OFFSET (MonoGSharedVtMethodRuntimeInfo, entries) + (idx * TARGET_SIZEOF_VOID_P));
 
 	return ins;
 }
@@ -3704,7 +3704,7 @@ handle_unbox (MonoCompile *cfg, MonoClass *klass, MonoInst **sp, int context_use
 		mini_reset_cast_details (cfg);
 	}
 
-	NEW_BIALU_IMM (cfg, add, OP_ADD_IMM, alloc_dreg (cfg, STACK_MP), obj_reg, sizeof (MonoObject));
+	NEW_BIALU_IMM (cfg, add, OP_ADD_IMM, alloc_dreg (cfg, STACK_MP), obj_reg, MONO_ABI_SIZEOF (MonoObject));
 	MONO_ADD_INS (cfg->cbb, add);
 	add->type = STACK_MP;
 	add->klass = klass;
@@ -3746,7 +3746,7 @@ handle_unbox_gsharedvt (MonoCompile *cfg, MonoClass *klass, MonoInst *obj)
 
 	/* Non-ref case */
 	/* UNBOX */
-	NEW_BIALU_IMM (cfg, addr, OP_ADD_IMM, addr_reg, obj->dreg, sizeof (MonoObject));
+	NEW_BIALU_IMM (cfg, addr, OP_ADD_IMM, addr_reg, obj->dreg, MONO_ABI_SIZEOF (MonoObject));
 	MONO_ADD_INS (cfg->cbb, addr);
 
 	MONO_EMIT_NEW_BRANCH_BLOCK (cfg, OP_BR, end_bb);
@@ -3837,7 +3837,7 @@ handle_alloc (MonoCompile *cfg, MonoClass *klass, gboolean for_box, int context_
 		if (managed_alloc && !(cfg->opt & MONO_OPT_SHARED)) {
 			if (known_instance_size) {
 				int size = mono_class_instance_size (klass);
-				if (size < sizeof (MonoObject))
+				if (size < MONO_ABI_SIZEOF (MonoObject))
 					g_error ("Invalid size %d for class %s", size, mono_type_get_full_name (klass));
 
 				EMIT_NEW_ICONST (cfg, iargs [1], size);
@@ -3870,7 +3870,7 @@ handle_alloc (MonoCompile *cfg, MonoClass *klass, gboolean for_box, int context_
 
 		if (managed_alloc) {
 			int size = mono_class_instance_size (klass);
-			if (size < sizeof (MonoObject))
+			if (size < MONO_ABI_SIZEOF (MonoObject))
 				g_error ("Invalid size %d for class %s", size, mono_type_get_full_name (klass));
 
 			EMIT_NEW_VTABLECONST (cfg, iargs [0], vtable);
@@ -3948,7 +3948,7 @@ mini_emit_box (MonoCompile *cfg, MonoInst *val, MonoClass *klass, int context_us
 		alloc = handle_alloc (cfg, klass, TRUE, context_used);
 		if (!alloc)
 			return NULL;
-		EMIT_NEW_STORE_MEMBASE_TYPE (cfg, ins, m_class_get_byval_arg (klass), alloc->dreg, sizeof (MonoObject), val->dreg);
+		EMIT_NEW_STORE_MEMBASE_TYPE (cfg, ins, m_class_get_byval_arg (klass), alloc->dreg, MONO_ABI_SIZEOF (MonoObject), val->dreg);
 		ins->opcode = OP_STOREV_MEMBASE;
 
 		EMIT_NEW_UNALU (cfg, res, OP_MOVE, dreg, alloc->dreg);
@@ -4005,7 +4005,7 @@ mini_emit_box (MonoCompile *cfg, MonoInst *val, MonoClass *klass, int context_us
 	if (!alloc)
 		return NULL;
 
-	EMIT_NEW_STORE_MEMBASE_TYPE (cfg, ins, m_class_get_byval_arg (klass), alloc->dreg, sizeof (MonoObject), val->dreg);
+	EMIT_NEW_STORE_MEMBASE_TYPE (cfg, ins, m_class_get_byval_arg (klass), alloc->dreg, MONO_ABI_SIZEOF (MonoObject), val->dreg);
 	return alloc;
 }
 
@@ -4344,7 +4344,7 @@ handle_constrained_gsharedvt_call (MonoCompile *cfg, MonoMethod *cmethod, MonoMe
 			MonoInst *add;
 
 			/* Unbox */
-			NEW_BIALU_IMM (cfg, add, OP_ADD_IMM, alloc_dreg (cfg, STACK_MP), ins->dreg, sizeof (MonoObject));
+			NEW_BIALU_IMM (cfg, add, OP_ADD_IMM, alloc_dreg (cfg, STACK_MP), ins->dreg, MONO_ABI_SIZEOF (MonoObject));
 			MONO_ADD_INS (cfg->cbb, add);
 			/* Load value */
 			NEW_LOAD_MEMBASE_TYPE (cfg, ins, fsig->ret, add->dreg, 0);
@@ -5858,7 +5858,7 @@ emit_llvmonly_virtual_call (MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSig
 
 		vtable_reg = alloc_preg (cfg);
 		EMIT_NEW_LOAD_MEMBASE (cfg, vtable_ins, OP_LOAD_MEMBASE, vtable_reg, this_reg, MONO_STRUCT_OFFSET (MonoObject, vtable));
-		offset = MONO_STRUCT_OFFSET (MonoVTable, vtable) + (slot * SIZEOF_VOID_P);
+		offset = MONO_STRUCT_OFFSET (MonoVTable, vtable) + (slot * TARGET_SIZEOF_VOID_P);
 
 		/* Load the vtable slot, which contains a function descriptor. */
 		MONO_EMIT_NEW_LOAD_MEMBASE (cfg, slot_reg, vtable_reg, offset);
@@ -5883,7 +5883,7 @@ emit_llvmonly_virtual_call (MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSig
 		MONO_START_BB (cfg, non_null_bb);
 		/* Load the address + arg from the vtable slot */
 		EMIT_NEW_LOAD_MEMBASE (cfg, call_target, OP_LOAD_MEMBASE, addr_reg, slot_reg, 0);
-		MONO_EMIT_NEW_LOAD_MEMBASE (cfg, arg_reg, slot_reg, SIZEOF_VOID_P);
+		MONO_EMIT_NEW_LOAD_MEMBASE (cfg, arg_reg, slot_reg, TARGET_SIZEOF_VOID_P);
 
 		return emit_extra_arg_calli (cfg, fsig, sp, arg_reg, call_target);
 	}
@@ -5902,7 +5902,7 @@ emit_llvmonly_virtual_call (MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSig
 
 		vtable_reg = alloc_preg (cfg);
 		EMIT_NEW_LOAD_MEMBASE (cfg, vtable_ins, OP_LOAD_MEMBASE, vtable_reg, this_reg, MONO_STRUCT_OFFSET (MonoObject, vtable));
-		offset = ((gint32)slot - MONO_IMT_SIZE) * SIZEOF_VOID_P;
+		offset = ((gint32)slot - MONO_IMT_SIZE) * TARGET_SIZEOF_VOID_P;
 
 		/*
 		 * The slot is already initialized when the vtable is created so there is no need
@@ -5914,7 +5914,7 @@ emit_llvmonly_virtual_call (MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSig
 
 		/* Load the address + arg of the imt thunk from the imt slot */
 		EMIT_NEW_LOAD_MEMBASE (cfg, thunk_addr_ins, OP_LOAD_MEMBASE, addr_reg, slot_reg, 0);
-		EMIT_NEW_LOAD_MEMBASE (cfg, thunk_arg_ins, OP_LOAD_MEMBASE, arg_reg, slot_reg, SIZEOF_VOID_P);
+		EMIT_NEW_LOAD_MEMBASE (cfg, thunk_arg_ins, OP_LOAD_MEMBASE, arg_reg, slot_reg, TARGET_SIZEOF_VOID_P);
 		/*
 		 * IMT thunks in llvm-only mode are C functions which take an info argument
 		 * plus the imt method and return the ftndesc to call.
@@ -5946,9 +5946,9 @@ emit_llvmonly_virtual_call (MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSig
 		vtable_reg = alloc_preg (cfg);
 		EMIT_NEW_LOAD_MEMBASE (cfg, vtable_ins, OP_LOAD_MEMBASE, vtable_reg, this_reg, MONO_STRUCT_OFFSET (MonoObject, vtable));
 		if (is_iface)
-			offset = ((gint32)slot - MONO_IMT_SIZE) * SIZEOF_VOID_P;
+			offset = ((gint32)slot - MONO_IMT_SIZE) * TARGET_SIZEOF_VOID_P;
 		else
-			offset = MONO_STRUCT_OFFSET (MonoVTable, vtable) + (slot * SIZEOF_VOID_P);
+			offset = MONO_STRUCT_OFFSET (MonoVTable, vtable) + (slot * TARGET_SIZEOF_VOID_P);
 
 		/* Load the slot, which contains a function descriptor. */
 		MONO_EMIT_NEW_LOAD_MEMBASE (cfg, slot_reg, vtable_reg, offset);
@@ -5961,7 +5961,7 @@ emit_llvmonly_virtual_call (MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSig
 		/* Fastpath */
 		/* Same as with iface calls */
 		EMIT_NEW_LOAD_MEMBASE (cfg, thunk_addr_ins, OP_LOAD_MEMBASE, addr_reg, slot_reg, 0);
-		EMIT_NEW_LOAD_MEMBASE (cfg, thunk_arg_ins, OP_LOAD_MEMBASE, arg_reg, slot_reg, SIZEOF_VOID_P);
+		EMIT_NEW_LOAD_MEMBASE (cfg, thunk_arg_ins, OP_LOAD_MEMBASE, arg_reg, slot_reg, TARGET_SIZEOF_VOID_P);
 		icall_args [0] = thunk_arg_ins;
 		icall_args [1] = emit_get_rgctx_method (cfg, context_used,
 												cmethod, MONO_RGCTX_INFO_METHOD);
@@ -8889,7 +8889,7 @@ calli_end:
 				ins->klass = (MonoClass *)GUINT_TO_POINTER (n);
 				MONO_ADD_INS (cfg->cbb, ins);
 			} else {
-				if (sizeof (gpointer) == 8)
+				if (TARGET_SIZEOF_VOID_P == 8)
 					MONO_EMIT_NEW_BIALU_IMM (cfg, OP_SHL_IMM, offset_reg, src1->dreg, 3);
 				else
 					MONO_EMIT_NEW_BIALU_IMM (cfg, OP_SHL_IMM, offset_reg, src1->dreg, 2);
@@ -9651,7 +9651,7 @@ calli_end:
 				break;
 			}
 
-			if (m_class_is_enumtype (klass) && !(val->type == STACK_I8 && SIZEOF_VOID_P == 4)) {
+			if (m_class_is_enumtype (klass) && !(val->type == STACK_I8 && TARGET_SIZEOF_VOID_P == 4)) {
 				/* Can't do this with 64 bit enums on 32 bit since the vtype decomp pass is ran after the long decomp pass */
 				if (val->opcode == OP_ICONST) {
 					MONO_INST_NEW (cfg, ins, OP_BOX_ICONST);
@@ -9787,7 +9787,7 @@ calli_end:
 
 			/* INSTANCE CASE */
 
-			foffset = m_class_is_valuetype (klass) ? field->offset - sizeof (MonoObject): field->offset;
+			foffset = m_class_is_valuetype (klass) ? field->offset - MONO_ABI_SIZEOF (MonoObject): field->offset;
 			if (il_op == MONO_CEE_STFLD) {
 				sp [1] = convert_value (cfg, field->type, sp [1]);
 				if (target_type_is_incompatible (cfg, field->type, sp [1]))
@@ -9802,7 +9802,7 @@ calli_end:
 					iargs [0] = sp [0];
 					EMIT_NEW_CLASSCONST (cfg, iargs [1], klass);
 					EMIT_NEW_FIELDCONST (cfg, iargs [2], field);
-					EMIT_NEW_ICONST (cfg, iargs [3], m_class_is_valuetype (klass) ? field->offset - sizeof (MonoObject) : 
+					EMIT_NEW_ICONST (cfg, iargs [3], m_class_is_valuetype (klass) ? field->offset - MONO_ABI_SIZEOF (MonoObject) : 
 						    field->offset);
 					iargs [4] = sp [1];
 
@@ -9879,7 +9879,7 @@ calli_end:
 				iargs [0] = sp [0];
 				EMIT_NEW_CLASSCONST (cfg, iargs [1], klass);
 				EMIT_NEW_FIELDCONST (cfg, iargs [2], field);
-				EMIT_NEW_ICONST (cfg, iargs [3], m_class_is_valuetype (klass) ? field->offset - sizeof (MonoObject) : field->offset);
+				EMIT_NEW_ICONST (cfg, iargs [3], m_class_is_valuetype (klass) ? field->offset - MONO_ABI_SIZEOF (MonoObject) : field->offset);
 				if (cfg->opt & MONO_OPT_INLINE || cfg->compile_aot) {
 					costs = inline_method (cfg, wrapper, mono_method_signature (wrapper), 
 										   iargs, ip, cfg->real_offset, TRUE);
@@ -10024,7 +10024,7 @@ calli_end:
 					MONO_EMIT_NEW_BIALU_IMM (cfg, OP_IAND_IMM, offset_reg, offset_reg, 0x7fffffff);
 					idx_reg = alloc_ireg (cfg);
 					MONO_EMIT_NEW_BIALU_IMM (cfg, OP_IAND_IMM, idx_reg, offset_reg, 0x3f);
-					MONO_EMIT_NEW_BIALU_IMM (cfg, OP_ISHL_IMM, idx_reg, idx_reg, sizeof (gpointer) == 8 ? 3 : 2);
+					MONO_EMIT_NEW_BIALU_IMM (cfg, OP_ISHL_IMM, idx_reg, idx_reg, TARGET_SIZEOF_VOID_P == 8 ? 3 : 2);
 					MONO_EMIT_NEW_BIALU (cfg, OP_PADD, static_data_reg, static_data_reg, idx_reg);
 					array_reg = alloc_ireg (cfg);
 					MONO_EMIT_NEW_LOAD_MEMBASE (cfg, array_reg, static_data_reg, 0);
@@ -10038,7 +10038,7 @@ calli_end:
 					idx = offset & 0x3f;
 
 					array_reg = alloc_ireg (cfg);
-					MONO_EMIT_NEW_LOAD_MEMBASE (cfg, array_reg, static_data_reg, idx * sizeof (gpointer));
+					MONO_EMIT_NEW_LOAD_MEMBASE (cfg, array_reg, static_data_reg, idx * TARGET_SIZEOF_VOID_P);
 					dreg = alloc_ireg (cfg);
 					EMIT_NEW_BIALU_IMM (cfg, ins, OP_ADD_IMM, dreg, array_reg, ((offset >> 6) & 0x1ffffff));
 				}
@@ -10291,7 +10291,7 @@ field_access_end:
 
 			context_used = mini_class_check_context_used (cfg, klass);
 
-			if (sp [0]->type == STACK_I8 || (SIZEOF_VOID_P == 8 && sp [0]->type == STACK_PTR)) {
+			if (sp [0]->type == STACK_I8 || (TARGET_SIZEOF_VOID_P == 8 && sp [0]->type == STACK_PTR)) {
 				MONO_INST_NEW (cfg, ins, OP_LCONV_TO_OVF_U4);
 				ins->sreg1 = sp [0]->dreg;
 				ins->type = STACK_I4;
@@ -11338,12 +11338,12 @@ mono_ldptr:
 					 */
 					MONO_INST_NEW (cfg, ins, OP_LOCALLOC_IMM);
 					ins->dreg = alloc_preg (cfg);
-					ins->inst_imm = 2 * SIZEOF_VOID_P;
+					ins->inst_imm = 2 * TARGET_SIZEOF_VOID_P;
 					MONO_ADD_INS (cfg->cbb, ins);
 					localloc_ins = ins;
 					cfg->flags |= MONO_CFG_HAS_ALLOCA;
 					MONO_EMIT_NEW_STORE_MEMBASE (cfg, OP_STORE_MEMBASE_REG, localloc_ins->dreg, 0, callee->dreg);
-					MONO_EMIT_NEW_STORE_MEMBASE (cfg, OP_STORE_MEMBASE_REG, localloc_ins->dreg, SIZEOF_VOID_P, arg->dreg);
+					MONO_EMIT_NEW_STORE_MEMBASE (cfg, OP_STORE_MEMBASE_REG, localloc_ins->dreg, TARGET_SIZEOF_VOID_P, arg->dreg);
 
 					call = emit_extra_arg_calli (cfg, fsig, sp, localloc_ins->dreg, addr);
 					MONO_EMIT_NEW_BRANCH_BLOCK (cfg, OP_BR, end_bb);
@@ -11383,12 +11383,12 @@ mono_ldptr:
 					 */
 					MONO_INST_NEW (cfg, ins, OP_LOCALLOC_IMM);
 					ins->dreg = alloc_preg (cfg);
-					ins->inst_imm = 2 * SIZEOF_VOID_P;
+					ins->inst_imm = 2 * TARGET_SIZEOF_VOID_P;
 					MONO_ADD_INS (cfg->cbb, ins);
 					localloc_ins = ins;
 					cfg->flags |= MONO_CFG_HAS_ALLOCA;
 					MONO_EMIT_NEW_STORE_MEMBASE (cfg, OP_STORE_MEMBASE_REG, localloc_ins->dreg, 0, callee->dreg);
-					MONO_EMIT_NEW_STORE_MEMBASE (cfg, OP_STORE_MEMBASE_REG, localloc_ins->dreg, SIZEOF_VOID_P, arg->dreg);
+					MONO_EMIT_NEW_STORE_MEMBASE (cfg, OP_STORE_MEMBASE_REG, localloc_ins->dreg, TARGET_SIZEOF_VOID_P, arg->dreg);
 
 					ins = emit_extra_arg_calli (cfg, fsig, sp, localloc_ins->dreg, addr);
 					ins->dreg = call->dreg;
@@ -11491,7 +11491,7 @@ mono_ldptr:
 			type_from_op (cfg, cmp, arg1, arg2);
 			CHECK_TYPE (cmp);
 			add_widen_op (cfg, cmp, &arg1, &arg2);
-			if ((arg1->type == STACK_I8) || ((SIZEOF_VOID_P == 8) && ((arg1->type == STACK_PTR) || (arg1->type == STACK_OBJ) || (arg1->type == STACK_MP))))
+			if ((arg1->type == STACK_I8) || ((TARGET_SIZEOF_VOID_P == 8) && ((arg1->type == STACK_PTR) || (arg1->type == STACK_OBJ) || (arg1->type == STACK_MP))))
 				cmp->opcode = OP_LCOMPARE;
 			else if (arg1->type == STACK_R4)
 				cmp->opcode = OP_RCOMPARE;
@@ -12919,7 +12919,7 @@ mono_spill_global_vars (MonoCompile *cfg, gboolean *need_local_opts)
 						g_assert_not_reached ();
 					}
 					reg2 = alloc_ireg (cfg);
-					NEW_LOAD_MEMBASE (cfg, load2, OP_LOADI4_MEMBASE, reg2, reg1, MONO_STRUCT_OFFSET (MonoGSharedVtMethodRuntimeInfo, entries) + (idx * sizeof (gpointer)));
+					NEW_LOAD_MEMBASE (cfg, load2, OP_LOADI4_MEMBASE, reg2, reg1, MONO_STRUCT_OFFSET (MonoGSharedVtMethodRuntimeInfo, entries) + (idx * TARGET_SIZEOF_VOID_P));
 					/* Load the locals area address */
 					reg3 = alloc_ireg (cfg);
 					if (locals_var->opcode == OP_REGOFFSET) {

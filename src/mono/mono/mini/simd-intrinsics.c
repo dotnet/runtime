@@ -1977,7 +1977,7 @@ mono_emit_vector_ldelema (MonoCompile *cfg, MonoType *array_type, MonoInst *arr,
 	array_reg = arr->dreg;
 	index_reg = index->dreg;
 
-#if SIZEOF_VOID_P == 8
+#if TARGET_SIZEOF_VOID_P == 8
 	/* The array reg is 64 bits but the index reg is only 32 */
 	index2_reg = alloc_preg (cfg);
 	MONO_EMIT_NEW_UNALU (cfg, OP_SEXT_I4, index2_reg, index_reg);

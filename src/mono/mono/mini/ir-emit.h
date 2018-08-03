@@ -151,7 +151,7 @@ alloc_dreg (MonoCompile *cfg, MonoStackType stack_type)
  */
 #define MONO_INST_NEW(cfg,dest,op) do {	\
 		(dest) = (MonoInst *)mono_mempool_alloc ((cfg)->mempool, sizeof (MonoInst));	\
-		(dest)->inst_c0 = (dest)->inst_c1 = 0; \
+		(dest)->inst_i0 = (dest)->inst_i1 = 0; \
 		(dest)->next = (dest)->prev = NULL;    \
 		(dest)->opcode = (op);	\
         (dest)->flags = 0; \
@@ -272,7 +272,7 @@ alloc_dreg (MonoCompile *cfg, MonoStackType stack_type)
 	} else { \
         MONO_INST_NEW ((cfg), (dest), cfg->compile_aot ? OP_AOTCONST : OP_PCONST); \
 		(dest)->inst_p0 = (cons);	\
-		(dest)->inst_i1 = (MonoInst *)(patch_type); \
+		(dest)->inst_p1 = GUINT_TO_POINTER (patch_type); \
 		(dest)->type = STACK_PTR;	\
 		(dest)->dreg = alloc_dreg ((cfg), STACK_PTR);	\
 	}													\

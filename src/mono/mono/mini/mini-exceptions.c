@@ -461,7 +461,7 @@ find_jit_info (MonoDomain *domain, MonoJitTlsData *jit_tls, MonoJitInfo *res, Mo
 		 * Remove any unused lmf.
 		 * Mask out the lower bits which might be used to hold additional information.
 		 */
-		*lmf = (MonoLMF *)(((gsize)(*lmf)->previous_lmf) & ~(SIZEOF_VOID_P -1));
+		*lmf = (MonoLMF *)(((gsize)(*lmf)->previous_lmf) & ~(TARGET_SIZEOF_VOID_P -1));
 	}
 
 	/* Convert between the new and the old APIs */
@@ -623,7 +623,7 @@ mono_find_jit_info_ext (MonoDomain *domain, MonoJitTlsData *jit_tls,
 		 * Remove any unused lmf.
 		 * Mask out the lower bits which might be used to hold additional information.
 		 */
-		*lmf = (MonoLMF *)(((gsize)(*lmf)->previous_lmf) & ~(SIZEOF_VOID_P -1));
+		*lmf = (MonoLMF *)(((gsize)(*lmf)->previous_lmf) & ~(TARGET_SIZEOF_VOID_P -1));
 	}
 
 	if (frame->ji && !frame->ji->is_trampoline && !frame->ji->async)
