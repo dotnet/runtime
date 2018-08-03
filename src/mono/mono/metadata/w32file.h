@@ -19,6 +19,7 @@
 
 #include <mono/metadata/object-internals.h>
 #include <mono/utils/mono-compiler.h>
+#include <mono/metadata/icalls.h>
 
 G_BEGIN_DECLS
 
@@ -114,145 +115,167 @@ typedef struct _MonoFSAsyncResult {
 */
 /* System.IO.MonoIO */
 
-extern MonoBoolean
+ICALL_EXPORT
+MonoBoolean
 ves_icall_System_IO_MonoIO_CreateDirectory (const gunichar2 *path, gint32 *error);
 
-extern MonoBoolean
+ICALL_EXPORT
+MonoBoolean
 ves_icall_System_IO_MonoIO_RemoveDirectory (const gunichar2 *path, gint32 *error);
 
-extern gpointer
+ICALL_EXPORT
+gpointer
 ves_icall_System_IO_MonoIO_FindFirstFile (const gunichar2 *path_with_pattern,
 					  MonoStringHandleOut file_name,
 					  gint32 *file_attr,
 					  gint32 *ioerror,
 					  MonoError *error);
-
-extern MonoBoolean
+ICALL_EXPORT
+MonoBoolean
 ves_icall_System_IO_MonoIO_FindNextFile (gpointer hnd,
 					 MonoStringHandleOut file_name,
 					 gint32 *file_attr,
 					 gint32 *ioerror,
 					 MonoError *error);
-
-extern MonoBoolean
+ICALL_EXPORT
+MonoBoolean
 ves_icall_System_IO_MonoIO_FindCloseFile (gpointer hnd);
 
-extern MonoStringHandle
+ICALL_EXPORT
+MonoStringHandle
 ves_icall_System_IO_MonoIO_GetCurrentDirectory (gint32 *io_error, MonoError *error);
 
-extern MonoBoolean
+ICALL_EXPORT
+MonoBoolean
 ves_icall_System_IO_MonoIO_SetCurrentDirectory (const gunichar2 *path,
 						gint32 *error);
-
-extern MonoBoolean
+ICALL_EXPORT
+MonoBoolean
 ves_icall_System_IO_MonoIO_MoveFile (const gunichar2 *path, const gunichar2 *dest,
 				     gint32 *error);
-
-extern MonoBoolean
+ICALL_EXPORT
+MonoBoolean
 ves_icall_System_IO_MonoIO_CopyFile (const gunichar2 *path, const gunichar2 *dest,
 				     MonoBoolean overwrite, gint32 *error);
-
-extern MonoBoolean
+ICALL_EXPORT
+MonoBoolean
 ves_icall_System_IO_MonoIO_DeleteFile (const gunichar2 *path, gint32 *error);
 
-extern gint32 
+ICALL_EXPORT
+gint32
 ves_icall_System_IO_MonoIO_GetFileAttributes (const gunichar2 *path, gint32 *error);
 
-extern MonoBoolean
+ICALL_EXPORT
+MonoBoolean
 ves_icall_System_IO_MonoIO_SetFileAttributes (const gunichar2 *path, gint32 attrs,
 					      gint32 *error);
-
-extern gint32
+ICALL_EXPORT
+gint32
 ves_icall_System_IO_MonoIO_GetFileType (gpointer handle, gint32 *error);
 
-extern MonoBoolean
+ICALL_EXPORT
+MonoBoolean
 ves_icall_System_IO_MonoIO_GetFileStat (const gunichar2 *path, MonoIOStat *stat,
 					gint32 *error);
-
-extern gpointer 
+ICALL_EXPORT
+gpointer
 ves_icall_System_IO_MonoIO_Open (const gunichar2 *filename, gint32 mode,
 				 gint32 access_mode, gint32 share, gint32 options,
 				 gint32 *error);
-
-extern MonoBoolean
+ICALL_EXPORT
+MonoBoolean
 ves_icall_System_IO_MonoIO_Close (gpointer handle, gint32 *error);
 
-extern gint32 
+ICALL_EXPORT
+gint32
 ves_icall_System_IO_MonoIO_Read (gpointer handle, MonoArrayHandle dest,
 				 gint32 dest_offset, gint32 count,
 				 gint32 *io_error,
 				 MonoError *error);
-
-extern gint32 
+ICALL_EXPORT
+gint32
 ves_icall_System_IO_MonoIO_Write (gpointer handle, MonoArrayHandle src,
 				  gint32 src_offset, gint32 count,
 				  gint32 *io_error,
 				  MonoError *error);
-
-extern gint64 
+ICALL_EXPORT
+gint64
 ves_icall_System_IO_MonoIO_Seek (gpointer handle, gint64 offset, gint32 origin,
 				 gint32 *error);
-
-extern MonoBoolean
+ICALL_EXPORT
+MonoBoolean
 ves_icall_System_IO_MonoIO_Flush (gpointer handle, gint32 *error);
 
-extern gint64 
+ICALL_EXPORT
+gint64
 ves_icall_System_IO_MonoIO_GetLength (gpointer handle, gint32 *error);
 
-extern MonoBoolean
+ICALL_EXPORT
+MonoBoolean
 ves_icall_System_IO_MonoIO_SetLength (gpointer handle, gint64 length,
 				      gint32 *error);
-
-extern MonoBoolean
+ICALL_EXPORT
+MonoBoolean
 ves_icall_System_IO_MonoIO_SetFileTime (gpointer handle, gint64 creation_time,
 					gint64 last_access_time,
 					gint64 last_write_time, gint32 *error);
-
-extern gpointer 
+ICALL_EXPORT
+gpointer
 ves_icall_System_IO_MonoIO_get_ConsoleOutput (void);
 
-extern gpointer 
+ICALL_EXPORT
+gpointer
 ves_icall_System_IO_MonoIO_get_ConsoleInput (void);
 
-extern gpointer 
+ICALL_EXPORT
+gpointer
 ves_icall_System_IO_MonoIO_get_ConsoleError (void);
 
-extern MonoBoolean
+ICALL_EXPORT
+MonoBoolean
 ves_icall_System_IO_MonoIO_CreatePipe (gpointer *read_handle, gpointer *write_handle, gint32 *error);
 
-extern MonoBoolean
+ICALL_EXPORT
+MonoBoolean
 ves_icall_System_IO_MonoIO_DuplicateHandle (gpointer source_process_handle, gpointer source_handle,
 		gpointer target_process_handle, gpointer *target_handle, gint32 access, gint32 inherit, gint32 options, gint32 *error);
 
-extern gunichar2 
+ICALL_EXPORT
+gunichar2
 ves_icall_System_IO_MonoIO_get_VolumeSeparatorChar (void);
 
-extern gunichar2 
+ICALL_EXPORT
+gunichar2
 ves_icall_System_IO_MonoIO_get_DirectorySeparatorChar (void);
 
-extern gunichar2 
+ICALL_EXPORT
+gunichar2
 ves_icall_System_IO_MonoIO_get_AltDirectorySeparatorChar (void);
 
-extern gunichar2 
+ICALL_EXPORT
+gunichar2
 ves_icall_System_IO_MonoIO_get_PathSeparator (void);
 
-extern MonoArrayHandle
+ICALL_EXPORT
+MonoArrayHandle
 ves_icall_System_IO_MonoIO_get_InvalidPathChars (MonoError *error);
 
-extern void ves_icall_System_IO_MonoIO_Lock (gpointer handle, gint64 position,
+ICALL_EXPORT
+void ves_icall_System_IO_MonoIO_Lock (gpointer handle, gint64 position,
 					     gint64 length, gint32 *error);
-extern void ves_icall_System_IO_MonoIO_Unlock (gpointer handle, gint64 position,
-					       gint64 length, gint32 *error);
 
-extern MonoBoolean
+ICALL_EXPORT
+void ves_icall_System_IO_MonoIO_Unlock (gpointer handle, gint64 position,
+					       gint64 length, gint32 *error);
+ICALL_EXPORT
+MonoBoolean
 ves_icall_System_IO_MonoIO_ReplaceFile (const gunichar2 *source_file_name, const gunichar2 *destination_file_name,
 					const gunichar2 *destination_backup_file_name, MonoBoolean ignore_metadata_errors,
 					gint32 *error);
 
 #if defined (TARGET_IOS) || defined (TARGET_ANDROID)
 
-MONO_RT_EXTERNAL_ONLY
-extern gint64
+MONO_API MONO_RT_EXTERNAL_ONLY gint64
 mono_filesize_from_path (MonoString *path);
 
 extern gint64
@@ -260,6 +283,7 @@ mono_filesize_from_fd (int fd);
 
 #endif
 
+ICALL_EXPORT
 void
 ves_icall_System_IO_MonoIO_DumpHandles (void);
 

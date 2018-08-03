@@ -363,7 +363,7 @@ mono_threads_platform_exit (gsize exit_code)
 }
 
 int
-ves_icall_System_Threading_Thread_SystemMaxStackSize (MonoError *error)
+mono_thread_info_get_system_max_stack_size (void)
 {
 	//FIXME
 	return INT_MAX;

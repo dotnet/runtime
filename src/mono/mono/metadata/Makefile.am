@@ -250,6 +250,7 @@ common_sources = \
 	domain-internals.h	\
 	environment.c		\
 	environment.h		\
+	environment-internal.h	\
 	exception.c		\
 	exception.h		\
 	exception-internals.h	\
@@ -260,6 +261,7 @@ common_sources = \
 	filewatcher.h		\
 	gc-internals.h		\
 	icall.c			\
+	icalls.h		\
 	icall-internals.h \
 	icall-def.h		\
 	icall-table.h	\
@@ -424,6 +426,9 @@ libmonoruntimesgen_la_LIBADD = libmonoruntime-config.la
 libmonoruntimeincludedir = $(includedir)/mono-$(API_VER)/mono/metadata
 
 # This list is sorted for easier searching.
+# These are public headers.
+# They may not use G_BEGIN_DECLS, guint, glib.h, etc.
+# debug-mono-symfile.h is an exception. It is only semi-public.
 libmonoruntimeinclude_HEADERS = \
 	appdomain.h		\
 	assembly.h		\

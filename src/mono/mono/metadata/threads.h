@@ -21,41 +21,42 @@ MONO_BEGIN_DECLS
 /* This callback should return TRUE if the runtime must wait for the thread, FALSE otherwise */
 typedef mono_bool (*MonoThreadManageCallback) (MonoThread* thread);
 
-extern MONO_API void mono_thread_init (MonoThreadStartCB start_cb,
+MONO_API void mono_thread_init (MonoThreadStartCB start_cb,
 			      MonoThreadAttachCB attach_cb);
-extern MONO_API void mono_thread_cleanup (void);
-extern MONO_API void mono_thread_manage(void);
+MONO_API void mono_thread_cleanup (void);
+MONO_API void mono_thread_manage(void);
 
-extern MONO_API MonoThread *mono_thread_current (void);
+MONO_API MonoThread *mono_thread_current (void);
 
-extern MONO_API void        mono_thread_set_main (MonoThread *thread);
-extern MONO_API MonoThread *mono_thread_get_main (void);
+MONO_API void        mono_thread_set_main (MonoThread *thread);
+MONO_API MonoThread *mono_thread_get_main (void);
 
-extern MONO_RT_EXTERNAL_ONLY MONO_API void mono_thread_stop (MonoThread *thread);
+MONO_API MONO_RT_EXTERNAL_ONLY void mono_thread_stop (MonoThread *thread);
 
-extern MONO_API void mono_thread_new_init (intptr_t tid, void* stack_start,
+MONO_API void mono_thread_new_init (intptr_t tid, void* stack_start,
 				  void* func);
 
-extern MONO_RT_EXTERNAL_ONLY MONO_API void
+MONO_RT_EXTERNAL_ONLY MONO_API void
 mono_thread_create (MonoDomain *domain, void* func, void* arg);
 
-extern MONO_API MonoThread *mono_thread_attach (MonoDomain *domain);
-extern MONO_API void mono_thread_detach (MonoThread *thread);
-extern MONO_API void mono_thread_exit (void);
+MONO_API MonoThread *mono_thread_attach (MonoDomain *domain);
+MONO_API void mono_thread_detach (MonoThread *thread);
+MONO_API void mono_thread_exit (void);
 
-extern MONO_API char   *mono_thread_get_name_utf8 (MonoThread *thread);
-extern MONO_API int32_t mono_thread_get_managed_id (MonoThread *thread);
+MONO_API char   *mono_thread_get_name_utf8 (MonoThread *thread);
+MONO_API int32_t mono_thread_get_managed_id (MonoThread *thread);
 
 MONO_API void     mono_thread_set_manage_callback (MonoThread *thread, MonoThreadManageCallback func);
 
-extern MONO_API void mono_threads_set_default_stacksize (uint32_t stacksize);
-extern MONO_API uint32_t mono_threads_get_default_stacksize (void);
+MONO_API void mono_threads_set_default_stacksize (uint32_t stacksize);
+MONO_API uint32_t mono_threads_get_default_stacksize (void);
 
 MONO_API void mono_threads_request_thread_dump (void);
 
 MONO_API mono_bool mono_thread_is_foreign (MonoThread *thread);
 
-extern MONO_RT_EXTERNAL_ONLY MONO_API mono_bool mono_thread_detach_if_exiting (void);
+MONO_API MONO_RT_EXTERNAL_ONLY mono_bool
+mono_thread_detach_if_exiting (void);
 
 MONO_END_DECLS
 

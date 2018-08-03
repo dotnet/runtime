@@ -968,7 +968,7 @@ HANDLES(ICALL(THREAD_22, "SleepInternal", ves_icall_System_Threading_Thread_Slee
 HANDLES(ICALL(THREAD_54, "SpinWait_nop", ves_icall_System_Threading_Thread_SpinWait_nop))
 HANDLES(ICALL(THREAD_23, "SuspendInternal", ves_icall_System_Threading_Thread_Suspend))
 // FIXME SystemMaxStackStize should be SystemMaxStackSize
-HANDLES(ICALL(THREAD_56, "SystemMaxStackStize", ves_icall_System_Threading_Thread_SystemMaxStackSize))
+NOHANDLES(ICALL(THREAD_56, "SystemMaxStackStize", ves_icall_System_Threading_Thread_SystemMaxStackSize))
 HANDLES(ICALL(THREAD_25, "Thread_internal", ves_icall_System_Threading_Thread_Thread_internal))
 NOHANDLES(ICALL(THREAD_26, "VolatileRead(byte&)", ves_icall_System_Threading_Thread_VolatileRead1))
 NOHANDLES(ICALL(THREAD_27, "VolatileRead(double&)", ves_icall_System_Threading_Thread_VolatileReadDouble))
@@ -996,7 +996,7 @@ NOHANDLES(ICALL(THREAD_48, "VolatileWrite(uint&,uint)", ves_icall_System_Threadi
 NOHANDLES(ICALL(THREAD_49, "VolatileWrite(uint16&,uint16)", ves_icall_System_Threading_Thread_VolatileWrite2))
 NOHANDLES(ICALL(THREAD_50, "VolatileWrite(uintptr&,uintptr)", ves_icall_System_Threading_Thread_VolatileWriteIntPtr))
 NOHANDLES(ICALL(THREAD_51, "VolatileWrite(ulong&,ulong)", ves_icall_System_Threading_Thread_VolatileWrite8))
-NOHANDLES(ICALL(THREAD_9, "YieldInternal", mono_threads_platform_yield))
+NOHANDLES(ICALL(THREAD_9, "YieldInternal", ves_icall_System_Threading_Thread_YieldInternal))
 NOHANDLES(ICALL(THREAD_52, "current_lcid()", ves_icall_System_Threading_Thread_current_lcid))
 
 ICALL_TYPE(THREADP, "System.Threading.ThreadPool", THREADP_1)

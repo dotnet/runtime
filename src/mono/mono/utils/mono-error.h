@@ -66,8 +66,7 @@ typedef struct _MonoErrorBoxed MonoErrorBoxed;
 
 MONO_BEGIN_DECLS
 
-MONO_RT_EXTERNAL_ONLY
-MONO_API void
+MONO_API MONO_RT_EXTERNAL_ONLY void
 mono_error_init (MonoError *error);
 
 MONO_API void

@@ -36,16 +36,6 @@ typedef struct _MonoDynamicMethod MonoDynamicMethod;
  */
 #define MONO_PROP_DYNAMIC_CATTR 0x1000
 
-#ifdef ENABLE_ICALL_EXPORT
-#pragma GCC diagnostic ignored "-Wmissing-prototypes"
-#define ICALL_DECL_EXPORT MONO_API
-#define ICALL_EXPORT MONO_API
-#else
-#define ICALL_DECL_EXPORT
-/* Can't be static as icall.c defines icalls referenced by icall-tables.c */
-#define ICALL_EXPORT
-#endif
-
 typedef enum {
 #define WRAPPER(e,n) MONO_WRAPPER_ ## e,
 #include "wrapper-types.h"

@@ -15,6 +15,7 @@
 #include <mono/metadata/object.h>
 #include <mono/utils/mono-compiler.h>
 #include <mono/utils/mono-coop-mutex.h>
+#include <mono/metadata/icalls.h>
 
 G_BEGIN_DECLS
 
@@ -127,24 +128,31 @@ mono_monitor_threads_sync_members_offset (int *status_offset, int *nest_offset);
 #define MONO_THREADS_SYNC_MEMBER_OFFSET(o)	((o)>>8)
 #define MONO_THREADS_SYNC_MEMBER_SIZE(o)	((o)&0xff)
 
+ICALL_EXPORT
 MonoBoolean
 ves_icall_System_Threading_Monitor_Monitor_test_owner (MonoObject *obj);
 
+ICALL_EXPORT
 MonoBoolean
 ves_icall_System_Threading_Monitor_Monitor_test_synchronised (MonoObject *obj);
 
+ICALL_EXPORT
 void
 ves_icall_System_Threading_Monitor_Monitor_pulse (MonoObject *obj);
 
+ICALL_EXPORT
 void
 ves_icall_System_Threading_Monitor_Monitor_pulse_all (MonoObject *obj);
 
+ICALL_EXPORT
 MonoBoolean
 ves_icall_System_Threading_Monitor_Monitor_wait (MonoObject *obj, guint32 ms);
 
+ICALL_EXPORT
 void
 ves_icall_System_Threading_Monitor_Monitor_try_enter_with_atomic_var (MonoObject *obj, guint32 ms, MonoBoolean *lockTaken);
 
+ICALL_EXPORT
 void
 ves_icall_System_Threading_Monitor_Monitor_Enter (MonoObject *obj);
 

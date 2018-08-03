@@ -18,10 +18,12 @@
 #include <mono/utils/mono-compiler.h>
 #include <mono/utils/mono-error.h>
 #include <mono/utils/mono-publib.h>
+#include <mono/metadata/icalls.h>
 
 G_BEGIN_DECLS
 
 /* System.Environment */
+ICALL_EXPORT
 MonoStringHandle
 ves_icall_System_Environment_get_UserName (MonoError *error);
 

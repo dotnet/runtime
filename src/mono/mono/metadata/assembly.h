@@ -12,39 +12,39 @@ MONO_BEGIN_DECLS
 
 MONO_API void          mono_assemblies_init     (void);
 MONO_API void          mono_assemblies_cleanup  (void);
-MONO_RT_EXTERNAL_ONLY
-MONO_API MonoAssembly *mono_assembly_open       (const char *filename,
+MONO_API MONO_RT_EXTERNAL_ONLY
+MonoAssembly *mono_assembly_open       (const char *filename,
 				       	MonoImageOpenStatus *status);
-MONO_RT_EXTERNAL_ONLY
-MONO_API MonoAssembly *mono_assembly_open_full (const char *filename,
+MONO_API MONO_RT_EXTERNAL_ONLY
+MonoAssembly *mono_assembly_open_full (const char *filename,
 				       	MonoImageOpenStatus *status,
 					mono_bool refonly);
 MONO_API MonoAssembly* mono_assembly_load       (MonoAssemblyName *aname, 
                                        	const char       *basedir, 
 				     	MonoImageOpenStatus *status);
-MONO_RT_EXTERNAL_ONLY
-MONO_API MonoAssembly* mono_assembly_load_full (MonoAssemblyName *aname, 
+MONO_API MONO_RT_EXTERNAL_ONLY
+MonoAssembly* mono_assembly_load_full (MonoAssemblyName *aname,
                                        	const char       *basedir, 
 				     	MonoImageOpenStatus *status,
 					mono_bool refonly);
-MONO_RT_EXTERNAL_ONLY
-MONO_API MonoAssembly* mono_assembly_load_from  (MonoImage *image, const char *fname,
+MONO_API MONO_RT_EXTERNAL_ONLY
+MonoAssembly* mono_assembly_load_from  (MonoImage *image, const char *fname,
 					MonoImageOpenStatus *status);
-MONO_RT_EXTERNAL_ONLY
-MONO_API MonoAssembly* mono_assembly_load_from_full  (MonoImage *image, const char *fname,
+MONO_API MONO_RT_EXTERNAL_ONLY
+MonoAssembly* mono_assembly_load_from_full  (MonoImage *image, const char *fname,
 					MonoImageOpenStatus *status,
 					mono_bool refonly);
 
-MONO_RT_EXTERNAL_ONLY
-MONO_API MonoAssembly* mono_assembly_load_with_partial_name (const char *name, MonoImageOpenStatus *status);
+MONO_API MONO_RT_EXTERNAL_ONLY
+MonoAssembly* mono_assembly_load_with_partial_name (const char *name, MonoImageOpenStatus *status);
 
-MONO_RT_EXTERNAL_ONLY
-MONO_API MonoAssembly* mono_assembly_loaded     (MonoAssemblyName *aname);
+MONO_API MONO_RT_EXTERNAL_ONLY
+MonoAssembly* mono_assembly_loaded     (MonoAssemblyName *aname);
 MONO_API MonoAssembly* mono_assembly_loaded_full (MonoAssemblyName *aname, mono_bool refonly);
 MONO_API void          mono_assembly_get_assemblyref (MonoImage *image, int index, MonoAssemblyName *aname);
 MONO_API void          mono_assembly_load_reference (MonoImage *image, int index);
 MONO_API void          mono_assembly_load_references (MonoImage *image, MonoImageOpenStatus *status);
-MONO_RT_EXTERNAL_ONLY MONO_API MonoImage*    mono_assembly_load_module (MonoAssembly *assembly, uint32_t idx);
+MONO_API MONO_RT_EXTERNAL_ONLY MonoImage*    mono_assembly_load_module (MonoAssembly *assembly, uint32_t idx);
 MONO_API void          mono_assembly_close      (MonoAssembly *assembly);
 MONO_API void          mono_assembly_setrootdir (const char *root_dir);
 MONO_API MONO_CONST_RETURN char *mono_assembly_getrootdir (void);
@@ -52,10 +52,10 @@ MONO_API char         *mono_native_getrootdir (void);
 MONO_API void	       mono_assembly_foreach    (MonoFunc func, void* user_data);
 MONO_API void          mono_assembly_set_main   (MonoAssembly *assembly);
 MONO_API MonoAssembly *mono_assembly_get_main   (void);
-MONO_RT_EXTERNAL_ONLY
-MONO_API MonoImage    *mono_assembly_get_image  (MonoAssembly *assembly);
-MONO_RT_EXTERNAL_ONLY
-MONO_API MonoAssemblyName *mono_assembly_get_name (MonoAssembly *assembly);
+MONO_API MONO_RT_EXTERNAL_ONLY
+MonoImage    *mono_assembly_get_image  (MonoAssembly *assembly);
+MONO_API MONO_RT_EXTERNAL_ONLY
+MonoAssemblyName *mono_assembly_get_name (MonoAssembly *assembly);
 MONO_API mono_bool      mono_assembly_fill_assembly_name (MonoImage *image, MonoAssemblyName *aname);
 MONO_API mono_bool      mono_assembly_names_equal (MonoAssemblyName *l, MonoAssemblyName *r);
 MONO_API char*         mono_stringify_assembly_name (MonoAssemblyName *aname);

@@ -55,8 +55,7 @@ mono_cominterop_emit_marshal_safearray (EmitMarshalContext *m, int argnum,
 										int conv_arg, MonoType **conv_arg_type,
 										MarshalAction action);
 
-MONO_RT_EXTERNAL_ONLY
-MONO_API MonoString * 
+MONO_API MONO_RT_EXTERNAL_ONLY MonoString *
 mono_string_from_bstr (/*mono_bstr*/gpointer bstr);
 
 MonoString *

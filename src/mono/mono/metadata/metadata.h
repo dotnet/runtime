@@ -236,8 +236,8 @@ MONO_API uint32_t mono_metadata_typedef_from_method (MonoImage *meta, uint32_t t
 MONO_API uint32_t mono_metadata_nested_in_typedef   (MonoImage *meta, uint32_t table_index);
 MONO_API uint32_t mono_metadata_nesting_typedef     (MonoImage *meta, uint32_t table_index, uint32_t start_index);
 
-MONO_RT_EXTERNAL_ONLY
-MONO_API MonoClass** mono_metadata_interfaces_from_typedef (MonoImage *meta, uint32_t table_index, unsigned int *count);
+MONO_API MONO_RT_EXTERNAL_ONLY
+MonoClass** mono_metadata_interfaces_from_typedef (MonoImage *meta, uint32_t table_index, unsigned int *count);
 
 MONO_API uint32_t     mono_metadata_events_from_typedef     (MonoImage *meta, uint32_t table_index, unsigned int *end_idx);
 MONO_API uint32_t     mono_metadata_methods_from_event      (MonoImage *meta, uint32_t table_index, unsigned int *end);
@@ -399,28 +399,27 @@ MONO_API int            mono_metadata_parse_custom_mod  (MonoImage      *m,
 						MonoCustomMod   *dest,
 						const char      *ptr,
 						const char     **rptr);
-MONO_RT_EXTERNAL_ONLY
-MONO_API MonoArrayType *mono_metadata_parse_array       (MonoImage      *m,
+MONO_API MONO_RT_EXTERNAL_ONLY
+MonoArrayType *mono_metadata_parse_array       (MonoImage      *m,
 						const char      *ptr,
 						const char     **rptr);
 MONO_API void           mono_metadata_free_array        (MonoArrayType     *array);
-MONO_RT_EXTERNAL_ONLY
-MONO_API MonoType      *mono_metadata_parse_type        (MonoImage      *m,
+MONO_API MONO_RT_EXTERNAL_ONLY MonoType      *mono_metadata_parse_type        (MonoImage      *m,
 						MonoParseTypeMode  mode,
 						short              opt_attrs,
 						const char        *ptr,
 						const char       **rptr);
-MONO_RT_EXTERNAL_ONLY
-MONO_API MonoType      *mono_metadata_parse_param       (MonoImage      *m,
+MONO_API MONO_RT_EXTERNAL_ONLY
+MonoType      *mono_metadata_parse_param       (MonoImage      *m,
 						const char      *ptr,
 						const char      **rptr);
-MONO_RT_EXTERNAL_ONLY
-MONO_API MonoType      *mono_metadata_parse_field_type  (MonoImage      *m,
+MONO_API MONO_RT_EXTERNAL_ONLY
+MonoType      *mono_metadata_parse_field_type  (MonoImage      *m,
 		                                short            field_flags,
 						const char      *ptr,
 						const char      **rptr);
-MONO_RT_EXTERNAL_ONLY
-MONO_API MonoType      *mono_type_create_from_typespec  (MonoImage        *image, 
+MONO_API MONO_RT_EXTERNAL_ONLY
+MonoType      *mono_type_create_from_typespec  (MonoImage        *image,
 					        uint32_t           type_spec);
 MONO_API void           mono_metadata_free_type         (MonoType        *type);
 MONO_API int            mono_type_size                  (MonoType        *type, 
@@ -438,12 +437,12 @@ MONO_API MonoMethodSignature  *mono_metadata_signature_alloc (MonoImage *image, 
 
 MONO_API MonoMethodSignature  *mono_metadata_signature_dup (MonoMethodSignature *sig);
 
-MONO_RT_EXTERNAL_ONLY
-MONO_API MonoMethodSignature  *mono_metadata_parse_signature (MonoImage *image, 
+MONO_API MONO_RT_EXTERNAL_ONLY
+MonoMethodSignature  *mono_metadata_parse_signature (MonoImage *image, 
 						     uint32_t    token);
 
-MONO_RT_EXTERNAL_ONLY
-MONO_API MonoMethodSignature  *mono_metadata_parse_method_signature (MonoImage            *m,
+MONO_API MONO_RT_EXTERNAL_ONLY
+MonoMethodSignature  *mono_metadata_parse_method_signature (MonoImage            *m,
                                                             int                    def,
                                                             const char            *ptr,
                                                             const char           **rptr);
@@ -454,8 +453,8 @@ MONO_API mono_bool          mono_metadata_signature_equal (MonoMethodSignature *
 
 MONO_API unsigned int             mono_signature_hash (MonoMethodSignature *sig);
 
-MONO_RT_EXTERNAL_ONLY
-MONO_API MonoMethodHeader *mono_metadata_parse_mh (MonoImage *m, const char *ptr);
+MONO_API MONO_RT_EXTERNAL_ONLY
+MonoMethodHeader *mono_metadata_parse_mh (MonoImage *m, const char *ptr);
 MONO_API void              mono_metadata_free_mh  (MonoMethodHeader *mh);
 
 /* MonoMethodHeader acccessors */

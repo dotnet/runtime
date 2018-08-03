@@ -43,13 +43,13 @@ mono_stackdata_get_stackpointer (const MonoStackData *stackdata)
 	return stackdata->stackpointer;
 }
 
-MONO_RT_EXTERNAL_ONLY MONO_API gpointer
+MONO_API MONO_RT_EXTERNAL_ONLY gpointer
 mono_threads_enter_gc_unsafe_region (gpointer* stackdata);
 
 gpointer
 mono_threads_enter_gc_unsafe_region_internal (MonoStackData *stackdata);
 
-MONO_RT_EXTERNAL_ONLY MONO_API void
+MONO_API MONO_RT_EXTERNAL_ONLY void
 mono_threads_exit_gc_unsafe_region (gpointer cookie, gpointer* stackdata);
 
 void
@@ -67,16 +67,16 @@ mono_threads_exit_gc_unsafe_region_unbalanced (gpointer cookie, gpointer* stackd
 void
 mono_threads_exit_gc_unsafe_region_unbalanced_internal (gpointer cookie, MonoStackData *stackdata);
 
-MONO_RT_EXTERNAL_ONLY MONO_API void
+MONO_API MONO_RT_EXTERNAL_ONLY void
 mono_threads_assert_gc_unsafe_region (void);
 
-MONO_RT_EXTERNAL_ONLY MONO_API gpointer
+MONO_API MONO_RT_EXTERNAL_ONLY gpointer
 mono_threads_enter_gc_safe_region (gpointer *stackdata);
 
 MONO_PROFILER_API gpointer
 mono_threads_enter_gc_safe_region_internal (MonoStackData *stackdata);
 
-MONO_RT_EXTERNAL_ONLY MONO_API void
+MONO_API MONO_RT_EXTERNAL_ONLY void
 mono_threads_exit_gc_safe_region (gpointer cookie, gpointer *stackdata);
 
 MONO_PROFILER_API void

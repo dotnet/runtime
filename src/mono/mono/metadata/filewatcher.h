@@ -14,6 +14,7 @@
 #include <mono/metadata/object.h>
 #include "mono/utils/mono-compiler.h"
 #include <glib.h>
+#include <mono/metadata/icalls.h>
 
 #ifdef HAVE_UNISTD_H
 #include <unistd.h>
@@ -21,17 +22,24 @@
 
 G_BEGIN_DECLS
 
+ICALL_EXPORT
 gint ves_icall_System_IO_FSW_SupportsFSW (void);
 
+ICALL_EXPORT
 gboolean ves_icall_System_IO_FAMW_InternalFAMNextEvent (gpointer conn,
 							MonoString **filename,
 							gint *code,
 							gint *reqnum);
-
+ICALL_EXPORT
 int ves_icall_System_IO_InotifyWatcher_GetInotifyInstance (void);
+
+ICALL_EXPORT
 int ves_icall_System_IO_InotifyWatcher_AddWatch (int fd, MonoString *directory, gint32 mask);
+
+ICALL_EXPORT
 int ves_icall_System_IO_InotifyWatcher_RemoveWatch (int fd, gint32 watch_descriptor);
 
+ICALL_EXPORT
 int ves_icall_System_IO_KqueueMonitor_kevent_notimeout (int *kq, gpointer changelist, int nchanges, gpointer eventlist, int nevents);
 
 #ifdef HOST_IOS // This will obsoleted by System.Native as soon as it's ported to iOS

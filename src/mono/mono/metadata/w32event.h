@@ -11,6 +11,7 @@
 #include "object.h"
 #include "object-internals.h"
 #include "w32handle-namespace.h"
+#include <mono/metadata/icalls.h>
 
 void
 mono_w32event_init (void);
@@ -27,18 +28,23 @@ mono_w32event_set (gpointer handle);
 void
 mono_w32event_reset (gpointer handle);
 
+ICALL_EXPORT
 gpointer
 ves_icall_System_Threading_Events_CreateEvent_internal (MonoBoolean manual, MonoBoolean initial, MonoStringHandle name, gint32 *err, MonoError *error);
 
+ICALL_EXPORT
 gboolean
 ves_icall_System_Threading_Events_SetEvent_internal (gpointer handle);
 
+ICALL_EXPORT
 gboolean
 ves_icall_System_Threading_Events_ResetEvent_internal (gpointer handle);
 
+ICALL_EXPORT
 void
 ves_icall_System_Threading_Events_CloseEvent_internal (gpointer handle);
 
+ICALL_EXPORT
 gpointer
 ves_icall_System_Threading_Events_OpenEvent_internal (MonoStringHandle name, gint32 rights, gint32 *err, MonoError *error);
 

@@ -35,6 +35,7 @@
 #include <mono/metadata/icall-table.h>
 #include <mono/utils/mono-publib.h>
 #include <mono/utils/bsearch.h>
+#include <mono/metadata/icalls.h>
 
 /*
  * icall.c defines a lot of icalls as static, to avoid having to add prototypes for
@@ -42,7 +43,7 @@
  */
 // Generate prototypes
 #define ICALL_TYPE(id,name,first)
-#define ICALL(id,name,func) extern void func (void);
+#define ICALL(id,name,func) ICALL_EXPORT void func (void);
 #define HANDLES(inner) inner
 #define NOHANDLES(inner) inner
 #include "metadata/icall-def.h"

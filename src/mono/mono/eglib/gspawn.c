@@ -80,7 +80,9 @@
  * arm-apple-darwin9.  We'll manually define the symbol on Apple as it does
  * in fact exist on all implementations (so far) 
  */
+G_BEGIN_DECLS
 gchar ***_NSGetEnviron(void);
+G_END_DECLS
 #define environ (*_NSGetEnviron())
 #else
 static char *mono_environ[1] = { NULL };
@@ -89,7 +91,9 @@ static char *mono_environ[1] = { NULL };
 #elif defined(_MSC_VER)
 /* MS defines this in stdlib.h */
 #else
+G_BEGIN_DECLS
 extern char **environ;
+G_END_DECLS
 #endif
 
 #ifndef G_OS_WIN32

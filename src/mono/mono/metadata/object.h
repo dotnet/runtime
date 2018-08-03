@@ -72,41 +72,41 @@ typedef void	    (*MonoMainThreadFunc)    (void* user_data);
 MONO_API mono_unichar2 *mono_string_chars  (MonoString *s);
 MONO_API int            mono_string_length (MonoString *s);
 
-MONO_RT_EXTERNAL_ONLY MONO_API MonoObject *
+MONO_API MONO_RT_EXTERNAL_ONLY MonoObject *
 mono_object_new		    (MonoDomain *domain, MonoClass *klass);
 
-MONO_RT_EXTERNAL_ONLY
-MONO_API MonoObject *
+MONO_API MONO_RT_EXTERNAL_ONLY
+MonoObject *
 mono_object_new_specific    (MonoVTable *vtable);
 
 /* can be used for classes without finalizer in non-profiling mode */
-MONO_RT_EXTERNAL_ONLY
-MONO_API MonoObject *
+MONO_API MONO_RT_EXTERNAL_ONLY
+MonoObject *
 mono_object_new_fast	    (MonoVTable *vtable);
 
-MONO_RT_EXTERNAL_ONLY
-MONO_API MonoObject *
+MONO_API MONO_RT_EXTERNAL_ONLY
+MonoObject *
 mono_object_new_alloc_specific (MonoVTable *vtable);
 
-MONO_RT_EXTERNAL_ONLY
-MONO_API MonoObject *
+MONO_API MONO_RT_EXTERNAL_ONLY
+MonoObject *
 mono_object_new_from_token  (MonoDomain *domain, MonoImage *image, uint32_t token);
 
-MONO_RT_EXTERNAL_ONLY
-MONO_API MonoArray*
+MONO_API MONO_RT_EXTERNAL_ONLY
+MonoArray*
 mono_array_new		    (MonoDomain *domain, MonoClass *eclass, uintptr_t n);
 
-MONO_RT_EXTERNAL_ONLY
-MONO_API MonoArray*
+MONO_API MONO_RT_EXTERNAL_ONLY
+MonoArray*
 mono_array_new_full	    (MonoDomain *domain, MonoClass *array_class,
 			     uintptr_t *lengths, intptr_t *lower_bounds);
 
-MONO_RT_EXTERNAL_ONLY
-MONO_API MonoArray *
+MONO_API MONO_RT_EXTERNAL_ONLY
+MonoArray *
 mono_array_new_specific	    (MonoVTable *vtable, uintptr_t n);
 
-MONO_RT_EXTERNAL_ONLY
-MONO_API MonoArray*
+MONO_API MONO_RT_EXTERNAL_ONLY
+MonoArray*
 mono_array_clone	    (MonoArray *array);
 
 MONO_API char*
@@ -118,46 +118,46 @@ mono_array_length           (MonoArray *array);
 MONO_API MonoString*
 mono_string_empty	      (MonoDomain *domain);
 
-MONO_RT_EXTERNAL_ONLY
-MONO_API MonoString*
+MONO_API MONO_RT_EXTERNAL_ONLY
+MonoString*
 mono_string_empty_wrapper   (void);
 
-MONO_RT_EXTERNAL_ONLY
-MONO_API MonoString*
+MONO_API MONO_RT_EXTERNAL_ONLY
+MonoString*
 mono_string_new_utf16	    (MonoDomain *domain, const mono_unichar2 *text, int32_t len);
 
-MONO_RT_EXTERNAL_ONLY
-MONO_API MonoString*
+MONO_API MONO_RT_EXTERNAL_ONLY
+MonoString*
 mono_string_new_size	    (MonoDomain *domain, int32_t len);
 
-MONO_RT_EXTERNAL_ONLY
-MONO_API MonoString*
+MONO_API MONO_RT_EXTERNAL_ONLY
+MonoString*
 mono_ldstr		    (MonoDomain *domain, MonoImage *image, uint32_t str_index);
 
 MONO_API MonoString*
 mono_string_is_interned	    (MonoString *str);
 
-MONO_RT_EXTERNAL_ONLY
-MONO_API MonoString*
+MONO_API MONO_RT_EXTERNAL_ONLY
+MonoString*
 mono_string_intern	    (MonoString *str);
 
-MONO_RT_EXTERNAL_ONLY
-MONO_API MonoString*
+MONO_API MONO_RT_EXTERNAL_ONLY
+MonoString*
 mono_string_new		    (MonoDomain *domain, const char *text);
 
 MONO_API MonoString*
 mono_string_new_wrapper	    (const char *text);
 
-MONO_RT_EXTERNAL_ONLY
-MONO_API MonoString*
+MONO_API MONO_RT_EXTERNAL_ONLY
+MonoString*
 mono_string_new_len	    (MonoDomain *domain, const char *text, unsigned int length);
 
-MONO_RT_EXTERNAL_ONLY
-MONO_API MonoString*
+MONO_API MONO_RT_EXTERNAL_ONLY
+MonoString*
 mono_string_new_utf32	    (MonoDomain *domain, const mono_unichar4 *text, int32_t len);
 
-MONO_RT_EXTERNAL_ONLY
-MONO_API char *
+MONO_API MONO_RT_EXTERNAL_ONLY
+char *
 mono_string_to_utf8	    (MonoString *string_obj);
 
 MONO_API char *
@@ -169,12 +169,10 @@ mono_string_to_utf16	    (MonoString *string_obj);
 MONO_API mono_unichar4 *
 mono_string_to_utf32	    (MonoString *string_obj);
 
-MONO_RT_EXTERNAL_ONLY
-MONO_API MonoString *
+MONO_API MONO_RT_EXTERNAL_ONLY MonoString *
 mono_string_from_utf16	    (/*const*/ mono_unichar2 *data);
 
-MONO_RT_EXTERNAL_ONLY
-MONO_API MonoString *
+MONO_API MONO_RT_EXTERNAL_ONLY MonoString *
 mono_string_from_utf32	    (/*const*/ mono_unichar4 *data);
 
 MONO_API mono_bool
@@ -186,12 +184,11 @@ mono_string_hash            (MonoString *s);
 MONO_API int
 mono_object_hash            (MonoObject* obj);
 
-MONO_RT_EXTERNAL_ONLY
-MONO_API MonoString *
+MONO_API MONO_RT_EXTERNAL_ONLY
+MonoString *
 mono_object_to_string (MonoObject *obj, MonoObject **exc);
 
-MONO_RT_EXTERNAL_ONLY
-MONO_API MonoObject *
+MONO_API MONO_RT_EXTERNAL_ONLY MonoObject *
 mono_value_box		    (MonoDomain *domain, MonoClass *klass, void* val);
 
 MONO_API void
@@ -212,20 +209,16 @@ mono_object_get_class       (MonoObject *obj);
 MONO_API void*
 mono_object_unbox	    (MonoObject *obj);
 
-MONO_RT_EXTERNAL_ONLY
-MONO_API MonoObject *
+MONO_API MONO_RT_EXTERNAL_ONLY MonoObject *
 mono_object_clone	    (MonoObject *obj);
 
-MONO_RT_EXTERNAL_ONLY
-MONO_API MonoObject *
+MONO_API MONO_RT_EXTERNAL_ONLY MonoObject *
 mono_object_isinst	    (MonoObject *obj, MonoClass *klass);
 
-MONO_RT_EXTERNAL_ONLY
-MONO_API MonoObject *
+MONO_API MONO_RT_EXTERNAL_ONLY MonoObject *
 mono_object_isinst_mbyref   (MonoObject *obj, MonoClass *klass);
 
-MONO_RT_EXTERNAL_ONLY
-MONO_API MonoObject *
+MONO_API MONO_RT_EXTERNAL_ONLY MonoObject *
 mono_object_castclass_mbyref (MonoObject *obj, MonoClass *klass);
 
 MONO_API mono_bool 
@@ -243,24 +236,19 @@ mono_object_get_size         (MonoObject *o);
 MONO_API void 
 mono_monitor_exit            (MonoObject *obj);
 
-MONO_RT_EXTERNAL_ONLY
-MONO_API void
+MONO_API MONO_RT_EXTERNAL_ONLY void
 mono_raise_exception	    (MonoException *ex);
 
-MONO_RT_EXTERNAL_ONLY
-MONO_API mono_bool
+MONO_API MONO_RT_EXTERNAL_ONLY mono_bool
 mono_runtime_set_pending_exception (MonoException *exc, mono_bool overwrite);
 
-MONO_RT_EXTERNAL_ONLY
-MONO_API void
+MONO_API MONO_RT_EXTERNAL_ONLY void
 mono_reraise_exception	    (MonoException *ex);
 
-MONO_RT_EXTERNAL_ONLY
-MONO_API void
+MONO_API MONO_RT_EXTERNAL_ONLY void
 mono_runtime_object_init    (MonoObject *this_obj);
 
-MONO_RT_EXTERNAL_ONLY
-MONO_API void
+MONO_API MONO_RT_EXTERNAL_ONLY void
 mono_runtime_class_init	    (MonoVTable *vtable);
 
 MONO_API MonoDomain *
@@ -272,8 +260,7 @@ mono_vtable_class           (MonoVTable *vtable);
 MONO_API MonoMethod*
 mono_object_get_virtual_method (MonoObject *obj, MonoMethod *method);
 
-MONO_RT_EXTERNAL_ONLY
-MONO_API MonoObject*
+MONO_API MONO_RT_EXTERNAL_ONLY MonoObject*
 mono_runtime_invoke	    (MonoMethod *method, void *obj, void **params,
 			     MonoObject **exc);
 
@@ -286,22 +273,18 @@ mono_get_delegate_begin_invoke (MonoClass *klass);
 MONO_API MonoMethod *
 mono_get_delegate_end_invoke (MonoClass *klass);
 
-MONO_RT_EXTERNAL_ONLY
-MONO_API MonoObject*
+MONO_API MONO_RT_EXTERNAL_ONLY MonoObject*
 mono_runtime_delegate_invoke (MonoObject *delegate, void **params, 
 			      MonoObject **exc);
 
-MONO_RT_EXTERNAL_ONLY
-MONO_API MonoObject*
+MONO_API MONO_RT_EXTERNAL_ONLY MonoObject*
 mono_runtime_invoke_array   (MonoMethod *method, void *obj, MonoArray *params,
 			     MonoObject **exc);
 
-MONO_RT_EXTERNAL_ONLY
-MONO_API void*
+MONO_API MONO_RT_EXTERNAL_ONLY void*
 mono_method_get_unmanaged_thunk (MonoMethod *method);
 
-MONO_RT_EXTERNAL_ONLY
-MONO_API MonoArray*
+MONO_API MONO_RT_EXTERNAL_ONLY MonoArray*
 mono_runtime_get_main_args  (void);
 
 MONO_API void
@@ -309,13 +292,11 @@ mono_runtime_exec_managed_code (MonoDomain *domain,
 				MonoMainThreadFunc main_func,
 				void* main_args);
 
-MONO_RT_EXTERNAL_ONLY
-MONO_API int
+MONO_API MONO_RT_EXTERNAL_ONLY int
 mono_runtime_run_main	    (MonoMethod *method, int argc, char* argv[], 
 			     MonoObject **exc);
 
-MONO_RT_EXTERNAL_ONLY
-MONO_API int
+MONO_API MONO_RT_EXTERNAL_ONLY int
 mono_runtime_exec_main	    (MonoMethod *method, MonoArray *args,
 			     MonoObject **exc);
 
@@ -324,20 +305,16 @@ mono_runtime_set_main_args  (int argc, char* argv[]);
 
 /* The following functions won't be available with mono was configured with remoting disabled. */
 /*#ifndef DISABLE_REMOTING */
-MONO_RT_EXTERNAL_ONLY
-MONO_API void*
+MONO_API MONO_RT_EXTERNAL_ONLY void*
 mono_load_remote_field (MonoObject *this_obj, MonoClass *klass, MonoClassField *field, void **res);
 
-MONO_RT_EXTERNAL_ONLY
-MONO_API MonoObject *
+MONO_API MONO_RT_EXTERNAL_ONLY MonoObject *
 mono_load_remote_field_new (MonoObject *this_obj, MonoClass *klass, MonoClassField *field);
 
-MONO_RT_EXTERNAL_ONLY
-MONO_API void
+MONO_API MONO_RT_EXTERNAL_ONLY void
 mono_store_remote_field (MonoObject *this_obj, MonoClass *klass, MonoClassField *field, void* val);
 
-MONO_RT_EXTERNAL_ONLY
-MONO_API void
+MONO_API MONO_RT_EXTERNAL_ONLY void
 mono_store_remote_field_new (MonoObject *this_obj, MonoClass *klass, MonoClassField *field, MonoObject *arg);
 
 /* #endif */
@@ -362,20 +339,16 @@ mono_field_static_set_value (MonoVTable *vt, MonoClassField *field, void *value)
 MONO_API void
 mono_field_get_value (MonoObject *obj, MonoClassField *field, void *value);
 
-MONO_RT_EXTERNAL_ONLY
-MONO_API void
+MONO_API MONO_RT_EXTERNAL_ONLY void
 mono_field_static_get_value (MonoVTable *vt, MonoClassField *field, void *value);
 
-MONO_RT_EXTERNAL_ONLY
-MONO_API MonoObject *
+MONO_API MONO_RT_EXTERNAL_ONLY MonoObject *
 mono_field_get_value_object (MonoDomain *domain, MonoClassField *field, MonoObject *obj);
 
-MONO_RT_EXTERNAL_ONLY
-MONO_API void
+MONO_API MONO_RT_EXTERNAL_ONLY void
 mono_property_set_value (MonoProperty *prop, void *obj, void **params, MonoObject **exc);
 
-MONO_RT_EXTERNAL_ONLY
-MONO_API MonoObject*
+MONO_API MONO_RT_EXTERNAL_ONLY MonoObject*
 mono_property_get_value (MonoProperty *prop, void *obj, void **params, MonoObject **exc);
 
 /* GC handles support 

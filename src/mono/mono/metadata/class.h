@@ -18,73 +18,72 @@ typedef struct _MonoClassField MonoClassField;
 typedef struct _MonoProperty MonoProperty;
 typedef struct _MonoEvent MonoEvent;
 
-MONO_RT_EXTERNAL_ONLY
-MONO_API MonoClass *
+MONO_API MONO_RT_EXTERNAL_ONLY
+MonoClass *
 mono_class_get             (MonoImage *image, uint32_t type_token);
 
-MONO_RT_EXTERNAL_ONLY
-MONO_API MonoClass *
+MONO_API MONO_RT_EXTERNAL_ONLY
+MonoClass *
 mono_class_get_full        (MonoImage *image, uint32_t type_token, MonoGenericContext *context);
 
 MONO_API mono_bool
 mono_class_init            (MonoClass *klass);
 
-MONO_RT_EXTERNAL_ONLY
-MONO_API MonoVTable *
+MONO_API MONO_RT_EXTERNAL_ONLY
+MonoVTable *
 mono_class_vtable          (MonoDomain *domain, MonoClass *klass);
 
-MONO_RT_EXTERNAL_ONLY MONO_API MonoClass *
+MONO_API MONO_RT_EXTERNAL_ONLY MonoClass *
 mono_class_from_name       (MonoImage *image, const char* name_space, const char *name);
 
-MONO_RT_EXTERNAL_ONLY MONO_API MonoClass *
+MONO_API MONO_RT_EXTERNAL_ONLY MonoClass *
 mono_class_from_name_case  (MonoImage *image, const char* name_space, const char *name);
 
-MONO_RT_EXTERNAL_ONLY MONO_API MonoMethod *
+MONO_API MONO_RT_EXTERNAL_ONLY MonoMethod *
 mono_class_get_method_from_name_flags (MonoClass *klass, const char *name, int param_count, int flags);
 
-MONO_RT_EXTERNAL_ONLY
-MONO_API MonoClass * 
+MONO_API MONO_RT_EXTERNAL_ONLY MonoClass *
 mono_class_from_typeref    (MonoImage *image, uint32_t type_token);
 
 MONO_API MonoClass *
 mono_class_from_typeref_checked (MonoImage *image, uint32_t type_token, MonoError *error);
 
-MONO_RT_EXTERNAL_ONLY
-MONO_API MonoClass *
+MONO_API MONO_RT_EXTERNAL_ONLY
+MonoClass *
 mono_class_from_generic_parameter (MonoGenericParam *param, MonoImage *image, mono_bool is_mvar);
 
-MONO_RT_EXTERNAL_ONLY MONO_API MonoType*
+MONO_API MONO_RT_EXTERNAL_ONLY MonoType*
 mono_class_inflate_generic_type (MonoType *type, MonoGenericContext *context) /* MONO_DEPRECATED */;
 
-MONO_RT_EXTERNAL_ONLY
-MONO_API MonoMethod*
+MONO_API MONO_RT_EXTERNAL_ONLY
+MonoMethod*
 mono_class_inflate_generic_method (MonoMethod *method, MonoGenericContext *context);
 
-MONO_RT_EXTERNAL_ONLY
-MONO_API MonoMethod *
+MONO_API MONO_RT_EXTERNAL_ONLY
+MonoMethod *
 mono_get_inflated_method (MonoMethod *method);
 
-MONO_RT_EXTERNAL_ONLY
-MONO_API MonoClassField*
+MONO_API MONO_RT_EXTERNAL_ONLY
+MonoClassField*
 mono_field_from_token      (MonoImage *image, uint32_t token, MonoClass **retklass, MonoGenericContext *context);
 
-MONO_RT_EXTERNAL_ONLY
-MONO_API MonoClass *
+MONO_API MONO_RT_EXTERNAL_ONLY
+MonoClass *
 mono_bounded_array_class_get (MonoClass *element_class, uint32_t rank, mono_bool bounded);
 
-MONO_RT_EXTERNAL_ONLY
-MONO_API MonoClass *
+MONO_API MONO_RT_EXTERNAL_ONLY
+MonoClass *
 mono_array_class_get       (MonoClass *element_class, uint32_t rank);
 
-MONO_RT_EXTERNAL_ONLY
-MONO_API MonoClass *
+MONO_API MONO_RT_EXTERNAL_ONLY
+MonoClass *
 mono_ptr_class_get         (MonoType *type);
 
 MONO_API MonoClassField *
 mono_class_get_field       (MonoClass *klass, uint32_t field_token);
 
-MONO_RT_EXTERNAL_ONLY
-MONO_API MonoClassField *
+MONO_API MONO_RT_EXTERNAL_ONLY
+MonoClassField *
 mono_class_get_field_from_name (MonoClass *klass, const char *name);
 
 MONO_API uint32_t
@@ -127,8 +126,8 @@ mono_class_is_subclass_of (MonoClass *klass, MonoClass *klassc,
 MONO_API mono_bool
 mono_class_is_assignable_from (MonoClass *klass, MonoClass *oklass);
 
-MONO_RT_EXTERNAL_ONLY
-MONO_API void*
+MONO_API MONO_RT_EXTERNAL_ONLY
+void*
 mono_ldtoken               (MonoImage *image, uint32_t token, MonoClass **retclass, MonoGenericContext *context);
 
 MONO_API char*         
@@ -156,8 +155,8 @@ mono_class_is_enum          (MonoClass *klass);
 MONO_API MonoType*
 mono_class_enum_basetype    (MonoClass *klass);
 
-MONO_RT_EXTERNAL_ONLY
-MONO_API MonoClass*
+MONO_API MONO_RT_EXTERNAL_ONLY
+MonoClass*
 mono_class_get_parent        (MonoClass *klass);
 
 MONO_API MonoClass*
@@ -169,12 +168,12 @@ mono_class_get_rank          (MonoClass *klass);
 MONO_API uint32_t
 mono_class_get_flags         (MonoClass *klass);
 
-MONO_RT_EXTERNAL_ONLY
-MONO_API const char*
+MONO_API MONO_RT_EXTERNAL_ONLY
+const char*
 mono_class_get_name          (MonoClass *klass);
 
-MONO_RT_EXTERNAL_ONLY
-MONO_API const char*
+MONO_API MONO_RT_EXTERNAL_ONLY
+const char*
 mono_class_get_namespace     (MonoClass *klass);
 
 MONO_API MonoType*
@@ -198,8 +197,8 @@ mono_class_num_properties    (MonoClass *klass);
 MONO_API int
 mono_class_num_events        (MonoClass *klass);
 
-MONO_RT_EXTERNAL_ONLY
-MONO_API MonoClassField*
+MONO_API MONO_RT_EXTERNAL_ONLY
+MonoClassField*
 mono_class_get_fields        (MonoClass* klass, void **iter);
 
 MONO_API MonoMethod*
@@ -217,8 +216,8 @@ mono_class_get_interfaces    (MonoClass* klass, void **iter);
 MONO_API MonoClass*
 mono_class_get_nested_types  (MonoClass* klass, void **iter);
 
-MONO_RT_EXTERNAL_ONLY
-MONO_API mono_bool
+MONO_API MONO_RT_EXTERNAL_ONLY
+mono_bool
 mono_class_is_delegate       (MonoClass* klass);
 
 MONO_API mono_bool
@@ -281,7 +280,7 @@ mono_event_get_parent        (MonoEvent *event);
 MONO_API uint32_t
 mono_event_get_flags         (MonoEvent *event);
 
-MONO_RT_EXTERNAL_ONLY MONO_API MonoMethod *
+MONO_API MONO_RT_EXTERNAL_ONLY MonoMethod *
 mono_class_get_method_from_name (MonoClass *klass, const char *name, int param_count);
 
 MONO_API char *

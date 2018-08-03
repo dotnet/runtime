@@ -23,7 +23,7 @@
 #include "image.h"
 #include "reflection.h"
 #include "tabledefs.h"
-
+#include <mono/metadata/icalls.h>
 
 /* Definitions */
 
@@ -61,7 +61,10 @@ void mono_security_set_mode (MonoSecurityMode mode);
 MonoSecurityMode mono_security_get_mode (void);
 
 /* internal calls */
+ICALL_EXPORT
 MonoBoolean ves_icall_System_Security_SecurityManager_get_SecurityEnabled (void);
+
+ICALL_EXPORT
 void ves_icall_System_Security_SecurityManager_set_SecurityEnabled (MonoBoolean value);
 
 #ifndef DISABLE_SECURITY

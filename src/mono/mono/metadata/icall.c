@@ -6668,15 +6668,19 @@ ves_icall_System_Environment_GetEnvironmentVariable_native (const gchar *utf8_na
  * arm-apple-darwin9.  We'll manually define the symbol on Apple as it does
  * in fact exist on all implementations (so far) 
  */
+G_BEGIN_DECLS
 gchar ***_NSGetEnviron(void);
+G_END_DECLS
 #define environ (*_NSGetEnviron())
 #else
 static char *mono_environ[1] = { NULL };
 #define environ mono_environ
 #endif /* defined (TARGET_OSX) */
 #else
+G_BEGIN_DECLS
 extern
 char **environ;
+G_END_DECLS
 #endif
 #endif
 #endif
@@ -8475,4 +8479,34 @@ ICALL_EXPORT void
 ves_icall_System_GC_RecordPressure (gint64 value, MonoError *error)
 {
 	mono_gc_add_memory_pressure (value);
+}
+
+ICALL_EXPORT gint64
+ves_icall_System_Diagnostics_Stopwatch_GetTimestamp (void)
+{
+	return mono_100ns_ticks ();
+}
+
+ICALL_EXPORT gint64
+ves_icall_System_Threading_Timer_GetTimeMonotonic (void)
+{
+	return mono_100ns_ticks ();
+}
+
+ICALL_EXPORT gint64
+ves_icall_System_DateTime_GetSystemTimeAsFileTime (void)
+{
+	return mono_100ns_datetime ();
+}
+
+ICALL_EXPORT int
+ves_icall_System_Threading_Thread_SystemMaxStackSize (void)
+{
+	return mono_thread_info_get_system_max_stack_size ();
+}
+
+ICALL_EXPORT void
+ves_icall_System_Threading_Thread_YieldInternal (void)
+{
+	mono_threads_platform_yield ();
 }

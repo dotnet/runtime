@@ -32,8 +32,8 @@ typedef enum {
 	MONO_TRACE_PROFILER           = 1 << 17,
 } MonoTraceMask;
 
-MONO_API extern GLogLevelFlags mono_internal_current_level;
-MONO_API extern MonoTraceMask mono_internal_current_mask;
+MONO_API_DATA GLogLevelFlags mono_internal_current_level;
+MONO_API_DATA MonoTraceMask mono_internal_current_mask;
 
 MONO_API void
 mono_trace_init (void);

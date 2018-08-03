@@ -13,31 +13,31 @@ MONO_BEGIN_DECLS
 
 typedef mono_bool (*MonoStackWalk)     (MonoMethod *method, int32_t native_offset, int32_t il_offset, mono_bool managed, void* data);
 
-MONO_RT_EXTERNAL_ONLY MONO_API MonoMethod *
+MONO_API MONO_RT_EXTERNAL_ONLY MonoMethod *
 mono_get_method             (MonoImage *image, uint32_t token, MonoClass *klass);
 
-MONO_RT_EXTERNAL_ONLY MONO_API MonoMethod *
+MONO_API MONO_RT_EXTERNAL_ONLY MonoMethod *
 mono_get_method_full        (MonoImage *image, uint32_t token, MonoClass *klass,
 			     MonoGenericContext *context);
 
-MONO_RT_EXTERNAL_ONLY MONO_API MonoMethod *
+MONO_API MONO_RT_EXTERNAL_ONLY MonoMethod *
 mono_get_method_constrained (MonoImage *image, uint32_t token, MonoClass *constrained_class,
 			     MonoGenericContext *context, MonoMethod **cil_method);
 
 MONO_API void               
 mono_free_method           (MonoMethod *method);
 
-MONO_RT_EXTERNAL_ONLY MONO_API MonoMethodSignature*
+MONO_API MONO_RT_EXTERNAL_ONLY MonoMethodSignature*
 mono_method_get_signature_full (MonoMethod *method, MonoImage *image, uint32_t token,
 				MonoGenericContext *context);
 
-MONO_RT_EXTERNAL_ONLY MONO_API MonoMethodSignature* 
+MONO_API MONO_RT_EXTERNAL_ONLY MonoMethodSignature*
 mono_method_get_signature  (MonoMethod *method, MonoImage *image, uint32_t token);
 
-MONO_API MonoMethodSignature* 
+MONO_API MonoMethodSignature*
 mono_method_signature      (MonoMethod *method);
 
-MONO_RT_EXTERNAL_ONLY MONO_API MonoMethodHeader* 
+MONO_API MONO_RT_EXTERNAL_ONLY MonoMethodHeader*
 mono_method_get_header     (MonoMethod *method);
 
 MONO_API const char*
