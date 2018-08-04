@@ -33,17 +33,17 @@ namespace Internal.Cryptography.Pal
 
                     switch (oid.Value)
                     {
-                        case Oids.RsaRsa:
+                        case Oids.Rsa:
                             Debug.Assert(!key.IsInvalid);
                             return new RSAImplementation.RSASecurityTransforms(key);
-                        case Oids.DsaDsa:
+                        case Oids.Dsa:
                             if (key.IsInvalid)
                             {
                                 // SecCertificateCopyKey returns null for DSA, so fall back to manually building it.
                                 return DecodeDsaPublicKey(encodedKeyValue, encodedParameters);
                             } 
                             return new DSAImplementation.DSASecurityTransforms(key);
-                        case Oids.Ecc:
+                        case Oids.EcPublicKey:
                             // If X509GetPublicKey uses the new SecCertificateCopyKey API it can return an invalid
                             // key reference for unsupported algorithms. This currently happens for the BrainpoolP160r1
                             // algorithm in the test suite (as of macOS Mojave Developer Preview 4).
@@ -70,9 +70,9 @@ namespace Internal.Cryptography.Pal
                 {
                     switch (oid.Value)
                     {
-                        case Oids.RsaRsa:
+                        case Oids.Rsa:
                             return DecodeRsaPublicKey(encodedKeyValue);
-                        case Oids.DsaDsa:
+                        case Oids.Dsa:
                             return DecodeDsaPublicKey(encodedKeyValue, encodedParameters);
                     }
                 }

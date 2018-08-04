@@ -17,7 +17,7 @@ namespace System.Security.Cryptography.Pkcs
             lookup.Add(Oids.DsaWithSha256, new DSACmsSignature(Oids.DsaWithSha256, HashAlgorithmName.SHA256));
             lookup.Add(Oids.DsaWithSha384, new DSACmsSignature(Oids.DsaWithSha384, HashAlgorithmName.SHA384));
             lookup.Add(Oids.DsaWithSha512, new DSACmsSignature(Oids.DsaWithSha512, HashAlgorithmName.SHA512));
-            lookup.Add(Oids.DsaPublicKey, new DSACmsSignature(null, default));
+            lookup.Add(Oids.Dsa, new DSACmsSignature(null, default));
         }
 
         private class DSACmsSignature : CmsSignature

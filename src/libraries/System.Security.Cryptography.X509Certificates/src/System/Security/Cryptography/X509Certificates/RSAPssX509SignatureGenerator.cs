@@ -92,7 +92,7 @@ namespace System.Security.Cryptography.X509Certificates
             {
                 AlgorithmIdentifierAsn identifier = new AlgorithmIdentifierAsn
                 {
-                    Algorithm = new Oid(Oids.RsaSsaPss),
+                    Algorithm = new Oid(Oids.RsaPss),
                     Parameters = writer.Encode(),
                 };
 
