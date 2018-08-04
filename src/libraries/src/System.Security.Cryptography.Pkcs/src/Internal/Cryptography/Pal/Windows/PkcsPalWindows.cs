@@ -143,8 +143,8 @@ namespace Internal.Cryptography.Pal.Windows
 
         public sealed override void AddCertsFromStoreForDecryption(X509Certificate2Collection certs)
         {
-            certs.AddRange(Helpers.GetStoreCertificates(StoreName.My, StoreLocation.CurrentUser, openExistingOnly: true));
-            certs.AddRange(Helpers.GetStoreCertificates(StoreName.My, StoreLocation.LocalMachine, openExistingOnly: true));
+            certs.AddRange(PkcsHelpers.GetStoreCertificates(StoreName.My, StoreLocation.CurrentUser, openExistingOnly: true));
+            certs.AddRange(PkcsHelpers.GetStoreCertificates(StoreName.My, StoreLocation.LocalMachine, openExistingOnly: true));
         }
 
         public sealed override Exception CreateRecipientsNotFoundException()

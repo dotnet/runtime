@@ -51,7 +51,7 @@
     <Compile Include="Internal\Cryptography\KeyAgreeRecipientInfoPal.cs" />
     <Compile Include="Internal\Cryptography\KeyLengths.cs" />
     <Compile Include="Internal\Cryptography\KeyTransRecipientInfoPal.cs" />
-    <Compile Include="Internal\Cryptography\Helpers.cs" />
+    <Compile Include="Internal\Cryptography\PkcsHelpers.cs" />
     <Compile Include="Internal\Cryptography\PkcsPal.cs" />
     <Compile Include="Internal\Cryptography\RecipientInfoPal.cs" />
     <Compile Include="$(CommonPath)\Internal\Cryptography\Helpers.cs">
