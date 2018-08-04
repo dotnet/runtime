@@ -10,6 +10,7 @@ if %1=="/?" GOTO :USAGE
 
 setlocal
 set __sourceDir=%~dp0
+set __ExtraCmakeParams=
 
 :: VS 2015 is the minimum supported toolset
 if "%__VSVersion%" == "vs2017" (
@@ -22,7 +23,7 @@ if "%__VSVersion%" == "vs2017" (
 if /i "%3" == "x86"     (set __VSString=%__VSString%)
 if /i "%3" == "x64"     (set __VSString=%__VSString% Win64)
 if /i "%3" == "arm"     (set __VSString=%__VSString% ARM)
-if /i "%3" == "arm64"   (set __VSString=%__VSString% Win64)
+if /i "%3" == "arm64"   (set __ExtraCmakeParams=%__ExtraCmakeParams% -A ARM64)
 
 if defined CMakePath goto DoGen
 
@@ -32,16 +33,16 @@ for /f "delims=" %%a in ('powershell -NoProfile -ExecutionPolicy ByPass "& .\pro
 popd
 
 :DoGen
-"%CMakePath%" %__SDKVersion% "-DCMAKE_BUILD_TYPE=%CMAKE_BUILD_TYPE%" "-DCMAKE_INSTALL_PREFIX=%__CMakeBinDir%" -G "Visual Studio %__VSString%" -B. -H%1
+"%CMakePath%" %__SDKVersion% "-DCMAKE_BUILD_TYPE=%CMAKE_BUILD_TYPE%" "-DCMAKE_INSTALL_PREFIX=%__CMakeBinDir%" -G "Visual Studio %__VSString%" -B. -H%1 %__ExtraCmakeParams% 
 endlocal
 GOTO :DONE
 
 :USAGE
   echo "Usage..."
-  echo "gen-buildsys-win.bat <path to top level CMakeLists.txt> <VSVersion> <Target Architecture"
-  echo "Specify the path to the top level CMake file - <ProjectK>/src/NDP"
+  echo "gen-buildsys-win.bat <path to top level CMakeLists.txt> <VSVersion> <Target Architecture>"
+  echo "Specify the path to the top level CMake file"
   echo "Specify the VSVersion to be used - VS2015 or VS2017"
-  echo "Specify the Target Architecture - x86, AnyCPU, ARM, or x64."
+  echo "Specify the Target Architecture - AnyCPU, x86, x64, ARM, or ARM64."
   EXIT /B 1
 
 :DONE
