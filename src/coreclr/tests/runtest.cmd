@@ -1,28 +1,27 @@
 @if not defined _echo @echo off
-setlocal EnableDelayedExpansion
-
-:: Set the default arguments
-set __BuildArch=x64
-set __BuildType=Debug
-set __BuildOS=Windows_NT
-set __MSBuildBuildArch=x64
-
-set "__ProjectDir=%~dp0"
+setlocal EnableDelayedExpansion EnableExtensions
 
 :: Define a prefix for most output progress messages that come from this script. That makes
 :: it easier to see where these are coming from. Note that there is a trailing space here.
 set "__MsgPrefix=RUNTEST: "
 
-call "%__ProjectDir%"\..\setup_vs_tools.cmd
+set __ThisScriptDir="%~dp0"
 
-REM setup_vs_tools.cmd will correctly echo error message.
+call "%__ThisScriptDir%"\..\setup_vs_tools.cmd
 if NOT '%ERRORLEVEL%' == '0' exit /b 1
 
-set __VSVersion=vs2017
+if defined VS150COMNTOOLS (
+    set __VSVersion=vs2017
+) else (
+    set __VSVersion=vs2015
+)
 
-if defined VS140COMNTOOLS set __VSVersion=vs2015
-if defined VS150COMNTOOLS set __VSVersion=vs2017
+:: Set the default arguments
+set __BuildArch=x64
+set __BuildType=Debug
+set __BuildOS=Windows_NT
 
+set "__ProjectDir=%~dp0"
 :: remove trailing slash
 if %__ProjectDir:~-1%==\ set "__ProjectDir=%__ProjectDir:~0,-1%"
 set "__ProjectFilesDir=%__ProjectDir%"
@@ -53,10 +52,10 @@ if /i "%1" == "-h"    goto Usage
 if /i "%1" == "/help" goto Usage
 if /i "%1" == "-help" goto Usage
 
-if /i "%1" == "x64"                   (set __BuildArch=x64&set __MSBuildBuildArch=x64&shift&goto Arg_Loop)
-if /i "%1" == "x86"                   (set __BuildArch=x86&set __MSBuildBuildArch=x86&shift&goto Arg_Loop)
-if /i "%1" == "arm"                   (set __BuildArch=arm&set __MSBuildBuildArch=arm&shift&goto Arg_Loop)
-if /i "%1" == "arm64"                 (set __BuildArch=arm64&set __MSBuildBuildArch=arm64&shift&goto Arg_Loop)
+if /i "%1" == "x64"                   (set __BuildArch=x64&shift&goto Arg_Loop)
+if /i "%1" == "x86"                   (set __BuildArch=x86&shift&goto Arg_Loop)
+if /i "%1" == "arm"                   (set __BuildArch=arm&shift&goto Arg_Loop)
+if /i "%1" == "arm64"                 (set __BuildArch=arm64&shift&goto Arg_Loop)
 
 if /i "%1" == "debug"                 (set __BuildType=Debug&shift&goto Arg_Loop)
 if /i "%1" == "release"               (set __BuildType=Release&shift&goto Arg_Loop)
@@ -121,6 +120,8 @@ if defined __CoreFXTestList (
 )
 
 :: Set the remaining variables based upon the determined configuration
+set __MSBuildBuildArch=%__BuildArch%
+
 set "__BinDir=%__RootBinDir%\Product\%__BuildOS%.%__BuildArch%.%__BuildType%"
 set "__TestWorkingDir=%__RootBinDir%\tests\%__BuildOS%.%__BuildArch%.%__BuildType%"
 
@@ -229,12 +230,16 @@ call :SetTestEnvironment
 call :ResolveDependencies
 if errorlevel 1 exit /b 1
 
-if defined __DoCrossgen call :PrecompileFX
+if defined __DoCrossgen (
+    echo %__MsgPrefix%Running crossgen on framework assemblies
+    call :PrecompileFX
+)
 
 REM Delete the unecessary mscorlib.ni file.
 if exist %CORE_ROOT%\mscorlib.ni.dll del %CORE_ROOT%\mscorlib.ni.dll
 
 if defined __GenerateLayoutOnly (
+    echo %__MsgPrefix%Done generating layout.
     exit /b 0
 )
 
@@ -262,7 +267,7 @@ if "%__CollectDumps%"=="true" (
 )
 
 echo %__MsgPrefix%CORE_ROOT that will be used is: %CORE_ROOT%
-echo %__MsgPrefix%Starting the test run ...
+echo %__MsgPrefix%Starting test run at %TIME%
 
 set __BuildLogRootName=TestRunResults
 call :msbuild "%__ProjectFilesDir%\runtest.proj" /p:Runtests=true /clp:showcommandline
@@ -273,7 +278,7 @@ if "%__CollectDumps%"=="true" (
 )
 
 if %__errorlevel% GEQ 1 (
-    echo Test Run failed. Refer to the following:
+    echo %__MsgPrefix%Test Run failed. Refer to the following:
     echo     Html report: %__TestRunHtmlLog%
     exit /b 1
 )
@@ -288,16 +293,17 @@ REM ============================================================================
 
 :RunPerfTests 
 echo %__MsgPrefix%CORE_ROOT that will be used is: %CORE_ROOT%  
-echo %__MsgPrefix%Starting the test run ...  
+echo %__MsgPrefix%Starting test run at %TIME%
 
 set __BuildLogRootName=PerfTestRunResults  
 echo %__MsgPrefix%Running perf tests  
 call :msbuild "%__ProjectFilesDir%\runtest.proj" /t:RunPerfTests /clp:showcommandline  
 
 if errorlevel 1 (  
-   echo %__MsgPrefix%Test Run failed. Refer to the following:  
-   echo     Html report: %__TestRunHtmlLog%  
-)  
+    echo %__MsgPrefix%Test Run failed. Refer to the following:  
+    echo     Html report: %__TestRunHtmlLog%  
+)
+
 goto TestsDone
 
 REM =========================================================================================
@@ -305,10 +311,12 @@ REM ===
 REM === Run CoreFX tests
 REM ===
 REM =========================================================================================
+
 :RunCoreFXTests
+
 set _CoreFXTestHost=%XunitTestBinBase%\testhost
-set _toolsDir=%__ProjectDir%\..\Tools
-set _dotnet=%_toolsDir%\dotnetcli\dotnet.exe
+set __ToolsDir=%__ProjectDir%\..\Tools
+set "DotNetCli=%__ToolsDir%\dotnetcli\dotnet.exe"
 
 set _RootCoreFXTestPath=%__TestWorkingDir%\CoreFX
 set _CoreFXTestUtilitiesOutputPath=%_RootCoreFXTestPath%\CoreFXTestUtilities
@@ -326,11 +334,13 @@ if defined __GenerateTestHostOnly (
     exit /b 0
 )
 
-if not exist %_CoreFXTestHost%\dotnet.exe echo CoreFX test host not found, please run runtest.cmd again && exit /b 1
+if not exist %_CoreFXTestHost%\dotnet.exe (
+    echo %__MsgPrefix%CoreFX test host not found, please run runtest.cmd again
+    exit /b 1
+)
 
 set /p _CoreFXTestRemoteURL=< "%__ProjectFilesDir%\CoreFX\CoreFXTestListURL.txt"
 if not defined __CoreFXTestList ( set __CoreFXTestList=%__ProjectFilesDir%\CoreFX\CoreFX.issues.json )
-
 
 set _CoreFXTestExecutable=xunit.console.netcore.exe
 set _CoreFXTestExecutableArgs= --notrait category=nonnetcoreapptests --notrait category=nonwindowstests  --notrait category=failing --notrait category=IgnoreForCI --notrait category=OuterLoop --notrait Benchmark=true
@@ -344,17 +354,16 @@ if "%__CoreFXTestsRunAllAvailable%" == "true" (
     set _CoreFX_RunCommand=--runSpecifiedTests
 )
 
-
-echo Downloading and Running CoreFX Test Binaries
-echo %__MsgPrefix%call "%_dotnet%" "%_CoreFXTestUtilitiesOutputPath%\%_CoreFXTestSetupUtilityName%.dll" --clean --outputDirectory "%_CoreFXTestBinariesPath%" --testListJsonPath "%__CoreFXTestList%" --testUrl "!_CoreFXTestRemoteURL!" %_CoreFX_RunCommand% --dotnetPath "%_CoreFXTestHost%\dotnet.exe" --executable %_CoreFXTestExecutable% --logPath %_CoreFXLogsDir%  %_CoreFXTestExecutableArgs% 
-call "%_dotnet%" "%_CoreFXTestUtilitiesOutputPath%\%_CoreFXTestSetupUtilityName%.dll" --clean --outputDirectory "%_CoreFXTestBinariesPath%" --testListJsonPath "%__CoreFXTestList%" --testUrl "!_CoreFXTestRemoteURL!" %_CoreFX_RunCommand% --dotnetPath "%_CoreFXTestHost%\dotnet.exe" --executable %_CoreFXTestExecutable% --log %_CoreFXLogsDir% %_CoreFXTestExecutableArgs% 
+echo %__MsgPrefix%Downloading and Running CoreFX Test Binaries
+set NEXTCMD=call "%DotNetCli%" "%_CoreFXTestUtilitiesOutputPath%\%_CoreFXTestSetupUtilityName%.dll" --clean --outputDirectory "%_CoreFXTestBinariesPath%" --testListJsonPath "%__CoreFXTestList%" --testUrl "!_CoreFXTestRemoteURL!" %_CoreFX_RunCommand% --dotnetPath "%_CoreFXTestHost%\dotnet.exe" --executable %_CoreFXTestExecutable% --log %_CoreFXLogsDir% %_CoreFXTestExecutableArgs%
+echo !NEXTCMD!
+!NEXTCMD!
 if errorlevel 1 (
-      echo %__MsgPrefix%Running CoreFX tests finished with Failures
-      echo %__MsgPrefix%Check %_CoreFXLogsDir% for test run logs
-      exit /b 1
+    echo %__MsgPrefix%CoreFX tests finished with failures. Refer to the following:  
+    echo     %_CoreFXLogsDir%
+    exit /b 1
 )
 
-)
 goto TestsDone
 
 REM =========================================================================================
@@ -365,7 +374,7 @@ REM ============================================================================
 
 :TestsDone
 
-echo %__MsgPrefix%Test run successful. Refer to the log files for details:
+echo %__MsgPrefix%Test run successful. Finished at %TIME%. Refer to the log files for details:
 echo     %__TestRunHtmlLog%
 echo     %__TestRunXmlLog%
 exit /b 0
@@ -534,6 +543,7 @@ REM ===
 REM =========================================================================================
 
 :ResolveDependencies
+
 set __BuildLogRootName=Tests_GenerateRuntimeLayout
 call :msbuild "%__ProjectFilesDir%\runtest.proj" /p:GenerateRuntimeLayout=true 
 if errorlevel 1 (
@@ -553,8 +563,10 @@ REM ===
 REM =========================================================================================
 
 :ResolveCoreFXDependencies
-set __BuildLogRootName=Tests_GenerateTestHost
+
 echo %__MsgPrefix%Building CoreFX Test Host
+
+set __BuildLogRootName=Tests_GenerateTestHost
 call :msbuild "%__ProjectFilesDir%\runtest.proj" /p:GenerateTestHost=true 
 if errorlevel 1 (
     echo %__MsgPrefix%Test Host Dependency Resolution Failed
@@ -564,15 +576,18 @@ echo %__MsgPrefix%Created the Test Host layout with all dependencies in %_CoreFX
 
 REM Publish and call the CoreFX test helper projects - should this be integrated into runtest.proj?
 REM Build Helper project
-echo "%_dotnet%" msbuild /t:Restore "%_CoreFXTestSetupUtility%"
-call "%_dotnet%" msbuild /t:Restore "%_CoreFXTestSetupUtility%"
+set NEXTCMD="%DotNetCli%" msbuild /t:Restore "%_CoreFXTestSetupUtility%"
+echo !NEXTCMD!
+!NEXTCMD!
 if errorlevel 1 (
-      exit /b 1
+    exit /b 1
 )
-echo "%_dotnet%" msbuild "/p:Configuration=%CoreRT_BuildType%" "/p:OSGroup=%CoreRT_BuildOS%" "/p:Platform=%CoreRT_BuildArch%" "/p:OutputPath=%_CoreFXTestUtilitiesOutputPath%" "%_CoreFXTestSetupUtility%"
-call "%_dotnet%" msbuild "/p:Configuration=%CoreRT_BuildType%" "/p:OSGroup=%CoreRT_BuildOS%" "/p:Platform=%CoreRT_BuildArch%" "/p:OutputPath=%_CoreFXTestUtilitiesOutputPath%" "%_CoreFXTestSetupUtility%"
+
+set NEXTCMD=call "%DotNetCli%" msbuild "/p:Configuration=%CoreRT_BuildType%" "/p:OSGroup=%CoreRT_BuildOS%" "/p:Platform=%CoreRT_BuildArch%" "/p:OutputPath=%_CoreFXTestUtilitiesOutputPath%" "%_CoreFXTestSetupUtility%"
+echo !NEXTCMD!
+!NEXTCMD!
 if errorlevel 1 (
-      exit /b 1
+    exit /b 1
 )
 
 exit /b 0
