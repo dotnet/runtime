@@ -17,7 +17,7 @@ using X509IssuerSerial = System.Security.Cryptography.Xml.X509IssuerSerial;
 
 namespace Internal.Cryptography
 {
-    internal static partial class Helpers
+    internal static partial class PkcsHelpers
     {
 #if !netcoreapp
         // Compatibility API.

@@ -121,7 +121,7 @@ namespace System.Security.Cryptography.Pkcs
             bool silent,
             out X509Certificate2Collection chainCerts)
         {
-            HashAlgorithmName hashAlgorithmName = Helpers.GetDigestAlgorithm(DigestAlgorithm);
+            HashAlgorithmName hashAlgorithmName = PkcsHelpers.GetDigestAlgorithm(DigestAlgorithm);
             IncrementalHash hasher = IncrementalHash.CreateHash(hashAlgorithmName);
 
             hasher.AppendData(data.Span);
@@ -170,7 +170,7 @@ namespace System.Security.Cryptography.Pkcs
 
                 // Use the serializer/deserializer to DER-normalize the attribute order.
                 SignedAttributesSet signedAttrsSet = new SignedAttributesSet();
-                signedAttrsSet.SignedAttributes = Helpers.NormalizeSet(
+                signedAttrsSet.SignedAttributes = PkcsHelpers.NormalizeSet(
                     signedAttrs.ToArray(),
                     normalized =>
                     {
@@ -224,7 +224,7 @@ namespace System.Security.Cryptography.Pkcs
             {
                 List<AttributeAsn> attrs = BuildAttributes(UnsignedAttributes);
 
-                newSignerInfo.UnsignedAttributes = Helpers.NormalizeSet(attrs.ToArray());
+                newSignerInfo.UnsignedAttributes = PkcsHelpers.NormalizeSet(attrs.ToArray());
             }
 
             bool signed = CmsSignature.Sign(

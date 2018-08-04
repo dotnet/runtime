@@ -200,8 +200,8 @@ namespace Internal.Cryptography.Pal.Windows
                             case CMsgKeyAgreeOriginatorChoice.CMSG_KEY_AGREE_ORIGINATOR_CERT:
                                 {
                                     X509Certificate2Collection candidateCerts = new X509Certificate2Collection();
-                                    candidateCerts.AddRange(Helpers.GetStoreCertificates(StoreName.AddressBook, StoreLocation.CurrentUser, openExistingOnly: true));
-                                    candidateCerts.AddRange(Helpers.GetStoreCertificates(StoreName.AddressBook, StoreLocation.LocalMachine, openExistingOnly: true));
+                                    candidateCerts.AddRange(PkcsHelpers.GetStoreCertificates(StoreName.AddressBook, StoreLocation.CurrentUser, openExistingOnly: true));
+                                    candidateCerts.AddRange(PkcsHelpers.GetStoreCertificates(StoreName.AddressBook, StoreLocation.LocalMachine, openExistingOnly: true));
                                     candidateCerts.AddRange(originatorCerts);
                                     candidateCerts.AddRange(extraStore);
                                     SubjectIdentifier originatorId = pKeyAgreeRecipientInfo->OriginatorCertId.ToSubjectIdentifier();
