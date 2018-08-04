@@ -22,7 +22,14 @@ typedef guint32 mword;
 typedef guint64 mword;
 #endif
 
-typedef mword SgenDescriptor;
+#if TARGET_SIZEOF_VOID_P == 4
+typedef guint32 target_mword;
+#else
+typedef guint64 target_mword;
+#endif
+
+/* This neeeds to be target specific since its embedded in vtables */
+typedef target_mword SgenDescriptor;
 #define SGEN_DESCRIPTOR_NULL	0
 
 /*
