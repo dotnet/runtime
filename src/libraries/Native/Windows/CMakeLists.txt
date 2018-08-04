@@ -48,11 +48,11 @@ if ($ENV{__BuildArch} STREQUAL "x86")
     add_compile_options(/Gz)
 endif ()
 
-if ($ENV{__BuildArch} STREQUAL "arm")
+if (($ENV{__BuildArch} STREQUAL "arm") OR ($ENV{__BuildArch} STREQUAL "arm64"))
     if(NOT DEFINED CMAKE_VS_WINDOWS_TARGET_PLATFORM_VERSION OR CMAKE_VS_WINDOWS_TARGET_PLATFORM_VERSION STREQUAL "" )
-	      message(FATAL_ERROR "Windows SDK is required for the Arm32 build.")
+          message(FATAL_ERROR "Windows SDK is required for the ARM32 or ARM64 build.")
       else()
-	      message("Using Windows SDK version ${CMAKE_VS_WINDOWS_TARGET_PLATFORM_VERSION}")
+          message("Using Windows SDK version ${CMAKE_VS_WINDOWS_TARGET_PLATFORM_VERSION}")
       endif()
 endif ()
 
@@ -100,7 +100,7 @@ if (UPPERCASE_CMAKE_BUILD_TYPE STREQUAL "RELEASE")
     
     # Force uCRT to be dynamically linked for Release build (unless env variable CLR_CMAKE_WIN32_FORCE_STATIC_LINK is set to true)
     set(CLR_CMAKE_WIN32_FORCE_STATIC_LINK $ENV{CLR_CMAKE_WIN32_FORCE_STATIC_LINK})
-    if(NOT CLR_CMAKE_WIN32_FORCE_STATIC_LINK)	
+    if(NOT CLR_CMAKE_WIN32_FORCE_STATIC_LINK)
       set(__LinkArgs "${__LinkArgs} /NODEFAULTLIB:libucrt.lib /DEFAULTLIB:ucrt.lib")
     endif()
     
@@ -110,11 +110,6 @@ if (UPPERCASE_CMAKE_BUILD_TYPE STREQUAL "RELEASE")
 else()
     # Debug build specific flags
     set(__LinkArgs "/NOVCFEATURE ${__LinkArgs}")
-endif()
-
-# Temporary until cmake has VS generators for arm64
-if($ENV{__BuildArch} STREQUAL "arm64")
-    set(__LinkArgs "${__LinkArgs} /machine:arm64")
 endif()
 
 if ($ENV{__BuildArch} STREQUAL "x86_64" OR $ENV{__BuildArch} STREQUAL "amd64")
