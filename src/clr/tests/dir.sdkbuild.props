@@ -10,7 +10,6 @@
     <RuntimeFrameworkVersion>$(MicrosoftNETCoreAppPackageVersion)</RuntimeFrameworkVersion>
     <AppendTargetFrameworkToOutputPath>false</AppendTargetFrameworkToOutputPath>
     <EnableDefaultCompileItems>false</EnableDefaultCompileItems>
-    <Platform>AnyCPU</Platform>
    
     <!-- Force the CLI to allow us to target higher netcoreapp than it may know about -->
     <NETCoreAppMaximumVersion>99.0</NETCoreAppMaximumVersion>
