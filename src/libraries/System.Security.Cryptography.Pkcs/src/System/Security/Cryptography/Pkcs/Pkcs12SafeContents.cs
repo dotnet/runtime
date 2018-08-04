@@ -49,7 +49,7 @@ namespace System.Security.Cryptography.Pkcs
                     break;
                 case Oids.Pkcs7Data:
                     ConfidentialityMode = Pkcs12ConfidentialityMode.None;
-                    _bags = ReadBags(Helpers.DecodeOctetString(contentInfoAsn.Content));
+                    _bags = ReadBags(PkcsHelpers.DecodeOctetString(contentInfoAsn.Content));
                     break;
                 default:
                     throw new CryptographicException(SR.Cryptography_Der_Invalid_Encoding);
