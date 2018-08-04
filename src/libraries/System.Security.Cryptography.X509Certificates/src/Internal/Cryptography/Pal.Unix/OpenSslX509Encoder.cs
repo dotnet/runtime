@@ -14,16 +14,16 @@ namespace Internal.Cryptography.Pal
     {
         public AsymmetricAlgorithm DecodePublicKey(Oid oid, byte[] encodedKeyValue, byte[] encodedParameters, ICertificatePal certificatePal)
         {
-            if (oid.Value == Oids.Ecc && certificatePal != null)
+            if (oid.Value == Oids.EcPublicKey && certificatePal != null)
             {
                 return ((OpenSslX509CertificateReader)certificatePal).GetECDsaPublicKey();
             }
 
             switch (oid.Value)
             {
-                case Oids.RsaRsa:
+                case Oids.Rsa:
                     return BuildRsaPublicKey(encodedKeyValue);
-                case Oids.DsaDsa:
+                case Oids.Dsa:
                     return BuildDsaPublicKey(encodedKeyValue, encodedParameters);
             }
 
