@@ -2850,6 +2850,110 @@ void CodeGen::genJmpMethod(GenTree* jmp)
 }
 
 //------------------------------------------------------------------------
+// genIntCastOverflowCheck: Generate overflow checking code for an integer cast.
+//
+// Arguments:
+//    cast - The GT_CAST node
+//    sourceReg - The register containing the value to check
+//
+void CodeGen::genIntCastOverflowCheck(GenTreeCast* cast, regNumber sourceReg)
+{
+    const var_types srcType  = genActualType(cast->CastOp()->TypeGet());
+    const var_types castType = cast->gtCastType;
+
+    emitter* emit = getEmitter();
+
+    // For Long to Int conversion we will have a reserved integer register to hold the immediate mask
+    regNumber tmpReg = (cast->AvailableTempRegCount() == 0) ? REG_NA : cast->GetSingleTempReg();
+
+    Lowering::CastInfo castInfo;
+    Lowering::getCastDescription(cast, &castInfo);
+
+    assert(castInfo.requiresOverflowCheck);
+
+    emitAttr cmpSize = EA_ATTR(genTypeSize(srcType));
+
+    if (castInfo.signCheckOnly)
+    {
+        // We only need to check for a negative value in sourceReg
+        emit->emitIns_R_I(INS_cmp, cmpSize, sourceReg, 0);
+        emitJumpKind jmpLT = genJumpKindForOper(GT_LT, CK_SIGNED);
+        genJumpToThrowHlpBlk(jmpLT, SCK_OVERFLOW);
+    }
+    else if (castInfo.unsignedSource || castInfo.unsignedDest)
+    {
+        // When we are converting from/to unsigned,
+        // we only have to check for any bits set in 'typeMask'
+
+        noway_assert(castInfo.typeMask != 0);
+#if defined(_TARGET_ARM_)
+        if (arm_Valid_Imm_For_Instr(INS_tst, castInfo.typeMask, INS_FLAGS_DONT_CARE))
+        {
+            emit->emitIns_R_I(INS_tst, cmpSize, sourceReg, castInfo.typeMask);
+        }
+        else
+        {
+            noway_assert(tmpReg != REG_NA);
+            instGen_Set_Reg_To_Imm(cmpSize, tmpReg, castInfo.typeMask);
+            emit->emitIns_R_R(INS_tst, cmpSize, sourceReg, tmpReg);
+        }
+#elif defined(_TARGET_ARM64_)
+        emit->emitIns_R_I(INS_tst, cmpSize, sourceReg, castInfo.typeMask);
+#endif // _TARGET_ARM*
+        emitJumpKind jmpNotEqual = genJumpKindForOper(GT_NE, CK_SIGNED);
+        genJumpToThrowHlpBlk(jmpNotEqual, SCK_OVERFLOW);
+    }
+    else
+    {
+        // For a narrowing signed cast
+        //
+        // We must check the value is in a signed range.
+
+        // Compare with the MAX
+
+        noway_assert((castInfo.typeMin != 0) && (castInfo.typeMax != 0));
+
+#if defined(_TARGET_ARM_)
+        if (emitter::emitIns_valid_imm_for_cmp(castInfo.typeMax, INS_FLAGS_DONT_CARE))
+#elif defined(_TARGET_ARM64_)
+        if (emitter::emitIns_valid_imm_for_cmp(castInfo.typeMax, cmpSize))
+#endif // _TARGET_*
+        {
+            emit->emitIns_R_I(INS_cmp, cmpSize, sourceReg, castInfo.typeMax);
+        }
+        else
+        {
+            noway_assert(tmpReg != REG_NA);
+            instGen_Set_Reg_To_Imm(cmpSize, tmpReg, castInfo.typeMax);
+            emit->emitIns_R_R(INS_cmp, cmpSize, sourceReg, tmpReg);
+        }
+
+        emitJumpKind jmpGT = genJumpKindForOper(GT_GT, CK_SIGNED);
+        genJumpToThrowHlpBlk(jmpGT, SCK_OVERFLOW);
+
+// Compare with the MIN
+
+#if defined(_TARGET_ARM_)
+        if (emitter::emitIns_valid_imm_for_cmp(castInfo.typeMin, INS_FLAGS_DONT_CARE))
+#elif defined(_TARGET_ARM64_)
+        if (emitter::emitIns_valid_imm_for_cmp(castInfo.typeMin, cmpSize))
+#endif // _TARGET_*
+        {
+            emit->emitIns_R_I(INS_cmp, cmpSize, sourceReg, castInfo.typeMin);
+        }
+        else
+        {
+            noway_assert(tmpReg != REG_NA);
+            instGen_Set_Reg_To_Imm(cmpSize, tmpReg, castInfo.typeMin);
+            emit->emitIns_R_R(INS_cmp, cmpSize, sourceReg, tmpReg);
+        }
+
+        emitJumpKind jmpLT = genJumpKindForOper(GT_LT, CK_SIGNED);
+        genJumpToThrowHlpBlk(jmpLT, SCK_OVERFLOW);
+    }
+}
+
+//------------------------------------------------------------------------
 // genIntToIntCast: Generate code for an integer cast
 //
 // Arguments:
@@ -2880,9 +2984,6 @@ void CodeGen::genIntToIntCast(GenTree* treeNode)
     regNumber targetReg = treeNode->gtRegNum;
     regNumber sourceReg = castOp->gtRegNum;
 
-    // For Long to Int conversion we will have a reserved integer register to hold the immediate mask
-    regNumber tmpReg = (treeNode->AvailableTempRegCount() == 0) ? REG_NA : treeNode->GetSingleTempReg();
-
     assert(genIsValidIntReg(targetReg));
     assert(genIsValidIntReg(sourceReg));
 
@@ -2894,16 +2995,14 @@ void CodeGen::genIntToIntCast(GenTree* treeNode)
 
     if (castInfo.requiresOverflowCheck)
     {
+        genIntCastOverflowCheck(treeNode->AsCast(), sourceReg);
+
         bool     movRequired = (sourceReg != targetReg);
         emitAttr movSize     = emitActualTypeSize(dstType);
-        emitAttr cmpSize     = EA_ATTR(genTypeSize(srcType));
 
         if (castInfo.signCheckOnly)
         {
             // We only need to check for a negative value in sourceReg
-            emit->emitIns_R_I(INS_cmp, cmpSize, sourceReg, 0);
-            emitJumpKind jmpLT = genJumpKindForOper(GT_LT, CK_SIGNED);
-            genJumpToThrowHlpBlk(jmpLT, SCK_OVERFLOW);
             noway_assert(genTypeSize(srcType) == 4 || genTypeSize(srcType) == 8);
             // This is only interesting case to ensure zero-upper bits.
             if ((srcType == TYP_INT) && (dstType == TYP_ULONG))
@@ -2914,77 +3013,6 @@ void CodeGen::genIntToIntCast(GenTree* treeNode)
                 movSize     = EA_4BYTE;
                 movRequired = true;
             }
-        }
-        else if (castInfo.unsignedSource || castInfo.unsignedDest)
-        {
-            // When we are converting from/to unsigned,
-            // we only have to check for any bits set in 'typeMask'
-
-            noway_assert(castInfo.typeMask != 0);
-#if defined(_TARGET_ARM_)
-            if (arm_Valid_Imm_For_Instr(INS_tst, castInfo.typeMask, INS_FLAGS_DONT_CARE))
-            {
-                emit->emitIns_R_I(INS_tst, cmpSize, sourceReg, castInfo.typeMask);
-            }
-            else
-            {
-                noway_assert(tmpReg != REG_NA);
-                instGen_Set_Reg_To_Imm(cmpSize, tmpReg, castInfo.typeMask);
-                emit->emitIns_R_R(INS_tst, cmpSize, sourceReg, tmpReg);
-            }
-#elif defined(_TARGET_ARM64_)
-            emit->emitIns_R_I(INS_tst, cmpSize, sourceReg, castInfo.typeMask);
-#endif // _TARGET_ARM*
-            emitJumpKind jmpNotEqual = genJumpKindForOper(GT_NE, CK_SIGNED);
-            genJumpToThrowHlpBlk(jmpNotEqual, SCK_OVERFLOW);
-        }
-        else
-        {
-            // For a narrowing signed cast
-            //
-            // We must check the value is in a signed range.
-
-            // Compare with the MAX
-
-            noway_assert((castInfo.typeMin != 0) && (castInfo.typeMax != 0));
-
-#if defined(_TARGET_ARM_)
-            if (emitter::emitIns_valid_imm_for_cmp(castInfo.typeMax, INS_FLAGS_DONT_CARE))
-#elif defined(_TARGET_ARM64_)
-            if (emitter::emitIns_valid_imm_for_cmp(castInfo.typeMax, cmpSize))
-#endif // _TARGET_*
-            {
-                emit->emitIns_R_I(INS_cmp, cmpSize, sourceReg, castInfo.typeMax);
-            }
-            else
-            {
-                noway_assert(tmpReg != REG_NA);
-                instGen_Set_Reg_To_Imm(cmpSize, tmpReg, castInfo.typeMax);
-                emit->emitIns_R_R(INS_cmp, cmpSize, sourceReg, tmpReg);
-            }
-
-            emitJumpKind jmpGT = genJumpKindForOper(GT_GT, CK_SIGNED);
-            genJumpToThrowHlpBlk(jmpGT, SCK_OVERFLOW);
-
-// Compare with the MIN
-
-#if defined(_TARGET_ARM_)
-            if (emitter::emitIns_valid_imm_for_cmp(castInfo.typeMin, INS_FLAGS_DONT_CARE))
-#elif defined(_TARGET_ARM64_)
-            if (emitter::emitIns_valid_imm_for_cmp(castInfo.typeMin, cmpSize))
-#endif // _TARGET_*
-            {
-                emit->emitIns_R_I(INS_cmp, cmpSize, sourceReg, castInfo.typeMin);
-            }
-            else
-            {
-                noway_assert(tmpReg != REG_NA);
-                instGen_Set_Reg_To_Imm(cmpSize, tmpReg, castInfo.typeMin);
-                emit->emitIns_R_R(INS_cmp, cmpSize, sourceReg, tmpReg);
-            }
-
-            emitJumpKind jmpLT = genJumpKindForOper(GT_LT, CK_SIGNED);
-            genJumpToThrowHlpBlk(jmpLT, SCK_OVERFLOW);
         }
 
         if (movRequired)
