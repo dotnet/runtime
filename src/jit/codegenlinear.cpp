@@ -1943,7 +1943,7 @@ void CodeGen::genCodeForCast(GenTreeOp* tree)
     else
     {
         // Casts int <--> int
-        genIntToIntCast(tree);
+        genIntToIntCast(tree->AsCast());
     }
     // The per-case functions call genProduceReg()
 }
