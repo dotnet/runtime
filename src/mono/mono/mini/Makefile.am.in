@@ -829,8 +829,9 @@ gsharedvtcheck:
 hybridcheck:
 	$(MAKE) fullaotcheck HYBRID=1
 
+# FIXME: force preemptive suspend while interpreter doesn't support coop/hybird suspend
 fullaotmixedcheck:
-	$(MAKE) fullaotcheck MIXED=1
+	$(MAKE) fullaotcheck MIXED=1 MONO_THREADS_SUSPEND=preemptive
 
 fullaot_regtests = $(regtests)
 fullaot_testing_deps = generics-variant-types.dll TestDriver.dll MemoryIntrinsics.dll

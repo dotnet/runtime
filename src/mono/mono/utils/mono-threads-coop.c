@@ -508,16 +508,6 @@ mono_threads_assert_gc_unsafe_region (void)
 	MONO_REQ_GC_UNSAFE_MODE;
 }
 
-/* -1 and 0 also used:
- * -1 means uninitialized
- * 0 means unset
- */
-typedef enum {
-	MONO_THREADS_SUSPEND_FULL_PREEMPTIVE = 1,
-	MONO_THREADS_SUSPEND_FULL_COOP,
-	MONO_THREADS_SUSPEND_HYBRID
-} MonoThreadsSuspendPolicy;
-
 static MonoThreadsSuspendPolicy
 threads_suspend_policy_default (void)
 {
@@ -584,10 +574,12 @@ threads_suspend_policy_getenv (void)
 	return policy;
 }
 
+static MonoThreadsSuspendPolicy threads_suspend_policy = -1;
+
 static MonoThreadsSuspendPolicy
 mono_threads_suspend_policy (void)
 {
-	static MonoThreadsSuspendPolicy policy = -1;
+	MonoThreadsSuspendPolicy policy = threads_suspend_policy;
 	if (G_UNLIKELY (policy == -1)) {
 		// thread suspend policy:
 		// if the MONO_THREADS_SUSPEND env is set, use it.
@@ -607,8 +599,23 @@ mono_threads_suspend_policy (void)
 			policy = MONO_THREADS_SUSPEND_FULL_PREEMPTIVE;
 		
 		g_assert (policy > 0);
+		threads_suspend_policy = policy;
 	}
 	return policy;
+}
+
+/**
+ * mono_threads_suspend_override_policy:
+ *
+ * Don't use this.  Provides a last resort escape hatch to override configure
+ * and environment settings and use the given thread suspend policy.
+ *
+ */
+void
+mono_threads_suspend_override_policy (MonoThreadsSuspendPolicy new_policy)
+{
+	threads_suspend_policy = new_policy;
+	g_warning ("Overriding suspend policy.  Using %s suspend.", mono_threads_suspend_policy_name ());
 }
 
 const char*

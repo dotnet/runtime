@@ -53,6 +53,20 @@ mono_threads_safepoint (void)
 		mono_threads_state_poll ();
 }
 
+/* -1 and 0 also used:
+ * -1 means uninitialized
+ * 0 means unset
+ */
+typedef enum {
+	MONO_THREADS_SUSPEND_FULL_PREEMPTIVE = 1,
+	MONO_THREADS_SUSPEND_FULL_COOP,
+	MONO_THREADS_SUSPEND_HYBRID
+} MonoThreadsSuspendPolicy;
+
+/* Don't use this. */
+void mono_threads_suspend_override_policy (MonoThreadsSuspendPolicy new_policy);
+
+
 /*
  * The following are used when detaching a thread. We need to pass the MonoThreadInfo*
  * as a paramater as the thread info TLS key is being destructed, meaning that

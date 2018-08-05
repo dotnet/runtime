@@ -4997,6 +4997,31 @@ AC_ARG_WITH(lazy_gc_thread_creation, [  --with-lazy-gc-thread-creation=yes|no   
 	fi
 ], [with_lazy_gc_thread_creation=no])
 
+dnl *****************************
+dnl *** Thread suspend policy ***
+dnl *****************************
+
+dnl Set a default hybrid or cooperative suspend on some platforms
+
+dnl Coop default is set by the bitcode preset.
+
+dnl If coop isn't on by default, maybe hybrid should be?
+if test x$enable_cooperative_suspend_default != xyes; then
+	case $HOST in
+	X86 | AMD64)
+		dnl Some host/target confusion, there's no host_osx (and
+		dnl host_darwin would be true on iOS not just macOS).
+		if test x$target_osx = xyes; then
+			enable_hybrid_suspend_default=yes
+		elif test x$host_linux = xyes -o x$host_win32 = xyes; then
+			enable_hybrid_suspend_default=yes
+		fi
+		;;
+	esac
+fi
+
+dnl Now check if there were flags overriding the defaults
+
 AC_ARG_WITH(cooperative_gc,        [  --with-cooperative-gc=yes|no        Enable cooperative stop-the-world garbage collection (sgen only) (defaults to no)], [AC_MSG_WARN([--with-cooperative-gc is deprecated, use --enable-cooperative-suspend instead])], [with_cooperative_gc=default])
 AC_ARG_ENABLE(cooperative_suspend, [  --enable-cooperative-suspend      Enable cooperative stop-the-world garbage collection (sgen only) (defaults to no)], [], [enable_cooperative_suspend=default])
 
@@ -5030,6 +5055,12 @@ fi
 
 AM_CONDITIONAL([ENABLE_HYBRID_SUSPEND], [test x$enable_hybrid_suspend != xno])
 
+dnl End of thread suspend policy
+
+dnl **********************
+dnl *** checked builds ***
+dnl **********************
+
 AC_ARG_ENABLE(checked_build, [  --enable-checked-build=LIST      To enable checked build (expensive asserts), configure with a comma-separated LIST of checked build modules and then include that same list in the environment variable MONO_CHECK_MODE at runtime. Recognized checked build modules: all, gc, metadata, thread, private_types],[
 
 	if test x$enable_checked_build != x ; then
@@ -5062,6 +5093,8 @@ AC_ARG_ENABLE(checked_build, [  --enable-checked-build=LIST      To enable check
 		AC_DEFINE(ENABLE_CHECKED_BUILD_PRIVATE_TYPES, 1, [Enable private types checked build])
 	fi
 ], [])
+
+dnl End of checked builds
 
 AC_CHECK_HEADER([malloc.h], 
 		[AC_DEFINE([HAVE_USR_INCLUDE_MALLOC_H], [1], 
@@ -5687,9 +5720,9 @@ fi
 
 thread_suspend_msg=
 if test x$buildsgen = xyes; then
-	if test x$enable_cooperative_suspend = xyes; then
+	if test x$enable_cooperative_suspend != xno; then
 		thread_suspend_msg="Suspend:       Cooperative"
-	elif test x$enable_hybrid_suspend = xyes; then
+	elif test x$enable_hybrid_suspend != xno; then
 		thread_suspend_msg="Suspend:       Hybrid"
 	else
 		thread_suspend_msg="Suspend:       Preemptive"
