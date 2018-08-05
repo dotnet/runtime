@@ -1578,7 +1578,7 @@ private:
     int BuildStoreLoc(GenTreeLclVarCommon* tree);
     int BuildIndir(GenTreeIndir* indirTree);
     int BuildGCWriteBarrier(GenTree* tree);
-    int BuildCast(GenTree* tree);
+    int BuildCast(GenTreeCast* cast);
 
 #if defined(_TARGET_XARCH_)
     // returns true if the tree can use the read-modify-write memory instruction form
