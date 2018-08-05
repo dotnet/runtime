@@ -789,6 +789,7 @@ protected:
     void genLongToIntCast(GenTree* treeNode);
 #endif
 
+    void genIntCastOverflowCheck(GenTreeCast* cast, regNumber reg);
     void genIntToIntCast(GenTree* treeNode);
     void genFloatToFloatCast(GenTree* treeNode);
     void genFloatToIntCast(GenTree* treeNode);
