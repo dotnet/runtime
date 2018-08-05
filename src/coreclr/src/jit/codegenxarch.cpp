@@ -6433,19 +6433,18 @@ void CodeGen::genIntCastOverflowCheck(GenTreeCast* cast, regNumber reg)
 // genIntToIntCast: Generate code for an integer cast, with or without overflow check.
 //
 // Arguments:
-//    treeNode - The GT_CAST node
+//    cast - The GT_CAST node
 //
 // Assumptions:
-//    The treeNode is not a contained node and must have an assigned register.
+//    The cast node is not a contained node and must have an assigned register.
 //    Neither the source nor target type can be a floating point type.
 //    On x86 casts to (U)BYTE require that the source be in a byte register.
 //
 // TODO-XArch-CQ: Allow castOp to be a contained node without an assigned register.
 // TODO: refactor to use getCastDescription
 //
-void CodeGen::genIntToIntCast(GenTree* treeNode)
+void CodeGen::genIntToIntCast(GenTreeCast* cast)
 {
-    GenTreeCast* cast = treeNode->AsCast();
     genConsumeOperands(cast);
 
     GenTree* src = cast->gtGetOp1();

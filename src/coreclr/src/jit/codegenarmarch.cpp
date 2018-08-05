@@ -2954,126 +2954,113 @@ void CodeGen::genIntCastOverflowCheck(GenTreeCast* cast, regNumber sourceReg)
 }
 
 //------------------------------------------------------------------------
-// genIntToIntCast: Generate code for an integer cast
+// genIntToIntCast: Generate code for an integer cast, with or without overflow check.
 //
 // Arguments:
-//    treeNode - The GT_CAST node
-//
-// Return Value:
-//    None.
+//    cast - The GT_CAST node
 //
 // Assumptions:
-//    The treeNode must have an assigned register.
-//    For a signed convert from byte, the source must be in a byte-addressable register.
+//    The cast node is not a contained node and must have an assigned register.
 //    Neither the source nor target type can be a floating point type.
 //
 // TODO-ARM64-CQ: Allow castOp to be a contained node without an assigned register.
 //
-void CodeGen::genIntToIntCast(GenTree* treeNode)
+void CodeGen::genIntToIntCast(GenTreeCast* cast)
 {
-    assert(treeNode->OperGet() == GT_CAST);
+    genConsumeOperands(cast);
 
-    GenTree* castOp = treeNode->gtCast.CastOp();
-    emitter* emit   = getEmitter();
+    GenTree* src = cast->gtGetOp1();
 
-    var_types dstType = treeNode->CastToType();
-    var_types srcType = genActualType(castOp->TypeGet());
+    const var_types srcType  = genActualType(src->TypeGet());
+    const unsigned  srcSize  = genTypeSize(srcType);
+    const var_types castType = cast->gtCastType;
+    const unsigned  castSize = genTypeSize(castType);
+    const var_types dstType  = genActualType(cast->TypeGet());
+    const unsigned  dstSize  = genTypeSize(dstType);
 
-    assert(genTypeSize(srcType) <= genTypeSize(TYP_I_IMPL));
+    assert((srcSize == 4) || (srcSize == genTypeSize(TYP_I_IMPL)));
+    assert((dstSize == 4) || (dstSize == genTypeSize(TYP_I_IMPL)));
+    assert(castSize <= dstSize);
 
-    regNumber targetReg = treeNode->gtRegNum;
-    regNumber sourceReg = castOp->gtRegNum;
+    const regNumber srcReg = src->gtRegNum;
+    const regNumber dstReg = cast->gtRegNum;
 
-    assert(genIsValidIntReg(targetReg));
-    assert(genIsValidIntReg(sourceReg));
+    assert(genIsValidIntReg(srcReg));
+    assert(genIsValidIntReg(dstReg));
 
-    genConsumeReg(castOp);
+    instruction ins = INS_none;
+    emitAttr    insSize;
+
     Lowering::CastInfo castInfo;
-
-    // Get information about the cast.
-    Lowering::getCastDescription(treeNode, &castInfo);
-
+    Lowering::getCastDescription(cast, &castInfo);
     if (castInfo.requiresOverflowCheck)
     {
-        genIntCastOverflowCheck(treeNode->AsCast(), sourceReg);
+        genIntCastOverflowCheck(cast, srcReg);
 
-        bool     movRequired = (sourceReg != targetReg);
-        emitAttr movSize     = emitActualTypeSize(dstType);
-
-        if (castInfo.signCheckOnly)
+#ifdef _TARGET_64BIT_
+        if ((srcType == TYP_INT) && !cast->IsUnsigned() && (castType == TYP_ULONG))
         {
-            // We only need to check for a negative value in sourceReg
-            noway_assert(genTypeSize(srcType) == 4 || genTypeSize(srcType) == 8);
-            // This is only interesting case to ensure zero-upper bits.
-            if ((srcType == TYP_INT) && (dstType == TYP_ULONG))
-            {
-                // cast to TYP_ULONG:
-                // We use a mov with size=EA_4BYTE
-                // which will zero out the upper bits
-                movSize     = EA_4BYTE;
-                movRequired = true;
-            }
+            // This is the only overflow checking cast that requires changing the
+            // source value (by zero extending), all others will copy the value as is.
+            ins     = INS_mov;
+            insSize = EA_4BYTE;
         }
-
-        if (movRequired)
-        {
-            emit->emitIns_R_R(INS_mov, movSize, targetReg, sourceReg);
-        }
+#endif
     }
     else // Non-overflow checking cast.
     {
-        const unsigned srcSize = genTypeSize(srcType);
-        const unsigned dstSize = genTypeSize(dstType);
-        instruction    ins;
-        emitAttr       insSize;
-
-        if (dstSize < 4)
+        if (castSize < 4)
         {
+            assert((castSize == 1) || (castSize == 2));
+
             // Casting to a small type really means widening from that small type to INT/LONG.
-            ins     = ins_Move_Extend(dstType, true);
-            insSize = emitActualTypeSize(treeNode->TypeGet());
+            ins     = ins_Move_Extend(castType, true);
+            insSize = EA_ATTR(dstSize);
         }
 #ifdef _TARGET_64BIT_
-        // dstType cannot be a long type on 32 bit targets, such casts should have been decomposed.
+        // castType cannot be a long type on 32 bit targets, such casts should have been decomposed.
         // srcType cannot be a small type since it's the "actual type" of the cast operand.
         // This means that widening casts do not occur on 32 bit targets.
-        else if (dstSize > srcSize)
+        else if (castSize > srcSize)
         {
             // (U)INT to (U)LONG widening cast
-            assert((srcSize == 4) && (dstSize == 8));
-            // Make sure the node type has the same size as the destination type.
-            assert(genTypeSize(treeNode->TypeGet()) == dstSize);
+            assert((srcSize == 4) && (castSize == 8));
 
-            ins = treeNode->IsUnsigned() ? INS_mov : INS_sxtw;
+            ins = cast->IsUnsigned() ? INS_mov : INS_sxtw;
             // SXTW requires EA_8BYTE but MOV requires EA_4BYTE in order to zero out the upper 32 bits.
             insSize = (ins == INS_sxtw) ? EA_8BYTE : EA_4BYTE;
         }
 #endif
-        else
-        {
-            // Sign changing cast or narrowing cast
-            assert(dstSize <= srcSize);
-            // Note that narrowing casts are possible only on 64 bit targets.
-            assert(srcSize <= genTypeSize(TYP_I_IMPL));
-            // Make sure the node type has the same size as the destination type.
-            assert(genTypeSize(treeNode->TypeGet()) == dstSize);
-
-            // This cast basically does nothing, even when narrowing it is the job of the
-            // consumer of this node to use the appropiate register size (32 or 64 bit)
-            // and not rely on the cast to set the upper 32 bits in a certain manner.
-            // Still, we will need to generate a MOV instruction if the source and target
-            // registers are different.
-            ins     = (sourceReg != targetReg) ? INS_mov : INS_none;
-            insSize = EA_SIZE(dstSize);
-        }
-
-        if (ins != INS_none)
-        {
-            emit->emitIns_R_R(ins, insSize, targetReg, sourceReg);
-        }
     }
 
-    genProduceReg(treeNode);
+    if (ins == INS_none)
+    {
+        // If the instruction has not been selected yet it means we're dealing with
+        // a narrowing/same type/sign changing cast.
+        assert(castSize <= srcSize);
+        // Make sure the destination size is correct. This prevents unsupported casts
+        // such as LONG->INT->LONG, these would be classified as narrowing but in fact
+        // they're widening casts. It may be useful to allow such casts but that
+        // requires more work here and throughout the JIT.
+        assert(dstSize <= srcSize);
+
+        // This cast basically does nothing, even when narrowing it is the job of the
+        // consumer of this node to use the appropiate register size (32 or 64 bit)
+        // and not rely on the cast to set the upper 32 bits in a certain manner.
+        // Still, we will need to generate a MOV instruction if the source and destination
+        // registers are different.
+        ins = (srcReg != dstReg) ? INS_mov : INS_none;
+        // We can use either the destination size or the source size. Use the destination
+        // size to be consistent with x64 where this may avoid the need for a REX prefix.
+        insSize = EA_SIZE(dstSize);
+    }
+
+    if (ins != INS_none)
+    {
+        getEmitter()->emitIns_R_R(ins, insSize, dstReg, srcReg);
+    }
+
+    genProduceReg(cast);
 }
 
 //------------------------------------------------------------------------
