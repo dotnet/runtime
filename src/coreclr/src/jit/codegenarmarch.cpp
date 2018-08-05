@@ -2858,6 +2858,8 @@ void CodeGen::genJmpMethod(GenTree* jmp)
 //
 void CodeGen::genIntCastOverflowCheck(GenTreeCast* cast, regNumber reg)
 {
+    assert(cast->IsOverflowCheckRequired());
+
     const var_types srcType      = genActualType(cast->gtGetOp1()->TypeGet());
     const bool      srcUnsigned  = cast->IsUnsigned();
     const unsigned  srcSize      = genTypeSize(srcType);
@@ -2984,9 +2986,7 @@ void CodeGen::genIntToIntCast(GenTreeCast* cast)
     instruction ins = INS_none;
     emitAttr    insSize;
 
-    Lowering::CastInfo castInfo;
-    Lowering::getCastDescription(cast, &castInfo);
-    if (castInfo.requiresOverflowCheck)
+    if (cast->IsOverflowCheckRequired())
     {
         genIntCastOverflowCheck(cast, srcReg);
 
