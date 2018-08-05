@@ -303,13 +303,11 @@
     <Compile Include="Interop\PInvoke\UnusedDefaultConstructorOfTypePassedByRefIsNotRemoved.cs" />
     <Compile Include="Interop\InternalCalls\UnusedDefaultConstructorIsRemoved.cs" />
     <Compile Include="Interop\PInvoke\UnusedDefaultConstructorIsRemoved.cs" />
-    <Compile Include="Interop\FieldsOfTypeMarkedSequentialLayoutAreNotRemoved.cs" />
     <Compile Include="Interop\InternalCalls\UnusedFieldsOfTypesAreNotRemoved.cs" />
     <Compile Include="Interop\InternalCalls\UnusedFieldsOfTypesPassedByRefAreNotRemoved.cs" />
     <Compile Include="Interop\PInvoke\UnusedFieldsOfTypesAreNotRemoved.cs" />
     <Compile Include="Interop\PInvoke\UnusedFieldsOfTypesPassedByRefAreNotRemoved.cs" />
     <Compile Include="Interop\InternalCalls\UnusedFieldsOfTypesWhenHasThisAreNotRemoved.cs" />
-    <Compile Include="Interop\UnusedTypeWithSequentialLayoutIsRemoved.cs" />
     <Compile Include="LinkXml\TypeWithPreserveFieldsHasBackingFieldsOfPropertiesRemoved.cs" />
     <Compile Include="LinkXml\UnusedFieldPreservedByLinkXmlIsKept.cs" />
     <Compile Include="LinkXml\UnusedMethodPreservedByLinkXmlIsKept.cs" />
@@ -350,6 +348,10 @@
     <Compile Include="Symbols\ReferenceWithMdb.cs" />
     <Compile Include="Symbols\ReferenceWithMdbAndSymbolLinkingEnabled.cs" />
     <Compile Include="Advanced\PreserveDependencyMethod.cs" />
+    <Compile Include="Attributes.StructLayout\SequentialClass.cs" />
+    <Compile Include="Attributes.StructLayout\AutoClass.cs" />
+    <Compile Include="Attributes.StructLayout\UnusedTypeWithSequentialLayoutIsRemoved.cs" />
+    <Compile Include="Attributes.StructLayout\ExplicitClass.cs" />
   </ItemGroup>
   <ItemGroup>
     <Content Include="Attributes\OnlyKeepUsed\UnusedAttributePreservedViaLinkXmlIsKept.xml" />
@@ -404,6 +406,9 @@
   </ItemGroup>
   <ItemGroup>
     <None Include="TestFramework\Dependencies\ILAssemblySample.il" />
+  </ItemGroup>
+  <ItemGroup>
+    <Folder Include="Attributes.StructLayout\" />
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
   <!-- To modify your build process, add your task inside one of the targets below and uncomment it. 
