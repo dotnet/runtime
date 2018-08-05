@@ -217,7 +217,6 @@ typedef struct MonoCompileArch {
 	struct _UNWIND_INFO* unwindinfo;
 #endif
 	gpointer seq_point_info_var;
-	gpointer ss_trigger_page_var;
 	gpointer ss_tramp_var;
 	gpointer bp_tramp_var;
 	gpointer lmf_var;
