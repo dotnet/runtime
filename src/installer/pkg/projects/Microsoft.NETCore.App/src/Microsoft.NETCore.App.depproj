@@ -40,6 +40,9 @@
     <PackageReference Include="NETStandard.Library">
       <Version>$(NETStandardLibraryPackageVersion)</Version>
     </PackageReference>
+    <PackageReference Include="Microsoft.TargetingPack.Private.WinRT">
+      <Version>1.0.5</Version>
+    </PackageReference>
   </ItemGroup>
 
   <ItemGroup Condition="'$(NuGetRuntimeIdentifier)' == ''">
@@ -60,6 +63,7 @@
       <_runtimeCoreLib Include="@(ReferenceCopyLocalPaths)" Condition="'%(ReferenceCopyLocalPaths.FileName)%(ReferenceCopyLocalPaths.Extension)' == 'System.Private.CoreLib.dll'" />
       <_runtimeJIT Include="@(ReferenceCopyLocalPaths)" Condition="'%(ReferenceCopyLocalPaths.FileName)%(ReferenceCopyLocalPaths.Extension)' == '$(LibraryFilePrefix)clrjit$(LibraryFileExtension)'" />
       <_fxSystemRuntime Include="@(ReferenceCopyLocalPaths)" Condition="'%(ReferenceCopyLocalPaths.FileName)%(ReferenceCopyLocalPaths.Extension)' == 'System.Runtime.dll'" />
+      <_windowsWinMD Include="@(ReferenceCopyLocalPaths)" Condition="'%(ReferenceCopyLocalPaths.FileName)%(ReferenceCopyLocalPaths.Extension)' == 'Windows.winmd'" />
     </ItemGroup>
 
     <PropertyGroup>
@@ -92,8 +96,12 @@
       <_fxLibDirectory>%(_fxSystemRuntime.RootDir)%(_fxSystemRuntime.Directory)</_fxLibDirectory>
     </PropertyGroup>
 
+    <PropertyGroup Condition="'@(_windowsWinMD)' != ''">
+      <_windowsWinMDDirectory>%(_windowsWinMD.RootDir)%(_windowsWinMD.Directory)</_windowsWinMDDirectory>
+    </PropertyGroup>
+    
     <ItemGroup>
-      <_requiredProperty Include="_runtimePackagePath;_coreLibDirectory;_crossGenPath;_jitPath;_fxLibDirectory" />
+      <_requiredProperty Include="_runtimePackagePath;_coreLibDirectory;_crossGenPath;_jitPath;_fxLibDirectory;_windowsWinMDDirectory" />
     </ItemGroup>
 
     <Message Text="%(_requiredProperty.Identity): $(%(_requiredProperty.Identity))" />
@@ -217,7 +225,7 @@
           Condition="'$(OSGroup)' != 'Windows_NT'" />
     <ItemGroup>
       <_filesToCrossGen Include="@(FilesToPackage)"
-                        Condition="'%(FilesToPackage.IsNative)' != 'true' AND '%(FileName)' != 'System.Private.CoreLib' AND '%(FileName)' != 'mscorlib' AND '%(FileName)' != 'System.Runtime.WindowsRuntime' AND '%(Extension)' == '.dll'">
+                        Condition="'%(FilesToPackage.IsNative)' != 'true' AND '%(FileName)' != 'System.Private.CoreLib' AND '%(FileName)' != 'mscorlib' AND '%(Extension)' == '.dll'">
         <CrossGenedDirectory>$(CrossGenOutputPath)/%(TargetPath)/</CrossGenedDirectory>
         <CrossGenedPath>$(CrossGenOutputPath)/%(TargetPath)/%(FileName)%(Extension)</CrossGenedPath>
         <CrossGenSymbolSemaphorePath>$(_crossGenIntermediatePath)/%(FileName).symbol.semaphore</CrossGenSymbolSemaphorePath>
@@ -261,6 +269,7 @@
       <_crossGenArgs Include="-in %(_filesToCrossGen.FullPath)" />
       <_crossGenArgs Include="-out %(_filesToCrossGen.CrossGenedPath)" />
       <_crossGenArgs Include="-platform_assemblies_paths $(_crossgenPlatformAssemblies)" />
+      <_crossGenArgs Include="-Platform_Winmd_Paths $(_windowsWinMDDirectory)" />
       <_crossGenArgs Include="-JITPath $(_jitPath)" />
     </ItemGroup>
 
@@ -285,7 +294,8 @@
 
     <ItemGroup>
       <_crossGenSymbolsArgs Include="-readytorun" />
-      <_crossGenSymbolsArgs Include="-platform_assemblies_paths %(_filesToCrossGen.CrossGenedDirectory)$(_pathSeparatorEscaped)$(_coreLibDirectory)" />
+      <_crossGenSymbolsArgs Include="-platform_assemblies_paths %(_filesToCrossGen.CrossGenedDirectory)$(_pathSeparatorEscaped)$(_coreLibDirectory)$(_pathSeparatorEscaped)$(_fxLibDirectory)" />
+      <_crossGenSymbolsArgs Include="-Platform_Winmd_Paths $(_windowsWinMDDirectory)" />
       <_crossGenSymbolsArgs Include="-$(_crossGenSymbolsOptionName)" />
       <_crossGenSymbolsArgs Include="$(_crossGenSymbolsOutputDirectory)" />
       <_crossGenSymbolsArgs Include="%(_filesToCrossGen.CrossGenedPath)" />
