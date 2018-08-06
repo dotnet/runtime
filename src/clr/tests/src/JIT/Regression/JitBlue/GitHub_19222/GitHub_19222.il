@@ -15,13 +15,24 @@
   .entrypoint
   .maxstack  2
   .locals ([0] class C c)
+
+  // Multiple defs of local 0 here currently inhibit jit exact type tracking
+  // and so the call to A::f below should not devirtualize
   newobj     instance void C::.ctor()
   stloc.0
   newobj     instance void D::.ctor()
   stloc.0
-  ldloc.0
+
   // Must invoke D::f
+  ldloc.0
   callvirt   instance int32 modopt([mscorlib]System.Runtime.CompilerServices.IsLong) A::f()
+
+  // Must invoke C::f
+  ldloc.0
+  callvirt   instance int32 modopt([mscorlib]System.Runtime.CompilerServices.IsLong) C::f()
+
+  // Sum of the 2 calls should give 100
+  add
   ret
 }
 
@@ -74,7 +85,7 @@
           f() cil managed
   {
     .override A::f
-    ldc.i4.2
+    ldc.i4 34
     ret
   }
 
@@ -96,7 +107,7 @@
           f() cil managed
   {
     .override A::f
-    ldc.i4 100
+    ldc.i4 66
     ret
   }
 
