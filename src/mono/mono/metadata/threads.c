@@ -6072,6 +6072,9 @@ mono_threads_summarize (MonoContext *ctx, gchar **out, MonoStackHash *hashes)
 			int count = 4;
 
 			while (old_num_summarized == num_threads_summarized && count > 0) {
+				if (thread->state & (ThreadState_Unstarted | ThreadState_Aborted | ThreadState_Stopped))
+					break;
+
 				sleep (1);
 				mono_memory_barrier ();
 				const char *name = thread_summary_state_to_str (summarizing_thread_state);
