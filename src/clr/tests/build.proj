@@ -30,6 +30,7 @@
     <RestoreProjects Include="$(MSBuildThisFileDirectory)src\JIT\config\benchmark+roslyn\benchmark+roslyn.csproj" />
     <RestoreProjects Include="$(MSBuildThisFileDirectory)src\JIT\config\benchmark+serialize\benchmark+serialize.csproj" />
     <RestoreProjects Include="$(MSBuildThisFileDirectory)src\JIT\config\benchmark\benchmark.csproj" />
+    <RestoreProjects Include="$(MSBuildThisFileDirectory)src\JIT\config\benchmark+intrinsic\benchmark+intrinsic.csproj" />
     <RestoreProjects Include="$(MSBuildThisFileDirectory)src\performance\performance.csproj" />
   </ItemGroup>
 
