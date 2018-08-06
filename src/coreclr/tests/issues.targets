@@ -196,6 +196,9 @@
         <ExcludeList Include="$(XunitTestBinBase)\baseservices\varargs\varargsupport_r\varargsupport_r.cmd">
             <Issue>Varargs supported on this platform</Issue>
         </ExcludeList>
+        <ExcludeList Include="$(XunitTestBinBase)\Interop\COM\NETClients\Primitives\NETClientPrimitives\NETClientPrimitives.cmd">
+            <Issue>19164</Issue>
+        </ExcludeList>
     </ItemGroup>
 
     <!-- The following are x86 failures -->
@@ -432,10 +435,6 @@
         </ExcludeList>
         <ExcludeList Include="$(XunitTestBinBase)\JIT\Performance\CodeQuality\BenchmarksGame\reverse-complement\reverse-complement-6\reverse-complement-6.cmd">
             <Issue>9314</Issue>
-        </ExcludeList>
-        <!-- Disable COM tests since they don't properly run on Windows.Nano and at present there is no way to special case that OS flavor. -->
-        <ExcludeList Include="$(XunitTestBinBase)\Interop\COM\NETClients\Primitives\NETClientPrimitives\NETClientPrimitives.cmd">
-            <Issue>Fails on Windows.Nano</Issue>
         </ExcludeList>
     </ItemGroup>
 
