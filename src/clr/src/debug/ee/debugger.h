@@ -2218,7 +2218,7 @@ public:
                             unsigned int errorLine,
                             bool exitThread);
 
-    BOOL IsSynchronizing(void)
+    virtual BOOL IsSynchronizing(void)
     {
         LIMITED_METHOD_CONTRACT;
 
