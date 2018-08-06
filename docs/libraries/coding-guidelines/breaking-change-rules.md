@@ -123,10 +123,6 @@ Breaking Change Rules
 * Introducing a new base class
 > So long as it does not introduce any new abstract members or change the semantics or behavior of existing members, a type can be introduced into a hierarchy between two existing types. For example, between .NET Framework 1.1 and .NET Framework 2.0, we introduced `DbConnection` as a new base class for `SqlConnection` which previously derived from `Component`.
 
-* Adding an interface implementation to a type
-> This is acceptable because it will not adversely affect existing clients. Any changes which could be made to the type being changed in this situation, will have to work within the boundaries of acceptable changes defined here, in order for the new implementation to remain acceptable. 
-> Extreme caution is urged when adding interfaces that directly affect the ability of the designer or serializer to generate code or data, that cannot be consumed down-level. An example is the `ISerializable` interface.
-
 * Removing an interface implementation from a type when the interface is already implemented lower in the hierarchy
 
 * Moving a type from one assembly into another assembly  
@@ -141,6 +137,9 @@ Breaking Change Rules
 
 * Removing the implementation of an interface on a type  
 > It is not breaking when you added the implementation of an interface which derives from the removed interface. For example, you removed `IDisposable`, but implemented `IComponent`, which derives from `IDisposable`.
+
+* Adding an interface implementation to a type
+> This can be a compile-time breaking change. Consider a type `public class MyType : IEnumerable<A>`. A developer can call the standard `ToList()` extension method and get a `List<A>` as a result. If the class is ever extended in the future as `public class MyType : IEnumerable<A>, IEnumerable<B>`, the call to `ToList()` will fail to compile since type inference cannot determine if the return type should be `List<A>` or `List<B>`. Type inference issues aside, adding interfaces like `ISerializable` affects the ability of a designer or serializer to generate code in a downlevel-compatible fashion.
 
 * Removing one or more base classes for a type, including changing `struct` to `class` and vice versa
 
