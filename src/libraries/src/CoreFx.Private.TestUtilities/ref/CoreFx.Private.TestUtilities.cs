@@ -41,6 +41,7 @@ namespace System
     public static partial class PlatformDetection
     {
         public static bool IsReflectionEmitSupported;
+        public static bool SupportsAlpn { get { throw null; } }
         public static bool ClientWebSocketPartialMessagesSupported { get { throw null; } }
         public static bool HasWindowsShell { get { throw null; } }
         public static bool IsArmProcess { get { throw null; } }
