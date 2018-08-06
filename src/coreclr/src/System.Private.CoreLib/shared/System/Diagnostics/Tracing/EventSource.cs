@@ -1780,9 +1780,10 @@ namespace System.Diagnostics.Tracing
                     if (dataType.IsEnum())
                     {
                         dataType = Enum.GetUnderlyingType(dataType);
+                        if (Runtime.InteropServices.Marshal.SizeOf(dataType) < sizeof(int))
+                            dataType = typeof(int);
                         goto Again;
                     }
-
 
                     // Everything else is marshaled as a string.
                     // ETW strings are NULL-terminated, so marshal everything up to the first
@@ -1794,7 +1795,6 @@ namespace System.Diagnostics.Tracing
                     }
 
                     return new string((char *)dataPointer);
-
                 }
                 finally
                 {
@@ -5479,7 +5479,7 @@ namespace System.Diagnostics.Tracing
                         }
                     }
 
-                    // the OS requrires that bitmaps and valuemaps have at least one value or it reject the whole manifest.
+                    // the OS requires that bitmaps and valuemaps have at least one value or it reject the whole manifest.
                     // To avoid that put a 'None' entry if there are no other values.  
                     if (!anyValuesWritten)
                     {
