@@ -149,6 +149,8 @@ namespace JIT.HardwareIntrinsics.X86
 
         public void RunBasicScenario_UnsafeRead()
         {
+            TestLibrary.TestFramework.BeginScenario(nameof(RunBasicScenario_UnsafeRead));
+
             Avx.ExtractVector128(
                 (Single*)_dataTable.outArrayPtr,
                 Unsafe.Read<Vector256<Single>>(_dataTable.inArrayPtr),
@@ -160,6 +162,8 @@ namespace JIT.HardwareIntrinsics.X86
 
         public void RunBasicScenario_Load()
         {
+            TestLibrary.TestFramework.BeginScenario(nameof(RunBasicScenario_Load));
+
             Avx.ExtractVector128(
                 (Single*)_dataTable.outArrayPtr,
                 Avx.LoadVector256((Single*)(_dataTable.inArrayPtr)),
@@ -171,6 +175,8 @@ namespace JIT.HardwareIntrinsics.X86
 
         public void RunBasicScenario_LoadAligned()
         {
+            TestLibrary.TestFramework.BeginScenario(nameof(RunBasicScenario_LoadAligned));
+
             Avx.ExtractVector128(
                 (Single*)_dataTable.outArrayPtr,
                 Avx.LoadAlignedVector256((Single*)(_dataTable.inArrayPtr)),
@@ -182,6 +188,8 @@ namespace JIT.HardwareIntrinsics.X86
 
         public void RunReflectionScenario_UnsafeRead()
         {
+            TestLibrary.TestFramework.BeginScenario(nameof(RunReflectionScenario_UnsafeRead));
+
             typeof(Avx).GetMethod(nameof(Avx.ExtractVector128), new Type[] { typeof(Single*), typeof(Vector256<Single>), typeof(byte) })
                                      .Invoke(null, new object[] {
                                         Pointer.Box(_dataTable.outArrayPtr, typeof(Single*)),
@@ -194,6 +202,8 @@ namespace JIT.HardwareIntrinsics.X86
 
         public void RunReflectionScenario_Load()
         {
+            TestLibrary.TestFramework.BeginScenario(nameof(RunReflectionScenario_Load));
+
             typeof(Avx).GetMethod(nameof(Avx.ExtractVector128), new Type[] { typeof(Single*), typeof(Vector256<Single>), typeof(byte) })
                                      .Invoke(null, new object[] {
                                         Pointer.Box(_dataTable.outArrayPtr, typeof(Single*)),
@@ -206,6 +216,8 @@ namespace JIT.HardwareIntrinsics.X86
 
         public void RunReflectionScenario_LoadAligned()
         {
+            TestLibrary.TestFramework.BeginScenario(nameof(RunReflectionScenario_LoadAligned));
+
             typeof(Avx).GetMethod(nameof(Avx.ExtractVector128), new Type[] {  typeof(Single*), typeof(Vector256<Single>), typeof(byte) })
                                      .Invoke(null, new object[] {
                                         Pointer.Box(_dataTable.outArrayPtr, typeof(Single*)),
@@ -218,6 +230,8 @@ namespace JIT.HardwareIntrinsics.X86
 
         public void RunClsVarScenario()
         {
+            TestLibrary.TestFramework.BeginScenario(nameof(RunClsVarScenario));
+
             Avx.ExtractVector128(
                 (Single*)_dataTable.outArrayPtr,
                 _clsVar,
@@ -229,6 +243,8 @@ namespace JIT.HardwareIntrinsics.X86
 
         public void RunLclVarScenario_UnsafeRead()
         {
+            TestLibrary.TestFramework.BeginScenario(nameof(RunLclVarScenario_UnsafeRead));
+
             var firstOp = Unsafe.Read<Vector256<Single>>(_dataTable.inArrayPtr);
             Avx.ExtractVector128((Single*)_dataTable.outArrayPtr, firstOp, 1);
             ValidateResult(firstOp, _dataTable.outArrayPtr);
@@ -236,6 +252,8 @@ namespace JIT.HardwareIntrinsics.X86
 
         public void RunLclVarScenario_Load()
         {
+            TestLibrary.TestFramework.BeginScenario(nameof(RunLclVarScenario_Load));
+
             var firstOp = Avx.LoadVector256((Single*)(_dataTable.inArrayPtr));
             Avx.ExtractVector128((Single*)_dataTable.outArrayPtr, firstOp, 1);
             ValidateResult(firstOp, _dataTable.outArrayPtr);
@@ -243,6 +261,8 @@ namespace JIT.HardwareIntrinsics.X86
 
         public void RunLclVarScenario_LoadAligned()
         {
+            TestLibrary.TestFramework.BeginScenario(nameof(RunLclVarScenario_LoadAligned));
+
             var firstOp = Avx.LoadAlignedVector256((Single*)(_dataTable.inArrayPtr));
             Avx.ExtractVector128((Single*)_dataTable.outArrayPtr, firstOp, 1);
             ValidateResult(firstOp, _dataTable.outArrayPtr);
@@ -250,6 +270,8 @@ namespace JIT.HardwareIntrinsics.X86
 
         public void RunClassLclFldScenario()
         {
+            TestLibrary.TestFramework.BeginScenario(nameof(RunClassLclFldScenario));
+
             var test = new ExtractStoreTest__ExtractVector128Single1();
             Avx.ExtractVector128((Single*)_dataTable.outArrayPtr, test._fld, 1);
             ValidateResult(test._fld, _dataTable.outArrayPtr);
@@ -257,12 +279,16 @@ namespace JIT.HardwareIntrinsics.X86
 
         public void RunClassFldScenario()
         {
+            TestLibrary.TestFramework.BeginScenario(nameof(RunClassFldScenario));
+
             Avx.ExtractVector128((Single*)_dataTable.outArrayPtr, _fld, 1);
             ValidateResult(_fld, _dataTable.outArrayPtr);
         }
 
         public void RunStructLclFldScenario()
         {
+            TestLibrary.TestFramework.BeginScenario(nameof(RunStructLclFldScenario));
+
             var test = TestStruct.Create();
             Avx.ExtractVector128((Single*)_dataTable.outArrayPtr, test._fld, 1);
             ValidateResult(test._fld, _dataTable.outArrayPtr);
@@ -270,12 +296,16 @@ namespace JIT.HardwareIntrinsics.X86
 
         public void RunStructFldScenario()
         {
+            TestLibrary.TestFramework.BeginScenario(nameof(RunStructFldScenario));
+
             var test = TestStruct.Create();
             test.RunStructFldScenario(this);
         }
 
         public void RunUnsupportedScenario()
         {
+            TestLibrary.TestFramework.BeginScenario(nameof(RunUnsupportedScenario));
+
             Succeeded = false;
 
             try
