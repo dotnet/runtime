@@ -4300,6 +4300,7 @@ mono_class_get_namespace (MonoClass *klass)
 	MONO_ENTER_GC_UNSAFE;
 	result = m_class_get_name_space (klass);
 	MONO_EXIT_GC_UNSAFE;
+	return result;
 }
 
 /**
