@@ -11,8 +11,12 @@ using Xunit;
 
 namespace System.Net.Http.Functional.Tests
 {
+    using Configuration = System.Net.Test.Common.Configuration;
+
     public abstract class HttpCookieProtocolTests : HttpClientTestBase
     {
+        public static readonly object[][] EchoServers = Configuration.Http.EchoServers;
+
         private const string s_cookieName = "ABC";
         private const string s_cookieValue = "123";
         private const string s_expectedCookieHeaderValue = "ABC=123";
@@ -149,6 +153,75 @@ namespace System.Net.Http.Functional.Tests
                     Assert.Equal(1, requestLines.Count(s => s.StartsWith("Cookie:")));
                 }
             });
+        }
+
+        [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework, "HTTP/2 is not supported on NetFX, and manually added Cookie header will be ignored if sent with container cookies")]
+        [OuterLoop("Uses external server")]
+        [Theory, MemberData(nameof(EchoServers))]
+        public async Task SendAsync_RemoteServersWithCookies_Success(Uri remoteServer)
+        {
+            // CurlHandler: cookies from container are not sent if a Cookie header is manually added #26983.
+            if (IsCurlHandler) return;
+
+            var expectedVersion = new Version(1,1);
+            HttpClientHandler handler = CreateHttpClientHandler();
+
+            if (remoteServer.Host == Configuration.Http.Http2Host && BackendSupportsAlpn)
+            {
+                // Windows 10 Anniversary release a.k.a Windows 10 Version 1607 added support to native WinHTTP for HTTP/2 protocol support.
+                if (IsWinHttpHandler && !PlatformDetection.IsWindows10Version1607OrGreater) return;
+
+                expectedVersion = new Version(2,0);
+                TestHelper.EnsureHttp2Feature(handler);
+            }
+
+            using (HttpClient client = new HttpClient(handler))
+            {
+                var request = new HttpRequestMessage(HttpMethod.Get, remoteServer)
+                {
+                    Version = expectedVersion,
+                };
+
+                // Make remote server send SetCookie header.
+                request.Headers.Add("X-SetCookie", "name=value");
+                request.Headers.Add("X-SetCookie", "name1=value1");
+                request.Headers.Add("X-SetCookie", "name2=value2");
+
+                using (HttpResponseMessage response = await client.SendAsync(request))
+                {
+                    Assert.Equal(expectedVersion, response.Version);
+                    Assert.Equal(HttpStatusCode.OK, response.StatusCode);
+
+                    // Verify server sends back SetCookie header.
+                    Assert.Contains("Set-Cookie: name=value, name1=value1, name2=value2", response.Headers.ToString());
+
+                    // Server does not have any cookies yet.
+                    Assert.Contains("\"Cookies\": {}", await response.Content.ReadAsStringAsync());
+                }
+
+                // Send next request to see if the cookie has been wrote to the header.
+                var newRequest = new HttpRequestMessage(HttpMethod.Get, remoteServer)
+                {
+                    Version = expectedVersion,
+                };
+
+                // Send additional cookie (along with the ones from CookieContainer).
+                newRequest.Headers.Add("Cookie", "cookie=c1");
+
+                using (HttpResponseMessage response = await client.SendAsync(newRequest))
+                {
+                    Assert.Equal(expectedVersion, response.Version);
+                    Assert.Equal(HttpStatusCode.OK, response.StatusCode);
+
+                    // Verify server received all cookies.
+                    string body = await response.Content.ReadAsStringAsync();
+                    Assert.Contains("\"Cookies\": ", body);
+                    Assert.Contains("\"name\": \"value\"", body);
+                    Assert.Contains("\"name1\": \"value1\"", body);
+                    Assert.Contains("\"name2\": \"value2\"", body);
+                    Assert.Contains("\"cookie\": \"c1\"", body);
+                }
+            }
         }
 
         [ActiveIssue(30051, TargetFrameworkMonikers.Uap)]
