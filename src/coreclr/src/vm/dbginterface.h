@@ -412,6 +412,7 @@ public:
     virtual void BeforeGarbageCollection() = 0;
     virtual void AfterGarbageCollection() = 0;
 #endif
+    virtual BOOL IsSynchronizing() = 0;
 };
 
 #ifndef DACCESS_COMPILE

@@ -6057,9 +6057,7 @@ void Debugger::AfterGarbageCollection()
         return;
 
     {
-        Debugger::DebuggerLockHolder dbgLockHolder(this);
-
-        this->m_isBlockedOnGarbageCollectionEvent = true;
+        Debugger::DebuggerLockHolder dbgLockHolder(this);        
 
         DebuggerIPCEvent* ipce1 = m_pRCThread->GetIPCEventSendBuffer();
         InitIPCEvent(ipce1,
@@ -6073,6 +6071,7 @@ void Debugger::AfterGarbageCollection()
 
     WaitForSingleObject(this->GetGarbageCollectionBlockerEvent(), INFINITE);
     ResetEvent(this->GetGarbageCollectionBlockerEvent());
+    this->m_isBlockedOnGarbageCollectionEvent = false;
 }
 
 void Debugger::SendDataBreakpoint(Thread *thread, CONTEXT *context,
@@ -10817,7 +10816,7 @@ bool Debugger::HandleIPCEvent(DebuggerIPCEvent * pEvent)
                 _ASSERTE(ThreadHoldsLock());
 
                 // Simply trap all Runtime threads if we're not already trying to.
-                if (!m_trappingRuntimeThreads)
+                if (!m_isBlockedOnGarbageCollectionEvent && !m_trappingRuntimeThreads)
                 {
                     // If the RS sent an Async-break, then that's an explicit request.
                     m_RSRequestedSync = TRUE;
@@ -10831,7 +10830,6 @@ bool Debugger::HandleIPCEvent(DebuggerIPCEvent * pEvent)
         {
             if (this->m_isBlockedOnGarbageCollectionEvent)
             {
-                this->m_isBlockedOnGarbageCollectionEvent = false;
                 this->m_stopped = false;
                 SetEvent(this->GetGarbageCollectionBlockerEvent());
             }
