@@ -5474,7 +5474,7 @@ process_bb (EmitContext *ctx, MonoBasicBlock *bb)
 			/* llvm.fabs not supported on all platforms */
 			args [0] = convert (ctx, lhs, LLVMDoubleType ());
 			values [ins->dreg] = LLVMBuildCall (builder, get_intrinsic (ctx, "fabs"), args, 1, dname);
-			values [ins->dreg] = convert (ctx, lhs, LLVMFloatType ());
+			values [ins->dreg] = convert (ctx, values [ins->dreg], LLVMFloatType ());
 #endif
 			break;
 		}
