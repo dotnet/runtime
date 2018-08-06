@@ -16,6 +16,8 @@ namespace System.Net.Http.Functional.Tests
         protected bool IsNetfxHandler => PlatformDetection.IsWindows && PlatformDetection.IsFullFramework;
         protected bool IsUapHandler => PlatformDetection.IsWindows && PlatformDetection.IsUap;
 
+        protected bool BackendSupportsAlpn => PlatformDetection.SupportsAlpn;
+
         protected HttpClient CreateHttpClient() => new HttpClient(CreateHttpClientHandler());
 
         protected HttpClientHandler CreateHttpClientHandler() => CreateHttpClientHandler(UseSocketsHttpHandler);
