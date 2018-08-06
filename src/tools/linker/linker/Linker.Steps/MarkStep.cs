@@ -1886,17 +1886,37 @@ namespace Mono.Linker.Steps {
 				if (!TypeNameParser.TryParseTypeAssemblyQualifiedName (typeAssemblyQualifiedName, out string typeName, out string assemblyName))
 					continue;
 
+				bool found = false;
 				foreach (var assemblyDefinition in _context.GetAssemblies ()) {
 					if (assemblyName != null && assemblyDefinition.Name.Name != assemblyName)
 						continue;
 
 					var type = assemblyDefinition.MainModule.GetType (typeName);
-					if (type != null)
-					{
+					if (type != null) {
 						MarkType(type);
+						found = true;
 						break;
 					}
 				}
+
+				if (!found && assemblyName != null) {
+					AssemblyDefinition newDependency;
+					try {
+						newDependency = _context.Resolve (assemblyName);
+					} catch {
+						newDependency = null;
+					}
+
+					if (newDependency == null) {
+						_context.Logger.LogMessage (MessageImportance.Low, $"Could not resolve assembly {assemblyName}");
+					} else {
+						var type = newDependency.MainModule.GetType (typeName);
+						if (type != null) {
+							MarkType (type);
+						}
+					}
+				}
+
 				_context.Tracer.Pop ();
 			}
 		}
