@@ -352,6 +352,8 @@
     <Compile Include="Attributes.StructLayout\AutoClass.cs" />
     <Compile Include="Attributes.StructLayout\UnusedTypeWithSequentialLayoutIsRemoved.cs" />
     <Compile Include="Attributes.StructLayout\ExplicitClass.cs" />
+    <Compile Include="Reflection\AssemblyImportedViaReflection.cs" />
+    <Compile Include="Reflection\Dependencies\AssemblyDependency.cs" />
   </ItemGroup>
   <ItemGroup>
     <Content Include="Attributes\OnlyKeepUsed\UnusedAttributePreservedViaLinkXmlIsKept.xml" />
@@ -409,6 +411,7 @@
   </ItemGroup>
   <ItemGroup>
     <Folder Include="Attributes.StructLayout\" />
+    <Folder Include="Reflection\Dependencies\" />
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
   <!-- To modify your build process, add your task inside one of the targets below and uncomment it. 
