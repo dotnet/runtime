@@ -476,6 +476,123 @@ namespace System.IO
             }
         }
 
+        private void WriteFormatHelper(string format, ParamsArray args, bool appendNewLine)
+        {
+            StringBuilder sb =
+                StringBuilderCache.Acquire(format.Length + args.Length * 8)
+                .AppendFormatHelper(null, format, args);
+
+            StringBuilder.ChunkEnumerator chunks = sb.GetChunks();
+
+            bool more = chunks.MoveNext();
+            while (more)
+            {
+                ReadOnlySpan<char> current = chunks.Current.Span;
+                more = chunks.MoveNext();
+
+                // If final chunk, include the newline if needed
+                WriteSpan(current, appendNewLine: more ? false : appendNewLine);
+            }
+
+            StringBuilderCache.Release(sb);
+        }
+
+        public override void Write(string format, object arg0)
+        {
+            if (GetType() == typeof(StreamWriter))
+            {
+                WriteFormatHelper(format, new ParamsArray(arg0), appendNewLine: false);
+            }
+            else
+            {
+                base.Write(format, arg0);
+            }
+        }
+
+        public override void Write(string format, object arg0, object arg1)
+        {
+            if (GetType() == typeof(StreamWriter))
+            {
+                WriteFormatHelper(format, new ParamsArray(arg0, arg1), appendNewLine: false);
+            }
+            else
+            {
+                base.Write(format, arg0, arg1);
+            }
+        }
+
+        public override void Write(string format, object arg0, object arg1, object arg2)
+        {
+            if (GetType() == typeof(StreamWriter))
+            {
+                WriteFormatHelper(format, new ParamsArray(arg0, arg1, arg2), appendNewLine: false);
+            }
+            else
+            {
+                base.Write(format, arg0, arg1, arg2);
+            }
+        }
+
+        public override void Write(string format, params object[] arg)
+        {
+            if (GetType() == typeof(StreamWriter))
+            {
+                WriteFormatHelper(format, new ParamsArray(arg), appendNewLine: false);
+            }
+            else
+            {
+                base.Write(format, arg);
+            }
+        }
+
+        public override void WriteLine(string format, object arg0)
+        {
+            if (GetType() == typeof(StreamWriter))
+            {
+                WriteFormatHelper(format, new ParamsArray(arg0), appendNewLine: true);
+            }
+            else
+            {
+                base.WriteLine(format, arg0);
+            }
+        }
+
+        public override void WriteLine(string format, object arg0, object arg1)
+        {
+            if (GetType() == typeof(StreamWriter))
+            {
+                WriteFormatHelper(format, new ParamsArray(arg0, arg1), appendNewLine: true);
+            }
+            else
+            {
+                base.WriteLine(format, arg0, arg1);
+            }
+        }
+
+        public override void WriteLine(string format, object arg0, object arg1, object arg2)
+        {
+            if (GetType() == typeof(StreamWriter))
+            {
+                WriteFormatHelper(format, new ParamsArray(arg0, arg1, arg2), appendNewLine: true);
+            }
+            else
+            {
+                base.WriteLine(format, arg0, arg1, arg2);
+            }
+        }
+
+        public override void WriteLine(string format, params object[] arg)
+        {
+            if (GetType() == typeof(StreamWriter))
+            {
+                WriteFormatHelper(format, new ParamsArray(arg), appendNewLine: true);
+            }
+            else
+            {
+                base.WriteLine(format, arg);
+            }
+        }
+
         #region Task based Async APIs
         public override Task WriteAsync(char value)
         {
