@@ -126,7 +126,7 @@ static bool shouldEnterCall(PTR_BYTE ip) {
 
     int pushes = 0;
 
-    // we should start unbalenced pops within 48 instrs. If not, it is not a special epilog function
+    // we should start unbalanced pops within 48 instrs. If not, it is not a special epilog function
     // the only reason we need as many instructions as we have below is because  coreclr
     // gets instrumented for profiling, code coverage, BBT etc, and we want these things to
     // just work.
@@ -134,6 +134,7 @@ static bool shouldEnterCall(PTR_BYTE ip) {
         switch(*ip) {
             case 0xF2:              // repne
             case 0xF3:              // repe
+            case 0x90:              // nop
                 ip++;
                 break;
 
