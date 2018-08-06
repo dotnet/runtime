@@ -150,6 +150,8 @@ namespace JIT.HardwareIntrinsics.X86
 
         public void RunBasicScenario_UnsafeRead()
         {
+            TestLibrary.TestFramework.BeginScenario(nameof(RunBasicScenario_UnsafeRead));
+
             var result = Avx2.ShiftRightArithmetic(
                 Unsafe.Read<Vector256<Int16>>(_dataTable.inArrayPtr),
                 16
@@ -161,6 +163,8 @@ namespace JIT.HardwareIntrinsics.X86
 
         public void RunBasicScenario_Load()
         {
+            TestLibrary.TestFramework.BeginScenario(nameof(RunBasicScenario_Load));
+
             var result = Avx2.ShiftRightArithmetic(
                 Avx.LoadVector256((Int16*)(_dataTable.inArrayPtr)),
                 16
@@ -172,6 +176,8 @@ namespace JIT.HardwareIntrinsics.X86
 
         public void RunBasicScenario_LoadAligned()
         {
+            TestLibrary.TestFramework.BeginScenario(nameof(RunBasicScenario_LoadAligned));
+
             var result = Avx2.ShiftRightArithmetic(
                 Avx.LoadAlignedVector256((Int16*)(_dataTable.inArrayPtr)),
                 16
@@ -183,6 +189,8 @@ namespace JIT.HardwareIntrinsics.X86
 
         public void RunReflectionScenario_UnsafeRead()
         {
+            TestLibrary.TestFramework.BeginScenario(nameof(RunReflectionScenario_UnsafeRead));
+
             var result = typeof(Avx2).GetMethod(nameof(Avx2.ShiftRightArithmetic), new Type[] { typeof(Vector256<Int16>), typeof(byte) })
                                      .Invoke(null, new object[] {
                                         Unsafe.Read<Vector256<Int16>>(_dataTable.inArrayPtr),
@@ -195,6 +203,8 @@ namespace JIT.HardwareIntrinsics.X86
 
         public void RunReflectionScenario_Load()
         {
+            TestLibrary.TestFramework.BeginScenario(nameof(RunReflectionScenario_Load));
+
             var result = typeof(Avx2).GetMethod(nameof(Avx2.ShiftRightArithmetic), new Type[] { typeof(Vector256<Int16>), typeof(byte) })
                                      .Invoke(null, new object[] {
                                         Avx.LoadVector256((Int16*)(_dataTable.inArrayPtr)),
@@ -207,6 +217,8 @@ namespace JIT.HardwareIntrinsics.X86
 
         public void RunReflectionScenario_LoadAligned()
         {
+            TestLibrary.TestFramework.BeginScenario(nameof(RunReflectionScenario_LoadAligned));
+
             var result = typeof(Avx2).GetMethod(nameof(Avx2.ShiftRightArithmetic), new Type[] { typeof(Vector256<Int16>), typeof(byte) })
                                      .Invoke(null, new object[] {
                                         Avx.LoadAlignedVector256((Int16*)(_dataTable.inArrayPtr)),
@@ -219,6 +231,8 @@ namespace JIT.HardwareIntrinsics.X86
 
         public void RunClsVarScenario()
         {
+            TestLibrary.TestFramework.BeginScenario(nameof(RunClsVarScenario));
+
             var result = Avx2.ShiftRightArithmetic(
                 _clsVar,
                 16
@@ -230,6 +244,8 @@ namespace JIT.HardwareIntrinsics.X86
 
         public void RunLclVarScenario_UnsafeRead()
         {
+            TestLibrary.TestFramework.BeginScenario(nameof(RunLclVarScenario_UnsafeRead));
+
             var firstOp = Unsafe.Read<Vector256<Int16>>(_dataTable.inArrayPtr);
             var result = Avx2.ShiftRightArithmetic(firstOp, 16);
 
@@ -239,6 +255,8 @@ namespace JIT.HardwareIntrinsics.X86
 
         public void RunLclVarScenario_Load()
         {
+            TestLibrary.TestFramework.BeginScenario(nameof(RunLclVarScenario_Load));
+
             var firstOp = Avx.LoadVector256((Int16*)(_dataTable.inArrayPtr));
             var result = Avx2.ShiftRightArithmetic(firstOp, 16);
 
@@ -248,6 +266,8 @@ namespace JIT.HardwareIntrinsics.X86
 
         public void RunLclVarScenario_LoadAligned()
         {
+            TestLibrary.TestFramework.BeginScenario(nameof(RunLclVarScenario_LoadAligned));
+
             var firstOp = Avx.LoadAlignedVector256((Int16*)(_dataTable.inArrayPtr));
             var result = Avx2.ShiftRightArithmetic(firstOp, 16);
 
@@ -257,6 +277,8 @@ namespace JIT.HardwareIntrinsics.X86
 
         public void RunClassLclFldScenario()
         {
+            TestLibrary.TestFramework.BeginScenario(nameof(RunClassLclFldScenario));
+
             var test = new ImmUnaryOpTest__ShiftRightArithmeticInt1616();
             var result = Avx2.ShiftRightArithmetic(test._fld, 16);
 
@@ -266,6 +288,8 @@ namespace JIT.HardwareIntrinsics.X86
 
         public void RunClassFldScenario()
         {
+            TestLibrary.TestFramework.BeginScenario(nameof(RunClassFldScenario));
+
             var result = Avx2.ShiftRightArithmetic(_fld, 16);
 
             Unsafe.Write(_dataTable.outArrayPtr, result);
@@ -274,6 +298,8 @@ namespace JIT.HardwareIntrinsics.X86
 
         public void RunStructLclFldScenario()
         {
+            TestLibrary.TestFramework.BeginScenario(nameof(RunStructLclFldScenario));
+
             var test = TestStruct.Create();
             var result = Avx2.ShiftRightArithmetic(test._fld, 16);
 
@@ -283,12 +309,16 @@ namespace JIT.HardwareIntrinsics.X86
 
         public void RunStructFldScenario()
         {
+            TestLibrary.TestFramework.BeginScenario(nameof(RunStructFldScenario));
+
             var test = TestStruct.Create();
             test.RunStructFldScenario(this);
         }
 
         public void RunUnsupportedScenario()
         {
+            TestLibrary.TestFramework.BeginScenario(nameof(RunUnsupportedScenario));
+
             Succeeded = false;
 
             try
