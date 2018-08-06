@@ -150,6 +150,8 @@ namespace JIT.HardwareIntrinsics.X86
 
         public void RunBasicScenario_UnsafeRead()
         {
+            TestLibrary.TestFramework.BeginScenario(nameof(RunBasicScenario_UnsafeRead));
+
             var result = Avx.RoundToNearestInteger(
                 Unsafe.Read<Vector256<Double>>(_dataTable.inArrayPtr)
             );
@@ -160,6 +162,8 @@ namespace JIT.HardwareIntrinsics.X86
 
         public void RunBasicScenario_Load()
         {
+            TestLibrary.TestFramework.BeginScenario(nameof(RunBasicScenario_Load));
+
             var result = Avx.RoundToNearestInteger(
                 Avx.LoadVector256((Double*)(_dataTable.inArrayPtr))
             );
@@ -170,6 +174,8 @@ namespace JIT.HardwareIntrinsics.X86
 
         public void RunBasicScenario_LoadAligned()
         {
+            TestLibrary.TestFramework.BeginScenario(nameof(RunBasicScenario_LoadAligned));
+
             var result = Avx.RoundToNearestInteger(
                 Avx.LoadAlignedVector256((Double*)(_dataTable.inArrayPtr))
             );
@@ -180,6 +186,8 @@ namespace JIT.HardwareIntrinsics.X86
 
         public void RunReflectionScenario_UnsafeRead()
         {
+            TestLibrary.TestFramework.BeginScenario(nameof(RunReflectionScenario_UnsafeRead));
+
             var result = typeof(Avx).GetMethod(nameof(Avx.RoundToNearestInteger), new Type[] { typeof(Vector256<Double>) })
                                      .Invoke(null, new object[] {
                                         Unsafe.Read<Vector256<Double>>(_dataTable.inArrayPtr)
@@ -191,6 +199,8 @@ namespace JIT.HardwareIntrinsics.X86
 
         public void RunReflectionScenario_Load()
         {
+            TestLibrary.TestFramework.BeginScenario(nameof(RunReflectionScenario_Load));
+
             var result = typeof(Avx).GetMethod(nameof(Avx.RoundToNearestInteger), new Type[] { typeof(Vector256<Double>) })
                                      .Invoke(null, new object[] {
                                         Avx.LoadVector256((Double*)(_dataTable.inArrayPtr))
@@ -202,6 +212,8 @@ namespace JIT.HardwareIntrinsics.X86
 
         public void RunReflectionScenario_LoadAligned()
         {
+            TestLibrary.TestFramework.BeginScenario(nameof(RunReflectionScenario_LoadAligned));
+
             var result = typeof(Avx).GetMethod(nameof(Avx.RoundToNearestInteger), new Type[] { typeof(Vector256<Double>) })
                                      .Invoke(null, new object[] {
                                         Avx.LoadAlignedVector256((Double*)(_dataTable.inArrayPtr))
@@ -213,6 +225,8 @@ namespace JIT.HardwareIntrinsics.X86
 
         public void RunClsVarScenario()
         {
+            TestLibrary.TestFramework.BeginScenario(nameof(RunClsVarScenario));
+
             var result = Avx.RoundToNearestInteger(
                 _clsVar
             );
@@ -223,6 +237,8 @@ namespace JIT.HardwareIntrinsics.X86
 
         public void RunLclVarScenario_UnsafeRead()
         {
+            TestLibrary.TestFramework.BeginScenario(nameof(RunLclVarScenario_UnsafeRead));
+
             var firstOp = Unsafe.Read<Vector256<Double>>(_dataTable.inArrayPtr);
             var result = Avx.RoundToNearestInteger(firstOp);
 
@@ -232,6 +248,8 @@ namespace JIT.HardwareIntrinsics.X86
 
         public void RunLclVarScenario_Load()
         {
+            TestLibrary.TestFramework.BeginScenario(nameof(RunLclVarScenario_Load));
+
             var firstOp = Avx.LoadVector256((Double*)(_dataTable.inArrayPtr));
             var result = Avx.RoundToNearestInteger(firstOp);
 
@@ -241,6 +259,8 @@ namespace JIT.HardwareIntrinsics.X86
 
         public void RunLclVarScenario_LoadAligned()
         {
+            TestLibrary.TestFramework.BeginScenario(nameof(RunLclVarScenario_LoadAligned));
+
             var firstOp = Avx.LoadAlignedVector256((Double*)(_dataTable.inArrayPtr));
             var result = Avx.RoundToNearestInteger(firstOp);
 
@@ -250,6 +270,8 @@ namespace JIT.HardwareIntrinsics.X86
 
         public void RunClassLclFldScenario()
         {
+            TestLibrary.TestFramework.BeginScenario(nameof(RunClassLclFldScenario));
+
             var test = new SimpleUnaryOpTest__RoundToNearestIntegerDouble();
             var result = Avx.RoundToNearestInteger(test._fld);
 
@@ -259,6 +281,8 @@ namespace JIT.HardwareIntrinsics.X86
 
         public void RunClassFldScenario()
         {
+            TestLibrary.TestFramework.BeginScenario(nameof(RunClassFldScenario));
+
             var result = Avx.RoundToNearestInteger(_fld);
 
             Unsafe.Write(_dataTable.outArrayPtr, result);
@@ -267,6 +291,8 @@ namespace JIT.HardwareIntrinsics.X86
 
         public void RunStructLclFldScenario()
         {
+            TestLibrary.TestFramework.BeginScenario(nameof(RunStructLclFldScenario));
+
             var test = TestStruct.Create();
             var result = Avx.RoundToNearestInteger(test._fld);
 
@@ -276,12 +302,16 @@ namespace JIT.HardwareIntrinsics.X86
 
         public void RunStructFldScenario()
         {
+            TestLibrary.TestFramework.BeginScenario(nameof(RunStructFldScenario));
+
             var test = TestStruct.Create();
             test.RunStructFldScenario(this);
         }
 
         public void RunUnsupportedScenario()
         {
+            TestLibrary.TestFramework.BeginScenario(nameof(RunUnsupportedScenario));
+
             Succeeded = false;
 
             try
