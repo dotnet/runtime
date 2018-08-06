@@ -35,6 +35,10 @@
 #include <linux/fs.h>
 #include <mono/utils/linux_magic.h>
 #endif
+#ifdef _AIX
+#include <sys/mntctl.h>
+#include <sys/vmount.h>
+#endif
 #include <sys/time.h>
 #ifdef HAVE_DIRENT_H
 # include <dirent.h>
@@ -3791,6 +3795,49 @@ mono_w32file_get_logical_drive (guint32 len, gunichar2 *buf)
 	g_free (stats);
 	return total;
 }
+#elif _AIX
+gint32
+mono_w32file_get_logical_drive (guint32 len, gunichar2 *buf)
+{
+	struct vmount *mounts;
+	// ret will first be the errno cond, then no of structs
+	int needsize, ret, total;
+	gunichar2 *dir;
+	glong length;
+	total = 0;
+
+	MONO_ENTER_GC_SAFE;
+	ret = mntctl (MCTL_QUERY, sizeof(needsize), &needsize);
+	MONO_EXIT_GC_SAFE;
+	if (ret == -1)
+		return 0;
+	mounts = (struct vmount *) g_malloc (needsize);
+	if (mounts == NULL)
+		return 0;
+	MONO_ENTER_GC_SAFE;
+	ret = mntctl (MCTL_QUERY, needsize, mounts);
+	MONO_EXIT_GC_SAFE;
+	if (ret == -1) {
+		g_free (mounts);
+		return 0;
+	}
+
+	for (int i = 0; i < ret; i++) {
+		dir = g_utf8_to_utf16 (vmt2dataptr(mounts, VMT_STUB), -1, NULL, &length, NULL);
+		if (total + length < len){
+			memcpy (buf + total, dir, sizeof (gunichar2) * length);
+			buf [total+length] = 0;
+		} 
+		g_free (dir);
+		total += length + 1;
+		mounts = (void*)mounts + mounts->vmt_length; // next!
+	}
+	if (total < len)
+		buf [total] = 0;
+	total++;
+	g_free (mounts);
+	return total;
+}
 #else
 /* In-place octal sequence replacement */
 static void
@@ -4463,7 +4510,12 @@ static _wapi_drive_type _wapi_drive_types[] = {
 	{ DRIVE_RAMDISK, "debugfs"    },
 	{ DRIVE_RAMDISK, "devpts"     },
 	{ DRIVE_RAMDISK, "securityfs" },
+	{ DRIVE_RAMDISK, "procfs"     }, // AIX procfs
+	{ DRIVE_RAMDISK, "namefs"     }, // AIX soft mounts
 	{ DRIVE_CDROM,   "iso9660"    },
+	{ DRIVE_CDROM,   "cdrfs"      }, // AIX ISO9660 CDs
+	{ DRIVE_CDROM,   "udfs"       }, // AIX UDF CDs
+	{ DRIVE_CDROM,   "QOPT"       }, // IBM i CD mount
 	{ DRIVE_FIXED,   "ext2"       },
 	{ DRIVE_FIXED,   "ext3"       },
 	{ DRIVE_FIXED,   "ext4"       },
@@ -4478,6 +4530,12 @@ static _wapi_drive_type _wapi_drive_types[] = {
 	{ DRIVE_FIXED,   "qnx4"       },
 	{ DRIVE_FIXED,   "ntfs"       },
 	{ DRIVE_FIXED,   "ntfs-3g"    },
+	{ DRIVE_FIXED,   "jfs"        }, // IBM JFS
+	{ DRIVE_FIXED,   "jfs2"       }, // IBM JFS (AIX defalt filesystem)
+	{ DRIVE_FIXED,   "EPFS"       }, // IBM i IFS (root and QOpenSys)
+	{ DRIVE_FIXED,   "EPFSP"      }, // IBM i auxiliary storage pool FS
+	{ DRIVE_FIXED,   "QSYS"       }, // IBM i native system libraries
+	{ DRIVE_FIXED,   "QDLS"       }, // IBM i legacy S/36 directories
 	{ DRIVE_REMOTE,  "smbfs"      },
 	{ DRIVE_REMOTE,  "fuse"       },
 	{ DRIVE_REMOTE,  "nfs"        },
@@ -4486,6 +4544,13 @@ static _wapi_drive_type _wapi_drive_types[] = {
 	{ DRIVE_REMOTE,  "ncpfs"      },
 	{ DRIVE_REMOTE,  "coda"       },
 	{ DRIVE_REMOTE,  "afs"        },
+	{ DRIVE_REMOTE,  "nfs3"       },
+	{ DRIVE_REMOTE,  "stnfs"      }, // AIX "short-term" NFS
+	{ DRIVE_REMOTE,  "autofs"     }, // AIX automounter NFS
+	{ DRIVE_REMOTE,  "cachefs"    }, // AIX cached NFS
+	{ DRIVE_REMOTE,  "NFS"        }, // IBM i NFS
+	{ DRIVE_REMOTE,  "QNETC"      }, // IBM i CIFS
+	{ DRIVE_REMOTE,  "QRFS"       }, // IBM i native remote FS
 	{ DRIVE_UNKNOWN, NULL         }
 #endif
 };
@@ -4512,29 +4577,39 @@ static guint32 _wapi_get_drive_type(const gchar* fstype)
 	current = &_wapi_drive_types[0];
 	while (current->drive_type != DRIVE_UNKNOWN) {
 		if (strcmp (current->fstype, fstype) == 0)
-			break;
+			return current->drive_type;
 
 		current++;
 	}
 	
-	return current->drive_type;
+	return DRIVE_UNKNOWN;
 }
 #endif
 
-#if defined (HOST_DARWIN) || defined (__linux__)
+#if defined (HOST_DARWIN) || defined (__linux__) || defined (_AIX)
 static guint32
 GetDriveTypeFromPath (const gchar *utf8_root_path_name)
 {
+#if defined (_AIX)
+	struct statvfs buf;
+#else
 	struct statfs buf;
+#endif
 	gint res;
 
 	MONO_ENTER_GC_SAFE;
+#if defined (_AIX)
+	res = statvfs (utf8_root_path_name, &buf);
+#else
 	res = statfs (utf8_root_path_name, &buf);
+#endif
 	MONO_EXIT_GC_SAFE;
 	if (res == -1)
 		return DRIVE_UNKNOWN;
 #if HOST_DARWIN
 	return _wapi_get_drive_type (buf.f_fstypename);
+#elif defined (_AIX)
+	return _wapi_get_drive_type (buf.f_basetype);
 #else
 	return _wapi_get_drive_type (buf.f_type);
 #endif
@@ -4630,7 +4705,21 @@ mono_w32file_get_drive_type(const gunichar2 *root_path_name)
 static gchar*
 get_fstypename (gchar *utfpath)
 {
-#if defined (HOST_DARWIN) || defined (__linux__)
+#if defined (_AIX)
+	/* statvfs offers the FS type name, easily, no need to iterate */
+	struct statvfs stat;
+	gint statvfs_res;
+
+	MONO_ENTER_GC_SAFE;
+	statvfs_res = statvfs (utfpath, &stat);
+	MONO_EXIT_GC_SAFE;
+
+	if (statvfs_res != -1) {
+		return g_strdup (stat.f_basetype);
+	}
+
+	return NULL;
+#elif defined (HOST_DARWIN) || defined (__linux__)
 	struct statfs stat;
 #if __linux__
 	_wapi_drive_type *current;
