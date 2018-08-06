@@ -21,10 +21,6 @@
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'Release|x64'">
   </PropertyGroup>
-  <PropertyGroup>
-    <!-- Fails with JIT stress modes, issue #19011 -->
-    <JitOptimizationSensitive>true</JitOptimizationSensitive>
-  </PropertyGroup>
 
   <ItemGroup>
     <Compile Include="BasicTests.cs" />
@@ -45,10 +41,10 @@ COPY /Y $(CoreClrDir)tests\src\readytorun\r2rdump\files\$(BuildOS).$(BuildArch).
 %Core_Root%\crossgen /readytorun /platform_assemblies_paths %Core_Root%%3B%25CD% /out GcInfoTransitions.ni.dll GcInfoTransitions.dll
 %Core_Root%\crossgen /readytorun /platform_assemblies_paths %Core_Root%%3B%25CD% /out GenericFunctions.ni.dll GenericFunctions.dll
 %Core_Root%\crossgen /readytorun /platform_assemblies_paths %Core_Root%%3B%25CD% /out MultipleRuntimeFunctions.ni.dll MultipleRuntimeFunctions.dll
-$(DotnetToolCommand) $(R2RDumpCommand) --in HelloWorld.ni.dll --out HelloWorld-test.xml -x -v
-$(DotnetToolCommand) $(R2RDumpCommand) --in GcInfoTransitions.ni.dll --out GcInfoTransitions-test.xml -x -v
-$(DotnetToolCommand) $(R2RDumpCommand) --in GenericFunctions.ni.dll --out GenericFunctions-test.xml -x -v
-$(DotnetToolCommand) $(R2RDumpCommand) --in MultipleRuntimeFunctions.ni.dll --out MultipleRuntimeFunctions-test.xml -x -v
+$(DotnetToolCommand) $(R2RDumpCommand) --in HelloWorld.ni.dll --out HelloWorld-test.xml -x -v --ignoreSensitive
+$(DotnetToolCommand) $(R2RDumpCommand) --in GcInfoTransitions.ni.dll --out GcInfoTransitions-test.xml -x -v --ignoreSensitive
+$(DotnetToolCommand) $(R2RDumpCommand) --in GenericFunctions.ni.dll --out GenericFunctions-test.xml -x -v --ignoreSensitive
+$(DotnetToolCommand) $(R2RDumpCommand) --in MultipleRuntimeFunctions.ni.dll --out MultipleRuntimeFunctions-test.xml -x -v --ignoreSensitive
 ]]></CLRTestBatchPreCommands>
   <BashCLRTestPreCommands><![CDATA[
 $(BashCLRTestPreCommands)
@@ -57,10 +53,10 @@ $CORE_ROOT/crossgen -readytorun -platform_assemblies_paths $CORE_ROOT:`pwd` -out
 $CORE_ROOT/crossgen -readytorun -platform_assemblies_paths $CORE_ROOT:`pwd` -out GcInfoTransitions.ni.dll GcInfoTransitions.dll
 $CORE_ROOT/crossgen -readytorun -platform_assemblies_paths $CORE_ROOT:`pwd` -out GenericFunctions.ni.dll GenericFunctions.dll
 $CORE_ROOT/crossgen -readytorun -platform_assemblies_paths $CORE_ROOT:`pwd` -out MultipleRuntimeFunctions.ni.dll MultipleRuntimeFunctions.dll
-$(BashDotnetToolCommand) $(BashR2RDumpCommand) --in HelloWorld.ni.dll --out HelloWorld-test.xml -x -v
-$(BashDotnetToolCommand) $(BashR2RDumpCommand) --in GcInfoTransitions.ni.dll --out GcInfoTransitions-test.xml -x -v
-$(BashDotnetToolCommand) $(BashR2RDumpCommand) --in GenericFunctions.ni.dll --out GenericFunctions-test.xml -x -v
-$(BashDotnetToolCommand) $(BashR2RDumpCommand) --in MultipleRuntimeFunctions.ni.dll --out MultipleRuntimeFunctions-test.xml -x -v
+$(BashDotnetToolCommand) $(BashR2RDumpCommand) --in HelloWorld.ni.dll --out HelloWorld-test.xml -x -v --ignoreSensitive
+$(BashDotnetToolCommand) $(BashR2RDumpCommand) --in GcInfoTransitions.ni.dll --out GcInfoTransitions-test.xml -x -v --ignoreSensitive
+$(BashDotnetToolCommand) $(BashR2RDumpCommand) --in GenericFunctions.ni.dll --out GenericFunctions-test.xml -x -v --ignoreSensitive
+$(BashDotnetToolCommand) $(BashR2RDumpCommand) --in MultipleRuntimeFunctions.ni.dll --out MultipleRuntimeFunctions-test.xml -x -v --ignoreSensitive
 ]]></BashCLRTestPreCommands>
   </PropertyGroup>
 
