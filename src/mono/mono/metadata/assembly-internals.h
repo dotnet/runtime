@@ -46,6 +46,10 @@ MonoAssembly* mono_assembly_load_full_nosearch (MonoAssemblyName *aname,
 MonoAssembly* mono_assembly_load_with_partial_name_internal (const char *name, MonoImageOpenStatus *status);
 
 
+typedef gboolean (*MonoAssemblyAsmCtxFromPathFunc) (const char *absfname, MonoAssembly *requesting_assembly, gpointer user_data, MonoAssemblyContextKind *out_asmctx);
+
+void mono_install_assembly_asmctx_from_path_hook (MonoAssemblyAsmCtxFromPathFunc func, gpointer user_data);
+
 /* If predicate returns true assembly should be loaded, if false ignore it. */
 typedef gboolean (*MonoAssemblyCandidatePredicate)(MonoAssembly *, gpointer);
 
@@ -53,6 +57,7 @@ MonoAssembly*          mono_assembly_open_predicate (const char *filename,
 						     MonoAssemblyContextKind asmctx,
 						     MonoAssemblyCandidatePredicate pred,
 						     gpointer user_data,
+						     MonoAssembly *requesting_assembly,
 						     MonoImageOpenStatus *status);
 
 MonoAssembly*          mono_assembly_load_from_predicate (MonoImage *image, const char *fname,

@@ -5525,6 +5525,7 @@ mono/arch/arm64/Makefile
 mono/arch/mips/Makefile
 mono/sgen/Makefile
 mono/tests/Makefile
+mono/tests/assembly-load-reference/Makefile
 mono/tests/tests-config
 mono/tests/gc-descriptors/Makefile
 mono/tests/testing_gac/Makefile

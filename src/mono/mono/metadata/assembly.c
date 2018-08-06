@@ -368,6 +368,9 @@ framework_assembly_sn_match (MonoAssemblyName *wanted_name, MonoAssemblyName *ca
 static const char *
 mono_asmctx_get_name (const MonoAssemblyContext *asmctx);
 
+static gboolean
+assembly_loadfrom_asmctx_from_path (const char *filename, MonoAssembly *requesting_assembly, gpointer user_data, MonoAssemblyContextKind *out_asmctx);
+
 static gchar*
 encode_public_tok (const guchar *token, gint32 len)
 {
@@ -726,7 +729,7 @@ load_in_path (const char *basename, const char** search_path, MonoImageOpenStatu
 
 	for (i = 0; search_path [i]; ++i) {
 		fullpath = g_build_filename (search_path [i], basename, NULL);
-		result = mono_assembly_open_predicate (fullpath, asmctx, predicate, user_data, status);
+		result = mono_assembly_open_predicate (fullpath, asmctx, predicate, user_data, NULL, status);
 		g_free (fullpath);
 		if (result)
 			return result;
@@ -1000,6 +1003,8 @@ mono_assemblies_init (void)
 		g_hash_table_insert (assembly_remapping_table, (void*)framework_assemblies [i].assembly_name, (void*)&framework_assemblies [i]);
 
 #endif
+	mono_install_assembly_asmctx_from_path_hook (assembly_loadfrom_asmctx_from_path, NULL);
+
 }
 
 static void
@@ -1471,17 +1476,17 @@ load_reference_by_aname_individual_asmctx (MonoAssemblyName *aname, MonoAssembly
 	aname = mono_assembly_apply_binding (aname, &maped_name_pp);
 
 	reference = mono_assembly_loaded_full (aname, FALSE);
-	/* Still try to load from MONO_PATH or the GAC.  This is consistent
-	 * with what .NET Framework (4.7) actually does, rather than what the
-	 * documentation implies: If `LoadFile` is used to load an assembly
-	 * into "no context"/individual assembly context, the runtime will
-	 * still load assemblies from the GAC (e.g. `System.Runtime` will be
-	 * loaded if it wasn't already).
+	/* Still try to load from application base directory, MONO_PATH or the
+	 * GAC.  This is consistent with what .NET Framework (4.7) actually
+	 * does, rather than what the documentation implies: If `LoadFile` is
+	 * used to load an assembly into "no context"/individual assembly
+	 * context, the runtime will still load assemblies from the GAC or the
+	 * application base directory (e.g. `System.Runtime` will be loaded if
+	 * it wasn't already).
+	 * Moreover, those referenced assemblies are loaded in the default context.
 	 */
 	if (!reference)
-		reference = mono_assembly_load_full_nodomain (aname, MONO_ASMCTX_DEFAULT, status);
-	if (!reference)
-		reference = mono_assembly_invoke_search_hook_internal (aname, requesting, FALSE, TRUE);
+		reference = mono_assembly_load_full_internal (aname, requesting, NULL, MONO_ASMCTX_DEFAULT, status);
 	if (!reference)
 		reference = (MonoAssembly*)REFERENCE_MISSING;
 	return reference;
@@ -1920,6 +1925,78 @@ free_assembly_preload_hooks (void)
 	}
 }
 
+typedef struct AssemblyAsmCtxFromPathHook AssemblyAsmCtxFromPathHook;
+struct AssemblyAsmCtxFromPathHook {
+	AssemblyAsmCtxFromPathHook *next;
+	MonoAssemblyAsmCtxFromPathFunc func;
+	gpointer user_data;
+};
+
+static AssemblyAsmCtxFromPathHook *assembly_asmctx_from_path_hook = NULL;
+
+/**
+ * mono_install_assembly_asmctx_from_path_hook:
+ *
+ * \param func Hook function
+ * \param user_data User data
+ *
+ * Installs a hook function \p func that when called with an absolute path name
+ * returns \c TRUE and writes to \c out_asmctx if an assembly that name would
+ * be found by that asmctx.  The hooks are called in the order from most
+ * recently added to oldest.
+ *
+ */
+void
+mono_install_assembly_asmctx_from_path_hook (MonoAssemblyAsmCtxFromPathFunc func, gpointer user_data)
+{
+	g_return_if_fail (func != NULL);
+
+	AssemblyAsmCtxFromPathHook *hook = g_new0 (AssemblyAsmCtxFromPathHook, 1);
+	hook->func = func;
+	hook->user_data = user_data;
+	hook->next = assembly_asmctx_from_path_hook;
+	assembly_asmctx_from_path_hook = hook;
+}
+
+/**
+ * mono_assembly_invoke_asmctx_from_path_hook:
+ *
+ * \param absfname absolute path name
+ * \param requesting_assembly the \c MonoAssembly that requested the load, may be \c NULL
+ * \param out_asmctx assembly context kind, written on output
+ *
+ * Invokes hooks to find the assembly context that would have searched for the
+ * given assembly name.  Writes to \p out_asmctx the assembly context kind from
+ * the first hook to return \c TRUE.  \returns \c TRUE if any hook wrote to \p
+ * out_asmctx, or \c FALSE otherwise.
+ */
+static gboolean
+assembly_invoke_asmctx_from_path_hook (const char *absfname, MonoAssembly *requesting_assembly, MonoAssemblyContextKind *out_asmctx)
+{
+	g_assert (absfname);
+	g_assert (out_asmctx);
+	AssemblyAsmCtxFromPathHook *hook;
+
+	for (hook = assembly_asmctx_from_path_hook; hook; hook = hook->next) {
+		*out_asmctx = MONO_ASMCTX_INDIVIDUAL;
+		if (hook->func (absfname, requesting_assembly, hook->user_data, out_asmctx))
+			return TRUE;
+	}
+	return FALSE;
+}
+
+
+static void
+free_assembly_asmctx_from_path_hooks (void)
+{
+	AssemblyAsmCtxFromPathHook *hook, *next;
+
+	for (hook = assembly_asmctx_from_path_hook; hook; hook = next) {
+		next = hook->next;
+		g_free (hook);
+	}
+}
+
 static gchar *
 absolute_dir (const gchar *filename)
 {
@@ -2065,13 +2142,26 @@ mono_assembly_open_full (const char *filename, MonoImageOpenStatus *status, gboo
 MonoAssembly *
 mono_assembly_open_a_lot (const char *filename, MonoImageOpenStatus *status, MonoAssemblyContextKind asmctx)
 {
-	return mono_assembly_open_predicate (filename, asmctx, NULL, NULL, status);
+	return mono_assembly_open_predicate (filename, asmctx, NULL, NULL, NULL, status);
+}
+
+static gboolean
+assembly_loadfrom_asmctx_from_path (const char *filename, MonoAssembly *requesting_assembly,
+				    gpointer user_data, MonoAssemblyContextKind *out_asmctx) {
+	if (requesting_assembly && mono_asmctx_get_kind (&requesting_assembly->context) == MONO_ASMCTX_LOADFROM) {
+		if (mono_path_filename_in_basedir (filename, requesting_assembly->basedir)) {
+			*out_asmctx = MONO_ASMCTX_LOADFROM;
+			return TRUE;
+		}
+	}
+	return FALSE;
 }
 
 MonoAssembly *
 mono_assembly_open_predicate (const char *filename, MonoAssemblyContextKind asmctx,
 			      MonoAssemblyCandidatePredicate predicate,
 			      gpointer user_data,
+			      MonoAssembly *requesting_assembly,
 			      MonoImageOpenStatus *status)
 {
 	MonoImage *image;
@@ -2130,6 +2220,21 @@ mono_assembly_open_predicate (const char *filename, MonoAssemblyContextKind asmc
 			*status = MONO_IMAGE_IMAGE_INVALID;
 			g_free (fname);
 			return NULL;
+		}
+
+		if (asmctx != MONO_ASMCTX_REFONLY) {
+			MonoAssemblyContextKind out_asmctx;
+			/* If the path belongs to the appdomain base dir or the
+			 * base dir of the requesting assembly, load the
+			 * assembly in the corresponding asmctx.
+			 */
+			if (assembly_invoke_asmctx_from_path_hook (fname, requesting_assembly, &out_asmctx))
+				asmctx = out_asmctx;
+		}
+	} else {
+		if (asmctx != MONO_ASMCTX_REFONLY) {
+			/* GAC assemblies always in default context or refonly context. */
+			asmctx = MONO_ASMCTX_DEFAULT;
 		}
 	}
 	if (new_fname && new_fname != fname) {
@@ -2534,7 +2639,7 @@ mono_assembly_open (const char *filename, MonoImageOpenStatus *status)
 {
 	MonoAssembly *res;
 	MONO_ENTER_GC_UNSAFE;
-	res = mono_assembly_open_predicate (filename, MONO_ASMCTX_DEFAULT, NULL, NULL, status);
+	res = mono_assembly_open_predicate (filename, MONO_ASMCTX_DEFAULT, NULL, NULL, NULL, status);
 	MONO_EXIT_GC_UNSAFE;
 	return res;
 }
@@ -3321,7 +3426,7 @@ probe_for_partial_name (const char *basepath, const char *fullname, MonoAssembly
 	if (fullpath == NULL)
 		return NULL;
 	else {
-		MonoAssembly *res = mono_assembly_open_predicate (fullpath, MONO_ASMCTX_DEFAULT, NULL, NULL, status);
+		MonoAssembly *res = mono_assembly_open_predicate (fullpath, MONO_ASMCTX_DEFAULT, NULL, NULL, NULL, status);
 		g_free (fullpath);
 		return res;
 	}
@@ -3870,7 +3975,7 @@ mono_assembly_load_from_gac (MonoAssemblyName *aname,  gchar *filename, MonoImag
 		paths = extra_gac_paths;
 		while (!result && *paths) {
 			fullpath = g_build_path (G_DIR_SEPARATOR_S, *paths, "lib", "mono", "gac", subpath, NULL);
-			result = mono_assembly_open_predicate (fullpath, asmctx, NULL, NULL, status);
+			result = mono_assembly_open_predicate (fullpath, asmctx, NULL, NULL, NULL, status);
 			g_free (fullpath);
 			paths++;
 		}
@@ -3884,7 +3989,7 @@ mono_assembly_load_from_gac (MonoAssemblyName *aname,  gchar *filename, MonoImag
 
 	fullpath = g_build_path (G_DIR_SEPARATOR_S, mono_assembly_getrootdir (),
 			"mono", "gac", subpath, NULL);
-	result = mono_assembly_open_predicate (fullpath, asmctx, NULL, NULL, status);
+	result = mono_assembly_open_predicate (fullpath, asmctx, NULL, NULL, NULL, status);
 	g_free (fullpath);
 
 	if (result)
@@ -4121,7 +4226,7 @@ mono_assembly_load_full_gac_base_default (MonoAssemblyName *aname,
 
 		if (basedir) {
 			fullpath = g_build_filename (basedir, filename, NULL);
-			result = mono_assembly_open_predicate (fullpath, asmctx, predicate, predicate_ud, status);
+			result = mono_assembly_open_predicate (fullpath, asmctx, predicate, predicate_ud, NULL, status);
 			g_free (fullpath);
 			if (result) {
 				result->in_gac = FALSE;
@@ -4416,6 +4521,7 @@ mono_assemblies_cleanup (void)
 	}
 	g_slist_free (loaded_assembly_bindings);
 
+	free_assembly_asmctx_from_path_hooks ();
 	free_assembly_load_hooks ();
 	free_assembly_search_hooks ();
 	free_assembly_preload_hooks ();

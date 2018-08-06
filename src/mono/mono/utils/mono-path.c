@@ -177,3 +177,27 @@ mono_path_resolve_symlinks (const char *path)
 #endif
 }
 
+/**
+ * mono_path_filename_in_basedir:
+ *
+ * Return \c TRUE if \p filename is in \p basedir
+ *
+ * Both paths must be absolute and using \c G_DIR_SEPARATOR for directory separators.
+ * If the file is in a subdirectory of \p basedir, returns \c FALSE.
+ * This function doesn't touch a filesystem, it looks solely at path names.
+ */
+gboolean
+mono_path_filename_in_basedir (const char *filename, const char *basedir)
+{
+	char *p = NULL;
+	if ((p = strstr (filename, basedir))) {
+		p += strlen (basedir);
+		if (*p != G_DIR_SEPARATOR)
+			return FALSE;
+		/* if it's in a subdir of the basedir, it doesn't count. */
+		if (strchr (p, G_DIR_SEPARATOR))
+			return FALSE;
+		return TRUE;
+	}
+	return FALSE;
+}

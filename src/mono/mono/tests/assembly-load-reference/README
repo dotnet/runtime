@@ -1,0 +1,13 @@
+Test loading references of assemblies loaded using LoadFrom and LoadFile.
+
+There are three variations of the same two tests: LoadFromMain and LoadFileMain.
+
+The differences are where we place the two additional assemblies Mid and Dep.
+Mid references Dep.
+
+samedir/
+  Main, Mid and Dep are all in the same directory - both LoadFile and LoadFrom expected to work.
+mainanddep/
+  Main and Dep are in the base dir, Mid is in mid/ - both LoadFrom and LoadFrom expected to work
+separatedir/
+  Main is in the base dir, Mid and Dep are in mid/ - LoadFrom expected to work, LoadFile expected to fail.

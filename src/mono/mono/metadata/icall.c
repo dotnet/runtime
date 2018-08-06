@@ -1401,6 +1401,24 @@ get_caller_no_system_or_reflection (MonoMethod *m, gint32 no, gint32 ilo, gboole
 	return FALSE;
 }
 
+/**
+ * mono_runtime_get_caller_no_system_or_reflection:
+ *
+ * Walk the stack of the current thread and find the first managed method that
+ * is not in the mscorlib System or System.Reflection namespace.  This skips
+ * unmanaged callers and wrapper methods.
+ *
+ * \returns a pointer to the \c MonoMethod or NULL if we walked past all the
+ * callers.
+ */
+MonoMethod*
+mono_runtime_get_caller_no_system_or_reflection (void)
+{
+	MonoMethod *dest = NULL;
+	mono_stack_walk_no_il (get_caller_no_system_or_reflection, &dest);
+	return dest;
+}
+
 static MonoReflectionTypeHandle
 type_from_parsed_name (MonoTypeNameParse *info, MonoBoolean ignoreCase, MonoAssembly **caller_assembly, MonoError *error)
 {
@@ -1433,7 +1451,7 @@ type_from_parsed_name (MonoTypeNameParse *info, MonoBoolean ignoreCase, MonoAsse
 		 *
 		 * It would be nice if we had stack marks.
 		 */
-		mono_stack_walk_no_il (get_caller_no_system_or_reflection, &dest);
+		dest = mono_runtime_get_caller_no_system_or_reflection ();
 		if (!dest)
 			dest = m;
 	}

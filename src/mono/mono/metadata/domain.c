@@ -1030,10 +1030,10 @@ mono_domain_assembly_open_internal (MonoDomain *domain, const char *name)
 		current = mono_domain_get ();
 
 		mono_domain_set (domain, FALSE);
-		ass = mono_assembly_open_predicate (name, MONO_ASMCTX_DEFAULT, NULL, NULL, NULL);
+		ass = mono_assembly_open_predicate (name, MONO_ASMCTX_DEFAULT, NULL, NULL, NULL, NULL);
 		mono_domain_set (current, FALSE);
 	} else {
-		ass = mono_assembly_open_predicate (name, MONO_ASMCTX_DEFAULT, NULL, NULL, NULL);
+		ass = mono_assembly_open_predicate (name, MONO_ASMCTX_DEFAULT, NULL, NULL, NULL, NULL);
 	}
 
 	return ass;

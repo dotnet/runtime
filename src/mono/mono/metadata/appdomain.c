@@ -105,6 +105,9 @@ mono_domain_assembly_search (MonoAssemblyName *aname,
 static void
 mono_domain_fire_assembly_load (MonoAssembly *assembly, gpointer user_data);
 
+static gboolean
+mono_domain_asmctx_from_path (const char *fname, MonoAssembly *requesting_assembly, gpointer user_data, MonoAssemblyContextKind *out_asmctx);
+
 static void
 add_assemblies_to_domain (MonoDomain *domain, MonoAssembly *ass, GHashTable *hash);
 
@@ -288,6 +291,7 @@ mono_runtime_init_checked (MonoDomain *domain, MonoThreadStartCB start_cb, MonoT
 	mono_install_assembly_postload_search_hook ((MonoAssemblySearchFunc)mono_domain_assembly_postload_search, GUINT_TO_POINTER (FALSE));
 	mono_install_assembly_postload_refonly_search_hook ((MonoAssemblySearchFunc)mono_domain_assembly_postload_search, GUINT_TO_POINTER (TRUE));
 	mono_install_assembly_load_hook (mono_domain_fire_assembly_load, NULL);
+	mono_install_assembly_asmctx_from_path_hook (mono_domain_asmctx_from_path, NULL);
 
 	mono_thread_init (start_cb, attach_cb);
 
@@ -1417,6 +1421,21 @@ leave:
 	HANDLE_FUNCTION_RETURN ();
 }
 
+static gboolean
+mono_domain_asmctx_from_path (const char *fname, MonoAssembly *requesting_assembly, gpointer user_data, MonoAssemblyContextKind *out_asmctx)
+{
+	MonoDomain *domain = mono_domain_get ();
+	char **search_path = NULL;
+
+        for (search_path = domain->search_path; search_path && *search_path; search_path++) {
+		if (mono_path_filename_in_basedir (fname, *search_path)) {
+			*out_asmctx = MONO_ASMCTX_DEFAULT;
+			return TRUE;
+		}
+	}
+	return FALSE;
+}
+
 /*
  * LOCKING: Acquires the domain assemblies lock.
  */
@@ -2120,7 +2139,7 @@ try_load_from (MonoAssembly **assembly,
 		found = g_file_test (fullpath, G_FILE_TEST_IS_REGULAR);
 	
 	if (found)
-		*assembly = mono_assembly_open_predicate (fullpath, asmctx, predicate, user_data, NULL);
+		*assembly = mono_assembly_open_predicate (fullpath, asmctx, predicate, user_data, NULL, NULL);
 
 	g_free (fullpath);
 	return (*assembly != NULL);
@@ -2307,7 +2326,14 @@ ves_icall_System_Reflection_Assembly_LoadFrom (MonoStringHandle fname, MonoBoole
 	name = filename = mono_string_handle_to_utf8 (fname, error);
 	goto_if_nok (error, leave);
 	
-	MonoAssembly *ass = mono_assembly_open_predicate (filename, refOnly ? MONO_ASMCTX_REFONLY : MONO_ASMCTX_LOADFROM, NULL, NULL, &status);
+	MonoAssembly *requesting_assembly = NULL;
+	if (!refOnly) {
+		MonoMethod *executing_method = mono_runtime_get_caller_no_system_or_reflection ();
+		MonoAssembly *executing_assembly = executing_method ? m_class_get_image (executing_method->klass)->assembly : NULL;
+		requesting_assembly = executing_assembly;
+	}
+
+	MonoAssembly *ass = mono_assembly_open_predicate (filename, refOnly ? MONO_ASMCTX_REFONLY : MONO_ASMCTX_LOADFROM, NULL, NULL, requesting_assembly, &status);
 	
 	if (!ass) {
 		if (status == MONO_IMAGE_IMAGE_INVALID)
@@ -2339,7 +2365,10 @@ ves_icall_System_Reflection_Assembly_LoadFile_internal (MonoStringHandle fname, 
 	goto_if_nok (error, leave);
 
 	MonoImageOpenStatus status;
-	MonoAssembly *ass = mono_assembly_open_predicate (filename, MONO_ASMCTX_INDIVIDUAL, NULL, NULL, &status);
+
+	MonoMethod *executing_method = mono_runtime_get_caller_no_system_or_reflection ();
+	MonoAssembly *executing_assembly = executing_method ? m_class_get_image (executing_method->klass)->assembly : NULL;
+	MonoAssembly *ass = mono_assembly_open_predicate (filename, MONO_ASMCTX_INDIVIDUAL, NULL, NULL, executing_assembly, &status);
 	if (!ass) {
 		if (status == MONO_IMAGE_IMAGE_INVALID)
 			mono_error_set_bad_image_by_name (error, filename, "Invalid Image");
@@ -2456,7 +2485,24 @@ ves_icall_System_AppDomain_LoadAssembly (MonoAppDomainHandle ad, MonoStringHandl
 		return refass;
 	}
 
-	ass = mono_assembly_load_full_nosearch (&aname, NULL, refOnly ? MONO_ASMCTX_REFONLY : MONO_ASMCTX_DEFAULT, &status);
+	MonoAssemblyContextKind asmctx = refOnly ? MONO_ASMCTX_REFONLY : MONO_ASMCTX_DEFAULT;
+	const char *basedir = NULL;
+	if (!refOnly) {
+		/* Determine if the current assembly is in LoadFrom context.
+		 * If it is, we must include the executing assembly's basedir
+		 * when probing for the given assembly name, and also load the
+		 * requested assembly in LoadFrom context.
+		 */
+		MonoMethod *executing_method = mono_runtime_get_caller_no_system_or_reflection ();
+		MonoAssembly *executing_assembly = executing_method ? m_class_get_image (executing_method->klass)->assembly : NULL;
+		if (executing_assembly && mono_asmctx_get_kind (&executing_assembly->context) == MONO_ASMCTX_LOADFROM) {
+			asmctx = MONO_ASMCTX_LOADFROM;
+			basedir = executing_assembly->basedir;
+		}
+	}
+
+
+	ass = mono_assembly_load_full_nosearch (&aname, basedir, asmctx, &status);
 	mono_assembly_name_free (&aname);
 
 	if (!ass) {

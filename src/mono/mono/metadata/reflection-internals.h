@@ -115,5 +115,7 @@ mono_method_body_get_object_handle (MonoDomain *domain, MonoMethod *method, Mono
 MonoClass *
 mono_class_from_mono_type_handle (MonoReflectionTypeHandle h);
 
+MonoMethod*
+mono_runtime_get_caller_no_system_or_reflection (void);
 
 #endif /* __MONO_METADATA_REFLECTION_INTERNALS_H__ */
