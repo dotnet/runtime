@@ -94,7 +94,6 @@ using namespace CorUnix;
 
 extern "C" BOOL CRTInitStdStreams( void );
 
-
 Volatile<INT> init_count = 0;
 Volatile<BOOL> shutdown_intent = 0;
 Volatile<LONG> g_coreclrInitialized = 0;
@@ -107,6 +106,8 @@ SIZE_T g_defaultStackSize = 0;
 /* critical section to protect access to init_count. This is allocated on the
    very first PAL_Initialize call, and is freed afterward. */
 static PCRITICAL_SECTION init_critsec = NULL;
+
+static DWORD g_initializeDLLFlags = PAL_INITIALIZE_DLL;
 
 static int Initialize(int argc, const char *const argv[], DWORD flags);
 static BOOL INIT_IncreaseDescriptorLimit(void);
@@ -157,6 +158,30 @@ PAL_Initialize(
 
 /*++
 Function:
+  PAL_InitializeFlags
+
+Abstract:
+  This function is the first function of the PAL to be called.
+  Internal structure initialization is done here. It could be called
+  several time by the same process, a reference count is kept.
+
+Return:
+  0 if successful
+  -1 if it failed
+
+--*/
+int
+PALAPI
+PAL_InitializeFlags(
+    int argc,
+    const char *const argv[],
+    DWORD flags)
+{
+    return Initialize(argc, argv, flags);
+}
+
+/*++
+Function:
   PAL_InitializeDLL
 
 Abstract:
@@ -171,7 +196,29 @@ int
 PALAPI
 PAL_InitializeDLL()
 {
-    return Initialize(0, NULL, PAL_INITIALIZE_DLL);
+    return Initialize(0, NULL, g_initializeDLLFlags);
+}
+
+/*++
+Function:
+  PAL_SetInitializeDLLFlags
+
+Abstract:
+  This sets the global PAL_INITIALIZE flags that PAL_InitializeDLL
+  will use. It needs to be called before any PAL_InitializeDLL call
+  is made so typical it is used in a __attribute__((constructor))
+  function to make sure. 
+
+Return:
+  none
+
+--*/
+void
+PALAPI
+PAL_SetInitializeDLLFlags(
+    DWORD flags)
+{
+    g_initializeDLLFlags = flags;
 }
 
 #ifdef ENSURE_PRIMARY_STACK_SIZE
