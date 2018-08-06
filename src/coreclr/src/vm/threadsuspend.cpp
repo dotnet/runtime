@@ -7108,7 +7108,7 @@ retry_for_debugger:
             || Thread::ThreadsAtUnsafePlaces()
 #ifdef DEBUGGING_SUPPORTED  // seriously?  When would we want to disable debugging support? :)
              || (CORDebuggerAttached() && 
-                 g_pDebugInterface->ThreadsAtUnsafePlaces())
+                 (g_pDebugInterface->ThreadsAtUnsafePlaces() || g_pDebugInterface->IsSynchronizing()))
 #endif // DEBUGGING_SUPPORTED
             )
         {
