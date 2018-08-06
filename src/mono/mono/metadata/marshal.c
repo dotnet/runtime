@@ -2188,7 +2188,7 @@ emit_delegate_invoke_internal_noilgen (MonoMethodBuilder *mb, MonoMethodSignatur
 MonoMethod *
 mono_marshal_get_delegate_invoke_internal (MonoMethod *method, gboolean callvirt, gboolean static_method_with_first_arg_bound, MonoMethod *target_method)
 {
-	MonoMethodSignature *sig, *static_sig, *invoke_sig;
+	MonoMethodSignature *sig, *invoke_sig;
 	MonoMethodBuilder *mb;
 	MonoMethod *res;
 	GHashTable *cache;
@@ -2264,7 +2264,7 @@ mono_marshal_get_delegate_invoke_internal (MonoMethod *method, gboolean callvirt
 			return res;
 		cache_key = method->klass;
 	} else if (static_method_with_first_arg_bound) {
-		cache = get_cache (&get_method_image (method)->delegate_bound_static_invoke_cache,
+		cache = get_cache (&get_method_image (target_method)->delegate_bound_static_invoke_cache,
 						   (GHashFunc)mono_signature_hash, 
 						   (GCompareFunc)mono_metadata_signature_equal);
 		/*
@@ -2302,10 +2302,10 @@ mono_marshal_get_delegate_invoke_internal (MonoMethod *method, gboolean callvirt
 		cache_key = sig;
 	}
 
-	static_sig = mono_metadata_signature_dup_full (get_method_image (method), sig);
-	static_sig->hasthis = 0;
-	if (!static_method_with_first_arg_bound)
-		invoke_sig = static_sig;
+	if (!static_method_with_first_arg_bound) {
+		invoke_sig = mono_metadata_signature_dup_full (get_method_image (method), sig);
+		invoke_sig->hasthis = 0;
+	}
 
 	if (static_method_with_first_arg_bound)
 		name = mono_signature_to_name (invoke_sig, "invoke_bound");
