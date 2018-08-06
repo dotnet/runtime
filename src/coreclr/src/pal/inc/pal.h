@@ -321,15 +321,24 @@ typedef long time_t;
 #define PAL_INITIALIZE_REGISTER_SIGTERM_HANDLER     0x08
 #define PAL_INITIALIZE_DEBUGGER_EXCEPTIONS          0x10
 #define PAL_INITIALIZE_ENSURE_STACK_SIZE            0x20
+#define PAL_INITIALIZE_REGISTER_SIGNALS             0x40
+#define PAL_INITIALIZE_ENSURE_ALT_SIGNAL_STACK      0x80
 
 // PAL_Initialize() flags
-#define PAL_INITIALIZE                 (PAL_INITIALIZE_SYNC_THREAD | PAL_INITIALIZE_STD_HANDLES)
+#define PAL_INITIALIZE                 (PAL_INITIALIZE_SYNC_THREAD | \
+                                        PAL_INITIALIZE_STD_HANDLES)
 
-// PAL_InitializeDLL() flags - don't start any of the helper threads
-#define PAL_INITIALIZE_DLL             PAL_INITIALIZE_NONE       
+// PAL_InitializeDLL() flags - don't start any of the helper threads or register any exceptions
+#define PAL_INITIALIZE_DLL              PAL_INITIALIZE_NONE       
 
 // PAL_InitializeCoreCLR() flags
-#define PAL_INITIALIZE_CORECLR         (PAL_INITIALIZE | PAL_INITIALIZE_EXEC_ALLOCATOR | PAL_INITIALIZE_REGISTER_SIGTERM_HANDLER | PAL_INITIALIZE_DEBUGGER_EXCEPTIONS | PAL_INITIALIZE_ENSURE_STACK_SIZE)
+#define PAL_INITIALIZE_CORECLR         (PAL_INITIALIZE | \
+                                        PAL_INITIALIZE_EXEC_ALLOCATOR | \
+                                        PAL_INITIALIZE_REGISTER_SIGTERM_HANDLER | \
+                                        PAL_INITIALIZE_DEBUGGER_EXCEPTIONS | \
+                                        PAL_INITIALIZE_ENSURE_STACK_SIZE | \
+                                        PAL_INITIALIZE_REGISTER_SIGNALS | \
+                                        PAL_INITIALIZE_ENSURE_ALT_SIGNAL_STACK)
 
 typedef DWORD (PALAPI *PTHREAD_START_ROUTINE)(LPVOID lpThreadParameter);
 typedef PTHREAD_START_ROUTINE LPTHREAD_START_ROUTINE;
@@ -344,9 +353,22 @@ PAL_Initialize(
     const char * const argv[]);
 
 PALIMPORT
+void
+PALAPI
+PAL_SetInitializeFlags(
+    DWORD flags);
+
+PALIMPORT
 int
 PALAPI
-PAL_InitializeDLL(VOID);
+PAL_InitializeDLL(
+    VOID);
+
+PALIMPORT
+void
+PALAPI
+PAL_SetInitializeDLLFlags(
+    DWORD flags);
 
 PALIMPORT
 DWORD
