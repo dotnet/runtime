@@ -1579,7 +1579,6 @@ interp_runtime_invoke (MonoMethod *method, void *obj, void **params, MonoObject 
 	MonoMethodSignature *sig = mono_method_signature (method);
 	MonoClass *klass = mono_class_from_mono_type (sig->ret);
 	stackval result;
-	stackval *args;
 	MonoMethod *target_method = method;
 
 	error_init (error);
@@ -1603,7 +1602,7 @@ interp_runtime_invoke (MonoMethod *method, void *obj, void **params, MonoObject 
 	//* <code>MonoObject *runtime_invoke (MonoObject *this_obj, void **params, MonoObject **exc, void* method)</code>
 
 	result.data.vt = alloca (mono_class_instance_size (klass));
-	args = (stackval*)alloca (sizeof (stackval) * 4);
+	stackval args [4];
 
 	if (sig->hasthis)
 		args [0].data.p = obj;
