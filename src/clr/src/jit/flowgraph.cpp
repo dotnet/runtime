@@ -18494,36 +18494,24 @@ void Compiler::fgSetTreeSeqHelper(GenTree* tree, bool isLIR)
     }
 
     // Special handling for dynamic block ops.
-    if (tree->OperIsDynBlkOp())
+    if (tree->OperIs(GT_DYN_BLK, GT_STORE_DYN_BLK))
     {
-        GenTreeDynBlk* dynBlk;
-        GenTree*       src;
-        GenTree*       asg = tree;
-        if (tree->OperGet() == GT_ASG)
-        {
-            dynBlk = tree->gtGetOp1()->AsDynBlk();
-            src    = tree->gtGetOp2();
-        }
-        else
-        {
-            dynBlk = tree->AsDynBlk();
-            src    = dynBlk->Data();
-            asg    = nullptr;
-        }
-        GenTree* sizeNode = dynBlk->gtDynamicSize;
-        GenTree* dstAddr  = dynBlk->Addr();
+        GenTreeDynBlk* dynBlk    = tree->AsDynBlk();
+        GenTree*       sizeNode  = dynBlk->gtDynamicSize;
+        GenTree*       dstAddr   = dynBlk->Addr();
+        GenTree*       src       = dynBlk->Data();
+        bool           isReverse = ((dynBlk->gtFlags & GTF_REVERSE_OPS) != 0);
         if (dynBlk->gtEvalSizeFirst)
         {
             fgSetTreeSeqHelper(sizeNode, isLIR);
         }
-        if (tree->gtFlags & GTF_REVERSE_OPS)
+        if (isReverse && (src != nullptr))
         {
             fgSetTreeSeqHelper(src, isLIR);
-            fgSetTreeSeqHelper(dstAddr, isLIR);
         }
-        else
+        fgSetTreeSeqHelper(dstAddr, isLIR);
+        if (!isReverse && (src != nullptr))
         {
-            fgSetTreeSeqHelper(dstAddr, isLIR);
             fgSetTreeSeqHelper(src, isLIR);
         }
         if (!dynBlk->gtEvalSizeFirst)
@@ -18531,10 +18519,6 @@ void Compiler::fgSetTreeSeqHelper(GenTree* tree, bool isLIR)
             fgSetTreeSeqHelper(sizeNode, isLIR);
         }
         fgSetTreeSeqFinish(dynBlk, isLIR);
-        if (asg != nullptr)
-        {
-            fgSetTreeSeqFinish(asg, isLIR);
-        }
         return;
     }
 
