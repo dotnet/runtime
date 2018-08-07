@@ -253,15 +253,22 @@ void CodeGen::genHWIntrinsic(GenTreeHWIntrinsic* node)
                 }
                 else if (category == HW_Category_MemoryStore)
                 {
-                    assert(intrinsicId == NI_SSE2_MaskMove);
-                    assert(targetReg == REG_NA);
-
-                    // SSE2 MaskMove hardcodes the destination (op3) in DI/EDI/RDI
-                    if (op3Reg != REG_EDI)
+                    if (intrinsicId == NI_AVX_MaskStore)
                     {
-                        emit->emitIns_R_R(INS_mov, EA_PTRSIZE, REG_EDI, op3Reg);
+                        emit->emitIns_AR_R_R(ins, simdSize, op2Reg, op3Reg, op1Reg, 0);
                     }
-                    emit->emitIns_R_R(ins, simdSize, op1Reg, op2Reg);
+                    else
+                    {
+                        assert(intrinsicId == NI_SSE2_MaskMove);
+                        assert(targetReg == REG_NA);
+
+                        // SSE2 MaskMove hardcodes the destination (op3) in DI/EDI/RDI
+                        if (op3Reg != REG_EDI)
+                        {
+                            emit->emitIns_R_R(INS_mov, EA_PTRSIZE, REG_EDI, op3Reg);
+                        }
+                        emit->emitIns_R_R(ins, simdSize, op1Reg, op2Reg);
+                    }
                 }
                 else
                 {
