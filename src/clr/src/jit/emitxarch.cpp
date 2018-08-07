@@ -4148,6 +4148,42 @@ void emitter::emitIns_AR(instruction ins, emitAttr attr, regNumber base, int off
     emitCurIGsize += sz;
 }
 
+//------------------------------------------------------------------------
+// emitIns_AR_R_R: emits the code for an instruction that takes a base memory register, two register operands
+//                 and that does not return a value
+//
+// Arguments:
+//    ins       -- The instruction being emitted
+//    attr      -- The emit attribute
+//    targetReg -- The target register
+//    op2Reg    -- The register of the second operand
+//    op3Reg    -- The register of the third operand
+//    base      -- The base register used for the memory address (first operand)
+//    offs      -- The offset from base
+//
+void emitter::emitIns_AR_R_R(
+    instruction ins, emitAttr attr, regNumber op2Reg, regNumber op3Reg, regNumber base, int offs)
+{
+    assert(IsSSEOrAVXInstruction(ins));
+    assert(IsThreeOperandAVXInstruction(ins));
+
+    instrDesc* id = emitNewInstrAmd(attr, offs);
+
+    id->idIns(ins);
+    id->idReg1(op2Reg);
+    id->idReg2(op3Reg);
+
+    id->idInsFmt(IF_AWR_RRD_RRD);
+    id->idAddr()->iiaAddrMode.amBaseReg = base;
+    id->idAddr()->iiaAddrMode.amIndxReg = REG_NA;
+
+    UNATIVE_OFFSET sz = emitInsSizeAM(id, insCodeMR(ins));
+    id->idCodeSize(sz);
+
+    dispIns(id);
+    emitCurIGsize += sz;
+}
+
 void emitter::emitIns_R_A(instruction ins, emitAttr attr, regNumber reg1, GenTreeIndir* indir)
 {
     ssize_t    offs = indir->Offset();
@@ -8586,6 +8622,15 @@ void emitter::emitDispIns(
             printf(", %s", emitRegName(id->idReg1(), attr));
             break;
 
+        case IF_AWR_RRD_RRD:
+        {
+            printf("%s", sstr);
+            emitDispAddrMode(id);
+            printf(", %s", emitRegName(id->idReg1(), attr));
+            printf(", %s", emitRegName(id->idReg2(), attr));
+            break;
+        }
+
         case IF_ARD_CNS:
         case IF_AWR_CNS:
         case IF_ARW_CNS:
@@ -9412,12 +9457,23 @@ BYTE* emitter::emitOutputAM(BYTE* dst, instrDesc* id, code_t code, CnsVal* addc)
     {
         if (IsDstDstSrcAVXInstruction(ins))
         {
-            regNumber src1 = id->idReg2();
+            regNumber src1 = REG_NA;
 
-            if ((id->idInsFmt() != IF_RWR_RRD_ARD) && (id->idInsFmt() != IF_RWR_RRD_ARD_CNS) &&
-                (id->idInsFmt() != IF_RWR_RRD_ARD_RRD))
+            switch (id->idInsFmt())
             {
-                src1 = id->idReg1();
+                case IF_RWR_RRD_ARD:
+                case IF_RWR_RRD_ARD_CNS:
+                case IF_RWR_RRD_ARD_RRD:
+                {
+                    src1 = id->idReg2();
+                    break;
+                }
+
+                default:
+                {
+                    src1 = id->idReg1();
+                    break;
+                }
             }
 
             // encode source operand reg in 'vvvv' bits in 1's complement form
@@ -9469,7 +9525,20 @@ BYTE* emitter::emitOutputAM(BYTE* dst, instrDesc* id, code_t code, CnsVal* addc)
         }
         if (reg345 == REG_NA)
         {
-            reg345 = id->idReg1();
+            switch (id->idInsFmt())
+            {
+                case IF_AWR_RRD_RRD:
+                {
+                    reg345 = id->idReg2();
+                    break;
+                }
+
+                default:
+                {
+                    reg345 = id->idReg1();
+                    break;
+                }
+            }
         }
         unsigned regcode = insEncodeReg345(ins, reg345, size, &code);
 
@@ -10098,6 +10167,9 @@ DONE:
 
             case IF_ARD_RRD:
             case IF_AWR_RRD:
+                break;
+
+            case IF_AWR_RRD_RRD:
                 break;
 
             case IF_ARD_CNS:
@@ -13079,6 +13151,15 @@ size_t emitter::emitOutputInstr(insGroup* ig, instrDesc* id, BYTE** dp)
             dst     = emitOutputAM(dst, id, code | regcode);
             sz      = emitSizeOfInsDsc(id);
             break;
+
+        case IF_AWR_RRD_RRD:
+        {
+            code = insCodeMR(ins);
+            code = AddVexPrefixIfNeeded(ins, code, size);
+            dst  = emitOutputAM(dst, id, code);
+            sz   = emitSizeOfInsDsc(id);
+            break;
+        }
 
         case IF_ARD_CNS:
         case IF_AWR_CNS:
