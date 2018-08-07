@@ -768,7 +768,7 @@ ves_array_create (MonoDomain *domain, MonoClass *klass, int param_count, stackva
 	MonoObject *obj;
 	int i;
 
-	lengths = (uintptr_t*)alloca (sizeof (uintptr_t) * m_class_get_rank (klass) * 2);
+	lengths = g_newa (uintptr_t, m_class_get_rank (klass) * 2);
 	for (i = 0; i < param_count; ++i) {
 		lengths [i] = values->data.i;
 		values ++;
@@ -1669,7 +1669,7 @@ interp_entry (InterpEntryData *data)
 	}
 	old_frame = context->current_frame;
 
-	args = (stackval*)alloca (sizeof (stackval) * (sig->param_count + (sig->hasthis ? 1 : 0)));
+	args = g_newa (stackval, sig->param_count + (sig->hasthis ? 1 : 0));
 	if (sig->hasthis)
 		args [0].data.p = data->this_arg;
 
@@ -2611,14 +2611,14 @@ interp_exec_method_full (InterpFrame *frame, ThreadContext *context, guint16 *st
 	}
 
 	if (!start_with_ip) {
-		frame->args = (char*)alloca (rtm->alloca_size);
+		frame->args = g_newa (char, rtm->alloca_size);
 		memset (frame->args, 0, rtm->alloca_size);
 
 		ip = rtm->code;
 	} else {
 		ip = start_with_ip;
 		if (base_frame) {
-			frame->args = (char*)alloca (rtm->alloca_size);
+			frame->args = g_newa (char, rtm->alloca_size);
 			memcpy (frame->args, base_frame->args, rtm->alloca_size);
 		}
 	}
@@ -2792,7 +2792,7 @@ interp_exec_method_full (InterpFrame *frame, ThreadContext *context, guint16 *st
 			 * than the callee stack frame (at the interp level)
 			 */
 			if (realloc_frame) {
-				frame->args = (char*)alloca (rtm->alloca_size);
+				frame->args = g_newa (char, rtm->alloca_size);
 				memset (frame->args, 0, rtm->alloca_size);
 				sp = frame->stack = (stackval *) ((char *) frame->args + rtm->args_size);
 			}
@@ -2908,7 +2908,7 @@ interp_exec_method_full (InterpFrame *frame, ThreadContext *context, guint16 *st
 				MonoMethod *m;
 
 				/* Pinvoke call is missing the wrapper. See mono_get_native_calli_wrapper */
-				mspecs = (MonoMarshalSpec**)alloca (sizeof (MonoMarshalSpec*) * (csignature->param_count + 1));
+				mspecs = g_newa (MonoMarshalSpec*, csignature->param_count + 1);
 				memset (&piinfo, 0, sizeof (piinfo));
 
 				m = mono_marshal_get_native_func_wrapper (m_class_get_image (frame->imethod->method->klass), csignature, &piinfo, mspecs, code);

@@ -168,7 +168,7 @@ mono_trace_enter_method (MonoMethod *method, char *ebp)
 
 	sig = mono_method_signature (method);
 
-	arg_info = (MonoJitArgumentInfo *)alloca (sizeof (MonoJitArgumentInfo) * (sig->param_count + 1));
+	arg_info = g_newa (MonoJitArgumentInfo, sig->param_count + 1);
 
 	if (method->is_inflated) {
 		/* FIXME: Might be better to pass the ji itself */

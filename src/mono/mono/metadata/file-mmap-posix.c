@@ -347,7 +347,7 @@ open_memory_map (const char *c_mapName, int mode, gint64 *capacity, int access, 
 			*ioerror = COULD_NOT_MAP_MEMORY;
 			goto done;
 		}
-		file_name = (char *)alloca (alloc_size);
+		file_name = g_newa (char, alloc_size);
 		strcpy (file_name, tmp_dir);
 		strcat (file_name, MONO_ANON_FILE_TEMPLATE);
 

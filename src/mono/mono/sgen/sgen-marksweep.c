@@ -1059,8 +1059,8 @@ static void
 major_dump_heap (FILE *heap_dump_file)
 {
 	MSBlockInfo *block;
-	int *slots_available = (int *)alloca (sizeof (int) * num_block_obj_sizes);
-	int *slots_used = (int *)alloca (sizeof (int) * num_block_obj_sizes);
+	int *slots_available = g_newa (int, num_block_obj_sizes);
+	int *slots_used = g_newa (int, num_block_obj_sizes);
 	int i;
 
 	for (i = 0; i < num_block_obj_sizes; ++i)
@@ -2504,9 +2504,9 @@ scan_card_table_for_block (MSBlockInfo *block, CardTableScanType scan_type, Scan
 	 * size is no longer required to be a multiple of the system page size.
 	 */
 #ifndef SGEN_HAVE_OVERLAPPING_CARDS
-	guint8 *cards_copy = alloca (sizeof (guint8) * CARDS_PER_BLOCK);
+	guint8 *cards_copy = g_newa (guint8, CARDS_PER_BLOCK);
 #endif
-	guint8 *cards_preclean = alloca (sizeof (guint8) * CARDS_PER_BLOCK);
+	guint8 *cards_preclean = g_newa (guint8, CARDS_PER_BLOCK);
 	gboolean small_objects;
 	int block_obj_size;
 	char *block_start;

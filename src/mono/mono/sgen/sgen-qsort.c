@@ -113,8 +113,8 @@ void sgen_qsort (
 	unsigned char pivot_tmp [element_size];
 	unsigned char swap_tmp [element_size];
 #else
-	unsigned char *pivot_tmp = (unsigned char *)alloca (element_size);
-	unsigned char *swap_tmp = (unsigned char *)alloca (element_size);
+	unsigned char *pivot_tmp = g_newa (unsigned char, element_size);
+	unsigned char *swap_tmp = g_newa (unsigned char, element_size);
 #endif
 	sgen_qsort_rec (
 		array,

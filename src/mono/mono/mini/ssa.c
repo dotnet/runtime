@@ -465,7 +465,7 @@ mono_ssa_compute (MonoCompile *cfg)
 
 	/* Renaming phase */
 
-	stack = (MonoInst **)alloca (sizeof (MonoInst *) * cfg->num_varinfo);
+	stack = g_newa (MonoInst*, cfg->num_varinfo);
 	memset (stack, 0, sizeof (MonoInst *) * cfg->num_varinfo);
 
 	lvreg_stack = g_new0 (guint32, cfg->next_vreg);

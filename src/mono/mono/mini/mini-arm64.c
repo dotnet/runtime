@@ -1468,7 +1468,7 @@ mono_arch_set_native_call_context_args (CallContext *ccontext, gpointer frame, M
 		int temp_size = arg_need_temp (ainfo);
 
 		if (temp_size)
-			storage = alloca (temp_size);
+			storage = alloca (temp_size); // FIXME? alloca in a loop
 		else
 			storage = arg_get_storage (ccontext, ainfo);
 
@@ -1530,7 +1530,7 @@ mono_arch_get_native_call_context_args (CallContext *ccontext, gpointer frame, M
 		int temp_size = arg_need_temp (ainfo);
 
 		if (temp_size) {
-			storage = alloca (temp_size);
+			storage = alloca (temp_size); // FIXME? alloca in a loop
 			arg_get_val (ccontext, ainfo, storage);
 		} else {
 			storage = arg_get_storage (ccontext, ainfo);

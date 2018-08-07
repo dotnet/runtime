@@ -5324,7 +5324,7 @@ mono_runtime_try_invoke_array (MonoMethod *method, void *obj, MonoArray *params,
 	gboolean has_byref_nullables = FALSE;
 
 	if (NULL != params) {
-		pa = (void **)alloca (sizeof (gpointer) * mono_array_length (params));
+		pa = g_newa (gpointer, mono_array_length (params));
 		for (i = 0; i < mono_array_length (params); i++) {
 			MonoType *t = sig->params [i];
 			pa [i] = invoke_array_extract_argument (params, i, t, &has_byref_nullables, error);
@@ -6028,8 +6028,8 @@ mono_array_clone_in_domain (MonoDomain *domain, MonoArrayHandle array_handle, Mo
 		size *= mono_array_element_size (klass);
 	} else {
 		guint8 klass_rank = m_class_get_rank (klass);
-		uintptr_t *sizes = (uintptr_t *)alloca (klass_rank * sizeof (uintptr_t));
-		intptr_t *lower_bounds = (intptr_t *)alloca (klass_rank * sizeof (intptr_t));
+		uintptr_t *sizes = g_newa (uintptr_t, klass_rank);
+		intptr_t *lower_bounds = g_newa (intptr_t, klass_rank);
 		size = mono_array_element_size (klass);
 		for (int i = 0; i < klass_rank; ++i) {
 			sizes [i] = array_bounds [i].length;

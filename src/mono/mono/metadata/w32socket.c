@@ -1041,7 +1041,8 @@ ves_icall_System_Net_Sockets_Socket_LocalEndPoint_internal (gsize sock, gint32 a
 		*werror = WSAEAFNOSUPPORT;
 		return NULL_HANDLE;
 	}
-	sa = (salen <= 128) ? (gchar *)alloca (salen) : (gchar *)g_malloc0 (salen);
+	// FIXME zeros only sometimes
+	sa = (salen <= 128) ? g_newa (char, salen) : (char *)g_malloc0 (salen);
 
 	ret = mono_w32socket_getsockname (sock, (struct sockaddr *)sa, &salen);
 	if (ret == SOCKET_ERROR) {
@@ -1074,7 +1075,8 @@ ves_icall_System_Net_Sockets_Socket_RemoteEndPoint_internal (gsize sock, gint32 
 		*werror = WSAEAFNOSUPPORT;
 		return MONO_HANDLE_NEW (MonoObject, NULL);
 	}
-	sa = (salen <= 128) ? (gchar *)alloca (salen) : (gchar *)g_malloc0 (salen);
+	// FIXME zeros only sometimes
+	sa = (salen <= 128) ? g_newa (char, salen) : (char *)g_malloc0 (salen);
 	/* Note: linux returns just 2 for AF_UNIX. Always. */
 
 	ret = mono_w32socket_getpeername (sock, (struct sockaddr *)sa, &salen);

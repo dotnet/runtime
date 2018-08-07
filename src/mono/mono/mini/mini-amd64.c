@@ -1129,7 +1129,8 @@ mono_arch_set_native_call_context_args (CallContext *ccontext, gpointer frame, M
 				break;
 			}
 			case ArgValuetypeInReg: {
-				storage = alloca (ainfo->nregs * sizeof (mgreg_t));
+				// FIXME? Alloca in a loop.
+				storage = g_newa (mgreg_t, ainfo->nregs);
 				break;
 			}
 			default:
@@ -1191,7 +1192,7 @@ mono_arch_get_native_call_context_ret (CallContext *ccontext, gpointer frame, Mo
 			break;
 		}
 		case ArgValuetypeInReg: {
-			storage = alloca (ainfo->nregs * sizeof (mgreg_t));
+			storage = g_newa (mgreg_t, ainfo->nregs);
 			mgreg_t *storage_tmp = storage;
 			/* Reconstruct the value type */
 			for (int k = 0; k < ainfo->nregs; k++) {

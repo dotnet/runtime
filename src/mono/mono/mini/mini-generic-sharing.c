@@ -3188,7 +3188,7 @@ get_object_generic_inst (int type_argc)
 	MonoType **type_argv;
 	int i;
 
-	type_argv = (MonoType **)alloca (sizeof (MonoType*) * type_argc);
+	type_argv = g_newa (MonoType*, type_argc);
 
 	MonoType *object_type = mono_get_object_type ();
 	for (i = 0; i < type_argc; ++i)

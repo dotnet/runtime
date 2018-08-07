@@ -3304,8 +3304,8 @@ mono_marshal_safearray_begin (gpointer safearray, MonoArray **result, gpointer *
 
 			*indices = g_malloc (dim * sizeof(int));
 
-			sizes = (uintptr_t *)alloca (dim * sizeof(uintptr_t));
-			bounds = (intptr_t *)alloca (dim * sizeof(intptr_t));
+			sizes = g_newa (uintptr_t, dim);
+			bounds = g_newa (intptr_t, dim);
 
 			for (i=0; i<dim; ++i) {
 				glong lbound, ubound;
@@ -3513,7 +3513,7 @@ mono_marshal_safearray_create (MonoArray *input, gpointer *newsafearray, gpointe
 	int const dim = m_class_get_rank (mono_object_class (input));
 
 	*indices = g_malloc (dim * sizeof (int));
-	SAFEARRAYBOUND * const bounds = (SAFEARRAYBOUND *)alloca (dim * sizeof (SAFEARRAYBOUND));
+	SAFEARRAYBOUND * const bounds = g_newa (SAFEARRAYBOUND, dim);
 	(*(int*)empty) = (max_array_length == 0);
 
 	if (dim > 1) {

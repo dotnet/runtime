@@ -1775,8 +1775,8 @@ emit_native_wrapper_ilgen (MonoImage *image, MonoMethodBuilder *mb, MonoMethodSi
 	}
 
 	/* we first do all conversions */
-	tmp_locals = (int *)alloca (sizeof (int) * sig->param_count);
-	m.orig_conv_args = (int *)alloca (sizeof (int) * (sig->param_count + 1));
+	tmp_locals = g_newa (int, sig->param_count);
+	m.orig_conv_args = g_newa (int, sig->param_count + 1);
 
 	for (i = 0; i < sig->param_count; i ++) {
 		tmp_locals [i] = mono_emit_marshal (&m, i + param_shift, sig->params [i], mspecs [i + 1], 0, &csig->params [i], MARSHAL_ACTION_CONV_IN);
@@ -5911,7 +5911,7 @@ emit_managed_wrapper_ilgen (MonoMethodBuilder *mb, MonoMethodSignature *invoke_s
 	emit_thread_interrupt_checkpoint (mb);
 
 	/* we first do all conversions */
-	tmp_locals = (int *)alloca (sizeof (int) * sig->param_count);
+	tmp_locals = g_newa (int, sig->param_count);
 	for (i = 0; i < sig->param_count; i ++) {
 		MonoType *t = sig->params [i];
 
