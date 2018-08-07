@@ -1856,7 +1856,6 @@ namespace Mono.Linker.Steps {
 				if (!CheckReflectionMethod (instruction, reflectionMethod))
 					continue;
 
-				_context.Tracer.Push ($"Reflection-{instruction.Operand as MethodReference}");
 				var nameOfThingUsedViaReflection = OperandOfNearestInstructionBefore<string> (i, OpCodes.Ldstr, instructions);
 				var bindingFlags = (BindingFlags) OperandOfNearestInstructionBefore<sbyte> (i, OpCodes.Ldc_I4_S, instructions);
 
@@ -1868,7 +1867,6 @@ namespace Mono.Linker.Steps {
 					if (typeDefinition != null)
 						markMethod (instructions, nameOfThingUsedViaReflection, typeDefinition, bindingFlags);
 				}
-				_context.Tracer.Pop ();
 			}
 		}
 
@@ -1880,26 +1878,22 @@ namespace Mono.Linker.Steps {
 				if (!CheckReflectionMethod (instruction, "GetType"))
 					continue;
 
-				_context.Tracer.Push ($"Reflection-{instruction.Operand as MethodReference}");
 				var typeAssemblyQualifiedName = OperandOfNearestInstructionBefore<string> (i, OpCodes.Ldstr, instructions);
 
 				if (!TypeNameParser.TryParseTypeAssemblyQualifiedName (typeAssemblyQualifiedName, out string typeName, out string assemblyName))
 					continue;
 
-				bool found = false;
+				TypeDefinition foundType = null;
 				foreach (var assemblyDefinition in _context.GetAssemblies ()) {
 					if (assemblyName != null && assemblyDefinition.Name.Name != assemblyName)
 						continue;
 
-					var type = assemblyDefinition.MainModule.GetType (typeName);
-					if (type != null) {
-						MarkType(type);
-						found = true;
+					foundType = assemblyDefinition.MainModule.GetType (typeName);
+					if (foundType != null)
 						break;
-					}
 				}
 
-				if (!found && assemblyName != null) {
+				if (foundType == null && assemblyName != null) {
 					AssemblyDefinition newDependency;
 					try {
 						newDependency = _context.Resolve (assemblyName);
@@ -1910,22 +1904,33 @@ namespace Mono.Linker.Steps {
 					if (newDependency == null) {
 						_context.Logger.LogMessage (MessageImportance.Low, $"Could not resolve assembly {assemblyName}");
 					} else {
-						var type = newDependency.MainModule.GetType (typeName);
-						if (type != null) {
-							MarkType (type);
-						}
+						foundType = newDependency.MainModule.GetType (typeName);
 					}
 				}
 
-				_context.Tracer.Pop ();
+				if (foundType == null)
+					continue;
+				
+				_context.Tracer.Push ($"Reflection-{foundType}");
+				try {
+					MarkType (foundType);
+				} finally {
+					_context.Tracer.Pop ();
+				}
 			}
 		}
 
 		void MarkConstructorsUsedViaReflection (Collection<Instruction> instructions, string unused, TypeDefinition declaringType, BindingFlags bindingFlags)
 		{
 			foreach (var method in declaringType.Methods) {
-				if ((bindingFlags == BindingFlags.Default || bindingFlags.IsSet(BindingFlags.Public) == method.IsPublic) && method.Name == ".ctor")
-					MarkMethod (method);
+				if ((bindingFlags == BindingFlags.Default || bindingFlags.IsSet(BindingFlags.Public) == method.IsPublic) && method.Name == ".ctor") {
+					Tracer.Push ($"Reflection-{method}");
+					try {
+						MarkMethod (method);
+					} finally {
+						Tracer.Pop ();
+					}
+				}
 			}
 		}
 
@@ -1936,8 +1941,14 @@ namespace Mono.Linker.Steps {
 
 			foreach (var method in declaringType.Methods) {
 				if ((bindingFlags == BindingFlags.Default || bindingFlags.IsSet(BindingFlags.Public) == method.IsPublic && bindingFlags.IsSet(BindingFlags.Static) == method.IsStatic)
-					&& method.Name == name)
-					MarkMethod (method);
+					&& method.Name == name) {
+					Tracer.Push ($"Reflection-{method}");
+					try {
+						MarkMethod (method);
+					} finally {
+						Tracer.Pop ();
+					}
+				}
 			}
 		}
 
@@ -1948,11 +1959,16 @@ namespace Mono.Linker.Steps {
 
 			foreach (var property in declaringType.Properties) {
 				if (property.Name == name) {
-					// It is not easy to reliably detect in the IL code whether the getter or setter (or both) are used.
-					// Be conservative and mark everything for the property.
-					MarkProperty (property);
-					MarkMethodIfNotNull (property.GetMethod);
-					MarkMethodIfNotNull (property.SetMethod);
+					Tracer.Push ($"Reflection-{property}");
+					try {
+						// It is not easy to reliably detect in the IL code whether the getter or setter (or both) are used.
+						// Be conservative and mark everything for the property.
+						MarkProperty (property);
+						MarkMethodIfNotNull (property.GetMethod);
+						MarkMethodIfNotNull (property.SetMethod);
+					} finally {
+						Tracer.Pop ();
+					}
 				}
 			}
 		}
@@ -1963,8 +1979,14 @@ namespace Mono.Linker.Steps {
 				return;
 
 			foreach (var field in declaringType.Fields) {
-				if (field.Name == name)
-					MarkField (field);
+				if (field.Name == name) {
+					Tracer.Push ($"Reflection-{field}");
+					try {
+						MarkField (field);
+					} finally {
+						Tracer.Pop ();
+					}
+				}
 			}
 		}
 
@@ -1974,8 +1996,14 @@ namespace Mono.Linker.Steps {
 				return;
 
 			foreach (var eventInfo in declaringType.Events) {
-				if (eventInfo.Name == name)
-					MarkEvent (eventInfo);
+				if (eventInfo.Name == name) {
+					Tracer.Push ($"Reflection-{eventInfo}");
+					try {
+						MarkEvent (eventInfo);
+					} finally {
+						Tracer.Pop ();
+					}
+				}
 			}
 		}
 
