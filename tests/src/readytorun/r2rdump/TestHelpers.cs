@@ -14,10 +14,10 @@ namespace R2RDumpTest
 {
     class TestHelpers
     {
-        public static void RunTest(string name)
+        public static void RunTest(string expectedXmlPath, string name)
         {
             List<XmlNode> testXmlNodes = ReadXmlNodes($"{name}-test.xml", true).Cast<XmlNode>().ToList();
-            List<XmlNode> expectedXmlNodes = ReadXmlNodes($"{name}.xml", true).Cast<XmlNode>().ToList();
+            List<XmlNode> expectedXmlNodes = ReadXmlNodes($"{expectedXmlPath}{name}.xml", true).Cast<XmlNode>().ToList();
             bool identical = XmlDiff(testXmlNodes, expectedXmlNodes);
             Assert.True(identical);
         }
