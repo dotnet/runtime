@@ -8730,14 +8730,14 @@ void CodeGen::genFnEpilog(BasicBlock* block)
             assert(methHnd != nullptr);
             assert(addrInfo.addr != nullptr);
 
-#ifdef _TARGET_ARM_
+#ifdef _TARGET_ARMARCH_
             emitter::EmitCallType callType;
             void*                 addr;
             regNumber             indCallReg;
             switch (addrInfo.accessType)
             {
                 case IAT_VALUE:
-                    if (arm_Valid_Imm_For_BL((ssize_t)addrInfo.addr))
+                    if (validImmForBL((ssize_t)addrInfo.addr))
                     {
                         // Simple direct call
                         callType   = emitter::EC_FUNC_TOKEN;
@@ -8754,7 +8754,7 @@ void CodeGen::genFnEpilog(BasicBlock* block)
                     // Load the address into a register, load indirect and call  through a register
                     // We have to use R12 since we assume the argument registers are in use
                     callType   = emitter::EC_INDIR_R;
-                    indCallReg = REG_R12;
+                    indCallReg = REG_INDIRECT_CALL_TARGET_REG;
                     addr       = NULL;
                     instGen_Set_Reg_To_Imm(EA_HANDLE_CNS_RELOC, indCallReg, (ssize_t)addrInfo.addr);
                     if (addrInfo.accessType == IAT_PVALUE)
@@ -8794,6 +8794,9 @@ void CodeGen::genFnEpilog(BasicBlock* block)
                                        addr,
                                        0,          // argSize
                                        EA_UNKNOWN, // retSize
+#if defined(_TARGET_ARM64_)
+                                       EA_UNKNOWN, // secondRetSize
+#endif
                                        gcInfo.gcVarPtrSetCur,
                                        gcInfo.gcRegGCrefSetCur,
                                        gcInfo.gcRegByrefSetCur,
@@ -8805,35 +8808,7 @@ void CodeGen::genFnEpilog(BasicBlock* block)
                                        true);         // isJump
             // clang-format on
             CLANG_FORMAT_COMMENT_ANCHOR;
-
-#else // _TARGET_ARM64_
-            if (addrInfo.accessType != IAT_VALUE)
-            {
-                NYI_ARM64("Unsupported JMP indirection");
-            }
-
-            emitter::EmitCallType callType = emitter::EC_FUNC_TOKEN;
-
-            // Simply emit a jump to the methodHnd. This is similar to a call so we can use
-            // the same descriptor with some minor adjustments.
-
-            // clang-format off
-            getEmitter()->emitIns_Call(callType,
-                                       methHnd,
-                                       INDEBUG_LDISASM_COMMA(nullptr)
-                                       addrInfo.addr,
-                                       0,          // argSize
-                                       EA_UNKNOWN, // retSize
-                                       EA_UNKNOWN, // secondRetSize
-                                       gcInfo.gcVarPtrSetCur,
-                                       gcInfo.gcRegGCrefSetCur,
-                                       gcInfo.gcRegByrefSetCur,
-                                       BAD_IL_OFFSET, REG_NA, REG_NA, 0, 0, /* iloffset, ireg, xreg, xmul, disp */
-                                       true);                               /* isJump */
-            // clang-format on
-            CLANG_FORMAT_COMMENT_ANCHOR;
-
-#endif // _TARGET_ARM64_
+#endif //_TARGET_ARMARCH_
         }
 #if FEATURE_FASTTAILCALL
         else
