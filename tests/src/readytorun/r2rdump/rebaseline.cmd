@@ -18,4 +18,5 @@ set tests=HelloWorld GcInfoTransitions GenericFunctions MultipleRuntimeFunctions
     "%ProjectDir%Tools\dotnetcli\dotnet.exe" %ProjectDir%bin\Product\Windows_NT.x86.Release\netcoreapp2.0\R2RDump.dll --in %%a.ni.dll --out %ProjectDir%tests\src\readytorun\r2rdump\files\Windows_NT.x86.Release\%%a.xml -x -v --ignoreSensitive
 ))
 
-COPY /Y %ProjectDir%tests\src\readytorun\r2rdump\files\Windows_NT.x86.Release\*.xml %ProjectDir%tests\src\readytorun\r2rdump\files\Windows_NT.x86.Checked
+COPY /Y %ProjectDir%tests\src\readytorun\r2rdump\files\Windows_NT.x64.Checked\*.xml %ProjectDir%tests\src\readytorun\r2rdump\files\Windows_NT.x64.Release\
+COPY /Y %ProjectDir%tests\src\readytorun\r2rdump\files\Windows_NT.x86.Release\*.xml %ProjectDir%tests\src\readytorun\r2rdump\files\Windows_NT.x86.Checked\
