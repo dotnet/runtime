@@ -23,11 +23,7 @@ namespace System.ServiceModel.Syndication
         public ReferencedCategoriesDocument(Uri link)
             : base()
         {
-            if (link == null)
-            {
-                throw DiagnosticUtility.ExceptionUtility.ThrowHelperArgumentNull(nameof(link));
-            }
-            _link = link;
+            _link = link ?? throw new ArgumentNullException(nameof(link));
         }
 
         public Uri Link

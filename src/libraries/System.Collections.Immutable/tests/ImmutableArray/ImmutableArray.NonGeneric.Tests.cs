@@ -15,7 +15,7 @@ namespace System.Collections.Immutable.Tests
         protected override bool ICollection_NonGeneric_SupportsSyncRoot => false;
 
         protected override Type IList_NonGeneric_Item_InvalidIndex_ThrowType => typeof(IndexOutOfRangeException);
-        protected override IEnumerable<ModifyEnumerable> ModifyEnumerables => new List<ModifyEnumerable>();
+        protected override IEnumerable<ModifyEnumerable> GetModifyEnumerables(ModifyOperation operations) => new List<ModifyEnumerable>();
         protected override bool Enumerator_Current_UndefinedOperation_Throws => true;
 
         protected override Type ICollection_NonGeneric_CopyTo_TwoDimensionArray_ThrowType => typeof(RankException);

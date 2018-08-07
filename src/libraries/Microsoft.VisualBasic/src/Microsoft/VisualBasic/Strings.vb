@@ -3,6 +3,7 @@
 ' See the LICENSE file in the project root for more information.
 
 Imports System
+Imports System.Globalization
 Imports System.Text
 Imports Microsoft.VisualBasic.CompilerServices
 Imports Microsoft.VisualBasic.CompilerServices.ExceptionUtils
@@ -67,7 +68,7 @@ Namespace Global.Microsoft.VisualBasic
         Public Function Asc(ByVal [String] As String) As Integer
 
             If ([String] Is Nothing) OrElse ([String].Length = 0) Then
-                Throw New ArgumentException(SR.Argument_LengthGTZero1, NameOf([String]))
+                Throw New ArgumentException(SR.Format(SR.Argument_LengthGTZero1, NameOf([String])), NameOf([String]))
             End If
 
             Dim ch As Char = [String].Chars(0)
@@ -77,7 +78,7 @@ Namespace Global.Microsoft.VisualBasic
 
         Public Function AscW([String] As String) As Integer
             If ([String] Is Nothing) OrElse ([String].Length = 0) Then
-                Throw New Global.System.ArgumentException(SR.Argument_LengthGTZero1, NameOf([String]))
+                Throw New Global.System.ArgumentException(SR.Format(SR.Argument_LengthGTZero1, NameOf([String])), NameOf([String]))
             End If
             Return AscW([String].Chars(0))
         End Function
@@ -89,7 +90,7 @@ Namespace Global.Microsoft.VisualBasic
         Public Function Chr(ByVal CharCode As Integer) As Char
             ' Documentation claims that < 0 or > 255 gives an ArgumentException
             If CharCode < -32768 OrElse CharCode > 65535 Then
-                Throw New ArgumentException(SR.Argument_RangeTwoBytes1, NameOf(CharCode))
+                Throw New ArgumentException(SR.Format(SR.Argument_RangeTwoBytes1, NameOf(CharCode)), NameOf(CharCode))
             End If
 
             If CharCode >= 0 AndAlso CharCode <= 127 Then
@@ -137,9 +138,95 @@ Namespace Global.Microsoft.VisualBasic
 
         Public Function ChrW(CharCode As Integer) As Char
             If CharCode < -32768 OrElse CharCode > 65535 Then
-                Throw New ArgumentException(SR.Argument_RangeTwoBytes1, NameOf(CharCode))
+                Throw New ArgumentException(SR.Format(SR.Argument_RangeTwoBytes1, NameOf(CharCode)), NameOf(CharCode))
             End If
             Return Global.System.Convert.ToChar(CharCode And &HFFFFI)
+        End Function
+
+        '============================================================================
+        ' String manipulation functions.
+        '============================================================================
+        Public Function Filter(ByVal Source() As Object, ByVal Match As String, Optional ByVal Include As Boolean = True, <Microsoft.VisualBasic.CompilerServices.OptionCompareAttribute()> Optional ByVal [Compare] As CompareMethod = CompareMethod.Binary) As String()
+
+            Dim Size As Integer = UBound(Source)
+            Dim StringSource(Size) As String
+
+            Try
+                For i As Integer = 0 To Size
+                    StringSource(i) = CStr(Source(i))
+                Next i
+            Catch ex As StackOverflowException
+                Throw ex
+            Catch ex As OutOfMemoryException
+                Throw ex
+            Catch ex As System.Threading.ThreadAbortException
+                Throw ex
+            Catch
+                Throw New ArgumentException(SR.Format(SR.Argument_InvalidValueType2, NameOf(Source), "String"), NameOf(Source))
+            End Try
+
+            Return Filter(StringSource, Match, Include, [Compare])
+        End Function
+
+        Public Function Filter(ByVal Source() As String, ByVal Match As String, Optional ByVal Include As Boolean = True, <Microsoft.VisualBasic.CompilerServices.OptionCompareAttribute()> Optional ByVal [Compare] As CompareMethod = CompareMethod.Binary) As String()
+            Try
+                Dim TmpResult() As String
+                Dim lNumElements As Integer
+                Dim lSourceIndex As Integer
+                Dim lResultIndex As Integer
+                Dim sStringElement As String
+                Dim iFlags As CompareOptions
+                Dim CompInfo As CompareInfo
+                Dim Loc As CultureInfo
+
+                'Do error checking
+                If Source.Rank <> 1 Then
+                    Throw New ArgumentException(SR.Argument_RankEQOne1, NameOf(Source))
+                End If
+
+                If Match Is Nothing OrElse Match.Length = 0 Then
+                    Return Nothing
+                End If
+
+                lNumElements = Source.Length
+
+                'up the globalization info
+                Loc = GetCultureInfo()
+                CompInfo = Loc.CompareInfo
+
+                If [Compare] = CompareMethod.Text Then
+                    iFlags = CompareOptions.IgnoreCase
+                End If
+
+                'Compare each element and build the result array
+                ReDim TmpResult(lNumElements - 1)
+
+                For lSourceIndex = 0 To lNumElements - 1
+                    sStringElement = Source(lSourceIndex)
+
+                    If (sStringElement Is Nothing) Then
+                        'Skip
+                    ElseIf (CompInfo.IndexOf(sStringElement, Match, iFlags) >= 0) = Include Then
+                        TmpResult(lResultIndex) = sStringElement
+                        lResultIndex = lResultIndex + 1
+                    End If
+                Next lSourceIndex
+
+                If lResultIndex = 0 Then
+                    ReDim TmpResult(-1)
+                    Return TmpResult
+                End If
+
+                If lResultIndex = TmpResult.Length Then
+                    'No redim required
+                    Return TmpResult
+                End If
+
+                ReDim Preserve TmpResult(lResultIndex - 1)
+                Return TmpResult
+            Catch ex As Exception
+                Throw ex
+            End Try
         End Function
 
         '============================================================================
@@ -152,7 +239,7 @@ Namespace Global.Microsoft.VisualBasic
             '   returned computed string
             '-------------------------------------------------------------
             If Length < 0 Then
-                Throw New ArgumentException(SR.Argument_GEZero1, NameOf(Length))
+                Throw New ArgumentException(SR.Format(SR.Argument_GEZero1, NameOf(Length)), NameOf(Length))
             ElseIf Length = 0 OrElse [str] Is Nothing Then
                 Return ""
             Else
@@ -199,9 +286,9 @@ Namespace Global.Microsoft.VisualBasic
             '   return computed string
             '-------------------------------------------------------------
             If Start <= 0 Then
-                Throw New ArgumentException(SR.Argument_GTZero1, NameOf(Start))
+                Throw New ArgumentException(SR.Format(SR.Argument_GTZero1, NameOf(Start)), NameOf(Start))
             ElseIf Length < 0 Then
-                Throw New ArgumentException(SR.Argument_GEZero1, NameOf(Length))
+                Throw New ArgumentException(SR.Format(SR.Argument_GEZero1, NameOf(Length)), NameOf(Length))
             ElseIf Length = 0 OrElse [str] Is Nothing Then
                 Return ""
             End If
@@ -221,7 +308,7 @@ Namespace Global.Microsoft.VisualBasic
 
         Public Function Right(ByVal [str] As String, ByVal Length As Integer) As String
             If Length < 0 Then
-                Throw New ArgumentException(SR.Argument_GEZero1, NameOf(Length))
+                Throw New ArgumentException(SR.Format(SR.Argument_GEZero1, NameOf(Length)), NameOf(Length))
             End If
 
             If Length = 0 OrElse [str] Is Nothing Then

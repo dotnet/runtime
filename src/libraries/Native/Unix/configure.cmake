@@ -403,6 +403,10 @@ check_function_exists(
     futimens
     HAVE_FUTIMENS)
 
+check_function_exists(
+    utimensat
+    HAVE_UTIMENSAT)
+
 set (PREVIOUS_CMAKE_REQUIRED_FLAGS ${CMAKE_REQUIRED_FLAGS})
 set (CMAKE_REQUIRED_FLAGS "-Werror -Wsign-conversion")
 
@@ -471,7 +475,7 @@ check_c_source_runs(
         // NOTE: PROT_EXEC and MAP_PRIVATE don't work well with shm_open
         //       on at least the current version of Mac OS X
 
-        if (mmap(nullptr, 1, PROT_EXEC, MAP_PRIVATE, fd, 0) == MAP_FAILED)
+        if (mmap(NULL, 1, PROT_EXEC, MAP_PRIVATE, fd, 0) == MAP_FAILED)
             return -1;
 
         return 0;

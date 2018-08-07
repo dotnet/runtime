@@ -1,6 +1,6 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
-    <ProjectGuid>{FE25D593-8029-4726-ABC2-944522B5BE04}</ProjectGuid>
+    <ProjectGuid>{a32671b6-5470-4f9c-9cd8-4094b9ab0799}</ProjectGuid>
     <NoVbRuntimeReference>true</NoVbRuntimeReference>
     <VBRuntime>None</VBRuntime>
     <OptionStrict>On</OptionStrict>
@@ -20,6 +20,7 @@
     <Compile Include="Microsoft\VisualBasic\ApplicationServices\StartupEventArgs.vb" />
     <Compile Include="Microsoft\VisualBasic\ApplicationServices\StartupNextInstanceEventArgs.vb" />
     <Compile Include="Microsoft\VisualBasic\ApplicationServices\UnhandledExceptionEventArgs.vb" />
+    <Compile Include="Microsoft\VisualBasic\CompilerServices\BooleanType.vb" />
     <Compile Include="Microsoft\VisualBasic\CompilerServices\ConversionResolution.vb" />
     <Compile Include="Microsoft\VisualBasic\CompilerServices\Conversions.vb" />
     <Compile Include="Microsoft\VisualBasic\CompilerServices\DecimalType.vb" />
@@ -41,11 +42,13 @@
     <Compile Include="Microsoft\VisualBasic\CompilerServices\Utils.LateBinder.vb" />
     <Compile Include="Microsoft\VisualBasic\CompilerServices\Utils.vb" />
     <Compile Include="Microsoft\VisualBasic\CompilerServices\Versioned.vb" />
+    <Compile Include="Microsoft\VisualBasic\Globals.vb" />
     <Compile Include="Microsoft\VisualBasic\Devices\NetworkAvailableEventArgs.vb" />
     <Compile Include="Microsoft\VisualBasic\ComClassAttribute.vb" />
     <Compile Include="Microsoft\VisualBasic\Constants.vb" />
     <Compile Include="Microsoft\VisualBasic\ControlChars.vb" />
     <Compile Include="Microsoft\VisualBasic\CompilerServices\DoubleType.vb" />
+    <Compile Include="Microsoft\VisualBasic\DateAndTime.vb" />
     <Compile Include="Microsoft\VisualBasic\HideModuleNameAttribute.vb" />
     <Compile Include="Microsoft\VisualBasic\Information.vb" />
     <Compile Include="Microsoft\VisualBasic\Interaction.vb" />

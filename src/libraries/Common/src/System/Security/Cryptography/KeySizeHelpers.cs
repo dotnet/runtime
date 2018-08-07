@@ -8,16 +8,11 @@ using System.Security.Cryptography;
 
 namespace System.Security.Cryptography
 {
-    internal static class Helpers
+    internal static class KeySizeHelpers
     {
-        public static byte[] CloneByteArray(this byte[] src)
+        public static KeySizes[] CloneKeySizesArray(this KeySizes[] src)
         {
-            if (src == null)
-            {
-                return null;
-            }
-
-            return (byte[])(src.Clone());
+            return (KeySizes[])(src.Clone());
         }
 
         public static bool IsLegalSize(this int size, KeySizes[] legalSizes)

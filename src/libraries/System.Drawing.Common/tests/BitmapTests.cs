@@ -1717,7 +1717,9 @@ namespace System.Drawing.Tests
             {
                 using (Bitmap bitmap = new Bitmap(new NonSeekableStream(stream)))
                 {
-                    // Should copy successfully
+                    Assert.Equal(100, bitmap.Height);
+                    Assert.Equal(100, bitmap.Width);
+                    Assert.Equal(ImageFormat.Png, bitmap.RawFormat);
                 }
             }
         }

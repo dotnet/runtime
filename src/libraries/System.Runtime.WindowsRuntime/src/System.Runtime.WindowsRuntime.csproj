@@ -7,12 +7,17 @@
     <!-- CS0436 - System.Private.CoreLib has internals visible to System.Runtime.WindowsRuntime and is colliding internals on common shared code -->
     <NoWarn>$(NoWarn);1698;0436</NoWarn>
     <ProjectGuid>{844A2A0B-4169-49C3-B367-AFDC4894E487}</ProjectGuid>
-    <PackageTargetRuntime>win8</PackageTargetRuntime>
-    <PackageTargetRuntime Condition="'$(TargetGroup)' == 'uapaot'">win8-aot</PackageTargetRuntime>
-    <Configurations>netcoreapp-Windows_NT-Debug;netcoreapp-Windows_NT-Release;uap-Windows_NT-Debug;uap-Windows_NT-Release;uapaot-Windows_NT-Debug;uapaot-Windows_NT-Release</Configurations>
+   <Configurations>netcoreapp-Windows_NT-Debug;netcoreapp-Windows_NT-Release;uap-Windows_NT-Debug;uap-Windows_NT-Release;uapaot-Windows_NT-Debug;uapaot-Windows_NT-Release;netstandard1.0-Debug;netstandard1.0-Release;</Configurations>
   </PropertyGroup>
   <PropertyGroup Condition="'$(TargetGroup)'=='netcoreapp' or '$(TargetGroup)'=='uap'">
     <DefineConstants>$(DefineConstants);netstandard;FEATURE_APPX</DefineConstants>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(TargetsNetStandard)' == 'true'">
+    <GeneratePlatformNotSupportedAssembly>true</GeneratePlatformNotSupportedAssembly>
+    <!-- <GeneratePlatformNotSupportedAssemblyMessage>SR.PlatformNotSupported_WindowsRuntime</GeneratePlatformNotSupportedAssemblyMessage> -->
+    <GeneratePlatformNotSupportedAssemblyWithGlobalPrefix>true</GeneratePlatformNotSupportedAssemblyWithGlobalPrefix>
+    <AssemblyVersion Condition="'$(TargetGroup)' == 'netstandard1.0'">4.0.0.0</AssemblyVersion>
+    <AssemblyVersion Condition="'$(TargetGroup)' == 'netstandard1.2'">4.0.11.0</AssemblyVersion>
   </PropertyGroup>
   <ItemGroup Condition="'$(TargetGroup)'=='netcoreapp' or '$(TargetGroup)'=='uap'">
     <ReferenceFromRuntime Include="System.Private.CoreLib" />
@@ -53,7 +58,7 @@
       <TargetGroup>uapaot</TargetGroup>
     </ProjectReference>
   </ItemGroup>
-  <ItemGroup Condition="'$(TargetGroup)'=='netcoreapp' or '$(TargetGroup)'=='uap'">
+  <ItemGroup Condition="'$(TargetsNETCoreApp)'=='true' or '$(TargetGroup)'=='uap'">
     <Compile Include="System\InternalHelpers.CoreCLR.cs" />
     <Compile Include="System\IO\StreamOperationAsyncResult.CoreCLR.cs" />
     <Compile Include="System\Runtime\InteropServices\WindowsRuntime\MarshalingHelpers.cs" />
@@ -76,7 +81,7 @@
     <Compile Include="System\Threading\Tasks\AsyncInfoToTaskBridge.CoreRT.cs" />
     <Compile Include="System\WindowsRuntimeSystemExtensions.CoreRT.cs" />
   </ItemGroup>
-  <ItemGroup>
+  <ItemGroup Condition="'$(TargetsNETCoreApp)'=='true' or '$(TargetsUAP)'=='true'">
     <Compile Include="$(CommonPath)\Interop\Windows\kernel32\Interop.ResolveLocaleName.cs">
       <Link>Common\Interop\Windows\kernel32\Interop.ResolveLocaleName.cs</Link>
     </Compile>
@@ -126,5 +131,14 @@
     <Compile Include="System\VoidTypeParameter.cs" />
     <Compile Include="System\Windows\TokenizerHelper.cs" />
     <Compile Include="System\Windows\UI\Color.cs" />
+  </ItemGroup>
+  
+  <ItemGroup Condition="'$(TargetsNetStandard)' == 'true'">
+    <Reference Include="System.Runtime" />
+    <Reference Include="System.IO" />
+    <Reference Include="System.Threading.Tasks" />
+    <Reference Include="System.Resources.ResourceManager" />
+    <ProjectReference Include="..\..\..\external\winrt\winrt.depproj" />
+    <ProjectReference Include="..\..\mscorlib.WinRT-Facade\ref\mscorlib.WinRT-Facade.csproj" />
   </ItemGroup>
 </Project>

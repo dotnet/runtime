@@ -8,7 +8,7 @@
 
 namespace System
 {
-    public partial class AppDomain : System.MarshalByRefObject
+    public sealed partial class AppDomain : System.MarshalByRefObject
     {
         private AppDomain() { }
         public static AppDomain CurrentDomain { get { throw null; } }
@@ -1755,6 +1755,14 @@ namespace System.Reflection
     {
         public AssemblyNameProxy() { }
         public System.Reflection.AssemblyName GetAssemblyName(System.String assemblyFile) { throw null; }
+    }
+}
+namespace System.Runtime
+{
+    public static class ProfileOptimization
+    {
+        public static void SetProfileRoot(string directoryPath) { throw null; }
+        public static void StartProfile(string profile) { throw null; }
     }
 }
 namespace System.Runtime.Versioning

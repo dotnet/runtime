@@ -66,8 +66,9 @@ namespace System.ServiceModel.Syndication
         {
             if (source == null)
             {
-                throw DiagnosticUtility.ExceptionUtility.ThrowHelperArgumentNull(nameof(source));
+                throw new ArgumentNullException(nameof(source));
             }
+
             _extensions = source._extensions.Clone();
             _authors = FeedUtils.ClonePersons(source._authors);
             _categories = FeedUtils.CloneCategories(source._categories);
@@ -238,8 +239,9 @@ namespace System.ServiceModel.Syndication
         {
             if (reader == null)
             {
-                throw DiagnosticUtility.ExceptionUtility.ThrowHelperArgumentNull(nameof(reader));
+                throw new ArgumentNullException(nameof(reader));
             }
+
             Atom10ItemFormatter<TSyndicationItem> atomSerializer = new Atom10ItemFormatter<TSyndicationItem>();
             if (atomSerializer.CanRead(reader))
             {
@@ -252,7 +254,8 @@ namespace System.ServiceModel.Syndication
                 rssSerializer.ReadFrom(reader);
                 return rssSerializer.Item as TSyndicationItem;
             }
-            throw DiagnosticUtility.ExceptionUtility.ThrowHelperError(new XmlException(SR.Format(SR.UnknownItemXml, reader.LocalName, reader.NamespaceURI)));
+
+            throw new XmlException(SR.Format(SR.UnknownItemXml, reader.LocalName, reader.NamespaceURI));
         }
 
 
@@ -262,7 +265,7 @@ namespace System.ServiceModel.Syndication
         {
             if (permalink == null)
             {
-                throw DiagnosticUtility.ExceptionUtility.ThrowHelperArgumentNull(nameof(permalink));
+                throw new ArgumentNullException(nameof(permalink));
             }
             this.Id = permalink.AbsoluteUri;
             this.Links.Add(SyndicationLink.CreateAlternateLink(permalink));

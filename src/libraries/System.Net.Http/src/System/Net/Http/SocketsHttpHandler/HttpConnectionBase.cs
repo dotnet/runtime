@@ -9,6 +9,6 @@ namespace System.Net.Http
 {
     internal abstract class HttpConnectionBase
     {
-        public abstract Task<HttpResponseMessage> SendAsync(HttpRequestMessage request, bool doRequestAuth, CancellationToken cancellationToken);
+        public abstract Task<HttpResponseMessage> SendAsync(HttpRequestMessage request, CancellationToken cancellationToken);
     }
 }

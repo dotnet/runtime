@@ -72,7 +72,7 @@ namespace Internal.Cryptography.Pal.Native
             }
             else
             {
-                Interop.crypt32.CertFreeCertificateContext(handle);
+                Interop.Crypt32.CertFreeCertificateContext(handle);
             }
 
             SetHandle(IntPtr.Zero);
@@ -203,7 +203,7 @@ namespace Internal.Cryptography.Pal.Native
     {
         protected sealed override bool ReleaseHandle()
         {
-            bool success = Interop.crypt32.CertCloseStore(handle, 0);
+            bool success = Interop.Crypt32.CertCloseStore(handle, 0);
             return success;
         }
     }
@@ -215,7 +215,7 @@ namespace Internal.Cryptography.Pal.Native
     {
         protected sealed override bool ReleaseHandle()
         {
-            bool success = Interop.crypt32.CryptMsgClose(handle);
+            bool success = Interop.Crypt32.CryptMsgClose(handle);
             return success;
         }
     }

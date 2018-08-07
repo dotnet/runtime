@@ -109,7 +109,7 @@ namespace System.Security.Cryptography.Pkcs
                         string issuer = issuerSerial.IssuerName;
                         byte[] certSerialNumber = certificate.GetSerialNumber();
 
-                        return Helpers.AreByteArraysEqual(certSerialNumber, serialNumber) && certificate.Issuer == issuer;
+                        return PkcsHelpers.AreByteArraysEqual(certSerialNumber, serialNumber) && certificate.Issuer == issuer;
                     }
 
                 case SubjectIdentifierType.SubjectKeyIdentifier:
@@ -118,7 +118,7 @@ namespace System.Security.Cryptography.Pkcs
                         byte[] ski = skiString.ToSkiBytes();
                         byte[] candidateSki = PkcsPal.Instance.GetSubjectKeyIdentifier(certificate);
 
-                        return Helpers.AreByteArraysEqual(ski, candidateSki);
+                        return PkcsHelpers.AreByteArraysEqual(ski, candidateSki);
                     }
 
                 default:

@@ -14,7 +14,7 @@ using System.Threading;
 
 namespace System
 {
-    public partial class AppDomain : MarshalByRefObject
+    public sealed partial class AppDomain : MarshalByRefObject
     {
         private static readonly AppDomain s_domain = new AppDomain();
         private readonly object _forLock = new object();

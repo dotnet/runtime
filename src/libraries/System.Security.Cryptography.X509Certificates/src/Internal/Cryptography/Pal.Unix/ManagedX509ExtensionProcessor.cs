@@ -4,9 +4,10 @@
 
 using System;
 using System.Collections.Generic;
-using System.Diagnostics;
 using System.Security.Cryptography;
+using System.Security.Cryptography.Asn1;
 using System.Security.Cryptography.X509Certificates;
+using System.Security.Cryptography.X509Certificates.Asn1;
 
 namespace Internal.Cryptography.Pal
 {
@@ -15,30 +16,25 @@ namespace Internal.Cryptography.Pal
         public virtual byte[] EncodeX509KeyUsageExtension(X509KeyUsageFlags keyUsages)
         {
             // The numeric values of X509KeyUsageFlags mean that if we interpret it as a little-endian
-            // ushort it will line up with the flags in the spec.
-            ushort ushortValue = unchecked((ushort)(int)keyUsages);
-            byte[] data = BitConverter.GetBytes(ushortValue);
-
-            // RFC 3280 section 4.2.1.3 (https://tools.ietf.org/html/rfc3280#section-4.2.1.3) defines
-            // digitalSignature (0) through decipherOnly (8), making 9 named bits.
-            const int namedBitsCount = 9;
+            // ushort it will line up with the flags in the spec. We flip bit order of each byte to get
+            // the KeyUsageFlagsAsn order expected by AsnWriter.
+            KeyUsageFlagsAsn keyUsagesAsn = 
+                (KeyUsageFlagsAsn)ReverseBitOrder((byte)keyUsages) |
+                (KeyUsageFlagsAsn)(ReverseBitOrder((byte)(((ushort)keyUsages >> 8))) << 8);
 
             // The expected output of this method isn't the SEQUENCE value, but just the payload bytes.
-            byte[][] segments = DerEncoder.SegmentedEncodeNamedBitList(data, namedBitsCount);
-            Debug.Assert(segments.Length == 3);
-            return ConcatenateArrays(segments);
+            using (AsnWriter writer = new AsnWriter(AsnEncodingRules.DER))
+            {
+                writer.WriteNamedBitList(keyUsagesAsn);
+                return writer.Encode();
+            }
         }
 
         public virtual void DecodeX509KeyUsageExtension(byte[] encoded, out X509KeyUsageFlags keyUsages)
         {
-            DerSequenceReader reader = DerSequenceReader.CreateForPayload(encoded);
-            byte[] decoded = reader.ReadBitString();
-
-            // Only 9 bits are defined.
-            if (decoded.Length > 2)
-            {
-                throw new CryptographicException();
-            }
+            AsnReader reader = new AsnReader(encoded, AsnEncodingRules.BER);
+            KeyUsageFlagsAsn keyUsagesAsn = reader.GetNamedBitListValue<KeyUsageFlagsAsn>();
+            reader.ThrowIfNotEmpty();
 
             // DER encodings of BIT_STRING values number the bits as
             // 01234567 89 (big endian), plus a number saying how many bits of the last byte were padding.
@@ -63,19 +59,9 @@ namespace Internal.Cryptography.Pal
             // ended up being little-endian for BIT_STRING values.  Untwist the bytes, and now the bits all
             // line up with the existing X509KeyUsageFlags.
 
-            int value = 0;
-
-            if (decoded.Length > 0)
-            {
-                value = decoded[0];
-            }
-
-            if (decoded.Length > 1)
-            {
-                value |= decoded[1] << 8;
-            }
-
-            keyUsages = (X509KeyUsageFlags)value;
+            keyUsages = 
+                (X509KeyUsageFlags)ReverseBitOrder((byte)keyUsagesAsn) |
+                (X509KeyUsageFlags)(ReverseBitOrder((byte)(((ushort)keyUsagesAsn >> 8))) << 8);
         }
 
         public virtual byte[] EncodeX509BasicConstraints2Extension(
@@ -83,27 +69,16 @@ namespace Internal.Cryptography.Pal
             bool hasPathLengthConstraint,
             int pathLengthConstraint)
         {
-            //BasicConstraintsSyntax::= SEQUENCE {
-            //    cA BOOLEAN DEFAULT FALSE,
-            //    pathLenConstraint INTEGER(0..MAX) OPTIONAL,
-            //    ... }
+            BasicConstraintsAsn constraints = new BasicConstraintsAsn();
 
-            List<byte[][]> segments = new List<byte[][]>(2);
-
-            if (certificateAuthority)
-            {
-                segments.Add(DerEncoder.SegmentedEncodeBoolean(true));
-            }
-
+            constraints.CA = certificateAuthority;
             if (hasPathLengthConstraint)
-            {
-                byte[] pathLengthBytes = BitConverter.GetBytes(pathLengthConstraint);
-                // Little-Endian => Big-Endian
-                Array.Reverse(pathLengthBytes);
-                segments.Add(DerEncoder.SegmentedEncodeUnsignedInteger(pathLengthBytes));
-            }
+                constraints.PathLengthConstraint = pathLengthConstraint;
 
-            return DerEncoder.ConstructSequence(segments);
+            using (AsnWriter writer = AsnSerializer.Serialize(constraints, AsnEncodingRules.DER))
+            {
+                return writer.Encode();
+            }
         }
 
         public virtual bool SupportsLegacyBasicConstraintsExtension => false;
@@ -128,90 +103,67 @@ namespace Internal.Cryptography.Pal
                 out bool hasPathLengthConstraint,
                 out int pathLengthConstraint)
         {
-            // BasicConstraints ::= SEQUENCE {
-            //   cA BOOLEAN DEFAULT FALSE,
-            //   pathLenConstraint INTEGER(0..MAX) OPTIONAL }
-
-            DerSequenceReader constraints = new DerSequenceReader(encoded);
-
-            if (!constraints.HasData)
-            {
-                certificateAuthority = false;
-                hasPathLengthConstraint = false;
-                pathLengthConstraint = 0;
-                return;
-            }
-
-            if (constraints.PeekTag() == (byte)DerSequenceReader.DerTag.Boolean)
-            {
-                certificateAuthority = constraints.ReadBoolean();
-            }
-            else
-            {
-                certificateAuthority = false;
-            }
-
-            if (constraints.HasData)
-            {
-                pathLengthConstraint = constraints.ReadInteger();
-                hasPathLengthConstraint = true;
-            }
-            else
-            {
-                pathLengthConstraint = 0;
-                hasPathLengthConstraint = false;
-            }
+            BasicConstraintsAsn constraints = AsnSerializer.Deserialize<BasicConstraintsAsn>(encoded, AsnEncodingRules.BER);
+            certificateAuthority = constraints.CA;
+            hasPathLengthConstraint = constraints.PathLengthConstraint.HasValue;
+            pathLengthConstraint = constraints.PathLengthConstraint.GetValueOrDefault();
         }
 
         public virtual byte[] EncodeX509EnhancedKeyUsageExtension(OidCollection usages)
         {
-            //extKeyUsage EXTENSION ::= {
-            //    SYNTAX SEQUENCE SIZE(1..MAX) OF KeyPurposeId
-            //    IDENTIFIED BY id-ce-extKeyUsage }
+            // https://tools.ietf.org/html/rfc5280#section-4.2.1.12
             //
-            //KeyPurposeId::= OBJECT IDENTIFIER
+            // extKeyUsage EXTENSION ::= {
+            //     SYNTAX SEQUENCE SIZE(1..MAX) OF KeyPurposeId
+            //     IDENTIFIED BY id-ce-extKeyUsage
+            // }
+            //
+            // KeyPurposeId ::= OBJECT IDENTIFIER
 
-            List<byte[][]> segments = new List<byte[][]>(usages.Count);
-
-            foreach (Oid usage in usages)
+            using (AsnWriter writer = new AsnWriter(AsnEncodingRules.DER))
             {
-                segments.Add(DerEncoder.SegmentedEncodeOid(usage));
+                writer.PushSequence();
+                foreach (Oid usage in usages)
+                {
+                    writer.WriteObjectIdentifier(usage);
+                }
+                writer.PopSequence();
+                return writer.Encode();
             }
-
-            return DerEncoder.ConstructSequence(segments);
         }
 
         public virtual void DecodeX509EnhancedKeyUsageExtension(byte[] encoded, out OidCollection usages)
         {
+            // https://tools.ietf.org/html/rfc5924#section-4.1
+            //
             // ExtKeyUsageSyntax ::= SEQUENCE SIZE (1..MAX) OF KeyPurposeId
             //
-            // KeyPurposeId::= OBJECT IDENTIFIER
+            // KeyPurposeId ::= OBJECT IDENTIFIER
 
-            OidCollection oids = new OidCollection();
-            DerSequenceReader reader = new DerSequenceReader(encoded);
-
-            while (reader.HasData)
-            {
-                oids.Add(reader.ReadOid());
-            }
-
-            usages = oids;
+            Oid[] keyUsages = AsnSerializer.Deserialize<Oid[]>(encoded, AsnEncodingRules.BER);
+            usages = new OidCollection();
+            foreach (Oid KeyPurposeId in keyUsages)
+                usages.Add(KeyPurposeId);
         }
 
         public virtual byte[] EncodeX509SubjectKeyIdentifierExtension(byte[] subjectKeyIdentifier)
         {
-            //subjectKeyIdentifier EXTENSION ::= {
-            //    SYNTAX SubjectKeyIdentifier
-            //    IDENTIFIED BY id - ce - subjectKeyIdentifier }
+            // https://tools.ietf.org/html/rfc5280#section-4.2.1.2
             //
-            //SubjectKeyIdentifier::= KeyIdentifier
+            // subjectKeyIdentifier EXTENSION ::= {
+            //     SYNTAX SubjectKeyIdentifier
+            //     IDENTIFIED BY id - ce - subjectKeyIdentifier
+            // }
             //
-            //KeyIdentifier ::= OCTET STRING
+            // SubjectKeyIdentifier::= KeyIdentifier
+            //
+            // KeyIdentifier ::= OCTET STRING
 
-            byte[][] segments = DerEncoder.SegmentedEncodeOctetString(subjectKeyIdentifier);
-
-            // The extension is not a sequence, just the octet string
-            return ConcatenateArrays(segments);
+            using (AsnWriter writer = new AsnWriter(AsnEncodingRules.DER))
+            {
+                writer.WriteOctetString(subjectKeyIdentifier);
+                return writer.Encode();
+            }
         }
 
         public virtual void DecodeX509SubjectKeyIdentifierExtension(byte[] encoded, out byte[] subjectKeyIdentifier)
@@ -221,8 +173,14 @@ namespace Internal.Cryptography.Pal
 
         internal static byte[] DecodeX509SubjectKeyIdentifierExtension(byte[] encoded)
         {
-            DerSequenceReader reader = DerSequenceReader.CreateForPayload(encoded);
-            return reader.ReadOctetString();
+            AsnReader reader = new AsnReader(encoded, AsnEncodingRules.BER);
+            ReadOnlyMemory<byte> contents;
+            if (!reader.TryGetPrimitiveOctetStringBytes(out contents))
+            {
+                throw new CryptographicException(SR.Cryptography_Der_Invalid_Encoding);
+            }
+            reader.ThrowIfNotEmpty();
+            return contents.ToArray();
         }
 
         [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Security", "CA5350", Justification = "SHA1 is required for Compat")]
@@ -231,67 +189,20 @@ namespace Internal.Cryptography.Pal
             // The CapiSha1 value is the SHA-1 of the SubjectPublicKeyInfo field, inclusive
             // of the DER structural bytes.
 
-            //SubjectPublicKeyInfo::= SEQUENCE {
-            //    algorithm AlgorithmIdentifier{ { SupportedAlgorithms} },
-            //    subjectPublicKey BIT STRING,
-            //    ... }
-            //
-            //AlgorithmIdentifier{ ALGORITHM: SupportedAlgorithms} ::= SEQUENCE {
-            //    algorithm ALGORITHM.&id({ SupportedAlgorithms}),
-            //    parameters ALGORITHM.&Type({ SupportedAlgorithms}
-            //    { @algorithm}) OPTIONAL,
-            //    ... }
-            //
-            //ALGORITHM::= CLASS {
-            //    &Type OPTIONAL,
-            //    &id OBJECT IDENTIFIER UNIQUE }
-            //WITH SYNTAX {
-            //    [&Type]
-            //IDENTIFIED BY &id }
+            SubjectPublicKeyInfoAsn spki = new SubjectPublicKeyInfoAsn();
+            spki.Algorithm = new AlgorithmIdentifierAsn { Algorithm = key.Oid, Parameters = key.EncodedParameters.RawData };
+            spki.SubjectPublicKey = key.EncodedKeyValue.RawData;
 
-            // key.EncodedKeyValue corresponds to SubjectPublicKeyInfo.subjectPublicKey, except it
-            // has had the BIT STRING envelope removed.
-            //
-            // key.EncodedParameters corresponds to AlgorithmIdentifier.Parameters precisely
-            // (DER NULL for RSA, DER Constructed SEQUENCE for DSA)
-
-            byte[] empty = Array.Empty<byte>();
-            byte[][] algorithmOid = DerEncoder.SegmentedEncodeOid(key.Oid);
-            // Because ConstructSegmentedSequence doesn't look to see that it really is tag+length+value (but does check
-            // that the array has length 3), just hide the joined TLV triplet in the last element.
-            byte[][] segmentedParameters = { empty, empty, key.EncodedParameters.RawData };
-            byte[][] algorithmIdentifier = DerEncoder.ConstructSegmentedSequence(algorithmOid, segmentedParameters);
-            byte[][] subjectPublicKey = DerEncoder.SegmentedEncodeBitString(key.EncodedKeyValue.RawData);
-
+            using (AsnWriter writer = AsnSerializer.Serialize(spki, AsnEncodingRules.DER))
             using (SHA1 hash = SHA1.Create())
             {
-                return hash.ComputeHash(
-                    DerEncoder.ConstructSequence(
-                        algorithmIdentifier,
-                        subjectPublicKey));
+                return hash.ComputeHash(writer.Encode());
             }
         }
 
-        private static byte[] ConcatenateArrays(byte[][] segments)
+        private static byte ReverseBitOrder(byte b)
         {
-            int length = 0;
-
-            foreach (byte[] segment in segments)
-            {
-                length += segment.Length;
-            }
-
-            byte[] concatenated = new byte[length];
-
-            int offset = 0;
-
-            foreach (byte[] segment in segments)
-            {
-                Buffer.BlockCopy(segment, 0, concatenated, offset, segment.Length);
-                offset += segment.Length;
-            }
-
-            return concatenated;
+            return (byte)(unchecked(b * 0x0202020202ul & 0x010884422010ul) % 1023);
         }
     }
 }
