@@ -184,10 +184,15 @@ unsigned HWIntrinsicInfo::lookupSimdSize(Compiler* comp, NamedIntrinsic id, CORI
     {
         typeHnd = sig->retTypeSigClass;
     }
+    else if (HWIntrinsicInfo::BaseTypeFromFirstArg(id))
+    {
+        typeHnd = comp->info.compCompHnd->getArgClass(sig, sig->args);
+    }
     else
     {
-        assert(HWIntrinsicInfo::BaseTypeFromFirstArg(id));
-        typeHnd = comp->info.compCompHnd->getArgClass(sig, sig->args);
+        assert(HWIntrinsicInfo::BaseTypeFromSecondArg(id));
+        CORINFO_ARG_LIST_HANDLE secondArg = comp->info.compCompHnd->getArgNext(sig->args);
+        typeHnd                           = comp->info.compCompHnd->getArgClass(sig, secondArg);
     }
 
     unsigned  simdSize = 0;
@@ -385,7 +390,6 @@ bool HWIntrinsicInfo::isFullyImplementedIsa(InstructionSet isa)
         }
 
         // These ISAs are partially implemented
-        case InstructionSet_AVX:
         case InstructionSet_AVX2:
         case InstructionSet_BMI1:
         case InstructionSet_BMI2:
@@ -395,14 +399,15 @@ bool HWIntrinsicInfo::isFullyImplementedIsa(InstructionSet isa)
         }
 
         // These ISAs are fully implemented
+        case InstructionSet_AVX:
+        case InstructionSet_FMA:
+        case InstructionSet_LZCNT:
+        case InstructionSet_POPCNT:
         case InstructionSet_SSE:
         case InstructionSet_SSE2:
         case InstructionSet_SSE3:
         case InstructionSet_SSSE3:
         case InstructionSet_SSE41:
-        case InstructionSet_FMA:
-        case InstructionSet_LZCNT:
-        case InstructionSet_POPCNT:
         {
             return true;
         }
