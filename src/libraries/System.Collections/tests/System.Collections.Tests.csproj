@@ -159,7 +159,6 @@
     <Compile Include="$(CommonTestPath)\System\Collections\IDictionary.NonGeneric.Tests.netcoreapp.cs">
       <Link>Common\System\Collections\IDictionary.NonGeneric.Tests.netcoreapp.cs</Link>
     </Compile>
-    <Compile Include="Generic\Dictionary\Dictionary.Tests.netcoreapp.cs" />
   </ItemGroup>
   <ItemGroup>
     <EmbeddedResource Include="Resources\$(AssemblyName).rd.xml" />
