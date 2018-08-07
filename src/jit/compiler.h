@@ -2790,9 +2790,9 @@ public:
     void lvaSortByRefCount();
     void lvaDumpRefCounts();
 
-    void lvaMarkLocalVars(BasicBlock* block);
-
     void lvaMarkLocalVars(); // Local variable ref-counting
+    void lvaComputeRefCounts(bool isRecompute, bool setSlotNumbers);
+    void lvaMarkLocalVars(BasicBlock* block, bool isRecompute);
 
     void lvaAllocOutgoingArgSpaceVar(); // Set up lvaOutgoingArgSpaceVar
 
@@ -2972,7 +2972,7 @@ public:
 protected:
     //---------------- Local variable ref-counting ----------------------------
 
-    void lvaMarkLclRefs(GenTree* tree, BasicBlock* block, GenTreeStmt* stmt);
+    void lvaMarkLclRefs(GenTree* tree, BasicBlock* block, GenTreeStmt* stmt, bool isRecompute);
     bool IsDominatedByExceptionalEntry(BasicBlock* block);
     void SetVolatileHint(LclVarDsc* varDsc);
 
