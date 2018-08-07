@@ -2696,6 +2696,10 @@ public:
     virtual
         HRESULT GetILCodeVersionNodeData(VMPTR_ILCodeVersionNode ilCodeVersionNode, DacSharedReJitInfo* pData) = 0;
 
+    // TODO, andrewau, documentation
+    virtual
+        HRESULT EnableGCNotificationEvents(BOOL fEnable) = 0;
+
     // The following tag tells the DD-marshalling tool to stop scanning.
     // END_MARSHAL
     
