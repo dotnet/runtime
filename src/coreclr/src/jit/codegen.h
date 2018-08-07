@@ -789,7 +789,77 @@ protected:
     void genLongToIntCast(GenTree* treeNode);
 #endif
 
-    void genIntCastOverflowCheck(GenTreeCast* cast, regNumber reg);
+    struct GenIntCastDesc
+    {
+        enum CheckKind
+        {
+            CHECK_NONE,
+            CHECK_SMALL_INT_RANGE,
+            CHECK_POSITIVE,
+#ifdef _TARGET_64BIT_
+            CHECK_UINT_RANGE,
+            CHECK_POSITIVE_INT_RANGE,
+            CHECK_INT_RANGE,
+#endif
+        };
+
+        enum ExtendKind
+        {
+            COPY,
+            ZERO_EXTEND_SMALL_INT,
+            SIGN_EXTEND_SMALL_INT,
+#ifdef _TARGET_64BIT_
+            ZERO_EXTEND_INT,
+            SIGN_EXTEND_INT,
+#endif
+        };
+
+    private:
+        CheckKind  m_checkKind;
+        unsigned   m_checkSrcSize;
+        int        m_checkSmallIntMin;
+        int        m_checkSmallIntMax;
+        ExtendKind m_extendKind;
+        unsigned   m_extendSrcSize;
+
+    public:
+        GenIntCastDesc(GenTreeCast* cast);
+
+        CheckKind CheckKind() const
+        {
+            return m_checkKind;
+        }
+
+        unsigned CheckSrcSize() const
+        {
+            assert(m_checkKind != CHECK_NONE);
+            return m_checkSrcSize;
+        }
+
+        int CheckSmallIntMin() const
+        {
+            assert(m_checkKind == CHECK_SMALL_INT_RANGE);
+            return m_checkSmallIntMin;
+        }
+
+        int CheckSmallIntMax() const
+        {
+            assert(m_checkKind == CHECK_SMALL_INT_RANGE);
+            return m_checkSmallIntMax;
+        }
+
+        ExtendKind ExtendKind() const
+        {
+            return m_extendKind;
+        }
+
+        unsigned ExtendSrcSize() const
+        {
+            return m_extendSrcSize;
+        }
+    };
+
+    void genIntCastOverflowCheck(GenTreeCast* cast, const GenIntCastDesc& desc, regNumber reg);
     void genIntToIntCast(GenTreeCast* cast);
     void genFloatToFloatCast(GenTree* treeNode);
     void genFloatToIntCast(GenTree* treeNode);
