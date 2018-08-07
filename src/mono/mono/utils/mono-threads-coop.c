@@ -508,17 +508,15 @@ mono_threads_assert_gc_unsafe_region (void)
 	MONO_REQ_GC_UNSAFE_MODE;
 }
 
-static MonoThreadsSuspendPolicy
+static int
 threads_suspend_policy_default (void)
 {
 #if defined (ENABLE_COOP_SUSPEND)
 	return MONO_THREADS_SUSPEND_FULL_COOP;
-#else
-#if defined (ENABLE_HYBRID_SUSPEND)
+#elif defined (ENABLE_HYBRID_SUSPEND)
 	return MONO_THREADS_SUSPEND_HYBRID;
 #else
 	return 0; /* unset */
-#endif
 #endif
 }
 
@@ -542,10 +540,10 @@ hasenv_obsolete (const char *name, const char* newval)
 	return FALSE;
 }
 
-static MonoThreadsSuspendPolicy
+static int
 threads_suspend_policy_getenv_compat (void)
 {
-	MonoThreadsSuspendPolicy policy = 0;
+	int policy = 0;
 	if (hasenv_obsolete ("MONO_ENABLE_COOP", "coop") || hasenv_obsolete ("MONO_ENABLE_COOP_SUSPEND", "coop")) {
 		g_assertf (!hasenv_obsolete ("MONO_ENABLE_HYBRID_SUSPEND", "hybrid"),
 			   "Environment variables set to enable both hybrid and cooperative suspend simultaneously");
@@ -555,10 +553,10 @@ threads_suspend_policy_getenv_compat (void)
 	return policy;
 }
 
-static MonoThreadsSuspendPolicy
+static int
 threads_suspend_policy_getenv (void)
 {
-	MonoThreadsSuspendPolicy policy = 0;
+	int policy = 0;
 	if (g_hasenv ("MONO_THREADS_SUSPEND")) {
 		gchar *str = g_getenv ("MONO_THREADS_SUSPEND");
 		if (!strcmp (str, "coop"))
@@ -574,34 +572,39 @@ threads_suspend_policy_getenv (void)
 	return policy;
 }
 
-static MonoThreadsSuspendPolicy threads_suspend_policy = -1;
+static char threads_suspend_policy;
 
 static MonoThreadsSuspendPolicy
 mono_threads_suspend_policy (void)
 {
-	MonoThreadsSuspendPolicy policy = threads_suspend_policy;
-	if (G_UNLIKELY (policy == -1)) {
+	int policy = threads_suspend_policy;
+	if (G_UNLIKELY (policy == 0)) {
 		// thread suspend policy:
 		// if the MONO_THREADS_SUSPEND env is set, use it.
 		// otherwise if there's a compiled-in default, use it.
 		// otherwise if one of the old environment variables is set, use that.
 		// otherwise use full preemptive suspend.
-		MonoThreadsSuspendPolicy env_policy = threads_suspend_policy_getenv ();
-		MonoThreadsSuspendPolicy default_policy = threads_suspend_policy_default ();
-		MonoThreadsSuspendPolicy env_compat_policy = threads_suspend_policy_getenv_compat ();
-		if (env_policy)
-			policy = env_policy;
-		else if (default_policy)
-			policy = default_policy;
-		else if (env_compat_policy)
-			policy = env_compat_policy;
-		else
-			policy = MONO_THREADS_SUSPEND_FULL_PREEMPTIVE;
-		
-		g_assert (policy > 0);
-		threads_suspend_policy = policy;
+		   (policy = threads_suspend_policy_getenv ())
+		|| (policy = threads_suspend_policy_default ())
+		|| (policy = threads_suspend_policy_getenv_compat ())
+		|| (policy = MONO_THREADS_SUSPEND_FULL_PREEMPTIVE);
+		g_assert (policy);
+		threads_suspend_policy = (char)policy;
 	}
-	return policy;
+	return (MonoThreadsSuspendPolicy)policy;
+}
+
+static MonoThreadsSuspendPolicy
+mono_threads_suspend_validate_policy (MonoThreadsSuspendPolicy policy)
+{
+	switch (policy) {
+	case MONO_THREADS_SUSPEND_FULL_COOP:
+	case MONO_THREADS_SUSPEND_FULL_PREEMPTIVE:
+	case MONO_THREADS_SUSPEND_HYBRID:
+		return policy;
+	default:
+		g_error ("Invalid suspend policy %d.", (int)policy);
+	}
 }
 
 /**
@@ -614,7 +617,7 @@ mono_threads_suspend_policy (void)
 void
 mono_threads_suspend_override_policy (MonoThreadsSuspendPolicy new_policy)
 {
-	threads_suspend_policy = new_policy;
+	threads_suspend_policy = (char)mono_threads_suspend_validate_policy (new_policy);
 	g_warning ("Overriding suspend policy.  Using %s suspend.", mono_threads_suspend_policy_name ());
 }
 
@@ -669,7 +672,6 @@ mono_threads_is_hybrid_suspension_enabled (void)
 {
 	return (mono_threads_suspend_policy () == MONO_THREADS_SUSPEND_HYBRID);
 }
-
 
 void
 mono_threads_coop_init (void)

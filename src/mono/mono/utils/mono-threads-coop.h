@@ -53,10 +53,7 @@ mono_threads_safepoint (void)
 		mono_threads_state_poll ();
 }
 
-/* -1 and 0 also used:
- * -1 means uninitialized
- * 0 means unset
- */
+// 0 also used internally for uninitialized
 typedef enum {
 	MONO_THREADS_SUSPEND_FULL_PREEMPTIVE = 1,
 	MONO_THREADS_SUSPEND_FULL_COOP,
