@@ -178,7 +178,7 @@ def validate_args(args):
     valid_run_types = ['rolling', 'private']
     valid_os = ['Windows_NT', 'Ubuntu14.04', 'Ubuntu16.04']
     valid_opt_levels = ['full_opt', 'min_opt']
-    valid_jit_names = 'ryujit'
+    valid_jit_names = ['ryujit']
 
     arch = next((a for a in valid_archs if a.lower() == arch.lower()), arch)
     build_type = next((b for b in valid_build_types if b.lower() == build_type.lower()), build_type)
@@ -192,7 +192,7 @@ def validate_args(args):
     validate_arg(run_type, lambda item: item in valid_run_types)
     validate_arg(iterations, lambda item: item > 0)
     validate_arg(opt_level, lambda item: item in valid_opt_levels)
-    validate_arg(jit_name, lambda item: item in valid_jit_names[arch])
+    validate_arg(jit_name, lambda item: item in valid_jit_names)
 
     if clr_root is None:
         raise Exception('--clr_root must be set')
