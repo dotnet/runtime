@@ -2854,54 +2854,36 @@ void CodeGen::genJmpMethod(GenTree* jmp)
 //
 // Arguments:
 //    cast - The GT_CAST node
+//    desc - The cast description
 //    reg  - The register containing the value to check
 //
-void CodeGen::genIntCastOverflowCheck(GenTreeCast* cast, regNumber reg)
+void CodeGen::genIntCastOverflowCheck(GenTreeCast* cast, const GenIntCastDesc& desc, regNumber reg)
 {
-    assert(cast->IsOverflowCheckRequired());
-
-    const var_types srcType      = genActualType(cast->gtGetOp1()->TypeGet());
-    const bool      srcUnsigned  = cast->IsUnsigned();
-    const unsigned  srcSize      = genTypeSize(srcType);
-    const var_types castType     = cast->gtCastType;
-    const bool      castUnsigned = varTypeIsUnsigned(castType);
-    const unsigned  castSize     = genTypeSize(castType);
-
-    if (castSize >= srcSize)
+    switch (desc.CheckKind())
     {
-        // It's either a widening cast from a signed type to an unsigned
-        // type or a sign changing cast.
-        assert((castSize > srcSize) ? (!srcUnsigned && castUnsigned) : (srcUnsigned != castUnsigned));
+        case GenIntCastDesc::CHECK_POSITIVE:
+            getEmitter()->emitIns_R_I(INS_cmp, EA_ATTR(desc.CheckSrcSize()), reg, 0);
+            genJumpToThrowHlpBlk(EJ_lt, SCK_OVERFLOW);
+            break;
 
-        // In both cases we just need to check if the value is positive.
-        getEmitter()->emitIns_R_I(INS_cmp, EA_ATTR(srcSize), reg, 0);
-        genJumpToThrowHlpBlk(EJ_lt, SCK_OVERFLOW);
-    }
 #ifdef _TARGET_64BIT_
-    // We handled widening and sign changing casts so we're left with narrowing casts.
-    // Handle (U)LONG to (U)INT casts first as they're 64 bit target specific and there
-    // are some complications related to encoding of the large immediate values they need.
-    else if (castSize == 4)
-    {
-        assert(srcSize == 8);
-
-        if (castUnsigned) // (U)LONG to UINT cast
-        {
+        case GenIntCastDesc::CHECK_UINT_RANGE:
             // We need to check if the value is not greater than 0xFFFFFFFF but this value
             // cannot be encoded in the immediate operand of CMP. Use TST instead to check
             // if the upper 32 bits are zero.
             getEmitter()->emitIns_R_I(INS_tst, EA_8BYTE, reg, 0xFFFFFFFF00000000LL);
             genJumpToThrowHlpBlk(EJ_ne, SCK_OVERFLOW);
-        }
-        else if (srcUnsigned) // ULONG to INT cast
-        {
+            break;
+
+        case GenIntCastDesc::CHECK_POSITIVE_INT_RANGE:
             // We need to check if the value is not greater than 0x7FFFFFFF but this value
             // cannot be encoded in the immediate operand of CMP. Use TST instead to check
             // if the upper 33 bits are zero.
             getEmitter()->emitIns_R_I(INS_tst, EA_8BYTE, reg, 0xFFFFFFFF80000000LL);
             genJumpToThrowHlpBlk(EJ_ne, SCK_OVERFLOW);
-        }
-        else // LONG to INT cast
+            break;
+
+        case GenIntCastDesc::CHECK_INT_RANGE:
         {
             const regNumber tempReg = cast->GetSingleTempReg();
             assert(tempReg != reg);
@@ -2912,39 +2894,38 @@ void CodeGen::genIntCastOverflowCheck(GenTreeCast* cast, regNumber reg)
             getEmitter()->emitIns_R_R(INS_cmp, EA_8BYTE, reg, tempReg);
             genJumpToThrowHlpBlk(EJ_lt, SCK_OVERFLOW);
         }
-    }
+        break;
 #endif
-    else // if (castSize < srcSize)
-    {
-        // This is a narrowing cast. We already handled (U)INT so what's left are small int types.
-        assert(castSize < 4);
 
-        // This happens to allow for easy compututation of the min and max
-        // values of the castType without risk of integer overflow.
-        const int castNumBits  = (castSize * 8) - (castUnsigned ? 0 : 1);
-        const int castMaxValue = (1 << castNumBits) - 1;
-        const int castMinValue = (castUnsigned | srcUnsigned) ? 0 : (-castMaxValue - 1);
+        default:
+        {
+            assert(desc.CheckKind() == GenIntCastDesc::CHECK_SMALL_INT_RANGE);
+            const int castMaxValue = desc.CheckSmallIntMax();
+            const int castMinValue = desc.CheckSmallIntMin();
 
-        // These values cannot be encoded in the immediate operand of CMP,
-        // replace (x > max) with (x >= max + 1) where max + 1 can be encoded.
-        // We could do this for all max values but on ARM32 "cmp r0, 255"
-        // is better than "cmp r0, 256" because it has a shorter encoding.
-        if ((castMaxValue == 32767) || (castMaxValue == 65535))
-        {
-            getEmitter()->emitIns_R_I(INS_cmp, EA_SIZE(srcSize), reg, castMaxValue + 1);
-            genJumpToThrowHlpBlk((castMinValue == 0) ? EJ_hs : EJ_ge, SCK_OVERFLOW);
-        }
-        else
-        {
-            getEmitter()->emitIns_R_I(INS_cmp, EA_SIZE(srcSize), reg, castMaxValue);
-            genJumpToThrowHlpBlk((castMinValue == 0) ? EJ_hi : EJ_gt, SCK_OVERFLOW);
-        }
+            // Values greater than 255 cannot be encoded in the immediate operand of CMP.
+            // Replace (x > max) with (x >= max + 1) where max + 1 (a power of 2) can be
+            // encoded. We could do this for all max values but on ARM32 "cmp r0, 255"
+            // is better than "cmp r0, 256" because it has a shorter encoding.
+            if (castMaxValue > 255)
+            {
+                assert((castMaxValue == 32767) || (castMaxValue == 65535));
+                getEmitter()->emitIns_R_I(INS_cmp, EA_SIZE(desc.CheckSrcSize()), reg, castMaxValue + 1);
+                genJumpToThrowHlpBlk((castMinValue == 0) ? EJ_hs : EJ_ge, SCK_OVERFLOW);
+            }
+            else
+            {
+                getEmitter()->emitIns_R_I(INS_cmp, EA_SIZE(desc.CheckSrcSize()), reg, castMaxValue);
+                genJumpToThrowHlpBlk((castMinValue == 0) ? EJ_hi : EJ_gt, SCK_OVERFLOW);
+            }
 
-        if (castMinValue != 0)
-        {
-            getEmitter()->emitIns_R_I(INS_cmp, EA_SIZE(srcSize), reg, castMinValue);
-            genJumpToThrowHlpBlk(EJ_lt, SCK_OVERFLOW);
+            if (castMinValue != 0)
+            {
+                getEmitter()->emitIns_R_I(INS_cmp, EA_SIZE(desc.CheckSrcSize()), reg, castMinValue);
+                genJumpToThrowHlpBlk(EJ_lt, SCK_OVERFLOW);
+            }
         }
+        break;
     }
 }
 
@@ -2962,95 +2943,54 @@ void CodeGen::genIntCastOverflowCheck(GenTreeCast* cast, regNumber reg)
 //
 void CodeGen::genIntToIntCast(GenTreeCast* cast)
 {
-    genConsumeOperands(cast);
+    genConsumeRegs(cast->gtGetOp1());
 
-    GenTree* src = cast->gtGetOp1();
-
-    const var_types srcType  = genActualType(src->TypeGet());
-    const unsigned  srcSize  = genTypeSize(srcType);
-    const var_types castType = cast->gtCastType;
-    const unsigned  castSize = genTypeSize(castType);
-    const var_types dstType  = genActualType(cast->TypeGet());
-    const unsigned  dstSize  = genTypeSize(dstType);
-
-    assert((srcSize == 4) || (srcSize == genTypeSize(TYP_I_IMPL)));
-    assert((dstSize == 4) || (dstSize == genTypeSize(TYP_I_IMPL)));
-    assert(castSize <= dstSize);
-
-    const regNumber srcReg = src->gtRegNum;
+    const regNumber srcReg = cast->gtGetOp1()->gtRegNum;
     const regNumber dstReg = cast->gtRegNum;
 
     assert(genIsValidIntReg(srcReg));
     assert(genIsValidIntReg(dstReg));
 
-    instruction ins = INS_none;
-    emitAttr    insSize;
+    GenIntCastDesc desc(cast);
 
-    if (cast->IsOverflowCheckRequired())
+    if (desc.CheckKind() != GenIntCastDesc::CHECK_NONE)
     {
-        genIntCastOverflowCheck(cast, srcReg);
+        genIntCastOverflowCheck(cast, desc, srcReg);
+    }
 
+    if ((desc.ExtendKind() != GenIntCastDesc::COPY) || (srcReg != dstReg))
+    {
+        instruction ins;
+        unsigned    insSize;
+
+        switch (desc.ExtendKind())
+        {
+            case GenIntCastDesc::ZERO_EXTEND_SMALL_INT:
+                ins     = (desc.ExtendSrcSize() == 1) ? INS_uxtb : INS_uxth;
+                insSize = 4;
+                break;
+            case GenIntCastDesc::SIGN_EXTEND_SMALL_INT:
+                ins     = (desc.ExtendSrcSize() == 1) ? INS_sxtb : INS_sxth;
+                insSize = 4;
+                break;
 #ifdef _TARGET_64BIT_
-        if ((srcType == TYP_INT) && !cast->IsUnsigned() && (castType == TYP_ULONG))
-        {
-            // This is the only overflow checking cast that requires changing the
-            // source value (by zero extending), all others will copy the value as is.
-            ins     = INS_mov;
-            insSize = EA_4BYTE;
-        }
+            case GenIntCastDesc::ZERO_EXTEND_INT:
+                ins     = INS_mov;
+                insSize = 4;
+                break;
+            case GenIntCastDesc::SIGN_EXTEND_INT:
+                ins     = INS_sxtw;
+                insSize = 8;
+                break;
 #endif
-    }
-    else // Non-overflow checking cast.
-    {
-        if (castSize < 4)
-        {
-            assert((castSize == 1) || (castSize == 2));
-
-            // Casting to a small type really means widening from that small type to INT/LONG.
-            ins     = ins_Move_Extend(castType, true);
-            insSize = EA_ATTR(dstSize);
+            default:
+                assert(desc.ExtendKind() == GenIntCastDesc::COPY);
+                ins     = INS_mov;
+                insSize = desc.ExtendSrcSize();
+                break;
         }
-#ifdef _TARGET_64BIT_
-        // castType cannot be a long type on 32 bit targets, such casts should have been decomposed.
-        // srcType cannot be a small type since it's the "actual type" of the cast operand.
-        // This means that widening casts do not occur on 32 bit targets.
-        else if (castSize > srcSize)
-        {
-            // (U)INT to (U)LONG widening cast
-            assert((srcSize == 4) && (castSize == 8));
 
-            ins = cast->IsUnsigned() ? INS_mov : INS_sxtw;
-            // SXTW requires EA_8BYTE but MOV requires EA_4BYTE in order to zero out the upper 32 bits.
-            insSize = (ins == INS_sxtw) ? EA_8BYTE : EA_4BYTE;
-        }
-#endif
-    }
-
-    if (ins == INS_none)
-    {
-        // If the instruction has not been selected yet it means we're dealing with
-        // a narrowing/same type/sign changing cast.
-        assert(castSize <= srcSize);
-        // Make sure the destination size is correct. This prevents unsupported casts
-        // such as LONG->INT->LONG, these would be classified as narrowing but in fact
-        // they're widening casts. It may be useful to allow such casts but that
-        // requires more work here and throughout the JIT.
-        assert(dstSize <= srcSize);
-
-        // This cast basically does nothing, even when narrowing it is the job of the
-        // consumer of this node to use the appropiate register size (32 or 64 bit)
-        // and not rely on the cast to set the upper 32 bits in a certain manner.
-        // Still, we will need to generate a MOV instruction if the source and destination
-        // registers are different.
-        ins = (srcReg != dstReg) ? INS_mov : INS_none;
-        // We can use either the destination size or the source size. Use the destination
-        // size to be consistent with x64 where this may avoid the need for a REX prefix.
-        insSize = EA_SIZE(dstSize);
-    }
-
-    if (ins != INS_none)
-    {
-        getEmitter()->emitIns_R_R(ins, insSize, dstReg, srcReg);
+        getEmitter()->emitIns_R_R(ins, EA_ATTR(insSize), dstReg, srcReg);
     }
 
     genProduceReg(cast);
