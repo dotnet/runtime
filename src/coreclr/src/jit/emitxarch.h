@@ -319,6 +319,8 @@ void emitIns_R_R_I(instruction ins, emitAttr attr, regNumber reg1, regNumber reg
 
 void emitIns_AR(instruction ins, emitAttr attr, regNumber base, int offs);
 
+void emitIns_AR_R_R(instruction ins, emitAttr attr, regNumber op2Reg, regNumber op3Reg, regNumber base, int offs);
+
 void emitIns_R_A(instruction ins, emitAttr attr, regNumber reg1, GenTreeIndir* indir);
 
 void emitIns_R_A_I(instruction ins, emitAttr attr, regNumber reg1, GenTreeIndir* indir, int ival);
