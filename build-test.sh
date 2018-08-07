@@ -252,6 +252,20 @@ build_Tests()
         echo "${__MsgPrefix}Error: build failed. Refer to the build log files for details (above)"
         exit 1
     else
+        echo "Checking the Managed Tests Build..."
+
+        if [ -n __priority1 ]; then
+            __Priority=1
+        else
+            __Priority=0
+        fi
+        build_Tests_internal "Check_Test_Build" "${__ProjectDir}/tests/runtest.proj" "Check Test Build" "/t:CheckTestBuild /p:CLRTestPriorityToBuild=$__Priority"
+
+        if [ $? -ne 0 ]; then
+            echo "${__MsgPrefix}Error: Check Test Build failed."
+            exit 1
+        fi
+
         echo "Managed tests build success!"
     fi
 
