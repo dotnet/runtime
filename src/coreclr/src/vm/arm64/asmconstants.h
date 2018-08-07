@@ -55,19 +55,20 @@ ASMCONSTANTS_C_ASSERT(AppDomain__m_dwId == offsetof(AppDomain, m_dwId));
 
 #define METHODDESC_REGISTER            x12
 
-#define SIZEOF__ArgumentRegisters 0x48
+#define SIZEOF__ArgumentRegisters 0x40
 ASMCONSTANTS_C_ASSERT(SIZEOF__ArgumentRegisters == sizeof(ArgumentRegisters))
 
 #define SIZEOF__FloatArgumentRegisters 0x40
 ASMCONSTANTS_C_ASSERT(SIZEOF__FloatArgumentRegisters == sizeof(FloatArgumentRegisters))
 
-#define CallDescrData__pSrc                0x00
-#define CallDescrData__numStackSlots       0x08
-#define CallDescrData__pArgumentRegisters  0x10
-#define CallDescrData__pFloatArgumentRegisters 0x18
-#define CallDescrData__fpReturnSize        0x20
-#define CallDescrData__pTarget             0x28
-#define CallDescrData__returnValue         0x30
+#define CallDescrData__pSrc                     0x00
+#define CallDescrData__numStackSlots            0x08
+#define CallDescrData__pArgumentRegisters       0x10
+#define CallDescrData__pFloatArgumentRegisters  0x18
+#define CallDescrData__fpReturnSize             0x20
+#define CallDescrData__pTarget                  0x28
+#define CallDescrData__pRetBuffArg              0x30
+#define CallDescrData__returnValue              0x38
 
 ASMCONSTANTS_C_ASSERT(CallDescrData__pSrc                 == offsetof(CallDescrData, pSrc))
 ASMCONSTANTS_C_ASSERT(CallDescrData__numStackSlots        == offsetof(CallDescrData, numStackSlots))
@@ -75,6 +76,7 @@ ASMCONSTANTS_C_ASSERT(CallDescrData__pArgumentRegisters   == offsetof(CallDescrD
 ASMCONSTANTS_C_ASSERT(CallDescrData__pFloatArgumentRegisters == offsetof(CallDescrData, pFloatArgumentRegisters))
 ASMCONSTANTS_C_ASSERT(CallDescrData__fpReturnSize         == offsetof(CallDescrData, fpReturnSize))
 ASMCONSTANTS_C_ASSERT(CallDescrData__pTarget              == offsetof(CallDescrData, pTarget))
+ASMCONSTANTS_C_ASSERT(CallDescrData__pRetBuffArg          == offsetof(CallDescrData, pRetBuffArg))
 ASMCONSTANTS_C_ASSERT(CallDescrData__returnValue          == offsetof(CallDescrData, returnValue))
 
 #define                  CORINFO_NullReferenceException_ASM 0

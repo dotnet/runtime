@@ -62,15 +62,18 @@ Ldonestack
         ldp     d6, d7, [x9, #48]
 LNoFloatingPoint
 
-        ;; Copy [pArgumentRegisters, ..., pArgumentRegisters + 64]
-        ;; into x0, ..., x7, x8
+        ;; Copy [pArgumentRegisters, ..., pArgumentRegisters + 56]
+        ;; into x0, ..., x7
 
         ldr     x9, [x19,#CallDescrData__pArgumentRegisters]
         ldp     x0, x1, [x9]
         ldp     x2, x3, [x9, #16]
         ldp     x4, x5, [x9, #32]
         ldp     x6, x7, [x9, #48]
-        ldr     x8, [x9, #64]
+
+        ;; Copy pRetBuffArg into x8
+        ldr     x9, [x19,#CallDescrData__pRetBuffArg]
+        ldr     x8, [x9]
 
         ;; call pTarget
         ldr     x9, [x19,#CallDescrData__pTarget]
