@@ -276,6 +276,10 @@
                 {
                     "name": "System.Security.Cryptography.X509Certificates.Tests.LoadFromFileTests.TestSerial",
                     "reason": "Expected: B00000000100DD9F3BD08B0AAF11B000000033\r\nActual: 33000000B011AF0A8BD03B9FDD0001000000B0\r\n"
+                },
+                {
+                    "name": "System.Security.Cryptography.X509Certificates.Tests.CertificateCreation.CertificateRequestUsageTests.InvalidSignatureAlgorithmEncoding",
+                    "reason": "outdated"
                 }
             ]
         }
@@ -501,6 +505,20 @@
                 },
                 {
                     "name": "Microsoft.VisualBasic.Tests.StringsTests.AscW_NullOrEmpty_ThrowsArgumentException",
+                    "reason": "outdated"
+                }
+            ]
+        }
+    },
+    {
+        "name": "System.Net.Security.Tests",
+        "enabled": true,
+        "exclusions": {
+            "namespaces": null,
+            "classes": null,
+            "methods": [
+                {
+                    "name": "System.Net.Security.Tests.NegotiateStreamStreamToStreamTest_BeginEnd.NegotiateStream_StreamToStream_Successive_ClientWrite_Sync_Success",
                     "reason": "outdated"
                 }
             ]
