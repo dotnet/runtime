@@ -558,7 +558,7 @@ worker_try_create (void)
 		counter._.starting ++;
 	});
 
-	thread = mono_thread_create_internal (mono_get_root_domain (), worker_thread, NULL, MONO_THREAD_CREATE_FLAGS_THREADPOOL, error);
+	thread = mono_thread_create_internal (mono_get_root_domain (), (gpointer)worker_thread, NULL, MONO_THREAD_CREATE_FLAGS_THREADPOOL, error);
 	if (!thread) {
 		mono_trace (G_LOG_LEVEL_DEBUG, MONO_TRACE_THREADPOOL, "[%p] try create worker, failed: could not create thread due to %s",
 			GUINT_TO_POINTER (MONO_NATIVE_THREAD_ID_TO_UINT (mono_native_thread_id_get ())), mono_error_get_message (error));
@@ -787,7 +787,7 @@ monitor_ensure_running (void)
 				return;
 			if (mono_atomic_cas_i32 (&worker.monitor_status, MONITOR_STATUS_REQUESTED, MONITOR_STATUS_NOT_RUNNING) == MONITOR_STATUS_NOT_RUNNING) {
 				// printf ("monitor_thread: creating\n");
-				if (!mono_thread_create_internal (mono_get_root_domain (), monitor_thread, NULL, MONO_THREAD_CREATE_FLAGS_THREADPOOL | MONO_THREAD_CREATE_FLAGS_SMALL_STACK, error)) {
+				if (!mono_thread_create_internal (mono_get_root_domain (), (gpointer)monitor_thread, NULL, (MonoThreadCreateFlags)(MONO_THREAD_CREATE_FLAGS_THREADPOOL | MONO_THREAD_CREATE_FLAGS_SMALL_STACK), error)) {
 					// printf ("monitor_thread: creating failed\n");
 					worker.monitor_status = MONITOR_STATUS_NOT_RUNNING;
 					mono_error_cleanup (error);
