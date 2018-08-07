@@ -7259,6 +7259,22 @@ HRESULT DacDbiInterfaceImpl::GetMDStructuresVersion(ULONG32* pMDStructuresVersio
     return S_OK;
 }
 
+HRESULT DacDbiInterfaceImpl::EnableGCNotificationEvents(BOOL fEnable)
+{
+    DD_ENTER_MAY_THROW
+
+    HRESULT hr = S_OK;
+    EX_TRY
+    {
+        if (g_pDebugger != NULL)
+        {
+            TADDR addr = PTR_HOST_MEMBER_TADDR(Debugger, g_pDebugger, m_isGarbageCollectionEventsEnabled);
+            SafeWriteStructOrThrow<BOOL>(addr, &fEnable);
+        }
+    }
+    EX_CATCH_HRESULT(hr);
+    return hr;
+}
 
 DacRefWalker::DacRefWalker(ClrDataAccess *dac, BOOL walkStacks, BOOL walkFQ, UINT32 handleMask)
     : mDac(dac), mWalkStacks(walkStacks), mWalkFQ(walkFQ), mHandleMask(handleMask), mStackWalker(NULL),

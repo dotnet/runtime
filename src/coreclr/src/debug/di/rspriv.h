@@ -3139,6 +3139,7 @@ public:
     // ICorDebugProcess10
     //-----------------------------------------------------------
     COM_METHOD GetContainingObject(CORDB_ADDRESS interiorPointer, ICorDebugObjectValue** ppContainingObject);
+    COM_METHOD EnableGCNotificationEvents(BOOL fEnable);
 
 #ifdef FEATURE_LEGACYNETCF_DBG_HOST_CONTROL
     // ---------------------------------------------------------------

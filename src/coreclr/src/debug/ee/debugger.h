@@ -2958,6 +2958,7 @@ public:
     virtual void AfterGarbageCollection();
 #endif
     BOOL m_isBlockedOnGarbageCollectionEvent;
+    BOOL m_isGarbageCollectionEventsEnabled;
 private:
     HANDLE GetGarbageCollectionBlockerEvent() { return  GetLazyData()->m_garbageCollectionBlockerEvent; }
 
