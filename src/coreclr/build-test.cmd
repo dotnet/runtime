@@ -335,6 +335,15 @@ for /l %%G in (1, 1, %__BuildLoopCount%) do (
     set __AppendToLog=true
 )
 
+REM Check that we've built about as many tests as we expect. This is primarily intended to prevent accidental changes that cause us to build
+REM drastically fewer Pri-1 tests than expected.
+echo %__MsgPrefix%Check the managed tests build
+call %__DotnetHost% msbuild %__ProjectDir%\tests\runtest.proj /t:CheckTestBuild /p:CLRTestPriorityToBuild=%__Priority% %__msbuildArgs% %__unprocessedBuildArgs%
+if errorlevel 1 (
+    echo %__MsgPrefix%Error: build failed.
+    exit /b 1
+)
+
 :SkipManagedBuild
 
 REM =========================================================================================
