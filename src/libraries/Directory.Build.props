@@ -241,6 +241,8 @@
   <!-- Language configuration -->
   <PropertyGroup>
     <LangVersion>latest</LangVersion> <!-- default to allowing all language features -->
+    <!-- Enables Strict mode for Roslyn compiler -->
+    <Features>strict</Features>
     <WarningLevel>4</WarningLevel>
     <TreatWarningsAsErrors>true</TreatWarningsAsErrors>
   </PropertyGroup>

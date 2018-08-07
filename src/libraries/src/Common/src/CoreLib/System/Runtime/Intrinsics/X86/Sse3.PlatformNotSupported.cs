@@ -11,10 +11,12 @@ namespace System.Runtime.Intrinsics.X86
     /// This class provides access to Intel SSE3 hardware instructions via intrinsics
     /// </summary>
     [CLSCompliant(false)]
-    public static class Sse3
+    public abstract class Sse3 : Sse2
     {
-        public static bool IsSupported { get { return false; } }
-        
+        internal Sse3() { }
+
+        public new static bool IsSupported { get { return false; } }
+
         /// <summary>
         /// __m128 _mm_addsub_ps (__m128 a, __m128 b)
         ///   ADDSUBPS xmm, xmm/m128

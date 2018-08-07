@@ -11,8 +11,10 @@ namespace System.Runtime.Intrinsics.X86
     /// This class provides access to Intel BMI2 hardware instructions via intrinsics
     /// </summary>
     [CLSCompliant(false)]
-    public static class Bmi2
+    public abstract class Bmi2
     {
+        internal Bmi2() { }
+
         public static bool IsSupported { get => IsSupported; }
 
         /// <summary>

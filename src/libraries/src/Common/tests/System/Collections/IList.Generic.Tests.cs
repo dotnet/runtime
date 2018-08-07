@@ -37,27 +37,26 @@ namespace System.Collections.Tests
         /// <summary>
         /// Returns a set of ModifyEnumerable delegates that modify the enumerable passed to them.
         /// </summary>
-        protected override IEnumerable<ModifyEnumerable> ModifyEnumerables
+        protected override IEnumerable<ModifyEnumerable> GetModifyEnumerables(ModifyOperation operations)
         {
-            get
+            foreach (var item in base.GetModifyEnumerables(operations))
+                yield return item;
+
+            if (!AddRemoveClear_ThrowsNotSupported && (operations & ModifyOperation.Insert) == ModifyOperation.Insert)
             {
-                foreach (var item in base.ModifyEnumerables)
-                    yield return item;
-
-                if (!AddRemoveClear_ThrowsNotSupported)
+                yield return (IEnumerable<T> enumerable) =>
                 {
-                    yield return (IEnumerable<T> enumerable) =>
+                    IList<T> casted = ((IList<T>)enumerable);
+                    if (casted.Count > 0)
                     {
-                        IList<T> casted = ((IList<T>)enumerable);
-                        if (casted.Count > 0)
-                        {
-                            casted.Insert(0, CreateT(12));
-                            return true;
-                        }
-                        return false;
-                    };
-                }
-
+                        casted.Insert(0, CreateT(12));
+                        return true;
+                    }
+                    return false;
+                };
+            }
+            if ((operations & ModifyOperation.Insert) == ModifyOperation.Insert)
+            {
                 yield return (IEnumerable<T> enumerable) =>
                 {
                     IList<T> casted = ((IList<T>)enumerable);
@@ -68,20 +67,19 @@ namespace System.Collections.Tests
                     }
                     return false;
                 };
-
-                if (!AddRemoveClear_ThrowsNotSupported)
+            }
+            if (!AddRemoveClear_ThrowsNotSupported && (operations & ModifyOperation.Remove) == ModifyOperation.Remove)
+            {
+                yield return (IEnumerable<T> enumerable) =>
                 {
-                    yield return (IEnumerable<T> enumerable) =>
+                    IList<T> casted = ((IList<T>)enumerable);
+                    if (casted.Count > 0)
                     {
-                        IList<T> casted = ((IList<T>)enumerable);
-                        if (casted.Count > 0)
-                        {
-                            casted.RemoveAt(0);
-                            return true;
-                        }
-                        return false;
-                    };
-                }
+                        casted.RemoveAt(0);
+                        return true;
+                    }
+                    return false;
+                };
             }
         }
 

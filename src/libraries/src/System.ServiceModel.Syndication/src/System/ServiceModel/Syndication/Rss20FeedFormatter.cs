@@ -16,7 +16,6 @@ namespace System.ServiceModel.Syndication
     using System.Xml;
     using System.Xml.Schema;
     using System.Xml.Serialization;
-    using DiagnosticUtility = System.ServiceModel.DiagnosticUtility;
     using System.Runtime.CompilerServices;
 
     [XmlRoot(ElementName = Rss20Constants.RssTag, Namespace = Rss20Constants.Rss20Namespace)]
@@ -46,14 +45,14 @@ namespace System.ServiceModel.Syndication
         {
             if (feedTypeToCreate == null)
             {
-                throw DiagnosticUtility.ExceptionUtility.ThrowHelperArgumentNull(nameof(feedTypeToCreate));
+                throw new ArgumentNullException(nameof(feedTypeToCreate));
             }
             if (!typeof(SyndicationFeed).IsAssignableFrom(feedTypeToCreate))
             {
-                throw DiagnosticUtility.ExceptionUtility.ThrowHelperArgument(nameof(feedTypeToCreate),
-                    SR.Format(SR.InvalidObjectTypePassed, nameof(feedTypeToCreate), "SyndicationFeed"));
+                throw new ArgumentException(SR.Format(SR.InvalidObjectTypePassed, nameof(feedTypeToCreate), nameof(SyndicationFeed)), nameof(feedTypeToCreate));
             }
             _serializeExtensionsAsAtom = true;
+
             _maxExtensionSize = int.MaxValue;
             _preserveElementExtensions = true;
             _preserveAttributeExtensions = true;
@@ -118,8 +117,9 @@ namespace System.ServiceModel.Syndication
         {
             if (reader == null)
             {
-                throw DiagnosticUtility.ExceptionUtility.ThrowHelperArgumentNull(nameof(reader));
+                throw new ArgumentNullException(nameof(reader));
             }
+
             return reader.IsStartElement(Rss20Constants.RssTag, Rss20Constants.Rss20Namespace);
         }
 
@@ -134,9 +134,10 @@ namespace System.ServiceModel.Syndication
         {
             if (reader == null)
             {
-                throw DiagnosticUtility.ExceptionUtility.ThrowHelperArgumentNull(nameof(reader));
+                throw new ArgumentNullException(nameof(reader));
             }
             TraceFeedReadBegin();
+
             ReadFeed(reader);
             TraceFeedReadEnd();
         }
@@ -146,9 +147,10 @@ namespace System.ServiceModel.Syndication
         {
             if (writer == null)
             {
-                throw DiagnosticUtility.ExceptionUtility.ThrowHelperArgumentNull(nameof(writer));
+                throw new ArgumentNullException(nameof(writer));
             }
             TraceFeedWriteBegin();
+
             WriteFeed(writer);
             TraceFeedWriteEnd();
         }
@@ -158,8 +160,9 @@ namespace System.ServiceModel.Syndication
             TraceFeedReadBegin();
             if (!CanRead(reader))
             {
-                throw DiagnosticUtility.ExceptionUtility.ThrowHelperError(new XmlException(SR.Format(SR.UnknownFeedXml, reader.LocalName, reader.NamespaceURI)));
+                throw new XmlException(SR.Format(SR.UnknownFeedXml, reader.LocalName, reader.NamespaceURI));
             }
+
             ReadFeed(reader);
             TraceFeedReadEnd();
         }
@@ -168,9 +171,10 @@ namespace System.ServiceModel.Syndication
         {
             if (writer == null)
             {
-                throw DiagnosticUtility.ExceptionUtility.ThrowHelperArgumentNull(nameof(writer));
+                throw new ArgumentNullException(nameof(writer));
             }
             TraceFeedWriteBegin();
+
             writer.WriteStartElement(Rss20Constants.RssTag, Rss20Constants.Rss20Namespace);
             WriteFeed(writer);
             writer.WriteEndElement();
@@ -206,12 +210,13 @@ namespace System.ServiceModel.Syndication
         {
             if (feed == null)
             {
-                throw DiagnosticUtility.ExceptionUtility.ThrowHelperArgumentNull(nameof(feed));
+                throw new ArgumentNullException(nameof(feed));
             }
             if (reader == null)
             {
-                throw DiagnosticUtility.ExceptionUtility.ThrowHelperArgumentNull(nameof(reader));
+                throw new ArgumentNullException(nameof(reader));
             }
+
             SyndicationItem item = CreateItem(feed);
             TraceItemReadBegin();
             ReadItemFrom(reader, item, feed.BaseUri);
@@ -224,12 +229,13 @@ namespace System.ServiceModel.Syndication
         {
             if (feed == null)
             {
-                throw DiagnosticUtility.ExceptionUtility.ThrowHelperArgumentNull(nameof(feed));
+                throw new ArgumentNullException(nameof(feed));
             }
             if (reader == null)
             {
-                throw DiagnosticUtility.ExceptionUtility.ThrowHelperArgumentNull(nameof(reader));
+                throw new ArgumentNullException(nameof(reader));
             }
+
             NullNotAllowedCollection<SyndicationItem> items = new NullNotAllowedCollection<SyndicationItem>();
             while (reader.IsStartElement(Rss20Constants.ItemTag, Rss20Constants.Rss20Namespace))
             {
@@ -562,11 +568,11 @@ namespace System.ServiceModel.Syndication
             }
             catch (FormatException e)
             {
-                throw DiagnosticUtility.ExceptionUtility.ThrowHelperError(new XmlException(FeedUtils.AddLineInfo(reader, SR.ErrorParsingItem), e));
+                throw new XmlException(FeedUtils.AddLineInfo(reader, SR.ErrorParsingItem), e);
             }
             catch (ArgumentException e)
             {
-                throw DiagnosticUtility.ExceptionUtility.ThrowHelperError(new XmlException(FeedUtils.AddLineInfo(reader, SR.ErrorParsingItem), e));
+                throw new XmlException(FeedUtils.AddLineInfo(reader, SR.ErrorParsingItem), e);
             }
         }
 
@@ -688,7 +694,7 @@ namespace System.ServiceModel.Syndication
                 string version = reader.GetAttribute(Rss20Constants.VersionTag, Rss20Constants.Rss20Namespace);
                 if (version != Rss20Constants.Version)
                 {
-                    throw DiagnosticUtility.ExceptionUtility.ThrowHelperError(new NotSupportedException(FeedUtils.AddLineInfo(reader, (SR.Format(SR.UnsupportedRssVersion, version)))));
+                    throw new NotSupportedException(FeedUtils.AddLineInfo(reader, (SR.Format(SR.UnsupportedRssVersion, version))));
                 }
                 if (reader.AttributeCount > 1)
                 {
@@ -882,11 +888,11 @@ namespace System.ServiceModel.Syndication
             }
             catch (FormatException e)
             {
-                throw DiagnosticUtility.ExceptionUtility.ThrowHelperError(new XmlException(FeedUtils.AddLineInfo(reader, SR.ErrorParsingFeed), e));
+                throw new XmlException(FeedUtils.AddLineInfo(reader, SR.ErrorParsingFeed), e);
             }
             catch (ArgumentException e)
             {
-                throw DiagnosticUtility.ExceptionUtility.ThrowHelperError(new XmlException(FeedUtils.AddLineInfo(reader, SR.ErrorParsingFeed), e));
+                throw new XmlException(FeedUtils.AddLineInfo(reader, SR.ErrorParsingFeed), e);
             }
         }
 
@@ -923,9 +929,10 @@ namespace System.ServiceModel.Syndication
         {
             if (this.Feed == null)
             {
-                throw DiagnosticUtility.ExceptionUtility.ThrowHelperError(new InvalidOperationException(SR.Format(SR.FeedFormatterDoesNotHaveFeed)));
+                throw new InvalidOperationException(SR.FeedFormatterDoesNotHaveFeed);
             }
             if (_serializeExtensionsAsAtom)
+
             {
                 writer.WriteAttributeString("xmlns", Atom10Constants.Atom10Prefix, null, Atom10Constants.Atom10Namespace);
             }

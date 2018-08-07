@@ -29,6 +29,7 @@ namespace System.IO.Pipelines
             _canceledState = CanceledState.NotCanceled;
             _completion = completed ? s_awaitableIsCompleted : s_awaitableIsNotCompleted;
             _completionState = null;
+            _cancellationToken = CancellationToken.None;
             _cancellationTokenRegistration = default;
             _synchronizationContext = null;
             _executionContext = null;

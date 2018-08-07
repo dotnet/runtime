@@ -19,13 +19,10 @@ namespace System.ServiceModel.Syndication
         protected CategoriesDocumentFormatter()
         {
         }
+
         protected CategoriesDocumentFormatter(CategoriesDocument documentToWrite)
         {
-            if (documentToWrite == null)
-            {
-                throw DiagnosticUtility.ExceptionUtility.ThrowHelperArgumentNull(nameof(documentToWrite));
-            }
-            _document = documentToWrite;
+            _document = documentToWrite ?? throw new ArgumentNullException(nameof(documentToWrite));
         }
 
         public CategoriesDocument Document

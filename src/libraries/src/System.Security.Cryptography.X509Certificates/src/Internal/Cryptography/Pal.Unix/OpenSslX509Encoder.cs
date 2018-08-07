@@ -14,16 +14,16 @@ namespace Internal.Cryptography.Pal
     {
         public AsymmetricAlgorithm DecodePublicKey(Oid oid, byte[] encodedKeyValue, byte[] encodedParameters, ICertificatePal certificatePal)
         {
-            if (oid.Value == Oids.Ecc && certificatePal != null)
+            if (oid.Value == Oids.EcPublicKey && certificatePal != null)
             {
                 return ((OpenSslX509CertificateReader)certificatePal).GetECDsaPublicKey();
             }
 
             switch (oid.Value)
             {
-                case Oids.RsaRsa:
+                case Oids.Rsa:
                     return BuildRsaPublicKey(encodedKeyValue);
-                case Oids.DsaDsa:
+                case Oids.Dsa:
                     return BuildDsaPublicKey(encodedKeyValue, encodedParameters);
             }
 
@@ -55,8 +55,8 @@ namespace Internal.Cryptography.Pal
             {
                 ICertificatePal certPal;
 
-                if (CertificatePal.TryReadX509Der(rawData, out certPal) ||
-                    CertificatePal.TryReadX509Pem(rawData, out certPal))
+                if (OpenSslX509CertificateReader.TryReadX509Der(rawData, out certPal) ||
+                    OpenSslX509CertificateReader.TryReadX509Pem(rawData, out certPal))
                 {
                     certPal.Dispose();
 
@@ -98,23 +98,23 @@ namespace Internal.Cryptography.Pal
                 {
                     ICertificatePal certPal;
 
-                    if (CertificatePal.TryReadX509Der(fileBio, out certPal))
+                    if (OpenSslX509CertificateReader.TryReadX509Der(fileBio, out certPal))
                     {
                         certPal.Dispose();
 
                         return X509ContentType.Cert;
                     }
 
-                    CertificatePal.RewindBio(fileBio, bioPosition);
+                    OpenSslX509CertificateReader.RewindBio(fileBio, bioPosition);
 
-                    if (CertificatePal.TryReadX509Pem(fileBio, out certPal))
+                    if (OpenSslX509CertificateReader.TryReadX509Pem(fileBio, out certPal))
                     {
                         certPal.Dispose();
 
                         return X509ContentType.Cert;
                     }
 
-                    CertificatePal.RewindBio(fileBio, bioPosition);
+                    OpenSslX509CertificateReader.RewindBio(fileBio, bioPosition);
                 }
 
                 // X509ContentType.Pkcs7
@@ -124,14 +124,14 @@ namespace Internal.Cryptography.Pal
                         return X509ContentType.Pkcs7;
                     }
 
-                    CertificatePal.RewindBio(fileBio, bioPosition);
+                    OpenSslX509CertificateReader.RewindBio(fileBio, bioPosition);
 
                     if (PkcsFormatReader.IsPkcs7Pem(fileBio))
                     {
                         return X509ContentType.Pkcs7;
                     }
 
-                    CertificatePal.RewindBio(fileBio, bioPosition);
+                    OpenSslX509CertificateReader.RewindBio(fileBio, bioPosition);
                 }
 
                 // X509ContentType.Pkcs12 (aka PFX)
@@ -145,7 +145,7 @@ namespace Internal.Cryptography.Pal
                         return X509ContentType.Pkcs12;
                     }
 
-                    CertificatePal.RewindBio(fileBio, bioPosition);
+                    OpenSslX509CertificateReader.RewindBio(fileBio, bioPosition);
                 }
             }
 

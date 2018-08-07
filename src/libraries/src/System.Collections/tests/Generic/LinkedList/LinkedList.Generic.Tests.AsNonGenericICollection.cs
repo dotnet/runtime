@@ -28,9 +28,9 @@ namespace System.Collections.Tests
         /// <summary>
         /// Returns a set of ModifyEnumerable delegates that modify the enumerable passed to them.
         /// </summary>
-        protected override IEnumerable<ModifyEnumerable> ModifyEnumerables
+        protected override IEnumerable<ModifyEnumerable> GetModifyEnumerables(ModifyOperation operations)
         {
-            get
+            if ((operations & ModifyOperation.Add) == ModifyOperation.Add)
             {
                 yield return (IEnumerable enumerable) =>
                 {
@@ -44,6 +44,9 @@ namespace System.Collections.Tests
                     casted.AddLast(CreateT(4531));
                     return true;
                 };
+            }
+            if ((operations & ModifyOperation.Remove) == ModifyOperation.Remove)
+            {
                 yield return (IEnumerable enumerable) =>
                 {
                     LinkedList<string> casted = ((LinkedList<string>)enumerable);
@@ -64,6 +67,9 @@ namespace System.Collections.Tests
                     }
                     return false;
                 };
+            }
+            if ((operations & ModifyOperation.Clear) == ModifyOperation.Clear)
+            {
                 yield return (IEnumerable enumerable) =>
                 {
                     LinkedList<string> casted = ((LinkedList<string>)enumerable);

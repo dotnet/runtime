@@ -136,7 +136,7 @@ namespace System.Security.Cryptography.X509Certificates.Tests.CertificateCreatio
             string expectedHex =
                 // SEQUENCE (AlgorithmIdentifier)
                 "303D" +
-                    // OBJECT IDENTIFIER (AlgorithmIdentifier.algorithm == Oids.RsaSsaPss)
+                    // OBJECT IDENTIFIER (AlgorithmIdentifier.algorithm == Oids.RsaPss)
                     "06092A864886F70D01010A" +
                     // SEQUENCE (AlgorithmIdentifier.params == RSASSA-PSS-params)
                     "3030" +

@@ -1,7 +1,7 @@
 param (
-$targetFramework = "netcoreapp2.2",
-$runtimeVersion = "2.2.0-*",
-$refDirName = "netcoreapp22_compat",
+$targetFramework = "netcoreapp3.0",
+$runtimeVersion = "3.0.0-*",
+$refDirName = "netcoreapp30_compat",
 $rid = "win7-x64"
 )
 

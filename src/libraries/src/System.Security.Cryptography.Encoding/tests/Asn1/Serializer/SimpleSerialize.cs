@@ -4,6 +4,7 @@
 
 using System.Globalization;
 using System.Numerics;
+using System.Runtime.InteropServices;
 using System.Security.Cryptography.Asn1;
 using Test.Cryptography;
 using Xunit;
@@ -15,7 +16,7 @@ namespace System.Security.Cryptography.Tests.Asn1
         [Fact]
         public static void SerializeNullAlgorithmIdentifier()
         {
-            AlgorithmIdentifier identifier = new AlgorithmIdentifier
+            AlgorithmIdentifierAsn identifier = new AlgorithmIdentifierAsn
             {
                 Algorithm = new Oid(null, "SHA-2-256"),
                 Parameters = new byte[] { 5, 0 },
@@ -41,7 +42,7 @@ namespace System.Security.Cryptography.Tests.Asn1
         [Fact]
         public static void SerializeAlgorithmIdentifier()
         {
-            AlgorithmIdentifier identifier = new AlgorithmIdentifier
+            AlgorithmIdentifierAsn identifier = new AlgorithmIdentifierAsn
             {
                 Algorithm = new Oid("2.16.840.1.101.3.4.2.1", "SHA-2-256"),
                 Parameters = new byte[] { 5, 0 },
@@ -49,7 +50,6 @@ namespace System.Security.Cryptography.Tests.Asn1
 
             using (AsnWriter writer = AsnSerializer.Serialize(identifier, AsnEncodingRules.DER))
             {
-
                 const string ExpectedHex =
                     "300D" +
                         "0609608648016503040201" +
@@ -62,7 +62,7 @@ namespace System.Security.Cryptography.Tests.Asn1
         [Fact]
         public static void SerializeAlgorithmIdentifier_CER()
         {
-            AlgorithmIdentifier identifier = new AlgorithmIdentifier
+            AlgorithmIdentifierAsn identifier = new AlgorithmIdentifierAsn
             {
                 Algorithm = new Oid("2.16.840.1.101.3.4.2.1", "SHA-2-256"),
                 Parameters = new byte[] { 5, 0 },
@@ -276,7 +276,7 @@ namespace System.Security.Cryptography.Tests.Asn1
         {
             var hybrid = new FlexibleStringClassHybrid
             {
-                DirectoryString = new DirectoryString
+                DirectoryString = new DirectoryStringAsn
                 {
                     Utf8String = "Marco",
                 },
@@ -293,7 +293,7 @@ namespace System.Security.Cryptography.Tests.Asn1
         {
             var hybrid = new FlexibleStringClassHybrid
             {
-                DirectoryString = new DirectoryString
+                DirectoryString = new DirectoryStringAsn
                 {
                     BmpString = "Polo",
                 },
@@ -467,6 +467,33 @@ namespace System.Security.Cryptography.Tests.Asn1
             {
                 Assert.Equal("300A0202FEEF0204FEEDF00D", writer.EncodeAsSpan().ByteArrayToHex());
             }
+        }
+
+        [Theory]
+        [InlineData(0, "3000")]
+        [InlineData(1, "3005A003020101")]
+        public static void SerializeExplicitDefaultValue(int version, string expectedHex)
+        {
+            ExplicitDefaultAsn data = new ExplicitDefaultAsn { Version = version };
+            byte[] encoded;
+
+            using (AsnWriter writer = AsnSerializer.Serialize(data, AsnEncodingRules.DER))
+            {
+                encoded = writer.Encode();
+                Assert.Equal(expectedHex, encoded.ByteArrayToHex());
+            }
+
+            // Deserialize the data back.
+            data = AsnSerializer.Deserialize<ExplicitDefaultAsn>(encoded, AsnEncodingRules.DER);
+            Assert.Equal(version, data.Version);
+        }
+
+        [StructLayout(LayoutKind.Sequential)]
+        internal struct ExplicitDefaultAsn
+        {
+            [ExpectedTag(0, ExplicitTag = true)]
+            [DefaultValue(0x02, 0x01, 0x00)]
+            public int Version;
         }
     }
 }

@@ -11,10 +11,12 @@ namespace System.Runtime.Intrinsics.X86
     /// This class provides access to Intel AES hardware instructions via intrinsics
     /// </summary>
     [CLSCompliant(false)]
-    public static class Aes 
+    public abstract class Aes : Sse2
     {
-        public static bool IsSupported { get { return false; } }
-        
+        internal Aes() { }
+
+        public new static bool IsSupported { get { return false; } }
+
         /// <summary>
         /// __m128i _mm_aesdec_si128 (__m128i a, __m128i RoundKey)
         ///   AESDEC xmm, xmm/m128
