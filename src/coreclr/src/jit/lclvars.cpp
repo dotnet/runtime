@@ -2025,9 +2025,6 @@ void Compiler::lvaPromoteStructVar(unsigned lclNum, lvaStructPromotionInfo* Stru
                 fieldVarDsc->lvOtherArgReg = varDsc->lvOtherArgReg;
             }
 #endif // FEATURE_MULTIREG_ARGS && defined(FEATURE_SIMD)
-
-            fieldVarDsc->incRefCnts(BB_UNITY_WEIGHT, this,
-                                    RCS_EARLY); // increment the ref count for prolog initialization
         }
 #endif
 
@@ -3640,6 +3637,7 @@ var_types LclVarDsc::lvaArgType()
 //     tree - some node in a tree
 //     block - block that the tree node belongs to
 //     stmt - stmt that the tree node belongs to
+//     isRecompute - true if we should just recompute counts
 //
 // Notes:
 //     Invoked via the MarkLocalVarsVisitor
@@ -3664,7 +3662,7 @@ var_types LclVarDsc::lvaArgType()
 //     Verifies that local accesses are consistenly typed.
 //     Verifies that casts remain in bounds.
 
-void Compiler::lvaMarkLclRefs(GenTree* tree, BasicBlock* block, GenTreeStmt* stmt)
+void Compiler::lvaMarkLclRefs(GenTree* tree, BasicBlock* block, GenTreeStmt* stmt, bool isRecompute)
 {
     const BasicBlock::weight_t weight = block->getBBWeight(this);
 
@@ -3687,63 +3685,66 @@ void Compiler::lvaMarkLclRefs(GenTree* tree, BasicBlock* block, GenTreeStmt* stm
         }
     }
 
-    /* Is this an assigment? */
-
-    if (tree->OperIsAssignment())
+    if (!isRecompute)
     {
-        GenTree* op1 = tree->gtOp.gtOp1;
-        GenTree* op2 = tree->gtOp.gtOp2;
+        /* Is this an assigment? */
+
+        if (tree->OperIsAssignment())
+        {
+            GenTree* op1 = tree->gtOp.gtOp1;
+            GenTree* op2 = tree->gtOp.gtOp2;
 
 #if OPT_BOOL_OPS
 
-        /* Is this an assignment to a local variable? */
+            /* Is this an assignment to a local variable? */
 
-        if (op1->gtOper == GT_LCL_VAR && op2->gtType != TYP_BOOL)
-        {
-            /* Only simple assignments allowed for booleans */
-
-            if (tree->gtOper != GT_ASG)
+            if (op1->gtOper == GT_LCL_VAR && op2->gtType != TYP_BOOL)
             {
-                goto NOT_BOOL;
+                /* Only simple assignments allowed for booleans */
+
+                if (tree->gtOper != GT_ASG)
+                {
+                    goto NOT_BOOL;
+                }
+
+                /* Is the RHS clearly a boolean value? */
+
+                switch (op2->gtOper)
+                {
+                    unsigned lclNum;
+
+                    case GT_CNS_INT:
+
+                        if (op2->gtIntCon.gtIconVal == 0)
+                        {
+                            break;
+                        }
+                        if (op2->gtIntCon.gtIconVal == 1)
+                        {
+                            break;
+                        }
+
+                        // Not 0 or 1, fall through ....
+                        __fallthrough;
+
+                    default:
+
+                        if (op2->OperIsCompare())
+                        {
+                            break;
+                        }
+
+                    NOT_BOOL:
+
+                        lclNum = op1->gtLclVarCommon.gtLclNum;
+                        noway_assert(lclNum < lvaCount);
+
+                        lvaTable[lclNum].lvIsBoolean = false;
+                        break;
+                }
             }
-
-            /* Is the RHS clearly a boolean value? */
-
-            switch (op2->gtOper)
-            {
-                unsigned lclNum;
-
-                case GT_CNS_INT:
-
-                    if (op2->gtIntCon.gtIconVal == 0)
-                    {
-                        break;
-                    }
-                    if (op2->gtIntCon.gtIconVal == 1)
-                    {
-                        break;
-                    }
-
-                    // Not 0 or 1, fall through ....
-                    __fallthrough;
-
-                default:
-
-                    if (op2->OperIsCompare())
-                    {
-                        break;
-                    }
-
-                NOT_BOOL:
-
-                    lclNum = op1->gtLclVarCommon.gtLclNum;
-                    noway_assert(lclNum < lvaCount);
-
-                    lvaTable[lclNum].lvIsBoolean = false;
-                    break;
-            }
-        }
 #endif
+        }
     }
 
     if ((tree->gtOper != GT_LCL_VAR) && (tree->gtOper != GT_LCL_FLD))
@@ -3763,107 +3764,110 @@ void Compiler::lvaMarkLclRefs(GenTree* tree, BasicBlock* block, GenTreeStmt* stm
 
     varDsc->incRefCnts(weight, this);
 
-    if (lvaVarAddrExposed(lclNum))
+    if (!isRecompute)
     {
-        varDsc->lvIsBoolean = false;
-    }
-
-    if (tree->gtOper == GT_LCL_FLD)
-    {
-#if ASSERTION_PROP
-        // variables that have uses inside a GT_LCL_FLD
-        // cause problems, so we will disqualify them here
-        varDsc->lvaDisqualifyVar();
-#endif // ASSERTION_PROP
-        return;
-    }
-
-#if ASSERTION_PROP
-    if (fgDomsComputed && IsDominatedByExceptionalEntry(block))
-    {
-        SetVolatileHint(varDsc);
-    }
-
-    /* Record if the variable has a single def or not */
-
-    if (!varDsc->lvDisqualify) // If this variable is already disqualified we can skip this
-    {
-        if (tree->gtFlags & GTF_VAR_DEF) // Is this is a def of our variable
+        if (lvaVarAddrExposed(lclNum))
         {
-            /*
-               If we have one of these cases:
-                   1.    We have already seen a definition (i.e lvSingleDef is true)
-                   2. or info.CompInitMem is true (thus this would be the second definition)
-                   3. or we have an assignment inside QMARK-COLON trees
-                   4. or we have an update form of assignment (i.e. +=, -=, *=)
-               Then we must disqualify this variable for use in optAddCopies()
+            varDsc->lvIsBoolean = false;
+        }
 
-               Note that all parameters start out with lvSingleDef set to true
-            */
-            if ((varDsc->lvSingleDef == true) || (info.compInitMem == true) || (tree->gtFlags & GTF_COLON_COND) ||
-                (tree->gtFlags & GTF_VAR_USEASG))
+        if (tree->gtOper == GT_LCL_FLD)
+        {
+#if ASSERTION_PROP
+            // variables that have uses inside a GT_LCL_FLD
+            // cause problems, so we will disqualify them here
+            varDsc->lvaDisqualifyVar();
+#endif // ASSERTION_PROP
+            return;
+        }
+
+#if ASSERTION_PROP
+        if (fgDomsComputed && IsDominatedByExceptionalEntry(block))
+        {
+            SetVolatileHint(varDsc);
+        }
+
+        /* Record if the variable has a single def or not */
+
+        if (!varDsc->lvDisqualify) // If this variable is already disqualified we can skip this
+        {
+            if (tree->gtFlags & GTF_VAR_DEF) // Is this is a def of our variable
             {
-                varDsc->lvaDisqualifyVar();
+                /*
+                   If we have one of these cases:
+                       1.    We have already seen a definition (i.e lvSingleDef is true)
+                       2. or info.CompInitMem is true (thus this would be the second definition)
+                       3. or we have an assignment inside QMARK-COLON trees
+                       4. or we have an update form of assignment (i.e. +=, -=, *=)
+                   Then we must disqualify this variable for use in optAddCopies()
+
+                   Note that all parameters start out with lvSingleDef set to true
+                */
+                if ((varDsc->lvSingleDef == true) || (info.compInitMem == true) || (tree->gtFlags & GTF_COLON_COND) ||
+                    (tree->gtFlags & GTF_VAR_USEASG))
+                {
+                    varDsc->lvaDisqualifyVar();
+                }
+                else
+                {
+                    varDsc->lvSingleDef = true;
+                    varDsc->lvDefStmt   = stmt;
+                }
             }
-            else
+            else // otherwise this is a ref of our variable
             {
-                varDsc->lvSingleDef = true;
-                varDsc->lvDefStmt   = stmt;
+                if (BlockSetOps::MayBeUninit(varDsc->lvRefBlks))
+                {
+                    // Lazy initialization
+                    BlockSetOps::AssignNoCopy(this, varDsc->lvRefBlks, BlockSetOps::MakeEmpty(this));
+                }
+                BlockSetOps::AddElemD(this, varDsc->lvRefBlks, block->bbNum);
             }
         }
-        else // otherwise this is a ref of our variable
-        {
-            if (BlockSetOps::MayBeUninit(varDsc->lvRefBlks))
-            {
-                // Lazy initialization
-                BlockSetOps::AssignNoCopy(this, varDsc->lvRefBlks, BlockSetOps::MakeEmpty(this));
-            }
-            BlockSetOps::AddElemD(this, varDsc->lvRefBlks, block->bbNum);
-        }
-    }
 #endif // ASSERTION_PROP
 
-    bool allowStructs = false;
+        bool allowStructs = false;
 #ifdef UNIX_AMD64_ABI
-    // On System V the type of the var could be a struct type.
-    allowStructs = varTypeIsStruct(varDsc);
+        // On System V the type of the var could be a struct type.
+        allowStructs = varTypeIsStruct(varDsc);
 #endif // UNIX_AMD64_ABI
 
-    /* Variables must be used as the same type throughout the method */
-    noway_assert(tiVerificationNeeded || varDsc->lvType == TYP_UNDEF || tree->gtType == TYP_UNKNOWN || allowStructs ||
-                 genActualType(varDsc->TypeGet()) == genActualType(tree->gtType) ||
-                 (tree->gtType == TYP_BYREF && varDsc->TypeGet() == TYP_I_IMPL) ||
-                 (tree->gtType == TYP_I_IMPL && varDsc->TypeGet() == TYP_BYREF) || (tree->gtFlags & GTF_VAR_CAST) ||
-                 varTypeIsFloating(varDsc->TypeGet()) && varTypeIsFloating(tree->gtType));
+        /* Variables must be used as the same type throughout the method */
+        noway_assert(tiVerificationNeeded || varDsc->lvType == TYP_UNDEF || tree->gtType == TYP_UNKNOWN ||
+                     allowStructs || genActualType(varDsc->TypeGet()) == genActualType(tree->gtType) ||
+                     (tree->gtType == TYP_BYREF && varDsc->TypeGet() == TYP_I_IMPL) ||
+                     (tree->gtType == TYP_I_IMPL && varDsc->TypeGet() == TYP_BYREF) || (tree->gtFlags & GTF_VAR_CAST) ||
+                     varTypeIsFloating(varDsc->TypeGet()) && varTypeIsFloating(tree->gtType));
 
-    /* Remember the type of the reference */
+        /* Remember the type of the reference */
 
-    if (tree->gtType == TYP_UNKNOWN || varDsc->lvType == TYP_UNDEF)
-    {
-        varDsc->lvType = tree->gtType;
-        noway_assert(genActualType(varDsc->TypeGet()) == tree->gtType); // no truncation
-    }
+        if (tree->gtType == TYP_UNKNOWN || varDsc->lvType == TYP_UNDEF)
+        {
+            varDsc->lvType = tree->gtType;
+            noway_assert(genActualType(varDsc->TypeGet()) == tree->gtType); // no truncation
+        }
 
 #ifdef DEBUG
-    if (tree->gtFlags & GTF_VAR_CAST)
-    {
-        // it should never be bigger than the variable slot
-
-        // Trees don't store the full information about structs
-        // so we can't check them.
-        if (tree->TypeGet() != TYP_STRUCT)
+        if (tree->gtFlags & GTF_VAR_CAST)
         {
-            unsigned treeSize = genTypeSize(tree->TypeGet());
-            unsigned varSize  = genTypeSize(varDsc->TypeGet());
-            if (varDsc->TypeGet() == TYP_STRUCT)
-            {
-                varSize = varDsc->lvSize();
-            }
+            // it should never be bigger than the variable slot
 
-            assert(treeSize <= varSize);
+            // Trees don't store the full information about structs
+            // so we can't check them.
+            if (tree->TypeGet() != TYP_STRUCT)
+            {
+                unsigned treeSize = genTypeSize(tree->TypeGet());
+                unsigned varSize  = genTypeSize(varDsc->TypeGet());
+                if (varDsc->TypeGet() == TYP_STRUCT)
+                {
+                    varSize = varDsc->lvSize();
+                }
+
+                assert(treeSize <= varSize);
+            }
         }
-    }
 #endif
+    }
 }
 
 //------------------------------------------------------------------------
@@ -3894,18 +3898,20 @@ void Compiler::SetVolatileHint(LclVarDsc* varDsc)
 //
 // Arguments:
 //    block - the block in question
+//    isRecompute - true if counts are being recomputed
 //
 // Notes:
 //    Invokes lvaMarkLclRefs on each tree node for each
 //    statement in the block.
 
-void Compiler::lvaMarkLocalVars(BasicBlock* block)
+void Compiler::lvaMarkLocalVars(BasicBlock* block, bool isRecompute)
 {
     class MarkLocalVarsVisitor final : public GenTreeVisitor<MarkLocalVarsVisitor>
     {
     private:
         BasicBlock*  m_block;
         GenTreeStmt* m_stmt;
+        bool         m_isRecompute;
 
     public:
         enum
@@ -3913,24 +3919,24 @@ void Compiler::lvaMarkLocalVars(BasicBlock* block)
             DoPreOrder = true,
         };
 
-        MarkLocalVarsVisitor(Compiler* compiler, BasicBlock* block, GenTreeStmt* stmt)
-            : GenTreeVisitor<MarkLocalVarsVisitor>(compiler), m_block(block), m_stmt(stmt)
+        MarkLocalVarsVisitor(Compiler* compiler, BasicBlock* block, GenTreeStmt* stmt, bool isRecompute)
+            : GenTreeVisitor<MarkLocalVarsVisitor>(compiler), m_block(block), m_stmt(stmt), m_isRecompute(isRecompute)
         {
         }
 
         Compiler::fgWalkResult PreOrderVisit(GenTree** use, GenTree* user)
         {
-            m_compiler->lvaMarkLclRefs(*use, m_block, m_stmt);
+            m_compiler->lvaMarkLclRefs(*use, m_block, m_stmt, m_isRecompute);
             return WALK_CONTINUE;
         }
     };
 
-    JITDUMP("\n*** marking local variables in block BB%02u (weight=%s)\n", block->bbNum,
-            refCntWtd2str(block->getBBWeight(this)));
+    JITDUMP("\n*** %s local variables in block BB%02u (weight=%s)\n", block->bbNum,
+            isRecompute ? "recomputing" : "marking", refCntWtd2str(block->getBBWeight(this)));
 
     for (GenTreeStmt* stmt = block->FirstNonPhiDef(); stmt != nullptr; stmt = stmt->getNextStmt())
     {
-        MarkLocalVarsVisitor visitor(this, block, stmt);
+        MarkLocalVarsVisitor visitor(this, block, stmt, isRecompute);
         DISPTREE(stmt);
         visitor.WalkTree(&stmt->gtStmtExpr, nullptr);
     }
@@ -4060,36 +4066,8 @@ void Compiler::lvaMarkLocalVars()
         return;
     }
 
-    // Slower path for optimization.
-    if (setSlotNumbers)
-    {
-        for (lclNum = 0, varDsc = lvaTable; lclNum < lvaCount; lclNum++, varDsc++)
-        {
-            varDsc->lvSlotNum = lclNum;
-        }
-    }
-
-    // Mark all explicit local variable references
-    for (BasicBlock* block = fgFirstBB; block; block = block->bbNext)
-    {
-        lvaMarkLocalVars(block);
-    }
-
-    // Bump ref counts for implicit prolog references
-    for (lclNum = 0, varDsc = lvaTable; lclNum < lvaCount; lclNum++, varDsc++)
-    {
-        if (lclNum >= info.compArgsCount)
-        {
-            break; // early exit for loop
-        }
-
-        if ((varDsc->lvIsRegArg) && (varDsc->lvRefCnt() > 0))
-        {
-            // Fix 388376 ARM JitStress WP7
-            varDsc->incRefCnts(BB_UNITY_WEIGHT, this);
-            varDsc->incRefCnts(BB_UNITY_WEIGHT, this);
-        }
-    }
+    const bool isRecompute = false;
+    lvaComputeRefCounts(isRecompute, setSlotNumbers);
 
 #if ASSERTION_PROP
     assert(!opts.MinOpts() && !opts.compDbgCode);
@@ -4111,6 +4089,68 @@ void Compiler::lvaMarkLocalVars()
     }
 
     lvaSortByRefCount();
+}
+
+//------------------------------------------------------------------------
+// lvaComputeRefCounts: compute ref counts for locals
+//
+// Arguments:
+//    isRecompute -- true if we just want ref counts and no other side effects;
+//                   false means to also look for true boolean locals, lay
+//                   groundwork for assertion prop, check type consistency, etc.
+//                   See lvaMarkLclRefs for details on what else goes on.
+//    setSlotNumbers -- true if local slot numbers should be assigned.
+//
+// Notes:
+//    Some implicit references are given actual counts or weight bumps here
+//    to match pre-existing behavior.
+
+void Compiler::lvaComputeRefCounts(bool isRecompute, bool setSlotNumbers)
+{
+    unsigned   lclNum = 0;
+    LclVarDsc* varDsc = nullptr;
+
+    // Reset all explicit ref counts and weights.
+    for (lclNum = 0, varDsc = lvaTable; lclNum < lvaCount; lclNum++, varDsc++)
+    {
+        varDsc->setLvRefCnt(0);
+        varDsc->setLvRefCntWtd(BB_ZERO_WEIGHT);
+
+        if (setSlotNumbers)
+        {
+            varDsc->lvSlotNum = lclNum;
+        }
+    }
+
+    // Account for all explicit local variable references
+    for (BasicBlock* block = fgFirstBB; block; block = block->bbNext)
+    {
+        lvaMarkLocalVars(block, isRecompute);
+    }
+
+    // Bump ref counts for some implicit prolog references
+    for (lclNum = 0, varDsc = lvaTable; lclNum < lvaCount; lclNum++, varDsc++)
+    {
+        // Todo: review justification for these count bumps.
+        if (varDsc->lvIsRegArg)
+        {
+            if ((lclNum < info.compArgsCount) && (varDsc->lvRefCnt() > 0))
+            {
+                // Fix 388376 ARM JitStress WP7
+                varDsc->incRefCnts(BB_UNITY_WEIGHT, this);
+                varDsc->incRefCnts(BB_UNITY_WEIGHT, this);
+            }
+
+            // Ref count bump that was in lvaPromoteStructVar
+            //
+            // This was formerly done during RCS_EARLY counting,
+            // and we did not used to reset counts like we do now.
+            if (varDsc->lvIsStructField)
+            {
+                varDsc->incRefCnts(BB_UNITY_WEIGHT, this);
+            }
+        }
+    }
 }
 
 void Compiler::lvaAllocOutgoingArgSpaceVar()
