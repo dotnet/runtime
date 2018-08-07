@@ -670,12 +670,16 @@ mono_thread_internal_set_priority (MonoInternalThread *internal, MonoThreadPrior
 
 #ifdef HOST_WIN32
 	BOOL res;
+	DWORD last_error;
 
 	g_assert (internal->native_handle);
 
+	MONO_ENTER_GC_SAFE;
 	res = SetThreadPriority (internal->native_handle, priority - 2);
+	last_error = GetLastError ();
+	MONO_EXIT_GC_SAFE;
 	if (!res)
-		g_error ("%s: SetThreadPriority failed, error %d", __func__, GetLastError ());
+		g_error ("%s: SetThreadPriority failed, error %d", __func__, last_error);
 #else /* HOST_WIN32 */
 	pthread_t tid;
 	int policy;
@@ -684,7 +688,9 @@ mono_thread_internal_set_priority (MonoInternalThread *internal, MonoThreadPrior
 
 	tid = thread_get_tid (internal);
 
+	MONO_ENTER_GC_SAFE;
 	res = pthread_getschedparam (tid, &policy, &param);
+	MONO_EXIT_GC_SAFE;
 	if (res != 0)
 		g_error ("%s: pthread_getschedparam failed, error: \"%s\" (%d)", __func__, g_strerror (res), res);
 
@@ -693,6 +699,7 @@ mono_thread_internal_set_priority (MonoInternalThread *internal, MonoThreadPrior
 
 	/* Necessary to get valid priority range */
 
+	MONO_ENTER_GC_SAFE;
 #if defined(__PASE__)
 	/* only priorities allowed by IBM i */
 	min = PRIORITY_MIN;
@@ -701,6 +708,7 @@ mono_thread_internal_set_priority (MonoInternalThread *internal, MonoThreadPrior
 	min = sched_get_priority_min (policy);
 	max = sched_get_priority_max (policy);
 #endif
+	MONO_EXIT_GC_SAFE;
 
 	if (max > 0 && min >= 0 && max > min) {
 		double srange, drange, sposition, dposition;
@@ -729,12 +737,14 @@ mono_thread_internal_set_priority (MonoInternalThread *internal, MonoThreadPrior
 		}
 	}
 
+	MONO_ENTER_GC_SAFE;
 #if defined(__PASE__)
 	/* only scheduling param allowed by IBM i */
 	res = pthread_setschedparam (tid, SCHED_OTHER, &param);
 #else
 	res = pthread_setschedparam (tid, policy, &param);
 #endif
+	MONO_EXIT_GC_SAFE;
 	if (res != 0) {
 		if (res == EPERM) {
 #if !defined(_AIX)
