@@ -2901,9 +2901,6 @@ struct GenTreeCast : public GenTreeOp
     {
     }
 #endif
-
-    // Returns true for casts that require an overflow check.
-    bool IsOverflowCheckRequired() const;
 };
 
 // GT_BOX nodes are place markers for boxed values.  The "real" tree
