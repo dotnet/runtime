@@ -10,8 +10,10 @@ namespace System.Runtime.Intrinsics.X86
     /// This class provides access to Intel LZCNT hardware instructions via intrinsics
     /// </summary>
     [CLSCompliant(false)]
-    public static class Lzcnt
+    public abstract class Lzcnt
     {
+        internal Lzcnt() { }
+
         public static bool IsSupported { get { return false; } }
 
         /// <summary>

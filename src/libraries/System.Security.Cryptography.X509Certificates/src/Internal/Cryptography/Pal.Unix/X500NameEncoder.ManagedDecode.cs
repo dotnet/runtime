@@ -5,6 +5,7 @@
 using System;
 using System.Collections.Generic;
 using System.Security.Cryptography;
+using System.Security.Cryptography.Asn1;
 using System.Text;
 
 namespace Internal.Cryptography.Pal
@@ -20,12 +21,15 @@ namespace Internal.Cryptography.Pal
             string multiValueSeparator,
             bool addTrailingDelimiter)
         {
-            DerSequenceReader x500NameReader = new DerSequenceReader(encodedName);
-            var rdnReaders = new List<DerSequenceReader>();
+            AsnReader x500NameReader = new AsnReader(encodedName, AsnEncodingRules.DER);
+            AsnReader x500NameSequenceReader = x500NameReader.ReadSequence();
+            var rdnReaders = new List<AsnReader>();
 
-            while (x500NameReader.HasData)
+            x500NameReader.ThrowIfNotEmpty();
+
+            while (x500NameSequenceReader.HasData)
             {
-                rdnReaders.Add(x500NameReader.ReadSet());
+                rdnReaders.Add(x500NameSequenceReader.ReadSetOf());
             }
 
             // We need to allocate a StringBuilder to hold the data as we're building it, and there's the usual
@@ -80,12 +84,16 @@ namespace Internal.Cryptography.Pal
                     printSpacing = true;
                 }
 
-                DerSequenceReader rdnReader = rdnReaders[loc];
+                AsnReader rdnReader = rdnReaders[loc];
                 bool hadValue = false;
 
                 while (rdnReader.HasData)
                 {
-                    DerSequenceReader tavReader = rdnReader.ReadSequence();
+                    AsnReader tavReader = rdnReader.ReadSequence();
+                    string oid = tavReader.ReadObjectIdentifierAsString();
+                    string attributeValue = ReadString(tavReader);
+
+                    tavReader.ThrowIfNotEmpty();
 
                     if (hadValue)
                     {
@@ -98,14 +106,9 @@ namespace Internal.Cryptography.Pal
 
                     if (printOid)
                     {
-                        AppendOid(decodedName, tavReader.ReadOidAsString());
-                    }
-                    else
-                    {
-                        tavReader.SkipValue();
+                        AppendOid(decodedName, oid);
                     }
 
-                    string attributeValue = ReadString(tavReader);
 
                     bool quote = quoteIfNeeded && NeedsQuoting(attributeValue);
 
@@ -135,22 +138,23 @@ namespace Internal.Cryptography.Pal
             return decodedName.ToString();
         }
 
-        private static string ReadString(DerSequenceReader tavReader)
+        private static string ReadString(AsnReader tavReader)
         {
-            var tag = (DerSequenceReader.DerTag)tavReader.PeekTag();
+            Asn1Tag tag = tavReader.PeekTag();
 
-            switch (tag)
+            if (tag.TagClass != TagClass.Universal)
             {
-                case DerSequenceReader.DerTag.BMPString:
-                    return tavReader.ReadBMPString();
-                case DerSequenceReader.DerTag.IA5String:
-                    return tavReader.ReadIA5String();
-                case DerSequenceReader.DerTag.PrintableString:
-                    return tavReader.ReadPrintableString();
-                case DerSequenceReader.DerTag.UTF8String:
-                    return tavReader.ReadUtf8String();
-                case DerSequenceReader.DerTag.T61String:
-                    return tavReader.ReadT61String();
+                throw new CryptographicException(SR.Cryptography_Der_Invalid_Encoding);
+            }
+
+            switch ((UniversalTagNumber)tag.TagValue)
+            {
+                case UniversalTagNumber.BMPString:
+                case UniversalTagNumber.IA5String:
+                case UniversalTagNumber.PrintableString:
+                case UniversalTagNumber.UTF8String:
+                case UniversalTagNumber.T61String:
+                    return tavReader.GetCharacterString((UniversalTagNumber)tag.TagValue);
                 default:
                     throw new CryptographicException(SR.Cryptography_Der_Invalid_Encoding);
             }

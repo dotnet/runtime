@@ -23,6 +23,7 @@
     <Compile Include="Asn1\Reader\ReadOctetString.cs" />
     <Compile Include="Asn1\Reader\ReadSequence.cs" />
     <Compile Include="Asn1\Reader\ReadSetOf.cs" />
+    <Compile Include="Asn1\Reader\ReadT61String.cs" />
     <Compile Include="Asn1\Reader\ReadUtcTime.cs" />
     <Compile Include="Asn1\Reader\ReadUTF8String.cs" />
     <Compile Include="Asn1\Reader\ReaderStateTests.cs" />
@@ -71,6 +72,15 @@
     </Compile>
     <Compile Include="$(CommonPath)\System\Security\Cryptography\DerSequenceReader.cs">
       <Link>Common\System\Security\Cryptography\DerSequenceReader.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)\System\Security\Cryptography\Asn1\GeneralNameAsn.cs">
+      <Link>Common\System\Security\Cryptography\Asn1\GeneralNameAsn.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)\System\Security\Cryptography\Asn1\AlgorithmIdentifierAsn.cs">
+      <Link>Common\System\Security\Cryptography\Asn1\AlgorithmIdentifierAsn.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)\System\Security\Cryptography\Asn1\SubjectPublicKeyInfoAsn.cs">
+      <Link>Common\System\Security\Cryptography\Asn1\SubjectPublicKeyInfoAsn.cs</Link>
     </Compile>
     <Compile Include="$(CommonTestPath)\System\Security\Cryptography\ByteUtils.cs">
       <Link>CommonTest\System\Security\Cryptography\ByteUtils.cs</Link>

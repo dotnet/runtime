@@ -1,2 +1,4 @@
 Compat issues with assembly System.Runtime:
 TypeCannotChangeClassification : Type 'System.Decimal' is marked as readonly in the contract so it must also be marked readonly in the implementation.
+TypeCannotChangeClassification : Type 'System.Double' is marked as readonly in the contract so it must also be marked readonly in the implementation.
+TypeCannotChangeClassification : Type 'System.Single' is marked as readonly in the contract so it must also be marked readonly in the implementation.

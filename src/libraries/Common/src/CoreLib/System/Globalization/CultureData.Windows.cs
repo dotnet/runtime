@@ -517,7 +517,7 @@ namespace System.Globalization
 
 
         // Context for EnumCalendarInfoExEx callback.
-        private class EnumLocaleData
+        private struct EnumLocaleData
         {
             public string regionName;
             public string cultureName;

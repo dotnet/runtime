@@ -34,19 +34,7 @@ namespace System.Xml
         private async Task<Stream> GetNonFileStreamAsync(Uri uri, ICredentials credentials, IWebProxy proxy,
             RequestCachePolicy cachePolicy)
         {
-            WebRequest req = WebRequest.Create(uri);
-            if (credentials != null)
-            {
-                req.Credentials = credentials;
-            }
-            if (proxy != null)
-            {
-                req.Proxy = proxy;
-            }
-            if (cachePolicy != null)
-            {
-                req.CachePolicy = cachePolicy;
-            }
+            WebRequest req = CreateWebRequestOrThrowIfRemoved(uri, credentials, proxy, cachePolicy);
 
             using (WebResponse resp = await req.GetResponseAsync().ConfigureAwait(false))
             using (Stream respStream = resp.GetResponseStream())

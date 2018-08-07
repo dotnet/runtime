@@ -15,11 +15,7 @@ namespace System.ServiceModel.Syndication
 
         public UrlSyndicationContent(Uri url, string mediaType) : base()
         {
-            if (url == null)
-            {
-                throw DiagnosticUtility.ExceptionUtility.ThrowHelperArgumentNull(nameof(url));
-            }
-            _url = url;
+            _url = url ?? throw new ArgumentNullException(nameof(url));
             _mediaType = mediaType;
         }
 
@@ -28,9 +24,10 @@ namespace System.ServiceModel.Syndication
         {
             if (source == null)
             {
-                throw DiagnosticUtility.ExceptionUtility.ThrowHelperArgumentNull(nameof(source));
+                throw new ArgumentNullException(nameof(source));
             }
             _url = source._url;
+
             _mediaType = source._mediaType;
         }
 

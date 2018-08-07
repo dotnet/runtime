@@ -261,7 +261,7 @@ int32_t SystemNative_GetActiveTcpConnectionInfos(NativeTcpConnectionInformation*
     assert(infoCount != NULL);
 
     size_t estimatedSize = GetEstimatedTcpPcbSize();
-    uint8_t* buffer = malloc(estimatedSize * sizeof(uint8_t));
+    uint8_t* buffer = (uint8_t*)malloc(estimatedSize * sizeof(uint8_t));
     if (buffer == NULL)
     {
         errno = ENOMEM;
@@ -361,7 +361,7 @@ int32_t SystemNative_GetActiveUdpListeners(IPEndPointInfo* infos, int32_t* infoC
     assert(infoCount != NULL);
 
     size_t estimatedSize = GetEstimatedUdpPcbSize();
-    uint8_t* buffer = malloc(estimatedSize * sizeof(uint8_t));
+    uint8_t* buffer = (uint8_t*)malloc(estimatedSize * sizeof(uint8_t));
     if (buffer == NULL)
     {
         errno = ENOMEM;
@@ -376,7 +376,7 @@ int32_t SystemNative_GetActiveUdpListeners(IPEndPointInfo* infos, int32_t* infoC
         free(buffer);
         size_t tmpEstimatedSize;
         if (!multiply_s(estimatedSize, (size_t)2, &tmpEstimatedSize) ||
-            (buffer = malloc(estimatedSize * sizeof(uint8_t))) == NULL)
+            (buffer = (uint8_t*)malloc(estimatedSize * sizeof(uint8_t))) == NULL)
         {
             errno = ENOMEM;
             return -1;
@@ -445,7 +445,7 @@ int32_t SystemNative_GetNativeIPInterfaceStatistics(char* interfaceName, NativeI
         return -1;
     }
 
-    uint8_t* buffer = malloc(len * sizeof(uint8_t));
+    uint8_t* buffer = (uint8_t*)malloc(len * sizeof(uint8_t));
     if (buffer == NULL)
     {
         errno = ENOMEM;
@@ -503,7 +503,7 @@ int32_t SystemNative_GetNumRoutes()
         return -1;
     }
 
-    uint8_t* buffer = malloc(len * sizeof(uint8_t));
+    uint8_t* buffer = (uint8_t*)malloc(len * sizeof(uint8_t));
     if (buffer == NULL)
     {
         errno = ENOMEM;

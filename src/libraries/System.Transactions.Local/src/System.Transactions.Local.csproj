@@ -4,6 +4,11 @@
     <IsPartialFacadeAssembly>true</IsPartialFacadeAssembly>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
     <Configurations>netcoreapp-Debug;netcoreapp-Release;uap-Windows_NT-Debug;uap-Windows_NT-Release</Configurations>
+    <!-- 
+    There are many instances of comparing an instance of a struct with null. Until these are all fixed,
+    disable the diagnostic.
+    -->
+    <Features>$(Features.Replace('strict', '')</Features>
   </PropertyGroup>
   <!-- Default configurations to help VS understand the options -->
   <ItemGroup>

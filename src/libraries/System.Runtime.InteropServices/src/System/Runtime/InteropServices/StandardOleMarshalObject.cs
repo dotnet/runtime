@@ -29,7 +29,7 @@ namespace System.Runtime.InteropServices
                 {
                     if (HResults.S_OK == Interop.Ole32.CoGetStandardMarshal(ref riid, pUnknown, dwDestContext, IntPtr.Zero, mshlflags, out pStandardMarshal))
                     {
-                        Debug.Assert(pStandardMarshal != null, "Failed to get marshaler for interface '" + riid.ToString() + "', CoGetStandardMarshal returned S_OK");
+                        Debug.Assert(pStandardMarshal != IntPtr.Zero, "Failed to get marshaler for interface '" + riid.ToString() + "', CoGetStandardMarshal returned S_OK");
                         return pStandardMarshal;
                     }
                 }

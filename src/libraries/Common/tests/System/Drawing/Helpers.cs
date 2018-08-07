@@ -46,6 +46,8 @@ namespace System.Drawing
             }
         }
 
+        public static bool IsNotUnix => PlatformDetection.IsWindows;
+
         public static bool IsWindowsRS3OrEarlier => !PlatformDetection.IsWindows10Version1803OrGreater;
 
         public static bool GetRecentGdiPlusIsAvailable2()

@@ -3,6 +3,11 @@
     <ProjectGuid>{82B54697-0251-47A1-8546-FC507D0F3B08}</ProjectGuid>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
     <Configurations>netcoreapp-Debug;netcoreapp-Release;netstandard-Debug;netstandard-Release</Configurations>
+    <!-- 
+    We wish to test operations that would result in
+    "Operator '-' cannot be applied to operands of type 'ushort' and 'EnumArithmeticTests.UInt16Enum'"
+    -->
+    <Features>$(Features.Replace('strict', '')</Features>
   </PropertyGroup>
   <ItemGroup>
     <Compile Include="AccessTests.cs" />

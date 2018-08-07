@@ -34,6 +34,10 @@
 // WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 //
 
+#if netcoreapp20
+using System.Buffers;
+#endif
+
 using System.IO;
 using System.Runtime.InteropServices;
 
@@ -41,164 +45,83 @@ namespace System.Drawing
 {
     internal sealed partial class GdiPlusStreamHelper
     {
-        public Stream stream;
+#if netcoreapp20
+        private const int DefaultBufferSize = 4096;
+#endif
+        private Stream _stream;
 
-        private StreamGetHeaderDelegate sghd = null;
-        private StreamGetBytesDelegate sgbd = null;
-        private StreamSeekDelegate skd = null;
-        private StreamPutBytesDelegate spbd = null;
-        private StreamCloseDelegate scd = null;
-        private StreamSizeDelegate ssd = null;
-        private byte[] start_buf;
-        private int start_buf_pos;
-        private int start_buf_len;
-        private byte[] managedBuf;
-        private const int default_bufsize = 4096;
-
-        public GdiPlusStreamHelper(Stream s, bool seekToOrigin)
+        public unsafe GdiPlusStreamHelper(Stream stream, bool seekToOrigin)
         {
-            managedBuf = new byte[default_bufsize];
-
-            stream = s;
-            if (stream != null && stream.CanSeek && seekToOrigin)
+            // Seeking required
+            if (!stream.CanSeek)
             {
-                stream.Seek(0, SeekOrigin.Begin);
+                var memoryStream = new MemoryStream();
+                stream.CopyTo(memoryStream);
+                _stream = memoryStream;
             }
+            else
+            {
+                _stream = stream;
+            }
+
+            if (seekToOrigin)
+            {
+                _stream.Seek(0, SeekOrigin.Begin);
+            }
+
+            CloseDelegate = StreamCloseImpl;
+            GetBytesDelegate = StreamGetBytesImpl;
+            GetHeaderDelegate = StreamGetHeaderImpl;
+            PutBytesDelegate = StreamPutBytesImpl;
+            SeekDelegate = StreamSeekImpl;
+            SizeDelegate = StreamSizeImpl;
         }
 
-        public int StreamGetHeaderImpl(IntPtr buf, int bufsz)
+        public unsafe int StreamGetHeaderImpl(byte* buf, int bufsz)
         {
-            int bytesRead;
+            return StreamGetBytesImpl(buf, bufsz, peek: true);
+        }
 
-            start_buf = new byte[bufsz];
+        public unsafe int StreamGetBytesImpl(byte* buf, int bufsz, bool peek)
+        {
+            if ((buf == null && peek) || !_stream.CanRead)
+                return -1;
+
+            if (bufsz <= 0)
+                return 0;
+
+            int read = 0;
+            long originalPosition = 0;
+            if (peek)
+            {
+                originalPosition = _stream.Position;
+            }
 
             try
             {
-                bytesRead = stream.Read(start_buf, 0, bufsz);
+                // Stream Span API isn't available in 2.0
+#if netcoreapp20
+                byte[] buffer = ArrayPool<byte>.Shared.Rent(Math.Max(DefaultBufferSize, bufsz));
+                read = _stream.Read(buffer, 0, bufsz);
+                Marshal.Copy(buffer, 0, (IntPtr)buf, read);
+                ArrayPool<byte>.Shared.Return(buffer);
+#else
+                Span<byte> buffer = new Span<byte>(buf, bufsz);
+                read = _stream.Read(buffer);
+#endif
             }
             catch (IOException)
             {
                 return -1;
             }
 
-            if (bytesRead > 0 && buf != IntPtr.Zero)
+            if (peek)
             {
-                Marshal.Copy(start_buf, 0, (IntPtr)(buf.ToInt64()), bytesRead);
+                // If we are peeking bytes, then go back to original position before peeking
+                _stream.Seek(originalPosition, SeekOrigin.Begin);
             }
 
-            start_buf_pos = 0;
-            start_buf_len = bytesRead;
-
-            return bytesRead;
-        }
-
-        public StreamGetHeaderDelegate GetHeaderDelegate
-        {
-            get
-            {
-                if (stream != null && stream.CanRead)
-                {
-                    if (sghd == null)
-                    {
-                        sghd = new StreamGetHeaderDelegate(StreamGetHeaderImpl);
-                    }
-                    return sghd;
-                }
-                return null;
-            }
-        }
-
-        public int StreamGetBytesImpl(IntPtr buf, int bufsz, bool peek)
-        {
-            if (buf == IntPtr.Zero && peek)
-            {
-                return -1;
-            }
-
-            if (bufsz > managedBuf.Length)
-                managedBuf = new byte[bufsz];
-            int bytesRead = 0;
-            long streamPosition = 0;
-
-            if (bufsz > 0)
-            {
-                if (stream.CanSeek)
-                {
-                    streamPosition = stream.Position;
-                }
-                if (start_buf_len > 0)
-                {
-                    if (start_buf_len > bufsz)
-                    {
-                        Array.Copy(start_buf, start_buf_pos, managedBuf, 0, bufsz);
-                        start_buf_pos += bufsz;
-                        start_buf_len -= bufsz;
-                        bytesRead = bufsz;
-                        bufsz = 0;
-                    }
-                    else
-                    {
-                        // this is easy
-                        Array.Copy(start_buf, start_buf_pos, managedBuf, 0, start_buf_len);
-                        bufsz -= start_buf_len;
-                        bytesRead = start_buf_len;
-                        start_buf_len = 0;
-                    }
-                }
-
-                if (bufsz > 0)
-                {
-                    try
-                    {
-                        bytesRead += stream.Read(managedBuf, bytesRead, bufsz);
-                    }
-                    catch (IOException)
-                    {
-                        return -1;
-                    }
-                }
-
-                if (bytesRead > 0 && buf != IntPtr.Zero)
-                {
-                    Marshal.Copy(managedBuf, 0, (IntPtr)(buf.ToInt64()), bytesRead);
-                }
-
-                if (!stream.CanSeek && (bufsz == 10) && peek)
-                {
-                    // Special 'hack' to support peeking of the type for gdi+ on non-seekable streams
-                }
-
-                if (peek)
-                {
-                    if (stream.CanSeek)
-                    {
-                        // If we are peeking bytes, then go back to original position before peeking
-                        stream.Seek(streamPosition, SeekOrigin.Begin);
-                    }
-                    else
-                    {
-                        throw new NotSupportedException();
-                    }
-                }
-            }
-
-            return bytesRead;
-        }
-
-        public StreamGetBytesDelegate GetBytesDelegate
-        {
-            get
-            {
-                if (stream != null && stream.CanRead)
-                {
-                    if (sgbd == null)
-                    {
-                        sgbd = new StreamGetBytesDelegate(StreamGetBytesImpl);
-                    }
-                    return sgbd;
-                }
-                return null;
-            }
+            return read;
         }
 
         public long StreamSeekImpl(int offset, int whence)
@@ -207,103 +130,37 @@ namespace System.Drawing
             if ((whence < 0) || (whence > 2))
                 return -1;
 
-            // Invalidate the start_buf if we're actually going to call a Seek method.
-            start_buf_pos += start_buf_len;
-            start_buf_len = 0;
-
-            SeekOrigin origin;
-
-            // Translate 'whence' into a SeekOrigin enum member.
-            switch (whence)
-            {
-                case 0:
-                    origin = SeekOrigin.Begin;
-                    break;
-                case 1:
-                    origin = SeekOrigin.Current;
-                    break;
-                case 2:
-                    origin = SeekOrigin.End;
-                    break;
-
-                // The following line is redundant but necessary to avoid a
-                // "Use of unassigned local variable" error without actually
-                // initializing 'origin' to a dummy value.
-                default:
-                    return -1;
-            }
-
-            // Do the actual seek operation and return its result.
-            return stream.Seek((long)offset, origin);
+            return _stream.Seek((long)offset, (SeekOrigin)whence);
         }
 
-        public StreamSeekDelegate SeekDelegate
+        public unsafe int StreamPutBytesImpl(byte* buf, int bufsz)
         {
-            get
-            {
-                if (stream != null && stream.CanSeek)
-                {
-                    if (skd == null)
-                    {
-                        skd = new StreamSeekDelegate(StreamSeekImpl);
-                    }
-                    return skd;
-                }
-                return null;
-            }
-        }
+            if (!_stream.CanWrite)
+                return -1;
 
-        public int StreamPutBytesImpl(IntPtr buf, int bufsz)
-        {
-            if (bufsz > managedBuf.Length)
-                managedBuf = new byte[bufsz];
-            Marshal.Copy(buf, managedBuf, 0, bufsz);
-            stream.Write(managedBuf, 0, bufsz);
+            // Stream Span API isn't available in 2.0
+#if netcoreapp20
+            byte[] buffer = ArrayPool<byte>.Shared.Rent(Math.Max(DefaultBufferSize, bufsz));
+            Marshal.Copy((IntPtr)buf, buffer, 0, bufsz);
+            _stream.Write(buffer, 0, bufsz);
+            ArrayPool<byte>.Shared.Return(buffer);
+#else
+            Span<byte> buffer = new Span<byte>(buf, bufsz);
+            _stream.Write(buffer);
+#endif
             return bufsz;
-        }
-
-        public StreamPutBytesDelegate PutBytesDelegate
-        {
-            get
-            {
-                if (stream != null && stream.CanWrite)
-                {
-                    if (spbd == null)
-                    {
-                        spbd = new StreamPutBytesDelegate(StreamPutBytesImpl);
-                    }
-                    return spbd;
-                }
-                return null;
-            }
         }
 
         public void StreamCloseImpl()
         {
-            stream.Dispose();
-        }
-
-        public StreamCloseDelegate CloseDelegate
-        {
-            get
-            {
-                if (stream != null)
-                {
-                    if (scd == null)
-                    {
-                        scd = new StreamCloseDelegate(StreamCloseImpl);
-                    }
-                    return scd;
-                }
-                return null;
-            }
+            _stream.Dispose();
         }
 
         public long StreamSizeImpl()
         {
             try
             {
-                return stream.Length;
+                return _stream.Length;
             }
             catch
             {
@@ -311,20 +168,11 @@ namespace System.Drawing
             }
         }
 
-        public StreamSizeDelegate SizeDelegate
-        {
-            get
-            {
-                if (stream != null)
-                {
-                    if (ssd == null)
-                    {
-                        ssd = new StreamSizeDelegate(StreamSizeImpl);
-                    }
-                    return ssd;
-                }
-                return null;
-            }
-        }
+        public StreamCloseDelegate CloseDelegate { get; }
+        public StreamGetBytesDelegate GetBytesDelegate { get; }
+        public StreamGetHeaderDelegate GetHeaderDelegate { get; }
+        public StreamPutBytesDelegate PutBytesDelegate { get; }
+        public StreamSeekDelegate SeekDelegate { get; }
+        public StreamSizeDelegate SizeDelegate { get; }
     }
 }

@@ -44,6 +44,13 @@ namespace System
 
         public static bool IsNotNetNative => !IsNetNative;
 
+        // Windows - Schannel supports alpn from win8.1/2012 R2 and higher.
+        // Linux - OpenSsl supports alpn from openssl 1.0.2 and higher.
+        // OSX - SecureTransport doesn't expose alpn APIs. #30492
+        public static bool SupportsAlpn => (IsWindows && !IsWindows7) ||
+            (RuntimeInformation.IsOSPlatform(OSPlatform.Linux) &&
+            (OpenSslVersion.Major >= 1 && (OpenSslVersion.Minor >= 1 || OpenSslVersion.Build >= 2)));
+
         // Officially, .Net Native only supports processes running in an AppContainer. However, the majority of tests still work fine
         // in a normal Win32 process and we often do so as running in an AppContainer imposes a substantial tax in debuggability
         // and investigatability. This predicate is used in ConditionalFacts to disable the specific tests that really need to be

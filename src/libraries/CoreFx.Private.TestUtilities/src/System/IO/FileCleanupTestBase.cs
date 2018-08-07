@@ -3,6 +3,7 @@
 // See the LICENSE file in the project root for more information.
 
 using Xunit;
+using System.Diagnostics;
 using System.Runtime.CompilerServices;
 using System.Threading;
 
@@ -12,6 +13,8 @@ namespace System.IO
     public abstract class FileCleanupTestBase : IDisposable
     {
         private static readonly Lazy<bool> s_isElevated = new Lazy<bool>(() => AdminHelpers.IsProcessElevated());
+
+        private string fallbackGuid = Guid.NewGuid().ToString("N").Substring(0, 10);
 
         protected static bool IsProcessElevated => s_isElevated.Value;
 
@@ -84,7 +87,39 @@ namespace System.IO
         /// <param name="index">An optional index value to use as a suffix on the file name.  Typically a loop index.</param>
         /// <param name="memberName">The member name of the function calling this method.</param>
         /// <param name="lineNumber">The line number of the function calling this method.</param>
-        protected string GetTestFileName(int? index = null, [CallerMemberName] string memberName = null, [CallerLineNumber] int lineNumber = 0) =>
+        protected string GetTestFileName(int? index = null, [CallerMemberName] string memberName = null, [CallerLineNumber] int lineNumber = 0)
+        {
+            string testFileName = GenerateTestFileName(index, memberName, lineNumber);
+            string testFilePath = Path.Combine(TestDirectory, testFileName);
+
+            const int maxLength = 260 - 5; // Windows MAX_PATH minus a bit
+
+            int excessLength = testFilePath.Length - maxLength;
+
+            if (excessLength > 0)
+            {
+                // The path will be too long for Windows -- can we
+                // trim memberName to fix it?
+                if (excessLength < memberName.Length + "...".Length)
+                {
+                    // Take a chunk out of the middle as perhaps it's the least interesting part of the name
+                    memberName = memberName.Substring(0, memberName.Length / 2 - excessLength / 2) + "..." + memberName.Substring(memberName.Length / 2 + excessLength / 2);
+
+                    testFileName = GenerateTestFileName(index, memberName, lineNumber);
+                    testFilePath = Path.Combine(TestDirectory, testFileName);
+                }
+                else
+                {
+                    return fallbackGuid;
+                }
+            }
+
+            Debug.Assert(testFilePath.Length <= maxLength + "...".Length);
+
+            return testFileName;
+        }
+
+        private string GenerateTestFileName(int? index, string memberName, int lineNumber) =>
             string.Format(
                 index.HasValue ? "{0}_{1}_{2}_{3}" : "{0}_{1}_{3}",
                 memberName ?? "TestBase",

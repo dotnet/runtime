@@ -153,12 +153,13 @@
     <Compile Include="Generic\Stack\Stack.Generic.Tests.netcoreapp.cs" />
     <Compile Include="Generic\SortedSet\SortedSet.Generic.Tests.netcoreapp.cs" />
     <Compile Include="Generic\Queue\Queue.Generic.Tests.netcoreapp.cs" />
-    <Compile Include="$(CommonTestPath)\System\Collections\IDictionary.Generic.Tests.netcoreapp.cs" >
+    <Compile Include="$(CommonTestPath)\System\Collections\IDictionary.Generic.Tests.netcoreapp.cs">
       <Link>Common\System\Collections\IDictionary.Generic.Tests.netcoreapp.cs</Link>
     </Compile>
-    <Compile Include="$(CommonTestPath)\System\Collections\IDictionary.NonGeneric.Tests.netcoreapp.cs" >
+    <Compile Include="$(CommonTestPath)\System\Collections\IDictionary.NonGeneric.Tests.netcoreapp.cs">
       <Link>Common\System\Collections\IDictionary.NonGeneric.Tests.netcoreapp.cs</Link>
     </Compile>
+    <Compile Include="Generic\Dictionary\Dictionary.Tests.netcoreapp.cs" />
   </ItemGroup>
   <ItemGroup>
     <EmbeddedResource Include="Resources\$(AssemblyName).rd.xml" />

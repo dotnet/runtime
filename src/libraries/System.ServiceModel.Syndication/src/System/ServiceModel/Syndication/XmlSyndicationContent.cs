@@ -25,8 +25,9 @@ namespace System.ServiceModel.Syndication
         {
             if (reader == null)
             {
-                throw DiagnosticUtility.ExceptionUtility.ThrowHelperArgumentNull(nameof(reader));
+                throw new ArgumentNullException(nameof(reader));
             }
+
             SyndicationFeedFormatter.MoveToStartElement(reader);
             if (reader.HasAttributes)
             {
@@ -70,12 +71,8 @@ namespace System.ServiceModel.Syndication
 
         public XmlSyndicationContent(string type, SyndicationElementExtension extension)
         {
-            if (extension == null)
-            {
-                throw DiagnosticUtility.ExceptionUtility.ThrowHelperArgumentNull(nameof(extension));
-            }
             _type = string.IsNullOrEmpty(type) ? Atom10Constants.XmlMediaType : type;
-            _extension = extension;
+            _extension = extension ?? throw new ArgumentNullException(nameof(extension));
         }
 
         protected XmlSyndicationContent(XmlSyndicationContent source)
@@ -83,8 +80,9 @@ namespace System.ServiceModel.Syndication
         {
             if (source == null)
             {
-                throw DiagnosticUtility.ExceptionUtility.ThrowHelperArgumentNull(nameof(source));
+                throw new ArgumentNullException(nameof(source));
             }
+
             _contentBuffer = source._contentBuffer;
             _extension = source._extension;
             _type = source._type;
@@ -168,9 +166,10 @@ namespace System.ServiceModel.Syndication
         {
             if (writer == null)
             {
-                throw DiagnosticUtility.ExceptionUtility.ThrowHelperArgumentNull(nameof(writer));
+                throw new ArgumentNullException(nameof(writer));
             }
             if (_extension != null)
+
             {
                 _extension.WriteTo(writer);
             }

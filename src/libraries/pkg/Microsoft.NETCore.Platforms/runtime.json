@@ -1675,6 +1675,31 @@
         "osx.10.12-x64-corert"
       ]
     },
+    "osx.10.14": {
+      "#import": [
+        "osx.10.13"
+      ]
+    },
+    "osx.10.14-corert": {
+      "#import": [
+        "osx.10.14",
+        "osx.10.13-corert"
+      ]
+    },
+    "osx.10.14-x64": {
+      "#import": [
+        "osx.10.14",
+        "osx.10.13-x64"
+      ]
+    },
+    "osx.10.14-x64-corert": {
+      "#import": [
+        "osx.10.14-corert",
+        "osx.10.14-x64",
+        "osx.10.14",
+        "osx.10.13-x64-corert"
+      ]
+    },
     "rhel": {
       "#import": [
         "linux"

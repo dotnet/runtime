@@ -14,6 +14,10 @@ namespace System.Collections.Tests
     /// </summary>
     public abstract partial class Dictionary_Generic_Tests<TKey, TValue> : IDictionary_Generic_Tests<TKey, TValue>
     {
+        protected override ModifyOperation ModifyEnumeratorThrows => ModifyOperation.Add | ModifyOperation.Insert | ModifyOperation.Clear;
+
+        protected override ModifyOperation ModifyEnumeratorAllowed => ModifyOperation.Remove;
+
         #region Remove(TKey)
 
         [Theory]
@@ -84,31 +88,71 @@ namespace System.Collections.Tests
             }
         }
 
+        [Fact]
+        public void Dictionary_Generic_Remove_RemoveFirstEnumerationContinues()
+        {
+            Dictionary<TKey,TValue> dict = (Dictionary<TKey, TValue>)GenericIDictionaryFactory(3);
+            using (var enumerator = dict.GetEnumerator())
+            {
+                enumerator.MoveNext();
+                TKey key = enumerator.Current.Key;
+                enumerator.MoveNext();
+                dict.Remove(key);
+                Assert.True(enumerator.MoveNext());
+                Assert.False(enumerator.MoveNext());
+            }
+        }
+
+        [Fact]
+        public void Dictionary_Generic_Remove_RemoveCurrentEnumerationContinues()
+        {
+            Dictionary<TKey, TValue> dict = (Dictionary<TKey, TValue>)GenericIDictionaryFactory(3);
+            using (var enumerator = dict.GetEnumerator())
+            {
+                enumerator.MoveNext();
+                enumerator.MoveNext();
+                dict.Remove(enumerator.Current.Key);
+                Assert.True(enumerator.MoveNext());
+                Assert.False(enumerator.MoveNext());
+            }
+        }
+
+        [Fact]
+        public void Dictionary_Generic_Remove_RemoveLastEnumerationFinishes()
+        {
+            Dictionary<TKey, TValue> dict = (Dictionary<TKey, TValue>)GenericIDictionaryFactory(3);
+            TKey key = default;
+            using (var enumerator = dict.GetEnumerator())
+            {
+                while (enumerator.MoveNext())
+                {
+                    key = enumerator.Current.Key;
+                }
+            }
+            using (var enumerator = dict.GetEnumerator())
+            {
+                enumerator.MoveNext();
+                enumerator.MoveNext();
+                dict.Remove(key);
+                Assert.False(enumerator.MoveNext());
+            }
+        }
+
         #endregion
 
         #region EnsureCapacity
 
         [Theory]
         [MemberData(nameof(ValidCollectionSizes))]
-        public void EnsureCapacity_Generic_RequestingLargerCapacity_DoesNotInvalidateEnumeration(int count)
+        public void EnsureCapacity_Generic_RequestingLargerCapacity_DoesInvalidateEnumeration(int count)
         {
             var dictionary = (Dictionary<TKey, TValue>)(GenericIDictionaryFactory(count));
             var capacity = dictionary.EnsureCapacity(0);
-            IEnumerator keysEnum = dictionary.Keys.GetEnumerator();
-            IEnumerator valuesEnum = dictionary.Values.GetEnumerator();
-            IEnumerator keysListEnum = new List<TKey>(dictionary.Keys).GetEnumerator();
-            IEnumerator valuesListEnum = new List<TValue>(dictionary.Values).GetEnumerator();
+            var enumerator = dictionary.GetEnumerator();
 
-            dictionary.EnsureCapacity(capacity + 1); // Verify EnsureCapacity does not invalidate enumeration
+            dictionary.EnsureCapacity(capacity + 1); // Verify EnsureCapacity does invalidate enumeration
 
-            while(keysEnum.MoveNext())
-            {
-                valuesEnum.MoveNext();
-                keysListEnum.MoveNext();
-                valuesListEnum.MoveNext();
-                Assert.Equal(keysListEnum.Current, keysEnum.Current);
-                Assert.Equal(valuesListEnum.Current, valuesEnum.Current);
-            }
+            Assert.Throws<InvalidOperationException>(() => enumerator.MoveNext());
         }
 
         [Fact]
@@ -417,6 +461,17 @@ namespace System.Collections.Tests
             Assert.True(dictionary.TryGetValue(chained[1], out val));
         }
 
+        [Fact]
+        public void TrimExcess_Generic_DoesInvalidateEnumeration()
+        {
+            var dictionary = new Dictionary<TKey, TValue>(20);
+            var enumerator = dictionary.GetEnumerator();
+
+            dictionary.TrimExcess(7); // Verify TrimExcess does invalidate enumeration
+
+            Assert.Throws<InvalidOperationException>(() => enumerator.MoveNext());
+        }
+        
         #endregion
     }
 }

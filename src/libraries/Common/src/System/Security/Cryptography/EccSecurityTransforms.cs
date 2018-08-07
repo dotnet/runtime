@@ -31,16 +31,13 @@ namespace System.Security.Cryptography
 
             switch (curve.Oid.Value)
             {
-                // secp256r1 / nistp256
-                case "1.2.840.10045.3.1.7":
+                case Oids.secp256r1:
                     keySize = 256;
                     break;
-                // secp384r1 / nistp384
-                case "1.3.132.0.34":
+                case Oids.secp384r1:
                     keySize = 384;
                     break;
-                // secp521r1 / nistp521
-                case "1.3.132.0.35":
+                case Oids.secp521r1:
                     keySize = 521;
                     break;
                 default:

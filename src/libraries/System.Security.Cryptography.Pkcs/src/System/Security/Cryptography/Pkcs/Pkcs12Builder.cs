@@ -253,7 +253,7 @@ namespace System.Security.Cryptography.Pkcs
                         {
                             writer.PushSequence();
                             {
-                                writer.WriteObjectIdentifier(Helpers.GetOidFromHashAlgorithm(hashAlgorithm));
+                                writer.WriteObjectIdentifier(PkcsHelpers.GetOidFromHashAlgorithm(hashAlgorithm));
                                 writer.PopSequence();
                             }
 

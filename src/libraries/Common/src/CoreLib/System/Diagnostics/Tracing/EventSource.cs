@@ -181,6 +181,7 @@ using System.Security.Permissions;
 using System.Text;
 using System.Threading;
 using Microsoft.Win32;
+using Internal.Runtime.Augments;
 
 #if ES_BUILD_STANDALONE
 using EventDescriptor = Microsoft.Diagnostics.Tracing.EventDescriptor;
@@ -194,10 +195,6 @@ using Microsoft.Reflection;
 using Contract = System.Diagnostics.Contracts.Contract;
 #else
 using Contract = Microsoft.Diagnostics.Contracts.Internal.Contract;
-#endif
-
-#if CORECLR || ES_BUILD_PN
-using Internal.Runtime.Augments;
 #endif
 
 #if ES_BUILD_STANDALONE
@@ -1913,13 +1910,25 @@ namespace System.Diagnostics.Tracing
                         // Maintain old behavior - object identity is preserved
                         if (AppContextSwitches.PreserveEventListnerObjectIdentity)
                         {
-                            WriteToAllListeners(eventId, pActivityId, childActivityID, args);
+                            WriteToAllListeners(
+                                eventId: eventId,
+                                osThreadId: null,
+                                timeStamp: null,
+                                activityID: pActivityId,
+                                childActivityID: childActivityID,
+                                args: args);
                         }
                         else
 #endif // !ES_BUILD_STANDALONE
                         {
                             object[] serializedArgs = SerializeEventArgs(eventId, args);
-                            WriteToAllListeners(eventId, pActivityId, childActivityID, serializedArgs);
+                            WriteToAllListeners(
+                                eventId: eventId,
+                                osThreadId: null,
+                                timeStamp: null,
+                                activityID: pActivityId,
+                                childActivityID: childActivityID,
+                                args: serializedArgs);
                         }
                     }
                 }
@@ -2021,14 +2030,24 @@ namespace System.Diagnostics.Tracing
             EventSource.EventData* dataPtr = data;
             for (int i = 0; i < paramCount; i++)
                 args[i] = DecodeObject(eventId, i, ref dataPtr);
-            WriteToAllListeners(eventId, activityID, childActivityID, args);
+            WriteToAllListeners(
+                eventId: eventId,
+                osThreadId: null,
+                timeStamp: null,
+                activityID: activityID,
+                childActivityID: childActivityID,
+                args: args);
         }
 
         // helper for writing to all EventListeners attached the current eventSource.  
-        internal unsafe void WriteToAllListeners(int eventId, Guid* activityID, Guid* childActivityID, params object[] args)
+        internal unsafe void WriteToAllListeners(int eventId, uint* osThreadId, DateTime* timeStamp, Guid* activityID, Guid* childActivityID, params object[] args)
         {
             EventWrittenEventArgs eventCallbackArgs = new EventWrittenEventArgs(this);
             eventCallbackArgs.EventId = eventId;
+            if (osThreadId != null)
+                eventCallbackArgs.OSThreadId = (int)*osThreadId;
+            if (timeStamp != null)
+                eventCallbackArgs.TimeStamp = *timeStamp;
             if (activityID != null)
                 eventCallbackArgs.ActivityId = *activityID;
             if (childActivityID != null)
@@ -4609,16 +4628,47 @@ namespace System.Diagnostics.Tracing
             }
         }
 
-#region private
+        /// <summary>
+        /// Gets the identifier for the OS thread that wrote the event.
+        /// </summary>
+        public long OSThreadId
+        {
+            get
+            {
+                if (!m_osThreadId.HasValue)
+                {
+                    m_osThreadId = (long)RuntimeThread.CurrentOSThreadId;
+                }
+
+                return m_osThreadId.Value;
+            }
+            internal set
+            {
+                m_osThreadId = value;
+            }
+        }
+
+        /// <summary>
+        /// Gets a UTC DateTime that specifies when the event was written.
+        /// </summary>
+        public DateTime TimeStamp
+        {
+            get;
+            internal set;
+        }
+
+        #region private
         internal EventWrittenEventArgs(EventSource eventSource)
         {
             m_eventSource = eventSource;
+            TimeStamp = DateTime.UtcNow;
         }
         private string m_message;
         private string m_eventName;
         private EventSource m_eventSource;
         private ReadOnlyCollection<string> m_payloadNames;
         private Guid m_activityId;
+        private long? m_osThreadId;
         internal EventTags m_tags;
         internal EventOpcode m_opcode;
         internal EventLevel m_level;

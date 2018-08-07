@@ -382,7 +382,7 @@ namespace System.Management
         static bool LoadDelegate<TDelegate>(ref TDelegate delegate_f, IntPtr hModule, string procName) where TDelegate : class
         {
             IntPtr procAddr = Interop.Kernel32.GetProcAddress(hModule, procName);
-            return procAddr != null &&
+            return procAddr != IntPtr.Zero &&
                 (delegate_f = Marshal.GetDelegateForFunctionPointer<TDelegate>(procAddr)) != null;
         }
 

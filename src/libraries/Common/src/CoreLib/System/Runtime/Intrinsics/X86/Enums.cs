@@ -95,7 +95,7 @@ namespace System.Runtime.Intrinsics.X86
         /// _CMP_LT_OQ
         /// </summary>
         LessThanOrderedNonSignaling = 17,
-        
+
         /// <summary>
         /// _CMP_LE_OQ
         /// </summary>
@@ -132,17 +132,17 @@ namespace System.Runtime.Intrinsics.X86
         EqualUnorderedSignaling = 24,
 
         /// <summary>
-        /// _CMP_NGE_UQ 
+        /// _CMP_NGE_UQ
         /// </summary>
         NotGreaterThanOrEqualUnorderedNonSignaling = 25,
 
         /// <summary>
-        /// _CMP_NGT_UQ 
+        /// _CMP_NGT_UQ
         /// </summary>
         NotGreaterThanUnorderedNonSignaling = 26,
 
         /// <summary>
-        /// _CMP_FALSE_OS 
+        /// _CMP_FALSE_OS
         /// </summary>
         FalseOrderedSignaling = 27,
 

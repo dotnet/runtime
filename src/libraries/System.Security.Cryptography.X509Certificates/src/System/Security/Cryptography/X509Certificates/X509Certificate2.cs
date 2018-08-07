@@ -118,6 +118,8 @@ namespace System.Security.Cryptography.X509Certificates
             throw new PlatformNotSupportedException();
         }
 
+        internal new ICertificatePal Pal => (ICertificatePal)base.Pal;
+
         public bool Archived
         {
             get
@@ -204,14 +206,14 @@ namespace System.Security.Cryptography.X509Certificates
                 {
                     switch (GetKeyAlgorithm())
                     {
-                        case Oids.RsaRsa:
+                        case Oids.Rsa:
                             _lazyPrivateKey = Pal.GetRSAPrivateKey();
                             break;
-                        case Oids.DsaDsa:
+                        case Oids.Dsa:
                             _lazyPrivateKey = Pal.GetDSAPrivateKey();
                             break;
                         default:
-                            // This includes ECDSA, because an Oids.Ecc key can be
+                            // This includes ECDSA, because an Oids.EcPublicKey key can be
                             // many different algorithm kinds, not necessarily with mutual exclusion.
                             //
                             // Plus, .NET Framework only supports RSA and DSA in this property.

@@ -5,6 +5,8 @@
 // Changes to this file must follow the http://aka.ms/api-review process.
 // ------------------------------------------------------------------------------
 
+using System;
+
 namespace Microsoft.VisualBasic
 {
     public enum CallType
@@ -13,6 +15,11 @@ namespace Microsoft.VisualBasic
         Let = 4,
         Method = 1,
         Set = 8,
+    }
+    public enum CompareMethod
+    { 
+        Binary = 0,
+        Text = 1,
     }
     [System.AttributeUsageAttribute((System.AttributeTargets)(4), Inherited=false, AllowMultiple=false)]
     public sealed partial class ComClassAttribute : System.Attribute
@@ -41,6 +48,8 @@ namespace Microsoft.VisualBasic
         public const string vbNullString = null;
         public const string vbTab = "\t";
         public const string vbVerticalTab = "\v";
+        public const CompareMethod vbBinaryCompare = CompareMethod.Binary;
+        public const CompareMethod vbTextCompare = CompareMethod.Text;
     }
     public sealed partial class ControlChars
     {
@@ -55,6 +64,13 @@ namespace Microsoft.VisualBasic
         public const char Tab = '\t';
         public const char VerticalTab = '\v';
         public ControlChars() { }
+    }
+    [Microsoft.VisualBasic.CompilerServices.StandardModuleAttribute]
+    public sealed partial class DateAndTime
+    {
+        internal DateAndTime() { }
+        public static DateTime Now { get; }
+        public static DateTime Today { get; }
     }
     [System.AttributeUsageAttribute((System.AttributeTargets)(4), AllowMultiple=false, Inherited=false)]
     [System.ComponentModel.EditorBrowsableAttribute((System.ComponentModel.EditorBrowsableState)(1))]
@@ -101,6 +117,8 @@ namespace Microsoft.VisualBasic
         public static int AscW(string String) { throw null; }
         public static char Chr(int CharCode) { throw null; }
         public static char ChrW(int CharCode) { throw null; }
+        public static string[] Filter(object[] Source, string Match, bool Include = true, [Microsoft.VisualBasic.CompilerServices.OptionCompareAttribute] CompareMethod Compare = CompareMethod.Binary) { throw null; }
+        public static string[] Filter(string[] Source, string Match, bool Include = true, [Microsoft.VisualBasic.CompilerServices.OptionCompareAttribute] CompareMethod Compare = CompareMethod.Binary) { throw null; }
         public static string Left(string str, int Length) { throw null; }
         public static string LTrim(string str) { throw null; }
         public static string Mid(string str, int Start) { throw null; }
@@ -230,6 +248,13 @@ namespace Microsoft.VisualBasic.CompilerServices
         public static ushort ToUShort(object Value) { throw null; }
         [System.CLSCompliantAttribute(false)]
         public static ushort ToUShort(string Value) { throw null; }
+    }
+    [System.ComponentModel.EditorBrowsableAttribute((System.ComponentModel.EditorBrowsableState)(1))]
+    public sealed partial class BooleanType
+    {
+        internal BooleanType() { }
+        public static Boolean FromObject(object Value) { throw null; }
+        public static Boolean FromString(string Value) { throw null; }
     }
     [System.ComponentModel.EditorBrowsableAttribute((System.ComponentModel.EditorBrowsableState)(1))]
     public sealed partial class DecimalType

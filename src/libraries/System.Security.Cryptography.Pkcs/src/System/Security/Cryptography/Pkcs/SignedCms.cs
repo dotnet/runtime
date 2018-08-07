@@ -104,7 +104,7 @@ namespace System.Security.Cryptography.Pkcs
                 throw new InvalidOperationException(SR.Cryptography_Cms_MessageNotSigned);
             }
 
-            return Helpers.EncodeContentInfo(_signedData, Oids.Pkcs7Signed);
+            return PkcsHelpers.EncodeContentInfo(_signedData, Oids.Pkcs7Signed);
         }
 
         public void Decode(byte[] encodedMessage)
@@ -310,7 +310,7 @@ namespace System.Security.Cryptography.Pkcs
             }
 
             AlgorithmIdentifierAsn signerAlgorithm = _signedData.SignerInfos[index].DigestAlgorithm;
-            Helpers.RemoveAt(ref _signedData.SignerInfos, index);
+            PkcsHelpers.RemoveAt(ref _signedData.SignerInfos, index);
 
             ConsiderDigestRemoval(signerAlgorithm);
             UpdateMetadata();
@@ -443,7 +443,7 @@ namespace System.Security.Cryptography.Pkcs
 
                 if (candidate.Equals(ref alg))
                 {
-                    Helpers.RemoveAt(ref _signedData.DigestAlgorithms, i);
+                    PkcsHelpers.RemoveAt(ref _signedData.DigestAlgorithms, i);
                     break;
                 }
             }
@@ -609,7 +609,7 @@ namespace System.Security.Cryptography.Pkcs
                 {
                     if (cert.Certificate.Value.Span.SequenceEqual(rawData))
                     {
-                        Helpers.RemoveAt(ref _signedData.CertificateSet, idx);
+                        PkcsHelpers.RemoveAt(ref _signedData.CertificateSet, idx);
                         Reencode();
                         return;
                     }

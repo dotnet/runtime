@@ -13,12 +13,12 @@ namespace System.Runtime.Intrinsics
     [DebuggerDisplay("{DisplayString,nq}")]
     [DebuggerTypeProxy(typeof(Vector128DebugView<>))]
     [StructLayout(LayoutKind.Sequential, Size = 16)]
-    public struct Vector128<T> where T : struct
+    public readonly struct Vector128<T> where T : struct
     {
         // These fields exist to ensure the alignment is 8, rather than 1.
         // This also allows the debug view to work https://github.com/dotnet/coreclr/issues/15694)
-        private ulong _00;
-        private ulong _01;
+        private readonly ulong _00;
+        private readonly ulong _01;
 
         private unsafe string DisplayString
         {

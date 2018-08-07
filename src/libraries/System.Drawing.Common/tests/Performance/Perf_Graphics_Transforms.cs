@@ -12,7 +12,7 @@ namespace System.Drawing.Tests
     public class Perf_Graphics_Transforms : RemoteExecutorTestBase
     {
         [Benchmark(InnerIterationCount = 10000)]
-        [ConditionalBenchmark(typeof(Helpers), nameof(Helpers.GetGdiplusIsAvailable))]
+        [ConditionalBenchmark(typeof(Helpers), nameof(Helpers.GetGdiplusIsAvailable), nameof(Helpers.IsNotUnix))] // Graphics.TransformPoints is not implemented in libgdiplus yet. See dotnet/corefx 20884
         public void TransformPoints()
         {
             Point[] points =
