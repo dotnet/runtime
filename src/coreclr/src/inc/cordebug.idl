@@ -3271,6 +3271,7 @@ interface ICorDebugProcess8 : IUnknown
 interface ICorDebugProcess10 : IUnknown
 {
     HRESULT GetContainingObject([in] CORDB_ADDRESS interiorPointer, [out] ICorDebugObjectValue** ppContainingObject);
+    HRESULT EnableGCNotificationEvents(BOOL fEnable);
 }
 
 // Event types MODULE_LOADED and MODULE_UNLOADED implement this interface
