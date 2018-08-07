@@ -4203,17 +4203,33 @@ unsigned Compiler::gtSetEvalOrder(GenTree* tree)
             switch (op1Val->gtOper)
             {
                 case GT_IND:
+                case GT_BLK:
+                case GT_OBJ:
+                case GT_DYN_BLK:
 
-                    // Struct assignments are different from scalar assignments in that semantically
-                    // the address of op1 is evaluated prior to op2.
-                    if (!varTypeIsStruct(op1))
+                    // In an indirection, the destination address is evaluated prior to the source.
+                    // If we have any side effects on the target indirection,
+                    // we have to evaluate op1 first.
+                    // However, if the LHS is a lclVar address, SSA relies on using evaluation order for its
+                    // renaming, and therefore the RHS must be evaluated first.
+                    // If we have an assignment involving a lclVar address, the LHS may be marked as having
+                    // side-effects.
+                    // However the side-effects won't require that we evaluate the LHS address first:
+                    // - The GTF_GLOB_REF might have been conservatively set on a FIELD of a local.
+                    // - The local might be address-exposed, but that side-effect happens at the actual assignment (not
+                    //   when its address is "evaluated") so it doesn't change the side effect to "evaluate" the address
+                    //   after the RHS (note that in this case it won't be renamed by SSA anyway, but the reordering is
+                    //   safe).
+                    //
+                    if (op1Val->AsIndir()->Addr()->IsLocalAddrExpr())
                     {
-                        // If we have any side effects on the GT_IND child node
-                        // we have to evaluate op1 first.
-                        if (op1Val->gtOp.gtOp1->gtFlags & GTF_ALL_EFFECT)
-                        {
-                            break;
-                        }
+                        bReverseInAssignment = true;
+                        tree->gtFlags |= GTF_REVERSE_OPS;
+                        break;
+                    }
+                    if (op1Val->AsIndir()->Addr()->gtFlags & GTF_ALL_EFFECT)
+                    {
+                        break;
                     }
 
                     // In case op2 assigns to a local var that is used in op1Val, we have to evaluate op1Val first.
@@ -4233,9 +4249,6 @@ unsigned Compiler::gtSetEvalOrder(GenTree* tree)
 
                 case GT_LCL_VAR:
                 case GT_LCL_FLD:
-                case GT_BLK:
-                case GT_OBJ:
-                case GT_DYN_BLK:
 
                     // We evaluate op2 before op1
                     bReverseInAssignment = true;
@@ -6912,9 +6925,6 @@ void Compiler::gtBlockOpInit(GenTree* result, GenTree* dst, GenTree* srcOrFillVa
     result->gtFlags |= dst->gtFlags & GTF_ALL_EFFECT;
     result->gtFlags |= result->gtOp.gtOp2->gtFlags & GTF_ALL_EFFECT;
 
-    // REVERSE_OPS is necessary because the use must occur before the def
-    result->gtFlags |= GTF_REVERSE_OPS;
-
     result->gtFlags |= (dst->gtFlags & GTF_EXCEPT) | (srcOrFillVal->gtFlags & GTF_EXCEPT);
 
     if (isVolatile)
@@ -8411,15 +8421,6 @@ unsigned GenTree::NumChildren()
             }
         }
 #endif
-        // Special case for assignment of dynamic block.
-        // This is here to duplicate the former case where the size may be evaluated prior to the
-        // source and destination addresses. In order to do this, we treat the size as a child of the
-        // assignment.
-        // TODO-1stClassStructs-Cleanup: Remove all this special casing, and ensure that the diffs are reasonable.
-        if ((OperGet() == GT_ASG) && (gtOp.gtOp1->OperGet() == GT_DYN_BLK) && (gtOp.gtOp1->AsDynBlk()->gtEvalSizeFirst))
-        {
-            return 3;
-        }
         assert(gtOp.gtOp1 != nullptr);
         if (gtOp.gtOp2 == nullptr)
         {
@@ -8454,17 +8455,8 @@ unsigned GenTree::NumChildren()
             case GT_ARR_ELEM:
                 return 1 + AsArrElem()->gtArrRank;
 
-            // This really has two children, but if the size is evaluated first, we treat it as a child of the
-            // parent assignment.
             case GT_DYN_BLK:
-                if (AsDynBlk()->gtEvalSizeFirst)
-                {
-                    return 1;
-                }
-                else
-                {
-                    return 2;
-                }
+                return 2;
 
             case GT_ARR_OFFSET:
             case GT_STORE_DYN_BLK:
@@ -8604,10 +8596,9 @@ GenTree* GenTree::GetChild(unsigned childNum)
                 switch (childNum)
                 {
                     case 0:
-                        return AsDynBlk()->Addr();
+                        return AsDynBlk()->gtEvalSizeFirst ? AsDynBlk()->gtDynamicSize : AsDynBlk()->Addr();
                     case 1:
-                        assert(!AsDynBlk()->gtEvalSizeFirst);
-                        return AsDynBlk()->gtDynamicSize;
+                        return AsDynBlk()->gtEvalSizeFirst ? AsDynBlk()->Addr() : AsDynBlk()->gtDynamicSize;
                     default:
                         unreached();
                 }
