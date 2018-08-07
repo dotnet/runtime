@@ -13,6 +13,10 @@ namespace System.Collections.Tests
     /// </summary>
     public abstract partial class Dictionary_Generic_Tests<TKey, TValue> : IDictionary_Generic_Tests<TKey, TValue>
     {
+        protected override ModifyOperation ModifyEnumeratorThrows => PlatformDetection.IsFullFramework ? base.ModifyEnumeratorThrows : ModifyOperation.Add | ModifyOperation.Insert | ModifyOperation.Clear;
+
+        protected override ModifyOperation ModifyEnumeratorAllowed => PlatformDetection.IsFullFramework ? base.ModifyEnumeratorAllowed : ModifyOperation.Remove;
+
         #region IDictionary<TKey, TValue Helper Methods
 
         protected override IDictionary<TKey, TValue> GenericIDictionaryFactory()

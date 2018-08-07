@@ -16,6 +16,10 @@ namespace System.Collections.Tests
             return new Dictionary<string, string>();
         }
 
+        protected override ModifyOperation ModifyEnumeratorThrows => PlatformDetection.IsFullFramework ? base.ModifyEnumeratorThrows : ModifyOperation.Add | ModifyOperation.Insert | ModifyOperation.Clear;
+
+        protected override ModifyOperation ModifyEnumeratorAllowed => PlatformDetection.IsFullFramework ? base.ModifyEnumeratorAllowed : ModifyOperation.Remove;
+
         /// <summary>
         /// Creates an object that is dependent on the seed given. The object may be either
         /// a value type or a reference type, chosen based on the value of the seed.
