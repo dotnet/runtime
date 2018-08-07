@@ -66,12 +66,14 @@ typedef unsigned __int64	uint64_t;
 #endif
 
 #if defined(MONO_DLL_EXPORT)
-	#define MONO_API MONO_EXTERN_C MONO_API_EXPORT
+	#define MONO_API_NO_EXTERN_C MONO_API_EXPORT
 #elif defined(MONO_DLL_IMPORT)
-	#define MONO_API MONO_EXTERN_C MONO_API_IMPORT
+	#define MONO_API_NO_EXTERN_C MONO_API_IMPORT
 #else
-	#define MONO_API MONO_EXTERN_C
+	#define MONO_API_NO_EXTERN_C /* nothing  */
 #endif
+
+#define MONO_API MONO_EXTERN_C MONO_API_NO_EXTERN_C
 
 // extern "C" extern int c; // warning: duplicate 'extern' declaration specifier [-Wduplicate-decl-specifier]
 //
