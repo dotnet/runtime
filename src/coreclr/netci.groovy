@@ -3227,12 +3227,6 @@ def static CreateWindowsArmTestJob(def dslFactory, def project, def architecture
                 def archLocation = testListArch[architecture]
 
                 addCommand("copy %WORKSPACE%\\tests\\${archLocation}\\Tests.lst bin\\tests\\${osGroup}.${architecture}.${configuration}")
-
-                if (architecture == "arm64") {
-                    addCommand("copy C:\\Jenkins\\vcruntime140.dll bin\\tests\\${osGroup}.${architecture}.${configuration}\\Tests\\Core_Root")
-                    addCommand("copy C:\\Jenkins\\vcruntime140d.dll bin\\tests\\${osGroup}.${architecture}.${configuration}\\Tests\\Core_Root")
-                }
-
                 addCommand("pushd bin\\tests\\${osGroup}.${architecture}.${configuration}")
                 addCommand("${smartyCommand}")
 
