@@ -1089,6 +1089,9 @@ typedef unsigned char   regNumberSmall;
   #define REG_R2R_INDIRECT_PARAM          REG_R4
   #define RBM_R2R_INDIRECT_PARAM          RBM_R4
 
+  // JMP Indirect call register
+  #define REG_INDIRECT_CALL_TARGET_REG REG_R12
+
   // Registers used by PInvoke frame setup
   #define REG_PINVOKE_FRAME        REG_R4
   #define RBM_PINVOKE_FRAME        RBM_R4
@@ -1401,6 +1404,9 @@ typedef unsigned char   regNumberSmall;
   // R2R indirect call. Use the same registers as VSD
   #define REG_R2R_INDIRECT_PARAM          REG_R11
   #define RBM_R2R_INDIRECT_PARAM          RBM_R11
+
+  // JMP Indirect call register
+  #define REG_INDIRECT_CALL_TARGET_REG    REG_IP0
 
   // Registers used by PInvoke frame setup
   #define REG_PINVOKE_FRAME        REG_R9
