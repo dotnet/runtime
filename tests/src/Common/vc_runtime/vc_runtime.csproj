@@ -5,8 +5,8 @@
     <Configuration Condition=" '$(Configuration)' == '' ">Debug</Configuration>
     <Platform Condition=" '$(Platform)' == '' ">AnyCPU</Platform>
     <CLRTestKind>BuildOnly</CLRTestKind>
-    <NugetTargetMoniker>.NETCoreApp,Version=v1.1</NugetTargetMoniker>
-    <NugetTargetMonikerShort>netcoreapp1.1</NugetTargetMonikerShort>
+    <NugetTargetMoniker>.NETCoreApp,Version=v3.0</NugetTargetMoniker>
+    <NugetTargetMonikerShort>netcoreapp3.0</NugetTargetMonikerShort>
     <IsTestProject>false</IsTestProject>
   </PropertyGroup>
   <ItemGroup>
@@ -15,10 +15,10 @@
     </PackageReference>
   </ItemGroup>
   <PropertyGroup>
-    <TargetFramework>netcoreapp1.1</TargetFramework>
+    <TargetFramework>netcoreapp3.0</TargetFramework>
     <TargetFrameworkIdentifier>.NETCoreApp</TargetFrameworkIdentifier>
     <PackageTargetFallback>$(PackageTargetFallback);dnxcore50;netcoreapp1.1;portable-net45+win8</PackageTargetFallback>
-    <RuntimeIdentifiers>win-arm</RuntimeIdentifiers>
+    <RuntimeIdentifiers>win-arm;win-arm64</RuntimeIdentifiers>
     <ContainsPackageReferences>true</ContainsPackageReferences>
     <PrereleaseResolveNuGetPackages>false</PrereleaseResolveNuGetPackages>
   </PropertyGroup>
