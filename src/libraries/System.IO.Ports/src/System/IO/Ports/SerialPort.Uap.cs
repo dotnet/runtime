@@ -23,7 +23,7 @@ namespace System.IO.Ports
                 throw new PlatformNotSupportedException(System.SR.PlatformNotSupported_SerialPort_GetPortNames);
             }
 
-            if (error == Interop.Errors.ERROR_MORE_DATA)
+            while (error == Interop.Errors.ERROR_MORE_DATA)
             {
                 portNumbers = new uint[portNumbersFound];
                 error = Interop.mincore.GetCommPorts(portNumbers, out portNumbersFound);
@@ -31,7 +31,8 @@ namespace System.IO.Ports
 
             if (error != Interop.Errors.ERROR_SUCCESS)
             {
-                throw new Win32Exception(error);
+                // Try to match general behavior of Fx: return empty array for failures.
+                return Array.Empty<string>();
             }
 
             var portNames = new string[portNumbersFound];
