@@ -64,6 +64,17 @@ namespace System.Reflection.Tests
             int* actual = (int*)(Pointer.Unbox(rv));
             Assert.Equal((IntPtr)expected, (IntPtr)actual);
         }
+        
+        [Fact]
+        [ActiveIssue("TFS 603305 - Bring Project N up to sync", TargetFrameworkMonikers.UapAot)]
+        public static unsafe void TestNullRefReturnOfPointer()
+        {
+            TestClassIntPointer tc = new TestClassIntPointer(null);
+
+            PropertyInfo p = typeof(TestClassIntPointer).GetProperty(nameof(TestClassIntPointer.NullRefReturningProp));
+            Assert.NotNull(p);
+            Assert.Throws<NullReferenceException>(() => p.GetValue(tc));
+        }
 
         public static IEnumerable<object[]> RefReturnInvokeTestData
         {
@@ -147,6 +158,7 @@ namespace System.Reflection.Tests
 
             public TestClassIntPointer(int* value) { _value = value; }
             public ref int* RefReturningProp => ref _value;
+            public ref int* NullRefReturningProp => ref *(int**)null;
         }
     }
 }
