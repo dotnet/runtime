@@ -3931,8 +3931,8 @@ void Compiler::lvaMarkLocalVars(BasicBlock* block, bool isRecompute)
         }
     };
 
-    JITDUMP("\n*** %s local variables in block BB%02u (weight=%s)\n", block->bbNum,
-            isRecompute ? "recomputing" : "marking", refCntWtd2str(block->getBBWeight(this)));
+    JITDUMP("\n*** %s local variables in block BB%02u (weight=%s)\n", isRecompute ? "recomputing" : "marking",
+            block->bbNum, refCntWtd2str(block->getBBWeight(this)));
 
     for (GenTreeStmt* stmt = block->FirstNonPhiDef(); stmt != nullptr; stmt = stmt->getNextStmt())
     {
