@@ -2557,6 +2557,11 @@ COM_METHOD CordbProcess::GetContainingObject(CORDB_ADDRESS interiorPointer, ICor
     return hr;
 }
 
+COM_METHOD CordbProcess::EnableGCNotificationEvents(BOOL fEnable)
+{
+    return this->m_pDacPrimitives->EnableGCNotificationEvents(fEnable);
+}
+
 #ifdef FEATURE_LEGACYNETCF_DBG_HOST_CONTROL
 
 COM_METHOD CordbProcess::InvokePauseCallback()
