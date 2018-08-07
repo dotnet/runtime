@@ -597,7 +597,7 @@ mono_arch_get_argument_info (MonoMethodSignature *csig, int param_count, MonoJit
 
 	/* Avoid g_malloc as it is not signal safe */
 	len = sizeof (CallInfo) + (sizeof (ArgInfo) * (csig->param_count + 1));
-	cinfo = (CallInfo*)g_newa (guint8*, len);
+	cinfo = (CallInfo*)g_alloca (len);
 	memset (cinfo, 0, len);
 
 	cinfo = get_call_info_internal (cinfo, csig);
