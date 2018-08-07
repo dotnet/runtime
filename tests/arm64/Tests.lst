@@ -89585,7 +89585,7 @@ RelativePath=Exceptions\ForeignThread\ForeignThreadExceptions\ForeignThreadExcep
 WorkingDir=Exceptions\ForeignThread\ForeignThreadExceptions
 Expected=0
 MaxAllowedDurationSeconds=600
-Categories=EXPECTED_FAIL;10636;NEW
+Categories=EXPECTED_PASS;NEW
 HostStyle=0
 
 [MathFExp.cmd_11575]
