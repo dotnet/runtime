@@ -113,6 +113,8 @@ namespace JIT.HardwareIntrinsics.X86
                 ["GetLowerHalf.UInt16"] = GetLowerHalfUInt16,
                 ["GetLowerHalf.UInt32"] = GetLowerHalfUInt32,
                 ["GetLowerHalf.UInt64"] = GetLowerHalfUInt64,
+                ["MaskStore.Double"] = MaskStoreDouble,
+                ["MaskStore.Single"] = MaskStoreSingle,
                 ["Max.Double"] = MaxDouble,
                 ["Max.Single"] = MaxSingle,
                 ["Min.Double"] = MinDouble,

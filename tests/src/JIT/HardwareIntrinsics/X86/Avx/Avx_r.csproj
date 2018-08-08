@@ -128,6 +128,8 @@
     <Compile Include="GetLowerHalf.UInt16.cs" />
     <Compile Include="GetLowerHalf.UInt32.cs" />
     <Compile Include="GetLowerHalf.UInt64.cs" />
+    <Compile Include="MaskStore.Double.cs" />
+    <Compile Include="MaskStore.Single.cs" />
     <Compile Include="Max.Double.cs" />
     <Compile Include="Max.Single.cs" />
     <Compile Include="Min.Double.cs" />
