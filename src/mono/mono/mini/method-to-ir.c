@@ -4134,7 +4134,7 @@ handle_delegate_ctor (MonoCompile *cfg, MonoClass *klass, MonoInst *target, Mono
 	}
 
 	/* Set method field */
-	if (!(target_method_context_used || invoke_context_used)) {
+	if (!(target_method_context_used || invoke_context_used) || cfg->llvm_only) {
 		//If compiling with gsharing enabled, it's faster to load method the delegate trampoline info than to use a rgctx slot
 		MonoInst *method_ins = emit_get_rgctx_method (cfg, target_method_context_used, method, MONO_RGCTX_INFO_METHOD);
 		MONO_EMIT_NEW_STORE_MEMBASE (cfg, OP_STORE_MEMBASE_REG, obj->dreg, MONO_STRUCT_OFFSET (MonoDelegate, method), method_ins->dreg);
