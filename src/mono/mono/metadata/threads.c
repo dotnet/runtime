@@ -6101,6 +6101,8 @@ thread_summary_state_to_str (MonoSummaryState state)
 		return "MONO_SUMMARY_EXAMINE";
 	case MONO_SUMMARY_MUTATE_SHARED:
 		return "MONO_SUMMARY_MUTATE_SHARED";
+	default:
+		g_assert_not_reached ();
 	}
 }
 
