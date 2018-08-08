@@ -18,6 +18,28 @@ namespace R2RDump
         public int Size { get; set; }
     }
 
+    public abstract class BaseGcTransition
+    {
+        [XmlAttribute("Index")]
+        public int CodeOffset { get; set; }
+
+        public BaseGcTransition() { }
+
+        public BaseGcTransition(int codeOffset)
+        {
+            CodeOffset = codeOffset;
+        }
+    }
+
+    public abstract class BaseGcInfo
+    {
+        public int Size { get; set; }
+        public int Offset { get; set; }
+        public int CodeLength { get; set; }
+        [XmlIgnore]
+        public Dictionary<int, List<BaseGcTransition>> Transitions { get; set; }
+    }
+
     public class RuntimeFunction
     {
         /// <summary>
@@ -56,7 +78,7 @@ namespace R2RDump
 
         public RuntimeFunction() { }
 
-        public RuntimeFunction(int id, int startRva, int endRva, int unwindRva, int codeOffset, R2RMethod method, BaseUnwindInfo unwindInfo, GcInfo gcInfo)
+        public RuntimeFunction(int id, int startRva, int endRva, int unwindRva, int codeOffset, R2RMethod method, BaseUnwindInfo unwindInfo, BaseGcInfo gcInfo)
         {
             Id = id;
             StartAddress = startRva;
@@ -152,7 +174,7 @@ namespace R2RDump
         public int EntryPointRuntimeFunctionId { get; set; }
 
         [XmlIgnore]
-        public GcInfo GcInfo { get; set; }
+        public BaseGcInfo GcInfo { get; set; }
 
         public FixupCell[] Fixups { get; set; }
 

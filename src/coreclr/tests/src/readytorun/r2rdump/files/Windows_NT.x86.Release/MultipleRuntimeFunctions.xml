@@ -83,6 +83,48 @@
         <Rid>1</Rid>
         <EntryPointRuntimeFunctionId>0</EntryPointRuntimeFunctionId>
       </R2RMethod>
+      <GcInfo>
+        <GcInfo xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:xsd="http://www.w3.org/2001/XMLSchema">
+          <Size>3</Size>
+          <Offset>2972</Offset>
+          <CodeLength>6</CodeLength>
+          <Header>
+            <PrologSize>5</PrologSize>
+            <EpilogSize>1</EpilogSize>
+            <EpilogCount>1</EpilogCount>
+            <EpilogAtEnd>true</EpilogAtEnd>
+            <EdiSaved>false</EdiSaved>
+            <EsiSaved>false</EsiSaved>
+            <EbxSaved>false</EbxSaved>
+            <EbpSaved>false</EbpSaved>
+            <EbpFrame>false</EbpFrame>
+            <Interruptible>false</Interruptible>
+            <DoubleAlign>false</DoubleAlign>
+            <Security>false</Security>
+            <Handlers>false</Handlers>
+            <Localloc>false</Localloc>
+            <EditNcontinue>false</EditNcontinue>
+            <Varargs>false</Varargs>
+            <ProfCallbacks>false</ProfCallbacks>
+            <GenericsContext>0</GenericsContext>
+            <GenericsContextIsMethodDesc>0</GenericsContextIsMethodDesc>
+            <ReturnKind>RT_Scalar</ReturnKind>
+            <ArgCount>0</ArgCount>
+            <FrameSize>0</FrameSize>
+            <UntrackedCnt>0</UntrackedCnt>
+            <VarPtrTableSize>0</VarPtrTableSize>
+            <GsCookieOffset>0</GsCookieOffset>
+            <SyncStartOffset>0</SyncStartOffset>
+            <SyncEndOffset>0</SyncEndOffset>
+            <RevPInvokeOffset>0</RevPInvokeOffset>
+            <HasArgTabOffset>false</HasArgTabOffset>
+            <ArgTabOffset>0</ArgTabOffset>
+          </Header>
+          <SlotTable>
+            <GcSlots />
+          </SlotTable>
+        </GcInfo>
+      </GcInfo>
       <RuntimeFunctions>
         <RuntimeFunction Index="0">
           <MethodRid>1</MethodRid>
@@ -109,6 +151,48 @@
         <Rid>2</Rid>
         <EntryPointRuntimeFunctionId>1</EntryPointRuntimeFunctionId>
       </R2RMethod>
+      <GcInfo>
+        <GcInfo xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:xsd="http://www.w3.org/2001/XMLSchema">
+          <Size>3</Size>
+          <Offset>2972</Offset>
+          <CodeLength>6</CodeLength>
+          <Header>
+            <PrologSize>5</PrologSize>
+            <EpilogSize>1</EpilogSize>
+            <EpilogCount>1</EpilogCount>
+            <EpilogAtEnd>true</EpilogAtEnd>
+            <EdiSaved>false</EdiSaved>
+            <EsiSaved>false</EsiSaved>
+            <EbxSaved>false</EbxSaved>
+            <EbpSaved>false</EbpSaved>
+            <EbpFrame>false</EbpFrame>
+            <Interruptible>false</Interruptible>
+            <DoubleAlign>false</DoubleAlign>
+            <Security>false</Security>
+            <Handlers>false</Handlers>
+            <Localloc>false</Localloc>
+            <EditNcontinue>false</EditNcontinue>
+            <Varargs>false</Varargs>
+            <ProfCallbacks>false</ProfCallbacks>
+            <GenericsContext>0</GenericsContext>
+            <GenericsContextIsMethodDesc>0</GenericsContextIsMethodDesc>
+            <ReturnKind>RT_Scalar</ReturnKind>
+            <ArgCount>0</ArgCount>
+            <FrameSize>0</FrameSize>
+            <UntrackedCnt>0</UntrackedCnt>
+            <VarPtrTableSize>0</VarPtrTableSize>
+            <GsCookieOffset>0</GsCookieOffset>
+            <SyncStartOffset>0</SyncStartOffset>
+            <SyncEndOffset>0</SyncEndOffset>
+            <RevPInvokeOffset>0</RevPInvokeOffset>
+            <HasArgTabOffset>false</HasArgTabOffset>
+            <ArgTabOffset>0</ArgTabOffset>
+          </Header>
+          <SlotTable>
+            <GcSlots />
+          </SlotTable>
+        </GcInfo>
+      </GcInfo>
       <RuntimeFunctions>
         <RuntimeFunction Index="1">
           <MethodRid>2</MethodRid>
@@ -135,6 +219,48 @@
         <Rid>3</Rid>
         <EntryPointRuntimeFunctionId>2</EntryPointRuntimeFunctionId>
       </R2RMethod>
+      <GcInfo>
+        <GcInfo xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:xsd="http://www.w3.org/2001/XMLSchema">
+          <Size>3</Size>
+          <Offset>2972</Offset>
+          <CodeLength>6</CodeLength>
+          <Header>
+            <PrologSize>5</PrologSize>
+            <EpilogSize>1</EpilogSize>
+            <EpilogCount>1</EpilogCount>
+            <EpilogAtEnd>true</EpilogAtEnd>
+            <EdiSaved>false</EdiSaved>
+            <EsiSaved>false</EsiSaved>
+            <EbxSaved>false</EbxSaved>
+            <EbpSaved>false</EbpSaved>
+            <EbpFrame>false</EbpFrame>
+            <Interruptible>false</Interruptible>
+            <DoubleAlign>false</DoubleAlign>
+            <Security>false</Security>
+            <Handlers>false</Handlers>
+            <Localloc>false</Localloc>
+            <EditNcontinue>false</EditNcontinue>
+            <Varargs>false</Varargs>
+            <ProfCallbacks>false</ProfCallbacks>
+            <GenericsContext>0</GenericsContext>
+            <GenericsContextIsMethodDesc>0</GenericsContextIsMethodDesc>
+            <ReturnKind>RT_Scalar</ReturnKind>
+            <ArgCount>0</ArgCount>
+            <FrameSize>0</FrameSize>
+            <UntrackedCnt>0</UntrackedCnt>
+            <VarPtrTableSize>0</VarPtrTableSize>
+            <GsCookieOffset>0</GsCookieOffset>
+            <SyncStartOffset>0</SyncStartOffset>
+            <SyncEndOffset>0</SyncEndOffset>
+            <RevPInvokeOffset>0</RevPInvokeOffset>
+            <HasArgTabOffset>false</HasArgTabOffset>
+            <ArgTabOffset>0</ArgTabOffset>
+          </Header>
+          <SlotTable>
+            <GcSlots />
+          </SlotTable>
+        </GcInfo>
+      </GcInfo>
       <RuntimeFunctions>
         <RuntimeFunction Index="2">
           <MethodRid>3</MethodRid>

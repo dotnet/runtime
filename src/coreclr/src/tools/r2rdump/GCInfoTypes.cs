@@ -8,6 +8,62 @@ using System.Text;
 
 namespace R2RDump
 {
+    enum InfoHdrAdjustConstants
+    {
+        // Constants
+        SET_FRAMESIZE_MAX = 7,
+        SET_ARGCOUNT_MAX = 8,
+        SET_PROLOGSIZE_MAX = 16,
+        SET_EPILOGSIZE_MAX = 10,
+        SET_EPILOGCNT_MAX = 4,
+        SET_UNTRACKED_MAX = 3,
+        SET_RET_KIND_MAX = 4,
+        ADJ_ENCODING_MAX = 0x7f,
+        MORE_BYTES_TO_FOLLOW = 0x80
+    };
+
+    //
+    // Enum to define codes that are used to incrementally adjust the InfoHdr structure.
+    // First set of opcodes
+    enum InfoHdrAdjust
+    {
+        SET_FRAMESIZE = 0,                                            // 0x00
+        SET_ARGCOUNT = SET_FRAMESIZE + InfoHdrAdjustConstants.SET_FRAMESIZE_MAX + 1,      // 0x08
+        SET_PROLOGSIZE = SET_ARGCOUNT + InfoHdrAdjustConstants.SET_ARGCOUNT_MAX + 1,      // 0x11
+        SET_EPILOGSIZE = SET_PROLOGSIZE + InfoHdrAdjustConstants.SET_PROLOGSIZE_MAX + 1,      // 0x22
+        SET_EPILOGCNT = SET_EPILOGSIZE + InfoHdrAdjustConstants.SET_EPILOGSIZE_MAX + 1,      // 0x2d
+        SET_UNTRACKED = SET_EPILOGCNT + (InfoHdrAdjustConstants.SET_EPILOGCNT_MAX + 1) * 2, // 0x37
+
+        FIRST_FLIP = SET_UNTRACKED + InfoHdrAdjustConstants.SET_UNTRACKED_MAX + 1,
+
+        FLIP_EDI_SAVED = FIRST_FLIP, // 0x3b
+        FLIP_ESI_SAVED,           // 0x3c
+        FLIP_EBX_SAVED,           // 0x3d
+        FLIP_EBP_SAVED,           // 0x3e
+        FLIP_EBP_FRAME,           // 0x3f
+        FLIP_INTERRUPTIBLE,       // 0x40
+        FLIP_DOUBLE_ALIGN,        // 0x41
+        FLIP_SECURITY,            // 0x42
+        FLIP_HANDLERS,            // 0x43
+        FLIP_LOCALLOC,            // 0x44
+        FLIP_EDITnCONTINUE,       // 0x45
+        FLIP_VAR_PTR_TABLE_SZ,    // 0x46 Flip whether a table-size exits after the header encoding
+        FFFF_UNTRACKED_CNT,       // 0x47 There is a count (>SET_UNTRACKED_MAX) after the header encoding
+        FLIP_VARARGS,             // 0x48
+        FLIP_PROF_CALLBACKS,      // 0x49
+        FLIP_HAS_GS_COOKIE,       // 0x4A - The offset of the GuardStack cookie follows after the header encoding
+        FLIP_SYNC,                // 0x4B
+        FLIP_HAS_GENERICS_CONTEXT,// 0x4C
+        FLIP_GENERICS_CONTEXT_IS_METHODDESC,// 0x4D
+        FLIP_REV_PINVOKE_FRAME,   // 0x4E
+        NEXT_OPCODE,              // 0x4F -- see next Adjustment enumeration
+        NEXT_FOUR_START = 0x50,
+        NEXT_FOUR_FRAMESIZE = 0x50,
+        NEXT_FOUR_ARGCOUNT = 0x60,
+        NEXT_THREE_PROLOGSIZE = 0x70,
+        NEXT_THREE_EPILOGSIZE = 0x78
+    };
+
     public class GcInfoTypes
     {
         private Machine _target;

@@ -59,34 +59,6 @@
                 <Section>6891812037705</Section>
               </ImportSectionEntry>
             </Entries>
-            <AuxiliaryData>
-              <Version>2</Version>
-              <CodeLength>0</CodeLength>
-              <ReturnKind>RT_Object</ReturnKind>
-              <ValidRangeStart>0</ValidRangeStart>
-              <ValidRangeEnd>0</ValidRangeEnd>
-              <SecurityObjectStackSlot>-1</SecurityObjectStackSlot>
-              <GSCookieStackSlot>-1</GSCookieStackSlot>
-              <PSPSymStackSlot>-1</PSPSymStackSlot>
-              <GenericsInstContextStackSlot>-1</GenericsInstContextStackSlot>
-              <StackBaseRegister>4294967295</StackBaseRegister>
-              <SizeOfEditAndContinuePreservedArea>4294967295</SizeOfEditAndContinuePreservedArea>
-              <ReversePInvokeFrameStackSlot>-1</ReversePInvokeFrameStackSlot>
-              <SizeOfStackOutgoingAndScratchArea>0</SizeOfStackOutgoingAndScratchArea>
-              <NumSafePoints>0</NumSafePoints>
-              <NumInterruptibleRanges>0</NumInterruptibleRanges>
-              <SafePointOffsets />
-              <InterruptibleRanges />
-              <SlotTable>
-                <NumRegisters>0</NumRegisters>
-                <NumStackSlots>0</NumStackSlots>
-                <NumUntracked>0</NumUntracked>
-                <NumSlots>0</NumSlots>
-                <GcSlots />
-              </SlotTable>
-              <Size>22</Size>
-              <Offset>3080</Offset>
-            </AuxiliaryData>
           </R2RImportSection>
           <ImportSectionEntry xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:xsd="http://www.w3.org/2001/XMLSchema" Index="0">
             <StartOffset>0</StartOffset>
@@ -146,8 +118,10 @@
       </R2RMethod>
       <GcInfo>
         <GcInfo xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:xsd="http://www.w3.org/2001/XMLSchema">
-          <Version>2</Version>
+          <Size>32</Size>
+          <Offset>3064</Offset>
           <CodeLength>27</CodeLength>
+          <Version>2</Version>
           <ReturnKind>RT_Scalar</ReturnKind>
           <ValidRangeStart>0</ValidRangeStart>
           <ValidRangeEnd>0</ValidRangeEnd>
@@ -174,8 +148,6 @@
             <NumSlots>0</NumSlots>
             <GcSlots />
           </SlotTable>
-          <Size>32</Size>
-          <Offset>3064</Offset>
         </GcInfo>
       </GcInfo>
       <RuntimeFunctions>
@@ -222,8 +194,10 @@
       </R2RMethod>
       <GcInfo>
         <GcInfo xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:xsd="http://www.w3.org/2001/XMLSchema">
-          <Version>2</Version>
+          <Size>22</Size>
+          <Offset>3076</Offset>
           <CodeLength>6</CodeLength>
+          <Version>2</Version>
           <ReturnKind>RT_Scalar</ReturnKind>
           <ValidRangeStart>0</ValidRangeStart>
           <ValidRangeEnd>0</ValidRangeEnd>
@@ -246,8 +220,6 @@
             <NumSlots>0</NumSlots>
             <GcSlots />
           </SlotTable>
-          <Size>22</Size>
-          <Offset>3076</Offset>
         </GcInfo>
       </GcInfo>
       <RuntimeFunctions>
