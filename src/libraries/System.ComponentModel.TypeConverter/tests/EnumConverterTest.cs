@@ -104,6 +104,66 @@ namespace System.ComponentModel.Tests
             Assert.All(Enum.GetValues(typeof(SomeEnum)).Cast<SomeEnum>(), value => Assert.Contains(value, standardValues));
         }
 
+        [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework, "Does not have fix for #31095")]
+        [Fact]
+        public static void ConvertFrom_ULongFlagsEnum_String()
+        {
+            EnumConverter converter = new EnumConverter(typeof(ULongFlagsEnum));
+            string str = $"{ULongFlagsEnum.Bit62}, {ULongFlagsEnum.Bit63}";
+            ULongFlagsEnum result = (ULongFlagsEnum)converter.ConvertFrom(null, null, str);
+            Assert.Equal(ULongFlagsEnum.Bit62 | ULongFlagsEnum.Bit63, result);
+        }
+
+        [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework, "Does not have fix for #31095")]
+        [Fact]
+        public static void ConvertFrom_ULongFlagsEnum_EnumArray()
+        {
+            EnumConverter converter = new EnumConverter(typeof(ULongFlagsEnum));
+            Enum[] arr = new Enum[] {ULongFlagsEnum.Bit62, ULongFlagsEnum.Bit63};
+            ULongFlagsEnum result = (ULongFlagsEnum)converter.ConvertFrom(null, null, arr);
+            Assert.Equal(ULongFlagsEnum.Bit62 | ULongFlagsEnum.Bit63, result);
+        }
+
+        [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework, "Does not have fix for #31095")]
+        [Fact]
+        public static void ConvertTo_ULongFlagsEnum_EnumArray()
+        {
+            EnumConverter converter = new EnumConverter(typeof(ULongFlagsEnum));
+            ULongFlagsEnum value = ULongFlagsEnum.Bit62 | ULongFlagsEnum.Bit63;
+            Enum[] result = (Enum[])converter.ConvertTo(null, null, value, typeof(Enum[]));
+            Assert.Equal(new Enum[] {ULongFlagsEnum.Bit62, ULongFlagsEnum.Bit63}, result);
+        }
+
+        [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework, "Does not have fix for #31095")]
+        [Fact]
+        public static void ConvertFrom_LongFlagsEnum_String()
+        {
+            EnumConverter converter = new EnumConverter(typeof(LongFlagsEnum));
+            string str = $"{LongFlagsEnum.Bit62}, {LongFlagsEnum.Bit63}";
+            LongFlagsEnum result = (LongFlagsEnum)converter.ConvertFrom(null, null, str);
+            Assert.Equal(LongFlagsEnum.Bit62 | LongFlagsEnum.Bit63, result);
+        }
+
+        [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework, "Does not have fix for #31095")]
+        [Fact]
+        public static void ConvertFrom_LongFlagsEnum_EnumArray()
+        {
+            EnumConverter converter = new EnumConverter(typeof(LongFlagsEnum));
+            Enum[] arr = new Enum[] {LongFlagsEnum.Bit62, LongFlagsEnum.Bit63};
+            LongFlagsEnum result = (LongFlagsEnum)converter.ConvertFrom(null, null, arr);
+            Assert.Equal(LongFlagsEnum.Bit62 | LongFlagsEnum.Bit63, result);
+        }
+
+        [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework, "Does not have fix for #31095")]
+        [Fact]
+        public static void ConvertTo_LongFlagsEnum_EnumArray()
+        {
+            EnumConverter converter = new EnumConverter(typeof(LongFlagsEnum));
+            LongFlagsEnum value = LongFlagsEnum.Bit62 | LongFlagsEnum.Bit63;
+            Enum[] result = (Enum[])converter.ConvertTo(null, null, value, typeof(Enum[]));
+            Assert.Equal(new Enum[] {LongFlagsEnum.Bit62, LongFlagsEnum.Bit63}, result);
+        }
+
         private static void VerifyArraysEqual<T>(T[] expected, object actual)
         {
             Assert.NotNull(actual);
