@@ -779,7 +779,8 @@ mono_dynimage_encode_typedef_or_ref_full (MonoDynamicImage *assembly, MonoType *
 		goto leave;
 	klass = mono_class_from_mono_type (type);
 
-	MonoReflectionTypeBuilderHandle tb = MONO_HANDLE_CAST (MonoReflectionTypeBuilder, mono_class_get_ref_info (klass));
+	MonoReflectionTypeBuilderHandle tb;
+	tb = MONO_HANDLE_CAST (MonoReflectionTypeBuilder, mono_class_get_ref_info (klass));
 	/*
 	 * If it's in the same module and not a generic type parameter:
 	 */
@@ -982,10 +983,12 @@ reflection_sighelper_get_signature_local (MonoReflectionSigHelperHandle sig, Mon
 	}
 
 	buflen = buf.p - buf.buf;
-	MonoArrayHandle result = mono_array_new_handle (mono_domain_get (), mono_defaults.byte_class, buflen, error);
+	MonoArrayHandle result;
+	result = mono_array_new_handle (mono_domain_get (), mono_defaults.byte_class, buflen, error);
 	goto_if_nok (error, fail);
 	uint32_t gchandle;
-	void *base = MONO_ARRAY_HANDLE_PIN (result, char, 0, &gchandle);
+	void *base;
+	base = MONO_ARRAY_HANDLE_PIN (result, char, 0, &gchandle);
 	memcpy (base, buf.buf, buflen);
 	sigbuffer_free (&buf);
 	mono_gchandle_free (gchandle);
@@ -1016,10 +1019,12 @@ reflection_sighelper_get_signature_field (MonoReflectionSigHelperHandle sig, Mon
 	}
 
 	buflen = buf.p - buf.buf;
-	MonoArrayHandle result = mono_array_new_handle (mono_domain_get (), mono_defaults.byte_class, buflen, error);
+	MonoArrayHandle result;
+	result = mono_array_new_handle (mono_domain_get (), mono_defaults.byte_class, buflen, error);
 	goto_if_nok (error, fail);
 	uint32_t gchandle;
-	void *base = MONO_ARRAY_HANDLE_PIN (result, char, 0, &gchandle);
+	void *base;
+	base = MONO_ARRAY_HANDLE_PIN (result, char, 0, &gchandle);
 	memcpy (base, buf.buf, buflen);
 	sigbuffer_free (&buf);
 	mono_gchandle_free (gchandle);

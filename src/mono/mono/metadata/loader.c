@@ -2315,7 +2315,8 @@ async_stack_walk_adapter (MonoStackFrameInfo *frame, MonoContext *ctx, gpointer 
 		if (!frame->ji)
 			return FALSE;
 
-		MonoMethod *method = frame->ji->async ? NULL : frame->actual_method;
+		MonoMethod *method;
+		method = frame->ji->async ? NULL : frame->actual_method;
 
 		return d->func (method, frame->domain, frame->ji->code_start, frame->native_offset, d->user_data);
 	default:

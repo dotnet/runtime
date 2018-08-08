@@ -201,7 +201,8 @@ emit_managed_allocater_ilgen (MonoMethodBuilder *mb, gboolean slowpath, gboolean
 		goto done;
 	}
 
-	MonoType *int_type = mono_get_int_type ();
+	MonoType *int_type;
+	int_type = mono_get_int_type ();
 	/*
 	 * Tls access might call foreign code or code without jinfo. This can
 	 * only happen if we are outside of the critical region.
