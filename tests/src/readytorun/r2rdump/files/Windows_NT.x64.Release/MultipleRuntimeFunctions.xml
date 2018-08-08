@@ -85,8 +85,10 @@
       </R2RMethod>
       <GcInfo>
         <GcInfo xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:xsd="http://www.w3.org/2001/XMLSchema">
-          <Version>2</Version>
+          <Size>22</Size>
+          <Offset>3028</Offset>
           <CodeLength>6</CodeLength>
+          <Version>2</Version>
           <ReturnKind>RT_Scalar</ReturnKind>
           <ValidRangeStart>0</ValidRangeStart>
           <ValidRangeEnd>0</ValidRangeEnd>
@@ -109,8 +111,6 @@
             <NumSlots>0</NumSlots>
             <GcSlots />
           </SlotTable>
-          <Size>22</Size>
-          <Offset>3028</Offset>
         </GcInfo>
       </GcInfo>
       <RuntimeFunctions>
@@ -148,8 +148,10 @@
       </R2RMethod>
       <GcInfo>
         <GcInfo xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:xsd="http://www.w3.org/2001/XMLSchema">
-          <Version>2</Version>
+          <Size>22</Size>
+          <Offset>3028</Offset>
           <CodeLength>6</CodeLength>
+          <Version>2</Version>
           <ReturnKind>RT_Scalar</ReturnKind>
           <ValidRangeStart>0</ValidRangeStart>
           <ValidRangeEnd>0</ValidRangeEnd>
@@ -172,8 +174,6 @@
             <NumSlots>0</NumSlots>
             <GcSlots />
           </SlotTable>
-          <Size>22</Size>
-          <Offset>3028</Offset>
         </GcInfo>
       </GcInfo>
       <RuntimeFunctions>
@@ -211,8 +211,10 @@
       </R2RMethod>
       <GcInfo>
         <GcInfo xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:xsd="http://www.w3.org/2001/XMLSchema">
-          <Version>2</Version>
+          <Size>22</Size>
+          <Offset>3028</Offset>
           <CodeLength>6</CodeLength>
+          <Version>2</Version>
           <ReturnKind>RT_Scalar</ReturnKind>
           <ValidRangeStart>0</ValidRangeStart>
           <ValidRangeEnd>0</ValidRangeEnd>
@@ -235,8 +237,6 @@
             <NumSlots>0</NumSlots>
             <GcSlots />
           </SlotTable>
-          <Size>22</Size>
-          <Offset>3028</Offset>
         </GcInfo>
       </GcInfo>
       <RuntimeFunctions>

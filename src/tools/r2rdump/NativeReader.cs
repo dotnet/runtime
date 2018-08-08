@@ -322,5 +322,30 @@ namespace R2RDump
             }
             return value;
         }
+
+        public static int DecodeSigned(byte[] image, ref int start)
+        {
+            int size = 1;
+            byte data  = image[start++];
+            byte first = data;
+            int value = data & 0x3f;
+            while ((data & 0x80) != 0)
+            {
+                size++;
+                data = image[start++];
+                value <<= 7;
+                value += data & 0x7f;
+            }
+            if ((first & 0x40) != 0)
+                value = -value;
+
+            return value;
+        }
+
+        public static uint DecodeUDelta(byte[] image, ref int start, uint lastValue)
+        {
+            uint delta = DecodeUnsignedGc(image, ref start);
+            return lastValue + delta;
+        }
     }
 }

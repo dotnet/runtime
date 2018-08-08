@@ -63,34 +63,6 @@
                 <Section>6891812037705</Section>
               </ImportSectionEntry>
             </Entries>
-            <AuxiliaryData>
-              <Version>2</Version>
-              <CodeLength>0</CodeLength>
-              <ReturnKind>RT_Object</ReturnKind>
-              <ValidRangeStart>0</ValidRangeStart>
-              <ValidRangeEnd>0</ValidRangeEnd>
-              <SecurityObjectStackSlot>-1</SecurityObjectStackSlot>
-              <GSCookieStackSlot>-1</GSCookieStackSlot>
-              <PSPSymStackSlot>-1</PSPSymStackSlot>
-              <GenericsInstContextStackSlot>-1</GenericsInstContextStackSlot>
-              <StackBaseRegister>4294967295</StackBaseRegister>
-              <SizeOfEditAndContinuePreservedArea>4294967295</SizeOfEditAndContinuePreservedArea>
-              <ReversePInvokeFrameStackSlot>-1</ReversePInvokeFrameStackSlot>
-              <SizeOfStackOutgoingAndScratchArea>0</SizeOfStackOutgoingAndScratchArea>
-              <NumSafePoints>0</NumSafePoints>
-              <NumInterruptibleRanges>0</NumInterruptibleRanges>
-              <SafePointOffsets />
-              <InterruptibleRanges />
-              <SlotTable>
-                <NumRegisters>0</NumRegisters>
-                <NumStackSlots>0</NumStackSlots>
-                <NumUntracked>0</NumUntracked>
-                <NumSlots>0</NumSlots>
-                <GcSlots />
-              </SlotTable>
-              <Size>22</Size>
-              <Offset>3140</Offset>
-            </AuxiliaryData>
           </R2RImportSection>
           <ImportSectionEntry xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:xsd="http://www.w3.org/2001/XMLSchema" Index="0">
             <StartOffset>0</StartOffset>
@@ -154,8 +126,10 @@
       </R2RMethod>
       <GcInfo>
         <GcInfo xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:xsd="http://www.w3.org/2001/XMLSchema">
-          <Version>2</Version>
+          <Size>106</Size>
+          <Offset>3096</Offset>
           <CodeLength>39</CodeLength>
+          <Version>2</Version>
           <ReturnKind>RT_Scalar</ReturnKind>
           <ValidRangeStart>0</ValidRangeStart>
           <ValidRangeEnd>0</ValidRangeEnd>
@@ -196,18 +170,18 @@
               </GcSlot>
             </GcSlots>
           </SlotTable>
-          <Size>106</Size>
-          <Offset>3096</Offset>
         </GcInfo>
         <GcTransition xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:xsd="http://www.w3.org/2001/XMLSchema" Index="25">
           <SlotId>0</SlotId>
           <IsLive>true</IsLive>
           <ChunkId>0</ChunkId>
+          <SlotState>ECX is live</SlotState>
         </GcTransition>
         <GcTransition xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:xsd="http://www.w3.org/2001/XMLSchema" Index="31">
           <SlotId>0</SlotId>
           <IsLive>false</IsLive>
           <ChunkId>0</ChunkId>
+          <SlotState>ECX is dead</SlotState>
         </GcTransition>
       </GcInfo>
       <RuntimeFunctions>
@@ -262,8 +236,10 @@
       </R2RMethod>
       <GcInfo>
         <GcInfo xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:xsd="http://www.w3.org/2001/XMLSchema">
-          <Version>2</Version>
+          <Size>106</Size>
+          <Offset>3124</Offset>
           <CodeLength>32</CodeLength>
+          <Version>2</Version>
           <ReturnKind>RT_Scalar</ReturnKind>
           <ValidRangeStart>0</ValidRangeStart>
           <ValidRangeEnd>0</ValidRangeEnd>
@@ -304,18 +280,18 @@
               </GcSlot>
             </GcSlots>
           </SlotTable>
-          <Size>106</Size>
-          <Offset>3124</Offset>
         </GcInfo>
         <GcTransition xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:xsd="http://www.w3.org/2001/XMLSchema" Index="18">
           <SlotId>0</SlotId>
           <IsLive>true</IsLive>
           <ChunkId>0</ChunkId>
+          <SlotState>ECX is live</SlotState>
         </GcTransition>
         <GcTransition xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:xsd="http://www.w3.org/2001/XMLSchema" Index="24">
           <SlotId>0</SlotId>
           <IsLive>false</IsLive>
           <ChunkId>0</ChunkId>
+          <SlotState>ECX is dead</SlotState>
         </GcTransition>
       </GcInfo>
       <RuntimeFunctions>

@@ -95,7 +95,8 @@ namespace R2RDump
         /// RVA of optional auxiliary data (typically GC info)
         /// </summary>
         public int AuxiliaryDataRVA { get; set; }
-        public GcInfo AuxiliaryData { get; set; }
+        [XmlIgnore]
+        public BaseGcInfo AuxiliaryData { get; set; }
 
         public R2RImportSection(int index, byte[] image, int rva, int size, CorCompileImportFlags flags, byte type, byte entrySize, int signatureRVA, List<ImportSectionEntry> entries, int auxDataRVA, int auxDataOffset, Machine machine, ushort majorVersion)
         {
@@ -113,7 +114,14 @@ namespace R2RDump
             AuxiliaryData = null;
             if (AuxiliaryDataRVA != 0)
             {
-                AuxiliaryData = new GcInfo(image, auxDataOffset, machine, majorVersion);
+                if (machine == Machine.Amd64)
+                {
+                    AuxiliaryData = new Amd64.GcInfo(image, auxDataOffset, machine, majorVersion);
+                }
+                else if (machine == Machine.I386)
+                {
+                    AuxiliaryData = new x86.GcInfo(image, auxDataOffset, machine, majorVersion);
+                }
             }
         }
 
