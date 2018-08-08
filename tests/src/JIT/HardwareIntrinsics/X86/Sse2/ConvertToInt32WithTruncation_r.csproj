@@ -21,7 +21,7 @@
     </CodeAnalysisDependentAssemblyPaths>
   </ItemGroup>
   <PropertyGroup>
-    <DebugType>None</DebugType>
+    <DebugType>Embedded</DebugType>
     <Optimize></Optimize>
   </PropertyGroup>
   <ItemGroup>
