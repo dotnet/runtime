@@ -46,6 +46,7 @@
 #include <mono/utils/w32api.h>
 #include <mono/utils/unlocked.h>
 #include <mono/utils/mono-os-wait.h>
+#include <mono/utils/mono-lazy-init.h>
 
 #ifndef HOST_WIN32
 #include <pthread.h>
@@ -70,6 +71,7 @@ gchar **mono_do_not_finalize_class_names ;
 #define mono_finalizer_unlock() mono_coop_mutex_unlock (&finalizer_mutex)
 static MonoCoopMutex finalizer_mutex;
 static MonoCoopMutex reference_queue_mutex;
+static mono_lazy_init_t reference_queue_mutex_inited = MONO_LAZY_INIT_STATUS_NOT_INITIALIZED;
 
 static GSList *domains_to_finalize;
 
@@ -958,11 +960,17 @@ mono_gc_init_finalizer_thread (void)
 	mono_error_assert_ok (error);
 }
 
+static void
+reference_queue_mutex_init (void)
+{
+	mono_coop_mutex_init_recursive (&reference_queue_mutex);
+}
+
 void
 mono_gc_init (void)
 {
+	mono_lazy_initialize (&reference_queue_mutex_inited, reference_queue_mutex_init);
 	mono_coop_mutex_init_recursive (&finalizer_mutex);
-	mono_coop_mutex_init_recursive (&reference_queue_mutex);
 
 	mono_counters_register ("Minor GC collections", MONO_COUNTER_GC | MONO_COUNTER_INT, &mono_gc_stats.minor_gc_count);
 	mono_counters_register ("Major GC collections", MONO_COUNTER_GC | MONO_COUNTER_INT, &mono_gc_stats.major_gc_count);
@@ -1237,6 +1245,7 @@ mono_gc_reference_queue_new_internal (mono_reference_queue_callback callback)
 	MonoReferenceQueue *res = g_new0 (MonoReferenceQueue, 1);
 	res->callback = callback;
 
+	mono_lazy_initialize (&reference_queue_mutex_inited, reference_queue_mutex_init);
 	mono_coop_mutex_lock (&reference_queue_mutex);
 	res->next = ref_queues;
 	ref_queues = res;
