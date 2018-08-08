@@ -4,7 +4,7 @@ set ProjectDir=%CurrentDir%..\..\..\..\
 "%ProjectDir%Tools\dotnetcli\dotnet.exe" build /p:__BuildArch=x64 /p:__BuildOS=Windows_NT /p:__BuildType=Checked %ProjectDir%src\tools\r2rdump\R2RDump.csproj
 "%ProjectDir%Tools\dotnetcli\dotnet.exe" build /p:__BuildArch=x64 /p:__BuildOS=Windows_NT /p:__BuildType=Debug %ProjectDir%src\tools\r2rdump\R2RDump.csproj
 "%ProjectDir%Tools\dotnetcli\dotnet.exe" build /p:__BuildArch=x86 /p:__BuildOS=Windows_NT /p:__BuildType=Release %ProjectDir%src\tools\r2rdump\R2RDump.csproj
-"%ProjectDir%Tools\dotnetcli\dotnet.exe" build /p:__BuildArch=x64 /p:__BuildOS=Windows_NT /p:__BuildType=Debug %ProjectDir%src\tools\r2rdump\R2RDump.csproj
+"%ProjectDir%Tools\dotnetcli\dotnet.exe" build /p:__BuildArch=x86 /p:__BuildOS=Windows_NT /p:__BuildType=Debug %ProjectDir%src\tools\r2rdump\R2RDump.csproj
 
 set tests=HelloWorld GcInfoTransitions GenericFunctions MultipleRuntimeFunctions
 

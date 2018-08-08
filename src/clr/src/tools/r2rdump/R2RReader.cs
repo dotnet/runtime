@@ -13,26 +13,6 @@ using System.Xml.Serialization;
 
 namespace R2RDump
 {
-    public enum Amd64Registers
-    {
-        EAX = 0,
-        ECX = 1,
-        EDX = 2,
-        EBX = 3,
-        ESP = 4,
-        EBP = 5,
-        ESI = 6,
-        EDI = 7,
-        E8 = 8,
-        E9 = 9,
-        E10 = 10,
-        E11 = 11,
-        E12 = 12,
-        E13 = 13,
-        E14 = 14,
-        E15 = 15,
-    }
-
     /// <summary>
     /// This structure represents a single precode fixup cell decoded from the
     /// nibble-oriented per-method fixup blob. Each method entrypoint fixup
@@ -292,7 +272,7 @@ namespace R2RDump
                 if (runtimeFunctionId == -1)
                     continue;
                 curOffset = runtimeFunctionOffset + runtimeFunctionId * runtimeFunctionSize;
-                GcInfo gcInfo = null;
+                BaseGcInfo gcInfo = null;
                 int codeOffset = 0;
                 do
                 {
@@ -311,7 +291,7 @@ namespace R2RDump
                         unwindInfo = new Amd64.UnwindInfo(Image, unwindOffset);
                         if (isEntryPoint[runtimeFunctionId])
                         {
-                            gcInfo = new GcInfo(Image, unwindOffset + unwindInfo.Size, Machine, R2RHeader.MajorVersion);
+                            gcInfo = new Amd64.GcInfo(Image, unwindOffset + unwindInfo.Size, Machine, R2RHeader.MajorVersion);
                         }
                     }
                     else if (Machine == Machine.I386)
@@ -319,7 +299,7 @@ namespace R2RDump
                         unwindInfo = new x86.UnwindInfo(Image, unwindOffset);
                         if (isEntryPoint[runtimeFunctionId])
                         {
-                            //gcInfo = new GcInfo(Image, unwindOffset + unwindInfo.Size, Machine, R2RHeader.MajorVersion);
+                            gcInfo = new x86.GcInfo(Image, unwindOffset, Machine, R2RHeader.MajorVersion);
                         }
                     }
 
