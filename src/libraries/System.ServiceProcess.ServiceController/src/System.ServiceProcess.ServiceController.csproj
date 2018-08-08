@@ -63,17 +63,11 @@
     <Compile Include="$(CommonPath)\Interop\Windows\advapi32\Interop.SERVICE_TABLE_ENTRY.cs">
       <Link>Common\Interop\Windows\Interop.SERVICE_TABLE_ENTRY.cs</Link>
     </Compile>
-    <Compile Include="$(CommonPath)\Interop\Windows\advapi32\Interop.ServiceControlDelegates.cs">
-      <Link>Common\Interop\Windows\Interop.ServiceControlDelegates.cs</Link>
-    </Compile>
     <Compile Include="$(CommonPath)\Interop\Windows\advapi32\Interop.SetServiceStatus.cs">
       <Link>Common\Interop\Windows\Interop.SetServiceStatus.cs</Link>
     </Compile>
     <Compile Include="$(CommonPath)\Interop\Windows\advapi32\Interop.WTSSESSION_NOTIFICATION.cs">
       <Link>Common\Interop\Windows\Interop.WTSSESSION_NOTIFICATION.cs</Link>
-    </Compile>
-    <Compile Include="$(CommonPath)\Interop\Windows\advapi32\Interop.RegisterServiceCtrlHandler.cs">
-      <Link>Common\Interop\Windows\Interop.RegisterServiceCtrlHandler.cs</Link>
     </Compile>
     <Compile Include="$(CommonPath)\Interop\Windows\advapi32\Interop.RegisterServiceCtrlHandlerEx.cs">
       <Link>Common\Interop\Windows\Interop.RegisterServiceCtrlHandlerEx.cs</Link>
