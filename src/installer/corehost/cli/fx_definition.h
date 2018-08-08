@@ -32,8 +32,6 @@ public:
     void parse_deps();
     void parse_deps(const deps_json_t::rid_fallback_graph_t& graph);
 
-    bool did_minor_or_major_roll_forward_occur() const;
-
 private:
     pal::string_t m_name;
     pal::string_t m_dir;
