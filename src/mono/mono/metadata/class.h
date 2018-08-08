@@ -140,16 +140,16 @@ mono_type_get_underlying_type (MonoType *type);
 MONO_API MonoImage*
 mono_class_get_image         (MonoClass *klass);
 
-MONO_RT_EXTERNAL_ONLY
-MONO_API MonoClass*
+MONO_API MONO_RT_EXTERNAL_ONLY
+MonoClass*
 mono_class_get_element_class (MonoClass *klass);
 
-MONO_RT_EXTERNAL_ONLY
-MONO_API mono_bool
+MONO_API MONO_RT_EXTERNAL_ONLY
+mono_bool
 mono_class_is_valuetype      (MonoClass *klass);
 
-MONO_RT_EXTERNAL_ONLY
-MONO_API mono_bool
+MONO_API MONO_RT_EXTERNAL_ONLY
+mono_bool
 mono_class_is_enum          (MonoClass *klass);
 
 MONO_API MonoType*
