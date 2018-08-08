@@ -1682,13 +1682,22 @@ inline unsigned Compiler::lvaGrabTemp(bool shortLifetime DEBUGARG(const char* re
         lvaTable    = newLvaTable;
     }
 
-    lvaTable[lvaCount].lvType    = TYP_UNDEF; // Initialize lvType, lvIsTemp and lvOnFrame
-    lvaTable[lvaCount].lvIsTemp  = shortLifetime;
-    lvaTable[lvaCount].lvOnFrame = true;
-
-    unsigned tempNum = lvaCount;
-
+    const unsigned tempNum = lvaCount;
     lvaCount++;
+
+    lvaTable[tempNum].lvType    = TYP_UNDEF; // Initialize lvType, lvIsTemp and lvOnFrame
+    lvaTable[tempNum].lvIsTemp  = shortLifetime;
+    lvaTable[tempNum].lvOnFrame = true;
+
+    // If we've started normal ref counting and are in minopts or debug
+    // mark this variable as implictly referenced.
+    if (lvaLocalVarRefCounted())
+    {
+        if (opts.MinOpts() || opts.compDbgCode)
+        {
+            lvaTable[tempNum].lvImplicitlyReferenced = 1;
+        }
+    }
 
 #ifdef DEBUG
     if (verbose)
