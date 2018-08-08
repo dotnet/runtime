@@ -41,7 +41,7 @@
       <Version>$(NETStandardLibraryPackageVersion)</Version>
     </PackageReference>
     <PackageReference Include="Microsoft.TargetingPack.Private.WinRT">
-      <Version>1.0.5</Version>
+      <Version>$(MicrosoftTargetingPackPrivateWinRTPackageVersion)</Version>
     </PackageReference>
   </ItemGroup>
 
@@ -224,8 +224,9 @@
     <Exec Command="chmod u+x $(_crossGenPath)"
           Condition="'$(OSGroup)' != 'Windows_NT'" />
     <ItemGroup>
+      <!-- -->
       <_filesToCrossGen Include="@(FilesToPackage)"
-                        Condition="'%(FilesToPackage.IsNative)' != 'true' AND '%(FileName)' != 'System.Private.CoreLib' AND '%(FileName)' != 'mscorlib' AND '%(Extension)' == '.dll'">
+                        Condition="'%(FilesToPackage.IsNative)' != 'true' AND '%(FileName)' != 'System.Private.CoreLib' AND '%(FileName)' != 'mscorlib' AND '%(Extension)' == '.dll' AND ('%(FileName)' != 'System.Runtime.WindowsRuntime' Or '$(OsEnvironment)'=='Windows_NT')">
         <CrossGenedDirectory>$(CrossGenOutputPath)/%(TargetPath)/</CrossGenedDirectory>
         <CrossGenedPath>$(CrossGenOutputPath)/%(TargetPath)/%(FileName)%(Extension)</CrossGenedPath>
         <CrossGenSymbolSemaphorePath>$(_crossGenIntermediatePath)/%(FileName).symbol.semaphore</CrossGenSymbolSemaphorePath>
@@ -269,7 +270,7 @@
       <_crossGenArgs Include="-in %(_filesToCrossGen.FullPath)" />
       <_crossGenArgs Include="-out %(_filesToCrossGen.CrossGenedPath)" />
       <_crossGenArgs Include="-platform_assemblies_paths $(_crossgenPlatformAssemblies)" />
-      <_crossGenArgs Include="-Platform_Winmd_Paths $(_windowsWinMDDirectory)" />
+      <_crossGenArgs Include="-Platform_Winmd_Paths $(_windowsWinMDDirectory)" Condition="'$(OsEnvironment)'=='Windows_NT'" />
       <_crossGenArgs Include="-JITPath $(_jitPath)" />
     </ItemGroup>
 
@@ -295,7 +296,7 @@
     <ItemGroup>
       <_crossGenSymbolsArgs Include="-readytorun" />
       <_crossGenSymbolsArgs Include="-platform_assemblies_paths %(_filesToCrossGen.CrossGenedDirectory)$(_pathSeparatorEscaped)$(_coreLibDirectory)$(_pathSeparatorEscaped)$(_fxLibDirectory)" />
-      <_crossGenSymbolsArgs Include="-Platform_Winmd_Paths $(_windowsWinMDDirectory)" />
+      <_crossGenSymbolsArgs Include="-Platform_Winmd_Paths $(_windowsWinMDDirectory)" Condition="'$(OsEnvironment)'=='Windows_NT'"/>
       <_crossGenSymbolsArgs Include="-$(_crossGenSymbolsOptionName)" />
       <_crossGenSymbolsArgs Include="$(_crossGenSymbolsOutputDirectory)" />
       <_crossGenSymbolsArgs Include="%(_filesToCrossGen.CrossGenedPath)" />
