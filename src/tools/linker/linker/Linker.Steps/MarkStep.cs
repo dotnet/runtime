@@ -1893,21 +1893,6 @@ namespace Mono.Linker.Steps {
 						break;
 				}
 
-				if (foundType == null && assemblyName != null) {
-					AssemblyDefinition newDependency;
-					try {
-						newDependency = _context.Resolve (assemblyName);
-					} catch {
-						newDependency = null;
-					}
-
-					if (newDependency == null) {
-						_context.Logger.LogMessage (MessageImportance.Low, $"Could not resolve assembly {assemblyName}");
-					} else {
-						foundType = newDependency.MainModule.GetType (typeName);
-					}
-				}
-
 				if (foundType == null)
 					continue;
 				
