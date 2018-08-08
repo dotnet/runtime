@@ -203,7 +203,7 @@ namespace System.Transactions
 
             if (IsEnabled(EventLevel.Informational, ALL_KEYWORDS))
             {
-                if (transaction != null && transaction.TransactionTraceId != null)
+                if (transaction != null && transaction.TransactionTraceId.TransactionIdentifier != null)
                     TransactionCreated(transaction.TransactionTraceId.TransactionIdentifier, type);
                 else
                     TransactionCreated(string.Empty, type);
@@ -229,7 +229,7 @@ namespace System.Transactions
 
             if (IsEnabled(EventLevel.Informational, ALL_KEYWORDS))
             {
-                if (transaction != null && transaction.TransactionTraceId != null)
+                if (transaction != null && transaction.TransactionTraceId.TransactionIdentifier != null)
                     TransactionCloneCreate(transaction.TransactionTraceId.TransactionIdentifier, type);
                 else
                     TransactionCloneCreate(string.Empty, type);
@@ -255,7 +255,7 @@ namespace System.Transactions
 
             if (IsEnabled(EventLevel.Informational, ALL_KEYWORDS))
             {
-                if (transaction != null && transaction.TransactionTraceId != null)
+                if (transaction != null && transaction.TransactionTraceId.TransactionIdentifier != null)
                     TransactionSerialized(transaction.TransactionTraceId.TransactionIdentifier, type);
                 else
                     TransactionSerialized(string.Empty, type);
@@ -352,7 +352,7 @@ namespace System.Transactions
 
             if (IsEnabled(EventLevel.Warning, ALL_KEYWORDS))
             {
-                if (transaction != null && transaction.TransactionTraceId != null)
+                if (transaction != null && transaction.TransactionTraceId.TransactionIdentifier != null)
                     TransactionRollback(transaction.TransactionTraceId.TransactionIdentifier, type);
                 else
                     TransactionRollback(string.Empty, type);
@@ -378,7 +378,7 @@ namespace System.Transactions
 
             if (IsEnabled(EventLevel.Informational, ALL_KEYWORDS))
             {
-                if (transaction != null && transaction.TransactionTraceId != null)
+                if (transaction != null && transaction.TransactionTraceId.TransactionIdentifier != null)
                     TransactionDependentCloneComplete(transaction.TransactionTraceId.TransactionIdentifier, type);
                 else
                     TransactionDependentCloneComplete(string.Empty, type);
@@ -392,7 +392,7 @@ namespace System.Transactions
             WriteEvent(TRANSACTION_DEPENDENT_CLONE_COMPLETE_EVENTID, transactionIdentifier, type);
         }
         #endregion
-        
+
         #region Transaction Commit
         /// <summary>Trace an event when there is commit on that transaction.</summary>
         /// <param name="transaction">The transaction to commit.</param>
@@ -404,7 +404,7 @@ namespace System.Transactions
 
             if (IsEnabled(EventLevel.Verbose, ALL_KEYWORDS))
             {
-                if (transaction != null && transaction.TransactionTraceId != null)
+                if (transaction != null && transaction.TransactionTraceId.TransactionIdentifier != null)
                     TransactionCommit(transaction.TransactionTraceId.TransactionIdentifier, type);
                 else
                     TransactionCommit(string.Empty, type);
@@ -430,7 +430,7 @@ namespace System.Transactions
 
             if (IsEnabled(EventLevel.Verbose, ALL_KEYWORDS))
             {
-                if (enlistment != null && enlistment.EnlistmentTraceId != null)
+                if (enlistment != null && enlistment.EnlistmentTraceId.EnlistmentIdentifier != 0)
                     EnlistmentStatus(enlistment.EnlistmentTraceId.EnlistmentIdentifier, notificationCall.ToString());
                 else
                     EnlistmentStatus(0, notificationCall.ToString());
@@ -455,7 +455,7 @@ namespace System.Transactions
 
             if (IsEnabled(EventLevel.Verbose, ALL_KEYWORDS))
             {
-                if (enlistment != null && enlistment.EnlistmentTraceId != null)
+                if (enlistment != null && enlistment.EnlistmentTraceId.EnlistmentIdentifier != 0)
                     EnlistmentDone(enlistment.EnlistmentTraceId.EnlistmentIdentifier);
                 else
                     EnlistmentDone(0);
@@ -480,7 +480,7 @@ namespace System.Transactions
 
             if (IsEnabled(EventLevel.Verbose, ALL_KEYWORDS))
             {
-                if (enlistment != null && enlistment.EnlistmentTraceId != null)
+                if (enlistment != null && enlistment.EnlistmentTraceId.EnlistmentIdentifier != 0)
                     EnlistmentPrepared(enlistment.EnlistmentTraceId.EnlistmentIdentifier);
                 else
                     EnlistmentPrepared(0);
@@ -505,7 +505,7 @@ namespace System.Transactions
 
             if (IsEnabled(EventLevel.Warning, ALL_KEYWORDS))
             {
-                if (enlistment != null && enlistment.EnlistmentTraceId != null)
+                if (enlistment != null && enlistment.EnlistmentTraceId.EnlistmentIdentifier != 0)
                     EnlistmentForceRollback(enlistment.EnlistmentTraceId.EnlistmentIdentifier);
                 else
                     EnlistmentForceRollback(0);
@@ -530,7 +530,7 @@ namespace System.Transactions
 
             if (IsEnabled(EventLevel.Warning, ALL_KEYWORDS))
             {
-                if (enlistment != null && enlistment.EnlistmentTraceId != null)
+                if (enlistment != null && enlistment.EnlistmentTraceId.EnlistmentIdentifier != 0)
                     EnlistmentAborted(enlistment.EnlistmentTraceId.EnlistmentIdentifier);
                 else
                     EnlistmentAborted(0);
@@ -556,7 +556,7 @@ namespace System.Transactions
 
             if (IsEnabled(EventLevel.Verbose, ALL_KEYWORDS))
             {
-                if (enlistment != null && enlistment.EnlistmentTraceId != null)
+                if (enlistment != null && enlistment.EnlistmentTraceId.EnlistmentIdentifier != 0)
                     EnlistmentCommitted(enlistment.EnlistmentTraceId.EnlistmentIdentifier);
                 else
                     EnlistmentCommitted(0);
@@ -581,7 +581,7 @@ namespace System.Transactions
 
             if (IsEnabled(EventLevel.Warning, ALL_KEYWORDS))
             {
-                if (enlistment != null && enlistment.EnlistmentTraceId != null)
+                if (enlistment != null && enlistment.EnlistmentTraceId.EnlistmentIdentifier != 0)
                     EnlistmentInDoubt(enlistment.EnlistmentTraceId.EnlistmentIdentifier);
                 else
                     EnlistmentInDoubt(0);
@@ -841,14 +841,11 @@ namespace System.Transactions
         /// <param name="transactionID">The transaction ID.</param>
         /// <param name="transactionScopeResult">The transaction scope result.</param>
         [NonEvent]
-        internal void TransactionScopeCreated(TransactionTraceIdentifier transactionID, TransactionScopeResult transactionScopeResult )
+        internal void TransactionScopeCreated(TransactionTraceIdentifier transactionID, TransactionScopeResult transactionScopeResult)
         {
             if (IsEnabled(EventLevel.Informational, ALL_KEYWORDS))
             {
-                if (transactionID != null && transactionID.TransactionIdentifier != null)
-                    TransactionScopeCreated(transactionID.TransactionIdentifier.ToString(), transactionScopeResult);
-                else
-                    TransactionScopeCreated(string.Empty, transactionScopeResult);
+                TransactionScopeCreated(transactionID.TransactionIdentifier ?? string.Empty, transactionScopeResult);
             }
         }
 
@@ -871,11 +868,11 @@ namespace System.Transactions
             {
                 string currentId = string.Empty;
                 string newId = string.Empty;
-                if (currenttransactionID != null && currenttransactionID.TransactionIdentifier != null)
+                if (currenttransactionID.TransactionIdentifier != null)
                 {
                     currentId = currenttransactionID.TransactionIdentifier.ToString();
                 }
-                if (newtransactionID!= null && newtransactionID.TransactionIdentifier != null)
+                if (newtransactionID.TransactionIdentifier != null)
                 {
                     newId = newtransactionID.TransactionIdentifier.ToString();
                 }
@@ -899,10 +896,7 @@ namespace System.Transactions
         {
             if (IsEnabled(EventLevel.Warning, ALL_KEYWORDS))
             {
-                if (transactionID != null && transactionID.TransactionIdentifier != null)
-                    TransactionScopeNestedIncorrectly(transactionID.TransactionIdentifier.ToString());
-                else
-                    TransactionScopeNestedIncorrectly(string.Empty);
+                TransactionScopeNestedIncorrectly(transactionID.TransactionIdentifier ?? string.Empty);
             }
         }
 
@@ -922,10 +916,7 @@ namespace System.Transactions
         {
             if (IsEnabled(EventLevel.Informational, ALL_KEYWORDS))
             {
-                if (transactionID != null && transactionID.TransactionIdentifier != null)
-                    TransactionScopeDisposed(transactionID.TransactionIdentifier.ToString());
-                else
-                    TransactionScopeDisposed(string.Empty);
+                TransactionScopeDisposed(transactionID.TransactionIdentifier ?? string.Empty);
             }
         }
 
@@ -945,10 +936,7 @@ namespace System.Transactions
         {
             if (IsEnabled(EventLevel.Warning, ALL_KEYWORDS))
             {
-                if (transactionID != null && transactionID.TransactionIdentifier != null)
-                    TransactionScopeIncomplete(transactionID.TransactionIdentifier.ToString());
-                else
-                    TransactionScopeIncomplete(string.Empty);
+                TransactionScopeIncomplete(transactionID.TransactionIdentifier ?? string.Empty);
             }
         }
 
@@ -988,10 +976,7 @@ namespace System.Transactions
         {
             if (IsEnabled(EventLevel.Warning, ALL_KEYWORDS))
             {
-                if (transactionID != null && transactionID.TransactionIdentifier != null)
-                    TransactionScopeTimeout(transactionID.TransactionIdentifier.ToString());
-                else
-                    TransactionScopeTimeout(string.Empty);
+                TransactionScopeTimeout(transactionID.TransactionIdentifier ?? string.Empty);
             }
         }
 
@@ -1011,10 +996,7 @@ namespace System.Transactions
         {
             if (IsEnabled(EventLevel.Warning, ALL_KEYWORDS))
             {
-                if (transactionID != null && transactionID.TransactionIdentifier != null)
-                    TransactionTimeout(transactionID.TransactionIdentifier.ToString());
-                else
-                    TransactionTimeout(string.Empty);
+                TransactionTimeout(transactionID.TransactionIdentifier ?? string.Empty);
             }
         }
 
@@ -1036,7 +1018,7 @@ namespace System.Transactions
         {
             if (IsEnabled(EventLevel.Informational, ALL_KEYWORDS))
             {
-                if (enlistmentID != null)
+                if (enlistmentID.EnlistmentIdentifier != 0)
                     TransactionstateEnlist(enlistmentID.EnlistmentIdentifier.ToString(), enlistmentType.ToString(), enlistmentOption.ToString());
                 else
                     TransactionstateEnlist(string.Empty, enlistmentType.ToString(), enlistmentOption.ToString());
@@ -1059,10 +1041,7 @@ namespace System.Transactions
         {
             if (IsEnabled(EventLevel.Verbose, ALL_KEYWORDS))
             {
-                if (transactionID != null && transactionID.TransactionIdentifier != null)
-                    TransactionCommitted(transactionID.TransactionIdentifier.ToString());
-                else
-                    TransactionCommitted(string.Empty);
+                TransactionCommitted(transactionID.TransactionIdentifier ?? string.Empty);
             }
         }
 
@@ -1082,10 +1061,7 @@ namespace System.Transactions
         {
             if (IsEnabled(EventLevel.Warning, ALL_KEYWORDS))
             {
-                if (transactionID != null && transactionID.TransactionIdentifier != null)
-                    TransactionInDoubt(transactionID.TransactionIdentifier.ToString());
-                else
-                    TransactionInDoubt(string.Empty);
+                TransactionInDoubt(transactionID.TransactionIdentifier ?? string.Empty);
             }
         }
 
@@ -1106,13 +1082,7 @@ namespace System.Transactions
         {
             if (IsEnabled(EventLevel.Informational, ALL_KEYWORDS))
             {
-                string id = string.Empty;
-                string distributedId = string.Empty;
-                if (transactionID != null && transactionID.TransactionIdentifier != null)
-                    id= transactionID.TransactionIdentifier.ToString();
-                if (distributedTxID != null && distributedTxID.TransactionIdentifier != null)
-                    distributedId = distributedTxID.TransactionIdentifier.ToString();
-                TransactionPromoted(id, distributedId);
+                TransactionPromoted(transactionID.TransactionIdentifier ?? string.Empty, distributedTxID.TransactionIdentifier ?? string.Empty);
             }
         }
 
@@ -1132,12 +1102,9 @@ namespace System.Transactions
         {
             if (IsEnabled(EventLevel.Warning, ALL_KEYWORDS))
             {
-                if (transactionID != null && transactionID.TransactionIdentifier != null)
-                    TransactionAborted(transactionID.TransactionIdentifier.ToString());
-                else
-                    TransactionAborted(string.Empty);
+                TransactionAborted(transactionID.TransactionIdentifier ?? string.Empty);
             }
-          }
+        }
 
         [Event(TRANSACTION_ABORTED_EVENTID, Keywords = Keywords.TraceLtm, Level = EventLevel.Warning, Task = Tasks.Transaction, Opcode = Opcodes.Aborted, Message = "Transaction aborted: transaction ID is {0}")]
         private void TransactionAborted(string transactionID)
@@ -1203,19 +1170,19 @@ namespace System.Transactions
         {
             Guid guid = Guid.Empty;
 
-            if (str.IndexOf('-')>=0)
+            if (str.IndexOf('-') >= 0)
             { // GUID with dash
-                if (str.Length>=36)
+                if (str.Length >= 36)
                 {
-                    string str_part1 = str.Substring(0,36);
+                    string str_part1 = str.Substring(0, 36);
                     Guid.TryParse(str_part1, out guid);
                 }
             }
             else
             {
-                if (str.Length>=32)
+                if (str.Length >= 32)
                 {
-                    string str_part1 = str.Substring(0,32);
+                    string str_part1 = str.Substring(0, 32);
                     Guid.TryParse(str_part1, out guid);
                 }
             }
