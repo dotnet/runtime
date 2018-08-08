@@ -106,7 +106,7 @@
   </ItemGroup>
   <PropertyGroup>
     <TargetFramework>netstandard1.6</TargetFramework>
-    <TargetFrameworkIdentifier>.NETStandard</TargetFrameworkIdentifier>
+    <TargetFrameworkIdentifier>.NETStandard,Version=1.6</TargetFrameworkIdentifier>
     <PackageTargetFallback>$(PackageTargetFallback);dnxcore50;portable-net45+win8</PackageTargetFallback>
     <ContainsPackageReferences>true</ContainsPackageReferences>
     <PrereleaseResolveNuGetPackages>false</PrereleaseResolveNuGetPackages>
