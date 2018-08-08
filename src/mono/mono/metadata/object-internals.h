@@ -356,7 +356,7 @@ struct _MonoIUnknownVTable
 
 struct _MonoIUnknown
 {
-	MonoIUnknownVTable const * const vtable;
+	const MonoIUnknownVTable *vtable;
 };
 
 typedef struct {

@@ -97,7 +97,7 @@ typedef struct {
 	const char *osVersion; 
 	int uiLidArg; // Application LCID 
 
-	const char systemModel [100];
+	char systemModel [100];
 	const char *systemManufacturer;
 
 	const char *eventType;
