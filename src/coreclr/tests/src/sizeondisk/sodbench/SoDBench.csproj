@@ -12,8 +12,8 @@
     <FileAlignment>512</FileAlignment>
     <ProjectTypeGuids>{786C830F-07A1-408B-BD7F-6EE04809D6DB};{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}</ProjectTypeGuids>
     <SolutionDir Condition="$(SolutionDir) == '' Or $(SolutionDir) == '*Undefined*'">..\..\</SolutionDir>
-    <NuGetTargetMoniker>.NETStandard,Version=v1.5</NuGetTargetMoniker>
-    <NuGetTargetMonikerShort>netstandard1.5</NuGetTargetMonikerShort>
+    <NuGetTargetMoniker>.NETStandard,Version=v1.6</NuGetTargetMoniker>
+    <NuGetTargetMonikerShort>netstandard1.6</NuGetTargetMonikerShort>
   </PropertyGroup>
   <!-- Default configurations to help VS understand the configurations -->
   <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Debug|AnyCPU' " />
@@ -34,9 +34,9 @@
   <ItemGroup>
     <Service Include="{82A7F48D-3B50-4B1E-B82E-3ADA8210C358}" />
   </ItemGroup>
-  <Import Project="..\..\performance\performance.targets" />
+  <Import Project="$(SourceDir)performance/performance.targets" />
 
   <PropertyGroup>
-    <ProjectAssetsFile>..\..\performance\obj\project.assets.json</ProjectAssetsFile>
+    <ProjectAssetsFile>$(SourceDir)performance/obj/project.assets.json</ProjectAssetsFile>
   </PropertyGroup>
 </Project>

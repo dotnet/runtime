@@ -27,7 +27,6 @@
 
   <ItemGroup>
     <ProjectReference Include="Test6_supplier.ilproj" />
-    <ProjectReference Include="Test6_supplier.ilproj" />
   </ItemGroup>
 
   <ItemGroup>
