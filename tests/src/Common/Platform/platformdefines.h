@@ -36,7 +36,7 @@ typedef int BOOL;
 typedef WCHAR *LPWSTR, *PWSTR;
 typedef const WCHAR *LPCWSTR, *PCWSTR;
 
-typedef long HRESULT;
+typedef int HRESULT;
 #define LONGLONG long long
 #define ULONGLONG unsigned LONGLONG
 typedef unsigned long ULONG, *PULONG;
@@ -125,9 +125,9 @@ typedef ULONG_PTR DWORD_PTR;
 //
 error_t TP_scpy_s(LPWSTR strDestination, size_t sizeInWords, LPCWSTR strSource);
 error_t TP_scat_s(LPWSTR strDestination, size_t sizeInWords, LPCWSTR strSource);
-int TP_slen(LPWSTR str);
+size_t TP_slen(LPCWSTR str);
 int TP_scmp_s(LPCSTR str1, LPCSTR str2);
-int TP_wcmp_s(LPWSTR str1, LPWSTR str2);
+int TP_wcmp_s(LPCWSTR str1, LPCWSTR str2);
 error_t TP_getenv_s(size_t* pReturnValue, LPWSTR buffer, size_t sizeInWords, LPCWSTR varname);
 error_t TP_putenv_s(LPTSTR name, LPTSTR value);
 void TP_ZeroMemory(LPVOID buffer, size_t sizeInBytes);

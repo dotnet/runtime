@@ -77,9 +77,9 @@ error_t TP_scat_s(LPWSTR strDestination, size_t sizeInWords, LPCWSTR strSource)
     return TP_scpy_s(strEnd, sizeInWords - ((strEnd - strDestination) / sizeof(WCHAR)), strSource);
 }
 
-int TP_slen(LPWSTR str)
+size_t TP_slen(LPCWSTR str)
 {
-    int len;
+    size_t len;
 
     if (NULL == str) return 0;
 
@@ -113,7 +113,7 @@ int TP_scmp_s(LPCSTR str1, LPCSTR str2)
     return (*str1 > *str2) ? 1 : -1;
 }
 
-int TP_wcmp_s(LPWSTR str1, LPWSTR str2)
+int TP_wcmp_s(LPCWSTR str1, LPCWSTR str2)
 {
     // < 0 str1 less than str2
     // 0  str1 identical to str2
