@@ -723,7 +723,7 @@ mono_image_load_module_checked (MonoImage *image, int idx, MonoError *error)
 		name = mono_metadata_string_heap (image, cols [MONO_MODULEREF_NAME]);
 		for (list_iter = valid_modules; list_iter; list_iter = list_iter->next) {
 			/* be safe with string dups, but we could just compare string indexes  */
-			if (strcmp (list_iter->data, name) == 0) {
+			if (strcmp ((const char*)list_iter->data, name) == 0) {
 				valid = TRUE;
 				break;
 			}
@@ -1150,7 +1150,7 @@ static const char *ignored_assemblies_file_names[] = {
 	"System.Threading.Overlapped.dll"
 };
 
-#define IGNORED_ASSEMBLY(HASH, NAME, GUID, VER_STR) { HASH, NAME, GUID }
+#define IGNORED_ASSEMBLY(HASH, NAME, GUID, VER_STR) { (int)HASH, NAME, GUID }
 
 static const IgnoredAssembly ignored_assemblies [] = {
 	IGNORED_ASSEMBLY (0x10CADA75, SYS_NET_HTTP, "EA2EC6DC-51DD-479C-BFC2-E713FB9E7E47", "4.1.1 net46"),

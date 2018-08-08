@@ -560,7 +560,8 @@ mono_domain_create_appdomain_checked (char *friendly_name, char *configuration_f
 	}
 	MONO_HANDLE_SET (setup, configuration_file, config_file);
 
-	MonoAppDomainHandle ad = mono_domain_create_appdomain_internal (friendly_name, setup, error);
+	MonoAppDomainHandle ad;
+	ad = mono_domain_create_appdomain_internal (friendly_name, setup, error);
 	goto_if_nok (error, leave);
 
 	result = mono_domain_from_appdomain_handle (ad);
@@ -600,7 +601,8 @@ mono_domain_set_config_checked (MonoDomain *domain, const char *base_dir, const 
 	MonoStringHandle base_dir_str = mono_string_new_handle (domain, base_dir, error);
 	goto_if_nok (error, leave);
 	MONO_HANDLE_SET (setup, application_base, base_dir_str);
-	MonoStringHandle config_file_name_str = mono_string_new_handle (domain, config_file_name, error);
+	MonoStringHandle config_file_name_str;
+	config_file_name_str = mono_string_new_handle (domain, config_file_name, error);
 	goto_if_nok (error, leave);
 	MONO_HANDLE_SET (setup, configuration_file, config_file_name_str);
 leave:
@@ -692,7 +694,8 @@ mono_domain_create_appdomain_internal (char *friendly_name, MonoAppDomainSetupHa
 
 	MONO_PROFILER_RAISE (domain_name, (data, data->friendly_name));
 
-	MonoStringHandle app_base = MONO_HANDLE_NEW_GET (MonoString, setup, application_base);
+	MonoStringHandle app_base;
+	app_base = MONO_HANDLE_NEW_GET (MonoString, setup, application_base);
 	if (MONO_HANDLE_IS_NULL (app_base)) {
 		/* Inherit from the root domain since MS.NET does this */
 		MonoDomain *root = mono_get_root_domain ();
@@ -725,7 +728,8 @@ mono_domain_create_appdomain_internal (char *friendly_name, MonoAppDomainSetupHa
 
 #ifndef DISABLE_SHADOW_COPY
 	/*FIXME, guard this for when the debugger is not running */
-	char *shadow_location = get_shadow_assembly_location_base (data, error);
+	char *shadow_location;
+	shadow_location = get_shadow_assembly_location_base (data, error);
 	if (!mono_error_ok (error)) {
 		g_free (data->friendly_name);
 		goto leave;
@@ -1282,8 +1286,10 @@ mono_try_assembly_resolve_handle (MonoDomain *domain, MonoStringHandle fname, Mo
 	params [0] = MONO_HANDLE_RAW (fname);
 	params[1] = requesting ? MONO_HANDLE_RAW (requesting_handle) : NULL;
 	params [2] = &isrefonly;
-	MonoObject *exc = NULL;
-	MonoReflectionAssemblyHandle result = MONO_HANDLE_CAST (MonoReflectionAssembly, MONO_HANDLE_NEW (MonoObject, mono_runtime_try_invoke (method, domain->domain, params, &exc, error)));
+	MonoObject *exc;
+	exc = NULL;
+	MonoReflectionAssemblyHandle result;
+	result = MONO_HANDLE_CAST (MonoReflectionAssembly, MONO_HANDLE_NEW (MonoObject, mono_runtime_try_invoke (method, domain->domain, params, &exc, error)));
 	if (!is_ok (error) || exc != NULL) {
 		if (is_ok (error))
 			mono_error_set_exception_instance (error, (MonoException*)exc);
@@ -1405,7 +1411,8 @@ mono_domain_fire_assembly_load (MonoAssembly *assembly, gpointer user_data)
 		goto leave;
 	}
 
-	MonoReflectionAssemblyHandle ref_assembly = mono_assembly_get_object_handle (domain, assembly, error);
+	MonoReflectionAssemblyHandle ref_assembly;
+	ref_assembly = mono_assembly_get_object_handle (domain, assembly, error);
 	mono_error_assert_ok (error);
 
 	if (assembly_load_method == NULL) {
@@ -2287,8 +2294,8 @@ mono_domain_assembly_search (MonoAssemblyName *aname,
 	/* If it's not a strong name, any version that has the right simple
 	 * name is good enough to satisfy the request.  .NET Framework also
 	 * ignores case differences in this case. */
-	const MonoAssemblyNameEqFlags eq_flags = strong_name ? MONO_ANAME_EQ_IGNORE_CASE :
-		(MONO_ANAME_EQ_IGNORE_PUBKEY | MONO_ANAME_EQ_IGNORE_VERSION | MONO_ANAME_EQ_IGNORE_CASE);
+	const MonoAssemblyNameEqFlags eq_flags = (MonoAssemblyNameEqFlags)(strong_name ? MONO_ANAME_EQ_IGNORE_CASE :
+		(MONO_ANAME_EQ_IGNORE_PUBKEY | MONO_ANAME_EQ_IGNORE_VERSION | MONO_ANAME_EQ_IGNORE_CASE));
 
 	mono_domain_assemblies_lock (domain);
 	for (tmp = domain->domain_assemblies; tmp; tmp = tmp->next) {
@@ -2333,7 +2340,8 @@ ves_icall_System_Reflection_Assembly_LoadFrom (MonoStringHandle fname, MonoBoole
 		requesting_assembly = executing_assembly;
 	}
 
-	MonoAssembly *ass = mono_assembly_open_predicate (filename, refOnly ? MONO_ASMCTX_REFONLY : MONO_ASMCTX_LOADFROM, NULL, NULL, requesting_assembly, &status);
+	MonoAssembly *ass;
+	ass = mono_assembly_open_predicate (filename, refOnly ? MONO_ASMCTX_REFONLY : MONO_ASMCTX_LOADFROM, NULL, NULL, requesting_assembly, &status);
 	
 	if (!ass) {
 		if (status == MONO_IMAGE_IMAGE_INVALID)
@@ -2365,10 +2373,12 @@ ves_icall_System_Reflection_Assembly_LoadFile_internal (MonoStringHandle fname, 
 	goto_if_nok (error, leave);
 
 	MonoImageOpenStatus status;
-
-	MonoMethod *executing_method = mono_runtime_get_caller_no_system_or_reflection ();
-	MonoAssembly *executing_assembly = executing_method ? m_class_get_image (executing_method->klass)->assembly : NULL;
-	MonoAssembly *ass = mono_assembly_open_predicate (filename, MONO_ASMCTX_INDIVIDUAL, NULL, NULL, executing_assembly, &status);
+	MonoMethod *executing_method;
+	executing_method = mono_runtime_get_caller_no_system_or_reflection ();
+	MonoAssembly *executing_assembly;
+	executing_assembly = executing_method ? m_class_get_image (executing_method->klass)->assembly : NULL;
+	MonoAssembly *ass;
+	ass = mono_assembly_open_predicate (filename, MONO_ASMCTX_INDIVIDUAL, NULL, NULL, executing_assembly, &status);
 	if (!ass) {
 		if (status == MONO_IMAGE_IMAGE_INVALID)
 			mono_error_set_bad_image_by_name (error, filename, "Invalid Image");
@@ -2381,7 +2391,6 @@ ves_icall_System_Reflection_Assembly_LoadFile_internal (MonoStringHandle fname, 
 leave:
 	g_free (filename);
 	return result;
-
 }
 
 MonoReflectionAssemblyHandle
@@ -2516,7 +2525,8 @@ ves_icall_System_AppDomain_LoadAssembly (MonoAppDomainHandle ad, MonoStringHandl
 	}
 
 	g_assert (ass);
-	MonoReflectionAssemblyHandle refass = mono_assembly_get_object_handle (domain, ass, error);
+	MonoReflectionAssemblyHandle refass;
+	refass = mono_assembly_get_object_handle (domain, ass, error);
 	goto_if_nok (error, fail);
 
 	MONO_HANDLE_SET (refass, evidence, evidence);

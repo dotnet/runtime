@@ -100,6 +100,9 @@ mono_string_to_bstr_handle (MonoStringHandle s)
 	return res;
 }
 
+// Cast the first parameter to gpointer; macros do not recurse.
+#define register_icall(func, name, sigstr, save) (register_icall ((gpointer)(func), (name), (sigstr), (save)))
+
 gpointer
 mono_string_to_bstr (MonoString* s_raw)
 {
@@ -2906,7 +2909,7 @@ mono_free_bstr (/*mono_bstr_const*/gpointer bstr)
 		g_free (((char *)bstr) - 4);
 #ifndef DISABLE_COM
 	} else if (com_provider == MONO_COM_MS && init_com_provider_ms ()) {
-		sys_free_string_ms (bstr);
+		sys_free_string_ms ((mono_bstr_const)bstr);
 	} else {
 		g_assert_not_reached ();
 	}

@@ -182,7 +182,7 @@ int mono_w32socket_recvbuffers (SOCKET s, WSABUF *lpBuffers, guint32 dwBufferCou
 	return ret;
 }
 
-int mono_w32socket_send (SOCKET s, char *buf, int len, int flags, gboolean blocking)
+int mono_w32socket_send (SOCKET s, void *buf, int len, int flags, gboolean blocking)
 {
 	int ret = SOCKET_ERROR;
 	MONO_ENTER_GC_SAFE;

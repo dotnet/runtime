@@ -139,6 +139,10 @@ register_icall_no_wrapper (gpointer func, const char *name, const char *sigstr)
 	mono_register_jit_icall (func, name, sig, TRUE);
 }
 
+// Cast the first parameter to gpointer; macros do not recurse.
+#define register_icall(func, name, sigstr, no_wrapper) (register_icall ((gpointer)(func), (name), (sigstr), (no_wrapper)))
+#define register_icall_no_wrapper(func, name, sigstr) (register_icall_no_wrapper ((gpointer)(func), (name), (sigstr)))
+
 MonoMethodSignature*
 mono_signature_no_pinvoke (MonoMethod *method)
 {
@@ -364,7 +368,8 @@ mono_delegate_handle_to_ftnptr (MonoDelegateHandle delegate, MonoError *error)
 		goto leave;
 	}
 
-	MonoObjectHandle delegate_target = MONO_HANDLE_NEW_GET (MonoObject, delegate, target);
+	MonoObjectHandle delegate_target;
+	delegate_target = MONO_HANDLE_NEW_GET (MonoObject, delegate, target);
 	if (!MONO_HANDLE_IS_NULL (delegate_target)) {
 		/* Produce a location which can be embedded in JITted code */
 		target_handle = mono_gchandle_new_weakref_from_handle (delegate_target);
@@ -4527,7 +4532,7 @@ mono_marshal_get_virtual_stelemref_wrappers (int *nwrappers)
 	*nwrappers = STELEMREF_KIND_COUNT;
 	res = (MonoMethod **)g_malloc0 (STELEMREF_KIND_COUNT * sizeof (MonoMethod*));
 	for (i = 0; i < STELEMREF_KIND_COUNT; ++i)
-		res [i] = get_virtual_stelemref_wrapper (i);
+		res [i] = get_virtual_stelemref_wrapper ((MonoStelemrefKind)i);
 	return res;
 }
 
@@ -5728,7 +5733,7 @@ mono_marshal_type_size (MonoType *type, MonoMarshalSpec *mspec, guint32 *align,
 			gboolean as_field, gboolean unicode)
 {
 	gint32 padded_size;
-	MonoMarshalNative native_type = mono_type_to_unmanaged (type, mspec, as_field, unicode, NULL);
+	MonoMarshalNative native_type = (MonoMarshalNative)mono_type_to_unmanaged (type, mspec, as_field, unicode, NULL);
 	MonoClass *klass;
 
 	switch (native_type) {

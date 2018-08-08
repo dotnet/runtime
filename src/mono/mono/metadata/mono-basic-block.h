@@ -9,6 +9,7 @@
 #include <mono/metadata/metadata.h>
 #include <mono/utils/mono-compiler.h>
 #include <mono/utils/mono-error.h>
+#include <mono/metadata/opcodes.h>
 
 G_BEGIN_DECLS
 
@@ -28,13 +29,7 @@ mono_basic_block_split (MonoMethod *method, MonoError *error, MonoMethodHeader *
 void
 mono_basic_block_free (MonoSimpleBasicBlock *bb);
 
-
 /*This function is here because opcodes.h is a public header*/
-
-#ifndef __MONO_METADATA_OPCODES_H__
-typedef enum _MonoOpcodeEnum MonoOpcodeEnum;
-#endif
-
 int
 mono_opcode_value_and_size (const unsigned char **ip, const unsigned char *end, MonoOpcodeEnum *value);
 

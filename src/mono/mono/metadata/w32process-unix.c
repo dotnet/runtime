@@ -2103,16 +2103,20 @@ ves_icall_System_Diagnostics_Process_ShellExecuteEx_internal (MonoW32ProcessStar
 		goto done;
 	}
 
-	const gunichar2 *lpFile = coop.filename;
-	const gunichar2 *lpParameters = coop.arguments;
-	const gunichar2 *lpDirectory = coop.length.working_directory ? coop.working_directory : NULL;
+	const gunichar2 *lpFile;
+	lpFile = coop.filename;
+	const gunichar2 *lpParameters;
+	lpParameters = coop.arguments;
+	const gunichar2 *lpDirectory;
+	lpDirectory = coop.length.working_directory ? coop.working_directory : NULL;
 
 	/* Put both executable and parameters into the second argument
 	 * to process_create (), so it searches $PATH.  The conversion
 	 * into and back out of utf8 is because there is no
 	 * g_strdup_printf () equivalent for gunichar2 :-(
 	 */
-	gunichar2 *args = utf16_concat (utf16_quote, lpFile, utf16_quote, lpParameters ? utf16_space : NULL, lpParameters, (const gunichar2 *)NULL);
+	gunichar2 *args;
+	args = utf16_concat (utf16_quote, lpFile, utf16_quote, lpParameters ? utf16_space : NULL, lpParameters, (const gunichar2 *)NULL);
 	if (args == NULL) {
 		mono_w32error_set_last (ERROR_INVALID_DATA);
 		ret = FALSE;
@@ -2190,7 +2194,7 @@ ves_icall_System_Diagnostics_Process_ShellExecuteEx_internal (MonoW32ProcessStar
 		if (handler_needswait) {
 			gint32 exitcode;
 			MonoW32HandleWaitRet waitret;
-			waitret = process_wait (process_info->process_handle, MONO_INFINITE_WAIT, NULL);
+			waitret = process_wait ((MonoW32Handle*)process_info->process_handle, MONO_INFINITE_WAIT, NULL);
 			mono_get_exit_code_process (process_info->process_handle, &exitcode);
 			if (exitcode != 0)
 				ret = FALSE;
@@ -2289,10 +2293,12 @@ ves_icall_System_Diagnostics_Process_CreateProcess_internal (MonoW32ProcessStart
 		goto exit;
 	}
 
-	gunichar2 *args = coop.length.arguments ? coop.arguments : NULL;
+	gunichar2 *args;
+	args = coop.length.arguments ? coop.arguments : NULL;
 
 	/* The default dir name is "".  Turn that into NULL to mean "current directory" */
-	gunichar2 *dir = coop.length.working_directory ? coop.working_directory : NULL;
+	gunichar2 *dir;
+	dir = coop.length.working_directory ? coop.working_directory : NULL;
 
 	ret = process_create (shell_path, args, dir, &startup_handles, process_info);
 

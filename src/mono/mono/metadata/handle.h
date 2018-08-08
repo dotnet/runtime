@@ -389,10 +389,10 @@ MONO_HANDLE_CAST_FOR (TYPE) (gpointer a)			\
 	TYPED_HANDLE_NAME (TYPE) b = { (TYPE**)a };		\
 	return b;						\
 }								\
-static inline MONO_ALWAYS_INLINE gpointer 			\
+static inline MONO_ALWAYS_INLINE MonoObject* 			\
 MONO_HANDLE_TYPECHECK_FOR (TYPE) (TYPE *a)			\
 {								\
-	return a;						\
+	return (MonoObject*)a;					\
 }
 
 #else
@@ -730,7 +730,7 @@ mono_array_handle_memcpy_refs (MonoArrayHandle dest, uintptr_t dest_idx, MonoArr
 gpointer
 mono_array_handle_pin_with_size (MonoArrayHandle handle, int size, uintptr_t index, uint32_t *gchandle);
 
-#define MONO_ARRAY_HANDLE_PIN(handle,type,index,gchandle_out) mono_array_handle_pin_with_size (MONO_HANDLE_CAST(MonoArray,(handle)), sizeof (type), (index), (gchandle_out))
+#define MONO_ARRAY_HANDLE_PIN(handle,type,index,gchandle_out) ((type*)mono_array_handle_pin_with_size (MONO_HANDLE_CAST(MonoArray,(handle)), sizeof (type), (index), (gchandle_out)))
 
 gunichar2 *
 mono_string_handle_pin_chars (MonoStringHandle s, uint32_t *gchandle_out);

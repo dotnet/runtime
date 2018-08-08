@@ -41,7 +41,7 @@ mono_property_bag_get (MonoPropertyBag *bag, int tag)
 void*
 mono_property_bag_add (MonoPropertyBag *bag, void *value)
 {
-	MonoPropertyBagItem *cur, **prev, *item = value;
+	MonoPropertyBagItem *cur, **prev, *item = (MonoPropertyBagItem*)value;
 	int tag = item->tag;
 	mono_memory_barrier (); //publish the values in value
 
@@ -51,7 +51,7 @@ retry:
 		cur = *prev;
 		if (!cur || cur->tag > tag) {
 			item->next = cur;
-			if (mono_atomic_cas_ptr ((void*)prev, item, cur) == cur)
+			if (mono_atomic_cas_ptr ((void**)prev, item, cur) == cur)
 				return item;
 			goto retry;
 		} else if (cur->tag == tag) {

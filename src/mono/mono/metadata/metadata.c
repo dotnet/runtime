@@ -3398,7 +3398,7 @@ mono_metadata_lookup_generic_class (MonoClass *container_class, MonoGenericInst 
 
 	mono_image_set_lock (set);
 
-	MonoGenericClass *gclass2 = mono_conc_hashtable_insert (set->gclass_cache, gclass, gclass);
+	MonoGenericClass *gclass2 = (MonoGenericClass*)mono_conc_hashtable_insert (set->gclass_cache, gclass, gclass);
 	if (!gclass2)
 		gclass2 = gclass;
 
@@ -3583,11 +3583,15 @@ lookup_anon_gparam (MonoImage *image, MonoGenericContainer *container, gint32 pa
 			return NULL;
 		return &cache[param_num];
 	} else {
-		MonoGenericParam key = { .owner = container, .num = param_num, .gshared_constraint = NULL };
+		MonoGenericParam key;
+		memset (&key, 0, sizeof (key));
+		key.owner = container;
+		key.num = param_num;
+		key.gshared_constraint = NULL;
 		MonoConcurrentHashTable *cache = is_mvar ? image->mvar_gparam_cache : image->var_gparam_cache;
 		if (!cache)
 			return NULL;
-		return mono_conc_hashtable_lookup (cache, &key);
+		return (MonoGenericParam*)mono_conc_hashtable_lookup (cache, &key);
 	}
 }
 
@@ -3599,7 +3603,7 @@ publish_anon_gparam_fast (MonoImage *image, MonoGenericContainer *container, gin
 	if (!*cache) {
 		mono_image_lock (image);
 		if (!*cache) {
-			*cache = mono_image_alloc0 (image, sizeof (MonoGenericParam) * FAST_GPARAM_CACHE_SIZE);
+			*cache = (MonoGenericParam*)mono_image_alloc0 (image, sizeof (MonoGenericParam) * FAST_GPARAM_CACHE_SIZE);
 			for (gint32 i = 0; i < FAST_GPARAM_CACHE_SIZE; ++i) {
 				MonoGenericParam *param = &(*cache)[i];
 				param->owner = container;
@@ -3631,7 +3635,7 @@ publish_anon_gparam_slow (MonoImage *image, MonoGenericParam *gparam)
 		}
 		mono_image_unlock (image);
 	}
-	MonoGenericParam *other = mono_conc_hashtable_insert (*cache, gparam, gparam);
+	MonoGenericParam *other = (MonoGenericParam*)mono_conc_hashtable_insert (*cache, gparam, gparam);
 	// If another thread published first return their param, otherwise return ours.
 	return other ? other : gparam;
 }
@@ -3659,7 +3663,7 @@ mono_metadata_create_anon_gparam (MonoImage *image, gint32 param_num, gboolean i
 		// Create a candidate generic param and try to insert it in the cache.
 		// If multiple threads both try to publish the same param, all but one
 		// will leak, but that's okay.
-		gparam = mono_image_alloc0 (image, sizeof (MonoGenericParam));
+		gparam = (MonoGenericParam*)mono_image_alloc0 (image, sizeof (MonoGenericParam));
 		gparam->owner = container;
 		gparam->num = param_num;
 
@@ -6139,7 +6143,7 @@ mono_type_create_from_typespec_checked (MonoImage *image, guint32 type_spec, Mon
 	mono_image_lock (image);
 
 	/* We might leak some data in the image mempool if found */
-	type = mono_conc_hashtable_insert (image->typespec_cache, GUINT_TO_POINTER (type_spec), type2);
+	type = (MonoType*)mono_conc_hashtable_insert (image->typespec_cache, GUINT_TO_POINTER (type_spec), type2);
 	if (!type)
 		type = type2;
 
@@ -6277,7 +6281,7 @@ mono_metadata_free_marshal_spec (MonoMarshalSpec *spec)
  * \returns A \c MonoMarshalNative enumeration value (<code>MONO_NATIVE_</code>) value
  * describing the underlying native reprensetation of the type.
  */
-guint32
+guint32 // FIXMEcxx MonoMarshalNative
 mono_type_to_unmanaged (MonoType *type, MonoMarshalSpec *mspec, gboolean as_field,
 			gboolean unicode, MonoMarshalConv *conv) 
 {
@@ -6780,9 +6784,9 @@ mono_metadata_load_generic_params (MonoImage *image, guint32 token, MonoGenericC
 		container->owner.image = image;
 	} else {
 		if (is_method)
-			container->owner.method = real_owner;
+			container->owner.method = (MonoMethod*)real_owner;
 		else
-			container->owner.klass = real_owner;
+			container->owner.klass = (MonoClass*)real_owner;
 	}
 	do {
 		n++;

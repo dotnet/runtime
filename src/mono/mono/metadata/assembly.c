@@ -3066,7 +3066,7 @@ parse_assembly_directory_name (const char *name, const char *dirname, MonoAssemb
 static gboolean
 split_key_value (const gchar *pair, gchar **key, guint32 *keylen, gchar **value)
 {
-	char *eqsign = strchr (pair, '=');
+	char *eqsign = (char*)strchr (pair, '=');
 	if (!eqsign) {
 		*key = NULL;
 		*keylen = 0;

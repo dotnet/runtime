@@ -438,7 +438,7 @@ mono_w32socket_recvbuffers (SOCKET sock, WSABUF *buffers, guint32 count, guint32
 }
 
 int
-mono_w32socket_send (SOCKET sock, char *buf, int len, int flags, gboolean blocking)
+mono_w32socket_send (SOCKET sock, void *buf, int len, int flags, gboolean blocking)
 {
 	SocketHandle *sockethandle;
 	int ret;
@@ -582,7 +582,7 @@ mono_w32socket_transmit_file (SOCKET sock, gpointer file_handle, TRANSMIT_FILE_B
 #if defined(HAVE_SENDFILE) && (defined(__linux__) || defined(DARWIN))
 	struct stat statbuf;
 #else
-	gchar *buffer;
+	gpointer buffer;
 #endif
 
 	if (!mono_fdhandle_lookup_and_ref(sock, (MonoFDHandle**) &sockethandle)) {
@@ -1129,12 +1129,13 @@ extension_transmit_file (SOCKET sock, gpointer file_handle, guint32 bytes_to_wri
 	return ret;
 }
 
+const
 static struct {
 	GUID guid;
 	gpointer func;
 } extension_functions[] = {
-	{ {0x7fda2e11,0x8630,0x436f,{0xa0,0x31,0xf5,0x36,0xa6,0xee,0xc1,0x57}} /* WSAID_DISCONNECTEX */, extension_disconect },
-	{ {0xb5367df0,0xcbac,0x11cf,{0x95,0xca,0x00,0x80,0x5f,0x48,0xa1,0x92}} /* WSAID_TRANSMITFILE */, extension_transmit_file },
+	{ {0x7fda2e11,0x8630,0x436f,{0xa0,0x31,0xf5,0x36,0xa6,0xee,0xc1,0x57}} /* WSAID_DISCONNECTEX */, (gpointer)extension_disconect },
+	{ {0xb5367df0,0xcbac,0x11cf,{0x95,0xca,0x00,0x80,0x5f,0x48,0xa1,0x92}} /* WSAID_TRANSMITFILE */, (gpointer)extension_transmit_file },
 	{ {0} , NULL },
 };
 
@@ -1143,7 +1144,7 @@ mono_w32socket_ioctl (SOCKET sock, gint32 command, gchar *input, gint inputlen, 
 {
 	SocketHandle *sockethandle;
 	gint ret;
-	gchar *buffer;
+	gpointer buffer;
 
 	if (!mono_fdhandle_lookup_and_ref(sock, (MonoFDHandle**) &sockethandle)) {
 		mono_w32error_set_last (WSAENOTSOCK);
