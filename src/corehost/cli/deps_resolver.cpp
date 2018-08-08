@@ -410,7 +410,7 @@ bool deps_resolver_t::resolve_tpa_list(
     const std::vector<deps_entry_t> empty(0);
     name_to_resolved_asset_map_t items;
 
-    auto process_entry = [&](const pal::string_t& deps_dir, const deps_entry_t& entry, int fx_level, bool compare_versions_on_duplicate) -> bool
+    auto process_entry = [&](const pal::string_t& deps_dir, const deps_entry_t& entry, int fx_level) -> bool
     {
         if (breadcrumb != nullptr && entry.is_serviceable)
         {
@@ -460,35 +460,35 @@ bool deps_resolver_t::resolve_tpa_list(
                 return false;
             }
 
-            if (compare_versions_on_duplicate)
+            deps_resolved_asset_t* existing_entry = &existing->second;
+
+            // If deps entry is same or newer than existing, then see if it should be replaced
+            if (entry.asset.assembly_version > existing_entry->asset.assembly_version ||
+                (entry.asset.assembly_version == existing_entry->asset.assembly_version && entry.asset.file_version >= existing_entry->asset.file_version))
             {
-                deps_resolved_asset_t* existing_entry = &existing->second;
-
-                // If deps entry is same or newer than existing, then see if it should be replaced
-                if (entry.asset.assembly_version > existing_entry->asset.assembly_version ||
-                    (entry.asset.assembly_version == existing_entry->asset.assembly_version && entry.asset.file_version >= existing_entry->asset.file_version))
+                if (probe_deps_entry(entry, deps_dir, fx_level, &resolved_path))
                 {
-                    if (probe_deps_entry(entry, deps_dir, fx_level, &resolved_path))
+                    // If the path is the same, then no need to replace
+                    if (resolved_path != existing_entry->resolved_path)
                     {
-                        // If the path is the same, then no need to replace
-                        if (resolved_path != existing_entry->resolved_path)
-                        {
-                            trace::verbose(_X("Replacing deps entry [%s, AssemblyVersion:%s, FileVersion:%s] with [%s, AssemblyVersion:%s, FileVersion:%s]"),
-                                existing_entry->resolved_path.c_str(), existing_entry->asset.assembly_version.as_str().c_str(), existing_entry->asset.file_version.as_str().c_str(),
-                                resolved_path.c_str(), entry.asset.assembly_version.as_str().c_str(), entry.asset.file_version.as_str().c_str());
+                        trace::verbose(_X("Replacing deps entry [%s, AssemblyVersion:%s, FileVersion:%s] with [%s, AssemblyVersion:%s, FileVersion:%s]"),
+                            existing_entry->resolved_path.c_str(), existing_entry->asset.assembly_version.as_str().c_str(), existing_entry->asset.file_version.as_str().c_str(),
+                            resolved_path.c_str(), entry.asset.assembly_version.as_str().c_str(), entry.asset.file_version.as_str().c_str());
 
-                            existing_entry = nullptr;
-                            items.erase(existing);
+                        existing_entry = nullptr;
+                        items.erase(existing);
 
-                            deps_asset_t asset(entry.asset.name, entry.asset.relative_path, entry.asset.assembly_version, entry.asset.file_version);
-                            deps_resolved_asset_t resolved_asset(asset, resolved_path);
-                            add_tpa_asset(resolved_asset, &items);
-                        }
+                        deps_asset_t asset(entry.asset.name, entry.asset.relative_path, entry.asset.assembly_version, entry.asset.file_version);
+                        deps_resolved_asset_t resolved_asset(asset, resolved_path);
+                        add_tpa_asset(resolved_asset, &items);
                     }
-                    else
-                    {
-                        return report_missing_assembly_in_manifest(entry);
-                    }
+                }
+                else if (fx_level != 0)
+                {
+                    // The framework is missing a newer package, so this is an error.
+                    // For compat, it is not an error for the app; this can occur for the main application assembly when using --depsfile
+                    // and the app assembly does not exist with the deps file.
+                    return report_missing_assembly_in_manifest(entry);
                 }
             }
 
@@ -507,7 +507,7 @@ bool deps_resolver_t::resolve_tpa_list(
     const auto& deps_entries = get_deps().get_entries(deps_entry_t::asset_types::runtime);
     for (const auto& entry : deps_entries)
     {
-        if (!process_entry(m_app_dir, entry, 0, false))
+        if (!process_entry(m_app_dir, entry, 0))
         {
             return false;
         }
@@ -521,22 +521,6 @@ bool deps_resolver_t::resolve_tpa_list(
         get_dir_assemblies(m_app_dir, _X("local"), &items);
     }
 
-    // Probe FX deps entries after app assemblies are added.
-    for (int i = 1; i < m_fx_definitions.size(); ++i)
-    {
-        // A minor\major roll-forward affects which layer wins
-        bool is_minor_or_major_roll_forward = m_fx_definitions[i]->did_minor_or_major_roll_forward_occur();
-
-        const auto& deps_entries = m_is_framework_dependent ? m_fx_definitions[i]->get_deps().get_entries(deps_entry_t::asset_types::runtime) : empty;
-        for (const auto& entry : deps_entries)
-        {
-            if (!process_entry(m_fx_definitions[i]->get_dir(), entry, i, is_minor_or_major_roll_forward))
-            {
-                return false;
-            }
-        }
-    }
-
     // If additional deps files were specified that need to be treated as part of the
     // application, then add them to the mix as well.
     for (const auto& additional_deps : m_additional_deps)
@@ -544,8 +528,20 @@ bool deps_resolver_t::resolve_tpa_list(
         auto additional_deps_entries = additional_deps->get_entries(deps_entry_t::asset_types::runtime);
         for (auto entry : additional_deps_entries)
         {
-            // Always check version numbers to support upgrade scenario where additional deps has newer versions
-            if (!process_entry(m_app_dir, entry, 0, true))
+            if (!process_entry(m_app_dir, entry, 0))
+            {
+                return false;
+            }
+        }
+    }
+
+    // Probe FX deps entries after app assemblies are added.
+    for (int i = 1; i < m_fx_definitions.size(); ++i)
+    {
+        const auto& deps_entries = m_is_framework_dependent ? m_fx_definitions[i]->get_deps().get_entries(deps_entry_t::asset_types::runtime) : empty;
+        for (const auto& entry : deps_entries)
+        {
+            if (!process_entry(m_fx_definitions[i]->get_dir(), entry, i))
             {
                 return false;
             }
@@ -792,6 +788,19 @@ bool deps_resolver_t::resolve_probe_dirs(
         (void) library_exists_in_dir(m_app_dir, LIBCLRJIT_NAME, &m_clrjit_path);
     }
 
+    // Handle any additional deps.json that were specified.
+    for (const auto& additional_deps : m_additional_deps)
+    {
+        const auto additional_deps_entries = additional_deps->get_entries(asset_type);
+        for (const auto entry : additional_deps_entries)
+        {
+            if (!add_package_cache_entry(entry, m_app_dir, 0))
+            {
+                return false;
+            }
+        }
+    }
+
     // Add fx package locations to fx_dir
     for (int i = 1; i < m_fx_definitions.size(); ++i)
     {
@@ -800,19 +809,6 @@ bool deps_resolver_t::resolve_probe_dirs(
         for (const auto& entry : fx_entries)
         {
             if (!add_package_cache_entry(entry, m_fx_definitions[i]->get_dir(), i))
-            {
-                return false;
-            }
-        }
-    }
-
-    // Handle any additional deps.json that were specified.
-    for (const auto& additional_deps : m_additional_deps)
-    {
-        const auto additional_deps_entries = additional_deps->get_entries(asset_type);
-        for (const auto entry : additional_deps_entries)
-        {
-            if (!add_package_cache_entry(entry, m_app_dir, 0))
             {
                 return false;
             }
