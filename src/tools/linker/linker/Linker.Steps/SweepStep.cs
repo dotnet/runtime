@@ -394,6 +394,8 @@ namespace Mono.Linker.Steps {
 
 				foreach (var parameter in method.Parameters)
 					SweepCustomAttributes (parameter);
+
+				SweepCustomAttributes (method.MethodReturnType);
 			}
 		}
 

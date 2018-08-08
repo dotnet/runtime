@@ -117,6 +117,7 @@
     <Compile Include="Attributes\OnlyKeepUsed\AttributeDefinedAndUsedInOtherAssemblyIsKept.cs" />
     <Compile Include="Attributes\OnlyKeepUsed\AttributeUsedByAttributeIsKept.cs" />
     <Compile Include="Attributes\OnlyKeepUsed\ThreadStaticIsPreservedOnField.cs" />
+    <Compile Include="Attributes\OnlyKeepUsed\UnusedAttributeOnReturnTypeIsRemoved.cs" />
     <Compile Include="Attributes\OnlyKeepUsed\UnusedAttributeTypeOnModuleIsRemoved.cs" />
     <Compile Include="Attributes\OnlyKeepUsed\UnusedAttributeWithTypeForwarderIsRemoved.cs" />
     <Compile Include="Attributes\OnlyKeepUsed\CanLinkCoreLibrariesWithOnlyKeepUsedAttributes.cs" />
@@ -356,6 +357,7 @@
     <Compile Include="Reflection\Dependencies\AssemblyDependency.cs" />
   </ItemGroup>
   <ItemGroup>
+    <Content Include="Attributes\OnlyKeepUsed\Dependencies\AssemblyWithUnusedAttributeOnReturnParameterDefinition.il" />
     <Content Include="Attributes\OnlyKeepUsed\UnusedAttributePreservedViaLinkXmlIsKept.xml" />
     <Content Include="LinkXml\CanPreserveTypesUsingRegex.xml" />
     <Content Include="LinkXml\CanPreserveAnExportedType.xml" />
