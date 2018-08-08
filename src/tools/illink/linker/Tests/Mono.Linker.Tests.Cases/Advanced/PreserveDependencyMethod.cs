@@ -23,10 +23,12 @@ namespace Mono.Linker.Tests.Cases.Advanced {
 			}
 
 			[Kept]
-			[PreserveDependency ("Mono.Linker.Tests.Cases.Advanced.C.Dependency1()")]
-			[PreserveDependency ("Mono.Linker.Tests.Cases.Advanced.C.Dependency2`1    (   T[]  ,   System.Int32  )  ")]
-			[PreserveDependency ("Mono.Linker.Tests.Cases.Advanced.C.field")]
-			[PreserveDependency ("Mono.Linker.Tests.Cases.Advanced.PreserveDependencyMethod+Nested.NextOne (Mono.Linker.Tests.Cases.Advanced.PreserveDependencyMethod+Nested&)")]
+			[PreserveDependency ("Dependency1()", "Mono.Linker.Tests.Cases.Advanced.C")]
+			[PreserveDependency ("Dependency2`1    (   T[]  ,   System.Int32  )  ", "Mono.Linker.Tests.Cases.Advanced.C")]
+			[PreserveDependency ("field", "Mono.Linker.Tests.Cases.Advanced.C")]
+			[PreserveDependency ("NextOne (Mono.Linker.Tests.Cases.Advanced.PreserveDependencyMethod+Nested&)", "Mono.Linker.Tests.Cases.Advanced.PreserveDependencyMethod+Nested")]
+			[PreserveDependency ("Property", "Mono.Linker.Tests.Cases.Advanced.C")]
+			[PreserveDependency ("get_Property()", "Mono.Linker.Tests.Cases.Advanced.C")]
 			public static void Method ()
 			{
 			}
@@ -39,15 +41,15 @@ namespace Mono.Linker.Tests.Cases.Advanced {
 			}
 
 			[Kept]
-			[PreserveDependency ("Mono.Linker.Tests.Cases.Advanced.C.Missing")]
-			[PreserveDependency ("Mono.Linker.Tests.Cases.Advanced.C.Dependency2`1 (T, System.Int32, System.Object)")]
+			[PreserveDependency ("Missing", "Mono.Linker.Tests.Cases.Advanced.C")]
+			[PreserveDependency ("Dependency2`1 (T, System.Int32, System.Object)", "Mono.Linker.Tests.Cases.Advanced.C")]
 			[PreserveDependency ("")]
 			public static void Broken ()
 			{
 			}
 
 			[Kept]
-			[PreserveDependency ("Mono.Linker.Tests.Cases.Advanced.C.ConditionalTest()", "don't have it")]
+			[PreserveDependency ("ConditionalTest()", "Mono.Linker.Tests.Cases.Advanced.C", Condition = "don't have it")]
 			public static void Conditional ()
 			{
 			}
@@ -80,6 +82,10 @@ namespace Mono.Linker.Tests.Cases.Advanced {
 		internal void Dependency2<T> (T[] arg1, int arg2)
 		{
 		}
+
+		[Kept]
+		[KeptBackingField]
+		internal string Property { [Kept] get; set; }
 
 		internal void ConditionalTest ()
 		{
