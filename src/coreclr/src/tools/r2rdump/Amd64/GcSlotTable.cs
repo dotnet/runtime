@@ -8,17 +8,19 @@ using System.Reflection.PortableExecutable;
 using System.Text;
 using System.Xml.Serialization;
 
-namespace R2RDump
+namespace R2RDump.Amd64
 {
     public class GcSlotTable
     {
-        public struct GcSlot
+        public class GcSlot
         {
             [XmlAttribute("Index")]
             public int Index { get; set; }
             public int RegisterNumber { get; set; }
             public GcStackSlot StackSlot { get; set; }
             public GcSlotFlags Flags { get; set; }
+
+            public GcSlot() { }
 
             public GcSlot(int index, int registerNumber, GcStackSlot stack, GcSlotFlags flags, bool isUntracked = false)
             {

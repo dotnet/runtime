@@ -15,6 +15,8 @@ namespace R2RDump
     public abstract class Dumper
     {
         internal R2RReader _r2r;
+        internal TextWriter _writer;
+
         internal bool _raw;
         internal bool _header;
         internal bool _disasm;
@@ -22,9 +24,15 @@ namespace R2RDump
         internal bool _unwind;
         internal bool _gc;
         internal bool _sectionContents;
-        internal TextWriter _writer;
 
+        /// <summary>
+        /// Run right before printing output
+        /// </summary>
         abstract internal void Begin();
+
+        /// <summary>
+        /// Run right after printing output
+        /// </summary>
         abstract internal void End();
         abstract internal void WriteDivider(string title);
         abstract internal void WriteSubDivider();
@@ -42,6 +50,7 @@ namespace R2RDump
 
     class R2RDump
     {
+        // Options set by user specifying what to dump
         private bool _help;
         private IReadOnlyList<string> _inputFilenames = Array.Empty<string>();
         private string _outputFilename = null;
@@ -66,6 +75,9 @@ namespace R2RDump
         {
         }
 
+        /// <summary>
+        /// Parse commandline options
+        /// </summary>
         private ArgumentSyntax ParseCommandLine(string[] args)
         {
             bool verbose = false;
@@ -132,13 +144,17 @@ namespace R2RDump
             return int.TryParse(arg, out n);
         }
 
+        /// <summary>
+        /// Outputs a warning message
+        /// </summary>
+        /// <param name="warning">The warning message to output</param>
         public static void WriteWarning(string warning)
         {
             Console.WriteLine($"Warning: {warning}");
         }
 
         // <summary>
-        /// For each query in the list of queries, search for all methods matching the query by name, signature or id
+        /// For each query in the list of queries, dump all methods matching the query by name, signature or id
         /// </summary>
         /// <param name="r2r">Contains all the extracted info about the ReadyToRun image</param>
         /// <param name="title">The title to print, "R2R Methods by Query" or "R2R Methods by Keyword"</param>
@@ -162,7 +178,7 @@ namespace R2RDump
         }
 
         // <summary>
-        /// For each query in the list of queries, search for all sections by the name or value of the ReadyToRunSectionType enum
+        /// For each query in the list of queries, dump all sections by the name or value of the ReadyToRunSectionType enum
         /// </summary>
         /// <param name="r2r">Contains all the extracted info about the ReadyToRun image</param>
         /// <param name="queries">The names/values to search for</param>
@@ -184,7 +200,7 @@ namespace R2RDump
         }
 
         // <summary>
-        /// For each query in the list of queries, search for a runtime function by id. 
+        /// For each query in the list of queries, dump a runtime function by id. 
         /// The method containing the runtime function gets outputted, along with the single runtime function that was searched
         /// </summary>
         /// <param name="r2r">Contains all the extracted info about the ReadyToRun image</param>
@@ -218,7 +234,7 @@ namespace R2RDump
 
             _dumper.Begin();
 
-            if (_queries.Count == 0 && _keywords.Count == 0 && _runtimeFunctions.Count == 0 && _sections.Count == 0) //dump all sections and methods
+            if (_queries.Count == 0 && _keywords.Count == 0 && _runtimeFunctions.Count == 0 && _sections.Count == 0) //dump all sections and methods if no queries specified
             {
                 _dumper.WriteDivider("R2R Header");
                 _dumper.DumpHeader(true);
@@ -228,7 +244,7 @@ namespace R2RDump
                     _dumper.DumpAllMethods();
                 }
             }
-            else //dump queried sections/methods/runtimeFunctions
+            else //dump queried sections, methods and runtimeFunctions
             {
                 if (_header)
                 {
@@ -245,7 +261,7 @@ namespace R2RDump
         }
 
         /// <summary>
-        /// Returns true if the name/signature/id of <param>method</param> matches <param>query</param>
+        /// Returns true if the name, signature or id of <param>method</param> matches <param>query</param>
         /// </summary>
         /// <param name="exact">Specifies exact or partial match</param>
         /// <remarks>Case-insensitive and ignores whitespace</remarks>

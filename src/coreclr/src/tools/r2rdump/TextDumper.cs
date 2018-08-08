@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.IO;
+using System.Reflection.PortableExecutable;
 using System.Text;
 using System.Xml;
 
@@ -161,7 +162,7 @@ namespace R2RDump
                 _writer.Write(rtf.UnwindInfo);
                 if (_raw)
                 {
-                    DumpBytes(rtf.UnwindRVA, (uint)((Amd64.UnwindInfo)rtf.UnwindInfo).Size);
+                    DumpBytes(rtf.UnwindRVA, (uint)rtf.UnwindInfo.Size);
                 }
             }
             SkipLine();
@@ -179,7 +180,10 @@ namespace R2RDump
                 _writer.Write(instr);
                 if (rtf.Method.GcInfo != null && rtf.Method.GcInfo.Transitions.ContainsKey(codeOffset))
                 {
-                    _writer.WriteLine($"\t\t\t\t{rtf.Method.GcInfo.Transitions[codeOffset].GetSlotState(rtf.Method.GcInfo.SlotTable)}");
+                    foreach (BaseGcTransition transition in rtf.Method.GcInfo.Transitions[codeOffset])
+                    {
+                        _writer.WriteLine($"\t\t\t\t{transition.ToString()}");
+                    }
                 }
 
                 CoreDisTools.ClearOutputBuffer();

@@ -8,9 +8,9 @@ using System.Reflection.PortableExecutable;
 using System.Text;
 using System.Xml.Serialization;
 
-namespace R2RDump
+namespace R2RDump.Amd64
 {
-    public class GcInfo
+    public class GcInfo : BaseGcInfo
     {
         private enum GcInfoHeaderFlags
         {
@@ -31,68 +31,6 @@ namespace R2RDump
             GC_INFO_FLAGS_BIT_SIZE_VERSION_1 = 9,
             GC_INFO_FLAGS_BIT_SIZE = 10,
         };
-
-        public struct InterruptibleRange
-        {
-            [XmlAttribute("Index")]
-            public uint Index { get; set; }
-            public uint StartOffset { get; set; }
-            public uint StopOffset { get; set; }
-            public InterruptibleRange(uint index, uint start, uint stop)
-            {
-                Index = index;
-                StartOffset = start;
-                StopOffset = stop;
-            }
-        }
-
-        public class GcTransition
-        {
-            [XmlAttribute("Index")]
-            public int CodeOffset { get; set; }
-            public int SlotId { get; set; }
-            public bool IsLive { get; set; }
-            public int ChunkId { get; set; }
-
-            public GcTransition() { }
-
-            public GcTransition(int codeOffset, int slotId, bool isLive, int chunkId)
-            {
-                CodeOffset = codeOffset;
-                SlotId = slotId;
-                IsLive = isLive;
-                ChunkId = chunkId;
-            }
-            public override string ToString()
-            {
-                StringBuilder sb = new StringBuilder();
-
-                sb.AppendLine($"\t\tCodeOffset: {CodeOffset}");
-                sb.AppendLine($"\t\tSlotId: {SlotId}");
-                sb.AppendLine($"\t\tIsLive: {IsLive}");
-                sb.AppendLine($"\t\tChunkId: {ChunkId}");
-                sb.Append($"\t\t--------------------");
-
-                return sb.ToString();
-            }
-            public string GetSlotState(GcSlotTable slotTable)
-            {
-                GcSlotTable.GcSlot slot = slotTable.GcSlots[SlotId];
-                string slotStr = "";
-                if (slot.StackSlot == null)
-                {
-                    slotStr = Enum.GetName(typeof(Amd64Registers), slot.RegisterNumber);
-                }
-                else
-                {
-                    slotStr = $"sp{slot.StackSlot.SpOffset:+#;-#;+0}";
-                }
-                string isLiveStr = "live";
-                if (!IsLive)
-                    isLiveStr = "dead";
-                return $"{slotStr} is {isLiveStr}";
-            }
-        }
 
         public struct SafePointOffset
         {
@@ -124,7 +62,6 @@ namespace R2RDump
         private GcInfoTypes _gcInfoTypes;
 
         public int Version { get; set; }
-        public int CodeLength { get; set; }
         public ReturnKinds ReturnKind { get; set; }
         public uint ValidRangeStart { get; set; }
         public uint ValidRangeEnd { get; set; }
@@ -141,11 +78,6 @@ namespace R2RDump
         public List<SafePointOffset> SafePointOffsets { get; set; }
         public List<InterruptibleRange> InterruptibleRanges { get; set; }
         public GcSlotTable SlotTable { get; set; }
-        public int Size { get; set; }
-        public int Offset { get; set; }
-
-        [XmlIgnore]
-        public Dictionary<int, GcTransition> Transitions { get; set; }
 
         public GcInfo() { }
 
@@ -292,7 +224,7 @@ namespace R2RDump
             }
 
             if (StackBaseRegister != 0xffffffff)
-                sb.AppendLine($"\tStackBaseRegister: {(Amd64Registers)StackBaseRegister}");
+                sb.AppendLine($"\tStackBaseRegister: {(Registers)StackBaseRegister}");
             if (_machine == Machine.Amd64)
             {
                 sb.AppendLine($"\tWants Report Only Leaf: {_wantsReportOnlyLeaf}");
@@ -322,9 +254,12 @@ namespace R2RDump
             sb.AppendLine($"\tSlotTable:");
             sb.Append(SlotTable.ToString());
             sb.AppendLine($"\tTransitions:");
-            foreach (GcTransition trans in Transitions.Values)
+            foreach (List<BaseGcTransition> transList in Transitions.Values)
             {
-                sb.AppendLine(trans.ToString());
+                foreach (GcTransition trans in transList)
+                {
+                    sb.AppendLine("\t\t" + trans.ToString());
+                }
             }
             sb.AppendLine($"\tSize: {Size} bytes");
 
@@ -398,7 +333,7 @@ namespace R2RDump
             return (readyToRunMajorVersion == 1) ? 1 : GCINFO_VERSION;
         }
 
-        public Dictionary<int, GcTransition> GetTranstions(byte[] image, ref int bitOffset)
+        public Dictionary<int, List<BaseGcTransition>> GetTranstions(byte[] image, ref int bitOffset)
         {
             int totalInterruptibleLength = 0;
             if (NumInterruptibleRanges == 0)
@@ -417,7 +352,7 @@ namespace R2RDump
             int numBitsPerPointer = (int)NativeReader.DecodeVarLengthUnsigned(image, _gcInfoTypes.POINTER_SIZE_ENCBASE, ref bitOffset);
             if (numBitsPerPointer == 0)
             {
-                return new Dictionary<int, GcTransition>();
+                return new Dictionary<int, List<BaseGcTransition>>();
             }
 
             int[] chunkPointers = new int[numChunks];
@@ -468,7 +403,7 @@ namespace R2RDump
                     while (NativeReader.ReadBits(image, 1, ref bitOffset) != 0)
                     {
                         int transitionOffset = NativeReader.ReadBits(image, _gcInfoTypes.NUM_NORM_CODE_OFFSETS_PER_CHUNK_LOG2, ref bitOffset) + normChunkBaseCodeOffset;
-                        transitions.Add(new GcTransition(transitionOffset, slotId, isLive, currentChunk));
+                        transitions.Add(new GcTransition(transitionOffset, slotId, isLive, currentChunk, SlotTable));
                         isLive = !isLive;
                     }
                     slotId++;
@@ -545,9 +480,9 @@ namespace R2RDump
             return slotId;
         }
 
-        private Dictionary<int, GcTransition> UpdateTransitionCodeOffset(List<GcTransition> transitions)
+        private Dictionary<int, List<BaseGcTransition>> UpdateTransitionCodeOffset(List<GcTransition> transitions)
         {
-            Dictionary<int, GcTransition> updatedTransitions = new Dictionary<int, GcTransition>();
+            Dictionary<int, List<BaseGcTransition>> updatedTransitions = new Dictionary<int, List<BaseGcTransition>>();
             int cumInterruptibleLength = 0;
             using (IEnumerator<InterruptibleRange> interruptibleRangesIter = InterruptibleRanges.GetEnumerator())
             {
@@ -566,7 +501,11 @@ namespace R2RDump
                         codeOffset = transition.CodeOffset + (int)currentRange.StartOffset - cumInterruptibleLength;
                     }
                     transition.CodeOffset = codeOffset;
-                    updatedTransitions[codeOffset] = transition;
+                    if (!updatedTransitions.ContainsKey(codeOffset))
+                    {
+                        updatedTransitions[codeOffset] = new List<BaseGcTransition>();
+                    }
+                    updatedTransitions[codeOffset].Add(transition);
                 }
             }
             return updatedTransitions;
