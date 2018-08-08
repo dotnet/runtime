@@ -142,12 +142,14 @@ size_t strcpy_s(char *dest, size_t n, char const *src)
     return snprintf(dest, n, "%s", src);
 }
 
+#ifndef wcslen
 size_t wcslen(const WCHAR *str)
 {
     size_t len = 0;
     while ('\0' != *(str + len)) len++;
     return len;
 }
+#endif
 
 int wcsncpy_s(LPWSTR strDestination, size_t size1, LPCWSTR strSource, size_t size2)
 {
