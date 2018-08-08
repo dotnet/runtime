@@ -2,60 +2,52 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
-/*============================================================
-**
-** 
-** 
-** 
-**
-**
-** Purpose: Used for binding and retrieving info about an assembly
-**
-**
-===========================================================*/
+using System.Configuration.Assemblies;
+using System.IO;
+using System.Runtime.CompilerServices;
+using System.Runtime.Serialization;
+using System.Text;
+using CultureInfo = System.Globalization.CultureInfo;
 
 namespace System.Reflection
 {
-    using System;
-    using System.IO;
-    using System.Configuration.Assemblies;
-    using System.Runtime.CompilerServices;
-    using CultureInfo = System.Globalization.CultureInfo;
-    using System.Runtime.Serialization;
-    using System.Runtime.InteropServices;
-    using System.Runtime.Versioning;
-    using System.Text;
-
-    public sealed class AssemblyName : ICloneable, ISerializable, IDeserializationCallback
+    public sealed class AssemblyName : ICloneable, IDeserializationCallback, ISerializable
     {
-        //
-        // READ ME
         // If you modify any of these fields, you must also update the 
         // AssemblyBaseObject structure in object.h
-        //
-        private string _Name;                  // Name
-        private byte[] _PublicKey;
-        private byte[] _PublicKeyToken;
-        private CultureInfo _CultureInfo;
-        private string _CodeBase;              // Potential location to get the file
-        private Version _Version;
+        private string _name;
+        private byte[] _publicKey;
+        private byte[] _publicKeyToken;
+        private CultureInfo _cultureInfo;
+        private string _codeBase;
+        private Version _version;
 
-        private StrongNameKeyPair _StrongNameKeyPair;
+        private StrongNameKeyPair _strongNameKeyPair;
 
-        private SerializationInfo m_siInfo; //A temporary variable which we need during deserialization.
+        private byte[] _hashForControl;
+        private AssemblyHashAlgorithm _hashAlgorithm;
+        private AssemblyHashAlgorithm _hashAlgorithmForControl;
 
-        private byte[] _HashForControl;
-        private AssemblyHashAlgorithm _HashAlgorithm;
-        private AssemblyHashAlgorithm _HashAlgorithmForControl;
-
-        private AssemblyVersionCompatibility _VersionCompatibility;
-        private AssemblyNameFlags _Flags;
+        private AssemblyVersionCompatibility _versionCompatibility;
+        private AssemblyNameFlags _flags;
 
         public AssemblyName()
         {
-            _HashAlgorithm = AssemblyHashAlgorithm.None;
-            _VersionCompatibility = AssemblyVersionCompatibility.SameMachine;
-            _Flags = AssemblyNameFlags.None;
+            _hashAlgorithm = AssemblyHashAlgorithm.None;
+            _versionCompatibility = AssemblyVersionCompatibility.SameMachine;
+            _flags = AssemblyNameFlags.None;
+        }
+
+        public AssemblyName(string assemblyName)
+        {
+            if (assemblyName == null)
+                throw new ArgumentNullException(nameof(assemblyName));
+            if ((assemblyName.Length == 0) ||
+                (assemblyName[0] == '\0'))
+                throw new ArgumentException(SR.Format_StringZeroLength);
+
+            _name = assemblyName;
+            nInit();
         }
 
         // Set and get the name of the assembly. If this is a weak Name
@@ -63,61 +55,49 @@ namespace System.Reflection
         // the name partitions up the strong name's namespace
         public string Name
         {
-            get { return _Name; }
-            set { _Name = value; }
+            get { return _name; }
+            set { _name = value; }
         }
 
         public Version Version
         {
-            get
-            {
-                return _Version;
-            }
-            set
-            {
-                _Version = value;
-            }
+            get { return _version; }
+            set { _version = value; }
         }
 
         // Locales, internally the LCID is used for the match.
         public CultureInfo CultureInfo
         {
-            get
-            {
-                return _CultureInfo;
-            }
-            set
-            {
-                _CultureInfo = value;
-            }
+            get { return _cultureInfo; }
+            set { _cultureInfo = value; }
         }
 
         public string CultureName
         {
             get
             {
-                return (_CultureInfo == null) ? null : _CultureInfo.Name;
+                return (_cultureInfo == null) ? null : _cultureInfo.Name;
             }
             set
             {
-                _CultureInfo = (value == null) ? null : new CultureInfo(value);
+                _cultureInfo = (value == null) ? null : new CultureInfo(value);
             }
         }
 
         public string CodeBase
         {
-            get { return _CodeBase; }
-            set { _CodeBase = value; }
+            get { return _codeBase; }
+            set { _codeBase = value; }
         }
 
         public string EscapedCodeBase
         {
             get
             {
-                if (_CodeBase == null)
+                if (_codeBase == null)
                     return null;
                 else
-                    return EscapeCodeBase(_CodeBase);
+                    return EscapeCodeBase(_codeBase);
             }
         }
 
@@ -125,7 +105,7 @@ namespace System.Reflection
         {
             get
             {
-                int x = (((int)_Flags) & 0x70) >> 4;
+                int x = (((int)_flags) & 0x70) >> 4;
                 if (x > 5)
                     x = 0;
                 return (ProcessorArchitecture)x;
@@ -135,8 +115,8 @@ namespace System.Reflection
                 int x = ((int)value) & 0x07;
                 if (x <= 5)
                 {
-                    _Flags = (AssemblyNameFlags)((int)_Flags & 0xFFFFFF0F);
-                    _Flags |= (AssemblyNameFlags)(x << 4);
+                    _flags = (AssemblyNameFlags)((int)_flags & 0xFFFFFF0F);
+                    _flags |= (AssemblyNameFlags)(x << 4);
                 }
             }
         }
@@ -145,7 +125,7 @@ namespace System.Reflection
         {
             get
             {
-                int x = (((int)_Flags) & 0x00000E00) >> 9;
+                int x = (((int)_flags) & 0x00000E00) >> 9;
                 if (x > 1)
                     x = 0;
                 return (AssemblyContentType)x;
@@ -155,30 +135,28 @@ namespace System.Reflection
                 int x = ((int)value) & 0x07;
                 if (x <= 1)
                 {
-                    _Flags = (AssemblyNameFlags)((int)_Flags & 0xFFFFF1FF);
-                    _Flags |= (AssemblyNameFlags)(x << 9);
+                    _flags = (AssemblyNameFlags)((int)_flags & 0xFFFFF1FF);
+                    _flags |= (AssemblyNameFlags)(x << 9);
                 }
             }
         }
-
-
 
         // Make a copy of this assembly name.
         public object Clone()
         {
             AssemblyName name = new AssemblyName();
-            name.Init(_Name,
-                      _PublicKey,
-                      _PublicKeyToken,
-                      _Version,
-                      _CultureInfo,
-                      _HashAlgorithm,
-                      _VersionCompatibility,
-                      _CodeBase,
-                      _Flags,
-                      _StrongNameKeyPair);
-            name._HashForControl = _HashForControl;
-            name._HashAlgorithmForControl = _HashAlgorithmForControl;
+            name.Init(_name,
+                      _publicKey,
+                      _publicKeyToken,
+                      _version,
+                      _cultureInfo,
+                      _hashAlgorithm,
+                      _versionCompatibility,
+                      _codeBase,
+                      _flags,
+                      _strongNameKeyPair);
+            name._hashForControl = _hashForControl;
+            name._hashAlgorithmForControl = _hashAlgorithmForControl;
             return name;
         }
 
@@ -198,78 +176,72 @@ namespace System.Reflection
             return nGetFileInformation(fullPath);
         }
 
-        internal void SetHashControl(byte[] hash, AssemblyHashAlgorithm hashAlgorithm)
-        {
-            _HashForControl = hash;
-            _HashAlgorithmForControl = hashAlgorithm;
-        }
-
         // The public key that is used to verify an assemblies
         // inclusion into the namespace. If the public key associated
         // with the namespace cannot verify the assembly the assembly
         // will fail to load.
         public byte[] GetPublicKey()
         {
-            return _PublicKey;
+            return _publicKey;
         }
 
         public void SetPublicKey(byte[] publicKey)
         {
-            _PublicKey = publicKey;
+            _publicKey = publicKey;
 
             if (publicKey == null)
-                _Flags &= ~AssemblyNameFlags.PublicKey;
+                _flags &= ~AssemblyNameFlags.PublicKey;
             else
-                _Flags |= AssemblyNameFlags.PublicKey;
+                _flags |= AssemblyNameFlags.PublicKey;
         }
 
         // The compressed version of the public key formed from a truncated hash.
-        // Will throw a SecurityException if _PublicKey is invalid
+        // Will throw a SecurityException if _publicKey is invalid
         public byte[] GetPublicKeyToken()
         {
-            if (_PublicKeyToken == null)
-                _PublicKeyToken = nGetPublicKeyToken();
-            return _PublicKeyToken;
+            if (_publicKeyToken == null)
+                _publicKeyToken = nGetPublicKeyToken();
+            return _publicKeyToken;
         }
 
         public void SetPublicKeyToken(byte[] publicKeyToken)
         {
-            _PublicKeyToken = publicKeyToken;
+            _publicKeyToken = publicKeyToken;
         }
 
         // Flags modifying the name. So far the only flag is PublicKey, which
         // indicates that a full public key and not the compressed version is
-        // present. 
+        // present.
         // Processor Architecture flags are set only through ProcessorArchitecture
         // property and can't be set or retrieved directly
-        // Content Type flags are set only through ContentType property and can't be 
+        // Content Type flags are set only through ContentType property and can't be
         // set or retrieved directly
         public AssemblyNameFlags Flags
         {
-            get { return (AssemblyNameFlags)((uint)_Flags & 0xFFFFF10F); }
+            get { return (AssemblyNameFlags)((uint)_flags & 0xFFFFF10F); }
             set
             {
-                _Flags &= unchecked((AssemblyNameFlags)0x00000EF0);
-                _Flags |= (value & unchecked((AssemblyNameFlags)0xFFFFF10F));
+                _flags &= unchecked((AssemblyNameFlags)0x00000EF0);
+                _flags |= (value & unchecked((AssemblyNameFlags)0xFFFFF10F));
             }
         }
 
         public AssemblyHashAlgorithm HashAlgorithm
         {
-            get { return _HashAlgorithm; }
-            set { _HashAlgorithm = value; }
+            get { return _hashAlgorithm; }
+            set { _hashAlgorithm = value; }
         }
 
         public AssemblyVersionCompatibility VersionCompatibility
         {
-            get { return _VersionCompatibility; }
-            set { _VersionCompatibility = value; }
+            get { return _versionCompatibility; }
+            set { _versionCompatibility = value; }
         }
 
         public StrongNameKeyPair KeyPair
         {
-            get { return _StrongNameKeyPair; }
-            set { _StrongNameKeyPair = value; }
+            get { return _strongNameKeyPair; }
+            set { _strongNameKeyPair = value; }
         }
 
         public string FullName
@@ -279,12 +251,11 @@ namespace System.Reflection
                 if (this.Name == null)
                     return string.Empty;
                 // Do not call GetPublicKeyToken() here - that latches the result into AssemblyName which isn't a side effect we want.
-                byte[] pkt = _PublicKeyToken ?? nGetPublicKeyToken();
+                byte[] pkt = _publicKeyToken ?? nGetPublicKeyToken();
                 return AssemblyNameFormatter.ComputeDisplayName(Name, Version, CultureName, pkt, Flags, ContentType);
             }
         }
 
-        // Returns the stringized version of the assembly name.
         public override string ToString()
         {
             string s = FullName;
@@ -302,18 +273,6 @@ namespace System.Reflection
         public void OnDeserialization(object sender)
         {
             throw new PlatformNotSupportedException();
-        }
-
-        public AssemblyName(string assemblyName)
-        {
-            if (assemblyName == null)
-                throw new ArgumentNullException(nameof(assemblyName));
-            if ((assemblyName.Length == 0) ||
-                (assemblyName[0] == '\0'))
-                throw new ArgumentException(SR.Format_StringZeroLength);
-
-            _Name = assemblyName;
-            nInit();
         }
 
         /// <summary>
@@ -348,7 +307,7 @@ namespace System.Reflection
 
         internal void SetProcArchIndex(PortableExecutableKinds pek, ImageFileMachine ifm)
         {
-            ProcessorArchitecture = CalculateProcArchIndex(pek, ifm, _Flags);
+            ProcessorArchitecture = CalculateProcArchIndex(pek, ifm, _flags);
         }
 
         internal static ProcessorArchitecture CalculateProcArchIndex(PortableExecutableKinds pek, ImageFileMachine ifm, AssemblyNameFlags flags)
@@ -401,29 +360,29 @@ namespace System.Reflection
                            AssemblyNameFlags flags,
                            StrongNameKeyPair keyPair) // Null if ref, matching Assembly if def
         {
-            _Name = name;
+            _name = name;
 
             if (publicKey != null)
             {
-                _PublicKey = new byte[publicKey.Length];
-                Array.Copy(publicKey, _PublicKey, publicKey.Length);
+                _publicKey = new byte[publicKey.Length];
+                Array.Copy(publicKey, _publicKey, publicKey.Length);
             }
 
             if (publicKeyToken != null)
             {
-                _PublicKeyToken = new byte[publicKeyToken.Length];
-                Array.Copy(publicKeyToken, _PublicKeyToken, publicKeyToken.Length);
+                _publicKeyToken = new byte[publicKeyToken.Length];
+                Array.Copy(publicKeyToken, _publicKeyToken, publicKeyToken.Length);
             }
 
             if (version != null)
-                _Version = (Version)version.Clone();
+                _version = (Version)version.Clone();
 
-            _CultureInfo = cultureInfo;
-            _HashAlgorithm = hashAlgorithm;
-            _VersionCompatibility = versionCompatibility;
-            _CodeBase = codeBase;
-            _Flags = flags;
-            _StrongNameKeyPair = keyPair;
+            _cultureInfo = cultureInfo;
+            _hashAlgorithm = hashAlgorithm;
+            _versionCompatibility = versionCompatibility;
+            _codeBase = codeBase;
+            _flags = flags;
+            _strongNameKeyPair = keyPair;
         }
 
         // This call opens and closes the file, but does not add the

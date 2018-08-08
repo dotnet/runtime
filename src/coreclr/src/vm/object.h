@@ -1794,36 +1794,35 @@ class AssemblyNameBaseObject : public Object
     // Modifying the order or fields of this object may require other changes to the
     //  classlib class definition of this object.
 
-    OBJECTREF     m_pSimpleName; 
-    U1ARRAYREF    m_pPublicKey;
-    U1ARRAYREF    m_pPublicKeyToken;
-    OBJECTREF     m_pCultureInfo;
-    OBJECTREF     m_pCodeBase;
-    OBJECTREF     m_pVersion;
-    OBJECTREF     m_StrongNameKeyPair;
-    OBJECTREF     m_siInfo;
-    U1ARRAYREF    m_HashForControl;
-    DWORD         m_HashAlgorithm;
-    DWORD         m_HashAlgorithmForControl;
-    DWORD         m_VersionCompatibility;
-    DWORD         m_Flags;
+    OBJECTREF     _name; 
+    U1ARRAYREF    _publicKey;
+    U1ARRAYREF    _publicKeyToken;
+    OBJECTREF     _cultureInfo;
+    OBJECTREF     _codeBase;
+    OBJECTREF     _version;
+    OBJECTREF     _strongNameKeyPair;
+    U1ARRAYREF    _hashForControl;
+    DWORD         _hashAlgorithm;
+    DWORD         _hashAlgorithmForControl;
+    DWORD         _versionCompatibility;
+    DWORD         _flags;
 
   protected:
     AssemblyNameBaseObject() { LIMITED_METHOD_CONTRACT; }
    ~AssemblyNameBaseObject() { LIMITED_METHOD_CONTRACT; }
    
   public:
-    OBJECTREF GetSimpleName() { LIMITED_METHOD_CONTRACT; return m_pSimpleName; }
-    U1ARRAYREF GetPublicKey() { LIMITED_METHOD_CONTRACT; return m_pPublicKey; }
-    U1ARRAYREF GetPublicKeyToken() { LIMITED_METHOD_CONTRACT; return m_pPublicKeyToken; }
-    OBJECTREF GetStrongNameKeyPair() { LIMITED_METHOD_CONTRACT; return m_StrongNameKeyPair; }
-    OBJECTREF GetCultureInfo() { LIMITED_METHOD_CONTRACT; return m_pCultureInfo; }
-    OBJECTREF GetAssemblyCodeBase() { LIMITED_METHOD_CONTRACT; return m_pCodeBase; }
-    OBJECTREF GetVersion() { LIMITED_METHOD_CONTRACT; return m_pVersion; }
-    DWORD GetAssemblyHashAlgorithm() { LIMITED_METHOD_CONTRACT; return m_HashAlgorithm; }
-    DWORD GetFlags() { LIMITED_METHOD_CONTRACT; return m_Flags; }
-    U1ARRAYREF GetHashForControl() { LIMITED_METHOD_CONTRACT; return m_HashForControl;}
-    DWORD GetHashAlgorithmForControl() { LIMITED_METHOD_CONTRACT; return m_HashAlgorithmForControl; }
+    OBJECTREF GetSimpleName() { LIMITED_METHOD_CONTRACT; return _name; }
+    U1ARRAYREF GetPublicKey() { LIMITED_METHOD_CONTRACT; return _publicKey; }
+    U1ARRAYREF GetPublicKeyToken() { LIMITED_METHOD_CONTRACT; return _publicKeyToken; }
+    OBJECTREF GetStrongNameKeyPair() { LIMITED_METHOD_CONTRACT; return _strongNameKeyPair; }
+    OBJECTREF GetCultureInfo() { LIMITED_METHOD_CONTRACT; return _cultureInfo; }
+    OBJECTREF GetAssemblyCodeBase() { LIMITED_METHOD_CONTRACT; return _codeBase; }
+    OBJECTREF GetVersion() { LIMITED_METHOD_CONTRACT; return _version; }
+    DWORD GetAssemblyHashAlgorithm() { LIMITED_METHOD_CONTRACT; return _hashAlgorithm; }
+    DWORD GetFlags() { LIMITED_METHOD_CONTRACT; return _flags; }
+    U1ARRAYREF GetHashForControl() { LIMITED_METHOD_CONTRACT; return _hashForControl;}
+    DWORD GetHashAlgorithmForControl() { LIMITED_METHOD_CONTRACT; return _hashAlgorithmForControl; }
 };
 
 // VersionBaseObject
