@@ -528,11 +528,7 @@ descriptor_check_consistency (Descriptor *desc, gboolean print)
 {
 	int count = desc->anchor.data.count;
 	int max_count = LOCK_FREE_ALLOC_SB_USABLE_SIZE (desc->block_size) / desc->slot_size;
-#if _MSC_VER
 	gboolean* linked = g_newa (gboolean, max_count);
-#else
-	gboolean linked [max_count];
-#endif
 	int i, last;
 	unsigned int index;
 
