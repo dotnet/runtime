@@ -333,13 +333,16 @@ namespace System.IO.Pipelines.Tests
             // and FlushAsync is cancelled while the method is running
             Pipe = new Pipe();
             var resetEvent = new ManualResetEvent(false);
-
+            var iterations = 0;
+            var cancellations = 0;
             var cancellationTokenSource = new CancellationTokenSource();
             var writer = Task.Run(async () =>
             {
-                var cancellations = 0;
-                while (cancellations < 20)
+                // We are limiting iteration count because on slower machines we are not able to
+                // reproduce race conditions enough times during the test
+                while (cancellations < 20 && iterations < 2_000_000)
                 {
+                    iterations++;
                     try
                     {
                         // We want reader to be awaiting
@@ -353,7 +356,6 @@ namespace System.IO.Pipelines.Tests
                             cancellationTokenSource = new CancellationTokenSource();
                             continue;
                         }
-
                         await Pipe.Writer.FlushAsync(cancellationTokenSource.Token);
                     }
                     catch (OperationCanceledException)
@@ -379,7 +381,6 @@ namespace System.IO.Pipelines.Tests
                     }
 
                     var result = await readTask;
-
                     if (result.Buffer.IsEmpty)
                     {
                         return;
@@ -401,6 +402,7 @@ namespace System.IO.Pipelines.Tests
             });
 
             Assert.True(Task.WaitAll(new [] { writer, reader, canceller }, TimeSpan.FromSeconds(30)), "Reader was not completed in reasonable time");
+            Assert.True(cancellations > 0);
         }
     }
 
