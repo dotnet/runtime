@@ -360,6 +360,8 @@
     <Compile Include="Attributes.StructLayout\ExplicitClass.cs" />
     <Compile Include="Reflection\AssemblyImportedViaReflection.cs" />
     <Compile Include="Reflection\Dependencies\AssemblyDependency.cs" />
+    <Compile Include="Advanced\PreserveDependencyMethodInAssembly.cs" />
+    <Compile Include="Advanced\Dependencies\PreserveDependencyMethodInAssemblyLibrary.cs" />
   </ItemGroup>
   <ItemGroup>
     <Content Include="Attributes\OnlyKeepUsed\Dependencies\AssemblyWithUnusedAttributeOnReturnParameterDefinition.il" />
@@ -419,6 +421,7 @@
   <ItemGroup>
     <Folder Include="Attributes.StructLayout\" />
     <Folder Include="Reflection\Dependencies\" />
+    <Folder Include="Advanced\Dependencies\" />
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
   <!-- To modify your build process, add your task inside one of the targets below and uncomment it. 
