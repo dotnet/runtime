@@ -1,3 +1,4 @@
+System.Runtime.WindowsRuntime.dll
 System.Runtime.WindowsRuntime.UI.Xaml.dll
 Microsoft.CodeAnalysis.VisualBasic.dll
 System.Net.NameResolution.dll
