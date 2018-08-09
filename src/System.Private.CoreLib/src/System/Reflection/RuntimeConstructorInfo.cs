@@ -370,9 +370,9 @@ namespace System.Reflection
 
         public override MethodBody GetMethodBody()
         {
-            MethodBody mb = RuntimeMethodHandle.GetMethodBody(this, ReflectedTypeInternal);
+            RuntimeMethodBody mb = RuntimeMethodHandle.GetMethodBody(this, ReflectedTypeInternal);
             if (mb != null)
-                mb.m_methodBase = this;
+                mb._methodBase = this;
             return mb;
         }
 

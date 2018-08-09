@@ -5564,7 +5564,7 @@ BOOL ComCallWrapperTemplate::IsSafeTypeForMarshalling()
         if (pMt->CanCastToClass(MscorlibBinder::GetClass(CLASS__ASSEMBLYBASE)) ||
         pMt->CanCastToClass(MscorlibBinder::GetClass(CLASS__MEMBER)) ||
         pMt->CanCastToClass(MscorlibBinder::GetClass(CLASS__MODULEBASE)) ||
-        pMt->CanCastToClass(MscorlibBinder::GetClass(CLASS__METHOD_BODY)) ||
+        pMt->CanCastToClass(MscorlibBinder::GetClass(CLASS__RUNTIME_METHOD_BODY)) ||
         pMt->CanCastToClass(MscorlibBinder::GetClass(CLASS__PARAMETER)))
         {
             isSafe = FALSE;
