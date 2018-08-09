@@ -1438,6 +1438,9 @@ mono_thread_attach (MonoDomain *domain)
 
 	tid=mono_native_thread_id_get ();
 
+	if (mono_runtime_get_no_exec ())
+		return NULL;
+
 	internal = create_internal_thread_object ();
 
 	thread = create_thread_object (domain, internal);

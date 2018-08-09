@@ -274,7 +274,6 @@ mono_runtime_init_checked (MonoDomain *domain, MonoThreadStartCB start_cb, MonoT
 
 	MonoAppDomainSetupHandle setup;
 	MonoAppDomainHandle ad;
-	MonoClass *klass;
 
 	error_init (error);
 
@@ -295,18 +294,20 @@ mono_runtime_init_checked (MonoDomain *domain, MonoThreadStartCB start_cb, MonoT
 
 	mono_thread_init (start_cb, attach_cb);
 
-	klass = mono_class_load_from_name (mono_defaults.corlib, "System", "AppDomainSetup");
-	setup = MONO_HANDLE_CAST (MonoAppDomainSetup, mono_object_new_pinned_handle (domain, klass, error));
-	goto_if_nok (error, exit);
+	if (!mono_runtime_get_no_exec ()) {
+		MonoClass *klass = mono_class_load_from_name (mono_defaults.corlib, "System", "AppDomainSetup");
+		setup = MONO_HANDLE_CAST (MonoAppDomainSetup, mono_object_new_pinned_handle (domain, klass, error));
+		goto_if_nok (error, exit);
 
-	klass = mono_class_load_from_name (mono_defaults.corlib, "System", "AppDomain");
+		klass = mono_class_load_from_name (mono_defaults.corlib, "System", "AppDomain");
 
-	ad = MONO_HANDLE_CAST (MonoAppDomain, mono_object_new_pinned_handle (domain, klass, error));
-	goto_if_nok (error, exit);
+		ad = MONO_HANDLE_CAST (MonoAppDomain, mono_object_new_pinned_handle (domain, klass, error));
+		goto_if_nok (error, exit);
 
-	MONO_HANDLE_SETVAL (ad, data, MonoDomain*, domain);
-	domain->domain = MONO_HANDLE_RAW (ad);
-	domain->setup = MONO_HANDLE_RAW (setup);
+		MONO_HANDLE_SETVAL (ad, data, MonoDomain*, domain);
+		domain->domain = MONO_HANDLE_RAW (ad);
+		domain->setup = MONO_HANDLE_RAW (setup);
+	}
 
 	mono_thread_attach (domain);
 
@@ -342,6 +343,9 @@ exit:
 static void
 mono_context_set_default_context (MonoDomain *domain)
 {
+	if (mono_runtime_get_no_exec ())
+		return;
+
 	HANDLE_FUNCTION_ENTER ();
 	mono_context_set_handle (MONO_HANDLE_NEW (MonoAppContext, domain->default_context));
 	HANDLE_FUNCTION_RETURN ();
@@ -452,6 +456,8 @@ mono_context_init_checked (MonoDomain *domain, MonoError *error)
 	MonoAppContext *context;
 
 	error_init (error);
+	if (mono_runtime_get_no_exec ())
+		return;
 
 	klass = mono_class_load_from_name (mono_defaults.corlib, "System.Runtime.Remoting.Contexts", "Context");
 	context = (MonoAppContext *) mono_object_new_pinned (domain, klass, error);
