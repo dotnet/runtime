@@ -982,7 +982,7 @@ namespace System
         internal static extern Resolver GetResolver(RuntimeMethodHandleInternal method);
 
         [MethodImpl(MethodImplOptions.InternalCall)]
-        internal static extern MethodBody GetMethodBody(IRuntimeMethodInfo method, RuntimeType declaringType);
+        internal static extern RuntimeMethodBody GetMethodBody(IRuntimeMethodInfo method, RuntimeType declaringType);
 
         [MethodImpl(MethodImplOptions.InternalCall)]
         internal static extern bool IsConstructor(RuntimeMethodHandleInternal method);

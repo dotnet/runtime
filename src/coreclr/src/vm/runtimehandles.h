@@ -30,54 +30,54 @@ typedef enum ReflectionCallConv {
 
 // Types used to expose method bodies via reflection.
 
-class ExceptionHandlingClause;
-class MethodBody;
+class RuntimeExceptionHandlingClause;
+class RuntimeMethodBody;
 class RuntimeLocalVariableInfo;
 
 #ifdef USE_CHECKED_OBJECTREFS
-typedef REF<ExceptionHandlingClause> EXCEPTIONHANDLINGCLAUSEREF;
-typedef REF<MethodBody> METHODBODYREF;
+typedef REF<RuntimeExceptionHandlingClause> RUNTIMEEXCEPTIONHANDLINGCLAUSEREF;
+typedef REF<RuntimeMethodBody> RUNTIMEMETHODBODYREF;
 typedef REF<RuntimeLocalVariableInfo> RUNTIMELOCALVARIABLEINFOREF;
 #else
-typedef DPTR(ExceptionHandlingClause) EXCEPTIONHANDLINGCLAUSEREF;
-typedef DPTR(MethodBody) METHODBODYREF;
+typedef DPTR(RuntimeExceptionHandlingClause) RUNTIMEEXCEPTIONHANDLINGCLAUSEREF;
+typedef DPTR(RuntimeMethodBody) RUNTIMEMETHODBODYREF;
 typedef DPTR(RuntimeLocalVariableInfo) RUNTIMELOCALVARIABLEINFOREF;
 #endif
 
-class ExceptionHandlingClause : Object 
+class RuntimeExceptionHandlingClause : Object 
 {
 private:
     // Disallow creation and copy construction of these.
-    ExceptionHandlingClause() { }
-    ExceptionHandlingClause(ExceptionHandlingClause &r) { }    
+    RuntimeExceptionHandlingClause() { }
+    RuntimeExceptionHandlingClause(RuntimeExceptionHandlingClause &r) { }    
 
 public:
-    METHODBODYREF m_methodBody;
-    CorExceptionFlag m_flags;
-    INT32 m_tryOffset;
-    INT32 m_tryLength;
-    INT32 m_handlerOffset;
-    INT32 m_handlerLength;
-    mdTypeDef m_catchToken;
-    INT32 m_filterOffset;
+    RUNTIMEMETHODBODYREF _methodBody;
+    CorExceptionFlag _flags;
+    INT32 _tryOffset;
+    INT32 _tryLength;
+    INT32 _handlerOffset;
+    INT32 _handlerLength;
+    mdTypeDef _catchToken;
+    INT32 _filterOffset;
 };
 
-class MethodBody : Object 
+class RuntimeMethodBody : Object 
 {     
 private:
     // Disallow creation and copy construction of these.
-    MethodBody() { }
-    MethodBody(MethodBody &r) { }    
+    RuntimeMethodBody() { }
+    RuntimeMethodBody(RuntimeMethodBody &r) { }    
 
 public:
-    U1ARRAYREF m_IL;
-    PTRARRAYREF m_exceptionClauses;
-    PTRARRAYREF m_localVariables;
-    OBJECTREF m_methodBase;
+    U1ARRAYREF _IL;
+    PTRARRAYREF _exceptionClauses;
+    PTRARRAYREF _localVariables;
+    OBJECTREF _methodBase;
 
-    INT32 m_localVarSigToken;
-    INT32 m_maxStackSize;
-    CLR_BOOL m_initLocals;    
+    INT32 _localVarSigToken;
+    INT32 _maxStackSize;
+    CLR_BOOL _initLocals;    
 };
 
 class RuntimeLocalVariableInfo : Object
@@ -358,7 +358,7 @@ public:
     static
     void QCALLTYPE GetCallerType(QCall::StackCrawlMarkHandle pStackMark, QCall::ObjectHandleOnStack retType);
 
-    static FCDECL2(MethodBody*, GetMethodBody, ReflectMethodObject *pMethodUNSAFE, PTR_ReflectClassBaseObject pDeclaringType);
+    static FCDECL2(RuntimeMethodBody*, GetMethodBody, ReflectMethodObject *pMethodUNSAFE, PTR_ReflectClassBaseObject pDeclaringType);
 
     static FCDECL1(FC_BOOL_RET, IsConstructor, MethodDesc *pMethod);
 
