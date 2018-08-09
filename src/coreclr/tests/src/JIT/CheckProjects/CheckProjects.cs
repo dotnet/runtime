@@ -217,7 +217,8 @@ internal class ScanProjectFiles
                     {
                         if (debugVal.Equals("pdbonly", StringComparison.OrdinalIgnoreCase)
                             || debugVal.Equals("none", StringComparison.OrdinalIgnoreCase)
-                            || debugVal.Equals("blank", StringComparison.OrdinalIgnoreCase))
+                            || debugVal.Equals("blank", StringComparison.OrdinalIgnoreCase)
+                            || debugVal.Equals("embedded", StringComparison.OrdinalIgnoreCase))
                         {
                             suffixNote = "SuffixRelOk";
                         }
