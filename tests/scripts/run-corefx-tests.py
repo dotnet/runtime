@@ -267,6 +267,15 @@ def main(args):
     if returncode != 0:
         sys.exit(1)
 
+    # Print the currently checked out commit hash. Mostly useful if you just checked
+    # out HEAD, which is the default.
+
+    command = "git rev-parse HEAD"
+    log(command)
+    returncode = 0 if testing else os.system(command)
+    if returncode != 0:
+        sys.exit(1)
+
     # On Unix, coreFx build.sh requires HOME to be set, and it isn't by default
     # under our CI system, so set it now.
 
