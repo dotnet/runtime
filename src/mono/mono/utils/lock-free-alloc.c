@@ -357,7 +357,7 @@ alloc_from_active_or_partial (MonoLockFreeAllocator *heap)
 
 	do {
 		unsigned int next;
-		new_anchor = old_anchor = *(volatile Anchor*)&desc->anchor.value;
+		new_anchor.value = old_anchor.value = ((volatile Anchor*)&desc->anchor)->value;
 		if (old_anchor.data.state == STATE_EMPTY) {
 			/* We must free it because we own it. */
 			desc_retire (desc);
@@ -464,7 +464,7 @@ mono_lock_free_free (gpointer ptr, size_t block_size)
 	sb = desc->sb;
 
 	do {
-		new_anchor = old_anchor = *(volatile Anchor*)&desc->anchor.value;
+		new_anchor.value = old_anchor.value = ((volatile Anchor*)&desc->anchor)->value;
 		*(unsigned int*)ptr = old_anchor.data.avail;
 		new_anchor.data.avail = ((char*)ptr - (char*)sb) / desc->slot_size;
 		g_assert (new_anchor.data.avail < LOCK_FREE_ALLOC_SB_USABLE_SIZE (block_size) / desc->slot_size);

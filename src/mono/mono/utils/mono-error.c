@@ -768,7 +768,7 @@ mono_error_box (const MonoError *ierror, MonoImage *image)
 	MonoErrorInternal *from = (MonoErrorInternal*)ierror;
 	/* Don't know how to box a gchandle */
 	g_assert (!is_managed_exception (from));
-	MonoErrorBoxed* box = mono_image_alloc (image, sizeof (MonoErrorBoxed));
+	MonoErrorBoxed* box = (MonoErrorBoxed*)mono_image_alloc (image, sizeof (MonoErrorBoxed));
 	box->image = image;
 	mono_error_init_flags (&box->error, MONO_ERROR_MEMPOOL_BOXED);
 	MonoErrorInternal *to = (MonoErrorInternal*)&box->error;

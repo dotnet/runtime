@@ -15,8 +15,8 @@ typedef struct {
 	MonoTraceMask	mask;
 } MonoLogLevelEntry;
 
-GLogLevelFlags mono_internal_current_level	= INT_MAX;
-MonoTraceMask  mono_internal_current_mask	= ~((MonoTraceMask)0);
+GLogLevelFlags mono_internal_current_level	= (GLogLevelFlags)INT_MAX;
+MonoTraceMask  mono_internal_current_mask	= (MonoTraceMask)~0;
 gboolean mono_trace_log_header			= FALSE;
 
 static GQueue		*level_stack		= NULL;
@@ -302,18 +302,18 @@ mono_trace_set_mask_string (const char *value)
 		{ "io-layer-semaphore", MONO_TRACE_IO_LAYER_SEMAPHORE },
 		{ "io-layer-mutex", MONO_TRACE_IO_LAYER_MUTEX },
 		{ "io-layer-handle", MONO_TRACE_IO_LAYER_HANDLE },
-		{ "io-layer", MONO_TRACE_IO_LAYER_PROCESS
+		{ "io-layer", (MonoTraceMask)(MONO_TRACE_IO_LAYER_PROCESS
 		               | MONO_TRACE_IO_LAYER_SOCKET
 		               | MONO_TRACE_IO_LAYER_FILE
 		               | MONO_TRACE_IO_LAYER_EVENT
 		               | MONO_TRACE_IO_LAYER_SEMAPHORE
 		               | MONO_TRACE_IO_LAYER_MUTEX
-		               | MONO_TRACE_IO_LAYER_HANDLE },
+		               | MONO_TRACE_IO_LAYER_HANDLE) },
 		{ "w32handle", MONO_TRACE_IO_LAYER_HANDLE },
 		{ "tailcall", MONO_TRACE_TAILCALL },
 		{ "profiler", MONO_TRACE_PROFILER },
-		{ "all", ~((MonoTraceMask)0) },
-		{ NULL, 0 },
+		{ "all", (MonoTraceMask)~0 }, // FIXMEcxx there is a better way -- operator overloads of enums
+		{ NULL, (MonoTraceMask)0 },
 	};
 
 	if(!value)
@@ -389,7 +389,7 @@ log_level_get_name (GLogLevelFlags log_level)
 static void
 callback_adapter (const char *domain, GLogLevelFlags level, mono_bool fatal, const char *message)
 {
-	UserSuppliedLoggerUserData *ll =logCallback.user_data;
+	UserSuppliedLoggerUserData *ll = (UserSuppliedLoggerUserData*)logCallback.user_data;
 
 	ll->legacy_callback (domain, log_level_get_name(level), message, fatal, ll->user_data);
 }
@@ -397,7 +397,7 @@ callback_adapter (const char *domain, GLogLevelFlags level, mono_bool fatal, con
 static void
 eglib_log_adapter (const gchar *log_domain, GLogLevelFlags log_level, const gchar *message, gpointer user_data)
 {
-	UserSuppliedLoggerUserData *ll = logCallback.user_data;
+	UserSuppliedLoggerUserData *ll = (UserSuppliedLoggerUserData*)logCallback.user_data;
 
 	ll->legacy_callback (log_domain, log_level_get_name (log_level), message, log_level & G_LOG_LEVEL_ERROR, ll->user_data);
 }
@@ -448,7 +448,7 @@ mono_trace_set_log_handler (MonoLogCallback callback, void *user_data)
 
 	if (logCallback.closer != NULL)
 		logCallback.closer();
-	UserSuppliedLoggerUserData *ll = g_malloc (sizeof (UserSuppliedLoggerUserData));
+	UserSuppliedLoggerUserData *ll = (UserSuppliedLoggerUserData*)g_malloc (sizeof (UserSuppliedLoggerUserData));
 	ll->legacy_callback = callback;
 	ll->user_data = user_data;
 	logCallback.opener = legacy_opener;

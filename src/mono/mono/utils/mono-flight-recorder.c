@@ -94,7 +94,7 @@ mono_flight_recorder_init (size_t max_count, size_t payload_size)
 	size_t size_of_items = item_size * max_count;
 	size_t size_of_item_ptrs = sizeof (gpointer) * max_count;
 	size_t size_of_recorder_prefix = offsetof(MonoFlightRecorder, items);
-	MonoFlightRecorder *recorder = g_malloc0 (size_of_recorder_prefix + size_of_item_ptrs + size_of_items);
+	MonoFlightRecorder *recorder = (MonoFlightRecorder*)g_malloc0 (size_of_recorder_prefix + size_of_item_ptrs + size_of_items);
 	intptr_t end_of_memory = ((intptr_t) recorder) + (size_of_recorder_prefix + size_of_item_ptrs + size_of_items);
 
 	recorder->max_count = max_count;

@@ -497,7 +497,7 @@ unregister_thread (void *arg)
 	MonoThreadInfo *info;
 	int small_id;
 	gboolean result;
-	gpointer handle;
+	MonoThreadHandle* handle;
 
 	info = (MonoThreadInfo *) arg;
 	g_assert (info);
@@ -773,14 +773,14 @@ thread_info_key_dtor (void *arg)
 MonoThreadInfoFlags
 mono_thread_info_get_flags (MonoThreadInfo *info)
 {
-    return mono_atomic_load_i32 (&info->flags);
+    return (MonoThreadInfoFlags)mono_atomic_load_i32 (&info->flags);
 }
 
 void
 mono_thread_info_set_flags (MonoThreadInfoFlags flags)
 {
 	MonoThreadInfo *info = mono_thread_info_current ();
-	MonoThreadInfoFlags old = mono_atomic_load_i32 (&info->flags);
+	MonoThreadInfoFlags old = (MonoThreadInfoFlags)mono_atomic_load_i32 (&info->flags);
 
 	if (threads_callbacks.thread_flags_changing)
 		threads_callbacks.thread_flags_changing (old, flags);
@@ -791,11 +791,6 @@ mono_thread_info_set_flags (MonoThreadInfoFlags flags)
 		threads_callbacks.thread_flags_changed (old, flags);
 }
 
-struct GSList {
-  gpointer data;
-  GSList *next;
-};
-
 #define MONO_END_INIT_CB GINT_TO_POINTER(-1)
 static GSList *init_callbacks;
 
@@ -804,14 +799,14 @@ mono_thread_info_wait_inited (void)
 {
 	MonoSemType cb;
 	mono_os_sem_init (&cb, 0);
-	gpointer old = init_callbacks;
+	GSList *old = init_callbacks;
 
 	GSList wait_request;
 	wait_request.data = &cb;
 	wait_request.next = old;
 
 	while (mono_threads_inited != TRUE) {
-		gpointer old_read = mono_atomic_cas_ptr ((gpointer *) &init_callbacks, &wait_request, old);
+		GSList *old_read = (GSList*)mono_atomic_cas_ptr ((gpointer *) &init_callbacks, &wait_request, old);
 
 		// Queued up waiter, need to be unstuck
 		if (old_read == old) {
@@ -845,7 +840,7 @@ mono_thread_info_set_inited (void)
 	GSList *old = init_callbacks;
 
 	while (TRUE) {
-		gpointer old_read = mono_atomic_cas_ptr ((gpointer *) &init_callbacks, MONO_END_INIT_CB, (gpointer) old);
+		GSList* old_read = (GSList*)mono_atomic_cas_ptr ((gpointer *) &init_callbacks, MONO_END_INIT_CB, (gpointer) old);
 		if (old == old_read)
 			break;
 		else
@@ -863,7 +858,7 @@ mono_thread_info_set_inited (void)
 		GSList *curr = (GSList *) old;
 		GSList *next = old->next;
 
-		mono_os_sem_post (curr->data);
+		mono_os_sem_post ((MonoSemType*)curr->data);
 		old = next;
 	}
 
@@ -1862,7 +1857,7 @@ mono_thread_info_wait_multiple_handle (MonoThreadHandle **thread_handles, gsize 
 
 	res = mono_os_event_wait_multiple (thread_events, nhandles, waitall, timeout, alertable);
 	if (res >= MONO_OS_EVENT_WAIT_RET_SUCCESS_0 && res <= MONO_OS_EVENT_WAIT_RET_SUCCESS_0 + nhandles - 1)
-		return MONO_THREAD_INFO_WAIT_RET_SUCCESS_0 + (res - MONO_OS_EVENT_WAIT_RET_SUCCESS_0);
+		return (MonoThreadInfoWaitRet)(MONO_THREAD_INFO_WAIT_RET_SUCCESS_0 + (res - MONO_OS_EVENT_WAIT_RET_SUCCESS_0));
 	else if (res == MONO_OS_EVENT_WAIT_RET_ALERTED)
 		return MONO_THREAD_INFO_WAIT_RET_ALERTED;
 	else if (res == MONO_OS_EVENT_WAIT_RET_TIMEOUT)
