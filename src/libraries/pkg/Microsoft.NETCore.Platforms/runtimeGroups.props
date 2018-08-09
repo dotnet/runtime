@@ -80,7 +80,7 @@
     <RuntimeGroup Include="opensuse">
       <Parent>linux</Parent>
       <Architectures>x64</Architectures>
-      <Versions>13.2;42.1;42.2;42.3</Versions>
+      <Versions>13.2;15.0;42.1;42.2;42.3</Versions>
       <TreatVersionsAsCompatible>false</TreatVersionsAsCompatible>
     </RuntimeGroup>
 
