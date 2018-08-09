@@ -1359,13 +1359,40 @@ interface ICorDebugManagedCallback3 : IUnknown
 
 interface ICorDebugManagedCallback4 : IUnknown
 {
-    // TODO, databp, these public APIs need to be commented.
-    // TODO, databp, measure performance to see if these events need to be switched.
+    //
+    // Callback indicating a garbage collection is about to start.
+    // 
+    // Parameters
+    //   pProcess - the process that is going to perform garbage collection.
+    // 
+    // Returns
+    //   S_OK - on success
+    //
     HRESULT BeforeGarbageCollection([in] ICorDebugProcess* pProcess);
+
+    //
+    // Callback indicating a garbage collection is about to complete.
+    // 
+    // Parameters
+    //   pProcess - the process that is going to complete garbage collection.
+    // 
+    // Returns
+    //   S_OK - on success
+    //
     HRESULT AfterGarbageCollection([in] ICorDebugProcess* pProcess);
+
+    //
+    // Callback indicating a data breakpoint is hit
+    // 
+    // Parameters
+    //   pProcess - the process that hits the data breakpoint
+    //   pThread  - the thread that hits the data breakpoint
+    // 
+    // Returns
+    //   S_OK - on success
+    //
     HRESULT DataBreakpoint([in] ICorDebugProcess* pProcess, [in] ICorDebugThread* pThread);
 }
-
 
 #pragma warning(disable:28718)	/* disable warning 28718 for interface ICorDebugManagedCallback2 */
 
@@ -3270,7 +3297,30 @@ interface ICorDebugProcess8 : IUnknown
 ]
 interface ICorDebugProcess10 : IUnknown
 {
+    //
+    // Given a pointer that is pointing to the interior of an object (for example, a field on an object), 
+    // returns the containing object. 
+    // 
+    // Parameters
+    //   interiorPointer - the pointer pointing to the interior of an object.
+    //   ppContainingObject - [out] An ICorDebugObjectValue that represents the containing object.
+    //   
+    // Returns
+    //   S_OK - on success
+    //   
+    // TODO: What if the pointer is not an interior pointer?
+    // TODO: What are all the possible error exit codes?
+    // 
     HRESULT GetContainingObject([in] CORDB_ADDRESS interiorPointer, [out] ICorDebugObjectValue** ppContainingObject);
+
+    // Enable or disable the GC notification events. The GC notification events are turned off by default
+    // They will be delivered through ICorDebugManagedCallback4
+    // 
+    // Parameters
+    //   fEnable - true to enable the events, false to disable
+    // 
+    // Returns
+    //   S_OK - on success    
     HRESULT EnableGCNotificationEvents(BOOL fEnable);
 }
 
