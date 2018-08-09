@@ -338,6 +338,7 @@
     <Compile Include="$(MSBuildThisFileDirectory)System\Reflection\Emit\StackBehaviour.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Reflection\EventAttributes.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Reflection\EventInfo.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)System\Reflection\ExceptionHandlingClause.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Reflection\ExceptionHandlingClauseOptions.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Reflection\FieldAttributes.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Reflection\FieldInfo.cs" />
@@ -356,6 +357,7 @@
     <Compile Include="$(MSBuildThisFileDirectory)System\Reflection\MemberTypes.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Reflection\MethodAttributes.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Reflection\MethodBase.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)System\Reflection\MethodBody.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Reflection\MethodImplAttributes.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Reflection\MethodInfo.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Reflection\MethodInfo.Internal.cs" />
