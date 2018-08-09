@@ -1253,7 +1253,7 @@ DelayLoad_Helper\suffix:
     mov x4, \frameFlags
     bl DynamicHelperWorker
     cbnz x0, LOCAL_LABEL(FakeProlog\suffix\()_0)
-    ldr x0, [sp, #__PWTB_ArgumentRegisters]
+    ldr x0, [sp, #__PWTB_ArgumentRegister_FirstArg]
     EPILOG_WITH_TRANSITION_BLOCK_RETURN
 LOCAL_LABEL(FakeProlog\suffix\()_0):
     mov x12, x0
