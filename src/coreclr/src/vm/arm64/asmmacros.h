@@ -44,7 +44,9 @@ $name   SETS    "|$symbol|"
         PROLOG_WITH_TRANSITION_BLOCK $extraLocals, $SaveFPArgs
 
         GBLA __PWTB_FloatArgumentRegisters
-        GBLA __PWTB_ArgumentRegisters 
+        GBLA __PWTB_ArgumentRegisters
+        GBLA __PWTB_ArgumentRegister_FirstArg ; We save the x8 register ahead of the first argument, so this
+                                              ; is different from the start of the argument register save area.
         GBLA __PWTB_StackAlloc
         GBLA __PWTB_TransitionBlock
         GBLL __PWTB_SaveFPArgs
@@ -73,6 +75,7 @@ __PWTB_TransitionBlock SETA __PWTB_FloatArgumentRegisters
 
 __PWTB_StackAlloc SETA __PWTB_TransitionBlock
 __PWTB_ArgumentRegisters SETA __PWTB_StackAlloc + 104
+__PWTB_ArgumentRegister_FirstArg SETA __PWTB_ArgumentRegisters + 8
 
         PROLOG_SAVE_REG_PAIR   fp, lr, #-176!
         ; Spill callee saved registers 
