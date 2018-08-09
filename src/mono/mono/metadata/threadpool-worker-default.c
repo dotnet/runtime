@@ -25,7 +25,6 @@
 #include <mono/metadata/w32event.h>
 #include <mono/utils/atomic.h>
 #include <mono/utils/mono-compiler.h>
-#include <mono/utils/mono-complex.h>
 #include <mono/utils/mono-logger.h>
 #include <mono/utils/mono-logger-internals.h>
 #include <mono/utils/mono-proclib.h>
@@ -34,6 +33,7 @@
 #include <mono/utils/mono-rand.h>
 #include <mono/utils/refcount.h>
 #include <mono/utils/w32api.h>
+#include <mono/utils/mono-complex.h> // This header has defines to muck with names, so put it late.
 
 #define CPU_USAGE_LOW 80
 #define CPU_USAGE_HIGH 95

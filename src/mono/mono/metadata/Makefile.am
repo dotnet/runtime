@@ -64,10 +64,6 @@ endif
 
 glib_libs = $(top_builddir)/mono/eglib/libeglib.la
 
-if HOST_ANDROID
-platform_sources += ../../support/libm/complex.c
-endif
-
 if HOST_WASM
 platform_sources += threadpool-worker-wasm.c
 else
