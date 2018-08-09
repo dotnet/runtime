@@ -297,7 +297,7 @@ bool ComputeMscorlibPathFromTrustedPlatformAssemblies(SString& pwzMscorlibPath, 
 // Given a path terminated with "\\" and a search mask, this function will add
 // the enumerated files, corresponding to the search mask, from the path into
 // the refTPAList.
-void PopulateTPAList(SString path, LPCWSTR pwszMask, SString &refTPAList, bool fCompilingMscorlib, bool fCreatePDB)
+void PopulateTPAList(SString path, LPCWSTR pwszMask, SString &refTPAList, bool fCreatePDB)
 {
     _ASSERTE(path.GetCount() > 0);
     ClrDirectoryEnumerator folderEnumerator(path.GetUnicode(), pwszMask);
@@ -339,7 +339,7 @@ void PopulateTPAList(SString path, LPCWSTR pwszMask, SString &refTPAList, bool f
 
 // Given a semi-colon delimited set of absolute folder paths (pwzPlatformAssembliesPaths), this function
 // will enumerate all EXE/DLL modules in those folders and add them to the TPAList buffer (refTPAList).
-void ComputeTPAListFromPlatformAssembliesPath(LPCWSTR pwzPlatformAssembliesPaths, SString &refTPAList, bool fCompilingMscorlib, bool fCreatePDB)
+void ComputeTPAListFromPlatformAssembliesPath(LPCWSTR pwzPlatformAssembliesPaths, SString &refTPAList, bool fCreatePDB)
 {
     // We should have a valid pointer to the paths
     _ASSERTE(pwzPlatformAssembliesPaths != NULL);
@@ -382,8 +382,8 @@ void ComputeTPAListFromPlatformAssembliesPath(LPCWSTR pwzPlatformAssembliesPaths
                 // Enumerate the EXE/DLL modules within this path and add them to the TPAList
                 EX_TRY
                 {
-                    PopulateTPAList(qualifiedPath, W("*.exe"), refTPAList, fCompilingMscorlib, fCreatePDB);
-                    PopulateTPAList(qualifiedPath, W("*.dll"), refTPAList, fCompilingMscorlib, fCreatePDB);
+                    PopulateTPAList(qualifiedPath, W("*.exe"), refTPAList, fCreatePDB);
+                    PopulateTPAList(qualifiedPath, W("*.dll"), refTPAList, fCreatePDB);
                 }
                 EX_CATCH
                 {
@@ -422,7 +422,6 @@ int _cdecl wmain(int argc, __in_ecount(argc) WCHAR **argv)
     LPWSTR pwzSearchPathForManagedPDB = NULL;
     LPCWSTR pwzOutputFilename = NULL;
     LPCWSTR pwzPublicKeys = nullptr;
-    bool fExplicitReadyToRunSwitch = false;
 
 #if !defined(FEATURE_MERGE_JIT_AND_ENGINE)
     LPCWSTR pwszCLRJITPath = nullptr;
@@ -514,7 +513,6 @@ int _cdecl wmain(int argc, __in_ecount(argc) WCHAR **argv)
         else if (MatchParameter(*argv, W("ReadyToRun")))
         {
             dwFlags |= NGENWORKER_FLAGS_READYTORUN;
-            fExplicitReadyToRunSwitch = true;
         }
         else if (MatchParameter(*argv, W("FragileNonVersionable")))
         {
@@ -831,15 +829,6 @@ int _cdecl wmain(int argc, __in_ecount(argc) WCHAR **argv)
         // To avoid this issue, put the input file as the first item in TPA.
         ssTPAList.Append(pwzFilename);
     }
-    
-    // Are we compiling mscorlib.dll? 
-    bool fCompilingMscorlib = StringEndsWith((LPWSTR)pwzFilename, CoreLibName_IL_W);
-
-// Disable fragile NGen when compiling Mscorlib for ARM.
-#if !(defined(_TARGET_ARM_) || defined(_TARGET_ARM64_))
-    if (fCompilingMscorlib && !fExplicitReadyToRunSwitch)
-        dwFlags &= ~NGENWORKER_FLAGS_READYTORUN;
-#endif // !(_TARGET_ARM_ || _TARGET_ARM64_)
 
     if(pwzPlatformAssembliesPaths != nullptr)
     {
@@ -847,7 +836,7 @@ int _cdecl wmain(int argc, __in_ecount(argc) WCHAR **argv)
         _ASSERTE(pwzTrustedPlatformAssemblies == nullptr);
         
         // Formulate the TPAList from Platform_Assemblies_Paths
-        ComputeTPAListFromPlatformAssembliesPath(pwzPlatformAssembliesPaths, ssTPAList, fCompilingMscorlib, fCreatePDB);
+        ComputeTPAListFromPlatformAssembliesPath(pwzPlatformAssembliesPaths, ssTPAList, fCreatePDB);
         pwzTrustedPlatformAssemblies = (WCHAR *)ssTPAList.GetUnicode();
         pwzPlatformAssembliesPaths = NULL;
     }
