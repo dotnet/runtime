@@ -9,46 +9,94 @@ namespace STAMain
 {
     internal static class STAMain
     {
+        private const int Success = 0;
+        private const int SuccessOnUnix = 2;
+        private const int Failure = 1;
+
+        private static Thread s_mainThread;
+
         [STAThread]
         static int Main(string[] args)
         {
-            const int Success = 0;
-            const int SuccessOnUnix = 2;
-            const int Failure = 1;
+            string testName = args[0];
+            s_mainThread = Thread.CurrentThread;
 
-            string mode = args[0];
-            int retValue = Failure;
-            Thread curThread = Thread.CurrentThread;
-            
-            if (mode == "GetApartmentState")
+            switch (testName)
             {
-                if (curThread.GetApartmentState() == ApartmentState.STA)
-                {
-                    curThread.SetApartmentState(ApartmentState.STA);
-                    retValue = Success;
-                }
-                else
-                {
-                    retValue = SuccessOnUnix;
-                }
+                case "GetApartmentStateTest":
+                    return GetApartmentStateTest();
+                case "SetApartmentStateTest":
+                    return SetApartmentStateTest();
+                case "WaitAllNotSupportedOnSta_Test0":
+                    return WaitAllNotSupportedOnSta_Test0();
+                case "WaitAllNotSupportedOnSta_Test1":
+                    return WaitAllNotSupportedOnSta_Test1();
+                default:
+                    return Failure;
             }
-            else
-            {
-                try
-                {
-                    curThread.SetApartmentState(ApartmentState.MTA);
-                }
-                catch (InvalidOperationException)
-                {
-                    retValue = Success;
-                }
-                catch (PlatformNotSupportedException)
-                {
-                    retValue = SuccessOnUnix;
-                }
-            }
+        }
 
-            return retValue;
+        private static int GetApartmentStateTest()
+        {
+            if (s_mainThread.GetApartmentState() == ApartmentState.STA)
+            {
+                s_mainThread.SetApartmentState(ApartmentState.STA);
+                return Success;
+            }
+            return SuccessOnUnix;
+        }
+
+        private static int SetApartmentStateTest()
+        {
+            try
+            {
+                s_mainThread.SetApartmentState(ApartmentState.MTA);
+            }
+            catch (InvalidOperationException)
+            {
+                return Success;
+            }
+            catch (PlatformNotSupportedException)
+            {
+                return SuccessOnUnix;
+            }
+            return Failure;
+        }
+
+        private static int WaitAllNotSupportedOnSta_Test0()
+        {
+            var wh = new ManualResetEvent[2];
+            wh[0] = new ManualResetEvent(true);
+            wh[1] = new ManualResetEvent(true);
+            try
+            {
+                WaitHandle.WaitAll(wh, 0);
+                return SuccessOnUnix;
+            }
+            catch (NotSupportedException)
+            {
+                return Success;
+            }
+        }
+
+        private static int WaitAllNotSupportedOnSta_Test1()
+        {
+            var wh = new ManualResetEvent[2];
+            wh[0] = new ManualResetEvent(true);
+            wh[1] = wh[0];
+            try
+            {
+                WaitHandle.WaitAll(wh, 0);
+                return Failure;
+            }
+            catch (NotSupportedException)
+            {
+                return Success;
+            }
+            catch (DuplicateWaitObjectException)
+            {
+                return SuccessOnUnix;
+            }
         }
     }
 }

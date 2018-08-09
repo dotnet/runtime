@@ -5,9 +5,9 @@
 using System;
 using System.Threading;
 
-namespace MTAMain
+namespace DefaultApartmentStateMain
 {
-    internal static class MTAMain
+    internal static class DefaultApartmentStateMain
     {
         private const int Success = 0;
         private const int SuccessOnUnix = 2;
@@ -15,7 +15,6 @@ namespace MTAMain
 
         private static Thread s_mainThread;
 
-        [MTAThread]
         static int Main(string[] args)
         {
             string testName = args[0];
