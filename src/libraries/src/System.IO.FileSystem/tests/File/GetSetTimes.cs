@@ -94,7 +94,7 @@ namespace System.IO.Tests
         }
 
         [Fact]
-        public void SetLastWriteTimeMilliSec()
+        public void SetLastWriteTimeTicks()
         {
             string firstFile = GetTestFilePath();
             string secondFile = GetTestFilePath();
@@ -105,6 +105,21 @@ namespace System.IO.Tests
             File.SetLastAccessTimeUtc(secondFile, DateTime.UtcNow);
             long firstFileTicks = File.GetLastWriteTimeUtc(firstFile).Ticks;
             long secondFileTicks = File.GetLastWriteTimeUtc(secondFile).Ticks;
+            Assert.True(firstFileTicks <= secondFileTicks, $"First File Ticks\t{firstFileTicks}\nSecond File Ticks\t{secondFileTicks}");
+        }
+
+        [Fact]
+        public void SetLastAccessTimeTicks()
+        {
+            string firstFile = GetTestFilePath();
+            string secondFile = GetTestFilePath();
+
+            File.WriteAllText(firstFile, "");
+            File.WriteAllText(secondFile, "");
+
+            File.SetLastWriteTimeUtc(secondFile, DateTime.UtcNow);
+            long firstFileTicks = File.GetLastAccessTimeUtc(firstFile).Ticks;
+            long secondFileTicks = File.GetLastAccessTimeUtc(secondFile).Ticks;
             Assert.True(firstFileTicks <= secondFileTicks, $"First File Ticks\t{firstFileTicks}\nSecond File Ticks\t{secondFileTicks}");
         }
     }
