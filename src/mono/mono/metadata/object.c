@@ -3639,13 +3639,15 @@ mono_field_get_value_object_checked (MonoDomain *domain, MonoClassField *field, 
 	return o;
 }
 
-int
-mono_get_constant_value_from_blob (MonoDomain* domain, MonoTypeEnum type, const char *blob, void *value, MonoError *error)
+/*
+ * Important detail, if type is MONO_TYPE_STRING we return a blob encoded string (ie, utf16 + leb128 prefixed size)
+ */
+gboolean
+mono_metadata_read_constant_value (const char *blob, MonoTypeEnum type, void *value, MonoError *error)
 {
-	MONO_REQ_GC_UNSAFE_MODE;
 
 	error_init (error);
-	int retval = 0;
+	gboolean retval = TRUE;
 	const char *p = blob;
 	mono_metadata_decode_blob_size (p, &p);
 
@@ -3675,16 +3677,30 @@ mono_get_constant_value_from_blob (MonoDomain* domain, MonoTypeEnum type, const 
 		readr8 (p, (double*) value);
 		break;
 	case MONO_TYPE_STRING:
-		*(gpointer*) value = mono_ldstr_metadata_sig (domain, blob, error);
+		*(const char**) value = blob;
 		break;
 	case MONO_TYPE_CLASS:
 		*(gpointer*) value = NULL;
 		break;
 	default:
-		retval = -1;
-		g_warning ("type 0x%02x should not be in constant table", type);
+		retval = FALSE;
+		mono_error_set_execution_engine (error, "Type 0x%02x should not be in constant table", type);
 	}
 	return retval;
+}
+
+int
+mono_get_constant_value_from_blob (MonoDomain* domain, MonoTypeEnum type, const char *blob, void *value, MonoError *error)
+{
+	MONO_REQ_GC_UNSAFE_MODE
+
+	if (!mono_metadata_read_constant_value (blob, type, value, error))
+		return -1;
+
+	if (type == MONO_TYPE_STRING)
+		*(gpointer*)value = mono_ldstr_metadata_sig (domain, *(const char**)value, error);
+
+	return 0;
 }
 
 static void
@@ -7374,6 +7390,14 @@ mono_ldstr_handle (MonoDomain *domain, MonoImage *image, guint32 idx, MonoError 
 	return MONO_HANDLE_NEW (MonoString, mono_ldstr_checked (domain, image, idx, error));
 }
 
+
+char*
+mono_string_from_blob (const char *str, MonoError *error)
+{
+	gsize len = mono_metadata_decode_blob_size (str, &str) >> 1;
+
+	return mono_utf16_to_utf8 ((const gunichar2*)str, len, error);
+}
 /**
  * mono_ldstr_metadata_sig
  * \param domain the domain for the string
