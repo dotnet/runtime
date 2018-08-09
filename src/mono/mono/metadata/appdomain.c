@@ -354,36 +354,30 @@ mono_context_set_default_context (MonoDomain *domain)
 static char*
 mono_get_corlib_version (void)
 {
-	// Return NULL for errors, including the old integer form, else
-	// a string to be passed to g_free (or typically just exit).
-
-	HANDLE_FUNCTION_ENTER ();
 	ERROR_DECL (error);
 
 	MonoClass *klass;
 	MonoClassField *field;
-	MonoObjectHandle value;
-	char *result = NULL;
 
 	klass = mono_class_load_from_name (mono_defaults.corlib, "System", "Environment");
 	mono_class_init (klass);
 	field = mono_class_get_field_from_name_full (klass, "mono_corlib_version", NULL);
 	if (!field)
-		goto exit;
+		return NULL;
 
-	if (! (field->type->attrs & FIELD_ATTRIBUTE_STATIC))
-		goto exit;
+	if (! (field->type->attrs & (FIELD_ATTRIBUTE_STATIC | FIELD_ATTRIBUTE_LITERAL)))
+		return NULL;
 
-	value = mono_static_field_get_value_handle (mono_domain_get (), field, error);
+	char *value;
+	MonoTypeEnum field_type;
+	const char *data = mono_class_get_field_default_value (field, &field_type);
+	mono_metadata_read_constant_value (data, field_type, &value, error);
 	mono_error_assert_ok (error);
-	klass = mono_handle_class (value);
-	if (klass != mono_defaults.string_class)
-		goto exit;
 
-	result = mono_string_handle_to_utf8 (MONO_HANDLE_CAST (MonoString, value), error);
+	char *res = mono_string_from_blob (value, error);
 	mono_error_assert_ok (error);
-exit:
-	HANDLE_FUNCTION_RETURN_VAL (result);
+
+	return res;
 }
 
 /**
