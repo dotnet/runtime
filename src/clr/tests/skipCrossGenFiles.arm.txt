@@ -1,4 +1,5 @@
 mscorlib.dll
+System.Runtime.WindowsRuntime.dll
 System.Runtime.WindowsRuntime.UI.Xaml.dll
 System.Private.CoreLib.dll
 xunit.performance.api.dll
