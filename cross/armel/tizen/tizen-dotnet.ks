@@ -8,8 +8,8 @@ rootpw tizen
 desktop --autologinuser=root
 user --name root  --groups audio,video --password 'tizen'
 
-repo --name=standard  --baseurl=http://download.tizen.org/snapshots/tizen/4.0-unified/latest/repos/standard/packages/ --ssl_verify=no
-repo --name=base      --baseurl=http://download.tizen.org/snapshots/tizen/4.0-base/latest/repos/arm/packages/ --ssl_verify=no
+repo --name=standard  --baseurl=http://download.tizen.org/releases/milestone/tizen/unified/latest/repos/standard/packages/ --ssl_verify=no
+repo --name=base      --baseurl=http://download.tizen.org/releases/milestone/tizen/base/latest/repos/standard/packages/ --ssl_verify=no
 
 %packages
 tar
