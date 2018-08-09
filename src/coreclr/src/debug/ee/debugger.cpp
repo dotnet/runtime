@@ -5207,27 +5207,27 @@ HRESULT Debugger::MapPatchToDJI( DebuggerControllerPatch *dcp,DebuggerJitInfo *d
 //
 // SendSyncCompleteIPCEvent sends a Sync Complete event to the Right Side.
 //
-void Debugger::SendSyncCompleteIPCEvent(bool lite)
+void Debugger::SendSyncCompleteIPCEvent(bool isEESuspendedForGC)
 {
     CONTRACTL
     {
         SO_NOT_MAINLINE;
         NOTHROW;
-        if (lite) { GC_NOTRIGGER; } else { GC_TRIGGERS; }
+        if (isEESuspendedForGC) { GC_NOTRIGGER; } else { GC_TRIGGERS; }
         PRECONDITION(ThreadHoldsLock());
 
         // Anyone sending the synccomplete must hold the TSL.
         PRECONDITION(ThreadStore::HoldingThreadStore() || g_fProcessDetach);
 
         // The sync complete is now only sent on a helper thread.
-        if (!lite)
+        if (!isEESuspendedForGC)
         {
             PRECONDITION(ThisIsHelperThreadWorker());
         }
         MODE_COOPERATIVE;
 
         // We had better be trapping Runtime threads and not stopped yet.
-        if (lite)
+        if (isEESuspendedForGC)
         {
             PRECONDITION(m_stopped);
         }
@@ -9285,12 +9285,12 @@ void Debugger::DetachThread(Thread *pRuntimeThread)
 // SuspendComplete is called when the last Runtime thread reaches a safe point in response to having its trap flags set.
 // This may be called on either the real helper thread or someone doing helper thread duty.
 //
-BOOL Debugger::SuspendComplete(bool lite)
+BOOL Debugger::SuspendComplete(bool isEESuspendedForGC)
 {
     CONTRACTL
     {
         NOTHROW;
-        if (lite) { GC_NOTRIGGER; } else { GC_TRIGGERS; }
+        if (isEESuspendedForGC) { GC_NOTRIGGER; } else { GC_TRIGGERS; }
         // This will is conceptually mode-cooperative.
         // But we haven't marked the runtime as stopped yet (m_stopped), so the contract
         // subsystem doesn't realize it yet.
@@ -9312,15 +9312,15 @@ BOOL Debugger::SuspendComplete(bool lite)
     // We can't throw here (we're in the middle of the runtime suspension logic).
     // But things below us throw. So we catch the exception, but then what state are we in?
 
-    if (!lite) {_ASSERTE((!g_pEEInterface->GetThread() || !g_pEEInterface->GetThread()->m_fPreemptiveGCDisabled) || g_fInControlC); }
-    if (!lite) { _ASSERTE(ThisIsHelperThreadWorker()); }
+    if (!isEESuspendedForGC) {_ASSERTE((!g_pEEInterface->GetThread() || !g_pEEInterface->GetThread()->m_fPreemptiveGCDisabled) || g_fInControlC); }
+    if (!isEESuspendedForGC) { _ASSERTE(ThisIsHelperThreadWorker()); }
 
     STRESS_LOG0(LF_CORDB, LL_INFO10000, "D::SC: suspension complete\n");
 
     // We have suspended runtime.
 
     // We're stopped now. Marking m_stopped allows us to use MODE_COOPERATIVE contracts.
-    if (lite)
+    if (isEESuspendedForGC)
     {
         _ASSERTE(!m_stopped);
     }
@@ -9336,7 +9336,7 @@ BOOL Debugger::SuspendComplete(bool lite)
         // If we fail to send the SyncComplete, what do we do?
         CONTRACT_VIOLATION(ThrowsViolation);
 
-        SendSyncCompleteIPCEvent(lite); // sets m_stopped = true...
+        SendSyncCompleteIPCEvent(isEESuspendedForGC); // sets m_stopped = true...
     }
 
     // Everything in the next scope is meant to mimic what we do UnlockForEventSending minus EnableEventHandling.
