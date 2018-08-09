@@ -1476,6 +1476,31 @@
         "opensuse-x64-corert"
       ]
     },
+    "opensuse.15.0": {
+      "#import": [
+        "opensuse"
+      ]
+    },
+    "opensuse.15.0-corert": {
+      "#import": [
+        "opensuse.15.0",
+        "opensuse-corert"
+      ]
+    },
+    "opensuse.15.0-x64": {
+      "#import": [
+        "opensuse.15.0",
+        "opensuse-x64"
+      ]
+    },
+    "opensuse.15.0-x64-corert": {
+      "#import": [
+        "opensuse.15.0-corert",
+        "opensuse.15.0-x64",
+        "opensuse.15.0",
+        "opensuse-x64-corert"
+      ]
+    },
     "opensuse.42.1": {
       "#import": [
         "opensuse"
@@ -2071,6 +2096,31 @@
         "sles.12.3-x64",
         "sles.12.3",
         "sles.12.2-x64-corert"
+      ]
+    },
+    "sles.15": {
+      "#import": [
+        "sles.12.3"
+      ]
+    },
+    "sles.15-corert": {
+      "#import": [
+        "sles.15",
+        "sles.12.3-corert"
+      ]
+    },
+    "sles.15-x64": {
+      "#import": [
+        "sles.15",
+        "sles.12.3-x64"
+      ]
+    },
+    "sles.15-x64-corert": {
+      "#import": [
+        "sles.15-corert",
+        "sles.15-x64",
+        "sles.15",
+        "sles.12.3-x64-corert"
       ]
     },
     "tizen": {
