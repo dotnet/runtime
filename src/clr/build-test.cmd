@@ -324,7 +324,7 @@ for /l %%G in (1, 1, %__BuildLoopCount%) do (
     set __MsbuildErr=/flp2:ErrorsOnly;LogFile="%__BuildErr%";Append=!__AppendToLog!
 
     set TestBuildSlice=%%G
-    call %__DotnetHost% msbuild %__ProjectDir%\tests\build.proj !__MsbuildLog! !__MsbuildWrn! !__MsbuildErr! %__msbuildArgs% %__BuildAgainstPackagesMsbuildArg% !__PriorityMsbuildArg! %__PassThroughArg% %__UnprocessedBuildArgs%
+    call %__DotnetHost% msbuild %__ProjectDir%\tests\build.proj !__MsbuildLog! !__MsbuildWrn! !__MsbuildErr! %__msbuildArgs% %__BuildAgainstPackagesMsbuildArg% !__PriorityMsbuildArg! %__UnprocessedBuildArgs%
 
     if errorlevel 1 (
         echo %__MsgPrefix%Error: build failed. Refer to the build log files for details:
@@ -578,6 +578,7 @@ echo crossgen: Precompiles the framework managed assemblies
 echo targetsNonWindows:
 echo Exclude- Optional parameter - specify location of default exclusion file ^(defaults to tests\issues.targets if not specified^)
 echo     Set to "" to disable default exclusion file.
+echo -- ... : all arguments following this tag will be passed directly to msbuild.
 echo -priority=^<N^> : specify a set of tests that will be built and run, with priority N.
 echo     0: Build only priority 0 cases as essential testcases (default)
 echo     1: Build all tests with priority 0 and 1
