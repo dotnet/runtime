@@ -64,7 +64,7 @@ mono_arch_create_sdb_trampoline (gboolean single_step, MonoTrampInfo **info, gbo
 	gpointer code;
 	if (single_step) {
 		name = "sdb_single_step_trampoline";
-		code = mono_sdb_single_step_trampoline;
+		code = mono_wasm_single_step_hit;
 	} else {
 		name = "sdb_breakpoint_trampoline";
 		code = mono_wasm_breakpoint_hit;

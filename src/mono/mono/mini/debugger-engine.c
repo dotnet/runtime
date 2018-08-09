@@ -490,6 +490,17 @@ mono_de_set_breakpoint (MonoMethod *method, long il_offset, EventRequest *req, M
 	return bp;
 }
 
+MonoBreakpoint *
+mono_de_get_breakpoint_by_id (int id)
+{
+	for (int i = 0; i < breakpoints->len; ++i) {
+		MonoBreakpoint *bp = (MonoBreakpoint *)g_ptr_array_index (breakpoints, i);
+		if (bp->req->id == id)
+			return bp;
+	}
+	return NULL;
+}
+
 void
 mono_de_clear_breakpoint (MonoBreakpoint *bp)
 {

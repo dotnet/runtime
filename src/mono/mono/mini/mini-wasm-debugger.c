@@ -20,6 +20,7 @@ static int log_level = 1;
 
 //functions exported to be used by JS
 EMSCRIPTEN_KEEPALIVE int mono_wasm_set_breakpoint (const char *assembly_name, int method_token, int il_offset);
+EMSCRIPTEN_KEEPALIVE int mono_wasm_remove_breakpoint (int bp_id);
 EMSCRIPTEN_KEEPALIVE int mono_wasm_current_bp_id (void);
 EMSCRIPTEN_KEEPALIVE void mono_wasm_enum_frames (void);
 EMSCRIPTEN_KEEPALIVE void mono_wasm_get_var_info (int scope, int pos);
@@ -425,6 +426,17 @@ mono_wasm_set_breakpoint (const char *assembly_name, int method_token, int il_of
 
 	DEBUG_PRINTF (1, "NEW BP %p has id %d\n", req, req->id);
 	return req->id;
+}
+
+EMSCRIPTEN_KEEPALIVE int
+mono_wasm_remove_breakpoint (int bp_id)
+{
+	MonoBreakpoint *bp = mono_de_get_breakpoint_by_id (bp_id);
+	if (!bp)
+		return 0;
+
+	mono_de_clear_breakpoint (bp);
+	return 1;
 }
 
 void
