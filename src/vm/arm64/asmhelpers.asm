@@ -1262,9 +1262,9 @@ Fail
         mov x4, $frameFlags
         bl DynamicHelperWorker
         cbnz x0, %FT0
-        ldr x0, [sp, #__PWTB_ArgumentRegisters]
+        ldr x0, [sp, #__PWTB_ArgumentRegister_FirstArg]
         EPILOG_WITH_TRANSITION_BLOCK_RETURN
-0		
+0
         mov x12, x0
         EPILOG_WITH_TRANSITION_BLOCK_TAILCALL
         EPILOG_BRANCH_REG  x12
