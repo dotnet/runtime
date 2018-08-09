@@ -2418,7 +2418,7 @@ FCIMPL2(MethodDesc*, RuntimeMethodHandle::GetMethodFromCanonical, MethodDesc *pM
 FCIMPLEND
 
 
-FCIMPL2(MethodBody *, RuntimeMethodHandle::GetMethodBody, ReflectMethodObject *pMethodUNSAFE, ReflectClassBaseObject *pDeclaringTypeUNSAFE)
+FCIMPL2(RuntimeMethodBody *, RuntimeMethodHandle::GetMethodBody, ReflectMethodObject *pMethodUNSAFE, ReflectClassBaseObject *pDeclaringTypeUNSAFE)
 {      
     CONTRACTL 
     {
@@ -2428,8 +2428,8 @@ FCIMPL2(MethodBody *, RuntimeMethodHandle::GetMethodBody, ReflectMethodObject *p
 
     struct _gc
     {
-        METHODBODYREF MethodBodyObj;
-        EXCEPTIONHANDLINGCLAUSEREF EHClauseObj;
+        RUNTIMEMETHODBODYREF MethodBodyObj;
+        RUNTIMEEXCEPTIONHANDLINGCLAUSEREF EHClauseObj;
         RUNTIMELOCALVARIABLEINFOREF RuntimeLocalVariableInfoObj;
         U1ARRAYREF                  U1Array;
         BASEARRAYREF                TempArray;
@@ -2466,7 +2466,7 @@ FCIMPL2(MethodBody *, RuntimeMethodHandle::GetMethodBody, ReflectMethodObject *p
         
         if (pILHeader)
         {
-            MethodTable * pExceptionHandlingClauseMT = MscorlibBinder::GetClass(CLASS__EH_CLAUSE);
+            MethodTable * pExceptionHandlingClauseMT = MscorlibBinder::GetClass(CLASS__RUNTIME_EH_CLAUSE);
             TypeHandle thEHClauseArray = ClassLoader::LoadArrayTypeThrowing(TypeHandle(pExceptionHandlingClauseMT), ELEMENT_TYPE_SZARRAY);
 
             MethodTable * pLocalVariableMT = MscorlibBinder::GetClass(CLASS__RUNTIME_LOCAL_VARIABLE_INFO);
@@ -2489,30 +2489,30 @@ FCIMPL2(MethodBody *, RuntimeMethodHandle::GetMethodBody, ReflectMethodObject *p
                 }
             }
 
-            gc.MethodBodyObj = (METHODBODYREF)AllocateObject(MscorlibBinder::GetClass(CLASS__METHOD_BODY));
+            gc.MethodBodyObj = (RUNTIMEMETHODBODYREF)AllocateObject(MscorlibBinder::GetClass(CLASS__RUNTIME_METHOD_BODY));
             
-            gc.MethodBodyObj->m_maxStackSize = header.GetMaxStack();
-            gc.MethodBodyObj->m_initLocals = !!(header.GetFlags() & CorILMethod_InitLocals);
+            gc.MethodBodyObj->_maxStackSize = header.GetMaxStack();
+            gc.MethodBodyObj->_initLocals = !!(header.GetFlags() & CorILMethod_InitLocals);
 
             if (header.IsFat())
-                gc.MethodBodyObj->m_localVarSigToken = header.GetLocalVarSigTok();
+                gc.MethodBodyObj->_localVarSigToken = header.GetLocalVarSigTok();
             else
-                gc.MethodBodyObj->m_localVarSigToken = 0;
+                gc.MethodBodyObj->_localVarSigToken = 0;
 
             // Allocate the array of IL and fill it in from the method header.
             BYTE* pIL = const_cast<BYTE*>(header.Code);
             COUNT_T cIL = header.GetCodeSize();
             gc.U1Array  = (U1ARRAYREF) AllocatePrimitiveArray(ELEMENT_TYPE_U1, cIL);
 
-            SetObjectReference((OBJECTREF*)&gc.MethodBodyObj->m_IL, gc.U1Array, GetAppDomain());
-            memcpyNoGCRefs(gc.MethodBodyObj->m_IL->GetDataPtr(), pIL, cIL);
+            SetObjectReference((OBJECTREF*)&gc.MethodBodyObj->_IL, gc.U1Array, GetAppDomain());
+            memcpyNoGCRefs(gc.MethodBodyObj->_IL->GetDataPtr(), pIL, cIL);
 
             // Allocate the array of exception clauses.
             INT32 cEh = (INT32)header.EHCount();
             const COR_ILMETHOD_SECT_EH* ehInfo = header.EH;
             gc.TempArray = (BASEARRAYREF) AllocateArrayEx(thEHClauseArray, &cEh, 1);
 
-            SetObjectReference((OBJECTREF*)&gc.MethodBodyObj->m_exceptionClauses, gc.TempArray, GetAppDomain());
+            SetObjectReference((OBJECTREF*)&gc.MethodBodyObj->_exceptionClauses, gc.TempArray, GetAppDomain());
             
             for (INT32 i = 0; i < cEh; i++)
             {                    
@@ -2520,21 +2520,21 @@ FCIMPL2(MethodBody *, RuntimeMethodHandle::GetMethodBody, ReflectMethodObject *p
                 const COR_ILMETHOD_SECT_EH_CLAUSE_FAT* ehClause = 
                     (const COR_ILMETHOD_SECT_EH_CLAUSE_FAT*)ehInfo->EHClause(i, &ehBuff); 
 
-                gc.EHClauseObj = (EXCEPTIONHANDLINGCLAUSEREF) AllocateObject(pExceptionHandlingClauseMT);
+                gc.EHClauseObj = (RUNTIMEEXCEPTIONHANDLINGCLAUSEREF) AllocateObject(pExceptionHandlingClauseMT);
 
-                gc.EHClauseObj->m_flags = ehClause->GetFlags();  
-                gc.EHClauseObj->m_tryOffset = ehClause->GetTryOffset();
-                gc.EHClauseObj->m_tryLength = ehClause->GetTryLength();
-                gc.EHClauseObj->m_handlerOffset = ehClause->GetHandlerOffset();
-                gc.EHClauseObj->m_handlerLength = ehClause->GetHandlerLength();
+                gc.EHClauseObj->_flags = ehClause->GetFlags();  
+                gc.EHClauseObj->_tryOffset = ehClause->GetTryOffset();
+                gc.EHClauseObj->_tryLength = ehClause->GetTryLength();
+                gc.EHClauseObj->_handlerOffset = ehClause->GetHandlerOffset();
+                gc.EHClauseObj->_handlerLength = ehClause->GetHandlerLength();
                 
                 if ((ehClause->GetFlags() & COR_ILEXCEPTION_CLAUSE_FILTER) == 0)
-                    gc.EHClauseObj->m_catchToken = ehClause->GetClassToken();
+                    gc.EHClauseObj->_catchToken = ehClause->GetClassToken();
                 else
-                    gc.EHClauseObj->m_filterOffset = ehClause->GetFilterOffset();
+                    gc.EHClauseObj->_filterOffset = ehClause->GetFilterOffset();
                 
-                gc.MethodBodyObj->m_exceptionClauses->SetAt(i, (OBJECTREF) gc.EHClauseObj);
-                SetObjectReference((OBJECTREF*)&(gc.EHClauseObj->m_methodBody), (OBJECTREF)gc.MethodBodyObj, GetAppDomain());
+                gc.MethodBodyObj->_exceptionClauses->SetAt(i, (OBJECTREF) gc.EHClauseObj);
+                SetObjectReference((OBJECTREF*)&(gc.EHClauseObj->_methodBody), (OBJECTREF)gc.MethodBodyObj, GetAppDomain());
             }     
            
             if (header.LocalVarSig != NULL)
@@ -2547,7 +2547,7 @@ FCIMPL2(MethodBody *, RuntimeMethodHandle::GetMethodBody, ReflectMethodObject *p
                                 MetaSig::sigLocalVars);
                 INT32 cLocals = metaSig.NumFixedArgs();
                 gc.TempArray  = (BASEARRAYREF) AllocateArrayEx(thLocalVariableArray, &cLocals, 1);
-                SetObjectReference((OBJECTREF*)&gc.MethodBodyObj->m_localVariables, gc.TempArray, GetAppDomain());
+                SetObjectReference((OBJECTREF*)&gc.MethodBodyObj->_localVariables, gc.TempArray, GetAppDomain());
 
                 for (INT32 i = 0; i < cLocals; i ++)
                 {
@@ -2565,20 +2565,20 @@ FCIMPL2(MethodBody *, RuntimeMethodHandle::GetMethodBody, ReflectMethodObject *p
                     TypeHandle  tempType= metaSig.GetArgProps().GetTypeHandleThrowing(pModule, &sigTypeContext);       
                     OBJECTREF refLocalType = tempType.GetManagedClassObject();
                     gc.RuntimeLocalVariableInfoObj->SetType(refLocalType);
-                    gc.MethodBodyObj->m_localVariables->SetAt(i, (OBJECTREF) gc.RuntimeLocalVariableInfoObj);
+                    gc.MethodBodyObj->_localVariables->SetAt(i, (OBJECTREF) gc.RuntimeLocalVariableInfoObj);
                 }        
             }
             else
             {
                 INT32 cLocals = 0;
                 gc.TempArray  = (BASEARRAYREF) AllocateArrayEx(thLocalVariableArray, &cLocals, 1);
-                SetObjectReference((OBJECTREF*)&gc.MethodBodyObj->m_localVariables, gc.TempArray, GetAppDomain());
+                SetObjectReference((OBJECTREF*)&gc.MethodBodyObj->_localVariables, gc.TempArray, GetAppDomain());
             }
         }
     }
     HELPER_METHOD_FRAME_END();
 
-    return (MethodBody*)OBJECTREFToObject(gc.MethodBodyObj);
+    return (RuntimeMethodBody*)OBJECTREFToObject(gc.MethodBodyObj);
 }
 FCIMPLEND
 
