@@ -1476,6 +1476,31 @@
         "opensuse-x64-corert"
       ]
     },
+    "opensuse.15.0": {
+      "#import": [
+        "opensuse"
+      ]
+    },
+    "opensuse.15.0-corert": {
+      "#import": [
+        "opensuse.15.0",
+        "opensuse-corert"
+      ]
+    },
+    "opensuse.15.0-x64": {
+      "#import": [
+        "opensuse.15.0",
+        "opensuse-x64"
+      ]
+    },
+    "opensuse.15.0-x64-corert": {
+      "#import": [
+        "opensuse.15.0-corert",
+        "opensuse.15.0-x64",
+        "opensuse.15.0",
+        "opensuse-x64-corert"
+      ]
+    },
     "opensuse.42.1": {
       "#import": [
         "opensuse"
