@@ -12,7 +12,7 @@ namespace System.Reflection
         private int _localIndex;
         private bool _isPinned;
 
-        protected RuntimeLocalVariableInfo() { }
+        private RuntimeLocalVariableInfo() { }
 
         public override Type LocalType { get { Debug.Assert(_type != null, "type must be set!"); return _type; } }
         public override int LocalIndex => _localIndex;
