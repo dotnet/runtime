@@ -102,6 +102,12 @@ if [ ! -e "$__DOTNET_PATH" ]; then
                         __PKG_RID=rhel.6
                     fi
                 fi
+                OSArch=$(uname -m)
+                if [ $OSArch == 'armv7l' ];then
+                    __PKG_ARCH=arm
+                elif [ $OSArch == 'aarch64' ]; then
+                    __PKG_ARCH=arm64
+                fi
 
                 ;;
 
