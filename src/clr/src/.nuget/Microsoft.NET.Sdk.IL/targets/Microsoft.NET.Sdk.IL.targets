@@ -29,6 +29,7 @@ Copyright (c) .NET Foundation. All rights reserved.
     <MicrosoftNetCoreIlasmPackageVersion Condition="'$(MicrosoftNetCoreIlasmPackageVersion)' == ''">3.0.0</MicrosoftNetCoreIlasmPackageVersion>
     <MicrosoftNetCoreIlasmPackageName>runtime.$(MicrosoftNetCoreIlasmPackageRuntimeId).microsoft.netcore.ilasm</MicrosoftNetCoreIlasmPackageName>
     <MicrosoftNetCoreRuntimeCoreClrPackageName>runtime.$(MicrosoftNetCoreIlasmPackageRuntimeId).microsoft.netcore.runtime.coreclr</MicrosoftNetCoreRuntimeCoreClrPackageName>
+    <MicrosoftNetCoreJitPackageName>runtime.$(MicrosoftNetCoreIlasmPackageRuntimeId).microsoft.netcore.jit</MicrosoftNetCoreJitPackageName>
 
     <ToolsDir Condition="'$(ToolsDir)' == ''">$([System.IO.Path]::Combine($([System.IO.Path]::GetTempPath()), $([System.IO.Path]::GetRandomFileName())))</ToolsDir>
   </PropertyGroup>
@@ -36,6 +37,7 @@ Copyright (c) .NET Foundation. All rights reserved.
   <ItemGroup>
     <PackageReference Include="$(MicrosoftNetCoreIlasmPackageName)" Version="$(MicrosoftNetCoreIlasmPackageVersion)" PrivateAssets="all" IsImplicitlyDefined="true" />
     <PackageReference Include="$(MicrosoftNetCoreRuntimeCoreClrPackageName)" Version="$(MicrosoftNetCoreIlasmPackageVersion)" PrivateAssets="all" IsImplicitlyDefined="true" />
+    <PackageReference Include="$(MicrosoftNetCoreJitPackageName)" Version="$(MicrosoftNetCoreIlasmPackageVersion)" PrivateAssets="all" IsImplicitlyDefined="true" />
   </ItemGroup>
 
   <PropertyGroup>
@@ -57,6 +59,7 @@ Copyright (c) .NET Foundation. All rights reserved.
     <ItemGroup>
       <_IlasmSourceFiles Include="$(NuGetPackageRoot)\$(MicrosoftNetCoreIlasmPackageName)\$(MicrosoftNetCoreIlasmPackageVersion)\runtimes\$(MicrosoftNetCoreIlasmPackageRuntimeId)\native\**\*" />
       <_IlasmSourceFiles Include="$(NuGetPackageRoot)\$(MicrosoftNetCoreRuntimeCoreClrPackageName)\$(MicrosoftNetCoreIlasmPackageVersion)\runtimes\$(MicrosoftNetCoreIlasmPackageRuntimeId)\native\**\*" />
+      <_IlasmSourceFiles Include="$(NuGetPackageRoot)\$(MicrosoftNetCoreJitPackageName)\$(MicrosoftNetCoreIlasmPackageVersion)\runtimes\$(MicrosoftNetCoreIlasmPackageRuntimeId)\native\**\*" />
     </ItemGroup>
 
     <PropertyGroup>
