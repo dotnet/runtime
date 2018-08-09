@@ -17,7 +17,7 @@
 #ifdef HAVE_COPYFILE_H
 #include <copyfile.h>
 #  if !defined(COPYFILE_CLONE)
-#    #define COPYFILE_CLONE (1 << 24)
+#    define COPYFILE_CLONE (1 << 24)
 #  endif
 #endif
 #if defined(HAVE_SYS_STATFS_H)
