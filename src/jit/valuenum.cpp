@@ -199,12 +199,38 @@ T ValueNumStore::EvalOp(VNFunc vnf, T v0, T v1, ValueNum* pExcSet)
     }
 }
 
+// We need to use target-specific NaN values when statically compute expressions.
+// Otherwise, cross crossgen (e.g. x86_arm) would have different binary outputs
+// from native crossgen (i.e. arm_arm) when the NaN got "embedded" into code.
+//
+// For example, when placing NaN value in r3 register
+// x86_arm crossgen would emit
+//   movw    r3, 0x00
+//   movt    r3, 0xfff8
+// while arm_arm crossgen (and JIT) output is
+//   movw    r3, 0x00
+//   movt    r3, 0x7ff8
+
 struct FloatTraits
 {
+    //------------------------------------------------------------------------
+    // NaN: Return target-specific float NaN value
+    //
+    // Notes:
+    //    "Default" NaN value returned by expression 0.0f / 0.0f on x86/x64 has
+    //    different binary representation (0xffc00000) than NaN on
+    //    ARM32/ARM64 (0x7fc00000).
+
     static float NaN()
     {
+#if defined(_TARGET_XARCH_)
         unsigned bits = 0xFFC00000u;
-        float    result;
+#elif defined(_TARGET_ARMARCH_)
+        unsigned           bits = 0x7FC00000u;
+#else
+#error Unsupported or unset target architecture
+#endif
+        float result;
         static_assert(sizeof(bits) == sizeof(result), "sizeof(unsigned) must equal sizeof(float)");
         memcpy(&result, &bits, sizeof(result));
         return result;
@@ -213,15 +239,169 @@ struct FloatTraits
 
 struct DoubleTraits
 {
+    //------------------------------------------------------------------------
+    // NaN: Return target-specific double NaN value
+    //
+    // Notes:
+    //    "Default" NaN value returned by expression 0.0 / 0.0 on x86/x64 has
+    //    different binary representation (0xfff8000000000000) than NaN on
+    //    ARM32/ARM64 (0x7ff8000000000000).
+
     static double NaN()
     {
+#if defined(_TARGET_XARCH_)
         unsigned long long bits = 0xFFF8000000000000ull;
-        double             result;
+#elif defined(_TARGET_ARMARCH_)
+        unsigned long long bits = 0x7FF8000000000000ull;
+#else
+#error Unsupported or unset target architecture
+#endif
+        double result;
         static_assert(sizeof(bits) == sizeof(result), "sizeof(unsigned long long) must equal sizeof(double)");
         memcpy(&result, &bits, sizeof(result));
         return result;
     }
 };
+
+//------------------------------------------------------------------------
+// FpAdd: Computes value1 + value2
+//
+// Return Value:
+//    TFpTraits::NaN() - If target ARM32/ARM64 and result value is NaN
+//    value1 + value2  - Otherwise
+//
+// Notes:
+//    See FloatTraits::NaN() and DoubleTraits::NaN() notes.
+
+template <typename TFp, typename TFpTraits>
+TFp FpAdd(TFp value1, TFp value2)
+{
+#ifdef _TARGET_ARMARCH_
+    // If [value1] is negative infinity and [value2] is positive infinity
+    //   the result is NaN.
+    // If [value1] is positive infinity and [value2] is negative infinity
+    //   the result is NaN.
+
+    if (!_finite(value1) && !_finite(value2))
+    {
+        if (value1 < 0 && value2 > 0)
+        {
+            return TFpTraits::NaN();
+        }
+
+        if (value1 > 0 && value2 < 0)
+        {
+            return TFpTraits::NaN();
+        }
+    }
+#endif // _TARGET_ARMARCH_
+
+    return value1 + value2;
+}
+
+//------------------------------------------------------------------------
+// FpSub: Computes value1 - value2
+//
+// Return Value:
+//    TFpTraits::NaN() - If target ARM32/ARM64 and result value is NaN
+//    value1 - value2  - Otherwise
+//
+// Notes:
+//    See FloatTraits::NaN() and DoubleTraits::NaN() notes.
+
+template <typename TFp, typename TFpTraits>
+TFp FpSub(TFp value1, TFp value2)
+{
+#ifdef _TARGET_ARMARCH_
+    // If [value1] is positive infinity and [value2] is positive infinity
+    //   the result is NaN.
+    // If [value1] is negative infinity and [value2] is negative infinity
+    //   the result is NaN.
+
+    if (!_finite(value1) && !_finite(value2))
+    {
+        if (value1 > 0 && value2 > 0)
+        {
+            return TFpTraits::NaN();
+        }
+
+        if (value1 < 0 && value2 < 0)
+        {
+            return TFpTraits::NaN();
+        }
+    }
+#endif // _TARGET_ARMARCH_
+
+    return value1 - value2;
+}
+
+//------------------------------------------------------------------------
+// FpMul: Computes value1 * value2
+//
+// Return Value:
+//    TFpTraits::NaN() - If target ARM32/ARM64 and result value is NaN
+//    value1 * value2  - Otherwise
+//
+// Notes:
+//    See FloatTraits::NaN() and DoubleTraits::NaN() notes.
+
+template <typename TFp, typename TFpTraits>
+TFp FpMul(TFp value1, TFp value2)
+{
+#ifdef _TARGET_ARMARCH_
+    // From the ECMA standard:
+    //
+    // If [value1] is zero and [value2] is infinity
+    //   the result is NaN.
+    // If [value1] is infinity and [value2] is zero
+    //   the result is NaN.
+
+    if (value1 == 0 && !_finite(value2) && !_isnan(value2))
+    {
+        return TFpTraits::NaN();
+    }
+    if (!_finite(value1) && !_isnan(value1) && value2 == 0)
+    {
+        return TFpTraits::NaN();
+    }
+#endif // _TARGET_ARMARCH_
+
+    return value1 * value2;
+}
+
+//------------------------------------------------------------------------
+// FpDiv: Computes value1 / value2
+//
+// Return Value:
+//    TFpTraits::NaN() - If target ARM32/ARM64 and result value is NaN
+//    value1 / value2  - Otherwise
+//
+// Notes:
+//    See FloatTraits::NaN() and DoubleTraits::NaN() notes.
+
+template <typename TFp, typename TFpTraits>
+TFp FpDiv(TFp dividend, TFp divisor)
+{
+#ifdef _TARGET_ARMARCH_
+    // From the ECMA standard:
+    //
+    // If [dividend] is zero and [divisor] is zero
+    //   the result is NaN.
+    // If [dividend] is infinity and [divisor] is infinity
+    //   the result is NaN.
+
+    if (dividend == 0 && divisor == 0)
+    {
+        return TFpTraits::NaN();
+    }
+    else if (!_finite(dividend) && !_isnan(dividend) && !_finite(divisor) && !_isnan(divisor))
+    {
+        return TFpTraits::NaN();
+    }
+#endif // _TARGET_ARMARCH_
+
+    return dividend / divisor;
+}
 
 template <typename TFp, typename TFpTraits>
 TFp FpRem(TFp dividend, TFp divisor)
@@ -254,13 +434,13 @@ double ValueNumStore::EvalOp<double>(VNFunc vnf, double v0, double v1, ValueNum*
     switch (oper)
     {
         case GT_ADD:
-            return v0 + v1;
+            return FpAdd<double, DoubleTraits>(v0, v1);
         case GT_SUB:
-            return v0 - v1;
+            return FpSub<double, DoubleTraits>(v0, v1);
         case GT_MUL:
-            return v0 * v1;
+            return FpMul<double, DoubleTraits>(v0, v1);
         case GT_DIV:
-            return v0 / v1;
+            return FpDiv<double, DoubleTraits>(v0, v1);
         case GT_MOD:
             return FpRem<double, DoubleTraits>(v0, v1);
 
@@ -278,13 +458,13 @@ float ValueNumStore::EvalOp<float>(VNFunc vnf, float v0, float v1, ValueNum* pEx
     switch (oper)
     {
         case GT_ADD:
-            return v0 + v1;
+            return FpAdd<float, FloatTraits>(v0, v1);
         case GT_SUB:
-            return v0 - v1;
+            return FpSub<float, FloatTraits>(v0, v1);
         case GT_MUL:
-            return v0 * v1;
+            return FpMul<float, FloatTraits>(v0, v1);
         case GT_DIV:
-            return v0 / v1;
+            return FpDiv<float, FloatTraits>(v0, v1);
         case GT_MOD:
             return FpRem<float, FloatTraits>(v0, v1);
 
