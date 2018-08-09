@@ -224,7 +224,8 @@
     <Exec Command="chmod u+x $(_crossGenPath)"
           Condition="'$(OSGroup)' != 'Windows_NT'" />
     <ItemGroup>
-      <!-- -->
+      <!-- Exclude run crossgen on System.Runtime.WindowsRuntime for non-Windows due to System.Runtime.WindowsRuntime.dll for non-Windows only throw NotSupported Exception  -->
+      <!-- Also crossgen on non-windows doesn't support -Platform_Winmd_Paths -->
       <_filesToCrossGen Include="@(FilesToPackage)"
                         Condition="'%(FilesToPackage.IsNative)' != 'true' AND '%(FileName)' != 'System.Private.CoreLib' AND '%(FileName)' != 'mscorlib' AND '%(Extension)' == '.dll' AND ('%(FileName)' != 'System.Runtime.WindowsRuntime' Or '$(OsEnvironment)'=='Windows_NT')">
         <CrossGenedDirectory>$(CrossGenOutputPath)/%(TargetPath)/</CrossGenedDirectory>
