@@ -353,7 +353,7 @@ Crst NativeImageCache
 End
 
 Crst GCCover
-    AcquiredBefore LoaderHeap
+    AcquiredBefore LoaderHeap ReJITSharedDomainTable
 End
 
 Crst GCMemoryPressure
