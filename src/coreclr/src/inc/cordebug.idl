@@ -3307,12 +3307,12 @@ interface ICorDebugProcess10 : IUnknown
     //   
     // Returns
     //   S_OK - on success
-    //   
-    // TODO: What if the pointer is not an interior pointer?
-    // TODO: What are all the possible error exit codes?
+    //   S_FALSE   - if the given interior pointer is not inside an object
+    //   E_POINTER - ppContainingObject is NULL
     // 
     HRESULT GetContainingObject([in] CORDB_ADDRESS interiorPointer, [out] ICorDebugObjectValue** ppContainingObject);
 
+    //
     // Enable or disable the GC notification events. The GC notification events are turned off by default
     // They will be delivered through ICorDebugManagedCallback4
     // 
@@ -3320,7 +3320,8 @@ interface ICorDebugProcess10 : IUnknown
     //   fEnable - true to enable the events, false to disable
     // 
     // Returns
-    //   S_OK - on success    
+    //   S_OK - on success   
+    // 
     HRESULT EnableGCNotificationEvents(BOOL fEnable);
 }
 
