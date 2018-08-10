@@ -99,6 +99,7 @@
     <Compile Include="Linker\ILogger.cs" />
     <Compile Include="Linker\ConsoleLogger.cs" />
     <Compile Include="Linker\Tracer.cs" />
+    <Compile Include="Linker.Steps\PreserveDependencyLookupStep.cs" />
   </ItemGroup>
   <ItemGroup>
     <None Include="app.config" />
