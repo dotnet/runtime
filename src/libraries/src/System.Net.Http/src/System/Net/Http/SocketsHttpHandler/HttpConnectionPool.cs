@@ -210,14 +210,15 @@ namespace System.Net.Http
                 return GetHttp2ConnectionAsync(request, cancellationToken);
             }
 
-            return GetHttp11ConnectionAsync(request, cancellationToken);
+            return GetHttpConnectionAsync(request, cancellationToken);
         }
 
         private ValueTask<(HttpConnectionBase connection, bool isNewConnection, HttpResponseMessage failureResponse)> 
-            GetHttp11ConnectionAsync(HttpRequestMessage request, CancellationToken cancellationToken)
+            GetHttpConnectionAsync(HttpRequestMessage request, CancellationToken cancellationToken)
         {
             if (cancellationToken.IsCancellationRequested)
             {
+                if (NetEventSource.IsEnabled) Trace("Unable to complete getting HTTP/1.x connection due to requested cancellation.");
                 return new ValueTask<(HttpConnectionBase, bool, HttpResponseMessage)>(Task.FromCanceled<(HttpConnectionBase, bool, HttpResponseMessage)>(cancellationToken));
             }
 
@@ -444,7 +445,7 @@ namespace System.Net.Http
             }
 
             // If we reach this point, it means we need to fall back to a (new or existing) HTTP/1.1 connection.
-            return await GetHttp11ConnectionAsync(request, cancellationToken);
+            return await GetHttpConnectionAsync(request, cancellationToken);
         }
 
         public async Task<HttpResponseMessage> SendWithRetryAsync(HttpRequestMessage request, bool doRequestAuth, CancellationToken cancellationToken)
