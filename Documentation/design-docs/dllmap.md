@@ -6,13 +6,13 @@ Author: Anna Aniol (@annaaniol)
 ## Background
 
 ### .NET Core P/invoke mechanism
-There is a .NET directive ([DllImport](https://msdn.microsoft.com/en-us/library/system.runtime.interopservices.dllimportattribute(v=vs.110).aspx)) indicating that the attributed method is exposed by an unmanaged DLL as a static entry point. It enables to call a function exported from an unmanaged DLL inside a managed code. To make such a call, library name must be provided. Names of naive libraries are OS-specific, so once the name is defined, the call can be executed correctly on one OS only.
+There is a .NET directive ([DllImport](https://msdn.microsoft.com/en-us/library/system.runtime.interopservices.dllimportattribute(v=vs.110).aspx)) indicating that the attributed method is exposed by an unmanaged DLL as a static entry point. It enables to call a function exported from an unmanaged DLL inside a managed code. To make such a call, library name must be provided. Names of native libraries are OS-specific, so once the name is defined, the call can be executed correctly on one OS only.
 
 Right now, CoreCLR has no good way to handle the differences between platforms when it comes to p/invoking native libraries. Here is an example usage of DllImport:
-```c++
+```c#
 // Use DllImport to import the Win32 MessageBox function.
-   [DllImport("user32.dll", CharSet = CharSet.Unicode)]
-   public  static  extern  int  MessageBox(IntPtr  hWnd, String text, String caption, uint type);
+[DllImport("user32.dll", CharSet = CharSet.Unicode)]
+public  static  extern  int  MessageBox(IntPtr  hWnd, String text, String caption, uint type);
 ```
 This import works with Windows, but it doesn’t work with any other OS. If run e.g. on Linux, a DllNotFoundException will be thrown, which means that a DLL specified in a DLL import cannot be found.
 
@@ -23,9 +23,9 @@ Mono already provides a feature that addresses the problem of cross-platform p/i
 In Mono Dllmap feature custom mapping can be tightly specified based on the OS name, CPU name and a wordsize.
 
 This simple Mono example maps references to the cygwin1.dll library to the libc.so.6 file:
-```c++
+```xml
 <configuration>
-	<dllmap  dll="cygwin1.dll" target="libc.so.6"/>
+    <dllmap  dll="cygwin1.dll" target="libc.so.6"/>
 </configuration>
 ```
 
@@ -43,8 +43,8 @@ Target platforms for this feature are: Windows, Linux and OS X.
 
 ### Interaction with Dllmap
 
-#### Mono combability
-Dllmap should be easy to use. It’s possible to achieve this easily by keeping Mono-compatible style of XML mapping configuration file. It’s described [here](http://www.mono-project.com/docs/advanced/pinvoke/dllmap/). Thanks to combability with Mono, users will be able to migrate from Mono’s Dllmap to .NET Core cross-platform applications.
+#### Mono compatibility
+Dllmap should be easy to use. It’s possible to achieve this easily by keeping Mono-compatible style of XML mapping configuration file. It’s described [here](http://www.mono-project.com/docs/advanced/pinvoke/dllmap/). Thanks to compatibility with Mono, users will be able to migrate from Mono’s Dllmap to .NET Core cross-platform applications.
 
 #### Flexibility
 For users, who want to manage their cross-platform dll imports in their own way, dll-load specific events will be exposed. Users will be able to subscribe to these events and implement any loading policies. Details are described in the Design section.
@@ -54,41 +54,43 @@ For users, who want to manage their cross-platform dll imports in their own way,
 Let’s say there is a customer developing a .NET application with p/invokes on Windows. The customer wants the application to run on both Windows and Linux without introducing any changes in the code.
 
 The application calls a function GetCurrentProcessId from an OS-specific library kernel32.dll.
-```c++
+```c#
 [DllImport("kernel32.dll")]
 static  extern  uint  GetCurrentProcessId();
 ```
 
-To make it work on Linux, that does not have kernel32.dll, user must define a mapping of dll. There is no GetCurrentProcessId function in any corresponding Linux-specific library, so entrypoint name mapping must be defined too. To achieve this, the user puts an XML configuration file in the main application directory. The file looks like this:
-```c++
+To make it work on Linux, that does not have kernel32.dll, user must define a mapping of the dll. 
+There is no `GetCurrentProcessId` function in any corresponding Linux-specific library, so entrypoint name mapping must be defined too. 
+To achieve this, the user puts an XML configuration file next to the dll that is about to be loaded. The file looks like this:
+```xml
 <configuration>
-	<dllmap  dll="kernel32.dll">
-		<dllentry  dll="libc.so.6" name="GetCurrentProcessId" target="getpid" />
-	</dllmap>
+    <dllmap  dll="kernel32.dll">
+        <dllentry  dll="libc.so.6" name="GetCurrentProcessId" target="getpid" />
+    </dllmap>
 </configuration>
 ```
 
-With this file, all GetCurrentProcessId calls get automatically mapped to getpid calls on runtime and the end user of the application can’t see any difference in application’s behavior. Running the application cross-platform does not require any OS-specific changes in the code. All the mapping is defined in advance in the external configuration file.
+With this file, all `GetCurrentProcessId` calls get automatically mapped to getpid calls on runtime and the end user of the application can’t see any difference in application’s behavior. Running the application cross-platform does not require any OS-specific changes in the code. All the mapping is defined in advance in the external configuration file.
 
 This is a very basic scenario and it can be extended to different operating systems, libraries and entrypoints and to subscribing to dll specific events.
 
 ## Design
 ### XML configuration file
-For a basic case, mapping must be defined in an XML configuration file, that must be placed in the main application folder. It must be named application_name.xml where application_name is the name of the application.
+For a basic case, mapping must be defined in an XML configuration file and placed next to the assembly that requires mapping of p/invokes. The file must be named AssemblyName.config where AssemblyName is a name of the executable for which the mapping is defined. 
 
-XML parsing will be implemented in corefxlab.
+XML parsing will be implemented in corefx.labs using XML parsers that .NET provides. 
 
 ### Library mapping
 In dllimport.cpp file there is a method that loads the DLL and finds the procaddress for an N/Direct call.
 ```c++
 VOID NDirect::NDirectLink(NDirectMethodDesc *pMD)
 {
-	…
-	HINSTANCE hmod = LoadLibraryModule( pMD, &errorTracker );
-	…
-	LPVOID pvTarget = NDirectGetEntryPoint(pMD, hmod);
-	…
-	pMD->SetNDirectTarget(pvTarget);
+    …
+    HINSTANCE hmod = LoadLibraryModule( pMD, &errorTracker );
+    …
+    LPVOID pvTarget = NDirectGetEntryPoint(pMD, hmod);
+    …
+    pMD->SetNDirectTarget(pvTarget);
 }
 ```
 `LoadLibraryModule`  is responsible for loading a correct library and `NDirectGetEntryPoint ` is responsible for resolving a right entrypoint.
@@ -99,33 +101,38 @@ hmod = LoadLibraryViaCallback(pMD, wszLibName); // this is the only intoduced st
 hmod = LoadLibraryModuleViaHost(pMD, pDomain, wszLibName);
 hmod = FindUnmanagedImageInCache(wszLibName)
 If FEATURE_CORESYSTEM:
-	hmod = LocalLoadLibraryHelper(wszLibName, LOAD_LIBRARY_SEARCH_SYSTEM32, pErrorTracker);
+    hmod = LocalLoadLibraryHelper(wszLibName, LOAD_LIBRARY_SEARCH_SYSTEM32, pErrorTracker);
 FOR currLibNameVariation IN VARIATIONS:
-	hmod = LoadFromNativeDllSearchDirectories(pDomain, currLibNameVariation, loadWithAlteredPathFlags, pErrorTracker)
-	IF !libNameIsRelativePath:
-		hmod = LocalLoadLibraryHelper(currLibNameVariation, flags, pErrorTracker)
-	ELSE IF searchAssemblyDirectory:
-		hmod = LoadFromPInvokeAssemblyDirectory(pAssembly, currLibNameVariation, loadWithAlteredPathFlags | dllImportSearchPathFlag, pErrorTracker)
-	hmod = LocalLoadLibraryHelper(currLibNameVariation, dllImportSearchPathFlag, pErrorTracker)
+    hmod = LoadFromNativeDllSearchDirectories(pDomain, currLibNameVariation, loadWithAlteredPathFlags, pErrorTracker)
+    IF !libNameIsRelativePath:
+        hmod = LocalLoadLibraryHelper(currLibNameVariation, flags, pErrorTracker)
+    ELSE IF searchAssemblyDirectory:
+        hmod = LoadFromPInvokeAssemblyDirectory(pAssembly, currLibNameVariation, loadWithAlteredPathFlags | dllImportSearchPathFlag, pErrorTracker)
+    hmod = LocalLoadLibraryHelper(currLibNameVariation, dllImportSearchPathFlag, pErrorTracker)
 hmod = LocalLoadLibraryHelper(pModule->GetPath(), loadWithAlteredPathFlags | dllImportSearchPathFlag, pErrorTracker)
 ```
-`LoadLibraryModuleViaHost`  already contains a callback (`AssemblyLoadContext` exposes `LoadUnmanagedDll()` API to load a dll but it can be used for a `CustomAssemblyLoadContext` only, not the default one).  `LoadLibraryViaCallback`  will do  a callback, but only for non-system assemblies. `System.Private.CoreLib` and other ‘system’ assemblies will not receive callbacks.
+`LoadLibraryModuleViaHost`  already contains a callback (`AssemblyLoadContext` exposes `LoadUnmanagedDll()` API to load a dll but it can be used for a 
+`CustomAssemblyLoadContext` only, not the default one).  `LoadLibraryViaCallback`  will do  a callback for all assemblies except `System.Private.CoreLib`, 
+which can’t be mapped at any time. The check to determine if the assembly is `System.Private.CoreLib` will happen on runtime in the unmanaged code.
 
 ### Entrypoint mapping
 Once hmod gets resolved and returned via `LoadLibraryModule`, an entrypoint must be find:
 
-Currently `NDirectGetEntryPoint` takes two arguments: `pMD` and hmod. When `NDirectGetEntryPoint`  gets called, `pMD `points to a target dll and hmod is correlated with a target dll too.
-The entrypoint name mapping will be done at the beginning of `NDirectGetEntryPoint`. A new method ` IntPtr  GetMappedEntrypoint(sourceEntrypointName)`  will be a callback and will return a mapping for an entrypoint if it exists. `pMD` will get updated to point to a target entrypoint. The rest of `NDirectGetEntryPoint()`  flow will remain the same.
+Currently `NDirectGetEntryPoint` takes two arguments: `pMD` and hmod. When `NDirectGetEntryPoint`  gets called, 
+`pMD `points to a target dll and hmod is correlated with a target dll too. The entrypoint name mapping will be done at the beginning of `NDirectGetEntryPoint`. 
+A new method ` IntPtr  GetMappedEntrypoint(sourceEntrypointName)`  will be a callback and will return a mapping for an entrypoint if it exists. 
+Similarly to library mapping, the callback will be done for all assemblies except `System.Private.CoreLib`.
+`pMD` will get updated to point to a target entrypoint. The rest of `NDirectGetEntryPoint()`  flow will remain the same.
 ```c++
 HINSTANCE hmod = LoadLibraryModule( pMD, &errorTracker );
 if ( hmod )
 {
-	LPVOID pvTarget = GetEntrypointViaCallback(pMD, hmod); // this is the only introduced step
-	if (!pvTarget)
-	{
-		LPVOID pvTarget = NDirectGetEntryPoint(pMD, hmod);
-	}
-	…
+    LPVOID pvTarget = GetEntrypointViaCallback(pMD, hmod); // this is the only introduced step
+    if (!pvTarget)
+    {
+        LPVOID pvTarget = NDirectGetEntryPoint(pMD, hmod);
+    }
+    …
 }
 ```
 
@@ -137,58 +144,72 @@ As explained above, runtime will rise two dll specific events on each load attem
 * 1st callback - when loading a non-system library
 * 2nd callback - when finding an entrypoint
 
-Events will be defined in `AssemblyLoadContext` in `Private.CoreLib`. Default handlers that subscribe dll load events will implement the mono-based dllmap logic. They will take string as argument and return IntPtr of target libraries and entrypoints based on the parsed XML configuration file.
+Events will be defined in `AssemblyLoadContext` in `System.Private.CoreLib`. Default handlers that subscribe dll load events will implement the mono-based dllmap logic. 
+They will take string as argument and return IntPtr of target libraries and entrypoints based on the parsed XML configuration file.
 
-Handlers implementation will stay in `AssemblyLoadContext`. Load library resolver will cache all the dll mapping results that got resolved (as key-value: IntPtr-hmod pairs). Thanks to that, the same library won't get loaded multiple times. User’s code will be able to subscribe to events and implement any loading behavior. That will give a user full flexibility when using dllmap and won’t limit defining the mapping to only xml-based style. Callbacks will be executed for non-system assemblies only. `System.Private.CoreLib` and other system assemblies will not receive callbacks, because that could cause problems like an infinite dll-mapping loop.
+Handlers implementation will stay in `corefx.labs`. Load library resolver will cache all the dll mapping results that got resolved (as key-value: IntPtr-hmod pairs). 
+Thanks to that, the same library won't get loaded multiple times. User’s code will be able to subscribe to events and implement any loading behavior. 
+That will give a user full flexibility when using dllmap and won’t limit defining the mapping to only xml-based style. 
+Callbacks can be executed for all assemblies except `System.Private.CoreLib`.
 
 ### Resolution flow
 
 **User’s code [managed code]**
 
--   Subscribes to `LoadLibraryModuleViaCallback` and `GetEntrypointViaCallback` events with their default or custom handler
+-   Includes `using System.Runtime.Dllmap`
+-   Subscribes to `ResolveNativeDllName` and `ResolveNativeEntrypointName` events with their default or custom handler
 -   Uses DllImport directive and does the p/invoke
-	 ```c++
-	[DllImport("MyLibrary.dll", EntryPoint="MyFunction")]
-	static  extern  int  MyFunction();
+	 ```c#
+    using System.Runtime.Dllmap;
 	…
 	System.Runtime.Loader.AssemblyLoadContext.Default.ResolveNativeDllName += LoadNativeDllViaDllMap;
 	System.Runtime.Loader.AssemblyLoadContext.Default.ResolveNativeEntrypointName += GetEntrypointViaDllMap;
 	…
-
+    [DllImport("MyLibrary.dll", EntryPoint="MyFunction")]
+	static  extern  int  MyFunction();
+	…
 	MyFunction();
 	```
 
 **Runtime [unmanaged code]**
--   Calls `LoadMappedLibrary` that raises `LoadLibraryModuleViaCallback` and `GetEntrypointViaCallback` events. Runtime uses a lock when it runs into a callback and releases the lock once the callback is done, to avoid infinite looping
+-   Calls `LoadLibraryModuleViaCallback` that raises `ResolveNativeDllName` event 
+-   Calls `GetEntrypointViaCallback` that raises `ResolveNativeEntrypointName` event
     
 **AssemblyLoadContext [unmanaged code]**
--   Defines `LoadLibraryModuleViaCallbackand` and exposes an API:
-	```c++
-	IntPtr  LoadLibraryModuleViaCallback(string libraryName)
-	IntPtr  GetEntrypointViaCallback(string entrypointName, HMOD hmod)	
+-   Defines `ResolveNativeDllName` and `ResolveNativeEntrypointName` and exposes an API:
+	```c#
+	IntPtr  ResolveNativeDllName(string libraryName)
+	IntPtr  ResolveNativeEntrypointName(string entrypointName, HMOD hmod)	
 	```
 
 **Dotnet.corefx.labs.dll [managed code]**
--   Implements LoadNativeDllViaDllMap and GetEntrypointViaDllMap
-	```c++
+-   Implements default handlers - `LoadNativeDllViaDllMap` and `GetEntrypointViaDllMap`
+-   To avoid infinite looping, `LoadNativeDllViaDllMap` takes a lock and releases it after the default library loading process is completed
+	```c#
 	IntPtr  LoadNativeDllViaDllMap(string libraryName)
 	{
-		if (libraryName in cachedResults)
-			return cachedResults[libraryName];
-		if (!mapStructure)
-			mapStructure = ReadAndParseXML();
-		targetLibraryName = mapStructure.GetLibrary(libraryName);
-		hmod = LoadLibrary(targetLibraryName);
-		AddToCache(libraryName, hmod);
-		return hmod;
+        private Object dllLock = new Object(); 
+
+        lock(dllLock)
+        {  
+            if (libraryName in cachedResults)
+                return cachedResults[libraryName];
+            if (!mapStructure)
+                mapStructure = ReadAndParseXML();
+            targetLibraryName = mapStructure.GetLibrary(libraryName);
+            hmod = LoadLibrary(targetLibraryName);
+            AddToCache(libraryName, hmod);
+        }
+
+        return hmod;
 	}
 	```
-	```c++
+	```c#
 	IntPtr  GetEntrypointViaDllMap(string entrypointName, HMOD hmod)
 	{
-		targetEntrypointName = mapStructure.GetEntrypoint(entrypointName);
-		pvTarget = GetProcAddress(targetEntrypointName, hmod);
-		return pvTarget;
+        targetEntrypointName = mapStructure.GetEntrypoint(entrypointName);
+        pvTarget = GetProcAddress(targetEntrypointName, hmod);
+        return pvTarget;
 	}
 	```
 
@@ -241,6 +262,9 @@ Test cases:
 
 All the above test cases will be covered.
 
-### Related discussion
+### Related discussions
+[Lightweight and dynamic driving of P/Invoke](https://github.com/dotnet/coreclr/issues/19112)
+
 [Handling p/invokes for different platforms and discussions about dllmap](https://github.com/dotnet/coreclr/issues/930)
+
 [Add NativeLibrary class PR](https://github.com/dotnet/coreclr/pull/16409/commits/7ece113b5f58111ee934d923e1ea213ba50f4224)
