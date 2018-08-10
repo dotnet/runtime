@@ -58,9 +58,10 @@ init_rid_plat()
 
 usage()
 {
-    echo "Usage: $0 --arch <Architecture> --hostver <Dotnet exe version> --apphostver <app host exe version> --fxrver <HostFxr library version> --policyver <HostPolicy library version> --commithash <Git commit hash> [--xcompiler <Cross C++ Compiler>]"
+    echo "Usage: $0 --configuration <configuration> --arch <Architecture> --hostver <Dotnet exe version> --apphostver <app host exe version> --fxrver <HostFxr library version> --policyver <HostPolicy library version> --commithash <Git commit hash> [--xcompiler <Cross C++ Compiler>]"
     echo ""
     echo "Options:"
+    echo "  --configuration <configuration>   Build configuration (Debug, Release)"
     echo "  --arch <Architecture>             Target Architecture (x64, x86, arm, arm64, armel)"
     echo "  --hostver <Dotnet host version>   Version of the dotnet executable"
     echo "  --apphostver <app host version>   Version of the apphost executable"
@@ -96,7 +97,7 @@ __commit_hash=
 __portableBuildArgs=
 __configuration=Debug
 __linkPortable=0
-__cmake_defines="-DCMAKE_BUILD_TYPE=${__configuration} ${__portableBuildArgs}"
+__cmake_defines=
 __baseIntermediateOutputPath="$RootRepo/Bin/obj"
 __versionSourceFile="$__baseIntermediateOutputPath/version.cpp"
 
@@ -150,6 +151,8 @@ while [ "$1" != "" ]; do
     esac
     shift
 done
+
+__cmake_defines="${__cmake_defines} -DCMAKE_BUILD_TYPE=${__configuration} ${__portableBuildArgs}"
 
 mkdir -p "$__baseIntermediateOutputPath"
 
