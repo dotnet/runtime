@@ -364,6 +364,9 @@
     <Compile Include="Reflection\Dependencies\AssemblyDependency.cs" />
     <Compile Include="Advanced\PreserveDependencyMethodInAssembly.cs" />
     <Compile Include="Advanced\Dependencies\PreserveDependencyMethodInAssemblyLibrary.cs" />
+    <Compile Include="Advanced\Dependencies\PreserveDependencyMethodInNonReferencedAssemblyBase.cs" />
+    <Compile Include="Advanced\Dependencies\PreserveDependencyMethodInNonReferencedAssemblyLibrary.cs" />
+    <Compile Include="Advanced\PreserveDependencyMethodInNonReferencedAssembly.cs" />
   </ItemGroup>
   <ItemGroup>
     <Content Include="Attributes\OnlyKeepUsed\Dependencies\AssemblyWithUnusedAttributeOnReturnParameterDefinition.il" />

@@ -274,8 +274,7 @@ namespace Mono.Linker.Steps {
 
 		protected virtual bool IsUserDependencyMarker (TypeReference type)
 		{
-			return type.Name == "PreserveDependencyAttribute" &&
-				       type.Namespace == "System.Runtime.CompilerServices";
+			return PreserveDependencyLookupStep.IsPreserveDependencyAttribute (type);
 		}
 
 		protected virtual void MarkUserDependency (MethodReference context, CustomAttribute ca)
@@ -300,7 +299,10 @@ namespace Mono.Linker.Steps {
 			AssemblyDefinition assembly;
 			var args = ca.ConstructorArguments;
 			if (args.Count >= 3 && args [2].Value is string assemblyName) {
-				assembly = _context.Resolve (assemblyName);
+				if (!_context.Resolver.AssemblyCache.TryGetValue (assemblyName, out assembly)) {
+					_context.Logger.LogMessage (MessageImportance.Low, $"Could not resolve '{assemblyName}' assembly dependency");
+					return;
+				}
 			} else {
 				assembly = null;
 			}
@@ -310,7 +312,7 @@ namespace Mono.Linker.Steps {
 				td = FindType (assembly ?? context.Module.Assembly, typeName);
 
 				if (td == null) {
-					_context.Logger.LogMessage (MessageImportance.Low, $"Could not resolve '{typeName}' dependency");
+					_context.Logger.LogMessage (MessageImportance.Low, $"Could not resolve '{typeName}' type dependency");
 					return;
 				}
 			} else {
