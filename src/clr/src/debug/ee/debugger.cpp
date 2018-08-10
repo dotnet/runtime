@@ -9284,6 +9284,9 @@ void Debugger::DetachThread(Thread *pRuntimeThread)
 //
 // SuspendComplete is called when the last Runtime thread reaches a safe point in response to having its trap flags set.
 // This may be called on either the real helper thread or someone doing helper thread duty.
+// 
+// It could also be called for sending garbage collection events (see DebuggerRCThread::SendIPCEvent for more about the 
+// thread mode associated with the events)
 //
 BOOL Debugger::SuspendComplete(bool isEESuspendedForGC)
 {
