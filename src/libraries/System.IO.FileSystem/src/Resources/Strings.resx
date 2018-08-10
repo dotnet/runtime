@@ -255,6 +255,9 @@
   <data name="IndexOutOfRange_IORaceCondition" xml:space="preserve">
     <value>Probable I/O race condition detected while copying memory. The I/O package is not thread safe by default. In multithreaded applications, a stream must be accessed in a thread-safe way, such as a thread-safe wrapper returned by TextReader's or TextWriter's Synchronized methods. This also applies to classes like StreamWriter and StreamReader.</value>
   </data>
+  <data name="NotSupported_EncryptionNeedsNTFS" xml:space="preserve">
+    <value>File encryption support only works on NTFS partitions.</value>
+  </data>
   <data name="NotSupported_UnreadableStream" xml:space="preserve">
     <value>Stream does not support reading.</value>
   </data>
