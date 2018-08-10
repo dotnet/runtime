@@ -166,7 +166,7 @@ inline void CORDbgSetInstruction(CORDB_ADDRESS_TYPE* address,
 
     *(PRD_TYPE *)ptraddr = instruction;
     FlushInstructionCache(GetCurrentProcess(),
-                          address,
+                          _ClearThumbBit(address),
                           sizeof(PRD_TYPE));
 }
 
