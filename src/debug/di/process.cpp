@@ -2534,11 +2534,11 @@ COM_METHOD CordbProcess::GetContainingObject(CORDB_ADDRESS interiorPointer, ICor
 
     HRESULT hr = S_OK;
     // TODO, databp, I don't know what I am doing, NO_LOCK doesn't sound right
-    PUBLIC_API_NO_LOCK_BEGIN(this);
+    PUBLIC_API_ENTRY(this);
+    FAIL_IF_NEUTERED(this);
+    ATT_REQUIRE_STOPPED_MAY_FAIL(this);
 
     *ppContainingObject = nullptr;
-
-    RSLockHolder ch(this->GetStopGoLock());
 
     DebuggerIPCEvent      event;
     this->InitIPCEvent(&event,
@@ -2565,7 +2565,6 @@ COM_METHOD CordbProcess::GetContainingObject(CORDB_ADDRESS interiorPointer, ICor
         }
     }
 
-    PUBLIC_API_END(hr);
     return hr;
 }
 
