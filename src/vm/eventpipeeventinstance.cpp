@@ -54,6 +54,7 @@ EventPipeEventInstance::EventPipeEventInstance(
     m_pData = pData;
     m_dataLength = length;
     QueryPerformanceCounter(&m_timeStamp);
+    _ASSERTE(m_timeStamp.QuadPart > 0);
 
     if(event.NeedStack() && !session.RundownEnabled())
     {
