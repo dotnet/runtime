@@ -28,10 +28,13 @@ namespace System.IO.Pipelines
 
         public PipeCompletionCallbacks TryComplete(Exception exception = null)
         {
-            _isCompleted = true;
-            if (exception != null)
+            if (!_isCompleted)
             {
-                _exceptionInfo = ExceptionDispatchInfo.Capture(exception);
+                _isCompleted = true;
+                if (exception != null)
+                {
+                    _exceptionInfo = ExceptionDispatchInfo.Capture(exception);
+                }
             }
             return GetCallbacks();
         }
