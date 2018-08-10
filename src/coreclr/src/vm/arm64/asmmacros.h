@@ -44,7 +44,9 @@ $name   SETS    "|$symbol|"
         PROLOG_WITH_TRANSITION_BLOCK $extraLocals, $SaveFPArgs
 
         GBLA __PWTB_FloatArgumentRegisters
-        GBLA __PWTB_ArgumentRegisters 
+        GBLA __PWTB_ArgumentRegisters
+        GBLA __PWTB_ArgumentRegister_FirstArg ; We save the x8 register ahead of the first argument, so this
+                                              ; is different from the start of the argument register save area.
         GBLA __PWTB_StackAlloc
         GBLA __PWTB_TransitionBlock
         GBLL __PWTB_SaveFPArgs
@@ -72,7 +74,8 @@ __PWTB_TransitionBlock SETA __PWTB_FloatArgumentRegisters
         ENDIF
 
 __PWTB_StackAlloc SETA __PWTB_TransitionBlock
-__PWTB_ArgumentRegisters SETA __PWTB_StackAlloc + 96 
+__PWTB_ArgumentRegisters SETA __PWTB_StackAlloc + 104
+__PWTB_ArgumentRegister_FirstArg SETA __PWTB_ArgumentRegisters + 8
 
         PROLOG_SAVE_REG_PAIR   fp, lr, #-176!
         ; Spill callee saved registers 
@@ -172,11 +175,12 @@ __PWTB_SAVE_ARGUMENT_REGISTERS_OFFSET SETA $offset
 __PWTB_SAVE_ARGUMENT_REGISTERS_OFFSET SETA 0
        ENDIF
 
-        stp                    x0, x1, [$reg, #(__PWTB_SAVE_ARGUMENT_REGISTERS_OFFSET)]
-        stp                    x2, x3, [$reg, #(__PWTB_SAVE_ARGUMENT_REGISTERS_OFFSET + 16)]
-        stp                    x4, x5, [$reg, #(__PWTB_SAVE_ARGUMENT_REGISTERS_OFFSET + 32)]
-        stp                    x6, x7, [$reg, #(__PWTB_SAVE_ARGUMENT_REGISTERS_OFFSET + 48)]
-        str                    x8, [$reg, #(__PWTB_SAVE_ARGUMENT_REGISTERS_OFFSET + 64)]
+        str                    x8, [$reg, #(__PWTB_SAVE_ARGUMENT_REGISTERS_OFFSET)]
+        stp                    x0, x1, [$reg, #(__PWTB_SAVE_ARGUMENT_REGISTERS_OFFSET + 8)]
+        stp                    x2, x3, [$reg, #(__PWTB_SAVE_ARGUMENT_REGISTERS_OFFSET + 24)]
+        stp                    x4, x5, [$reg, #(__PWTB_SAVE_ARGUMENT_REGISTERS_OFFSET + 40)]
+        stp                    x6, x7, [$reg, #(__PWTB_SAVE_ARGUMENT_REGISTERS_OFFSET + 56)]
+
     MEND
 
 ; Reserve 64 bytes of memory before calling  SAVE_FLOAT_ARGUMENT_REGISTERS
@@ -208,11 +212,12 @@ __PWTB_RESTORE_ARGUMENT_REGISTERS_OFFSET SETA $offset
 __PWTB_RESTORE_ARGUMENT_REGISTERS_OFFSET SETA 0
        ENDIF
 
-        ldp                    x0, x1, [$reg, #(__PWTB_RESTORE_ARGUMENT_REGISTERS_OFFSET)]
-        ldp                    x2, x3, [$reg, #(__PWTB_RESTORE_ARGUMENT_REGISTERS_OFFSET + 16)]
-        ldp                    x4, x5, [$reg, #(__PWTB_RESTORE_ARGUMENT_REGISTERS_OFFSET + 32)]
-        ldp                    x6, x7, [$reg, #(__PWTB_RESTORE_ARGUMENT_REGISTERS_OFFSET + 48)]
-        ldr                    x8, [$reg, #(__PWTB_RESTORE_ARGUMENT_REGISTERS_OFFSET + 64)]
+        ldr                    x8, [$reg, #(__PWTB_RESTORE_ARGUMENT_REGISTERS_OFFSET)]
+        ldp                    x0, x1, [$reg, #(__PWTB_RESTORE_ARGUMENT_REGISTERS_OFFSET + 8)]
+        ldp                    x2, x3, [$reg, #(__PWTB_RESTORE_ARGUMENT_REGISTERS_OFFSET + 24)]
+        ldp                    x4, x5, [$reg, #(__PWTB_RESTORE_ARGUMENT_REGISTERS_OFFSET + 40)]
+        ldp                    x6, x7, [$reg, #(__PWTB_RESTORE_ARGUMENT_REGISTERS_OFFSET + 56)]
+
     MEND
 
     MACRO

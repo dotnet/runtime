@@ -57,6 +57,7 @@ extern PCODE GetPreStubEntryPoint();
 
 #define CALLDESCR_ARGREGS                       1   // CallDescrWorker has ArgumentRegister parameter
 #define CALLDESCR_FPARGREGS                     1   // CallDescrWorker has FloatArgumentRegisters parameter
+#define CALLDESCR_RETBUFFARGREG                 1   // CallDescrWorker has RetBuffArg parameter that's separate from arg regs
 
 // Given a return address retrieved during stackwalk,
 // this is the offset by which it should be decremented to arrive at the callsite.
@@ -77,7 +78,9 @@ extern PCODE GetPreStubEntryPoint();
 typedef INT64 StackElemType;
 #define STACK_ELEM_SIZE sizeof(StackElemType)
 
-// !! This expression assumes STACK_ELEM_SIZE is a power of 2.
+// The expression below assumes STACK_ELEM_SIZE is a power of 2, so check that.
+static_assert(((STACK_ELEM_SIZE & (STACK_ELEM_SIZE-1)) == 0), "STACK_ELEM_SIZE must be a power of 2");
+
 #define StackElemSize(parmSize) (((parmSize) + STACK_ELEM_SIZE - 1) & ~((ULONG)(STACK_ELEM_SIZE - 1)))
 
 //
@@ -115,11 +118,11 @@ struct CalleeSavedRegisters {
 // will probably have to communicate this back to the PromoteCallerStack
 // routine to avoid a double promotion.
 //--------------------------------------------------------------------
+#define NUM_ARGUMENT_REGISTERS 8
 typedef DPTR(struct ArgumentRegisters) PTR_ArgumentRegisters;
 struct ArgumentRegisters {
-    INT64 x[9]; // x0 ....x7 & x8 can contain return buffer address
+    INT64 x[NUM_ARGUMENT_REGISTERS]; // x0 ....x7. Note that x8 (return buffer address) is not included.
 };
-#define NUM_ARGUMENT_REGISTERS 9
 
 #define ARGUMENTREGISTERS_SIZE sizeof(ArgumentRegisters)
 

@@ -62,7 +62,10 @@ LOCAL_LABEL(NoFloatingPoint):
     ldp     x2, x3, [x9, #16]
     ldp     x4, x5, [x9, #32]
     ldp     x6, x7, [x9, #48]
-    ldr     x8, [x9, #64]
+
+    // Copy pRetBuffArg into x8
+    ldr     x9, [x19,#CallDescrData__pRetBuffArg]
+    ldr     x8, [x9]
 
     // call pTarget
     ldr     x9, [x19,#CallDescrData__pTarget]

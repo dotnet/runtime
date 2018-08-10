@@ -2004,6 +2004,7 @@ protected:
 #elif defined (_TARGET_ARM64_)
     TADDR           m_fp;
     TADDR           m_ReturnAddress;
+    TADDR           m_x8; // ret buff arg
     ArgumentRegisters m_argumentRegisters;
 #else
     TADDR           m_ReturnAddress;  // return address into unmanaged code

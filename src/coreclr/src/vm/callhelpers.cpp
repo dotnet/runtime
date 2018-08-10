@@ -208,6 +208,12 @@ void * DispatchCallSimple(
     callDescrData.pSrc = pSrc;
     callDescrData.numStackSlots = numStackSlotsToCopy;
 #endif
+
+#ifdef CALLDESCR_RETBUFFARGREG
+    UINT64 retBuffArgPlaceholder = 0;
+    callDescrData.pRetBuffArg = &retBuffArgPlaceholder;
+#endif
+
 #ifdef CALLDESCR_FPARGREGS
     callDescrData.pFloatArgumentRegisters = NULL;
 #endif
@@ -596,6 +602,9 @@ void MethodDescCallSite::CallTargetWorker(const ARG_SLOT *pArguments, ARG_SLOT *
     callDescrData.numStackSlots = nStackBytes / STACK_ELEM_SIZE;
 #ifdef CALLDESCR_ARGREGS
     callDescrData.pArgumentRegisters = (ArgumentRegisters*)(pTransitionBlock + TransitionBlock::GetOffsetOfArgumentRegisters());
+#endif
+#ifdef CALLDESCR_RETBUFFARGREG
+    callDescrData.pRetBuffArg = (UINT64*)(pTransitionBlock + TransitionBlock::GetOffsetOfRetBuffArgReg());
 #endif
 #ifdef CALLDESCR_FPARGREGS
     callDescrData.pFloatArgumentRegisters = pFloatArgumentRegisters;
