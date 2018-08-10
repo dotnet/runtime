@@ -11,7 +11,7 @@ using System.Collections;
 using System.Collections.Generic;
 using System.Globalization;
 using System.Security;
-
+using System.Runtime.CompilerServices;
 
 namespace System.Runtime.Serialization
 {
@@ -64,16 +64,24 @@ namespace System.Runtime.Serialization
             private int _childElementIndex = 0;
 #endif
 
+#if uapaot
+            [RemovableFeature(ReflectionBasedSerializationFeature.Name)]
+#endif
+            private XmlFormatClassWriterDelegate CreateReflectionXmlFormatClassWriterDelegate()
+            {
+                return new ReflectionXmlFormatWriter().ReflectionWriteClass;
+            }
+
             internal XmlFormatClassWriterDelegate GenerateClassWriter(ClassDataContract classContract)
             {
                 if (DataContractSerializer.Option == SerializationOption.ReflectionOnly)
                 {
-                    return new ReflectionXmlFormatWriter().ReflectionWriteClass;
+                    return CreateReflectionXmlFormatClassWriterDelegate();
                 }
 #if uapaot
                 else if (DataContractSerializer.Option == SerializationOption.ReflectionAsBackup)
                 {
-                    return new ReflectionXmlFormatWriter().ReflectionWriteClass;
+                    return CreateReflectionXmlFormatClassWriterDelegate();
                 }
 #endif
                 else
@@ -105,16 +113,24 @@ namespace System.Runtime.Serialization
                 }
             }
 
+#if uapaot
+            [RemovableFeature(ReflectionBasedSerializationFeature.Name)]
+#endif
+            private XmlFormatCollectionWriterDelegate CreateReflectionXmlFormatCollectionWriterDelegate()
+            {
+                return new ReflectionXmlFormatWriter().ReflectionWriteCollection;
+            }
+
             internal XmlFormatCollectionWriterDelegate GenerateCollectionWriter(CollectionDataContract collectionContract)
             {
                 if (DataContractSerializer.Option == SerializationOption.ReflectionOnly)
                 {
-                    return new ReflectionXmlFormatWriter().ReflectionWriteCollection;
+                    return CreateReflectionXmlFormatCollectionWriterDelegate();
                 }
 #if uapaot
                 else if (DataContractSerializer.Option == SerializationOption.ReflectionAsBackup)
                 {
-                    return new ReflectionXmlFormatWriter().ReflectionWriteCollection;
+                    return CreateReflectionXmlFormatCollectionWriterDelegate();
                 }
 #endif
                 else
