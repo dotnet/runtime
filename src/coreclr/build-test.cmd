@@ -125,7 +125,7 @@ if defined __BuildAgainstPackagesArg (
 
 set __RunArgs=-BuildOS=%__BuildOS% -BuildType=%__BuildType% -BuildArch=%__BuildArch%
 REM As we move from buildtools to arcade, __RunArgs should be replaced with __msbuildArgs
-set __msbuildArgs=/p:__BuildOS=%__BuildOS% /p:__BuildType=%__BuildType% /p:__BuildArch=%__BuildArch% /nologo /verbosity:minimal /clp:Summary
+set __msbuildArgs=/p:__BuildOS=%__BuildOS% /p:__BuildType=%__BuildType% /p:__BuildArch=%__BuildArch% /nologo /verbosity:minimal /clp:Summary /maxcpucount
 
 echo %__MsgPrefix%Commencing CoreCLR test build
 
