@@ -27,6 +27,9 @@
     <Compile Include="$(CommonPath)\System\NotImplemented.cs">
       <Link>Common\System\NotImplemented.cs</Link>
     </Compile>
+    <Compile Include="$(CommonPath)\System\Runtime\CompilerServices\RemovableFeatureAttribute.cs">
+      <Link>System\Runtime\CompilerServices\RemovableFeatureAttribute</Link>
+    </Compile>
     <Compile Include="$(RuntimeSerializationSources)\Attributes.cs" />
     <Compile Include="$(RuntimeSerializationSources)\CodeGenerator.cs" />
     <Compile Include="$(RuntimeSerializationSources)\ClassDataContract.cs" />
@@ -144,6 +147,7 @@
     <Compile Include="System\Runtime\Serialization\IExtensibleDataObject.cs" />
     <Compile Include="System\Runtime\Serialization\Json\ReflectionJsonFormatReader.cs" />
     <Compile Include="System\Runtime\Serialization\Json\ReflectionJsonFormatWriter.cs" />
+    <Compile Include="System\Runtime\Serialization\ReflectionFeature.cs" />
     <Compile Include="System\Runtime\Serialization\ReflectionReader.cs" />
     <Compile Include="System\Runtime\Serialization\ReflectionClassWriter.cs" />
     <Compile Include="System\Runtime\Serialization\ReflectionXmlFormatReader.cs" />
