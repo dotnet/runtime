@@ -1777,7 +1777,23 @@ HRESULT DebuggerRCThread::SendIPCEvent()
         NOTHROW;
         GC_NOTRIGGER; // duh, we're in preemptive..
 
-        if (!m_debugger->m_isBlockedOnGarbageCollectionEvent)
+        if (m_debugger->m_isBlockedOnGarbageCollectionEvent)
+        {
+            //
+            // If m_debugger->m_isBlockedOnGarbageCollectionEvent is true, then it must be reporting
+            // either the BeforeGarbageCollection event or the AfterGarbageCollection event
+            // The thread is in preemptive mode during BeforeGarbageCollection
+            // The thread is in cooperative mode during AfterGarbageCollection
+            // In either case, the thread mode doesn't really matter because GC has already taken control
+            // of execution.
+            //
+            // Despite the fact that we are actually in preemptive mode during BeforeGarbageCollection,
+            // because IsGCThread() is true, the EEContract::DoCheck() will happily accept the fact we are
+            // testing for MODE_COOPERATIVE.
+            //
+            MODE_COOPERATIVE;
+        }
+        else
         {
             if (ThisIsHelperThreadWorker())
             {
@@ -1794,8 +1810,6 @@ HRESULT DebuggerRCThread::SendIPCEvent()
                 MODE_PREEMPTIVE;
             }
         }
-
-
         PRECONDITION(ThisMaybeHelperThread());
     }
     CONTRACTL_END;
