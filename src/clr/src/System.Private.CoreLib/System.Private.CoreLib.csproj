@@ -394,7 +394,6 @@
     <Compile Include="$(BclSourcesRoot)\System\Threading\Volatile.cs" />
     <Compile Include="$(BclSourcesRoot)\System\Threading\WaitHandle.cs" />
     <Compile Include="$(BclSourcesRoot)\System\Threading\SpinLock.cs" />
-    <Compile Include="$(BclSourcesRoot)\System\Threading\ThreadLocal.cs" />
     <Compile Include="$(BclSourcesRoot)\System\Threading\CancellationTokenRegistration.cs" />
     <Compile Include="$(BclSourcesRoot)\System\Threading\CancellationTokenSource.cs" />
     <Compile Include="$(BclSourcesRoot)\System\Threading\Tasks\future.cs" />

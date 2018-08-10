@@ -1,22 +1,13 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
-#pragma warning disable 0420
-
-// =+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+
-//
-//
-//
-// A class that provides a simple, lightweight implementation of thread-local lazy-initialization, where a value is initialized once per accessing 
-// thread; this provides an alternative to using a ThreadStatic static variable and having 
-// to check the variable prior to every access to see if it's been initialized.
-//
-// 
-//
-// =-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
 
 using System.Collections.Generic;
 using System.Diagnostics;
+
+// A class that provides a simple, lightweight implementation of thread-local lazy-initialization, where a value is initialized once per accessing 
+// thread; this provides an alternative to using a ThreadStatic static variable and having 
+// to check the variable prior to every access to see if it's been initialized.
 
 namespace System.Threading
 {
@@ -36,15 +27,13 @@ namespace System.Threading
     public class ThreadLocal<T> : IDisposable
     {
         // a delegate that returns the created value, if null the created value will be default(T)
-        private Func<T> m_valueFactory;
+        private Func<T> _valueFactory;
 
-        //
         // ts_slotArray is a table of thread-local values for all ThreadLocal<T> instances
         //
         // So, when a thread reads ts_slotArray, it gets back an array of *all* ThreadLocal<T> values for this thread and this T.
-        // The slot relevant to this particular ThreadLocal<T> instance is determined by the m_idComplement instance field stored in
+        // The slot relevant to this particular ThreadLocal<T> instance is determined by the _idComplement instance field stored in
         // the ThreadLocal<T> instance.
-        //
         [ThreadStatic]
         private static LinkedSlotVolatile[] ts_slotArray;
 
@@ -54,22 +43,22 @@ namespace System.Threading
         // Slot ID of this ThreadLocal<> instance. We store a bitwise complement of the ID (that is ~ID), which allows us to distinguish
         // between the case when ID is 0 and an incompletely initialized object, either due to a thread abort in the constructor, or
         // possibly due to a memory model issue in user code.
-        private int m_idComplement;
+        private int _idComplement;
 
         // This field is set to true when the constructor completes. That is helpful for recognizing whether a constructor
         // threw an exception - either due to invalid argument or due to a thread abort. Finally, the field is set to false
         // when the instance is disposed.
-        private volatile bool m_initialized;
+        private volatile bool _initialized;
 
         // IdManager assigns and reuses slot IDs. Additionally, the object is also used as a global lock.
         private static IdManager s_idManager = new IdManager();
 
         // A linked list of all values associated with this ThreadLocal<T> instance.
         // We create a dummy head node. That allows us to remove any (non-dummy)  node without having to locate the m_linkedSlot field. 
-        private LinkedSlot m_linkedSlot = new LinkedSlot(null);
+        private LinkedSlot _linkedSlot = new LinkedSlot(null);
 
         // Whether the Values property is supported
-        private bool m_trackAllValues;
+        private bool _trackAllValues;
 
         /// <summary>
         /// Initializes the <see cref="System.Threading.ThreadLocal{T}"/> instance.
@@ -130,19 +119,19 @@ namespace System.Threading
 
         private void Initialize(Func<T> valueFactory, bool trackAllValues)
         {
-            m_valueFactory = valueFactory;
-            m_trackAllValues = trackAllValues;
+            _valueFactory = valueFactory;
+            _trackAllValues = trackAllValues;
 
-            // Assign the ID and mark the instance as initialized. To avoid leaking IDs, we assign the ID and set m_initialized
+            // Assign the ID and mark the instance as initialized. To avoid leaking IDs, we assign the ID and set _initialized
             // in a finally block, to avoid a thread abort in between the two statements.
             try { }
             finally
             {
-                m_idComplement = ~s_idManager.GetId();
+                _idComplement = ~s_idManager.GetId();
 
-                // As the last step, mark the instance as fully initialized. (Otherwise, if m_initialized=false, we know that an exception
+                // As the last step, mark the instance as fully initialized. (Otherwise, if _initialized=false, we know that an exception
                 // occurred in the constructor.)
-                m_initialized = true;
+                _initialized = true;
             }
         }
 
@@ -184,21 +173,21 @@ namespace System.Threading
 
             lock (s_idManager)
             {
-                id = ~m_idComplement;
-                m_idComplement = 0;
+                id = ~_idComplement;
+                _idComplement = 0;
 
-                if (id < 0 || !m_initialized)
+                if (id < 0 || !_initialized)
                 {
-                    Debug.Assert(id >= 0 || !m_initialized, "expected id >= 0 if initialized");
+                    Debug.Assert(id >= 0 || !_initialized, "expected id >= 0 if initialized");
 
                     // Handle double Dispose calls or disposal of an instance whose constructor threw an exception.
                     return;
                 }
-                m_initialized = false;
+                _initialized = false;
 
-                for (LinkedSlot linkedSlot = m_linkedSlot.Next; linkedSlot != null; linkedSlot = linkedSlot.Next)
+                for (LinkedSlot linkedSlot = _linkedSlot._next; linkedSlot != null; linkedSlot = linkedSlot._next)
                 {
-                    LinkedSlotVolatile[] slotArray = linkedSlot.SlotArray;
+                    LinkedSlotVolatile[] slotArray = linkedSlot._slotArray;
 
                     if (slotArray == null)
                     {
@@ -207,15 +196,15 @@ namespace System.Threading
                     }
 
                     // Remove the reference from the LinkedSlot to the slot table.
-                    linkedSlot.SlotArray = null;
+                    linkedSlot._slotArray = null;
 
                     // And clear the references from the slot table to the linked slot and the value so that
                     // both can get garbage collected.
-                    slotArray[id].Value.Value = default;
+                    slotArray[id].Value._value = default;
                     slotArray[id].Value = null;
                 }
             }
-            m_linkedSlot = null;
+            _linkedSlot = null;
             s_idManager.ReturnId(id);
         }
 
@@ -264,7 +253,7 @@ namespace System.Threading
             {
                 LinkedSlotVolatile[] slotArray = ts_slotArray;
                 LinkedSlot slot;
-                int id = ~m_idComplement;
+                int id = ~_idComplement;
 
                 //
                 // Attempt to get the value using the fast path
@@ -273,7 +262,7 @@ namespace System.Threading
                     && id >= 0   // Is the ID non-negative (i.e., instance is not disposed)?
                     && id < slotArray.Length   // Is the table large enough?
                     && (slot = slotArray[id].Value) != null   // Has a LinkedSlot object has been allocated for this ID?
-                    && m_initialized // Has the instance *still* not been disposed (important for a race condition with Dispose)?
+                    && _initialized // Has the instance *still* not been disposed (important for a race condition with Dispose)?
                 )
                 {
                     // We verified that the instance has not been disposed *after* we got a reference to the slot.
@@ -281,7 +270,7 @@ namespace System.Threading
                     // 
                     // Volatile read of the LinkedSlotVolatile.Value property ensures that the m_initialized read
                     // will not be reordered before the read of slotArray[id].
-                    return slot.Value;
+                    return slot._value;
                 }
 
                 return GetValueSlow();
@@ -290,16 +279,14 @@ namespace System.Threading
             {
                 LinkedSlotVolatile[] slotArray = ts_slotArray;
                 LinkedSlot slot;
-                int id = ~m_idComplement;
+                int id = ~_idComplement;
 
-                //
                 // Attempt to set the value using the fast path
-                //
                 if (slotArray != null   // Has the slot array been initialized?
                     && id >= 0   // Is the ID non-negative (i.e., instance is not disposed)?
                     && id < slotArray.Length   // Is the table large enough?
                     && (slot = slotArray[id].Value) != null   // Has a LinkedSlot object has been allocated for this ID?
-                    && m_initialized // Has the instance *still* not been disposed (important for a race condition with Dispose)?
+                    && _initialized // Has the instance *still* not been disposed (important for a race condition with Dispose)?
                     )
                 {
                     // We verified that the instance has not been disposed *after* we got a reference to the slot.
@@ -307,7 +294,7 @@ namespace System.Threading
                     // 
                     // Volatile read of the LinkedSlotVolatile.Value property ensures that the m_initialized read
                     // will not be reordered before the read of slotArray[id].
-                    slot.Value = value;
+                    slot._value = value;
                 }
                 else
                 {
@@ -319,7 +306,7 @@ namespace System.Threading
         private T GetValueSlow()
         {
             // If the object has been disposed, the id will be -1.
-            int id = ~m_idComplement;
+            int id = ~_idComplement;
             if (id < 0)
             {
                 throw new ObjectDisposedException(SR.ThreadLocal_Disposed);
@@ -329,13 +316,13 @@ namespace System.Threading
 
             // Determine the initial value
             T value;
-            if (m_valueFactory == null)
+            if (_valueFactory == null)
             {
                 value = default;
             }
             else
             {
-                value = m_valueFactory();
+                value = _valueFactory();
 
                 if (IsValueCreated)
                 {
@@ -350,7 +337,7 @@ namespace System.Threading
 
         private void SetValueSlow(T value, LinkedSlotVolatile[] slotArray)
         {
-            int id = ~m_idComplement;
+            int id = ~_idComplement;
 
             // If the object has been disposed, id will be -1.
             if (id < 0)
@@ -362,7 +349,7 @@ namespace System.Threading
             if (slotArray == null)
             {
                 slotArray = new LinkedSlotVolatile[GetNewTableSize(id + 1)];
-                ts_finalizationHelper = new FinalizationHelper(slotArray, m_trackAllValues);
+                ts_finalizationHelper = new FinalizationHelper(slotArray, _trackAllValues);
                 ts_slotArray = slotArray;
             }
 
@@ -391,12 +378,12 @@ namespace System.Threading
                 // if this ThreadLocal instance was disposed on another thread and another ThreadLocal instance was
                 // created, we definitely won't assign the value into the wrong instance.
 
-                if (!m_initialized)
+                if (!_initialized)
                 {
                     throw new ObjectDisposedException(SR.ThreadLocal_Disposed);
                 }
 
-                slot.Value = value;
+                slot._value = value;
             }
         }
 
@@ -413,26 +400,24 @@ namespace System.Threading
             {
                 // Check that the instance has not been disposed. It is important to check this under a lock, since
                 // Dispose also executes under a lock.
-                if (!m_initialized)
+                if (!_initialized)
                 {
                     throw new ObjectDisposedException(SR.ThreadLocal_Disposed);
                 }
 
-                LinkedSlot firstRealNode = m_linkedSlot.Next;
+                LinkedSlot firstRealNode = _linkedSlot._next;
 
-                //
                 // Insert linkedSlot between nodes m_linkedSlot and firstRealNode. 
-                // (m_linkedSlot is the dummy head node that should always be in the front.)
-                //
-                linkedSlot.Next = firstRealNode;
-                linkedSlot.Previous = m_linkedSlot;
-                linkedSlot.Value = value;
+                // (_linkedSlot is the dummy head node that should always be in the front.)
+                linkedSlot._next = firstRealNode;
+                linkedSlot._previous = _linkedSlot;
+                linkedSlot._value = value;
 
                 if (firstRealNode != null)
                 {
-                    firstRealNode.Previous = linkedSlot;
+                    firstRealNode._previous = linkedSlot;
                 }
-                m_linkedSlot.Next = linkedSlot;
+                _linkedSlot._next = linkedSlot;
 
                 // Assigning the slot under a lock prevents a race condition with Dispose (dispose also acquires the lock).
                 // Otherwise, it would be possible that the ThreadLocal instance is disposed, another one gets created
@@ -451,7 +436,7 @@ namespace System.Threading
         {
             get
             {
-                if (!m_trackAllValues)
+                if (!_trackAllValues)
                 {
                     throw new InvalidOperationException(SR.ThreadLocal_ValuesNotAvailable);
                 }
@@ -466,18 +451,18 @@ namespace System.Threading
         private List<T> GetValuesAsList()
         {
             List<T> valueList = new List<T>();
-            int id = ~m_idComplement;
+            int id = ~_idComplement;
             if (id == -1)
             {
                 return null;
             }
 
             // Walk over the linked list of slots and gather the values associated with this ThreadLocal instance.
-            for (LinkedSlot linkedSlot = m_linkedSlot.Next; linkedSlot != null; linkedSlot = linkedSlot.Next)
+            for (LinkedSlot linkedSlot = _linkedSlot._next; linkedSlot != null; linkedSlot = linkedSlot._next)
             {
                 // We can safely read linkedSlot.Value. Even if this ThreadLocal has been disposed in the meantime, the LinkedSlot
                 // objects will never be assigned to another ThreadLocal instance.
-                valueList.Add(linkedSlot.Value);
+                valueList.Add(linkedSlot._value);
             }
 
             return valueList;
@@ -489,7 +474,7 @@ namespace System.Threading
             get
             {
                 int count = 0;
-                for (LinkedSlot linkedSlot = m_linkedSlot.Next; linkedSlot != null; linkedSlot = linkedSlot.Next)
+                for (LinkedSlot linkedSlot = _linkedSlot._next; linkedSlot != null; linkedSlot = linkedSlot._next)
                 {
                     count++;
                 }
@@ -507,7 +492,7 @@ namespace System.Threading
         {
             get
             {
-                int id = ~m_idComplement;
+                int id = ~_idComplement;
                 if (id < 0)
                 {
                     throw new ObjectDisposedException(SR.ThreadLocal_Disposed);
@@ -526,12 +511,12 @@ namespace System.Threading
             get
             {
                 LinkedSlotVolatile[] slotArray = ts_slotArray;
-                int id = ~m_idComplement;
+                int id = ~_idComplement;
 
                 LinkedSlot slot;
-                if (slotArray == null || id >= slotArray.Length || (slot = slotArray[id].Value) == null || !m_initialized)
+                if (slotArray == null || id >= slotArray.Length || (slot = slotArray[id].Value) == null || !_initialized)
                     return default;
-                return slot.Value;
+                return slot._value;
             }
         }
 
@@ -563,9 +548,9 @@ namespace System.Threading
                 for (int i = 0; i < table.Length; i++)
                 {
                     LinkedSlot linkedSlot = table[i].Value;
-                    if (linkedSlot != null && linkedSlot.SlotArray != null)
+                    if (linkedSlot != null && linkedSlot._slotArray != null)
                     {
-                        linkedSlot.SlotArray = newTable;
+                        linkedSlot._slotArray = newTable;
                         newTable[i] = table[i];
                     }
                 }
@@ -590,13 +575,13 @@ namespace System.Threading
             // Round up the size to the next power of 2
             //
             // The algorithm takes three steps: 
-            //   input -> subtract one -> propagate 1-bits to the right -> add one
+            // input -> subtract one -> propagate 1-bits to the right -> add one
             //
             // Let's take a look at the 3 steps in both interesting cases: where the input 
             // is (Example 1) and isn't (Example 2) a power of 2.
             //
-            //   Example 1: 100000 -> 011111 -> 011111 -> 100000
-            //   Example 2: 011010 -> 011001 -> 011111 -> 100000
+            // Example 1: 100000 -> 011111 -> 011111 -> 100000
+            // Example 2: 011010 -> 011001 -> 011111 -> 100000
             // 
             int newSize = minSize;
 
@@ -643,20 +628,20 @@ namespace System.Threading
         {
             internal LinkedSlot(LinkedSlotVolatile[] slotArray)
             {
-                SlotArray = slotArray;
+                _slotArray = slotArray;
             }
 
             // The next LinkedSlot for this ThreadLocal<> instance
-            internal volatile LinkedSlot Next;
+            internal volatile LinkedSlot _next;
 
             // The previous LinkedSlot for this ThreadLocal<> instance
-            internal volatile LinkedSlot Previous;
+            internal volatile LinkedSlot _previous;
 
             // The SlotArray that stores this LinkedSlot at SlotArray.Table[id].
-            internal volatile LinkedSlotVolatile[] SlotArray;
+            internal volatile LinkedSlotVolatile[] _slotArray;
 
             // The value for this slot.
-            internal T Value;
+            internal T _value;
         }
 
         /// <summary>
@@ -665,32 +650,32 @@ namespace System.Threading
         private class IdManager
         {
             // The next ID to try
-            private int m_nextIdToTry = 0;
+            private int _nextIdToTry = 0;
 
             // Stores whether each ID is free or not. Additionally, the object is also used as a lock for the IdManager.
-            private List<bool> m_freeIds = new List<bool>();
+            private List<bool> _freeIds = new List<bool>();
 
             internal int GetId()
             {
-                lock (m_freeIds)
+                lock (_freeIds)
                 {
-                    int availableId = m_nextIdToTry;
-                    while (availableId < m_freeIds.Count)
+                    int availableId = _nextIdToTry;
+                    while (availableId < _freeIds.Count)
                     {
-                        if (m_freeIds[availableId]) { break; }
+                        if (_freeIds[availableId]) { break; }
                         availableId++;
                     }
 
-                    if (availableId == m_freeIds.Count)
+                    if (availableId == _freeIds.Count)
                     {
-                        m_freeIds.Add(false);
+                        _freeIds.Add(false);
                     }
                     else
                     {
-                        m_freeIds[availableId] = false;
+                        _freeIds[availableId] = false;
                     }
 
-                    m_nextIdToTry = availableId + 1;
+                    _nextIdToTry = availableId + 1;
 
                     return availableId;
                 }
@@ -699,10 +684,10 @@ namespace System.Threading
             // Return an ID to the pool
             internal void ReturnId(int id)
             {
-                lock (m_freeIds)
+                lock (_freeIds)
                 {
-                    m_freeIds[id] = true;
-                    if (id < m_nextIdToTry) m_nextIdToTry = id;
+                    _freeIds[id] = true;
+                    if (id < _nextIdToTry) _nextIdToTry = id;
                 }
             }
         }
@@ -722,12 +707,12 @@ namespace System.Threading
         private class FinalizationHelper
         {
             internal LinkedSlotVolatile[] SlotArray;
-            private bool m_trackAllValues;
+            private bool _trackAllValues;
 
             internal FinalizationHelper(LinkedSlotVolatile[] slotArray, bool trackAllValues)
             {
                 SlotArray = slotArray;
-                m_trackAllValues = trackAllValues;
+                _trackAllValues = trackAllValues;
             }
 
             ~FinalizationHelper()
@@ -744,10 +729,10 @@ namespace System.Threading
                         continue;
                     }
 
-                    if (m_trackAllValues)
+                    if (_trackAllValues)
                     {
                         // Set the SlotArray field to null to release the slot array.
-                        linkedSlot.SlotArray = null;
+                        linkedSlot._slotArray = null;
                     }
                     else
                     {
@@ -755,14 +740,14 @@ namespace System.Threading
                         // the table will be have been removed, and so the table can get GC'd.
                         lock (s_idManager)
                         {
-                            if (linkedSlot.Next != null)
+                            if (linkedSlot._next != null)
                             {
-                                linkedSlot.Next.Previous = linkedSlot.Previous;
+                                linkedSlot._next._previous = linkedSlot._previous;
                             }
 
                             // Since the list uses a dummy head node, the Previous reference should never be null.
-                            Debug.Assert(linkedSlot.Previous != null);
-                            linkedSlot.Previous.Next = linkedSlot.Next;
+                            Debug.Assert(linkedSlot._previous != null);
+                            linkedSlot._previous._next = linkedSlot._next;
                         }
                     }
                 }
@@ -775,37 +760,22 @@ namespace System.Threading
     internal sealed class SystemThreading_ThreadLocalDebugView<T>
     {
         //The ThreadLocal object being viewed.
-        private readonly ThreadLocal<T> m_tlocal;
+        private readonly ThreadLocal<T> _tlocal;
 
         /// <summary>Constructs a new debugger view object for the provided ThreadLocal object.</summary>
         /// <param name="tlocal">A ThreadLocal object to browse in the debugger.</param>
         public SystemThreading_ThreadLocalDebugView(ThreadLocal<T> tlocal)
         {
-            m_tlocal = tlocal;
+            _tlocal = tlocal;
         }
 
         /// <summary>Returns whether the ThreadLocal object is initialized or not.</summary>
-        public bool IsValueCreated
-        {
-            get { return m_tlocal.IsValueCreated; }
-        }
+        public bool IsValueCreated => _tlocal.IsValueCreated;
 
         /// <summary>Returns the value of the ThreadLocal object.</summary>
-        public T Value
-        {
-            get
-            {
-                return m_tlocal.ValueForDebugDisplay;
-            }
-        }
+        public T Value => _tlocal.ValueForDebugDisplay;
 
         /// <summary>Return all values for all threads that have accessed this instance.</summary>
-        public List<T> Values
-        {
-            get
-            {
-                return m_tlocal.ValuesForDebugDisplay;
-            }
-        }
+        public List<T> Values => _tlocal.ValuesForDebugDisplay;
     }
 }
