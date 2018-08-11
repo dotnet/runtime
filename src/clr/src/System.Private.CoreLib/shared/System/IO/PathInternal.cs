@@ -22,10 +22,10 @@ namespace System.IO
         internal static bool StartsWithDirectorySeparator(ReadOnlySpan<char> path) => path.Length > 0 && IsDirectorySeparator(path[0]);
 
         internal static string EnsureTrailingSeparator(string path)
-            => EndsInDirectorySeparator(path) ? path : path + DirectorySeparatorCharAsString;
+            => EndsInDirectorySeparator(path.AsSpan()) ? path : path + DirectorySeparatorCharAsString;
 
         internal static string TrimEndingDirectorySeparator(string path) =>
-            EndsInDirectorySeparator(path) && !IsRoot(path) ?
+            EndsInDirectorySeparator(path.AsSpan()) && !IsRoot(path.AsSpan()) ?
                 path.Substring(0, path.Length - 1) :
                 path;
 
@@ -97,8 +97,8 @@ namespace System.IO
         /// </summary>
         internal static bool AreRootsEqual(string first, string second, StringComparison comparisonType)
         {
-            int firstRootLength = GetRootLength(first);
-            int secondRootLength = GetRootLength(second);
+            int firstRootLength = GetRootLength(first.AsSpan());
+            int secondRootLength = GetRootLength(second.AsSpan());
 
             return firstRootLength == secondRootLength
                 && string.Compare(
