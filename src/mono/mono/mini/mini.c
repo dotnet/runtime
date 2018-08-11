@@ -3045,6 +3045,9 @@ init_backend (MonoBackend *backend)
 #ifdef MONO_ARCH_EXPLICIT_NULL_CHECKS
 	backend->explicit_null_checks = 1;
 #endif
+#ifdef MONO_ARCH_HAVE_OPTIMIZED_DIV
+	backend->optimized_div = 1;
+#endif
 }
 
 /*
