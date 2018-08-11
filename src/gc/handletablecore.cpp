@@ -510,14 +510,6 @@ BOOL SegmentInitialize(TableSegment *pSegment, HandleTable *pTable)
     // we want to commit enough for the header PLUS some handles
     uint32_t dwCommit = HANDLE_HEADER_SIZE;
 
-#ifndef FEATURE_REDHAWK // todo: implement SafeInt
-    // Prefast overflow sanity check the addition
-    if (!ClrSafeInt<uint32_t>::addition(dwCommit, OS_PAGE_SIZE, dwCommit))
-    {
-        return FALSE;
-    }
-#endif // !FEATURE_REDHAWK
-
     // Round down to the dwPageSize
     dwCommit &= ~(OS_PAGE_SIZE - 1);
 
