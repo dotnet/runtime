@@ -2533,7 +2533,7 @@ COM_METHOD CordbProcess::GetContainingObject(CORDB_ADDRESS interiorPointer, ICor
         return E_POINTER;
 
     HRESULT hr = S_OK;
-    // TODO, databp, I don't know what I am doing, NO_LOCK doesn't sound right
+
     PUBLIC_API_ENTRY(this);
     FAIL_IF_NEUTERED(this);
     ATT_REQUIRE_STOPPED_MAY_FAIL(this);
