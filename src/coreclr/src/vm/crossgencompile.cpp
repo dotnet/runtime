@@ -385,7 +385,7 @@ void EEPolicy::HandleFatalError(UINT exitCode, UINT_PTR address, LPCWSTR pszMess
 
 //---------------------------------------------------------------------------------------
 
-Assembly * AppDomain::RaiseAssemblyResolveEvent(AssemblySpec * pSpec, BOOL fIntrospection, BOOL fPreBind)
+Assembly * AppDomain::RaiseAssemblyResolveEvent(AssemblySpec * pSpec, BOOL fPreBind)
 {
     return NULL;
 }

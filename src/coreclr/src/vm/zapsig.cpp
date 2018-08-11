@@ -663,8 +663,7 @@ Module *ZapSig::DecodeModuleFromIndexes(Module *fromModule,
                 AssemblySpec spec;
                 spec.InitializeSpec(TokenFromRid(assemblyIndex, mdtAssemblyRef),
                                     fromModule->GetNativeAssemblyImport(),
-                                    NULL,
-                                    FALSE);
+                                    NULL);
 
                 pAssembly = spec.LoadAssembly(FILE_LOADED);
 

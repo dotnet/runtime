@@ -3709,8 +3709,7 @@ OBJECTREF DispatchExInfo::GetReflectionObject()
     // we get the exposed class object and not the actual objectred contained in the
     // wrapper.
 
-    if (m_pMT == g_pRuntimeTypeClass ||
-        MscorlibBinder::IsClass(m_pMT, CLASS__CLASS_INTROSPECTION_ONLY))
+    if (m_pMT == g_pRuntimeTypeClass)
         return m_pMT->GetManagedClassObject();
     else
         return m_pSimpleWrapperOwner->GetObjectRef();

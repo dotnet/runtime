@@ -704,7 +704,6 @@ public:
         InterlockedUpdateFlags(mdcNotInline, set);
     }
 
-    BOOL IsIntrospectionOnly();
 #ifndef DACCESS_COMPILE
     VOID EnsureActive();
 #endif

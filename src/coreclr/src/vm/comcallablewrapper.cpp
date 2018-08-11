@@ -1602,9 +1602,6 @@ BOOL SimpleComCallWrapper::SupportsIReflect(MethodTable *pClass)
     if (pClass == g_pRuntimeTypeClass)
         return FALSE;
 
-    if (MscorlibBinder::IsClass(pClass, CLASS__CLASS_INTROSPECTION_ONLY))
-        return FALSE;
-
     if (MscorlibBinder::IsClass(pClass, CLASS__TYPE_BUILDER))
         return FALSE;
 

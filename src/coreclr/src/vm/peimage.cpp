@@ -808,8 +808,6 @@ void PEImage::EnumMemoryRegions(CLRDataEnumMemoryFlags flags)
         m_pLayouts[IMAGE_MAPPED]->EnumMemoryRegions(flags);
     if (m_pLayouts[IMAGE_LOADED].IsValid() &&  m_pLayouts[IMAGE_LOADED]!=NULL)
         m_pLayouts[IMAGE_LOADED]->EnumMemoryRegions(flags);
-    if (m_pLayouts[IMAGE_LOADED_FOR_INTROSPECTION].IsValid() &&  m_pLayouts[IMAGE_LOADED_FOR_INTROSPECTION]!=NULL)
-        m_pLayouts[IMAGE_LOADED_FOR_INTROSPECTION]->EnumMemoryRegions(flags);
 }
 
 #endif // #ifdef DACCESS_COMPILE
@@ -1179,19 +1177,6 @@ void PEImage::LoadFromMapped()
         SetLayout(IMAGE_LOADED,pLayout.Extract());
 }
 
-void PEImage::LoadForIntrospection()
-{
-    STANDARD_VM_CONTRACT;
-
-    if (HasLoadedIntrospectionLayout())
-        return;
-
-    PEImageLayoutHolder pLayout(GetLayout(PEImageLayout::LAYOUT_ANY,LAYOUT_CREATEIFNEEDED));
-    SimpleWriteLockHolder lock(m_pLayoutLock);
-    if(m_pLayouts[IMAGE_LOADED_FOR_INTROSPECTION]==NULL)
-        SetLayout(IMAGE_LOADED_FOR_INTROSPECTION,pLayout.Extract());
-}
-
 void PEImage::LoadNoFile()
 {
     CONTRACTL
@@ -1212,32 +1197,25 @@ void PEImage::LoadNoFile()
 }
 
 
-void PEImage::LoadNoMetaData(BOOL bIntrospection)
+void PEImage::LoadNoMetaData()
 {
     STANDARD_VM_CONTRACT;
 
-     if (bIntrospection)
-     {
-        if (HasLoadedIntrospectionLayout())
-            return;
-     }
-     else
-         if (HasLoadedLayout())
-            return;
+    if (HasLoadedLayout())
+        return;
 
     SimpleWriteLockHolder lock(m_pLayoutLock);
-    int layoutKind=bIntrospection?IMAGE_LOADED_FOR_INTROSPECTION:IMAGE_LOADED;
-    if (m_pLayouts[layoutKind]!=NULL)
+    if (m_pLayouts[IMAGE_LOADED]!=NULL)
         return;
     if (m_pLayouts[IMAGE_FLAT]!=NULL)
     {
         m_pLayouts[IMAGE_FLAT]->AddRef();
-        SetLayout(layoutKind,m_pLayouts[IMAGE_FLAT]);
+        SetLayout(IMAGE_LOADED,m_pLayouts[IMAGE_FLAT]);
     }
     else
     {
         _ASSERTE(!m_path.IsEmpty());
-        SetLayout(layoutKind,PEImageLayout::LoadFlat(GetFileHandle(),this));
+        SetLayout(IMAGE_LOADED,PEImageLayout::LoadFlat(GetFileHandle(),this));
     }
 }
 

@@ -1650,16 +1650,6 @@ PCODE MethodDesc::DoPrestub(MethodTable *pDispatchingMT)
     // Running a prestub on a method causes us to access its MethodTable
     g_IBCLogger.LogMethodDescAccess(this);
 
-    // A secondary layer of defense against executing code in inspection-only assembly.
-    // This should already have been taken care of by not allowing inspection assemblies
-    // to be activated. However, this is a very inexpensive piece of insurance in the name
-    // of security.
-    if (IsIntrospectionOnly())
-    {
-        _ASSERTE(!"A ReflectionOnly assembly reached the prestub. This should not have happened.");
-        COMPlusThrow(kInvalidOperationException, IDS_EE_CODEEXECUTION_IN_INTROSPECTIVE_ASSEMBLY);
-    }
-
     if (ContainsGenericVariables())
     {
         COMPlusThrow(kInvalidOperationException, IDS_EE_CODEEXECUTION_CONTAINSGENERICVAR);

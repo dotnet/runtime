@@ -1098,8 +1098,6 @@ TypeHandle TypeName::GetTypeUsingCASearchRules(LPCWSTR szTypeName, Assembly *pRe
     STATIC_CONTRACT_GC_TRIGGERS;
     STATIC_CONTRACT_FAULT;
 
-    BOOL bIntrospectionOnly = pRequestingAssembly ? pRequestingAssembly->IsIntrospectionOnly() : FALSE; // classfactory loads are always for execution
-
     DWORD error = (DWORD)-1;
 
     GCX_COOP();
@@ -1140,7 +1138,6 @@ TypeHandle TypeName::GetTypeUsingCASearchRules(LPCWSTR szTypeName, Assembly *pRe
     th = pTypeName->GetTypeWorker(
         /*bThrowIfNotFound = */ TRUE, 
         /*bIgnoreCase = */ FALSE, 
-        bIntrospectionOnly, 
         /*pAssemblyGetType =*/ NULL, 
         /*fEnableCASearchRules = */ TRUE, 
         /*fProhibitAsmQualifiedName = */ FALSE, 
@@ -1183,7 +1180,6 @@ TypeHandle TypeName::GetTypeUsingCASearchRules(LPCWSTR szTypeName, Assembly *pRe
     DomainAssembly* pAssemblyGetType, 
     BOOL bThrowIfNotFound, 
     BOOL bIgnoreCase, 
-    BOOL bIntrospectionOnly, 
     BOOL bProhibitAsmQualifiedName,
     StackCrawlMark* pStackMark, 
     BOOL bLoadTypeFromPartialNameHack,
@@ -1231,7 +1227,6 @@ TypeHandle TypeName::GetTypeUsingCASearchRules(LPCWSTR szTypeName, Assembly *pRe
     TypeHandle result = pTypeName->GetTypeWorker(
         bPeriodPrefix ? FALSE : bThrowIfNotFound, 
         bIgnoreCase, 
-        bIntrospectionOnly, 
         pAssemblyGetType ? pAssemblyGetType->GetAssembly() : NULL, 
         /*fEnableCASearchRules = */TRUE, 
         bProhibitAsmQualifiedName, 
@@ -1262,7 +1257,6 @@ TypeHandle TypeName::GetTypeUsingCASearchRules(LPCWSTR szTypeName, Assembly *pRe
         result = pTypeName->GetTypeWorker(
             bThrowIfNotFound, 
             bIgnoreCase, 
-            bIntrospectionOnly, 
             pAssemblyGetType ? pAssemblyGetType->GetAssembly() : NULL, 
             /*fEnableCASearchRules = */TRUE, 
             bProhibitAsmQualifiedName, 
@@ -1326,19 +1320,15 @@ TypeHandle TypeName::GetTypeUsingCASearchRules(LPCWSTR szTypeName, Assembly *pRe
         COMPlusThrow(kArgumentException, IDS_EE_CANNOT_HAVE_ASSEMBLY_SPEC);
     }
 
-    return pTypeName->GetTypeWorker(bThrowIfNotFound, /*bIgnoreCase = */FALSE, pAssembly->IsIntrospectionOnly(), pAssembly, /*fEnableCASearchRules = */FALSE, FALSE, NULL, NULL, 
+    return pTypeName->GetTypeWorker(bThrowIfNotFound, /*bIgnoreCase = */FALSE, pAssembly, /*fEnableCASearchRules = */FALSE, FALSE, NULL, NULL, 
         nullptr, // pPrivHostBinder
         FALSE, NULL /* cannot find a collectible type unless it is in assembly */);
-
-
-    
-
 }
 
 //-------------------------------------------------------------------------------------------
 // Retrieves a type. Will assert if the name is not fully qualified.
 //-------------------------------------------------------------------------------------------
-/* public static */ TypeHandle TypeName::GetTypeFromAsmQualifiedName(LPCWSTR szFullyQualifiedName, BOOL bForIntrospection)
+/* public static */ TypeHandle TypeName::GetTypeFromAsmQualifiedName(LPCWSTR szFullyQualifiedName)
 {
     STATIC_CONTRACT_THROWS;
     STATIC_CONTRACT_GC_TRIGGERS;
@@ -1373,11 +1363,11 @@ TypeHandle TypeName::GetTypeUsingCASearchRules(LPCWSTR szTypeName, Assembly *pRe
         COMPlusThrowArgumentException(msg.GetUnicode(), NULL);
     }
 
-    return pTypeName->GetTypeFromAsm(bForIntrospection);
+    return pTypeName->GetTypeFromAsm();
 }
 
 
-TypeHandle TypeName::GetTypeFromAsm(BOOL bForIntrospection)
+TypeHandle TypeName::GetTypeFromAsm()
 {
     STATIC_CONTRACT_THROWS;
     STATIC_CONTRACT_GC_TRIGGERS;
@@ -1393,7 +1383,6 @@ TypeHandle TypeName::GetTypeFromAsm(BOOL bForIntrospection)
     return this->GetTypeWorker(
         /*bThrowIfNotFound =*/TRUE, 
         /*bIgnoreCase = */FALSE, 
-        bForIntrospection, 
         NULL, 
         /*fEnableCASearchRules = */FALSE, 
         FALSE, 
@@ -1416,7 +1405,6 @@ TypeHandle TypeName::GetTypeFromAsm(BOOL bForIntrospection)
 /* private instance */ TypeHandle TypeName::GetTypeWorker(
     BOOL bThrowIfNotFound, 
     BOOL bIgnoreCase, 
-    BOOL bIntrospectionOnly, 
     Assembly* pAssemblyGetType,
 
     BOOL fEnableCASearchRules,
@@ -1492,7 +1480,7 @@ TypeHandle TypeName::GetTypeFromAsm(BOOL bForIntrospection)
             {
                 DomainAssembly *pDomainAssembly = LoadDomainAssembly(GetAssembly(), pRequestingAssembly, 
                                                                      pPrivHostBinder,
-                                                                     bThrowIfNotFound, bIntrospectionOnly, pssOuterTypeName);
+                                                                     bThrowIfNotFound, pssOuterTypeName);
                 if (pDomainAssembly)
                 {
                     th = GetTypeHaveAssembly(pDomainAssembly->GetAssembly(), bThrowIfNotFound, bIgnoreCase, pKeepAlive);
@@ -1508,7 +1496,7 @@ TypeHandle TypeName::GetTypeFromAsm(BOOL bForIntrospection)
         {
             DomainAssembly *pDomainAssembly = LoadDomainAssembly(GetAssembly(), pRequestingAssembly, 
                                                                  pPrivHostBinder,
-                                                                 bThrowIfNotFound, bIntrospectionOnly, pssOuterTypeName);
+                                                                 bThrowIfNotFound, pssOuterTypeName);
             if (pDomainAssembly)
             {
                 th = GetTypeHaveAssembly(pDomainAssembly->GetAssembly(), bThrowIfNotFound, bIgnoreCase, pKeepAlive);
@@ -1525,14 +1513,6 @@ TypeHandle TypeName::GetTypeFromAsm(BOOL bForIntrospection)
     // Otherwise look in the caller's assembly then the system assembly
     else if (fEnableCASearchRules)
     {
-        if (bIntrospectionOnly)
-        {
-            if (pStackMark != NULL) // This is our test to see if we're being because of a managed api or because we are parsing a CA. 
-            {
-                COMPlusThrow(kArgumentException, IDS_EE_REFLECTIONONLYGETTYPE_NOASSEMBLY);
-            }
-        }
-
         if (!pRequestingAssembly && pStackMark)
             pRequestingAssembly = SystemDomain::GetCallersAssembly(pStackMark); 
         
@@ -1548,7 +1528,7 @@ TypeHandle TypeName::GetTypeFromAsm(BOOL bForIntrospection)
         }
         
         // Raise AssemblyResolveEvent to try to resolve assembly
-        if (th.IsNull() && !bIntrospectionOnly) 
+        if (th.IsNull()) 
         {
             AppDomain *pDomain = (AppDomain *)SystemDomain::GetCurrentDomain();
 
@@ -1603,7 +1583,7 @@ TypeHandle TypeName::GetTypeFromAsm(BOOL bForIntrospection)
         for (INT32 i = 0; i < cGenericArgs; i++)
         {
             TypeHandle thGenericArg = m_genericArguments[i]->GetTypeWorker(
-                bThrowIfNotFound, bIgnoreCase, bIntrospectionOnly, 
+                bThrowIfNotFound, bIgnoreCase,
                 pAssemblyGetType, fEnableCASearchRules, bProhibitAsmQualifiedName, pStackMark, pRequestingAssembly, 
                 pPrivHostBinder,
                 bLoadTypeFromPartialNameHack, 
@@ -1816,7 +1796,6 @@ DomainAssembly * LoadDomainAssembly(
     Assembly * pRequestingAssembly, 
     ICLRPrivBinder * pPrivHostBinder,
     BOOL       bThrowIfNotFound, 
-    BOOL       bIntrospectionOnly, 
     SString *  pssOuterTypeName)
 {
     CONTRACTL
@@ -1829,9 +1808,6 @@ DomainAssembly * LoadDomainAssembly(
     CONTRACTL_END;
     AssemblySpec spec;
     DomainAssembly *pDomainAssembly = NULL;
-
-    if (bIntrospectionOnly)
-        spec.SetIntrospectionOnly(TRUE);
 
     StackScratchBuffer buffer;
     LPCUTF8 szAssemblySpec = psszAssemblySpec->GetUTF8(buffer);
@@ -1869,7 +1845,7 @@ DomainAssembly * LoadDomainAssembly(
     {
         EX_TRY
         {
-            pDomainAssembly = spec.LoadDomainAssembly(FILE_LOADED, NULL, bThrowIfNotFound);
+            pDomainAssembly = spec.LoadDomainAssembly(FILE_LOADED, bThrowIfNotFound);
         }
         EX_CATCH
         {

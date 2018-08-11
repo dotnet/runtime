@@ -1901,8 +1901,6 @@ protected:
         return m_dwPersistedFlags.LoadWithoutBarrier() & LOW_LEVEL_SYSTEM_ASSEMBLY_BY_NAME;
     }
 
-    BOOL IsIntrospectionOnly();
-
 #ifndef DACCESS_COMPILE
     VOID EnsureActive();
     VOID EnsureAllocated();    

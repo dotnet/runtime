@@ -383,9 +383,6 @@ namespace System.Reflection
         {
             get
             {
-                Type declaringType = DeclaringType;
-                if ((declaringType == null && Module.Assembly.ReflectionOnly) || declaringType is ReflectionOnlyType)
-                    throw new InvalidOperationException(SR.InvalidOperation_NotAllowedInReflectionOnly);
                 return new RuntimeMethodHandle(this);
             }
         }
@@ -427,14 +424,8 @@ namespace System.Reflection
 
         private void ThrowNoInvokeException()
         {
-            // method is ReflectionOnly
-            Type declaringType = DeclaringType;
-            if ((declaringType == null && Module.Assembly.ReflectionOnly) || declaringType is ReflectionOnlyType)
-            {
-                throw new InvalidOperationException(SR.Arg_ReflectionOnlyInvoke);
-            }
             // method is on a class that contains stack pointers
-            else if ((InvocationFlags & INVOCATION_FLAGS.INVOCATION_FLAGS_CONTAINS_STACK_POINTERS) != 0)
+            if ((InvocationFlags & INVOCATION_FLAGS.INVOCATION_FLAGS_CONTAINS_STACK_POINTERS) != 0)
             {
                 throw new NotSupportedException();
             }
