@@ -18,7 +18,11 @@ This import works with Windows, but it doesn’t work with any other OS. If run 
 
 ### Mono’s Dllmap
 
-Mono already provides a feature that addresses the problem of cross-platform p/invoke support. Mono’s [Dllmap](http://www.mono-project.com/docs/advanced/pinvoke/dllmap/) enables to configure p/invoke signatures at runtime. By providing an XML configuration file, user can define a custom mapping between OS-specific library names and methods. Thanks to that, even if a library defined in DllImport is incompatible with an OS that is currently running the application, a correct unmanaged method can be called (if it exists for this OS).
+Mono already provides a feature that addresses the problem of cross-platform p/invoke support. Mono’s [Dllmap](http://www.mono-project.com/docs/advanced/pinvoke/dllmap/) 
+enables to configure p/invoke signatures at runtime. By providing an XML configuration file, 
+user can define a custom mapping between OS-specific library names and methods. 
+Thanks to that, even if a library defined in DllImport is incompatible with an OS that is currently running the application, 
+a correct unmanaged method can be called (if it exists for this OS).
 
 In Mono Dllmap feature custom mapping can be tightly specified based on the OS name, CPU name and a wordsize.
 
@@ -29,7 +33,8 @@ This simple Mono example maps references to the cygwin1.dll library to the libc.
 </configuration>
 ```
 
-Mono dllmap logic is implemented in [metadata/mono-config.c](https://github.com/mono/mono/blob/master/mono/metadata/mono-config.c) and [metadata/loader.c](https://github.com/mono/mono/blob/master/mono/metadata/loader.c) files.
+Mono dllmap logic is implemented in [metadata/mono-config.c](https://github.com/mono/mono/blob/master/mono/metadata/mono-config.c) 
+and [metadata/loader.c](https://github.com/mono/mono/blob/master/mono/metadata/loader.c) files.
 
 ## Expectations
 
@@ -41,13 +46,20 @@ Dllmap will allow making changes in both library names and target method names (
 
 Target platforms for this feature are: Windows, Linux and OS X.
 
+There will be a diagnostic mechanism available to monitor dllmap related issues.
+
 ### Interaction with Dllmap
 
 #### Mono compatibility
-Dllmap should be easy to use. It’s possible to achieve this easily by keeping Mono-compatible style of XML mapping configuration file. It’s described [here](http://www.mono-project.com/docs/advanced/pinvoke/dllmap/). Thanks to compatibility with Mono, users will be able to migrate from Mono’s Dllmap to .NET Core cross-platform applications.
+Dllmap should be easy to use. It’s possible to achieve this easily by keeping Mono-compatible style of XML mapping configuration file. 
+It’s described [here](http://www.mono-project.com/docs/advanced/pinvoke/dllmap/). 
+Thanks to compatibility with Mono, users will be able to migrate from Mono’s Dllmap to .NET Core cross-platform applications.
 
 #### Flexibility
-For users, who want to manage their cross-platform dll imports in their own way, dll-load specific events will be exposed. Users will be able to subscribe to these events and implement any loading policies. Details are described in the Design section.
+For users, who want to manage their cross-platform dll imports in their own way, dll-load specific events will be exposed. 
+Users will be able to subscribe to these events and implement any library/entrypoint loading policies. 
+For example, they will be able to replace XML parsing with JSON or any other file format parsing and provide configuration files in the most suitable format.
+This is something that Mono doesn't have. Details are described in the Design section.
 
 ### Usage example (XML configuration)
 
@@ -70,18 +82,21 @@ To achieve this, the user puts an XML configuration file next to the dll that is
 </configuration>
 ```
 
-With this file, all `GetCurrentProcessId` calls get automatically mapped to getpid calls on runtime and the end user of the application can’t see any difference in application’s behavior. Running the application cross-platform does not require any OS-specific changes in the code. All the mapping is defined in advance in the external configuration file.
+With this file, all `GetCurrentProcessId` calls get automatically mapped to `getpid` calls on runtime and the end user of the application can’t see any difference in application’s behavior. Running the application cross-platform does not require any OS-specific changes in the code. All the mapping is defined in advance in the external configuration file.
 
-This is a very basic scenario and it can be extended to different operating systems, libraries and entrypoints and to subscribing to dll specific events.
+When mapping a function into another function, both the source and the target functions must take the same number of arguments of compatible type. Otherwise, the mapping will not work.
+
+This is a very basic scenario and it can be extended to different operating systems, libraries and entrypoints. 
+It assumes that user does not implement any custom actions (handlers) but uses the default dllmap behavior.
 
 ## Design
 ### XML configuration file
-For a basic case, mapping must be defined in an XML configuration file and placed next to the assembly that requires mapping of p/invokes. The file must be named AssemblyName.config where AssemblyName is a name of the executable for which the mapping is defined. 
+For a basic case, the mapping must be defined in an XML configuration file and placed next to the assembly that requires mapping of p/invokes. The file must be named AssemblyName.config where AssemblyName is a name of the executable for which the mapping is defined. 
 
 XML parsing will be implemented in corefx.labs using XML parsers that .NET provides. 
 
 ### Library mapping
-In dllimport.cpp file there is a method that loads the DLL and finds the procaddress for an N/Direct call.
+In [dllimport.cpp](https://github.com/dotnet/coreclr/blob/master/src/vm/dllimport.cpp) file there is a method that loads the DLL and finds the procaddress for an N/Direct call.
 ```c++
 VOID NDirect::NDirectLink(NDirectMethodDesc *pMD)
 {
@@ -259,6 +274,12 @@ Test cases:
 |with extension|no extension|
 |no extension (foo)|with extension|
 |no extension| no extension|
+
+**Resistance to errors in the config file** - test cases:
+- correct config file
+- config file that can't be parsed  &rightarrow; 
+log a warning, ignore the mapping for the corresponding assembly &rightarrow;  on some platforms (where mapping is not required) execute application, on some throw DllNotFoundException
+- config file pointing to a dll/entrypoint that can't be found &rightarrow; on the affected platforms throw a DllNotFoundException
 
 All the above test cases will be covered.
 
