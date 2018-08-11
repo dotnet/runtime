@@ -31,32 +31,32 @@
 #define LOG_ENABLE                      0x0040
 
 
-static DWORD    LogFlags = 0;
+static DWORD    LogFlags                    = 0;
 static CQuickWSTR     szLogFileName;
-static HANDLE   LogFileHandle = INVALID_HANDLE_VALUE;
-static MUTEX_COOKIE   LogFileMutex = 0;
-static DWORD    LogFacilityMask = LF_ALL;
-static DWORD    LogFacilityMask2 = 0;
-static DWORD    LogVMLevel = LL_INFO100;
-// <TODO>@todo FIX should probably only display warnings and above by default</TODO>
+static HANDLE   LogFileHandle               = INVALID_HANDLE_VALUE;
+static MUTEX_COOKIE   LogFileMutex                = 0;
+static DWORD    LogFacilityMask             = LF_ALL;
+static DWORD    LogFacilityMask2            = 0;
+static DWORD    LogVMLevel                  = LL_INFO100;
+        // <TODO>@todo FIX should probably only display warnings and above by default</TODO>
 
 
 VOID InitLogging()
 {
     STATIC_CONTRACT_NOTHROW;
-
-    // <TODO>FIX bit of a workaround for now, check for the log file in the
-    // registry and if there, turn on file logging VPM</TODO>
-
-    LogFlags |= REGUTIL::GetConfigFlag_DontUse_(CLRConfig::INTERNAL_LogEnable, LOG_ENABLE);
+    
+        // <TODO>FIX bit of a workaround for now, check for the log file in the
+        // registry and if there, turn on file logging VPM</TODO>
+    
+    LogFlags |= REGUTIL::GetConfigFlag_DontUse_(CLRConfig::INTERNAL_LogEnable, LOG_ENABLE);    
     LogFacilityMask = REGUTIL::GetConfigDWORD_DontUse_(CLRConfig::INTERNAL_LogFacility, LogFacilityMask) | LF_ALWAYS;
     LogVMLevel = REGUTIL::GetConfigDWORD_DontUse_(CLRConfig::EXTERNAL_LogLevel, LogVMLevel);
     LogFlags |= REGUTIL::GetConfigFlag_DontUse_(CLRConfig::INTERNAL_LogFileAppend, LOG_ENABLE_APPEND_FILE);
-    LogFlags |= REGUTIL::GetConfigFlag_DontUse_(CLRConfig::INTERNAL_LogFlushFile, LOG_ENABLE_FLUSH_FILE);
+    LogFlags |= REGUTIL::GetConfigFlag_DontUse_(CLRConfig::INTERNAL_LogFlushFile,  LOG_ENABLE_FLUSH_FILE);
     LogFlags |= REGUTIL::GetConfigFlag_DontUse_(CLRConfig::INTERNAL_LogToDebugger, LOG_ENABLE_DEBUGGER_LOGGING);
-    LogFlags |= REGUTIL::GetConfigFlag_DontUse_(CLRConfig::INTERNAL_LogToFile, LOG_ENABLE_FILE_LOGGING);
-    LogFlags |= REGUTIL::GetConfigFlag_DontUse_(CLRConfig::INTERNAL_LogToConsole, LOG_ENABLE_CONSOLE_LOGGING);
-
+    LogFlags |= REGUTIL::GetConfigFlag_DontUse_(CLRConfig::INTERNAL_LogToFile,     LOG_ENABLE_FILE_LOGGING);
+    LogFlags |= REGUTIL::GetConfigFlag_DontUse_(CLRConfig::INTERNAL_LogToConsole,  LOG_ENABLE_CONSOLE_LOGGING);
+    
     LogFacilityMask2 = REGUTIL::GetConfigDWORD_DontUse_(CLRConfig::INTERNAL_LogFacility2, LogFacilityMask2) | LF_ALWAYS;
 
     if (SUCCEEDED(szLogFileName.ReSizeNoThrow(MAX_LONGPATH)))
@@ -93,10 +93,10 @@ VOID InitLogging()
             FILE_SHARE_READ,
             NULL,
             fdwCreate,
-            FILE_ATTRIBUTE_NORMAL | FILE_FLAG_SEQUENTIAL_SCAN | ((LogFlags & LOG_ENABLE_FLUSH_FILE) ? FILE_FLAG_WRITE_THROUGH : 0),
+            FILE_ATTRIBUTE_NORMAL | FILE_FLAG_SEQUENTIAL_SCAN |  ((LogFlags & LOG_ENABLE_FLUSH_FILE) ? FILE_FLAG_WRITE_THROUGH : 0),
             NULL);
 
-        if (0 == LogFileMutex)
+        if(0 == LogFileMutex)
         {
             LogFileMutex = ClrCreateMutex(
                 NULL,
@@ -105,7 +105,7 @@ VOID InitLogging()
             _ASSERTE(LogFileMutex != 0);
         }
 
-        // Some other logging may be going on, try again with another file name
+            // Some other logging may be going on, try again with another file name
         if (LogFileHandle == INVALID_HANDLE_VALUE && wcslen(szLogFileName.Ptr()) + 3 <= szLogFileName.Size())
         {
             WCHAR* ptr = szLogFileName.Ptr() + wcslen(szLogFileName.Ptr()) + 1;
@@ -113,7 +113,7 @@ VOID InitLogging()
             ptr[0] = W('0');
             ptr[1] = 0;
 
-            for (int i = 0; i < 10; i++)
+            for(int i = 0; i < 10; i++)
             {
                 LogFileHandle = WszCreateFile(
                     szLogFileName.Ptr(),
@@ -121,7 +121,7 @@ VOID InitLogging()
                     FILE_SHARE_READ,
                     NULL,
                     fdwCreate,
-                    FILE_ATTRIBUTE_NORMAL | FILE_FLAG_SEQUENTIAL_SCAN | ((LogFlags & LOG_ENABLE_FLUSH_FILE) ? FILE_FLAG_WRITE_THROUGH : 0),
+                    FILE_ATTRIBUTE_NORMAL | FILE_FLAG_SEQUENTIAL_SCAN |  ((LogFlags & LOG_ENABLE_FLUSH_FILE) ? FILE_FLAG_WRITE_THROUGH : 0),
                     NULL);
                 if (LogFileHandle != INVALID_HANDLE_VALUE)
                     break;
@@ -152,7 +152,7 @@ VOID InitLogging()
         {
             if (LogFlags & LOG_ENABLE_APPEND_FILE)
                 SetFilePointer(LogFileHandle, 0, NULL, FILE_END);
-            LogSpew(LF_ALWAYS, FATALERROR, "************************ New Output *****************\n");
+            LogSpew( LF_ALWAYS, FATALERROR, "************************ New Output *****************\n" );
         }
     }
 }
@@ -166,7 +166,7 @@ VOID EnterLogLock()
     // rather hard to care about this, as we LOG all over the place.
     CONTRACT_VIOLATION(TakesLockViolation);
 
-    if (LogFileMutex != 0)
+    if(LogFileMutex != 0)
     {
         DWORD status;
         status = ClrWaitForMutex(LogFileMutex, INFINITE, FALSE);
@@ -179,7 +179,7 @@ VOID LeaveLogLock()
     STATIC_CONTRACT_NOTHROW;
     STATIC_CONTRACT_GC_NOTRIGGER;
 
-    if (LogFileMutex != 0)
+    if(LogFileMutex != 0)
     {
         BOOL success;
         success = ClrReleaseMutex(LogFileMutex);
@@ -206,9 +206,9 @@ VOID FlushLogging() {
     {
         // We must take the lock, as an OS deadlock can occur between
         // FlushFileBuffers and WriteFile.
-        EnterLogLock();
-        FlushFileBuffers(LogFileHandle);
-        LeaveLogLock();
+        EnterLogLock();        
+        FlushFileBuffers( LogFileHandle );
+        LeaveLogLock();        
     }
 }
 
@@ -217,8 +217,8 @@ VOID ShutdownLogging()
     STATIC_CONTRACT_NOTHROW;
 
     if (LogFileHandle != INVALID_HANDLE_VALUE) {
-        LogSpew(LF_ALWAYS, FATALERROR, "Logging shutting down\n");
-        CloseHandle(LogFileHandle);
+        LogSpew( LF_ALWAYS, FATALERROR, "Logging shutting down\n");
+        CloseHandle( LogFileHandle );
     }
     LogFileHandle = INVALID_HANDLE_VALUE;
     bLoggingInitialized = false;
@@ -239,8 +239,8 @@ bool LoggingOn(DWORD facility, DWORD level) {
     _ASSERTE(LogFacilityMask & LF_ALWAYS); // LF_ALWAYS should always be enabled
 
     return((LogFlags & LOG_ENABLE) &&
-        level <= LogVMLevel &&
-        (facility & LogFacilityMask));
+           level <= LogVMLevel &&
+           (facility & LogFacilityMask));
 }
 
 bool Logging2On(DWORD facility2, DWORD level) {
@@ -249,8 +249,8 @@ bool Logging2On(DWORD facility2, DWORD level) {
     _ASSERTE(LogFacilityMask2 & LF_ALWAYS); // LF_ALWAYS should always be enabled
 
     return((LogFlags & LOG_ENABLE) &&
-        level <= LogVMLevel &&
-        (facility2 & LogFacilityMask2));
+           level <= LogVMLevel &&
+           (facility2 & LogFacilityMask2));
 }
 
 //
@@ -261,7 +261,7 @@ VOID LogSpewValist(DWORD facility, DWORD level, const char *fmt, va_list args)
     SCAN_IGNORE_FAULT;  // calls to new (nothrow) in logging code are OK
     STATIC_CONTRACT_NOTHROW;
     STATIC_CONTRACT_GC_NOTRIGGER;
-
+    
     if (!LoggingOn(facility, level))
         return;
 
@@ -276,7 +276,7 @@ VOID LogSpew2Valist(DWORD facility2, DWORD level, const char *fmt, va_list args)
     SCAN_IGNORE_FAULT;  // calls to new (nothrow) in logging code are OK
     STATIC_CONTRACT_NOTHROW;
     STATIC_CONTRACT_GC_NOTRIGGER;
-
+    
     if (!Logging2On(facility2, level))
         return;
 
@@ -291,7 +291,7 @@ VOID LogSpewAlwaysValist(const char *fmt, va_list args)
     SCAN_IGNORE_FAULT;  // calls to new (nothrow) in logging code are OK
     STATIC_CONTRACT_NOTHROW;
     STATIC_CONTRACT_GC_NOTRIGGER;
-
+    
     DEBUG_ONLY_FUNCTION;
 
     // We can't do heap allocations at all.  The current thread may have
@@ -314,8 +314,8 @@ VOID LogSpewAlwaysValist(const char *fmt, va_list args)
 
     EnterLogLock();
 
-    char *  pBuffer = &rgchBuffer[0];
-    DWORD       buflen = 0;
+    char *  pBuffer      = &rgchBuffer[0];
+    DWORD       buflen       = 0;
     DWORD       written;
 
     static bool needsPrefix = true;
@@ -323,20 +323,19 @@ VOID LogSpewAlwaysValist(const char *fmt, va_list args)
     if (needsPrefix)
         buflen = sprintf_s(pBuffer, COUNTOF(rgchBuffer), "TID %04x: ", GetCurrentThreadId());
 
-    needsPrefix = (fmt[strlen(fmt) - 1] == '\n');
+    needsPrefix = (fmt[strlen(fmt)-1] == '\n');
 
-    int cCountWritten = _vsnprintf_s(&pBuffer[buflen], BUFFERSIZE - buflen, _TRUNCATE, fmt, args);
-    pBuffer[BUFFERSIZE - 1] = 0;
+    int cCountWritten = _vsnprintf_s(&pBuffer[buflen], BUFFERSIZE-buflen, _TRUNCATE, fmt, args );
+    pBuffer[BUFFERSIZE-1] = 0;
     if (cCountWritten < 0) {
         buflen = BUFFERSIZE - 1;
-    }
-    else {
+    } else {
         buflen += cCountWritten;
     }
 
     // Its a little late for this, but at least you wont continue
     // trashing your program...
-    _ASSERTE((buflen < (DWORD)BUFFERSIZE) && "Log text is too long!");
+    _ASSERTE((buflen < (DWORD) BUFFERSIZE) && "Log text is too long!") ;
 
 #if !PLATFORM_UNIX
     //convert NL's to CR NL to fixup notepad
@@ -365,7 +364,7 @@ VOID LogSpewAlwaysValist(const char *fmt, va_list args)
     {
         WriteFile(LogFileHandle, pBuffer, buflen, &written, NULL);
         if (LogFlags & LOG_ENABLE_FLUSH_FILE) {
-            FlushFileBuffers(LogFileHandle);
+            FlushFileBuffers( LogFileHandle );
         }
     }
 
@@ -374,7 +373,7 @@ VOID LogSpewAlwaysValist(const char *fmt, va_list args)
         WriteFile(GetStdHandle(STD_OUTPUT_HANDLE), pBuffer, buflen, &written, 0);
         //<TODO>@TODO ...Unnecessary to flush console?</TODO>
         if (LogFlags & LOG_ENABLE_FLUSH_FILE)
-            FlushFileBuffers(GetStdHandle(STD_OUTPUT_HANDLE));
+            FlushFileBuffers( GetStdHandle(STD_OUTPUT_HANDLE) );
     }
 
     if (LogFlags & LOG_ENABLE_DEBUGGER_LOGGING)
@@ -385,12 +384,12 @@ VOID LogSpewAlwaysValist(const char *fmt, va_list args)
     LeaveLogLock();
 }
 
-VOID LogSpew(DWORD facility, DWORD level, const char *fmt, ...)
+VOID LogSpew(DWORD facility, DWORD level, const char *fmt, ... )
 {
     STATIC_CONTRACT_WRAPPER;
-
+    
     ENTER_SO_NOT_MAINLINE_CODE;
-
+    
 #ifdef SELF_NO_HOST
     if (TRUE)
 #else //!SELF_NO_HOST
@@ -399,7 +398,7 @@ VOID LogSpew(DWORD facility, DWORD level, const char *fmt, ...)
     {
         va_list     args;
         va_start(args, fmt);
-        LogSpewValist(facility, level, fmt, args);
+        LogSpewValist (facility, level, fmt, args);
         va_end(args);
     }
     else
@@ -407,16 +406,16 @@ VOID LogSpew(DWORD facility, DWORD level, const char *fmt, ...)
         // Cannot acquire the required lock, as this would call back
         // into the host.  Eat the log message.
     }
-
+    
     LEAVE_SO_NOT_MAINLINE_CODE;
 }
 
-VOID LogSpew2(DWORD facility2, DWORD level, const char *fmt, ...)
+VOID LogSpew2(DWORD facility2, DWORD level, const char *fmt, ... )
 {
     STATIC_CONTRACT_WRAPPER;
-
+    
     ENTER_SO_NOT_MAINLINE_CODE;
-
+    
 #ifdef SELF_NO_HOST
     if (TRUE)
 #else //!SELF_NO_HOST
@@ -433,16 +432,16 @@ VOID LogSpew2(DWORD facility2, DWORD level, const char *fmt, ...)
         // Cannot acquire the required lock, as this would call back
         // into the host.  Eat the log message.
     }
-
+    
     LEAVE_SO_NOT_MAINLINE_CODE;
 }
 
-VOID LogSpewAlways(const char *fmt, ...)
+VOID LogSpewAlways (const char *fmt, ... )
 {
     STATIC_CONTRACT_WRAPPER;
-
+    
     ENTER_SO_NOT_MAINLINE_CODE;
-
+    
 #ifdef SELF_NO_HOST
     if (TRUE)
 #else //!SELF_NO_HOST
@@ -451,7 +450,7 @@ VOID LogSpewAlways(const char *fmt, ...)
     {
         va_list     args;
         va_start(args, fmt);
-        LogSpewValist(LF_ALWAYS, LL_ALWAYS, fmt, args);
+        LogSpewValist (LF_ALWAYS, LL_ALWAYS, fmt, args);
         va_end(args);
     }
     else
@@ -459,7 +458,7 @@ VOID LogSpewAlways(const char *fmt, ...)
         // Cannot acquire the required lock, as this would call back
         // into the host.  Eat the log message.
     }
-
+    
     LEAVE_SO_NOT_MAINLINE_CODE;
 }
 
