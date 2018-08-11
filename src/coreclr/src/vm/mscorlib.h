@@ -209,8 +209,6 @@ DEFINE_METHOD(CLASS,                GET_METHOD_BASE,        GetMethodBase,      
 DEFINE_METHOD(CLASS,                GET_FIELD_INFO,         GetFieldInfo,               SM_RuntimeType_IRuntimeFieldInfo_RetFieldInfo)
 DEFINE_METHOD(CLASS,                GET_PROPERTY_INFO,      GetPropertyInfo,            SM_RuntimeType_Int_RetPropertyInfo)
 
-DEFINE_CLASS(CLASS_INTROSPECTION_ONLY, System,              ReflectionOnlyType)
-
 #ifdef FEATURE_COMINTEROP
 DEFINE_CLASS_U(System,                 __ComObject,            ComObject)
 DEFINE_FIELD_U(m_ObjectToDataMap,      ComObject,              m_ObjectToDataMap)

@@ -218,7 +218,6 @@ public:
     BOOL IsDynamic() const;
     BOOL IsResource() const;
     BOOL IsIStream() const;
-    BOOL IsIntrospectionOnly() const;
     // Returns self (if assembly) or containing assembly (if module)
     PEAssembly *GetAssembly() const;
 
@@ -454,7 +453,6 @@ protected:
         PEFILE_NATIVE_IMAGE_USED_EXCLUSIVELY =0x1000,
         PEFILE_SAFE_TO_HARDBINDTO     = 0x4000, // NGEN-only flag
 #endif        
-        PEFILE_INTROSPECTIONONLY      = 0x400,
     };
 
     // ------------------------------------------------------------
@@ -674,8 +672,7 @@ class PEAssembly : public PEFile
         PEAssembly *       pParent,
         PEImage *          pPEImageIL, 
         PEImage *          pPEImageNI, 
-        ICLRPrivAssembly * pHostAssembly, 
-        BOOL               fIsIntrospectionOnly = FALSE);
+        ICLRPrivAssembly * pHostAssembly);
 
     // This opens the canonical mscorlib.dll
     static PEAssembly *OpenSystem(IUnknown *pAppCtx);
@@ -685,26 +682,22 @@ class PEAssembly : public PEFile
 
     static PEAssembly *Open(
         CoreBindResult* pBindResult,
-        BOOL isSystem,
-        BOOL isIntrospectionOnly);
+        BOOL isSystem);
 
     static PEAssembly *Create(
         PEAssembly *pParentAssembly,
-        IMetaDataAssemblyEmit *pEmit,
-        BOOL isIntrospectionOnly);
+        IMetaDataAssemblyEmit *pEmit);
 
     static PEAssembly *OpenMemory(
         PEAssembly *pParentAssembly,
         const void *flat,
         COUNT_T size, 
-        BOOL isIntrospectionOnly = FALSE,
         CLRPrivBinderLoadFile* pBinderToUse = NULL);
 
     static PEAssembly *DoOpenMemory(
         PEAssembly *pParentAssembly,
         const void *flat,
         COUNT_T size,
-        BOOL isIntrospectionOnly,
         CLRPrivBinderLoadFile* pBinderToUse);
 
   private:
@@ -789,7 +782,6 @@ class PEAssembly : public PEFile
         IMetaDataEmit *pEmit,
         PEFile *creator, 
         BOOL system, 
-        BOOL introspectionOnly = FALSE,
         PEImage * pPEImageIL = NULL,
         PEImage * pPEImageNI = NULL,
         ICLRPrivAssembly * pHostAssembly = NULL

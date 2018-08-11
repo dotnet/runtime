@@ -791,7 +791,6 @@ class CompilationDomain : public AppDomain,
     PEAssembly *BindAssemblySpec(
         AssemblySpec *pSpec,
         BOOL fThrowOnFileNotFound,
-        BOOL fRaisePrebindEvents,
         StackCrawlMark *pCallerStackMark = NULL,
         BOOL fUseHostBinderIfAvailable = TRUE) DAC_EMPTY_RET(NULL);
 

@@ -50,7 +50,6 @@ DomainAssembly * LoadDomainAssembly(
     Assembly * pRequestingAssembly, 
     ICLRPrivBinder * pPrivHostBinder,
     BOOL       bThrowIfNotFound, 
-    BOOL       bIntrospectionOnly, 
     SString *  pssOuterTypeName);
 
 class TypeNameFactory : public ITypeNameFactory
@@ -323,12 +322,12 @@ public:
     //-------------------------------------------------------------------------------------------
     static TypeHandle GetTypeFromAssembly(LPCWSTR szTypeName, Assembly *pAssembly, BOOL bThrowIfNotFound = TRUE);
 
-    TypeHandle GetTypeFromAsm(BOOL bForIntrospection);
+    TypeHandle GetTypeFromAsm();
 
     //-------------------------------------------------------------------------------------------
     // Retrieves a type. Will assert if the name is not fully qualified.
     //-------------------------------------------------------------------------------------------
-    static TypeHandle GetTypeFromAsmQualifiedName(LPCWSTR szFullyQualifiedName, BOOL bForIntrospection);
+    static TypeHandle GetTypeFromAsmQualifiedName(LPCWSTR szFullyQualifiedName);
 
 
     //-------------------------------------------------------------------------------------------
@@ -366,7 +365,6 @@ public:
         DomainAssembly* pAssemblyGetType,
         BOOL bThrowIfNotFound,
         BOOL bIgnoreCase,
-        BOOL bIntrospectionOnly,
         BOOL bProhibitAssemblyQualifiedName,
         StackCrawlMark* pStackMark,
         BOOL bLoadTypeFromPartialNameHack,
@@ -427,7 +425,6 @@ private:
     TypeHandle GetTypeWorker(
         BOOL bThrowIfNotFound, 
         BOOL bIgnoreCase, 
-        BOOL bIntrospectionOnly, 
         Assembly* pAssemblyGetType,
 
         BOOL fEnableCASearchRules,  

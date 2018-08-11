@@ -168,9 +168,6 @@ FCIMPL5(Object*, RuntimeFieldHandle::GetValue, ReflectFieldObject *pFieldUNSAFE,
         pAssem = declaringType.GetAssembly();
     }
 
-    if (pAssem->IsIntrospectionOnly())
-        FCThrowEx(kInvalidOperationException, IDS_EE_CODEEXECUTION_IN_INTROSPECTIVE_ASSEMBLY, NULL, NULL, NULL);
-
     // We should throw NotSupportedException here. 
     // But for backward compatibility we are throwing FieldAccessException instead.
     if (pAssem->IsDynamic() && !pAssem->HasRunAccess())
@@ -331,9 +328,6 @@ FCIMPL7(void, RuntimeFieldHandle::SetValue, ReflectFieldObject *pFieldUNSAFE, Ob
         pAssem = declaringType.GetAssembly();
     }
 
-    if (pAssem->IsIntrospectionOnly())
-        FCThrowExVoid(kInvalidOperationException, IDS_EE_CODEEXECUTION_IN_INTROSPECTIVE_ASSEMBLY, NULL, NULL, NULL);
-
     // We should throw NotSupportedException here. 
     // But for backward compatibility we are throwing FieldAccessException instead.
     if (pAssem->IsDynamic() && !pAssem->HasRunAccess())
@@ -403,9 +397,6 @@ FCIMPL5(Object*, RuntimeTypeHandle::CreateInstance, ReflectClassBaseObject* refT
     TypeHandle thisTH = refThis->GetType();
 
     Assembly *pAssem = thisTH.GetAssembly();
-
-    if (pAssem->IsIntrospectionOnly())
-        FCThrowEx(kInvalidOperationException, IDS_EE_CODEEXECUTION_IN_INTROSPECTIVE_ASSEMBLY, NULL, NULL, NULL);
 
     if (pAssem->IsDynamic() && !pAssem->HasRunAccess())
         FCThrowRes(kNotSupportedException, W("NotSupported_DynamicAssemblyNoRunAccess"));
@@ -986,9 +977,6 @@ FCIMPL5(Object*, RuntimeMethodHandle::InvokeMethod,
 
     Assembly *pAssem = pMeth->GetAssembly();
 
-    if (pAssem->IsIntrospectionOnly())
-        COMPlusThrow(kInvalidOperationException, IDS_EE_CODEEXECUTION_IN_INTROSPECTIVE_ASSEMBLY);
-
     // We should throw NotSupportedException here. 
     // But for backward compatibility we are throwing TargetException instead.
     if (pAssem->IsDynamic() && !pAssem->HasRunAccess())
@@ -1527,9 +1515,6 @@ FCIMPL4(Object*, RuntimeFieldHandle::GetValueDirect, ReflectFieldObject *pFieldU
 
     Assembly *pAssem = pField->GetModule()->GetAssembly();
 
-    if (pAssem->IsIntrospectionOnly())
-        FCThrowEx(kInvalidOperationException, IDS_EE_CODEEXECUTION_IN_INTROSPECTIVE_ASSEMBLY, NULL, NULL, NULL);
-
     // We should throw NotSupportedException here. 
     // But for backward compatibility we are throwing FieldAccessException instead.
     if (pAssem->IsDynamic() && !pAssem->HasRunAccess())
@@ -1691,9 +1676,6 @@ FCIMPL5(void, RuntimeFieldHandle::SetValueDirect, ReflectFieldObject *pFieldUNSA
     FieldDesc *pField = gc.refField->GetField();
 
     Assembly *pAssem = pField->GetModule()->GetAssembly();
-
-    if (pAssem->IsIntrospectionOnly())
-        FCThrowExVoid(kInvalidOperationException, IDS_EE_CODEEXECUTION_IN_INTROSPECTIVE_ASSEMBLY, NULL, NULL, NULL);
 
     // We should throw NotSupportedException here. 
     // But for backward compatibility we are throwing FieldAccessException instead.
@@ -1909,9 +1891,6 @@ FCIMPL1(void, ReflectionInvocation::RunClassConstructor, ReflectClassBaseObject 
 
     Assembly *pAssem = pMT->GetAssembly();
 
-    if (pAssem->IsIntrospectionOnly())
-        FCThrowExVoid(kInvalidOperationException, IDS_EE_CODEEXECUTION_IN_INTROSPECTIVE_ASSEMBLY, NULL, NULL, NULL);
-
     if (pAssem->IsDynamic() && !pAssem->HasRunAccess())
     {
         FCThrowResVoid(kNotSupportedException, W("NotSupported_DynamicAssemblyNoRunAccess"));
@@ -1946,9 +1925,6 @@ FCIMPL1(void, ReflectionInvocation::RunModuleConstructor, ReflectModuleBaseObjec
     Module *pModule = refModule->GetModule();
 
     Assembly *pAssem = pModule->GetAssembly();
-
-    if (pAssem->IsIntrospectionOnly())
-        FCThrowExVoid(kInvalidOperationException, IDS_EE_CODEEXECUTION_IN_INTROSPECTIVE_ASSEMBLY, NULL, NULL, NULL);
 
     if (pAssem->IsDynamic() && !pAssem->HasRunAccess())
         FCThrowResVoid(kNotSupportedException, W("NotSupported_DynamicAssemblyNoRunAccess"));

@@ -107,7 +107,6 @@ FCIMPL7(Object*, AssemblyNative::Load, AssemblyNameBaseObject* assemblyNameUNSAF
     AssemblySpec spec;
     spec.InitializeSpec(&(pThread->m_MarshalAlloc), 
                         &gc.assemblyName,
-                        FALSE,
                         FALSE);
     
     if (!spec.HasUniqueIdentity())
@@ -146,7 +145,7 @@ FCIMPL7(Object*, AssemblyNative::Load, AssemblyNameBaseObject* assemblyNameUNSAF
     
     {
         GCX_PREEMP();
-        pAssembly = spec.LoadAssembly(FILE_LOADED, fThrowOnFileNotFound, FALSE /*fRaisePrebindEvents*/, stackMark);
+        pAssembly = spec.LoadAssembly(FILE_LOADED, fThrowOnFileNotFound, stackMark);
     }
 
     if (pAssembly != NULL)
@@ -239,7 +238,7 @@ Assembly* AssemblyNative::LoadFromPEImage(ICLRPrivBinder* pBinderContext, PEImag
     BINDER_SPACE::Assembly* assem;
     assem = BINDER_SPACE::GetAssemblyFromPrivAssemblyFast(pAssembly);
     
-    PEAssemblyHolder pPEAssembly(PEAssembly::Open(pParentAssembly, assem->GetPEImage(), assem->GetNativePEImage(), pAssembly, FALSE));
+    PEAssemblyHolder pPEAssembly(PEAssembly::Open(pParentAssembly, assem->GetPEImage(), assem->GetNativePEImage(), pAssembly));
 
     DomainAssembly *pDomainAssembly = pCurDomain->LoadDomainAssembly(&spec, pPEAssembly, FILE_LOADED);
     RETURN pDomainAssembly->GetAssembly();
@@ -416,7 +415,7 @@ void QCALLTYPE AssemblyNative::GetType(QCall::AssemblyHandle pAssembly, LPCWSTR 
     BOOL prohibitAsmQualifiedName = TRUE;
 
     // Load the class from this assembly (fail if it is in a different one).
-    retTypeHandle = TypeName::GetTypeManaged(wszName, pAssembly, bThrowOnError, bIgnoreCase, pAssembly->IsIntrospectionOnly(), prohibitAsmQualifiedName, NULL, FALSE, (OBJECTREF*)keepAlive.m_ppObject);
+    retTypeHandle = TypeName::GetTypeManaged(wszName, pAssembly, bThrowOnError, bIgnoreCase, prohibitAsmQualifiedName, NULL, FALSE, (OBJECTREF*)keepAlive.m_ppObject);
 
     if (!retTypeHandle.IsNull())
     {

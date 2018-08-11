@@ -261,8 +261,7 @@ FCIMPL2(Object*, AppDomainNative::GetAssemblies, AppDomainBaseObject* refThisUNS
         //  to the array.  Quit when the array is full, in case assemblies have been
         //  loaded into this appdomain, on another thread.
         AppDomain::AssemblyIterator i = pApp->IterateAssembliesEx((AssemblyIterationFlags)(
-            kIncludeLoaded | 
-            (forIntrospection ? kIncludeIntrospection : kIncludeExecution)));
+            kIncludeLoaded | kIncludeExecution));
         CollectibleAssemblyHolder<DomainAssembly *> pDomainAssembly;
         
         while (i.Next(pDomainAssembly.This()) && (numAssemblies < nArrayElems))
@@ -448,8 +447,7 @@ FCIMPL2(StringObject*, AppDomainNative::nApplyPolicy, AppDomainBaseObject* refTh
     AssemblySpec spec;
     spec.InitializeSpec(&(pThread->m_MarshalAlloc), 
                         &gc.assemblyName,
-                        FALSE, /*fIsStringized*/ 
-                        FALSE /*fForIntrospection*/
+                        FALSE /*fIsStringized*/
                        );
 
     StackSString sDisplayName;

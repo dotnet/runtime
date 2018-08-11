@@ -1435,9 +1435,6 @@ namespace System.Reflection
         private static bool IsCustomAttributeDefined(
             RuntimeModule decoratedModule, int decoratedMetadataToken, RuntimeType attributeFilterType, int attributeCtorToken, bool mustBeInheritable)
         {
-            if (decoratedModule.Assembly.ReflectionOnly)
-                throw new InvalidOperationException(SR.Arg_ReflectionOnlyCA);
-
             CustomAttributeRecord[] car = CustomAttributeData.GetCustomAttributeRecords(decoratedModule, decoratedMetadataToken);
 
             if (attributeFilterType != null)
@@ -1490,9 +1487,6 @@ namespace System.Reflection
             RuntimeModule decoratedModule, int decoratedMetadataToken, int pcaCount,
             RuntimeType attributeFilterType, bool mustBeInheritable, IList derivedAttributes)
         {
-            if (decoratedModule.Assembly.ReflectionOnly)
-                throw new InvalidOperationException(SR.Arg_ReflectionOnlyCA);
-
             MetadataImport scope = decoratedModule.MetadataImport;
             CustomAttributeRecord[] car = CustomAttributeData.GetCustomAttributeRecords(decoratedModule, decoratedMetadataToken);
 

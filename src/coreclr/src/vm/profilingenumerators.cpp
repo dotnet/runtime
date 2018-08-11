@@ -294,7 +294,7 @@ HRESULT IterateUnsharedModules(AppDomain * pAppDomain,
     // DomainAssembly instances.
     AppDomain::AssemblyIterator domainAssemblyIterator = 
         pAppDomain->IterateAssembliesEx(
-            (AssemblyIterationFlags) (kIncludeAvailableToProfilers | kIncludeExecution | kIncludeIntrospection));
+            (AssemblyIterationFlags) (kIncludeAvailableToProfilers | kIncludeExecution));
     CollectibleAssemblyHolder<DomainAssembly *> pDomainAssembly;
     
     while (domainAssemblyIterator.Next(pDomainAssembly.This()))

@@ -94,16 +94,6 @@ inline PTR_PEImageLayout PEImage::GetLoadedLayout()
     return m_pLayouts[IMAGE_LOADED]; //no addref
 }
 
-inline PTR_PEImageLayout PEImage::GetLoadedIntrospectionLayout()
-{
-    LIMITED_METHOD_CONTRACT;
-    SUPPORTS_DAC;
-
-    _ASSERTE(m_pLayouts[IMAGE_LOADED_FOR_INTROSPECTION]!=NULL);
-    return m_pLayouts[IMAGE_LOADED_FOR_INTROSPECTION]; //no addref
-}
-
-
 //
 // GetExistingLayout - get an layout corresponding to the specified mask, or null if none.
 // Does not take any locks or call AddRef.
@@ -125,8 +115,6 @@ inline PTR_PEImageLayout PEImage::GetExistingLayoutInternal(DWORD imageLayoutMas
 
     if (imageLayoutMask&PEImageLayout::LAYOUT_LOADED)
         pRetVal=m_pLayouts[IMAGE_LOADED];
-    if (pRetVal==NULL && (imageLayoutMask & PEImageLayout::LAYOUT_LOADED_FOR_INTROSPECTION)) 
-        pRetVal=m_pLayouts[IMAGE_LOADED_FOR_INTROSPECTION];
     if (pRetVal==NULL && (imageLayoutMask & PEImageLayout::LAYOUT_MAPPED))
         pRetVal=m_pLayouts[IMAGE_MAPPED];
     if (pRetVal==NULL && (imageLayoutMask & PEImageLayout::LAYOUT_FLAT))
@@ -146,14 +134,7 @@ inline BOOL PEImage::HasLoadedLayout()
 inline BOOL PEImage::IsOpened()
 {
     LIMITED_METHOD_CONTRACT;
-    return m_pLayouts[IMAGE_LOADED]!=NULL ||m_pLayouts[IMAGE_MAPPED]!=NULL || m_pLayouts[IMAGE_FLAT] !=NULL || m_pLayouts[IMAGE_LOADED_FOR_INTROSPECTION]!=NULL;
-}
-
-
-inline BOOL PEImage::HasLoadedIntrospectionLayout() //introspection only!!!
-{
-    LIMITED_METHOD_DAC_CONTRACT;
-    return m_pLayouts[IMAGE_LOADED_FOR_INTROSPECTION]!=NULL;
+    return m_pLayouts[IMAGE_LOADED]!=NULL ||m_pLayouts[IMAGE_MAPPED]!=NULL || m_pLayouts[IMAGE_FLAT] !=NULL;
 }
 
 

@@ -31,7 +31,6 @@ protected:
     LPCSTR                      m_szWinRtTypeClassName;
     ICLRPrivBinder             *m_pHostBinder;
     int                         m_ownedFlags;
-    BOOL                        m_fIntrospectionOnly;
     ICLRPrivBinder             *m_pBindingContext;
 
 public:
@@ -141,22 +140,6 @@ public:
         IAssemblyName **ppName,
         BOOL fIncludeCodeBase = TRUE, /* Used by fusion only */
         BOOL fMustBeBindable = FALSE) const;
-
-
-    BOOL IsIntrospectionOnly()
-    {
-        LIMITED_METHOD_CONTRACT;
-
-        // Important to ensure we return a normalized boolean (the introspection fields
-        // of different AssemblySpecs can be compared.)
-        return !!m_fIntrospectionOnly;
-    }
-
-    VOID SetIntrospectionOnly(BOOL fIntrospectionOnly)
-    {
-        LIMITED_METHOD_CONTRACT;
-        m_fIntrospectionOnly = !!fIntrospectionOnly;
-    }
 
     inline BOOL IsContentType_WindowsRuntime() const
     {

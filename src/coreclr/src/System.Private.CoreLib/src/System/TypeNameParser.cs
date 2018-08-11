@@ -247,7 +247,7 @@ namespace System
             {
                 if (assembly == null)
                 {
-                    type = RuntimeType.GetType(OuterMostTypeName, throwOnError, ignoreCase, false, ref stackMark);
+                    type = RuntimeType.GetType(OuterMostTypeName, throwOnError, ignoreCase, ref stackMark);
                 }
                 else
                 {

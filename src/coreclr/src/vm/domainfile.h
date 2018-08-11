@@ -260,8 +260,6 @@ class DomainFile
     // Other public APIs
     // ------------------------------------------------------------
 
-    BOOL IsIntrospectionOnly();
-
 #ifndef DACCESS_COMPILE
     BOOL Equals(DomainFile *pFile) { WRAPPER_NO_CONTRACT; return GetFile()->Equals(pFile->GetFile()); }
     BOOL Equals(PEFile *pFile) { WRAPPER_NO_CONTRACT; return GetFile()->Equals(pFile); }

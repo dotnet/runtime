@@ -1628,7 +1628,7 @@ typedef Wrapper <ADUnloadSink*,DoNothing,ADUnloadSink__Release,NULL> ADUnloadSin
 //
 // The flags can be combined so if you want all loaded assemblies, you must specify:
 //
-///     kIncludeLoaded|kIncludeExecution|kIncludeIntrospection
+///     kIncludeLoaded|kIncludeExecution
 
 enum AssemblyIterationFlags
 {
@@ -1643,7 +1643,6 @@ enum AssemblyIterationFlags
 
     // Execution / introspection flags
     kIncludeExecution     = 0x00000004, // include assemblies that are loaded for execution only
-    kIncludeIntrospection = 0x00000008, // include assemblies that are loaded for introspection only
     
     kIncludeFailedToLoad  = 0x00000010, // include assemblies that failed to load 
 
@@ -2484,7 +2483,6 @@ public:
     virtual PEAssembly * BindAssemblySpec(
         AssemblySpec *pSpec,
         BOOL fThrowOnFileNotFound,
-        BOOL fRaisePrebindEvents,
         StackCrawlMark *pCallerStackMark = NULL,
         BOOL fUseHostBinderIfAvailable = TRUE) DAC_EMPTY_RET(NULL);
 
@@ -2498,8 +2496,7 @@ public:
         PEAssembly *       pParentPEAssembly,
         ICLRPrivAssembly * pPrivAssembly, 
         IAssemblyName *    pAssemblyName, 
-        PEAssembly **      ppAssembly, 
-        BOOL               fIsIntrospectionOnly = FALSE) DAC_EMPTY_RET(S_OK);
+        PEAssembly **      ppAssembly) DAC_EMPTY_RET(S_OK);
 
 
     PEAssembly *TryResolveAssembly(AssemblySpec *pSpec, BOOL fPreBind);
@@ -3180,7 +3177,7 @@ public:
     static void RaiseExitProcessEvent();
     Assembly* RaiseResourceResolveEvent(DomainAssembly* pAssembly, LPCSTR szName);
     DomainAssembly* RaiseTypeResolveEventThrowing(DomainAssembly* pAssembly, LPCSTR szName, ASSEMBLYREF *pResultingAssemblyRef);
-    Assembly* RaiseAssemblyResolveEvent(AssemblySpec *pSpec, BOOL fIntrospection, BOOL fPreBind);
+    Assembly* RaiseAssemblyResolveEvent(AssemblySpec *pSpec, BOOL fPreBind);
 
 private:
     CrstExplicitInit    m_ReflectionCrst;

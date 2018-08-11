@@ -69,7 +69,7 @@ FCIMPL1(Object*, AssemblyNameNative::GetFileInformation, StringObject* filenameU
         pImage->VerifyIsAssembly();
 
     AssemblySpec spec;
-    spec.InitializeSpec(TokenFromRid(mdtAssembly,1),pImage->GetMDImport(),NULL,TRUE);
+    spec.InitializeSpec(TokenFromRid(mdtAssembly,1),pImage->GetMDImport(),NULL);
     spec.AssemblyNameInit(&gc.result, pImage);
     
     HELPER_METHOD_FRAME_END();
@@ -93,7 +93,7 @@ FCIMPL1(Object*, AssemblyNameNative::ToString, Object* refThisUNSAFE)
     CheckPointHolder cph(pThread->m_MarshalAlloc.GetCheckpoint()); //hold checkpoint for autorelease
 
     AssemblySpec spec;
-    spec.InitializeSpec(&(pThread->m_MarshalAlloc), (ASSEMBLYNAMEREF*) &pThis, FALSE, FALSE); 
+    spec.InitializeSpec(&(pThread->m_MarshalAlloc), (ASSEMBLYNAMEREF*) &pThis, FALSE); 
 
     StackSString name;
     spec.GetFileOrDisplayName(ASM_DISPLAYF_VERSION |
@@ -168,7 +168,7 @@ FCIMPL3(void, AssemblyNameNative::Init, Object * refThisUNSAFE, OBJECTREF * pAss
     CheckPointHolder cph(pThread->m_MarshalAlloc.GetCheckpoint()); //hold checkpoint for autorelease
 
     AssemblySpec spec;
-    hr = spec.InitializeSpec(&(pThread->m_MarshalAlloc), (ASSEMBLYNAMEREF *) &pThis, TRUE, FALSE); 
+    hr = spec.InitializeSpec(&(pThread->m_MarshalAlloc), (ASSEMBLYNAMEREF *) &pThis, TRUE); 
 
     if (SUCCEEDED(hr))
     {
@@ -176,7 +176,7 @@ FCIMPL3(void, AssemblyNameNative::Init, Object * refThisUNSAFE, OBJECTREF * pAss
     }
     else if ((hr == FUSION_E_INVALID_NAME) && fRaiseResolveEvent)
     {
-        Assembly * pAssembly = GetAppDomain()->RaiseAssemblyResolveEvent(&spec, FALSE, FALSE);
+        Assembly * pAssembly = GetAppDomain()->RaiseAssemblyResolveEvent(&spec, FALSE);
 
         if (pAssembly == NULL)
         {

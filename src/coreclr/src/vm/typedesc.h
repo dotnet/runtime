@@ -651,15 +651,8 @@ public:
     }
 
 #ifndef DACCESS_COMPILE
-    
     // Returns TRUE if all return and argument types are externally visible.
     BOOL IsExternallyVisible() const;
-    // Returns TRUE if any of return or argument types is part of an assembly loaded for introspection.
-    BOOL IsIntrospectionOnly() const;
-    // Returns TRUE if any of return or argument types is part of an assembly loaded for introspection.
-    // Instantiations of generic types are also recursively checked.
-    BOOL ContainsIntrospectionOnlyTypes() const;
-    
 #endif //DACCESS_COMPILE
 
 #ifdef FEATURE_PREJIT

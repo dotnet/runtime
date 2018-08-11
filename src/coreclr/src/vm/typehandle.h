@@ -542,12 +542,6 @@ public:
     void CheckRestore() const;
     BOOL IsExternallyVisible() const;
 
-    // Is this type part of an assembly loaded for introspection?
-    BOOL IsIntrospectionOnly() const;
-
-    // Checks this type and its components for "IsIntrospectionOnly"
-    BOOL ContainsIntrospectionOnlyTypes() const;
-
     // Does this type participate in type equivalence?
     inline BOOL HasTypeEquivalence() const;
 

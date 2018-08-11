@@ -441,12 +441,6 @@ namespace System.Reflection.Emit
 
                 if (type.Module.Assembly == typeof(object).Module.Assembly)
                     continue;
-
-                if (type.Module.Assembly.ReflectionOnly && !ReflectionOnly)
-                    throw new InvalidOperationException(SR.Format(SR.Arugment_EmitMixedContext1, type.AssemblyQualifiedName));
-
-                if (!type.Module.Assembly.ReflectionOnly && ReflectionOnly)
-                    throw new InvalidOperationException(SR.Format(SR.Arugment_EmitMixedContext2, type.AssemblyQualifiedName));
             }
         }
 
