@@ -301,14 +301,6 @@ OBJECTHANDLE HndCreateHandle(HHANDLETABLE hTable, uint32_t uType, OBJECTREF obje
     }
     CONTRACTL_END;
 
-#if defined( _DEBUG) && !defined(FEATURE_REDHAWK)
-    if (g_pConfig->ShouldInjectFault(INJECTFAULT_HANDLETABLE))
-    {
-        FAULT_NOT_FATAL();
-        return NULL;
-    }
-#endif // _DEBUG && !FEATURE_REDHAWK
-
     // If we are creating a variable-strength handle, verify that the
     // requested variable handle type is valid.
     _ASSERTE(uType != HNDTYPE_VARIABLE || IS_VALID_VHT_VALUE(lExtraInfo));

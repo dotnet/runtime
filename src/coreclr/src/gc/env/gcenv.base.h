@@ -378,7 +378,6 @@ typedef struct _PROCESSOR_NUMBER {
 #define WRAPPER(_contract)
 #define DISABLED(_contract)
 #define INJECT_FAULT(_expr)
-#define INJECTFAULT_HANDLETABLE 0x1
 #define INJECTFAULT_GCHEAP 0x2
 #define FAULT_NOT_FATAL()
 #define BEGIN_DEBUG_ONLY_CODE

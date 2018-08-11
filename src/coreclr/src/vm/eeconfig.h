@@ -827,7 +827,6 @@ public:
     DWORD GetHostTestThreadAbort() const {LIMITED_METHOD_CONTRACT; return testThreadAbort;}
 
 #define INJECTFAULT_LOADERHEAP      0x1
-#define INJECTFAULT_HANDLETABLE     0x1
 #define INJECTFAULT_GCHEAP          0x2
 #define INJECTFAULT_SO              0x4
 #define INJECTFAULT_GMHEAP          0x8

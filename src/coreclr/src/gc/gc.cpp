@@ -3874,7 +3874,7 @@ class CObjectHeader : public Object
 {
 public:
 
-#ifdef FEATURE_REDHAWK
+#if defined(FEATURE_REDHAWK) || defined(BUILD_AS_STANDALONE)
     // The GC expects the following methods that are provided by the Object class in the CLR but not provided
     // by Redhawk's version of Object.
     uint32_t GetNumComponents()
@@ -5051,19 +5051,13 @@ public:
         if (!GCToOSInterface::CanGetCurrentProcessorNumber())
         {
             n_sniff_buffers = n_heaps*2+1;
-            size_t sniff_buf_size = 0;
-#ifdef FEATURE_REDHAWK
-            size_t n_cache_lines = 1 + n_heaps*n_sniff_buffers + 1;
-            sniff_buf_size = n_cache_lines * HS_CACHE_LINE_SIZE;
-#else
-            S_SIZE_T safe_sniff_buf_size = S_SIZE_T(1 + n_heaps*n_sniff_buffers + 1);
-            safe_sniff_buf_size *= HS_CACHE_LINE_SIZE;
-            if (safe_sniff_buf_size.IsOverflow())
+            size_t n_cache_lines = 1 + n_heaps * n_sniff_buffers + 1;
+            size_t sniff_buf_size = n_cache_lines * HS_CACHE_LINE_SIZE;
+            if (sniff_buf_size / HS_CACHE_LINE_SIZE != n_cache_lines) // check for overlow
             {
                 return FALSE;
             }
-            sniff_buf_size = safe_sniff_buf_size.Value();
-#endif //FEATURE_REDHAWK
+
             sniff_buffer = new (nothrow) uint8_t[sniff_buf_size];
             if (sniff_buffer == 0)
                 return FALSE;
@@ -5463,7 +5457,7 @@ void gc_heap::gc_thread_function ()
 
 bool virtual_alloc_commit_for_heap(void* addr, size_t size, int h_number)
 {
-#if defined(MULTIPLE_HEAPS) && !defined(FEATURE_REDHAWK) && !defined(FEATURE_PAL)
+#if defined(MULTIPLE_HEAPS) && !defined(FEATURE_REDHAWK) && !defined(FEATURE_PAL) && !defined(BUILD_AS_STANDALONE)
     // Currently there is no way for us to specific the numa node to allocate on via hosting interfaces to
     // a host. This will need to be added later.
 #if !defined(FEATURE_CORECLR)
@@ -9011,7 +9005,7 @@ inline size_t my_get_size (Object* ob)
 #ifdef COLLECTIBLE_CLASS
 #define contain_pointers_or_collectible(i) header(i)->ContainsPointersOrCollectible()
 
-#define get_class_object(i) method_table(i)->GetLoaderAllocatorObjectForGC()
+#define get_class_object(i) GCToEEInterface::GetLoaderAllocatorObjectForGC((Object *)i)
 #define is_collectible(i) method_table(i)->Collectible()
 #else //COLLECTIBLE_CLASS
 #define contain_pointers_or_collectible(i) header(i)->ContainsPointers()
@@ -16305,6 +16299,7 @@ void gc_heap::update_collection_counts ()
 inline
 BOOL AnalyzeSurvivorsRequested(int condemnedGeneration)
 {
+#ifndef BUILD_AS_STANDALONE
     // Is the list active?
     GcNotifications gn(g_pGcNotificationTable);
     if (gn.IsActive())
@@ -16315,11 +16310,13 @@ BOOL AnalyzeSurvivorsRequested(int condemnedGeneration)
             return TRUE;
         }
     }
+#endif // BUILD_AS_STANDALONE
     return FALSE;
 }
 
 void DACNotifyGcMarkEnd(int condemnedGeneration)
 {
+#ifndef BUILD_AS_STANDALONE
     // Is the list active?
     GcNotifications gn(g_pGcNotificationTable);
     if (gn.IsActive())
@@ -16330,6 +16327,7 @@ void DACNotifyGcMarkEnd(int condemnedGeneration)
             DACNotify::DoGCNotification(gea);
         }
     }
+#endif // BUILD_AS_STANDALONE
 }
 #endif // HEAP_ANALYZE
 
@@ -34215,10 +34213,6 @@ GCHeap::AllocAlign8Common(void* _hp, alloc_context* acontext, size_t size, uint3
 #endif //COUNT_CYCLES
 #endif //TRACE_GC
 
-#ifndef FEATURE_REDHAWK
-    GCStress<gc_on_alloc>::MaybeTrigger(acontext);
-#endif // FEATURE_REDHAWK
-
     if (size < LARGE_OBJECT_SIZE)
     {
 #ifdef TRACE_GC
@@ -34394,10 +34388,6 @@ GCHeap::Alloc(gc_alloc_context* context, size_t size, uint32_t flags REQD_ALIGN_
         assert (acontext->get_alloc_heap());
     }
 #endif //MULTIPLE_HEAPS
-
-#ifndef FEATURE_REDHAWK
-    GCStress<gc_on_alloc>::MaybeTrigger(acontext);
-#endif // FEATURE_REDHAWK
 
 #ifdef MULTIPLE_HEAPS
     gc_heap* hp = acontext->get_alloc_heap()->pGenGCHeap;

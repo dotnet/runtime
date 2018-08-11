@@ -357,7 +357,7 @@ uint8_t* GCToEEInterface::GetLoaderAllocatorObjectForGC(Object* pObject)
     }
     CONTRACTL_END;
 
-    return pObject->GetMethodTable()->GetLoaderAllocatorObjectForGC();
+    return pObject->GetGCSafeMethodTable()->GetLoaderAllocatorObjectForGC();
 }
 
 bool GCToEEInterface::IsPreemptiveGCDisabled()

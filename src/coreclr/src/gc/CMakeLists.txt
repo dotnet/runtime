@@ -11,9 +11,6 @@ remove_definitions(-DSTRESS_HEAP)
 # https://github.com/dotnet/coreclr/issues/11519
 remove_definitions(-DWRITE_BARRIER_CHECK)
 
-# https://github.com/dotnet/coreclr/issues/14701
-add_definitions(-DFEATURE_REDHAWK)
-
 set( GC_SOURCES
   gceventstatus.cpp
   gcconfig.cpp

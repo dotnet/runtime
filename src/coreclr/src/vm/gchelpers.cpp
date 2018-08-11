@@ -238,12 +238,16 @@ inline Object* Alloc(size_t size, BOOL bFinalize, BOOL bContainsPointers )
     INTERIOR_STACK_PROBE_FOR(GetThread(), static_cast<unsigned>(DEFAULT_ENTRY_PROBE_AMOUNT * 1.5));
     if (GCHeapUtilities::UseThreadAllocationContexts())
     {
-        retVal = GCHeapUtilities::GetGCHeap()->Alloc(GetThreadAllocContext(), size, flags);
+        gc_alloc_context *threadContext = GetThreadAllocContext();
+        GCStress<gc_on_alloc>::MaybeTrigger(threadContext);
+        retVal = GCHeapUtilities::GetGCHeap()->Alloc(threadContext, size, flags);
     }
     else
     {
         GlobalAllocLockHolder holder(&g_global_alloc_lock);
-        retVal = GCHeapUtilities::GetGCHeap()->Alloc(&g_global_alloc_context, size, flags);
+        gc_alloc_context *globalContext = &g_global_alloc_context;
+        GCStress<gc_on_alloc>::MaybeTrigger(globalContext);
+        retVal = GCHeapUtilities::GetGCHeap()->Alloc(globalContext, size, flags);
     }
 
 
@@ -279,12 +283,16 @@ inline Object* AllocAlign8(size_t size, BOOL bFinalize, BOOL bContainsPointers, 
     INTERIOR_STACK_PROBE_FOR(GetThread(), static_cast<unsigned>(DEFAULT_ENTRY_PROBE_AMOUNT * 1.5));
     if (GCHeapUtilities::UseThreadAllocationContexts())
     {
-        retVal = GCHeapUtilities::GetGCHeap()->AllocAlign8(GetThreadAllocContext(), size, flags);
+        gc_alloc_context *threadContext = GetThreadAllocContext();
+        GCStress<gc_on_alloc>::MaybeTrigger(threadContext);
+        retVal = GCHeapUtilities::GetGCHeap()->AllocAlign8(threadContext, size, flags);
     }
     else
     {
         GlobalAllocLockHolder holder(&g_global_alloc_lock);
-        retVal = GCHeapUtilities::GetGCHeap()->AllocAlign8(&g_global_alloc_context, size, flags);
+        gc_alloc_context *globalContext = &g_global_alloc_context;
+        GCStress<gc_on_alloc>::MaybeTrigger(globalContext);
+        retVal = GCHeapUtilities::GetGCHeap()->AllocAlign8(globalContext, size, flags);
     }
 
     if (!retVal)
