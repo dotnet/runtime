@@ -37,7 +37,7 @@ namespace System.IO
             {
                 if (((int)d & 1) != 0)
                 {
-                    result[count++] = new string(root);
+                    result[count++] = root.ToString();
                 }
                 d >>= 1;
                 root[0]++;

@@ -2,9 +2,15 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file ref the project root for more information.
 
+using System;
 using System.Collections.Generic;
+using System.IO;
 
+#if MS_IO_REDIST
+namespace Microsoft.IO.Enumeration
+#else
 namespace System.IO.Enumeration
+#endif
 {
     internal static class FileSystemEnumerableFactory
     {
@@ -31,7 +37,7 @@ namespace System.IO.Enumeration
             if (directoryName.Length != 0)
             {
                 // Need to fix up the input paths
-                directory = Path.Join(directory, directoryName);
+                directory = Path.Join(directory.AsSpan(), directoryName);
                 expression = expression.Substring(directoryName.Length + 1);
             }
 
@@ -75,9 +81,9 @@ namespace System.IO.Enumeration
             switch (options.MatchType)
             {
                 case MatchType.Simple:
-                    return FileSystemName.MatchesSimpleExpression(expression, name, ignoreCase);
+                    return FileSystemName.MatchesSimpleExpression(expression.AsSpan(), name, ignoreCase);
                 case MatchType.Win32:
-                    return FileSystemName.MatchesWin32Expression(expression, name, ignoreCase);
+                    return FileSystemName.MatchesWin32Expression(expression.AsSpan(), name, ignoreCase);
                 default:
                     throw new ArgumentOutOfRangeException(nameof(options));
             }

@@ -116,6 +116,12 @@
         "2.0.2.0": "2.1.0"
       }
     },
+    "Microsoft.IO.Redist": {
+      "InboxOn": {},
+      "AssemblyVersionInPackageVersion": {
+        "4.0.0.0": "4.6.0"
+      }
+    },
     "Microsoft.JScript": {
       "InboxOn": {
         "net45": "10.0.0.0"
