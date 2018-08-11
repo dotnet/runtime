@@ -120,13 +120,6 @@ SIZE_T MethodDesc::SizeOf()
     return size;
 }
 
-//*******************************************************************************
-BOOL MethodDesc::IsIntrospectionOnly()
-{
-    WRAPPER_NO_CONTRACT;
-    return GetModule()->GetAssembly()->IsIntrospectionOnly();
-}
-
 /*********************************************************************/
 #ifndef DACCESS_COMPILE
 BOOL NDirectMethodDesc::HasDefaultDllImportSearchPathsAttribute()

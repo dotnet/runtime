@@ -463,13 +463,6 @@ PTR_ReadyToRunInfo ReadyToRunInfo::Initialize(Module * pModule, AllocMemTracker 
         return NULL;
     }
 
-    // Ignore ReadyToRun for introspection-only loads
-    if (pFile->IsIntrospectionOnly())
-    {
-        DoLog("Ready to Run disabled - module loaded for reflection");
-        return NULL;
-    }
-
     if (!pFile->HasLoadedIL())
     {
         DoLog("Ready to Run disabled - no loaded IL image");

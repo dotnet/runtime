@@ -651,7 +651,7 @@ Assembly *Assembly::CreateDynamic(AppDomain *pDomain, CreateDynamicAssemblyArgs 
         IfFailThrow(pAssemblyEmit->DefineAssembly(publicKey, publicKey.GetSize(), ulHashAlgId,
                                                    name, &assemData, dwFlags,
                                                    &ma));
-        pFile = PEAssembly::Create(pCallerAssembly->GetManifestFile(), pAssemblyEmit, args->access & ASSEMBLY_ACCESS_REFLECTION_ONLY);
+        pFile = PEAssembly::Create(pCallerAssembly->GetManifestFile(), pAssemblyEmit);
 
         // Dynamically created modules (aka RefEmit assemblies) do not have a LoadContext associated with them since they are not bound
         // using an actual binder. As a result, we will assume the same binding/loadcontext information for the dynamic assembly as its
@@ -876,12 +876,6 @@ DomainAssembly *Assembly::FindDomainAssembly(AppDomain *pDomain)
 
     PREFIX_ASSUME (GetManifestModule() !=NULL); 
     RETURN GetManifestModule()->FindDomainAssembly(pDomain);
-}
-
-BOOL Assembly::IsIntrospectionOnly()
-{
-    WRAPPER_NO_CONTRACT;
-    return m_pManifestFile->IsIntrospectionOnly();
 }
 
 PTR_LoaderHeap Assembly::GetLowFrequencyHeap()

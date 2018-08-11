@@ -66,7 +66,7 @@ MethodTable* FrameworkExceptionLoader::GetException(RuntimeExceptionKind kind)
     // Loading will either succeed or throw a FileLoadException.  Catch & swallow that exception.
     EX_TRY
     {
-        pMT = TypeName::GetTypeFromAsmQualifiedName(assemblyQualifiedName.GetUnicode(), FALSE).GetMethodTable();
+        pMT = TypeName::GetTypeFromAsmQualifiedName(assemblyQualifiedName.GetUnicode()).GetMethodTable();
 
         // Since this type is from another assembly, we must ensure that assembly has been sufficiently loaded.
         pMT->EnsureActive();

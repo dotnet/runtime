@@ -825,8 +825,6 @@ BEGIN
     IDS_EE_DUPLICATE_DECLSEC                "Multiple permission sets specified with the same SecurityAction."
     IDS_EE_SAFEARRAYSZARRAYMISMATCH         "SafeArray cannot be marshaled to this array type because it has either nonzero lower bounds or more than one dimension."
 
-    IDS_EE_REFLECTIONONLYGETTYPE_NOASSEMBLY "Explicit assembly name must be specified when loading a type as ReflectionOnly"
-    IDS_EE_REFLECTIONONLY_LOADFAILURE       "Cannot resolve dependency to assembly '%1' because it has not been preloaded. When using the ReflectionOnly APIs, dependent assemblies must be pre-loaded or loaded on demand through the ReflectionOnlyAssemblyResolve event."
     IDS_EE_WINRT_LOADFAILURE                "Could not find Windows Runtime type '%1'."
     IDS_EE_WINRT_THIRDPARTY_NOTSUPPORTED    "Types from custom Windows Runtime components are not supported in desktop applications."
 
@@ -927,11 +925,6 @@ BEGIN
     IDS_EE_RECORD_NON_SUPPORTED_FIELDS      "The structure contains fields that are not supported in unmanaged records."
 
     IDS_CLASSLOAD_NSTRUCT_NEGATIVE_OFFSET   "Could not load type '%1' from assembly '%2' because field '%3' was given a negative offset."
-
-    IDS_EE_CODEEXECUTION_IN_INTROSPECTIVE_ASSEMBLY  "Code execution is prohibited in an assembly loaded as ReflectionOnly."
-
-    IDS_CLASSLOAD_ASSEMBLY_RESOLVE_RETURNED_INTROSPECTION "AssemblyResolveEvent handlers cannot return Assemblies loaded for reflection only."
-    IDS_CLASSLOAD_ASSEMBLY_RESOLVE_RETURNED_EXECUTION     "ReflectionOnlyAssemblyResolve handlers must return Assemblies loaded for reflection only." 
 
     IDS_CLASSLOAD_OVERLAPPING_INTERFACES "The type '%1' in assembly '%2' has a contracting interface set for some instantiations"
     

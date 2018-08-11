@@ -296,11 +296,6 @@ public:
         return hash;
 #endif
     }
-
-    // Is this type part of an assembly loaded for introspection?
-    BOOL IsIntrospectionOnly();
-
-
 };
 
 

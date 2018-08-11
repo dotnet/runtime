@@ -409,12 +409,6 @@ DomainAssembly *DomainFile::GetDomainAssembly()
     return (DomainAssembly *) this;
 }
 
-BOOL DomainFile::IsIntrospectionOnly()
-{
-    WRAPPER_NO_CONTRACT;
-    return GetFile()->IsIntrospectionOnly();
-}
-
 // Return true iff the debugger should get notifications about this assembly.
 //
 // Notes:
@@ -431,7 +425,6 @@ BOOL DomainAssembly::IsVisibleToDebugger()
     SUPPORTS_DAC;
 
     // If you can't run an assembly, then don't send notifications to the debugger.
-    // This check includeds IsIntrospectionOnly().
     return ((GetAssembly() != NULL) ? GetAssembly()->HasRunAccess() : FALSE);
 }
 
@@ -1052,9 +1045,6 @@ void DomainFile::EagerFixups()
     WRAPPER_NO_CONTRACT;
 
 #ifdef FEATURE_PREJIT
-    if (IsIntrospectionOnly())
-        return; 
-    
     if (GetCurrentModule()->HasNativeImage())
     {
         GetCurrentModule()->RunEagerFixups();
@@ -1190,12 +1180,6 @@ void DomainFile::VerifyExecution()
         STANDARD_VM_CHECK;
     }
     CONTRACT_END;
-
-    if (GetModule()->IsIntrospectionOnly())
-    {
-        // Throw an exception
-        COMPlusThrow(kInvalidOperationException, IDS_EE_CODEEXECUTION_IN_INTROSPECTIVE_ASSEMBLY);
-    }
 
     if(GetFile()->PassiveDomainOnly())
     {

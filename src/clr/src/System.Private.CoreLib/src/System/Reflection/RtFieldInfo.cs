@@ -28,16 +28,11 @@ namespace System.Reflection
                 if ((m_invocationFlags & INVOCATION_FLAGS.INVOCATION_FLAGS_INITIALIZED) == 0)
                 {
                     Type declaringType = DeclaringType;
-                    bool fIsReflectionOnlyType = (declaringType is ReflectionOnlyType);
 
                     INVOCATION_FLAGS invocationFlags = 0;
 
                     // first take care of all the NO_INVOKE cases
-                    if (
-                        (declaringType != null && declaringType.ContainsGenericParameters) ||
-                        (declaringType == null && Module.Assembly.ReflectionOnly) ||
-                        (fIsReflectionOnlyType)
-                       )
+                    if (declaringType != null && declaringType.ContainsGenericParameters)
                     {
                         invocationFlags |= INVOCATION_FLAGS.INVOCATION_FLAGS_NO_INVOKE;
                     }
@@ -132,9 +127,6 @@ namespace System.Reflection
                 if (declaringType != null && declaringType.ContainsGenericParameters)
                     throw new InvalidOperationException(SR.Arg_UnboundGenField);
 
-                if ((declaringType == null && Module.Assembly.ReflectionOnly) || declaringType is ReflectionOnlyType)
-                    throw new InvalidOperationException(SR.Arg_ReflectionOnlyField);
-
                 throw new FieldAccessException();
             }
 
@@ -194,9 +186,6 @@ namespace System.Reflection
             {
                 if (declaringType != null && DeclaringType.ContainsGenericParameters)
                     throw new InvalidOperationException(SR.Arg_UnboundGenField);
-
-                if ((declaringType == null && Module.Assembly.ReflectionOnly) || declaringType is ReflectionOnlyType)
-                    throw new InvalidOperationException(SR.Arg_ReflectionOnlyField);
 
                 throw new FieldAccessException();
             }
@@ -317,9 +306,6 @@ namespace System.Reflection
         {
             get
             {
-                Type declaringType = DeclaringType;
-                if ((declaringType == null && Module.Assembly.ReflectionOnly) || declaringType is ReflectionOnlyType)
-                    throw new InvalidOperationException(SR.InvalidOperation_NotAllowedInReflectionOnly);
                 return new RuntimeFieldHandle(this);
             }
         }

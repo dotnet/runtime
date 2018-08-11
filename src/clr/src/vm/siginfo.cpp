@@ -3364,14 +3364,6 @@ BOOL CompareTypeDefsForEquivalence(mdToken tk1, mdToken tk2, Module *pModule1, M
     }
 
     // *************************************************************************
-    // 2c. the two types cannot be equivalent across IntrospectionOnly/Non-introspection boundaries
-    // *************************************************************************
-    if (!!pModule1->GetAssembly()->IsIntrospectionOnly() != !!pModule2->GetAssembly()->IsIntrospectionOnly())
-    {
-        return FALSE;
-    }
-
-    // *************************************************************************
     // 3. type is an interface, struct, enum, or delegate
     // *************************************************************************
     if (IsTdInterface(dwAttrType1))

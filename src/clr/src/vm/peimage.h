@@ -70,11 +70,8 @@ public:
     };
     PTR_PEImageLayout GetLayout(DWORD imageLayoutMask,DWORD flags); //with ref
     PTR_PEImageLayout GetLoadedLayout(); //no ref
-    PTR_PEImageLayout GetLoadedIntrospectionLayout(); //no ref, introspection only
     BOOL IsOpened();
     BOOL HasLoadedLayout();
-    BOOL HasLoadedIntrospectionLayout();
-    
 
 public:
     // ------------------------------------------------------------
@@ -135,10 +132,9 @@ public:
 
     void   Load();
     void   SetLoadedHMODULE(HMODULE hMod);
-    void   LoadNoMetaData(BOOL bIntrospection);
+    void   LoadNoMetaData();
     void   LoadNoFile();
-    void   LoadFromMapped();  
-    void   LoadForIntrospection();
+    void   LoadFromMapped();
 
     void AllocateLazyCOWPages();
 #endif
@@ -329,8 +325,7 @@ protected:
         IMAGE_FLAT=0,
         IMAGE_MAPPED=1,
         IMAGE_LOADED=2,
-        IMAGE_LOADED_FOR_INTROSPECTION=3,
-        IMAGE_COUNT=4
+        IMAGE_COUNT=3
     };
     
     SimpleRWLock *m_pLayoutLock;
