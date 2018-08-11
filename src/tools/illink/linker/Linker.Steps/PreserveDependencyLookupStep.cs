@@ -36,11 +36,10 @@ namespace Mono.Linker.Steps {
 		{
 			var module = assembly.MainModule;
 
-			// TODO: This is expensive
-			if (!module.HasTypeReference ("System.Runtime.CompilerServices.PreserveDependencyAttribute"))
-				return;
-				
 			foreach (var type in module.Types) {
+				if (!type.HasMethods)
+					continue;
+
 				foreach (var method in type.GetMethods ()) {
 					var md = method.Resolve ();
 					if (md?.HasCustomAttributes != true)
