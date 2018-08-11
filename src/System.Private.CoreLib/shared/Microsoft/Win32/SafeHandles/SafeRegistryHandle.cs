@@ -2,13 +2,6 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
-//
-//
-//
-// Implements Microsoft.Win32.SafeHandles.SafeRegistryHandle
-//
-// ======================================================================================
-
 using System;
 using System.Security;
 using System.Runtime.InteropServices;
@@ -18,7 +11,12 @@ using System.Runtime.Versioning;
 
 namespace Microsoft.Win32.SafeHandles
 {
-    internal sealed class SafeRegistryHandle : SafeHandleZeroOrMinusOneIsInvalid
+#if REGISTRY_ASSEMBLY
+    public
+#else
+    internal
+#endif
+    sealed class SafeRegistryHandle : SafeHandleZeroOrMinusOneIsInvalid
     {
         internal SafeRegistryHandle() : base(true) { }
 
@@ -27,13 +25,9 @@ namespace Microsoft.Win32.SafeHandles
             SetHandle(preexistingHandle);
         }
 
-        override protected bool ReleaseHandle()
+        protected override bool ReleaseHandle()
         {
-            return (RegCloseKey(handle) == Interop.Errors.ERROR_SUCCESS);
+            return (Interop.Advapi32.RegCloseKey(handle) == Interop.Errors.ERROR_SUCCESS);
         }
-
-        [DllImport(Win32Native.ADVAPI32)]
-        internal static extern int RegCloseKey(IntPtr hKey);
     }
 }
-
