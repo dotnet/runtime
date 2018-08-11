@@ -753,54 +753,37 @@ namespace System
         // that string.Equals(A, B, C), then they will return the same hash code with this comparison C.
         public int GetHashCode(StringComparison comparisonType) => StringComparer.FromComparison(comparisonType).GetHashCode(this);
 
-        // Use this if and only if you need the hashcode to not change across app domains (e.g. you have an app domain agile
-        // hash table).
-        internal int GetLegacyNonRandomizedHashCode()
+        // Use this if and only if 'Denial of Service' attacks are not a concern (i.e. never used for free-form user input),
+        // or are otherwise mitigated
+        internal unsafe int GetNonRandomizedHashCode()
         {
-            unsafe
+            fixed (char* src = &_firstChar)
             {
-                fixed (char* src = &_firstChar)
+                Debug.Assert(src[this.Length] == '\0', "src[this.Length] == '\\0'");
+                Debug.Assert(((int)src) % 4 == 0, "Managed string should start at 4 bytes boundary");
+
+                uint hash1 = (5381 << 16) + 5381;
+                uint hash2 = hash1;
+
+                uint* ptr = (uint*)src;
+                int length = this.Length;
+
+                while (length > 2)
                 {
-                    Debug.Assert(src[this.Length] == '\0', "src[this.Length] == '\\0'");
-                    Debug.Assert(((int)src) % 4 == 0, "Managed string should start at 4 bytes boundary");
-#if BIT64
-                    int hash1 = 5381;
-#else // !BIT64 (32)
-                    int hash1 = (5381<<16) + 5381;
-#endif
-                    int hash2 = hash1;
-
-#if BIT64
-                    int c;
-                    char* s = src;
-                    while ((c = s[0]) != 0)
-                    {
-                        hash1 = ((hash1 << 5) + hash1) ^ c;
-                        c = s[1];
-                        if (c == 0)
-                            break;
-                        hash2 = ((hash2 << 5) + hash2) ^ c;
-                        s += 2;
-                    }
-#else // !BIT64 (32)
-                    // 32 bit machines.
-                    int* pint = (int *)src;
-                    int len = this.Length;
-                    while (len > 2)
-                    {
-                        hash1 = ((hash1 << 5) + hash1 + (hash1 >> 27)) ^ pint[0];
-                        hash2 = ((hash2 << 5) + hash2 + (hash2 >> 27)) ^ pint[1];
-                        pint += 2;
-                        len  -= 4;
-                    }
-
-                    if (len > 0)
-                    {
-                        hash1 = ((hash1 << 5) + hash1 + (hash1 >> 27)) ^ pint[0];
-                    }
-#endif
-                    return hash1 + (hash2 * 1566083941);
+                    length -= 4;
+                    // Where length is 4n-1 (e.g. 3,7,11,15,19) this additionally consumes the null terminator
+                    hash1 = (((hash1 << 5) | (hash1 >> 27)) + hash1) ^ ptr[0];
+                    hash2 = (((hash2 << 5) | (hash2 >> 27)) + hash2) ^ ptr[1];
+                    ptr += 2;
                 }
+
+                if (length > 0)
+                {
+                    // Where length is 4n-3 (e.g. 1,5,9,13,17) this additionally consumes the null terminator
+                    hash2 = (((hash2 << 5) | (hash2 >> 27)) + hash2) ^ ptr[0];
+                }
+
+                return (int)(hash1 + (hash2 * 1566083941));
             }
         }
 
