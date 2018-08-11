@@ -5100,7 +5100,7 @@ namespace System.Reflection
             }
             else
             {
-                return sKey.GetLegacyNonRandomizedHashCode();
+                return sKey.GetNonRandomizedHashCode();
             }
         }
 
