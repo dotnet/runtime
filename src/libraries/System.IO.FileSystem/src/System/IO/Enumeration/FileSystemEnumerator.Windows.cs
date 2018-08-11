@@ -2,6 +2,8 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
+using System;
+using System.IO;
 using System.Buffers;
 using System.Collections.Generic;
 using System.Diagnostics;
@@ -9,7 +11,11 @@ using System.Runtime.ConstrainedExecution;
 using System.Runtime.InteropServices;
 using System.Threading;
 
+#if MS_IO_REDIST
+namespace Microsoft.IO.Enumeration
+#else
 namespace System.IO.Enumeration
+#endif
 {
     public unsafe abstract partial class FileSystemEnumerator<TResult> : CriticalFinalizerObject, IEnumerator<TResult>
     {
@@ -148,7 +154,7 @@ namespace System.IO.Enumeration
                         return false;
 
                     // Calling the constructor inside the try block would create a second instance on the stack.
-                    FileSystemEntry.Initialize(ref entry, _entry, _currentPath, _rootDirectory, _originalRootDirectory);
+                    FileSystemEntry.Initialize(ref entry, _entry, _currentPath.AsSpan(), _rootDirectory.AsSpan(), _originalRootDirectory.AsSpan());
 
                     // Skip specified attributes
                     if ((_entry->FileAttributes & _options.AttributesToSkip) != 0)
@@ -166,7 +172,7 @@ namespace System.IO.Enumeration
                         else if (_options.RecurseSubdirectories && ShouldRecurseIntoEntry(ref entry))
                         {
                             // Recursion is on and the directory was accepted, Queue it
-                            string subDirectory = Path.Join(_currentPath, _entry->FileName);
+                            string subDirectory = Path.Join(_currentPath.AsSpan(), _entry->FileName);
                             IntPtr subDirectoryHandle = CreateRelativeDirectoryHandle(_entry->FileName, subDirectory);
                             if (subDirectoryHandle != IntPtr.Zero)
                             {

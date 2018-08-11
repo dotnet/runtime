@@ -2,14 +2,20 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
+using System;
 using System.Buffers;
 using System.Collections.Generic;
 using System.Diagnostics;
+using System.IO;
 using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
 
+#if MS_IO_REDIST
+namespace Microsoft.IO
+#else
 namespace System.IO
+#endif
 {
     // Class for creating FileStream objects, and some basic file management
     // routines such as Delete, etc.
@@ -330,9 +336,11 @@ namespace System.IO
                 }
                 else if (fileLength == 0)
                 {
+#if !MS_IO_REDIST
                     // Some file systems (e.g. procfs on Linux) return 0 for length even when there's content.
                     // Thus we need to assume 0 doesn't mean empty.
                     return ReadAllBytesUnknownLength(fs);
+#endif
                 }
 
                 int index = 0;
@@ -350,6 +358,7 @@ namespace System.IO
             }
         }
 
+#if !MS_IO_REDIST
         private static byte[] ReadAllBytesUnknownLength(FileStream fs)
         {
             byte[] rentedArray = null;
@@ -393,6 +402,7 @@ namespace System.IO
                 }
             }
         }
+#endif
 
         public static void WriteAllBytes(string path, byte[] bytes)
         {
@@ -700,7 +710,11 @@ namespace System.IO
                 StringBuilder sb = new StringBuilder();
                 for (;;)
                 {
+#if MS_IO_REDIST
+                    int read = await sr.ReadAsync(buffer, 0, buffer.Length).ConfigureAwait(false);
+#else
                     int read = await sr.ReadAsync(new Memory<char>(buffer), cancellationToken).ConfigureAwait(false);
+#endif
                     if (read == 0)
                     {
                         return sb.ToString();
@@ -787,7 +801,11 @@ namespace System.IO
                 byte[] bytes = new byte[count];
                 do
                 {
+#if MS_IO_REDIST
+                    int n = await fs.ReadAsync(bytes, index, count - index, cancellationToken).ConfigureAwait(false);
+#else
                     int n = await fs.ReadAsync(new Memory<byte>(bytes, index, count - index), cancellationToken).ConfigureAwait(false);
+#endif
                     if (n == 0)
                     {
                         throw Error.GetEndOfFile();
@@ -823,7 +841,11 @@ namespace System.IO
                     }
 
                     Debug.Assert(bytesRead < rentedArray.Length);
+#if MS_IO_REDIST
+                    int n = await fs.ReadAsync(rentedArray, bytesRead, rentedArray.Length - bytesRead, cancellationToken).ConfigureAwait(false);
+#else
                     int n = await fs.ReadAsync(rentedArray.AsMemory(bytesRead), cancellationToken).ConfigureAwait(false);
+#endif
                     if (n == 0)
                     {
                         return rentedArray.AsSpan(0, bytesRead).ToArray();
@@ -859,7 +881,11 @@ namespace System.IO
 
             using (FileStream fs = new FileStream(path, FileMode.Create, FileAccess.Write, FileShare.Read, DefaultBufferSize, FileOptions.Asynchronous | FileOptions.SequentialScan))
             {
+#if MS_IO_REDIST
+                await fs.WriteAsync(bytes, 0, bytes.Length, cancellationToken).ConfigureAwait(false);
+#else
                 await fs.WriteAsync(new ReadOnlyMemory<byte>(bytes), cancellationToken).ConfigureAwait(false);
+#endif
                 await fs.FlushAsync(cancellationToken).ConfigureAwait(false);
             }
         }
@@ -952,7 +978,11 @@ namespace System.IO
                 {
                     int batchSize = Math.Min(DefaultBufferSize, count - index);
                     contents.CopyTo(index, buffer, 0, batchSize);
+#if MS_IO_REDIST
+                    await sw.WriteAsync(buffer, 0, batchSize).ConfigureAwait(false);
+#else
                     await sw.WriteAsync(new ReadOnlyMemory<char>(buffer, 0, batchSize), cancellationToken).ConfigureAwait(false);
+#endif
                     index += batchSize;
                 }
 

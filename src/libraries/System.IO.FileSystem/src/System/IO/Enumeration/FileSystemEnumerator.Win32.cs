@@ -2,10 +2,16 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
+using System;
+using System.IO;
 using System.Diagnostics;
 using System.Runtime.CompilerServices;
 
+#if MS_IO_REDIST
+namespace Microsoft.IO.Enumeration
+#else
 namespace System.IO.Enumeration
+#endif
 {
     public partial class FileSystemEnumerator<TResult>
     {

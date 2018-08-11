@@ -2,11 +2,16 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
+using System;
 using System.Collections;
 using System.Collections.Generic;
 using System.Runtime.ConstrainedExecution;
 
+#if MS_IO_REDIST
+namespace Microsoft.IO.Enumeration
+#else
 namespace System.IO.Enumeration
+#endif
 {
     public unsafe abstract partial class FileSystemEnumerator<TResult> : CriticalFinalizerObject, IEnumerator<TResult>
     {
@@ -48,7 +53,7 @@ namespace System.IO.Enumeration
 
             // Close the handle now that we're done
             CloseDirectoryHandle();
-            OnDirectoryFinished(_currentPath);
+            OnDirectoryFinished(_currentPath.AsSpan());
 
             // Attempt to grab another directory to process
             if (!DequeueNextDirectory())
