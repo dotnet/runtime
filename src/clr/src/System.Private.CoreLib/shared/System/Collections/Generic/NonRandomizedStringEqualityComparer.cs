@@ -23,7 +23,7 @@ namespace System.Collections.Generic
 
         public sealed override bool Equals(string x, string y) => string.Equals(x, y);
 
-        public sealed override int GetHashCode(string obj) => obj?.GetLegacyNonRandomizedHashCode() ?? 0;
+        public sealed override int GetHashCode(string obj) => obj?.GetNonRandomizedHashCode() ?? 0;
 
         public void GetObjectData(SerializationInfo info, StreamingContext context)
         {
