@@ -24,6 +24,11 @@
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'Release|x64'">
   </PropertyGroup>
 
+  <PropertyGroup>
+    <!-- Fails with JIT stress modes, issue #19415 -->
+    <JitOptimizationSensitive>true</JitOptimizationSensitive>
+  </PropertyGroup>
+
   <ItemGroup>
     <Compile Include="BasicTests.cs" />
     <Compile Include="TestHelpers.cs" />
