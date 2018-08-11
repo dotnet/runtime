@@ -2,7 +2,11 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
+#if MS_IO_REDIST
+namespace Microsoft.IO
+#else
 namespace System.IO
+#endif
 {
     public enum MatchType
     {

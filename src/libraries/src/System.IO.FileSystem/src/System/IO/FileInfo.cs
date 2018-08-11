@@ -2,10 +2,16 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
+using System;
 using System.Diagnostics;
+using System.IO;
 using System.Text;
 
+#if MS_IO_REDIST
+namespace Microsoft.IO
+#else
 namespace System.IO
+#endif
 {
     // Class for creating FileStream objects, and some basic file management
     // routines such as Delete, etc.
@@ -24,7 +30,7 @@ namespace System.IO
             OriginalPath = originalPath ?? throw new ArgumentNullException(nameof(fileName));
 
             fullPath = fullPath ?? originalPath;
-            Debug.Assert(!isNormalized || !PathInternal.IsPartiallyQualified(fullPath), "should be fully qualified if normalized");
+            Debug.Assert(!isNormalized || !PathInternal.IsPartiallyQualified(fullPath.AsSpan()), "should be fully qualified if normalized");
 
             FullPath = isNormalized ? fullPath ?? originalPath : Path.GetFullPath(fullPath);
             _name = fileName ?? Path.GetFileName(originalPath);
