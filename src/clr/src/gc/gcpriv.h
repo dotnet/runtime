@@ -275,7 +275,7 @@ void GCLog (const char *fmt, ... );
 #define dprintf(l,x)
 #endif //TRACE_GC
 
-#ifndef FEATURE_REDHAWK
+#if !defined(FEATURE_REDHAWK) && !defined(BUILD_AS_STANDALONE)
 #undef  assert
 #define assert _ASSERTE
 #undef  ASSERT
