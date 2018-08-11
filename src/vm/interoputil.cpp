@@ -5255,7 +5255,7 @@ TypeHandle GetWinRTType(SString* ssTypeName, BOOL bThrowIfNotFound)
     SString ssAssemblyName(SString::Utf8Literal, "WindowsRuntimeAssemblyName, ContentType=WindowsRuntime");
     DomainAssembly *pAssembly = LoadDomainAssembly(&ssAssemblyName, NULL, 
                                                    NULL, 
-                                                   bThrowIfNotFound, FALSE, ssTypeName);
+                                                   bThrowIfNotFound, ssTypeName);
     if (pAssembly != NULL)
     {
         typeHandle = TypeName::GetTypeFromAssembly(*ssTypeName, pAssembly->GetAssembly(), bThrowIfNotFound);
@@ -5953,7 +5953,7 @@ MethodTable *WinRTInterfaceRedirector::GetWinRTTypeForRedirectedInterfaceIndex(W
         const NonMscorlibRedirectedInterfaceInfo *pInfo = &s_rNonMscorlibInterfaceInfos[id & ~NON_MSCORLIB_MARKER];
         SString assemblyQualifiedTypeName(SString::Utf8, pInfo->m_szWinRTInterfaceAssemblyQualifiedTypeName);
 
-        RETURN TypeName::GetTypeFromAsmQualifiedName(assemblyQualifiedTypeName.GetUnicode(), FALSE).GetMethodTable();
+        RETURN TypeName::GetTypeFromAsmQualifiedName(assemblyQualifiedTypeName.GetUnicode()).GetMethodTable();
     }
 }
 
@@ -5970,7 +5970,7 @@ MethodDesc *WinRTInterfaceRedirector::LoadMethodFromRedirectedAssembly(LPCUTF8 s
 
     SString assemblyQualifiedTypeName(SString::Utf8, szAssemblyQualifiedTypeName);
 
-    MethodTable *pMT = TypeName::GetTypeFromAsmQualifiedName(assemblyQualifiedTypeName.GetUnicode(), FALSE).GetMethodTable();
+    MethodTable *pMT = TypeName::GetTypeFromAsmQualifiedName(assemblyQualifiedTypeName.GetUnicode()).GetMethodTable();
     return MemberLoader::FindMethodByName(pMT, szMethodName);
 }
 
@@ -6239,13 +6239,13 @@ MethodTable *WinRTDelegateRedirector::GetWinRTTypeForRedirectedDelegateIndex(Win
     case WinMDAdapter::RedirectedTypeIndex_System_Collections_Specialized_NotifyCollectionChangedEventHandler:
     {
         SString assemblyQualifiedTypeName(SString::Utf8, NCCEHWINRT_ASM_QUAL_TYPE_NAME);
-        return TypeName::GetTypeFromAsmQualifiedName(assemblyQualifiedTypeName.GetUnicode(), FALSE).GetMethodTable();
+        return TypeName::GetTypeFromAsmQualifiedName(assemblyQualifiedTypeName.GetUnicode()).GetMethodTable();
     }
 
     case WinMDAdapter::RedirectedTypeIndex_System_ComponentModel_PropertyChangedEventHandler:
     {
         SString assemblyQualifiedTypeName(SString::Utf8, PCEHWINRT_ASM_QUAL_TYPE_NAME);
-        return TypeName::GetTypeFromAsmQualifiedName(assemblyQualifiedTypeName.GetUnicode(), FALSE).GetMethodTable();
+        return TypeName::GetTypeFromAsmQualifiedName(assemblyQualifiedTypeName.GetUnicode()).GetMethodTable();
     }
 
     default:

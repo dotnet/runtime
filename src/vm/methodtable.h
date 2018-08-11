@@ -993,11 +993,6 @@ public:
     }
 #endif // FEATURE_COMINTEROP
 
-    BOOL IsIntrospectionOnly();
-
-    // Checks this type and its instantiation for "IsIntrospectionOnly"
-    BOOL ContainsIntrospectionOnlyTypes();
-
 #ifndef DACCESS_COMPILE
     VOID EnsureActive();
     VOID EnsureInstanceActive();

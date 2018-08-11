@@ -53,7 +53,6 @@ class FriendAssemblyDescriptor;
 // Bits in m_dwDynamicAssemblyAccess (see System.Reflection.Emit.AssemblyBuilderAccess.cs)
 #define ASSEMBLY_ACCESS_RUN     0x01
 #define ASSEMBLY_ACCESS_SAVE    0x02
-#define ASSEMBLY_ACCESS_REFLECTION_ONLY    0x04
 #define ASSEMBLY_ACCESS_COLLECT 0x8
 
 struct CreateDynamicAssemblyArgsGC
@@ -221,12 +220,6 @@ public:
     void SetParent(BaseDomain* pParent);
 
     //-----------------------------------------------------------------------------------------
-    // If true, this assembly is loaded only for introspection. We can load modules, types, etc,
-    // but no code execution or object instantiation is permitted.
-    //-----------------------------------------------------------------------------------------
-    BOOL IsIntrospectionOnly();
-
-    //-----------------------------------------------------------------------------------------
     // EnsureActive ensures that the assembly is properly prepped in the current app domain
     // for active uses like code execution, static field access, and instance allocation
     //-----------------------------------------------------------------------------------------
@@ -323,7 +316,7 @@ public:
     BOOL CanSkipPolicyResolution()
     {
         WRAPPER_NO_CONTRACT;
-        return IsSystem() || IsIntrospectionOnly() || (m_isDynamic && !(m_dwDynamicAssemblyAccess & ASSEMBLY_ACCESS_RUN));
+        return IsSystem() || (m_isDynamic && !(m_dwDynamicAssemblyAccess & ASSEMBLY_ACCESS_RUN));
     }
 
     PTR_LoaderHeap GetLowFrequencyHeap();

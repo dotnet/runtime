@@ -69,7 +69,7 @@ namespace System
         FullName,
     }
 
-    internal class RuntimeType :
+    internal sealed class RuntimeType :
         System.Reflection.TypeInfo, ICloneable
     {
         #region Definitions
@@ -1754,14 +1754,14 @@ namespace System
         #region Static Members
 
         #region Internal
-        internal static RuntimeType GetType(string typeName, bool throwOnError, bool ignoreCase, bool reflectionOnly,
+        internal static RuntimeType GetType(string typeName, bool throwOnError, bool ignoreCase,
             ref StackCrawlMark stackMark)
         {
             if (typeName == null)
                 throw new ArgumentNullException(nameof(typeName));
 
             return RuntimeTypeHandle.GetTypeByName(
-                typeName, throwOnError, ignoreCase, reflectionOnly, ref stackMark, false);
+                typeName, throwOnError, ignoreCase, ref stackMark, false);
         }
 
         internal static MethodBase GetMethodBase(RuntimeModule scope, int typeMetadataToken)
@@ -4576,9 +4576,6 @@ namespace System
         #region Legacy Internal
         private void CreateInstanceCheckThis()
         {
-            if (this is ReflectionOnlyType)
-                throw new ArgumentException(SR.Arg_ReflectionOnlyInvoke);
-
             if (ContainsGenericParameters)
                 throw new ArgumentException(
                     SR.Format(SR.Acc_CreateGenericEx, this));
@@ -4801,9 +4798,6 @@ namespace System
         [Diagnostics.DebuggerHidden]
         internal object CreateInstanceDefaultCtor(bool publicOnly, bool skipCheckThis, bool fillCache, bool wrapExceptions)
         {
-            if (GetType() == typeof(ReflectionOnlyType))
-                throw new InvalidOperationException(SR.InvalidOperation_NotAllowedInReflectionOnly);
-
             ActivatorCache activatorCache = s_ActivatorCache;
             if (activatorCache != null)
             {
@@ -4891,29 +4885,6 @@ namespace System
 
         #region COM
         #endregion
-    }
-
-    // this is the introspection only type. This type overrides all the functions with runtime semantics
-    // and throws an exception.
-    // The idea behind this type is that it relieves RuntimeType from doing honerous checks about ReflectionOnly
-    // context.
-    // This type should not derive from RuntimeType but it's doing so for convinience.
-    // That should not present a security threat though it is risky as a direct call to one of the base method
-    // method (RuntimeType) and an instance of this type will work around the reason to have this type in the 
-    // first place. However given RuntimeType is not public all its methods are protected and require full trust
-    // to be accessed
-    internal class ReflectionOnlyType : RuntimeType
-    {
-        private ReflectionOnlyType() { }
-
-        // always throw
-        public override RuntimeTypeHandle TypeHandle
-        {
-            get
-            {
-                throw new InvalidOperationException(SR.InvalidOperation_NotAllowedInReflectionOnly);
-            }
-        }
     }
 
     #region Library

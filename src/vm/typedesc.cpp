@@ -821,10 +821,7 @@ OBJECTREF ParamTypeDesc::GetManagedClassObject()
     if (m_hExposedClassObject == NULL) {
         REFLECTCLASSBASEREF  refClass = NULL;
         GCPROTECT_BEGIN(refClass);
-        if (GetAssembly()->IsIntrospectionOnly())
-            refClass = (REFLECTCLASSBASEREF) AllocateObject(MscorlibBinder::GetClass(CLASS__CLASS_INTROSPECTION_ONLY));
-        else
-            refClass = (REFLECTCLASSBASEREF) AllocateObject(g_pRuntimeTypeClass);
+        refClass = (REFLECTCLASSBASEREF) AllocateObject(g_pRuntimeTypeClass);
 
         LoaderAllocator *pLoaderAllocator = GetLoaderAllocator();
         TypeHandle th = TypeHandle(this);
@@ -2261,10 +2258,7 @@ OBJECTREF TypeVarTypeDesc::GetManagedClassObject()
     if (m_hExposedClassObject == NULL) {
         REFLECTCLASSBASEREF  refClass = NULL;
         GCPROTECT_BEGIN(refClass);
-        if (GetAssembly()->IsIntrospectionOnly())
-            refClass = (REFLECTCLASSBASEREF) AllocateObject(MscorlibBinder::GetClass(CLASS__CLASS_INTROSPECTION_ONLY));
-        else
-            refClass = (REFLECTCLASSBASEREF) AllocateObject(g_pRuntimeTypeClass);
+        refClass = (REFLECTCLASSBASEREF) AllocateObject(g_pRuntimeTypeClass);
 
         LoaderAllocator *pLoaderAllocator = GetLoaderAllocator();
         TypeHandle th = TypeHandle(this);
@@ -2335,53 +2329,6 @@ FnPtrTypeDesc::IsExternallyVisible() const
     // All return/arguments types are externally visible
     return TRUE;
 } // FnPtrTypeDesc::IsExternallyVisible
-
-// Returns TRUE if any of return or argument types is part of an assembly loaded for introspection.
-BOOL 
-FnPtrTypeDesc::IsIntrospectionOnly() const
-{
-    CONTRACTL
-    {
-        THROWS;
-        GC_TRIGGERS;
-    }
-    CONTRACTL_END;
-    
-    const TypeHandle * rgRetAndArgTypes = GetRetAndArgTypes();
-    for (DWORD i = 0; i <= m_NumArgs; i++)
-    {
-        if (rgRetAndArgTypes[i].IsIntrospectionOnly())
-        {
-            return TRUE;
-        }
-    }
-    // None of the return/arguments type was loaded for introspection
-    return FALSE;
-} // FnPtrTypeDesc::IsIntrospectionOnly
-
-// Returns TRUE if any of return or argument types is part of an assembly loaded for introspection.
-// Instantiations of generic types are also recursively checked.
-BOOL 
-FnPtrTypeDesc::ContainsIntrospectionOnlyTypes() const
-{
-    CONTRACTL
-    {
-        THROWS;
-        GC_TRIGGERS;
-    }
-    CONTRACTL_END;
-    
-    const TypeHandle * rgRetAndArgTypes = GetRetAndArgTypes();
-    for (DWORD i = 0; i <= m_NumArgs; i++)
-    {
-        if (rgRetAndArgTypes[i].ContainsIntrospectionOnlyTypes())
-        {
-            return TRUE;
-        }
-    }
-    // None of the return/arguments type contains types loaded for introspection
-    return FALSE;
-} // FnPtrTypeDesc::ContainsIntrospectionOnlyTypes
 
 #endif //DACCESS_COMPILE
 

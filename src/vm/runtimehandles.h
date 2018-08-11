@@ -172,7 +172,7 @@ public:
     void QCALLTYPE GetTypeByNameUsingCARules(LPCWSTR pwzClassName, QCall::ModuleHandle pModule, QCall::ObjectHandleOnStack retType);
 
     static
-    void QCALLTYPE GetTypeByName(LPCWSTR pwzClassName, BOOL bThrowOnError, BOOL bIgnoreCase, BOOL bReflectionOnly,
+    void QCALLTYPE GetTypeByName(LPCWSTR pwzClassName, BOOL bThrowOnError, BOOL bIgnoreCase,
                                  QCall::StackCrawlMarkHandle pStackMark, 
                                  ICLRPrivBinder * pPrivHostBinder,
                                  BOOL bLoadTypeFromPartialNameHack, QCall::ObjectHandleOnStack retType,

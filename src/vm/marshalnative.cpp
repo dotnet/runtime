@@ -974,8 +974,7 @@ FCIMPL1(ITypeInfo*, MarshalNative::GetITypeInfoForType, ReflectClassBaseObject* 
         COMPlusThrowArgumentNull(W("t"));
         
     MethodTable *pRefMT = refClass->GetMethodTable();
-    if (pRefMT != g_pRuntimeTypeClass &&
-        pRefMT != MscorlibBinder::GetClass(CLASS__CLASS_INTROSPECTION_ONLY))
+    if (pRefMT != g_pRuntimeTypeClass)
         COMPlusThrowArgumentException(W("t"), W("Argument_MustBeRuntimeType"));
 
     TypeHandle th = refClass->GetType();
@@ -1533,8 +1532,7 @@ FCIMPL1(FC_BOOL_RET, MarshalNative::IsTypeVisibleFromCom, ReflectClassBaseObject
         COMPlusThrowArgumentNull(W("t"));
         
     MethodTable *pRefMT = refClass->GetMethodTable();
-    if (pRefMT != g_pRuntimeTypeClass && 
-        pRefMT != MscorlibBinder::GetClass(CLASS__CLASS_INTROSPECTION_ONLY))
+    if (pRefMT != g_pRuntimeTypeClass)
         COMPlusThrowArgumentException(W("t"), W("Argument_MustBeRuntimeType"));
 
     // Call the internal version of IsTypeVisibleFromCom.
@@ -1728,8 +1726,7 @@ FCIMPL2(void, MarshalNative::DoGenerateGuidForType, GUID * result, ReflectClassB
         COMPlusThrowArgumentNull(W("type"));
         
     MethodTable *pRefMT = refType->GetMethodTable();
-    if (pRefMT != g_pRuntimeTypeClass &&
-        pRefMT != MscorlibBinder::GetClass(CLASS__CLASS_INTROSPECTION_ONLY))
+    if (pRefMT != g_pRuntimeTypeClass)
         COMPlusThrowArgumentException(W("type"), W("Argument_MustBeRuntimeType"));
     if (result == NULL)
         COMPlusThrow(kArgumentNullException, W("ArgumentNull_GUID"));
@@ -1964,8 +1961,7 @@ FCIMPL1(int, MarshalNative::GetStartComSlot, ReflectClassBaseObject* tUNSAFE)
         COMPlusThrow(kArgumentNullException, W("ArgumentNull_Generic"));
     
     MethodTable *pTMT = t->GetMethodTable();
-    if (pTMT != g_pRuntimeTypeClass &&
-        pTMT != MscorlibBinder::GetClass(CLASS__CLASS_INTROSPECTION_ONLY))
+    if (pTMT != g_pRuntimeTypeClass)
         COMPlusThrowArgumentException(W("t"), W("Argument_MustBeRuntimeType"));
 
     MethodTable *pMT = t->GetType().GetMethodTable();
@@ -1998,8 +1994,7 @@ FCIMPL1(int, MarshalNative::GetEndComSlot, ReflectClassBaseObject* tUNSAFE)
         COMPlusThrow(kArgumentNullException, W("ArgumentNull_Generic"));
     
     MethodTable *pTMT = t->GetMethodTable();
-    if (pTMT != g_pRuntimeTypeClass &&
-        pTMT != MscorlibBinder::GetClass(CLASS__CLASS_INTROSPECTION_ONLY))
+    if (pTMT != g_pRuntimeTypeClass)
         COMPlusThrowArgumentException(W("t"), W("Argument_MustBeRuntimeType"));
 
     TypeHandle classTH = t->GetType();
@@ -2077,8 +2072,7 @@ FCIMPL3(Object*, MarshalNative::GetMethodInfoForComSlot, ReflectClassBaseObject*
         COMPlusThrow(kArgumentNullException, W("ArgumentNull_Generic"));
     
     MethodTable *pTMT = t->GetMethodTable();
-    if (pTMT != g_pRuntimeTypeClass &&
-        pTMT != MscorlibBinder::GetClass(CLASS__CLASS_INTROSPECTION_ONLY))
+    if (pTMT != g_pRuntimeTypeClass)
         COMPlusThrowArgumentException(W("t"), W("Argument_MustBeRuntimeType"));
 
     TypeHandle type = t->GetType();

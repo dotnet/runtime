@@ -375,8 +375,7 @@ InstantiatedMethodDesc::NewInstantiatedMethodDesc(MethodTable *pExactMT,
 
         // Next look in each ngen'ed image in turn
         AppDomain::AssemblyIterator assemblyIterator = GetAppDomain()->IterateAssembliesEx((AssemblyIterationFlags)(
-            kIncludeLoaded | 
-            (pExactMT->IsIntrospectionOnly() ? kIncludeIntrospection : kIncludeExecution)));
+            kIncludeLoaded | kIncludeExecution));
         CollectibleAssemblyHolder<DomainAssembly *> pDomainAssembly;
         while ((pNewMD == NULL) && assemblyIterator.Next(pDomainAssembly.This()))
         {

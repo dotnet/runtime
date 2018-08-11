@@ -186,7 +186,6 @@ BOOL AssemblySpec::IsValidAssemblyName()
 HRESULT AssemblySpec::InitializeSpecInternal(mdToken kAssemblyToken,
                                   IMDInternalImport *pImport,
                                   DomainAssembly *pStaticParent,
-                                  BOOL fIntrospectionOnly, 
                                   BOOL fAllowAllocation)
 {
     CONTRACTL
@@ -199,7 +198,6 @@ HRESULT AssemblySpec::InitializeSpecInternal(mdToken kAssemblyToken,
         PRECONDITION(pImport->IsValidToken(kAssemblyToken));
         PRECONDITION(TypeFromToken(kAssemblyToken) == mdtAssembly
                      || TypeFromToken(kAssemblyToken) == mdtAssemblyRef);
-        PRECONDITION(pStaticParent == NULL || !(pStaticParent->IsIntrospectionOnly() && !fIntrospectionOnly));   //Something's wrong if an introspection assembly loads an assembly for execution.
     }
     CONTRACTL_END;
     
@@ -207,16 +205,6 @@ HRESULT AssemblySpec::InitializeSpecInternal(mdToken kAssemblyToken,
     
     EX_TRY
     {
-        // We also did this check as a precondition as we should have prevented this structurally - but just 
-        // in case, make sure retail stops us from proceeding further.
-        if (pStaticParent != NULL && pStaticParent->IsIntrospectionOnly() && !fIntrospectionOnly)
-        {
-            EEPOLICY_HANDLE_FATAL_ERROR(COR_E_EXECUTIONENGINE);
-        }
-        
-        // Normalize this boolean as it tends to be used for comparisons
-        m_fIntrospectionOnly = !!fIntrospectionOnly;
-
         IfFailThrow(BaseAssemblySpec::Init(kAssemblyToken,pImport));
 
         if (IsContentType_WindowsRuntime())
@@ -268,7 +256,7 @@ void AssemblySpec::InitializeSpec(PEAssembly * pFile)
     mdAssembly a;
     IfFailThrow(pImport->GetAssemblyFromScope(&a));
 
-    InitializeSpec(a, pImport, NULL, pFile->IsIntrospectionOnly());
+    InitializeSpec(a, pImport, NULL);
     
 #ifdef FEATURE_COMINTEROP
     if (IsContentType_WindowsRuntime())
@@ -303,7 +291,7 @@ void AssemblySpec::InitializeSpec(PEAssembly * pFile)
 
 // This uses thread storage to allocate space. Please use Checkpoint and release it.
 HRESULT AssemblySpec::InitializeSpec(StackingAllocator* alloc, ASSEMBLYNAMEREF* pName, 
-                                  BOOL fParse /*=TRUE*/, BOOL fIntrospectionOnly /*=FALSE*/)
+                                  BOOL fParse /*=TRUE*/)
 {
     CONTRACTL
     {
@@ -452,9 +440,6 @@ HRESULT AssemblySpec::InitializeSpec(StackingAllocator* alloc, ASSEMBLYNAMEREF* 
         SetHashForControl((*pName)->GetHashForControl()->GetDataPtr(), 
                           (*pName)->GetHashForControl()->GetNumComponents(), 
                           (*pName)->GetHashAlgorithmForControl());
-
-    // Normalize this boolean as it tends to be used for comparisons
-    m_fIntrospectionOnly = !!fIntrospectionOnly;
 
     // Extract embedded WinRT name, if present.
     ParseEncodedName();
@@ -755,7 +740,7 @@ PEAssembly *AssemblySpec::ResolveAssemblyFile(AppDomain *pDomain, BOOL fPreBind)
     if (GetName() == NULL)
         RETURN NULL;
 
-    Assembly *pAssembly = pDomain->RaiseAssemblyResolveEvent(this, IsIntrospectionOnly(), fPreBind);
+    Assembly *pAssembly = pDomain->RaiseAssemblyResolveEvent(this, fPreBind);
 
     if (pAssembly != NULL) {
         PEAssembly *pFile = pAssembly->GetManifestFile();
@@ -768,7 +753,7 @@ PEAssembly *AssemblySpec::ResolveAssemblyFile(AppDomain *pDomain, BOOL fPreBind)
 }
 
 
-Assembly *AssemblySpec::LoadAssembly(FileLoadLevel targetLevel, BOOL fThrowOnFileNotFound, BOOL fRaisePrebindEvents, StackCrawlMark *pCallerStackMark)
+Assembly *AssemblySpec::LoadAssembly(FileLoadLevel targetLevel, BOOL fThrowOnFileNotFound, StackCrawlMark *pCallerStackMark)
 {
     CONTRACTL
     {
@@ -778,7 +763,7 @@ Assembly *AssemblySpec::LoadAssembly(FileLoadLevel targetLevel, BOOL fThrowOnFil
     }
     CONTRACTL_END;
  
-    DomainAssembly * pDomainAssembly = LoadDomainAssembly(targetLevel, fThrowOnFileNotFound, fRaisePrebindEvents, pCallerStackMark);
+    DomainAssembly * pDomainAssembly = LoadDomainAssembly(targetLevel, fThrowOnFileNotFound, pCallerStackMark);
     if (pDomainAssembly == NULL) {
         _ASSERTE(!fThrowOnFileNotFound);
         return NULL;
@@ -907,7 +892,6 @@ ICLRPrivBinder* AssemblySpec::GetBindingContextFromParentAssembly(AppDomain *pDo
 
 DomainAssembly *AssemblySpec::LoadDomainAssembly(FileLoadLevel targetLevel,
                                                  BOOL fThrowOnFileNotFound,
-                                                 BOOL fRaisePrebindEvents,
                                                  StackCrawlMark *pCallerStackMark)
 {
     CONTRACT(DomainAssembly *)
@@ -960,7 +944,7 @@ DomainAssembly *AssemblySpec::LoadDomainAssembly(FileLoadLevel targetLevel,
     }
 
 
-    PEAssemblyHolder pFile(pDomain->BindAssemblySpec(this, fThrowOnFileNotFound, fRaisePrebindEvents, pCallerStackMark));
+    PEAssemblyHolder pFile(pDomain->BindAssemblySpec(this, fThrowOnFileNotFound, pCallerStackMark));
     if (pFile == NULL)
         RETURN NULL;
 
@@ -1785,11 +1769,7 @@ BOOL AssemblySpecBindingCache::CompareSpecs(UPTR u1, UPTR u2)
     AssemblySpec *a1 = (AssemblySpec *) (u1 << 1);
     AssemblySpec *a2 = (AssemblySpec *) u2;
 
-
-    if ((!a1->CompareEx(a2)) ||
-        (a1->IsIntrospectionOnly() != a2->IsIntrospectionOnly()))
-        return FALSE;
-    return TRUE;  
+    return a1->CompareEx(a2);
 }
 
 
@@ -1802,13 +1782,7 @@ BOOL DomainAssemblyCache::CompareBindingSpec(UPTR spec1, UPTR spec2)
     AssemblySpec* pSpec1 = (AssemblySpec*) (spec1 << 1);
     AssemblyEntry* pEntry2 = (AssemblyEntry*) spec2;
 
-
-
-    if ((!pSpec1->CompareEx(&pEntry2->spec)) ||
-        (pSpec1->IsIntrospectionOnly() != pEntry2->spec.IsIntrospectionOnly()))
-        return FALSE;
-
-    return TRUE;
+    return pSpec1->CompareEx(&pEntry2->spec);
 }
 
 

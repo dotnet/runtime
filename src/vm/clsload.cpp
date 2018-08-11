@@ -1034,8 +1034,7 @@ VOID ClassLoader::PopulateAvailableClassHashTable(Module* pModule,
     SString            ssFileName;
     StackScratchBuffer ssFileNameBuffer;
     
-    if (pModule->GetAssembly()->IsWinMD() && 
-        !pModule->IsIntrospectionOnly())
+    if (pModule->GetAssembly()->IsWinMD())
     {   // WinMD file in execution context (not ReflectionOnly context) - use its file name as WinRT namespace prefix 
         //  (Windows requirement)
         // Note: Reflection can work on 'unfinished' WinMD files where the types are in 'wrong' WinMD file (i.e. 
@@ -1562,11 +1561,6 @@ TypeHandle ClassLoader::TryFindDynLinkZapType(TypeKey *pKey)
     }
     CONTRACTL_END;
 
-    // For the introspection-only case, we can skip this step as introspection assemblies
-    // do not use NGEN images. 
-    if (pKey->IsIntrospectionOnly())
-        return TypeHandle();
-
     // Never use dyn link zap items during ngen time. We will independently decide later 
     // whether we want to store the item into ngen image or not.
     // Note that it is not good idea to make decisions based on the list of depencies here 
@@ -1636,7 +1630,6 @@ TypeHandle ClassLoader::TryFindDynLinkZapType(TypeKey *pKey)
 
         AppDomain * pDomain = pRequiredDomain->AsAppDomain();
         
-        _ASSERTE(!(pKey->IsIntrospectionOnly()));
         AppDomain::AssemblyIterator assemblyIterator = pDomain->IterateAssembliesEx(
             (AssemblyIterationFlags)(kIncludeLoaded | kIncludeExecution));
         CollectibleAssemblyHolder<DomainAssembly *> pDomainAssembly;
@@ -2820,63 +2813,60 @@ TypeHandle ClassLoader::LoadTypeDefThrowing(Module *pModule,
 
             if (pModule->IsReflection())
             {
-                //if (!(pModule->IsIntrospectionOnly()))
+                // Don't try to load types that are not in available table, when this
+                // is an in-memory module.  Raise the type-resolve event instead.
+                typeHnd = TypeHandle();
+
+                // Avoid infinite recursion
+                if (tokenNotToLoad != tdAllAssemblies)
                 {
-                    // Don't try to load types that are not in available table, when this
-                    // is an in-memory module.  Raise the type-resolve event instead.
-                    typeHnd = TypeHandle();
+                    AppDomain* pDomain = SystemDomain::GetCurrentDomain();
 
-                    // Avoid infinite recursion
-                    if (tokenNotToLoad != tdAllAssemblies)
+                    LPUTF8 pszFullName;
+                    LPCUTF8 className;
+                    LPCUTF8 nameSpace;
+                    if (FAILED(pInternalImport->GetNameOfTypeDef(typeDef, &className, &nameSpace)))
                     {
-                        AppDomain* pDomain = SystemDomain::GetCurrentDomain();
+                        LOG((LF_CLASSLOADER, LL_INFO10, "Bogus TypeDef record while loading: 0x%08x\n", typeDef));
+                        typeHnd = TypeHandle();
+                    }
+                    else
+                    {
+                        MAKE_FULL_PATH_ON_STACK_UTF8(pszFullName,
+                                                        nameSpace,
+                                                        className);
+                        GCX_COOP();
+                        ASSEMBLYREF asmRef = NULL;
+                        DomainAssembly *pDomainAssembly = NULL;
+                        GCPROTECT_BEGIN(asmRef);
 
-                        LPUTF8 pszFullName;
-                        LPCUTF8 className;
-                        LPCUTF8 nameSpace;
-                        if (FAILED(pInternalImport->GetNameOfTypeDef(typeDef, &className, &nameSpace)))
+                        pDomainAssembly = pDomain->RaiseTypeResolveEventThrowing(
+                            pModule->GetAssembly()->GetDomainAssembly(), 
+                            pszFullName, &asmRef);
+
+                        if (asmRef != NULL)
                         {
-                            LOG((LF_CLASSLOADER, LL_INFO10, "Bogus TypeDef record while loading: 0x%08x\n", typeDef));
-                            typeHnd = TypeHandle();
-                        }
-                        else
-                        {
-                            MAKE_FULL_PATH_ON_STACK_UTF8(pszFullName,
-                                                         nameSpace,
-                                                         className);
-                            GCX_COOP();
-                            ASSEMBLYREF asmRef = NULL;
-                            DomainAssembly *pDomainAssembly = NULL;
-                            GCPROTECT_BEGIN(asmRef);
-
-                            pDomainAssembly = pDomain->RaiseTypeResolveEventThrowing(
-                                pModule->GetAssembly()->GetDomainAssembly(), 
-                                pszFullName, &asmRef);
-
-                            if (asmRef != NULL)
+                            _ASSERTE(pDomainAssembly != NULL);
+                            if (pDomainAssembly->GetAssembly()->GetLoaderAllocator()->IsCollectible())
                             {
-                                _ASSERTE(pDomainAssembly != NULL);
-                                if (pDomainAssembly->GetAssembly()->GetLoaderAllocator()->IsCollectible())
+                                if (!pModule->GetLoaderAllocator()->IsCollectible())
                                 {
-                                    if (!pModule->GetLoaderAllocator()->IsCollectible())
-                                    {
-                                        LOG((LF_CLASSLOADER, LL_INFO10, "Bad result from TypeResolveEvent while loader TypeDef record: 0x%08x\n", typeDef));
-                                        COMPlusThrow(kNotSupportedException, W("NotSupported_CollectibleBoundNonCollectible"));
-                                    }
-
-                                    pModule->GetLoaderAllocator()->EnsureReference(pDomainAssembly->GetAssembly()->GetLoaderAllocator());
+                                    LOG((LF_CLASSLOADER, LL_INFO10, "Bad result from TypeResolveEvent while loader TypeDef record: 0x%08x\n", typeDef));
+                                    COMPlusThrow(kNotSupportedException, W("NotSupported_CollectibleBoundNonCollectible"));
                                 }
+
+                                pModule->GetLoaderAllocator()->EnsureReference(pDomainAssembly->GetAssembly()->GetLoaderAllocator());
                             }
-                            GCPROTECT_END();
-                            if (pDomainAssembly != NULL)
-                            {
-                                Assembly *pAssembly = pDomainAssembly->GetAssembly();
+                        }
+                        GCPROTECT_END();
+                        if (pDomainAssembly != NULL)
+                        {
+                            Assembly *pAssembly = pDomainAssembly->GetAssembly();
                                 
-                                NameHandle name(nameSpace, className);
-                                name.SetTypeToken(pModule, typeDef);
-                                name.SetTokenNotToLoad(tdAllAssemblies);
-                                typeHnd = pAssembly->GetLoader()->LoadTypeHandleThrowing(&name, level);
-                            }
+                            NameHandle name(nameSpace, className);
+                            name.SetTypeToken(pModule, typeDef);
+                            name.SetTokenNotToLoad(tdAllAssemblies);
+                            typeHnd = pAssembly->GetLoader()->LoadTypeHandleThrowing(&name, level);
                         }
                     }
                 }

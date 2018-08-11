@@ -682,15 +682,6 @@
   <data name="Arg_RanksAndBounds" xml:space="preserve">
     <value>Number of lengths and lowerBounds must match.</value>
   </data>
-  <data name="Arg_ReflectionOnlyCA" xml:space="preserve">
-    <value>It is illegal to reflect on the custom attributes of a Type loaded via ReflectionOnlyGetType (see Assembly.ReflectionOnly) -- use CustomAttributeData instead.</value>
-  </data>
-  <data name="Arg_ReflectionOnlyField" xml:space="preserve">
-    <value>It is illegal to get or set the value on a field on a Type loaded via ReflectionOnlyGetType.</value>
-  </data>
-  <data name="Arg_ReflectionOnlyInvoke" xml:space="preserve">
-    <value>It is illegal to invoke a method on a Type loaded via ReflectionOnlyGetType.</value>
-  </data>
   <data name="Arg_RegBadKeyKind" xml:space="preserve">
     <value>The specified RegistryValueKind is an invalid value.</value>
   </data>
@@ -1921,12 +1912,6 @@
   <data name="ArrayTypeMismatch_ConstrainedCopy" xml:space="preserve">
     <value>Array.ConstrainedCopy will only work on array types that are provably compatible, without any form of boxing, unboxing, widening, or casting of each array element.  Change the array types (i.e., copy a Derived[] to a Base[]), or use a mitigation strategy in the CER for Array.Copy's less powerful reliability contract, such as cloning the array or throwing away the potentially corrupt destination array.</value>
   </data>
-  <data name="Arugment_EmitMixedContext1" xml:space="preserve">
-    <value>Type '{0}' was loaded in the ReflectionOnly context but the AssemblyBuilder was not created as AssemblyBuilderAccess.ReflectionOnly.</value>
-  </data>
-  <data name="Arugment_EmitMixedContext2" xml:space="preserve">
-    <value>Type '{0}' was not loaded in the ReflectionOnly context but the AssemblyBuilder was created as AssemblyBuilderAccess.ReflectionOnly.</value>
-  </data>
   <data name="AssertionFailed" xml:space="preserve">
     <value>Assertion failed.</value>
   </data>
@@ -2574,9 +2559,6 @@
   </data>
   <data name="InvalidOperation_NotAllowedInDynamicMethod" xml:space="preserve">
     <value>The requested operation is invalid for DynamicMethod.</value>
-  </data>
-  <data name="InvalidOperation_NotAllowedInReflectionOnly" xml:space="preserve">
-    <value>The requested operation is invalid in the ReflectionOnly context.</value>
   </data>
   <data name="InvalidOperation_NotAVarArgCallingConvention" xml:space="preserve">
     <value>Calling convention must be VarArgs.</value>
