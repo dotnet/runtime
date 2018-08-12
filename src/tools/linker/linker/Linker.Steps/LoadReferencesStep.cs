@@ -34,20 +34,18 @@ using Mono.Cecil;
 namespace Mono.Linker.Steps {
 
 	public class LoadReferencesStep : BaseStep {
-		
-		readonly Dictionary<AssemblyNameDefinition, AssemblyDefinition> _references = new Dictionary<AssemblyNameDefinition, AssemblyDefinition> ();
+
+		readonly HashSet<AssemblyNameDefinition> references = new HashSet<AssemblyNameDefinition> ();
 
 		protected override void ProcessAssembly (AssemblyDefinition assembly)
 		{
 			ProcessReferences (assembly);
 		}
 
-		void ProcessReferences (AssemblyDefinition assembly)
+		protected void ProcessReferences (AssemblyDefinition assembly)
 		{
-			if (_references.ContainsKey (assembly.Name))
+			if (!references.Add (assembly.Name))
 				return;
-
-			_references.Add (assembly.Name, assembly);
 
 			Context.RegisterAssembly (assembly);
 
