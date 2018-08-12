@@ -46,6 +46,16 @@ The following are the minimum requirements:
   * .NET Framework 4.6 Targeting Pack
   * Windows Universal CRT SDK
   * VC++ 2015.3 v140 Toolset (x86, x64)
+  
+#### Visual Studio 2017 - Command line install
+
+If you've installed Visual Studio 2017 already, go to `C:\Program Files (x86)\Microsoft Visual Studio\Installer` and run
+
+     vs_installer.exe modify --installPath "C:\Program Files (x86)\Microsoft Visual Studio\2017\Community" --add Microsoft.VisualStudio.Component.NuGet --add Microsoft.Net.Component.4.6.TargetingPack --add Microsoft.VisualStudio.Component.PortableLibrary --add Microsoft.VisualStudio.Component.Static.Analysis.Tools --add Microsoft.VisualStudio.Component.Roslyn.Compiler --add Microsoft.Component.MSBuild --add Microsoft.VisualStudio.Component.VC.Tools.x86.x64 --add Microsoft.VisualStudio.Component.VC.CoreIde --add Microsoft.VisualStudio.Component.Windows10SDK --add Microsoft.VisualStudio.Component.VC.140
+
+This will install all the components needed.
+
+Note that you will need to adjust the install path to reflect your version, "Community", "Professional", "Enterprise" or "Preview"
 
 ## Building From the Command Line
 
@@ -113,3 +123,5 @@ show up as red squiggles while writing code.  Such errors should, however, not a
 debug engine is a VS 2015 component.
 
 * If the Xamarin PCL profiles are installed, the build will fail due to [issue #449](https://github.com/dotnet/corefx/issues/449).  A possible workaround is listed [in the issue](https://github.com/dotnet/corefx/issues/449#issuecomment-95117040) itself.
+
+* If your build fails with "[...].dll - Access is denied" errors, it might be because Visual Studio/MSBuild is locking these files. Try shutting down `VBCSCompiler.exe`, `devenv.exe` and `MSBuild.exe` from the task manager before building again.

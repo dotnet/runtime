@@ -7,6 +7,7 @@ namespace System.Drawing.Tests
 {
     public class Graphics_DrawLineTests : DrawingTest
     {
+        [ActiveIssue(30180, TestPlatforms.Linux)]
         [ConditionalFact(Helpers.GdiplusIsAvailable)]
         public void DrawLines_Points()
         {

@@ -68,7 +68,7 @@ namespace Microsoft.SqlServer.TDS.AllHeaders
             byte[] guidBytes = new byte[16];
 
             // Check if activity ID is available
-            if (ActivityID != null)
+            if (ActivityID != Guid.Empty)
             {
                 guidBytes = ActivityID.ToByteArray();
             }

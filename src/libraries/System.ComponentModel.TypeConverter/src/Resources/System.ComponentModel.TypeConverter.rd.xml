@@ -13,6 +13,9 @@
         </Type>
         <Type Name="TypeConverterAttribute">
           <AttributeImplies Activate="Required Public" />
+          
+          <!-- AttributeCollection.GetDefaultAttribute will end up reflecting on the Default field -->
+          <Field Name="Default" Dynamic="Required" />
         </Type>
       </Namespace>
     </Assembly>

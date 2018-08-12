@@ -5,6 +5,7 @@
 Imports System
 Imports System.ComponentModel
 Imports System.Diagnostics
+Imports System.Globalization
 Imports System.Reflection
 
 Imports Microsoft.VisualBasic.CompilerServices.Symbols
@@ -16,551 +17,551 @@ Imports Container = Microsoft.VisualBasic.CompilerServices.Symbols.Container
 Namespace Global.Microsoft.VisualBasic.CompilerServices
     <Global.System.Diagnostics.DebuggerNonUserCode()>
     <Global.System.ComponentModel.EditorBrowsable(Global.System.ComponentModel.EditorBrowsableState.Never)>
-    Public Class Conversions
+    Public NotInheritable Class Conversions
         Private Sub New()
         End Sub
-        Private Shared Function GetEnumValue(value As Object) As Object
-            Dim underlyingType As Type = System.Enum.GetUnderlyingType(value.GetType())
+        Private Shared Function GetEnumValue(Value As Object) As Object
+            Dim underlyingType As Type = System.Enum.GetUnderlyingType(Value.GetType())
             If underlyingType.Equals(GetType(SByte)) Then
-                Return DirectCast(value, SByte)
+                Return DirectCast(Value, SByte)
             ElseIf underlyingType.Equals(GetType(Byte)) Then
-                Return DirectCast(value, Byte)
+                Return DirectCast(Value, Byte)
             ElseIf underlyingType.Equals(GetType(Global.System.Int16)) Then
-                Return DirectCast(value, Global.System.Int16)
+                Return DirectCast(Value, Global.System.Int16)
             ElseIf underlyingType.Equals(GetType(Global.System.UInt16)) Then
-                Return DirectCast(value, Global.System.UInt16)
+                Return DirectCast(Value, Global.System.UInt16)
             ElseIf underlyingType.Equals(GetType(Global.System.Int32)) Then
-                Return DirectCast(value, Global.System.Int32)
+                Return DirectCast(Value, Global.System.Int32)
             ElseIf underlyingType.Equals(GetType(Global.System.UInt32)) Then
-                Return DirectCast(value, Global.System.UInt32)
+                Return DirectCast(Value, Global.System.UInt32)
             ElseIf underlyingType.Equals(GetType(Global.System.Int64)) Then
-                Return DirectCast(value, Global.System.Int64)
+                Return DirectCast(Value, Global.System.Int64)
             ElseIf underlyingType.Equals(GetType(Global.System.UInt64)) Then
-                Return DirectCast(value, Global.System.UInt64)
+                Return DirectCast(Value, Global.System.UInt64)
             Else
                 Throw New Global.System.InvalidCastException
             End If
         End Function
-        Public Shared Function ToBoolean(value As String) As Boolean
-            If value Is Nothing Then
-                value = ""
+        Public Shared Function ToBoolean(Value As String) As Boolean
+            If Value Is Nothing Then
+                Value = ""
             End If
             Try
                 Dim loc As Global.System.Globalization.CultureInfo = GetCultureInfo()
-                If loc.CompareInfo.Compare(value, Boolean.FalseString, Global.System.Globalization.CompareOptions.IgnoreCase) = 0 Then
+                If loc.CompareInfo.Compare(Value, Boolean.FalseString, Global.System.Globalization.CompareOptions.IgnoreCase) = 0 Then
                     Return False
-                ElseIf loc.CompareInfo.Compare(value, Boolean.TrueString, Global.System.Globalization.CompareOptions.IgnoreCase) = 0 Then
+                ElseIf loc.CompareInfo.Compare(Value, Boolean.TrueString, Global.System.Globalization.CompareOptions.IgnoreCase) = 0 Then
                     Return True
                 End If
                 Dim i64Value As Global.System.Int64
-                If IsHexOrOctValue(value, i64Value) Then
+                If IsHexOrOctValue(Value, i64Value) Then
                     Return CBool(i64Value)
                 End If
-                Return CBool(ParseDouble(value))
+                Return CBool(ParseDouble(Value))
             Catch e As Global.System.FormatException
                 Throw New Global.System.InvalidCastException(e.Message, e)
             End Try
         End Function
-        Public Shared Function ToBoolean(value As Object) As Boolean
-            If value Is Nothing Then
+        Public Shared Function ToBoolean(Value As Object) As Boolean
+            If Value Is Nothing Then
                 Return False
             End If
-            If TypeOf value Is Global.System.Enum Then
-                value = GetEnumValue(value)
+            If TypeOf Value Is Global.System.Enum Then
+                Value = GetEnumValue(Value)
             End If
-            If TypeOf value Is Boolean Then
-                Return CBool(DirectCast(value, Boolean))
-            ElseIf TypeOf value Is SByte Then
-                Return CBool(DirectCast(value, SByte))
-            ElseIf TypeOf value Is Byte Then
-                Return CBool(DirectCast(value, Byte))
-            ElseIf TypeOf value Is Global.System.Int16 Then
-                Return CBool(DirectCast(value, Global.System.Int16))
-            ElseIf TypeOf value Is Global.System.UInt16 Then
-                Return CBool(DirectCast(value, Global.System.UInt16))
-            ElseIf TypeOf value Is Global.System.Int32 Then
-                Return CBool(DirectCast(value, Global.System.Int32))
-            ElseIf TypeOf value Is Global.System.UInt32 Then
-                Return CBool(DirectCast(value, Global.System.UInt32))
-            ElseIf TypeOf value Is Global.System.Int64 Then
-                Return CBool(DirectCast(value, Global.System.Int64))
-            ElseIf TypeOf value Is Global.System.UInt64 Then
-                Return CBool(DirectCast(value, Global.System.UInt64))
-            ElseIf TypeOf value Is Decimal Then
-                Return CBool(DirectCast(value, Global.System.Decimal))
-            ElseIf TypeOf value Is Single Then
-                Return CBool(DirectCast(value, Single))
-            ElseIf TypeOf value Is Double Then
-                Return CBool(DirectCast(value, Double))
-            ElseIf TypeOf value Is String Then
-                Return CBool(DirectCast(value, String))
+            If TypeOf Value Is Boolean Then
+                Return CBool(DirectCast(Value, Boolean))
+            ElseIf TypeOf Value Is SByte Then
+                Return CBool(DirectCast(Value, SByte))
+            ElseIf TypeOf Value Is Byte Then
+                Return CBool(DirectCast(Value, Byte))
+            ElseIf TypeOf Value Is Global.System.Int16 Then
+                Return CBool(DirectCast(Value, Global.System.Int16))
+            ElseIf TypeOf Value Is Global.System.UInt16 Then
+                Return CBool(DirectCast(Value, Global.System.UInt16))
+            ElseIf TypeOf Value Is Global.System.Int32 Then
+                Return CBool(DirectCast(Value, Global.System.Int32))
+            ElseIf TypeOf Value Is Global.System.UInt32 Then
+                Return CBool(DirectCast(Value, Global.System.UInt32))
+            ElseIf TypeOf Value Is Global.System.Int64 Then
+                Return CBool(DirectCast(Value, Global.System.Int64))
+            ElseIf TypeOf Value Is Global.System.UInt64 Then
+                Return CBool(DirectCast(Value, Global.System.UInt64))
+            ElseIf TypeOf Value Is Decimal Then
+                Return CBool(DirectCast(Value, Global.System.Decimal))
+            ElseIf TypeOf Value Is Single Then
+                Return CBool(DirectCast(Value, Single))
+            ElseIf TypeOf Value Is Double Then
+                Return CBool(DirectCast(Value, Double))
+            ElseIf TypeOf Value Is String Then
+                Return CBool(DirectCast(Value, String))
             End If
             Throw New Global.System.InvalidCastException()
         End Function
-        Public Shared Function ToByte(value As String) As Byte
-            If value Is Nothing Then
+        Public Shared Function ToByte(Value As String) As Byte
+            If Value Is Nothing Then
                 Return 0
             End If
             Try
                 Dim i64Value As Global.System.Int64
-                If IsHexOrOctValue(value, i64Value) Then
+                If IsHexOrOctValue(Value, i64Value) Then
                     Return CByte(i64Value)
                 End If
-                Return CByte(ParseDouble(value))
+                Return CByte(ParseDouble(Value))
             Catch e As Global.System.FormatException
                 Throw New Global.System.InvalidCastException(e.Message, e)
             End Try
         End Function
-        Public Shared Function ToByte(value As Object) As Byte
-            If value Is Nothing Then
+        Public Shared Function ToByte(Value As Object) As Byte
+            If Value Is Nothing Then
                 Return 0
             End If
-            If TypeOf value Is Global.System.Enum Then
-                value = GetEnumValue(value)
+            If TypeOf Value Is Global.System.Enum Then
+                Value = GetEnumValue(Value)
             End If
-            If TypeOf value Is Boolean Then
-                Return CByte(DirectCast(value, Boolean))
-            ElseIf TypeOf value Is SByte Then
-                Return CByte(DirectCast(value, SByte))
-            ElseIf TypeOf value Is Byte Then
-                Return CByte(DirectCast(value, Byte))
-            ElseIf TypeOf value Is Global.System.Int16 Then
-                Return CByte(DirectCast(value, Global.System.Int16))
-            ElseIf TypeOf value Is Global.System.UInt16 Then
-                Return CByte(DirectCast(value, Global.System.UInt16))
-            ElseIf TypeOf value Is Global.System.Int32 Then
-                Return CByte(DirectCast(value, Global.System.Int32))
-            ElseIf TypeOf value Is Global.System.UInt32 Then
-                Return CByte(DirectCast(value, Global.System.UInt32))
-            ElseIf TypeOf value Is Global.System.Int64 Then
-                Return CByte(DirectCast(value, Global.System.Int64))
-            ElseIf TypeOf value Is Global.System.UInt64 Then
-                Return CByte(DirectCast(value, Global.System.UInt64))
-            ElseIf TypeOf value Is Decimal Then
-                Return CByte(DirectCast(value, Global.System.Decimal))
-            ElseIf TypeOf value Is Single Then
-                Return CByte(DirectCast(value, Single))
-            ElseIf TypeOf value Is Double Then
-                Return CByte(DirectCast(value, Double))
-            ElseIf TypeOf value Is String Then
-                Return CByte(DirectCast(value, String))
+            If TypeOf Value Is Boolean Then
+                Return CByte(DirectCast(Value, Boolean))
+            ElseIf TypeOf Value Is SByte Then
+                Return CByte(DirectCast(Value, SByte))
+            ElseIf TypeOf Value Is Byte Then
+                Return CByte(DirectCast(Value, Byte))
+            ElseIf TypeOf Value Is Global.System.Int16 Then
+                Return CByte(DirectCast(Value, Global.System.Int16))
+            ElseIf TypeOf Value Is Global.System.UInt16 Then
+                Return CByte(DirectCast(Value, Global.System.UInt16))
+            ElseIf TypeOf Value Is Global.System.Int32 Then
+                Return CByte(DirectCast(Value, Global.System.Int32))
+            ElseIf TypeOf Value Is Global.System.UInt32 Then
+                Return CByte(DirectCast(Value, Global.System.UInt32))
+            ElseIf TypeOf Value Is Global.System.Int64 Then
+                Return CByte(DirectCast(Value, Global.System.Int64))
+            ElseIf TypeOf Value Is Global.System.UInt64 Then
+                Return CByte(DirectCast(Value, Global.System.UInt64))
+            ElseIf TypeOf Value Is Decimal Then
+                Return CByte(DirectCast(Value, Global.System.Decimal))
+            ElseIf TypeOf Value Is Single Then
+                Return CByte(DirectCast(Value, Single))
+            ElseIf TypeOf Value Is Double Then
+                Return CByte(DirectCast(Value, Double))
+            ElseIf TypeOf Value Is String Then
+                Return CByte(DirectCast(Value, String))
             End If
             Throw New Global.System.InvalidCastException()
         End Function
         <Global.System.CLSCompliant(False)>
-        Public Shared Function ToSByte(value As String) As SByte
-            If value Is Nothing Then
+        Public Shared Function ToSByte(Value As String) As SByte
+            If Value Is Nothing Then
                 Return 0
             End If
             Try
                 Dim i64Value As Global.System.Int64
-                If IsHexOrOctValue(value, i64Value) Then
+                If IsHexOrOctValue(Value, i64Value) Then
                     Return CSByte(i64Value)
                 End If
-                Return CSByte(ParseDouble(value))
+                Return CSByte(ParseDouble(Value))
             Catch e As Global.System.FormatException
                 Throw New Global.System.InvalidCastException(e.Message, e)
             End Try
         End Function
         <Global.System.CLSCompliant(False)>
-        Public Shared Function ToSByte(value As Object) As SByte
-            If value Is Nothing Then
+        Public Shared Function ToSByte(Value As Object) As SByte
+            If Value Is Nothing Then
                 Return 0
             End If
-            If TypeOf value Is Global.System.Enum Then
-                value = GetEnumValue(value)
+            If TypeOf Value Is Global.System.Enum Then
+                Value = GetEnumValue(Value)
             End If
-            If TypeOf value Is Boolean Then
-                Return CSByte(DirectCast(value, Boolean))
-            ElseIf TypeOf value Is SByte Then
-                Return CSByte(DirectCast(value, SByte))
-            ElseIf TypeOf value Is Byte Then
-                Return CSByte(DirectCast(value, Byte))
-            ElseIf TypeOf value Is Global.System.Int16 Then
-                Return CSByte(DirectCast(value, Global.System.Int16))
-            ElseIf TypeOf value Is Global.System.UInt16 Then
-                Return CSByte(DirectCast(value, Global.System.UInt16))
-            ElseIf TypeOf value Is Global.System.Int32 Then
-                Return CSByte(DirectCast(value, Global.System.Int32))
-            ElseIf TypeOf value Is Global.System.UInt32 Then
-                Return CSByte(DirectCast(value, Global.System.UInt32))
-            ElseIf TypeOf value Is Global.System.Int64 Then
-                Return CSByte(DirectCast(value, Global.System.Int64))
-            ElseIf TypeOf value Is Global.System.UInt64 Then
-                Return CSByte(DirectCast(value, Global.System.UInt64))
-            ElseIf TypeOf value Is Decimal Then
-                Return CSByte(DirectCast(value, Global.System.Decimal))
-            ElseIf TypeOf value Is Single Then
-                Return CSByte(DirectCast(value, Single))
-            ElseIf TypeOf value Is Double Then
-                Return CSByte(DirectCast(value, Double))
-            ElseIf TypeOf value Is String Then
-                Return CSByte(DirectCast(value, String))
+            If TypeOf Value Is Boolean Then
+                Return CSByte(DirectCast(Value, Boolean))
+            ElseIf TypeOf Value Is SByte Then
+                Return CSByte(DirectCast(Value, SByte))
+            ElseIf TypeOf Value Is Byte Then
+                Return CSByte(DirectCast(Value, Byte))
+            ElseIf TypeOf Value Is Global.System.Int16 Then
+                Return CSByte(DirectCast(Value, Global.System.Int16))
+            ElseIf TypeOf Value Is Global.System.UInt16 Then
+                Return CSByte(DirectCast(Value, Global.System.UInt16))
+            ElseIf TypeOf Value Is Global.System.Int32 Then
+                Return CSByte(DirectCast(Value, Global.System.Int32))
+            ElseIf TypeOf Value Is Global.System.UInt32 Then
+                Return CSByte(DirectCast(Value, Global.System.UInt32))
+            ElseIf TypeOf Value Is Global.System.Int64 Then
+                Return CSByte(DirectCast(Value, Global.System.Int64))
+            ElseIf TypeOf Value Is Global.System.UInt64 Then
+                Return CSByte(DirectCast(Value, Global.System.UInt64))
+            ElseIf TypeOf Value Is Decimal Then
+                Return CSByte(DirectCast(Value, Global.System.Decimal))
+            ElseIf TypeOf Value Is Single Then
+                Return CSByte(DirectCast(Value, Single))
+            ElseIf TypeOf Value Is Double Then
+                Return CSByte(DirectCast(Value, Double))
+            ElseIf TypeOf Value Is String Then
+                Return CSByte(DirectCast(Value, String))
             End If
             Throw New Global.System.InvalidCastException()
         End Function
-        Public Shared Function ToShort(value As String) As Short
-            If value Is Nothing Then
+        Public Shared Function ToShort(Value As String) As Short
+            If Value Is Nothing Then
                 Return 0
             End If
             Try
                 Dim i64Value As Global.System.Int64
-                If IsHexOrOctValue(value, i64Value) Then
+                If IsHexOrOctValue(Value, i64Value) Then
                     Return CShort(i64Value)
                 End If
-                Return CShort(ParseDouble(value))
+                Return CShort(ParseDouble(Value))
             Catch e As Global.System.FormatException
                 Throw New Global.System.InvalidCastException(e.Message, e)
             End Try
         End Function
-        Public Shared Function ToShort(value As Object) As Short
-            If value Is Nothing Then
+        Public Shared Function ToShort(Value As Object) As Short
+            If Value Is Nothing Then
                 Return 0
             End If
-            If TypeOf value Is Global.System.Enum Then
-                value = GetEnumValue(value)
+            If TypeOf Value Is Global.System.Enum Then
+                Value = GetEnumValue(Value)
             End If
-            If TypeOf value Is Boolean Then
-                Return CShort(DirectCast(value, Boolean))
-            ElseIf TypeOf value Is SByte Then
-                Return CShort(DirectCast(value, SByte))
-            ElseIf TypeOf value Is Byte Then
-                Return CShort(DirectCast(value, Byte))
-            ElseIf TypeOf value Is Global.System.Int16 Then
-                Return CShort(DirectCast(value, Global.System.Int16))
-            ElseIf TypeOf value Is Global.System.UInt16 Then
-                Return CShort(DirectCast(value, Global.System.UInt16))
-            ElseIf TypeOf value Is Global.System.Int32 Then
-                Return CShort(DirectCast(value, Global.System.Int32))
-            ElseIf TypeOf value Is Global.System.UInt32 Then
-                Return CShort(DirectCast(value, Global.System.UInt32))
-            ElseIf TypeOf value Is Global.System.Int64 Then
-                Return CShort(DirectCast(value, Global.System.Int64))
-            ElseIf TypeOf value Is Global.System.UInt64 Then
-                Return CShort(DirectCast(value, Global.System.UInt64))
-            ElseIf TypeOf value Is Decimal Then
-                Return CShort(DirectCast(value, Global.System.Decimal))
-            ElseIf TypeOf value Is Single Then
-                Return CShort(DirectCast(value, Single))
-            ElseIf TypeOf value Is Double Then
-                Return CShort(DirectCast(value, Double))
-            ElseIf TypeOf value Is String Then
-                Return CShort(DirectCast(value, String))
+            If TypeOf Value Is Boolean Then
+                Return CShort(DirectCast(Value, Boolean))
+            ElseIf TypeOf Value Is SByte Then
+                Return CShort(DirectCast(Value, SByte))
+            ElseIf TypeOf Value Is Byte Then
+                Return CShort(DirectCast(Value, Byte))
+            ElseIf TypeOf Value Is Global.System.Int16 Then
+                Return CShort(DirectCast(Value, Global.System.Int16))
+            ElseIf TypeOf Value Is Global.System.UInt16 Then
+                Return CShort(DirectCast(Value, Global.System.UInt16))
+            ElseIf TypeOf Value Is Global.System.Int32 Then
+                Return CShort(DirectCast(Value, Global.System.Int32))
+            ElseIf TypeOf Value Is Global.System.UInt32 Then
+                Return CShort(DirectCast(Value, Global.System.UInt32))
+            ElseIf TypeOf Value Is Global.System.Int64 Then
+                Return CShort(DirectCast(Value, Global.System.Int64))
+            ElseIf TypeOf Value Is Global.System.UInt64 Then
+                Return CShort(DirectCast(Value, Global.System.UInt64))
+            ElseIf TypeOf Value Is Decimal Then
+                Return CShort(DirectCast(Value, Global.System.Decimal))
+            ElseIf TypeOf Value Is Single Then
+                Return CShort(DirectCast(Value, Single))
+            ElseIf TypeOf Value Is Double Then
+                Return CShort(DirectCast(Value, Double))
+            ElseIf TypeOf Value Is String Then
+                Return CShort(DirectCast(Value, String))
             End If
             Throw New Global.System.InvalidCastException()
         End Function
         <Global.System.CLSCompliant(False)>
-        Public Shared Function ToUShort(value As String) As UShort
-            If value Is Nothing Then
+        Public Shared Function ToUShort(Value As String) As UShort
+            If Value Is Nothing Then
                 Return 0
             End If
             Try
                 Dim i64Value As Global.System.Int64
-                If IsHexOrOctValue(value, i64Value) Then
+                If IsHexOrOctValue(Value, i64Value) Then
                     Return CUShort(i64Value)
                 End If
-                Return CUShort(ParseDouble(value))
+                Return CUShort(ParseDouble(Value))
             Catch e As Global.System.FormatException
                 Throw New Global.System.InvalidCastException(e.Message, e)
             End Try
         End Function
         <Global.System.CLSCompliant(False)>
-        Public Shared Function ToUShort(value As Object) As UShort
-            If value Is Nothing Then
+        Public Shared Function ToUShort(Value As Object) As UShort
+            If Value Is Nothing Then
                 Return 0
             End If
-            If TypeOf value Is Global.System.Enum Then
-                value = GetEnumValue(value)
+            If TypeOf Value Is Global.System.Enum Then
+                Value = GetEnumValue(Value)
             End If
-            If TypeOf value Is Boolean Then
-                Return CUShort(DirectCast(value, Boolean))
-            ElseIf TypeOf value Is SByte Then
-                Return CUShort(DirectCast(value, SByte))
-            ElseIf TypeOf value Is Byte Then
-                Return CUShort(DirectCast(value, Byte))
-            ElseIf TypeOf value Is Global.System.Int16 Then
-                Return CUShort(DirectCast(value, Global.System.Int16))
-            ElseIf TypeOf value Is Global.System.UInt16 Then
-                Return CUShort(DirectCast(value, Global.System.UInt16))
-            ElseIf TypeOf value Is Global.System.Int32 Then
-                Return CUShort(DirectCast(value, Global.System.Int32))
-            ElseIf TypeOf value Is Global.System.UInt32 Then
-                Return CUShort(DirectCast(value, Global.System.UInt32))
-            ElseIf TypeOf value Is Global.System.Int64 Then
-                Return CUShort(DirectCast(value, Global.System.Int64))
-            ElseIf TypeOf value Is Global.System.UInt64 Then
-                Return CUShort(DirectCast(value, Global.System.UInt64))
-            ElseIf TypeOf value Is Decimal Then
-                Return CUShort(DirectCast(value, Global.System.Decimal))
-            ElseIf TypeOf value Is Single Then
-                Return CUShort(DirectCast(value, Single))
-            ElseIf TypeOf value Is Double Then
-                Return CUShort(DirectCast(value, Double))
-            ElseIf TypeOf value Is String Then
-                Return CUShort(DirectCast(value, String))
+            If TypeOf Value Is Boolean Then
+                Return CUShort(DirectCast(Value, Boolean))
+            ElseIf TypeOf Value Is SByte Then
+                Return CUShort(DirectCast(Value, SByte))
+            ElseIf TypeOf Value Is Byte Then
+                Return CUShort(DirectCast(Value, Byte))
+            ElseIf TypeOf Value Is Global.System.Int16 Then
+                Return CUShort(DirectCast(Value, Global.System.Int16))
+            ElseIf TypeOf Value Is Global.System.UInt16 Then
+                Return CUShort(DirectCast(Value, Global.System.UInt16))
+            ElseIf TypeOf Value Is Global.System.Int32 Then
+                Return CUShort(DirectCast(Value, Global.System.Int32))
+            ElseIf TypeOf Value Is Global.System.UInt32 Then
+                Return CUShort(DirectCast(Value, Global.System.UInt32))
+            ElseIf TypeOf Value Is Global.System.Int64 Then
+                Return CUShort(DirectCast(Value, Global.System.Int64))
+            ElseIf TypeOf Value Is Global.System.UInt64 Then
+                Return CUShort(DirectCast(Value, Global.System.UInt64))
+            ElseIf TypeOf Value Is Decimal Then
+                Return CUShort(DirectCast(Value, Global.System.Decimal))
+            ElseIf TypeOf Value Is Single Then
+                Return CUShort(DirectCast(Value, Single))
+            ElseIf TypeOf Value Is Double Then
+                Return CUShort(DirectCast(Value, Double))
+            ElseIf TypeOf Value Is String Then
+                Return CUShort(DirectCast(Value, String))
             End If
             Throw New Global.System.InvalidCastException()
         End Function
-        Public Shared Function ToInteger(value As String) As Integer
-            If value Is Nothing Then
+        Public Shared Function ToInteger(Value As String) As Integer
+            If Value Is Nothing Then
                 Return 0
             End If
             Try
                 Dim i64Value As Global.System.Int64
-                If IsHexOrOctValue(value, i64Value) Then
+                If IsHexOrOctValue(Value, i64Value) Then
                     Return CInt(i64Value)
                 End If
-                Return CInt(ParseDouble(value))
+                Return CInt(ParseDouble(Value))
             Catch e As Global.System.FormatException
                 Throw New Global.System.InvalidCastException(e.Message, e)
             End Try
         End Function
-        Public Shared Function ToInteger(value As Object) As Integer
-            If value Is Nothing Then
+        Public Shared Function ToInteger(Value As Object) As Integer
+            If Value Is Nothing Then
                 Return 0
             End If
-            If TypeOf value Is Global.System.Enum Then
-                value = GetEnumValue(value)
+            If TypeOf Value Is Global.System.Enum Then
+                Value = GetEnumValue(Value)
             End If
-            If TypeOf value Is Boolean Then
-                Return CInt(DirectCast(value, Boolean))
-            ElseIf TypeOf value Is SByte Then
-                Return CInt(DirectCast(value, SByte))
-            ElseIf TypeOf value Is Byte Then
-                Return CInt(DirectCast(value, Byte))
-            ElseIf TypeOf value Is Global.System.Int16 Then
-                Return CInt(DirectCast(value, Global.System.Int16))
-            ElseIf TypeOf value Is Global.System.UInt16 Then
-                Return CInt(DirectCast(value, Global.System.UInt16))
-            ElseIf TypeOf value Is Global.System.Int32 Then
-                Return CInt(DirectCast(value, Global.System.Int32))
-            ElseIf TypeOf value Is Global.System.UInt32 Then
-                Return CInt(DirectCast(value, Global.System.UInt32))
-            ElseIf TypeOf value Is Global.System.Int64 Then
-                Return CInt(DirectCast(value, Global.System.Int64))
-            ElseIf TypeOf value Is Global.System.UInt64 Then
-                Return CInt(DirectCast(value, Global.System.UInt64))
-            ElseIf TypeOf value Is Decimal Then
-                Return CInt(DirectCast(value, Global.System.Decimal))
-            ElseIf TypeOf value Is Single Then
-                Return CInt(DirectCast(value, Single))
-            ElseIf TypeOf value Is Double Then
-                Return CInt(DirectCast(value, Double))
-            ElseIf TypeOf value Is String Then
-                Return CInt(DirectCast(value, String))
+            If TypeOf Value Is Boolean Then
+                Return CInt(DirectCast(Value, Boolean))
+            ElseIf TypeOf Value Is SByte Then
+                Return CInt(DirectCast(Value, SByte))
+            ElseIf TypeOf Value Is Byte Then
+                Return CInt(DirectCast(Value, Byte))
+            ElseIf TypeOf Value Is Global.System.Int16 Then
+                Return CInt(DirectCast(Value, Global.System.Int16))
+            ElseIf TypeOf Value Is Global.System.UInt16 Then
+                Return CInt(DirectCast(Value, Global.System.UInt16))
+            ElseIf TypeOf Value Is Global.System.Int32 Then
+                Return CInt(DirectCast(Value, Global.System.Int32))
+            ElseIf TypeOf Value Is Global.System.UInt32 Then
+                Return CInt(DirectCast(Value, Global.System.UInt32))
+            ElseIf TypeOf Value Is Global.System.Int64 Then
+                Return CInt(DirectCast(Value, Global.System.Int64))
+            ElseIf TypeOf Value Is Global.System.UInt64 Then
+                Return CInt(DirectCast(Value, Global.System.UInt64))
+            ElseIf TypeOf Value Is Decimal Then
+                Return CInt(DirectCast(Value, Global.System.Decimal))
+            ElseIf TypeOf Value Is Single Then
+                Return CInt(DirectCast(Value, Single))
+            ElseIf TypeOf Value Is Double Then
+                Return CInt(DirectCast(Value, Double))
+            ElseIf TypeOf Value Is String Then
+                Return CInt(DirectCast(Value, String))
             End If
             Throw New Global.System.InvalidCastException()
         End Function
         <Global.System.CLSCompliant(False)>
-        Public Shared Function ToUInteger(value As String) As UInteger
-            If value Is Nothing Then
+        Public Shared Function ToUInteger(Value As String) As UInteger
+            If Value Is Nothing Then
                 Return 0
             End If
             Try
                 Dim i64Value As Global.System.Int64
-                If IsHexOrOctValue(value, i64Value) Then
+                If IsHexOrOctValue(Value, i64Value) Then
                     Return CUInt(i64Value)
                 End If
-                Return CUInt(ParseDouble(value))
+                Return CUInt(ParseDouble(Value))
             Catch e As Global.System.FormatException
                 Throw New Global.System.InvalidCastException(e.Message, e)
             End Try
         End Function
         <Global.System.CLSCompliant(False)>
-        Public Shared Function ToUInteger(value As Object) As UInteger
-            If value Is Nothing Then
+        Public Shared Function ToUInteger(Value As Object) As UInteger
+            If Value Is Nothing Then
                 Return 0
             End If
-            If TypeOf value Is Global.System.Enum Then
-                value = GetEnumValue(value)
+            If TypeOf Value Is Global.System.Enum Then
+                Value = GetEnumValue(Value)
             End If
-            If TypeOf value Is Boolean Then
-                Return CUInt(DirectCast(value, Boolean))
-            ElseIf TypeOf value Is SByte Then
-                Return CUInt(DirectCast(value, SByte))
-            ElseIf TypeOf value Is Byte Then
-                Return CUInt(DirectCast(value, Byte))
-            ElseIf TypeOf value Is Global.System.Int16 Then
-                Return CUInt(DirectCast(value, Global.System.Int16))
-            ElseIf TypeOf value Is Global.System.UInt16 Then
-                Return CUInt(DirectCast(value, Global.System.UInt16))
-            ElseIf TypeOf value Is Global.System.Int32 Then
-                Return CUInt(DirectCast(value, Global.System.Int32))
-            ElseIf TypeOf value Is Global.System.UInt32 Then
-                Return CUInt(DirectCast(value, Global.System.UInt32))
-            ElseIf TypeOf value Is Global.System.Int64 Then
-                Return CUInt(DirectCast(value, Global.System.Int64))
-            ElseIf TypeOf value Is Global.System.UInt64 Then
-                Return CUInt(DirectCast(value, Global.System.UInt64))
-            ElseIf TypeOf value Is Decimal Then
-                Return CUInt(DirectCast(value, Global.System.Decimal))
-            ElseIf TypeOf value Is Single Then
-                Return CUInt(DirectCast(value, Single))
-            ElseIf TypeOf value Is Double Then
-                Return CUInt(DirectCast(value, Double))
-            ElseIf TypeOf value Is String Then
-                Return CUInt(DirectCast(value, String))
+            If TypeOf Value Is Boolean Then
+                Return CUInt(DirectCast(Value, Boolean))
+            ElseIf TypeOf Value Is SByte Then
+                Return CUInt(DirectCast(Value, SByte))
+            ElseIf TypeOf Value Is Byte Then
+                Return CUInt(DirectCast(Value, Byte))
+            ElseIf TypeOf Value Is Global.System.Int16 Then
+                Return CUInt(DirectCast(Value, Global.System.Int16))
+            ElseIf TypeOf Value Is Global.System.UInt16 Then
+                Return CUInt(DirectCast(Value, Global.System.UInt16))
+            ElseIf TypeOf Value Is Global.System.Int32 Then
+                Return CUInt(DirectCast(Value, Global.System.Int32))
+            ElseIf TypeOf Value Is Global.System.UInt32 Then
+                Return CUInt(DirectCast(Value, Global.System.UInt32))
+            ElseIf TypeOf Value Is Global.System.Int64 Then
+                Return CUInt(DirectCast(Value, Global.System.Int64))
+            ElseIf TypeOf Value Is Global.System.UInt64 Then
+                Return CUInt(DirectCast(Value, Global.System.UInt64))
+            ElseIf TypeOf Value Is Decimal Then
+                Return CUInt(DirectCast(Value, Global.System.Decimal))
+            ElseIf TypeOf Value Is Single Then
+                Return CUInt(DirectCast(Value, Single))
+            ElseIf TypeOf Value Is Double Then
+                Return CUInt(DirectCast(Value, Double))
+            ElseIf TypeOf Value Is String Then
+                Return CUInt(DirectCast(Value, String))
             End If
             Throw New Global.System.InvalidCastException()
         End Function
-        Public Shared Function ToLong(value As String) As Long
-            If (value Is Nothing) Then
+        Public Shared Function ToLong(Value As String) As Long
+            If (Value Is Nothing) Then
                 Return 0
             End If
             Try
                 Dim i64Value As Global.System.Int64
-                If IsHexOrOctValue(value, i64Value) Then
+                If IsHexOrOctValue(Value, i64Value) Then
                     Return CLng(i64Value)
                 End If
-                Return CLng(ParseDecimal(value, Nothing))
+                Return CLng(ParseDecimal(Value, Nothing))
             Catch e As Global.System.FormatException
                 Throw New Global.System.InvalidCastException(e.Message, e)
             End Try
         End Function
-        Public Shared Function ToLong(value As Object) As Long
-            If value Is Nothing Then
+        Public Shared Function ToLong(Value As Object) As Long
+            If Value Is Nothing Then
                 Return 0
             End If
-            If TypeOf value Is Global.System.Enum Then
-                value = GetEnumValue(value)
+            If TypeOf Value Is Global.System.Enum Then
+                Value = GetEnumValue(Value)
             End If
-            If TypeOf value Is Boolean Then
-                Return CLng(DirectCast(value, Boolean))
-            ElseIf TypeOf value Is SByte Then
-                Return CLng(DirectCast(value, SByte))
-            ElseIf TypeOf value Is Byte Then
-                Return CLng(DirectCast(value, Byte))
-            ElseIf TypeOf value Is Global.System.Int16 Then
-                Return CLng(DirectCast(value, Global.System.Int16))
-            ElseIf TypeOf value Is Global.System.UInt16 Then
-                Return CLng(DirectCast(value, Global.System.UInt16))
-            ElseIf TypeOf value Is Global.System.Int32 Then
-                Return CLng(DirectCast(value, Global.System.Int32))
-            ElseIf TypeOf value Is Global.System.UInt32 Then
-                Return CLng(DirectCast(value, Global.System.UInt32))
-            ElseIf TypeOf value Is Global.System.Int64 Then
-                Return CLng(DirectCast(value, Global.System.Int64))
-            ElseIf TypeOf value Is Global.System.UInt64 Then
-                Return CLng(DirectCast(value, Global.System.UInt64))
-            ElseIf TypeOf value Is Decimal Then
-                Return CLng(DirectCast(value, Global.System.Decimal))
-            ElseIf TypeOf value Is Single Then
-                Return CLng(DirectCast(value, Single))
-            ElseIf TypeOf value Is Double Then
-                Return CLng(DirectCast(value, Double))
-            ElseIf TypeOf value Is String Then
-                Return CLng(DirectCast(value, String))
+            If TypeOf Value Is Boolean Then
+                Return CLng(DirectCast(Value, Boolean))
+            ElseIf TypeOf Value Is SByte Then
+                Return CLng(DirectCast(Value, SByte))
+            ElseIf TypeOf Value Is Byte Then
+                Return CLng(DirectCast(Value, Byte))
+            ElseIf TypeOf Value Is Global.System.Int16 Then
+                Return CLng(DirectCast(Value, Global.System.Int16))
+            ElseIf TypeOf Value Is Global.System.UInt16 Then
+                Return CLng(DirectCast(Value, Global.System.UInt16))
+            ElseIf TypeOf Value Is Global.System.Int32 Then
+                Return CLng(DirectCast(Value, Global.System.Int32))
+            ElseIf TypeOf Value Is Global.System.UInt32 Then
+                Return CLng(DirectCast(Value, Global.System.UInt32))
+            ElseIf TypeOf Value Is Global.System.Int64 Then
+                Return CLng(DirectCast(Value, Global.System.Int64))
+            ElseIf TypeOf Value Is Global.System.UInt64 Then
+                Return CLng(DirectCast(Value, Global.System.UInt64))
+            ElseIf TypeOf Value Is Decimal Then
+                Return CLng(DirectCast(Value, Global.System.Decimal))
+            ElseIf TypeOf Value Is Single Then
+                Return CLng(DirectCast(Value, Single))
+            ElseIf TypeOf Value Is Double Then
+                Return CLng(DirectCast(Value, Double))
+            ElseIf TypeOf Value Is String Then
+                Return CLng(DirectCast(Value, String))
             End If
             Throw New Global.System.InvalidCastException()
         End Function
         <Global.System.CLSCompliant(False)>
-        Public Shared Function ToULong(value As String) As ULong
-            If (value Is Nothing) Then
+        Public Shared Function ToULong(Value As String) As ULong
+            If (Value Is Nothing) Then
                 Return 0
             End If
             Try
                 Dim ui64Value As Global.System.UInt64
-                If IsHexOrOctValue(value, ui64Value) Then
+                If IsHexOrOctValue(Value, ui64Value) Then
                     Return CULng(ui64Value)
                 End If
-                Return CULng(ParseDecimal(value, Nothing))
+                Return CULng(ParseDecimal(Value, Nothing))
             Catch e As Global.System.FormatException
                 Throw New Global.System.InvalidCastException(e.Message, e)
             End Try
         End Function
         <Global.System.CLSCompliant(False)>
-        Public Shared Function ToULong(value As Object) As ULong
-            If value Is Nothing Then
+        Public Shared Function ToULong(Value As Object) As ULong
+            If Value Is Nothing Then
                 Return 0
             End If
-            If TypeOf value Is Global.System.Enum Then
-                value = GetEnumValue(value)
+            If TypeOf Value Is Global.System.Enum Then
+                Value = GetEnumValue(Value)
             End If
-            If TypeOf value Is Boolean Then
-                Return CULng(DirectCast(value, Boolean))
-            ElseIf TypeOf value Is SByte Then
-                Return CULng(DirectCast(value, SByte))
-            ElseIf TypeOf value Is Byte Then
-                Return CULng(DirectCast(value, Byte))
-            ElseIf TypeOf value Is Global.System.Int16 Then
-                Return CULng(DirectCast(value, Global.System.Int16))
-            ElseIf TypeOf value Is Global.System.UInt16 Then
-                Return CULng(DirectCast(value, Global.System.UInt16))
-            ElseIf TypeOf value Is Global.System.Int32 Then
-                Return CULng(DirectCast(value, Global.System.Int32))
-            ElseIf TypeOf value Is Global.System.UInt32 Then
-                Return CULng(DirectCast(value, Global.System.UInt32))
-            ElseIf TypeOf value Is Global.System.Int64 Then
-                Return CULng(DirectCast(value, Global.System.Int64))
-            ElseIf TypeOf value Is Global.System.UInt64 Then
-                Return CULng(DirectCast(value, Global.System.UInt64))
-            ElseIf TypeOf value Is Decimal Then
-                Return CULng(DirectCast(value, Global.System.Decimal))
-            ElseIf TypeOf value Is Single Then
-                Return CULng(DirectCast(value, Single))
-            ElseIf TypeOf value Is Double Then
-                Return CULng(DirectCast(value, Double))
-            ElseIf TypeOf value Is String Then
-                Return CULng(DirectCast(value, String))
+            If TypeOf Value Is Boolean Then
+                Return CULng(DirectCast(Value, Boolean))
+            ElseIf TypeOf Value Is SByte Then
+                Return CULng(DirectCast(Value, SByte))
+            ElseIf TypeOf Value Is Byte Then
+                Return CULng(DirectCast(Value, Byte))
+            ElseIf TypeOf Value Is Global.System.Int16 Then
+                Return CULng(DirectCast(Value, Global.System.Int16))
+            ElseIf TypeOf Value Is Global.System.UInt16 Then
+                Return CULng(DirectCast(Value, Global.System.UInt16))
+            ElseIf TypeOf Value Is Global.System.Int32 Then
+                Return CULng(DirectCast(Value, Global.System.Int32))
+            ElseIf TypeOf Value Is Global.System.UInt32 Then
+                Return CULng(DirectCast(Value, Global.System.UInt32))
+            ElseIf TypeOf Value Is Global.System.Int64 Then
+                Return CULng(DirectCast(Value, Global.System.Int64))
+            ElseIf TypeOf Value Is Global.System.UInt64 Then
+                Return CULng(DirectCast(Value, Global.System.UInt64))
+            ElseIf TypeOf Value Is Decimal Then
+                Return CULng(DirectCast(Value, Global.System.Decimal))
+            ElseIf TypeOf Value Is Single Then
+                Return CULng(DirectCast(Value, Single))
+            ElseIf TypeOf Value Is Double Then
+                Return CULng(DirectCast(Value, Double))
+            ElseIf TypeOf Value Is String Then
+                Return CULng(DirectCast(Value, String))
             End If
             Throw New Global.System.InvalidCastException()
         End Function
-        Public Shared Function ToDecimal(value As Boolean) As Decimal
-            If value Then
+        Public Shared Function ToDecimal(Value As Boolean) As Decimal
+            If Value Then
                 Return -1D
             Else
                 Return 0D
             End If
         End Function
-        Public Shared Function ToDecimal(value As String) As Decimal
-            If value Is Nothing Then
+        Public Shared Function ToDecimal(Value As String) As Decimal
+            If Value Is Nothing Then
                 Return 0D
             End If
             Try
                 Dim i64Value As Global.System.Int64
-                If IsHexOrOctValue(value, i64Value) Then
+                If IsHexOrOctValue(Value, i64Value) Then
                     Return CDec(i64Value)
                 End If
-                Return ParseDecimal(value, Nothing)
+                Return ParseDecimal(Value, Nothing)
             Catch e1 As Global.System.OverflowException
                 Throw e1
             Catch e2 As Global.System.FormatException
                 Throw New Global.System.InvalidCastException(e2.Message, e2)
             End Try
         End Function
-        Public Shared Function ToDecimal(value As Object) As Decimal
-            If value Is Nothing Then
+        Public Shared Function ToDecimal(Value As Object) As Decimal
+            If Value Is Nothing Then
                 Return 0D
             End If
-            If TypeOf value Is Global.System.Enum Then
-                value = GetEnumValue(value)
+            If TypeOf Value Is Global.System.Enum Then
+                Value = GetEnumValue(Value)
             End If
-            If TypeOf value Is Boolean Then
-                Return CDec(DirectCast(value, Boolean))
-            ElseIf TypeOf value Is SByte Then
-                Return CDec(DirectCast(value, SByte))
-            ElseIf TypeOf value Is Byte Then
-                Return CDec(DirectCast(value, Byte))
-            ElseIf TypeOf value Is Global.System.Int16 Then
-                Return CDec(DirectCast(value, Global.System.Int16))
-            ElseIf TypeOf value Is Global.System.UInt16 Then
-                Return CDec(DirectCast(value, Global.System.UInt16))
-            ElseIf TypeOf value Is Global.System.Int32 Then
-                Return CDec(DirectCast(value, Global.System.Int32))
-            ElseIf TypeOf value Is Global.System.UInt32 Then
-                Return CDec(DirectCast(value, Global.System.UInt32))
-            ElseIf TypeOf value Is Global.System.Int64 Then
-                Return CDec(DirectCast(value, Global.System.Int64))
-            ElseIf TypeOf value Is Global.System.UInt64 Then
-                Return CDec(DirectCast(value, Global.System.UInt64))
-            ElseIf TypeOf value Is Decimal Then
-                Return CDec(DirectCast(value, Global.System.Decimal))
-            ElseIf TypeOf value Is Single Then
-                Return CDec(DirectCast(value, Single))
-            ElseIf TypeOf value Is Double Then
-                Return CDec(DirectCast(value, Double))
-            ElseIf TypeOf value Is String Then
-                Return CDec(DirectCast(value, String))
+            If TypeOf Value Is Boolean Then
+                Return CDec(DirectCast(Value, Boolean))
+            ElseIf TypeOf Value Is SByte Then
+                Return CDec(DirectCast(Value, SByte))
+            ElseIf TypeOf Value Is Byte Then
+                Return CDec(DirectCast(Value, Byte))
+            ElseIf TypeOf Value Is Global.System.Int16 Then
+                Return CDec(DirectCast(Value, Global.System.Int16))
+            ElseIf TypeOf Value Is Global.System.UInt16 Then
+                Return CDec(DirectCast(Value, Global.System.UInt16))
+            ElseIf TypeOf Value Is Global.System.Int32 Then
+                Return CDec(DirectCast(Value, Global.System.Int32))
+            ElseIf TypeOf Value Is Global.System.UInt32 Then
+                Return CDec(DirectCast(Value, Global.System.UInt32))
+            ElseIf TypeOf Value Is Global.System.Int64 Then
+                Return CDec(DirectCast(Value, Global.System.Int64))
+            ElseIf TypeOf Value Is Global.System.UInt64 Then
+                Return CDec(DirectCast(Value, Global.System.UInt64))
+            ElseIf TypeOf Value Is Decimal Then
+                Return CDec(DirectCast(Value, Global.System.Decimal))
+            ElseIf TypeOf Value Is Single Then
+                Return CDec(DirectCast(Value, Single))
+            ElseIf TypeOf Value Is Double Then
+                Return CDec(DirectCast(Value, Double))
+            ElseIf TypeOf Value Is String Then
+                Return CDec(DirectCast(Value, String))
             End If
             Throw New Global.System.InvalidCastException()
         End Function
@@ -633,16 +634,16 @@ MisMatch:
             End With
             Return outNumberFormat
         End Function
-        Public Shared Function ToSingle(value As String) As Single
-            If value Is Nothing Then
+        Public Shared Function ToSingle(Value As String) As Single
+            If Value Is Nothing Then
                 Return 0
             End If
             Try
                 Dim i64Value As Global.System.Int64
-                If IsHexOrOctValue(value, i64Value) Then
+                If IsHexOrOctValue(Value, i64Value) Then
                     Return CSng(i64Value)
                 End If
-                Dim result As Double = ParseDouble(value)
+                Dim result As Double = ParseDouble(Value)
                 If (result < Global.System.Single.MinValue OrElse result > Global.System.Single.MaxValue) AndAlso
                    Not Global.System.Double.IsInfinity(result) Then
                     Throw New Global.System.OverflowException
@@ -652,89 +653,89 @@ MisMatch:
                 Throw New Global.System.InvalidCastException(e.Message, e)
             End Try
         End Function
-        Public Shared Function ToSingle(value As Object) As Single
-            If value Is Nothing Then
+        Public Shared Function ToSingle(Value As Object) As Single
+            If Value Is Nothing Then
                 Return 0
             End If
-            If TypeOf value Is Global.System.Enum Then
-                value = GetEnumValue(value)
+            If TypeOf Value Is Global.System.Enum Then
+                Value = GetEnumValue(Value)
             End If
-            If TypeOf value Is Boolean Then
-                Return CSng(DirectCast(value, Boolean))
-            ElseIf TypeOf value Is SByte Then
-                Return CSng(DirectCast(value, SByte))
-            ElseIf TypeOf value Is Byte Then
-                Return CSng(DirectCast(value, Byte))
-            ElseIf TypeOf value Is Global.System.Int16 Then
-                Return CSng(DirectCast(value, Global.System.Int16))
-            ElseIf TypeOf value Is Global.System.UInt16 Then
-                Return CSng(DirectCast(value, Global.System.UInt16))
-            ElseIf TypeOf value Is Global.System.Int32 Then
-                Return CSng(DirectCast(value, Global.System.Int32))
-            ElseIf TypeOf value Is Global.System.UInt32 Then
-                Return CSng(DirectCast(value, Global.System.UInt32))
-            ElseIf TypeOf value Is Global.System.Int64 Then
-                Return CSng(DirectCast(value, Global.System.Int64))
-            ElseIf TypeOf value Is Global.System.UInt64 Then
-                Return CSng(DirectCast(value, Global.System.UInt64))
-            ElseIf TypeOf value Is Decimal Then
-                Return CSng(DirectCast(value, Global.System.Decimal))
-            ElseIf TypeOf value Is Single Then
-                Return CSng(DirectCast(value, Single))
-            ElseIf TypeOf value Is Double Then
-                Return CSng(DirectCast(value, Double))
-            ElseIf TypeOf value Is String Then
-                Return CSng(DirectCast(value, String))
+            If TypeOf Value Is Boolean Then
+                Return CSng(DirectCast(Value, Boolean))
+            ElseIf TypeOf Value Is SByte Then
+                Return CSng(DirectCast(Value, SByte))
+            ElseIf TypeOf Value Is Byte Then
+                Return CSng(DirectCast(Value, Byte))
+            ElseIf TypeOf Value Is Global.System.Int16 Then
+                Return CSng(DirectCast(Value, Global.System.Int16))
+            ElseIf TypeOf Value Is Global.System.UInt16 Then
+                Return CSng(DirectCast(Value, Global.System.UInt16))
+            ElseIf TypeOf Value Is Global.System.Int32 Then
+                Return CSng(DirectCast(Value, Global.System.Int32))
+            ElseIf TypeOf Value Is Global.System.UInt32 Then
+                Return CSng(DirectCast(Value, Global.System.UInt32))
+            ElseIf TypeOf Value Is Global.System.Int64 Then
+                Return CSng(DirectCast(Value, Global.System.Int64))
+            ElseIf TypeOf Value Is Global.System.UInt64 Then
+                Return CSng(DirectCast(Value, Global.System.UInt64))
+            ElseIf TypeOf Value Is Decimal Then
+                Return CSng(DirectCast(Value, Global.System.Decimal))
+            ElseIf TypeOf Value Is Single Then
+                Return CSng(DirectCast(Value, Single))
+            ElseIf TypeOf Value Is Double Then
+                Return CSng(DirectCast(Value, Double))
+            ElseIf TypeOf Value Is String Then
+                Return CSng(DirectCast(Value, String))
             End If
             Throw New Global.System.InvalidCastException()
         End Function
-        Public Shared Function ToDouble(value As String) As Double
-            If value Is Nothing Then
+        Public Shared Function ToDouble(Value As String) As Double
+            If Value Is Nothing Then
                 Return 0
             End If
             Try
                 Dim i64Value As Global.System.Int64
-                If IsHexOrOctValue(value, i64Value) Then
+                If IsHexOrOctValue(Value, i64Value) Then
                     Return CDbl(i64Value)
                 End If
-                Return ParseDouble(value)
+                Return ParseDouble(Value)
             Catch e As Global.System.FormatException
                 Throw New Global.System.InvalidCastException(e.Message, e)
             End Try
         End Function
-        Public Shared Function ToDouble(value As Object) As Double
-            If value Is Nothing Then
+        Public Shared Function ToDouble(Value As Object) As Double
+            If Value Is Nothing Then
                 Return 0
             End If
-            If TypeOf value Is Global.System.Enum Then
-                value = GetEnumValue(value)
+            If TypeOf Value Is Global.System.Enum Then
+                Value = GetEnumValue(Value)
             End If
-            If TypeOf value Is Boolean Then
-                Return CDbl(DirectCast(value, Boolean))
-            ElseIf TypeOf value Is SByte Then
-                Return CDbl(DirectCast(value, SByte))
-            ElseIf TypeOf value Is Byte Then
-                Return CDbl(DirectCast(value, Byte))
-            ElseIf TypeOf value Is Global.System.Int16 Then
-                Return CDbl(DirectCast(value, Global.System.Int16))
-            ElseIf TypeOf value Is Global.System.UInt16 Then
-                Return CDbl(DirectCast(value, Global.System.UInt16))
-            ElseIf TypeOf value Is Global.System.Int32 Then
-                Return CDbl(DirectCast(value, Global.System.Int32))
-            ElseIf TypeOf value Is Global.System.UInt32 Then
-                Return CDbl(DirectCast(value, Global.System.UInt32))
-            ElseIf TypeOf value Is Global.System.Int64 Then
-                Return CDbl(DirectCast(value, Global.System.Int64))
-            ElseIf TypeOf value Is Global.System.UInt64 Then
-                Return CDbl(DirectCast(value, Global.System.UInt64))
-            ElseIf TypeOf value Is Decimal Then
-                Return CDbl(DirectCast(value, Global.System.Decimal))
-            ElseIf TypeOf value Is Single Then
-                Return CDbl(DirectCast(value, Single))
-            ElseIf TypeOf value Is Double Then
-                Return CDbl(DirectCast(value, Double))
-            ElseIf TypeOf value Is String Then
-                Return CDbl(DirectCast(value, String))
+            If TypeOf Value Is Boolean Then
+                Return CDbl(DirectCast(Value, Boolean))
+            ElseIf TypeOf Value Is SByte Then
+                Return CDbl(DirectCast(Value, SByte))
+            ElseIf TypeOf Value Is Byte Then
+                Return CDbl(DirectCast(Value, Byte))
+            ElseIf TypeOf Value Is Global.System.Int16 Then
+                Return CDbl(DirectCast(Value, Global.System.Int16))
+            ElseIf TypeOf Value Is Global.System.UInt16 Then
+                Return CDbl(DirectCast(Value, Global.System.UInt16))
+            ElseIf TypeOf Value Is Global.System.Int32 Then
+                Return CDbl(DirectCast(Value, Global.System.Int32))
+            ElseIf TypeOf Value Is Global.System.UInt32 Then
+                Return CDbl(DirectCast(Value, Global.System.UInt32))
+            ElseIf TypeOf Value Is Global.System.Int64 Then
+                Return CDbl(DirectCast(Value, Global.System.Int64))
+            ElseIf TypeOf Value Is Global.System.UInt64 Then
+                Return CDbl(DirectCast(Value, Global.System.UInt64))
+            ElseIf TypeOf Value Is Decimal Then
+                Return CDbl(DirectCast(Value, Global.System.Decimal))
+            ElseIf TypeOf Value Is Single Then
+                Return CDbl(DirectCast(Value, Single))
+            ElseIf TypeOf Value Is Double Then
+                Return CDbl(DirectCast(Value, Double))
+            ElseIf TypeOf Value Is String Then
+                Return CDbl(DirectCast(Value, String))
             End If
             Throw New Global.System.InvalidCastException()
         End Function
@@ -762,162 +763,225 @@ MisMatch:
                 Throw ex
             End Try
         End Function
-        Public Shared Function ToDate(value As String) As Date
+
+        Friend Shared Function TryParseDouble(ByVal Value As String, ByRef Result As Double) As Boolean
+            Dim numberFormat As NumberFormatInfo
+            Dim normalizedNumberFormat As NumberFormatInfo
+            Dim culture As CultureInfo = GetCultureInfo()
+
+            numberFormat = culture.NumberFormat
+            normalizedNumberFormat = GetNormalizedNumberFormat(numberFormat)
+
+            Const flags As NumberStyles =
+                NumberStyles.AllowDecimalPoint Or
+                NumberStyles.AllowExponent Or
+                NumberStyles.AllowLeadingSign Or
+                NumberStyles.AllowLeadingWhite Or
+                NumberStyles.AllowThousands Or
+                NumberStyles.AllowTrailingSign Or
+                NumberStyles.AllowParentheses Or
+                NumberStyles.AllowTrailingWhite Or
+                NumberStyles.AllowCurrencySymbol
+
+            Value = ToHalfwidthNumbers(Value, culture)
+
+            ' The below code handles the 80% case efficiently and is inefficient only when the numeric and currency settings
+            ' are different
+
+            If numberFormat Is normalizedNumberFormat Then
+                Return System.Double.TryParse(Value, flags, normalizedNumberFormat, Result)
+            Else
+                Try
+                    ' Use numeric settings to parse
+                    ' Note that we use Parse instead of TryParse in order to distinguish whether the conversion failed
+                    ' due to FormatException or other exception like OverFlowException, etc.
+                    Result = System.Double.Parse(Value, flags, normalizedNumberFormat)
+                    Return True
+                Catch FormatEx As FormatException
+                    ' Use currency settings to parse
+                    Try
+                        Return System.Double.TryParse(Value, flags, numberFormat, Result)
+                    Catch ex As ArgumentException
+                        Return False
+                    End Try
+                Catch ex As StackOverflowException
+                    Throw ex
+                Catch ex As OutOfMemoryException
+                    Throw ex
+                Catch ex As System.Threading.ThreadAbortException
+                    Throw ex
+                Catch Ex As Exception
+                    Return False
+                End Try
+            End If
+
+        End Function
+
+        Public Shared Function ToDate(Value As String) As Date
             Dim parsedDate As Global.System.DateTime
             Const parseStyle As Global.System.Globalization.DateTimeStyles =
                 Global.System.Globalization.DateTimeStyles.AllowWhiteSpaces Or
                 Global.System.Globalization.DateTimeStyles.NoCurrentDateDefault
             Dim culture As Global.System.Globalization.CultureInfo = GetCultureInfo()
-            Dim result As Boolean = Global.System.DateTime.TryParse(ToHalfwidthNumbers(value, culture), culture, parseStyle, parsedDate)
+            Dim result As Boolean = Global.System.DateTime.TryParse(ToHalfwidthNumbers(Value, culture), culture, parseStyle, parsedDate)
             If result Then
                 Return parsedDate
             Else
                 Throw New Global.System.InvalidCastException()
             End If
         End Function
-        Public Shared Function ToDate(value As Object) As Date
-            If value Is Nothing Then
+        Public Shared Function ToDate(Value As Object) As Date
+            If Value Is Nothing Then
                 Return Nothing
             End If
-            If TypeOf value Is Global.System.DateTime Then
-                Return CDate(DirectCast(value, Global.System.DateTime))
-            ElseIf TypeOf value Is String Then
-                Return CDate(DirectCast(value, String))
+            If TypeOf Value Is Global.System.DateTime Then
+                Return CDate(DirectCast(Value, Global.System.DateTime))
+            ElseIf TypeOf Value Is String Then
+                Return CDate(DirectCast(Value, String))
             End If
             Throw New Global.System.InvalidCastException()
         End Function
-        Public Shared Function ToChar(value As String) As Char
-            If (value Is Nothing) OrElse (value.Length = 0) Then
-                Return Global.System.Convert.ToChar(0 And &HFFFFI)
-            End If
-            Return value.Chars(0)
+
+        Friend Shared Function TryParseDate(ByVal Value As String, ByRef Result As System.DateTime) As Boolean
+            Const ParseStyle As DateTimeStyles =
+                    DateTimeStyles.AllowWhiteSpaces Or
+                    DateTimeStyles.NoCurrentDateDefault
+            Dim Culture As CultureInfo = GetCultureInfo()
+            Return System.DateTime.TryParse(ToHalfwidthNumbers(Value, Culture), Culture, ParseStyle, Result)
         End Function
-        Public Shared Function ToChar(value As Object) As Char
-            If value Is Nothing Then
+
+        Public Shared Function ToChar(Value As String) As Char
+            If (Value Is Nothing) OrElse (Value.Length = 0) Then
                 Return Global.System.Convert.ToChar(0 And &HFFFFI)
             End If
-            If TypeOf value Is Char Then
-                Return CChar(DirectCast(value, Char))
-            ElseIf TypeOf value Is String Then
-                Return CChar(DirectCast(value, String))
+            Return Value.Chars(0)
+        End Function
+        Public Shared Function ToChar(Value As Object) As Char
+            If Value Is Nothing Then
+                Return Global.System.Convert.ToChar(0 And &HFFFFI)
+            End If
+            If TypeOf Value Is Char Then
+                Return CChar(DirectCast(Value, Char))
+            ElseIf TypeOf Value Is String Then
+                Return CChar(DirectCast(Value, String))
             End If
             Throw New Global.System.InvalidCastException()
         End Function
-        Public Shared Function ToCharArrayRankOne(value As String) As Char()
-            If value Is Nothing Then
-                value = ""
+        Public Shared Function ToCharArrayRankOne(Value As String) As Char()
+            If Value Is Nothing Then
+                Value = ""
             End If
-            Return value.ToCharArray()
+            Return Value.ToCharArray()
         End Function
-        Public Shared Function ToCharArrayRankOne(value As Object) As Char()
-            If value Is Nothing Then
+        Public Shared Function ToCharArrayRankOne(Value As Object) As Char()
+            If Value Is Nothing Then
                 Return "".ToCharArray()
             End If
-            Dim arrayValue As Char() = TryCast(value, Char())
+            Dim arrayValue As Char() = TryCast(Value, Char())
             If arrayValue IsNot Nothing AndAlso arrayValue.Rank = 1 Then
                 Return arrayValue
-            ElseIf TypeOf value Is String Then
-                Return DirectCast(value, String).ToCharArray()
+            ElseIf TypeOf Value Is String Then
+                Return DirectCast(Value, String).ToCharArray()
             End If
             Throw New Global.System.InvalidCastException()
         End Function
-        Public Shared Shadows Function ToString(value As Short) As String
-            Return value.ToString()
+        Public Shared Shadows Function ToString(Value As Short) As String
+            Return Value.ToString()
         End Function
-        Public Shared Shadows Function ToString(value As Integer) As String
-            Return value.ToString()
-        End Function
-        <Global.System.CLSCompliant(False)>
-        Public Shared Shadows Function ToString(value As UInteger) As String
-            Return value.ToString()
-        End Function
-        Public Shared Shadows Function ToString(value As Long) As String
-            Return value.ToString()
+        Public Shared Shadows Function ToString(Value As Integer) As String
+            Return Value.ToString()
         End Function
         <Global.System.CLSCompliant(False)>
-        Public Shared Shadows Function ToString(value As ULong) As String
-            Return value.ToString()
+        Public Shared Shadows Function ToString(Value As UInteger) As String
+            Return Value.ToString()
         End Function
-        Public Shared Shadows Function ToString(value As Single) As String
-            Return value.ToString()
+        Public Shared Shadows Function ToString(Value As Long) As String
+            Return Value.ToString()
         End Function
-        Public Shared Shadows Function ToString(value As Double) As String
-            Return value.ToString("G")
+        <Global.System.CLSCompliant(False)>
+        Public Shared Shadows Function ToString(Value As ULong) As String
+            Return Value.ToString()
         End Function
-        Public Shared Shadows Function ToString(value As Date) As String
-            Dim timeTicks As Long = value.TimeOfDay.Ticks
-            If (timeTicks = value.Ticks) OrElse
-                (value.Year = 1899 AndAlso value.Month = 12 AndAlso value.Day = 30) Then
-                Return value.ToString("T")
+        Public Shared Shadows Function ToString(Value As Single) As String
+            Return Value.ToString()
+        End Function
+        Public Shared Shadows Function ToString(Value As Double) As String
+            Return Value.ToString("G")
+        End Function
+        Public Shared Shadows Function ToString(Value As Date) As String
+            Dim timeTicks As Long = Value.TimeOfDay.Ticks
+            If (timeTicks = Value.Ticks) OrElse
+                (Value.Year = 1899 AndAlso Value.Month = 12 AndAlso Value.Day = 30) Then
+                Return Value.ToString("T")
             ElseIf timeTicks = 0 Then
-                Return value.ToString("d")
+                Return Value.ToString("d")
             Else
-                Return value.ToString("G")
+                Return Value.ToString("G")
             End If
         End Function
-        Public Shared Shadows Function ToString(value As Decimal) As String
-            Return value.ToString("G")
+        Public Shared Shadows Function ToString(Value As Decimal) As String
+            Return Value.ToString("G")
         End Function
-        Public Shared Shadows Function ToString(value As Object) As String
-            If value Is Nothing Then
+        Public Shared Shadows Function ToString(Value As Object) As String
+            If Value Is Nothing Then
                 Return Nothing
             Else
-                Dim stringValue As String = TryCast(value, String)
+                Dim stringValue As String = TryCast(Value, String)
                 If stringValue IsNot Nothing Then
                     Return stringValue
                 End If
             End If
-            If TypeOf value Is Global.System.Enum Then
-                value = GetEnumValue(value)
+            If TypeOf Value Is Global.System.Enum Then
+                Value = GetEnumValue(Value)
             End If
-            If TypeOf value Is Boolean Then
-                Return CStr(DirectCast(value, Boolean))
-            ElseIf TypeOf value Is SByte Then
-                Return CStr(DirectCast(value, SByte))
-            ElseIf TypeOf value Is Byte Then
-                Return CStr(DirectCast(value, Byte))
-            ElseIf TypeOf value Is Global.System.Int16 Then
-                Return CStr(DirectCast(value, Global.System.Int16))
-            ElseIf TypeOf value Is Global.System.UInt16 Then
-                Return CStr(DirectCast(value, Global.System.UInt16))
-            ElseIf TypeOf value Is Global.System.Int32 Then
-                Return CStr(DirectCast(value, Global.System.Int32))
-            ElseIf TypeOf value Is Global.System.UInt32 Then
-                Return CStr(DirectCast(value, Global.System.UInt32))
-            ElseIf TypeOf value Is Global.System.Int64 Then
-                Return CStr(DirectCast(value, Global.System.Int64))
-            ElseIf TypeOf value Is Global.System.UInt64 Then
-                Return CStr(DirectCast(value, Global.System.UInt64))
-            ElseIf TypeOf value Is Decimal Then
-                Return CStr(DirectCast(value, Global.System.Decimal))
-            ElseIf TypeOf value Is Single Then
-                Return CStr(DirectCast(value, Single))
-            ElseIf TypeOf value Is Double Then
-                Return CStr(DirectCast(value, Double))
-            ElseIf TypeOf value Is Char Then
-                Return CStr(DirectCast(value, Char))
-            ElseIf TypeOf value Is Date Then
-                Return CStr(DirectCast(value, Date))
+            If TypeOf Value Is Boolean Then
+                Return CStr(DirectCast(Value, Boolean))
+            ElseIf TypeOf Value Is SByte Then
+                Return CStr(DirectCast(Value, SByte))
+            ElseIf TypeOf Value Is Byte Then
+                Return CStr(DirectCast(Value, Byte))
+            ElseIf TypeOf Value Is Global.System.Int16 Then
+                Return CStr(DirectCast(Value, Global.System.Int16))
+            ElseIf TypeOf Value Is Global.System.UInt16 Then
+                Return CStr(DirectCast(Value, Global.System.UInt16))
+            ElseIf TypeOf Value Is Global.System.Int32 Then
+                Return CStr(DirectCast(Value, Global.System.Int32))
+            ElseIf TypeOf Value Is Global.System.UInt32 Then
+                Return CStr(DirectCast(Value, Global.System.UInt32))
+            ElseIf TypeOf Value Is Global.System.Int64 Then
+                Return CStr(DirectCast(Value, Global.System.Int64))
+            ElseIf TypeOf Value Is Global.System.UInt64 Then
+                Return CStr(DirectCast(Value, Global.System.UInt64))
+            ElseIf TypeOf Value Is Decimal Then
+                Return CStr(DirectCast(Value, Global.System.Decimal))
+            ElseIf TypeOf Value Is Single Then
+                Return CStr(DirectCast(Value, Single))
+            ElseIf TypeOf Value Is Double Then
+                Return CStr(DirectCast(Value, Double))
+            ElseIf TypeOf Value Is Char Then
+                Return CStr(DirectCast(Value, Char))
+            ElseIf TypeOf Value Is Date Then
+                Return CStr(DirectCast(Value, Date))
             Else
-                Dim charArray As Char() = TryCast(value, Char())
+                Dim charArray As Char() = TryCast(Value, Char())
                 If charArray IsNot Nothing Then
                     Return New String(charArray)
                 End If
             End If
             Throw New Global.System.InvalidCastException()
         End Function
-        Public Shared Shadows Function ToString(value As Boolean) As String
-            If value Then
+        Public Shared Shadows Function ToString(Value As Boolean) As String
+            If Value Then
                 Return Global.System.Boolean.TrueString
             Else
                 Return Global.System.Boolean.FalseString
             End If
         End Function
-        Public Shared Shadows Function ToString(value As Byte) As String
-            Return value.ToString()
+        Public Shared Shadows Function ToString(Value As Byte) As String
+            Return Value.ToString()
         End Function
-        Public Shared Shadows Function ToString(value As Char) As String
-            Return value.ToString()
+        Public Shared Shadows Function ToString(Value As Char) As String
+            Return Value.ToString()
         End Function
         Friend Shared Function GetCultureInfo() As Global.System.Globalization.CultureInfo
             Return Global.System.Globalization.CultureInfo.CurrentCulture
@@ -984,43 +1048,43 @@ GetSpecialValue:
             End If
             Return True
         End Function
-        Public Shared Function ToGenericParameter(Of T)(value As Object) As T
-            If value Is Nothing Then
+        Public Shared Function ToGenericParameter(Of T)(Value As Object) As T
+            If Value Is Nothing Then
                 Return Nothing
             End If
             Dim reflectedType As Global.System.Type = GetType(T)
             If Global.System.Type.Equals(reflectedType, GetType(Global.System.Boolean)) Then
-                Return DirectCast(CObj(CBool(value)), T)
+                Return DirectCast(CObj(CBool(Value)), T)
             ElseIf Global.System.Type.Equals(reflectedType, GetType(Global.System.SByte)) Then
-                Return DirectCast(CObj(CSByte(value)), T)
+                Return DirectCast(CObj(CSByte(Value)), T)
             ElseIf Global.System.Type.Equals(reflectedType, GetType(Global.System.Byte)) Then
-                Return DirectCast(CObj(CByte(value)), T)
+                Return DirectCast(CObj(CByte(Value)), T)
             ElseIf Global.System.Type.Equals(reflectedType, GetType(Global.System.Int16)) Then
-                Return DirectCast(CObj(CShort(value)), T)
+                Return DirectCast(CObj(CShort(Value)), T)
             ElseIf Global.System.Type.Equals(reflectedType, GetType(Global.System.UInt16)) Then
-                Return DirectCast(CObj(CUShort(value)), T)
+                Return DirectCast(CObj(CUShort(Value)), T)
             ElseIf Global.System.Type.Equals(reflectedType, GetType(Global.System.Int32)) Then
-                Return DirectCast(CObj(CInt(value)), T)
+                Return DirectCast(CObj(CInt(Value)), T)
             ElseIf Global.System.Type.Equals(reflectedType, GetType(Global.System.UInt32)) Then
-                Return DirectCast(CObj(CUInt(value)), T)
+                Return DirectCast(CObj(CUInt(Value)), T)
             ElseIf Global.System.Type.Equals(reflectedType, GetType(Global.System.Int64)) Then
-                Return DirectCast(CObj(CLng(value)), T)
+                Return DirectCast(CObj(CLng(Value)), T)
             ElseIf Global.System.Type.Equals(reflectedType, GetType(Global.System.UInt64)) Then
-                Return DirectCast(CObj(CULng(value)), T)
+                Return DirectCast(CObj(CULng(Value)), T)
             ElseIf Global.System.Type.Equals(reflectedType, GetType(Global.System.Decimal)) Then
-                Return DirectCast(CObj(CDec(value)), T)
+                Return DirectCast(CObj(CDec(Value)), T)
             ElseIf Global.System.Type.Equals(reflectedType, GetType(Global.System.Single)) Then
-                Return DirectCast(CObj(CSng(value)), T)
+                Return DirectCast(CObj(CSng(Value)), T)
             ElseIf Global.System.Type.Equals(reflectedType, GetType(Global.System.Double)) Then
-                Return DirectCast(CObj(CDbl(value)), T)
+                Return DirectCast(CObj(CDbl(Value)), T)
             ElseIf Global.System.Type.Equals(reflectedType, GetType(Global.System.DateTime)) Then
-                Return DirectCast(CObj(CDate(value)), T)
+                Return DirectCast(CObj(CDate(Value)), T)
             ElseIf Global.System.Type.Equals(reflectedType, GetType(Global.System.Char)) Then
-                Return DirectCast(CObj(CChar(value)), T)
+                Return DirectCast(CObj(CChar(Value)), T)
             ElseIf Global.System.Type.Equals(reflectedType, GetType(Global.System.String)) Then
-                Return DirectCast(CObj(CStr(value)), T)
+                Return DirectCast(CObj(CStr(Value)), T)
             Else
-                Return DirectCast(value, T)
+                Return DirectCast(Value, T)
             End If
         End Function
 
@@ -1152,8 +1216,8 @@ GetSpecialValue:
         End Function
 
 
-        Public Shared Function ChangeType(ByVal expression As Object, ByVal targetType As System.Type) As Object
-            Return ChangeType(expression, targetType, False)
+        Public Shared Function ChangeType(ByVal Expression As Object, ByVal TargetType As System.Type) As Object
+            Return ChangeType(Expression, TargetType, False)
         End Function
 
 

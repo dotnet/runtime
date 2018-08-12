@@ -37,7 +37,11 @@ namespace System.Collections.Tests
         /// To be implemented in the concrete collections test classes. Returns a set of ModifyEnumerable delegates
         /// that modify the enumerable passed to them.
         /// </summary>
-        protected abstract IEnumerable<ModifyEnumerable> ModifyEnumerables { get; }
+        protected abstract IEnumerable<ModifyEnumerable> GetModifyEnumerables(ModifyOperation operations);
+
+        protected virtual ModifyOperation ModifyEnumeratorThrows => ModifyOperation.Add | ModifyOperation.Insert | ModifyOperation.Remove | ModifyOperation.Clear;
+
+        protected virtual ModifyOperation ModifyEnumeratorAllowed => ModifyOperation.None;
 
         /// <summary>
         /// The Reset method is provided for COM interoperability. It does not necessarily need to be
@@ -359,7 +363,7 @@ namespace System.Collections.Tests
         [MemberData(nameof(ValidCollectionSizes))]
         public void IEnumerable_Generic_Enumerator_MoveNext_ModifiedBeforeEnumeration_ThrowsInvalidOperationException(int count)
         {
-            Assert.All(ModifyEnumerables, ModifyEnumerable =>
+            Assert.All(GetModifyEnumerables(ModifyEnumeratorThrows), ModifyEnumerable =>
             {
                 IEnumerable<T> enumerable = GenericIEnumerableFactory(count);
                 using (IEnumerator<T> enumerator = enumerable.GetEnumerator())
@@ -381,9 +385,29 @@ namespace System.Collections.Tests
 
         [Theory]
         [MemberData(nameof(ValidCollectionSizes))]
+        public void IEnumerable_Generic_Enumerator_MoveNext_ModifiedBeforeEnumeration_Succeeds(int count)
+        {
+            Assert.All(GetModifyEnumerables(ModifyEnumeratorAllowed), ModifyEnumerable =>
+            {
+                IEnumerable<T> enumerable = GenericIEnumerableFactory(count);
+                using (IEnumerator<T> enumerator = enumerable.GetEnumerator())
+                {
+                    if (ModifyEnumerable(enumerable))
+                    {
+                        if (Enumerator_ModifiedDuringEnumeration_ThrowsInvalidOperationException)
+                        {
+                            enumerator.MoveNext();
+                        }
+                    }
+                }
+            });
+        }
+
+        [Theory]
+        [MemberData(nameof(ValidCollectionSizes))]
         public void IEnumerable_Generic_Enumerator_MoveNext_ModifiedDuringEnumeration_ThrowsInvalidOperationException(int count)
         {
-            Assert.All(ModifyEnumerables, ModifyEnumerable =>
+            Assert.All(GetModifyEnumerables(ModifyEnumeratorThrows), ModifyEnumerable =>
             {
                 IEnumerable<T> enumerable = GenericIEnumerableFactory(count);
                 using (IEnumerator<T> enumerator = enumerable.GetEnumerator())
@@ -407,9 +431,28 @@ namespace System.Collections.Tests
 
         [Theory]
         [MemberData(nameof(ValidCollectionSizes))]
+        public void IEnumerable_Generic_Enumerator_MoveNext_ModifiedDuringEnumeration_Succeeds(int count)
+        {
+            Assert.All(GetModifyEnumerables(ModifyEnumeratorAllowed), ModifyEnumerable =>
+            {
+                IEnumerable<T> enumerable = GenericIEnumerableFactory(count);
+                using (IEnumerator<T> enumerator = enumerable.GetEnumerator())
+                {
+                    for (int i = 0; i < count / 2; i++)
+                        enumerator.MoveNext();
+                    if (ModifyEnumerable(enumerable))
+                    {
+                        enumerator.MoveNext();
+                    }
+                }
+            });
+        }
+
+        [Theory]
+        [MemberData(nameof(ValidCollectionSizes))]
         public void IEnumerable_Generic_Enumerator_MoveNext_ModifiedAfterEnumeration_ThrowsInvalidOperationException(int count)
         {
-            Assert.All(ModifyEnumerables, ModifyEnumerable =>
+            Assert.All(GetModifyEnumerables(ModifyEnumeratorThrows), ModifyEnumerable =>
             {
                 IEnumerable<T> enumerable = GenericIEnumerableFactory(count);
                 using (IEnumerator<T> enumerator = enumerable.GetEnumerator())
@@ -425,6 +468,25 @@ namespace System.Collections.Tests
                         {
                             enumerator.MoveNext();
                         }
+                    }
+                }
+            });
+        }
+
+        [Theory]
+        [MemberData(nameof(ValidCollectionSizes))]
+        public void IEnumerable_Generic_Enumerator_MoveNext_ModifiedAfterEnumeration_Succeeds(int count)
+        {
+            Assert.All(GetModifyEnumerables(ModifyEnumeratorAllowed), ModifyEnumerable =>
+            {
+                IEnumerable<T> enumerable = GenericIEnumerableFactory(count);
+                using (IEnumerator<T> enumerator = enumerable.GetEnumerator())
+                {
+                    while (enumerator.MoveNext())
+                        ;
+                    if (ModifyEnumerable(enumerable))
+                    {
+                        enumerator.MoveNext();
                     }
                 }
             });
@@ -556,7 +618,7 @@ namespace System.Collections.Tests
         [MemberData(nameof(ValidCollectionSizes))]
         public void IEnumerable_Generic_Enumerator_Current_ModifiedDuringEnumeration_UndefinedBehavior(int count)
         {
-            Assert.All(ModifyEnumerables, ModifyEnumerable =>
+            Assert.All(GetModifyEnumerables(ModifyEnumeratorThrows), ModifyEnumerable =>
             {
                 T current;
                 IEnumerable<T> enumerable = GenericIEnumerableFactory(count);
@@ -568,6 +630,24 @@ namespace System.Collections.Tests
                             Assert.Throws<InvalidOperationException>(() => enumerator.Current);
                         else
                             current = enumerator.Current;
+                    }
+                }
+            });
+        }
+
+        [Theory]
+        [MemberData(nameof(ValidCollectionSizes))]
+        public void IEnumerable_Generic_Enumerator_Current_ModifiedDuringEnumeration_Succeeds(int count)
+        {
+            Assert.All(GetModifyEnumerables(ModifyEnumeratorAllowed), ModifyEnumerable =>
+            {
+                T current;
+                IEnumerable<T> enumerable = GenericIEnumerableFactory(count);
+                using (IEnumerator<T> enumerator = enumerable.GetEnumerator())
+                {
+                    if (ModifyEnumerable(enumerable))
+                    {
+                        current = enumerator.Current;
                     }
                 }
             });
@@ -594,7 +674,7 @@ namespace System.Collections.Tests
         [MemberData(nameof(ValidCollectionSizes))]
         public void IEnumerable_Generic_Enumerator_Reset_ModifiedBeforeEnumeration_ThrowsInvalidOperationException(int count)
         {
-            Assert.All(ModifyEnumerables, ModifyEnumerable =>
+            Assert.All(GetModifyEnumerables(ModifyEnumeratorThrows), ModifyEnumerable =>
             {
                 IEnumerable<T> enumerable = GenericIEnumerableFactory(count);
                 using (IEnumerator<T> enumerator = enumerable.GetEnumerator())
@@ -616,9 +696,26 @@ namespace System.Collections.Tests
 
         [Theory]
         [MemberData(nameof(ValidCollectionSizes))]
+        public void IEnumerable_Generic_Enumerator_Reset_ModifiedBeforeEnumeration_Succeeds(int count)
+        {
+            Assert.All(GetModifyEnumerables(ModifyEnumeratorAllowed), ModifyEnumerable =>
+            {
+                IEnumerable<T> enumerable = GenericIEnumerableFactory(count);
+                using (IEnumerator<T> enumerator = enumerable.GetEnumerator())
+                {
+                    if (ModifyEnumerable(enumerable))
+                    {
+                        enumerator.Reset();
+                    }
+                }
+            });
+        }
+
+        [Theory]
+        [MemberData(nameof(ValidCollectionSizes))]
         public void IEnumerable_Generic_Enumerator_Reset_ModifiedDuringEnumeration_ThrowsInvalidOperationException(int count)
         {
-            Assert.All(ModifyEnumerables, ModifyEnumerable =>
+            Assert.All(GetModifyEnumerables(ModifyEnumeratorThrows), ModifyEnumerable =>
             {
                 IEnumerable<T> enumerable = GenericIEnumerableFactory(count);
                 using (IEnumerator<T> enumerator = enumerable.GetEnumerator())
@@ -642,9 +739,28 @@ namespace System.Collections.Tests
 
         [Theory]
         [MemberData(nameof(ValidCollectionSizes))]
+        public void IEnumerable_Generic_Enumerator_Reset_ModifiedDuringEnumeration_Succeeds(int count)
+        {
+            Assert.All(GetModifyEnumerables(ModifyEnumeratorAllowed), ModifyEnumerable =>
+            {
+                IEnumerable<T> enumerable = GenericIEnumerableFactory(count);
+                using (IEnumerator<T> enumerator = enumerable.GetEnumerator())
+                {
+                    for (int i = 0; i < count / 2; i++)
+                        enumerator.MoveNext();
+                    if (ModifyEnumerable(enumerable))
+                    {
+                        enumerator.Reset();
+                    }
+                }
+            });
+        }
+
+        [Theory]
+        [MemberData(nameof(ValidCollectionSizes))]
         public void IEnumerable_Generic_Enumerator_Reset_ModifiedAfterEnumeration_ThrowsInvalidOperationException(int count)
         {
-            Assert.All(ModifyEnumerables, ModifyEnumerable =>
+            Assert.All(GetModifyEnumerables(ModifyEnumeratorThrows), ModifyEnumerable =>
             {
                 IEnumerable<T> enumerable = GenericIEnumerableFactory(count);
                 using (IEnumerator<T> enumerator = enumerable.GetEnumerator())
@@ -660,6 +776,25 @@ namespace System.Collections.Tests
                         {
                             enumerator.Reset();
                         }
+                    }
+                }
+            });
+        }
+
+        [Theory]
+        [MemberData(nameof(ValidCollectionSizes))]
+        public void IEnumerable_Generic_Enumerator_Reset_ModifiedAfterEnumeration_Succeeds(int count)
+        {
+            Assert.All(GetModifyEnumerables(ModifyEnumeratorAllowed), ModifyEnumerable =>
+            {
+                IEnumerable<T> enumerable = GenericIEnumerableFactory(count);
+                using (IEnumerator<T> enumerator = enumerable.GetEnumerator())
+                {
+                    while (enumerator.MoveNext())
+                        ;
+                    if (ModifyEnumerable(enumerable))
+                    {
+                        enumerator.Reset();
                     }
                 }
             });

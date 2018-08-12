@@ -155,9 +155,9 @@ namespace System.Collections.Tests
         /// <summary>
         /// Returns a set of ModifyEnumerable delegates that modify the enumerable passed to them.
         /// </summary>
-        protected override IEnumerable<ModifyEnumerable> ModifyEnumerables
+        protected override IEnumerable<ModifyEnumerable> GetModifyEnumerables(ModifyOperation operations)
         {
-            get
+            if ((operations & ModifyOperation.Add) == ModifyOperation.Add)
             {
                 yield return (IEnumerable<KeyValuePair<TKey, TValue>> enumerable) =>
                 {
@@ -165,12 +165,18 @@ namespace System.Collections.Tests
                     casted.Add(CreateTKey(12), CreateTValue(5123));
                     return true;
                 };
+            }
+            if ((operations & ModifyOperation.Insert) == ModifyOperation.Insert)
+            {
                 yield return (IEnumerable<KeyValuePair<TKey, TValue>> enumerable) =>
                 {
                     IDictionary<TKey, TValue> casted = ((IDictionary<TKey, TValue>)enumerable);
                     casted[CreateTKey(541)] = CreateTValue(12);
                     return true;
                 };
+            }
+            if ((operations & ModifyOperation.Remove) == ModifyOperation.Remove)
+            {
                 yield return (IEnumerable<KeyValuePair<TKey, TValue>> enumerable) =>
                 {
                     IDictionary<TKey, TValue> casted = ((IDictionary<TKey, TValue>)enumerable);
@@ -183,6 +189,9 @@ namespace System.Collections.Tests
                     }
                     return false;
                 };
+            }
+            if ((operations & ModifyOperation.Clear) == ModifyOperation.Clear)
+            {
                 yield return (IEnumerable<KeyValuePair<TKey, TValue>> enumerable) =>
                 {
                     IDictionary<TKey, TValue> casted = ((IDictionary<TKey, TValue>)enumerable);
@@ -194,6 +203,7 @@ namespace System.Collections.Tests
                     return false;
                 };
             }
+            //throw new InvalidOperationException(string.Format("{0:G}", operations));
         }
 
         /// <summary>

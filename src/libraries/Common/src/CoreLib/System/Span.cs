@@ -5,9 +5,8 @@
 using System.ComponentModel;
 using System.Diagnostics;
 using System.Runtime.CompilerServices;
-#if !FEATURE_PORTABLE_SPAN
+
 using System.Runtime.Versioning;
-#endif // !FEATURE_PORTABLE_SPAN
 
 #pragma warning disable 0809  //warning CS0809: Obsolete member 'Span<T>.Equals(object)' overrides non-obsolete member 'object.Equals(object)'
 
@@ -26,9 +25,7 @@ namespace System
         /// </summary>
         public int Length
         {
-#if !FEATURE_PORTABLE_SPAN
             [NonVersionable]
-#endif // !FEATURE_PORTABLE_SPAN
             get
             {
                 return _length;
@@ -40,9 +37,7 @@ namespace System
         /// </summary>
         public bool IsEmpty
         {
-#if !FEATURE_PORTABLE_SPAN
             [NonVersionable]
-#endif // !FEATURE_PORTABLE_SPAN
             get
             {
                 return _length == 0;

@@ -118,6 +118,8 @@ namespace System.Security.Cryptography.X509Certificates
             throw new PlatformNotSupportedException();
         }
 
+        internal new ICertificatePal Pal => (ICertificatePal)base.Pal;
+
         public bool Archived
         {
             get
@@ -288,9 +290,7 @@ namespace System.Security.Cryptography.X509Certificates
         {
             get
             {
-                byte[] serialNumber = GetSerialNumber();
-                Array.Reverse(serialNumber);
-                return serialNumber.ToHexStringUpper();
+                return GetSerialNumberString();
             }
         }
 
@@ -327,8 +327,7 @@ namespace System.Security.Cryptography.X509Certificates
         {
             get
             {
-                byte[] thumbPrint = GetCertHash();
-                return thumbPrint.ToHexStringUpper();
+                return GetCertHashString();
             }
         }
 

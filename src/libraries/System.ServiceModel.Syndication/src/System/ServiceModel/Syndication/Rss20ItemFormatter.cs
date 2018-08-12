@@ -34,18 +34,18 @@ namespace System.ServiceModel.Syndication
         {
             if (itemTypeToCreate == null)
             {
-                throw DiagnosticUtility.ExceptionUtility.ThrowHelperArgumentNull(nameof(itemTypeToCreate));
+                throw new ArgumentNullException(nameof(itemTypeToCreate));
             }
             if (!typeof(SyndicationItem).IsAssignableFrom(itemTypeToCreate))
             {
-                throw DiagnosticUtility.ExceptionUtility.ThrowHelperArgument(nameof(itemTypeToCreate),
-                    SR.Format(SR.InvalidObjectTypePassed, nameof(itemTypeToCreate), "SyndicationItem"));
+                throw new ArgumentException(SR.Format(SR.InvalidObjectTypePassed, nameof(itemTypeToCreate), nameof(SyndicationItem)), nameof(itemTypeToCreate));
             }
             _feedSerializer = new Rss20FeedFormatter();
             _feedSerializer.PreserveAttributeExtensions = _preserveAttributeExtensions = true;
             _feedSerializer.PreserveElementExtensions = _preserveElementExtensions = true;
             _feedSerializer.SerializeExtensionsAsAtom = _serializeExtensionsAsAtom = true;
             _itemType = itemTypeToCreate;
+
         }
 
         public Rss20ItemFormatter(SyndicationItem itemToWrite)
@@ -111,8 +111,9 @@ namespace System.ServiceModel.Syndication
         {
             if (reader == null)
             {
-                throw DiagnosticUtility.ExceptionUtility.ThrowHelperArgumentNull(nameof(reader));
+                throw new ArgumentNullException(nameof(reader));
             }
+
             return reader.IsStartElement(Rss20Constants.ItemTag, Rss20Constants.Rss20Namespace);
         }
 
@@ -127,9 +128,10 @@ namespace System.ServiceModel.Syndication
         {
             if (reader == null)
             {
-                throw DiagnosticUtility.ExceptionUtility.ThrowHelperArgumentNull(nameof(reader));
+                throw new ArgumentNullException(nameof(reader));
             }
             SyndicationFeedFormatter.TraceItemReadBegin();
+            
             ReadItem(reader);
             SyndicationFeedFormatter.TraceItemReadEnd();
         }
@@ -139,9 +141,10 @@ namespace System.ServiceModel.Syndication
         {
             if (writer == null)
             {
-                throw DiagnosticUtility.ExceptionUtility.ThrowHelperArgumentNull(nameof(writer));
+                throw new ArgumentNullException(nameof(writer));
             }
             SyndicationFeedFormatter.TraceItemWriteBegin();
+
             WriteItem(writer);
             SyndicationFeedFormatter.TraceItemWriteEnd();
         }
@@ -151,8 +154,9 @@ namespace System.ServiceModel.Syndication
             SyndicationFeedFormatter.TraceItemReadBegin();
             if (!CanRead(reader))
             {
-                throw DiagnosticUtility.ExceptionUtility.ThrowHelperError(new XmlException(SR.Format(SR.UnknownItemXml, reader.LocalName, reader.NamespaceURI)));
+                throw new XmlException(SR.Format(SR.UnknownItemXml, reader.LocalName, reader.NamespaceURI));
             }
+
             ReadItem(reader);
             SyndicationFeedFormatter.TraceItemReadEnd();
         }
@@ -161,9 +165,10 @@ namespace System.ServiceModel.Syndication
         {
             if (writer == null)
             {
-                throw DiagnosticUtility.ExceptionUtility.ThrowHelperArgumentNull(nameof(writer));
+                throw new ArgumentNullException(nameof(writer));
             }
             SyndicationFeedFormatter.TraceItemWriteBegin();
+
             writer.WriteStartElement(Rss20Constants.ItemTag, Rss20Constants.Rss20Namespace);
             WriteItem(writer);
             writer.WriteEndElement();
@@ -185,8 +190,9 @@ namespace System.ServiceModel.Syndication
         {
             if (this.Item == null)
             {
-                throw DiagnosticUtility.ExceptionUtility.ThrowHelperError(new InvalidOperationException(SR.Format(SR.ItemFormatterDoesNotHaveItem)));
+                throw new InvalidOperationException(SR.ItemFormatterDoesNotHaveItem);
             }
+
             XmlDictionaryWriter w = XmlDictionaryWriter.CreateDictionaryWriter(writer);
             _feedSerializer.WriteItemContents(w, this.Item);
         }

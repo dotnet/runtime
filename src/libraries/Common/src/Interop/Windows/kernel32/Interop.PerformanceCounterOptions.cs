@@ -352,20 +352,20 @@ internal partial class Interop
 
 
             [StructLayout(LayoutKind.Sequential)]
-            public class PDH_RAW_COUNTER
+            public struct PDH_RAW_COUNTER
             {
-                public int CStatus = 0;
-                public long TimeStamp = 0;
-                public long FirstValue = 0;
-                public long SecondValue = 0;
-                public int MultiCount = 0;
+                public int CStatus;
+                public long TimeStamp;
+                public long FirstValue;
+                public long SecondValue;
+                public int MultiCount;
             }
 
             [StructLayout(LayoutKind.Sequential)]
-            public class PDH_FMT_COUNTERVALUE
+            public struct PDH_FMT_COUNTERVALUE
             {
-                public int CStatus = 0;
-                public double data = 0;
+                public int CStatus;
+                public double data;
             }
 
             public const int PDH_NO_DATA = unchecked((int)0x800007D5);

@@ -4,24 +4,15 @@
 
 using System.Diagnostics;
 using System.Runtime.CompilerServices;
-
-#if !netstandard
-using Internal.Runtime.CompilerServices;
-#endif
-
-#if !netstandard11
 using System.Numerics;
-#endif
 
-#if netstandard
-using nuint = System.NUInt;
-#else
+using Internal.Runtime.CompilerServices;
+
 #if BIT64
 using nuint = System.UInt64;
 #else
 using nuint = System.UInt32;
 #endif // BIT64
-#endif // netstandard
 
 namespace System
 {
@@ -112,14 +103,13 @@ namespace System
             uint uValue = value; // Use uint for comparisons to avoid unnecessary 8->32 extensions
             IntPtr index = (IntPtr)0; // Use IntPtr for arithmetic to avoid unnecessary 64->32->64 truncations
             IntPtr nLength = (IntPtr)length;
-#if !netstandard11
+
             if (Vector.IsHardwareAccelerated && length >= Vector<byte>.Count * 2)
             {
                 int unaligned = (int)Unsafe.AsPointer(ref searchSpace) & (Vector<byte>.Count - 1);
                 nLength = (IntPtr)((Vector<byte>.Count - unaligned) & (Vector<byte>.Count - 1));
             }
         SequentialScan:
-#endif
             while ((byte*)nLength >= (byte*)8)
             {
                 nLength -= 8;
@@ -169,13 +159,13 @@ namespace System
 
                 index += 1;
             }
-#if !netstandard11
+
             if (Vector.IsHardwareAccelerated && ((int)(byte*)index < length))
             {
                 nLength = (IntPtr)((length - (int)(byte*)index) & ~(Vector<byte>.Count - 1));
 
                 // Get comparison Vector
-                Vector<byte> vComparison = GetVector(value);
+                Vector<byte> vComparison = new Vector<byte>(value);
 
                 while ((byte*)nLength > (byte*)index)
                 {
@@ -195,7 +185,6 @@ namespace System
                     goto SequentialScan;
                 }
             }
-#endif
             return -1;
         Found: // Workaround for https://github.com/dotnet/coreclr/issues/13549
             return (int)(byte*)index;
@@ -256,14 +245,13 @@ namespace System
             uint uValue = value; // Use uint for comparisons to avoid unnecessary 8->32 extensions
             IntPtr index = (IntPtr)length; // Use IntPtr for arithmetic to avoid unnecessary 64->32->64 truncations
             IntPtr nLength = (IntPtr)length;
-#if !netstandard11
+
             if (Vector.IsHardwareAccelerated && length >= Vector<byte>.Count * 2)
             {
                 int unaligned = (int)Unsafe.AsPointer(ref searchSpace) & (Vector<byte>.Count - 1);
                 nLength = (IntPtr)(((length & (Vector<byte>.Count - 1)) + unaligned) & (Vector<byte>.Count - 1));
             }
         SequentialScan:
-#endif
             while ((byte*)nLength >= (byte*)8)
             {
                 nLength -= 8;
@@ -310,13 +298,13 @@ namespace System
                 if (uValue == Unsafe.AddByteOffset(ref searchSpace, index))
                     goto Found;
             }
-#if !netstandard11
+
             if (Vector.IsHardwareAccelerated && ((byte*)index > (byte*)0))
             {
                 nLength = (IntPtr)((int)(byte*)index & ~(Vector<byte>.Count - 1));
 
                 // Get comparison Vector
-                Vector<byte> vComparison = GetVector(value);
+                Vector<byte> vComparison = new Vector<byte>(value);
 
                 while ((byte*)nLength > (byte*)(Vector<byte>.Count - 1))
                 {
@@ -336,7 +324,6 @@ namespace System
                     goto SequentialScan;
                 }
             }
-#endif
             return -1;
         Found: // Workaround for https://github.com/dotnet/coreclr/issues/13549
             return (int)(byte*)index;
@@ -364,14 +351,13 @@ namespace System
             uint uValue1 = value1; // Use uint for comparisons to avoid unnecessary 8->32 extensions
             IntPtr index = (IntPtr)0; // Use IntPtr for arithmetic to avoid unnecessary 64->32->64 truncations
             IntPtr nLength = (IntPtr)length;
-#if !netstandard11
+
             if (Vector.IsHardwareAccelerated && length >= Vector<byte>.Count * 2)
             {
                 int unaligned = (int)Unsafe.AsPointer(ref searchSpace) & (Vector<byte>.Count - 1);
                 nLength = (IntPtr)((Vector<byte>.Count - unaligned) & (Vector<byte>.Count - 1));
             }
         SequentialScan:
-#endif
             uint lookUp;
             while ((byte*)nLength >= (byte*)8)
             {
@@ -435,14 +421,14 @@ namespace System
 
                 index += 1;
             }
-#if !netstandard11
+
             if (Vector.IsHardwareAccelerated && ((int)(byte*)index < length))
             {
                 nLength = (IntPtr)((length - (int)(byte*)index) & ~(Vector<byte>.Count - 1));
 
                 // Get comparison Vector
-                Vector<byte> values0 = GetVector(value0);
-                Vector<byte> values1 = GetVector(value1);
+                Vector<byte> values0 = new Vector<byte>(value0);
+                Vector<byte> values1 = new Vector<byte>(value1);
 
                 while ((byte*)nLength > (byte*)index)
                 {
@@ -465,7 +451,6 @@ namespace System
                     goto SequentialScan;
                 }
             }
-#endif
             return -1;
         Found: // Workaround for https://github.com/dotnet/coreclr/issues/13549
             return (int)(byte*)index;
@@ -494,14 +479,13 @@ namespace System
             uint uValue2 = value2; // Use uint for comparisons to avoid unnecessary 8->32 extensions
             IntPtr index = (IntPtr)0; // Use IntPtr for arithmetic to avoid unnecessary 64->32->64 truncations
             IntPtr nLength = (IntPtr)length;
-#if !netstandard11
+
             if (Vector.IsHardwareAccelerated && length >= Vector<byte>.Count * 2)
             {
                 int unaligned = (int)Unsafe.AsPointer(ref searchSpace) & (Vector<byte>.Count - 1);
                 nLength = (IntPtr)((Vector<byte>.Count - unaligned) & (Vector<byte>.Count - 1));
             }
         SequentialScan:
-#endif
             uint lookUp;
             while ((byte*)nLength >= (byte*)8)
             {
@@ -565,15 +549,15 @@ namespace System
 
                 index += 1;
             }
-#if !netstandard11
+
             if (Vector.IsHardwareAccelerated && ((int)(byte*)index < length))
             {
                 nLength = (IntPtr)((length - (int)(byte*)index) & ~(Vector<byte>.Count - 1));
 
                 // Get comparison Vector
-                Vector<byte> values0 = GetVector(value0);
-                Vector<byte> values1 = GetVector(value1);
-                Vector<byte> values2 = GetVector(value2);
+                Vector<byte> values0 = new Vector<byte>(value0);
+                Vector<byte> values1 = new Vector<byte>(value1);
+                Vector<byte> values2 = new Vector<byte>(value2);
 
                 while ((byte*)nLength > (byte*)index)
                 {
@@ -600,7 +584,6 @@ namespace System
                     goto SequentialScan;
                 }
             }
-#endif
             return -1;
         Found: // Workaround for https://github.com/dotnet/coreclr/issues/13549
             return (int)(byte*)index;
@@ -628,14 +611,13 @@ namespace System
             uint uValue1 = value1; // Use uint for comparisons to avoid unnecessary 8->32 extensions
             IntPtr index = (IntPtr)length; // Use IntPtr for arithmetic to avoid unnecessary 64->32->64 truncations
             IntPtr nLength = (IntPtr)length;
-#if !netstandard11
+
             if (Vector.IsHardwareAccelerated && length >= Vector<byte>.Count * 2)
             {
                 int unaligned = (int)Unsafe.AsPointer(ref searchSpace) & (Vector<byte>.Count - 1);
                 nLength = (IntPtr)(((length & (Vector<byte>.Count - 1)) + unaligned) & (Vector<byte>.Count - 1));
             }
         SequentialScan:
-#endif
             uint lookUp;
             while ((byte*)nLength >= (byte*)8)
             {
@@ -696,14 +678,14 @@ namespace System
                 if (uValue0 == lookUp || uValue1 == lookUp)
                     goto Found;
             }
-#if !netstandard11
+
             if (Vector.IsHardwareAccelerated && ((byte*)index > (byte*)0))
             {
                 nLength = (IntPtr)((int)(byte*)index & ~(Vector<byte>.Count - 1));
 
                 // Get comparison Vector
-                Vector<byte> values0 = GetVector(value0);
-                Vector<byte> values1 = GetVector(value1);
+                Vector<byte> values0 = new Vector<byte>(value0);
+                Vector<byte> values1 = new Vector<byte>(value1);
 
                 while ((byte*)nLength > (byte*)(Vector<byte>.Count - 1))
                 {
@@ -727,7 +709,6 @@ namespace System
                     goto SequentialScan;
                 }
             }
-#endif
             return -1;
         Found: // Workaround for https://github.com/dotnet/coreclr/issues/13549
             return (int)(byte*)index;
@@ -756,14 +737,13 @@ namespace System
             uint uValue2 = value2; // Use uint for comparisons to avoid unnecessary 8->32 extensions
             IntPtr index = (IntPtr)length; // Use IntPtr for arithmetic to avoid unnecessary 64->32->64 truncations
             IntPtr nLength = (IntPtr)length;
-#if !netstandard11
+
             if (Vector.IsHardwareAccelerated && length >= Vector<byte>.Count * 2)
             {
                 int unaligned = (int)Unsafe.AsPointer(ref searchSpace) & (Vector<byte>.Count - 1);
                 nLength = (IntPtr)(((length & (Vector<byte>.Count - 1)) + unaligned) & (Vector<byte>.Count - 1));
             }
         SequentialScan:
-#endif
             uint lookUp;
             while ((byte*)nLength >= (byte*)8)
             {
@@ -824,15 +804,15 @@ namespace System
                 if (uValue0 == lookUp || uValue1 == lookUp || uValue2 == lookUp)
                     goto Found;
             }
-#if !netstandard11
+
             if (Vector.IsHardwareAccelerated && ((byte*)index > (byte*)0))
             {
                 nLength = (IntPtr)((int)(byte*)index & ~(Vector<byte>.Count - 1));
 
                 // Get comparison Vector
-                Vector<byte> values0 = GetVector(value0);
-                Vector<byte> values1 = GetVector(value1);
-                Vector<byte> values2 = GetVector(value2);
+                Vector<byte> values0 = new Vector<byte>(value0);
+                Vector<byte> values1 = new Vector<byte>(value1);
+                Vector<byte> values2 = new Vector<byte>(value2);
 
                 while ((byte*)nLength > (byte*)(Vector<byte>.Count - 1))
                 {
@@ -860,7 +840,6 @@ namespace System
                     goto SequentialScan;
                 }
             }
-#endif
             return -1;
         Found: // Workaround for https://github.com/dotnet/coreclr/issues/13549
             return (int)(byte*)index;
@@ -890,7 +869,6 @@ namespace System
             IntPtr i = (IntPtr)0; // Use IntPtr for arithmetic to avoid unnecessary 64->32->64 truncations
             IntPtr n = (IntPtr)(void*)length;
 
-#if !netstandard11
             if (Vector.IsHardwareAccelerated && (byte*)n >= (byte*)Vector<byte>.Count)
             {
                 n -= Vector<byte>.Count;
@@ -906,7 +884,6 @@ namespace System
                 return Unsafe.ReadUnaligned<Vector<byte>>(ref Unsafe.AddByteOffset(ref first, n)) ==
                        Unsafe.ReadUnaligned<Vector<byte>>(ref Unsafe.AddByteOffset(ref second, n));
             }
-#endif
 
             if ((byte*)n >= (byte*)sizeof(UIntPtr))
             {
@@ -938,7 +915,6 @@ namespace System
             return false;
         }
 
-#if !netstandard11
         // Vector sub-search adapted from https://github.com/aspnet/KestrelHttpServer/pull/1138
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         private static int LocateFirstFoundByte(Vector<byte> match)
@@ -959,7 +935,6 @@ namespace System
             // Single LEA instruction with jitted const (using function result)
             return i * 8 + LocateFirstFoundByte(candidate);
         }
-#endif
 
         public static unsafe int SequenceCompareTo(ref byte first, int firstLength, ref byte second, int secondLength)
         {
@@ -974,7 +949,6 @@ namespace System
             IntPtr i = (IntPtr)0; // Use IntPtr for arithmetic to avoid unnecessary 64->32->64 truncations
             IntPtr n = (IntPtr)(void*)minLength;
 
-#if !netstandard11
             if (Vector.IsHardwareAccelerated && (byte*)n > (byte*)Vector<byte>.Count)
             {
                 n -= Vector<byte>.Count;
@@ -989,7 +963,6 @@ namespace System
                 }
                 goto NotEqual;
             }
-#endif
 
             if ((byte*)n > (byte*)sizeof(UIntPtr))
             {
@@ -1018,7 +991,6 @@ namespace System
             return firstLength - secondLength;
         }
 
-#if !netstandard11
         // Vector sub-search adapted from https://github.com/aspnet/KestrelHttpServer/pull/1138
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         private static int LocateLastFoundByte(Vector<byte> match)
@@ -1039,9 +1011,7 @@ namespace System
             // Single LEA instruction with jitted const (using function result)
             return i * 8 + LocateLastFoundByte(candidate);
         }
-#endif
 
-#if !netstandard11
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         private static int LocateFirstFoundByte(ulong match)
         {
@@ -1050,9 +1020,7 @@ namespace System
             // Shift all powers of two into the high byte and extract
             return (int)((powerOfTwoFlag * XorPowerOfTwoToHighByte) >> 57);
         }
-#endif
 
-#if !netstandard11
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         private static int LocateLastFoundByte(ulong match)
         {
@@ -1065,24 +1033,7 @@ namespace System
             }
             return index;
         }
-#endif
 
-#if !netstandard11
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        private static Vector<byte> GetVector(byte vectorByte)
-        {
-#if !netcoreapp
-            // Vector<byte> .ctor doesn't become an intrinsic due to detection issue
-            // However this does cause it to become an intrinsic (with additional multiply and reg->reg copy)
-            // https://github.com/dotnet/coreclr/issues/7459#issuecomment-253965670
-            return Vector.AsVectorByte(new Vector<uint>(vectorByte * 0x01010101u));
-#else
-            return new Vector<byte>(vectorByte);
-#endif
-        }
-#endif
-
-#if !netstandard11
         private const ulong XorPowerOfTwoToHighByte = (0x07ul |
                                                        0x06ul << 8 |
                                                        0x05ul << 16 |
@@ -1090,6 +1041,5 @@ namespace System
                                                        0x03ul << 32 |
                                                        0x02ul << 40 |
                                                        0x01ul << 48) + 1;
-#endif
     }
 }

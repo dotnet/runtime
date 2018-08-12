@@ -38,15 +38,27 @@ namespace System.Net.Security
             {
                 if (!cert.HasPrivateKey)
                 {
+                    if (NetEventSource.IsEnabled)
+                    {
+                        NetEventSource.Info(candidateCerts, $"Skipping current X509Certificate2 {cert.GetHashCode()} since it doesn't have private key. Certificate Subject: {cert.Subject}, Thumbprint: {cert.Thumbprint}.");
+                    }
                     continue;
                 }
                 
                 if (IsValidClientCertificate(cert))
                 {
+                    if (NetEventSource.IsEnabled)
+                    {
+                        NetEventSource.Info(candidateCerts, $"Choosing X509Certificate2 {cert.GetHashCode()} as the Client Certificate. Certificate Subject: {cert.Subject}, Thumbprint: {cert.Thumbprint}.");
+                    }
                     return cert;
                 }
             }
 
+            if (NetEventSource.IsEnabled)
+            {
+                NetEventSource.Info(candidateCerts, "No eligible client certificate found.");
+            }
             return null;
         }
 
@@ -56,10 +68,18 @@ namespace System.Net.Security
             {
                 if ((extension is X509EnhancedKeyUsageExtension eku) && !IsValidForClientAuthenticationEKU(eku))
                 {
+                    if (NetEventSource.IsEnabled)
+                    {
+                        NetEventSource.Info(cert, $"For Certificate {cert.GetHashCode()} - current X509EnhancedKeyUsageExtension {eku.GetHashCode()} is not valid for Client Authentication.");
+                    }
                     return false;
                 }
                 else if ((extension is X509KeyUsageExtension ku) && !IsValidForDigitalSignatureUsage(ku))
                 {
+                    if (NetEventSource.IsEnabled)
+                    {
+                        NetEventSource.Info(cert, $"For Certificate {cert.GetHashCode()} - current X509KeyUsageExtension {ku.GetHashCode()} is not valid for Digital Signature.");
+                    }
                     return false;
                 }
             }

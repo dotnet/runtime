@@ -63,7 +63,7 @@ namespace System.Linq
 
     [DebuggerDisplay("Count = {Count}")]
     [DebuggerTypeProxy(typeof(SystemLinq_LookupDebugView<,>))]
-    public class Lookup<TKey, TElement> : ILookup<TKey, TElement>, IIListProvider<IGrouping<TKey, TElement>>
+    public partial class Lookup<TKey, TElement> : ILookup<TKey, TElement>
     {
         private readonly IEqualityComparer<TKey> _comparer;
         private Grouping<TKey, TElement>[] _groupings;
@@ -132,7 +132,7 @@ namespace System.Linq
                     return grouping;
                 }
 
-                return Array.Empty<TElement>();
+                return Enumerable.Empty<TElement>();
             }
         }
 
@@ -152,62 +152,6 @@ namespace System.Linq
             }
         }
 
-        IGrouping<TKey, TElement>[] IIListProvider<IGrouping<TKey, TElement>>.ToArray()
-        {
-            IGrouping<TKey, TElement>[] array = new IGrouping<TKey, TElement>[_count];
-            int index = 0;
-            Grouping<TKey, TElement> g = _lastGrouping;
-            if (g != null)
-            {
-                do
-                {
-                    g = g._next;
-                    array[index] = g;
-                    ++index;
-                }
-                while (g != _lastGrouping);
-            }
-
-            return array;
-        }
-
-        internal TResult[] ToArray<TResult>(Func<TKey, IEnumerable<TElement>, TResult> resultSelector)
-        {
-            TResult[] array = new TResult[_count];
-            int index = 0;
-            Grouping<TKey, TElement> g = _lastGrouping;
-            if (g != null)
-            {
-                do
-                {
-                    g = g._next;
-                    g.Trim();
-                    array[index] = resultSelector(g._key, g._elements);
-                    ++index;
-                }
-                while (g != _lastGrouping);
-            }
-
-            return array;
-        }
-
-        List<IGrouping<TKey, TElement>> IIListProvider<IGrouping<TKey, TElement>>.ToList()
-        {
-            List<IGrouping<TKey, TElement>> list = new List<IGrouping<TKey, TElement>>(_count);
-            Grouping<TKey, TElement> g = _lastGrouping;
-            if (g != null)
-            {
-                do
-                {
-                    g = g._next;
-                    list.Add(g);
-                }
-                while (g != _lastGrouping);
-            }
-
-            return list;
-        }
-
         internal List<TResult> ToList<TResult>(Func<TKey, IEnumerable<TElement>, TResult> resultSelector)
         {
             List<TResult> list = new List<TResult>(_count);
@@ -225,8 +169,6 @@ namespace System.Linq
 
             return list;
         }
-
-        int IIListProvider<IGrouping<TKey, TElement>>.GetCount(bool onlyIfCheap) => _count;
 
         public IEnumerable<TResult> ApplyResultSelector<TResult>(Func<TKey, IEnumerable<TElement>, TResult> resultSelector)
         {

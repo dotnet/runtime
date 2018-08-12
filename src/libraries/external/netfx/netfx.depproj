@@ -20,12 +20,12 @@
 
   <ItemGroup>
     <!-- For things not .NETFramework binplace to the NETFX ref path -->
-    <BinPlaceConfiguration  Condition="'$(TargetsNetFx)' != 'true'" Include="$(Configuration)">
+    <BinPlaceConfiguration Condition="'$(TargetsNetFx)' != 'true'" Include="$(Configuration)">
       <RefPath>$(NetFxRefPath)</RefPath>
     </BinPlaceConfiguration>
 
     <!-- For things .NETFramework binplace to refpath -->
-    <BinPlaceConfiguration  Condition="'$(TargetsNetFx)' == 'true'" Include="$(Configuration)">
+    <BinPlaceConfiguration Condition="'$(TargetsNetFx)' == 'true'" Include="$(Configuration)">
       <RefPath>$(RefPath)</RefPath>
     </BinPlaceConfiguration>
   </ItemGroup>

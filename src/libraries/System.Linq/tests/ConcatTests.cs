@@ -256,7 +256,7 @@ namespace System.Linq.Tests
             {
                 // The full .NET Framework uses unsigned arithmetic summing up collection counts.
                 // See https://github.com/dotnet/corefx/pull/11492.
-                if (PlatformDetection.IsFullFramework)
+                if (!PlatformDetection.IsNetCore)
                 {
                     testCode();
                 }

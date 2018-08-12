@@ -1010,6 +1010,66 @@ namespace System.Security.Cryptography.Pkcs.Tests
             Assert.Equal(contentHex, signedCms.ContentInfo.Content.ByteArrayToHex());
         }
 
+        [Fact]
+        public static void VerifyUnsortedAttributeSignature()
+        {
+            SignedCms cms = new SignedCms();
+            cms.Decode(SignedDocuments.DigiCertTimeStampToken);
+
+            // Assert.NoThrows
+            cms.CheckSignature(true);
+        }
+
+        [Fact]
+        public static void VerifyUnsortedAttributeSignature_ImportExportImport()
+        {
+            SignedCms cms = new SignedCms();
+            cms.Decode(SignedDocuments.DigiCertTimeStampToken);
+
+            // Assert.NoThrows
+            cms.CheckSignature(true);
+
+            byte[] exported = cms.Encode();
+            cms = new SignedCms();
+            cms.Decode(exported);
+
+            // Assert.NoThrows
+            cms.CheckSignature(true);
+        }
+
+        [Fact]
+        public static void AddSignerToUnsortedAttributeSignature()
+        {
+            SignedCms cms = new SignedCms();
+            cms.Decode(SignedDocuments.DigiCertTimeStampToken);
+
+            // Assert.NoThrows
+            cms.CheckSignature(true);
+
+            using (X509Certificate2 cert = Certificates.RSAKeyTransferCapi1.TryGetCertificateWithPrivateKey())
+            {
+                cms.ComputeSignature(
+                    new CmsSigner(
+                        SubjectIdentifierType.IssuerAndSerialNumber,
+                        cert));
+
+                cms.ComputeSignature(
+                    new CmsSigner(
+                        SubjectIdentifierType.SubjectKeyIdentifier,
+                        cert));
+            }
+
+            // Assert.NoThrows
+            cms.CheckSignature(true);
+
+            byte[] exported = cms.Encode();
+            cms = new SignedCms();
+            cms.Decode(exported);
+
+            // Assert.NoThrows
+            cms.CheckSignature(true);
+        }
+
         [Theory]
         [InlineData(null, "0102", Oids.Pkcs7Data)]
         [InlineData(null, "010100", Oids.Pkcs7Data)]

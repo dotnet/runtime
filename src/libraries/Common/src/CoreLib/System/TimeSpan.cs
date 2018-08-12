@@ -450,7 +450,7 @@ namespace System
         }
         public override string ToString()
         {
-            return TimeSpanFormat.Format(this, null, null);
+            return TimeSpanFormat.FormatC(this);
         }
         public string ToString(string format)
         {

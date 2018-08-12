@@ -70,15 +70,18 @@ namespace System.Collections.Tests
         /// <summary>
         /// Returns a set of ModifyEnumerable delegates that modify the enumerable passed to them.
         /// </summary>
-        protected override IEnumerable<ModifyEnumerable> ModifyEnumerables
+        protected override IEnumerable<ModifyEnumerable> GetModifyEnumerables(ModifyOperation operations)
         {
-            get
+            if ((operations & ModifyOperation.Add) == ModifyOperation.Add)
             {
                 yield return (IEnumerable<T> enumerable) =>
                 {
                     Add(enumerable, CreateT(12));
                     return true;
                 };
+            }
+            if ((operations & ModifyOperation.Remove) == ModifyOperation.Remove)
+            {
                 yield return (IEnumerable<T> enumerable) =>
                 {
                     if (Count(enumerable) > 0)
@@ -87,6 +90,9 @@ namespace System.Collections.Tests
                     }
                     return false;
                 };
+            }
+            if ((operations & ModifyOperation.Clear) == ModifyOperation.Clear)
+            {
                 yield return (IEnumerable<T> enumerable) =>
                 {
                     if (Count(enumerable) > 0)

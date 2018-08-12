@@ -364,7 +364,13 @@ namespace System.Security.Cryptography.Xml
         public const string XmlDsigMinimalCanonicalizationUrl = "http://www.w3.org/2000/09/xmldsig#minimal";
         public const string XmlDsigNamespaceUrl = "http://www.w3.org/2000/09/xmldsig#";
         public const string XmlDsigRSASHA1Url = "http://www.w3.org/2000/09/xmldsig#rsa-sha1";
+        public const string XmlDsigRSASHA256Url = "http://www.w3.org/2001/04/xmldsig-more#rsa-sha256";
+        public const string XmlDsigRSASHA384Url = "http://www.w3.org/2001/04/xmldsig-more#rsa-sha384";
+        public const string XmlDsigRSASHA512Url = "http://www.w3.org/2001/04/xmldsig-more#rsa-sha512";
         public const string XmlDsigSHA1Url = "http://www.w3.org/2000/09/xmldsig#sha1";
+        public const string XmlDsigSHA256Url = "http://www.w3.org/2001/04/xmlenc#sha256";
+        public const string XmlDsigSHA384Url = "http://www.w3.org/2001/04/xmldsig-more#sha384";
+        public const string XmlDsigSHA512Url = "http://www.w3.org/2001/04/xmlenc#sha512";
         public const string XmlDsigXPathTransformUrl = "http://www.w3.org/TR/1999/REC-xpath-19991116";
         public const string XmlDsigXsltTransformUrl = "http://www.w3.org/TR/1999/REC-xslt-19991116";
         public const string XmlLicenseTransformUrl = "urn:mpeg:mpeg21:2003:01-REL-R-NS:licenseTransform";

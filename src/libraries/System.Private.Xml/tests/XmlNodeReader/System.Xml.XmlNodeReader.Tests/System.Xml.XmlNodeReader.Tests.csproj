@@ -1,0 +1,18 @@
+﻿<Project Sdk="Microsoft.NET.Sdk" ToolsVersion="15.0">
+  <Import Project="$(CommonTestPath)\Tests.props" />
+  <PropertyGroup>
+    <ProjectGuid>{6C6F323D-054E-4723-9DEA-1C5E1E45DF88}</ProjectGuid>
+    <Configurations>netstandard-Debug;netstandard-Release</Configurations>
+  </PropertyGroup>
+  <ItemGroup>
+    <Compile Include="NodeReaderTestHelper.cs" />
+    <Compile Include="XmlNodeReaderConstructionTests.cs" />
+    <Compile Include="XmlNodeReaderGetAttributeTests.cs" />
+    <Compile Include="XmlNodeReaderMiscTests.cs" />
+    <Compile Include="XmlNodeReaderMoveToAttributeTests.cs" />
+    <Compile Include="XmlNodeReaderReadTests.cs" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="Configurations.props" />
+  </ItemGroup>
+</Project>

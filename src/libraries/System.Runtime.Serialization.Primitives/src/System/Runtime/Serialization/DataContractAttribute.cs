@@ -20,7 +20,7 @@ namespace System.Runtime.Serialization
 
         public bool IsReference
         {
-            get { return _isReference; }
+            get => _isReference;
             set
             {
                 _isReference = value;
@@ -28,14 +28,11 @@ namespace System.Runtime.Serialization
             }
         }
 
-        public bool IsReferenceSetExplicitly
-        {
-            get { return _isReferenceSetExplicitly; }
-        }
+        public bool IsReferenceSetExplicitly => _isReferenceSetExplicitly;
 
         public string Namespace
         {
-            get { return _ns; }
+            get => _ns;
             set
             {
                 _ns = value;
@@ -43,14 +40,11 @@ namespace System.Runtime.Serialization
             }
         }
 
-        public bool IsNamespaceSetExplicitly
-        {
-            get { return _isNamespaceSetExplicitly; }
-        }
+        public bool IsNamespaceSetExplicitly => _isNamespaceSetExplicitly;
 
         public string Name
         {
-            get { return _name; }
+            get => _name;
             set
             {
                 _name = value;
@@ -58,9 +52,6 @@ namespace System.Runtime.Serialization
             }
         }
 
-        public bool IsNameSetExplicitly
-        {
-            get { return _isNameSetExplicitly; }
-        }
+        public bool IsNameSetExplicitly => _isNameSetExplicitly;
     }
 }

@@ -241,6 +241,30 @@
   <data name="Cryptography_NotValidPublicOrPrivateKey" xml:space="preserve">
     <value>Key is not a valid public or private key.</value>
   </data>
+  <data name="Cryptography_Pkcs12_CannotProcessEncryptedSafeContents" xml:space="preserve">
+    <value>This operation is not valid on an encrypted or enveloped Pkcs12SafeContents.</value>
+  </data>
+  <data name="Cryptography_Pkcs12_CertBagNotX509" xml:space="preserve">
+    <value>The Pkcs12CertBag contents are not an X.509 certificate.</value>
+  </data>
+  <data name="Cryptography_Pkcs12_PfxIsSealed" xml:space="preserve">
+    <value>The Pkcs12Builder can no longer be modified because one of the Seal methods was already invoked.</value>
+  </data>
+  <data name="Cryptography_Pkcs12_PfxMustBeSealed" xml:space="preserve">
+    <value>One of the Seal methods must be invoked on the Pkcs12Builder before invoking an Encode method.</value>
+  </data>
+  <data name="Cryptography_Pkcs12_SafeContentsIsEncrypted" xml:space="preserve">
+    <value>Cannot enumerate the contents of an encrypted or enveloped Pkcs12SafeContents.</value>
+  </data>
+  <data name="Cryptography_Pkcs12_SafeContentsIsReadOnly" xml:space="preserve">
+    <value>New Pkcs12SafeBag values cannot be added to a Pkcs12SafeContents that was read from existing data.</value>
+  </data>
+  <data name="Cryptography_Pkcs12_WrongModeForDecrypt" xml:space="preserve">
+   <value>This decryption operation applies to 'Pkcs12ConfidentialityMode.{0}', but the target object is in 'Pkcs12ConfidentialityMode.{1}'.</value>
+  </data>
+  <data name="Cryptography_Pkcs12_WrongModeForVerify" xml:space="preserve">
+   <value>This verification operation applies to 'Pkcs12IntegrityMode.{0}', but the target object is in 'Pkcs12IntegrityMode.{1}'.</value>
+  </data>
   <data name="Cryptography_Pkcs_InvalidSignatureParameters" xml:space="preserve">
     <value>Invalid signature paramters.</value>
   </data>

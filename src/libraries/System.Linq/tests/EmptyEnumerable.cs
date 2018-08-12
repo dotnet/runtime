@@ -2,8 +2,6 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
-using System.Collections;
-using System.Collections.Generic;
 using Xunit;
 
 namespace System.Linq.Tests
@@ -31,7 +29,7 @@ namespace System.Linq.Tests
         {
             Assert.Equal(new T[0], Enumerable.Empty<T>());
             Assert.Equal(0, Enumerable.Empty<T>().Count());
-            Assert.Same(Enumerable.Empty<T>().GetEnumerator(), ((IList<T>)Enumerable.Empty<T>()).GetEnumerator());
+            Assert.Same(Enumerable.Empty<T>().GetEnumerator(), Enumerable.Empty<T>().GetEnumerator());
         }
 
         [Fact]
@@ -41,27 +39,6 @@ namespace System.Linq.Tests
             TestEmptyEmpty<string>();
             TestEmptyEmpty<object>();
             TestEmptyEmpty<EmptyEnumerableTest>();
-        }
-
-        [Fact]
-        public void CastToIList()
-        {
-            var emptyEnumerable = Enumerable.Empty<object>();
-            Assert.Same(emptyEnumerable, (IList)emptyEnumerable);
-        }
-
-        [Fact]
-        public void CastToIListGeneric()
-        {
-            var emptyEnumerable = Enumerable.Empty<object>();
-            Assert.Same(emptyEnumerable, (IList<object>)emptyEnumerable);
-        }
-
-        [Fact]
-        public void CastToArray()
-        {
-            var emptyEnumerable = Enumerable.Empty<object>();
-            Assert.Same(emptyEnumerable, (object[])emptyEnumerable);
         }
     }
 }

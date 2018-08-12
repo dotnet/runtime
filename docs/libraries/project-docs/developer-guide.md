@@ -52,7 +52,7 @@ For more details on the build configurations see [project-guidelines](../coding-
 
 **Common full clean build and test run**
 ```
-clean --all
+clean -all
 build
 build-tests
 ```

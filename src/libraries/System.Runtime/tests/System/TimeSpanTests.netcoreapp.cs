@@ -229,22 +229,22 @@ namespace System.Tests
 
         [Theory]
         [MemberData(nameof(ToString_MemberData))]
-        public static void TryFormat_Valid(TimeSpan input, string format, string expected)
+        public static void TryFormat_Valid(TimeSpan input, string format, CultureInfo info, string expected)
         {
             int charsWritten;
             Span<char> dst;
 
             dst = new char[expected.Length - 1];
-            Assert.False(input.TryFormat(dst, out charsWritten, format, CultureInfo.InvariantCulture));
+            Assert.False(input.TryFormat(dst, out charsWritten, format, info));
             Assert.Equal(0, charsWritten);
 
             dst = new char[expected.Length];
-            Assert.True(input.TryFormat(dst, out charsWritten, format, CultureInfo.InvariantCulture));
+            Assert.True(input.TryFormat(dst, out charsWritten, format, info));
             Assert.Equal(expected.Length, charsWritten);
             Assert.Equal(expected, new string(dst));
 
             dst = new char[expected.Length + 1];
-            Assert.True(input.TryFormat(dst, out charsWritten, format, CultureInfo.InvariantCulture));
+            Assert.True(input.TryFormat(dst, out charsWritten, format, info));
             Assert.Equal(expected.Length, charsWritten);
             Assert.Equal(expected, new string(dst.Slice(0, dst.Length - 1)));
             Assert.Equal(0, dst[dst.Length - 1]);

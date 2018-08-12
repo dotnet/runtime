@@ -65,6 +65,7 @@
     <Compile Include="SQL\SqlCredentialTest\SqlCredentialTest.cs" />
     <Compile Include="SQL\SqlSchemaInfoTest\SqlSchemaInfoTest.cs" />
     <Compile Include="SQL\SqlBulkCopyTest\AdjustPrecScaleForBulkCopy.cs" />
+    <Compile Include="SQL\SqlBulkCopyTest\AzureDistributedTransaction.cs" />
     <Compile Include="SQL\SqlBulkCopyTest\ErrorOnRowsMarkedAsDeleted.cs" />
     <Compile Include="SQL\SqlBulkCopyTest\Bug84548.cs" />
     <Compile Include="SQL\SqlBulkCopyTest\Bug85007.cs" />
@@ -121,6 +122,7 @@
     <Compile Include="SQL\UdtTest\UdtTest.cs" />
     <Compile Include="SQL\UdtTest\UdtTest2.cs" />
     <Compile Include="SQL\UdtTest\UdtTestHelpers.cs" />
+    <Compile Include="SQL\Utf8SupportTest\Utf8SupportTest.cs" />
     <Compile Include="SQL\WeakRefTest\WeakRefTest.cs" />
     <Compile Include="SQL\WeakRefTestYukonSpecific\WeakRefTestYukonSpecific.cs" />
     <Compile Include="XUnitAssemblyAttributes.cs" />

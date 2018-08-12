@@ -42,16 +42,9 @@ namespace System.ServiceModel.Syndication
 
         public ResourceCollectionInfo(TextSyndicationContent title, Uri link, IEnumerable<CategoriesDocument> categories, IEnumerable<string> accepts)
         {
-            if (title == null)
-            {
-                throw DiagnosticUtility.ExceptionUtility.ThrowHelperArgumentNull(nameof(title));
-            }
-            if (link == null)
-            {
-                throw DiagnosticUtility.ExceptionUtility.ThrowHelperArgumentNull(nameof(link));
-            }
-            _title = title;
-            _link = link;
+            _title = title ?? throw new ArgumentNullException(nameof(title));
+            _link = link ?? throw new ArgumentNullException(nameof(link));
+    
             if (categories != null)
             {
                 _categories = new NullNotAllowedCollection<CategoriesDocument>();

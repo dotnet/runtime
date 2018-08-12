@@ -107,12 +107,23 @@ namespace System.Security.Cryptography.Pkcs
             int SLen = ((salt.Length - 1 + vBytes) / vBytes) * vBytes;
 
             // The password is a null-terminated UTF-16BE version of the input.
-            int passLen = (password.Length + 1) * 2;
+            int passLen = checked((password.Length + 1) * 2);
+
+            // If password == default then the span represents the null string (as opposed to
+            // an empty string), and the P block should then have size 0 in the next step.
+            if (password == default)
+            {
+                passLen = 0;
+            }
 
             // 3.  Concatenate copies of the password together to create a string P
             // of length v(ceiling(p/v)) bits (the final copy of the password
             // may be truncated to create P).  Note that if the password is the
             // empty string, then so is P.
+            //
+            // (The RFC quote considers the trailing '\0' to be part of the string,
+            // so "empty string" from this RFC means "null string" in C#, and C#'s
+            // "empty string" is not 'empty' in this context.)
             int PLen = ((passLen - 1 + vBytes) / vBytes) * vBytes;
 
             // 4.  Set I=S||P to be the concatenation of S and P.

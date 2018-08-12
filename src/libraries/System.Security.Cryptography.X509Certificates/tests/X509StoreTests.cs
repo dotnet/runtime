@@ -309,6 +309,18 @@ namespace System.Security.Cryptography.X509Certificates.Tests
             }
         }
 
+        [Fact]
+        public static void RemoveDisposedIsIgnored()
+        {
+            using (X509Store store = new X509Store(StoreName.My, StoreLocation.CurrentUser))
+            using (X509Certificate2 cert = new X509Certificate2(TestData.MsCertificate))
+            {
+                store.Open(OpenFlags.ReadWrite);
+                cert.Dispose();
+                store.Remove(cert);
+            }
+        }
+
         /* Placeholder information for these tests until they can be written to run reliably.
          * Currently such tests would create physical files (Unix) and\or certificates (Windows)
          * which can collide with other running tests that use the same cert, or from a

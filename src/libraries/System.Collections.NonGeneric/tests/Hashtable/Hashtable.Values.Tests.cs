@@ -19,7 +19,7 @@ namespace System.Collections.Tests
         protected override bool SupportsSerialization => false;
 
         protected override bool Enumerator_Current_UndefinedOperation_Throws => true;
-        protected override IEnumerable<ModifyEnumerable> ModifyEnumerables => new List<ModifyEnumerable>();
+        protected override IEnumerable<ModifyEnumerable> GetModifyEnumerables(ModifyOperation operations) => new List<ModifyEnumerable>();
 
         protected override ICollection NonGenericICollectionFactory() => new Hashtable().Values;
 

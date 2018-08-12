@@ -6,6 +6,7 @@ using Xunit;
 
 namespace System.Runtime.InteropServices.Tests
 {
+    [SkipOnTargetFramework(TargetFrameworkMonikers.Uap, "GetNativeVariantForObject() not supported on UWP")]
     public class GetNativeVariantForObjectTests
     {
         internal struct Variant
@@ -21,13 +22,6 @@ namespace System.Runtime.InteropServices.Tests
         }
 
 #pragma warning disable 618
-        [Fact]
-        [PlatformSpecific(TestPlatforms.Windows)]
-        public static void NullParameter()
-        {
-            AssertExtensions.Throws<ArgumentNullException>("pDstNativeVariant", () => Marshal.GetNativeVariantForObject(new object(), IntPtr.Zero));
-            AssertExtensions.Throws<ArgumentNullException>("pDstNativeVariant", () => Marshal.GetNativeVariantForObject<int>(1, IntPtr.Zero));
-        }
 
         [Fact]
         [PlatformSpecific(TestPlatforms.Windows)]
@@ -141,7 +135,23 @@ namespace System.Runtime.InteropServices.Tests
             {
                 Marshal.FreeHGlobal(pNative);
             }
-}
+        }
+
+        [Fact]
+        [PlatformSpecific(TestPlatforms.AnyUnix)]
+        public void GetNativeVariantForObject_Unix_ThrowsPlatformNotSupportedException()
+        {
+            Assert.Throws<PlatformNotSupportedException>(() => Marshal.GetNativeVariantForObject(new object(), IntPtr.Zero));
+            Assert.Throws<PlatformNotSupportedException>(() => Marshal.GetNativeVariantForObject<int>(1, IntPtr.Zero));
+        }
+
+        [Fact]
+        [PlatformSpecific(TestPlatforms.Windows)]
+        public static void GetNativeVariantForObject_ZeroPointer_ThrowsArgumentNullException()
+        {
+            AssertExtensions.Throws<ArgumentNullException>("pDstNativeVariant", () => Marshal.GetNativeVariantForObject(new object(), IntPtr.Zero));
+            AssertExtensions.Throws<ArgumentNullException>("pDstNativeVariant", () => Marshal.GetNativeVariantForObject<int>(1, IntPtr.Zero));
+        }
 #pragma warning restore 618
     }
 }

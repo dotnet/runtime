@@ -2102,6 +2102,7 @@ namespace System.Drawing.Tests
             }
         }
 
+        [ActiveIssue(20884, TestPlatforms.AnyUnix)]
         [ConditionalTheory(Helpers.GdiplusIsAvailable)]
         [InlineData(CoordinateSpace.Device)]
         [InlineData(CoordinateSpace.World)]
@@ -2120,6 +2121,7 @@ namespace System.Drawing.Tests
             }
         }
 
+        [ActiveIssue(20884, TestPlatforms.AnyUnix)]
         [ConditionalTheory(Helpers.GdiplusIsAvailable)]
         [InlineData(CoordinateSpace.Device)]
         [InlineData(CoordinateSpace.World)]

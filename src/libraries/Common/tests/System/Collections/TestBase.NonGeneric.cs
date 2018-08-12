@@ -29,6 +29,16 @@ namespace System.Collections.Tests
             Lazy,
         };
 
+        [Flags]
+        public enum ModifyOperation
+        {
+            None = 0,
+            Add = 1,
+            Insert = 2,
+            Remove = 4,
+            Clear = 8
+        }
+
         #endregion
     }
 }

@@ -50,7 +50,7 @@ namespace Internal.Cryptography.Pal.AnyOS
             }
         }
 
-        private static byte[] Encrypt(
+        private byte[] Encrypt(
             CmsRecipientCollection recipients,
             ContentInfo contentInfo,
             AlgorithmIdentifier contentEncryptionAlgorithm,

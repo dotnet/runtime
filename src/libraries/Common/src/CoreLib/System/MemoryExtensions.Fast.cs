@@ -226,6 +226,7 @@ namespace System
         /// <param name="culture">An object that supplies culture-specific casing rules.</param>
         /// <remarks>If the source and destinations overlap, this method behaves as if the original values are in
         /// a temporary location before the destination is overwritten.</remarks>
+        /// <returns>The number of characters written into the destination span. If the destination is too small, returns -1.</returns>
         /// <exception cref="System.ArgumentNullException">
         /// Thrown when <paramref name="culture"/> is null.
         /// </exception>
@@ -253,6 +254,7 @@ namespace System
         /// <param name="destination">The destination span which contains the transformed characters.</param>
         /// <remarks>If the source and destinations overlap, this method behaves as if the original values are in
         /// a temporary location before the destination is overwritten.</remarks>
+        /// <returns>The number of characters written into the destination span. If the destination is too small, returns -1.</returns>
         public static int ToLowerInvariant(this ReadOnlySpan<char> source, Span<char> destination)
         {
             // Assuming that changing case does not affect length
@@ -275,6 +277,7 @@ namespace System
         /// <param name="culture">An object that supplies culture-specific casing rules.</param>
         /// <remarks>If the source and destinations overlap, this method behaves as if the original values are in
         /// a temporary location before the destination is overwritten.</remarks>
+        /// <returns>The number of characters written into the destination span. If the destination is too small, returns -1.</returns>
         /// <exception cref="System.ArgumentNullException">
         /// Thrown when <paramref name="culture"/> is null.
         /// </exception>
@@ -302,6 +305,7 @@ namespace System
         /// <param name="destination">The destination span which contains the transformed characters.</param>
         /// <remarks>If the source and destinations overlap, this method behaves as if the original values are in
         /// a temporary location before the destination is overwritten.</remarks>
+        /// <returns>The number of characters written into the destination span. If the destination is too small, returns -1.</returns>
         public static int ToUpperInvariant(this ReadOnlySpan<char> source, Span<char> destination)
         {
             // Assuming that changing case does not affect length

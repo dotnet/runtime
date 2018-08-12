@@ -30,7 +30,9 @@ namespace System.Data.SqlClient
             Pooling,
             MinPoolSize,
             MaxPoolSize,
+#if netcoreapp
             PoolBlockingPeriod,
+#endif
 
             MultipleActiveResultSets,
             Replication,
@@ -107,7 +109,9 @@ namespace System.Data.SqlClient
             validKeywords[(int)Keywords.ApplicationIntent] = DbConnectionStringKeywords.ApplicationIntent;
             validKeywords[(int)Keywords.ApplicationName] = DbConnectionStringKeywords.ApplicationName;
             validKeywords[(int)Keywords.AttachDBFilename] = DbConnectionStringKeywords.AttachDBFilename;
+#if netcoreapp
             validKeywords[(int)Keywords.PoolBlockingPeriod] = DbConnectionStringKeywords.PoolBlockingPeriod;
+#endif
             validKeywords[(int)Keywords.ConnectTimeout] = DbConnectionStringKeywords.ConnectTimeout;
             validKeywords[(int)Keywords.CurrentLanguage] = DbConnectionStringKeywords.CurrentLanguage;
             validKeywords[(int)Keywords.DataSource] = DbConnectionStringKeywords.DataSource;
@@ -144,7 +148,9 @@ namespace System.Data.SqlClient
             hash.Add(DbConnectionStringKeywords.ApplicationIntent, Keywords.ApplicationIntent);
             hash.Add(DbConnectionStringKeywords.ApplicationName, Keywords.ApplicationName);
             hash.Add(DbConnectionStringKeywords.AttachDBFilename, Keywords.AttachDBFilename);
+#if netcoreapp
             hash.Add(DbConnectionStringKeywords.PoolBlockingPeriod, Keywords.PoolBlockingPeriod);
+#endif
             hash.Add(DbConnectionStringKeywords.ConnectTimeout, Keywords.ConnectTimeout);
             hash.Add(DbConnectionStringKeywords.CurrentLanguage, Keywords.CurrentLanguage);
             hash.Add(DbConnectionStringKeywords.DataSource, Keywords.DataSource);

@@ -5,12 +5,7 @@
 using System.Diagnostics;
 using System.Text;
 using System.Runtime.InteropServices;
-
-#if !netstandard
 using Internal.Runtime.CompilerServices;
-#else
-using System.Runtime.CompilerServices;
-#endif
 
 namespace System
 {
