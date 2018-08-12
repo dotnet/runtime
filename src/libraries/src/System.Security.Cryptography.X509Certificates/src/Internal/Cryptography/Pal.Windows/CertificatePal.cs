@@ -16,6 +16,7 @@ using FILETIME = Internal.Cryptography.Pal.Native.FILETIME;
 
 using System.Security.Cryptography;
 using SafeX509ChainHandle = Microsoft.Win32.SafeHandles.SafeX509ChainHandle;
+using SafePasswordHandle = Microsoft.Win32.SafeHandles.SafePasswordHandle;
 using System.Security.Cryptography.X509Certificates;
 
 using static Interop.Crypt32;
@@ -57,21 +58,13 @@ namespace Internal.Cryptography.Pal
             get { return _certContext.DangerousGetHandle(); }
         }
 
-        public string Issuer
-        {
-            get
-            {
-                return GetIssuerOrSubject(issuer: true);
-            }
-        }
+        public string Issuer => GetIssuerOrSubject(issuer: true, reverse: true);
 
-        public string Subject
-        {
-            get
-            {
-                return GetIssuerOrSubject(issuer: false);
-            }
-        }
+        public string Subject => GetIssuerOrSubject(issuer: false, reverse: true);
+
+        public string LegacyIssuer => GetIssuerOrSubject(issuer: true, reverse: false);
+
+        public string LegacySubject => GetIssuerOrSubject(issuer: false, reverse: false);
 
         public byte[] Thumbprint
         {
@@ -199,6 +192,7 @@ namespace Internal.Cryptography.Pal
                 {
                     CERT_CONTEXT* pCertContext = _certContext.CertContext;
                     byte[] serialNumber = pCertContext->pCertInfo->SerialNumber.ToByteArray();
+                    Array.Reverse(serialNumber);
                     GC.KeepAlive(this);
                     return serialNumber;
                 }
@@ -523,12 +517,12 @@ namespace Internal.Cryptography.Pal
             }
         }
 
-        private unsafe string GetIssuerOrSubject(bool issuer) =>
+        private unsafe string GetIssuerOrSubject(bool issuer, bool reverse) =>
             Interop.crypt32.CertGetNameString(
                 _certContext,
                 CertNameType.CERT_NAME_RDN_TYPE,
                 issuer ? CertNameFlags.CERT_NAME_ISSUER_FLAG : CertNameFlags.None,
-                CertNameStringType.CERT_X500_NAME_STR | CertNameStringType.CERT_NAME_STR_REVERSE_FLAG);
+                CertNameStringType.CERT_X500_NAME_STR | (reverse ? CertNameStringType.CERT_NAME_STR_REVERSE_FLAG : 0));
 
         private CertificatePal(CertificatePal copyFrom)
         {
@@ -548,6 +542,14 @@ namespace Internal.Cryptography.Pal
                 GC.KeepAlive(oldCertContext);
             }
             _certContext = certContext;
+        }
+
+        public byte[] Export(X509ContentType contentType, SafePasswordHandle password)
+        {
+            using (IExportPal storePal = StorePal.FromCertificate(this))
+            {
+                return storePal.Export (contentType, password);
+            }
         }
     }
 }

@@ -14,6 +14,10 @@ using System.IO;
 
 using static Interop.Advapi32;
 
+#if !netcoreapp
+using MemoryMarshal = System.Diagnostics.PerformanceCounterLib;
+#endif
+
 namespace System.Diagnostics
 {
     internal class PerformanceCounterLib
@@ -102,9 +106,13 @@ namespace System.Diagnostics
             }
         }
 
-        // TODO: Replace with https://github.com/dotnet/corefx/issues/30613
-        private static ref readonly T AsStruct<T>(ReadOnlySpan<byte> span) where T : struct
-            => ref MemoryMarshal.Cast<byte, T>(span)[0];
+#if !netcoreapp
+        internal static T Read<T>(ReadOnlySpan<byte> span) where T : struct
+            => System.Runtime.InteropServices.MemoryMarshal.Read<T>(span);
+
+        internal static ref readonly T AsRef<T>(ReadOnlySpan<byte> span) where T : struct
+            => ref System.Runtime.InteropServices.MemoryMarshal.Cast<byte, T>(span)[0];
+#endif
 
         private Hashtable CategoryTable
         {
@@ -118,7 +126,7 @@ namespace System.Diagnostics
                         {
                             ReadOnlySpan<byte> data = GetPerformanceData("Global");
                       
-                            ref readonly PERF_DATA_BLOCK dataBlock = ref AsStruct<PERF_DATA_BLOCK>(data);
+                            ref readonly PERF_DATA_BLOCK dataBlock = ref MemoryMarshal.AsRef<PERF_DATA_BLOCK>(data);
                             int pos = dataBlock.HeaderLength;
 
                             int numPerfObjects = dataBlock.NumObjectTypes;
@@ -130,7 +138,7 @@ namespace System.Diagnostics
                             Hashtable tempCategoryTable = new Hashtable(numPerfObjects, StringComparer.OrdinalIgnoreCase);
                             for (int index = 0; index < numPerfObjects && pos < dataBlock.TotalByteLength; index++)
                             {
-                                ref readonly PERF_OBJECT_TYPE perfObject = ref AsStruct<PERF_OBJECT_TYPE>(data.Slice(pos));
+                                ref readonly PERF_OBJECT_TYPE perfObject = ref MemoryMarshal.AsRef<PERF_OBJECT_TYPE>(data.Slice(pos));
 
                                 CategoryEntry newCategoryEntry = new CategoryEntry(in perfObject);
                                 int nextPos = pos + perfObject.TotalByteLength;
@@ -142,7 +150,7 @@ namespace System.Diagnostics
                                 //return several adyacent copies of the same counter.
                                 for (int index2 = 0; index2 < newCategoryEntry.CounterIndexes.Length; ++index2)
                                 {
-                                    ref readonly PERF_COUNTER_DEFINITION perfCounter = ref AsStruct<PERF_COUNTER_DEFINITION>(data.Slice(pos));
+                                    ref readonly PERF_COUNTER_DEFINITION perfCounter = ref MemoryMarshal.AsRef<PERF_COUNTER_DEFINITION>(data.Slice(pos));
                                     if (perfCounter.CounterNameTitleIndex != previousCounterIndex)
                                     {
                                         newCategoryEntry.CounterIndexes[index3] = perfCounter.CounterNameTitleIndex;
@@ -1389,17 +1397,13 @@ namespace System.Diagnostics
         private CategoryEntry _entry;
         private PerformanceCounterLib _library;
 
-        // TODO: Replace with https://github.com/dotnet/corefx/issues/30613
-        private static ref readonly T AsStruct<T>(ReadOnlySpan<byte> span) where T : struct
-            => ref MemoryMarshal.Cast<byte, T>(span)[0];
-
         internal CategorySample(ReadOnlySpan<byte> data, CategoryEntry entry, PerformanceCounterLib library)
         {
             _entry = entry;
             _library = library;
             int categoryIndex = entry.NameIndex;
 
-            ref readonly PERF_DATA_BLOCK dataBlock = ref AsStruct<PERF_DATA_BLOCK>(data);
+            ref readonly PERF_DATA_BLOCK dataBlock = ref MemoryMarshal.AsRef<PERF_DATA_BLOCK>(data);
 
             _systemFrequency = dataBlock.PerfFreq;
             _timeStamp = dataBlock.PerfTime;
@@ -1418,7 +1422,7 @@ namespace System.Diagnostics
             bool foundCategory = false;
             for (int index = 0; index < numPerfObjects; index++)
             {
-                ref readonly PERF_OBJECT_TYPE perfObjectType = ref AsStruct<PERF_OBJECT_TYPE>(data.Slice(pos));
+                ref readonly PERF_OBJECT_TYPE perfObjectType = ref MemoryMarshal.AsRef<PERF_OBJECT_TYPE>(data.Slice(pos));
 
                 if (perfObjectType.ObjectNameTitleIndex == categoryIndex)
                 {
@@ -1432,7 +1436,7 @@ namespace System.Diagnostics
             if (!foundCategory)
                 throw new InvalidOperationException(SR.Format(SR.CantReadCategoryIndex, categoryIndex.ToString(CultureInfo.CurrentCulture)));
 
-            ref readonly PERF_OBJECT_TYPE perfObject = ref AsStruct<PERF_OBJECT_TYPE>(data.Slice(pos));
+            ref readonly PERF_OBJECT_TYPE perfObject = ref MemoryMarshal.AsRef<PERF_OBJECT_TYPE>(data.Slice(pos));
 
             _counterFrequency = perfObject.PerfFreq;
             _counterTimeStamp = perfObject.PerfTime;
@@ -1451,7 +1455,7 @@ namespace System.Diagnostics
             _counterTable = new Hashtable(counterNumber);
             for (int index = 0; index < samples.Length; ++index)
             {
-                ref readonly PERF_COUNTER_DEFINITION perfCounter = ref AsStruct<PERF_COUNTER_DEFINITION>(data.Slice(pos));
+                ref readonly PERF_COUNTER_DEFINITION perfCounter = ref MemoryMarshal.AsRef<PERF_COUNTER_DEFINITION>(data.Slice(pos));
                 samples[index] = new CounterDefinitionSample(in perfCounter, this, instanceNumber);
                 pos += perfCounter.ByteLength;
 
@@ -1488,7 +1492,7 @@ namespace System.Diagnostics
                 _instanceNameTable = new Hashtable(instanceNumber, StringComparer.OrdinalIgnoreCase);
                 for (int i = 0; i < instanceNumber; i++)
                 {
-                    ref readonly PERF_INSTANCE_DEFINITION perfInstance = ref AsStruct<PERF_INSTANCE_DEFINITION>(data.Slice(pos));
+                    ref readonly PERF_INSTANCE_DEFINITION perfInstance = ref MemoryMarshal.AsRef<PERF_INSTANCE_DEFINITION>(data.Slice(pos));
                     if (perfInstance.ParentObjectTitleIndex > 0 && parentInstanceNames == null)
                         parentInstanceNames = GetInstanceNamesFromIndex(perfInstance.ParentObjectTitleIndex);
 
@@ -1520,7 +1524,7 @@ namespace System.Diagnostics
                     for (int index = 0; index < samples.Length; ++index)
                         samples[index].SetInstanceValue(i, data.Slice(pos));
 
-                    pos += AsStruct<PERF_COUNTER_BLOCK>(data.Slice(pos)).ByteLength;
+                    pos += MemoryMarshal.AsRef<PERF_COUNTER_BLOCK>(data.Slice(pos)).ByteLength;
                 }
             }
         }
@@ -1529,14 +1533,14 @@ namespace System.Diagnostics
         {
             ReadOnlySpan<byte> data = _library.GetPerformanceData(categoryIndex.ToString(CultureInfo.InvariantCulture));
 
-            ref readonly PERF_DATA_BLOCK dataBlock = ref AsStruct<PERF_DATA_BLOCK>(data);
+            ref readonly PERF_DATA_BLOCK dataBlock = ref MemoryMarshal.AsRef<PERF_DATA_BLOCK>(data);
             int pos = dataBlock.HeaderLength;
             int numPerfObjects = dataBlock.NumObjectTypes;
 
             bool foundCategory = false;
             for (int index = 0; index < numPerfObjects; index++)
             {
-                ref readonly PERF_OBJECT_TYPE type = ref AsStruct<PERF_OBJECT_TYPE>(data.Slice(pos));
+                ref readonly PERF_OBJECT_TYPE type = ref MemoryMarshal.AsRef<PERF_OBJECT_TYPE>(data.Slice(pos));
 
                 if (type.ObjectNameTitleIndex == categoryIndex)
                 {
@@ -1550,7 +1554,7 @@ namespace System.Diagnostics
             if (!foundCategory)
                 return Array.Empty<string>();
 
-            ref readonly PERF_OBJECT_TYPE perfObject = ref AsStruct<PERF_OBJECT_TYPE>(data.Slice(pos));
+            ref readonly PERF_OBJECT_TYPE perfObject = ref MemoryMarshal.AsRef<PERF_OBJECT_TYPE>(data.Slice(pos));
 
             int counterNumber = perfObject.NumCounters;
             int instanceNumber = perfObject.NumInstances;
@@ -1562,17 +1566,17 @@ namespace System.Diagnostics
             CounterDefinitionSample[] samples = new CounterDefinitionSample[counterNumber];
             for (int index = 0; index < samples.Length; ++index)
             {
-                pos += AsStruct<PERF_COUNTER_DEFINITION>(data.Slice(pos)).ByteLength;
+                pos += MemoryMarshal.AsRef<PERF_COUNTER_DEFINITION>(data.Slice(pos)).ByteLength;
             }
 
             string[] instanceNames = new string[instanceNumber];
             for (int i = 0; i < instanceNumber; i++)
             {
-                ref readonly PERF_INSTANCE_DEFINITION perfInstance = ref AsStruct<PERF_INSTANCE_DEFINITION>(data.Slice(pos));
+                ref readonly PERF_INSTANCE_DEFINITION perfInstance = ref MemoryMarshal.AsRef<PERF_INSTANCE_DEFINITION>(data.Slice(pos));
                 instanceNames[i] = PERF_INSTANCE_DEFINITION.GetName(in perfInstance, data.Slice(pos)).ToString();
                 pos += perfInstance.ByteLength;
 
-                pos += AsStruct<PERF_COUNTER_BLOCK>(data.Slice(pos)).ByteLength;
+                pos += MemoryMarshal.AsRef<PERF_COUNTER_BLOCK>(data.Slice(pos)).ByteLength;
             }
 
             return instanceNames;

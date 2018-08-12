@@ -88,14 +88,14 @@ namespace System.Diagnostics
             Interop.Kernel32.PerformanceCounterOptions.PDH_RAW_COUNTER newPdhValue = new Interop.Kernel32.PerformanceCounterOptions.PDH_RAW_COUNTER();
             Interop.Kernel32.PerformanceCounterOptions.PDH_RAW_COUNTER oldPdhValue = new Interop.Kernel32.PerformanceCounterOptions.PDH_RAW_COUNTER();
 
-            FillInValues(oldSample, newSample, oldPdhValue, newPdhValue);
+            FillInValues(oldSample, newSample, ref oldPdhValue, ref newPdhValue);
 
             LoadPerfCounterDll();
 
             Interop.Kernel32.PerformanceCounterOptions.PDH_FMT_COUNTERVALUE pdhFormattedValue = new Interop.Kernel32.PerformanceCounterOptions.PDH_FMT_COUNTERVALUE();
             long timeBase = newSample.SystemFrequency;
             int result = Interop.PerfCounter.FormatFromRawValue((uint)newCounterType, Interop.Kernel32.PerformanceCounterOptions.PDH_FMT_DOUBLE | Interop.Kernel32.PerformanceCounterOptions.PDH_FMT_NOSCALE | Interop.Kernel32.PerformanceCounterOptions.PDH_FMT_NOCAP100,
-                                                          ref timeBase, newPdhValue, oldPdhValue, pdhFormattedValue);
+                                                          ref timeBase, ref newPdhValue, ref oldPdhValue, ref pdhFormattedValue);
 
             if (result != Interop.Errors.ERROR_SUCCESS)
             {
@@ -112,7 +112,7 @@ namespace System.Diagnostics
 
         // This method figures out which values are supposed to go into which structures so that PDH can do the 
         // calculation for us.  This was ported from Window's cutils.c
-        private static void FillInValues(CounterSample oldSample, CounterSample newSample, Interop.Kernel32.PerformanceCounterOptions.PDH_RAW_COUNTER oldPdhValue, Interop.Kernel32.PerformanceCounterOptions.PDH_RAW_COUNTER newPdhValue)
+        private static void FillInValues(CounterSample oldSample, CounterSample newSample, ref Interop.Kernel32.PerformanceCounterOptions.PDH_RAW_COUNTER oldPdhValue, ref Interop.Kernel32.PerformanceCounterOptions.PDH_RAW_COUNTER newPdhValue)
         {
             int newCounterType = (int)newSample.CounterType;
 

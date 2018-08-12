@@ -30,7 +30,7 @@ namespace System.Linq
             if (source is TSource[] array)
             {
                 return array.Length == 0 ?
-                    (IEnumerable<TSource>)EmptyPartition<TSource>.Instance :
+                    Empty<TSource>() :
                     new WhereArrayIterator<TSource>(array, predicate);
             }
 
@@ -78,7 +78,7 @@ namespace System.Linq
         /// An iterator that filters each item of an <see cref="IEnumerable{TSource}"/>.
         /// </summary>
         /// <typeparam name="TSource">The type of the source enumerable.</typeparam>
-        private sealed class WhereEnumerableIterator<TSource> : Iterator<TSource>, IIListProvider<TSource>
+        private sealed partial class WhereEnumerableIterator<TSource> : Iterator<TSource>
         {
             private readonly IEnumerable<TSource> _source;
             private readonly Func<TSource, bool> _predicate;
@@ -103,29 +103,6 @@ namespace System.Linq
                 }
 
                 base.Dispose();
-            }
-
-            public int GetCount(bool onlyIfCheap)
-            {
-                if (onlyIfCheap)
-                {
-                    return -1;
-                }
-
-                int count = 0;
-
-                foreach (TSource item in _source)
-                {
-                    if (_predicate(item))
-                    {
-                        checked
-                        {
-                            count++;
-                        }
-                    }
-                }
-
-                return count;
             }
 
             public override bool MoveNext()
@@ -157,36 +134,6 @@ namespace System.Linq
             public override IEnumerable<TResult> Select<TResult>(Func<TSource, TResult> selector) =>
                 new WhereSelectEnumerableIterator<TSource, TResult>(_source, _predicate, selector);
 
-            public TSource[] ToArray()
-            {
-                var builder = new LargeArrayBuilder<TSource>(initialize: true);
-
-                foreach (TSource item in _source)
-                {
-                    if (_predicate(item))
-                    {
-                        builder.Add(item);
-                    }
-                }
-
-                return builder.ToArray();
-            }
-
-            public List<TSource> ToList()
-            {
-                var list = new List<TSource>();
-
-                foreach (TSource item in _source)
-                {
-                    if (_predicate(item))
-                    {
-                        list.Add(item);
-                    }
-                }
-
-                return list;
-            }
-
             public override IEnumerable<TSource> Where(Func<TSource, bool> predicate) =>
                 new WhereEnumerableIterator<TSource>(_source, CombinePredicates(_predicate, predicate));
         }
@@ -195,7 +142,7 @@ namespace System.Linq
         /// An iterator that filters each item of a <see cref="T:TSource[]"/>.
         /// </summary>
         /// <typeparam name="TSource">The type of the source array.</typeparam>
-        internal sealed class WhereArrayIterator<TSource> : Iterator<TSource>, IIListProvider<TSource>
+        internal sealed partial class WhereArrayIterator<TSource> : Iterator<TSource>
         {
             private readonly TSource[] _source;
             private readonly Func<TSource, bool> _predicate;
@@ -210,29 +157,6 @@ namespace System.Linq
 
             public override Iterator<TSource> Clone() =>
                 new WhereArrayIterator<TSource>(_source, _predicate);
-
-            public int GetCount(bool onlyIfCheap)
-            {
-                if (onlyIfCheap)
-                {
-                    return -1;
-                }
-
-                int count = 0;
-
-                foreach (TSource item in _source)
-                {
-                    if (_predicate(item))
-                    {
-                        checked
-                        {
-                            count++;
-                        }
-                    }
-                }
-
-                return count;
-            }
 
             public override bool MoveNext()
             {
@@ -257,36 +181,6 @@ namespace System.Linq
             public override IEnumerable<TResult> Select<TResult>(Func<TSource, TResult> selector) =>
                 new WhereSelectArrayIterator<TSource, TResult>(_source, _predicate, selector);
 
-            public TSource[] ToArray()
-            {
-                var builder = new LargeArrayBuilder<TSource>(_source.Length);
-
-                foreach (TSource item in _source)
-                {
-                    if (_predicate(item))
-                    {
-                        builder.Add(item);
-                    }
-                }
-
-                return builder.ToArray();
-            }
-
-            public List<TSource> ToList()
-            {
-                var list = new List<TSource>();
-
-                foreach (TSource item in _source)
-                {
-                    if (_predicate(item))
-                    {
-                        list.Add(item);
-                    }
-                }
-
-                return list;
-            }
-
             public override IEnumerable<TSource> Where(Func<TSource, bool> predicate) =>
                 new WhereArrayIterator<TSource>(_source, CombinePredicates(_predicate, predicate));
         }
@@ -295,7 +189,7 @@ namespace System.Linq
         /// An iterator that filters each item of a <see cref="List{TSource}"/>.
         /// </summary>
         /// <typeparam name="TSource">The type of the source list.</typeparam>
-        private sealed class WhereListIterator<TSource> : Iterator<TSource>, IIListProvider<TSource>
+        private sealed partial class WhereListIterator<TSource> : Iterator<TSource>
         {
             private readonly List<TSource> _source;
             private readonly Func<TSource, bool> _predicate;
@@ -311,30 +205,6 @@ namespace System.Linq
 
             public override Iterator<TSource> Clone() =>
                 new WhereListIterator<TSource>(_source, _predicate);
-
-            public int GetCount(bool onlyIfCheap)
-            {
-                if (onlyIfCheap)
-                {
-                    return -1;
-                }
-
-                int count = 0;
-
-                for (int i = 0; i < _source.Count; i++)
-                {
-                    TSource item = _source[i];
-                    if (_predicate(item))
-                    {
-                        checked
-                        {
-                            count++;
-                        }
-                    }
-                }
-
-                return count;
-            }
 
             public override bool MoveNext()
             {
@@ -365,38 +235,6 @@ namespace System.Linq
             public override IEnumerable<TResult> Select<TResult>(Func<TSource, TResult> selector) =>
                 new WhereSelectListIterator<TSource, TResult>(_source, _predicate, selector);
 
-            public TSource[] ToArray()
-            {
-                var builder = new LargeArrayBuilder<TSource>(_source.Count);
-
-                for (int i = 0; i < _source.Count; i++)
-                {
-                    TSource item = _source[i];
-                    if (_predicate(item))
-                    {
-                        builder.Add(item);
-                    }
-                }
-
-                return builder.ToArray();
-            }
-
-            public List<TSource> ToList()
-            {
-                var list = new List<TSource>();
-
-                for (int i = 0; i < _source.Count; i++)
-                {
-                    TSource item = _source[i];
-                    if (_predicate(item))
-                    {
-                        list.Add(item);
-                    }
-                }
-
-                return list;
-            }
-
             public override IEnumerable<TSource> Where(Func<TSource, bool> predicate) =>
                 new WhereListIterator<TSource>(_source, CombinePredicates(_predicate, predicate));
         }
@@ -406,7 +244,7 @@ namespace System.Linq
         /// </summary>
         /// <typeparam name="TSource">The type of the source array.</typeparam>
         /// <typeparam name="TResult">The type of the mapped items.</typeparam>
-        private sealed class WhereSelectArrayIterator<TSource, TResult> : Iterator<TResult>, IIListProvider<TResult>
+        private sealed partial class WhereSelectArrayIterator<TSource, TResult> : Iterator<TResult>
         {
             private readonly TSource[] _source;
             private readonly Func<TSource, bool> _predicate;
@@ -424,33 +262,6 @@ namespace System.Linq
 
             public override Iterator<TResult> Clone() =>
                 new WhereSelectArrayIterator<TSource, TResult>(_source, _predicate, _selector);
-
-            public int GetCount(bool onlyIfCheap)
-            {
-                // In case someone uses Count() to force evaluation of
-                // the selector, run it provided `onlyIfCheap` is false.
-
-                if (onlyIfCheap)
-                {
-                    return -1;
-                }
-
-                int count = 0;
-
-                foreach (TSource item in _source)
-                {
-                    if (_predicate(item))
-                    {
-                        _selector(item);
-                        checked
-                        {
-                            count++;
-                        }
-                    }
-                }
-
-                return count;
-            }
 
             public override bool MoveNext()
             {
@@ -474,36 +285,6 @@ namespace System.Linq
 
             public override IEnumerable<TResult2> Select<TResult2>(Func<TResult, TResult2> selector) =>
                 new WhereSelectArrayIterator<TSource, TResult2>(_source, _predicate, CombineSelectors(_selector, selector));
-
-            public TResult[] ToArray()
-            {
-                var builder = new LargeArrayBuilder<TResult>(_source.Length);
-
-                foreach (TSource item in _source)
-                {
-                    if (_predicate(item))
-                    {
-                        builder.Add(_selector(item));
-                    }
-                }
-
-                return builder.ToArray();
-            }
-
-            public List<TResult> ToList()
-            {
-                var list = new List<TResult>();
-
-                foreach (TSource item in _source)
-                {
-                    if (_predicate(item))
-                    {
-                        list.Add(_selector(item));
-                    }
-                }
-
-                return list;
-            }
         }
 
         /// <summary>
@@ -511,7 +292,7 @@ namespace System.Linq
         /// </summary>
         /// <typeparam name="TSource">The type of the source list.</typeparam>
         /// <typeparam name="TResult">The type of the mapped items.</typeparam>
-        private sealed class WhereSelectListIterator<TSource, TResult> : Iterator<TResult>, IIListProvider<TResult>
+        private sealed partial class WhereSelectListIterator<TSource, TResult> : Iterator<TResult>
         {
             private readonly List<TSource> _source;
             private readonly Func<TSource, bool> _predicate;
@@ -530,34 +311,6 @@ namespace System.Linq
 
             public override Iterator<TResult> Clone() =>
                 new WhereSelectListIterator<TSource, TResult>(_source, _predicate, _selector);
-
-            public int GetCount(bool onlyIfCheap)
-            {
-                // In case someone uses Count() to force evaluation of
-                // the selector, run it provided `onlyIfCheap` is false.
-
-                if (onlyIfCheap)
-                {
-                    return -1;
-                }
-
-                int count = 0;
-
-                for (int i = 0; i < _source.Count; i++)
-                {
-                    TSource item = _source[i];
-                    if (_predicate(item))
-                    {
-                        _selector(item);
-                        checked
-                        {
-                            count++;
-                        }
-                    }
-                }
-
-                return count;
-            }
 
             public override bool MoveNext()
             {
@@ -587,38 +340,6 @@ namespace System.Linq
 
             public override IEnumerable<TResult2> Select<TResult2>(Func<TResult, TResult2> selector) =>
                 new WhereSelectListIterator<TSource, TResult2>(_source, _predicate, CombineSelectors(_selector, selector));
-
-            public TResult[] ToArray()
-            {
-                var builder = new LargeArrayBuilder<TResult>(_source.Count);
-
-                for (int i = 0; i < _source.Count; i++)
-                {
-                    TSource item = _source[i];
-                    if (_predicate(item))
-                    {
-                        builder.Add(_selector(item));
-                    }
-                }
-
-                return builder.ToArray();
-            }
-
-            public List<TResult> ToList()
-            {
-                var list = new List<TResult>();
-
-                for (int i = 0; i < _source.Count; i++)
-                {
-                    TSource item = _source[i];
-                    if (_predicate(item))
-                    {
-                        list.Add(_selector(item));
-                    }
-                }
-
-                return list;
-            }
         }
 
         /// <summary>
@@ -626,7 +347,7 @@ namespace System.Linq
         /// </summary>
         /// <typeparam name="TSource">The type of the source enumerable.</typeparam>
         /// <typeparam name="TResult">The type of the mapped items.</typeparam>
-        private sealed class WhereSelectEnumerableIterator<TSource, TResult> : Iterator<TResult>, IIListProvider<TResult>
+        private sealed partial class WhereSelectEnumerableIterator<TSource, TResult> : Iterator<TResult>
         {
             private readonly IEnumerable<TSource> _source;
             private readonly Func<TSource, bool> _predicate;
@@ -657,33 +378,6 @@ namespace System.Linq
                 base.Dispose();
             }
 
-            public int GetCount(bool onlyIfCheap)
-            {
-                // In case someone uses Count() to force evaluation of
-                // the selector, run it provided `onlyIfCheap` is false.
-
-                if (onlyIfCheap)
-                {
-                    return -1;
-                }
-
-                int count = 0;
-
-                foreach (TSource item in _source)
-                {
-                    if (_predicate(item))
-                    {
-                        _selector(item);
-                        checked
-                        {
-                            count++;
-                        }
-                    }
-                }
-
-                return count;
-            }
-
             public override bool MoveNext()
             {
                 switch (_state)
@@ -712,36 +406,6 @@ namespace System.Linq
 
             public override IEnumerable<TResult2> Select<TResult2>(Func<TResult, TResult2> selector) =>
                 new WhereSelectEnumerableIterator<TSource, TResult2>(_source, _predicate, CombineSelectors(_selector, selector));
-
-            public TResult[] ToArray()
-            {
-                var builder = new LargeArrayBuilder<TResult>(initialize: true);
-
-                foreach (TSource item in _source)
-                {
-                    if (_predicate(item))
-                    {
-                        builder.Add(_selector(item));
-                    }
-                }
-
-                return builder.ToArray();
-            }
-
-            public List<TResult> ToList()
-            {
-                var list = new List<TResult>();
-
-                foreach (TSource item in _source)
-                {
-                    if (_predicate(item))
-                    {
-                        list.Add(_selector(item));
-                    }
-                }
-
-                return list;
-            }
         }
     }
 }

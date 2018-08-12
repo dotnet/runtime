@@ -1157,8 +1157,8 @@ namespace System.Data.SqlClient
                 _federatedAuthenticationRequested = true;
             }
 
-            // The GLOBALTRANSACTIONS feature is implicitly requested
-            requestedFeatures |= TdsEnums.FeatureExtension.GlobalTransactions;
+            // The GLOBALTRANSACTIONS and UTF8 support features are implicitly requested
+            requestedFeatures |= TdsEnums.FeatureExtension.GlobalTransactions | TdsEnums.FeatureExtension.UTF8Support;
             _parser.TdsLogin(login, requestedFeatures, _recoverySessionData, _fedAuthFeatureExtensionData);
         }
 
@@ -1959,6 +1959,14 @@ namespace System.Data.SqlClient
                         break;
                     }
 
+                case TdsEnums.FEATUREEXT_UTF8SUPPORT:
+                    {
+                        if (data.Length < 1)
+                        {
+                            throw SQL.ParsingError();
+                        }
+                        break;
+                    }
                 default:
                     {
                         // Unknown feature ack 

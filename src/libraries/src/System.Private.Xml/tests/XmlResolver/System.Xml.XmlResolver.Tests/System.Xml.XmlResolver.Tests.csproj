@@ -1,0 +1,18 @@
+﻿<Project Sdk="Microsoft.NET.Sdk" ToolsVersion="15.0">
+  <Import Project="$(CommonTestPath)\Tests.props" />
+  <PropertyGroup>
+    <ProjectGuid>{F011A6F5-BA48-4F8D-A20F-79CCE01CDE0E}</ProjectGuid>
+    <Configurations>netstandard-Debug;netstandard-Release</Configurations>
+  </PropertyGroup>
+  <ItemGroup>
+    <Compile Include="DummyStream.cs" />
+    <Compile Include="XmlPreloadedResolverAddRemoveTests.cs" />
+    <Compile Include="XmlPreloadedResolverConstructionTests.cs" />
+    <Compile Include="XmlPreloadedResolverGetEntity.cs" />
+    <Compile Include="XmlPreloadedResolverMiscTests.cs" />
+    <Compile Include="XmlPreloadedResolverResolveUriTests.cs" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="Configurations.props" />
+  </ItemGroup>
+</Project>

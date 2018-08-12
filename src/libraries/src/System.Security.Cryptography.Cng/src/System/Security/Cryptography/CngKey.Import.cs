@@ -65,6 +65,11 @@ namespace System.Security.Cryptography
                     pvBuffer = passwordHandle.DangerousGetHandle(),
                 };
 
+                if (buffers[0].pvBuffer == IntPtr.Zero)
+                {
+                    buffers[0].cbBuffer = 0;
+                }
+
                 Interop.NCrypt.NCryptBufferDesc desc = new Interop.NCrypt.NCryptBufferDesc
                 {
                     cBuffers = 1,

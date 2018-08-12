@@ -21,16 +21,21 @@ namespace System.Net.Http.Functional.Tests
         {
             // TODO (#5525): Align with the rest of tests w.r.t response parsing once the test server is finalized.
             // Currently not adding any new dependencies
-            string pattern = string.Format(@"""{0}"": ""{1}""", key, value);
-            return message.Contains(pattern);
+
+            // Deal with JSON encoding of '\' and '"' in value
+            value = value.Replace("\\", "\\\\").Replace("\"", "\\\"");
+
+            // In HTTP2, all header names are in lowercase. So accept either the original header name or the lowercase version.
+            return message.Contains($"\"{key}\": \"{value}\"") ||
+                message.Contains($"\"{key.ToLowerInvariant()}\": \"{value}\"");
         }
 
         public static bool JsonMessageContainsKey(string message, string key)
         {
             // TODO (#5525): Align with the rest of tests w.r.t response parsing once the test server is finalized.
             // Currently not adding any new dependencies
-            string pattern = string.Format(@"""{0}"": """, key);
-            return message.Contains(pattern);
+
+            return JsonMessageContainsKeyValue(message, key, "");
         }
 
         public static void VerifyResponseBody(
@@ -103,6 +108,9 @@ namespace System.Net.Http.Functional.Tests
         public static IPAddress GetIPv6LinkLocalAddress() =>
             NetworkInterface
                 .GetAllNetworkInterfaces()
+                .Where(i => i.Description != "PANGP Virtual Ethernet Adapter")      // This is a VPN adapter, but is reported as a regular Ethernet interface with 
+                                                                                    // a valid link-local address, but the link-local address doesn't actually work.
+                                                                                    // So just manually filter it out.
                 .SelectMany(i => i.GetIPProperties().UnicastAddresses)
                 .Select(a => a.Address)
                 .Where(a => a.IsIPv6LinkLocal)

@@ -15,6 +15,7 @@ namespace System.Runtime.InteropServices.Tests
     {
         [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotWindowsNanoServer))]
         [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework, "ComEventsHelper.Combine throws a PNSE in .NET Core")]
+        [ActiveIssue(31214)]
         public void AddEventHandler_DispIdAttribute_ThrowsPlatformNotSupportedException()
         {
             var attribute = new ComAwareEventInfo(typeof(DispAttributeInterface), nameof(DispAttributeInterface.Event));

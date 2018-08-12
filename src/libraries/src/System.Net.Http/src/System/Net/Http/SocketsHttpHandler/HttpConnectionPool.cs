@@ -32,10 +32,15 @@ namespace System.Net.Http
         /// <summary>The maximum number of connections allowed to be associated with the pool.</summary>
         private readonly int _maxConnections;
 
+        private bool _http2Enabled;
+        private Http2Connection _http2Connection;
+        private SemaphoreSlim _http2ConnectionCreateLock;
+
         /// <summary>For non-proxy connection pools, this is the host name in bytes; for proxies, null.</summary>
         private readonly byte[] _hostHeaderValueBytes;
         /// <summary>Options specialized and cached for this pool and its <see cref="_key"/>.</summary>
-        private readonly SslClientAuthenticationOptions _sslOptions;
+        private readonly SslClientAuthenticationOptions _sslOptionsHttp11;
+        private readonly SslClientAuthenticationOptions _sslOptionsHttp2;
 
         /// <summary>The head of a list of waiters waiting for a connection.  Null if no one's waiting.</summary>
         private ConnectionWaiter _waitersHead;
@@ -64,6 +69,8 @@ namespace System.Net.Http
             _proxyUri = proxyUri;
             _maxConnections = maxConnections;
 
+            _http2Enabled = (_poolManager.Settings._maxHttpVersion == HttpVersion.Version20);
+
             switch (kind)
             {
                 case HttpConnectionKind.Http:
@@ -71,6 +78,8 @@ namespace System.Net.Http
                     Debug.Assert(port != 0);
                     Debug.Assert(sslHostName == null);
                     Debug.Assert(proxyUri == null);
+
+                    _http2Enabled = false;
                     break;
 
                 case HttpConnectionKind.Https:
@@ -78,8 +87,6 @@ namespace System.Net.Http
                     Debug.Assert(port != 0);
                     Debug.Assert(sslHostName != null);
                     Debug.Assert(proxyUri == null);
-
-                    _sslOptions = ConstructSslOptions(poolManager, sslHostName);
                     break;
 
                 case HttpConnectionKind.Proxy:
@@ -87,6 +94,8 @@ namespace System.Net.Http
                     Debug.Assert(port == 0);
                     Debug.Assert(sslHostName == null);
                     Debug.Assert(proxyUri != null);
+
+                    _http2Enabled = false;
                     break;
 
                 case HttpConnectionKind.ProxyTunnel:
@@ -94,6 +103,8 @@ namespace System.Net.Http
                     Debug.Assert(port != 0);
                     Debug.Assert(sslHostName == null);
                     Debug.Assert(proxyUri != null);
+
+                    _http2Enabled = false;
                     break;
 
                 case HttpConnectionKind.SslProxyTunnel:
@@ -101,8 +112,6 @@ namespace System.Net.Http
                     Debug.Assert(port != 0);
                     Debug.Assert(sslHostName != null);
                     Debug.Assert(proxyUri != null);
-
-                    _sslOptions = ConstructSslOptions(poolManager, sslHostName);
                     break;
 
                 case HttpConnectionKind.ProxyConnect:
@@ -110,7 +119,8 @@ namespace System.Net.Http
                     Debug.Assert(port != 0);
                     Debug.Assert(sslHostName == null);
                     Debug.Assert(proxyUri != null);
-                    Debug.Assert(proxyUri.IdnHost == host && proxyUri.Port == port);
+
+                    _http2Enabled = false;
                     break;
 
                 default:
@@ -118,12 +128,25 @@ namespace System.Net.Http
                     break;
             }
 
+            if (sslHostName != null)
+            {
+                _sslOptionsHttp11 = ConstructSslOptions(poolManager, sslHostName);
+                _sslOptionsHttp11.ApplicationProtocols = null;
+
+                if (_http2Enabled)
+                {
+                    _sslOptionsHttp2 = ConstructSslOptions(poolManager, sslHostName);
+                    _sslOptionsHttp2.ApplicationProtocols = Http2ApplicationProtocols;
+                    _sslOptionsHttp2.AllowRenegotiation = false;
+                }
+            }
+
             if (_host != null)
             {
                 // Precalculate ASCII bytes for Host header
                 // Note that if _host is null, this is a (non-tunneled) proxy connection, and we can't cache the hostname.
                 string hostHeader =
-                    (_port != (_sslOptions == null ? DefaultHttpPort : DefaultHttpsPort)) ?
+                    (_port != (sslHostName == null ? DefaultHttpPort : DefaultHttpsPort)) ?
                     $"{_host}:{_port}" :
                     _host;
 
@@ -139,13 +162,16 @@ namespace System.Net.Http
             }
         }
 
+        private static readonly List<SslApplicationProtocol> Http2ApplicationProtocols = new List<SslApplicationProtocol>() { SslApplicationProtocol.Http2, SslApplicationProtocol.Http11 };
+
         private static SslClientAuthenticationOptions ConstructSslOptions(HttpConnectionPoolManager poolManager, string sslHostName)
         {
             Debug.Assert(sslHostName != null);
 
             SslClientAuthenticationOptions sslOptions = poolManager.Settings._sslOptions?.ShallowClone() ?? new SslClientAuthenticationOptions();
-            sslOptions.ApplicationProtocols = null; // explicitly ignore any ApplicationProtocols set
-            sslOptions.TargetHost = sslHostName; // always use the key's name rather than whatever was specified
+
+            // Set TargetHost for SNI
+            sslOptions.TargetHost = sslHostName;
 
             // Windows 7 and Windows 2008 R2 support TLS 1.1 and 1.2, but for legacy reasons by default those protocols
             // are not enabled when a developer elects to use the system default.  However, in .NET Core 2.0 and earlier,
@@ -165,7 +191,7 @@ namespace System.Net.Http
         }
 
         public HttpConnectionSettings Settings => _poolManager.Settings;
-        public bool IsSecure => _sslOptions != null;
+        public bool IsSecure => _sslOptionsHttp11 != null;
         public HttpConnectionKind Kind => _kind;
         public bool AnyProxyKind => (_proxyUri != null);
         public Uri ProxyUri => _proxyUri;
@@ -176,11 +202,23 @@ namespace System.Net.Http
         /// <summary>Object used to synchronize access to state in the pool.</summary>
         private object SyncObj => _idleConnections;
 
-        private ValueTask<(HttpConnection, HttpResponseMessage)> GetConnectionAsync(HttpRequestMessage request, CancellationToken cancellationToken)
+        private ValueTask<(HttpConnectionBase connection, bool isNewConnection, HttpResponseMessage failureResponse)> 
+            GetConnectionAsync(HttpRequestMessage request, CancellationToken cancellationToken)
+        {
+            if (_http2Enabled && request.Version.Major >= 2)
+            {
+                return GetHttp2ConnectionAsync(request, cancellationToken);
+            }
+
+            return GetHttp11ConnectionAsync(request, cancellationToken);
+        }
+
+        private ValueTask<(HttpConnectionBase connection, bool isNewConnection, HttpResponseMessage failureResponse)> 
+            GetHttp11ConnectionAsync(HttpRequestMessage request, CancellationToken cancellationToken)
         {
             if (cancellationToken.IsCancellationRequested)
             {
-                return new ValueTask<(HttpConnection, HttpResponseMessage)>(Task.FromCanceled<(HttpConnection, HttpResponseMessage)>(cancellationToken));
+                return new ValueTask<(HttpConnectionBase, bool, HttpResponseMessage)>(Task.FromCanceled<(HttpConnectionBase, bool, HttpResponseMessage)>(cancellationToken));
             }
 
             TimeSpan pooledConnectionLifetime = _poolManager.Settings._pooledConnectionLifetime;
@@ -202,7 +240,7 @@ namespace System.Net.Http
                     {
                         // We found a valid connection.  Return it.
                         if (NetEventSource.IsEnabled) conn.Trace("Found usable connection in pool.");
-                        return new ValueTask<(HttpConnection, HttpResponseMessage)>((conn, null));
+                        return new ValueTask<(HttpConnectionBase, bool, HttpResponseMessage)>((conn, false, null));
                     }
 
                     // We got a connection, but it was already closed by the server or the
@@ -220,7 +258,7 @@ namespace System.Net.Http
                 {
                     if (NetEventSource.IsEnabled) Trace("Creating new connection for pool.");
                     IncrementConnectionCountNoLock();
-                    return WaitForCreatedConnectionAsync(CreateConnectionAsync(request, cancellationToken));
+                    return WaitForCreatedConnectionAsync(CreateHttp11ConnectionAsync(request, cancellationToken));
                 }
                 else
                 {
@@ -253,7 +291,7 @@ namespace System.Net.Http
                             }
                         }, waiter);
                     }
-                    return new ValueTask<(HttpConnection, HttpResponseMessage)>(waiter.Task);
+                    return new ValueTask<(HttpConnectionBase, bool, HttpResponseMessage)>(waiter.Task);
                 }
 
                 // Note that we don't check for _disposed.  We may end up disposing the
@@ -267,33 +305,175 @@ namespace System.Net.Http
             }
         }
 
+        private async ValueTask<(HttpConnectionBase connection, bool isNewConnection, HttpResponseMessage failureResponse)>
+            GetHttp2ConnectionAsync(HttpRequestMessage request, CancellationToken cancellationToken)
+        {
+            Debug.Assert(_kind == HttpConnectionKind.Https || _kind == HttpConnectionKind.SslProxyTunnel);
+
+            // See if we have an HTTP2 connection
+            Http2Connection http2Connection = _http2Connection;
+            if (http2Connection != null)
+            {
+                if (NetEventSource.IsEnabled) Trace("Using existing HTTP2 connection.");
+                return (http2Connection, false, null);
+            }
+
+            // Ensure that the connection creation semaphore is created 
+            if (_http2ConnectionCreateLock == null)
+            {
+                lock (SyncObj)
+                {
+                    if (_http2ConnectionCreateLock == null)
+                    {
+                        _http2ConnectionCreateLock = new SemaphoreSlim(1);
+                    }
+                }
+            }
+
+            // Try to establish an HTTP2 connection
+            Socket socket = null;
+            SslStream sslStream = null;
+            TransportContext transportContext = null;
+
+            // Serialize creation attempt
+            await _http2ConnectionCreateLock.WaitAsync().ConfigureAwait(false);
+            try
+            {
+                if (_http2Connection != null)
+                {
+                    // Someone beat us to it
+
+                    if (NetEventSource.IsEnabled)
+                    {
+                        Trace("Using existing HTTP2 connection.");
+                    }
+
+                    return (_http2Connection, false, null);
+                }
+
+                // Recheck if HTTP2 has been disabled by a previous attempt.
+                if (_http2Enabled)
+                {
+                    if (NetEventSource.IsEnabled)
+                    {
+                        Trace("Attempting new HTTP2 connection.");
+                    }
+
+                    Stream stream;
+                    HttpResponseMessage failureResponse;
+                    (socket, stream, transportContext, failureResponse) =
+                        await ConnectAsync(request, true, cancellationToken).ConfigureAwait(false);
+                    if (failureResponse != null)
+                    {
+                        return (null, true, failureResponse);
+                    }
+
+                    sslStream = (SslStream)stream;
+                    if (sslStream.NegotiatedApplicationProtocol == SslApplicationProtocol.Http2)
+                    {
+                        // The server accepted our request for HTTP2.
+
+                        if (sslStream.SslProtocol < SslProtocols.Tls12)
+                        {
+                            throw new HttpRequestException(SR.net_http_invalid_response);
+                        }
+
+                        http2Connection = new Http2Connection(this, sslStream);
+                        await http2Connection.SetupAsync().ConfigureAwait(false);
+
+                        Debug.Assert(_http2Connection == null);
+                        _http2Connection = http2Connection;
+
+                        if (NetEventSource.IsEnabled)
+                        {
+                            Trace("New HTTP2 connection established.");
+                        }
+
+                        return (_http2Connection, true, null);
+                    }
+                }
+            }
+            finally
+            {
+                _http2ConnectionCreateLock.Release();
+            }
+
+            if (sslStream != null)
+            {
+                // We established an SSL connection, but the server denied our request for HTTP2.
+                // Continue as an HTTP/1.1 connection.
+                if (NetEventSource.IsEnabled)
+                {
+                    Trace("Server does not support HTTP2; disabling HTTP2 use and proceeding with HTTP/1.1 connection");
+                }
+
+                bool canUse = true;
+                lock (SyncObj)
+                {
+                    _http2Enabled = false;
+
+                    if (_associatedConnectionCount < _maxConnections)
+                    {
+                        IncrementConnectionCountNoLock();
+                    }
+                    else
+                    {
+                        // We are in the weird situation of having established a new HTTP 1.1 connection
+                        // when we were already at the maximum for HTTP 1.1 connections.
+                        // Just discard this connection and get another one from the pool.
+                        // This should be a really rare situation to get into, since it would require 
+                        // the user to make multiple HTTP 1.1-only requests first before attempting an
+                        // HTTP2 request, and the server failing to accept HTTP2.
+                        canUse = false;
+                    }
+                }
+
+                if (canUse)
+                {
+                    return (ConstructHttp11Connection(socket, sslStream, transportContext), true, null);
+                }
+                else
+                {
+                    if (NetEventSource.IsEnabled)
+                    {
+                        Trace("Discarding downgraded HTTP/1.1 connection because connection limit is exceeded");
+                    }
+
+                    sslStream.Close();
+                }
+            }
+
+            // If we reach this point, it means we need to fall back to a (new or existing) HTTP/1.1 connection.
+            return await GetHttp11ConnectionAsync(request, cancellationToken);
+        }
+
         public async Task<HttpResponseMessage> SendWithRetryAsync(HttpRequestMessage request, bool doRequestAuth, CancellationToken cancellationToken)
         {
             while (true)
-            { 
+            {
                 // Loop on connection failures and retry if possible.
 
-                (HttpConnection connection, HttpResponseMessage response) = await GetConnectionAsync(request, cancellationToken).ConfigureAwait(false);
-                if (response != null)
+                (HttpConnectionBase connection, bool isNewConnection, HttpResponseMessage failureResponse) = await GetConnectionAsync(request, cancellationToken).ConfigureAwait(false);
+                if (failureResponse != null)
                 {
                     // Proxy tunnel failure; return proxy response
-                    return response;
+                    Debug.Assert(isNewConnection);
+                    Debug.Assert(connection == null);
+                    return failureResponse;
                 }
 
-                bool isNewConnection = connection.IsNewConnection;
-
-                connection.Acquire();
                 try
                 {
                     return await connection.SendAsync(request, doRequestAuth, cancellationToken).ConfigureAwait(false);
                 }
-                catch (HttpRequestException e) when (!isNewConnection && e.InnerException is IOException && connection.CanRetry)
+                catch (HttpRequestException e) when (!isNewConnection && e.AllowRetry)
                 {
+                    if (NetEventSource.IsEnabled)
+                    {
+                        Trace($"Retrying request after exception on existing connection: {e}");
+                    }
+
                     // Eat exception and try again.
-                }
-                finally
-                {
-                    connection.Release();
                 }
             }
         }
@@ -319,7 +499,7 @@ namespace System.Net.Http
             return SendWithProxyAuthAsync(request, doRequestAuth, cancellationToken);
         }
 
-        private async ValueTask<(HttpConnection, HttpResponseMessage)> CreateConnectionAsync(HttpRequestMessage request, CancellationToken cancellationToken)
+        private async ValueTask<(Socket, Stream, TransportContext, HttpResponseMessage)> ConnectAsync(HttpRequestMessage request, bool allowHttp2, CancellationToken cancellationToken)
         {
             // If a non-infinite connect timeout has been set, create and use a new CancellationToken that'll be canceled
             // when either the original token is canceled or a connect timeout occurs.
@@ -355,28 +535,45 @@ namespace System.Net.Http
                         {
                             // Return non-success response from proxy.
                             response.RequestMessage = request;
-                            return (null, response);
+                            return (null, null, null, response);
                         }
                         break;
                 }
 
                 TransportContext transportContext = null;
-                if (_sslOptions != null)
+                if (_kind == HttpConnectionKind.Https || _kind == HttpConnectionKind.SslProxyTunnel)
                 {
-                    SslStream sslStream = await ConnectHelper.EstablishSslConnectionAsync(_sslOptions, request, stream, cancellationToken).ConfigureAwait(false);
+                    SslStream sslStream = await ConnectHelper.EstablishSslConnectionAsync(allowHttp2 ? _sslOptionsHttp2 : _sslOptionsHttp11, request, stream, cancellationToken).ConfigureAwait(false);
                     stream = sslStream;
                     transportContext = sslStream.TransportContext;
                 }
 
-                HttpConnection connection = _maxConnections == int.MaxValue ?
-                    new HttpConnection(this, socket, stream, transportContext) :
-                    new HttpConnectionWithFinalizer(this, socket, stream, transportContext); // finalizer needed to signal the pool when a connection is dropped
-                return (connection, null);
+                return (socket, stream, transportContext, null);
             }
             finally
             {
                 cancellationWithConnectTimeout?.Dispose();
             }
+        }
+
+        private async ValueTask<(HttpConnection, HttpResponseMessage)> CreateHttp11ConnectionAsync(HttpRequestMessage request, CancellationToken cancellationToken)
+        {
+            (Socket socket, Stream stream, TransportContext transportContext, HttpResponseMessage failureResponse) =
+                await ConnectAsync(request, false, cancellationToken).ConfigureAwait(false);
+
+            if (failureResponse != null)
+            {
+                return (null, failureResponse);
+            }
+
+            return (ConstructHttp11Connection(socket, stream, transportContext), null);
+        }
+
+        private HttpConnection ConstructHttp11Connection(Socket socket, Stream stream, TransportContext transportContext)
+        {
+            return _maxConnections == int.MaxValue ?
+                new HttpConnection(this, socket, stream, transportContext) :
+                new HttpConnectionWithFinalizer(this, socket, stream, transportContext); // finalizer needed to signal the pool when a connection is dropped
         }
 
         // Returns the established stream or an HttpResponseMessage from the proxy indicating failure.
@@ -478,7 +675,7 @@ namespace System.Net.Http
         }
 
         /// <summary>Waits for and returns the created connection, decrementing the associated connection count if it fails.</summary>
-        private async ValueTask<(HttpConnection, HttpResponseMessage)> WaitForCreatedConnectionAsync(ValueTask<(HttpConnection, HttpResponseMessage)> creationTask)
+        private async ValueTask<(HttpConnectionBase connection, bool isNewConnection, HttpResponseMessage failureResponse)> WaitForCreatedConnectionAsync(ValueTask<(HttpConnection, HttpResponseMessage)> creationTask)
         {
             try
             {
@@ -487,7 +684,7 @@ namespace System.Net.Http
                 {
                     DecrementConnectionCount();
                 }
-                return (connection, response);
+                return (connection, true, response);
             }
             catch
             {
@@ -550,7 +747,8 @@ namespace System.Net.Http
                         // Transfer the connection to the waiter.  Since we already have a count
                         // that's inflated due to the connection being disassociated, we don't
                         // need to change the count here.
-                        waiter.SetResult(connectionTask.Result);
+                        (HttpConnection connection, HttpResponseMessage failureResponse) = connectionTask.Result;
+                        waiter.SetResult((connection, true, failureResponse));
                     }
                     else
                     {
@@ -561,10 +759,12 @@ namespace System.Net.Http
                             try
                             {
                                 // Get the resulting connection.
-                                (HttpConnection result, HttpResponseMessage response) = innerConnectionTask.GetAwaiter().GetResult();
+                                (HttpConnection connection, HttpResponseMessage failureResponse) = innerConnectionTask.GetAwaiter().GetResult();
 
-                                if (response != null)
+                                if (failureResponse != null)
                                 {
+                                    Debug.Assert(connection == null);
+
                                     // Proxy tunnel connect failed, so decrement the connection count.
                                     innerWaiter._pool.DecrementConnectionCount();
                                 }
@@ -572,7 +772,7 @@ namespace System.Net.Http
                                 // Store the resulting connection into the waiter. As in the synchronous case,
                                 // since we already have a count that's inflated due to the connection being
                                 // disassociated, we don't need to change the count here.
-                                innerWaiter.SetResult(innerConnectionTask.Result);
+                                innerWaiter.SetResult((connection, true, failureResponse));
                             }
                             catch (Exception e)
                             {
@@ -625,7 +825,7 @@ namespace System.Net.Http
                         waiter._cancellationTokenRegistration.Dispose();
 
                         if (NetEventSource.IsEnabled) connection.Trace("Transferring connection returned to pool.");
-                        waiter.SetResult((connection, null));
+                        waiter.SetResult((connection, false, null));
 
                         return;
                     }
@@ -658,6 +858,12 @@ namespace System.Net.Http
             }
         }
 
+        public void InvalidateHttp2Connection(Http2Connection connection)
+        {
+            Debug.Assert(_http2Connection == connection);
+            _http2Connection = null;
+        }
+
         /// <summary>
         /// Disposes the connection pool.  This is only needed when the pool currently contains
         /// or has associated connections.
@@ -673,6 +879,12 @@ namespace System.Net.Http
                     _disposed = true;
                     list.ForEach(c => c._connection.Dispose());
                     list.Clear();
+
+                    if (_http2Connection != null)
+                    {
+                        _http2Connection.Dispose();
+                        _http2Connection = null;
+                    }
                 }
                 Debug.Assert(list.Count == 0, $"Expected {nameof(list)}.{nameof(list.Count)} == 0");
             }
@@ -791,12 +1003,12 @@ namespace System.Net.Http
         public override string ToString() =>
             $"{nameof(HttpConnectionPool)} " +
             (_proxyUri == null ?
-                (_sslOptions == null ?
+                (_sslOptionsHttp11 == null ?
                     $"http://{_host}:{_port}" :
-                    $"https://{_host}:{_port}" + (_sslOptions.TargetHost != _host ? $", SSL TargetHost={_sslOptions.TargetHost}" : null)) :
-                (_sslOptions == null ?
+                    $"https://{_host}:{_port}" + (_sslOptionsHttp11.TargetHost != _host ? $", SSL TargetHost={_sslOptionsHttp11.TargetHost}" : null)) :
+                (_sslOptionsHttp11 == null ?
                     $"Proxy {_proxyUri}" :
-                    $"https://{_host}:{_port}/ tunnelled via Proxy {_proxyUri}" + (_sslOptions.TargetHost != _host ? $", SSL TargetHost={_sslOptions.TargetHost}" : null)));
+                    $"https://{_host}:{_port}/ tunnelled via Proxy {_proxyUri}" + (_sslOptionsHttp11.TargetHost != _host ? $", SSL TargetHost={_sslOptionsHttp11.TargetHost}" : null)));
 
         private void Trace(string message, [CallerMemberName] string memberName = null) =>
             NetEventSource.Log.HandlerMessage(
@@ -877,7 +1089,7 @@ namespace System.Net.Http
         /// into the waiter as a result, and if no connection is available from the pool,
         /// this waiter's logic is used to create the connection.
         /// </summary>
-        private class ConnectionWaiter : TaskCompletionSource<(HttpConnection, HttpResponseMessage)>
+        private class ConnectionWaiter : TaskCompletionSource<(HttpConnectionBase connection, bool isNewConnection, HttpResponseMessage failureResponse)>
         {
             /// <summary>The pool with which this waiter is associated.</summary>
             internal readonly HttpConnectionPool _pool;
@@ -904,7 +1116,7 @@ namespace System.Net.Http
 
             /// <summary>Creates a connection.</summary>
             public ValueTask<(HttpConnection, HttpResponseMessage)> CreateConnectionAsync() =>
-                _pool.CreateConnectionAsync(_request, _cancellationToken);
+                _pool.CreateHttp11ConnectionAsync(_request, _cancellationToken);
         }
     }
 }

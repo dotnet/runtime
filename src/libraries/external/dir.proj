@@ -14,6 +14,7 @@
     <Project Include="runtime/runtime.depproj" />
     <Project Include="test-runtime/XUnit.Runtime.depproj"  Condition="'$(DotNetBuildFromSource)' != 'true'" />
     <Project Include="harvestPackages/harvestPackages.depproj" />
+    <Project Include="binplacePackages/binplacePackages.depproj" />
     <Project Include="portable/portable.depproj" />
     <Project Include="docs/docs.depproj" Condition="'$(DotNetBuildFromSource)' != 'true'" />
     <Project Condition="'$(ILLinkTrimAssembly)' != 'false'" Include="ILLink/ILLink.depproj" />

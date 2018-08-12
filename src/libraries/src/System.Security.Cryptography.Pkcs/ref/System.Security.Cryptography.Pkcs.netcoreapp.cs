@@ -5,6 +5,8 @@
 // Changes to this file must follow the http://aka.ms/api-review process.
 // ------------------------------------------------------------------------------
 
+using System.Collections.Generic;
+using System.Collections.ObjectModel;
 using System.Security.Cryptography.X509Certificates;
 
 namespace System.Security.Cryptography.Pkcs
@@ -17,6 +19,100 @@ namespace System.Security.Cryptography.Pkcs
     public sealed partial class EnvelopedCms
     {
         public void Decrypt(System.Security.Cryptography.Pkcs.RecipientInfo recipientInfo, System.Security.Cryptography.AsymmetricAlgorithm privateKey) { }
+    }
+    public sealed partial class Pkcs12Builder
+    {
+        public bool IsSealed { get; }
+        public void AddSafeContentsEncrypted(Pkcs12SafeContents safeContents, byte[] passwordBytes, PbeParameters pbeParameters) => throw null;
+        public void AddSafeContentsEncrypted(Pkcs12SafeContents safeContents, ReadOnlySpan<byte> passwordBytes, PbeParameters pbeParameters) => throw null;
+        public void AddSafeContentsEncrypted(Pkcs12SafeContents safeContents, string password, PbeParameters pbeParameters) => throw null;
+        public void AddSafeContentsEncrypted(Pkcs12SafeContents safeContents, ReadOnlySpan<char> password, PbeParameters pbeParameters) => throw null;
+        public void AddSafeContentsUnencrypted(Pkcs12SafeContents safeContents) => throw null;
+        public byte[] Encode() => throw null;
+        public void SealWithMac(string password, HashAlgorithmName hashAlgorithm, int iterationCount) => throw null;
+        public void SealWithMac(ReadOnlySpan<char> password, HashAlgorithmName hashAlgorithm, int iterationCount) => throw null;
+        public void SealWithoutIntegrity() => throw null;
+        public bool TryEncode(Span<byte> destination, out int bytesWritten) => throw null;
+    }
+    public sealed partial class Pkcs12CertBag : Pkcs12SafeBag
+    {
+        public Pkcs12CertBag(Oid certificateType, ReadOnlyMemory<byte> encodedCertificate) : base(null, default) => throw null;
+        public bool IsX509Certificate { get; }
+        public ReadOnlyMemory<byte> EncodedCertificate { get; }
+        public Oid GetCertificateType() => throw null;
+        public X509Certificate2 GetCertificate() => throw null;
+    }
+    public enum Pkcs12ConfidentialityMode
+    {
+        Unknown = 0,
+        None = 1,
+        Password = 2,
+        PublicKey = 3,
+    }
+    public sealed partial class Pkcs12Info
+    {
+        private Pkcs12Info() { }
+        public ReadOnlyCollection<Pkcs12SafeContents> AuthenticatedSafe { get; }
+        public Pkcs12IntegrityMode IntegrityMode { get; }
+        public bool VerifyMac(string password) => throw null;
+        public bool VerifyMac(ReadOnlySpan<char> password) => throw null;
+        public static Pkcs12Info Decode(ReadOnlyMemory<byte> encodedBytes, out int bytesConsumed, bool skipCopy=false) => throw null;
+    }
+    public enum Pkcs12IntegrityMode
+    {
+        Unknown = 0,
+        None = 1,
+        Password = 2,
+        PublicKey = 3,
+    }
+    public sealed partial class Pkcs12KeyBag : Pkcs12SafeBag
+    {
+        public Pkcs12KeyBag(ReadOnlyMemory<byte> pkcs8PrivateKey, bool skipCopy = false) : base(null, default) { }
+        public ReadOnlyMemory<byte> Pkcs8PrivateKey { get; }
+    }
+    public abstract partial class Pkcs12SafeBag
+    {
+        protected Pkcs12SafeBag(string bagIdValue, ReadOnlyMemory<byte> encodedBagValue, bool skipCopy=false) { }
+        public CryptographicAttributeObjectCollection Attributes { get; }
+        public ReadOnlyMemory<byte> EncodedBagValue { get; }
+        public byte[] Encode() => throw null;
+        public Oid GetBagId() => throw null;
+        public bool TryEncode(Span<byte> destination, out int bytesWritten) => throw null;
+    }
+    public sealed partial class Pkcs12SafeContents
+    {
+        public Pkcs12ConfidentialityMode ConfidentialityMode { get; }
+        public bool IsReadOnly { get; }
+        public void AddSafeBag(Pkcs12SafeBag safeBag) => throw null;
+        public Pkcs12CertBag AddCertificate(X509Certificate2 certificate) => throw null;
+        public Pkcs12KeyBag AddKeyUnencrypted(AsymmetricAlgorithm key) => throw null;
+        public Pkcs12SafeContentsBag AddNestedContents(Pkcs12SafeContents safeContents) => throw null;
+        public Pkcs12ShroudedKeyBag AddShroudedKey(AsymmetricAlgorithm key, byte[] passwordBytes, PbeParameters pbeParameters) => throw null;
+        public Pkcs12ShroudedKeyBag AddShroudedKey(AsymmetricAlgorithm key, ReadOnlySpan<byte> passwordBytes, PbeParameters pbeParameters) => throw null;
+        public Pkcs12ShroudedKeyBag AddShroudedKey(AsymmetricAlgorithm key, string password, PbeParameters pbeParameters) => throw null;
+        public Pkcs12ShroudedKeyBag AddShroudedKey(AsymmetricAlgorithm key, ReadOnlySpan<char> password, PbeParameters pbeParameters) => throw null;
+        public Pkcs12SecretBag AddSecret(Oid secretType, ReadOnlyMemory<byte> secretValue) => throw null;
+        public void Decrypt(byte[] passwordBytes) => throw null;
+        public void Decrypt(ReadOnlySpan<byte> passwordBytes) => throw null;
+        public void Decrypt(string password) => throw null;
+        public void Decrypt(ReadOnlySpan<char> password) => throw null;
+        public IEnumerable<Pkcs12SafeBag> GetBags() => throw null;
+    }
+    public sealed partial class Pkcs12SafeContentsBag : Pkcs12SafeBag
+    {
+        private Pkcs12SafeContentsBag() : base(null, default) { }
+        public Pkcs12SafeContents SafeContents { get; }
+    }
+    public sealed partial class Pkcs12SecretBag : Pkcs12SafeBag
+    {
+        private Pkcs12SecretBag() : base(null, default) { }
+        public Oid GetSecretType() => throw null;
+        public ReadOnlyMemory<byte> SecretValue { get; }
+    }
+    public sealed partial class Pkcs12ShroudedKeyBag : Pkcs12SafeBag
+    {
+        public Pkcs12ShroudedKeyBag(ReadOnlyMemory<byte> encryptedPkcs8PrivateKey, bool skipCopy = false) : base(null, default) { }
+        public ReadOnlyMemory<byte> EncryptedPkcs8PrivateKey { get; }
     }
     public sealed partial class Pkcs8PrivateKeyInfo
     {
@@ -35,6 +131,13 @@ namespace System.Security.Cryptography.Pkcs
         public bool TryEncrypt(ReadOnlySpan<byte> passwordBytes, PbeParameters pbeParameters, Span<byte> destination, out int bytesWritten) => throw null;
         public static Pkcs8PrivateKeyInfo DecryptAndDecode(ReadOnlySpan<char> password, ReadOnlyMemory<byte> source, out int bytesRead) => throw null;
         public static Pkcs8PrivateKeyInfo DecryptAndDecode(ReadOnlySpan<byte> passwordBytes, ReadOnlyMemory<byte> source, out int bytesRead) => throw null;
+    }
+    public sealed partial class Pkcs9LocalKeyId : Pkcs9AttributeObject
+    {
+        public ReadOnlyMemory<byte> KeyId { get; }
+        public Pkcs9LocalKeyId() => throw null;
+        public Pkcs9LocalKeyId(byte[] keyId) => throw null;
+        public Pkcs9LocalKeyId(ReadOnlySpan<byte> keyId) => throw null;
     }
     public sealed partial class Rfc3161TimestampRequest
     {

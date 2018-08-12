@@ -39,22 +39,6 @@ namespace System.Net.Http.Functional.Tests
         public static readonly object[][] EchoServers = Configuration.Http.EchoServers;
         public static readonly object[][] VerifyUploadServers = Configuration.Http.VerifyUploadServers;
         public static readonly object[][] CompressedServers = Configuration.Http.CompressedServers;
-        public static readonly object[][] HeaderValueAndUris = {
-            new object[] { "X-CustomHeader", "x-value", Configuration.Http.RemoteEchoServer },
-            new object[] { "X-CustomHeader", "x-value", Configuration.Http.RedirectUriForDestinationUri(
-                secure:false,
-                statusCode:302,
-                destinationUri:Configuration.Http.RemoteEchoServer,
-                hops:1) },
-        };
-        public static readonly object[][] HeaderWithEmptyValueAndUris = {
-            new object[] { "X-Cust-Header-NoValue", "" , Configuration.Http.RemoteEchoServer },
-            new object[] { "X-Cust-Header-NoValue", "" , Configuration.Http.RedirectUriForDestinationUri(
-                secure:false,
-                statusCode:302,
-                destinationUri:Configuration.Http.RemoteEchoServer,
-                hops:1) },
-        };
         public static readonly object[][] Http2Servers = Configuration.Http.Http2Servers;
         public static readonly object[][] Http2NoPushServers = Configuration.Http.Http2NoPushServers;
 
@@ -1381,14 +1365,16 @@ namespace System.Net.Http.Functional.Tests
         [OuterLoop("Uses external server")]
         [SkipOnTargetFramework(TargetFrameworkMonikers.Uap)]
         [Theory]
-        [MemberData(nameof(HeaderWithEmptyValueAndUris))]
-        public async Task GetAsync_RequestHeadersAddCustomHeaders_HeaderAndEmptyValueSent(string name, string value, Uri uri)
+        [MemberData(nameof(HeaderEchoUrisMemberData))]
+        public async Task GetAsync_RequestHeadersAddCustomHeaders_HeaderAndEmptyValueSent(Uri uri)
         {
             if (IsWinHttpHandler && !PlatformDetection.IsWindows10Version1709OrGreater)
             {
                 return;
             }
 
+            string name = "X-Cust-Header-NoValue";
+            string value = "";
             using (HttpClient client = CreateHttpClient())
             {
                 _output.WriteLine($"name={name}, value={value}");
@@ -1420,6 +1406,74 @@ namespace System.Net.Http.Functional.Tests
                 }
             }
         }
+
+        [OuterLoop("Uses external server")]
+        [Theory, MemberData(nameof(HeaderEchoUrisMemberData))]
+        public async Task GetAsync_LargeRequestHeader_HeadersAndValuesSent(Uri uri)
+        {
+            // Unfortunately, our remote servers seem to have pretty strict limits (around 16K?)
+            // on the total size of the request header.
+            // TODO: Figure out how to reconfigure remote endpoints to allow larger request headers,
+            // and then increase the limits in this test.
+
+            string headerValue = new string('a', 2048);
+            const int headerCount = 6;
+
+            using (HttpClient client = CreateHttpClient())
+            {
+                for (int i = 0; i < headerCount; i++)
+                {
+                    client.DefaultRequestHeaders.Add($"Header-{i}", headerValue);
+                }
+
+                using (HttpResponseMessage httpResponse = await client.GetAsync(uri))
+                {
+                    Assert.Equal(HttpStatusCode.OK, httpResponse.StatusCode);
+                    string responseText = await httpResponse.Content.ReadAsStringAsync();
+
+                    for (int i = 0; i < headerCount; i++)
+                    {
+                        Assert.True(TestHelper.JsonMessageContainsKeyValue(responseText, $"Header-{i}", headerValue));
+                    }
+                }
+            }
+        }
+
+        public static IEnumerable<object[]> HeaderValueAndUris()
+        {
+            foreach (Uri uri in HeaderEchoUris())
+            {
+                yield return new object[] { "X-CustomHeader", "x-value", uri };
+                yield return new object[] { "MyHeader", "1, 2, 3", uri };
+
+                // Construct a header value with every valid character (except space)
+                string allchars = "";
+                for (int i = 0x21; i <= 0x7E; i++)
+                {
+                    allchars = allchars + (char)i;
+                }
+
+                // Put a space in the middle so it's not interpreted as insignificant leading/trailing whitespace
+                allchars = allchars + " " + allchars;
+
+                yield return new object[] { "All-Valid-Chars-Header", allchars, uri };
+            }
+        }
+
+        public static IEnumerable<Uri> HeaderEchoUris()
+        {
+            foreach (Uri uri in Configuration.Http.EchoServerList)
+            {
+                yield return uri;
+                yield return Configuration.Http.RedirectUriForDestinationUri(
+                    secure: false,
+                    statusCode: 302,
+                    destinationUri: uri,
+                    hops: 1);
+            }
+        }
+
+        public static IEnumerable<object[]> HeaderEchoUrisMemberData() => HeaderEchoUris().Select(uri => new object[] { uri });
 
         [SkipOnTargetFramework(TargetFrameworkMonikers.Uap, "UAP HTTP ignores invalid headers")]
         [Theory]
@@ -2263,6 +2317,18 @@ namespace System.Net.Http.Functional.Tests
                 return;
             }
 
+            if (PlatformDetection.IsFullFramework)
+            {
+                // Skip test on .NET Framework. It will sometimes not throw TaskCanceledException.
+                // Instead it might throw the following top-level and inner exceptions depending
+                // on race conditions.
+                //
+                // System.Net.Http.HttpRequestException : Error while copying content to a stream.
+                // ---- System.IO.IOException : The read operation failed, see inner exception.
+                //-------- System.Net.WebException : The request was aborted: The request was canceled.
+                return;
+            }
+
             await LoopbackServer.CreateServerAsync(async (server1, url1) =>
             {
                 await LoopbackServer.CreateServerAsync(async (server2, url2) =>
@@ -2364,7 +2430,7 @@ namespace System.Net.Http.Functional.Tests
             }
         }
 
-        #region Post Methods Tests
+#region Post Methods Tests
 
         [OuterLoop("Uses external server")]
         [Theory, MemberData(nameof(VerifyUploadServers))]
@@ -2663,7 +2729,6 @@ namespace System.Net.Http.Functional.Tests
         [Theory]
         [InlineData(false)]
         [InlineData(true)]
-        [ActiveIssue("https://github.com/dotnet/corefx/issues/28882", TargetFrameworkMonikers.NetFramework)]
         public async Task PostAsync_ThrowFromContentCopy_RequestFails(bool syncFailure)
         {
             await LoopbackServer.CreateServerAsync(async (server, uri) =>
@@ -2682,6 +2747,7 @@ namespace System.Net.Http.Functional.Tests
                         lengthFunc: () => 12345678,
                         positionGetFunc: () => 0,
                         canReadFunc: () => true,
+                        readFunc: (buffer, offset, count) => throw error,
                         readAsyncFunc: (buffer, offset, count, cancellationToken) => syncFailure ? throw error : Task.Delay(1).ContinueWith<int>(_ => throw error)));
 
                     if (PlatformDetection.IsUap)
@@ -2761,8 +2827,9 @@ namespace System.Net.Http.Functional.Tests
         }
 
         [OuterLoop("Uses external server")]
-        [Theory, MemberData(nameof(EchoServers))] // NOTE: will not work for in-box System.Net.Http.dll due to disposal of request content
-        [ActiveIssue("https://github.com/dotnet/corefx/issues/28882", TargetFrameworkMonikers.NetFramework)]
+        [Theory, MemberData(nameof(EchoServers))]
+        [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework, ".NET Framework disposes request content after send")]
+        [ActiveIssue(31104, TestPlatforms.AnyUnix)]
         public async Task PostAsync_ReuseRequestContent_Success(Uri remoteServer)
         {
             const string ContentString = "This is the content string.";
@@ -2799,9 +2866,9 @@ namespace System.Net.Http.Functional.Tests
             }
         }
 
-        #endregion
+#endregion
 
-        #region Various HTTP Method Tests
+#region Various HTTP Method Tests
 
         [OuterLoop("Uses external server")]
         [Theory, MemberData(nameof(HttpMethods))]
@@ -2951,9 +3018,9 @@ namespace System.Net.Http.Functional.Tests
                 }
             }
         }
-        #endregion
+#endregion
 
-        #region Version tests
+#region Version tests
         [SkipOnTargetFramework(TargetFrameworkMonikers.Uap, "UAP does not allow HTTP/1.0 requests.")]
         [OuterLoop("Uses external server")]
         [Fact]
@@ -3131,9 +3198,9 @@ namespace System.Net.Http.Functional.Tests
 
             return receivedRequestVersion;
         }
-        #endregion
+#endregion
 
-        #region Uri wire transmission encoding tests
+#region Uri wire transmission encoding tests
         [Fact]
         public async Task SendRequest_UriPathHasReservedChars_ServerReceivedExpectedPath()
         {
@@ -3159,6 +3226,6 @@ namespace System.Net.Http.Functional.Tests
                 }
             });
         }
-        #endregion
+#endregion
     }
 }

@@ -574,7 +574,7 @@ namespace System.Net.Http.Functional.Tests
                             new UriBuilder(uri) { Scheme = "https" }.ToString()), default));
                     sw.Stop();
 
-                    Assert.InRange(sw.ElapsedMilliseconds, 500, 30_000);
+                    Assert.InRange(sw.ElapsedMilliseconds, 500, 60_000);
                     releaseServer.SetResult(true);
                 }
             }, server => releaseServer.Task); // doesn't establish SSL connection

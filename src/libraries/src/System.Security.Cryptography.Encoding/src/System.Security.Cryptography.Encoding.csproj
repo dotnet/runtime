@@ -7,7 +7,6 @@
   </PropertyGroup>
   <ItemGroup>
     <Compile Include="Internal\Cryptography\AsnFormatter.cs" />
-    <Compile Include="Internal\Cryptography\Helpers.cs" />
     <Compile Include="Internal\Cryptography\OidLookup.cs" />
     <Compile Include="System\Security\Cryptography\AsnEncodedData.cs" />
     <Compile Include="System\Security\Cryptography\AsnEncodedDataCollection.cs" />
@@ -17,6 +16,9 @@
     <Compile Include="System\Security\Cryptography\OidCollection.cs" />
     <Compile Include="System\Security\Cryptography\OidEnumerator.cs" />
     <Compile Include="System\Security\Cryptography\OidGroup.cs" />
+    <Compile Include="$(CommonPath)\Internal\Cryptography\Helpers.cs">
+      <Link>Internal\Cryptography\Helpers.cs</Link>
+    </Compile>
   </ItemGroup>
   <ItemGroup Condition=" '$(TargetsWindows)' == 'true'">
     <Compile Include="Internal\Cryptography\AsnFormatter.Windows.cs" />

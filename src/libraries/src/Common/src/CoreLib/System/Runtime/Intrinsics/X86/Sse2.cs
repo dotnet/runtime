@@ -12,9 +12,11 @@ namespace System.Runtime.Intrinsics.X86
     /// This class provides access to Intel SSE2 hardware instructions via intrinsics
     /// </summary>
     [CLSCompliant(false)]
-    public static class Sse2
+    public abstract class Sse2 : Sse
     {
-        public static bool IsSupported { get => IsSupported; }
+        internal Sse2() { }
+
+        public new static bool IsSupported { get => IsSupported; }
 
         /// <summary>
         /// __m128i _mm_add_epi8 (__m128i a,  __m128i b)

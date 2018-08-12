@@ -16,13 +16,14 @@ namespace System.Runtime.Serialization
 
         public string Value
         {
-            get { return _value; }
-            set { _value = value; _isValueSetExplicitly = true; }
+            get => _value;
+            set
+            {
+                _value = value;
+                _isValueSetExplicitly = true;
+            }
         }
 
-        public bool IsValueSetExplicitly
-        {
-            get { return _isValueSetExplicitly; }
-        }
+        public bool IsValueSetExplicitly => _isValueSetExplicitly;
     }
 }

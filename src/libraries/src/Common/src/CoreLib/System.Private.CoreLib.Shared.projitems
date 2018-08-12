@@ -116,6 +116,8 @@
     <Compile Include="$(MSBuildThisFileDirectory)System\DateTimeOffset.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\DayOfWeek.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\DBNull.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)System\Decimal.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)System\Decimal.DecCalc.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\DefaultBinder.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Diagnostics\CodeAnalysis\SuppressMessageAttribute.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Diagnostics\ConditionalAttribute.cs" />

@@ -1,0 +1,50 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project ToolsVersion="14.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003" DefaultTargets="Build">
+  <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), Directory.Build.props))\Directory.Build.props" />
+  <PropertyGroup>
+    <NugetRuntimeIdentifier>$(PackageRID)</NugetRuntimeIdentifier>
+    <RidSpecificAssets>true</RidSpecificAssets>
+    <BinPlaceRef>true</BinPlaceRef>
+    <BinPlaceRuntime>true</BinPlaceRuntime>
+    <NETStandardVersion Condition="$(NuGetTargetMoniker.StartsWith('.NETStandard,Version=v'))">$(NuGetTargetMoniker.SubString(22))</NETStandardVersion>
+    <NuGetDeploySourceItem>Reference</NuGetDeploySourceItem>
+  </PropertyGroup>
+
+    <!-- Ref binplacing for all configurations -->
+  <ItemGroup>
+    <BinPlaceConfiguration Include="$(Configuration)">
+      <RefPath>$(RefPath)</RefPath>
+    </BinPlaceConfiguration>
+  </ItemGroup>
+
+  <!-- Runtime / test-runtime binplacing -->
+  <ItemGroup Condition="'$(TargetsNetStandard)' != 'true'">
+    <BinPlaceConfiguration Include="$(Configuration)">
+      <ItemName>BinPlaceLib</ItemName>
+      <RuntimePath>$(TestHostRootPath)</RuntimePath>
+    </BinPlaceConfiguration>
+    <BinPlaceConfiguration Include="$(Configuration)">
+      <ItemName>BinPlaceLib</ItemName>
+      <RuntimePath>$(RuntimePath)</RuntimePath>
+    </BinPlaceConfiguration>
+  </ItemGroup>
+
+  <ItemGroup>
+    <!-- runtime dependency: System.Data.SqlClient uap10.0.16299 -->
+    <!-- runtime dependency: System.Diagnostics.PerformanceCounters netcoreapp2.0,net461 -->
+    <PackageReference Include="System.Memory" Condition="'$(TargetGroup)' == 'netcoreapp2.0' OR '$(TargetGroup)' == 'uap10.0.16299' OR '$(TargetsNetfx)' == 'true' OR ('$(TargetsNetStandard)' == 'true' AND '$(NETStandardVersion)' &gt;= 1.1)">
+      <Version>4.5.1</Version>
+    </PackageReference>
+
+    <!-- Only include the assets from the direct packages we reference in the output -->
+    <PackageToInclude Include="@(PackageReference)" />
+  </ItemGroup>
+
+  <Target Name="AddHarvestedLibraries" BeforeTargets="CoreCompile"
+          Condition="'$(TargetsNetStandard)' != 'true'">
+    <ItemGroup>
+      <BinPlaceLib Include="@(ReferenceCopyLocalPaths)" />
+    </ItemGroup>
+  </Target>
+  <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), Directory.Build.targets))\Directory.Build.targets" />
+</Project>

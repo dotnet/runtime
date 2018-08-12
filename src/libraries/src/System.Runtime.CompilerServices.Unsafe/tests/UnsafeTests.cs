@@ -793,6 +793,42 @@ namespace System.Runtime.CompilerServices
             Assert.Equal(123456789, actual.Int32);
             Assert.Equal(3.42, actual.Double);
         }
+
+        [Fact]
+        public static void Unbox_Int32()
+        {
+            object box = 42;
+
+            Assert.True(Unsafe.AreSame(ref Unsafe.Unbox<int>(box), ref Unsafe.Unbox<int>(box)));
+
+            Assert.Equal(42, (int)box);
+            Assert.Equal(42, Unsafe.Unbox<int>(box));
+
+            ref int value = ref Unsafe.Unbox<int>(box);
+            value = 84;
+            Assert.Equal(84, (int)box);
+            Assert.Equal(84, Unsafe.Unbox<int>(box));
+
+            Assert.Throws<InvalidCastException>(() => Unsafe.Unbox<Byte4>(box));
+        }
+
+        [Fact]
+        public static void Unbox_CustomValueType()
+        {
+            object box = new Int32Double();
+
+            Assert.Equal(0, ((Int32Double)box).Double);
+            Assert.Equal(0, ((Int32Double)box).Int32);
+
+            ref Int32Double value = ref Unsafe.Unbox<Int32Double>(box);
+            value.Double = 42;
+            value.Int32 = 84;
+
+            Assert.Equal(42, ((Int32Double)box).Double);
+            Assert.Equal(84, ((Int32Double)box).Int32);
+
+            Assert.Throws<InvalidCastException>(() => Unsafe.Unbox<bool>(box));
+        }
     }
 
     [StructLayout(LayoutKind.Explicit)]

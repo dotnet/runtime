@@ -6,6 +6,7 @@ using Xunit;
 
 namespace System.Runtime.InteropServices.Tests
 {
+    [SkipOnTargetFramework(TargetFrameworkMonikers.Uap, "Marshalling between VARIANT and Object is not supported in AppX")]
     public class GetObjectForNativeVariantTests
     {
         [StructLayout(LayoutKind.Sequential)]
@@ -58,13 +59,6 @@ namespace System.Runtime.InteropServices.Tests
         }
 
 #pragma warning disable 618
-        [Fact]
-        [PlatformSpecific(TestPlatforms.Windows)]
-        public static void NullParameter()
-        {
-            AssertExtensions.Throws<ArgumentNullException>("pSrcNativeVariant", () => Marshal.GetObjectForNativeVariant(IntPtr.Zero));
-            AssertExtensions.Throws<ArgumentNullException>("pSrcNativeVariant", () => Marshal.GetObjectForNativeVariant<int>(IntPtr.Zero));
-        }
 
         [DllImport(@"oleaut32.dll", SetLastError = true, CallingConvention = CallingConvention.StdCall)]
         static extern Int32 VariantClear(IntPtr pvarg);
@@ -169,6 +163,22 @@ namespace System.Runtime.InteropServices.Tests
                 Marshal.Release(pUnk);
                 DeleteVariant(pNative);
             }
+        }
+
+        [Fact]
+        [PlatformSpecific(TestPlatforms.AnyUnix)]
+        public void GetObjectForNativeVariant_Unix_ThrowsPlatformNotSupportedException()
+        {
+            Assert.Throws<PlatformNotSupportedException>(() => Marshal.GetObjectForNativeVariant(IntPtr.Zero));
+            Assert.Throws<PlatformNotSupportedException>(() => Marshal.GetObjectForNativeVariant<int>(IntPtr.Zero));
+        }
+
+        [Fact]
+        [PlatformSpecific(TestPlatforms.Windows)]
+        public static void GetObjectForNativeVariant_ZeroPointer_ThrowsArgumentNullException()
+        {
+            AssertExtensions.Throws<ArgumentNullException>("pSrcNativeVariant", () => Marshal.GetObjectForNativeVariant(IntPtr.Zero));
+            AssertExtensions.Throws<ArgumentNullException>("pSrcNativeVariant", () => Marshal.GetObjectForNativeVariant<int>(IntPtr.Zero));
         }
 #pragma warning restore 618
     }

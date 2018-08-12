@@ -12,7 +12,6 @@ namespace System.ServiceModel.Syndication
     using System.Xml.Serialization;
     using System.Xml.Schema;
     using System.Diagnostics.CodeAnalysis;
-    using DiagnosticUtility = System.ServiceModel.DiagnosticUtility;
     using System.Runtime.CompilerServices;
 
     [DataContract]
@@ -27,11 +26,7 @@ namespace System.ServiceModel.Syndication
 
         protected SyndicationItemFormatter(SyndicationItem itemToWrite)
         {
-            if (itemToWrite == null)
-            {
-                throw DiagnosticUtility.ExceptionUtility.ThrowHelperArgumentNull(nameof(itemToWrite));
-            }
-            _item = itemToWrite;
+            _item = itemToWrite ?? throw new ArgumentNullException(nameof(itemToWrite));
         }
 
         public SyndicationItem Item
@@ -58,11 +53,7 @@ namespace System.ServiceModel.Syndication
 
         internal protected virtual void SetItem(SyndicationItem item)
         {
-            if (item == null)
-            {
-                throw DiagnosticUtility.ExceptionUtility.ThrowHelperArgumentNull(nameof(item));
-            }
-            _item = item;
+            _item = item ?? throw new ArgumentNullException(nameof(item));
         }
 
         internal static void CreateBufferIfRequiredAndWriteNode(ref XmlBuffer buffer, ref XmlDictionaryWriter extWriter, XmlDictionaryReader reader, int maxExtensionSize)

@@ -1670,6 +1670,12 @@
         "4.0.1.0": "4.6.0"
       }
     },
+    "System.Drawing.Design.Primitives": {
+      "InboxOn": {},
+      "AssemblyVersionInPackageVersion": {
+        "4.0.0.0": "4.6.0"
+      }
+    },
     "System.Drawing.Design": {
       "InboxOn": {
         "net45": "4.0.0.0"
@@ -2451,6 +2457,10 @@
       }
     },
     "System.Memory": {
+      "StableVersions": [
+        "4.5.0",
+        "4.5.1"
+      ],
       "InboxOn": {
         "netcoreapp2.1": "4.1.0.0",
         "monoandroid10": "Any",
@@ -2462,9 +2472,8 @@
         "xamarinwatchos10": "Any"
       },
       "AssemblyVersionInPackageVersion": {
-        "4.0.0.0": "4.4.0",
         "4.0.1.0": "4.5.0",
-        "4.0.2.0": "4.6.0"
+        "4.1.0.0": "4.6.0"
       }
     },
     "System.Messaging": {
@@ -3588,12 +3597,15 @@
     },
     "System.Runtime.CompilerServices.Unsafe": {
       "StableVersions": [
-        "4.4.0"
+        "4.4.0",
+        "4.5.0",
+        "4.5.1"
       ],
       "InboxOn": {
         "uap10.0.16300": "4.0.5.0"
       },
       "AssemblyVersionInPackageVersion": {
+        "4.0.3.0": "4.4.0",
         "4.0.4.0": "4.5.0",
         "4.0.5.0": "4.6.0"
       }
@@ -3799,11 +3811,9 @@
         "4.0.2.0": "4.3.0"
       }
     },
-    "System.Runtime.Intrinsics.Experimental": {
-      "InboxOn": {},
-      "AssemblyVersionInPackageVersion": {
-        "4.0.0.0": "4.5.0",
-        "4.0.1.0": "4.6.0"
+    "System.Runtime.Intrinsics": {
+      "InboxOn": {
+        "netcoreapp3.0": "4.0.0.0"
       }
     },
     "System.Runtime.Loader": {
@@ -4988,10 +4998,10 @@
       ],
       "BaselineVersion": "4.4.0",
       "InboxOn": {
-        "monoandroid10": "Any",
-        "monotouch10": "Any",
         "netcoreapp2.0": "4.1.1.0",
         "netcoreapp2.1": "4.3.0.0",
+        "monoandroid10": "Any",
+        "monotouch10": "Any",
         "uap10.0.16300": "4.3.0.0",
         "xamarinios10": "Any",
         "xamarinmac20": "Any",
@@ -5286,6 +5296,12 @@
     "System.Windows.Controls.Ribbon": {
       "InboxOn": {
         "net45": "4.0.0.0"
+      }
+    },
+    "System.Windows.Extensions": {
+      "InboxOn": {},
+      "AssemblyVersionInPackageVersion": {
+        "4.0.0.0": "4.6.0"
       }
     },
     "System.Windows.Forms": {

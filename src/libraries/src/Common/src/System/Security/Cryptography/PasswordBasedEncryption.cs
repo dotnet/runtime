@@ -302,7 +302,7 @@ namespace System.Security.Cryptography
             byte[] destination,
             Span<byte> ivDest)
         {
-            byte[] pwdTmpBytes = isPkcs12 ? null : new byte[passwordBytes.Length];
+            byte[] pwdTmpBytes = null;
             byte[] derivedKey;
             byte[] iv = cipher.IV;
 
@@ -310,6 +310,23 @@ namespace System.Security.Cryptography
             int keySizeBytes = cipher.KeySize / 8;
             int iterationCount = pbeParameters.IterationCount;
             HashAlgorithmName prf = pbeParameters.HashAlgorithm;
+            System.Text.Encoding encoding = System.Text.Encoding.UTF8;
+
+            if (!isPkcs12)
+            {
+                if (passwordBytes.Length == 0 && password.Length > 0)
+                {
+                    pwdTmpBytes = new byte[encoding.GetByteCount(password)];
+                }
+                else if (passwordBytes.Length == 0)
+                {
+                    pwdTmpBytes = Array.Empty<byte>();
+                }
+                else
+                {
+                    pwdTmpBytes = new byte[passwordBytes.Length];
+                }
+            }
 
             fixed (byte* pkcs8RentPin = sourceRent)
             fixed (byte* pwdTmpBytesPtr = pwdTmpBytes)
@@ -340,7 +357,25 @@ namespace System.Security.Cryptography
                 }
                 else
                 {
-                    passwordBytes.CopyTo(pwdTmpBytes);
+                    if (passwordBytes.Length > 0)
+                    {
+                        Debug.Assert(pwdTmpBytes.Length == passwordBytes.Length);
+                        passwordBytes.CopyTo(pwdTmpBytes);
+                    }
+                    else if (password.Length > 0)
+                    {
+                        int length = encoding.GetBytes(password, pwdTmpBytes);
+
+                        if (length != pwdTmpBytes.Length)
+                        {
+                            Debug.Fail($"UTF-8 encoding size changed between GetByteCount and GetBytes");
+                            throw new CryptographicException();
+                        }
+                    }
+                    else
+                    {
+                        Debug.Assert(pwdTmpBytes.Length == 0);
+                    }
 
                     using (var pbkdf2 = new Rfc2898DeriveBytes(pwdTmpBytes, salt.ToArray(), iterationCount, prf))
                     {
@@ -1019,7 +1054,7 @@ namespace System.Security.Cryptography
             writer.PopSequence();
         }
 
-        private static int NormalizeIterationCount(uint iterationCount)
+        internal static int NormalizeIterationCount(uint iterationCount)
         {
             if (iterationCount == 0 || iterationCount > IterationLimit)
             {

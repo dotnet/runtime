@@ -188,5 +188,14 @@ namespace System.Net.Primitives.PalTests
             Assert.Equal(scope, actualScope);
             Assert.Equal(port, SocketAddressPal.GetPort(buffer));
         }
+
+        [Fact]
+        public void ToString_ValidSocketAddress_ExpectedFormat()
+        {
+            IPEndPoint ipLocalEndPoint = new IPEndPoint(IPAddress.Loopback, Convert.ToInt32("cafe", 16));
+            SocketAddress socketAddress = ipLocalEndPoint.Serialize();
+
+            Assert.Equal("InterNetwork:16:{202,254,127,0,0,1,0,0,0,0,0,0,0,0}", socketAddress.ToString());
+        }
     }
 }

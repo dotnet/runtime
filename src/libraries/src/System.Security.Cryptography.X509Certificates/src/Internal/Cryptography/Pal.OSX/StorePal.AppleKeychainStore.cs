@@ -73,7 +73,8 @@ namespace Internal.Cryptography.Pal
 
                 AppleCertificatePal applePal = (AppleCertificatePal)cert;
 
-                Interop.AppleCrypto.X509StoreRemoveCertificate(applePal.CertificateHandle, _keychainHandle);
+                var handle = (SafeKeychainItemHandle)applePal.IdentityHandle ?? applePal.CertificateHandle;
+                Interop.AppleCrypto.X509StoreRemoveCertificate(handle, _keychainHandle);
             }
 
             public SafeHandle SafeHandle => _keychainHandle;

@@ -3,7 +3,7 @@
 // See the LICENSE file in the project root for more information.
 
 using System;
-using System.Collections.Generic;
+using System.Collections.Concurrent;
 using System.Diagnostics;
 using System.IO;
 using System.Text;
@@ -35,8 +35,8 @@ internal static class Utils
         }
     }
 
-    private static Dictionary<string, string> s_prefixToNamespaceDesk = new Dictionary<string, string>();
-    private static Dictionary<string, string> s_prefixToNamespaceCoreCLR = new Dictionary<string, string>();
+    private static ConcurrentDictionary<string, string> s_prefixToNamespaceDesk = new ConcurrentDictionary<string, string>();
+    private static ConcurrentDictionary<string, string> s_prefixToNamespaceCoreCLR = new ConcurrentDictionary<string, string>();
 
     internal struct CompareResult
     {

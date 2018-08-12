@@ -11,9 +11,11 @@ namespace System.Runtime.Intrinsics.X86
     /// This class provides access to Intel SSE4.2 hardware instructions via intrinsics
     /// </summary>
     [CLSCompliant(false)]
-    public static class Sse42
+    public abstract class Sse42 : Sse41
     {
-        public static bool IsSupported { get { return false; } }
+        internal Sse42() { }
+
+        public new static bool IsSupported { get { return false; } }
 
         /// <summary>
         /// int _mm_cmpistra (__m128i a, __m128i b, const int imm8)

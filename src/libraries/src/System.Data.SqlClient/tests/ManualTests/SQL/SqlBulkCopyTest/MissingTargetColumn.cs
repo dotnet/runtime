@@ -20,7 +20,7 @@ namespace System.Data.SqlClient.ManualTesting.Tests
 
                 try
                 {
-                    Helpers.Execute(dstCmd, "create table " + dstTable + " (col1 int, col3 nvarchar(10))");
+                    Helpers.TryExecute(dstCmd, "create table " + dstTable + " (col1 int, col3 nvarchar(10))");
 
                     using (SqlConnection srcConn = new SqlConnection(srcConstr))
                     using (SqlCommand srcCmd = new SqlCommand("select top 5 EmployeeID, LastName, FirstName from employees", srcConn))
@@ -44,7 +44,7 @@ namespace System.Data.SqlClient.ManualTesting.Tests
                 }
                 finally
                 {
-                    Helpers.Execute(dstCmd, "drop table " + dstTable);
+                    Helpers.TryExecute(dstCmd, "drop table " + dstTable);
                 }
             }
         }

@@ -28,9 +28,9 @@ Returns the ECC key parameters.
 DLLEXPORT int32_t CryptoNative_GetECKeyParameters(
     const EC_KEY* key,
     int32_t includePrivate,
-    BIGNUM** qx, int32_t* cbQx,
-    BIGNUM** qy, int32_t* cbQy,
-    BIGNUM** d, int32_t* cbD);
+    const BIGNUM** qx, int32_t* cbQx,
+    const BIGNUM** qy, int32_t* cbQy,
+    const BIGNUM** d, int32_t* cbD);
 
 /*
 Returns the ECC key and curve parameters.
@@ -39,17 +39,17 @@ DLLEXPORT int32_t CryptoNative_GetECCurveParameters(
     const EC_KEY* key,
     int32_t includePrivate,
     ECCurveType* curveType,
-    BIGNUM** qx, int32_t* cbx,
-    BIGNUM** qy, int32_t* cby,
-    BIGNUM** d, int32_t* cbd,
-    BIGNUM** p, int32_t* cbP,
-    BIGNUM** a, int32_t* cbA,
-    BIGNUM** b, int32_t* cbB,
-    BIGNUM** gx, int32_t* cbGx,
-    BIGNUM** gy, int32_t* cbGy,
-    BIGNUM** order, int32_t* cbOrder,
-    BIGNUM** cofactor, int32_t* cbCofactor,
-    BIGNUM** seed, int32_t* cbSeed);
+    const BIGNUM** qx, int32_t* cbx,
+    const BIGNUM** qy, int32_t* cby,
+    const BIGNUM** d, int32_t* cbd,
+    const BIGNUM** p, int32_t* cbP,
+    const BIGNUM** a, int32_t* cbA,
+    const BIGNUM** b, int32_t* cbB,
+    const BIGNUM** gx, int32_t* cbGx,
+    const BIGNUM** gy, int32_t* cbGy,
+    const BIGNUM** order, int32_t* cbOrder,
+    const BIGNUM** cofactor, int32_t* cbCofactor,
+    const BIGNUM** seed, int32_t* cbSeed);
 
 /*
 Creates the new EC_KEY instance using the curve oid (friendly name or value) and public key parameters.

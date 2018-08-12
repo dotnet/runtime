@@ -3,6 +3,7 @@
 // See the LICENSE file in the project root for more information.
 
 #include "pal_seckey.h"
+#include "pal_utilities.h"
 
 int32_t AppleCryptoNative_SecKeyExport(
     SecKeyRef pKey, int32_t exportPrivate, CFStringRef cfExportPassphrase, CFDataRef* ppDataOut, int32_t* pOSStatus)
@@ -38,8 +39,6 @@ int32_t AppleCryptoNative_SecKeyExport(
 
     return (*pOSStatus == noErr);
 }
-
-typedef const struct OpaqueSecKeyRef* ConstSecKeyRef;
 
 int32_t AppleCryptoNative_SecKeyImportEphemeral(
     uint8_t* pbKeyBlob, int32_t cbKeyBlob, int32_t isPrivateKey, SecKeyRef* ppKeyOut, int32_t* pOSStatus)
@@ -117,7 +116,7 @@ int32_t AppleCryptoNative_SecKeyImportEphemeral(
     }
 
     CFRetain(outItem);
-    *ppKeyOut = (ConstSecKeyRef)outItem;
+    *ppKeyOut = (SecKeyRef)CONST_CAST(void *, outItem);
     ret = 1;
 
 cleanup:
@@ -181,7 +180,7 @@ OSStatus ExportImportKey(SecKeyRef* key, SecExternalItemType type)
             if (CFGetTypeID(outItem) == SecKeyGetTypeID())
             {
                 CFRetain(outItem);
-                *key = (ConstSecKeyRef)outItem;
+                *key = (SecKeyRef)CONST_CAST(void *, outItem);
 
                 return noErr;
             }

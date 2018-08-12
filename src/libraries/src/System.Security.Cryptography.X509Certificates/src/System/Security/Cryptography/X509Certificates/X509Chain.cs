@@ -109,7 +109,7 @@ namespace System.Security.Cryptography.X509Certificates
         {
             lock (_syncRoot)
             {
-                if (certificate == null)
+                if (certificate == null || certificate.Pal == null)
                     throw new ArgumentException(SR.Cryptography_InvalidContextHandle, nameof(certificate));
 
                 Reset();

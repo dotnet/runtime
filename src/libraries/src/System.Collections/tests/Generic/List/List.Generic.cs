@@ -50,7 +50,7 @@ namespace System.Collections.Tests
             return GenericListFactory().AsReadOnly();
         }
 
-        protected override IEnumerable<ModifyEnumerable> ModifyEnumerables => new List<ModifyEnumerable>();
+        protected override IEnumerable<ModifyEnumerable> GetModifyEnumerables(ModifyOperation operations) => new List<ModifyEnumerable>();
     }
 
     public class List_Generic_Tests_int_ReadOnly : List_Generic_Tests<int>
@@ -72,6 +72,7 @@ namespace System.Collections.Tests
         {
             return GenericListFactory().AsReadOnly();
         }
-        protected override IEnumerable<ModifyEnumerable> ModifyEnumerables => new List<ModifyEnumerable>();
+
+        protected override IEnumerable<ModifyEnumerable> GetModifyEnumerables(ModifyOperation operations) => new List<ModifyEnumerable>();
     }
 }

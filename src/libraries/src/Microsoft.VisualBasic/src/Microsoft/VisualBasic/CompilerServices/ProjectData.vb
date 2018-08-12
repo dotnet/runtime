@@ -5,7 +5,7 @@
 Namespace Global.Microsoft.VisualBasic.CompilerServices
     <Global.System.Diagnostics.DebuggerNonUserCode()>
     <Global.System.ComponentModel.EditorBrowsable(Global.System.ComponentModel.EditorBrowsableState.Never)>
-    Public Class ProjectData
+    Public NotInheritable Class ProjectData
         Private Sub New()
         End Sub
         Public Overloads Shared Sub SetProjectError(ex As Global.System.Exception)

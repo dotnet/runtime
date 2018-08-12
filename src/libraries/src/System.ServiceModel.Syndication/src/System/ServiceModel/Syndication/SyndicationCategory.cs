@@ -41,11 +41,12 @@ namespace System.ServiceModel.Syndication
         {
             if (source == null)
             {
-                throw DiagnosticUtility.ExceptionUtility.ThrowHelperArgumentNull(nameof(source));
+                throw new ArgumentNullException(nameof(source));
             }
             _label = source._label;
             _name = source._name;
             _scheme = source._scheme;
+
             _extensions = source._extensions.Clone();
         }
 

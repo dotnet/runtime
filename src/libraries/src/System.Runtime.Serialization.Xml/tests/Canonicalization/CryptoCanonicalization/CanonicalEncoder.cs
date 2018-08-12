@@ -406,7 +406,7 @@ namespace System.Runtime.Serialization.Xml.Canonicalization.Tests
         {
             if (buffer == null)
             {
-                throw new ArgumentNullException("buffer");
+                throw new ArgumentNullException(nameof(buffer));
             }
 
             if (count < 0 || count > buffer.Length)

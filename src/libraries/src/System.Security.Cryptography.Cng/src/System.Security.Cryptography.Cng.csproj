@@ -215,6 +215,9 @@
     <Compile Include="$(CommonPath)\Internal\Cryptography\HashProviderCng.cs">
       <Link>Internal\Cryptography\HashProviderCng.cs</Link>
     </Compile>
+    <Compile Include="$(CommonPath)\Internal\Cryptography\Helpers.cs">
+      <Link>Internal\Cryptography\Helpers.cs</Link>
+    </Compile>
     <Compile Include="$(CommonPath)\Internal\Cryptography\BasicSymmetricCipher.cs">
       <Link>Internal\Cryptography\BasicSymmetricCipher.cs</Link>
     </Compile>

@@ -11,9 +11,11 @@ namespace System.Runtime.Intrinsics.X86
     /// This class provides access to Intel POPCNT hardware instructions via intrinsics
     /// </summary>
     [CLSCompliant(false)]
-    public static class Popcnt
+    public abstract class Popcnt : Sse42
     {
-        public static bool IsSupported { get => IsSupported; }
+        internal Popcnt() { }
+
+        public new static bool IsSupported { get => IsSupported; }
 
         /// <summary>
         /// int _mm_popcnt_u32 (unsigned int a)

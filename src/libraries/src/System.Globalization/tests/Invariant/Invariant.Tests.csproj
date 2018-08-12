@@ -12,7 +12,11 @@
   </PropertyGroup>
   <ItemGroup>
     <Compile Include="InvariantMode.cs" />
-    <Content Include="xunit.console.netcore.runtimeconfig.json">
+    <Content Condition="'$(UsingCoverageDedicatedRuntime)'!='true'" Include="xunit.console.netcore.runtimeconfig.json">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
+    <!-- If using coverage dedicated runtime the proper runtimeconfig needs to be ussed -->
+    <Content Condition="'$(UsingCoverageDedicatedRuntime)'=='true'" Include="coverage/xunit.console.netcore.runtimeconfig.json">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </Content>
   </ItemGroup>

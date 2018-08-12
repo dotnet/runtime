@@ -85,12 +85,13 @@ namespace System.ServiceModel.Syndication
         {
             if (readerOverUnparsedExtensions == null)
             {
-                throw DiagnosticUtility.ExceptionUtility.ThrowHelperArgumentNull(nameof(readerOverUnparsedExtensions));
+                throw new ArgumentNullException(nameof(readerOverUnparsedExtensions));
             }
             if (maxExtensionSize < 0)
             {
-                throw DiagnosticUtility.ExceptionUtility.ThrowHelperError(new ArgumentOutOfRangeException(nameof(maxExtensionSize)));
+                throw new ArgumentOutOfRangeException(nameof(maxExtensionSize));
             }
+
             XmlDictionaryReader r = XmlDictionaryReader.CreateDictionaryReader(readerOverUnparsedExtensions);
             _elementExtensions = new SyndicationElementExtensionCollection(CreateXmlBuffer(r, maxExtensionSize));
         }
@@ -105,8 +106,9 @@ namespace System.ServiceModel.Syndication
         {
             if (writer == null)
             {
-                throw DiagnosticUtility.ExceptionUtility.ThrowHelperArgumentNull(nameof(writer));
+                throw new ArgumentNullException(nameof(writer));
             }
+
             if (_attributeExtensions != null)
             {
                 foreach (XmlQualifiedName qname in _attributeExtensions.Keys)
@@ -121,8 +123,9 @@ namespace System.ServiceModel.Syndication
         {
             if (writer == null)
             {
-                throw DiagnosticUtility.ExceptionUtility.ThrowHelperArgumentNull(nameof(writer));
+                throw new ArgumentNullException(nameof(writer));
             }
+
             if (_elementExtensions != null)
             {
                 _elementExtensions.WriteTo(writer, shouldSkipElement);

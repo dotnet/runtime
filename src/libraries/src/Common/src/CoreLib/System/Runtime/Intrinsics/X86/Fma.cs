@@ -10,9 +10,12 @@ namespace System.Runtime.Intrinsics.X86
     /// <summary>
     /// This class provides access to Intel FMA hardware instructions via intrinsics
     /// </summary>
-    public static class Fma
+    [CLSCompliant(false)]
+    public abstract class Fma : Avx
     {
-        public static bool IsSupported { get => IsSupported; }
+        internal Fma() { }
+
+        public new static bool IsSupported { get => IsSupported; }
 
         /// <summary>
         /// __m128 _mm_fmadd_ps (__m128 a, __m128 b, __m128 c)
