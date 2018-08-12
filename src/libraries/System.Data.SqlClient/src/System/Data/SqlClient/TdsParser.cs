@@ -684,7 +684,7 @@ namespace System.Data.SqlClient
             byte[] payload = new byte[_physicalStateObj._inBytesPacket];
 
             Debug.Assert(_physicalStateObj._syncOverAsync, "Should not attempt pends in a synchronous call");
-            result = _physicalStateObj.TryReadByteArray(payload, 0, payload.Length);
+            result = _physicalStateObj.TryReadByteArray(payload.AsSpan(0), payload.Length);
             if (!result) { throw SQL.SynchronousCallMayNotPend(); }
 
             if (payload[0] == 0xaa)
@@ -2375,7 +2375,7 @@ namespace System.Data.SqlClient
                             return false;
                         }
                         env.newBinValue = new byte[env.newLength];
-                        if (!stateObj.TryReadByteArray(env.newBinValue, 0, env.newLength))
+                        if (!stateObj.TryReadByteArray(env.newBinValue.AsSpan(0), env.newLength))
                         { // read new value with 4 byte length
                             return false;
                         }
@@ -2467,7 +2467,7 @@ namespace System.Data.SqlClient
             }
             env.newLength = byteLength;
             env.newBinValue = new byte[env.newLength];
-            if (!stateObj.TryReadByteArray(env.newBinValue, 0, env.newLength))
+            if (!stateObj.TryReadByteArray(env.newBinValue.AsSpan(0), env.newLength))
             {
                 return false;
             }
@@ -2477,7 +2477,7 @@ namespace System.Data.SqlClient
             }
             env.oldLength = byteLength;
             env.oldBinValue = new byte[env.oldLength];
-            if (!stateObj.TryReadByteArray(env.oldBinValue, 0, env.oldLength))
+            if (!stateObj.TryReadByteArray(env.oldBinValue.AsSpan(0), env.oldLength))
             {
                 return false;
             }
@@ -2730,7 +2730,7 @@ namespace System.Data.SqlClient
                     byte[] data = new byte[dataLen];
                     if (dataLen > 0)
                     {
-                        if (!stateObj.TryReadByteArray(data, 0, checked((int)dataLen)))
+                        if (!stateObj.TryReadByteArray(data.AsSpan(0), checked((int)dataLen)))
                         {
                             return false;
                         }
@@ -2835,7 +2835,7 @@ namespace System.Data.SqlClient
                 }
                 if (buffer != null)
                 {
-                    if (!stateObj.TryReadByteArray(buffer, 0, stateLen))
+                    if (!stateObj.TryReadByteArray(buffer.AsSpan(0), stateLen))
                     {
                         return false;
                     }
@@ -2873,7 +2873,7 @@ namespace System.Data.SqlClient
             }
 
             byte[] b = new byte[TdsEnums.VERSION_SIZE];
-            if (!stateObj.TryReadByteArray(b, 0, b.Length))
+            if (!stateObj.TryReadByteArray(b.AsSpan(0), b.Length))
             {
                 return false;
             }
@@ -4480,7 +4480,7 @@ namespace System.Data.SqlClient
                     {
                         //Debug.Assert(length > 0 && length < (long)(Int32.MaxValue), "Bad length for column");
                         b = new byte[length];
-                        if (!stateObj.TryReadByteArray(b, 0, length))
+                        if (!stateObj.TryReadByteArray(b.AsSpan(0), length))
                         {
                             return false;
                         }
@@ -4540,15 +4540,9 @@ namespace System.Data.SqlClient
 
         private bool TryReadSqlDateTime(SqlBuffer value, byte tdsType, int length, byte scale, TdsParserStateObject stateObj)
         {
-#if netcoreapp
             Span<byte> datetimeBuffer = length <= 10 ? stackalloc byte[length] : new byte[length];
 
             if (!stateObj.TryReadByteArray(datetimeBuffer, length))
-#else
-            byte[] datetimeBuffer = new byte[length];
-
-            if (!stateObj.TryReadByteArray(datetimeBuffer, 0, length))
-#endif
             {
                 return false;
             }
@@ -4766,7 +4760,7 @@ namespace System.Data.SqlClient
 
                         byte[] b = new byte[length];
 
-                        if (!stateObj.TryReadByteArray(b, 0, length))
+                        if (!stateObj.TryReadByteArray(b.AsSpan(0), length))
                         {
                             return false;
                         }
@@ -4783,7 +4777,7 @@ namespace System.Data.SqlClient
                         // Note: Better not come here with plp data!!
                         Debug.Assert(length <= TdsEnums.MAXSIZE);
                         byte[] b = new byte[length];
-                        if (!stateObj.TryReadByteArray(b, 0, length))
+                        if (!stateObj.TryReadByteArray(b.AsSpan(0), length))
                         {
                             return false;
                         }
@@ -6523,7 +6517,7 @@ namespace System.Data.SqlClient
 
             // read SSPI data received from server
             Debug.Assert(_physicalStateObj._syncOverAsync, "Should not attempt pends in a synchronous call");
-            bool result = _physicalStateObj.TryReadByteArray(receivedBuff, 0, receivedLength);
+            bool result = _physicalStateObj.TryReadByteArray(receivedBuff.AsSpan(0), receivedLength);
             if (!result) { throw SQL.SynchronousCallMayNotPend(); }
 
             // allocate send buffer and initialize length

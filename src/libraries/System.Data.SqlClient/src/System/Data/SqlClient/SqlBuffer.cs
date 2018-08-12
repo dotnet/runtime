@@ -1027,12 +1027,12 @@ namespace System.Data.SqlClient
             _isNull = false;
         }
 
-        internal void SetToDate(byte[] bytes)
+        internal void SetToDate(ReadOnlySpan<byte> bytes)
         {
             Debug.Assert(IsEmpty, "setting value a second time?");
 
             _type = StorageType.Date;
-            _value._int32 = GetDateFromByteArray(bytes, 0);
+            _value._int32 = GetDateFromByteArray(bytes);
             _isNull = false;
         }
 
@@ -1045,7 +1045,7 @@ namespace System.Data.SqlClient
             _isNull = false;
         }
 
-        internal void SetToTime(byte[] bytes, int length, byte scale)
+        internal void SetToTime(ReadOnlySpan<byte> bytes, int length, byte scale)
         {
             Debug.Assert(IsEmpty, "setting value a second time?");
 
@@ -1054,66 +1054,61 @@ namespace System.Data.SqlClient
             _isNull = false;
         }
 
-        internal void SetToTime(TimeSpan timeSpan, byte scale)
+        //internal void SetToTime(TimeSpan timeSpan, byte scale)
+        //{
+        //    Debug.Assert(IsEmpty, "setting value a second time?");
+
+        //    _type = StorageType.Time;
+        //    _value._timeInfo.ticks = timeSpan.Ticks;
+        //    _value._timeInfo.scale = scale;
+        //    _isNull = false;
+        //}
+
+        internal void SetToDateTime2(ReadOnlySpan<byte> bytes, int length, byte scale)
         {
             Debug.Assert(IsEmpty, "setting value a second time?");
-
-            _type = StorageType.Time;
-            _value._timeInfo.ticks = timeSpan.Ticks;
-            _value._timeInfo.scale = scale;
-            _isNull = false;
-        }
-
-        internal void SetToDateTime2(byte[] bytes, int length, byte scale)
-        {
-            Debug.Assert(IsEmpty, "setting value a second time?");
-
             _type = StorageType.DateTime2;
             FillInTimeInfo(ref _value._dateTime2Info.timeInfo, bytes, length - 3, scale); // remaining 3 bytes is for date
-            _value._dateTime2Info.date = GetDateFromByteArray(bytes, length - 3); // 3 bytes for date
+            _value._dateTime2Info.date = GetDateFromByteArray(bytes.Slice(length - 3)); // 3 bytes for date
             _isNull = false;
         }
 
-        internal void SetToDateTime2(DateTime dateTime, byte scale)
-        {
-            Debug.Assert(IsEmpty, "setting value a second time?");
+        //internal void SetToDateTime2(DateTime dateTime, byte scale)
+        //{
+        //    Debug.Assert(IsEmpty, "setting value a second time?");
 
-            _type = StorageType.DateTime2;
-            _value._dateTime2Info.timeInfo.ticks = dateTime.TimeOfDay.Ticks;
-            _value._dateTime2Info.timeInfo.scale = scale;
-            _value._dateTime2Info.date = dateTime.Subtract(DateTime.MinValue).Days;
-            _isNull = false;
-        }
+        //    _type = StorageType.DateTime2;
+        //    _value._dateTime2Info.timeInfo.ticks = dateTime.TimeOfDay.Ticks;
+        //    _value._dateTime2Info.timeInfo.scale = scale;
+        //    _value._dateTime2Info.date = dateTime.Subtract(DateTime.MinValue).Days;
+        //    _isNull = false;
+        //}
 
-        internal void SetToDateTimeOffset(byte[] bytes, int length, byte scale)
+        internal void SetToDateTimeOffset(ReadOnlySpan<byte> bytes, int length, byte scale)
         {
             Debug.Assert(IsEmpty, "setting value a second time?");
 
             _type = StorageType.DateTimeOffset;
             FillInTimeInfo(ref _value._dateTimeOffsetInfo.dateTime2Info.timeInfo, bytes, length - 5, scale); // remaining 5 bytes are for date and offset
-            _value._dateTimeOffsetInfo.dateTime2Info.date = GetDateFromByteArray(bytes, length - 5); // 3 bytes for date
+            _value._dateTimeOffsetInfo.dateTime2Info.date = GetDateFromByteArray(bytes.Slice(length - 5)); // 3 bytes for date
             _value._dateTimeOffsetInfo.offset = (short)(bytes[length - 2] + (bytes[length - 1] << 8)); // 2 bytes for offset (Int16)
             _isNull = false;
         }
 
-        internal void SetToDateTimeOffset(DateTimeOffset dateTimeOffset, byte scale)
-        {
-            Debug.Assert(IsEmpty, "setting value a second time?");
+        //internal void SetToDateTimeOffset(DateTimeOffset dateTimeOffset, byte scale)
+        //{
+        //    Debug.Assert(IsEmpty, "setting value a second time?");
 
-            _type = StorageType.DateTimeOffset;
-            DateTime utcDateTime = dateTimeOffset.UtcDateTime; // timeInfo stores the utc datetime of a datatimeoffset
-            _value._dateTimeOffsetInfo.dateTime2Info.timeInfo.ticks = utcDateTime.TimeOfDay.Ticks;
-            _value._dateTimeOffsetInfo.dateTime2Info.timeInfo.scale = scale;
-            _value._dateTimeOffsetInfo.dateTime2Info.date = utcDateTime.Subtract(DateTime.MinValue).Days;
-            _value._dateTimeOffsetInfo.offset = (short)dateTimeOffset.Offset.TotalMinutes;
-            _isNull = false;
-        }
+        //    _type = StorageType.DateTimeOffset;
+        //    DateTime utcDateTime = dateTimeOffset.UtcDateTime; // timeInfo stores the utc datetime of a datatimeoffset
+        //    _value._dateTimeOffsetInfo.dateTime2Info.timeInfo.ticks = utcDateTime.TimeOfDay.Ticks;
+        //    _value._dateTimeOffsetInfo.dateTime2Info.timeInfo.scale = scale;
+        //    _value._dateTimeOffsetInfo.dateTime2Info.date = utcDateTime.Subtract(DateTime.MinValue).Days;
+        //    _value._dateTimeOffsetInfo.offset = (short)dateTimeOffset.Offset.TotalMinutes;
+        //    _isNull = false;
+        //}
 
-#if netcoreapp
         private static void FillInTimeInfo(ref TimeInfo timeInfo, ReadOnlySpan<byte> timeBytes, int length, byte scale)
-#else
-        private static void FillInTimeInfo(ref TimeInfo timeInfo, byte[] timeBytes, int length, byte scale)
-#endif
         {
             Debug.Assert(3 <= length && length <= 5, "invalid data length for timeInfo: " + length);
             Debug.Assert(0 <= scale && scale <= 7, "invalid scale: " + scale);
@@ -1131,9 +1126,9 @@ namespace System.Data.SqlClient
             timeInfo.scale = scale;
         }
 
-        private static int GetDateFromByteArray(byte[] buf, int offset)
+        private static int GetDateFromByteArray(ReadOnlySpan<byte> buf)
         {
-            return buf[offset] + (buf[offset + 1] << 8) + (buf[offset + 2] << 16);
+            return buf[0] + (buf[1] << 8) + (buf[2] << 16);
         }
 
         private void ThrowIfNull()
