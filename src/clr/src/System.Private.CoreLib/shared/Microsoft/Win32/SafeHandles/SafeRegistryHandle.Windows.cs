@@ -2,7 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
-using System;
+using System.Runtime.InteropServices;
 
 namespace Microsoft.Win32.SafeHandles
 {
@@ -13,11 +13,7 @@ namespace Microsoft.Win32.SafeHandles
 #endif
     sealed partial class SafeRegistryHandle : SafeHandleZeroOrMinusOneIsInvalid
     {
-        internal SafeRegistryHandle() : base(true) { }
-
-        public SafeRegistryHandle(IntPtr preexistingHandle, bool ownsHandle) : base(ownsHandle)
-        {
-            SetHandle(preexistingHandle);
-        }
+        protected override bool ReleaseHandle() =>
+            Interop.Advapi32.RegCloseKey(handle) == Interop.Errors.ERROR_SUCCESS;
     }
 }
