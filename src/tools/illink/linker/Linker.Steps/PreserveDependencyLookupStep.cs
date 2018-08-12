@@ -30,8 +30,7 @@ using System;
 using Mono.Cecil;
 
 namespace Mono.Linker.Steps {
-	public class PreserveDependencyLookupStep : BaseStep
-	{
+	public class PreserveDependencyLookupStep : LoadReferencesStep {
 		protected override void ProcessAssembly (AssemblyDefinition assembly)
 		{
 			var module = assembly.MainModule;
@@ -45,7 +44,7 @@ namespace Mono.Linker.Steps {
 					if (md?.HasCustomAttributes != true)
 						continue;
 
-					foreach (var ca in  md.CustomAttributes) {
+					foreach (var ca in md.CustomAttributes) {
 						if (!IsPreserveDependencyAttribute (ca.AttributeType))
 							continue;
 
@@ -56,7 +55,9 @@ namespace Mono.Linker.Steps {
 						if (assemblyName == null)
 							continue;
 
-						assembly = Context.Resolve (assemblyName);
+						var newDependency = Context.Resolve (new AssemblyNameReference (assemblyName, new Version ()));
+						if (newDependency != null)
+							ProcessReferences (newDependency);
 					}
 				}
 			}
