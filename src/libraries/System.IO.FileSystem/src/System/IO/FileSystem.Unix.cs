@@ -28,16 +28,6 @@ namespace System.IO
                 Interop.CheckIo(Interop.Sys.CopyFile(src.SafeFileHandle, dst.SafeFileHandle));
             }
         }
-        
-        public static void Encrypt(string path)
-        {
-            throw new PlatformNotSupportedException(SR.PlatformNotSupported_FileEncryption);
-        }
-
-        public static void Decrypt(string path)
-        {
-            throw new PlatformNotSupportedException(SR.PlatformNotSupported_FileEncryption);
-        }
 
         public static void ReplaceFile(string sourceFullPath, string destFullPath, string destBackupFullPath, bool ignoreMetadataErrors)
         {

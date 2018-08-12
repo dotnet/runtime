@@ -644,8 +644,13 @@ namespace System.IO
         {
             if (path == null)
                 throw new ArgumentNullException(nameof(path));
-        
-            FileSystem.Encrypt(path);
+
+            // TODO: Not supported on Unix or in WinRt, and the EncryptFile API isn't currently
+            // available in OneCore.  For now, we just throw PNSE everywhere.  When the API is
+            // available, we can put this into the FileSystem abstraction and implement it
+            // properly for Win32.
+
+            throw new PlatformNotSupportedException(SR.PlatformNotSupported_FileEncryption);
         }
 
         public static void Decrypt(string path)
@@ -653,7 +658,12 @@ namespace System.IO
             if (path == null)
                 throw new ArgumentNullException(nameof(path));
 
-            FileSystem.Decrypt(path);
+            // TODO: Not supported on Unix or in WinRt, and the EncryptFile API isn't currently
+            // available in OneCore.  For now, we just throw PNSE everywhere.  When the API is
+            // available, we can put this into the FileSystem abstraction and implement it
+            // properly for Win32.
+
+            throw new PlatformNotSupportedException(SR.PlatformNotSupported_FileEncryption);
         }
 
         // UTF-8 without BOM and with error detection. Same as the default encoding for StreamWriter.
