@@ -69,45 +69,42 @@ namespace System.Collections.Tests
         /// <summary>
         /// Returns a set of ModifyEnumerable delegates that modify the enumerable passed to them.
         /// </summary>
-        protected override IEnumerable<ModifyEnumerable> ModifyEnumerables
+        protected override IEnumerable<ModifyEnumerable> GetModifyEnumerables(ModifyOperation operations)
         {
-            get
+            if (!AddRemoveClear_ThrowsNotSupported && (operations & ModifyOperation.Add) == ModifyOperation.Add)
             {
-                if (!AddRemoveClear_ThrowsNotSupported)
+                yield return (IEnumerable<T> enumerable) =>
                 {
-                    yield return (IEnumerable<T> enumerable) =>
+                    var casted = (ICollection<T>)enumerable;
+                    casted.Add(CreateT(2344));
+                    return true;
+                };
+            }
+            if (!AddRemoveClear_ThrowsNotSupported && (operations & ModifyOperation.Remove) == ModifyOperation.Remove)
+            {
+                yield return (IEnumerable<T> enumerable) =>
+                {
+                    var casted = (ICollection<T>)enumerable;
+                    if (casted.Count() > 0)
                     {
-                        var casted = (ICollection<T>)enumerable;
-                        casted.Add(CreateT(2344));
+                        casted.Remove(casted.ElementAt(0));
                         return true;
-                    };
-                }
-                if (!AddRemoveClear_ThrowsNotSupported)
+                    }
+                    return false;
+                };
+            }
+            if (!AddRemoveClear_ThrowsNotSupported && (operations & ModifyOperation.Clear) == ModifyOperation.Clear)
+            {
+                yield return (IEnumerable<T> enumerable) =>
                 {
-                    yield return (IEnumerable<T> enumerable) =>
+                    var casted = (ICollection<T>)enumerable;
+                    if (casted.Count() > 0)
                     {
-                        var casted = (ICollection<T>)enumerable;
-                        if (casted.Count() > 0)
-                        {
-                            casted.Remove(casted.ElementAt(0));
-                            return true;
-                        }
-                        return false;
-                    };
-                }
-                if (!AddRemoveClear_ThrowsNotSupported)
-                {
-                    yield return (IEnumerable<T> enumerable) =>
-                    {
-                        var casted = (ICollection<T>)enumerable;
-                        if (casted.Count() > 0)
-                        {
-                            casted.Clear();
-                            return true;
-                        }
-                        return false;
-                    };
-                }
+                        casted.Clear();
+                        return true;
+                    }
+                    return false;
+                };
             }
         }
 

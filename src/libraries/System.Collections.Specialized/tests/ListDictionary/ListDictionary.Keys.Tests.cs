@@ -44,7 +44,7 @@ namespace System.Collections.Specialized.Tests
 
         protected override void AddToCollection(ICollection collection, int numberOfItemsToAdd) => Debug.Assert(false);
 
-        protected override IEnumerable<ModifyEnumerable> ModifyEnumerables => new List<ModifyEnumerable>();
+        protected override IEnumerable<ModifyEnumerable> GetModifyEnumerables(ModifyOperation operations) => new List<ModifyEnumerable>();
 
         [Theory]
         [MemberData(nameof(ValidCollectionSizes))]

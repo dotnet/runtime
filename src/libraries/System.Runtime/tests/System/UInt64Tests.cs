@@ -4,6 +4,7 @@
 
 using System.Collections.Generic;
 using System.Globalization;
+using System.Numerics;
 using Xunit;
 
 namespace System.Tests
@@ -161,97 +162,94 @@ namespace System.Tests
 
         public static IEnumerable<object[]> Parse_Valid_TestData()
         {
-            NumberStyles defaultStyle = NumberStyles.Integer;
-            NumberFormatInfo emptyFormat = new NumberFormatInfo();
+            // Reuse all Int64 test data that's relevant
+            foreach (object[] objs in Int64Tests.Parse_Valid_TestData())
+            {
+                if ((long)objs[3] < 0) continue;
+                yield return new object[] { objs[0], objs[1], objs[2], (ulong)(long)objs[3] };
+            }
 
-            NumberFormatInfo customFormat = new NumberFormatInfo();
-            customFormat.CurrencySymbol = "$";
+            // All lengths decimal
+            {
+                string s = "";
+                ulong result = 0;
+                for (int i = 1; i <= 20; i++)
+                {
+                    result = (result * 10) + (ulong)(i % 10);
+                    s += (i % 10).ToString();
+                    yield return new object[] { s, NumberStyles.Integer, null, result };
+                }
+            }
 
-            yield return new object[] { "0", defaultStyle, null, (ulong)0 };
-            yield return new object[] { "123", defaultStyle, null, (ulong)123 };
-            yield return new object[] { "+123", defaultStyle, null, (ulong)123 };
-            yield return new object[] { "  123  ", defaultStyle, null, (ulong)123 };
-            yield return new object[] { "18446744073709551615", defaultStyle, null, 18446744073709551615 };
+            // All lengths hexadecimal
+            {
+                string s = "";
+                ulong result = 0;
+                for (int i = 1; i <= 16; i++)
+                {
+                    result = (result * 16) + (ulong)(i % 16);
+                    s += (i % 16).ToString("X");
+                    yield return new object[] { s, NumberStyles.HexNumber, null, result };
+                }
+            }
 
-            yield return new object[] { "12", NumberStyles.HexNumber, null, (ulong)0x12 };
-            yield return new object[] { "1000", NumberStyles.AllowThousands, null, (ulong)1000 };
-
-            yield return new object[] { "123", defaultStyle, emptyFormat, (ulong)123 };
-
-            yield return new object[] { "123", NumberStyles.Any, emptyFormat, (ulong)123 };
-            yield return new object[] { "12", NumberStyles.HexNumber, emptyFormat, (ulong)0x12 };
-            yield return new object[] { "abc", NumberStyles.HexNumber, emptyFormat, (ulong)0xabc };
-            yield return new object[] { "ABC", NumberStyles.HexNumber, null, (ulong)0xabc };
-            yield return new object[] { "$1,000", NumberStyles.Currency, customFormat, (ulong)1000 };
+            // And test boundary conditions for UInt64
+            yield return new object[] { "18446744073709551615", NumberStyles.Integer, null, ulong.MaxValue };
+            yield return new object[] { "+18446744073709551615", NumberStyles.Integer, null, ulong.MaxValue };
+            yield return new object[] { "    +18446744073709551615  ", NumberStyles.Integer, null, ulong.MaxValue };
+            yield return new object[] { "FFFFFFFFFFFFFFFF", NumberStyles.HexNumber, null, ulong.MaxValue };
+            yield return new object[] { "   FFFFFFFFFFFFFFFF   ", NumberStyles.HexNumber, null, ulong.MaxValue };
         }
 
         [Theory]
         [MemberData(nameof(Parse_Valid_TestData))]
-        public static void Parse(string value, NumberStyles style, IFormatProvider provider, ulong expected)
+        public static void Parse_Valid(string value, NumberStyles style, IFormatProvider provider, ulong expected)
         {
             ulong result;
-            // If no style is specified, use the (String) or (String, IFormatProvider) overload
-            if (style == NumberStyles.Integer)
+
+            // Default style and provider
+            if (style == NumberStyles.Integer && provider == null)
             {
                 Assert.True(ulong.TryParse(value, out result));
                 Assert.Equal(expected, result);
-
                 Assert.Equal(expected, ulong.Parse(value));
-
-                // If a format provider is specified, but the style is the default, use the (String, IFormatProvider) overload
-                if (provider != null)
-                {
-                    Assert.Equal(expected, ulong.Parse(value, provider));
-                }
             }
 
-            // If a format provider isn't specified, test the default one, using a new instance of NumberFormatInfo
-            Assert.True(ulong.TryParse(value, style, provider ?? new NumberFormatInfo(), out result));
-            Assert.Equal(expected, result);
-
-            // If a format provider isn't specified, test the default one, using the (String, NumberStyles) overload
+            // Default provider
             if (provider == null)
             {
                 Assert.Equal(expected, ulong.Parse(value, style));
+
+                // Substitute default NumberFormatInfo
+                Assert.True(ulong.TryParse(value, style, new NumberFormatInfo(), out result));
+                Assert.Equal(expected, result);
+                Assert.Equal(expected, ulong.Parse(value, style, new NumberFormatInfo()));
             }
-            Assert.Equal(expected, ulong.Parse(value, style, provider ?? new NumberFormatInfo()));
+
+            // Default style
+            if (style == NumberStyles.Integer)
+            {
+                Assert.Equal(expected, ulong.Parse(value, provider));
+            }
+
+            // Full overloads
+            Assert.True(ulong.TryParse(value, style, provider, out result));
+            Assert.Equal(expected, result);
+            Assert.Equal(expected, ulong.Parse(value, style, provider));
         }
 
         public static IEnumerable<object[]> Parse_Invalid_TestData()
         {
-            NumberStyles defaultStyle = NumberStyles.Integer;
-
-            NumberFormatInfo customFormat = new NumberFormatInfo();
-            customFormat.CurrencySymbol = "$";
-            customFormat.NumberDecimalSeparator = ".";
-
-            yield return new object[] { null, defaultStyle, null, typeof(ArgumentNullException) };
-            yield return new object[] { "", defaultStyle, null, typeof(FormatException) };
-            yield return new object[] { " \t \n \r ", defaultStyle, null, typeof(FormatException) };
-            yield return new object[] { "Garbage", defaultStyle, null, typeof(FormatException) };
-
-            yield return new object[] { "abc", defaultStyle, null, typeof(FormatException) }; // Hex value
-            yield return new object[] { "1E23", defaultStyle, null, typeof(FormatException) }; // Exponent
-            yield return new object[] { "(123)", defaultStyle, null, typeof(FormatException) }; // Parentheses
-            yield return new object[] { 100.ToString("C0"), defaultStyle, null, typeof(FormatException) }; // Currency
-            yield return new object[] { 1000.ToString("N0"), defaultStyle, null, typeof(FormatException) }; // Thousands
-            yield return new object[] { 678.90.ToString("F2"), defaultStyle, null, typeof(FormatException) }; // Decimal
-            yield return new object[] { "+-123", defaultStyle, null, typeof(FormatException) };
-            yield return new object[] { "-+123", defaultStyle, null, typeof(FormatException) };
-            yield return new object[] { "+abc", NumberStyles.HexNumber, null, typeof(FormatException) };
-            yield return new object[] { "-abc", NumberStyles.HexNumber, null, typeof(FormatException) };
-
-            yield return new object[] { "- 123", defaultStyle, null, typeof(FormatException) };
-            yield return new object[] { "+ 123", defaultStyle, null, typeof(FormatException) };
-
-            yield return new object[] { "abc", NumberStyles.None, null, typeof(FormatException) }; // Hex value
-            yield return new object[] { "  123  ", NumberStyles.None, null, typeof(FormatException) }; // Trailing and leading whitespace
-
-            yield return new object[] { "678.90", defaultStyle, customFormat, typeof(FormatException) }; // Decimal
-
-            yield return new object[] { "-1", defaultStyle, null, typeof(OverflowException) }; // < min value
-            yield return new object[] { "18446744073709551616", defaultStyle, null, typeof(OverflowException) }; // > max value
-            yield return new object[] { "(123)", NumberStyles.AllowParentheses, null, typeof(OverflowException) }; // Parentheses = negative
+            // Reuse all uint test data, except for those that wouldn't overflow ulong.
+            foreach (object[] objs in UInt32Tests.Parse_Invalid_TestData())
+            {
+                if ((Type)objs[3] == typeof(OverflowException) &&
+                    (!BigInteger.TryParse((string)objs[0], out BigInteger bi) || bi <= ulong.MaxValue))
+                {
+                    continue;
+                }
+                yield return objs;
+            }
         }
 
         [Theory]
@@ -259,31 +257,36 @@ namespace System.Tests
         public static void Parse_Invalid(string value, NumberStyles style, IFormatProvider provider, Type exceptionType)
         {
             ulong result;
-            // If no style is specified, use the (String) or (String, IFormatProvider) overload
-            if (style == NumberStyles.Integer)
+
+            // Default style and provider
+            if (style == NumberStyles.Integer && provider == null)
             {
                 Assert.False(ulong.TryParse(value, out result));
-                Assert.Equal(default(ulong), result);
-
+                Assert.Equal(default, result);
                 Assert.Throws(exceptionType, () => ulong.Parse(value));
-
-                // If a format provider is specified, but the style is the default, use the (String, IFormatProvider) overload
-                if (provider != null)
-                {
-                    Assert.Throws(exceptionType, () => ulong.Parse(value, provider));
-                }
             }
 
-            // If a format provider isn't specified, test the default one, using a new instance of NumberFormatInfo
-            Assert.False(ulong.TryParse(value, style, provider ?? new NumberFormatInfo(), out result));
-            Assert.Equal(default(ulong), result);
-
-            // If a format provider isn't specified, test the default one, using the (String, NumberStyles) overload
+            // Default provider
             if (provider == null)
             {
                 Assert.Throws(exceptionType, () => ulong.Parse(value, style));
+
+                // Substitute default NumberFormatInfo
+                Assert.False(ulong.TryParse(value, style, new NumberFormatInfo(), out result));
+                Assert.Equal(default, result);
+                Assert.Throws(exceptionType, () => ulong.Parse(value, style, new NumberFormatInfo()));
             }
-            Assert.Throws(exceptionType, () => ulong.Parse(value, style, provider ?? new NumberFormatInfo()));
+
+            // Default style
+            if (style == NumberStyles.Integer)
+            {
+                Assert.Throws(exceptionType, () => ulong.Parse(value, provider));
+            }
+
+            // Full overloads
+            Assert.False(ulong.TryParse(value, style, provider, out result));
+            Assert.Equal(default, result);
+            Assert.Throws(exceptionType, () => ulong.Parse(value, style, provider));
         }
 
         [Theory]

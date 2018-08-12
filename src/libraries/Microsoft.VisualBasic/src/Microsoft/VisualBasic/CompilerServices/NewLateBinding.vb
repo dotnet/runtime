@@ -24,6 +24,7 @@ Imports System.Runtime.Versioning
 Namespace Microsoft.VisualBasic.CompilerServices
 
     ' Implements VB late binder.
+    <ComponentModel.EditorBrowsable(ComponentModel.EditorBrowsableState.Never)>
     Public NotInheritable Class NewLateBinding
         ' Prevent creation.
         Private Sub New()
@@ -81,32 +82,32 @@ Namespace Microsoft.VisualBasic.CompilerServices
 
         <DebuggerHiddenAttribute()> <DebuggerStepThroughAttribute()>
         Public Shared Function LateCall(
-                ByVal instance As Object,
-                ByVal type As System.Type,
-                ByVal memberName As String,
-                ByVal arguments As Object(),
-                ByVal argumentNames As String(),
-                ByVal typeArguments As System.Type(),
-                ByVal copyBack As Boolean(),
-                ByVal ignoreReturn As Boolean) As Object
+                ByVal Instance As Object,
+                ByVal Type As System.Type,
+                ByVal MemberName As String,
+                ByVal Arguments As Object(),
+                ByVal ArgumentNames As String(),
+                ByVal TypeArguments As System.Type(),
+                ByVal CopyBack As Boolean(),
+                ByVal IgnoreReturn As Boolean) As Object
 
-            If arguments Is Nothing Then arguments = NoArguments
-            If argumentNames Is Nothing Then argumentNames = NoArgumentNames
-            If typeArguments Is Nothing Then typeArguments = NoTypeArguments
+            If Arguments Is Nothing Then Arguments = NoArguments
+            If ArgumentNames Is Nothing Then ArgumentNames = NoArgumentNames
+            If TypeArguments Is Nothing Then TypeArguments = NoTypeArguments
 
             Dim baseReference As Container
-            If type IsNot Nothing Then
-                baseReference = New Container(type)
+            If Type IsNot Nothing Then
+                baseReference = New Container(Type)
             Else
-                baseReference = New Container(instance)
+                baseReference = New Container(Instance)
             End If
 
-            Dim idmop As IDynamicMetaObjectProvider = IDOUtils.TryCastToIDMOP(instance)
-            If idmop IsNot Nothing AndAlso typeArguments Is NoTypeArguments Then
-                Return IDOBinder.IDOCall(idmop, memberName, arguments, argumentNames, copyBack, ignoreReturn)
+            Dim idmop As IDynamicMetaObjectProvider = IDOUtils.TryCastToIDMOP(Instance)
+            If idmop IsNot Nothing AndAlso TypeArguments Is NoTypeArguments Then
+                Return IDOBinder.IDOCall(idmop, MemberName, Arguments, ArgumentNames, CopyBack, IgnoreReturn)
             Else
-                Return ObjectLateCall(instance, type, memberName, arguments,
-                    argumentNames, typeArguments, copyBack, ignoreReturn)
+                Return ObjectLateCall(Instance, Type, MemberName, Arguments,
+                    ArgumentNames, TypeArguments, CopyBack, IgnoreReturn)
             End If
         End Function
 
@@ -115,14 +116,14 @@ Namespace Microsoft.VisualBasic.CompilerServices
         <System.ComponentModel.EditorBrowsable(System.ComponentModel.EditorBrowsableState.Never)>
         <DebuggerHiddenAttribute()> <DebuggerStepThroughAttribute()>
         Public Shared Function FallbackCall(
-                ByVal instance As Object,
-                ByVal memberName As String,
-                ByVal arguments As Object(),
-                ByVal argumentNames As String(),
-                ByVal ignoreReturn As Boolean) As Object
+                ByVal Instance As Object,
+                ByVal MemberName As String,
+                ByVal Arguments As Object(),
+                ByVal ArgumentNames As String(),
+                ByVal IgnoreReturn As Boolean) As Object
 
-            Return ObjectLateCall(instance, Nothing, memberName, arguments,
-                argumentNames, NoTypeArguments, IDOBinder.GetCopyBack(), ignoreReturn)
+            Return ObjectLateCall(Instance, Nothing, MemberName, Arguments,
+                ArgumentNames, NoTypeArguments, IDOBinder.GetCopyBack(), IgnoreReturn)
         End Function
 
         <DebuggerHiddenAttribute()> <DebuggerStepThroughAttribute()>
@@ -194,12 +195,12 @@ Namespace Microsoft.VisualBasic.CompilerServices
         <System.ComponentModel.EditorBrowsable(System.ComponentModel.EditorBrowsableState.Never)>
         <DebuggerHiddenAttribute()> <DebuggerStepThroughAttribute()>
         Public Shared Function LateCallInvokeDefault(
-                ByVal instance As Object,
-                ByVal arguments As Object(),
-                ByVal argumentNames As String(),
-                ByVal reportErrors As Boolean) As Object
+                ByVal Instance As Object,
+                ByVal Arguments As Object(),
+                ByVal ArgumentNames As String(),
+                ByVal ReportErrors As Boolean) As Object
 
-            Return InternalLateInvokeDefault(instance, arguments, argumentNames, reportErrors, IDOBinder.GetCopyBack())
+            Return InternalLateInvokeDefault(Instance, Arguments, ArgumentNames, ReportErrors, IDOBinder.GetCopyBack())
         End Function
 
         ' LateGetInvokeDefault is used to optionally invoke the default action.
@@ -209,10 +210,10 @@ Namespace Microsoft.VisualBasic.CompilerServices
         <System.ComponentModel.EditorBrowsable(System.ComponentModel.EditorBrowsableState.Never)>
         <DebuggerHiddenAttribute()> <DebuggerStepThroughAttribute()>
         Public Shared Function LateGetInvokeDefault(
-                ByVal instance As Object,
-                ByVal arguments As Object(),
-                ByVal argumentNames As String(),
-                ByVal reportErrors As Boolean) As Object
+                ByVal Instance As Object,
+                ByVal Arguments As Object(),
+                ByVal ArgumentNames As String(),
+                ByVal ReportErrors As Boolean) As Object
 
             ' According to a comment in VBGetBinder.FallbackInvoke, this function is called when
             ' "The DLR was able to resolve o.member, but not o.member(args)"
@@ -220,12 +221,12 @@ Namespace Microsoft.VisualBasic.CompilerServices
             ' if arguments are not empty. It simply returns result of evaluating o.member. I believe, it makes sense
             ' to follow the same logic here. I.e., if there are no arguments, simply return the instance unless it is an IDO.
 
-            If IDOUtils.TryCastToIDMOP(instance) IsNot Nothing OrElse
-                (arguments IsNot Nothing AndAlso arguments.Length > 0) _
+            If IDOUtils.TryCastToIDMOP(Instance) IsNot Nothing OrElse
+                (Arguments IsNot Nothing AndAlso Arguments.Length > 0) _
             Then
-                Return InternalLateInvokeDefault(instance, arguments, argumentNames, reportErrors, IDOBinder.GetCopyBack())
+                Return InternalLateInvokeDefault(Instance, Arguments, ArgumentNames, ReportErrors, IDOBinder.GetCopyBack())
             Else
-                Return instance
+                Return Instance
             End If
         End Function
 
@@ -249,13 +250,13 @@ Namespace Microsoft.VisualBasic.CompilerServices
         <System.ComponentModel.EditorBrowsable(System.ComponentModel.EditorBrowsableState.Never)>
         <DebuggerHiddenAttribute()> <DebuggerStepThroughAttribute()>
         Public Shared Function FallbackInvokeDefault1(
-                ByVal instance As Object,
-                ByVal arguments As Object(),
-                ByVal argumentNames As String(),
-                ByVal reportErrors As Boolean) As Object
+                ByVal Instance As Object,
+                ByVal Arguments As Object(),
+                ByVal ArgumentNames As String(),
+                ByVal ReportErrors As Boolean) As Object
 
             ' Try using the IDO index operation (in case it's an IDO array)
-            Return IDOBinder.IDOFallbackInvokeDefault(DirectCast(instance, IDynamicMetaObjectProvider), arguments, argumentNames, reportErrors, IDOBinder.GetCopyBack())
+            Return IDOBinder.IDOFallbackInvokeDefault(DirectCast(Instance, IDynamicMetaObjectProvider), Arguments, ArgumentNames, ReportErrors, IDOBinder.GetCopyBack())
         End Function
 
         'This method is only called from DynamicMethods generated at runtime
@@ -263,12 +264,12 @@ Namespace Microsoft.VisualBasic.CompilerServices
         <System.ComponentModel.EditorBrowsable(System.ComponentModel.EditorBrowsableState.Never)>
         <DebuggerHiddenAttribute()> <DebuggerStepThroughAttribute()>
         Public Shared Function FallbackInvokeDefault2(
-                ByVal instance As Object,
-                ByVal arguments As Object(),
-                ByVal argumentNames As String(),
-                ByVal reportErrors As Boolean) As Object
+                ByVal Instance As Object,
+                ByVal Arguments As Object(),
+                ByVal ArgumentNames As String(),
+                ByVal ReportErrors As Boolean) As Object
 
-            Return ObjectLateInvokeDefault(instance, arguments, argumentNames, reportErrors, IDOBinder.GetCopyBack())
+            Return ObjectLateInvokeDefault(Instance, Arguments, ArgumentNames, ReportErrors, IDOBinder.GetCopyBack())
         End Function
 
         <DebuggerHiddenAttribute()> <DebuggerStepThroughAttribute()>
@@ -290,11 +291,11 @@ Namespace Microsoft.VisualBasic.CompilerServices
 
         <DebuggerHiddenAttribute(), DebuggerStepThroughAttribute()>
         Public Shared Function LateIndexGet(
-                ByVal instance As Object,
-                ByVal arguments() As Object,
-                ByVal argumentNames() As String) As Object
+                ByVal Instance As Object,
+                ByVal Arguments() As Object,
+                ByVal ArgumentNames() As String) As Object
 
-            Return InternalLateInvokeDefault(instance, arguments, argumentNames, True, Nothing)
+            Return InternalLateInvokeDefault(Instance, Arguments, ArgumentNames, True, Nothing)
         End Function
 
         Private Shared Function LateIndexGet(
@@ -393,32 +394,32 @@ Namespace Microsoft.VisualBasic.CompilerServices
 
         <DebuggerHiddenAttribute(), DebuggerStepThroughAttribute()>
         Public Shared Function LateGet(
-                ByVal instance As Object,
-                ByVal type As System.Type,
-                ByVal memberName As String,
-                ByVal arguments As Object(),
-                ByVal argumentNames As String(),
-                ByVal typeArguments As Type(),
-                ByVal copyBack As Boolean()) As Object
+                ByVal Instance As Object,
+                ByVal Type As System.Type,
+                ByVal MemberName As String,
+                ByVal Arguments As Object(),
+                ByVal ArgumentNames As String(),
+                ByVal TypeArguments As Type(),
+                ByVal CopyBack As Boolean()) As Object
 
-            If arguments Is Nothing Then arguments = NoArguments
-            If argumentNames Is Nothing Then argumentNames = NoArgumentNames
-            If typeArguments Is Nothing Then typeArguments = NoTypeArguments
+            If Arguments Is Nothing Then Arguments = NoArguments
+            If ArgumentNames Is Nothing Then ArgumentNames = NoArgumentNames
+            If TypeArguments Is Nothing Then TypeArguments = NoTypeArguments
 
             Dim baseReference As Container
-            If type IsNot Nothing Then
-                baseReference = New Container(type)
+            If Type IsNot Nothing Then
+                baseReference = New Container(Type)
             Else
-                baseReference = New Container(instance)
+                baseReference = New Container(Instance)
             End If
 
             Dim invocationFlags As BindingFlags = BindingFlagsInvokeMethod Or BindingFlagsGetProperty
 
-            Dim idmop As IDynamicMetaObjectProvider = IDOUtils.TryCastToIDMOP(instance)
-            If idmop IsNot Nothing AndAlso typeArguments Is NoTypeArguments Then
-                Return IDOBinder.IDOGet(idmop, memberName, arguments, argumentNames, copyBack)
+            Dim idmop As IDynamicMetaObjectProvider = IDOUtils.TryCastToIDMOP(Instance)
+            If idmop IsNot Nothing AndAlso TypeArguments Is NoTypeArguments Then
+                Return IDOBinder.IDOGet(idmop, MemberName, Arguments, ArgumentNames, CopyBack)
             Else
-                Return ObjectLateGet(instance, type, memberName, arguments, argumentNames, typeArguments, copyBack)
+                Return ObjectLateGet(Instance, Type, MemberName, Arguments, ArgumentNames, TypeArguments, CopyBack)
             End If
         End Function 'LateGet
 
@@ -427,12 +428,12 @@ Namespace Microsoft.VisualBasic.CompilerServices
         <System.ComponentModel.EditorBrowsable(System.ComponentModel.EditorBrowsableState.Never)>
         <DebuggerHiddenAttribute()> <DebuggerStepThroughAttribute()>
         Public Shared Function FallbackGet(
-                ByVal instance As Object,
-                ByVal memberName As String,
-                ByVal arguments As Object(),
-                ByVal argumentNames As String()) As Object
+                ByVal Instance As Object,
+                ByVal MemberName As String,
+                ByVal Arguments As Object(),
+                ByVal ArgumentNames As String()) As Object
 
-            Return ObjectLateGet(instance, Nothing, memberName, arguments, argumentNames, NoTypeArguments, IDOBinder.GetCopyBack())
+            Return ObjectLateGet(Instance, Nothing, MemberName, Arguments, ArgumentNames, NoTypeArguments, IDOBinder.GetCopyBack())
         End Function 'FallbackGet
 
         <DebuggerHiddenAttribute(), DebuggerStepThroughAttribute()>
@@ -620,17 +621,17 @@ Namespace Microsoft.VisualBasic.CompilerServices
 
         <DebuggerHiddenAttribute(), DebuggerStepThroughAttribute()>
         Public Shared Sub LateIndexSetComplex(
-                ByVal instance As Object,
-                ByVal arguments As Object(),
-                ByVal argumentNames As String(),
-                ByVal optimisticSet As Boolean,
-                ByVal rValueBase As Boolean)
+                ByVal Instance As Object,
+                ByVal Arguments As Object(),
+                ByVal ArgumentNames As String(),
+                ByVal OptimisticSet As Boolean,
+                ByVal RValueBase As Boolean)
 
-            Dim idmop As IDynamicMetaObjectProvider = IDOUtils.TryCastToIDMOP(instance)
+            Dim idmop As IDynamicMetaObjectProvider = IDOUtils.TryCastToIDMOP(Instance)
             If idmop IsNot Nothing Then
-                Call IDOBinder.IDOIndexSetComplex(idmop, arguments, argumentNames, optimisticSet, rValueBase)
+                Call IDOBinder.IDOIndexSetComplex(idmop, Arguments, ArgumentNames, OptimisticSet, RValueBase)
             Else
-                Call ObjectLateIndexSetComplex(instance, arguments, argumentNames, optimisticSet, rValueBase)
+                Call ObjectLateIndexSetComplex(Instance, Arguments, ArgumentNames, OptimisticSet, RValueBase)
                 Return
             End If
         End Sub
@@ -640,13 +641,13 @@ Namespace Microsoft.VisualBasic.CompilerServices
         <System.ComponentModel.EditorBrowsable(System.ComponentModel.EditorBrowsableState.Never)>
         <DebuggerHiddenAttribute(), DebuggerStepThroughAttribute()>
         Public Shared Sub FallbackIndexSetComplex(
-                ByVal instance As Object,
-                ByVal arguments As Object(),
-                ByVal argumentNames As String(),
-                ByVal optimisticSet As Boolean,
-                ByVal rValueBase As Boolean)
+                ByVal Instance As Object,
+                ByVal Arguments As Object(),
+                ByVal ArgumentNames As String(),
+                ByVal OptimisticSet As Boolean,
+                ByVal RValueBase As Boolean)
 
-            ObjectLateIndexSetComplex(instance, arguments, argumentNames, optimisticSet, rValueBase)
+            ObjectLateIndexSetComplex(Instance, Arguments, ArgumentNames, OptimisticSet, RValueBase)
         End Sub 'FallbackIndexSetComplex
 
         <DebuggerHiddenAttribute(), DebuggerStepThroughAttribute()>
@@ -795,16 +796,16 @@ Namespace Microsoft.VisualBasic.CompilerServices
 
         <DebuggerHiddenAttribute(), DebuggerStepThroughAttribute()>
         Public Shared Sub LateIndexSet(
-                ByVal instance As Object,
-                ByVal arguments() As Object,
-                ByVal argumentNames() As String)
+                ByVal Instance As Object,
+                ByVal Arguments() As Object,
+                ByVal ArgumentNames() As String)
 
-            Dim idmop As IDynamicMetaObjectProvider = IDOUtils.TryCastToIDMOP(instance)
+            Dim idmop As IDynamicMetaObjectProvider = IDOUtils.TryCastToIDMOP(Instance)
             If idmop IsNot Nothing Then
-                IDOBinder.IDOIndexSet(idmop, arguments, argumentNames)
+                IDOBinder.IDOIndexSet(idmop, Arguments, ArgumentNames)
                 Return
             Else
-                ObjectLateIndexSet(instance, arguments, argumentNames)
+                ObjectLateIndexSet(Instance, Arguments, ArgumentNames)
                 Return
             End If
         End Sub 'LateIndexSet
@@ -814,40 +815,40 @@ Namespace Microsoft.VisualBasic.CompilerServices
         <System.ComponentModel.EditorBrowsable(System.ComponentModel.EditorBrowsableState.Never)>
         <DebuggerHiddenAttribute()> <DebuggerStepThroughAttribute()>
         Public Shared Sub FallbackIndexSet(
-                ByVal instance As Object,
-                ByVal arguments() As Object,
-                ByVal argumentNames() As String)
+                ByVal Instance As Object,
+                ByVal Arguments() As Object,
+                ByVal ArgumentNames() As String)
 
-            ObjectLateIndexSet(instance, arguments, argumentNames)
+            ObjectLateIndexSet(Instance, Arguments, ArgumentNames)
         End Sub 'FallbackIndexSet
 
         <DebuggerHiddenAttribute(), DebuggerStepThroughAttribute()>
         Private Shared Sub ObjectLateIndexSet(
-                ByVal instance As Object,
-                ByVal arguments() As Object,
-                ByVal argumentNames() As String)
+                ByVal Instance As Object,
+                ByVal Arguments() As Object,
+                ByVal ArgumentNames() As String)
 
-            ObjectLateIndexSetComplex(instance, arguments, argumentNames, False, False)
+            ObjectLateIndexSetComplex(Instance, Arguments, ArgumentNames, False, False)
             Return
         End Sub 'ObjectLateIndexSet
 
         <DebuggerHiddenAttribute(), DebuggerStepThroughAttribute()>
         Public Shared Sub LateSetComplex(
-                ByVal instance As Object,
-                ByVal type As Type,
-                ByVal memberName As String,
-                ByVal arguments() As Object,
-                ByVal argumentNames() As String,
-                ByVal typeArguments() As Type,
-                ByVal optimisticSet As Boolean,
-                ByVal rValueBase As Boolean)
+                ByVal Instance As Object,
+                ByVal Type As Type,
+                ByVal MemberName As String,
+                ByVal Arguments() As Object,
+                ByVal ArgumentNames() As String,
+                ByVal TypeArguments() As Type,
+                ByVal OptimisticSet As Boolean,
+                ByVal RValueBase As Boolean)
 
-            Dim idmop As IDynamicMetaObjectProvider = IDOUtils.TryCastToIDMOP(instance)
-            If idmop IsNot Nothing AndAlso typeArguments Is Nothing Then
-                IDOBinder.IDOSetComplex(idmop, memberName, arguments, argumentNames, optimisticSet, rValueBase)
+            Dim idmop As IDynamicMetaObjectProvider = IDOUtils.TryCastToIDMOP(Instance)
+            If idmop IsNot Nothing AndAlso TypeArguments Is Nothing Then
+                IDOBinder.IDOSetComplex(idmop, MemberName, Arguments, ArgumentNames, OptimisticSet, RValueBase)
             Else
-                ObjectLateSetComplex(instance, type,
-                    memberName, arguments, argumentNames, typeArguments, optimisticSet, rValueBase)
+                ObjectLateSetComplex(Instance, Type,
+                    MemberName, Arguments, ArgumentNames, TypeArguments, OptimisticSet, RValueBase)
                 Return
             End If
         End Sub
@@ -857,15 +858,15 @@ Namespace Microsoft.VisualBasic.CompilerServices
         <System.ComponentModel.EditorBrowsable(System.ComponentModel.EditorBrowsableState.Never)>
         <DebuggerHiddenAttribute(), DebuggerStepThroughAttribute()>
         Public Shared Sub FallbackSetComplex(
-                ByVal instance As Object,
-                ByVal memberName As String,
-                ByVal arguments() As Object,
-                ByVal optimisticSet As Boolean,
-                ByVal rValueBase As Boolean)
+                ByVal Instance As Object,
+                ByVal MemberName As String,
+                ByVal Arguments() As Object,
+                ByVal OptimisticSet As Boolean,
+                ByVal RValueBase As Boolean)
 
             ObjectLateSetComplex(
-                instance, Nothing, memberName, arguments, New String() {},
-                NoTypeArguments, optimisticSet, rValueBase)
+                Instance, Nothing, MemberName, Arguments, New String() {},
+                NoTypeArguments, OptimisticSet, RValueBase)
         End Sub 'FallbackSetComplex
 
         <DebuggerHiddenAttribute(), DebuggerStepThroughAttribute()>
@@ -885,18 +886,18 @@ Namespace Microsoft.VisualBasic.CompilerServices
 
         <DebuggerHiddenAttribute(), DebuggerStepThroughAttribute()>
         Public Shared Sub LateSet(
-                ByVal instance As Object,
-                ByVal type As Type,
-                ByVal memberName As String,
-                ByVal arguments() As Object,
-                ByVal argumentNames() As String,
-                ByVal typeArguments As Type())
+                ByVal Instance As Object,
+                ByVal Type As Type,
+                ByVal MemberName As String,
+                ByVal Arguments() As Object,
+                ByVal ArgumentNames() As String,
+                ByVal TypeArguments As Type())
 
-            Dim idmop As IDynamicMetaObjectProvider = IDOUtils.TryCastToIDMOP(instance)
-            If idmop IsNot Nothing AndAlso typeArguments Is Nothing Then
-                IDOBinder.IDOSet(idmop, memberName, argumentNames, arguments)
+            Dim idmop As IDynamicMetaObjectProvider = IDOUtils.TryCastToIDMOP(Instance)
+            If idmop IsNot Nothing AndAlso TypeArguments Is Nothing Then
+                IDOBinder.IDOSet(idmop, MemberName, ArgumentNames, Arguments)
             Else
-                ObjectLateSet(instance, type, memberName, arguments, argumentNames, typeArguments)
+                ObjectLateSet(Instance, Type, MemberName, Arguments, ArgumentNames, TypeArguments)
                 Return
             End If
         End Sub
@@ -906,11 +907,11 @@ Namespace Microsoft.VisualBasic.CompilerServices
         <System.ComponentModel.EditorBrowsable(System.ComponentModel.EditorBrowsableState.Never)>
         <DebuggerHiddenAttribute(), DebuggerStepThroughAttribute()>
         Public Shared Sub FallbackSet(
-                ByVal instance As Object,
-                ByVal memberName As String,
-                ByVal arguments() As Object)
+                ByVal Instance As Object,
+                ByVal MemberName As String,
+                ByVal Arguments() As Object)
 
-            ObjectLateSet(instance, Nothing, memberName, arguments, NoArgumentNames, NoTypeArguments)
+            ObjectLateSet(Instance, Nothing, MemberName, Arguments, NoArgumentNames, NoTypeArguments)
         End Sub
 
         Friend Shared Sub ObjectLateSet(
@@ -929,25 +930,25 @@ Namespace Microsoft.VisualBasic.CompilerServices
 
         <DebuggerHiddenAttribute(), DebuggerStepThroughAttribute()>
         Public Shared Sub LateSet(
-                ByVal instance As Object,
-                ByVal type As Type,
-                ByVal memberName As String,
-                ByVal arguments As Object(),
-                ByVal argumentNames As String(),
-                ByVal typeArguments As Type(),
-                ByVal optimisticSet As Boolean,
-                ByVal rValueBase As Boolean,
-                ByVal callType As CallType)
+                ByVal Instance As Object,
+                ByVal Type As Type,
+                ByVal MemberName As String,
+                ByVal Arguments As Object(),
+                ByVal ArgumentNames As String(),
+                ByVal TypeArguments As Type(),
+                ByVal OptimisticSet As Boolean,
+                ByVal RValueBase As Boolean,
+                ByVal CallType As CallType)
 
-            If arguments Is Nothing Then arguments = NoArguments
-            If argumentNames Is Nothing Then argumentNames = NoArgumentNames
-            If typeArguments Is Nothing Then typeArguments = NoTypeArguments
+            If Arguments Is Nothing Then Arguments = NoArguments
+            If ArgumentNames Is Nothing Then ArgumentNames = NoArgumentNames
+            If TypeArguments Is Nothing Then TypeArguments = NoTypeArguments
 
             Dim baseReference As Container
-            If type IsNot Nothing Then
-                baseReference = New Container(type)
+            If Type IsNot Nothing Then
+                baseReference = New Container(Type)
             Else
-                baseReference = New Container(instance)
+                baseReference = New Container(Instance)
             End If
 
             Dim invocationFlags As BindingFlags
@@ -955,20 +956,20 @@ Namespace Microsoft.VisualBasic.CompilerServices
             ' If we have a IDO that implements TryGetMember for a property but not TrySetMember then we could land up
             ' here and with an optimistic set but we don't want to throw an exception if the property is not found.
             ' Swallow the exception and return quietly if this is a readonly IDO property doing an optimistic set.
-            Dim members As MemberInfo() = baseReference.GetMembers(memberName, Not optimisticSet)
+            Dim members As MemberInfo() = baseReference.GetMembers(MemberName, Not OptimisticSet)
 
-            If members.Length = 0 And optimisticSet Then
+            If members.Length = 0 And OptimisticSet Then
                 Return
             End If
 
             If members(0).MemberType = MemberTypes.Field Then
 
-                If typeArguments.Length > 0 Then
+                If TypeArguments.Length > 0 Then
                     Throw New ArgumentException(GetResourceString(SR.Argument_InvalidValue))
                 End If
 
-                If arguments.Length = 1 Then
-                    If rValueBase AndAlso baseReference.IsValueType Then
+                If Arguments.Length = 1 Then
+                    If RValueBase AndAlso baseReference.IsValueType Then
                         Throw New Exception(
                                 GetResourceString(
                                     SR.RValueBaseForValueType,
@@ -976,41 +977,41 @@ Namespace Microsoft.VisualBasic.CompilerServices
                                     baseReference.VBFriendlyName))
                     End If
                     'This is a simple field set.
-                    baseReference.SetFieldValue(DirectCast(members(0), FieldInfo), arguments(0))
+                    baseReference.SetFieldValue(DirectCast(members(0), FieldInfo), Arguments(0))
                     Return
                 Else
                     'This is an indexed field set.
                     Dim fieldValue As Object = baseReference.GetFieldValue(DirectCast(members(0), FieldInfo))
-                    LateIndexSetComplex(fieldValue, arguments, argumentNames, optimisticSet, True)
+                    LateIndexSetComplex(fieldValue, Arguments, ArgumentNames, OptimisticSet, True)
                     Return
                 End If
             End If
 
             invocationFlags = BindingFlagsSetProperty
 
-            If argumentNames.Length > arguments.Length Then
+            If ArgumentNames.Length > Arguments.Length Then
                 Throw New ArgumentException(GetResourceString(SR.Argument_InvalidValue))
             End If
 
             Dim failure As OverloadResolution.ResolutionFailure
             Dim targetProcedure As Method
 
-            If typeArguments.Length = 0 Then
+            If TypeArguments.Length = 0 Then
 
                 targetProcedure =
                     ResolveCall(
                         baseReference,
-                        memberName,
+                        MemberName,
                         members,
-                        arguments,
-                        argumentNames,
+                        Arguments,
+                        ArgumentNames,
                         NoTypeArguments,
                         invocationFlags,
                         False,
                         failure)
 
                 If failure = OverloadResolution.ResolutionFailure.None Then
-                    If rValueBase AndAlso baseReference.IsValueType Then
+                    If RValueBase AndAlso baseReference.IsValueType Then
                         Throw New Exception(
                                 GetResourceString(
                                     SR.RValueBaseForValueType,
@@ -1018,7 +1019,7 @@ Namespace Microsoft.VisualBasic.CompilerServices
                                     baseReference.VBFriendlyName))
                     End If
 
-                    baseReference.InvokeMethod(targetProcedure, arguments, Nothing, invocationFlags)
+                    baseReference.InvokeMethod(targetProcedure, Arguments, Nothing, invocationFlags)
                     Return
                 End If
 
@@ -1032,11 +1033,11 @@ Namespace Microsoft.VisualBasic.CompilerServices
                 targetProcedure =
                     ResolveCall(
                         baseReference,
-                        memberName,
+                        MemberName,
                         members,
                         NoArguments,
                         NoArgumentNames,
-                        typeArguments,
+                        TypeArguments,
                         secondaryInvocationFlags,
                         False,
                         failure)
@@ -1054,24 +1055,24 @@ Namespace Microsoft.VisualBasic.CompilerServices
                                     baseReference.VBFriendlyName))
                     End If
 
-                    LateIndexSetComplex(result, arguments, argumentNames, optimisticSet, True)
+                    LateIndexSetComplex(result, Arguments, ArgumentNames, OptimisticSet, True)
                     Return
                 End If
             End If
 
-            If optimisticSet Then
+            If OptimisticSet Then
                 Return
             End If
 
             'Everything failed, so give errors. Redo the first attempt to generate the errors.
-            If typeArguments.Length = 0 Then
+            If TypeArguments.Length = 0 Then
                 ResolveCall(
                     baseReference,
-                    memberName,
+                    MemberName,
                     members,
-                    arguments,
-                    argumentNames,
-                    typeArguments,
+                    Arguments,
+                    ArgumentNames,
+                    TypeArguments,
                     invocationFlags,
                     True,
                     failure)
@@ -1079,11 +1080,11 @@ Namespace Microsoft.VisualBasic.CompilerServices
             Else
                 ResolveCall(
                     baseReference,
-                    memberName,
+                    MemberName,
                     members,
                     NoArguments,
                     NoArgumentNames,
-                    typeArguments,
+                    TypeArguments,
                     secondaryInvocationFlags,
                     True,
                     failure)

@@ -74,7 +74,7 @@ namespace System.Data.SqlClient.ManualTesting.Tests
 
                 try
                 {
-                    Helpers.Execute(_dstcmd, "create table " + dstTable + " (orderid int, customerid nchar(5), rdate datetime, freight money, shipname nvarchar(40))");
+                    Helpers.TryExecute(_dstcmd, "create table " + dstTable + " (orderid int, customerid nchar(5), rdate datetime, freight money, shipname nvarchar(40))");
                     _dstcmd.CommandText = "truncate table " + dstTable;
 
                     expectedErrorMsg = SystemDataResourceManager.Instance.SQL_ConnectionLockedForBcpEvent;

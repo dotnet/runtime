@@ -42,7 +42,7 @@ namespace System.Data.SqlClient.ManualTesting.Tests.SystemDataInternals
         private static void VerifyObjectIsInternalConnection(object internalConnection)
         {
             if (internalConnection == null)
-                throw new ArgumentNullException("internalConnection");
+                throw new ArgumentNullException(nameof(internalConnection));
             if (!s_dbConnectionInternal.IsInstanceOfType(internalConnection))
                 throw new ArgumentException("Object provided was not a DbConnectionInternal", "internalConnection");
         }

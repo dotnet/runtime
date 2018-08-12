@@ -1,0 +1,15 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <ProjectGuid>{43341081-27A8-4CFB-8B89-C63CE457EAC2}</ProjectGuid>
+    <Configurations>netstandard-Debug;netstandard-Release</Configurations>
+  </PropertyGroup>
+  <ItemGroup>
+    <Compile Include="System\Runtime\Serialization\CollectionDataContractAttributeTests.cs" />
+    <Compile Include="System\Runtime\Serialization\ContractNamespaceAttributeTests.cs" />
+    <Compile Include="System\Runtime\Serialization\DataContractAttributeTests.cs" />
+    <Compile Include="System\Runtime\Serialization\DataMemberAttributeTests.cs" />
+    <Compile Include="System\Runtime\Serialization\EnumMemberAttributeTests.cs" />
+    <Compile Include="System\Runtime\Serialization\InvalidDataContractExceptionTests.cs" />
+    <Compile Include="System\Runtime\Serialization\KnownTypeAttributeTests.cs" />
+  </ItemGroup>
+</Project>

@@ -3181,7 +3181,8 @@ namespace MonoTests.System.Drawing
                 Assert.Equal(-12156236, bmp.GetPixel(1, 9).ToArgb());
             }
         }
-
+        
+        [ActiveIssue(20884, TestPlatforms.AnyUnix)]
         [ConditionalFact(Helpers.GdiplusIsAvailable)]
         public void TransformPoints()
         {

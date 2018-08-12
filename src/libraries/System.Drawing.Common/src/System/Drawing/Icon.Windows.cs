@@ -637,15 +637,19 @@ namespace System.Drawing
                 // converting them to DIBS and saving them into the file.
                 // But, in the interest of simplicity, we just call to 
                 // OLE to do it for us.
-                SafeNativeMethods.PICTDESC pictdesc = SafeNativeMethods.PICTDESC.CreateIconPICTDESC(Handle);
-                Guid g = typeof(SafeNativeMethods.IPicture).GUID;
-                SafeNativeMethods.IPicture picture = SafeNativeMethods.OleCreatePictureIndirect(pictdesc, ref g, false);
+                PICTDESC pictdesc = PICTDESC.CreateIconPICTDESC(Handle);
+                Guid g = typeof(IPicture).GUID;
+                IPicture picture = OleCreatePictureIndirect(pictdesc, ref g, false);
 
                 if (picture != null)
                 {
                     try
                     {
-                        picture.SaveAsFile(new UnsafeNativeMethods.ComStreamFromDataStream(outputStream), -1, out int temp);
+                        // We threw this way on NetFX
+                        if (outputStream == null)
+                            throw new ArgumentNullException("dataStream");
+
+                        picture.SaveAsFile(new GPStream(outputStream, makeSeekable: false), -1, out int temp);
                     }
                     finally
                     {
@@ -896,5 +900,76 @@ namespace System.Drawing
         }
 
         public override string ToString() => SR.toStringIcon;
+
+        [DllImport(ExternDll.Oleaut32, PreserveSig = false)]
+        internal static extern IPicture OleCreatePictureIndirect(PICTDESC pictdesc, [In]ref Guid refiid, bool fOwn);
+
+        [ComImport()]
+        [Guid("7BF80980-BF32-101A-8BBB-00AA00300CAB")]
+        [InterfaceType(ComInterfaceType.InterfaceIsIUnknown)]
+        internal interface IPicture
+        {
+            IntPtr GetHandle();
+
+            IntPtr GetHPal();
+
+            [return: MarshalAs(UnmanagedType.I2)]
+            short GetPictureType();
+
+            int GetWidth();
+
+            int GetHeight();
+
+            void Render();
+
+            void SetHPal([In] IntPtr phpal);
+
+            IntPtr GetCurDC();
+
+            void SelectPicture([In] IntPtr hdcIn,
+                               [Out, MarshalAs(UnmanagedType.LPArray)] int[] phdcOut,
+                               [Out, MarshalAs(UnmanagedType.LPArray)] int[] phbmpOut);
+
+            [return: MarshalAs(UnmanagedType.Bool)]
+            bool GetKeepOriginalFormat();
+
+            void SetKeepOriginalFormat([In, MarshalAs(UnmanagedType.Bool)] bool pfkeep);
+
+            void PictureChanged();
+
+            [PreserveSig]
+            int SaveAsFile([In, MarshalAs(UnmanagedType.Interface)] Interop.Ole32.IStream pstm,
+                           [In] int fSaveMemCopy,
+                           [Out] out int pcbSize);
+
+            int GetAttributes();
+
+            void SetHdc([In] IntPtr hdc);
+        }
+
+        internal class Ole
+        {
+            public const int PICTYPE_ICON = 3;
+        }
+
+        [StructLayout(LayoutKind.Sequential)]
+        internal class PICTDESC
+        {
+            internal int cbSizeOfStruct;
+            public int picType;
+            internal IntPtr union1;
+            internal int union2;
+            internal int union3;
+
+            public static PICTDESC CreateIconPICTDESC(IntPtr hicon)
+            {
+                return new PICTDESC()
+                {
+                    cbSizeOfStruct = 12,
+                    picType = Ole.PICTYPE_ICON,
+                    union1 = hicon
+                };
+            }
+        }
     }
 }

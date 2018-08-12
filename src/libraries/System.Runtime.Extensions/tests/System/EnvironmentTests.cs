@@ -7,6 +7,7 @@ using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
 using System.Linq;
+using System.Reflection;
 using System.Runtime.InteropServices;
 using System.Threading;
 using System.Threading.Tasks;
@@ -130,6 +131,28 @@ namespace System.Tests
 
             Assert.Contains(version.ToString(2), versionString);
             Assert.Contains(RuntimeInformation.IsOSPlatform(OSPlatform.Windows) ? "Windows" : "Unix", versionString);
+        }
+
+        // On Unix, we must parse the version from uname -r
+        [Theory]
+        [PlatformSpecific(TestPlatforms.AnyUnix)]
+        [InlineData("2.6.19-1.2895.fc6", 2, 6, 19, 1)]
+        [InlineData("xxx1yyy2zzz3aaa4bbb", 1, 2, 3, 4)]
+        [InlineData("2147483647.2147483647.2147483647.2147483647", int.MaxValue, int.MaxValue, int.MaxValue, int.MaxValue)]
+        [InlineData("0.0.0.0", 0, 0, 0, 0)]
+        [InlineData("-1.-1.-1.-1", 1, 1, 1, 1)]
+        [InlineData("nelknet 4.15.0-10000000000-generic", 4, 15, 0, int.MaxValue)] // integer overflow
+        [InlineData("nelknet 4.15.0-24201807041620-generic", 4, 15, 0, int.MaxValue)] // integer overflow
+        [InlineData("", 0, 0, 0, 0)]
+        [InlineData("1abc", 1, 0, 0, 0)]
+        public void OSVersion_ParseVersion(string input, int major, int minor, int build, int revision)
+        {
+            var getOSMethod = typeof(Environment).GetMethod("GetOperatingSystem", BindingFlags.Static | BindingFlags.NonPublic);
+
+            var expected = new Version(major, minor, build, revision);
+            var actual = ((OperatingSystem)getOSMethod.Invoke(null, new object[] { input })).Version;
+
+            Assert.Equal(expected, actual);
         }
 
         [Fact]

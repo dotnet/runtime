@@ -33,17 +33,17 @@ namespace System.ServiceModel.Syndication
         {
             if (itemTypeToCreate == null)
             {
-                throw DiagnosticUtility.ExceptionUtility.ThrowHelperArgumentNull(nameof(itemTypeToCreate));
+                throw new ArgumentNullException(nameof(itemTypeToCreate));
             }
             if (!typeof(SyndicationItem).IsAssignableFrom(itemTypeToCreate))
             {
-                throw DiagnosticUtility.ExceptionUtility.ThrowHelperArgument(nameof(itemTypeToCreate),
-                    SR.Format(SR.InvalidObjectTypePassed, nameof(itemTypeToCreate), "SyndicationItem"));
+                throw new ArgumentException(SR.Format(SR.InvalidObjectTypePassed, nameof(itemTypeToCreate), nameof(SyndicationItem)), nameof(itemTypeToCreate));
             }
             _feedSerializer = new Atom10FeedFormatter();
             _feedSerializer.PreserveAttributeExtensions = _preserveAttributeExtensions = true;
             _feedSerializer.PreserveElementExtensions = _preserveElementExtensions = true;
             _itemType = itemTypeToCreate;
+
         }
 
         public Atom10ItemFormatter(SyndicationItem itemToWrite)
@@ -93,8 +93,9 @@ namespace System.ServiceModel.Syndication
         {
             if (reader == null)
             {
-                throw DiagnosticUtility.ExceptionUtility.ThrowHelperArgumentNull(nameof(reader));
+                throw new ArgumentNullException(nameof(reader));
             }
+
             return reader.IsStartElement(Atom10Constants.EntryTag, Atom10Constants.Atom10Namespace);
         }
 
@@ -109,9 +110,10 @@ namespace System.ServiceModel.Syndication
         {
             if (reader == null)
             {
-                throw DiagnosticUtility.ExceptionUtility.ThrowHelperArgumentNull(nameof(reader));
+                throw new ArgumentNullException(nameof(reader));
             }
             SyndicationFeedFormatter.TraceItemReadBegin();
+
             ReadItem(reader);
             SyndicationFeedFormatter.TraceItemReadEnd();
         }
@@ -121,9 +123,10 @@ namespace System.ServiceModel.Syndication
         {
             if (writer == null)
             {
-                throw DiagnosticUtility.ExceptionUtility.ThrowHelperArgumentNull(nameof(writer));
+                throw new ArgumentNullException(nameof(writer));
             }
             SyndicationFeedFormatter.TraceItemWriteBegin();
+
             WriteItem(writer);
             SyndicationFeedFormatter.TraceItemWriteEnd();
         }
@@ -133,8 +136,9 @@ namespace System.ServiceModel.Syndication
             SyndicationFeedFormatter.TraceItemReadBegin();
             if (!CanRead(reader))
             {
-                throw DiagnosticUtility.ExceptionUtility.ThrowHelperError(new XmlException(SR.Format(SR.UnknownItemXml, reader.LocalName, reader.NamespaceURI)));
+                throw new XmlException(SR.Format(SR.UnknownItemXml, reader.LocalName, reader.NamespaceURI));
             }
+
             ReadItem(reader);
             SyndicationFeedFormatter.TraceItemReadEnd();
         }
@@ -143,9 +147,10 @@ namespace System.ServiceModel.Syndication
         {
             if (writer == null)
             {
-                throw DiagnosticUtility.ExceptionUtility.ThrowHelperArgumentNull(nameof(writer));
+                throw new ArgumentNullException(nameof(writer));
             }
             SyndicationFeedFormatter.TraceItemWriteBegin();
+            
             writer.WriteStartElement(Atom10Constants.EntryTag, Atom10Constants.Atom10Namespace);
             WriteItem(writer);
             writer.WriteEndElement();
@@ -167,8 +172,9 @@ namespace System.ServiceModel.Syndication
         {
             if (this.Item == null)
             {
-                throw DiagnosticUtility.ExceptionUtility.ThrowHelperError(new InvalidOperationException(SR.Format(SR.ItemFormatterDoesNotHaveItem)));
+                throw new InvalidOperationException(SR.ItemFormatterDoesNotHaveItem);
             }
+
             XmlDictionaryWriter w = XmlDictionaryWriter.CreateDictionaryWriter(writer);
             _feedSerializer.WriteItemContents(w, this.Item);
         }

@@ -151,6 +151,11 @@ namespace System.Security.Cryptography
                         pvBuffer = stringHandle.DangerousGetHandle(),
                     };
 
+                    if (buffers[0].pvBuffer == IntPtr.Zero)
+                    {
+                        buffers[0].cbBuffer = 0;
+                    }
+
                     buffers[1] = new Interop.NCrypt.NCryptBuffer
                     {
                         BufferType = Interop.NCrypt.BufferType.PkcsAlgOid,

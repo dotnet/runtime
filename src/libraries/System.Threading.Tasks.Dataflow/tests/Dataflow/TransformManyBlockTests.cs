@@ -775,5 +775,31 @@ namespace System.Threading.Tasks.Dataflow.Tests
             tb.Complete();
             await tb.Completion;
         }
+
+        [Theory]
+        [InlineData(false)]
+        [InlineData(true)]
+        public async Task TestOrdering_Sync_BlockingEnumeration_NoDeadlock(bool ensureOrdered)
+        {
+            // If iteration of the yielded enumerables happened while holding a lock, this would deadlock.
+            var options = new ExecutionDataflowBlockOptions { MaxDegreeOfParallelism = 2, EnsureOrdered = ensureOrdered };
+
+            ManualResetEventSlim mres1 = new ManualResetEventSlim(), mres2 = new ManualResetEventSlim();
+            var tb = new TransformManyBlock<int, int>(i => i == 0 ? BlockableIterator(mres1, mres2) : BlockableIterator(mres2, mres1), options);
+            tb.Post(0);
+            tb.Post(1);
+            Assert.Equal(42, await tb.ReceiveAsync());
+            Assert.Equal(42, await tb.ReceiveAsync());
+
+            tb.Complete();
+            await tb.Completion;
+
+            IEnumerable<int> BlockableIterator(ManualResetEventSlim wait, ManualResetEventSlim release)
+            {
+                release.Set();
+                wait.Wait();
+                yield return 42;
+            }
+        }
     }
 }

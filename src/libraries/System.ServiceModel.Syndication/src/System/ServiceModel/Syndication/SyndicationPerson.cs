@@ -43,11 +43,12 @@ namespace System.ServiceModel.Syndication
         {
             if (source == null)
             {
-                throw DiagnosticUtility.ExceptionUtility.ThrowHelperArgumentNull(nameof(source));
+                throw new ArgumentNullException(nameof(source));
             }
             _email = source._email;
             _name = source._name;
             _uri = source._uri;
+
             _extensions = source._extensions.Clone();
         }
 

@@ -78,6 +78,46 @@ namespace System.Security.Cryptography.Tests.Asn1
                 cert.Signature.ByteArrayToHex());
         }
 
+        [Fact]
+        public static void ReadX509v1()
+        {
+            byte[] buf = Convert.FromBase64String(X509v1Certificate);
+
+            Certificate cert = AsnSerializer.Deserialize<Certificate>(
+                buf,
+                AsnEncodingRules.DER);
+
+            ref TbsCertificate tbsCertificate = ref cert.TbsCertificate;
+            ref SubjectPublicKeyInfo spki = ref tbsCertificate.SubjectPublicKeyInfo;
+
+            Assert.Equal(0, tbsCertificate.Version);
+            Assert.Equal("0B", tbsCertificate.SerialNumber.ByteArrayToHex());
+
+            Assert.Equal("1.2.840.113549.1.1.11", tbsCertificate.Signature.Algorithm.Value);
+            Assert.Equal("0500", tbsCertificate.Signature.Parameters.ByteArrayToHex());
+            
+            // Issuer goes here
+
+            Assert.Equal(new DateTimeOffset(2017, 4, 11, 16, 46, 19, TimeSpan.Zero), tbsCertificate.Validity.NotBefore.Value);
+            Assert.Equal(new DateTimeOffset(2027, 1, 9, 16, 46, 19, TimeSpan.Zero), tbsCertificate.Validity.NotAfter.Value);
+            
+            // Subject goes here
+
+            Assert.Equal("1.2.840.113549.1.1.1", spki.AlgorithmIdentifier.Algorithm.Value);
+            Assert.Equal("0500", spki.AlgorithmIdentifier.Parameters.ByteArrayToHex());
+            // spki.PublicKey goes here
+
+            Assert.Null(tbsCertificate.IssuerUniqueId);
+            Assert.Null(tbsCertificate.SubjectUniqueId);
+            
+            Assert.Null(tbsCertificate.Extensions);
+
+            Assert.Equal("1.2.840.113549.1.1.11", cert.SignatureAlgorithm.Algorithm.Value);
+            Assert.Equal("0500", cert.SignatureAlgorithm.Parameters.ByteArrayToHex());
+
+            // cert.Signature goes here
+        }
+
         [StructLayout(LayoutKind.Sequential)]
         internal struct Certificate
         {
@@ -91,7 +131,7 @@ namespace System.Security.Cryptography.Tests.Asn1
         internal struct TbsCertificate
         {
             [ExpectedTag(0, ExplicitTag = true)]
-            [DefaultValue(0x02, 0x01, 0x01)]
+            [DefaultValue(0x02, 0x01, 0x00)]
             public int Version;
 
             [Integer]
@@ -184,5 +224,25 @@ X5JCha4+zWZscDiF3KZdJNpm06+uOZaFIZlaTDmMffON+oKiA3LxPUpWrbIbWCJU
 mRgBVke1+KwTHMXrJFNNFyvGAhioi2W89xx/OIzj4O9pe0IDcgSDu1eURVtZfYDU
 jNOh1zy7xgnAWHZ9H/BgpgnX49QxcHmvDNCopJJRqxKRV/mJSgNkhw==
 ";
+
+        private const string X509v1Certificate =
+            @"
+MIIDJzCCAg8CAQswDQYJKoZIhvcNAQELBQAwbTELMAkGA1UEBhMCVVMxDjAMBgNV
+BAgTBVRleGFzMQ8wDQYDVQQHEwZBdXN0aW4xDTALBgNVBAoTBERFTU8xFzAVBgNV
+BAsTDkRFTU8gQ29ycG9yYXRlMRUwEwYDVQQDEwxERU1PIFJvb3QgQ0EwHhcNMTcw
+NDExMTY0NjE5WhcNMjcwMTA5MTY0NjE5WjBGMUQwQgYDVQQDDDs5eTNnNXEubWVz
+c2FnaW5nLmZyYTAyLTMudGVzdC5pbnRlcm5ldG9mdGhpbmdzLmlibWNsb3VkLmNv
+bTCCASIwDQYJKoZIhvcNAQEBBQADggEPADCCAQoCggEBANrwaPyG3KshIzr7Kvo9
+uzQZO675VkS+WO9JKUiaYYaYbMPDIZqEvnYheKPlXDVPTxViE7Zat0wGcFI8AguM
+ZzYUIWfeJCXUFJXORGVwWuSfYRrRabf9ReAV7kYdeR8kfzCXFT+6nsgbRqYMCi2q
+nRaGCs3+WOgOsVa71VerngkRpVpFjv15V93bqFFkUKcA08Q5eP5DzgXxfX/kgXWK
+Gjb6VsbADhaZzeM/jCrP3kvYRfofHCzKbZOJGrmvd6il+a5CKOL00IHUktN7shhp
+sMqfPyHWgWy6Ik+pA9rGut5XzGeLoRZiZnRudWTcQa2c2POH5fyxN6edj2CXWYY9
+5zUCAwEAATANBgkqhkiG9w0BAQsFAAOCAQEATOfLas14rU9Lrq2zNj9iHpuMXKBW
+XCoFduttNA5VGgZYFHy1NrgYleDISRCjCk9lXQsjV/m7VnBTrI3ncwYvVdS+n2Dv
+UN9zcm8+SzyVDBzXVl+kXOUXy5rHGagxqT3M1cij3NAxosufzXn61fSRCaVgezEF
+7crQjMhYPepbYCvsv6NGzdA2D3+uAfb4hq3J8y1qHrNxBcgKogeGWMs0/I827YBB
+vAFw1qhcoTZb+EymNNl5xstmby25fd3jVVOwa5FbrImCdCglNbq+7UC4ZgCd9F7F
+0MMxg4N7v8ruoVffaUwKKNtNykA/sKyrtOhEdTbbRNToSOjD99Adc4rhoQ==";
     }
 }

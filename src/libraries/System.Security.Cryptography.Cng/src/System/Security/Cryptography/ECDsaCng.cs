@@ -10,7 +10,7 @@ namespace System.Security.Cryptography
     public sealed partial class ECDsaCng : ECDsa
     {
         private CngAlgorithmCore _core;
-        private CngAlgorithm _hashAlgorithm;
+        private CngAlgorithm _hashAlgorithm = CngAlgorithm.Sha256;
 
         /// <summary>
         ///     Hash algorithm to use when generating a signature over arbitrary data

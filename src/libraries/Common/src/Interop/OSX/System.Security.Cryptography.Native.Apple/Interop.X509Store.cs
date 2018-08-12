@@ -21,7 +21,7 @@ internal static partial class Interop
 
         [DllImport(Libraries.AppleCryptoNative)]
         private static extern int AppleCryptoNative_X509StoreRemoveCertificate(
-            SafeSecCertificateHandle cert,
+            SafeKeychainItemHandle cert,
             SafeKeychainHandle keychain,
             out int pOSStatus);
 
@@ -42,7 +42,7 @@ internal static partial class Interop
             }
         }
 
-        internal static void X509StoreRemoveCertificate(SafeSecCertificateHandle certHandle, SafeKeychainHandle keychain)
+        internal static void X509StoreRemoveCertificate(SafeKeychainItemHandle certHandle, SafeKeychainHandle keychain)
         {
             int osStatus;
             int ret = AppleCryptoNative_X509StoreRemoveCertificate(certHandle, keychain, out osStatus);

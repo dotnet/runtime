@@ -173,5 +173,12 @@ namespace System.Security.Cryptography.EcDiffieHellman.Tests
                 Assert.Equal(outputCng, outputAlgorithms);
             }
         }
+
+        [Fact]
+        public static void HashAlgorithm_DefaultsToSha256()
+        {
+            using (var ecdhCng = new ECDiffieHellmanCng())
+                Assert.Equal(CngAlgorithm.Sha256, ecdhCng.HashAlgorithm);
+        }
     }
 }

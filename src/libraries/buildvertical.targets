@@ -114,7 +114,7 @@
     </PropertyGroup>
 
     <!-- Filter out configurations for things not in netcoreapp when building only netcoreapp -->
-    <PropertyGroup Condition="'$(BuildNETCoreAppOnly)' == 'true' and ('$(MSBuildProjectExtension)' == '.csproj' or '$(MSBuildProjectExtension)' == '.ilproj')">
+    <PropertyGroup Condition="'$(BuildNETCoreAppOnly)' == 'true' and ('$(MSBuildProjectExtension)' == '.csproj' or '$(MSBuildProjectExtension)' == '.vbproj' or '$(MSBuildProjectExtension)' == '.ilproj')">
       <PartOfNETCoreAppBuild Condition="'$(PartOfNETCoreAppBuild)' == ''">$(IsNETCoreApp)</PartOfNETCoreAppBuild>
 
       <_AllBuildConfigurations Condition="'$(PartOfNETCoreAppBuild)' != 'true'"></_AllBuildConfigurations>

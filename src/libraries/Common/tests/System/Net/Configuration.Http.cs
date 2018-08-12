@@ -2,6 +2,8 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
+using System.Linq;
+
 namespace System.Net.Test.Common
 {
     public static partial class Configuration
@@ -36,7 +38,7 @@ namespace System.Net.Test.Common
             public static string ExpiredCertRemoteServer => GetValue("COREFX_HTTPHOST_EXPIREDCERT", "https://expired.badssl.com/");
             public static string WrongHostNameCertRemoteServer => GetValue("COREFX_HTTPHOST_WRONGHOSTNAME", "https://wrong.host.badssl.com/");
             public static string SelfSignedCertRemoteServer => GetValue("COREFX_HTTPHOST_SELFSIGNEDCERT", "https://self-signed.badssl.com/");
-            public static string RevokedCertRemoteServer => GetValue("COREFX_HTTPHOST_REVOKEDCERT", "https://revoked.grc.com/");
+            public static string RevokedCertRemoteServer => GetValue("COREFX_HTTPHOST_REVOKEDCERT", "https://revoked.badssl.com/");
 
             public static string EchoClientCertificateRemoteServer => GetValue("COREFX_HTTPHOST_ECHOCLIENTCERT", "https://corefx-net-tls.azurewebsites.net/EchoClientCertificate.ashx");
 
@@ -54,6 +56,7 @@ namespace System.Net.Test.Common
             public static readonly Uri RemoteEchoServer = new Uri("http://" + Host + "/" + EchoHandler);
             public static readonly Uri SecureRemoteEchoServer = new Uri("https://" + SecureHost + "/" + EchoHandler);
             public static readonly Uri Http2RemoteEchoServer = new Uri("https://" + Http2Host + "/" + EchoHandler);
+            public static readonly Uri[] EchoServerList = new Uri[] { RemoteEchoServer, SecureRemoteEchoServer, Http2RemoteEchoServer };
 
             public static readonly Uri RemoteVerifyUploadServer = new Uri("http://" + Host + "/" + VerifyUploadHandler);
             public static readonly Uri SecureRemoteVerifyUploadServer = new Uri("https://" + SecureHost + "/" + VerifyUploadHandler);
@@ -65,9 +68,10 @@ namespace System.Net.Test.Common
             public static readonly Uri Http2RemoteDeflateServer = new Uri("https://" + Http2Host + "/" + DeflateHandler);
             public static readonly Uri Http2RemoteGZipServer = new Uri("https://" + Http2Host + "/" + GZipHandler);
 
-            public static readonly object[][] EchoServers = { new object[] { RemoteEchoServer }, new object[] { SecureRemoteEchoServer }, new object[] { Http2RemoteEchoServer } };
+            public static readonly object[][] EchoServers = EchoServerList.Select(x => new object[] { x }).ToArray();
             public static readonly object[][] VerifyUploadServers = { new object[] { RemoteVerifyUploadServer }, new object[] { SecureRemoteVerifyUploadServer }, new object[] { Http2RemoteVerifyUploadServer } };
             public static readonly object[][] CompressedServers = { new object[] { RemoteDeflateServer }, new object[] { RemoteGZipServer }, new object[] { Http2RemoteDeflateServer }, new object[] { Http2RemoteGZipServer } };
+
             public static readonly object[][] Http2Servers = { new object[] { new Uri("https://" + Http2Host) } };
             public static readonly object[][] Http2NoPushServers = { new object[] { new Uri("https://" + Http2NoPushHost) } };
 

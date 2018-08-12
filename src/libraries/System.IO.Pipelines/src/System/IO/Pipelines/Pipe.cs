@@ -336,6 +336,19 @@ namespace System.IO.Pipelines
                 // AttachToken before completing reader awaiter in case cancellationToken is already completed
                 cancellationTokenRegistration = _writerAwaitable.AttachToken(cancellationToken, s_signalWriterAwaitable, this);
 
+                // If the writer is completed (which it will be most of the time) then return a completed ValueTask
+                if (_writerAwaitable.IsCompleted)
+                {
+                    var flushResult = new FlushResult();
+                    GetFlushResult(ref flushResult);
+                    result = new ValueTask<FlushResult>(flushResult);
+                }
+                else
+                {
+                    // Otherwise it's async
+                    result = new ValueTask<FlushResult>(_writer, token: 0);
+                }
+
                 // Complete reader only if new data was pushed into the pipe
                 if (!wasEmpty)
                 {
@@ -349,19 +362,6 @@ namespace System.IO.Pipelines
                 // I couldn't find a way for flush to induce backpressure deadlock
                 // if it always adds new data to pipe and wakes up the reader but assert anyway
                 Debug.Assert(_writerAwaitable.IsCompleted || _readerAwaitable.IsCompleted);
-
-                // If the writer is completed (which it will be most of the time) the return a completed ValueTask
-                if (_writerAwaitable.IsCompleted)
-                {
-                    var flushResult = new FlushResult();
-                    GetFlushResult(ref flushResult);
-                    result = new ValueTask<FlushResult>(flushResult);
-                }
-                else
-                {
-                    // Otherwise it's async
-                    result = new ValueTask<FlushResult>(_writer, token: 0);
-                }
             }
 
             cancellationTokenRegistration.Dispose();

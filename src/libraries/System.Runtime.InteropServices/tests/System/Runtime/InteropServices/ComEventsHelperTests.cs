@@ -33,6 +33,7 @@ namespace System.Runtime.InteropServices.Tests
 
         [Fact]
         [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework, "ComEventsHelper.Combine is not supported in .NET Core.")]
+        [ActiveIssue(31214)]
         public void Combine_NonNullRcw_ThrowsPlatformNotSupportedException()
         {
             Assert.Throws<PlatformNotSupportedException>(() => ComEventsHelper.Combine(1, Guid.Empty, 1, null));
@@ -61,6 +62,7 @@ namespace System.Runtime.InteropServices.Tests
 
         [Fact]
         [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework, "ComEventsHelper.Combine is not supported in .NET Core.")]
+        [ActiveIssue(31214)]
         public void Remove_NonNullRcw_ThrowsPlatformNotSupportedException()
         {
             Assert.Throws<PlatformNotSupportedException>(() => ComEventsHelper.Remove(1, Guid.Empty, 1, null));

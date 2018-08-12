@@ -325,6 +325,83 @@ namespace System.IO.Pipelines.Tests
             Assert.True(task.IsCompleted);
             Assert.True(task.Result.IsCompleted);
         }
+
+        [Fact]
+        public void ReadAsyncCompletesIfFlushAsyncCanceledMidFlush()
+        {
+            // This test tries to get pipe into a state where ReadAsync is being awaited
+            // and FlushAsync is cancelled while the method is running
+            Pipe = new Pipe();
+            var resetEvent = new ManualResetEvent(false);
+
+            var cancellationTokenSource = new CancellationTokenSource();
+            var writer = Task.Run(async () =>
+            {
+                var cancellations = 0;
+                while (cancellations < 20)
+                {
+                    try
+                    {
+                        // We want reader to be awaiting
+                        resetEvent.WaitOne();
+                        Pipe.Writer.WriteEmpty(1);
+
+                        // We want the token to be cancelled during FlushAsync call
+                        // check it it's already cancelled and try a new one
+                        if (cancellationTokenSource.Token.IsCancellationRequested)
+                        {
+                            cancellationTokenSource = new CancellationTokenSource();
+                            continue;
+                        }
+
+                        await Pipe.Writer.FlushAsync(cancellationTokenSource.Token);
+                    }
+                    catch (OperationCanceledException)
+                    {
+                        cancellations ++;
+                    }
+                }
+
+                Pipe.Writer.Complete();
+                return;
+            });
+
+            var reader = Task.Run(async () =>
+            {
+                while (true)
+                {
+                    var readTask = Pipe.Reader.ReadAsync();
+
+                    // Signal writer to initiate a flush
+                    if (!readTask.IsCompleted || readTask.Result.IsCompleted)
+                    {
+                        resetEvent.Set();
+                    }
+
+                    var result = await readTask;
+
+                    if (result.Buffer.IsEmpty)
+                    {
+                        return;
+                    }
+
+                    resetEvent.Reset();
+
+                    Pipe.Reader.AdvanceTo(result.Buffer.End);
+                }
+            });
+
+            var canceller = Task.Run(() =>
+            {
+                while (!writer.IsCompleted)
+                {
+                    resetEvent.WaitOne();
+                    cancellationTokenSource.Cancel();
+                }
+            });
+
+            Assert.True(Task.WaitAll(new [] { writer, reader, canceller }, TimeSpan.FromSeconds(30)), "Reader was not completed in reasonable time");
+        }
     }
 
     public static class TestWriterExtensions

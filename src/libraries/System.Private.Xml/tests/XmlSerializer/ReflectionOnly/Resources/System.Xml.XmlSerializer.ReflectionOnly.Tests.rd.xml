@@ -7,6 +7,7 @@
           <Property Name="Mode" Dynamic="Required" />
         </Type>
       </Namespace>
+      <Namespace Name="System.Xml.Schema" Dynamic="Public" />
     </Assembly>
   </Library>
 </Directives>

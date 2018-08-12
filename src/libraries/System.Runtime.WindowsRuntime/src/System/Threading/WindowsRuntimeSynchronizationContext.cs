@@ -117,7 +117,7 @@ namespace System.Threading
         public override void Post(SendOrPostCallback d, object state)
         {
             if (d == null)
-                throw new ArgumentNullException("d");
+                throw new ArgumentNullException(nameof(d));
             Contract.EndContractBlock();
 
             var ignored = _dispatcher.RunAsync(CoreDispatcherPriority.Normal, new Invoker(d, state).Invoke);
@@ -140,7 +140,7 @@ namespace System.Threading
         public override void Post(SendOrPostCallback d, object state)
         {
             if (d == null)
-                throw new ArgumentNullException("d");
+                throw new ArgumentNullException(nameof(d));
             Contract.EndContractBlock();
 
             // We explicitly choose to ignore the return value here. This enqueue operation might fail if the 

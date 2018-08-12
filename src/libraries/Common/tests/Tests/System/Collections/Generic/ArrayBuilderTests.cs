@@ -85,33 +85,6 @@ namespace System.Collections.Generic.Tests
 
         [Theory]
         [MemberData(nameof(EnumerableData))]
-        public void AddAndIndexer(IEnumerable<T> seed)
-        {
-            // CreateBuilderFromSequence implicitly tests Add
-            ArrayBuilder<T> builder = CreateBuilderFromSequence(seed);
-
-            // Continuously shift the elements in the builder over
-            // using the get/set indexers, until none are left.
-            for (int left = builder.Count - 1; left >= 0; )
-            {
-                for (int i = 0; i < left; i++)
-                {
-                    builder[i] = builder[i + 1];
-                }
-
-                // Nil out the slot we're no longer using
-                builder[left--] = default(T);
-
-                int offset = (builder.Count - 1) - left; // How much we've skipped into the enumerable
-                IEnumerable<T> expected = seed.Skip(offset)
-                    .Concat(Enumerable.Repeat(default(T), offset)); // The count has not been changed, but slots @ the end have been nil'd out
-
-                VerifyBuilderContents(expected, builder);
-            }
-        }
-
-        [Theory]
-        [MemberData(nameof(EnumerableData))]
         public void ToArray(IEnumerable<T> seed)
         {
             ArrayBuilder<T> builder = CreateBuilderFromSequence(seed);

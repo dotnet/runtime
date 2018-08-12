@@ -578,14 +578,6 @@ namespace System.Drawing
             private static FunctionWrapper<GdipGetImageType_delegate> GdipGetImageType_ptr;
             internal static int GdipGetImageType(IntPtr image, out ImageType type) => GdipGetImageType_ptr.Delegate(image, out type);
 
-            private delegate int GdipImageGetFrameDimensionsCount_delegate(IntPtr image, out uint count);
-            private static FunctionWrapper<GdipImageGetFrameDimensionsCount_delegate> GdipImageGetFrameDimensionsCount_ptr;
-            internal static int GdipImageGetFrameDimensionsCount(IntPtr image, out uint count) => GdipImageGetFrameDimensionsCount_ptr.Delegate(image, out count);
-
-            private delegate int GdipImageGetFrameDimensionsList_delegate(IntPtr image, [Out] Guid[] dimensionIDs, uint count);
-            private static FunctionWrapper<GdipImageGetFrameDimensionsList_delegate> GdipImageGetFrameDimensionsList_ptr;
-            internal static int GdipImageGetFrameDimensionsList(IntPtr image, [Out] Guid[] dimensionIDs, uint count) => GdipImageGetFrameDimensionsList_ptr.Delegate(image, dimensionIDs, count);
-
             private delegate int GdipGetImagePaletteSize_delegate(IntPtr image, out int size);
             private static FunctionWrapper<GdipGetImagePaletteSize_delegate> GdipGetImagePaletteSize_ptr;
             internal static int GdipGetImagePaletteSize(IntPtr image, out int size) => GdipGetImagePaletteSize_ptr.Delegate(image, out size);
@@ -1098,10 +1090,10 @@ namespace System.Drawing
     }
 
     // These are unix-only
-    internal delegate int StreamGetHeaderDelegate(IntPtr buf, int bufsz);
-    internal delegate int StreamGetBytesDelegate(IntPtr buf, int bufsz, bool peek);
+    internal unsafe delegate int StreamGetHeaderDelegate(byte* buf, int bufsz);
+    internal unsafe delegate int StreamGetBytesDelegate(byte* buf, int bufsz, bool peek);
     internal delegate long StreamSeekDelegate(int offset, int whence);
-    internal delegate int StreamPutBytesDelegate(IntPtr buf, int bufsz);
+    internal unsafe delegate int StreamPutBytesDelegate(byte* buf, int bufsz);
     internal delegate void StreamCloseDelegate();
     internal delegate long StreamSizeDelegate();
 }

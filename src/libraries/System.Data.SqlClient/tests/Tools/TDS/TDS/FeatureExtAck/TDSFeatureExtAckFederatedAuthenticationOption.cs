@@ -44,7 +44,7 @@ namespace Microsoft.SqlServer.TDS.FeatureExtAck
             // Nonce and/or Signature can be null depending on the FedAuthLibrary used
             if (clientNonce == null && signature != null)
             {
-                throw new ArgumentNullException("signature");
+                throw new ArgumentNullException(nameof(signature));
             }
             else if (clientNonce != null && clientNonce.Length != s_nonceDataLength)
             {

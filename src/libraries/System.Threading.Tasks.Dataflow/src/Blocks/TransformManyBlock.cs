@@ -492,7 +492,14 @@ namespace System.Threading.Tasks.Dataflow
         /// <param name="outputItems">The untrusted enumerable.</param>
         private void StoreOutputItemsNonReorderedWithIteration(IEnumerable<TOutput> outputItems)
         {
-            bool isSerial = _target.DataflowBlockOptions.MaxDegreeOfParallelism == 1;
+            // The _source we're adding to isn't thread-safe, so we need to determine
+            // whether we need to lock.  If the block is configured with a max degree
+            // of parallelism of 1, then only one transform can run at a time, and so
+            // we don't need to lock.  Similarly, if there's a reordering buffer, then
+            // it guarantees that we're invoked serially, and we don't need to lock.
+            bool isSerial =
+                _target.DataflowBlockOptions.MaxDegreeOfParallelism == 1 ||
+                _reorderingBuffer != null;
 
             // If we're bounding, we need to increment the bounded count
             // for each individual item as we enumerate it.
@@ -538,10 +545,12 @@ namespace System.Threading.Tasks.Dataflow
                 }
                 else
                 {
-                    lock (ParallelSourceLock) // don't hold lock while enumerating
+                    foreach (TOutput item in outputItems)
                     {
-                        foreach (TOutput item in outputItems)
+                        lock (ParallelSourceLock) // don't hold lock while enumerating
+                        {
                             _source.AddMessage(item);
+                        }
                     }
                 }
             }

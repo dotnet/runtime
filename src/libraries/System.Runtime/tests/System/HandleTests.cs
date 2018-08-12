@@ -16,7 +16,7 @@ public static class HandleTests
         Type t = typeof(Derived);
         FieldInfo f = t.GetField(nameof(Base.MyField));
         RuntimeFieldHandle h = f.FieldHandle;
-        Assert.True(h.Value != null);
+        Assert.True(h.Value != IntPtr.Zero);
     }
 
     [Fact]

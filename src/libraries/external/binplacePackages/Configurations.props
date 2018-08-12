@@ -1,0 +1,19 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project ToolsVersion="14.0" DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <PropertyGroup>
+    <BuildConfigurations>
+      net461;
+      netfx;
+      netstandard1.1;
+      netstandard1.2;
+      netstandard1.3;
+      netstandard1.4;
+      netstandard1.5;
+      netstandard1.6;
+      netstandard2.0;
+      netstandard;
+      netcoreapp2.0;
+      uap10.0.16299;
+    </BuildConfigurations>
+  </PropertyGroup>
+</Project>

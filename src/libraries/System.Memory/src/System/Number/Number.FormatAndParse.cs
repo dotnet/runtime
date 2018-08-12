@@ -4,12 +4,7 @@
 
 using System.Diagnostics;
 using System.Buffers.Text;
-
-#if !netstandard
 using Internal.Runtime.CompilerServices;
-#else
-using System.Runtime.CompilerServices;
-#endif
 
 //
 // This code is copied almost verbatim from the same-named file in CoreRT with mechanical changes to Span-ify it.
@@ -25,22 +20,19 @@ namespace System
         internal static bool NumberBufferToDouble(ref NumberBuffer number, out double value)
         {
             double d = NumberToDouble(ref number);
-
-            uint e = DoubleHelper.Exponent(d);
-            ulong m = DoubleHelper.Mantissa(d);
-            if (e == 0x7FF)
+            if (!Double.IsFinite(d))
             {
                 value = default;
                 return false;
             }
 
-            if (e == 0 && m == 0)
+            if (d == 0.0)
             {
-                d = 0;
+                // normalize -0.0 to 0.0
+                d = 0.0;
             }
 
             value = d;
-
             return true;
         }
 
@@ -511,24 +503,6 @@ namespace System
                 val |= 0x8000000000000000;
 
             return *(double*)&val;
-        }
-
-        private static class DoubleHelper
-        {
-            public static unsafe uint Exponent(double d)
-            {
-                return (*((uint*)&d + 1) >> 20) & 0x000007ff;
-            }
-
-            public static unsafe ulong Mantissa(double d)
-            {
-                return (*((uint*)&d)) | ((ulong)(*((uint*)&d + 1) & 0x000fffff) << 32);
-            }
-
-            public static unsafe bool Sign(double d)
-            {
-                return (*((uint*)&d + 1) >> 31) != 0;
-            }
         }
     }
 }

@@ -112,7 +112,7 @@ namespace System.Runtime.Serialization.Xml.Canonicalization.Tests
                 ThrowIfNotInStartState();
                 if (value == null)
                 {
-                    throw new ArgumentNullException("value");
+                    throw new ArgumentNullException(nameof(value));
                 }
                 _encoder = value;
             }
@@ -465,7 +465,7 @@ namespace System.Runtime.Serialization.Xml.Canonicalization.Tests
         {
             if (s == null)
             {
-                throw new ArgumentNullException("s");
+                throw new ArgumentNullException(nameof(s));
             }
 
             OnPossibleEndOfBase64Content();
@@ -529,7 +529,7 @@ namespace System.Runtime.Serialization.Xml.Canonicalization.Tests
         {
             if (text == null)
             {
-                throw new ArgumentNullException("text");
+                throw new ArgumentNullException(nameof(text));
             }
 
             if (_state == WriteState.Element)
@@ -639,7 +639,7 @@ namespace System.Runtime.Serialization.Xml.Canonicalization.Tests
         {
             if (name == null)
             {
-                throw new ArgumentNullException("name");
+                throw new ArgumentNullException(nameof(name));
             }
 
             if (_state == WriteState.Attribute)
@@ -659,7 +659,7 @@ namespace System.Runtime.Serialization.Xml.Canonicalization.Tests
         {
             if (localName == null || localName.Length == 0)
             {
-                throw new ArgumentNullException("localName");
+                throw new ArgumentNullException(nameof(localName));
             }
 
             if (ns == null)
@@ -774,7 +774,7 @@ namespace System.Runtime.Serialization.Xml.Canonicalization.Tests
 
             if (localName == null)
             {
-                throw new ArgumentNullException("localName");
+                throw new ArgumentNullException(nameof(localName));
             }
 
             if (prefix == null)
@@ -886,7 +886,7 @@ namespace System.Runtime.Serialization.Xml.Canonicalization.Tests
 
             if (localName == null || localName.Length == 0)
             {
-                throw new ArgumentNullException("localName");
+                throw new ArgumentNullException(nameof(localName));
             }
 
             OnPossibleEndOfBase64Content();
@@ -930,7 +930,7 @@ namespace System.Runtime.Serialization.Xml.Canonicalization.Tests
         {
             if (s == null)
             {
-                throw new ArgumentNullException("s");
+                throw new ArgumentNullException(nameof(s));
             }
 
             WriteStringCore(s);
@@ -944,7 +944,7 @@ namespace System.Runtime.Serialization.Xml.Canonicalization.Tests
         {
             if (s == null)
             {
-                throw new ArgumentNullException("s");
+                throw new ArgumentNullException(nameof(s));
             }
 
             WriteStringCore(s.Value);

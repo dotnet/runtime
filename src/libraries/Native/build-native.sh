@@ -18,7 +18,7 @@ usage()
     echo "-staticLibLink - Optional argument to statically link any native library."
     echo "-portable - Optional argument to build native libraries portable over GLIBC based Linux distros."
     echo "-stripSymbols - Optional argument to strip native symbols during the build."
-    echo "-generateversion - Pass this in to get a version on the build output."
+    echo "-skipgenerateversion - Pass this in to skip getting a version on the build output."
     echo "-cmakeargs - user-settable additional arguments passed to CMake."
     exit 1
 }
@@ -112,7 +112,7 @@ prepare_native_build()
     __versionSourceFile=$__rootRepo/bin/obj/version.c
     if [ ! -e "${__versionSourceFile}" ]; then
         if [ $__generateversionsource == true ]; then
-            $__rootRepo/Tools/msbuild.sh "$__rootRepo/build.proj" /t:GenerateVersionSourceFile /p:GenerateVersionSourceFile=true /v:minimal
+            $__rootRepo/run.sh build-managed -project:"$__rootRepo/build.proj" -- /t:GenerateVersionSourceFile /p:GenerateVersionSourceFile=true /v:minimal
         else
             __versionSourceLine="static char sccsid[] __attribute__((used)) = \"@(#)No version information produced\";"
             echo $__versionSourceLine > $__versionSourceFile
@@ -157,7 +157,7 @@ __rootbinpath="$__scriptpath/../../bin"
 # Set the various build properties here so that CMake and MSBuild can pick them up
 __CMakeExtraArgs=""
 __MakeExtraArgs=""
-__generateversionsource=false
+__generateversionsource=true
 __BuildArch=x64
 __BuildType=Debug
 __CMakeArgs=DEBUG
@@ -286,8 +286,8 @@ while :; do
                 __PortableBuild=1
             fi
             ;;
-        generateversion|-generateversion)
-            __generateversionsource=true
+        skipgenerateversion|-skipgenerateversion)
+            __generateversionsource=false
             ;;
         --clang*)
                 # clangx.y or clang-x.y

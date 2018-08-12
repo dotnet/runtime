@@ -21,7 +21,7 @@ namespace System.Runtime.Serialization.Xml.Canonicalization.Tests
         {
             if (node == null)
             {
-                throw new ArgumentNullException("node");
+                throw new ArgumentNullException(nameof(node));
             }
             _list.Add(node);
         }

@@ -10,11 +10,10 @@ namespace System.Collections.Tests
 {
     public class SortedDictionary_Generic_Tests_Keys : ICollection_Generic_Tests<string>
     {
-        protected override bool DefaultValueAllowed { get { return false; } }
-        protected override bool DuplicateValuesAllowed { get { return false; } }
-        protected override bool IsReadOnly { get { return true; } }
-        protected override IEnumerable<ModifyEnumerable> ModifyEnumerables { get { return new List<ModifyEnumerable>(); } }
-
+        protected override bool DefaultValueAllowed => false;
+        protected override bool DuplicateValuesAllowed => false;
+        protected override bool IsReadOnly => true;
+        protected override IEnumerable<ModifyEnumerable> GetModifyEnumerables(ModifyOperation operations)=> new List<ModifyEnumerable>();
         protected override ICollection<string> GenericICollectionFactory()
         {
             return new SortedDictionary<string, string>().Keys;
@@ -59,11 +58,11 @@ namespace System.Collections.Tests
 
     public class SortedDictionary_Generic_Tests_Keys_AsICollection : ICollection_NonGeneric_Tests
     {
-        protected override bool NullAllowed { get { return false; } }
-        protected override bool DuplicateValuesAllowed { get { return false; } }
-        protected override bool IsReadOnly { get { return true; } }
-        protected override bool Enumerator_Current_UndefinedOperation_Throws { get { return true; } }
-        protected override IEnumerable<ModifyEnumerable> ModifyEnumerables { get { return new List<ModifyEnumerable>(); } }
+        protected override bool NullAllowed => false;
+        protected override bool DuplicateValuesAllowed => false;
+        protected override bool IsReadOnly => true;
+        protected override bool Enumerator_Current_UndefinedOperation_Throws => true;
+        protected override IEnumerable<ModifyEnumerable> GetModifyEnumerables(ModifyOperation operations) => new List<ModifyEnumerable>();
         protected override ICollection NonGenericICollectionFactory()
         {
             return (ICollection)(new SortedDictionary<string, string>().Keys);

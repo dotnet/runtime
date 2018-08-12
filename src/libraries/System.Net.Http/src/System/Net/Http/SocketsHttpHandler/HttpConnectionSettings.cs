@@ -10,6 +10,9 @@ namespace System.Net.Http
     /// <summary>Provides a state bag of settings for configuring HTTP connections.</summary>
     internal sealed class HttpConnectionSettings
     {
+        private const string Http2SupportEnvironmentVariableSettingName = "DOTNET_SYSTEM_NET_HTTP_SOCKETSHTTPHANDLER_HTTP2SUPPORT";
+        private const string Http2SupportAppCtxSettingName = "System.Net.Http.SocketsHttpHandler.Http2Support";
+        
         internal DecompressionMethods _automaticDecompression = HttpHandlerDefaults.DefaultAutomaticDecompression;
 
         internal bool _useCookies = HttpHandlerDefaults.DefaultUseCookies;
@@ -35,9 +38,16 @@ namespace System.Net.Http
         internal TimeSpan _expect100ContinueTimeout = HttpHandlerDefaults.DefaultExpect100ContinueTimeout;
         internal TimeSpan _connectTimeout = HttpHandlerDefaults.DefaultConnectTimeout;
 
+        internal Version _maxHttpVersion;
+
         internal SslClientAuthenticationOptions _sslOptions;
 
         internal IDictionary<string, object> _properties;
+
+        public HttpConnectionSettings()
+        {
+            _maxHttpVersion = AllowHttp2 ? HttpVersion.Version20 : HttpVersion.Version11;
+        }
 
         public HttpConnectionSettings Clone()
         {
@@ -58,6 +68,7 @@ namespace System.Net.Http
                 _expect100ContinueTimeout = _expect100ContinueTimeout,
                 _maxAutomaticRedirections = _maxAutomaticRedirections,
                 _maxConnectionsPerServer = _maxConnectionsPerServer,
+                _maxHttpVersion = _maxHttpVersion,
                 _maxResponseDrainSize = _maxResponseDrainSize,
                 _maxResponseDrainTime = _maxResponseDrainTime,
                 _maxResponseHeadersLength = _maxResponseHeadersLength,
@@ -70,6 +81,29 @@ namespace System.Net.Http
                 _useCookies = _useCookies,
                 _useProxy = _useProxy,
             };
+        }
+
+        private static bool AllowHttp2
+        {
+            get
+            {
+                // First check for the AppContext switch, giving it priority over the environment variable.
+                if (AppContext.TryGetSwitch(Http2SupportAppCtxSettingName, out bool allowHttp2))
+                {
+                    return allowHttp2;
+                }
+
+                // AppContext switch wasn't used. Check the environment variable.
+                string envVar = Environment.GetEnvironmentVariable(Http2SupportEnvironmentVariableSettingName);
+                if (envVar != null && (envVar.Equals("true", StringComparison.OrdinalIgnoreCase) || envVar.Equals("1")))
+                {
+                    // Allow HTTP/2.0 protocol.
+                    return true;
+                }
+
+                // Default to a maximum of HTTP/1.1.
+                return false;
+            }
         }
     }
 }

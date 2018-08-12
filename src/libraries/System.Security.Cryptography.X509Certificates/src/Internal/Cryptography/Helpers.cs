@@ -9,18 +9,8 @@ using System.Globalization;
 
 namespace Internal.Cryptography
 {
-    internal static class Helpers
+    internal static partial class Helpers
     {
-        public static byte[] CloneByteArray(this byte[] src)
-        {
-            if (src == null)
-            {
-                return null;
-            }
-
-            return (byte[])(src.Clone());
-        }
-
         // Encode a byte array as an array of upper-case hex characters.
         public static char[] ToHexArrayUpper(this byte[] bytes)
         {
@@ -46,9 +36,16 @@ namespace Internal.Cryptography
 
         // Decode a hex string-encoded byte array passed to various X509 crypto api.
         // The parsing rules are overly forgiving but for compat reasons, they cannot be tightened.
-        public static byte[] DecodeHexString(this string s)
+        public static byte[] DecodeHexString(this string hexString)
         {
             int whitespaceCount = 0;
+
+            ReadOnlySpan<char> s = hexString;
+
+            if (s.Length != 0 && s[0] == '\u200E')
+            {
+                s = s.Slice(1);
+            }
 
             for (int i = 0; i < s.Length; i++)
             {

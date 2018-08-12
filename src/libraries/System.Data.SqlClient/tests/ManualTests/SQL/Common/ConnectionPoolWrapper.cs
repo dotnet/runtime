@@ -19,7 +19,7 @@ namespace System.Data.SqlClient.ManualTesting.Tests
         public ConnectionPoolWrapper(SqlConnection connection)
         {
             if (connection == null)
-                throw new ArgumentNullException("connection");
+                throw new ArgumentNullException(nameof(connection));
 
             _connectionPool = ConnectionHelper.GetConnectionPool(connection.GetInternalConnection());
             ConnectionString = connection.ConnectionString;
@@ -36,7 +36,7 @@ namespace System.Data.SqlClient.ManualTesting.Tests
         public ConnectionPoolWrapper(string connectionString)
         {
             if (connectionString == null)
-                throw new ArgumentNullException("connectionString");
+                throw new ArgumentNullException(nameof(connectionString));
 
             ConnectionString = connectionString;
             _connectionPool = ConnectionPoolHelper.ConnectionPoolFromString(connectionString);
@@ -104,7 +104,7 @@ namespace System.Data.SqlClient.ManualTesting.Tests
         public bool ContainsConnection(SqlConnection connection)
         {
             if (connection == null)
-                throw new ArgumentNullException("connection");
+                throw new ArgumentNullException(nameof(connection));
 
             return (_connectionPool == ConnectionHelper.GetConnectionPool(connection.GetInternalConnection()));
         }

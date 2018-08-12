@@ -24,11 +24,12 @@ namespace System.ServiceModel.Syndication
 
         public TextSyndicationContent(string text, TextSyndicationContentKind textKind)
         {
-            if (!TextSyndicationContentKindHelper.IsDefined(textKind))
+            if (textKind < TextSyndicationContentKind.Plaintext || textKind > TextSyndicationContentKind.XHtml)
             {
-                throw DiagnosticUtility.ExceptionUtility.ThrowHelperError(new ArgumentOutOfRangeException(nameof(textKind)));
+                throw new ArgumentOutOfRangeException(nameof(textKind));
             }
             _text = text;
+
             _textKind = textKind;
         }
 
@@ -37,9 +38,10 @@ namespace System.ServiceModel.Syndication
         {
             if (source == null)
             {
-                throw DiagnosticUtility.ExceptionUtility.ThrowHelperArgumentNull(nameof(source));
+                throw new ArgumentNullException(nameof(source));
             }
             _text = source._text;
+
             _textKind = source._textKind;
         }
 

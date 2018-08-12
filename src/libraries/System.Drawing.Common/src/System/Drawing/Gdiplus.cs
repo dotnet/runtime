@@ -314,7 +314,7 @@ namespace System.Drawing
                         return new ExternalException(SR.GdiplusNotInitialized, E_FAIL);
                 }
 
-                return new ExternalException(SR.GdiplusUnknown, E_UNEXPECTED);
+                return new ExternalException($"{SR.GdiplusUnknown} [{status}]", E_UNEXPECTED);
             }
         }
 
@@ -916,31 +916,6 @@ namespace System.Drawing
             public int dwImageOffset;
         }
 
-        public class Ole
-        {
-            public const int PICTYPE_ICON = 3;
-        }
-
-        [StructLayout(LayoutKind.Sequential)]
-        public class PICTDESC
-        {
-            internal int cbSizeOfStruct;
-            public int picType;
-            internal IntPtr union1;
-            internal int union2;
-            internal int union3;
-
-            public static PICTDESC CreateIconPICTDESC(IntPtr hicon)
-            {
-                return new PICTDESC()
-                {
-                    cbSizeOfStruct = 12,
-                    picType = Ole.PICTYPE_ICON,
-                    union1 = hicon
-                };
-            }
-        }
-
         [StructLayout(LayoutKind.Sequential, CharSet = CharSet.Auto)]
         public class DEVMODE
         {
@@ -1069,13 +1044,6 @@ namespace System.Drawing
 #endif
         }
 
-        public class StreamConsts
-        {
-            public const int STREAM_SEEK_SET = 0x0;
-            public const int STREAM_SEEK_CUR = 0x1;
-            public const int STREAM_SEEK_END = 0x2;
-        }
-
         [DllImport(ExternDll.Gdi32, SetLastError = true, ExactSpelling = true, EntryPoint = "DeleteObject", CharSet = CharSet.Auto)]
         internal static extern int IntDeleteObject(HandleRef hObject);
 
@@ -1166,50 +1134,5 @@ namespace System.Drawing
                                                         
                                                         
 #endif
-        [DllImport(ExternDll.Oleaut32, PreserveSig = false)]
-        public static extern IPicture OleCreatePictureIndirect(SafeNativeMethods.PICTDESC pictdesc, [In]ref Guid refiid, bool fOwn);
-
-        [ComImport()]
-        [Guid("7BF80980-BF32-101A-8BBB-00AA00300CAB")]
-        [InterfaceType(ComInterfaceType.InterfaceIsIUnknown)]
-        public interface IPicture
-        {
-            IntPtr GetHandle();
-
-            IntPtr GetHPal();
-
-            [return: MarshalAs(UnmanagedType.I2)]
-            short GetPictureType();
-
-            int GetWidth();
-
-            int GetHeight();
-
-            void Render();
-
-            void SetHPal([In] IntPtr phpal);
-
-            IntPtr GetCurDC();
-
-            void SelectPicture([In] IntPtr hdcIn,
-                               [Out, MarshalAs(UnmanagedType.LPArray)] int[] phdcOut,
-                               [Out, MarshalAs(UnmanagedType.LPArray)] int[] phbmpOut);
-
-            [return: MarshalAs(UnmanagedType.Bool)]
-            bool GetKeepOriginalFormat();
-
-            void SetKeepOriginalFormat([In, MarshalAs(UnmanagedType.Bool)] bool pfkeep);
-
-            void PictureChanged();
-
-            [PreserveSig]
-            int SaveAsFile([In, MarshalAs(UnmanagedType.Interface)] UnsafeNativeMethods.IStream pstm,
-                           [In] int fSaveMemCopy,
-                           [Out] out int pcbSize);
-
-            int GetAttributes();
-
-            void SetHdc([In] IntPtr hdc);
-        }
     }
 }

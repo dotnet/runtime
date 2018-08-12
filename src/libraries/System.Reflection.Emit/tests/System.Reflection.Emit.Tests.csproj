@@ -52,6 +52,7 @@
     <Compile Include="ModuleBuilder\ModuleBuilderCreateGlobalFunctions.cs" />
     <Compile Include="ModuleBuilder\ModuleBuilderDefineEnum.cs" />
     <Compile Include="ModuleBuilder\ModuleBuilderDefineInitializedData.cs" />
+    <Compile Include="ModuleBuilder\ModuleBuilderDefinePInvokeMethod.cs" />
     <Compile Include="ModuleBuilder\ModuleBuilderDefineType.cs" />
     <Compile Include="ModuleBuilder\ModuleBuilderDefineUninitializedData.cs" />
     <Compile Include="ModuleBuilder\ModuleBuilderGetArrayMethod.cs" />
@@ -76,6 +77,7 @@
     <Compile Include="TypeBuilder\TypeBuilderDeclaringMethod.cs" />
     <Compile Include="TypeBuilder\TypeBuilderDefineConstructor.cs" />
     <Compile Include="TypeBuilder\TypeBuilderDefineDefaultConstructor.cs" />
+    <Compile Include="TypeBuilder\TypeBuilderDefinePInvokeMethod.cs" />
     <Compile Include="TypeBuilder\TypeBuilderDefineMethod.cs" />
     <Compile Include="TypeBuilder\TypeBuilderDefineField.cs" />
     <Compile Include="TypeBuilder\TypeBuilderDefineGenericParameters.cs" />
@@ -109,3 +111,4 @@
     <Compile Include="Utilities.cs" />
   </ItemGroup>
 </Project>
+

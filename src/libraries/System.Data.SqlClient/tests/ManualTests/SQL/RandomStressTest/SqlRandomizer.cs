@@ -139,7 +139,7 @@ namespace System.Data.SqlClient.ManualTesting.Tests
         public void Shuffle<T>(T[] values, int? valuesToSet = null)
         {
             if (values == null)
-                throw new ArgumentNullException("values");
+                throw new ArgumentNullException(nameof(values));
 
             int count = values.Length;
             int selectValues = count;
@@ -270,7 +270,7 @@ namespace System.Data.SqlClient.ManualTesting.Tests
         public void FillByteArray(byte[] result)
         {
             if (result == null)
-                throw new ArgumentNullException("result");
+                throw new ArgumentNullException(nameof(result));
 
             if (result.Length == 0)
                 return;
@@ -290,7 +290,7 @@ namespace System.Data.SqlClient.ManualTesting.Tests
         public void FillAnsiCharArray(char[] result)
         {
             if (result == null)
-                throw new ArgumentNullException("result");
+                throw new ArgumentNullException(nameof(result));
 
             if (result.Length == 0)
                 return;
@@ -310,7 +310,7 @@ namespace System.Data.SqlClient.ManualTesting.Tests
         public void FillUcs2CharArray(char[] result)
         {
             if (result == null)
-                throw new ArgumentNullException("result");
+                throw new ArgumentNullException(nameof(result));
 
             if (result.Length == 0)
                 return;

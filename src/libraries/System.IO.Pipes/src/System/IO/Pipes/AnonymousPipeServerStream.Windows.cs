@@ -5,6 +5,7 @@
 using Microsoft.Win32.SafeHandles;
 using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
+using System.Runtime.InteropServices;
 using System.Security;
 
 namespace System.IO.Pipes
@@ -17,6 +18,12 @@ namespace System.IO.Pipes
         // Creates the anonymous pipe.
         private void Create(PipeDirection direction, HandleInheritability inheritability, int bufferSize)
         {
+            Create(direction, inheritability, bufferSize, null);
+        }
+
+        // Creates the anonymous pipe. This overload is used in Mono to implement public constructors.
+        private void Create(PipeDirection direction, HandleInheritability inheritability, int bufferSize, PipeSecurity pipeSecurity)
+        {
             Debug.Assert(direction != PipeDirection.InOut, "Anonymous pipe direction shouldn't be InOut");
             Debug.Assert(bufferSize >= 0, "bufferSize is negative");
 
@@ -25,14 +32,26 @@ namespace System.IO.Pipes
             SafePipeHandle newServerHandle;
 
             // Create the two pipe handles that make up the anonymous pipe.
-            Interop.Kernel32.SECURITY_ATTRIBUTES secAttrs = PipeStream.GetSecAttrs(inheritability);
-            if (direction == PipeDirection.In)
+            var pinningHandle = new GCHandle();
+            try
             {
-                bSuccess = Interop.Kernel32.CreatePipe(out serverHandle, out _clientHandle, ref secAttrs, bufferSize);
+                Interop.Kernel32.SECURITY_ATTRIBUTES secAttrs = PipeStream.GetSecAttrs(inheritability, pipeSecurity, ref pinningHandle);
+
+                if (direction == PipeDirection.In)
+                {
+                    bSuccess = Interop.Kernel32.CreatePipe(out serverHandle, out _clientHandle, ref secAttrs, bufferSize);
+                }
+                else
+                {
+                    bSuccess = Interop.Kernel32.CreatePipe(out _clientHandle, out serverHandle, ref secAttrs, bufferSize);
+                }
             }
-            else
+            finally
             {
-                bSuccess = Interop.Kernel32.CreatePipe(out _clientHandle, out serverHandle, ref secAttrs, bufferSize);
+                if (pinningHandle.IsAllocated)
+                {
+                    pinningHandle.Free();
+                }
             }
 
             if (!bSuccess)
