@@ -401,7 +401,7 @@ namespace System.IO.Pipelines.Tests
                 }
             });
 
-            Assert.True(Task.WaitAll(new [] { writer, reader, canceller }, TimeSpan.FromSeconds(30)), "Reader was not completed in reasonable time");
+            Assert.True(Task.WaitAll(new [] { writer, reader, canceller }, TimeSpan.FromMinutes(5)), "Reader was not completed in 5 minutes");
             Assert.True(cancellations > 0);
         }
     }
