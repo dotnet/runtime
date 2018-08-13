@@ -1791,11 +1791,7 @@ INT32 Assembly::ExecuteMainMethod(PTRARRAYREF *stringArgs, BOOL waitForOtherThre
 
                 Thread::ApartmentState state = Thread::AS_Unknown;
                 state = SystemDomain::GetEntryPointThreadAptState(pMeth->GetMDImport(), pMeth->GetMemberDef());
-
-                // If the entry point has an explicit thread apartment state, set it
-                // before running the AppDomainManager initialization code.
-                if (state == Thread::AS_InSTA || state == Thread::AS_InMTA)
-                    SystemDomain::SetThreadAptState(state);
+                SystemDomain::SetThreadAptState(state);
 #endif // FEATURE_COMINTEROP
             }
 

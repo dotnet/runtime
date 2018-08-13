@@ -227,12 +227,14 @@ FCIMPL4(INT32, WaitHandleNative::CorWaitMultipleNative, Object* waitObjectsUNSAF
     PTRARRAYREF pWaitObjects = (PTRARRAYREF)waitObjects;  // array of objects on which to wait
     int numWaiters = pWaitObjects->GetNumComponents();
 
-    // Note: this should really be FEATURE_COMINTEROP_APARTMENT_SUPPORT.
-    // Because it's not, CoreCLR will allow WaitAll on STA threads.
-    // But fixing this would be a breaking change at this point, since we already shipped
-    // SL 2 and 3 this way.
-    // Perhaps in a future release we can fix this, if we aren't quite so concerned about
-    // compatibility....
+#ifdef FEATURE_COMINTEROP_APARTMENT_SUPPORT
+    // There are some issues with wait-all from an STA thread
+    // - https://github.com/dotnet/coreclr/issues/17787#issuecomment-385117537
+    if (waitForAll && numWaiters > 1 && pThread->GetApartment() == Thread::AS_InSTA)
+    {
+        COMPlusThrow(kNotSupportedException, W("NotSupported_WaitAllSTAThread"));
+    }
+#endif // FEATURE_COMINTEROP_APARTMENT_SUPPORT
 
     WaitHandleArrayHolder arrayHolder;
     arrayHolder.Initialize(numWaiters, (PTRARRAYREF*) &waitObjects);
