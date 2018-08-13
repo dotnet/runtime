@@ -68913,7 +68913,7 @@ RelativePath=JIT\Regression\CLR-x86-JIT\v2.1\DDB\b163200\b163200\b163200.cmd
 WorkingDir=JIT\Regression\CLR-x86-JIT\v2.1\DDB\b163200\b163200
 Expected=0
 MaxAllowedDurationSeconds=600
-Categories=JIT;EXPECTED_PASS;Pri1
+Categories=JIT;EXPECTED_PASS;Pri1;GCSTRESS_FAIL;19464
 HostStyle=0
 
 [LdfldaHack.cmd_8968]
