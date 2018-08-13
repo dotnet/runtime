@@ -71289,7 +71289,7 @@ RelativePath=JIT\SIMD\VectorDot_ro\VectorDot_ro.cmd
 WorkingDir=JIT\SIMD\VectorDot_ro
 Expected=0
 MaxAllowedDurationSeconds=600
-Categories=EXPECTED_PASS
+Categories=EXPECTED_PASS;R2R_FAIL;18991
 HostStyle=0
 
 [VectorExp_r.cmd_9268]
