@@ -1405,7 +1405,6 @@ mono_resolve_patch_target (MonoMethod *method, MonoDomain *domain, guint8 *code,
 		break;
 	}
 	case MONO_PATCH_INFO_GC_SAFE_POINT_FLAG:
-		g_assert (mono_threads_are_safepoints_enabled ());
 		target = (gpointer)&mono_polling_required;
 		break;
 	case MONO_PATCH_INFO_SWITCH: {
