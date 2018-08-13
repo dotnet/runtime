@@ -464,7 +464,7 @@ namespace System.Xml.Xsl.XsltOld
                 }
                 else if (NodeType == XmlNodeType.Attribute)
                 {
-                    return _encoder.AtributeInnerXml(Value);
+                    return _encoder.AttributeInnerXml(Value);
                 }
                 else
                 {
@@ -506,7 +506,7 @@ namespace System.Xml.Xsl.XsltOld
                 }
                 else if (NodeType == XmlNodeType.Attribute)
                 {
-                    return _encoder.AtributeOuterXml(Name, Value);
+                    return _encoder.AttributeOuterXml(Name, Value);
                 }
                 else
                 {
@@ -707,7 +707,7 @@ namespace System.Xml.Xsl.XsltOld
                 _encoder = new XmlTextEncoder(new StringWriter(_buffer, CultureInfo.InvariantCulture));
             }
 
-            public string AtributeInnerXml(string value)
+            public string AttributeInnerXml(string value)
             {
                 if (_encoder == null) Init();
                 _buffer.Length = 0;       // clean buffer
@@ -717,7 +717,7 @@ namespace System.Xml.Xsl.XsltOld
                 return _buffer.ToString();
             }
 
-            public string AtributeOuterXml(string name, string value)
+            public string AttributeOuterXml(string name, string value)
             {
                 if (_encoder == null) Init();
                 _buffer.Length = 0;       // clean buffer

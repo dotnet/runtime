@@ -109,7 +109,7 @@
   <data name="Xml_DataTableInferenceNotSupported" xml:space="preserve"><value>DataTable does not support schema inference from Xml.</value></data>
   <data name="Xml_MultipleParentRows" xml:space="preserve"><value>Cannot proceed with serializing DataTable '{0}'. It contains a DataRow which has multiple parent rows on the same Foreign Key.</value></data>
   <data name="Xml_IsDataSetAttributeMissingInSchema" xml:space="preserve"><value>IsDataSet attribute is missing in input Schema.</value></data>
-  <data name="Xml_TooManyIsDataSetAtributeInSchema" xml:space="preserve"><value>Cannot determine the DataSet Element. IsDataSet attribute exist more than once.</value></data>
+  <data name="Xml_TooManyIsDataSetAttributesInSchema" xml:space="preserve"><value>Cannot determine the DataSet element. More than one IsDataSet attribute exists.</value></data>
   <data name="Xml_DynamicWithoutXmlSerializable" xml:space="preserve"><value>DataSet will not serialize types that implement IDynamicMetaObjectProvider but do not also implement IXmlSerializable.</value></data>
   <data name="Expr_NYI" xml:space="preserve"><value>The feature not implemented. {0}.</value></data>
   <data name="Expr_MissingOperand" xml:space="preserve"><value>Syntax error: Missing operand after '{0}' operator.</value></data>
