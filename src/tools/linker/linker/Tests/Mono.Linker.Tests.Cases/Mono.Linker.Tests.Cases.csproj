@@ -37,6 +37,10 @@
     <Reference Include="System.Xml" />
   </ItemGroup>
   <ItemGroup>
+    <Compile Include="Advanced\PreserveDependencyMethodInNonReferencedAssemblyWithEmbeddedXml.cs" />
+    <Compile Include="Advanced\PreserveDependencyOnUnusedMethodInNonReferencedAssembly.cs" />
+    <Compile Include="Advanced\PreserveDependencyOnUnusedMethodInNonReferencedAssemblyWithCopyAction.cs" />
+    <Compile Include="Advanced\PreserveDependencyOnUnusedMethodInNonReferencedAssemblyWithEmbeddedXml.cs" />
     <Compile Include="Attributes.Debugger\DebuggerDisplayAttributeOnAssemblyUsingTarget.cs" />
     <Compile Include="Attributes.Debugger\DebuggerDisplayAttributeOnAssemblyUsingTargetTypeNameInOtherAssembly.cs" />
     <Compile Include="Attributes.Debugger\DebuggerDisplayAttributeOnAssemblyUsingTargetOnUnusedType.cs" />
@@ -369,6 +373,7 @@
     <Compile Include="Advanced\PreserveDependencyMethodInNonReferencedAssembly.cs" />
   </ItemGroup>
   <ItemGroup>
+    <Content Include="Advanced\Dependencies\PreserveDependencyMethodInNonReferencedAssemblyLibrary.xml" />
     <Content Include="Attributes\OnlyKeepUsed\Dependencies\AssemblyWithUnusedAttributeOnReturnParameterDefinition.il" />
     <Content Include="Attributes\OnlyKeepUsed\UnusedAttributePreservedViaLinkXmlIsKept.xml" />
     <Content Include="LinkXml\CanPreserveTypesUsingRegex.xml" />
