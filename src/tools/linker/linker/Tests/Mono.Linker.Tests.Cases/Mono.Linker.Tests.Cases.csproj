@@ -37,6 +37,11 @@
     <Reference Include="System.Xml" />
   </ItemGroup>
   <ItemGroup>
+    <Compile Include="Advanced\Dependencies\PreserveDependencyMethodInNonReferencedAssemblyBase2.cs" />
+    <Compile Include="Advanced\Dependencies\PreserveDependencyMethodInNonReferencedAssemblyChainedLibrary.cs" />
+    <Compile Include="Advanced\Dependencies\PreserveDependencyMethodInNonReferencedAssemblyChainedReferenceLibrary.cs" />
+    <Compile Include="Advanced\PreserveDependencyMethodInNonReferencedAssemblyChained.cs" />
+    <Compile Include="Advanced\PreserveDependencyMethodInNonReferencedAssemblyChainedReference.cs" />
     <Compile Include="Advanced\PreserveDependencyMethodInNonReferencedAssemblyWithEmbeddedXml.cs" />
     <Compile Include="Advanced\PreserveDependencyOnUnusedMethodInNonReferencedAssembly.cs" />
     <Compile Include="Advanced\PreserveDependencyOnUnusedMethodInNonReferencedAssemblyWithCopyAction.cs" />
