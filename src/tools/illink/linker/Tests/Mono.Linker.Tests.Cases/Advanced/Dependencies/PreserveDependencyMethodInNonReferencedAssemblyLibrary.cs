@@ -4,5 +4,9 @@
 		{
 			return "Dependency";
 		}
+
+		private void UnusedMethod ()
+		{
+		}
 	}
 }
