@@ -26,7 +26,7 @@ export PYTHON
 
 usage()
 {
-    echo "Usage: $0 [BuildArch] [BuildType] [-verbose] [-coverage] [-cross] [-clangx.y] [-ninja] [-configureonly] [-skipconfigure] [-skipnative] [-skipmscorlib] [-skiptests] [-stripsymbols] [-ignorewarnings] [-cmakeargs] [-bindir]"
+    echo "Usage: $0 [BuildArch] [BuildType] [-verbose] [-coverage] [-cross] [-clangx.y] [-ninja] [-configureonly] [-skipconfigure] [-skipnative] [-skipmanaged] [-skipmscorlib] [-skiptests] [-stripsymbols] [-ignorewarnings] [-cmakeargs] [-bindir]"
     echo "BuildArch can be: -x64, -x86, -arm, -armel, -arm64"
     echo "BuildType can be: -debug, -checked, -release"
     echo "-coverage - optional argument to enable code coverage build (currently supported only for Linux and OSX)."
@@ -42,6 +42,7 @@ usage()
     echo "-configureonly - do not perform any builds; just configure the build."
     echo "-skipconfigure - skip build configuration."
     echo "-skipnative - do not build native components."
+    echo "-skipmanaged - do not build managed components."
     echo "-skipmscorlib - do not build mscorlib.dll."
     echo "-skiptests - skip the tests in the 'tests' subdirectory."
     echo "-skipnuget - skip building nuget packages."
@@ -388,6 +389,11 @@ isMSBuildOnNETCoreSupported()
         return
     fi
 
+    if [ $__SkipManaged == 1 ]; then
+        __isMSBuildOnNETCoreSupported=0
+        return
+    fi
+
     if [ "$__HostArch" == "x64" ]; then
         if [ "$__HostOS" == "Linux" ]; then
             __isMSBuildOnNETCoreSupported=1
@@ -631,6 +637,7 @@ __PgoOptimize=1
 __IbcTuning=""
 __ConfigureOnly=0
 __SkipConfigure=0
+__SkipManaged=0
 __SkipRestore=""
 __SkipNuget=0
 __SkipCoreCLR=0
@@ -808,6 +815,10 @@ while :; do
 
         crosscomponent|-crosscomponent)
             __DoCrossArchBuild=1
+            ;;
+
+        skipmanaged|-skipmanaged)
+            __SkipManaged=1
             ;;
 
         skipmscorlib|-skipmscorlib)
