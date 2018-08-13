@@ -3,9 +3,9 @@ using Mono.Linker.Tests.Cases.Expectations.Assertions;
 using Mono.Linker.Tests.Cases.Expectations.Metadata;
 
 namespace Mono.Linker.Tests.Cases.Advanced {
-	[IgnoreTestCase("Bug introduced with https://github.com/mono/linker/pull/348")]
-	[SetupLinkerCoreAction ("copy")]
+	[SetupLinkerCoreAction ("copyused")]
 	[RemovedAssembly ("System.Core.dll")]
+	[SkipPeVerify]
 	public class PreserveDependencyOnUnusedMethodInNonReferencedAssemblyWithCopyAction {
 		public static void Main ()
 		{
