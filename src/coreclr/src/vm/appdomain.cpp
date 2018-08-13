@@ -3074,8 +3074,9 @@ void SystemDomain::SetThreadAptState (Thread::ApartmentState state)
         Thread::ApartmentState pState = pThread->SetApartment(Thread::AS_InSTA, TRUE);
         _ASSERTE(pState == Thread::AS_InSTA);
     }
-    else if (state == Thread::AS_InMTA)
+    else
     {
+        // If an apartment state was not explicitly requested, default to MTA
         Thread::ApartmentState pState = pThread->SetApartment(Thread::AS_InMTA, TRUE);
         _ASSERTE(pState == Thread::AS_InMTA);
     }
