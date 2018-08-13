@@ -82033,7 +82033,7 @@ RelativePath=baseservices\threading\regressions\beta2\437044\437044.cmd
 WorkingDir=baseservices\threading\regressions\beta2\437044
 Expected=0
 MaxAllowedDurationSeconds=600
-Categories=EXPECTED_PASS;Pri1
+Categories=EXPECTED_PASS;Pri1;GCSTRESS_EXCLUDE
 HostStyle=0
 
 [KeyCollectionCtor.cmd_10305]
