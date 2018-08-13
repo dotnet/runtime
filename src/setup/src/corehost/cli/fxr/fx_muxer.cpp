@@ -509,7 +509,7 @@ fx_definition_t* fx_muxer_t::resolve_fx(
         for (pal::string_t dir : global_dirs)
         {
             // Avoid duplicate of dotnet_dir_temp
-            if (dir != dotnet_dir_temp)
+            if (!pal::are_paths_equal_with_normalized_casing(dir, dotnet_dir_temp))
             {
                 hive_dir.push_back(dir);
             }

@@ -30,7 +30,7 @@ void sdk_info::get_all_sdk_infos(
     {
         for (pal::string_t dir : global_dirs)
         {
-            if (dir != own_dir_temp)
+            if (!pal::are_paths_equal_with_normalized_casing(dir, own_dir_temp))
             {
                 hive_dir.push_back(dir);
             }
