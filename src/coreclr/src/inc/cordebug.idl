@@ -3813,6 +3813,7 @@ interface ICorDebugRegisterSet : IUnknown
         REGISTER_ARM_D30,
         REGISTER_ARM_D31,
 
+
         // ARM64 registers
 
         REGISTER_ARM64_PC = 0,

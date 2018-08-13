@@ -1815,7 +1815,7 @@ public:
         LOG((LF_CORDB, LL_INFO10000, "D::DDBP: Doing TriggerDataBreakpoint...\n"));
 
         bool hitDataBp = false;
-
+#if defined(_TARGET_X86_) || defined(_TARGET_AMD64_)
         PDR6 pdr6 = (PDR6)&(pContext->Dr6);
 
         if (pdr6->B0 || pdr6->B1 || pdr6->B2 || pdr6->B3)
@@ -1831,7 +1831,7 @@ public:
         {
             LOG((LF_CORDB, LL_INFO10000, "D::DDBP: DIDN'T TRIGGER DATA BREAKPOINT...\n"));
         }
-
+#endif
         return hitDataBp;
     }
 
