@@ -39,10 +39,8 @@
 #include <unicode-data.h>
 #include <errno.h>
 
-#ifndef G_OS_WIN32
-#    ifdef HAVE_LOCALCHARSET_H
-#       include <localcharset.h>
-#    endif
+#if !defined (G_OS_WIN32) && HAVE_NL_LANGINFO
+#    include <langinfo.h>
 #endif
 
 const char *eg_my_charset;
@@ -208,8 +206,29 @@ g_get_charset (G_CONST_RETURN char **charset)
 {
 	if (eg_my_charset == NULL) {
 		/* These shouldn't be heap allocated */
-#if defined(HAVE_LOCALCHARSET_H)
-		eg_my_charset = locale_charset ();
+#if HAVE_NL_LANGINFO
+		/*
+		 * This function used used to use the "locale_charset" call in
+		 * libiconv's libcharset library. However, this isn't always
+		 * available on some systems, including ones with GNU libc. So,
+		 * instead use a function that's a standard part of POSIX2008.
+		 *
+		 * nl_langinfo is in POSIX2008 and should be on any sane modern
+		 * Unix. With a UTF-8 locale, it should return "UTF-8" - this
+		 * has been verified with Ubuntu 18.04, FreeBSD 11, and i 7.3.
+		 *
+		 * The motivation for using locale_charset was likely due to
+		 * the cruftiness of Unices back in ~2001; where you had to
+		 * manually query environment variables, and the values were
+		 * inconsistent between each other. Nowadays, if Linux, macOS,
+		 * AIX/PASE, and FreeBSD can all return the same values for a
+		 * UTF-8 locale, we can just use the value directly.
+		 *
+		 * It should be noted that by default, this function will give
+		 * values for the "C" locale, unless `setlocale (LC_ALL, "")`
+		 * is ran to init locales - driver.c in mini does this for us.
+		 */
+		eg_my_charset = nl_langinfo (CODESET);
 #else
 		eg_my_charset = "UTF-8";
 #endif

@@ -51,7 +51,7 @@ struct _GIConv {
 	Decoder decode;
 	Encoder encode;
 	gunichar c;
-#ifdef HAVE_ICONV
+#ifdef HAVE_LIBICONV
 	iconv_t cd;
 #endif
 };
@@ -112,7 +112,7 @@ static struct {
 GIConv
 g_iconv_open (const char *to_charset, const char *from_charset)
 {
-#ifdef HAVE_ICONV
+#ifdef HAVE_LIBICONV
 	iconv_t icd = (iconv_t) -1;
 #endif
 	Decoder decoder = NULL;
@@ -135,7 +135,7 @@ g_iconv_open (const char *to_charset, const char *from_charset)
 	}
 	
 	if (!encoder || !decoder) {
-#ifdef HAVE_ICONV
+#ifdef HAVE_LIBICONV
 		if ((icd = iconv_open (to_charset, from_charset)) == (iconv_t) -1)
 			return (GIConv) -1;
 #else
@@ -150,7 +150,7 @@ g_iconv_open (const char *to_charset, const char *from_charset)
 	cd->encode = encoder;
 	cd->c = -1;
 	
-#ifdef HAVE_ICONV
+#ifdef HAVE_LIBICONV
 	cd->cd = icd;
 #endif
 	
@@ -160,7 +160,7 @@ g_iconv_open (const char *to_charset, const char *from_charset)
 int
 g_iconv_close (GIConv cd)
 {
-#ifdef HAVE_ICONV
+#ifdef HAVE_LIBICONV
 	if (cd->cd != (iconv_t) -1)
 		iconv_close (cd->cd);
 #endif
@@ -179,7 +179,7 @@ g_iconv (GIConv cd, gchar **inbytes, gsize *inbytesleft,
 	gunichar c;
 	int rc = 0;
 	
-#ifdef HAVE_ICONV
+#ifdef HAVE_LIBICONV
 	if (cd->cd != (iconv_t) -1) {
 		/* Note: gsize may have a different size than size_t, so we need to
 		   remap inbytesleft and outbytesleft to size_t's. */
