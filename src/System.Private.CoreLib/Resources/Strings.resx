@@ -3031,6 +3031,9 @@
   <data name="NotSupported_UnknownTypeCode" xml:space="preserve">
     <value>TypeCode '{0}' was not valid.</value>
   </data>
+  <data name="NotSupported_WaitAllSTAThread" xml:space="preserve">
+    <value>WaitAll for multiple handles on a STA thread is not supported.</value>
+  </data>
   <data name="NotSupported_UnreadableStream" xml:space="preserve">
     <value>Stream does not support reading.</value>
   </data>
