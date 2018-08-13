@@ -43,6 +43,17 @@
         DestinationFolder="$(BinDir)PDB" />
   </Target>
 
+  <ItemGroup>
+    <UcrtFilesToCopy Include="$(UniversalCRTSDKDir)Redist\ucrt\DLLs\$(BuildArch)\*.dll" />
+  </ItemGroup>
+  <!-- Copy the UCRT files from the windows kit directory to the local directory.
+       The api-*xstate.dll binary needs to be signed. -->
+  <Target Name="CopyUcrtFiles" AfterTargets="Build">
+    <Copy Condition="'$(BuildType)'=='Release' AND '$(BuildArch)' != 'arm64'"
+        SourceFiles="@(UcrtFilesToCopy)"
+        DestinationFolder="$(BinDir)Redist\ucrt\DLLs\$(BuildArch)" />
+  </Target>
+
   <PropertyGroup>
     <RunEnforcePGO Condition="$(__EnforcePgo) == '1'">true</RunEnforcePGO>
     <RunEnforcePGO Condition="$(__BuildArch) == 'arm' OR $(__BuildArch) == 'arm64'">false</RunEnforcePGO>
