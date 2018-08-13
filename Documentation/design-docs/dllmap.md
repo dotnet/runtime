@@ -50,16 +50,18 @@ There will be a diagnostic mechanism available to monitor dllmap related issues.
 
 ### Interaction with Dllmap
 
-#### Mono compatibility
-Dllmap should be easy to use. It’s possible to achieve this easily by keeping Mono-compatible style of XML mapping configuration file. 
-It’s described [here](http://www.mono-project.com/docs/advanced/pinvoke/dllmap/). 
-Thanks to compatibility with Mono, users will be able to migrate from Mono’s Dllmap to .NET Core cross-platform applications.
+#### Mono users: Mono compatibility
+The Dllmap method is meant as a compatibility feature for Mono and provides users with a straightforward migration story from Mono to .NET Core applications having p/invokes.
+The default dllmap will consume a configuration file of [the same style](http://www.mono-project.com/docs/advanced/pinvoke/dllmap/) as Mono does.
+Users will be able to use their old Mono configuration files when specifying the mapping for .NET Core applications.
+Configuration files must be placed next to the assemblies that they describe.
 
-#### Flexibility
-For users, who want to manage their cross-platform dll imports in their own way, dll-load specific events will be exposed. 
-Users will be able to subscribe to these events and implement any library/entrypoint loading policies. 
-For example, they will be able to replace XML parsing with JSON or any other file format parsing and provide configuration files in the most suitable format.
-This is something that Mono doesn't have. Details are described in the Design section.
+#### New users: flexibility
+New users, who plan to support p/invokes in their cross-platform applications, should implement their custom mapping policies that satisfies their needs.
+The runtime will use two dll specific callbacks on each dll load attempt (one on loading a library, one on determining an entrypoint).
+The user’s code can subscribe to these callbacks and define any mapping strategy.
+Users should keep in mind that the default dllmap methods are provided for an easier migration from Mono.
+For newcomers, it’s highly recommended to use callbacks and implement their own handers. Details of the callback strategy are described in the Design section.
 
 ### Usage example (XML configuration)
 
@@ -87,7 +89,7 @@ With this file, all `GetCurrentProcessId` calls get automatically mapped to `get
 When mapping a function into another function, both the source and the target functions must take the same number of arguments of compatible type. Otherwise, the mapping will not work.
 
 This is a very basic scenario and it can be extended to different operating systems, libraries and entrypoints. 
-It assumes that user does not implement any custom actions (handlers) but uses the default dllmap behavior.
+It assumes that user does not implement any custom actions (handlers) but uses the default Mono-like dllmap behavior.
 
 ## Design
 ### XML configuration file
@@ -197,7 +199,7 @@ Callbacks can be executed for all assemblies except `System.Private.CoreLib`.
 	IntPtr  ResolveNativeEntrypointName(string entrypointName, HMOD hmod)	
 	```
 
-**Dotnet.corefx.labs.dll [managed code]**
+**corefx.labs [managed code]**
 -   Implements default handlers - `LoadNativeDllViaDllMap` and `GetEntrypointViaDllMap`
 -   To avoid infinite looping, `LoadNativeDllViaDllMap` takes a lock and releases it after the default library loading process is completed
 	```c#
