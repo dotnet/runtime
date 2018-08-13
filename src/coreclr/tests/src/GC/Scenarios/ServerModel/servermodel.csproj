@@ -11,7 +11,7 @@
     <SolutionDir Condition="$(SolutionDir) == '' Or $(SolutionDir) == '*Undefined*'">..\..\</SolutionDir>
     <CLRTestExecutionArguments>/numrequests:100</CLRTestExecutionArguments>
     <GCStressIncompatible>true</GCStressIncompatible>
-    <HeapVerifyIncompatible Condition="'$(Platform)' == 'x86'">true</HeapVerifyIncompatible>
+    <HeapVerifyIncompatible Condition="'$(Platform)' == 'x86' or '$(Platform)' == 'arm'">true</HeapVerifyIncompatible>
   </PropertyGroup>
   <!-- Default configurations to help VS understand the configurations -->
   <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Debug|AnyCPU' ">
