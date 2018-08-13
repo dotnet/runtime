@@ -1438,6 +1438,9 @@ mono_thread_attach (MonoDomain *domain)
 
 	tid=mono_native_thread_id_get ();
 
+	if (mono_runtime_get_no_exec ())
+		return NULL;
+
 	internal = create_internal_thread_object ();
 
 	thread = create_thread_object (domain, internal);
@@ -3309,7 +3312,8 @@ mono_thread_cleanup (void)
 	 * thread exits, but if it's not running in a subthread it
 	 * won't exit in time.
 	 */
-	mono_w32mutex_abandon (mono_thread_internal_current ());
+	if (!mono_runtime_get_no_exec ())
+		mono_w32mutex_abandon (mono_thread_internal_current ());
 #endif
 
 #if 0

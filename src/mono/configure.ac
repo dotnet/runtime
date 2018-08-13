@@ -109,7 +109,8 @@ extra_runtime_ldflags=""
 # Hack for WASM
 # Current autotools (v1.15) doesn't have a triplet we can use for wasm so the kludge we do is to
 # work around it by using a feature flag instead
-AC_ARG_ENABLE(wasm,[  --enable-wasm    Hack to set the current runtime to target wasm], enable_wasm=$enableval)
+AC_ARG_ENABLE(wasm,[  --enable-wasm           Hack to set the runtime host to wasm ], enable_wasm=$enableval)
+AC_ARG_ENABLE(wasm,[  --enable-wasm-aot       Hack to set the runtime target wasm], enable_wasm_aot=$enableval)
 
 # Thread configuration inspired by sleepycat's db
 AC_MSG_CHECKING([host platform characteristics])
@@ -3882,6 +3883,20 @@ HOST=WASM
 arch_target=wasm
 AC_DEFINE(TARGET_WASM, 1, [Target wasm])
 AC_DEFINE(HOST_WASM, 1, [Host wasm])
+BTLS_SUPPORTED=no
+with_tls=pthread
+target_mach=no
+
+elif test "x$enable_wasm_aot" = "xyes"; then
+cross_compiling=yes
+target=wasm
+AC_DEFINE(MONO_CROSS_COMPILE,1,[The runtime is compiled for cross-compiling mode])
+enable_mcs_build=no
+enable_support_build=no
+BTLS_SUPPORTED=no
+TARGET=WASM
+arch_target=wasm
+AC_DEFINE(TARGET_WASM, 1, [Target wasm])
 BTLS_SUPPORTED=no
 with_tls=pthread
 target_mach=no

@@ -941,6 +941,9 @@ setup_jit_tls_data (gpointer stack_start, gpointer abort_func)
 static void
 free_jit_tls_data (MonoJitTlsData *jit_tls)
 {
+	//This happens during AOT cuz the thread is never attached
+	if (!jit_tls)
+		return;
 	mono_arch_free_jit_tls_data (jit_tls);
 	mono_free_altstack (jit_tls);
 

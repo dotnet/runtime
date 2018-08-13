@@ -550,4 +550,20 @@ mono_monoctx_to_sigctx (MonoContext *mctx, void *sigctx)
 	UCONTEXT_REG_Rn(uc, 1) = mctx->sc_sp;
 }
 
+#elif defined (TARGET_WASM)
+
+#include <mono/utils/mono-context.h>
+
+void
+mono_sigctx_to_monoctx (void *sigctx, MonoContext *mctx)
+{
+	g_error ("MonoContext not supported");
+}
+
+void
+mono_monoctx_to_sigctx (MonoContext *mctx, void *sigctx)
+{
+	g_error ("MonoContext not supported");
+}
+
 #endif /* #if defined(__i386__) */
