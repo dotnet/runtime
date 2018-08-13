@@ -1,0 +1,16 @@
+﻿using System.Runtime.CompilerServices;
+
+namespace Mono.Linker.Tests.Cases.Advanced.Dependencies {
+	public class PreserveDependencyMethodInNonReferencedAssemblyChainedLibrary : PreserveDependencyMethodInNonReferencedAssemblyBase {
+		public override string Method ()
+		{
+			Dependency ();
+			return "Dependency";
+		}
+		
+		[PreserveDependency (".ctor()", "Mono.Linker.Tests.Cases.Advanced.Dependencies.PreserveDependencyMethodInNonReferencedAssemblyBase2", "base2")]
+		public static void Dependency ()
+		{
+		}
+	}
+}
