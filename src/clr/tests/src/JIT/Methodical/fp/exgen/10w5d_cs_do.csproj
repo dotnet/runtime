@@ -25,6 +25,8 @@
     <DebugType>Full</DebugType>
     <Optimize>True</Optimize>
     <AllowUnsafeBlocks>True</AllowUnsafeBlocks>
+    <!-- Temporarily flagged as optimization-sensitive due to https://github.com/dotnet/coreclr/issues/18988 -->
+    <JitOptimizationSensitive>True</JitOptimizationSensitive>
   </PropertyGroup>
   <ItemGroup>
     <Compile Include="10w5d.cs" />
