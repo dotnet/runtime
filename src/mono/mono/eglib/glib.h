@@ -100,7 +100,14 @@ typedef float          gfloat;
 typedef double         gdouble;
 typedef int32_t        gboolean;
 
+#if defined (HOST_WIN32) || defined (_WIN32)
+G_END_DECLS
+#include <wchar.h>
+typedef wchar_t gunichar2;
+G_BEGIN_DECLS
+#else
 typedef guint16 gunichar2;
+#endif
 typedef guint32 gunichar;
 
 /*
