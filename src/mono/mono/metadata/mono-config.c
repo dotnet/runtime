@@ -194,7 +194,7 @@ typedef struct {
 	void *user_data;
 	MonoImage *assembly;
 	int inited;
-} ParseState;
+} MonoConfigParseState;
 
 static void start_element (GMarkupParseContext *context, 
                            const gchar         *element_name,
@@ -203,7 +203,7 @@ static void start_element (GMarkupParseContext *context,
 			   gpointer             user_data,
 			   GError             **gerror)
 {
-	ParseState *state = (ParseState *)user_data;
+	MonoConfigParseState *state = (MonoConfigParseState *)user_data;
 	if (!state->current) {
 		state->current = (MonoParseHandler *)g_hash_table_lookup (config_handlers, element_name);
 		if (state->current && state->current->init)
@@ -218,7 +218,7 @@ static void end_element   (GMarkupParseContext *context,
 			   gpointer             user_data,
 			   GError             **gerror)
 {
-	ParseState *state = (ParseState *)user_data;
+	MonoConfigParseState *state = (MonoConfigParseState *)user_data;
 	if (state->current) {
 		if (state->current->end)
 			state->current->end (state->user_data, element_name);
@@ -237,7 +237,7 @@ static void parse_text    (GMarkupParseContext *context,
 			   gpointer             user_data,
 			   GError             **gerror)
 {
-	ParseState *state = (ParseState *)user_data;
+	MonoConfigParseState *state = (MonoConfigParseState *)user_data;
 	if (state->current && state->current->text)
 		state->current->text (state->user_data, text, text_len);
 }
@@ -255,7 +255,7 @@ static void parse_error   (GMarkupParseContext *context,
                            GError              *gerror,
 			   gpointer             user_data)
 {
-	ParseState *state = (ParseState *)user_data;
+	MonoConfigParseState *state = (MonoConfigParseState *)user_data;
 	const gchar *msg;
 	const gchar *filename;
 
@@ -482,7 +482,7 @@ mono_config_cleanup (void)
 /* FIXME: error handling */
 
 static void
-mono_config_parse_xml_with_context (ParseState *state, const char *text, gsize len)
+mono_config_parse_xml_with_context (MonoConfigParseState *state, const char *text, gsize len)
 {
 	GMarkupParseContext *context;
 
@@ -498,7 +498,7 @@ mono_config_parse_xml_with_context (ParseState *state, const char *text, gsize l
 
 /* If assembly is NULL, parse in the global context */
 static int
-mono_config_parse_file_with_context (ParseState *state, const char *filename)
+mono_config_parse_file_with_context (MonoConfigParseState *state, const char *filename)
 {
 	gchar *text;
 	gsize len;
@@ -528,7 +528,7 @@ mono_config_parse_file_with_context (ParseState *state, const char *filename)
 void
 mono_config_parse_memory (const char *buffer)
 {
-	ParseState state = {NULL};
+	MonoConfigParseState state = {NULL};
 
 	state.user_data = (gpointer) "<buffer>";
 	mono_config_parse_xml_with_context (&state, buffer, strlen (buffer));
@@ -537,7 +537,7 @@ mono_config_parse_memory (const char *buffer)
 static void
 mono_config_parse_file (const char *filename)
 {
-	ParseState state = {NULL};
+	MonoConfigParseState state = {NULL};
 	state.user_data = (gpointer) filename;
 	mono_config_parse_file_with_context (&state, filename);
 }
@@ -618,7 +618,7 @@ mono_config_for_assembly_internal (MonoImage *assembly)
 {
 	MONO_REQ_GC_UNSAFE_MODE;
 
-	ParseState state = {NULL};
+	MonoConfigParseState state = {NULL};
 	int got_it = 0, i;
 	char *aname, *cfg, *cfg_name;
 	const char *bundled_config;
@@ -883,7 +883,7 @@ mono_config_parse_publisher_policy (const gchar *filename, MonoAssemblyBindingIn
 		NULL,
 		NULL
 	};
-	ParseState state = {
+	MonoConfigParseState state = {
 		&publisher_policy_parser, /* MonoParseHandler */
 		&user_data, /* user_data */
 		NULL, /* MonoImage (we don't need it right now)*/
@@ -908,7 +908,7 @@ mono_config_parse_assembly_bindings (const char *filename, int amajor, int amino
 {
 	MonoAssemblyBindingInfo info;
 	ParserUserData pud;
-	ParseState state;
+	MonoConfigParseState state;
 
 	info.major = amajor;
 	info.minor = aminor;

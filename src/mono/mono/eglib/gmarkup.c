@@ -53,13 +53,13 @@ typedef enum {
 	CLOSING_ELEMENT,
 	COMMENT,
 	SKIP_XML_DECLARATION
-} ParseState;
+} MonoGMarkupParseState;
 
 struct _GMarkupParseContext {
 	GMarkupParser  parser;
 	gpointer       user_data;
 	GDestroyNotify user_data_dnotify;
-	ParseState     state;
+	MonoGMarkupParseState state;
 
 	/* Stores the name of the current element, so we can issue the end_element */
 	GSList         *level;
