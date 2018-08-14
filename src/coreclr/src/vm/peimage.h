@@ -153,27 +153,13 @@ public:
     const SString &GetPath();
     BOOL IsFile();
     HANDLE GetFileHandle();
-    HANDLE GetFileHandleLocking();
     void SetFileHandle(HANDLE hFile);
     HRESULT TryOpenFile();    
-
-    HANDLE GetProtectingFileHandle(BOOL bProtectIfNotOpenedYet);
 
     LPCWSTR GetPathForErrorMessages();
 
     // Equality
     BOOL Equals(PEImage *pImage);
-    static ULONG HashStreamIds(UINT64 id1, DWORD id2);
-
-    // Hashing utilities.  (These require a flat version of the file, and 
-    // will open one if necessary.)
-
-#ifndef DACCESS_COMPILE
-    void GetImageBits(DWORD layout, SBuffer &result);
-#endif
-
-    void ComputeHash(ALG_ID algorithm, SBuffer &result);
-    CHECK CheckHash(ALG_ID algorithm, const void *pbHash, COUNT_T cbHash);
 
     void GetMVID(GUID *pMvid);
     const BOOL HasV1Metadata();
@@ -181,7 +167,6 @@ public:
     BOOL MDImportLoaded();
     IMDInternalImport* GetNativeMDImport(BOOL loadAllowed = TRUE);    
 
-    BOOL HasSecurityDirectory();
     BOOL HasContents() ;
     BOOL HasNativeHeader() ;
     BOOL IsPtrInImage(PTR_CVOID data);
@@ -220,7 +205,6 @@ public:
     BOOL PassiveDomainOnly();
     BOOL IsReferenceAssembly();
 #ifdef FEATURE_PREJIT  
-    const BOOL GetNativeILHasSecurityDirectory();
     const BOOL IsNativeILILOnly();
     const BOOL IsNativeILDll();
     void GetNativeILPEKindAndMachine(DWORD* pdwKind, DWORD* pdwMachine);
@@ -234,11 +218,7 @@ public:
     const WORD GetSubsystem();
     BOOL  IsFileLocked();
     const BOOL HasStrongNameSignature();
-#ifndef DACCESS_COMPILE
-    const HRESULT VerifyStrongName(DWORD* verifyOutputFlags);    
-#endif
 
-    BOOL IsStrongNameSigned();
     BOOL IsIbcOptimized();
     BOOL Has32BitNTHeaders();
 

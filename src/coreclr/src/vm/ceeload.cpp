@@ -4394,21 +4394,6 @@ UINT32 Module::GetTlsIndex()
     return m_file->GetTlsIndex();
 }
 
-PCCOR_SIGNATURE Module::GetSignature(RVA signature)
-{
-    WRAPPER_NO_CONTRACT;
-
-    return m_file->GetSignature(signature);
-}
-
-RVA Module::GetSignatureRva(PCCOR_SIGNATURE signature)
-{
-    WRAPPER_NO_CONTRACT;
-
-    return m_file->GetSignatureRva(signature);
-}
-
-
 
 // In DAC builds this function was being called on host addresses which may or may not
 // have been marshalled from the target. Such addresses can't be reliably mapped back to
@@ -4459,20 +4444,6 @@ StubMethodHashTable *Module::GetStubMethodHashTable()
     return m_pStubMethodHashTable;
 }
 #endif // FEATURE_PREJIT
-
-CHECK Module::CheckSignatureRva(RVA signature)
-{
-    WRAPPER_NO_CONTRACT;
-    CHECK(m_file->CheckSignatureRva(signature));
-    CHECK_OK;
-}
-
-CHECK Module::CheckSignature(PCCOR_SIGNATURE signature)
-{
-    WRAPPER_NO_CONTRACT;
-    CHECK(m_file->CheckSignature(signature));
-    CHECK_OK;
-}
 
 void Module::InitializeStringData(DWORD token, EEStringData *pstrData, CQuickBytes *pqb)
 {
