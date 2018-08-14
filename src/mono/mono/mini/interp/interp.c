@@ -5705,12 +5705,16 @@ interp_run_finally (StackFrameInfo *frame, int clause_index, gpointer handler_ip
 {
 	InterpFrame *iframe = (InterpFrame*)frame->interp_frame;
 	ThreadContext *context = (ThreadContext*)mono_native_tls_get_value (thread_context_id);
+	const unsigned short *old_ip = iframe->ip;
+
 
 	interp_exec_method_full (iframe, context, (guint16*)handler_ip, NULL, clause_index, NULL);
-	if (context->has_resume_state)
+	if (context->has_resume_state) {
 		return TRUE;
-	else
+	} else {
+		iframe->ip = old_ip;
 		return FALSE;
+	}
 }
 
 /*
