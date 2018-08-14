@@ -411,12 +411,12 @@ mono_gc_is_disabled (void)
 }
 
 void
-mono_gc_wbarrier_range_copy (gpointer _dest, gpointer _src, int size)
+mono_gc_wbarrier_range_copy (gpointer _dest, gconstpointer _src, int size)
 {
 	g_assert_not_reached ();
 }
 
-void*
+MonoRangeCopyFunction
 mono_gc_get_range_copy_func (void)
 {
 	return &mono_gc_wbarrier_range_copy;

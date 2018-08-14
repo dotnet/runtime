@@ -3067,7 +3067,7 @@ mono_gc_wbarrier_generic_store_atomic (gpointer ptr, GCObject *value)
 }
 
 void
-sgen_wbarrier_range_copy (gpointer _dest, gpointer _src, int size)
+sgen_wbarrier_range_copy (gpointer _dest, gconstpointer _src, int size)
 {
 	remset.wbarrier_range_copy (_dest,_src, size);
 }

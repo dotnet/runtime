@@ -133,7 +133,7 @@ sgen_card_table_wbarrier_generic_nostore (gpointer ptr)
 }
 
 static void
-sgen_card_table_wbarrier_range_copy (gpointer _dest, gpointer _src, int size)
+sgen_card_table_wbarrier_range_copy (gpointer _dest, gconstpointer _src, int size)
 {
 	GCObject **dest = (GCObject **)_dest;
 	GCObject **src = (GCObject **)_src;
