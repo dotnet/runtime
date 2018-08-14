@@ -223,21 +223,6 @@ inline BOOL PEImage::PassiveDomainOnly()
     return m_bPassiveDomainOnly;
 }
 
-#ifdef FEATURE_PREJIT    
-
-inline const BOOL PEImage::GetNativeILHasSecurityDirectory()   
-{
-    WRAPPER_NO_CONTRACT;
-    if (HasLoadedLayout())
-        return GetLoadedLayout()->GetNativeILHasSecurityDirectory();
-    else
-    {
-        PEImageLayoutHolder pLayout(GetLayout(PEImageLayout::LAYOUT_ANY,LAYOUT_CREATEIFNEEDED));
-        return pLayout->GetNativeILHasSecurityDirectory();
-    }
-}
-#endif
-
 inline const BOOL PEImage::HasDirectoryEntry(int entry)   
 {
     WRAPPER_NO_CONTRACT;
@@ -389,18 +374,6 @@ inline const BOOL PEImage::HasStrongNameSignature()
 
 #endif // !DACCESS_COMPILE
 
-inline BOOL PEImage::IsStrongNameSigned()   
-{
-    WRAPPER_NO_CONTRACT;
-    if (HasLoadedLayout())
-        return GetLoadedLayout()->IsStrongNameSigned();
-    else
-    {
-        PEImageLayoutHolder pLayout(GetLayout(PEImageLayout::LAYOUT_ANY,LAYOUT_CREATEIFNEEDED));
-        return pLayout->IsStrongNameSigned();
-    }
-}
-
 inline BOOL PEImage::IsIbcOptimized()   
 {
     WRAPPER_NO_CONTRACT;
@@ -412,22 +385,6 @@ inline BOOL PEImage::IsIbcOptimized()
         return pLayout->GetNativeILIsIbcOptimized();
     }
 }
-
-#ifndef DACCESS_COMPILE
-
-inline void PEImage::GetImageBits(DWORD layout, SBuffer &result)
-{
-    WRAPPER_NO_CONTRACT;
-    PEImageLayoutHolder pLayout(GetLayout(layout,LAYOUT_CREATEIFNEEDED));
-    BYTE* buffer=result.OpenRawBuffer(pLayout->GetSize());
-    PREFIX_ASSUME(buffer != NULL);
-    memcpyNoGCRefs(buffer,pLayout->GetBase(),pLayout->GetSize());
-    result.CloseRawBuffer(pLayout->GetSize());
-}
-
-#endif
-
-
 
 #ifdef FEATURE_PREJIT 
 inline PTR_CVOID PEImage::GetNativeManifestMetadata(COUNT_T *pSize) 

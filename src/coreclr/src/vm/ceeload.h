@@ -2670,10 +2670,6 @@ public:
     UINT32 GetFieldTlsOffset(DWORD field);
     UINT32 GetTlsIndex();
 
-    PCCOR_SIGNATURE GetSignature(RVA signature);
-    RVA GetSignatureRva(PCCOR_SIGNATURE signature);
-    CHECK CheckSignatureRva(RVA signature);
-    CHECK CheckSignature(PCCOR_SIGNATURE signature);
     BOOL IsSigInIL(PCCOR_SIGNATURE signature);
 
     mdToken GetEntryPointToken();
