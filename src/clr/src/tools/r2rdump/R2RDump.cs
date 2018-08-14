@@ -18,7 +18,7 @@ namespace R2RDump
         internal bool _raw;
         internal bool _header;
         internal bool _disasm;
-        internal IntPtr _disassembler;
+        internal Disassembler _disassembler;
         internal bool _unwind;
         internal bool _gc;
         internal bool _sectionContents;
@@ -34,7 +34,7 @@ namespace R2RDump
         abstract internal void DumpAllMethods();
         abstract internal void DumpMethod(R2RMethod method, XmlNode parentNode = null);
         abstract internal void DumpRuntimeFunction(RuntimeFunction rtf, XmlNode parentNode = null);
-        abstract internal unsafe void DumpDisasm(IntPtr Disasm, RuntimeFunction rtf, int imageOffset, byte[] image, XmlNode parentNode = null);
+        abstract internal void DumpDisasm(RuntimeFunction rtf, int imageOffset, XmlNode parentNode = null);
         abstract internal void DumpBytes(int rva, uint size, XmlNode parentNode = null, string name = "Raw", bool convertToOffset = true);
         abstract internal void DumpSectionContents(R2RSection section, XmlNode parentNode = null);
         abstract internal XmlNode DumpQueryCount(string q, string title, int count);
@@ -54,7 +54,6 @@ namespace R2RDump
         private IReadOnlyList<int> _runtimeFunctions = Array.Empty<int>();
         private IReadOnlyList<string> _sections = Array.Empty<string>();
         private bool _diff;
-        private IntPtr _disassembler;
         private bool _unwind;
         private bool _gc;
         private bool _sectionContents;
@@ -371,6 +370,8 @@ namespace R2RDump
                 return 0;
             }
 
+            Disassembler disassembler = null;
+
             try
             {
                 if (_inputFilenames.Count == 0)
@@ -382,24 +383,19 @@ namespace R2RDump
 
                     if (_disasm)
                     {
-                        _disassembler = CoreDisTools.GetDisasm(r2r.Machine);
+                        disassembler = new Disassembler(r2r.Image, r2r.Machine);
                     }
 
                     if (_xml)
                     {
-                        _dumper = new XmlDumper(_ignoreSensitive, r2r, _writer, _raw, _header, _disasm, _disassembler, _unwind, _gc, _sectionContents);
+                        _dumper = new XmlDumper(_ignoreSensitive, r2r, _writer, _raw, _header, _disasm, disassembler, _unwind, _gc, _sectionContents);
                     }
                     else
                     {
-                        _dumper = new TextDumper(r2r, _writer, _raw, _header, _disasm, _disassembler, _unwind, _gc, _sectionContents);
+                        _dumper = new TextDumper(r2r, _writer, _raw, _header, _disasm, disassembler, _unwind, _gc, _sectionContents);
                     }
 
                     Dump(r2r);
-
-                    if (_disasm)
-                    {
-                        CoreDisTools.FinishDisasm(_disassembler);
-                    }
                 }
             }
             catch (Exception e)
@@ -425,6 +421,10 @@ namespace R2RDump
             }
             finally
             {
+                if (disassembler != null)
+                {
+                    disassembler.Dispose();
+                }
                 // close output stream
                 _writer.Close();
             }
