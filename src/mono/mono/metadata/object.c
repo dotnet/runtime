@@ -7396,7 +7396,19 @@ mono_string_from_blob (const char *str, MonoError *error)
 {
 	gsize len = mono_metadata_decode_blob_size (str, &str) >> 1;
 
+#if G_BYTE_ORDER != G_LITTLE_ENDIAN
+	gunichar2 *src = (gunichar2*)str;
+	gunichar2 *copy = g_new (gunichar2, len);
+	int i;
+	for (i = 0; i < len; ++i)
+		copy [i] = GUINT16_FROM_LE (src [i]);
+
+	char *res = mono_utf16_to_utf8 (copy, len, error);
+	g_free (copy);
+	return res;
+#else
 	return mono_utf16_to_utf8 ((const gunichar2*)str, len, error);
+#endif
 }
 /**
  * mono_ldstr_metadata_sig
