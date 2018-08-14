@@ -8,7 +8,7 @@ namespace R2RDump
 {
     class TextDumper : Dumper
     {
-        public TextDumper(R2RReader r2r, TextWriter writer, bool raw, bool header, bool disasm, IntPtr disassembler, bool unwind, bool gc, bool sectionContents)
+        public TextDumper(R2RReader r2r, TextWriter writer, bool raw, bool header, bool disasm, Disassembler disassembler, bool unwind, bool gc, bool sectionContents)
         {
             _r2r = r2r;
             _writer = writer;
@@ -147,7 +147,7 @@ namespace R2RDump
 
             if (_disasm)
             {
-                DumpDisasm(_disassembler, rtf, _r2r.GetOffset(rtf.StartAddress), _r2r.Image);
+                DumpDisasm(rtf, _r2r.GetOffset(rtf.StartAddress));
             }
 
             if (_raw)
@@ -167,14 +167,14 @@ namespace R2RDump
             SkipLine();
         }
 
-        internal unsafe override void DumpDisasm(IntPtr Disasm, RuntimeFunction rtf, int imageOffset, byte[] image, XmlNode parentNode = null)
+        internal override void DumpDisasm(RuntimeFunction rtf, int imageOffset, XmlNode parentNode = null)
         {
             int rtfOffset = 0;
             int codeOffset = rtf.CodeOffset;
             while (rtfOffset < rtf.Size)
             {
                 string instr;
-                int instrSize = CoreDisTools.GetInstruction(Disasm, rtf, imageOffset, rtfOffset, image, out instr);
+                int instrSize = _disassembler.GetInstruction(rtf, imageOffset, rtfOffset, out instr);
 
                 _writer.Write(instr);
                 if (rtf.Method.GcInfo != null && rtf.Method.GcInfo.Transitions.ContainsKey(codeOffset))

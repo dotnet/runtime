@@ -76,4 +76,91 @@ namespace R2RDump
             return InitBufferedDisasm(target);
         }
     }
+
+    public class Disassembler : IDisposable
+    {
+        private readonly IntPtr _disasm;
+
+        private readonly byte[] _image;
+
+        private readonly Machine _machine;
+
+        public Disassembler(byte[] image, Machine machine)
+        {
+            _disasm = CoreDisTools.GetDisasm(machine);
+            _image = image;
+            _machine = machine;
+        }
+
+        public void Dispose()
+        {
+            if (_disasm != IntPtr.Zero)
+            {
+                CoreDisTools.FinishDisasm(_disasm);
+            }
+        }
+
+        public int GetInstruction(RuntimeFunction rtf, int imageOffset, int rtfOffset, out string instruction)
+        {
+            int instrSize = CoreDisTools.GetInstruction(_disasm, rtf, imageOffset, rtfOffset, _image, out instruction);
+
+            switch (_machine)
+            {
+                case Machine.Amd64:
+                case Machine.IA64:
+                    ProbeX64Quirks(rtf, imageOffset, rtfOffset, instrSize, ref instruction);
+                    break;
+
+                case Machine.I386:
+                    break;
+
+                case Machine.ArmThumb2:
+                case Machine.Thumb:
+                    break;
+
+                case Machine.Arm64:
+                    break;
+
+                default:
+                    throw new NotImplementedException();
+            }
+
+            return instrSize;
+        }
+
+        const string RelIPTag = "[rip ";
+
+        private void ProbeX64Quirks(RuntimeFunction rtf, int imageOffset, int rtfOffset, int instrSize, ref string instruction)
+        {
+            int relip = instruction.IndexOf(RelIPTag);
+            if (relip >= 0 && instruction.Length >= relip + RelIPTag.Length + 3)
+            {
+                int start = relip;
+                relip += RelIPTag.Length;
+                char sign = instruction[relip];
+                if (sign == '+' || sign == '-' &&
+                    instruction[relip + 1] == ' ' &&
+                    Char.IsDigit(instruction[relip + 2]))
+                {
+                    relip += 2;
+                    int offset = 0;
+                    do
+                    {
+                        offset = 10 * offset + (int)(instruction[relip] - '0');
+                    }
+                    while (++relip < instruction.Length && Char.IsDigit(instruction[relip]));
+                    if (relip < instruction.Length && instruction[relip] == ']')
+                    {
+                        relip++;
+                        if (sign == '-')
+                        {
+                            offset = -offset;
+                        }
+                        int target = rtf.StartAddress + rtfOffset + instrSize + offset;
+                        instruction = instruction.Substring(0, start) + $@"[0x{target:x4}]" + instruction.Substring(relip);
+                    }
+                }
+            }
+        }
+    }
 }
