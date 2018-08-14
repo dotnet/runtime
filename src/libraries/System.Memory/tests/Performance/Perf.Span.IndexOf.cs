@@ -210,6 +210,7 @@ namespace System.Memory.Tests
                 }
         }
 
+#if netcoreapp
         [Benchmark]
         [MemberData(nameof(s_indexTestData))]
         public void SpanLastIndexOfSpanComparison(string input, string value, StringComparison comparisonType)
@@ -223,5 +224,6 @@ namespace System.Memory.Tests
                     inputSpan.LastIndexOf(valueSpan, comparisonType);
                 }
         }
+#endif
     }
 }

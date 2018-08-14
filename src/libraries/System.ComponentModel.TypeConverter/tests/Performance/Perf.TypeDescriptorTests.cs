@@ -45,7 +45,9 @@ namespace System.ComponentModel.Tests
         [InlineData(typeof(ClassIBase), typeof(IBaseConverter))]
         [InlineData(typeof(ClassIDerived), typeof(IBaseConverter))]
         [InlineData(typeof(Uri), typeof(UriTypeConverter))]
+#if netcoreapp
         [InlineData(typeof(Version), typeof(VersionConverter))]
+#endif
         public static void GetConverter(Type typeToConvert, Type expectedConverter)
         {
             const int innerIterations = 100;

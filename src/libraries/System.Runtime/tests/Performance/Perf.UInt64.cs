@@ -12,8 +12,10 @@ namespace System.Tests
         private const int InnerCount = 100_000;
 
         private static string s_resultString;
+#if netcoreapp
         private static int s_resultInt32;
         private static ulong s_resultUInt64;
+#endif
 
         public static object[][] UInt64Values => new[]
         {
@@ -59,6 +61,7 @@ namespace System.Tests
             }
         }
 
+#if netcoreapp
         [Benchmark(InnerIterationCount = InnerCount)]
         [MemberData(nameof(UInt64Values))]
         public void TryFormat(ulong value)
@@ -92,5 +95,6 @@ namespace System.Tests
                 }
             }
         }
+#endif
     }
 }

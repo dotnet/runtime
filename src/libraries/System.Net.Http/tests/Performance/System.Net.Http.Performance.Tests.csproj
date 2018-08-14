@@ -1,10 +1,8 @@
 <Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
-    <IncludePerformanceTests>true</IncludePerformanceTests>
     <ProjectGuid>{981FC867-9071-444D-9388-BC5826609F76}</ProjectGuid>
     <Configurations>netcoreapp-Debug;netcoreapp-Release</Configurations>
   </PropertyGroup>
-  <!-- Default configurations to help VS understand the configurations -->
   <ItemGroup>
     <Compile Include="Perf.SocketsHttpHandler.cs" />
     <Compile Include="$(CommonTestPath)\System\PerfUtils.cs">
@@ -22,8 +20,5 @@
   </ItemGroup>
   <ItemGroup>
     <SupplementalTestData Include="$(PackagesDir)system.net.testdata\1.0.1-prerelease\content\**\*.*" />
-  </ItemGroup>
-  <ItemGroup>
-    <Service Include="{82A7F48D-3B50-4B1E-B82E-3ADA8210C358}" />
   </ItemGroup>
 </Project>

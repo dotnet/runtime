@@ -12,6 +12,7 @@ namespace System.Net.Sockets.Tests
 {
     public class SocketSendReceivePerfTest
     {
+#if netcoreapp
         [Benchmark(InnerIterationCount = 10_000), MeasureGCAllocations]
         public async Task SendAsyncThenReceiveAsync_Task()
         {
@@ -56,6 +57,7 @@ namespace System.Net.Sockets.Tests
                 }
             });
         }
+#endif
 
         [Benchmark(InnerIterationCount = 10_000), MeasureGCAllocations]
         public async Task SendAsyncThenReceiveAsync_SocketAsyncEventArgs()

@@ -19,6 +19,7 @@ namespace System.Numerics.Tests
 
         public const int DefaultInnerIterationsCount = 100000000;
 
+#if netcoreapp
         [Benchmark(InnerIterationCount = DefaultInnerIterationsCount)]
         public static void ConstructorBenchmark_Byte()
         {
@@ -159,7 +160,6 @@ namespace System.Numerics.Tests
             }
         }
 
-
         public static void Construct<T>(Span<T> values) where T : struct
         {
             for (var iteration = 0; iteration < Benchmark.InnerIterationCount; iteration++)
@@ -167,6 +167,7 @@ namespace System.Numerics.Tests
                 Vector<T> vect = new Vector<T>(values);
             }
         }
+#endif
 
         [Benchmark(InnerIterationCount = DefaultInnerIterationsCount)]
         public static void SpanCastBenchmark_Byte()

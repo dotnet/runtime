@@ -1,10 +1,8 @@
 <Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
-    <IncludePerformanceTests>true</IncludePerformanceTests>
     <ProjectGuid>{16568C86-E97E-42C6-B683-65A1B5AF2EC8}</ProjectGuid>
-    <Configurations>netcoreapp-Debug;netcoreapp-Release</Configurations>
+    <Configurations>netstandard-Debug;netstandard-Release</Configurations>
   </PropertyGroup>
-  <!-- Default configurations to help VS understand the configurations -->
   <ItemGroup>
     <Compile Include="Perf.ConcurrentBag.cs" />
     <Compile Include="Perf.ConcurrentDictionary.cs" />
