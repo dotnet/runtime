@@ -4858,10 +4858,11 @@ add_generic_class_with_depth (MonoAotCompile *acfg, MonoClass *klass, int depth,
 
 		iter = NULL;
 		while ((method = mono_class_get_methods (array_class, &iter))) {
-			if (strstr (method->name, name_prefix)) {
+			if (!strncmp (method->name, name_prefix, strlen (name_prefix))) {
 				MonoMethod *m = mono_aot_get_array_helper_from_wrapper (method);
 
-				add_extra_method_with_depth (acfg, m, depth);
+				if (m->is_inflated && !mono_method_is_generic_sharable_full (m, FALSE, FALSE, FALSE))
+					add_extra_method_with_depth (acfg, m, depth);
 			}
 		}
 
