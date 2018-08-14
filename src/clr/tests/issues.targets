@@ -1731,6 +1731,9 @@
         <ExcludeList Include="$(XunitTestBinBase)\tracing\eventsource\eventpipeandetw\eventpipeandetw\eventpipeandetw.cmd">
             <Issue>by design Windows only</Issue>
         </ExcludeList>
+        <ExcludeList Include="$(XunitTestBinBase)\readytorun\r2rdump\R2RDumpTest\R2RDumpTest.cmd">
+            <Issue>19441</Issue>
+        </ExcludeList>
     </ItemGroup>
 
     <!-- Failures while testing via ILLINK -->
