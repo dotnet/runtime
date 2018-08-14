@@ -103,11 +103,10 @@ static void restore_signal(int signal_id, struct sigaction *previousAction);
 
 /* internal data declarations *********************************************/
 
-static bool ensure_alt_signal_stack = false;
-static bool registered_sigterm_handler = false;
 #if !HAVE_MACH_EXCEPTIONS
 static bool registered_signal_handlers = false;
 #endif // !HAVE_MACH_EXCEPTIONS
+static bool registered_sigterm_handler = false;
 
 struct sigaction g_previous_sigterm;
 #if !HAVE_MACH_EXCEPTIONS
@@ -147,7 +146,7 @@ BOOL EnsureSignalAlternateStack()
 {
     int st = 0;
 
-    if (ensure_alt_signal_stack)
+    if (registered_signal_handlers)
     {
         stack_t oss;
 
@@ -207,7 +206,7 @@ Return :
 --*/
 void FreeSignalAlternateStack()
 {
-    if (ensure_alt_signal_stack)
+    if (registered_signal_handlers)
     {
         stack_t ss, oss;
         // The man page for sigaltstack says that when the ss.ss_flags is set to SS_DISABLE,
@@ -245,6 +244,7 @@ BOOL SEHInitializeSignals(DWORD flags)
     if (flags & PAL_INITIALIZE_REGISTER_SIGNALS)
     {
         registered_signal_handlers = true;
+
         /* we call handle_signal for every possible signal, even
            if we don't provide a signal handler.
 
@@ -273,11 +273,6 @@ BOOL SEHInitializeSignals(DWORD flags)
 #ifdef INJECT_ACTIVATION_SIGNAL
         handle_signal(INJECT_ACTIVATION_SIGNAL, inject_activation_handler, &g_previous_activation);
 #endif
-    }
-
-    if (flags & PAL_INITIALIZE_ENSURE_ALT_SIGNAL_STACK)
-    {
-        ensure_alt_signal_stack = true;
         if (!EnsureSignalAlternateStack())
         {
             return FALSE;
