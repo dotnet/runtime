@@ -1,13 +1,10 @@
 <Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
-    <IncludePerformanceTests>true</IncludePerformanceTests>
     <DefineConstants>$(DefineConstants);PERFORMANCE_TESTS</DefineConstants>
     <ProjectGuid>{89C76728-ECAF-4905-A33F-BD6BFED5E91D}</ProjectGuid>
     <AssemblyVersion>9.9.9.9</AssemblyVersion>
-    <Configurations>netcoreapp-Debug;netcoreapp-Release</Configurations>
-  </PropertyGroup>
-  <PropertyGroup>
-    <DebugEngines>{2E36F1D4-B23C-435D-AB41-18E608940038}</DebugEngines>
+    <DefineConstants Condition="'$(TargetGroup)' == 'netcoreapp'">$(DefineConstants);netcoreapp</DefineConstants>
+    <Configurations>netcoreapp-Debug;netcoreapp-Release;netstandard-Debug;netstandard-Release</Configurations>
   </PropertyGroup>
   <ItemGroup>
     <Compile Include="..\SampleClasses.cs" />
