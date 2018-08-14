@@ -1484,7 +1484,6 @@ CI_DISABLED_TESTS = \
 	main-returns-background-resetabort.exe \
 	main-returns-background-abort-resetabort.exe	\
 	assemblyresolve_event3.exe \
-	delegate2.exe	\
 	finally_guard.exe \
 	generic-xdomain.2.exe
 
