@@ -10,6 +10,7 @@
     <CopyNuGetImplementations>false</CopyNuGetImplementations>
     <NoWarn>0436</NoWarn>
     <IsTestProject>true</IsTestProject>
+    <IsPerformanceTestProject>true</IsPerformanceTestProject>
     <Configurations>netstandard-Debug;netstandard-Release;netstandard1.3-Debug;netstandard1.3-Release</Configurations>
   </PropertyGroup>
   <ItemGroup>
@@ -22,7 +23,7 @@
     </Compile>
   </ItemGroup>
   <ItemGroup>
-    <Content Include="PerfRunner.runtimeconfig.json">
+    <Content Condition="'$(TargetsNetFx)' != 'true'" Include="PerfRunner.runtimeconfig.json">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </Content>
   </ItemGroup>
