@@ -325,7 +325,7 @@ inline BOOL PEFile::IsIStream() const
 {
     LIMITED_METHOD_CONTRACT;
 
-    return (m_flags & PEFILE_ISTREAM) != 0;
+    return FALSE;
 }
 
 inline PEAssembly *PEFile::GetAssembly() const
@@ -335,74 +335,6 @@ inline PEAssembly *PEFile::GetAssembly() const
     return dac_cast<PTR_PEAssembly>(this);
 
 }
-
-// ------------------------------------------------------------
-// Hash support
-// ------------------------------------------------------------
-
-#ifndef DACCESS_COMPILE
-inline void PEFile::GetImageBits(SBuffer &result)
-{
-    CONTRACTL
-    {
-        INSTANCE_CHECK;
-        PRECONDITION(CheckValue(result));
-        THROWS;
-        GC_TRIGGERS;
-        MODE_ANY;
-    }
-    CONTRACTL_END;
-
-    EnsureImageOpened();
-    // We don't cache any other hashes right now.
-    if (!IsDynamic())
-        GetILimage()->GetImageBits(PEImageLayout::LAYOUT_FLAT,result);
-}
-
-inline void PEFile::GetHash(ALG_ID algorithm, SBuffer &result)
-{
-    CONTRACTL
-    {
-        INSTANCE_CHECK;
-        PRECONDITION(CheckValue(result));
-        THROWS;
-        GC_TRIGGERS;
-        MODE_ANY;
-    }
-    CONTRACTL_END;
-
-    if (algorithm == CALG_SHA1)
-    {
-        GetSHA1Hash(result);
-    }
-    else
-    {
-        EnsureImageOpened();
-        // We don't cache any other hashes right now.
-        GetILimage()->ComputeHash(algorithm, result);
-    }
-}
-    
-inline CHECK PEFile::CheckHash(ALG_ID algorithm, const void *hash, COUNT_T size)
-{
-    CONTRACT_CHECK
-    {
-        INSTANCE_CHECK;
-        PRECONDITION(CheckPointer(hash));
-        THROWS;
-        GC_TRIGGERS;
-        MODE_ANY;
-    }
-    CONTRACT_CHECK_END;
-
-    StackSBuffer hashBuffer;
-    GetHash(algorithm, hashBuffer);
-
-    CHECK(hashBuffer.Equals((const BYTE *)hash, size));
-
-    CHECK_OK;
-}
-#endif // DACCESS_COMPILE
 
 // ------------------------------------------------------------
 // Metadata access
@@ -598,37 +530,6 @@ inline HRESULT PEFile::GetScopeName(LPCUTF8 * pszName)
 // ------------------------------------------------------------
 // PE file access
 // ------------------------------------------------------------
-
-inline BOOL PEFile::HasSecurityDirectory()
-{
-    WRAPPER_NO_CONTRACT;
-
-    if (IsResource() || IsDynamic())
-        return FALSE;
-
-#ifdef FEATURE_PREJIT
-    if (IsNativeLoaded())
-    {
-        CONSISTENCY_CHECK(HasNativeImage());
-
-        return m_nativeImage->GetNativeILHasSecurityDirectory();
-    }
-#ifndef DACCESS_COMPILE
-    if (!HasOpenedILimage())
-    {
-        //don't want to touch the IL image unless we already have
-        ReleaseHolder<PEImage> pNativeImage = GetNativeImageWithRef();
-        if (pNativeImage)
-            return pNativeImage->GetNativeILHasSecurityDirectory();
-    }
-#endif // DACCESS_COMPILE
-#endif // FEATURE_PREJIT
-
-    if (!GetILimage()->HasNTHeaders())
-        return FALSE;
-
-    return GetOpenedILimage()->HasDirectoryEntry(IMAGE_DIRECTORY_ENTRY_SECURITY);
-}
 
 inline BOOL PEFile::IsIbcOptimized()
 {
@@ -1016,87 +917,6 @@ inline CHECK PEFile::CheckInternalPInvokeTarget(RVA target)
     CHECK(!IsILOnly());
     CHECK(GetLoadedIL()->CheckRva(target));
     
-    CHECK_OK;
-}
-    
-inline PCCOR_SIGNATURE  PEFile::GetSignature(RVA signature)
-{
-    CONTRACT(PCCOR_SIGNATURE)
-    {
-        INSTANCE_CHECK;
-        PRECONDITION(!IsDynamic() || signature == 0);
-        PRECONDITION(!IsResource());
-        PRECONDITION(CheckSignatureRva(signature));
-        POSTCONDITION(CheckSignature(RETVAL));
-        PRECONDITION(CheckLoaded());
-        NOTHROW;
-        GC_NOTRIGGER;
-        MODE_ANY;
-    }
-    CONTRACT_END;
-
-    if (signature == 0)
-        RETURN NULL;
-    else
-        RETURN (PCCOR_SIGNATURE) GetLoadedIL()->GetRvaData(signature);
-}
-
-inline RVA PEFile::GetSignatureRva(PCCOR_SIGNATURE signature)
-{
-    CONTRACT(RVA)
-    {
-        INSTANCE_CHECK;
-        PRECONDITION(!IsDynamic() || signature == NULL);
-        PRECONDITION(!IsResource());
-        PRECONDITION(CheckSignature(signature));
-        POSTCONDITION(CheckSignatureRva(RETVAL));
-        PRECONDITION(CheckLoaded());
-        NOTHROW;
-        GC_NOTRIGGER;
-        MODE_ANY;
-    }
-    CONTRACT_END;
-
-    if (signature == NULL)
-        RETURN 0;
-    else
-        RETURN GetLoadedIL()->GetDataRva(
-            dac_cast<TADDR>(signature));
-}
-
-inline CHECK PEFile::CheckSignature(PCCOR_SIGNATURE signature)
-{
-    CONTRACT_CHECK
-    {
-        INSTANCE_CHECK;
-        PRECONDITION(!IsDynamic() || signature == NULL);
-        PRECONDITION(!IsResource());
-        PRECONDITION(CheckLoaded());
-        NOTHROW;
-        GC_NOTRIGGER;
-        MODE_ANY;
-    }
-    CONTRACT_CHECK_END;
-        
-    CHECK(GetLoadedIL()->CheckData(signature,NULL_OK));
-    CHECK_OK;
-}
-
-inline CHECK PEFile::CheckSignatureRva(RVA signature)
-{
-    CONTRACT_CHECK
-    {
-        INSTANCE_CHECK;
-        PRECONDITION(!IsDynamic() || signature == NULL);
-        PRECONDITION(!IsResource());
-        PRECONDITION(CheckLoaded());
-        NOTHROW;
-        GC_NOTRIGGER;
-        MODE_ANY;
-    }
-    CONTRACT_CHECK_END;
-        
-    CHECK(GetLoadedIL()->CheckRva(signature,NULL_OK));
     CHECK_OK;
 }
 
@@ -1657,12 +1477,6 @@ inline BOOL PEFile::IsStrongNamed()
 // Check to see if this assembly has had its strong name signature verified yet.
 //
 
-inline BOOL PEFile::IsStrongNameVerified()
-{
-    LIMITED_METHOD_CONTRACT;
-    return m_fStrongNameVerified;
-}
-
 inline const void *PEFile::GetPublicKey(DWORD *pcbPK)
 {
     CONTRACTL
@@ -1774,42 +1588,6 @@ inline BOOL PEAssembly::HasStrongNameSignature()
 
     return GetILimage()->HasStrongNameSignature();
 }
-
-//---------------------------------------------------------------------------------------
-//
-// Check to see that an assembly is not delay or test signed
-//
-
-inline BOOL PEAssembly::IsFullySigned()
-{
-    WRAPPER_NO_CONTRACT;
-
-#ifdef FEATURE_PREJIT
-    if (IsNativeLoaded())
-    {
-        CONSISTENCY_CHECK(HasNativeImage());
-
-        // If we are strongly named and successfully strong named, then we consider ourselves fully
-        // signed since either our signature verified at ngen time, or skip verification was in effect
-        // The only code that differentiates between skip verification and fully signed is in the strong
-        // name verification path itself, and therefore we abstract that away at this level.
-        //
-        // Note that this is consistent with other abstractions at the PEFile level such as
-        // HasStrongNameSignature()
-        return IsStrongNamed();
-    } else
-#endif // FEATURE_PREJIT
-    if (HasOpenedILimage())
-    {
-        return GetOpenedILimage()->IsStrongNameSigned();
-    }
-    else
-    {
-        return FALSE;
-    }
-}
-
-
 
 // ------------------------------------------------------------
 // Metadata access

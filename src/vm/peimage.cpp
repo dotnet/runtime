@@ -159,26 +159,6 @@ void PEImage::GetAll(SArray<PEImage*> &images)
     }
 }
 
-/* static */
-ULONG PEImage::HashStreamIds(UINT64 id1, DWORD id2)
-{
-    LIMITED_METHOD_CONTRACT;
-
-    ULONG hash = 5381;
-
-    hash ^= id2;
-    hash = _rotl(hash, 4);
-
-    void *data = &id1;
-    hash ^= *(INT32 *) data;
-
-    hash = _rotl(hash, 4);
-    ((INT32 *&)data)++;
-    hash ^= *(INT32 *) data;
-
-    return hash;
-}
-
 PEImage::~PEImage()
 {
     CONTRACTL
@@ -1279,23 +1259,6 @@ HANDLE PEImage::GetFileHandle()
     return m_hFile;
 }
 
-// Like GetFileHandle, but can be called without the PEImage being locked for writing.
-// Only intend to be called by NGen.
-HANDLE PEImage::GetFileHandleLocking()
-{
-    CONTRACTL
-    {
-        STANDARD_VM_CHECK;
-    }
-    CONTRACTL_END;
-
-    if (m_hFile!=INVALID_HANDLE_VALUE)
-        return m_hFile;
-
-    SimpleWriteLockHolder lock(m_pLayoutLock);
-    return GetFileHandle();
-}
-
 void PEImage::SetFileHandle(HANDLE hFile)
 {
     CONTRACTL
@@ -1337,33 +1300,6 @@ HRESULT PEImage::TryOpenFile()
     return HRESULT_FROM_WIN32(ERROR_FILE_NOT_FOUND);
 }
 
-
-
-HANDLE PEImage::GetProtectingFileHandle(BOOL bProtectIfNotOpenedYet)
-{
-    STANDARD_VM_CONTRACT;
-
-    if (m_hFile==INVALID_HANDLE_VALUE && !bProtectIfNotOpenedYet)
-        return INVALID_HANDLE_VALUE;
-
-    HANDLE hRet=INVALID_HANDLE_VALUE;
-    {
-        ErrorModeHolder mode(SEM_NOOPENFILEERRORBOX|SEM_FAILCRITICALERRORS);
-        hRet=WszCreateFile((LPCWSTR) m_path,
-                                            GENERIC_READ,
-                                            FILE_SHARE_READ,
-                                            NULL,
-                                            OPEN_EXISTING,
-                                            FILE_ATTRIBUTE_NORMAL,
-                                            NULL);
-    }
-    if (hRet == INVALID_HANDLE_VALUE)
-        ThrowLastError();
-    if (m_hFile!=INVALID_HANDLE_VALUE && !CompareFiles(m_hFile,hRet))
-        ThrowHR(FUSION_E_REF_DEF_MISMATCH);
-
-    return hRet;
-}
 
 BOOL PEImage::IsPtrInImage(PTR_CVOID data)
 {

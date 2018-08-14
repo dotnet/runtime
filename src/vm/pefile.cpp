@@ -66,11 +66,9 @@ PEFile::PEFile(PEImage *identity, BOOL fCheckAuthenticodeSignature/*=TRUE*/) :
     m_pEmitter(NULL),
     m_pMetadataLock(::new SimpleRWLock(PREEMPTIVE, LOCK_TYPE_DEFAULT)),
     m_refCount(1),
-    m_hash(NULL),
     m_flags(0),
-    m_fStrongNameVerified(FALSE)
-    ,m_pHostAssembly(nullptr)
-    ,m_pFallbackLoadContextBinder(nullptr)
+    m_pHostAssembly(nullptr),
+    m_pFallbackLoadContextBinder(nullptr)
 {
     CONTRACTL
     {
@@ -112,9 +110,6 @@ PEFile::~PEFile()
     
     ReleaseMetadataInterfaces(TRUE);
     
-    if (m_hash != NULL)
-        delete m_hash;
-
 #ifdef FEATURE_PREJIT
     if (m_nativeImage != NULL)
     {
@@ -1992,9 +1987,6 @@ PEAssembly::PEAssembly(
         m_bIsOnTpaList = pBindResultInfo->IsOnTpaList();
     }
 
-    // Check security related stuff
-    VerifyStrongName();
-
     // Open metadata eagerly to minimize failure windows
     if (pEmit == NULL)
         OpenMDImport_Unsafe(); //constructor, cannot race with anything
@@ -2311,9 +2303,6 @@ void PEAssembly::SetNativeImage(PEImage * image)
             //cache a bunch of PE metadata in the PEDecoder
             m_ILimage->CheckILFormat();
 
-            //we also need some of metadata (for the public key), so cache this too
-            DWORD verifyOutputFlags;
-            m_ILimage->VerifyStrongName(&verifyOutputFlags);
             //fudge this by a few pages to make sure we can still mess with the PE headers
             const size_t fudgeSize = 4096 * 4;
             ClrVirtualProtect((void*)(((char *)layout->GetBase()) + fudgeSize),
@@ -2343,56 +2332,6 @@ BOOL PEAssembly::IsSourceGAC()
 
 
 #ifndef DACCESS_COMPILE
-
-
-// ------------------------------------------------------------
-// Hash support
-// ------------------------------------------------------------
-
-void PEAssembly::VerifyStrongName()
-{
-    CONTRACTL
-    {
-        INSTANCE_CHECK;
-        THROWS;
-        GC_TRIGGERS;
-        MODE_ANY;
-        INJECT_FAULT(COMPlusThrowOM(););
-    }
-    CONTRACTL_END;
-
-    // If we've already done the signature checks, we don't need to do them again.
-    if (m_fStrongNameVerified)
-    {
-        return;
-    }
-
-    // Without FUSION/GAC, we need to verify SN on all assemblies, except dynamic assemblies.
-    if (IsDynamic())
-    {
-
-        m_flags |= PEFILE_SKIP_MODULE_HASH_CHECKS;
-        m_fStrongNameVerified = TRUE;
-        return;
-    }
-
-    // Next, verify the strong name, if necessary
-
-    // Check format of image. Note we must delay this until after the GAC status has been
-    // checked, to handle the case where we are not loading m_image.
-    EnsureImageOpened();
-
-
-    if (m_nativeImage == NULL && !GetILimage()->IsTrustedNativeImage())
-    {
-        if (!GetILimage()->CheckILFormat())
-            ThrowHR(COR_E_BADIMAGEFORMAT);
-    }
-
-    // Runtime policy on CoreCLR is to skip verification of ALL assemblies
-    m_flags |= PEFILE_SKIP_MODULE_HASH_CHECKS;
-    m_fStrongNameVerified = TRUE;
-}
 
 BOOL PEAssembly::IsProfileAssembly()
 {

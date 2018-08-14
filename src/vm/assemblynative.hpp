@@ -81,13 +81,6 @@ public:
     static
     void QCALLTYPE GetVersion(QCall::AssemblyHandle pAssembly, INT32* pMajorVersion, INT32* pMinorVersion, INT32*pBuildNumber, INT32* pRevisionNumber);
 
-    static
-    void QCALLTYPE LoadModule(QCall::AssemblyHandle pAssembly, 
-                                             LPCWSTR wszModuleName,
-                                             LPCBYTE pRawModule, INT32 cbModule,
-                                             LPCBYTE pRawSymbolStore, INT32 cbSymbolStore,
-                                             QCall::ObjectHandleOnStack retModule);
-
     static 
     void QCALLTYPE GetType(QCall::AssemblyHandle pAssembly, LPCWSTR wszName, BOOL bThrowOnError, BOOL bIgnoreCase, QCall::ObjectHandleOnStack retType, QCall::ObjectHandleOnStack keepAlive);
 
@@ -96,9 +89,6 @@ public:
 
     static 
     INT32 QCALLTYPE GetManifestResourceInfo(QCall::AssemblyHandle pAssembly, LPCWSTR wszName, QCall::ObjectHandleOnStack retAssembly, QCall::StringHandleOnStack retFileName, QCall::StackCrawlMarkHandle stackMark);
-
-    static 
-    BOOL QCALLTYPE UseRelativeBindForSatellites();
 
     static
     void QCALLTYPE GetModules(QCall::AssemblyHandle pAssembly, BOOL fLoadIfNotFound, BOOL fGetResourceModules, QCall::ObjectHandleOnStack retModules);
@@ -118,48 +108,14 @@ public:
     static 
     void QCALLTYPE GetEntryPoint(QCall::AssemblyHandle pAssembly, QCall::ObjectHandleOnStack retMethod);
 
-    static FCDECL1(ReflectModuleBaseObject *, GetOnDiskAssemblyModule, AssemblyBaseObject * pAssemblyUNSAFE);
     static FCDECL1(ReflectModuleBaseObject *, GetInMemoryAssemblyModule, AssemblyBaseObject * pAssemblyUNSAFE);
 
     static 
     void QCALLTYPE GetImageRuntimeVersion(QCall::AssemblyHandle pAssembly, QCall::StringHandleOnStack retString);
 
-
-    //
-    // AssemblyBuilder FCALLs
-    //
-
-    static
-    void QCALLTYPE PrepareForSavingManifestToDisk(QCall::AssemblyHandle pAssembly, QCall::ModuleHandle pAssemblyModule);
-
-
-    static
-    mdFile QCALLTYPE AddFile(QCall::AssemblyHandle pAssembly, LPCWSTR wszFileName);
-
-    static 
-    void QCALLTYPE SetFileHashValue(QCall::AssemblyHandle pAssembly, INT32 tkFile, LPCWSTR wszFullFileName);
-
-    static
-    void QCALLTYPE AddStandAloneResource(QCall::AssemblyHandle pAssembly, LPCWSTR wszName, LPCWSTR wszFileName, LPCWSTR wszFullFileName, INT32 iAttribute);
-
-    static
-    void QCALLTYPE AddDeclarativeSecurity(QCall::AssemblyHandle pAssembly, INT32 action, PVOID blob, INT32 length);
-
-
-    static
-    void QCALLTYPE GetRawBytes(QCall::AssemblyHandle pAssembly, QCall::ObjectHandleOnStack retRawBytes);
-
     //
     // PEFile QCalls
     // 
-    
-    static
-    void QCALLTYPE ReleaseSafePEFileHandle(PEFile *pPEFile);
-
-#ifdef FEATURE_APPX
-    static
-    BOOL QCALLTYPE IsDesignerBindingContext(QCall::AssemblyHandle pAssembly);
-#endif
 
     static INT_PTR QCALLTYPE InitializeAssemblyLoadContext(INT_PTR ptrManagedAssemblyLoadContext, BOOL fRepresentsTPALoadContext);
     static BOOL QCALLTYPE OverrideDefaultAssemblyLoadContextForCurrentDomain(INT_PTR ptrNativeAssemblyLoadContext);
