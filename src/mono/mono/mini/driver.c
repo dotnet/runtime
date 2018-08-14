@@ -408,7 +408,7 @@ mini_regression_step (MonoImage *image, int verbose, int *total_run, int *total,
 #else
 					func = (TestMethod)(gpointer)cfg->native_code;
 #endif
-				func = (TestMethod)mono_create_ftnptr (mono_get_root_domain (), func);
+				func = (TestMethod)mono_create_ftnptr (mono_get_root_domain (), (gpointer)func);
 				result = func ();
 				if (result != expected) {
 					failed++;
@@ -1057,7 +1057,7 @@ jit_info_table_test (MonoDomain *domain)
 	*/
 
 	for (i = 0; i < num_threads; ++i) {
-		mono_thread_create_checked (domain, test_thread_func, &thread_datas [i], error);
+		mono_thread_create_checked (domain, (gpointer)test_thread_func, &thread_datas [i], error);
 		mono_error_assert_ok (error);
 	}
 }
@@ -1167,7 +1167,7 @@ compile_all_methods (MonoAssembly *ass, int verbose, guint32 opts, guint32 recom
 	 * Need to create a mono thread since compilation might trigger
 	 * running of managed code.
 	 */
-	mono_thread_create_checked (mono_domain_get (), compile_all_methods_thread_main, &args, error);
+	mono_thread_create_checked (mono_domain_get (), (gpointer)compile_all_methods_thread_main, &args, error);
 	mono_error_assert_ok (error);
 
 	mono_thread_manage ();

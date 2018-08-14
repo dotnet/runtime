@@ -285,7 +285,7 @@ sgen_thread_pool_start (void)
 	threadpool_shutdown = FALSE;
 
 	for (i = 0; i < threads_num; i++) {
-		mono_native_thread_create (&threads [i], thread_func, (void*)(gsize)i);
+		mono_native_thread_create (&threads [i], (gpointer)thread_func, (void*)(gsize)i);
 	}
 }
 

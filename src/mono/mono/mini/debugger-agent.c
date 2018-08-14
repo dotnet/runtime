@@ -1615,7 +1615,7 @@ start_debugger_thread (void)
 	ERROR_DECL (error);
 	MonoInternalThread *thread;
 
-	thread = mono_thread_create_internal (mono_get_root_domain (), debugger_thread, NULL, MONO_THREAD_CREATE_FLAGS_DEBUGGER, error);
+	thread = mono_thread_create_internal (mono_get_root_domain (), (gpointer)debugger_thread, NULL, MONO_THREAD_CREATE_FLAGS_DEBUGGER, error);
 	mono_error_assert_ok (error);
 
 	debugger_thread_handle = mono_threads_open_thread_handle (thread->handle);

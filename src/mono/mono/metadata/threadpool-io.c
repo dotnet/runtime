@@ -582,7 +582,7 @@ initialize (void)
 	io_selector_running = TRUE;
 
 	ERROR_DECL (error);
-	if (!mono_thread_create_internal (mono_get_root_domain (), selector_thread, NULL, MONO_THREAD_CREATE_FLAGS_THREADPOOL | MONO_THREAD_CREATE_FLAGS_SMALL_STACK, error))
+	if (!mono_thread_create_internal (mono_get_root_domain (), (gpointer)selector_thread, NULL, (MonoThreadCreateFlags)(MONO_THREAD_CREATE_FLAGS_THREADPOOL | MONO_THREAD_CREATE_FLAGS_SMALL_STACK), error))
 		g_error ("initialize: mono_thread_create_internal () failed due to %s", mono_error_get_message (error));
 
 	mono_coop_mutex_unlock (&threadpool_io->updates_lock);
