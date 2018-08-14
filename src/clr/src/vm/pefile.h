@@ -222,18 +222,6 @@ public:
     PEAssembly *GetAssembly() const;
 
     // ------------------------------------------------------------
-    // Hash support
-    // ------------------------------------------------------------
-
-#ifndef DACCESS_COMPILE
-    void GetImageBits(SBuffer &result);
-    void GetHash(ALG_ID algorithm, SBuffer &result);
-#endif // DACCESS_COMPILE
-
-    void GetSHA1Hash(SBuffer &result);
-    CHECK CheckHash(ALG_ID algorithm, const void *hash, COUNT_T size);
-
-    // ------------------------------------------------------------
     // Metadata access
     // ------------------------------------------------------------
 
@@ -266,7 +254,6 @@ public:
     // PE file access
     // ------------------------------------------------------------
 
-    BOOL HasSecurityDirectory();
     BOOL IsIbcOptimized();
     BOOL IsILImageReadyToRun();
     WORD GetSubsystem();
@@ -283,11 +270,6 @@ public:
     PTR_VOID GetRvaField(RVA field);
     CHECK CheckRvaField(RVA field);
     CHECK CheckRvaField(RVA field, COUNT_T size);
-
-    PCCOR_SIGNATURE GetSignature(RVA signature);
-    RVA GetSignatureRva(PCCOR_SIGNATURE signature);
-    CHECK CheckSignature(PCCOR_SIGNATURE signature);
-    CHECK CheckSignatureRva(RVA signature);
 
     BOOL HasTls();
     BOOL IsRvaFieldTls(RVA field);
@@ -445,9 +427,7 @@ protected:
         PEFILE_SYSTEM                 = 0x01,
         PEFILE_ASSEMBLY               = 0x02,
         PEFILE_MODULE                 = 0x04,
-        //                            = 0x08,
-        PEFILE_SKIP_MODULE_HASH_CHECKS= 0x10,
-        PEFILE_ISTREAM                = 0x100,
+
 #ifdef FEATURE_PREJIT        
         PEFILE_HAS_NATIVE_IMAGE_METADATA = 0x200,
         PEFILE_NATIVE_IMAGE_USED_EXCLUSIVELY =0x1000,
@@ -529,9 +509,7 @@ protected:
     IMetaDataEmit           *m_pEmitter;
     SimpleRWLock            *m_pMetadataLock;
     Volatile<LONG>           m_refCount;
-    SBuffer                 *m_hash;                   // cached SHA1 hash value
     int                     m_flags;
-    BOOL                    m_fStrongNameVerified;
 
 #ifdef DEBUGGING_SUPPORTED
 #ifdef FEATURE_PREJIT
@@ -723,13 +701,7 @@ class PEAssembly : public PEFile
     // Hash support
     // ------------------------------------------------------------
 
-    BOOL NeedsModuleHashChecks();
-
     BOOL HasStrongNameSignature();
-    BOOL IsFullySigned();
-
-    void SetStrongNameBypassed();
-    void VerifyStrongName();
 
     // ------------------------------------------------------------
     // Descriptive strings
@@ -800,16 +772,7 @@ class PEAssembly : public PEFile
 
     BOOL CheckNativeImageVersion(PEImage *image);
 
-
-
 #endif  // FEATURE_PREJIT
-
-  private:
-    // Check both the StrongName and Authenticode signature of an assembly. If the application is using
-    // strong name bypass, then this call may not result in a strong name verificaiton. VerifyStrongName
-    // should be called if a strong name must be forced to verify.
-    void DoLoadSignatureChecks();
-
 
   private:
     // ------------------------------------------------------------
