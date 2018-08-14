@@ -322,7 +322,6 @@ typedef long time_t;
 #define PAL_INITIALIZE_DEBUGGER_EXCEPTIONS          0x10
 #define PAL_INITIALIZE_ENSURE_STACK_SIZE            0x20
 #define PAL_INITIALIZE_REGISTER_SIGNALS             0x40
-#define PAL_INITIALIZE_ENSURE_ALT_SIGNAL_STACK      0x80
 
 // PAL_Initialize() flags
 #define PAL_INITIALIZE                 (PAL_INITIALIZE_SYNC_THREAD | \
@@ -337,8 +336,7 @@ typedef long time_t;
                                         PAL_INITIALIZE_REGISTER_SIGTERM_HANDLER | \
                                         PAL_INITIALIZE_DEBUGGER_EXCEPTIONS | \
                                         PAL_INITIALIZE_ENSURE_STACK_SIZE | \
-                                        PAL_INITIALIZE_REGISTER_SIGNALS | \
-                                        PAL_INITIALIZE_ENSURE_ALT_SIGNAL_STACK)
+                                        PAL_INITIALIZE_REGISTER_SIGNALS)
 
 typedef DWORD (PALAPI *PTHREAD_START_ROUTINE)(LPVOID lpThreadParameter);
 typedef PTHREAD_START_ROUTINE LPTHREAD_START_ROUTINE;
@@ -355,7 +353,7 @@ PAL_Initialize(
 PALIMPORT
 void
 PALAPI
-PAL_SetInitializeFlags(
+PAL_InitializeWithFlags(
     DWORD flags);
 
 PALIMPORT

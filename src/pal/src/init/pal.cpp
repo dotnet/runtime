@@ -158,7 +158,7 @@ PAL_Initialize(
 
 /*++
 Function:
-  PAL_InitializeFlags
+  PAL_InitializeWithFlags
 
 Abstract:
   This function is the first function of the PAL to be called.
@@ -172,7 +172,7 @@ Return:
 --*/
 int
 PALAPI
-PAL_InitializeFlags(
+PAL_InitializeWithFlags(
     int argc,
     const char *const argv[],
     DWORD flags)
