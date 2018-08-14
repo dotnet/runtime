@@ -9,17 +9,17 @@
        These ref versions are pulled from https://github.com/dotnet/versions.
   -->
   <PropertyGroup>
-    <CoreFxCurrentRef>c744a7cef7e7196d22d87ae8bdbbac3ba62e4e49</CoreFxCurrentRef>
-    <CoreClrCurrentRef>4490675aaa3c3f6ad0fb16dd8a26d202b9b06b99</CoreClrCurrentRef>
+    <CoreFxCurrentRef>4fff7606f722c982dc8f7257a6b012d13129f99a</CoreFxCurrentRef>
+    <CoreClrCurrentRef>4fff7606f722c982dc8f7257a6b012d13129f99a</CoreClrCurrentRef>
     <StandardCurrentRef>9beae4222a58a355e2107e99bdbcb8902c232c18</StandardCurrentRef>
     <BuildToolsCurrentRef>d16232814e6d6854b17d8e8046afbe86f0344e38</BuildToolsCurrentRef>
   </PropertyGroup>
 
   <PropertyGroup>
-    <MicrosoftNETCorePlatformsPackageVersion>3.0.0-preview1-26811-01</MicrosoftNETCorePlatformsPackageVersion>
+    <MicrosoftNETCorePlatformsPackageVersion>3.0.0-preview1-26814-01</MicrosoftNETCorePlatformsPackageVersion>
     <MicrosoftNETCoreTargetsPackageVersion>2.0.0</MicrosoftNETCoreTargetsPackageVersion>
-    <MicrosoftPrivateCoreFxNETCoreAppPackageVersion>4.6.0-preview1-26811-01</MicrosoftPrivateCoreFxNETCoreAppPackageVersion>
-    <MicrosoftNETCoreRuntimeCoreCLRPackageVersion>3.0.0-preview1-26810-04</MicrosoftNETCoreRuntimeCoreCLRPackageVersion>
+    <MicrosoftPrivateCoreFxNETCoreAppPackageVersion>4.6.0-preview1-26814-01</MicrosoftPrivateCoreFxNETCoreAppPackageVersion>
+    <MicrosoftNETCoreRuntimeCoreCLRPackageVersion>3.0.0-preview1-26814-06</MicrosoftNETCoreRuntimeCoreCLRPackageVersion>
     <NETStandardLibraryPackageVersion>2.0.3</NETStandardLibraryPackageVersion>
     <MicrosoftDiaSymReaderNativePackageVersion>1.7.0</MicrosoftDiaSymReaderNativePackageVersion>
     <MicrosoftTargetingPackPrivateWinRTPackageVersion>1.0.5</MicrosoftTargetingPackPrivateWinRTPackageVersion>
