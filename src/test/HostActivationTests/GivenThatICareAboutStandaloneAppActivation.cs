@@ -41,7 +41,9 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation.StandaloneApp
                 .Should()
                 .Pass()
                 .And
-                .HaveStdOutContaining("Hello World");
+                .HaveStdOutContaining("Hello World")
+                .And
+                .HaveStdOutContaining($"Framework Version:{sharedTestState.RepoDirectories.MicrosoftNETCoreAppVersion}");
         }
 
         [Fact]
@@ -59,7 +61,9 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation.StandaloneApp
                 .Should()
                 .Pass()
                 .And
-                .HaveStdOutContaining("Hello World");
+                .HaveStdOutContaining("Hello World")
+                .And
+                .HaveStdOutContaining($"Framework Version:{sharedTestState.RepoDirectories.MicrosoftNETCoreAppVersion}");
         }
 
         [Fact]
@@ -138,7 +142,9 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation.StandaloneApp
                 .Should()
                 .Pass()
                 .And
-                .HaveStdOutContaining("Hello World");
+                .HaveStdOutContaining("Hello World")
+                .And
+                .HaveStdOutContaining($"Framework Version:{sharedTestState.RepoDirectories.MicrosoftNETCoreAppVersion}");
         }
 
         [Fact]
@@ -175,7 +181,9 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation.StandaloneApp
                 .Should()
                 .Pass()
                 .And
-                .HaveStdOutContaining("Hello World");
+                .HaveStdOutContaining("Hello World")
+                .And
+                .HaveStdOutContaining($"Framework Version:{sharedTestState.RepoDirectories.MicrosoftNETCoreAppVersion}");
         }
 
         [Fact]
@@ -259,7 +267,9 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation.StandaloneApp
                 .Should()
                 .Pass()
                 .And
-                .HaveStdOutContaining("Hello World");
+                .HaveStdOutContaining("Hello World")
+                .And
+                .HaveStdOutContaining($"Framework Version:{sharedTestState.RepoDirectories.MicrosoftNETCoreAppVersion}");
         }
 
         public class SharedTestState : IDisposable

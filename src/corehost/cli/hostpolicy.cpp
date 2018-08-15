@@ -103,11 +103,12 @@ int run(const arguments_t& args, pal::string_t* out_host_command_result = nullpt
         "APP_CONTEXT_BASE_DIRECTORY",
         "APP_CONTEXT_DEPS_FILES",
         "FX_DEPS_FILE",
-        "PROBING_DIRECTORIES"
+        "PROBING_DIRECTORIES",
+        "FX_PRODUCT_VERSION"
     };
 
     // Note: these variables' lifetime should be longer than coreclr_initialize.
-    std::vector<char> tpa_paths_cstr, app_base_cstr, native_dirs_cstr, resources_dirs_cstr, fx_deps, deps, clrjit_path_cstr, probe_directories;
+    std::vector<char> tpa_paths_cstr, app_base_cstr, native_dirs_cstr, resources_dirs_cstr, fx_deps, deps, clrjit_path_cstr, probe_directories, clr_library_version;
     pal::pal_clrstring(probe_paths.tpa, &tpa_paths_cstr);
     pal::pal_clrstring(args.app_root, &app_base_cstr);
     pal::pal_clrstring(probe_paths.native, &native_dirs_cstr);
@@ -135,6 +136,15 @@ int run(const arguments_t& args, pal::string_t* out_host_command_result = nullpt
 
     pal::pal_clrstring(resolver.get_lookup_probe_directories(), &probe_directories);
 
+    if (resolver.is_framework_dependent())
+    {
+        pal::pal_clrstring(get_root_framework(resolver.get_fx_definitions()).get_found_version() , &clr_library_version);
+    }
+    else
+    {
+        pal::pal_clrstring(resolver.get_coreclr_library_version(), &clr_library_version);
+    }
+
     std::vector<const char*> property_values = {
         // TRUSTED_PLATFORM_ASSEMBLIES
         tpa_paths_cstr.data(),
@@ -151,7 +161,9 @@ int run(const arguments_t& args, pal::string_t* out_host_command_result = nullpt
         // FX_DEPS_FILE
         fx_deps.data(),
         //PROBING_DIRECTORIES
-        probe_directories.data()
+        probe_directories.data(),
+        //FX_PRODUCT_VERSION
+        clr_library_version.data()
     };
 
     if (!clrjit_path.empty())
