@@ -1216,8 +1216,7 @@ namespace System.Data.SqlClient
         // bytes from the in buffer.
         public bool TryReadByteArray(Span<byte> buff, int len)
         {
-            int ignored;
-            return TryReadByteArray(buff, len, out ignored);
+            return TryReadByteArray(buff, len, out _);
         }
 
         // NOTE: This method must be retriable WITHOUT replaying a snapshot
