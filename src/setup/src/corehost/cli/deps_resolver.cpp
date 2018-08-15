@@ -573,6 +573,7 @@ void deps_resolver_t::init_known_entry_path(const deps_entry_t& entry, const pal
     if (m_coreclr_path.empty() && ends_with(entry.asset.relative_path, _X("/") + pal::string_t(LIBCORECLR_NAME), false))
     {
         m_coreclr_path = path;
+        m_coreclr_library_version = entry.library_version;
         return;
     }
     if (m_clrjit_path.empty() && ends_with(entry.asset.relative_path, _X("/") + pal::string_t(LIBCLRJIT_NAME), false))

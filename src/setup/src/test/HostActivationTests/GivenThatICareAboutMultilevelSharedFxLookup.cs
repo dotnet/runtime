@@ -322,7 +322,9 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation.MultilevelSharedFxLooku
                 .Should()
                 .Pass()
                 .And
-                .HaveStdErrContaining(Path.Combine(_exeSelectedMessage, "9999.1.1"));
+                .HaveStdErrContaining(Path.Combine(_exeSelectedMessage, "9999.1.1"))
+                .And
+                .HaveStdOutContaining("Framework Version:9999.1.1");
 
             // Verify we have the expected runtime versions
             dotnet.Exec("--list-runtimes")
@@ -386,7 +388,9 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation.MultilevelSharedFxLooku
                 .Should()
                 .Pass()
                 .And
-                .HaveStdErrContaining(Path.Combine(_exeSelectedMessage, "9999.1.1"));
+                .HaveStdErrContaining(Path.Combine(_exeSelectedMessage, "9999.1.1"))
+                .And
+                .HaveStdOutContaining("Framework Version:9999.1.1");
 
             // Version: 9999.0.0
             // 'Roll forward on no candidate fx' disabled through env var
@@ -564,7 +568,9 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation.MultilevelSharedFxLooku
                 .Should()
                 .Pass()
                 .And
-                .HaveStdErrContaining(Path.Combine(_exeSelectedMessage, "9999.0.0-dummy2"));
+                .HaveStdErrContaining(Path.Combine(_exeSelectedMessage, "9999.0.0-dummy2"))
+                .And
+                .HaveStdOutContaining("Framework Version:9999.0.0-dummy2");
 
             // Verify we have the expected runtime versions
             dotnet.Exec("--list-runtimes")
@@ -665,6 +671,8 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation.MultilevelSharedFxLooku
                 .And
                 .HaveStdErrContaining(Path.Combine(_exeSelectedMessage, "9999.0.0"))
                 .And
+                .HaveStdOutContaining("Framework Version:9999.0.0")
+                .And
                 .HaveStdErrContaining(Path.Combine(_exeFoundUberFxMessage, "7777.0.0"));
 
             // Add a newer version to verify roll-forward
@@ -764,6 +772,8 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation.MultilevelSharedFxLooku
                 .And
                 .HaveStdErrContaining(Path.Combine(_exeSelectedMessage, "9999.1.0"))
                 .And
+                .HaveStdOutContaining("Framework Version:9999.1.0")
+                .And
                 .HaveStdErrContaining(Path.Combine(_exeFoundUberFxMessage, "7777.0.0"))
                 .And
                 .HaveStdErrContaining("Property TestProperty = UberValue");
@@ -789,6 +799,8 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation.MultilevelSharedFxLooku
                 .Pass()
                 .And
                 .HaveStdErrContaining(Path.Combine(_exeSelectedMessage, "9999.1.0"))
+                .And
+                .HaveStdOutContaining("Framework Version:9999.1.0")
                 .And
                 .HaveStdErrContaining(Path.Combine(_exeFoundUberFxMessage, "7777.0.0"))
                 .And
@@ -832,6 +844,8 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation.MultilevelSharedFxLooku
                 .And
                 .HaveStdErrContaining(Path.Combine(_exeSelectedMessage, "9999.1.0"))
                 .And
+                .HaveStdOutContaining("Framework Version:9999.1.0")
+                .And
                 .HaveStdErrContaining(Path.Combine(_exeFoundUberFxMessage, "7777.0.0"));
 
             // Change the additionalFrameworks to allow roll forward, overriding Uber's global section and ignoring Uber's framework section
@@ -862,6 +876,8 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation.MultilevelSharedFxLooku
                 .Pass()
                 .And
                 .HaveStdErrContaining(Path.Combine(_exeSelectedMessage, "9999.1.0"))
+                .And
+                .HaveStdOutContaining("Framework Version:9999.1.0")
                 .And
                 .HaveStdErrContaining(Path.Combine(_exeFoundUberFxMessage, "7777.0.0"));
 

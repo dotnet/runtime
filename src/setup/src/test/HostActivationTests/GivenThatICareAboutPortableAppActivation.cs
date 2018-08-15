@@ -312,7 +312,10 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation.PortableApp
                 .Should()
                 .Pass()
                 .And
-                .HaveStdOutContaining("Hello World");
+                .HaveStdOutContaining("Hello World")
+                .And
+                .HaveStdOutContaining($"Framework Version:{sharedTestState.RepoDirectories.MicrosoftNETCoreAppVersion}");
+
 
             // Verify running from within the working directory
             Command.Create(appExe)
@@ -325,7 +328,9 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation.PortableApp
                 .Should()
                 .Pass()
                 .And
-                .HaveStdOutContaining("Hello World");
+                .HaveStdOutContaining("Hello World")
+                .And
+                .HaveStdOutContaining($"Framework Version:{sharedTestState.RepoDirectories.MicrosoftNETCoreAppVersion}");
         }
 
         private void MoveDepsJsonToSubdirectory(TestProjectFixture testProjectFixture)
