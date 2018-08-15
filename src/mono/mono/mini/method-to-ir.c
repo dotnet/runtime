@@ -6254,6 +6254,7 @@ is_supported_tailcall (MonoCompile *cfg, const guint8 *ip, MonoMethod *method, M
 		// Interface method dispatch has the same problem (imt_arg).
 
 		|| IS_NOT_SUPPORTED_TAILCALL (extra_arg && !cfg->backend->have_volatile_non_param_register)
+			   || IS_NOT_SUPPORTED_TAILCALL (cfg->gsharedvt)
 		) {
 		tailcall_calli = FALSE;
 		tailcall = FALSE;
