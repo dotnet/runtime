@@ -46,6 +46,7 @@
         System.Private.Xml;
         System.Private.Xml.Linq;
         System.Runtime.WindowsRuntime;
+        System.Runtime.WindowsRuntime.UI.Xaml;
         System.Security.AccessControl;
         System.Security.Cryptography.Cng;
         System.Security.Cryptography.OpenSsl;

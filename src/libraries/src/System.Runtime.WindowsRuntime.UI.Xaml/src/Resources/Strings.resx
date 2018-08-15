@@ -76,4 +76,7 @@
   <data name="LayoutCycle_Default" xml:space="preserve">
     <value>A cycle occurred while laying out the GUI.</value>
   </data>
+  <data name="PlatformNotSupported_WindowsRuntime" xml:space="preserve">
+    <value>Windows Runtime (WinRT) is not supported on this platform.</value>
+  </data>
 </root>
