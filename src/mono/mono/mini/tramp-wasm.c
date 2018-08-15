@@ -7,7 +7,9 @@ void mono_sdb_single_step_trampoline (void);
 gpointer
 mono_arch_create_specific_trampoline (gpointer arg1, MonoTrampolineType tramp_type, MonoDomain *domain, guint32 *code_len)
 {
-	g_error ("mono_arch_create_specific_trampoline");
+	static void *_dummy;
+
+	return (gpointer)&_dummy;
 }
 
 guchar*
@@ -74,3 +76,41 @@ mono_arch_create_sdb_trampoline (gboolean single_step, MonoTrampInfo **info, gbo
 		*info = mono_tramp_info_create (name, code, 1, NULL, NULL);
 	return code;
 }
+
+
+#ifndef DISABLE_JIT
+
+guint8*
+mono_arch_get_call_target (guint8 *code)
+{
+	g_error ("mono_arch_get_call_target");
+}
+
+/*
+ * mono_arch_get_plt_info_offset:
+ *
+ *   Return the PLT info offset belonging to the plt entry PLT_ENTRY.
+ */
+guint32
+mono_arch_get_plt_info_offset (guint8 *plt_entry, mgreg_t *regs, guint8 *code)
+{
+	g_error ("mono_arch_get_plt_info_offset");
+	return *(guint32*)(plt_entry + 6);
+}
+
+gpointer
+mono_arch_get_gsharedvt_arg_trampoline (MonoDomain *domain, gpointer arg, gpointer addr)
+{
+	g_assert_not_reached ();
+	return NULL;
+}
+
+gpointer
+mono_arch_get_gsharedvt_trampoline (MonoTrampInfo **info, gboolean aot)
+{
+	g_assert_not_reached ();
+	return NULL;
+}
+
+
+#endif
