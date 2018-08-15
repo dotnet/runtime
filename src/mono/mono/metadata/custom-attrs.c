@@ -133,15 +133,14 @@ free_param_data (MonoMethodSignature *sig, void **params) {
  */
 static guint32
 find_field_index (MonoClass *klass, MonoClassField *field) {
-	int i;
-
 	int fcount = mono_class_get_field_count (klass);
 	MonoClassField *klass_fields = m_class_get_fields (klass);
-	for (i = 0; i < fcount; ++i) {
-		if (field == &klass_fields [i])
-			return mono_class_get_first_field_idx (klass) + 1 + i;
-	}
-	return 0;
+	int index = field - klass_fields;
+	if (index > fcount)
+		return 0;
+
+	g_assert (field == &klass_fields [index]);
+	return mono_class_get_first_field_idx (klass) + 1 + index;
 }
 
 /*
