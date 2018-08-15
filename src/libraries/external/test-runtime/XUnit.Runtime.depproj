@@ -17,7 +17,7 @@
     <NuGetTargetMonikerShort Condition="'$(TargetGroup)' == 'uap'">netstandard2.0</NuGetTargetMonikerShort>
     <!-- Coverlet related properties -->
     <CoverletPackageId>coverlet.msbuild</CoverletPackageId>
-    <CoverletPackageVersion>2.1.1</CoverletPackageVersion>
+    <CoverletPackageVersion>2.2.1</CoverletPackageVersion>
     <!-- Don't warn if some dependencies were rolled forward -->
     <NoWarn>$(NoWarn);NU1603</NoWarn>
   </PropertyGroup>
