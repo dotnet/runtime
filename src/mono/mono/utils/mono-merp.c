@@ -426,7 +426,7 @@ mono_merp_fingerprint_payload (const char *non_param_data, const MERPStruct *mer
 
 	mono_json_writer_indent (&writer);
 	mono_json_writer_object_key(&writer, "SystemModel:");
-	mono_json_writer_printf (&writer, "\"%s\"\n", merp->systemModel);
+	mono_json_writer_printf (&writer, "\"%s\",\n", merp->systemModel);
 
 	mono_json_writer_indent (&writer);
 	mono_json_writer_object_key(&writer, "EventType:");
