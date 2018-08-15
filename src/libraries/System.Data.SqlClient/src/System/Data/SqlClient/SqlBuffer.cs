@@ -1036,15 +1036,6 @@ namespace System.Data.SqlClient
             _isNull = false;
         }
 
-        internal void SetToDate(DateTime date)
-        {
-            Debug.Assert(IsEmpty, "setting value a second time?");
-
-            _type = StorageType.Date;
-            _value._int32 = date.Subtract(DateTime.MinValue).Days;
-            _isNull = false;
-        }
-
         internal void SetToTime(ReadOnlySpan<byte> bytes, int length, byte scale)
         {
             Debug.Assert(IsEmpty, "setting value a second time?");
@@ -1054,16 +1045,6 @@ namespace System.Data.SqlClient
             _isNull = false;
         }
 
-        //internal void SetToTime(TimeSpan timeSpan, byte scale)
-        //{
-        //    Debug.Assert(IsEmpty, "setting value a second time?");
-
-        //    _type = StorageType.Time;
-        //    _value._timeInfo.ticks = timeSpan.Ticks;
-        //    _value._timeInfo.scale = scale;
-        //    _isNull = false;
-        //}
-
         internal void SetToDateTime2(ReadOnlySpan<byte> bytes, int length, byte scale)
         {
             Debug.Assert(IsEmpty, "setting value a second time?");
@@ -1072,17 +1053,6 @@ namespace System.Data.SqlClient
             _value._dateTime2Info.date = GetDateFromByteArray(bytes.Slice(length - 3)); // 3 bytes for date
             _isNull = false;
         }
-
-        //internal void SetToDateTime2(DateTime dateTime, byte scale)
-        //{
-        //    Debug.Assert(IsEmpty, "setting value a second time?");
-
-        //    _type = StorageType.DateTime2;
-        //    _value._dateTime2Info.timeInfo.ticks = dateTime.TimeOfDay.Ticks;
-        //    _value._dateTime2Info.timeInfo.scale = scale;
-        //    _value._dateTime2Info.date = dateTime.Subtract(DateTime.MinValue).Days;
-        //    _isNull = false;
-        //}
 
         internal void SetToDateTimeOffset(ReadOnlySpan<byte> bytes, int length, byte scale)
         {
@@ -1094,19 +1064,6 @@ namespace System.Data.SqlClient
             _value._dateTimeOffsetInfo.offset = (short)(bytes[length - 2] + (bytes[length - 1] << 8)); // 2 bytes for offset (Int16)
             _isNull = false;
         }
-
-        //internal void SetToDateTimeOffset(DateTimeOffset dateTimeOffset, byte scale)
-        //{
-        //    Debug.Assert(IsEmpty, "setting value a second time?");
-
-        //    _type = StorageType.DateTimeOffset;
-        //    DateTime utcDateTime = dateTimeOffset.UtcDateTime; // timeInfo stores the utc datetime of a datatimeoffset
-        //    _value._dateTimeOffsetInfo.dateTime2Info.timeInfo.ticks = utcDateTime.TimeOfDay.Ticks;
-        //    _value._dateTimeOffsetInfo.dateTime2Info.timeInfo.scale = scale;
-        //    _value._dateTimeOffsetInfo.dateTime2Info.date = utcDateTime.Subtract(DateTime.MinValue).Days;
-        //    _value._dateTimeOffsetInfo.offset = (short)dateTimeOffset.Offset.TotalMinutes;
-        //    _isNull = false;
-        //}
 
         private static void FillInTimeInfo(ref TimeInfo timeInfo, ReadOnlySpan<byte> timeBytes, int length, byte scale)
         {

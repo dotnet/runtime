@@ -20,7 +20,7 @@ namespace System.Data.SqlClient
         internal long _value;
     }
 
-    internal abstract partial class TdsParserStateObject
+    internal abstract class TdsParserStateObject
     {
         private const int AttentionTimeoutSeconds = 5;
 
@@ -517,7 +517,7 @@ namespace System.Data.SqlClient
                 }
 
                 // read the null bitmap compression information from TDS
-                if (!stateObj.TryReadByteArray(_nullBitmap.AsSpan(0), _nullBitmap.Length))
+                if (!stateObj.TryReadByteArray(_nullBitmap.AsSpan(), _nullBitmap.Length))
                 {
                     return false;
                 }
@@ -1343,7 +1343,7 @@ namespace System.Data.SqlClient
                 // If the char isn't fully in the buffer, or if it isn't fully in the packet,
                 // then use ReadByteArray since the logic is there to take care of that.
 
-                if (!TryReadByteArray(_bTmp.AsSpan(0), 2))
+                if (!TryReadByteArray(_bTmp.AsSpan(), 2))
                 {
                     value = '\0';
                     return false;
@@ -1380,7 +1380,7 @@ namespace System.Data.SqlClient
                 // If the int16 isn't fully in the buffer, or if it isn't fully in the packet,
                 // then use ReadByteArray since the logic is there to take care of that.
 
-                if (!TryReadByteArray(_bTmp.AsSpan(0), 2))
+                if (!TryReadByteArray(_bTmp.AsSpan(), 2))
                 {
                     value = default(short);
                     return false;
@@ -1414,7 +1414,7 @@ namespace System.Data.SqlClient
                 // If the int isn't fully in the buffer, or if it isn't fully in the packet,
                 // then use ReadByteArray since the logic is there to take care of that.
 
-                if (!TryReadByteArray(_bTmp.AsSpan(0), 4))
+                if (!TryReadByteArray(_bTmp.AsSpan(), 4))
                 {
                     value = 0;
                     return false;
@@ -1499,7 +1499,7 @@ namespace System.Data.SqlClient
                 // If the uint16 isn't fully in the buffer, or if it isn't fully in the packet,
                 // then use ReadByteArray since the logic is there to take care of that.
 
-                if (!TryReadByteArray(_bTmp.AsSpan(0), 2))
+                if (!TryReadByteArray(_bTmp.AsSpan(), 2))
                 {
                     value = default(ushort);
                     return false;
@@ -1582,7 +1582,7 @@ namespace System.Data.SqlClient
                 // If the float isn't fully in the buffer, or if it isn't fully in the packet,
                 // then use ReadByteArray since the logic is there to take care of that.
 
-                if (!TryReadByteArray(_bTmp.AsSpan(0), 4))
+                if (!TryReadByteArray(_bTmp.AsSpan(), 4))
                 {
                     value = default(float);
                     return false;
@@ -1615,7 +1615,7 @@ namespace System.Data.SqlClient
                 // If the double isn't fully in the buffer, or if it isn't fully in the packet,
                 // then use ReadByteArray since the logic is there to take care of that.
 
-                if (!TryReadByteArray(_bTmp.AsSpan(0), 8))
+                if (!TryReadByteArray(_bTmp.AsSpan(), 8))
                 {
                     value = default(double);
                     return false;
@@ -1654,7 +1654,7 @@ namespace System.Data.SqlClient
                     _bTmp = new byte[cBytes];
                 }
 
-                if (!TryReadByteArray(_bTmp.AsSpan(0), cBytes))
+                if (!TryReadByteArray(_bTmp.AsSpan(), cBytes))
                 {
                     value = null;
                     return false;
@@ -1729,7 +1729,7 @@ namespace System.Data.SqlClient
                         _bTmp = new byte[length];
                     }
 
-                    if (!TryReadByteArray(_bTmp.AsSpan(0), length))
+                    if (!TryReadByteArray(_bTmp.AsSpan(), length))
                     {
                         value = null;
                         return false;
