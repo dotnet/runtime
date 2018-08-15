@@ -211,7 +211,7 @@ gpointer
 ves_icall_System_Security_Principal_WindowsImpersonationContext_DuplicateToken (gpointer token, MonoError *error)
 {
 	gpointer dupe = NULL;
-	return DuplicateToken (token, SecurityImpersonation, &dupe) ? dup : NULL;
+	return DuplicateToken (token, SecurityImpersonation, &dupe) ? dupe : NULL;
 }
 #endif /* G_HAVE_API_SUPPORT(HAVE_CLASSIC_WINAPI_SUPPORT) */
 
