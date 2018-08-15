@@ -27,5 +27,8 @@
     <ProjectReference Include="MTAMain\MTAMain.csproj">
       <Name>MTAMain</Name>
     </ProjectReference>
+    <ProjectReference Include="DefaultApartmentStateMain\DefaultApartmentStateMain.csproj">
+      <Name>DefaultApartmentStateMain</Name>
+    </ProjectReference>
   </ItemGroup>
 </Project>

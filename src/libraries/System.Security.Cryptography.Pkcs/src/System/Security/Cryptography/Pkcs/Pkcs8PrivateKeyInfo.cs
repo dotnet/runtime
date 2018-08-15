@@ -249,7 +249,7 @@ namespace System.Security.Cryptography.Pkcs
 
             if (Attributes.Count > 0)
             {
-                info.Attributes = Helpers.NormalizeSet(CmsSigner.BuildAttributes(Attributes).ToArray());
+                info.Attributes = PkcsHelpers.NormalizeSet(CmsSigner.BuildAttributes(Attributes).ToArray());
             }
 
             // Write in BER in case any of the provided fields was BER.

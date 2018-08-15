@@ -206,7 +206,7 @@ namespace System.Security.Cryptography.Pkcs
             bool requestSignerCertificates = false,
             X509ExtensionCollection extensions = null)
         {
-            string oidStr = Helpers.GetOidFromHashAlgorithm(hashAlgorithm);
+            string oidStr = PkcsHelpers.GetOidFromHashAlgorithm(hashAlgorithm);
             
             return CreateFromHash(
                 hash,

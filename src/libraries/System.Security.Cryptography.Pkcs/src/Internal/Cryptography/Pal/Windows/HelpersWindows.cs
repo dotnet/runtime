@@ -467,7 +467,7 @@ namespace Internal.Cryptography.Pal.Windows
             for (int i = 0; i < pCryptAttribute->cValue; i++)
             {
                 byte[] encodedAttribute = pCryptAttribute->rgValue[i].ToByteArray();
-                AsnEncodedData attributeObject = Helpers.CreateBestPkcs9AttributeObjectAvailable(oid, encodedAttribute);
+                AsnEncodedData attributeObject = PkcsHelpers.CreateBestPkcs9AttributeObjectAvailable(oid, encodedAttribute);
                 attributeCollection.Add(attributeObject);
             }
 

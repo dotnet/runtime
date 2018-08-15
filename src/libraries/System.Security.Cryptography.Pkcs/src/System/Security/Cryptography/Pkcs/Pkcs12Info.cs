@@ -130,7 +130,7 @@ namespace System.Security.Cryptography.Pkcs
 
             if (pfx.AuthSafe.ContentType == Oids.Pkcs7Data)
             {
-                authSafeBytes = Helpers.DecodeOctetString(pfx.AuthSafe.Content);
+                authSafeBytes = PkcsHelpers.DecodeOctetString(pfx.AuthSafe.Content);
 
                 if (pfx.MacData.HasValue)
                 {

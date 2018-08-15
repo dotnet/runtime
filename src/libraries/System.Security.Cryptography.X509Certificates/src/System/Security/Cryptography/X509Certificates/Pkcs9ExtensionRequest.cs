@@ -3,6 +3,8 @@
 // See the LICENSE file in the project root for more information.
 
 using System.Collections.Generic;
+using System.Security.Cryptography.Asn1;
+using System.Security.Cryptography.X509Certificates.Asn1;
 using Internal.Cryptography;
 
 namespace System.Security.Cryptography.X509Certificates
@@ -19,34 +21,18 @@ namespace System.Security.Cryptography.X509Certificates
             if (extensions == null)
                 throw new ArgumentNullException(nameof(extensions));
 
-            // extensionRequest ATTRIBUTE ::= {
-            //  WITH SYNTAX ExtensionRequest
-            //  SINGLE VALUE TRUE
-            //  ID pkcs-9-at-extensionRequest
-            // }
-            //
-            // ExtensionRequest ::= Extensions
-            //
-            // Extensions  ::=  SEQUENCE SIZE (1..MAX) OF Extension
-            //
-            // Extension  ::=  SEQUENCE  {
-            //   extnID      OBJECT IDENTIFIER,
-            //   critical    BOOLEAN DEFAULT FALSE,
-            //   extnValue   OCTET STRING  }
-
-            List<byte[][]> encodedExtensions = new List<byte[][]>();
-
-            foreach (X509Extension extension in extensions)
+            using (AsnWriter writer = new AsnWriter(AsnEncodingRules.DER))
             {
-                if (extension == null)
-                    continue;
+                writer.PushSequence();
 
-                encodedExtensions.Add(extension.SegmentedEncodedX509Extension());
+                foreach (X509Extension e in extensions)
+                {
+                    AsnSerializer.Serialize(new X509ExtensionAsn(e), writer);
+                }
+
+                writer.PopSequence();
+                return writer.Encode();
             }
-
-            // The SEQUENCE over the encodedExtensions list is the value of
-            // Extensions/ExtensionRequest.
-            return DerEncoder.ConstructSequence(encodedExtensions.ToArray());
         }
     }
 }

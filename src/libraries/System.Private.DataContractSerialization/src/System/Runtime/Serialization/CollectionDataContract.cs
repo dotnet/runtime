@@ -10,6 +10,7 @@ namespace System.Runtime.Serialization
     using System.Collections;
     using System.Collections.Generic;
     using System.Reflection;
+    using System.Runtime.CompilerServices;
     using System.Threading;
     using System.Xml;
     using System.Linq;
@@ -337,6 +338,14 @@ namespace System.Runtime.Serialization
         }
 
 #if uapaot
+        [RemovableFeature(ReflectionBasedSerializationFeature.Name)]
+#endif
+        private XmlFormatCollectionWriterDelegate CreateXmlFormatWriterDelegate()
+        {
+            return new XmlFormatWriterGenerator().GenerateCollectionWriter(this);
+        }
+
+#if uapaot
         private XmlFormatCollectionWriterDelegate _xmlFormatWriterDelegate;
         public XmlFormatCollectionWriterDelegate XmlFormatWriterDelegate
 #else
@@ -358,7 +367,7 @@ namespace System.Runtime.Serialization
                     {
                         if (_helper.XmlFormatWriterDelegate == null)
                         {
-                            XmlFormatCollectionWriterDelegate tempDelegate = new XmlFormatWriterGenerator().GenerateCollectionWriter(this);
+                            XmlFormatCollectionWriterDelegate tempDelegate = CreateXmlFormatWriterDelegate();
                             Interlocked.MemoryBarrier();
                             _helper.XmlFormatWriterDelegate = tempDelegate;
                         }
@@ -372,6 +381,14 @@ namespace System.Runtime.Serialization
                 _xmlFormatWriterDelegate = value;
 #endif
             }
+        }
+
+#if uapaot
+        [RemovableFeature(ReflectionBasedSerializationFeature.Name)]
+#endif
+        private XmlFormatCollectionReaderDelegate CreateXmlFormatReaderDelegate()
+        {
+            return new XmlFormatReaderGenerator().GenerateCollectionReader(this);
         }
 
 #if uapaot
@@ -396,7 +413,7 @@ namespace System.Runtime.Serialization
                     {
                         if (_helper.XmlFormatReaderDelegate == null)
                         {
-                            XmlFormatCollectionReaderDelegate tempDelegate = new XmlFormatReaderGenerator().GenerateCollectionReader(this);
+                            XmlFormatCollectionReaderDelegate tempDelegate = CreateXmlFormatReaderDelegate();
                             Interlocked.MemoryBarrier();
                             _helper.XmlFormatReaderDelegate = tempDelegate;
                         }
@@ -411,6 +428,15 @@ namespace System.Runtime.Serialization
 #endif
             }
         }
+
+#if uapaot
+        [RemovableFeature(ReflectionBasedSerializationFeature.Name)]
+#endif
+        private XmlFormatGetOnlyCollectionReaderDelegate CreateXmlFormatGetOnlyCollectionReaderDelegate()
+        {
+            return new XmlFormatReaderGenerator().GenerateGetOnlyCollectionReader(this);
+        }
+
 
 #if uapaot
         private XmlFormatGetOnlyCollectionReaderDelegate _xmlFormatGetOnlyCollectionReaderDelegate;
@@ -444,7 +470,7 @@ namespace System.Runtime.Serialization
                                 throw DiagnosticUtility.ExceptionUtility.ThrowHelperError(new InvalidDataContractException(SR.Format(SR.GetOnlyCollectionMustHaveAddMethod, GetClrTypeFullName(UnderlyingType))));
                             }
 
-                            XmlFormatGetOnlyCollectionReaderDelegate tempDelegate = new XmlFormatReaderGenerator().GenerateGetOnlyCollectionReader(this);
+                            XmlFormatGetOnlyCollectionReaderDelegate tempDelegate = CreateXmlFormatGetOnlyCollectionReaderDelegate();
                             Interlocked.MemoryBarrier();
                             _helper.XmlFormatGetOnlyCollectionReaderDelegate = tempDelegate;
                         }

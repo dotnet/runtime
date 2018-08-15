@@ -14,6 +14,7 @@ namespace System.Runtime.Serialization
     using System.Xml.Schema;
     using System.Security;
     using System.Linq;
+    using System.Runtime.CompilerServices;
 
 #if uapaot
     public delegate IXmlSerializable CreateXmlSerializableDelegate();
@@ -379,6 +380,7 @@ namespace System.Runtime.Serialization
         }
 #endif
 
+        [RemovableFeature(ReflectionBasedSerializationFeature.Name)]
         internal IXmlSerializable ReflectionCreateXmlSerializable(Type type)
         {
             if (type.IsValueType)

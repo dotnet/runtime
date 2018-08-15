@@ -51,7 +51,7 @@
     <Compile Include="Internal\Cryptography\KeyAgreeRecipientInfoPal.cs" />
     <Compile Include="Internal\Cryptography\KeyLengths.cs" />
     <Compile Include="Internal\Cryptography\KeyTransRecipientInfoPal.cs" />
-    <Compile Include="Internal\Cryptography\Helpers.cs" />
+    <Compile Include="Internal\Cryptography\PkcsHelpers.cs" />
     <Compile Include="Internal\Cryptography\PkcsPal.cs" />
     <Compile Include="Internal\Cryptography\RecipientInfoPal.cs" />
     <Compile Include="$(CommonPath)\Internal\Cryptography\Helpers.cs">
@@ -256,6 +256,9 @@
     <Compile Include="$(CommonPath)\System\Security\Cryptography\Asn1\EncryptedPrivateKeyInfoAsn.cs">
       <Link>Common\System\Security\Cryptography\Asn1\EncryptedPrivateKeyInfoAsn.cs</Link>
     </Compile>
+    <Compile Include="$(CommonPath)\System\Security\Cryptography\Asn1\GeneralNameAsn.cs">
+      <Link>Common\System\Security\Cryptography\Asn1\GeneralNameAsn.cs</Link>
+    </Compile>
     <Compile Include="$(CommonPath)\System\Security\Cryptography\Asn1\PBEParameter.cs">
       <Link>Common\System\Security\Cryptography\Asn1\PBEParameter.cs</Link>
     </Compile>
@@ -267,6 +270,9 @@
     </Compile>
     <Compile Include="$(CommonPath)\System\Security\Cryptography\Asn1\Pbkdf2SaltChoice.cs">
       <Link>Common\System\Security\Cryptography\Asn1\Pbkdf2SaltChoice.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)\System\Security\Cryptography\Asn1\PssParamsAsn.cs">
+      <Link>Common\System\Security\Cryptography\Asn1\PssParamsAsn.cs</Link>
     </Compile>
     <Compile Include="$(CommonPath)\System\Security\Cryptography\Asn1\PrivateKeyInfoAsn.cs">
       <Link>Common\System\Security\Cryptography\Asn1\PrivateKeyInfoAsn.cs</Link>
@@ -283,10 +289,8 @@
     <Compile Include="System\Security\Cryptography\Pkcs\Asn1\CertificateChoiceAsn.cs" />
     <Compile Include="System\Security\Cryptography\Pkcs\Asn1\ContentInfoAsn.cs" />
     <Compile Include="System\Security\Cryptography\Pkcs\Asn1\EncapsulatedContentInfoAsn.cs" />
-    <Compile Include="System\Security\Cryptography\Pkcs\Asn1\GeneralName.cs" />
     <Compile Include="System\Security\Cryptography\Pkcs\Asn1\IssuerAndSerialNumberAsn.cs" />
     <Compile Include="System\Security\Cryptography\Pkcs\Asn1\MessageImprint.cs" />
-    <Compile Include="System\Security\Cryptography\Pkcs\Asn1\PssParamsAsn.cs" />
     <Compile Include="System\Security\Cryptography\Pkcs\Asn1\Rfc3161Accuracy.cs" />
     <Compile Include="System\Security\Cryptography\Pkcs\Asn1\Rfc3161TimeStampReq.cs" />
     <Compile Include="System\Security\Cryptography\Pkcs\Asn1\Rfc3161TimeStampResp.cs" />

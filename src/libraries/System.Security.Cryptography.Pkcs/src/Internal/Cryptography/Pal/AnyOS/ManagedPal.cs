@@ -17,13 +17,13 @@ namespace Internal.Cryptography.Pal.AnyOS
 
         public override void AddCertsFromStoreForDecryption(X509Certificate2Collection certs)
         {
-            certs.AddRange(Helpers.GetStoreCertificates(StoreName.My, StoreLocation.CurrentUser, openExistingOnly: false));
+            certs.AddRange(PkcsHelpers.GetStoreCertificates(StoreName.My, StoreLocation.CurrentUser, openExistingOnly: false));
 
             try
             {
                 // This store exists on macOS, but not Linux
                 certs.AddRange(
-                    Helpers.GetStoreCertificates(StoreName.My, StoreLocation.LocalMachine, openExistingOnly: false));
+                    PkcsHelpers.GetStoreCertificates(StoreName.My, StoreLocation.LocalMachine, openExistingOnly: false));
             }
             catch (CryptographicException)
             {

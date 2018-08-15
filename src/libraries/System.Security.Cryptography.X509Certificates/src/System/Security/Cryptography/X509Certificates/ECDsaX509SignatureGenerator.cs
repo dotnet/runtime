@@ -24,15 +24,15 @@ namespace System.Security.Cryptography.X509Certificates
 
             if (hashAlgorithm == HashAlgorithmName.SHA256)
             {
-                oid = Oids.ECDsaSha256;
+                oid = Oids.ECDsaWithSha256;
             }
             else if (hashAlgorithm == HashAlgorithmName.SHA384)
             {
-                oid = Oids.ECDsaSha384;
+                oid = Oids.ECDsaWithSha384;
             }
             else if (hashAlgorithm == HashAlgorithmName.SHA512)
             {
-                oid = Oids.ECDsaSha512;
+                oid = Oids.ECDsaWithSha512;
             }
             else
             {
@@ -77,13 +77,13 @@ namespace System.Security.Cryptography.X509Certificates
                 switch (friendlyName)
                 {
                     case "nistP256":
-                        curveOid = Oids.EccCurveSecp256r1;
+                        curveOid = Oids.secp256r1;
                         break;
                     case "nistP384":
-                        curveOid = Oids.EccCurveSecp384r1;
+                        curveOid = Oids.secp384r1;
                         break;
                     case "nistP521":
-                        curveOid = Oids.EccCurveSecp521r1;
+                        curveOid = Oids.secp521r1;
                         break;
                     default:
                         curveOid = new Oid(friendlyName).Value;
@@ -100,7 +100,7 @@ namespace System.Security.Cryptography.X509Certificates
             Buffer.BlockCopy(ecParameters.Q.X, 0, uncompressedPoint, 1, ecParameters.Q.X.Length);
             Buffer.BlockCopy(ecParameters.Q.Y, 0, uncompressedPoint, 1 + ecParameters.Q.X.Length, ecParameters.Q.Y.Length);
 
-            Oid ecPublicKey = new Oid(Oids.Ecc);
+            Oid ecPublicKey = new Oid(Oids.EcPublicKey);
             
             return new PublicKey(
                 ecPublicKey,
