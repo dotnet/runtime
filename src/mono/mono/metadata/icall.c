@@ -1752,6 +1752,65 @@ ves_icall_RuntimeTypeHandle_type_is_assignable_from (MonoReflectionTypeHandle re
 	return mono_class_is_assignable_from (klass, klassc);
 }
 
+ICALL_EXPORT MonoBoolean
+ves_icall_RuntimeTypeHandle_is_subclass_of (MonoType *childType, MonoType *baseType)
+{
+	ERROR_DECL (error);
+	mono_bool result = FALSE;
+	MonoClass *childClass;
+	MonoClass *baseClass;
+
+	childClass = mono_class_from_mono_type (childType);
+	mono_class_init_checked (childClass, error);
+	goto_if_nok (error, done);
+
+	baseClass = mono_class_from_mono_type (baseType);
+	mono_class_init_checked (baseClass, error);
+	goto_if_nok (error, done);
+
+	if (G_UNLIKELY (childType->byref)) {
+		result = !baseType->byref && baseClass == mono_defaults.object_class;
+		goto done;
+	}
+
+	if (G_UNLIKELY (baseType->byref)) {
+		result = FALSE;
+		goto done;
+	}
+
+	if (childType == baseType) {
+		/* .NET IsSubclassOf is not reflexive */
+		result = FALSE;
+		goto done;
+	}
+
+	if (G_UNLIKELY (is_generic_parameter (childType))) {
+		/* slow path: walk the type hierarchy looking at base types
+		 * until we see baseType.  If the current type is not a gparam,
+		 * break out of the loop and use is_subclass_of.
+		 */
+		MonoClass *c = mono_generic_param_get_base_type (childClass);
+
+		result = FALSE;
+		while (c != NULL) {
+			if (c == baseClass) {
+				result = TRUE;
+				break;
+			}
+			if (!is_generic_parameter (m_class_get_byval_arg (c))) {
+				result = mono_class_is_subclass_of (c, baseClass, FALSE);
+				break;
+			} else
+				c = mono_generic_param_get_base_type (c);
+		}
+	} else {
+		result = mono_class_is_subclass_of (childClass, baseClass, FALSE);
+	}
+done:
+	mono_error_set_pending_exception (error);
+	return result;
+}
+
 ICALL_EXPORT guint32
 ves_icall_RuntimeTypeHandle_IsInstanceOfType (MonoReflectionTypeHandle ref_type, MonoObjectHandle obj, MonoError *error)
 {
