@@ -1267,7 +1267,7 @@ interp_delegate_ctor (MonoObjectHandle this_obj, MonoObjectHandle target, gpoint
 	}
 
 	g_assert (imethod->method);
-	gpointer entry = mini_get_interp_callbacks ()->create_method_pointer (imethod->method, error);
+	gpointer entry = mini_get_interp_callbacks ()->create_method_pointer (imethod->method, FALSE, error);
 	return_if_nok (error);
 
 	MONO_HANDLE_SETVAL (MONO_HANDLE_CAST (MonoDelegate, this_obj), interp_method, gpointer, imethod);
@@ -2415,7 +2415,7 @@ interp_no_native_to_managed (void)
  * interpreter. Return NULL for methods which are not supported.
  */
 static gpointer
-interp_create_method_pointer (MonoMethod *method, MonoError *error)
+interp_create_method_pointer (MonoMethod *method, gboolean compile, MonoError *error)
 {
 #ifndef MONO_ARCH_HAVE_INTERP_NATIVE_TO_MANAGED
 	return interp_no_native_to_managed;
@@ -2424,6 +2424,12 @@ interp_create_method_pointer (MonoMethod *method, MonoError *error)
 	MonoDomain *domain = mono_domain_get ();
 	MonoJitDomainInfo *info;
 	InterpMethod *imethod = mono_interp_get_imethod (domain, method, error);
+
+	if (compile) {
+		/* Return any errors from method compilation */
+		mono_interp_transform_method (imethod, (ThreadContext*)mono_native_tls_get_value (thread_context_id), error);
+		return_val_if_nok (error, NULL);
+	}
 
 	/* HACK: method_ptr of delegate should point to a runtime method*/
 	if (method->wrapper_type && (method->wrapper_type == MONO_WRAPPER_DYNAMIC_METHOD ||

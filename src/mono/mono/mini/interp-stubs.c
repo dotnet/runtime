@@ -107,7 +107,7 @@ stub_frame_iter_next (MonoInterpStackIter *iter, StackFrameInfo *frame)
 }
 
 static gpointer
-stub_create_method_pointer (MonoMethod *method, MonoError *error)
+stub_create_method_pointer (MonoMethod *method, gboolean compile, MonoError *error)
 {
 	g_assert_not_reached ();
 	return NULL;

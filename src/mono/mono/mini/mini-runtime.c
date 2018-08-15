@@ -2269,7 +2269,7 @@ mono_jit_compile_method_with_opt (MonoMethod *method, guint32 opt, gboolean jit_
 		}
 	}
 	if (use_interp) {
-		code = mini_get_interp_callbacks ()->create_method_pointer (method, error);
+		code = mini_get_interp_callbacks ()->create_method_pointer (method, TRUE, error);
 		if (code)
 			return code;
 	}
@@ -2384,7 +2384,7 @@ lookup_start:
 		code = compile_special (method, target_domain, error);
 
 	if (!jit_only && !code && mono_aot_only && mono_use_interpreter && method->wrapper_type != MONO_WRAPPER_UNKNOWN)
-		code = mini_get_interp_callbacks ()->create_method_pointer (method, error);
+		code = mini_get_interp_callbacks ()->create_method_pointer (method, TRUE, error);
 
 	if (!code) {
 		if (mono_class_is_open_constructed_type (m_class_get_byval_arg (method->klass))) {
