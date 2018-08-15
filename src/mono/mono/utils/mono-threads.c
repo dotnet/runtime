@@ -1373,8 +1373,18 @@ mono_thread_info_set_is_async_context (gboolean async_context)
 {
 	MonoThreadInfo *info = mono_thread_info_current ();
 
-	if (info)
+	if (info) {
+		// If this assert fails, that means there is recursion and/or
+		// concurrency, such that setting async_context to FALSE
+		// that all the callers do after this, is incorrect,
+		// and this should instead be incremented/decremented.
+		//
+		// As the value is only accessed via current(), that
+		// limits the case to recursion, but increment/decrement
+		// is still fast and correct and simple.
+		g_assert (!async_context || !info->is_async_context);
 		info->is_async_context = async_context;
+	}
 }
 
 gboolean
