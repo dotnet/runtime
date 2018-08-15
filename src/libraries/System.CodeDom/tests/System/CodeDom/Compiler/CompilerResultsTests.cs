@@ -30,7 +30,7 @@ namespace System.CodeDom.Compiler.Tests
         }
 
         [Fact]
-        [ActiveIssue(30252, ~TargetFrameworkMonikers.NetFramework)]
+        [SkipOnTargetFramework(~TargetFrameworkMonikers.NetFramework, "Assembly.Load ignores CodeBase by design, except on netfx. See https://github.com/dotnet/coreclr/issues/10561")]
         public void CompiledAssembly_ValidPathToAssembly_ReturnsExpected()
         {
             var results = new CompilerResults(null) { PathToAssembly = typeof(int).Assembly.EscapedCodeBase };

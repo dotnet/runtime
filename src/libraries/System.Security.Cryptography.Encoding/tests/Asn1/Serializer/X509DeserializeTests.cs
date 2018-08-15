@@ -21,13 +21,13 @@ namespace System.Security.Cryptography.Tests.Asn1
                 AsnEncodingRules.DER);
 
             ref TbsCertificate tbsCertificate = ref cert.TbsCertificate;
-            ref SubjectPublicKeyInfo spki = ref tbsCertificate.SubjectPublicKeyInfo;
+            ref SubjectPublicKeyInfoAsn spki = ref tbsCertificate.SubjectPublicKeyInfo;
 
             Assert.Equal(2, tbsCertificate.Version);
             Assert.Equal("3DF70C5D9903F8D8868B9B8CCF20DF69", tbsCertificate.SerialNumber.ByteArrayToHex());
 
             Assert.Equal("1.2.840.113549.1.1.11", tbsCertificate.Signature.Algorithm.Value);
-            Assert.Equal("0500", tbsCertificate.Signature.Parameters.ByteArrayToHex());
+            Assert.Equal("0500", tbsCertificate.Signature.Parameters.Value.ByteArrayToHex());
             
             // Issuer goes here
 
@@ -36,8 +36,8 @@ namespace System.Security.Cryptography.Tests.Asn1
             
             // Subject goes here
 
-            Assert.Equal("1.2.840.113549.1.1.1", spki.AlgorithmIdentifier.Algorithm.Value);
-            Assert.Equal("0500", spki.AlgorithmIdentifier.Parameters.ByteArrayToHex());
+            Assert.Equal("1.2.840.113549.1.1.1", spki.Algorithm.Algorithm.Value);
+            Assert.Equal("0500", spki.Algorithm.Parameters.Value.ByteArrayToHex());
             Assert.Equal(
                 "3082010A0282010100A46861FA9D5DB763633BF5A64EF6E7C2C2367F48D2D466" +
                 "43A22DFCFCCB24E58A14D0F06BDC956437F2A56BA4BEF70BA361BF12964A0D66" +
@@ -48,7 +48,7 @@ namespace System.Security.Cryptography.Tests.Asn1
                 "E17AC69934E8440A48AB9D1F5DF89A502CEF6DFDBE790045BD45E0C94E5CA8AD" +
                 "D76A013E9C978440FC8A9E2A9A4940B2460819C3E302AA9C9F355AD754C86D3E" +
                 "D77DDAA3DA13810B4D0203010001",
-                spki.PublicKey.ByteArrayToHex());
+                spki.SubjectPublicKey.ByteArrayToHex());
 
             Assert.Null(tbsCertificate.IssuerUniqueId);
             Assert.Null(tbsCertificate.SubjectUniqueId);
@@ -64,7 +64,7 @@ namespace System.Security.Cryptography.Tests.Asn1
             Assert.Equal("1.3.6.1.5.5.7.1.1", tbsCertificate.Extensions[7].ExtnId);
 
             Assert.Equal("1.2.840.113549.1.1.11", cert.SignatureAlgorithm.Algorithm.Value);
-            Assert.Equal("0500", cert.SignatureAlgorithm.Parameters.ByteArrayToHex());
+            Assert.Equal("0500", cert.SignatureAlgorithm.Parameters.Value.ByteArrayToHex());
 
             Assert.Equal(
                 "15F8505B627ED7F9F96707097E93A51E7A7E05A3D420A5C258EC7A1CFE1843EC" +
@@ -88,13 +88,13 @@ namespace System.Security.Cryptography.Tests.Asn1
                 AsnEncodingRules.DER);
 
             ref TbsCertificate tbsCertificate = ref cert.TbsCertificate;
-            ref SubjectPublicKeyInfo spki = ref tbsCertificate.SubjectPublicKeyInfo;
+            ref SubjectPublicKeyInfoAsn spki = ref tbsCertificate.SubjectPublicKeyInfo;
 
             Assert.Equal(0, tbsCertificate.Version);
             Assert.Equal("0B", tbsCertificate.SerialNumber.ByteArrayToHex());
 
             Assert.Equal("1.2.840.113549.1.1.11", tbsCertificate.Signature.Algorithm.Value);
-            Assert.Equal("0500", tbsCertificate.Signature.Parameters.ByteArrayToHex());
+            Assert.Equal("0500", tbsCertificate.Signature.Parameters.Value.ByteArrayToHex());
             
             // Issuer goes here
 
@@ -103,8 +103,8 @@ namespace System.Security.Cryptography.Tests.Asn1
             
             // Subject goes here
 
-            Assert.Equal("1.2.840.113549.1.1.1", spki.AlgorithmIdentifier.Algorithm.Value);
-            Assert.Equal("0500", spki.AlgorithmIdentifier.Parameters.ByteArrayToHex());
+            Assert.Equal("1.2.840.113549.1.1.1", spki.Algorithm.Algorithm.Value);
+            Assert.Equal("0500", spki.Algorithm.Parameters.Value.ByteArrayToHex());
             // spki.PublicKey goes here
 
             Assert.Null(tbsCertificate.IssuerUniqueId);
@@ -113,7 +113,7 @@ namespace System.Security.Cryptography.Tests.Asn1
             Assert.Null(tbsCertificate.Extensions);
 
             Assert.Equal("1.2.840.113549.1.1.11", cert.SignatureAlgorithm.Algorithm.Value);
-            Assert.Equal("0500", cert.SignatureAlgorithm.Parameters.ByteArrayToHex());
+            Assert.Equal("0500", cert.SignatureAlgorithm.Parameters.Value.ByteArrayToHex());
 
             // cert.Signature goes here
         }
@@ -122,7 +122,7 @@ namespace System.Security.Cryptography.Tests.Asn1
         internal struct Certificate
         {
             public TbsCertificate TbsCertificate;
-            public AlgorithmIdentifier SignatureAlgorithm;
+            public AlgorithmIdentifierAsn SignatureAlgorithm;
             [BitString]
             public ReadOnlyMemory<byte> Signature;
         }
@@ -137,7 +137,7 @@ namespace System.Security.Cryptography.Tests.Asn1
             [Integer]
             public ReadOnlyMemory<byte> SerialNumber;
 
-            public AlgorithmIdentifier Signature;
+            public AlgorithmIdentifierAsn Signature;
 
             [AnyValue]
             public ReadOnlyMemory<byte> Issuer;
@@ -147,7 +147,7 @@ namespace System.Security.Cryptography.Tests.Asn1
             [AnyValue]
             public ReadOnlyMemory<byte> Subject;
 
-            public SubjectPublicKeyInfo SubjectPublicKeyInfo;
+            public SubjectPublicKeyInfoAsn SubjectPublicKeyInfo;
 
             [ExpectedTag(1), BitString, OptionalValue]
             public ReadOnlyMemory<byte>? IssuerUniqueId;

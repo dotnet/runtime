@@ -130,7 +130,7 @@ namespace System.IO
             // In any case, all internal usages should be hitting normalize path (Path.GetFullPath) before they hit this
             // shimming method. (Or making a change that doesn't impact normalization, such as adding a filename to a
             // normalized base path.)
-            if (IsPartiallyQualified(path) || IsDevice(path))
+            if (IsPartiallyQualified(path.AsSpan()) || IsDevice(path.AsSpan()))
                 return path;
 
             // Given \\server\share in longpath becomes \\?\UNC\server\share

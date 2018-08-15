@@ -14,10 +14,6 @@ namespace System.Collections.Tests
     /// </summary>
     public abstract partial class Dictionary_Generic_Tests<TKey, TValue> : IDictionary_Generic_Tests<TKey, TValue>
     {
-        protected override ModifyOperation ModifyEnumeratorThrows => ModifyOperation.Add | ModifyOperation.Insert | ModifyOperation.Clear;
-
-        protected override ModifyOperation ModifyEnumeratorAllowed => ModifyOperation.Remove;
-
         #region Remove(TKey)
 
         [Theory]

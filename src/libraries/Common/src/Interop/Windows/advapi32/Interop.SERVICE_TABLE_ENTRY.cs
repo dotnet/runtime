@@ -9,11 +9,13 @@ internal partial class Interop
 {
     internal partial class Advapi32
     {
+        public delegate void ServiceMainCallback(int argCount, IntPtr argPointer);
+
         [StructLayout(LayoutKind.Sequential)]
         public struct SERVICE_TABLE_ENTRY
         {
             public IntPtr name;
-            public Delegate callback;
+            public ServiceMainCallback callback;
         }
     }
 }

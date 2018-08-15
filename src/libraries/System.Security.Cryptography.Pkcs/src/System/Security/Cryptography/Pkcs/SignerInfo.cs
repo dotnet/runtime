@@ -218,7 +218,7 @@ namespace System.Security.Cryptography.Pkcs
 
             if (isOnlyValue)
             {
-                Helpers.RemoveAt(ref mySigner.UnsignedAttributes, outerIndex);
+                PkcsHelpers.RemoveAt(ref mySigner.UnsignedAttributes, outerIndex);
             }
             else
             {
@@ -416,7 +416,7 @@ namespace System.Security.Cryptography.Pkcs
                 }
                 else
                 {
-                    Helpers.RemoveAt(ref myData.UnsignedAttributes, removeAttrIdx);
+                    PkcsHelpers.RemoveAt(ref myData.UnsignedAttributes, removeAttrIdx);
                 }
             }
             else
@@ -786,7 +786,7 @@ namespace System.Security.Cryptography.Pkcs
 
         private HashAlgorithmName GetDigestAlgorithm()
         {
-            return Helpers.GetDigestAlgorithm(DigestAlgorithm.Value);
+            return PkcsHelpers.GetDigestAlgorithm(DigestAlgorithm.Value);
         }
 
         internal static CryptographicAttributeObjectCollection MakeAttributeCollection(AttributeAsn[] attributes)
@@ -820,7 +820,7 @@ namespace System.Security.Cryptography.Pkcs
             while (collReader.HasData)
             {
                 byte[] attrBytes = collReader.GetEncodedValue().ToArray();
-                valueColl.Add(Helpers.CreateBestPkcs9AttributeObjectAvailable(type, attrBytes));
+                valueColl.Add(PkcsHelpers.CreateBestPkcs9AttributeObjectAvailable(type, attrBytes));
             }
 
             return new CryptographicAttributeObject(type, valueColl);

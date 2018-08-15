@@ -1,11 +1,7 @@
 #|
-//------------------------------------------------------------------------------
-// <copyright file="ConstantFold.p" company="Microsoft">
-//     Copyright (c) Microsoft Corporation.  All rights reserved.
-// </copyright>
-// <owner current="true" primary="true">akimball</owner>
-// <spec>http://webdata/xml/query/docs/QIL%20Normalizer%20Functional%20Specification.doc</spec>
-//------------------------------------------------------------------------------
+// Licensed to the .NET Foundation under one or more agreements.
+// The .NET Foundation licenses this file to you under the MIT license.
+// See the LICENSE file in the project root for more information.
 |#
 
 

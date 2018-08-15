@@ -2,9 +2,9 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
-using System;
 using System.Reflection;
 using System.Reflection.Emit;
+using System.Runtime.InteropServices.Tests.Common;
 using Xunit;
 
 namespace System.Runtime.InteropServices.Tests
@@ -13,19 +13,6 @@ namespace System.Runtime.InteropServices.Tests
     [SkipOnTargetFramework(TargetFrameworkMonikers.Uap, "Not approved COM object for app")]
     public partial class ComAwareEventInfoTests
     {
-        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotWindowsNanoServer))]
-        [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework, "ComEventsHelper.Combine throws a PNSE in .NET Core")]
-        [ActiveIssue(31214)]
-        public void AddEventHandler_DispIdAttribute_ThrowsPlatformNotSupportedException()
-        {
-            var attribute = new ComAwareEventInfo(typeof(DispAttributeInterface), nameof(DispAttributeInterface.Event));
-            var target = new ComObject();
-            Delegate handler = new EventHandler(EventHandler);
-
-            Assert.Throws<PlatformNotSupportedException>(() => attribute.AddEventHandler(target, handler));
-            Assert.Throws<PlatformNotSupportedException>(() => attribute.RemoveEventHandler(target, handler));
-        }
-
         [ComEventInterface(typeof(DispAttributeClass), typeof(int))]
         public interface DispAttributeInterface
         {
@@ -42,7 +29,7 @@ namespace System.Runtime.InteropServices.Tests
         public void AddEventHandler_ComObjectWithoutComEventInterfaceAttribute_ThrowsInvalidOperationException()
         {
             var attribute = new ComAwareEventInfo(typeof(NonComObject), nameof(NonComObject.Event));
-            var target = new ComObject();
+            var target = new ComImportObject();
             Delegate handler = new EventHandler(EventHandler);
 
             Assert.Throws<InvalidOperationException>(() => attribute.AddEventHandler(target, handler));
@@ -67,7 +54,7 @@ namespace System.Runtime.InteropServices.Tests
             eventBuilder.SetAddOnMethod(addMethod);
 
             var attribute = new ComAwareEventInfo(typeBuilder.CreateType(), "Event");
-            var target = new ComObject();
+            var target = new ComImportObject();
             Delegate handler = new EventHandler(EventHandler);
             Assert.Throws<AmbiguousMatchException>(() => attribute.AddEventHandler(target, handler));
             Assert.Throws<AmbiguousMatchException>(() => attribute.RemoveEventHandler(target, handler));
@@ -77,7 +64,7 @@ namespace System.Runtime.InteropServices.Tests
         public void AddEventHandler_NullSourceTypeEventInterface_ThrowsNullReferenceException()
         {
             var attribute = new ComAwareEventInfo(typeof(NullSourceType), nameof(NullSourceType.Event));
-            var target = new ComObject();
+            var target = new ComImportObject();
             Delegate handler = new EventHandler(EventHandler);
 
             Assert.Throws<NullReferenceException>(() => attribute.AddEventHandler(target, handler));
@@ -94,7 +81,7 @@ namespace System.Runtime.InteropServices.Tests
         public void AddEventHandler_NoSuchSourceTypeEventInterface_ThrowsArgumentNullException()
         {
             var attribute = new ComAwareEventInfo(typeof(NoSuchSourceType), nameof(NoSuchSourceType.Event));
-            var target = new ComObject();
+            var target = new ComImportObject();
             Delegate handler = new EventHandler(EventHandler);
 
             AssertExtensions.Throws<ArgumentNullException>("element", () => attribute.AddEventHandler(target, handler));
@@ -111,11 +98,22 @@ namespace System.Runtime.InteropServices.Tests
         public void AddEventHandler_NoDispIdAttribute_ThrowsInvalidOperationException()
         {
             var attribute = new ComAwareEventInfo(typeof(NoDispAttributeInterface), nameof(NoDispAttributeInterface.Event));
-            var target = new ComObject();
+            var target = new ComImportObject();
             Delegate handler = new EventHandler(EventHandler);
 
             Assert.Throws<InvalidOperationException>(() => attribute.AddEventHandler(target, handler));
             Assert.Throws<InvalidOperationException>(() => attribute.RemoveEventHandler(target, handler));
+        }
+
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotWindowsNanoServer))]
+        public void AddEventHandler_TargetNotIConnectionIConnectionPointContainer_ThrowsInvalidCastException()
+        {
+            var attribute = new ComAwareEventInfo(typeof(DispAttributeInterface), nameof(DispAttributeInterface.Event));
+            var target = new ComImportObject();
+            Delegate handler = new EventHandler(EventHandler);
+
+            Assert.Throws<InvalidCastException>(() => attribute.AddEventHandler(target, handler));
+            attribute.RemoveEventHandler(target, handler);
         }
 
         [ComEventInterface(typeof(NoDispAttributeClass), typeof(int))]
@@ -128,10 +126,6 @@ namespace System.Runtime.InteropServices.Tests
         {
             public void Event() { }
         }
-
-        [ComImport]
-        [Guid("7b9e38b0-a97c-11d0-8534-00c04fd8d503")]
-        public class ComObject { }
     }
 #pragma warning restore 0618
 }

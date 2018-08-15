@@ -287,6 +287,9 @@
     <Compile Include="$(CommonPath)\System\Security\Cryptography\KeyFormatHelper.cs">
       <Link>Common\System\Security\Cryptography\KeyFormatHelper.cs</Link>
     </Compile>
+    <Compile Include="$(CommonPath)\System\Security\Cryptography\KeySizeHelpers.cs">
+      <Link>Common\System\Security\Cryptography\KeySizeHelpers.cs</Link>
+    </Compile>
     <Compile Include="$(CommonPath)\System\Security\Cryptography\Oids.cs">
       <Link>Common\System\Security\Cryptography\Oids.cs</Link>
     </Compile>

@@ -450,6 +450,8 @@ namespace System.Net.Http
                 }
                 else
                 {
+                    if (NetEventSource.IsEnabled) Trace($"Request content is not null, start processing it. hasExpectContinueHeader = {hasExpectContinueHeader}");
+
                     // Send the body if there is one.  We prefer to serialize the sending of the content before
                     // we try to receive any response, but if ExpectContinue has been set, we allow the sending
                     // to run concurrently until we receive the final status line, at which point we wait for it.
@@ -557,6 +559,9 @@ namespace System.Net.Http
                     await sendRequestContentTask.ConfigureAwait(false);
                     sendRequestContentTask = null;
                 }
+
+                // Now we are sure that the request was fully sent.
+                if (NetEventSource.IsEnabled) Trace("Request is fully sent.");
 
                 // Parse the response headers.
                 while (true)
@@ -682,37 +687,9 @@ namespace System.Net.Http
             }
         }
 
-        public Task<HttpResponseMessage> SendWithNtProxyAuthAsync(HttpRequestMessage request, CancellationToken cancellationToken)
+        public sealed override Task<HttpResponseMessage> SendAsync(HttpRequestMessage request, CancellationToken cancellationToken)
         {
-            if (_pool.AnyProxyKind && _pool.ProxyCredentials != null)
-            {
-                return AuthenticationHelper.SendWithNtProxyAuthAsync(request, _pool.ProxyUri, _pool.ProxyCredentials, this, cancellationToken);
-            }
-
             return SendAsyncCore(request, cancellationToken);
-        }
-
-        private Task<HttpResponseMessage> SendAsyncInternal(HttpRequestMessage request, bool doRequestAuth, CancellationToken cancellationToken)
-        {
-            if (doRequestAuth && _pool.Settings._credentials != null)
-            {
-                return AuthenticationHelper.SendWithNtConnectionAuthAsync(request, _pool.Settings._credentials, this, cancellationToken);
-            }
-
-            return SendWithNtProxyAuthAsync(request, cancellationToken);
-        }
-
-        public sealed override async Task<HttpResponseMessage> SendAsync(HttpRequestMessage request, bool doRequestAuth, CancellationToken cancellationToken)
-        {
-            Acquire();
-            try
-            {
-                return await SendAsyncInternal(request, doRequestAuth, cancellationToken).ConfigureAwait(false);
-            }
-            finally
-            {
-                Release();
-            }
         }
 
         private HttpContentWriteStream CreateRequestContentStream(HttpRequestMessage request)
@@ -760,6 +737,8 @@ namespace System.Net.Http
 
             // Flush any content that might still be buffered.
             await FlushAsync().ConfigureAwait(false);
+
+            if (NetEventSource.IsEnabled) Trace("Finished sending request content.");
         }
 
         private async Task SendRequestContentWithExpect100ContinueAsync(
@@ -928,7 +907,8 @@ namespace System.Net.Http
             }
             else
             {
-                response.Headers.TryAddWithoutValidation(descriptor, headerValue);
+                // Request headers returned on the response must be treated as custom headers
+                response.Headers.TryAddWithoutValidation(descriptor.HeaderType == HttpHeaderType.Request ? descriptor.AsCustomHeader() : descriptor, headerValue);
             }
         }
 
@@ -1470,7 +1450,7 @@ namespace System.Net.Http
             }
         }
 
-        private void Acquire()
+        internal void Acquire()
         {
             Debug.Assert(_currentRequest == null);
             Debug.Assert(!_inUse);
@@ -1478,7 +1458,7 @@ namespace System.Net.Http
             _inUse = true;
         }
 
-        private void Release()
+        internal void Release()
         {
             Debug.Assert(_inUse);
 

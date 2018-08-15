@@ -243,7 +243,7 @@ namespace System.IO
             ReadOnlySpan<char> output = builderToUse.AsSpan(rootDifference);
 
             string returnValue = ((originalPath != null) && output.Equals(originalPath.AsSpan(), StringComparison.Ordinal))
-                ? originalPath : new string(output);
+                ? originalPath : output.ToString();
 
             inputBuilder.Dispose();
             return returnValue;

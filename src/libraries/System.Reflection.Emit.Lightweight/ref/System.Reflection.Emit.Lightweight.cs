@@ -21,6 +21,7 @@ namespace System.Reflection.Emit
         public override System.Reflection.MethodAttributes Attributes { get { throw null; } }
         public override System.Reflection.CallingConventions CallingConvention { get { throw null; } }
         public override System.Type DeclaringType { get { throw null; } }
+        public ParameterBuilder DefineParameter(int position, System.Reflection.ParameterAttributes attributes, System.String parameterName) { throw null; }
         public bool InitLocals { get { throw null; } set { } }
         public override System.RuntimeMethodHandle MethodHandle { get { throw null; } }
         public override string Name { get { throw null; } }

@@ -296,8 +296,12 @@ namespace System.Security.Cryptography.X509Certificates.Tests.CertificateCreatio
             }
         }
 
-        [Fact]
-        public static void SerialNumber_AlwaysPositive()
+        [Theory]
+        [InlineData("80", "0080")]
+        [InlineData("0080", "0080")]
+        [InlineData("00000080", "0080")]
+        [InlineData("00000000", "00")]
+        public static void SerialNumber_AlwaysPositive(string desiredSerial, string expectedSerial)
         {
             using (ECDsa ecdsa = ECDsa.Create(EccTestData.Secp521r1_DiminishedPublic_Data.KeyParameters))
             {
@@ -308,8 +312,6 @@ namespace System.Security.Cryptography.X509Certificates.Tests.CertificateCreatio
                     generator.PublicKey,
                     HashAlgorithmName.SHA512);
 
-                byte[] desiredSerial = { 0x80 };
-
                 DateTimeOffset now = DateTimeOffset.UtcNow;
 
                 X509Certificate2 cert = request.Create(
@@ -317,11 +319,11 @@ namespace System.Security.Cryptography.X509Certificates.Tests.CertificateCreatio
                     generator,
                     now,
                     now.AddDays(1),
-                    desiredSerial);
+                    desiredSerial.HexToByteArray());
 
                 using (cert)
                 {
-                    Assert.Equal("0080", cert.SerialNumber);
+                    Assert.Equal(expectedSerial, cert.SerialNumber);
                 }
             }
         }
@@ -522,7 +524,7 @@ namespace System.Security.Cryptography.X509Certificates.Tests.CertificateCreatio
 #if netcoreapp
             if (CultureInfo.CurrentCulture.Name == "en-US")
             {
-                Assert.Contains("ASN1", exception.Message);
+                Assert.Contains("ASN1", exception.Message, StringComparison.OrdinalIgnoreCase);
             }
 #endif
         }

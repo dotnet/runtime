@@ -156,23 +156,27 @@ namespace System.Threading.Threads.Tests
         }
 
         [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsNotWindowsNanoServer))]
-        [InlineData("STAMain.exe", "GetApartmentState")] 
-        [InlineData("STAMain.exe", "SetApartmentState")]
-        [InlineData("MTAMain.exe", "GetApartmentState")]
-        [InlineData("MTAMain.exe", "SetApartmentState")]
+        [InlineData("STAMain.exe", "GetApartmentStateTest")]
+        [InlineData("STAMain.exe", "SetApartmentStateTest")]
+        [InlineData("STAMain.exe", "WaitAllNotSupportedOnSta_Test0")]
+        [InlineData("STAMain.exe", "WaitAllNotSupportedOnSta_Test1")]
+        [InlineData("MTAMain.exe", "GetApartmentStateTest")]
+        [InlineData("MTAMain.exe", "SetApartmentStateTest")]
+        [InlineData("DefaultApartmentStateMain.exe", "GetApartmentStateTest")]
+        [InlineData("DefaultApartmentStateMain.exe", "SetApartmentStateTest")]
         [ActiveIssue(20766, TargetFrameworkMonikers.Uap)]
-        public static void ApartmentState_AttributePresent(string AppName, string mode)
+        public static void ApartmentState_AttributePresent(string appName, string testName)
         {
             var psi = new ProcessStartInfo();
             if (PlatformDetection.IsFullFramework || PlatformDetection.IsNetNative)
             {
-                psi.FileName = AppName;
-                psi.Arguments = $"{mode}";
+                psi.FileName = appName;
+                psi.Arguments = $"{testName}";
             }
             else
             {
                 psi.FileName = DummyClass.HostRunnerTest;
-                psi.Arguments = $"{AppName} {mode}";
+                psi.Arguments = $"{appName} {testName}";
             }
             using (Process p = Process.Start(psi))
             {
@@ -191,20 +195,6 @@ namespace System.Threading.Threads.Tests
                 Assert.Equal(ApartmentState.MTA, Thread.CurrentThread.GetApartmentState());
                 Assert.Throws<InvalidOperationException>(() => Thread.CurrentThread.SetApartmentState(ApartmentState.STA));
                 Thread.CurrentThread.SetApartmentState(ApartmentState.MTA);
-            }).Dispose();
-        }
-
-        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotWindowsNanoServer))]
-        [ActiveIssue(20766,TargetFrameworkMonikers.UapAot)]
-        [PlatformSpecific(TestPlatforms.Windows)]
-        [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework)]
-        public static void ApartmentState_NoAttributePresent_STA_Windows_Core()
-        {
-            DummyClass.RemoteInvoke(() =>
-            {
-                Thread.CurrentThread.SetApartmentState(ApartmentState.STA);
-                Assert.Equal(ApartmentState.STA, Thread.CurrentThread.GetApartmentState());
-                Assert.Throws<InvalidOperationException>(() => Thread.CurrentThread.SetApartmentState(ApartmentState.MTA));
             }).Dispose();
         }
 

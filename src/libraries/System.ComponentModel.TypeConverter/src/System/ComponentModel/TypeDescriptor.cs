@@ -808,6 +808,12 @@ namespace System.ComponentModel
             return GetDescriptor(type, nameof(type)).GetConverter();
         }
 
+        // This is called by System.ComponentModel.DefaultValueAttribute via reflection.
+        private static object ConvertFromInvariantString(Type type, string stringValue)
+        {
+            return GetConverter(type).ConvertFromInvariantString(stringValue);
+        }
+
         /// <summary>
         /// Gets the default event for the specified type of component.
         /// </summary>
