@@ -13,8 +13,7 @@
     <DefineConstants>$(DefineConstants);netstandard;FEATURE_APPX</DefineConstants>
   </PropertyGroup>
   <PropertyGroup Condition="'$(TargetsNetStandard)' == 'true'">
-    <GeneratePlatformNotSupportedAssembly>true</GeneratePlatformNotSupportedAssembly>
-    <!-- <GeneratePlatformNotSupportedAssemblyMessage>SR.PlatformNotSupported_WindowsRuntime</GeneratePlatformNotSupportedAssemblyMessage> -->
+    <GeneratePlatformNotSupportedAssemblyMessage>SR.PlatformNotSupported_WindowsRuntime</GeneratePlatformNotSupportedAssemblyMessage>
     <GeneratePlatformNotSupportedAssemblyWithGlobalPrefix>true</GeneratePlatformNotSupportedAssemblyWithGlobalPrefix>
     <AssemblyVersion Condition="'$(TargetGroup)' == 'netstandard1.0'">4.0.0.0</AssemblyVersion>
     <AssemblyVersion Condition="'$(TargetGroup)' == 'netstandard1.2'">4.0.11.0</AssemblyVersion>
