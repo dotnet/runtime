@@ -1459,6 +1459,12 @@ namespace System.Runtime.InteropServices
         [MethodImpl(MethodImplOptions.InternalCall)]
         private static extern object InternalCreateWrapperOfType(object o, Type t);
 
+        /// <summary>
+        /// check if the type is visible from COM.
+        /// </summary>
+        [MethodImplAttribute(MethodImplOptions.InternalCall)]
+        public static extern bool IsTypeVisibleFromCom(Type t);
+
         [MethodImpl(MethodImplOptions.InternalCall)]
         public static extern int /* HRESULT */ QueryInterface(IntPtr /* IUnknown */ pUnk, ref Guid iid, out IntPtr ppv);
 
@@ -1507,6 +1513,12 @@ namespace System.Runtime.InteropServices
         /// </summary>
         [MethodImpl(MethodImplOptions.InternalCall)]
         public static extern int GetStartComSlot(Type t);
+
+        /// <summary>
+        /// <para>Returns the last valid COM slot that GetMethodInfoForSlot will work on. </para>
+        /// </summary>
+        [MethodImpl(MethodImplOptions.InternalCall)]
+        public static extern int GetEndComSlot(Type t);
 #endif // FEATURE_COMINTEROP
 
         /// <summary>
