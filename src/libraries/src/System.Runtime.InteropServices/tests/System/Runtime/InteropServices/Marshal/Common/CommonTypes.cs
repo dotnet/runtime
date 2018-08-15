@@ -24,4 +24,13 @@ namespace System.Runtime.InteropServices.Tests.Common
 
     [ComVisible(true)]
     public interface NonGenericInterface { }
+
+    [ComVisible(false)]
+    public interface NonComVisibleInterface { }
+
+    [ComVisible(false)]
+    public class NonComVisibleClass { }
+
+    [ComVisible(false)]
+    public struct NonComVisibleStruct { }
 }
