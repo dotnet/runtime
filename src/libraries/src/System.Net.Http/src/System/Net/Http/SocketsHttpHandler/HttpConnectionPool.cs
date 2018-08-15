@@ -210,14 +210,15 @@ namespace System.Net.Http
                 return GetHttp2ConnectionAsync(request, cancellationToken);
             }
 
-            return GetHttp11ConnectionAsync(request, cancellationToken);
+            return GetHttpConnectionAsync(request, cancellationToken);
         }
 
         private ValueTask<(HttpConnectionBase connection, bool isNewConnection, HttpResponseMessage failureResponse)> 
-            GetHttp11ConnectionAsync(HttpRequestMessage request, CancellationToken cancellationToken)
+            GetHttpConnectionAsync(HttpRequestMessage request, CancellationToken cancellationToken)
         {
             if (cancellationToken.IsCancellationRequested)
             {
+                if (NetEventSource.IsEnabled) Trace("Unable to complete getting HTTP/1.x connection due to requested cancellation.");
                 return new ValueTask<(HttpConnectionBase, bool, HttpResponseMessage)>(Task.FromCanceled<(HttpConnectionBase, bool, HttpResponseMessage)>(cancellationToken));
             }
 
@@ -444,7 +445,7 @@ namespace System.Net.Http
             }
 
             // If we reach this point, it means we need to fall back to a (new or existing) HTTP/1.1 connection.
-            return await GetHttp11ConnectionAsync(request, cancellationToken);
+            return await GetHttpConnectionAsync(request, cancellationToken);
         }
 
         public async Task<HttpResponseMessage> SendWithRetryAsync(HttpRequestMessage request, bool doRequestAuth, CancellationToken cancellationToken)
@@ -464,7 +465,14 @@ namespace System.Net.Http
 
                 try
                 {
-                    return await connection.SendAsync(request, doRequestAuth, cancellationToken).ConfigureAwait(false);
+                    if (connection is HttpConnection)
+                    {
+                        return await SendWithNtConnectionAuthAsync((HttpConnection)connection, request, doRequestAuth, cancellationToken).ConfigureAwait(false);
+                    }
+                    else
+                    {
+                        return await connection.SendAsync(request, cancellationToken).ConfigureAwait(false);
+                    }
                 }
                 catch (HttpRequestException e) when (!isNewConnection && e.AllowRetry)
                 {
@@ -477,6 +485,35 @@ namespace System.Net.Http
                 }
             }
         }
+
+        public async Task<HttpResponseMessage> SendWithNtConnectionAuthAsync(HttpConnection connection, HttpRequestMessage request, bool doRequestAuth, CancellationToken cancellationToken)
+        {
+            connection.Acquire();
+            try
+            {
+                if (doRequestAuth && Settings._credentials != null)
+                {
+                    return await AuthenticationHelper.SendWithNtConnectionAuthAsync(request, Settings._credentials, connection, this, cancellationToken).ConfigureAwait(false);
+                }
+
+                return await SendWithNtProxyAuthAsync(connection, request, cancellationToken).ConfigureAwait(false);
+            }
+            finally
+            {
+                connection.Release();
+            }
+        }
+
+        public Task<HttpResponseMessage> SendWithNtProxyAuthAsync(HttpConnection connection, HttpRequestMessage request, CancellationToken cancellationToken)
+        {
+            if (AnyProxyKind && ProxyCredentials != null)
+            {
+                return AuthenticationHelper.SendWithNtProxyAuthAsync(request, ProxyUri, ProxyCredentials, connection, this, cancellationToken);
+            }
+
+            return connection.SendAsync(request, cancellationToken);
+        }
+
 
         public Task<HttpResponseMessage> SendWithProxyAuthAsync(HttpRequestMessage request, bool doRequestAuth, CancellationToken cancellationToken)
         {
@@ -556,7 +593,7 @@ namespace System.Net.Http
             }
         }
 
-        private async ValueTask<(HttpConnection, HttpResponseMessage)> CreateHttp11ConnectionAsync(HttpRequestMessage request, CancellationToken cancellationToken)
+        internal async ValueTask<(HttpConnection, HttpResponseMessage)> CreateHttp11ConnectionAsync(HttpRequestMessage request, CancellationToken cancellationToken)
         {
             (Socket socket, Stream stream, TransportContext transportContext, HttpResponseMessage failureResponse) =
                 await ConnectAsync(request, false, cancellationToken).ConfigureAwait(false);
@@ -705,6 +742,15 @@ namespace System.Net.Http
                 $"Expected 0 <= {_associatedConnectionCount} < {_maxConnections}");
             _associatedConnectionCount++;
         }
+
+        internal void IncrementConnectionCount()
+        {
+            lock (SyncObj)
+            {
+                IncrementConnectionCountNoLock();
+            }
+        }
+
 
         /// <summary>
         /// Decrements the number of connections associated with the pool.

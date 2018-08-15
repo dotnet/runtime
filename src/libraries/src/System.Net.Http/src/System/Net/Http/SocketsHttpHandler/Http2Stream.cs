@@ -141,7 +141,6 @@ namespace System.Net.Http
             private void WriteHeaders(HttpRequestMessage request)
             {
                 // TODO: ISSUE 31305: Disallow sending Connection: and Transfer-Encoding: chunked
-                // TODO: ISSUE 31306: Handle container cookies
 
                 HeaderEncodingState state = new HeaderEncodingState() { IsFirstFrame = true, IsEmptyResponse = (request.Content == null), CurrentFrameOffset = 0 };
 
@@ -181,6 +180,16 @@ namespace System.Net.Http
                 if (request.HasHeaders)
                 {
                     WriteHeaders(ref state, request.Headers);
+                }
+
+                // Determine cookies to send.
+                if (_connection._pool.Settings._useCookies)
+                {
+                    string cookiesFromContainer = _connection._pool.Settings._cookieContainer.GetCookieHeader(request.RequestUri);
+                    if (cookiesFromContainer != string.Empty)
+                    {
+                        WriteHeader(ref state, HttpKnownHeaderNames.Cookie, cookiesFromContainer);
+                    }
                 }
 
                 if (request.Content == null)
@@ -258,6 +267,12 @@ namespace System.Net.Http
                 else
                 {
                     responseContent.SetStream(new Http2ReadStream(this));
+                }
+
+                // Process Set-Cookie headers.
+                if (_connection._pool.Settings._useCookies)
+                {
+                    CookieHelper.ProcessReceivedCookies(_response, _connection._pool.Settings._cookieContainer);
                 }
 
                 return _response;

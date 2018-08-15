@@ -311,7 +311,7 @@ namespace System
 
         public static string NewLine => "\n";
 
-        private static Lazy<OperatingSystem> s_osVersion = new Lazy<OperatingSystem>(GetOperatingSystem(Interop.Sys.GetUnixRelease()));
+        private static Lazy<OperatingSystem> s_osVersion = new Lazy<OperatingSystem>(() => GetOperatingSystem(Interop.Sys.GetUnixRelease()));
 
         private static OperatingSystem GetOperatingSystem(string release)
         {
@@ -430,7 +430,7 @@ namespace System
 
             var errorInfo = new Interop.ErrorInfo(error);
 
-            // If the call failed because the buffer was too small, return false to 
+            // If the call failed because the buffer was too small, return false to
             // indicate the caller should try again with a larger buffer.
             if (errorInfo.Error == Interop.Error.ERANGE)
             {

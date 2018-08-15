@@ -11,6 +11,7 @@ using System.Collections;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Security;
+using System.Runtime.CompilerServices;
 
 namespace System.Runtime.Serialization
 {
@@ -68,16 +69,24 @@ namespace System.Runtime.Serialization
             private ArgBuilder _collectionContractArg;
 #endif
 
+#if uapaot
+            [RemovableFeature(ReflectionBasedSerializationFeature.Name)]
+#endif
+            private XmlFormatClassReaderDelegate CreateReflectionXmlClassReader(ClassDataContract classContract)
+            {
+                return new ReflectionXmlClassReader(classContract).ReflectionReadClass;
+            }
+
             public XmlFormatClassReaderDelegate GenerateClassReader(ClassDataContract classContract)
             {
                 if (DataContractSerializer.Option == SerializationOption.ReflectionOnly)
                 {
-                    return new ReflectionXmlClassReader(classContract).ReflectionReadClass;
+                    return CreateReflectionXmlClassReader(classContract);
                 }
 #if uapaot
                 else if (DataContractSerializer.Option == SerializationOption.ReflectionAsBackup)
                 {
-                    return new ReflectionXmlClassReader(classContract).ReflectionReadClass;
+                    return CreateReflectionXmlClassReader(classContract);
                 }
 #endif
                 else
@@ -161,16 +170,24 @@ namespace System.Runtime.Serialization
                 }
             }
 
+#if uapaot
+            [RemovableFeature(ReflectionBasedSerializationFeature.Name)]
+#endif
+            private XmlFormatCollectionReaderDelegate CreateReflectionXmlCollectionReader()
+            {
+                return new ReflectionXmlCollectionReader().ReflectionReadCollection;
+            }
+
             public XmlFormatCollectionReaderDelegate GenerateCollectionReader(CollectionDataContract collectionContract)
             {
                 if (DataContractSerializer.Option == SerializationOption.ReflectionOnly)
                 {
-                    return new ReflectionXmlCollectionReader().ReflectionReadCollection;
+                    return CreateReflectionXmlCollectionReader();
                 }
 #if uapaot
                 else if (DataContractSerializer.Option == SerializationOption.ReflectionAsBackup)
                 {
-                    return new ReflectionXmlCollectionReader().ReflectionReadCollection;
+                    return CreateReflectionXmlCollectionReader();
                 }
 #endif
                 else
@@ -187,16 +204,24 @@ namespace System.Runtime.Serialization
                 }
             }
 
+#if uapaot
+            [RemovableFeature(ReflectionBasedSerializationFeature.Name)]
+#endif
+            private XmlFormatGetOnlyCollectionReaderDelegate CreateReflectionReadGetOnlyCollectionReader()
+            {
+                return new ReflectionXmlCollectionReader().ReflectionReadGetOnlyCollection;
+            }
+
             public XmlFormatGetOnlyCollectionReaderDelegate GenerateGetOnlyCollectionReader(CollectionDataContract collectionContract)
             {
                 if (DataContractSerializer.Option == SerializationOption.ReflectionOnly)
                 {
-                    return new ReflectionXmlCollectionReader().ReflectionReadGetOnlyCollection;
+                    return CreateReflectionReadGetOnlyCollectionReader();
                 }
 #if uapaot
                 else if (DataContractSerializer.Option == SerializationOption.ReflectionAsBackup)
                 {
-                    return new ReflectionXmlCollectionReader().ReflectionReadGetOnlyCollection;
+                    return CreateReflectionReadGetOnlyCollectionReader();
                 }
 #endif
                 else

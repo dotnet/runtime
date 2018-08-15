@@ -9,6 +9,8 @@
 #include <assert.h>
 #include <utime.h>
 #include <time.h>
+#include <sys/stat.h>
+#include <fcntl.h>
 #include <sys/time.h>
 #if HAVE_MACH_ABSOLUTE_TIME
 #include <mach/mach_time.h>
@@ -20,21 +22,27 @@ enum
     SecondsToNanoSeconds = 1000000000 // 10^9
 };
 
-static void ConvertUTimBuf(const UTimBuf* pal, struct utimbuf* native)
+int32_t SystemNative_UTimensat(const char* path, TimeSpec* times)
 {
-    native->actime = (time_t)(pal->AcTime);
-    native->modtime = (time_t)(pal->ModTime);
-}
-
-int32_t SystemNative_UTime(const char* path, UTimBuf* times)
-{
-    assert(times != NULL);
-
-    struct utimbuf temp;
-    ConvertUTimBuf(times, &temp);
-
     int32_t result;
-    while (CheckInterrupted(result = utime(path, &temp)));
+#if HAVE_UTIMENSAT
+    struct timespec origTimes[2];
+    origTimes[0].tv_sec = (time_t)times[0].tv_sec;
+    origTimes[0].tv_nsec = (long)times[0].tv_nsec;
+
+    origTimes[1].tv_sec = (time_t)times[1].tv_sec;
+    origTimes[1].tv_nsec = (long)times[1].tv_nsec;    
+    while (CheckInterrupted(result = utimensat(AT_FDCWD, path, origTimes, 0)));
+#else
+    struct timeval origTimes[2];
+    origTimes[0].tv_sec = (long)times[0].tv_sec;
+    origTimes[0].tv_usec = (int)times[0].tv_nsec / 1000;
+    
+    origTimes[1].tv_sec = (long)times[1].tv_sec;
+    origTimes[1].tv_usec = (int)times[1].tv_nsec / 1000;
+    while (CheckInterrupted(result = utimes(path, origTimes)));
+#endif
+
     return result;
 }
 

@@ -7,6 +7,7 @@ using System.Collections.Generic;
 using System.Diagnostics;
 using System.Runtime.InteropServices;
 using System.Text.RegularExpressions;
+using Microsoft.Win32;
 
 namespace Legacy.Support
 {
@@ -22,9 +23,37 @@ namespace Legacy.Support
         {
             if (PlatformDetection.IsUap)
             {
-                return new [] { "COM3", "COM4", "COM5", "COM6", "COM7" }; // we are waiting for a Win32 new QueryDosDevice API since the current doesn't work for Uap https://github.com/dotnet/corefx/issues/21156
+                // On UAP it is not possible to call QueryDosDevice, so use HARDWARE\DEVICEMAP\SERIALCOMM on the registry
+                // to get this information. The UAP code uses the GetCommPorts API to retrieve the same information.
+                return GetCommPortsFromRegistry();
             }
 
+            return GetCommPortsViaQueryDosDevice();
+        }
+
+        private static string[] GetCommPortsFromRegistry()
+        {
+            // See https://msdn.microsoft.com/en-us/library/windows/hardware/ff546502.aspx for more information.
+            using (RegistryKey serialKey = Registry.LocalMachine.OpenSubKey(@"HARDWARE\DEVICEMAP\SERIALCOMM"))
+            {
+                if (serialKey != null)
+                {
+                    string[] result = serialKey.GetValueNames();
+                    for (int i = 0; i < result.Length; i++)
+                    {
+                        // Replace the name in the array with its value.
+                        result[i] = (string)serialKey.GetValue(result[i]);
+                    }
+
+                    return result;
+                }
+            }
+
+            return Array.Empty<string>();
+        }
+
+        private static string[] GetCommPortsViaQueryDosDevice()
+        {
             List<string> ports = new List<string>();
             int returnSize = 0;
             int maxSize = 1000000;

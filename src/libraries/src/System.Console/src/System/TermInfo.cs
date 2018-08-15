@@ -176,6 +176,7 @@ namespace System
                     "/etc/terminfo",
                     "/lib/terminfo",
                     "/usr/share/terminfo",
+                    "/usr/share/misc/terminfo"
                 };
 
             /// <summary>Read the database for the specified terminal.</summary>

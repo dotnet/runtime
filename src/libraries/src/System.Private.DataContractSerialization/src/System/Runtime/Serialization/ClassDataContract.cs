@@ -13,6 +13,7 @@ namespace System.Runtime.Serialization
     using System.IO;
     using System.Globalization;
     using System.Reflection;
+    using System.Runtime.CompilerServices;
     using System.Threading;
     using System.Xml;
     using DataContractDictionary = System.Collections.Generic.Dictionary<System.Xml.XmlQualifiedName, DataContract>;
@@ -243,6 +244,14 @@ namespace System.Runtime.Serialization
         }
 
 #if uapaot
+        [RemovableFeature(ReflectionBasedSerializationFeature.Name)]
+#endif
+        private XmlFormatClassWriterDelegate CreateXmlFormatWriterDelegate()
+        {
+            return new XmlFormatWriterGenerator().GenerateClassWriter(this);
+        }
+
+#if uapaot
         private XmlFormatClassWriterDelegate _xmlFormatWriterDelegate;
         public XmlFormatClassWriterDelegate XmlFormatWriterDelegate
 #else
@@ -264,7 +273,7 @@ namespace System.Runtime.Serialization
                     {
                         if (_helper.XmlFormatWriterDelegate == null)
                         {
-                            XmlFormatClassWriterDelegate tempDelegate = new XmlFormatWriterGenerator().GenerateClassWriter(this);
+                            XmlFormatClassWriterDelegate tempDelegate = CreateXmlFormatWriterDelegate();
                             Interlocked.MemoryBarrier();
                             _helper.XmlFormatWriterDelegate = tempDelegate;
                         }
@@ -278,6 +287,14 @@ namespace System.Runtime.Serialization
                 _xmlFormatWriterDelegate = value;
 #endif
             }
+        }
+
+#if uapaot
+        [RemovableFeature(ReflectionBasedSerializationFeature.Name)]
+#endif
+        private XmlFormatClassReaderDelegate CreateXmlFormatReaderDelegate()
+        {
+            return new XmlFormatReaderGenerator().GenerateClassReader(this);
         }
 
 #if uapaot
@@ -302,7 +319,7 @@ namespace System.Runtime.Serialization
                     {
                         if (_helper.XmlFormatReaderDelegate == null)
                         {
-                            XmlFormatClassReaderDelegate tempDelegate = new XmlFormatReaderGenerator().GenerateClassReader(this);
+                            XmlFormatClassReaderDelegate tempDelegate = CreateXmlFormatReaderDelegate();
                             Interlocked.MemoryBarrier();
                             _helper.XmlFormatReaderDelegate = tempDelegate;
                         }

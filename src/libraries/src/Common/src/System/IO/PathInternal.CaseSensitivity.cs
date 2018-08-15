@@ -4,6 +4,10 @@
 
 using System.Diagnostics;
 
+#if MS_IO_REDIST
+using Microsoft.IO;
+#endif
+
 namespace System.IO
 {
     /// <summary>Contains internal path helpers that are shared between many projects.</summary>

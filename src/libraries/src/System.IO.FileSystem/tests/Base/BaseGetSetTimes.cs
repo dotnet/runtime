@@ -48,7 +48,8 @@ namespace System.IO.Tests
 
             Assert.All(TimeFunctions(requiresRoundtripping: true), (function) =>
             {
-                DateTime dt = new DateTime(2014, 12, 1, 12, 0, 0, function.Kind);
+                // Checking that milliseconds are not dropped after setter.
+                DateTime dt = new DateTime(2014, 12, 1, 12, 3, 3, isHFS ? 0 : 321, function.Kind);
                 function.Setter(item, dt);
                 DateTime result = function.Getter(item);
                 Assert.Equal(dt, result);
@@ -77,7 +78,7 @@ namespace System.IO.Tests
         }
 
         [ConditionalFact(nameof(isNotHFS))] // OSX HFS driver format does not support millisec granularity
-        public void TimesIncludeMillisecondPart_Unix()
+        public void TimesIncludeMillisecondPart()
         {
             T item = GetExistingItem();
             Assert.All(TimeFunctions(), (function) =>
@@ -109,7 +110,7 @@ namespace System.IO.Tests
         }
 
         [ConditionalFact(nameof(isHFS))]
-        public void TimesIncludeMillisecondPart_OSX()
+        public void TimesIncludeMillisecondPart_HFS()
         {
             T item = GetExistingItem();
             // OSX HFS driver format does not support millisec granularity

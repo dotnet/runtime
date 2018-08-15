@@ -782,6 +782,9 @@ namespace System.Net.Http.Headers
             // If we don't have the header in the store yet, add it now.
             HeaderStoreItemInfo result = new HeaderStoreItemInfo();
 
+            // If the descriptor header type is in _treatAsCustomHeaderTypes, it must be converted to a custom header before calling this method
+            Debug.Assert((descriptor.HeaderType & _treatAsCustomHeaderTypes) == 0);
+
             AddHeaderToStore(descriptor, result);
 
             return result;

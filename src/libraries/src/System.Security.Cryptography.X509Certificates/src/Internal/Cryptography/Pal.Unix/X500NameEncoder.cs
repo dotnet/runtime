@@ -6,6 +6,7 @@ using System;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Security.Cryptography;
+using System.Security.Cryptography.Asn1;
 using System.Security.Cryptography.X509Certificates;
 using System.Text;
 
@@ -116,14 +117,23 @@ namespace Internal.Cryptography.Pal
 
             Debug.Assert(dnSeparators.Count != 0);
 
-            List<byte[][]> encodedSets = ParseDistinguishedName(stringForm, dnSeparators, noQuotes);
+            List<byte[]> encodedSets = ParseDistinguishedName(stringForm, dnSeparators, noQuotes);
 
             if (reverse)
             {
                 encodedSets.Reverse();
             }
 
-            return DerEncoder.ConstructSequence(encodedSets);
+            using (AsnWriter writer = new AsnWriter(AsnEncodingRules.DER))
+            {
+                writer.PushSequence();
+                foreach (byte[] encodedSet in encodedSets)
+                {
+                    writer.WriteEncodedValue(encodedSet);
+                }
+                writer.PopSequence();
+                return writer.Encode();
+            }
         }
 
         private static bool NeedsQuoting(string rdnValue)
@@ -189,7 +199,7 @@ namespace Internal.Cryptography.Pal
             SeekComma,
         }
 
-        private static List<byte[][]> ParseDistinguishedName(
+        private static List<byte[]> ParseDistinguishedName(
             string stringForm,
             List<char> dnSeparators,
             bool noQuotes)
@@ -204,7 +214,7 @@ namespace Internal.Cryptography.Pal
             //
             // 7 + 6 = 13, round up to the nearest power-of-two.
             const int InitalRdnSize = 16;
-            List<byte[][]> encodedSets = new List<byte[][]>(InitalRdnSize);
+            List<byte[]> encodedSets = new List<byte[]>(InitalRdnSize);
             char[] chars = stringForm.ToCharArray();
 
             int pos;
@@ -508,83 +518,73 @@ namespace Internal.Cryptography.Pal
             return new Oid(stringForm.Substring(tagStart, length));
         }
 
-        private static byte[][] ParseRdn(Oid tagOid, char[] chars, int valueStart, int valueEnd, bool hadEscapedQuote)
+        private static byte[] ParseRdn(Oid tagOid, char[] chars, int valueStart, int valueEnd, bool hadEscapedQuote)
         {
-            bool ia5String = (tagOid.Value == Oids.EmailAddress);
-            byte[][] encodedOid;
-
-            try
-            {
-                encodedOid = DerEncoder.SegmentedEncodeOid(tagOid);
-            }
-            catch (CryptographicException e)
-            {
-                throw new CryptographicException(SR.Cryptography_Invalid_X500Name, e);
-            }
+            ReadOnlySpan<char> charValue;
 
             if (hadEscapedQuote)
             {
-                char[] value = ExtractValue(chars, valueStart, valueEnd);
-
-                return ParseRdn(encodedOid, value, ia5String);
-            }
-
-            return ParseRdn(encodedOid, chars, valueStart, valueEnd, ia5String);
-        }
-
-        private static byte[][] ParseRdn(
-            byte[][] encodedOid,
-            char[] chars,
-            int valueStart,
-            int valueEnd,
-            bool ia5String)
-        {
-            byte[][] encodedValue;
-
-            int length = valueEnd - valueStart;
-
-            if (ia5String)
-            {
-                // An email address with an invalid value will throw.
-                encodedValue = DerEncoder.SegmentedEncodeIA5String(chars, valueStart, length);
-            }
-            else if (DerEncoder.IsValidPrintableString(chars, valueStart, length))
-            {
-                encodedValue = DerEncoder.SegmentedEncodePrintableString(chars, valueStart, length);
+                charValue = ExtractValue(chars, valueStart, valueEnd);
             }
             else
             {
-                encodedValue = DerEncoder.SegmentedEncodeUtf8String(chars, valueStart, length);
+                charValue = new ReadOnlySpan<char>(chars, valueStart, valueEnd - valueStart);
             }
 
-            return DerEncoder.ConstructSegmentedSet(
-                DerEncoder.ConstructSegmentedSequence(
-                    encodedOid,
-                    encodedValue));
+            using (AsnWriter writer = new AsnWriter(AsnEncodingRules.DER))
+            {
+                writer.PushSetOf();
+                writer.PushSequence();
+
+                try
+                {
+                    writer.WriteObjectIdentifier(tagOid);
+                }
+                catch (CryptographicException e)
+                {
+                    throw new CryptographicException(SR.Cryptography_Invalid_X500Name, e);
+                }
+
+                if (tagOid.Value == Oids.EmailAddress)
+                {
+                    try
+                    {
+                        // An email address with an invalid value will throw.
+                        writer.WriteCharacterString(UniversalTagNumber.IA5String, charValue);
+                    }
+                    catch (EncoderFallbackException)
+                    {
+                        throw new CryptographicException(SR.Cryptography_Invalid_IA5String);
+                    }
+                }
+                else if (IsValidPrintableString(charValue))
+                {
+                    writer.WriteCharacterString(UniversalTagNumber.PrintableString, charValue);
+                }
+                else
+                {
+                    writer.WriteCharacterString(UniversalTagNumber.UTF8String, charValue);
+                }
+                
+                writer.PopSequence();
+                writer.PopSetOf();
+                return writer.Encode();
+            }
         }
 
-        private static byte[][] ParseRdn(byte[][] encodedOid, char[] value, bool ia5String)
+        private static bool IsValidPrintableString(ReadOnlySpan<char> value)
         {
-            byte[][] encodedValue;
-
-            if (ia5String)
+            try
             {
-                // An email address with an invalid value will throw.
-                encodedValue = DerEncoder.SegmentedEncodeIA5String(value);
+                Encoding encoding = AsnCharacterStringEncodings.GetEncoding(UniversalTagNumber.PrintableString);
+                // Throws on invalid characters.
+                encoding.GetByteCount(value);
+                return true;
             }
-            else if (DerEncoder.IsValidPrintableString(value))
+            catch (EncoderFallbackException)
             {
-                encodedValue = DerEncoder.SegmentedEncodePrintableString(value);
+                return false;
             }
-            else
-            {
-                encodedValue = DerEncoder.SegmentedEncodeUtf8String(value);
-            }
-
-            return DerEncoder.ConstructSegmentedSet(
-                DerEncoder.ConstructSegmentedSequence(
-                    encodedOid,
-                    encodedValue));
         }
 
         private static char[] ExtractValue(char[] chars, int valueStart, int valueEnd)

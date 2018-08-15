@@ -9,7 +9,9 @@ internal partial class Interop
 {
     internal partial class Advapi32
     {
+        public delegate int ServiceControlCallbackEx(int control, int eventType, IntPtr eventData, IntPtr eventContext);
+
         [DllImport(Libraries.Advapi32, CharSet = CharSet.Unicode, SetLastError = true)]
-        public extern static IntPtr RegisterServiceCtrlHandlerEx(string serviceName, Delegate callback, IntPtr userData);
+        public extern static IntPtr RegisterServiceCtrlHandlerEx(string serviceName, ServiceControlCallbackEx callback, IntPtr userData);
     }
 }

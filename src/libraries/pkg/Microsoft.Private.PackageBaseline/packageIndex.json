@@ -116,6 +116,12 @@
         "2.0.2.0": "2.1.0"
       }
     },
+    "Microsoft.IO.Redist": {
+      "InboxOn": {},
+      "AssemblyVersionInPackageVersion": {
+        "4.0.0.0": "4.6.0"
+      }
+    },
     "Microsoft.JScript": {
       "InboxOn": {
         "net45": "10.0.0.0"
@@ -1670,15 +1676,15 @@
         "4.0.1.0": "4.6.0"
       }
     },
+    "System.Drawing.Design": {
+      "InboxOn": {
+        "net45": "4.0.0.0"
+      }
+    },
     "System.Drawing.Design.Primitives": {
       "InboxOn": {},
       "AssemblyVersionInPackageVersion": {
         "4.0.0.0": "4.6.0"
-      }
-    },
-    "System.Drawing.Design": {
-      "InboxOn": {
-        "net45": "4.0.0.0"
       }
     },
     "System.Drawing.Primitives": {
@@ -4081,7 +4087,8 @@
         "4.0.10.0": "4.0.10",
         "4.0.11.0": "4.0.11",
         "4.0.12.0": "4.3.0",
-        "4.0.13.0": "4.4.0"
+        "4.0.13.0": "4.4.0",
+        "4.0.14.0": "4.6.0"
       }
     },
     "System.Runtime.WindowsRuntime.UI.Xaml": {
@@ -4101,7 +4108,8 @@
         "4.0.0.0": "4.0.0",
         "4.0.1.0": "4.0.1",
         "4.0.2.0": "4.3.0",
-        "4.0.3.0": "4.4.0"
+        "4.0.3.0": "4.4.0",
+        "4.0.4.0": "4.6.0"
       }
     },
     "System.Security": {

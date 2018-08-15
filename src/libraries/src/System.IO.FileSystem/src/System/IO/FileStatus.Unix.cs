@@ -2,6 +2,8 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
+using System.Runtime.InteropServices;
+
 namespace System.IO
 {
     internal struct FileStatus
@@ -175,8 +177,7 @@ namespace System.IO
             return UnixTimeToDateTimeOffset(_fileStatus.ATime, _fileStatus.ATimeNsec);
         }
 
-        internal void SetLastAccessTime(string path, DateTimeOffset time)
-            => SetAccessWriteTimes(path, time.ToUnixTimeSeconds(), null);
+        internal void SetLastAccessTime(string path, DateTimeOffset time) => SetAccessWriteTimes(path, time,  isAccessTime: true);
 
         internal DateTimeOffset GetLastWriteTime(ReadOnlySpan<char> path, bool continueOnError = false)
         {
@@ -186,24 +187,42 @@ namespace System.IO
             return UnixTimeToDateTimeOffset(_fileStatus.MTime, _fileStatus.MTimeNsec);
         }
 
-        internal void SetLastWriteTime(string path, DateTimeOffset time)
-            => SetAccessWriteTimes(path, null, time.ToUnixTimeSeconds());
-
+        internal void SetLastWriteTime(string path, DateTimeOffset time) => SetAccessWriteTimes(path, time, isAccessTime: false);
+        
         private DateTimeOffset UnixTimeToDateTimeOffset(long seconds, long nanoseconds)
         {
             return DateTimeOffset.FromUnixTimeSeconds(seconds).AddTicks(nanoseconds / NanosecondsPerTick).ToLocalTime();
         }
 
-        private void SetAccessWriteTimes(string path, long? accessTime, long? writeTime)
+        private void SetAccessWriteTimes(string path, DateTimeOffset time, bool isAccessTime)
         {
             // force a refresh so that we have an up-to-date times for values not being overwritten
             _fileStatusInitialized = -1;
             EnsureStatInitialized(path);
-            Interop.Sys.UTimBuf buf;
-            // we use utime() not utimensat() so we drop the subsecond part
-            buf.AcTime = accessTime ?? _fileStatus.ATime;
-            buf.ModTime = writeTime ?? _fileStatus.MTime;
-            Interop.CheckIo(Interop.Sys.UTime(path, ref buf), path, InitiallyDirectory);
+
+            // we use utimes()/utimensat() to set the accessTime and writeTime
+            Span<Interop.Sys.TimeSpec> buf = stackalloc Interop.Sys.TimeSpec[2];
+
+            long seconds = time.ToUnixTimeSeconds();
+            long nanoseconds = (time.ToUnixTimeMilliseconds() - seconds * 1000) * 1_000_000;
+
+            if (isAccessTime)
+            {
+                buf[0].TvSec = seconds;
+                buf[0].TvNsec = nanoseconds;
+                buf[1].TvSec = _fileStatus.MTime;
+                buf[1].TvNsec = _fileStatus.MTimeNsec;
+            }
+            else
+            {
+                buf[0].TvSec = _fileStatus.ATime;
+                buf[0].TvNsec = _fileStatus.ATimeNsec;
+                buf[1].TvSec = seconds;
+                buf[1].TvNsec = nanoseconds;
+            }
+
+            Interop.CheckIo(Interop.Sys.UTimensat(path, ref MemoryMarshal.GetReference(buf)), path, InitiallyDirectory);          
+
             _fileStatusInitialized = -1;
         }
 

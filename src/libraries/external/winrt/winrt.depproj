@@ -4,7 +4,9 @@
   <PropertyGroup>
     <AssemblyName>Windows</AssemblyName>
     <TargetExt>.winmd</TargetExt>
-    <BinPlaceRef>true</BinPlaceRef>
+    <!-- don't binplace for netstandard since the netstandard ref path is used for API compat and assumed to be 
+         implemented by all frameworks that support it.  Instead require projectreference to this project -->
+    <BinPlaceRef Condition="'$(TargetsNetStandard)' != 'true'">true</BinPlaceRef>
     <NuGetDeploySourceItem>Reference</NuGetDeploySourceItem>
   </PropertyGroup>
   <ItemGroup>

@@ -109,7 +109,7 @@ namespace System.Security.Cryptography.Pkcs
                 return false;
             }
 
-            bool ret = VerifyHash(hash, Helpers.GetOidFromHashAlgorithm(hashAlgorithm));
+            bool ret = VerifyHash(hash, PkcsHelpers.GetOidFromHashAlgorithm(hashAlgorithm));
 
             if (ret)
             {
@@ -179,7 +179,7 @@ namespace System.Security.Cryptography.Pkcs
         private bool VerifyData(ReadOnlySpan<byte> data)
         {
             Oid hashAlgorithmId = TokenInfo.HashAlgorithmId;
-            HashAlgorithmName hashAlgorithmName = Helpers.GetDigestAlgorithm(hashAlgorithmId);
+            HashAlgorithmName hashAlgorithmName = PkcsHelpers.GetDigestAlgorithm(hashAlgorithmId);
 
             using (IncrementalHash hasher = IncrementalHash.CreateHash(hashAlgorithmName))
             {
@@ -422,14 +422,14 @@ namespace System.Security.Cryptography.Pkcs
             string issuerDirectoryName,
             string serialNumber)
         {
-            GeneralName[] issuerNames = issuerSerial.Issuer;
+            GeneralNameAsn[] issuerNames = issuerSerial.Issuer;
 
             if (issuerNames == null || issuerNames.Length != 1)
             {
                 return false;
             }
 
-            GeneralName requiredName = issuerNames[0];
+            GeneralNameAsn requiredName = issuerNames[0];
 
             if (requiredName.DirectoryName == null)
             {
@@ -449,14 +449,14 @@ namespace System.Security.Cryptography.Pkcs
             ReadOnlySpan<byte> issuerDirectoryName,
             ReadOnlySpan<byte> serialNumber)
         {
-            GeneralName[] issuerNames = issuerSerial.Issuer;
+            GeneralNameAsn[] issuerNames = issuerSerial.Issuer;
 
             if (issuerNames == null || issuerNames.Length != 1)
             {
                 return false;
             }
 
-            GeneralName requiredName = issuerNames[0];
+            GeneralNameAsn requiredName = issuerNames[0];
 
             if (requiredName.DirectoryName == null)
             {
@@ -511,7 +511,7 @@ namespace System.Security.Cryptography.Pkcs
 
                 try
                 {
-                    alg = Helpers.GetDigestAlgorithm(certId2.HashAlgorithm.Algorithm);
+                    alg = PkcsHelpers.GetDigestAlgorithm(certId2.HashAlgorithm.Algorithm);
 
                     if (signerCert.TryGetCertHash(alg, thumbprint, out int written))
                     {

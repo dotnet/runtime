@@ -2256,5 +2256,10 @@
     "CommonTypes": [
       "System.Xml.XPath.XmlDocumentExtensions"
     ]
+  },
+  {
+    "Name": "Microsoft.IO.Redist",
+    "Description": "Downlevel support package for System.IO classes.",
+    "CommonTypes": []
   }
 ]
