@@ -34,7 +34,7 @@ As long as control can making it to the signal/abort handler and the fork/execve
 
 **Stack overflow exception**
 
-Like the severe memory corruption case, if the signal handler (`SIGSEGV`) gets control it can detect most stack overflow cases and does trigger a core dump. There are still many cases where this doesn't happen and the OS just terminates the process.
+Like the severe memory corruption case, if the signal handler (`SIGSEGV`) gets control it can detect most stack overflow cases and does trigger a core dump. There are still many cases where this doesn't happen and the OS just terminates the process. There is a bug in the earlier versions (2.1.x or less) of the runtime where _createdump_ isn't invoked for any stack overflow.
 
 ### FreeBSD/OpenBSD/NetBSD ###
 
@@ -57,7 +57,11 @@ Environment variables supported:
 
 (Please refer to MSDN for the meaning of the [minidump enum values](https://msdn.microsoft.com/en-us/library/windows/desktop/ms680519(v=vs.85).aspx) reported above)
 
-**Utility command line options**:
+**Command Line Usage**
+
+The createdump utility can also be run from the command line on arbitrary .NET Core processes. The type of dump can be controlled with the below command switches. The default is a "minidump" which contains the majority the memory and managed state needed. Unless you have ptrace (CAP_SYS_PTRACE) administrative privilege, you need to run with sudo or su. The same as if you were attaching with lldb or other native debugger.
+
+`sudo createdump <pid>`  
 
     createdump [options] pid
     -f, --name - dump path and file name. The pid can be placed in the name with %d. The default is "/tmp/coredump.%d"

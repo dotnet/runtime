@@ -135,13 +135,13 @@ However the common commands have been aliased so that you don't need the SOS pre
 It is also possible to debug .NET Core crash dumps using lldb and SOS. In order to do this, you need all of the following:
 
 - The crash dump file. We have a service called "Dumpling" which collects, uploads, and archives crash dump files during all of our CI jobs and official builds.
-- On Linux, there is an utility called `createdump` (see [doc](https://github.com/dotnet/coreclr/blob/master/Documentation/botr/xplat-minidump-generation.md "doc")) that can be setup to generate core dumps when a managed app throws an unhandled exception or faults.
+- On Linux, there is an utility called `createdump` (see [doc](https://github.com/dotnet/coreclr/blob/master/Documentation/botr/xplat-minidump-generation.md#configurationpolicy)) that can be setup to generate core dumps when a managed app throws an unhandled exception or faults.
 - To get matching runtime and symbol binaries for the core dump use the symbol downloader CLI extension:
   - Install the [.NET Core 2.1 SDK](https://www.microsoft.com/net/download/).
-  - Install the symbol downloader extension: `dotnet tool install -g dotnet-symbol`.
+  - Install the symbol downloader extension: `dotnet tool install -g dotnet-symbol`. Make sure you are not in any project directory with a NuGet.Config that doesn't include nuget.org as a source. 
   - Run `dotnet symbol coredump` to download the runtime binaries and symbols.
   - Check out the coreclr and corefx repositories at the appropriate commit for the appropriate source.
-  - For more details see: [dotnet-symbol](https://github.com/dotnet/symstore/blob/master/src/dotnet-symbol/README.md).
+  - For further information see: [dotnet-symbol](https://github.com/dotnet/symstore/blob/master/src/dotnet-symbol/README.md).
 - lldb version 3.9. The SOS plugin (i.e. libsosplugin.so) provided is now built for lldb 3.9. In order to install lldb 3.9 just run the following commands:
 ```
 ~$ echo "deb http://llvm.org/apt/trusty/ llvm-toolchain-trusty-3.9 main" | sudo tee /etc/apt/sources.list.d/llvm.list
