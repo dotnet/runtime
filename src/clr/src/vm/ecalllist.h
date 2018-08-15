@@ -872,13 +872,15 @@ FCFuncStart(gInteropMarshalFuncs)
     FCFuncElement("GetNativeVariantForObject", MarshalNative::GetNativeVariantForObject)
     FCFuncElement("GetObjectForNativeVariant", MarshalNative::GetObjectForNativeVariant)
     FCFuncElement("InternalFinalReleaseComObject", MarshalNative::FinalReleaseComObject)
+    FCFuncElement("IsTypeVisibleFromCom", MarshalNative::IsTypeVisibleFromCom)
     FCFuncElement("QueryInterface", MarshalNative::QueryInterface)
     FCFuncElement("CreateAggregatedObject", MarshalNative::CreateAggregatedObject)
     FCFuncElement("AreComObjectsAvailableForCleanup", MarshalNative::AreComObjectsAvailableForCleanup)
     FCFuncElement("InternalCreateWrapperOfType", MarshalNative::InternalCreateWrapperOfType)
     FCFuncElement("GetObjectsForNativeVariants", MarshalNative::GetObjectsForNativeVariants)
     FCFuncElement("GetStartComSlot", MarshalNative::GetStartComSlot)
-
+    FCFuncElement("GetEndComSlot", MarshalNative::GetEndComSlot)
+    
     FCFuncElement("InitializeManagedWinRTFactoryObject", MarshalNative::InitializeManagedWinRTFactoryObject)
 
     FCFuncElement("GetNativeActivationFactory", MarshalNative::GetNativeActivationFactory)
