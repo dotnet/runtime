@@ -10,62 +10,62 @@ namespace System.Runtime.InteropServices.Tests
     public class ComEventsHelperTests
     {
         [Fact]
-        [PlatformSpecific(TestPlatforms.Windows)]
-        [SkipOnTargetFramework(TargetFrameworkMonikers.UapAot, "Throws PlatformNotSupportedException in UapAot")]
-        public void Combine_NullRcwWindows_ThrowsArgumentNullException()
-        {
-            AssertExtensions.Throws<ArgumentNullException>(null, () => ComEventsHelper.Combine(null, Guid.Empty, 1, null));
-        }
-
-        [Fact]
         [SkipOnTargetFramework(~TargetFrameworkMonikers.UapAot, "Throws PlatformNotSupportedException in UapAot")]
-        public void Combine_NullRcwUapAot_PlatformNotSupportedException()
+        public void Combine_UapAot_PlatformNotSupportedException()
         {
             Assert.Throws<PlatformNotSupportedException>(() => ComEventsHelper.Combine(null, Guid.Empty, 1, null));
         }
         
         [Fact]
         [PlatformSpecific(TestPlatforms.AnyUnix)]
-        public void Combine_NullRcwUnix_ThrowsArgumentNullException()
+        public void Combine_Unix_ThrowsPlatformNotSupportedException()
         {
             Assert.Throws<PlatformNotSupportedException>(() => ComEventsHelper.Combine(null, Guid.Empty, 1, null));
         }
 
         [Fact]
-        [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework, "ComEventsHelper.Combine is not supported in .NET Core.")]
-        [ActiveIssue(31214)]
-        public void Combine_NonNullRcw_ThrowsPlatformNotSupportedException()
+        [PlatformSpecific(TestPlatforms.Windows)]
+        [SkipOnTargetFramework(TargetFrameworkMonikers.UapAot, "Throws PlatformNotSupportedException in UapAot")]
+        public void Combine_NullRcw_ThrowsArgumentNullException()
         {
-            Assert.Throws<PlatformNotSupportedException>(() => ComEventsHelper.Combine(1, Guid.Empty, 1, null));
+            AssertExtensions.Throws<ArgumentNullException>(null, () => ComEventsHelper.Combine(null, Guid.Empty, 1, null));
         }
 
         [Fact]
         [PlatformSpecific(TestPlatforms.Windows)]
         [SkipOnTargetFramework(TargetFrameworkMonikers.UapAot, "Throws PlatformNotSupportedException in UapAot")]
-        public void Remove_NullRcwWindows_ThrowsArgumentNullException()
+        public void Combine_NotComObject_ThrowsArgumentException()
         {
-            AssertExtensions.Throws<ArgumentNullException>(null, () => ComEventsHelper.Remove(null, Guid.Empty, 1, null));
+            AssertExtensions.Throws<ArgumentException>("obj", () => ComEventsHelper.Combine(1, Guid.Empty, 1, null));
         }
 
         [SkipOnTargetFramework(~TargetFrameworkMonikers.UapAot, "Throws PlatformNotSupportedException in UapAot")]
-        public void Remove_NullRcwUapAot_ThrowsPlatformNotSupportedException()
+        public void Remove_UapAot_ThrowsPlatformNotSupportedException()
         {
             Assert.Throws<PlatformNotSupportedException>(() => ComEventsHelper.Remove(null, Guid.Empty, 1, null));
         }
 
         [Fact]
         [PlatformSpecific(TestPlatforms.AnyUnix)]
-        public void Remove_NullRcwUnix_ThrowPlatformNotSupportedException()
+        public void Remove_Unix_ThrowPlatformNotSupportedException()
         {
             Assert.Throws<PlatformNotSupportedException>(() => ComEventsHelper.Remove(null, Guid.Empty, 1, null));   
         }
 
         [Fact]
-        [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework, "ComEventsHelper.Combine is not supported in .NET Core.")]
-        [ActiveIssue(31214)]
-        public void Remove_NonNullRcw_ThrowsPlatformNotSupportedException()
+        [PlatformSpecific(TestPlatforms.Windows)]
+        [SkipOnTargetFramework(TargetFrameworkMonikers.UapAot, "Throws PlatformNotSupportedException in UapAot")]
+        public void Remove_NullRcw_ThrowsArgumentNullException()
         {
-            Assert.Throws<PlatformNotSupportedException>(() => ComEventsHelper.Remove(1, Guid.Empty, 1, null));
+            AssertExtensions.Throws<ArgumentNullException>(null, () => ComEventsHelper.Remove(null, Guid.Empty, 1, null));
+        }
+
+        [Fact]
+        [PlatformSpecific(TestPlatforms.Windows)]
+        [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework, "ComEventsHelper.Combine is not supported in .NET Core.")]
+        public void Remove_NotComObject_ThrowsArgumentException()
+        {
+            AssertExtensions.Throws<ArgumentException>("obj", () => ComEventsHelper.Remove(1, Guid.Empty, 1, null));
         }
     }
 #pragma warning restore 0618

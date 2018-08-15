@@ -56,8 +56,6 @@
     <Compile Include="System\Runtime\InteropServices\Marshal\BindToMonikerTests.cs" />
     <Compile Include="System\Runtime\InteropServices\Marshal\ChangeWrapperHandleStrengthTests.cs" />
     <Compile Include="System\Runtime\InteropServices\Marshal\CleanupUnusedObjectsInCurrentContextTests.cs" />
-    <Compile Include="System\Runtime\InteropServices\Marshal\Common\CommonTypes.cs" />
-    <Compile Include="System\Runtime\InteropServices\Marshal\Common\CommonTypes.Windows.cs" Condition="'$(TargetsWindows)' == 'true'" />
     <Compile Include="System\Runtime\InteropServices\Marshal\DestroyStructureTests.cs" />
     <Compile Include="System\Runtime\InteropServices\Marshal\FreeBSTRTests.cs" />
     <Compile Include="System\Runtime\InteropServices\Marshal\FreeCoTaskMemTests.cs" />
@@ -66,11 +64,12 @@
     <Compile Include="System\Runtime\InteropServices\Marshal\GenerateGuidForTypeTests.Windows.cs" Condition="'$(TargetsWindows)' == 'true'" />
     <Compile Include="System\Runtime\InteropServices\Marshal\GenerateProgIdForTypeTests.cs" />
     <Compile Include="System\Runtime\InteropServices\Marshal\GenerateProgIdForTypeTests.Windows.cs" Condition="'$(TargetsWindows)' == 'true'" />
+    <Compile Include="System\Runtime\InteropServices\Marshal\GetComObjectDataTests.cs" />
+    <Compile Include="System\Runtime\InteropServices\Marshal\GetComObjectDataTests.Windows.cs" Condition="'$(TargetsWindows)' == 'true'" />
+    <Compile Include="System\Runtime\InteropServices\Marshal\GetDelegateForFunctionPointerTests.cs" />
     <Compile Include="System\Runtime\InteropServices\Marshal\GetExceptionCodeTests.cs" />
     <Compile Include="System\Runtime\InteropServices\Marshal\GetExceptionForHRTests.cs" />
     <Compile Include="System\Runtime\InteropServices\Marshal\GetExceptionPointersTests.cs" />
-    <Compile Include="System\Runtime\InteropServices\Marshal\GetComObjectDataTests.cs" />
-    <Compile Include="System\Runtime\InteropServices\Marshal\GetDelegateForFunctionPointerTests.cs" />
     <Compile Include="System\Runtime\InteropServices\Marshal\GetFunctionPointerForDelegateTests.cs" />
     <Compile Include="System\Runtime\InteropServices\Marshal\GetHINSTANCETests.cs" />
     <Compile Include="System\Runtime\InteropServices\Marshal\GetHRForExceptionTests.cs" />
@@ -94,6 +93,7 @@
     <Compile Include="System\Runtime\InteropServices\Marshal\SecureStringToGlobalAllocAnsiTests.cs" />
     <Compile Include="System\Runtime\InteropServices\Marshal\SecureStringToGlobalAllocUnicodeTests.cs" />
     <Compile Include="System\Runtime\InteropServices\Marshal\SetComObjectDataTests.cs" />
+    <Compile Include="System\Runtime\InteropServices\Marshal\SetComObjectDataTests.Windows.cs" Condition="'$(TargetsWindows)' == 'true'" />
     <Compile Include="System\Runtime\InteropServices\Marshal\SizeOfTests.cs" />
     <Compile Include="System\Runtime\InteropServices\Marshal\StringToBSTRTests.cs" />
     <Compile Include="System\Runtime\InteropServices\Marshal\StringToCoTaskMemAnsiTests.cs" />
@@ -112,6 +112,8 @@
     <Compile Include="System\Runtime\InteropServices\Marshal\ZeroFreeCoTaskMemUTF8Tests.cs" Condition="'$(TargetGroup)' == 'netcoreapp'" />
     <Compile Include="System\Runtime\InteropServices\Marshal\ZeroFreeGlobalAllocAnsiTests.cs" />
     <Compile Include="System\Runtime\InteropServices\Marshal\ZeroFreeGlobalAllocUnicodeTests.cs" />
+    <Compile Include="System\Runtime\InteropServices\Marshal\Common\CommonTypes.cs" />
+    <Compile Include="System\Runtime\InteropServices\Marshal\Common\CommonTypes.Windows.cs" Condition="'$(TargetsWindows)' == 'true'" />
     <Compile Include="System\Runtime\InteropServices\Marshal\ReadWrite\ByteTests.cs" />
     <Compile Include="System\Runtime\InteropServices\Marshal\ReadWrite\Int16Tests.cs" />
     <Compile Include="System\Runtime\InteropServices\Marshal\ReadWrite\Int32Tests.cs" />
