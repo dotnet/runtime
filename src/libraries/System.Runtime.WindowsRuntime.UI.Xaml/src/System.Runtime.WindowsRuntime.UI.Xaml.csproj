@@ -2,11 +2,15 @@
   <PropertyGroup>
     <AssemblyName>System.Runtime.WindowsRuntime.UI.Xaml</AssemblyName>
     <ProjectGuid>{263DA4F1-C3BC-4B43-98E7-9F38B419A131}</ProjectGuid>
-    <PackageTargetRuntime>win8</PackageTargetRuntime>
-    <Configurations>uap-Windows_NT-Debug;uap-Windows_NT-Release</Configurations>
+    <Configurations>netcoreapp-Windows_NT-Debug;netcoreapp-Windows_NT-Release;netstandard-Debug;netstandard-Release;netstandard1.1-Debug;netstandard1.1-Release;uap-Windows_NT-Debug;uap-Windows_NT-Release;uapaot-Windows_NT-Debug;uapaot-Windows_NT-Release</Configurations>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(TargetGroup)' == 'netstandard1.1' or '$(TargetGroup)' == 'netstandard'">
+    <GeneratePlatformNotSupportedAssemblyMessage>SR.PlatformNotSupported_WindowsRuntime</GeneratePlatformNotSupportedAssemblyMessage>
+    <GeneratePlatformNotSupportedAssemblyWithGlobalPrefix>true</GeneratePlatformNotSupportedAssemblyWithGlobalPrefix>
+    <AssemblyVersion Condition="'$(TargetGroup)' == 'netstandard1.1'">4.0.1.0</AssemblyVersion>
   </PropertyGroup>
   <!-- Default configurations to help VS understand the options -->
-  <ItemGroup>
+  <ItemGroup Condition="'$(TargetsNETCoreApp)'=='true' or '$(TargetsUap)'=='true'">
     <Compile Include="System\Runtime\InteropServices\HResults.cs" />
     <Compile Include="System\Windows\CornerRadius.cs" />
     <Compile Include="System\Windows\Duration.cs" />
@@ -26,14 +30,21 @@
       <Link>Common\System\Runtime\InteropServices\WindowsRuntime\WindowsRuntimeImportAttribute.cs</Link>
     </Compile>
   </ItemGroup>
-  <ItemGroup>
+  <ItemGroup Condition="'$(TargetsNETCoreApp)'=='true' or '$(TargetsUap)'=='true'">
     <Reference Include="System.Runtime" />
     <Reference Include="System.Resources.ResourceManager" />
     <Reference Include="System.Globalization" />
     <Reference Include="System.Runtime.WindowsRuntime" />
     <Reference Include="System.Runtime.Extensions" />
   </ItemGroup>
-  <ItemGroup>
+  <ItemGroup Condition="'$(TargetsUap)'=='true'">
     <EmbeddedResource Include="Resources\$(AssemblyName).rd.xml" />
+  </ItemGroup>
+  <ItemGroup Condition="'$(TargetsNetStandard)' == 'true'">
+    <Reference Include="System.Runtime" />
+    <Reference Include="System.IO" />
+    <Reference Include="System.Threading.Tasks" />
+    <Reference Include="System.Resources.ResourceManager" />
+    <Reference Include="System.Runtime.WindowsRuntime" />
   </ItemGroup>
 </Project>
