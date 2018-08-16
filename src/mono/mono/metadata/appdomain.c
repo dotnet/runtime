@@ -2372,6 +2372,11 @@ ves_icall_System_Reflection_Assembly_LoadFile_internal (MonoStringHandle fname, 
 	filename = mono_string_handle_to_utf8 (fname, error);
 	goto_if_nok (error, leave);
 
+	if (!g_path_is_absolute (filename)) {
+		mono_error_set_argument (error, "assemblyFile", "Absolute path information is required.");
+		goto leave;
+	}
+
 	MonoImageOpenStatus status;
 	MonoMethod *executing_method;
 	executing_method = mono_runtime_get_caller_no_system_or_reflection ();
