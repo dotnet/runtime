@@ -240,6 +240,20 @@
         }
     },
     {
+        "name": "System.Text.RegularExpressions.Tests",
+        "enabled": true,
+        "exclusions": {
+            "namespaces": null,
+            "classes": null,
+            "methods": [
+                {
+                    "name": "System.Text.RegularExpressions.Tests.RegexMatchTests.Match_ExcessPrefix",
+                    "reason": "https://github.com/dotnet/coreclr/issues/18912"
+                }
+            ]
+        }
+    },
+    {
         "name": "System.Threading.Thread.Tests",
         "enabled": true,
         "exclusions": {
