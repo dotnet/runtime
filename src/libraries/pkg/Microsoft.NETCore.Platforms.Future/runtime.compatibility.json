@@ -1,0 +1,15 @@
+{
+  "unix-wasm": [
+    "unix-wasm"
+  ],
+  "webassembly": [
+    "webassembly",
+    "unix"
+  ],
+  "webassembly-wasm": [
+    "webassembly-wasm",
+    "webassembly",
+    "unix-wasm",
+    "unix"
+  ]
+}

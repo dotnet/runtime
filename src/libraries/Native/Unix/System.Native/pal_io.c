@@ -675,7 +675,7 @@ int64_t SystemNative_LSeek(intptr_t fd, int64_t offset, int32_t whence)
             lseek(
 #endif
                  ToFileDescriptor(fd),
-                 offset,
+                 (off_t)offset,
                  whence)) < 0 && errno == EINTR);
     return result;
 }
@@ -829,7 +829,7 @@ void* SystemNative_MMap(void* address,
             protection,
             flags,
             ToFileDescriptorUnchecked(fd),
-            offset);
+            (off_t)offset);
 
     if (ret == MAP_FAILED)
     {
@@ -920,7 +920,7 @@ int32_t SystemNative_FTruncate(intptr_t fd, int64_t length)
         ftruncate(
 #endif
             ToFileDescriptor(fd),
-            length)) < 0 && errno == EINTR);
+            (off_t)length)) < 0 && errno == EINTR);
     return result;
 }
 
@@ -1052,8 +1052,8 @@ int32_t SystemNative_PosixFAdvise(intptr_t fd, int64_t offset, int64_t length, i
             posix_fadvise(
 #endif
                 ToFileDescriptor(fd),
-                offset,
-                length,
+                (off_t)offset,
+                (off_t)length,
                 advice)) < 0 && errno == EINTR);
     return result;
 #else
@@ -1359,7 +1359,10 @@ int32_t SystemNative_INotifyRemoveWatch(intptr_t fd, int32_t wd)
 int32_t SystemNative_GetPeerID(intptr_t socket, uid_t* euid)
 {
     int fd = ToFileDescriptor(socket);
-#ifdef SO_PEERCRED
+
+    // ucred causes Emscripten to fail even though it's defined,
+    // but getting peer credentials won't work for WebAssembly anyway
+#if defined(SO_PEERCRED) && !defined(_WASM_)
     struct ucred creds;
     socklen_t len = sizeof(creds);
     if (getsockopt(fd, SOL_SOCKET, SO_PEERCRED, &creds, &len) == 0)
@@ -1401,8 +1404,8 @@ int32_t SystemNative_LockFileRegion(intptr_t fd, int64_t offset, int64_t length,
 
     lockArgs.l_type = lockType;
     lockArgs.l_whence = SEEK_SET;
-    lockArgs.l_start = offset;
-    lockArgs.l_len = length;
+    lockArgs.l_start = (off_t)offset;
+    lockArgs.l_len = (off_t)length;
 
     int32_t ret;
     while ((ret = fcntl (ToFileDescriptor(fd), F_SETLK, &lockArgs)) < 0 && errno == EINTR);
