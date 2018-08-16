@@ -40,17 +40,10 @@ namespace System.Net.Sockets.Tests
         [InlineData(5)]
         public async Task Accept_ConcurrentAcceptsBeforeConnects_Success(int numberAccepts)
         {
-            // The SyncForceNonBlocking implementation currently toggles the listener's Blocking setting
-            // back and force on every Accept, which causes pending sync Accepts to return EWOULDBLOCK.
-            // For now, just skip the test for SyncForceNonBlocking.
-            // TODO: Issue #22885
-            if (typeof(T) == typeof(SocketHelperSyncForceNonBlocking))
-                return;
-
             using (Socket listener = new Socket(AddressFamily.InterNetwork, SocketType.Stream, ProtocolType.Tcp))
             {
                 listener.Bind(new IPEndPoint(IPAddress.Loopback, 0));
-                listener.Listen(numberAccepts);
+                Listen(listener, numberAccepts);
 
                 var clients = new Socket[numberAccepts];
                 var servers = new Task<Socket>[numberAccepts];
@@ -97,17 +90,10 @@ namespace System.Net.Sockets.Tests
         [InlineData(5)]
         public async Task Accept_ConcurrentAcceptsAfterConnects_Success(int numberAccepts)
         {
-            // The SyncForceNonBlocking implementation currently toggles the listener's Blocking setting
-            // back and force on every Accept, which causes pending sync Accepts to return EWOULDBLOCK.
-            // For now, just skip the test for SyncForceNonBlocking.
-            // TODO: Issue #22885
-            if (typeof(T) == typeof(SocketHelperSyncForceNonBlocking))
-                return;
-
             using (Socket listener = new Socket(AddressFamily.InterNetwork, SocketType.Stream, ProtocolType.Tcp))
             {
                 listener.Bind(new IPEndPoint(IPAddress.Loopback, 0));
-                listener.Listen(numberAccepts);
+                Listen(listener, numberAccepts);
 
                 var clients = new Socket[numberAccepts];
                 var clientConnects = new Task[numberAccepts];
