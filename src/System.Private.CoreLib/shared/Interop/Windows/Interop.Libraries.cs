@@ -13,5 +13,6 @@ internal static partial class Interop
         internal const string Ole32 = "ole32.dll";
         internal const string OleAut32 = "oleaut32.dll";
         internal const string User32 = "user32.dll";
+        internal const string NtDll = "ntdll.dll";
     }
 }
