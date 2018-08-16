@@ -14,12 +14,12 @@
 #include <pthread.h>
 #include <arpa/inet.h>
 #include <assert.h>
+#include <sys/time.h>
 #if HAVE_EPOLL
 #include <sys/epoll.h>
 #elif HAVE_KQUEUE
 #include <sys/types.h>
 #include <sys/event.h>
-#include <sys/time.h>
 #elif HAVE_SYS_POLL_H
 #include <sys/poll.h>
 #endif
@@ -31,11 +31,14 @@
 #include <string.h>
 #include <sys/ioctl.h>
 #include <sys/socket.h>
+#if HAVE_SYS_SOCKIO_H
+#include <sys/sockio.h>
+#endif
 #include <sys/un.h>
 #if defined(__APPLE__) && __APPLE__
 #include <sys/socketvar.h>
 #endif
-#if !HAVE_GETDOMAINNAME && HAVE_UNAME
+#if !HAVE_GETDOMAINNAME && HAVE_UTSNAME_DOMAINNAME
 #include <sys/utsname.h>
 #include <stdio.h>
 #endif
@@ -408,7 +411,7 @@ int32_t SystemNative_GetDomainName(uint8_t* name, int32_t nameLength)
 #endif
 
     return getdomainname((char*)name, namelen);
-#elif HAVE_UNAME
+#elif HAVE_UTSNAME_DOMAINNAME
     // On Android, there's no getdomainname but we can use uname to fetch the domain name
     // of the current device
     size_t namelen = (uint32_t)nameLength;
@@ -1881,9 +1884,11 @@ static bool TryConvertSocketTypePalToPlatform(int32_t palSocketType, int* platfo
             *platformSocketType = SOCK_RAW;
             return true;
 
+#ifdef SOCK_RDM
         case SocketType_SOCK_RDM:
             *platformSocketType = SOCK_RDM;
             return true;
+#endif
 
         case SocketType_SOCK_SEQPACKET:
             *platformSocketType = SOCK_SEQPACKET;

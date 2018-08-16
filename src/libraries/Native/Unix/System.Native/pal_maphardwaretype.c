@@ -61,27 +61,39 @@ uint16_t MapHardwareType(uint16_t nativeType)
     {
         case IFT_ETHER:
             return NetworkInterfaceType_Ethernet;
+#ifdef IFT_ISO88025
         case IFT_ISO88025:
             return NetworkInterfaceType_TokenRing;
+#endif
+#ifdef IFT_FDDI
         case IFT_FDDI:
             return NetworkInterfaceType_Fddi;
+#endif
+#ifdef IFT_ISDNBASIC
         case IFT_ISDNBASIC:
             return NetworkInterfaceType_Isdn;
+#endif
+#ifdef IFT_ISDNPRIMARY
         case IFT_ISDNPRIMARY:
             return NetworkInterfaceType_PrimaryIsdn;
+#endif
         case IFT_PPP:
             return NetworkInterfaceType_Ppp;
         case IFT_LOOP:
             return NetworkInterfaceType_Loopback;
+#ifdef IFT_XETHER
         case IFT_XETHER:
             return NetworkInterfaceType_Ethernet3Megabit;
+#endif
         case IFT_SLIP:
             return NetworkInterfaceType_Slip;
+#ifdef IFT_ATM
         case IFT_ATM:
             return NetworkInterfaceType_Atm;
+#endif
         case IFT_MODEM:
             return NetworkInterfaceType_GenericModem;
-#if defined(IFT_IEEE1394)
+#ifdef IFT_IEEE1394
         case IFT_IEEE1394:
             return NetworkInterfaceType_HighPerformanceSerialBus;
 #endif
