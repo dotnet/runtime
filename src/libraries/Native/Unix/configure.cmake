@@ -189,6 +189,12 @@ check_symbol_exists(
     HAVE_TCSANOW)
 
 check_struct_has_member(
+    "struct utsname"
+    domainname
+    "sys/utsname.h"
+    HAVE_UTSNAME_DOMAINNAME)
+
+check_struct_has_member(
     "struct stat"
     st_birthtimespec
     "sys/types.h;sys/stat.h"
@@ -325,6 +331,10 @@ check_symbol_exists(
     fcopyfile
     copyfile.h
     HAVE_FCOPYFILE)
+
+check_include_files(
+     "sys/sockio.h"
+     HAVE_SYS_SOCKIO_H)
 
 check_include_files(
      "sys/poll.h"

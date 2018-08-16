@@ -178,8 +178,10 @@ int32_t SystemNative_ConvertErrorPlatformToPal(int32_t platformErrno)
             return Error_ETXTBSY;
         case EXDEV:
             return Error_EXDEV;
+#ifdef ESOCKTNOSUPPORT
         case ESOCKTNOSUPPORT:
             return Error_ESOCKTNOSUPPORT;
+#endif
         case EPFNOSUPPORT:
             return Error_EPFNOSUPPORT;
         case ESHUTDOWN:
@@ -366,8 +368,10 @@ int32_t SystemNative_ConvertErrorPalToPlatform(int32_t error)
             return EXDEV;
         case Error_EPFNOSUPPORT:
             return EPFNOSUPPORT;
+#ifdef ESOCKTNOSUPPORT
         case Error_ESOCKTNOSUPPORT:
             return ESOCKTNOSUPPORT;
+#endif
         case Error_ESHUTDOWN:
             return ESHUTDOWN;
         case Error_EHOSTDOWN:
