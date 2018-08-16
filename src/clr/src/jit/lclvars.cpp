@@ -4100,7 +4100,16 @@ void Compiler::lvaComputeRefCounts(bool isRecompute, bool setSlotNumbers)
             // to do something else to ensure late temps are considered.
             for (lclNum = 0, varDsc = lvaTable; lclNum < lvaCount; lclNum++, varDsc++)
             {
-                assert(varDsc->lvImplicitlyReferenced);
+                const bool isSpecialVarargsParam = varDsc->lvIsParam && raIsVarargsStackArg(lclNum);
+
+                if (isSpecialVarargsParam)
+                {
+                    assert(varDsc->lvRefCnt() == 0);
+                }
+                else
+                {
+                    assert(varDsc->lvImplicitlyReferenced);
+                }
             }
 #endif // defined (DEBUG)
 
@@ -4118,8 +4127,17 @@ void Compiler::lvaComputeRefCounts(bool isRecompute, bool setSlotNumbers)
             // unreferenced later, we'll have to explicitly clear this bit.
             varDsc->setLvRefCnt(0);
             varDsc->setLvRefCntWtd(0);
-            varDsc->lvImplicitlyReferenced = 1;
-            varDsc->lvTracked              = 0;
+
+            // Special case for some varargs params ... these must
+            // remain unreferenced.
+            const bool isSpecialVarargsParam = varDsc->lvIsParam && raIsVarargsStackArg(lclNum);
+
+            if (!isSpecialVarargsParam)
+            {
+                varDsc->lvImplicitlyReferenced = 1;
+            }
+
+            varDsc->lvTracked = 0;
 
             if (setSlotNumbers)
             {
