@@ -9,7 +9,7 @@
     "OSGroup": {
       "description": "Sets the OS for the BuildConfigurtation you want to build.",
       "valueType": "property",
-      "values": ["Windows_NT", "Unix", "Linux", "OSX", "FreeBSD", "NetBSD"],
+      "values": ["Windows_NT", "Unix", "Linux", "OSX", "FreeBSD", "NetBSD", "WebAssembly"],
       "defaultValue": "${OSName}"
     },
     "ConfigurationGroup": {
@@ -21,7 +21,7 @@
     "ArchGroup": {
       "description": "Sets the architecture for the BuildConfiguration you want to build.",
       "valueType": "property",
-      "values": ["x64", "x86", "arm", "arm64"],
+      "values": ["x64", "x86", "arm", "arm64", "wasm"],
       "defaultValue": "x64"
     },
     "BuildAllConfigurations": {
@@ -159,7 +159,7 @@
     "BuildArchitecture": {
       "description": "Sets the value of the build architecture.",
       "valueType": "passThrough",
-      "values": ["x86", "arm", "armel", "x64", "arm64"],
+      "values": ["x86", "arm", "armel", "x64", "arm64", "wasm"],
       "defaultValue": "${CPUArch}"
     },
     "CmakeBuildType": {

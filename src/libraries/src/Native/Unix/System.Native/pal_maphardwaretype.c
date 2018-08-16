@@ -9,8 +9,13 @@
 #include <sys/types.h>
 
 #if defined(AF_PACKET)
+#if defined(_WASM_)
+#include <netpacket/packet.h>
+#include <net/if_arp.h>
+#else // _WASM_
 #include <linux/if_packet.h>
 #include <linux/if_arp.h>
+#endif // _WASM_
 #elif defined(AF_LINK)
 #include <net/if_dl.h>
 #include <net/if_types.h>

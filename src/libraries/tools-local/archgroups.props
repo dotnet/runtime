@@ -6,5 +6,6 @@
     <ArchGroups Include="arm" />
     <ArchGroups Include="arm64" />
     <ArchGroups Include="armel" />
+    <ArchGroups Include="wasm" />
   </ItemGroup>
 </Project>

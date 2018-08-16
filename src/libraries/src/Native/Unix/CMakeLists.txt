@@ -25,6 +25,10 @@ add_compile_options(-g)
 add_compile_options(-Wthread-safety)
 add_compile_options(-Werror)
 
+if(CMAKE_SYSTEM_NAME STREQUAL Emscripten)
+    set(CLR_CMAKE_PLATFORM_WASM 1)
+    add_definitions(-D_WASM_)
+endif(CMAKE_SYSTEM_NAME STREQUAL Emscripten)
 if (CMAKE_SYSTEM_PROCESSOR STREQUAL x86_64 OR CMAKE_SYSTEM_PROCESSOR STREQUAL amd64)
     add_definitions(-DBIT64=1)
     add_definitions(-D_AMD64_)
@@ -153,6 +157,8 @@ if (NOT WIN32)
         if (STRIP STREQUAL "STRIP-NOTFOUND")
             message(FATAL_ERROR "strip not found")
         endif()
+    elseif (CLR_CMAKE_PLATFORM_WASM)
+        # No object stripping for WASM
     else (CMAKE_SYSTEM_NAME STREQUAL Darwin)
         # Ensure that objcopy is present
         if(DEFINED ENV{CROSSCOMPILE})
@@ -236,15 +242,20 @@ endfunction()
 
 include(configure.cmake)
 
-add_subdirectory(System.IO.Compression.Native)
-add_subdirectory(System.IO.Ports.Native)
+if (NOT CLR_CMAKE_PLATFORM_WASM)
+    add_subdirectory(System.IO.Compression.Native)
+	add_subdirectory(System.IO.Ports.Native)
+endif()
 
 add_compile_options(-Weverything)
 
 add_subdirectory(System.Native)
-add_subdirectory(System.Net.Http.Native)
-add_subdirectory(System.Net.Security.Native)
-add_subdirectory(System.Security.Cryptography.Native)
+
+if (NOT CLR_CMAKE_PLATFORM_WASM)
+    add_subdirectory(System.Net.Http.Native)
+    add_subdirectory(System.Net.Security.Native)
+    add_subdirectory(System.Security.Cryptography.Native)
+endif()
 
 if(APPLE)
     add_subdirectory(System.Security.Cryptography.Native.Apple)
