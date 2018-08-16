@@ -605,7 +605,7 @@ void GCToOSInterface::GetMemoryStatus(uint32_t* memory_load, uint64_t* available
             workingSetSize = pmc.WorkingSetSize;
         }
 #else
-        status = PAL_GetWorkingSetSize(&workingSetSize);
+        status = PAL_GetPhysicalMemoryUsed(&workingSetSize);
 #endif
         if(status)
         {
