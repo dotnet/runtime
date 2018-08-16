@@ -64,7 +64,7 @@ pal::string_t resolve_cli_version(const pal::string_t& global_json)
     return retval;
 }
 
-pal::string_t resolve_sdk_version(pal::string_t sdk_path, bool parse_only_production, pal::string_t global_cli_version)
+pal::string_t resolve_sdk_version(pal::string_t sdk_path, bool disallow_prerelease, pal::string_t global_cli_version)
 {
     fx_ver_t specified(-1, -1, -1);
 
@@ -75,6 +75,12 @@ pal::string_t resolve_sdk_version(pal::string_t sdk_path, bool parse_only_produc
         {
             trace::error(_X("The specified SDK version '%s' could not be parsed"), global_cli_version.c_str());
             return pal::string_t();
+        }
+
+        // Always consider prereleases when the version specified in global.json is itself a prerelease
+        if (specified.is_prerelease())
+        {
+            disallow_prerelease = false;
         }
     }
 
@@ -90,7 +96,7 @@ pal::string_t resolve_sdk_version(pal::string_t sdk_path, bool parse_only_produc
         trace::verbose(_X("Considering version... [%s]"), version.c_str());
 
         fx_ver_t ver(-1, -1, -1);
-        if (fx_ver_t::parse(version, &ver, parse_only_production))
+        if (fx_ver_t::parse(version, &ver, disallow_prerelease))
         {
             if (global_cli_version.empty() ||
                 // If a global cli version is specified:
@@ -130,15 +136,16 @@ bool sdk_resolver_t::resolve_sdk_dotnet_path(const pal::string_t& dotnet_root, p
     return resolve_sdk_dotnet_path(dotnet_root, cwd, cli_sdk);
 }
 
-bool higher_sdk_version(const pal::string_t& new_version, pal::string_t* version, bool parse_only_production)
+bool higher_sdk_version(const pal::string_t& new_version, pal::string_t* version)
 {
+    bool disallow_prerelease = false;
     bool retval = false;
     fx_ver_t ver(-1, -1, -1);
     fx_ver_t new_ver(-1, -1, -1);
 
-    if (fx_ver_t::parse(new_version, &new_ver, parse_only_production))
+    if (fx_ver_t::parse(new_version, &new_ver, disallow_prerelease))
     {
-        if (!fx_ver_t::parse(*version, &ver, parse_only_production) || (new_ver > ver))
+        if (!fx_ver_t::parse(*version, &ver, disallow_prerelease) || (new_ver > ver))
         {
             version->assign(new_version);
             retval = true;
@@ -148,7 +155,12 @@ bool higher_sdk_version(const pal::string_t& new_version, pal::string_t* version
     return retval;
 }
 
-bool sdk_resolver_t::resolve_sdk_dotnet_path(const pal::string_t& dotnet_root, const pal::string_t& cwd, pal::string_t* cli_sdk)
+bool sdk_resolver_t::resolve_sdk_dotnet_path(
+    const pal::string_t& dotnet_root, 
+    const pal::string_t& cwd, 
+    pal::string_t* cli_sdk,
+    bool disallow_prerelease,
+    pal::string_t* global_json_path)
 {
     pal::string_t global;
 
@@ -214,18 +226,22 @@ bool sdk_resolver_t::resolve_sdk_dotnet_path(const pal::string_t& dotnet_root, c
         trace::verbose(_X("Searching SDK directory in [%s]"), dir.c_str());
         pal::string_t current_sdk_path = dir;
         append_path(&current_sdk_path, _X("sdk"));
-        bool parse_only_production = false;  // false -- implies both production and prerelease.
 
         if (global_cli_version.empty())
         {
-            pal::string_t new_cli_version = resolve_sdk_version(current_sdk_path, parse_only_production, global_cli_version);
-            if (higher_sdk_version(new_cli_version, &cli_version, parse_only_production))
+            pal::string_t new_cli_version = resolve_sdk_version(current_sdk_path, disallow_prerelease, global_cli_version);
+            if (higher_sdk_version(new_cli_version, &cli_version))
             {
                 sdk_path = current_sdk_path;
             }
         }
         else
         {
+            if (global_json_path != nullptr)
+            {
+                global_json_path->assign(global);
+            }
+
             pal::string_t probing_sdk_path = current_sdk_path;
             append_path(&probing_sdk_path, global_cli_version.c_str());
 
@@ -239,8 +255,8 @@ bool sdk_resolver_t::resolve_sdk_dotnet_path(const pal::string_t& dotnet_root, c
             }
             else
             {
-                pal::string_t new_cli_version = resolve_sdk_version(current_sdk_path, parse_only_production, global_cli_version);
-                if (higher_sdk_version(new_cli_version, &cli_version, parse_only_production))
+                pal::string_t new_cli_version = resolve_sdk_version(current_sdk_path, disallow_prerelease, global_cli_version);
+                if (higher_sdk_version(new_cli_version, &cli_version))
                 {
                     sdk_path = current_sdk_path;
                 }
