@@ -92,3 +92,9 @@ void
 mono_arch_undo_ip_adjustment (MonoContext *ctx)
 {
 }
+
+gboolean
+mono_arch_handle_exception (void *sigctx, gpointer obj)
+{
+	g_error ("mono_arch_handle_exception");
+}
