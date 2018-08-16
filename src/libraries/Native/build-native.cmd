@@ -12,11 +12,13 @@ set __BuildArch=x64
 set __TargetGroup=netcoreapp
 set __appContainer=""
 set __VCBuildArch=x86_amd64
+set __BuildOS=Windows_NT
 set CMAKE_BUILD_TYPE=Debug
 set "__LinkArgs= "
 set "__LinkLibraries= "
 
-call %__rootDir%/run.cmd build-managed -GenerateVersion -project=%__rootDir%/build.proj
+call %__rootDir%/run.cmd build-managed -GenerateVersion -project=%__rootDir%/build.proj 
+msbuild "%__rootDir%/build.proj" /t:GenerateVersionSourceFile /p:GenerateVersionSourceFile=true /v:minimal
 
 :Arg_Loop
 :: Since the native build requires some configuration information before msbuild is called, we have to do some manual args parsing
@@ -30,7 +32,10 @@ if /i [%1] == [arm]         ( set __BuildArch=arm&&set __VCBuildArch=x86_arm&&se
 if /i [%1] == [x64]         ( set __BuildArch=x64&&set __VCBuildArch=x86_amd64&&shift&goto Arg_Loop)
 if /i [%1] == [amd64]       ( set __BuildArch=x64&&set __VCBuildArch=x86_amd64&&shift&goto Arg_Loop)
 if /i [%1] == [arm64]       ( set __BuildArch=arm64&&set __VCBuildArch=x86_arm64&&set __SDKVersion="-DCMAKE_SYSTEM_VERSION=10.0"&&shift&goto Arg_Loop)
+if /i [%1] == [wasm]        ( set __BuildArch=wasm&&set __VCBuildArch=x86_amd64&&shift&goto Arg_Loop)
 
+
+if /i [%1] == [WebAssembly] ( set __BuildOS=WebAssembly&&shift&goto Arg_Loop)
 if /i [%1] == [--TargetGroup]  ( set "__TargetGroup=%2"&&shift&&shift&goto Arg_Loop)
 
 shift
@@ -98,10 +103,10 @@ goto :SetupDirs
 echo Commencing build of native components
 echo.
 
-set "__BaseIntermediatesDir=%__binDir%\obj\Windows_NT.%__BuildArch%.%CMAKE_BUILD_TYPE%"
+set "__BaseIntermediatesDir=%__binDir%\obj\%__BuildOS%.%__BuildArch%.%CMAKE_BUILD_TYPE%"
 
 if %__CMakeBinDir% == "" (
-    set "__CMakeBinDir=%__binDir%\Windows_NT.%__BuildArch%.%CMAKE_BUILD_TYPE%\native"
+    set "__CMakeBinDir=%__binDir%\%__BuildOS%.%__BuildArch%.%CMAKE_BUILD_TYPE%\native"
 )
 if %__IntermediatesDir% == "" (
     set "__IntermediatesDir=%__BaseIntermediatesDir%\native"
@@ -140,6 +145,7 @@ popd
 :CheckForProj
 :: Check that the project created by Cmake exists
 if exist "%__IntermediatesDir%\install.vcxproj" goto BuildNativeProj
+if exist "%__IntermediatesDir%\Makefile" goto BuildNativeEmscripten
 goto :Failure
 
 :BuildNativeProj
@@ -154,7 +160,7 @@ IF ERRORLEVEL 1 (
 echo Done building Native components
 
 :BuildNativeAOT
-set "__CMakeBinDir=%__binDir%\Windows_NT.%__BuildArch%.%CMAKE_BUILD_TYPE%\native_aot"
+set "__CMakeBinDir=%__binDir%\%__BuildOS%.%__BuildArch%.%CMAKE_BUILD_TYPE%\native_aot"
 set "__IntermediatesDir=%__BaseIntermediatesDir%\native_aot"
 set "__CMakeBinDir=%__CMakeBinDir:\=/%"
 set "__IntermediatesDir=%__IntermediatesDir:\=/%"
@@ -175,6 +181,13 @@ IF ERRORLEVEL 1 (
 )
 echo Done building Native AOT components
 exit /B 0
+
+:BuildNativeEmscripten
+pushd "%__IntermediatesDir%"
+nmake install
+popd
+IF NOT ERRORLEVEL 1 exit /B 0
+exit /B 1
 
 :Failure
 :: Build failed

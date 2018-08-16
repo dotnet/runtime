@@ -22,7 +22,11 @@
 #endif
 
 #if defined(AF_PACKET)
+#if defined(_WASM_)
+#include <netpacket/packet.h>
+#else // _WASM_
 #include <linux/if_packet.h>
+#endif // _WASM_
 #elif defined(AF_LINK)
 #include <net/if_dl.h>
 #include <net/if_types.h>

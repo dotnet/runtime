@@ -24,6 +24,7 @@ if /i "%3" == "x86"     (set __VSString=%__VSString%)
 if /i "%3" == "x64"     (set __VSString=%__VSString% Win64)
 if /i "%3" == "arm"     (set __VSString=%__VSString% ARM)
 if /i "%3" == "arm64"   (set __ExtraCmakeParams=%__ExtraCmakeParams% -A ARM64)
+if /i "%3" == "wasm"    (set __sourceDir=%~dp0..\Unix && goto DoGen)
 
 if defined CMakePath goto DoGen
 
@@ -33,7 +34,12 @@ for /f "delims=" %%a in ('powershell -NoProfile -ExecutionPolicy ByPass "& .\pro
 popd
 
 :DoGen
-"%CMakePath%" %__SDKVersion% "-DCMAKE_BUILD_TYPE=%CMAKE_BUILD_TYPE%" "-DCMAKE_INSTALL_PREFIX=%__CMakeBinDir%" -G "Visual Studio %__VSString%" -B. -H%1 %__ExtraCmakeParams% 
+
+if "%3" == "wasm" (
+    emcmake cmake "-DEMSCRIPTEN_GENERATE_BITCODE_STATIC_LIBRARIES=1" "-DCMAKE_TOOLCHAIN_FILE=%EMSCRIPTEN%/cmake/Modules/Platform/Emscripten.cmake" "-DCMAKE_BUILD_TYPE=%CMAKE_BUILD_TYPE%" -G "NMake Makefiles" %__sourceDir%
+) else (
+    "%CMakePath%" %__SDKVersion% "-DCMAKE_BUILD_TYPE=%CMAKE_BUILD_TYPE%" "-DCMAKE_INSTALL_PREFIX=%__CMakeBinDir%" -G "Visual Studio %__VSString%" -B. -H%1 %__ExtraCmakeParams% 
+)
 endlocal
 GOTO :DONE
 
