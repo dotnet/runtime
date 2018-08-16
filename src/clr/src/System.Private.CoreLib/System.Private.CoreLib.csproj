@@ -462,7 +462,6 @@
   <ItemGroup>
     <Compile Include="$(BclSourcesRoot)\Microsoft\Win32\UnsafeNativeMethods.cs" />
     <Compile Include="$(BclSourcesRoot)\Microsoft\Win32\Win32Native.cs" />
-    <Compile Condition="'$(FeatureWin32Registry)' == 'true'" Include="$(BclSourcesRoot)\Microsoft\Win32\Registry.cs" />
     <Compile Condition="'$(FeatureWin32Registry)' == 'true'" Include="$(BclSourcesRoot)\Microsoft\Win32\RegistryKey.cs" />
     <Compile Condition="'$(FeatureClassicCominterop)' == 'true'" Include="$(BclSourcesRoot)\Microsoft\Win32\OAVariantLib.cs" />
   </ItemGroup>
