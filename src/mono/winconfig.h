@@ -295,7 +295,8 @@
 #ifdef _MSC_VER
 #define MONO_KEYWORD_THREAD __declspec (thread)
 #else
-#define MONO_KEYWORD_THREAD __thread
+// Cygwin/gcc emulates __thread.
+#undef MONO_KEYWORD_THREAD
 #endif
 
 /* Have large file support */
