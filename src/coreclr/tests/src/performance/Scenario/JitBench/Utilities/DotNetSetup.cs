@@ -235,13 +235,17 @@ namespace JitBench
 
         public static string GetTargetFrameworkMonikerForFrameworkVersion(string runtimeVersion)
         {
-            if(runtimeVersion.StartsWith("2.0"))
+            if (runtimeVersion.StartsWith("3.0"))
             {
-                return "netcoreapp2.0";
+                return "netcoreapp3.0";
             }
-            else if(runtimeVersion.StartsWith("2.1"))
+            else if (runtimeVersion.StartsWith("2.1"))
             {
                 return "netcoreapp2.1";
+            }
+            else if (runtimeVersion.StartsWith("2.0"))
+            {
+                return "netcoreapp2.0";
             }
             else
             {
@@ -257,13 +261,17 @@ namespace JitBench
 
         public static string GetCompatibleDefaultSDKVersionForRuntimeTFM(string targetFrameworkMoniker)
         {
-            if (targetFrameworkMoniker == "netcoreapp2.0")
+            if (targetFrameworkMoniker == "netcoreapp3.0")
             {
-                return "2.0.0";
+                return "3.0.100-alpha1-009410";
             }
             else if (targetFrameworkMoniker == "netcoreapp2.1")
             {
                 return "2.2.0-preview1-007558";
+            }
+            else if (targetFrameworkMoniker == "netcoreapp2.0")
+            {
+                return "2.0.9";
             }
             else
             {

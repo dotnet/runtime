@@ -14,11 +14,11 @@ namespace JitBench
         {
             using (var setupSection = new IndentedTestOutputHelper("Setup " + Name, output))
             {
-                await SetupHelloWorldProject(dotNetInstall.DotNetExe, intermediateOutputDir, useExistingSetup, setupSection);
+                await SetupHelloWorldProject(dotNetInstall, intermediateOutputDir, useExistingSetup, setupSection);
             }
         }
 
-        protected async Task SetupHelloWorldProject(string dotNetExePath, string intermediateOutputDir, bool useExistingSetup, ITestOutputHelper output)
+        protected async Task SetupHelloWorldProject(DotNetInstallation dotNetInstall, string intermediateOutputDir, bool useExistingSetup, ITestOutputHelper output)
         {
             string helloWorldProjectDir = Path.Combine(intermediateOutputDir, "helloworld");
             //the 'exePath' gets passed as an argument to dotnet.exe
@@ -37,10 +37,12 @@ namespace JitBench
             {
                 FileTasks.DeleteDirectory(helloWorldProjectDir, output);
                 FileTasks.CreateDirectory(helloWorldProjectDir, output);
-                await new ProcessRunner(dotNetExePath, "new console")
+                await new ProcessRunner(dotNetInstall.DotNetExe, "new console")
                     .WithWorkingDirectory(helloWorldProjectDir)
                     .WithLog(output)
                     .Run();
+
+                RetargetProjects(dotNetInstall, helloWorldProjectDir, new string[] { "helloworld.csproj" });
             }
         }
     }
