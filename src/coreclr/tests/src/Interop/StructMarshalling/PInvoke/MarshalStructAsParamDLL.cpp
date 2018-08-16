@@ -167,7 +167,7 @@ extern "C" DLL_EXPORT BOOL NATIVEAPI MarshalStructAsParam_AsSeqByValOut3(CharSet
 }
 extern "C" DLL_EXPORT BOOL NATIVEAPI MarshalStructAsParam_AsSeqByRefOut3(CharSetAnsiSequential* str1)
 {
-	TP_CoTaskMemFree((void*)(str1->f1));
+	CoTaskMemFree((void*)(str1->f1));
 	str1->f1 = CoStrDup("change string");
 	str1->f2 = 'n';
 	return TRUE;
