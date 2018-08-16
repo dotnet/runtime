@@ -37,7 +37,7 @@ namespace System.Globalization
             try
             {
                 // Need to access registry
-                RegistryKey key = RegistryKey.GetBaseKey(RegistryKey.HKEY_LOCAL_MACHINE).OpenSubKey(c_japaneseErasHive, false);
+                RegistryKey key = RegistryKey.OpenBaseKey(RegistryHive.LocalMachine).OpenSubKey(c_japaneseErasHive, false);
 
                 // Abort if we didn't find anything
                 if (key == null) return null;
