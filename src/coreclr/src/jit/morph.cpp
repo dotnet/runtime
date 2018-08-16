@@ -3637,36 +3637,43 @@ GenTreeCall* Compiler::fgMorphArgs(GenTreeCall* call)
 
                     structBaseType = getArgTypeForStruct(objClass, &howToPassStruct, callIsVararg, originalSize);
 
-#if defined(_TARGET_ARM64_) || defined(UNIX_AMD64_ABI)
-                    // For ARM64 or AMD64/UX we can pass non-power-of-2 structs in a register.
-                    if ((howToPassStruct == SPK_PrimitiveType) && // Passed in a single register
-                        !isPow2(originalSize))                    // size is 3,5,6 or 7 bytes
-                    {
-                        originalSize = genTypeSize(structBaseType);
-                    }
-#endif //  _TARGET_ARM64_ || UNIX_AMD64_ABI
+                    bool     passStructByRef = false;
+                    unsigned passingSize     = originalSize;
 
-                    bool passStructByRef = false;
+#ifndef _TARGET_X86_
 
                     // Check to see if we can transform this struct load (GT_OBJ) into a GT_IND of the appropriate size.
                     // That is the else clause of the if statement below.
                     // When it can do this is platform-dependent:
-                    // - In general, it can be done for power of 2 structs that fit in a single register
-                    //   (or, for ARM64 and AMD64/UX, lclVars that are less than pointer size, see above).
+                    // - In general, it can be done for power of 2 structs that fit in a single register.
                     // - For ARM and ARM64 it must also be a non-HFA struct, or have a single field.
                     // - This is irrelevant for X86, since structs are always passed by value on the stack.
                     // Note that 'howToPassStruct' captures all but the power-of-2 requirement.
-                    CLANG_FORMAT_COMMENT_ANCHOR;
 
-#ifndef _TARGET_X86_
-                    // Check for struct argument with size 1, 2, 4 or 8 bytes
-                    // As we can optimize these by turning them into a GT_IND of the correct type
-                    //
-                    // Check for cases that we cannot optimize:
-                    bool canTransformToInd = (howToPassStruct == SPK_PrimitiveType) && isPow2(originalSize);
+                    GenTree* lclVar            = fgIsIndirOfAddrOfLocal(argObj);
+                    bool     canTransformToInd = false;
+                    if (howToPassStruct == SPK_PrimitiveType)
+                    {
+                        if (isPow2(passingSize))
+                        {
+                            canTransformToInd = true;
+                        }
+
+#if defined(_TARGET_ARM64_) || defined(UNIX_AMD64_ABI)
+                        // For ARM64 or AMD64/UX we can pass non-power-of-2 structs in a register, but we can
+                        // only transform to an indirection in that case if we are loading from a local.
+                        // TODO-CQ: This transformation should be applicable in general, not just for the ARM64
+                        // or UNIX_AMD64_ABI cases where they will be passed in registers.
+                        else
+                        {
+                            canTransformToInd = (lclVar != nullptr);
+                            passingSize       = genTypeSize(structBaseType);
+                        }
+#endif //  _TARGET_ARM64_ || UNIX_AMD64_ABI
+                    }
+
                     if (!canTransformToInd)
                     {
-                        GenTree* lclVar = fgIsIndirOfAddrOfLocal(argObj);
                         // Normalize 'size' to the number of pointer sized items
                         // 'size' is the number of register slots that we will use to pass the argument
                         size = roundupSize / TARGET_POINTER_SIZE;
@@ -3693,7 +3700,7 @@ GenTreeCall* Compiler::fgMorphArgs(GenTreeCall* call)
                             {
                                 copyBlkClass = objClass;
                             }
-                            else if (originalSize != structSize)
+                            else if (passingSize != structSize)
                             {
                                 copyBlkClass = objClass;
                             }
@@ -3714,7 +3721,7 @@ GenTreeCall* Compiler::fgMorphArgs(GenTreeCall* call)
                             passStructByRef = true;
                             copyBlkClass    = objClass;
                         }
-                        else if ((originalSize != structSize) && (lclVar == nullptr))
+                        else if ((passingSize != structSize) && (lclVar == nullptr))
                         {
                             copyBlkClass = objClass;
                         }
@@ -3751,7 +3758,7 @@ GenTreeCall* Compiler::fgMorphArgs(GenTreeCall* call)
 
                         assert(howToPassStruct == SPK_PrimitiveType);
                         noway_assert(structBaseType != TYP_UNKNOWN);
-                        assert(originalSize == genTypeSize(structBaseType));
+                        assert(passingSize == genTypeSize(structBaseType));
 
                         argObj->ChangeOper(GT_IND);
 
@@ -3787,13 +3794,13 @@ GenTreeCall* Compiler::fgMorphArgs(GenTreeCall* call)
                                 {
                                     // get the first and only promoted field
                                     LclVarDsc* fieldVarDsc = &lvaTable[varDsc->lvFieldLclStart];
-                                    if (genTypeSize(fieldVarDsc->TypeGet()) >= originalSize)
+                                    if (genTypeSize(fieldVarDsc->TypeGet()) >= passingSize)
                                     {
                                         // we will use the first and only promoted field
                                         argObj->gtLclVarCommon.SetLclNum(varDsc->lvFieldLclStart);
 
                                         if (varTypeCanReg(fieldVarDsc->TypeGet()) &&
-                                            (genTypeSize(fieldVarDsc->TypeGet()) == originalSize))
+                                            (genTypeSize(fieldVarDsc->TypeGet()) == passingSize))
                                         {
                                             // Just use the existing field's type
                                             argObj->gtType = fieldVarDsc->TypeGet();
