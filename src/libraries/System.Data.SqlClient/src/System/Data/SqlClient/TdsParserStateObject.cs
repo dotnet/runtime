@@ -517,7 +517,7 @@ namespace System.Data.SqlClient
                 }
 
                 // read the null bitmap compression information from TDS
-                if (!stateObj.TryReadByteArray(_nullBitmap.AsSpan(), _nullBitmap.Length))
+                if (!stateObj.TryReadByteArray(_nullBitmap, _nullBitmap.Length))
                 {
                     return false;
                 }
@@ -1343,7 +1343,7 @@ namespace System.Data.SqlClient
                 // If the char isn't fully in the buffer, or if it isn't fully in the packet,
                 // then use ReadByteArray since the logic is there to take care of that.
 
-                if (!TryReadByteArray(_bTmp.AsSpan(), 2))
+                if (!TryReadByteArray(_bTmp, 2))
                 {
                     value = '\0';
                     return false;
@@ -1380,9 +1380,9 @@ namespace System.Data.SqlClient
                 // If the int16 isn't fully in the buffer, or if it isn't fully in the packet,
                 // then use ReadByteArray since the logic is there to take care of that.
 
-                if (!TryReadByteArray(_bTmp.AsSpan(), 2))
+                if (!TryReadByteArray(_bTmp, 2))
                 {
-                    value = default(short);
+                    value = default;
                     return false;
                 }
 
@@ -1414,7 +1414,7 @@ namespace System.Data.SqlClient
                 // If the int isn't fully in the buffer, or if it isn't fully in the packet,
                 // then use ReadByteArray since the logic is there to take care of that.
 
-                if (!TryReadByteArray(_bTmp.AsSpan(), 4))
+                if (!TryReadByteArray(_bTmp, 4))
                 {
                     value = 0;
                     return false;
@@ -1499,9 +1499,9 @@ namespace System.Data.SqlClient
                 // If the uint16 isn't fully in the buffer, or if it isn't fully in the packet,
                 // then use ReadByteArray since the logic is there to take care of that.
 
-                if (!TryReadByteArray(_bTmp.AsSpan(), 2))
+                if (!TryReadByteArray(_bTmp, 2))
                 {
-                    value = default(ushort);
+                    value = default;
                     return false;
                 }
 
@@ -1582,9 +1582,9 @@ namespace System.Data.SqlClient
                 // If the float isn't fully in the buffer, or if it isn't fully in the packet,
                 // then use ReadByteArray since the logic is there to take care of that.
 
-                if (!TryReadByteArray(_bTmp.AsSpan(), 4))
+                if (!TryReadByteArray(_bTmp, 4))
                 {
-                    value = default(float);
+                    value = default;
                     return false;
                 }
 
@@ -1615,9 +1615,9 @@ namespace System.Data.SqlClient
                 // If the double isn't fully in the buffer, or if it isn't fully in the packet,
                 // then use ReadByteArray since the logic is there to take care of that.
 
-                if (!TryReadByteArray(_bTmp.AsSpan(), 8))
+                if (!TryReadByteArray(_bTmp, 8))
                 {
-                    value = default(double);
+                    value = default;
                     return false;
                 }
 
@@ -1654,7 +1654,7 @@ namespace System.Data.SqlClient
                     _bTmp = new byte[cBytes];
                 }
 
-                if (!TryReadByteArray(_bTmp.AsSpan(), cBytes))
+                if (!TryReadByteArray(_bTmp, cBytes))
                 {
                     value = null;
                     return false;
@@ -1729,7 +1729,7 @@ namespace System.Data.SqlClient
                         _bTmp = new byte[length];
                     }
 
-                    if (!TryReadByteArray(_bTmp.AsSpan(), length))
+                    if (!TryReadByteArray(_bTmp, length))
                     {
                         value = null;
                         return false;
