@@ -182,19 +182,21 @@ endif
 mono_boehm_SOURCES = \
 	main.c
 
-mono_CFLAGS = $(AM_CFLAGS)
+mono_CFLAGS = $(AM_CFLAGS) @CXX_REMOVE_CFLAGS@
 
-mono_boehm_CFLAGS = $(AM_CFLAGS)
+mono_boehm_CFLAGS = $(AM_CFLAGS) @CXX_REMOVE_CFLAGS@
 
 AM_CPPFLAGS = $(LIBGC_CPPFLAGS)
 
+# These files are stuck as C for now, because -xc++
+# can only be used when compiling, not linking.
 mono_sgen_SOURCES = \
 	main-sgen.c
 
 mono_SOURCES = \
 	main-sgen.c
 
-mono_sgen_CFLAGS = $(AM_CFLAGS)
+mono_sgen_CFLAGS = $(AM_CFLAGS) @CXX_REMOVE_CFLAGS@
 
 # We build this after libmono was built so it contains the date when the final
 # link was done
@@ -646,7 +648,7 @@ mono_CFLAGS += $(JEMALLOC_CFLAGS)
 endif
 
 libmono_ee_interp_la_SOURCES = $(interp_sources)
-libmono_ee_interp_la_CFLAGS = $(mono_CFLAGS)
+libmono_ee_interp_la_CFLAGS = $(mono_CFLAGS) @CXX_ADD_CFLAGS@
 if BITCODE
 libmono_ee_interp_la_LDFLAGS = $(libmonoldflags)
 if DISABLE_INTERPRETER
@@ -659,7 +661,7 @@ extra_libmono_dbg_source = debugger-engine.c
 endif
 
 libmono_dbg_la_SOURCES = debugger-agent.c debugger-state-machine.c $(extra_libmono_dbg_source)
-libmono_dbg_la_CFLAGS = $(mono_CFLAGS)
+libmono_dbg_la_CFLAGS = $(mono_CFLAGS) @CXX_ADD_CFLAGS@
 if BITCODE
 if DISABLE_DEBUGGER_AGENT
 libmono_dbg_la_LIBADD = libmonosgen-2.0.la
@@ -682,15 +684,17 @@ endif
 # compile time dependencies on boehm/sgen.
 #
 libmini_la_SOURCES = $(common_sources) $(llvm_sources) $(llvm_runtime_sources) $(arch_sources) $(os_sources)
-libmini_la_CFLAGS = $(mono_CFLAGS)
+libmini_la_CFLAGS = $(mono_CFLAGS) @CXX_ADD_CFLAGS@
 
 libmonoboehm_2_0_la_SOURCES =
-libmonoboehm_2_0_la_CFLAGS = $(mono_boehm_CFLAGS)
+libmonoboehm_2_0_la_CFLAGS = $(mono_boehm_CFLAGS) @CXX_ADD_CFLAGS@
+
 libmonoboehm_2_0_la_LIBADD = libmini.la $(interp_libs_with_mini) $(dbg_libs_with_mini) $(boehm_libs) $(LIBMONO_DTRACE_OBJECT) $(LLVMMONOF)
 libmonoboehm_2_0_la_LDFLAGS = $(libmonoldflags) $(monobin_platform_ldflags) 
 
 libmonosgen_2_0_la_SOURCES =
-libmonosgen_2_0_la_CFLAGS = $(mono_sgen_CFLAGS)
+libmonosgen_2_0_la_CFLAGS = $(mono_sgen_CFLAGS) @CXX_ADD_CFLAGS@
+
 libmonosgen_2_0_la_LIBADD = libmini.la $(interp_libs_with_mini) $(dbg_libs_with_mini) $(sgen_libs) $(LIBMONO_DTRACE_OBJECT) $(LLVMMONOF)
 libmonosgen_2_0_la_LDFLAGS = $(libmonoldflags) $(monobin_platform_ldflags) 
 
@@ -1009,4 +1013,5 @@ Makefile.am: Makefile.am.in $(llvm_makefile_dep)
 
 endif
 
-CFLAGS := $(filter-out @CXX_REMOVE_CFLAGS@, @CFLAGS@) @CXX_ADD_CFLAGS@
+# Per-library because linking doesn't like -xc++, it treats libraries as C++.
+CFLAGS := $(filter-out @CXX_REMOVE_CFLAGS@, @CFLAGS@)

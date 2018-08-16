@@ -34,6 +34,11 @@ endif
 
 noinst_LIBRARIES = libmonodis.a
 
+CFLAGS := $(filter-out @CXX_REMOVE_CFLAGS@, @CFLAGS@)
+
+libmonodis_a_CFLAGS = $(CFLAGS) @CXX_ADD_CFLAGS@
+#monodis_CFLAGS = $(CFLAGS) @CXX_ADD_CFLAGS@
+
 libmonodis_a_SOURCES =	\
 	get.c		\
 	get.h		\
