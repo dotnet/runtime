@@ -23,6 +23,7 @@ SET_DEFAULT_DEBUG_CHANNEL(MISC);
 #define PROC_CGROUP_FILENAME "/proc/self/cgroup"
 #define PROC_STATM_FILENAME "/proc/self/statm"
 #define MEM_LIMIT_FILENAME "/memory.limit_in_bytes"
+#define MEM_USAGE_FILENAME "/memory.usage_in_bytes"
 #define CFS_QUOTA_FILENAME "/cpu.cfs_quota_us"
 #define CFS_PERIOD_FILENAME "/cpu.cfs_period_us"
 class CGroup
@@ -60,6 +61,27 @@ public:
         strcat_s(mem_limit_filename, len+1, MEM_LIMIT_FILENAME);
         result = ReadMemoryValueFromFile(mem_limit_filename, val);
         PAL_free(mem_limit_filename);
+        return result;
+    }
+
+    bool GetPhysicalMemoryUsage(size_t *val)
+    {
+        char *mem_usage_filename = nullptr;
+        bool result = false;
+
+        if (m_memory_cgroup_path == nullptr)
+            return result;
+
+        size_t len = strlen(m_memory_cgroup_path);
+        len += strlen(MEM_USAGE_FILENAME);
+        mem_usage_filename = (char*)malloc(len+1);
+        if (mem_usage_filename == nullptr)
+            return result;
+
+        strcpy(mem_usage_filename, m_memory_cgroup_path);
+        strcat(mem_usage_filename, MEM_USAGE_FILENAME);
+        result = ReadMemoryValueFromFile(mem_usage_filename, val);
+        free(mem_usage_filename);
         return result;
     }
 
@@ -384,15 +406,21 @@ PAL_GetRestrictedPhysicalMemoryLimit()
 
 BOOL
 PALAPI
-PAL_GetWorkingSetSize(size_t* val)
+PAL_GetPhysicalMemoryUsed(size_t* val)
 {
     BOOL result = false;
     size_t linelen;
     char* line = nullptr;
+    CGroup cgroup;
 
     if (val == nullptr)
         return FALSE;
 
+    // Linux uses cgroup usage to trigger oom kills.
+    if (cgroup.GetPhysicalMemoryUsage(val))
+        return TRUE;
+
+    // process resident set size.
     FILE* file = fopen(PROC_STATM_FILENAME, "r");
     if (file != nullptr && getline(&line, &linelen, file) != -1)
     {
