@@ -36,16 +36,6 @@ namespace System
             return DecCalc.DecDivMod1E9(ref AsMutable(ref value));
         }
 
-        internal static void DecAddInt32(ref decimal value, uint i)
-        {
-            DecCalc.DecAddInt32(ref AsMutable(ref value), i);
-        }
-
-        internal static void DecMul10(ref decimal value)
-        {
-            DecCalc.DecMul10(ref AsMutable(ref value));
-        }
-
         #endregion
 
         /// <summary>
@@ -2471,8 +2461,6 @@ done:
                 return;
             }
 
-#region Number Formatting helpers
-
             internal static uint DecDivMod1E9(ref DecCalc value)
             {
                 ulong high64 = ((ulong)value.uhi << 32) + value.umid;
@@ -2485,57 +2473,6 @@ done:
                 value.ulo = div;
                 return (uint)num - div * TenToPowerNine;
             }
-
-            internal static void DecAddInt32(ref DecCalc value, uint i)
-            {
-                if (D32AddCarry(ref value.ulo, i))
-                {
-                    if (D32AddCarry(ref value.umid, 1))
-                        D32AddCarry(ref value.uhi, 1);
-                }
-            }
-
-            private static bool D32AddCarry(ref uint value, uint i)
-            {
-                uint v = value;
-                uint sum = v + i;
-                value = sum;
-                return (sum < v) || (sum < i);
-            }
-
-            internal static void DecMul10(ref DecCalc value)
-            {
-                DecCalc d = value;
-                DecShiftLeft(ref value);
-                DecShiftLeft(ref value);
-                DecAdd(ref value, d);
-                DecShiftLeft(ref value);
-            }
-
-            private static void DecShiftLeft(ref DecCalc value)
-            {
-                uint c0 = (value.Low & 0x80000000) != 0 ? 1u : 0u;
-                uint c1 = (value.Mid & 0x80000000) != 0 ? 1u : 0u;
-                value.Low = value.Low << 1;
-                value.Mid = (value.Mid << 1) | c0;
-                value.High = (value.High << 1) | c1;
-            }
-
-            private static void DecAdd(ref DecCalc value, DecCalc d)
-            {
-                if (D32AddCarry(ref value.ulo, d.Low))
-                {
-                    if (D32AddCarry(ref value.umid, 1))
-                        D32AddCarry(ref value.uhi, 1);
-                }
-
-                if (D32AddCarry(ref value.umid, d.Mid))
-                    D32AddCarry(ref value.uhi, 1);
-
-                D32AddCarry(ref value.uhi, d.High);
-            }
-
-#endregion
 
             struct PowerOvfl
             {
