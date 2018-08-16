@@ -52,24 +52,29 @@ namespace System.IO
         private PreAllocatedOverlapped _preallocatedOverlapped;     // optimization for async ops to avoid per-op allocations
         private FileStreamCompletionSource _currentOverlappedOwner; // async op currently using the preallocated overlapped
 
-        private void Init(FileMode mode, FileShare share)
+        private void Init(FileMode mode, FileShare share, string originalPath)
         {
-            // Disallow access to all non-file devices from the Win32FileStream
-            // constructors that take a String.  Everyone else can call 
-            // CreateFile themselves then use the constructor that takes an 
-            // IntPtr.  Disallows "con:", "com1:", "lpt1:", etc.
-            int fileType = Interop.Kernel32.GetFileType(_fileHandle);
-            if (fileType != Interop.Kernel32.FileTypes.FILE_TYPE_DISK)
+            if (!PathInternal.IsExtended(originalPath))
             {
-                int errorCode = fileType == Interop.Kernel32.FileTypes.FILE_TYPE_UNKNOWN ? Marshal.GetLastWin32Error() : Interop.Errors.ERROR_SUCCESS;
+                // To help avoid stumbling into opening COM/LPT ports by accident, we will block on non file handles unless
+                // we were explicitly passed a path that has \\?\. GetFullPath() will turn paths like C:\foo\con.txt into
+                // \\.\CON, so we'll only allow the \\?\ syntax.
 
-                _fileHandle.Dispose();
-
-                if (errorCode != Interop.Errors.ERROR_SUCCESS)
+                int fileType = Interop.Kernel32.GetFileType(_fileHandle);
+                if (fileType != Interop.Kernel32.FileTypes.FILE_TYPE_DISK)
                 {
-                    throw Win32Marshal.GetExceptionForWin32Error(errorCode);
+                    int errorCode = fileType == Interop.Kernel32.FileTypes.FILE_TYPE_UNKNOWN
+                        ? Marshal.GetLastWin32Error()
+                        : Interop.Errors.ERROR_SUCCESS;
+
+                    _fileHandle.Dispose();
+
+                    if (errorCode != Interop.Errors.ERROR_SUCCESS)
+                    {
+                        throw Win32Marshal.GetExceptionForWin32Error(errorCode);
+                    }
+                    throw new NotSupportedException(SR.NotSupported_FileStreamOnNonFiles);
                 }
-                throw new NotSupportedException(SR.NotSupported_FileStreamOnNonFiles);
             }
 
             // This is necessary for async IO using IO Completion ports via our 
@@ -168,8 +173,7 @@ namespace System.IO
             }
             else if (!useAsyncIO)
             {
-                if (handleType != Interop.Kernel32.FileTypes.FILE_TYPE_PIPE)
-                    VerifyHandleIsSync(handle, access);
+                VerifyHandleIsSync(handle, handleType);
             }
 
             if (_canSeek)
@@ -190,46 +194,6 @@ namespace System.IO
                 };
             }
             return secAttrs;
-        }
-
-        // Verifies that this handle supports synchronous IO operations (unless you
-        // didn't open it for either reading or writing).
-        private static unsafe void VerifyHandleIsSync(SafeFileHandle handle, FileAccess access)
-        {
-            // Do NOT use this method on pipes.  Reading or writing to a pipe may
-            // cause an app to block incorrectly, introducing a deadlock (depending
-            // on whether a write will wake up an already-blocked thread or this
-            // Win32FileStream's thread).
-            Debug.Assert(Interop.Kernel32.GetFileType(handle) != Interop.Kernel32.FileTypes.FILE_TYPE_PIPE);
-
-            byte* bytes = stackalloc byte[1];
-            int numBytesReadWritten;
-            int r = -1;
-
-            // If the handle is a pipe, ReadFile will block until there
-            // has been a write on the other end.  We'll just have to deal with it,
-            // For the read end of a pipe, you can mess up and 
-            // accidentally read synchronously from an async pipe.
-            if ((access & FileAccess.Read) != 0) // don't use the virtual CanRead or CanWrite, as this may be used in the ctor
-            {
-                r = Interop.Kernel32.ReadFile(handle, bytes, 0, out numBytesReadWritten, IntPtr.Zero);
-            }
-            else if ((access & FileAccess.Write) != 0) // don't use the virtual CanRead or CanWrite, as this may be used in the ctor
-            {
-                r = Interop.Kernel32.WriteFile(handle, bytes, 0, out numBytesReadWritten, IntPtr.Zero);
-            }
-
-            if (r == 0)
-            {
-                int errorCode = Marshal.GetLastWin32Error();
-                switch (errorCode)
-                {
-                    case Interop.Errors.ERROR_INVALID_PARAMETER:
-                        throw new ArgumentException(SR.Arg_HandleNotSync, "handle");
-                    case Interop.Errors.ERROR_INVALID_HANDLE:
-                        throw Win32Marshal.GetExceptionForWin32Error(errorCode);
-                }
-            }
         }
 
         private bool HasActiveBufferOperation
@@ -627,7 +591,7 @@ namespace System.IO
             {
                 if (closeInvalidHandle)
                 {
-                    throw Win32Marshal.GetExceptionForWin32Error(GetLastWin32ErrorAndDisposeHandleIfInvalid(throwIfInvalidHandle: false), _path);
+                    throw Win32Marshal.GetExceptionForWin32Error(GetLastWin32ErrorAndDisposeHandleIfInvalid(), _path);
                 }
                 else
                 {
@@ -1238,7 +1202,7 @@ namespace System.IO
             }
         }
 
-        private int GetLastWin32ErrorAndDisposeHandleIfInvalid(bool throwIfInvalidHandle = false)
+        private int GetLastWin32ErrorAndDisposeHandleIfInvalid()
         {
             int errorCode = Marshal.GetLastWin32Error();
 
@@ -1262,9 +1226,6 @@ namespace System.IO
             if (errorCode == Interop.Errors.ERROR_INVALID_HANDLE)
             {
                 _fileHandle.Dispose();
-
-                if (throwIfInvalidHandle)
-                    throw Win32Marshal.GetExceptionForWin32Error(errorCode, _path);
             }
 
             return errorCode;
