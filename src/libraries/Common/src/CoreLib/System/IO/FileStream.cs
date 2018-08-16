@@ -6,7 +6,6 @@ using System.Threading;
 using System.Threading.Tasks;
 using Microsoft.Win32.SafeHandles;
 using System.Diagnostics;
-using System.Security;
 
 namespace System.IO
 {
@@ -233,7 +232,7 @@ namespace System.IO
 
             try
             {
-                Init(mode, share);
+                Init(mode, share, path);
             }
             catch
             {
@@ -243,12 +242,6 @@ namespace System.IO
                 _fileHandle = null;
                 throw;
             }
-        }
-
-        private static bool GetDefaultIsAsync(SafeFileHandle handle)
-        {
-            // This will eventually get more complicated as we can actually check the underlying handle type on Windows
-            return handle.IsAsync.HasValue ? handle.IsAsync.Value : false;
         }
 
         [Obsolete("This property has been deprecated.  Please use FileStream's SafeFileHandle property instead.  http://go.microsoft.com/fwlink/?linkid=14202")]
