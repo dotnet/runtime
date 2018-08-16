@@ -40,6 +40,14 @@ namespace JitBench
                 using (var setupSection = new IndentedTestOutputHelper("Setup " + Name, output))
                 {
                     await CloneWord2VecNetRepo(outputDir, setupSection);
+                    RetargetProjects(
+                        dotNetInstall,
+                        GetWord2VecNetRepoRootDir(outputDir),
+                        new string[]
+                        {
+                            Path.Combine("Word2Vec.Net", "Word2Vec.Net.csproj"),
+                            Path.Combine("Word2VecScenario", "Word2VecScenario.csproj")
+                        });
                     await Publish(dotNetInstall, outputDir, setupSection);
                     await DownloadAndExtractTextCorpus(dotNetInstall, outputDir, setupSection);
                 }
@@ -101,7 +109,7 @@ namespace JitBench
             publishDir = GetWord2VecNetPublishDirectory(dotNetInstall, outputDir, tfm);
             if (publishDir == null)
             {
-                throw new DirectoryNotFoundException("Could not find 'publish' directory");
+                throw new DirectoryNotFoundException($"Could not find 'publish' directory: {publishDir}");
             }
             return publishDir;
         }
