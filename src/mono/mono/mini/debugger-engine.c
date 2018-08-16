@@ -459,12 +459,12 @@ mono_de_set_breakpoint (MonoMethod *method, long il_offset, EventRequest *req, M
 
 	mono_loader_lock ();
 
-	CollectDomainData user_data = {
-		.bp = bp,
-		.methods = methods,
-		.method_domains = method_domains,
-		.method_seq_points = method_seq_points
-	};
+	CollectDomainData user_data;
+	memset (&user_data, 0, sizeof (user_data));
+	user_data.bp = bp;
+	user_data.methods = methods;
+	user_data.method_domains = method_domains;
+	user_data.method_seq_points = method_seq_points;
 	mono_de_foreach_domain (collect_domain_bp, &user_data);
 
 	for (i = 0; i < methods->len; ++i) {

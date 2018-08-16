@@ -402,7 +402,7 @@ static const struct msgstr_t {
 #undef PATCH_INFO
 };
 static const gint16 opidx [] = {
-#define PATCH_INFO(a,b) [MONO_PATCH_INFO_ ## a] = offsetof (struct msgstr_t, MSGSTRFIELD(__LINE__)),
+#define PATCH_INFO(a,b) offsetof (struct msgstr_t, MSGSTRFIELD(__LINE__)),
 #include "patch-info.h"
 #undef PATCH_INFO
 };

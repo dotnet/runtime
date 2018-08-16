@@ -102,7 +102,7 @@ static const struct msgstr_t {
 #undef OPTFLAG
 };
 static const gint16 opt_names [] = {
-#define OPTFLAG(id,shift,name,desc) [(shift)] = offsetof (struct msgstr_t, MSGSTRFIELD(__LINE__)),
+#define OPTFLAG(id,shift,name,desc) offsetof (struct msgstr_t, MSGSTRFIELD(__LINE__)),
 #include "optflags-def.h"
 #undef OPTFLAG
 };

@@ -1,3 +1,5 @@
+// This file must be sorted based on the second column.
+// i.e. so that designated initializers are not required.
 OPTFLAG(PEEPHOLE ,0, "peephole",   "Peephole postpass")
 OPTFLAG(BRANCH   ,1, "branch",     "Branch optimizations")
 OPTFLAG(INLINE   ,2, "inline",     "Inline method calls")

@@ -2599,7 +2599,11 @@ mono_marshal_get_runtime_invoke_full (MonoMethod *method, gboolean virtual_, gbo
 	const char *param_names [16];
 	WrapperInfo *info;
 	MonoWrapperMethodCacheKey *method_key;
-	MonoWrapperMethodCacheKey method_key_lookup_only = { .method = method, .virtual_ = virtual_, .need_direct_wrapper = need_direct_wrapper };
+	MonoWrapperMethodCacheKey method_key_lookup_only;
+	memset (&method_key_lookup_only, 0, sizeof (method_key_lookup_only));
+	method_key_lookup_only.method = method;
+	method_key_lookup_only.virtual_ = virtual_;
+	method_key_lookup_only.need_direct_wrapper = need_direct_wrapper;
 	method_key = &method_key_lookup_only;
 
 	g_assert (method);
@@ -2652,7 +2656,10 @@ mono_marshal_get_runtime_invoke_full (MonoMethod *method, gboolean virtual_, gbo
 		MonoMethodSignature *tmp_sig;
 
 		callsig = mono_marshal_get_runtime_invoke_sig (callsig);
-		MonoWrapperSignatureCacheKey sig_key = { .signature = callsig, .valuetype = m_class_is_valuetype (method->klass)};
+		MonoWrapperSignatureCacheKey sig_key;
+		memset (&sig_key, 0, sizeof (sig_key));
+		sig_key.signature = callsig;
+		sig_key.valuetype = m_class_is_valuetype (method->klass);
 
 		cache_table = &mono_method_get_wrapper_cache (method)->runtime_invoke_signature_cache;
 		sig_cache = get_cache (cache_table, (GHashFunc) wrapper_cache_signature_key_hash, (GCompareFunc) wrapper_cache_signature_key_equal);
