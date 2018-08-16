@@ -2952,4 +2952,22 @@ public static partial class XmlSerializerTests
         Assert.True(element.LastAttribute.Value == expectedAttribute, string.Format("{0}Test failed for wrong output from schema: {0}Expected Output: {1}{0}Actual Output: {2}",
                 Environment.NewLine, baseline, actualOutput));
     }
+
+    [Fact]
+    [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework, "dotnet/corefx #31427")]
+    public static void SerializeXmlTextAttributeOnDerivedClass()
+    {
+        var value = new EnumTestDerived() { Test = TestEnum.On };
+        var actual = SerializeAndDeserialize(value, "<?xml version=\"1.0\"?><EnumTestDerived xmlns:xsi=\"http://www.w3.org/2001/XMLSchema-instance\" xmlns:xsd=\"http://www.w3.org/2001/XMLSchema\">On</EnumTestDerived>");
+        Assert.Equal(value.Test, actual.Test);
+    }
+
+    [Fact]
+    [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework, "dotnet/corefx #31427")]
+    public static void SerializePrimitiveXmlTextAttributeOnDerivedClass()
+    {
+        var value = new PrimiveAttributeTestDerived() { Number = 5 };
+        var actual = SerializeAndDeserialize(value, "<?xml version=\"1.0\"?><PrimiveAttributeTestDerived xmlns:xsi=\"http://www.w3.org/2001/XMLSchema-instance\" xmlns:xsd=\"http://www.w3.org/2001/XMLSchema\">5</PrimiveAttributeTestDerived>");
+        Assert.Equal(value.Number, actual.Number);
+    }
 }
