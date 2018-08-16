@@ -27,7 +27,7 @@
  * Copyright (c) 2006-2009 Novell, Inc.
  *
  */
-
+#include "config.h"
 #include <stdio.h>
 #include <glib.h>
 

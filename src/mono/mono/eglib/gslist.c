@@ -26,7 +26,7 @@
  *
  * (C) 2006 Novell, Inc.
  */
-
+#include "config.h"
 #include <stdio.h>
 #include <glib.h>
 
