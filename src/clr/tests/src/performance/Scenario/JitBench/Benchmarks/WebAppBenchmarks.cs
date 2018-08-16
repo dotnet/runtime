@@ -9,7 +9,12 @@ namespace JitBench
 {
     class MusicStoreBenchmark : WebAppBenchmark
     {
-        public MusicStoreBenchmark() : base("MusicStore", "MusicStore.dll") { }
+        public MusicStoreBenchmark() :
+            base(
+                "MusicStore",
+                "MusicStore.dll",
+                new string[] { Path.Combine("src", "MusicStore", "MusicStore.csproj") })
+        { }
 
         protected override string GetJitBenchRepoRootDir(string outputDir)
         {
@@ -24,7 +29,12 @@ namespace JitBench
 
     class AllReadyBenchmark : WebAppBenchmark
     {
-        public AllReadyBenchmark() : base("AllReady", "AllReady.dll") { }
+        public AllReadyBenchmark() :
+            base(
+                "AllReady",
+                "AllReady.dll",
+                new string[] { Path.Combine("src", "AllReady", "AllReady.csproj") })
+        { }
 
         protected override string GetJitBenchRepoRootDir(string outputDir)
         {
@@ -41,9 +51,12 @@ namespace JitBench
     {
         private static readonly HashSet<int> DefaultExitCodes = new HashSet<int>(new[] { 0 });
 
-        public WebAppBenchmark(string name, string executableName) : base(name)
+        private string[] _projectFileRelativePaths;
+
+        public WebAppBenchmark(string name, string executableName, string[] projectFileRelativePaths) : base(name)
         {
             ExePath = executableName;
+            _projectFileRelativePaths = projectFileRelativePaths;
         }
 
         public override async Task Setup(DotNetInstallation dotNetInstall, string outputDir, bool useExistingSetup, ITestOutputHelper output)
@@ -53,6 +66,7 @@ namespace JitBench
                 using (var setupSection = new IndentedTestOutputHelper("Setup " + Name, output))
                 {
                     await CloneAspNetJitBenchRepo(outputDir, setupSection);
+                    RetargetProjects(dotNetInstall, GetJitBenchRepoRootDir(outputDir), _projectFileRelativePaths);
                     await CreateStore(dotNetInstall, outputDir, setupSection);
                     await Publish(dotNetInstall, outputDir, setupSection);
                 }
@@ -120,7 +134,7 @@ namespace JitBench
             publishDir = GetWebAppPublishDirectory(dotNetInstall, outputDir, tfm);
             if (publishDir == null)
             {
-                throw new DirectoryNotFoundException("Could not find 'publish' directory");
+                throw new DirectoryNotFoundException($"Could not find 'publish' directory: {publishDir}");
             }
             return publishDir;
         }
