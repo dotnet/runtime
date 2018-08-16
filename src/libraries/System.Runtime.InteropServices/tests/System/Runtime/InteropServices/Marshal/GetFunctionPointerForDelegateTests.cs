@@ -30,6 +30,7 @@ namespace System.Runtime.InteropServices.Tests
             Delegate original = targetMethod.CreateDelegate(typeof(NonGenericDelegate));
             IntPtr ptr = Marshal.GetFunctionPointerForDelegate(original);
             Delegate d = Marshal.GetDelegateForFunctionPointer<NonGenericDelegate>(ptr);
+            GC.KeepAlive(original);
 
             IntPtr pointer1 = Marshal.GetFunctionPointerForDelegate(d);
             IntPtr pointer2 = Marshal.GetFunctionPointerForDelegate(d);
@@ -57,7 +58,8 @@ namespace System.Runtime.InteropServices.Tests
             Delegate original = targetMethod.CreateDelegate(typeof(NonGenericDelegate));
             IntPtr ptr = Marshal.GetFunctionPointerForDelegate(original);
             NonGenericDelegate d = Marshal.GetDelegateForFunctionPointer<NonGenericDelegate>(ptr);
-
+            GC.KeepAlive(original);
+            
             IntPtr pointer1 = Marshal.GetFunctionPointerForDelegate(d);
             IntPtr pointer2 = Marshal.GetFunctionPointerForDelegate(d);
             Assert.NotEqual(IntPtr.Zero, pointer1);
