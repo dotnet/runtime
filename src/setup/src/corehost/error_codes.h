@@ -32,5 +32,6 @@ enum StatusCode
     HostApiBufferTooSmall       = 0x80008098,
     LibHostUnknownCommand       = 0x80008099,
     LibHostAppRootFindFailure   = 0x8000809a,
+    SdkResolverResolveFailure   = 0x8000809b,
 };
 #endif // __ERROR_CODES_H__
