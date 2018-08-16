@@ -56,7 +56,7 @@ static uint8_t* g_helperPage = 0;
 static pthread_mutex_t g_flushProcessWriteBuffersMutex;
 
 size_t GetRestrictedPhysicalMemoryLimit();
-bool GetWorkingSetSize(size_t* val);
+bool GetPhysicalMemoryUsed(size_t* val);
 bool GetCpuLimit(uint32_t* val);
 
 static size_t g_RestrictedPhysicalMemoryLimit = 0;
@@ -623,7 +623,7 @@ void GCToOSInterface::GetMemoryStatus(uint32_t* memory_load, uint64_t* available
 
         // Get the physical memory in use - from it, we can get the physical memory available.
         // We do this only when we have the total physical memory available.
-        if (total > 0 && GetWorkingSetSize(&used))
+        if (total > 0 && GetPhysicalMemoryUsed(&used))
         {
             available = total > used ? total-used : 0; 
             load = (uint32_t)(((float)used * 100) / (float)total);

@@ -2396,7 +2396,7 @@ PAL_GetRestrictedPhysicalMemoryLimit(VOID);
 PALIMPORT
 BOOL
 PALAPI
-PAL_GetWorkingSetSize(size_t* val);
+PAL_GetPhysicalMemoryUsed(size_t* val);
 
 PALIMPORT
 BOOL
