@@ -45,7 +45,7 @@ namespace System.Globalization
             try
             {
                 // Open in read-only mode.
-                key = RegistryKey.GetBaseKey(RegistryKey.HKEY_CURRENT_USER).OpenSubKey(InternationalRegKey, false);
+                key = RegistryKey.OpenBaseKey(RegistryHive.CurrentUser).OpenSubKey(InternationalRegKey, false);
             }
             //If this fails for any reason, we'll just return 0.
             catch (ObjectDisposedException) { return 0; }
