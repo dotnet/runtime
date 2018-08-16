@@ -53,10 +53,6 @@ for i in "${@:5}"; do
       echo "Code coverage is turned on for this build."
       code_coverage=ON
       ;;
-      INCLUDE_TESTS)
-      echo "Including tests directory in build."
-      build_tests=ON
-      ;;
       NINJA)
       generator=Ninja
       ;;
@@ -166,9 +162,12 @@ else
     overridefile=clang-compiler-override.txt
 fi
 
+# Determine the current script directory
+__currentScriptDir="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
+
 cmake \
   -G "$generator" \
-  "-DCMAKE_USER_MAKE_RULES_OVERRIDE=$1/src/pal/tools/$overridefile" \
+  "-DCMAKE_USER_MAKE_RULES_OVERRIDE=${__currentScriptDir}/$overridefile" \
   "-DCMAKE_AR=$llvm_ar" \
   "-DCMAKE_LINKER=$llvm_link" \
   "-DCMAKE_NM=$llvm_nm" \
@@ -176,7 +175,6 @@ cmake \
   "-DCMAKE_BUILD_TYPE=$buildtype" \
   "-DCMAKE_EXPORT_COMPILE_COMMANDS=1 " \
   "-DCLR_CMAKE_ENABLE_CODE_COVERAGE=$code_coverage" \
-  "-DCLR_CMAKE_BUILD_TESTS=$build_tests" \
   $cmake_extra_defines \
   $__UnprocessedCMakeArgs \
   "$1"
