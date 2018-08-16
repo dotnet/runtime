@@ -646,7 +646,7 @@ namespace System.Xml.Serialization
             {
                 _hasSimpleContent = false;
             }
-            if (!_hasSimpleContent && text != null && !text.Mapping.TypeDesc.CanBeTextValue)
+            if (!_hasSimpleContent && text != null && !text.Mapping.TypeDesc.CanBeTextValue && !(BaseMapping != null && !BaseMapping.TypeDesc.IsRoot && (text.Mapping.TypeDesc.IsEnum || text.Mapping.TypeDesc.IsPrimitive)))
             {
                 throw new InvalidOperationException(SR.Format(SR.XmlIllegalTypedTextAttribute, TypeDesc.FullName, text.Name, text.Mapping.TypeDesc.FullName));
             }
