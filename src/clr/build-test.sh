@@ -152,7 +152,7 @@ generate_layout()
     # ===
     # =========================================================================================
 
-    build_Tests_internal "Restore_Packages" "${__ProjectDir}/tests/build.proj" "Restore product binaries (build tests)" "-BatchRestorePackages"
+    build_MSBuild_projects "Restore_Packages" "${__ProjectDir}/tests/build.proj" "Restore product binaries (build tests)" "-BatchRestorePackages"
 
     if [ -n "$__UpdateInvalidPackagesArg" ]; then
         __up=-updateinvalidpackageversion
@@ -172,7 +172,7 @@ generate_layout()
 
     mkdir -p $CORE_ROOT
 
-    build_Tests_internal "Tests_Overlay_Managed" "${__ProjectDir}/tests/runtest.proj" "Creating test overlay" "-testOverlay" 
+    build_MSBuild_projects "Tests_Overlay_Managed" "${__ProjectDir}/tests/runtest.proj" "Creating test overlay" "-testOverlay"
 
     chmod +x $__BinDir/corerun
     chmod +x $__BinDir/crossgen
@@ -193,7 +193,7 @@ generate_testhost()
     echo "${__MsgPrefix}Creating test overlay..."    
     mkdir -p $TEST_HOST
 
-    build_Tests_internal "Tests_Generate_TestHost" "${__ProjectDir}/tests/runtest.proj" "Creating test host" "-testHost"
+    build_MSBuild_projects "Tests_Generate_TestHost" "${__ProjectDir}/tests/runtest.proj" "Creating test host" "-testHost"
 }
 
 
@@ -210,16 +210,27 @@ build_Tests()
         fi
     fi
 
-    __CMakeBinDir="${__TestBinDir}"
+    export __CMakeBinDir="${__TestBinDir}"
+    if [ ! -d "${__TestIntermediatesDir}" ]; then
+        mkdir -p ${__TestIntermediatesDir}
+    fi
 
-    if [ -z "$__TestIntermediateDir" ]; then
-        __TestIntermediateDir="tests/obj/${__BuildOS}.${__BuildArch}.${__BuildType}"
+    __NativeTestIntermediatesDir="${__TestIntermediatesDir}/Native"
+    if [  ! -d "${__NativeTestIntermediatesDir}" ]; then
+        mkdir -p ${__NativeTestIntermediatesDir}
+    fi
+
+    __ManagedTestIntermediatesDir="${__TestIntermediatesDir}/Managed"
+    if [ ! -d "${__ManagedTestIntermediatesDir}" ]; then
+        mkdir -p ${__ManagedTestIntermediatesDir}
     fi
 
     echo "__BuildOS: ${__BuildOS}"
     echo "__BuildArch: ${__BuildArch}"
     echo "__BuildType: ${__BuildType}"
-    echo "__TestIntermediateDir: ${__TestIntermediateDir}"
+    echo "__TestIntermediatesDir: ${__TestIntermediatesDir}"
+    echo "__NativeTestIntermediatesDir: ${__NativeTestIntermediatesDir}"
+    echo "__ManagedTestIntermediatesDir: ${__ManagedTestIntermediatesDir}"
 
     if [ ! -f "$__TestBinDir" ]; then
         echo "Creating TestBinDir: ${__TestBinDir}"
@@ -238,15 +249,26 @@ build_Tests()
     # ===
     # =========================================================================================
 
-    build_Tests_internal "Restore_Product" "${__ProjectDir}/tests/build.proj" "Restore product binaries (build tests)" "-BatchRestorePackages"
+    if [ ${__SkipRestorePackages} != 1 ]; then
+        build_MSBuild_projects "Restore_Product" "${__ProjectDir}/tests/build.proj" "Restore product binaries (build tests)" "-BatchRestorePackages"
+    fi
 
     if [ -n "$__BuildAgainstPackagesArg" ]; then
-        build_Tests_internal "Tests_GenerateRuntimeLayout" "${__ProjectDir}/tests/runtest.proj" "Restore product binaries (run tests)" "-BinPlaceRef" "-BinPlaceProduct" "-CopyCrossgenToProduct"
+        build_MSBuild_projects "Tests_GenerateRuntimeLayout" "${__ProjectDir}/tests/runtest.proj" "Restore product binaries (run tests)" "-BinPlaceRef" "-BinPlaceProduct" "-CopyCrossgenToProduct"
+    fi
+
+    if [ $__SkipNative != 1 ]; then
+        build_native_projects "$__BuildArch" "${__NativeTestIntermediatesDir}"
+
+        if [ $? -ne 0 ]; then
+            echo "${__MsgPrefix}Error: build failed. Refer to the build log files for details (above)"
+            exit 1
+        fi
     fi
 
     echo "Starting the Managed Tests Build..."
 
-    build_Tests_internal "Tests_Managed" "$__ProjectDir/tests/build.proj" "Managed tests build (build tests)" "$__up"
+    build_MSBuild_projects "Tests_Managed" "$__ProjectDir/tests/build.proj" "Managed tests build (build tests)" "$__up"
 
     if [ $? -ne 0 ]; then
         echo "${__MsgPrefix}Error: build failed. Refer to the build log files for details (above)"
@@ -254,12 +276,7 @@ build_Tests()
     else
         echo "Checking the Managed Tests Build..."
 
-        if [ -n __priority1 ]; then
-            __Priority=1
-        else
-            __Priority=0
-        fi
-        build_Tests_internal "Check_Test_Build" "${__ProjectDir}/tests/runtest.proj" "Check Test Build" "/t:CheckTestBuild /p:CLRTestPriorityToBuild=$__Priority"
+        build_MSBuild_projects "Check_Test_Build" "${__ProjectDir}/tests/runtest.proj" "Check Test Build" "-ExtraParameters:/t:CheckTestBuild"
 
         if [ $? -ne 0 ]; then
             echo "${__MsgPrefix}Error: Check Test Build failed."
@@ -276,7 +293,7 @@ build_Tests()
 
         if [ ! -f $__XUnitWrapperBuiltMarker ]; then
 
-            build_Tests_internal "Tests_XunitWrapper" "$__ProjectDir/tests/runtest.proj" "Test Xunit Wrapper" "-BuildWrappers" "-MsBuildEventLogging= " "-TargetsWindows=false"
+            build_MSBuild_projects "Tests_XunitWrapper" "$__ProjectDir/tests/runtest.proj" "Test Xunit Wrapper" "-BuildWrappers" "-MsBuildEventLogging= " "-TargetsWindows=false"
 
             if [ $? -ne 0 ]; then
                 echo "${__MsgPrefix}Error: build failed. Refer to the build log files for details (above)"
@@ -301,11 +318,11 @@ build_Tests()
 
     if [ $__ZipTests -ne 0 ]; then
         echo "${__MsgPrefix}ZIP tests packages..."
-        build_Tests_internal "Helix_Prep" "$__ProjectDir/tests/helixprep.proj" "Prep test binaries for Helix publishing" " "
+        build_MSBuild_projects "Helix_Prep" "$__ProjectDir/tests/helixprep.proj" "Prep test binaries for Helix publishing" " "
     fi
 }
 
-build_Tests_internal()
+build_MSBuild_projects()
 {
     subDirectoryName=$1
     shift
@@ -404,6 +421,80 @@ build_Tests_internal()
     fi
 }
 
+build_native_projects()
+{
+    platformArch="$1"
+    intermediatesForBuild="$2"
+
+    extraCmakeArguments="-DCLR_CMAKE_TARGET_OS=${__BuildOS} -DCLR_CMAKE_HOST_ARCH=${platformArch}"
+    message="native tests assets"
+
+    # All set to commence the build
+    echo "Commencing build of $message for $__BuildOS.$__BuildArch.$__BuildType in $intermediatesForBuild"
+
+    generator=""
+    buildFile="Makefile"
+    buildTool="make"
+    if [ $__UseNinja == 1 ]; then
+        generator="ninja"
+        buildFile="build.ninja"
+        if ! buildTool=$(command -v ninja || command -v ninja-build); then
+           echo "Unable to locate ninja!" 1>&2
+           exit 1
+        fi
+    fi
+
+    if [ $__SkipConfigure == 0 ]; then
+        # if msbuild is not supported, then set __SkipGenerateVersion to 1
+        if [ $__isMSBuildOnNETCoreSupported == 0 ]; then __SkipGenerateVersion=1; fi
+        # Drop version.cpp file
+        __versionSourceFile="$intermediatesForBuild/version.cpp"
+        if [ $__SkipGenerateVersion == 0 ]; then
+            pwd
+            "$__ProjectRoot/run.sh" build -Project=$__ProjectDir/build.proj -generateHeaderUnix -NativeVersionSourceFile=$__versionSourceFile -MsBuildEventLogging="/l:BinClashLogger,Tools/Microsoft.DotNet.Build.Tasks.dll;LogFile=binclash.log"  $__RunArgs $__UnprocessedBuildArgs
+        else
+            # Generate the dummy version.cpp, but only if it didn't exist to make sure we don't trigger unnecessary rebuild
+            __versionSourceLine="static char sccsid[] __attribute__((used)) = \"@(#)No version information produced\";"
+            if [ -e $__versionSourceFile ]; then
+                read existingVersionSourceLine < $__versionSourceFile
+            fi
+            if [ "$__versionSourceLine" != "$existingVersionSourceLine" ]; then
+                echo $__versionSourceLine > $__versionSourceFile
+            fi
+        fi
+
+        pushd "$intermediatesForBuild"
+        # Regenerate the CMake solution
+        echo "Invoking \"$__ProjectRoot/src/pal/tools/gen-buildsys-clang.sh\" \"$__TestDir\" $__ClangMajorVersion $__ClangMinorVersion $platformArch $__BuildType $__CodeCoverage $generator $extraCmakeArguments $__cmakeargs"
+        "$__ProjectRoot/src/pal/tools/gen-buildsys-clang.sh" "$__TestDir" $__ClangMajorVersion $__ClangMinorVersion $platformArch $__BuildType $__CodeCoverage $generator "$extraCmakeArguments" "$__cmakeargs"
+        popd
+    fi
+
+    if [ ! -f "$intermediatesForBuild/$buildFile" ]; then
+        echo "Failed to generate $message build project!"
+        exit 1
+    fi
+
+    # Build
+    if [ $__ConfigureOnly == 1 ]; then
+        echo "Finish configuration & skipping $message build."
+        return
+    fi
+
+    pushd "$intermediatesForBuild"
+
+    echo "Executing $buildTool install -j $__NumProc"
+
+    $buildTool install -j $__NumProc
+    if [ $? != 0 ]; then
+        echo "Failed to build $message."
+        exit 1
+    fi
+
+    popd
+    echo "Native tests build success!"
+}
+
 usage()
 {
     echo "Usage: $0 [BuildArch] [BuildType] [verbose] [coverage] [cross] [clangx.y] [ninja] [runtests] [bindir]"
@@ -420,9 +511,11 @@ usage()
     echo "portablebuild - Use portable build."
     echo "verbose - optional argument to enable verbose build output."
     echo "rebuild - if tests have already been built - rebuild them"
+    echo "skipnative: skip the native tests build"
     echo "generatelayoutonly - only pull down dependencies and build coreroot"
     echo "generatetesthostonly - only pull down dependencies and build coreroot and the CoreFX testhost"
     echo "buildagainstpackages - pull down and build using packages."
+    echo "skiprestorepackages - skip package restore"
     echo "runtests - run tests after building them"
     echo "ziptests - zips CoreCLR tests & Core_Root for a Helix run"
     echo "bindir - output directory (defaults to $__ProjectRoot/bin)"
@@ -434,8 +527,6 @@ usage()
 
 # Obtain the location of the bash script to figure out where the root of the repo is.
 __ProjectRoot="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
-
-# $__ProjectRoot/build.sh $1 $2
 
 # Use uname to determine what the CPU is.
 CPUName=$(uname -p)
@@ -531,12 +622,17 @@ __MSBCleanBuildArgs=
 __UseNinja=0
 __VerboseBuild=0
 __SkipRestore=""
+__SkipNative=1 # [REMOVE] Temporarily default to skip native
+__SkipConfigure=0
+__SkipGenerateVersion=0
+__ConfigureOnly=0
 __CrossBuild=0
 __ClangMajorVersion=0
 __ClangMinorVersion=0
 __NuGetPath="$__PackagesDir/NuGet.exe"
 __HostDistroRid=""
 __BuildAgainstPackagesArg=
+__SkipRestorePackages=0
 __DistroRid=""
 __cmakeargs=""
 __PortableLinux=0
@@ -672,6 +768,15 @@ while :; do
             __RebuildTests=1
             ;;
 
+        skipnative|-skipnative)
+            __SkipNative=1
+            ;;
+
+        # [REMOVE] Enable native build - the temporary default is to skip native
+        --skipnative)
+            __SkipNative=0
+            ;;
+
         ziptests)
             __ZipTests=1
             ;;
@@ -684,6 +789,9 @@ while :; do
             ;;
         buildagainstpackages)
             __BuildAgainstPackagesArg=1
+            ;;
+        skiprestorepackages)
+            __SkipRestorePackages=1
             ;;
 
         bindir)
@@ -717,6 +825,18 @@ while :; do
     shift
 done
 
+# Get the number of processors available to the scheduler
+# Other techniques such as `nproc` only get the number of
+# processors available to a single process.
+if [ `uname` = "FreeBSD" ]; then
+  __NumProc=`sysctl hw.ncpu | awk '{ print $2+1 }'`
+elif [ `uname` = "NetBSD" ]; then
+  __NumProc=$(($(getconf NPROCESSORS_ONLN)+1))
+elif [ `uname` = "Darwin" ]; then
+  __NumProc=$(($(getconf _NPROCESSORS_ONLN)+1))
+else
+  __NumProc=$(nproc --all)
+fi
 
 __RunArgs=("-BuildArch=$__BuildArch" "-BuildType=$__BuildType" "-BuildOS=$__BuildOS")
 
@@ -736,7 +856,6 @@ if [[ $__ClangMajorVersion == 0 && $__ClangMinorVersion == 0 ]]; then
         __ClangMinorVersion=5
     fi
 fi
-
 
 # Set dependent variables
 __LogsDir="$__RootBinDir/Logs"
@@ -778,25 +897,6 @@ if [ -z "$HOME" ]; then
     echo "HOME not defined; setting it to $HOME"
 fi
 
-# Specify path to be set for CMAKE_INSTALL_PREFIX.
-# This is where all built CoreClr libraries will copied to.
-export __CMakeBinDir="$__BinDir"
-if [ [ ! -d "$__BinDir" ] || [ ! -d "$__BinDir/bin" ] ]; then
-    if [ [ -z "$__GenerateLayoutOnly" ] && [ -z "$__GenerateTestHostOnly" ] ]; then
-
-        echo "Cannot find build directory for the CoreCLR native tests."
-        echo "Please make sure native tests are built before building managed tests."
-        echo "Example use: './build.sh $__BuildArch $__BuildType' without -skiptests switch"
-    else
-        echo "Cannot find build directory for the CoreCLR Product."
-        echo "Please make sure CoreCLR and native tests are built before building managed tests."
-        echo "Example use: './build.sh $__BuildArch $__BuildType' "
-        fi
-    exit 1
-fi
-
-
-
 # Configure environment if we are doing a cross compile.
 if [ $__CrossBuild == 1 ]; then
     export CROSSCOMPILE=1
@@ -813,7 +913,6 @@ initTargetDistroRid
 __CoreClrVersion=1.1.0
 __sharedFxDir=$__BuildToolsDir/dotnetcli/shared/Microsoft.NETCore.App/$__CoreClrVersion/
 
-
 if [[ (-z "$__GenerateLayoutOnly") && (-z "$__GenerateTestHostOnly") ]]; then
     echo "Building Tests..."
     build_Tests
@@ -821,7 +920,7 @@ else
     echo "Generating test layout..."
     generate_layout
     if [ ! -z "$__GenerateTestHostOnly" ]; then
-        echo "Generating test host..."        
+        echo "Generating test host..."
         generate_testhost
     fi
 fi

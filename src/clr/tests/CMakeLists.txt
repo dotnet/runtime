@@ -1,15 +1,9 @@
 # Require at least version 2.8.12 of CMake
 cmake_minimum_required(VERSION 2.8.12)
 
-if (CMAKE_CONFIGURATION_TYPES) # multi-configuration generator?
-    set(CMAKE_CONFIGURATION_TYPES "Debug;Checked;Release;RelWithDebInfo" CACHE STRING "" FORCE)
-endif (CMAKE_CONFIGURATION_TYPES)
-set(CMAKE_C_FLAGS_CHECKED "")
-set(CMAKE_CXX_FLAGS_CHECKED "")
-set(CMAKE_EXE_LINKER_FLAGS_CHECKED "")
-set(CMAKE_SHARED_LINKER_FLAGS_CHECKED "")
-
-set(CLR_CMAKE_TARGET_ARCH ${CLR_CMAKE_HOST_ARCH})
+# Include global configure settings
+include(${CMAKE_CURRENT_SOURCE_DIR}/../configure.cmake)
+include(${CMAKE_CURRENT_SOURCE_DIR}/../configurecompiler.cmake)
 
 set(INC_PLATFORM_DIR ${CMAKE_CURRENT_SOURCE_DIR}/src/Common/Platform)
 if (WIN32)
