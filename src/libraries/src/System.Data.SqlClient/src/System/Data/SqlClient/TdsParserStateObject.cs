@@ -1285,7 +1285,6 @@ namespace System.Data.SqlClient
             return true;
         }
 
-
         // Takes no arguments and returns a byte from the buffer.  If the buffer is empty, it is filled
         // before the byte is returned.
         internal bool TryReadByte(out byte value)
