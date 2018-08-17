@@ -215,6 +215,9 @@ namespace R2RDump
             }
         }
 
+        /// <summary>
+        /// Dumps disassembly and register liveness
+        /// </summary>
         internal override void DumpDisasm(RuntimeFunction rtf, int imageOffset, XmlNode parentNode)
         {
             int rtfOffset = 0;

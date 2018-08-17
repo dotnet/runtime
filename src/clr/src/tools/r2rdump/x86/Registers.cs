@@ -8,6 +8,9 @@ using System.Text;
 
 namespace R2RDump.x86
 {
+    /// <summary>
+    /// based on <a href="https://github.com/dotnet/coreclr/blob/master/src/gcdump/i386/gcdumpx86.cpp">src\gcdump\i386\gcdumpx86.cpp</a> RegName
+    /// </summary>
     public enum Registers
     {
         EAX = 0x00,
@@ -20,6 +23,9 @@ namespace R2RDump.x86
         EDI = 0x07,
     };
 
+    /// <summary>
+    /// based on <a href="https://github.com/dotnet/coreclr/blob/master/src/gcdump/i386/gcdumpx86.cpp">src\gcdump\i386\gcdumpx86.cpp</a> CalleeSavedRegName
+    /// </summary>
     public enum CalleeSavedRegisters
     {
         EDI = 0x00,

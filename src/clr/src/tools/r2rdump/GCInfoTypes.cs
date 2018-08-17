@@ -8,6 +8,9 @@ using System.Text;
 
 namespace R2RDump
 {
+    /// <summary>
+    /// based on <a href="https://github.com/dotnet/coreclr/blob/master/src/inc/gcinfotypes.h">src\inc\gcinfotypes.h</a> infoHdrAdjustConstants
+    /// </summary>
     enum InfoHdrAdjustConstants
     {
         // Constants
@@ -22,9 +25,10 @@ namespace R2RDump
         MORE_BYTES_TO_FOLLOW = 0x80
     };
 
-    //
-    // Enum to define codes that are used to incrementally adjust the InfoHdr structure.
-    // First set of opcodes
+    /// <summary>
+    /// Enum to define codes that are used to incrementally adjust the InfoHdr structure.
+    /// based on <a href="https://github.com/dotnet/coreclr/blob/master/src/inc/gcinfotypes.h">src\inc\gcinfotypes.h</a> infoHdrAdjustConstants
+    /// </summary>
     enum InfoHdrAdjust
     {
         SET_FRAMESIZE = 0,                                            // 0x00
@@ -64,6 +68,9 @@ namespace R2RDump
         NEXT_THREE_EPILOGSIZE = 0x78
     };
 
+    /// <summary>
+    /// based on macros defined in <a href="https://github.com/dotnet/coreclr/blob/master/src/inc/gcinfotypes.h">src\inc\gcinfotypes.h</a>
+    /// </summary>
     public class GcInfoTypes
     {
         private Machine _target;

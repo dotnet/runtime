@@ -12,6 +12,9 @@ namespace R2RDump.Amd64
 {
     public class GcInfo : BaseGcInfo
     {
+        /// <summary>
+        /// based on <a href="https://github.com/dotnet/coreclr/blob/master/src/inc/gcinfodecoder.h">src/inc/gcinfodecoder.h</a> GcInfoHeaderFlags
+        /// </summary>
         private enum GcInfoHeaderFlags
         {
             GC_INFO_IS_VARARG = 0x1,
@@ -81,6 +84,9 @@ namespace R2RDump.Amd64
 
         public GcInfo() { }
 
+        /// <summary>
+        /// based on <a href="https://github.com/dotnet/coreclr/blob/master/src/vm/gcinfodecoder.cpp">GcInfoDecoder::GcInfoDecoder</a>
+        /// </summary>
         public GcInfo(byte[] image, int offset, Machine machine, ushort majorVersion)
         {
             Offset = offset;
@@ -253,19 +259,14 @@ namespace R2RDump.Amd64
             }
             sb.AppendLine($"\tSlotTable:");
             sb.Append(SlotTable.ToString());
-            sb.AppendLine($"\tTransitions:");
-            foreach (List<BaseGcTransition> transList in Transitions.Values)
-            {
-                foreach (GcTransition trans in transList)
-                {
-                    sb.AppendLine("\t\t" + trans.ToString());
-                }
-            }
             sb.AppendLine($"\tSize: {Size} bytes");
 
             return sb.ToString();
         }
 
+        /// <summary>
+        /// based on <a href="https://github.com/dotnet/coreclr/blob/master/src/vm/gcinfodecoder.cpp">GcInfoDecoder::GcInfoDecoder</a>
+        /// </summary>
         private void ParseHeaderFlags(byte[] image, ref int bitOffset)
         {
             GcInfoHeaderFlags headerFlags;
@@ -305,6 +306,9 @@ namespace R2RDump.Amd64
             return safePoints;
         }
 
+        /// <summary>
+        /// based on beginning of <a href="https://github.com/dotnet/coreclr/blob/master/src/vm/gcinfodecoder.cpp">GcInfoDecoder::EnumerateLiveSlots</a>
+        /// </summary>
         private List<InterruptibleRange> EnumerateInterruptibleRanges(byte[] image, int interruptibleRangeDelta1EncBase, int interruptibleRangeDelta2EncBase, ref int bitOffset)
         {
             List<InterruptibleRange> ranges = new List<InterruptibleRange>();
@@ -333,6 +337,9 @@ namespace R2RDump.Amd64
             return (readyToRunMajorVersion == 1) ? 1 : GCINFO_VERSION;
         }
 
+        /// <summary>
+        /// based on end of <a href="https://github.com/dotnet/coreclr/blob/master/src/vm/gcinfodecoder.cpp">GcInfoDecoder::EnumerateLiveSlots and GcInfoEncoder::Build</a>
+        /// </summary>
         public Dictionary<int, List<BaseGcTransition>> GetTranstions(byte[] image, ref int bitOffset)
         {
             int totalInterruptibleLength = 0;
@@ -348,22 +355,25 @@ namespace R2RDump.Amd64
                 }
             }
 
-            int numChunks = (totalInterruptibleLength + _gcInfoTypes.NUM_NORM_CODE_OFFSETS_PER_CHUNK - 1) / _gcInfoTypes.NUM_NORM_CODE_OFFSETS_PER_CHUNK; //=2
+            int numChunks = (totalInterruptibleLength + _gcInfoTypes.NUM_NORM_CODE_OFFSETS_PER_CHUNK - 1) / _gcInfoTypes.NUM_NORM_CODE_OFFSETS_PER_CHUNK;
             int numBitsPerPointer = (int)NativeReader.DecodeVarLengthUnsigned(image, _gcInfoTypes.POINTER_SIZE_ENCBASE, ref bitOffset);
             if (numBitsPerPointer == 0)
             {
                 return new Dictionary<int, List<BaseGcTransition>>();
             }
 
+            // get offsets of each chunk
             int[] chunkPointers = new int[numChunks];
             for (int i = 0; i < numChunks; i++)
             {
                 chunkPointers[i] = NativeReader.ReadBits(image, numBitsPerPointer, ref bitOffset);
             }
+
+            // Offset to m_Info2 containing all the info on register liveness
             int info2Offset = (int)Math.Ceiling(bitOffset / 8.0) * 8;
 
             List<GcTransition> transitions = new List<GcTransition>();
-            bool[] liveAtEnd = new bool[SlotTable.GcSlots.Count - SlotTable.NumUntracked];
+            bool[] liveAtEnd = new bool[SlotTable.GcSlots.Count - SlotTable.NumUntracked]; // true if slot is live at the end of the chunk
             for (int currentChunk = 0; currentChunk < numChunks; currentChunk++)
             {
                 if (chunkPointers[currentChunk] == 0)
@@ -375,7 +385,7 @@ namespace R2RDump.Amd64
                     bitOffset = info2Offset + chunkPointers[currentChunk] - 1;
                 }
 
-                int couldBeLiveOffset = bitOffset;
+                int couldBeLiveOffset = bitOffset; // points to the couldBeLive bit array (array of bits indicating the slot changed state in the chunk)
                 int slotId = 0;
                 bool fSimple = (NativeReader.ReadBits(image, 1, ref couldBeLiveOffset) == 0);
                 bool fSkipFirst = false;
@@ -386,20 +396,22 @@ namespace R2RDump.Amd64
                     slotId = -1;
                 }
 
-                uint numCouldBeLiveSlots = GetNumCouldBeLiveSlots(image, ref bitOffset);
+                uint numCouldBeLiveSlots = GetNumCouldBeLiveSlots(image, ref bitOffset); // count the number of set bits in the couldBeLive array
 
-                int finalStateOffset = bitOffset;
-                bitOffset += (int)numCouldBeLiveSlots;
+                int finalStateOffset = bitOffset; // points to the finalState bit array (array of bits indicating if the slot is live at the end of the chunk)
+                bitOffset += (int)numCouldBeLiveSlots; // points to the array of code offsets
 
-                int normChunkBaseCodeOffset = currentChunk * _gcInfoTypes.NUM_NORM_CODE_OFFSETS_PER_CHUNK;
+                int normChunkBaseCodeOffset = currentChunk * _gcInfoTypes.NUM_NORM_CODE_OFFSETS_PER_CHUNK; // the sum of the sizes of all preceeding chunks
                 for (int i = 0; i < numCouldBeLiveSlots; i++)
                 {
+                    // get the index of the next couldBeLive slot
                     slotId = GetNextSlotId(image, fSimple, fSkipFirst, slotId, ref couldBeLiveCnt, ref couldBeLiveOffset);
 
+                    // set the liveAtEnd for the slot at slotId
                     bool isLive = !liveAtEnd[slotId];
                     liveAtEnd[slotId] = (NativeReader.ReadBits(image, 1, ref finalStateOffset) != 0);
 
-                    // Read transitions
+                    // Read all the code offsets where the slot at slotId changed state
                     while (NativeReader.ReadBits(image, 1, ref bitOffset) != 0)
                     {
                         int transitionOffset = NativeReader.ReadBits(image, _gcInfoTypes.NUM_NORM_CODE_OFFSETS_PER_CHUNK_LOG2, ref bitOffset) + normChunkBaseCodeOffset;
@@ -410,8 +422,8 @@ namespace R2RDump.Amd64
                 }
             }
 
+            // convert normCodeOffsetDelta to the actual CodeOffset
             transitions.Sort((s1, s2) => s1.CodeOffset.CompareTo(s2.CodeOffset));
-
             return UpdateTransitionCodeOffset(transitions);
         }
 
@@ -440,6 +452,7 @@ namespace R2RDump.Amd64
             }
             else
             {
+                // count the number of set bits in the couldBeLive bit array
                 foreach (var slot in SlotTable.GcSlots)
                 {
                     if (slot.Flags == GcSlotFlags.GC_SLOT_UNTRACKED)
@@ -456,6 +469,7 @@ namespace R2RDump.Amd64
         {
             if (fSimple)
             {
+                // Get the slotId by iterating through the couldBeLive bit array. The slotId is the index of the next set bit
                 while (NativeReader.ReadBits(image, 1, ref couldBeLiveOffset) == 0)
                     slotId++;
             }
@@ -480,10 +494,13 @@ namespace R2RDump.Amd64
             return slotId;
         }
 
+        /// <summary>
+        /// convert normCodeOffsetDelta to the actual CodeOffset
+        /// </summary>
         private Dictionary<int, List<BaseGcTransition>> UpdateTransitionCodeOffset(List<GcTransition> transitions)
         {
             Dictionary<int, List<BaseGcTransition>> updatedTransitions = new Dictionary<int, List<BaseGcTransition>>();
-            int cumInterruptibleLength = 0;
+            int cumInterruptibleLength = 0; // the sum of the lengths of all preceeding interruptible ranges
             using (IEnumerator<InterruptibleRange> interruptibleRangesIter = InterruptibleRanges.GetEnumerator())
             {
                 interruptibleRangesIter.MoveNext();
