@@ -318,11 +318,21 @@ namespace System.Security.Principal
         SystemOperator = 549,
         User = 545,
     }
+    [System.Runtime.InteropServices.ComVisible(true)]
+    public enum WindowsAccountType
+    {
+        Normal = 0,
+        Guest = 1,
+        System = 2,
+        Anonymous = 3
+    }
     public partial class WindowsIdentity : System.Security.Claims.ClaimsIdentity, System.IDisposable, System.Runtime.Serialization.ISerializable, System.Runtime.Serialization.IDeserializationCallback
     {
         public new const string DefaultIssuer = "AD AUTHORITY";
         public WindowsIdentity(System.IntPtr userToken) { }
         public WindowsIdentity(System.IntPtr userToken, string type) { }
+        public WindowsIdentity(System.IntPtr userToken, string type, WindowsAccountType acctType){ }
+        public WindowsIdentity(System.IntPtr userToken, string type, WindowsAccountType acctType, bool isAuthenticated) { }
         public WindowsIdentity(string sUserPrincipalName) { }
         public WindowsIdentity(System.Runtime.Serialization.SerializationInfo info, System.Runtime.Serialization.StreamingContext context) { }
         protected WindowsIdentity(System.Security.Principal.WindowsIdentity identity) { }
