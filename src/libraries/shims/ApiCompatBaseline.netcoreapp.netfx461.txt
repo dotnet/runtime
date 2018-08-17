@@ -26,7 +26,6 @@ TypesMustExist : Type 'System.Runtime.Serialization.Formatters.ISoapMessage' doe
 TypesMustExist : Type 'System.Runtime.Serialization.Formatters.ServerFault' does not exist in the implementation but it does exist in the contract.
 TypesMustExist : Type 'System.Runtime.Serialization.Formatters.SoapFault' does not exist in the implementation but it does exist in the contract.
 TypesMustExist : Type 'System.Runtime.Serialization.Formatters.SoapMessage' does not exist in the implementation but it does exist in the contract.
-TypesMustExist : Type 'System.Security.Principal.WindowsAccountType' does not exist in the implementation but it does exist in the contract.
 TypesMustExist : Type 'System.Security.Principal.WindowsImpersonationContext' does not exist in the implementation but it does exist in the contract.
 Compat issues with assembly System:
 MembersMustExist : Member 'System.CodeDom.Compiler.CompilerParameters.Evidence.get()' does not exist in the implementation but it does exist in the contract.
