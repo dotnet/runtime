@@ -8,7 +8,7 @@ using Xunit;
 
 namespace System.ComponentModel.Tests
 {
-    public class TypeDescriptorTests
+    public partial class TypeDescriptorTests
     {
         [Fact]
         public void AddAndRemoveProvider()
@@ -66,16 +66,48 @@ namespace System.ComponentModel.Tests
             Assert.Equal(secondaryObject, associatedObject);
         }
 
-        [Fact]
-        public static void GetConverter()
+        [Theory]
+        [InlineData(typeof(bool), typeof(BooleanConverter))]
+        [InlineData(typeof(byte), typeof(ByteConverter))]
+        [InlineData(typeof(sbyte), typeof(SByteConverter))]
+        [InlineData(typeof(char), typeof(CharConverter))]
+        [InlineData(typeof(double), typeof(DoubleConverter))]
+        [InlineData(typeof(string), typeof(StringConverter))]
+        [InlineData(typeof(short), typeof(Int16Converter))]
+        [InlineData(typeof(int), typeof(Int32Converter))]
+        [InlineData(typeof(long), typeof(Int64Converter))]
+        [InlineData(typeof(float), typeof(SingleConverter))]
+        [InlineData(typeof(ushort), typeof(UInt16Converter))]
+        [InlineData(typeof(uint), typeof(UInt32Converter))]
+        [InlineData(typeof(ulong), typeof(UInt64Converter))]
+        [InlineData(typeof(object), typeof(TypeConverter))]
+        [InlineData(typeof(void), typeof(TypeConverter))]
+        [InlineData(typeof(DateTime), typeof(DateTimeConverter))]
+        [InlineData(typeof(DateTimeOffset), typeof(DateTimeOffsetConverter))]
+        [InlineData(typeof(decimal), typeof(DecimalConverter))]
+        [InlineData(typeof(TimeSpan), typeof(TimeSpanConverter))]
+        [InlineData(typeof(Guid), typeof(GuidConverter))]
+        [InlineData(typeof(Array), typeof(ArrayConverter))]
+        [InlineData(typeof(ICollection), typeof(CollectionConverter))]
+        [InlineData(typeof(Enum), typeof(EnumConverter))]
+        [InlineData(typeof(SomeEnum), typeof(EnumConverter))]
+        [InlineData(typeof(SomeValueType?), typeof(NullableConverter))]
+        [InlineData(typeof(int?), typeof(NullableConverter))]
+        [InlineData(typeof(ClassWithNoConverter), typeof(TypeConverter))]
+        [InlineData(typeof(BaseClass), typeof(BaseClassConverter))]
+        [InlineData(typeof(DerivedClass), typeof(DerivedClassConverter))]
+        [InlineData(typeof(IBase), typeof(IBaseConverter))]
+        [InlineData(typeof(IDerived), typeof(IBaseConverter))]
+        [InlineData(typeof(ClassIBase), typeof(IBaseConverter))]
+        [InlineData(typeof(ClassIDerived), typeof(IBaseConverter))]
+        [InlineData(typeof(Uri), typeof(UriTypeConverter))]
+        [InlineData(typeof(CultureInfo), typeof(CultureInfoConverter))]
+        public static void GetConverter(Type targetType, Type resultConverterType)
         {
-            foreach (Tuple<Type, Type> pair in s_typesWithConverters)
-            {
-                TypeConverter converter = TypeDescriptor.GetConverter(pair.Item1);
-                Assert.NotNull(converter);
-                Assert.Equal(pair.Item2, converter.GetType());
-                Assert.True(converter.CanConvertTo(typeof(string)));
-            }
+            TypeConverter converter = TypeDescriptor.GetConverter(targetType);
+            Assert.NotNull(converter);
+            Assert.Equal(resultConverterType, converter.GetType());
+            Assert.True(converter.CanConvertTo(typeof(string)));
         }
 
         [Fact]
@@ -239,44 +271,5 @@ namespace System.ComponentModel.Tests
             [Description("Derived")]
             public override int Value { get; set; }
         }
-
-        private static Tuple<Type, Type>[] s_typesWithConverters =
-        {
-            new Tuple<Type, Type> (typeof(bool), typeof(BooleanConverter)),
-            new Tuple<Type, Type> (typeof(byte), typeof(ByteConverter)),
-            new Tuple<Type, Type> (typeof(sbyte), typeof(SByteConverter)),
-            new Tuple<Type, Type> (typeof(char), typeof(CharConverter)),
-            new Tuple<Type, Type> (typeof(double), typeof(DoubleConverter)),
-            new Tuple<Type, Type> (typeof(string), typeof(StringConverter)),
-            new Tuple<Type, Type> (typeof(short), typeof(Int16Converter)),
-            new Tuple<Type, Type> (typeof(int), typeof(Int32Converter)),
-            new Tuple<Type, Type> (typeof(long), typeof(Int64Converter)),
-            new Tuple<Type, Type> (typeof(float), typeof(SingleConverter)),
-            new Tuple<Type, Type> (typeof(ushort), typeof(UInt16Converter)),
-            new Tuple<Type, Type> (typeof(uint), typeof(UInt32Converter)),
-            new Tuple<Type, Type> (typeof(ulong), typeof(UInt64Converter)),
-            new Tuple<Type, Type> (typeof(object), typeof(TypeConverter)),
-            new Tuple<Type, Type> (typeof(void), typeof(TypeConverter)),
-            new Tuple<Type, Type> (typeof(DateTime), typeof(DateTimeConverter)),
-            new Tuple<Type, Type> (typeof(DateTimeOffset), typeof(DateTimeOffsetConverter)),
-            new Tuple<Type, Type> (typeof(decimal), typeof(DecimalConverter)),
-            new Tuple<Type, Type> (typeof(TimeSpan), typeof(TimeSpanConverter)),
-            new Tuple<Type, Type> (typeof(Guid), typeof(GuidConverter)),
-            new Tuple<Type, Type> (typeof(Array), typeof(ArrayConverter)),
-            new Tuple<Type, Type> (typeof(ICollection), typeof(CollectionConverter)),
-            new Tuple<Type, Type> (typeof(Enum), typeof(EnumConverter)),
-            new Tuple<Type, Type> (typeof(SomeEnum), typeof(EnumConverter)),
-            new Tuple<Type, Type> (typeof(SomeValueType?), typeof(NullableConverter)),
-            new Tuple<Type, Type> (typeof(int?), typeof(NullableConverter)),
-            new Tuple<Type, Type> (typeof(ClassWithNoConverter), typeof(TypeConverter)),
-            new Tuple<Type, Type> (typeof(BaseClass), typeof(BaseClassConverter)),
-            new Tuple<Type, Type> (typeof(DerivedClass), typeof(DerivedClassConverter)),
-            new Tuple<Type, Type> (typeof(IBase), typeof(IBaseConverter)),
-            new Tuple<Type, Type> (typeof(IDerived), typeof(IBaseConverter)),
-            new Tuple<Type, Type> (typeof(ClassIBase), typeof(IBaseConverter)),
-            new Tuple<Type, Type> (typeof(ClassIDerived), typeof(IBaseConverter)),
-            new Tuple<Type, Type> (typeof(Uri), typeof(UriTypeConverter)),
-            new Tuple<Type, Type> (typeof(CultureInfo), typeof(CultureInfoConverter))
-        };
     }
 }

@@ -126,6 +126,7 @@ namespace System.ComponentModel
             [typeof(TimeSpan)] = typeof(TimeSpanConverter),
             [typeof(Guid)] = typeof(GuidConverter),
             [typeof(Uri)] = typeof(UriTypeConverter),
+            [typeof(Version)] = typeof(VersionConverter),
             [typeof(Color)] = typeof(ColorConverter),
             [typeof(Point)] = typeof(PointConverter),
             [typeof(Rectangle)] = typeof(RectangleConverter),
