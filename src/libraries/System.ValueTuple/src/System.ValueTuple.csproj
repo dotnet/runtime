@@ -7,7 +7,7 @@
     <RunApiCompat Condition="'$(TargetGroup)' != 'netcoreapp' AND '$(TargetGroup)' != 'uap'">false</RunApiCompat>
     <!-- We've explicitly authored a reference facade so we do not need to use the desktop implementation as ref -->
     <PackageDesktopAsRef>false</PackageDesktopAsRef>
-    <Configurations>net461-Debug;net461-Release;net47-Debug;net47-Release;netcoreapp-Debug;netcoreapp-Release;netstandard1.0-Debug;netstandard1.0-Release;portable_net40+sl4+win8+wp8-Debug;portable_net40+sl4+win8+wp8-Release;uap-Windows_NT-Debug;uap-Windows_NT-Release</Configurations>
+    <Configurations>net461-Debug;net461-Release;net47-Debug;net47-Release;netcoreapp-Debug;netcoreapp-Release;netstandard1.0-Debug;netstandard1.0-Release;uap-Windows_NT-Debug;uap-Windows_NT-Release</Configurations>
   </PropertyGroup>
   <!-- Default configurations to help VS understand the options -->
   <PropertyGroup>
@@ -23,16 +23,10 @@
       <Link>Common\System\Numerics\Hashing\HashHelpers.cs</Link>
     </Compile>
   </ItemGroup>
-  <ItemGroup Condition="'$(IsPartialFacadeAssembly)' != 'true' AND '$(TargetGroup)' != 'portable_net40+sl4+win8+wp8'">
-    <!-- The portable_net40+sl4+win8+wp8 PCL profile does not have AllowPartiallyTrustedCallersAttribute -->
+  <ItemGroup Condition="'$(IsPartialFacadeAssembly)' != 'true'">
     <Compile Include="AssemblyInfo.cs" />
   </ItemGroup>
-  <ItemGroup Condition="'$(TargetGroup)' == 'portable_net40+sl4+win8+wp8'">
-    <Compile Include="$(CommonPath)\System\Reflection\AssemblyMetadataAttribute.cs">
-      <Link>Common\System\Reflection\AssemblyMetadataAttribute.cs</Link>
-    </Compile>
-  </ItemGroup>
-  <ItemGroup Condition="'$(TargetGroup)' == 'portable_net40+sl4+win8+wp8' OR '$(TargetGroup)' == 'net461' OR '$(TargetGroup)' == 'net47'">
+  <ItemGroup Condition="'$(TargetGroup)' == 'net461' OR '$(TargetGroup)' == 'net47'">
     <Reference Include="mscorlib" />
     <Reference Include="System" />
     <Reference Include="System.Core" />
