@@ -8,6 +8,9 @@ using System.Text;
 
 namespace R2RDump.Amd64
 {
+    /// <summary>
+    /// based on <a href="https://github.com/dotnet/coreclr/blob/master/src/gcdump/gcdumpnonx86.cpp">src\gcdump\gcdumpnonx86.cpp</a> GetRegName
+    /// </summary>
     public enum Registers
     {
         EAX = 0,
