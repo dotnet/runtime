@@ -11,6 +11,9 @@ namespace R2RDump
 {
     public struct R2RSection
     {
+        /// <summary>
+        /// based on <a href="https://github.com/dotnet/coreclr/blob/master/src/inc/readytorun.h">src/inc/readytorun.h</a> ReadyToRunSectionType
+        /// </summary>
         public enum SectionType
         {
             READYTORUN_SECTION_COMPILER_IDENTIFIER = 100,

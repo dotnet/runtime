@@ -7,6 +7,9 @@ using System.Text;
 
 namespace R2RDump
 {
+    /// <summary>
+    /// based on <a href="https://github.com/dotnet/coreclr/blob/master/src/vm/nativeformatreader.h">NativeFormat::NativeParser</a>
+    /// </summary>
     struct NativeParser
     {
         /// <summary>
@@ -76,6 +79,9 @@ namespace R2RDump
         }
     }
 
+    /// <summary>
+    /// based on <a href="https://github.com/dotnet/coreclr/blob/master/src/vm/nativeformatreader.h">NativeFormat::NativeHashtable</a>
+    /// </summary>
     struct NativeHashtable
     {
         private byte[] _image;

@@ -168,6 +168,9 @@ namespace R2RDump
             SkipLine();
         }
 
+        /// <summary>
+        /// Dumps disassembly and register liveness
+        /// </summary>
         internal override void DumpDisasm(RuntimeFunction rtf, int imageOffset, XmlNode parentNode = null)
         {
             int rtfOffset = 0;
@@ -244,7 +247,7 @@ namespace R2RDump
                     }
                     break;
                 case R2RSection.SectionType.READYTORUN_SECTION_METHODDEF_ENTRYPOINTS:
-                        NativeArray methodEntryPoints = new NativeArray(_r2r.Image, (uint)_r2r.GetOffset(section.RelativeVirtualAddress));
+                    NativeArray methodEntryPoints = new NativeArray(_r2r.Image, (uint)_r2r.GetOffset(section.RelativeVirtualAddress));
                     _writer.Write(methodEntryPoints.ToString());
                     break;
                 case R2RSection.SectionType.READYTORUN_SECTION_INSTANCE_METHOD_ENTRYPOINTS:
@@ -259,8 +262,18 @@ namespace R2RDump
                     int rtfIndex = 0;
                     while (rtfOffset < rtfEndOffset)
                     {
-                        uint rva = NativeReader.ReadUInt32(_r2r.Image, ref rtfOffset);
-                        _writer.WriteLine($"{rtfIndex}: 0x{rva:X8}");
+                        int startRva = NativeReader.ReadInt32(_r2r.Image, ref rtfOffset);
+                        int endRva = -1;
+                        if (_r2r.Machine == Machine.Amd64)
+                        {
+                            endRva = NativeReader.ReadInt32(_r2r.Image, ref rtfOffset);
+                        }
+                        int unwindRva = NativeReader.ReadInt32(_r2r.Image, ref rtfOffset);
+                        _writer.WriteLine($"Index: {rtfIndex}");
+                        _writer.WriteLine($"\tStartRva: 0x{startRva:X8}");
+                        if (endRva != -1)
+                            _writer.WriteLine($"\tEndRva: 0x{endRva:X8}");
+                        _writer.WriteLine($"\tUnwindRva: 0x{unwindRva:X8}");
                         rtfIndex++;
                     }
                     break;

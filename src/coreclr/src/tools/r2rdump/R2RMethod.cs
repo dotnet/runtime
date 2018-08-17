@@ -40,6 +40,9 @@ namespace R2RDump
         public Dictionary<int, List<BaseGcTransition>> Transitions { get; set; }
     }
 
+    /// <summary>
+    /// based on <a href="https://github.com/dotnet/coreclr/blob/master/src/pal/inc/pal.h">src/pal/inc/pal.h</a> _RUNTIME_FUNCTION
+    /// </summary>
     public class RuntimeFunction
     {
         /// <summary>
@@ -67,6 +70,9 @@ namespace R2RDump
         /// </summary>
         public int UnwindRVA { get; set; }
 
+        /// <summary>
+        /// The start offset of the runtime function with is non-zero for methods with multiple runtime functions
+        /// </summary>
         public int CodeOffset { get; set; }
 
         /// <summary>
@@ -267,6 +273,9 @@ namespace R2RDump
             SignatureString = GetSignature();
         }
 
+        /// <summary>
+        /// Initialize map of generic parameters names to the type in the instance
+        /// </summary>
         private void InitGenericInstances(GenericParameterHandleCollection genericParams, GenericElementTypes[] instanceArgs, uint[] tok)
         {
             if (instanceArgs.Length != genericParams.Count || tok.Length != genericParams.Count)
@@ -276,18 +285,21 @@ namespace R2RDump
 
             for (int i = 0; i < instanceArgs.Length; i++)
             {
-                string key = _mdReader.GetString(_mdReader.GetGenericParameter(genericParams.ElementAt(i)).Name);
-                string name = instanceArgs[i].ToString();
+                string key = _mdReader.GetString(_mdReader.GetGenericParameter(genericParams.ElementAt(i)).Name); // name of the generic param, eg. "T"
+                string type = instanceArgs[i].ToString(); // type of the generic param instance
                 if (instanceArgs[i] == GenericElementTypes.ValueType)
                 {
                     var t = _mdReader.GetTypeDefinition(MetadataTokens.TypeDefinitionHandle((int)tok[i]));
-                    name = _mdReader.GetString(t.Name);
+                    type = _mdReader.GetString(t.Name); // name of the struct
 
                 }
-                _genericParamInstanceMap[key] = name;
+                _genericParamInstanceMap[key] = type;
             }
         }
 
+        /// <summary>
+        /// Returns a string with format DeclaringType.Name<GenericTypes,...>(ArgTypes,...)
+        /// </summary>
         private string GetSignature()
         {
             StringBuilder sb = new StringBuilder();
