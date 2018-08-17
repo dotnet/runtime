@@ -3368,7 +3368,6 @@ ${runScript} \\
         Utilities.addXUnitDotNETResults(newJob, "${workspaceRelativeFxRootLinux}/bin/**/testResults.xml")
     }
     else {
-        Utilities.addArchival(newJob, "bin/tests/${osGroup}.${architecture}.${configuration}/coreclrtests.*.txt")
         Utilities.addXUnitDotNETResults(newJob, '**/coreclrtests.xml')
     }
 
