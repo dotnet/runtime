@@ -4583,7 +4583,9 @@ register_icalls (void)
 	register_opcode_emulation (OP_LCONV_TO_R_UN, "__emul_lconv_to_r8_un", "double long", mono_lconv_to_r8_un, "mono_lconv_to_r8_un", FALSE);
 #endif
 #ifdef MONO_ARCH_EMULATE_FREM
-	register_opcode_emulation (OP_FREM, "__emul_frem", "double double double", fmod, "fmod", FALSE);
+	// fmod is overloaded in C++, capture local to disambiguate -- an implied safe static cast.
+	double (*pfmod)(double, double) = fmod;
+	register_opcode_emulation (OP_FREM, "__emul_frem", "double double double", pfmod, "fmod", FALSE);
 	register_opcode_emulation (OP_RREM, "__emul_rrem", "float float float", fmodf, "fmodf", FALSE);
 #endif
 
