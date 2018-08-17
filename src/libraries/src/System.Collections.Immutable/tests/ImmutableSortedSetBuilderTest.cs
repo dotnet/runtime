@@ -11,7 +11,7 @@ using Xunit;
 
 namespace System.Collections.Immutable.Tests
 {
-    public class ImmutableSortedSetBuilderTest : ImmutablesTestBase
+    public partial class ImmutableSortedSetBuilderTest : ImmutablesTestBase
     {
         [Fact]
         public void CreateBuilder()
@@ -375,31 +375,6 @@ namespace System.Collections.Immutable.Tests
             Type proxyType = DebuggerAttributes.GetProxyType(ImmutableSortedSet.CreateBuilder<int>());
             TargetInvocationException tie = Assert.Throws<TargetInvocationException>(() => Activator.CreateInstance(proxyType, (object)null));
             Assert.IsType<ArgumentNullException>(tie.InnerException);
-        }
-
-        [Fact]
-        public void ItemRef()
-        {
-            var array = new[] { 1, 2, 3 }.ToImmutableSortedSet();
-            var builder = new ImmutableSortedSet<int>.Builder(array);
-
-            ref readonly var safeRef = ref builder.ItemRef(1);
-            ref var unsafeRef = ref Unsafe.AsRef(safeRef);
-
-            Assert.Equal(2, builder.ItemRef(1));
-
-            unsafeRef = 4;
-
-            Assert.Equal(4, builder.ItemRef(1));
-        }
-
-        [Fact]
-        public void ItemRef_OutOfBounds()
-        {
-            var array = new[] { 1, 2, 3 }.ToImmutableSortedSet();
-            var builder = new ImmutableSortedSet<int>.Builder(array);
-
-            Assert.Throws<ArgumentOutOfRangeException> (() => builder.ItemRef(5));
         }
     }
 }

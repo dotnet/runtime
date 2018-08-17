@@ -10,18 +10,11 @@ using Xunit;
 
 namespace System.Collections.Immutable.Tests
 {
-    public class ImmutableHashSetTest : ImmutableSetTest
+    public partial class ImmutableHashSetTest : ImmutableSetTest
     {
         protected override bool IncludesGetHashCodeDerivative
         {
             get { return true; }
-        }
-
-        [Fact]
-        public void EmptyTest()
-        {
-            this.EmptyTestHelper(Empty<int>(), 5, null);
-            this.EmptyTestHelper(EmptyTyped<string>().WithComparer(StringComparer.OrdinalIgnoreCase), "a", StringComparer.OrdinalIgnoreCase);
         }
 
         [Fact]
@@ -180,12 +173,6 @@ namespace System.Collections.Immutable.Tests
         }
 
         [Fact]
-        public void TryGetValueTest()
-        {
-            this.TryGetValueTestHelper(ImmutableHashSet<string>.Empty.WithComparer(StringComparer.OrdinalIgnoreCase));
-        }
-
-        [Fact]
         [SkipOnTargetFramework(TargetFrameworkMonikers.UapAot, "Cannot do DebuggerAttribute testing on UapAot: requires internal Reflection on framework types.")]
         public void DebuggerAttributesValid()
         {
@@ -232,35 +219,6 @@ namespace System.Collections.Immutable.Tests
         protected override ISet<T> EmptyMutable<T>()
         {
             return new HashSet<T>();
-        }
-
-        internal override IBinaryTree GetRootNode<T>(IImmutableSet<T> set)
-        {
-            return ((ImmutableHashSet<T>)set).Root;
-        }
-
-        /// <summary>
-        /// Tests various aspects of an unordered set.
-        /// </summary>
-        /// <typeparam name="T">The type of element stored in the set.</typeparam>
-        /// <param name="emptySet">The empty set.</param>
-        /// <param name="value">A value that could be placed in the set.</param>
-        /// <param name="comparer">The comparer used to obtain the empty set, if any.</param>
-        private void EmptyTestHelper<T>(IImmutableSet<T> emptySet, T value, IEqualityComparer<T> comparer)
-        {
-            Assert.NotNull(emptySet);
-
-            this.EmptyTestHelper(emptySet);
-            Assert.Same(emptySet, emptySet.ToImmutableHashSet(comparer));
-            Assert.Same(comparer ?? EqualityComparer<T>.Default, ((IHashKeyCollection<T>)emptySet).KeyComparer);
-
-            if (comparer == null)
-            {
-                Assert.Same(emptySet, ImmutableHashSet<T>.Empty);
-            }
-
-            var reemptied = emptySet.Add(value).Clear();
-            Assert.Same(reemptied, reemptied.ToImmutableHashSet(comparer)); //, "Getting the empty set from a non-empty instance did not preserve the comparer.");
         }
     }
 }
