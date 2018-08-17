@@ -2,7 +2,6 @@
 <Project ToolsVersion="14.0" DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
   <PropertyGroup>
     <PackageConfigurations>
-      portable_net40+sl4+win8+wp8;
       net461;
       net47;
     </PackageConfigurations>

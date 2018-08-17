@@ -8,6 +8,8 @@
     <ProjectReference Include="..\src\System.Drawing.Common.csproj" />
 
     <InboxOnTargetFramework Include="$(AllXamarinFrameworks)" />
+
+    <HarvestIncludePaths Include="ref/portable-net40+sl4+win8+wp8;lib/portable-net40+sl4+win8+wp8" />
   </ItemGroup>
   <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), Directory.Build.targets))\Directory.Build.targets" />
 </Project>
