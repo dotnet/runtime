@@ -11,22 +11,19 @@ namespace JitBench
             Name = "Default";
             EnvironmentVariables = new Dictionary<string, string>();
         }
+
         public bool IsDefault {  get { return Name == "Default"; } }
         public string Name { get; set; }
         public Dictionary<string, string> EnvironmentVariables { get; private set; }
 
-        public BenchmarkConfiguration WithTiering()
+        public BenchmarkConfiguration WithoutTiering()
         {
-            return WithModifier("Tiering", "COMPLUS_TieredCompilation", "1");
+            return WithModifier("NoTiering", "COMPlus_TieredCompilation", "0");
         }
 
         public BenchmarkConfiguration WithMinOpts()
         {
-            BenchmarkConfiguration configuration =
-                WithModifier("Minopts", "COMPLUS_JitMinOpts", "1").
-                WithModifier("Tiering", "COMPLUS_TieredCompilation", "0");
-            configuration.Name = "Minopts";
-            return configuration;
+            return WithModifier("Minopts", "COMPlus_JitMinOpts", "1");
         }
 
         public BenchmarkConfiguration WithNoR2R()
@@ -36,7 +33,7 @@ namespace JitBench
 
         public BenchmarkConfiguration WithNoNgen()
         {
-            return WithModifier("NoNgen", "COMPLUS_ZapDisable", "1");
+            return WithModifier("NoNgen", "COMPlus_ZapDisable", "1");
         }
 
         private BenchmarkConfiguration WithModifier(string modifier, string variableName, string variableValue)

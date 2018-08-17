@@ -17,7 +17,7 @@ Name | Description | Type
 
 ## Environment/Registry Configuration Knobs
 
-This table was machine-generated using `clr-configuration-knobs.csx` script from repository commit [8611986](https://github.com/dotnet/coreclr/commit/861198647dc232ecaf05b4a8e2f10605e7a22537) on 4/30/2018. It might be out of date. To generate latest documentation run `{dotnet} csi clr-configuration-knobs.csx` from this file directory.
+This table was machine-generated using `clr-configuration-knobs.csx` script from repository commit [79aadb8](https://github.com/dotnet/coreclr/commit/79aadb8c6455e30065cbd817e3ec5b52d17f3dce) on 6/12/2018. It might be out of date. To generate latest documentation run `{dotnet} csi clr-configuration-knobs.csx` from this file directory.
 
 When using these configurations from environment variables, the variables need to have the `COMPlus_` prefix in their names. e.g. To set DumpJittedMethods to 1, add the environment variable `COMPlus_DumpJittedMethods=1`.
 
@@ -769,8 +769,7 @@ Name | Description | Type | Class | Default Value | Flags
 
 Name | Description | Type | Class | Default Value | Flags 
 -----|-------------|------|-------|---------------|-------
-`EXPERIMENTAL_TieredCompilation` | Deprecated - Use COMPLUS_TieredCompilation | `DWORD` | `UNSUPPORTED` | `0` | 
-`TieredCompilation` | Enables tiered compilation | `DWORD` | `EXTERNAL` | `0` | 
+`TieredCompilation` | Enables tiered compilation | `DWORD` | `EXTERNAL` | `1` | 
 `TieredCompilation_Test_CallCounting` | Enabled by default (only activates when TieredCompilation is also enabled). If disabled immediately backpatches prestub, and likely prevents any tier1 promotion | `DWORD` | `UNSUPPORTED` | `1` | 
 `TieredCompilation_Test_OptimizeTier0` | Use optimized codegen (normally used by tier1) in tier0 | `DWORD` | `UNSUPPORTED` | `0` | 
 `TieredCompilation_Tier1CallCountingDelayMs` | Delay in milliseconds since process startup or the last tier 0 JIT before call counting begins for tier 1 promotion. | `DWORD` | `UNSUPPORTED` | `100` | 

@@ -20,15 +20,6 @@
 // handles logistics of getting new code created and installed.
 //
 //
-// # Current feature state
-//
-// This feature is a work in progress. It should be functionally correct for a 
-// good range of scenarios, but performance varies by scenario. To enable it
-// you need to set COMPLUS_TieredCompilation = 1. This feature has been
-// tested with all of our runtime and CoreFX functional tests, as well as
-// diagnostics tests and various partner testing in Visual Studio. 
-//
-//
 // # Important entrypoints in this code:
 //
 // 
