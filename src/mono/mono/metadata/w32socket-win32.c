@@ -285,6 +285,7 @@ mono_w32socket_disconnect (SOCKET sock, gboolean reuse)
 	 * managed objects that still works on 64bit platforms. */
 
 	GUID disconnect_guid = WSAID_DISCONNECTEX;
+	GUID transmit_file_guid = WSAID_TRANSMITFILE;
 	ret = WSAIoctl (sock, SIO_GET_EXTENSION_FUNCTION_POINTER, &disconnect_guid, sizeof (GUID), &disconnect, sizeof (LPFN_DISCONNECTEX), &output_bytes, NULL, NULL);
 	if (ret == 0) {
 		if (!disconnect (sock, NULL, reuse ? TF_REUSE_SOCKET : 0, 0)) {
@@ -296,7 +297,6 @@ mono_w32socket_disconnect (SOCKET sock, gboolean reuse)
 		goto done;
 	}
 
-	GUID transmit_file_guid = WSAID_TRANSMITFILE;
 	ret = WSAIoctl (sock, SIO_GET_EXTENSION_FUNCTION_POINTER, &transmit_file_guid, sizeof (GUID), &transmit_file, sizeof (LPFN_TRANSMITFILE), &output_bytes, NULL, NULL);
 	if (ret == 0) {
 		if (!transmit_file (sock, NULL, 0, 0, NULL, NULL, TF_DISCONNECT | (reuse ? TF_REUSE_SOCKET : 0))) {

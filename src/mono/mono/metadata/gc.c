@@ -322,7 +322,8 @@ mono_gc_run_finalize (void *obj, void *data)
 	MONO_PROFILER_RAISE (gc_finalizing_object, (o));
 
 #ifdef HOST_WASM
-	gpointer params[] = { NULL };
+	gpointer params [1];
+	params [0] = NULL;
 	mono_runtime_try_invoke (finalizer, o, params, &exc, error);
 #else
 	runtime_invoke (o, NULL, &exc, NULL);
