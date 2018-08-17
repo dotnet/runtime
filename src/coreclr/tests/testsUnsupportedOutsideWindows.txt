@@ -124,9 +124,6 @@ CoreMangLib/system/collections/generic/hashset/Regression_Dev10_609271/Regressio
 CoreMangLib/system/collections/generic/hashset/Regression_Dev10_624201/Regression_Dev10_624201.sh
 GC/Coverage/smalloom/smalloom.sh
 Interop/COM/NETClients/Primitives/NETClientPrimitives/NETClientPrimitives.sh
-Interop/MarshalAPI/GetNativeVariantForObject/GetNativeVariantForObject/GetNativeVariantForObject.sh
-Interop/MarshalAPI/GetObjectForNativeVariant/GetObjectForNativeVariant/GetObjectForNativeVariant.sh
-Interop/MarshalAPI/GetObjectsForNativeVariants/GetObjectsForNativeVariants/GetObjectsForNativeVariants.sh
 Interop/MarshalAPI/IUnknown/IUnknownTest/IUnknownTest.sh
 Interop/SizeConst/SizeConstTest/SizeConstTest.sh
 JIT/Directed/coverage/oldtests/callipinvoke/callipinvoke.sh
