@@ -47,6 +47,31 @@ typedef struct {
 /* must be at a power of 2 and >= 8 */
 #define MONO_ARCH_FRAME_ALIGNMENT 16
 
+#define MONO_ARCH_USE_FPSTACK FALSE
+
+// Does the ABI have a volatile non-parameter register, so tailcall
+// can pass context to generics or interfaces?
+#define MONO_ARCH_HAVE_VOLATILE_NON_PARAM_REGISTER 0
+
+#define MONO_ARCH_AOT_SUPPORTED 1
+#define MONO_ARCH_LLVM_SUPPORTED 1
+#define MONO_ARCH_GSHAREDVT_SUPPORTED 1
+#define MONO_ARCH_HAVE_FULL_AOT_TRAMPOLINES 1
+
+#define MONO_ARCH_EMULATE_FREM 1
+#define MONO_ARCH_FLOAT32_SUPPORTED 1
+
+//mini-codegen stubs - this doesn't do anything
+#define MONO_ARCH_CALLEE_REGS (1 << 0)
+#define MONO_ARCH_CALLEE_FREGS (1 << 1)
+#define MONO_ARCH_CALLEE_SAVED_FREGS (1 << 2)
+#define MONO_ARCH_CALLEE_SAVED_REGS (1 << 3)
+#define MONO_ARCH_INST_FIXED_REG(desc) FALSE
+#define MONO_ARCH_INST_IS_REGPAIR(desc) FALSE
+#define MONO_ARCH_INST_REGPAIR_REG2(desc,hreg1) (-1)
+#define MONO_ARCH_INST_SREG2_MASK(ins) 0
+
+
 #define MONO_ARCH_INTERPRETER_SUPPORTED 1
 #define MONO_ARCH_HAS_REGISTER_ICALL 1
 #define MONO_ARCH_HAVE_PATCH_CODE_NEW 1

@@ -10,13 +10,199 @@
 //XXX This is dirty, extend ee.h to support extracting info from MonoInterpFrameHandle
 #include <mono/mini/interp/interp-internals.h>
 
-#include <emscripten.h>
+#ifndef DISABLE_JIT
 
+// include "ir-emit.h"
+#include "cpu-wasm.h"
+
+gboolean
+mono_arch_have_fast_tls (void)
+{
+	return FALSE;
+}
+
+guint32
+mono_arch_get_patch_offset (guint8 *code)
+{
+	g_error ("mono_arch_get_patch_offset");
+	return 0;
+}
+gpointer
+mono_arch_ip_from_context (void *sigctx)
+{
+	g_error ("mono_arch_ip_from_context");
+}
+
+gboolean
+mono_arch_is_inst_imm (int opcode, int imm_opcode, gint64 imm)
+{
+	g_error ("mono_arch_is_inst_imm");
+	return TRUE;
+}
+
+void
+mono_arch_lowering_pass (MonoCompile *cfg, MonoBasicBlock *bb)
+{
+}
+
+gboolean
+mono_arch_opcode_supported (int opcode)
+{
+	return FALSE;
+}
+
+void
+mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
+{
+	g_error ("mono_arch_output_basic_block");
+}
+
+void
+mono_arch_peephole_pass_1 (MonoCompile *cfg, MonoBasicBlock *bb)
+{
+}
+
+void
+mono_arch_peephole_pass_2 (MonoCompile *cfg, MonoBasicBlock *bb)
+{
+}
+
+guint32
+mono_arch_regalloc_cost (MonoCompile *cfg, MonoMethodVar *vmv)
+{
+	return 0;
+}
+
+GList *
+mono_arch_get_allocatable_int_vars (MonoCompile *cfg)
+{
+	g_error ("mono_arch_get_allocatable_int_vars");
+}
+
+GList *
+mono_arch_get_global_int_regs (MonoCompile *cfg)
+{
+	g_error ("mono_arch_get_global_int_regs");
+}
+
+void
+mono_arch_allocate_vars (MonoCompile *cfg)
+{
+	g_error ("mono_arch_allocate_vars");
+}
+
+void
+mono_arch_create_vars (MonoCompile *cfg)
+{
+	g_error ("mono_arch_create_vars");
+}
+
+void
+mono_arch_emit_call (MonoCompile *cfg, MonoCallInst *call)
+{
+	g_error ("mono_arch_emit_call");
+}
+
+void
+mono_arch_emit_epilog (MonoCompile *cfg)
+{
+	g_error ("mono_arch_emit_epilog");
+}
+
+void
+mono_arch_emit_exceptions (MonoCompile *cfg)
+{
+	g_error ("mono_arch_emit_exceptions");
+}
+
+MonoInst*
+mono_arch_emit_inst_for_method (MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSignature *fsig, MonoInst **args)
+{
+	g_error ("mono_arch_emit_inst_for_method");
+	return NULL;
+}
+
+void
+mono_arch_emit_outarg_vt (MonoCompile *cfg, MonoInst *ins, MonoInst *src)
+{
+	g_error ("mono_arch_emit_outarg_vt");
+}
+
+guint8 *
+mono_arch_emit_prolog (MonoCompile *cfg)
+{
+	g_error ("mono_arch_emit_prolog");
+}
+
+void
+mono_arch_emit_setret (MonoCompile *cfg, MonoMethod *method, MonoInst *val)
+{
+	g_error ("mono_arch_emit_setret");
+}
+
+void
+mono_arch_flush_icache (guint8 *code, gint size)
+{
+}
+
+const char*
+mono_arch_fregname (int reg)
+{
+	return "freg0";
+}
+
+const char*
+mono_arch_regname (int reg)
+{
+	return "r0";
+}
+
+LLVMCallInfo*
+mono_arch_get_llvm_call_info (MonoCompile *cfg, MonoMethodSignature *sig)
+{
+	g_error ("mono_arch_get_llvm_call_info");
+}
+
+gboolean
+mono_arch_tailcall_supported (MonoCompile *cfg, MonoMethodSignature *caller_sig, MonoMethodSignature *callee_sig)
+{
+	g_error ("mono_arch_tailcall_supported");
+	return FALSE;
+}
+#endif
+
+int
+mono_arch_get_argument_info (MonoMethodSignature *csig, int param_count, MonoJitArgumentInfo *arg_info)
+{
+	g_error ("mono_arch_get_argument_info");
+}
+
+GSList*
+mono_arch_get_delegate_invoke_impls (void)
+{
+	g_error ("mono_arch_get_delegate_invoke_impls");
+}
+
+gpointer
+mono_arch_get_gsharedvt_call_info (gpointer addr, MonoMethodSignature *normal_sig, MonoMethodSignature *gsharedvt_sig, gboolean gsharedvt_in, gint32 vcall_offset, gboolean calli)
+{
+	g_error ("mono_arch_get_gsharedvt_call_info");
+	return NULL;
+}
+
+gpointer
+mono_arch_get_delegate_invoke_impl (MonoMethodSignature *sig, gboolean has_target)
+{
+	g_error ("mono_arch_get_delegate_invoke_impl");
+}
+
+#ifdef HOST_WASM
+#include <emscripten.h>
 //functions exported to be used by JS
 EMSCRIPTEN_KEEPALIVE void mono_set_timeout_exec (int id);
-
 //JS functions imported that we use
 extern void mono_set_timeout (int t, int d);
+#endif
 
 gpointer
 mono_arch_get_this_arg_from_call (mgreg_t *regs, guint8 *code)
@@ -102,20 +288,6 @@ mono_arch_cpu_optimizations (guint32 *exclude_mask)
 	return 0;
 }
 
-GSList*
-mono_arch_get_delegate_invoke_impls (void)
-{
-	g_error ("mono_arch_get_delegate_invoke_impls");
-	return NULL;
-}
-
-gpointer
-mono_arch_get_delegate_invoke_impl (MonoMethodSignature *sig, gboolean has_target)
-{
-	g_error ("mono_arch_get_delegate_invoke_impl");
-	return NULL;
-}
-
 mgreg_t
 mono_arch_context_get_int_reg (MonoContext *ctx, int reg)
 {
@@ -123,13 +295,7 @@ mono_arch_context_get_int_reg (MonoContext *ctx, int reg)
 	return 0;
 }
 
-int
-mono_arch_get_argument_info (MonoMethodSignature *csig, int param_count, MonoJitArgumentInfo *arg_info)
-{
-	g_error ("mono_arch_get_argument_info");
-	return 0;
-
-}
+#ifdef HOST_WASM
 
 void
 mono_runtime_setup_stat_profiler (void)
@@ -170,7 +336,6 @@ mono_thread_state_init_from_handle (MonoThreadUnwindState *tctx, MonoThreadInfo 
 	return FALSE;
 }
 
-
 EMSCRIPTEN_KEEPALIVE void
 mono_set_timeout_exec (int id)
 {
@@ -207,10 +372,14 @@ mono_wasm_set_timeout (int timeout, int id)
 	mono_set_timeout (timeout, id);
 }
 
+#endif
+
 void
 mono_arch_register_icall (void)
 {
+#ifdef HOST_WASM
 	mono_add_internal_call ("System.Threading.WasmRuntime::SetTimeout", mono_wasm_set_timeout);
+#endif
 }
 
 void
@@ -218,6 +387,8 @@ mono_arch_patch_code_new (MonoCompile *cfg, MonoDomain *domain, guint8 *code, Mo
 {
 	g_error ("mono_arch_patch_code_new");
 }
+
+#ifdef HOST_WASM
 
 /*
 The following functions don't belong here, but are due to laziness.
@@ -333,3 +504,4 @@ sem_timedwait (sem_t *sem, const struct timespec *abs_timeout)
 	return 0;
 	
 }
+#endif

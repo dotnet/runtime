@@ -26,7 +26,7 @@
 #define MONO_ABI_ALIGNOF(type) MONO_ALIGN_ ## type
 #define MONO_CURRENT_ABI_ALIGNOF_TYPEDEF(type) typedef struct { char c; type x; } Mono_Align_Struct_ ##type;
 #define MONO_CURRENT_ABI_ALIGNOF(type) ((int)G_STRUCT_OFFSET(Mono_Align_Struct_ ##type, x))
-#define MONO_ABI_SIZEOF(type) MONO_SIZEOF_ ## type
+#define MONO_ABI_SIZEOF(type) (MONO_STRUCT_SIZE (type))
 #define MONO_CURRENT_ABI_SIZEOF(type) ((int)sizeof(type))
 
 #undef DECL_OFFSET
@@ -35,8 +35,7 @@
 #define DECL_OFFSET2(struct,field,offset) MONO_OFFSET_ ## struct ## _ ## field = offset,
 #define DECL_ALIGN(type) MONO_ALIGN_ ##type = MONO_CURRENT_ABI_ALIGNOF (type),
 #define DECL_ALIGN2(type,size) MONO_ALIGN_ ##type = size,
-#define DECL_SIZE(type) MONO_SIZEOF_ ##type = MONO_CURRENT_ABI_SIZEOF (type),
-#define DECL_SIZE2(type,size) MONO_SIZEOF_ ##type = size,
+#define DECL_SIZE(type) MONO_SIZEOF_ ##type = -1,
 
 /* Needed by MONO_CURRENT_ABI_ALIGNOF */
 MONO_CURRENT_ABI_ALIGNOF_TYPEDEF(gint8)
@@ -53,11 +52,14 @@ enum {
 
 #ifdef USED_CROSS_COMPILER_OFFSETS
 #define MONO_STRUCT_OFFSET(struct,field) MONO_OFFSET_ ## struct ## _ ## field
+#define MONO_STRUCT_SIZE(struct) MONO_SIZEOF_ ## struct
 #else
 #if defined(HAS_CROSS_COMPILER_OFFSETS) || defined(MONO_CROSS_COMPILE)
 #define MONO_STRUCT_OFFSET(struct,field) (MONO_OFFSET_ ## struct ## _ ## field == -1, G_STRUCT_OFFSET (struct,field))
+#define MONO_STRUCT_SIZE(struct) (MONO_SIZEOF_ ## struct == -1, (int)sizeof(struct))
 #else
 #define MONO_STRUCT_OFFSET(struct,field) G_STRUCT_OFFSET (struct,field)
+#define MONO_STRUCT_SIZE(struct) ((int)sizeof(struct))
 #endif
 #endif
 

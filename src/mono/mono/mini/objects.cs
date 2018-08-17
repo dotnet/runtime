@@ -1389,6 +1389,7 @@ ncells ) {
 		return 1.4e-45f;
 	}
 
+#if !NO_BITCODE
 	[Category ("!BITCODE")] // bug #59953
 	public static int test_0_float_return_spill () {
 		// The return value of return_float () is spilled because of the
@@ -1397,6 +1398,7 @@ ncells ) {
 		float f = return_float ();
 		return (float)o == f ? 0 : 1;
 	}
+#endif
 
 	class R4Holder {
 		public static float pi = 3.14f;
