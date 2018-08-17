@@ -102,7 +102,7 @@ namespace R2RDump
                 syntax.DefineOption("gc", ref _gc, "Dump gcInfo and slot table");
                 syntax.DefineOption("sc", ref _sectionContents, "Dump section contents");
                 syntax.DefineOption("v|verbose", ref verbose, "Dump raw bytes, disassembly, unwindInfo, gcInfo and section contents");
-                syntax.DefineOption("diff", ref _diff, "Compare two R2R images (not yet implemented)");
+                syntax.DefineOption("diff", ref _diff, "Compare two R2R images");
                 syntax.DefineOption("ignoreSensitive", ref _ignoreSensitive, "Ignores sensitive properties in xml dump to avoid failing tests");
             });
 
@@ -393,6 +393,11 @@ namespace R2RDump
                 if (_inputFilenames.Count == 0)
                     throw new ArgumentException("Input filename must be specified (--in <file>)");
 
+                if (_diff && _inputFilenames.Count < 2)
+                    throw new ArgumentException("Need at least 2 input files in diff mode");
+
+                R2RReader previousReader = null;
+
                 foreach (string filename in _inputFilenames)
                 {
                     // parse the ReadyToRun image
@@ -412,8 +417,17 @@ namespace R2RDump
                         _dumper = new TextDumper(r2r, _writer, _raw, _header, _disasm, disassembler, _unwind, _gc, _sectionContents);
                     }
 
-                    // output the ReadyToRun info
-                    Dump(r2r);
+                    if (!_diff)
+                    {
+                        // output the ReadyToRun info
+                        Dump(r2r);
+                    }
+                    else if (previousReader != null)
+                    {
+                        new R2RDiff(previousReader, r2r, _writer).Run();
+                    }
+
+                    previousReader = r2r;
                 }
             }
             catch (Exception e)
