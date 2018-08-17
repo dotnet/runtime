@@ -13,6 +13,16 @@ namespace System.Data.SqlClient.ManualTesting.Tests
     {
         private const string COL_PROGRAM_NAME = "ProgramName";
         private const string COL_HOSTNAME = "HostName";
+        private static readonly string s_databaseName = "d_" + Guid.NewGuid().ToString().Replace('-', '_');
+        private static readonly string s_tableName = "Person";
+        private static readonly string s_connectionString = DataTestUtility.TcpConnStr;
+        private static readonly string s_dbConnectionString = new SqlConnectionStringBuilder(s_connectionString) { InitialCatalog = s_databaseName }.ConnectionString;
+        private static readonly string s_createDatabaseCmd = $"CREATE DATABASE {s_databaseName}";
+        private static readonly string s_createTableCmd = $"CREATE TABLE {s_tableName} (NAME NVARCHAR(40), AGE INT)";
+        private static readonly string s_alterDatabaseSingleCmd = $"ALTER DATABASE {s_databaseName} SET SINGLE_USER WITH ROLLBACK IMMEDIATE;";
+        private static readonly string s_alterDatabaseMultiCmd = $"ALTER DATABASE {s_databaseName} SET MULTI_USER WITH ROLLBACK IMMEDIATE;";
+        private static readonly string s_selectTableCmd = $"SELECT COUNT(*) FROM {s_tableName}";
+        private static readonly string s_dropDatabaseCmd = $"DROP DATABASE {s_databaseName}";
 
         [CheckConnStrSetupFact]
         public static void EnvironmentHostNameTest()
@@ -167,6 +177,36 @@ namespace System.Data.SqlClient.ManualTesting.Tests
                 _timeElapsed = totalTime / Convert.ToDouble(_numOfTry);
 
                 _doneEvent.Set();
+            }
+        }
+
+        [CheckConnStrSetupFact]
+        public static void ConnectionKilledTest()
+        {
+            try
+            {
+                // Setup Database and Table.
+                DataTestUtility.RunNonQuery(s_connectionString, s_createDatabaseCmd);
+                DataTestUtility.RunNonQuery(s_dbConnectionString, s_createTableCmd);
+
+                // Kill all the connections and set Database to SINGLE_USER Mode.
+                DataTestUtility.RunNonQuery(s_connectionString, s_alterDatabaseSingleCmd);
+                // Set Database back to MULTI_USER Mode
+                DataTestUtility.RunNonQuery(s_connectionString, s_alterDatabaseMultiCmd);
+
+                // Execute SELECT statement.
+                DataTestUtility.RunNonQuery(s_dbConnectionString, s_selectTableCmd);
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"Error: {ex.Message}");
+                Assert.Null(ex);
+            }
+            finally
+            {
+                // Kill all the connections, set Database to SINGLE_USER Mode and drop Database
+                DataTestUtility.RunNonQuery(s_connectionString, s_alterDatabaseSingleCmd);
+                DataTestUtility.RunNonQuery(s_connectionString, s_dropDatabaseCmd);
             }
         }
     }

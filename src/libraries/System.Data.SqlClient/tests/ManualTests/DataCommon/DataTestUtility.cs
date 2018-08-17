@@ -264,13 +264,11 @@ namespace System.Data.SqlClient.ManualTesting.Tests
         public static void RunNonQuery(string connectionString, string sql)
         {
             using (SqlConnection connection = new SqlConnection(connectionString))
+            using (SqlCommand command = connection.CreateCommand())
             {
                 connection.Open();
-                using (SqlCommand command = connection.CreateCommand())
-                {
-                    command.CommandText = sql;
-                    command.ExecuteNonQuery();
-                }
+                command.CommandText = sql;
+                command.ExecuteNonQuery();
             }
         }
 
