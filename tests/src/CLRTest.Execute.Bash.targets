@@ -81,11 +81,17 @@ then
   exit $(GCBashScriptExitCode)
 fi
       ]]></BashCLRTestEnvironmentCompatibilityCheck>
-      <BashCLRTestEnvironmentCompatibilityCheck Condition="'$(JitOptimizationSensitive)' == 'true'"><![CDATA[
+      <BashCLRTestEnvironmentCompatibilityCheck Condition="'$(JitOptimizationSensitive)' == 'true'">
+    <![CDATA[
 $(BashCLRTestEnvironmentCompatibilityCheck)
-if [[ ( ! -z "$COMPlus_JitStress" ) || ( ! -z "$COMPlus_JitStressRegs" ) || ( ! -z "$COMPlus_JITMinOpts" ) || ( ! -z "$COMPlus_TailcallStress" ) || ( ! -z "$COMPlus_EXPERIMENTAL_TieredCompilation" ) || ( ! -z "$COMPlus_TieredCompilation" ) ]]
+if [[ ( ! -z "$COMPlus_JitStress" ) || ( ! -z "$COMPlus_JitStressRegs" ) || ( ! -z "$COMPlus_JITMinOpts" ) || ( ! -z "$COMPlus_TailcallStress" ) ]]
 then
-  echo "SKIPPING EXECUTION BECAUSE ONE OR MORE OF (COMPlus_JitStress, COMPlus_JitStressRegs, COMPlus_JITMinOpts, COMPlus_TailcallStress, COMPlus_EXPERIMENTAL_TieredCompilation, COMPlus_TieredCompilation) IS SET"
+  echo "SKIPPING EXECUTION BECAUSE ONE OR MORE OF (COMPlus_JitStress, COMPlus_JitStressRegs, COMPlus_JITMinOpts, COMPlus_TailcallStress) IS SET"
+  exit $(GCBashScriptExitCode)
+fi
+if [[ "$COMPlus_TieredCompilation" != "0" ]]
+then
+  echo "SKIPPING EXECUTION BECAUSE COMPlus_TieredCompilation has not been disabled and this test is marked JitOptimizationSensitive"
   exit $(GCBashScriptExitCode)
 fi
       ]]></BashCLRTestEnvironmentCompatibilityCheck>

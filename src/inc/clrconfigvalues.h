@@ -651,8 +651,7 @@ RETAIL_CONFIG_DWORD_INFO(INTERNAL_HillClimbing_GainExponent,                    
 /// Tiered Compilation
 ///
 #ifdef FEATURE_TIERED_COMPILATION
-RETAIL_CONFIG_DWORD_INFO(EXTERNAL_TieredCompilation, W("TieredCompilation"), 0, "Enables tiered compilation")
-RETAIL_CONFIG_DWORD_INFO(UNSUPPORTED_LEGACY_TieredCompilation, W("EXPERIMENTAL_TieredCompilation"), 0, "Deprecated - Use COMPLUS_TieredCompilation")
+RETAIL_CONFIG_DWORD_INFO(EXTERNAL_TieredCompilation, W("TieredCompilation"), 1, "Enables tiered compilation")
 RETAIL_CONFIG_DWORD_INFO(UNSUPPORTED_TieredCompilation_Tier1CallCountThreshold, W("TieredCompilation_Tier1CallCountThreshold"), 30, "Number of times a method must be called after which it is promoted to tier 1.")
 RETAIL_CONFIG_DWORD_INFO(UNSUPPORTED_TieredCompilation_Tier1CallCountingDelayMs, W("TieredCompilation_Tier1CallCountingDelayMs"), 100, "A perpetual delay in milliseconds that is applied to tier 1 call counting and jitting, while there is tier 0 activity.")
 RETAIL_CONFIG_DWORD_INFO(UNSUPPORTED_TieredCompilation_Tier1DelaySingleProcMultiplier, W("TieredCompilation_Tier1DelaySingleProcMultiplier"), 10, "Multiplier for TieredCompilation_Tier1CallCountingDelayMs that is applied on a single-processor machine or when the process is affinitized to a single processor.")

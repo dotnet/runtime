@@ -84,6 +84,7 @@ if /i "%1" == "CoreFXTestsAll"        (set __CoreFXTests=true&set __CoreFXTestsR
 if /i "%1" == "CoreFXTestList"        (set __CoreFXTests=true&set __CoreFXTestList=%2&shift&shift&goto Arg_Loop)
 if /i "%1" == "runcrossgentests"      (set RunCrossGen=true&shift&goto Arg_Loop)
 if /i "%1" == "link"                  (set DoLink=true&set ILLINK=%2&shift&shift&goto Arg_Loop)
+REM tieredcompilation is on by default now, but setting this environment variable is harmless and I didn't want to break any automation that might be using it just yet
 if /i "%1" == "tieredcompilation"     (set COMPLUS_TieredCompilation=1&shift&goto Arg_Loop)
 if /i "%1" == "gcname"                (set COMPlus_GCName=%2&shift&shift&goto Arg_Loop)
 if /i "%1" == "timeout"               (set __TestTimeout=%2&shift&shift&goto Arg_Loop)
