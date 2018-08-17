@@ -537,15 +537,6 @@
         <ExcludeList Include="$(XunitTestBinBase)\GC\Stress\Framework\ReliabilityFramework\ReliabilityFramework.cmd">
             <Issue>needs triage</Issue>
         </ExcludeList>
-        <ExcludeList Include="$(XunitTestBinBase)\Interop\MarshalAPI\GetNativeVariantForObject\GetNativeVariantForObject\GetNativeVariantForObject.cmd">
-            <Issue>needs triage</Issue>
-        </ExcludeList>
-        <ExcludeList Include="$(XunitTestBinBase)\Interop\MarshalAPI\GetObjectForNativeVariant\GetObjectForNativeVariant\GetObjectForNativeVariant.cmd">
-            <Issue>needs triage</Issue>
-        </ExcludeList>
-        <ExcludeList Include="$(XunitTestBinBase)\Interop\MarshalAPI\GetObjectsForNativeVariants\GetObjectsForNativeVariants\GetObjectsForNativeVariants.cmd">
-            <Issue>needs triage</Issue>
-        </ExcludeList>
         <ExcludeList Include="$(XunitTestBinBase)\Interop\MarshalAPI\IUnknown\IUnknownTest\IUnknownTest.cmd">
             <Issue>needs triage</Issue>
         </ExcludeList>
