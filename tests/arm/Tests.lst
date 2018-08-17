@@ -2892,14 +2892,6 @@ MaxAllowedDurationSeconds=600
 Categories=EXPECTED_PASS;Pri1
 HostStyle=0
 
-[CopyInt32Array.cmd_363]
-RelativePath=Interop\MarshalAPI\Copy\CopyInt32Array\CopyInt32Array.cmd
-WorkingDir=Interop\MarshalAPI\Copy\CopyInt32Array
-Expected=0
-MaxAllowedDurationSeconds=600
-Categories=EXPECTED_PASS
-HostStyle=0
-
 [Generated528.cmd_364]
 RelativePath=Loader\classloader\TypeGeneratorTests\TypeGeneratorTest528\Generated528\Generated528.cmd
 WorkingDir=Loader\classloader\TypeGeneratorTests\TypeGeneratorTest528\Generated528
@@ -10940,14 +10932,6 @@ MaxAllowedDurationSeconds=600
 Categories=EXPECTED_PASS;Pri1
 HostStyle=0
 
-[ReadWriteInt64.cmd_1375]
-RelativePath=Interop\MarshalAPI\ReadWrite\ReadWriteInt64\ReadWriteInt64.cmd
-WorkingDir=Interop\MarshalAPI\ReadWrite\ReadWriteInt64
-Expected=0
-MaxAllowedDurationSeconds=600
-Categories=EXPECTED_PASS
-HostStyle=0
-
 [AutoConstructTrue.cmd_1376]
 RelativePath=baseservices\threading\events\EventWaitHandle\unit\AutoConstructTrue\AutoConstructTrue.cmd
 WorkingDir=baseservices\threading\events\EventWaitHandle\unit\AutoConstructTrue
@@ -12530,14 +12514,6 @@ WorkingDir=JIT\Methodical\Invoke\implicit\_il_relobjref
 Expected=0
 MaxAllowedDurationSeconds=600
 Categories=EXPECTED_PASS;Pri1
-HostStyle=0
-
-[CopyInt64Array.cmd_1577]
-RelativePath=Interop\MarshalAPI\Copy\CopyInt64Array\CopyInt64Array.cmd
-WorkingDir=Interop\MarshalAPI\Copy\CopyInt64Array
-Expected=0
-MaxAllowedDurationSeconds=600
-Categories=EXPECTED_PASS
 HostStyle=0
 
 [_il_dbgrefloc_o2.cmd_1578]
@@ -15812,14 +15788,6 @@ MaxAllowedDurationSeconds=600
 Categories=EXPECTED_PASS
 HostStyle=0
 
-[StringMarshalingTest.cmd_1988]
-RelativePath=Interop\MarshalAPI\String\StringMarshalingTest\StringMarshalingTest.cmd
-WorkingDir=Interop\MarshalAPI\String\StringMarshalingTest
-Expected=0
-MaxAllowedDurationSeconds=600
-Categories=EXPECTED_PASS;Pri1
-HostStyle=0
-
 [b433189.cmd_1989]
 RelativePath=JIT\Methodical\Coverage\b433189\b433189.cmd
 WorkingDir=JIT\Methodical\Coverage\b433189
@@ -16236,14 +16204,6 @@ MaxAllowedDurationSeconds=600
 Categories=EXPECTED_PASS;Pri1
 HostStyle=0
 
-[UnsafeAddrOfPinnedArrayElement.cmd_2041]
-RelativePath=Interop\MarshalAPI\UnsafeAddrOfPinnedArrayElement\UnsafeAddrOfPinnedArrayElement\UnsafeAddrOfPinnedArrayElement.cmd
-WorkingDir=Interop\MarshalAPI\UnsafeAddrOfPinnedArrayElement\UnsafeAddrOfPinnedArrayElement
-Expected=0
-MaxAllowedDurationSeconds=600
-Categories=EXPECTED_PASS;Pri1
-HostStyle=0
-
 [Test1535.cmd_2042]
 RelativePath=Regressions\coreclr\1535\Test1535\Test1535.cmd
 WorkingDir=Regressions\coreclr\1535\Test1535
@@ -16554,14 +16514,6 @@ WorkingDir=CoreMangLib\cti\system\sbyte\SByteIConvertibleToInt64
 Expected=0
 MaxAllowedDurationSeconds=600
 Categories=EXPECTED_PASS;Pri1
-HostStyle=0
-
-[ReadWriteByte.cmd_2081]
-RelativePath=Interop\MarshalAPI\ReadWrite\ReadWriteByte\ReadWriteByte.cmd
-WorkingDir=Interop\MarshalAPI\ReadWrite\ReadWriteByte
-Expected=0
-MaxAllowedDurationSeconds=600
-Categories=EXPECTED_PASS
 HostStyle=0
 
 [ThreadStartUInt.cmd_2082]
@@ -18466,14 +18418,6 @@ WorkingDir=JIT\IL_Conformance\Old\Conformance_Base\ble_u8
 Expected=0
 MaxAllowedDurationSeconds=600
 Categories=EXPECTED_PASS;Pri1
-HostStyle=0
-
-[GetNativeVariantForObject.cmd_2321]
-RelativePath=Interop\MarshalAPI\GetNativeVariantForObject\GetNativeVariantForObject\GetNativeVariantForObject.cmd
-WorkingDir=Interop\MarshalAPI\GetNativeVariantForObject\GetNativeVariantForObject
-Expected=0
-MaxAllowedDurationSeconds=600
-Categories=EXPECTED_PASS
 HostStyle=0
 
 [Generated156.cmd_2322]
@@ -30060,14 +30004,6 @@ MaxAllowedDurationSeconds=600
 Categories=EXPECTED_PASS;Pri1
 HostStyle=0
 
-[FunctionPtrTest.cmd_3775]
-RelativePath=Interop\MarshalAPI\FunctionPointer\FunctionPtrTest\FunctionPtrTest.cmd
-WorkingDir=Interop\MarshalAPI\FunctionPointer\FunctionPtrTest
-Expected=0
-MaxAllowedDurationSeconds=600
-Categories=EXPECTED_PASS
-HostStyle=0
-
 [ArrayIndexOf4.cmd_3776]
 RelativePath=CoreMangLib\cti\system\array\ArrayIndexOf4\ArrayIndexOf4.cmd
 WorkingDir=CoreMangLib\cti\system\array\ArrayIndexOf4
@@ -38940,14 +38876,6 @@ MaxAllowedDurationSeconds=600
 Categories=EXPECTED_PASS;Pri1
 HostStyle=0
 
-[ReadWriteObject.cmd_4886]
-RelativePath=Interop\MarshalAPI\ReadWrite\ReadWriteObject\ReadWriteObject.cmd
-WorkingDir=Interop\MarshalAPI\ReadWrite\ReadWriteObject
-Expected=0
-MaxAllowedDurationSeconds=600
-Categories=EXPECTED_PASS
-HostStyle=0
-
 [bgt_i4.cmd_4887]
 RelativePath=JIT\IL_Conformance\Old\Conformance_Base\bgt_i4\bgt_i4.cmd
 WorkingDir=JIT\IL_Conformance\Old\Conformance_Base\bgt_i4
@@ -39292,14 +39220,6 @@ MaxAllowedDurationSeconds=600
 Categories=EXPECTED_PASS;Pri1
 HostStyle=0
 
-[CopyByteArray.cmd_4930]
-RelativePath=Interop\MarshalAPI\Copy\CopyByteArray\CopyByteArray.cmd
-WorkingDir=Interop\MarshalAPI\Copy\CopyByteArray
-Expected=0
-MaxAllowedDurationSeconds=600
-Categories=EXPECTED_PASS
-HostStyle=0
-
 [GCSimulator_146.cmd_4931]
 RelativePath=GC\Scenarios\GCSimulator\GCSimulator_146\GCSimulator_146.cmd
 WorkingDir=GC\Scenarios\GCSimulator\GCSimulator_146
@@ -39402,14 +39322,6 @@ WorkingDir=JIT\IL_Conformance\Old\Base\ldarg_starg
 Expected=0
 MaxAllowedDurationSeconds=600
 Categories=EXPECTED_PASS;Pri1
-HostStyle=0
-
-[ReadWriteInt32.cmd_4944]
-RelativePath=Interop\MarshalAPI\ReadWrite\ReadWriteInt32\ReadWriteInt32.cmd
-WorkingDir=Interop\MarshalAPI\ReadWrite\ReadWriteInt32
-Expected=0
-MaxAllowedDurationSeconds=600
-Categories=EXPECTED_PASS
 HostStyle=0
 
 [5w1d-02_cs_do.cmd_4945]
@@ -40532,14 +40444,6 @@ MaxAllowedDurationSeconds=600
 Categories=EXPECTED_PASS;Pri1
 HostStyle=0
 
-[MarshalStructure.cmd_5085]
-RelativePath=Interop\MarshalAPI\MarshalStructure\MarshalStructure\MarshalStructure.cmd
-WorkingDir=Interop\MarshalAPI\MarshalStructure\MarshalStructure
-Expected=0
-MaxAllowedDurationSeconds=600
-Categories=EXPECTED_PASS
-HostStyle=0
-
 [_opt_relrefarg_s.cmd_5086]
 RelativePath=JIT\Methodical\explicit\basic\_opt_relrefarg_s\_opt_relrefarg_s.cmd
 WorkingDir=JIT\Methodical\explicit\basic\_opt_relrefarg_s
@@ -41290,14 +41194,6 @@ WorkingDir=GC\Scenarios\GCSimulator\GCSimulator_24
 Expected=0
 MaxAllowedDurationSeconds=600
 Categories=EXPECTED_PASS;Pri1
-HostStyle=0
-
-[GetExceptionForHR.cmd_5180]
-RelativePath=Interop\MarshalAPI\GetExceptionForHR\GetExceptionForHR\GetExceptionForHR.cmd
-WorkingDir=Interop\MarshalAPI\GetExceptionForHR\GetExceptionForHR
-Expected=0
-MaxAllowedDurationSeconds=600
-Categories=EXPECTED_PASS
 HostStyle=0
 
 [StringPadLeft2.cmd_5181]
@@ -43724,14 +43620,6 @@ MaxAllowedDurationSeconds=600
 Categories=EXPECTED_PASS;Pri1
 HostStyle=0
 
-[MarshalClassTests.cmd_5485]
-RelativePath=Interop\MarshalAPI\Miscellaneous\MarshalClassTests\MarshalClassTests.cmd
-WorkingDir=Interop\MarshalAPI\Miscellaneous\MarshalClassTests
-Expected=0
-MaxAllowedDurationSeconds=600
-Categories=EXPECTED_PASS
-HostStyle=0
-
 [hfa_sf2E_d.cmd_5486]
 RelativePath=JIT\jit64\hfa\main\testE\hfa_sf2E_d\hfa_sf2E_d.cmd
 WorkingDir=JIT\jit64\hfa\main\testE\hfa_sf2E_d
@@ -45354,14 +45242,6 @@ WorkingDir=baseservices\threading\events\EventWaitHandle\unit\ManualConstructTru
 Expected=0
 MaxAllowedDurationSeconds=600
 Categories=EXPECTED_PASS;Pri1
-HostStyle=0
-
-[CopyDoubleArray.cmd_5690]
-RelativePath=Interop\MarshalAPI\Copy\CopyDoubleArray\CopyDoubleArray.cmd
-WorkingDir=Interop\MarshalAPI\Copy\CopyDoubleArray
-Expected=0
-MaxAllowedDurationSeconds=600
-Categories=EXPECTED_PASS
 HostStyle=0
 
 [GCSimulator_173.cmd_5691]
@@ -49882,14 +49762,6 @@ WorkingDir=baseservices\exceptions\regressions\v4.0\640474\test640474
 Expected=0
 MaxAllowedDurationSeconds=600
 Categories=EXPECTED_PASS;Pri1
-HostStyle=0
-
-[GetObjectsForNativeVariants.cmd_6260]
-RelativePath=Interop\MarshalAPI\GetObjectsForNativeVariants\GetObjectsForNativeVariants\GetObjectsForNativeVariants.cmd
-WorkingDir=Interop\MarshalAPI\GetObjectsForNativeVariants\GetObjectsForNativeVariants
-Expected=0
-MaxAllowedDurationSeconds=600
-Categories=EXPECTED_PASS
 HostStyle=0
 
 [b49322.cmd_6261]
@@ -58572,14 +58444,6 @@ MaxAllowedDurationSeconds=600
 Categories=EXPECTED_PASS;Pri1
 HostStyle=0
 
-[GetObjectForNativeVariant.cmd_7352]
-RelativePath=Interop\MarshalAPI\GetObjectForNativeVariant\GetObjectForNativeVariant\GetObjectForNativeVariant.cmd
-WorkingDir=Interop\MarshalAPI\GetObjectForNativeVariant\GetObjectForNativeVariant
-Expected=0
-MaxAllowedDurationSeconds=600
-Categories=EXPECTED_PASS
-HostStyle=0
-
 [hfa_sd0B_d.cmd_7353]
 RelativePath=JIT\jit64\hfa\main\testB\hfa_sd0B_d\hfa_sd0B_d.cmd
 WorkingDir=JIT\jit64\hfa\main\testB\hfa_sd0B_d
@@ -60090,14 +59954,6 @@ WorkingDir=CoreMangLib\cti\system\mathf\MathFCosh
 Expected=0
 MaxAllowedDurationSeconds=600
 Categories=EXPECTED_PASS;Pri1
-HostStyle=0
-
-[CopySingleArray.cmd_7542]
-RelativePath=Interop\MarshalAPI\Copy\CopySingleArray\CopySingleArray.cmd
-WorkingDir=Interop\MarshalAPI\Copy\CopySingleArray
-Expected=0
-MaxAllowedDurationSeconds=600
-Categories=EXPECTED_PASS
 HostStyle=0
 
 [b72828.cmd_7543]
@@ -66764,14 +66620,6 @@ MaxAllowedDurationSeconds=600
 Categories=EXPECTED_PASS;Pri1
 HostStyle=0
 
-[OffsetOf.cmd_8381]
-RelativePath=Interop\MarshalAPI\OffsetOf\OffsetOf\OffsetOf.cmd
-WorkingDir=Interop\MarshalAPI\OffsetOf\OffsetOf
-Expected=0
-MaxAllowedDurationSeconds=600
-Categories=EXPECTED_PASS
-HostStyle=0
-
 [DblDivConst.cmd_8382]
 RelativePath=JIT\CodeGenBringUpTests\DblDivConst_ro\DblDivConst_ro.cmd
 WorkingDir=JIT\CodeGenBringUpTests\DblDivConst_ro
@@ -68890,14 +68738,6 @@ WorkingDir=baseservices\threading\mutex\openexisting\openmutexpos2
 Expected=0
 MaxAllowedDurationSeconds=600
 Categories=EXPECTED_PASS;Pri1
-HostStyle=0
-
-[CopyIntPtrArray.cmd_8647]
-RelativePath=Interop\MarshalAPI\Copy\CopyIntPtrArray\CopyIntPtrArray.cmd
-WorkingDir=Interop\MarshalAPI\Copy\CopyIntPtrArray
-Expected=0
-MaxAllowedDurationSeconds=600
-Categories=EXPECTED_PASS
 HostStyle=0
 
 [LVNumCnt1.cmd_8648]
@@ -74978,14 +74818,6 @@ WorkingDir=JIT\Generics\ConstrainedCall\vt3_cs_ro
 Expected=0
 MaxAllowedDurationSeconds=600
 Categories=EXPECTED_PASS;Pri1
-HostStyle=0
-
-[AutoLayoutStructure.cmd_9413]
-RelativePath=Interop\MarshalAPI\Miscellaneous\AutoLayoutStructure\AutoLayoutStructure.cmd
-WorkingDir=Interop\MarshalAPI\Miscellaneous\AutoLayoutStructure
-Expected=0
-MaxAllowedDurationSeconds=600
-Categories=EXPECTED_PASS
 HostStyle=0
 
 [b05784.cmd_9414]
@@ -81108,14 +80940,6 @@ MaxAllowedDurationSeconds=600
 Categories=EXPECTED_PASS;Pri1
 HostStyle=0
 
-[CopyCharArray.cmd_10188]
-RelativePath=Interop\MarshalAPI\Copy\CopyCharArray\CopyCharArray.cmd
-WorkingDir=Interop\MarshalAPI\Copy\CopyCharArray
-Expected=0
-MaxAllowedDurationSeconds=600
-Categories=EXPECTED_PASS
-HostStyle=0
-
 [NullableValue.cmd_10189]
 RelativePath=CoreMangLib\cti\system\nullable\NullableValue\NullableValue.cmd
 WorkingDir=CoreMangLib\cti\system\nullable\NullableValue
@@ -82058,14 +81882,6 @@ WorkingDir=JIT\jit64\hfa\main\testA\hfa_sf0A_r
 Expected=0
 MaxAllowedDurationSeconds=600
 Categories=EXPECTED_PASS;Pri1
-HostStyle=0
-
-[IUnknownTest.cmd_10308]
-RelativePath=Interop\MarshalAPI\IUnknown\IUnknownTest\IUnknownTest.cmd
-WorkingDir=Interop\MarshalAPI\IUnknown\IUnknownTest
-Expected=0
-MaxAllowedDurationSeconds=600
-Categories=EXPECTED_PASS
 HostStyle=0
 
 [OpCodesConv_U.cmd_10309]
@@ -83780,14 +83596,6 @@ MaxAllowedDurationSeconds=600
 Categories=EXPECTED_PASS;Pri1
 HostStyle=0
 
-[ReadWriteIntPtr.cmd_10525]
-RelativePath=Interop\MarshalAPI\ReadWrite\ReadWriteIntPtr\ReadWriteIntPtr.cmd
-WorkingDir=Interop\MarshalAPI\ReadWrite\ReadWriteIntPtr
-Expected=0
-MaxAllowedDurationSeconds=600
-Categories=EXPECTED_PASS
-HostStyle=0
-
 [b84958.cmd_10526]
 RelativePath=JIT\Regression\VS-ia64-JIT\M00\b84958\b84958\b84958.cmd
 WorkingDir=JIT\Regression\VS-ia64-JIT\M00\b84958\b84958
@@ -84762,14 +84570,6 @@ WorkingDir=JIT\Methodical\xxobj\sizeof\_speed_dbgsizeof64
 Expected=0
 MaxAllowedDurationSeconds=600
 Categories=EXPECTED_PASS;Pri1
-HostStyle=0
-
-[ReadWriteInt16.cmd_10648]
-RelativePath=Interop\MarshalAPI\ReadWrite\ReadWriteInt16\ReadWriteInt16.cmd
-WorkingDir=Interop\MarshalAPI\ReadWrite\ReadWriteInt16
-Expected=0
-MaxAllowedDurationSeconds=600
-Categories=EXPECTED_PASS
 HostStyle=0
 
 [_dbgexplicit7.cmd_10649]
@@ -89191,14 +88991,6 @@ HostStyle=0
 [callipinvoke.cmd_11205]
 RelativePath=JIT\Directed\coverage\oldtests\callipinvoke\callipinvoke.cmd
 WorkingDir=JIT\Directed\coverage\oldtests\callipinvoke
-Expected=0
-MaxAllowedDurationSeconds=600
-Categories=EXPECTED_PASS
-HostStyle=0
-
-[CopyInt16Array.cmd_11206]
-RelativePath=Interop\MarshalAPI\Copy\CopyInt16Array\CopyInt16Array.cmd
-WorkingDir=Interop\MarshalAPI\Copy\CopyInt16Array
 Expected=0
 MaxAllowedDurationSeconds=600
 Categories=EXPECTED_PASS
