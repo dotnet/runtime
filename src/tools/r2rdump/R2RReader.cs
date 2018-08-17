@@ -45,8 +45,16 @@ namespace R2RDump
 
     public class R2RReader
     {
-        private readonly PEReader _peReader;
-        private readonly MetadataReader _mdReader;
+        /// <summary>
+        /// Underlying PE image reader is used to access raw PE structures like header
+        /// or section list.
+        /// </summary>
+        public readonly PEReader PEReader;
+
+        /// <summary>
+        /// MetadataReader is used to access the MSIL metadata in the R2R file.
+        /// </summary>
+        public readonly MetadataReader MetadataReader;
 
         /// <summary>
         /// Byte array containing the ReadyToRun image
@@ -111,24 +119,24 @@ namespace R2RDump
             fixed (byte* p = Image)
             {
                 IntPtr ptr = (IntPtr)p;
-                _peReader = new PEReader(p, Image.Length);
+                PEReader = new PEReader(p, Image.Length);
 
-                IsR2R = ((_peReader.PEHeaders.CorHeader.Flags & CorFlags.ILLibrary) != 0);
+                IsR2R = ((PEReader.PEHeaders.CorHeader.Flags & CorFlags.ILLibrary) != 0);
                 if (!IsR2R)
                 {
                     throw new BadImageFormatException("The file is not a ReadyToRun image");
                 }
 
-                Machine = _peReader.PEHeaders.CoffHeader.Machine;
+                Machine = PEReader.PEHeaders.CoffHeader.Machine;
 				if (!Machine.IsDefined(typeof(Machine), Machine))
                 {
                     Machine = Machine.Amd64;
                     R2RDump.WriteWarning($"Invalid Machine: {Machine}");
                 }
-                ImageBase = _peReader.PEHeaders.PEHeader.ImageBase;
+                ImageBase = PEReader.PEHeaders.PEHeader.ImageBase;
 
                 // initialize R2RHeader
-                DirectoryEntry r2rHeaderDirectory = _peReader.PEHeaders.CorHeader.ManagedNativeHeaderDirectory;
+                DirectoryEntry r2rHeaderDirectory = PEReader.PEHeaders.CorHeader.ManagedNativeHeaderDirectory;
                 int r2rHeaderOffset = GetOffset(r2rHeaderDirectory.RelativeVirtualAddress);
                 R2RHeader = new R2RHeader(Image, r2rHeaderDirectory.RelativeVirtualAddress, r2rHeaderOffset);
                 if (r2rHeaderDirectory.Size != R2RHeader.Size)
@@ -136,9 +144,9 @@ namespace R2RDump
                     throw new BadImageFormatException("The calculated size of the R2RHeader doesn't match the size saved in the ManagedNativeHeaderDirectory");
                 }
 
-                if (_peReader.HasMetadata)
+                if (PEReader.HasMetadata)
                 {
-                    _mdReader = _peReader.GetMetadataReader();
+                    MetadataReader = PEReader.GetMetadataReader();
 
                     R2RMethods = new List<R2RMethod>();
                     if (R2RHeader.Sections.ContainsKey(R2RSection.SectionType.READYTORUN_SECTION_RUNTIME_FUNCTIONS))
@@ -200,7 +208,7 @@ namespace R2RDump
                     int runtimeFunctionId;
                     FixupCell[] fixups;
                     GetRuntimeFunctionIndexFromOffset(offset, out runtimeFunctionId, out fixups);
-                    R2RMethod method = new R2RMethod(R2RMethods.Count, _mdReader, rid, runtimeFunctionId, null, null, fixups);
+                    R2RMethod method = new R2RMethod(R2RMethods.Count, MetadataReader, rid, runtimeFunctionId, null, null, fixups);
 
                     if (method.EntryPointRuntimeFunctionId < 0 || method.EntryPointRuntimeFunctionId >= isEntryPoint.Length)
                     {
@@ -249,7 +257,7 @@ namespace R2RDump
                     int runtimeFunctionId;
                     FixupCell[] fixups;
                     GetRuntimeFunctionIndexFromOffset((int)curParser.Offset, out runtimeFunctionId, out fixups);
-                    R2RMethod method = new R2RMethod(R2RMethods.Count, _mdReader, rid, runtimeFunctionId, args, tokens, fixups);
+                    R2RMethod method = new R2RMethod(R2RMethods.Count, MetadataReader, rid, runtimeFunctionId, args, tokens, fixups);
                     if (method.EntryPointRuntimeFunctionId >= 0 && method.EntryPointRuntimeFunctionId < isEntryPoint.Length)
                     {
                         isEntryPoint[method.EntryPointRuntimeFunctionId] = true;
@@ -333,7 +341,7 @@ namespace R2RDump
                 uint rid = curParser.GetUnsigned();
                 rid = rid >> 1;
                 TypeDefinitionHandle typeDefHandle = MetadataTokens.TypeDefinitionHandle((int)rid);
-                AvailableTypes.Add(GetTypeDefFullName(_mdReader, typeDefHandle));
+                AvailableTypes.Add(GetTypeDefFullName(MetadataReader, typeDefHandle));
                 curParser = allEntriesEnum.GetNext();
             }
         }
@@ -440,12 +448,12 @@ namespace R2RDump
         /// <param name="rva">The relative virtual address</param>
         public int GetOffset(int rva)
         {
-            int index = _peReader.PEHeaders.GetContainingSectionIndex(rva);
+            int index = PEReader.PEHeaders.GetContainingSectionIndex(rva);
             if (index == -1)
             {
                 throw new BadImageFormatException("Failed to convert invalid RVA to offset: " + rva);
             }
-            SectionHeader containingSection = _peReader.PEHeaders.SectionHeaders[index];
+            SectionHeader containingSection = PEReader.PEHeaders.SectionHeaders[index];
             return rva - containingSection.VirtualAddress + containingSection.PointerToRawData;
         }
 
