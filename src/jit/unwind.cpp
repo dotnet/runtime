@@ -122,6 +122,10 @@ void Compiler::unwindGetFuncLocations(FuncInfoDsc*             func,
 
 void Compiler::createCfiCode(FuncInfoDsc* func, UCHAR codeOffset, UCHAR cfiOpcode, USHORT dwarfReg, INT offset)
 {
+#if defined(_TARGET_ARM_)
+    if (compGeneratingEpilog && unwindCfiEpilogFormed)
+        return;
+#endif
     CFI_CODE cfiEntry(codeOffset, cfiOpcode, dwarfReg, offset);
     func->cfiCodes->push_back(cfiEntry);
 }
@@ -153,7 +157,10 @@ void Compiler::unwindPushPopCFI(regNumber reg)
         // since it is pushed as a frame register.
         || (reg == REG_FPBASE)
 #endif // ETW_EBP_FRAMED
-#endif
+#endif // UNIX_AMD64_ABI
+#if defined(_TARGET_ARM_)
+        || (reg == REG_R11) || (reg == REG_LR) || (reg == REG_PC)
+#endif // _TARGET_ARM_
             )
     {
         createCfiCode(func, cbProlog, CFI_REL_OFFSET, mapRegNumToDwarfReg(reg));
