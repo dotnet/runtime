@@ -108,7 +108,7 @@ g_Framework_Assemblies = [
     'Microsoft.DotNet.InternalAbstractions.dll',
     'Microsoft.DotNet.ProjectModel.dll',
     'Microsoft.Extensions.DependencyModel.dll',
-#   'Microsoft.VisualBasic.dll', see https://github.com/dotnet/coreclr/issues/19370
+    'Microsoft.VisualBasic.dll',
     'Microsoft.Win32.Primitives.dll',
     'Microsoft.Win32.Registry.dll',
     'netstandard.dll',
