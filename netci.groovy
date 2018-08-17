@@ -3419,7 +3419,17 @@ ${runScript} \\
 
     if (doCoreFxTesting) {
         Utilities.addArchival(newJob, "${workspaceRelativeFxRootLinux}/bin/**/testResults.xml")
-        Utilities.addXUnitDotNETResults(newJob, "${workspaceRelativeFxRootLinux}/bin/**/testResults.xml")
+        if ((os == "Ubuntu") && (architecture == 'arm')) {
+            // We have a problem with the xunit plug-in, where it is consistently failing on Ubuntu arm32 test result uploading with this error:
+            //
+            //   [xUnit] [ERROR] - The plugin hasn't been performed correctly: remote file operation failed: /ssd/j/workspace/dotnet_coreclr/master/jitstress/arm_cross_checked_ubuntu_corefx_baseline_tst at hudson.remoting.Channel@3697f46d:JNLP4-connect connection from 131.107.159.149/131.107.159.149:58529: java.io.IOException: Remote call on JNLP4-connect connection from 131.107.159.149/131.107.159.149:58529 failed
+            //
+            // We haven't been able to identify the reason. So, do not add xunit parsing of the test data in this scenario.
+            // This is tracked by: https://github.com/dotnet/coreclr/issues/19447.
+        }
+        else {
+            Utilities.addXUnitDotNETResults(newJob, "${workspaceRelativeFxRootLinux}/bin/**/testResults.xml")
+        }
     }
     else {
         Utilities.addXUnitDotNETResults(newJob, '**/coreclrtests.xml')
