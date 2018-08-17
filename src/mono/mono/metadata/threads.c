@@ -6104,14 +6104,17 @@ mono_threads_summarize (MonoContext *ctx, gchar **out, MonoStackHash *hashes)
 			summarizing_thread = tid;
 			mono_threads_pthread_kill (info, SIGTERM);
 
-			// Number of seconds to give each dumping thread
-			int count = 4;
+			// Number of rounds of 40 milliseconds seconds to give each dumping thread
+			int count = 400;
 
 			while (old_num_summarized == num_threads_summarized && count > 0) {
-				sleep (1);
+				if (thread->state & (ThreadState_Unstarted | ThreadState_Aborted | ThreadState_Stopped))
+					break;
+
+				usleep (10);
 				mono_memory_barrier ();
 				const char *name = thread_summary_state_to_str (summarizing_thread_state);
-				MOSTLY_ASYNC_SAFE_PRINTF("Waiting for signalled thread %zx to collect stacktrace. Status: %s\n", tid, name);
+				MOSTLY_ASYNC_SAFE_PRINTF("Waiting for signalled thread %zx to collect stacktrace. Status: %s\n. Thread state: 0x%x\n", tid, name, thread->state);
 				count--;
 			}
 
