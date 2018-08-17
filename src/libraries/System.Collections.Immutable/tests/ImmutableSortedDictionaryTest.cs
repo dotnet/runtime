@@ -12,7 +12,7 @@ using Xunit;
 
 namespace System.Collections.Immutable.Tests
 {
-    public class ImmutableSortedDictionaryTest : ImmutableDictionaryTestBase
+    public partial class ImmutableSortedDictionaryTest : ImmutableDictionaryTestBase
     {
         private enum Operation
         {
@@ -524,11 +524,6 @@ namespace System.Collections.Immutable.Tests
         protected override IEqualityComparer<TValue> GetValueComparer<TKey, TValue>(IImmutableDictionary<TKey, TValue> dictionary)
         {
             return ((ImmutableSortedDictionary<TKey, TValue>)dictionary).ValueComparer;
-        }
-
-        internal override IBinaryTree GetRootNode<TKey, TValue>(IImmutableDictionary<TKey, TValue> dictionary)
-        {
-            return ((ImmutableSortedDictionary<TKey, TValue>)dictionary).Root;
         }
 
         protected void ContainsValueTestHelper<TKey, TValue>(ImmutableSortedDictionary<TKey, TValue> map, TKey key, TValue value)

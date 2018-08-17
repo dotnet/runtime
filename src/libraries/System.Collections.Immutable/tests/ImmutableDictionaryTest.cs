@@ -10,7 +10,7 @@ using Xunit;
 
 namespace System.Collections.Immutable.Tests
 {
-    public class ImmutableDictionaryTest : ImmutableDictionaryTestBase
+    public partial class ImmutableDictionaryTest : ImmutableDictionaryTestBase
     {
         [Fact]
         public void AddExistingKeySameValueTest()
@@ -79,13 +79,6 @@ namespace System.Collections.Immutable.Tests
         }
 
         [Fact]
-        public override void EmptyTest()
-        {
-            base.EmptyTest();
-            this.EmptyTestHelperHash(Empty<int, bool>(), 5);
-        }
-
-        [Fact]
         public void ContainsValueTest()
         {
             this.ContainsValueTestHelper(ImmutableDictionary<int, GenericParameterHelper>.Empty, 1, new GenericParameterHelper());
@@ -101,13 +94,6 @@ namespace System.Collections.Immutable.Tests
             }.ToImmutableDictionary();
             Assert.False(dictionary.ContainsValue("c"));
             Assert.False(dictionary.ContainsValue(null));
-        }
-
-        [Fact]
-        public void EnumeratorWithHashCollisionsTest()
-        {
-            var emptyMap = Empty<int, GenericParameterHelper>(new BadHasher<int>());
-            this.EnumeratorTestHelper(emptyMap);
         }
 
         [Fact]
@@ -412,11 +398,6 @@ namespace System.Collections.Immutable.Tests
             return ((ImmutableDictionary<TKey, TValue>)dictionary).ValueComparer;
         }
 
-        internal override IBinaryTree GetRootNode<TKey, TValue>(IImmutableDictionary<TKey, TValue> dictionary)
-        {
-            return ((ImmutableDictionary<TKey, TValue>)dictionary).Root;
-        }
-
         protected void ContainsValueTestHelper<TKey, TValue>(ImmutableDictionary<TKey, TValue> map, TKey key, TValue value)
         {
             Assert.False(map.ContainsValue(value));
@@ -426,11 +407,6 @@ namespace System.Collections.Immutable.Tests
         private static ImmutableDictionary<TKey, TValue> Empty<TKey, TValue>(IEqualityComparer<TKey> keyComparer = null, IEqualityComparer<TValue> valueComparer = null)
         {
             return ImmutableDictionary<TKey, TValue>.Empty.WithComparers(keyComparer, valueComparer);
-        }
-
-        private void EmptyTestHelperHash<TKey, TValue>(IImmutableDictionary<TKey, TValue> empty, TKey someKey)
-        {
-            Assert.Same(EqualityComparer<TKey>.Default, ((IHashKeyCollection<TKey>)empty).KeyComparer);
         }
 
         /// <summary>
