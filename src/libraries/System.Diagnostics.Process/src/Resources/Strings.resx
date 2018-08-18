@@ -243,8 +243,11 @@
   <data name="ProcessorAffinityNotSupported" xml:space="preserve">
     <value>Processor affinity for processes or threads is not supported on this platform.</value>
   </data>
-  <data name="ProcessStartIdentityNotSupported" xml:space="preserve">
-    <value>Starting a process with a different identity is not supported on this platform.</value>
+  <data name="ProcessStartWithPasswordAndDomainNotSupported" xml:space="preserve">
+    <value>Starting a process as another user with a specified password and domain is not supported on this platform.</value>
+  </data>
+  <data name="ProcessStartSingleFeatureNotSupported" xml:space="preserve">
+    <value>The {0} property is not supported on this platform.</value>
   </data>
   <data name="RUsageFailure" xml:space="preserve">
     <value>Failed to set or retrieve rusage information. See the error code for OS-specific error information.</value>
