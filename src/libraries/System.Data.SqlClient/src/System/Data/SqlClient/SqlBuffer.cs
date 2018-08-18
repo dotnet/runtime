@@ -14,7 +14,7 @@ using System.Runtime.InteropServices;
 
 namespace System.Data.SqlClient
 {
-    internal sealed partial class SqlBuffer
+    internal sealed class SqlBuffer
     {
         internal enum StorageType
         {
