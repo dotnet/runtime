@@ -113,7 +113,7 @@ g_Framework_Assemblies = [
     'Microsoft.Win32.Registry.dll',
     'netstandard.dll',
     'Newtonsoft.Json.dll',
-    'NuGet.Common.dll'
+    'NuGet.Common.dll',
     'NuGet.Configuration.dll',
     'NuGet.DependencyResolver.Core.dll',
     'NuGet.Frameworks.dll',
@@ -228,7 +228,6 @@ g_Framework_Assemblies = [
     'System.Runtime.InteropServices.dll',
     'System.Runtime.InteropServices.RuntimeInformation.dll',
     'System.Runtime.InteropServices.WindowsRuntime.dll',
-    'System.Runtime.Intrinsics.Experimental.dll',
     'System.Runtime.Loader.dll',
     'System.Runtime.Numerics.dll',
     'System.Runtime.Serialization.dll',
@@ -282,15 +281,7 @@ g_Framework_Assemblies = [
     'System.Xml.XPath.dll',
     'System.Xml.XPath.XDocument.dll',
     'TraceReloggerLib.dll',
-    'WindowsBase.dll',
-    'xunit.abstractions.dll',
-    'xunit.assert.dll',
-    'xunit.core.dll',
-    'xunit.execution.dotnet.dll',
-    'xunit.performance.core.dll',
-    'xunit.performance.execution.dll',
-    'xunit.performance.metrics.dll',
-    'xunit.runner.utility.dotnet.dll']
+    'WindowsBase.dll']
 
 class CrossGenRunner:
     def __init__(self, crossgen_executable_filename, no_logo=True):
