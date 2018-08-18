@@ -1196,17 +1196,11 @@ emit_volatile_load (EmitContext *ctx, int vreg)
 	MonoType *t;
 	LLVMValueRef v;
 
-#ifdef TARGET_ARM64
-	// FIXME: This hack is required because we pass the rgctx in a callee saved
+	// On arm64, we pass the rgctx in a callee saved
 	// register on arm64 (x15), and llvm might keep the value in that register
 	// even through the register is marked as 'reserved' inside llvm.
-	if (ctx->cfg->rgctx_var && ctx->cfg->rgctx_var->dreg == vreg)
-		v = mono_llvm_build_load (ctx->builder, ctx->addresses [vreg], "", TRUE);
-	else
-		v = LLVMBuildLoad (ctx->builder, ctx->addresses [vreg], "");
-#else
-	v = LLVMBuildLoad (ctx->builder, ctx->addresses [vreg], "");
-#endif
+
+	v = mono_llvm_build_load (ctx->builder, ctx->addresses [vreg], "", TRUE);
 	t = ctx->vreg_cli_types [vreg];
 	if (t && !t->byref) {
 		/* 
