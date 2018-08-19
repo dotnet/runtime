@@ -109,22 +109,22 @@ AllocatePalThread(CPalThread **ppThread)
     CPalThread *pThread = NULL;
     PAL_ERROR palError;
 
+    palError = CreateThreadData(&pThread);
+    if (NO_ERROR != palError)
+    {
+        goto exit;
+    }
+
 #if !HAVE_MACH_EXCEPTIONS
     // Ensure alternate stack for SIGSEGV handling. Our SIGSEGV handler is set to
     // run on an alternate stack and the stack needs to be allocated per thread.
-    if (!EnsureSignalAlternateStack())
+    if (!pThread->EnsureSignalAlternateStack())
     {
         ERROR("Cannot allocate alternate stack for SIGSEGV handler!\n");
         palError = ERROR_NOT_ENOUGH_MEMORY;
         goto exit;
     }
 #endif // !HAVE_MACH_EXCEPTIONS
-
-    palError = CreateThreadData(&pThread);
-    if (NO_ERROR != palError)
-    {
-        goto exit;
-    }
 
     HANDLE hThread;
     palError = CreateThreadObject(pThread, pThread, &hThread);
