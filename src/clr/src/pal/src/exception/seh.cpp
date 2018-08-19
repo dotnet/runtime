@@ -81,7 +81,7 @@ Return value :
 BOOL 
 SEHInitialize (CPalThread *pthrCurrent, DWORD flags)
 {
-    if (!SEHInitializeSignals(flags))
+    if (!SEHInitializeSignals(pthrCurrent, flags))
     {
         ERROR("SEHInitializeSignals failed!\n");
         SEHCleanup();
