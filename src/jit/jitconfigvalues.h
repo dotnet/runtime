@@ -113,6 +113,7 @@ CONFIG_INTEGER(JitSplitFunctionSize, W("JitSplitFunctionSize"), 0) // On ARM, us
 CONFIG_INTEGER(JitSsaStress, W("JitSsaStress"), 0) // Perturb order of processing of blocks in SSA; 0 = no stress; 1 =
                                                    // use method hash; * = supplied value as random hash
 CONFIG_INTEGER(JitStackChecks, W("JitStackChecks"), 0)
+CONFIG_STRING(JitStdOutFile, W("JitStdOutFile")) // If set, sends JIT's stdout output to this file.
 CONFIG_INTEGER(JitStress, W("JitStress"), 0) // Internal Jit stress mode: 0 = no stress, 2 = all stress, other = vary
                                              // stress based on a hash of the method and this value
 CONFIG_INTEGER(JitStressBBProf, W("JitStressBBProf"), 0)               // Internal Jit stress mode
