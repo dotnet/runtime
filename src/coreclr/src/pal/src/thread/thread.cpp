@@ -54,6 +54,7 @@ SET_DEFAULT_DEBUG_CHANNEL(THREAD); // some headers have code with asserts, so do
 #include <errno.h>
 #include <stddef.h>
 #include <sys/stat.h>
+#include <sys/mman.h>
 #if HAVE_MACH_THREADS
 #include <mach/mach.h>
 #endif // HAVE_MACH_THREADS
@@ -177,14 +178,14 @@ static void InternalEndCurrentThreadWrapper(void *arg)
        will lock its own critical section */
     LOADCallDllMain(DLL_THREAD_DETACH, NULL);
 
+#if !HAVE_MACH_EXCEPTIONS
+    pThread->FreeSignalAlternateStack();
+#endif // !HAVE_MACH_EXCEPTIONS
+
     // PAL_Leave will be called just before we release the thread reference
     // in InternalEndCurrentThread.
     InternalEndCurrentThread(pThread);
     pthread_setspecific(thObjKey, NULL);
-
-#if !HAVE_MACH_EXCEPTIONS
-    FreeSignalAlternateStack();
-#endif // !HAVE_MACH_EXCEPTIONS
 }
 
 /*++
@@ -1623,7 +1624,7 @@ CPalThread::ThreadEntry(
     }
 
 #if !HAVE_MACH_EXCEPTIONS
-    if (!EnsureSignalAlternateStack())
+    if (!pThread->EnsureSignalAlternateStack())
     {
         ASSERT("Cannot allocate alternate stack for SIGSEGV!\n");
         goto fail;
@@ -2390,6 +2391,114 @@ CPalThread::WaitForStartStatus(
 
     return m_fStartStatus;
 }
+
+#if !HAVE_MACH_EXCEPTIONS
+/*++
+Function :
+    EnsureSignalAlternateStack
+
+    Ensure that alternate stack for signal handling is allocated for the current thread
+
+Parameters :
+    None
+
+Return :
+    TRUE in case of a success, FALSE otherwise
+--*/
+BOOL 
+CPalThread::EnsureSignalAlternateStack()
+{
+    int st = 0;
+
+    if (g_registered_signal_handlers)
+    {
+        stack_t oss;
+
+        // Query the current alternate signal stack
+        st = sigaltstack(NULL, &oss);
+        if ((st == 0) && (oss.ss_flags == SS_DISABLE))
+        {
+            // There is no alternate stack for SIGSEGV handling installed yet so allocate one
+
+            // We include the size of the SignalHandlerWorkerReturnPoint in the alternate stack size since the 
+            // context contained in it is large and the SIGSTKSZ was not sufficient on ARM64 during testing.
+            int altStackSize = SIGSTKSZ + ALIGN_UP(sizeof(SignalHandlerWorkerReturnPoint), 16) + GetVirtualPageSize();
+#ifdef HAS_ASAN
+            // Asan also uses alternate stack so we increase its size on the SIGSTKSZ * 4 that enough for asan
+            // (see kAltStackSize in compiler-rt/lib/sanitizer_common/sanitizer_posix_libcdep.cc)
+            altStackSize += SIGSTKSZ * 4;
+#endif
+            altStackSize = ALIGN_UP(altStackSize, GetVirtualPageSize());
+            void* altStack = mmap(NULL, altStackSize, PROT_READ | PROT_WRITE, MAP_ANONYMOUS | MAP_STACK | MAP_PRIVATE, -1, 0);
+            if (altStack != MAP_FAILED)
+            {
+                // create a guard page for the alternate stack
+                st = mprotect(altStack, GetVirtualPageSize(), PROT_NONE);
+                if (st == 0)
+                {
+                    stack_t ss;
+                    ss.ss_sp = (char*)altStack;
+                    ss.ss_size = altStackSize;
+                    ss.ss_flags = 0;
+                    st = sigaltstack(&ss, NULL);
+                }
+
+                if (st == 0)
+                {
+                    m_alternateStack = altStack;
+                }
+                else 
+                {
+                    int st2 = munmap(altStack, altStackSize);
+                    _ASSERTE(st2 == 0);
+                }
+            }
+        }
+    }
+
+    return (st == 0);
+}
+
+/*++
+Function :
+    FreeSignalAlternateStack
+
+    Free alternate stack for signal handling
+
+Parameters :
+    None
+
+Return :
+    None
+--*/
+void 
+CPalThread::FreeSignalAlternateStack()
+{
+    void *altstack = m_alternateStack;
+    m_alternateStack = nullptr;
+
+    if (altstack != nullptr)
+    {
+        stack_t ss, oss;
+        // The man page for sigaltstack says that when the ss.ss_flags is set to SS_DISABLE,
+        // all other ss fields are ignored. However, MUSL implementation checks that the 
+        // ss_size is >= MINSIGSTKSZ even in this case.
+        ss.ss_size = MINSIGSTKSZ;
+        ss.ss_flags = SS_DISABLE;
+        int st = sigaltstack(&ss, &oss);
+        if ((st == 0) && (oss.ss_flags != SS_DISABLE))
+        {
+            // Make sure this altstack is this PAL's before freeing.
+            if (oss.ss_sp == altstack)
+            {
+                int st = munmap(oss.ss_sp, oss.ss_size);
+                _ASSERTE(st == 0);
+            }
+        }
+    }
+}
+
+#endif // !HAVE_MACH_EXCEPTIONS
 
 /* IncrementEndingThreadCount and DecrementEndingThreadCount are used
 to control a global counter that indicates if any threads are about to die.
