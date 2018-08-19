@@ -2,9 +2,8 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 //
-// This test was extracted from the corefx System.Numerics.Vectors tests,
-// and was failing with minOpts because a SIMD12 was being spilled using
-// a 16-byte load, but only a 12-byte location had been allocated.
+// GitHub19454: a zero length span was tripping up the jit when trying
+// to analyze a bounds check.
 
 using System;
 
