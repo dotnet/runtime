@@ -804,7 +804,7 @@ namespace System.Globalization
                     }
                 }
 
-                result.parsedTimeSpan._ticks = ticks;
+                result.parsedTimeSpan = new TimeSpan(ticks);
                 return true;
             }
 
@@ -932,7 +932,7 @@ namespace System.Globalization
                     }
                 }
 
-                result.parsedTimeSpan._ticks = ticks;
+                result.parsedTimeSpan = new TimeSpan(ticks);
                 return true;
             }
 
@@ -1058,7 +1058,7 @@ namespace System.Globalization
                     }
                 }
 
-                result.parsedTimeSpan._ticks = ticks;
+                result.parsedTimeSpan = new TimeSpan(ticks);
                 return true;
             }
 
@@ -1130,7 +1130,7 @@ namespace System.Globalization
                     }
                 }
 
-                result.parsedTimeSpan._ticks = ticks;
+                result.parsedTimeSpan = new TimeSpan(ticks);
                 return true;
             }
 
@@ -1200,7 +1200,7 @@ namespace System.Globalization
                     }
                 }
 
-                result.parsedTimeSpan._ticks = ticks;
+                result.parsedTimeSpan = new TimeSpan(ticks);
                 return true;
             }
 
@@ -1399,7 +1399,7 @@ namespace System.Globalization
                     ticks = -ticks;
                 }
 
-                result.parsedTimeSpan._ticks = ticks;
+                result.parsedTimeSpan = new TimeSpan(ticks);
                 return true;
             }
             else
@@ -1494,7 +1494,7 @@ namespace System.Globalization
 
             internal bool TryParse(ReadOnlySpan<char> input, ref TimeSpanResult result)
             {
-                result.parsedTimeSpan._ticks = 0;
+                result.parsedTimeSpan = default;
 
                 _str = input;
                 _len = input.Length;
@@ -1563,7 +1563,7 @@ namespace System.Globalization
                     return result.SetBadTimeSpanFailure();
                 }
 
-                result.parsedTimeSpan._ticks = time;
+                result.parsedTimeSpan = new TimeSpan(time);
                 return true;
             }
 
