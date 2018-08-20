@@ -7,14 +7,8 @@ namespace Mono.Linker.Tests.Cases.Expectations.Metadata
 	{
 		public SetupLinkerCoreActionAttribute (string action)
 		{
-			switch (action) {
-			case "link":
-			case "copy":
-			case "skip":
-				break;
-			default:
-				throw new ArgumentOutOfRangeException (nameof (action));
-			}
+			if (string.IsNullOrEmpty (action))
+				throw new ArgumentNullException (nameof (action));
 		}
 	}
 }
