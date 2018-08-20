@@ -7,11 +7,11 @@ using System.Diagnostics;
 
 namespace System.Runtime.Serialization
 {
-    public struct SerializationEntry
+    public readonly struct SerializationEntry
     {
-        private string _name;
-        private object _value;
-        private Type _type;
+        private readonly string _name;
+        private readonly object _value;
+        private readonly Type _type;
 
         internal SerializationEntry(string entryName, object entryValue, Type entryType)
         {
