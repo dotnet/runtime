@@ -21,8 +21,8 @@ namespace System.Numerics
     /* Note: The following patterns are used throughout the code here and are described here
     *
     * PATTERN:
-    *    if (typeof(T) == typeof(Int32)) { ... }
-    *    else if (typeof(T) == typeof(Single)) { ... }
+    *    if (typeof(T) == typeof(int)) { ... }
+    *    else if (typeof(T) == typeof(float)) { ... }
     * EXPLANATION:
     *    At runtime, each instantiation of Vector<T> will be type-specific, and each of these typeof blocks will be eliminated,
     *    as typeof(T) is a (JIT) compile-time constant for each instantiation. This design was chosen to eliminate any overhead from
@@ -119,7 +119,7 @@ namespace System.Numerics
 #>
             <#=GenerateIfStatementHeader(type)#>
             {
-                typeSizeInBytes = sizeof(<#=type.Name#>);
+                typeSizeInBytes = sizeof(<#=typeAliases[type]#>);
             }
 <#
       }
@@ -148,11 +148,11 @@ namespace System.Numerics
 #>
                 <#=GenerateIfStatementHeader(type)#>
                 {
-                    fixed (<#=type.Name#>* basePtr = &this.<#=GetRegisterFieldName(type, 0)#>)
+                    fixed (<#=typeAliases[type]#>* basePtr = &this.<#=GetRegisterFieldName(type, 0)#>)
                     {
                         for (int g = 0; g < Count; g++)
                         {
-                            *(basePtr + g) = (<#=type.Name#>)(object)value;
+                            *(basePtr + g) = (<#=typeAliases[type]#>)(object)value;
                         }
                     }
                 }
@@ -171,7 +171,7 @@ namespace System.Numerics
             for (int g = 0; g < totalSize / Marshal.SizeOf(type); g++)
             {
 #>
-                    <#=GetRegisterFieldName(type, g)#> = (<#=type.Name#>)(object)value;
+                    <#=GetRegisterFieldName(type, g)#> = (<#=typeAliases[type]#>)(object)value;
 <#
             }
 #>
@@ -212,11 +212,11 @@ namespace System.Numerics
 #>
                 <#=GenerateIfStatementHeader(type)#>
                 {
-                    fixed (<#=type.Name#>* basePtr = &this.<#=GetRegisterFieldName(type, 0)#>)
+                    fixed (<#=typeAliases[type]#>* basePtr = &this.<#=GetRegisterFieldName(type, 0)#>)
                     {
                         for (int g = 0; g < Count; g++)
                         {
-                            *(basePtr + g) = (<#=type.Name#>)(object)values[g + index];
+                            *(basePtr + g) = (<#=typeAliases[type]#>)(object)values[g + index];
                         }
                     }
                 }
@@ -231,13 +231,13 @@ namespace System.Numerics
 #>
                 <#=GenerateIfStatementHeader(type)#>
                 {
-                    fixed (<#=type.Name#>* basePtr = &this.<#=GetRegisterFieldName(type, 0)#>)
+                    fixed (<#=typeAliases[type]#>* basePtr = &this.<#=GetRegisterFieldName(type, 0)#>)
                     {
 <#
             for (int g = 0; g < GetNumFields(type, totalSize); g++)
             {
 #>
-                        *(basePtr + <#=g#>) = (<#=type.Name#>)(object)values[<#=g#> + index];
+                        *(basePtr + <#=g#>) = (<#=typeAliases[type]#>)(object)values[<#=g#> + index];
 <#
             }
 #>
@@ -263,9 +263,9 @@ namespace System.Numerics
 #>
             <#=GenerateIfStatementHeader(type)#>
             {
-                <#=type.Name#>* castedPtr = (<#=type.Name#>*)dataPointer;
+                <#=typeAliases[type]#>* castedPtr = (<#=typeAliases[type]#>*)dataPointer;
                 castedPtr += offset;
-                fixed (<#=type.Name#>* registerBase = &this.<#=GetRegisterFieldName(type, 0)#>)
+                fixed (<#=typeAliases[type]#>* registerBase = &this.<#=GetRegisterFieldName(type, 0)#>)
                 {
                     for (int g = 0; g < Count; g++)
                     {
@@ -356,12 +356,12 @@ namespace System.Numerics
 #>
                 <#=GenerateIfStatementHeader(type)#>
                 {
-                    <#=type.Name#>[] <#=type.Name.ToLowerInvariant()#>Array = (<#=type.Name#>[])(object)destination;
-                    fixed (<#=type.Name#>* destinationBase = <#=type.Name.ToLowerInvariant()#>Array)
+                    <#=typeAliases[type]#>[] <#=type.Name.ToLowerInvariant()#>Array = (<#=typeAliases[type]#>[])(object)destination;
+                    fixed (<#=typeAliases[type]#>* destinationBase = <#=type.Name.ToLowerInvariant()#>Array)
                     {
                         for (int g = 0; g < Count; g++)
                         {
-                            destinationBase[startIndex + g] = (<#=type.Name#>)(object)this[g];
+                            destinationBase[startIndex + g] = (<#=typeAliases[type]#>)(object)this[g];
                         }
                     }
                 }
@@ -376,8 +376,8 @@ namespace System.Numerics
 #>
                 <#=GenerateIfStatementHeader(type)#>
                 {
-                    <#=type.Name#>[] <#=type.Name.ToLowerInvariant()#>Array = (<#=type.Name#>[])(object)destination;
-                    fixed (<#=type.Name#>* destinationBase = <#=type.Name.ToLowerInvariant()#>Array)
+                    <#=typeAliases[type]#>[] <#=type.Name.ToLowerInvariant()#>Array = (<#=typeAliases[type]#>[])(object)destination;
+                    fixed (<#=typeAliases[type]#>* destinationBase = <#=type.Name.ToLowerInvariant()#>Array)
                     {
 <#
             for (int g = 0; g < GetNumFields(type, totalSize); g++)
@@ -412,7 +412,7 @@ namespace System.Numerics
 #>
                 <#=GenerateIfStatementHeader(type)#>
                 {
-                    fixed (<#=type.Name#>* basePtr = &this.<#=GetRegisterFieldName(type, 0)#>)
+                    fixed (<#=typeAliases[type]#>* basePtr = &this.<#=GetRegisterFieldName(type, 0)#>)
                     {
                         return (T)(object)*(basePtr + index);
                     }
@@ -518,7 +518,7 @@ namespace System.Numerics
                 {
                     for (int g = 0; g < Count; g++)
                     {
-                        hash = HashHelpers.Combine(hash, ((<#=type.Name#>)(object)this[g]).GetHashCode());
+                        hash = HashHelpers.Combine(hash, ((<#=typeAliases[type]#>)(object)this[g]).GetHashCode());
                     }
                     return hash;
                 }
@@ -619,10 +619,10 @@ namespace System.Numerics
 #>
                     <#=GenerateIfStatementHeader(type)#>
                     {
-                        <#=type.Name#>* dataPtr = stackalloc <#=type.Name#>[Count];
+                        <#=typeAliases[type]#>* dataPtr = stackalloc <#=typeAliases[type]#>[Count];
                         for (int g = 0; g < Count; g++)
                         {
-                            dataPtr[g] = (<#=type.Name#>)(object)ScalarAdd(left[g], right[g]);
+                            dataPtr[g] = (<#=typeAliases[type]#>)(object)ScalarAdd(left[g], right[g]);
                         }
                         return new Vector<T>(dataPtr);
                     }
@@ -646,7 +646,7 @@ namespace System.Numerics
                 for (int g = 0; g < GetNumFields(type, totalSize); g++)
                 {
 #>
-                        sum.<#= GetRegisterFieldName(type, g) #> = (<#=type.Name#>)(left.<#= GetRegisterFieldName(type, g) #> + right.<#= GetRegisterFieldName(type, g) #>);
+                        sum.<#= GetRegisterFieldName(type, g) #> = (<#=typeAliases[type]#>)(left.<#= GetRegisterFieldName(type, g) #> + right.<#= GetRegisterFieldName(type, g) #>);
 <#
                 }
 #>
@@ -676,10 +676,10 @@ namespace System.Numerics
 #>
                     <#=GenerateIfStatementHeader(type)#>
                     {
-                        <#=type.Name#>* dataPtr = stackalloc <#=type.Name#>[Count];
+                        <#=typeAliases[type]#>* dataPtr = stackalloc <#=typeAliases[type]#>[Count];
                         for (int g = 0; g < Count; g++)
                         {
-                            dataPtr[g] = (<#=type.Name#>)(object)ScalarSubtract(left[g], right[g]);
+                            dataPtr[g] = (<#=typeAliases[type]#>)(object)ScalarSubtract(left[g], right[g]);
                         }
                         return new Vector<T>(dataPtr);
                     }
@@ -703,7 +703,7 @@ namespace System.Numerics
                 for (int g = 0; g < GetNumFields(type, totalSize); g++)
                 {
 #>
-                        difference.<#= GetRegisterFieldName(type, g) #> = (<#=type.Name#>)(left.<#= GetRegisterFieldName(type, g) #> - right.<#= GetRegisterFieldName(type, g) #>);
+                        difference.<#= GetRegisterFieldName(type, g) #> = (<#=typeAliases[type]#>)(left.<#= GetRegisterFieldName(type, g) #> - right.<#= GetRegisterFieldName(type, g) #>);
 <#
                 }
 #>
@@ -734,10 +734,10 @@ namespace System.Numerics
 #>
                     <#=GenerateIfStatementHeader(type)#>
                     {
-                        <#=type.Name#>* dataPtr = stackalloc <#=type.Name#>[Count];
+                        <#=typeAliases[type]#>* dataPtr = stackalloc <#=typeAliases[type]#>[Count];
                         for (int g = 0; g < Count; g++)
                         {
-                            dataPtr[g] = (<#=type.Name#>)(object)ScalarMultiply(left[g], right[g]);
+                            dataPtr[g] = (<#=typeAliases[type]#>)(object)ScalarMultiply(left[g], right[g]);
                         }
                         return new Vector<T>(dataPtr);
                     }
@@ -761,7 +761,7 @@ namespace System.Numerics
                 for (int g = 0; g < GetNumFields(type, totalSize); g++)
                 {
 #>
-                        product.<#= GetRegisterFieldName(type, g) #> = (<#=type.Name#>)(left.<#= GetRegisterFieldName(type, g) #> * right.<#= GetRegisterFieldName(type, g) #>);
+                        product.<#= GetRegisterFieldName(type, g) #> = (<#=typeAliases[type]#>)(left.<#= GetRegisterFieldName(type, g) #> * right.<#= GetRegisterFieldName(type, g) #>);
 <#
                 }
 #>
@@ -801,7 +801,7 @@ namespace System.Numerics
                 for (int g = 0; g < GetNumFields(type, totalSize); g++)
                 {
 #>
-                        product.<#= GetRegisterFieldName(type, g) #> = (<#=type.Name#>)(value.<#= GetRegisterFieldName(type, g) #> * (<#=type.Name#>)(object)factor);
+                        product.<#= GetRegisterFieldName(type, g) #> = (<#=typeAliases[type]#>)(value.<#= GetRegisterFieldName(type, g) #> * (<#=typeAliases[type]#>)(object)factor);
 <#
                 }
 #>
@@ -841,7 +841,7 @@ namespace System.Numerics
                 for (int g = 0; g < GetNumFields(type, totalSize); g++)
                 {
 #>
-                        product.<#= GetRegisterFieldName(type, g) #> = (<#=type.Name#>)(value.<#= GetRegisterFieldName(type, g) #> * (<#=type.Name#>)(object)factor);
+                        product.<#= GetRegisterFieldName(type, g) #> = (<#=typeAliases[type]#>)(value.<#= GetRegisterFieldName(type, g) #> * (<#=typeAliases[type]#>)(object)factor);
 <#
                 }
 #>
@@ -872,10 +872,10 @@ namespace System.Numerics
 #>
                     <#=GenerateIfStatementHeader(type)#>
                     {
-                        <#=type.Name#>* dataPtr = stackalloc <#=type.Name#>[Count];
+                        <#=typeAliases[type]#>* dataPtr = stackalloc <#=typeAliases[type]#>[Count];
                         for (int g = 0; g < Count; g++)
                         {
-                            dataPtr[g] = (<#=type.Name#>)(object)ScalarDivide(left[g], right[g]);
+                            dataPtr[g] = (<#=typeAliases[type]#>)(object)ScalarDivide(left[g], right[g]);
                         }
                         return new Vector<T>(dataPtr);
                     }
@@ -899,7 +899,7 @@ namespace System.Numerics
                 for (int g = 0; g < GetNumFields(type, totalSize); g++)
                 {
 #>
-                        quotient.<#= GetRegisterFieldName(type, g) #> = (<#=type.Name#>)(left.<#= GetRegisterFieldName(type, g) #> / right.<#= GetRegisterFieldName(type, g) #>);
+                        quotient.<#= GetRegisterFieldName(type, g) #> = (<#=typeAliases[type]#>)(left.<#= GetRegisterFieldName(type, g) #> / right.<#= GetRegisterFieldName(type, g) #>);
 <#
                 }
 #>
@@ -938,18 +938,18 @@ namespace System.Numerics
             {
                 if (Vector.IsHardwareAccelerated)
                 {
-                    Int64* resultBase = &result.register.int64_0;
-                    Int64* leftBase = &left.register.int64_0;
-                    Int64* rightBase = &right.register.int64_0;
-                    for (int g = 0; g < Vector<Int64>.Count; g++)
+                    long* resultBase = &result.register.int64_0;
+                    long* leftBase = &left.register.int64_0;
+                    long* rightBase = &right.register.int64_0;
+                    for (int g = 0; g < Vector<long>.Count; g++)
                     {
                         resultBase[g] = leftBase[g] & rightBase[g];
                     }
                 }
                 else
                 {
-                    result.<#=GetRegisterFieldName(typeof(Int64), 0)#> = left.<#=GetRegisterFieldName(typeof(Int64), 0)#> & right.<#=GetRegisterFieldName(typeof(Int64), 0)#>;
-                    result.<#=GetRegisterFieldName(typeof(Int64), 1)#> = left.<#=GetRegisterFieldName(typeof(Int64), 1)#> & right.<#=GetRegisterFieldName(typeof(Int64), 1)#>;
+                    result.<#=GetRegisterFieldName(typeof(long), 0)#> = left.<#=GetRegisterFieldName(typeof(long), 0)#> & right.<#=GetRegisterFieldName(typeof(long), 0)#>;
+                    result.<#=GetRegisterFieldName(typeof(long), 1)#> = left.<#=GetRegisterFieldName(typeof(long), 1)#> & right.<#=GetRegisterFieldName(typeof(long), 1)#>;
                 }
             }
             return result;
@@ -969,18 +969,18 @@ namespace System.Numerics
             {
                 if (Vector.IsHardwareAccelerated)
                 {
-                    Int64* resultBase = &result.register.int64_0;
-                    Int64* leftBase = &left.register.int64_0;
-                    Int64* rightBase = &right.register.int64_0;
-                    for (int g = 0; g < Vector<Int64>.Count; g++)
+                    long* resultBase = &result.register.int64_0;
+                    long* leftBase = &left.register.int64_0;
+                    long* rightBase = &right.register.int64_0;
+                    for (int g = 0; g < Vector<long>.Count; g++)
                     {
                         resultBase[g] = leftBase[g] | rightBase[g];
                     }
                 }
                 else
                 {
-                    result.<#=GetRegisterFieldName(typeof(Int64), 0)#> = left.<#=GetRegisterFieldName(typeof(Int64), 0)#> | right.<#=GetRegisterFieldName(typeof(Int64), 0)#>;
-                    result.<#=GetRegisterFieldName(typeof(Int64), 1)#> = left.<#=GetRegisterFieldName(typeof(Int64), 1)#> | right.<#=GetRegisterFieldName(typeof(Int64), 1)#>;
+                    result.<#=GetRegisterFieldName(typeof(long), 0)#> = left.<#=GetRegisterFieldName(typeof(long), 0)#> | right.<#=GetRegisterFieldName(typeof(long), 0)#>;
+                    result.<#=GetRegisterFieldName(typeof(long), 1)#> = left.<#=GetRegisterFieldName(typeof(long), 1)#> | right.<#=GetRegisterFieldName(typeof(long), 1)#>;
                 }
             }
             return result;
@@ -1000,18 +1000,18 @@ namespace System.Numerics
             {
                 if (Vector.IsHardwareAccelerated)
                 {
-                    Int64* resultBase = &result.register.int64_0;
-                    Int64* leftBase = &left.register.int64_0;
-                    Int64* rightBase = &right.register.int64_0;
-                    for (int g = 0; g < Vector<Int64>.Count; g++)
+                    long* resultBase = &result.register.int64_0;
+                    long* leftBase = &left.register.int64_0;
+                    long* rightBase = &right.register.int64_0;
+                    for (int g = 0; g < Vector<long>.Count; g++)
                     {
                         resultBase[g] = leftBase[g] ^ rightBase[g];
                     }
                 }
                 else
                 {
-                    result.<#=GetRegisterFieldName(typeof(Int64), 0)#> = left.<#=GetRegisterFieldName(typeof(Int64), 0)#> ^ right.<#=GetRegisterFieldName(typeof(Int64), 0)#>;
-                    result.<#=GetRegisterFieldName(typeof(Int64), 1)#> = left.<#=GetRegisterFieldName(typeof(Int64), 1)#> ^ right.<#=GetRegisterFieldName(typeof(Int64), 1)#>;
+                    result.<#=GetRegisterFieldName(typeof(long), 0)#> = left.<#=GetRegisterFieldName(typeof(long), 0)#> ^ right.<#=GetRegisterFieldName(typeof(long), 0)#>;
+                    result.<#=GetRegisterFieldName(typeof(long), 1)#> = left.<#=GetRegisterFieldName(typeof(long), 1)#> ^ right.<#=GetRegisterFieldName(typeof(long), 1)#>;
                 }
             }
             return result;
@@ -1073,9 +1073,9 @@ namespace System.Numerics
         }
 #>
         [Intrinsic]
-        public static explicit operator Vector<<#=type.Name#>>(Vector<T> value)
+        public static explicit operator Vector<<#=typeAliases[type]#>>(Vector<T> value)
         {
-            return new Vector<<#=type.Name#>>(ref value.register);
+            return new Vector<<#=typeAliases[type]#>>(ref value.register);
         }
 
 <#
@@ -1095,10 +1095,10 @@ namespace System.Numerics
 #>
                 <#=GenerateIfStatementHeader(type)#>
                 {
-                    <#=type.Name#>* dataPtr = stackalloc <#=type.Name#>[Count];
+                    <#=typeAliases[type]#>* dataPtr = stackalloc <#=typeAliases[type]#>[Count];
                     for (int g = 0; g < Count; g++)
                     {
-                        dataPtr[g] = ScalarEquals(left[g], right[g]) ? ConstantHelper.Get<#=type.Name#>WithAllBitsSet() : (<#=type.Name#>)0;
+                        dataPtr[g] = ScalarEquals(left[g], right[g]) ? ConstantHelper.Get<#=type.Name#>WithAllBitsSet() : (<#=typeAliases[type]#>)0;
                     }
                     return new Vector<T>(dataPtr);
                 }
@@ -1122,7 +1122,7 @@ namespace System.Numerics
                 for (int g = 0; g < GetNumFields(type, totalSize); g++)
                 {
 #>
-                    <#= GetRegisterFieldName(type, g) #> = left.<#= GetRegisterFieldName(type, g) #> == right.<#= GetRegisterFieldName(type, g) #> ? ConstantHelper.Get<#=type.Name#>WithAllBitsSet() : (<#=type.Name#>)0;
+                    <#= GetRegisterFieldName(type, g) #> = left.<#= GetRegisterFieldName(type, g) #> == right.<#= GetRegisterFieldName(type, g) #> ? ConstantHelper.Get<#=type.Name#>WithAllBitsSet() : (<#=typeAliases[type]#>)0;
 <#
                 }
 #>
@@ -1149,10 +1149,10 @@ namespace System.Numerics
 #>
                 <#=GenerateIfStatementHeader(type)#>
                 {
-                    <#=type.Name#>* dataPtr = stackalloc <#=type.Name#>[Count];
+                    <#=typeAliases[type]#>* dataPtr = stackalloc <#=typeAliases[type]#>[Count];
                     for (int g = 0; g < Count; g++)
                     {
-                        dataPtr[g] = ScalarLessThan(left[g], right[g]) ? ConstantHelper.Get<#=type.Name#>WithAllBitsSet() : (<#=type.Name#>)0;
+                        dataPtr[g] = ScalarLessThan(left[g], right[g]) ? ConstantHelper.Get<#=type.Name#>WithAllBitsSet() : (<#=typeAliases[type]#>)0;
                     }
                     return new Vector<T>(dataPtr);
                 }
@@ -1176,7 +1176,7 @@ namespace System.Numerics
                 for (int g = 0; g < GetNumFields(type, totalSize); g++)
                 {
 #>
-                    <#= GetRegisterFieldName(type, g) #> = left.<#= GetRegisterFieldName(type, g) #> < right.<#= GetRegisterFieldName(type, g) #> ? ConstantHelper.Get<#=type.Name#>WithAllBitsSet() : (<#=type.Name#>)0;
+                    <#= GetRegisterFieldName(type, g) #> = left.<#= GetRegisterFieldName(type, g) #> < right.<#= GetRegisterFieldName(type, g) #> ? ConstantHelper.Get<#=type.Name#>WithAllBitsSet() : (<#=typeAliases[type]#>)0;
 <#
                 }
 #>
@@ -1203,10 +1203,10 @@ namespace System.Numerics
 #>
                 <#=GenerateIfStatementHeader(type)#>
                 {
-                    <#=type.Name#>* dataPtr = stackalloc <#=type.Name#>[Count];
+                    <#=typeAliases[type]#>* dataPtr = stackalloc <#=typeAliases[type]#>[Count];
                     for (int g = 0; g < Count; g++)
                     {
-                        dataPtr[g] = ScalarGreaterThan(left[g], right[g]) ? ConstantHelper.Get<#=type.Name#>WithAllBitsSet() : (<#=type.Name#>)0;
+                        dataPtr[g] = ScalarGreaterThan(left[g], right[g]) ? ConstantHelper.Get<#=type.Name#>WithAllBitsSet() : (<#=typeAliases[type]#>)0;
                     }
                     return new Vector<T>(dataPtr);
                 }
@@ -1230,7 +1230,7 @@ namespace System.Numerics
                 for (int g = 0; g < GetNumFields(type, totalSize); g++)
                 {
 #>
-                    <#= GetRegisterFieldName(type, g) #> = left.<#= GetRegisterFieldName(type, g) #> > right.<#= GetRegisterFieldName(type, g) #> ? ConstantHelper.Get<#=type.Name#>WithAllBitsSet() : (<#=type.Name#>)0;
+                    <#= GetRegisterFieldName(type, g) #> = left.<#= GetRegisterFieldName(type, g) #> > right.<#= GetRegisterFieldName(type, g) #> ? ConstantHelper.Get<#=type.Name#>WithAllBitsSet() : (<#=typeAliases[type]#>)0;
 <#
                 }
 #>
@@ -1291,10 +1291,10 @@ namespace System.Numerics
 #>
                 <#=GenerateIfStatementHeader(type, supportedTypes.Except(unsignedTypes))#>
                 {
-                    <#=type.Name#>* dataPtr = stackalloc <#=type.Name#>[Count];
+                    <#=typeAliases[type]#>* dataPtr = stackalloc <#=typeAliases[type]#>[Count];
                     for (int g = 0; g < Count; g++)
                     {
-                        dataPtr[g] = (<#=type.Name#>)(object)(Math.Abs((<#=type.Name#>)(object)value[g]));
+                        dataPtr[g] = (<#=typeAliases[type]#>)(object)(Math.Abs((<#=typeAliases[type]#>)(object)value[g]));
                     }
                     return new Vector<T>(dataPtr);
                 }
@@ -1318,7 +1318,7 @@ namespace System.Numerics
         for (int g = 0; g < GetNumFields(type, totalSize); g++)
         {
 #>
-                    value.<#=GetRegisterFieldName(type, g)#> = (<#=type.Name#>)(Math.Abs(value.<#=GetRegisterFieldName(type, g)#>));
+                    value.<#=GetRegisterFieldName(type, g)#> = (<#=typeAliases[type]#>)(Math.Abs(value.<#=GetRegisterFieldName(type, g)#>));
 <#
         }
 #>
@@ -1344,10 +1344,10 @@ namespace System.Numerics
 #>
                 <#=GenerateIfStatementHeader(type)#>
                 {
-                    <#=type.Name#>* dataPtr = stackalloc <#=type.Name#>[Count];
+                    <#=typeAliases[type]#>* dataPtr = stackalloc <#=typeAliases[type]#>[Count];
                     for (int g = 0; g < Count; g++)
                     {
-                        dataPtr[g] = ScalarLessThan(left[g], right[g]) ? (<#=type.Name#>)(object)left[g] : (<#=type.Name#>)(object)right[g];
+                        dataPtr[g] = ScalarLessThan(left[g], right[g]) ? (<#=typeAliases[type]#>)(object)left[g] : (<#=typeAliases[type]#>)(object)right[g];
                     }
                     return new Vector<T>(dataPtr);
                 }
@@ -1397,10 +1397,10 @@ namespace System.Numerics
 #>
                 <#=GenerateIfStatementHeader(type)#>
                 {
-                    <#=type.Name#>* dataPtr = stackalloc <#=type.Name#>[Count];
+                    <#=typeAliases[type]#>* dataPtr = stackalloc <#=typeAliases[type]#>[Count];
                     for (int g = 0; g < Count; g++)
                     {
-                        dataPtr[g] = ScalarGreaterThan(left[g], right[g]) ? (<#=type.Name#>)(object)left[g] : (<#=type.Name#>)(object)right[g];
+                        dataPtr[g] = ScalarGreaterThan(left[g], right[g]) ? (<#=typeAliases[type]#>)(object)left[g] : (<#=typeAliases[type]#>)(object)right[g];
                     }
                     return new Vector<T>(dataPtr);
                 }
@@ -1459,12 +1459,12 @@ namespace System.Numerics
     #>
                 <#=GenerateIfStatementHeader(type)#>
                 {
-                    <#=type.Name#> product = 0;
+                    <#=typeAliases[type]#> product = 0;
 <#
                 for (int g = 0; g < GetNumFields(type, totalSize); g++)
                 {
 #>
-                    product += (<#=type.Name#>)(left.<#=GetRegisterFieldName(type, g)#> * right.<#=GetRegisterFieldName(type, g)#>);
+                    product += (<#=typeAliases[type]#>)(left.<#=GetRegisterFieldName(type, g)#> * right.<#=GetRegisterFieldName(type, g)#>);
 <#
                 }
 #>
@@ -1490,10 +1490,10 @@ namespace System.Numerics
 #>
                 <#=GenerateIfStatementHeader(type)#>
                 {
-                    <#=type.Name#>* dataPtr = stackalloc <#=type.Name#>[Count];
+                    <#=typeAliases[type]#>* dataPtr = stackalloc <#=typeAliases[type]#>[Count];
                     for (int g = 0; g < Count; g++)
                     {
-                        dataPtr[g] = unchecked((<#=type.Name#>)Math.Sqrt((<#=type.Name#>)(object)value[g]));
+                        dataPtr[g] = unchecked((<#=typeAliases[type]#>)Math.Sqrt((<#=typeAliases[type]#>)(object)value[g]));
                     }
                     return new Vector<T>(dataPtr);
                 }
@@ -1516,7 +1516,7 @@ namespace System.Numerics
                 for (int g = 0; g < GetNumFields(type, totalSize); g++)
                 {
 #>
-                    value.<#=GetRegisterFieldName(type, g)#> = (<#=type.Name#>)Math.Sqrt(value.<#=GetRegisterFieldName(type, g)#>);
+                    value.<#=GetRegisterFieldName(type, g)#> = (<#=typeAliases[type]#>)Math.Sqrt(value.<#=GetRegisterFieldName(type, g)#>);
 <#
                 }
 #>
@@ -1542,7 +1542,7 @@ namespace System.Numerics
 #>
             <#=GenerateIfStatementHeader(type)#>
             {
-                return (<#=type.Name#>)(object)left == (<#=type.Name#>)(object)right;
+                return (<#=typeAliases[type]#>)(object)left == (<#=typeAliases[type]#>)(object)right;
             }
 <#
    }
@@ -1561,7 +1561,7 @@ namespace System.Numerics
 #>
             <#=GenerateIfStatementHeader(type)#>
             {
-                return (<#=type.Name#>)(object)left < (<#=type.Name#>)(object)right;
+                return (<#=typeAliases[type]#>)(object)left < (<#=typeAliases[type]#>)(object)right;
             }
 <#
    }
@@ -1580,7 +1580,7 @@ namespace System.Numerics
 #>
             <#=GenerateIfStatementHeader(type)#>
             {
-                return (<#=type.Name#>)(object)left > (<#=type.Name#>)(object)right;
+                return (<#=typeAliases[type]#>)(object)left > (<#=typeAliases[type]#>)(object)right;
             }
 <#
    }
@@ -1599,7 +1599,7 @@ namespace System.Numerics
 #>
             <#=GenerateIfStatementHeader(type)#>
             {
-                return (T)(object)unchecked((<#=type.Name#>)((<#=type.Name#>)(object)left + (<#=type.Name#>)(object)right));
+                return (T)(object)unchecked((<#=typeAliases[type]#>)((<#=typeAliases[type]#>)(object)left + (<#=typeAliases[type]#>)(object)right));
             }
 <#
    }
@@ -1618,7 +1618,7 @@ namespace System.Numerics
 #>
             <#=GenerateIfStatementHeader(type)#>
             {
-                return (T)(object)(<#=type.Name#>)((<#=type.Name#>)(object)left - (<#=type.Name#>)(object)right);
+                return (T)(object)(<#=typeAliases[type]#>)((<#=typeAliases[type]#>)(object)left - (<#=typeAliases[type]#>)(object)right);
             }
 <#
    }
@@ -1637,7 +1637,7 @@ namespace System.Numerics
 #>
             <#=GenerateIfStatementHeader(type)#>
             {
-                return (T)(object)unchecked((<#=type.Name#>)((<#=type.Name#>)(object)left * (<#=type.Name#>)(object)right));
+                return (T)(object)unchecked((<#=typeAliases[type]#>)((<#=typeAliases[type]#>)(object)left * (<#=typeAliases[type]#>)(object)right));
             }
 <#
    }
@@ -1656,7 +1656,7 @@ namespace System.Numerics
 #>
             <#=GenerateIfStatementHeader(type)#>
             {
-                return (T)(object)(<#=type.Name#>)((<#=type.Name#>)(object)left / (<#=type.Name#>)(object)right);
+                return (T)(object)(<#=typeAliases[type]#>)((<#=typeAliases[type]#>)(object)left / (<#=typeAliases[type]#>)(object)right);
             }
 <#
    }
@@ -1675,7 +1675,7 @@ namespace System.Numerics
 #>
             <#=GenerateIfStatementHeader(type)#>
             {
-                <#=type.Name#> value = 1;
+                <#=typeAliases[type]#> value = 1;
                 return (T)(object)value;
             }
 <#
@@ -1731,22 +1731,22 @@ namespace System.Numerics
         }
 #>
         [Intrinsic]
-        public static unsafe void Widen(Vector<<#=type.Name#>> source, out Vector<<#=widenTarget.Name#>> low, out Vector<<#=widenTarget.Name#>> high)
+        public static unsafe void Widen(Vector<<#=typeAliases[type]#>> source, out Vector<<#=typeAliases[widenTarget]#>> low, out Vector<<#=typeAliases[widenTarget]#>> high)
         {
-            int elements = Vector<<#=type.Name#>>.Count;
-            <#=widenTarget.Name#>* lowPtr = stackalloc <#=widenTarget.Name#>[elements / 2];
+            int elements = Vector<<#=typeAliases[type]#>>.Count;
+            <#=typeAliases[widenTarget]#>* lowPtr = stackalloc <#=typeAliases[widenTarget]#>[elements / 2];
             for (int i = 0; i < elements / 2; i++)
             {
-                lowPtr[i] = (<#=widenTarget.Name#>)source[i];
+                lowPtr[i] = (<#=typeAliases[widenTarget]#>)source[i];
             }
-            <#=widenTarget.Name#>* highPtr = stackalloc <#=widenTarget.Name#>[elements / 2];
+            <#=typeAliases[widenTarget]#>* highPtr = stackalloc <#=typeAliases[widenTarget]#>[elements / 2];
             for (int i = 0; i < elements / 2; i++)
             {
-                highPtr[i] = (<#=widenTarget.Name#>)source[i + (elements / 2)];
+                highPtr[i] = (<#=typeAliases[widenTarget]#>)source[i + (elements / 2)];
             }
 
-            low = new Vector<<#=widenTarget.Name#>>(lowPtr);
-            high = new Vector<<#=widenTarget.Name#>>(highPtr);
+            low = new Vector<<#=typeAliases[widenTarget]#>>(lowPtr);
+            high = new Vector<<#=typeAliases[widenTarget]#>>(highPtr);
         }
 
 <#
@@ -1771,22 +1771,22 @@ namespace System.Numerics
         }
 #>
         [Intrinsic]
-        public static unsafe Vector<<#=narrowTarget.Name#>> Narrow(Vector<<#=narrowSource.Name#>> low, Vector<<#=narrowSource.Name#>> high)
+        public static unsafe Vector<<#=typeAliases[narrowTarget]#>> Narrow(Vector<<#=typeAliases[narrowSource]#>> low, Vector<<#=typeAliases[narrowSource]#>> high)
         {
 		    unchecked
 		    {
-				int elements = Vector<<#=narrowTarget.Name#>>.Count;
-				<#=narrowTarget.Name#>* retPtr = stackalloc <#=narrowTarget.Name#>[elements];
+				int elements = Vector<<#=typeAliases[narrowTarget]#>>.Count;
+                <#=typeAliases[narrowTarget]#>* retPtr = stackalloc <#=typeAliases[narrowTarget]#>[elements];
 				for (int i = 0; i < elements / 2; i++)
 				{
-					retPtr[i] = (<#=narrowTarget.Name#>)low[i];
+					retPtr[i] = (<#=typeAliases[narrowTarget]#>)low[i];
 				}
 				for (int i = 0; i < elements / 2; i++)
 				{
-					retPtr[i + (elements / 2)] = (<#=narrowTarget.Name#>)high[i];
+					retPtr[i + (elements / 2)] = (<#=typeAliases[narrowTarget]#>)high[i];
 				}
 
-				return new Vector<<#=narrowTarget.Name#>>(retPtr);
+				return new Vector<<#=typeAliases[narrowTarget]#>>(retPtr);
 		    }
         }
 
@@ -1813,18 +1813,18 @@ namespace System.Numerics
         }
 #>
         [Intrinsic]
-        public static unsafe Vector<<#=pair.Value.Name#>> ConvertTo<#=pair.Value.Name#>(Vector<<#=pair.Key.Name#>> value)
+        public static unsafe Vector<<#=typeAliases[pair.Value]#>> ConvertTo<#=pair.Value.Name#>(Vector<<#=typeAliases[pair.Key]#>> value)
         {
 			unchecked
 			{
-				int elements = Vector<<#=pair.Value.Name#>>.Count;
-				<#=pair.Value.Name#>* retPtr = stackalloc <#=pair.Value.Name#>[elements];
+				int elements = Vector<<#=typeAliases[pair.Value]#>>.Count;
+                <#=typeAliases[pair.Value]#>* retPtr = stackalloc <#=typeAliases[pair.Value]#>[elements];
 				for (int i = 0; i < elements; i++)
 				{
-					retPtr[i] = (<#=pair.Value.Name#>)value[i];
+					retPtr[i] = (<#=typeAliases[pair.Value]#>)value[i];
 				}
 
-				return new Vector<<#=pair.Value.Name#>>(retPtr);
+				return new Vector<<#=typeAliases[pair.Value]#>>(retPtr);
 			}
         }
 
