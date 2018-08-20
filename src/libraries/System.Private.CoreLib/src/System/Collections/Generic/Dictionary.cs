@@ -1157,11 +1157,11 @@ namespace System.Collections.Generic
         public struct Enumerator : IEnumerator<KeyValuePair<TKey, TValue>>,
             IDictionaryEnumerator
         {
-            private Dictionary<TKey, TValue> _dictionary;
-            private int _version;
+            private readonly Dictionary<TKey, TValue> _dictionary;
+            private readonly int _version;
             private int _index;
             private KeyValuePair<TKey, TValue> _current;
-            private int _getEnumeratorRetType;  // What should Enumerator.Current return?
+            private readonly int _getEnumeratorRetType;  // What should Enumerator.Current return?
 
             internal const int DictEntry = 1;
             internal const int KeyValuePair = 2;
@@ -1392,9 +1392,9 @@ namespace System.Collections.Generic
 
             public struct Enumerator : IEnumerator<TKey>, IEnumerator
             {
-                private Dictionary<TKey, TValue> _dictionary;
+                private readonly Dictionary<TKey, TValue> _dictionary;
                 private int _index;
-                private int _version;
+                private readonly int _version;
                 private TKey _currentKey;
 
                 internal Enumerator(Dictionary<TKey, TValue> dictionary)
@@ -1575,9 +1575,9 @@ namespace System.Collections.Generic
 
             public struct Enumerator : IEnumerator<TValue>, IEnumerator
             {
-                private Dictionary<TKey, TValue> _dictionary;
+                private readonly Dictionary<TKey, TValue> _dictionary;
                 private int _index;
-                private int _version;
+                private readonly int _version;
                 private TValue _currentValue;
 
                 internal Enumerator(Dictionary<TKey, TValue> dictionary)
