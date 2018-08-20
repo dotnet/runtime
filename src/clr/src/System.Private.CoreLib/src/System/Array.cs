@@ -1889,11 +1889,11 @@ namespace System
 
 
         // Private value type used by the Sort methods.
-        private struct SorterObjectArray
+        private readonly struct SorterObjectArray
         {
-            private object[] keys;
-            private object[] items;
-            private IComparer comparer;
+            private readonly object[] keys;
+            private readonly object[] items;
+            private readonly IComparer comparer;
 
             internal SorterObjectArray(object[] keys, object[] items, IComparer comparer)
             {
@@ -2095,11 +2095,11 @@ namespace System
         // Private value used by the Sort methods for instances of Array.
         // This is slower than the one for Object[], since we can't use the JIT helpers
         // to access the elements.  We must use GetValue & SetValue.
-        private struct SorterGenericArray
+        private readonly struct SorterGenericArray
         {
-            private Array keys;
-            private Array items;
-            private IComparer comparer;
+            private readonly Array keys;
+            private readonly Array items;
+            private readonly IComparer comparer;
 
             internal SorterGenericArray(Array keys, Array items, IComparer comparer)
             {

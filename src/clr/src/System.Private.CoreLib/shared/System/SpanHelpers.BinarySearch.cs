@@ -62,11 +62,11 @@ namespace System
         }
 
         // Helper to allow sharing all code via IComparable<T> inlineable
-        internal struct ComparerComparable<T, TComparer> : IComparable<T>
+        internal readonly struct ComparerComparable<T, TComparer> : IComparable<T>
             where TComparer : IComparer<T>
         {
-            readonly T _value;
-            readonly TComparer _comparer;
+            private readonly T _value;
+            private readonly TComparer _comparer;
 
             public ComparerComparable(T value, TComparer comparer)
             {
