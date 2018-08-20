@@ -6225,16 +6225,10 @@ void Compiler::optPerformHoistExpr(GenTree* origExpr, unsigned lnum)
     BasicBlock* preHead = optLoopTable[lnum].lpHead;
     assert(preHead->bbJumpKind == BBJ_NONE);
 
-    // fgMorphTree and lvaRecursiveIncRefCounts requires that compCurBB be the block that contains
+    // fgMorphTree requires that compCurBB be the block that contains
     // (or in this case, will contain) the expression.
     compCurBB = preHead;
-
-    // Increment the ref counts of any local vars appearing in "hoist".
-    // Note that we need to do this before fgMorphTree() as fgMorph() could constant
-    // fold away some of the lcl vars referenced by "hoist".
-    lvaRecursiveIncRefCounts(hoist);
-
-    hoist = fgMorphTree(hoist);
+    hoist     = fgMorphTree(hoist);
 
     GenTree* hoistStmt = gtNewStmt(hoist);
     hoistStmt->gtFlags |= GTF_STMT_CMPADD;
@@ -7937,32 +7931,6 @@ Compiler::fgWalkResult Compiler::optRemoveTreeVisitor(GenTree** pTree, fgWalkDat
         }
     }
 
-    // This node is being removed from the graph of GenTree*
-
-    // Look for any local variable references
-
-    if (tree->gtOper == GT_LCL_VAR && comp->lvaLocalVarRefCounted())
-    {
-        unsigned   lclNum;
-        LclVarDsc* varDsc;
-
-        /* This variable ref is going away, decrease its ref counts */
-
-        lclNum = tree->gtLclVarCommon.gtLclNum;
-        assert(lclNum < comp->lvaCount);
-        varDsc = comp->lvaTable + lclNum;
-
-        // make sure it's been initialized
-        assert(comp->compCurBB != nullptr);
-        assert(comp->compCurBB->bbWeight <= BB_MAX_WEIGHT);
-
-        /* Decrement its lvRefCnt and lvRefCntWtd */
-
-        // Use getBBWeight to determine the proper block weight.
-        // This impacts the block weights when we have IBC data.
-        varDsc->decRefCnts(comp->compCurBB->getBBWeight(comp), comp);
-    }
-
     return WALK_CONTINUE;
 }
 
@@ -8783,10 +8751,6 @@ void Compiler::optOptimizeBoolsGcStress(BasicBlock* condBlock)
     }
 
     GenTree* comparandClone = gtCloneExpr(comparand);
-
-    // Bump up the ref-counts of any variables in 'comparandClone'
-    compCurBB = condBlock;
-    IncLclVarRefCountsVisitor::WalkTree(this, comparandClone);
 
     noway_assert(relop->gtOp.gtOp1 == comparand);
     genTreeOps oper   = compStressCompile(STRESS_OPT_BOOLS_GC, 50) ? GT_OR : GT_AND;

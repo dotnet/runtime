@@ -335,17 +335,18 @@ void Compiler::raMarkStkVars()
             /*
               For Debug Code, we have to reserve space even if the variable is never
               in scope. We will also need to initialize it if it is a GC var.
-              So we set lvMustInit and artifically bump up the ref-cnt.
+              So we set lvMustInit and verify it has a nonzero ref-cnt.
              */
 
             if (opts.compDbgCode && !stkFixedArgInVarArgs && lclNum < info.compLocalsCount)
             {
-                needSlot |= true;
-
-                if (lvaTypeIsGC(lclNum))
+                if (varDsc->lvRefCnt() == 0)
                 {
-                    varDsc->setLvRefCnt(1);
+                    assert(!"unreferenced local in debug codegen");
+                    varDsc->lvImplicitlyReferenced = 1;
                 }
+
+                needSlot |= true;
 
                 if (!varDsc->lvIsParam)
                 {

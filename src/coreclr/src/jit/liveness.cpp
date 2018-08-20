@@ -134,7 +134,6 @@ void Compiler::fgLocalVarLiveness()
 
     // Init liveness data structures.
     fgLocalVarLivenessInit();
-    assert(lvaSortAgain == false); // Set to false by lvaSortOnly()
 
     EndPhase(PHASE_LCLVARLIVENESS_INIT);
 
@@ -157,25 +156,18 @@ void Compiler::fgLocalVarLiveness()
         fgInterBlockLocalVarLiveness();
     } while (fgStmtRemoved && fgLocalVarLivenessChanged);
 
-    // If we removed any dead code we will have set 'lvaSortAgain' via decRefCnts
-    if (lvaSortAgain)
-    {
-        JITDUMP("In fgLocalVarLiveness, setting lvaSortAgain back to false (set during dead-code removal)\n");
-        lvaSortAgain = false; // We don't re-Sort because we just performed LclVar liveness.
-    }
-
     EndPhase(PHASE_LCLVARLIVENESS_INTERBLOCK);
 }
 
 /*****************************************************************************/
 void Compiler::fgLocalVarLivenessInit()
 {
-    // If necessary, re-sort the variable table by ref-count...before creating any varsets using this sorting.
-    if (lvaSortAgain)
+    JITDUMP("In fgLocalVarLivenessInit\n");
+
+    // Sort locals first, if we're optimizing
+    if (!opts.MinOpts() && !opts.compDbgCode)
     {
-        JITDUMP("In fgLocalVarLivenessInit, sorting locals\n");
         lvaSortByRefCount();
-        assert(lvaSortAgain == false); // Set to false by lvaSortOnly()
     }
 
     // We mark a lcl as must-init in a first pass of local variable
@@ -1025,10 +1017,7 @@ void Compiler::fgExtendDbgLifetimes()
                 {
                     printf("Created zero-init of V%02u in BB%02u\n", varNum, block->bbNum);
                 }
-#endif // DEBUG
-
-                varDsc->incRefCnts(block->getBBWeight(this), this);
-
+#endif                                         // DEBUG
                 block->bbFlags |= BBF_CHANGED; // indicates that the contents of the block have changed.
             }
 
@@ -1888,8 +1877,6 @@ void Compiler::fgComputeLifeLIR(VARSET_TP& life, BasicBlock* block, VARSET_VALAR
                         // Remove the store. DCE will iteratively clean up any ununsed operands.
                         lclVarNode->gtOp1->SetUnusedValue();
 
-                        lvaDecRefCnts(block, node);
-
                         // If the store is marked as a late argument, it is referenced by a call. Instead of removing
                         // it, bash it to a NOP.
                         if ((node->gtFlags & GTF_LATE_ARG) != 0)
@@ -2192,7 +2179,6 @@ bool Compiler::fgRemoveDeadStore(GenTree**        pTree,
                         printf("\n");
                     }
 #endif // DEBUG
-                    fgUpdateRefCntForExtract(asgNode, sideEffList);
 
                     /* Replace the assignment statement with the list of side effects */
                     noway_assert(sideEffList->gtOper != GT_STMT);
@@ -2285,7 +2271,6 @@ bool Compiler::fgRemoveDeadStore(GenTree**        pTree,
 #endif // DEBUG
                 if (sideEffList->gtOper == asgNode->gtOper)
                 {
-                    fgUpdateRefCntForExtract(asgNode, sideEffList);
 #ifdef DEBUG
                     *treeModf = true;
 #endif // DEBUG
@@ -2295,7 +2280,6 @@ bool Compiler::fgRemoveDeadStore(GenTree**        pTree,
                 }
                 else
                 {
-                    fgUpdateRefCntForExtract(asgNode, sideEffList);
 #ifdef DEBUG
                     *treeModf = true;
 #endif // DEBUG
@@ -2330,11 +2314,7 @@ bool Compiler::fgRemoveDeadStore(GenTree**        pTree,
                     printf("\n");
                 }
 #endif // DEBUG
-                /* No side effects - Remove the interior statement */
-                fgUpdateRefCntForExtract(asgNode, nullptr);
-
-                /* Change the assignment to a GT_NOP node */
-
+                /* No side effects - Change the assignment to a GT_NOP node */
                 asgNode->gtBashToNOP();
 
 #ifdef DEBUG

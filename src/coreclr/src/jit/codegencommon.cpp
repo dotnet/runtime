@@ -3668,7 +3668,12 @@ void CodeGen::genFnPrologCalleeRegArgs(regNumber xtraReg, bool* pXtraRegClobbere
             {
                 if (varDsc->lvTrackedNonStruct())
                 {
-                    noway_assert(!VarSetOps::IsMember(compiler, compiler->fgFirstBB->bbLiveIn, varDsc->lvVarIndex));
+                    // We may now see some tracked locals with zero refs.
+                    // See Lowering::DoPhase. Tolerate these.
+                    if (varDsc->lvRefCnt() > 0)
+                    {
+                        noway_assert(!VarSetOps::IsMember(compiler, compiler->fgFirstBB->bbLiveIn, varDsc->lvVarIndex));
+                    }
                 }
                 else
                 {

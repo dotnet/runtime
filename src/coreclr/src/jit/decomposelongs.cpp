@@ -141,10 +141,8 @@ GenTree* DecomposeLongs::DecomposeNode(GenTree* tree)
                 m_compiler->gtDispTreeRange(Range(), tree);
             }
 #endif // DEBUG
-            m_compiler->lvaDecRefCnts(tree);
             unsigned loVarNum = varDsc->lvFieldLclStart;
             tree->AsLclVarCommon()->SetLclNum(loVarNum);
-            m_compiler->lvaIncRefCnts(tree);
             return tree->gtNext;
         }
     }
@@ -343,13 +341,11 @@ GenTree* DecomposeLongs::DecomposeLclVar(LIR::Use& use)
     assert(use.IsInitialized());
     assert(use.Def()->OperGet() == GT_LCL_VAR);
 
-    GenTree*   tree   = use.Def();
-    unsigned   varNum = tree->AsLclVarCommon()->gtLclNum;
-    LclVarDsc* varDsc = m_compiler->lvaTable + varNum;
-    m_compiler->lvaDecRefCnts(tree);
-
-    GenTree* loResult = tree;
-    loResult->gtType  = TYP_INT;
+    GenTree*   tree     = use.Def();
+    unsigned   varNum   = tree->AsLclVarCommon()->gtLclNum;
+    LclVarDsc* varDsc   = m_compiler->lvaTable + varNum;
+    GenTree*   loResult = tree;
+    loResult->gtType    = TYP_INT;
 
     GenTree* hiResult = m_compiler->gtNewLclLNode(varNum, TYP_INT);
     Range().InsertAfter(loResult, hiResult);
@@ -372,9 +368,6 @@ GenTree* DecomposeLongs::DecomposeLclVar(LIR::Use& use)
         hiResult->AsLclFld()->gtLclOffs  = 4;
         hiResult->AsLclFld()->gtFieldSeq = FieldSeqStore::NotAField();
     }
-
-    m_compiler->lvaIncRefCnts(loResult);
-    m_compiler->lvaIncRefCnts(hiResult);
 
     return FinalizeDecomposition(use, loResult, hiResult, hiResult);
 }
@@ -399,8 +392,6 @@ GenTree* DecomposeLongs::DecomposeLclFld(LIR::Use& use)
 
     GenTree* hiResult = m_compiler->gtNewLclFldNode(loResult->gtLclNum, TYP_INT, loResult->gtLclOffs + 4);
     Range().InsertAfter(loResult, hiResult);
-
-    m_compiler->lvaIncRefCnts(hiResult);
 
     return FinalizeDecomposition(use, loResult, hiResult, hiResult);
 }
@@ -472,8 +463,6 @@ GenTree* DecomposeLongs::DecomposeStoreLclVar(LIR::Use& use)
     }
 
     assert(varDsc->lvFieldCnt == 2);
-    m_compiler->lvaDecRefCnts(tree);
-
     GenTreeOp* value = rhs->AsOp();
     Range().Remove(value);
 
@@ -488,9 +477,6 @@ GenTree* DecomposeLongs::DecomposeStoreLclVar(LIR::Use& use)
     hiStore->SetOper(GT_STORE_LCL_VAR);
     hiStore->gtOp.gtOp1 = value->gtOp2;
     hiStore->gtFlags |= GTF_VAR_DEF;
-
-    m_compiler->lvaIncRefCnts(loStore);
-    m_compiler->lvaIncRefCnts(hiStore);
 
     Range().InsertAfter(tree, hiStore);
 
@@ -528,9 +514,6 @@ GenTree* DecomposeLongs::DecomposeStoreLclFld(LIR::Use& use)
     hiStore->SetOper(GT_STORE_LCL_FLD);
     hiStore->gtOp1 = value->gtOp2;
     hiStore->gtFlags |= (GTF_VAR_DEF | GTF_VAR_USEASG);
-
-    // Bump the ref count for the destination.
-    m_compiler->lvaIncRefCnts(hiStore);
 
     Range().InsertAfter(loStore, hiStore);
 
@@ -653,8 +636,6 @@ GenTree* DecomposeLongs::DecomposeCast(LIR::Use& use)
                 hiResult         = m_compiler->gtNewOperNode(GT_RSH, TYP_INT, loCopy, shiftBy);
 
                 Range().InsertAfter(cast, loCopy, shiftBy, hiResult);
-                m_compiler->lvaIncRefCnts(loCopy);
-
                 Range().Remove(cast);
             }
         }
@@ -830,8 +811,6 @@ GenTree* DecomposeLongs::DecomposeStoreInd(LIR::Use& use)
     GenTree* storeIndHigh = new (m_compiler, GT_STOREIND) GenTreeStoreInd(TYP_INT, addrHigh, dataHigh);
     storeIndHigh->gtFlags = (storeIndLow->gtFlags & (GTF_ALL_EFFECT | GTF_LIVENESS_MASK));
 
-    m_compiler->lvaIncRefCnts(addrBaseHigh);
-
     Range().InsertAfter(storeIndLow, dataHigh, addrBaseHigh, addrHigh, storeIndHigh);
 
     return storeIndHigh;
@@ -883,8 +862,6 @@ GenTree* DecomposeLongs::DecomposeInd(LIR::Use& use)
         new (m_compiler, GT_LEA) GenTreeAddrMode(TYP_REF, addrBaseHigh, nullptr, 0, genTypeSize(TYP_INT));
     GenTree* indHigh = new (m_compiler, GT_IND) GenTreeIndir(GT_IND, TYP_INT, addrHigh, nullptr);
     indHigh->gtFlags |= (indLow->gtFlags & (GTF_GLOB_REF | GTF_EXCEPT | GTF_IND_FLAGS));
-
-    m_compiler->lvaIncRefCnts(addrBaseHigh);
 
     Range().InsertAfter(indLow, addrBaseHigh, addrHigh, indHigh);
 
@@ -1149,8 +1126,6 @@ GenTree* DecomposeLongs::DecomposeShift(LIR::Use& use)
                     GenTree* hiOp   = new (m_compiler, GT_LONG) GenTreeOp(GT_LONG, TYP_LONG, loCopy, hiOp1);
                     hiResult        = m_compiler->gtNewOperNode(GT_LSH_HI, TYP_INT, hiOp, shiftByHi);
 
-                    m_compiler->lvaIncRefCnts(loCopy);
-
                     Range().InsertBefore(shift, loOp1, shiftByLo, loResult);
                     Range().InsertBefore(shift, loCopy, hiOp, shiftByHi, hiResult);
 
@@ -1226,8 +1201,6 @@ GenTree* DecomposeLongs::DecomposeShift(LIR::Use& use)
                     GenTree* shiftByHi = m_compiler->gtNewIconNode(count, TYP_INT);
                     GenTree* shiftByLo = m_compiler->gtNewIconNode(count, TYP_INT);
 
-                    m_compiler->lvaIncRefCnts(hiCopy);
-
                     hiResult = m_compiler->gtNewOperNode(GT_RSZ, TYP_INT, hiOp1, shiftByHi);
 
                     // Create a GT_LONG that contains loOp1 and hiCopy. This will be used in codegen to
@@ -1298,7 +1271,6 @@ GenTree* DecomposeLongs::DecomposeShift(LIR::Use& use)
 
                     GenTree* shiftByHi = m_compiler->gtNewIconNode(count, TYP_INT);
                     GenTree* shiftByLo = m_compiler->gtNewIconNode(count, TYP_INT);
-                    m_compiler->lvaIncRefCnts(hiCopy);
 
                     hiResult = m_compiler->gtNewOperNode(GT_RSH, TYP_INT, hiOp1, shiftByHi);
 
@@ -1349,8 +1321,6 @@ GenTree* DecomposeLongs::DecomposeShift(LIR::Use& use)
                     GenTree* shiftBy = m_compiler->gtNewIconNode(31, TYP_INT);
                     hiResult         = m_compiler->gtNewOperNode(GT_RSH, TYP_INT, hiCopy, shiftBy);
                     Range().InsertBefore(shift, shiftBy, hiCopy, hiResult);
-
-                    m_compiler->lvaIncRefCnts(hiCopy);
                 }
 
                 insertAfter = hiResult;
@@ -1542,9 +1512,6 @@ GenTree* DecomposeLongs::DecomposeRotate(LIR::Use& use)
         GenTree* loCopy = m_compiler->gtNewLclvNode(loOp1LclNum, TYP_INT);
         GenTree* hiOp   = new (m_compiler, GT_LONG) GenTreeOp(GT_LONG, TYP_LONG, loCopy, hiOp1);
         hiResult        = m_compiler->gtNewOperNode(oper, TYP_INT, hiOp, rotateByHi);
-
-        m_compiler->lvaIncRefCnts(loCopy);
-        m_compiler->lvaIncRefCnts(hiCopy);
 
         Range().InsertBefore(tree, hiCopy, loOp1, loOp);
         Range().InsertBefore(tree, rotateByLo, loResult);
