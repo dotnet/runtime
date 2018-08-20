@@ -36,6 +36,7 @@
 #define DECL_ALIGN(type) MONO_ALIGN_ ##type = MONO_CURRENT_ABI_ALIGNOF (type),
 #define DECL_ALIGN2(type,size) MONO_ALIGN_ ##type = size,
 #define DECL_SIZE(type) MONO_SIZEOF_ ##type = -1,
+#define DECL_SIZE2(type,size) MONO_SIZEOF_ ##type = -1,
 
 /* Needed by MONO_CURRENT_ABI_ALIGNOF */
 MONO_CURRENT_ABI_ALIGNOF_TYPEDEF(gint8)
