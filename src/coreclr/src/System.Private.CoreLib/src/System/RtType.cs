@@ -186,11 +186,11 @@ namespace System
                 NestedType
             }
 
-            private struct Filter
+            private readonly struct Filter
             {
-                private MdUtf8String m_name;
-                private MemberListType m_listType;
-                private uint m_nameHash;
+                private readonly MdUtf8String m_name;
+                private readonly MemberListType m_listType;
+                private readonly uint m_nameHash;
 
                 public unsafe Filter(byte* pUtf8Name, int cUtf8Name, MemberListType listType)
                 {
@@ -4888,7 +4888,7 @@ namespace System
     }
 
     #region Library
-    internal unsafe struct MdUtf8String
+    internal readonly unsafe struct MdUtf8String
     {
         [MethodImplAttribute(MethodImplOptions.InternalCall)]
         private static extern unsafe bool EqualsCaseSensitive(void* szLhs, void* szRhs, int cSz);
@@ -4917,8 +4917,8 @@ namespace System
             return len;
         }
 
-        private void* m_pStringHeap;        // This is the raw UTF8 string.
-        private int m_StringHeapByteLength;
+        private readonly void* m_pStringHeap;        // This is the raw UTF8 string.
+        private readonly int m_StringHeapByteLength;
 
         internal MdUtf8String(void* pStringHeap)
         {
