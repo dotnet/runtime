@@ -12,7 +12,7 @@ using Xunit;
 
 namespace System.Runtime.InteropServices.Tests
 {
-    public class IntPtrTests
+    public partial class IntPtrTests
     {
         public static IEnumerable<object[]> ReadWrite_TestData()
         {
@@ -146,18 +146,6 @@ namespace System.Runtime.InteropServices.Tests
         }
 
         [Fact]
-        public void ReadIntPtr_NotReadable_ThrowsArgumentException()
-        {
-            AssemblyBuilder assemblyBuilder = AssemblyBuilder.DefineDynamicAssembly(new AssemblyName("Assembly"), AssemblyBuilderAccess.RunAndCollect);
-            ModuleBuilder moduleBuilder = assemblyBuilder.DefineDynamicModule("Module");
-            TypeBuilder typeBuilder = moduleBuilder.DefineType("Type");
-            Type collectibleType = typeBuilder.CreateType();
-            object collectibleObject = Activator.CreateInstance(collectibleType);
-
-            AssertExtensions.Throws<ArgumentException>(null, () => Marshal.ReadIntPtr(collectibleObject, 0));
-        }
-
-        [Fact]
         public void WriteIntPtr_ZeroPointer_ThrowsException()
         {
             AssertExtensions.ThrowsAny<AccessViolationException, NullReferenceException>(() => Marshal.WriteIntPtr(IntPtr.Zero, (IntPtr)0));
@@ -169,18 +157,6 @@ namespace System.Runtime.InteropServices.Tests
         public void WriteIntPtr_NullObject_ThrowsAccessViolationException()
         {
             Assert.Throws<AccessViolationException>(() => Marshal.WriteIntPtr(null, 2, (IntPtr)0));
-        }
-
-        [Fact]
-        public void WriteIntPtr_NotReadable_ThrowsArgumentException()
-        {
-            AssemblyBuilder assemblyBuilder = AssemblyBuilder.DefineDynamicAssembly(new AssemblyName("Assembly"), AssemblyBuilderAccess.RunAndCollect);
-            ModuleBuilder moduleBuilder = assemblyBuilder.DefineDynamicModule("Module");
-            TypeBuilder typeBuilder = moduleBuilder.DefineType("Type");
-            Type collectibleType = typeBuilder.CreateType();
-            object collectibleObject = Activator.CreateInstance(collectibleType);
-
-            AssertExtensions.Throws<ArgumentException>(null, () => Marshal.WriteIntPtr(collectibleObject, 0, IntPtr.Zero));
         }
 
         public struct BlittableStruct
