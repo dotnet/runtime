@@ -24,6 +24,7 @@
 #include <pedecoder.h>
 #include <getproductversionnumber.h>
 #include <dbgenginemetrics.h>
+#include <arrayholder.h>
 
 #ifndef FEATURE_PAL
 #define PSAPI_VERSION 2
@@ -1052,6 +1053,57 @@ IsCoreClrWithGoodHeader(
     return false;
 }
 
+static
+HMODULE*
+EnumProcessModulesInternal(
+    HANDLE hProcess, 
+    DWORD *pCountModules)
+{
+    *pCountModules = 0;
+
+    // Start with 1024 modules
+    DWORD cbNeeded = sizeof(HMODULE) * 1024;
+
+    ArrayHolder<HMODULE> modules = new (nothrow) HMODULE[cbNeeded / sizeof(HMODULE)];
+    if (modules == nullptr)
+    {
+        SetLastError(ERROR_OUTOFMEMORY);
+        return nullptr;
+    }
+
+    if(!EnumProcessModules(hProcess, modules, cbNeeded, &cbNeeded))
+    {
+        return nullptr;
+    }
+
+    // If 1024 isn't enough, try the modules array size returned (cbNeeded)
+    if (cbNeeded > (sizeof(HMODULE) * 1024)) 
+    {
+        modules = new (nothrow) HMODULE[cbNeeded / sizeof(HMODULE)];
+        if (modules == nullptr)
+        {
+            SetLastError(ERROR_OUTOFMEMORY);
+            return nullptr;
+        }
+
+        DWORD cbNeeded2;
+        if(!EnumProcessModules(hProcess, modules, cbNeeded, &cbNeeded2))
+        {
+            return nullptr;
+        }
+
+        // The only way cbNeeded2 could change on the second call is if number of
+        // modules loaded by the process changed in the small window between the
+        // above EnumProcessModules calls. If this actually happens, then give
+        // up on trying to get the whole module list and risk missing the coreclr
+        // module.
+        cbNeeded = min(cbNeeded, cbNeeded2);
+    }
+
+    *pCountModules = cbNeeded / sizeof(HMODULE);
+    return modules.Detach();
+}
+
 //-----------------------------------------------------------------------------
 // Public API.
 //
@@ -1089,10 +1141,10 @@ EnumerateCLRs(
     if (NULL == hProcess)
         return E_FAIL;
 
-    // These shouldn't be freed
-    HMODULE modules[1000];
-    DWORD cbNeeded;
-    if(!EnumProcessModules(hProcess, modules, sizeof(modules), &cbNeeded))
+    // The modules in the array returned don't need to be closed
+    DWORD countModules;
+    ArrayHolder<HMODULE> modules = EnumProcessModulesInternal(hProcess, &countModules);
+    if (modules == nullptr)
     {
         return HRESULT_FROM_WIN32(GetLastError());
     }
@@ -1101,7 +1153,6 @@ EnumerateCLRs(
     // count the number of coreclr.dll entries
     //
     DWORD count = 0;
-    DWORD countModules = cbNeeded/sizeof(HMODULE);
     for(DWORD i = 0; i < countModules; i++)
     {
         if (IsCoreClrWithGoodHeader(hProcess, modules[i]))
@@ -1268,15 +1319,14 @@ GetRemoteModuleBaseAddress(
         ThrowHR(E_FAIL);
     }
 
-    // These shouldn't be freed
-    HMODULE modules[1000];
-    DWORD cbNeeded;
-    if(!EnumProcessModules(hProcess, modules, sizeof(modules), &cbNeeded))
+    // The modules in the array returned don't need to be closed
+    DWORD countModules;
+    ArrayHolder<HMODULE> modules = EnumProcessModulesInternal(hProcess, &countModules);
+    if (modules == nullptr)
     {
         ThrowHR(HRESULT_FROM_WIN32(GetLastError()));
     }
 
-    DWORD countModules = min(cbNeeded, sizeof(modules)) / sizeof(HMODULE);
     for(DWORD i = 0; i < countModules; i++)
     {
         WCHAR modulePath[MAX_LONGPATH];
