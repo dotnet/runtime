@@ -18505,6 +18505,10 @@ void Compiler::fgSetTreeSeqHelper(GenTree* tree, bool isLIR)
         {
             fgSetTreeSeqHelper(sizeNode, isLIR);
         }
+
+        // We either have a DYN_BLK or a STORE_DYN_BLK. If the latter, we have a
+        // src (the Data to be stored), and isReverse tells us whether to evaluate
+        // that before dstAddr.
         if (isReverse && (src != nullptr))
         {
             fgSetTreeSeqHelper(src, isLIR);
