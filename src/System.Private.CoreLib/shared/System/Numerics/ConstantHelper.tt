@@ -20,7 +20,8 @@ namespace System.Numerics
 {
     internal class ConstantHelper
     {
-<#    foreach (var type in supportedTypes)
+<#
+    foreach (var type in supportedTypes)
     {
         string hexValue = "0x" + new string('f', Marshal.SizeOf(type) * 2);
 #>
