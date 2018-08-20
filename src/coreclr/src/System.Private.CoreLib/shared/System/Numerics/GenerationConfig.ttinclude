@@ -8,27 +8,40 @@
     // The set of supported numeric types to compile
     public static Type[] supportedTypes = new[] 
     { 
-        typeof(Byte), typeof(SByte), typeof(UInt16), typeof(Int16),
-        typeof(UInt32), typeof(Int32), typeof(UInt64), typeof(Int64),
-        typeof(Single), typeof(Double)
+        typeof(byte), typeof(sbyte), typeof(ushort), typeof(short),
+        typeof(uint), typeof(int), typeof(ulong), typeof(long),
+        typeof(float), typeof(double)
     };
 
     // The set of unsigned types, a subset of the above. Used for excluding from certain methods, i.e. Abs and Negate
     public static Type[] unsignedTypes = new[]
     {
-        typeof(Byte), typeof(UInt16), typeof(UInt32), typeof(UInt64)
+        typeof(byte), typeof(ushort), typeof(uint), typeof(ulong)
     };
 
     public static Type[] integralTypes = new[]
     {
-        typeof(Byte), typeof(SByte), typeof(UInt16), typeof(Int16),
-        typeof(UInt32), typeof(Int32), typeof(UInt64), typeof(Int64)
+        typeof(byte), typeof(sbyte), typeof(ushort), typeof(short),
+        typeof(uint), typeof(int), typeof(ulong), typeof(long)
     };
 
     public static Type[] nonClsCompliantTypes = new[]
     {
-        typeof(SByte), typeof(UInt16), 
-        typeof(UInt32), typeof(UInt64)
+        typeof(sbyte), typeof(ushort), typeof(uint), typeof(ulong)
+    };
+
+    public static Dictionary<Type, string> typeAliases = new Dictionary<Type, string>()
+    {
+        { typeof(byte), "byte" },
+        { typeof(sbyte), "sbyte" },
+        { typeof(ushort), "ushort" },
+        { typeof(short), "short" },
+        { typeof(uint), "uint" },
+        { typeof(int), "int" },
+        { typeof(ulong), "ulong" },
+        { typeof(long), "long" },
+        { typeof(float), "float" },
+        { typeof(double), "double" }
     };
 
     // The total register size, in bytes. 16 for SSE2, 32 for AVX, 64 for AVX512
@@ -137,18 +150,18 @@
     public string GenerateIfStatementHeader(Type type)
     {
         string keyword = (type == supportedTypes[0]) ? "if" : "else if";
-        return string.Format("{0} (typeof(T) == typeof({1}))", keyword, type.Name);
+        return string.Format("{0} (typeof(T) == typeof({1}))", keyword, typeAliases[type]);
     }
 
     public string GenerateIfStatementHeader(Type type, IEnumerable<Type> allTypes)
     {
         string keyword = (type == allTypes.ToArray()[0]) ? "if" : "else if";
-        return string.Format("{0} (typeof(T) == typeof({1}))", keyword, type.Name);
+        return string.Format("{0} (typeof(T) == typeof({1}))", keyword, typeAliases[type]);
     }
 
     public string MakeTypeComparisonCondition(Type type)
     {
-        return string.Format("(typeof(T) == typeof({0}))", type.Name);
+        return string.Format("(typeof(T) == typeof({0}))", typeAliases[type]);
     }
 
     public string GenerateIfConditionAllTypes(IEnumerable<Type> allTypes)
