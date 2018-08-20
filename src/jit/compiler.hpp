@@ -1685,17 +1685,24 @@ inline unsigned Compiler::lvaGrabTemp(bool shortLifetime DEBUGARG(const char* re
     const unsigned tempNum = lvaCount;
     lvaCount++;
 
-    lvaTable[tempNum].lvType    = TYP_UNDEF; // Initialize lvType, lvIsTemp and lvOnFrame
+    // Initialize lvType, lvIsTemp and lvOnFrame
+    lvaTable[tempNum].lvType    = TYP_UNDEF;
     lvaTable[tempNum].lvIsTemp  = shortLifetime;
     lvaTable[tempNum].lvOnFrame = true;
 
-    // If we've started normal ref counting and are in minopts or debug
-    // mark this variable as implictly referenced.
+    // If we've started normal ref counting, bump the ref count of this
+    // local, as we no longer do any incremental counting, and we presume
+    // this new local will be referenced.
     if (lvaLocalVarRefCounted())
     {
         if (opts.MinOpts() || opts.compDbgCode)
         {
             lvaTable[tempNum].lvImplicitlyReferenced = 1;
+        }
+        else
+        {
+            lvaTable[tempNum].setLvRefCnt(1);
+            lvaTable[tempNum].setLvRefCntWtd(BB_UNITY_WEIGHT);
         }
     }
 
@@ -1731,6 +1738,9 @@ inline unsigned Compiler::lvaGrabTemps(unsigned cnt DEBUGARG(const char* reason)
                lvaCount + cnt - 1, reason);
     }
 #endif
+
+    // Could handle this...
+    assert(!lvaLocalVarRefCounted());
 
     // You cannot allocate more space after frame layout!
     noway_assert(lvaDoneFrameLayout < Compiler::TENTATIVE_FRAME_LAYOUT);
@@ -1810,124 +1820,6 @@ inline unsigned Compiler::lvaGrabTempWithImplicitUse(bool shortLifetime DEBUGARG
     varDsc->lvImplicitlyReferenced = 1;
 
     return lclNum;
-}
-
-/*****************************************************************************
- *
- *  If lvaTrackedFixed is false then set the lvaSortAgain flag
- *   (this allows us to grow the number of tracked variables)
- *   and zero lvRefCntWtd when lvRefCnt is zero
- */
-
-inline void LclVarDsc::lvaResetSortAgainFlag(Compiler* comp, RefCountState state)
-{
-    if (!comp->lvaTrackedFixed && !comp->opts.MinOpts() && !comp->opts.compDbgCode)
-    {
-        /* Flag this change, set lvaSortAgain to true */
-        comp->lvaSortAgain = true;
-    }
-    /* Set weighted ref count to zero if  ref count is zero */
-    if (lvRefCnt(state) == 0)
-    {
-        setLvRefCntWtd(0, state);
-    }
-}
-
-/*****************************************************************************
- *
- *  Decrement the ref counts for a local variable
- */
-
-inline void LclVarDsc::decRefCnts(BasicBlock::weight_t weight, Compiler* comp, RefCountState state, bool propagate)
-{
-    // In minopts and debug codegen, we don't maintain normal ref counts.
-    if ((state == RCS_NORMAL) && (comp->opts.MinOpts() || comp->opts.compDbgCode))
-    {
-        return;
-    }
-
-    /* Decrement lvRefCnt and lvRefCntWtd */
-    Compiler::lvaPromotionType promotionType = DUMMY_INIT(Compiler::PROMOTION_TYPE_NONE);
-    if (varTypeIsStruct(lvType))
-    {
-        promotionType = comp->lvaGetPromotionType(this);
-    }
-
-    //
-    // Decrement counts on the local itself.
-    //
-    if (lvType != TYP_STRUCT || promotionType != Compiler::PROMOTION_TYPE_INDEPENDENT)
-    {
-        assert(lvRefCnt(state)); // Can't decrement below zero
-
-        // TODO: Well, the assert above could be bogus.
-        // If lvRefCnt has overflowed before, then might drop to 0.
-        // Therefore we do need the following check to keep lvRefCnt from underflow:
-        if (lvRefCnt(state) > 0)
-        {
-            //
-            // Decrement lvRefCnt
-            //
-            decLvRefCnt(1, state);
-
-            //
-            // Decrement lvRefCntWtd
-            //
-            if (weight != 0)
-            {
-                if (lvIsTemp && (weight * 2 > weight))
-                {
-                    weight *= 2;
-                }
-
-                if (lvRefCntWtd(state) <= weight)
-                { // Can't go below zero
-                    setLvRefCntWtd(0, state);
-                }
-                else
-                {
-                    decLvRefCntWtd(weight, state);
-                }
-            }
-        }
-    }
-
-    if (varTypeIsStruct(lvType) && propagate)
-    {
-        // For promoted struct locals, decrement lvRefCnt on its field locals as well.
-        if (promotionType == Compiler::PROMOTION_TYPE_INDEPENDENT ||
-            promotionType == Compiler::PROMOTION_TYPE_DEPENDENT)
-        {
-            for (unsigned i = lvFieldLclStart; i < lvFieldLclStart + lvFieldCnt; ++i)
-            {
-                comp->lvaTable[i].decRefCnts(weight, comp, state, false); // Don't propagate
-            }
-        }
-    }
-
-    if (lvIsStructField && propagate)
-    {
-        // Depending on the promotion type, decrement the ref count for the parent struct as well.
-        promotionType           = comp->lvaGetParentPromotionType(this);
-        LclVarDsc* parentvarDsc = &comp->lvaTable[lvParentLcl];
-        assert(!parentvarDsc->lvRegStruct);
-        if (promotionType == Compiler::PROMOTION_TYPE_DEPENDENT)
-        {
-            parentvarDsc->decRefCnts(weight, comp, state, false); // Don't propagate
-        }
-    }
-
-    lvaResetSortAgainFlag(comp, state);
-
-#ifdef DEBUG
-    if (comp->verbose)
-    {
-        unsigned varNum = (unsigned)(this - comp->lvaTable);
-        assert(&comp->lvaTable[varNum] == this);
-        printf("New refCnts for V%02u: refCnt = %2u, refCntWtd = %s\n", varNum, lvRefCnt(state),
-               refCntWtd2str(lvRefCntWtd(state)));
-    }
-#endif
 }
 
 /*****************************************************************************
@@ -2013,8 +1905,6 @@ inline void LclVarDsc::incRefCnts(BasicBlock::weight_t weight, Compiler* comp, R
             parentvarDsc->incRefCnts(weight, comp, state, false); // Don't propagate
         }
     }
-
-    lvaResetSortAgainFlag(comp, state);
 
 #ifdef DEBUG
     if (comp->verbose)
@@ -4917,30 +4807,6 @@ inline void LclVarDsc::incLvRefCnt(unsigned short delta, RefCountState state)
 }
 
 //------------------------------------------------------------------------------
-// decLvRefCnt: decrement reference count for this local var
-//
-// Arguments:
-//    delta: the amount of the decrement
-//    state: the requestor's expected ref count state; defaults to RCS_NORMAL
-//
-// Notes:
-//    It is currently the caller's responsibilty to ensure this decrement
-//    will not cause underflow.
-
-inline void LclVarDsc::decLvRefCnt(unsigned short delta, RefCountState state)
-{
-
-#if defined(DEBUG)
-    assert(state != RCS_INVALID);
-    Compiler* compiler = JitTls::GetCompiler();
-    assert(compiler->lvaRefCountState == state);
-#endif
-
-    assert(m_lvRefCnt >= delta);
-    m_lvRefCnt -= delta;
-}
-
-//------------------------------------------------------------------------------
 // setLvRefCnt: set the reference count for this local var
 //
 // Arguments:
@@ -5012,30 +4878,6 @@ inline void LclVarDsc::incLvRefCntWtd(BasicBlock::weight_t delta, RefCountState 
     BasicBlock::weight_t oldRefCntWtd = m_lvRefCntWtd;
     m_lvRefCntWtd += delta;
     assert(m_lvRefCntWtd >= oldRefCntWtd);
-}
-
-//------------------------------------------------------------------------------
-// decLvRefCntWtd: decrement weighted reference count for this local var
-//
-// Arguments:
-//    delta: the amount of the decrement
-//    state: the requestor's expected ref count state; defaults to RCS_NORMAL
-//
-// Notes:
-//    It is currently the caller's responsibilty to ensure this decrement
-//    will not cause underflow.
-
-inline void LclVarDsc::decLvRefCntWtd(BasicBlock::weight_t delta, RefCountState state)
-{
-
-#if defined(DEBUG)
-    assert(state != RCS_INVALID);
-    Compiler* compiler = JitTls::GetCompiler();
-    assert(compiler->lvaRefCountState == state);
-#endif
-
-    assert(m_lvRefCntWtd >= delta);
-    m_lvRefCntWtd -= delta;
 }
 
 //------------------------------------------------------------------------------

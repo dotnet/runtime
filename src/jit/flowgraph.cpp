@@ -9670,41 +9670,6 @@ void Compiler::fgSimpleLowering()
 #endif
 }
 
-/*****************************************************************************
- */
-
-void Compiler::fgUpdateRefCntForClone(BasicBlock* addedToBlock, GenTree* clonedTree)
-{
-    assert(clonedTree->gtOper != GT_STMT);
-
-    if (lvaLocalVarRefCounted())
-    {
-        compCurBB = addedToBlock;
-        IncLclVarRefCountsVisitor::WalkTree(this, clonedTree);
-    }
-}
-
-/*****************************************************************************
- */
-
-void Compiler::fgUpdateRefCntForExtract(GenTree* wholeTree, GenTree* keptTree)
-{
-    if (lvaLocalVarRefCounted())
-    {
-        /*  Update the refCnts of removed lcl vars - The problem is that
-         *  we have to consider back the side effects trees so we first
-         *  increment all refCnts for side effects then decrement everything
-         *  in the statement
-         */
-        if (keptTree)
-        {
-            IncLclVarRefCountsVisitor::WalkTree(this, keptTree);
-        }
-
-        DecLclVarRefCountsVisitor::WalkTree(this, wholeTree);
-    }
-}
-
 VARSET_VALRET_TP Compiler::fgGetVarBits(GenTree* tree)
 {
     VARSET_TP varBits(VarSetOps::MakeEmpty(this));
@@ -9875,14 +9840,10 @@ void Compiler::fgRemoveEmptyBlocks()
 /*****************************************************************************
  *
  * Remove a useless statement from a basic block.
- * The default is to decrement ref counts of included vars
  *
  */
 
-void Compiler::fgRemoveStmt(BasicBlock* block,
-                            GenTree*    node,
-                            // whether to decrement ref counts for tracked vars in statement
-                            bool updateRefCount)
+void Compiler::fgRemoveStmt(BasicBlock* block, GenTree* node)
 {
     noway_assert(node);
     assert(fgOrder == FGOrderTree);
@@ -9939,14 +9900,6 @@ void Compiler::fgRemoveStmt(BasicBlock* block,
     }
 
     noway_assert(!optValnumCSE_phase);
-
-    if (updateRefCount)
-    {
-        if (fgStmtListThreaded)
-        {
-            DecLclVarRefCountsVisitor::WalkTree(this, stmt->gtStmtExpr);
-        }
-    }
 
     fgStmtRemoved = true;
 
@@ -14142,9 +14095,7 @@ bool Compiler::fgOptimizeSwitchBranches(BasicBlock* block)
 
                 if (fgStmtListThreaded)
                 {
-                    /* Update the lclvar ref counts */
                     compCurBB = block;
-                    fgUpdateRefCntForExtract(switchTree, sideEffList);
 
                     /* Update ordering, costs, FP levels, etc. */
                     gtSetStmtInfo(switchStmt);
@@ -14553,9 +14504,7 @@ bool Compiler::fgOptimizeBranchToNext(BasicBlock* block, BasicBlock* bNext, Basi
 
                     if (fgStmtListThreaded)
                     {
-                        /* Update the lclvar ref counts */
                         compCurBB = block;
-                        fgUpdateRefCntForExtract(cond->gtStmtExpr, sideEffList);
 
                         /* Update ordering, costs, FP levels, etc. */
                         gtSetStmtInfo(cond);
@@ -14835,9 +14784,6 @@ bool Compiler::fgOptimizeBranch(BasicBlock* bJump)
     {
         return false;
     }
-
-    // Bump up the ref-counts of any variables in 'stmt'
-    fgUpdateRefCntForClone(bJump, stmt->gtStmtExpr);
 
     //
     // Find the last statement in the bJump block

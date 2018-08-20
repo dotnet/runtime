@@ -265,10 +265,6 @@ unsigned LIR::Use::ReplaceWithLclVar(Compiler* compiler, unsigned blockWeight, u
         lclNum = compiler->lvaGrabTemp(true DEBUGARG("ReplaceWithLclVar is creating a new local variable"));
     }
 
-    // Increment its lvRefCnt and lvRefCntWtd twice, one for the def and one for the use
-    compiler->lvaTable[lclNum].incRefCnts(blockWeight, compiler);
-    compiler->lvaTable[lclNum].incRefCnts(blockWeight, compiler);
-
     GenTreeLclVar* const store = compiler->gtNewTempAssign(lclNum, node)->AsLclVar();
     assert(store != nullptr);
     assert(store->gtOp1 == node);
@@ -1083,8 +1079,7 @@ LIR::Range LIR::Range::Remove(ReadOnlyRange&& range)
 // LIR::Range::Delete: Deletes a node from this range.
 //
 // Note that the deleted node must not be used after this function has
-// been called. If the deleted node is part of a block, this function also
-// calls `Compiler::lvaDecRefCnts` as necessary.
+// been called.
 //
 // Arguments:
 //    node - The node to delete. Must be part of this range.
@@ -1097,16 +1092,6 @@ void LIR::Range::Delete(Compiler* compiler, BasicBlock* block, GenTree* node)
     assert((block == nullptr) == (compiler == nullptr));
 
     Remove(node);
-
-    if (block != nullptr)
-    {
-        if (((node->OperGet() == GT_CALL) && ((node->gtFlags & GTF_CALL_UNMANAGED) != 0)) ||
-            (node->OperIsLocal() && !node->IsPhiNode()))
-        {
-            compiler->lvaDecRefCnts(block, node);
-        }
-    }
-
     DEBUG_DESTROY_NODE(node);
 }
 
@@ -1115,8 +1100,7 @@ void LIR::Range::Delete(Compiler* compiler, BasicBlock* block, GenTree* node)
 //
 // Both the start and the end of the subrange must be part of this range.
 // Note that the deleted nodes must not be used after this function has
-// been called. If the deleted nodes are part of a block, this function
-// also calls `Compiler::lvaDecRefCnts` as necessary.
+// been called.
 //
 // Arguments:
 //    firstNode - The first node in the subrange.
@@ -1134,18 +1118,6 @@ void LIR::Range::Delete(Compiler* compiler, BasicBlock* block, GenTree* firstNod
 
     assert(lastNode->gtNext == nullptr);
 
-    if (block != nullptr)
-    {
-        for (GenTree* node = firstNode; node != nullptr; node = node->gtNext)
-        {
-            if (((node->OperGet() == GT_CALL) && ((node->gtFlags & GTF_CALL_UNMANAGED) != 0)) ||
-                (node->OperIsLocal() && !node->IsPhiNode()))
-            {
-                compiler->lvaDecRefCnts(block, node);
-            }
-        }
-    }
-
 #ifdef DEBUG
     // We can't do this in the loop above because it causes `IsPhiNode` to return a false negative
     // for `GT_STORE_LCL_VAR` nodes that participate in phi definitions.
@@ -1161,8 +1133,7 @@ void LIR::Range::Delete(Compiler* compiler, BasicBlock* block, GenTree* firstNod
 //
 // Both the start and the end of the subrange must be part of this range.
 // Note that the deleted nodes must not be used after this function has
-// been called. If the deleted nodes are part of a block, this function
-// also calls `Compiler::lvaDecRefCnts` as necessary.
+// been called.
 //
 // Arguments:
 //    range - The subrange to delete.

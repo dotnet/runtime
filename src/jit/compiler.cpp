@@ -4912,8 +4912,7 @@ void Compiler::compCompile(void** methodCodePtr, ULONG* methodCodeSize, JitFlags
     StackLevelSetter stackLevelSetter(this); // PHASE_STACK_LEVEL_SETTER
     stackLevelSetter.Run();
 
-    assert(lvaSortAgain == false); // We should have re-run fgLocalVarLiveness() in lower.Run()
-    lvaTrackedFixed = true;        // We can not add any new tracked variables after this point.
+    lvaTrackedFixed = true; // We can not add any new tracked variables after this point.
 
     /* Now that lowering is completed we can proceed to perform register allocation */
     m_pLinearScan->doLinearScan();

@@ -931,7 +931,6 @@ Compiler::fgWalkResult Rationalizer::RewriteNode(GenTree** useEdge, ArrayStack<G
     {
         if (use.IsDummyUse())
         {
-            comp->lvaDecRefCnts(node);
             BlockRange().Remove(node);
         }
         else
