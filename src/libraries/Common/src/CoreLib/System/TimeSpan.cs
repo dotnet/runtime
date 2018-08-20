@@ -28,7 +28,7 @@ namespace System
     // an appropriate custom ILMarshaler to keep WInRT interop scenarios enabled.
     //
     [Serializable]
-    public struct TimeSpan : IComparable, IComparable<TimeSpan>, IEquatable<TimeSpan>, IFormattable, ISpanFormattable
+    public readonly struct TimeSpan : IComparable, IComparable<TimeSpan>, IEquatable<TimeSpan>, IFormattable, ISpanFormattable
     {
         public const long TicksPerMillisecond = 10000;
         private const double MillisecondsPerTick = 1.0 / TicksPerMillisecond;
@@ -65,7 +65,7 @@ namespace System
 
         // internal so that DateTime doesn't have to call an extra get
         // method for some arithmetic operations.
-        internal long _ticks; // Do not rename (binary serialization)
+        internal readonly long _ticks; // Do not rename (binary serialization)
 
         public TimeSpan(long ticks)
         {

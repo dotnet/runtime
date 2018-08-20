@@ -4,12 +4,12 @@
 
 namespace System.Runtime.InteropServices
 {
-    public struct HandleRef
+    public readonly struct HandleRef
     {
         // ! Do not add or rearrange fields as the EE depends on this layout.
         //------------------------------------------------------------------
-        private object _wrapper;
-        private IntPtr _handle;
+        private readonly object _wrapper;
+        private readonly IntPtr _handle;
         //------------------------------------------------------------------
 
         public HandleRef(object wrapper, IntPtr handle)
