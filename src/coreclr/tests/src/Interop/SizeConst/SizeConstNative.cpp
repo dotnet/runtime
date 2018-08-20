@@ -6,7 +6,7 @@
 
 const int ARRAY_SIZE = 100;
 typedef struct { char  arr[ARRAY_SIZE]; } S_CHARByValArray;
-extern "C" DLL_EXPORT BOOL TakeByValTStr(S_CHARByValArray s, int size)
+extern "C" DLL_EXPORT BOOL _cdecl TakeByValTStr(S_CHARByValArray s, int size)
 {
     return true;
 }
