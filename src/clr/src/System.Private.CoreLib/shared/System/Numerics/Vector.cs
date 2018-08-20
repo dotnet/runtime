@@ -16,8 +16,8 @@ namespace System.Numerics
     /* Note: The following patterns are used throughout the code here and are described here
     *
     * PATTERN:
-    *    if (typeof(T) == typeof(Int32)) { ... }
-    *    else if (typeof(T) == typeof(Single)) { ... }
+    *    if (typeof(T) == typeof(int)) { ... }
+    *    else if (typeof(T) == typeof(float)) { ... }
     * EXPLANATION:
     *    At runtime, each instantiation of Vector<T> will be type-specific, and each of these typeof blocks will be eliminated,
     *    as typeof(T) is a (JIT) compile-time constant for each instantiation. This design was chosen to eliminate any overhead from
