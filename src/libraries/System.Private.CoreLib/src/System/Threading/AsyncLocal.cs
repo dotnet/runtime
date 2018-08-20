@@ -86,19 +86,18 @@ namespace System.Threading
         void OnValueChanged(object previousValue, object currentValue, bool contextChanged);
     }
 
-    public struct AsyncLocalValueChangedArgs<T>
+    public readonly struct AsyncLocalValueChangedArgs<T>
     {
-        public T PreviousValue { get; private set; }
-        public T CurrentValue { get; private set; }
+        public T PreviousValue { get; }
+        public T CurrentValue { get; }
 
         //
         // If the value changed because we changed to a different ExecutionContext, this is true.  If it changed
         // because someone set the Value property, this is false.
         //
-        public bool ThreadContextChanged { get; private set; }
+        public bool ThreadContextChanged { get; }
 
         internal AsyncLocalValueChangedArgs(T previousValue, T currentValue, bool contextChanged)
-            : this()
         {
             PreviousValue = previousValue;
             CurrentValue = currentValue;
