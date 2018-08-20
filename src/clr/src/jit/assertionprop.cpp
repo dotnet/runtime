@@ -430,12 +430,6 @@ void Compiler::optAddCopies()
             {
                 stmt = fgInsertStmtNearEnd(bestBlock, copyAsgn);
             }
-
-            /* Increment its lvRefCnt and lvRefCntWtd */
-            lvaTable[lclNum].incRefCnts(fgFirstBB->getBBWeight(this), this);
-
-            /* Increment its lvRefCnt and lvRefCntWtd */
-            lvaTable[copyLclNum].incRefCnts(fgFirstBB->getBBWeight(this), this);
         }
         else
         {
@@ -460,10 +454,6 @@ void Compiler::optAddCopies()
 
             /*  TODO-Review: BB_UNITY_WEIGHT is not the correct block weight */
             unsigned blockWeight = BB_UNITY_WEIGHT;
-
-            /* Increment its lvRefCnt and lvRefCntWtd twice */
-            lvaTable[copyLclNum].incRefCnts(blockWeight, this);
-            lvaTable[copyLclNum].incRefCnts(blockWeight, this);
 
             /* Assign the old expression into the new temp */
 
@@ -2698,10 +2688,6 @@ GenTree* Compiler::optConstantAssertionProp(AssertionDsc* curAssertion,
         gtDispTree(newTree, nullptr, nullptr, true);
     }
 #endif
-    if (lvaLocalVarRefCounted())
-    {
-        lvaTable[lclNum].decRefCnts(compCurBB->getBBWeight(this), this);
-    }
 
     return optAssertionProp_Update(newTree, tree, stmt);
 }
@@ -2811,13 +2797,7 @@ GenTree* Compiler::optCopyAssertionProp(AssertionDsc* curAssertion,
         return nullptr;
     }
 
-    // If global assertion prop, by now we should have ref counts, fix them.
-    if (lvaLocalVarRefCounted())
-    {
-        lvaTable[lclNum].decRefCnts(compCurBB->getBBWeight(this), this);
-        lvaTable[copyLclNum].incRefCnts(compCurBB->getBBWeight(this), this);
-        tree->gtLclVarCommon.SetSsaNum(copySsaNum);
-    }
+    tree->gtLclVarCommon.SetSsaNum(copySsaNum);
     tree->gtLclVarCommon.SetLclNum(copyLclNum);
 
 #ifdef DEBUG
@@ -3097,9 +3077,6 @@ GenTree* Compiler::optAssertionPropGlobal_RelOp(ASSERT_VALARG_TP assertions, Gen
             gtDispTree(tree, nullptr, nullptr, true);
         }
 #endif
-        // Decrement the ref counts, before we change the oper.
-        lvaTable[op1->gtLclVar.gtLclNum].decRefCnts(compCurBB->getBBWeight(this), this);
-
         // Change the oper to const.
         if (genActualType(op1->TypeGet()) == TYP_INT)
         {
@@ -3158,8 +3135,6 @@ GenTree* Compiler::optAssertionPropGlobal_RelOp(ASSERT_VALARG_TP assertions, Gen
             gtDispTree(tree, nullptr, nullptr, true);
         }
 #endif
-        lvaTable[op1->gtLclVar.gtLclNum].decRefCnts(compCurBB->getBBWeight(this), this);
-
         // If floating point, don't just substitute op1 with op2, this won't work if
         // op2 is NaN. Just turn it into a "true" or "false" yielding expression.
         if (op1->TypeGet() == TYP_DOUBLE || op1->TypeGet() == TYP_FLOAT)
@@ -3169,7 +3144,6 @@ GenTree* Compiler::optAssertionPropGlobal_RelOp(ASSERT_VALARG_TP assertions, Gen
             // point only on JTrue nodes, so if the condition held earlier, it will hold
             // now. We don't create OAK_EQUAL assertion on floating point from GT_ASG
             // because we depend on value num which would constant prop the NaN.
-            lvaTable[op2->gtLclVar.gtLclNum].decRefCnts(compCurBB->getBBWeight(this), this);
             op1->ChangeOperConst(GT_CNS_DBL);
             op1->gtDblCon.gtDconVal = 0;
             op2->ChangeOperConst(GT_CNS_DBL);
@@ -3179,7 +3153,6 @@ GenTree* Compiler::optAssertionPropGlobal_RelOp(ASSERT_VALARG_TP assertions, Gen
         else
         {
             noway_assert(varTypeIsIntegralOrI(op1->TypeGet()));
-            lvaTable[op2->gtLclVar.gtLclNum].incRefCnts(compCurBB->getBBWeight(this), this);
             op1->AsLclVarCommon()->SetLclNum(op2->AsLclVarCommon()->GetLclNum());
             op1->AsLclVarCommon()->SetSsaNum(op2->AsLclVarCommon()->GetSsaNum());
         }
@@ -4631,12 +4604,10 @@ GenTree* Compiler::optPrepareTreeForReplacement(GenTree* oldTree, GenTree* newTr
 
         gtExtractSideEffList(oldTree, &sideEffList, GTF_SIDE_EFFECT, ignoreRoot);
     }
+
     if (sideEffList != nullptr)
     {
         noway_assert((sideEffList->gtFlags & GTF_SIDE_EFFECT) != 0);
-
-        // Increment the ref counts as we want to keep the side effects.
-        lvaRecursiveIncRefCounts(sideEffList);
 
         if (newTree != nullptr)
         {
@@ -4648,8 +4619,6 @@ GenTree* Compiler::optPrepareTreeForReplacement(GenTree* oldTree, GenTree* newTr
         }
     }
 
-    // Decrement the ref counts as the oldTree is going to be dropped.
-    lvaRecursiveDecRefCounts(oldTree);
     return newTree;
 }
 
@@ -5169,12 +5138,4 @@ void Compiler::optAssertionPropMain()
     fgDebugCheckBBlist();
     fgDebugCheckLinks();
 #endif
-
-    // Assertion propagation may have changed the reference counts
-    // We need to resort the variable table
-
-    if (optAssertionPropagated)
-    {
-        lvaSortAgain = true;
-    }
 }

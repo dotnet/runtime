@@ -613,12 +613,10 @@ private:
 public:
     unsigned short lvRefCnt(RefCountState state = RCS_NORMAL) const;
     void incLvRefCnt(unsigned short delta, RefCountState state = RCS_NORMAL);
-    void decLvRefCnt(unsigned short delta, RefCountState state = RCS_NORMAL);
     void setLvRefCnt(unsigned short newValue, RefCountState state = RCS_NORMAL);
 
     BasicBlock::weight_t lvRefCntWtd(RefCountState state = RCS_NORMAL) const;
     void incLvRefCntWtd(BasicBlock::weight_t delta, RefCountState state = RCS_NORMAL);
-    void decLvRefCntWtd(BasicBlock::weight_t delta, RefCountState state = RCS_NORMAL);
     void setLvRefCntWtd(BasicBlock::weight_t newValue, RefCountState state = RCS_NORMAL);
 
     int      lvStkOffs;   // stack offset of home
@@ -711,11 +709,6 @@ public:
                !(lvIsParam || lvAddrExposed || lvIsStructField);
     }
 
-    void lvaResetSortAgainFlag(Compiler* pComp, RefCountState = RCS_NORMAL);
-    void decRefCnts(BasicBlock::weight_t weight,
-                    Compiler*            pComp,
-                    RefCountState        state     = RCS_NORMAL,
-                    bool                 propagate = true);
     void incRefCnts(BasicBlock::weight_t weight,
                     Compiler*            pComp,
                     RefCountState        state     = RCS_NORMAL,
@@ -2541,7 +2534,6 @@ public:
         return lvaRefCountState == RCS_NORMAL;
     }
 
-    bool     lvaSortAgain;    // true: We need to sort the lvaTable
     bool     lvaTrackedFixed; // true: We cannot add new 'tracked' variable
     unsigned lvaCount;        // total number of locals
 
@@ -2797,13 +2789,6 @@ public:
     void lvaAllocOutgoingArgSpaceVar(); // Set up lvaOutgoingArgSpaceVar
 
     VARSET_VALRET_TP lvaStmtLclMask(GenTree* stmt);
-
-    void lvaIncRefCnts(GenTree* tree);
-    void lvaDecRefCnts(GenTree* tree);
-
-    void lvaDecRefCnts(BasicBlock* basicBlock, GenTree* tree);
-    void lvaRecursiveDecRefCounts(GenTree* tree);
-    void lvaRecursiveIncRefCounts(GenTree* tree);
 
 #ifdef DEBUG
     struct lvaStressLclFldArgs
@@ -3970,10 +3955,6 @@ public:
 
     void fgLiveVarAnalysis(bool updateInternalOnly = false);
 
-    void fgUpdateRefCntForClone(BasicBlock* addedToBlock, GenTree* clonedTree);
-
-    void fgUpdateRefCntForExtract(GenTree* wholeTree, GenTree* keptTree);
-
     void fgComputeLifeCall(VARSET_TP& life, GenTreeCall* call);
 
     void fgComputeLifeTrackedLocalUse(VARSET_TP& life, LclVarDsc& varDsc, GenTreeLclVarCommon* node);
@@ -4488,7 +4469,7 @@ public:
 
     void fgRemoveEmptyBlocks();
 
-    void fgRemoveStmt(BasicBlock* block, GenTree* stmt, bool updateRefCnt = true);
+    void fgRemoveStmt(BasicBlock* block, GenTree* stmt);
 
     bool fgCheckRemoveStmt(BasicBlock* block, GenTree* stmt);
 
