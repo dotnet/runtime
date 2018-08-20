@@ -193,7 +193,7 @@ restore_optdata()
         fi
         local OptDataProjectFilePath="$__ProjectRoot/src/.nuget/optdata/optdata.csproj"
         __PgoOptDataVersion=$(DOTNET_SKIP_FIRST_TIME_EXPERIENCE=1 $DotNetCli msbuild $OptDataProjectFilePath /t:DumpPgoDataPackageVersion /nologo | sed 's/^\s*//')
-        __IbcOptDataVersion=$(DOTNET_SKIP_FIRST_TIME_EXPERIENCE=1 $DotNetCli msbuild $OptDataProjectFilePath /t:DumpIbcDataPackageVersion /nologo | sed 's/^\s*//')
+        __IbcOptDataVersion=$(DOTNET_SKIP_FIRST_TIME_EXPERIENCE=1 $DotNetCli msbuild $OptDataProjectFilePath /t:DumpIbcDataPackageVersion /nologo | sed 's/^[[:blank:]]*//')
     fi
 }
 

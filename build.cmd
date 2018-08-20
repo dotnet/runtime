@@ -74,6 +74,7 @@ set __PgoInstrument=0
 set __PgoOptimize=1
 set __EnforcePgo=0
 set __IbcTuning=
+set __IbcOptimize=0
 
 REM __PassThroughArgs is a set of things that will be passed through to nested calls to build.cmd
 REM when using "all".
@@ -100,6 +101,7 @@ set __CrossArch=
 set __SkipNugetPackage=0
 set __PgoOptDataVersion=
 set __IbcOptDataVersion=
+set __IbcMergeVersion=
 
 @REM CMD has a nasty habit of eating "=" on the argument list, so passing:
 @REM    -priority=1
@@ -178,6 +180,7 @@ if /i "%1" == "-usenmakemakefiles"   (set __NMakeMakefiles=1&set __ConfigureOnly
 if /i "%1" == "-pgoinstrument"       (set __PgoInstrument=1&set processedArgs=!processedArgs! %1&shift&goto Arg_Loop)
 if /i "%1" == "-enforcepgo"          (set __EnforcePgo=1&set processedArgs=!processedArgs! %1&shift&goto Arg_Loop)
 if /i "%1" == "-nopgooptimize"       (set __PgoOptimize=0&set processedArgs=!processedArgs! %1&shift&goto Arg_Loop)
+if /i "%1" == "-ibcoptimize"         (set __IbcOptimize=1&set __PartialNgen=1&set processedArgs=!processedArgs! %1&shift&goto Arg_Loop)
 if /i "%1" == "-ibcinstrument"       (set __IbcTuning=/Tuning&set processedArgs=!processedArgs! %1&shift&goto Arg_Loop)
 if /i "%1" == "-crossgenaltjit"      (set __CrossgenAltJit=%2&set processedArgs=!processedArgs! %1 %2&shift&shift&goto Arg_Loop)
 
@@ -580,10 +583,6 @@ if %__BuildCoreLib% EQU 1 (
     set Platform=
 
     set __ExtraBuildArgs=
-    if not defined __IbcTuning (
-        set __ExtraBuildArgs=!__ExtraBuildArgs! -OptimizationDataDir="%__PackagesDir%/optimization.%__BuildOS%-%__BuildArch%.IBC.CoreCLR/%__IbcOptDataVersion%/data/"
-        set __ExtraBuildArgs=!__ExtraBuildArgs! -EnableProfileGuidedOptimization=true
-    )
 
     if "%__BuildSOS%" == "0" (
         set __ExtraBuildArgs=!__ExtraBuildArgs! -SkipSOS=true
@@ -674,6 +673,87 @@ if %__BuildNativeCoreLib% EQU 1 (
         set COMPlus_AltJitAssertOnNYI=1
         set COMPlus_NoGuiOnAssert=1
         set COMPlus_ContinueOnAssert=0
+    )
+
+    if %__IbcOptimize% EQU 1 (
+        set IbcMergeProjectFilePath=%__ProjectDir%\src\.nuget\optdata\ibcmerge.csproj
+        for /f "tokens=*" %%s in ('%DotNetCli% msbuild "!IbcMergeProjectFilePath!" /t:DumpIbcMergePackageVersion /nologo') do @(
+            set __IbcMergeVersion=%%s
+        )
+
+        set IbcMergePath=%__PackagesDir%\microsoft.dotnet.ibcmerge\!__IbcMergeVersion!\lib\net45\ibcmerge.exe
+        if exist !IbcMergePath! (
+            echo %__MsgPrefix%Optimizing using IBC training data
+            set OptimizationDataDir=%__PackagesDir%\optimization.%__BuildOS%-%__BuildArch%.IBC.CoreCLR\!__IbcOptDataVersion!\data\
+            set InputAssemblyFile=!OptimizationDataDir!System.Private.CoreLib.dll
+            set TargetOptimizationDataFile=!OptimizationDataDir!System.Private.CoreLib.pgo
+
+            if exist "!InputAssemblyFile!" (
+                set RawOptimizationDataFile=!OptimizationDataDir!System.Private.CoreLib.ibc
+
+                REM Merge the optimization data into the source DLL
+                set NEXTCMD="!IbcMergePath!" -q -f -delete -mo "!InputAssemblyFile!" "!RawOptimizationDataFile!"
+                echo %__MsgPrefix%!NEXTCMD! >> "%__CrossGenCoreLibLog%"
+                !NEXTCMD! >> "%__CrossGenCoreLibLog%" 2>&1
+                if NOT !errorlevel! == 0 (
+                    echo %__MsgPrefix%Error: CrossGen System.Private.CoreLib build failed. Refer to %__CrossGenCoreLibLog%
+                    REM Put it in the same log, helpful for Jenkins
+                    type %__CrossGenCoreLibLog%
+                    goto CrossgenFailure
+                )
+
+                REM Verify that the optimization data has been merged
+                set NEXTCMD="!IbcMergePath!" -mi "!InputAssemblyFile!"
+                echo %__MsgPrefix%!NEXTCMD! >> "%__CrossGenCoreLibLog%"
+                !NEXTCMD! >> "%__CrossGenCoreLibLog%" 2>&1
+                if NOT !errorlevel! == 0 (
+                    echo %__MsgPrefix%Error: CrossGen System.Private.CoreLib build failed. Refer to %__CrossGenCoreLibLog%
+                    REM Put it in the same log, helpful for Jenkins
+                    type %__CrossGenCoreLibLog%
+                    goto CrossgenFailure
+                )
+
+                REM Save the module as *.pgo to match the convention expected
+                copy /y !InputAssemblyFile! !TargetOptimizationDataFile!
+            )
+
+            if exist "!TargetOptimizationDataFile!" (
+                REM Customize IBCMerge's arguments depending on input props
+                set IBCMergeArguments=-q -f -delete -mo "%__BinDir%\IL\System.Private.CoreLib.dll" -incremental "!TargetOptimizationDataFile!"
+
+                REM Apply optimization data to the compiled assembly
+                set NEXTCMD="!IbcMergePath!" !IBCMergeArguments!
+                echo %__MsgPrefix%!NEXTCMD! >> "%__CrossGenCoreLibLog%"
+                !NEXTCMD! >> "%__CrossGenCoreLibLog%" 2>&1
+                if NOT !errorlevel! == 0 (
+                    echo %__MsgPrefix%Error: CrossGen System.Private.CoreLib build failed. Refer to %__CrossGenCoreLibLog%
+                    REM Put it in the same log, helpful for Jenkins
+                    type %__CrossGenCoreLibLog%
+                    goto CrossgenFailure
+                )
+                
+                REM Verify that the optimization data has been applied
+                set NEXTCMD="!IbcMergePath!" -mi "%__BinDir%\IL\System.Private.CoreLib.dll"
+                echo %__MsgPrefix%!NEXTCMD! >> "%__CrossGenCoreLibLog%"
+                !NEXTCMD! >> "%__CrossGenCoreLibLog%" 2>&1
+                if NOT !errorlevel! == 0 (
+                    echo %__MsgPrefix%Error: CrossGen System.Private.CoreLib build failed. Refer to %__CrossGenCoreLibLog%
+                    REM Put it in the same log, helpful for Jenkins
+                    type %__CrossGenCoreLibLog%
+                    goto CrossgenFailure
+                )
+            ) else (
+                echo %__MsgPrefix%!TargetOptimizationDataFile! does not exist >> %__CrossGenCoreLibLog%
+                echo %__MsgPrefix%Error: CrossGen System.Private.CoreLib build failed. Refer to %__CrossGenCoreLibLog%
+                REM Put it in the same log, helpful for Jenkins
+                type %__CrossGenCoreLibLog%
+                goto CrossgenFailure
+            )
+        )
+    )
+
+    if defined __PartialNgen (
+        set COMPlus_PartialNgen=1
     )
 
     set NEXTCMD="%__CrossgenExe%" %__IbcTuning% /Platform_Assemblies_Paths "%__BinDir%"\IL /out "%__BinDir%\System.Private.CoreLib.dll" "%__BinDir%\IL\System.Private.CoreLib.dll"

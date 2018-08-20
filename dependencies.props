@@ -28,6 +28,7 @@
     <BuildToolsCurrentRef>e0c1d36d8a19fed21cadfff4890e027bd4c2c214</BuildToolsCurrentRef>
     <PgoDataCurrentRef>e0c1d36d8a19fed21cadfff4890e027bd4c2c214</PgoDataCurrentRef>
     <CoreSetupCurrentRef>e0c1d36d8a19fed21cadfff4890e027bd4c2c214</CoreSetupCurrentRef>
+    <IbcDataCurrentRef>e0c1d36d8a19fed21cadfff4890e027bd4c2c214</IbcDataCurrentRef>
   </PropertyGroup>
 
   <!-- Tests/infrastructure dependency versions. -->
@@ -38,6 +39,8 @@
     <MicrosoftNETCoreRuntimeCoreCLRPackageVersion>3.0.0-preview1-26817-05</MicrosoftNETCoreRuntimeCoreCLRPackageVersion>
     <MicrosoftNETCoreAppPackageVersion>3.0.0-preview1-26817-01</MicrosoftNETCoreAppPackageVersion>
     <XunitPackageVersion>2.4.0-beta.2.build4010</XunitPackageVersion>
+    <IbcDataPackageVersion>99.99.99-master-20180817-0151</IbcDataPackageVersion>
+    <IbcMergePackageVersion>4.6.0-alpha-00001</IbcMergePackageVersion>
     <XunitPerformanceApiPackageVersion>1.0.0-beta-build0015</XunitPerformanceApiPackageVersion>
     <MicrosoftDiagnosticsTracingTraceEventPackageVersion>2.0.4</MicrosoftDiagnosticsTracingTraceEventPackageVersion>
     <CommandLineParserVersion>2.2.0</CommandLineParserVersion>
@@ -91,6 +94,10 @@
       <BuildInfoPath>$(BaseDotNetBuildInfo)optimization/$(DependencyBranch)</BuildInfoPath>
       <CurrentRef>$(PgoDataCurrentRef)</CurrentRef>
     </RemoteDependencyBuildInfo>
+    <RemoteDependencyBuildInfo Include="IbcData">
+      <BuildInfoPath>$(BaseDotNetBuildInfo)optimization/$(DependencyBranch)</BuildInfoPath>
+      <CurrentRef>$(IbcDataCurrentRef)</CurrentRef>
+    </RemoteDependencyBuildInfo>
     <RemoteDependencyBuildInfo Include="CoreSetup">
       <BuildInfoPath>$(BaseDotNetBuildInfo)core-setup/$(DependencyBranch)</BuildInfoPath>
       <CurrentRef>$(CoreSetupCurrentRef)</CurrentRef>
@@ -134,6 +141,11 @@
       <Path>$(MSBuildThisFileFullPath)</Path>
       <ElementName>PgoDataPackageVersion</ElementName>
       <PackageId>optimization.PGO.CoreCLR</PackageId>
+    </XmlUpdateStep>
+    <XmlUpdateStep Include="Data">
+      <Path>$(MSBuildThisFileFullPath)</Path>
+      <ElementName>IbcDataPackageVersion</ElementName>
+      <PackageId>optimization.IBC.CoreCLR</PackageId>
     </XmlUpdateStep>
     <UpdateStep Include="ILAsm">
       <UpdaterType>File</UpdaterType>

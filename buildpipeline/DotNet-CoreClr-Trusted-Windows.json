@@ -102,7 +102,7 @@
       },
       "inputs": {
         "filename": "sync.cmd",
-        "arguments": "-p -- /p:BuildType=$(PB_BuildType)",
+        "arguments": "-p -- /p:BuildType=$(PB_BuildType) $(PB_OptionalToolingSyncArguments)",
         "workingFolder": "",
         "failOnStandardError": "false"
       }
@@ -122,7 +122,7 @@
       },
       "inputs": {
         "filename": "build.cmd",
-        "arguments": "$(Architecture) $(PB_BuildType) skiptests skipbuildpackages $(PB_EnforcePGO) -OfficialBuildId=$(OfficialBuildId) -Priority=$(Priority) -skiprestore -- /p:SignType=$(PB_SignType) /flp:\"v=diag\"",
+        "arguments": "$(Architecture) $(PB_BuildType) skiptests skipbuildpackages -ibcoptimize $(PB_EnforcePGO) -OfficialBuildId=$(OfficialBuildId) -Priority=$(Priority) -skiprestore -- /p:SignType=$(PB_SignType) /flp:\"v=diag\"",
         "workingFolder": "",
         "failOnStandardError": "false"
       }
@@ -385,6 +385,24 @@
     },
     "Label": {
       "value": "$(Build.BuildNumber)"
+    },
+    "PB_OptionalToolingSyncArguments": {
+      "value": "/p:OptionalToolSource=$(PB_OptionalToolSource) /p:OptionalToolSourceUser=$(PB_OptionalToolSourceUser);OptionalToolSourcePassword=$(PB_OptionalToolSourcePAT)"
+    },
+    "PB_OptionalToolSource": {
+      "value": null,
+      "allowOverride": true,
+      "isSecret": true
+    },
+    "PB_OptionalToolSourcePAT": {
+      "value": null,
+      "allowOverride": true,
+      "isSecret": true
+    },
+    "PB_OptionalToolSourceUser": {
+      "value": null,
+      "allowOverride": true,
+      "isSecret": true
     },
     "PB_SignType": {
       "value": "test",
