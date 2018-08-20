@@ -31,7 +31,7 @@ namespace System
     [StructLayout(LayoutKind.Auto)]
     [Serializable]
     [System.Runtime.CompilerServices.TypeForwardedFrom("mscorlib, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089")] 
-    public struct DateTimeOffset : IComparable, IFormattable, IComparable<DateTimeOffset>, IEquatable<DateTimeOffset>, ISerializable, IDeserializationCallback, ISpanFormattable
+    public readonly struct DateTimeOffset : IComparable, IFormattable, IComparable<DateTimeOffset>, IEquatable<DateTimeOffset>, ISerializable, IDeserializationCallback, ISpanFormattable
     {
         // Constants
         internal const long MaxOffset = TimeSpan.TicksPerHour * 14;
@@ -49,8 +49,8 @@ namespace System
         public static readonly DateTimeOffset UnixEpoch = new DateTimeOffset(DateTime.UnixEpochTicks, TimeSpan.Zero);
 
         // Instance Fields
-        private DateTime _dateTime;
-        private short _offsetMinutes;
+        private readonly DateTime _dateTime;
+        private readonly short _offsetMinutes;
 
         // Constructors
 
@@ -553,8 +553,8 @@ namespace System
         {
             try
             {
-                _offsetMinutes = ValidateOffset(Offset);
-                _dateTime = ValidateDate(ClockDateTime, Offset);
+                ValidateOffset(Offset);
+                ValidateDate(ClockDateTime, Offset);
             }
             catch (ArgumentException e)
             {
