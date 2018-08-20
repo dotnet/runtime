@@ -582,14 +582,12 @@ namespace System
             }
 
             char fmt = ParseFormatSpecifier(format, out int digits);
-            NumberFormatInfo info = NumberFormatInfo.GetInstance(provider);
-
             char fmtUpper = (char)(fmt & 0xFFDF); // ensure fmt is upper-cased for purposes of comparison
             if ((fmtUpper == 'G' && digits < 1) || fmtUpper == 'D')
             {
                 return value >= 0 ?
                     UInt32ToDecStr((uint)value, digits) :
-                    NegativeInt32ToDecStr(value, digits, info.NegativeSign);
+                    NegativeInt32ToDecStr(value, digits, NumberFormatInfo.GetInstance(provider).NegativeSign);
             }
             else if (fmtUpper == 'X')
             {
@@ -599,6 +597,7 @@ namespace System
             }
             else
             {
+                NumberFormatInfo info = NumberFormatInfo.GetInstance(provider);
                 NumberBuffer number = default;
                 Int32ToNumber(value, ref number);
                 ValueStringBuilder sb;
@@ -628,14 +627,12 @@ namespace System
             }
 
             char fmt = ParseFormatSpecifier(format, out int digits);
-            NumberFormatInfo info = NumberFormatInfo.GetInstance(provider);
-
             char fmtUpper = (char)(fmt & 0xFFDF); // ensure fmt is upper-cased for purposes of comparison
             if ((fmtUpper == 'G' && digits < 1) || fmtUpper == 'D')
             {
                 return value >= 0 ?
                     TryUInt32ToDecStr((uint)value, digits, destination, out charsWritten) :
-                    TryNegativeInt32ToDecStr(value, digits, info.NegativeSign, destination, out charsWritten);
+                    TryNegativeInt32ToDecStr(value, digits, NumberFormatInfo.GetInstance(provider).NegativeSign, destination, out charsWritten);
             }
             else if (fmtUpper == 'X')
             {
@@ -645,6 +642,7 @@ namespace System
             }
             else
             {
+                NumberFormatInfo info = NumberFormatInfo.GetInstance(provider);
                 NumberBuffer number = default;
                 Int32ToNumber(value, ref number);
                 ValueStringBuilder sb;
@@ -674,8 +672,6 @@ namespace System
             }
 
             char fmt = ParseFormatSpecifier(format, out int digits);
-            NumberFormatInfo info = NumberFormatInfo.GetInstance(provider);
-
             char fmtUpper = (char)(fmt & 0xFFDF); // ensure fmt is upper-cased for purposes of comparison
             if ((fmtUpper == 'G' && digits < 1) || fmtUpper == 'D')
             {
@@ -689,6 +685,7 @@ namespace System
             }
             else
             {
+                NumberFormatInfo info = NumberFormatInfo.GetInstance(provider);
                 NumberBuffer number = default;
                 UInt32ToNumber(value, ref number);
                 ValueStringBuilder sb;
@@ -718,8 +715,6 @@ namespace System
             }
 
             char fmt = ParseFormatSpecifier(format, out int digits);
-            NumberFormatInfo info = NumberFormatInfo.GetInstance(provider);
-
             char fmtUpper = (char)(fmt & 0xFFDF); // ensure fmt is upper-cased for purposes of comparison
             if ((fmtUpper == 'G' && digits < 1) || fmtUpper == 'D')
             {
@@ -733,6 +728,7 @@ namespace System
             }
             else
             {
+                NumberFormatInfo info = NumberFormatInfo.GetInstance(provider);
                 NumberBuffer number = default;
                 UInt32ToNumber(value, ref number);
                 ValueStringBuilder sb;
@@ -762,14 +758,12 @@ namespace System
             }
 
             char fmt = ParseFormatSpecifier(format, out int digits);
-            NumberFormatInfo info = NumberFormatInfo.GetInstance(provider);
-
             char fmtUpper = (char)(fmt & 0xFFDF); // ensure fmt is upper-cased for purposes of comparison
             if ((fmtUpper == 'G' && digits < 1) || fmtUpper == 'D')
             {
                 return value >= 0 ?
                     UInt64ToDecStr((ulong)value, digits) :
-                    NegativeInt64ToDecStr(value, digits, info.NegativeSign);
+                    NegativeInt64ToDecStr(value, digits, NumberFormatInfo.GetInstance(provider).NegativeSign);
             }
             else if (fmtUpper == 'X')
             {
@@ -780,6 +774,7 @@ namespace System
             }
             else
             {
+                NumberFormatInfo info = NumberFormatInfo.GetInstance(provider);
                 NumberBuffer number = default;
                 Int64ToNumber(value, ref number);
                 ValueStringBuilder sb;
@@ -809,14 +804,12 @@ namespace System
             }
 
             char fmt = ParseFormatSpecifier(format, out int digits);
-            NumberFormatInfo info = NumberFormatInfo.GetInstance(provider);
-
             char fmtUpper = (char)(fmt & 0xFFDF); // ensure fmt is upper-cased for purposes of comparison
             if ((fmtUpper == 'G' && digits < 1) || fmtUpper == 'D')
             {
                 return value >= 0 ?
                     TryUInt64ToDecStr((ulong)value, digits, destination, out charsWritten) :
-                    TryNegativeInt64ToDecStr(value, digits, info.NegativeSign, destination, out charsWritten);
+                    TryNegativeInt64ToDecStr(value, digits, NumberFormatInfo.GetInstance(provider).NegativeSign, destination, out charsWritten);
             }
             else if (fmtUpper == 'X')
             {
@@ -827,6 +820,7 @@ namespace System
             }
             else
             {
+                NumberFormatInfo info = NumberFormatInfo.GetInstance(provider);
                 NumberBuffer number = default;
                 Int64ToNumber(value, ref number);
                 ValueStringBuilder sb;
@@ -856,8 +850,6 @@ namespace System
             }
 
             char fmt = ParseFormatSpecifier(format, out int digits);
-            NumberFormatInfo info = NumberFormatInfo.GetInstance(provider);
-
             char fmtUpper = (char)(fmt & 0xFFDF); // ensure fmt is upper-cased for purposes of comparison
             if ((fmtUpper == 'G' && digits < 1) || fmtUpper == 'D')
             {
@@ -872,6 +864,7 @@ namespace System
             }
             else
             {
+                NumberFormatInfo info = NumberFormatInfo.GetInstance(provider);
                 NumberBuffer number = default;
                 UInt64ToNumber(value, ref number);
                 ValueStringBuilder sb;
@@ -901,8 +894,6 @@ namespace System
             }
 
             char fmt = ParseFormatSpecifier(format, out int digits);
-            NumberFormatInfo info = NumberFormatInfo.GetInstance(provider);
-
             char fmtUpper = (char)(fmt & 0xFFDF); // ensure fmt is upper-cased for purposes of comparison
             if ((fmtUpper == 'G' && digits < 1) || fmtUpper == 'D')
             {
@@ -917,6 +908,7 @@ namespace System
             }
             else
             {
+                NumberFormatInfo info = NumberFormatInfo.GetInstance(provider);
                 NumberBuffer number = default;
                 UInt64ToNumber(value, ref number);
                 ValueStringBuilder sb;

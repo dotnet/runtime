@@ -174,27 +174,27 @@ namespace System
 
         public override string ToString()
         {
-            return Number.FormatInt32(m_value, null, null);
+            return Number.FormatUInt32(m_value, null, null);
         }
 
         public string ToString(string format)
         {
-            return Number.FormatInt32(m_value, format, null);
+            return Number.FormatUInt32(m_value, format, null);
         }
 
         public string ToString(IFormatProvider provider)
         {
-            return Number.FormatInt32(m_value, null, provider);
+            return Number.FormatUInt32(m_value, null, provider);
         }
 
         public string ToString(string format, IFormatProvider provider)
         {
-            return Number.FormatInt32(m_value, format, provider);
+            return Number.FormatUInt32(m_value, format, provider);
         }
 
         public bool TryFormat(Span<char> destination, out int charsWritten, ReadOnlySpan<char> format = default, IFormatProvider provider = null)
         {
-            return Number.TryFormatInt32(m_value, format, provider, destination, out charsWritten);
+            return Number.TryFormatUInt32(m_value, format, provider, destination, out charsWritten);
         }
 
         //
