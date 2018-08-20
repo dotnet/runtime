@@ -7000,7 +7000,7 @@ mono_llvm_emit_method (MonoCompile *cfg)
 		 * - the method needs to have a unique mangled name
 		 * - llvmonly mode, since the code in aot-runtime.c would initialize got slots in the wrong aot image etc.
 		 */
-		is_linkonce = ctx->module->llvm_only && ctx->module->static_link && mono_aot_can_dedup (cfg->method);
+		is_linkonce = ctx->module->llvm_only && ctx->module->static_link && mono_aot_can_dedup (cfg->method) && FALSE;
 		if (is_linkonce) {
 			method_name = mono_aot_get_mangled_method_name (cfg->method);
 			if (!method_name)
