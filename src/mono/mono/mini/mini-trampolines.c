@@ -1389,12 +1389,12 @@ void
 mono_trampolines_init (void)
 {
 	mono_os_mutex_init_recursive (&trampolines_mutex);
-
-	if (mono_aot_only
+	gboolean disable_tramps = FALSE;
 #if TARGET_WASM
-		 || mono_compile_aot
+	disable_tramps = TRUE;
 #endif
-	)
+
+	if (mono_aot_only || disable_tramps)
 		return;
 
 	mono_trampoline_code [MONO_TRAMPOLINE_JIT] = create_trampoline_code (MONO_TRAMPOLINE_JIT);
