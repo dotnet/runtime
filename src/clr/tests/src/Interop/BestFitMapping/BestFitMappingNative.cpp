@@ -19,7 +19,7 @@ static int ReportFailure(const char* s)
     return (++fails);
 }
 
-extern  "C" DLL_EXPORT int GetResult()
+extern  "C" DLL_EXPORT int _cdecl GetResult()
 {
     return fails;
 }
@@ -169,7 +169,7 @@ extern "C" DLL_EXPORT LPSTR _cdecl CLPStr_InOutByRef(LPSTR* ppStr)
 
 
 typedef LPSTR (_cdecl* delegate_cdecl)(LPSTR* ppstr);
-extern "C" DLL_EXPORT delegate_cdecl CLPStr_DelegatePInvoke()
+extern "C" DLL_EXPORT delegate_cdecl _cdecl CLPStr_DelegatePInvoke()
 {
     return CLPStr_InOutByRef;
 }
