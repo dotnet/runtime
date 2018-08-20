@@ -561,9 +561,7 @@ mono_wasm_set_timeout (int timeout, int id)
 void
 mono_arch_register_icall (void)
 {
-#ifdef HOST_WASM
 	mono_add_internal_call ("System.Threading.WasmRuntime::SetTimeout", mono_wasm_set_timeout);
-#endif
 }
 
 void
