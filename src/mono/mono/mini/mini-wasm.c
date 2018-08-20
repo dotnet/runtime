@@ -12,8 +12,113 @@
 
 #ifndef DISABLE_JIT
 
-// include "ir-emit.h"
+#include "ir-emit.h"
 #include "cpu-wasm.h"
+
+ //FIXME figure out if we need to distingush between i,l,f,d types
+typedef enum {
+	ArgOnStack,
+	ArgValuetypeAddrOnStack,
+	ArgGsharedVTOnStack,
+	ArgValuetypeAddrInIReg,
+	ArgInvalid,
+} ArgStorage;
+
+typedef struct {
+	ArgStorage storage : 8;
+} ArgInfo;
+
+typedef struct {
+	int nargs;
+	gboolean gsharedvt;
+
+	ArgInfo ret;
+	ArgInfo args [1];
+} CallInfo;
+
+static ArgStorage
+get_storage (MonoType *type, gboolean is_return)
+{
+	switch (type->type) {
+	case MONO_TYPE_I1:
+	case MONO_TYPE_U1:
+	case MONO_TYPE_I2:
+	case MONO_TYPE_U2:
+	case MONO_TYPE_I4:
+	case MONO_TYPE_U4:
+	case MONO_TYPE_I:
+	case MONO_TYPE_U:
+	case MONO_TYPE_PTR:
+	case MONO_TYPE_FNPTR:
+	case MONO_TYPE_OBJECT:
+		return ArgOnStack;
+
+	case MONO_TYPE_U8:
+	case MONO_TYPE_I8:
+		return ArgOnStack;
+
+	case MONO_TYPE_R4:
+		return ArgOnStack;
+
+	case MONO_TYPE_R8:
+		return ArgOnStack;
+
+	case MONO_TYPE_GENERICINST:
+		if (!mono_type_generic_inst_is_valuetype (type))
+			return ArgOnStack;
+
+		if (mini_is_gsharedvt_type (type)) {
+			return ArgGsharedVTOnStack;
+		}
+		/* fall through */
+	case MONO_TYPE_VALUETYPE:
+	case MONO_TYPE_TYPEDBYREF: {
+		return is_return ? ArgValuetypeAddrInIReg : ArgValuetypeAddrOnStack;
+		break;
+	}
+	case MONO_TYPE_VAR:
+	case MONO_TYPE_MVAR:
+		g_assert (mini_is_gsharedvt_type (type));
+		return ArgGsharedVTOnStack;
+		break;
+	case MONO_TYPE_VOID:
+		g_assert (is_return);
+		break;
+	default:
+		g_error ("Can't handle as return value 0x%x", type->type);
+	}
+	return ArgInvalid;
+}
+
+static CallInfo*
+get_call_info (MonoMemPool *mp, MonoMethodSignature *sig)
+{
+	int n = sig->hasthis + sig->param_count;
+	CallInfo *cinfo;
+
+	if (mp)
+		cinfo = (CallInfo *)mono_mempool_alloc0 (mp, sizeof (CallInfo) + (sizeof (ArgInfo) * n));
+	else
+		cinfo = (CallInfo *)g_malloc0 (sizeof (CallInfo) + (sizeof (ArgInfo) * n));
+
+	cinfo->nargs = n;
+	cinfo->gsharedvt = mini_is_gsharedvt_variable_signature (sig);
+
+	/* return value */
+	cinfo->ret.storage = get_storage (mini_get_underlying_type (sig->ret), TRUE);
+
+	if (sig->hasthis)
+		cinfo->args [0].storage = ArgOnStack;
+
+	// not supported
+	g_assert (sig->call_convention != MONO_CALL_VARARG);
+
+	int i;
+	for (i = 0; i < sig->param_count; ++i)
+		cinfo->args [i + sig->hasthis].storage = get_storage (mini_get_underlying_type (sig->params [i]), FALSE);
+
+	return cinfo;
+}
 
 gboolean
 mono_arch_have_fast_tls (void)
@@ -36,7 +141,6 @@ mono_arch_ip_from_context (void *sigctx)
 gboolean
 mono_arch_is_inst_imm (int opcode, int imm_opcode, gint64 imm)
 {
-	g_error ("mono_arch_is_inst_imm");
 	return TRUE;
 }
 
@@ -94,7 +198,36 @@ mono_arch_allocate_vars (MonoCompile *cfg)
 void
 mono_arch_create_vars (MonoCompile *cfg)
 {
-	g_error ("mono_arch_create_vars");
+	MonoMethodSignature *sig;
+	CallInfo *cinfo;
+	MonoType *sig_ret;
+
+	sig = mono_method_signature (cfg->method);
+
+	if (!cfg->arch.cinfo)
+		cfg->arch.cinfo = get_call_info (cfg->mempool, sig);
+	cinfo = (CallInfo *)cfg->arch.cinfo;
+
+	// if (cinfo->ret.storage == ArgValuetypeInReg)
+	// 	cfg->ret_var_is_local = TRUE;
+
+	sig_ret = mini_get_underlying_type (sig->ret);
+	if (cinfo->ret.storage == ArgValuetypeAddrInIReg || cinfo->ret.storage == ArgGsharedVTOnStack) {
+		cfg->vret_addr = mono_compile_create_var (cfg, mono_get_int_type (), OP_ARG);
+		if (G_UNLIKELY (cfg->verbose_level > 1)) {
+			printf ("vret_addr = ");
+			mono_print_ins (cfg->vret_addr);
+		}
+	}
+
+	if (cfg->gen_sdb_seq_points)
+		g_error ("gen_sdb_seq_points not supported");
+
+	if (cfg->method->save_lmf)
+		cfg->create_lmf_var = TRUE;
+
+	if (cfg->method->save_lmf)
+		cfg->lmf_ir = TRUE;
 }
 
 void
@@ -118,7 +251,6 @@ mono_arch_emit_exceptions (MonoCompile *cfg)
 MonoInst*
 mono_arch_emit_inst_for_method (MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSignature *fsig, MonoInst **args)
 {
-	g_error ("mono_arch_emit_inst_for_method");
 	return NULL;
 }
 
@@ -137,7 +269,21 @@ mono_arch_emit_prolog (MonoCompile *cfg)
 void
 mono_arch_emit_setret (MonoCompile *cfg, MonoMethod *method, MonoInst *val)
 {
-	g_error ("mono_arch_emit_setret");
+	MonoType *ret = mini_get_underlying_type (mono_method_signature (method)->ret);
+
+	if (!ret->byref) {
+		if (ret->type == MONO_TYPE_R4) {
+			MONO_EMIT_NEW_UNALU (cfg, cfg->r4fp ? OP_RMOVE : OP_FMOVE, cfg->ret->dreg, val->dreg);
+			return;
+		} else if (ret->type == MONO_TYPE_R8) {
+			MONO_EMIT_NEW_UNALU (cfg, OP_FMOVE, cfg->ret->dreg, val->dreg);
+			return;
+		} else if (ret->type == MONO_TYPE_I8 || ret->type == MONO_TYPE_U8) {
+			MONO_EMIT_NEW_UNALU (cfg, OP_LMOVE, cfg->ret->dreg, val->dreg);
+			return;
+		}
+	}
+	MONO_EMIT_NEW_UNALU (cfg, OP_MOVE, cfg->ret->dreg, val->dreg);
 }
 
 void
@@ -160,13 +306,49 @@ mono_arch_regname (int reg)
 LLVMCallInfo*
 mono_arch_get_llvm_call_info (MonoCompile *cfg, MonoMethodSignature *sig)
 {
-	g_error ("mono_arch_get_llvm_call_info");
+	int i, n;
+	CallInfo *cinfo;
+	LLVMCallInfo *linfo;
+
+	cinfo = get_call_info (cfg->mempool, sig);
+	n = cinfo->nargs;
+
+	linfo = mono_mempool_alloc0 (cfg->mempool, sizeof (LLVMCallInfo) + (sizeof (LLVMArgInfo) * n));
+
+	if (mini_type_is_vtype (sig->ret)) {
+		/* Vtype returned using a hidden argument */
+		linfo->ret.storage = LLVMArgVtypeRetAddr;
+		// linfo->vret_arg_index = cinfo->vret_arg_index;
+	} else {
+		if (sig->ret->type != MONO_TYPE_VOID)
+			linfo->ret.storage = LLVMArgNormal;
+	}
+
+	for (i = 0; i < n; ++i) {
+		ArgInfo *ainfo = &cinfo->args[i];
+
+		switch (ainfo->storage) {
+		case ArgOnStack:
+			linfo->args [i].storage = LLVMArgNormal;
+			break;
+		case ArgValuetypeAddrOnStack:
+			linfo->args [i].storage = LLVMArgVtypeByRef;
+			break;
+		case ArgGsharedVTOnStack:
+			linfo->args [i].storage = LLVMArgGsharedvtVariable;
+			break;
+		case ArgValuetypeAddrInIReg:
+			g_error ("this is only valid for sig->ret");
+			break;
+		}
+	}
+
+	return linfo;
 }
 
 gboolean
 mono_arch_tailcall_supported (MonoCompile *cfg, MonoMethodSignature *caller_sig, MonoMethodSignature *callee_sig)
 {
-	g_error ("mono_arch_tailcall_supported");
 	return FALSE;
 }
 #endif
@@ -366,13 +548,15 @@ mono_set_timeout_exec (int id)
 	}
 }
 
+#endif
+
 void
 mono_wasm_set_timeout (int timeout, int id)
 {
+#ifdef HOST_WASM
 	mono_set_timeout (timeout, id);
-}
-
 #endif
+}
 
 void
 mono_arch_register_icall (void)
