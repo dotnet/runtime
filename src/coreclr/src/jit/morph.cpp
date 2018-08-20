@@ -2333,18 +2333,9 @@ void fgArgInfo::EvalArgsToTemps()
                 {
                     setupArg = compiler->gtNewTempAssign(tmpVarNum, argx);
 
-                    LclVarDsc* varDsc = compiler->lvaTable + tmpVarNum;
-
-                    if (compiler->fgOrder == Compiler::FGOrderLinear)
-                    {
-                        // We'll reference this temporary variable just once
-                        // when we perform the function call after
-                        // setting up this argument.
-                        varDsc->setLvRefCnt(1);
-                    }
-
-                    var_types lclVarType = genActualType(argx->gtType);
-                    var_types scalarType = TYP_UNKNOWN;
+                    LclVarDsc* varDsc     = compiler->lvaTable + tmpVarNum;
+                    var_types  lclVarType = genActualType(argx->gtType);
+                    var_types  scalarType = TYP_UNKNOWN;
 
                     if (setupArg->OperIsCopyBlkOp())
                     {
@@ -2628,28 +2619,11 @@ GenTree* Compiler::fgMakeMultiUse(GenTree** pOp)
     GenTree* tree = *pOp;
     if (tree->IsLocal())
     {
-        auto result = gtClone(tree);
-        if (lvaLocalVarRefCounted())
-        {
-            lvaTable[tree->gtLclVarCommon.gtLclNum].incRefCnts(compCurBB->getBBWeight(this), this);
-        }
-        return result;
+        return gtClone(tree);
     }
     else
     {
-        GenTree* result = fgInsertCommaFormTemp(pOp);
-
-        // At this point, *pOp is GT_COMMA(GT_ASG(V01, *pOp), V01) and result = V01
-        // Therefore, the ref count has to be incremented 3 times for *pOp and result, if result will
-        // be added by the caller.
-        if (lvaLocalVarRefCounted())
-        {
-            lvaTable[result->gtLclVarCommon.gtLclNum].incRefCnts(compCurBB->getBBWeight(this), this);
-            lvaTable[result->gtLclVarCommon.gtLclNum].incRefCnts(compCurBB->getBBWeight(this), this);
-            lvaTable[result->gtLclVarCommon.gtLclNum].incRefCnts(compCurBB->getBBWeight(this), this);
-        }
-
-        return result;
+        return fgInsertCommaFormTemp(pOp);
     }
 }
 
@@ -5912,13 +5886,6 @@ GenTree* Compiler::fgMorphArrayIndex(GenTree* tree)
             GenTreeBoundsChk(GT_ARR_BOUNDS_CHECK, TYP_VOID, index, arrLen, SCK_RNGCHK_FAIL);
 
         bndsChk = arrBndsChk;
-
-        // Make sure to increment ref-counts if already ref-counted.
-        if (lvaLocalVarRefCounted())
-        {
-            lvaRecursiveIncRefCounts(index);
-            lvaRecursiveIncRefCounts(arrRef);
-        }
 
         // Now we'll switch to using the second copies for arrRef and index
         // to compute the address expression
@@ -12576,21 +12543,6 @@ DONE_MORPHING_CHILDREN:
 
                     DEBUG_DESTROY_NODE(asg->gtOp.gtOp1);
                     DEBUG_DESTROY_NODE(lcl);
-
-                    /* This local variable should never be used again */
-                    // <BUGNUM>
-                    // VSW 184221: Make RefCnt to zero to indicate that this local var
-                    // is not used any more. (Keey the lvType as is.)
-                    // Otherwise lvOnFrame will be set to true in Compiler::raMarkStkVars
-                    // And then emitter::emitEndCodeGen will assert in the following line:
-                    //        noway_assert( dsc->lvTracked);
-                    // </BUGNUM>
-                    noway_assert(varDsc->lvRefCnt() == 0 || // lvRefCnt may not have been set yet.
-                                 varDsc->lvRefCnt() == 2    // Or, we assume this tmp should only be used here,
-                                                            // and it only shows up twice.
-                                 );
-                    lvaTable[lclNum].setLvRefCnt(0);
-                    lvaTable[lclNum].lvaResetSortAgainFlag(this);
                 }
 
                 if (op1->OperIsCompare())
@@ -12599,9 +12551,9 @@ DONE_MORPHING_CHILDREN:
                     //
                     //                        EQ/NE           ->      RELOP/!RELOP
                     //                        /  \                       /    \
-                        //                     RELOP  CNS 0/1
+                    //                     RELOP  CNS 0/1
                     //                     /   \
-                        //
+                    //
                     // Note that we will remove/destroy the EQ/NE node and move
                     // the RELOP up into it's location.
 
@@ -13755,11 +13707,6 @@ DONE_MORPHING_CHILDREN:
                 }
                 else
                 {
-                    /* The left operand is worthless, throw it away */
-                    if (lvaLocalVarRefCounted())
-                    {
-                        lvaRecursiveDecRefCounts(op1);
-                    }
                     op2->gtFlags |= (tree->gtFlags & (GTF_DONT_CSE | GTF_LATE_ARG));
                     DEBUG_DESTROY_NODE(tree);
                     DEBUG_DESTROY_NODE(op1);
@@ -14328,20 +14275,10 @@ GenTree* Compiler::fgMorphModToSubMulDiv(GenTreeOp* tree)
     {
         numerator = fgMakeMultiUse(&tree->gtOp1);
     }
-    else if (lvaLocalVarRefCounted() && numerator->OperIsLocal())
-    {
-        // Morphing introduces new lclVar references. Increase ref counts
-        lvaIncRefCnts(numerator);
-    }
 
     if (!denominator->OperIsLeaf())
     {
         denominator = fgMakeMultiUse(&tree->gtOp2);
-    }
-    else if (lvaLocalVarRefCounted() && denominator->OperIsLocal())
-    {
-        // Morphing introduces new lclVar references. Increase ref counts
-        lvaIncRefCnts(denominator);
     }
 
     // The numerator and denominator may have been assigned to temps, in which case
@@ -15697,12 +15634,6 @@ bool Compiler::fgMorphBlockStmt(BasicBlock* block, GenTreeStmt* stmt DEBUGARG(co
     }
 
     stmt->gtStmtExpr = morph;
-
-    if (lvaLocalVarRefCounted())
-    {
-        // fgMorphTree may have introduced new lclVar references. Bump the ref counts if requested.
-        lvaRecursiveIncRefCounts(stmt->gtStmtExpr);
-    }
 
     // Can the entire tree be removed?
     bool removedStmt = false;

@@ -12017,9 +12017,6 @@ GenTree* Compiler::gtFoldExpr(GenTree* tree)
                 GenTree* sideEffList = nullptr;
                 gtExtractSideEffList(op1, &sideEffList);
 
-                fgUpdateRefCntForExtract(op1, sideEffList);   // Decrement refcounts for op1, Keeping any side-effects
-                fgUpdateRefCntForExtract(colon_op1, nullptr); // Decrement refcounts for colon_op1
-
                 // Clear colon flags only if the qmark itself is not conditionaly executed
                 if ((tree->gtFlags & GTF_COLON_COND) == 0)
                 {
@@ -12230,10 +12227,7 @@ GenTree* Compiler::gtFoldExprCompare(GenTree* tree)
         cons->gtNext = tree->gtNext;
         cons->gtPrev = tree->gtPrev;
     }
-    if (lvaLocalVarRefCounted())
-    {
-        lvaRecursiveDecRefCounts(tree);
-    }
+
     return cons;
 }
 
@@ -12671,10 +12665,6 @@ GenTree* Compiler::gtFoldExprSpecial(GenTree* tree)
                 /* Multiply by zero - return the 'zero' node, but not if side effects */
                 if (!(op->gtFlags & GTF_SIDE_EFFECT))
                 {
-                    if (lvaLocalVarRefCounted())
-                    {
-                        lvaRecursiveDecRefCounts(op);
-                    }
                     op = cons;
                     goto DONE_FOLD;
                 }
@@ -12703,10 +12693,6 @@ GenTree* Compiler::gtFoldExprSpecial(GenTree* tree)
 
                 if (!(op->gtFlags & GTF_SIDE_EFFECT))
                 {
-                    if (lvaLocalVarRefCounted())
-                    {
-                        lvaRecursiveDecRefCounts(op);
-                    }
                     op = cons;
                     goto DONE_FOLD;
                 }
@@ -12743,10 +12729,6 @@ GenTree* Compiler::gtFoldExprSpecial(GenTree* tree)
 
                 if (!(op->gtFlags & GTF_SIDE_EFFECT))
                 {
-                    if (lvaLocalVarRefCounted())
-                    {
-                        lvaRecursiveDecRefCounts(op);
-                    }
                     op = cons;
                     goto DONE_FOLD;
                 }
@@ -12766,10 +12748,6 @@ GenTree* Compiler::gtFoldExprSpecial(GenTree* tree)
                 }
                 else if (!(op->gtFlags & GTF_SIDE_EFFECT))
                 {
-                    if (lvaLocalVarRefCounted())
-                    {
-                        lvaRecursiveDecRefCounts(op);
-                    }
                     op = cons;
                     goto DONE_FOLD;
                 }
@@ -12793,10 +12771,6 @@ GenTree* Compiler::gtFoldExprSpecial(GenTree* tree)
             {
                 op         = op2->AsColon()->ElseNode();
                 opToDelete = op2->AsColon()->ThenNode();
-            }
-            if (lvaLocalVarRefCounted())
-            {
-                lvaRecursiveDecRefCounts(opToDelete);
             }
 
             // Clear colon flags only if the qmark itself is not conditionaly executed

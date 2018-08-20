@@ -266,8 +266,6 @@ void Compiler::optCopyProp(BasicBlock* block, GenTree* stmt, GenTree* tree, LclN
         }
 #endif
 
-        lvaTable[lclNum].decRefCnts(block->getBBWeight(this), this);
-        lvaTable[newLclNum].incRefCnts(block->getBBWeight(this), this);
         tree->gtLclVarCommon.SetLclNum(newLclNum);
         tree->AsLclVarCommon()->SetSsaNum(newSsaNum);
         gtUpdateSideEffects(stmt, tree);

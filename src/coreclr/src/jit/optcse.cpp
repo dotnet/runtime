@@ -283,28 +283,6 @@ Compiler::fgWalkResult Compiler::optUnmarkCSEs(GenTree** pTree, fgWalkData* data
         // The call to optUnmarkCSE(tree) should have cleared any CSE info
         //
         assert(!IS_CSE_INDEX(tree->gtCSEnum));
-
-        // This node is to be removed from the graph of GenTree*
-        // next decrement any LclVar references.
-        //
-        if (tree->gtOper == GT_LCL_VAR)
-        {
-            unsigned   lclNum;
-            LclVarDsc* varDsc;
-
-            // This variable ref is going away, decrease its ref counts
-
-            lclNum = tree->gtLclVarCommon.gtLclNum;
-            assert(lclNum < comp->lvaCount);
-            varDsc = comp->lvaTable + lclNum;
-
-            // make sure it's been initialized
-            assert(comp->optCSEweight <= BB_MAX_WEIGHT);
-
-            //  Decrement its lvRefCnt and lvRefCntWtd
-
-            varDsc->decRefCnts(comp->optCSEweight, comp);
-        }
     }
     else // optUnmarkCSE(tree) returned false
     {
@@ -2337,15 +2315,6 @@ public:
                                                // cannot add any new exceptions
             }
 
-            // Increment ref count for the CSE ref
-            m_pCompiler->lvaTable[cseLclVarNum].incRefCnts(blk->getBBWeight(m_pCompiler), m_pCompiler);
-
-            if (isDef)
-            {
-                // Also increment ref count for the CSE assignment
-                m_pCompiler->lvaTable[cseLclVarNum].incRefCnts(blk->getBBWeight(m_pCompiler), m_pCompiler);
-            }
-
             // Walk the statement 'stm' and find the pointer
             // in the tree is pointing to 'exp'
             //
@@ -2462,11 +2431,7 @@ public:
     //
     void Cleanup()
     {
-        if (m_addCSEcount > 0)
-        {
-            /* We've added new local variables to the lvaTable so note that we need to recreate the sorted table */
-            m_pCompiler->lvaSortAgain = true;
-        }
+        // Nothing to do, currently.
     }
 };
 
