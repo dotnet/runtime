@@ -143,13 +143,21 @@ mono_arch_create_generic_trampoline (MonoTrampolineType tramp_type, MonoTrampInf
 
 	/* Setup stack frame */
 	imm = frame_size;
+	mono_add_unwind_op_def_cfa (unwind_ops, code, buf, ARMREG_SP, 0);
 	while (imm > 256) {
 		arm_subx_imm (code, ARMREG_SP, ARMREG_SP, 256);
 		imm -= 256;
+		mono_add_unwind_op_def_cfa_offset (unwind_ops, code, buf, frame_size - imm);
 	}
 	arm_subx_imm (code, ARMREG_SP, ARMREG_SP, imm);
+	mono_add_unwind_op_def_cfa_offset (unwind_ops, code, buf, frame_size);
+
 	arm_stpx (code, ARMREG_FP, ARMREG_LR, ARMREG_SP, 0);
+	mono_add_unwind_op_offset (unwind_ops, code, buf, ARMREG_LR, -frame_size + 8);
+	mono_add_unwind_op_offset (unwind_ops, code, buf, ARMREG_FP, -frame_size);
+
 	arm_movspx (code, ARMREG_FP, ARMREG_SP);
+	mono_add_unwind_op_def_cfa_reg (unwind_ops, code, buf, ARMREG_FP);
 
 	/* Save gregs */
 	// FIXME: Optimize this
