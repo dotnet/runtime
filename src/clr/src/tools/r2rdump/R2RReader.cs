@@ -174,6 +174,24 @@ namespace R2RDump
             }
         }
 
+        public bool InputArchitectureMatchesDisassemblerArchitecture()
+        {
+            System.Runtime.InteropServices.Architecture val = System.Runtime.InteropServices.RuntimeInformation.ProcessArchitecture;
+            switch (Machine)
+            {
+                case Machine.Amd64:
+                    return val == System.Runtime.InteropServices.Architecture.X64;
+                case Machine.I386:
+                    return val == System.Runtime.InteropServices.Architecture.X86;
+                case Machine.Arm64:
+                    return val == System.Runtime.InteropServices.Architecture.Arm64;
+                case Machine.ArmThumb2:
+                    return val == System.Runtime.InteropServices.Architecture.Arm;
+                default:
+                    return false;
+            }
+        }
+
         /// <summary>
         /// Each runtime function entry has 3 fields for Amd64 machines (StartAddress, EndAddress, UnwindRVA), otherwise 2 fields (StartAddress, UnwindRVA)
         /// </summary>
