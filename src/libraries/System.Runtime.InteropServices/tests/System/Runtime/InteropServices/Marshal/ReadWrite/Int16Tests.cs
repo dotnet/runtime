@@ -10,7 +10,7 @@ using Xunit;
 
 namespace System.Runtime.InteropServices.Tests
 {
-    public class Int16Tests
+    public partial class Int16Tests
     {
         [Theory]
         [InlineData(new short[] { 0, 1, 2, 3, 4, 5, 6, 7, 8, 9, short.MaxValue })]
@@ -139,18 +139,6 @@ namespace System.Runtime.InteropServices.Tests
         }
 
         [Fact]
-        public void ReadInt16_NotReadable_ThrowsArgumentException()
-        {
-            AssemblyBuilder assemblyBuilder = AssemblyBuilder.DefineDynamicAssembly(new AssemblyName("Assembly"), AssemblyBuilderAccess.RunAndCollect);
-            ModuleBuilder moduleBuilder = assemblyBuilder.DefineDynamicModule("Module");
-            TypeBuilder typeBuilder = moduleBuilder.DefineType("Type");
-            Type collectibleType = typeBuilder.CreateType();
-            object collectibleObject = Activator.CreateInstance(collectibleType);
-
-            AssertExtensions.Throws<ArgumentException>(null, () => Marshal.ReadInt16(collectibleObject, 0));
-        }
-
-        [Fact]
         public void WriteInt16_ZeroPointer_ThrowsException()
         {
             AssertExtensions.ThrowsAny<AccessViolationException, NullReferenceException>(() => Marshal.WriteInt16(IntPtr.Zero, 0));
@@ -162,18 +150,6 @@ namespace System.Runtime.InteropServices.Tests
         public void WriteInt16_NullObject_ThrowsAccessViolationException()
         {
             Assert.Throws<AccessViolationException>(() => Marshal.WriteInt16(null, 2, 0));
-        }
-
-        [Fact]
-        public void WriteInt16_NotReadable_ThrowsArgumentException()
-        {
-            AssemblyBuilder assemblyBuilder = AssemblyBuilder.DefineDynamicAssembly(new AssemblyName("Assembly"), AssemblyBuilderAccess.RunAndCollect);
-            ModuleBuilder moduleBuilder = assemblyBuilder.DefineDynamicModule("Module");
-            TypeBuilder typeBuilder = moduleBuilder.DefineType("Type");
-            Type collectibleType = typeBuilder.CreateType();
-            object collectibleObject = Activator.CreateInstance(collectibleType);
-
-            AssertExtensions.Throws<ArgumentException>(null, () => Marshal.WriteInt16(collectibleObject, 0, 0));
         }
 
         public struct BlittableStruct

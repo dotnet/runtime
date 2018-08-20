@@ -10,7 +10,7 @@ using Xunit;
 
 namespace System.Runtime.InteropServices.Tests
 {
-    public class ByteTests
+    public partial class ByteTests
     {
         [Theory]
         [InlineData(new byte[] { 0, 1, 2, 3, 4, 5, 6, 7, 8, 9, byte.MaxValue })]
@@ -137,18 +137,6 @@ namespace System.Runtime.InteropServices.Tests
         }
 
         [Fact]
-        public void ReadByte_NotReadable_ThrowsArgumentException()
-        {
-            AssemblyBuilder assemblyBuilder = AssemblyBuilder.DefineDynamicAssembly(new AssemblyName("Assembly"), AssemblyBuilderAccess.RunAndCollect);
-            ModuleBuilder moduleBuilder = assemblyBuilder.DefineDynamicModule("Module");
-            TypeBuilder typeBuilder = moduleBuilder.DefineType("Type");
-            Type collectibleType = typeBuilder.CreateType();
-            object collectibleObject = Activator.CreateInstance(collectibleType);
-
-            AssertExtensions.Throws<ArgumentException>(null, () => Marshal.ReadByte(collectibleObject, 0));
-        }
-
-        [Fact]
         public void WriteByte_ZeroPointer_ThrowsException()
         {
             AssertExtensions.ThrowsAny<AccessViolationException, NullReferenceException>(() => Marshal.WriteByte(IntPtr.Zero, 0));
@@ -160,18 +148,6 @@ namespace System.Runtime.InteropServices.Tests
         public void WriteByte_NullObject_ThrowsAccessViolationException()
         {
             Assert.Throws<AccessViolationException>(() => Marshal.WriteByte(null, 2, 0));
-        }
-
-        [Fact]
-        public void WriteByte_NotReadable_ThrowsArgumentException()
-        {
-            AssemblyBuilder assemblyBuilder = AssemblyBuilder.DefineDynamicAssembly(new AssemblyName("Assembly"), AssemblyBuilderAccess.RunAndCollect);
-            ModuleBuilder moduleBuilder = assemblyBuilder.DefineDynamicModule("Module");
-            TypeBuilder typeBuilder = moduleBuilder.DefineType("Type");
-            Type collectibleType = typeBuilder.CreateType();
-            object collectibleObject = Activator.CreateInstance(collectibleType);
-
-            AssertExtensions.Throws<ArgumentException>(null, () => Marshal.WriteByte(collectibleObject, 0, 0));
         }
 
         public struct BlittableStruct

@@ -10,7 +10,7 @@ using Xunit;
 
 namespace System.Runtime.InteropServices.Tests
 {
-    public class Int64Tests
+    public partial class Int64Tests
     {
         [Theory]
         [InlineData(new long[] { 0, 1, 2, 3, 4, 5, 6, 7, 8, 9, long.MaxValue })]
@@ -151,18 +151,6 @@ namespace System.Runtime.InteropServices.Tests
         }
 
         [Fact]
-        public void ReadInt64_NotReadable_ThrowsArgumentException()
-        {
-            AssemblyBuilder assemblyBuilder = AssemblyBuilder.DefineDynamicAssembly(new AssemblyName("Assembly"), AssemblyBuilderAccess.RunAndCollect);
-            ModuleBuilder moduleBuilder = assemblyBuilder.DefineDynamicModule("Module");
-            TypeBuilder typeBuilder = moduleBuilder.DefineType("Type");
-            Type collectibleType = typeBuilder.CreateType();
-            object collectibleObject = Activator.CreateInstance(collectibleType);
-
-            AssertExtensions.Throws<ArgumentException>(null, () => Marshal.ReadInt64(collectibleObject, 0));
-        }
-
-        [Fact]
         public void WriteInt64_ZeroPointer_ThrowsException()
         {
             AssertExtensions.ThrowsAny<AccessViolationException, NullReferenceException>(() => Marshal.WriteInt64(IntPtr.Zero, 0));
@@ -174,18 +162,6 @@ namespace System.Runtime.InteropServices.Tests
         public void WriteInt64_NullObject_ThrowsAccessViolationException()
         {
             Assert.Throws<AccessViolationException>(() => Marshal.WriteInt64(null, 2, 0));
-        }
-
-        [Fact]
-        public void WriteInt64_NotReadable_ThrowsArgumentException()
-        {
-            AssemblyBuilder assemblyBuilder = AssemblyBuilder.DefineDynamicAssembly(new AssemblyName("Assembly"), AssemblyBuilderAccess.RunAndCollect);
-            ModuleBuilder moduleBuilder = assemblyBuilder.DefineDynamicModule("Module");
-            TypeBuilder typeBuilder = moduleBuilder.DefineType("Type");
-            Type collectibleType = typeBuilder.CreateType();
-            object collectibleObject = Activator.CreateInstance(collectibleType);
-
-            AssertExtensions.Throws<ArgumentException>(null, () => Marshal.WriteInt64(collectibleObject, 0, 0));
         }
 
         public struct BlittableStruct
