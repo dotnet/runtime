@@ -9,7 +9,7 @@
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
     <ClsCompliant>false</ClsCompliant>
   </PropertyGroup>
-  <ItemGroup Condition="'$(BuildingInsideVisualStudio)' == 'true'">
+  <ItemGroup>
     <Compile Include="..\..\System.IO.FileSystem\src\Microsoft\Win32\SafeHandles\SafeFindHandle.Windows.cs" Link="Microsoft\IO\Win32\SafeHandles\SafeFindHandle.Windows.cs" />
     <Compile Include="..\..\System.IO.FileSystem\src\System\IO\Directory.cs" Link="Microsoft\IO\Directory.cs" />
     <Compile Include="..\..\System.IO.FileSystem\src\System\IO\DirectoryInfo.cs" Link="Microsoft\IO\DirectoryInfo.cs" />
