@@ -6648,7 +6648,7 @@ mono_icall_get_machine_name (MonoError *error)
 #if !defined(DISABLE_SOCKETS)
 	MonoStringHandle result;
 	char *buf;
-	int n;
+	int n, i;
 #if defined _SC_HOST_NAME_MAX
 	n = sysconf (_SC_HOST_NAME_MAX);
 	if (n == -1)
@@ -6658,6 +6658,13 @@ mono_icall_get_machine_name (MonoError *error)
 
 	if (gethostname (buf, n) == 0){
 		buf [n] = 0;
+		// try truncating the string at the first dot
+		for (i = 0; i < n; i++) {
+			if (buf [i] == '.') {
+				buf [i] = 0;
+				break;
+			}
+		}
 		result = mono_string_new_handle (mono_domain_get (), buf, error);
 	} else
 		result = MONO_HANDLE_CAST (MonoString, NULL_HANDLE);
