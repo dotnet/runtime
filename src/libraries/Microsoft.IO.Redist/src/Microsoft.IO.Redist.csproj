@@ -25,6 +25,7 @@
     <Compile Include="..\..\System.IO.FileSystem\src\System\IO\Error.cs" Link="Microsoft\IO\Error.cs" />
     <Compile Include="..\..\System.IO.FileSystem\src\System\IO\File.cs" Link="Microsoft\IO\File.cs" />
     <Compile Include="..\..\System.IO.FileSystem\src\System\IO\FileInfo.cs" Link="Microsoft\IO\FileInfo.cs" />
+    <Compile Include="..\..\System.IO.FileSystem\src\System\IO\FileSystem.Win32.cs" Link="Microsoft\IO\FileSystem.Win32.cs" />
     <Compile Include="..\..\System.IO.FileSystem\src\System\IO\FileSystem.Windows.cs" Link="Microsoft\IO\FileSystem.Windows.cs" />
     <Compile Include="..\..\System.IO.FileSystem\src\System\IO\FileSystemInfo.cs" Link="Microsoft\IO\FileSystemInfo.cs" />
     <Compile Include="..\..\System.IO.FileSystem\src\System\IO\FileSystemInfo.Windows.cs" Link="Microsoft\IO\FileSystemInfo.Windows.cs" />
@@ -153,6 +154,12 @@
     </Compile>
     <Compile Include="$(CommonPath)\Interop\Windows\kernel32\Interop.GenericOperations.cs">
       <Link>Common\Interop\Windows\Interop.GenericOperations.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)\Interop\Windows\kernel32\Interop.EncryptDecrypt.cs"> 
+      <Link>Common\Interop\Windows\Interop.EncryptDecrypt.cs</Link> 
+    </Compile>
+    <Compile Include="$(CommonPath)\Interop\Windows\kernel32\Interop.GetVolumeInformation.cs"> 
+      <Link>Common\Interop\Windows\Interop.GetVolumeInformation.cs</Link> 
     </Compile>
     <Compile Include="$(CommonPath)\CoreLib\Interop\Windows\kernel32\Interop.FindFirstFileEx.cs">
       <Link>Common\CoreLib\Interop\Windows\Interop.FindFirstFileEx.cs</Link>
