@@ -14,7 +14,7 @@
 - `dnf install sqliteodbc.x86_64`
 
 ## Notes on commands used in Debian 8.2
-- followed [dockerfile](https://devdiv.visualstudio.com/DevDiv/_git/DotNetCore?path=%2Fdockerfiles%2Fdebian%2F8.2%2FDockerfile&version=GBmaster) instructions for debian 8.2
+- followed [dockerfile](https://github.com/dotnet/dotnet-buildtools-prereqs-docker/blob/master/src/debian/8.2/Dockerfile) instructions for debian 8.2
 - dependencies: libkrb5-dev, cmake
 
 Get the tag name from https://hub.docker.com/r/microsoft/dotnet-buildtools-prereqs/tags/ and use in docker run below
