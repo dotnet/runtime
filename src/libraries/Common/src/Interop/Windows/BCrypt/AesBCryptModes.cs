@@ -28,7 +28,7 @@ namespace Internal.Cryptography
             }
         }
 
-        private static SafeAlgorithmHandle OpenAesAlgorithm(string cipherMode)
+        internal static SafeAlgorithmHandle OpenAesAlgorithm(string cipherMode)
         {
             SafeAlgorithmHandle hAlg = Cng.BCryptOpenAlgorithmProvider(Cng.BCRYPT_AES_ALGORITHM, null, Cng.OpenAlgorithmProviderFlags.NONE);
             hAlg.SetCipherMode(cipherMode);

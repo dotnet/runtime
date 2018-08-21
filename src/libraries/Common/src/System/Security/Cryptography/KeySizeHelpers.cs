@@ -15,43 +15,58 @@ namespace System.Security.Cryptography
             return (KeySizes[])(src.Clone());
         }
 
+        public static bool IsLegalSize(this int size, KeySizes legalSizes)
+        {
+            return size.IsLegalSize(legalSizes, out _);
+        }
+
         public static bool IsLegalSize(this int size, KeySizes[] legalSizes)
         {
-            bool dontCare;
-            return size.IsLegalSize(legalSizes, out dontCare);
+            return size.IsLegalSize(legalSizes, out _);
+        }
+
+        public static bool IsLegalSize(this int size, KeySizes legalSizes, out bool validatedByZeroSkipSizeKeySizes)
+        {
+            validatedByZeroSkipSizeKeySizes = false;
+
+            // If a cipher has only one valid key size, MinSize == MaxSize and SkipSize will be 0
+            if (legalSizes.SkipSize == 0)
+            {
+                if (legalSizes.MinSize == size)
+                {
+                    // Signal that we were validated by a 0-skipsize KeySizes entry. Needed to preserve a very obscure
+                    // piece of back-compat behavior.
+                    validatedByZeroSkipSizeKeySizes = true;
+                    return true;
+                }
+            }
+            else if (size >= legalSizes.MinSize && size <= legalSizes.MaxSize)
+            {
+                // If the number is in range, check to see if it's a legal increment above MinSize
+                int delta = size - legalSizes.MinSize;
+
+                // While it would be unusual to see KeySizes { 10, 20, 5 } and { 11, 14, 1 }, it could happen.
+                // So don't return false just because this one doesn't match.
+                if (delta % legalSizes.SkipSize == 0)
+                {
+                    return true;
+                }
+            }
+
+            return false;
         }
 
         public static bool IsLegalSize(this int size, KeySizes[] legalSizes, out bool validatedByZeroSkipSizeKeySizes)
         {
-            validatedByZeroSkipSizeKeySizes = false;
             for (int i = 0; i < legalSizes.Length; i++)
             {
-                KeySizes currentSizes = legalSizes[i];
-                
-                // If a cipher has only one valid key size, MinSize == MaxSize and SkipSize will be 0
-                if (currentSizes.SkipSize == 0)
+                if (size.IsLegalSize(legalSizes[i], out validatedByZeroSkipSizeKeySizes))
                 {
-                    if (currentSizes.MinSize == size)
-                    {
-                        // Signal that we were validated by a 0-skipsize KeySizes entry. Needed to preserve a very obscure
-                        // piece of back-compat behavior.
-                        validatedByZeroSkipSizeKeySizes = true;
-                        return true;
-                    }
-                }
-                else if (size >= currentSizes.MinSize && size <= currentSizes.MaxSize)
-                {
-                    // If the number is in range, check to see if it's a legal increment above MinSize
-                    int delta = size - currentSizes.MinSize;
-
-                    // While it would be unusual to see KeySizes { 10, 20, 5 } and { 11, 14, 1 }, it could happen.
-                    // So don't return false just because this one doesn't match.
-                    if (delta % currentSizes.SkipSize == 0)
-                    {
-                        return true;
-                    }
+                    return true;
                 }
             }
+
+            validatedByZeroSkipSizeKeySizes = false;
             return false;
         }
     }

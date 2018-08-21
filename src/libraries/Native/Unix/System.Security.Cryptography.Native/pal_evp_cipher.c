@@ -68,6 +68,45 @@ CryptoNative_EvpCipherCreate2(const EVP_CIPHER* type, uint8_t* key, int32_t keyL
     return ctx;
 }
 
+EVP_CIPHER_CTX*
+CryptoNative_EvpCipherCreatePartial(const EVP_CIPHER* type)
+{
+    EVP_CIPHER_CTX* ctx = (EVP_CIPHER_CTX*)malloc(sizeof(EVP_CIPHER_CTX));
+    if (ctx == NULL)
+    {
+        // Allocation failed
+        return NULL;
+    }
+
+    EVP_CIPHER_CTX_init(ctx);
+
+    // Perform partial initialization so we can set the key lengths
+    int ret = EVP_CipherInit_ex(ctx, type, NULL, NULL, NULL, 0);
+    if (!ret)
+    {
+        free(ctx);
+        return NULL;
+    }
+
+    return ctx;
+}
+
+int32_t CryptoNative_EvpCipherSetKeyAndIV(EVP_CIPHER_CTX* ctx, uint8_t* key, unsigned char* iv, int32_t enc)
+{
+    // Perform final initialization specifying the remaining arguments
+    return EVP_CipherInit_ex(ctx, NULL, NULL, key, iv, enc);
+}
+
+int32_t CryptoNative_EvpCipherSetGcmNonceLength(EVP_CIPHER_CTX* ctx, int32_t ivLength)
+{
+    return EVP_CIPHER_CTX_ctrl(ctx, EVP_CTRL_GCM_SET_IVLEN, ivLength, NULL);
+}
+
+int32_t CryptoNative_EvpCipherSetCcmNonceLength(EVP_CIPHER_CTX* ctx, int32_t ivLength)
+{
+    return EVP_CIPHER_CTX_ctrl(ctx, EVP_CTRL_CCM_SET_IVLEN, ivLength, NULL);
+}
+
 void CryptoNative_EvpCipherDestroy(EVP_CIPHER_CTX* ctx)
 {
     if (ctx != NULL)
@@ -121,6 +160,26 @@ int32_t CryptoNative_EvpCipherFinalEx(EVP_CIPHER_CTX* ctx, uint8_t* outm, int32_
     return ret;
 }
 
+int32_t CryptoNative_EvpCipherGetGcmTag(EVP_CIPHER_CTX* ctx, uint8_t* tag, int32_t tagLength)
+{
+    return EVP_CIPHER_CTX_ctrl(ctx, EVP_CTRL_GCM_GET_TAG, tagLength, tag);
+}
+
+int32_t CryptoNative_EvpCipherSetGcmTag(EVP_CIPHER_CTX* ctx, uint8_t* tag, int32_t tagLength)
+{
+    return EVP_CIPHER_CTX_ctrl(ctx, EVP_CTRL_GCM_SET_TAG, tagLength, tag);
+}
+
+int32_t CryptoNative_EvpCipherGetCcmTag(EVP_CIPHER_CTX* ctx, uint8_t* tag, int32_t tagLength)
+{
+    return EVP_CIPHER_CTX_ctrl(ctx, EVP_CTRL_CCM_GET_TAG, tagLength, tag);
+}
+
+int32_t CryptoNative_EvpCipherSetCcmTag(EVP_CIPHER_CTX* ctx, uint8_t* tag, int32_t tagLength)
+{
+    return EVP_CIPHER_CTX_ctrl(ctx, EVP_CTRL_CCM_SET_TAG, tagLength, tag);
+}
+
 const EVP_CIPHER* CryptoNative_EvpAes128Ecb()
 {
     return EVP_aes_128_ecb();
@@ -129,6 +188,16 @@ const EVP_CIPHER* CryptoNative_EvpAes128Ecb()
 const EVP_CIPHER* CryptoNative_EvpAes128Cbc()
 {
     return EVP_aes_128_cbc();
+}
+
+const EVP_CIPHER* CryptoNative_EvpAes128Gcm()
+{
+    return EVP_aes_128_gcm();
+}
+
+const EVP_CIPHER* CryptoNative_EvpAes128Ccm()
+{
+    return EVP_aes_128_ccm();
 }
 
 const EVP_CIPHER* CryptoNative_EvpAes192Ecb()
@@ -141,6 +210,16 @@ const EVP_CIPHER* CryptoNative_EvpAes192Cbc()
     return EVP_aes_192_cbc();
 }
 
+const EVP_CIPHER* CryptoNative_EvpAes192Gcm()
+{
+    return EVP_aes_192_gcm();
+}
+
+const EVP_CIPHER* CryptoNative_EvpAes192Ccm()
+{
+    return EVP_aes_192_ccm();
+}
+
 const EVP_CIPHER* CryptoNative_EvpAes256Ecb()
 {
     return EVP_aes_256_ecb();
@@ -149,6 +228,16 @@ const EVP_CIPHER* CryptoNative_EvpAes256Ecb()
 const EVP_CIPHER* CryptoNative_EvpAes256Cbc()
 {
     return EVP_aes_256_cbc();
+}
+
+const EVP_CIPHER* CryptoNative_EvpAes256Gcm()
+{
+    return EVP_aes_256_gcm();
+}
+
+const EVP_CIPHER* CryptoNative_EvpAes256Ccm()
+{
+    return EVP_aes_256_ccm();
 }
 
 const EVP_CIPHER* CryptoNative_EvpDesEcb()

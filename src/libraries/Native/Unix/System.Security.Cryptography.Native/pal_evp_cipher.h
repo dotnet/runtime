@@ -21,6 +21,15 @@ CryptoNative_EvpCipherCreate(const EVP_CIPHER* type, uint8_t* key, unsigned char
 
 DLLEXPORT EVP_CIPHER_CTX*
 CryptoNative_EvpCipherCreate2(const EVP_CIPHER* type, uint8_t* key, int32_t keyLength, int32_t effectiveKeyLength, unsigned char* iv, int32_t enc);
+
+DLLEXPORT EVP_CIPHER_CTX*
+CryptoNative_EvpCipherCreatePartial(const EVP_CIPHER* type);
+
+DLLEXPORT int32_t CryptoNative_EvpCipherSetKeyAndIV(EVP_CIPHER_CTX* ctx, uint8_t* key, unsigned char* iv, int32_t enc);
+
+DLLEXPORT int32_t CryptoNative_EvpCipherSetGcmNonceLength(EVP_CIPHER_CTX* ctx, int32_t ivLength);
+DLLEXPORT int32_t CryptoNative_EvpCipherSetCcmNonceLength(EVP_CIPHER_CTX* ctx, int32_t ivLength);
+
 /*
 Cleans up and deletes an EVP_CIPHER_CTX instance created by EvpCipherCreate.
 
@@ -69,6 +78,38 @@ DLLEXPORT int32_t CryptoNative_EvpCipherFinalEx(EVP_CIPHER_CTX* ctx, uint8_t* ou
 
 /*
 Function:
+EvpAesGcmGetTag
+
+Retrieves tag for authenticated encryption
+*/
+DLLEXPORT int32_t CryptoNative_EvpCipherGetGcmTag(EVP_CIPHER_CTX* ctx, uint8_t* tag, int32_t tagLength);
+
+/*
+Function:
+EvpAesGcmSetTag
+
+Sets tag for authenticated decryption
+*/
+DLLEXPORT int32_t CryptoNative_EvpCipherSetGcmTag(EVP_CIPHER_CTX* ctx, uint8_t* tag, int32_t tagLength);
+
+/*
+Function:
+EvpAesCcmGetTag
+
+Retrieves tag for authenticated encryption
+*/
+DLLEXPORT int32_t CryptoNative_EvpCipherGetCcmTag(EVP_CIPHER_CTX* ctx, uint8_t* tag, int32_t tagLength);
+
+/*
+Function:
+EvpAesCcmSetTag
+
+Sets tag for authenticated decryption
+*/
+DLLEXPORT int32_t CryptoNative_EvpCipherSetCcmTag(EVP_CIPHER_CTX* ctx, uint8_t* tag, int32_t tagLength);
+
+/*
+Function:
 EvpAes128Ecb
 
 Direct shim to EVP_aes_128_ecb.
@@ -82,6 +123,22 @@ EvpAes128Cbc
 Direct shim to EVP_aes_128_cbc.
 */
 DLLEXPORT const EVP_CIPHER* CryptoNative_EvpAes128Cbc(void);
+
+/*
+Function:
+EvpAes128Gcm
+
+Direct shim to EVP_aes_128_gcm.
+*/
+DLLEXPORT const EVP_CIPHER* CryptoNative_EvpAes128Gcm(void);
+
+/*
+Function:
+EvpAes128Ccm
+
+Direct shim to EVP_aes_128_ccm.
+*/
+DLLEXPORT const EVP_CIPHER* CryptoNative_EvpAes128Ccm(void);
 
 /*
 Function:
@@ -101,6 +158,22 @@ DLLEXPORT const EVP_CIPHER* CryptoNative_EvpAes192Cbc(void);
 
 /*
 Function:
+EvpAes192Gcm
+
+Direct shim to EVP_aes_192_gcm.
+*/
+DLLEXPORT const EVP_CIPHER* CryptoNative_EvpAes192Gcm(void);
+
+/*
+Function:
+EvpAes192Ccm
+
+Direct shim to EVP_aes_192_ccm.
+*/
+DLLEXPORT const EVP_CIPHER* CryptoNative_EvpAes192Ccm(void);
+
+/*
+Function:
 EvpAes256Ecb
 
 Direct shim to EVP_aes_256_ecb.
@@ -114,6 +187,22 @@ EvpAes256Cbc
 Direct shim to EVP_aes_256_cbc.
 */
 DLLEXPORT const EVP_CIPHER* CryptoNative_EvpAes256Cbc(void);
+
+/*
+Function:
+EvpAes256Gcm
+
+Direct shim to EVP_aes_256_gcm.
+*/
+DLLEXPORT const EVP_CIPHER* CryptoNative_EvpAes256Gcm(void);
+
+/*
+Function:
+EvpAes256Ccm
+
+Direct shim to EVP_aes_256_ccm.
+*/
+DLLEXPORT const EVP_CIPHER* CryptoNative_EvpAes256Ccm(void);
 
 /*
 Function:
