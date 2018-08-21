@@ -5488,6 +5488,7 @@ AC_CONFIG_COMMANDS([runtime/etc/mono/4.5/web.config],
 
 AC_CONFIG_COMMANDS([quiet-libtool], [sed -e 's/echo "copying selected/# "copying selected/g' < libtool > libtool.tmp && mv libtool.tmp libtool && chmod a+x libtool; sed -e 's/$ECHO "copying selected/# "copying selected/g' < libtool > libtool.tmp && mv libtool.tmp libtool && chmod a+x libtool])
 AC_CONFIG_COMMANDS([nolock-libtool], [sed -e 's/lock_old_archive_extraction=yes/lock_old_archive_extraction=no/g' < libtool > libtool.tmp && mv libtool.tmp libtool && chmod a+x libtool])
+AC_CONFIG_COMMANDS([clean-llvm], [rm -f llvm/llvm_config.mk])
 
 # Anything involving -Werror must be done late because autoconf depends on compiling with warnings to be success.
 if test x"$GCC" = xyes; then
