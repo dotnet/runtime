@@ -722,7 +722,7 @@ endif
         add     rdi, 8h
         add     rsi, 8h
         ret
-LEAF_END JIT_ByRefWriteBarrier, _TEXT
+LEAF_END_MARKED JIT_ByRefWriteBarrier, _TEXT
 
 
 g_pObjectClass      equ     ?g_pObjectClass@@3PEAVMethodTable@@EA
