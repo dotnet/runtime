@@ -761,22 +761,22 @@ namespace System.Runtime.Intrinsics.X86
         /// __m128 _mm_permutevar_ps (__m128 a, __m128i b)
         ///   VPERMILPS xmm, xmm, xmm/m128
         /// </summary>
-        public static Vector128<float> PermuteVar(Vector128<float> left, Vector128<float> mask) { throw new PlatformNotSupportedException(); }
+        public static Vector128<float> PermuteVar(Vector128<float> left, Vector128<int> control) { throw new PlatformNotSupportedException(); }
         /// <summary>
         /// __m128d _mm_permutevar_pd (__m128d a, __m128i b)
         ///   VPERMILPD xmm, xmm, xmm/m128
         /// </summary>
-        public static Vector128<double> PermuteVar(Vector128<double> left, Vector128<double> mask) { throw new PlatformNotSupportedException(); }
+        public static Vector128<double> PermuteVar(Vector128<double> left, Vector128<long> control) { throw new PlatformNotSupportedException(); }
         /// <summary>
         /// __m256 _mm256_permutevar_ps (__m256 a, __m256i b)
         ///   VPERMILPS ymm, ymm, ymm/m256
         /// </summary>
-        public static Vector256<float> PermuteVar(Vector256<float> left, Vector256<float> mask) { throw new PlatformNotSupportedException(); }
+        public static Vector256<float> PermuteVar(Vector256<float> left, Vector256<int> control) { throw new PlatformNotSupportedException(); }
         /// <summary>
         /// __m256d _mm256_permutevar_pd (__m256d a, __m256i b)
         ///   VPERMILPD ymm, ymm, ymm/m256
         /// </summary>
-        public static Vector256<double> PermuteVar(Vector256<double> left, Vector256<double> mask) { throw new PlatformNotSupportedException(); }
+        public static Vector256<double> PermuteVar(Vector256<double> left, Vector256<long> control) { throw new PlatformNotSupportedException(); }
 
         /// <summary>
         /// __m256 _mm256_rcp_ps (__m256 a)
