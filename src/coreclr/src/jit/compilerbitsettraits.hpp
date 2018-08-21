@@ -78,7 +78,7 @@ unsigned AllVarBitSetTraits::GetSize(Compiler* comp)
 // static
 unsigned AllVarBitSetTraits::GetArrSize(Compiler* comp, unsigned elemSize)
 {
-    return unsigned(roundUp(GetSize(comp), elemSize));
+    return roundUp(GetSize(comp), elemSize);
 }
 
 // static
@@ -163,7 +163,7 @@ unsigned BitVecTraits::GetArrSize(BitVecTraits* b, unsigned elemSize)
 {
     assert(elemSize == sizeof(size_t));
     unsigned elemBits = 8 * elemSize;
-    return (unsigned)roundUp(b->size, elemBits) / elemBits;
+    return roundUp(b->size, elemBits) / elemBits;
 }
 
 // static

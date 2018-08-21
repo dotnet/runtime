@@ -5069,7 +5069,7 @@ void CodeGen::genCallInstruction(GenTreeCall* call)
                 if (source->TypeGet() == TYP_STRUCT)
                 {
                     GenTreeObj* obj      = source->AsObj();
-                    unsigned    argBytes = (unsigned)roundUp(obj->gtBlkSize, TARGET_POINTER_SIZE);
+                    unsigned    argBytes = roundUp(obj->gtBlkSize, TARGET_POINTER_SIZE);
                     assert((curArgTabEntry->numSlots * TARGET_POINTER_SIZE) == argBytes);
                 }
 #endif // FEATURE_PUT_STRUCT_ARG_STK

@@ -6660,7 +6660,7 @@ void Compiler::gtSetObjGcInfo(GenTreeObj* objNode)
         {
             // Get the GC fields info
             var_types simdBaseType; // Dummy argument
-            slots    = (unsigned)(roundUp(size, TARGET_POINTER_SIZE) / TARGET_POINTER_SIZE);
+            slots    = roundUp(size, TARGET_POINTER_SIZE) / TARGET_POINTER_SIZE;
             gcPtrs   = new (this, CMK_ASTNode) BYTE[slots];
             nodeType = impNormStructType(structHnd, gcPtrs, &gcPtrCount, &simdBaseType);
         }

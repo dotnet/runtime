@@ -9648,7 +9648,7 @@ void Compiler::fgSimpleLowering()
     // stack alignment boundary.
     if (compLocallocUsed)
     {
-        outgoingArgSpaceSize = (unsigned)roundUp(outgoingArgSpaceSize, STACK_ALIGN);
+        outgoingArgSpaceSize = roundUp(outgoingArgSpaceSize, STACK_ALIGN);
         JITDUMP("Bumping outgoingArgSpaceSize to %u for localloc", outgoingArgSpaceSize);
     }
 
