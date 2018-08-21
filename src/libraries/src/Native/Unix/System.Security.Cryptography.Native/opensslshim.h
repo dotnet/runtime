@@ -168,10 +168,16 @@ void SSL_get0_alpn_selected(const SSL* ssl, const unsigned char** protocol, unsi
     PER_FUNCTION_BLOCK(ERR_reason_error_string, true) \
     PER_FUNCTION_BLOCK(EVP_aes_128_cbc, true) \
     PER_FUNCTION_BLOCK(EVP_aes_128_ecb, true) \
+    PER_FUNCTION_BLOCK(EVP_aes_128_gcm, true) \
+    PER_FUNCTION_BLOCK(EVP_aes_128_ccm, true) \
     PER_FUNCTION_BLOCK(EVP_aes_192_cbc, true) \
     PER_FUNCTION_BLOCK(EVP_aes_192_ecb, true) \
+    PER_FUNCTION_BLOCK(EVP_aes_192_gcm, true) \
+    PER_FUNCTION_BLOCK(EVP_aes_192_ccm, true) \
     PER_FUNCTION_BLOCK(EVP_aes_256_cbc, true) \
     PER_FUNCTION_BLOCK(EVP_aes_256_ecb, true) \
+    PER_FUNCTION_BLOCK(EVP_aes_256_gcm, true) \
+    PER_FUNCTION_BLOCK(EVP_aes_256_ccm, true) \
     PER_FUNCTION_BLOCK(EVP_CIPHER_CTX_cleanup, true) \
     PER_FUNCTION_BLOCK(EVP_CIPHER_CTX_ctrl, true) \
     PER_FUNCTION_BLOCK(EVP_CIPHER_CTX_init, true) \
@@ -465,10 +471,16 @@ FOR_ALL_OPENSSL_FUNCTIONS
 #define ERR_reason_error_string ERR_reason_error_string_ptr
 #define EVP_aes_128_cbc EVP_aes_128_cbc_ptr
 #define EVP_aes_128_ecb EVP_aes_128_ecb_ptr
+#define EVP_aes_128_gcm EVP_aes_128_gcm_ptr
+#define EVP_aes_128_ccm EVP_aes_128_ccm_ptr
 #define EVP_aes_192_cbc EVP_aes_192_cbc_ptr
 #define EVP_aes_192_ecb EVP_aes_192_ecb_ptr
+#define EVP_aes_192_gcm EVP_aes_192_gcm_ptr
+#define EVP_aes_192_ccm EVP_aes_192_ccm_ptr
 #define EVP_aes_256_cbc EVP_aes_256_cbc_ptr
 #define EVP_aes_256_ecb EVP_aes_256_ecb_ptr
+#define EVP_aes_256_gcm EVP_aes_256_gcm_ptr
+#define EVP_aes_256_ccm EVP_aes_256_ccm_ptr
 #define EVP_CIPHER_CTX_cleanup EVP_CIPHER_CTX_cleanup_ptr
 #define EVP_CIPHER_CTX_ctrl EVP_CIPHER_CTX_ctrl_ptr
 #define EVP_CIPHER_CTX_init EVP_CIPHER_CTX_init_ptr

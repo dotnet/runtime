@@ -13,6 +13,30 @@ namespace System.Security.Cryptography
         public static new System.Security.Cryptography.Aes Create() { throw null; }
         public static new System.Security.Cryptography.Aes Create(string algorithmName) { throw null; }
     }
+    public sealed class AesGcm : IDisposable
+    {
+        public AesGcm(ReadOnlySpan<byte> key) { }
+        public AesGcm(byte[] key) { }
+        public static KeySizes TagByteSizes { get => throw null; }
+        public static KeySizes NonceByteSizes { get => throw null; }
+        public void Encrypt(ReadOnlySpan<byte> nonce, ReadOnlySpan<byte> plaintext, Span<byte> ciphertext, Span<byte> tag, ReadOnlySpan<byte> associatedData = default) => throw null;
+        public void Encrypt(byte[] nonce, byte[] plaintext, byte[] ciphertext, byte[] tag, byte[] associatedData = null) => throw null;
+        public void Decrypt(ReadOnlySpan<byte> nonce, ReadOnlySpan<byte> ciphertext, ReadOnlySpan<byte> tag, Span<byte> plaintext, ReadOnlySpan<byte> associatedData = default) => throw null;
+        public void Decrypt(byte[] nonce, byte[] ciphertext, byte[] tag, byte[] plaintext, byte[] associatedData = default) => throw null;
+        public void Dispose() { }
+    }
+    public sealed class AesCcm : IDisposable
+    {
+        public AesCcm(ReadOnlySpan<byte> key) { }
+        public AesCcm(byte[] key) { }
+        public static KeySizes TagByteSizes { get => throw null; }
+        public static KeySizes NonceByteSizes { get => throw null; }
+        public void Encrypt(ReadOnlySpan<byte> nonce, ReadOnlySpan<byte> plaintext, Span<byte> ciphertext, Span<byte> tag, ReadOnlySpan<byte> associatedData = default) => throw null;
+        public void Encrypt(byte[] nonce, byte[] plaintext, byte[] ciphertext, byte[] tag, byte[] associatedData = null) => throw null;
+        public void Decrypt(ReadOnlySpan<byte> nonce, ReadOnlySpan<byte> ciphertext, ReadOnlySpan<byte> tag, Span<byte> plaintext, ReadOnlySpan<byte> associatedData = default) => throw null;
+        public void Decrypt(byte[] nonce, byte[] ciphertext, byte[] tag, byte[] plaintext, byte[] associatedData = default) => throw null;
+        public void Dispose() { }
+    }
     [System.ComponentModel.EditorBrowsableAttribute((System.ComponentModel.EditorBrowsableState)(1))]
     public sealed partial class AesManaged : System.Security.Cryptography.Aes
     {
