@@ -2,18 +2,10 @@
   <PropertyGroup>
     <ProjectGuid>{28EB14BE-3BC9-4543-ABA6-A932424DFBD0}</ProjectGuid>
     <OutputType>Exe</OutputType>
-    <AssemblyName>System.Diagnostics.FileVersionInfo.TestAssembly</AssemblyName>
     <GenerateAssemblyInfo>false</GenerateAssemblyInfo>
-    <Configuration Condition="'$(Configuration)'==''">Windows_Debug</Configuration>
     <Configurations>netstandard-Debug;netstandard-Release</Configurations>
   </PropertyGroup>
-  <!-- Compiled Source Files -->
   <ItemGroup>
     <Compile Include="Assembly1.cs" />
-  </ItemGroup>
-  <!-- Automatically added by VS -->
-  <ItemGroup>
-    <Service Include="{508349B6-6B84-4DF5-91F0-309BEEBAD82D}" />
-    <Service Include="{82A7F48D-3B50-4B1E-B82E-3ADA8210C358}" />
   </ItemGroup>
 </Project>
