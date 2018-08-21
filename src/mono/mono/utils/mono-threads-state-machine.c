@@ -266,6 +266,47 @@ STATE_ASYNC_SUSPEND_REQUESTED: Since there can only be one async suspend in prog
 
 
 /*
+Peek at the thread state and return whether it's BLOCKING_SUSPEND_REQUESTED or not.
+
+Assumes that it is called in the second phase of a two-phase suspend, so the
+thread is either some flavor of suspended or else blocking suspend requested.
+All other states can't happen.
+ */
+gboolean
+mono_threads_transition_peek_blocking_suspend_requested (MonoThreadInfo *info)
+{
+	int raw_state, cur_state, suspend_count;
+	g_assert (info != mono_thread_info_current ());
+
+	UNWRAP_THREAD_STATE (raw_state, cur_state, suspend_count, info);
+
+	switch (cur_state) {
+	case STATE_ASYNC_SUSPENDED:
+	case STATE_SELF_SUSPENDED:
+		return FALSE; /*ReqPeekBlockingSuspendRequestedRunningSuspended;*/
+	case STATE_BLOCKING_SELF_SUSPENDED:
+	case STATE_BLOCKING_ASYNC_SUSPENDED:
+	case STATE_BLOCKING_SUSPEND_REQUESTED:
+		if (!(suspend_count > 0 && suspend_count < THREAD_SUSPEND_COUNT_MAX))
+			mono_fatal_with_history ("suspend_count = %d, but should be > 0 and < THREAD_SUSPEND_COUNT_MAX", suspend_count);
+		if (cur_state == STATE_BLOCKING_SUSPEND_REQUESTED)
+			return TRUE; /*ReqPeekBlockingSuspendRequestedBlockingSuspendRequested;*/
+		else
+			return FALSE; /*ReqPeekBlockingSuspendRequestedBlockingSuspended;*/
+/*
+ STATE_RUNNING:
+   Can't happen - should have been suspended in the first phase.
+ STATE_ASYNC_SUSPEND_REQUESTED
+   Can't happen - first phase should've waited until the thread self-suspended
+ STATE_BLOCKING:
+   Can't happen - should've had a suspension request in the first phase.
+ */
+	default:
+		mono_fatal_with_history ("Thread %p in unexpected state %s with PEEK_BLOCKING_SUSPEND_REQUESTED", mono_thread_info_get_tid (info), state_name (cur_state));
+	}
+}
+
+/*
 Check the current state of the thread and try to init a self suspend.
 This must be called with self state saved.
 

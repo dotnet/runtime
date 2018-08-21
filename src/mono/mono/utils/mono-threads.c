@@ -152,7 +152,7 @@ begin_suspend_for_running_thread (MonoThreadInfo *info, gboolean interrupt_kerne
 }
 
 static BeginSuspendResult
-begin_suspend_for_blocking_thread (MonoThreadInfo *info, gboolean interrupt_kernel, gboolean *did_interrupt)
+begin_suspend_for_blocking_thread (MonoThreadInfo *info, gboolean interrupt_kernel, MonoThreadSuspendPhase phase, gboolean *did_interrupt)
 {
 	// if a thread can't transition to blocking, we certainly shouldn't be
 	// trying to suspend it like it's blocking.
@@ -163,7 +163,18 @@ begin_suspend_for_blocking_thread (MonoThreadInfo *info, gboolean interrupt_kern
 		if (did_interrupt) {
 			*did_interrupt = interrupt_kernel;
 		}
-		return begin_preemptive_suspend (info, interrupt_kernel);
+		switch (phase) {
+		case MONO_THREAD_SUSPEND_PHASE_INITIAL:
+			/* In hybrid suspend, in the first phase, a thread in
+			 * blocking can continue running (and possibly
+			 * self-suspend).  We'll preemptively suspend it in the
+			 * second phase. */
+			return BeginSuspendOkNoWait;
+		case MONO_THREAD_SUSPEND_PHASE_MOPUP:
+			return begin_preemptive_suspend (info, interrupt_kernel);
+		default:
+			g_assert_not_reached ();
+		}
 	} else {
 		if (did_interrupt)
 			*did_interrupt = FALSE;
@@ -987,35 +998,109 @@ cleanup:
 	return result;
 }
 
-gboolean
-mono_thread_info_begin_suspend (MonoThreadInfo *info)
+static MonoThreadBeginSuspendResult
+begin_suspend_request_suspension_cordially (MonoThreadInfo *info);
+
+static MonoThreadBeginSuspendResult
+begin_suspend_peek_and_preempt (MonoThreadInfo *info);
+
+
+MonoThreadBeginSuspendResult
+mono_thread_info_begin_suspend (MonoThreadInfo *info, MonoThreadSuspendPhase phase)
 {
+	if (phase == MONO_THREAD_SUSPEND_PHASE_MOPUP && mono_threads_is_hybrid_suspension_enabled ())
+		return begin_suspend_peek_and_preempt (info);
+	else
+		return begin_suspend_request_suspension_cordially (info);
+}
+
+MonoThreadBeginSuspendResult
+begin_suspend_request_suspension_cordially (MonoThreadInfo *info)
+{
+	/* Ask the thread nicely to suspend.  In hybrid suspend, blocking
+	 * threads are transitioned to blocking_suspend_requested, but not
+	 * preemptively suspend in the current phase.
+	 */
 	switch (mono_threads_transition_request_suspension (info)) {
 	case ReqSuspendAlreadySuspended:
-		return TRUE;
+		return MONO_THREAD_BEGIN_SUSPEND_SUSPENDED;
 	case ReqSuspendAlreadySuspendedBlocking:
-		// This state should not be possible if we're using preemptive
-		// suspend on a blocking thread - there can only be a single
-		// suspend initiator at a time (guarded by
-		// mono_thread_info_suspend_lock), and we expect the victim
-		// thread to finish the two-phase preemptive suspension
-		// procedure (and reach the ReqSuspendAlreadySuspended stage)
-		// before the next suspend initiator can begin.
-		g_assert (mono_threads_is_blocking_transition_enabled () && !mono_threads_is_hybrid_suspension_enabled ());
+		if (mono_threads_is_hybrid_suspension_enabled ()) {
+			/* This should only happen in the second phase of
+			 * hybrid suspend. It means that the first phase asked
+			 * the thread to suspend but did not signal it to
+			 * suspend preemptively. */
+			g_assert_not_reached ();
+		} else {
+			// This state should not be possible if we're using preemptive
+			// suspend on a blocking thread - there can only be a single
+			// suspend initiator at a time (guarded by
+			// mono_thread_info_suspend_lock), and we expect the victim
+			// thread to finish the two-phase preemptive suspension
+			// procedure (and reach the ReqSuspendAlreadySuspended stage)
+			// before the next suspend initiator can begin.
+			g_assert (mono_threads_is_blocking_transition_enabled ());
 
-		return TRUE;
+			return MONO_THREAD_BEGIN_SUSPEND_SUSPENDED;
+		}
 	case ReqSuspendInitSuspendBlocking:
 		// in full cooperative mode just leave BLOCKING
 		// threads running until they try to return to RUNNING, so
 		// nothing to do, in hybrid coop preempt the thread.
-		return begin_suspend_for_blocking_thread (info, FALSE, NULL) != BeginSuspendFail;
+		switch (begin_suspend_for_blocking_thread (info, FALSE, MONO_THREAD_SUSPEND_PHASE_INITIAL, NULL)) {
+		case BeginSuspendFail:
+			return MONO_THREAD_BEGIN_SUSPEND_SKIP;
+		case BeginSuspendOkNoWait:
+			if (mono_threads_is_hybrid_suspension_enabled ())
+				return MONO_THREAD_BEGIN_SUSPEND_NEXT_PHASE;
+			else {
+				g_assert (mono_threads_is_cooperative_suspension_enabled ());
+				return MONO_THREAD_BEGIN_SUSPEND_SUSPENDED;
+			}
+		case BeginSuspendOkPreemptive:
+		case BeginSuspendOkCooperative:
+			return MONO_THREAD_BEGIN_SUSPEND_SUSPENDED;
+		default:
+			g_assert_not_reached ();
+		}
 	case ReqSuspendInitSuspendRunning:
 		// in full preemptive mode this should be a preemptive suspend
 		// in full and hybrid cooperative modes this should be a coop suspend
-		return begin_suspend_for_running_thread (info, FALSE) != BeginSuspendFail;
+		if (begin_suspend_for_running_thread (info, FALSE) != BeginSuspendFail)
+			return MONO_THREAD_BEGIN_SUSPEND_SUSPENDED;
+		else
+			return MONO_THREAD_BEGIN_SUSPEND_SKIP;
 	default:
 		g_assert_not_reached ();
 	}
+}
+
+MonoThreadBeginSuspendResult
+begin_suspend_peek_and_preempt (MonoThreadInfo *info)
+{
+	/* This only makes sense for two-phase hybrid suspension:
+	 * requires that a suspension request transition was already performed for 'info',
+	 * and if it is still in blocking_suspend_requested, preemptively suspends it.
+	 */
+	g_assert (mono_threads_is_hybrid_suspension_enabled ());
+	if (mono_threads_transition_peek_blocking_suspend_requested (info)) {
+		// in full cooperative mode just leave BLOCKING
+		// threads running until they try to return to RUNNING, so
+		// nothing to do, in hybrid coop preempt the thread.
+		switch (begin_suspend_for_blocking_thread (info, FALSE, MONO_THREAD_SUSPEND_PHASE_MOPUP, NULL)) {
+		case BeginSuspendFail:
+			return MONO_THREAD_BEGIN_SUSPEND_SKIP;
+		case BeginSuspendOkNoWait:
+		case BeginSuspendOkCooperative:
+			/* can't happen - should've suspended in the previous phase */
+			g_assert_not_reached ();
+		case BeginSuspendOkPreemptive:
+			return MONO_THREAD_BEGIN_SUSPEND_SUSPENDED;
+		default:
+			g_assert_not_reached ();
+		}
+	} else
+		return MONO_THREAD_BEGIN_SUSPEND_SUSPENDED;
 }
 
 gboolean
@@ -1120,7 +1205,7 @@ suspend_sync (MonoNativeThreadId tid, gboolean interrupt_kernel)
 		return info;
 	case ReqSuspendInitSuspendBlocking: {
 		gboolean did_interrupt = FALSE;
-		suspend_result = begin_suspend_for_blocking_thread (info, interrupt_kernel, &did_interrupt);
+		suspend_result = begin_suspend_for_blocking_thread (info, interrupt_kernel, MONO_THREAD_SUSPEND_PHASE_MOPUP, &did_interrupt);
 		if (suspend_result == BeginSuspendFail) {
 			mono_hazard_pointer_clear (hp, 1);
 			return NULL;

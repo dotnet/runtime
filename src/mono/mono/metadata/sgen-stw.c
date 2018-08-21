@@ -256,23 +256,49 @@ sgen_unified_suspend_stop_world (void)
 	mono_threads_begin_global_suspend ();
 	THREADS_STW_DEBUG ("[GC-STW-BEGIN][%p] *** BEGIN SUSPEND *** \n", mono_thread_info_get_tid (mono_thread_info_current ()));
 
-	FOREACH_THREAD_EXCLUDE (info, MONO_THREAD_INFO_FLAGS_NO_GC) {
-		info->client_info.skip = FALSE;
-		info->client_info.suspend_done = FALSE;
+	for (MonoThreadSuspendPhase phase = MONO_THREAD_SUSPEND_PHASE_INITIAL; phase < MONO_THREAD_SUSPEND_PHASE_COUNT; phase++) {
+		gboolean need_next_phase = FALSE;
+		FOREACH_THREAD_EXCLUDE (info, MONO_THREAD_INFO_FLAGS_NO_GC) {
+			/* look at every thread in the first phase. */
+			if (phase == MONO_THREAD_SUSPEND_PHASE_INITIAL) {
+				info->client_info.skip = FALSE;
+				info->client_info.suspend_done = FALSE;
+			} else {
+				/* skip threads suspended by previous phase. */
+				/* threads with info->client_info->skip set to TRUE will be skipped by sgen_is_thread_in_current_stw. */
+				if (info->client_info.suspend_done)
+					continue;
+			}
 
-		int reason;
-		if (!sgen_is_thread_in_current_stw (info, &reason)) {
-			THREADS_STW_DEBUG ("[GC-STW-BEGIN-SUSPEND] IGNORE thread %p skip %s reason %d\n", mono_thread_info_get_tid (info), info->client_info.skip ? "true" : "false", reason);
-			continue;
-		}
+			int reason;
+			if (!sgen_is_thread_in_current_stw (info, &reason)) {
+				THREADS_STW_DEBUG ("[GC-STW-BEGIN-SUSPEND-%d] IGNORE thread %p skip %s reason %d\n", (int)phase, mono_thread_info_get_tid (info), info->client_info.skip ? "true" : "false", reason);
+				continue;
+			}
 
-		info->client_info.skip = !mono_thread_info_begin_suspend (info);
+			switch (mono_thread_info_begin_suspend (info, phase)) {
+			case MONO_THREAD_BEGIN_SUSPEND_SUSPENDED:
+				info->client_info.skip = FALSE;
+				break;
+			case MONO_THREAD_BEGIN_SUSPEND_SKIP:
+				info->client_info.skip = TRUE;
+				break;
+			case MONO_THREAD_BEGIN_SUSPEND_NEXT_PHASE:
+				need_next_phase = TRUE;
+				break;
+			default:
+				g_assert_not_reached ();
+			}
 
-		THREADS_STW_DEBUG ("[GC-STW-BEGIN-SUSPEND] SUSPEND thread %p skip %s\n", mono_thread_info_get_tid (info), info->client_info.skip ? "true" : "false");
-	} FOREACH_THREAD_END
+			THREADS_STW_DEBUG ("[GC-STW-BEGIN-SUSPEND-%d] SUSPEND thread %p skip %s\n", (int)phase, mono_thread_info_get_tid (info), info->client_info.skip ? "true" : "false");
+		} FOREACH_THREAD_END;
 
-	mono_thread_info_current ()->client_info.suspend_done = TRUE;
-	mono_threads_wait_pending_operations ();
+		mono_thread_info_current ()->client_info.suspend_done = TRUE;
+		mono_threads_wait_pending_operations ();
+
+		if (!need_next_phase)
+			break;
+	}
 
 	for (;;) {
 		gint restart_counter = 0;
@@ -335,7 +361,18 @@ sgen_unified_suspend_stop_world (void)
 				continue;
 			}
 
-			info->client_info.skip = !mono_thread_info_begin_suspend (info);
+			switch (mono_thread_info_begin_suspend (info, MONO_THREAD_SUSPEND_PHASE_MOPUP)) {
+			case MONO_THREAD_BEGIN_SUSPEND_SUSPENDED:
+				info->client_info.skip = FALSE;
+				break;
+			case MONO_THREAD_BEGIN_SUSPEND_SKIP:
+				info->client_info.skip = TRUE;
+				break;
+			case MONO_THREAD_BEGIN_SUSPEND_NEXT_PHASE:
+				g_assert_not_reached ();
+			default:
+				g_assert_not_reached ();
+			}
 
 			THREADS_STW_DEBUG ("[GC-STW-RESTART] SUSPEND thread %p skip %s\n", mono_thread_info_get_tid (info), info->client_info.skip ? "true" : "false");
 		} FOREACH_THREAD_END

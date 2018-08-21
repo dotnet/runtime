@@ -1498,7 +1498,7 @@ CI_PR_DISABLED_TESTS = \
 	appdomain-threadpool-unload.exe
 
 # FIXME Hybrid Suspend - see https://github.com/mono/mono/issues/9959
-CI_PR_DISABLED_TESTS += sgen-new-threads-collect.exe
+# CI_PR_DISABLED_TESTS += sgen-new-threads-collect.exe
 
 # appdomain-threadpool-unload.exe creates 100 appdomains, takes too long with llvm
 LLVM_DISABLED_TESTS = \
