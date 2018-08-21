@@ -131,7 +131,10 @@
   </data>
   <data name="Arg_InvalidHandle" xml:space="preserve">
     <value>Invalid handle.</value>
-  </data>  
+  </data>
+  <data name="Arg_MustBeDriveLetterOrRootDir" xml:space="preserve">
+    <value>Drive name must be a root directory (i.e. 'C:\') or a drive letter ('C').</value>
+  </data>
   <data name="Arg_Path2IsRooted" xml:space="preserve">
     <value>Second path fragment must not be a drive or UNC name.</value>
   </data>

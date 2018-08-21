@@ -13,33 +13,7 @@ namespace System.IO
     {
         private static string NormalizeDriveName(string driveName)
         {
-            Debug.Assert(driveName != null);
-
-            string name;
-
-            if (driveName.Length == 1)
-                name = driveName + ":\\";
-            else
-            {
-                name = Path.GetPathRoot(driveName);
-                // Disallow null or empty drive letters and UNC paths
-                if (name == null || name.Length == 0 || name.StartsWith("\\\\", StringComparison.Ordinal))
-                    throw new ArgumentException(SR.Arg_MustBeDriveLetterOrRootDir, nameof(driveName));
-            }
-            // We want to normalize to have a trailing backslash so we don't have two equivalent forms and
-            // because some Win32 API don't work without it.
-            if (name.Length == 2 && name[1] == ':')
-            {
-                name = name + "\\";
-            }
-
-            // Now verify that the drive letter could be a real drive name.
-            // On Windows this means it's between A and Z, ignoring case.
-            char letter = driveName[0];
-            if (!((letter >= 'A' && letter <= 'Z') || (letter >= 'a' && letter <= 'z')))
-                throw new ArgumentException(SR.Arg_MustBeDriveLetterOrRootDir, nameof(driveName));
-
-            return name;
+            return DriveInfoInternal.NormalizeDriveName(driveName);
         }
 
         public DriveType DriveType
