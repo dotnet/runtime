@@ -10,6 +10,7 @@ using System.Runtime.InteropServices;
 using Internal.Cryptography;
 using static Interop;
 using static Interop.BCrypt;
+using Microsoft.Win32.SafeHandles;
 
 namespace Internal.NativeCrypto
 {
@@ -64,6 +65,8 @@ namespace Internal.NativeCrypto
 
         public const string BCRYPT_CHAIN_MODE_CBC = "ChainingModeCBC";
         public const string BCRYPT_CHAIN_MODE_ECB = "ChainingModeECB";
+        public const string BCRYPT_CHAIN_MODE_GCM = "ChainingModeGCM";
+        public const string BCRYPT_CHAIN_MODE_CCM = "ChainingModeCCM";
 
         public static SafeAlgorithmHandle BCryptOpenAlgorithmProvider(string pszAlgId, string pszImplementation, OpenAlgorithmProviderFlags dwFlags)
         {
@@ -74,7 +77,7 @@ namespace Internal.NativeCrypto
             return hAlgorithm;
         }
 
-        public static SafeKeyHandle BCryptImportKey(this SafeAlgorithmHandle hAlg, byte[] key)
+        public static SafeKeyHandle BCryptImportKey(this SafeAlgorithmHandle hAlg, ReadOnlySpan<byte> key)
         {
             unsafe
             {
@@ -89,11 +92,15 @@ namespace Internal.NativeCrypto
                     pBlob->dwVersion = BCRYPT_KEY_DATA_BLOB_HEADER.BCRYPT_KEY_DATA_BLOB_VERSION1;
                     pBlob->cbKeyData = (uint)keySize;
                 }
-                Buffer.BlockCopy(key, 0, blob, sizeof(BCRYPT_KEY_DATA_BLOB_HEADER), keySize);
+
+                key.CopyTo(blob.AsSpan(sizeof(BCRYPT_KEY_DATA_BLOB_HEADER)));
                 SafeKeyHandle hKey;
                 NTSTATUS ntStatus = Interop.BCryptImportKey(hAlg, IntPtr.Zero, BCRYPT_KEY_DATA_BLOB, out hKey, IntPtr.Zero, 0, blob, blobSize, 0);
                 if (ntStatus != NTSTATUS.STATUS_SUCCESS)
+                {
                     throw CreateCryptographicException(ntStatus);
+                }
+
                 return hKey;
             }
         }
@@ -206,14 +213,6 @@ namespace Internal.NativeCrypto
             return sb.ToString();
         }
 
-        private enum NTSTATUS : uint
-        {
-            STATUS_SUCCESS = 0x0,
-            STATUS_NOT_FOUND = 0xc0000225,
-            STATUS_INVALID_PARAMETER = 0xc000000d,
-            STATUS_NO_MEMORY = 0xc0000017,
-        }
-
         private static Exception CreateCryptographicException(NTSTATUS ntStatus)
         {
             int hr = ((int)ntStatus) | 0x01000000;
@@ -224,7 +223,7 @@ namespace Internal.NativeCrypto
 
     internal static partial class Cng
     {
-        private static class Interop
+        internal static class Interop
         {
             [DllImport(Libraries.BCrypt, CharSet = CharSet.Unicode)]
             public static extern NTSTATUS BCryptOpenAlgorithmProvider(out SafeAlgorithmHandle phAlgorithm, string pszAlgId, string pszImplementation, int dwFlags);
@@ -262,22 +261,6 @@ namespace Internal.NativeCrypto
                 [MarshalAs(UnmanagedType.LPWStr)]
                 [Out]     StringBuilder pbFormat,   // Receives formatted string.
                 [In, Out] ref int pcbFormat);       // Sends/receives length of formatted String.
-        }
-    }
-
-    internal abstract class SafeBCryptHandle : SafeHandle
-    {
-        public SafeBCryptHandle()
-            : base(IntPtr.Zero, true)
-        {
-        }
-
-        public sealed override bool IsInvalid
-        {
-            get
-            {
-                return handle == IntPtr.Zero;
-            }
         }
     }
 
