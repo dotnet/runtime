@@ -1278,17 +1278,17 @@ namespace System.Runtime.Intrinsics.X86
         /// __m256i _mm256_permutevar8x32_epi32 (__m256i a, __m256i idx)
         ///   VPERMD ymm, ymm/m256, imm8
         /// </summary>
-        public static Vector256<int> PermuteVar8x32(Vector256<int> left, Vector256<int> mask) { throw new PlatformNotSupportedException(); }
+        public static Vector256<int> PermuteVar8x32(Vector256<int> left, Vector256<int> control) { throw new PlatformNotSupportedException(); }
         /// <summary>
         /// __m256i _mm256_permutevar8x32_epi32 (__m256i a, __m256i idx)
         ///   VPERMD ymm, ymm/m256, imm8
         /// </summary>
-        public static Vector256<uint> PermuteVar8x32(Vector256<uint> left, Vector256<uint> mask) { throw new PlatformNotSupportedException(); }
+        public static Vector256<uint> PermuteVar8x32(Vector256<uint> left, Vector256<uint> control) { throw new PlatformNotSupportedException(); }
         /// <summary>
         /// __m256 _mm256_permutevar8x32_ps (__m256 a, __m256i idx)
         ///   VPERMPS ymm, ymm/m256, imm8
         /// </summary>
-        public static Vector256<float> PermuteVar8x32(Vector256<float> left, Vector256<float> mask) { throw new PlatformNotSupportedException(); }
+        public static Vector256<float> PermuteVar8x32(Vector256<float> left, Vector256<int> control) { throw new PlatformNotSupportedException(); }
 
         /// <summary>
         /// __m256i _mm256_sll_epi16 (__m256i a, __m128i count)
