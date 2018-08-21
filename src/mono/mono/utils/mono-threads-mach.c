@@ -24,6 +24,7 @@
 #include <mono/utils/mono-compiler.h>
 #include <mono/utils/mono-threads.h>
 #include <mono/utils/hazard-pointer.h>
+#include <mono/utils/mono-threads-coop.h>
 #include <mono/utils/mono-threads-debug.h>
 
 void
@@ -75,13 +76,18 @@ mono_threads_suspend_begin_async_suspend (MonoThreadInfo *info, gboolean interru
 	if (ret != KERN_SUCCESS)
 		return FALSE;
 
-	/* We're in the middle of a self-suspend, resume and register */
 	if (!mono_threads_transition_finish_async_suspend (info)) {
+		/* We raced with self-suspend and lost.  Resume the native
+		 * thread.  It is still self-suspended, waiting to be resumed.
+		 * So suspend can continue.
+		 */
 		do {
 			ret = thread_resume (info->native_handle);
 		} while (ret == KERN_ABORTED);
 		g_assert (ret == KERN_SUCCESS);
-		THREADS_SUSPEND_DEBUG ("FAILSAFE RESUME/1 %p -> %d\n", (gpointer)(gsize)info->native_handle, 0);
+		info->suspend_can_continue = TRUE;
+		THREADS_SUSPEND_DEBUG ("\tlost race with self suspend %p\n", (gpointer)(gsize)info->native_handle);
+		g_assert (mono_threads_is_hybrid_suspension_enabled ());
 		//XXX interrupt_kernel doesn't make sense in this case as the target is not in a syscall
 		return TRUE;
 	}
