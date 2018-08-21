@@ -23,11 +23,11 @@
 
 #include <errno.h>
 #include <string.h>
-#if defined(HAVE_UNISTD_H)
+#if defined(HOST_WIN32)
+#include <windows.h>
+#elif defined(HAVE_UNISTD_H)
 #include <unistd.h>
 #include <fcntl.h>
-#elif defined(HOST_WIN32)
-#include <windows.h>
 #endif
 
 #if defined(HOST_WIN32)
@@ -96,7 +96,9 @@ binary_protocol_open_file (gboolean assert_on_failure)
 	else
 		filename = filename_or_prefix;
 
-#if defined(HAVE_UNISTD_H)
+#if defined(HOST_WIN32)
+	binary_protocol_file = CreateFileA (filename, GENERIC_WRITE, 0, NULL, CREATE_ALWAYS, FILE_ATTRIBUTE_NORMAL, NULL);
+#elif defined(HAVE_UNISTD_H)
 	do {
 		binary_protocol_file = open (filename, O_CREAT | O_WRONLY, 0644);
 		if (binary_protocol_file == -1) {
@@ -114,12 +116,9 @@ binary_protocol_open_file (gboolean assert_on_failure)
 			ftruncate (binary_protocol_file, 0);
 		}
 	} while (binary_protocol_file == -1);
-#elif defined(HOST_WIN32)
-	binary_protocol_file = CreateFileA (filename, GENERIC_WRITE, 0, NULL, CREATE_ALWAYS, FILE_ATTRIBUTE_NORMAL, NULL);
 #else
 	g_error ("sgen binary protocol: not supported");
 #endif
-
 	if (binary_protocol_file == invalid_file_value && assert_on_failure)
 		g_error ("sgen binary protocol: failed to open file");
 
@@ -160,11 +159,11 @@ sgen_binary_protocol_is_enabled (void)
 static void
 close_binary_protocol_file (void)
 {
-#if defined(HAVE_UNISTD_H)
+#if defined(HOST_WIN32)
+	CloseHandle (binary_protocol_file);
+#elif defined(HAVE_UNISTD_H)
 	while (close (binary_protocol_file) == -1 && errno == EINTR)
 		;
-#elif defined(HOST_WIN32)
-	CloseHandle (binary_protocol_file);
 #endif
 	binary_protocol_file = invalid_file_value;
 }
@@ -224,22 +223,20 @@ binary_protocol_flush_buffer (BinaryProtocolBuffer *buffer)
 	size_t written = 0;
 	g_assert (buffer->index > 0);
 
-	while (written < to_write) {
-#if defined(HAVE_UNISTD_H)
+	while (binary_protocol_file != invalid_file_value && written < to_write) {
+#if defined(HOST_WIN32)
+		DWORD tmp_written;
+		if (WriteFile (binary_protocol_file, buffer->buffer + written, to_write - written, &tmp_written, NULL))
+			written += tmp_written;
+#elif defined(HAVE_UNISTD_H)
 		ret = write (binary_protocol_file, buffer->buffer + written, to_write - written);
 		if (ret >= 0)
 			written += ret;
 		else if (errno == EINTR)
 			continue;
-		else
-			close_binary_protocol_file ();
-#elif defined(HOST_WIN32)
-		int tmp_written;
-		if (WriteFile (binary_protocol_file, buffer->buffer + written, to_write - written, &tmp_written, NULL))
-			written += tmp_written;
-		else
-			close_binary_protocol_file ();
 #endif
+		else
+			close_binary_protocol_file ();
 	}
 
 	current_file_size += buffer->index;
