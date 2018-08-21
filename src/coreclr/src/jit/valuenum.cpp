@@ -693,7 +693,7 @@ ValueNum ValueNumStore::VNExcSetSingleton(ValueNum x)
 #ifdef DEBUG
     if (m_pComp->verbose)
     {
-        printf("    " STR_VN "%x = singleton exc set", res);
+        printf("    " FMT_VN " = singleton exc set", res);
         vnDump(m_pComp, x);
         printf("\n");
     }
@@ -1062,8 +1062,8 @@ ValueNum ValueNumStore::VNForCastOper(var_types castToType, bool srcIsUnsigned /
 #ifdef DEBUG
     if (m_pComp->verbose)
     {
-        printf("    VNForCastOper(%s%s) is " STR_VN "%x\n", varTypeName(castToType),
-               srcIsUnsigned ? ", unsignedSrc" : "", result);
+        printf("    VNForCastOper(%s%s) is " FMT_VN "\n", varTypeName(castToType), srcIsUnsigned ? ", unsignedSrc" : "",
+               result);
     }
 #endif
 
@@ -1527,7 +1527,7 @@ ValueNum ValueNumStore::VNForMapStore(var_types typ, ValueNum arg0VN, ValueNum a
 #ifdef DEBUG
     if (m_pComp->verbose)
     {
-        printf("    VNForMapStore(" STR_VN "%x, " STR_VN "%x, " STR_VN "%x):%s returns ", arg0VN, arg1VN, arg2VN,
+        printf("    VNForMapStore(" FMT_VN ", " FMT_VN ", " FMT_VN "):%s returns ", arg0VN, arg1VN, arg2VN,
                varTypeName(typ));
         m_pComp->vnPrint(result, 1);
         printf("\n");
@@ -1566,7 +1566,7 @@ ValueNum ValueNumStore::VNForMapSelect(ValueNumKind vnk, var_types typ, ValueNum
 #ifdef DEBUG
     if (m_pComp->verbose)
     {
-        printf("    VNForMapSelect(" STR_VN "%x, " STR_VN "%x):%s returns ", arg0VN, arg1VN, varTypeName(typ));
+        printf("    VNForMapSelect(" FMT_VN ", " FMT_VN "):%s returns ", arg0VN, arg1VN, varTypeName(typ));
         m_pComp->vnPrint(result, 1);
         printf("\n");
     }
@@ -1659,8 +1659,8 @@ TailCall:
                 if (funcApp.m_args[1] == arg1VN)
                 {
 #if FEATURE_VN_TRACE_APPLY_SELECTORS
-                    JITDUMP("      AX1: select([" STR_VN "%x]store(" STR_VN "%x, " STR_VN "%x, " STR_VN "%x), " STR_VN
-                            "%x) ==> " STR_VN "%x.\n",
+                    JITDUMP("      AX1: select([" FMT_VN "]store(" FMT_VN ", " FMT_VN ", " FMT_VN "), " FMT_VN
+                            ") ==> " FMT_VN ".\n",
                             funcApp.m_args[0], arg0VN, funcApp.m_args[1], funcApp.m_args[2], arg1VN, funcApp.m_args[2]);
 #endif
                     return funcApp.m_args[2];
@@ -1671,8 +1671,8 @@ TailCall:
                 {
                     assert(funcApp.m_args[1] != arg1VN); // we already checked this above.
 #if FEATURE_VN_TRACE_APPLY_SELECTORS
-                    JITDUMP("      AX2: " STR_VN "%x != " STR_VN "%x ==> select([" STR_VN "%x]store(" STR_VN
-                            "%x, " STR_VN "%x, " STR_VN "%x), " STR_VN "%x) ==> select(" STR_VN "%x, " STR_VN "%x).\n",
+                    JITDUMP("      AX2: " FMT_VN " != " FMT_VN " ==> select([" FMT_VN "]store(" FMT_VN ", " FMT_VN
+                            ", " FMT_VN "), " FMT_VN ") ==> select(" FMT_VN ", " FMT_VN ").\n",
                             arg1VN, funcApp.m_args[1], arg0VN, funcApp.m_args[0], funcApp.m_args[1], funcApp.m_args[2],
                             arg1VN, funcApp.m_args[0], arg1VN);
 #endif
@@ -2718,7 +2718,7 @@ ValueNum ValueNumStore::VNApplySelectors(ValueNumKind  vnk,
             printf("  VNApplySelectors:\n");
             const char* modName;
             const char* fldName = m_pComp->eeGetFieldName(fldHnd, &modName);
-            printf("    VNForHandle(Fseq[%s]) is " STR_VN "%x, fieldType is %s", fldName, fldHndVN,
+            printf("    VNForHandle(Fseq[%s]) is " FMT_VN ", fieldType is %s", fldName, fldHndVN,
                    varTypeName(fieldType));
             if (varTypeIsStruct(fieldType))
             {
@@ -2871,14 +2871,14 @@ ValueNum ValueNumStore::VNApplySelectorsAssign(
 #ifdef DEBUG
         if (m_pComp->verbose)
         {
-            printf("  fieldHnd " STR_VN "%x is ", fieldHndVN);
+            printf("  fieldHnd " FMT_VN " is ", fieldHndVN);
             vnDump(m_pComp, fieldHndVN);
             printf("\n");
 
             ValueNum seqNextVN  = VNForFieldSeq(fieldSeq->m_next);
             ValueNum fieldSeqVN = VNForFunc(TYP_REF, VNF_FieldSeq, fieldHndVN, seqNextVN);
 
-            printf("  fieldSeq " STR_VN "%x is ", fieldSeqVN);
+            printf("  fieldSeq " FMT_VN " is ", fieldSeqVN);
             vnDump(m_pComp, fieldSeqVN);
             printf("\n");
         }
@@ -2942,11 +2942,11 @@ ValueNum ValueNumStore::VNForFieldSeq(FieldSeqNode* fieldSeq)
 #ifdef DEBUG
         if (m_pComp->verbose)
         {
-            printf("  fieldHnd " STR_VN "%x is ", fieldHndVN);
+            printf("  fieldHnd " FMT_VN " is ", fieldHndVN);
             vnDump(m_pComp, fieldHndVN);
             printf("\n");
 
-            printf("  fieldSeq " STR_VN "%x is ", fieldSeqVN);
+            printf("  fieldSeq " FMT_VN " is ", fieldSeqVN);
             vnDump(m_pComp, fieldSeqVN);
             printf("\n");
         }
@@ -3004,7 +3004,7 @@ ValueNum ValueNumStore::FieldSeqVNAppend(ValueNum fsVN1, ValueNum fsVN2)
 #ifdef DEBUG
     if (m_pComp->verbose)
     {
-        printf("  fieldSeq " STR_VN "%x is ", fieldSeqVN);
+        printf("  fieldSeq " FMT_VN " is ", fieldSeqVN);
         vnDump(m_pComp, fieldSeqVN);
         printf("\n");
     }
@@ -3140,7 +3140,7 @@ ValueNum Compiler::fgValueNumberArrIndexAssign(CORINFO_CLASS_HANDLE elemTypeEq,
 #ifdef DEBUG
     if (verbose)
     {
-        printf("  hAtArrType " STR_VN "%x is MapSelect(curGcHeap(" STR_VN "%x), ", hAtArrType, fgCurMemoryVN[GcHeap]);
+        printf("  hAtArrType " FMT_VN " is MapSelect(curGcHeap(" FMT_VN "), ", hAtArrType, fgCurMemoryVN[GcHeap]);
 
         if (arrElemType == TYP_STRUCT)
         {
@@ -3150,23 +3150,23 @@ ValueNum Compiler::fgValueNumberArrIndexAssign(CORINFO_CLASS_HANDLE elemTypeEq,
         {
             printf("%s[]).\n", varTypeName(arrElemType));
         }
-        printf("  hAtArrTypeAtArr " STR_VN "%x is MapSelect(hAtArrType(" STR_VN "%x), arr=" STR_VN "%x)\n",
-               hAtArrTypeAtArr, hAtArrType, arrVN);
-        printf("  hAtArrTypeAtArrAtInx " STR_VN "%x is MapSelect(hAtArrTypeAtArr(" STR_VN "%x), inx=" STR_VN "%x):%s\n",
+        printf("  hAtArrTypeAtArr " FMT_VN " is MapSelect(hAtArrType(" FMT_VN "), arr=" FMT_VN ")\n", hAtArrTypeAtArr,
+               hAtArrType, arrVN);
+        printf("  hAtArrTypeAtArrAtInx " FMT_VN " is MapSelect(hAtArrTypeAtArr(" FMT_VN "), inx=" FMT_VN "):%s\n",
                hAtArrTypeAtArrAtInx, hAtArrTypeAtArr, inxVN, varTypeName(arrElemType));
 
         if (!invalidateArray)
         {
-            printf("  newValAtInd " STR_VN "%x is ", newValAtInx);
+            printf("  newValAtInd " FMT_VN " is ", newValAtInx);
             vnStore->vnDump(this, newValAtInx);
             printf("\n");
 
-            printf("  newValAtArr " STR_VN "%x is ", newValAtArr);
+            printf("  newValAtArr " FMT_VN " is ", newValAtArr);
             vnStore->vnDump(this, newValAtArr);
             printf("\n");
         }
 
-        printf("  newValAtArrType " STR_VN "%x is ", newValAtArrType);
+        printf("  newValAtArrType " FMT_VN " is ", newValAtArrType);
         vnStore->vnDump(this, newValAtArrType);
         printf("\n");
 
@@ -3215,7 +3215,7 @@ ValueNum Compiler::fgValueNumberArrIndexVal(GenTree*             tree,
 #ifdef DEBUG
         if (verbose)
         {
-            printf("  IND of PtrToArrElem is unique VN " STR_VN "%x.\n", selectedElem);
+            printf("  IND of PtrToArrElem is unique VN " FMT_VN ".\n", selectedElem);
         }
 #endif // DEBUG
 
@@ -3234,8 +3234,7 @@ ValueNum Compiler::fgValueNumberArrIndexVal(GenTree*             tree,
 #ifdef DEBUG
         if (verbose)
         {
-            printf("  hAtArrType " STR_VN "%x is MapSelect(curGcHeap(" STR_VN "%x), ", hAtArrType,
-                   fgCurMemoryVN[GcHeap]);
+            printf("  hAtArrType " FMT_VN " is MapSelect(curGcHeap(" FMT_VN "), ", hAtArrType, fgCurMemoryVN[GcHeap]);
             if (elemTyp == TYP_STRUCT)
             {
                 printf("%s[]).\n", eeGetClassName(elemTypeEq));
@@ -3245,11 +3244,11 @@ ValueNum Compiler::fgValueNumberArrIndexVal(GenTree*             tree,
                 printf("%s[]).\n", varTypeName(elemTyp));
             }
 
-            printf("  hAtArrTypeAtArr " STR_VN "%x is MapSelect(hAtArrType(" STR_VN "%x), arr=" STR_VN "%x).\n",
+            printf("  hAtArrTypeAtArr " FMT_VN " is MapSelect(hAtArrType(" FMT_VN "), arr=" FMT_VN ").\n",
                    hAtArrTypeAtArr, hAtArrType, arrVN);
 
-            printf("  wholeElem " STR_VN "%x is MapSelect(hAtArrTypeAtArr(" STR_VN "%x), ind=" STR_VN "%x).\n",
-                   wholeElem, hAtArrTypeAtArr, inxVN);
+            printf("  wholeElem " FMT_VN " is MapSelect(hAtArrTypeAtArr(" FMT_VN "), ind=" FMT_VN ").\n", wholeElem,
+                   hAtArrTypeAtArr, inxVN);
         }
 #endif // DEBUG
 
@@ -3266,7 +3265,7 @@ ValueNum Compiler::fgValueNumberArrIndexVal(GenTree*             tree,
 #ifdef DEBUG
         if (verbose && (selectedElem != wholeElem))
         {
-            printf("  selectedElem is " STR_VN "%x after applying selectors.\n", selectedElem);
+            printf("  selectedElem is " FMT_VN " after applying selectors.\n", selectedElem);
         }
 #endif // DEBUG
 
@@ -4207,7 +4206,7 @@ void ValueNumStore::vnDump(Compiler* comp, ValueNum vn, bool isPtr)
                         printf(", ");
                     }
 
-                    printf(STR_VN "%x", funcApp.m_args[i]);
+                    printf(FMT_VN "", funcApp.m_args[i]);
 
 #if FEATURE_VN_DUMP_FUNC_ARGS
                     printf("=");
@@ -4839,7 +4838,7 @@ void Compiler::fgValueNumber()
 #ifdef DEBUG
     if (verbose)
     {
-        printf("Memory Initial Value in BB01 is: " STR_VN "%x\n", memoryInitVal);
+        printf("Memory Initial Value in BB01 is: " FMT_VN "\n", memoryInitVal);
     }
 #endif // DEBUG
 
@@ -5265,7 +5264,7 @@ ValueNum Compiler::fgMemoryVNForLoopSideEffects(MemoryKind  memoryKind,
                 {
                     const char* modName;
                     const char* fldName = eeGetFieldName(fldHnd, &modName);
-                    printf("     VNForHandle(Fseq[%s]) is " STR_VN "%x\n", fldName, fldHndVN);
+                    printf("     VNForHandle(Fseq[%s]) is " FMT_VN "\n", fldName, fldHndVN);
 
                     printf("  fgCurMemoryVN assigned:\n");
                 }
@@ -5365,7 +5364,7 @@ void Compiler::recordGcHeapStore(GenTree* curTree, ValueNum gcHeapVN DEBUGARG(co
     {
         printf("  fgCurMemoryVN[GcHeap] assigned by %s at ", msg);
         Compiler::printTreeID(curTree);
-        printf(" to VN: " STR_VN "%x.\n", gcHeapVN);
+        printf(" to VN: " FMT_VN ".\n", gcHeapVN);
     }
 #endif // DEBUG
 
@@ -5389,7 +5388,7 @@ void Compiler::recordAddressExposedLocalStore(GenTree* curTree, ValueNum memoryV
     {
         printf("  fgCurMemoryVN[ByrefExposed] assigned by %s at ", msg);
         Compiler::printTreeID(curTree);
-        printf(" to VN: " STR_VN "%x.\n", memoryVN);
+        printf(" to VN: " FMT_VN ".\n", memoryVN);
     }
 #endif // DEBUG
 
@@ -6874,12 +6873,12 @@ void Compiler::fgValueNumberTree(GenTree* tree, bool evalAsgLhsInd)
                 {
                     printf("  Relabeled IND_ARR_INDEX address node ");
                     Compiler::printTreeID(addr);
-                    printf(" with l:" STR_VN "%x: ", elemAddr);
+                    printf(" with l:" FMT_VN ": ", elemAddr);
                     vnStore->vnDump(this, elemAddr);
                     printf("\n");
                     if (vnStore->VNNormVal(elemAddr) != elemAddr)
                     {
-                        printf("      [" STR_VN "%x is: ", vnStore->VNNormVal(elemAddr));
+                        printf("      [" FMT_VN " is: ", vnStore->VNNormVal(elemAddr));
                         vnStore->vnDump(this, vnStore->VNNormVal(elemAddr));
                         printf("]\n");
                     }
@@ -7417,7 +7416,7 @@ ValueNum ValueNumStore::VNForCast(ValueNum  srcVN,
 #ifdef DEBUG
     if (m_pComp->verbose)
     {
-        printf("    VNForCast(" STR_VN "%x, " STR_VN "%x) returns ", srcVN, castTypeVN);
+        printf("    VNForCast(" FMT_VN ", " FMT_VN ") returns ", srcVN, castTypeVN);
         m_pComp->vnPrint(resultVN, 1);
         printf("\n");
     }
@@ -8189,9 +8188,9 @@ void Compiler::JitTestCheckVN()
                 {
                     printf("Node: ");
                     Compiler::printTreeID(node);
-                    printf(", with value number " STR_VN "%x, was declared in VN class %d,\n", nodeVN, tlAndN.m_num);
-                    printf("but this value number " STR_VN
-                           "%x has already been associated with a different SSA name class: %d.\n",
+                    printf(", with value number " FMT_VN ", was declared in VN class %d,\n", nodeVN, tlAndN.m_num);
+                    printf("but this value number " FMT_VN
+                           " has already been associated with a different SSA name class: %d.\n",
                            vn, num2);
                     assert(false);
                 }
@@ -8200,8 +8199,8 @@ void Compiler::JitTestCheckVN()
                 {
                     printf("Node: ");
                     Compiler::printTreeID(node);
-                    printf(", " STR_VN "%x was declared in SSA name class %d,\n", nodeVN, tlAndN.m_num);
-                    printf("but that name class was previously bound to a different value number: " STR_VN "%x.\n", vn);
+                    printf(", " FMT_VN " was declared in SSA name class %d,\n", nodeVN, tlAndN.m_num);
+                    printf("but that name class was previously bound to a different value number: " FMT_VN ".\n", vn);
                     assert(false);
                 }
             }
@@ -8213,7 +8212,7 @@ void Compiler::JitTestCheckVN()
                 {
                     printf("Node: ");
                     Compiler::printTreeID(node);
-                    printf(", " STR_VN "%x was declared in value number class %d,\n", nodeVN, tlAndN.m_num);
+                    printf(", " FMT_VN " was declared in value number class %d,\n", nodeVN, tlAndN.m_num);
                     printf(
                         "but this value number has already been associated with a different value number class: %d.\n",
                         num);
@@ -8256,7 +8255,7 @@ void Compiler::vnPrint(ValueNum vn, unsigned level)
     }
     else
     {
-        printf(STR_VN "%x", vn);
+        printf(FMT_VN, vn);
         if (level > 0)
         {
             vnStore->vnDump(this, vn);
