@@ -666,7 +666,7 @@ public:
         }
 #endif // defined(FEATURE_SIMD) && !defined(_TARGET_64BIT_)
 
-        return (unsigned)(roundUp(lvExactSize, TARGET_POINTER_SIZE));
+        return roundUp(lvExactSize, TARGET_POINTER_SIZE);
     }
 
     const size_t lvArgStackSize() const;
@@ -3701,7 +3701,7 @@ public:
         fgCurBBEpoch++;
         fgCurBBEpochSize = fgBBNumMax + 1;
         fgBBSetCountInSizeTUnits =
-            unsigned(roundUp(fgCurBBEpochSize, sizeof(size_t) * 8)) / unsigned(sizeof(size_t) * 8);
+            roundUp(fgCurBBEpochSize, (unsigned)(sizeof(size_t) * 8)) / unsigned(sizeof(size_t) * 8);
 
 #ifdef DEBUG
         // All BlockSet objects are now invalid!

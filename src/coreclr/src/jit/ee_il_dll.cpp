@@ -500,13 +500,13 @@ unsigned Compiler::eeGetArgSize(CORINFO_ARG_LIST_HANDLE list, CORINFO_SIG_INFO* 
 #endif // FEATURE_MULTIREG_ARGS
 
         // we pass this struct by value in multiple registers
-        return (unsigned)roundUp(structSize, TARGET_POINTER_SIZE);
+        return roundUp(structSize, TARGET_POINTER_SIZE);
     }
     else
     {
         unsigned argSize = sizeof(int) * genTypeStSz(argType);
         assert(0 < argSize && argSize <= sizeof(__int64));
-        return (unsigned)roundUp(argSize, TARGET_POINTER_SIZE);
+        return roundUp(argSize, TARGET_POINTER_SIZE);
     }
 #endif
 }

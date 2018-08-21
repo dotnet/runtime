@@ -977,7 +977,7 @@ void Compiler::lvaInitUserArgs(InitVarDscInfo* varDscInfo)
 #endif // _TARGET_XXX_
 
 #if FEATURE_FASTTAILCALL
-            varDscInfo->stackArgSize += (unsigned)roundUp(argSize, TARGET_POINTER_SIZE);
+            varDscInfo->stackArgSize += roundUp(argSize, TARGET_POINTER_SIZE);
 #endif // FEATURE_FASTTAILCALL
         }
 
@@ -985,7 +985,7 @@ void Compiler::lvaInitUserArgs(InitVarDscInfo* varDscInfo)
         // The arg size is returning the number of bytes of the argument. For a struct it could return a size not a
         // multiple of TARGET_POINTER_SIZE. The stack allocated space should always be multiple of TARGET_POINTER_SIZE,
         // so round it up.
-        compArgSize += (unsigned)roundUp(argSize, TARGET_POINTER_SIZE);
+        compArgSize += roundUp(argSize, TARGET_POINTER_SIZE);
 #else  // !UNIX_AMD64_ABI
         compArgSize += argSize;
 #endif // !UNIX_AMD64_ABI
@@ -3296,7 +3296,8 @@ void Compiler::lvaSortByRefCount()
 
     // We have a new epoch, and also cache the tracked var count in terms of size_t's sufficient to hold that many bits.
     lvaCurEpoch++;
-    lvaTrackedCountInSizeTUnits = unsigned(roundUp(lvaTrackedCount, sizeof(size_t) * 8)) / unsigned(sizeof(size_t) * 8);
+    lvaTrackedCountInSizeTUnits =
+        roundUp((unsigned)lvaTrackedCount, (unsigned)(sizeof(size_t) * 8)) / unsigned(sizeof(size_t) * 8);
 
 #ifdef DEBUG
     VarSetOps::AssignNoCopy(this, lvaTrackedVars, VarSetOps::MakeFull(this));
@@ -4899,7 +4900,7 @@ void Compiler::lvaAssignVirtualFrameOffsetsToArgs()
 #ifdef UNIX_AMD64_ABI
         // On the stack frame the homed arg always takes a full number of slots
         // for proper stack alignment. Make sure the real struct size is properly rounded up.
-        argumentSize = (unsigned)roundUp(argumentSize, TARGET_POINTER_SIZE);
+        argumentSize = roundUp(argumentSize, TARGET_POINTER_SIZE);
 #endif // UNIX_AMD64_ABI
 
         argOffs =
@@ -5190,7 +5191,7 @@ int Compiler::lvaAssignVirtualFrameOffsetToArg(unsigned lclNum,
                     if (argOffs < prevRegsSize)
                     {
                         // We must align up the argOffset to a multiple of 8 to account for skipped registers.
-                        argOffs = roundUp(argOffs, 2 * TARGET_POINTER_SIZE);
+                        argOffs = roundUp((unsigned)argOffs, 2 * TARGET_POINTER_SIZE);
                     }
                     // We should've skipped only a single register.
                     assert(argOffs == prevRegsSize);
@@ -5310,7 +5311,8 @@ int Compiler::lvaAssignVirtualFrameOffsetToArg(unsigned lclNum,
             case TYP_DOUBLE:
             case TYP_LONG:
                 // We must align up the argOffset to a multiple of 8
-                argOffs = roundUp(argOffsWithoutPreSpillRegArgs, 2 * TARGET_POINTER_SIZE) + sizeofPreSpillRegArgs;
+                argOffs =
+                    roundUp((unsigned)argOffsWithoutPreSpillRegArgs, 2 * TARGET_POINTER_SIZE) + sizeofPreSpillRegArgs;
                 break;
 
             default:
@@ -7210,14 +7212,14 @@ Compiler::fgWalkResult Compiler::lvaStressLclFldCB(GenTree** pTree, fgWalkData* 
         // We need to support alignment requirements to access memory on ARM ARCH
         unsigned alignment = 1;
         pComp->codeGen->InferOpSizeAlign(lcl, &alignment);
-        alignment = (unsigned)roundUp(alignment, TARGET_POINTER_SIZE);
-        padding   = (unsigned)roundUp(padding, alignment);
+        alignment = roundUp(alignment, TARGET_POINTER_SIZE);
+        padding   = roundUp(padding, alignment);
 #endif // _TARGET_ARMARCH_
 
         // Change the variable to a TYP_BLK
         if (varType != TYP_BLK)
         {
-            varDsc->lvExactSize = (unsigned)(roundUp(padding + pComp->lvaLclSize(lclNum), TARGET_POINTER_SIZE));
+            varDsc->lvExactSize = roundUp(padding + pComp->lvaLclSize(lclNum), TARGET_POINTER_SIZE);
             varDsc->lvType      = TYP_BLK;
             pComp->lvaSetVarAddrExposed(lclNum);
         }
