@@ -87,7 +87,7 @@ mono_dynstream_insert_mstring (MonoDynamicStream *sh, MonoString *str, MonoError
 }
 
 guint32
-mono_dynstream_add_data (MonoDynamicStream *stream, const char *data, guint32 len)
+mono_dynstream_add_data (MonoDynamicStream *stream, gconstpointer data, guint32 len)
 {
 	MONO_REQ_GC_NEUTRAL_MODE;
 

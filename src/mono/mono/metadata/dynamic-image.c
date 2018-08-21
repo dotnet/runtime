@@ -369,9 +369,9 @@ mono_dynamic_image_create (MonoDynamicAssembly *assembly, char *assembly_name, c
 	/*g_print ("string heap create for image %p (%s)\n", image, module_name);*/
 	string_heap_init (&image->sheap);
 	mono_dynstream_add_data (&image->us, "", 1);
-	mono_dynamic_image_add_to_blob_cached (image, (char*) "", 1, NULL, 0);
+	mono_dynamic_image_add_to_blob_cached (image, "", 1, NULL, 0);
 	/* import tables... */
-	mono_dynstream_add_data (&image->code, (char*)entrycode, sizeof (entrycode));
+	mono_dynstream_add_data (&image->code, entrycode, sizeof (entrycode));
 	image->iat_offset = mono_dynstream_add_zero (&image->code, 8); /* two IAT entries */
 	image->idt_offset = mono_dynstream_add_zero (&image->code, 2 * sizeof (MonoIDT)); /* two IDT entries */
 	image->imp_names_offset = mono_dynstream_add_zero (&image->code, 2); /* flags for name entry */
@@ -416,7 +416,7 @@ mono_dynamic_image_create (MonoDynamicAssembly *assembly, char *assembly_name, c
 #endif /* DISABLE_REFLECTION_EMIT */
 
 guint32
-mono_dynamic_image_add_to_blob_cached (MonoDynamicImage *assembly, char *b1, int s1, char *b2, int s2)
+mono_dynamic_image_add_to_blob_cached (MonoDynamicImage *assembly, gconstpointer b1, int s1, gconstpointer b2, int s2)
 {
 	MONO_REQ_GC_NEUTRAL_MODE;
 

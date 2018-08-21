@@ -172,7 +172,7 @@ add_mono_string_to_blob_cached (MonoDynamicImage *assembly, MonoString *str)
 		g_free (swapped);
 	}
 #else
-	idx = mono_dynamic_image_add_to_blob_cached (assembly, blob_size, b-blob_size, (char*)mono_string_chars (str), len);
+	idx = mono_dynamic_image_add_to_blob_cached (assembly, blob_size, b-blob_size, mono_string_chars (str), len);
 #endif
 	return idx;
 }
