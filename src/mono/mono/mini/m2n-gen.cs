@@ -98,7 +98,7 @@ class Driver {
 			Console.WriteLine ("{");
 
 			
-			Console.Write ($"\t{TypeToSigType (c [0])} (*func)(");
+			Console.Write ($"\ttypedef {TypeToSigType (c [0])} (*T)(");
 			for (int i = 1; i < c.Length; ++i) {
 				char p = c [i];
 				if (i > 1)
@@ -108,7 +108,7 @@ class Driver {
 			if (c.Length == 1)
 				Console.Write ("void");
 
-			Console.WriteLine (") = target_func;\n");
+			Console.WriteLine (");\n\tT func = (T)target_func;");
 
 			var ctx = new EmitCtx ();
 
