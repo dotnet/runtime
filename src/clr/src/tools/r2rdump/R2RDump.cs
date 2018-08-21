@@ -101,7 +101,7 @@ namespace R2RDump
                 syntax.DefineOption("unwind", ref _unwind, "Dump unwindInfo");
                 syntax.DefineOption("gc", ref _gc, "Dump gcInfo and slot table");
                 syntax.DefineOption("sc", ref _sectionContents, "Dump section contents");
-                syntax.DefineOption("v|verbose", ref verbose, "Dump raw bytes, disassembly, unwindInfo, gcInfo and section contents");
+                syntax.DefineOption("v|verbose", ref verbose, "Dump disassembly, unwindInfo, gcInfo and section contents");
                 syntax.DefineOption("diff", ref _diff, "Compare two R2R images");
                 syntax.DefineOption("ignoreSensitive", ref _ignoreSensitive, "Ignores sensitive properties in xml dump to avoid failing tests");
             });
