@@ -78,7 +78,7 @@ bool RangeCheck::BetweenBounds(Range& range, int lower, GenTree* upper)
     ValueNum uLimitVN = upper->gtVNPair.GetConservative();
 
 #ifdef DEBUG
-    JITDUMP("VN%04X upper bound is: ", uLimitVN);
+    JITDUMP(FMT_VN " upper bound is: ", uLimitVN);
     if (m_pCompiler->verbose)
     {
         vnStore->vnDump(m_pCompiler, uLimitVN);
@@ -244,7 +244,7 @@ void RangeCheck::OptimizeRangeCheck(BasicBlock* block, GenTree* stmt, GenTree* t
             return;
         }
 
-        JITDUMP("[RangeCheck::OptimizeRangeCheck] Is index %d in <0, arrLenVn VN%X sz:%d>.\n", idxVal, arrLenVn,
+        JITDUMP("[RangeCheck::OptimizeRangeCheck] Is index %d in <0, arrLenVn " FMT_VN " sz:%d>.\n", idxVal, arrLenVn,
                 arrSize);
         if ((idxVal < arrSize) && (idxVal >= 0))
         {
@@ -704,7 +704,7 @@ void RangeCheck::MergeEdgeAssertions(GenTreeLclVarCommon* lcl, ASSERT_VALARG_TP 
 
             if (limit.vn != arrLenVN)
             {
-                JITDUMP("Array length VN did not match cur=$%x, assert=$%x\n", arrLenVN, limit.vn);
+                JITDUMP("Array length VN did not match arrLen=" FMT_VN ", limit=" FMT_VN "\n", arrLenVN, limit.vn);
                 continue;
             }
 
@@ -760,8 +760,8 @@ void RangeCheck::MergeEdgeAssertions(GenTreeLclVarCommon* lcl, ASSERT_VALARG_TP 
 // arguments. If not a phi argument, check if we assertions about local variables.
 void RangeCheck::MergeAssertion(BasicBlock* block, GenTree* op, Range* pRange DEBUGARG(int indent))
 {
-    JITDUMP("Merging assertions from pred edges of BB%02d for op [%06d] $%03x\n", block->bbNum, Compiler::dspTreeID(op),
-            op->gtVNPair.GetConservative());
+    JITDUMP("Merging assertions from pred edges of BB%02d for op [%06d] with " FMT_VN "\n", block->bbNum,
+            Compiler::dspTreeID(op), op->gtVNPair.GetConservative());
     ASSERT_TP assertions = BitVecOps::UninitVal();
 
     // If we have a phi arg, we can get to the block from it and use its assertion out.
