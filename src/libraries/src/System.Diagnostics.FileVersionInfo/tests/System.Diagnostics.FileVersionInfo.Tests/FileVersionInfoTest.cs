@@ -13,6 +13,10 @@ namespace System.Diagnostics.Tests
         // The extension is ".ildll" rather than ".dll" to prevent ILC from treating TestAssembly.dll as IL to subsume into executable.
         private const string TestAssemblyFileName = "System.Diagnostics.FileVersionInfo.TestAssembly.ildll";
         private const string OriginalTestAssemblyFileName = "System.Diagnostics.FileVersionInfo.TestAssembly.dll";
+        // On Unix the internal name's extension is .exe if OutputType is exe even though the TargetExt is .dll.
+        private readonly string OriginalTestAssemblyInternalName = PlatformDetection.IsWindows ?
+            "System.Diagnostics.FileVersionInfo.TestAssembly.dll" :
+            "System.Diagnostics.FileVersionInfo.TestAssembly.exe";
         private const string TestCsFileName = "Assembly1.cs";
         private const string TestNotFoundFileName = "notfound.dll";
 
@@ -31,7 +35,7 @@ namespace System.Diagnostics.Tests
                 FileName = Path.Combine(Directory.GetCurrentDirectory(), TestAssemblyFileName),
                 FilePrivatePart = 1,
                 FileVersion = "4.3.2.1",
-                InternalName = OriginalTestAssemblyFileName,
+                InternalName = OriginalTestAssemblyInternalName,
                 IsDebug = false,
                 IsPatched = false,
                 IsPrivateBuild = false,
@@ -40,7 +44,7 @@ namespace System.Diagnostics.Tests
                 Language = GetFileVersionLanguage(0x0000),
                 LegalCopyright = "Copyright, you betcha!",
                 LegalTrademarks = "TM",
-                OriginalFilename = OriginalTestAssemblyFileName,
+                OriginalFilename = OriginalTestAssemblyInternalName,
                 PrivateBuild = "",
                 ProductBuildPart = 3,
                 ProductMajorPart = 1,

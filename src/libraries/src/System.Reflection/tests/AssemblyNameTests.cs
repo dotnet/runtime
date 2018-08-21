@@ -437,22 +437,22 @@ namespace System.Reflection.Tests
             string assemblyNamePrefix = "System.Reflection.Tests.Assembly_";
 
             // Requested version 1.0 does not load 0.0.0.0, but loads 1.2.0.0, 3.0.0.0
-            Assert.Throws<FileLoadException>(() => Assembly.Load(new AssemblyName(assemblyNamePrefix + "0_0_0_0, Version=1.0")));
+            Assert.Throws<FileNotFoundException>(() => Assembly.Load(new AssemblyName(assemblyNamePrefix + "0_0_0_0, Version=1.0")));
             Assert.NotNull(Assembly.Load(new AssemblyName(assemblyNamePrefix + "1_2_0_0, Version=1.0")));
             Assert.NotNull(Assembly.Load(new AssemblyName(assemblyNamePrefix + "3_0_0_0, Version=1.0")));
 
             // Requested version 1.1 does not load 1.0.0.0, but loads 1.1.2.0, 1.3.0.0
-            Assert.Throws<FileLoadException>(() => Assembly.Load(new AssemblyName(assemblyNamePrefix + "1_0_0_0, Version=1.1")));
+            Assert.Throws<FileNotFoundException>(() => Assembly.Load(new AssemblyName(assemblyNamePrefix + "1_0_0_0, Version=1.1")));
             Assert.NotNull(Assembly.Load(new AssemblyName(assemblyNamePrefix + "1_1_2_0, Version=1.1")));
             Assert.NotNull(Assembly.Load(new AssemblyName(assemblyNamePrefix + "1_3_0_0, Version=1.1")));
 
             // Requested version 1.1.1 does not load 1.1.0.0, but loads 1.1.1.2, 1.1.3.0
-            Assert.Throws<FileLoadException>(() => Assembly.Load(new AssemblyName(assemblyNamePrefix + "1_1_0_0, Version=1.1.1")));
+            Assert.Throws<FileNotFoundException>(() => Assembly.Load(new AssemblyName(assemblyNamePrefix + "1_1_0_0, Version=1.1.1")));
             Assert.NotNull(Assembly.Load(new AssemblyName(assemblyNamePrefix + "1_1_1_2, Version=1.1.1")));
             Assert.NotNull(Assembly.Load(new AssemblyName(assemblyNamePrefix + "1_1_3_0, Version=1.1.1")));
 
             // Requested version 1.1.1.1 does not load 1.1.1.0, but loads 1.1.1.3
-            Assert.Throws<FileLoadException>(() => Assembly.Load(new AssemblyName(assemblyNamePrefix + "1_1_1_0, Version=1.1.1.1")));
+            Assert.Throws<FileNotFoundException>(() => Assembly.Load(new AssemblyName(assemblyNamePrefix + "1_1_1_0, Version=1.1.1.1")));
             Assert.NotNull(Assembly.Load(new AssemblyName(assemblyNamePrefix + "1_1_1_3, Version=1.1.1.1")));
 
             Constructor_String_LoadVersionTest_ReferenceVersionAssemblies();

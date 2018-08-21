@@ -14,9 +14,8 @@ namespace System.Linq.Tests
         [Theory]
         [MemberData(nameof(DebuggerAttributesValid_Data))]
         [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework, "Grouping<TKey, TValue> doesn't have a Debugger proxy in the full .NET Framework. See https://github.com/dotnet/corefx/issues/14790.")]
-        public void DebuggerAttributesValid<TKey, TElement>(IGrouping<TKey, TElement> grouping, string keyString, TKey dummy1, TElement dummy2)
+        public void DebuggerAttributesValid<TKey, TElement>(IGrouping<TKey, TElement> grouping, string keyString)
         {
-            // The dummy parameters can be removed once https://github.com/dotnet/buildtools/pull/1300 is brought in.
             Assert.Equal($"Key = {keyString}", DebuggerAttributes.ValidateDebuggerDisplayReferences(grouping));
             
             object proxyObject = DebuggerAttributes.GetProxyObject(grouping);
@@ -44,15 +43,12 @@ namespace System.Linq.Tests
         public static IEnumerable<object[]> DebuggerAttributesValid_Data()
         {
             IEnumerable<int> source = new[] { 1 };
-            yield return new object[] { source.GroupBy(i => i).Single(), "1", 0, 0 };
-            yield return new object[] { source.GroupBy(i => i.ToString(), i => i).Single(), @"""1""", string.Empty, 0 };
-            yield return new object[] { source.GroupBy(i => TimeSpan.FromSeconds(i), i => i).Single(), "{00:00:01}", TimeSpan.Zero, 0 };
+            yield return new object[] { source.GroupBy(i => i).Single(), "1" };
+            yield return new object[] { source.GroupBy(i => i.ToString(), i => i).Single(), @"""1""" };
+            yield return new object[] { source.GroupBy(i => TimeSpan.FromSeconds(i), i => i).Single(), "{00:00:01}" };
 
-            yield return new object[] { new string[] { null }.GroupBy(x => x).Single(), "null", string.Empty, string.Empty };
-            // This test won't even work with the work-around because nullables lose their type once boxed, so xUnit sees an `int` and thinks
-            // we're trying to pass an IGrouping<int, int> rather than an IGrouping<int?, int?>.
-            // However, it should also be fixed once that PR is brought in, so leaving in this comment.
-            // yield return new object[] { new int?[] { null }.GroupBy(x => x).Single(), "null", new int?(0), new int?(0) };
+            yield return new object[] { new string[] { null }.GroupBy(x => x).Single(), "null" };
+            yield return new object[] { new int?[] { null }.GroupBy(x => x).Single(), "null" };
         }
     }
 }
