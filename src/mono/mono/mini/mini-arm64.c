@@ -2536,10 +2536,10 @@ mono_arch_emit_call (MonoCompile *cfg, MonoCallInst *call)
 		if (!cfg->arch.vret_addr_loc) {
 			cfg->arch.vret_addr_loc = mono_compile_create_var (cfg, mono_get_int_type (), OP_LOCAL);
 			/* Prevent it from being register allocated or optimized away */
-			((MonoInst*)cfg->arch.vret_addr_loc)->flags |= MONO_INST_VOLATILE;
+			cfg->arch.vret_addr_loc->flags |= MONO_INST_VOLATILE;
 		}
 
-		MONO_EMIT_NEW_UNALU (cfg, OP_MOVE, ((MonoInst*)cfg->arch.vret_addr_loc)->dreg, call->vret_var->dreg);
+		MONO_EMIT_NEW_UNALU (cfg, OP_MOVE, cfg->arch.vret_addr_loc->dreg, call->vret_var->dreg);
 		break;
 	case ArgVtypeByRef:
 		/* Pass the vtype return address in R8 */
@@ -4429,7 +4429,7 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 		}
 		case OP_ARGLIST:
 			g_assert (cfg->arch.cinfo);
-			code = emit_addx_imm (code, ARMREG_IP0, cfg->arch.args_reg, ((CallInfo*)cfg->arch.cinfo)->sig_cookie.offset);
+			code = emit_addx_imm (code, ARMREG_IP0, cfg->arch.args_reg, cfg->arch.cinfo->sig_cookie.offset);
 			arm_strx (code, ARMREG_IP0, sreg1, 0);
 			break;
 		case OP_DYN_CALL: {

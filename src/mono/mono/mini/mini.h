@@ -42,6 +42,11 @@
 #include <mono/utils/mono-signal-handler.h>
 #include <mono/metadata/icalls.h>
 
+// Forward declare so that mini-*.h can have pointers to them.
+// CallInfo is presently architecture specific.
+typedef struct MonoInst MonoInst;
+typedef struct CallInfo CallInfo;
+
 #include "mini-arch.h"
 #include "regalloc.h"
 #include "mini-unwind.h"
@@ -332,7 +337,6 @@ enum {
 #endif
 
 typedef struct MonoInstList MonoInstList;
-typedef struct MonoInst MonoInst;
 typedef struct MonoCallInst MonoCallInst;
 typedef struct MonoCallArgParm MonoCallArgParm;
 typedef struct MonoMethodVar MonoMethodVar;

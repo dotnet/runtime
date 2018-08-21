@@ -100,15 +100,15 @@ typedef struct {
 } DynCallArgs;
 
 typedef struct {
-	gpointer cinfo;
+	CallInfo *cinfo;
 	int saved_gregs_offset;
 	/* Points to arguments received on the stack */
 	int args_reg;
 	gboolean cond_branch_islands;
-	gpointer vret_addr_loc;
-	gpointer seq_point_info_var;
-	gpointer ss_tramp_var;
-	gpointer bp_tramp_var;
+	MonoInst *vret_addr_loc;
+	MonoInst *seq_point_info_var;
+	MonoInst *ss_tramp_var;
+	MonoInst *bp_tramp_var;
 	guint8 *thunks;
 	int thunks_size;
 } MonoCompileArch;
@@ -222,14 +222,14 @@ typedef struct {
 	gboolean hfa;
 } ArgInfo;
 
-typedef struct {
+struct CallInfo {
 	int nargs;
 	int gr, fr, stack_usage;
 	gboolean pinvoke;
 	ArgInfo ret;
 	ArgInfo sig_cookie;
 	ArgInfo args [1];
-} CallInfo;
+};
 
 typedef struct {
 	/* General registers + ARMREG_R8 for indirect returns */

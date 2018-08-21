@@ -1444,7 +1444,7 @@ mono_arch_compute_omit_fp (MonoCompile *cfg)
 
 	if (!cfg->arch.cinfo)
 		cfg->arch.cinfo = get_call_info (cfg->mempool, sig);
-	cinfo = (CallInfo *)cfg->arch.cinfo;
+	cinfo = cfg->arch.cinfo;
 
 	/*
 	 * FIXME: Remove some of the restrictions.
@@ -1554,7 +1554,7 @@ mono_arch_fill_argument_info (MonoCompile *cfg)
 
 	sig = mono_method_signature (cfg->method);
 
-	cinfo = (CallInfo *)cfg->arch.cinfo;
+	cinfo = cfg->arch.cinfo;
 	sig_ret = mini_get_underlying_type (sig->ret);
 
 	/*
@@ -1621,7 +1621,7 @@ mono_arch_allocate_vars (MonoCompile *cfg)
 
 	sig = mono_method_signature (cfg->method);
 
-	cinfo = (CallInfo *)cfg->arch.cinfo;
+	cinfo = cfg->arch.cinfo;
 	sig_ret = mini_get_underlying_type (sig->ret);
 
 	mono_arch_compute_omit_fp (cfg);
@@ -1846,7 +1846,7 @@ mono_arch_create_vars (MonoCompile *cfg)
 
 	if (!cfg->arch.cinfo)
 		cfg->arch.cinfo = get_call_info (cfg->mempool, sig);
-	cinfo = (CallInfo *)cfg->arch.cinfo;
+	cinfo = cfg->arch.cinfo;
 
 	if (cinfo->ret.storage == ArgValuetypeInReg)
 		cfg->ret_var_is_local = TRUE;
@@ -2285,10 +2285,10 @@ mono_arch_emit_call (MonoCompile *cfg, MonoCallInst *call)
 			if (!cfg->arch.vret_addr_loc) {
 				cfg->arch.vret_addr_loc = mono_compile_create_var (cfg, mono_get_int_type (), OP_LOCAL);
 				/* Prevent it from being register allocated or optimized away */
-				((MonoInst*)cfg->arch.vret_addr_loc)->flags |= MONO_INST_VOLATILE;
+				cfg->arch.vret_addr_loc->flags |= MONO_INST_VOLATILE;
 			}
 
-			MONO_EMIT_NEW_UNALU (cfg, OP_MOVE, ((MonoInst*)cfg->arch.vret_addr_loc)->dreg, call->vret_var->dreg);
+			MONO_EMIT_NEW_UNALU (cfg, OP_MOVE, cfg->arch.vret_addr_loc->dreg, call->vret_var->dreg);
 		}
 		break;
 	case ArgValuetypeAddrInIReg:
@@ -3499,7 +3499,7 @@ emit_move_return_value (MonoCompile *cfg, MonoInst *ins, guint8 *code)
 	case OP_VCALL2_MEMBASE:
 		cinfo = get_call_info (cfg->mempool, ((MonoCallInst*)ins)->signature);
 		if (cinfo->ret.storage == ArgValuetypeInReg) {
-			MonoInst *loc = (MonoInst *)cfg->arch.vret_addr_loc;
+			MonoInst *loc = cfg->arch.vret_addr_loc;
 
 			/* Load the destination address */
 			g_assert (loc->opcode == OP_REGOFFSET);
@@ -4175,7 +4175,7 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 			break;
 		case OP_SEQ_POINT: {
 			if (ins->flags & MONO_INST_SINGLE_STEP_LOC) {
-				MonoInst *var = (MonoInst *)cfg->arch.ss_tramp_var;
+				MonoInst *var = cfg->arch.ss_tramp_var;
 				guint8 *label;
 
 				/* Load ss_tramp_var */
@@ -4199,7 +4199,7 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 			if (cfg->compile_aot) {
 				const guint32 offset = code - cfg->native_code;
 				guint32 val;
-				MonoInst *info_var = (MonoInst *)cfg->arch.seq_point_info_var;
+				MonoInst *info_var = cfg->arch.seq_point_info_var;
 				guint8 *label;
 
 				/* Load info var */
@@ -4214,7 +4214,7 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 				amd64_call_reg (code, AMD64_R11);
 				amd64_patch (label, code);
 			} else {
-				MonoInst *var = (MonoInst *)cfg->arch.bp_tramp_var;
+				MonoInst *var = cfg->arch.bp_tramp_var;
 				guint8 *label;
 
 				/*
@@ -7066,7 +7066,7 @@ mono_arch_emit_prolog (MonoCompile *cfg)
 	sig = mono_method_signature (method);
 	pos = 0;
 
-	cinfo = (CallInfo *)cfg->arch.cinfo;
+	cinfo = cfg->arch.cinfo;
 
 	if (sig->ret->type != MONO_TYPE_VOID) {
 		/* Save volatile arguments to the stack */
@@ -7248,7 +7248,7 @@ mono_arch_emit_prolog (MonoCompile *cfg)
 	}
 
 	if (cfg->gen_sdb_seq_points) {
-		MonoInst *info_var = (MonoInst *)cfg->arch.seq_point_info_var;
+		MonoInst *info_var = cfg->arch.seq_point_info_var;
 
 		/* Initialize seq_point_info_var */
 		if (cfg->compile_aot) {
@@ -7262,7 +7262,7 @@ mono_arch_emit_prolog (MonoCompile *cfg)
 
 		if (cfg->compile_aot) {
 			/* Initialize ss_tramp_var */
-			ins = (MonoInst *)cfg->arch.ss_tramp_var;
+			ins = cfg->arch.ss_tramp_var;
 			g_assert (ins->opcode == OP_REGOFFSET);
 
 			amd64_mov_reg_membase (code, AMD64_R11, info_var->inst_basereg, info_var->inst_offset, 8);
@@ -7270,14 +7270,14 @@ mono_arch_emit_prolog (MonoCompile *cfg)
 			amd64_mov_membase_reg (code, ins->inst_basereg, ins->inst_offset, AMD64_R11, 8);
 		} else {
 			/* Initialize ss_tramp_var */
-			ins = (MonoInst *)cfg->arch.ss_tramp_var;
+			ins = cfg->arch.ss_tramp_var;
 			g_assert (ins->opcode == OP_REGOFFSET);
 
 			amd64_mov_reg_imm (code, AMD64_R11, (guint64)&ss_trampoline);
 			amd64_mov_membase_reg (code, ins->inst_basereg, ins->inst_offset, AMD64_R11, 8);
 
 			/* Initialize bp_tramp_var */
-			ins = (MonoInst *)cfg->arch.bp_tramp_var;
+			ins = cfg->arch.bp_tramp_var;
 			g_assert (ins->opcode == OP_REGOFFSET);
 
 			amd64_mov_reg_imm (code, AMD64_R11, (guint64)&bp_trampoline);
@@ -7298,7 +7298,7 @@ mono_arch_emit_epilog (MonoCompile *cfg)
 	guint8 *code;
 	int max_epilog_size;
 	CallInfo *cinfo;
-	gint32 lmf_offset = cfg->lmf_var ? ((MonoInst*)cfg->lmf_var)->inst_offset : -1;
+	gint32 lmf_offset = cfg->lmf_var ? cfg->lmf_var->inst_offset : -1;
 	gint32 save_area_offset = cfg->arch.reg_save_area_offset;
 
 	max_epilog_size = get_max_epilog_size (cfg);
@@ -7348,7 +7348,7 @@ mono_arch_emit_epilog (MonoCompile *cfg)
 	}
 
 	/* Load returned vtypes into registers if needed */
-	cinfo = (CallInfo *)cfg->arch.cinfo;
+	cinfo = cfg->arch.cinfo;
 	if (cinfo->ret.storage == ArgValuetypeInReg) {
 		ArgInfo *ainfo = &cinfo->ret;
 		MonoInst *inst = cfg->ret;

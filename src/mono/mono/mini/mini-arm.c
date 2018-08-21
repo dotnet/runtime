@@ -502,7 +502,7 @@ mono_arm_emit_vfp_scratch_save (MonoCompile *cfg, guint8 *code, int reg)
 
 	g_assert (reg == vfp_scratch1 || reg == vfp_scratch2);
 
-	inst = (MonoInst *) cfg->arch.vfp_scratch_slots [reg == vfp_scratch1 ? 0 : 1];
+	inst = cfg->arch.vfp_scratch_slots [reg == vfp_scratch1 ? 0 : 1];
 
 	if (IS_HARD_FLOAT) {
 		if (!arm_is_fpimm8 (inst->inst_offset)) {
@@ -522,7 +522,7 @@ mono_arm_emit_vfp_scratch_restore (MonoCompile *cfg, guint8 *code, int reg)
 
 	g_assert (reg == vfp_scratch1 || reg == vfp_scratch2);
 
-	inst = (MonoInst *) cfg->arch.vfp_scratch_slots [reg == vfp_scratch1 ? 0 : 1];
+	inst = cfg->arch.vfp_scratch_slots [reg == vfp_scratch1 ? 0 : 1];
 
 	if (IS_HARD_FLOAT) {
 		if (!arm_is_fpimm8 (inst->inst_offset)) {
@@ -2218,7 +2218,7 @@ mono_arch_create_vars (MonoCompile *cfg)
 			MonoInst *inst = mono_compile_create_var (cfg, m_class_get_byval_arg (mono_defaults.double_class), OP_LOCAL);
 			inst->flags |= MONO_INST_VOLATILE;
 
-			cfg->arch.vfp_scratch_slots [i] = (gpointer) inst;
+			cfg->arch.vfp_scratch_slots [i] = inst;
 		}
 	}
 
@@ -2418,10 +2418,10 @@ mono_arch_emit_call (MonoCompile *cfg, MonoCallInst *call)
 		if (!cfg->arch.vret_addr_loc) {
 			cfg->arch.vret_addr_loc = mono_compile_create_var (cfg, mono_get_int_type (), OP_LOCAL);
 			/* Prevent it from being register allocated or optimized away */
-			((MonoInst*)cfg->arch.vret_addr_loc)->flags |= MONO_INST_VOLATILE;
+			cfg->arch.vret_addr_loc->flags |= MONO_INST_VOLATILE;
 		}
 
-		MONO_EMIT_NEW_UNALU (cfg, OP_MOVE, ((MonoInst*)cfg->arch.vret_addr_loc)->dreg, call->vret_var->dreg);
+		MONO_EMIT_NEW_UNALU (cfg, OP_MOVE, cfg->arch.vret_addr_loc->dreg, call->vret_var->dreg);
 		break;
 	case RegTypeStructByAddr: {
 		MonoInst *vtarg;

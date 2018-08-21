@@ -153,7 +153,7 @@ typedef struct {
 	guint8  size    : 4; /* 1, 2, 4, 8, or regs used by ArgStructByVal */
 } ArgInfo;
 
-typedef struct {
+struct CallInfo {
 	int nargs;
 	int gr;
 	int fr;
@@ -166,7 +166,7 @@ typedef struct {
 	ArgInfo ret;
 	ArgInfo sig_cookie;
 	ArgInfo args [1];
-} CallInfo;
+};
 
 void patch_lui_addiu(guint32 *ip, guint32 val);
 static

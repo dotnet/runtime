@@ -849,7 +849,7 @@ typedef struct {
 				in one word, otherwise it's 0*/
 } ArgInfo;
 
-typedef struct {
+struct CallInfo {
 	int nargs;
 	guint32 stack_usage;
 	guint32 struct_ret;
@@ -858,7 +858,7 @@ typedef struct {
 	gboolean vtype_retaddr;
 	int vret_arg_index;
 	ArgInfo args [1];
-} CallInfo;
+};
 
 #define DEBUG(a)
 

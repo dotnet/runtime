@@ -216,7 +216,7 @@ struct MonoLMF {
 };
 
 typedef struct MonoCompileArch {
-	gpointer    cinfo;
+	CallInfo	*cinfo;
 	guint		iregs_offset;
 	guint		lmf_offset;
 	guint		local_alloc_offset;

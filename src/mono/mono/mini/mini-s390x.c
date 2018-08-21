@@ -401,7 +401,7 @@ typedef struct {
 	gint32  type;		/* Data type of argument */
 } ArgInfo;
 
-typedef struct {
+struct CallInfo {
 	int nargs;
 	int lastgr;
 	guint32 stack_usage;
@@ -412,7 +412,7 @@ typedef struct {
 	int vret_arg_index;
 	MonoMethodSignature *sig;
 	ArgInfo args [1];
-} CallInfo;
+};
 
 typedef struct {
 	gint64	gr[5];		/* R2-R6			    */

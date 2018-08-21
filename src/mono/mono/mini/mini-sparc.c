@@ -379,14 +379,14 @@ typedef struct {
 	guint32 vt_offset; /* for valuetypes */
 } ArgInfo;
 
-typedef struct {
+struct CallInfo {
 	int nargs;
 	guint32 stack_usage;
 	guint32 reg_usage;
 	ArgInfo ret;
 	ArgInfo sig_cookie;
 	ArgInfo args [1];
-} CallInfo;
+};
 
 #define DEBUG(a)
 

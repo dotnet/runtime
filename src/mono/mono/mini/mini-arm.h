@@ -168,7 +168,8 @@ typedef struct {
 	int gsharedvt_in;
 	/* Whenever this call uses fp registers */
 	int have_fregs;
-	gpointer caller_cinfo, callee_cinfo;
+	CallInfo *caller_cinfo;
+	CallInfo *callee_cinfo;
 	/* Maps stack slots/registers in the caller to the stack slots/registers in the callee */
 	/* A negative value means a register, i.e. -1=r0, -2=r1 etc. */
 	int map [MONO_ZERO_LEN_ARRAY];
@@ -212,7 +213,7 @@ typedef struct {
 	guint8  size    : 4; /* 1, 2, 4, 8, or regs used by RegTypeStructByVal */
 } ArgInfo;
 
-typedef struct {
+struct CallInfo {
 	int nargs;
 	guint32 stack_usage;
 	/* The index of the vret arg in the argument list for RegTypeStructByAddr */
@@ -220,7 +221,7 @@ typedef struct {
 	ArgInfo ret;
 	ArgInfo sig_cookie;
 	ArgInfo args [1];
-} CallInfo;
+};
 
 #define PARAM_REGS 4
 #define FP_PARAM_REGS 8
@@ -294,13 +295,14 @@ struct MonoLMF {
 };
 
 typedef struct MonoCompileArch {
-	gpointer seq_point_info_var, ss_trigger_page_var;
-	gpointer seq_point_ss_method_var;
-	gpointer seq_point_bp_method_var;
-	gpointer vret_addr_loc;
+	MonoInst *seq_point_info_var;
+	MonoInst *ss_trigger_page_var;
+	MonoInst *seq_point_ss_method_var;
+	MonoInst *seq_point_bp_method_var;
+	MonoInst *vret_addr_loc;
 	gboolean omit_fp, omit_fp_computed;
-	gpointer cinfo;
-	gpointer *vfp_scratch_slots [2];
+	CallInfo *cinfo;
+	MonoInst *vfp_scratch_slots [2];
 	int atomic_tmp_offset;
 	guint8 *thunks;
 	int thunks_size;
