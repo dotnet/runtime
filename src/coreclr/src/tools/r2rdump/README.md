@@ -31,9 +31,11 @@ dotnet R2RDump.dll --in &lt;path to ReadyToRun image&gt;
 * --sc
 	- Dump section contents
 * -v, --verbose
-	- Dump raw bytes, disassembly, unwindInfo, gcInfo and section contents
+	- Dump disassembly, unwindInfo, gcInfo and section contents
 
 ## ReadyToRun Format
+
+![R2RFormat](R2RFormat.png)
 
 ### READYTORUN_SECTION_COMPILER_IDENTIFIER
 
@@ -81,7 +83,7 @@ The x64 GcInfo is written in crossgen by [GcInfoEncoder::Build](../../gcinfo/gci
 
 Contains the code length followed by the header, GcSlots, and finally GcTransitions
 
-The header contains flags indicating which properties are in the GcInfo. GcSlots gives details on the registers or stack pointer offsets are used in the method. GcTransitions give the CodeOffsets (which line in the assembly code) where GcSlots (excluding untracked slots) become live or dead
+The header contains flags indicating which properties are in the GcInfo. GcSlots gives details on the registers or stack pointer offsets that are used in the method. GcTransitions give the CodeOffsets (which line in the assembly code) where GcSlots (excluding untracked slots) become live or dead
 
 In x64, GcTransitions are grouped into chunks where each chunk covers NUM_NORM_CODE_OFFSETS_PER_CHUNK lines of assembly code. The following format is used:
 > Array of offsets pointing to each chunk
@@ -104,3 +106,5 @@ In x64, GcTransitions are grouped into chunks where each chunk covers NUM_NORM_C
 * Support R2RDump on ARM and ARM64 (https://github.com/dotnet/coreclr/issues/19089)
 
 * Parse R2RSections: READYTORUN_SECTION_EXCEPTION_INFO, READYTORUN_SECTION_DEBUG_INFO, READYTORUN_SECTION_DELAYLOAD_METHODCALL_THUNKS, READYTORUN_SECTION_INLINING_INFO, READYTORUN_SECTION_PROFILEDATA_INFO
+
+* Reenable R2RDumpTests after making it less fragile
