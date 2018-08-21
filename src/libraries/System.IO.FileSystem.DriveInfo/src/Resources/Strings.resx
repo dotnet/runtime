@@ -118,7 +118,7 @@
     <value>System.Resources.ResXResourceWriter, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
   </resheader>
   <data name="Arg_MustBeDriveLetterOrRootDir" xml:space="preserve">
-    <value>Drive name must be a root directory ('C:\\') or a drive letter ('C').</value>
+    <value>Drive name must be a root directory (i.e. 'C:\') or a drive letter ('C').</value>
   </data>
   <data name="Arg_MustBeNonEmptyDriveName" xml:space="preserve">
     <value>Drive name must not be empty.</value>
