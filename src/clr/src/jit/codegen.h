@@ -251,7 +251,7 @@ protected:
 
     void genDefineTempLabel(BasicBlock* label);
 
-    void genAdjustSP(ssize_t delta);
+    void genAdjustSP(target_ssize_t delta);
 
     void genAdjustStackLevel(BasicBlock* block);
 
@@ -1181,7 +1181,8 @@ public:
     void inst_IV_handle(instruction ins, int val);
     void inst_FS(instruction ins, unsigned stk = 0);
 
-    void inst_RV_IV(instruction ins, regNumber reg, ssize_t val, emitAttr size, insFlags flags = INS_FLAGS_DONT_CARE);
+    void inst_RV_IV(
+        instruction ins, regNumber reg, target_ssize_t val, emitAttr size, insFlags flags = INS_FLAGS_DONT_CARE);
 
     void inst_ST_RV(instruction ins, TempDsc* tmp, unsigned ofs, regNumber reg, var_types type);
     void inst_ST_IV(instruction ins, TempDsc* tmp, unsigned ofs, int val, var_types type);
@@ -1265,13 +1266,13 @@ public:
     void inst_set_SV_var(GenTree* tree);
 
 #ifdef _TARGET_ARM_
-    bool arm_Valid_Imm_For_Instr(instruction ins, ssize_t imm, insFlags flags);
-    bool arm_Valid_Disp_For_LdSt(ssize_t disp, var_types type);
-    bool arm_Valid_Imm_For_Alu(ssize_t imm);
-    bool arm_Valid_Imm_For_Mov(ssize_t imm);
-    bool arm_Valid_Imm_For_Small_Mov(regNumber reg, ssize_t imm, insFlags flags);
-    bool arm_Valid_Imm_For_Add(ssize_t imm, insFlags flag);
-    bool arm_Valid_Imm_For_Add_SP(ssize_t imm);
+    bool arm_Valid_Imm_For_Instr(instruction ins, target_ssize_t imm, insFlags flags);
+    bool arm_Valid_Disp_For_LdSt(target_ssize_t disp, var_types type);
+    bool arm_Valid_Imm_For_Alu(target_ssize_t imm);
+    bool arm_Valid_Imm_For_Mov(target_ssize_t imm);
+    bool arm_Valid_Imm_For_Small_Mov(regNumber reg, target_ssize_t imm, insFlags flags);
+    bool arm_Valid_Imm_For_Add(target_ssize_t imm, insFlags flag);
+    bool arm_Valid_Imm_For_Add_SP(target_ssize_t imm);
     bool arm_Valid_Imm_For_BL(ssize_t addr);
 
     bool ins_Writes_Dest(instruction ins);
@@ -1306,7 +1307,7 @@ public:
 
     void instGen_Compare_Reg_To_Reg(emitAttr size, regNumber reg1, regNumber reg2);
 
-    void instGen_Compare_Reg_To_Imm(emitAttr size, regNumber reg, ssize_t imm);
+    void instGen_Compare_Reg_To_Imm(emitAttr size, regNumber reg, target_ssize_t imm);
 
     void instGen_Load_Reg_From_Lcl(var_types srcType, regNumber dstReg, int varNum, int offs);
 
