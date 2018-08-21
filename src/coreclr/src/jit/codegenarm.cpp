@@ -78,6 +78,7 @@ void CodeGen::instGen_Set_Reg_To_Imm(emitAttr size, regNumber reg, ssize_t imm, 
 
     if (EA_IS_RELOC(size))
     {
+        // TODO-CrossBitness: we wouldn't need the cast below if we had CodeGen::instGen_Set_Reg_To_Reloc_Imm.
         genMov32RelocatableImmediate(size, (BYTE*)imm, reg);
     }
     else if (imm == 0)
@@ -86,14 +87,16 @@ void CodeGen::instGen_Set_Reg_To_Imm(emitAttr size, regNumber reg, ssize_t imm, 
     }
     else
     {
-        if (arm_Valid_Imm_For_Mov(imm))
+        // TODO-CrossBitness: we wouldn't need the cast below if we had CodeGen::instGen_Set_Reg_To_Reloc_Imm.
+        const int val32 = (int)imm;
+        if (arm_Valid_Imm_For_Mov(val32))
         {
-            getEmitter()->emitIns_R_I(INS_mov, size, reg, imm, flags);
+            getEmitter()->emitIns_R_I(INS_mov, size, reg, val32, flags);
         }
         else // We have to use a movw/movt pair of instructions
         {
-            ssize_t imm_lo16 = (imm & 0xffff);
-            ssize_t imm_hi16 = (imm >> 16) & 0xffff;
+            const int imm_lo16 = val32 & 0xffff;
+            const int imm_hi16 = (val32 >> 16) & 0xffff;
 
             assert(arm_Valid_Imm_For_Mov(imm_lo16));
             assert(imm_hi16 != 0);

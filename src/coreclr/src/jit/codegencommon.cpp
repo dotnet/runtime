@@ -1038,7 +1038,7 @@ void CodeGen::genDefineTempLabel(BasicBlock* label)
  *  return value) are used at this point.
  */
 
-void CodeGen::genAdjustSP(ssize_t delta)
+void CodeGen::genAdjustSP(target_ssize_t delta)
 {
 #if defined(_TARGET_X86_) && !defined(UNIX_X86_ABI)
     if (delta == sizeof(int))
