@@ -110,6 +110,7 @@ namespace System.Linq.Parallel.Tests
 
         [Theory]
         [MemberData(nameof(EmptyData))]
+        [ActiveIssue("https://github.com/xunit/xunit/issues/1771")]
         public static void DefaultIfEmpty_Empty<T>(Labeled<ParallelQuery<T>> labeled, T def)
         {
             ParallelQuery<T> notEmpty = labeled.Item.DefaultIfEmpty();
@@ -125,6 +126,7 @@ namespace System.Linq.Parallel.Tests
 
         [Theory]
         [MemberData(nameof(EmptyData))]
+        [ActiveIssue("https://github.com/xunit/xunit/issues/1771")]
         public static void DefaultIfEmpty_Empty_NotPipelined<T>(Labeled<ParallelQuery<T>> labeled, T def)
         {
             IList<T> notEmpty = labeled.Item.DefaultIfEmpty().ToList();

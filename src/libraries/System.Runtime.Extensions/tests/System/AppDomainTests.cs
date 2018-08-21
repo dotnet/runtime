@@ -117,7 +117,7 @@ namespace System.Tests
             string expected = Assembly.GetEntryAssembly()?.GetName()?.Name;
 
             // GetEntryAssembly may be null (i.e. desktop)
-            if (expected == null)
+            if (expected == null || PlatformDetection.IsFullFramework)
                 expected = Assembly.GetExecutingAssembly().GetName().Name;
 
             Assert.Equal(expected, s);

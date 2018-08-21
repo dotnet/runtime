@@ -82,12 +82,6 @@ namespace System.Reflection.Tests
             Assert.Equal(exists, resourceStream != null);
         }
 
-        [Fact]
-        public void EntryPoint_ExecutingAssembly_IsNull()
-        {
-            Assert.Null(Helpers.ExecutingAssembly.EntryPoint);
-        }
-
         public static IEnumerable<object[]> Equals_TestData()
         {
             yield return new object[] { Assembly.Load(new AssemblyName(typeof(int).GetTypeInfo().Assembly.FullName)), Assembly.Load(new AssemblyName(typeof(int).GetTypeInfo().Assembly.FullName)), true };
