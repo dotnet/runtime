@@ -12,7 +12,7 @@
     </Compile>
   </ItemGroup>
   <ItemGroup>
-    <SupplementalTestData Include="$(PackagesDir)system.drawing.common.testdata\1.0.6\content\bitmaps\nature24bits.jpg">
+    <SupplementalTestData Include="$(PackagesDir)system.drawing.common.testdata\1.0.7\content\bitmaps\nature24bits.jpg">
       <DestinationDir>bitmaps/</DestinationDir>
     </SupplementalTestData>
   </ItemGroup>
