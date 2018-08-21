@@ -114,4 +114,7 @@
   <data name="Arg_PathEmpty" xml:space="preserve">
     <value>The path is empty.</value>
   </data>
+  <data name="Arg_MustBeDriveLetterOrRootDir" xml:space="preserve">
+    <value>Drive name must be a root directory (i.e. 'C:\') or a drive letter ('C').</value> 
+  </data>
 </root>
