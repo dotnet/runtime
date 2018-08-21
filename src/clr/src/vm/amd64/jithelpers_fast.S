@@ -384,7 +384,7 @@ LEAF_ENTRY JIT_ByRefWriteBarrier, _TEXT
         add     rdi, 8h
         add     rsi, 8h
         ret
-LEAF_END JIT_ByRefWriteBarrier, _TEXT
+LEAF_END_MARKED JIT_ByRefWriteBarrier, _TEXT
 
 // TODO: put definition for this in asmconstants.h
 #define CanCast 1
