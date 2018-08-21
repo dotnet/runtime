@@ -457,9 +457,9 @@ def main(args):
     # Set up environment for running tests
     if optLevel == 'min_opts':
         myEnv['COMPlus_JITMinOpts'] = '1'
-        myEnv['COMPLUS_TieredCompilation'] = '0'
+        myEnv['COMPlus_TieredCompilation'] = '0'
     elif optLevel == 'full_opt':
-        myEnv['COMPLUS_TieredCompilation'] = '0'
+        myEnv['COMPlus_TieredCompilation'] = '0'
 
     if not 'XUNIT_PERFORMANCE_MAX_ITERATION' in myEnv:
         myEnv['XUNIT_PERFORMANCE_MAX_ITERATION'] = '21'
