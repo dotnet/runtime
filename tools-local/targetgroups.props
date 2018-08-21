@@ -189,21 +189,30 @@
       <Imports>netcoreapp2.0</Imports>
       <CompatibleWith>netstandard</CompatibleWith>
     </TargetGroups>
-    <!-- netcoreapp is an alias for netcoreapp2.1 -->
-    <TargetGroups Include="netcoreapp">
-      <TargetFramework>netcoreapp2.1</TargetFramework>
-      <NuGetTargetMoniker>.NETCoreApp,Version=v2.1</NuGetTargetMoniker>
-      <NuGetTargetMonikerShort>netcoreapp2.1</NuGetTargetMonikerShort>
+    <TargetGroups Include="netcoreapp2.2">
+      <TargetFramework>netcoreapp2.2</TargetFramework>
+      <NuGetTargetMoniker>.NETCoreApp,Version=v2.2</NuGetTargetMoniker>
+      <NuGetTargetMonikerShort>netcoreapp2.2</NuGetTargetMonikerShort>
       <Imports>netcoreapp2.1</Imports>
       <CompatibleWith>netstandard</CompatibleWith>
     </TargetGroups>
-    <TargetGroups Include="netcoreapp1.2">
-      <TargetFramework>netcoreapp1.2</TargetFramework>
-      <NuGetTargetMoniker>.NETCoreApp,Version=v1.2</NuGetTargetMoniker>
-      <NuGetTargetMonikerShort>netcoreapp1.2</NuGetTargetMonikerShort>
+    <TargetGroups Include="netcoreapp3.0">
+      <TargetFramework>netcoreapp3.0</TargetFramework>
+      <NuGetTargetMoniker>.NETCoreApp,Version=v3.0</NuGetTargetMoniker>
+      <NuGetTargetMonikerShort>netcoreapp3.0</NuGetTargetMonikerShort>
+      <Imports>netcoreapp2.2</Imports>
+      <CompatibleWith>netstandard</CompatibleWith>
     </TargetGroups>
-    <TargetGroups Include="netcoreapp2.1aot">
-      <TargetFramework>netcoreapp2.1</TargetFramework>
+    <!-- netcoreapp is an alias for netcoreapp3.0 -->
+    <TargetGroups Include="netcoreapp">
+      <TargetFramework>netcoreapp3.0</TargetFramework>
+      <NuGetTargetMoniker>.NETCoreApp,Version=v3.0</NuGetTargetMoniker>
+      <NuGetTargetMonikerShort>netcoreapp3.0</NuGetTargetMonikerShort>
+      <Imports>netcoreapp3.0</Imports>
+      <CompatibleWith>netstandard</CompatibleWith>
+    </TargetGroups>
+    <TargetGroups Include="netcoreapp3.0aot">
+      <TargetFramework>netcoreapp3.0</TargetFramework>
       <PackageTargetRuntimeSuffix>aot</PackageTargetRuntimeSuffix>
       <NuGetTargetMoniker>.NETCoreApp,Version=v2.1</NuGetTargetMoniker>
       <NuGetTargetMonikerShort>netcoreapp2.1</NuGetTargetMonikerShort>
@@ -211,11 +220,11 @@
       <CompatibleWith>netstandard</CompatibleWith>
     </TargetGroups>
     <TargetGroups Include="netcoreappaot">
-      <TargetFramework>netcoreapp2.1</TargetFramework>
+      <TargetFramework>netcoreapp3.0</TargetFramework>
       <PackageTargetRuntimeSuffix>aot</PackageTargetRuntimeSuffix>
-      <NuGetTargetMoniker>.NETCoreApp,Version=v2.1</NuGetTargetMoniker>
-      <NuGetTargetMonikerShort>netcoreapp2.1</NuGetTargetMonikerShort>
-      <Imports>netcoreapp;netcoreapp2.1</Imports>
+      <NuGetTargetMoniker>.NETCoreApp,Version=v3.0</NuGetTargetMoniker>
+      <NuGetTargetMonikerShort>netcoreapp3.0</NuGetTargetMonikerShort>
+      <Imports>netcoreapp;netcoreapp3.0aot</Imports>
       <CompatibleWith>netstandard</CompatibleWith>
     </TargetGroups>
     <TargetGroups Include="net45">
