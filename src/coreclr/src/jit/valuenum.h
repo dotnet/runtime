@@ -81,10 +81,9 @@ struct VNFuncApp
     }
 };
 
-// A unique prefix character to use when dumping a tree's gtVN in the tree dumps
-// We use this together with string concatenation to put this in printf format strings
-// static const char* const VN_DumpPrefix = "$";
-#define STR_VN "$"
+// We use a unique prefix character when printing value numbers in dumps:  i.e.  $1c0
+// This define is used with string concatenation to put this in printf format strings
+#define FMT_VN "$%x"
 
 class ValueNumStore
 {

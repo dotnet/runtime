@@ -9775,7 +9775,7 @@ int cValNumIR(Compiler* comp, GenTree* tree)
         {
             chars += printf("<v:");
             vn = vnp.GetLiberal();
-            chars += printf(STR_VN "%x", vn);
+            chars += printf(FMT_VN, vn);
             if (ValueNumStore::isReservedVN(vn))
             {
                 chars += printf("R");
@@ -9786,14 +9786,14 @@ int cValNumIR(Compiler* comp, GenTree* tree)
         {
             vn = vnp.GetLiberal();
             chars += printf("<v:");
-            chars += printf(STR_VN "%x", vn);
+            chars += printf(FMT_VN, vn);
             if (ValueNumStore::isReservedVN(vn))
             {
                 chars += printf("R");
             }
             chars += printf(",");
             vn = vnp.GetConservative();
-            chars += printf(STR_VN "%x", vn);
+            chars += printf(FMT_VN, vn);
             if (ValueNumStore::isReservedVN(vn))
             {
                 chars += printf("R");
