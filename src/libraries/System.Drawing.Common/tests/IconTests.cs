@@ -39,6 +39,7 @@ namespace System.Drawing.Tests
         [ConditionalTheory(Helpers.GdiplusIsAvailable)]
         [InlineData("48x48_multiple_entries_4bit.ico")]
         [InlineData("256x256_seven_entries_multiple_bits.ico")]
+        [InlineData("pngwithheight_icon.ico")]
         public void Ctor_FilePath(string name)
         {
             using (var icon = new Icon(Helpers.GetTestBitmapPath(name)))
@@ -47,6 +48,13 @@ namespace System.Drawing.Tests
                 Assert.Equal(32, icon.Height);
                 Assert.Equal(new Size(32, 32), icon.Size);
             }
+        }
+
+        [Fact]
+        [PlatformSpecific(TestPlatforms.AnyUnix)]
+        public void Unix_OverflowException_CorruptIcon()
+        {
+            Assert.Throws<OverflowException>(() => new Icon(Helpers.GetTestBitmapPath("overflowicon.ico")));
         }
 
         public static IEnumerable<object[]> Size_TestData()

@@ -46,12 +46,16 @@ namespace System.Drawing
 {
 #if !NETCORE
 #if !MONOTOUCH
-    [Editor ("System.Drawing.Design.IconEditor, " + Consts.AssemblySystem_Drawing_Design, typeof (System.Drawing.Design.UITypeEditor))]
+    [Editor("System.Drawing.Design.IconEditor, " + Consts.AssemblySystem_Drawing_Design, typeof(System.Drawing.Design.UITypeEditor))]
 #endif
     [TypeConverter(typeof(IconConverter))]
 #endif
     public sealed partial class Icon : MarshalByRefObject, ISerializable, ICloneable, IDisposable
     {
+        // The PNG signature is specified at http://www.w3.org/TR/PNG/#5PNG-file-signature
+        private const uint PNGSignature1 = 137 + ('P' << 8) + ('N' << 16) + ('G' << 24);
+        private const uint PNGSignature2 = 13 + (10 << 8) + (26 << 16) + (10 << 24);
+
         [StructLayout(LayoutKind.Sequential)]
         internal struct IconDirEntry
         {
@@ -63,7 +67,7 @@ namespace System.Drawing
             internal ushort bitCount;       // Bits per pixel
             internal uint bytesInRes;     // bytes in resource
             internal uint imageOffset;  // position in file 
-            internal bool ignore;       // for unsupported images (vista 256 png)
+            internal bool png;       // for unsupported images (vista 256 png)
         };
 
         [StructLayout(LayoutKind.Sequential)]
@@ -159,7 +163,7 @@ namespace System.Drawing
                 for (ushort i = 0; i < count; i++)
                 {
                     IconDirEntry ide = iconDir.idEntries[i];
-                    if (((ide.height == size.Height) || (ide.width == size.Width)) && !ide.ignore)
+                    if (((ide.height == size.Height) || (ide.width == size.Width)) && !ide.png)
                     {
                         id = i;
                         break;
@@ -175,7 +179,7 @@ namespace System.Drawing
                     for (ushort i = 0; i < count; i++)
                     {
                         IconDirEntry ide = iconDir.idEntries[i];
-                        if (((ide.height < requested) || (ide.width < requested)) && !ide.ignore)
+                        if (((ide.height < requested) || (ide.width < requested)) && !ide.png)
                         {
                             if (best == null)
                             {
@@ -198,7 +202,7 @@ namespace System.Drawing
                     while (id == ushort.MaxValue && i > 0)
                     {
                         i--;
-                        if (!iconDir.idEntries[i].ignore)
+                        if (!iconDir.idEntries[i].png)
                             id = (ushort)i;
                     }
                 }
@@ -406,7 +410,7 @@ namespace System.Drawing
                     SaveIconImage(writer, (IconImage)imageData[i]);
             }
         }
-        // TODO: check image not ignored (presently this method doesnt seem to be called unless width/height 
+        // TODO: check image not png (presently this method doesnt seem to be called unless width/height
         // refer to image)
         private void SaveBestSingleIcon(BinaryWriter writer, int width, int height)
         {
@@ -707,181 +711,178 @@ namespace System.Drawing
                 throw new ArgumentNullException(nameof(stream));
 
             if (stream.Length == 0)
-                throw new System.ArgumentException("The argument 'stream' must be a picture that can be used as a Icon", nameof(stream));
+                throw new ArgumentException(SR.Format(SR.InvalidPictureType, "picture", nameof(stream)));
 
-            //read the icon header
-            BinaryReader reader = new BinaryReader(stream);
-
-            //iconDir = new IconDir ();
-            iconDir.idReserved = reader.ReadUInt16();
-            if (iconDir.idReserved != 0) //must be 0
-                throw new System.ArgumentException("Invalid Argument", nameof(stream));
-
-            iconDir.idType = reader.ReadUInt16();
-            if (iconDir.idType != 1) //must be 1
-                throw new System.ArgumentException("Invalid Argument", nameof(stream));
-
-            ushort dirEntryCount = reader.ReadUInt16();
-            imageData = new ImageData[dirEntryCount];
-            iconDir.idCount = dirEntryCount;
-            iconDir.idEntries = new IconDirEntry[dirEntryCount];
             bool sizeObtained = false;
-            // now read in the IconDirEntry structures
-            for (int i = 0; i < dirEntryCount; i++)
+            ushort dirEntryCount;
+            // Read the icon header
+            using (var reader = new BinaryReader(stream))
             {
-                IconDirEntry ide;
-                ide.width = reader.ReadByte();
-                ide.height = reader.ReadByte();
-                ide.colorCount = reader.ReadByte();
-                ide.reserved = reader.ReadByte();
-                ide.planes = reader.ReadUInt16();
-                ide.bitCount = reader.ReadUInt16();
-                ide.bytesInRes = reader.ReadUInt32();
-                ide.imageOffset = reader.ReadUInt32();
+                iconDir.idReserved = reader.ReadUInt16();
+                if (iconDir.idReserved != 0) //must be 0
+                    throw new ArgumentException(SR.Format(SR.InvalidPictureType, "picture", nameof(stream)));
 
-                // Vista 256x256 icons points directly to a PNG bitmap
-                // 256x256 icons are decoded as 0x0 (width and height are encoded as BYTE)
-                // and we ignore them just like MS does (at least up to fx 2.0) 
-                // Added: storing data so it can be saved back
-                if ((ide.width == 0) && (ide.height == 0))
-                    ide.ignore = true;
-                else
-                    ide.ignore = false;
+                iconDir.idType = reader.ReadUInt16();
+                if (iconDir.idType != 1) //must be 1
+                    throw new ArgumentException(SR.Format(SR.InvalidPictureType, "picture", nameof(stream)));
 
-                iconDir.idEntries[i] = ide;
+                dirEntryCount = reader.ReadUInt16();
+                imageData = new ImageData[dirEntryCount];
+                iconDir.idCount = dirEntryCount;
+                iconDir.idEntries = new IconDirEntry[dirEntryCount];
+                // Now read in the IconDirEntry structures
+                for (int i = 0; i < dirEntryCount; i++)
+                {
+                    var ide = new IconDirEntry
+                    {
+                        width = reader.ReadByte(),
+                        height = reader.ReadByte(),
+                        colorCount = reader.ReadByte(),
+                        reserved = reader.ReadByte(),
+                        planes = reader.ReadUInt16(),
+                        bitCount = reader.ReadUInt16(),
+                        bytesInRes = reader.ReadUInt32(),
+                        imageOffset = reader.ReadUInt32()
+                    };
 
-                //is this is the best fit??
+                    // Vista 256x256 icons points directly to a PNG bitmap
+                    // 256x256 icons are decoded as 0x0 (width and height are encoded as BYTE)
+                    // We mark them as png and later on we just store the raw bytes to be able to save to a file.
+                    ide.png = (ide.width == 0) && (ide.height == 0);
+
+                    iconDir.idEntries[i] = ide;
+
+                    if (!sizeObtained)
+                    {
+                        if (((ide.height == height) || (ide.width == width)) && !ide.png)
+                        {
+                            this.id = (ushort)i;
+                            sizeObtained = true;
+                            this.iconSize.Height = ide.height;
+                            this.iconSize.Width = ide.width;
+                        }
+                    }
+                }
+
+                // If we havent found the best match, return the one with the largest size.
                 if (!sizeObtained)
                 {
-                    if (((ide.height == height) || (ide.width == width)) && !ide.ignore)
+                    uint largestSize = 0;
+                    for (int j = 0; j < dirEntryCount; j++)
                     {
-                        this.id = (ushort)i;
-                        sizeObtained = true;
-                        this.iconSize.Height = ide.height;
-                        this.iconSize.Width = ide.width;
+                        if (iconDir.idEntries[j].bytesInRes >= largestSize && !iconDir.idEntries[j].png)
+                        {
+                            largestSize = iconDir.idEntries[j].bytesInRes;
+                            this.id = (ushort)j;
+                            this.iconSize.Height = iconDir.idEntries[j].height;
+                            this.iconSize.Width = iconDir.idEntries[j].width;
+                        }
                     }
                 }
-            }
 
-            // throw error if no valid entries found
-            int valid = 0;
-            for (int i = 0; i < dirEntryCount; i++)
-            {
-                if (!(iconDir.idEntries[i].ignore))
-                    valid++;
-            }
-
-            if (valid == 0)
-                throw new Win32Exception(0, "No valid icon entry were found.");
-
-            // if we havent found the best match, return the one with the
-            // largest size. Is this approach correct??
-            if (!sizeObtained)
-            {
-                uint largestSize = 0;
+                // Now read in the icon data
+                bool valid = false;
                 for (int j = 0; j < dirEntryCount; j++)
                 {
-                    if (iconDir.idEntries[j].bytesInRes >= largestSize && !iconDir.idEntries[j].ignore)
+                    stream.Seek(iconDir.idEntries[j].imageOffset, SeekOrigin.Begin);
+                    byte[] buffer = new byte[iconDir.idEntries[j].bytesInRes];
+                    stream.Read(buffer, 0, buffer.Length);
+                    using (var bihReader = new BinaryReader(new MemoryStream(buffer)))
                     {
-                        largestSize = iconDir.idEntries[j].bytesInRes;
-                        this.id = (ushort)j;
-                        this.iconSize.Height = iconDir.idEntries[j].height;
-                        this.iconSize.Width = iconDir.idEntries[j].width;
+                        uint headerSize = bihReader.ReadUInt32();
+                        int headerWidth = bihReader.ReadInt32();
+
+                        // Process PNG images into IconDump
+                        if (iconDir.idEntries[j].png || (headerSize == PNGSignature1 && headerWidth == (int)PNGSignature2))
+                        {
+                            IconDump id = new IconDump();
+                            id.data = buffer;
+                            imageData[j] = id;
+                            iconDir.idEntries[j].png = true;
+                            continue;
+                        }
+
+                        // We found a valid icon BMP entry.
+                        valid = true;
+
+                        var bih = new BitmapInfoHeader
+                        {
+                            biSize = headerSize,
+                            biWidth = headerWidth,
+                            biHeight = bihReader.ReadInt32(),
+                            biPlanes = bihReader.ReadUInt16(),
+                            biBitCount = bihReader.ReadUInt16(),
+                            biCompression = bihReader.ReadUInt32(),
+                            biSizeImage = bihReader.ReadUInt32(),
+                            biXPelsPerMeter = bihReader.ReadInt32(),
+                            biYPelsPerMeter = bihReader.ReadInt32(),
+                            biClrUsed = bihReader.ReadUInt32(),
+                            biClrImportant = bihReader.ReadUInt32()
+                        };
+                        var iidata = new IconImage
+                        {
+                            iconHeader = bih
+                        };
+                        // Read the number of colors used and corresponding memory occupied by
+                        // color table. Fill this memory chunk into rgbquad[]
+                        int numColors;
+                        switch (bih.biBitCount)
+                        {
+                            case 1:
+                                numColors = 2;
+                                break;
+                            case 4:
+                                numColors = 16;
+                                break;
+                            case 8:
+                                numColors = 256;
+                                break;
+                            default:
+                                numColors = 0;
+                                break;
+                        }
+
+                        iidata.iconColors = new uint[numColors];
+                        for (int i = 0; i < numColors; i++)
+                            iidata.iconColors[i] = bihReader.ReadUInt32();
+
+                        //XOR mask is immediately after ColorTable and its size is
+                        //icon height* no. of bytes per line
+
+                        //icon height is half of BITMAPINFOHEADER.biHeight, since it contains
+                        //both XOR as well as AND mask bytes
+                        int iconHeight = bih.biHeight / 2;
+
+                        //bytes per line should should be uint aligned
+                        int numBytesPerLine = checked((((bih.biWidth * bih.biPlanes * bih.biBitCount) + 31) >> 5) << 2);
+
+                        //Determine the XOR array Size
+                        int xorSize = checked(numBytesPerLine * iconHeight);
+                        iidata.iconXOR = new byte[xorSize];
+                        int nread = bihReader.Read(iidata.iconXOR, 0, xorSize);
+                        if (nread != xorSize)
+                        {
+                            throw new ArgumentException(SR.Format(SR.IconInvalidMaskLength, "XOR", xorSize, nread), nameof(stream));
+                        }
+
+                        //Determine the AND array size
+                        numBytesPerLine = checked((((bih.biWidth) + 31) & ~31) >> 3);
+                        int andSize = checked(numBytesPerLine * iconHeight);
+                        iidata.iconAND = new byte[andSize];
+                        nread = bihReader.Read(iidata.iconAND, 0, andSize);
+                        if (nread != andSize)
+                        {
+                            throw new ArgumentException(SR.Format(SR.IconInvalidMaskLength, "AND", andSize, nread), nameof(stream));
+                        }
+
+                        imageData[j] = iidata;
                     }
                 }
+
+                // Throw error if no valid entries found
+                if (!valid)
+                    throw new Win32Exception(SafeNativeMethods.ERROR_INVALID_PARAMETER, SR.Format(SR.InvalidPictureType, "picture", nameof(stream)));
             }
-
-            //now read in the icon data
-            for (int j = 0; j < dirEntryCount; j++)
-            {
-                // process ignored into IconDump
-                if (iconDir.idEntries[j].ignore)
-                {
-                    IconDump id = new IconDump();
-                    stream.Seek(iconDir.idEntries[j].imageOffset, SeekOrigin.Begin);
-                    id.data = new byte[iconDir.idEntries[j].bytesInRes];
-                    stream.Read(id.data, 0, id.data.Length);
-                    imageData[j] = id;
-                    continue;
-                }
-                // standard image
-                IconImage iidata = new IconImage();
-                BitmapInfoHeader bih = new BitmapInfoHeader();
-                stream.Seek(iconDir.idEntries[j].imageOffset, SeekOrigin.Begin);
-                byte[] buffer = new byte[iconDir.idEntries[j].bytesInRes];
-                stream.Read(buffer, 0, buffer.Length);
-                BinaryReader bihReader = new BinaryReader(new MemoryStream(buffer));
-                bih.biSize = bihReader.ReadUInt32();
-                bih.biWidth = bihReader.ReadInt32();
-                bih.biHeight = bihReader.ReadInt32();
-                bih.biPlanes = bihReader.ReadUInt16();
-                bih.biBitCount = bihReader.ReadUInt16();
-                bih.biCompression = bihReader.ReadUInt32();
-                bih.biSizeImage = bihReader.ReadUInt32();
-                bih.biXPelsPerMeter = bihReader.ReadInt32();
-                bih.biYPelsPerMeter = bihReader.ReadInt32();
-                bih.biClrUsed = bihReader.ReadUInt32();
-                bih.biClrImportant = bihReader.ReadUInt32();
-                iidata.iconHeader = bih;
-                //Read the number of colors used and corresponding memory occupied by
-                //color table. Fill this memory chunk into rgbquad[]
-                int numColors;
-                switch (bih.biBitCount)
-                {
-                    case 1:
-                        numColors = 2;
-                        break;
-                    case 4:
-                        numColors = 16;
-                        break;
-                    case 8:
-                        numColors = 256;
-                        break;
-                    default:
-                        numColors = 0;
-                        break;
-                }
-
-                iidata.iconColors = new uint[numColors];
-                for (int i = 0; i < numColors; i++)
-                    iidata.iconColors[i] = bihReader.ReadUInt32();
-
-                //XOR mask is immediately after ColorTable and its size is 
-                //icon height* no. of bytes per line
-
-                //icon height is half of BITMAPINFOHEADER.biHeight, since it contains
-                //both XOR as well as AND mask bytes
-                int iconHeight = bih.biHeight / 2;
-
-                //bytes per line should should be uint aligned
-                int numBytesPerLine = ((((bih.biWidth * bih.biPlanes * bih.biBitCount) + 31) >> 5) << 2);
-
-                //Determine the XOR array Size
-                int xorSize = numBytesPerLine * iconHeight;
-                iidata.iconXOR = new byte[xorSize];
-                int nread = bihReader.Read(iidata.iconXOR, 0, xorSize);
-                if (nread != xorSize)
-                {
-                    string msg = string.Format("{0} data length expected {1}, read {2}", "XOR", xorSize, nread);
-                    throw new ArgumentException(msg, nameof(stream));
-                }
-
-                //Determine the AND array size
-                numBytesPerLine = (int)((((bih.biWidth) + 31) & ~31) >> 3);
-                int andSize = numBytesPerLine * iconHeight;
-                iidata.iconAND = new byte[andSize];
-                nread = bihReader.Read(iidata.iconAND, 0, andSize);
-                if (nread != andSize)
-                {
-                    string msg = string.Format("{0} data length expected {1}, read {2}", "AND", andSize, nread);
-                    throw new ArgumentException(msg, nameof(stream));
-                }
-
-                imageData[j] = iidata;
-                bihReader.Dispose();
-            }
-
-            reader.Dispose();
         }
     }
 }
