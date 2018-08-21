@@ -122,7 +122,7 @@
       },
       "inputs": {
         "filename": "build.cmd",
-        "arguments": "$(Architecture) $(PB_BuildType) skiptests skipbuildpackages -ibcoptimize $(PB_EnforcePGO) -OfficialBuildId=$(OfficialBuildId) -Priority=$(Priority) -skiprestore -- /p:SignType=$(PB_SignType) /flp:\"v=diag\"",
+        "arguments": "$(Architecture) $(PB_BuildType) skiptests skipbuildpackages $(PB_EnforcePGO) -OfficialBuildId=$(OfficialBuildId) -Priority=$(Priority) -skiprestore -- /p:SignType=$(PB_SignType) /flp:\"v=diag\"",
         "workingFolder": "",
         "failOnStandardError": "false"
       }
