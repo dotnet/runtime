@@ -1809,7 +1809,7 @@ void LinearScan::initVarRegMaps()
     // The compiler memory allocator requires that the allocation be an
     // even multiple of int-sized objects
     unsigned int varCount = compiler->lvaTrackedCount;
-    regMapCount           = (unsigned int)roundUp(varCount, sizeof(int));
+    regMapCount           = roundUp(varCount, (unsigned)sizeof(int));
 
     // Not sure why blocks aren't numbered from zero, but they don't appear to be.
     // So, if we want to index by bbNum we have to know the maximum value.
