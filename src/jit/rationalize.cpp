@@ -293,7 +293,7 @@ void Rationalizer::FixupIfSIMDLocal(GenTreeLclVarCommon* node)
             node->gtFlags &= ~(GTF_VAR_USEASG);
             break;
     }
-    unsigned simdSize = (unsigned int)roundUp(varDsc->lvExactSize, TARGET_POINTER_SIZE);
+    unsigned simdSize = roundUp(varDsc->lvExactSize, TARGET_POINTER_SIZE);
     node->gtType      = comp->getSIMDTypeForSize(simdSize);
 #endif // FEATURE_SIMD
 }
@@ -450,7 +450,7 @@ void Rationalizer::RewriteAssignment(LIR::Use& use)
                 {
                     CORINFO_CLASS_HANDLE structHnd = varDsc->lvVerTypeInfo.GetClassHandle();
                     GenTreeObj*          objNode   = comp->gtNewObjNode(structHnd, location)->AsObj();
-                    unsigned int         slots = (unsigned)(roundUp(size, TARGET_POINTER_SIZE) / TARGET_POINTER_SIZE);
+                    unsigned int         slots     = roundUp(size, TARGET_POINTER_SIZE) / TARGET_POINTER_SIZE;
 
                     objNode->SetGCInfo(varDsc->lvGcLayout, varDsc->lvStructGcCount, slots);
                     objNode->ChangeOper(GT_STORE_OBJ);

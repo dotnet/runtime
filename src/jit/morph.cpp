@@ -1211,7 +1211,7 @@ fgArgTabEntry* fgArgInfo::AddStkArg(unsigned argNum,
 {
     fgArgTabEntry* curArgTabEntry = new (compiler, CMK_fgArgInfo) fgArgTabEntry;
 
-    nextSlotNum = (unsigned)roundUp(nextSlotNum, alignment);
+    nextSlotNum = roundUp(nextSlotNum, alignment);
 
     curArgTabEntry->setRegNum(0, REG_STK);
     curArgTabEntry->argNum     = argNum;
@@ -1354,7 +1354,7 @@ void fgArgInfo::RemorphStkArg(unsigned argNum, GenTree* node, GenTree* parent, u
         }
     }
 
-    nextSlotNum = (unsigned)roundUp(nextSlotNum, alignment);
+    nextSlotNum = roundUp(nextSlotNum, alignment);
 
     assert(curArgTabEntry->argNum == argNum);
     assert(curArgTabEntry->slotNum == nextSlotNum);
@@ -3478,8 +3478,8 @@ GenTreeCall* Compiler::fgMorphArgs(GenTreeCall* call)
                 }
                 else
                 {
-                    size = (unsigned)(roundUp(info.compCompHnd->getClassSize(argx->gtArgPlace.gtArgPlaceClsHnd),
-                                              TARGET_POINTER_SIZE)) /
+                    size = roundUp(info.compCompHnd->getClassSize(argx->gtArgPlace.gtArgPlaceClsHnd),
+                                   TARGET_POINTER_SIZE) /
                            TARGET_POINTER_SIZE;
                     eeGetSystemVAmd64PassStructInRegisterDescriptor(argx->gtArgPlace.gtArgPlaceClsHnd, &structDesc);
                     if (size > 1)
@@ -3502,8 +3502,8 @@ GenTreeCall* Compiler::fgMorphArgs(GenTreeCall* call)
                     else
                     {
                         // Structs are either passed in 1 or 2 (64-bit) slots
-                        size = (unsigned)(roundUp(info.compCompHnd->getClassSize(argx->gtArgPlace.gtArgPlaceClsHnd),
-                                                  TARGET_POINTER_SIZE)) /
+                        size = roundUp(info.compCompHnd->getClassSize(argx->gtArgPlace.gtArgPlaceClsHnd),
+                                       TARGET_POINTER_SIZE) /
                                TARGET_POINTER_SIZE;
 
                         if (size == 2)
@@ -3528,8 +3528,8 @@ GenTreeCall* Compiler::fgMorphArgs(GenTreeCall* call)
 #elif defined(_TARGET_ARM_)
                 if (isStructArg)
                 {
-                    size = (unsigned)(roundUp(info.compCompHnd->getClassSize(argx->gtArgPlace.gtArgPlaceClsHnd),
-                                              TARGET_POINTER_SIZE)) /
+                    size = roundUp(info.compCompHnd->getClassSize(argx->gtArgPlace.gtArgPlaceClsHnd),
+                                   TARGET_POINTER_SIZE) /
                            TARGET_POINTER_SIZE;
                     if (isHfaArg || size > 1)
                     {
@@ -3562,7 +3562,7 @@ GenTreeCall* Compiler::fgMorphArgs(GenTreeCall* call)
                     if (varTypeIsStruct(argx))
                     {
                         size                 = info.compCompHnd->getClassSize(impGetRefAnyClass());
-                        unsigned roundupSize = (unsigned)roundUp(size, TARGET_POINTER_SIZE);
+                        unsigned roundupSize = roundUp(size, TARGET_POINTER_SIZE);
                         size                 = roundupSize / TARGET_POINTER_SIZE;
                         eeGetSystemVAmd64PassStructInRegisterDescriptor(impGetRefAnyClass(), &structDesc);
                     }
@@ -3603,7 +3603,7 @@ GenTreeCall* Compiler::fgMorphArgs(GenTreeCall* call)
 
                     unsigned originalSize = info.compCompHnd->getClassSize(objClass);
                     originalSize          = (originalSize == 0 ? TARGET_POINTER_SIZE : originalSize);
-                    unsigned roundupSize  = (unsigned)roundUp(originalSize, TARGET_POINTER_SIZE);
+                    unsigned roundupSize  = roundUp(originalSize, TARGET_POINTER_SIZE);
 
                     structSize = originalSize;
 
@@ -3943,7 +3943,7 @@ GenTreeCall* Compiler::fgMorphArgs(GenTreeCall* call)
                         // recompute the 'size' so that it represent the number of stack slots rather than the number of
                         // registers
                         //
-                        unsigned roundupSize = (unsigned)roundUp(structSize, TARGET_POINTER_SIZE);
+                        unsigned roundupSize = roundUp(structSize, TARGET_POINTER_SIZE);
                         size                 = roundupSize / TARGET_POINTER_SIZE;
 
                         // We also must update fltArgRegNum so that we no longer try to
@@ -4705,7 +4705,7 @@ GenTree* Compiler::fgMorphMultiregStructArg(GenTree* arg, fgArgTabEntry* fgEntry
     {
         assert(structSize <= MAX_ARG_REG_COUNT * TARGET_POINTER_SIZE);
         BYTE gcPtrs[MAX_ARG_REG_COUNT];
-        elemCount = (unsigned)roundUp(structSize, TARGET_POINTER_SIZE) / TARGET_POINTER_SIZE;
+        elemCount = roundUp(structSize, TARGET_POINTER_SIZE) / TARGET_POINTER_SIZE;
         info.compCompHnd->getClassGClayout(objClass, &gcPtrs[0]);
 
         for (unsigned inx = 0; inx < elemCount; inx++)

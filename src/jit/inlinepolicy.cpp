@@ -780,7 +780,7 @@ int DefaultPolicy::DetermineCallsiteNativeSizeEstimate(CORINFO_METHOD_INFO* meth
 
             callsiteSize += 10; // "lea     EAX, bword ptr [EBP-14H]"
 
-            unsigned opsz  = (unsigned)(roundUp(comp->getClassSize(verType.GetClassHandle()), TARGET_POINTER_SIZE));
+            unsigned opsz  = roundUp(comp->getClassSize(verType.GetClassHandle()), TARGET_POINTER_SIZE);
             unsigned slots = opsz / TARGET_POINTER_SIZE;
 
             callsiteSize += slots * 20; // "push    gword ptr [EAX+offs]  "
