@@ -32,6 +32,9 @@ mono_is_usermode_native_debugger_present (void)
 #if defined (__NetBSD__)
 #include <kvm.h>
 #endif
+#if defined (_AIX)
+#include <procinfo.h>
+#endif
 
 static gboolean
 mono_is_usermode_native_debugger_present_slow (void)
@@ -78,6 +81,14 @@ mono_is_usermode_native_debugger_present_slow (void)
 	gboolean const traced = info && count > 0 && (info->kp_proc.p_slflag & PSL_TRACED);
 	kvm_close (kd);
 	return traced;
+
+#elif defined (_AIX)
+
+	struct procentry64 proc;
+	pid_t pid;
+	pid = getpid ();
+	getprocs64 (&proc, sizeof (proc), NULL, 0, &pid, 1);
+	return (proc.pi_flags & STRC) != 0; // SMPTRACE or SWTED might work too
 
 #else
 	return FALSE; // FIXME Other operating systems.
