@@ -587,13 +587,13 @@ mono_w32socket_transmit_file (SOCKET sock, gpointer file_handle, TRANSMIT_FILE_B
 
 	if (!mono_fdhandle_lookup_and_ref(sock, (MonoFDHandle**) &sockethandle)) {
 		mono_w32error_set_last (WSAENOTSOCK);
-		return SOCKET_ERROR;
+		return FALSE;
 	}
 
 	if (((MonoFDHandle*) sockethandle)->type != MONO_FDTYPE_SOCKET) {
 		mono_fdhandle_unref ((MonoFDHandle*) sockethandle);
 		mono_w32error_set_last (WSAENOTSOCK);
-		return SOCKET_ERROR;
+		return FALSE;
 	}
 
 	/* Write the header */
@@ -617,7 +617,7 @@ mono_w32socket_transmit_file (SOCKET sock, gpointer file_handle, TRANSMIT_FILE_B
 		gint errnum = errno;
 		mono_w32socket_set_last_error (mono_w32socket_convert_error (errnum));
 		mono_fdhandle_unref ((MonoFDHandle*) sockethandle);
-		return SOCKET_ERROR;
+		return FALSE;
 	}
 
 	do {
