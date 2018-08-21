@@ -165,6 +165,13 @@ void Compiler::unwindPushPopCFI(regNumber reg)
     {
         createCfiCode(func, cbProlog, CFI_REL_OFFSET, mapRegNumToDwarfReg(reg));
     }
+#if defined(_TARGET_ARM_)
+    // The non-callee-saved registers are for stack space allocation only
+    else
+    {
+        createCfiCode(func, cbProlog, CFI_ADJUST_CFA_OFFSET, DWARF_REG_ILLEGAL, REGSIZE_BYTES);
+    }
+#endif // _TARGET_ARM_
 }
 
 typedef jitstd::vector<CFI_CODE> CFICodeVector;
