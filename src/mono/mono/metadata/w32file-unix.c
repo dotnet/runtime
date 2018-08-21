@@ -4427,12 +4427,21 @@ mono_w32file_get_disk_free_space (const gunichar2 *path_name, guint64 *free_byte
 typedef struct {
 	guint32 drive_type;
 #if __linux__
-	const long fstypeid;
+	// http://man7.org/linux/man-pages/man2/statfs.2.html
+	//
+	// The __fsword_t type used for various fields in the statfs structure
+	// definition is a glibc internal type, not intended for public use.
+	// This leaves the programmer in a bit of a conundrum when trying to
+	// copy or compare these fields to local variables in a program.  Using
+	// unsigned int for such variables suffices on most systems.
+	//
+	// Let's hope "most" is enough, and that it works with other libc.
+	unsigned fstypeid;
 #endif
 	const gchar* fstype;
 } _wapi_drive_type;
 
-static _wapi_drive_type _wapi_drive_types[] = {
+static const _wapi_drive_type _wapi_drive_types[] = {
 #if HOST_DARWIN
 	{ DRIVE_REMOTE, "afp" },
 	{ DRIVE_REMOTE, "afpfs" },
@@ -4583,9 +4592,9 @@ static _wapi_drive_type _wapi_drive_types[] = {
 };
 
 #if __linux__
-static guint32 _wapi_get_drive_type(long f_type)
+static guint32 _wapi_get_drive_type(unsigned f_type)
 {
-	_wapi_drive_type *current;
+	const _wapi_drive_type *current;
 
 	current = &_wapi_drive_types[0];
 	while (current->drive_type != DRIVE_UNKNOWN) {
@@ -4599,7 +4608,7 @@ static guint32 _wapi_get_drive_type(long f_type)
 #else
 static guint32 _wapi_get_drive_type(const gchar* fstype)
 {
-	_wapi_drive_type *current;
+	const _wapi_drive_type *current;
 
 	current = &_wapi_drive_types[0];
 	while (current->drive_type != DRIVE_UNKNOWN) {
@@ -4749,7 +4758,7 @@ get_fstypename (gchar *utfpath)
 #elif defined (HOST_DARWIN) || defined (__linux__)
 	struct statfs stat;
 #if __linux__
-	_wapi_drive_type *current;
+	const _wapi_drive_type *current;
 #endif
 	gint statfs_res;
 	MONO_ENTER_GC_SAFE;
