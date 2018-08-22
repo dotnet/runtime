@@ -13,6 +13,7 @@ namespace System.IO.Tests
         [Fact]
         [PlatformSpecific(TestPlatforms.Windows)]
         [SkipOnTargetFramework(TargetFrameworkMonikers.NetcoreCoreRT)]
+        [SkipOnTargetFramework(TargetFrameworkMonikers.Uap, "File encryption is not supported on this platform.")]
         public static void NullArg_ThrowsException()
         {
             AssertExtensions.Throws<ArgumentNullException>("path", () => File.Encrypt(null));
@@ -32,6 +33,7 @@ namespace System.IO.Tests
         }
 
         [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotWindowsNanoServer))]
+        [SkipOnTargetFramework(TargetFrameworkMonikers.Uap, "File encryption is not supported on this platform.")]
         [PlatformSpecific(TestPlatforms.Windows)]
         public static void EncryptDecrypt_Read()
         {

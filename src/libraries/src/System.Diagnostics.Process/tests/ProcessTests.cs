@@ -16,6 +16,7 @@ using Xunit;
 
 namespace System.Diagnostics.Tests
 {
+    [ActiveIssue(31908, TargetFrameworkMonikers.Uap)]
     public partial class ProcessTests : ProcessTestBase
     {
         private class FinalizingProcess : Process
