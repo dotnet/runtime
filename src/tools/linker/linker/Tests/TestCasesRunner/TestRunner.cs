@@ -87,6 +87,16 @@ namespace Mono.Linker.Tests.TestCasesRunner {
 		{
 			var linker = _factory.CreateLinker ();
 			var builder = _factory.CreateLinkerArgumentBuilder (metadataProvider);
+
+			AddLinkOptions (sandbox, compilationResult, builder, metadataProvider);
+
+			linker.Link (builder.ToArgs ());
+
+			return new LinkedTestCaseResult (testCase, compilationResult.InputAssemblyPath, sandbox.OutputDirectory.Combine (compilationResult.InputAssemblyPath.FileName), compilationResult.ExpectationsAssemblyPath);
+		}
+
+		protected virtual void AddLinkOptions (TestCaseSandbox sandbox, ManagedCompilationResult compilationResult, LinkerArgumentBuilder builder, TestCaseMetadaProvider metadataProvider)
+		{
 			var caseDefinedOptions = metadataProvider.GetLinkerOptions ();
 
 			builder.AddOutputDirectory (sandbox.OutputDirectory);
@@ -99,17 +109,7 @@ namespace Mono.Linker.Tests.TestCasesRunner {
 
 			builder.ProcessOptions (caseDefinedOptions);
 
-			AddAdditionalLinkOptions (builder, metadataProvider);
-
 			builder.ProcessTestInputAssembly (compilationResult.InputAssemblyPath);
-
-			linker.Link (builder.ToArgs ());
-
-			return new LinkedTestCaseResult (testCase, compilationResult.InputAssemblyPath, sandbox.OutputDirectory.Combine (compilationResult.InputAssemblyPath.FileName), compilationResult.ExpectationsAssemblyPath);
-		}
-
-		protected virtual void AddAdditionalLinkOptions (LinkerArgumentBuilder builder, TestCaseMetadaProvider metadataProvider)
-		{
 		}
 
 		private T GetResultOfTaskThatMakesNUnitAssertions<T> (Task<T> task)
