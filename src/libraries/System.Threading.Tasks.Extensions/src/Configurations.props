@@ -8,6 +8,7 @@
     <BuildConfigurations>
       $(PackageConfigurations);
       netcoreapp-Windows_NT;
+      netcoreappaot-Windows_NT;
       netcoreapp-Unix;
       uap-Windows_NT;
     </BuildConfigurations>

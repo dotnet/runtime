@@ -1,0 +1,12 @@
+Compat issues with assembly netstandard:
+TypeCannotChangeClassification : Type 'System.RuntimeArgumentHandle' is a 'ref struct' in the implementation but is a 'struct' in the contract.
+TypeCannotChangeClassification : Type 'System.TypedReference' is a 'ref struct' in the implementation but is a 'struct' in the contract.
+TypesMustExist : Type 'System.Diagnostics.SymbolStore.ISymbolDocumentWriter' does not exist in the implementation but it does exist in the contract.
+TypesMustExist : Type 'System.Reflection.Emit.FlowControl' does not exist in the implementation but it does exist in the contract.
+TypesMustExist : Type 'System.Reflection.Emit.OpCode' does not exist in the implementation but it does exist in the contract.
+TypesMustExist : Type 'System.Reflection.Emit.OpCodes' does not exist in the implementation but it does exist in the contract.
+TypesMustExist : Type 'System.Reflection.Emit.OpCodeType' does not exist in the implementation but it does exist in the contract.
+TypesMustExist : Type 'System.Reflection.Emit.OperandType' does not exist in the implementation but it does exist in the contract.
+TypesMustExist : Type 'System.Reflection.Emit.PackingSize' does not exist in the implementation but it does exist in the contract.
+TypesMustExist : Type 'System.Reflection.Emit.StackBehaviour' does not exist in the implementation but it does exist in the contract.
+Total Issues: 10

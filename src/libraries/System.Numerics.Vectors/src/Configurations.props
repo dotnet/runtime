@@ -11,6 +11,7 @@
       uap-Windows_NT;
       netfx-Windows_NT;
       netcoreapp-Windows_NT;
+      netcoreappaot-Windows_NT;
       netcoreapp-Unix;
       $(PackageConfigurations)
     </BuildConfigurations>

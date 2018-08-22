@@ -8,16 +8,16 @@
     <ProjectGuid>{AEF718E9-D4FC-418F-A7AE-ED6B2C7B3787}</ProjectGuid>
     <AssemblyName>System.Linq.Expressions</AssemblyName>
     <RootNamespace>System.Linq.Expressions</RootNamespace>
-    <IsInterpreting Condition="'$(TargetGroup)' == 'uapaot'">true</IsInterpreting>
-    <!-- These defines are disabled on UapAot due to https://github.com/dotnet/corefx/issues/29745 -->
-    <DefineConstants Condition="'$(TargetGroup)' != 'uapaot'"> $(DefineConstants);FEATURE_DLG_INVOKE;FEATURE_FAST_CREATE</DefineConstants>
+    <IsInterpreting Condition="'$(TargetsAOT)'=='true'">true</IsInterpreting>    
+    <!-- These defines are disabled on Aot due to https://github.com/dotnet/corefx/issues/29745 -->
+    <DefineConstants Condition="'$(TargetsAOT)'!='true'"> $(DefineConstants);FEATURE_DLG_INVOKE;FEATURE_FAST_CREATE</DefineConstants>    
     <DefineConstants Condition=" '$(IsInterpreting)' != 'true' ">$(DefineConstants);FEATURE_COMPILE</DefineConstants>
     <DefineConstants Condition=" '$(FeatureInterpret)' == 'true' ">$(DefineConstants);FEATURE_INTERPRET</DefineConstants>
   </PropertyGroup>
-  <PropertyGroup Condition="'$(TargetGroup)' == 'uapaot'">
+  <PropertyGroup Condition="'$(TargetsAOT)'=='true'">
     <DefineConstants>$(DefineConstants);FEATURE_DYNAMIC_DELEGATE</DefineConstants>
   </PropertyGroup>
-  <ItemGroup Condition="'$(TargetGroup)' == 'uapaot'">
+  <ItemGroup Condition="'$(TargetsAOT)'=='true'">
     <EmbeddedResource Include="Resources\$(AssemblyName).rd.xml" />
   </ItemGroup>
   <ItemGroup>

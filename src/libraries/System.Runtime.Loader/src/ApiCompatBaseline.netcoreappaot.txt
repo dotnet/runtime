@@ -1,0 +1,20 @@
+Compat issues with assembly System.Runtime.Loader:
+TypesMustExist : Type 'System.Reflection.Metadata.AssemblyExtensions' does not exist in the implementation but it does exist in the contract.
+MembersMustExist : Member 'System.Runtime.Loader.AssemblyLoadContext.add_Resolving(System.Func<System.Runtime.Loader.AssemblyLoadContext, System.Reflection.AssemblyName, System.Reflection.Assembly>)' does not exist in the implementation but it does exist in the contract.
+MembersMustExist : Member 'System.Runtime.Loader.AssemblyLoadContext.add_Unloading(System.Action<System.Runtime.Loader.AssemblyLoadContext>)' does not exist in the implementation but it does exist in the contract.
+MembersMustExist : Member 'System.Runtime.Loader.AssemblyLoadContext.Default.get()' does not exist in the implementation but it does exist in the contract.
+MembersMustExist : Member 'System.Runtime.Loader.AssemblyLoadContext.GetAssemblyName(System.String)' does not exist in the implementation but it does exist in the contract.
+MembersMustExist : Member 'System.Runtime.Loader.AssemblyLoadContext.GetLoadContext(System.Reflection.Assembly)' does not exist in the implementation but it does exist in the contract.
+MembersMustExist : Member 'System.Runtime.Loader.AssemblyLoadContext.Load(System.Reflection.AssemblyName)' does not exist in the implementation but it does exist in the contract.
+MembersMustExist : Member 'System.Runtime.Loader.AssemblyLoadContext.LoadFromAssemblyName(System.Reflection.AssemblyName)' does not exist in the implementation but it does exist in the contract.
+MembersMustExist : Member 'System.Runtime.Loader.AssemblyLoadContext.LoadFromAssemblyPath(System.String)' does not exist in the implementation but it does exist in the contract.
+MembersMustExist : Member 'System.Runtime.Loader.AssemblyLoadContext.LoadFromNativeImagePath(System.String, System.String)' does not exist in the implementation but it does exist in the contract.
+MembersMustExist : Member 'System.Runtime.Loader.AssemblyLoadContext.LoadFromStream(System.IO.Stream)' does not exist in the implementation but it does exist in the contract.
+MembersMustExist : Member 'System.Runtime.Loader.AssemblyLoadContext.LoadFromStream(System.IO.Stream, System.IO.Stream)' does not exist in the implementation but it does exist in the contract.
+MembersMustExist : Member 'System.Runtime.Loader.AssemblyLoadContext.LoadUnmanagedDll(System.String)' does not exist in the implementation but it does exist in the contract.
+MembersMustExist : Member 'System.Runtime.Loader.AssemblyLoadContext.LoadUnmanagedDllFromPath(System.String)' does not exist in the implementation but it does exist in the contract.
+MembersMustExist : Member 'System.Runtime.Loader.AssemblyLoadContext.remove_Resolving(System.Func<System.Runtime.Loader.AssemblyLoadContext, System.Reflection.AssemblyName, System.Reflection.Assembly>)' does not exist in the implementation but it does exist in the contract.
+MembersMustExist : Member 'System.Runtime.Loader.AssemblyLoadContext.remove_Unloading(System.Action<System.Runtime.Loader.AssemblyLoadContext>)' does not exist in the implementation but it does exist in the contract.
+MembersMustExist : Member 'System.Runtime.Loader.AssemblyLoadContext.SetProfileOptimizationRoot(System.String)' does not exist in the implementation but it does exist in the contract.
+MembersMustExist : Member 'System.Runtime.Loader.AssemblyLoadContext.StartProfileOptimization(System.String)' does not exist in the implementation but it does exist in the contract.
+Total Issues: 18

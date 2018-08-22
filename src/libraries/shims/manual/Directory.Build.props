@@ -7,6 +7,7 @@
     <BuildConfigurations>
       $(PackageConfigurations);
       netcoreapp;
+      netcoreappaot;
       uap;
     </BuildConfigurations>
     <IsNETCoreApp>true</IsNETCoreApp>
@@ -15,7 +16,7 @@
   <!-- need to by-pass the Directory.Build.props in the shims directory for this project -->
   <Import Project="..\..\Directory.Build.props" />
   <PropertyGroup>
-    <_RuntimePath Condition="'$(TargetGroup)' == 'netcoreapp' OR '$(TargetGroup)' == 'uap'">$(RuntimePath)</_RuntimePath>
+    <_RuntimePath Condition="'$(TargetGroup)' == 'netcoreapp' OR '$(TargetGroup)' == 'uap' OR '$(TargetGroup)' == 'netcoreappaot'">$(RuntimePath)</_RuntimePath>
     <_RuntimePath Condition="'$(TargetGroup)' == 'netcoreapp2.0'">$(ShimsTargetRuntimeRoot)netcoreapp2.0/</_RuntimePath>
     <AssemblyVersion>4.0.0.0</AssemblyVersion>
     <AssemblyKey>ECMA</AssemblyKey>

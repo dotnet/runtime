@@ -5,6 +5,7 @@
       uapaot-Windows_NT;
       uap-Windows_NT;
       netcoreapp;
+      netcoreappaot;
     </BuildConfigurations>
   </PropertyGroup>
 </Project>
