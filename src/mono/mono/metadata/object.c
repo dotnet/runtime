@@ -3503,7 +3503,7 @@ mono_field_get_value_object_checked (MonoDomain *domain, MonoClassField *field, 
 	MonoObject *o;
 	MonoClass *klass;
 	MonoVTable *vtable = NULL;
-	gchar *v;
+	gpointer v;
 	gboolean is_static = FALSE;
 	gboolean is_ref = FALSE;
 	gboolean is_literal = FALSE;
@@ -3585,7 +3585,6 @@ mono_field_get_value_object_checked (MonoDomain *domain, MonoClassField *field, 
 		static MonoMethod *m;
 		gpointer args [2];
 		gpointer *ptr;
-		gpointer v;
 
 		if (!m) {
 			MonoClass *ptr_klass = mono_class_get_pointer_class ();
@@ -3624,7 +3623,7 @@ mono_field_get_value_object_checked (MonoDomain *domain, MonoClassField *field, 
 
 	o = mono_object_new_checked (domain, klass, error);
 	return_val_if_nok (error, NULL);
-	v = (gpointer)mono_object_get_data (o);
+	v = mono_object_get_data (o);
 
 	if (is_literal) {
 		get_default_field_value (domain, field, v, error);
