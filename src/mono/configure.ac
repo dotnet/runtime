@@ -5491,7 +5491,7 @@ if test x"$GCC" = xyes; then
 fi
 
 # Update all submodules recursively to ensure everything is checked out
-$srcdir/scripts/update_submodules.sh
+(cd $srcdir && scripts/update_submodules.sh)
 
 AC_OUTPUT([
 Makefile
