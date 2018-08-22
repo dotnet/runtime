@@ -427,7 +427,7 @@ def create_and_use_test_env(_os, env, func):
 
     if len(list(complus_vars.keys())) > 0:
         print("Found COMPlus variables in the current environment")
-        print()
+        print("")
 
         file_header = None
 
@@ -470,13 +470,13 @@ REM Temporary test env for test run.
                 test_env.write(line)
                 contents += line
 
-            print()
+            print("")
             print("TestEnv: %s" % test_env.name)
-            print() 
+            print("")
             print("Contents:")
-            print()
+            print("")
             print(contents)
-            print()
+            print("")
 
             return func(test_env.name)
 
@@ -601,6 +601,8 @@ def call_msbuild(coreclr_repo_location,
                 "/p:__LogsDir=%s" % logs_dir]
 
     print(" ".join(command))
+
+    sys.stdout.flush() # flush output before creating sub-process
     proc = subprocess.Popen(command)
 
     try:
@@ -743,6 +745,7 @@ def run_tests(host_os,
         os.environ["__TestTimeout"] = str(120*60*1000) # 1,800,000 ms
 
     # Set Core_Root
+    print("Setting CORE_ROOT=%s" % core_root)
     os.environ["CORE_ROOT"] = core_root
 
     # Set test env if exists
@@ -826,7 +829,7 @@ def setup_args(args):
 
             print("Using default test location.")
             print("TestLocation: %s" % default_test_location)
-            print()
+            print("")
 
         else:
             # The tests for the default location have not been built.
@@ -888,7 +891,7 @@ def setup_args(args):
 
             print("Using default test location.")
             print("TestLocation: %s" % default_test_location)
-            print()
+            print("")
 
     if core_root is None:
         default_core_root = os.path.join(test_location, "Tests", "Core_Root")
@@ -898,7 +901,7 @@ def setup_args(args):
 
             print("Using default location for core_root.")
             print("Core_Root: %s" % core_root)
-            print()
+            print("")
 
         elif args.generate_layout is False:
             # CORE_ROOT has not been setup correctly.
@@ -918,7 +921,7 @@ def setup_args(args):
             print("Using default location for test_native_bin_location.")
             test_native_bin_location = os.path.join(os.path.join(coreclr_repo_location, "bin", "obj", "%s.%s.%s" % (host_os, arch, build_type), "tests"))
             print("Native bin location: %s" % test_native_bin_location)
-            print()
+            print("")
             
         if not os.path.isdir(test_native_bin_location):
             print("Error, test_native_bin_location: %s, does not exist." % test_native_bin_location)
@@ -982,43 +985,29 @@ def setup_coredis_tools(coreclr_repo_location, host_os, arch, core_root):
         core_root(str)              : core_root
     """
 
-    test_location = os.path.join(coreclr_repo_location, "tests")
-
-    def is_coredis_tools_supported(host_os, arch):
-        """ Is coredis tools supported on this os/arch
-
-        Args:
-            host_os(str): os
-            arch(str)   : arch
-
-        """
-        unsupported_unix_arches = ["arm", "arm64"]
-
-        if host_os.lower() == "osx":
-            return False
-        
-        return True
-
-        if host_os != "Windows_NT" and arch in unsupported_unix_arches:
-            return False
-
-        return True
-
-    if is_coredis_tools_supported(host_os, arch):
-        command = None
-        if host_os == "Windows_NT":
-            command = [os.path.join(test_location, "setup-stress-dependencies.cmd"), "/arch", arch, "/outputdir", core_root]
-        else:
-            command = [os.path.join(test_location, "setup-stress-dependencies.sh"), "--outputDir=%s" % core_root]
-
-        proc = subprocess.Popen(command)
-        proc.communicate()
-
-        if proc.returncode != 0:
-            print("setup_stress_dependencies.sh failed.")
-            sys.exit(1)
-    else:
+    if host_os.lower() == "osx":
         print("GCStress C is not supported on your platform.")
+        sys.exit(1)
+
+    unsupported_arches = ["arm", "arm64"]
+
+    if arch in unsupported_arches:
+        # Nothing to do; CoreDisTools unneeded.
+        return
+
+    command = None
+    test_location = os.path.join(coreclr_repo_location, "tests")
+    if host_os == "Windows_NT":
+        command = [os.path.join(test_location, "setup-stress-dependencies.cmd"), "/arch", arch, "/outputdir", core_root]
+    else:
+        command = [os.path.join(test_location, "setup-stress-dependencies.sh"), "--outputDir=%s" % core_root]
+
+    sys.stdout.flush() # flush output before creating sub-process
+    proc = subprocess.Popen(command)
+    proc.communicate()
+
+    if proc.returncode != 0:
+        print("Failed to set up stress dependencies.")
         sys.exit(1)
 
 def precompile_core_root(test_location,
@@ -1094,22 +1083,19 @@ def precompile_core_root(test_location,
 
         return_code = proc.returncode
 
-        passed = False
         if return_code == -2146230517:
             print("%s is not a managed assembly." % file)
-            return passed
+            return False
 
         if return_code != 0:
-            print("Unable to precompile %s" % file)
-            return passed
+            print("Unable to precompile %s (%d)" % (file, return_code))
+            return False
 
         print("Successfully precompiled %s" % file)
-        passed = True
-
-        return passed
+        return True
 
     print("Precompiling all assemblies in %s" % core_root)
-    print()
+    print("")
 
     env = os.environ.copy()
 
@@ -1135,7 +1121,7 @@ def precompile_core_root(test_location,
     for dll in dlls:
         call_crossgen(dll, env)
 
-    print()
+    print("")
 
 def setup_core_root(host_os, 
                     arch, 
@@ -1218,6 +1204,7 @@ def setup_core_root(host_os,
     print("Restoring packages...")
     print(" ".join(command))
 
+    sys.stdout.flush() # flush output before creating sub-process
     if not g_verbose:
         proc = subprocess.Popen(command, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
     else:
@@ -1230,7 +1217,7 @@ def setup_core_root(host_os,
         sys.exit(1)
 
     if proc.returncode == 1:
-        "Error test dependency resultion failed."
+        print("Error: package restore failed.")
         return False
 
     os.environ["__BuildLogRootName"] = ""
@@ -1283,6 +1270,7 @@ def setup_core_root(host_os,
     print("Creating Core_Root...")
     print(" ".join(command))
 
+    sys.stdout.flush() # flush output before creating sub-process
     if not g_verbose:
         proc = subprocess.Popen(command, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
     else:
@@ -1295,7 +1283,7 @@ def setup_core_root(host_os,
         sys.exit(1)
 
     if proc.returncode == 1:
-        "Error test dependency resultion failed."
+        print("Error: creating Core_Root failed.")
         return False
 
     os.environ["__BuildLogRootName"] = ""
@@ -1327,12 +1315,12 @@ def setup_core_root(host_os,
                 shutil.copytree(item, new_dir)
 
     # Copy the product dir to the core_root directory
-    print()
+    print("")
     print("Copying Product Bin to Core_Root:")
     print("cp -r %s%s* %s" % (product_location, os.path.sep, core_root))
     copy_tree(product_location, core_root)
     print("---------------------------------------------------------------------")
-    print()
+    print("")
 
     if is_corefx:
         corefx_utility_setup = os.path.join(coreclr_repo_location,
@@ -1347,11 +1335,13 @@ def setup_core_root(host_os,
                            "msbuild",
                            os.path.join(coreclr_repo_location, "tests", "runtest.proj"),
                            "/p:GenerateRuntimeLayout=true"]
+
+        sys.stdout.flush() # flush output before creating sub-process
         proc = subprocess.Popen(msbuild_command)
         proc.communicate()
 
         if not proc.returncode == 0:
-            "Error test dependency resultion failed."
+            print("Error: generating test host failed.")
             return False
 
         os.environ["__BuildLogRootName"] = ""
@@ -1361,11 +1351,12 @@ def setup_core_root(host_os,
                            "/t:Restore",
                            corefx_utility_setup]
 
+        sys.stdout.flush() # flush output before creating sub-process
         proc = subprocess.Popen(msbuild_command)
         proc.communicate()
 
         if proc.returncode == 1:
-            "Error test dependency resultion failed."
+            print("Error: msbuild failed.")
             return False
 
         corefx_logpath = os.path.join(coreclr_repo_location, 
@@ -1383,11 +1374,12 @@ def setup_core_root(host_os,
                            "/p:OutputPath=%s" % corefx_logpath,
                            corefx_utility_setup]
 
+        sys.stdout.flush() # flush output before creating sub-process
         proc = subprocess.Popen(msbuild_command)
         proc.communicate()
 
         if proc.returncode == 1:
-            "Error test dependency resultion failed."
+            print("Error: msbuild failed.")
             return False
 
     print("Core_Root setup.")
@@ -1476,6 +1468,7 @@ def build_test_wrappers(host_os,
     print("Creating test wrappers...")
     print(" ".join(command))
 
+    sys.stdout.flush() # flush output before creating sub-process
     if not g_verbose:
         proc = subprocess.Popen(command, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
 
@@ -1515,7 +1508,7 @@ def build_test_wrappers(host_os,
         sys.exit(1)
 
     if proc.returncode == 1:
-        "Error test dependency resultion failed."
+        print("Error: creating test wrappers failed.")
         return False
 
 def find_test_from_name(host_os, test_location, test_name):
@@ -1740,14 +1733,6 @@ def print_summary(tests):
         else:
             skipped_tests.append(test)
 
-    print()
-    print("Total tests run: %d" % len(tests))
-    print()
-    print("Total passing tests: %d" % len(passed_tests))
-    print("Total failed tests: %d" % len(failed_tests))
-    print("Total skipped tests: %d" % len(skipped_tests))
-    print()
-
     failed_tests.sort(key=lambda item: item["time"], reverse=True)
     passed_tests.sort(key=lambda item: item["time"], reverse=True)
     skipped_tests.sort(key=lambda item: item["time"], reverse=True)
@@ -1788,41 +1773,51 @@ def print_summary(tests):
                     break
 
     if len(failed_tests) > 0:
-        print("Failed tests:")
-        print()
+        print("%d failed tests:" % len(failed_tests))
+        print("")
         print_tests_helper(failed_tests, None)
         
-
-    if len(passed_tests) > 50:
-        print()
-        print("50 slowest passing tests:")
-        print()
-        print_tests_helper(passed_tests, 50)
+    # The following code is currently disabled, as it produces too much verbosity in a normal
+    # test run. It could be put under a switch, or else just enabled as needed when investigating
+    # test slowness.
+    #
+    # if len(passed_tests) > 50:
+    #     print("")
+    #     print("50 slowest passing tests:")
+    #     print("")
+    #     print_tests_helper(passed_tests, 50)
 
     if len(failed_tests) > 0:
-        print()
+        print("")
         print("#################################################################")
         print("Output of failing tests:")
-        print()
+        print("")
 
         for item in failed_tests:
             print("[%s]: " % item["test_path"])
-            print()
+            print("")
             
             test_output = item["test_output"]
 
-            # XUnit results are captured as escaped, escaped characters.
+            # XUnit results are captured as escaped characters.
             test_output = test_output.replace("\\r", "\r")
             test_output = test_output.replace("\\n", "\n")
 
             print(test_output)
-            print()
+            print("")
 
-        print()
+        print("")
         print("#################################################################")
         print("End of output of failing tests")
         print("#################################################################")
-        print()
+        print("")
+
+    print("")
+    print("Total tests run    : %d" % len(tests))
+    print("Total passing tests: %d" % len(passed_tests))
+    print("Total failed tests : %d" % len(failed_tests))
+    print("Total skipped tests: %d" % len(skipped_tests))
+    print("")
 
 def create_repro(host_os, arch, build_type, env, core_root, coreclr_repo_location, tests):
     """ Go through the failing tests and create repros for them
@@ -1849,13 +1844,11 @@ def create_repro(host_os, arch, build_type, env, core_root, coreclr_repo_locatio
     repro_location = os.path.join(bin_location, "repro", "%s.%s.%s" % (host_os, arch, build_type))
     if os.path.isdir(repro_location):
         shutil.rmtree(repro_location)
-    
-    print("mkdir %s" % repro_location)
+
+    print("")
+    print("Creating repro files at: %s" % repro_location)
+
     os.makedirs(repro_location)
-
-    print()
-    print("Creating repo files, they can be found at: %s" % repro_location)
-
     assert os.path.isdir(repro_location)
 
     # Now that the repro_location exists under <coreclr_location>/bin/repro
@@ -1865,7 +1858,6 @@ def create_repro(host_os, arch, build_type, env, core_root, coreclr_repo_locatio
         debug_env.write_repro()
 
     print("Repro files written.")
-    print("They can be found at %s" % repro_location)
 
 def do_setup(host_os, 
              arch, 
@@ -1893,7 +1885,7 @@ def do_setup(host_os,
                                   core_root)
 
         if not success:
-            print("Error GenerateLayout has failed.")
+            print("Error: GenerateLayout failed.")
             sys.exit(1)
 
         if unprocessed_args.generate_layout_only:
@@ -1932,7 +1924,7 @@ def do_setup(host_os,
         else:
             build_test_wrappers(host_os, arch, build_type, coreclr_repo_location, test_location)
 
-    run_tests(host_os, 
+    return run_tests(host_os, 
               arch,
               build_type,
               core_root, 
@@ -1991,6 +1983,8 @@ def main(args):
     if tests is not None:
         print_summary(tests)
         create_repro(host_os, arch, build_type, env, core_root, coreclr_repo_location, tests)
+
+    return ret_code
 
 ################################################################################
 # __main__
