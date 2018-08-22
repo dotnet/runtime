@@ -112,7 +112,7 @@ The following file header is the used for .NET Core. Please use it for new files
 ```
 
 - See [class.cpp](../../src/vm/class.cpp) for an example of the header in a C++ file.
-- See [List.cs](../../src/mscorlib/shared/System/Collections/Generic/List.cs) for an example of the header in a C# file.
+- See [List.cs](../../src/System.Private.CoreLib/shared/System/Collections/Generic/List.cs) for an example of the header in a C# file.
 
 Contributing Ports
 ------------------
@@ -147,7 +147,7 @@ The following rules must be followed for PRs that include files from another pro
 - The license of the file is left in-tact.
 - The contribution is correctly attributed in the [3rd party notices](../../THIRD-PARTY-NOTICES.TXT) file in the repository, as needed.
 
-See [IdnMapping.cs](../../src/mscorlib/shared/System/Globalization/IdnMapping.cs) for an example of a file copied from another project and attributed in the [CoreCLR 3rd party notices](../../THIRD-PARTY-NOTICES.TXT) file. 
+See [IdnMapping.cs](../../src/System.Private.CoreLib/shared/System/Globalization/IdnMapping.cs) for an example of a file copied from another project and attributed in the [CoreCLR 3rd party notices](../../THIRD-PARTY-NOTICES.TXT) file. 
 
 Porting Files from Other Projects
 ---------------------------------
