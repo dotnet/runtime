@@ -215,7 +215,8 @@ void Compiler::optAddCopies()
 #ifdef DEBUG
             if (verbose)
             {
-                printf("        Referenced in BB%02u, bbWeight is %s", bbNum, refCntWtd2str(block->getBBWeight(this)));
+                printf("        Referenced in " FMT_BB ", bbWeight is %s", bbNum,
+                       refCntWtd2str(block->getBBWeight(this)));
 
                 if (isDominatedByFirstBB)
                 {
@@ -313,7 +314,7 @@ void Compiler::optAddCopies()
 #ifdef DEBUG
             if (verbose)
             {
-                printf("        Starting at BB%02u, bbWeight is %s", block->bbNum,
+                printf("        Starting at " FMT_BB ", bbWeight is %s", block->bbNum,
                        refCntWtd2str(block->getBBWeight(this)));
 
                 printf(", bestWeight is %s\n", refCntWtd2str(bestWeight));
@@ -336,7 +337,7 @@ void Compiler::optAddCopies()
 #ifdef DEBUG
                 if (verbose)
                 {
-                    printf("        Considering BB%02u, bbWeight is %s", block->bbNum,
+                    printf("        Considering " FMT_BB ", bbWeight is %s", block->bbNum,
                            refCntWtd2str(block->getBBWeight(this)));
 
                     printf(", bestWeight is %s\n", refCntWtd2str(bestWeight));
@@ -412,7 +413,7 @@ void Compiler::optAddCopies()
 #ifdef DEBUG
             if (verbose)
             {
-                printf("        Insert copy at the %s of BB%02u\n",
+                printf("        Insert copy at the %s of " FMT_BB "\n",
                        (BlockSetOps::IsEmpty(this, paramImportantUseDom) ||
                         BlockSetOps::IsMember(this, varDsc->lvRefBlks, bestBlock->bbNum))
                            ? "start"
@@ -1560,7 +1561,7 @@ AssertionIndex Compiler::optAddAssertion(AssertionDsc* newAssertion)
     {
         printf("GenTreeNode creates assertion:\n");
         gtDispTree(optAssertionPropCurrentTree, nullptr, nullptr, true);
-        printf(optLocalAssertionProp ? "In BB%02u New Local " : "In BB%02u New Global ", compCurBB->bbNum);
+        printf(optLocalAssertionProp ? "In " FMT_BB " New Local " : "In " FMT_BB " New Global ", compCurBB->bbNum);
         optPrintAssertion(newAssertion, optAssertionCount);
     }
 #endif // DEBUG
@@ -2683,7 +2684,7 @@ GenTree* Compiler::optConstantAssertionProp(AssertionDsc* curAssertion,
 #ifdef DEBUG
     if (verbose)
     {
-        printf("\nAssertion prop in BB%02u:\n", compCurBB->bbNum);
+        printf("\nAssertion prop in " FMT_BB ":\n", compCurBB->bbNum);
         optPrintAssertion(curAssertion, index);
         gtDispTree(newTree, nullptr, nullptr, true);
     }
@@ -2803,7 +2804,7 @@ GenTree* Compiler::optCopyAssertionProp(AssertionDsc* curAssertion,
 #ifdef DEBUG
     if (verbose)
     {
-        printf("\nAssertion prop in BB%02u:\n", compCurBB->bbNum);
+        printf("\nAssertion prop in " FMT_BB ":\n", compCurBB->bbNum);
         optPrintAssertion(curAssertion, index);
         gtDispTree(tree, nullptr, nullptr, true);
     }
@@ -3044,7 +3045,7 @@ GenTree* Compiler::optAssertionPropGlobal_RelOp(ASSERT_VALARG_TP assertions, Gen
 #ifdef DEBUG
         if (verbose)
         {
-            printf("\nVN relop based constant assertion prop in BB%02u:\n", compCurBB->bbNum);
+            printf("\nVN relop based constant assertion prop in " FMT_BB ":\n", compCurBB->bbNum);
             printf("Assertion index=#%02u: ", index);
             printTreeID(op1);
             printf(" %s ", (curAssertion->assertionKind == OAK_EQUAL) ? "==" : "!=");
@@ -3128,7 +3129,7 @@ GenTree* Compiler::optAssertionPropGlobal_RelOp(ASSERT_VALARG_TP assertions, Gen
 #ifdef DEBUG
         if (verbose)
         {
-            printf("\nVN relop based copy assertion prop in BB%02u:\n", compCurBB->bbNum);
+            printf("\nVN relop based copy assertion prop in " FMT_BB ":\n", compCurBB->bbNum);
             printf("Assertion index=#%02u: V%02d.%02d %s V%02d.%02d\n", index, op1->gtLclVar.gtLclNum,
                    op1->gtLclVar.gtSsaNum, (curAssertion->assertionKind == OAK_EQUAL) ? "==" : "!=",
                    op2->gtLclVar.gtLclNum, op2->gtLclVar.gtSsaNum);
@@ -3253,7 +3254,7 @@ GenTree* Compiler::optAssertionPropLocal_RelOp(ASSERT_VALARG_TP assertions, GenT
 #ifdef DEBUG
     if (verbose)
     {
-        printf("\nAssertion prop for index #%02u in BB%02u:\n", index, compCurBB->bbNum);
+        printf("\nAssertion prop for index #%02u in " FMT_BB ":\n", index, compCurBB->bbNum);
         gtDispTree(tree, nullptr, nullptr, true);
     }
 #endif
@@ -3326,7 +3327,7 @@ GenTree* Compiler::optAssertionProp_Cast(ASSERT_VALARG_TP assertions, GenTree* t
 #ifdef DEBUG
                     if (verbose)
                     {
-                        printf("\nSubrange prop for index #%02u in BB%02u:\n", index, compCurBB->bbNum);
+                        printf("\nSubrange prop for index #%02u in " FMT_BB ":\n", index, compCurBB->bbNum);
                         gtDispTree(tree, nullptr, nullptr, true);
                     }
 #endif
@@ -3363,7 +3364,7 @@ GenTree* Compiler::optAssertionProp_Cast(ASSERT_VALARG_TP assertions, GenTree* t
 #ifdef DEBUG
         if (verbose)
         {
-            printf("\nSubrange prop for index #%02u in BB%02u:\n", index, compCurBB->bbNum);
+            printf("\nSubrange prop for index #%02u in " FMT_BB ":\n", index, compCurBB->bbNum);
             gtDispTree(tree, nullptr, nullptr, true);
         }
 #endif
@@ -3432,8 +3433,8 @@ GenTree* Compiler::optAssertionProp_Ind(ASSERT_VALARG_TP assertions, GenTree* tr
 #ifdef DEBUG
         if (verbose)
         {
-            (vnBased) ? printf("\nVN based non-null prop in BB%02u:\n", compCurBB->bbNum)
-                      : printf("\nNon-null prop for index #%02u in BB%02u:\n", index, compCurBB->bbNum);
+            (vnBased) ? printf("\nVN based non-null prop in " FMT_BB ":\n", compCurBB->bbNum)
+                      : printf("\nNon-null prop for index #%02u in " FMT_BB ":\n", index, compCurBB->bbNum);
             gtDispTree(tree, nullptr, nullptr, true);
         }
 #endif
@@ -3569,8 +3570,8 @@ GenTree* Compiler::optNonNullAssertionProp_Call(ASSERT_VALARG_TP assertions, Gen
 #ifdef DEBUG
         if (verbose)
         {
-            (vnBased) ? printf("\nVN based non-null prop in BB%02u:\n", compCurBB->bbNum)
-                      : printf("\nNon-null prop for index #%02u in BB%02u:\n", index, compCurBB->bbNum);
+            (vnBased) ? printf("\nVN based non-null prop in " FMT_BB ":\n", compCurBB->bbNum)
+                      : printf("\nNon-null prop for index #%02u in " FMT_BB ":\n", index, compCurBB->bbNum);
             gtDispTree(call, nullptr, nullptr, true);
         }
 #endif
@@ -3626,7 +3627,7 @@ GenTree* Compiler::optAssertionProp_Call(ASSERT_VALARG_TP assertions, GenTreeCal
 #ifdef DEBUG
                 if (verbose)
                 {
-                    printf("\nDid VN based subtype prop for index #%02u in BB%02u:\n", index, compCurBB->bbNum);
+                    printf("\nDid VN based subtype prop for index #%02u in " FMT_BB ":\n", index, compCurBB->bbNum);
                     gtDispTree(call, nullptr, nullptr, true);
                 }
 #endif
@@ -3666,7 +3667,7 @@ GenTree* Compiler::optAssertionProp_BndsChk(ASSERT_VALARG_TP assertions, GenTree
 #ifdef DEBUG
         if (verbose)
         {
-            printf("\nFlagging check redundant due to JitNoRangeChks in BB%02u:\n", compCurBB->bbNum);
+            printf("\nFlagging check redundant due to JitNoRangeChks in " FMT_BB ":\n", compCurBB->bbNum);
             gtDispTree(tree, nullptr, nullptr, true);
         }
 #endif // DEBUG
@@ -3764,7 +3765,7 @@ GenTree* Compiler::optAssertionProp_BndsChk(ASSERT_VALARG_TP assertions, GenTree
 #ifdef DEBUG
         if (verbose)
         {
-            printf("\nVN based redundant (%s) bounds check assertion prop for index #%02u in BB%02u:\n", dbgMsg,
+            printf("\nVN based redundant (%s) bounds check assertion prop for index #%02u in " FMT_BB ":\n", dbgMsg,
                    assertionIndex, compCurBB->bbNum);
             gtDispTree(tree, nullptr, nullptr, true);
         }
@@ -4335,7 +4336,7 @@ public:
     // At the start of the merge function of the dataflow equations, initialize premerge state (to detect change.)
     void StartMerge(BasicBlock* block)
     {
-        JITDUMP("AssertionPropCallback::StartMerge: BB%02d in -> %s\n", block->bbNum,
+        JITDUMP("AssertionPropCallback::StartMerge: " FMT_BB " in -> %s\n", block->bbNum,
                 BitVecOps::ToString(apTraits, block->bbAssertionIn));
         BitVecOps::Assign(apTraits, preMergeOut, block->bbAssertionOut);
         BitVecOps::Assign(apTraits, preMergeJumpDestOut, mJumpDestOut[block->bbNum]);
@@ -4347,8 +4348,8 @@ public:
         ASSERT_TP pAssertionOut = ((predBlock->bbJumpKind == BBJ_COND) && (predBlock->bbJumpDest == block))
                                       ? mJumpDestOut[predBlock->bbNum]
                                       : predBlock->bbAssertionOut;
-        JITDUMP("AssertionPropCallback::Merge     : BB%02d in -> %s, predBlock BB%02d out -> %s\n", block->bbNum,
-                BitVecOps::ToString(apTraits, block->bbAssertionIn), predBlock->bbNum,
+        JITDUMP("AssertionPropCallback::Merge     : " FMT_BB " in -> %s, predBlock " FMT_BB " out -> %s\n",
+                block->bbNum, BitVecOps::ToString(apTraits, block->bbAssertionIn), predBlock->bbNum,
                 BitVecOps::ToString(apTraits, predBlock->bbAssertionOut));
         BitVecOps::IntersectionD(apTraits, block->bbAssertionIn, pAssertionOut);
     }
@@ -4356,7 +4357,7 @@ public:
     // At the end of the merge store results of the dataflow equations, in a postmerge state.
     bool EndMerge(BasicBlock* block)
     {
-        JITDUMP("AssertionPropCallback::EndMerge  : BB%02d in -> %s\n\n", block->bbNum,
+        JITDUMP("AssertionPropCallback::EndMerge  : " FMT_BB " in -> %s\n\n", block->bbNum,
                 BitVecOps::ToString(apTraits, block->bbAssertionIn));
 
         BitVecOps::DataFlowD(apTraits, block->bbAssertionOut, block->bbAssertionGen, block->bbAssertionIn);
@@ -4367,7 +4368,7 @@ public:
 
         if (changed)
         {
-            JITDUMP("AssertionPropCallback::Changed   : BB%02d before out -> %s; after out -> %s;\n"
+            JITDUMP("AssertionPropCallback::Changed   : " FMT_BB " before out -> %s; after out -> %s;\n"
                     "\t\tjumpDest before out -> %s; jumpDest after out -> %s;\n\n",
                     block->bbNum, BitVecOps::ToString(apTraits, preMergeOut),
                     BitVecOps::ToString(apTraits, block->bbAssertionOut),
@@ -4376,8 +4377,8 @@ public:
         }
         else
         {
-            JITDUMP("AssertionPropCallback::Unchanged  : BB%02d out -> %s; \t\tjumpDest out -> %s\n\n", block->bbNum,
-                    BitVecOps::ToString(apTraits, block->bbAssertionOut),
+            JITDUMP("AssertionPropCallback::Unchanged  : " FMT_BB " out -> %s; \t\tjumpDest out -> %s\n\n",
+                    block->bbNum, BitVecOps::ToString(apTraits, block->bbAssertionOut),
                     BitVecOps::ToString(apTraits, mJumpDestOut[block->bbNum]));
         }
 
@@ -4471,10 +4472,10 @@ ASSERT_TP* Compiler::optComputeAssertionGen()
 #ifdef DEBUG
         if (verbose)
         {
-            printf("\nBB%02u valueGen = %s", block->bbNum, BitVecOps::ToString(apTraits, block->bbAssertionGen));
+            printf("\n" FMT_BB " valueGen = %s", block->bbNum, BitVecOps::ToString(apTraits, block->bbAssertionGen));
             if (block->bbJumpKind == BBJ_COND)
             {
-                printf(" => BB%02u valueGen = %s,", block->bbJumpDest->bbNum,
+                printf(" => " FMT_BB " valueGen = %s,", block->bbJumpDest->bbNum,
                        BitVecOps::ToString(apTraits, jumpDestGen[block->bbNum]));
             }
         }
@@ -5032,12 +5033,12 @@ void Compiler::optAssertionPropMain()
         printf("\n");
         for (BasicBlock* block = fgFirstBB; block; block = block->bbNext)
         {
-            printf("\nBB%02u", block->bbNum);
+            printf("\n" FMT_BB, block->bbNum);
             printf(" valueIn  = %s", BitVecOps::ToString(apTraits, block->bbAssertionIn));
             printf(" valueOut = %s", BitVecOps::ToString(apTraits, block->bbAssertionOut));
             if (block->bbJumpKind == BBJ_COND)
             {
-                printf(" => BB%02u", block->bbJumpDest->bbNum);
+                printf(" => " FMT_BB, block->bbJumpDest->bbNum);
                 printf(" valueOut= %s", BitVecOps::ToString(apTraits, bbJtrueAssertionOut[block->bbNum]));
             }
         }
@@ -5092,7 +5093,7 @@ void Compiler::optAssertionPropMain()
                     break;
                 }
 
-                JITDUMP("Propagating %s assertions for BB%02d, stmt [%06d], tree [%06d], tree -> %d\n",
+                JITDUMP("Propagating %s assertions for " FMT_BB ", stmt [%06d], tree [%06d], tree -> %d\n",
                         BitVecOps::ToString(apTraits, assertions), block->bbNum, dspTreeID(stmt), dspTreeID(tree),
                         tree->GetAssertionInfo().GetAssertionIndex());
 

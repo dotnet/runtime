@@ -473,7 +473,7 @@ void Compiler::fgEnsureFirstBBisScratch()
 #ifdef DEBUG
     if (verbose)
     {
-        printf("New scratch BB%02u\n", block->bbNum);
+        printf("New scratch " FMT_BB "\n", block->bbNum);
     }
 #endif
 }
@@ -1956,7 +1956,7 @@ void Compiler::fgComputeEnterBlocksSet()
         unsigned          bbNum = 0;
         while (iter.NextElem(&bbNum))
         {
-            printf("BB%02u ", bbNum);
+            printf(FMT_BB " ", bbNum);
         }
         printf("\n");
     }
@@ -2271,7 +2271,7 @@ void Compiler::fgDfsInvPostOrder()
         printf("\nAfter doing a post order traversal of the BB graph, this is the ordering:\n");
         for (unsigned i = 1; i <= fgBBNumMax; ++i)
         {
-            printf("%02u -> BB%02u\n", i, fgBBInvPostOrder[i]->bbNum);
+            printf("%02u -> " FMT_BB "\n", i, fgBBInvPostOrder[i]->bbNum);
         }
         printf("\n");
     }
@@ -2307,7 +2307,7 @@ BlockSet_ValRet_T Compiler::fgDomFindStartNodes()
         unsigned          bbNum = 0;
         while (iter.NextElem(&bbNum))
         {
-            printf("BB%02u ", bbNum);
+            printf(FMT_BB " ", bbNum);
         }
         printf("\n");
     }
@@ -2697,12 +2697,12 @@ void Compiler::fgBuildDomTree()
         printf("PreOrder:\n");
         for (i = 1; i <= fgBBNumMax; ++i)
         {
-            printf("BB%02u : %02u\n", i, fgDomTreePreOrder[i]);
+            printf(FMT_BB " : %02u\n", i, fgDomTreePreOrder[i]);
         }
         printf("PostOrder:\n");
         for (i = 1; i <= fgBBNumMax; ++i)
         {
-            printf("BB%02u : %02u\n", i, fgDomTreePostOrder[i]);
+            printf(FMT_BB " : %02u\n", i, fgDomTreePostOrder[i]);
         }
     }
 #endif // DEBUG
@@ -2734,11 +2734,11 @@ void Compiler::fgDispDomTree(BasicBlockList** domTree)
     {
         if (domTree[i] != nullptr)
         {
-            printf("BB%02u : ", i);
+            printf(FMT_BB " : ", i);
             for (BasicBlockList* current = domTree[i]; current != nullptr; current = current->next)
             {
                 assert(current->block);
-                printf("BB%02u ", current->block->bbNum);
+                printf(FMT_BB " ", current->block->bbNum);
             }
             printf("\n");
         }
@@ -3643,7 +3643,7 @@ void Compiler::fgCreateGCPolls()
 #ifdef DEBUG
                 if (verbose)
                 {
-                    printf("Could not compute loop iterations for loop from BB%02u to BB%02u", head->bbNum,
+                    printf("Could not compute loop iterations for loop from " FMT_BB " to " FMT_BB, head->bbNum,
                            bottom->bbNum);
                 }
 #endif                      // DEBUG
@@ -3666,7 +3666,7 @@ void Compiler::fgCreateGCPolls()
 #ifdef DEBUG
             if (verbose)
             {
-                printf("Removing poll in block BB%02u because it forms a bounded counted loop\n", bottom->bbNum);
+                printf("Removing poll in block " FMT_BB " because it forms a bounded counted loop\n", bottom->bbNum);
             }
 #endif // DEBUG
         }
@@ -3693,7 +3693,7 @@ void Compiler::fgCreateGCPolls()
 #ifdef DEBUG
                     if (verbose)
                     {
-                        printf("Removing poll in block BB%02u because it is not loop\n", block->bbNum);
+                        printf("Removing poll in block " FMT_BB " because it is not loop\n", block->bbNum);
                     }
 #endif // DEBUG
                     continue;
@@ -3705,7 +3705,7 @@ void Compiler::fgCreateGCPolls()
 #ifdef DEBUG
                 if (verbose)
                 {
-                    printf("Removing poll in block BB%02u because it is not a jump\n", block->bbNum);
+                    printf("Removing poll in block " FMT_BB " because it is not a jump\n", block->bbNum);
                 }
 #endif // DEBUG
                 block->bbFlags &= ~BBF_NEEDS_GCPOLL;
@@ -3720,7 +3720,7 @@ void Compiler::fgCreateGCPolls()
 #ifdef DEBUG
                 if (verbose)
                 {
-                    printf("Removing poll in return block BB%02u because it is GC Safe\n", block->bbNum);
+                    printf("Removing poll in return block " FMT_BB " because it is GC Safe\n", block->bbNum);
                 }
 #endif // DEBUG
                 block->bbFlags &= ~BBF_NEEDS_GCPOLL;
@@ -3737,7 +3737,8 @@ void Compiler::fgCreateGCPolls()
 #ifdef DEBUG
                     if (verbose)
                     {
-                        printf("Removing poll in return block BB%02u because it dominated by a call\n", block->bbNum);
+                        printf("Removing poll in return block " FMT_BB " because it dominated by a call\n",
+                               block->bbNum);
                     }
 #endif // DEBUG
                     continue;
@@ -3791,7 +3792,7 @@ void Compiler::fgCreateGCPolls()
 #ifdef DEBUG
             if (verbose)
             {
-                printf("Selecting CALL poll in block BB%02u because of debug/minopts\n", block->bbNum);
+                printf("Selecting CALL poll in block " FMT_BB " because of debug/minopts\n", block->bbNum);
             }
 #endif // DEBUG
 
@@ -3803,7 +3804,7 @@ void Compiler::fgCreateGCPolls()
 #ifdef DEBUG
             if (verbose)
             {
-                printf("Selecting CALL poll in block BB%02u because it is the single return block\n", block->bbNum);
+                printf("Selecting CALL poll in block " FMT_BB " because it is the single return block\n", block->bbNum);
             }
 #endif // DEBUG
 
@@ -3815,7 +3816,8 @@ void Compiler::fgCreateGCPolls()
 #ifdef DEBUG
             if (verbose)
             {
-                printf("Selecting CALL poll in block BB%02u because it is a loop formed by a SWITCH\n", block->bbNum);
+                printf("Selecting CALL poll in block " FMT_BB " because it is a loop formed by a SWITCH\n",
+                       block->bbNum);
             }
 #endif // DEBUG
 
@@ -3907,7 +3909,7 @@ bool Compiler::fgCreateGCPoll(GCPollType pollType, BasicBlock* block)
 #ifdef DEBUG
         if (verbose)
         {
-            printf("*** creating GC Poll in block BB%02u\n", block->bbNum);
+            printf("*** creating GC Poll in block " FMT_BB "\n", block->bbNum);
             gtDispTreeList(block->bbTreeList);
         }
 #endif // DEBUG
@@ -4044,11 +4046,11 @@ bool Compiler::fgCreateGCPoll(GCPollType pollType, BasicBlock* block)
 #ifdef DEBUG
         if (verbose)
         {
-            printf("*** creating inlined GC Poll in top block BB%02u\n", top->bbNum);
+            printf("*** creating inlined GC Poll in top block " FMT_BB "\n", top->bbNum);
             gtDispTreeList(top->bbTreeList);
-            printf(" poll block is BB%02u\n", poll->bbNum);
+            printf(" poll block is " FMT_BB "\n", poll->bbNum);
             gtDispTreeList(poll->bbTreeList);
-            printf(" bottom block is BB%02u\n", bottom->bbNum);
+            printf(" bottom block is " FMT_BB "\n", bottom->bbNum);
             gtDispTreeList(bottom->bbTreeList);
         }
 #endif // DEBUG
@@ -7601,7 +7603,7 @@ inline void Compiler::fgMarkLoopHead(BasicBlock* block)
 #ifdef DEBUG
     if (verbose)
     {
-        printf("fgMarkLoopHead: Checking loop head block BB%02u: ", block->bbNum);
+        printf("fgMarkLoopHead: Checking loop head block " FMT_BB ": ", block->bbNum);
     }
 #endif
 
@@ -8128,7 +8130,7 @@ void Compiler::fgConvertSyncReturnToLeave(BasicBlock* block)
 #ifdef DEBUG
     if (verbose)
     {
-        printf("Synchronized method - convert block BB%02u to BBJ_ALWAYS [targets BB%02u]\n", block->bbNum,
+        printf("Synchronized method - convert block " FMT_BB " to BBJ_ALWAYS [targets " FMT_BB "]\n", block->bbNum,
                block->bbJumpDest->bbNum);
     }
 #endif
@@ -8417,7 +8419,7 @@ private:
 #ifdef DEBUG
         if (comp->verbose)
         {
-            printf("\n newReturnBB [BB%02u] created\n", newReturnBB->bbNum);
+            printf("\n newReturnBB [" FMT_BB "] created\n", newReturnBB->bbNum);
         }
 #endif
 
@@ -9201,7 +9203,7 @@ BasicBlock* Compiler::fgSplitBlockAtEnd(BasicBlock* curr)
             BasicBlock* succ = curr->GetSucc(i, this);
             if (succ != newBlock)
             {
-                JITDUMP("BB%02u previous predecessor was BB%02u, now is BB%02u\n", succ->bbNum, curr->bbNum,
+                JITDUMP(FMT_BB " previous predecessor was " FMT_BB ", now is " FMT_BB "\n", succ->bbNum, curr->bbNum,
                         newBlock->bbNum);
                 fgReplacePred(succ, curr, newBlock);
             }
@@ -9428,7 +9430,8 @@ BasicBlock* Compiler::fgSplitEdge(BasicBlock* curr, BasicBlock* succ)
     }
     newBlock->bbFlags |= (curr->bbFlags & succ->bbFlags & (BBF_BACKWARD_JUMP));
 
-    JITDUMP("Splitting edge from BB%02u to BB%02u; adding BB%02u\n", curr->bbNum, succ->bbNum, newBlock->bbNum);
+    JITDUMP("Splitting edge from " FMT_BB " to " FMT_BB "; adding " FMT_BB "\n", curr->bbNum, succ->bbNum,
+            newBlock->bbNum);
 
     if (curr->bbJumpKind == BBJ_COND)
     {
@@ -9743,7 +9746,7 @@ void Compiler::fgRemoveEmptyBlocks()
 #ifdef DEBUG
                 if (verbose)
                 {
-                    printf("BB%02u was not imported, marked as removed (%d)\n", cur->bbNum, removedBlks);
+                    printf(FMT_BB " was not imported, marked as removed (%d)\n", cur->bbNum, removedBlks);
                 }
 #endif // DEBUG
 
@@ -9789,7 +9792,7 @@ void Compiler::fgRemoveEmptyBlocks()
 #ifdef DEBUG
             if (verbose)
             {
-                printf("Beginning of try block (BB%02u) not imported "
+                printf("Beginning of try block (" FMT_BB ") not imported "
                        "- remove index #%u from the EH table\n",
                        HBtab->ebdTryBeg->bbNum, XTnum + delCnt);
             }
@@ -9857,7 +9860,7 @@ void Compiler::fgRemoveStmt(BasicBlock* block, GenTree* node)
     {
         printf("\nRemoving statement ");
         printTreeID(stmt);
-        printf(" in BB%02u as useless:\n", block->bbNum);
+        printf(" in " FMT_BB " as useless:\n", block->bbNum);
         gtDispTree(stmt);
     }
 #endif // DEBUG
@@ -9908,7 +9911,7 @@ void Compiler::fgRemoveStmt(BasicBlock* block, GenTree* node)
     {
         if (block->bbTreeList == nullptr)
         {
-            printf("\nBB%02u becomes empty", block->bbNum);
+            printf("\n" FMT_BB " becomes empty", block->bbNum);
         }
         printf("\n");
     }
@@ -10087,7 +10090,7 @@ void Compiler::fgCompactBlocks(BasicBlock* block, BasicBlock* bNext)
 #ifdef DEBUG
     if (verbose)
     {
-        printf("\nCompacting blocks BB%02u and BB%02u:\n", block->bbNum, bNext->bbNum);
+        printf("\nCompacting blocks " FMT_BB " and " FMT_BB ":\n", block->bbNum, bNext->bbNum);
     }
 #endif
 
@@ -10548,7 +10551,7 @@ void Compiler::fgUnreachableBlock(BasicBlock* block)
 #ifdef DEBUG
     if (verbose)
     {
-        printf("\nRemoving unreachable BB%02u\n", block->bbNum);
+        printf("\nRemoving unreachable " FMT_BB "\n", block->bbNum);
     }
 #endif // DEBUG
 
@@ -10626,7 +10629,8 @@ void Compiler::fgRemoveConditionalJump(BasicBlock* block)
     block->bbJumpDest = nullptr;
     if (verbose)
     {
-        printf("Block BB%02u becoming a BBJ_NONE to BB%02u (jump target is the same whether the condition is true or "
+        printf("Block " FMT_BB " becoming a BBJ_NONE to " FMT_BB
+               " (jump target is the same whether the condition is true or "
                "false)\n",
                block->bbNum, block->bbNext->bbNum);
     }
@@ -10780,7 +10784,7 @@ void Compiler::fgUnlinkBlock(BasicBlock* block)
             // We had created an initial scratch BB, but now we're deleting it.
             if (verbose)
             {
-                printf("Unlinking scratch BB%02u\n", block->bbNum);
+                printf("Unlinking scratch " FMT_BB "\n", block->bbNum);
             }
 #endif // DEBUG
             fgFirstBBScratch = nullptr;
@@ -10845,7 +10849,7 @@ void Compiler::fgRemoveBlock(BasicBlock* block, bool unreachable)
 
     PREFIX_ASSUME(block != nullptr);
 
-    JITDUMP("fgRemoveBlock BB%02u\n", block->bbNum);
+    JITDUMP("fgRemoveBlock " FMT_BB "\n", block->bbNum);
 
     // If we've cached any mappings from switch blocks to SwitchDesc's (which contain only the
     // *unique* successors of the switch block), invalidate that cache, since an entry in one of
@@ -10952,7 +10956,7 @@ void Compiler::fgRemoveBlock(BasicBlock* block, bool unreachable)
 #ifdef DEBUG
         if (verbose)
         {
-            printf("Removing empty BB%02u\n", block->bbNum);
+            printf("Removing empty " FMT_BB "\n", block->bbNum);
         }
 #endif // DEBUG
 
@@ -11230,7 +11234,8 @@ BasicBlock* Compiler::fgConnectFallThrough(BasicBlock* bSrc, BasicBlock* bDst)
 #ifdef DEBUG
                     if (verbose)
                     {
-                        printf("Block BB%02u ended with a BBJ_NONE, Changed to an unconditional jump to BB%02u\n",
+                        printf("Block " FMT_BB " ended with a BBJ_NONE, Changed to an unconditional jump to " FMT_BB
+                               "\n",
                                bSrc->bbNum, bSrc->bbJumpDest->bbNum);
                     }
 #endif
@@ -11308,8 +11313,8 @@ BasicBlock* Compiler::fgConnectFallThrough(BasicBlock* bSrc, BasicBlock* bDst)
 #ifdef DEBUG
                     if (verbose)
                     {
-                        printf("Added an unconditional jump to BB%02u after block BB%02u\n", jmpBlk->bbJumpDest->bbNum,
-                               bSrc->bbNum);
+                        printf("Added an unconditional jump to " FMT_BB " after block " FMT_BB "\n",
+                               jmpBlk->bbJumpDest->bbNum, bSrc->bbNum);
                     }
 #endif // DEBUG
                     break;
@@ -11332,7 +11337,8 @@ BasicBlock* Compiler::fgConnectFallThrough(BasicBlock* bSrc, BasicBlock* bDst)
 #ifdef DEBUG
                 if (verbose)
                 {
-                    printf("Changed an unconditional jump from BB%02u to the next block BB%02u into a BBJ_NONE block\n",
+                    printf("Changed an unconditional jump from " FMT_BB " to the next block " FMT_BB
+                           " into a BBJ_NONE block\n",
                            bSrc->bbNum, bSrc->bbNext->bbNum);
                 }
 #endif // DEBUG
@@ -11386,7 +11392,7 @@ bool Compiler::fgRenumberBlocks()
 #ifdef DEBUG
             if (verbose)
             {
-                printf("Renumber BB%02u to BB%02u\n", block->bbNum, num);
+                printf("Renumber " FMT_BB " to " FMT_BB "\n", block->bbNum, num);
             }
 #endif // DEBUG
             block->bbNum = num;
@@ -11594,7 +11600,7 @@ bool Compiler::fgExpandRarelyRunBlocks()
                         assert(reason != nullptr);
                         if (verbose)
                         {
-                            printf("%s, marking BB%02u as rarely run\n", reason, bPrev->bbNum);
+                            printf("%s, marking " FMT_BB " as rarely run\n", reason, bPrev->bbNum);
                         }
 #endif // DEBUG
 
@@ -11733,7 +11739,8 @@ bool Compiler::fgExpandRarelyRunBlocks()
 #ifdef DEBUG
                 if (verbose)
                 {
-                    printf("All branches to BB%02u are from rarely run blocks, marking as rarely run\n", block->bbNum);
+                    printf("All branches to " FMT_BB " are from rarely run blocks, marking as rarely run\n",
+                           block->bbNum);
                 }
 #endif // DEBUG
 
@@ -11748,7 +11755,7 @@ bool Compiler::fgExpandRarelyRunBlocks()
 #ifdef DEBUG
                     if (verbose)
                     {
-                        printf("Also marking the BBJ_ALWAYS at BB%02u as rarely run\n", bNext->bbNum);
+                        printf("Also marking the BBJ_ALWAYS at " FMT_BB " as rarely run\n", bNext->bbNum);
                     }
 #endif // DEBUG
                 }
@@ -11783,7 +11790,8 @@ bool Compiler::fgExpandRarelyRunBlocks()
 #ifdef DEBUG
                 if (verbose)
                 {
-                    printf("Marking the BBJ_CALLFINALLY block at BB%02u as rarely run because BB%02u is rarely run\n",
+                    printf("Marking the BBJ_CALLFINALLY block at " FMT_BB " as rarely run because " FMT_BB
+                           " is rarely run\n",
                            bPrev->bbNum, block->bbNum);
                 }
 #endif // DEBUG
@@ -11796,7 +11804,8 @@ bool Compiler::fgExpandRarelyRunBlocks()
 #ifdef DEBUG
                 if (verbose)
                 {
-                    printf("Marking the BBJ_ALWAYS block at BB%02u as rarely run because BB%02u is rarely run\n",
+                    printf("Marking the BBJ_ALWAYS block at " FMT_BB " as rarely run because " FMT_BB
+                           " is rarely run\n",
                            block->bbNum, bPrev->bbNum);
                 }
 #endif // DEBUG
@@ -11840,7 +11849,7 @@ void Compiler::fgMoveBlocksAfter(BasicBlock* bStart, BasicBlock* bEnd, BasicBloc
 #ifdef DEBUG
     if (verbose)
     {
-        printf("Relocated block%s [BB%02u..BB%02u] inserted after BB%02u%s\n", (bStart == bEnd) ? "" : "s",
+        printf("Relocated block%s [" FMT_BB ".." FMT_BB "] inserted after " FMT_BB "%s\n", (bStart == bEnd) ? "" : "s",
                bStart->bbNum, bEnd->bbNum, insertAfterBlk->bbNum,
                (insertAfterBlk->bbNext == nullptr) ? " at the end of method" : "");
     }
@@ -11991,7 +12000,7 @@ BasicBlock* Compiler::fgRelocateEHRange(unsigned regionIndex, FG_RELOCATE_TYPE r
     bPrev = bStart->bbPrev;
     noway_assert(bPrev != nullptr); // Can't move a range that includes the first block of the function.
 
-    JITDUMP("Relocating %s range BB%02u..BB%02u (EH#%u) to end of BBlist\n",
+    JITDUMP("Relocating %s range " FMT_BB ".." FMT_BB " (EH#%u) to end of BBlist\n",
             (relocateType == FG_RELOCATE_TRY) ? "try" : "handler", bStart->bbNum, bLast->bbNum, regionIndex);
 
 #ifdef DEBUG
@@ -12216,8 +12225,8 @@ FAILURE:
 #ifdef DEBUG
     if (verbose)
     {
-        printf("*************** Failed fgRelocateEHRange(BB%02u..BB%02u) because %s\n", bStart->bbNum, bLast->bbNum,
-               reason);
+        printf("*************** Failed fgRelocateEHRange(" FMT_BB ".." FMT_BB ") because %s\n", bStart->bbNum,
+               bLast->bbNum, reason);
     }
 #endif // DEBUG
 
@@ -12424,7 +12433,7 @@ void Compiler::fgInsertFuncletPrologBlock(BasicBlock* block)
 #ifdef DEBUG
     if (verbose)
     {
-        printf("\nCreating funclet prolog header for BB%02u\n", block->bbNum);
+        printf("\nCreating funclet prolog header for " FMT_BB "\n", block->bbNum);
     }
 #endif
 
@@ -12924,13 +12933,13 @@ void Compiler::fgPrintEdgeWeights()
     {
         if (bDst->bbPreds != nullptr)
         {
-            printf("    Edge weights into BB%02u :", bDst->bbNum);
+            printf("    Edge weights into " FMT_BB " :", bDst->bbNum);
             for (edge = bDst->bbPreds; edge != nullptr; edge = edge->flNext)
             {
                 bSrc = edge->flBlock;
                 // This is the control flow edge (bSrc -> bDst)
 
-                printf("BB%02u ", bSrc->bbNum);
+                printf(FMT_BB " ", bSrc->bbNum);
 
                 if (edge->flEdgeWeightMin < BB_MAX_WEIGHT)
                 {
@@ -13602,8 +13611,8 @@ bool Compiler::fgOptimizeBranchToEmptyUnconditional(BasicBlock* block, BasicBloc
 #ifdef DEBUG
         if (verbose)
         {
-            printf("\nOptimizing a jump to an unconditional jump (BB%02u -> BB%02u -> BB%02u)\n", block->bbNum,
-                   bDest->bbNum, bDest->bbJumpDest->bbNum);
+            printf("\nOptimizing a jump to an unconditional jump (" FMT_BB " -> " FMT_BB " -> " FMT_BB ")\n",
+                   block->bbNum, bDest->bbNum, bDest->bbJumpDest->bbNum);
         }
 #endif // DEBUG
 
@@ -13840,7 +13849,8 @@ bool Compiler::fgOptimizeEmptyBlock(BasicBlock* block)
 #ifdef DEBUG
                         if (verbose)
                         {
-                            printf("\nKeeping empty block BB%02u - it is the target of a catch return\n", block->bbNum);
+                            printf("\nKeeping empty block " FMT_BB " - it is the target of a catch return\n",
+                                   block->bbNum);
                         }
 #endif // DEBUG
 
@@ -13957,8 +13967,9 @@ bool Compiler::fgOptimizeSwitchBranches(BasicBlock* block)
 #ifdef DEBUG
                 if (verbose)
                 {
-                    printf("\nOptimizing a switch jump to an empty block with an unconditional jump (BB%02u -> BB%02u "
-                           "-> BB%02u)\n",
+                    printf("\nOptimizing a switch jump to an empty block with an unconditional jump (" FMT_BB
+                           " -> " FMT_BB " "
+                           "-> " FMT_BB ")\n",
                            block->bbNum, bDest->bbNum, bNewDest->bbNum);
                 }
 #endif // DEBUG
@@ -14041,7 +14052,7 @@ bool Compiler::fgOptimizeSwitchBranches(BasicBlock* block)
 #ifdef DEBUG
         if (verbose)
         {
-            printf("\nRemoving a switch jump with a single target (BB%02u)\n", block->bbNum);
+            printf("\nRemoving a switch jump with a single target (" FMT_BB ")\n", block->bbNum);
             printf("BEFORE:\n");
         }
 #endif // DEBUG
@@ -14154,7 +14165,7 @@ bool Compiler::fgOptimizeSwitchBranches(BasicBlock* block)
 #ifdef DEBUG
         if (verbose)
         {
-            printf("\nConverting a switch (BB%02u) with only one significant clause besides a default target to a "
+            printf("\nConverting a switch (" FMT_BB ") with only one significant clause besides a default target to a "
                    "conditional branch\n",
                    block->bbNum);
         }
@@ -14365,7 +14376,8 @@ bool Compiler::fgOptimizeUncondBranchToSimpleCond(BasicBlock* block, BasicBlock*
 #ifdef DEBUG
     if (verbose)
     {
-        printf("fgOptimizeUncondBranchToSimpleCond(from BB%02u to cond BB%02u), created new uncond BB%02u\n",
+        printf("fgOptimizeUncondBranchToSimpleCond(from " FMT_BB " to cond " FMT_BB "), created new uncond " FMT_BB
+               "\n",
                block->bbNum, target->bbNum, next->bbNum);
     }
 #endif // DEBUG
@@ -14413,7 +14425,8 @@ bool Compiler::fgOptimizeBranchToNext(BasicBlock* block, BasicBlock* bNext, Basi
 #ifdef DEBUG
                     if (verbose)
                     {
-                        printf("\nRemoving unconditional jump to next block (BB%02u -> BB%02u) (converted BB%02u to "
+                        printf("\nRemoving unconditional jump to next block (" FMT_BB " -> " FMT_BB
+                               ") (converted " FMT_BB " to "
                                "fall-through)\n",
                                block->bbNum, bNext->bbNum, block->bbNum);
                     }
@@ -14432,7 +14445,8 @@ bool Compiler::fgOptimizeBranchToNext(BasicBlock* block, BasicBlock* bNext, Basi
 #ifdef DEBUG
         if (verbose)
         {
-            printf("\nRemoving conditional jump to next block (BB%02u -> BB%02u)\n", block->bbNum, bNext->bbNum);
+            printf("\nRemoving conditional jump to next block (" FMT_BB " -> " FMT_BB ")\n", block->bbNum,
+                   bNext->bbNum);
         }
 #endif // DEBUG
 
@@ -14698,7 +14712,8 @@ bool Compiler::fgOptimizeBranch(BasicBlock* bJump)
 #ifdef DEBUG
     if (verbose)
     {
-        printf("\nDuplication of the conditional block BB%02u (always branch from BB%02u) %s, because the cost of "
+        printf("\nDuplication of the conditional block " FMT_BB " (always branch from " FMT_BB
+               ") %s, because the cost of "
                "duplication (%i) is %s than %i,"
                " validProfileWeights = %s\n",
                bDest->bbNum, bJump->bbNum, costIsTooHigh ? "not done" : "performed", estDupCostSz,
@@ -14876,12 +14891,12 @@ bool Compiler::fgOptimizeBranch(BasicBlock* bJump)
     if (verbose)
     {
         // Dump out the newStmtList that we created
-        printf("\nfgOptimizeBranch added these statements(s) at the end of BB%02u:\n", bJump->bbNum);
+        printf("\nfgOptimizeBranch added these statements(s) at the end of " FMT_BB ":\n", bJump->bbNum);
         for (stmt = newStmtList->AsStmt(); stmt; stmt = stmt->gtNextStmt)
         {
             gtDispTree(stmt);
         }
-        printf("\nfgOptimizeBranch changed block BB%02u from BBJ_ALWAYS to BBJ_COND.\n", bJump->bbNum);
+        printf("\nfgOptimizeBranch changed block " FMT_BB " from BBJ_ALWAYS to BBJ_COND.\n", bJump->bbNum);
 
         printf("\nAfter this change in fgOptimizeBranch the BB graph is:");
         fgDispBasicBlocks(verboseTrees);
@@ -15631,18 +15646,18 @@ void Compiler::fgReorderBlocks()
             {
                 if (bPrev->bbJumpKind == BBJ_COND)
                 {
-                    printf("Decided to reverse conditional branch at block BB%02u branch to BB%02u ", bPrev->bbNum,
-                           bDest->bbNum);
+                    printf("Decided to reverse conditional branch at block " FMT_BB " branch to " FMT_BB " ",
+                           bPrev->bbNum, bDest->bbNum);
                 }
                 else if (bPrev->bbJumpKind == BBJ_ALWAYS)
                 {
-                    printf("Decided to straighten unconditional branch at block BB%02u branch to BB%02u ", bPrev->bbNum,
-                           bDest->bbNum);
+                    printf("Decided to straighten unconditional branch at block " FMT_BB " branch to " FMT_BB " ",
+                           bPrev->bbNum, bDest->bbNum);
                 }
                 else
                 {
-                    printf("Decided to place hot code after BB%02u, placed BB%02u after this block ", bPrev->bbNum,
-                           bDest->bbNum);
+                    printf("Decided to place hot code after " FMT_BB ", placed " FMT_BB " after this block ",
+                           bPrev->bbNum, bDest->bbNum);
                 }
 
                 if (profHotWeight > 0)
@@ -15663,7 +15678,7 @@ void Compiler::fgReorderBlocks()
             }
             else
             {
-                printf("Decided to relocate block(s) after block BB%02u since they are %s block(s)\n", bPrev->bbNum,
+                printf("Decided to relocate block(s) after block " FMT_BB " since they are %s block(s)\n", bPrev->bbNum,
                        block->isRunRarely() ? "rarely run" : "uncommonly run");
             }
         }
@@ -15921,11 +15936,12 @@ void Compiler::fgReorderBlocks()
                     {
                         if (bStart != bEnd)
                         {
-                            printf("Could not relocate blocks (BB%02u .. BB%02u)\n", bStart->bbNum, bEnd->bbNum);
+                            printf("Could not relocate blocks (" FMT_BB " .. " FMT_BB ")\n", bStart->bbNum,
+                                   bEnd->bbNum);
                         }
                         else
                         {
-                            printf("Could not relocate block BB%02u\n", bStart->bbNum);
+                            printf("Could not relocate block " FMT_BB "\n", bStart->bbNum);
                         }
                     }
 #endif // DEBUG
@@ -15963,16 +15979,16 @@ void Compiler::fgReorderBlocks()
             printf("Relocated %s ", msg);
             if (bStart != bEnd)
             {
-                printf("blocks (BB%02u .. BB%02u)", bStart->bbNum, bEnd->bbNum);
+                printf("blocks (" FMT_BB " .. " FMT_BB ")", bStart->bbNum, bEnd->bbNum);
             }
             else
             {
-                printf("block BB%02u", bStart->bbNum);
+                printf("block " FMT_BB, bStart->bbNum);
             }
 
             if (bPrev->bbJumpKind == BBJ_COND)
             {
-                printf(" by reversing conditional jump at BB%02u\n", bPrev->bbNum);
+                printf(" by reversing conditional jump at " FMT_BB "\n", bPrev->bbNum);
             }
             else
             {
@@ -16321,7 +16337,7 @@ EXIT:;
     {
         if (firstColdBlock)
         {
-            printf("fgFirstColdBlock is BB%02u.\n", firstColdBlock->bbNum);
+            printf("fgFirstColdBlock is " FMT_BB ".\n", firstColdBlock->bbNum);
         }
         else
         {
@@ -16522,8 +16538,8 @@ bool Compiler::fgUpdateFlowGraph(bool doTailDuplication)
 #ifdef DEBUG
                         if (verbose)
                         {
-                            printf("\nReversing a conditional jump around an unconditional jump (BB%02u -> BB%02u -> "
-                                   "BB%02u)\n",
+                            printf("\nReversing a conditional jump around an unconditional jump (" FMT_BB " -> " FMT_BB
+                                   " -> " FMT_BB ")\n",
                                    block->bbNum, bDest->bbNum, bNext->bbJumpDest->bbNum);
                         }
 #endif // DEBUG
@@ -16954,7 +16970,7 @@ void Compiler::fgExtendEHRegionBefore(BasicBlock* block)
 #ifdef DEBUG
             if (verbose)
             {
-                printf("EH#%u: New first block of try: BB%02u\n", ehGetIndex(HBtab), bPrev->bbNum);
+                printf("EH#%u: New first block of try: " FMT_BB "\n", ehGetIndex(HBtab), bPrev->bbNum);
             }
 #endif // DEBUG
             HBtab->ebdTryBeg = bPrev;
@@ -16972,7 +16988,7 @@ void Compiler::fgExtendEHRegionBefore(BasicBlock* block)
 #ifdef DEBUG
             if (verbose)
             {
-                printf("EH#%u: New first block of handler: BB%02u\n", ehGetIndex(HBtab), bPrev->bbNum);
+                printf("EH#%u: New first block of handler: " FMT_BB "\n", ehGetIndex(HBtab), bPrev->bbNum);
             }
 #endif // DEBUG
 
@@ -17007,8 +17023,8 @@ void Compiler::fgExtendEHRegionBefore(BasicBlock* block)
 #ifdef DEBUG
                 if (verbose)
                 {
-                    printf("EH#%u: Updating bbJumpDest for filter ret block: BB%02u => BB%02u\n", ehGetIndex(HBtab),
-                           bFilterLast->bbNum, bPrev->bbNum);
+                    printf("EH#%u: Updating bbJumpDest for filter ret block: " FMT_BB " => " FMT_BB "\n",
+                           ehGetIndex(HBtab), bFilterLast->bbNum, bPrev->bbNum);
                 }
 #endif // DEBUG
                 // Change the bbJumpDest for bFilterLast from the old first 'block' to the new first 'bPrev'
@@ -17021,7 +17037,7 @@ void Compiler::fgExtendEHRegionBefore(BasicBlock* block)
 #ifdef DEBUG
             if (verbose)
             {
-                printf("EH#%u: New first block of filter: BB%02u\n", ehGetIndex(HBtab), bPrev->bbNum);
+                printf("EH#%u: New first block of filter: " FMT_BB "\n", ehGetIndex(HBtab), bPrev->bbNum);
             }
 #endif // DEBUG
 
@@ -17475,8 +17491,9 @@ BasicBlock* Compiler::fgFindInsertPoint(unsigned    regionIndex,
     }
 #endif // DEBUG
 
-    JITDUMP("fgFindInsertPoint(regionIndex=%u, putInTryRegion=%s, startBlk=BB%02u, endBlk=BB%02u, nearBlk=BB%02u, "
-            "jumpBlk=BB%02u, runRarely=%s)\n",
+    JITDUMP("fgFindInsertPoint(regionIndex=%u, putInTryRegion=%s, startBlk=" FMT_BB ", endBlk=" FMT_BB
+            ", nearBlk=" FMT_BB ", "
+            "jumpBlk=" FMT_BB ", runRarely=%s)\n",
             regionIndex, dspBool(putInTryRegion), startBlk->bbNum, (endBlk == nullptr) ? 0 : endBlk->bbNum,
             (nearBlk == nullptr) ? 0 : nearBlk->bbNum, (jumpBlk == nullptr) ? 0 : jumpBlk->bbNum, dspBool(runRarely));
 
@@ -17875,7 +17892,7 @@ _FoundAfterBlk:;
     noway_assert(afterBlk != nullptr);
 
     JITDUMP("fgNewBBinRegion(jumpKind=%u, tryIndex=%u, hndIndex=%u, putInFilter=%s, runRarely=%s, insertAtEnd=%s): "
-            "inserting after BB%02u\n",
+            "inserting after " FMT_BB "\n",
             jumpKind, tryIndex, hndIndex, dspBool(putInFilter), dspBool(runRarely), dspBool(insertAtEnd),
             afterBlk->bbNum);
 
@@ -18372,7 +18389,7 @@ BasicBlock* Compiler::fgRngChkTarget(BasicBlock* block, unsigned stkDepth, Speci
 #ifdef DEBUG
     if (verbose)
     {
-        printf("*** Computing fgRngChkTarget for block BB%02u to stkDepth %d\n", block->bbNum, stkDepth);
+        printf("*** Computing fgRngChkTarget for block " FMT_BB " to stkDepth %d\n", block->bbNum, stkDepth);
         if (!block->IsLIR())
         {
             gtDispTree(compCurStmt);
@@ -19693,15 +19710,15 @@ bool Compiler::fgDumpFlowGraph(Phases phase)
                 case BBJ_COND:
                 case BBJ_NONE:
                     assert(block->bbNext != nullptr);
-                    fprintf(fgxFile, "    BB%02u -> BB%02u\n", block->bbNum, block->bbNext->bbNum);
+                    fprintf(fgxFile, "    " FMT_BB " -> " FMT_BB "\n", block->bbNum, block->bbNext->bbNum);
                     break;
                 default:
                     // These may or may not have an edge to the next block.
                     // Add a transparent edge to keep nodes ordered.
                     if (block->bbNext != nullptr)
                     {
-                        fprintf(fgxFile, "    BB%02u -> BB%02u [arrowtail=none,color=transparent]\n", block->bbNum,
-                                block->bbNext->bbNum);
+                        fprintf(fgxFile, "    " FMT_BB " -> " FMT_BB " [arrowtail=none,color=transparent]\n",
+                                block->bbNum, block->bbNext->bbNum);
                     }
             }
         }
@@ -19785,7 +19802,7 @@ bool Compiler::fgDumpFlowGraph(Phases phase)
                 {
                     continue;
                 }
-                fprintf(fgxFile, "    BB%02u -> BB%02u", bSource->bbNum, bTarget->bbNum);
+                fprintf(fgxFile, "    " FMT_BB " -> " FMT_BB, bSource->bbNum, bTarget->bbNum);
                 if ((bSource->bbNum > bTarget->bbNum))
                 {
                     fprintf(fgxFile, "[arrowhead=normal,arrowtail=none,color=green]\n");
@@ -19884,12 +19901,12 @@ void Compiler::fgDispReach()
 
     for (BasicBlock* block = fgFirstBB; block != nullptr; block = block->bbNext)
     {
-        printf("BB%02u : ", block->bbNum);
+        printf(FMT_BB " : ", block->bbNum);
         BlockSetOps::Iter iter(this, block->bbReach);
         unsigned          bbNum = 0;
         while (iter.NextElem(&bbNum))
         {
-            printf("BB%02u ", bbNum);
+            printf(FMT_BB " ", bbNum);
         }
         printf("\n");
     }
@@ -19910,10 +19927,10 @@ void Compiler::fgDispDoms()
     for (unsigned i = 1; i <= fgBBNumMax; ++i)
     {
         BasicBlock* current = fgBBInvPostOrder[i];
-        printf("BB%02u:  ", current->bbNum);
+        printf(FMT_BB ":  ", current->bbNum);
         while (current != current->bbIDom)
         {
-            printf("BB%02u ", current->bbNum);
+            printf(FMT_BB " ", current->bbNum);
             current = current->bbIDom;
         }
         printf("\n");
@@ -20055,30 +20072,30 @@ void Compiler::fgTableDispBasicBlock(BasicBlock* block, int ibcColWidth /* = 0 *
         switch (block->bbJumpKind)
         {
             case BBJ_COND:
-                printf("-> BB%02u%*s ( cond )", block->bbJumpDest->bbNum,
+                printf("-> " FMT_BB "%*s ( cond )", block->bbJumpDest->bbNum,
                        maxBlockNumWidth - max(CountDigits(block->bbJumpDest->bbNum), 2), "");
                 break;
 
             case BBJ_CALLFINALLY:
-                printf("-> BB%02u%*s (callf )", block->bbJumpDest->bbNum,
+                printf("-> " FMT_BB "%*s (callf )", block->bbJumpDest->bbNum,
                        maxBlockNumWidth - max(CountDigits(block->bbJumpDest->bbNum), 2), "");
                 break;
 
             case BBJ_ALWAYS:
                 if (flags & BBF_KEEP_BBJ_ALWAYS)
                 {
-                    printf("-> BB%02u%*s (ALWAYS)", block->bbJumpDest->bbNum,
+                    printf("-> " FMT_BB "%*s (ALWAYS)", block->bbJumpDest->bbNum,
                            maxBlockNumWidth - max(CountDigits(block->bbJumpDest->bbNum), 2), "");
                 }
                 else
                 {
-                    printf("-> BB%02u%*s (always)", block->bbJumpDest->bbNum,
+                    printf("-> " FMT_BB "%*s (always)", block->bbJumpDest->bbNum,
                            maxBlockNumWidth - max(CountDigits(block->bbJumpDest->bbNum), 2), "");
                 }
                 break;
 
             case BBJ_LEAVE:
-                printf("-> BB%02u%*s (leave )", block->bbJumpDest->bbNum,
+                printf("-> " FMT_BB "%*s (leave )", block->bbJumpDest->bbNum,
                        maxBlockNumWidth - max(CountDigits(block->bbJumpDest->bbNum), 2), "");
                 break;
 
@@ -20091,7 +20108,7 @@ void Compiler::fgTableDispBasicBlock(BasicBlock* block, int ibcColWidth /* = 0 *
                 break;
 
             case BBJ_EHCATCHRET:
-                printf("-> BB%02u%*s ( cret )", block->bbJumpDest->bbNum,
+                printf("-> " FMT_BB "%*s ( cret )", block->bbJumpDest->bbNum,
                        maxBlockNumWidth - max(CountDigits(block->bbJumpDest->bbNum), 2), "");
                 break;
 
@@ -20118,7 +20135,7 @@ void Compiler::fgTableDispBasicBlock(BasicBlock* block, int ibcColWidth /* = 0 *
                 switchWidth = 0;
                 do
                 {
-                    printf("%cBB%02u", (jumpTab == block->bbJumpSwt->bbsDstTab) ? ' ' : ',', (*jumpTab)->bbNum);
+                    printf("%c" FMT_BB, (jumpTab == block->bbJumpSwt->bbsDstTab) ? ' ' : ',', (*jumpTab)->bbNum);
                     switchWidth += 1 /* space/comma */ + 2 /* BB */ + max(CountDigits((*jumpTab)->bbNum), 2);
                 } while (++jumpTab, --jumpCnt);
 
@@ -20380,7 +20397,7 @@ void Compiler::fgDumpStmtTree(GenTree* stmt, unsigned bbNum)
 {
     compCurStmtNum++; // Increment the current stmtNum
 
-    printf("\n***** BB%02u, stmt %d\n", bbNum, compCurStmtNum);
+    printf("\n***** " FMT_BB ", stmt %d\n", bbNum, compCurStmtNum);
 
     if (fgOrder == FGOrderLinear || opts.compDbgInfo)
     {
@@ -20604,7 +20621,7 @@ bool BBPredsChecker::CheckEhTryDsc(BasicBlock* block, BasicBlock* blockPred, EHb
         return true;
     }
 
-    printf("Jump into the middle of try region: BB%02u branches to BB%02u\n", blockPred->bbNum, block->bbNum);
+    printf("Jump into the middle of try region: " FMT_BB " branches to " FMT_BB "\n", blockPred->bbNum, block->bbNum);
     assert(!"Jump into middle of try region");
     return false;
 }
@@ -20636,7 +20653,8 @@ bool BBPredsChecker::CheckEhHndDsc(BasicBlock* block, BasicBlock* blockPred, EHb
         return true;
     }
 
-    printf("Jump into the middle of handler region: BB%02u branches to BB%02u\n", blockPred->bbNum, block->bbNum);
+    printf("Jump into the middle of handler region: " FMT_BB " branches to " FMT_BB "\n", blockPred->bbNum,
+           block->bbNum);
     assert(!"Jump into the middle of handler region");
     return false;
 }
@@ -22875,7 +22893,7 @@ void Compiler::fgInsertInlineeBlocks(InlineInfo* pInlineInfo)
 #ifdef DEBUG
                 if (verbose)
                 {
-                    printf("\nConvert bbJumpKind of BB%02u to BBJ_ALWAYS to bottomBlock BB%02u\n", block->bbNum,
+                    printf("\nConvert bbJumpKind of " FMT_BB " to BBJ_ALWAYS to bottomBlock " FMT_BB "\n", block->bbNum,
                            bottomBlock->bbNum);
                 }
 #endif // DEBUG
@@ -22885,7 +22903,7 @@ void Compiler::fgInsertInlineeBlocks(InlineInfo* pInlineInfo)
 #ifdef DEBUG
                 if (verbose)
                 {
-                    printf("\nConvert bbJumpKind of BB%02u to BBJ_NONE\n", block->bbNum);
+                    printf("\nConvert bbJumpKind of " FMT_BB " to BBJ_NONE\n", block->bbNum);
                 }
 #endif // DEBUG
                 block->bbJumpKind = BBJ_NONE;
@@ -23734,9 +23752,10 @@ void Compiler::fgRemoveEmptyFinally()
                 BasicBlock* const leaveBlock          = currentBlock->bbNext;
                 BasicBlock* const postTryFinallyBlock = leaveBlock->bbJumpDest;
 
-                JITDUMP("Modifying callfinally BB%02u leave BB%02u finally BB%02u continuation BB%02u\n",
+                JITDUMP("Modifying callfinally " FMT_BB " leave " FMT_BB " finally " FMT_BB " continuation " FMT_BB
+                        "\n",
                         currentBlock->bbNum, leaveBlock->bbNum, firstBlock->bbNum, postTryFinallyBlock->bbNum);
-                JITDUMP("so that BB%02u jumps to BB%02u; then remove BB%02u\n", currentBlock->bbNum,
+                JITDUMP("so that " FMT_BB " jumps to " FMT_BB "; then remove " FMT_BB "\n", currentBlock->bbNum,
                         postTryFinallyBlock->bbNum, leaveBlock->bbNum);
 
                 noway_assert(leaveBlock->bbJumpKind == BBJ_ALWAYS);
@@ -23766,7 +23785,7 @@ void Compiler::fgRemoveEmptyFinally()
             currentBlock = nextBlock;
         }
 
-        JITDUMP("Remove now-unreachable handler BB%02u\n", firstBlock->bbNum);
+        JITDUMP("Remove now-unreachable handler " FMT_BB "\n", firstBlock->bbNum);
 
         // Handler block should now be unreferenced, since the only
         // explicit references to it were in call finallys.
@@ -23948,7 +23967,7 @@ void Compiler::fgRemoveEmptyTry()
         // or branch to same.
         if (!firstTryBlock->isEmpty())
         {
-            JITDUMP("EH#%u first try block BB%02u not empty; skipping.\n", XTnum, firstTryBlock->bbNum);
+            JITDUMP("EH#%u first try block " FMT_BB " not empty; skipping.\n", XTnum, firstTryBlock->bbNum);
             XTnum++;
             continue;
         }
@@ -23959,7 +23978,8 @@ void Compiler::fgRemoveEmptyTry()
         // pair that targets the finally
         if (firstTryBlock->bbJumpKind != BBJ_ALWAYS)
         {
-            JITDUMP("EH#%u first try block BB%02u not jump to a callfinally; skipping.\n", XTnum, firstTryBlock->bbNum);
+            JITDUMP("EH#%u first try block " FMT_BB " not jump to a callfinally; skipping.\n", XTnum,
+                    firstTryBlock->bbNum);
             XTnum++;
             continue;
         }
@@ -23971,7 +23991,7 @@ void Compiler::fgRemoveEmptyTry()
         // return.
         if (!callFinally->isBBCallAlwaysPair() || (callFinally->bbJumpDest != firstHandlerBlock))
         {
-            JITDUMP("EH#%u first try block BB%02u always jumps but not to a callfinally; skipping.\n", XTnum,
+            JITDUMP("EH#%u first try block " FMT_BB " always jumps but not to a callfinally; skipping.\n", XTnum,
                     firstTryBlock->bbNum);
             XTnum++;
             continue;
@@ -23980,7 +24000,7 @@ void Compiler::fgRemoveEmptyTry()
         // Try itself must be a single block.
         if (firstTryBlock != lastTryBlock)
         {
-            JITDUMP("EH#%u first try block BB%02u not only block in try; skipping.\n", XTnum,
+            JITDUMP("EH#%u first try block " FMT_BB " not only block in try; skipping.\n", XTnum,
                     firstTryBlock->bbNext->bbNum);
             XTnum++;
             continue;
@@ -23992,7 +24012,7 @@ void Compiler::fgRemoveEmptyTry()
         // finally doesn't return.
         if (!firstTryBlock->isBBCallAlwaysPair() || (firstTryBlock->bbJumpDest != firstHandlerBlock))
         {
-            JITDUMP("EH#%u first try block BB%02u not a callfinally; skipping.\n", XTnum, firstTryBlock->bbNum);
+            JITDUMP("EH#%u first try block " FMT_BB " not a callfinally; skipping.\n", XTnum, firstTryBlock->bbNum);
             XTnum++;
             continue;
         }
@@ -24002,7 +24022,7 @@ void Compiler::fgRemoveEmptyTry()
         // Try must be a callalways pair of blocks.
         if (firstTryBlock->bbNext != lastTryBlock)
         {
-            JITDUMP("EH#%u block BB%02u not last block in try; skipping.\n", XTnum, firstTryBlock->bbNext->bbNum);
+            JITDUMP("EH#%u block " FMT_BB " not last block in try; skipping.\n", XTnum, firstTryBlock->bbNext->bbNum);
             XTnum++;
             continue;
         }
@@ -24026,7 +24046,7 @@ void Compiler::fgRemoveEmptyTry()
 
                 if (block != callFinally)
                 {
-                    JITDUMP("EH#%u found unexpected callfinally BB%02u; skipping.\n");
+                    JITDUMP("EH#%u found unexpected callfinally " FMT_BB "; skipping.\n");
                     verifiedSingleCallfinally = false;
                     break;
                 }
@@ -24457,12 +24477,12 @@ void Compiler::fgCloneFinally()
             // through from the try into the clone.
             tryToRelocateCallFinally = true;
 
-            JITDUMP("Chose path to clone: try block BB%02u jumps to callfinally at BB%02u;"
-                    " the call returns to BB%02u which jumps to BB%02u\n",
+            JITDUMP("Chose path to clone: try block " FMT_BB " jumps to callfinally at " FMT_BB ";"
+                    " the call returns to " FMT_BB " which jumps to " FMT_BB "\n",
                     block->bbNum, jumpDest->bbNum, finallyReturnBlock->bbNum, postTryFinallyBlock->bbNum);
 #else
-            JITDUMP("Chose path to clone: try block BB%02u is a callfinally;"
-                    " the call returns to BB%02u which jumps to BB%02u\n",
+            JITDUMP("Chose path to clone: try block " FMT_BB " is a callfinally;"
+                    " the call returns to " FMT_BB " which jumps to " FMT_BB "\n",
                     block->bbNum, finallyReturnBlock->bbNum, postTryFinallyBlock->bbNum);
 #endif // FEATURE_EH_CALLFINALLY_THUNKS
 
@@ -24476,8 +24496,8 @@ void Compiler::fgCloneFinally()
             continue;
         }
 
-        JITDUMP("Will update callfinally block BB%02u to jump to the clone;"
-                " clone will jump to BB%02u\n",
+        JITDUMP("Will update callfinally block " FMT_BB " to jump to the clone;"
+                " clone will jump to " FMT_BB "\n",
                 normalCallFinallyBlock->bbNum, normalCallFinallyReturn->bbNum);
 
         // If there are multiple callfinallys and we're in the
@@ -24519,7 +24539,7 @@ void Compiler::fgCloneFinally()
                 if ((placeToMoveAfter->bbJumpKind == BBJ_ALWAYS) &&
                     (placeToMoveAfter->bbJumpDest == normalCallFinallyBlock))
                 {
-                    JITDUMP("Moving callfinally BB%02u to be first in line, before BB%02u\n",
+                    JITDUMP("Moving callfinally " FMT_BB " to be first in line, before " FMT_BB "\n",
                             normalCallFinallyBlock->bbNum, firstCallFinallyBlock->bbNum);
 
                     BasicBlock* const firstToMove = normalCallFinallyBlock;
@@ -24543,8 +24563,8 @@ void Compiler::fgCloneFinally()
                 }
                 else
                 {
-                    JITDUMP("Can't move callfinally BB%02u to be first in line"
-                            " -- last finally block BB%02u doesn't jump to it\n",
+                    JITDUMP("Can't move callfinally " FMT_BB " to be first in line"
+                            " -- last finally block " FMT_BB " doesn't jump to it\n",
                             normalCallFinallyBlock->bbNum, placeToMoveAfter->bbNum);
                 }
             }
@@ -24643,7 +24663,7 @@ void Compiler::fgCloneFinally()
         // We should have cloned all the finally region blocks.
         assert(cloneBBCount == regionBBCount);
 
-        JITDUMP("Cloned finally blocks are: BB%2u ... BB%2u\n", blockMap[firstBlock]->bbNum,
+        JITDUMP("Cloned finally blocks are: " FMT_BB " ... " FMT_BB "\n", blockMap[firstBlock]->bbNum,
                 blockMap[lastBlock]->bbNum);
 
         // Redirect redirect any branches within the newly-cloned
@@ -24719,7 +24739,7 @@ void Compiler::fgCloneFinally()
                     {
                         // We can't retarget this call since it
                         // returns somewhere else.
-                        JITDUMP("Can't retarget callfinally in BB%02u as it jumps to BB%02u, not BB%02u\n",
+                        JITDUMP("Can't retarget callfinally in " FMT_BB " as it jumps to " FMT_BB ", not " FMT_BB "\n",
                                 currentBlock->bbNum, postTryFinallyBlock->bbNum, normalCallFinallyReturn->bbNum);
 
                         retargetedAllCalls = false;
@@ -24956,8 +24976,8 @@ void Compiler::fgDebugCheckTryFinallyExits()
 
                 if (!thisExitValid)
                 {
-                    JITDUMP("fgCheckTryFinallyExitS: EH#%u exit via BB%02u -> BB%02u is invalid\n", XTnum, block->bbNum,
-                            succBlock->bbNum);
+                    JITDUMP("fgCheckTryFinallyExitS: EH#%u exit via " FMT_BB " -> " FMT_BB " is invalid\n", XTnum,
+                            block->bbNum, succBlock->bbNum);
                 }
 
                 allTryExitsValid = allTryExitsValid & thisExitValid;
@@ -25083,7 +25103,7 @@ void Compiler::fgAddFinallyTargetFlags()
 
             if ((continuation->bbFlags & BBF_FINALLY_TARGET) == 0)
             {
-                JITDUMP("Found callfinally BB%02u; setting finally target bit on BB%02u\n", block->bbNum,
+                JITDUMP("Found callfinally " FMT_BB "; setting finally target bit on " FMT_BB "\n", block->bbNum,
                         continuation->bbNum);
 
                 continuation->bbFlags |= BBF_FINALLY_TARGET;
@@ -25362,12 +25382,12 @@ bool Compiler::fgRetargetBranchesToCanonicalCallFinally(BasicBlock*      block,
     // If the block already jumps to the canoncial call finally, no work needed.
     if (block->bbJumpDest == canonicalCallFinally)
     {
-        JITDUMP("BB%02u already canonical\n", block->bbNum);
+        JITDUMP(FMT_BB " already canonical\n", block->bbNum);
         return false;
     }
 
     // Else, retarget it so that it does...
-    JITDUMP("Redirecting branch in BB%02u from BB%02u to BB%02u.\n", block->bbNum, callFinally->bbNum,
+    JITDUMP("Redirecting branch in " FMT_BB " from " FMT_BB " to " FMT_BB ".\n", block->bbNum, callFinally->bbNum,
             canonicalCallFinally->bbNum);
 
     block->bbJumpDest = canonicalCallFinally;

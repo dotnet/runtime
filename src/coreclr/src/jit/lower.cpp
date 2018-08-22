@@ -450,14 +450,14 @@ GenTree* Lowering::LowerSwitch(GenTree* node)
     }
 #endif
 
-    JITDUMP("Lowering switch BB%02u, %d cases\n", originalSwitchBB->bbNum, jumpCnt);
+    JITDUMP("Lowering switch " FMT_BB ", %d cases\n", originalSwitchBB->bbNum, jumpCnt);
 
     // Handle a degenerate case: if the switch has only a default case, just convert it
     // to an unconditional branch. This should only happen in minopts or with debuggable
     // code.
     if (targetCnt == 1)
     {
-        JITDUMP("Lowering switch BB%02u: single target; converting to BBJ_ALWAYS\n", originalSwitchBB->bbNum);
+        JITDUMP("Lowering switch " FMT_BB ": single target; converting to BBJ_ALWAYS\n", originalSwitchBB->bbNum);
         noway_assert(comp->opts.MinOpts() || comp->opts.compDbgCode);
         if (originalSwitchBB->bbNext == jumpTab[0])
         {
@@ -645,7 +645,7 @@ GenTree* Lowering::LowerSwitch(GenTree* node)
         //    a statement that is responsible for performing a comparison of the table index and conditional
         //    branch if equal.
 
-        JITDUMP("Lowering switch BB%02u: using compare/branch expansion\n", originalSwitchBB->bbNum);
+        JITDUMP("Lowering switch " FMT_BB ": using compare/branch expansion\n", originalSwitchBB->bbNum);
 
         // We'll use 'afterDefaultCondBlock' for the first conditional. After that, we'll add new
         // blocks. If we end up not needing it at all (say, if all the non-default cases just fall through),
@@ -738,7 +738,7 @@ GenTree* Lowering::LowerSwitch(GenTree* node)
             // All the cases were fall-through! We don't need this block.
             // Convert it from BBJ_SWITCH to BBJ_NONE and unset the BBF_DONT_REMOVE flag
             // so fgRemoveBlock() doesn't complain.
-            JITDUMP("Lowering switch BB%02u: all switch cases were fall-through\n", originalSwitchBB->bbNum);
+            JITDUMP("Lowering switch " FMT_BB ": all switch cases were fall-through\n", originalSwitchBB->bbNum);
             assert(currentBlock == afterDefaultCondBlock);
             assert(currentBlock->bbJumpKind == BBJ_SWITCH);
             currentBlock->bbJumpKind = BBJ_NONE;
@@ -759,7 +759,7 @@ GenTree* Lowering::LowerSwitch(GenTree* node)
         // if that's not possible a jump table based switch will be generated.
         if (!TryLowerSwitchToBitTest(jumpTab, jumpCnt, targetCnt, afterDefaultCondBlock, switchValue))
         {
-            JITDUMP("Lowering switch BB%02u: using jump table expansion\n", originalSwitchBB->bbNum);
+            JITDUMP("Lowering switch " FMT_BB ": using jump table expansion\n", originalSwitchBB->bbNum);
 
 #ifdef _TARGET_64BIT_
             if (tempLclType != TYP_I_IMPL)

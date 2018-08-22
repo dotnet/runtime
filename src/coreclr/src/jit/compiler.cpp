@@ -8589,7 +8589,7 @@ void dBlockList(BasicBlockList* list)
     printf("WorkList: ");
     while (list != nullptr)
     {
-        printf("BB%02u ", list->block->bbNum);
+        printf(FMT_BB " ", list->block->bbNum);
         list = list->next;
     }
     printf("\n");
@@ -8766,19 +8766,19 @@ void cLoopIR(Compiler* comp, Compiler::LoopDsc* loop)
 
     printf("LOOP\n");
     printf("\n");
-    printf("HEAD   BB%02u\n", blockHead->bbNum);
-    printf("FIRST  BB%02u\n", blockFirst->bbNum);
-    printf("TOP    BB%02u\n", blockTop->bbNum);
-    printf("ENTRY  BB%02u\n", blockEntry->bbNum);
+    printf("HEAD   " FMT_BB "\n", blockHead->bbNum);
+    printf("FIRST  " FMT_BB "\n", blockFirst->bbNum);
+    printf("TOP    " FMT_BB "\n", blockTop->bbNum);
+    printf("ENTRY  " FMT_BB "\n", blockEntry->bbNum);
     if (loop->lpExitCnt == 1)
     {
-        printf("EXIT   BB%02u\n", blockExit->bbNum);
+        printf("EXIT   " FMT_BB "\n", blockExit->bbNum);
     }
     else
     {
         printf("EXITS  %u", loop->lpExitCnt);
     }
-    printf("BOTTOM BB%02u\n", blockBottom->bbNum);
+    printf("BOTTOM " FMT_BB "\n", blockBottom->bbNum);
     printf("\n");
 
     cBlockIR(comp, blockHead);
@@ -8857,7 +8857,7 @@ void cBlockIR(Compiler* comp, BasicBlock* block)
     }
     else
     {
-        printf("BB%02u:\n", block->bbNum);
+        printf(FMT_BB ":\n", block->bbNum);
     }
 
     printf("\n");
@@ -8921,7 +8921,7 @@ void cBlockIR(Compiler* comp, BasicBlock* block)
         case BBJ_EHCATCHRET:
             chars += printf("BRANCH(EHCATCHRETURN)");
             chars += dTabStopIR(chars, COLUMN_OPERANDS);
-            chars += printf(" BB%02u", block->bbJumpDest->bbNum);
+            chars += printf(" " FMT_BB, block->bbJumpDest->bbNum);
             break;
 
         case BBJ_THROW:
@@ -8940,7 +8940,7 @@ void cBlockIR(Compiler* comp, BasicBlock* block)
         case BBJ_ALWAYS:
             chars += printf("BRANCH(ALWAYS)");
             chars += dTabStopIR(chars, COLUMN_OPERANDS);
-            chars += printf(" BB%02u", block->bbJumpDest->bbNum);
+            chars += printf(" " FMT_BB, block->bbJumpDest->bbNum);
             if (block->bbFlags & BBF_KEEP_BBJ_ALWAYS)
             {
                 chars += dTabStopIR(chars, COLUMN_KINDS);
@@ -8951,19 +8951,19 @@ void cBlockIR(Compiler* comp, BasicBlock* block)
         case BBJ_LEAVE:
             chars += printf("BRANCH(LEAVE)");
             chars += dTabStopIR(chars, COLUMN_OPERANDS);
-            chars += printf(" BB%02u", block->bbJumpDest->bbNum);
+            chars += printf(" " FMT_BB, block->bbJumpDest->bbNum);
             break;
 
         case BBJ_CALLFINALLY:
             chars += printf("BRANCH(CALLFINALLY)");
             chars += dTabStopIR(chars, COLUMN_OPERANDS);
-            chars += printf(" BB%02u", block->bbJumpDest->bbNum);
+            chars += printf(" " FMT_BB, block->bbJumpDest->bbNum);
             break;
 
         case BBJ_COND:
             chars += printf("BRANCH(COND)");
             chars += dTabStopIR(chars, COLUMN_OPERANDS);
-            chars += printf(" BB%02u", block->bbJumpDest->bbNum);
+            chars += printf(" " FMT_BB, block->bbJumpDest->bbNum);
             break;
 
         case BBJ_SWITCH:
@@ -8976,7 +8976,7 @@ void cBlockIR(Compiler* comp, BasicBlock* block)
             jumpTab = block->bbJumpSwt->bbsDstTab;
             do
             {
-                chars += printf("%c BB%02u", (jumpTab == block->bbJumpSwt->bbsDstTab) ? ' ' : ',', (*jumpTab)->bbNum);
+                chars += printf("%c " FMT_BB, (jumpTab == block->bbJumpSwt->bbsDstTab) ? ' ' : ',', (*jumpTab)->bbNum);
             } while (++jumpTab, --jumpCnt);
             break;
 
@@ -10170,7 +10170,7 @@ int cLeafIR(Compiler* comp, GenTree* tree)
 
             if (tree->gtLabel.gtLabBB)
             {
-                chars += printf("BB%02u", tree->gtLabel.gtLabBB->bbNum);
+                chars += printf(FMT_BB, tree->gtLabel.gtLabBB->bbNum);
             }
             else
             {

@@ -7332,7 +7332,7 @@ void emitter::emitDispInsHelp(
             if (id->idIsBound())
                 printf("G_M%03u_IG%02u", Compiler::s_compMethodsCount, id->idAddr()->iiaIGlabel->igNum);
             else
-                printf("L_M%03u_BB%02u", Compiler::s_compMethodsCount, id->idAddr()->iiaBBlabel->bbNum);
+                printf("L_M%03u_" FMT_BB, Compiler::s_compMethodsCount, id->idAddr()->iiaBBlabel->bbNum);
             break;
 
         case IF_T1_I: // Special Compare-and-branch
@@ -7377,7 +7377,7 @@ void emitter::emitDispInsHelp(
             else if (id->idIsBound())
                 printf("G_M%03u_IG%02u", Compiler::s_compMethodsCount, id->idAddr()->iiaIGlabel->igNum);
             else
-                printf("L_M%03u_BB%02u", Compiler::s_compMethodsCount, id->idAddr()->iiaBBlabel->bbNum);
+                printf("L_M%03u_" FMT_BB, Compiler::s_compMethodsCount, id->idAddr()->iiaBBlabel->bbNum);
         }
         break;
 
