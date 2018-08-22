@@ -765,8 +765,8 @@ unsigned Compiler::optValnumCSE_Index(GenTree* tree, GenTree* stmt)
             EXPSET_TP tempMask = BitVecOps::MakeSingleton(cseTraits, genCSEnum2bit(CSEindex));
             printf("\nCSE candidate #%02u, vn=", CSEindex);
             vnPrint(vnlib, 0);
-            printf(" cseMask=%s in BB%02u, [cost=%2u, size=%2u]: \n", genES2str(cseTraits, tempMask), compCurBB->bbNum,
-                   tree->gtCostEx, tree->gtCostSz);
+            printf(" cseMask=%s in " FMT_BB ", [cost=%2u, size=%2u]: \n", genES2str(cseTraits, tempMask),
+                   compCurBB->bbNum, tree->gtCostEx, tree->gtCostSz);
             gtDispTree(tree);
         }
 #endif // DEBUG
@@ -1045,7 +1045,7 @@ void Compiler::optValnumCSE_InitDataFlow()
                     printf("\nBlocks that generate CSE def/uses\n");
                     headerPrinted = true;
                 }
-                printf("BB%02u", block->bbNum);
+                printf(FMT_BB, block->bbNum);
                 printf(" cseGen = %s\n", genES2str(cseTraits, block->bbCseGen));
             }
         }
@@ -1120,7 +1120,7 @@ void Compiler::optValnumCSE_DataFlow()
 
         for (BasicBlock* block = fgFirstBB; block; block = block->bbNext)
         {
-            printf("BB%02u", block->bbNum);
+            printf(FMT_BB, block->bbNum);
             printf(" cseIn  = %s", genES2str(cseTraits, block->bbCseIn));
             printf(" cseOut = %s", genES2str(cseTraits, block->bbCseOut));
             printf("\n");
@@ -1227,7 +1227,7 @@ void Compiler::optValnumCSE_Availablity()
 #ifdef DEBUG
                     if (verbose && IS_CSE_INDEX(tree->gtCSEnum))
                     {
-                        printf("BB%02u ", block->bbNum);
+                        printf(FMT_BB " ", block->bbNum);
                         printTreeID(tree);
                         printf(" %s of CSE #%02u [weight=%s]\n", IS_CSE_USE(tree->gtCSEnum) ? "Use" : "Def",
                                GET_CSE_INDEX(tree->gtCSEnum), refCntWtd2str(stmw));
@@ -2092,7 +2092,7 @@ public:
                 {
                     printf("\nWorking on the replacement of the CSE #%02u use at ", exp->gtCSEnum);
                     Compiler::printTreeID(exp);
-                    printf(" in BB%02u\n", blk->bbNum);
+                    printf(" in " FMT_BB "\n", blk->bbNum);
                 }
 #endif // DEBUG
 
@@ -2212,7 +2212,7 @@ public:
                     {
                         printf("\nCSE #%02u use at ", exp->gtCSEnum);
                         Compiler::printTreeID(exp);
-                        printf(" replaced in BB%02u with temp use.\n", blk->bbNum);
+                        printf(" replaced in " FMT_BB " with temp use.\n", blk->bbNum);
                     }
 #endif // DEBUG
                     // If we have any side effects or extracted CSE defs then we need to create a GT_COMMA tree instead
@@ -2280,7 +2280,7 @@ public:
                 {
                     printf("\nCSE #%02u def at ", GET_CSE_INDEX(exp->gtCSEnum));
                     Compiler::printTreeID(exp);
-                    printf(" replaced in BB%02u with def of V%02u\n", blk->bbNum, cseLclVarNum);
+                    printf(" replaced in " FMT_BB " with def of V%02u\n", blk->bbNum, cseLclVarNum);
                 }
 #endif // DEBUG
 

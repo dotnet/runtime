@@ -1023,7 +1023,7 @@ void CodeGen::genDefineTempLabel(BasicBlock* label)
 #ifdef DEBUG
     if (compiler->opts.dspCode)
     {
-        printf("\n      L_M%03u_BB%02u:\n", Compiler::s_compMethodsCount, label->bbNum);
+        printf("\n      L_M%03u_" FMT_BB ":\n", Compiler::s_compMethodsCount, label->bbNum);
     }
 #endif
 
@@ -2144,7 +2144,7 @@ void CodeGen::genInsertNopForUnwinder(BasicBlock* block)
 #ifdef DEBUG
         if (compiler->verbose)
         {
-            printf("\nEmitting finally target NOP predecessor for BB%02u\n", block->bbNum);
+            printf("\nEmitting finally target NOP predecessor for " FMT_BB "\n", block->bbNum);
         }
 #endif
         // Create a label that we'll use for computing the start of an EH region, if this block is
@@ -7394,7 +7394,7 @@ void CodeGen::genReserveProlog(BasicBlock* block)
 {
     assert(block != nullptr);
 
-    JITDUMP("Reserving prolog IG for block BB%02u\n", block->bbNum);
+    JITDUMP("Reserving prolog IG for block " FMT_BB "\n", block->bbNum);
 
     /* Nothing is live on entry to the prolog */
 
@@ -7437,7 +7437,7 @@ void CodeGen::genReserveEpilog(BasicBlock* block)
         }
     }
 
-    JITDUMP("Reserving epilog IG for block BB%02u\n", block->bbNum);
+    JITDUMP("Reserving epilog IG for block " FMT_BB "\n", block->bbNum);
 
     assert(block != nullptr);
     const VARSET_TP& gcrefVarsArg(getEmitter()->emitThisGCrefVars);
@@ -7471,7 +7471,7 @@ void CodeGen::genReserveFuncletProlog(BasicBlock* block)
     noway_assert((gcInfo.gcRegGCrefSetCur & RBM_EXCEPTION_OBJECT) == gcInfo.gcRegGCrefSetCur);
     noway_assert(gcInfo.gcRegByrefSetCur == 0);
 
-    JITDUMP("Reserving funclet prolog IG for block BB%02u\n", block->bbNum);
+    JITDUMP("Reserving funclet prolog IG for block " FMT_BB "\n", block->bbNum);
 
     getEmitter()->emitCreatePlaceholderIG(IGPT_FUNCLET_PROLOG, block, gcInfo.gcVarPtrSetCur, gcInfo.gcRegGCrefSetCur,
                                           gcInfo.gcRegByrefSetCur, false);
@@ -7486,7 +7486,7 @@ void CodeGen::genReserveFuncletEpilog(BasicBlock* block)
 {
     assert(block != nullptr);
 
-    JITDUMP("Reserving funclet epilog IG for block BB%02u\n", block->bbNum);
+    JITDUMP("Reserving funclet epilog IG for block " FMT_BB "\n", block->bbNum);
 
     bool last = (block->bbNext == nullptr);
     getEmitter()->emitCreatePlaceholderIG(IGPT_FUNCLET_EPILOG, block, gcInfo.gcVarPtrSetCur, gcInfo.gcRegGCrefSetCur,

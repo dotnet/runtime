@@ -252,7 +252,7 @@ void Compiler::optMarkLoopBlocks(BasicBlock* begBlk, BasicBlock* endBlk, bool ex
 #ifdef DEBUG
                 if (verbose)
                 {
-                    printf("\n    BB%02u(wt=%s)", curBlk->bbNum, refCntWtd2str(curBlk->getBBWeight(this)));
+                    printf("\n    " FMT_BB "(wt=%s)", curBlk->bbNum, refCntWtd2str(curBlk->getBBWeight(this)));
                 }
 #endif
             }
@@ -393,7 +393,7 @@ void Compiler::optUnmarkLoopBlocks(BasicBlock* begBlk, BasicBlock* endBlk)
 #ifdef DEBUG
             if (verbose)
             {
-                printf("\n    BB%02u(wt=%s)", curBlk->bbNum, refCntWtd2str(curBlk->getBBWeight(this)));
+                printf("\n    " FMT_BB "(wt=%s)", curBlk->bbNum, refCntWtd2str(curBlk->getBBWeight(this)));
             }
 #endif
         }
@@ -659,18 +659,18 @@ void Compiler::optPrintLoopInfo(unsigned      loopInd,
     //       Therefore the correct way is to call the Compiler::optPrintLoopInfo(unsigned lnum)
     //       version of this method.
     //
-    printf("L%02u, from BB%02u", loopInd, lpFirst->bbNum);
+    printf("L%02u, from " FMT_BB, loopInd, lpFirst->bbNum);
     if (lpTop != lpFirst)
     {
-        printf(" (loop top is BB%02u)", lpTop->bbNum);
+        printf(" (loop top is " FMT_BB ")", lpTop->bbNum);
     }
 
-    printf(" to BB%02u (Head=BB%02u, Entry=BB%02u, ExitCnt=%d", lpBottom->bbNum, lpHead->bbNum, lpEntry->bbNum,
-           lpExitCnt);
+    printf(" to " FMT_BB " (Head=" FMT_BB ", Entry=" FMT_BB ", ExitCnt=%d", lpBottom->bbNum, lpHead->bbNum,
+           lpEntry->bbNum, lpExitCnt);
 
     if (lpExitCnt == 1)
     {
-        printf(" at BB%02u", lpExit->bbNum);
+        printf(" at " FMT_BB, lpExit->bbNum);
     }
 
     if (parentLoop != BasicBlock::NOT_IN_LOOP)
@@ -1749,7 +1749,7 @@ public:
 
         if (bottom->hasTryIndex() && !comp->bbInTryRegions(bottom->getTryIndex(), first))
         {
-            JITDUMP("Loop 'first' BB%02u is in an outer EH region compared to loop 'bottom' BB%02u. Rejecting "
+            JITDUMP("Loop 'first' " FMT_BB " is in an outer EH region compared to loop 'bottom' " FMT_BB ". Rejecting "
                     "loop.\n",
                     first->bbNum, bottom->bbNum);
             return false;
@@ -1767,7 +1767,7 @@ public:
 
         if ((first->bbFlags & BBF_FINALLY_TARGET) != 0)
         {
-            JITDUMP("Loop 'first' BB%02u is a finally target. Rejecting loop.\n", first->bbNum);
+            JITDUMP("Loop 'first' " FMT_BB " is a finally target. Rejecting loop.\n", first->bbNum);
             return false;
         }
 #endif // FEATURE_EH_FUNCLETS && defined(_TARGET_ARM_)
@@ -2717,7 +2717,8 @@ bool Compiler::optCanonicalizeLoop(unsigned char loopInd)
         return false;
     }
 
-    JITDUMP("in optCanonicalizeLoop: L%02u has top BB%02u (bottom BB%02u) with natural loop number L%02u: need to "
+    JITDUMP("in optCanonicalizeLoop: L%02u has top " FMT_BB " (bottom " FMT_BB
+            ") with natural loop number L%02u: need to "
             "canonicalize\n",
             loopInd, t->bbNum, optLoopTable[loopInd].lpBottom->bbNum, t->bbNatLoopNum);
 
@@ -2847,13 +2848,14 @@ bool Compiler::optCanonicalizeLoop(unsigned char loopInd)
         // outside-in, so we shouldn't encounter the new blocks at the loop boundaries, or in the predecessor lists.
         if (t->bbNum <= topPredBlock->bbNum && topPredBlock->bbNum <= b->bbNum)
         {
-            JITDUMP("in optCanonicalizeLoop: 'top' predecessor BB%02u is in the range of L%02u (BB%02u..BB%02u); not "
+            JITDUMP("in optCanonicalizeLoop: 'top' predecessor " FMT_BB " is in the range of L%02u (" FMT_BB ".." FMT_BB
+                    "); not "
                     "redirecting its bottom edge\n",
                     topPredBlock->bbNum, loopInd, t->bbNum, b->bbNum);
             continue;
         }
 
-        JITDUMP("in optCanonicalizeLoop: redirect top predecessor BB%02u to BB%02u\n", topPredBlock->bbNum,
+        JITDUMP("in optCanonicalizeLoop: redirect top predecessor " FMT_BB " to " FMT_BB "\n", topPredBlock->bbNum,
                 newT->bbNum);
         optRedirectBlock(topPredBlock, blockMap);
 
@@ -2864,7 +2866,7 @@ bool Compiler::optCanonicalizeLoop(unsigned char loopInd)
             //
             if (firstPred)
             {
-                JITDUMP("in optCanonicalizeLoop: block BB%02u will inheritWeight from BB%02u\n", newT->bbNum,
+                JITDUMP("in optCanonicalizeLoop: block " FMT_BB " will inheritWeight from " FMT_BB "\n", newT->bbNum,
                         topPredBlock->bbNum);
 
                 newT->inheritWeight(topPredBlock);
@@ -2872,7 +2874,7 @@ bool Compiler::optCanonicalizeLoop(unsigned char loopInd)
             }
             else
             {
-                JITDUMP("in optCanonicalizeLoop: block BB%02u will also contribute to the weight of BB%02u\n",
+                JITDUMP("in optCanonicalizeLoop: block " FMT_BB " will also contribute to the weight of " FMT_BB "\n",
                         newT->bbNum, topPredBlock->bbNum);
 
                 BasicBlock::weight_t newWeight = newT->getBBWeight(this) + topPredBlock->getBBWeight(this);
@@ -2901,7 +2903,7 @@ bool Compiler::optCanonicalizeLoop(unsigned char loopInd)
 
     newT->bbNatLoopNum = loopInd;
 
-    JITDUMP("in optCanonicalizeLoop: made new block BB%02u [%p] the new unique top of loop %d.\n", newT->bbNum,
+    JITDUMP("in optCanonicalizeLoop: made new block " FMT_BB " [%p] the new unique top of loop %d.\n", newT->bbNum,
             dspPtr(newT), loopInd);
 
     // Make sure the head block still goes to the entry...
@@ -3750,10 +3752,10 @@ void Compiler::optUnrollLoops()
 #ifdef DEBUG
             if (verbose)
             {
-                printf("\nUnrolling loop BB%02u", head->bbNext->bbNum);
+                printf("\nUnrolling loop " FMT_BB, head->bbNext->bbNum);
                 if (head->bbNext->bbNum != bottom->bbNum)
                 {
-                    printf("..BB%02u", bottom->bbNum);
+                    printf(".." FMT_BB, bottom->bbNum);
                 }
                 printf(" over V%02u from %u to %u", lvar, lbeg, llim);
                 printf(" unrollCostSz = %d\n", unrollCostSz);
@@ -4341,8 +4343,8 @@ void Compiler::fgOptWhileLoop(BasicBlock* block)
 #ifdef DEBUG
     if (verbose)
     {
-        printf("\nDuplicating loop condition in BB%02u for loop (BB%02u - BB%02u)", block->bbNum, block->bbNext->bbNum,
-               bTest->bbNum);
+        printf("\nDuplicating loop condition in " FMT_BB " for loop (" FMT_BB " - " FMT_BB ")", block->bbNum,
+               block->bbNext->bbNum, bTest->bbNum);
         printf("\nEstimated code size expansion is %d\n ", estDupCostSz);
 
         gtDispTree(copyOfCondStmt);
@@ -5413,7 +5415,7 @@ BasicBlock* Compiler::optInsertLoopChoiceConditions(LoopCloneContext* context,
 
         curCond->inheritWeight(head);
         curCond->bbNatLoopNum = head->bbNatLoopNum;
-        JITDUMP("Created new block %02d for new level\n", curCond->bbNum);
+        JITDUMP("Created new " FMT_BB " for new level\n", curCond->bbNum);
     }
 
     // Finally insert cloning conditions after all deref conditions have been inserted.
@@ -6194,7 +6196,7 @@ void Compiler::optPerformHoistExpr(GenTree* origExpr, unsigned lnum)
     {
         printf("\nHoisting a copy of ");
         printTreeID(origExpr);
-        printf(" into PreHeader for loop L%02u <BB%02u..BB%02u>:\n", lnum, optLoopTable[lnum].lpFirst->bbNum,
+        printf(" into PreHeader for loop L%02u <" FMT_BB ".." FMT_BB ">:\n", lnum, optLoopTable[lnum].lpFirst->bbNum,
                optLoopTable[lnum].lpBottom->bbNum);
         gtDispTree(origExpr);
         printf("\n");
@@ -6261,7 +6263,7 @@ void Compiler::optPerformHoistExpr(GenTree* origExpr, unsigned lnum)
 #ifdef DEBUG
     if (verbose)
     {
-        printf("This hoisted copy placed in PreHeader (BB%02u):\n", preHead->bbNum);
+        printf("This hoisted copy placed in PreHeader (" FMT_BB "):\n", preHead->bbNum);
         gtDispTree(hoist);
     }
 #endif
@@ -6547,7 +6549,7 @@ void Compiler::optHoistThisLoop(unsigned lnum, LoopHoistContext* hoistCtxt)
 #ifdef DEBUG
     if (verbose)
     {
-        printf("optHoistLoopCode for loop L%02u <BB%02u..BB%02u>:\n", lnum, begn, endn);
+        printf("optHoistLoopCode for loop L%02u <" FMT_BB ".." FMT_BB ">:\n", lnum, begn, endn);
         printf("  Loop body %s a call\n", pLoopDsc->lpContainsCall ? "contains" : "does not contain");
     }
 #endif
@@ -6674,7 +6676,8 @@ void Compiler::optHoistLoopExprsForBlock(BasicBlock* blk, unsigned lnum, LoopHoi
 #ifdef DEBUG
     if (verbose)
     {
-        printf("    optHoistLoopExprsForBlock BB%02u (weight=%6s) of loop L%02u <BB%02u..BB%02u>, firstBlock is %s\n",
+        printf("    optHoistLoopExprsForBlock " FMT_BB " (weight=%6s) of loop L%02u <" FMT_BB ".." FMT_BB
+               ">, firstBlock is %s\n",
                blk->bbNum, refCntWtd2str(blkWeight), lnum, pLoopDsc->lpFirst->bbNum, pLoopDsc->lpBottom->bbNum,
                firstBlockAndBeforeSideEffect ? "true" : "false");
         if (blkWeight < (BB_UNITY_WEIGHT / 10))
@@ -7265,8 +7268,8 @@ void Compiler::fgCreateLoopPreHeader(unsigned lnum)
 #ifdef DEBUG
     if (verbose)
     {
-        printf("\nCreated PreHeader (BB%02u) for loop L%02u (BB%02u - BB%02u), with weight = %s\n", preHead->bbNum,
-               lnum, top->bbNum, pLoopDsc->lpBottom->bbNum, refCntWtd2str(preHead->getBBWeight(this)));
+        printf("\nCreated PreHeader (" FMT_BB ") for loop L%02u (" FMT_BB " - " FMT_BB "), with weight = %s\n",
+               preHead->bbNum, lnum, top->bbNum, pLoopDsc->lpBottom->bbNum, refCntWtd2str(preHead->getBBWeight(this)));
     }
 #endif
 
@@ -7476,8 +7479,8 @@ void Compiler::fgCreateLoopPreHeader(unsigned lnum)
 #ifdef DEBUG
                 if (verbose)
                 {
-                    printf("Same PreHeader (BB%02u) can be used for loop L%02u (BB%02u - BB%02u)\n\n", preHead->bbNum,
-                           l, top->bbNum, optLoopTable[l].lpBottom->bbNum);
+                    printf("Same PreHeader (" FMT_BB ") can be used for loop L%02u (" FMT_BB " - " FMT_BB ")\n\n",
+                           preHead->bbNum, l, top->bbNum, optLoopTable[l].lpBottom->bbNum);
                 }
 #endif
             }
@@ -8257,7 +8260,7 @@ bool Compiler::optIdentifyLoopOptInfo(unsigned loopNum, LoopCloneContext* contex
     noway_assert((op1->gtOper == GT_LCL_VAR) && (op1->gtLclVarCommon.gtLclNum == ivLclNum));
 #endif
 
-    JITDUMP("Checking blocks BB%02d..BB%02d for optimization candidates\n", beg->bbNum,
+    JITDUMP("Checking blocks " FMT_BB ".." FMT_BB " for optimization candidates\n", beg->bbNum,
             end->bbNext ? end->bbNext->bbNum : 0);
 
     LoopCloneVisitorInfo info(context, loopNum, nullptr);
@@ -9207,8 +9210,8 @@ void Compiler::optOptimizeBools()
 #ifdef DEBUG
             if (verbose)
             {
-                printf("Folded %sboolean conditions of BB%02u and BB%02u to :\n", c2->OperIsLeaf() ? "" : "non-leaf ",
-                       b1->bbNum, b2->bbNum);
+                printf("Folded %sboolean conditions of " FMT_BB " and " FMT_BB " to :\n",
+                       c2->OperIsLeaf() ? "" : "non-leaf ", b1->bbNum, b2->bbNum);
                 gtDispTree(s1);
                 printf("\n");
             }

@@ -132,7 +132,8 @@ void SsaRenameState::Push(BasicBlock* bb, unsigned lclNum, unsigned count)
     EnsureStacks();
 
     // We'll use BB00 here to indicate the "block before any real blocks..."
-    DBG_SSA_JITDUMP("[SsaRenameState::Push] BB%02u, V%02u, count = %d\n", bb != nullptr ? bb->bbNum : 0, lclNum, count);
+    DBG_SSA_JITDUMP("[SsaRenameState::Push] " FMT_BB ", V%02u, count = %d\n", bb != nullptr ? bb->bbNum : 0, lclNum,
+                    count);
 
     Stack* stack = stacks[lclNum];
 
@@ -160,7 +161,7 @@ void SsaRenameState::Push(BasicBlock* bb, unsigned lclNum, unsigned count)
         printf("\tContents of the stack: [");
         for (Stack::iterator iter2 = stack->begin(); iter2 != stack->end(); iter2++)
         {
-            printf("<BB%02u, %d>", ((*iter2).m_bb != nullptr ? (*iter2).m_bb->bbNum : 0), (*iter2).m_count);
+            printf("<" FMT_BB ", %d>", ((*iter2).m_bb != nullptr ? (*iter2).m_bb->bbNum : 0), (*iter2).m_count);
         }
         printf("]\n");
 
@@ -171,7 +172,7 @@ void SsaRenameState::Push(BasicBlock* bb, unsigned lclNum, unsigned count)
 
 void SsaRenameState::PopBlockStacks(BasicBlock* block)
 {
-    DBG_SSA_JITDUMP("[SsaRenameState::PopBlockStacks] BB%02u\n", block->bbNum);
+    DBG_SSA_JITDUMP("[SsaRenameState::PopBlockStacks] " FMT_BB "\n", block->bbNum);
     // Iterate over the stacks for all the variables, popping those that have an entry
     // for "block" on top.
     while (!definedLocs.empty() && definedLocs.back().m_bb == block)
@@ -236,7 +237,8 @@ void SsaRenameState::DumpStacks()
                     {
                         printf(", ");
                     }
-                    printf("<BB%02u, %2d>", ((*iter2).m_bb != nullptr ? (*iter2).m_bb->bbNum : 0), (*iter2).m_count);
+                    printf("<" FMT_BB ", %2d>", ((*iter2).m_bb != nullptr ? (*iter2).m_bb->bbNum : 0),
+                           (*iter2).m_count);
                 }
             }
             printf("\n");
