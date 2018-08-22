@@ -18,7 +18,7 @@ endif()
 set(SKIP_VERSIONING 1)
 
 set(SOURCES
-    ../../fxr/fx_ver.cpp
+    ../fxr/fx_ver.cpp
 )
 
 include(../exe.cmake)
