@@ -11,7 +11,6 @@ public partial class ConsoleEncoding
 {
     [Fact]
     [PlatformSpecific(TestPlatforms.Windows)]
-    [SkipOnTargetFramework(TargetFrameworkMonikers.Uap, "https://github.com/dotnet/corefx/issues/21483")]
     public void InputEncoding_SetDefaultEncoding_Success()
     {
         RemoteInvoke(() =>
@@ -45,7 +44,6 @@ public partial class ConsoleEncoding
 
     [Fact]
     [PlatformSpecific(TestPlatforms.Windows)]
-    [SkipOnTargetFramework(TargetFrameworkMonikers.Uap, "https://github.com/dotnet/corefx/issues/21483")]
     public void OutputEncoding_SetDefaultEncoding_Success()
     {
         RemoteInvoke(() =>

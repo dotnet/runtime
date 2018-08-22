@@ -222,7 +222,6 @@ public class WindowAndCursorProps : RemoteExecutorTestBase
 
     [Fact]
     [PlatformSpecific(TestPlatforms.Windows)]
-    [SkipOnTargetFramework(TargetFrameworkMonikers.Uap, "In appcontainer, the stream cannot be opened: there is no Console")]
     [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework, "// NETFX does not have the fix https://github.com/dotnet/corefx/pull/28905")]
     public static void Title_GetWindows_ReturnsNonNull()
     {
@@ -231,7 +230,6 @@ public class WindowAndCursorProps : RemoteExecutorTestBase
 
     [Fact]
     [PlatformSpecific(TestPlatforms.Windows)]
-    [SkipOnTargetFramework(TargetFrameworkMonikers.Uap, "In appcontainer, the stream cannot be opened: there is no Console")]
     [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework, "// NETFX does not have the fix https://github.com/dotnet/corefx/pull/28905")]
     public static void Title_Get_Windows_NoNulls()
     {
@@ -261,7 +259,6 @@ public class WindowAndCursorProps : RemoteExecutorTestBase
     [InlineData(513)]
     [InlineData(1024)]
     [PlatformSpecific(TestPlatforms.Windows)]
-    [SkipOnTargetFramework(TargetFrameworkMonikers.Uap)] // In appcontainer, the stream cannot be opened: there is no Console
     public static void Title_Set_Windows(int lengthOfTitle)
     {
         // Try to set the title to some other value.
@@ -283,13 +280,11 @@ public class WindowAndCursorProps : RemoteExecutorTestBase
         }, lengthOfTitle.ToString()).Dispose();
     }
 
-    [SkipOnTargetFramework(~TargetFrameworkMonikers.Uap)] // In appcontainer, the stream cannot be opened: there is no Console
     public static void Title_GetWindowsUap_ThrowsIOException()
     {
         Assert.Throws<IOException>(() => Console.Title);
     }
 
-    [SkipOnTargetFramework(~TargetFrameworkMonikers.Uap)] // In appcontainer, the stream cannot be opened: there is no Console
     public static void Title_SetWindowsUap_ThrowsIOException(int lengthOfTitle)
     {
         Assert.Throws<IOException>(() => Console.Title = "x");

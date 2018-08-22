@@ -13,6 +13,7 @@ namespace System.Diagnostics.Tests
     public class ProcessWaitingTests : ProcessTestBase
     {
         [Fact]
+        [ActiveIssue(31908, TargetFrameworkMonikers.Uap)]
         public void MultipleProcesses_StartAllKillAllWaitAll()
         {
             const int Iters = 10;
@@ -24,6 +25,7 @@ namespace System.Diagnostics.Tests
         }
 
         [Fact]
+        [ActiveIssue(31908, TargetFrameworkMonikers.Uap)]
         public void MultipleProcesses_SerialStartKillWait()
         {
             const int Iters = 10;
@@ -37,6 +39,7 @@ namespace System.Diagnostics.Tests
         }
 
         [Fact]
+        [ActiveIssue(31908, TargetFrameworkMonikers.Uap)]
         public void MultipleProcesses_ParallelStartKillWait()
         {
             const int Tasks = 4, ItersPerTask = 10;
@@ -62,6 +65,7 @@ namespace System.Diagnostics.Tests
         }
 
         [Fact]
+        [ActiveIssue(31908, TargetFrameworkMonikers.Uap)]
         public void SingleProcess_TryWaitMultipleTimesBeforeCompleting()
         {
             Process p = CreateProcessLong();
@@ -84,6 +88,7 @@ namespace System.Diagnostics.Tests
         [Theory]
         [InlineData(false)]
         [InlineData(true)]
+        [ActiveIssue(31908, TargetFrameworkMonikers.Uap)]
         public async Task SingleProcess_WaitAfterExited(bool addHandlerBeforeStart)
         {
             Process p = CreateProcessLong();
@@ -125,6 +130,7 @@ namespace System.Diagnostics.Tests
         }
 
         [Fact]
+        [ActiveIssue(31908, TargetFrameworkMonikers.Uap)]
         public void SingleProcess_CopiesShareExitInformation()
         {
             Process p = CreateProcessLong();
