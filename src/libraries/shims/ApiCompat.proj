@@ -18,13 +18,13 @@
     <ApiCompatImplementationDirs>$(RefPath),$(GenFacadesOutputPath)</ApiCompatImplementationDirs>
     <!-- If we are targeting uap or uapaot run ApiCompat against the implementation assemblies instead since they don't match the reference assemblies -->
     <!-- also include $(RefPath) last to pick up windows.winmd dependency, which we don't place in RuntimePath -->
-    <ApiCompatImplementationDirs Condition="$(TargetGroup.StartsWith('uap'))">$(RuntimePath),$(GenFacadesOutputPath),$(RefPath)</ApiCompatImplementationDirs>
+    <ApiCompatImplementationDirs Condition="$(TargetGroup.StartsWith('uap')) or '$(TargetsAOT)' == 'true'">$(RuntimePath),$(GenFacadesOutputPath),$(RefPath)</ApiCompatImplementationDirs>
     <!-- Set to true to build this project -->
     <!-- Separate property otherwise /p:BaselineApiCompat=true would force it to run even for non-UAP -->
     <BaselineApiCompat Condition="'$(BaselineApiCompat)' == ''">false</BaselineApiCompat>
     <_RunApiCompat>true</_RunApiCompat>
     <!-- Disable running apicompat for uap scenarios because the RuntimePath is not correctly setup in BuildAllConfigurations mode -->
-    <_RunApiCompat Condition="'$(BuildAllConfigurations)' == 'true' and $(TargetGroup.StartsWith('uap'))">false</_RunApiCompat>
+    <_RunApiCompat Condition="'$(BuildAllConfigurations)' == 'true' and ($(TargetGroup.StartsWith('uap')) or '$(TargetsAOT)' == 'true')">false</_RunApiCompat>
   </PropertyGroup>
 
   <ItemGroup>

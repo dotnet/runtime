@@ -3,6 +3,7 @@
   <PropertyGroup>
     <BuildConfigurations>
       uapaot-Windows_NT;
+      netcoreappaot-Windows_NT;
     </BuildConfigurations>
   </PropertyGroup>
 </Project>

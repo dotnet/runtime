@@ -6,7 +6,7 @@
     <RidSpecificAssets>true</RidSpecificAssets>
     <NoWarn>$(NoWarn);NU1603;NU1605</NoWarn>
   </PropertyGroup>
-  <PropertyGroup Condition="'$(TargetGroup)' == 'uapaot'  Or '$(TargetGroup)' == 'uap10.0.16299aot'">
+  <PropertyGroup Condition="'$(TargetsAOT)'=='true'">
     <!-- Temporarily Override restore moniker since NETNative's targeting pack still uses uap10.1 moniker -->
     <NuGetTargetMoniker>UAP,Version=v10.1</NuGetTargetMoniker>
     <NuGetTargetMonikerShort>uap10.1</NuGetTargetMonikerShort>
@@ -14,9 +14,9 @@
     <BinPlaceILCInputFolder>false</BinPlaceILCInputFolder>
     <NuGetDeploySourceItem>Reference</NuGetDeploySourceItem>
   </PropertyGroup>
-  <ItemGroup Condition="'$(TargetGroup)'=='uapaot'  Or '$(TargetGroup)' == 'uap10.0.16299aot'">
+  <ItemGroup Condition="'$(TargetsAOT)'=='true'">
     <PackageReference Include="Microsoft.TargetingPack.Private.NETNative">
-      <Version Condition="'$(TargetGroup)'=='uapaot'">1.1.0-$(ProjectNTfsExpectedPrerelease)</Version>
+      <Version Condition="'$(TargetGroup)'=='uapaot' OR '$(TargetGroup)'=='netcoreappaot'">1.1.0-$(ProjectNTfsExpectedPrerelease)</Version>
       <!-- Following is version used in release/uwp6.0 -->
       <Version Condition="'$(TargetGroup)'=='uap10.0.16299aot'">1.1.0-rel-25728-00</Version>
     </PackageReference>
@@ -25,7 +25,7 @@
     <FileToExclude Include="System.Private.CoreLib.WinRTInterop" />
   </ItemGroup>
 
-  <ItemGroup Condition="'$(TargetGroup)'!='uapaot'  And '$(TargetGroup)' != 'uap10.0.16299aot'">
+  <ItemGroup Condition="'$(TargetsAOT)'!='true'">
     <PackageReference Include="Microsoft.NETCore.Platforms">
       <Version>$(MicrosoftNETCorePlatformsPackageVersion)</Version>
     </PackageReference>

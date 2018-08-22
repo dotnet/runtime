@@ -139,7 +139,7 @@
   </ItemGroup>
 
   <!-- System.Data.SqlClient tests require sni.dll in the test folder -->
-  <ItemGroup Condition="'$(TargetGroup)' == 'uapaot'">
+  <ItemGroup Condition="'$(TargetsAOT)'=='true'">
     <PackageReference Include="runtime.native.System.Data.SqlClient.sni">
       <Version>$(RuntimeWinX64RuntimeNativeSystemDataSqlClientSniPackageVersion)</Version>
     </PackageReference>
@@ -198,7 +198,7 @@
 
   <Target Name="CopyTestILCToolsToTestHost"
           AfterTargets="RestorePackages"
-          Condition="'$(TargetGroup)' == 'uapaot'">
+          Condition="'$(TargetsAOT)'=='true'">
     <PropertyGroup>
       <TestILCToolsPackageName>TestILC</TestILCToolsPackageName>
       <TestILCToolsPackageName Condition="'$(ArchGroup)' == 'x64'">$(TestILCToolsPackageName).amd64ret</TestILCToolsPackageName>

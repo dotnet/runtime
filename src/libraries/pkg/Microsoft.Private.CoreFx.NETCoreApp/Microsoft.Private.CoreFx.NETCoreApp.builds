@@ -4,7 +4,7 @@
 
   <ItemGroup>
     <!-- identity project, runtime specific projects are included through netcoreapp.rids.props -->
-    <Project Include="$(MSBuildProjectName).pkgproj" />
+    <Project Include="$(MSBuildProjectName).pkgproj"  Condition="'$(TargetGroup)'=='netcoreapp'" />
   </ItemGroup>
 
   <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.traversal.targets))\dir.traversal.targets" />

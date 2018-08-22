@@ -4,6 +4,7 @@
     <BuildConfigurations>
       uap;
       uapaot;
+      netcoreappaot;
       netstandard;
       netfx;
     </BuildConfigurations>

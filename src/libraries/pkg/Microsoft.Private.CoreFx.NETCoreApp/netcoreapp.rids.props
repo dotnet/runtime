@@ -21,6 +21,7 @@
     <OfficialBuildRID Include="win-x86">
       <Platform>x86</Platform>
     </OfficialBuildRID>
+    <OfficialBuildRID Include="@(OfficialBuildRID->'%(Identity)-aot')" />
 
     <!-- The following RIDs are not officically supported and are not
          built during official builds, however we wish to include them
