@@ -9,12 +9,12 @@
        These ref versions are pulled from https://github.com/dotnet/versions.
   -->
   <PropertyGroup>
-    <CoreFxCurrentRef>5c21cc5e3582fcdb9e62598974045d17efffbc48</CoreFxCurrentRef>
-    <CoreClrCurrentRef>5c21cc5e3582fcdb9e62598974045d17efffbc48</CoreClrCurrentRef>
-    <CoreSetupCurrentRef>5c21cc5e3582fcdb9e62598974045d17efffbc48</CoreSetupCurrentRef>
+    <CoreFxCurrentRef>dfe7ac514daec9ba08867f4120be0c2ec0f2ccc0</CoreFxCurrentRef>
+    <CoreClrCurrentRef>dfe7ac514daec9ba08867f4120be0c2ec0f2ccc0</CoreClrCurrentRef>
+    <CoreSetupCurrentRef>dfe7ac514daec9ba08867f4120be0c2ec0f2ccc0</CoreSetupCurrentRef>
     <ExternalCurrentRef>96dc7805f5df4a70a55783964ce69dcd91bfca80</ExternalCurrentRef>
-    <ProjectNTfsCurrentRef>5c21cc5e3582fcdb9e62598974045d17efffbc48</ProjectNTfsCurrentRef>
-    <ProjectNTfsTestILCCurrentRef>5c21cc5e3582fcdb9e62598974045d17efffbc48</ProjectNTfsTestILCCurrentRef>
+    <ProjectNTfsCurrentRef>dfe7ac514daec9ba08867f4120be0c2ec0f2ccc0</ProjectNTfsCurrentRef>
+    <ProjectNTfsTestILCCurrentRef>dfe7ac514daec9ba08867f4120be0c2ec0f2ccc0</ProjectNTfsTestILCCurrentRef>
     <SniCurrentRef>8bd1ec5fac9f0eec34ff6b34b1d878b4359e02dd</SniCurrentRef>
     <StandardCurrentRef>9004703a1923e5c5582ceb8d79712df777412446</StandardCurrentRef>
     <BuildToolsCurrentRef>e0c1d36d8a19fed21cadfff4890e027bd4c2c214</BuildToolsCurrentRef>
@@ -31,15 +31,15 @@
 
   <!-- Tests/infrastructure dependency versions. -->
   <PropertyGroup>
-    <CoreFxExpectedPrerelease>preview1-26820-04</CoreFxExpectedPrerelease>
-    <MicrosoftNETCorePlatformsPackageVersion>3.0.0-preview1-26820-04</MicrosoftNETCorePlatformsPackageVersion>
-    <MicrosoftNETCoreRuntimeCoreCLRPackageVersion>3.0.0-preview1-26820-04</MicrosoftNETCoreRuntimeCoreCLRPackageVersion>
-    <ProjectNTfsExpectedPrerelease>beta-26820-00</ProjectNTfsExpectedPrerelease>
-    <ProjectNTfsTestILCExpectedPrerelease>beta-26820-00</ProjectNTfsTestILCExpectedPrerelease>
-    <ProjectNTfsTestILCPackageVersion>1.0.0-beta-26820-00</ProjectNTfsTestILCPackageVersion>
-    <MicrosoftNETCoreDotNetHostPackageVersion>3.0.0-preview1-26820-01</MicrosoftNETCoreDotNetHostPackageVersion>
-    <MicrosoftNETCoreDotNetHostPolicyPackageVersion>3.0.0-preview1-26820-01</MicrosoftNETCoreDotNetHostPolicyPackageVersion>
-    <MicrosoftNETCoreAppPackageVersion>3.0.0-preview1-26820-01</MicrosoftNETCoreAppPackageVersion>
+    <CoreFxExpectedPrerelease>preview1-26822-04</CoreFxExpectedPrerelease>
+    <MicrosoftNETCorePlatformsPackageVersion>3.0.0-preview1-26822-04</MicrosoftNETCorePlatformsPackageVersion>
+    <MicrosoftNETCoreRuntimeCoreCLRPackageVersion>3.0.0-preview1-26822-04</MicrosoftNETCoreRuntimeCoreCLRPackageVersion>
+    <ProjectNTfsExpectedPrerelease>beta-26822-00</ProjectNTfsExpectedPrerelease>
+    <ProjectNTfsTestILCExpectedPrerelease>beta-26822-00</ProjectNTfsTestILCExpectedPrerelease>
+    <ProjectNTfsTestILCPackageVersion>1.0.0-beta-26822-00</ProjectNTfsTestILCPackageVersion>
+    <MicrosoftNETCoreDotNetHostPackageVersion>3.0.0-preview1-26822-01</MicrosoftNETCoreDotNetHostPackageVersion>
+    <MicrosoftNETCoreDotNetHostPolicyPackageVersion>3.0.0-preview1-26822-01</MicrosoftNETCoreDotNetHostPolicyPackageVersion>
+    <MicrosoftNETCoreAppPackageVersion>3.0.0-preview1-26822-01</MicrosoftNETCoreAppPackageVersion>
 
     <!-- CoreFX-built SNI identity package -->
     <RuntimeNativeSystemDataSqlClientSniPackageVersion>4.4.0</RuntimeNativeSystemDataSqlClientSniPackageVersion>
