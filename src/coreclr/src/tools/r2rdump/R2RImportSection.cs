@@ -144,7 +144,7 @@ namespace R2RDump
             sb.AppendLine($"EntrySize: {EntrySize}");
             sb.AppendLine($"SignatureRVA: 0x{SignatureRVA:X8} ({SignatureRVA})");
             sb.AppendLine($"AuxiliaryDataRVA: 0x{AuxiliaryDataRVA:X8} ({AuxiliaryDataRVA})");
-            if (AuxiliaryDataRVA != 0)
+            if (AuxiliaryDataRVA != 0 && AuxiliaryData != null)
             {
                 sb.AppendLine("AuxiliaryData:");
                 sb.AppendLine(AuxiliaryData.ToString());
