@@ -429,6 +429,8 @@ namespace System.Drawing.Primitives.Tests
         [InlineData(51, 255, 51, 1f)]
         [InlineData(51, 51, 255, 1f)]
         [InlineData(51, 51, 51, 0f)]
+        [InlineData(204, 51, 51, 0.6f)]
+        [InlineData(221, 221, 204, 0.2f)]
         public void GetSaturation(int r, int g, int b, float expected)
         {
             Assert.Equal(expected, Color.FromArgb(r, g, b).GetSaturation());

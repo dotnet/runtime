@@ -1,0 +1,21 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <TestCategories>InnerLoop;OuterLoop</TestCategories>
+    <IncludePerformanceTests>true</IncludePerformanceTests>
+    <ProjectGuid>{1BD5C9BF-D7F2-4249-AA31-43B1850A5DB3}</ProjectGuid>
+    <Configurations>netcoreapp-Debug;netcoreapp-Release</Configurations>
+  </PropertyGroup>
+  <ItemGroup>
+    <Compile Include="Perf_Color.cs" />
+  </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="$(CommonPath)\..\perf\PerfRunner\PerfRunner.csproj">
+      <Project>{69e46a6f-9966-45a5-8945-2559fe337827}</Project>
+      <Name>PerfRunner</Name>
+    </ProjectReference>
+  </ItemGroup>
+  <ItemGroup>
+    <Service Include="{82A7F48D-3B50-4B1E-B82E-3ADA8210C358}" />
+  </ItemGroup>
+</Project>
