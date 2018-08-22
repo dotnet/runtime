@@ -96,6 +96,7 @@ namespace System.Diagnostics.Tests
         }
 
         [Fact]
+        [SkipOnTargetFramework(TargetFrameworkMonikers.Uap, "Retrieving information about local processes is not supported on uap")]
         public void BothArgumentCtorAndArgumentListSet()
         {
             ProcessStartInfo psi = new ProcessStartInfo(GetCurrentProcessName(), "arg3");

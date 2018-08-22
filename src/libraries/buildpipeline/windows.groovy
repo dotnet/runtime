@@ -8,7 +8,7 @@
 // TestOuter - If true, runs outerloop, if false runs just innerloop
 
 def submittedHelixJson = null
-def submitToHelix = (params.TGroup == 'netcoreapp' || params.TGroup == 'netfx')
+def submitToHelix = (params.TGroup == 'netcoreapp' || params.TGroup == 'netfx' || params.TGroup == 'uap')
 
 simpleNode('windows.10.amd64.clientrs4.devex.open') {
     stage ('Checkout source') {
@@ -46,7 +46,7 @@ simpleNode('windows.10.amd64.clientrs4.devex.open') {
         if (submitToHelix) {
             archiveTests = 'true'
         }
-        if (submitToHelix || params.TGroup == 'uap' || params.TGroup == 'uapaot') {
+        if (submitToHelix || params.TGroup == 'uapaot') {
             additionalArgs += ' -SkipTests'
         }
         if (params.TGroup != 'all') {
