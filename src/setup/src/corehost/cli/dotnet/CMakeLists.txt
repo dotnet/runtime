@@ -5,7 +5,7 @@ cmake_minimum_required (VERSION 2.6)
 project(dotnet)
 set(DOTNET_HOST_EXE_NAME "dotnet")
 set(SOURCES 
-    ../../fxr/fx_ver.cpp)
+    ../fxr/fx_ver.cpp)
 include(../exe.cmake)
 
 install_library_and_symbols (dotnet)
