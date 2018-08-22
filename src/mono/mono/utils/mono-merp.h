@@ -47,7 +47,7 @@ gboolean mono_merp_enabled (void);
  * when the registered telemetry application does not respond.
  */
 void
-mono_merp_invoke (const intptr_t crashed_pid, const char *signal, const char *dump_file, MonoStackHash *hashes, char *version);
+mono_merp_invoke (const intptr_t crashed_pid, const char *signal, const char *dump_file, MonoStackHash *hashes);
 
 
 #endif // TARGET_OSX

@@ -102,6 +102,7 @@
 #include <mono/metadata/w32error.h>
 #include <mono/utils/w32api.h>
 #include <mono/utils/mono-merp.h>
+#include <mono/utils/mono-state.h>
 #include <mono/utils/mono-logger-internals.h>
 
 #if !defined(HOST_WIN32) && defined(HAVE_SYS_UTSNAME_H)
@@ -5803,6 +5804,61 @@ ves_icall_Mono_Runtime_EnableMicrosoftTelemetry (char *appBundleID, char *appSig
 	mono_merp_enable (appBundleID, appSignature, appVersion, merpGUIPath, eventType, appPath);
 
 	mono_get_runtime_callbacks ()->install_state_summarizer ();
+#else
+	// Icall has platform check in managed too.
+	g_assert_not_reached ();
+#endif
+}
+
+ICALL_EXPORT MonoStringHandle
+ves_icall_Mono_Runtime_ExceptionToState (MonoExceptionHandle exc_handle, guint64 *portable_hash_out, guint64 *unportable_hash_out, MonoError *error)
+{
+	MonoStringHandle result;
+
+#ifndef DISABLE_CRASH_REPORTING
+	// FIXME: Push handles down into mini/mini-exceptions.c
+	MonoException *exc = MONO_HANDLE_RAW (exc_handle);
+	MonoThreadSummary out;
+	mono_get_eh_callbacks ()->mono_summarize_exception (exc, &out);
+
+	*portable_hash_out = (guint64) out.hashes.offset_free_hash;
+	*unportable_hash_out = (guint64) out.hashes.offset_rich_hash;
+
+	JsonWriter writer;
+	mono_json_writer_init (&writer);
+	mono_native_state_init (&writer);
+	gboolean first_thread_added = TRUE;
+	mono_native_state_add_thread (&writer, &out, NULL, first_thread_added);
+	char *output = mono_native_state_free (&writer, FALSE);
+	result = mono_string_new_handle (mono_domain_get (), output, error);
+	g_free (output);
+#else
+	*portable_hash_out = 0;
+	*unportable_hash_out = 0;
+	result = mono_string_new_handle (mono_domain_get (), "", error);
+#endif
+
+	return result;
+}
+
+ICALL_EXPORT void
+ves_icall_Mono_Runtime_SendMicrosoftTelemetry (char *payload, guint64 portable_hash, guint64 unportable_hash, MonoError *error)
+{
+#ifdef TARGET_OSX
+	if (!mono_merp_enabled ())
+		g_error ("Cannot send telemetry without registering parameters first");
+
+	pid_t crashed_pid = getpid ();
+
+	MonoStackHash hashes;
+	memset (&hashes, 0, sizeof (MonoStackHash));
+	hashes.offset_free_hash = portable_hash;
+	hashes.offset_rich_hash = unportable_hash;
+
+	// Tells mono that we want to send the HANG EXC_TYPE.
+	const char *signal = "SIGTERM";
+
+	mono_merp_invoke (crashed_pid, signal, payload, &hashes);
 #else
 	// Icall has platform check in managed too.
 	g_assert_not_reached ();

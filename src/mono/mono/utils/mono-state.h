@@ -16,10 +16,15 @@
 #include <mono/utils/mono-publib.h>
 #include <mono/utils/mono-context.h>
 #include <mono/metadata/threads-types.h>
+#include <mono/utils/json.h>
 
 #define MONO_NATIVE_STATE_PROTOCOL_VERSION "0.0.1"
 
 MONO_BEGIN_DECLS
+
+/*
+ * These use static memory, can only be called once
+ */
 
 void
 mono_summarize_native_state_begin (void);
@@ -29,6 +34,25 @@ mono_summarize_native_state_end (void);
 
 void
 mono_summarize_native_state_add_thread (MonoThreadSummary *thread, MonoContext *ctx);
+
+/*
+ * These use memory from the caller
+ */
+
+void
+mono_native_state_init (JsonWriter *writer);
+
+char *
+mono_native_state_emit (JsonWriter *writer);
+
+char *
+mono_native_state_free (JsonWriter *writer, gboolean free_data);
+
+void
+mono_native_state_add_thread (JsonWriter *writer, MonoThreadSummary *thread, MonoContext *ctx, gboolean first_thread);
+
+void
+mono_crash_dump (const char *jsonFile, MonoStackHash *hashes);
 
 MONO_END_DECLS
 #endif // DISABLE_CRASH_REPORTING
