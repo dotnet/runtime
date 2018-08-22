@@ -235,7 +235,7 @@ namespace System
             out int pdwReturnedProductType
         );
 
-        [DllImport("ntdll.dll")]
+        [DllImport("ntdll.dll", ExactSpelling=true)]
         private static extern int RtlGetVersion(out RTL_OSVERSIONINFOEX lpVersionInformation);
 
         [StructLayout(LayoutKind.Sequential)]
