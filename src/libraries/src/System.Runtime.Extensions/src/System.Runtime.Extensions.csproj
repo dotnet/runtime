@@ -254,7 +254,7 @@
     <Reference Include="mscorlib" />
     <Reference Include="Windows" />
   </ItemGroup>
-  <ItemGroup Condition="'$(TargetGroup)' == 'uapaot'">
+  <ItemGroup Condition="'$(TargetsAOT)'=='true'">
     <ReferenceFromRuntime Include="System.Private.Interop" />
   </ItemGroup>
   <ItemGroup>

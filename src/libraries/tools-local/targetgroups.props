@@ -164,9 +164,19 @@
       <NuGetTargetMoniker>.NETCoreApp,Version=v1.2</NuGetTargetMoniker>
       <NuGetTargetMonikerShort>netcoreapp1.2</NuGetTargetMonikerShort>
     </TargetGroups>
-    <TargetGroups Include="netcoreapp1.2corert">
-      <NuGetTargetMoniker>.NETCoreApp,Version=v1.2</NuGetTargetMoniker>
-      <NuGetTargetMonikerShort>netcoreapp1.2</NuGetTargetMonikerShort>
+    <TargetGroups Include="netcoreapp2.1aot">
+      <PackageTargetRuntimeSuffix>aot</PackageTargetRuntimeSuffix>
+      <NuGetTargetMoniker>.NETCoreApp,Version=v2.1</NuGetTargetMoniker>
+      <NuGetTargetMonikerShort>netcoreapp2.1</NuGetTargetMonikerShort>
+      <Imports>netcoreapp;netcoreapp2.1</Imports>
+      <CompatibleWith>netstandard</CompatibleWith>
+    </TargetGroups>
+    <TargetGroups Include="netcoreappaot">
+      <PackageTargetRuntimeSuffix>aot</PackageTargetRuntimeSuffix>
+      <NuGetTargetMoniker>.NETCoreApp,Version=v2.1</NuGetTargetMoniker>
+      <NuGetTargetMonikerShort>netcoreapp2.1</NuGetTargetMonikerShort>
+      <Imports>netcoreapp;netcoreapp2.1</Imports>
+      <CompatibleWith>netstandard</CompatibleWith>
     </TargetGroups>
     <TargetGroups Include="net45">
       <TargetingPackNugetPackageId>Microsoft.TargetingPack.NETFramework.v4.5</TargetingPackNugetPackageId>

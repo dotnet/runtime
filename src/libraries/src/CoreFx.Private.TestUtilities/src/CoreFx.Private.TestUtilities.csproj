@@ -21,7 +21,7 @@
     <Compile Condition="'$(TargetGroup)' == 'netfx'" Include="System\Diagnostics\RemoteExecutorTestBase.netfx.cs" />
     <Compile Condition="'$(TargetGroup)' != 'uap'" Include="System\Diagnostics\RemoteExecutorTestBase.Process.cs" />
     <Compile Condition="'$(TargetGroup)' == 'uap'" Include="System\Diagnostics\RemoteExecutorTestBase.uap.cs" />
-    <Compile Condition="'$(TargetGroup)' == 'uapaot'" Include="System\Diagnostics\RemoteExecutorTestBase.uapaot.cs" />
+    <Compile Condition="'$(TargetsAOT)'=='true'" Include="System\Diagnostics\RemoteExecutorTestBase.aot.cs" />
     <Compile Condition="'$(TargetGroup)' == 'netfx'" Include="System\PlatformDetection.NetFx.cs" />
     <Compile Condition="'$(TargetGroup)' != 'netfx'" Include="System\PlatformDetection.NonNetFx.cs" />
     <Compile Include="System\PlatformDetection.cs" />

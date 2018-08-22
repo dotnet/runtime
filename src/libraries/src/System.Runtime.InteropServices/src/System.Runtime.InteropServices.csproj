@@ -4,8 +4,8 @@
     <AssemblyName>System.Runtime.InteropServices</AssemblyName>
     <OutputType>Library</OutputType>
     <IsPartialFacadeAssembly>true</IsPartialFacadeAssembly>
-    <GenFacadesIgnoreMissingTypes Condition="'$(TargetGroup)' == 'uapaot'">true</GenFacadesIgnoreMissingTypes>
-    <NoWarn Condition="'$(TargetGroup)' == 'uapaot'">0436;3001</NoWarn>
+    <GenFacadesIgnoreMissingTypes Condition="'$(TargetsAOT)' == 'true'">true</GenFacadesIgnoreMissingTypes>
+    <NoWarn Condition="'$(TargetsAOT)' == 'true'">0436;3001</NoWarn>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
     <Configurations>netcoreapp-Unix-Debug;netcoreapp-Unix-Release;netcoreapp-Windows_NT-Debug;netcoreapp-Windows_NT-Release;uap-Windows_NT-Debug;uap-Windows_NT-Release;uapaot-Windows_NT-Debug;uapaot-Windows_NT-Release</Configurations>
   </PropertyGroup>
@@ -22,22 +22,22 @@
     <Compile Include="System\Runtime\CompilerServices\Attributes.cs" />
     <Compile Include="System\Runtime\InteropServices\Attributes.cs" />
     <Compile Include="System\Runtime\InteropServices\ComAwareEventInfo.cs" />
-    <Compile Include="System\Runtime\InteropServices\ComEventInterfaceAttribute.cs" Condition="'$(TargetGroup)' != 'uapaot'" />
-    <Compile Include="System\Runtime\InteropServices\DefaultParameterValueAttribute.cs" Condition="'$(TargetGroup)' != 'uapaot'" />
-    <Compile Include="System\Runtime\InteropServices\HandleCollector.cs" Condition="'$(TargetGroup)' != 'uapaot'" />
+    <Compile Include="System\Runtime\InteropServices\ComEventInterfaceAttribute.cs" Condition="'$(TargetsAOT)' != 'true'" />
+    <Compile Include="System\Runtime\InteropServices\DefaultParameterValueAttribute.cs" Condition="'$(TargetsAOT)' != 'true'" />
+    <Compile Include="System\Runtime\InteropServices\HandleCollector.cs" Condition="'$(TargetsAOT)' != 'true'" />
     <Compile Include="System\Runtime\InteropServices\IMarshal.cs" />
     <Compile Include="System\Runtime\InteropServices\RuntimeEnvironment.cs" />
-    <Compile Include="System\Runtime\InteropServices\ComTypes\advf.cs" Condition="'$(TargetGroup)' != 'uapaot'" />
-    <Compile Include="System\Runtime\InteropServices\ComTypes\datadir.cs" Condition="'$(TargetGroup)' != 'uapaot'" />
-    <Compile Include="System\Runtime\InteropServices\ComTypes\dvaspect.cs" Condition="'$(TargetGroup)' != 'uapaot'" />
-    <Compile Include="System\Runtime\InteropServices\ComTypes\formatetc.cs" Condition="'$(TargetGroup)' != 'uapaot'" />
-    <Compile Include="System\Runtime\InteropServices\ComTypes\IAdviseSink.cs" Condition="'$(TargetGroup)' != 'uapaot'" />
+    <Compile Include="System\Runtime\InteropServices\ComTypes\advf.cs" Condition="'$(TargetsAOT)' != 'true'" />
+    <Compile Include="System\Runtime\InteropServices\ComTypes\datadir.cs" Condition="'$(TargetsAOT)' != 'true'" />
+    <Compile Include="System\Runtime\InteropServices\ComTypes\dvaspect.cs" Condition="'$(TargetsAOT)' != 'true'" />
+    <Compile Include="System\Runtime\InteropServices\ComTypes\formatetc.cs" Condition="'$(TargetsAOT)' != 'true'" />
+    <Compile Include="System\Runtime\InteropServices\ComTypes\IAdviseSink.cs" Condition="'$(TargetsAOT)' != 'true'" />
     <Compile Include="System\Runtime\InteropServices\ComTypes\IDataObject.cs" />
-    <Compile Include="System\Runtime\InteropServices\ComTypes\IEnumFormatETC.cs" Condition="'$(TargetGroup)' != 'uapaot'" />
+    <Compile Include="System\Runtime\InteropServices\ComTypes\IEnumFormatETC.cs" Condition="'$(TargetsAOT)' != 'true'" />
     <Compile Include="System\Runtime\InteropServices\ComTypes\IEnumSTATDATA.cs" />
-    <Compile Include="System\Runtime\InteropServices\ComTypes\statdata.cs" Condition="'$(TargetGroup)' != 'uapaot'" />
-    <Compile Include="System\Runtime\InteropServices\ComTypes\stgmedium.cs" Condition="'$(TargetGroup)' != 'uapaot'" />
-    <Compile Include="System\Runtime\InteropServices\ComTypes\tymed.cs" Condition="'$(TargetGroup)' != 'uapaot'" />
+    <Compile Include="System\Runtime\InteropServices\ComTypes\statdata.cs" Condition="'$(TargetsAOT)' != 'true'" />
+    <Compile Include="System\Runtime\InteropServices\ComTypes\stgmedium.cs" Condition="'$(TargetsAOT)' != 'true'" />
+    <Compile Include="System\Runtime\InteropServices\ComTypes\tymed.cs" Condition="'$(TargetsAOT)' != 'true'" />
     <Compile Include="System\Runtime\InteropServices\AssemblyRegistrationFlags.cs" />
     <Compile Include="System\Runtime\InteropServices\ExporterEventKind.cs" />
     <Compile Include="System\Runtime\InteropServices\RegistrationClassContext.cs" />
@@ -49,10 +49,10 @@
     <ReferenceFromRuntime Include="System.Private.CoreLib" />
     <ProjectReference Include="..\..\System.Runtime.Extensions\src\System.Runtime.Extensions.csproj" />
   </ItemGroup>
-  <ItemGroup Condition="'$(TargetGroup)' == 'uapaot'">
+  <ItemGroup Condition="'$(TargetsAOT)' == 'true'">
     <ReferenceFromRuntime Include="System.Private.Interop" />
     <ProjectReference Include="..\..\System.Runtime\src\System.Runtime.csproj">
-      <TargetGroup>uapaot</TargetGroup>
+      <TargetGroup>$(TargetGroup)</TargetGroup>
     </ProjectReference>
   </ItemGroup>
 </Project>

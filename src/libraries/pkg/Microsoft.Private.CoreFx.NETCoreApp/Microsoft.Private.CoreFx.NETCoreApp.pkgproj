@@ -9,6 +9,7 @@
 
     <RefBinDir>$(NETCoreAppPackageRefPath)</RefBinDir>
     <LibBinDir>$(NETCoreAppPackageRuntimePath)</LibBinDir>
+    <LibBinDir Condition="$(PackageTargetRuntime.EndsWith('-aot'))">$(NETCoreAppAotPackageRuntimePath)</LibBinDir>
 
     <IsFrameworkPackage>true</IsFrameworkPackage>
 
@@ -20,6 +21,7 @@
     <IgnoredReference Include="System.Private.CoreLib" />
     <IgnoredReference Include="Windows" />
 
+    <IgnoredReference Condition="$(PackageTargetRuntime.EndsWith('-aot'))" Include="System.Private.Interop" />
     <!-- Exclude shims from the closure verification -->
     <ExcludeFromClosure Include="mscorlib" />
     <ExcludeFromClosure Include="System" />
