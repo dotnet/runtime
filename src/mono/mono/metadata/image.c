@@ -1686,7 +1686,7 @@ mono_image_open_a_lot (const char *fname, MonoImageOpenStatus *status, gboolean 
 	// then assemblies need to be loaded with LoadLibrary:
 	if (!refonly && coree_module_handle) {
 		HMODULE module_handle;
-		guint16 *fname_utf16;
+		gunichar2 *fname_utf16;
 		DWORD last_error;
 
 		absfname = mono_path_resolve_symlinks (fname);

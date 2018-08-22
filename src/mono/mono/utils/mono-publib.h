@@ -87,7 +87,14 @@ typedef unsigned __int64	uint64_t;
 
 typedef int32_t		mono_bool;
 typedef uint8_t		mono_byte;
+#ifdef _WIN32
+MONO_END_DECLS
+#include <wchar.h>
+typedef wchar_t 	mono_unichar2;
+MONO_BEGIN_DECLS
+#else
 typedef uint16_t	mono_unichar2;
+#endif
 typedef uint32_t	mono_unichar4;
 
 typedef void	(*MonoFunc)	(void* data, void* user_data);

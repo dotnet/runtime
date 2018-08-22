@@ -6414,7 +6414,7 @@ mono_string_empty_handle (MonoDomain *domain)
  * \returns A newly created string object which contains \p text.
  */
 MonoString *
-mono_string_new_utf16 (MonoDomain *domain, const guint16 *text, gint32 len)
+mono_string_new_utf16 (MonoDomain *domain, const mono_unichar2 *text, gint32 len)
 {
 	MONO_REQ_GC_UNSAFE_MODE;
 
@@ -6435,7 +6435,7 @@ mono_string_new_utf16 (MonoDomain *domain, const guint16 *text, gint32 len)
  * On error, returns NULL and sets \p error.
  */
 MonoString *
-mono_string_new_utf16_checked (MonoDomain *domain, const guint16 *text, gint32 len, MonoError *error)
+mono_string_new_utf16_checked (MonoDomain *domain, const gunichar2 *text, gint32 len, MonoError *error)
 {
 	MONO_REQ_GC_UNSAFE_MODE;
 
@@ -6459,7 +6459,7 @@ mono_string_new_utf16_checked (MonoDomain *domain, const guint16 *text, gint32 l
  * On error, returns NULL and sets \p error.
  */
 MonoStringHandle
-mono_string_new_utf16_handle (MonoDomain *domain, const guint16 *text, gint32 len, MonoError *error)
+mono_string_new_utf16_handle (MonoDomain *domain, const gunichar2 *text, gint32 len, MonoError *error)
 {
 	return MONO_HANDLE_NEW (MonoString, mono_string_new_utf16_checked (domain, text, len, error));
 }
@@ -6594,7 +6594,7 @@ mono_string_new_utf8_len_handle (MonoDomain *domain, const char *text, guint len
 
 	GError *eg_error = NULL;
 	MonoStringHandle o = NULL_HANDLE_STRING;
-	guint16 *ut = NULL;
+	gunichar2 *ut = NULL;
 	glong items_written;
 
 	ut = eg_utf8_to_utf16_with_nuls (text, length, NULL, &items_written, &eg_error);
@@ -6666,7 +6666,7 @@ mono_string_new_checked (MonoDomain *domain, const char *text, MonoError *error)
 
 	GError *eg_error = NULL;
 	MonoString *o = NULL;
-	guint16 *ut;
+	gunichar2 *ut;
 	glong items_written;
 	int len;
 
@@ -6730,7 +6730,7 @@ mono_string_new_wtf8_len_checked (MonoDomain *domain, const char *text, guint le
 
 	GError *eg_error = NULL;
 	MonoString *o = NULL;
-	guint16 *ut = NULL;
+	gunichar2 *ut = NULL;
 	glong items_written;
 
 	ut = eg_wtf8_to_utf16 (text, length, NULL, &items_written, &eg_error);
@@ -7430,12 +7430,12 @@ mono_ldstr_metadata_sig (MonoDomain *domain, const char* sig, MonoError *error)
 	len2 = mono_metadata_decode_blob_size (str, &str);
 	len2 >>= 1;
 
-	o = mono_string_new_utf16_checked (domain, (guint16*)str, len2, error);
+	o = mono_string_new_utf16_checked (domain, (gunichar2*)str, len2, error);
 	return_val_if_nok (error, NULL);
 #if G_BYTE_ORDER != G_LITTLE_ENDIAN
 	{
 		int i;
-		guint16 *p2 = (guint16*)mono_string_chars (o);
+		gunichar2 *p2 = (gunichar2*)mono_string_chars (o);
 		for (i = 0; i < len2; ++i) {
 			*p2 = GUINT16_FROM_LE (*p2);
 			++p2;
@@ -7486,7 +7486,7 @@ mono_ldstr_utf8 (MonoImage *image, guint32 idx, MonoError *error)
 	len2 = mono_metadata_decode_blob_size (str, &str);
 	len2 >>= 1;
 
-	as = g_utf16_to_utf8 ((guint16*)str, len2, NULL, &written, &gerror);
+	as = g_utf16_to_utf8 ((gunichar2*)str, len2, NULL, &written, &gerror);
 	if (gerror) {
 		mono_error_set_argument (error, "string", gerror->message);
 		g_error_free (gerror);

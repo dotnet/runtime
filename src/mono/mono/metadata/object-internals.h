@@ -1953,10 +1953,10 @@ MonoString*
 mono_string_new_wtf8_len_checked (MonoDomain *domain, const char *text, guint length, MonoError *error);
 
 MonoString *
-mono_string_new_utf16_checked (MonoDomain *domain, const guint16 *text, gint32 len, MonoError *error);
+mono_string_new_utf16_checked (MonoDomain *domain, const gunichar2 *text, gint32 len, MonoError *error);
 
 MonoStringHandle
-mono_string_new_utf16_handle (MonoDomain *domain, const guint16 *text, gint32 len, MonoError *error);
+mono_string_new_utf16_handle (MonoDomain *domain, const gunichar2 *text, gint32 len, MonoError *error);
 
 MonoStringHandle
 mono_string_new_utf8_len_handle (MonoDomain *domain, const char *text, guint length, MonoError *error);

@@ -1674,7 +1674,7 @@ make_sibling_path (const gchar *path, gint pathlen, const char *extension, Shado
 static gboolean
 shadow_copy_sibling (const gchar *src_pristine, gint srclen, const char *extension, ShadowCopySiblingExt extopt, const gchar *target_pristine, gint targetlen)
 {
-	guint16 *orig, *dest;
+	gunichar2 *orig, *dest;
 	gboolean copy_result;
 	gint32 copy_error;
 	gchar *src = NULL;
@@ -1856,7 +1856,7 @@ shadow_copy_create_ini (const char *shadow, const char *filename)
 {
 	char *dir_name;
 	char *ini_file;
-	guint16 *u16_ini;
+	gunichar2 *u16_ini;
 	gboolean result;
 	guint32 n;
 	HANDLE handle;
@@ -1968,7 +1968,7 @@ mono_make_shadow_copy (const char *filename, MonoError *oerror)
 {
 	ERROR_DECL (error);
 	gint filename_len, shadow_len;
-	guint16 *orig, *dest;
+	gunichar2 *orig, *dest;
 	guint32 attrs;
 	char *shadow;
 	gboolean copy_result;

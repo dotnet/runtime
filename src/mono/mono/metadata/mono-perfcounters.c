@@ -633,7 +633,7 @@ static int
 mono_string_compare_ascii (MonoString *str, const char *ascii_str)
 {
 	/* FIXME: make this case insensitive */
-	guint16 *strc = mono_string_chars (str);
+	const gunichar2 *strc = mono_string_chars (str);
 	while (*strc == *ascii_str++) {
 		if (*strc == 0)
 			return 0;

@@ -258,7 +258,7 @@ mono_string_equal (MonoString *s1, MonoString *s2)
 guint
 mono_string_hash (MonoString *s)
 {
-	const guint16 *p = mono_string_chars (s);
+	const gunichar2 *p = mono_string_chars (s);
 	int i, len = mono_string_length (s);
 	guint h = 0;
 

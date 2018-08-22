@@ -753,13 +753,13 @@ mono_byvalarray_to_array (MonoArray *arr, gpointer native_arr, MonoClass *elclas
 
 	if (elclass == mono_defaults.byte_class) {
 		GError *gerror = NULL;
-		guint16 *ut;
+		gunichar2 *ut;
 		glong items_written;
 
 		ut = g_utf8_to_utf16 ((const gchar *)native_arr, elnum, NULL, &items_written, &gerror);
 
 		if (!gerror) {
-			memcpy (mono_array_addr (arr, guint16, 0), ut, items_written * sizeof (guint16));
+			memcpy (mono_array_addr (arr, gunichar2, 0), ut, items_written * sizeof (gunichar2));
 			g_free (ut);
 		}
 		else
@@ -5047,10 +5047,10 @@ ves_icall_System_Runtime_InteropServices_Marshal_PtrToStringAnsi_len (const char
 }
 
 MonoStringHandle
-ves_icall_System_Runtime_InteropServices_Marshal_PtrToStringUni (const guint16 *ptr, MonoError *error)
+ves_icall_System_Runtime_InteropServices_Marshal_PtrToStringUni (const gunichar2 *ptr, MonoError *error)
 {
 	gsize len = 0;
-	const guint16 *t = ptr;
+	const gunichar2 *t = ptr;
 
 	if (!ptr)
 		return NULL_HANDLE_STRING;
@@ -5065,7 +5065,7 @@ ves_icall_System_Runtime_InteropServices_Marshal_PtrToStringUni (const guint16 *
 }
 
 MonoStringHandle
-ves_icall_System_Runtime_InteropServices_Marshal_PtrToStringUni_len (const guint16 *ptr, gint32 len, MonoError *error)
+ves_icall_System_Runtime_InteropServices_Marshal_PtrToStringUni_len (const gunichar2 *ptr, gint32 len, MonoError *error)
 {
 	if (!ptr) {
 		mono_error_set_argument_null (error, "ptr", "");
