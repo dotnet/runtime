@@ -432,7 +432,7 @@ void CodeGen::siBeginBlock(BasicBlock* block)
         // For now, don't report any scopes in funclets. JIT64 doesn't.
         siInFuncletRegion = true;
 
-        JITDUMP("Scope info: found beginning of funclet region at block BB%02u; ignoring following blocks\n",
+        JITDUMP("Scope info: found beginning of funclet region at block " FMT_BB "; ignoring following blocks\n",
                 block->bbNum);
 
         return;
@@ -442,7 +442,7 @@ void CodeGen::siBeginBlock(BasicBlock* block)
 #ifdef DEBUG
     if (verbose)
     {
-        printf("\nScope info: begin block BB%02u, IL range ", block->bbNum);
+        printf("\nScope info: begin block " FMT_BB ", IL range ", block->bbNum);
         block->dspBlockILRange();
         printf("\n");
     }
@@ -582,7 +582,7 @@ void CodeGen::siEndBlock(BasicBlock* block)
 #ifdef DEBUG
     if (verbose)
     {
-        printf("\nScope info: end block BB%02u, IL range ", block->bbNum);
+        printf("\nScope info: end block " FMT_BB ", IL range ", block->bbNum);
         block->dspBlockILRange();
         printf("\n");
     }
