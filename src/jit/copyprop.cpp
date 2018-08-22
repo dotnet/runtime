@@ -302,7 +302,7 @@ bool Compiler::optIsSsaLocal(GenTree* tree)
 void Compiler::optBlockCopyProp(BasicBlock* block, LclNumToGenTreePtrStack* curSsaName)
 {
 #ifdef DEBUG
-    JITDUMP("Copy Assertion for BB%02u\n", block->bbNum);
+    JITDUMP("Copy Assertion for " FMT_BB "\n", block->bbNum);
     if (verbose)
     {
         printf("  curSsaName stack: ");

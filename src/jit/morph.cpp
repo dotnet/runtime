@@ -6952,7 +6952,7 @@ void Compiler::fgMorphCallInlineHelper(GenTreeCall* call, InlineResult* result)
     {
         printf("Expanding INLINE_CANDIDATE in statement ");
         printTreeID(fgMorphStmt);
-        printf(" in BB%02u:\n", compCurBB->bbNum);
+        printf(" in " FMT_BB ":\n", compCurBB->bbNum);
         gtDispTree(fgMorphStmt);
         if (call->IsImplicitTailCall())
         {
@@ -15265,8 +15265,8 @@ bool Compiler::fgFoldConditional(BasicBlock* block)
 #ifdef DEBUG
             if (verbose)
             {
-                printf("\nConditional folded at BB%02u\n", block->bbNum);
-                printf("BB%02u becomes a BBJ_THROW\n", block->bbNum);
+                printf("\nConditional folded at " FMT_BB "\n", block->bbNum);
+                printf(FMT_BB " becomes a BBJ_THROW\n", block->bbNum);
             }
 #endif
             goto DONE_COND;
@@ -15401,12 +15401,12 @@ bool Compiler::fgFoldConditional(BasicBlock* block)
 #ifdef DEBUG
             if (verbose)
             {
-                printf("\nConditional folded at BB%02u\n", block->bbNum);
-                printf("BB%02u becomes a %s", block->bbNum,
+                printf("\nConditional folded at " FMT_BB "\n", block->bbNum);
+                printf(FMT_BB " becomes a %s", block->bbNum,
                        block->bbJumpKind == BBJ_ALWAYS ? "BBJ_ALWAYS" : "BBJ_NONE");
                 if (block->bbJumpKind == BBJ_ALWAYS)
                 {
-                    printf(" to BB%02u", block->bbJumpDest->bbNum);
+                    printf(" to " FMT_BB, block->bbJumpDest->bbNum);
                 }
                 printf("\n");
             }
@@ -15438,7 +15438,7 @@ bool Compiler::fgFoldConditional(BasicBlock* block)
 #ifdef DEBUG
                         if (verbose)
                         {
-                            printf("Removing loop L%02u (from BB%02u to BB%02u)\n\n", loopNum,
+                            printf("Removing loop L%02u (from " FMT_BB " to " FMT_BB ")\n\n", loopNum,
                                    optLoopTable[loopNum].lpFirst->bbNum, optLoopTable[loopNum].lpBottom->bbNum);
                         }
 #endif
@@ -15480,8 +15480,8 @@ bool Compiler::fgFoldConditional(BasicBlock* block)
 #ifdef DEBUG
             if (verbose)
             {
-                printf("\nConditional folded at BB%02u\n", block->bbNum);
-                printf("BB%02u becomes a BBJ_THROW\n", block->bbNum);
+                printf("\nConditional folded at " FMT_BB "\n", block->bbNum);
+                printf(FMT_BB " becomes a BBJ_THROW\n", block->bbNum);
             }
 #endif
             goto DONE_SWITCH;
@@ -15558,12 +15558,12 @@ bool Compiler::fgFoldConditional(BasicBlock* block)
 #ifdef DEBUG
             if (verbose)
             {
-                printf("\nConditional folded at BB%02u\n", block->bbNum);
-                printf("BB%02u becomes a %s", block->bbNum,
+                printf("\nConditional folded at " FMT_BB "\n", block->bbNum);
+                printf(FMT_BB " becomes a %s", block->bbNum,
                        block->bbJumpKind == BBJ_ALWAYS ? "BBJ_ALWAYS" : "BBJ_NONE");
                 if (block->bbJumpKind == BBJ_ALWAYS)
                 {
-                    printf(" to BB%02u", block->bbJumpDest->bbNum);
+                    printf(" to " FMT_BB, block->bbJumpDest->bbNum);
                 }
                 printf("\n");
             }
@@ -15698,7 +15698,7 @@ bool Compiler::fgMorphBlockStmt(BasicBlock* block, GenTreeStmt* stmt DEBUGARG(co
 #ifdef DEBUG
         if (verbose)
         {
-            printf("\n%s Block BB%02u becomes a throw block.\n", msg, block->bbNum);
+            printf("\n%s Block " FMT_BB " becomes a throw block.\n", msg, block->bbNum);
         }
 #endif
         fgRemoveRestOfBlock = false;
@@ -15759,7 +15759,7 @@ void Compiler::fgMorphStmts(BasicBlock* block, bool* lnot, bool* loadw)
 
         if (verbose)
         {
-            printf("\nfgMorphTree BB%02u, stmt %d (before)\n", block->bbNum, compCurStmtNum);
+            printf("\nfgMorphTree " FMT_BB ", stmt %d (before)\n", block->bbNum, compCurStmtNum);
             gtDispTree(tree);
         }
 #endif
@@ -15846,7 +15846,7 @@ void Compiler::fgMorphStmts(BasicBlock* block, bool* lnot, bool* loadw)
             unsigned newHash = gtHashValue(morph);
             if (newHash != oldHash)
             {
-                printf("\nfgMorphTree BB%02u, stmt %d (after)\n", block->bbNum, compCurStmtNum);
+                printf("\nfgMorphTree " FMT_BB ", stmt %d (after)\n", block->bbNum, compCurStmtNum);
                 gtDispTree(morph);
             }
         }
@@ -16004,7 +16004,7 @@ void Compiler::fgMorphBlocks()
 #ifdef DEBUG
         if (verbose)
         {
-            printf("\nMorphing BB%02u of '%s'\n", block->bbNum, info.compFullName);
+            printf("\nMorphing " FMT_BB " of '%s'\n", block->bbNum, info.compFullName);
         }
 #endif
 
@@ -16108,7 +16108,7 @@ void Compiler::fgMorphBlocks()
 #ifdef DEBUG
                     if (verbose)
                     {
-                        printf("morph BB%02u to point at onereturn.  New block is\n", block->bbNum);
+                        printf("morph " FMT_BB " to point at onereturn.  New block is\n", block->bbNum);
                         fgTableDispBasicBlock(block);
                     }
 #endif
@@ -16502,7 +16502,7 @@ void Compiler::fgExpandQmarkForCastInstOf(BasicBlock* block, GenTree* stmt)
 #ifdef DEBUG
     if (verbose)
     {
-        printf("\nExpanding CastInstOf qmark in BB%02u (before)\n", block->bbNum);
+        printf("\nExpanding CastInstOf qmark in " FMT_BB " (before)\n", block->bbNum);
         fgDispBasicBlocks(block, block, true);
     }
 #endif // DEBUG
@@ -16633,7 +16633,7 @@ void Compiler::fgExpandQmarkForCastInstOf(BasicBlock* block, GenTree* stmt)
 #ifdef DEBUG
     if (verbose)
     {
-        printf("\nExpanding CastInstOf qmark in BB%02u (after)\n", block->bbNum);
+        printf("\nExpanding CastInstOf qmark in " FMT_BB " (after)\n", block->bbNum);
         fgDispBasicBlocks(block, remainderBlock, true);
     }
 #endif // DEBUG
@@ -16710,7 +16710,7 @@ void Compiler::fgExpandQmarkStmt(BasicBlock* block, GenTree* stmt)
 #ifdef DEBUG
     if (verbose)
     {
-        printf("\nExpanding top-level qmark in BB%02u (before)\n", block->bbNum);
+        printf("\nExpanding top-level qmark in " FMT_BB " (before)\n", block->bbNum);
         fgDispBasicBlocks(block, block, true);
     }
 #endif // DEBUG
@@ -16867,7 +16867,7 @@ void Compiler::fgExpandQmarkStmt(BasicBlock* block, GenTree* stmt)
 #ifdef DEBUG
     if (verbose)
     {
-        printf("\nExpanding top-level qmark in BB%02u (after)\n", block->bbNum);
+        printf("\nExpanding top-level qmark in " FMT_BB " (after)\n", block->bbNum);
         fgDispBasicBlocks(block, remainderBlock, true);
     }
 #endif // DEBUG
@@ -18630,7 +18630,7 @@ bool Compiler::fgMorphCombineSIMDFieldAssignments(BasicBlock* block, GenTree* st
     if (verbose)
     {
         printf("\nFound contiguous assignments from a SIMD vector to memory.\n");
-        printf("From BB%02u, stmt", block->bbNum);
+        printf("From " FMT_BB ", stmt", block->bbNum);
         printTreeID(stmt);
         printf(" to stmt");
         printTreeID(lastStmt);
@@ -18673,7 +18673,7 @@ bool Compiler::fgMorphCombineSIMDFieldAssignments(BasicBlock* block, GenTree* st
 #ifdef DEBUG
     if (verbose)
     {
-        printf("\nBB%02u stmt", block->bbNum);
+        printf("\n" FMT_BB " stmt", block->bbNum);
         printTreeID(stmt);
         printf("(before)\n");
         gtDispTree(stmt);
@@ -18698,7 +18698,7 @@ bool Compiler::fgMorphCombineSIMDFieldAssignments(BasicBlock* block, GenTree* st
 #ifdef DEBUG
     if (verbose)
     {
-        printf("\nReplaced BB%02u stmt", block->bbNum);
+        printf("\nReplaced " FMT_BB " stmt", block->bbNum);
         printTreeID(stmt);
         printf("(after)\n");
         gtDispTree(stmt);

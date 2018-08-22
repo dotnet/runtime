@@ -270,7 +270,7 @@ void CodeGen::genCodeForBBlist()
 #ifdef DEBUG
         if (compiler->opts.dspCode)
         {
-            printf("\n      L_M%03u_BB%02u:\n", Compiler::s_compMethodsCount, block->bbNum);
+            printf("\n      L_M%03u_" FMT_BB ":\n", Compiler::s_compMethodsCount, block->bbNum);
         }
 #endif
 
@@ -426,7 +426,7 @@ void CodeGen::genCodeForBBlist()
 
         if (nonVarPtrRegs)
         {
-            printf("Regset after BB%02u gcr=", block->bbNum);
+            printf("Regset after " FMT_BB " gcr=", block->bbNum);
             printRegMaskInt(gcInfo.gcRegGCrefSetCur & ~regSet.rsMaskVars);
             compiler->getEmitter()->emitDispRegSet(gcInfo.gcRegGCrefSetCur & ~regSet.rsMaskVars);
             printf(", byr=");

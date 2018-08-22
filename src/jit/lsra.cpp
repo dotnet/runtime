@@ -573,14 +573,14 @@ void LinearScan::dumpVarToRegMap(VarToRegMap map)
 
 void LinearScan::dumpInVarToRegMap(BasicBlock* block)
 {
-    printf("Var=Reg beg of BB%02u: ", block->bbNum);
+    printf("Var=Reg beg of " FMT_BB ": ", block->bbNum);
     VarToRegMap map = getInVarToRegMap(block->bbNum);
     dumpVarToRegMap(map);
 }
 
 void LinearScan::dumpOutVarToRegMap(BasicBlock* block)
 {
-    printf("Var=Reg end of BB%02u: ", block->bbNum);
+    printf("Var=Reg end of " FMT_BB ": ", block->bbNum);
     VarToRegMap map = getOutVarToRegMap(block->bbNum);
     dumpVarToRegMap(map);
 }
@@ -913,7 +913,7 @@ void LinearScan::setBlockSequence()
     int i = 1;
     for (BasicBlock *block = startBlockSequence(); block != nullptr; ++i, block = moveToNextBlock())
     {
-        JITDUMP("BB%02u", block->bbNum);
+        JITDUMP(FMT_BB, block->bbNum);
 
         if (block->isMaxBBWeight())
         {
@@ -1231,7 +1231,7 @@ void LinearScan::recordVarLocationsAtStartOfBB(BasicBlock* bb)
     {
         return;
     }
-    JITDUMP("Recording Var Locations at start of BB%02u\n", bb->bbNum);
+    JITDUMP("Recording Var Locations at start of " FMT_BB "\n", bb->bbNum);
     VarToRegMap map   = getInVarToRegMap(bb->bbNum);
     unsigned    count = 0;
 
@@ -1992,7 +1992,7 @@ void LinearScan::checkLastUses(BasicBlock* block)
 {
     if (VERBOSE)
     {
-        JITDUMP("\n\nCHECKING LAST USES for block %u, liveout=", block->bbNum);
+        JITDUMP("\n\nCHECKING LAST USES for " FMT_BB ", liveout=", block->bbNum);
         dumpConvertedVarSet(compiler, block->bbLiveOut);
         JITDUMP("\n==============================\n");
     }
@@ -2087,7 +2087,7 @@ void LinearScan::checkLastUses(BasicBlock* block)
         unsigned varNum = compiler->lvaTrackedToVarNum[liveInNotComputedLiveIndex];
         if (compiler->lvaTable[varNum].lvLRACandidate)
         {
-            JITDUMP("BB%02u: V%02u is in LiveIn set, but not computed live.\n", block->bbNum, varNum);
+            JITDUMP(FMT_BB ": V%02u is in LiveIn set, but not computed live.\n", block->bbNum, varNum);
             foundDiff = true;
         }
     }
@@ -2101,7 +2101,7 @@ void LinearScan::checkLastUses(BasicBlock* block)
         unsigned varNum = compiler->lvaTrackedToVarNum[computedLiveNotLiveInIndex];
         if (compiler->lvaTable[varNum].lvLRACandidate)
         {
-            JITDUMP("BB%02u: V%02u is computed live, but not in LiveIn set.\n", block->bbNum, varNum);
+            JITDUMP(FMT_BB ": V%02u is computed live, but not in LiveIn set.\n", block->bbNum, varNum);
             foundDiff = true;
         }
     }
@@ -6830,7 +6830,7 @@ void LinearScan::resolveRegisters()
             printf("Prior to Resolution\n");
             foreach_block(compiler, block)
             {
-                printf("\nBB%02u use def in out\n", block->bbNum);
+                printf("\n" FMT_BB " use def in out\n", block->bbNum);
                 dumpConvertedVarSet(compiler, block->bbVarUse);
                 printf("\n");
                 dumpConvertedVarSet(compiler, block->bbVarDef);
@@ -7116,7 +7116,7 @@ void LinearScan::insertSwap(
         {
             insertionPointString = "bottom";
         }
-        printf("   BB%02u %s: swap V%02u in %s with V%02u in %s\n", block->bbNum, insertionPointString, lclNum1,
+        printf("   " FMT_BB " %s: swap V%02u in %s with V%02u in %s\n", block->bbNum, insertionPointString, lclNum1,
                getRegName(reg1), lclNum2, getRegName(reg2));
     }
 #endif // DEBUG
@@ -7357,7 +7357,7 @@ void LinearScan::addResolution(
 #endif // DEBUG
     }
 
-    JITDUMP("   BB%02u %s: move V%02u from ", block->bbNum, insertionPointString, interval->varNum);
+    JITDUMP("   " FMT_BB " %s: move V%02u from ", block->bbNum, insertionPointString, interval->varNum);
     JITDUMP("%s to %s", getRegName(fromReg), getRegName(toReg));
 
     insertMove(block, insertionPoint, interval->varNum, fromReg, toReg);
@@ -7828,7 +7828,7 @@ void LinearScan::resolveEdges()
                         printf("Found mismatched var locations after resolution!\n");
                     }
                     unsigned varNum = compiler->lvaTrackedToVarNum[varIndex];
-                    printf(" V%02u: BB%02u to BB%02u: %s to %s\n", varNum, predBlock->bbNum, block->bbNum,
+                    printf(" V%02u: " FMT_BB " to " FMT_BB ": %s to %s\n", varNum, predBlock->bbNum, block->bbNum,
                            getRegName(fromReg), getRegName(toReg));
                 }
             }
@@ -8372,7 +8372,7 @@ void LinearScan::dumpLsraStats(FILE* file)
 
         if (spillCount != 0 || copyRegCount != 0 || resolutionMovCount != 0 || splitEdgeCount != 0)
         {
-            fprintf(file, "BB%02u [%8d]: ", block->bbNum, block->bbWeight);
+            fprintf(file, FMT_BB " [%8d]: ", block->bbNum, block->bbWeight);
             fprintf(file, "SpillCount = %d, ResolutionMovs = %d, SplitEdges = %d, CopyReg = %d\n", spillCount,
                     resolutionMovCount, splitEdgeCount, copyRegCount);
         }
@@ -8478,7 +8478,7 @@ void RefPosition::dump()
     {
         printf("%s ", treeNode->OpName(treeNode->OperGet()));
     }
-    printf("BB%02u ", this->bbNum);
+    printf(FMT_BB " ", this->bbNum);
 
     printf("regmask=");
     dumpRegMask(registerAssignment);
@@ -9031,7 +9031,7 @@ void LinearScan::TupleStyleDump(LsraTupleDumpMode mode)
         if (enregisterLocalVars && mode == LSRA_DUMP_POST && block != compiler->fgFirstBB &&
             block->bbNum <= bbNumMaxBeforeResolution)
         {
-            printf("Predecessor for variable locations: BB%02u\n", blockInfo[block->bbNum].predBBNum);
+            printf("Predecessor for variable locations: " FMT_BB "\n", blockInfo[block->bbNum].predBBNum);
             dumpInVarToRegMap(block);
         }
         if (block->bbNum > bbNumMaxBeforeResolution)
@@ -9040,7 +9040,7 @@ void LinearScan::TupleStyleDump(LsraTupleDumpMode mode)
             splitBBNumToTargetBBNumMap->Lookup(block->bbNum, &splitEdgeInfo);
             assert(splitEdgeInfo.toBBNum <= bbNumMaxBeforeResolution);
             assert(splitEdgeInfo.fromBBNum <= bbNumMaxBeforeResolution);
-            printf("New block introduced for resolution from BB%02u to BB%02u\n", splitEdgeInfo.fromBBNum,
+            printf("New block introduced for resolution from " FMT_BB " to " FMT_BB "\n", splitEdgeInfo.fromBBNum,
                    splitEdgeInfo.toBBNum);
         }
 
