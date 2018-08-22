@@ -6814,7 +6814,7 @@ mono_value_box_handle (MonoDomain *domain, MonoClass *klass, gpointer value, Mon
 
 	size = size - MONO_ABI_SIZEOF (MonoObject);
 
-	guint8 *data = mono_object_get_data (res);
+	gpointer data = mono_object_get_data (res);
 
 	if (mono_gc_is_moving ()) {
 		g_assert (size == mono_class_value_size (klass, NULL));
@@ -6879,7 +6879,7 @@ mono_value_box_checked (MonoDomain *domain, MonoClass *klass, gpointer value, Mo
 
 	size = size - MONO_ABI_SIZEOF (MonoObject);
 
-	guint8 *data = mono_object_get_data (res);
+	gpointer data = mono_object_get_data (res);
 	if (mono_gc_is_moving ()) {
 		g_assert (size == mono_class_value_size (klass, NULL));
 		mono_gc_wbarrier_value_copy (data, value, 1, klass);
