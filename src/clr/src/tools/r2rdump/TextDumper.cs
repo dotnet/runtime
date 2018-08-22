@@ -181,6 +181,21 @@ namespace R2RDump
                 int instrSize = _disassembler.GetInstruction(rtf, imageOffset, rtfOffset, out instr);
 
                 _writer.Write(instr);
+
+                if (_r2r.Machine == Machine.Amd64 && ((Amd64.UnwindInfo)rtf.UnwindInfo).UnwindCodes.ContainsKey(codeOffset))
+                {
+                    List<Amd64.UnwindCode> codes = ((Amd64.UnwindInfo)rtf.UnwindInfo).UnwindCodes[codeOffset];
+                    foreach (Amd64.UnwindCode code in codes)
+                    {
+                        _writer.Write($"\t\t\t\t{code.UnwindOp} {code.OpInfoStr}");
+                        if (code.NextFrameOffset != -1)
+                        {
+                            _writer.WriteLine($" - {code.NextFrameOffset}");
+                        }
+                        _writer.WriteLine();
+                    }
+                }
+
                 if (rtf.Method.GcInfo != null && rtf.Method.GcInfo.Transitions.ContainsKey(codeOffset))
                 {
                     foreach (BaseGcTransition transition in rtf.Method.GcInfo.Transitions[codeOffset])
