@@ -1007,7 +1007,7 @@ endif
 
 if HAS_EXTENSION_MODULE
 else
-Makefile.am: Makefile.am.in $(llvm_makefile_dep)
+Makefile.am: Makefile.am.in
 	echo "##################### Generated from Makefile.am.in, do not modify ##########################" > $@
 	cat $< >> $@
 
