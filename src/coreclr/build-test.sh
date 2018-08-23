@@ -356,7 +356,7 @@ build_MSBuild_projects()
         export __TestGroupToBuild=1
         __AppendToLog=false
 
-        if [ -n __priority1 ]; then
+        if [ -n "$__priority1" ]; then
             export __BuildLoopCount=16
             export __TestGroupToBuild=2
         fi
