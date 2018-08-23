@@ -1317,7 +1317,7 @@ mono_domain_get_friendly_name (MonoDomain *domain)
  * LOCKING: Acquires the domain lock.
  */
 gpointer
-mono_domain_alloc (MonoDomain *domain, guint size)
+(mono_domain_alloc) (MonoDomain *domain, guint size)
 {
 	gpointer res;
 
@@ -1337,7 +1337,7 @@ mono_domain_alloc (MonoDomain *domain, guint size)
  * LOCKING: Acquires the domain lock.
  */
 gpointer
-mono_domain_alloc0 (MonoDomain *domain, guint size)
+(mono_domain_alloc0) (MonoDomain *domain, guint size)
 {
 	gpointer res;
 
@@ -1352,7 +1352,7 @@ mono_domain_alloc0 (MonoDomain *domain, guint size)
 }
 
 gpointer
-mono_domain_alloc0_lock_free (MonoDomain *domain, guint size)
+(mono_domain_alloc0_lock_free) (MonoDomain *domain, guint size)
 {
 	return lock_free_mempool_alloc0 (domain->lock_free_mp, size);
 }
@@ -1363,7 +1363,7 @@ mono_domain_alloc0_lock_free (MonoDomain *domain, guint size)
  * LOCKING: Acquires the domain lock.
  */
 void*
-mono_domain_code_reserve (MonoDomain *domain, int size)
+(mono_domain_code_reserve) (MonoDomain *domain, int size)
 {
 	gpointer res;
 
@@ -1380,7 +1380,7 @@ mono_domain_code_reserve (MonoDomain *domain, int size)
  * LOCKING: Acquires the domain lock.
  */
 void*
-mono_domain_code_reserve_align (MonoDomain *domain, int size, int alignment)
+(mono_domain_code_reserve_align) (MonoDomain *domain, int size, int alignment)
 {
 	gpointer res;
 

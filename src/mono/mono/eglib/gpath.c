@@ -97,7 +97,7 @@ strrchr_seperator (const gchar* filename)
 #endif
 	char *p;
 
-	p = strrchr (filename, G_DIR_SEPARATOR);
+	p = (char*)strrchr (filename, G_DIR_SEPARATOR);
 #ifdef G_OS_WIN32
 	p2 = strrchr (filename, '/');
 	if (p2 > p)

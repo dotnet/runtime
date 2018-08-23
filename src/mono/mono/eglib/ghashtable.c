@@ -29,6 +29,7 @@
 #include <stdio.h>
 #include <math.h>
 #include <glib.h>
+#include <eglib-remap.h>
 
 typedef struct _Slot Slot;
 
@@ -657,7 +658,7 @@ g_int_hash (gconstpointer v1)
 gboolean
 g_str_equal (gconstpointer v1, gconstpointer v2)
 {
-	return strcmp (v1, v2) == 0;
+	return strcmp ((const char*)v1, (const char*)v2) == 0;
 }
 
 guint

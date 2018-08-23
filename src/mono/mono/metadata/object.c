@@ -1672,7 +1672,7 @@ mono_vtable_build_imt_slot (MonoVTable* vtable, int imt_slot)
  * LOCKING: The domain lock must be held.
  */
 gpointer
-mono_method_alloc_generic_virtual_trampoline (MonoDomain *domain, int size)
+(mono_method_alloc_generic_virtual_trampoline) (MonoDomain *domain, int size)
 {
 	MONO_REQ_GC_NEUTRAL_MODE;
 

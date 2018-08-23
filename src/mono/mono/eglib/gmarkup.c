@@ -448,7 +448,7 @@ g_markup_parse_context_parse (GMarkupParseContext *context,
 				goto fail;
 			}
 			
-			text = current->data;
+			text = (char*)current->data;
 			if (context->parser.end_element != NULL){
 				context->parser.end_element (context, text, context->user_data, gerror);
 				if (gerror != NULL && *gerror != NULL){

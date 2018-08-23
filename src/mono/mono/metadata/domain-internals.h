@@ -512,17 +512,27 @@ mono_is_shadow_copy_enabled (MonoDomain *domain, const gchar *dir_name);
 gpointer
 mono_domain_alloc  (MonoDomain *domain, guint size);
 
+#define mono_domain_alloc(domain, size) (g_cast (mono_domain_alloc ((domain), (size))))
+
 gpointer
 mono_domain_alloc0 (MonoDomain *domain, guint size);
+
+#define mono_domain_alloc0(domain, size) (g_cast (mono_domain_alloc0 ((domain), (size))))
 
 gpointer
 mono_domain_alloc0_lock_free (MonoDomain *domain, guint size);
 
+#define mono_domain_alloc0_lock_free(domain, size) (g_cast (mono_domain_alloc0_lock_free ((domain), (size))))
+
 void*
 mono_domain_code_reserve (MonoDomain *domain, int size) MONO_LLVM_INTERNAL;
 
+#define mono_domain_code_reserve(domain, size) (g_cast (mono_domain_code_reserve ((domain), (size))))
+
 void*
 mono_domain_code_reserve_align (MonoDomain *domain, int size, int alignment);
+
+#define mono_domain_code_reserve_align(domain, size, align) (g_cast (mono_domain_code_reserve_align ((domain), (size), (align))))
 
 void
 mono_domain_code_commit (MonoDomain *domain, void *data, int size, int newsize);

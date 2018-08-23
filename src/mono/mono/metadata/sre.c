@@ -164,7 +164,7 @@ image_g_malloc (MonoImage *image, guint size)
  * from the C heap.
  */
 gpointer
-mono_image_g_malloc0 (MonoImage *image, guint size)
+(mono_image_g_malloc0) (MonoImage *image, guint size)
 {
 	MONO_REQ_GC_NEUTRAL_MODE;
 

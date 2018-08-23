@@ -1,3 +1,11 @@
+#undef g_malloc
+#undef g_realloc
+#undef g_malloc0
+#undef g_calloc
+#undef g_try_malloc
+#undef g_try_realloc
+#undef g_memdup
+
 #define g_array_append monoeg_g_array_append
 #define g_array_append_vals monoeg_g_array_append_vals
 #define g_array_free monoeg_g_array_free

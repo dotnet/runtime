@@ -224,7 +224,7 @@ Icall macros
 
 #define CLEAR_ICALL_FRAME_VALUE(RESULT, HANDLE)				\
 	mono_stack_mark_record_size (__info, &__mark, __FUNCTION__);	\
-	(RESULT) = mono_stack_mark_pop_value (__info, &__mark, (HANDLE));
+	(RESULT) = g_cast (mono_stack_mark_pop_value (__info, &__mark, (HANDLE)));
 
 #define HANDLE_FUNCTION_ENTER() do {				\
 	MonoThreadInfo *__info = mono_thread_info_current ();	\
@@ -245,7 +245,7 @@ Icall macros
 	do {							\
 		void* __result = MONO_HANDLE_RAW (HANDLE);	\
 		CLEAR_ICALL_FRAME;				\
-		return __result;				\
+		return g_cast (__result);			\
 	} while (0); } while (0);
 
 #if MONO_TYPE_SAFE_HANDLES
@@ -326,7 +326,7 @@ mono_thread_info_push_stack_mark (MonoThreadInfo *info, void *mark)
 		CLEAR_ICALL_COMMON	\
 		void* __ret = MONO_HANDLE_RAW (HANDLE);	\
 		CLEAR_ICALL_FRAME	\
-		return __ret;	\
+		return g_cast (__ret);	\
 	} while (0); } while (0)
 
 /*

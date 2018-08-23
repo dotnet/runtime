@@ -348,7 +348,7 @@ gboolean mono_method_same_domain (MonoJitInfo *caller, MonoJitInfo *callee)
  *
  *  Allocate code memory from the global code manager.
  */
-void *mono_global_codeman_reserve (int size)
+void *(mono_global_codeman_reserve) (int size)
 {
 	void *ptr;
 

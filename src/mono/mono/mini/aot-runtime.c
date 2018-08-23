@@ -2976,6 +2976,9 @@ decode_llvm_mono_eh_frame (MonoAotModule *amodule, MonoDomain *domain, MonoJitIn
 
 static gpointer
 alloc0_jit_info_data (MonoDomain *domain, int size, gboolean async_context)
+
+#define alloc0_jit_info_data(domain, size, async_context) (g_cast (alloc0_jit_info_data ((domain), (size), (async_context))))
+
 {
 	gpointer res;
 
@@ -5374,7 +5377,7 @@ mono_aot_get_trampoline_full (const char *name, MonoTrampInfo **out_tinfo)
 }
 
 gpointer
-mono_aot_get_trampoline (const char *name)
+(mono_aot_get_trampoline) (const char *name)
 {
 	MonoTrampInfo *out_tinfo;
 	gpointer code;

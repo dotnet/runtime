@@ -53,6 +53,7 @@ libeglib_la_SOURCES = \
 	unicode-data.h	\
 	$(os_files)
 
+CFLAGS := $(filter-out @CXX_REMOVE_CFLAGS@, @CFLAGS@) @CXX_ADD_CFLAGS@
 libeglib_la_CFLAGS = -g -Wall -D_FORTIFY_SOURCE=2 -D_GNU_SOURCE
 
 AM_CPPFLAGS = -I$(srcdir)

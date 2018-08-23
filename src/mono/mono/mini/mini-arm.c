@@ -1690,7 +1690,7 @@ mono_arch_set_native_call_context_args (CallContext *ccontext, gpointer frame, M
 
 	ccontext->stack_size = ALIGN_TO (cinfo->stack_usage, MONO_ARCH_FRAME_ALIGNMENT);
 	if (ccontext->stack_size)
-		ccontext->stack = calloc (1, ccontext->stack_size);
+		ccontext->stack = (guint8*)calloc (1, ccontext->stack_size);
 
 	if (sig->ret->type != MONO_TYPE_VOID) {
 		ainfo = &cinfo->ret;
@@ -3164,7 +3164,7 @@ mono_arch_finish_dyn_call (MonoDynCallInfo *info, guint8 *buf)
 void*
 mono_arch_instrument_prolog (MonoCompile *cfg, void *func, void *p, gboolean enable_arguments)
 {
-	guchar *code = p;
+	guchar *code = (guchar*)p;
 
 	code = mono_arm_emit_load_imm (code, ARMREG_R0, (guint32)cfg->method);
 	ARM_MOV_REG_IMM8 (code, ARMREG_R1, 0); /* NULL ebp for now */
@@ -3185,7 +3185,7 @@ enum {
 void*
 mono_arch_instrument_epilog (MonoCompile *cfg, void *func, void *p, gboolean enable_arguments)
 {
-	guchar *code = p;
+	guchar *code = (guchar*)p;
 	int save_mode = SAVE_NONE;
 	MonoMethod *method = cfg->method;
 	MonoType *ret_type = mini_get_underlying_type (mono_method_signature (method)->ret);

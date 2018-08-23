@@ -86,7 +86,7 @@ g_unichar_type (gunichar c)
 	/* since the argument is UTF-16, we cannot check beyond FFFF */
 
 	/* It should match any of above */
-	return 0;
+	return 0; // G_UNICODE_CONTROL
 }
 
 GUnicodeBreakType

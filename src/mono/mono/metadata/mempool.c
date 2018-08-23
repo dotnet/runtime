@@ -260,7 +260,7 @@ get_next_size (MonoMemPool *pool, int size)
  * \returns the address of a newly allocated memory block.
  */
 gpointer
-mono_mempool_alloc (MonoMemPool *pool, guint size)
+(mono_mempool_alloc) (MonoMemPool *pool, guint size)
 {
 	gpointer rval = pool->pos; // Return value
 
@@ -318,7 +318,7 @@ mono_mempool_alloc (MonoMemPool *pool, guint size)
  * same as \c mono_mempool_alloc, but fills memory with zero.
  */
 gpointer
-mono_mempool_alloc0 (MonoMemPool *pool, guint size)
+(mono_mempool_alloc0) (MonoMemPool *pool, guint size)
 {
 	gpointer rval;
 

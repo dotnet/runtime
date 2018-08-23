@@ -29,8 +29,12 @@ mono_mempool_stats         (MonoMemPool *pool);
 MONO_API void*
 mono_mempool_alloc         (MonoMemPool *pool, unsigned int size);
 
+#define mono_mempool_alloc(pool, size) (g_cast (mono_mempool_alloc ((pool), (size))))
+
 MONO_API void*
 mono_mempool_alloc0        (MonoMemPool *pool, unsigned int size);
+
+#define mono_mempool_alloc0(pool, size) (g_cast (mono_mempool_alloc0 ((pool), (size))))
 
 MONO_API mono_bool
 mono_mempool_contains_addr (MonoMemPool *pool, void* addr);
