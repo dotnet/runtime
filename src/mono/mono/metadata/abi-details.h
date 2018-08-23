@@ -36,7 +36,7 @@
 #define DECL_ALIGN(type) MONO_ALIGN_ ##type = MONO_CURRENT_ABI_ALIGNOF (type),
 #define DECL_ALIGN2(type,size) MONO_ALIGN_ ##type = size,
 #define DECL_SIZE(type) MONO_SIZEOF_ ##type = -1,
-#define DECL_SIZE2(type,size) MONO_SIZEOF_ ##type = -1,
+#define DECL_SIZE2(type,size) MONO_SIZEOF_ ##type = size,
 
 /* Needed by MONO_CURRENT_ABI_ALIGNOF */
 MONO_CURRENT_ABI_ALIGNOF_TYPEDEF(gint8)
@@ -63,7 +63,5 @@ enum {
 #define MONO_STRUCT_SIZE(struct) ((int)sizeof(struct))
 #endif
 #endif
-
-#define MONO_SIZEOF_MonoObject (2 * MONO_SIZEOF_gpointer)
 
 #endif
