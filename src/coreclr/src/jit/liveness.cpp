@@ -522,7 +522,7 @@ void Compiler::fgPerBlockLocalVarLiveness()
         if (verbose)
         {
             VARSET_TP allVars(VarSetOps::Union(this, fgCurUseSet, fgCurDefSet));
-            printf("BB%02u", block->bbNum);
+            printf(FMT_BB, block->bbNum);
             printf(" USE(%d)=", VarSetOps::Count(this, fgCurUseSet));
             lvaDispVarSet(fgCurUseSet, allVars);
             for (MemoryKind memoryKind : allMemoryKinds())
@@ -604,7 +604,7 @@ void Compiler::fgMarkInScope(BasicBlock* block, VARSET_VALARG_TP inScope)
 #ifdef DEBUG
     if (verbose)
     {
-        printf("Scope info: block BB%02u marking in scope: ", block->bbNum);
+        printf("Scope info: block " FMT_BB " marking in scope: ", block->bbNum);
         dumpConvertedVarSet(this, inScope);
         printf("\n");
     }
@@ -630,7 +630,7 @@ void Compiler::fgUnmarkInScope(BasicBlock* block, VARSET_VALARG_TP unmarkScope)
 #ifdef DEBUG
     if (verbose)
     {
-        printf("Scope info: block BB%02u UNmarking in scope: ", block->bbNum);
+        printf("Scope info: block " FMT_BB " UNmarking in scope: ", block->bbNum);
         dumpConvertedVarSet(this, unmarkScope);
         printf("\n");
     }
@@ -653,7 +653,7 @@ void Compiler::fgDispDebugScopes()
     BasicBlock* block;
     for (block = fgFirstBB; block; block = block->bbNext)
     {
-        printf("BB%02u: ", block->bbNum);
+        printf(FMT_BB ": ", block->bbNum);
         dumpConvertedVarSet(this, block->bbScope);
         printf("\n");
     }
@@ -1015,7 +1015,7 @@ void Compiler::fgExtendDbgLifetimes()
 #ifdef DEBUG
                 if (verbose)
                 {
-                    printf("Created zero-init of V%02u in BB%02u\n", varNum, block->bbNum);
+                    printf("Created zero-init of V%02u in " FMT_BB "\n", varNum, block->bbNum);
                 }
 #endif                                         // DEBUG
                 block->bbFlags |= BBF_CHANGED; // indicates that the contents of the block have changed.
@@ -1199,7 +1199,7 @@ class LiveVarAnalysis
 #ifdef DEBUG
                     if (m_compiler->verbose)
                     {
-                        printf("Scope info: block BB%02u LiveIn+ ", block->bbNum);
+                        printf("Scope info: block " FMT_BB " LiveIn+ ", block->bbNum);
                         dumpConvertedVarSet(m_compiler, VarSetOps::Diff(m_compiler, m_liveIn, block->bbLiveIn));
                         printf(", LiveOut+ ");
                         dumpConvertedVarSet(m_compiler, VarSetOps::Diff(m_compiler, m_liveOut, block->bbLiveOut));
@@ -2150,7 +2150,7 @@ bool Compiler::fgRemoveDeadStore(GenTree**        pTree,
 #ifdef DEBUG
                 if (verbose)
                 {
-                    printf("BB%02u - Dead assignment has side effects...\n", compCurBB->bbNum);
+                    printf(FMT_BB " - Dead assignment has side effects...\n", compCurBB->bbNum);
                     gtDispTree(asgNode);
                     printf("\n");
                 }
@@ -2248,7 +2248,7 @@ bool Compiler::fgRemoveDeadStore(GenTree**        pTree,
 #ifdef DEBUG
                 if (verbose)
                 {
-                    printf("BB%02u - INTERIOR dead assignment has side effects...\n", compCurBB->bbNum);
+                    printf(FMT_BB " - INTERIOR dead assignment has side effects...\n", compCurBB->bbNum);
                     gtDispTree(asgNode);
                     printf("\n");
                 }
@@ -2309,7 +2309,7 @@ bool Compiler::fgRemoveDeadStore(GenTree**        pTree,
                 {
                     printf("\nRemoving tree ");
                     printTreeID(asgNode);
-                    printf(" in BB%02u as useless\n", compCurBB->bbNum);
+                    printf(" in " FMT_BB " as useless\n", compCurBB->bbNum);
                     gtDispTree(asgNode);
                     printf("\n");
                 }
@@ -2613,7 +2613,7 @@ void Compiler::fgInterBlockLocalVarLiveness()
 void Compiler::fgDispBBLiveness(BasicBlock* block)
 {
     VARSET_TP allVars(VarSetOps::Union(this, block->bbLiveIn, block->bbLiveOut));
-    printf("BB%02u", block->bbNum);
+    printf(FMT_BB, block->bbNum);
     printf(" IN (%d)=", VarSetOps::Count(this, block->bbLiveIn));
     lvaDispVarSet(block->bbLiveIn, allVars);
     for (MemoryKind memoryKind : allMemoryKinds())
