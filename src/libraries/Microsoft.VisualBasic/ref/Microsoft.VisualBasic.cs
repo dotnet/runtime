@@ -164,6 +164,15 @@ namespace Microsoft.VisualBasic
         public VBFixedStringAttribute(int Length) { }
         public int Length { get { throw null; } }
     }
+    [Microsoft.VisualBasic.CompilerServices.StandardModuleAttribute]
+    public sealed partial class VBMath
+    {
+        internal VBMath() { }
+        public static void Randomize() { }
+        public static void Randomize(double Number) { }
+        public static float Rnd() { throw null; }
+        public static float Rnd(float Number) { throw null; }
+    }
 }
 namespace Microsoft.VisualBasic.ApplicationServices
 {
