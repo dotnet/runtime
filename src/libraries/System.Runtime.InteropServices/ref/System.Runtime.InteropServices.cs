@@ -415,9 +415,9 @@ namespace System.Runtime.InteropServices
         public void Add() { }
         public void Remove() { }
     }
-    public struct HandleRef
+    public readonly struct HandleRef
     {
-        private object _dummy;
+        private readonly object _dummy;
         public HandleRef(object wrapper, System.IntPtr handle) : this() { }
         public System.IntPtr Handle { get; }
         public object Wrapper { get; }

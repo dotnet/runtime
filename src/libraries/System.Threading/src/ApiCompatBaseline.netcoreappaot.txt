@@ -1,0 +1,2 @@
+Compat issues with assembly System.Threading:
+TypeCannotChangeClassification : Type 'System.Threading.AsyncLocalValueChangedArgs<T>' is marked as readonly in the contract so it must also be marked readonly in the implementation.
