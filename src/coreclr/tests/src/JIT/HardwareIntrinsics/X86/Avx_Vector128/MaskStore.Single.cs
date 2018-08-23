@@ -366,7 +366,7 @@ namespace JIT.HardwareIntrinsics.X86
 
         private void ValidateResult(Single[] left, Single[] right, Single[] result, [CallerMemberName] string method = "")
         {
-            if (BitConverter.SingleToInt32Bits(result[0]) != BitConverter.SingleToInt32Bits((BitConverter.SingleToInt32Bits(left[0]) < 0) ? right[0] : 0))
+            if (BitConverter.SingleToInt32Bits(result[0]) != BitConverter.SingleToInt32Bits((BitConverter.SingleToInt32Bits(left[0]) < 0) ? right[0] : BitConverter.SingleToInt32Bits(result[0])))
             {
                 Succeeded = false;
             }
@@ -374,7 +374,7 @@ namespace JIT.HardwareIntrinsics.X86
             {
                 for (var i = 1; i < RetElementCount; i++)
                 {
-                    if (BitConverter.SingleToInt32Bits(result[i]) != BitConverter.SingleToInt32Bits((BitConverter.SingleToInt32Bits(left[i]) < 0) ? right[i] : 0))
+                    if (BitConverter.SingleToInt32Bits(result[i]) != BitConverter.SingleToInt32Bits((BitConverter.SingleToInt32Bits(left[i]) < 0) ? right[i] : BitConverter.SingleToInt32Bits(result[i])))
                     {
                         Succeeded = false;
                         break;

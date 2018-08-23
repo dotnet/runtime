@@ -164,7 +164,7 @@ void CodeGen::genHWIntrinsic(GenTreeHWIntrinsic* node)
                 }
                 else if (category == HW_Category_MemoryLoad)
                 {
-                    if (intrinsicId == NI_AVX_MaskLoad)
+                    if (intrinsicId == NI_AVX_MaskLoad || intrinsicId == NI_AVX2_MaskLoad)
                     {
                         emit->emitIns_SIMD_R_R_AR(ins, simdSize, targetReg, op2Reg, op1Reg);
                     }
@@ -253,7 +253,7 @@ void CodeGen::genHWIntrinsic(GenTreeHWIntrinsic* node)
                 }
                 else if (category == HW_Category_MemoryStore)
                 {
-                    if (intrinsicId == NI_AVX_MaskStore)
+                    if (intrinsicId == NI_AVX_MaskStore || intrinsicId == NI_AVX2_MaskStore)
                     {
                         emit->emitIns_AR_R_R(ins, simdSize, op2Reg, op3Reg, op1Reg, 0);
                     }
