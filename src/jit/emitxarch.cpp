@@ -3573,10 +3573,24 @@ void emitter::emitInsRMW(instruction ins, emitAttr attr, GenTreeStoreInd* storeI
     if (src->isContainedIntOrIImmed())
     {
         GenTreeIntConCommon* intConst = src->AsIntConCommon();
-        id                            = emitNewInstrAmdCns(attr, offset, (int)intConst->IconValue());
+        int                  iconVal  = (int)intConst->IconValue();
+        switch (ins)
+        {
+            case INS_rcl_N:
+            case INS_rcr_N:
+            case INS_rol_N:
+            case INS_ror_N:
+            case INS_shl_N:
+            case INS_shr_N:
+            case INS_sar_N:
+                iconVal &= 0x7F;
+                break;
+        }
+
+        id = emitNewInstrAmdCns(attr, offset, iconVal);
         emitHandleMemOp(storeInd, id, IF_ARW_CNS, ins);
         id->idIns(ins);
-        sz = emitInsSizeAM(id, insCodeMI(ins), (int)intConst->IconValue());
+        sz = emitInsSizeAM(id, insCodeMI(ins), iconVal);
     }
     else
     {
