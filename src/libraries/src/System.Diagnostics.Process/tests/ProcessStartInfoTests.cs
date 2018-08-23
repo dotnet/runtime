@@ -19,6 +19,7 @@ using System.Threading;
 
 namespace System.Diagnostics.Tests
 {
+    [ActiveIssue(31908, TargetFrameworkMonikers.Uap)]
     public partial class ProcessStartInfoTests : ProcessTestBase
     {
         [Fact]

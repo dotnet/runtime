@@ -8,9 +8,9 @@ using System.Reflection;
 using Xunit.Abstractions;
 using Xunit.Sdk;
 
-// Usage: [assembly: TestCaseOrderer("Xunit.NetCore.Extensions.BenchmarkFilter", "System.Drawing.Common.Performance.Tests")]
+// Usage: [assembly: TestCaseOrderer("Microsoft.DotNet.XUnitExtensions.BenchmarkFilter", "System.Drawing.Common.Performance.Tests")]
 
-namespace Xunit.NetCore.Extensions
+namespace Microsoft.DotNet.XUnitExtensions
 {
     public class BenchmarkFilter : ITestCaseOrderer
     {

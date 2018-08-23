@@ -162,8 +162,8 @@ namespace System.Threading.Threads.Tests
         [InlineData("STAMain.exe", "WaitAllNotSupportedOnSta_Test1")]
         [InlineData("MTAMain.exe", "GetApartmentStateTest")]
         [InlineData("MTAMain.exe", "SetApartmentStateTest")]
-        [InlineData("DefaultApartmentStateMain.exe", "GetApartmentStateTest")]
-        [InlineData("DefaultApartmentStateMain.exe", "SetApartmentStateTest")]
+        [InlineData("DefaultApartmentStateMain.dll", "GetApartmentStateTest")]
+        [InlineData("DefaultApartmentStateMain.dll", "SetApartmentStateTest")]
         [ActiveIssue(20766, TargetFrameworkMonikers.Uap)]
         public static void ApartmentState_AttributePresent(string appName, string testName)
         {
@@ -1018,12 +1018,13 @@ namespace System.Threading.Threads.Tests
 
         [Fact]
         [PlatformSpecific(TestPlatforms.Windows)]
+        [SkipOnTargetFramework(TargetFrameworkMonikers.Uap, "SetPrincipal doesn't work on UAP.")]
         public static void WindowsPrincipalPolicyTest_Windows()
         {
             DummyClass.RemoteInvoke(() =>
             {
-                    AppDomain.CurrentDomain.SetPrincipalPolicy(PrincipalPolicy.WindowsPrincipal);
-                    Assert.Equal(Environment.UserDomainName + @"\" + Environment.UserName, Thread.CurrentPrincipal.Identity.Name);
+                AppDomain.CurrentDomain.SetPrincipalPolicy(PrincipalPolicy.WindowsPrincipal);
+                Assert.Equal(Environment.UserDomainName + @"\" + Environment.UserName, Thread.CurrentPrincipal.Identity.Name);
             }).Dispose();
                 }
 

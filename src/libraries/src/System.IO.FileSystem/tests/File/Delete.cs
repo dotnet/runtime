@@ -3,7 +3,7 @@
 // See the LICENSE file in the project root for more information.
 
 using Xunit;
-using Xunit.NetCore.Extensions;
+using Microsoft.DotNet.XUnitExtensions;
 
 namespace System.IO.Tests
 {

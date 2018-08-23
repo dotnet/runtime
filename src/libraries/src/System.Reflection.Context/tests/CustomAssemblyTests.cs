@@ -63,12 +63,6 @@ namespace System.Reflection.Context.Tests
         }
 
         [Fact]
-        public void EntryPoint()
-        {
-            Assert.Null(_customAssembly.EntryPoint);
-        }
-
-        [Fact]
         public void GetExportedTypesTest()
         {
             Type[] exportedTypes = _customAssembly.GetExportedTypes();

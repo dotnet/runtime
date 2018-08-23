@@ -9,10 +9,8 @@
     <Compile Include="$(CommonTestPath)\System\Runtime\Serialization\Utils.cs" />
     <Compile Include="$(TestSourceFolder)..\..\..\..\System.Runtime.Serialization.Xml\tests\SerializationTypes.cs" />
     <Compile Include="$(TestSourceFolder)..\..\..\..\System.Runtime.Serialization.Xml\tests\SerializationTypes.RuntimeOnly.cs" />
-    <Compile Include="$(TestSourceFolder)..\..\..\..\System.Runtime.Serialization.Xml\tests\Performance\PerformanceTestsCommon.cs" />
     <Compile Include="$(TestSourceFolder)..\XmlSerializerTests.cs" />
     <Compile Include="$(TestSourceFolder)..\XmlSerializerTests.RuntimeOnly.cs" />
-    <Compile Include="$(TestSourceFolder)..\Performance\XsPerformanceTest.cs" />
   </ItemGroup>
   <ItemGroup>
     <EmbeddedResource Include="Resources\$(AssemblyName).rd.xml" />

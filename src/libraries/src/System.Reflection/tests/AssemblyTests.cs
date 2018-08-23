@@ -82,12 +82,6 @@ namespace System.Reflection.Tests
             Assert.Equal(exists, resourceStream != null);
         }
 
-        [Fact]
-        public void EntryPoint_ExecutingAssembly_IsNull()
-        {
-            Assert.Null(Helpers.ExecutingAssembly.EntryPoint);
-        }
-
         public static IEnumerable<object[]> Equals_TestData()
         {
             yield return new object[] { Assembly.Load(new AssemblyName(typeof(int).GetTypeInfo().Assembly.FullName)), Assembly.Load(new AssemblyName(typeof(int).GetTypeInfo().Assembly.FullName)), true };
@@ -123,8 +117,8 @@ namespace System.Reflection.Tests
         {
             Assert.NotNull(Assembly.GetEntryAssembly());
             string assembly = Assembly.GetEntryAssembly().ToString();
-            bool correct = assembly.IndexOf("xunit.console.netcore", StringComparison.OrdinalIgnoreCase) != -1 ||
-                           assembly.IndexOf("XUnit.Runner.Uap", StringComparison.OrdinalIgnoreCase) != -1;
+            bool correct = assembly.IndexOf("xunit.console", StringComparison.OrdinalIgnoreCase) != -1 ||
+                           assembly.IndexOf("Microsoft.DotNet.XUnitRunnerUap", StringComparison.OrdinalIgnoreCase) != -1;
             Assert.True(correct, $"Unexpected assembly name {assembly}");
         }
 

@@ -263,7 +263,7 @@ namespace System.Drawing.Tests
             using (var stream = new MemoryStream())
             {
                 Exception ex = Assert.ThrowsAny<Exception>(() => icon.Save(stream));
-                Assert.True(ex is COMException || ex is ObjectDisposedException, $"{ex.GetType().ToString()} was thrown.");
+                Assert.True(ex is COMException || ex is ObjectDisposedException || ex is FileNotFoundException, $"{ex.GetType().ToString()} was thrown.");
 
                 AssertExtensions.Throws<ArgumentException>(null, () => icon.ToBitmap());
                 Assert.Equal(Size.Empty, icon.Size);

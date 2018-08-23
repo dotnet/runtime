@@ -18,7 +18,7 @@
   </ItemGroup>
 
   <!-- For UAP we are using an APPX that is registered with a unique ID. Because of that we need to run tests sequentially -->
-  <PropertyGroup Condition="'$(BuildingUAPVertical)'=='true' and '$(SkipTests)' != 'true' " >
+  <PropertyGroup Condition="'$(BuildingUAPVertical)'=='true' and '$(SkipTests)' != 'true'">
     <SerializeProjects>true</SerializeProjects>
   </PropertyGroup>
 
@@ -26,8 +26,8 @@
   <Import Project="$(ToolsDir)VersionTools.targets" Condition="Exists('$(ToolsDir)VersionTools.targets')" />
 
   <PropertyGroup>
-    <_ProjectPattern Condition="'$(Performance)'!='true'">.Tests</_ProjectPattern>
-    <_ProjectPattern Condition="'$(Performance)'=='true'">.Performance.Tests</_ProjectPattern>
+    <_ProjectPattern Condition="'$(Performance)' != 'true'">.Tests</_ProjectPattern>
+    <_ProjectPattern Condition="'$(Performance)' == 'true'">.Performance.Tests</_ProjectPattern>
   </PropertyGroup>
   
   <ItemGroup Condition="'$(BuildAllConfigurations)' != 'true'">

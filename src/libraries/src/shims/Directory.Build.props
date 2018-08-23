@@ -19,7 +19,7 @@
   </PropertyGroup>
 
   <PropertyGroup>
-    <IntermediateOutputPath>$(BaseIntermediateOutputPath)shims/$(TargetGroup)/</IntermediateOutputPath>
-    <GenFacadesOutputPath>$(BaseIntermediateOutputPath)shims/$(TargetGroup)/facades/</GenFacadesOutputPath>
+    <!-- shared folder for ApiCompat.proj and shims.proj -->
+    <GenFacadesOutputPath>$(RootIntermediateOutputPath)shims/$(TargetGroup)/</GenFacadesOutputPath>
   </PropertyGroup>
 </Project>

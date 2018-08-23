@@ -4,4 +4,4 @@
 
 using Xunit;
 
-[assembly: TestCaseOrderer("Xunit.NetCore.Extensions.BenchmarkFilter", "System.Drawing.Common.Performance.Tests")]
+[assembly: TestCaseOrderer("Microsoft.DotNet.XUnitExtensions.BenchmarkFilter", "System.Drawing.Common.Performance.Tests")]

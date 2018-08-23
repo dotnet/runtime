@@ -128,6 +128,7 @@ namespace System.Buffers.Text.Tests
             }
         }
 
+#if netcoreapp
         [Benchmark(InnerIterationCount = InnerCount)]
         [InlineData(10)]
         [InlineData(100)]
@@ -148,6 +149,7 @@ namespace System.Buffers.Text.Tests
                 }
             }
         }
+#endif
 
         [Benchmark(InnerIterationCount = InnerCount)]
         [InlineData(10)]

@@ -6,7 +6,7 @@ using System.Diagnostics;
 using System.Drawing.Imaging;
 using System.IO;
 using Microsoft.Xunit.Performance;
-using Xunit.NetCore.Extensions;
+using Microsoft.DotNet.XUnitExtensions;
 
 namespace System.Drawing.Tests
 {

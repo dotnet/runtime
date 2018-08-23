@@ -12,9 +12,6 @@
 
   <Import Project="..\Directory.Build.targets" />
   
-  <Target Name="_CheckForInvalidConfigurationAndPlatform" />
-  <Target Name="_CheckForUnsupportedTargetFramework" />
-  <Target Name="RunResolvePackageDependencies" />
   <Target Name="AddSkipGetTargetFrameworkToProjectReferences" Condition="'@(ProjectReference)' != ''">
     <ItemGroup>
       <ProjectReference>
@@ -57,10 +54,4 @@
   <Target Name="DumpTargets" BeforeTargets="ResolveProjectReferences">
     <Message Text="DumpTargets> $(OutputPath), C=[$(Configuration)], CG=[$(ConfigurationGroup)], OG=[$(OSGroup)], TG=[$(TargetGroup)]" Importance="Low" />
   </Target>
-
-  <PropertyGroup>
-    <!-- Workaround https://github.com/dotnet/project-system/issues/3670 by setting TargetFramework expicitly -->
-    <!-- This property is set late in the project evaluation so other properties don't try to use it. -->
-    <TargetFramework>$(TargetGroup)</TargetFramework>
-  </PropertyGroup>
 </Project> 

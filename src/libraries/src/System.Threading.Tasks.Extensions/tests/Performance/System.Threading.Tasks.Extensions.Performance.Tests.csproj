@@ -1,10 +1,8 @@
 <Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
-    <IncludePerformanceTests>true</IncludePerformanceTests>
     <ProjectGuid>{77E38A48-61ED-4D79-9136-D88617EE3558}</ProjectGuid>
     <Configurations>netcoreapp-Debug;netcoreapp-Release</Configurations>
   </PropertyGroup>
-  <!-- Default configurations to help VS understand the configurations -->
   <ItemGroup>
     <Compile Include="Perf.ValueTask.cs" />
     <Compile Include="$(CommonTestPath)\System\PerfUtils.cs">
