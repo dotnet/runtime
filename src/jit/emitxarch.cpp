@@ -145,6 +145,10 @@ bool emitter::IsDstDstSrcAVXInstruction(instruction ins)
         case INS_addss:
         case INS_addsubpd:
         case INS_addsubps:
+        case INS_aesdec:
+        case INS_aesdeclast:
+        case INS_aesenc:
+        case INS_aesenclast:
         case INS_andn:
         case INS_andnpd:
         case INS_andnps:
@@ -427,6 +431,7 @@ static bool IsDstSrcImmAvxInstruction(instruction ins)
 {
     switch (ins)
     {
+        case INS_aeskeygenassist:
         case INS_extractps:
         case INS_pextrb:
         case INS_pextrw:
