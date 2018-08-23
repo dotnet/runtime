@@ -227,6 +227,7 @@ typedef struct MonoAotOptions {
 	char *instances_logfile_path;
 	char *logfile;
 	char *llvm_opts;
+	char *llvm_llc;
 	gboolean dump_json;
 	gboolean profile_only;
 	gboolean no_opt;
@@ -7593,6 +7594,8 @@ mono_aot_parse_options (const char *aot_options, MonoAotOptions *opts)
 			opts->verbose = TRUE;
 		} else if (str_begins_with (arg, "llvmopts=")){
 			opts->llvm_opts = g_strdup (arg + strlen ("llvmopts="));
+		} else if (str_begins_with (arg, "llvmllc=")){
+			opts->llvm_llc = g_strdup (arg + strlen ("llvmllc="));
 		} else if (!strcmp (arg, "deterministic")) {
 			opts->deterministic = TRUE;
 		} else if (!strcmp (arg, "no-opt")) {
@@ -9164,6 +9167,12 @@ emit_llvm_file (MonoAotCompile *acfg)
 	} else {
 		output_fname = g_strdup_printf ("%s", acfg->llvm_sfile);
 	}
+
+	if (acfg->aot_opts.llvm_llc) {
+		g_free (acfg->llc_args);
+		acfg->llc_args = g_string_new (acfg->aot_opts.llvm_llc);
+	}
+
 	command = g_strdup_printf ("\"%sllc\" %s -o \"%s\" \"%s.opt.bc\"", acfg->aot_opts.llvm_path, acfg->llc_args->str, output_fname, acfg->tmpbasename);
 	g_free (output_fname);
 
