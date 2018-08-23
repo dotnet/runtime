@@ -6977,7 +6977,7 @@ void Compiler::fgMorphCallInlineHelper(GenTreeCall* call, InlineResult* result)
         memset(lvaTable + startVars, 0, (lvaCount - startVars) * sizeof(*lvaTable));
         for (unsigned i = startVars; i < lvaCount; i++)
         {
-            new (&lvaTable[i], jitstd::placement_t()) LclVarDsc(this); // call the constructor.
+            new (&lvaTable[i], jitstd::placement_t()) LclVarDsc(); // call the constructor.
         }
 
         lvaCount = startVars;
