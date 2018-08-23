@@ -82,7 +82,7 @@ the implementation without compat concerns in future releases.
       - Update the ProjectReferences in the respective pkgproj's to align with the build configurations in the
       `<Library>\src\<Library>.builds` file. This may entail adding new references or removing references according to whatever changes were made to the .builds file.
   - If assembly or package version is updated the package index needs to be updated by running
-    `msbuild <Library>/pkg/<Library>.pkgproj /t:UpdatePackageIndex`
+    `dotnet msbuild <Library>/pkg/<Library>.pkgproj /t:UpdatePackageIndex`
 
 **Update tests**
   - If changing target framework
@@ -93,7 +93,7 @@ the implementation without compat concerns in future releases.
       - Set `TestTFMs` metadata to a list of target frameworks to run on, will generally match the `SupportedFramework` metadata in the pkgproj (ex: [tests\System.Runtime.builds](https://github.com/dotnet/corefx/blob/master/src/System.Runtime/tests/System.Runtime.Tests.builds#L8))
       - If `TestTFMs` is empty it defaults to [netcoreapp1.0](https://github.com/dotnet/corefx/commit/57af41ef1439ad2e443e42d03d55d41613e4c02e#diff-cd0fc5e0bad8102e1a45aa7575bdd102R155)
   - Add new test code following [conventions](https://github.com/dotnet/corefx/blob/master/Documentation/coding-guidelines/project-guidelines.md#code-file-naming-conventions) for new files to that are specific to the new target framework.
-  - To run just the new test configuration run `msbuild <Library>.csproj /t:RebuildAndTest /p:TargetGroup=<TargetGroup>`
+  - To run just the new test configuration run `dotnet msbuild <Library>.csproj /t:RebuildAndTest /p:TargetGroup=<TargetGroup>`
 
 ## FAQ
 _**<a name="isnetstandard">Is your API part of netstandard?</a>**_

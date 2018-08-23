@@ -4,7 +4,7 @@
 
 This tutorial describes how to build and run application code that targets self-compiled .NET Core binaries without using Visual Studio,  the .NET Core SDK Host (`dotnet.exe`) or a project file (e.g. `csproj`). Follow these steps to quickly validate changes you've made in the product e.g. by running benchmarks or tests on it.
 
-If you are on Windows you currently need to use the `Developer Command Prompt for VS 2017` to build corefx/coreclr! For the sake of completeness, we have placed our repositories under `d:\git\`.
+For the sake of completeness, we have placed our repositories under `d:\git\`.
 
 ## Compile corefx with self-compiled coreclr binaries
 If you've made changes to coreclr make sure to also build it and pass its binaries to corefx.

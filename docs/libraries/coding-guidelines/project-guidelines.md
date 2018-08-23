@@ -131,33 +131,21 @@ Temporary versions are at https://github.com/dotnet/corefx/blob/dev/eng/src/Tool
 - UAP F5 -> `uap-Windows_NT`
 
 ## Project configurations for VS
-For each unique configuration needed for a given library project a configuration property group should be added to the project so it can be selected and built in VS and also clearly identify the various configurations.<BR/>
+For each unique configuration needed for a given library project a configuration entry separated by a ';' should be added to the project so it can be selected and built in VS and also clearly identify the various configurations.<BR/>
 
-`<PropertyGroup Condition="'$(Configuration)|$(Platform)' == '$(OSGroup)-$(TargetGroup)-$(ConfigurationGroup)|$(Platform)'">`
-
+`$(TargetGroup)-$(OSGroup)-$(ConfigurationGroup)|$(Platform`
 - Note that the majority of managed projects, currently all in corefx, $(Platform) is overridden to be AnyCPU.
 
+`<Configurations>netcoreapp-Unix-Debug;netcoreapp-Unix-Release;netcoreapp-Windows_NT-Debug;netcoreapp-Windows_NT-Release;uap-Windows_NT-Debug;uap-Windows_NT-Release;uapaot-Windows_NT-Debug;uapaot-Windows_NT-Release</Configurations>`
+
 ####*Examples*
-Project configurations for a pure IL library project which targets the defaults.
-```xml
-  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'Debug|AnyCPU'" />
-  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'Release|AnyCPU'" />
-```
 Project configurations with a unique implementation on Unix and Windows
 ```xml
-  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'Unix-Debug|AnyCPU'" />
-  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'Unix-Release|AnyCPU'" />
-  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'Windows_NT-Debug|AnyCPU'" />
-  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'Windows_NT-Release|AnyCPU'" />
+<Configurations>netcoreapp-Unix-Debug;netcoreapp-Unix-Release;netcoreapp-Windows_NT-Debug;netcoreapp-Windows_NT-Release</Configurations>
 ```
 Project configurations that are unique for a few different target frameworks and runtimes
 ```xml
-  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'Debug|AnyCPU'" />
-  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'Release|AnyCPU'" />
-  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'uap101aot-Debug|AnyCPU'" />
-  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'uap101aot-Release|AnyCPU'" />
-  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'uap101-Debug|AnyCPU'" />
-  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'uap101-Release|AnyCPU'" />
+<Configurations>netcoreapp-Windows_NT-Debug;netcoreapp-Windows_NT-Release;uap-Windows_NT-Debug;uap-Windows_NT-Release;uapaot-Windows_NT-Debug;uapaot-Windows_NT-Release</Configurations>
 ```
 
 ## Updating Configurations
@@ -165,7 +153,7 @@ Project configurations that are unique for a few different target frameworks and
 We have a build task that you can run to automatically update all the projects with the above boilerplate as well as updating all the solution files for the libraries. Whenever you change the list of configurations for a project you can regenerate all these for the entire repo by running:
 
 ```
-msbuild build.proj /t:UpdateVSConfigurations
+dotnet msbuild build.proj /t:UpdateVSConfigurations
 ```
 
 If you want to scope the geneneration you can either undo changes that you don't need or you can temporally limit the set of projects or directories by updating the item set in the UpdateVSConfigurations target in https://github.com/dotnet/corefx/blob/master/build.proj
