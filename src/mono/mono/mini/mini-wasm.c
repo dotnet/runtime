@@ -467,6 +467,8 @@ mono_arch_cpu_enumerate_simd_versions (void)
 guint32
 mono_arch_cpu_optimizations (guint32 *exclude_mask)
 {
+	/* No arch specific passes yet */
+	*exclude_mask = 0;
 	return 0;
 }
 
