@@ -174,6 +174,9 @@
     <Compile Include="Permute2x128.UInt32.2.cs" />
     <Compile Include="Permute2x128.Int64.2.cs" />
     <Compile Include="Permute2x128.UInt64.2.cs" />
+    <Compile Include="Permute4x64.Double.85.cs"/>
+    <Compile Include="Permute4x64.Int64.85.cs"/>
+    <Compile Include="Permute4x64.UInt64.85.cs"/>
     <Compile Include="ShiftLeftLogical.Int16.1.cs" />
     <Compile Include="ShiftLeftLogical.UInt16.1.cs" />
     <Compile Include="ShiftLeftLogical.Int32.1.cs" />
