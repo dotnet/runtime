@@ -2377,6 +2377,7 @@ bool Lowering::IsContainableHWIntrinsicOp(GenTreeHWIntrinsic* containingNode, Ge
                 case NI_SSE41_Blend:
                 case NI_SSE41_DotProduct:
                 case NI_SSE41_MultipleSumAbsoluteDifferences:
+                case NI_AES_KeygenAssist:
                 case NI_AVX_Blend:
                 case NI_AVX_Compare:
                 case NI_AVX_DotProduct:
@@ -2804,6 +2805,19 @@ void Lowering::ContainCheckHWIntrinsic(GenTreeHWIntrinsic* node)
                             else if (supportsRegOptional)
                             {
                                 op2->SetRegOptional();
+                            }
+                            break;
+                        }
+
+                        case NI_AES_KeygenAssist:
+                        {
+                            if (IsContainableHWIntrinsicOp(node, op1, &supportsRegOptional))
+                            {
+                                MakeSrcContained(node, op1);
+                            }
+                            else if (supportsRegOptional)
+                            {
+                                op1->SetRegOptional();
                             }
                             break;
                         }
