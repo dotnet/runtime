@@ -463,6 +463,14 @@ INST3( pextrq,       "pextrq"      , 0, IUM_WR, 0, 0, SSE3A(0x16),  BAD_CODE, BA
 INST3( pextrw_sse41, "pextrw"      , 0, IUM_WR, 0, 0, SSE3A(0x15),  BAD_CODE, BAD_CODE)      // Extract Word
 INST3( extractps,    "extractps"   , 0, IUM_WR, 0, 0, SSE3A(0x17),  BAD_CODE, BAD_CODE)      // Extract Packed Floating-Point Values
 
+//AES instructions
+INST3(aesdec,         "aesdec"          , 0, IUM_WR, 0, 0, BAD_CODE,     BAD_CODE, SSE38(0xDE))   // Perform one round of an AES decryption flow
+INST3(aesdeclast,     "aesdeclast"      , 0, IUM_WR, 0, 0, BAD_CODE,     BAD_CODE, SSE38(0xDF))   // Perform last round of an AES decryption flow
+INST3(aesenc,         "aesenc"          , 0, IUM_WR, 0, 0, BAD_CODE,     BAD_CODE, SSE38(0xDC))   // Perform one round of an AES encryption flow
+INST3(aesenclast,     "aesenclast"      , 0, IUM_WR, 0, 0, BAD_CODE,     BAD_CODE, SSE38(0xDD))   // Perform last round of an AES encryption flow
+INST3(aesimc,         "aesimc"          , 0, IUM_WR, 0, 0, BAD_CODE,     BAD_CODE, SSE38(0xDB))   // Perform the AES InvMixColumn Transformation
+INST3(aeskeygenassist,"aeskeygenassist" , 0, IUM_WR, 0, 0, BAD_CODE,     BAD_CODE, SSE3A(0xDF))   // AES Round Key Generation Assist
+
 INST3(LAST_SSE4_INSTRUCTION, "LAST_SSE4_INSTRUCTION",  0, IUM_WR, 0, 0, BAD_CODE, BAD_CODE, BAD_CODE)
 
 INST3(FIRST_AVX_INSTRUCTION, "FIRST_AVX_INSTRUCTION",  0, IUM_WR, 0, 0, BAD_CODE, BAD_CODE, BAD_CODE)
