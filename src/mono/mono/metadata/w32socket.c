@@ -1027,72 +1027,54 @@ get_sockaddr_size (int family)
 	return size;
 }
 
-MonoObjectHandle
-ves_icall_System_Net_Sockets_Socket_LocalEndPoint_internal (gsize sock, gint32 af, gint32 *werror, MonoError *error)
+static MonoObjectHandle
+mono_w32socket_getname (gsize sock, gint32 af, gboolean local, gint32 *werror, MonoError *error)
 {
-	gchar *sa;
-	socklen_t salen;
+	gpointer sa = NULL;
+	socklen_t salen = 0;
 	int ret;
-	
+	MonoObjectHandle result = NULL_HANDLE;
+
 	*werror = 0;
 	
 	salen = get_sockaddr_size (convert_family ((MonoAddressFamily)af));
 	if (salen == 0) {
 		*werror = WSAEAFNOSUPPORT;
-		return NULL_HANDLE;
+		goto exit;
 	}
-	// FIXME zeros only sometimes
-	sa = (salen <= 128) ? g_newa (char, salen) : (char *)g_malloc0 (salen);
+	if (salen <= 128) {
+		sa = g_alloca (salen);
+		memset (sa, 0, salen);
+	} else {
+		sa = g_malloc0 (salen);
+	}
 
-	ret = mono_w32socket_getsockname (sock, (struct sockaddr *)sa, &salen);
+	/* Note: linux returns just 2 for AF_UNIX. Always. */
+	ret = (local ? mono_w32socket_getsockname : mono_w32socket_getpeername) (sock, (struct sockaddr *)sa, &salen);
 	if (ret == SOCKET_ERROR) {
 		*werror = mono_w32socket_get_last_error ();
-		if (salen > 128)
-			g_free (sa);
-		return NULL_HANDLE;
+		goto exit;
 	}
 	
-	LOGDEBUG (g_message("%s: bound to %s port %d", __func__, inet_ntoa (((struct sockaddr_in *)&sa)->sin_addr), ntohs (((struct sockaddr_in *)&sa)->sin_port)));
+	LOGDEBUG (g_message("%s: %s to %s port %d", __func__, local ? "bound" : "connected", inet_ntoa (((struct sockaddr_in *)&sa)->sin_addr), ntohs (((struct sockaddr_in *)&sa)->sin_port)));
 
-	MonoObjectHandle result = create_object_handle_from_sockaddr ((struct sockaddr *)sa, salen, werror, error);
+	result = create_object_handle_from_sockaddr ((struct sockaddr *)sa, salen, werror, error);
+exit:
 	if (salen > 128)
 		g_free (sa);
 	return result;
 }
 
 MonoObjectHandle
+ves_icall_System_Net_Sockets_Socket_LocalEndPoint_internal (gsize sock, gint32 af, gint32 *werror, MonoError *error)
+{
+	return mono_w32socket_getname (sock, af, TRUE, werror, error);
+}
+
+MonoObjectHandle
 ves_icall_System_Net_Sockets_Socket_RemoteEndPoint_internal (gsize sock, gint32 af, gint32 *werror, MonoError *error)
 {
-	gchar *sa;
-	socklen_t salen;
-	int ret;
-	
-	error_init (error);
-	*werror = 0;
-	
-	salen = get_sockaddr_size (convert_family ((MonoAddressFamily)af));
-	if (salen == 0) {
-		*werror = WSAEAFNOSUPPORT;
-		return MONO_HANDLE_NEW (MonoObject, NULL);
-	}
-	// FIXME zeros only sometimes
-	sa = (salen <= 128) ? g_newa (char, salen) : (char *)g_malloc0 (salen);
-	/* Note: linux returns just 2 for AF_UNIX. Always. */
-
-	ret = mono_w32socket_getpeername (sock, (struct sockaddr *)sa, &salen);
-	if (ret == SOCKET_ERROR) {
-		*werror = mono_w32socket_get_last_error ();
-		if (salen > 128)
-			g_free (sa);
-		return MONO_HANDLE_NEW (MonoObject, NULL);
-	}
-	
-	LOGDEBUG (g_message("%s: connected to %s port %d", __func__, inet_ntoa (((struct sockaddr_in *)&sa)->sin_addr), ntohs (((struct sockaddr_in *)&sa)->sin_port)));
-
-	MonoObjectHandle result = create_object_handle_from_sockaddr ((struct sockaddr *)sa, salen, werror, error);
-	if (salen > 128)
-		g_free (sa);
-	return result;
+	return mono_w32socket_getname (sock, af, FALSE, werror, error);
 }
 
 static struct sockaddr*
