@@ -912,9 +912,9 @@ def static isValidPrTriggeredInnerLoopJob(os, architecture, configuration, isBui
     return false
 }
 
-// This means the job builds and runs the 'Pri0' test set. This does not mean the job is 
+// This means the job builds and runs the 'innerloop' test set. This does not mean the job is 
 // scheduled with a default PR trigger despite the correlation being true at the moment.
-def static isPri0TestScenario(def scenario) {
+def static isInnerloopTestScenario(def scenario) {
     return (scenario == 'innerloop' || scenario == 'no_tiered_compilation_innerloop')
 }
 
@@ -941,7 +941,7 @@ def static setJobTimeout(newJob, isPR, architecture, configuration, scenario, is
     // 2 hours (120 minutes) is the default timeout
     def timeout = 120
 
-    if (!isPri0TestScenario(scenario)) {
+    if (!isInnerloopTestScenario(scenario)) {
         // Pri-1 test builds take a long time (see calculateBuildCommands()). So up the Pri-1 build jobs timeout.
         timeout = 240
     }
@@ -2083,7 +2083,7 @@ def static calculateBuildCommands(def newJob, def scenario, def branch, def isPR
     def lowerConfiguration = configuration.toLowerCase()
 
     def priority = '1'
-    if (isPri0TestScenario(scenario)) {
+    if (isInnerloopTestScenario(scenario)) {
         priority = '0'
     }
 
@@ -3090,7 +3090,7 @@ def static CreateWindowsArmTestJob(def dslFactory, def project, def architecture
                     addArchSpecificExclude(architecture, excludeTag)
                 }
 
-                if (isPri0TestScenario(scenario)) {
+                if (isInnerloopTestScenario(scenario)) {
                     addExclude("pri1")
                 }
 
@@ -3783,7 +3783,7 @@ Constants.allScenarios.each { scenario ->
 
                     // Figure out the job name of the CoreCLR build the test will depend on.
 
-                    def inputCoreCLRBuildScenario = isPri0TestScenario(scenario) ? 'innerloop' : 'normal'
+                    def inputCoreCLRBuildScenario = isInnerloopTestScenario(scenario) ? 'innerloop' : 'normal'
                     def inputCoreCLRBuildIsBuildOnly = false
                     if (doCoreFxTesting) {
                         // Every CoreFx test depends on its own unique build.
@@ -3810,7 +3810,7 @@ Constants.allScenarios.each { scenario ->
                     def inputTestsBuildName = null
 
                     if (!windowsArmJob && !doCoreFxTesting & !doCrossGenComparison) {
-                        def testBuildScenario = isPri0TestScenario(scenario) ? 'innerloop' : 'normal'
+                        def testBuildScenario = isInnerloopTestScenario(scenario) ? 'innerloop' : 'normal'
 
                         def inputTestsBuildArch = architecture
                         if (architecture == "arm64") {
