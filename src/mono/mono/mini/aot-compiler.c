@@ -7642,6 +7642,7 @@ mono_aot_parse_options (const char *aot_options, MonoAotOptions *opts)
 			printf ("    write-symbols\n");
 			printf ("    verbose\n");
 			printf ("    no-opt\n");
+			printf ("    llvmllc=\n");
 			printf ("    help/?\n");
 			exit (0);
 		} else {
