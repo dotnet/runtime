@@ -57,6 +57,8 @@ public class Test
             passed = false;
         }
 
+        handle.Free();
+
         if (passed)
         {
             Console.WriteLine("Test Passed!");

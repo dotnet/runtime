@@ -2295,7 +2295,7 @@ private:
         GUID m_guidMVID;
     };
 
-    class NativeImageDependenciesTraits : public NoRemoveSHashTraits<DefaultSHashTraits<NativeImageDependenciesEntry *> >
+    class NativeImageDependenciesTraits : public DeleteElementsOnDestructSHashTraits<DefaultSHashTraits<NativeImageDependenciesEntry *> >
     {
     public:
         typedef BaseAssemblySpec *key_t;
@@ -2316,6 +2316,7 @@ private:
 
 public:
     void CheckForMismatchedNativeImages(AssemblySpec * pSpec, const GUID * pGuid);
+    BOOL RemoveNativeImageDependency(AssemblySpec* pSpec);
 
 public:
     class PathIterator
@@ -2425,15 +2426,19 @@ public:
     void CacheStringsForDAC();
 
     BOOL AddFileToCache(AssemblySpec* pSpec, PEAssembly *pFile, BOOL fAllowFailure = FALSE);
+    BOOL RemoveFileFromCache(PEAssembly *pFile);
+
     BOOL AddAssemblyToCache(AssemblySpec* pSpec, DomainAssembly *pAssembly);
+    BOOL RemoveAssemblyFromCache(DomainAssembly* pAssembly);
+
     BOOL AddExceptionToCache(AssemblySpec* pSpec, Exception *ex);
     void AddUnmanagedImageToCache(LPCWSTR libraryName, HMODULE hMod);
     HMODULE FindUnmanagedImageInCache(LPCWSTR libraryName);
     //****************************************************************************************
     //
-    // Adds an assembly to the domain.
+    // Adds or removes an assembly to the domain.
     void AddAssembly(DomainAssembly * assem);
-    void RemoveAssembly_Unlocked(DomainAssembly * pAsm);
+    void RemoveAssembly(DomainAssembly * pAsm);
 
     BOOL ContainsAssembly(Assembly * assem);
 

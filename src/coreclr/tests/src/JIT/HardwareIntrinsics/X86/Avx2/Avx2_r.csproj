@@ -142,6 +142,14 @@
     <Compile Include="InsertVector128.UInt32.1.Load.cs" />
     <Compile Include="InsertVector128.Int64.1.Load.cs" />
     <Compile Include="InsertVector128.UInt64.1.Load.cs" />
+    <Compile Include="MaskLoad.Int32.cs" />
+    <Compile Include="MaskLoad.UInt32.cs" />
+    <Compile Include="MaskLoad.Int64.cs" />
+    <Compile Include="MaskLoad.UInt64.cs" />
+    <Compile Include="MaskStore.Int32.cs" />
+    <Compile Include="MaskStore.UInt32.cs" />
+    <Compile Include="MaskStore.Int64.cs" />
+    <Compile Include="MaskStore.UInt64.cs" />
     <Compile Include="Max.Byte.cs" />
     <Compile Include="Max.Int16.cs" />
     <Compile Include="Max.Int32.cs" />

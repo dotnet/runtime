@@ -907,7 +907,7 @@ FORCEINLINE
 ULONG
 RtlpGetFunctionEndAddress (
     __in PT_RUNTIME_FUNCTION FunctionEntry,
-    __in ULONG ImageBase
+    __in TADDR ImageBase
     )
 {
     ULONG FunctionLength;

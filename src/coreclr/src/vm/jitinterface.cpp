@@ -11731,14 +11731,13 @@ void* CEEJitInfo::getFieldAddress(CORINFO_FIELD_HANDLE fieldHnd,
 
     _ASSERTE(!pMT->ContainsGenericVariables());
 
-    // We must not call here for statics of collectible types.
-    _ASSERTE(!pMT->Collectible());
-
     void *base = NULL;
 
     if (!field->IsRVA())
     {
         // <REVISIT_TODO>@todo: assert that the current method being compiled is unshared</REVISIT_TODO>
+        // We must not call here for statics of collectible types.
+        _ASSERTE(!pMT->Collectible());
 
         // Allocate space for the local class if necessary, but don't trigger
         // class construction.
@@ -13760,7 +13759,7 @@ void* CEEInfo::getTailCallCopyArgsThunk(CORINFO_SIG_INFO       *pSig,
 
     JIT_TO_EE_TRANSITION();
 
-    Stub* pStub = CPUSTUBLINKER::CreateTailCallCopyArgsThunk(pSig, flags);
+    Stub* pStub = CPUSTUBLINKER::CreateTailCallCopyArgsThunk(pSig, m_pMethodBeingCompiled, flags);
         
     ftn = (void*)pStub->GetEntryPoint();
 

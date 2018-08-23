@@ -500,6 +500,8 @@ INST3(vbroadcastf128,"broadcastf128",0, IUM_WR, 0, 0, BAD_CODE,     BAD_CODE, SS
 INST3(vbroadcasti128,"broadcasti128",0, IUM_WR, 0, 0, BAD_CODE,     BAD_CODE, SSE38(0x5A))   // Broadcast packed integer values read from memory to entire ymm register
 INST3(vmaskmovps,    "maskmovps"    ,0, IUM_WR, 0, 0, SSE38(0x2E),  BAD_CODE, SSE38(0x2C))   // Conditional SIMD Packed Single-Precision Floating-Point Loads and Stores
 INST3(vmaskmovpd,    "maskmovpd"    ,0, IUM_WR, 0, 0, SSE38(0x2F),  BAD_CODE, SSE38(0x2D))   // Conditional SIMD Packed Double-Precision Floating-Point Loads and Stores
+INST3(vpmaskmovd,    "pmaskmovd"    ,0, IUM_WR, 0, 0, SSE38(0x8E),  BAD_CODE, SSE38(0x8C))   // Conditional SIMD Integer Packed Dword Loads and Stores
+INST3(vpmaskmovq,    "pmaskmovq"    ,0, IUM_WR, 0, 0, SSE38(0x8E),  BAD_CODE, SSE38(0x8C))   // Conditional SIMD Integer Packed Qword Loads and Stores
 
 INST3(FIRST_FMA_INSTRUCTION, "FIRST_FMA_INSTRUCTION",  0, IUM_WR, 0, 0, BAD_CODE, BAD_CODE, BAD_CODE)
 //    enum            name             FP updmode rf wf MR            MI        RM
