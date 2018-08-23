@@ -197,7 +197,7 @@ inline void MethodTable::SetLoaderAllocator(LoaderAllocator* pAllocator)
     LIMITED_METHOD_CONTRACT;
     _ASSERTE(pAllocator == GetLoaderAllocator());
 
-    if (pAllocator->Id()->IsCollectible())
+    if (pAllocator->IsCollectible())
     {
         SetFlag(enum_flag_Collectible);
     }

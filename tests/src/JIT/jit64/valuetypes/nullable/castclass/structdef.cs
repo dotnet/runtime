@@ -4,9 +4,11 @@
 
 #pragma warning disable 0183
 
-using System.Runtime.InteropServices;
 using System;
 using System.ComponentModel;
+using System.Reflection;
+using System.Runtime.InteropServices;
+using System.Runtime.Loader;
 // primitives / CLR Types
 
 // interfaces 
@@ -222,14 +224,25 @@ public static class ExitCode
     public static int Passed = 100;
 }
 
-
 // Create Value Instance
 internal static class Helper
 {
     public static GCHandle GCHANDLE;
+
     static Helper()
     {
-        GCHANDLE = GCHandle.Alloc(System.Console.Out);
+        GCHANDLE = GCHandle.Alloc(Console.Out);
+
+        AssemblyLoadContext currentContext = AssemblyLoadContext.GetLoadContext(Assembly.GetExecutingAssembly());
+        if (currentContext != null)
+        {
+            currentContext.Unloading += Context_Unloading;
+        }
+    }
+
+    private static void Context_Unloading(AssemblyLoadContext obj)
+    {
+        GCHANDLE.Free();
     }
 
     public static char Create(char val) { return 'c'; }
