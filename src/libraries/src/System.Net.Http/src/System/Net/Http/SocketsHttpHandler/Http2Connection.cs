@@ -498,8 +498,6 @@ namespace System.Net.Http
                     _disposed = true;
                 }
 
-                List<Http2Stream> streamsToAbort = null;
-
                 foreach (KeyValuePair<int, Http2Stream> kvp in _httpStreams)
                 {
                     int streamId = kvp.Key;
@@ -507,22 +505,9 @@ namespace System.Net.Http
 
                     if (streamId > lastValidStream)
                     {
-                        if (streamsToAbort == null)
-                        {
-                            streamsToAbort = new List<Http2Stream>();
-                        }
+                        kvp.Value.OnResponseAbort();
 
-                        streamsToAbort.Add(kvp.Value);
-                    }
-                }
-
-                if (streamsToAbort != null)
-                {
-                    foreach (Http2Stream http2Stream in streamsToAbort)
-                    {
-                        http2Stream.OnResponseAbort();
-
-                        _httpStreams.Remove(http2Stream.StreamId);
+                        _httpStreams.Remove(kvp.Value.StreamId);
                     }
                 }
 
