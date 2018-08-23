@@ -161,7 +161,7 @@ As explained above, runtime will rise two dll specific events on each load attem
 * 1st callback - when loading a non-system library
 * 2nd callback - when finding an entrypoint
 
-Events will be defined in `AssemblyLoadContext` in `System.Private.CoreLib`. Default handlers that subscribe dll load events will implement the mono-based dllmap logic. 
+Events will be defined in `AssemblyLoadContext` in `System.Private.CoreLib`. Default handlers that subscribe to dll load events will implement the mono-based dllmap logic.
 They will take string as argument and return IntPtr of target libraries and entrypoints based on the parsed XML configuration file.
 
 Handlers implementation will stay in `corefx.labs`. Load library resolver will cache all the dll mapping results that got resolved (as key-value: IntPtr-hmod pairs). 
@@ -169,18 +169,20 @@ Thanks to that, the same library won't get loaded multiple times. User’s code 
 That will give a user full flexibility when using dllmap and won’t limit defining the mapping to only xml-based style. 
 Callbacks can be executed for all assemblies except `System.Private.CoreLib`.
 
+We do not plan to support unsubscribing from events at this point.
+
 ### Resolution flow
 
 **User’s code [managed code]**
 
 -   Includes `using System.Runtime.Dllmap`
--   Subscribes to `ResolveNativeDllName` and `ResolveNativeEntrypointName` events with their default or custom handler
+-   Subscribes to `LoadNativeLibrary` and `LoadNativeEntrypoint` events with their default or custom handler
 -   Uses DllImport directive and does the p/invoke
 	 ```c#
     using System.Runtime.Dllmap;
 	…
-	System.Runtime.Loader.AssemblyLoadContext.Default.ResolveNativeDllName += LoadNativeDllViaDllMap;
-	System.Runtime.Loader.AssemblyLoadContext.Default.ResolveNativeEntrypointName += GetEntrypointViaDllMap;
+	System.Runtime.Loader.AssemblyLoadContext.Default.LoadNativeLibrary += LoadLibraryCustomHandler;
+	System.Runtime.Loader.AssemblyLoadContext.Default.LoadNativeEntrypoint += LoadEntrypointCustomHandler;
 	…
     [DllImport("MyLibrary.dll", EntryPoint="MyFunction")]
 	static  extern  int  MyFunction();
@@ -189,21 +191,21 @@ Callbacks can be executed for all assemblies except `System.Private.CoreLib`.
 	```
 
 **Runtime [unmanaged code]**
--   Calls `LoadLibraryModuleViaCallback` that raises `ResolveNativeDllName` event 
--   Calls `GetEntrypointViaCallback` that raises `ResolveNativeEntrypointName` event
+-   Calls `LoadLibraryModuleViaCallback` that raises `LoadNativeLibrary` event
+-   Calls `GetEntrypointViaCallback` that raises `LoadNativeEntrypoint` event
     
 **AssemblyLoadContext [unmanaged code]**
--   Defines `ResolveNativeDllName` and `ResolveNativeEntrypointName` and exposes an API:
+-   Defines `LoadNativeLibrary` and `LoadNativeEntrypoint` and exposes an API:
 	```c#
-	IntPtr  ResolveNativeDllName(string libraryName)
-	IntPtr  ResolveNativeEntrypointName(string entrypointName, HMOD hmod)	
+	IntPtr  LoadNativeLibrary(string libraryName)
+	IntPtr  LoadNativeEntrypoint(string entrypointName, HMOD hmod)
 	```
 
 **corefx.labs [managed code]**
--   Implements default handlers - `LoadNativeDllViaDllMap` and `GetEntrypointViaDllMap`
--   To avoid infinite looping, `LoadNativeDllViaDllMap` takes a lock and releases it after the default library loading process is completed
+-   Implements default handlers - `LoadLibraryCustomHandler` and `LoadEntrypointCustomHandler`
+-   To avoid infinite looping, `LoadLibraryCustomHandler` takes a lock and releases it after the default library loading process is completed
 	```c#
-	IntPtr  LoadNativeDllViaDllMap(string libraryName)
+	IntPtr  LoadLibraryCustomHandler(string libraryName)
 	{
         private Object dllLock = new Object(); 
 
@@ -222,7 +224,7 @@ Callbacks can be executed for all assemblies except `System.Private.CoreLib`.
 	}
 	```
 	```c#
-	IntPtr  GetEntrypointViaDllMap(string entrypointName, HMOD hmod)
+	IntPtr  LoadEntrypointCustomHandler(string entrypointName, HMOD hmod)
 	{
         targetEntrypointName = mapStructure.GetEntrypoint(entrypointName);
         pvTarget = GetProcAddress(targetEntrypointName, hmod);
