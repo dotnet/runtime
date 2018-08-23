@@ -20,22 +20,24 @@ Breaking Change Rules
 &#10003; **Allowed**
 * Increasing the range of accepted values for a property or parameter if the member _is not_ `virtual`
  
- > Note that the range can only increase to the extent that it does not impact the static type. e.g. it is OK to remove `if (x > 10) throw new ArgumentOutOfRangeException("x")`, but it is not OK to change the type of `x` from `int` to `long`.
+    Note that the range can only increase to the extent that it does not impact the static type. e.g. it is OK to remove `if (x > 10) throw new ArgumentOutOfRangeException("x")`, but it is not OK to change the type of `x` from `int` to `long`.
 
 * Returning a value of a more derived type for a property, field, return or `out` value
 
- > Note, again, that the static type cannot change. e.g. it is OK to return a `string` instance where an `object` was returned previously, but it is not OK to change the return type from `object` to `string`.
+    Note, again, that the static type cannot change. e.g. it is OK to return a `string` instance where an `object` was returned previously, but it is not OK to change the return type from `object` to `string`.
 
 &#10007; **Disallowed**  
-* Increasing the range of accepted values for a property or parameter if the member _is_ `virtual`   
-> This is breaking because any existing overridden members will now not function correctly for the extended range of values.
+* Increasing the range of accepted values for a property or parameter if the member _is_ `virtual`
+
+    This is breaking because any existing overridden members will now not function correctly for the extended range of values.
 
 * Decreasing the range of accepted values for a property or parameter, such as a change in parsing of input and throwing new errors (even if parsing behavior is not specified in the docs)
 
 * Increasing the range of returned values for a property, field, return or `out` value
 
 * Changing the returned values for a property, field, return or 'out' value, such as the value returned from `ToString`
-> If you had an API which returned a value from 0-10, but actually intended to divide the value by two and forgot (return only 0-5) then changing the return to now give the correct value is a breaking.
+
+    If you had an API which returned a value from 0-10, but actually intended to divide the value by two and forgot (return only 0-5) then changing the return to now give the correct value is a breaking.
 
 * Changing the default value for a property, field or parameter (either via an overload or default value)
 
@@ -45,21 +47,24 @@ Breaking Change Rules
 
 ### Exceptions
 &#10003; **Allowed**
-* Throwing a more derived exception than an existing exception  
-> For example, `CultureInfo.GetCultureInfo(String)` used to throw `ArgumentException` in .NET Framework 3.5. In .NET Framework 4.0, this was changed to throw `CultureNotFoundException` which derives from `ArgumentException`, and therefore is an acceptable change.
+* Throwing a more derived exception than an existing exception
 
-* Throwing a more specific exception than `NotSupportedException`, `NotImplementedException`, `NullReferenceException` or an exception that is considered unrecoverable  
-> Unrecoverable exceptions should not be getting caught and will be dealt with on a broad level by a high-level catch-all handler. Therefore, users are not expected to have code that catches these explicit exceptions. The unrecoverable exceptions are:
->
-> * `StackOverflowException`
-> * `SEHException`
-> * `ExecutionEngineException`
-> * `AccessViolationException`
+    For example, `CultureInfo.GetCultureInfo(String)` used to throw `ArgumentException` in .NET Framework 3.5. In .NET Framework 4.0, this was changed to throw `CultureNotFoundException` which derives from `ArgumentException`, and therefore is an acceptable change.
+
+* Throwing a more specific exception than `NotSupportedException`, `NotImplementedException`, `NullReferenceException` or an exception that is considered unrecoverable
+
+    Unrecoverable exceptions should not be getting caught and will be dealt with on a broad level by a high-level catch-all handler. Therefore, users are not expected to have code that catches these explicit exceptions. The unrecoverable exceptions are:
+
+    * `StackOverflowException`
+    * `SEHException`
+    * `ExecutionEngineException`
+    * `AccessViolationException`
 
 * Throwing a new exception that only applies to a code-path which can only be observed with new parameter values, or state (that couldn't hit by existing code targeting the previous version)
 
-* Removing an exception that was being thrown when the API allows more robust behavior or enables new scenarios  
-> For example, a Divide method which only worked on positive values, but threw an exception otherwise, can be changed to support all values and the exception is no longer thrown.
+* Removing an exception that was being thrown when the API allows more robust behavior or enables new scenarios
+
+    For example, a Divide method which only worked on positive values, but threw an exception otherwise, can be changed to support all values and the exception is no longer thrown.
 
 &#10007; **Disallowed**
 * Throwing a new exception in any other case not listed above
@@ -76,24 +81,29 @@ Breaking Change Rules
 
 ### Code
 &#10003; **Allowed**
-* A change which is directly intended to increase performance of an operation  
-> The ability to modify the performance of an operation is essential in order to ensure we stay competitive, and we continue to give users operational benefits. This can break anything which relies upon the current speed of an operation, sometimes visible in badly built code relying upon asynchronous operations. Note that the performance change should have no affect on other behavior of the API in question, otherwise the change will be breaking.
+* A change which is directly intended to increase performance of an operation
+
+    The ability to modify the performance of an operation is essential in order to ensure we stay competitive, and we continue to give users operational benefits. This can break anything which relies upon the current speed of an operation, sometimes visible in badly built code relying upon asynchronous operations. Note that the performance change should have no affect on other behavior of the API in question, otherwise the change will be breaking.
 
 * A change which indirectly, and often adversely, affects performance
-> Assuming the change in question is not categorized as breaking for some other reason, this is acceptable. Often, actions need to be taken which may include extra operation calls, or new functionality. This will almost always affect performance, but may be essential to make the API in question function as expected.
+
+    Assuming the change in question is not categorized as breaking for some other reason, this is acceptable. Often, actions need to be taken which may include extra operation calls, or new functionality. This will almost always affect performance, but may be essential to make the API in question function as expected.
 
 * Changing the text of an error message
-> Not only should users not rely on these text messages, but they change anyways based on culture
+
+    Not only should users not rely on these text messages, but they change anyways based on culture
 
 * Calling a brand new event that wasn't previously defined.
 
 &#10007; **Disallowed**
 
-* Adding the `checked` keyword to a code-block  
-> This may cause code in a block to to begin to throwing exceptions, an unacceptable change.
+* Adding the `checked` keyword to a code-block
+
+    This may cause code in a block to to begin to throwing exceptions, an unacceptable change.
 
 * Changing the order in which events are fired
-> Developers can reasonably expect events to fire in the same order.
+
+    Developers can reasonably expect events to fire in the same order.
 
 * Removing the raising of an event on a given action
 
@@ -121,12 +131,14 @@ Breaking Change Rules
 * Increasing the visibility of a type
 
 * Introducing a new base class
-> So long as it does not introduce any new abstract members or change the semantics or behavior of existing members, a type can be introduced into a hierarchy between two existing types. For example, between .NET Framework 1.1 and .NET Framework 2.0, we introduced `DbConnection` as a new base class for `SqlConnection` which previously derived from `Component`.
+
+    So long as it does not introduce any new abstract members or change the semantics or behavior of existing members, a type can be introduced into a hierarchy between two existing types. For example, between .NET Framework 1.1 and .NET Framework 2.0, we introduced `DbConnection` as a new base class for `SqlConnection` which previously derived from `Component`.
 
 * Removing an interface implementation from a type when the interface is already implemented lower in the hierarchy
 
-* Moving a type from one assembly into another assembly  
-> The old assembly must be marked with `TypeForwardedToAttribute` pointing to the new location
+* Moving a type from one assembly into another assembly
+
+    The old assembly must be marked with `TypeForwardedToAttribute` pointing to the new location
 
 * Changing a `struct` type to a `readonly struct` type
 
@@ -135,11 +147,13 @@ Breaking Change Rules
 
 * Decreasing the visibility of a type
 
-* Removing the implementation of an interface on a type  
-> It is not breaking when you added the implementation of an interface which derives from the removed interface. For example, you removed `IDisposable`, but implemented `IComponent`, which derives from `IDisposable`.
+* Removing the implementation of an interface on a type
+
+    It is not breaking when you added the implementation of an interface which derives from the removed interface. For example, you removed `IDisposable`, but implemented `IComponent`, which derives from `IDisposable`.
 
 * Adding an interface implementation to a type
-> This can be a compile-time breaking change. Consider a type `public class MyType : IEnumerable<A>`. A developer can call the standard `ToList()` extension method and get a `List<A>` as a result. If the class is ever extended in the future as `public class MyType : IEnumerable<A>, IEnumerable<B>`, the call to `ToList()` will fail to compile since type inference cannot determine if the return type should be `List<A>` or `List<B>`. Type inference issues aside, adding interfaces like `ISerializable` affects the ability of a designer or serializer to generate code in a downlevel-compatible fashion.
+
+    This can be a compile-time breaking change. Consider a type `public class MyType : IEnumerable<A>`. A developer can call the standard `ToList()` extension method and get a `List<A>` as a result. If the class is ever extended in the future as `public class MyType : IEnumerable<A>, IEnumerable<B>`, the call to `ToList()` will fail to compile since type inference cannot determine if the return type should be `List<A>` or `List<B>`. Type inference issues aside, adding interfaces like `ISerializable` affects the ability of a designer or serializer to generate code in a downlevel-compatible fashion.
 
 * Removing one or more base classes for a type, including changing `struct` to `class` and vice versa
 
@@ -162,7 +176,8 @@ Breaking Change Rules
 * Changing a member from `abstract` to `virtual`
 
 * Introducing or removing an override
-> Make note, that introducing an override might cause previous consumers to skip over the override when calling `base`.
+
+    Make note, that introducing an override might cause previous consumers to skip over the override when calling `base`.
 
 * Change from `ref readonly` return to `ref` return (except for virtual methods or interfaces)
 
@@ -173,8 +188,9 @@ Breaking Change Rules
 
 * Adding a constructor to a class which previously had no constructor, without also adding the default constructor
 
-* Adding an overload that precludes an existing overload, and defines different behavior  
-> This will break existing clients that were bound to the previous overload. For example, if you have a class that has a single version of a method that accepts a `uint`, an existing consumer will 
+* Adding an overload that precludes an existing overload, and defines different behavior
+
+    This will break existing clients that were bound to the previous overload. For example, if you have a class that has a single version of a method that accepts a `uint`, an existing consumer will 
 successfully bind to that overload, if simply passing an `int` value. However, if you add an overload that accepts an `int`, recompiling or via late-binding the application will now bind to the new overload. If different behavior results, then this is a breaking change.
 
 * Removing or renaming a member, including a getter or setter from a property or enum members
@@ -186,7 +202,8 @@ successfully bind to that overload, if simply passing an `int` value. However, i
 * Removing the `virtual` keyword from a member
 
 * Adding `virtual` to a member
-> While this change would often work without breaking too many scenarios because C# compiler tends to emit `callvirt` IL instructions to call non-virtual methods (`callvirt` performs a null check, while a normal `call` won't), we can't rely on it. C# is not the only language we target and the C# compiler increasingly tries to optimize `callvirt` to a normal `call` whenever the target method is non-virtual and the `this` is provably not null (such as a method accessed through the `?.` null propagation operator). Making a method virtual would mean that consumer code would often end up calling it non-virtually.
+
+    While this change would often work without breaking too many scenarios because C# compiler tends to emit `callvirt` IL instructions to call non-virtual methods (`callvirt` performs a null check, while a normal `call` won't), we can't rely on it. C# is not the only language we target and the C# compiler increasingly tries to optimize `callvirt` to a normal `call` whenever the target method is non-virtual and the `this` is provably not null (such as a method accessed through the `?.` null propagation operator). Making a method virtual would mean that consumer code would often end up calling it non-virtually.
 
 * Change from `ref` return to `ref readonly` return
 
@@ -213,10 +230,11 @@ successfully bind to that overload, if simply passing an `int` value. However, i
 
 * Adding or removing `in`, `out`, or `ref` keywords from a parameter
 
-* Renaming a parameter (including case)  
-> This is considered breaking for two reasons:
-  * It breaks late-bound scenarios, such as Visual Basic's late-binding feature and C#'s `dynamic`
-  * It breaks source compatibility when developers use [named parameters](http://msdn.microsoft.com/en-us/library/dd264739.aspx).
+* Renaming a parameter (including case)
+
+    This is considered breaking for two reasons:
+    * It breaks late-bound scenarios, such as Visual Basic's late-binding feature and C#'s `dynamic`
+    * It breaks source compatibility when developers use [named parameters](http://msdn.microsoft.com/en-us/library/dd264739.aspx).
 
 * Changing a parameter modifier from `ref` to `out`, or vice versa
 
@@ -226,7 +244,8 @@ successfully bind to that overload, if simply passing an `int` value. However, i
 
 &#10007; **Disallowed**
 
-* Removing an attribute  
-> Although this item can be addressed on a case to case basis, removing an attribute will often be breaking. For example, `NonSerializedAttribute`
+* Removing an attribute
+
+    Although this item can be addressed on a case to case basis, removing an attribute will often be breaking. For example, `NonSerializedAttribute`
 
 * Changing values of an attribute that _is observable_
