@@ -2069,7 +2069,8 @@ void CodeGen::genRegCopy(GenTree* treeNode)
     regNumber targetReg  = treeNode->gtRegNum;
     assert(targetReg != REG_NA);
 
-    GenTree* op1 = treeNode->gtOp.gtOp1;
+    GenTree*  op1       = treeNode->gtOp.gtOp1;
+    regNumber sourceReg = genConsumeReg(op1);
 
     // Check whether this node and the node from which we're copying the value have the same
     // register type.
@@ -2080,7 +2081,7 @@ void CodeGen::genRegCopy(GenTree* treeNode)
     if (varTypeIsFloating(treeNode) != varTypeIsFloating(op1))
     {
 #ifdef _TARGET_ARM64_
-        inst_RV_RV(INS_fmov, targetReg, genConsumeReg(op1), targetType);
+        inst_RV_RV(INS_fmov, targetReg, sourceReg, targetType);
 #else  // !_TARGET_ARM64_
         if (varTypeIsFloating(treeNode))
         {
@@ -2105,9 +2106,21 @@ void CodeGen::genRegCopy(GenTree* treeNode)
         }
 #endif // !_TARGET_ARM64_
     }
+    else if (targetType == TYP_STRUCT)
+    {
+        noway_assert(op1->IsMultiRegNode() && !op1->IsCopyOrReload());
+        unsigned regCount = op1->GetMultiRegCount();
+        for (unsigned i = 0; i < regCount; i++)
+        {
+            regNumber srcReg  = op1->GetRegByIndex(i);
+            regNumber tgtReg  = treeNode->AsCopyOrReload()->GetRegNumByIdx(i);
+            var_types regType = op1->GetRegTypeByIndex(i);
+            inst_RV_RV(ins_Copy(regType), tgtReg, srcReg, regType);
+        }
+    }
     else
     {
-        inst_RV_RV(ins_Copy(targetType), targetReg, genConsumeReg(op1), targetType);
+        inst_RV_RV(ins_Copy(targetType), targetReg, sourceReg, targetType);
     }
 
     if (op1->IsLocal())

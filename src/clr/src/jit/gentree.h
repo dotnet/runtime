@@ -1735,8 +1735,14 @@ public:
     // Returns true if it is a node returning its value in more than one register
     inline bool IsMultiRegNode() const;
 
+    // Returns the number of registers defined by a multireg node.
+    unsigned GetMultiRegCount();
+
     // Returns the regIndex'th register defined by a possibly-multireg node.
     regNumber GetRegByIndex(int regIndex);
+
+    // Returns the type of the regIndex'th register defined by a multi-reg node.
+    var_types GetRegTypeByIndex(int regIndex);
 
     // Returns true if it is a GT_COPY or GT_RELOAD node
     inline bool IsCopyOrReload() const;
@@ -5431,7 +5437,7 @@ struct GenTreeCopyOrReload : public GenTreeUnOp
 {
 #if FEATURE_MULTIREG_RET
     // State required to support copy/reload of a multi-reg call node.
-    // First register is is always given by gtRegNum.
+    // The first register is always given by gtRegNum.
     //
     regNumberSmall gtOtherRegs[MAX_RET_REG_COUNT - 1];
 #endif
@@ -5533,6 +5539,26 @@ struct GenTreeCopyOrReload : public GenTreeUnOp
         {
             gtOtherRegs[i] = from->gtOtherRegs[i];
         }
+#endif
+    }
+
+    unsigned GetRegCount()
+    {
+        if (gtRegNum == REG_NA)
+        {
+            return 0;
+        }
+#if FEATURE_MULTIREG_RET
+        for (unsigned i = 0; i < MAX_RET_REG_COUNT - 1; ++i)
+        {
+            if (gtOtherRegs[i] == REG_NA)
+            {
+                return i + 1;
+            }
+        }
+        return MAX_RET_REG_COUNT;
+#else
+        return 1;
 #endif
     }
 
@@ -6022,6 +6048,40 @@ inline bool GenTree::IsMultiRegNode() const
 
     return false;
 }
+//-----------------------------------------------------------------------------------
+// GetMultiRegCount: Return the register count for a multi-reg node.
+//
+// Arguments:
+//     None
+//
+// Return Value:
+//     Returns the number of registers defined by this node.
+inline unsigned GenTree::GetMultiRegCount()
+{
+    if (IsMultiRegCall())
+    {
+        return AsCall()->GetReturnTypeDesc()->GetReturnRegCount();
+    }
+
+#if FEATURE_ARG_SPLIT
+    if (OperIsPutArgSplit())
+    {
+        return AsPutArgSplit()->gtNumRegs;
+    }
+#endif
+#if defined(_TARGET_ARM_)
+    if (OperIsMultiRegOp())
+    {
+        return AsMultiRegOp()->GetRegCount();
+    }
+    if (OperIs(GT_COPY, GT_RELOAD))
+    {
+        return AsCopyOrReload()->GetRegCount();
+    }
+#endif
+    assert(!"GetMultiRegCount called with non-multireg node");
+    return 1;
+}
 
 //-----------------------------------------------------------------------------------
 // GetRegByIndex: Get a specific register, based on regIndex, that is produced
@@ -6062,6 +6122,43 @@ inline regNumber GenTree::GetRegByIndex(int regIndex)
 #endif
     assert(!"Invalid regIndex for GetRegFromMultiRegNode");
     return REG_NA;
+}
+
+//-----------------------------------------------------------------------------------
+// GetRegTypeByIndex: Get a specific register's type, based on regIndex, that is produced
+//                    by this multi-reg node.
+//
+// Arguments:
+//     regIndex - which register type to return
+//
+// Return Value:
+//     The register type assigned to this index for this node.
+//
+// Notes:
+//     This must be a multireg node that is *not* a copy or reload (which must retrieve the
+//     type from its source), and 'regIndex' must be a valid index for this node.
+//
+inline var_types GenTree::GetRegTypeByIndex(int regIndex)
+{
+    if (IsMultiRegCall())
+    {
+        return AsCall()->AsCall()->GetReturnTypeDesc()->GetReturnRegType(regIndex);
+    }
+
+#if FEATURE_ARG_SPLIT
+    if (OperIsPutArgSplit())
+    {
+        return AsPutArgSplit()->GetRegType(regIndex);
+    }
+#endif
+#if defined(_TARGET_ARM_)
+    if (OperIsMultiRegOp())
+    {
+        return AsMultiRegOp()->GetRegType(regIndex);
+    }
+#endif
+    assert(!"Invalid node type for GetRegTypeByIndex");
+    return TYP_UNDEF;
 }
 
 //-------------------------------------------------------------------------

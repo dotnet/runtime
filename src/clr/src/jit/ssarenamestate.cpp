@@ -2,23 +2,6 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
-// ==++==
-//
-
-//
-
-//
-// ==--==
-
-/*XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
-XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
-XX                                                                           XX
-XX                                  SSA                                      XX
-XX                                                                           XX
-XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
-XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
-*/
-
 #include "jitpch.h"
 #include "ssaconfig.h"
 #include "ssarenamestate.h"
@@ -29,32 +12,13 @@ XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
  * @params alloc The allocator class used to allocate jitstd data.
  */
 SsaRenameState::SsaRenameState(CompAllocator alloc, unsigned lvaCount, bool byrefStatesMatchGcHeapStates)
-    : counts(nullptr)
-    , stacks(nullptr)
+    : stacks(nullptr)
     , definedLocs(alloc)
     , memoryStack(alloc)
-    , memoryCount(0)
     , lvaCount(lvaCount)
     , m_alloc(alloc)
     , byrefStatesMatchGcHeapStates(byrefStatesMatchGcHeapStates)
 {
-}
-
-/**
- * Allocates memory to hold SSA variable def counts,
- * if not allocated already.
- *
- */
-void SsaRenameState::EnsureCounts()
-{
-    if (counts == nullptr)
-    {
-        counts = m_alloc.allocate<unsigned>(lvaCount);
-        for (unsigned i = 0; i < lvaCount; ++i)
-        {
-            counts[i] = SsaConfig::FIRST_SSA_NUM;
-        }
-    }
 }
 
 /**
@@ -75,25 +39,6 @@ void SsaRenameState::EnsureStacks()
 }
 
 /**
- * Returns a SSA count number for a local variable and does a post increment.
- *
- * If there is no counter for the local yet, initializes it with the default value
- * else, returns the count with a post increment, so the next def gets a new count.
- *
- * @params lclNum The local variable def for which a count has to be returned.
- * @return the variable name for the current definition.
- *
- */
-unsigned SsaRenameState::CountForDef(unsigned lclNum)
-{
-    EnsureCounts();
-    unsigned count = counts[lclNum];
-    counts[lclNum]++;
-    DBG_SSA_JITDUMP("Incrementing counter = %d by 1 for V%02u.\n", count, lclNum);
-    return count;
-}
-
-/**
  * Returns a SSA count number for a local variable from top of the stack.
  *
  * @params lclNum The local variable def for which a count has to be returned.
@@ -111,10 +56,7 @@ unsigned SsaRenameState::CountForUse(unsigned lclNum)
     DBG_SSA_JITDUMP("[SsaRenameState::CountForUse] V%02u\n", lclNum);
 
     Stack* stack = stacks[lclNum];
-    if (stack == nullptr || stack->empty())
-    {
-        return SsaConfig::UNINIT_SSA_NUM;
-    }
+    noway_assert((stack != nullptr) && !stack->empty());
     return stack->back().m_count;
 }
 

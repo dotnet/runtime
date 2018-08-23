@@ -1912,6 +1912,18 @@
   <data name="ArrayTypeMismatch_ConstrainedCopy" xml:space="preserve">
     <value>Array.ConstrainedCopy will only work on array types that are provably compatible, without any form of boxing, unboxing, widening, or casting of each array element.  Change the array types (i.e., copy a Derived[] to a Base[]), or use a mitigation strategy in the CER for Array.Copy's less powerful reliability contract, such as cloning the array or throwing away the potentially corrupt destination array.</value>
   </data>
+  <data name="AssemblyLoadContext_Constructor_CannotInstantiateWhileUnloading" xml:space="preserve">
+    <value>Cannot instantiate AssemblyLoadContext while the current process is exiting.</value>
+  </data>
+  <data name="AssemblyLoadContext_Unload_CannotUnloadIfNotCollectible" xml:space="preserve">
+    <value>Cannot unload non-collectible AssemblyLoadContext.</value>
+  </data>
+  <data name="AssemblyLoadContext_Unload_AlreadyUnloaded" xml:space="preserve">
+    <value>Unload called on AssemblyLoadContext that is unloading or that was already unloaded.</value>
+  </data>
+  <data name="AssemblyLoadContext_Verify_NotUnloading" xml:space="preserve">
+    <value>AssemblyLoadContext is unloading or was already unloaded.</value>
+  </data>
   <data name="AssertionFailed" xml:space="preserve">
     <value>Assertion failed.</value>
   </data>

@@ -132,10 +132,6 @@ private:
     // for variables renaming. Assigns the rhs arguments to the phi, i.e., block's phi node arguments.
     void AssignPhiNodeRhsVariables(BasicBlock* block, SsaRenameState* pRenameState);
 
-    // Requires "tree" to be a local variable node. Maintains a map of <lclNum, ssaNum> -> tree
-    // information in m_defs.
-    void AddDefPoint(GenTree* tree, BasicBlock* blk);
-
 #ifdef DEBUG
     void Print(BasicBlock** postOrder, int count);
 #endif

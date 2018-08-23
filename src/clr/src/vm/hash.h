@@ -722,6 +722,14 @@ public:
             return iter.end();
         }
 
+        UPTR GetKey()
+        {
+            WRAPPER_NO_CONTRACT;
+            SUPPORTS_DAC;
+
+            return iter.GetKey();
+        }
+
         PTR_VOID GetValue()
         {
             WRAPPER_NO_CONTRACT;

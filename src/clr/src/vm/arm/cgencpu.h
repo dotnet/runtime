@@ -964,6 +964,7 @@ public:
 #endif // FEATURE_SHARE_GENERIC_CODE
 
     static Stub * CreateTailCallCopyArgsThunk(CORINFO_SIG_INFO * pSig,
+                                              MethodDesc* pMD,
                                               CorInfoHelperTailCallSpecialHandling flags);
 
 private:

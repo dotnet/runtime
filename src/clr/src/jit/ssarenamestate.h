@@ -2,23 +2,6 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
-// ==++==
-//
-
-//
-
-//
-// ==--==
-
-/*XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
-XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
-XX                                                                           XX
-XX                                  SSA                                      XX
-XX                                                                           XX
-XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
-XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
-*/
-
 #pragma once
 
 #include "jitstd.h"
@@ -98,17 +81,11 @@ struct SsaRenameState
 {
     typedef jitstd::list<SsaRenameStateForBlock> Stack;
     typedef Stack**                              Stacks;
-    typedef unsigned*                            Counts;
     typedef jitstd::list<SsaRenameStateLocDef>   DefStack;
 
     SsaRenameState(CompAllocator allocator, unsigned lvaCount, bool byrefStatesMatchGcHeapStates);
 
-    void EnsureCounts();
     void EnsureStacks();
-
-    // Requires "lclNum" to be a variable number for which a new count corresponding to a
-    // definition is desired. The method post increments the counter for the "lclNum."
-    unsigned CountForDef(unsigned lclNum);
 
     // Requires "lclNum" to be a variable number for which an ssa number at the top of the
     // stack is required i.e., for variable "uses."
@@ -122,16 +99,6 @@ struct SsaRenameState
     void PopBlockStacks(BasicBlock* bb);
 
     // Similar functions for the special implicit memory variable.
-    unsigned CountForMemoryDef()
-    {
-        if (memoryCount == 0)
-        {
-            memoryCount = SsaConfig::FIRST_SSA_NUM;
-        }
-        unsigned res = memoryCount;
-        memoryCount++;
-        return res;
-    }
     unsigned CountForMemoryUse(MemoryKind memoryKind)
     {
         if ((memoryKind == GcHeap) && byrefStatesMatchGcHeapStates)
@@ -154,20 +121,12 @@ struct SsaRenameState
 
     void PopBlockMemoryStack(MemoryKind memoryKind, BasicBlock* bb);
 
-    unsigned MemoryCount()
-    {
-        return memoryCount;
-    }
-
 #ifdef DEBUG
     // Debug interface
     void DumpStacks();
 #endif
 
 private:
-    // Map of lclNum -> count.
-    Counts counts;
-
     // Map of lclNum -> SsaRenameStateForBlock.
     Stacks stacks;
 
@@ -176,7 +135,6 @@ private:
 
     // Same state for the special implicit memory variables.
     ConstructedArray<Stack, MemoryKindCount> memoryStack;
-    unsigned memoryCount;
 
     // Number of stacks/counts to allocate.
     unsigned lvaCount;
