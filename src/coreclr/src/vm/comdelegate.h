@@ -224,4 +224,53 @@ struct ShuffleEntry
 
 #include <poppack.h>
 
+class ShuffleThunkCache : public StubCacheBase
+{
+public:
+    ShuffleThunkCache(LoaderHeap* heap) : StubCacheBase(heap)
+    {
+    }
+private:
+    //---------------------------------------------------------
+    // Compile a static delegate shufflethunk. Always returns
+    // STANDALONE since we don't interpret these things.
+    //---------------------------------------------------------
+    virtual void CompileStub(const BYTE *pRawStub,
+                             StubLinker *pstublinker)
+    {
+        STANDARD_VM_CONTRACT;
+
+        ((CPUSTUBLINKER*)pstublinker)->EmitShuffleThunk((ShuffleEntry*)pRawStub);
+    }
+
+    //---------------------------------------------------------
+    // Tells the StubCacheBase the length of a ShuffleEntryArray.
+    //---------------------------------------------------------
+    virtual UINT Length(const BYTE *pRawStub)
+    {
+        LIMITED_METHOD_CONTRACT;
+        ShuffleEntry *pse = (ShuffleEntry*)pRawStub;
+        while (pse->srcofs != ShuffleEntry::SENTINEL)
+        {
+            pse++;
+        }
+        return sizeof(ShuffleEntry) * (UINT)(1 + (pse - (ShuffleEntry*)pRawStub));
+    }
+
+    virtual void AddStub(const BYTE* pRawStub, Stub* pNewStub)
+    {
+        CONTRACTL
+        {
+            THROWS;
+            GC_NOTRIGGER;
+            MODE_ANY;
+        }
+        CONTRACTL_END;
+
+#ifndef CROSSGEN_COMPILE
+        DelegateInvokeStubManager::g_pManager->AddStub(pNewStub);
+#endif
+    }
+};
+
 #endif  // _COMDELEGATE_H_

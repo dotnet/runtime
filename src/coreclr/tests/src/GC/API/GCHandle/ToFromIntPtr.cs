@@ -34,7 +34,11 @@ public class ToFromIntPtrTest
         GCHandle gch = GCHandle.Alloc(new Dummy(dummyValue));
         GCHandle gch2 = GCHandle.FromIntPtr(GCHandle.ToIntPtr(gch));
 
-        if (gch.Target == gch2.Target)
+        bool success = (gch.Target == gch2.Target);
+
+        gch.Free();
+
+        if (success)
         {
             Console.WriteLine("ToFromTest Passed");
             return true;

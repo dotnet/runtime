@@ -508,51 +508,6 @@ VOID GenerateShuffleArray(MethodDesc* pInvoke, MethodDesc *pTargetMeth, SArray<S
 }
 
 
-class ShuffleThunkCache : public StubCacheBase
-{
-private:
-    //---------------------------------------------------------
-    // Compile a static delegate shufflethunk. Always returns
-    // STANDALONE since we don't interpret these things.
-    //---------------------------------------------------------
-    virtual void CompileStub(const BYTE *pRawStub,
-                             StubLinker *pstublinker)
-    {
-        STANDARD_VM_CONTRACT;
-
-        ((CPUSTUBLINKER*)pstublinker)->EmitShuffleThunk((ShuffleEntry*)pRawStub);
-    }
-
-    //---------------------------------------------------------
-    // Tells the StubCacheBase the length of a ShuffleEntryArray.
-    //---------------------------------------------------------
-    virtual UINT Length(const BYTE *pRawStub)
-    {
-        LIMITED_METHOD_CONTRACT;
-        ShuffleEntry *pse = (ShuffleEntry*)pRawStub;
-        while (pse->srcofs != ShuffleEntry::SENTINEL)
-        {
-            pse++;
-        }
-        return sizeof(ShuffleEntry) * (UINT)(1 + (pse - (ShuffleEntry*)pRawStub));
-    }
-
-    virtual void AddStub(const BYTE* pRawStub, Stub* pNewStub)
-    {
-        CONTRACTL
-        {
-            THROWS;
-            GC_NOTRIGGER;
-            MODE_ANY;
-        }
-        CONTRACTL_END;
-
-#ifndef CROSSGEN_COMPILE
-        DelegateInvokeStubManager::g_pManager->AddStub(pNewStub);
-#endif
-    }
-};
-
 ShuffleThunkCache *COMDelegate::m_pShuffleThunkCache = NULL;
 MulticastStubCache *COMDelegate::m_pSecureDelegateStubCache = NULL;
 MulticastStubCache *COMDelegate::m_pMulticastStubCache = NULL;
@@ -579,7 +534,7 @@ void COMDelegate::Init()
     LockOwner lock = {&COMDelegate::s_DelegateToFPtrHashCrst, IsOwnerOfCrst};
     s_pDelegateToFPtrHash->Init(TRUE, &lock);
 
-    m_pShuffleThunkCache = new ShuffleThunkCache();
+    m_pShuffleThunkCache = new ShuffleThunkCache(SystemDomain::GetGlobalLoaderAllocator()->GetStubHeap());
     m_pMulticastStubCache = new MulticastStubCache();
     m_pSecureDelegateStubCache = new MulticastStubCache();
 }
@@ -642,7 +597,15 @@ Stub* COMDelegate::SetupShuffleThunk(MethodTable * pDelMT, MethodDesc *pTargetMe
     StackSArray<ShuffleEntry> rShuffleEntryArray;
     GenerateShuffleArray(pMD, pTargetMeth, &rShuffleEntryArray);
 
-    Stub* pShuffleThunk = m_pShuffleThunkCache->Canonicalize((const BYTE *)&rShuffleEntryArray[0]);
+    ShuffleThunkCache* pShuffleThunkCache = m_pShuffleThunkCache;
+
+    LoaderAllocator* pLoaderAllocator = pDelMT->GetLoaderAllocator();
+    if (pLoaderAllocator->IsCollectible())
+    {
+        pShuffleThunkCache = ((AssemblyLoaderAllocator*)pLoaderAllocator)->GetShuffleThunkCache();
+    }
+
+    Stub* pShuffleThunk = pShuffleThunkCache->Canonicalize((const BYTE *)&rShuffleEntryArray[0]);
     if (!pShuffleThunk)
     {
         COMPlusThrowOM();
