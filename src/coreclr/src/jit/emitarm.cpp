@@ -4290,9 +4290,12 @@ void emitter::emitIns_R_L(instruction ins, emitAttr attr, BasicBlock* dst, regNu
     id->idjNext      = emitCurIGjmpList;
     emitCurIGjmpList = id;
 
-    // Set the relocation flags - these give hint to zap to perform
-    // relocation of the specified 32bit address.
-    id->idSetRelocFlags(attr);
+    if (emitComp->opts.compReloc)
+    {
+        // Set the relocation flags - these give hint to zap to perform
+        // relocation of the specified 32bit address.
+        id->idSetRelocFlags(attr);
+    }
 
 #if EMITTER_STATS
     emitTotalIGjmps++;
