@@ -98,7 +98,13 @@ protected:
     bool      m_genAlignLoops;
 
 private:
+#if defined(_TARGET_XARCH_)
+    static const insFlags instInfo[INS_count];
+#elif defined(_TARGET_ARM_) || defined(_TARGET_ARM64_)
     static const BYTE instInfo[INS_count];
+#else
+#error Unsupported target architecture
+#endif
 
 #define INST_FP 0x01 // is it a FP instruction?
 public:
