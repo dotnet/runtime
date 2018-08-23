@@ -1862,7 +1862,7 @@ void LinearScan::buildIntervals()
         printf("-----------------\n");
         foreach_block(compiler, block)
         {
-            printf("BB%02u use def in out\n", block->bbNum);
+            printf(FMT_BB " use def in out\n", block->bbNum);
             dumpConvertedVarSet(compiler, block->bbVarUse);
             printf("\n");
             dumpConvertedVarSet(compiler, block->bbVarDef);
@@ -2019,13 +2019,14 @@ void LinearScan::buildIntervals()
 
     for (block = startBlockSequence(); block != nullptr; block = moveToNextBlock())
     {
-        JITDUMP("\nNEW BLOCK BB%02u\n", block->bbNum);
+        JITDUMP("\nNEW BLOCK " FMT_BB "\n", block->bbNum);
 
         bool predBlockIsAllocated = false;
         predBlock                 = findPredBlockForLiveIn(block, prevBlock DEBUGARG(&predBlockIsAllocated));
         if (predBlock)
         {
-            JITDUMP("\n\nSetting BB%02u as the predecessor for determining incoming variable registers of BB%02u\n",
+            JITDUMP("\n\nSetting " FMT_BB " as the predecessor for determining incoming variable registers of " FMT_BB
+                    "\n",
                     block->bbNum, predBlock->bbNum);
             assert(predBlock->bbNum <= bbNumMaxBeforeResolution);
             blockInfo[block->bbNum].predBBNum = predBlock->bbNum;
