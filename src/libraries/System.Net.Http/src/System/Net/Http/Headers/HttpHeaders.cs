@@ -340,8 +340,6 @@ namespace System.Net.Http.Headers
 
         private IEnumerator<KeyValuePair<string, IEnumerable<string>>> GetEnumeratorCore()
         {
-            List<HeaderDescriptor> invalidHeaders = null;
-
             foreach (var header in _headerStore)
             {
                 HeaderDescriptor descriptor = header.Key;
@@ -352,30 +350,13 @@ namespace System.Net.Http.Headers
                 // values.
                 if (!ParseRawHeaderValues(descriptor, info, false))
                 {
-                    // We have an invalid header value (contains invalid newline chars). Mark it as "to-be-deleted"
-                    // and skip this header.
-                    if (invalidHeaders == null)
-                    {
-                        invalidHeaders = new List<HeaderDescriptor>();
-                    }
-                    invalidHeaders.Add(descriptor);
+                    // We have an invalid header value (contains invalid newline chars). Delete it.
+                    _headerStore.Remove(descriptor);
                 }
                 else
                 {
                     string[] values = GetValuesAsStrings(descriptor, info);
                     yield return new KeyValuePair<string, IEnumerable<string>>(descriptor.Name, values);
-                }
-            }
-
-            // While we were enumerating headers, we also parsed header values. If during parsing it turned out that
-            // the header value was invalid (contains invalid newline chars), remove the header from the store after
-            // completing the enumeration.
-            if (invalidHeaders != null)
-            {
-                Debug.Assert(_headerStore != null);
-                foreach (HeaderDescriptor invalidheaderInfo in invalidHeaders)
-                {
-                    _headerStore.Remove(invalidheaderInfo);
                 }
             }
         }
@@ -392,8 +373,6 @@ namespace System.Net.Http.Headers
 
         private IEnumerable<KeyValuePair<HeaderDescriptor, string[]>> GetHeaderDescriptorsAndValuesCore()
         {
-            List<HeaderDescriptor> invalidHeaders = null;
-
             foreach (var header in _headerStore)
             {
                 HeaderDescriptor descriptor = header.Key;
@@ -404,30 +383,13 @@ namespace System.Net.Http.Headers
                 // values.
                 if (!ParseRawHeaderValues(descriptor, info, false))
                 {
-                    // We have an invalid header value (contains invalid newline chars). Mark it as "to-be-deleted"
-                    // and skip this header.
-                    if (invalidHeaders == null)
-                    {
-                        invalidHeaders = new List<HeaderDescriptor>();
-                    }
-                    invalidHeaders.Add(descriptor);
+                    // We have an invalid header value (contains invalid newline chars). Delete it.
+                    _headerStore.Remove(descriptor);
                 }
                 else
                 {
                     string[] values = GetValuesAsStrings(descriptor, info);
                     yield return new KeyValuePair<HeaderDescriptor, string[]>(descriptor, values);
-                }
-            }
-
-            // While we were enumerating headers, we also parsed header values. If during parsing it turned out that
-            // the header value was invalid (contains invalid newline chars), remove the header from the store after
-            // completing the enumeration.
-            if (invalidHeaders != null)
-            {
-                Debug.Assert(_headerStore != null);
-                foreach (HeaderDescriptor invalidheaderInfo in invalidHeaders)
-                {
-                    _headerStore.Remove(invalidheaderInfo);
                 }
             }
         }
@@ -635,8 +597,6 @@ namespace System.Net.Http.Headers
                 return;
             }
 
-            List<HeaderDescriptor> invalidHeaders = null;
-
             foreach (var header in sourceHeaders._headerStore)
             {
                 // Only add header values if they're not already set on the message. Note that we don't merge 
@@ -652,27 +612,13 @@ namespace System.Net.Http.Headers
                     if (!sourceHeaders.ParseRawHeaderValues(header.Key, sourceInfo, false))
                     {
                         // If after trying to parse source header values no value is left (i.e. all values contain 
-                        // invalid newline chars), mark this header as 'to-be-deleted' and skip to the next header.
-                        if (invalidHeaders == null)
-                        {
-                            invalidHeaders = new List<HeaderDescriptor>();
-                        }
-
-                        invalidHeaders.Add(header.Key);
+                        // invalid newline chars), delete it and skip to the next header.
+                        sourceHeaders._headerStore.Remove(header.Key);
                     }
                     else
                     {
                         AddHeaderInfo(header.Key, sourceInfo);
                     }
-                }
-            }
-
-            if (invalidHeaders != null)
-            {
-                Debug.Assert(sourceHeaders._headerStore != null);
-                foreach (HeaderDescriptor invalidheaderInfo in invalidHeaders)
-                {
-                    sourceHeaders._headerStore.Remove(invalidheaderInfo);
                 }
             }
         }
