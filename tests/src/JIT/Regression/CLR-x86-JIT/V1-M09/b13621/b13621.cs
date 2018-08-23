@@ -24,6 +24,12 @@ namespace DefaultNamespace
                 if (n % 50 == 0)
                     Console.Out.WriteLine(n);
             }
+
+            for (n = 0; n < iSize; n++)
+            {
+                root[n].Free();
+            }
+
             return 100;
         }
 

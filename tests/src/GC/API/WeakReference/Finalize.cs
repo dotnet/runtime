@@ -33,7 +33,7 @@ public class Test {
         }
 
         [MethodImplAttribute(MethodImplOptions.NoInlining)]
-        public void RunTest() 
+        public GCHandle RunTest()
         {
             WeakReference weak1 = new WeakReference(dummy1);
             GCHandle handle = GCHandle.Alloc(dummy1,GCHandleType.Normal); // Strong Reference
@@ -43,19 +43,25 @@ public class Test {
             // ensuring that GC happens even with /debug mode
             dummy1=null;
             dummy2=null;
+
+            return handle;
         }    
     }
 
     public static int Main() 
     {
         CreateObj temp = new CreateObj();
-        temp.RunTest();
+        GCHandle handle = temp.RunTest();
 
         GC.Collect();
         GC.WaitForPendingFinalizers();
         GC.Collect();
 
-        if (Dummy.visited) 
+        bool success = Dummy.visited;
+
+        handle.Free();
+
+        if (success)
         {
             Console.WriteLine("Test for WeakReference.Finalize() passed!");
             return 100;

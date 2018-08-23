@@ -130,8 +130,8 @@ namespace R2RDump
                 Machine = PEReader.PEHeaders.CoffHeader.Machine;
 				if (!Machine.IsDefined(typeof(Machine), Machine))
                 {
-                    Machine = Machine.Amd64;
                     R2RDump.WriteWarning($"Invalid Machine: {Machine}");
+                    Machine = Machine.Amd64;
                 }
                 ImageBase = PEReader.PEHeaders.PEHeader.ImageBase;
 

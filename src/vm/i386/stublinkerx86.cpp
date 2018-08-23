@@ -6040,6 +6040,7 @@ static void AppendGCLayout(ULONGARRAY &gcLayout, size_t baseOffset, BOOL fIsType
 }
 
 Stub * StubLinkerCPU::CreateTailCallCopyArgsThunk(CORINFO_SIG_INFO * pSig,
+                                                  MethodDesc* pMD,
                                                   CorInfoHelperTailCallSpecialHandling flags)
 {
     STANDARD_VM_CONTRACT;
@@ -6429,7 +6430,8 @@ Stub * StubLinkerCPU::CreateTailCallCopyArgsThunk(CORINFO_SIG_INFO * pSig,
         EncodeGCOffsets(pSl, gcLayout);
     }
 
-    return pSl->Link();
+    LoaderHeap* pHeap = pMD->GetLoaderAllocatorForCode()->GetStubHeap();
+    return pSl->Link(pHeap);
 }
 #endif // DACCESS_COMPILE
 

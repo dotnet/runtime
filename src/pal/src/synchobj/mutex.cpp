@@ -804,7 +804,7 @@ void SPINLOCKAcquire (LONG * lock, unsigned int flags)
 
 void SPINLOCKRelease (LONG * lock)
 {
-    *lock = 0;
+    VolatileStore(lock, 0);
 }
 
 DWORD SPINLOCKTryAcquire (LONG * lock)

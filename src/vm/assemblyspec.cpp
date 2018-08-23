@@ -1267,7 +1267,7 @@ void AssemblySpecBindingCache::Init(CrstBase *pCrst, LoaderHeap *pHeap)
     m_pHeap = pHeap;
 }
 
-AssemblySpecBindingCache::AssemblyBinding* AssemblySpecBindingCache::GetAssemblyBindingEntryForAssemblySpec(AssemblySpec* pSpec, BOOL fThrow)
+AssemblySpecBindingCache::AssemblyBinding* AssemblySpecBindingCache::LookupInternal(AssemblySpec* pSpec, BOOL fThrow)
 {
     CONTRACTL
     {
@@ -1288,9 +1288,9 @@ AssemblySpecBindingCache::AssemblyBinding* AssemblySpecBindingCache::GetAssembly
     }
     CONTRACTL_END;
 
-    AssemblyBinding* pEntry = (AssemblyBinding *) INVALIDENTRY;
     UPTR key = (UPTR)pSpec->Hash();
-    
+    UPTR lookupKey = key;
+
     // On CoreCLR, we will use the BinderID as the key 
     ICLRPrivBinder *pBinderContextForLookup = NULL;
     AppDomain *pSpecDomain = pSpec->GetAppDomain();
@@ -1309,7 +1309,7 @@ AssemblySpecBindingCache::AssemblyBinding* AssemblySpecBindingCache::GetAssembly
     if (pBinderContextForLookup != NULL)
     {
         // We are working with the actual binding context in which the assembly was expected to be loaded.
-        // Thus, we dont need to get it from the parent assembly.
+        // Thus, we don't need to get it from the parent assembly.
         fGetBindingContextFromParent = false;
     }
 
@@ -1324,7 +1324,6 @@ AssemblySpecBindingCache::AssemblyBinding* AssemblySpecBindingCache::GetAssembly
         }
     }
 
-    UPTR lookupKey = key;
     if (pBinderContextForLookup)
     {
         UINT_PTR binderID = 0;
@@ -1332,9 +1331,9 @@ AssemblySpecBindingCache::AssemblyBinding* AssemblySpecBindingCache::GetAssembly
         _ASSERTE(SUCCEEDED(hr));
         lookupKey = key^binderID;
     }
-    
-    pEntry = (AssemblyBinding *) m_map.LookupValue(lookupKey, pSpec);
-    
+
+    AssemblyBinding* pEntry = (AssemblyBinding *)m_map.LookupValue(lookupKey, pSpec);
+
     // Reset the binding context if one was originally never present in the AssemblySpec and we didnt find any entry
     // in the cache.
     if (fGetBindingContextFromParent)
@@ -1351,8 +1350,7 @@ AssemblySpecBindingCache::AssemblyBinding* AssemblySpecBindingCache::GetAssembly
 BOOL AssemblySpecBindingCache::Contains(AssemblySpec *pSpec)
 {
     WRAPPER_NO_CONTRACT;
-
-    return (GetAssemblyBindingEntryForAssemblySpec(pSpec, TRUE) != (AssemblyBinding *) INVALIDENTRY);
+    return (LookupInternal(pSpec, TRUE) != (AssemblyBinding *) INVALIDENTRY);
 }
 
 DomainAssembly *AssemblySpecBindingCache::LookupAssembly(AssemblySpec *pSpec,
@@ -1378,7 +1376,7 @@ DomainAssembly *AssemblySpecBindingCache::LookupAssembly(AssemblySpec *pSpec,
 
     AssemblyBinding *entry = (AssemblyBinding *) INVALIDENTRY;
     
-    entry = GetAssemblyBindingEntryForAssemblySpec(pSpec, fThrow);
+    entry = LookupInternal(pSpec, fThrow);
 
     if (entry == (AssemblyBinding *) INVALIDENTRY)
         RETURN NULL;
@@ -1414,9 +1412,8 @@ PEAssembly *AssemblySpecBindingCache::LookupFile(AssemblySpec *pSpec, BOOL fThro
     }
     CONTRACT_END;
 
-    AssemblyBinding *entry = (AssemblyBinding *) INVALIDENTRY;
-    
-    entry = GetAssemblyBindingEntryForAssemblySpec(pSpec, fThrow);
+    AssemblyBinding *entry = (AssemblyBinding *) INVALIDENTRY;    
+    entry = LookupInternal(pSpec, fThrow);
     
     if (entry == (AssemblyBinding *) INVALIDENTRY)
         RETURN NULL;
@@ -1545,6 +1542,7 @@ BOOL AssemblySpecBindingCache::StoreAssembly(AssemblySpec *pSpec, DomainAssembly
 
     // On CoreCLR, we will use the BinderID as the key 
     ICLRPrivBinder* pBinderContextForLookup = pAssembly->GetFile()->GetBindingContext();
+
     _ASSERTE(pBinderContextForLookup || pAssembly->GetFile()->IsSystem());
     if (pBinderContextForLookup)
     {
@@ -1558,15 +1556,21 @@ BOOL AssemblySpecBindingCache::StoreAssembly(AssemblySpec *pSpec, DomainAssembly
             pSpec->SetBindingContext(pBinderContextForLookup);
         }
     }
-    
+
     AssemblyBinding *entry = (AssemblyBinding *) m_map.LookupValue(key, pSpec);
 
     if (entry == (AssemblyBinding *) INVALIDENTRY)
     {
         AssemblyBindingHolder abHolder;
-        entry = abHolder.CreateAssemblyBinding(m_pHeap);
 
-        entry->Init(pSpec,pAssembly->GetFile(),pAssembly,NULL,m_pHeap, abHolder.GetPamTracker());
+        LoaderHeap* pHeap = m_pHeap;
+        if (pAssembly->IsCollectible())
+        {
+            pHeap = pAssembly->GetLoaderAllocator()->GetHighFrequencyHeap();
+        }
+
+        entry = abHolder.CreateAssemblyBinding(pHeap);
+        entry->Init(pSpec,pAssembly->GetFile(),pAssembly,NULL,pHeap, abHolder.GetPamTracker());
 
         m_map.InsertValue(key, entry);
 
@@ -1625,6 +1629,7 @@ BOOL AssemblySpecBindingCache::StoreFile(AssemblySpec *pSpec, PEAssembly *pFile)
 
     // On CoreCLR, we will use the BinderID as the key 
     ICLRPrivBinder* pBinderContextForLookup = pFile->GetBindingContext();
+
     _ASSERTE(pBinderContextForLookup || pFile->IsSystem());
     if (pBinderContextForLookup)
     {
@@ -1644,9 +1649,27 @@ BOOL AssemblySpecBindingCache::StoreFile(AssemblySpec *pSpec, PEAssembly *pFile)
     if (entry == (AssemblyBinding *) INVALIDENTRY)
     {
         AssemblyBindingHolder abHolder;
-        entry = abHolder.CreateAssemblyBinding(m_pHeap);
 
-        entry->Init(pSpec,pFile,NULL,NULL,m_pHeap, abHolder.GetPamTracker());
+        LoaderHeap* pHeap = m_pHeap;
+
+#ifndef CROSSGEN_COMPILE
+        if (pBinderContextForLookup != NULL)
+        {
+            LoaderAllocator* pLoaderAllocator = NULL;
+
+            // Assemblies loaded with AssemblyLoadContext need to use a different heap if
+            // marked as collectible
+            if (SUCCEEDED(pBinderContextForLookup->GetLoaderAllocator((LPVOID*)&pLoaderAllocator)))
+            {
+                _ASSERTE(pLoaderAllocator != NULL);
+                pHeap = pLoaderAllocator->GetHighFrequencyHeap();
+            }
+        }
+#endif // !CROSSGEN_COMPILE
+
+        entry = abHolder.CreateAssemblyBinding(pHeap);
+
+        entry->Init(pSpec,pFile,NULL,NULL,pHeap, abHolder.GetPamTracker());
 
         m_map.InsertValue(key, entry);
         abHolder.SuppressRelease();
@@ -1694,7 +1717,7 @@ BOOL AssemblySpecBindingCache::StoreException(AssemblySpec *pSpec, Exception* pE
 
     UPTR key = (UPTR)pSpec->Hash();
 
-    AssemblyBinding *entry = GetAssemblyBindingEntryForAssemblySpec(pSpec, TRUE);
+    AssemblyBinding *entry = LookupInternal(pSpec, TRUE);
     if (entry == (AssemblyBinding *) INVALIDENTRY)
     {
         // TODO: Merge this with the failure lookup in the binder
@@ -1751,6 +1774,40 @@ BOOL AssemblySpecBindingCache::StoreException(AssemblySpec *pSpec, Exception* pE
     }
 }
 
+BOOL AssemblySpecBindingCache::RemoveAssembly(DomainAssembly* pAssembly)
+{
+    CONTRACT(BOOL)
+    {
+        INSTANCE_CHECK;
+        NOTHROW;
+        GC_TRIGGERS;
+        MODE_ANY;
+        PRECONDITION(pAssembly != NULL);
+    }
+    CONTRACT_END;
+    BOOL result = FALSE;
+    PtrHashMap::PtrIterator i = m_map.begin();
+    while (!i.end())
+    {
+        AssemblyBinding* entry = (AssemblyBinding*)i.GetValue();
+        if (entry->GetAssembly() == pAssembly)
+        {
+            UPTR key = i.GetKey();
+            m_map.DeleteValue(key, entry);
+
+            if (m_pHeap == NULL)
+                delete entry;
+            else
+                entry->~AssemblyBinding();
+
+            result = TRUE;
+        }
+        ++i;
+    }
+
+    RETURN result;
+}
+
 /* static */
 BOOL AssemblySpecHash::CompareSpecs(UPTR u1, UPTR u2)
 {
@@ -1758,9 +1815,6 @@ BOOL AssemblySpecHash::CompareSpecs(UPTR u1, UPTR u2)
     WRAPPER_NO_CONTRACT;
     return AssemblySpecBindingCache::CompareSpecs(u1,u2);  
 }
-
-
-
 
 /* static */
 BOOL AssemblySpecBindingCache::CompareSpecs(UPTR u1, UPTR u2)
@@ -1772,8 +1826,6 @@ BOOL AssemblySpecBindingCache::CompareSpecs(UPTR u1, UPTR u2)
     return a1->CompareEx(a2);
 }
 
-
-
 /* static */
 BOOL DomainAssemblyCache::CompareBindingSpec(UPTR spec1, UPTR spec2)
 {
@@ -1784,7 +1836,6 @@ BOOL DomainAssemblyCache::CompareBindingSpec(UPTR spec1, UPTR spec2)
 
     return pSpec1->CompareEx(&pEntry2->spec);
 }
-
 
 DomainAssemblyCache::AssemblyEntry* DomainAssemblyCache::LookupEntry(AssemblySpec* pSpec)
 {

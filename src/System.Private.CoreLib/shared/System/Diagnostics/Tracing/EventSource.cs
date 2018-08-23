@@ -1650,6 +1650,14 @@ namespace System.Diagnostics.Tracing
 
         private static Guid GenerateGuidFromName(string name)
         {
+            if (namespaceBytes == null)
+            {
+                namespaceBytes = new byte[] {
+                    0x48, 0x2C, 0x2D, 0xB2, 0xC3, 0x90, 0x47, 0xC8,
+                    0x87, 0xF8, 0x1A, 0x15, 0xBF, 0xC1, 0x30, 0xFB,
+                };
+            }
+
             byte[] bytes = Encoding.BigEndianUnicode.GetBytes(name);
             var hash = new Sha1ForNonSecretPurposes();
             hash.Start();
@@ -3748,11 +3756,12 @@ namespace System.Diagnostics.Tracing
         internal const string s_ActivityStartSuffix = "Start";
         internal const string s_ActivityStopSuffix = "Stop";
 
+        // WARNING: Do not depend upon initialized statics during creation of EventSources, as it is possible for creation of an EventSource to trigger
+        // creation of yet another EventSource.  When this happens, these statics may not yet be initialized.
+        // Rather than depending on initialized statics, use lazy initialization to ensure that the statics are initialized exactly when they are needed.
+
         // used for generating GUID from eventsource name
-        private static readonly byte[] namespaceBytes = new byte[] {
-            0x48, 0x2C, 0x2D, 0xB2, 0xC3, 0x90, 0x47, 0xC8,
-            0x87, 0xF8, 0x1A, 0x15, 0xBF, 0xC1, 0x30, 0xFB,
-        };
+        private static byte[] namespaceBytes;
 
 #endregion
     }
@@ -3860,6 +3869,16 @@ namespace System.Diagnostics.Tracing
         /// the EventListener has enabled events.  
         /// </summary>
         public event EventHandler<EventWrittenEventArgs> EventWritten;
+
+        static EventListener()
+        {
+#if FEATURE_PERFTRACING
+            // Ensure that RuntimeEventSource is initialized so that EventListeners get an opportunity to subscribe to its events.
+            // This is required because RuntimeEventSource never emit events on its own, and thus will never be initialized
+            // in the normal way that EventSources are initialized.
+            GC.KeepAlive(RuntimeEventSource.Log);
+#endif // FEATURE_PERFTRACING
+        }
 
         /// <summary>
         /// Create a new EventListener in which all events start off turned off (use EnableEvents to turn
@@ -4102,9 +4121,24 @@ namespace System.Diagnostics.Tracing
                 }
                 newEventSource.m_id = newIndex;
 
-                // Add every existing dispatcher to the new EventSource
-                for (EventListener listener = s_Listeners; listener != null; listener = listener.m_Next)
-                    newEventSource.AddListener(listener);
+#if DEBUG
+                // Disable validation of EventSource/EventListener connections in case a call to EventSource.AddListener
+                // causes a recursive call into this method.
+                bool previousValue = s_ConnectingEventSourcesAndListener;
+                s_ConnectingEventSourcesAndListener = true;
+                try
+                {
+#endif
+                    // Add every existing dispatcher to the new EventSource
+                    for (EventListener listener = s_Listeners; listener != null; listener = listener.m_Next)
+                        newEventSource.AddListener(listener);
+#if DEBUG
+                }
+                finally
+                {
+                    s_ConnectingEventSourcesAndListener = previousValue;
+                }
+#endif
 
                 Validate();
             }
@@ -4185,6 +4219,14 @@ namespace System.Diagnostics.Tracing
         [Conditional("DEBUG")]
         internal static void Validate()
         {
+#if DEBUG
+            // Don't run validation code if we're in the middle of modifying the connections between EventSources and EventListeners.
+            if (s_ConnectingEventSourcesAndListener)
+            {
+                return;
+            }
+#endif
+
             lock (EventListenersLock)
             {
                 // Get all listeners 
@@ -4274,18 +4316,30 @@ namespace System.Diagnostics.Tracing
                     // is created.
                     WeakReference[] eventSourcesSnapshot = s_EventSources.ToArray();
 
-                    for (int i = 0; i < eventSourcesSnapshot.Length; i++)
+#if DEBUG
+                    bool previousValue = s_ConnectingEventSourcesAndListener;
+                    s_ConnectingEventSourcesAndListener = true;
+                    try
                     {
-                        WeakReference eventSourceRef = eventSourcesSnapshot[i];
-                        EventSource eventSource = eventSourceRef.Target as EventSource;
-                        if (eventSource != null)
+#endif
+                        for (int i = 0; i < eventSourcesSnapshot.Length; i++)
                         {
-                            EventSourceCreatedEventArgs args = new EventSourceCreatedEventArgs();
-                            args.EventSource = eventSource;
-                            callback(this, args);
+                            WeakReference eventSourceRef = eventSourcesSnapshot[i];
+                            EventSource eventSource = eventSourceRef.Target as EventSource;
+                            if (eventSource != null)
+                            {
+                                EventSourceCreatedEventArgs args = new EventSourceCreatedEventArgs();
+                                args.EventSource = eventSource;
+                                callback(this, args);
+                            }
                         }
+#if DEBUG
                     }
-
+                    finally
+                    {
+                        s_ConnectingEventSourcesAndListener = previousValue;
+                    }
+#endif
                     Validate();
                 }
                 finally
@@ -4318,6 +4372,16 @@ namespace System.Diagnostics.Tracing
         /// Used to disallow reentrancy.  
         /// </summary>
         private static bool s_CreatingListener = false;
+
+#if DEBUG
+        /// <summary>
+        /// Used to disable validation of EventSource and EventListener connectivity.
+        /// This is needed when an EventListener is in the middle of being published to all EventSources
+        /// and another EventSource is created as part of the process.
+        /// </summary>
+        [ThreadStatic]
+        private static bool s_ConnectingEventSourcesAndListener = false;
+#endif
 
         /// <summary>
         /// Used to register AD/Process shutdown callbacks.
@@ -4657,7 +4721,7 @@ namespace System.Diagnostics.Tracing
             internal set;
         }
 
-        #region private
+#region private
         internal EventWrittenEventArgs(EventSource eventSource)
         {
             m_eventSource = eventSource;

@@ -176,6 +176,12 @@ public:
         }
     }
 
+    STDMETHOD(GetLoaderAllocator)(
+        LPVOID * pLoaderAllocator)
+    {
+        return E_FAIL;
+    }
+
     HRESULT FindWinRTAssemblyBySpec(
         LPVOID pvAppDomain,
         LPVOID pvAssemblySpec,
@@ -380,6 +386,13 @@ public:
     {
         STATIC_CONTRACT_WRAPPER;
         return m_pBinder->FindAssemblyBySpec(pvAppDomain, pvAssemblySpec, pResult, ppAssembly);
+    }
+
+    STDMETHOD(GetLoaderAllocator)(
+        LPVOID * pLoaderAllocator)
+    {
+        WRAPPER_NO_CONTRACT;
+        return m_pBinder->GetLoaderAllocator(pLoaderAllocator);
     }
 
     //=============================================================================================

@@ -6,6 +6,10 @@
 #include "common.h"
 #include "stringliteralmap.h"
 #include "virtualcallstub.h"
+#include "threadsuspend.h"
+#ifndef DACCESS_COMPILE
+#include "comdelegate.h"
+#endif
 
 //*****************************************************************************
 // Used by LoaderAllocator::Init for easier readability.
@@ -43,7 +47,7 @@ LoaderAllocator::LoaderAllocator()
     
     m_cReferences = (UINT32)-1;
     
-    m_pDomainAssemblyToDelete = NULL;
+    m_pFirstDomainAssemblyFromSameALCToDelete = NULL;
     
 #ifdef FAT_DISPATCH_TOKENS
     // DispatchTokenFat pointer table for token overflow scenarios. Lazily allocated.
@@ -66,6 +70,7 @@ LoaderAllocator::LoaderAllocator()
     m_pLastUsedCodeHeap = NULL;
     m_pLastUsedDynamicCodeHeap = NULL;
     m_pJumpStubCache = NULL;
+    m_IsCollectible = false;
 
     m_nLoaderAllocator = InterlockedIncrement64((LONGLONG *)&LoaderAllocator::cLoaderAllocatorsCreated);
 }
@@ -344,15 +349,11 @@ LoaderAllocator * LoaderAllocator::GCLoaderAllocators_RemoveAssemblies(AppDomain
     CONTRACTL
     {
         THROWS;
-        GC_NOTRIGGER; // Because we are holding assembly list lock code:BaseDomain#AssemblyListLock
+        GC_TRIGGERS;
         MODE_PREEMPTIVE;
         SO_INTOLERANT;
     }
     CONTRACTL_END;
-    
-    _ASSERTE(pAppDomain->GetLoaderAllocatorReferencesLock()->OwnedByCurrentThread());
-    _ASSERTE(pAppDomain->GetAssemblyListLock()->OwnedByCurrentThread());
-    
     // List of LoaderAllocators being deleted
     LoaderAllocator * pFirstDestroyedLoaderAllocator = NULL;
     
@@ -392,6 +393,8 @@ LoaderAllocator * LoaderAllocator::GCLoaderAllocators_RemoveAssemblies(AppDomain
     AppDomain::AssemblyIterator i;
     // Iterate through every loader allocator, marking as we go
     {
+        CrstHolder chAssemblyListLock(pAppDomain->GetAssemblyListLock());
+
         i = pAppDomain->IterateAssembliesEx((AssemblyIterationFlags)(
             kIncludeExecution | kIncludeLoaded | kIncludeCollected));
         CollectibleAssemblyHolder<DomainAssembly *> pDomainAssembly;
@@ -416,6 +419,9 @@ LoaderAllocator * LoaderAllocator::GCLoaderAllocators_RemoveAssemblies(AppDomain
     // Iterate through every loader allocator, unmarking marked loaderallocators, and
     // build a free list of unmarked ones 
     {
+        CrstHolder chLoaderAllocatorReferencesLock(pAppDomain->GetLoaderAllocatorReferencesLock());
+        CrstHolder chAssemblyListLock(pAppDomain->GetAssemblyListLock());
+
         i = pAppDomain->IterateAssembliesEx((AssemblyIterationFlags)(
             kIncludeExecution | kIncludeLoaded | kIncludeCollected));
         CollectibleAssemblyHolder<DomainAssembly *> pDomainAssembly;
@@ -436,10 +442,29 @@ LoaderAllocator * LoaderAllocator::GCLoaderAllocators_RemoveAssemblies(AppDomain
                     }
                     else if (!pLoaderAllocator->IsAlive())
                     {
-                        pLoaderAllocator->m_pLoaderAllocatorDestroyNext = pFirstDestroyedLoaderAllocator;
-                        // We will store a reference to this assembly, and use it later in this function
-                        pFirstDestroyedLoaderAllocator = pLoaderAllocator;
-                        _ASSERTE(pLoaderAllocator->m_pDomainAssemblyToDelete != NULL);
+                        // Check that we don't have already this LoaderAllocator in the list to destroy
+                        // (in case multiple assemblies are loaded in the same LoaderAllocator)
+                        bool addAllocator = true;
+                        LoaderAllocator * pCheckAllocatorToDestroy = pFirstDestroyedLoaderAllocator;
+                        while (pCheckAllocatorToDestroy != NULL)
+                        {
+                            if (pCheckAllocatorToDestroy == pLoaderAllocator)
+                            {
+                                addAllocator = false;
+                                break;
+                            }
+
+                            pCheckAllocatorToDestroy = pCheckAllocatorToDestroy->m_pLoaderAllocatorDestroyNext;
+                        }
+
+                        // Otherwise, we have a LoaderAllocator that we add to the list
+                        if (addAllocator)
+                        {
+                            pLoaderAllocator->m_pLoaderAllocatorDestroyNext = pFirstDestroyedLoaderAllocator;
+                            // We will store a reference to this assembly, and use it later in this function
+                            pFirstDestroyedLoaderAllocator = pLoaderAllocator;
+                            _ASSERTE(pLoaderAllocator->m_pFirstDomainAssemblyFromSameALCToDelete != NULL);
+                        }
                     }
                 }
             }
@@ -452,10 +477,27 @@ LoaderAllocator * LoaderAllocator::GCLoaderAllocators_RemoveAssemblies(AppDomain
     while (pDomainLoaderAllocatorDestroyIterator != NULL)
     {
         _ASSERTE(!pDomainLoaderAllocatorDestroyIterator->IsAlive());
-        _ASSERTE(pDomainLoaderAllocatorDestroyIterator->m_pDomainAssemblyToDelete != NULL);
-        
-        pAppDomain->RemoveAssembly_Unlocked(pDomainLoaderAllocatorDestroyIterator->m_pDomainAssemblyToDelete);
-        
+
+        DomainAssemblyIterator domainAssemblyIt(pDomainLoaderAllocatorDestroyIterator->m_pFirstDomainAssemblyFromSameALCToDelete);
+
+        // Release all assemblies from the same ALC
+        while (!domainAssemblyIt.end())
+        {
+            DomainAssembly* domainAssemblyToRemove = domainAssemblyIt;
+            pAppDomain->RemoveAssembly(domainAssemblyToRemove);
+
+            if (!domainAssemblyToRemove->GetAssembly()->IsDynamic())
+            {
+                pAppDomain->RemoveFileFromCache(domainAssemblyToRemove->GetFile());
+                AssemblySpec spec;
+                spec.InitializeSpec(domainAssemblyToRemove->GetFile());
+                VERIFY(pAppDomain->RemoveAssemblyFromCache(domainAssemblyToRemove));
+                pAppDomain->RemoveNativeImageDependency(&spec);
+            }
+
+            domainAssemblyIt++;
+        }
+
         pDomainLoaderAllocatorDestroyIterator = pDomainLoaderAllocatorDestroyIterator->m_pLoaderAllocatorDestroyNext;
     }
     
@@ -467,7 +509,7 @@ LoaderAllocator * LoaderAllocator::GCLoaderAllocators_RemoveAssemblies(AppDomain
 // Collect unreferenced assemblies, delete all their remaining resources.
 // 
 //static
-void LoaderAllocator::GCLoaderAllocators(AppDomain * pAppDomain)
+void LoaderAllocator::GCLoaderAllocators(LoaderAllocator* pOriginalLoaderAllocator)
 {
     CONTRACTL
     {
@@ -481,20 +523,16 @@ void LoaderAllocator::GCLoaderAllocators(AppDomain * pAppDomain)
     // List of LoaderAllocators being deleted
     LoaderAllocator * pFirstDestroyedLoaderAllocator = NULL;
     
-    {
-        CrstHolder chLoaderAllocatorReferencesLock(pAppDomain->GetLoaderAllocatorReferencesLock());
-        
-        // We will lock the assembly list, so no other thread can delete items from it while we are deleting 
-        // them.
-        // Note: Because of the previously taken lock we could just lock during every enumeration, but this 
-        // is more robust for the future.
-        // This lock switches thread to GC_NOTRIGGER (see code:BaseDomain#AssemblyListLock).
-        CrstHolder chAssemblyListLock(pAppDomain->GetAssemblyListLock());
-        
-        pFirstDestroyedLoaderAllocator = GCLoaderAllocators_RemoveAssemblies(pAppDomain);
-    }
+    AppDomain* pAppDomain = (AppDomain*)pOriginalLoaderAllocator->GetDomain();
+
+    // Collect all LoaderAllocators that don't have anymore DomainAssemblies alive
+    // Note: that it may not collect our pOriginalLoaderAllocator in case this 
+    // LoaderAllocator hasn't loaded any DomainAssembly. We handle this case in the next loop.
     // Note: The removed LoaderAllocators are not reachable outside of this function anymore, because we 
     // removed them from the assembly list
+    pFirstDestroyedLoaderAllocator = GCLoaderAllocators_RemoveAssemblies(pAppDomain);
+
+    bool isOriginalLoaderAllocatorFound = false;
 
     // Iterate through free list, firing ETW events and notifying the debugger
     LoaderAllocator * pDomainLoaderAllocatorDestroyIterator = pFirstDestroyedLoaderAllocator;
@@ -507,12 +545,27 @@ void LoaderAllocator::GCLoaderAllocators(AppDomain * pAppDomain)
         // Set the unloaded flag before notifying the debugger
         pDomainLoaderAllocatorDestroyIterator->SetIsUnloaded();
 
-        DomainAssembly * pDomainAssembly = pDomainLoaderAllocatorDestroyIterator->m_pDomainAssemblyToDelete;
-        _ASSERTE(pDomainAssembly != NULL);
-        // Notify the debugger
-        pDomainAssembly->NotifyDebuggerUnload();
-        
+        DomainAssemblyIterator domainAssemblyIt(pDomainLoaderAllocatorDestroyIterator->m_pFirstDomainAssemblyFromSameALCToDelete);
+        while (!domainAssemblyIt.end())
+        {
+            // Notify the debugger
+            domainAssemblyIt->NotifyDebuggerUnload();
+            domainAssemblyIt++;
+        }
+
+        if (pDomainLoaderAllocatorDestroyIterator == pOriginalLoaderAllocator)
+        {
+            isOriginalLoaderAllocatorFound = true;
+        }
         pDomainLoaderAllocatorDestroyIterator = pDomainLoaderAllocatorDestroyIterator->m_pLoaderAllocatorDestroyNext;
+    }
+
+    // If the original LoaderAllocator was not processed, it is most likely a LoaderAllocator without any loaded DomainAssembly
+    // But we still want to collect it so we add it to the list of LoaderAllocator to destroy
+    if (!isOriginalLoaderAllocatorFound && !pOriginalLoaderAllocator->IsAlive())
+    {
+        pOriginalLoaderAllocator->m_pLoaderAllocatorDestroyNext = pFirstDestroyedLoaderAllocator;
+        pFirstDestroyedLoaderAllocator = pOriginalLoaderAllocator;
     }
     
     // Iterate through free list, deleting DomainAssemblies
@@ -520,14 +573,62 @@ void LoaderAllocator::GCLoaderAllocators(AppDomain * pAppDomain)
     while (pDomainLoaderAllocatorDestroyIterator != NULL)
     {
         _ASSERTE(!pDomainLoaderAllocatorDestroyIterator->IsAlive());
-        _ASSERTE(pDomainLoaderAllocatorDestroyIterator->m_pDomainAssemblyToDelete != NULL);
-        
-        delete pDomainLoaderAllocatorDestroyIterator->m_pDomainAssemblyToDelete;
+
+        DomainAssemblyIterator domainAssemblyIt(pDomainLoaderAllocatorDestroyIterator->m_pFirstDomainAssemblyFromSameALCToDelete);
+        while (!domainAssemblyIt.end())
+        {
+            delete (DomainAssembly*)domainAssemblyIt;
+            domainAssemblyIt++;
+        }
         // We really don't have to set it to NULL as the assembly is not reachable anymore, but just in case ...
         // (Also debugging NULL AVs if someone uses it accidentally is so much easier)
-        pDomainLoaderAllocatorDestroyIterator->m_pDomainAssemblyToDelete = NULL;
-        
-        pDomainLoaderAllocatorDestroyIterator = pDomainLoaderAllocatorDestroyIterator->m_pLoaderAllocatorDestroyNext;
+        pDomainLoaderAllocatorDestroyIterator->m_pFirstDomainAssemblyFromSameALCToDelete = NULL;
+
+        pDomainLoaderAllocatorDestroyIterator->ReleaseManagedAssemblyLoadContext();
+
+        // The following code was previously happening on delete ~DomainAssembly->Terminate
+        // We are moving this part here in order to make sure that we can unload a LoaderAllocator
+        // that didn't have a DomainAssembly
+        // (we have now a LoaderAllocator with 0-n DomainAssembly)
+
+        // This cleanup code starts resembling parts of AppDomain::Terminate too much.
+        // It would be useful to reduce duplication and also establish clear responsibilites
+        // for LoaderAllocator::Destroy, Assembly::Terminate, LoaderAllocator::Terminate
+        // and LoaderAllocator::~LoaderAllocator. We need to establish how these
+        // cleanup paths interact with app-domain unload and process tear-down, too.
+
+        if (!IsAtProcessExit())
+        {
+            // Suspend the EE to do some clean up that can only occur
+            // while no threads are running.
+            GCX_COOP(); // SuspendEE may require current thread to be in Coop mode
+                        // SuspendEE cares about the reason flag only when invoked for a GC
+                        // Other values are typically ignored. If using SUSPEND_FOR_APPDOMAIN_SHUTDOWN
+                        // is inappropriate, we can introduce a new flag or hijack an unused one.
+            ThreadSuspend::SuspendEE(ThreadSuspend::SUSPEND_FOR_APPDOMAIN_SHUTDOWN);
+        }
+
+        ExecutionManager::Unload(pDomainLoaderAllocatorDestroyIterator);
+        pDomainLoaderAllocatorDestroyIterator->UninitVirtualCallStubManager();
+
+        // TODO: Do we really want to perform this on each LoaderAllocator?
+        MethodTable::ClearMethodDataCache();
+        ClearJitGenericHandleCache(pAppDomain);
+
+        if (!IsAtProcessExit())
+        {
+            // Resume the EE.
+            ThreadSuspend::RestartEE(FALSE, TRUE);
+        }
+
+        // Because RegisterLoaderAllocatorForDeletion is modifying m_pLoaderAllocatorDestroyNext, we are saving it here
+        LoaderAllocator* pLoaderAllocatorDestroyNext = pDomainLoaderAllocatorDestroyIterator->m_pLoaderAllocatorDestroyNext;
+
+        // Register this LoaderAllocator for cleanup
+        pAppDomain->RegisterLoaderAllocatorForDeletion(pDomainLoaderAllocatorDestroyIterator);
+
+        // Go to next
+        pDomainLoaderAllocatorDestroyIterator = pLoaderAllocatorDestroyNext;
     }
     
     // Deleting the DomainAssemblies will have created a list of LoaderAllocator's on the AppDomain
@@ -554,19 +655,20 @@ BOOL QCALLTYPE LoaderAllocator::Destroy(QCall::LoaderAllocatorHandle pLoaderAllo
         // This will probably change for shared code unloading
         _ASSERTE(pID->GetType() == LAT_Assembly);
 
-        Assembly *pAssembly = pID->GetDomainAssembly()->GetCurrentAssembly();
-        
-        //if not fully loaded, it is still domain specific, so just get one from DomainAssembly
-        BaseDomain *pDomain = pAssembly ? pAssembly->Parent() : pID->GetDomainAssembly()->GetAppDomain();
+        DomainAssembly* pDomainAssembly = (DomainAssembly*)(pID->GetDomainAssemblyIterator());
+        if (pDomainAssembly != NULL)
+        {
+            Assembly *pAssembly = pDomainAssembly->GetCurrentAssembly();
 
-        pLoaderAllocator->CleanupStringLiteralMap();
+            //if not fully loaded, it is still domain specific, so just get one from DomainAssembly
+            BaseDomain *pDomain = pAssembly ? pAssembly->Parent() : pDomainAssembly->GetAppDomain();
 
-        // This will probably change for shared code unloading
-        _ASSERTE(pDomain->IsAppDomain());
+            // This will probably change for shared code unloading
+            _ASSERTE(pDomain->IsAppDomain());
 
-        AppDomain *pAppDomain = pDomain->AsAppDomain();
-
-        pLoaderAllocator->m_pDomainAssemblyToDelete = pAssembly->GetDomainAssembly(pAppDomain);
+            AppDomain *pAppDomain = pDomain->AsAppDomain();
+            pLoaderAllocator->m_pFirstDomainAssemblyFromSameALCToDelete = pAssembly->GetDomainAssembly(pAppDomain);
+        }
 
         // Iterate through all references to other loader allocators and decrement their reference
         // count
@@ -587,7 +689,7 @@ BOOL QCALLTYPE LoaderAllocator::Destroy(QCall::LoaderAllocatorHandle pLoaderAllo
         // may hit zero early.
         if (fIsLastReferenceReleased)
         {
-            LoaderAllocator::GCLoaderAllocators(pAppDomain);
+            LoaderAllocator::GCLoaderAllocators(pLoaderAllocator);
         }
         STRESS_LOG1(LF_CLASSLOADER, LL_INFO100, "End LoaderAllocator::Destroy for loader allocator %p\n", reinterpret_cast<void *>(static_cast<PTR_LoaderAllocator>(pLoaderAllocator)));
 
@@ -1217,6 +1319,8 @@ void LoaderAllocator::Terminate()
     }
 #endif // FAT_DISPATCH_TOKENS
 
+    CleanupStringLiteralMap();
+
     LOG((LF_CLASSLOADER, LL_INFO100, "End LoaderAllocator::Terminate for loader allocator %p\n", reinterpret_cast<void *>(static_cast<PTR_LoaderAllocator>(this))));
 }
 
@@ -1400,7 +1504,7 @@ DispatchToken LoaderAllocator::TryLookupDispatchToken(UINT32 typeId, UINT32 slot
     }
 }
 
-void LoaderAllocator::InitVirtualCallStubManager(BaseDomain * pDomain, BOOL fCollectible /* = FALSE */)
+void LoaderAllocator::InitVirtualCallStubManager(BaseDomain * pDomain)
 {
     STANDARD_VM_CONTRACT;
 
@@ -1468,9 +1572,56 @@ BOOL LoaderAllocator::IsDomainNeutral()
     return GetDomain()->IsSharedDomain();
 }
 
+DomainAssemblyIterator::DomainAssemblyIterator(DomainAssembly* pFirstAssembly)
+{
+    pCurrentAssembly = pFirstAssembly;
+    pNextAssembly = pCurrentAssembly ? pCurrentAssembly->GetNextDomainAssemblyInSameALC() : NULL;
+}
+
+void DomainAssemblyIterator::operator++()
+{
+    pCurrentAssembly = pNextAssembly;
+    pNextAssembly = pCurrentAssembly ? pCurrentAssembly->GetNextDomainAssemblyInSameALC() : NULL;
+}
+
+void AssemblyLoaderAllocator::SetCollectible()
+{
+    CONTRACTL
+    {
+        THROWS;
+    }
+    CONTRACTL_END;
+
+    m_IsCollectible = true;
+#ifndef DACCESS_COMPILE
+    m_pShuffleThunkCache = new ShuffleThunkCache(m_pStubHeap);
+#endif
+}
+
 #ifndef DACCESS_COMPILE
 
 #ifndef CROSSGEN_COMPILE
+
+AssemblyLoaderAllocator::~AssemblyLoaderAllocator()
+{
+    if (m_binderToRelease != NULL)
+    {
+        VERIFY(m_binderToRelease->Release() == 0);
+        m_binderToRelease = NULL;
+    }
+
+    delete m_pShuffleThunkCache;
+    m_pShuffleThunkCache = NULL;
+}
+
+void AssemblyLoaderAllocator::RegisterBinder(CLRPrivBinderAssemblyLoadContext* binderToRelease)
+{
+    // When the binder is registered it will be released by the destructor
+    // of this instance
+    _ASSERTE(m_binderToRelease == NULL);
+    m_binderToRelease = binderToRelease;
+}
+
 STRINGREF *LoaderAllocator::GetStringObjRefPtrFromUnicodeString(EEStringData *pStringData)
 {
     CONTRACTL
@@ -1666,6 +1817,25 @@ void LoaderAllocator::CleanupFailedTypeInit()
         pLock->Unlink(pItem->m_pListLockEntry);
     }
 }
+
+void AssemblyLoaderAllocator::ReleaseManagedAssemblyLoadContext()
+{
+    CONTRACTL
+    {
+        THROWS;
+        GC_TRIGGERS;
+        MODE_ANY;
+        SO_INTOLERANT;
+    }
+    CONTRACTL_END;
+
+    if (m_binderToRelease != NULL)
+    {
+        // Release the managed ALC
+        m_binderToRelease->ReleaseLoadContext();
+    }
+}
+
 #endif // !CROSSGEN_COMPILE
 
 #endif // !DACCESS_COMPILE

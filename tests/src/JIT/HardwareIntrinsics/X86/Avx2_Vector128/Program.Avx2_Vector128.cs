@@ -20,6 +20,14 @@ namespace JIT.HardwareIntrinsics.X86
                 ["Blend.UInt32.2"] = BlendUInt322,
                 ["Blend.UInt32.4"] = BlendUInt324,
                 ["Blend.UInt32.85"] = BlendUInt3285,
+                ["MaskLoad.Int32"] = MaskLoadInt32,
+                ["MaskLoad.UInt32"] = MaskLoadUInt32,
+                ["MaskLoad.Int64"] = MaskLoadInt64,
+                ["MaskLoad.UInt64"] = MaskLoadUInt64,
+                ["MaskStore.Int32"] = MaskStoreInt32,
+                ["MaskStore.UInt32"] = MaskStoreUInt32,
+                ["MaskStore.Int64"] = MaskStoreInt64,
+                ["MaskStore.UInt64"] = MaskStoreUInt64,
             };
         }
     }
