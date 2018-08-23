@@ -147,7 +147,7 @@ inline TADDR GetRegdisplayStackMark(REGDISPLAY *display) {
 #endif
 }
 
-#elif defined(_WIN64)
+#elif defined(_TARGET_64BIT_)
 
 #if defined(_TARGET_ARM64_)
 typedef struct _Arm64VolatileContextPointer
@@ -278,7 +278,7 @@ inline TADDR GetRegdisplayStackMark(REGDISPLAY *display) {
 #error "RegDisplay functions are not implemented on this platform."
 #endif
 
-#if defined(_WIN64) || defined(_TARGET_ARM_) || (defined(_TARGET_X86_) && defined(WIN64EXCEPTIONS))
+#if defined(_TARGET_64BIT_) || defined(_TARGET_ARM_) || (defined(_TARGET_X86_) && defined(WIN64EXCEPTIONS))
 // This needs to be implemented for platforms that have funclets.
 inline LPVOID GetRegdisplayReturnValue(REGDISPLAY *display)
 {
@@ -289,7 +289,7 @@ inline LPVOID GetRegdisplayReturnValue(REGDISPLAY *display)
 #elif defined(_TARGET_ARM64_)
     return (LPVOID)display->pCurrentContext->X0;
 #elif defined(_TARGET_ARM_)
-    return (LPVOID)display->pCurrentContext->R0;
+    return (LPVOID)((TADDR)display->pCurrentContext->R0);
 #elif defined(_TARGET_X86_)
     return (LPVOID)display->pCurrentContext->Eax;
 #else
@@ -302,24 +302,24 @@ inline void SyncRegDisplayToCurrentContext(REGDISPLAY* pRD)
 {
     LIMITED_METHOD_CONTRACT;
 
-#if defined(_WIN64)
+#if defined(_TARGET_64BIT_)
     pRD->SP         = (INT_PTR)GetSP(pRD->pCurrentContext);
     pRD->ControlPC  = INT_PTR(GetIP(pRD->pCurrentContext));
-#elif defined(_TARGET_ARM_) // _WIN64
+#elif defined(_TARGET_ARM_)
     pRD->SP         = (DWORD)GetSP(pRD->pCurrentContext);
     pRD->ControlPC  = (DWORD)GetIP(pRD->pCurrentContext);
-#elif defined(_TARGET_X86_) // _TARGET_ARM_
+#elif defined(_TARGET_X86_)
     pRD->SP         = (DWORD)GetSP(pRD->pCurrentContext);
     pRD->ControlPC  = (DWORD)GetIP(pRD->pCurrentContext);
 #else // _TARGET_X86_
     PORTABILITY_ASSERT("SyncRegDisplayToCurrentContext");
-#endif // _TARGET_ARM_ || _TARGET_X86_
+#endif
 
 #ifdef DEBUG_REGDISPLAY
     CheckRegDisplaySP(pRD);
 #endif // DEBUG_REGDISPLAY
 }
-#endif // _WIN64 || _TARGET_ARM_ || (_TARGET_X86_ && WIN64EXCEPTIONS)
+#endif // _TARGET_64BIT_ || _TARGET_ARM_ || (_TARGET_X86_ && WIN64EXCEPTIONS)
 
 typedef REGDISPLAY *PREGDISPLAY;
 
