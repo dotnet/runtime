@@ -4,9 +4,11 @@ Debugging CoreFX build issues
 ## MSBuild debug options
 
 * Enable MSBuild diagnostics log (msbuild.log):
-`msbuild my.csproj /flp:v=diag /t:rebuild`
+`dotnet msbuild my.csproj /flp:v=diag /t:rebuild`
 * Generate a flat project file (out.pp):
-`msbuild my.csproj /pp:out.pp`
+`dotnet msbuild my.csproj /pp:out.pp`
+* Generate a binary log usable by the [MSBuild Binary and Structured Log Viewer](http://msbuildlog.com/):
+`dotnet msbuild my.csproj /bl`
 
 ## Steps to debug packaging build issues
 
@@ -14,11 +16,11 @@ Debugging CoreFX build issues
 
 I found the following process to help when investigating some of the build issues caused by incorrect packaging. 
 
-In general, always build the .builds file instead of any of the csproj to ensure that all [Build Pivots](../coding-guidelines/project-guidelines.md#build-pivots) are generated. This applies for running tests as well. For more information, see [Build individual CoreFX DLLs](../project-docs/developer-guide.md#building-individual-corefx-dlls) 
+To quickly validate if a given project compiles on all supported configurations use `dotnet msbuild /t:RebuildAll`. This applies for running tests as well. For more information, see [Building individual libraries](../project-docs/developer-guide.md#building-individual-libraries) 
 
 Assuming the current directory is `\src\contractname\`:
 
-1. Build the `\ref` folder: `msbuild /t:rebuild contractname.builds` 
+1. Build the `\ref` folder: `dotnet msbuild /t:rebuild` 
 
 
 Check the logs for output such as:
@@ -48,11 +50,11 @@ CopyFilesToOutputDirectory:
 
 Using your favourite IL disassembler, ensure that each platform contains the correct APIs. Missing APIs from the contracts is likely caused by not having the right `DefineConstants` tags in the csproj files.
 
-2. Build the `\src` folder: `msbuild /t:rebuild contractname.builds`
+2. Build the `\src` folder: `dotnet msbuild /t:rebuild`
 
 Use the same technique above to ensure that the binaries include the correct implementations.
 
-3. Build the `\pkg` folder: `msbuild /t:rebuild contractname.builds`
+3. Build the `\pkg` folder: `dotnet msbuild /t:rebuild`
 
 Ensure that all Build Pivots are actually being built. This should build all .\ref and .\src variations as well as actually creating the NuGet packages.
 
@@ -70,7 +72,7 @@ Build:
 
 To validate the content of the nupkg, change the extension to .zip. As before, use an IL disassembler to verify that the right APIs are present within `ref\<platform>\contractname.dll` and the right implementations within the `lib\<platform>\contractname.dll`.
 
-4. Run the tests from `\tests`: `msbuild /t:rebuild,test contractname.Tests.builds`
+4. Run the tests from `\tests`: `dotnet msbuild /t:rebuildandtest`
 
 Ensure that the test is referencing the correct pkg. For example:
 ```
@@ -82,7 +84,7 @@ Ensure that the test is referencing the correct pkg. For example:
   </ItemGroup>
 ```
 
-Ensure that the right `TargetGroup` (what we're testing) and `TestTFM` (the Target Framework of the test code) are correctly set in the .builds file.
+Ensure that the right `TargetGroup` (what we're testing) is set.
 
 To identify which of the combinations failed, search for the following pattern in the output:
 
@@ -90,18 +92,17 @@ To identify which of the combinations failed, search for the following pattern i
 Project "S:\c1\src\System.Net.ServicePoint\tests\System.Net.ServicePoint.Tests.builds" (1) is building "S:\c1\src\System.Net.ServicePoint\tests\System.Net.ServicePoint.Tests.csproj"
 (2:5) on node 1 (Build target(s)).
 ResolvePkgProjReferences:
-  Resolved compile assets from .NETStandard,Version=v1.7: S:\c1\bin\ref\System.Net.ServicePoint\4.0.0.0\System.Net.ServicePoint.dll
-  Resolved runtime assets from .NETCoreApp,Version=v1.1: S:\c1\bin\AnyOS.AnyCPU.Debug\System.Net.ServicePoint\System.Net.ServicePoint.dll
+  Resolved compile assets from .NETStandard,Version=v2.0: S:\c1\bin\ref\System.Net.ServicePoint\4.0.0.0\System.Net.ServicePoint.dll
+  Resolved runtime assets from .NETCoreApp,Version=v2.0: S:\c1\bin\AnyOS.AnyCPU.Debug\System.Net.ServicePoint\System.Net.ServicePoint.dll
 ```
 
-To run a test from a single Build Pivot combination, specify all properties and build the `csproj` instead of the `builds` file:
+To run a test from a single Build Pivot combination, specify all properties and build the `csproj`:
 
 ```
-msbuild /t:rebuild,test /p:Outerloop=true "/p:XunitOptions=-showprogress" /p:Configuration=Windows_Debug /p:TargetGroup=netstandard1.7 /p:TestTFM=netcoreapp1.1 .\System.Net.ServicePoint.Tests.csproj
+dotnet msbuild System.Net.ServicePoint.Tests.csproj /t:rebuildandtest /p:TargetGroup=netcoreapp2.0 /p:Outerloop=true /p:xunitoptions=-showprogress /p:ConfigurationGroup=Debug
 ```
 Will run the test using the following pivot values:
 * Architecture: AnyCPU
 * Flavor: Debug
 * OS: Windows_NT
-* Platform Runtime: netcoreapp1.1
-* Target: netstandard1.7
+* Target: netstandard2.0

@@ -99,11 +99,7 @@ For more information about extra parameters take a look at the scripts `build-na
 
 ### Build Managed
 Since the managed build uses the .NET Core CLI (which the build will download), managed components can only be built on a subset of distros.
-There are some additional prerequisites from the CLI which need to be installed. Both libicu and
-libunwind are used by CoreCLR to execute managed code, so they must be
-installed. Since CoreFX does not actually link against these packages, runtime
-versions are sufficient.  We also require curl to be present, which we use to
-download the .NET Core CLI.
+There are some additional prerequisites from the CLI which need to be installed. Both libicu and libunwind are used by CoreCLR to execute managed code, so they must be installed. Since CoreFX does not actually link against these packages, runtime versions are sufficient. We also require curl to be present, which we use to download the .NET Core CLI.
 
 **Examples**
 
@@ -172,18 +168,20 @@ build System.Collections -framework:netfx -release
 
 ### Building individual projects
 
+You can either ues `dotnet msbuild` or `msbuild`, depending on which is in your path. As `dotnet msbuild` works on all supported environments (i.e. Unix) we will use it throughout this guide.
+
 **Note**: Before working on individual projects or test projects you **must** run `build` from the root once before beginning that work. It is also a good idea to run `build` whenever you pull a large set of unknown changes into your branch.
 
 Under the src directory is a set of directories, each of which represents a particular assembly in CoreFX. See Libary Project Guidelines section under [project-guidelines](../coding-guidelines/project-guidelines.md) for more details about the structure.
 
 For example the src\System.Diagnostics.DiagnosticSource directory holds the source code for the System.Diagnostics.DiagnosticSource.dll assembly.
 
-You can build the DLL for System.Diagnostics.DiagnosticSource.dll by going to the `src\System.Diagnostics.DiagnosticsSource\src` directory and typing `msbuild`. The DLL ends up in `bin\AnyOS.AnyCPU.Debug\System.Diagnostics.DiagnosticSource` as well as `bin\runtime\[BuildConfiguration]`.
+You can build the DLL for System.Diagnostics.DiagnosticSource.dll by going to the `src\System.Diagnostics.DiagnosticsSource\src` directory and typing `dotnet msbuild`. The DLL ends up in `bin\AnyOS.AnyCPU.Debug\System.Diagnostics.DiagnosticSource` as well as `bin\runtime\[BuildConfiguration]`.
 
 You can build the tests for System.Diagnostics.DiagnosticSource.dll by going to
-`src\System.Diagnostics.DiagnosticSource\tests` and typing `msbuild`.
+`src\System.Diagnostics.DiagnosticSource\tests` and typing `dotnet msbuild`.
 
-Some libraries might also have a ref and/or a pkg directory and you can build them in a similar way by typing `msbuild` in that directory.
+Some libraries might also have a ref and/or a pkg directory and you can build them in a similar way by typing `dotnet msbuild` in that directory.
 
 For libraries that have multiple build configurations the configurations will be listed in the `<BuildConfigurations>` property group, commonly found in a configurations.props file next to the csproj. When building the csproj for a configuration the most compatible one in the list will be choosen and set for the build. For more information about `BuildConfigurations` see [project-guidelines](../coding-guidelines/project-guidelines.md).
 
@@ -191,20 +189,24 @@ For libraries that have multiple build configurations the configurations will be
 
 - Build project for Linux for netcoreapp
 ```
-msbuild System.Net.NetworkInformation.csproj /p:OSGroup=Linux
+dotnet msbuild System.Net.NetworkInformation.csproj /p:OSGroup=Linux
 ```
 
 - Build project for uap (not if trying to build on non-windows you also need to specify OSGroup=Windows_NT)
 ```
-msbuild System.Net.NetworkInformation.csproj /p:TargetGroup=uap
+dotnet msbuild System.Net.NetworkInformation.csproj /p:TargetGroup=uap
 ```
 
 - Build release version of library
 ```
-msbuild System.Net.NetworkInformation.csproj /p:ConfigurationGroup=Release
+dotnet msbuild System.Net.NetworkInformation.csproj /p:ConfigurationGroup=Release
 ```
 
-**Note:** If building in a non-Windows environment, call `<repo-root>/Tools/msbuild.sh` instead of just `msbuild`.
+To build for all supported configurations you can use the `BuildAll` and `RebuildAll` tasks:
+
+```
+dotnet msbuild System.Net.NetworkInformation.csproj /t:RebuildAll
+```
 
 ### Building all for other OSes
 
@@ -216,11 +218,11 @@ Note that you cannot generally build native components for another OS but you ca
 ### Building in Release or Debug
 
 By default, building from the root or within a project will build the libraries in Debug mode.
-One can build in Debug or Release mode from the root by doing `build -release` or `build -debug` or when building a project by specifying `/p:ConfigurationGroup=[Debug|Release]` after the `msbuild` command.
+One can build in Debug or Release mode from the root by doing `build -release` or `build -debug` or when building a project by specifying `/p:ConfigurationGroup=[Debug|Release]` after the `dotnet msbuild` command.
 
 ### Building other Architectures
 
-One can build 32- or 64-bit binaries or for any architecture by specifying in the root `build -buildArch=[value]` or in a project `/p:ArchGroup=[value]` after the `msbuild` command.
+One can build 32- or 64-bit binaries or for any architecture by specifying in the root `build -buildArch=[value]` or in a project `/p:ArchGroup=[value]` after the `dotnet msbuild` command.
 
 ### Tests
 
@@ -238,15 +240,14 @@ The easiest (and recommended) way to do it, is by simply building the test .cspr
 
 ```cmd
 cd src\System.Collections.Immutable\tests
-msbuild /t:BuildAndTest   ::or /t:Test to just run the tests if the binaries are already built
-msbuild /t:RebuildAndTest ::this will cause a test project to rebuild and then run tests
+dotnet msbuild /t:BuildAndTest   ::or /t:Test to just run the tests if the binaries are already built
+dotnet msbuild /t:RebuildAndTest ::this will cause a test project to rebuild and then run tests
 ```
 
 It is possible to pass parameters to the underlying xunit runner via the `XunitOptions` parameter, e.g.:
 ```cmd
-msbuild /t:Test "/p:XunitOptions=-class Test.ClassUnderTests"
+dotnet msbuild /t:Test "/p:XunitOptions=-class Test.ClassUnderTests"
 ```
-**Note:** If building in a non-Windows environment, call `./Tools/msbuild.sh` instead of just `msbuild`.
 
 There may be multiple projects in some directories so you may need to specify the path to a specific test project to get it to build and run the tests.
 
@@ -256,7 +257,7 @@ Tests participate in the incremental build.  This means that if tests have alrea
 
 To quickly run or debug a single test from the command line, set the XunitMethodName property (found in Tools\tests.targets) to the full method name (including namespace), e.g.:
 ```cmd
-msbuild /t:RebuildAndTest /p:XunitMethodName={FullyQualifiedNamespace}.{ClassName}.{MethodName}
+dotnet msbuild /t:RebuildAndTest /p:XunitMethodName={FullyQualifiedNamespace}.{ClassName}.{MethodName}
 ```
 
 #### Running tests in a different target framework
@@ -265,7 +266,7 @@ Each test project can potentially have multiple build configurations. There are 
 
 ```cmd
 cd src\System.Runtime\tests
-msbuild System.Runtime.Tests.csproj /p:TargetGroup=netfx
+dotnet msbuild System.Runtime.Tests.csproj /p:TargetGroup=netfx
 ```
 
 #### Filtering tests using traits
@@ -277,7 +278,7 @@ The tests can also be filtered based on xunit trait attributes defined in [`Micr
 ```cs
 [OuterLoop()]
 ```
-Tests marked as `Outerloop` are for scenarios that don't need to run every build. They may take longer than normal tests, cover seldom hit code paths, or require special setup or resources to execute. These tests are excluded by default when testing through msbuild but can be enabled manually by adding the  `Outerloop` property e.g.
+Tests marked as `Outerloop` are for scenarios that don't need to run every build. They may take longer than normal tests, cover seldom hit code paths, or require special setup or resources to execute. These tests are excluded by default when testing through `dotnet msbuild` but can be enabled manually by adding the `Outerloop` property e.g.
 
 ```cmd
 build-managed -Outerloop
@@ -285,7 +286,7 @@ build-managed -Outerloop
 
 To run <b>only</b> the Outerloop tests, use the following command:
 ```cmd
-msbuild <csproj_file> /t:BuildAndTest /p:WithCategories=OuterLoop
+dotnet msbuild <csproj_file> /t:BuildAndTest /p:WithCategories=OuterLoop
 ```
 
 #### PlatformSpecificAttribute
@@ -302,11 +303,11 @@ Use this attribute on test methods to specify that this test may only be run on 
 
 When running tests by building a test project, tests that don't apply to the `OSGroup` are not run. For example, to run Linux-specific tests on a Linux box, use the following command line:
 ```sh
-<repo-root>/Tools/msbuild.sh <csproj_file> /t:BuildAndTest /p:OSGroup=Linux
+dotnet msbuild <csproj_file> /t:BuildAndTest /p:OSGroup=Linux
 ```
 To run all Linux-compatible tests that are failing:
 ```sh
-<repo-root>/Tools/msbuild.sh <csproj_file> /t:BuildAndTest /p:OSGroup=Linux /p:WithCategories=failing
+dotnet msbuild <csproj_file> /t:BuildAndTest /p:OSGroup=Linux /p:WithCategories=failing
 ```
 
 #### ActiveIssueAttribute
@@ -422,11 +423,11 @@ _**A few common examples with the above attributes:**_
 
 - Run all tests acceptable on Windows that are not failing:
 ```cmd
-msbuild <csproj_file> /t:BuildAndTest /p:OSGroup=Windows_NT
+dotnet msbuild <csproj_file> /t:BuildAndTest /p:OSGroup=Windows_NT
 ```
 - Run all outer loop tests acceptable on OS X that are currently associated with active issues:
 ```sh
-<repo-root>/Tools/msbuild.sh <csproj_file> /t:BuildAndTest /p:OSGroup=OSX /p:WithCategories="OuterLoop;failing""
+dotnet msbuild <csproj_file> /t:BuildAndTest /p:OSGroup=OSX /p:WithCategories="OuterLoop;failing""
 ```
 
 Alternatively, you can directly invoke the XUnit executable by changing your working directory to the test execution directory at `bin\tests\{OSPlatformConfig)\{Project}.Tests\{TargetGroup}.{TestTFM}\` which is created when the test project is built.  For example, the following command runs all Linux-supported inner-loop tests:
@@ -444,7 +445,7 @@ build-tests -Coverage
 
 :: To run a single project with code coverage enabled pass the /p:Coverage=true property
 cd src\System.Collections.Immutable\tests
-msbuild /t:BuildAndTest /p:Coverage=true
+dotnet msbuild /t:BuildAndTest /p:Coverage=true
 ```
 If coverage succeeds, the code coverage report will be generated automatically and placed in the bin\tests\coverage directory.  You can view the full report by opening index.htm
 
@@ -452,21 +453,20 @@ Code coverage reports from the continuous integration system are available from 
 
 ### Building tests with .NET Native (Windows only)
 
-.NET Native is a technology that allows compiling IL applications down into a native executable and minimal set of native DLLs, containing all needed functionality from the .NET Framework in native format.  For CoreFX tests, .NET Native support in CoreFX is relatively early, but supported.
+.NET Native is a technology that allows compiling IL applications down into a native executable and minimal set of native DLLs, containing all needed functionality from the .NET Framework in native format.
 
 ```cmd
 :: To run a single project with the .NET Native toolchain, set the appropriate build flags:
 cd src\Microsoft.CSharp\tests
-::TODO: The exact properties needed for .NET Native tests runs after engineering work is TBD
-msbuild /t:BuildAndTest /p:TargetGroup=uap /p:UseDotNetNativeToolchain=true
+dotnet msbuild /t:BuildAndTest /p:TargetGroup=uapaot
 ```
-If native compilation succeeds, the test will build and run as a native executable named "xunit.console.dll" in a folder named "native" in the test execution folder.  Note many tests in CoreFX are not ready to run though native compilation yet.
+If native compilation succeeds, the test will build and run as a native executable named "xunit.console.exe" in a folder named "uapaot" in the test execution folder. The .NET Native toolchain, required to build with TargetGroup `uapaot` is currently not available for external contributors.
 
 A slight variation on these arguments will allow you to build and run against `uap`, the managed version of the UWP Framework subset, used when debugging UWP applications in Visual Studio:
 ```cmd
 :: To run a single project with the .NET Native toolchain, set the appropriate build flags:
 cd src\Microsoft.CSharp\tests
-msbuild /t:BuildAndTest /p:TargetGroup=uap
+dotnet msbuild /t:BuildAndTest /p:TargetGroup=uap
 ```
 In this case, your test will get executed within the context of a wrapper UWP application, targeting the Managed uap as opposed to the .NET Native version.
 
@@ -486,7 +486,7 @@ build.cmd -- /p:CoreCLROverridePath=d:\git\coreclr\bin\Product\Windows_NT.x64.Re
 When we copy the files to override the CoreCLR we do a hard-link copy, so in general if you rebuild CoreCLR the new binaries should be reflected in CoreFx for subsequent builds of individual projects in corefx. However if you want to force refresh or if you want to just update the CoreCLR after you already ran `build.cmd` from CoreFx you can run the following command:
 
 ```
-msbuild /p:CoreCLROverridePath=d:\git\coreclr\bin\Product\Windows_NT.x64.Release\ ./external/runtime/runtime.depproj
+dotnet msbuild /p:CoreCLROverridePath=d:\git\coreclr\bin\Product\Windows_NT.x64.Release\ ./external/runtime/runtime.depproj
 ```
 
 By convention the project will look for PDBs in a directory under `$(CoreCLROverridePath)/PDB` and if found will also copy them. If not found no PDBs will be copied. If you want to explicitly set the PDB path then you can pass `CoreCLRPDBOverridePath` property to that PDB directory.
@@ -497,6 +497,6 @@ If you prefer, you can use a Debug build of System.Private.CoreLib, but if you d
 
 To collect code coverage that includes types in System.Private.CoreLib.dll, you'll need to follow the above steps, then
 
-`msbuild /t:rebuildandtest /p:Coverage=true /p:CodeCoverageAssemblies="System.Private.CoreLib"`
+`dotnet msbuild /t:rebuildandtest /p:Coverage=true /p:CodeCoverageAssemblies="System.Private.CoreLib"`
 
 In order to facilitate coverage tools that perform IL rewrite a dedicated shared framework directory is created by default for coverage runs. This shared runtime is copied from the default shared test runtime (the one with version 9.9.9, e.g.: `\corefx\bin\testhost\netcoreapp-Windows_NT-Debug-x64\shared\Microsoft.NETCore.App\9.9.9`). This behavior can be overriden by adding `/p:UseCoverageDedicatedRuntime=false` to the build command used to capture code coverage, which will cause the coverage run to use the same shared runtime as a test run using the native image of System.Private.CoreLib.dll, causing loss of source coverage information for it.
