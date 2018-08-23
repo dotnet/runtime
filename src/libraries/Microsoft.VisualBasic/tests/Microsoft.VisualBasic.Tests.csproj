@@ -26,6 +26,7 @@
     <Compile Include="DateAndTimeTests.cs" />
     <Compile Include="InformationTests.cs" />
     <Compile Include="UtilsTests.cs" />
+    <Compile Include="VBMathTests.cs" />
     <Compile Include="StringsTests.cs" />
   </ItemGroup>
   <ItemGroup>
