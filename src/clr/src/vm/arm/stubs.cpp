@@ -2984,7 +2984,7 @@ void StubLinkerCPU::ThumbEmitCondRegJump(CodeLabel *target, BOOL nonzero, ThumbR
     EmitLabelRef(target, reinterpret_cast<ThumbCondJump&>(gThumbCondJump), variation);
 }
 
-unsigned int StubLinkerCPU::HashMulticastInvoke(MetaSig *pSig)
+UINT_PTR StubLinkerCPU::HashMulticastInvoke(MetaSig *pSig)
 {
     // Generate a hash key as follows:
     // Bit0-2   : num of general purpose registers used 
