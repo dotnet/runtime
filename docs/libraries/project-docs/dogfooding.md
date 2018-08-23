@@ -12,28 +12,36 @@ this experience. Make sure to consult this document often.
 
 2. By default, the dotnet CLI will use the globally installed SDK if it matches the major/minor version you request and has a higher revision. To force it to use the locally installed SDK, you must set an environment variable `DOTNET_MULTILEVEL_LOOKUP=0` in your shell. You can use `dotnet --info` to verify what version of the Shared Framework it is using.
 
-3. Reminder: if you are using a local copy of the dotnet CLI, take care that when you type `dotnet` you do not inadvertently pick up a different copy that you may have in your path. On Windows, for example, if you use a Developer Command Prompt, a global copy may be in the path, so use the fully qualified path to your local `dotnet`. If you receive an error "The current .NET SDK does not support targeting .NET Core 2.1." then you may be executing an older `dotnet`.
+3. Reminder: if you are using a local copy of the dotnet CLI, take care that when you type `dotnet` you do not inadvertently pick up a different copy that you may have in your path. On Windows, for example, if you use a Command Prompt, a global copy may be in the path, so use the fully qualified path to your local `dotnet`. If you receive an error "The current .NET SDK does not support targeting .NET Core 2.1." then you may be executing an older `dotnet`.
 
 After setting up dotnet you can verify you are using the newer version by executing `dotnet --info` -- the version should be greater than `2.1.300-*`  (dotnet CLI for .NET Core 2.1 is currently numbered `2.1.300-*`). Here is an example output at the time of writing:
 ```
->dotnet.exe --info
-.NET Command Line Tools (2.1.300-preview2-008171)
-
-Product Information:
- Version:            2.1.300-preview2-008171
- Commit SHA-1 hash:  fbc76ea5f6
+>dotnet --info
+.NET Core SDK (reflecting any global.json):
+ Version:   2.1.301
+ Commit:    59524873d6
 
 Runtime Environment:
  OS Name:     Windows
- OS Version:  10.0.16299
+ OS Version:  10.0.17711
  OS Platform: Windows
  RID:         win10-x64
- Base Path:   F:\dotnet\sdk\2.1.300-preview2-008171\
+ Base Path:   C:\Program Files\dotnet\sdk\2.1.301\
 
-Microsoft .NET Core Shared Framework Host
+Host (useful for support):
+  Version: 2.1.1
+  Commit:  6985b9f684
 
-  Version  : 2.1.0-preview2-26209-04
-  Build    : 5df6e9b7ab674a461b2a7f01ac87fb6e0ca06666
+.NET Core SDKs installed:
+  2.1.301 [C:\Program Files\dotnet\sdk]
+
+.NET Core runtimes installed:
+  Microsoft.AspNetCore.All 2.1.1 [C:\Program Files\dotnet\shared\Microsoft.AspNetCore.All]
+  Microsoft.AspNetCore.App 2.1.1 [C:\Program Files\dotnet\shared\Microsoft.AspNetCore.App]
+  Microsoft.NETCore.App 2.1.1 [C:\Program Files\dotnet\shared\Microsoft.NETCore.App]
+
+To install additional .NET Core runtimes or SDKs:
+  https://aka.ms/dotnet-download
 ```
 
 4. Our nightly builds are uploaded to MyGet, not NuGet - so ensure the .NET Core MyGet feed is in your nuget configuration in case you need other packages from .NET Core that aren't included in the download. For example, on Windows you could edit `%userprofile%\appdata\roaming\nuget\nuget.config` or on Linux edit `~/.nuget/NuGet/NuGet.Config` to add this line:
