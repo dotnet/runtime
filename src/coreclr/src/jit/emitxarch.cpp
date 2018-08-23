@@ -3585,6 +3585,8 @@ void emitter::emitInsRMW(instruction ins, emitAttr attr, GenTreeStoreInd* storeI
             case INS_sar_N:
                 iconVal &= 0x7F;
                 break;
+            default:
+                break;
         }
 
         id = emitNewInstrAmdCns(attr, offset, iconVal);
