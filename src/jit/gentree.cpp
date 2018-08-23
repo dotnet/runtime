@@ -10705,7 +10705,7 @@ void Compiler::gtDispLeaf(GenTree* tree, IndentStack* indentStack)
         case GT_LABEL:
             if (tree->gtLabel.gtLabBB)
             {
-                printf(" dst=BB%02u", tree->gtLabel.gtLabBB->bbNum);
+                printf(" dst=" FMT_BB, tree->gtLabel.gtLabBB->bbNum);
             }
             else
             {

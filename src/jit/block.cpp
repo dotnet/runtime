@@ -393,7 +393,7 @@ unsigned BasicBlock::dspPreds()
             printf(",");
             count += 1;
         }
-        printf("BB%02u", pred->flBlock->bbNum);
+        printf(FMT_BB, pred->flBlock->bbNum);
         count += 4;
 
         // Account for %02u only handling 2 digits, but we can display more than that.
@@ -429,7 +429,7 @@ unsigned BasicBlock::dspCheapPreds()
             printf(",");
             count += 1;
         }
-        printf("BB%02u", pred->block->bbNum);
+        printf(FMT_BB, pred->block->bbNum);
         count += 4;
 
         // Account for %02u only handling 2 digits, but we can display more than that.
@@ -455,7 +455,7 @@ unsigned BasicBlock::dspSuccs(Compiler* compiler)
     for (unsigned i = 0; i < numSuccs; i++)
     {
         printf("%s", (count == 0) ? "" : ",");
-        printf("BB%02u", GetSucc(i, compiler)->bbNum);
+        printf(FMT_BB, GetSucc(i, compiler)->bbNum);
         count++;
     }
     return count;
@@ -477,7 +477,7 @@ void BasicBlock::dspJumpKind()
             break;
 
         case BBJ_EHCATCHRET:
-            printf(" -> BB%02u (cret)", bbJumpDest->bbNum);
+            printf(" -> " FMT_BB " (cret)", bbJumpDest->bbNum);
             break;
 
         case BBJ_THROW:
@@ -495,24 +495,24 @@ void BasicBlock::dspJumpKind()
         case BBJ_ALWAYS:
             if (bbFlags & BBF_KEEP_BBJ_ALWAYS)
             {
-                printf(" -> BB%02u (ALWAYS)", bbJumpDest->bbNum);
+                printf(" -> " FMT_BB " (ALWAYS)", bbJumpDest->bbNum);
             }
             else
             {
-                printf(" -> BB%02u (always)", bbJumpDest->bbNum);
+                printf(" -> " FMT_BB " (always)", bbJumpDest->bbNum);
             }
             break;
 
         case BBJ_LEAVE:
-            printf(" -> BB%02u (leave)", bbJumpDest->bbNum);
+            printf(" -> " FMT_BB " (leave)", bbJumpDest->bbNum);
             break;
 
         case BBJ_CALLFINALLY:
-            printf(" -> BB%02u (callf)", bbJumpDest->bbNum);
+            printf(" -> " FMT_BB " (callf)", bbJumpDest->bbNum);
             break;
 
         case BBJ_COND:
-            printf(" -> BB%02u (cond)", bbJumpDest->bbNum);
+            printf(" -> " FMT_BB " (cond)", bbJumpDest->bbNum);
             break;
 
         case BBJ_SWITCH:
@@ -524,7 +524,7 @@ void BasicBlock::dspJumpKind()
             jumpTab = bbJumpSwt->bbsDstTab;
             do
             {
-                printf("%cBB%02u", (jumpTab == bbJumpSwt->bbsDstTab) ? ' ' : ',', (*jumpTab)->bbNum);
+                printf("%c" FMT_BB, (jumpTab == bbJumpSwt->bbsDstTab) ? ' ' : ',', (*jumpTab)->bbNum);
             } while (++jumpTab, --jumpCnt);
 
             printf(" (switch)");
@@ -541,7 +541,7 @@ void BasicBlock::dspBlockHeader(Compiler* compiler,
                                 bool      showFlags /*= false*/,
                                 bool      showPreds /*= true*/)
 {
-    printf("BB%02u ", bbNum);
+    printf(FMT_BB " ", bbNum);
     dspBlockILRange();
     if (showKind)
     {
@@ -579,7 +579,7 @@ const char* BasicBlock::dspToString(int blockNumPadding /* = 2*/)
 
     auto& buffer    = buffers[nextBufferIndex];
     nextBufferIndex = (nextBufferIndex + 1) % _countof(buffers);
-    _snprintf_s(buffer, _countof(buffer), _countof(buffer), "BB%02u%*s [%04u]", bbNum, blockNumPadding, "", bbID);
+    _snprintf_s(buffer, _countof(buffer), _countof(buffer), FMT_BB "%*s [%04u]", bbNum, blockNumPadding, "", bbID);
     return buffer;
 }
 

@@ -3638,7 +3638,7 @@ AGAIN:
 #ifdef DEBUG
                     if (EMITVERBOSE)
                     {
-                        printf("Adjusted offset of block %02u from %04X to %04X\n", lstIG->igNum, lstIG->igOffs,
+                        printf("Adjusted offset of " FMT_BB " from %04X to %04X\n", lstIG->igNum, lstIG->igOffs,
                                lstIG->igOffs - adjIG);
                     }
 #endif // DEBUG
@@ -3723,7 +3723,7 @@ AGAIN:
             {
                 printf("Binding: ");
                 emitDispIns(jmp, false, false, false);
-                printf("Binding L_M%03u_BB%02u ", Compiler::s_compMethodsCount, jmp->idAddr()->iiaBBlabel->bbNum);
+                printf("Binding L_M%03u_" FMT_BB, Compiler::s_compMethodsCount, jmp->idAddr()->iiaBBlabel->bbNum);
             }
 #endif // DEBUG
 
@@ -3738,7 +3738,7 @@ AGAIN:
                 }
                 else
                 {
-                    printf("-- ERROR, no emitter cookie for BB%02u; it is probably missing BBF_JMP_TARGET or "
+                    printf("-- ERROR, no emitter cookie for " FMT_BB "; it is probably missing BBF_JMP_TARGET or "
                            "BBF_HAS_LABEL.\n",
                            jmp->idAddr()->iiaBBlabel->bbNum);
                 }
@@ -4111,7 +4111,7 @@ AGAIN:
 #ifdef DEBUG
             if (EMITVERBOSE)
             {
-                printf("Adjusted offset of block %02u from %04X to %04X\n", lstIG->igNum, lstIG->igOffs,
+                printf("Adjusted offset of " FMT_BB " from %04X to %04X\n", lstIG->igNum, lstIG->igOffs,
                        lstIG->igOffs - adjIG);
             }
 #endif // DEBUG
@@ -5453,7 +5453,7 @@ void emitter::emitOutputDataSec(dataSecDsc* sec, BYTE* dst)
                     emitRecordRelocation(&(bDst[i]), target, IMAGE_REL_BASED_HIGHLOW);
                 }
 
-                JITDUMP("  BB%02u: 0x%p\n", block->bbNum, bDst[i]);
+                JITDUMP("  " FMT_BB ": 0x%p\n", block->bbNum, bDst[i]);
             }
         }
         // relative label table
@@ -5476,7 +5476,7 @@ void emitter::emitOutputDataSec(dataSecDsc* sec, BYTE* dst)
                 assert(FitsIn<uint32_t>(lab->igOffs - labFirst->igOffs));
                 uDst[i] = lab->igOffs - labFirst->igOffs;
 
-                JITDUMP("  BB%02u: 0x%x\n", block->bbNum, uDst[i]);
+                JITDUMP("  " FMT_BB ": 0x%x\n", block->bbNum, uDst[i]);
             }
         }
         else
