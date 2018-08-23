@@ -37,12 +37,12 @@ const char* CodeGen::genInsName(instruction ins)
     const char * const insNames[] =
     {
 #if defined(_TARGET_XARCH_)
-        #define INST0(id, nm, fp, um, rf, wf, mr                 ) nm,
-        #define INST1(id, nm, fp, um, rf, wf, mr                 ) nm,
-        #define INST2(id, nm, fp, um, rf, wf, mr, mi             ) nm,
-        #define INST3(id, nm, fp, um, rf, wf, mr, mi, rm         ) nm,
-        #define INST4(id, nm, fp, um, rf, wf, mr, mi, rm, a4     ) nm,
-        #define INST5(id, nm, fp, um, rf, wf, mr, mi, rm, a4, rr ) nm,
+        #define INST0(id, nm, um, mr,                 flags) nm,
+        #define INST1(id, nm, um, mr,                 flags) nm,
+        #define INST2(id, nm, um, mr, mi,             flags) nm,
+        #define INST3(id, nm, um, mr, mi, rm,         flags) nm,
+        #define INST4(id, nm, um, mr, mi, rm, a4,     flags) nm,
+        #define INST5(id, nm, um, mr, mi, rm, a4, rr, flags) nm,
         #include "instrs.h"
 
 #elif defined(_TARGET_ARM_)
@@ -215,7 +215,11 @@ bool CodeGenInterface::instIsFP(instruction ins)
 {
     assert((unsigned)ins < _countof(instInfo));
 
+#ifdef _TARGET_XARCH_
+    return (instInfo[ins] & INS_FLAGS_x87Instr) != 0;
+#else
     return (instInfo[ins] & INST_FP) != 0;
+#endif
 }
 
 #ifdef _TARGET_XARCH_

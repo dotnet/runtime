@@ -15,12 +15,12 @@
 enum instruction : unsigned
 {
 #if defined(_TARGET_XARCH_)
-    #define INST0(id, nm, fp, um, rf, wf, mr                ) INS_##id,
-    #define INST1(id, nm, fp, um, rf, wf, mr                ) INS_##id,
-    #define INST2(id, nm, fp, um, rf, wf, mr, mi            ) INS_##id,
-    #define INST3(id, nm, fp, um, rf, wf, mr, mi, rm        ) INS_##id,
-    #define INST4(id, nm, fp, um, rf, wf, mr, mi, rm, a4    ) INS_##id,
-    #define INST5(id, nm, fp, um, rf, wf, mr, mi, rm, a4, rr) INS_##id,
+    #define INST0(id, nm, um, mr,                 flags) INS_##id,
+    #define INST1(id, nm, um, mr,                 flags) INS_##id,
+    #define INST2(id, nm, um, mr, mi,             flags) INS_##id,
+    #define INST3(id, nm, um, mr, mi, rm,         flags) INS_##id,
+    #define INST4(id, nm, um, mr, mi, rm, a4,     flags) INS_##id,
+    #define INST5(id, nm, um, mr, mi, rm, a4, rr, flags) INS_##id,
     #include "instrs.h"
 
 #elif defined(_TARGET_ARM_)
@@ -86,13 +86,28 @@ enum GCtype : unsigned
     GCT_BYREF
 };
 
-// TODO-Cleanup:  Move 'insFlags' under _TARGET_ARM_
+#if defined(_TARGET_XARCH_)
+enum insFlags: uint8_t
+{
+    INS_FLAGS_None = 0x00,
+    INS_FLAGS_ReadsFlags = 0x01,
+    INS_FLAGS_WritesFlags = 0x02,
+    INS_FLAGS_x87Instr = 0x04,
+
+    //  TODO-Cleanup:  Remove this flag and its usage from _TARGET_XARCH_
+    INS_FLAGS_DONT_CARE = 0x00,
+};
+#elif defined(_TARGET_ARM_) || defined(_TARGET_ARM64_)
+// TODO-Cleanup: Move 'insFlags' under _TARGET_ARM_
 enum insFlags: unsigned
 {
-    INS_FLAGS_NOT_SET,
-    INS_FLAGS_SET,
-    INS_FLAGS_DONT_CARE
+    INS_FLAGS_NOT_SET = 0x00,
+    INS_FLAGS_SET = 0x01,
+    INS_FLAGS_DONT_CARE = 0x02,
 };
+#else
+#error Unsupported target architecture
+#endif
 
 #if defined(_TARGET_ARM_)
 enum insOpts: unsigned
