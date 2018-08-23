@@ -129,8 +129,6 @@ namespace JIT.HardwareIntrinsics.X86
                 ["Permute.Double.1"] = PermuteDouble1,
                 ["Permute.Single.2"] = PermuteSingle2,
                 ["Permute.Double.2"] = PermuteDouble2,
-                ["PermuteVar.Single"] = PermuteVarSingle,
-                ["PermuteVar.Double"] = PermuteVarDouble,
                 ["RoundCurrentDirection.Double"] = RoundCurrentDirectionDouble,
                 ["RoundCurrentDirection.Single"] = RoundCurrentDirectionSingle,
                 ["RoundToNearestInteger.Double"] = RoundToNearestIntegerDouble,

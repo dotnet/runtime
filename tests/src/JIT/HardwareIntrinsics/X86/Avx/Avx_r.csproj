@@ -144,8 +144,6 @@
     <Compile Include="Permute.Double.1.cs" />
     <Compile Include="Permute.Single.2.cs" />
     <Compile Include="Permute.Double.2.cs" />
-    <Compile Include="PermuteVar.Single.cs" />
-    <Compile Include="PermuteVar.Double.cs" />
     <Compile Include="RoundCurrentDirection.Double.cs" />
     <Compile Include="RoundCurrentDirection.Single.cs" />
     <Compile Include="RoundToNearestInteger.Double.cs" />
