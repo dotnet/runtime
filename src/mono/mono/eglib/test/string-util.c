@@ -463,6 +463,8 @@ test_filename_from_uri (void)
 	fileit ("file:///%41", "/A");
 	fileit ("file:///home/miguel", "/home/miguel");
 	fileit ("file:///home/mig%20uel", "/home/mig uel");
+	fileit ("file:///home/c%2B%2B", "/home/c++");
+	fileit ("file:///home/c%2b%2b", "/home/c++");
 	ferrit ("/a");
 	ferrit ("a");
 	ferrit ("file://a");

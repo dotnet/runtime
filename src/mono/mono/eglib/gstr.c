@@ -724,9 +724,9 @@ decode (char p)
 	if (p >= '0' && p <= '9')
 		return p - '0';
 	if (p >= 'A' && p <= 'F')
-		return p - 'A';
+		return (p - 'A') + 10;
 	if (p >= 'a' && p <= 'f')
-		return p - 'a';
+		return (p - 'a') + 10;
 	g_assert_not_reached ();
 	return 0;
 }
