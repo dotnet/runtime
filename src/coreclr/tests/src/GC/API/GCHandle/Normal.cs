@@ -21,7 +21,7 @@ public class Test {
 	}
 
     [MethodImplAttribute(MethodImplOptions.NoInlining)]
-    public static void RunTest()
+    public static GCHandle  RunTest()
     {
         Dummy obj = new Dummy();
 		
@@ -30,17 +30,23 @@ public class Test {
 		
 		// ensuring that GC happens even with /debug mode
 		obj=null;
+
+		return handle;
     }    
 
 
 	public static int Main() {
-        RunTest();
+        GCHandle handle = RunTest();
 
 		GC.Collect();
 		GC.WaitForPendingFinalizers();
 		GC.Collect();
 		
-		if(Dummy.flag == 0) {
+		bool success = (Dummy.flag == 0);
+
+		handle.Free();
+
+		if (success) {
 			Console.WriteLine("Test for GCHandleType.Normal passed!");
             return 100;
 		}

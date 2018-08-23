@@ -726,7 +726,6 @@ BEGIN
     IDS_CLASSLOAD_STATICVIRTUAL             "Method '%3' in type '%1' from assembly '%2' cannot be a static and a virtual."
     IDS_CLASSLOAD_REDUCEACCESS              "Derived method '%3' in type '%1' from assembly '%2' cannot reduce access."
     IDS_CLASSLOAD_BADPINVOKE                "Could not get PINVOKE information for method '%3' in type '%1' from assembly '%2'."
-    IDS_CLASSLOAD_COLLECTIBLEPINVOKE        "PInvoke method not permitted on type '%1' from collectible assembly '%2'."
     IDS_CLASSLOAD_COLLECTIBLESPECIALSTATICS "Collectible type '%1' may not have Thread or Context static members."
     IDS_CLASSLOAD_VALUECLASSTOOLARGE        "Array of type '%1' from assembly '%2' cannot be created because base value type is too large."
     IDS_CLASSLOAD_NOTIMPLEMENTED            "Method '%3' in type '%1' from assembly '%2' does not have an implementation."

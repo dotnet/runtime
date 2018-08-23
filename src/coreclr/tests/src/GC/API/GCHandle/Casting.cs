@@ -33,7 +33,12 @@ public class CastingTest
 
         GCHandle gch = GCHandle.Alloc(new Dummy(dummyValue));
         GCHandle gch2 = (GCHandle)((IntPtr)gch);
-        if (gch.Target == gch2.Target)
+
+        bool success = (gch.Target == gch2.Target);
+
+        gch.Free();
+
+        if (success)
         {
             Console.WriteLine("CastTest Passed");
             return true;

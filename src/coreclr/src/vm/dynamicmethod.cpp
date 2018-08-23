@@ -869,7 +869,7 @@ void DynamicMethodDesc::Destroy(BOOL fDomainUnload)
         if (pLoaderAllocator->Release())
         {
             GCX_PREEMP();
-            LoaderAllocator::GCLoaderAllocators(pLoaderAllocator->GetDomain()->AsAppDomain());
+            LoaderAllocator::GCLoaderAllocators(pLoaderAllocator);
         }
     }
 }

@@ -3161,6 +3161,7 @@ void StubLinkerCPU::ThumbCopyOneTailCallArg(UINT * pnSrcAlign, const ArgLocDesc 
 
 
 Stub * StubLinkerCPU::CreateTailCallCopyArgsThunk(CORINFO_SIG_INFO * pSig,
+                                                  MethodDesc* pMD,
                                                   CorInfoHelperTailCallSpecialHandling flags)
 {
     STANDARD_VM_CONTRACT;
@@ -3407,8 +3408,8 @@ Stub * StubLinkerCPU::CreateTailCallCopyArgsThunk(CORINFO_SIG_INFO * pSig,
         pSl->ThumbEmitJumpRegister(thumbRegLr);
     }
 
-
-    return pSl->Link();
+    LoaderHeap* pHeap = pMD->GetLoaderAllocatorForCode()->GetStubHeap();
+    return pSl->Link(pHeap);
 }
 
 

@@ -203,6 +203,18 @@ HRESULT CLRPrivBinderAssemblyLoadContext::FindAssemblyBySpec(
     return E_FAIL;
 }
 
+HRESULT CLRPrivBinderAssemblyLoadContext::GetLoaderAllocator(LPVOID* pLoaderAllocator)
+{
+    _ASSERTE(pLoaderAllocator != NULL);
+    if (m_pAssemblyLoaderAllocator == NULL)
+    {
+        return E_FAIL;
+    }
+
+    *pLoaderAllocator = m_pAssemblyLoaderAllocator;
+    return S_OK;
+}
+
 //=============================================================================
 // Creates an instance of the AssemblyLoadContext Binder
 //
@@ -212,7 +224,9 @@ HRESULT CLRPrivBinderAssemblyLoadContext::FindAssemblyBySpec(
 /* static */
 HRESULT CLRPrivBinderAssemblyLoadContext::SetupContext(DWORD      dwAppDomainId,
                                             CLRPrivBinderCoreCLR *pTPABinder,
-                                            UINT_PTR ptrAssemblyLoadContext,                                            
+                                            LoaderAllocator* pLoaderAllocator,
+                                            void* loaderAllocatorHandle,
+                                            UINT_PTR ptrAssemblyLoadContext,
                                             CLRPrivBinderAssemblyLoadContext **ppBindContext)
 {
     HRESULT hr = E_FAIL;
@@ -240,6 +254,20 @@ HRESULT CLRPrivBinderAssemblyLoadContext::SetupContext(DWORD      dwAppDomainId,
                 // AssemblyLoadContext instance
                 pBinder->m_ptrManagedAssemblyLoadContext = ptrAssemblyLoadContext;
 
+                if (pLoaderAllocator != NULL)
+                {
+                    // Link to LoaderAllocator, keep a reference to it
+                    VERIFY(pLoaderAllocator->AddReferenceIfAlive());
+                }
+                pBinder->m_pAssemblyLoaderAllocator = pLoaderAllocator;
+                pBinder->m_loaderAllocatorHandle = loaderAllocatorHandle;
+
+#if !defined(DACCESS_COMPILE) && !defined(CROSSGEN_COMPILE)
+                if (pLoaderAllocator != NULL)
+                {
+                    ((AssemblyLoaderAllocator*)pLoaderAllocator)->RegisterBinder(pBinder);
+                }
+#endif
                 // Return reference to the allocated Binder instance
                 *ppBindContext = clr::SafeAddRef(pBinder.Extract());
             }
@@ -251,9 +279,53 @@ Exit:
     return hr;
 }
 
+void CLRPrivBinderAssemblyLoadContext::PrepareForLoadContextRelease(INT_PTR ptrManagedStrongAssemblyLoadContext)
+{
+    CONTRACTL
+    {
+        GC_NOTRIGGER;
+        THROWS;
+        MODE_COOPERATIVE;
+        SO_TOLERANT;
+    }
+    CONTRACTL_END;
+
+    // Replace the weak handle with a strong handle so that the managed assembly load context stays alive until the
+    // CLRPrivBinderAssemblyLoadContext::ReleaseLoadContext is called.
+    OBJECTHANDLE handle = reinterpret_cast<OBJECTHANDLE>(m_ptrManagedAssemblyLoadContext);
+    OBJECTHANDLE strongHandle = reinterpret_cast<OBJECTHANDLE>(ptrManagedStrongAssemblyLoadContext);
+    DestroyShortWeakHandle(handle);
+    m_ptrManagedAssemblyLoadContext = reinterpret_cast<INT_PTR>(strongHandle);
+
+    _ASSERTE(m_pAssemblyLoaderAllocator != NULL);
+    _ASSERTE(m_loaderAllocatorHandle != NULL);
+
+    // We cannot delete the binder here as it is used indirectly when comparing assemblies with the same binder
+    // It will be deleted when the LoaderAllocator will be deleted
+    // But we can release the LoaderAllocator as we are no longer using it here
+    m_pAssemblyLoaderAllocator->Release();
+    m_pAssemblyLoaderAllocator = NULL;
+
+    // Destroy the strong handle to the LoaderAllocator in order to let it reach its finalizer
+    DestroyHandle(reinterpret_cast<OBJECTHANDLE>(m_loaderAllocatorHandle));
+    m_loaderAllocatorHandle = NULL;
+}
+
 CLRPrivBinderAssemblyLoadContext::CLRPrivBinderAssemblyLoadContext()
 {
     m_pTPABinder = NULL;
 }
 
+void CLRPrivBinderAssemblyLoadContext::ReleaseLoadContext()
+{
+    VERIFY(m_ptrManagedAssemblyLoadContext != NULL);
+
+    // This method is called to release the strong handle on the managed AssemblyLoadContext
+    // once the Unloading event has been fired
+    OBJECTHANDLE handle = reinterpret_cast<OBJECTHANDLE>(m_ptrManagedAssemblyLoadContext);
+    DestroyHandle(handle);
+    m_ptrManagedAssemblyLoadContext = NULL;
+}
+
 #endif // !defined(DACCESS_COMPILE) && !defined(CROSSGEN_COMPILE)
+

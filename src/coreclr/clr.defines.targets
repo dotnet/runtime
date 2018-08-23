@@ -1,5 +1,4 @@
 <Project DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
-
     <!-- Features we're currently flighting, but don't intend to ship in officially supported releases -->
     <PropertyGroup Condition="'$(IsPrerelease)' == 'true'">
         <FeatureDefaultInterfaces>true</FeatureDefaultInterfaces>
@@ -11,6 +10,7 @@
         <DefineConstants Condition="'$(FeatureMulticastStubAsIL)' == 'true'">$(DefineConstants);FEATURE_MULTICASTSTUB_AS_IL</DefineConstants>
         <DefineConstants Condition="'$(FeatureStubsAsIL)' == 'true'">$(DefineConstants);FEATURE_STUBS_AS_IL</DefineConstants>
         <DefineConstants Condition="'$(FeatureClassicCominterop)' == 'true'">$(DefineConstants);FEATURE_CLASSIC_COMINTEROP</DefineConstants>
+        <DefineConstants Condition="'$(FeatureCollectibleALC)' == 'true'">$(DefineConstants);FEATURE_COLLECTIBLE_ALC</DefineConstants>
         <DefineConstants Condition="'$(FeatureCominterop)' == 'true'">$(DefineConstants);FEATURE_COMINTEROP</DefineConstants>
         <DefineConstants Condition="'$(FeatureCominteropApartmentSupport)' == 'true'">$(DefineConstants);FEATURE_COMINTEROP_APARTMENT_SUPPORT</DefineConstants>
         <DefineConstants Condition="'$(FeatureCominteropUnmanagedActivation)' == 'true'">$(DefineConstants);FEATURE_COMINTEROP_UNMANAGED_ACTIVATION</DefineConstants>
