@@ -179,7 +179,7 @@ namespace System.Linq.Tests
         }
 
         [Theory, MemberData(nameof(SequencesWithDuplicates))]
-        public void FindDistinctAndValidate<T>(T unusedArgumentToForceTypeInference, IEnumerable<T> original)
+        public void FindDistinctAndValidate<T>(IEnumerable<T> original)
         {
             // Convert to list to avoid repeated enumerations of the enumerables.
             var originalList = original.ToList();
@@ -198,13 +198,13 @@ namespace System.Linq.Tests
         public static IEnumerable<object[]> SequencesWithDuplicates()
         {
             // Validate an array of different numeric data types.
-            yield return new object[] { 0, new int[] { 1, 1, 1, 2, 3, 5, 5, 6, 6, 10 } };
-            yield return new object[] { 0L, new long[] { 1, 1, 1, 2, 3, 5, 5, 6, 6, 10 } };
-            yield return new object[] { 0F, new float[] { 1, 1, 1, 2, 3, 5, 5, 6, 6, 10 } };
-            yield return new object[] { 0.0, new double[] { 1, 1, 1, 2, 3, 5, 5, 6, 6, 10 } };
-            yield return new object[] { 0M, new decimal[] { 1, 1, 1, 2, 3, 5, 5, 6, 6, 10 } };
+            yield return new object[] { new int[] { 1, 1, 1, 2, 3, 5, 5, 6, 6, 10 } };
+            yield return new object[] { new long[] { 1, 1, 1, 2, 3, 5, 5, 6, 6, 10 } };
+            yield return new object[] { new float[] { 1, 1, 1, 2, 3, 5, 5, 6, 6, 10 } };
+            yield return new object[] { new double[] { 1, 1, 1, 2, 3, 5, 5, 6, 6, 10 } };
+            yield return new object[] { new decimal[] { 1, 1, 1, 2, 3, 5, 5, 6, 6, 10 } };
             // Try strings
-            yield return new object[] { "", new []
+            yield return new object[] { new []
                 {
                     "add",
                     "add",

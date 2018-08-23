@@ -131,7 +131,7 @@
       <XunitAssemblies Include="$(BinDir)runtime/$(BuildConfiguration)/xunit*.dll" />
       <!--In Unix some xunit assemblies have a capital 'X'-->
       <XunitAssemblies Include="$(BinDir)runtime/$(BuildConfiguration)/Xunit*.dll" />
-      <XunitAssemblies Include="$(BinDir)runtime/$(BuildConfiguration)/xunit.console.netcore.exe" />
+      <XunitAssemblies Include="$(BinDir)runtime/$(BuildConfiguration)/Microsoft.DotNet.XUnitExtensions.dll" />
       <XunitAssemblies Include="$(BinDir)runtime/$(BuildConfiguration)/Newtonsoft.Json.dll" />
     </ItemGroup>
     <Copy SourceFiles="%(XunitAssemblies.Identity)" DestinationFolder="$(SharedFrameworkValidationRuntimePath)" />

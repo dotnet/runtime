@@ -4,7 +4,7 @@
 
 using System.Text;
 using Xunit;
-using Xunit.NetCore.Extensions;
+using Microsoft.DotNet.XUnitExtensions;
 
 namespace System.IO.Tests
 {

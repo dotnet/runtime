@@ -2,6 +2,8 @@
   <PropertyGroup>
     <ProjectGuid>{8DE22889-A6CB-41EC-B807-D44A2C184719}</ProjectGuid>
     <OutputType>Exe</OutputType>
+    <!-- To be consistent between netfx and others we override the SDK behavior which defaults to .dll -->
+    <TargetExt>.exe</TargetExt>
     <RootNamespace>RemoteExecutorConsoleApp</RootNamespace>
     <AssemblyName>RemoteExecutorConsoleApp</AssemblyName>
     <AutoGenerateBindingRedirects>true</AutoGenerateBindingRedirects>

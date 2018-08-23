@@ -1,15 +1,10 @@
 <Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
     <TestCategories>InnerLoop;OuterLoop</TestCategories>
-    <IncludePerformanceTests>true</IncludePerformanceTests>
     <ProjectGuid>{3C42F714-82AF-4A43-9B9C-744DE31B5C5D}</ProjectGuid>
     <Configurations>netstandard-Debug;netstandard-Release</Configurations>
   </PropertyGroup>
   <ItemGroup>
-    <ProjectReference Include="$(CommonTestPath)\System\Diagnostics\RemoteExecutorConsoleApp\RemoteExecutorConsoleApp.csproj">
-      <Project>{69e46a6f-9966-45a5-8945-2559fe337827}</Project>
-      <Name>RemoteExecutorConsoleApp</Name>
-    </ProjectReference>
     <Compile Include="..\PortedCommon\ReparsePointUtilities.cs" />
     <Compile Include="..\TestData.cs" />
     <Compile Include="..\FileSystemTest.cs" />
@@ -33,8 +28,5 @@
       <Project>{69e46a6f-9966-45a5-8945-2559fe337827}</Project>
       <Name>PerfRunner</Name>
     </ProjectReference>
-  </ItemGroup>
-  <ItemGroup>
-    <Service Include="{82A7F48D-3B50-4B1E-B82E-3ADA8210C358}" />
   </ItemGroup>
 </Project>

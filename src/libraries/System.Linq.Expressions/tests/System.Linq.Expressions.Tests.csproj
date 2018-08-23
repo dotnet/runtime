@@ -18,12 +18,6 @@
   <ItemGroup>
     <ReferenceFromRuntime Include="System.Private.CoreLib" />
     <ReferenceFromRuntime Include="CoreFx.Private.TestUtilities" />
-    <ReferenceFromRuntime Include="xunit.core" />
-    <ReferenceFromRuntime Include="Xunit.NetCore.Extensions" />
-    <ReferenceFromRuntime Include="xunit.assert" />
-    <ReferenceFromRuntime Include="xunit.abstractions" />
-    <ReferenceFromRuntime Include="xunit.performance.core" />
-    <ReferenceFromRuntime Include="xunit.performance.api" />
     <ReferenceFromRuntime Include="System.Runtime" />
     <ReferenceFromRuntime Include="System.Collections" />
     <ReferenceFromRuntime Include="System.Reflection.Primitives" />

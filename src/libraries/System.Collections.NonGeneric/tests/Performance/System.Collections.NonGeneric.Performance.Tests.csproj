@@ -1,8 +1,7 @@
 <Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
-    <IncludePerformanceTests>true</IncludePerformanceTests>
     <ProjectGuid>{93AB3799-BC91-4B27-B526-28FFFF0DB1B1}</ProjectGuid>
-    <Configurations>netcoreapp-Debug;netcoreapp-Release</Configurations>
+    <Configurations>netstandard-Debug;netstandard-Release</Configurations>
   </PropertyGroup>
   <ItemGroup>
     <Compile Include="Perf.ArrayList.cs" />

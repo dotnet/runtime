@@ -7,7 +7,7 @@ using System.Runtime.InteropServices;
 using System.Threading;
 using System.Threading.Tasks;
 using Xunit;
-using Xunit.NetCore.Extensions;
+using Microsoft.DotNet.XUnitExtensions;
 using System.Linq;
 namespace System.IO.Compression.Tests
 {
