@@ -270,7 +270,7 @@ void EHblkDsc::DispEntry(unsigned XTnum)
     ////////////// Protected (try) region
     //////////////
 
-    printf("- Try at BB%02u..BB%02u", ebdTryBeg->bbNum, ebdTryLast->bbNum);
+    printf("- Try at " FMT_BB ".." FMT_BB, ebdTryBeg->bbNum, ebdTryLast->bbNum);
 
     /* ( brace matching editor workaround to compensate for the following line */
     printf(" [%03X..%03X), ", ebdTryBegOffset, ebdTryEndOffset);
@@ -282,8 +282,8 @@ void EHblkDsc::DispEntry(unsigned XTnum)
     if (HasFilter())
     {
         /* ( brace matching editor workaround to compensate for the following line */
-        printf("Filter at BB%02u..BB%02u [%03X..%03X), ", ebdFilter->bbNum, BBFilterLast()->bbNum, ebdFilterBegOffset,
-               ebdHndBegOffset);
+        printf("Filter at " FMT_BB ".." FMT_BB " [%03X..%03X), ", ebdFilter->bbNum, BBFilterLast()->bbNum,
+               ebdFilterBegOffset, ebdHndBegOffset);
     }
 
     //////////////
@@ -303,7 +303,7 @@ void EHblkDsc::DispEntry(unsigned XTnum)
         printf("Handler");
     }
 
-    printf(" at BB%02u..BB%02u", ebdHndBeg->bbNum, ebdHndLast->bbNum);
+    printf(" at " FMT_BB ".." FMT_BB, ebdHndBeg->bbNum, ebdHndLast->bbNum);
 
     /* ( brace matching editor workaround to compensate for the following line */
     printf(" [%03X..%03X)", ebdHndBegOffset, ebdHndEndOffset);
@@ -1232,7 +1232,7 @@ void Compiler::fgSetTryEnd(EHblkDsc* handlerTab, BasicBlock* newTryLast)
 #ifdef DEBUG
         if (verbose)
         {
-            printf("EH#%u: New last block of try: BB%02u\n", ehGetIndex(handlerTab), newTryLast->bbNum);
+            printf("EH#%u: New last block of try: " FMT_BB "\n", ehGetIndex(handlerTab), newTryLast->bbNum);
         }
 #endif // DEBUG
     }
@@ -1258,7 +1258,7 @@ void Compiler::fgSetHndEnd(EHblkDsc* handlerTab, BasicBlock* newHndLast)
 #ifdef DEBUG
         if (verbose)
         {
-            printf("EH#%u: New last block of handler: BB%02u\n", ehGetIndex(handlerTab), newHndLast->bbNum);
+            printf("EH#%u: New last block of handler: " FMT_BB "\n", ehGetIndex(handlerTab), newHndLast->bbNum);
         }
 #endif // DEBUG
     }
@@ -2175,8 +2175,9 @@ bool Compiler::fgNormalizeEHCase1()
 #ifdef DEBUG
             if (verbose)
             {
-                printf("Handler begin for EH#%02u and 'try' begin for EH%02u are the same block; inserted new BB%02u "
-                       "before BB%02u as new handler begin for EH#%u.\n",
+                printf("Handler begin for EH#%02u and 'try' begin for EH%02u are the same block; inserted new " FMT_BB
+                       " "
+                       "before " FMT_BB " as new handler begin for EH#%u.\n",
                        XTnum, ehGetIndex(handlerStartContainingTry), newHndStart->bbNum, eh->ebdHndBeg->bbNum, XTnum);
             }
 #endif // DEBUG
@@ -2341,7 +2342,8 @@ bool Compiler::fgNormalizeEHCase2()
 #ifdef DEBUG
                         if (verbose)
                         {
-                            printf("'try' begin for EH#%u and EH#%u are same block; inserted new BB%02u before BB%02u "
+                            printf("'try' begin for EH#%u and EH#%u are same block; inserted new " FMT_BB
+                                   " before " FMT_BB " "
                                    "as new 'try' begin for EH#%u.\n",
                                    ehOuterTryIndex, XTnum, newTryStart->bbNum, insertBeforeBlk->bbNum, ehOuterTryIndex);
                         }
@@ -2428,8 +2430,8 @@ bool Compiler::fgNormalizeEHCase2()
 #ifdef DEBUG
                                 if (verbose)
                                 {
-                                    printf("Redirect BB%02u target from BB%02u to BB%02u.\n", predBlock->bbNum,
-                                           insertBeforeBlk->bbNum, newTryStart->bbNum);
+                                    printf("Redirect " FMT_BB " target from " FMT_BB " to " FMT_BB ".\n",
+                                           predBlock->bbNum, insertBeforeBlk->bbNum, newTryStart->bbNum);
                                 }
 #endif // DEBUG
                             }
@@ -2720,10 +2722,11 @@ bool Compiler::fgNormalizeEHCase3()
 #ifdef DEBUG
                     if (verbose)
                     {
-                        printf("last %s block for EH#%u and last %s block for EH#%u are same block; inserted new "
-                               "BB%02u after BB%02u as new last %s block for EH#%u.\n",
-                               outerType, ehOuterIndex, innerType, ehInnerIndex, newLast->bbNum, insertAfterBlk->bbNum,
-                               outerType, ehOuterIndex);
+                        printf(
+                            "last %s block for EH#%u and last %s block for EH#%u are same block; inserted new " FMT_BB
+                            " after " FMT_BB " as new last %s block for EH#%u.\n",
+                            outerType, ehOuterIndex, innerType, ehInnerIndex, newLast->bbNum, insertAfterBlk->bbNum,
+                            outerType, ehOuterIndex);
                     }
 #endif // DEBUG
 
@@ -3126,7 +3129,7 @@ void Compiler::fgVerifyHandlerTab()
         {
             if (blockNumMap[i] != 0)
             {
-                printf("BB%02u => BB%02u\n", i, blockNumMap[i]);
+                printf(FMT_BB " => " FMT_BB "\n", i, blockNumMap[i]);
             }
         }
     }

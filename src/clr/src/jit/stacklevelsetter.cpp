@@ -189,7 +189,7 @@ void StackLevelSetter::SetThrowHelperBlock(SpecialCodeKind kind, BasicBlock* blo
         add->acdStkLvlInit = true;
         if (add->acdStkLvl != currentStackLevel)
         {
-            JITDUMP("Wrong stack level was set for block %d\n", add->acdDstBlk->bbNum);
+            JITDUMP("Wrong stack level was set for " FMT_BB "\n", add->acdDstBlk->bbNum);
         }
 #ifdef DEBUG
         add->acdDstBlk->bbTgtStkDepth = currentStackLevel;

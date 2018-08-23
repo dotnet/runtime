@@ -4632,7 +4632,7 @@ struct ValueNumberState
     void FinishVisit(BasicBlock* blk)
     {
 #ifdef DEBUG_VN_VISIT
-        JITDUMP("finish(BB%02u).\n", blk->bbNum);
+        JITDUMP("finish(" FMT_BB ").\n", blk->bbNum);
 #endif // DEBUG_VN_VISIT
 
         SetVisitBit(blk->bbNum, BVB_complete);
@@ -4640,7 +4640,7 @@ struct ValueNumberState
         for (BasicBlock* succ : blk->GetAllSuccs(m_comp))
         {
 #ifdef DEBUG_VN_VISIT
-            JITDUMP("   Succ(BB%02u).\n", succ->bbNum);
+            JITDUMP("   Succ(" FMT_BB ").\n", succ->bbNum);
 #endif // DEBUG_VN_VISIT
 
             if (GetVisitBit(succ->bbNum, BVB_complete))
@@ -5091,7 +5091,7 @@ void Compiler::fgValueNumberBlock(BasicBlock* blk)
 #ifdef DEBUG
         if (verbose)
         {
-            printf("The SSA definition for %s (#%d) at start of BB%02u is ", memoryKindNames[memoryKind],
+            printf("The SSA definition for %s (#%d) at start of " FMT_BB " is ", memoryKindNames[memoryKind],
                    blk->bbMemorySsaNumIn[memoryKind], blk->bbNum);
             vnPrint(fgCurMemoryVN[memoryKind], 1);
             printf("\n");
@@ -5108,7 +5108,7 @@ void Compiler::fgValueNumberBlock(BasicBlock* blk)
         compCurStmtNum++;
         if (verbose)
         {
-            printf("\n***** BB%02u, stmt %d (before)\n", blk->bbNum, compCurStmtNum);
+            printf("\n***** " FMT_BB ", stmt %d (before)\n", blk->bbNum, compCurStmtNum);
             gtDispTree(stmt->gtStmt.gtStmtExpr);
             printf("\n");
         }
@@ -5122,7 +5122,7 @@ void Compiler::fgValueNumberBlock(BasicBlock* blk)
 #ifdef DEBUG
         if (verbose)
         {
-            printf("\n***** BB%02u, stmt %d (after)\n", blk->bbNum, compCurStmtNum);
+            printf("\n***** " FMT_BB ", stmt %d (after)\n", blk->bbNum, compCurStmtNum);
             gtDispTree(stmt->gtStmt.gtStmtExpr);
             printf("\n");
             if (stmt->gtNext)
@@ -5175,8 +5175,8 @@ ValueNum Compiler::fgMemoryVNForLoopSideEffects(MemoryKind  memoryKind,
 #ifdef DEBUG
     if (verbose)
     {
-        printf("Computing %s state for block BB%02u, entry block for loops %d to %d:\n", memoryKindNames[memoryKind],
-               entryBlock->bbNum, innermostLoopNum, loopNum);
+        printf("Computing %s state for block " FMT_BB ", entry block for loops %d to %d:\n",
+               memoryKindNames[memoryKind], entryBlock->bbNum, innermostLoopNum, loopNum);
     }
 #endif // DEBUG
 
@@ -5212,8 +5212,8 @@ ValueNum Compiler::fgMemoryVNForLoopSideEffects(MemoryKind  memoryKind,
 #ifdef DEBUG
                 if (verbose)
                 {
-                    printf("  Entry block has >1 non-loop preds: (at least) BB%02u and BB%02u.\n", nonLoopPred->bbNum,
-                           predBlock->bbNum);
+                    printf("  Entry block has >1 non-loop preds: (at least) " FMT_BB " and " FMT_BB ".\n",
+                           nonLoopPred->bbNum, predBlock->bbNum);
                 }
 #endif // DEBUG
                 multipleNonLoopPreds = true;
