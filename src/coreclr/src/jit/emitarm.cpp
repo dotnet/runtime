@@ -5391,11 +5391,7 @@ BYTE* emitter::emitOutputLJ(insGroup* ig, BYTE* dst, instrDesc* i)
             }
             ((instrDescJmp*)id)->idjTemp.idjAddr = (dstOffs > srcOffs) ? dst : NULL;
 
-            assert((imm & 0x0000ffff) == imm);
-            code |= (imm & 0x00ff);
-            code |= ((imm & 0x0700) << 4);
-            code |= ((imm & 0x0800) << 15);
-            code |= ((imm & 0xf000) << 4);
+            code |= insEncodeImmT2_Mov(imm);
             dst += emitOutput_Thumb2Instr(dst, code);
 
             if (id->idIsCnsReloc() || id->idIsDspReloc())
