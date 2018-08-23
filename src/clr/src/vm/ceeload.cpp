@@ -3195,7 +3195,10 @@ void Module::SetDomainFile(DomainFile *pDomainFile)
 
     // Allocate static handles now.
     // NOTE: Bootstrapping issue with mscorlib - we will manually allocate later
-    if (g_pPredefinedArrayTypes[ELEMENT_TYPE_OBJECT] != NULL)
+    // If the assembly is collectible, we don't initialize static handles for them
+    // as it is currently initialized through the DomainLocalModule::PopulateClass in MethodTable::CheckRunClassInitThrowing
+    // (If we don't do this, it would allocate here unused regular static handles that will be overridden later)
+    if (g_pPredefinedArrayTypes[ELEMENT_TYPE_OBJECT] != NULL && !GetAssembly()->IsCollectible())
         AllocateRegularStaticHandles(pDomainFile->GetAppDomain());
 }
 

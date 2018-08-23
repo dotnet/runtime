@@ -81,7 +81,7 @@ class DomainFile
     DomainFile() {LIMITED_METHOD_CONTRACT;};
 #endif
 
-    LoaderAllocator *GetLoaderAllocator();
+    virtual LoaderAllocator *GetLoaderAllocator();
 
     PTR_AppDomain GetAppDomain()
     {
@@ -513,6 +513,12 @@ public:
         return PTR_PEAssembly(m_pFile);
     }
 
+    LoaderAllocator *GetLoaderAllocator()
+    {
+        LIMITED_METHOD_CONTRACT;
+        return m_pLoaderAllocator;
+    }
+
 #ifdef FEATURE_LOADER_OPTIMIZATION
     
 public:
@@ -776,8 +782,21 @@ private:
     Volatile<bool>                          m_fHostAssemblyPublished;
     Volatile<bool>                          m_fCalculatedShouldLoadDomainNeutral;
     Volatile<bool>                          m_fShouldLoadDomainNeutral;
+    PTR_LoaderAllocator                     m_pLoaderAllocator;
+    DomainAssembly*                         m_NextDomainAssemblyInSameALC;
 
   public:
+      DomainAssembly* GetNextDomainAssemblyInSameALC()
+      {
+          return m_NextDomainAssemblyInSameALC;
+      }
+
+      void SetNextDomainAssemblyInSameALC(DomainAssembly* domainAssembly)
+      {
+          _ASSERTE(m_NextDomainAssemblyInSameALC == NULL);
+          m_NextDomainAssemblyInSameALC = domainAssembly;
+      }
+
     // Indicates if the assembly can be cached in a binding cache such as AssemblySpecBindingCache.
     inline bool CanUseWithBindingCache()
     { STATIC_CONTRACT_WRAPPER; return GetFile()->CanUseWithBindingCache(); }

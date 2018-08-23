@@ -91,6 +91,16 @@ interface ICLRPrivBinder : IUnknown
         [in]          LPVOID pvAssemblySpec,
         [out]         HRESULT * pResult,
         [out]         ICLRPrivAssembly ** ppAssembly);
+
+    /**********************************************************************************
+     ** GetLoaderAllocator
+     ** Get LoaderAllocator for binders that contain it. For other binders, return
+     ** E_FAIL
+     **
+     **  pLoaderAllocator - when successful, constains the returned LoaderAllocator
+     **********************************************************************************/
+    HRESULT GetLoaderAllocator(
+        [out, retval] LPVOID * pLoaderAllocator);
 };
 
 enum CLR_PRIV_BINDER_FLAGS

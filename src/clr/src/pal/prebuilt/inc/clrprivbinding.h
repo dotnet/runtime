@@ -171,7 +171,9 @@ EXTERN_C const IID IID_ICLRPrivBinder;
             /* [in] */ LPVOID pvAssemblySpec,
             /* [out] */ HRESULT *pResult,
             /* [out] */ ICLRPrivAssembly **ppAssembly) = 0;
-        
+
+        virtual HRESULT STDMETHODCALLTYPE GetLoaderAllocator(
+            /* [retval][out] */ LPVOID* pLoaderAllocator) = 0;
     };
     
     
@@ -219,6 +221,10 @@ EXTERN_C const IID IID_ICLRPrivBinder;
             /* [out] */ HRESULT *pResult,
             /* [out] */ ICLRPrivAssembly **ppAssembly);
         
+        HRESULT(STDMETHODCALLTYPE *GetLoaderAllocator)(
+            ICLRPrivBinder * This,
+            /* [retval][out] */ LPVOID *pLoaderAllocator) = 0;
+
         END_INTERFACE
     } ICLRPrivBinderVtbl;
 

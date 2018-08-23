@@ -437,6 +437,7 @@ class StubLinkerCPU : public StubLinker
 #ifdef _TARGET_AMD64_
 
         static Stub * CreateTailCallCopyArgsThunk(CORINFO_SIG_INFO * pSig,
+                                                  MethodDesc* pMD,
                                                   CorInfoHelperTailCallSpecialHandling flags);
 
 #endif // _TARGET_AMD64_

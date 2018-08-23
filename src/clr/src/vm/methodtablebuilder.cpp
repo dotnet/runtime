@@ -1723,7 +1723,7 @@ MethodTableBuilder::BuildMethodTableThrowing(
     // the offsets of our fields will depend on this. For the dynamic case (which requires
     // an extra indirection (indirect depending of methodtable) we'll allocate the slot
     // in setupmethodtable
-    if (((pModule->IsReflection() || bmtGenerics->HasInstantiation() || !pModule->IsStaticStoragePrepared(cl)) &&
+    if (((pAllocator->IsCollectible() ||  pModule->IsReflection() || bmtGenerics->HasInstantiation() || !pModule->IsStaticStoragePrepared(cl)) &&
         (bmtVT->GetClassCtorSlotIndex() != INVALID_SLOT_INDEX || bmtEnumFields->dwNumStaticFields !=0))
 #ifdef EnC_SUPPORTED 
         // Classes in modules that have been edited (would do on class level if there were a
@@ -3185,12 +3185,6 @@ MethodTableBuilder::EnumerateClassMethods()
         else
         {
             type = METHOD_TYPE_NORMAL;
-        }
-
-        // PInvoke methods are not permitted on collectible types
-        if ((type == METHOD_TYPE_NDIRECT) && GetAssembly()->IsCollectible())
-        {
-            BuildMethodTableThrowException(IDS_CLASSLOAD_COLLECTIBLEPINVOKE);
         }
 
         // Generic methods should always be METHOD_TYPE_INSTANTIATED
