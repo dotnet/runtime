@@ -46,10 +46,7 @@ namespace System.Security.Cryptography.Xml.Tests
         {
             Reference reference = new Reference(uri);
 
-            if (PlatformDetection.IsFullFramework)
-                Assert.Equal("http://www.w3.org/2000/09/xmldsig#sha1", reference.DigestMethod);
-            else
-                Assert.Equal("http://www.w3.org/2001/04/xmlenc#sha256", reference.DigestMethod);
+            Assert.Equal("http://www.w3.org/2001/04/xmlenc#sha256", reference.DigestMethod);
 
             Assert.Null(reference.DigestValue);
             Assert.Null(reference.Id);
@@ -68,10 +65,8 @@ namespace System.Security.Cryptography.Xml.Tests
             using (MemoryStream memoryStream = data != null ? new MemoryStream(Encoding.UTF8.GetBytes(data)) : null)
             {
                 Reference reference = new Reference(memoryStream);
-                if (PlatformDetection.IsFullFramework)
-                    Assert.Equal("http://www.w3.org/2000/09/xmldsig#sha1", reference.DigestMethod);
-                else
-                    Assert.Equal("http://www.w3.org/2001/04/xmlenc#sha256", reference.DigestMethod);
+
+                Assert.Equal("http://www.w3.org/2001/04/xmlenc#sha256", reference.DigestMethod);
 
                 Assert.Null(reference.DigestValue);
                 Assert.Null(reference.Id);

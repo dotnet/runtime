@@ -12,8 +12,10 @@ namespace System.Tests
         private const int InnerCount = 500_000;
 
         private static string s_resultString;
+#if netcoreapp
         private static int s_resultInt32;
         private static uint s_resultUInt32;
+#endif
 
         public static object[][] UInt32Values => new[]
         {
@@ -40,6 +42,7 @@ namespace System.Tests
             }
         }
 
+#if netcoreapp
         [Benchmark(InnerIterationCount = InnerCount)]
         [MemberData(nameof(UInt32Values))]
         public void TryFormat(uint value)
@@ -73,5 +76,6 @@ namespace System.Tests
                 }
             }
         }
+#endif
     }
 }

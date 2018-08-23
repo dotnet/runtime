@@ -79,7 +79,6 @@ public partial class ConsoleEncoding : RemoteExecutorTestBase
     }
 
     [Fact]
-    [SkipOnTargetFramework(TargetFrameworkMonikers.Uap, "https://github.com/dotnet/corefx/issues/21483")]
     public void TestValidEncodings()
     {
         Action<Encoding> check = encoding =>

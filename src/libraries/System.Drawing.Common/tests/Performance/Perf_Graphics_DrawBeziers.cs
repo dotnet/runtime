@@ -4,7 +4,7 @@
 
 using System.Diagnostics;
 using Microsoft.Xunit.Performance;
-using Xunit.NetCore.Extensions;
+using Microsoft.DotNet.XUnitExtensions;
 
 namespace System.Drawing.Tests
 {

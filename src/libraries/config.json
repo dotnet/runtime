@@ -246,6 +246,12 @@
         "values": [],
         "defaultValue": ""
     },
+    "Performance": {
+      "description": "Enables/Disables performance test execution.",
+      "valueType": "property",
+      "values": ["True", "False"],
+      "defaultValue": false
+    },
   },
   "commands": {
     "build-directory": {
@@ -334,14 +340,16 @@
         "tests": {
           "description": "Builds src and then builds and runs the tests for the given configuration.",
           "settings": {
-            "BuildTests": true
+            "BuildTests": true,
+            "Performance": "default"
           }
         },
         "testsOnly": {
           "description": "Builds and runs the tests for the given configuration.",
           "settings": {
             "Project": "src/tests.builds",
-            "MsBuildLogging":"/flp:v=normal;LogFile=build-tests.log"
+            "MsBuildLogging":"/flp:v=normal;LogFile=build-tests.log",
+            "Performance": "default"
           }
         },
         "debug": {

@@ -10,6 +10,7 @@ namespace System.Runtime.InteropServices.Tests
     public partial class GetComObjectDataTests
     {
         [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotWindowsNanoServer))]
+        [ActiveIssue(31910, TargetFrameworkMonikers.Uap)]
         [PlatformSpecific(TestPlatforms.Windows)]
         public void GetComObjectData_ValidObject_ReturnsExpected()
         {

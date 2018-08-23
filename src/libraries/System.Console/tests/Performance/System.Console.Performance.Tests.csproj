@@ -1,18 +1,14 @@
 <Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
-    <IncludePerformanceTests>true</IncludePerformanceTests>
     <ProjectGuid>{14BE0BA2-28BC-467A-AA76-C6B86D21FDAE}</ProjectGuid>
-    <Configurations>netcoreapp-Debug;netcoreapp-Release</Configurations>
+    <Configurations>netstandard-Debug;netstandard-Release</Configurations>
   </PropertyGroup>
   <ItemGroup>
     <Compile Include="Perf.Console.cs" />
     <Compile Include="$(CommonTestPath)\System\PerfUtils.cs">
       <Link>Common\System\PerfUtils.cs</Link>
     </Compile>
-  </ItemGroup>
-  <ItemGroup>
-    <ProjectReference Include="$(CommonTestPath)\System\Diagnostics\RemoteExecutorConsoleApp\RemoteExecutorConsoleApp.csproj" />
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="$(CommonPath)\..\perf\PerfRunner\PerfRunner.csproj">

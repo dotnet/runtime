@@ -17,7 +17,7 @@ namespace System.Linq.Tests
 
         [Theory]
         [MemberData(nameof(ReverseData))]
-        public void Reverse<T>(IEnumerable<T> source, T dummy)
+        public void Reverse<T>(IEnumerable<T> source)
         {
             T[] expected = source.ToArray();
             Array.Reverse(expected);
@@ -50,7 +50,7 @@ namespace System.Linq.Tests
         }
 
         [Theory, MemberData(nameof(ReverseData))]
-        public void RunOnce<T>(IEnumerable<T> source, T dummy)
+        public void RunOnce<T>(IEnumerable<T> source)
         {
             T[] expected = source.ToArray();
             Array.Reverse(expected);
@@ -70,11 +70,10 @@ namespace System.Linq.Tests
                 new[] { -10, 0, 5, 0, 9, 100, 9 }, // Some repeating elements.
             };
             
-            // TODO: Remove workarounds when xUnit is updated to include xunit/xunit#965.
             return integers
-                .Select(collection => new object[] { collection, 0 })
+                .Select(collection => new object[] { collection })
                 .Concat(
-                    integers.Select(c => new object[] { c.Select(i => i.ToString()), string.Empty })
+                    integers.Select(c => new object[] { c.Select(i => i.ToString()) })
                 );
         }
 

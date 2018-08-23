@@ -27,6 +27,8 @@ namespace System.Collections.Tests
         protected override string Min => 0.ToString().PadLeft(10);
         protected override string Max => int.MaxValue.ToString().PadLeft(10);
 
+        protected override bool CanAddDefaultValue => false;
+
         protected override string CreateT(int seed)
         {
             return seed.ToString().PadLeft(10);
@@ -38,7 +40,7 @@ namespace System.Collections.Tests
             {
                 int seed = count * 21;
                 ICollection<string> collection = GenericICollectionFactory(count);
-                AssertExtensions.Throws<ArgumentOutOfRangeException>("item", () => collection.Remove(default(string)));
+                Assert.False(collection.Remove(default(string)));
             }
         }
 
@@ -47,7 +49,7 @@ namespace System.Collections.Tests
             if (DefaultValueAllowed && !IsReadOnly && !AddRemoveClear_ThrowsNotSupported)
             {
                 ICollection<string> collection = GenericICollectionFactory(count);
-                AssertExtensions.Throws<ArgumentOutOfRangeException>("item", () => collection.Add(default(string)));
+                AssertExtensions.Throws<ArgumentOutOfRangeException>("item", null, () => collection.Add(default(string)));
             }
         }
     }
@@ -56,6 +58,8 @@ namespace System.Collections.Tests
     {
         protected abstract T Min { get; }
         protected abstract T Max { get; }
+        protected virtual bool CanAddDefaultValue => true;
+
         private SortedSet<T> OriginalSet { get; set; }
 
         protected override ISet<T> GenericISetFactory()
@@ -67,11 +71,11 @@ namespace System.Collections.Tests
         public override void ICollection_Generic_Add_DefaultValue(int count)
         {
             // Adding an item to a TreeSubset does nothing - it updates the parent.
-            if (DefaultValueAllowed && !IsReadOnly && !AddRemoveClear_ThrowsNotSupported)
+            if (DefaultValueAllowed && !IsReadOnly && !AddRemoveClear_ThrowsNotSupported && CanAddDefaultValue)
             {
                 ICollection<T> collection = GenericICollectionFactory(count);
                 collection.Add(default(T));
-                Assert.Equal(count, collection.Count);
+                Assert.Equal(count + 1, collection.Count); // collection is also updated.
                 Assert.Equal(count + 1, OriginalSet.Count);
             }
         }
