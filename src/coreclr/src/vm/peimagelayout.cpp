@@ -235,7 +235,7 @@ void PEImageLayout::ApplyBaseRelocations()
 
 #ifdef _TARGET_ARM_
             case IMAGE_REL_BASED_THUMB_MOV32:
-                PutThumb2Mov32((UINT16 *)address, GetThumb2Mov32((UINT16 *)address) + delta);
+                PutThumb2Mov32((UINT16 *)address, GetThumb2Mov32((UINT16 *)address) + (INT32)delta);
                 pEndAddressToFlush = max(pEndAddressToFlush, address + 8);
                 break;
 #endif
