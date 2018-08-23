@@ -297,6 +297,7 @@ bool TakesRexWPrefix(instruction ins, emitAttr attr)
     // and here we must special case these by the opcode.
     switch (ins)
     {
+        case INS_vpermpd:
         case INS_vpermq:
         case INS_vpsrlvq:
         case INS_vpsllvq:
