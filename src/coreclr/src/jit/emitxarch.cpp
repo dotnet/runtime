@@ -360,6 +360,8 @@ bool emitter::IsDstDstSrcAVXInstruction(instruction ins)
         case INS_vinserti128:
         case INS_vmaskmovps:
         case INS_vmaskmovpd:
+        case INS_vpmaskmovd:
+        case INS_vpmaskmovq:
         case INS_vpblendd:
         case INS_vperm2i128:
         case INS_vperm2f128:
@@ -586,6 +588,7 @@ bool TakesRexWPrefix(instruction ins, emitAttr attr)
         case INS_vfnmsub132sd:
         case INS_vfnmsub213sd:
         case INS_vfnmsub231sd:
+        case INS_vpmaskmovq:
             return true;
         default:
             break;

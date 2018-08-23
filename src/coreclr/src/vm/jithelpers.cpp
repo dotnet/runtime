@@ -6238,6 +6238,8 @@ void InitJitHelperLogging()
             ThrowLastError();
         }
         
+        LoaderHeap* pHeap = SystemDomain::GetGlobalLoaderAllocator()->GetStubHeap();
+
         // iterate through the jit helper tables replacing helpers with logging thunks
         //
         // NOTE: if NGEN'd images were NGEN'd with hard binding on then static helper
@@ -6278,7 +6280,7 @@ void InitJitHelperLogging()
 #endif // _TARGET_AMD64_
                 
                     pSl->EmitJITHelperLoggingThunk(GetEEFuncEntryPoint(hlpFunc->pfnHelper), (LPVOID)hlpFuncCount);
-                    Stub* pStub = pSl->Link();
+                    Stub* pStub = pSl->Link(pHeap);
                     hlpFunc->pfnHelper = (void*)pStub->GetEntryPoint();
                 }
                 else
@@ -6335,7 +6337,7 @@ void InitJitHelperLogging()
 #endif // _TARGET_AMD64_
 
                     pSl->EmitJITHelperLoggingThunk(GetEEFuncEntryPoint(dynamicHlpFunc->pfnHelper), (LPVOID)hlpFuncCount);
-                    Stub* pStub = pSl->Link();
+                    Stub* pStub = pSl->Link(pHeap);
                     dynamicHlpFunc->pfnHelper = (void*)pStub->GetEntryPoint();            
                 }
             }

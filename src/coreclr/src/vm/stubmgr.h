@@ -917,7 +917,7 @@ public:
         return dac_cast<PTR_Object>(pContext->Rcx);
 #endif
 #elif defined(_TARGET_ARM_)
-        return dac_cast<PTR_Object>(pContext->R0);
+        return dac_cast<PTR_Object>((TADDR)pContext->R0);
 #elif defined(_TARGET_ARM64_)
         return dac_cast<PTR_Object>(pContext->X0);
 #else
@@ -980,7 +980,7 @@ public:
 
         return context.Rip;
 #elif defined(_TARGET_ARM_)
-        return *((PCODE *)pContext->R11 + 1);      
+        return *((PCODE *)((TADDR)pContext->R11) + 1);
 #elif defined(_TARGET_ARM64_)
         return *((PCODE *)pContext->Fp + 1);      
 #else

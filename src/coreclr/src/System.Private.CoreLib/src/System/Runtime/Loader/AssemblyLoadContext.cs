@@ -4,6 +4,8 @@
 
 
 using System;
+using System.Collections.Generic;
+using System.Diagnostics;
 using System.Reflection;
 using System.IO;
 using System.Runtime.Versioning;
@@ -17,11 +19,27 @@ namespace System.Runtime.Loader
 {
     public abstract class AssemblyLoadContext
     {
+        private static readonly Dictionary<long, WeakReference<AssemblyLoadContext>> ContextsToUnload = new Dictionary<long, WeakReference<AssemblyLoadContext>>();
+        private static long _nextId;
+        private static bool _isProcessExiting;
+
+        // Id used by contextsToUnload
+        private readonly long id;
+
+        // synchronization primitive to protect against usage of this instance while unloading
+        private readonly object unloadLock = new object();
+
+        // Indicates the state of this ALC (Alive or in Unloading state)
+        private InternalState state;
+
         [DllImport(JitHelpers.QCall, CharSet = CharSet.Unicode)]
         private static extern bool CanUseAppPathAssemblyLoadContextInCurrentDomain();
 
         [DllImport(JitHelpers.QCall, CharSet = CharSet.Unicode)]
-        private static extern IntPtr InitializeAssemblyLoadContext(IntPtr ptrAssemblyLoadContext, bool fRepresentsTPALoadContext);
+        private static extern IntPtr InitializeAssemblyLoadContext(IntPtr ptrAssemblyLoadContext, bool fRepresentsTPALoadContext, bool isCollectible);
+
+        [DllImport(JitHelpers.QCall, CharSet = CharSet.Unicode)]
+        private static extern void PrepareForAssemblyLoadContextRelease(IntPtr ptrNativeAssemblyLoadContext, IntPtr ptrAssemblyLoadContextStrong);
 
         [DllImport(JitHelpers.QCall, CharSet = CharSet.Unicode)]
         private static extern IntPtr LoadFromStream(IntPtr ptrNativeAssemblyLoadContext, IntPtr ptrAssemblyArray, int iAssemblyArrayLen, IntPtr ptrSymbols, int iSymbolArrayLen, ObjectHandleOnStack retAssembly);
@@ -32,37 +50,92 @@ namespace System.Runtime.Loader
         [DllImport(JitHelpers.QCall, CharSet = CharSet.Unicode)]
         internal static extern void InternalStartProfile(string profile, IntPtr ptrNativeAssemblyLoadContext);
 
-        protected AssemblyLoadContext()
+        static AssemblyLoadContext()
         {
-            // Initialize the ALC representing non-TPA LoadContext
-            InitializeLoadContext(false);
-        }
-
-        internal AssemblyLoadContext(bool fRepresentsTPALoadContext)
-        {
-            // Initialize the ALC representing TPA LoadContext
-            InitializeLoadContext(fRepresentsTPALoadContext);
-        }
-
-        private void InitializeLoadContext(bool fRepresentsTPALoadContext)
-        {
-            // Initialize the VM side of AssemblyLoadContext if not already done.
-            GCHandle gchALC = GCHandle.Alloc(this);
-            IntPtr ptrALC = GCHandle.ToIntPtr(gchALC);
-            m_pNativeAssemblyLoadContext = InitializeAssemblyLoadContext(ptrALC, fRepresentsTPALoadContext);
-
-            // Initialize event handlers to be null by default
-            Resolving = null;
-            Unloading = null;
-
-            // Since unloading an AssemblyLoadContext is not yet implemented, this is a temporary solution to raise the
-            // Unloading event on process exit. Register for the current AppDomain's ProcessExit event, and the handler will in
-            // turn raise the Unloading event.
+            // We register the cleanup of all AssemblyLoadContext that have not been finalized in the AppContext.Unloading
             AppContext.Unloading += OnAppContextUnloading;
         }
 
+        protected AssemblyLoadContext() : this(false, false)
+        {
+        }
+
+        protected AssemblyLoadContext(bool isCollectible) : this(false, isCollectible)
+        {
+        }
+
+        internal AssemblyLoadContext(bool fRepresentsTPALoadContext, bool isCollectible)
+        {
+            // Initialize the VM side of AssemblyLoadContext if not already done.
+            IsCollectible = isCollectible;
+
+            // Add this instance to the list of alive ALC
+            lock (ContextsToUnload)
+            {
+                if (_isProcessExiting)
+                {
+                    throw new InvalidOperationException(SR.GetResourceString("AssemblyLoadContext_Constructor_CannotInstantiateWhileUnloading"));
+                }
+
+                // If this is a collectible ALC, we are creating a weak handle otherwise we use a strong handle
+                var thisHandle = GCHandle.Alloc(this, IsCollectible ? GCHandleType.Weak : GCHandleType.Normal);
+                var thisHandlePtr = GCHandle.ToIntPtr(thisHandle);
+                m_pNativeAssemblyLoadContext = InitializeAssemblyLoadContext(thisHandlePtr, fRepresentsTPALoadContext, isCollectible);
+
+                // Initialize event handlers to be null by default
+                Resolving = null;
+                Unloading = null;
+
+                id = _nextId++;
+                ContextsToUnload.Add(id, new WeakReference<AssemblyLoadContext>(this, true));
+            }
+        }
+
+        ~AssemblyLoadContext()
+        {
+            // Only valid for a Collectible ALC. Non-collectible ALCs have the finalizer suppressed.
+            // We get here only in case the explicit Unload was not initiated.
+            Debug.Assert(state != InternalState.Unloading);
+            InitiateUnload();
+        }
+
+        private void InitiateUnload()
+        {
+            var unloading = Unloading;
+            Unloading = null;
+            unloading?.Invoke(this);
+
+            // When in Unloading state, we are not supposed to be called on the finalizer
+            // as the native side is holding a strong reference after calling Unload
+            lock (unloadLock)
+            {
+                if (!_isProcessExiting)
+                {
+                    Debug.Assert(state == InternalState.Alive);
+
+                    var thisStrongHandle = GCHandle.Alloc(this, GCHandleType.Normal);
+                    var thisStrongHandlePtr = GCHandle.ToIntPtr(thisStrongHandle);
+                    // The underlying code will transform the original weak handle
+                    // created by InitializeLoadContext to a strong handle
+                    PrepareForAssemblyLoadContextRelease(m_pNativeAssemblyLoadContext, thisStrongHandlePtr);
+                }
+
+                state = InternalState.Unloading;
+            }
+
+            if (!_isProcessExiting)
+            {
+                lock (ContextsToUnload)
+                {
+                    ContextsToUnload.Remove(id);
+                }
+            }
+        }
+
+        public bool IsCollectible { get; }
+
         [DllImport(JitHelpers.QCall, CharSet = CharSet.Unicode)]
-        private static extern void LoadFromPath(IntPtr ptrNativeAssemblyLoadContext, string ilPath, string niPath, ObjectHandleOnStack retAssembly);
+        private static extern void LoadFromPath(IntPtr ptrNativeAssemblyLoadContet, string ilPath, string niPath, ObjectHandleOnStack retAssembly);
 
         public static Assembly[] GetLoadedAssemblies()
         {
@@ -78,14 +151,19 @@ namespace System.Runtime.Loader
                 throw new ArgumentNullException(nameof(assemblyPath));
             }
 
-            if (PathInternal.IsPartiallyQualified(assemblyPath))
+            lock (unloadLock)
             {
-                throw new ArgumentException(SR.Argument_AbsolutePathRequired, nameof(assemblyPath));
-            }
+                VerifyIsAlive();
+                if (PathInternal.IsPartiallyQualified(assemblyPath))
+                {
+                    throw new ArgumentException(SR.GetResourceString("Argument_AbsolutePathRequired"),
+                        nameof(assemblyPath));
+                }
 
-            RuntimeAssembly loadedAssembly = null;
-            LoadFromPath(m_pNativeAssemblyLoadContext, assemblyPath, null, JitHelpers.GetObjectHandleOnStack(ref loadedAssembly));
-            return loadedAssembly;
+                RuntimeAssembly loadedAssembly = null;
+                LoadFromPath(m_pNativeAssemblyLoadContext, assemblyPath, null, JitHelpers.GetObjectHandleOnStack(ref loadedAssembly));
+                return loadedAssembly;
+            }
         }
 
         public Assembly LoadFromNativeImagePath(string nativeImagePath, string assemblyPath)
@@ -95,21 +173,28 @@ namespace System.Runtime.Loader
                 throw new ArgumentNullException(nameof(nativeImagePath));
             }
 
-            if (PathInternal.IsPartiallyQualified(nativeImagePath))
+            lock (unloadLock)
             {
-                throw new ArgumentException(SR.Argument_AbsolutePathRequired, nameof(nativeImagePath));
-            }
+                VerifyIsAlive();
 
-            if (assemblyPath != null && PathInternal.IsPartiallyQualified(assemblyPath))
-            {
-                throw new ArgumentException(SR.Argument_AbsolutePathRequired, nameof(assemblyPath));
-            }
+                if (PathInternal.IsPartiallyQualified(nativeImagePath))
+                {
+                    throw new ArgumentException(SR.GetResourceString("Argument_AbsolutePathRequired"),
+                        nameof(nativeImagePath));
+                }
 
-            // Basic validation has succeeded - lets try to load the NI image.
-            // Ask LoadFile to load the specified assembly in the DefaultContext
-            RuntimeAssembly loadedAssembly = null;
-            LoadFromPath(m_pNativeAssemblyLoadContext, assemblyPath, nativeImagePath, JitHelpers.GetObjectHandleOnStack(ref loadedAssembly));
-            return loadedAssembly;
+                if (assemblyPath != null && PathInternal.IsPartiallyQualified(assemblyPath))
+                {
+                    throw new ArgumentException(SR.GetResourceString("Argument_AbsolutePathRequired"),
+                        nameof(assemblyPath));
+                }
+
+                // Basic validation has succeeded - lets try to load the NI image.
+                // Ask LoadFile to load the specified assembly in the DefaultContext
+                RuntimeAssembly loadedAssembly = null;
+                LoadFromPath(m_pNativeAssemblyLoadContext, assemblyPath, nativeImagePath, JitHelpers.GetObjectHandleOnStack(ref loadedAssembly));
+                return loadedAssembly;
+            }
         }
 
         public Assembly LoadFromStream(Stream assembly)
@@ -128,36 +213,59 @@ namespace System.Runtime.Loader
             {
                 throw new BadImageFormatException(SR.BadImageFormat_BadILFormat);
             }
-
-            int iAssemblyStreamLength = (int)assembly.Length;
-            int iSymbolLength = 0;
-
-            // Allocate the byte[] to hold the assembly
-            byte[] arrAssembly = new byte[iAssemblyStreamLength];
-
-            // Copy the assembly to the byte array
-            assembly.Read(arrAssembly, 0, iAssemblyStreamLength);
-
-            // Get the symbol stream in byte[] if provided
-            byte[] arrSymbols = null;
-            if (assemblySymbols != null)
+            lock (unloadLock)
             {
-                iSymbolLength = (int)assemblySymbols.Length;
-                arrSymbols = new byte[iSymbolLength];
+                VerifyIsAlive();
 
-                assemblySymbols.Read(arrSymbols, 0, iSymbolLength);
-            }
+                int iAssemblyStreamLength = (int) assembly.Length;
+                int iSymbolLength = 0;
 
-            RuntimeAssembly loadedAssembly = null;
-            unsafe
-            {
-                fixed (byte* ptrAssembly = arrAssembly, ptrSymbols = arrSymbols)
+                // Allocate the byte[] to hold the assembly
+                byte[] arrAssembly = new byte[iAssemblyStreamLength];
+
+                // Copy the assembly to the byte array
+                assembly.Read(arrAssembly, 0, iAssemblyStreamLength);
+
+                // Get the symbol stream in byte[] if provided
+                byte[] arrSymbols = null;
+                if (assemblySymbols != null)
                 {
-                    LoadFromStream(m_pNativeAssemblyLoadContext, new IntPtr(ptrAssembly), iAssemblyStreamLength, new IntPtr(ptrSymbols), iSymbolLength, JitHelpers.GetObjectHandleOnStack(ref loadedAssembly));
+                    iSymbolLength = (int) assemblySymbols.Length;
+                    arrSymbols = new byte[iSymbolLength];
+
+                    assemblySymbols.Read(arrSymbols, 0, iSymbolLength);
                 }
+
+                RuntimeAssembly loadedAssembly = null;
+                unsafe
+                {
+                    fixed (byte* ptrAssembly = arrAssembly, ptrSymbols = arrSymbols)
+                    {
+                        LoadFromStream(m_pNativeAssemblyLoadContext, new IntPtr(ptrAssembly), iAssemblyStreamLength,
+                            new IntPtr(ptrSymbols), iSymbolLength, JitHelpers.GetObjectHandleOnStack(ref loadedAssembly));
+                    }
+                }
+                return loadedAssembly;
+            }
+        }
+
+        public void Unload()
+        {
+            if (!IsCollectible)
+            {
+                throw new InvalidOperationException(SR.GetResourceString("AssemblyLoadContext_Unload_CannotUnloadIfNotCollectible"));
             }
 
-            return loadedAssembly;
+            GC.SuppressFinalize(this);
+            InitiateUnload();
+        }
+
+        private void VerifyIsAlive()
+        {
+            if (state != InternalState.Alive)
+            {
+                throw new InvalidOperationException(SR.GetResourceString("AssemblyLoadContext_Verify_NotUnloading"));
+            }
         }
 
         // Custom AssemblyLoadContext implementations can override this
@@ -391,12 +499,26 @@ namespace System.Runtime.Loader
             InternalStartProfile(profile, m_pNativeAssemblyLoadContext);
         }
 
-        private void OnAppContextUnloading(object sender, EventArgs e)
+        private void OnAppContextUnloading()
         {
-            var unloading = Unloading;
-            if (unloading != null)
+            InitiateUnload();
+        }
+
+        private static void OnAppContextUnloading(object sender, EventArgs e)
+        {
+            lock (ContextsToUnload)
             {
-                unloading(this);
+                _isProcessExiting = true;
+                foreach (var alcAlive in ContextsToUnload)
+                {
+                    AssemblyLoadContext alc;
+                    if (alcAlive.Value.TryGetTarget(out alc))
+                    {
+                        // Should we use a try/catch?
+                        alc.OnAppContextUnloading();
+                    }
+                }
+                ContextsToUnload.Clear();
             }
         }
 
@@ -442,11 +564,25 @@ namespace System.Runtime.Loader
             add { AppDomain.CurrentDomain.AssemblyResolve += value; }
             remove { AppDomain.CurrentDomain.AssemblyResolve -= value; }
         }
+
+        private enum InternalState
+        {
+            /// <summary>
+            /// The ALC is alive (default)
+            /// </summary>
+            Alive,
+
+            /// <summary>
+            /// The unload process has started, the Unloading event will be called
+            /// once the underlying LoaderAllocator has been finalized
+            /// </summary>
+            Unloading
+        }
     }
 
     internal class AppPathAssemblyLoadContext : AssemblyLoadContext
     {
-        internal AppPathAssemblyLoadContext() : base(true)
+        internal AppPathAssemblyLoadContext() : base(true, false)
         {
         }
 
@@ -460,7 +596,7 @@ namespace System.Runtime.Loader
 
     internal class IndividualAssemblyLoadContext : AssemblyLoadContext
     {
-        internal IndividualAssemblyLoadContext() : base(false)
+        internal IndividualAssemblyLoadContext() : base(false, false)
         {
         }
 
@@ -469,5 +605,6 @@ namespace System.Runtime.Loader
             return null;
         }
     }
+
 }
 

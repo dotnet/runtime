@@ -152,12 +152,7 @@ struct VarScopeDsc
                        // compEnterScopeList and compExitScopeList sorted arrays.
 };
 
-/*****************************************************************************
- *
- *  The following holds the local variable counts and the descriptor table.
- */
-
-// This is the location of a definition.
+// This is the location of a SSA definition.
 struct DefLoc
 {
     BasicBlock* m_blk;
@@ -166,22 +161,134 @@ struct DefLoc
     DefLoc() : m_blk(nullptr), m_tree(nullptr)
     {
     }
-};
 
-// This class encapsulates all info about a local variable that may vary for different SSA names
-// in the family.
-class LclSsaVarDsc
-{
-public:
-    ValueNumPair m_vnPair;
-    DefLoc       m_defLoc;
-
-    LclSsaVarDsc()
+    DefLoc(BasicBlock* block, GenTree* tree) : m_blk(block), m_tree(tree)
     {
     }
 };
 
-typedef JitExpandArray<LclSsaVarDsc> PerSsaArray;
+// This class stores information associated with a LclVar SSA definition.
+class LclSsaVarDsc
+{
+public:
+    LclSsaVarDsc()
+    {
+    }
+
+    LclSsaVarDsc(BasicBlock* block, GenTree* tree) : m_defLoc(block, tree)
+    {
+    }
+
+    ValueNumPair m_vnPair;
+    DefLoc       m_defLoc;
+};
+
+// This class stores information associated with a memory SSA definition.
+class SsaMemDef
+{
+public:
+    ValueNumPair m_vnPair;
+};
+
+//------------------------------------------------------------------------
+// SsaDefArray: A resizable array of SSA definitions.
+//
+// Unlike an ordinary resizable array implementation, this allows only element
+// addition (by calling AllocSsaNum) and has special handling for RESERVED_SSA_NUM
+// (basically it's a 1-based array). The array doesn't impose any particular
+// requirements on the elements it stores and AllocSsaNum forwards its arguments
+// to the array element constructor, this way the array supports both LclSsaVarDsc
+// and SsaMemDef elements.
+//
+template <typename T>
+class SsaDefArray
+{
+    T*       m_array;
+    unsigned m_arraySize;
+    unsigned m_count;
+
+    static_assert_no_msg(SsaConfig::RESERVED_SSA_NUM == 0);
+    static_assert_no_msg(SsaConfig::FIRST_SSA_NUM == 1);
+
+    // Get the minimum valid SSA number.
+    unsigned GetMinSsaNum() const
+    {
+        return SsaConfig::FIRST_SSA_NUM;
+    }
+
+    // Increase (double) the size of the array.
+    void GrowArray(CompAllocator alloc)
+    {
+        unsigned oldSize = m_arraySize;
+        unsigned newSize = max(2, oldSize * 2);
+
+        T* newArray = alloc.allocate<T>(newSize);
+
+        for (unsigned i = 0; i < oldSize; i++)
+        {
+            newArray[i] = m_array[i];
+        }
+
+        m_array     = newArray;
+        m_arraySize = newSize;
+    }
+
+public:
+    // Construct an empty SsaDefArray.
+    SsaDefArray() : m_array(nullptr), m_arraySize(0), m_count(0)
+    {
+    }
+
+    // Reset the array (used only if the SSA form is reconstructed).
+    void Reset()
+    {
+        m_count = 0;
+    }
+
+    // Allocate a new SSA number (starting with SsaConfig::FIRST_SSA_NUM).
+    template <class... Args>
+    unsigned AllocSsaNum(CompAllocator alloc, Args&&... args)
+    {
+        if (m_count == m_arraySize)
+        {
+            GrowArray(alloc);
+        }
+
+        unsigned ssaNum    = GetMinSsaNum() + m_count;
+        m_array[m_count++] = T(jitstd::forward<Args>(args)...);
+
+        // Ensure that the first SSA number we allocate is SsaConfig::FIRST_SSA_NUM
+        assert((ssaNum == SsaConfig::FIRST_SSA_NUM) || (m_count > 1));
+
+        return ssaNum;
+    }
+
+    // Get the number of SSA definitions in the array.
+    unsigned GetCount() const
+    {
+        return m_count;
+    }
+
+    // Get a pointer to the SSA definition at the specified index.
+    T* GetSsaDefByIndex(unsigned index)
+    {
+        assert(index < m_count);
+        return &m_array[index];
+    }
+
+    // Check if the specified SSA number is valid.
+    bool IsValidSsaNum(unsigned ssaNum) const
+    {
+        return (GetMinSsaNum() <= ssaNum) && (ssaNum < (GetMinSsaNum() + m_count));
+    }
+
+    // Get a pointer to the SSA definition associated with the specified SSA number.
+    T* GetSsaDef(unsigned ssaNum)
+    {
+        assert(ssaNum != SsaConfig::RESERVED_SSA_NUM);
+        return GetSsaDefByIndex(ssaNum - GetMinSsaNum());
+    }
+};
 
 enum RefCountState
 {
@@ -194,7 +301,7 @@ class LclVarDsc
 {
 public:
     // The constructor. Most things can just be zero'ed.
-    LclVarDsc(Compiler* comp);
+    LclVarDsc();
 
     // note this only packs because var_types is a typedef of unsigned char
     var_types lvType : 5; // TYP_INT/LONG/FLOAT/DOUBLE/REF
@@ -731,23 +838,14 @@ public:
 
     var_types lvaArgType();
 
-    PerSsaArray lvPerSsaData;
-
-#ifdef DEBUG
-    // Keep track of the # of SsaNames, for a bounds check.
-    unsigned lvNumSsaNames;
-#endif
+    SsaDefArray<LclSsaVarDsc> lvPerSsaData;
 
     // Returns the address of the per-Ssa data for the given ssaNum (which is required
     // not to be the SsaConfig::RESERVED_SSA_NUM, which indicates that the variable is
     // not an SSA variable).
     LclSsaVarDsc* GetPerSsaData(unsigned ssaNum)
     {
-        assert(ssaNum != SsaConfig::RESERVED_SSA_NUM);
-        assert(SsaConfig::RESERVED_SSA_NUM == 0);
-        unsigned zeroBased = ssaNum - SsaConfig::UNINIT_SSA_NUM;
-        assert(zeroBased < lvNumSsaNames);
-        return &lvPerSsaData.GetRef(zeroBased);
+        return lvPerSsaData.GetSsaDef(ssaNum);
     }
 
 #ifdef DEBUG
@@ -2962,20 +3060,15 @@ protected:
     void SetVolatileHint(LclVarDsc* varDsc);
 
     // Keeps the mapping from SSA #'s to VN's for the implicit memory variables.
-    PerSsaArray lvMemoryPerSsaData;
-    unsigned    lvMemoryNumSsaNames;
+    SsaDefArray<SsaMemDef> lvMemoryPerSsaData;
 
 public:
     // Returns the address of the per-Ssa data for memory at the given ssaNum (which is required
     // not to be the SsaConfig::RESERVED_SSA_NUM, which indicates that the variable is
     // not an SSA variable).
-    LclSsaVarDsc* GetMemoryPerSsaData(unsigned ssaNum)
+    SsaMemDef* GetMemoryPerSsaData(unsigned ssaNum)
     {
-        assert(ssaNum != SsaConfig::RESERVED_SSA_NUM);
-        assert(SsaConfig::RESERVED_SSA_NUM == 0);
-        ssaNum--;
-        assert(ssaNum < lvMemoryNumSsaNames);
-        return &lvMemoryPerSsaData.GetRef(ssaNum);
+        return lvMemoryPerSsaData.GetSsaDef(ssaNum);
     }
 
     /*
@@ -9272,7 +9365,7 @@ public:
 }; // end of class Compiler
 
 // LclVarDsc constructor. Uses Compiler, so must come after Compiler definition.
-inline LclVarDsc::LclVarDsc(Compiler* comp)
+inline LclVarDsc::LclVarDsc()
     : // Initialize the ArgRegs to REG_STK.
     // The morph will do the right thing to change
     // to the right register if passed in register.
@@ -9286,7 +9379,7 @@ inline LclVarDsc::LclVarDsc(Compiler* comp)
     lvRefBlks(BlockSetOps::UninitVal())
     ,
 #endif // ASSERTION_PROP
-    lvPerSsaData(comp->getAllocator())
+    lvPerSsaData()
 {
 }
 

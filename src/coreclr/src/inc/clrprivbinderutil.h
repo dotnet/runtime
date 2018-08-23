@@ -154,6 +154,15 @@ namespace CLRPrivBinderUtil
         { STATIC_CONTRACT_WRAPPER; return _pWrapped->FindAssemblyBySpec(pvAppDomain, pvAssemblySpec, pResult, ppAssembly); }
 
         //-----------------------------------------------------------------------------------------------------------------
+        // Forwards to wrapped binder.
+        STDMETHOD(GetLoaderAllocator)(
+            LPVOID * pLoaderAllocator)
+        {
+            WRAPPER_NO_CONTRACT;
+            return _pWrapped->GetLoaderAllocator(pLoaderAllocator);
+        }
+
+        //-----------------------------------------------------------------------------------------------------------------
         // ICLRPrivAssembly method is unsupported.
         STDMETHOD(IsShareable)(
             BOOL * pbIsShareable)

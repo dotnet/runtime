@@ -57,6 +57,10 @@ public:
         ICLRPrivAssembly ** ppAssembly)
     { STATIC_CONTRACT_WRAPPER; return E_FAIL; }
 
+    STDMETHOD(GetLoaderAllocator)(
+        /* [retval][out] */ LoaderAllocator** pLoaderAllocator)
+    { STATIC_CONTRACT_WRAPPER; return E_FAIL; }
+
     //=============================================================================================
     // Class methods
     //---------------------------------------------------------------------------------------------
@@ -145,4 +149,12 @@ public:
         HRESULT * pResult,
         ICLRPrivAssembly ** ppAssembly)
     { STATIC_CONTRACT_WRAPPER; return m_pBinder->FindAssemblyBySpec(pvAppDomain, pvAssemblySpec, pResult, ppAssembly); }
+
+    //---------------------------------------------------------------------------------------------
+    STDMETHOD(GetLoaderAllocator)(
+        LoaderAllocator** pLoaderAllocator)
+    {
+        WRAPPER_NO_CONTRACT;
+        return m_pBinder->GetLoaderAllocator(pLoaderAllocator);
+    }
 };

@@ -12,6 +12,8 @@ namespace JIT.HardwareIntrinsics.X86
         static Program()
         {
             TestList = new Dictionary<string, Action>() {
+                ["MaskLoad.Double"] = MaskLoadDouble,
+                ["MaskLoad.Single"] = MaskLoadSingle,
                 ["MaskStore.Double"] = MaskStoreDouble,
                 ["MaskStore.Single"] = MaskStoreSingle,
             };

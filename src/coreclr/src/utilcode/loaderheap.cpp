@@ -1804,14 +1804,17 @@ void UnlockedLoaderHeap::EnumMemoryRegions(CLRDataEnumMemoryFlags flags)
 #endif // #ifdef DACCESS_COMPILE
 
 
-void UnlockedLoaderHeap::EnumPageRegions (EnumPageRegionsCallback *pCallback)
+void UnlockedLoaderHeap::EnumPageRegions (EnumPageRegionsCallback *pCallback, PTR_VOID pvArgs)
 {
     WRAPPER_NO_CONTRACT;
 
     PTR_LoaderHeapBlock block = m_pFirstBlock;
     while (block)
     {
-        (*pCallback)(block->pVirtualAddress, block->dwVirtualSize);
+        if ((*pCallback)(pvArgs, block->pVirtualAddress, block->dwVirtualSize))
+        {
+            break;
+        }
         
         block = block->pNext;
     }

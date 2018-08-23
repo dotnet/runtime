@@ -17,7 +17,14 @@ namespace BINDER_SPACE
     class AssemblyIdentityUTF8;
 };
 
-class CLRPrivBinderAssemblyLoadContext : public IUnknownCommon<ICLRPrivBinder>
+class AppDomain;
+
+class Object;
+class Assembly;
+class LoaderAllocator;
+
+class CLRPrivBinderAssemblyLoadContext :
+    public IUnknownCommon<ICLRPrivBinder>
 {
 public:
 
@@ -45,14 +52,24 @@ public:
             /* [out] */ HRESULT *pResult,
             /* [out] */ ICLRPrivAssembly **ppAssembly);
 
+    STDMETHOD(GetLoaderAllocator)(
+        /* [retval][out] */ LPVOID *pLoaderAllocator);
+
 public:
     //=========================================================================
     // Class functions
     //-------------------------------------------------------------------------
 
-    static HRESULT SetupContext(DWORD      dwAppDomainId, CLRPrivBinderCoreCLR *pTPABinder, 
-                                UINT_PTR ptrAssemblyLoadContext, CLRPrivBinderAssemblyLoadContext **ppBindContext);
-                    
+    static HRESULT SetupContext(DWORD      dwAppDomainId,
+                                CLRPrivBinderCoreCLR *pTPABinder,
+                                LoaderAllocator* pLoaderAllocator,
+                                void* loaderAllocatorHandle,
+                                UINT_PTR ptrAssemblyLoadContext,
+                                CLRPrivBinderAssemblyLoadContext **ppBindContext);
+
+    void PrepareForLoadContextRelease(INT_PTR ptrManagedStrongAssemblyLoadContext);
+    void ReleaseLoadContext();
+
     CLRPrivBinderAssemblyLoadContext();
     
     inline BINDER_SPACE::ApplicationContext *GetAppContext()
@@ -80,6 +97,9 @@ private:
     CLRPrivBinderCoreCLR *m_pTPABinder;
     
     INT_PTR m_ptrManagedAssemblyLoadContext;
+
+    LoaderAllocator* m_pAssemblyLoaderAllocator;
+    void* m_loaderAllocatorHandle;
 };
 
 #endif // !defined(DACCESS_COMPILE) && !defined(CROSSGEN_COMPILE)

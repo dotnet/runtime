@@ -274,8 +274,8 @@ public:
 #endif
 
 public:
-    typedef void EnumPageRegionsCallback (PTR_VOID pvAllocationBase, SIZE_T cbReserved);
-    void EnumPageRegions (EnumPageRegionsCallback *pCallback);
+    typedef bool EnumPageRegionsCallback (PTR_VOID pvArgs, PTR_VOID pvAllocationBase, SIZE_T cbReserved);
+    void EnumPageRegions (EnumPageRegionsCallback *pCallback, PTR_VOID pvArgs);
 
 #ifndef DACCESS_COMPILE
 protected:
