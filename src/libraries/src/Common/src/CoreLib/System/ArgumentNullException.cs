@@ -18,7 +18,6 @@ namespace System
     // The ArgumentException is thrown when an argument 
     // is null when it shouldn't be.
     [Serializable]
-    [System.Runtime.CompilerServices.TypeForwardedFrom("mscorlib, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089")]
     public class ArgumentNullException : ArgumentException
     {
         // Creates a new ArgumentNullException with its message 
