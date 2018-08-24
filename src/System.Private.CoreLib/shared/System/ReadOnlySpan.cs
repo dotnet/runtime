@@ -40,7 +40,8 @@ namespace System
             [NonVersionable]
             get
             {
-                return _length == 0;
+                // Workaround for https://github.com/dotnet/coreclr/issues/19620
+                return 0 >= (uint)_length;
             }
         }
         /// <summary>
