@@ -152,20 +152,10 @@ The the actual output is placed in a directory like this
 
 * bin\Product\Windows_NT.x64.Release
 
-Where you can see the operating system and CPU architecture, and the build type are part of the name.   While
-the 'raw' output of the build is sometimes useful, normally you are only interested in the NuGet packages 
-that were built, which are placed in the directory 
-
-* bin\Product\Windows_NT.x64.Release\.nuget\pkg
-
-These packages are the 'output' of your build.   
-
 There are two basic techniques for using your new runtime.
 
  1. **Use dotnet.exe and NuGet to compose an application**.   See [Using Your Build](Documentation/workflow/UsingYourBuild.md) for 
- instructions on creating a program that uses 
- your new runtime by using the NuGet packages you just created and the 'dotnet' command line interface.  This
- is the expected way non-runtime developers are likely to consume your new runtime.    
+ instructions on creating a program that uses your new runtime by using the 'dotnet' command line interface.
 
  2. **Use corerun.exe to run an application using unpackaged Dlls**. This repository also defines a simple host called
  corerun.exe that does NOT take any dependency on NuGet.   Basically it has to be told where to get all the

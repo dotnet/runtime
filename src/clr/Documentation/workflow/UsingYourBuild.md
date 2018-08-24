@@ -28,7 +28,7 @@ or always fully qualify the path to dotnet in the root of this folder for all th
 
 After setting up dotnet you can verify you are using the newer version by:
 
-`dotnet --info` -- the version should be greater than 2.1.0-*
+`dotnet --info` -- the version should be greater than 3.0.0-*
 
 For another small walkthrough see [Dogfooding .NET Core SDK](https://github.com/dotnet/corefx/blob/master/Documentation/project-docs/dogfooding.md).
 
@@ -55,16 +55,6 @@ shared framework.  In order to do that you will need to add a `RuntimeIdentifier
 ```
 For Windows you will want `win-x64`, for macOS `osx-x64` and `linux-x64` for Linux.
 
-You might also need to explicitly specify a `PlatformTarget`: it shouldn't be required though, unless for some reason the default `PlatformTarget` on your machine, for that directory, is not `x64`.
-
-```xml
-<PropertyGroup>
-  ...
-  <RuntimeIdentifier>win-x64</RuntimeIdentifier>
-  <PlatformTarget>x64</PlatformTarget>
-</PropertyGroup>
-```
-
 ### Publish
 
 Now is the time to publish. The publish step will trigger restore and build. You can iterate on build by calling `dotnet build` as
@@ -79,10 +69,10 @@ dotnet publish
 1. run `dotnet new nugetconfig`
 2. go to the `NuGet.Config` file and add `<add key="dotnet-core" value="https://dotnet.myget.org/F/dotnet-core/api/v3/index.json" />`
 
-After you publish you will find you all the binaries needed to run your application under `bin\Debug\netcoreapp2.1\win-x64\publish\`.
+After you publish you will find you all the binaries needed to run your application under `bin\Debug\netcoreapp3.0\win-x64\publish\`.
 
 ```
-.\bin\Debug\netcoreapp2.1\win-x64\publish\HelloWorld.exe
+.\bin\Debug\netcoreapp3.0\win-x64\publish\HelloWorld.exe
 ```
 
 **But we are not done yet, you need to replace the published runtime files with the files from your local build!**
@@ -101,7 +91,7 @@ you wish to update the DLLs. For example typically when you update CoreCLR you e
 * System.Private.CoreLib.dll - If you modified C# it will end up here.
 
 Thus after making a change and building, you can simply copy the updated binary from the `bin\Product\<OS>.<arch>.<flavor>`
-directory to your publication directory (e.g. `helloWorld\bin\Debug\netcoreapp2.1\win-x64\publish`) to quickly
+directory to your publication directory (e.g. `helloWorld\bin\Debug\netcoreapp3.0\win-x64\publish`) to quickly
 deploy your new bits. In a lot of cases it is easiest to just copy everything from here to your publication directory.
 
 You can build just the .NET Library part of the build by doing (debug, for release add 'release' qualifier)
@@ -135,7 +125,7 @@ at the time of building:
 
 ```
 Hello World from Core 4.6.26210.0 @BuiltBy: adsitnik-MININT-O513E3V @SrcCode: https://github.com/dotnet/coreclr/tree/3d6da797d1f7dc47d5934189787a4e8006ab3a04
-The location is C:\coreclr\helloWorld\bin\Debug\netcoreapp2.1\win-x64\publish\System.Private.CoreLib.dll
+The location is C:\coreclr\helloWorld\bin\Debug\netcoreapp3.0\win-x64\publish\System.Private.CoreLib.dll
 ```
 
 ## Using DotNetCli to run your .NET Core Application
