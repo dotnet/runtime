@@ -3,7 +3,7 @@
 ///////////////////////////////////////////////////////////////////////////////////
 //							EXPORTED METHODS
 ///////////////////////////////////////////////////////////////////////////////////
-extern "C" DLL_EXPORT BOOL NATIVEAPI MarshalStructAsParam_AsSeqByVal(InnerSequential inner)
+extern "C" DLL_EXPORT BOOL STDMETHODCALLTYPE MarshalStructAsParam_AsSeqByVal(InnerSequential inner)
 {
 	if(!IsCorrectInnerSequential(&inner))
 	{
@@ -15,7 +15,7 @@ extern "C" DLL_EXPORT BOOL NATIVEAPI MarshalStructAsParam_AsSeqByVal(InnerSequen
 	return TRUE;
 }
 
-extern "C" DLL_EXPORT BOOL NATIVEAPI MarshalStructAsParam_AsSeqByRef(InnerSequential* inner)
+extern "C" DLL_EXPORT BOOL STDMETHODCALLTYPE MarshalStructAsParam_AsSeqByRef(InnerSequential* inner)
 {
 	if(!IsCorrectInnerSequential(inner))
 	{
@@ -26,7 +26,7 @@ extern "C" DLL_EXPORT BOOL NATIVEAPI MarshalStructAsParam_AsSeqByRef(InnerSequen
 	ChangeInnerSequential(inner);
 	return TRUE;
 }
-extern "C" DLL_EXPORT BOOL NATIVEAPI MarshalStructAsParam_AsSeqByRefIn(InnerSequential* inner)
+extern "C" DLL_EXPORT BOOL STDMETHODCALLTYPE MarshalStructAsParam_AsSeqByRefIn(InnerSequential* inner)
 {
 	if(!IsCorrectInnerSequential(inner))
 	{
@@ -38,7 +38,7 @@ extern "C" DLL_EXPORT BOOL NATIVEAPI MarshalStructAsParam_AsSeqByRefIn(InnerSequ
 	return TRUE;
 }
 
-extern "C" DLL_EXPORT BOOL NATIVEAPI MarshalStructAsParam_AsSeqByValOut(InnerSequential inner)
+extern "C" DLL_EXPORT BOOL STDMETHODCALLTYPE MarshalStructAsParam_AsSeqByValOut(InnerSequential inner)
 {
 	if(!IsCorrectInnerSequential(&inner))
 	{
@@ -50,14 +50,14 @@ extern "C" DLL_EXPORT BOOL NATIVEAPI MarshalStructAsParam_AsSeqByValOut(InnerSeq
 	return TRUE;
 }
 
-extern "C" DLL_EXPORT BOOL NATIVEAPI MarshalStructAsParam_AsSeqByRefOut(InnerSequential* inner)
+extern "C" DLL_EXPORT BOOL STDMETHODCALLTYPE MarshalStructAsParam_AsSeqByRefOut(InnerSequential* inner)
 {
 	ChangeInnerSequential(inner);
 	return TRUE;
 }
 
 ///////////////////////////////////////////////////////////////////////////////////////////
-extern "C" DLL_EXPORT BOOL NATIVEAPI MarshalStructAsParam_AsSeqByVal2(InnerArraySequential outer)
+extern "C" DLL_EXPORT BOOL STDMETHODCALLTYPE MarshalStructAsParam_AsSeqByVal2(InnerArraySequential outer)
 {
 	if(!IsCorrectInnerArraySequential(&outer))
 	{
@@ -69,7 +69,7 @@ extern "C" DLL_EXPORT BOOL NATIVEAPI MarshalStructAsParam_AsSeqByVal2(InnerArray
 	return TRUE;
 }
 
-extern "C" DLL_EXPORT BOOL NATIVEAPI MarshalStructAsParam_AsSeqByRef2(InnerArraySequential* outer)
+extern "C" DLL_EXPORT BOOL STDMETHODCALLTYPE MarshalStructAsParam_AsSeqByRef2(InnerArraySequential* outer)
 {
 	if(!IsCorrectInnerArraySequential(outer))
 	{
@@ -80,7 +80,7 @@ extern "C" DLL_EXPORT BOOL NATIVEAPI MarshalStructAsParam_AsSeqByRef2(InnerArray
 	ChangeInnerArraySequential(outer);
 	return TRUE;
 }
-extern "C" DLL_EXPORT BOOL NATIVEAPI MarshalStructAsParam_AsSeqByRefIn2(InnerArraySequential* outer)
+extern "C" DLL_EXPORT BOOL STDMETHODCALLTYPE MarshalStructAsParam_AsSeqByRefIn2(InnerArraySequential* outer)
 {
 	if(!IsCorrectInnerArraySequential(outer))
 	{
@@ -91,7 +91,7 @@ extern "C" DLL_EXPORT BOOL NATIVEAPI MarshalStructAsParam_AsSeqByRefIn2(InnerArr
 	ChangeInnerArraySequential(outer);
 	return TRUE;
 }
-extern "C" DLL_EXPORT BOOL NATIVEAPI MarshalStructAsParam_AsSeqByValOut2(InnerArraySequential outer)
+extern "C" DLL_EXPORT BOOL STDMETHODCALLTYPE MarshalStructAsParam_AsSeqByValOut2(InnerArraySequential outer)
 {
 	if(!IsCorrectInnerArraySequential(&outer))
 	{
@@ -106,7 +106,7 @@ extern "C" DLL_EXPORT BOOL NATIVEAPI MarshalStructAsParam_AsSeqByValOut2(InnerAr
 	}
 	return TRUE;
 }
-extern "C" DLL_EXPORT BOOL NATIVEAPI MarshalStructAsParam_AsSeqByRefOut2(InnerArraySequential* outer)
+extern "C" DLL_EXPORT BOOL STDMETHODCALLTYPE MarshalStructAsParam_AsSeqByRefOut2(InnerArraySequential* outer)
 {
 	for(int i = 0;i<NumArrElements;i++)
 	{
@@ -121,7 +121,7 @@ extern "C" DLL_EXPORT BOOL NATIVEAPI MarshalStructAsParam_AsSeqByRefOut2(InnerAr
 }
 
 ////////////////////////////////////////////////////////////////////////////////////////////////
-extern "C" DLL_EXPORT BOOL NATIVEAPI MarshalStructAsParam_AsSeqByVal3(CharSetAnsiSequential str1)
+extern "C" DLL_EXPORT BOOL STDMETHODCALLTYPE MarshalStructAsParam_AsSeqByVal3(CharSetAnsiSequential str1)
 {
 	if(!IsCorrectCharSetAnsiSequential(&str1))
 	{
@@ -132,7 +132,7 @@ extern "C" DLL_EXPORT BOOL NATIVEAPI MarshalStructAsParam_AsSeqByVal3(CharSetAns
 	ChangeCharSetAnsiSequential(&str1);
 	return TRUE;
 }
-extern "C" DLL_EXPORT BOOL NATIVEAPI MarshalStructAsParam_AsSeqByRef3(CharSetAnsiSequential* str1)
+extern "C" DLL_EXPORT BOOL STDMETHODCALLTYPE MarshalStructAsParam_AsSeqByRef3(CharSetAnsiSequential* str1)
 {
 	if(!IsCorrectCharSetAnsiSequential(str1))
 	{
@@ -143,7 +143,7 @@ extern "C" DLL_EXPORT BOOL NATIVEAPI MarshalStructAsParam_AsSeqByRef3(CharSetAns
 	ChangeCharSetAnsiSequential(str1);
 	return TRUE;
 }
-extern "C" DLL_EXPORT BOOL NATIVEAPI MarshalStructAsParam_AsSeqByRefIn3(CharSetAnsiSequential* str1)
+extern "C" DLL_EXPORT BOOL STDMETHODCALLTYPE MarshalStructAsParam_AsSeqByRefIn3(CharSetAnsiSequential* str1)
 {
 	if(!IsCorrectCharSetAnsiSequential(str1))
 	{
@@ -154,7 +154,7 @@ extern "C" DLL_EXPORT BOOL NATIVEAPI MarshalStructAsParam_AsSeqByRefIn3(CharSetA
 	ChangeCharSetAnsiSequential(str1);
 	return TRUE;
 }
-extern "C" DLL_EXPORT BOOL NATIVEAPI MarshalStructAsParam_AsSeqByValOut3(CharSetAnsiSequential str1)
+extern "C" DLL_EXPORT BOOL STDMETHODCALLTYPE MarshalStructAsParam_AsSeqByValOut3(CharSetAnsiSequential str1)
 {
 	if(!IsCorrectCharSetAnsiSequential(&str1))
 	{
@@ -165,16 +165,16 @@ extern "C" DLL_EXPORT BOOL NATIVEAPI MarshalStructAsParam_AsSeqByValOut3(CharSet
 	str1.f2 = 'n';
 	return TRUE;
 }
-extern "C" DLL_EXPORT BOOL NATIVEAPI MarshalStructAsParam_AsSeqByRefOut3(CharSetAnsiSequential* str1)
+extern "C" DLL_EXPORT BOOL STDMETHODCALLTYPE MarshalStructAsParam_AsSeqByRefOut3(CharSetAnsiSequential* str1)
 {
-	CoTaskMemFree((void*)(str1->f1));
+	CoreClrFree((void*)(str1->f1));
 	str1->f1 = CoStrDup("change string");
 	str1->f2 = 'n';
 	return TRUE;
 }
 
 ////////////////////////////////////////////////////////////////////////////////////////////////
-extern "C" DLL_EXPORT BOOL NATIVEAPI MarshalStructAsParam_AsSeqByVal4(CharSetUnicodeSequential str1)
+extern "C" DLL_EXPORT BOOL STDMETHODCALLTYPE MarshalStructAsParam_AsSeqByVal4(CharSetUnicodeSequential str1)
 {
 	if(!IsCorrectCharSetUnicodeSequential(&str1))
 	{
@@ -185,7 +185,7 @@ extern "C" DLL_EXPORT BOOL NATIVEAPI MarshalStructAsParam_AsSeqByVal4(CharSetUni
 	ChangeCharSetUnicodeSequential(&str1);
 	return TRUE;
 }
-extern "C" DLL_EXPORT BOOL NATIVEAPI MarshalStructAsParam_AsSeqByRef4(CharSetUnicodeSequential* str1)
+extern "C" DLL_EXPORT BOOL STDMETHODCALLTYPE MarshalStructAsParam_AsSeqByRef4(CharSetUnicodeSequential* str1)
 {
 	if(!IsCorrectCharSetUnicodeSequential(str1))
 	{
@@ -196,7 +196,7 @@ extern "C" DLL_EXPORT BOOL NATIVEAPI MarshalStructAsParam_AsSeqByRef4(CharSetUni
 	ChangeCharSetUnicodeSequential(str1);
 	return TRUE;
 }
-extern "C" DLL_EXPORT BOOL NATIVEAPI MarshalStructAsParam_AsSeqByRefIn4(CharSetUnicodeSequential* str1)
+extern "C" DLL_EXPORT BOOL STDMETHODCALLTYPE MarshalStructAsParam_AsSeqByRefIn4(CharSetUnicodeSequential* str1)
 {
 	if(!IsCorrectCharSetUnicodeSequential(str1))
 	{
@@ -207,7 +207,7 @@ extern "C" DLL_EXPORT BOOL NATIVEAPI MarshalStructAsParam_AsSeqByRefIn4(CharSetU
 	ChangeCharSetUnicodeSequential(str1);
 	return TRUE;
 }
-extern "C" DLL_EXPORT BOOL NATIVEAPI MarshalStructAsParam_AsSeqByValOut4(CharSetUnicodeSequential str1)
+extern "C" DLL_EXPORT BOOL STDMETHODCALLTYPE MarshalStructAsParam_AsSeqByValOut4(CharSetUnicodeSequential str1)
 {
 	if(!IsCorrectCharSetUnicodeSequential(&str1))
 	{
@@ -218,7 +218,7 @@ extern "C" DLL_EXPORT BOOL NATIVEAPI MarshalStructAsParam_AsSeqByValOut4(CharSet
 	str1.f2 = L'n';
 	return TRUE;
 }
-extern "C" DLL_EXPORT BOOL NATIVEAPI MarshalStructAsParam_AsSeqByRefOut4(CharSetUnicodeSequential* str1)
+extern "C" DLL_EXPORT BOOL STDMETHODCALLTYPE MarshalStructAsParam_AsSeqByRefOut4(CharSetUnicodeSequential* str1)
 {
 	if(str1->f1 != 0 || str1->f2 != 0)
 		return false;
@@ -227,7 +227,7 @@ extern "C" DLL_EXPORT BOOL NATIVEAPI MarshalStructAsParam_AsSeqByRefOut4(CharSet
 }
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////////
-extern "C" DLL_EXPORT BOOL NATIVEAPI MarshalStructAsParam_AsSeqByVal6(NumberSequential str1)
+extern "C" DLL_EXPORT BOOL STDMETHODCALLTYPE MarshalStructAsParam_AsSeqByVal6(NumberSequential str1)
 {
 	if(!IsCorrectNumberSequential(&str1))
 	{
@@ -238,7 +238,7 @@ extern "C" DLL_EXPORT BOOL NATIVEAPI MarshalStructAsParam_AsSeqByVal6(NumberSequ
 	ChangeNumberSequential(&str1);
 	return TRUE;
 }
-extern "C" DLL_EXPORT BOOL NATIVEAPI MarshalStructAsParam_AsSeqByRef6(NumberSequential* str1)
+extern "C" DLL_EXPORT BOOL STDMETHODCALLTYPE MarshalStructAsParam_AsSeqByRef6(NumberSequential* str1)
 {
 	if(!IsCorrectNumberSequential(str1))
 	{
@@ -249,7 +249,7 @@ extern "C" DLL_EXPORT BOOL NATIVEAPI MarshalStructAsParam_AsSeqByRef6(NumberSequ
 	ChangeNumberSequential(str1);
 	return TRUE;
 }
-extern "C" DLL_EXPORT BOOL NATIVEAPI MarshalStructAsParam_AsSeqByRefIn6(NumberSequential* str1)
+extern "C" DLL_EXPORT BOOL STDMETHODCALLTYPE MarshalStructAsParam_AsSeqByRefIn6(NumberSequential* str1)
 {
 	if(!IsCorrectNumberSequential(str1))
 	{
@@ -261,7 +261,7 @@ extern "C" DLL_EXPORT BOOL NATIVEAPI MarshalStructAsParam_AsSeqByRefIn6(NumberSe
 	return TRUE;
 }
 
-extern "C" DLL_EXPORT BOOL NATIVEAPI MarshalStructAsParam_AsSeqByValOut6(NumberSequential str1)
+extern "C" DLL_EXPORT BOOL STDMETHODCALLTYPE MarshalStructAsParam_AsSeqByValOut6(NumberSequential str1)
 {
 	if(!IsCorrectNumberSequential(&str1))
 	{
@@ -271,14 +271,14 @@ extern "C" DLL_EXPORT BOOL NATIVEAPI MarshalStructAsParam_AsSeqByValOut6(NumberS
 	}
 	return TRUE;
 }
-extern "C" DLL_EXPORT BOOL NATIVEAPI MarshalStructAsParam_AsSeqByRefOut6(NumberSequential* str1)
+extern "C" DLL_EXPORT BOOL STDMETHODCALLTYPE MarshalStructAsParam_AsSeqByRefOut6(NumberSequential* str1)
 {
 	ChangeNumberSequential(str1);
 	return TRUE;
 }
 
 ////////////////////////////////////////////////////////////////////////////////////
-extern "C" DLL_EXPORT BOOL NATIVEAPI MarshalStructAsParam_AsSeqByVal7(S3 str1)
+extern "C" DLL_EXPORT BOOL STDMETHODCALLTYPE MarshalStructAsParam_AsSeqByVal7(S3 str1)
 {
 	if(!IsCorrectS3(&str1))
 	{
@@ -290,7 +290,7 @@ extern "C" DLL_EXPORT BOOL NATIVEAPI MarshalStructAsParam_AsSeqByVal7(S3 str1)
 	return TRUE;
 }
 
-extern "C" DLL_EXPORT BOOL NATIVEAPI MarshalStructAsParam_AsSeqByRef7(S3* str1)
+extern "C" DLL_EXPORT BOOL STDMETHODCALLTYPE MarshalStructAsParam_AsSeqByRef7(S3* str1)
 {
 	if(!IsCorrectS3(str1))
 	{
@@ -300,7 +300,7 @@ extern "C" DLL_EXPORT BOOL NATIVEAPI MarshalStructAsParam_AsSeqByRef7(S3* str1)
 	ChangeS3(str1);
 	return TRUE;
 }
-extern "C" DLL_EXPORT BOOL NATIVEAPI MarshalStructAsParam_AsSeqByRefIn7(S3* str1)
+extern "C" DLL_EXPORT BOOL STDMETHODCALLTYPE MarshalStructAsParam_AsSeqByRefIn7(S3* str1)
 {
 	if(!IsCorrectS3(str1))
 	{
@@ -312,7 +312,7 @@ extern "C" DLL_EXPORT BOOL NATIVEAPI MarshalStructAsParam_AsSeqByRefIn7(S3* str1
 	return TRUE;
 }
 
-extern "C" DLL_EXPORT BOOL NATIVEAPI MarshalStructAsParam_AsSeqByValOut7(S3 str1)
+extern "C" DLL_EXPORT BOOL STDMETHODCALLTYPE MarshalStructAsParam_AsSeqByValOut7(S3 str1)
 {
 	if(!IsCorrectS3(&str1))
 	{
@@ -324,13 +324,13 @@ extern "C" DLL_EXPORT BOOL NATIVEAPI MarshalStructAsParam_AsSeqByValOut7(S3 str1
 	return TRUE;
 
 }
-extern "C" DLL_EXPORT BOOL NATIVEAPI MarshalStructAsParam_AsSeqByRefOut7(S3* str1)
+extern "C" DLL_EXPORT BOOL STDMETHODCALLTYPE MarshalStructAsParam_AsSeqByRefOut7(S3* str1)
 {
 	ChangeS3(str1);
 	return TRUE;
 }
 ////////////////////////////////////////////////////////////////////////////////////////
-extern "C" DLL_EXPORT BOOL NATIVEAPI MarshalStructAsParam_AsSeqByVal8(S5 str1)
+extern "C" DLL_EXPORT BOOL STDMETHODCALLTYPE MarshalStructAsParam_AsSeqByVal8(S5 str1)
 {
 	if(!IsCorrectS5(&str1))
 	{
@@ -341,7 +341,7 @@ extern "C" DLL_EXPORT BOOL NATIVEAPI MarshalStructAsParam_AsSeqByVal8(S5 str1)
 	ChangeS5(&str1);
 	return TRUE;
 }
-extern "C" DLL_EXPORT BOOL NATIVEAPI MarshalStructAsParam_AsSeqByRef8(S5* str1)
+extern "C" DLL_EXPORT BOOL STDMETHODCALLTYPE MarshalStructAsParam_AsSeqByRef8(S5* str1)
 {
 	if(!IsCorrectS5(str1))
 	{
@@ -353,7 +353,7 @@ extern "C" DLL_EXPORT BOOL NATIVEAPI MarshalStructAsParam_AsSeqByRef8(S5* str1)
 	return TRUE;
 }
 
-extern "C" DLL_EXPORT BOOL NATIVEAPI MarshalStructAsParam_AsSeqByRefIn8(S5* str1)
+extern "C" DLL_EXPORT BOOL STDMETHODCALLTYPE MarshalStructAsParam_AsSeqByRefIn8(S5* str1)
 {
 	if(!IsCorrectS5(str1))
 	{
@@ -364,7 +364,7 @@ extern "C" DLL_EXPORT BOOL NATIVEAPI MarshalStructAsParam_AsSeqByRefIn8(S5* str1
 	ChangeS5(str1);
 	return TRUE;
 }
-extern "C" DLL_EXPORT BOOL NATIVEAPI MarshalStructAsParam_AsSeqByRefOut8(S5* str1)
+extern "C" DLL_EXPORT BOOL STDMETHODCALLTYPE MarshalStructAsParam_AsSeqByRefOut8(S5* str1)
 {
 	ChangeS5(str1);
 	return TRUE;
@@ -372,7 +372,7 @@ extern "C" DLL_EXPORT BOOL NATIVEAPI MarshalStructAsParam_AsSeqByRefOut8(S5* str
 
 
 /////////////////////////////////////////////////////////////////////////////////////////////////////////////
-extern "C" DLL_EXPORT BOOL NATIVEAPI MarshalStructAsParam_AsSeqByVal9(StringStructSequentialAnsi str1)
+extern "C" DLL_EXPORT BOOL STDMETHODCALLTYPE MarshalStructAsParam_AsSeqByVal9(StringStructSequentialAnsi str1)
 {
 	if(!IsCorrectStringStructSequentialAnsi(&str1))
 	{
@@ -383,7 +383,7 @@ extern "C" DLL_EXPORT BOOL NATIVEAPI MarshalStructAsParam_AsSeqByVal9(StringStru
 	ChangeStringStructSequentialAnsi(&str1);
 	return TRUE;
 }
-extern "C" DLL_EXPORT BOOL NATIVEAPI MarshalStructAsParam_AsSeqByRef9(StringStructSequentialAnsi* str1)
+extern "C" DLL_EXPORT BOOL STDMETHODCALLTYPE MarshalStructAsParam_AsSeqByRef9(StringStructSequentialAnsi* str1)
 {
 	if(!IsCorrectStringStructSequentialAnsi(str1))
 	{
@@ -395,7 +395,7 @@ extern "C" DLL_EXPORT BOOL NATIVEAPI MarshalStructAsParam_AsSeqByRef9(StringStru
 	return TRUE;
 }
 
-extern "C" DLL_EXPORT BOOL NATIVEAPI MarshalStructAsParam_AsSeqByRefIn9(StringStructSequentialAnsi* str1)
+extern "C" DLL_EXPORT BOOL STDMETHODCALLTYPE MarshalStructAsParam_AsSeqByRefIn9(StringStructSequentialAnsi* str1)
 {
 	if(!IsCorrectStringStructSequentialAnsi(str1))
 	{
@@ -406,7 +406,7 @@ extern "C" DLL_EXPORT BOOL NATIVEAPI MarshalStructAsParam_AsSeqByRefIn9(StringSt
 	ChangeStringStructSequentialAnsi(str1);
 	return TRUE;
 }
-extern "C" DLL_EXPORT BOOL NATIVEAPI MarshalStructAsParam_AsSeqByValOut9(StringStructSequentialAnsi str1)
+extern "C" DLL_EXPORT BOOL STDMETHODCALLTYPE MarshalStructAsParam_AsSeqByValOut9(StringStructSequentialAnsi str1)
 {
 	if(!IsCorrectStringStructSequentialAnsi(&str1))
 	{
@@ -416,7 +416,7 @@ extern "C" DLL_EXPORT BOOL NATIVEAPI MarshalStructAsParam_AsSeqByValOut9(StringS
 	}
 	return TRUE;
 }
-extern "C" DLL_EXPORT BOOL NATIVEAPI MarshalStructAsParam_AsSeqByRefOut9(StringStructSequentialAnsi* str1)
+extern "C" DLL_EXPORT BOOL STDMETHODCALLTYPE MarshalStructAsParam_AsSeqByRefOut9(StringStructSequentialAnsi* str1)
 {
 	ChangeStringStructSequentialAnsi(str1);
 
@@ -425,7 +425,7 @@ extern "C" DLL_EXPORT BOOL NATIVEAPI MarshalStructAsParam_AsSeqByRefOut9(StringS
 
 
 /////////////////////////////////////////////////////////////////////////////////////////////////////////////
-extern "C" DLL_EXPORT BOOL NATIVEAPI MarshalStructAsParam_AsSeqByVal10(StringStructSequentialUnicode str1)
+extern "C" DLL_EXPORT BOOL STDMETHODCALLTYPE MarshalStructAsParam_AsSeqByVal10(StringStructSequentialUnicode str1)
 {
 	if(!IsCorrectStringStructSequentialUnicode(&str1))
 	{
@@ -436,7 +436,7 @@ extern "C" DLL_EXPORT BOOL NATIVEAPI MarshalStructAsParam_AsSeqByVal10(StringStr
 	ChangeStringStructSequentialUnicode(&str1);
 	return TRUE;
 }
-extern "C" DLL_EXPORT BOOL NATIVEAPI MarshalStructAsParam_AsSeqByRef10(StringStructSequentialUnicode* str1)
+extern "C" DLL_EXPORT BOOL STDMETHODCALLTYPE MarshalStructAsParam_AsSeqByRef10(StringStructSequentialUnicode* str1)
 {
 	if(!IsCorrectStringStructSequentialUnicode(str1))
 	{
@@ -448,7 +448,7 @@ extern "C" DLL_EXPORT BOOL NATIVEAPI MarshalStructAsParam_AsSeqByRef10(StringStr
 	return TRUE;
 }
 
-extern "C" DLL_EXPORT BOOL NATIVEAPI MarshalStructAsParam_AsSeqByRefIn10(StringStructSequentialUnicode* str1)
+extern "C" DLL_EXPORT BOOL STDMETHODCALLTYPE MarshalStructAsParam_AsSeqByRefIn10(StringStructSequentialUnicode* str1)
 {
 	if(!IsCorrectStringStructSequentialUnicode(str1))
 	{
@@ -459,7 +459,7 @@ extern "C" DLL_EXPORT BOOL NATIVEAPI MarshalStructAsParam_AsSeqByRefIn10(StringS
 	ChangeStringStructSequentialUnicode(str1);
 	return TRUE;
 }
-extern "C" DLL_EXPORT BOOL NATIVEAPI MarshalStructAsParam_AsSeqByValOut10(StringStructSequentialUnicode str1)
+extern "C" DLL_EXPORT BOOL STDMETHODCALLTYPE MarshalStructAsParam_AsSeqByValOut10(StringStructSequentialUnicode str1)
 {
 	if(!IsCorrectStringStructSequentialUnicode(&str1))
 	{
@@ -469,7 +469,7 @@ extern "C" DLL_EXPORT BOOL NATIVEAPI MarshalStructAsParam_AsSeqByValOut10(String
 	}
 	return TRUE;
 }
-extern "C" DLL_EXPORT BOOL NATIVEAPI MarshalStructAsParam_AsSeqByRefOut10(StringStructSequentialUnicode* str1)
+extern "C" DLL_EXPORT BOOL STDMETHODCALLTYPE MarshalStructAsParam_AsSeqByRefOut10(StringStructSequentialUnicode* str1)
 {
 	ChangeStringStructSequentialUnicode(str1);
 
@@ -477,7 +477,7 @@ extern "C" DLL_EXPORT BOOL NATIVEAPI MarshalStructAsParam_AsSeqByRefOut10(String
 }
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////
-extern "C" DLL_EXPORT BOOL NATIVEAPI MarshalStructAsParam_AsSeqByVal11(S8 str1)
+extern "C" DLL_EXPORT BOOL STDMETHODCALLTYPE MarshalStructAsParam_AsSeqByVal11(S8 str1)
 {
 	if(!IsCorrectS8(&str1))
 	{
@@ -488,7 +488,7 @@ extern "C" DLL_EXPORT BOOL NATIVEAPI MarshalStructAsParam_AsSeqByVal11(S8 str1)
 	ChangeS8(&str1);
 	return TRUE;
 }
-extern "C" DLL_EXPORT BOOL NATIVEAPI MarshalStructAsParam_AsSeqByRef11(S8* str1)
+extern "C" DLL_EXPORT BOOL STDMETHODCALLTYPE MarshalStructAsParam_AsSeqByRef11(S8* str1)
 {
 	if(!IsCorrectS8(str1))
 	{
@@ -500,7 +500,7 @@ extern "C" DLL_EXPORT BOOL NATIVEAPI MarshalStructAsParam_AsSeqByRef11(S8* str1)
 	return TRUE;
 }
 
-extern "C" DLL_EXPORT BOOL NATIVEAPI MarshalStructAsParam_AsSeqByRefIn11(S8* str1)
+extern "C" DLL_EXPORT BOOL STDMETHODCALLTYPE MarshalStructAsParam_AsSeqByRefIn11(S8* str1)
 {
 	if(!IsCorrectS8(str1))
 	{
@@ -511,7 +511,7 @@ extern "C" DLL_EXPORT BOOL NATIVEAPI MarshalStructAsParam_AsSeqByRefIn11(S8* str
 	ChangeS8(str1);
 	return TRUE;
 }
-extern "C" DLL_EXPORT BOOL NATIVEAPI MarshalStructAsParam_AsSeqByValOut11(S8 str1)
+extern "C" DLL_EXPORT BOOL STDMETHODCALLTYPE MarshalStructAsParam_AsSeqByValOut11(S8 str1)
 {
 	if(!IsCorrectS8(&str1))
 	{
@@ -523,7 +523,7 @@ extern "C" DLL_EXPORT BOOL NATIVEAPI MarshalStructAsParam_AsSeqByValOut11(S8 str
 	str1.ui32 = 256;
 	return TRUE;
 }
-extern "C" DLL_EXPORT BOOL NATIVEAPI MarshalStructAsParam_AsSeqByRefOut11(S8* str1)
+extern "C" DLL_EXPORT BOOL STDMETHODCALLTYPE MarshalStructAsParam_AsSeqByRefOut11(S8* str1)
 {
 	ChangeS8(str1);
 
@@ -535,7 +535,7 @@ extern "C" void NtestMethod(S9 str1)
 {
 	printf("\tAction of the delegate");
 }
-extern "C" DLL_EXPORT BOOL NATIVEAPI MarshalStructAsParam_AsSeqByVal12(S9 str1)
+extern "C" DLL_EXPORT BOOL STDMETHODCALLTYPE MarshalStructAsParam_AsSeqByVal12(S9 str1)
 {
 	if(str1.i32 != 128 ||
 		str1.myDelegate1 == NULL)
@@ -546,7 +546,7 @@ extern "C" DLL_EXPORT BOOL NATIVEAPI MarshalStructAsParam_AsSeqByVal12(S9 str1)
 	str1.myDelegate1 = NULL;
 	return TRUE;
 }
-extern "C" DLL_EXPORT BOOL NATIVEAPI MarshalStructAsParam_AsSeqByRef12(S9* str1)
+extern "C" DLL_EXPORT BOOL STDMETHODCALLTYPE MarshalStructAsParam_AsSeqByRef12(S9* str1)
 {
 	if(str1->i32 != 128 ||
 		str1->myDelegate1 == NULL)
@@ -560,7 +560,7 @@ extern "C" DLL_EXPORT BOOL NATIVEAPI MarshalStructAsParam_AsSeqByRef12(S9* str1)
 	}
 	return TRUE;
 }
-extern "C" DLL_EXPORT BOOL NATIVEAPI MarshalStructAsParam_AsSeqByRefIn12(S9* str1)
+extern "C" DLL_EXPORT BOOL STDMETHODCALLTYPE MarshalStructAsParam_AsSeqByRefIn12(S9* str1)
 {
 	if(str1->i32 != 128 ||
 		str1->myDelegate1 == NULL)
@@ -574,7 +574,7 @@ extern "C" DLL_EXPORT BOOL NATIVEAPI MarshalStructAsParam_AsSeqByRefIn12(S9* str
 	}
 	return TRUE;
 }
-extern "C" DLL_EXPORT BOOL NATIVEAPI MarshalStructAsParam_AsSeqByValOut12(S9 str1)
+extern "C" DLL_EXPORT BOOL STDMETHODCALLTYPE MarshalStructAsParam_AsSeqByValOut12(S9 str1)
 {
 	if(str1.i32 != 128 ||
 		str1.myDelegate1 == NULL)
@@ -585,7 +585,7 @@ extern "C" DLL_EXPORT BOOL NATIVEAPI MarshalStructAsParam_AsSeqByValOut12(S9 str
 	str1.myDelegate1 = NULL;
 	return TRUE;
 }
-extern "C" DLL_EXPORT BOOL NATIVEAPI MarshalStructAsParam_AsSeqByRefOut12(S9* str1)
+extern "C" DLL_EXPORT BOOL STDMETHODCALLTYPE MarshalStructAsParam_AsSeqByRefOut12(S9* str1)
 {
 	str1->i32 = 256;
 	str1->myDelegate1 = NtestMethod;
@@ -594,7 +594,7 @@ extern "C" DLL_EXPORT BOOL NATIVEAPI MarshalStructAsParam_AsSeqByRefOut12(S9* st
 
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////
-extern "C" DLL_EXPORT BOOL NATIVEAPI MarshalStructAsParam_AsSeqByVal13(S10 str1)
+extern "C" DLL_EXPORT BOOL STDMETHODCALLTYPE MarshalStructAsParam_AsSeqByVal13(S10 str1)
 {
 	if(!IsCorrectS10(&str1))
 	{
@@ -605,7 +605,7 @@ extern "C" DLL_EXPORT BOOL NATIVEAPI MarshalStructAsParam_AsSeqByVal13(S10 str1)
 	ChangeS10(&str1);
 	return TRUE;
 }
-extern "C" DLL_EXPORT BOOL NATIVEAPI MarshalStructAsParam_AsSeqByRef13(S10* str1)
+extern "C" DLL_EXPORT BOOL STDMETHODCALLTYPE MarshalStructAsParam_AsSeqByRef13(S10* str1)
 {
 	if(!IsCorrectS10(str1))
 	{
@@ -617,7 +617,7 @@ extern "C" DLL_EXPORT BOOL NATIVEAPI MarshalStructAsParam_AsSeqByRef13(S10* str1
 	return TRUE;
 }
 
-extern "C" DLL_EXPORT BOOL NATIVEAPI MarshalStructAsParam_AsSeqByRefIn13(S10* str1)
+extern "C" DLL_EXPORT BOOL STDMETHODCALLTYPE MarshalStructAsParam_AsSeqByRefIn13(S10* str1)
 {
 	if(!IsCorrectS10(str1))
 	{
@@ -628,7 +628,7 @@ extern "C" DLL_EXPORT BOOL NATIVEAPI MarshalStructAsParam_AsSeqByRefIn13(S10* st
 	ChangeS10(str1);
 	return TRUE;
 }
-extern "C" DLL_EXPORT BOOL NATIVEAPI MarshalStructAsParam_AsSeqByValOut13(S10 str1)
+extern "C" DLL_EXPORT BOOL STDMETHODCALLTYPE MarshalStructAsParam_AsSeqByValOut13(S10 str1)
 {
 	if(!IsCorrectS10(&str1))
 	{
@@ -639,7 +639,7 @@ extern "C" DLL_EXPORT BOOL NATIVEAPI MarshalStructAsParam_AsSeqByValOut13(S10 st
 	str1.s.i = 64;
 	return TRUE;
 }
-extern "C" DLL_EXPORT BOOL NATIVEAPI MarshalStructAsParam_AsSeqByRefOut13(S10* str1)
+extern "C" DLL_EXPORT BOOL STDMETHODCALLTYPE MarshalStructAsParam_AsSeqByRefOut13(S10* str1)
 {
 	ChangeS10(str1);
 
@@ -647,7 +647,7 @@ extern "C" DLL_EXPORT BOOL NATIVEAPI MarshalStructAsParam_AsSeqByRefOut13(S10* s
 }
 
 //////////////////////////////////////////////////////////////////////////////////////////////////////////
-extern "C" DLL_EXPORT BOOL NATIVEAPI MarshalStructAsParam_AsSeqByVal14(S11 str1)
+extern "C" DLL_EXPORT BOOL STDMETHODCALLTYPE MarshalStructAsParam_AsSeqByVal14(S11 str1)
 {
 	if( str1.i32 != 0 || str1.i != 32 )
 		return FALSE;
@@ -655,7 +655,7 @@ extern "C" DLL_EXPORT BOOL NATIVEAPI MarshalStructAsParam_AsSeqByVal14(S11 str1)
 	str1.i = 64;
 	return TRUE;
 }
-extern "C" DLL_EXPORT BOOL NATIVEAPI MarshalStructAsParam_AsSeqByRef14(S11* str1)
+extern "C" DLL_EXPORT BOOL STDMETHODCALLTYPE MarshalStructAsParam_AsSeqByRef14(S11* str1)
 {
 	if(str1->i32 != 0 || str1->i != 32)
 		return FALSE;
@@ -666,7 +666,7 @@ extern "C" DLL_EXPORT BOOL NATIVEAPI MarshalStructAsParam_AsSeqByRef14(S11* str1
 		return TRUE;
 	}
 }
-extern "C" DLL_EXPORT BOOL NATIVEAPI MarshalStructAsParam_AsSeqByRefIn14(S11* str1)
+extern "C" DLL_EXPORT BOOL STDMETHODCALLTYPE MarshalStructAsParam_AsSeqByRefIn14(S11* str1)
 {
 	if(str1->i32 != 0 || str1->i != 32)
 		return FALSE;
@@ -677,21 +677,21 @@ extern "C" DLL_EXPORT BOOL NATIVEAPI MarshalStructAsParam_AsSeqByRefIn14(S11* st
 		return TRUE;
 	}
 }
-extern "C" DLL_EXPORT BOOL NATIVEAPI MarshalStructAsParam_AsSeqByValOut14(S11 str1)
+extern "C" DLL_EXPORT BOOL STDMETHODCALLTYPE MarshalStructAsParam_AsSeqByValOut14(S11 str1)
 {
 	if( str1.i32 != (LPINT)32 || str1.i != 32 )
 		return FALSE;
 	str1.i = 64;
 	return TRUE;
 }
-extern "C" DLL_EXPORT BOOL NATIVEAPI MarshalStructAsParam_AsSeqByRefOut14(S11* str1)
+extern "C" DLL_EXPORT BOOL STDMETHODCALLTYPE MarshalStructAsParam_AsSeqByRefOut14(S11* str1)
 {
 	str1->i32 = reinterpret_cast<LPINT>(static_cast<INT_PTR>(str1->i));
 	str1->i = 64;
 	return TRUE;
 }
 //////////////////////////////////////////////////////////////////////////////////////
-extern "C" DLL_EXPORT BOOL NATIVEAPI MarshalStructAsParam_AsExpByValINNER2(INNER2 inner)
+extern "C" DLL_EXPORT BOOL STDMETHODCALLTYPE MarshalStructAsParam_AsExpByValINNER2(INNER2 inner)
 {
 	if(!IsCorrectINNER2(&inner))
 	{
@@ -703,7 +703,7 @@ extern "C" DLL_EXPORT BOOL NATIVEAPI MarshalStructAsParam_AsExpByValINNER2(INNER
 	return TRUE;
 }
 
-extern "C" DLL_EXPORT BOOL NATIVEAPI MarshalStructAsParam_AsExpByRefINNER2(INNER2* inner)
+extern "C" DLL_EXPORT BOOL STDMETHODCALLTYPE MarshalStructAsParam_AsExpByRefINNER2(INNER2* inner)
 {
 	if(!IsCorrectINNER2(inner))
 	{
@@ -714,7 +714,7 @@ extern "C" DLL_EXPORT BOOL NATIVEAPI MarshalStructAsParam_AsExpByRefINNER2(INNER
 	ChangeINNER2(inner);
 	return TRUE;
 }
-extern "C" DLL_EXPORT BOOL NATIVEAPI MarshalStructAsParam_AsExpByRefInINNER2(INNER2* inner)
+extern "C" DLL_EXPORT BOOL STDMETHODCALLTYPE MarshalStructAsParam_AsExpByRefInINNER2(INNER2* inner)
 {
 	if(!IsCorrectINNER2(inner))
 	{
@@ -726,7 +726,7 @@ extern "C" DLL_EXPORT BOOL NATIVEAPI MarshalStructAsParam_AsExpByRefInINNER2(INN
 	return TRUE;
 }
 
-extern "C" DLL_EXPORT BOOL NATIVEAPI MarshalStructAsParam_AsExpByValOutINNER2(INNER2 inner)
+extern "C" DLL_EXPORT BOOL STDMETHODCALLTYPE MarshalStructAsParam_AsExpByValOutINNER2(INNER2 inner)
 {
 	if(!IsCorrectINNER2(&inner))
 	{
@@ -738,14 +738,14 @@ extern "C" DLL_EXPORT BOOL NATIVEAPI MarshalStructAsParam_AsExpByValOutINNER2(IN
 	return TRUE;
 }
 
-extern "C" DLL_EXPORT BOOL NATIVEAPI MarshalStructAsParam_AsExpByRefOutINNER2(INNER2* inner)
+extern "C" DLL_EXPORT BOOL STDMETHODCALLTYPE MarshalStructAsParam_AsExpByRefOutINNER2(INNER2* inner)
 {
 	//change struct
 	ChangeINNER2(inner);
 	return TRUE;
 }
 /////////////////////////////////////////////////////////////////////////////////////////////////////
-extern "C" DLL_EXPORT BOOL NATIVEAPI MarshalStructAsParam_AsExpByValInnerExplicit(InnerExplicit inner)
+extern "C" DLL_EXPORT BOOL STDMETHODCALLTYPE MarshalStructAsParam_AsExpByValInnerExplicit(InnerExplicit inner)
 {
 	if((&inner)->f1 != 1 || memcmp((&inner)->f3, "some string",11*sizeof(char)) != 0)
 	{
@@ -757,7 +757,7 @@ extern "C" DLL_EXPORT BOOL NATIVEAPI MarshalStructAsParam_AsExpByValInnerExplici
 	return TRUE;
 }
 
-extern "C" DLL_EXPORT BOOL NATIVEAPI MarshalStructAsParam_AsExpByRefInnerExplicit(InnerExplicit* inner)
+extern "C" DLL_EXPORT BOOL STDMETHODCALLTYPE MarshalStructAsParam_AsExpByRefInnerExplicit(InnerExplicit* inner)
 {
 	if(inner->f1 != 1 || memcmp(inner->f3, "some string",11*sizeof(char)) != 0)
 	{
@@ -769,7 +769,7 @@ extern "C" DLL_EXPORT BOOL NATIVEAPI MarshalStructAsParam_AsExpByRefInnerExplici
 	return TRUE;
 }
 
-extern "C" DLL_EXPORT BOOL NATIVEAPI MarshalStructAsParam_AsExpByRefInInnerExplicit(InnerExplicit* inner)
+extern "C" DLL_EXPORT BOOL STDMETHODCALLTYPE MarshalStructAsParam_AsExpByRefInInnerExplicit(InnerExplicit* inner)
 {
 	if(inner->f1 != 1 || memcmp(inner->f3, "some string",11*sizeof(char)) != 0)
 	{
@@ -781,7 +781,7 @@ extern "C" DLL_EXPORT BOOL NATIVEAPI MarshalStructAsParam_AsExpByRefInInnerExpli
 	return TRUE;
 }
 
-extern "C" DLL_EXPORT BOOL NATIVEAPI MarshalStructAsParam_AsExpByRefOutInnerExplicit(InnerExplicit* inner)
+extern "C" DLL_EXPORT BOOL STDMETHODCALLTYPE MarshalStructAsParam_AsExpByRefOutInnerExplicit(InnerExplicit* inner)
 {
 	if(inner->f1 != 0 || inner->f2 != 0.0)
 	{
@@ -795,7 +795,7 @@ extern "C" DLL_EXPORT BOOL NATIVEAPI MarshalStructAsParam_AsExpByRefOutInnerExpl
 
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////
-extern "C" DLL_EXPORT BOOL NATIVEAPI MarshalStructAsParam_AsExpByValInnerArrayExplicit(InnerArrayExplicit outer2)
+extern "C" DLL_EXPORT BOOL STDMETHODCALLTYPE MarshalStructAsParam_AsExpByValInnerArrayExplicit(InnerArrayExplicit outer2)
 {
 	for(int i = 0;i<NumArrElements;i++)
 	{
@@ -813,7 +813,7 @@ extern "C" DLL_EXPORT BOOL NATIVEAPI MarshalStructAsParam_AsExpByValInnerArrayEx
 	return TRUE;
 }
 
-extern "C" DLL_EXPORT BOOL NATIVEAPI MarshalStructAsParam_AsExpByRefInnerArrayExplicit(InnerArrayExplicit* outer2)
+extern "C" DLL_EXPORT BOOL STDMETHODCALLTYPE MarshalStructAsParam_AsExpByRefInnerArrayExplicit(InnerArrayExplicit* outer2)
 {
 	for(int i = 0;i<NumArrElements;i++)
 	{
@@ -837,7 +837,7 @@ extern "C" DLL_EXPORT BOOL NATIVEAPI MarshalStructAsParam_AsExpByRefInnerArrayEx
 	return TRUE;
 }
 
-extern "C" DLL_EXPORT BOOL NATIVEAPI MarshalStructAsParam_AsExpByRefInInnerArrayExplicit(InnerArrayExplicit* outer2)
+extern "C" DLL_EXPORT BOOL STDMETHODCALLTYPE MarshalStructAsParam_AsExpByRefInInnerArrayExplicit(InnerArrayExplicit* outer2)
 {
 	for(int i = 0;i<NumArrElements;i++)
 	{
@@ -859,7 +859,7 @@ extern "C" DLL_EXPORT BOOL NATIVEAPI MarshalStructAsParam_AsExpByRefInInnerArray
 	outer2->s.f4 = CoStrDup("change string2");
 	return TRUE;
 }
-extern "C" DLL_EXPORT BOOL NATIVEAPI MarshalStructAsParam_AsExpByRefOutInnerArrayExplicit(InnerArrayExplicit* outer2)
+extern "C" DLL_EXPORT BOOL STDMETHODCALLTYPE MarshalStructAsParam_AsExpByRefOutInnerArrayExplicit(InnerArrayExplicit* outer2)
 {
 	for(int i =0;i<NumArrElements;i++)
 	{
@@ -871,7 +871,7 @@ extern "C" DLL_EXPORT BOOL NATIVEAPI MarshalStructAsParam_AsExpByRefOutInnerArra
 
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////////
-extern "C" DLL_EXPORT BOOL NATIVEAPI MarshalStructAsParam_AsExpByValOUTER3(OUTER3 outer3)
+extern "C" DLL_EXPORT BOOL STDMETHODCALLTYPE MarshalStructAsParam_AsExpByValOUTER3(OUTER3 outer3)
 {
 	if(!IsCorrectOUTER3(&outer3))
 	{
@@ -882,7 +882,7 @@ extern "C" DLL_EXPORT BOOL NATIVEAPI MarshalStructAsParam_AsExpByValOUTER3(OUTER
 	ChangeOUTER3(&outer3);
 	return TRUE;
 }
-extern "C" DLL_EXPORT BOOL NATIVEAPI MarshalStructAsParam_AsExpByRefOUTER3(OUTER3* outer3)
+extern "C" DLL_EXPORT BOOL STDMETHODCALLTYPE MarshalStructAsParam_AsExpByRefOUTER3(OUTER3* outer3)
 {
 	if(!IsCorrectOUTER3(outer3))
 	{
@@ -893,7 +893,7 @@ extern "C" DLL_EXPORT BOOL NATIVEAPI MarshalStructAsParam_AsExpByRefOUTER3(OUTER
 	ChangeOUTER3(outer3);
 	return TRUE;
 }
-extern "C" DLL_EXPORT BOOL NATIVEAPI MarshalStructAsParam_AsExpByRefInOUTER3(OUTER3* outer3)
+extern "C" DLL_EXPORT BOOL STDMETHODCALLTYPE MarshalStructAsParam_AsExpByRefInOUTER3(OUTER3* outer3)
 {
 	if(!IsCorrectOUTER3(outer3))
 	{
@@ -904,14 +904,14 @@ extern "C" DLL_EXPORT BOOL NATIVEAPI MarshalStructAsParam_AsExpByRefInOUTER3(OUT
 	ChangeOUTER3(outer3);
 	return TRUE;
 }
-extern "C" DLL_EXPORT BOOL NATIVEAPI MarshalStructAsParam_AsExpByRefOutOUTER3(OUTER3* outer3)
+extern "C" DLL_EXPORT BOOL STDMETHODCALLTYPE MarshalStructAsParam_AsExpByRefOutOUTER3(OUTER3* outer3)
 {
 	ChangeOUTER3(outer3);
 	return TRUE;
 }
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////
-extern "C" DLL_EXPORT BOOL NATIVEAPI MarshalStructAsParam_AsExpByValU(U str1)
+extern "C" DLL_EXPORT BOOL STDMETHODCALLTYPE MarshalStructAsParam_AsExpByValU(U str1)
 {
 	if(!IsCorrectU(&str1))
 	{
@@ -922,7 +922,7 @@ extern "C" DLL_EXPORT BOOL NATIVEAPI MarshalStructAsParam_AsExpByValU(U str1)
 	ChangeU(&str1);
 	return TRUE;
 }
-extern "C" DLL_EXPORT BOOL NATIVEAPI MarshalStructAsParam_AsExpByRefU(U* str1)
+extern "C" DLL_EXPORT BOOL STDMETHODCALLTYPE MarshalStructAsParam_AsExpByRefU(U* str1)
 {
 	if(!IsCorrectU(str1))
 	{
@@ -934,7 +934,7 @@ extern "C" DLL_EXPORT BOOL NATIVEAPI MarshalStructAsParam_AsExpByRefU(U* str1)
 	return TRUE;
 }
 
-extern "C" DLL_EXPORT BOOL NATIVEAPI MarshalStructAsParam_AsExpByRefInU(U* str1)
+extern "C" DLL_EXPORT BOOL STDMETHODCALLTYPE MarshalStructAsParam_AsExpByRefInU(U* str1)
 {
 	if(!IsCorrectU(str1))
 	{
@@ -945,7 +945,7 @@ extern "C" DLL_EXPORT BOOL NATIVEAPI MarshalStructAsParam_AsExpByRefInU(U* str1)
 	ChangeU(str1);
 	return TRUE;
 }
-extern "C" DLL_EXPORT BOOL NATIVEAPI MarshalStructAsParam_AsExpByRefOutU(U* str1)
+extern "C" DLL_EXPORT BOOL STDMETHODCALLTYPE MarshalStructAsParam_AsExpByRefOutU(U* str1)
 {
 	ChangeU(str1);
 
@@ -953,7 +953,7 @@ extern "C" DLL_EXPORT BOOL NATIVEAPI MarshalStructAsParam_AsExpByRefOutU(U* str1
 }
 
 //////////////////////////////////////////////////////////////////////////////////////////////////////////
-extern "C" DLL_EXPORT BOOL NATIVEAPI MarshalStructAsParam_AsExpByValByteStructPack2Explicit(ByteStructPack2Explicit str1)
+extern "C" DLL_EXPORT BOOL STDMETHODCALLTYPE MarshalStructAsParam_AsExpByValByteStructPack2Explicit(ByteStructPack2Explicit str1)
 {
 	if(!IsCorrectByteStructPack2Explicit(&str1))
 	{
@@ -964,7 +964,7 @@ extern "C" DLL_EXPORT BOOL NATIVEAPI MarshalStructAsParam_AsExpByValByteStructPa
 	ChangeByteStructPack2Explicit(&str1);
 	return TRUE;
 }
-extern "C" DLL_EXPORT BOOL NATIVEAPI MarshalStructAsParam_AsExpByRefByteStructPack2Explicit(ByteStructPack2Explicit* str1)
+extern "C" DLL_EXPORT BOOL STDMETHODCALLTYPE MarshalStructAsParam_AsExpByRefByteStructPack2Explicit(ByteStructPack2Explicit* str1)
 {
 	if(!IsCorrectByteStructPack2Explicit(str1))
 	{
@@ -976,7 +976,7 @@ extern "C" DLL_EXPORT BOOL NATIVEAPI MarshalStructAsParam_AsExpByRefByteStructPa
 	return TRUE;
 }
 
-extern "C" DLL_EXPORT BOOL NATIVEAPI MarshalStructAsParam_AsExpByRefInByteStructPack2Explicit(ByteStructPack2Explicit* str1)
+extern "C" DLL_EXPORT BOOL STDMETHODCALLTYPE MarshalStructAsParam_AsExpByRefInByteStructPack2Explicit(ByteStructPack2Explicit* str1)
 {
 	if(!IsCorrectByteStructPack2Explicit(str1))
 	{
@@ -987,7 +987,7 @@ extern "C" DLL_EXPORT BOOL NATIVEAPI MarshalStructAsParam_AsExpByRefInByteStruct
 	ChangeByteStructPack2Explicit(str1);
 	return TRUE;
 }
-extern "C" DLL_EXPORT BOOL NATIVEAPI MarshalStructAsParam_AsExpByRefOutByteStructPack2Explicit(ByteStructPack2Explicit* str1)
+extern "C" DLL_EXPORT BOOL STDMETHODCALLTYPE MarshalStructAsParam_AsExpByRefOutByteStructPack2Explicit(ByteStructPack2Explicit* str1)
 {
 	ChangeByteStructPack2Explicit(str1);
 
@@ -995,7 +995,7 @@ extern "C" DLL_EXPORT BOOL NATIVEAPI MarshalStructAsParam_AsExpByRefOutByteStruc
 }
 
 //////////////////////////////////////////////////////////////////////////////////////////////////////////
-extern "C" DLL_EXPORT BOOL NATIVEAPI MarshalStructAsParam_AsExpByValShortStructPack4Explicit(ShortStructPack4Explicit str1)
+extern "C" DLL_EXPORT BOOL STDMETHODCALLTYPE MarshalStructAsParam_AsExpByValShortStructPack4Explicit(ShortStructPack4Explicit str1)
 {
 	if(!IsCorrectShortStructPack4Explicit(&str1))
 	{
@@ -1006,7 +1006,7 @@ extern "C" DLL_EXPORT BOOL NATIVEAPI MarshalStructAsParam_AsExpByValShortStructP
 	ChangeShortStructPack4Explicit(&str1);
 	return TRUE;
 }
-extern "C" DLL_EXPORT BOOL NATIVEAPI MarshalStructAsParam_AsExpByRefShortStructPack4Explicit(ShortStructPack4Explicit* str1)
+extern "C" DLL_EXPORT BOOL STDMETHODCALLTYPE MarshalStructAsParam_AsExpByRefShortStructPack4Explicit(ShortStructPack4Explicit* str1)
 {
 	if(!IsCorrectShortStructPack4Explicit(str1))
 	{
@@ -1018,7 +1018,7 @@ extern "C" DLL_EXPORT BOOL NATIVEAPI MarshalStructAsParam_AsExpByRefShortStructP
 	return TRUE;
 }
 
-extern "C" DLL_EXPORT BOOL NATIVEAPI MarshalStructAsParam_AsExpByRefInShortStructPack4Explicit(ShortStructPack4Explicit* str1)
+extern "C" DLL_EXPORT BOOL STDMETHODCALLTYPE MarshalStructAsParam_AsExpByRefInShortStructPack4Explicit(ShortStructPack4Explicit* str1)
 {
 	if(!IsCorrectShortStructPack4Explicit(str1))
 	{
@@ -1029,7 +1029,7 @@ extern "C" DLL_EXPORT BOOL NATIVEAPI MarshalStructAsParam_AsExpByRefInShortStruc
 	ChangeShortStructPack4Explicit(str1);
 	return TRUE;
 }
-extern "C" DLL_EXPORT BOOL NATIVEAPI MarshalStructAsParam_AsExpByRefOutShortStructPack4Explicit(ShortStructPack4Explicit* str1)
+extern "C" DLL_EXPORT BOOL STDMETHODCALLTYPE MarshalStructAsParam_AsExpByRefOutShortStructPack4Explicit(ShortStructPack4Explicit* str1)
 {
 	ChangeShortStructPack4Explicit(str1);
 
@@ -1037,7 +1037,7 @@ extern "C" DLL_EXPORT BOOL NATIVEAPI MarshalStructAsParam_AsExpByRefOutShortStru
 }
 
 //////////////////////////////////////////////////////////////////////////////////////////////////////////
-extern "C" DLL_EXPORT BOOL NATIVEAPI MarshalStructAsParam_AsExpByValIntStructPack8Explicit(IntStructPack8Explicit str1)
+extern "C" DLL_EXPORT BOOL STDMETHODCALLTYPE MarshalStructAsParam_AsExpByValIntStructPack8Explicit(IntStructPack8Explicit str1)
 {
 	if(!IsCorrectIntStructPack8Explicit(&str1))
 	{
@@ -1048,7 +1048,7 @@ extern "C" DLL_EXPORT BOOL NATIVEAPI MarshalStructAsParam_AsExpByValIntStructPac
 	ChangeIntStructPack8Explicit(&str1);
 	return TRUE;
 }
-extern "C" DLL_EXPORT BOOL NATIVEAPI MarshalStructAsParam_AsExpByRefIntStructPack8Explicit(IntStructPack8Explicit* str1)
+extern "C" DLL_EXPORT BOOL STDMETHODCALLTYPE MarshalStructAsParam_AsExpByRefIntStructPack8Explicit(IntStructPack8Explicit* str1)
 {
 	if(!IsCorrectIntStructPack8Explicit(str1))
 	{
@@ -1060,7 +1060,7 @@ extern "C" DLL_EXPORT BOOL NATIVEAPI MarshalStructAsParam_AsExpByRefIntStructPac
 	return TRUE;
 }
 
-extern "C" DLL_EXPORT BOOL NATIVEAPI MarshalStructAsParam_AsExpByRefInIntStructPack8Explicit(IntStructPack8Explicit* str1)
+extern "C" DLL_EXPORT BOOL STDMETHODCALLTYPE MarshalStructAsParam_AsExpByRefInIntStructPack8Explicit(IntStructPack8Explicit* str1)
 {
 	if(!IsCorrectIntStructPack8Explicit(str1))
 	{
@@ -1071,7 +1071,7 @@ extern "C" DLL_EXPORT BOOL NATIVEAPI MarshalStructAsParam_AsExpByRefInIntStructP
 	ChangeIntStructPack8Explicit(str1);
 	return TRUE;
 }
-extern "C" DLL_EXPORT BOOL NATIVEAPI MarshalStructAsParam_AsExpByRefOutIntStructPack8Explicit(IntStructPack8Explicit* str1)
+extern "C" DLL_EXPORT BOOL STDMETHODCALLTYPE MarshalStructAsParam_AsExpByRefOutIntStructPack8Explicit(IntStructPack8Explicit* str1)
 {
 	ChangeIntStructPack8Explicit(str1);
 
@@ -1079,7 +1079,7 @@ extern "C" DLL_EXPORT BOOL NATIVEAPI MarshalStructAsParam_AsExpByRefOutIntStruct
 }
 
 //////////////////////////////////////////////////////////////////////////////////////////////////////////
-extern "C" DLL_EXPORT BOOL NATIVEAPI MarshalStructAsParam_AsExpByValLongStructPack16Explicit(LongStructPack16Explicit str1)
+extern "C" DLL_EXPORT BOOL STDMETHODCALLTYPE MarshalStructAsParam_AsExpByValLongStructPack16Explicit(LongStructPack16Explicit str1)
 {
 	if(!IsCorrectLongStructPack16Explicit(&str1))
 	{
@@ -1090,7 +1090,7 @@ extern "C" DLL_EXPORT BOOL NATIVEAPI MarshalStructAsParam_AsExpByValLongStructPa
 	ChangeLongStructPack16Explicit(&str1);
 	return TRUE;
 }
-extern "C" DLL_EXPORT BOOL NATIVEAPI MarshalStructAsParam_AsExpByRefLongStructPack16Explicit(LongStructPack16Explicit* str1)
+extern "C" DLL_EXPORT BOOL STDMETHODCALLTYPE MarshalStructAsParam_AsExpByRefLongStructPack16Explicit(LongStructPack16Explicit* str1)
 {
 	if(!IsCorrectLongStructPack16Explicit(str1))
 	{
@@ -1102,7 +1102,7 @@ extern "C" DLL_EXPORT BOOL NATIVEAPI MarshalStructAsParam_AsExpByRefLongStructPa
 	return TRUE;
 }
 
-extern "C" DLL_EXPORT BOOL NATIVEAPI MarshalStructAsParam_AsExpByRefInLongStructPack16Explicit(LongStructPack16Explicit* str1)
+extern "C" DLL_EXPORT BOOL STDMETHODCALLTYPE MarshalStructAsParam_AsExpByRefInLongStructPack16Explicit(LongStructPack16Explicit* str1)
 {
 	if(!IsCorrectLongStructPack16Explicit(str1))
 	{
@@ -1113,7 +1113,7 @@ extern "C" DLL_EXPORT BOOL NATIVEAPI MarshalStructAsParam_AsExpByRefInLongStruct
 	ChangeLongStructPack16Explicit(str1);
 	return TRUE;
 }
-extern "C" DLL_EXPORT BOOL NATIVEAPI MarshalStructAsParam_AsExpByRefOutLongStructPack16Explicit(LongStructPack16Explicit* str1)
+extern "C" DLL_EXPORT BOOL STDMETHODCALLTYPE MarshalStructAsParam_AsExpByRefOutLongStructPack16Explicit(LongStructPack16Explicit* str1)
 {
 	ChangeLongStructPack16Explicit(str1);
 

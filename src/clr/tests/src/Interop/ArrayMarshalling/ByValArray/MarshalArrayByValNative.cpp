@@ -28,7 +28,7 @@ macro definition
     expected[i] = (__type)i
 
 #define INIT_EXPECTED_STRUCT(__type, __size, __array_type) \
-    __type *expected = (__type *)::CoTaskMemAlloc( sizeof(__type) ); \
+    __type *expected = (__type *)CoreClrAlloc( sizeof(__type) ); \
     for ( size_t i = 0; i < (__size); ++i) \
     expected->arr[i] = (__array_type)i
 
@@ -70,7 +70,7 @@ helper function
 
 LPSTR ToString(int i)
 {
-    CHAR *pBuffer = (CHAR *)::CoTaskMemAlloc(10 * sizeof(CHAR)); // 10 is enough for our case, WCHAR for BSTR
+    CHAR *pBuffer = (CHAR *)CoreClrAlloc(10 * sizeof(CHAR)); // 10 is enough for our case, WCHAR for BSTR
 	snprintf(pBuffer, 10, "%d", i);
     return pBuffer;
 }
@@ -79,7 +79,7 @@ LPSTR ToString(int i)
 
 TestStruct* InitTestStruct()
 {
-    TestStruct *expected = (TestStruct *)CoTaskMemAlloc( sizeof(TestStruct) * ARRAY_SIZE );
+    TestStruct *expected = (TestStruct *)CoreClrAlloc( sizeof(TestStruct) * ARRAY_SIZE );
 
     for ( int i = 0; i < ARRAY_SIZE; i++)
     {
@@ -185,84 +185,84 @@ Function
 /*----------------------------------------------------------------------------
 marshal sequential strut
 ----------------------------------------------------------------------------*/
-extern "C" DLL_EXPORT BOOL NATIVEAPI TakeIntArraySeqStructByVal( S_INTArray s, int size )
+extern "C" DLL_EXPORT BOOL STDMETHODCALLTYPE TakeIntArraySeqStructByVal( S_INTArray s, int size )
 {
     CHECK_PARAM_NOT_EMPTY( s.arr );
     INIT_EXPECTED( INT, ARRAY_SIZE );
     return Equals( s.arr, size, expected, ARRAY_SIZE );
 }
 
-extern "C" DLL_EXPORT BOOL NATIVEAPI TakeUIntArraySeqStructByVal( S_UINTArray s, int size )
+extern "C" DLL_EXPORT BOOL STDMETHODCALLTYPE TakeUIntArraySeqStructByVal( S_UINTArray s, int size )
 {
     CHECK_PARAM_NOT_EMPTY( s.arr );
     INIT_EXPECTED( UINT, ARRAY_SIZE );
     return Equals( s.arr, size, expected, ARRAY_SIZE );
 }
 
-extern "C" DLL_EXPORT BOOL NATIVEAPI TakeShortArraySeqStructByVal( S_SHORTArray s, int size )
+extern "C" DLL_EXPORT BOOL STDMETHODCALLTYPE TakeShortArraySeqStructByVal( S_SHORTArray s, int size )
 {
     CHECK_PARAM_NOT_EMPTY( s.arr );
     INIT_EXPECTED( SHORT, ARRAY_SIZE );
     return Equals( s.arr, size, expected, ARRAY_SIZE );
 }
 
-extern "C" DLL_EXPORT BOOL NATIVEAPI TakeWordArraySeqStructByVal( S_WORDArray s, int size )
+extern "C" DLL_EXPORT BOOL STDMETHODCALLTYPE TakeWordArraySeqStructByVal( S_WORDArray s, int size )
 {
     CHECK_PARAM_NOT_EMPTY( s.arr );
     INIT_EXPECTED( WORD, ARRAY_SIZE );
     return Equals( s.arr, size, expected, ARRAY_SIZE );
 }
 
-extern "C" DLL_EXPORT BOOL NATIVEAPI TakeLong64ArraySeqStructByVal( S_LONG64Array s, int size )
+extern "C" DLL_EXPORT BOOL STDMETHODCALLTYPE TakeLong64ArraySeqStructByVal( S_LONG64Array s, int size )
 {
     CHECK_PARAM_NOT_EMPTY( s.arr );
     INIT_EXPECTED( LONG64, ARRAY_SIZE );
     return Equals( s.arr, size, expected, ARRAY_SIZE );
 }
 
-extern "C" DLL_EXPORT BOOL NATIVEAPI TakeULong64ArraySeqStructByVal( S_ULONG64Array s, int size )
+extern "C" DLL_EXPORT BOOL STDMETHODCALLTYPE TakeULong64ArraySeqStructByVal( S_ULONG64Array s, int size )
 {
     CHECK_PARAM_NOT_EMPTY( s.arr );
     INIT_EXPECTED( ULONG64, ARRAY_SIZE );
     return Equals( s.arr, size, expected, ARRAY_SIZE );
 }
 
-extern "C" DLL_EXPORT BOOL NATIVEAPI TakeDoubleArraySeqStructByVal( S_DOUBLEArray s, int size )
+extern "C" DLL_EXPORT BOOL STDMETHODCALLTYPE TakeDoubleArraySeqStructByVal( S_DOUBLEArray s, int size )
 {
     CHECK_PARAM_NOT_EMPTY( s.arr );
     INIT_EXPECTED( DOUBLE, ARRAY_SIZE );
     return Equals( s.arr, size, expected, ARRAY_SIZE );
 }
 
-extern "C" DLL_EXPORT BOOL NATIVEAPI TakeFloatArraySeqStructByVal( S_FLOATArray s, int size )
+extern "C" DLL_EXPORT BOOL STDMETHODCALLTYPE TakeFloatArraySeqStructByVal( S_FLOATArray s, int size )
 {
     CHECK_PARAM_NOT_EMPTY( s.arr );
     INIT_EXPECTED( FLOAT, ARRAY_SIZE );
     return Equals( s.arr, size, expected, ARRAY_SIZE );
 }
 
-extern "C" DLL_EXPORT BOOL NATIVEAPI TakeByteArraySeqStructByVal( S_BYTEArray s, int size )
+extern "C" DLL_EXPORT BOOL STDMETHODCALLTYPE TakeByteArraySeqStructByVal( S_BYTEArray s, int size )
 {
     CHECK_PARAM_NOT_EMPTY( s.arr );
     INIT_EXPECTED( BYTE, ARRAY_SIZE );
     return Equals( s.arr, size, expected, ARRAY_SIZE );
 }
 
-extern "C" DLL_EXPORT BOOL NATIVEAPI TakeCharArraySeqStructByVal( S_CHARArray s, int size )
+extern "C" DLL_EXPORT BOOL STDMETHODCALLTYPE TakeCharArraySeqStructByVal( S_CHARArray s, int size )
 {
     CHECK_PARAM_NOT_EMPTY( s.arr );
     INIT_EXPECTED( CHAR, ARRAY_SIZE );
     return Equals( s.arr, size, expected, ARRAY_SIZE );
 }
 
-extern "C" DLL_EXPORT BOOL NATIVEAPI TakeIntPtrArraySeqStructByVal(S_DWORD_PTRArray s, int size)
+extern "C" DLL_EXPORT BOOL STDMETHODCALLTYPE TakeIntPtrArraySeqStructByVal(S_DWORD_PTRArray s, int size)
 {
 	CHECK_PARAM_NOT_EMPTY(s.arr);
 	INIT_EXPECTED( DWORD_PTR, ARRAY_SIZE);
 	return Equals(s.arr, size, expected, ARRAY_SIZE);
 }
 
-extern "C" DLL_EXPORT BOOL NATIVEAPI TakeLPSTRArraySeqStructByVal( S_LPSTRArray s, int size )
+extern "C" DLL_EXPORT BOOL STDMETHODCALLTYPE TakeLPSTRArraySeqStructByVal( S_LPSTRArray s, int size )
 {
     CHECK_PARAM_NOT_EMPTY( s.arr );
 
@@ -273,7 +273,7 @@ extern "C" DLL_EXPORT BOOL NATIVEAPI TakeLPSTRArraySeqStructByVal( S_LPSTRArray 
     return Equals( s.arr, size, expected, ARRAY_SIZE );
 }
 
-extern "C" DLL_EXPORT BOOL NATIVEAPI TakeLPCSTRArraySeqStructByVal( S_LPCSTRArray s, int size )
+extern "C" DLL_EXPORT BOOL STDMETHODCALLTYPE TakeLPCSTRArraySeqStructByVal( S_LPCSTRArray s, int size )
 {
     CHECK_PARAM_NOT_EMPTY( s.arr );
 
@@ -286,7 +286,7 @@ extern "C" DLL_EXPORT BOOL NATIVEAPI TakeLPCSTRArraySeqStructByVal( S_LPCSTRArra
 
 
 
-extern "C" DLL_EXPORT BOOL NATIVEAPI TakeStructArraySeqStructByVal( S_StructArray s, int size )
+extern "C" DLL_EXPORT BOOL STDMETHODCALLTYPE TakeStructArraySeqStructByVal( S_StructArray s, int size )
 {
     CHECK_PARAM_NOT_EMPTY( s.arr );
 
@@ -297,69 +297,69 @@ extern "C" DLL_EXPORT BOOL NATIVEAPI TakeStructArraySeqStructByVal( S_StructArra
 /*----------------------------------------------------------------------------
 marshal sequential class
 ----------------------------------------------------------------------------*/
-extern "C" DLL_EXPORT BOOL NATIVEAPI TakeIntArraySeqClassByVal( S_INTArray *s, int size )
+extern "C" DLL_EXPORT BOOL STDMETHODCALLTYPE TakeIntArraySeqClassByVal( S_INTArray *s, int size )
 {
     return TakeIntArraySeqStructByVal( *s, size );
 }
 
-extern "C" DLL_EXPORT BOOL NATIVEAPI TakeUIntArraySeqClassByVal( S_UINTArray *s, int size )
+extern "C" DLL_EXPORT BOOL STDMETHODCALLTYPE TakeUIntArraySeqClassByVal( S_UINTArray *s, int size )
 {
     return TakeUIntArraySeqStructByVal( *s, size );
 }
 
-extern "C" DLL_EXPORT BOOL NATIVEAPI TakeShortArraySeqClassByVal( S_SHORTArray *s, int size )
+extern "C" DLL_EXPORT BOOL STDMETHODCALLTYPE TakeShortArraySeqClassByVal( S_SHORTArray *s, int size )
 {
     return TakeShortArraySeqStructByVal( *s, size );
 }
 
-extern "C" DLL_EXPORT BOOL NATIVEAPI TakeWordArraySeqClassByVal( S_WORDArray *s, int size )
+extern "C" DLL_EXPORT BOOL STDMETHODCALLTYPE TakeWordArraySeqClassByVal( S_WORDArray *s, int size )
 {
     return TakeWordArraySeqStructByVal( *s, size );
 }
 
-extern "C" DLL_EXPORT BOOL NATIVEAPI TakeLong64ArraySeqClassByVal( S_LONG64Array *s, int size )
+extern "C" DLL_EXPORT BOOL STDMETHODCALLTYPE TakeLong64ArraySeqClassByVal( S_LONG64Array *s, int size )
 {
     return TakeLong64ArraySeqStructByVal( *s, size );
 }
 
-extern "C" DLL_EXPORT BOOL NATIVEAPI TakeULong64ArraySeqClassByVal( S_ULONG64Array *s, int size )
+extern "C" DLL_EXPORT BOOL STDMETHODCALLTYPE TakeULong64ArraySeqClassByVal( S_ULONG64Array *s, int size )
 {
     return TakeULong64ArraySeqStructByVal( *s, size );
 }
 
-extern "C" DLL_EXPORT BOOL NATIVEAPI TakeDoubleArraySeqClassByVal( S_DOUBLEArray *s, int size )
+extern "C" DLL_EXPORT BOOL STDMETHODCALLTYPE TakeDoubleArraySeqClassByVal( S_DOUBLEArray *s, int size )
 {
     return TakeDoubleArraySeqStructByVal( *s, size );
 }
 
-extern "C" DLL_EXPORT BOOL NATIVEAPI TakeFloatArraySeqClassByVal( S_FLOATArray *s, int size )
+extern "C" DLL_EXPORT BOOL STDMETHODCALLTYPE TakeFloatArraySeqClassByVal( S_FLOATArray *s, int size )
 {
     return TakeFloatArraySeqStructByVal( *s, size );
 }
 
-extern "C" DLL_EXPORT BOOL NATIVEAPI TakeByteArraySeqClassByVal( S_BYTEArray *s, int size )
+extern "C" DLL_EXPORT BOOL STDMETHODCALLTYPE TakeByteArraySeqClassByVal( S_BYTEArray *s, int size )
 {
     return TakeByteArraySeqStructByVal( *s, size );
 }
 
-extern "C" DLL_EXPORT BOOL NATIVEAPI TakeCharArraySeqClassByVal( S_CHARArray *s, int size )
+extern "C" DLL_EXPORT BOOL STDMETHODCALLTYPE TakeCharArraySeqClassByVal( S_CHARArray *s, int size )
 {
     return TakeCharArraySeqStructByVal( *s, size );
 }
 
-extern "C" DLL_EXPORT BOOL NATIVEAPI TakeLPSTRArraySeqClassByVal( S_LPSTRArray *s, int size )
+extern "C" DLL_EXPORT BOOL STDMETHODCALLTYPE TakeLPSTRArraySeqClassByVal( S_LPSTRArray *s, int size )
 {
     return TakeLPSTRArraySeqStructByVal( *s, size );
 }
 
-extern "C" DLL_EXPORT BOOL NATIVEAPI TakeLPCSTRArraySeqClassByVal( S_LPCSTRArray *s, int size )
+extern "C" DLL_EXPORT BOOL STDMETHODCALLTYPE TakeLPCSTRArraySeqClassByVal( S_LPCSTRArray *s, int size )
 {
     return TakeLPCSTRArraySeqStructByVal( *s, size );
 }
 
 
 
-extern "C" DLL_EXPORT BOOL NATIVEAPI TakeStructArraySeqClassByVal( S_StructArray *s, int size )
+extern "C" DLL_EXPORT BOOL STDMETHODCALLTYPE TakeStructArraySeqClassByVal( S_StructArray *s, int size )
 {
     return TakeStructArraySeqStructByVal( *s, size );
 }
@@ -367,69 +367,69 @@ extern "C" DLL_EXPORT BOOL NATIVEAPI TakeStructArraySeqClassByVal( S_StructArray
 /*----------------------------------------------------------------------------
 marshal explicit struct
 ----------------------------------------------------------------------------*/
-extern "C" DLL_EXPORT BOOL NATIVEAPI TakeIntArrayExpStructByVal( S_INTArray s, int size )
+extern "C" DLL_EXPORT BOOL STDMETHODCALLTYPE TakeIntArrayExpStructByVal( S_INTArray s, int size )
 {
     return TakeIntArraySeqStructByVal( s, size );
 }
 
-extern "C" DLL_EXPORT BOOL NATIVEAPI TakeUIntArrayExpStructByVal( S_UINTArray s, int size )
+extern "C" DLL_EXPORT BOOL STDMETHODCALLTYPE TakeUIntArrayExpStructByVal( S_UINTArray s, int size )
 {
     return TakeUIntArraySeqStructByVal( s, size );
 }
 
-extern "C" DLL_EXPORT BOOL NATIVEAPI TakeShortArrayExpStructByVal( S_SHORTArray s, int size )
+extern "C" DLL_EXPORT BOOL STDMETHODCALLTYPE TakeShortArrayExpStructByVal( S_SHORTArray s, int size )
 {
     return TakeShortArraySeqStructByVal( s, size );
 }
 
-extern "C" DLL_EXPORT BOOL NATIVEAPI TakeWordArrayExpStructByVal( S_WORDArray s, int size )
+extern "C" DLL_EXPORT BOOL STDMETHODCALLTYPE TakeWordArrayExpStructByVal( S_WORDArray s, int size )
 {
     return TakeWordArraySeqStructByVal( s, size );
 }
 
-extern "C" DLL_EXPORT BOOL NATIVEAPI TakeLong64ArrayExpStructByVal( S_LONG64Array s, int size )
+extern "C" DLL_EXPORT BOOL STDMETHODCALLTYPE TakeLong64ArrayExpStructByVal( S_LONG64Array s, int size )
 {
     return TakeLong64ArraySeqStructByVal( s, size );
 }
 
-extern "C" DLL_EXPORT BOOL NATIVEAPI TakeULong64ArrayExpStructByVal( S_ULONG64Array s, int size )
+extern "C" DLL_EXPORT BOOL STDMETHODCALLTYPE TakeULong64ArrayExpStructByVal( S_ULONG64Array s, int size )
 {
     return TakeULong64ArraySeqStructByVal( s, size );
 }
 
-extern "C" DLL_EXPORT BOOL NATIVEAPI TakeDoubleArrayExpStructByVal( S_DOUBLEArray s, int size )
+extern "C" DLL_EXPORT BOOL STDMETHODCALLTYPE TakeDoubleArrayExpStructByVal( S_DOUBLEArray s, int size )
 {
     return TakeDoubleArraySeqStructByVal( s, size );
 }
 
-extern "C" DLL_EXPORT BOOL NATIVEAPI TakeFloatArrayExpStructByVal( S_FLOATArray s, int size )
+extern "C" DLL_EXPORT BOOL STDMETHODCALLTYPE TakeFloatArrayExpStructByVal( S_FLOATArray s, int size )
 {
     return TakeFloatArraySeqStructByVal( s, size );
 }
 
-extern "C" DLL_EXPORT BOOL NATIVEAPI TakeByteArrayExpStructByVal( S_BYTEArray s, int size )
+extern "C" DLL_EXPORT BOOL STDMETHODCALLTYPE TakeByteArrayExpStructByVal( S_BYTEArray s, int size )
 {
     return TakeByteArraySeqStructByVal( s, size );
 }
 
-extern "C" DLL_EXPORT BOOL NATIVEAPI TakeCharArrayExpStructByVal( S_CHARArray s, int size )
+extern "C" DLL_EXPORT BOOL STDMETHODCALLTYPE TakeCharArrayExpStructByVal( S_CHARArray s, int size )
 {
     return TakeCharArraySeqStructByVal( s, size );
 }
 
-extern "C" DLL_EXPORT BOOL NATIVEAPI TakeLPSTRArrayExpStructByVal( S_LPSTRArray s, int size )
+extern "C" DLL_EXPORT BOOL STDMETHODCALLTYPE TakeLPSTRArrayExpStructByVal( S_LPSTRArray s, int size )
 {
     return TakeLPSTRArraySeqStructByVal( s, size );
 }
 
-extern "C" DLL_EXPORT BOOL NATIVEAPI TakeLPCSTRArrayExpStructByVal( S_LPCSTRArray s, int size )
+extern "C" DLL_EXPORT BOOL STDMETHODCALLTYPE TakeLPCSTRArrayExpStructByVal( S_LPCSTRArray s, int size )
 {
     return TakeLPCSTRArraySeqStructByVal( s, size );
 }
 
 
 
-extern "C" DLL_EXPORT BOOL NATIVEAPI TakeStructArrayExpStructByVal( S_StructArray s, int size )
+extern "C" DLL_EXPORT BOOL STDMETHODCALLTYPE TakeStructArrayExpStructByVal( S_StructArray s, int size )
 {
     return TakeStructArraySeqStructByVal( s, size );
 }
@@ -437,69 +437,69 @@ extern "C" DLL_EXPORT BOOL NATIVEAPI TakeStructArrayExpStructByVal( S_StructArra
 /*----------------------------------------------------------------------------
 marshal explicit class
 ----------------------------------------------------------------------------*/
-extern "C" DLL_EXPORT BOOL NATIVEAPI TakeIntArrayExpClassByVal( S_INTArray *s, int size )
+extern "C" DLL_EXPORT BOOL STDMETHODCALLTYPE TakeIntArrayExpClassByVal( S_INTArray *s, int size )
 {
     return TakeIntArraySeqStructByVal( *s, size );
 }
 
-extern "C" DLL_EXPORT BOOL NATIVEAPI TakeUIntArrayExpClassByVal( S_UINTArray *s, int size )
+extern "C" DLL_EXPORT BOOL STDMETHODCALLTYPE TakeUIntArrayExpClassByVal( S_UINTArray *s, int size )
 {
     return TakeUIntArraySeqStructByVal( *s, size );
 }
 
-extern "C" DLL_EXPORT BOOL NATIVEAPI TakeShortArrayExpClassByVal( S_SHORTArray *s, int size )
+extern "C" DLL_EXPORT BOOL STDMETHODCALLTYPE TakeShortArrayExpClassByVal( S_SHORTArray *s, int size )
 {
     return TakeShortArraySeqStructByVal( *s, size );
 }
 
-extern "C" DLL_EXPORT BOOL NATIVEAPI TakeWordArrayExpClassByVal( S_WORDArray *s, int size )
+extern "C" DLL_EXPORT BOOL STDMETHODCALLTYPE TakeWordArrayExpClassByVal( S_WORDArray *s, int size )
 {
     return TakeWordArraySeqStructByVal( *s, size );
 }
 
-extern "C" DLL_EXPORT BOOL NATIVEAPI TakeLong64ArrayExpClassByVal( S_LONG64Array *s, int size )
+extern "C" DLL_EXPORT BOOL STDMETHODCALLTYPE TakeLong64ArrayExpClassByVal( S_LONG64Array *s, int size )
 {
     return TakeLong64ArraySeqStructByVal( *s, size );
 }
 
-extern "C" DLL_EXPORT BOOL NATIVEAPI TakeULong64ArrayExpClassByVal( S_ULONG64Array *s, int size )
+extern "C" DLL_EXPORT BOOL STDMETHODCALLTYPE TakeULong64ArrayExpClassByVal( S_ULONG64Array *s, int size )
 {
     return TakeULong64ArraySeqStructByVal( *s, size );
 }
 
-extern "C" DLL_EXPORT BOOL NATIVEAPI TakeDoubleArrayExpClassByVal( S_DOUBLEArray *s, int size )
+extern "C" DLL_EXPORT BOOL STDMETHODCALLTYPE TakeDoubleArrayExpClassByVal( S_DOUBLEArray *s, int size )
 {
     return TakeDoubleArraySeqStructByVal( *s, size );
 }
 
-extern "C" DLL_EXPORT BOOL NATIVEAPI TakeFloatArrayExpClassByVal( S_FLOATArray *s, int size )
+extern "C" DLL_EXPORT BOOL STDMETHODCALLTYPE TakeFloatArrayExpClassByVal( S_FLOATArray *s, int size )
 {
     return TakeFloatArraySeqStructByVal( *s, size );
 }
 
-extern "C" DLL_EXPORT BOOL NATIVEAPI TakeByteArrayExpClassByVal( S_BYTEArray *s, int size )
+extern "C" DLL_EXPORT BOOL STDMETHODCALLTYPE TakeByteArrayExpClassByVal( S_BYTEArray *s, int size )
 {
     return TakeByteArraySeqStructByVal( *s, size );
 }
 
-extern "C" DLL_EXPORT BOOL NATIVEAPI TakeCharArrayExpClassByVal( S_CHARArray *s, int size )
+extern "C" DLL_EXPORT BOOL STDMETHODCALLTYPE TakeCharArrayExpClassByVal( S_CHARArray *s, int size )
 {
     return TakeCharArraySeqStructByVal( *s, size );
 }
 
-extern "C" DLL_EXPORT BOOL NATIVEAPI TakeLPSTRArrayExpClassByVal( S_LPSTRArray *s, int size )
+extern "C" DLL_EXPORT BOOL STDMETHODCALLTYPE TakeLPSTRArrayExpClassByVal( S_LPSTRArray *s, int size )
 {
     return TakeLPSTRArraySeqStructByVal( *s, size );
 }
 
-extern "C" DLL_EXPORT BOOL NATIVEAPI TakeLPCSTRArrayExpClassByVal( S_LPCSTRArray *s, int size )
+extern "C" DLL_EXPORT BOOL STDMETHODCALLTYPE TakeLPCSTRArrayExpClassByVal( S_LPCSTRArray *s, int size )
 {
     return TakeLPCSTRArraySeqStructByVal( *s, size );
 }
 
 
 
-extern "C" DLL_EXPORT BOOL NATIVEAPI TakeStructArrayExpClassByVal( S_StructArray *s, int size )
+extern "C" DLL_EXPORT BOOL STDMETHODCALLTYPE TakeStructArrayExpClassByVal( S_StructArray *s, int size )
 {
     return TakeStructArraySeqStructByVal( *s, size );
 }
@@ -507,79 +507,79 @@ extern "C" DLL_EXPORT BOOL NATIVEAPI TakeStructArrayExpClassByVal( S_StructArray
 /*----------------------------------------------------------------------------
 return a struct including a C array
 ----------------------------------------------------------------------------*/
-extern "C" DLL_EXPORT S_INTArray* NATIVEAPI S_INTArray_Ret()
+extern "C" DLL_EXPORT S_INTArray* STDMETHODCALLTYPE S_INTArray_Ret()
 {
     INIT_EXPECTED_STRUCT( S_INTArray, ARRAY_SIZE, INT );
 
     return expected;
 }
 
-extern "C" DLL_EXPORT S_UINTArray* NATIVEAPI S_UINTArray_Ret()
+extern "C" DLL_EXPORT S_UINTArray* STDMETHODCALLTYPE S_UINTArray_Ret()
 {
     INIT_EXPECTED_STRUCT( S_UINTArray, ARRAY_SIZE, UINT );
 
     return expected;
 }
 
-extern "C" DLL_EXPORT S_SHORTArray* NATIVEAPI S_SHORTArray_Ret()
+extern "C" DLL_EXPORT S_SHORTArray* STDMETHODCALLTYPE S_SHORTArray_Ret()
 {
     INIT_EXPECTED_STRUCT( S_SHORTArray, ARRAY_SIZE, SHORT );
 
     return expected;
 }
 
-extern "C" DLL_EXPORT S_WORDArray* NATIVEAPI S_WORDArray_Ret()
+extern "C" DLL_EXPORT S_WORDArray* STDMETHODCALLTYPE S_WORDArray_Ret()
 {
     INIT_EXPECTED_STRUCT( S_WORDArray, ARRAY_SIZE, WORD );
 
     return expected;
 }
 
-extern "C" DLL_EXPORT S_LONG64Array* NATIVEAPI S_LONG64Array_Ret()
+extern "C" DLL_EXPORT S_LONG64Array* STDMETHODCALLTYPE S_LONG64Array_Ret()
 {
     INIT_EXPECTED_STRUCT( S_LONG64Array, ARRAY_SIZE, LONG64 );
 
     return expected;
 }
 
-extern "C" DLL_EXPORT S_ULONG64Array* NATIVEAPI S_ULONG64Array_Ret()
+extern "C" DLL_EXPORT S_ULONG64Array* STDMETHODCALLTYPE S_ULONG64Array_Ret()
 {
     INIT_EXPECTED_STRUCT( S_ULONG64Array, ARRAY_SIZE, ULONG64 );
 
     return expected;
 }
 
-extern "C" DLL_EXPORT S_DOUBLEArray* NATIVEAPI S_DOUBLEArray_Ret()
+extern "C" DLL_EXPORT S_DOUBLEArray* STDMETHODCALLTYPE S_DOUBLEArray_Ret()
 {
     INIT_EXPECTED_STRUCT( S_DOUBLEArray, ARRAY_SIZE, DOUBLE );
 
     return expected;
 }
 
-extern "C" DLL_EXPORT S_FLOATArray* NATIVEAPI S_FLOATArray_Ret()
+extern "C" DLL_EXPORT S_FLOATArray* STDMETHODCALLTYPE S_FLOATArray_Ret()
 {
     INIT_EXPECTED_STRUCT( S_FLOATArray, ARRAY_SIZE, FLOAT );
 
     return expected;
 }
 
-extern "C" DLL_EXPORT S_BYTEArray* NATIVEAPI S_BYTEArray_Ret()
+extern "C" DLL_EXPORT S_BYTEArray* STDMETHODCALLTYPE S_BYTEArray_Ret()
 {
     INIT_EXPECTED_STRUCT( S_BYTEArray, ARRAY_SIZE, BYTE );
 
     return expected;
 }
 
-extern "C" DLL_EXPORT S_CHARArray* NATIVEAPI S_CHARArray_Ret()
+extern "C" DLL_EXPORT S_CHARArray* STDMETHODCALLTYPE S_CHARArray_Ret()
 {
     INIT_EXPECTED_STRUCT( S_CHARArray, ARRAY_SIZE, CHAR );
 
     return expected;
 }
 
-extern "C" DLL_EXPORT S_LPSTRArray* NATIVEAPI S_LPSTRArray_Ret()
+extern "C" DLL_EXPORT S_LPSTRArray* STDMETHODCALLTYPE S_LPSTRArray_Ret()
 {        
-    S_LPSTRArray *expected = (S_LPSTRArray *)::CoTaskMemAlloc( sizeof(S_LPSTRArray) );
+    S_LPSTRArray *expected = (S_LPSTRArray *)CoreClrAlloc( sizeof(S_LPSTRArray) );
     for ( int i = 0; i < ARRAY_SIZE; ++i )
         expected->arr[i] = ToString(i);
 
@@ -587,9 +587,9 @@ extern "C" DLL_EXPORT S_LPSTRArray* NATIVEAPI S_LPSTRArray_Ret()
 }
 
 
-extern "C" DLL_EXPORT S_StructArray* NATIVEAPI S_StructArray_Ret()
+extern "C" DLL_EXPORT S_StructArray* STDMETHODCALLTYPE S_StructArray_Ret()
 {
-    S_StructArray *expected = (S_StructArray *)::CoTaskMemAlloc( sizeof(S_StructArray) );
+    S_StructArray *expected = (S_StructArray *)CoreClrAlloc( sizeof(S_StructArray) );
     for ( int i = 0; i < ARRAY_SIZE; ++i )
     {
         expected->arr[i].x = i;

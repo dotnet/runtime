@@ -10,12 +10,12 @@
 #pragma warning( push )
 #pragma warning( disable : 4996)
 
-extern "C" DLL_EXPORT int _cdecl Sum(int a, int b)
+extern "C" DLL_EXPORT int __cdecl Sum(int a, int b)
 {
     return a + b;
 }
 
-extern "C" int _cdecl main(int argc,  char **argv)
+extern "C" int __cdecl main(int argc,  char **argv)
 {
     return 0;
 }

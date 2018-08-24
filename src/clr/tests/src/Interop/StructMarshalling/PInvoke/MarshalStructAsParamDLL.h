@@ -4,7 +4,7 @@
 inline char* CoStrDup(const char* str)
 {
 	size_t size = strlen(str) + 1;
-	char* dup = (char *)CoTaskMemAlloc(size);
+	char* dup = (char *)CoreClrAlloc(size);
     if (dup != nullptr)
     {
         strcpy_s(dup, size, str);
@@ -294,7 +294,7 @@ void ChangeCharSetUnicodeSequential(CharSetUnicodeSequential* p)
 	LPCWSTR strSource = u"change string";
 #endif
 	size_t len = wcslen(strSource);
-	LPCWSTR temp = (LPCWSTR)CoTaskMemAlloc(sizeof(WCHAR)*(len+1));
+	LPCWSTR temp = (LPCWSTR)CoreClrAlloc(sizeof(WCHAR)*(len+1));
 	if(temp != NULL)
 	{
 		wcscpy_s((WCHAR*)temp, (len+1), strSource);
@@ -405,7 +405,7 @@ void ChangeS3(S3* p)
 {
 	p->flag = false;
 
-	/*CoTaskMemFree((void *)p->str);*/
+	/*CoreClrFree((void *)p->str);*/
 	p->str = CoStrDup("change string");
 
     for(int i = 1;i<257;i++)
@@ -505,8 +505,8 @@ bool IsCorrectStringStructSequentialAnsi(StringStructSequentialAnsi* str)
 
 void ChangeStringStructSequentialAnsi(StringStructSequentialAnsi* str)
 {
-	char* newFirst = (char*)CoTaskMemAlloc(sizeof(char)*513);
-	char* newLast = (char*)CoTaskMemAlloc(sizeof(char)*513);
+	char* newFirst = (char*)CoreClrAlloc(sizeof(char)*513);
+	char* newLast = (char*)CoreClrAlloc(sizeof(char)*513);
 	for (int i = 0; i < 512; ++i)
 	{
 		newFirst[i] = 'b';
@@ -558,8 +558,8 @@ bool IsCorrectStringStructSequentialUnicode(StringStructSequentialUnicode* str)
 
 void ChangeStringStructSequentialUnicode(StringStructSequentialUnicode* str)
 {
-	WCHAR* newFirst = (WCHAR*)CoTaskMemAlloc(sizeof(WCHAR)*257);
-	WCHAR* newLast = (WCHAR*)CoTaskMemAlloc(sizeof(WCHAR)*257);
+	WCHAR* newFirst = (WCHAR*)CoreClrAlloc(sizeof(WCHAR)*257);
+	WCHAR* newLast = (WCHAR*)CoreClrAlloc(sizeof(WCHAR)*257);
 	for (int i = 0; i < 256; ++i)
 	{
 		newFirst[i] = L'b';

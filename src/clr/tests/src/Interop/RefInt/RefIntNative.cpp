@@ -10,7 +10,7 @@ const int iManaged = 10;
 const int iNative = 11;
 
 
-extern "C"  BOOL DLL_EXPORT _cdecl MarshalRefInt_Cdcel(int * pint)
+extern "C"  BOOL DLL_EXPORT __cdecl MarshalRefInt_Cdcel(int * pint)
 {
 	//Check the Input	
 	if(iManaged != *pint)
@@ -34,8 +34,8 @@ extern "C"  BOOL DLL_EXPORT __stdcall MarshalRefInt_Stdcall(int * pint)
 	return TRUE;
 }
 
-typedef BOOL (_cdecl *Cdeclcaller)(int* pint);
-extern "C"  BOOL DLL_EXPORT _cdecl DoCallBack_MarshalRefInt_Cdecl(Cdeclcaller caller)
+typedef BOOL (__cdecl *Cdeclcaller)(int* pint);
+extern "C"  BOOL DLL_EXPORT __cdecl DoCallBack_MarshalRefInt_Cdecl(Cdeclcaller caller)
 {
 	//Check the Input
 	int itemp = iNative;
@@ -70,8 +70,8 @@ extern "C"  BOOL DLL_EXPORT __stdcall DoCallBack_MarshalRefInt_Stdcall(Stdcallca
 	return TRUE;
 }
 
-typedef BOOL (_cdecl * DelegatePInvokeCdecl)(int * pint);
-extern "C" DLL_EXPORT DelegatePInvokeCdecl _cdecl MarshalRefInt_DelegatePInvoke_Cdecl()
+typedef BOOL (__cdecl * DelegatePInvokeCdecl)(int * pint);
+extern "C" DLL_EXPORT DelegatePInvokeCdecl __cdecl MarshalRefInt_DelegatePInvoke_Cdecl()
 {
 	return MarshalRefInt_Cdcel;
 }

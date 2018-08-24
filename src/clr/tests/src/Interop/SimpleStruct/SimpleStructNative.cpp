@@ -26,7 +26,7 @@ typedef struct {
 }ExplStruct;
 
 extern "C"
-DLL_EXPORT BOOL _cdecl CdeclSimpleStructByRef(Sstr *p) 
+DLL_EXPORT BOOL __cdecl CdeclSimpleStructByRef(Sstr *p) 
 {
   p->a = 100;
   p->b=1;
@@ -35,7 +35,7 @@ DLL_EXPORT BOOL _cdecl CdeclSimpleStructByRef(Sstr *p)
 }
 
 extern "C"
-DLL_EXPORT BOOL _cdecl CdeclSimpleExplStructByRef(ExplStruct *p)
+DLL_EXPORT BOOL __cdecl CdeclSimpleExplStructByRef(ExplStruct *p)
 {
 	if((p->a != 0) || (p->udata.i != 10))
 	{
@@ -48,7 +48,7 @@ DLL_EXPORT BOOL _cdecl CdeclSimpleExplStructByRef(ExplStruct *p)
 }
 
 extern "C"
-DLL_EXPORT Sstr_simple* _cdecl CdeclSimpleStruct(Sstr_simple p,BOOL *result)
+DLL_EXPORT Sstr_simple* __cdecl CdeclSimpleStruct(Sstr_simple p,BOOL *result)
 {
 	Sstr_simple *pSimpleStruct;
 	if((p.a !=100) || (p.b != FALSE) || (p.c != 3.142))
@@ -56,7 +56,7 @@ DLL_EXPORT Sstr_simple* _cdecl CdeclSimpleStruct(Sstr_simple p,BOOL *result)
 		*(result)= FALSE;
 		return NULL;
 	}
-	pSimpleStruct = (Sstr_simple*) TP_CoTaskMemAlloc(sizeof(Sstr_simple) * 1);
+	pSimpleStruct = (Sstr_simple*) CoreClrAlloc(sizeof(Sstr_simple) * 1);
 	pSimpleStruct->a = 101;
 	pSimpleStruct->b = TRUE;
 	pSimpleStruct->c = 10.11;
@@ -65,7 +65,7 @@ DLL_EXPORT Sstr_simple* _cdecl CdeclSimpleStruct(Sstr_simple p,BOOL *result)
 }
 
 extern "C"
-DLL_EXPORT ExplStruct* _cdecl CdeclSimpleExplStruct(ExplStruct p,BOOL *result)
+DLL_EXPORT ExplStruct* __cdecl CdeclSimpleExplStruct(ExplStruct p,BOOL *result)
 {
 	ExplStruct *pExplStruct;
 	if((p.a !=1) || (p.udata.b != FALSE))
@@ -73,7 +73,7 @@ DLL_EXPORT ExplStruct* _cdecl CdeclSimpleExplStruct(ExplStruct p,BOOL *result)
 		*(result)= FALSE;
 		return NULL;
 	}
-	pExplStruct = (ExplStruct*) TP_CoTaskMemAlloc(sizeof(ExplStruct) * 1);
+	pExplStruct = (ExplStruct*) CoreClrAlloc(sizeof(ExplStruct) * 1);
 	pExplStruct->a = 2;
 	pExplStruct->udata.d = 3.142;
 	*(result)= TRUE;
@@ -81,7 +81,7 @@ DLL_EXPORT ExplStruct* _cdecl CdeclSimpleExplStruct(ExplStruct p,BOOL *result)
 }
 
 extern "C"
-DLL_EXPORT voidPtr NATIVEAPI GetFptr(int i)
+DLL_EXPORT voidPtr STDMETHODCALLTYPE GetFptr(int i)
 {
 	switch(i)
 	{

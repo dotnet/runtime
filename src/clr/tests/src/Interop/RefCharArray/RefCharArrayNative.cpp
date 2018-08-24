@@ -7,7 +7,7 @@
 #include <stdlib.h>
 
 const int LEN = 10;
-extern "C" BOOL DLL_EXPORT _cdecl MarshalRefCharArray_Cdecl(char ** pstr)
+extern "C" BOOL DLL_EXPORT __cdecl MarshalRefCharArray_Cdecl(char ** pstr)
 {
     //Check the Input
     for(int i = 0; i < LEN; i++)
@@ -46,10 +46,10 @@ extern "C" BOOL DLL_EXPORT __stdcall MarshalRefCharArray_Stdcall(char ** pstr)
     return TRUE;
 }
 
-typedef BOOL(_cdecl *CdeclCallBack)(char ** pstr);
-extern "C" BOOL DLL_EXPORT _cdecl DoCallBack_MarshalRefCharArray_Cdecl(CdeclCallBack caller)
+typedef BOOL(__cdecl *CdeclCallBack)(char ** pstr);
+extern "C" BOOL DLL_EXPORT __cdecl DoCallBack_MarshalRefCharArray_Cdecl(CdeclCallBack caller)
 {
-    char * str = (char*)CoTaskMemAlloc(LEN);
+    char * str = (char*)CoreClrAlloc(LEN);
     for(int i = 0;i<LEN;i++)
     {
         str[i] = 'z';
@@ -61,7 +61,7 @@ extern "C" BOOL DLL_EXPORT _cdecl DoCallBack_MarshalRefCharArray_Cdecl(CdeclCall
     }
     if(str[0]!='a')
     {
-        CoTaskMemFree(str);
+        CoreClrFree(str);
         return FALSE;
     }
     return TRUE;
@@ -70,7 +70,7 @@ extern "C" BOOL DLL_EXPORT _cdecl DoCallBack_MarshalRefCharArray_Cdecl(CdeclCall
 typedef BOOL(__stdcall *StdCallBack)(char ** pstr);
 extern "C" BOOL DLL_EXPORT __stdcall DoCallBack_MarshalRefCharArray_Stdcall(StdCallBack caller)
 {
-    char * str = (char*)CoTaskMemAlloc(LEN);
+    char * str = (char*)CoreClrAlloc(LEN);
     for(int i = 0;i<LEN;i++)
     {
         str[i] = 'z';
@@ -83,14 +83,14 @@ extern "C" BOOL DLL_EXPORT __stdcall DoCallBack_MarshalRefCharArray_Stdcall(StdC
     if(str[0]!='a')
     {
 
-        CoTaskMemFree(str);
+        CoreClrFree(str);
         return FALSE;
     }
     return TRUE;
 }
 
-typedef BOOL (_cdecl * DelegatePInvoke_Cdecl)(char **pstr);
-extern "C" DLL_EXPORT DelegatePInvoke_Cdecl _cdecl DelegatePinvoke_Cdecl()
+typedef BOOL (__cdecl * DelegatePInvoke_Cdecl)(char **pstr);
+extern "C" DLL_EXPORT DelegatePInvoke_Cdecl __cdecl DelegatePinvoke_Cdecl()
 {
     return MarshalRefCharArray_Cdecl;
 }

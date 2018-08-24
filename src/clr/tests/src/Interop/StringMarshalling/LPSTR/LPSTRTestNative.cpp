@@ -17,7 +17,7 @@ size_t lenstrNative = 7; //the len of strNative
 extern "C" LPSTR ReturnString()
 {
     size_t strLength = strlen(strReturn);
-    LPSTR ret = (LPSTR)(CoTaskMemAlloc(sizeof(char)* (strLength +1)));
+    LPSTR ret = (LPSTR)(CoreClrAlloc(sizeof(char)* (strLength +1)));
     memset(ret,'\0',strLength+1);
     strncpy_s(ret,strLength + 1, strReturn, strLength);
     return ret;
@@ -26,7 +26,7 @@ extern "C" LPSTR ReturnString()
 extern "C" LPSTR ReturnErrorString()
 {
     size_t strLength = strlen(strerrReturn);
-    LPSTR ret = (LPSTR)(CoTaskMemAlloc(sizeof(char)*(strLength + 1)));
+    LPSTR ret = (LPSTR)(CoreClrAlloc(sizeof(char)*(strLength + 1)));
     memset(ret,'\0',strLength + 1);
     strncpy_s(ret,strLength + 1,strerrReturn,strLength);
     return ret;
@@ -60,7 +60,7 @@ extern "C" DLL_EXPORT LPSTR Marshal_InOut(/*[In,Out]*/LPSTR s)
 
 extern "C" DLL_EXPORT LPSTR Marshal_Out(/*[Out]*/LPSTR s)
 {
-    s = (LPSTR)(CoTaskMemAlloc(sizeof(char)*(lenstrNative+1)));
+    s = (LPSTR)(CoreClrAlloc(sizeof(char)*(lenstrNative+1)));
 
     memset(s,0,lenstrNative+1);
     //In-Place Change
@@ -90,8 +90,8 @@ extern "C" DLL_EXPORT LPSTR MarshalPointer_InOut(/*[in,out]*/LPSTR *s)
     }
 
     //Allocate New
-    CoTaskMemFree(*s);
-    *s = (LPSTR)CoTaskMemAlloc(sizeof(char)*(lenstrNative+1));
+    CoreClrFree(*s);
+    *s = (LPSTR)CoreClrAlloc(sizeof(char)*(lenstrNative+1));
     memset(*s,0,lenstrNative+1);
     strncpy_s(*s,len + 1,strNative,lenstrNative);
 
@@ -101,7 +101,7 @@ extern "C" DLL_EXPORT LPSTR MarshalPointer_InOut(/*[in,out]*/LPSTR *s)
 
 extern "C" DLL_EXPORT LPSTR MarshalPointer_Out(/*[out]*/ LPSTR *s)
 {
-    *s = (LPSTR)CoTaskMemAlloc(sizeof(char)*(lenstrNative+1));
+    *s = (LPSTR)CoreClrAlloc(sizeof(char)*(lenstrNative+1));
     memset(*s,0,lenstrNative+1);
     strncpy_s(*s,lenstrNative+1,strNative,lenstrNative);
 
@@ -138,7 +138,7 @@ extern "C" DLL_EXPORT BOOL __cdecl RPinvoke_DelMarshal_InOut(Test_DelMarshal_InO
         return FALSE;
     }
     
-    CoTaskMemFree((LPVOID)str);
+    CoreClrFree((LPVOID)str);
 
     return TRUE;
 }

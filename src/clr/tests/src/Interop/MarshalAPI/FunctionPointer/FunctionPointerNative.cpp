@@ -4,7 +4,7 @@
 #include <stdio.h>
 #include <xplatform.h>
 
-extern "C" DLL_EXPORT bool __cdecl CheckFcnPtr(bool(CALLBACK *fcnptr)(__int64))
+extern "C" DLL_EXPORT bool __cdecl CheckFcnPtr(bool(STDMETHODCALLTYPE *fcnptr)(__int64))
 {
     if (fcnptr == 0)
     {
