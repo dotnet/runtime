@@ -148,7 +148,7 @@ to build the release (full speed) flavor.  You can find more build options with 
 
 The build places all of its generated files under the `bin` directory at the base of the repository.   There 
 is a `bin\Log` directory that contains log files generated during the build (most useful when the build fails).
-The the actual output is placed in a directory like this 
+The actual output is placed in a directory like this
 
 * bin\Product\Windows_NT.x64.Release
 
