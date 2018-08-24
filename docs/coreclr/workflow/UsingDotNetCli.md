@@ -60,14 +60,14 @@ Please run `dotnet new console` in the app folder and update the created `.cspro
 
   <PropertyGroup>
     <OutputType>Exe</OutputType>
-    <TargetFramework>netcoreapp2.1</TargetFramework>
+    <TargetFramework>netcoreapp3.0</TargetFramework>
     <RuntimeIdentifier>win-x64</RuntimeIdentifier>
-    <RuntimeFrameworkVersion>2.1.0-preview1-26210-0</RuntimeFrameworkVersion>
+    <RuntimeFrameworkVersion>3.0.0-preview1-26210-0</RuntimeFrameworkVersion>
   </PropertyGroup>
 
   <ItemGroup>
-    <PackageReference Include="runtime.win-x64.Microsoft.NETCore.Runtime.CoreCLR" Version="2.1.0-preview1-26210-0" />
-    <PackageReference Include="runtime.win-x64.Microsoft.NETCore.Jit" Version="2.1.0-preview1-26210-0" />
+    <PackageReference Include="runtime.win-x64.Microsoft.NETCore.Runtime.CoreCLR" Version="3.0.0-preview1-26210-0" />
+    <PackageReference Include="runtime.win-x64.Microsoft.NETCore.Jit" Version="3.0.0-preview1-26210-0" />
   </ItemGroup>
 
 </Project>
@@ -76,10 +76,10 @@ Please run `dotnet new console` in the app folder and update the created `.cspro
 **You have to set the correct values for `RuntimeIdentifier` (RI), `RuntimeFrameworkVersion` and versions of both packages.**
 
 You can generally figure that out by looking at the packages you found in your output. 
-In our example you will see there is a package with the name `runtime.win-x64.Microsoft.NETCore.Runtime.CoreCLR.2.1.0-preview1-26210-0.nupkg`
+In our example you will see there is a package with the name `runtime.win-x64.Microsoft.NETCore.Runtime.CoreCLR.3.0.0-preview1-26210-0.nupkg`
 
 ```
-runtime.win-x64.Microsoft.NETCore.Runtime.CoreCLR.2.1.0-preview1-26210-0.nupkg
+runtime.win-x64.Microsoft.NETCore.Runtime.CoreCLR.3.0.0-preview1-26210-0.nupkg
        ^--RI---^                                 ^--------version-------^  
 ```
 
@@ -110,22 +110,22 @@ Make sure that restoring done by `dotnet publish` installed the explicit version
 ```
 PS C:\coreclr\helloWorld> dotnet publish
   Restoring packages for C:\coreclr\helloWorld\helloWorld.csproj...
-  Installing runtime.win-x64.Microsoft.NETCore.Runtime.CoreCLR 2.1.0-preview1-26210-
+  Installing runtime.win-x64.Microsoft.NETCore.Runtime.CoreCLR 3.0.0-preview1-26210-
 ```
 
 If you see something like the message below it means that it has failed to restore your local runtime packages. In such case double check your `NuGet.config` file and paths used in it.
 
 ```
-C:\coreclr\helloWorld\helloWorld.csproj : warning NU1603: helloWorld depends on runtime.win-x64.Microsoft.NETCore.Runtime.CoreCLR (>= 2.1.0-preview1-26210-0) but runtime.win-x64.Microsoft.NETCore.Runtime.CoreCLR 2.1.0-preview1-26210-0 was not found. An approximate best match of runtime.win-x64.Microsoft.NETCore.Runtime.CoreCLR 2.1.0-preview2-25501-02 was resolved.
+C:\coreclr\helloWorld\helloWorld.csproj : warning NU1603: helloWorld depends on runtime.win-x64.Microsoft.NETCore.Runtime.CoreCLR (>= 3.0.0-preview1-26210-0) but runtime.win-x64.Microsoft.NETCore.Runtime.CoreCLR 3.0.0-preview1-26210-0 was not found. An approximate best match of runtime.win-x64.Microsoft.NETCore.Runtime.CoreCLR 3.0.0-preview2-25501-02 was resolved.
 ```
 
 ### 6. Run the app
 
-After you publish you will find all the binaries needed to run your application under `bin\Debug\netcoreapp2.1\win-x64\publish\`.
+After you publish you will find all the binaries needed to run your application under `bin\Debug\netcoreapp3.0\win-x64\publish\`.
 To run the application simply run the EXE that is in this publish directory (it is the name of the app, or specified in the project file).
 
 ```
-.\bin\Debug\netcoreapp2.1\win-x64\publish\HelloWorld.exe
+.\bin\Debug\netcoreapp3.0\win-x64\publish\HelloWorld.exe
 ```
 
 Running the app should tell you the version and which user and machine build the assembly as well as the commit hash of the code
@@ -133,7 +133,7 @@ at the time of building:
 
 ```
 Hello World from Core 4.6.26210.0 @BuiltBy: adsitnik-MININT-O513E3V @SrcCode: https://github.com/dotnet/coreclr/tree/3d6da797d1f7dc47d5934189787a4e8006ab3a04
-The location is C:\coreclr\helloWorld\bin\Debug\netcoreapp2.1\win-x64\publish\System.Private.CoreLib.dll
+The location is C:\coreclr\helloWorld\bin\Debug\netcoreapp3.0\win-x64\publish\System.Private.CoreLib.dll
 ```
 
 **Congratulations! You have just run your first app against local CoreCLR build!** 
@@ -155,12 +155,12 @@ give it a value by setting the BuildNumberMinor environment variable.
 ```bat
     set BuildNumberMinor=3
 ```
-before packaging. You should see this number show up in the version number (e.g. 2.1.0-preview1-26210-03).
+before packaging. You should see this number show up in the version number (e.g. 3.0.0-preview1-26210-03).
 
 As an alternative you can delete the existing copy of the package from the Nuget cache.   For example on
 windows (on Linux substitute ~/ for %HOMEPATH%) you could delete
 ```bat
-     %HOMEPATH%\.nuget\packages\runtime.win-x64.Microsoft.NETCore.Runtime.CoreCLR\2.1.0-preview1-26210-0
+     %HOMEPATH%\.nuget\packages\runtime.win-x64.Microsoft.NETCore.Runtime.CoreCLR\3.0.0-preview1-26210-0
 ```
 which should make things work (but is fragile, confirm file timestamps that you are getting the version you expect)
 
@@ -175,10 +175,10 @@ Get this by simply listing the name of the `runtime.win-x64.Microsoft.NETCore.Ru
 and you will get name of the which looks something like this
 
 ```
-    runtime.win-x64.Microsoft.NETCore.Runtime.CoreCLR.2.1.0-preview1-26210-3.nupkg
+    runtime.win-x64.Microsoft.NETCore.Runtime.CoreCLR.3.0.0-preview1-26210-3.nupkg
 ```
 
-This gets us the version number, in the above case it is 2.1.0-preview1-26210-3. We will
+This gets us the version number, in the above case it is 3.0.0-preview1-26210-3. We will
 use this in the next step.
 
 #### 3. Update the references to your runtime package
@@ -187,12 +187,12 @@ Edit your `.csproj` file and change the versions:
 
 ```
 <PropertyGroup>
-    <RuntimeFrameworkVersion>2.1.0-preview1-26210-3</RuntimeFrameworkVersion>
+    <RuntimeFrameworkVersion>3.0.0-preview1-26210-3</RuntimeFrameworkVersion>
 </PropertyGroup>
 
 <ItemGroup>
-  <PackageReference Include="runtime.win-x64.Microsoft.NETCore.Runtime.CoreCLR" Version="2.1.0-preview1-26210-3" />
-  <PackageReference Include="runtime.win-x64.Microsoft.NETCore.Jit" Version="2.1.0-preview1-26210-3" />
+  <PackageReference Include="runtime.win-x64.Microsoft.NETCore.Runtime.CoreCLR" Version="3.0.0-preview1-26210-3" />
+  <PackageReference Include="runtime.win-x64.Microsoft.NETCore.Jit" Version="3.0.0-preview1-26210-3" />
 </ItemGroup>
 ```
 
