@@ -116,7 +116,7 @@ namespace R2RDump
                     SIZE_OF_RETURN_KIND_FAT = 4;
                     NUM_SAFE_POINTS_ENCBASE = 2;
                     break;
-                case Machine.Arm:
+                case Machine.ArmThumb2:
                     CODE_LENGTH_ENCBASE = 7;
                     SECURITY_OBJECT_STACK_SLOT_ENCBASE = 5;
                     GS_COOKIE_STACK_SLOT_ENCBASE = 5;
@@ -157,7 +157,7 @@ namespace R2RDump
         {
             switch (_target)
             {
-                case Machine.Arm:
+                case Machine.ArmThumb2:
                     return (x << 1);
                 case Machine.Arm64:
                     return (x << 2);
@@ -171,7 +171,7 @@ namespace R2RDump
             {
                 case Machine.Amd64:
                     return (x << 3);
-                case Machine.Arm:
+                case Machine.ArmThumb2:
                     return (x << 2);
                 case Machine.Arm64:
                     return (x << 3);
@@ -185,7 +185,7 @@ namespace R2RDump
             {
                 case Machine.Amd64:
                     return (x ^ 5);
-                case Machine.Arm:
+                case Machine.ArmThumb2:
                     return ((x ^ 7) + 4);
                 case Machine.Arm64:
                     return (x ^ 29);
@@ -199,7 +199,7 @@ namespace R2RDump
             {
                 case Machine.Amd64:
                     return (x << 3);
-                case Machine.Arm:
+                case Machine.ArmThumb2:
                     return (x << 2);
                 case Machine.Arm64:
                     return (x << 3);
