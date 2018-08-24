@@ -27,7 +27,6 @@ CorJitResult __stdcall interceptor_ICJC::compileMethod(ICorJitInfo*             
     CorJitResult temp =
         original_ICorJitCompiler->compileMethod(&our_ICorJitInfo, info, flags, nativeEntry, nativeSizeOfCode);
 
-    mcs->SaveTextFile();
     return temp;
 }
 

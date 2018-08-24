@@ -5,6 +5,7 @@
 
 #include "standardpch.h"
 #include "methodcallsummarizer.h"
+#include "logging.h"
 
 MethodCallSummarizer::MethodCallSummarizer(WCHAR* logPath)
 {
@@ -132,6 +133,12 @@ void MethodCallSummarizer::SaveTextFile()
     DWORD  bytesWritten = 0;
     HANDLE hFile        = CreateFileW(dataFileName, GENERIC_READ | GENERIC_WRITE, 0, NULL, CREATE_ALWAYS,
                                FILE_ATTRIBUTE_NORMAL | FILE_FLAG_SEQUENTIAL_SCAN, NULL);
+
+    if (hFile == INVALID_HANDLE_VALUE)
+    {
+        LogError("Couldn't open file '%ws': error %d", dataFileName, ::GetLastError());
+        return;
+    }
 
     DWORD len = (DWORD)sprintf_s(buff, 512, "FunctionName,Count\n");
     WriteFile(hFile, buff, len, &bytesWritten, NULL);
