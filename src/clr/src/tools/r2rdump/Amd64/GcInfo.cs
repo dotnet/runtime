@@ -229,14 +229,26 @@ namespace R2RDump.Amd64
                 sb.AppendLine($"\tGenericsInstContextStackSlot: caller.sp{GenericsInstContextStackSlot:+#;-#;+0}");
             }
 
-            if (StackBaseRegister != 0xffffffff)
-                sb.AppendLine($"\tStackBaseRegister: {(Registers)StackBaseRegister}");
             if (_machine == Machine.Amd64)
             {
+                if (StackBaseRegister != 0xffffffff)
+                    sb.AppendLine($"\tStackBaseRegister: {(Amd64.Registers)StackBaseRegister}");
                 sb.AppendLine($"\tWants Report Only Leaf: {_wantsReportOnlyLeaf}");
             }
-            else if (_machine == Machine.Arm || _machine == Machine.Arm64)
+            else if (_machine == Machine.ArmThumb2 || _machine == Machine.Arm64)
             {
+                if (StackBaseRegister != 0xffffffff)
+                {
+                    if (_machine == Machine.ArmThumb2)
+                    {
+                        sb.AppendLine($"\tStackBaseRegister: {(Arm.Registers)StackBaseRegister}");
+                    }
+                    else
+                    {
+                        sb.AppendLine($"\tStackBaseRegister: {(Arm64.Registers)StackBaseRegister}");
+                    }
+                }
+
                 sb.AppendLine($"\tHas Tailcalls: {_wantsReportOnlyLeaf}");
             }
 
@@ -415,7 +427,7 @@ namespace R2RDump.Amd64
                     while (NativeReader.ReadBits(image, 1, ref bitOffset) != 0)
                     {
                         int transitionOffset = NativeReader.ReadBits(image, _gcInfoTypes.NUM_NORM_CODE_OFFSETS_PER_CHUNK_LOG2, ref bitOffset) + normChunkBaseCodeOffset;
-                        transitions.Add(new GcTransition(transitionOffset, slotId, isLive, currentChunk, SlotTable));
+                        transitions.Add(new GcTransition(transitionOffset, slotId, isLive, currentChunk, SlotTable, _machine));
                         isLive = !isLive;
                     }
                     slotId++;
@@ -517,6 +529,7 @@ namespace R2RDump.Amd64
                         currentRangeLength = (int)(currentRange.StopOffset - currentRange.StartOffset);
                         codeOffset = transition.CodeOffset + (int)currentRange.StartOffset - cumInterruptibleLength;
                     }
+
                     transition.CodeOffset = codeOffset;
                     if (!updatedTransitions.ContainsKey(codeOffset))
                     {

@@ -4,6 +4,7 @@
 
 using System;
 using System.Collections.Generic;
+using System.Reflection.PortableExecutable;
 using System.Text;
 using System.Xml.Serialization;
 
@@ -32,13 +33,13 @@ namespace R2RDump.Amd64
 
         public GcTransition() { }
 
-        public GcTransition(int codeOffset, int slotId, bool isLive, int chunkId, GcSlotTable slotTable)
+        public GcTransition(int codeOffset, int slotId, bool isLive, int chunkId, GcSlotTable slotTable, Machine machine)
         {
             CodeOffset = codeOffset;
             SlotId = slotId;
             IsLive = isLive;
             ChunkId = chunkId;
-            SlotState = GetSlotState(slotTable);
+            SlotState = GetSlotState(slotTable, machine);
         }
 
         public override string ToString()
@@ -46,13 +47,22 @@ namespace R2RDump.Amd64
             return SlotState;
         }
 
-        public string GetSlotState(GcSlotTable slotTable)
+        public string GetSlotState(GcSlotTable slotTable, Machine machine)
         {
             GcSlotTable.GcSlot slot = slotTable.GcSlots[SlotId];
             string slotStr = "";
             if (slot.StackSlot == null)
             {
-                slotStr = Enum.GetName(typeof(Registers), slot.RegisterNumber);
+                Type regType = typeof(Amd64.Registers);
+                if (machine == Machine.ArmThumb2)
+                {
+                    regType = typeof(Arm.Registers);
+                }
+                else
+                {
+                    regType = typeof(Arm64.Registers);
+                }
+                slotStr = Enum.GetName(regType, slot.RegisterNumber);
             }
             else
             {

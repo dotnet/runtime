@@ -45,11 +45,11 @@ Eg. "CoreCLR 4.5.30319.0 __BUILDMACHINE__"
 
 ### READYTORUN_SECTION_IMPORT_SECTIONS
 
-A struct described in [READYTORUN_IMPORT_SECTION](../../inc/readytorun.h)
+A struct described in [READYTORUN_IMPORT_SECTION](../../inc/readytorun.h). Currently not parsed correctly
 
 ### READYTORUN_SECTION_RUNTIME_FUNCTIONS
 
-A array of RVAs. For x64, each RuntimeFunction has RVAs to the start of the assembly, end of the assembly, and start of the UnwindInfo. For x86, each RuntimeFunction has RVAs to the start of the assembly, and start of the UnwindInfo.
+A array of RVAs. For x64, each RuntimeFunction has RVAs to the start of the assembly, end of the assembly, and start of the UnwindInfo. For x86/Arm/Arm64, each RuntimeFunction has RVAs to the start of the assembly, and start of the UnwindInfo.
 
 ### READYTORUN_SECTION_METHODDEF_ENTRYPOINTS
 
@@ -73,7 +73,7 @@ A struct described in [_UNWIND_INFO](../../inc/win64unwind.h). Each RuntimeFunct
 
 For x86, it contains only an encoded function length
 
-For x64, it contains a bit field followed by an array of unwind codes ([_UNWIND_CODE](../../inc/win64unwind.h)) and finally padding to make it byte aligned
+For x64, Arm and Arm64, it contains a bit field followed by an array of unwind codes ([_UNWIND_CODE](../../inc/win64unwind.h)) and finally padding to make it byte aligned
 
 The unwind data info structure is used to record the effects a function has on the stack pointer and where the nonvolatile registers are saved on the stack (see https://msdn.microsoft.com/en-us/library/0kd71y96.aspx)
 
@@ -81,13 +81,13 @@ The unwind data info structure is used to record the effects a function has on t
 
 Written into the ReadyToRun image right after UnwindInfo. Contains a header, GcSlots and GcTransitions (register liveness).
 
-The x64 GcInfo is written in crossgen by [GcInfoEncoder::Build](../../gcinfo/gcinfoencoder.cpp) and decoded similar to [GcInfoDecoder::EnumerateLiveSlots](../../vm/gcinfodecoder.cpp). The x86 gcInfo is written by [GCInfo::gcMakeRegPtrTable](../../jit/gcencode.cpp) and decoded similar to [GCDump::DumpGCTable](../../gcdump/i386/gcdumpx86.cpp)
+The x64/Arm/Arm64 GcInfo is written in crossgen by [GcInfoEncoder::Build](../../gcinfo/gcinfoencoder.cpp) and decoded similar to [GcInfoDecoder::EnumerateLiveSlots](../../vm/gcinfodecoder.cpp). The x86 gcInfo is written by [GCInfo::gcMakeRegPtrTable](../../jit/gcencode.cpp) and decoded similar to [GCDump::DumpGCTable](../../gcdump/i386/gcdumpx86.cpp)
 
 Contains the code length followed by the header, GcSlots, and finally GcTransitions
 
 The header contains flags indicating which properties are in the GcInfo. GcSlots gives details on the registers or stack pointer offsets that are used in the method. GcTransitions give the CodeOffsets (which line in the assembly code) where GcSlots (excluding untracked slots) become live or dead
 
-In x64, GcTransitions are grouped into chunks where each chunk covers NUM_NORM_CODE_OFFSETS_PER_CHUNK lines of assembly code. The following format is used:
+In x64/Arm/Arm64, GcTransitions are grouped into chunks where each chunk covers NUM_NORM_CODE_OFFSETS_PER_CHUNK lines of assembly code. The following format is used:
 > Array of offsets pointing to each chunk
 
 > Padding to make it byte aligned
@@ -107,6 +107,10 @@ In x64, GcTransitions are grouped into chunks where each chunk covers NUM_NORM_C
 
 * Support R2RDump on ARM and ARM64 (https://github.com/dotnet/coreclr/issues/19089)
 
-* Parse R2RSections: READYTORUN_SECTION_EXCEPTION_INFO, READYTORUN_SECTION_DEBUG_INFO, READYTORUN_SECTION_DELAYLOAD_METHODCALL_THUNKS, READYTORUN_SECTION_INLINING_INFO, READYTORUN_SECTION_PROFILEDATA_INFO
+* Fix issue with invalid machine type in COFF header (https://github.com/dotnet/coreclr/issues/19592)
+
+* Parse R2RSections: READYTORUN_SECTION_EXCEPTION_INFO, READYTORUN_SECTION_DEBUG_INFO, READYTORUN_SECTION_DELAYLOAD_METHODCALL_THUNKS, READYTORUN_SECTION_INLINING_INFO, READYTORUN_SECTION_PROFILEDATA_INFO (https://github.com/dotnet/coreclr/issues/19616)
 
 * Reenable R2RDumpTests after making it less fragile
+
+* Fix issue with disasm on Arm (https://github.com/dotnet/coreclr/issues/19637)
