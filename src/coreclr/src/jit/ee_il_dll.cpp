@@ -80,9 +80,16 @@ extern "C" void __stdcall jitStartup(ICorJitHost* jitHost)
     assert(!JitConfig.isInitialized());
     JitConfig.initialize(jitHost);
 
-#if defined(_HOST_UNIX_)
-    jitstdout = procstdout();
-#else  // !_HOST_UNIX_
+#ifdef DEBUG
+    const wchar_t* jitStdOutFile = JitConfig.JitStdOutFile();
+    if (jitStdOutFile != nullptr)
+    {
+        jitstdout = _wfopen(jitStdOutFile, W("a"));
+        assert(jitstdout != nullptr);
+    }
+#endif // DEBUG
+
+#if !defined(_HOST_UNIX_)
     if (jitstdout == nullptr)
     {
         int stdoutFd = _fileno(procstdout());
@@ -106,6 +113,7 @@ extern "C" void __stdcall jitStartup(ICorJitHost* jitHost)
             }
         }
     }
+#endif // !_HOST_UNIX_
 
     // If jitstdout is still null, fallback to whatever procstdout() was
     // initially set to.
@@ -113,7 +121,6 @@ extern "C" void __stdcall jitStartup(ICorJitHost* jitHost)
     {
         jitstdout = procstdout();
     }
-#endif // !_HOST_UNIX_
 
 #ifdef FEATURE_TRACELOGGING
     JitTelemetry::NotifyDllProcessAttach();
