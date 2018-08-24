@@ -360,13 +360,13 @@ namespace System.Drawing
             this.knownColor = unchecked((short)knownColor);
         }
 
-        public byte R => (byte)(((uint)Value & ARGBRedMask) >> ARGBRedShift);
+        public byte R => unchecked((byte)(Value >> ARGBRedShift));
 
-        public byte G => (byte)(((uint)Value & ARGBGreenMask) >> ARGBGreenShift);
+        public byte G => unchecked((byte)(Value >> ARGBGreenShift));
 
-        public byte B => (byte)(((uint)Value & ARGBBlueMask) >> ARGBBlueShift);
+        public byte B => unchecked((byte)(Value >> ARGBBlueShift));
 
-        public byte A => (byte)(((uint)Value & ARGBAlphaMask) >> ARGBAlphaShift);
+        public byte A => unchecked((byte)(Value >> ARGBAlphaShift));
 
         public bool IsKnownColor => (state & StateKnownColorValid) != 0;
 
