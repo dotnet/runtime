@@ -142,7 +142,7 @@ namespace JitBench
                 string[] args = new string[] { "--perf:collect", string.Join("+", run.MetricNames), "--perf:outputdir", run.OutputDir, "--perf:runid", run.BenchviewRunId };
                 using (var harness = new XunitPerformanceHarness(args))
                 {
-                    ProcessStartInfo startInfo = new ProcessStartInfo(run.DotNetInstallation.DotNetExe, ExePath + " " + CommandLineArguments);
+                    ProcessStartInfo startInfo = new ProcessStartInfo(run.DotNetInstallation.DotNetExe, (ExePath + " " + CommandLineArguments).Trim());
                     startInfo.WorkingDirectory = WorkingDirPath;
                     startInfo.RedirectStandardError = true;
                     startInfo.RedirectStandardOutput = true;
@@ -152,7 +152,9 @@ namespace JitBench
                         startInfo.Environment[kv.Key] = kv.Value;
                     }
                     output.WriteLine("XUnitPerfHarness doesn't log env vars it uses to run processes. To workaround, logging them here:");
-                    output.WriteLine(string.Join(", ", extraEnvVars.Select(kv => kv.Key + "=" + kv.Value)));
+                    output.WriteLine($"Environment variables: {string.Join(", ", extraEnvVars.Select(kv => kv.Key + "=" + kv.Value))}");
+                    output.WriteLine($"Working directory: \"{startInfo.WorkingDirectory}\"");
+                    output.WriteLine($"Command line: \"{startInfo.FileName}\" {startInfo.Arguments}");
 
                     BenchmarkRunResult result = new BenchmarkRunResult(this, config);
                     StringBuilder stderr = new StringBuilder();
