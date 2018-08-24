@@ -355,10 +355,10 @@ namespace System.Runtime.Intrinsics.X86
         public static Vector256<float> Permute(Vector256<float> value, byte control) { throw null; }
         public static Vector256<double> Permute(Vector256<double> value, byte control) { throw null; }
         public static Vector256<T> Permute2x128<T>(Vector256<T> left, Vector256<T> right, byte control) where T : struct { throw null; }
-        public static Vector128<float> PermuteVar(Vector128<float> left, Vector128<float> mask) { throw null; }
-        public static Vector128<double> PermuteVar(Vector128<double> left, Vector128<double> mask) { throw null; }
-        public static Vector256<float> PermuteVar(Vector256<float> left, Vector256<float> mask) { throw null; }
-        public static Vector256<double> PermuteVar(Vector256<double> left, Vector256<double> mask) { throw null; }
+        public static Vector128<float> PermuteVar(Vector128<float> left, Vector128<int> control) { throw null; }
+        public static Vector128<double> PermuteVar(Vector128<double> left, Vector128<long> control) { throw null; }
+        public static Vector256<float> PermuteVar(Vector256<float> left, Vector256<int> control) { throw null; }
+        public static Vector256<double> PermuteVar(Vector256<double> left, Vector256<long> control) { throw null; }
         public static Vector256<float> Reciprocal(Vector256<float> value) { throw null; }
         public static Vector256<float> ReciprocalSqrt(Vector256<float> value) { throw null; }
         public static Vector256<float> RoundToNearestInteger(Vector256<float> value) { throw null; }
@@ -677,9 +677,9 @@ namespace System.Runtime.Intrinsics.X86
         public static Vector256<long> Permute4x64(Vector256<long> value, byte control) { throw null; }
         public static Vector256<ulong> Permute4x64(Vector256<ulong> value, byte control) { throw null; }
         public static Vector256<double> Permute4x64(Vector256<double> value, byte control) { throw null; }
-        public static Vector256<int> PermuteVar8x32(Vector256<int> left, Vector256<int> mask) { throw null; }
-        public static Vector256<uint> PermuteVar8x32(Vector256<uint> left, Vector256<uint> mask) { throw null; }
-        public static Vector256<float> PermuteVar8x32(Vector256<float> left, Vector256<float> mask) { throw null; }
+        public static Vector256<int> PermuteVar8x32(Vector256<int> left, Vector256<int> control) { throw null; }
+        public static Vector256<uint> PermuteVar8x32(Vector256<uint> left, Vector256<uint> control) { throw null; }
+        public static Vector256<float> PermuteVar8x32(Vector256<float> left, Vector256<int> control) { throw null; }
         public static Vector256<short> ShiftLeftLogical(Vector256<short> value, Vector128<short> count) { throw null; }
         public static Vector256<ushort> ShiftLeftLogical(Vector256<ushort> value, Vector128<ushort> count) { throw null; }
         public static Vector256<int> ShiftLeftLogical(Vector256<int> value, Vector128<int> count) { throw null; }
