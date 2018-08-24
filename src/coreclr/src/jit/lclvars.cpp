@@ -1496,8 +1496,9 @@ void Compiler::lvaCanPromoteStructType(CORINFO_CLASS_HANDLE    typeHnd,
         CLANG_FORMAT_COMMENT_ANCHOR;
 #if defined(FEATURE_SIMD)
 #if defined(_TARGET_XARCH_)
-        // This will allow promotion of 2 Vector<T> fields on AVX2, or 4 Vector<T> fields on SSE2.
-        const int MaxOffset = MAX_NumOfFieldsInPromotableStruct * XMM_REGSIZE_BYTES;
+        // This will allow promotion of 4 Vector<T> fields on AVX2 or Vector256<T> on AVX,
+        // or 8 Vector<T>/Vector128<T> fields on SSE2.
+        const int MaxOffset = MAX_NumOfFieldsInPromotableStruct * YMM_REGSIZE_BYTES;
 #elif defined(_TARGET_ARM64_)
         const int MaxOffset = MAX_NumOfFieldsInPromotableStruct * FP_REGSIZE_BYTES;
 #endif // defined(_TARGET_XARCH_) || defined(_TARGET_ARM64_)
