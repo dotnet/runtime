@@ -11,7 +11,6 @@ namespace System
 {
     [Serializable]
     [StructLayout(LayoutKind.Sequential)]
-    [TypeForwardedFrom("mscorlib, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089")]
     public readonly struct Int64 : IComparable, IConvertible, IFormattable, IComparable<long>, IEquatable<long>, ISpanFormattable
     {
         private readonly long m_value; // Do not rename (binary serialization)
