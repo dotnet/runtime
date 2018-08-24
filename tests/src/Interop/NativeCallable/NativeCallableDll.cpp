@@ -4,9 +4,9 @@
 
 #include <xplatform.h> 
 
-typedef int (NATIVEAPI *CALLBACKPROC)(int n);
+typedef int (STDMETHODCALLTYPE *CALLBACKPROC)(int n);
 
-extern "C" DLL_EXPORT int NATIVEAPI CallManagedProc(CALLBACKPROC pCallbackProc, int n)
+extern "C" DLL_EXPORT int STDMETHODCALLTYPE CallManagedProc(CALLBACKPROC pCallbackProc, int n)
 {
     return pCallbackProc(n);
 }
