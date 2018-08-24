@@ -11,7 +11,10 @@ namespace JitBench
     {
         private const string ExecutableName = "console.dll";
 
-        public EmptyConsoleProgramExecution() : base("Empty Console Program") { }
+        public EmptyConsoleProgramExecution() : base("Empty Console Program")
+        {
+            ExePath = ExecutableName;
+        }
 
         public override async Task Setup(DotNetInstallation dotNetInstall, string outputDir, bool useExistingSetup, ITestOutputHelper output)
         {
@@ -20,6 +23,7 @@ namespace JitBench
                 using (var setupSection = new IndentedTestOutputHelper("Setup " + Name, output))
                 {
                     await SetupSourceToCompile(outputDir, dotNetInstall.FrameworkDir, useExistingSetup, setupSection);
+                    RetargetProjects(dotNetInstall, GetRootDir(outputDir), new string[] { "console.csproj" });
                     await Publish(dotNetInstall, outputDir, setupSection);
                 }
             }
@@ -77,8 +81,6 @@ namespace JitBench
             publishDir = GetAppPublishDirectory(dotNetInstall, outputDir, tfm);
             if (publishDir == null)
                 throw new DirectoryNotFoundException("Could not find 'publish' directory");
-
-            ExePath = Path.Combine(publishDir, ExecutableName);
             return publishDir;
         }
 
