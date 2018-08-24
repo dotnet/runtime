@@ -14285,6 +14285,23 @@ void Compiler::impImportBlockCode(BasicBlock* block)
                 op2 = impPopStack().val;
                 assertImp(genActualTypeIsIntOrI(op2->gtType));
 
+#ifdef _TARGET_64BIT_
+                // The array helper takes a native int for array length.
+                // So if we have an int, explicitly extend it to be a native int.
+                if (genActualType(op2->TypeGet()) != TYP_I_IMPL)
+                {
+                    if (op2->IsIntegralConst())
+                    {
+                        op2->gtType = TYP_I_IMPL;
+                    }
+                    else
+                    {
+                        bool isUnsigned = false;
+                        op2             = gtNewCastNode(TYP_I_IMPL, op2, isUnsigned, TYP_I_IMPL);
+                    }
+                }
+#endif // _TARGET_64BIT_
+
 #ifdef FEATURE_READYTORUN_COMPILER
                 if (opts.IsReadyToRun())
                 {
