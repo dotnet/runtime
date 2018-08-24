@@ -26,7 +26,6 @@ namespace System.Text
     // object unless specified otherwise.  This class may be used in conjunction with the String
     // class to carry out modifications upon strings.
     [Serializable]
-    [System.Runtime.CompilerServices.TypeForwardedFrom("mscorlib, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089")]
     public sealed partial class StringBuilder : ISerializable
     {
         // A StringBuilder is internally represented as a linked list of blocks each of which holds

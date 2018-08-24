@@ -21,7 +21,6 @@ namespace System.Runtime.InteropServices
     // Base exception for COM Interop errors &; Structured Exception Handler
     // exceptions.
     [Serializable]
-    [System.Runtime.CompilerServices.TypeForwardedFrom("mscorlib, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089")]
     public class ExternalException : SystemException
     {
         public ExternalException()

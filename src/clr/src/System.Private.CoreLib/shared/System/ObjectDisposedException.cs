@@ -12,7 +12,6 @@ namespace System
     ///       disposed.</para>
     /// </devdoc>
     [Serializable]
-    [System.Runtime.CompilerServices.TypeForwardedFrom("mscorlib, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089")]
     public class ObjectDisposedException : InvalidOperationException
     {
         private string _objectName;
