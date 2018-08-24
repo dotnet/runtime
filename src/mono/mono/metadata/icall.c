@@ -5865,6 +5865,20 @@ ves_icall_Mono_Runtime_SendMicrosoftTelemetry (char *payload, guint64 portable_h
 #endif
 }
 
+ICALL_EXPORT void
+ves_icall_Mono_Runtime_DumpTelemetry (char *payload, guint64 portable_hash, guint64 unportable_hash, MonoError *error)
+{
+#ifndef DISABLE_CRASH_REPORTING
+	MonoStackHash hashes;
+	memset (&hashes, 0, sizeof (MonoStackHash));
+	hashes.offset_free_hash = portable_hash;
+	hashes.offset_rich_hash = unportable_hash;
+	mono_crash_dump (payload, &hashes);
+#else
+	return;
+#endif
+}
+
 ICALL_EXPORT MonoBoolean
 ves_icall_System_Reflection_AssemblyName_ParseAssemblyName (const char *name, MonoAssemblyName *aname, MonoBoolean *is_version_defined_arg, MonoBoolean *is_token_defined_arg)
 {
