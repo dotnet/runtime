@@ -72,6 +72,9 @@ namespace R2RDump
                 case Machine.ArmThumb2:
                     target = TargetArch.Target_Thumb;
                     break;
+                default:
+                    R2RDump.WriteWarning($"{machine} not supported on CoreDisTools");
+                    return IntPtr.Zero;
             }
             return InitBufferedDisasm(target);
         }
@@ -102,6 +105,12 @@ namespace R2RDump
 
         public int GetInstruction(RuntimeFunction rtf, int imageOffset, int rtfOffset, out string instruction)
         {
+            if (_disasm == IntPtr.Zero)
+            {
+                instruction = "";
+                return rtf.Size;
+            }
+
             int instrSize = CoreDisTools.GetInstruction(_disasm, rtf, imageOffset, rtfOffset, _image, out instruction);
 
             switch (_machine)
