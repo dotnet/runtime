@@ -5,6 +5,7 @@ set(SOURCES FunctionPointerNative.cpp)
 
 # add the executable
 add_library (FunctionPointerNative SHARED ${SOURCES})
+target_link_libraries(FunctionPointerNative ${LINK_LIBRARIES_ADDITIONAL})
 
 # add the install targets
 install (TARGETS FunctionPointerNative DESTINATION bin)

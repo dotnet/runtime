@@ -9,7 +9,7 @@
 BOOL boolManaged = true;
 BOOL boolNative = false;
 
-extern "C" DLL_EXPORT BOOL __stdcall Marshal_In(/*[in]*/BOOL boolValue)
+extern "C" DLL_EXPORT BOOL STDMETHODCALLTYPE Marshal_In(/*[in]*/BOOL boolValue)
 {
 	//Check the input
 	if(boolValue != boolManaged)
@@ -29,7 +29,7 @@ extern "C" DLL_EXPORT BOOL __stdcall Marshal_In(/*[in]*/BOOL boolValue)
 	return true;
 }
 
-extern "C" DLL_EXPORT BOOL __stdcall Marshal_InOut(/*[In,Out]*/BOOL boolValue)
+extern "C" DLL_EXPORT BOOL STDMETHODCALLTYPE Marshal_InOut(/*[In,Out]*/BOOL boolValue)
 {
 	//Check the input
 	if(boolValue != boolManaged)
@@ -53,7 +53,7 @@ extern "C" DLL_EXPORT BOOL __stdcall Marshal_InOut(/*[In,Out]*/BOOL boolValue)
 	return true;
 }
 
-extern "C" DLL_EXPORT BOOL __stdcall Marshal_Out(/*[Out]*/BOOL boolValue)
+extern "C" DLL_EXPORT BOOL STDMETHODCALLTYPE Marshal_Out(/*[Out]*/BOOL boolValue)
 {
 	//In-Place Change
 	boolValue = boolNative;
@@ -62,7 +62,7 @@ extern "C" DLL_EXPORT BOOL __stdcall Marshal_Out(/*[Out]*/BOOL boolValue)
 	return true;
 }
 
-extern "C" DLL_EXPORT BOOL __stdcall MarshalPointer_In(/*[in]*/BOOL *pboolValue)
+extern "C" DLL_EXPORT BOOL STDMETHODCALLTYPE MarshalPointer_In(/*[in]*/BOOL *pboolValue)
 {
 	//Check the input
 	if(*pboolValue != boolManaged)
@@ -82,7 +82,7 @@ extern "C" DLL_EXPORT BOOL __stdcall MarshalPointer_In(/*[in]*/BOOL *pboolValue)
 	return true;
 }
 
-extern "C" DLL_EXPORT BOOL __stdcall MarshalPointer_InOut(/*[in,out]*/BOOL *pboolValue)
+extern "C" DLL_EXPORT BOOL STDMETHODCALLTYPE MarshalPointer_InOut(/*[in,out]*/BOOL *pboolValue)
 {
 	//Check the input
 	if(*pboolValue != boolManaged)
@@ -106,7 +106,7 @@ extern "C" DLL_EXPORT BOOL __stdcall MarshalPointer_InOut(/*[in,out]*/BOOL *pboo
 	return true;
 }
 
-extern "C" DLL_EXPORT BOOL __stdcall MarshalPointer_Out(/*[out]*/ BOOL *pboolValue)
+extern "C" DLL_EXPORT BOOL STDMETHODCALLTYPE MarshalPointer_Out(/*[out]*/ BOOL *pboolValue)
 {
 	//In-Place Change
 	*pboolValue = boolNative;
@@ -121,7 +121,7 @@ extern "C" DLL_EXPORT BOOL __stdcall MarshalPointer_Out(/*[out]*/ BOOL *pboolVal
 #pragma warning(disable: 4800)
 #endif
 
-extern "C" DLL_EXPORT bool __stdcall Marshal_As_In(/*[in]*/bool boolValue)
+extern "C" DLL_EXPORT bool STDMETHODCALLTYPE Marshal_As_In(/*[in]*/bool boolValue)
 {
 	//Check the input
 	if(boolValue != (bool)boolManaged)
@@ -141,7 +141,7 @@ extern "C" DLL_EXPORT bool __stdcall Marshal_As_In(/*[in]*/bool boolValue)
 	return true;
 }
 
-extern "C" DLL_EXPORT bool __stdcall Marshal_As_InOut(/*[In,Out]*/bool boolValue)
+extern "C" DLL_EXPORT bool STDMETHODCALLTYPE Marshal_As_InOut(/*[In,Out]*/bool boolValue)
 {
 	//Check the input
 	if(boolValue != (bool)boolManaged)
@@ -165,7 +165,7 @@ extern "C" DLL_EXPORT bool __stdcall Marshal_As_InOut(/*[In,Out]*/bool boolValue
 	return true;
 }
 
-extern "C" DLL_EXPORT bool __stdcall Marshal_As_Out(/*[Out]*/bool boolValue)
+extern "C" DLL_EXPORT bool STDMETHODCALLTYPE Marshal_As_Out(/*[Out]*/bool boolValue)
 {
 	//In-Place Change
 	boolValue = (bool)boolNative;

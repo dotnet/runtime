@@ -19,13 +19,13 @@ static int ReportFailure(const char* s)
     return (++fails);
 }
 
-extern  "C" DLL_EXPORT int _cdecl GetResult()
+extern  "C" DLL_EXPORT int __cdecl GetResult()
 {
     return fails;
 }
 
 //This method is used on Windows Only
-extern "C" DLL_EXPORT char _cdecl GetByteForWideChar()
+extern "C" DLL_EXPORT char __cdecl GetByteForWideChar()
 {
 #ifdef WINDOWS
     char * p = new char[3];
@@ -68,7 +68,7 @@ bool CheckInput(LPSTR str)
     p[2] = (char)0xbc;
     p[3] = (char)0;
 #endif
-    if (0 != _tcsncmp(str, p, 4))
+    if (0 != strncmp(str, p, 4))
     {
         printf("CheckInput:Expected:%s,Actual:%d\n", p, str[0]);
         delete[]p;
@@ -80,7 +80,7 @@ bool CheckInput(LPSTR str)
 }
 
 //C Call,In attribute,LPstr
-extern "C" DLL_EXPORT LPSTR _cdecl CLPStr_In(LPSTR pStr)
+extern "C" DLL_EXPORT LPSTR __cdecl CLPStr_In(LPSTR pStr)
 {
     //Check the Input
     if (!CheckInput(pStr))
@@ -90,17 +90,17 @@ extern "C" DLL_EXPORT LPSTR _cdecl CLPStr_In(LPSTR pStr)
 
     //alloc,copy, since we cannot depend the Marshaler's activity.
     size_t len = strlen(pStr) + 1; //+1, Include the NULL Character.
-    LPSTR pBack = (LPSTR)CoTaskMemAlloc(sizeof(char) * len);
+    LPSTR pBack = (LPSTR)CoreClrAlloc(sizeof(char) * len);
     strncpy(pBack, pStr, len);
 
     return pBack;
 }
 
-extern "C" DLL_EXPORT LPSTR _cdecl CLPStr_Out(LPSTR pStr)
+extern "C" DLL_EXPORT LPSTR __cdecl CLPStr_Out(LPSTR pStr)
 {
     const char* pTemp = "AAAA";
     size_t len = strlen(pTemp) + 1; //+1, Include the NULL Character.
-    LPSTR pBack = (LPSTR)CoTaskMemAlloc(sizeof(char) * len);
+    LPSTR pBack = (LPSTR)CoreClrAlloc(sizeof(char) * len);
     strncpy(pBack, pTemp, strlen(pTemp) + 1);
 
     strncpy(pStr, pTemp, strlen(pTemp) + 1);
@@ -108,7 +108,7 @@ extern "C" DLL_EXPORT LPSTR _cdecl CLPStr_Out(LPSTR pStr)
     return pBack;
 }
 
-extern "C" DLL_EXPORT LPSTR _cdecl CLPStr_InOut(LPSTR pStr)
+extern "C" DLL_EXPORT LPSTR __cdecl CLPStr_InOut(LPSTR pStr)
 {
     //Check the Input
     if (!CheckInput(pStr))
@@ -118,13 +118,13 @@ extern "C" DLL_EXPORT LPSTR _cdecl CLPStr_InOut(LPSTR pStr)
 
     //alloc,copy, since we cannot depend the Marshaler's activity.
     size_t len = strlen(pStr) + 1; //+1, Include the NULL Character.
-    LPSTR pBack = (LPSTR)CoTaskMemAlloc(len);
+    LPSTR pBack = (LPSTR)CoreClrAlloc(len);
     strncpy(pBack, pStr, len);
 
     return pBack;
 }
 
-extern "C" DLL_EXPORT LPSTR _cdecl CLPStr_InByRef(LPSTR* ppStr)
+extern "C" DLL_EXPORT LPSTR __cdecl CLPStr_InByRef(LPSTR* ppStr)
 {
     //Check the Input
     if (!CheckInput(*ppStr))
@@ -134,25 +134,25 @@ extern "C" DLL_EXPORT LPSTR _cdecl CLPStr_InByRef(LPSTR* ppStr)
 
     //alloc,copy, since we cannot depend the Marshaler's activity.
     size_t len = strlen(*ppStr) + 1; //+1, Include the NULL Character.
-    LPSTR pBack = (LPSTR)CoTaskMemAlloc(len);
+    LPSTR pBack = (LPSTR)CoreClrAlloc(len);
     strncpy(pBack, *ppStr, len);
 
     return pBack;
 }
 
-extern "C" DLL_EXPORT LPSTR _cdecl CLPStr_OutByRef(LPSTR* ppStr)
+extern "C" DLL_EXPORT LPSTR __cdecl CLPStr_OutByRef(LPSTR* ppStr)
 {
     const char* pTemp = "AAAA";
     size_t len = strlen(pTemp) + 1; //+1, Include the NULL Character.
-    LPSTR pBack = (LPSTR)CoTaskMemAlloc(sizeof(char) * len);
+    LPSTR pBack = (LPSTR)CoreClrAlloc(sizeof(char) * len);
     strncpy(pBack, pTemp, strlen(pTemp) + 1);
 
-    *ppStr = (LPSTR)CoTaskMemAlloc(sizeof(char) * len);
+    *ppStr = (LPSTR)CoreClrAlloc(sizeof(char) * len);
     strncpy(*ppStr, pTemp, strlen(pTemp) + 1);
     return pBack;
 }
 
-extern "C" DLL_EXPORT LPSTR _cdecl CLPStr_InOutByRef(LPSTR* ppStr)
+extern "C" DLL_EXPORT LPSTR __cdecl CLPStr_InOutByRef(LPSTR* ppStr)
 {
     //Check the Input
     if (!CheckInput(*ppStr))
@@ -162,21 +162,21 @@ extern "C" DLL_EXPORT LPSTR _cdecl CLPStr_InOutByRef(LPSTR* ppStr)
 
     //alloc,copy, since we cannot depend the Marshaler's activity.
     size_t len = strlen(*ppStr) + 1; //+1, Include the NULL Character.
-    LPSTR pBack = (LPSTR)CoTaskMemAlloc(len);
+    LPSTR pBack = (LPSTR)CoreClrAlloc(len);
     strncpy(pBack, *ppStr, len);
     return pBack;
 }
 
 
-typedef LPSTR (_cdecl* delegate_cdecl)(LPSTR* ppstr);
-extern "C" DLL_EXPORT delegate_cdecl _cdecl CLPStr_DelegatePInvoke()
+typedef LPSTR (__cdecl* delegate_cdecl)(LPSTR* ppstr);
+extern "C" DLL_EXPORT delegate_cdecl __cdecl CLPStr_DelegatePInvoke()
 {
     return CLPStr_InOutByRef;
 }
 
 //stdcall
 
-extern "C" DLL_EXPORT LPSTR __stdcall SLPStr_In(LPSTR pStr)
+extern "C" DLL_EXPORT LPSTR STDMETHODCALLTYPE SLPStr_In(LPSTR pStr)
 {
     //Check the Input
     if (!CheckInput(pStr))
@@ -186,23 +186,23 @@ extern "C" DLL_EXPORT LPSTR __stdcall SLPStr_In(LPSTR pStr)
 
     //alloc,copy, since we cannot depend the Marshaler's activity.
     size_t len = strlen(pStr) + 1; //+1, Include the NULL Character.
-    LPSTR pBack = (LPSTR)CoTaskMemAlloc(len);
+    LPSTR pBack = (LPSTR)CoreClrAlloc(len);
     strncpy(pBack, pStr, len);
     return pBack;
 }
 
-extern "C" DLL_EXPORT LPSTR __stdcall SLPStr_Out(LPSTR pStr)
+extern "C" DLL_EXPORT LPSTR STDMETHODCALLTYPE SLPStr_Out(LPSTR pStr)
 {
     const char* pTemp = "AAAA";
     size_t len = strlen(pTemp) + 1; //+1, Include the NULL Character.
-    LPSTR pBack = (LPSTR)CoTaskMemAlloc(sizeof(char) * len);
+    LPSTR pBack = (LPSTR)CoreClrAlloc(sizeof(char) * len);
     strncpy(pBack, pTemp, strlen(pTemp) + 1);
 
     strncpy(pStr, pTemp, strlen(pTemp) + 1);
     return pBack;
 }
 
-extern "C" DLL_EXPORT LPSTR __stdcall SLPStr_InOut(LPSTR pStr)
+extern "C" DLL_EXPORT LPSTR STDMETHODCALLTYPE SLPStr_InOut(LPSTR pStr)
 {
     //Check the Input
     if (!CheckInput(pStr))
@@ -212,12 +212,12 @@ extern "C" DLL_EXPORT LPSTR __stdcall SLPStr_InOut(LPSTR pStr)
 
     //alloc,copy, since we cannot depend the Marshaler's activity.
     size_t len = strlen(pStr) + 1; //+1, Include the NULL Character.
-    LPSTR pBack = (LPSTR)CoTaskMemAlloc(len);
+    LPSTR pBack = (LPSTR)CoreClrAlloc(len);
     strncpy(pBack, pStr, len);
     return pBack;
 }
 
-extern "C" DLL_EXPORT LPSTR __stdcall SLPStr_InByRef(LPSTR* ppStr)
+extern "C" DLL_EXPORT LPSTR STDMETHODCALLTYPE SLPStr_InByRef(LPSTR* ppStr)
 {
     //Check the Input
     if (!CheckInput(*ppStr))
@@ -226,25 +226,25 @@ extern "C" DLL_EXPORT LPSTR __stdcall SLPStr_InByRef(LPSTR* ppStr)
     }
     //alloc,copy, since we cannot depend the Marshaler's activity.
     size_t len = strlen(*ppStr) + 1; //+1, Include the NULL Character.
-    LPSTR pBack = (LPSTR)CoTaskMemAlloc(len);
+    LPSTR pBack = (LPSTR)CoreClrAlloc(len);
     strncpy(pBack, *ppStr, len);
     return pBack;
 }
 
-extern "C" DLL_EXPORT LPSTR __stdcall SLPStr_OutByRef(LPSTR* ppStr)
+extern "C" DLL_EXPORT LPSTR STDMETHODCALLTYPE SLPStr_OutByRef(LPSTR* ppStr)
 {
     const char* pTemp = "AAAA";
     size_t len = strlen(pTemp) + 1; //+1, Include the NULL Character.
-    LPSTR pBack = (LPSTR)CoTaskMemAlloc(sizeof(char) * len);
+    LPSTR pBack = (LPSTR)CoreClrAlloc(sizeof(char) * len);
     strncpy(pBack, pTemp, strlen(pTemp) + 1);
 
-    *ppStr = (LPSTR)CoTaskMemAlloc(sizeof(char) * len);
+    *ppStr = (LPSTR)CoreClrAlloc(sizeof(char) * len);
     strncpy(*ppStr, pTemp, strlen(pTemp) + 1);
 
     return pBack;
 }
 
-extern "C" DLL_EXPORT LPSTR __stdcall SLPStr_InOutByRef(LPSTR* ppStr)
+extern "C" DLL_EXPORT LPSTR STDMETHODCALLTYPE SLPStr_InOutByRef(LPSTR* ppStr)
 {
     //Check the Input
     if (!CheckInput(*ppStr))
@@ -254,12 +254,12 @@ extern "C" DLL_EXPORT LPSTR __stdcall SLPStr_InOutByRef(LPSTR* ppStr)
 
     //alloc,copy, since we cannot depend the Marshaler's activity.
     size_t len = strlen(*ppStr) + 1; //+1, Include the NULL Character.
-    LPSTR pBack = (LPSTR)CoTaskMemAlloc(len);
+    LPSTR pBack = (LPSTR)CoreClrAlloc(len);
     strncpy(pBack, *ppStr, len);
     return pBack;
 }
 
-typedef LPSTR (__stdcall *delegate_stdcall)(LPSTR* ppstr);
+typedef LPSTR (STDMETHODCALLTYPE *delegate_stdcall)(LPSTR* ppstr);
 extern "C" DLL_EXPORT delegate_stdcall SLPStr_DelegatePInvoke()
 {
     return SLPStr_InOutByRef;
@@ -267,26 +267,26 @@ extern "C" DLL_EXPORT delegate_stdcall SLPStr_DelegatePInvoke()
 
 ///Cdecl, Reverse PInvoke
 
-typedef LPSTR (_cdecl *CCallBackIn)(LPSTR pstr);
-extern "C" DLL_EXPORT void _cdecl DoCCallBack_LPSTR_In(CCallBackIn callback)
+typedef LPSTR (__cdecl *CCallBackIn)(LPSTR pstr);
+extern "C" DLL_EXPORT void __cdecl DoCCallBack_LPSTR_In(CCallBackIn callback)
 {
   const char* pTemp = "AAAA";
   size_t len = strlen(pTemp)+1;
-  LPSTR pStr = (LPSTR)CoTaskMemAlloc(len);
+  LPSTR pStr = (LPSTR)CoreClrAlloc(len);
   strncpy(pStr,pTemp,len);
 
   if(!CheckInput(callback(pStr)))
   {
   	ReportFailure("DoCCallBack_LPSTR_In:NativeSide");
   }
-  CoTaskMemFree(pStr);
+  CoreClrFree(pStr);
 }
 
-typedef LPSTR (_cdecl *CCallBackOut)(LPSTR pstr);
-extern "C" DLL_EXPORT void _cdecl DoCCallBack_LPSTR_Out(CCallBackOut callback)
+typedef LPSTR (__cdecl *CCallBackOut)(LPSTR pstr);
+extern "C" DLL_EXPORT void __cdecl DoCCallBack_LPSTR_Out(CCallBackOut callback)
 {
     size_t len = 10;
-    LPSTR pStr = (LPSTR)CoTaskMemAlloc(len);
+    LPSTR pStr = (LPSTR)CoreClrAlloc(len);
 
     //Check the return value
     if (!CheckInput(callback(pStr)))
@@ -297,15 +297,15 @@ extern "C" DLL_EXPORT void _cdecl DoCCallBack_LPSTR_Out(CCallBackOut callback)
     {
         ReportFailure("DoCCallBack_LPSTR_Out:NativeSide,the Second Check");
     }
-    CoTaskMemFree(pStr);
+    CoreClrFree(pStr);
 }
 
-typedef LPSTR (_cdecl *CCallBackInOut)(LPSTR pstr);
-extern "C" DLL_EXPORT void _cdecl DoCCallBack_LPSTR_InOut(CCallBackInOut callback)
+typedef LPSTR (__cdecl *CCallBackInOut)(LPSTR pstr);
+extern "C" DLL_EXPORT void __cdecl DoCCallBack_LPSTR_InOut(CCallBackInOut callback)
 {
     const char* pTemp = "AAAA";
     size_t len = strlen(pTemp) + 1;
-    LPSTR pStr = (LPSTR)CoTaskMemAlloc(len);
+    LPSTR pStr = (LPSTR)CoreClrAlloc(len);
     strncpy(pStr, pTemp, len);
 
     if (!CheckInput(callback(pStr)))
@@ -316,29 +316,29 @@ extern "C" DLL_EXPORT void _cdecl DoCCallBack_LPSTR_InOut(CCallBackInOut callbac
     {
         ReportFailure("DoCCallBack_LPSTR_InOut:NativeSide,the Second Check");
     }
-    CoTaskMemFree(pStr);
+    CoreClrFree(pStr);
 }
 
-typedef LPSTR (_cdecl *CallBackInByRef)(LPSTR* pstr);
-extern "C" DLL_EXPORT void _cdecl DoCCallBack_LPSTR_InByRef(CallBackInByRef callback)
+typedef LPSTR (__cdecl *CallBackInByRef)(LPSTR* pstr);
+extern "C" DLL_EXPORT void __cdecl DoCCallBack_LPSTR_InByRef(CallBackInByRef callback)
 {
     const char* pTemp = "AAAA";
     size_t len = strlen(pTemp) + 1;
-    LPSTR pStr = (LPSTR)CoTaskMemAlloc(len);
+    LPSTR pStr = (LPSTR)CoreClrAlloc(len);
     strncpy(pStr, pTemp, len);
 
     if (!CheckInput(callback(&pStr)))
     {
         ReportFailure("DoCCallBack_LPSTR_InByRef:NativeSide");
     }
-    CoTaskMemFree(pStr);
+    CoreClrFree(pStr);
 }
 
-typedef LPSTR (_cdecl *CCallBackOutByRef)(LPSTR* pstr);
-extern "C" DLL_EXPORT void _cdecl DoCCallBack_LPSTR_OutByRef(CCallBackOutByRef callback)
+typedef LPSTR (__cdecl *CCallBackOutByRef)(LPSTR* pstr);
+extern "C" DLL_EXPORT void __cdecl DoCCallBack_LPSTR_OutByRef(CCallBackOutByRef callback)
 {
     size_t len = 10;
-    LPSTR pStr = (LPSTR)CoTaskMemAlloc(len);
+    LPSTR pStr = (LPSTR)CoreClrAlloc(len);
 
     if (!CheckInput(callback(&pStr)))
     {
@@ -348,15 +348,15 @@ extern "C" DLL_EXPORT void _cdecl DoCCallBack_LPSTR_OutByRef(CCallBackOutByRef c
     {
         ReportFailure("DoCCallBack_LPSTR_OutByRef:NativeSide,the Second Check");
     }
-    CoTaskMemFree(pStr);
+    CoreClrFree(pStr);
 }
 
-typedef LPSTR (_cdecl *CCallBackInOutByRef)(LPSTR* pstr);
-extern "C" DLL_EXPORT void _cdecl DoCCallBack_LPSTR_InOutByRef(CCallBackInOutByRef callback)
+typedef LPSTR (__cdecl *CCallBackInOutByRef)(LPSTR* pstr);
+extern "C" DLL_EXPORT void __cdecl DoCCallBack_LPSTR_InOutByRef(CCallBackInOutByRef callback)
 {
     const char* pTemp = "AAAA";
     size_t len = strlen(pTemp) + 1;
-    LPSTR pStr = (LPSTR)CoTaskMemAlloc(len);
+    LPSTR pStr = (LPSTR)CoreClrAlloc(len);
     strncpy(pStr, pTemp, len);
 
     if (!CheckInput(callback(&pStr)))
@@ -367,31 +367,31 @@ extern "C" DLL_EXPORT void _cdecl DoCCallBack_LPSTR_InOutByRef(CCallBackInOutByR
     {
         ReportFailure("DoCCallBack_LPSTR_InOutByRef:NativeSide,the Second Check");
     }
-    CoTaskMemFree(pStr);
+    CoreClrFree(pStr);
 }
 
 ///STDCALL Reverse PInvoke
-typedef LPSTR (__stdcall *SCallBackIn)(LPSTR pstr);
-extern "C" DLL_EXPORT void _cdecl DoSCallBack_LPSTR_In(SCallBackIn callback)
+typedef LPSTR (STDMETHODCALLTYPE *SCallBackIn)(LPSTR pstr);
+extern "C" DLL_EXPORT void __cdecl DoSCallBack_LPSTR_In(SCallBackIn callback)
 {
     const char* pTemp = "AAAA";
     size_t len = strlen(pTemp) + 1;
-    LPSTR pStr = (LPSTR)CoTaskMemAlloc(len);
+    LPSTR pStr = (LPSTR)CoreClrAlloc(len);
     strncpy(pStr, pTemp, len);
 
     if (!CheckInput(callback(pStr)))
     {
         ReportFailure("DoSCallBack_LPSTR_In:NativeSide");
     }
-    CoTaskMemFree(pStr);
+    CoreClrFree(pStr);
 }
 
-typedef LPSTR (__stdcall *SCallBackOut)(LPSTR pstr);
-extern "C" DLL_EXPORT void _cdecl DoSCallBack_LPSTR_Out(SCallBackOut callback)
+typedef LPSTR (STDMETHODCALLTYPE *SCallBackOut)(LPSTR pstr);
+extern "C" DLL_EXPORT void __cdecl DoSCallBack_LPSTR_Out(SCallBackOut callback)
 {
 
     size_t len = 10;
-    LPSTR pStr = (LPSTR)CoTaskMemAlloc(len);
+    LPSTR pStr = (LPSTR)CoreClrAlloc(len);
 
     if (!CheckInput(callback(pStr)))
     {
@@ -401,15 +401,15 @@ extern "C" DLL_EXPORT void _cdecl DoSCallBack_LPSTR_Out(SCallBackOut callback)
     {
         ReportFailure("DoSCallBack_LPSTR_Out:NativeSide,the Second Check");
     }
-    CoTaskMemFree(pStr);
+    CoreClrFree(pStr);
 }
 
-typedef LPSTR (__stdcall *SCallBackInOut)(LPSTR pstr);
-extern "C" DLL_EXPORT void _cdecl DoSCallBack_LPSTR_InOut(SCallBackInOut callback)
+typedef LPSTR (STDMETHODCALLTYPE *SCallBackInOut)(LPSTR pstr);
+extern "C" DLL_EXPORT void __cdecl DoSCallBack_LPSTR_InOut(SCallBackInOut callback)
 {
     const char* pTemp = "AAAA";
     size_t len = strlen(pTemp) + 1;
-    LPSTR pStr = (LPSTR)CoTaskMemAlloc(len);
+    LPSTR pStr = (LPSTR)CoreClrAlloc(len);
     strncpy(pStr, pTemp, len);
 
     if (!CheckInput(callback(pStr)))
@@ -420,29 +420,29 @@ extern "C" DLL_EXPORT void _cdecl DoSCallBack_LPSTR_InOut(SCallBackInOut callbac
     {
         ReportFailure("DoSCallBack_LPSTR_InOut:NativeSide,the second Check");
     }
-    CoTaskMemFree(pStr);
+    CoreClrFree(pStr);
 }
 
-typedef LPSTR (__stdcall *SCallBackInByRef)(LPSTR* pstr);
-extern "C" DLL_EXPORT void _cdecl DoSCallBack_LPSTR_InByRef(SCallBackInByRef callback)
+typedef LPSTR (STDMETHODCALLTYPE *SCallBackInByRef)(LPSTR* pstr);
+extern "C" DLL_EXPORT void __cdecl DoSCallBack_LPSTR_InByRef(SCallBackInByRef callback)
 {
     const char* pTemp = "AAAA";
     size_t len = strlen(pTemp) + 1;
-    LPSTR pStr = (LPSTR)CoTaskMemAlloc(len);
+    LPSTR pStr = (LPSTR)CoreClrAlloc(len);
     strncpy(pStr, pTemp, len);
 
     if (!CheckInput(callback(&pStr)))
     {
         ReportFailure("DoSCallBack_LPSTR_InByRef:NativeSide");
     }
-    CoTaskMemFree(pStr);
+    CoreClrFree(pStr);
 }
 
-typedef LPSTR (__stdcall *SCallBackOutByRef)(LPSTR* pstr);
-extern "C" DLL_EXPORT void _cdecl DoSCallBack_LPSTR_OutByRef(SCallBackOutByRef callback)
+typedef LPSTR (STDMETHODCALLTYPE *SCallBackOutByRef)(LPSTR* pstr);
+extern "C" DLL_EXPORT void __cdecl DoSCallBack_LPSTR_OutByRef(SCallBackOutByRef callback)
 {
     size_t len = 10;
-    LPSTR pStr = (LPSTR)CoTaskMemAlloc(len);
+    LPSTR pStr = (LPSTR)CoreClrAlloc(len);
 
     if (!CheckInput(callback(&pStr)))
     {
@@ -452,15 +452,15 @@ extern "C" DLL_EXPORT void _cdecl DoSCallBack_LPSTR_OutByRef(SCallBackOutByRef c
     {
         ReportFailure("DoSCallBack_LPSTR_OutByRef:NativeSide,the second Check");
     }
-    CoTaskMemFree(pStr);
+    CoreClrFree(pStr);
 }
 
-typedef LPSTR (__stdcall *SCallBackInOutByRef)(LPSTR* pstr);
-extern "C" DLL_EXPORT void _cdecl DoSCallBack_LPSTR_InOutByRef(SCallBackInOutByRef callback)
+typedef LPSTR (STDMETHODCALLTYPE *SCallBackInOutByRef)(LPSTR* pstr);
+extern "C" DLL_EXPORT void __cdecl DoSCallBack_LPSTR_InOutByRef(SCallBackInOutByRef callback)
 {
     const char* pTemp = "AAAA";
     size_t len = strlen(pTemp) + 1;
-    LPSTR pStr = (LPSTR)CoTaskMemAlloc(len);
+    LPSTR pStr = (LPSTR)CoreClrAlloc(len);
     strncpy(pStr, pTemp, len);
 
     if (!CheckInput(callback(&pStr)))
@@ -471,6 +471,6 @@ extern "C" DLL_EXPORT void _cdecl DoSCallBack_LPSTR_InOutByRef(SCallBackInOutByR
     {
         ReportFailure("DoSCallBack_LPSTR_InOutByRef:NativeSide,the second Check");
     }
-    CoTaskMemFree(pStr);
+    CoreClrFree(pStr);
 }
 #pragma warning( pop )
