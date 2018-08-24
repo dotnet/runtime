@@ -4571,27 +4571,27 @@ namespace System.Data.SqlClient
             {
                 return false;
             }
-
+            ReadOnlySpan<byte> dateTimeData = datetimeBuffer.Slice(0, length);
             switch (tdsType)
             {
                 case TdsEnums.SQLDATE:
                     Debug.Assert(length == 3, "invalid length for date type!");
-                    value.SetToDate(datetimeBuffer);
+                    value.SetToDate(dateTimeData);
                     break;
 
                 case TdsEnums.SQLTIME:
                     Debug.Assert(3 <= length && length <= 5, "invalid length for time type!");
-                    value.SetToTime(datetimeBuffer, length, scale);
+                    value.SetToTime(dateTimeData, scale);
                     break;
 
                 case TdsEnums.SQLDATETIME2:
                     Debug.Assert(6 <= length && length <= 8, "invalid length for datetime2 type!");
-                    value.SetToDateTime2(datetimeBuffer, length, scale);
+                    value.SetToDateTime2(dateTimeData, scale);
                     break;
 
                 case TdsEnums.SQLDATETIMEOFFSET:
                     Debug.Assert(8 <= length && length <= 10, "invalid length for datetimeoffset type!");
-                    value.SetToDateTimeOffset(datetimeBuffer, length, scale);
+                    value.SetToDateTimeOffset(dateTimeData, scale);
                     break;
 
                 default:
