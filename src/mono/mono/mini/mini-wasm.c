@@ -28,13 +28,13 @@ typedef struct {
 	ArgStorage storage : 8;
 } ArgInfo;
 
-typedef struct {
+struct CallInfo {
 	int nargs;
 	gboolean gsharedvt;
 
 	ArgInfo ret;
 	ArgInfo args [1];
-} CallInfo;
+};
 
 static ArgStorage
 get_storage (MonoType *type, gboolean is_return)
