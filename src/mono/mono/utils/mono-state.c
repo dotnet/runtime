@@ -517,13 +517,12 @@ mono_crash_dump (const char *jsonFile, MonoStackHash *hashes)
 {
 	size_t size = strlen (jsonFile);
 
-	pid_t pid = getpid ();
 	gboolean success = FALSE;
 
 	// Save up to 100 dump files for a given stacktrace hash
 	for (int increment = 0; increment < 100; increment++) {
 		FILE* fp;
-		char *name = g_strdup_printf ("mono_crash.%d.%d.json", hashes->offset_free_hash, increment);
+		char *name = g_strdup_printf ("mono_crash.%" PRIx64 " .%d.json", hashes->offset_free_hash, increment);
 
 		if ((fp = fopen (name, "ab"))) {
 			if (ftell (fp) == 0) {

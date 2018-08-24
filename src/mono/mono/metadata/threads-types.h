@@ -547,8 +547,8 @@ typedef struct {
 } MonoFrameSummary;
 
 typedef struct {
-	intptr_t offset_free_hash;
-	intptr_t offset_rich_hash;
+	guint64 offset_free_hash;
+	guint64 offset_rich_hash;
 } MonoStackHash;
 
 typedef struct {

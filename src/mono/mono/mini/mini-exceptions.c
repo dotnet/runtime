@@ -1336,14 +1336,14 @@ mono_get_portable_ip (intptr_t in_ip, intptr_t *out_ip, char *out_name)
 	return TRUE;
 }
 
-static intptr_t
-summarize_offset_free_hash (intptr_t accum, MonoFrameSummary *frame)
+static guint64
+summarize_offset_free_hash (guint64 accum, MonoFrameSummary *frame)
 {
 	if (!frame->is_managed)
 		return accum;
 
 	// See: mono_ptrarray_hash
-	intptr_t hash_accum = accum;
+	guint64 hash_accum = accum;
 
 	// The assembly and the method token, no offsets
 	hash_accum += mono_metadata_str_hash (frame->str_descr);
@@ -1352,11 +1352,11 @@ summarize_offset_free_hash (intptr_t accum, MonoFrameSummary *frame)
 	return hash_accum;
 }
 
-static intptr_t
-summarize_offset_rich_hash (intptr_t accum, MonoFrameSummary *frame)
+static guint64
+summarize_offset_rich_hash (guint64 accum, MonoFrameSummary *frame)
 {
 	// See: mono_ptrarray_hash
-	intptr_t hash_accum = accum;
+	guint64 hash_accum = accum;
 
 	if (!frame->is_managed) {
 		hash_accum += frame->unmanaged_data.ip;
