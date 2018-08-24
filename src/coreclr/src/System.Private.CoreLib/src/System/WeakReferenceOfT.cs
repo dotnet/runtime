@@ -19,7 +19,6 @@ using System.Runtime.Versioning;
 namespace System
 {
     [Serializable]
-    [System.Runtime.CompilerServices.TypeForwardedFrom("mscorlib, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089")] 
     // This class is sealed to mitigate security issues caused by Object::MemberwiseClone.
     public sealed class WeakReference<T> : ISerializable
         where T : class

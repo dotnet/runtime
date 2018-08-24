@@ -46,7 +46,6 @@ namespace System.Collections.Generic
     // It is used by the IEnumerable<T> implementation for both IDictionary<TKey, TValue>
     // and IReadOnlyDictionary<TKey, TValue>.
     [Serializable]
-    [System.Runtime.CompilerServices.TypeForwardedFrom("mscorlib, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089")]
     public readonly struct KeyValuePair<TKey, TValue>
     {
         private readonly TKey key; // Do not rename (binary serialization)
