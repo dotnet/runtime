@@ -16,13 +16,13 @@ namespace System
         public static bool IsNetfx471OrNewer => false;
         public static bool IsNetfx472OrNewer => false;
 
-
+#if !TargetsWindows
         [DllImport("libc", CharSet = CharSet.Ansi, CallingConvention = CallingConvention.Cdecl)]
         private static extern IntPtr gnu_get_libc_release();
 
         [DllImport("libc", CharSet = CharSet.Ansi, CallingConvention = CallingConvention.Cdecl)]
         private static extern IntPtr gnu_get_libc_version();
-
+#endif
         /// <summary>
         /// If gnulibc is available, returns the release, such as "stable".
         /// Otherwise (eg., Windows, musl) returns "glibc_not_found".
@@ -31,6 +31,9 @@ namespace System
         {
             get
             {
+#if TargetsWindows
+                return "glibc_not_found";
+#else
                 try
                 {
                     return Marshal.PtrToStringUTF8(gnu_get_libc_release());
@@ -39,6 +42,7 @@ namespace System
                 {
                     return "glibc_not_found";
                 }
+#endif
             }
         }
 
@@ -50,6 +54,9 @@ namespace System
         {
             get
             {
+#if TargetsWindows
+                return "glibc_not_found";
+#else
                 try
                 {
                     return Marshal.PtrToStringUTF8(gnu_get_libc_version());
@@ -58,6 +65,7 @@ namespace System
                 {
                     return "glibc_not_found";
                 }
+#endif
             }
         }
     }
