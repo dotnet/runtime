@@ -7,7 +7,7 @@ using Xunit;
 
 namespace System.ComponentModel.Tests
 {
-    public static partial class DefaultValueAttributeTests
+    public partial class DefaultValueAttributeTests
     {
         [Fact]
         public static void Ctor_netcoreapp11()

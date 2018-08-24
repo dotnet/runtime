@@ -3,11 +3,14 @@
 // See the LICENSE file in the project root for more information.
 
 using System.Collections.Generic;
+using System.Diagnostics;
+using System.Globalization;
+using System.Reflection;
 using Xunit;
 
 namespace System.ComponentModel.Tests
 {
-    public static partial class DefaultValueAttributeTests
+    public partial class DefaultValueAttributeTests : RemoteExecutorTestBase
     {
         [Fact]
         public static void Ctor()
@@ -33,6 +36,71 @@ namespace System.ComponentModel.Tests
 
             Assert.Equal(42, new DefaultValueAttribute(typeof(int), "42").Value);
             Assert.Null(new DefaultValueAttribute(typeof(int), "caughtException").Value);
+        }
+
+        class CustomType
+        {
+            public int Value { get; set; }
+        }
+
+        class CustomConverter : TypeConverter
+        {
+            public override object ConvertFrom(ITypeDescriptorContext context, CultureInfo culture, object value)
+            {
+                return new CustomType() { Value = int.Parse((string)value) };
+            }
+        }
+
+        class CustomType2
+        {
+            public int Value { get; set; }
+        }
+
+        [Fact]
+        public static void Ctor_CustomTypeConverter()
+        {
+            TypeDescriptor.AddAttributes(typeof(CustomType), new TypeConverterAttribute(typeof(CustomConverter)));
+            DefaultValueAttribute attr = new DefaultValueAttribute(typeof(CustomType), "42");
+            Assert.Equal(42, ((CustomType)attr.Value).Value);
+        }
+
+        [Theory]
+        [InlineData(typeof(CustomType), true, "", 0)]
+        [InlineData(typeof(int), false, "42", 42)]
+        // On NetFramework will fail because there isn't fallback code, only call to TypeDescriptor.GetConverter
+        [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework)]
+        public void Ctor_TypeDescriptorNotFound_ExceptionFallback(Type type, bool returnNull, string stringToConvert, int expectedValue)
+        {
+            RemoteInvoke((innerType, innerReturnNull, innerStringToConvert, innerExpectedValue) =>
+            {
+                FieldInfo s_convertFromInvariantString = typeof(DefaultValueAttribute).GetField("s_convertFromInvariantString", BindingFlags.GetField | Reflection.BindingFlags.NonPublic | Reflection.BindingFlags.Static);
+                Assert.NotNull(s_convertFromInvariantString);
+
+                // simulate TypeDescriptor.ConvertFromInvariantString not found
+                s_convertFromInvariantString.SetValue(null, new object());
+
+                // we fallback to empty catch in DefaultValueAttribute constructor
+                DefaultValueAttribute attr = new DefaultValueAttribute(Type.GetType(innerType), innerStringToConvert);
+
+                if (bool.Parse(innerReturnNull))
+                {
+                    Assert.Null(attr.Value);
+                }
+                else
+                {
+                    Assert.Equal(int.Parse(innerExpectedValue), attr.Value);
+                }
+
+            }, type.ToString(), returnNull.ToString(), stringToConvert, expectedValue.ToString()).Dispose();
+        }
+
+        [Theory]
+        [InlineData(typeof(CustomType2))]
+        [InlineData(typeof(DefaultValueAttribute))]
+        public static void Ctor_DefaultTypeConverter_Null(Type type)
+        {
+            DefaultValueAttribute attr = new DefaultValueAttribute(type, "42");
+            Assert.Null(attr.Value);
         }
 
         public static IEnumerable<object[]> Equals_TestData()
