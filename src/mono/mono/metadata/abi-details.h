@@ -40,12 +40,9 @@ int mono_abi_alignment (CoreTypeAlign type);
 #define MONO_ABI_SIZEOF(type) (MONO_STRUCT_SIZE (type))
 #define MONO_CURRENT_ABI_SIZEOF(type) ((int)sizeof(type))
 
-#undef DECL_OFFSET
 #undef DECL_OFFSET2
 #define DECL_OFFSET(struct,field) MONO_OFFSET_ ## struct ## _ ## field = -1,
 #define DECL_OFFSET2(struct,field,offset) MONO_OFFSET_ ## struct ## _ ## field = offset,
-// #define DECL_ALIGN(type) MONO_ALIGN_ ##type = MONO_CURRENT_ABI_ALIGNOF (type),
-// #define DECL_ALIGN2(type,size) MONO_ALIGN_ ##type = size,
 #define DECL_ALIGN2(type,size)
 #define DECL_SIZE(type) MONO_SIZEOF_ ##type = -1,
 #define DECL_SIZE2(type,size) MONO_SIZEOF_ ##type = size,
@@ -68,4 +65,6 @@ enum {
 #endif
 #endif
 
+// #define MONO_SIZEOF_MonoObject (2 * MONO_ABI_SIZEOF(gpointer))
+#define MONO_SIZEOF_MonoObject (2 * MONO_SIZEOF_gpointer)
 #endif

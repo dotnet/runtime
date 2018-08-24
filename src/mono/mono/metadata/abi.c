@@ -5,28 +5,20 @@
 
 
 typedef struct {
-	char alignment [MONO_ALIGN_COUNT];
+	const char alignment [MONO_ALIGN_COUNT];
 } AbiDetails;
 
-AbiDetails mono_abi_details;
+
+#define DECLARE_ABI_DETAILS(I8, I16, I32, I64, F32, F64, PTR) \
+const static AbiDetails mono_abi_details = {	\
+	.alignment = { I8, I16, I32, I64, F32, F64, PTR }	\
+};	\
 
 #ifdef MONO_CROSS_COMPILE
 
 #if TARGET_WASM
 
-static void
-init_abi_detail (void)
-{
-#define INIT_ALIGN(type, size) mono_abi_details.alignment [MONO_ALIGN_  ## type] = size
-	INIT_ALIGN (gint8, 1);
-	INIT_ALIGN (gint16, 2);
-	INIT_ALIGN (gint32, 4);
-	INIT_ALIGN (gint64, 8);
-	INIT_ALIGN (float, 4);
-	INIT_ALIGN (double, 8);
-	INIT_ALIGN (gpointer, 4);
-#undef INIT_ALIGN
-}
+DECLARE_ABI_DETAILS (1, 2, 4, 8, 4, 8, 4)
 
 #else
 
@@ -41,19 +33,14 @@ enum {
 #include "object-offsets.h"
 };
 
-static void
-init_abi_detail (void)
-{
-#define INIT_ALIGN(type) mono_abi_details.alignment [MONO_ALIGN_  ## type] = MONO_ALIGN_value_ ## type
-	INIT_ALIGN (gint8);
-	INIT_ALIGN (gint16);
-	INIT_ALIGN (gint32);
-	INIT_ALIGN (gint64);
-	INIT_ALIGN (float);
-	INIT_ALIGN (double);
-	INIT_ALIGN (gpointer);
-#undef INIT_ALIGN
-}
+DECLARE_ABI_DETAILS (
+	MONO_ALIGN_value_gint8,
+	MONO_ALIGN_value_gint16,
+	MONO_ALIGN_value_gint32,
+	MONO_ALIGN_value_gint64,
+	MONO_ALIGN_value_float,
+	MONO_ALIGN_value_double,
+	MONO_ALIGN_value_gpointer)
 
 #endif
 
@@ -71,35 +58,19 @@ MONO_CURRENT_ABI_ALIGNOF_TYPEDEF(float)
 MONO_CURRENT_ABI_ALIGNOF_TYPEDEF(double)
 MONO_CURRENT_ABI_ALIGNOF_TYPEDEF(gpointer)
 
-static void
-init_abi_detail (void)
-{
-#define INIT_ALIGN(type) mono_abi_details.alignment [MONO_ALIGN_  ## type] = MONO_CURRENT_ABI_ALIGNOF (type)
-	INIT_ALIGN (gint8);
-	INIT_ALIGN (gint16);
-	INIT_ALIGN (gint32);
-	INIT_ALIGN (gint64);
-	INIT_ALIGN (float);
-	INIT_ALIGN (double);
-	INIT_ALIGN (gpointer);
-#undef INIT_ALIGN
-}
+DECLARE_ABI_DETAILS (
+	MONO_CURRENT_ABI_ALIGNOF (gint8),
+	MONO_CURRENT_ABI_ALIGNOF (gint16),
+	MONO_CURRENT_ABI_ALIGNOF (gint32),
+	MONO_CURRENT_ABI_ALIGNOF (gint64),
+	MONO_CURRENT_ABI_ALIGNOF (float),
+	MONO_CURRENT_ABI_ALIGNOF (double),
+	MONO_CURRENT_ABI_ALIGNOF (gpointer))
 
 #endif
 
 int
 mono_abi_alignment (CoreTypeAlign type)
 {
-	static gboolean inited;
-	/*
-	 * OMG This is RACY! Like SUPER racy!
-	 * That's true, *but* given the values are constant and we do safe publication, it's harmless.
-	 */
-	if (!inited) {
-		init_abi_detail ();
-		mono_memory_barrier ();
-		inited = TRUE;
-	}
-
 	return mono_abi_details.alignment [type];
 }
