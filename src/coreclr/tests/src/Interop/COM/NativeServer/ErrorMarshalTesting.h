@@ -14,7 +14,7 @@ public: // IErrorMarshalTesting
     {
         return HRESULT{ hresultToReturn };
     }
-    long __stdcall Return_As_HResult(
+    long STDMETHODCALLTYPE Return_As_HResult(
         /*[in]*/ long hresultToReturn)
     {
         return hresultToReturn;
