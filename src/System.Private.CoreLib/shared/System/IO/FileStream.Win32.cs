@@ -88,7 +88,7 @@ namespace System.IO
             return (fileMode & (Interop.NtDll.FILE_SYNCHRONOUS_IO_ALERT | Interop.NtDll.FILE_SYNCHRONOUS_IO_NONALERT)) > 0;
         }
 
-        private static void VerifyHandleIsSync(SafeFileHandle handle, int fileType)
+        private static void VerifyHandleIsSync(SafeFileHandle handle, int fileType, FileAccess access)
         {
             // As we can accurately check the handle type when we have access to NtQueryInformationFile we don't need to skip for
             // any particular file handle type.

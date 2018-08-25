@@ -43,7 +43,7 @@ namespace System.IO
 
         private static bool GetDefaultIsAsync(SafeFileHandle handle) => handle.IsAsync ?? DefaultIsAsync;
 
-        private static unsafe bool? IsHandleSynchronous(SafeFileHandle handle)
+        private static unsafe bool? IsHandleSynchronous(SafeFileHandle handle, FileAccess access)
         {
             // Do NOT use this method on any type other than DISK. Reading or writing to a pipe may
             // cause an app to block incorrectly, introducing a deadlock (depending on whether a write
@@ -57,10 +57,14 @@ namespace System.IO
             // has been a write on the other end.  We'll just have to deal with it,
             // For the read end of a pipe, you can mess up and 
             // accidentally read synchronously from an async pipe.
-            if (_canRead)
+            if ((access & FileAccess.Read) != 0)
+            {
                 r = Interop.Kernel32.ReadFile(handle, bytes, 0, out numBytesReadWritten, IntPtr.Zero);
-            else if (_canWrite)
+            }
+            else if ((access & FileAccess.Write) != 0)
+            {
                 r = Interop.Kernel32.WriteFile(handle, bytes, 0, out numBytesReadWritten, IntPtr.Zero);
+            }
 
             if (r == 0)
             {
@@ -77,15 +81,15 @@ namespace System.IO
             return true;
         }
 
-        private static void VerifyHandleIsSync(SafeFileHandle handle, int fileType)
+        private static void VerifyHandleIsSync(SafeFileHandle handle, int fileType, FileAccess access)
         {
             // The technique here only really works for FILE_TYPE_DISK. FileMode is the right thing to check, but it currently
             // isn't available in WinRT.
 
-            if (fileType == Interop.mincore.FileTypes.FILE_TYPE_DISK)
+            if (fileType == Interop.Kernel32.FileTypes.FILE_TYPE_DISK)
             {
                 // If we can't check the handle, just assume it is ok.
-                if (!(IsHandleSynchronous() ?? true))
+                if (!(IsHandleSynchronous(handle, access) ?? true))
                     throw new ArgumentException(SR.Arg_HandleNotSync, nameof(handle));
             }
         }
