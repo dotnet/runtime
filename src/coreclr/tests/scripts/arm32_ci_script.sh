@@ -353,7 +353,7 @@ function copy_to_emulator {
 function run_tests {
     sudo chroot $__ARMEmulRootfs /bin/bash -x <<EOF
         cd "$__ARMEmulCoreclr"
-        ./tests/runtest.sh --sequential\
+        ./tests/bringup_runtest.sh --sequential\
                            --testRootDir=$__testRootDirBase \
                            --mscorlibDir=$__mscorlibDirBase \
                            --coreFxNativeBinDir=$__coreFxNativeBinDirBase \

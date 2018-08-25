@@ -69,9 +69,7 @@ WARNING:   When setting properties based on their current state (for example:
     <Message Text="Project depends on $(_CLRTestToRunFileFullPath)." Condition="'$(_CLRTestNeedsProjectToRun)' == 'True'" />
 
     <PropertyGroup>
-      <!-- An exit code of 2 indicates "Skipped" for regular non-windows runs, but "Failed" in Helix -->
-      <GCBashScriptExitCode Condition="'$(BuildTestsAgainstPackages)' != 'true'">2</GCBashScriptExitCode>
-      <GCBashScriptExitCode Condition="'$(BuildTestsAgainstPackages)' == 'true'">0</GCBashScriptExitCode>
+      <GCBashScriptExitCode>0</GCBashScriptExitCode>
 
       <BashCLRTestEnvironmentCompatibilityCheck Condition="'$(GCStressIncompatible)' == 'true'"><![CDATA[
 $(BashCLRTestEnvironmentCompatibilityCheck)
@@ -102,6 +100,11 @@ then
   echo SKIPPING EXECUTION BECAUSE COMPlus_HeapVerify IS SET
   exit $(GCBashScriptExitCode)
 fi
+      ]]></BashCLRTestEnvironmentCompatibilityCheck>
+      <BashCLRTestEnvironmentCompatibilityCheck Condition="'$(TestUnsupportedOutsideWindows)' == 'true'"><![CDATA[
+$(BashCLRTestEnvironmentCompatibilityCheck)
+echo SKIPPING EXECUTION BECAUSE test is unsupported outside Windows.
+exit $(GCBashScriptExitCode)
       ]]></BashCLRTestEnvironmentCompatibilityCheck>
 
       <BashCLRTestExitCodePrep Condition="$(_CLRTestNeedsToRun)">
@@ -275,8 +278,8 @@ $(BashLinkerTestCleanupCmds)
 $(BashCLRTestLaunchCmds)
 echo export CDPATH="$%28dirname "$0")"
 export CDPATH="$%28dirname "$0")"
-echo /bin/sh -c  $(InputAssemblyName) 
-/bin/sh -c $(InputAssemblyName)
+echo /bin/sh $(InputAssemblyName) 
+/bin/sh $(InputAssemblyName)
 CLRTestExitCode=$?
 CLRTestExpectedExitCode=0
       ]]></BashCLRTestLaunchCmds>

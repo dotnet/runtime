@@ -53204,14 +53204,6 @@ MaxAllowedDurationSeconds=600
 Categories=EXPECTED_PASS;Pri1
 HostStyle=0
 
-[b12011.cmd_6691]
-RelativePath=JIT\Regression\VS-ia64-JIT\V1.2-M02\b12011\b12011\b12011.cmd
-WorkingDir=JIT\Regression\VS-ia64-JIT\V1.2-M02\b12011\b12011
-Expected=0
-MaxAllowedDurationSeconds=600
-Categories=EXPECTED_PASS
-HostStyle=0
-
 [FlowControlNext.cmd_6692]
 RelativePath=CoreMangLib\cti\system\reflection\emit\flowcontrol\FlowControlNext\FlowControlNext.cmd
 WorkingDir=CoreMangLib\cti\system\reflection\emit\flowcontrol\FlowControlNext

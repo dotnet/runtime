@@ -41,6 +41,8 @@ set __CrossgenAltJit=
 set __PerfTests=
 set __CoreFXTests=
 set __CoreFXTestsRunAllAvailable=
+set __SkipGenerateLayout=
+set __BuildXUnitWrappers=
 
 :Arg_Loop
 if "%1" == "" goto ArgsDone
@@ -78,6 +80,8 @@ if /i "%1" == "jitforcerelocs"        (set COMPlus_ForceRelocs=1&shift&goto Arg_
 if /i "%1" == "jitdisasm"             (set __JitDisasm=1&shift&goto Arg_Loop)
 if /i "%1" == "ilasmroundtrip"        (set __IlasmRoundTrip=1&shift&goto Arg_Loop)
 if /i "%1" == "GenerateLayoutOnly"    (set __GenerateLayoutOnly=1&shift&goto Arg_Loop)
+if /i "%1" == "skipgeneratelayout"    (set __SkipGenerateLayout=1&shift&goto Arg_Loop)
+if /i "%1" == "buildxunitwrappers"    (set __BuildXunitWrappers=1&shift&goto Arg_Loop)
 if /i "%1" == "PerfTests"             (set __PerfTests=true&shift&goto Arg_Loop)
 if /i "%1" == "CoreFXTests"           (set __CoreFXTests=true&shift&goto Arg_Loop)
 if /i "%1" == "CoreFXTestsAll"        (set __CoreFXTests=true&set __CoreFXTestsRunAllAvailable=true&shift&goto Arg_Loop)
@@ -90,7 +94,7 @@ if /i "%1" == "gcname"                (set COMPlus_GCName=%2&shift&shift&goto Ar
 if /i "%1" == "timeout"               (set __TestTimeout=%2&shift&shift&goto Arg_Loop)
 
 REM change it to COMPlus_GCStress when we stop using xunit harness
-if /i "%1" == "gcstresslevel"         (set __GCSTRESSLEVEL=%2&set __TestTimeout=1800000&shift&shift&goto Arg_Loop)
+if /i "%1" == "gcstresslevel"         (set COMPlus_GCStress=%2&set __TestTimeout=1800000&shift&shift&goto Arg_Loop)
 if /i "%1" == "collectdumps"          (set __CollectDumps=true&shift&goto Arg_Loop)
 
 if /i not "%1" == "msbuildargs" goto SkipMsbuildArgs
@@ -131,6 +135,77 @@ set "__TestWorkingDir=%__RootBinDir%\tests\%__BuildOS%.%__BuildArch%.%__BuildTyp
 :: REVIEW: XunitTestReportDirBase is not used in this script. Who needs to have it set?
 if not defined XunitTestBinBase       set  XunitTestBinBase=%__TestWorkingDir%
 if not defined XunitTestReportDirBase set  XunitTestReportDirBase=%XunitTestBinBase%\Reports\
+
+REM At this point in the script there will be a divergence in how the tests are run.
+REM For official builds we will continue to run tests using the un-unified scripting
+REM which relies on msbuild and calls runtest.proj directly. For all other scenarios
+REM runtest.py will handle setup and will then call runtest.proj
+
+if defined __AgainstPackages goto SetupMSBuildAndCallRuntestProj
+if "%__CoreFXTests%"=="true" goto SetupMSBuildAndCallRuntestProj
+if "%__PerfTests%"=="true" goto SetupMSBuildAndCallRuntestProj
+if defined __GenerateLayoutOnly goto SetupMSBuildAndCallRuntestProj
+
+REM We are not running in the official build scenario, call runtest.py
+
+set __RuntestPyArgs=-arch %__BuildArch% -build_type %__BuildType%
+
+if defined DoLink (
+    set __RuntestPyArgs=%__RuntestPyArgs% --il_link
+)
+
+if defined __LongGCTests (
+    set __RuntestPyArgs=%__RuntestPyArgs% --long_gc
+)
+
+if defined __GCSimulatorTests (
+    set __RuntestPyArgs=%__RuntestPyArgs% --gcsimulator
+)
+
+if defined __JitDisasm (
+    set __RuntestPyArgs=%__RuntestPyArgs% --jitdisasm
+)
+
+if defined __IlasmRoundTrip (
+    set __RuntestPyArgs=%__RuntestPyArgs% --ilasmroundtrip
+)
+
+if defined __TestEnv (
+    set __RuntestPyArgs=%__RuntestPyArgs% -test_env %__TestEnv%
+)
+
+if defined __Sequential (
+    set __RuntestPyArgs=%__RuntestPyArgs% --sequential
+)
+
+if not defined __SkipGenerateLayout (
+    set __RuntestPyArgs=%__RuntestPyArgs% --generate_layout
+)
+
+if defined __GenerateLayoutOnly (
+    set __RuntestPyArgs=%__RuntestPyArgs% --generate_layout_only
+)
+
+if defined __BuildXUnitWrappers (
+    set __RuntestPyArgs=%__RuntestPyArgs% --build_xunit_test_wrappers
+)
+
+if defined RunCrossGen (
+    set __RuntestPyArgs=%__RuntestPyArgs% --run_crossgen_tests
+)
+
+if defined __DoCrossgen (
+    set __RuntestPyArgs=%__RuntestPyArgs% --precompile_core_root
+)
+
+REM __ProjectDir is poorly named, it is actually <projectDir>/tests
+set NEXTCMD=python "%__ProjectDir%\runtest.py" %__RuntestPyArgs%
+echo !NEXTCMD!
+!NEXTCMD!
+
+exit /b %ERRORLEVEL%
+
+:SetupMSBuildAndCallRuntestProj
 
 :: Set up msbuild and tools environment. Check if msbuild and VS exist.
 

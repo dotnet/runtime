@@ -70244,14 +70244,6 @@ MaxAllowedDurationSeconds=600
 Categories=JIT;EXPECTED_PASS
 HostStyle=0
 
-[b12011.cmd_9160]
-RelativePath=JIT\Regression\VS-ia64-JIT\V1.2-M02\b12011\b12011\b12011.cmd
-WorkingDir=JIT\Regression\VS-ia64-JIT\V1.2-M02\b12011\b12011
-Expected=0
-MaxAllowedDurationSeconds=600
-Categories=EXPECTED_PASS
-HostStyle=0
-
 [b14355.cmd_9161]
 RelativePath=JIT\Regression\VS-ia64-JIT\V1.2-M02\b14355\b14355\b14355.cmd
 WorkingDir=JIT\Regression\VS-ia64-JIT\V1.2-M02\b14355\b14355

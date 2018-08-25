@@ -12,6 +12,10 @@
     <CLRTestPriority>1</CLRTestPriority>
     <CLRTestExecutionArguments>/size:2 /pos:1</CLRTestExecutionArguments>
     <GCStressIncompatible>true</GCStressIncompatible>
+
+    <!-- Test unsupported outside of windows -->
+    <TestUnsupportedOutsideWindows>true</TestUnsupportedOutsideWindows>
+    <DisableProjectBuild Condition="'$(TargetsUnix)' == 'true'">true</DisableProjectBuild>
   </PropertyGroup>
   <!-- Default configurations to help VS understand the configurations -->
   <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Debug|AnyCPU' ">

@@ -316,6 +316,9 @@ namespace $([System.String]::Copy($(Category)).Replace(".","_").Replace("\","").
       <AllXUnitFacts Include= "%(AllCommands._XunitFact)" />
     </ItemGroup>
 
+    <Message Text="HasExcludes: $(HaveExcludes)" Importance="high"/>
+    <Message Text="CanonicalExcludeList: @(CanonicalExcludeList)" Importance="high"/>
+
   </Target>
 
   <Target Name="CreateAllWrappers" DependsOnTargets="GetListOfTestCmds;FindCmdDirectories">
