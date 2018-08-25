@@ -26,7 +26,7 @@ Compiler::fgWalkResult Compiler::optAddCopiesCallback(GenTree** pTree, fgWalkDat
 {
     GenTree* tree = *pTree;
 
-    if (tree->OperIsAssignment())
+    if (tree->OperIs(GT_ASG))
     {
         GenTree*  op1  = tree->gtOp.gtOp1;
         Compiler* comp = data->compiler;
@@ -450,7 +450,7 @@ void Compiler::optAddCopies()
             GenTree* tree = optAddCopyAsgnNode;
             GenTree* op1  = tree->gtOp.gtOp1;
 
-            noway_assert(tree && op1 && tree->OperIsAssignment() && (op1->gtOper == GT_LCL_VAR) &&
+            noway_assert(tree && op1 && tree->OperIs(GT_ASG) && (op1->gtOper == GT_LCL_VAR) &&
                          (op1->gtLclVarCommon.gtLclNum == lclNum));
 
             /*  TODO-Review: BB_UNITY_WEIGHT is not the correct block weight */

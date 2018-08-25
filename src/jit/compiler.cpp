@@ -10295,7 +10295,7 @@ int cOperandIR(Compiler* comp, GenTree* operand)
         }
         chars += cLeafIR(comp, operand);
     }
-    else if (dumpDataflow && (operand->OperIsAssignment() || (op == GT_STORE_LCL_VAR) || (op == GT_STORE_LCL_FLD)))
+    else if (dumpDataflow && (operand->OperIs(GT_ASG) || (op == GT_STORE_LCL_VAR) || (op == GT_STORE_LCL_FLD)))
     {
         operand = operand->GetChild(0);
         chars += cOperandIR(comp, operand);
@@ -10567,7 +10567,7 @@ void cNodeIR(Compiler* comp, GenTree* tree)
     // }
 
     chars += printf("    ");
-    if (dataflowView && tree->OperIsAssignment())
+    if (dataflowView && tree->OperIs(GT_ASG))
     {
         child = tree->GetChild(0);
         chars += cOperandIR(comp, child);
@@ -10620,7 +10620,7 @@ void cNodeIR(Compiler* comp, GenTree* tree)
 
     if (dataflowView)
     {
-        if (tree->OperIsAssignment() || (op == GT_STORE_LCL_VAR) || (op == GT_STORE_LCL_FLD) || (op == GT_STOREIND))
+        if (tree->OperIs(GT_ASG) || (op == GT_STORE_LCL_VAR) || (op == GT_STORE_LCL_FLD) || (op == GT_STOREIND))
         {
             chars += printf("(t%d)", tree->gtTreeID);
         }

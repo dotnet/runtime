@@ -370,7 +370,7 @@ void Compiler::fgPerNodeLocalVarLiveness(GenTree* tree)
         default:
 
             // Determine what memory locations it defines.
-            if (tree->OperIsAssignment() || tree->OperIsBlkOp())
+            if (tree->OperIs(GT_ASG) || tree->OperIsBlkOp())
             {
                 GenTreeLclVarCommon* dummyLclVarTree = nullptr;
                 if (tree->DefinesLocal(this, &dummyLclVarTree))
@@ -2100,7 +2100,7 @@ bool Compiler::fgRemoveDeadStore(GenTree**        pTree,
         return false;
     }
 
-    if (asgNode->OperIsAssignment())
+    if (asgNode->OperIs(GT_ASG))
     {
         rhsNode = asgNode->gtGetOp2();
     }

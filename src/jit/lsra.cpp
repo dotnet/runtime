@@ -8854,7 +8854,7 @@ void LinearScan::lsraDispNode(GenTree* tree, LsraTupleDumpMode mode, bool hasDes
             printf("  V%02u MEM", varNum);
         }
     }
-    else if (tree->OperIsAssignment())
+    else if (tree->OperIs(GT_ASG))
     {
         assert(!tree->gtHasReg());
         printf("  asg%s  ", GenTree::OpName(tree->OperGet()));

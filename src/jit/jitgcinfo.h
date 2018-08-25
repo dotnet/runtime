@@ -321,7 +321,7 @@ public:
     };
 
     WriteBarrierForm gcIsWriteBarrierCandidate(GenTree* tgt, GenTree* assignVal);
-    bool gcIsWriteBarrierAsgNode(GenTree* op);
+    bool gcIsWriteBarrierStoreIndNode(GenTree* op);
 
     // Returns a WriteBarrierForm decision based on the form of "tgtAddr", which is assumed to be the
     // argument of a GT_IND LHS.

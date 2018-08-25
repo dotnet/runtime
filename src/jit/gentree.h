@@ -762,7 +762,9 @@ public:
 // GT_LCL_VAR nodes may be changed to GT_REG_VAR nodes without resetting
 // the flags. These are also used by GT_LCL_FLD.
 #define GTF_VAR_DEF         0x80000000 // GT_LCL_VAR -- this is a definition
-#define GTF_VAR_USEASG      0x40000000 // GT_LCL_VAR -- this is a use/def for a x<op>=y
+#define GTF_VAR_USEASG      0x40000000 // GT_LCL_VAR -- this is a partial definition, a use of the previous definition is implied
+                                       // A partial definition usually occurs when a struct field is assigned to (s.f = ...) or
+                                       // when a scalar typed variable is assigned to via a narrow store (*((byte*)&i) = ...).
 #define GTF_VAR_CAST        0x10000000 // GT_LCL_VAR -- has been explictly cast (variable node may not be type of local)
 #define GTF_VAR_ITERATOR    0x08000000 // GT_LCL_VAR -- this is a iterator reference in the loop condition
 #define GTF_VAR_CLONED      0x01000000 // GT_LCL_VAR -- this node has been cloned or is a clone
@@ -1429,16 +1431,6 @@ public:
     {
         return OperIsCommutative(gtOper) || (OperIsSIMD(gtOper) && isCommutativeSIMDIntrinsic()) ||
                (OperIsHWIntrinsic(gtOper) && isCommutativeHWIntrinsic());
-    }
-
-    static bool OperIsAssignment(genTreeOps gtOper)
-    {
-        return gtOper == GT_ASG;
-    }
-
-    bool OperIsAssignment() const
-    {
-        return OperIsAssignment(gtOper);
     }
 
     static bool OperMayOverflow(genTreeOps gtOper)
