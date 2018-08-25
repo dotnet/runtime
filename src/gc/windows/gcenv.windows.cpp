@@ -11,8 +11,10 @@
 #include "env/gcenv.structs.h"
 #include "env/gcenv.base.h"
 #include "env/gcenv.os.h"
+#include "env/gcenv.ee.h"
 #include "env/gcenv.windows.inl"
 #include "env/volatile.h"
+#include "gcconfig.h"
 
 GCSystemInfo g_SystemInfo;
 
@@ -29,6 +31,187 @@ typedef BOOL (WINAPI *PIS_PROCESS_IN_JOB)(HANDLE processHandle, HANDLE jobHandle
 typedef BOOL (WINAPI *PQUERY_INFORMATION_JOB_OBJECT)(HANDLE jobHandle, JOBOBJECTINFOCLASS jobObjectInfoClass, void* lpJobObjectInfo, DWORD cbJobObjectInfoLength, LPDWORD lpReturnLength);
 
 namespace {
+
+static bool g_fEnableGCNumaAware;
+
+struct CPU_Group_Info 
+{
+    WORD    nr_active;  // at most 64
+    WORD    reserved[1];
+    WORD    begin;
+    WORD    end;
+    DWORD_PTR   active_mask;
+    DWORD   groupWeight;
+    DWORD   activeThreadWeight;
+};
+
+static bool g_fEnableGCCPUGroups;
+static bool g_fHadSingleProcessorAtStartup;
+static DWORD  g_nGroups;
+static DWORD g_nProcessors;
+static CPU_Group_Info *g_CPUGroupInfoArray;
+
+void InitNumaNodeInfo()
+{
+    ULONG highest = 0;
+    
+    g_fEnableGCNumaAware = false;
+
+    if (!GCConfig::GetGCNumaAware())
+        return;
+
+    // fail to get the highest numa node number
+    if (!GetNumaHighestNodeNumber(&highest) || (highest == 0))
+        return;
+
+    g_fEnableGCNumaAware = true;
+    return;
+}
+
+#if (defined(_TARGET_AMD64_) || defined(_TARGET_ARM64_))
+// Calculate greatest common divisor
+DWORD GCD(DWORD u, DWORD v)
+{
+    while (v != 0)
+    {
+        DWORD dwTemp = v;
+        v = u % v;
+        u = dwTemp;
+    }
+
+    return u;
+}
+
+// Calculate least common multiple
+DWORD LCM(DWORD u, DWORD v)
+{
+    return u / GCD(u, v) * v;
+}
+#endif
+
+bool InitCPUGroupInfoArray()
+{
+#if (defined(_TARGET_AMD64_) || defined(_TARGET_ARM64_))
+    BYTE *bBuffer = NULL;
+    SYSTEM_LOGICAL_PROCESSOR_INFORMATION_EX *pSLPIEx = NULL;
+    SYSTEM_LOGICAL_PROCESSOR_INFORMATION_EX *pRecord = NULL;
+    DWORD cbSLPIEx = 0;
+    DWORD byteOffset = 0;
+    DWORD dwNumElements = 0;
+    DWORD dwWeight = 1;
+
+    if (GetLogicalProcessorInformationEx(RelationGroup, pSLPIEx, &cbSLPIEx) &&
+                      GetLastError() != ERROR_INSUFFICIENT_BUFFER)
+        return false;
+
+    assert(cbSLPIEx);
+
+    // Fail to allocate buffer
+    bBuffer = new (std::nothrow) BYTE[ cbSLPIEx ];
+    if (bBuffer == NULL)
+        return false;
+
+    pSLPIEx = (SYSTEM_LOGICAL_PROCESSOR_INFORMATION_EX *)bBuffer;
+    if (!GetLogicalProcessorInformationEx(RelationGroup, pSLPIEx, &cbSLPIEx))
+    {
+        delete[] bBuffer;
+        return false;
+    }
+
+    pRecord = pSLPIEx;
+    while (byteOffset < cbSLPIEx)
+    {
+        if (pRecord->Relationship == RelationGroup)
+        {
+            g_nGroups = pRecord->Group.ActiveGroupCount;
+            break;
+        }
+        byteOffset += pRecord->Size;
+        pRecord = (SYSTEM_LOGICAL_PROCESSOR_INFORMATION_EX *)(bBuffer + byteOffset);
+    }
+
+    g_CPUGroupInfoArray = new (std::nothrow) CPU_Group_Info[g_nGroups];
+    if (g_CPUGroupInfoArray == NULL) 
+    {
+        delete[] bBuffer;
+        return false;
+    }
+
+    for (DWORD i = 0; i < g_nGroups; i++)
+    {
+        g_CPUGroupInfoArray[i].nr_active   = (WORD)pRecord->Group.GroupInfo[i].ActiveProcessorCount;
+        g_CPUGroupInfoArray[i].active_mask = pRecord->Group.GroupInfo[i].ActiveProcessorMask;
+        g_nProcessors += g_CPUGroupInfoArray[i].nr_active;
+        dwWeight = LCM(dwWeight, (DWORD)g_CPUGroupInfoArray[i].nr_active);
+    }
+
+    // The number of threads per group that can be supported will depend on the number of CPU groups
+    // and the number of LPs within each processor group. For example, when the number of LPs in
+    // CPU groups is the same and is 64, the number of threads per group before weight overflow
+    // would be 2^32/2^6 = 2^26 (64M threads)
+    for (DWORD i = 0; i < g_nGroups; i++)
+    {
+        g_CPUGroupInfoArray[i].groupWeight = dwWeight / (DWORD)g_CPUGroupInfoArray[i].nr_active;
+        g_CPUGroupInfoArray[i].activeThreadWeight = 0;
+    }
+
+    delete[] bBuffer;  // done with it; free it
+    return true;
+#else
+    return false;
+#endif
+}
+
+bool InitCPUGroupInfoRange()
+{
+#if (defined(_TARGET_AMD64_) || defined(_TARGET_ARM64_))
+    WORD begin   = 0;
+    WORD nr_proc = 0;
+
+    for (WORD i = 0; i < g_nGroups; i++) 
+    {
+        nr_proc += g_CPUGroupInfoArray[i].nr_active;
+        g_CPUGroupInfoArray[i].begin = begin;
+        g_CPUGroupInfoArray[i].end   = nr_proc - 1;
+        begin = nr_proc;
+    }
+
+    return true;
+#else
+    return false;
+#endif
+}
+
+void InitCPUGroupInfo()
+{
+    g_fEnableGCCPUGroups = false;
+
+#if (defined(_TARGET_AMD64_) || defined(_TARGET_ARM64_))
+    if (!GCConfig::GetGCCpuGroup())
+        return;
+
+    if (!InitCPUGroupInfoArray())
+        return;
+
+    if (!InitCPUGroupInfoRange())
+        return;
+
+    // only enable CPU groups if more than one group exists
+    g_fEnableGCCPUGroups = g_nGroups > 1;
+#endif // _TARGET_AMD64_ || _TARGET_ARM64_
+
+    // Determine if the process is affinitized to a single processor (or if the system has a single processor)
+    DWORD_PTR processAffinityMask, systemAffinityMask;
+    if (::GetProcessAffinityMask(::GetCurrentProcess(), &processAffinityMask, &systemAffinityMask))
+    {
+        processAffinityMask &= systemAffinityMask;
+        if (processAffinityMask != 0 && // only one CPU group is involved
+            (processAffinityMask & (processAffinityMask - 1)) == 0) // only one bit is set
+        {
+            g_fHadSingleProcessorAtStartup = true;
+        }
+    }
+}
 
 void GetProcessMemoryLoad(LPMEMORYSTATUSEX pMSEX)
 {
@@ -177,6 +360,9 @@ bool GCToOSInterface::Initialize()
 
     assert(systemInfo.dwPageSize == 0x1000);
 
+    InitNumaNodeInfo();
+    InitCPUGroupInfo();
+
     return true;
 }
 
@@ -320,9 +506,17 @@ bool GCToOSInterface::VirtualRelease(void* address, size_t size)
 //  size    - size of the virtual memory range
 // Return:
 //  true if it has succeeded, false if it has failed
-bool GCToOSInterface::VirtualCommit(void* address, size_t size)
+bool GCToOSInterface::VirtualCommit(void* address, size_t size, uint32_t node)
 {
-    return ::VirtualAlloc(address, size, MEM_COMMIT, PAGE_READWRITE) != nullptr;
+    if (node == NUMA_NODE_UNDEFINED)
+    {
+        return ::VirtualAlloc(address, size, MEM_COMMIT, PAGE_READWRITE) != nullptr;
+    }
+    else
+    {
+        assert(g_fEnableGCNumaAware);
+        return ::VirtualAllocExNuma(::GetCurrentProcess(), address, size, MEM_COMMIT, PAGE_READWRITE, node) != nullptr;
+    }
 }
 
 // Decomit virtual memory range.
@@ -623,6 +817,63 @@ uint32_t GCToOSInterface::GetLowPrecisionTimeStamp()
     return ::GetTickCount();
 }
 
+// Gets the total number of processors on the machine, not taking
+// into account current process affinity.
+// Return:
+//  Number of processors on the machine
+uint32_t GCToOSInterface::GetTotalProcessorCount()
+{
+    if (CanEnableGCCPUGroups())
+    {
+        return g_nProcessors;
+    }
+    else
+    {
+        return g_SystemInfo.dwNumberOfProcessors;
+    }
+}
+ 
+bool GCToOSInterface::CanEnableGCNumaAware()
+{
+    return g_fEnableGCNumaAware;
+}
+
+bool GCToOSInterface::GetNumaProcessorNode(PPROCESSOR_NUMBER proc_no, uint16_t *node_no)
+{
+    assert(g_fEnableGCNumaAware);
+    return ::GetNumaProcessorNodeEx(proc_no, node_no) != FALSE;
+}
+
+bool GCToOSInterface::CanEnableGCCPUGroups()
+{
+    return g_fEnableGCCPUGroups;
+}
+
+void GCToOSInterface::GetGroupForProcessor(uint16_t processor_number, uint16_t* group_number, uint16_t* group_processor_number)
+{
+    assert(g_fEnableGCCPUGroups);
+
+#if !defined(FEATURE_REDHAWK) && (defined(_TARGET_AMD64_) || defined(_TARGET_ARM64_))
+    WORD bTemp = 0;
+    WORD bDiff = processor_number - bTemp;
+
+    for (WORD i=0; i < g_nGroups; i++)
+    {
+        bTemp += g_CPUGroupInfoArray[i].nr_active;
+        if (bTemp > processor_number)
+        {
+            *group_number = i;
+            *group_processor_number = bDiff;
+            break;
+        }
+        bDiff = processor_number - bTemp;
+    }
+#else
+    *group_number = 0;
+    *group_processor_number = 0;
+#endif
+}
+
 // Parameters of the GC thread stub
 struct GCThreadStubParam
 {
@@ -642,15 +893,6 @@ static DWORD GCThreadStub(void* param)
     function(threadParam);
 
     return 0;
-}
-
-// Gets the total number of processors on the machine, not taking
-// into account current process affinity.
-// Return:
-//  Number of processors on the machine
-uint32_t GCToOSInterface::GetTotalProcessorCount()
-{
-    return g_SystemInfo.dwNumberOfProcessors;
 }
 
 // Initialize the critical section
@@ -817,4 +1059,3 @@ bool GCEvent::CreateOSManualEventNoThrow(bool initialState)
     m_impl = event.release();
     return true;
 }
-
