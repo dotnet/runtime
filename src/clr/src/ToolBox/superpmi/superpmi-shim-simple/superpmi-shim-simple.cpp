@@ -101,15 +101,9 @@ extern "C" void __stdcall jitStartup(ICorJitHost* host)
     SetDefaultPaths();
     SetLibName();
 
-    // Load Library
-    if (g_hRealJit == 0)
+    if (!LoadRealJitLib(g_hRealJit, g_realJitPath))
     {
-        g_hRealJit = ::LoadLibraryW(g_realJitPath);
-        if (g_hRealJit == 0)
-        {
-            LogError("getJit() - LoadLibrary failed to load '%ws' (0x%08x)", g_realJitPath, ::GetLastError());
-            return;
-        }
+        return;
     }
 
     // Get the required entrypoint
@@ -136,15 +130,9 @@ extern "C" ICorJitCompiler* __stdcall getJit()
     SetDefaultPaths();
     SetLibName();
 
-    // Load Library
-    if (g_hRealJit == 0)
+    if (!LoadRealJitLib(g_hRealJit, g_realJitPath))
     {
-        g_hRealJit = ::LoadLibraryW(g_realJitPath);
-        if (g_hRealJit == 0)
-        {
-            LogError("getJit() - LoadLibrary failed to load '%ws' (0x%08x)", g_realJitPath, ::GetLastError());
-            return nullptr;
-        }
+        return nullptr;
     }
 
     // get the required entrypoints

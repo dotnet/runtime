@@ -6,9 +6,6 @@
 #ifndef _JitDebugger
 #define _JitDebugger
 
-extern bool breakOnDebugBreakorAV; // It's kind of awful that I'm making this global, but it was kind of awful that it
-                                   // was file-global already.
-
 //
 // Functions to support just-in-time debugging.
 //
