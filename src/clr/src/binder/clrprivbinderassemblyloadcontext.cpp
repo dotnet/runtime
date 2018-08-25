@@ -45,7 +45,7 @@ HRESULT CLRPrivBinderAssemblyLoadContext::BindAssemblyByNameWorker(BINDER_SPACE:
 }
 
 HRESULT CLRPrivBinderAssemblyLoadContext::BindAssemblyByName(IAssemblyName     *pIAssemblyName,
-                                                 ICLRPrivAssembly **ppAssembly)
+                                                             ICLRPrivAssembly **ppAssembly)
 {
     HRESULT hr = S_OK;
     VALIDATE_ARG_RET(pIAssemblyName != nullptr && ppAssembly != nullptr);

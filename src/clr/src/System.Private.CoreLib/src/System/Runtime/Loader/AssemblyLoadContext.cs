@@ -190,7 +190,6 @@ namespace System.Runtime.Loader
                 }
 
                 // Basic validation has succeeded - lets try to load the NI image.
-                // Ask LoadFile to load the specified assembly in the DefaultContext
                 RuntimeAssembly loadedAssembly = null;
                 LoadFromPath(m_pNativeAssemblyLoadContext, assemblyPath, nativeImagePath, JitHelpers.GetObjectHandleOnStack(ref loadedAssembly));
                 return loadedAssembly;
