@@ -160,7 +160,7 @@ AliasSet::NodeInfo::NodeInfo(Compiler* compiler, GenTree* node)
 
     // Is the operation a write? If so, set `node` to the location that is being written to.
     bool isWrite = false;
-    if (node->OperIsAssignment())
+    if (node->OperIs(GT_ASG))
     {
         isWrite = true;
         node    = node->gtGetOp1();

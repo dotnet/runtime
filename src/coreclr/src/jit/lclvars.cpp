@@ -3486,7 +3486,7 @@ void Compiler::lvaMarkLclRefs(GenTree* tree, BasicBlock* block, GenTreeStmt* stm
     {
         /* Is this an assigment? */
 
-        if (tree->OperIsAssignment())
+        if (tree->OperIs(GT_ASG))
         {
             GenTree* op1 = tree->gtOp.gtOp1;
             GenTree* op2 = tree->gtOp.gtOp2;

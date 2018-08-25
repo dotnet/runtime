@@ -13682,7 +13682,7 @@ DONE_MORPHING_CHILDREN:
         case GT_COMMA:
 
             /* Special case: trees that don't produce a value */
-            if (op2->OperIsAssignment() || (op2->OperGet() == GT_COMMA && op2->TypeGet() == TYP_VOID) || fgIsThrow(op2))
+            if (op2->OperIs(GT_ASG) || (op2->OperGet() == GT_COMMA && op2->TypeGet() == TYP_VOID) || fgIsThrow(op2))
             {
                 typ = tree->gtType = TYP_VOID;
             }
@@ -13855,7 +13855,7 @@ DONE_MORPHING_CHILDREN:
             if ((op1->gtFlags & GTF_ALL_EFFECT) == 0)
             {
                 // If tree is an asg node
-                if (tree->OperIsAssignment())
+                if (tree->OperIs(GT_ASG))
                 {
                     /* Return the throw node as the new tree */
                     return op2->gtOp.gtOp1;

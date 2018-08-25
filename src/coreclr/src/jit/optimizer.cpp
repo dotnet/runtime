@@ -5562,7 +5562,7 @@ bool Compiler::optNarrowTree(GenTree* tree, var_types srct, var_types dstt, Valu
     oper = tree->OperGet();
     kind = tree->OperKind();
 
-    if (GenTree::OperIsAssignment(oper))
+    if (oper == GT_ASG)
     {
         noway_assert(doit == false);
         return false;
@@ -5951,7 +5951,7 @@ Compiler::fgWalkResult Compiler::optIsVarAssgCB(GenTree** pTree, fgWalkData* dat
 {
     GenTree* tree = *pTree;
 
-    if (tree->OperIsAssignment())
+    if (tree->OperIs(GT_ASG))
     {
         GenTree*   dest     = tree->gtOp.gtOp1;
         genTreeOps destOper = dest->OperGet();
@@ -6972,7 +6972,7 @@ bool Compiler::optHoistLoopExprsForTree(GenTree*          tree,
                 }
             }
         }
-        else if (tree->OperIsAssignment())
+        else if (tree->OperIs(GT_ASG))
         {
             // If the LHS of the assignment has a global reference, then assume it's a global side effect.
             GenTree* lhs = tree->gtOp.gtOp1;
@@ -7004,7 +7004,7 @@ bool Compiler::optHoistLoopExprsForTree(GenTree*          tree,
             if (childrenHoistable[childNum])
             {
                 // We can't hoist the LHS of an assignment, isn't a real use.
-                if (childNum == 0 && (tree->OperIsAssignment()))
+                if ((childNum == 0) && tree->OperIs(GT_ASG))
                 {
                     continue;
                 }
@@ -7606,7 +7606,7 @@ void Compiler::optComputeLoopSideEffectsOfBlock(BasicBlock* blk)
             // We also do a very limited analysis if byref PtrTo values, to cover some cases
             // that the compiler creates.
 
-            if (GenTree::OperIsAssignment(oper))
+            if (oper == GT_ASG)
             {
                 GenTree* lhs = tree->gtOp.gtOp1->gtEffectiveVal(/*commaOnly*/ true);
 
@@ -7731,7 +7731,7 @@ void Compiler::optComputeLoopSideEffectsOfBlock(BasicBlock* blk)
                     }
                 }
             }
-            else // not GenTree::OperIsAssignment(oper)
+            else // if (oper != GT_ASG)
             {
                 switch (oper)
                 {
@@ -8096,13 +8096,13 @@ GenTree* Compiler::optFindLocalInit(BasicBlock* block,
 
         GenTree* tree = stmt->gtStmt.gtStmtExpr;
         // If we encounter an assignment to a local variable,
-        if (tree->OperIsAssignment() && tree->gtOp.gtOp1->gtOper == GT_LCL_VAR)
+        if (tree->OperIs(GT_ASG) && (tree->gtOp.gtOp1->gtOper == GT_LCL_VAR))
         {
             // And the assigned variable equals the input local,
             if (tree->gtOp.gtOp1->gtLclVarCommon.gtLclNum == LclNum)
             {
                 // If the assignment is '=' and it is not a conditional, then return rhs.
-                if (tree->gtOper == GT_ASG && !(tree->gtFlags & GTF_COLON_COND))
+                if ((tree->gtFlags & GTF_COLON_COND) == 0)
                 {
                     rhs = tree->gtOp.gtOp2;
                 }

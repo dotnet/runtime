@@ -73,7 +73,7 @@ void TreeLifeUpdater<ForCodeGen>::UpdateLifeVar(GenTree* tree)
         return;
     }
 
-    // if it's "x <op>=..." then variable "x" must have had a previous, original, site to be born.
+    // if it's a partial definition then variable "x" must have had a previous, original, site to be born.
     bool isBorn  = ((tree->gtFlags & GTF_VAR_DEF) != 0 && (tree->gtFlags & GTF_VAR_USEASG) == 0);
     bool isDying = ((tree->gtFlags & GTF_VAR_DEATH) != 0);
     bool spill   = ((tree->gtFlags & GTF_SPILL) != 0);

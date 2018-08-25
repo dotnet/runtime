@@ -6133,21 +6133,12 @@ void Compiler::fgValueNumberTree(GenTree* tree, bool evalAsgLhsInd)
         unsigned memorySsaNum;
 #endif
 
-        if (GenTree::OperIsAssignment(oper) && !varTypeIsStruct(tree))
+        if ((oper == GT_ASG) && !varTypeIsStruct(tree))
         {
-
             GenTree* lhs = tree->gtOp.gtOp1;
             GenTree* rhs = tree->gtOp.gtOp2;
 
-            ValueNumPair rhsVNPair;
-            if (oper == GT_ASG)
-            {
-                rhsVNPair = rhs->gtVNPair;
-            }
-            else // Must be an "op="
-            {
-                unreached();
-            }
+            ValueNumPair rhsVNPair = rhs->gtVNPair;
 
             // Is the type being stored different from the type computed by the rhs?
             if (rhs->TypeGet() != lhs->TypeGet())
@@ -7120,7 +7111,7 @@ void Compiler::fgValueNumberTree(GenTree* tree, bool evalAsgLhsInd)
             }
             else
             {
-                assert(!GenTree::OperIsAssignment(oper)); // We handled assignments earlier.
+                assert(oper != GT_ASG); // We handled assignments earlier.
                 assert(GenTree::OperIsBinary(oper));
                 // Standard binary operator.
                 ValueNumPair op2VNPair;
