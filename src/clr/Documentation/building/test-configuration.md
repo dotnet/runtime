@@ -39,15 +39,17 @@ Test cases are categorized by priority level. The most important subset should b
     ```
 * Disable building of a test by conditionally setting the `<DisableProjectBuild>` property.
 	* e.g. `<DisableProjectBuild Condition=" '$(Platform)' == 'arm64' ">true</DisableProjectBuild>`
+* Exclude test from GCStress runs by adding the following to the csproj:
+    * `<GCStressIncompatible>true</GCStressIncompatible>`
+* Exclude test from JIT stress runs runs by adding the following to the csproj:
+    * `<JitOptimizationSensitive>true</JitOptimizationSensitive>`
 * Add NuGet/MyGet references by updating the following [test project](https://github.com/dotnet/coreclr/blob/master/tests/src/Common/test_dependencies/test_dependencies.csproj).
 * Build against the `mscorlib` facade by adding `<ReferenceLocalMscorlib>true</ReferenceLocalMscorlib>` to the test project.
 * Update relevent exclusion lists:
-  * Note that there are two build pipelines Jenkin's CI and nightly Helix - both must be updated for expected exclusion.
-    * Jenkin's CI build - see the associated `*.txt` files under `tests/` (e.g. `tests/testsUnsupportedOutsideWindows.txt`).
-    * Official nightly Helix build - see the `tests/issues.targets` file.
-  * ARM/ARM64
-    * `tests/arm/Tests.lst` and `tests/arm64/Tests.lst` are used to define the tests to run due to limitations with XUnit.
-    * These files can be manually edited or the generated using `tests/scripts/lst_creator.py`.
+  There are currently three different exclude lists. Tests.lst is currently only used by CI.
+    - `tests/issues.targets`
+    - `tests/arm/Tests.lst` - Used by Windows arm32 testing
+    - `tests/arm64/Tests.lst` - Used by Windows arm64 testing
 
 ### Creating a C# test project
 

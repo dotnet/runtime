@@ -16,7 +16,11 @@
     <BashR2RDumpCommand>$(BashCoreClrDir)bin/Product/$(BuildOS).$(BuildArch).$(BuildType)/netcoreapp2.0/R2RDump.dll</BashR2RDumpCommand>
     <BashDotnetToolCommand>$(BashCoreClrDir)Tools/dotnetcli/dotnet</BashDotnetToolCommand>
     <CLRTestExecutionArguments>$(CoreClrDir)tests\src\readytorun\r2rdump\files\$(BuildOS).$(BuildArch).$(BuildType)\</CLRTestExecutionArguments>
-    <DisableProjectBuild Condition=" '$(Platform)' == 'arm64' or '$(Platform)' == 'arm' ">true</DisableProjectBuild>
+  
+    <!-- Test unsupported outside of windows -->
+    <!-- Test unsupported on arm targets -->
+    <TestUnsupportedOutsideWindows>true</TestUnsupportedOutsideWindows>
+    <DisableProjectBuild Condition=" '$(Platform)' == 'arm64' or '$(Platform)' == 'arm' or '$(TargetsUnix)' == 'true' ">true</DisableProjectBuild>
   </PropertyGroup>
   <!-- Default configurations to help VS understand the configurations -->
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'Debug|x64'">

@@ -97,7 +97,6 @@ namespace CoreclrTestLib
         
         // Default timeout set to 10 minutes
         public const int DEFAULT_TIMEOUT = 1000 * 60*10;
-        public const string GC_STRESS_LEVEL = "__GCSTRESSLEVEL";
 
         public const string COLLECT_DUMPS_ENVIRONMENT_VAR = "__CollectDumps";
         public const string CRASH_DUMP_FOLDER_ENVIRONMENT_VAR = "__CrashDumpFolder";
@@ -167,8 +166,6 @@ namespace CoreclrTestLib
             string environmentVar = Environment.GetEnvironmentVariable(TIMEOUT_ENVIRONMENT_VAR);
             int timeout = environmentVar != null ? int.Parse(environmentVar) : DEFAULT_TIMEOUT;
 
-            string gcstressVar = Environment.GetEnvironmentVariable(GC_STRESS_LEVEL);
-
             // Check if we are running in Windows
             string operatingSystem = System.Environment.GetEnvironmentVariable("OS");
             bool runningInWindows = (operatingSystem != null && operatingSystem.StartsWith("Windows"));
@@ -183,13 +180,6 @@ namespace CoreclrTestLib
             using (var errorWriter = new StreamWriter(errorStream))
             using (Process process = new Process())
             {
-                if (gcstressVar!=null)
-                {
-                    //Note: this is not the best way to set the Env, but since we are using 
-                    //Desktop to start the tests, this Env will affect the test harness behavior
-                    process.StartInfo.EnvironmentVariables["COMPlus_GCStress"] = gcstressVar;
-                }
-
                 // Windows can run the executable implicitly
                 if (runningInWindows)
                 {
