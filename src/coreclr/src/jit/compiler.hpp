@@ -3406,38 +3406,28 @@ inline void Compiler::LoopDsc::VERIFY_lpIterTree()
 #ifdef DEBUG
     assert(lpFlags & LPFLG_ITER);
 
-    // iterTree should be "lcl <op>= const"
+    // iterTree should be "lcl ASG lcl <op> const"
 
-    assert(lpIterTree);
+    assert(lpIterTree->OperIs(GT_ASG));
 
-    assert(lpIterTree->OperIsAssignment());
+    GenTree* lhs = lpIterTree->gtOp.gtOp1;
+    GenTree* rhs = lpIterTree->gtOp.gtOp2;
+    assert(lhs->OperGet() == GT_LCL_VAR);
 
-    if (lpIterTree->OperGet() == GT_ASG)
+    switch (rhs->gtOper)
     {
-        GenTree* lhs = lpIterTree->gtOp.gtOp1;
-        GenTree* rhs = lpIterTree->gtOp.gtOp2;
-        assert(lhs->OperGet() == GT_LCL_VAR);
-
-        switch (rhs->gtOper)
-        {
-            case GT_ADD:
-            case GT_SUB:
-            case GT_MUL:
-            case GT_RSH:
-            case GT_LSH:
-                break;
-            default:
-                assert(!"Unknown operator for loop increment");
-        }
-        assert(rhs->gtOp.gtOp1->OperGet() == GT_LCL_VAR);
-        assert(rhs->gtOp.gtOp1->AsLclVarCommon()->GetLclNum() == lhs->AsLclVarCommon()->GetLclNum());
-        assert(rhs->gtOp.gtOp2->OperGet() == GT_CNS_INT);
+        case GT_ADD:
+        case GT_SUB:
+        case GT_MUL:
+        case GT_RSH:
+        case GT_LSH:
+            break;
+        default:
+            assert(!"Unknown operator for loop increment");
     }
-    else
-    {
-        assert(lpIterTree->gtOp.gtOp1->OperGet() == GT_LCL_VAR);
-        assert(lpIterTree->gtOp.gtOp2->OperGet() == GT_CNS_INT);
-    }
+    assert(rhs->gtOp.gtOp1->OperGet() == GT_LCL_VAR);
+    assert(rhs->gtOp.gtOp1->AsLclVarCommon()->GetLclNum() == lhs->AsLclVarCommon()->GetLclNum());
+    assert(rhs->gtOp.gtOp2->OperGet() == GT_CNS_INT);
 #endif
 }
 
@@ -3454,15 +3444,8 @@ inline unsigned Compiler::LoopDsc::lpIterVar()
 inline int Compiler::LoopDsc::lpIterConst()
 {
     VERIFY_lpIterTree();
-    if (lpIterTree->OperGet() == GT_ASG)
-    {
-        GenTree* rhs = lpIterTree->gtOp.gtOp2;
-        return (int)rhs->gtOp.gtOp2->gtIntCon.gtIconVal;
-    }
-    else
-    {
-        return (int)lpIterTree->gtOp.gtOp2->gtIntCon.gtIconVal;
-    }
+    GenTree* rhs = lpIterTree->gtOp.gtOp2;
+    return (int)rhs->gtOp.gtOp2->gtIntCon.gtIconVal;
 }
 
 //-----------------------------------------------------------------------------
@@ -3470,15 +3453,8 @@ inline int Compiler::LoopDsc::lpIterConst()
 inline genTreeOps Compiler::LoopDsc::lpIterOper()
 {
     VERIFY_lpIterTree();
-    if (lpIterTree->OperGet() == GT_ASG)
-    {
-        GenTree* rhs = lpIterTree->gtOp.gtOp2;
-        return rhs->OperGet();
-    }
-    else
-    {
-        return lpIterTree->OperGet();
-    }
+    GenTree* rhs = lpIterTree->gtOp.gtOp2;
+    return rhs->OperGet();
 }
 
 inline var_types Compiler::LoopDsc::lpIterOperType()
@@ -4301,7 +4277,7 @@ unsigned Compiler::GetSsaNumForLocalVarDef(GenTree* lcl)
 
     if (lcl->gtFlags & GTF_VAR_USEASG)
     {
-        // It's an "lcl op= rhs" assignment.  "lcl" is both used and defined here;
+        // It's partial definition of a struct. "lcl" is both used and defined here;
         // we've chosen in this case to annotate "lcl" with the SSA number (and VN) of the use,
         // and to store the SSA number of the def in a side table.
         unsigned ssaNum;

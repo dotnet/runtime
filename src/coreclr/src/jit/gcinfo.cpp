@@ -292,20 +292,11 @@ GCInfo::WriteBarrierForm GCInfo::gcIsWriteBarrierCandidate(GenTree* tgt, GenTree
     return WBF_NoBarrier;
 }
 
-bool GCInfo::gcIsWriteBarrierAsgNode(GenTree* op)
+bool GCInfo::gcIsWriteBarrierStoreIndNode(GenTree* op)
 {
-    if (op->gtOper == GT_ASG)
-    {
-        return gcIsWriteBarrierCandidate(op->gtOp.gtOp1, op->gtOp.gtOp2) != WBF_NoBarrier;
-    }
-    else if (op->gtOper == GT_STOREIND)
-    {
-        return gcIsWriteBarrierCandidate(op, op->gtOp.gtOp2) != WBF_NoBarrier;
-    }
-    else
-    {
-        return false;
-    }
+    assert(op->OperIs(GT_STOREIND));
+
+    return gcIsWriteBarrierCandidate(op, op->gtOp.gtOp2) != WBF_NoBarrier;
 }
 
 /*****************************************************************************/

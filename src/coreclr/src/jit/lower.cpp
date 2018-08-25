@@ -111,7 +111,7 @@ GenTree* Lowering::LowerNode(GenTree* node)
 
         case GT_STOREIND:
             TryCreateAddrMode(LIR::Use(BlockRange(), &node->gtOp.gtOp1, node), true);
-            if (!comp->codeGen->gcInfo.gcIsWriteBarrierAsgNode(node))
+            if (!comp->codeGen->gcInfo.gcIsWriteBarrierStoreIndNode(node))
             {
                 LowerStoreIndir(node->AsIndir());
             }
@@ -388,8 +388,7 @@ GenTree* Lowering::LowerNode(GenTree* node)
  *    the default case of the switch in case the conditional is evaluated to true).
  *
  *     ----- original block, transformed
- *     GT_ASG
- *        |_____ tempLocal (a new temporary local variable used to store the switch index)
+ *     GT_STORE_LCL_VAR tempLocal (a new temporary local variable used to store the switch index)
  *        |_____ expr      (the index expression)
  *
  *     GT_JTRUE
@@ -1273,7 +1272,7 @@ void Lowering::LowerArg(GenTreeCall* call, GenTree** ppArg)
     DISPNODE(arg);
 
     // No assignments should remain by Lowering.
-    assert(!arg->OperIsAssignment());
+    assert(!arg->OperIs(GT_ASG));
     assert(!arg->OperIsPutArgStk());
 
     // Assignments/stores at this level are not really placing an argument.
