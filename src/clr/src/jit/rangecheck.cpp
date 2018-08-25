@@ -397,23 +397,7 @@ bool RangeCheck::IsMonotonicallyIncreasing(GenTree* expr, bool rejectNegativeCon
     {
         BasicBlock* asgBlock;
         GenTreeOp*  asg = GetSsaDefAsg(expr->AsLclVarCommon(), &asgBlock);
-        if (asg == nullptr)
-        {
-            return false;
-        }
-
-        switch (asg->OperGet())
-        {
-            case GT_ASG:
-                return IsMonotonicallyIncreasing(asg->gtGetOp2(), rejectNegativeConst);
-
-            default:
-                noway_assert(false);
-                // All other 'asg->OperGet()' kinds, return false
-                break;
-        }
-        JITDUMP("Unknown local definition type\n");
-        return false;
+        return (asg != nullptr) && IsMonotonicallyIncreasing(asg->gtGetOp2(), rejectNegativeConst);
     }
     else if (expr->OperGet() == GT_ADD)
     {
@@ -464,7 +448,7 @@ GenTreeOp* RangeCheck::GetSsaDefAsg(GenTreeLclVarCommon* lclUse, BasicBlock** as
     // the assignment node and its destination node.
     GenTree* asg = lclDef->gtNext;
 
-    if (!asg->OperIsAssignment() || (asg->gtGetOp1() != lclDef))
+    if (!asg->OperIs(GT_ASG) || (asg->gtGetOp1() != lclDef))
     {
         return nullptr;
     }
@@ -875,29 +859,16 @@ Range RangeCheck::ComputeRangeForLocalDef(BasicBlock*          block,
         JITDUMP("----------------------------------------------------\n");
     }
 #endif
-    switch (asg->OperGet())
+    assert(asg->OperIs(GT_ASG));
+    Range range = GetRange(asgBlock, asg->gtGetOp2(), monotonic DEBUGARG(indent));
+    if (!BitVecOps::MayBeUninit(block->bbAssertionIn))
     {
-        // If the operator of the definition is assignment, then compute the range of the rhs.
-        case GT_ASG:
-        {
-            Range range = GetRange(asgBlock, asg->gtGetOp2(), monotonic DEBUGARG(indent));
-            if (!BitVecOps::MayBeUninit(block->bbAssertionIn))
-            {
-                JITDUMP("Merge assertions from " FMT_BB ":%s for assignment about [%06d]\n", block->bbNum,
-                        BitVecOps::ToString(m_pCompiler->apTraits, block->bbAssertionIn),
-                        Compiler::dspTreeID(asg->gtGetOp1()));
-                MergeEdgeAssertions(asg->gtGetOp1()->AsLclVarCommon(), block->bbAssertionIn, &range);
-                JITDUMP("done merging\n");
-            }
-            return range;
-        }
-
-        default:
-            noway_assert(false);
-            // All other 'asg->OperGet()' kinds, return Limit::keUnknown
-            break;
+        JITDUMP("Merge assertions from " FMT_BB ":%s for assignment about [%06d]\n", block->bbNum,
+                BitVecOps::ToString(m_pCompiler->apTraits, block->bbAssertionIn), Compiler::dspTreeID(asg->gtGetOp1()));
+        MergeEdgeAssertions(asg->gtGetOp1()->AsLclVarCommon(), block->bbAssertionIn, &range);
+        JITDUMP("done merging\n");
     }
-    return Range(Limit(Limit::keUnknown));
+    return range;
 }
 
 // https://msdn.microsoft.com/en-us/windows/apps/hh285054.aspx
@@ -1011,22 +982,7 @@ bool RangeCheck::DoesVarDefOverflow(GenTreeLclVarCommon* lcl)
 {
     BasicBlock* asgBlock;
     GenTreeOp*  asg = GetSsaDefAsg(lcl, &asgBlock);
-    if (asg == nullptr)
-    {
-        return true;
-    }
-
-    switch (asg->OperGet())
-    {
-        case GT_ASG:
-            return DoesOverflow(asgBlock, asg->gtGetOp2());
-
-        default:
-            noway_assert(false);
-            // All other 'asg->OperGet()' kinds, conservatively return true
-            break;
-    }
-    return true;
+    return (asg == nullptr) || DoesOverflow(asgBlock, asg->gtGetOp2());
 }
 
 bool RangeCheck::DoesPhiOverflow(BasicBlock* block, GenTree* expr)
@@ -1252,7 +1208,7 @@ void RangeCheck::MapStmtDefs(const Location& loc)
         if (ssaNum != SsaConfig::RESERVED_SSA_NUM)
         {
             // To avoid ind(addr) use asgs
-            if (loc.parent->OperIsAssignment())
+            if (loc.parent->OperIs(GT_ASG))
             {
                 SetDef(HashCode(lclNum, ssaNum), new (m_alloc) Location(loc));
             }

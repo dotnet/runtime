@@ -21159,7 +21159,7 @@ void Compiler::fgDebugCheckFlags(GenTree* tree)
 
             /* For a GT_ASG(GT_IND(x), y) we are interested in the side effects of x */
             GenTree* op1p;
-            if (GenTree::OperIsAssignment(oper) && (op1->gtOper == GT_IND))
+            if ((oper == GT_ASG) && (op1->gtOper == GT_IND))
             {
                 op1p = op1->gtOp.gtOp1;
             }
@@ -25493,7 +25493,7 @@ private:
     bool ContainsFatCalli(GenTreeStmt* stmt)
     {
         GenTree* fatPointerCandidate = stmt->gtStmtExpr;
-        if (fatPointerCandidate->OperIsAssignment())
+        if (fatPointerCandidate->OperIs(GT_ASG))
         {
             fatPointerCandidate = fatPointerCandidate->gtGetOp2();
         }
@@ -25510,7 +25510,7 @@ private:
             checkBlock      = nullptr;
             thenBlock       = nullptr;
             elseBlock       = nullptr;
-            doesReturnValue = stmt->gtStmtExpr->OperIsAssignment();
+            doesReturnValue = stmt->gtStmtExpr->OperIs(GT_ASG);
             origCall        = GetCall(stmt);
             fptrAddress     = origCall->gtCallAddr;
             pointerType     = fptrAddress->TypeGet();
@@ -25547,7 +25547,7 @@ private:
             GenTreeCall* call = nullptr;
             if (doesReturnValue)
             {
-                assert(tree->OperIsAssignment());
+                assert(tree->OperIs(GT_ASG));
                 call = tree->gtGetOp2()->AsCall();
             }
             else

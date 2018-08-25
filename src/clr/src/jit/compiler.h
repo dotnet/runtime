@@ -4107,8 +4107,8 @@ public:
 
     void fgInterBlockLocalVarLiveness();
 
-    // The presence of "x op= y" operations presents some difficulties for SSA: this is both a use of some SSA name of
-    // "x", and a def of a new SSA name for "x".  The tree only has one local variable for "x", so it has to choose
+    // The presence of a partial definition presents some difficulties for SSA: this is both a use of some SSA name
+    // of "x", and a def of a new SSA name for "x".  The tree only has one local variable for "x", so it has to choose
     // whether to treat that as the use or def.  It chooses the "use", and thus the old SSA name.  This map allows us
     // to record/recover the "def" SSA number, given the lcl var node for "x" in such a tree.
     typedef JitHashTable<GenTree*, JitPtrKeyFuncs<GenTree>, unsigned> NodeToUnsignedMap;
@@ -4130,7 +4130,7 @@ public:
 
     // Requires that "lcl" has the GTF_VAR_DEF flag set.  Returns the SSA number of "lcl".
     // Except: assumes that lcl is a def, and if it is
-    // a def appearing in "lcl op= rhs" (GTF_VAR_USEASG), looks up and returns the SSA number for the "def",
+    // a partial def (GTF_VAR_USEASG), looks up and returns the SSA number for the "def",
     // rather than the "use" SSA number recorded in the tree "lcl".
     inline unsigned GetSsaNumForLocalVarDef(GenTree* lcl);
 
@@ -5503,7 +5503,7 @@ public:
 
         /* The following values are set only for iterator loops, i.e. has the flag LPFLG_ITER set */
 
-        GenTree*   lpIterTree;    // The "i <op>= const" tree
+        GenTree*   lpIterTree;    // The "i = i <op> const" tree
         unsigned   lpIterVar();   // iterator variable #
         int        lpIterConst(); // the constant with which the iterator is incremented
         genTreeOps lpIterOper();  // the type of the operation on the iterator (ASG_ADD, ASG_SUB, etc.)

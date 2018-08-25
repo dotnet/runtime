@@ -1610,7 +1610,7 @@ AGAIN:
                 return false;
             }
 
-            if (GenTree::OperIsAssignment(oper))
+            if (oper == GT_ASG)
             {
                 // 'tree' is the gtOp1 of an assignment node. So we can handle
                 // the case where defOnly is either true or false.
@@ -4121,43 +4121,25 @@ unsigned Compiler::gtSetEvalOrder(GenTree* tree)
                 return gtSetListOrder(tree, isListCallArgs, callArgsInRegs);
             }
 
+            case GT_ASG:
+                /* Assignments need a bit of special handling */
+                /* Process the target */
+                level = gtSetEvalOrder(op1);
+
+                if (gtIsLikelyRegVar(op1))
+                {
+                    assert(lvlb == 0);
+                    lvl2 = gtSetEvalOrder(op2);
+
+                    /* Assignment to an enregistered LCL_VAR */
+                    costEx = op2->gtCostEx;
+                    costSz = max(3, op2->gtCostSz); // 3 is an estimate for a reg-reg assignment
+                    goto DONE_OP1_AFTER_COST;
+                }
+                goto DONE_OP1;
+
             default:
                 break;
-        }
-
-        /* Assignments need a bit of special handling */
-
-        if (GenTree::OperIsAssignment(oper))
-        {
-            /* Process the target */
-
-            level = gtSetEvalOrder(op1);
-
-            if (gtIsLikelyRegVar(op1))
-            {
-                assert(lvlb == 0);
-                lvl2 = gtSetEvalOrder(op2);
-                if (oper != GT_ASG)
-                {
-                    ftreg |= op2->gtRsvdRegs;
-                }
-
-                /* Assignment to an enregistered LCL_VAR */
-                costEx = op2->gtCostEx;
-                costSz = max(3, op2->gtCostSz); // 3 is an estimate for a reg-reg assignment
-                goto DONE_OP1_AFTER_COST;
-            }
-            else if (oper != GT_ASG)
-            {
-                // Assign-Op instructions read and write op1
-                //
-                costEx += op1->gtCostEx;
-#ifdef _TARGET_ARM_
-                costSz += op1->gtCostSz;
-#endif
-            }
-
-            goto DONE_OP1;
         }
 
         /* Process the sub-operands */
@@ -4186,18 +4168,15 @@ unsigned Compiler::gtSetEvalOrder(GenTree* tree)
     DONE_OP1_AFTER_COST:
 
         bool bReverseInAssignment = false;
-        if (GenTree::OperIsAssignment(oper))
+        if (oper == GT_ASG)
         {
             GenTree* op1Val = op1;
 
-            if (tree->gtOper == GT_ASG)
+            // Skip over the GT_IND/GT_ADDR tree (if one exists)
+            //
+            if ((op1->gtOper == GT_IND) && (op1->gtOp.gtOp1->gtOper == GT_ADDR))
             {
-                // Skip over the GT_IND/GT_ADDR tree (if one exists)
-                //
-                if ((op1->gtOper == GT_IND) && (op1->gtOp.gtOp1->gtOper == GT_ADDR))
-                {
-                    op1Val = op1->gtOp.gtOp1->gtOp.gtOp1;
-                }
+                op1Val = op1->gtOp.gtOp1->gtOp.gtOp1;
             }
 
             switch (op1Val->gtOper)
@@ -5497,7 +5476,7 @@ GenTree* GenTree::gtGetParent(GenTree*** parentChildPtrPtr) const
 
 bool GenTree::OperRequiresAsgFlag()
 {
-    if (OperIsAssignment() || OperIs(GT_XADD, GT_XCHG, GT_LOCKADD, GT_CMPXCHG, GT_MEMORYBARRIER))
+    if (OperIs(GT_ASG) || OperIs(GT_XADD, GT_XCHG, GT_LOCKADD, GT_CMPXCHG, GT_MEMORYBARRIER))
     {
         return true;
     }
@@ -11884,7 +11863,7 @@ void Compiler::gtDispLIRNode(GenTree* node, const char* prefixMsg /* = nullptr *
                 displayOperand(operand, "size", operandArc, indentStack, prefixIndent);
             }
         }
-        else if (node->OperIsAssignment())
+        else if (node->OperIs(GT_ASG))
         {
             if (operand == node->gtGetOp1())
             {
@@ -12789,7 +12768,7 @@ DONE_FOLD:
     // a use, update the flags appropriately
     if (op->gtOper == GT_LCL_VAR)
     {
-        assert(tree->OperIsAssignment() || (op->gtFlags & (GTF_VAR_USEASG | GTF_VAR_DEF)) == 0);
+        assert(tree->OperIs(GT_ASG) || (op->gtFlags & (GTF_VAR_USEASG | GTF_VAR_DEF)) == 0);
 
         op->gtFlags &= ~(GTF_VAR_USEASG | GTF_VAR_DEF);
     }
@@ -14921,7 +14900,7 @@ bool Compiler::gtNodeHasSideEffects(GenTree* tree, unsigned flags)
         // will simply be dropped is they are ever subject to an "extract side effects" operation.
         // It is possible that the reason no bugs have yet been observed in this area is that the
         // other nodes are likely to always be tree roots.
-        if (tree->OperIsAssignment())
+        if (tree->OperIs(GT_ASG))
         {
             return true;
         }
@@ -15620,7 +15599,7 @@ bool GenTree::IsPartialLclFld(Compiler* comp)
 bool GenTree::DefinesLocal(Compiler* comp, GenTreeLclVarCommon** pLclVarTree, bool* pIsEntire)
 {
     GenTreeBlk* blkNode = nullptr;
-    if (OperIsAssignment())
+    if (OperIs(GT_ASG))
     {
         if (gtOp.gtOp1->IsLocal())
         {
@@ -15934,22 +15913,19 @@ bool GenTree::IsLocalAddrExpr(Compiler* comp, GenTreeLclVarCommon** pLclVarTree,
 unsigned GenTree::IsLclVarUpdateTree(GenTree** pOtherTree, genTreeOps* pOper)
 {
     unsigned lclNum = BAD_VAR_NUM;
-    if (OperIsAssignment())
+    if (OperIs(GT_ASG))
     {
         GenTree* lhs = gtOp.gtOp1;
         if (lhs->OperGet() == GT_LCL_VAR)
         {
             unsigned lhsLclNum = lhs->AsLclVarCommon()->gtLclNum;
-            if (gtOper == GT_ASG)
+            GenTree* rhs       = gtOp.gtOp2;
+            if (rhs->OperIsBinary() && (rhs->gtOp.gtOp1->gtOper == GT_LCL_VAR) &&
+                (rhs->gtOp.gtOp1->AsLclVarCommon()->gtLclNum == lhsLclNum))
             {
-                GenTree* rhs = gtOp.gtOp2;
-                if (rhs->OperIsBinary() && (rhs->gtOp.gtOp1->gtOper == GT_LCL_VAR) &&
-                    (rhs->gtOp.gtOp1->AsLclVarCommon()->gtLclNum == lhsLclNum))
-                {
-                    lclNum      = lhsLclNum;
-                    *pOtherTree = rhs->gtOp.gtOp2;
-                    *pOper      = rhs->gtOper;
-                }
+                lclNum      = lhsLclNum;
+                *pOtherTree = rhs->gtOp.gtOp2;
+                *pOper      = rhs->gtOper;
             }
         }
     }
