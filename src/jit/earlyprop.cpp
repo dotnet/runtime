@@ -273,7 +273,7 @@ GenTree* Compiler::optEarlyPropRewriteTree(GenTree* tree)
         return nullptr;
     }
 
-    if (!objectRefPtr->OperIsScalarLocal() || fgExcludeFromSsa(objectRefPtr->AsLclVarCommon()->GetLclNum()))
+    if (!objectRefPtr->OperIsScalarLocal() || !lvaInSsa(objectRefPtr->AsLclVarCommon()->GetLclNum()))
 
     {
         return nullptr;
@@ -442,7 +442,7 @@ GenTree* Compiler::optPropGetValueRec(unsigned lclNum, unsigned ssaNum, optPropK
             assert(treelhs == treeDefParent->gtGetOp1());
             GenTree* treeRhs = treeDefParent->gtGetOp2();
 
-            if (treeRhs->OperIsScalarLocal() && !fgExcludeFromSsa(treeRhs->AsLclVarCommon()->GetLclNum()))
+            if (treeRhs->OperIsScalarLocal() && lvaInSsa(treeRhs->AsLclVarCommon()->GetLclNum()))
             {
                 // Recursively track the Rhs
                 unsigned rhsLclNum = treeRhs->AsLclVarCommon()->GetLclNum();
