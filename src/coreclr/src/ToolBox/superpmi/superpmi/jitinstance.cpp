@@ -46,17 +46,14 @@ JitInstance* JitInstance::InitJit(char*          nameOfJit,
     return jit;
 }
 
-HRESULT JitInstance::StartUp(char*          PathToJit,
-                             bool           copyJit,
-                             bool           parambreakOnDebugBreakorAV,
-                             MethodContext* firstContext)
+HRESULT JitInstance::StartUp(char* PathToJit, bool copyJit, bool breakOnDebugBreakorAV, MethodContext* firstContext)
 {
     // startup jit
     DWORD dwRetVal = 0;
     UINT  uRetVal  = 0;
     BOOL  bRetVal  = FALSE;
 
-    breakOnDebugBreakorAV = parambreakOnDebugBreakorAV;
+    SetBreakOnDebugBreakOrAV(breakOnDebugBreakorAV);
 
     char pFullPathName[MAX_PATH];
     char lpTempPathBuffer[MAX_PATH];
