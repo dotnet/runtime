@@ -7178,7 +7178,7 @@ bool Compiler::optTreeIsValidAtLoopHead(GenTree* tree, unsigned lnum)
         unsigned             lclNum = lclVar->gtLclNum;
 
         // The lvlVar must be have an Ssa tracked lifetime
-        if (fgExcludeFromSsa(lclNum))
+        if (!lvaInSsa(lclNum))
         {
             return false;
         }
@@ -7627,7 +7627,7 @@ void Compiler::optComputeLoopSideEffectsOfBlock(BasicBlock* blk)
                     {
                         // If it's a local byref for which we recorded a value number, use that...
                         GenTreeLclVar* argLcl = arg->AsLclVar();
-                        if (!fgExcludeFromSsa(argLcl->GetLclNum()))
+                        if (lvaInSsa(argLcl->GetLclNum()))
                         {
                             ValueNum argVN =
                                 lvaTable[argLcl->GetLclNum()].GetPerSsaData(argLcl->GetSsaNum())->m_vnPair.GetLiberal();
@@ -7717,7 +7717,7 @@ void Compiler::optComputeLoopSideEffectsOfBlock(BasicBlock* blk)
                     if (rhsVN != ValueNumStore::NoVN)
                     {
                         rhsVN = vnStore->VNNormVal(rhsVN);
-                        if (!fgExcludeFromSsa(lhsLcl->GetLclNum()))
+                        if (lvaInSsa(lhsLcl->GetLclNum()))
                         {
                             lvaTable[lhsLcl->GetLclNum()]
                                 .GetPerSsaData(lhsLcl->GetSsaNum())

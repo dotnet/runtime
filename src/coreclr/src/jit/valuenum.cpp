@@ -4756,9 +4756,16 @@ void Compiler::fgValueNumber()
 
     // Start by giving incoming arguments value numbers.
     // Also give must-init vars a zero of their type.
-    for (unsigned i = 0; i < lvaCount; i++)
+    for (unsigned lclNum = 0; lclNum < lvaCount; lclNum++)
     {
-        LclVarDsc* varDsc = &lvaTable[i];
+        if (!lvaInSsa(lclNum))
+        {
+            continue;
+        }
+
+        LclVarDsc* varDsc = &lvaTable[lclNum];
+        assert(varDsc->lvTracked);
+
         if (varDsc->lvIsParam)
         {
             // We assume that code equivalent to this variable initialization loop
@@ -4767,13 +4774,13 @@ void Compiler::fgValueNumber()
             // SSA numbers always start from FIRST_SSA_NUM, and we give the value number to SSA name FIRST_SSA_NUM.
             // We use the VNF_InitVal(i) from here so we know that this value is loop-invariant
             // in all loops.
-            ValueNum      initVal = vnStore->VNForFunc(varDsc->TypeGet(), VNF_InitVal, vnStore->VNForIntCon(i));
+            ValueNum      initVal = vnStore->VNForFunc(varDsc->TypeGet(), VNF_InitVal, vnStore->VNForIntCon(lclNum));
             LclSsaVarDsc* ssaDef  = varDsc->GetPerSsaData(SsaConfig::FIRST_SSA_NUM);
             ssaDef->m_vnPair.SetBoth(initVal);
             ssaDef->m_defLoc.m_blk = fgFirstBB;
         }
         else if (info.compInitMem || varDsc->lvMustInit ||
-                 (varDsc->lvTracked && VarSetOps::IsMember(this, fgFirstBB->bbLiveIn, varDsc->lvVarIndex)))
+                 VarSetOps::IsMember(this, fgFirstBB->bbLiveIn, varDsc->lvVarIndex))
         {
             // The last clause covers the use-before-def variables (the ones that are live-in to the the first block),
             // these are variables that are read before being initialized (at least on some control flow paths)
@@ -4804,7 +4811,7 @@ void Compiler::fgValueNumber()
                     else
                     {
                         // Here we have uninitialized TYP_BYREF
-                        initVal = vnStore->VNForFunc(typ, VNF_InitVal, vnStore->VNForIntCon(i));
+                        initVal = vnStore->VNForFunc(typ, VNF_InitVal, vnStore->VNForIntCon(lclNum));
                     }
                     break;
 
@@ -4816,12 +4823,12 @@ void Compiler::fgValueNumber()
                     }
                     else
                     {
-                        initVal = vnStore->VNForFunc(typ, VNF_InitVal, vnStore->VNForIntCon(i));
+                        initVal = vnStore->VNForFunc(typ, VNF_InitVal, vnStore->VNForIntCon(lclNum));
                     }
                     break;
             }
 #ifdef _TARGET_X86_
-            bool isVarargParam = (i == lvaVarargsBaseOfStkArgs || i == lvaVarargsHandleArg);
+            bool isVarargParam = (lclNum == lvaVarargsBaseOfStkArgs || lclNum == lvaVarargsHandleArg);
             if (isVarargParam)
                 initVal = vnStore->VNForExpr(fgFirstBB); // a new, unique VN.
 #endif
@@ -5530,7 +5537,7 @@ void Compiler::fgValueNumberBlockAssignment(GenTree* tree, bool evalAsgLhsInd)
 
             // Ignore vars that we excluded from SSA (for example, because they're address-exposed). They don't have
             // SSA names in which to store VN's on defs.  We'll yield unique VN's when we read from them.
-            if (!fgExcludeFromSsa(lclNum))
+            if (lvaInSsa(lclNum))
             {
                 // Should not have been recorded as updating ByrefExposed.
                 assert(!GetMemorySsaMap(ByrefExposed)->Lookup(tree, &memorySsaNum));
@@ -5598,7 +5605,7 @@ void Compiler::fgValueNumberBlockAssignment(GenTree* tree, bool evalAsgLhsInd)
             unsigned      lhsLclNum = lclVarTree->GetLclNum();
             FieldSeqNode* lhsFldSeq = nullptr;
             // If it's excluded from SSA, don't need to do anything.
-            if (!fgExcludeFromSsa(lhsLclNum))
+            if (lvaInSsa(lhsLclNum))
             {
                 // Should not have been recorded as updating ByrefExposed.
                 assert(!GetMemorySsaMap(ByrefExposed)->Lookup(tree, &memorySsaNum));
@@ -5652,7 +5659,7 @@ void Compiler::fgValueNumberBlockAssignment(GenTree* tree, bool evalAsgLhsInd)
                     {
                         unsigned rhsLclNum = rhsLclVarTree->GetLclNum();
                         rhsVarDsc          = &lvaTable[rhsLclNum];
-                        if (fgExcludeFromSsa(rhsLclNum) || rhsFldSeq == FieldSeqStore::NotAField())
+                        if (!lvaInSsa(rhsLclNum) || rhsFldSeq == FieldSeqStore::NotAField())
                         {
                             rhsVNPair.SetBoth(vnStore->VNForExpr(compCurBB, rhsLclVarTree->TypeGet()));
                             isNewUniq = true;
@@ -5681,7 +5688,7 @@ void Compiler::fgValueNumberBlockAssignment(GenTree* tree, bool evalAsgLhsInd)
                     {
                         unsigned rhsLclNum = rhsLclVarTree->GetLclNum();
                         rhsVarDsc          = &lvaTable[rhsLclNum];
-                        if (fgExcludeFromSsa(rhsLclNum) || rhsFldSeq == FieldSeqStore::NotAField())
+                        if (!lvaInSsa(rhsLclNum) || rhsFldSeq == FieldSeqStore::NotAField())
                         {
                             isNewUniq = true;
                         }
@@ -5983,7 +5990,7 @@ void Compiler::fgValueNumberTree(GenTree* tree, bool evalAsgLhsInd)
             case GT_LCL_FLD:
             {
                 GenTreeLclFld* lclFld = tree->AsLclFld();
-                assert(fgExcludeFromSsa(lclFld->GetLclNum()) || lclFld->gtFieldSeq != nullptr);
+                assert(!lvaInSsa(lclFld->GetLclNum()) || lclFld->gtFieldSeq != nullptr);
                 // If this is a (full) def, then the variable will be labeled with the new SSA number,
                 // which will not have a value.  We skip; it will be handled by one of the assignment-like
                 // forms (assignment, or initBlk or copyBlk).
@@ -5994,7 +6001,7 @@ void Compiler::fgValueNumberTree(GenTree* tree, bool evalAsgLhsInd)
                     LclVarDsc* varDsc = &lvaTable[lclNum];
 
                     var_types indType = tree->TypeGet();
-                    if (lclFld->gtFieldSeq == FieldSeqStore::NotAField() || fgExcludeFromSsa(lclFld->GetLclNum()))
+                    if (lclFld->gtFieldSeq == FieldSeqStore::NotAField() || !lvaInSsa(lclFld->GetLclNum()))
                     {
                         // This doesn't represent a proper field access or it's a struct
                         // with overlapping fields that is hard to reason about; return a new unique VN.
@@ -6363,7 +6370,7 @@ void Compiler::fgValueNumberTree(GenTree* tree, bool evalAsgLhsInd)
 
                             wasLocal = true;
 
-                            if (!fgExcludeFromSsa(lclNum))
+                            if (lvaInSsa(lclNum))
                             {
                                 FieldSeqNode* fieldSeq = vnStore->FieldSeqVNToFieldSeq(funcApp.m_args[1]);
 
@@ -6716,7 +6723,7 @@ void Compiler::fgValueNumberTree(GenTree* tree, bool evalAsgLhsInd)
             {
                 FieldSeqNode* fieldSeq = nullptr;
                 ValueNum      newVN    = ValueNumStore::NoVN;
-                if (fgExcludeFromSsa(arg->gtLclVarCommon.GetLclNum()))
+                if (!lvaInSsa(arg->gtLclVarCommon.GetLclNum()))
                 {
                     newVN = vnStore->VNForExpr(compCurBB, TYP_BYREF);
                 }
@@ -6928,8 +6935,7 @@ void Compiler::fgValueNumberTree(GenTree* tree, bool evalAsgLhsInd)
                 VNFuncApp     funcApp;
 
                 // Is it a local or a heap address?
-                if (addr->IsLocalAddrExpr(this, &lclVarTree, &localFldSeq) &&
-                    !fgExcludeFromSsa(lclVarTree->GetLclNum()))
+                if (addr->IsLocalAddrExpr(this, &lclVarTree, &localFldSeq) && lvaInSsa(lclVarTree->GetLclNum()))
                 {
                     unsigned   lclNum = lclVarTree->GetLclNum();
                     unsigned   ssaNum = lclVarTree->GetSsaNum();

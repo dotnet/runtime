@@ -687,10 +687,6 @@ void SsaBuilder::InsertPhiFunctions(BasicBlock** postOrder, int count)
 {
     JITDUMP("*************** In SsaBuilder::InsertPhiFunctions()\n");
 
-    // Compute liveness on the graph.
-    m_pCompiler->fgLocalVarLiveness();
-    EndPhase(PHASE_BUILD_SSA_LIVENESS);
-
     // Compute dominance frontier.
     BlkToBlkVectorMap mapDF(m_allocator);
     ComputeDominanceFrontiers(postOrder, count, &mapDF);
@@ -722,7 +718,7 @@ void SsaBuilder::InsertPhiFunctions(BasicBlock** postOrder, int count)
             unsigned lclNum = m_pCompiler->lvaTrackedToVarNum[varIndex];
             DBG_SSA_JITDUMP("  Considering local var V%02u:\n", lclNum);
 
-            if (m_pCompiler->fgExcludeFromSsa(lclNum))
+            if (!m_pCompiler->lvaInSsa(lclNum))
             {
                 DBG_SSA_JITDUMP("  Skipping because it is excluded.\n");
                 continue;
@@ -914,7 +910,7 @@ void SsaBuilder::TreeRenameVariables(GenTree* tree, BasicBlock* block, SsaRename
 
     unsigned lclNum = tree->gtLclVarCommon.gtLclNum;
     // Is this a variable we exclude from SSA?
-    if (m_pCompiler->fgExcludeFromSsa(lclNum))
+    if (!m_pCompiler->lvaInSsa(lclNum))
     {
         tree->gtLclVarCommon.SetSsaNum(SsaConfig::RESERVED_SSA_NUM);
         return;
@@ -1526,20 +1522,25 @@ void SsaBuilder::RenameVariables(BlkToBlkVectorMap* domTree, SsaRenameState* pRe
 
     // The first thing we do is treat parameters and must-init variables as if they have a
     // virtual definition before entry -- they start out at SSA name 1.
-    for (unsigned i = 0; i < m_pCompiler->lvaCount; i++)
+    for (unsigned lclNum = 0; lclNum < m_pCompiler->lvaCount; lclNum++)
     {
-        LclVarDsc* varDsc = &m_pCompiler->lvaTable[i];
+        if (!m_pCompiler->lvaInSsa(lclNum))
+        {
+            continue;
+        }
+
+        LclVarDsc* varDsc = &m_pCompiler->lvaTable[lclNum];
+        assert(varDsc->lvTracked);
 
         if (varDsc->lvIsParam || m_pCompiler->info.compInitMem || varDsc->lvMustInit ||
-            (varDsc->lvTracked &&
-             VarSetOps::IsMember(m_pCompiler, m_pCompiler->fgFirstBB->bbLiveIn, varDsc->lvVarIndex)))
+            VarSetOps::IsMember(m_pCompiler, m_pCompiler->fgFirstBB->bbLiveIn, varDsc->lvVarIndex))
         {
             unsigned ssaNum = varDsc->lvPerSsaData.AllocSsaNum(m_allocator);
 
             // In ValueNum we'd assume un-inited variables get FIRST_SSA_NUM.
             assert(ssaNum == SsaConfig::FIRST_SSA_NUM);
 
-            pRenameState->Push(nullptr, i, ssaNum);
+            pRenameState->Push(nullptr, lclNum, ssaNum);
         }
     }
 
@@ -1729,6 +1730,16 @@ void SsaBuilder::Build()
     ComputeDominators(postOrder, count, domTree);
     EndPhase(PHASE_BUILD_SSA_DOMS);
 
+    // Compute liveness on the graph.
+    m_pCompiler->fgLocalVarLiveness();
+    EndPhase(PHASE_BUILD_SSA_LIVENESS);
+
+    // Mark all variables that will be tracked by SSA
+    for (unsigned lclNum = 0; lclNum < m_pCompiler->lvaCount; lclNum++)
+    {
+        m_pCompiler->lvaTable[lclNum].lvInSsa = IncludeInSsa(lclNum);
+    }
+
     // Insert phi functions.
     InsertPhiFunctions(postOrder, count);
 
@@ -1789,6 +1800,52 @@ void SsaBuilder::SetupBBRoot()
     {
         m_pCompiler->fgAddRefPred(oldFirst, bbRoot);
     }
+}
+
+//------------------------------------------------------------------------
+// IncludeInSsa: Check if the specified variable can be included in SSA.
+//
+// Arguments:
+//    lclNum - the variable number
+//
+// Return Value:
+//    true if the variable is included in SSA
+//
+bool SsaBuilder::IncludeInSsa(unsigned lclNum)
+{
+    LclVarDsc* varDsc = &m_pCompiler->lvaTable[lclNum];
+
+    if (varDsc->lvAddrExposed)
+    {
+        return false; // We exclude address-exposed variables.
+    }
+    if (!varDsc->lvTracked)
+    {
+        return false; // SSA is only done for tracked variables
+    }
+    // lvPromoted structs are never tracked...
+    assert(!varDsc->lvPromoted);
+
+    if (varDsc->lvOverlappingFields)
+    {
+        return false; // Don't use SSA on structs that have overlapping fields
+    }
+
+    if (varDsc->lvIsStructField &&
+        (m_pCompiler->lvaGetParentPromotionType(lclNum) != Compiler::PROMOTION_TYPE_INDEPENDENT))
+    {
+        // SSA must exclude struct fields that are not independent
+        // - because we don't model the struct assignment properly when multiple fields can be assigned by one struct
+        //   assignment.
+        // - SSA doesn't allow a single node to contain multiple SSA definitions.
+        // - and PROMOTION_TYPE_DEPENDEDNT fields  are never candidates for a register.
+        //
+        // Example mscorlib method: CompatibilitySwitches:IsCompatibilitySwitchSet
+        //
+        return false;
+    }
+    // otherwise this variable is included in SSA
+    return true;
 }
 
 #ifdef DEBUG

@@ -330,6 +330,8 @@ public:
     unsigned char lvFieldAccessed : 1;   // The var is a struct local, and a field of the variable is accessed.  Affects
                                          // struct promotion.
 
+    unsigned char lvInSsa : 1; // The variable is in SSA form (set by SsaBuilder)
+
 #ifdef DEBUG
     // These further document the reasons for setting "lvDoNotEnregister".  (Note that "lvAddrExposed" is one of the
     // reasons;
@@ -3025,6 +3027,13 @@ public:
     unsigned lvaGSSecurityCookie; // LclVar number
     bool     lvaTempsHaveLargerOffsetThanVars();
 
+    // Returns "true" iff local variable "lclNum" is in SSA form.
+    bool lvaInSsa(unsigned lclNum)
+    {
+        assert(lclNum < lvaCount);
+        return lvaTable[lclNum].lvInSsa;
+    }
+
     unsigned lvaSecurityObject;  // variable representing the security object on the stack
     unsigned lvaStubArgumentVar; // variable representing the secret stub argument coming in EAX
 
@@ -4132,9 +4141,6 @@ public:
     void fgResetForSsa();
 
     unsigned fgSsaPassesCompleted; // Number of times fgSsaBuild has been run.
-
-    // Returns "true" iff lcl "lclNum" should be excluded from SSA.
-    inline bool fgExcludeFromSsa(unsigned lclNum);
 
     // Returns "true" if a struct temp of the given type requires needs zero init in this block
     inline bool fgStructTempNeedsExplicitZeroInit(LclVarDsc* varDsc, BasicBlock* block);

@@ -1296,8 +1296,8 @@ AssertionIndex Compiler::optCreateAssertion(GenTree*         op1,
             noway_assert(lclNum < lvaCount);
             LclVarDsc* lclVar = &lvaTable[lclNum];
 
-            //  If the local variable has its address exposed then bail
-            if (fgExcludeFromSsa(lclNum))
+            //  If the local variable is not in SSA then bail
+            if (!lvaInSsa(lclNum))
             {
                 goto DONE_ASSERTION;
             }
