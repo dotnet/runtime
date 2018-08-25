@@ -17712,7 +17712,7 @@ void Compiler::fgRetypeImplicitByRefArgs()
 
             // Since this previously was a TYP_STRUCT and we have changed it to a TYP_BYREF
             // make sure that the following flag is not set as these will force SSA to
-            // exclude tracking/enregistering these LclVars. (see fgExcludeFromSsa)
+            // exclude tracking/enregistering these LclVars. (see SsaBuilder::IncludeInSsa)
             //
             varDsc->lvOverlappingFields = 0; // This flag could have been set, clear it.
 

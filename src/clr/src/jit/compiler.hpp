@@ -4276,48 +4276,6 @@ bool Compiler::fgStructTempNeedsExplicitZeroInit(LclVarDsc* varDsc, BasicBlock* 
 }
 
 /*****************************************************************************/
-bool Compiler::fgExcludeFromSsa(unsigned lclNum)
-{
-    if (opts.MinOpts())
-    {
-        return true; // If we're doing MinOpts, no SSA vars.
-    }
-
-    LclVarDsc* varDsc = &lvaTable[lclNum];
-
-    if (varDsc->lvAddrExposed)
-    {
-        return true; // We exclude address-exposed variables.
-    }
-    if (!varDsc->lvTracked)
-    {
-        return true; // SSA is only done for tracked variables
-    }
-    // lvPromoted structs are never tracked...
-    assert(!varDsc->lvPromoted);
-
-    if (varDsc->lvOverlappingFields)
-    {
-        return true; // Don't use SSA on structs that have overlapping fields
-    }
-
-    if (varDsc->lvIsStructField && (lvaGetParentPromotionType(lclNum) != PROMOTION_TYPE_INDEPENDENT))
-    {
-        // SSA must exclude struct fields that are not independent
-        // - because we don't model the struct assignment properly when multiple fields can be assigned by one struct
-        //   assignment.
-        // - SSA doesn't allow a single node to contain multiple SSA definitions.
-        // - and PROMOTION_TYPE_DEPENDEDNT fields  are never candidates for a register.
-        //
-        // Example mscorlib method: CompatibilitySwitches:IsCompatibilitySwitchSet
-        //
-        return true;
-    }
-    // otherwise this variable is *not* excluded for SSA
-    return false;
-}
-
-/*****************************************************************************/
 ValueNum Compiler::GetUseAsgDefVNOrTreeVN(GenTree* op)
 {
     if (op->gtFlags & GTF_VAR_USEASG)
@@ -4336,7 +4294,7 @@ ValueNum Compiler::GetUseAsgDefVNOrTreeVN(GenTree* op)
 unsigned Compiler::GetSsaNumForLocalVarDef(GenTree* lcl)
 {
     // Address-taken variables don't have SSA numbers.
-    if (fgExcludeFromSsa(lcl->AsLclVarCommon()->gtLclNum))
+    if (!lvaInSsa(lcl->AsLclVarCommon()->gtLclNum))
     {
         return SsaConfig::RESERVED_SSA_NUM;
     }

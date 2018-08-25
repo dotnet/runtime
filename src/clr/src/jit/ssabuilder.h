@@ -24,6 +24,8 @@ private:
         m_pCompiler->EndPhase(phase);
     }
 
+    bool IncludeInSsa(unsigned lclNum);
+
 public:
     // Constructor
     SsaBuilder(Compiler* pCompiler);
