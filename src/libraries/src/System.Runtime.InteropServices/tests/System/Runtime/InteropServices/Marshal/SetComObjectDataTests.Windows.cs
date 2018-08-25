@@ -10,7 +10,7 @@ namespace System.Runtime.InteropServices.Tests
     public partial class SetComObjectDataTests
     {
         [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotWindowsNanoServer))]
-        [ActiveIssue(31910, TargetFrameworkMonikers.Uap)]
+        [SkipOnTargetFramework(TargetFrameworkMonikers.Uap, "Not approved COM object for app")]
         [PlatformSpecific(TestPlatforms.Windows)]
         public void SetComObjectData_NonNullValue_Sucesss()
         {
@@ -27,7 +27,7 @@ namespace System.Runtime.InteropServices.Tests
         }
 
         [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotWindowsNanoServer))]
-        [ActiveIssue(31910, TargetFrameworkMonikers.Uap)]
+        [SkipOnTargetFramework(TargetFrameworkMonikers.Uap, "Not approved COM object for app")]
         [PlatformSpecific(TestPlatforms.Windows)]
         public void SetComObjectData_NullValue_Sucesss()
         {
