@@ -158,9 +158,8 @@ namespace System.Reflection
         }
 
         // Loads the assembly with a COFF based IMAGE containing
-        // an emitted assembly. The assembly is loaded into the domain
-        // of the caller. The second parameter is the raw bytes
-        // representing the symbol store that matches the assembly.
+        // an emitted assembly. The assembly is loaded into a fully isolated ALC with resolution fully deferred to the AssemblyLoadContext.Default.
+        // The second parameter is the raw bytes representing the symbol store that matches the assembly.
         [System.Security.DynamicSecurityMethod] // Methods containing StackCrawlMark local var has to be marked DynamicSecurityMethod
         public static Assembly Load(byte[] rawAssembly,
                                     byte[] rawSymbolStore)
@@ -203,9 +202,7 @@ namespace System.Reflection
             return result;
         }
 
-        /*
-         * Get the assembly that the current code is running from.
-         */
+        // Get the assembly that the current code is running from.
         [System.Security.DynamicSecurityMethod] // Methods containing StackCrawlMark local var has to be marked DynamicSecurityMethod 
         public static Assembly GetExecutingAssembly()
         {
@@ -216,9 +213,9 @@ namespace System.Reflection
         [System.Security.DynamicSecurityMethod] // Methods containing StackCrawlMark local var has to be marked DynamicSecurityMethod
         public static Assembly GetCallingAssembly()
         {
-            // LookForMyCallersCaller is not guarantee to return the correct stack frame
+            // LookForMyCallersCaller is not guaranteed to return the correct stack frame
             // because of inlining, tail calls, etc. As a result GetCallingAssembly is not 
-            // ganranteed to return the correct result. We should document it as such.
+            // guaranteed to return the correct result. It's also documented as such.
             StackCrawlMark stackMark = StackCrawlMark.LookForMyCallersCaller;
             return RuntimeAssembly.GetExecutingAssembly(ref stackMark);
         }
