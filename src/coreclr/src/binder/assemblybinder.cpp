@@ -61,18 +61,6 @@ extern BOOL RuntimeCanUseAppPathAssemblyResolver(DWORD adid);
 
 namespace BINDER_SPACE
 {
-    typedef enum
-    {
-        kVersionIgnore,
-        kVersionExact,
-        kVersionServiceRollForward,
-        kVersionFeatureRollForward,
-        kVersionFeatureExact,
-        kVersionFeatureHighest,
-        kVersionFeatureLowestHigher,
-        kVersionFeatureHighestLower
-    } VersionMatchMode;
-
     namespace
     {
         BOOL fAssemblyBinderInitialized = FALSE;
