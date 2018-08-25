@@ -49,16 +49,4 @@ namespace System.Security.Cryptography.Pkcs.Asn1
         [OptionalValue]
         public AttributeAsn[] UnsignedAttributes;
     }
-
-    // This type is not properly from the ASN module, but it exists to allow for
-    // deserialization on demand of the signed attributes, so the deserialization
-    // and reserialization process does not modify the contents of the signed
-    // attributes.
-    [Choice]
-    internal struct SignedAttributesSet
-    {
-        [ExpectedTag(0)]
-        [SetOf]
-        public AttributeAsn[] SignedAttributes;
-    }
 }

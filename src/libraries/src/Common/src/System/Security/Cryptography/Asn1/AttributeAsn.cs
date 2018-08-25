@@ -20,5 +20,19 @@ namespace System.Security.Cryptography.Asn1
 
         [AnyValue]
         public ReadOnlyMemory<byte> AttrValues;
+
+        internal void Encode(AsnWriter writer)
+        {
+            AsnSerializer.Serialize(this, writer);
+        }
+
+        internal static void Decode(AsnReader reader, out AttributeAsn decoded)
+        {
+            if (reader == null)
+                throw new ArgumentNullException(nameof(reader));
+
+            ReadOnlyMemory<byte> value = reader.GetEncodedValue();
+            decoded = AsnSerializer.Deserialize<AttributeAsn>(value, reader.RuleSet);
+        }
     }
 }
