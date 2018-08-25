@@ -49,7 +49,7 @@ public:
 
     void EnableFinalization(bool foundFinalizers);
     void HandleFatalError(unsigned int exitCode);
-    bool ShouldFinalizeObjectForUnload(AppDomain* pDomain, Object* obj);
+    bool ShouldFinalizeObjectForUnload(void* pDomain, Object* obj);
     bool ForceFullGCToBeBlocking();
     bool EagerFinalized(Object* obj);
     MethodTable* GetFreeObjectMethodTable();
@@ -63,6 +63,13 @@ public:
     void WalkAsyncPinnedForPromotion(Object* object, ScanContext* sc, promote_func* callback);
     void WalkAsyncPinned(Object* object, void* context, void(*callback)(Object*, Object*, void*));
     IGCToCLREventSink* EventSink();
+
+    uint32_t GetDefaultDomainIndex();
+    void *GetAppDomainAtIndex(uint32_t appDomainIndex);
+    bool AppDomainCanAccessHandleTable(uint32_t appDomainID);
+    uint32_t GetIndexOfAppDomainBeingUnloaded();
+    uint32_t GetTotalNumSizedRefHandles();
+    bool AppDomainIsRudeUnload(void *appDomain);
 };
 
 } // namespace standalone
