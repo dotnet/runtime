@@ -80,18 +80,18 @@ HRESULT CLRPrivBinderCoreCLR::BindAssemblyByName(IAssemblyName     *pIAssemblyNa
             INT_PTR pManagedAssemblyLoadContext = GetManagedAssemblyLoadContext();
             if (pManagedAssemblyLoadContext != NULL)
             {
-              hr = AssemblyBinder::BindUsingHostAssemblyResolver(pManagedAssemblyLoadContext, pAssemblyName, pIAssemblyName, 
-              NULL, &pCoreCLRFoundAssembly);
-              if (SUCCEEDED(hr))
-              {
-                  // We maybe returned an assembly that was bound to a different AssemblyLoadContext instance.
-                  // In such a case, we will not overwrite the binding context (which would be wrong since it would not
-                  // be present in the cache of the current binding context).
-                  if (pCoreCLRFoundAssembly->GetBinder() == NULL)
-                  {
-                      pCoreCLRFoundAssembly->SetBinder(this);
-                  }
-              }
+                hr = AssemblyBinder::BindUsingHostAssemblyResolver(pManagedAssemblyLoadContext, pAssemblyName, pIAssemblyName, 
+                                                                   NULL, &pCoreCLRFoundAssembly);
+                if (SUCCEEDED(hr))
+                {
+                    // We maybe returned an assembly that was bound to a different AssemblyLoadContext instance.
+                    // In such a case, we will not overwrite the binding context (which would be wrong since it would not
+                    // be present in the cache of the current binding context).
+                    if (pCoreCLRFoundAssembly->GetBinder() == NULL)
+                    {
+                        pCoreCLRFoundAssembly->SetBinder(this);
+                    }
+                }
             }
         }
 #endif // !defined(DACCESS_COMPILE) && !defined(CROSSGEN_COMPILE)
@@ -109,8 +109,8 @@ Exit:;
 
 #if !defined(DACCESS_COMPILE) && !defined(CROSSGEN_COMPILE)
 HRESULT CLRPrivBinderCoreCLR::BindUsingPEImage( /* in */ PEImage *pPEImage, 
-                                                            /* in */ BOOL fIsNativeImage, 
-                                                            /* [retval][out] */ ICLRPrivAssembly **ppAssembly)
+                                                /* in */ BOOL fIsNativeImage, 
+                                                /* [retval][out] */ ICLRPrivAssembly **ppAssembly)
 {
     HRESULT hr = S_OK;
 

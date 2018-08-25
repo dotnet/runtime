@@ -7025,8 +7025,6 @@ EndTry2:;
                 {
                     bool fAddFileToCache = false;
 
-                    BOOL fIsWellKnown = FALSE;
-
                     // Use CoreClr's fusion alternative
                     CoreBindResult bindResult;
 
@@ -7068,7 +7066,7 @@ EndTry2:;
                             AddFileToCache(pSpec, result, TRUE /*fAllowFailure*/);
                         }
                     }
-                    else if (!fIsWellKnown)
+                    else
                     {
                         _ASSERTE(fThrowOnFileNotFound == FALSE);
 
