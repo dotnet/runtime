@@ -81,50 +81,15 @@ sudo apt-get install libunwind8:armhf libunwind8-dev:armhf libicu-dev:armhf libl
 The following instructions assume that on the Unix machine:
 - The CoreCLR repo is cloned at `/mnt/coreclr`
 
-If DotNet is unsupported
-- The CoreFX repo is cloned at `/mnt/corefx`
-- The other platform's clone of the CoreCLR repo is mounted at `/media/coreclr`
-
-The following steps are different if DotNet is supported or not on your arch and os.
-
-### DotNet is supported
-
-build-test.sh will have setup the Core_Root directory correctly after the test build. If this was either skipped or needs to be regenerated use:
-
->`build-test.sh generatelayoutonly`
-
-To run the tests run with the --coreOverlayDir path
+build-test.sh will have setup the Core_Root directory correctly after the test build.
 
 ```bash
-~/coreclr$ tests/runtest.sh
-    --testRootDir=/mnt/coreclr/bin/tests/Linux.x64.Debug
-    --testNativeBinDir=/mnt/coreclr/bin/obj/Linux.x64.Debug/tests
-    --coreOverlayDir=/mnt/coreclr/bin/tests/Linux.x64.Debug/Tests/Core_Root
-    --copyNativeTestBin
+~/coreclr$ tests/runtest.sh x64 checked
 ```
 
-### DotNet is not supported
+Please use the following command for help.
 
-Tests need to be built on another platform and copied over to the Unix machine for testing. Copy the test build over to the Unix machine:
-
-> `cp --recursive /media/coreclr/bin/tests/Windows_NT.x64.Debug /mnt/test/`
-
-See `runtest.sh` usage information:
-
-> `/mnt/coreclr$ tests/runtest.sh --help`
-
-Run tests (`Debug` may be replaced with `Release` or `Checked`, depending on which Configuration you've built):
-
-```bash
-/mnt/coreclr$ tests/runtest.sh
-    --testRootDir=/mnt/test/Windows_NT.x64.Debug
-    --testNativeBinDir=/mnt/coreclr/bin/obj/Linux.x64.Debug/tests
-    --coreClrBinDir=/mnt/coreclr/bin/Product/Linux.x64.Debug
-    --mscorlibDir=/mnt/coreclr/bin/Product/Linux.x64.Debug
-    --coreFxBinDir=/mnt/corefx/bin/runtime/netcoreapp-Linux-Debug-x64
-```
-
-The method above will copy dependencies from the set of directories provided to create an 'overlay' directory.
+>./tests/runtest.sh -h
 
 ### Results
 
@@ -134,13 +99,21 @@ Test results will go into:
 
 ### Unsupported and temporarily disabled tests
 
-These tests are skipped by default:
-- Tests that are not supported outside Windows, are listed in:
-    > `~/coreclr/tests/testsUnsupportedOutsideWindows.txt`
-- Tests that are temporarily disabled outside Windows due to unexpected failures (pending investigation), are listed in:
-    > `~/coreclr/tests/testsFailingOutsideWindows.txt`
+Unsupported tests outside of Windows have two annotations in their csproj to
+ignore them when run.
 
-To run only the set of temporarily disabled tests, pass in the `--runFailingTestsOnly` argument to `runtest.sh`.
+```
+<TestUnsupportedOutsideWindows>true</TestUnsupportedOutsideWindows>
+```
+
+This will write in the bash target to skip the test by returning a passing value if run outside Windows.
+
+In addition:
+```
+<DisableProjectBuild Condition="'$(TargetsUnix)' == 'true'">true</DisableProjectBuild>
+```
+
+Is used to disable the build, that way if building on unix cycles are saved building/running.
 
 PAL tests
 ---------

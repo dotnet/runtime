@@ -47,9 +47,33 @@ echo Running %0 > "%INIT_TOOLS_LOG%"
 set /p DOTNET_VERSION=< "%~dp0DotnetCLIVersion.txt"
 if exist "%DOTNET_CMD%" goto :afterdotnetrestore
 
+REM Use x86 tools on arm64 and x86.
+REM arm32 host is not currently supported, please crossbuild.
+if /i "%PROCESSOR_ARCHITECTURE%" == "arm" (
+  echo "Error, arm32 arch not supported for build tools."
+  exit /b 1
+)
+
+if /i "%PROCESSOR_ARCHITECTURE%" == "amd64" (
+  set _Arch="x64"
+  goto ArchSet
+)
+
+REM If this is not amd64 and not arm, then we should be running on arm64 or x86
+REM either way we can (and should) use the x86 dotnet cli
+REM
+REM TODO: consume native arm64 toolset, blocked by official arm64 windows cli
+REM     : release. See https://github.com/dotnet/coreclr/issues/19614 for more
+REM     : information
+set _Arch="x86"
+
+echo "init-tools.cmd: Setting arch to %_Arch% for build tools"
+
+:ArchSet
+
 echo Installing dotnet cli...
 if NOT exist "%DOTNET_PATH%" mkdir "%DOTNET_PATH%"
-set DOTNET_ZIP_NAME=dotnet-sdk-%DOTNET_VERSION%-win-x64.zip
+set DOTNET_ZIP_NAME=dotnet-sdk-%DOTNET_VERSION%-win-%_Arch%.zip
 set DOTNET_REMOTE_PATH=https://dotnetcli.azureedge.net/dotnet/Sdk/%DOTNET_VERSION%/%DOTNET_ZIP_NAME%
 set DOTNET_LOCAL_PATH=%DOTNET_PATH%%DOTNET_ZIP_NAME%
 echo Installing '%DOTNET_REMOTE_PATH%' to '%DOTNET_LOCAL_PATH%' >> "%INIT_TOOLS_LOG%"
