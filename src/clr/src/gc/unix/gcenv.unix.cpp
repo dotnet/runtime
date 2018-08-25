@@ -319,8 +319,9 @@ bool GCToOSInterface::VirtualRelease(void* address, size_t size)
 //  size    - size of the virtual memory range
 // Return:
 //  true if it has succeeded, false if it has failed
-bool GCToOSInterface::VirtualCommit(void* address, size_t size)
+bool GCToOSInterface::VirtualCommit(void* address, size_t size, uint32_t node)
 {
+    assert(node == NUMA_NODE_UNDEFINED && "Numa allocation is not ported to local GC on unix yet");
     return mprotect(address, size, PROT_WRITE | PROT_READ) == 0;
 }
 
@@ -697,6 +698,26 @@ uint32_t GCToOSInterface::GetTotalProcessorCount()
     return g_logicalCpuCount;
 }
 
+bool GCToOSInterface::CanEnableGCNumaAware()
+{
+    return false;
+}
+
+bool GCToOSInterface::GetNumaProcessorNode(PPROCESSOR_NUMBER proc_no, uint16_t *node_no)
+{
+    assert(!"Numa has not been ported to local GC for unix");
+    return false;
+}
+
+bool GCToOSInterface::CanEnableGCCPUGroups()
+{
+    return false;
+}
+
+void GCToOSInterface::GetGroupForProcessor(uint16_t processor_number, uint16_t* group_number, uint16_t* group_processor_number)
+{
+    assert(!"CpuGroup has not been ported to local GC for unix");
+}
 
 // Initialize the critical section
 void CLRCriticalSection::Initialize()

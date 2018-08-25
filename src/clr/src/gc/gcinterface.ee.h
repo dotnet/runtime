@@ -319,7 +319,7 @@ public:
     // Asks the EE if it wants a particular object to be finalized when unloading
     // an app domain.
     virtual
-    bool ShouldFinalizeObjectForUnload(AppDomain* pDomain, Object* obj) = 0;
+    bool ShouldFinalizeObjectForUnload(void* pDomain, Object* obj) = 0;
 
     // Offers the EE the option to finalize the given object eagerly, i.e.
     // not on the finalizer thread but on the current thread. The
@@ -409,6 +409,24 @@ public:
     // Returns an IGCToCLREventSink instance that can be used to fire events.
     virtual
     IGCToCLREventSink* EventSink() = 0;
+
+    virtual
+    uint32_t GetDefaultDomainIndex() = 0;
+
+    virtual
+    void *GetAppDomainAtIndex(uint32_t appDomainIndex) = 0;
+
+    virtual
+    uint32_t GetIndexOfAppDomainBeingUnloaded() = 0;
+
+    virtual
+    bool AppDomainCanAccessHandleTable(uint32_t appDomainID) = 0;
+
+    virtual
+    uint32_t GetTotalNumSizedRefHandles() = 0;
+
+    virtual
+    bool AppDomainIsRudeUnload(void *appDomain) = 0;
 };
 
 #endif // _GCINTERFACE_EE_H_

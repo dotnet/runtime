@@ -1041,7 +1041,7 @@ void TableRelocateAsyncPinHandles(HandleTable *pTable,
     }
     CONTRACTL_END;
 
-    _ASSERTE (pTargetTable->uADIndex == SystemDomain::System()->DefaultDomain()->GetIndex());  // must be for default domain
+    _ASSERTE (pTargetTable->uADIndex == ADIndex(GCToEEInterface::GetDefaultDomainIndex()));  // must be for default domain
 
     BOOL fGotException = FALSE;
     TableSegment *pSegment = pTable->pSegmentList;

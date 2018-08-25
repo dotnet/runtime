@@ -167,31 +167,7 @@ public:
         GCSTRESS_INSTR_NGEN = 8,    // GC on every allowable NGEN instr
         GCSTRESS_UNIQUE = 16,   // GC only on a unique stack trace
     };
-
-    int     GetHeapVerifyLevel() { return 0; }
-    bool    IsHeapVerifyEnabled() { return GetHeapVerifyLevel() != 0; }
-
-    GCStressFlags GetGCStressLevel()        const { return GCSTRESS_NONE; }
-    bool    IsGCStressMix()                 const { return false; }
-
-    int     GetGCtraceStart()               const { return 0; }
-    int     GetGCtraceEnd()               const { return 0; }//1000000000; }
-    int     GetGCtraceFac()               const { return 0; }
-    int     GetGCprnLvl()               const { return 0; }
-    bool    IsGCBreakOnOOMEnabled()         const { return false; }
-    int     GetGCgen0size()               const { return 0; }
-    int     GetSegmentSize()               const { return 0; }
-    int     GetGCconcurrent()               const { return 1; }
-    int     GetGCLatencyMode()              const { return 1; }
-    int     GetGCForceCompact()             const { return 0; }
-    int     GetGCRetainVM()                const { return 0; }
-    int     GetGCTrimCommit()               const { return 0; }
-    int     GetGCLOHCompactionMode()        const { return 0; }
-
-    bool    GetGCConservative()             const { return true; }
 };
-
-extern EEConfig * g_pConfig;
 
 #include "etmdummy.h"
 #define ETW_EVENT_ENABLED(e,f) false

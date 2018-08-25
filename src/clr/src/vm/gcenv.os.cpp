@@ -211,11 +211,18 @@ bool GCToOSInterface::VirtualRelease(void* address, size_t size)
 //  size    - size of the virtual memory range
 // Return:
 //  true if it has succeeded, false if it has failed
-bool GCToOSInterface::VirtualCommit(void* address, size_t size)
+bool GCToOSInterface::VirtualCommit(void* address, size_t size, uint32_t node)
 {
     LIMITED_METHOD_CONTRACT;
 
-    return ::ClrVirtualAlloc(address, size, MEM_COMMIT, PAGE_READWRITE) != NULL;
+    if (node == NUMA_NODE_UNDEFINED)
+    {
+        return ::ClrVirtualAlloc(address, size, MEM_COMMIT, PAGE_READWRITE) != NULL;
+    }
+    else
+    {
+        return NumaNodeInfo::VirtualAllocExNuma(::GetCurrentProcess(), address, size, MEM_COMMIT, PAGE_READWRITE, node) != NULL;
+    }
 }
 
 // Decomit virtual memory range.
@@ -708,7 +715,42 @@ uint32_t GCToOSInterface::GetTotalProcessorCount()
 {
     LIMITED_METHOD_CONTRACT;
 
-    return g_SystemInfo.dwNumberOfProcessors;
+    if (CPUGroupInfo::CanEnableGCCPUGroups())
+    {
+        return CPUGroupInfo::GetNumActiveProcessors();
+    }
+    else
+    {
+        return g_SystemInfo.dwNumberOfProcessors;
+    }
+}
+
+bool GCToOSInterface::CanEnableGCNumaAware()
+{
+    LIMITED_METHOD_CONTRACT;
+
+    return NumaNodeInfo::CanEnableGCNumaAware() != FALSE;
+}
+
+bool GCToOSInterface::GetNumaProcessorNode(PPROCESSOR_NUMBER proc_no, uint16_t *node_no)
+{
+    LIMITED_METHOD_CONTRACT;
+
+    return NumaNodeInfo::GetNumaProcessorNodeEx(proc_no, node_no) != FALSE;
+}
+
+bool GCToOSInterface::CanEnableGCCPUGroups()
+{
+    LIMITED_METHOD_CONTRACT;
+
+    return CPUGroupInfo::CanEnableGCCPUGroups() != FALSE;
+}
+
+void GCToOSInterface::GetGroupForProcessor(uint16_t processor_number, uint16_t* group_number, uint16_t* group_processor_number)
+{
+    LIMITED_METHOD_CONTRACT;
+
+    return CPUGroupInfo::GetGroupForProcessor(processor_number, group_number, group_processor_number);
 }
 
 // Initialize the critical section

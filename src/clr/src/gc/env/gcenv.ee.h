@@ -71,7 +71,7 @@ public:
     static void EnableFinalization(bool foundFinalizers);
 
     static void HandleFatalError(unsigned int exitCode);
-    static bool ShouldFinalizeObjectForUnload(AppDomain* pDomain, Object* obj);
+    static bool ShouldFinalizeObjectForUnload(void* pDomain, Object* obj);
     static bool ForceFullGCToBeBlocking();
     static bool EagerFinalized(Object* obj);
     static MethodTable* GetFreeObjectMethodTable();
@@ -85,6 +85,13 @@ public:
     static void WalkAsyncPinnedForPromotion(Object* object, ScanContext* sc, promote_func* callback);
     static void WalkAsyncPinned(Object* object, void* context, void(*callback)(Object*, Object*, void*));
     static IGCToCLREventSink* EventSink();
+
+    static uint32_t GetDefaultDomainIndex();
+    static void *GetAppDomainAtIndex(uint32_t appDomainIndex);
+    static bool AppDomainCanAccessHandleTable(uint32_t appDomainID);
+    static uint32_t GetIndexOfAppDomainBeingUnloaded();
+    static uint32_t GetTotalNumSizedRefHandles();
+    static bool GCToEEInterface::AppDomainIsRudeUnload(void *appDomain);
 };
 
 #endif // __GCENV_EE_H__

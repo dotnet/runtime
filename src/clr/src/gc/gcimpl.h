@@ -209,7 +209,7 @@ public:
     PER_HEAP_ISOLATED size_t GetFinalizablePromotedCount();
 
     void SetFinalizeQueueForShutdown(bool fHasLock);
-    bool FinalizeAppDomain(AppDomain *pDomain, bool fRunFinalizers);
+    bool FinalizeAppDomain(void *pDomain, bool fRunFinalizers);
     bool ShouldRestartFinalizerWatchDog();
 
     void DiagWalkObject (Object* obj, walk_fn fn, void* context);

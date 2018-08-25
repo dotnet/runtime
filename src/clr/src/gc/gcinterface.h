@@ -581,7 +581,7 @@ public:
     */
 
     // Finalizes an app domain by finalizing objects within that app domain.
-    virtual bool FinalizeAppDomain(AppDomain* pDomain, bool fRunFinalizers) = 0;
+    virtual bool FinalizeAppDomain(void* pDomain, bool fRunFinalizers) = 0;
 
     // Finalizes all registered objects for shutdown, even if they are still reachable.
     virtual void SetFinalizeQueueForShutdown(bool fHasLock) = 0;

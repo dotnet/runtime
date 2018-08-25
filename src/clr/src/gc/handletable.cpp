@@ -363,11 +363,9 @@ void ValidateFetchObjrefForHandle(OBJECTREF objref, ADIndex appDomainIndex)
     BEGIN_DEBUG_ONLY_CODE;
     VALIDATEOBJECTREF (objref);
 
-    AppDomain *pDomain = SystemDomain::GetAppDomainAtIndex(appDomainIndex);
-
-    // Access to a handle in unloaded domain is not allowed
-    _ASSERTE(pDomain != NULL);
-    _ASSERTE(!pDomain->NoAccessToHandleTable());
+#ifndef DACCESS_COMPILE
+    _ASSERTE(GCToEEInterface::AppDomainCanAccessHandleTable(appDomainIndex.m_dwIndex));
+#endif // DACCESS_COMPILE
 
     END_DEBUG_ONLY_CODE;
 }
@@ -384,12 +382,9 @@ void ValidateAssignObjrefForHandle(OBJECTREF objref, ADIndex appDomainIndex)
 
     VALIDATEOBJECTREF (objref);
 
-    AppDomain *pDomain = SystemDomain::GetAppDomainAtIndex(appDomainIndex);
-
-    // Access to a handle in unloaded domain is not allowed
-    _ASSERTE(pDomain != NULL);
-    _ASSERTE(!pDomain->NoAccessToHandleTable());
-
+#ifndef DACCESS_COMPILE
+    _ASSERTE(GCToEEInterface::AppDomainCanAccessHandleTable(appDomainIndex.m_dwIndex));
+#endif // DACCESS_COMPILE
     END_DEBUG_ONLY_CODE;
 }
 
@@ -407,12 +402,12 @@ void ValidateAppDomainForHandle(OBJECTHANDLE handle)
 #else
     BEGIN_DEBUG_ONLY_CODE;
     ADIndex id = HndGetHandleADIndex(handle);
-    AppDomain *pUnloadingDomain = SystemDomain::AppDomainBeingUnloaded();
-    if (!pUnloadingDomain || pUnloadingDomain->GetIndex() != id)
+    ADIndex unloadingDomain(GCToEEInterface::GetIndexOfAppDomainBeingUnloaded());
+    if (unloadingDomain != id)
     {
         return;
     }
-    if (!pUnloadingDomain->NoAccessToHandleTable())
+    if (GCToEEInterface::AppDomainCanAccessHandleTable(unloadingDomain.m_dwIndex))
     {
         return;
     }
@@ -604,7 +599,7 @@ void HndLogSetEvent(OBJECTHANDLE handle, _UNCHECKED_OBJECTREF value)
     {
         uint32_t hndType = HandleFetchType(handle);
         ADIndex appDomainIndex = HndGetHandleADIndex(handle);   
-        AppDomain* pAppDomain = SystemDomain::GetAppDomainAtIndex(appDomainIndex);
+        void* pAppDomain = GCToEEInterface::GetAppDomainAtIndex(appDomainIndex.m_dwIndex);
         uint32_t generation = value != 0 ? g_theGCHeap->WhichGeneration(value) : 0;
         FIRE_EVENT(SetGCHandle, (void *)handle, (void *)value, hndType, generation, (uint64_t)pAppDomain);
         FIRE_EVENT(PrvSetGCHandle, (void *) handle, (void *)value, hndType, generation, (uint64_t)pAppDomain);
@@ -620,7 +615,7 @@ void HndLogSetEvent(OBJECTHANDLE handle, _UNCHECKED_OBJECTREF value)
             // to this structure as our closure's context pointer.
             struct ClosureCapture
             {
-                AppDomain* pAppDomain;
+                void* pAppDomain;
                 Object* overlapped;
             };
 

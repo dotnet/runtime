@@ -748,7 +748,7 @@ BYTE * ClrVirtualAllocWithinRange(const BYTE *pMinAddr,
 /*static*/ NumaNodeInfo::PVAExN NumaNodeInfo::m_pVirtualAllocExNuma = NULL;
 
 /*static*/ LPVOID NumaNodeInfo::VirtualAllocExNuma(HANDLE hProc, LPVOID lpAddr, SIZE_T dwSize,
-		    		     DWORD allocType, DWORD prot, DWORD node)
+                         DWORD allocType, DWORD prot, DWORD node)
 {
     return (*m_pVirtualAllocExNuma)(hProc, lpAddr, dwSize, allocType, prot, node);
 }
@@ -766,7 +766,7 @@ BYTE * ClrVirtualAllocWithinRange(const BYTE *pMinAddr,
 #if !defined(FEATURE_REDHAWK)
     //check for numa support if multiple heaps are used
     ULONG highest = 0;
-	
+    
     if (CLRConfig::GetConfigValue(CLRConfig::UNSUPPORTED_GCNumaAware) == 0)
         return FALSE;
 
