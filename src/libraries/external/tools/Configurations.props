@@ -5,6 +5,7 @@
       netcoreapp-Windows_NT;
       netcoreappaot-Windows_NT;
       netcoreapp-Unix;
+      netfx;
       uap10.0.16299;
       uap10.0.16299aot;
       uap;
