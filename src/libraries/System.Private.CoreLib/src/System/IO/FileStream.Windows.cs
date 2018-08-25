@@ -173,7 +173,7 @@ namespace System.IO
             }
             else if (!useAsyncIO)
             {
-                VerifyHandleIsSync(handle, handleType);
+                VerifyHandleIsSync(handle, handleType, access);
             }
 
             if (_canSeek)
