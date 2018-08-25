@@ -71,7 +71,17 @@ if [ ! -e "$__DOTNET_PATH" ]; then
             echo "Warning: build not supported on 32 bit Unix"
         fi
 
-        __PKG_ARCH=x64
+        if [ "$(uname -m)" = "armhf" ] || [ "$(uname -m)" = "arm64" ] || [ "$(uname -m)" = "aarch64" ];  then
+            if [ "$(uname -m)" = "armhf" ]; then
+                __PKG_ARCH=arm
+            fi
+
+            if [ "$(uname -m)" = "arm64" ] || [ "$(uname -m)" = "aarch64" ]; then
+                __PKG_ARCH=arm64
+            fi
+        else
+            __PKG_ARCH=x64
+        fi
 
         OSName=$(uname -s)
         case $OSName in
@@ -171,26 +181,30 @@ if [ -n "${DotNetBootstrapCliTarPath-}" ]; then
     unset ILASMCOMPILER_VERSION
 fi
 
-echo "Initializing BuildTools..."
-echo "Running: $__BUILD_TOOLS_PATH/init-tools.sh $__scriptpath $__DOTNET_CMD $__TOOLRUNTIME_DIR $__PACKAGES_DIR" >> "$__init_tools_log"
+# Build tools only supported on x64
+if [ "${__PKG_ARCH}" != "x64" ] &&  [ "${__PKG_ARCH}" != "arm" ]; then
+    echo "Skipped installing build tools."
+else
+    echo "Initializing BuildTools..."
+    echo "Running: $__BUILD_TOOLS_PATH/init-tools.sh $__scriptpath $__DOTNET_CMD $__TOOLRUNTIME_DIR $__PACKAGES_DIR" >> "$__init_tools_log"
 
-# Executables restored with .NET Core 2.0 do not have executable permission flags. https://github.com/NuGet/Home/issues/4424
-chmod +x "$__BUILD_TOOLS_PATH/init-tools.sh"
-"$__BUILD_TOOLS_PATH/init-tools.sh" "$__scriptpath" "$__DOTNET_CMD" "$__TOOLRUNTIME_DIR" "$__PACKAGES_DIR" >> "$__init_tools_log"
-if [ "$?" != "0" ]; then
-    echo "ERROR: An error occurred when trying to initialize the tools." 1>&2
-    display_error_message
-    exit 1
+    # Executables restored with .NET Core 2.0 do not have executable permission flags. https://github.com/NuGet/Home/issues/4424
+    chmod +x "$__BUILD_TOOLS_PATH/init-tools.sh"
+    "$__BUILD_TOOLS_PATH/init-tools.sh" "$__scriptpath" "$__DOTNET_CMD" "$__TOOLRUNTIME_DIR" "$__PACKAGES_DIR" >> "$__init_tools_log"
+    if [ "$?" != "0" ]; then
+        echo "ERROR: An error occurred when trying to initialize the tools." 1>&2
+        display_error_message
+        exit 1
+    fi
+
+    echo "Making all .sh files executable under Tools."
+    # Executables restored with .NET Core 2.0 do not have executable permission flags. https://github.com/NuGet/Home/issues/4424
+    ls "$__scriptpath/Tools/"*.sh | xargs chmod +x
+    ls "$__scriptpath/Tools/scripts/docker/"*.sh | xargs chmod +x
+
+    "$__scriptpath/Tools/crossgen.sh" "$__scriptpath/Tools" $__PKG_RID
+
+    mkdir -p "$(dirname "$__BUILD_TOOLS_SEMAPHORE")" && touch "$__BUILD_TOOLS_SEMAPHORE"
+
+    echo "Done initializing tools."
 fi
-
-echo "Making all .sh files executable under Tools."
-# Executables restored with .NET Core 2.0 do not have executable permission flags. https://github.com/NuGet/Home/issues/4424
-ls "$__scriptpath/Tools/"*.sh | xargs chmod +x
-ls "$__scriptpath/Tools/scripts/docker/"*.sh | xargs chmod +x
-
-"$__scriptpath/Tools/crossgen.sh" "$__scriptpath/Tools" $__PKG_RID
-
-mkdir -p "$(dirname "$__BUILD_TOOLS_SEMAPHORE")" && touch "$__BUILD_TOOLS_SEMAPHORE"
-
-echo "Done initializing tools."
-

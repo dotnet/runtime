@@ -21,9 +21,9 @@ This will use `crossgen.exe` to precompile the test executables before they are 
 
 ## Building Other Priority Tests
 
-    C:\git\coreclr>build-test.cmd -priority=2
+    C:\git\coreclr>build-test.cmd -priority=1
 
-The number '2' is just an example. The default value (if no priority is specified) is 0. To clarify, if '2' is specified, all tests with CLRTestPriorty 0, 1 **and** 2 will be built and consequently run.
+The number '1' is just an example. The default value (if no priority is specified) is 0. To clarify, if '1' is specified, all tests with CLRTestPriorty 0 **and** 1 will be built and consequently run.
 
 ## Examples
 
@@ -35,7 +35,7 @@ To run a clean, priority 1, crossgen test pass:
 
 ### Building Individual Tests
 
-Note: buildtest.cmd or build.cmd skipnative skipmscorlib needs to be run atleast once
+Note: build-test.cmd or build.cmd skipnative needs to be run atleast once
 
 * Native Test: Build the generated Visual Studio solution or make file corresponding to Test cmake file.
   
@@ -47,7 +47,7 @@ Note: buildtest.cmd or build.cmd skipnative skipmscorlib needs to be run atleast
 
 For example to run all of the tests using your checked build:
 
-     <repo_root>\tests\runtest.cmd -checked
+     <repo_root>\tests\runtest.cmd checked
 
 This will generate a report named as `TestRun_<arch>_<flavor>.html` (e.g. `TestRun_Windows_NT__x64__Checked.html`) in the subdirectory `<repo_root>\bin\Logs`. Any tests that failed will be listed in `TestRunResults_Windows_NT__x64__Checked.err`.
 

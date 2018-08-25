@@ -65,7 +65,7 @@
       <XunitCommandLine>$(CorerunExecutable) $(XunitConsoleRunner) @(TestAssemblies->'%(Identity)', ' ') $(XunitArgs)</XunitCommandLine>
     </PropertyGroup>
 
-    <Error Condition="$(XunitCommandLine.Length) > 8191" Text="Xunit command line is too long." />
+    <Error Condition="$(XunitCommandLine.Length) > 8191 and '$(RunningOnUnix)' != 'true'" Text="Xunit command line is too long." />
     <Exec Command="$(XunitCommandLine)"
           WorkingDirectory="$(BaseOutputPathWithConfig)"/>
 

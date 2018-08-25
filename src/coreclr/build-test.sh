@@ -289,22 +289,18 @@ build_Tests()
     if [ $__BuildTestWrappers -ne -0 ]; then
         echo "${__MsgPrefix}Creating test wrappers..."
 
-        __XUnitWrapperBuiltMarker=${__TestBinDir}/xunit_wrapper_build
+        # Always create the test wrappers and set the exclude file.
+        export __Exclude="$__TestDir/issues.targets"
+        echo "Exclude set to $__TestDir/issues.targets"
+        build_Tests_internal "Tests_XunitWrapper" "$__ProjectDir/tests/runtest.proj" "Test Xunit Wrapper" "-BuildWrappers" "-MsBuildEventLogging= " "-TargetsWindows=false"
 
-        if [ ! -f $__XUnitWrapperBuiltMarker ]; then
-
-            build_MSBuild_projects "Tests_XunitWrapper" "$__ProjectDir/tests/runtest.proj" "Test Xunit Wrapper" "-BuildWrappers" "-MsBuildEventLogging= " "-TargetsWindows=false"
-
-            if [ $? -ne 0 ]; then
-                echo "${__MsgPrefix}Error: build failed. Refer to the build log files for details (above)"
-                exit 1
-            else
-                echo "XUnit Wrappers have been built."
-                echo "Create marker \"${__XUnitWrapperBuiltMarker}\""
-                touch $__XUnitWrapperBuiltMarker
-            fi
+        if [ $? -ne 0 ]; then
+            echo "${__MsgPrefix}Error: build failed. Refer to the build log files for details (above)"
+            exit 1
         else
-            echo "XUnit Wrappers had been built before."
+            echo "XUnit Wrappers have been built."
+            echo "Create marker \"${__XUnitWrapperBuiltMarker}\""
+            touch $__XUnitWrapperBuiltMarker
         fi
     fi
 
