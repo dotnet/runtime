@@ -9,9 +9,9 @@
 
 struct GCSystemInfo
 {
-    uint32_t dwNumberOfProcessors;
-    uint32_t dwPageSize;
-    uint32_t dwAllocationGranularity;
+    uint32_t        dwNumberOfProcessors;
+    uint32_t        dwPageSize;
+    uint32_t        dwAllocationGranularity;
 };
 
 typedef void * HANDLE;
