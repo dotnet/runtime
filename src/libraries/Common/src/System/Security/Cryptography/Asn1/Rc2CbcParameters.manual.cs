@@ -2,21 +2,8 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
-using System.Runtime.InteropServices;
-
 namespace System.Security.Cryptography.Asn1
 {
-    // https://tools.ietf.org/html/rfc3370#section-5.2 (CMS Algorithms, RC2-CBC) says
-    //
-    //    The AlgorithmIdentifier parameters field MUST be present, and the
-    //    parameters field MUST contain a RC2CBCParameter:
-    //
-    // RC2CBCParameter ::= SEQUENCE {
-    //   rc2ParameterVersion INTEGER,
-    //   iv OCTET STRING  }  -- exactly 8 octets
-    //
-    // It then effectively says "see RFC2268" for the version.
-    //
     // https://tools.ietf.org/html/rfc2268#section-6 provides the table (EkbEncoding),
     // and provides a different structure for "RC2-CBCParameter" (with a hyphen in this name).
     //
@@ -24,8 +11,7 @@ namespace System.Security.Cryptography.Asn1
     // Since 3370 says to just use that alternative there's no fallback in this code for handling
     // just an IV which means that an effective key size of 32-bits has been chosen.  Since 40-bit is the
     // smallest supported by .NET that's not really a problem.
-    [StructLayout(LayoutKind.Sequential)]
-    internal struct Rc2CbcParameters
+    internal partial struct Rc2CbcParameters
     {
         private static readonly byte[] s_rc2EkbEncoding =
         {
@@ -46,11 +32,6 @@ namespace System.Security.Cryptography.Asn1
             0x64, 0x6d, 0x7a, 0xd4, 0x10, 0x81, 0x44, 0xef, 0x49, 0xd6, 0xae, 0x2e, 0xdd, 0x76, 0x5c, 0x2f,
             0xa7, 0x1c, 0xc9, 0x09, 0x69, 0x9a, 0x83, 0xcf, 0x29, 0x39, 0xb9, 0xe9, 0x4c, 0xff, 0x43, 0xab,
         };
-
-        internal int Rc2Version;
-
-        [OctetString]
-        internal ReadOnlyMemory<byte> Iv;
 
         internal Rc2CbcParameters(ReadOnlyMemory<byte> iv, int keySize)
         {

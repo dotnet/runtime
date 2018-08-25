@@ -163,8 +163,9 @@ namespace Internal.Cryptography.Pal.AnyOS
                 {
                     Rc2CbcParameters rc2Params = new Rc2CbcParameters(alg.IV, alg.KeySize);
 
-                    using (AsnWriter writer = AsnSerializer.Serialize(rc2Params, AsnEncodingRules.DER))
+                    using (AsnWriter writer = new AsnWriter(AsnEncodingRules.DER))
                     {
+                        rc2Params.Encode(writer);
                         parameterBytes = writer.Encode();
                     }
                 }

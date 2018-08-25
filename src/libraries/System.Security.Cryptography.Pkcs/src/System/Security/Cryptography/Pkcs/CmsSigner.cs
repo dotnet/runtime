@@ -181,8 +181,9 @@ namespace System.Security.Cryptography.Pkcs
                 // Since this contains user data in a context where BER is permitted, use BER.
                 // There shouldn't be any observable difference here between BER and DER, though,
                 // since the top level fields were written by NormalizeSet.
-                using (AsnWriter attrsWriter = AsnSerializer.Serialize(signedAttrsSet, AsnEncodingRules.BER))
+                using (AsnWriter attrsWriter = new AsnWriter(AsnEncodingRules.BER))
                 {
+                    signedAttrsSet.Encode(attrsWriter);
                     newSignerInfo.SignedAttributes = attrsWriter.Encode();
                 }
 
