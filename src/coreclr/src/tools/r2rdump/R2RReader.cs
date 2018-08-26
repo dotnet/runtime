@@ -360,6 +360,9 @@ namespace R2RDump
             {
                 return;
             }
+
+            HashSet<uint> added = new HashSet<uint>();
+
             R2RSection availableTypesSection = R2RHeader.Sections[R2RSection.SectionType.READYTORUN_SECTION_AVAILABLE_TYPES];
             int availableTypesOffset = GetOffset(availableTypesSection.RelativeVirtualAddress);
             NativeParser parser = new NativeParser(Image, (uint)availableTypesOffset);
@@ -370,8 +373,28 @@ namespace R2RDump
             {
                 uint rid = curParser.GetUnsigned();
                 rid = rid >> 1;
+                if (added.Contains(rid))
+                    continue;
+
                 TypeDefinitionHandle typeDefHandle = MetadataTokens.TypeDefinitionHandle((int)rid);
-                AvailableTypes.Add(GetTypeDefFullName(MetadataReader, typeDefHandle));
+                string typeDefName = GetTypeDefFullName(MetadataReader, typeDefHandle);
+                ExportedTypeHandle exportedTypeHandle = MetadataTokens.ExportedTypeHandle((int)rid);
+                string exportedTypeName = GetExportedTypeFullName(MetadataReader, exportedTypeHandle);
+                if (typeDefName == null && exportedTypeName == null)
+                {
+                    R2RDump.WriteWarning($"AvailableType with rid {rid} is not a TypeDef or ExportedType");
+                }
+                if (typeDefName != null)
+                {
+                    AvailableTypes.Add(typeDefName);
+                    added.Add(rid);
+                }
+                if (exportedTypeName != null)
+                {
+                    AvailableTypes.Add("exported " + exportedTypeName);
+                    added.Add(rid);
+                }
+
                 curParser = allEntriesEnum.GetNext();
             }
         }
@@ -510,17 +533,46 @@ namespace R2RDump
         /// </summary>
         public static string GetTypeDefFullName(MetadataReader mdReader, TypeDefinitionHandle handle)
         {
-            TypeDefinition typeDef;
+            string typeNamespace = "";
             string typeStr = "";
             do
             {
-                typeDef = mdReader.GetTypeDefinition(handle);
-                typeStr = "." + mdReader.GetString(typeDef.Name) + typeStr;
-                handle = typeDef.GetDeclaringType();
+                try
+                {
+                    TypeDefinition typeDef = mdReader.GetTypeDefinition(handle);
+                    typeStr = "." + mdReader.GetString(typeDef.Name) + typeStr;
+                    handle = typeDef.GetDeclaringType();
+                    if (handle.IsNil)
+                        typeNamespace = mdReader.GetString(typeDef.Namespace);
+                }
+                catch (BadImageFormatException)
+                {
+                    return null;
+                }
             }
             while (!handle.IsNil);
 
-            return mdReader.GetString(typeDef.Namespace) + typeStr;
+            return typeNamespace + typeStr;
+        }
+
+        /// <summary>
+        /// Get the full name of an ExportedType, including namespace
+        /// </summary>
+        public static string GetExportedTypeFullName(MetadataReader mdReader, ExportedTypeHandle handle)
+        {
+            string typeNamespace = "";
+            string typeStr = "";
+            try
+            {
+                ExportedType exportedType = mdReader.GetExportedType(handle);
+                typeStr = "." + mdReader.GetString(exportedType.Name) + typeStr;
+                typeNamespace = mdReader.GetString(exportedType.Namespace);
+            }
+            catch (BadImageFormatException)
+            {
+                return null;
+            }
+            return typeNamespace + typeStr;
         }
 
         /// <summary>
