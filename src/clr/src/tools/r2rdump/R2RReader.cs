@@ -174,22 +174,18 @@ namespace R2RDump
             }
         }
 
-        public bool InputArchitectureMatchesDisassemblerArchitecture()
+        public bool InputArchitectureSupported()
+        {
+            return Machine != Machine.ArmThumb2; // CoreDisTools often fails to decode when disassembling ARM images (see https://github.com/dotnet/coreclr/issues/19637)
+        }
+
+        // TODO: Fix R2RDump issue where an R2R image cannot be dissassembled with the x86 CoreDisTools
+        // For the short term, we want to error out with a decent message explaining the unexpected error
+        // Issue #19564: https://github.com/dotnet/coreclr/issues/19564
+        public bool DisassemblerArchitectureSupported()
         {
             System.Runtime.InteropServices.Architecture val = System.Runtime.InteropServices.RuntimeInformation.ProcessArchitecture;
-            switch (Machine)
-            {
-                case Machine.Amd64:
-                    return val == System.Runtime.InteropServices.Architecture.X64;
-                case Machine.I386:
-                    return val == System.Runtime.InteropServices.Architecture.X86;
-                case Machine.Arm64:
-                    return val == System.Runtime.InteropServices.Architecture.Arm64;
-                case Machine.ArmThumb2:
-                    return val == System.Runtime.InteropServices.Architecture.Arm;
-                default:
-                    return false;
-            }
+            return val != System.Runtime.InteropServices.Architecture.X86;
         }
 
         /// <summary>
