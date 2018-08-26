@@ -403,16 +403,13 @@ namespace R2RDump
 
                     if (_disasm)
                     {
-                        // TODO: Fix R2RDump issue where an x64 R2R image cannot be dissassembled with the x86 CoreDisTools
-                        // For the short term, we want to error out with a decent message explaining the unexpected error
-                        // Issue #19564: https://github.com/dotnet/coreclr/issues/19564
-                        if (r2r.InputArchitectureMatchesDisassemblerArchitecture())
+                        if (r2r.InputArchitectureSupported() && r2r.DisassemblerArchitectureSupported())
                         {
                             disassembler = new Disassembler(r2r.Image, r2r.Machine);
                         }
                         else
                         {
-                            throw new ArgumentException($"The architecture of input file {filename} is {r2r.Machine.ToString()} and does not match the architecture of the disassembler tools {System.Runtime.InteropServices.RuntimeInformation.ProcessArchitecture.ToString()}");
+                            throw new ArgumentException($"The architecture of input file {filename} ({r2r.Machine.ToString()}) or the architecture of the disassembler tools ({System.Runtime.InteropServices.RuntimeInformation.ProcessArchitecture.ToString()}) is not supported.");
                         }
                     }
 
