@@ -43,6 +43,19 @@ namespace R2RDump
         }
     }
 
+    /// <summary>
+    /// based on <a href="https://github.com/dotnet/coreclr/blob/master/src/inc/pedecoder.h">src/inc/pedecoder.h</a> IMAGE_FILE_MACHINE_NATIVE_OS_OVERRIDE
+    /// </summary>
+    public enum OperatingSystem
+    {
+        Apple = 0x4644,
+        FreeBSD = 0xADC4,
+        Linux = 0x7B79,
+        NetBSD = 0x1993,
+        Windows = 0,
+        Unknown = -1
+    }
+
     public class R2RReader
     {
         /// <summary>
@@ -75,6 +88,8 @@ namespace R2RDump
         /// The type of target machine
         /// </summary>
         public Machine Machine { get; set; }
+
+        public OperatingSystem OS { get; set; }
 
         /// <summary>
         /// The preferred address of the first byte of image when loaded into memory; 
@@ -127,11 +142,20 @@ namespace R2RDump
                     throw new BadImageFormatException("The file is not a ReadyToRun image");
                 }
 
-                Machine = PEReader.PEHeaders.CoffHeader.Machine;
-				if (!Machine.IsDefined(typeof(Machine), Machine))
+                uint machine = (uint)PEReader.PEHeaders.CoffHeader.Machine;
+                OS = OperatingSystem.Unknown;
+                foreach(OperatingSystem os in Enum.GetValues(typeof(OperatingSystem)))
                 {
-                    R2RDump.WriteWarning($"Invalid Machine: {Machine}");
-                    Machine = Machine.Amd64;
+                    Machine = (Machine)(machine ^ (uint)os);
+                    if (Enum.IsDefined(typeof(Machine), Machine))
+                    {
+                        OS = os;
+                        break;
+                    }
+                }
+                if (OS == OperatingSystem.Unknown)
+                {
+                    throw new BadImageFormatException($"Invalid Machine: {machine}");
                 }
                 ImageBase = PEReader.PEHeaders.PEHeader.ImageBase;
 
