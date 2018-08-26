@@ -610,12 +610,12 @@ namespace System.Tests
         [InlineData(-1.41421356f,           -1.0f,                   0.0f)]     // value: -(sqrt(2))
         [InlineData(-1.12837917f,           -1.0f,                   0.0f)]     // value: -(2 / sqrt(pi))
         [InlineData(-1.0f,                  -1.0f,                   0.0f)]
-        [InlineData(-0.785398163f,          -0.0f,                   0.0f, Skip = "https://github.com/dotnet/coreclr/issues/10287")]  // value: -(pi / 4)
-        [InlineData(-0.707106781f,          -0.0f,                   0.0f, Skip = "https://github.com/dotnet/coreclr/issues/10287")]  // value: -(1 / sqrt(2))
-        [InlineData(-0.693147181f,          -0.0f,                   0.0f, Skip = "https://github.com/dotnet/coreclr/issues/10287")]  // value: -(ln(2))
-        [InlineData(-0.636619772f,          -0.0f,                   0.0f, Skip = "https://github.com/dotnet/coreclr/issues/10287")]  // value: -(2 / pi)
-        [InlineData(-0.434294482f,          -0.0f,                   0.0f, Skip = "https://github.com/dotnet/coreclr/issues/10287")]  // value: -(log10(e))
-        [InlineData(-0.318309886f,          -0.0f,                   0.0f, Skip = "https://github.com/dotnet/coreclr/issues/10287")]  // value: -(1 / pi)
+        [InlineData(-0.785398163f,          -0.0f,                   0.0f)]  // value: -(pi / 4)
+        [InlineData(-0.707106781f,          -0.0f,                   0.0f)]  // value: -(1 / sqrt(2))
+        [InlineData(-0.693147181f,          -0.0f,                   0.0f)]  // value: -(ln(2))
+        [InlineData(-0.636619772f,          -0.0f,                   0.0f)]  // value: -(2 / pi)
+        [InlineData(-0.434294482f,          -0.0f,                   0.0f)]  // value: -(log10(e))
+        [InlineData(-0.318309886f,          -0.0f,                   0.0f)]  // value: -(1 / pi)
         [InlineData(-0.0f,                  -0.0f,                   0.0f)]
         [InlineData( float.NaN,              float.NaN,              0.0f)]
         [InlineData( 0.0f,                   0.0f,                   0.0f)]
