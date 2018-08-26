@@ -26,6 +26,7 @@ namespace R2RDump
         internal override void Begin()
         {
             _writer.WriteLine($"Filename: {_r2r.Filename}");
+            _writer.WriteLine($"OS: {_r2r.OS}");
             _writer.WriteLine($"Machine: {_r2r.Machine}");
             _writer.WriteLine($"ImageBase: 0x{_r2r.ImageBase:X8}");
             SkipLine();
