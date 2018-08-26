@@ -9,7 +9,4 @@
   <ItemGroup Condition="'$(TargetGroup)' == 'netcoreapp' Or '$(TargetGroup)' == 'uap'">
     <ProjectReference Include="..\..\System.Runtime\ref\System.Runtime.csproj" />
   </ItemGroup>
-  <ItemGroup Condition="'$(TargetGroup)' == 'netfx' or '$(TargetGroup)' == 'net462' or '$(TargetGroup)' == 'net47'">
-    <Reference Include="mscorlib" />
-  </ItemGroup>
 </Project>

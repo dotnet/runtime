@@ -7,10 +7,9 @@
     <FileAlignment>512</FileAlignment>
     <PlatformTarget>AnyCPU</PlatformTarget>
     <ProjectGuid>{CDF0ACB5-1361-4E48-8ECB-22E8022F5F01}</ProjectGuid>
-    <IsPartialFacadeAssembly Condition="'$(TargetGroup)'=='netfx'">true</IsPartialFacadeAssembly>
     <Configurations>netcoreapp-Debug;netcoreapp-Release;uap-Windows_NT-Debug;uap-Windows_NT-Release;uapaot-Windows_NT-Debug;uapaot-Windows_NT-Release</Configurations>
   </PropertyGroup>
-  <ItemGroup Condition="'$(TargetGroup)'!='netfx'">
+  <ItemGroup>
     <Compile Include="System\Runtime\Serialization\CollectionDataContractAttribute.cs" />
     <Compile Include="System\Runtime\Serialization\ContractNamespaceAttribute.cs" />
     <Compile Include="System\Runtime\Serialization\DataContractAttribute.cs" />
@@ -21,11 +20,6 @@
     <Compile Include="System\Runtime\Serialization\ISerializationSurrogateProvider.cs" />
     <Compile Include="System\Runtime\Serialization\KnownTypeAttribute.cs" />
     <Compile Include="System.Runtime.Serialization.Primitives.TypeForwards.cs" />
-  </ItemGroup>
-  <ItemGroup Condition="'$(TargetGroup)'=='netfx'">
-    <Reference Include="mscorlib" />
-    <Reference Include="System.Runtime.Serialization" />
-    <Compile Include="System\Runtime\Serialization\ISerializationSurrogateProvider.cs" />
   </ItemGroup>
   <ItemGroup>
     <Reference Include="System.Resources.ResourceManager" />
