@@ -18,8 +18,6 @@ namespace System.Numerics.Tests
             yield return new object[] { string.Concat(Enumerable.Repeat("1234567890", 20)) };
         }
 
-        // TODO #18249: Port disabled perf tests from tests\BigInteger\PerformanceTests.cs
-
         [Benchmark]
         [MemberData(nameof(NumberStrings))]
         public void Ctor_ByteArray(string numberString)
