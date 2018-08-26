@@ -52,7 +52,7 @@ If you want to run your benchmarks without spawning a new process per benchmark 
 
 1. Before you start benchmarking the code you need to build entire CoreFX in Release which is going to generate the right CoreRun bits for you:
 
-        C:\Projects\corefx> build.cmd -release -buildArch=x64
+        C:\Projects\corefx>build.cmd -release -buildArch=x64
 
 After that, you should be able to find `CoreRun.exe` in a location similar to:
 
@@ -60,7 +60,14 @@ After that, you should be able to find `CoreRun.exe` in a location similar to:
 
 2. Create a new .NET Core console app using your favorite IDE
 3. Install BenchmarkDotNet (0.11.1+)
-4. Define the benchmarks
+4. Define the benchmarks and pass the arguments to BenchmarkSwitcher
+
+```cs
+class Program
+{
+   static void Main(string[] args) => BenchmarkSwitcher.FromAssembly(typeof(Program).Assembly).Run(args);
+}
+```
 5. Run the benchmarks using `--coreRun` from the first step. Save the results in a dedicated folder.
 
         dotnet run -c Release -f netcoreapp2.1 -- -f * --coreRun "C:\Projects\corefx\bin\testhost\netcoreapp-Windows_NT-Release-x64\shared\Microsoft.NETCore.App\9.9.9\CoreRun.exe" --artifacts ".\before"
