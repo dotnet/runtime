@@ -473,7 +473,7 @@ mono_arch_create_rgctx_lazy_fetch_trampoline (guint32 slot, MonoTrampInfo **info
 	if (aot) {
 		code = mono_arm_emit_aotconst (&ji, code, buf, ARMREG_IP0, MONO_PATCH_INFO_JIT_ICALL_ADDR, g_strdup_printf ("specific_trampoline_lazy_fetch_%u", slot));
 	} else {
-		tramp = mono_arch_create_specific_trampoline (GUINT_TO_POINTER (slot), MONO_TRAMPOLINE_RGCTX_LAZY_FETCH, mono_get_root_domain (), &code_len);
+		tramp = (guint8*)mono_arch_create_specific_trampoline (GUINT_TO_POINTER (slot), MONO_TRAMPOLINE_RGCTX_LAZY_FETCH, mono_get_root_domain (), &code_len);
 		code = mono_arm_emit_imm64 (code, ARMREG_IP0, (guint64)tramp);
 	}
 	arm_brx (code, ARMREG_IP0);
@@ -596,7 +596,7 @@ mono_arch_create_sdb_trampoline (gboolean single_step, MonoTrampInfo **info, gbo
 		else
 			code = mono_arm_emit_aotconst (&ji, code, buf, ARMREG_IP0, MONO_PATCH_INFO_JIT_ICALL_ADDR, "debugger_agent_breakpoint_from_context");
 	} else {
-		gpointer addr = single_step ? mini_get_dbg_callbacks ()->single_step_from_context : mini_get_dbg_callbacks ()->breakpoint_from_context;
+		void (*addr) (MonoContext *ctx) = single_step ? mini_get_dbg_callbacks ()->single_step_from_context : mini_get_dbg_callbacks ()->breakpoint_from_context;
 
 		code = mono_arm_emit_imm64 (code, ARMREG_IP0, (guint64)addr);
 	}

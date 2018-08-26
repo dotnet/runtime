@@ -151,11 +151,11 @@ mono_arch_get_delegate_invoke_impls (void)
 	int i;
 	char *tramp_name;
 
-	code = get_delegate_invoke_impl (TRUE, 0, &code_len);
+	code = (guint8*)get_delegate_invoke_impl (TRUE, 0, &code_len);
 	res = g_slist_prepend (res, mono_tramp_info_create ("delegate_invoke_impl_has_target", code, code_len, NULL, NULL));
 
 	for (i = 0; i <= MAX_ARCH_DELEGATE_PARAMS; ++i) {
-		code = get_delegate_invoke_impl (FALSE, i, &code_len);
+		code = (guint8*)get_delegate_invoke_impl (FALSE, i, &code_len);
 		tramp_name = g_strdup_printf ("delegate_invoke_impl_target_%d", i);
 		res = g_slist_prepend (res, mono_tramp_info_create (tramp_name, code, code_len, NULL, NULL));
 		g_free (tramp_name);
@@ -181,9 +181,9 @@ mono_arch_get_delegate_invoke_impl (MonoMethodSignature *sig, gboolean has_targe
 			return cached;
 
 		if (mono_ee_features.use_aot_trampolines)
-			start = mono_aot_get_trampoline ("delegate_invoke_impl_has_target");
+			start = (guint8*)mono_aot_get_trampoline ("delegate_invoke_impl_has_target");
 		else
-			start = get_delegate_invoke_impl (TRUE, 0, NULL);
+			start = (guint8*)get_delegate_invoke_impl (TRUE, 0, NULL);
 		mono_memory_barrier ();
 		cached = start;
 		return cached;
@@ -203,10 +203,10 @@ mono_arch_get_delegate_invoke_impl (MonoMethodSignature *sig, gboolean has_targe
 
 		if (mono_ee_features.use_aot_trampolines) {
 			char *name = g_strdup_printf ("delegate_invoke_impl_target_%d", sig->param_count);
-			start = mono_aot_get_trampoline (name);
+			start = (guint8*)mono_aot_get_trampoline (name);
 			g_free (name);
 		} else {
-			start = get_delegate_invoke_impl (FALSE, sig->param_count, NULL);
+			start = (guint8*)get_delegate_invoke_impl (FALSE, sig->param_count, NULL);
 		}
 		mono_memory_barrier ();
 		cache [sig->param_count] = start;
@@ -713,7 +713,7 @@ emit_call (MonoCompile *cfg, guint8* code, guint32 patch_type, gconstpointer dat
 	code = emit_imm64_template (code, ARMREG_LR);
 	arm_blrx (code, ARMREG_LR);
 	*/
-	mono_add_patch_info_rel (cfg, code - cfg->native_code, patch_type, data, MONO_R_ARM64_BL);
+	mono_add_patch_info_rel (cfg, code - cfg->native_code, (MonoJumpInfoType)patch_type, data, MONO_R_ARM64_BL);
 	arm_bl (code, code);
 	cfg->thunk_area += THUNK_SIZE;
 	return code;
@@ -723,9 +723,9 @@ static guint8*
 emit_aotconst_full (MonoCompile *cfg, MonoJumpInfo **ji, guint8 *code, guint8 *start, int dreg, guint32 patch_type, gconstpointer data)
 {
 	if (cfg)
-		mono_add_patch_info (cfg, code - cfg->native_code, patch_type, data);
+		mono_add_patch_info (cfg, code - cfg->native_code, (MonoJumpInfoType)patch_type, data);
 	else
-		*ji = mono_patch_info_list_prepend (*ji, code - start, patch_type, data);
+		*ji = mono_patch_info_list_prepend (*ji, code - start, (MonoJumpInfoType)patch_type, data);
 	/* See arch_emit_got_access () in aot-compiler.c */
 	arm_ldrx_lit (code, dreg, 0);
 	arm_nop (code);
@@ -1024,13 +1024,13 @@ mono_arch_flush_register_windows (void)
 MonoMethod*
 mono_arch_find_imt_method (mgreg_t *regs, guint8 *code)
 {
-	return (gpointer)regs [MONO_ARCH_RGCTX_REG];
+	return (MonoMethod*)regs [MONO_ARCH_RGCTX_REG];
 }
 
 MonoVTable*
 mono_arch_find_static_call_vtable (mgreg_t *regs, guint8 *code)
 {
-	return (gpointer)regs [MONO_ARCH_RGCTX_REG];
+	return (MonoVTable*)regs [MONO_ARCH_RGCTX_REG];
 }
 
 mgreg_t
@@ -2634,7 +2634,7 @@ void
 mono_arch_emit_outarg_vt (MonoCompile *cfg, MonoInst *ins, MonoInst *src)
 {
 	MonoCallInst *call = (MonoCallInst*)ins->inst_p0;
-	ArgInfo *ainfo = ins->inst_p1;
+	ArgInfo *ainfo = (ArgInfo*)ins->inst_p1;
 	MonoInst *load;
 	int i;
 
@@ -3289,7 +3289,7 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 			break;
 		}
 		case OP_AOTCONST:
-			code = emit_aotconst (cfg, code, dreg, (MonoJumpInfoType)ins->inst_i1, ins->inst_p0);
+			code = emit_aotconst (cfg, code, dreg, (MonoJumpInfoType)(gsize)ins->inst_i1, ins->inst_p0);
 			break;
 		case OP_OBJC_GET_SELECTOR:
 			mono_add_patch_info (cfg, offset, MONO_PATCH_INFO_OBJC_SELECTOR_REF, ins->inst_p0);
@@ -4571,7 +4571,7 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 		case OP_COND_EXC_LE:
 		case OP_COND_EXC_ILE_UN:
 		case OP_COND_EXC_LE_UN:
-			code = emit_cond_exc (cfg, code, ins->opcode, ins->inst_p1);
+			code = emit_cond_exc (cfg, code, ins->opcode, (const char*)ins->inst_p1);
 			break;
 		case OP_THROW:
 			if (sreg1 != ARMREG_R0)
@@ -5184,7 +5184,7 @@ mono_arch_emit_exceptions (MonoCompile *cfg)
 
 	for (ji = cfg->patch_info; ji; ji = ji->next) {
 		if (ji->type == MONO_PATCH_INFO_EXC) {
-			i = mini_exception_id_by_name (ji->data.target);
+			i = mini_exception_id_by_name ((const char*)ji->data.target);
 			if (!exc_throw_found [i]) {
 				size += 32;
 				exc_throw_found [i] = TRUE;
@@ -5201,7 +5201,7 @@ mono_arch_emit_exceptions (MonoCompile *cfg)
 
 		ip = cfg->native_code + ji->ip.i;
 
-		id = mini_exception_id_by_name (ji->data.target);
+		id = mini_exception_id_by_name ((const char*)ji->data.target);
 
 		if (exc_throw_pos [id]) {
 			/* ip points to the bcc () in OP_COND_EXC_... */
@@ -5395,11 +5395,11 @@ mono_arch_set_breakpoint (MonoJitInfo *ji, guint8 *ip)
 	guint32 native_offset = ip - (guint8*)ji->code_start;
 
 	if (ji->from_aot) {
-		SeqPointInfo *info = mono_arch_get_seq_point_info (mono_domain_get (), ji->code_start);
+		SeqPointInfo *info = mono_arch_get_seq_point_info (mono_domain_get (), (guint8*)ji->code_start);
 
 		g_assert (native_offset % 4 == 0);
 		g_assert (info->bp_addrs [native_offset / 4] == 0);
-		info->bp_addrs [native_offset / 4] = mini_get_breakpoint_trampoline ();
+		info->bp_addrs [native_offset / 4] = (guint8*)mini_get_breakpoint_trampoline ();
 	} else {
 		/* ip points to an ldrx */
 		code += 4;
@@ -5415,7 +5415,7 @@ mono_arch_clear_breakpoint (MonoJitInfo *ji, guint8 *ip)
 
 	if (ji->from_aot) {
 		guint32 native_offset = ip - (guint8*)ji->code_start;
-		SeqPointInfo *info = mono_arch_get_seq_point_info (mono_domain_get (), ji->code_start);
+		SeqPointInfo *info = mono_arch_get_seq_point_info (mono_domain_get (), (guint8*)ji->code_start);
 
 		g_assert (native_offset % 4 == 0);
 		info->bp_addrs [native_offset / 4] = NULL;
@@ -5474,7 +5474,7 @@ mono_arch_get_seq_point_info (MonoDomain *domain, guint8 *code)
 	// FIXME: Add a free function
 
 	mono_domain_lock (domain);
-	info = g_hash_table_lookup (domain_jit_info (domain)->arch_seq_points, 
+	info = (SeqPointInfo*)g_hash_table_lookup (domain_jit_info (domain)->arch_seq_points,
 								code);
 	mono_domain_unlock (domain);
 
