@@ -31,11 +31,7 @@ namespace System.Data.SqlTypes
 
         public SqlSingle(float value)
         {
-#if !netfx
             if (!float.IsFinite(value))
-#else
-            if (float.IsInfinity(value) || float.IsNaN(value))
-#endif
             {
                 throw new OverflowException(SQLResource.ArithOverflowMessage);
             }

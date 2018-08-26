@@ -16,8 +16,4 @@
     <ProjectReference Include="..\..\System.Security.Cryptography.X509Certificates\ref\System.Security.Cryptography.X509Certificates.csproj" />
     <ProjectReference Include="..\..\System.Text.Encoding\ref\System.Text.Encoding.csproj" />
   </ItemGroup>
-  <ItemGroup Condition="'$(TargetGroup)' == 'netfx' OR '$(TargetGroup)' == 'net46'">
-    <Reference Include="mscorlib" />
-    <Reference Include="System" />
-  </ItemGroup>
 </Project>

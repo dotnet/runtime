@@ -8,17 +8,7 @@
   <ItemGroup Condition="'$(TargetGroup)' == 'netcoreapp' or '$(TargetGroup)' == 'uap'">
     <ProjectReference Include="$(SourceDir)System.Private.DataContractSerialization\src\System.Private.DataContractSerialization.csproj" />
   </ItemGroup>
-  <ItemGroup Condition="'$(TargetGroup)' == 'netfx'">
-    <Reference Include="mscorlib" />
-    <Reference Include="System" />
-    <Reference Include="System.Runtime.Serialization" />
-    <ProjectReference Include="$(SourceDir)System.Runtime.Serialization.Primitives\src\System.Runtime.Serialization.Primitives.csproj" />
-    <Compile Include="$(SourceDir)System.Private.DataContractSerialization\src\System\Runtime\Serialization\DataContractSerializerExtensions.Desktop.cs" />
-    <Compile Include="$(CommonPath)\System\NotImplemented.cs">
-      <Link>Common\System\NotImplemented.cs</Link>
-    </Compile>
-  </ItemGroup>
-  <ItemGroup Condition="'$(TargetGroup)' != 'netfx'">
+  <ItemGroup>
     <Reference Include="System.Runtime" />
     <Reference Include="System.Runtime.Serialization.Primitives" />
   </ItemGroup>
