@@ -722,12 +722,6 @@ namespace System.Tests
         [InlineData(-1.4142135623730950,     -1.0,                     0.0)]    // value: -(sqrt(2))
         [InlineData(-1.1283791670955126,     -1.0,                     0.0)]    // value: -(2 / sqrt(pi))
         [InlineData(-1.0,                    -1.0,                     0.0)]
-        [InlineData(-0.78539816339744831,    -0.0,                     0.0, Skip = "https://github.com/dotnet/coreclr/issues/10287")]    // value: -(pi / 4)
-        [InlineData(-0.70710678118654752,    -0.0,                     0.0, Skip = "https://github.com/dotnet/coreclr/issues/10287")]    // value: -(1 / sqrt(2))
-        [InlineData(-0.69314718055994531,    -0.0,                     0.0, Skip = "https://github.com/dotnet/coreclr/issues/10287")]    // value: -(ln(2))
-        [InlineData(-0.63661977236758134,    -0.0,                     0.0, Skip = "https://github.com/dotnet/coreclr/issues/10287")]    // value: -(2 / pi)
-        [InlineData(-0.43429448190325183,    -0.0,                     0.0, Skip = "https://github.com/dotnet/coreclr/issues/10287")]    // value: -(log10(e))
-        [InlineData(-0.31830988618379067,    -0.0,                     0.0, Skip = "https://github.com/dotnet/coreclr/issues/10287")]    // value: -(1 / pi)
         [InlineData(-0.0,                    -0.0,                     0.0)]
         [InlineData( double.NaN,              double.NaN,              0.0)]
         [InlineData( 0.0,                     0.0,                     0.0)]
@@ -747,6 +741,19 @@ namespace System.Tests
         [InlineData( 3.1415926535897932,      4.0,                     0.0)]    // value:  (pi)
         [InlineData(double.PositiveInfinity, double.PositiveInfinity,  0.0)]
         public static void Ceiling_Double(double value, double expectedResult, double allowedVariance)
+        {
+            AssertEqual(expectedResult, Math.Ceiling(value), allowedVariance);
+        }
+
+        [Theory]
+        [InlineData(-0.78539816339744831,    -0.0,                     0.0)]    // value: -(pi / 4)
+        [InlineData(-0.70710678118654752,    -0.0,                     0.0)]    // value: -(1 / sqrt(2))
+        [InlineData(-0.69314718055994531,    -0.0,                     0.0)]    // value: -(ln(2))
+        [InlineData(-0.63661977236758134,    -0.0,                     0.0)]    // value: -(2 / pi)
+        [InlineData(-0.43429448190325183,    -0.0,                     0.0)]    // value: -(log10(e))
+        [InlineData(-0.31830988618379067,    -0.0,                     0.0)]    // value: -(1 / pi)
+        [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework)]
+        public static void Ceiling_Double_IEEE(double value, double expectedResult, double allowedVariance)
         {
             AssertEqual(expectedResult, Math.Ceiling(value), allowedVariance);
         }
@@ -892,7 +899,6 @@ namespace System.Tests
         [InlineData(-0.63661977236758134,    -1.0,                     0.0)]    // value: -(2 / pi)
         [InlineData(-0.43429448190325183,    -1.0,                     0.0)]    // value: -(log10(e))
         [InlineData(-0.31830988618379067,    -1.0,                     0.0)]    // value: -(1 / pi)
-        [InlineData(-0.0,                    -0.0,                     0.0, Skip = "https://github.com/dotnet/coreclr/issues/10288")]
         [InlineData( double.NaN,              double.NaN,              0.0)]
         [InlineData( 0.0,                     0.0,                     0.0)]
         [InlineData( 0.31830988618379067,     0.0,                     0.0)]    // value:  (1 / pi)
@@ -911,6 +917,14 @@ namespace System.Tests
         [InlineData( 3.1415926535897932,      3.0,                     0.0)]    // value:  (pi)
         [InlineData(double.PositiveInfinity,  double.PositiveInfinity, 0.0)]
         public static void Floor_Double(double value, double expectedResult, double allowedVariance)
+        {
+            AssertEqual(expectedResult, Math.Floor(value), allowedVariance);
+        }
+
+        [Theory]
+        [InlineData(-0.0,                    -0.0,                     0.0)]
+        [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework)]
+        public static void Floor_Double_IEEE(double value, double expectedResult, double allowedVariance)
         {
             AssertEqual(expectedResult, Math.Floor(value), allowedVariance);
         }
