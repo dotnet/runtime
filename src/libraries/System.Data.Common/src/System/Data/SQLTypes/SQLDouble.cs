@@ -34,11 +34,7 @@ namespace System.Data.SqlTypes
 
         public SqlDouble(double value)
         {
-#if !netfx
             if (!double.IsFinite(value))
-#else
-            if (double.IsInfinity(value) || double.IsNaN(value))
-#endif
             {
                 throw new OverflowException(SQLResource.ArithOverflowMessage);
             }

@@ -4,16 +4,10 @@
     <AssemblyName>System.Data.Common</AssemblyName>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
     <PlatformTarget>AnyCPU</PlatformTarget>
-    <IsPartialFacadeAssembly Condition="'$(TargetGroup)' == 'netfx'">true</IsPartialFacadeAssembly>
-    <DefineConstants Condition="'$(TargetGroup)' == 'netfx'">$(DefineConstants);netfx</DefineConstants>
     <DefineConstants Condition="'$(TargetGroup)' == 'uapaot'">$(DefineConstants);uapaot</DefineConstants>
     <Configurations>netcoreapp-Debug;netcoreapp-Release;uap-Windows_NT-Debug;uap-Windows_NT-Release;uapaot-Windows_NT-Debug;uapaot-Windows_NT-Release</Configurations>
   </PropertyGroup>
   <ItemGroup>
-    <Compile Include="System\Data\Common\DbColumn.cs" />
-    <Compile Include="System\Data\Common\IDbColumnSchemaGenerator.cs" />
-  </ItemGroup>
-  <ItemGroup Condition="'$(TargetGroup)' != 'netfx'">
     <Compile Include="System.Data.Common.TypeForwards.cs" />
     <Compile Include="System\HResults.cs" />
     <Compile Include="System\Xml\TreeIterator.cs" />
@@ -177,6 +171,7 @@
     <Compile Include="System\Data\Common\DataTableMappingCollection.cs" />
     <Compile Include="System\Data\Common\DateTimeOffsetStorage.cs" />
     <Compile Include="System\Data\Common\DateTimeStorage.cs" />
+    <Compile Include="System\Data\Common\DbColumn.cs" />
     <Compile Include="System\Data\Common\DbCommand.cs">
       <SubType>Component</SubType>
     </Compile>
@@ -219,6 +214,7 @@
     <Compile Include="System\Data\Common\DoubleStorage.cs" />
     <Compile Include="System\Data\Common\FieldNameLookup.cs" />
     <Compile Include="System\Data\Common\Groupbybehavior.cs" />
+    <Compile Include="System\Data\Common\IDbColumnSchemaGenerator.cs" />
     <Compile Include="System\Data\Common\identifiercase.cs" />
     <Compile Include="System\Data\Common\Int16Storage.cs" />
     <Compile Include="System\Data\Common\Int32Storage.cs" />
@@ -297,14 +293,7 @@
     <Compile Include="System\Data\ProviderBase\DataReaderContainer.cs" />
     <Compile Include="System\Data\ProviderBase\SchemaMapping.cs" />
   </ItemGroup>
-  <ItemGroup Condition="'$(TargetGroup)' == 'netfx'">
-    <Reference Include="mscorlib" />
-    <Reference Include="System" />
-    <Reference Include="System.Data" />
-    <Reference Include="System.Transactions" />
-    <Compile Include="System\Data\Common\DbDataReaderExtensions.Facade.cs" />
-  </ItemGroup>
-  <ItemGroup Condition="'$(TargetGroup)' != 'netfx'">
+  <ItemGroup>
     <Reference Include="System.Collections" />
     <Reference Include="System.Collections.Concurrent" />
     <Reference Include="System.Collections.NonGeneric" />
@@ -329,7 +318,7 @@
     <Reference Include="System.Threading.Thread" />
     <Reference Include="System.Transactions.Local" />
   </ItemGroup>
-  <ItemGroup Condition="'$(TargetGroup)' != 'uapaot' and '$(TargetGroup)' != 'netfx'">
+  <ItemGroup Condition="'$(TargetGroup)' != 'uapaot'">
     <Reference Include="System.Xml.ReaderWriter" />
     <Reference Include="System.Xml.XmlSerializer" />
   </ItemGroup>

@@ -4,11 +4,11 @@
     <OutputType>Library</OutputType>
     <ProjectGuid>{E9ED0A04-23A8-4F8B-82C1-2B18AF74C870}</ProjectGuid>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
-    <IsPartialFacadeAssembly Condition="'$(TargetGroup)' == 'netfx'">true</IsPartialFacadeAssembly>
     <Configurations>netcoreapp-Unix-Debug;netcoreapp-Unix-Release;netcoreapp-Windows_NT-Debug;netcoreapp-Windows_NT-Release;uap-Windows_NT-Debug;uap-Windows_NT-Release</Configurations>
   </PropertyGroup>
   <!-- Default configurations to help VS understand the options -->
   <ItemGroup>
+    <Compile Include="Interop\Interop.zlib.cs" />
     <Compile Include="$(SharedOpenSourcePath)System\IO\Compression\ZipArchive.cs" />
     <Compile Include="$(SharedOpenSourcePath)System\IO\Compression\ZipArchiveEntry.cs" />
     <Compile Include="$(SharedOpenSourcePath)System\IO\Compression\ZipArchiveMode.cs" />
@@ -33,38 +33,30 @@
     <Compile Include="System\IO\Compression\DeflateManaged\MatchState.cs" />
     <Compile Include="System\IO\Compression\DeflateManaged\OutputBuffer.cs" />
     <Compile Include="System\IO\Compression\DeflateManaged\OutputWindow.cs" />
-    <Compile Include="System\IO\Compression\PositionPreservingWriteOnlyStreamWrapper.cs" />
-    <Compile Include="$(CommonPath)\CoreLib\System\Threading\Tasks\TaskToApm.cs">
-      <Link>Common\CoreLib\System\Threading\Tasks\TaskToApm.cs</Link>
-    </Compile>
-  </ItemGroup>
-  <ItemGroup Condition="'$(TargetGroup)' != 'netfx'">
-    <Compile Include="Interop\Interop.zlib.cs" />
-    <Compile Include="System\IO\Compression\CompressionLevel.cs" />
-    <Compile Include="System\IO\Compression\CompressionMode.cs" />
-    <Compile Include="System\IO\Compression\GZipStream.cs" />
-    <Compile Include="System\IO\Compression\Crc32Helper.ZLib.cs" />
     <Compile Include="System\IO\Compression\DeflateZLib\Deflater.cs" />
     <Compile Include="System\IO\Compression\DeflateZLib\DeflateStream.cs" />
     <Compile Include="System\IO\Compression\DeflateZLib\Inflater.cs" />
     <Compile Include="System\IO\Compression\DeflateZLib\ZLibException.cs" />
     <Compile Include="System\IO\Compression\DeflateZLib\ZLibNative.cs" />
     <Compile Include="System\IO\Compression\DeflateZLib\ZLibNative.ZStream.cs" />
+    <Compile Include="System\IO\Compression\CompressionLevel.cs" />
+    <Compile Include="System\IO\Compression\CompressionMode.cs" />
+    <Compile Include="System\IO\Compression\Crc32Helper.ZLib.cs" />
+    <Compile Include="System\IO\Compression\GZipStream.cs" />
+    <Compile Include="System\IO\Compression\PositionPreservingWriteOnlyStreamWrapper.cs" />
+    <Compile Include="System\IO\Compression\PositionPreservingWriteOnlyStreamWrapper.netcoreapp.cs" />
     <Compile Include="System\IO\Compression\ZipArchiveEntry.netcoreapp.cs" />
     <Compile Include="System\IO\Compression\ZipCustomStreams.netcoreapp.cs" />
-    <Compile Include="System\IO\Compression\PositionPreservingWriteOnlyStreamWrapper.netcoreapp.cs" />
     <Compile Include="$(CommonPath)\CoreLib\System\IO\StreamHelpers.CopyValidation.cs">
       <Link>Common\CoreLib\System\IO\StreamHelpers.CopyValidation.cs</Link>
     </Compile>
-  </ItemGroup>
-  <ItemGroup Condition="'$(TargetGroup)' == 'netfx'">
-    <Compile Include="System\IO\Compression\Crc32Helper.Managed.cs" />
+    <Compile Include="$(CommonPath)\CoreLib\System\Threading\Tasks\TaskToApm.cs">
+      <Link>Common\CoreLib\System\Threading\Tasks\TaskToApm.cs</Link>
+    </Compile>
   </ItemGroup>
   <!-- Windows specific files -->
   <ItemGroup Condition=" '$(TargetsWindows)' == 'true'">
     <Compile Include="System\IO\Compression\ZipArchiveEntry.Windows.cs" />
-  </ItemGroup>
-  <ItemGroup Condition=" '$(TargetsWindows)' == 'true' AND '$(TargetGroup)' != 'netfx'">
     <Compile Include="$(CommonPath)\System\IO\PathInternal.Windows.cs">
       <Link>Common\System\IO\PathInternal.Windows.cs</Link>
     </Compile>
@@ -85,7 +77,7 @@
       <Link>Common\CoreLib\Interop\Unix\System.Native\Interop.PathConf.cs</Link>
     </Compile>
   </ItemGroup>
-  <ItemGroup Condition="'$(TargetGroup)' != 'netfx'">
+  <ItemGroup>
     <Reference Include="System.Buffers" />
     <Reference Include="System.Collections" />
     <Reference Include="System.Diagnostics.Debug" />
@@ -97,9 +89,5 @@
     <Reference Include="System.Runtime.InteropServices" />
     <Reference Include="System.Threading" />
     <Reference Include="System.Threading.Tasks" />
-  </ItemGroup>
-  <ItemGroup Condition="'$(TargetGroup)' == 'netfx'">
-    <Reference Include="mscorlib" />
-    <Reference Include="System" />
   </ItemGroup>
 </Project>
