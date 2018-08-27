@@ -2444,6 +2444,7 @@ mono_handle_exception_internal (MonoContext *ctx, MonoObject *obj, gboolean resu
 			MONO_STACKDATA (stackptr);
 
 			mono_threads_enter_gc_safe_region_unbalanced_internal (&stackptr);
+			mono_set_lmf (lmf);
 			ftnptr_eh_callback (handle);
 			g_error ("Did not expect ftnptr_eh_callback to return.");
 		}
