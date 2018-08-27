@@ -55,6 +55,15 @@ namespace System.Security.Cryptography.Pkcs
             }
         }
 
+        internal static SignedAttributesSet Decode(ReadOnlyMemory<byte> encoded, AsnEncodingRules ruleSet)
+        {
+            AsnReader reader = new AsnReader(encoded, ruleSet);
+            
+            Decode(reader, out SignedAttributesSet decoded);
+            reader.ThrowIfNotEmpty();
+            return decoded;
+        }
+
         internal static void Decode(AsnReader reader, out SignedAttributesSet decoded)
         {
             if (reader == null)
