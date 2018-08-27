@@ -27,14 +27,14 @@
     <GetLastStablePackage
         LatestPackages="@(PackageReference)"
         PackageIndexes="$(PackageIndexFile)">
-        <Output  TaskParameter="LastStablePackages" ItemName="_NewPackageReferences" />
+        <Output TaskParameter="LastStablePackages" ItemName="_NewPackageReferences" />
     </GetLastStablePackage>
 
     <ItemGroup>
       <_Lines Include="&lt;Project xmlns=&quot;http://schemas.microsoft.com/developer/msbuild/2003&quot;&gt;" />
       <_Lines Include="&lt;!-- The versions can be updated by running UpdateToLatestStablePackages target in harvestPackages.depproj --&gt;" />
       <_Lines Include="&lt;ItemGroup&gt;" />
-      <_Lines Include="&lt;PackageReference Include=&quot;%(_NewPackageReferences.Identity)&quot;&gt;&#13;  &lt;Version&gt;%(_NewPackageReferences.Version)&lt;/Version&gt;&#13;&lt;/PackageReference&gt;" />
+      <_Lines Include="&lt;PackageReference Include=&quot;%(_NewPackageReferences.Identity)&quot;&gt;&#13;&#10;  &lt;Version&gt;%(_NewPackageReferences.Version)&lt;/Version&gt;&#13;&#10;&lt;/PackageReference&gt;" />
       <_Lines Include="&lt;/ItemGroup&gt;" />
       <_Lines Include="&lt;/Project&gt;" />
     </ItemGroup>
