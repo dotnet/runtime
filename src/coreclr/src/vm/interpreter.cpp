@@ -2282,7 +2282,9 @@ EvalLoop:
                     {
                         // If looseInt is true, we are relying on auto-downcast in case *retVal
                         // is small (but this is guaranteed not to happen by def'n of ARG_SLOT.)
-                        assert(sz == sizeof(INT64));
+                        //
+                        // Note structs of size 5, 6, 7 may be returned as 8 byte ints.
+                        assert(sz <= sizeof(INT64));
                         *retVal = OpStackGet<INT64>(0);
                     }
                 }
@@ -5516,7 +5518,6 @@ CORINFO_CLASS_HANDLE Interpreter::GetTypeFromToken(BYTE* codePtr, CorInfoTokenKi
 
     GCX_PREEMP();
 
-    CORINFO_GENERICHANDLE_RESULT embedInfo;
     CORINFO_RESOLVED_TOKEN typeTok;
     ResolveToken(&typeTok, getU4LittleEndian(codePtr), tokKind InterpTracingArg(rtk));
     return typeTok.hClass;
@@ -5630,12 +5631,47 @@ void Interpreter::StObj()
         void* dest = OpStackGet<void*>(destInd);
         ThrowOnInvalidPointer(dest);
 
-        assert(   (OpStackTypeGet(valInd).ToCorInfoType() == CORINFO_TYPE_VALUECLASS &&
-                   OpStackTypeGet(valInd).ToClassHandle() == clsHnd)
-               ||
-                  (OpStackTypeGet(valInd).ToCorInfoType() == 
-                   CorInfoTypeStackNormalize(GetTypeForPrimitiveValueClass(clsHnd)))
-               || (s_InterpreterLooseRules && sz <= sizeof(dest)));
+#ifdef _DEBUG
+        // Try and validate types
+        InterpreterType vit = OpStackTypeGet(valInd);
+        CorInfoType vitc = vit.ToCorInfoType();
+
+        if (vitc == CORINFO_TYPE_VALUECLASS)
+        {
+            CORINFO_CLASS_HANDLE vClsHnd = vit.ToClassHandle();
+            const bool isClass = (vClsHnd == clsHnd);
+            const bool isPrim = (vitc == CorInfoTypeStackNormalize(GetTypeForPrimitiveValueClass(clsHnd)));
+            bool isShared = false;
+
+            // If operand type is shared we need a more complex check;
+            // the IL type may not be shared
+            if (!isPrim && !isClass)
+            {
+                DWORD vClsAttribs;
+                {
+                    GCX_PREEMP();
+                    vClsAttribs = m_interpCeeInfo.getClassAttribs(vClsHnd);
+                }
+
+                if ((vClsAttribs & CORINFO_FLG_SHAREDINST) != 0)
+                {
+                    MethodTable* clsMT2 = clsMT->GetCanonicalMethodTable();
+                    if (((CORINFO_CLASS_HANDLE) clsMT2) == vClsHnd)
+                    {
+                        isShared = true;
+                    }
+                }
+            }
+
+            assert(isClass || isPrim || isShared);
+        }
+        else
+        {
+            const bool isSz = s_InterpreterLooseRules && sz <= sizeof(dest);
+            assert(isSz);
+        }
+
+#endif // _DEBUG
 
         GCX_FORBID();
 
@@ -5986,8 +6022,8 @@ void Interpreter::NewArr()
         }
 #endif
 
-        MethodTable *pArrayMT = (MethodTable *) elemClsHnd;
-
+        TypeHandle th(elemClsHnd);
+        MethodTable* pArrayMT = th.GetMethodTable();
         pArrayMT->CheckRunClassInitThrowing();
 
         INT32 size32 = (INT32)sz;
@@ -9045,6 +9081,14 @@ void Interpreter::DoCallWork(bool virtualCall, void* thisArg, CORINFO_RESOLVED_T
             DoGetTypeFromHandle();
             didIntrinsic = true;
             break;
+        case CORINFO_INTRINSIC_ByReference_Ctor:
+            DoByReferenceCtor();
+            didIntrinsic = true;
+            break;
+        case CORINFO_INTRINSIC_ByReference_Value:
+            DoByReferenceValue();
+            didIntrinsic = true;
+            break;
 #if INTERP_ILSTUBS
         case CORINFO_INTRINSIC_StubHelpers_GetStubContext:
             OpStackSet<void*>(m_curStackHt, GetStubContext());
@@ -9076,6 +9120,37 @@ void Interpreter::DoCallWork(bool virtualCall, void* thisArg, CORINFO_RESOLVED_T
             thrd->m_dwLastError = thrd->m_dwLastErrorInterp;
             didIntrinsic = true;
         }
+
+#if FEATURE_SIMD
+        if (fFeatureSIMD.val(CLRConfig::EXTERNAL_FeatureSIMD) != 0)
+        {
+            // Check for the simd class...
+            assert(exactClass != NULL);
+            GCX_PREEMP();
+            bool isSIMD = m_interpCeeInfo.isInSIMDModule(exactClass);
+
+            if (isSIMD)
+            {
+                // SIMD intrinsics are recognized by name.
+                const char* namespaceName = NULL;
+                const char* className = NULL;
+                const char* methodName = m_interpCeeInfo.getMethodNameFromMetadata((CORINFO_METHOD_HANDLE)methToCall, &className, &namespaceName);
+                if (strcmp(methodName, "get_IsHardwareAccelerated") == 0)
+                {
+                    GCX_COOP();
+                    DoSIMDHwAccelerated();
+                    didIntrinsic = true;
+                }
+            }
+
+            if (didIntrinsic)
+            {
+                // Must block caching or we lose easy access to the class
+                doNotCache = true;
+            }
+        }
+#endif // FEATURE_SIMD
+
     }
 
     if (didIntrinsic)
@@ -10439,6 +10514,11 @@ void Interpreter::DoStringLength()
 
     Object* obj = OpStackGet<Object*>(ind);
 
+    if (obj == NULL)
+    {
+        ThrowNullPointerException();
+    }
+
 #ifdef _DEBUG
     if (obj->GetMethodTable() != g_pStringClass)
     {
@@ -10474,6 +10554,11 @@ void Interpreter::DoStringGetChar()
 #endif // _DEBUG
 
     Object* obj = OpStackGet<Object*>(strInd);
+
+    if (obj == NULL)
+    {
+        ThrowNullPointerException();
+    }
 
 #ifdef _DEBUG
     if (obj->GetMethodTable() != g_pStringClass)
@@ -10534,6 +10619,95 @@ void Interpreter::DoGetTypeFromHandle()
 #endif // _DEBUG
 
     OpStackTypeSet(ind, InterpreterType(CORINFO_TYPE_CLASS));
+}
+
+void Interpreter::DoByReferenceCtor()
+{
+    CONTRACTL {
+        SO_TOLERANT;
+        THROWS;
+        GC_TRIGGERS;
+        MODE_COOPERATIVE;
+    } CONTRACTL_END;
+
+    // Note 'this' is not passed on the operand stack...
+    assert(m_curStackHt > 0);
+    assert(m_callThisArg != NULL);
+    unsigned valInd = m_curStackHt - 1;
+    CorInfoType valCit = OpStackTypeGet(valInd).ToCorInfoType();
+
+#ifdef _DEBUG
+    if (valCit != CORINFO_TYPE_BYREF)
+    {
+        VerificationError("ByReference<T>.ctor called with non-byref value.");
+    }
+#endif // _DEBUG
+
+#if INTERP_TRACING
+    if (s_TraceInterpreterILFlag.val(CLRConfig::INTERNAL_TraceInterpreterIL))
+    {
+        fprintf(GetLogFile(), "    ByReference<T>.ctor -- intrinsic\n");
+    }
+#endif // INTERP_TRACING
+
+    GCX_FORBID();
+    void** thisPtr = reinterpret_cast<void**>(m_callThisArg);
+    void* val = OpStackGet<void*>(valInd);
+    *thisPtr = val;
+    m_curStackHt--;
+}
+
+void Interpreter::DoByReferenceValue()
+{
+    CONTRACTL {
+        SO_TOLERANT;
+        THROWS;
+        GC_TRIGGERS;
+        MODE_COOPERATIVE;
+    } CONTRACTL_END;
+
+    assert(m_curStackHt > 0);
+    unsigned slot = m_curStackHt - 1;
+    CorInfoType thisCit = OpStackTypeGet(slot).ToCorInfoType();
+
+#ifdef _DEBUG
+    if (thisCit != CORINFO_TYPE_BYREF)
+    {
+        VerificationError("ByReference<T>.get_Value called with non-byref this");
+    }
+#endif // _DEBUG
+
+#if INTERP_TRACING
+    if (s_TraceInterpreterILFlag.val(CLRConfig::INTERNAL_TraceInterpreterIL))
+    {
+        fprintf(GetLogFile(), "    ByReference<T>.getValue -- intrinsic\n");
+    }
+#endif // INTERP_TRACING
+
+    GCX_FORBID();
+    void** thisPtr = OpStackGet<void**>(slot);
+    void* value = *thisPtr;
+    OpStackSet<void*>(slot, value);
+    OpStackTypeSet(slot, InterpreterType(CORINFO_TYPE_BYREF));
+}
+
+void Interpreter::DoSIMDHwAccelerated()
+{
+    CONTRACTL {
+        SO_TOLERANT;
+        THROWS;
+        GC_TRIGGERS;
+        MODE_COOPERATIVE;
+    } CONTRACTL_END;
+
+#if INTERP_TRACING
+    if (s_TraceInterpreterILFlag.val(CLRConfig::INTERNAL_TraceInterpreterIL))
+    {
+        fprintf(GetLogFile(), "    System.Numerics.Vector.IsHardwareAccelerated -- intrinsic\n");
+    }
+#endif // INTERP_TRACING
+
+    LdIcon(1);
 }
 
 void Interpreter::RecordConstrainedCall()
