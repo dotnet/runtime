@@ -167,8 +167,8 @@
     </ItemGroup>
 
     <ItemGroup Condition="'$(NuGetRuntimeIdentifier)' == ''">
-      <!-- Not RID-specific: include all reference files -->
-      <FilesToPackage Include="@(Reference)">
+      <!-- Not RID-specific: include all reference files except files in Microsoft.TargetingPack.Private.WinRT -->
+      <FilesToPackage Include="@(Reference)" Condition="'%(Reference.NuGetPackageId)' != 'Microsoft.TargetingPack.Private.WinRT'">
         <TargetPath>ref/$(PackageTargetFramework)</TargetPath>
       </FilesToPackage>
 
