@@ -23,16 +23,5 @@
          therefore it cannot reference NETStandard.Library -->
     <SuppressMetaPackage Include="NETStandard.Library" />
   </ItemGroup>
-  
-  <PropertyGroup>
-    <HarvestVersion>4.4.0</HarvestVersion>
-  </PropertyGroup>
-  <Target Name="_checkForNewerHarvestPackage" AfterTargets="HarvestStablePackage">
-    <GetLastStablePackage LatestPackages="@(_latestPackage)" PackageIndexes="@(PackageIndex)">
-      <Output TaskParameter="LastStablePackages" ItemName="_lastStablePackage" />
-    </GetLastStablePackage>
-    <Error Condition="'%(_lastStablePackage.Version)' &gt; '4.5.0'"
-           Text="This target and the hardcoded HarvestVersion should be removed from this project.  Please ensure that the harvested package contains a valid lib/netcoreapp1.0 asset." />
-  </Target>
   <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), Directory.Build.targets))\Directory.Build.targets" />
 </Project>
