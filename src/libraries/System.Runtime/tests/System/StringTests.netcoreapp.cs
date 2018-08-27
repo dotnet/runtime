@@ -470,6 +470,11 @@ namespace System.Tests
                 Assert.Equal("\u0069a", source.Replace("\u0130", "a", StringComparison.CurrentCulture));
                 Assert.Equal("aa", source.Replace("\u0130", "a", StringComparison.CurrentCultureIgnoreCase));
 
+                return SuccessExitCode;
+            }, src).Dispose();
+
+            RemoteInvoke((source) =>
+            {
                 CultureInfo.CurrentCulture = new CultureInfo("en-US");
 
                 Assert.False("\u0069".Equals("\u0130", StringComparison.CurrentCultureIgnoreCase));
@@ -480,7 +485,7 @@ namespace System.Tests
                 Assert.Equal("\u0069a", source.Replace("\u0130", "a", StringComparison.CurrentCultureIgnoreCase));
 
                 return SuccessExitCode;
-            }, src).Dispose();
+            }, src).Dispose();                            
         }
 
         public static IEnumerable<object[]> Replace_StringComparisonCulture_TestData()
