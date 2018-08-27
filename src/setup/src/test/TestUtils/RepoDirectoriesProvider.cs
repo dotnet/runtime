@@ -46,7 +46,7 @@ namespace Microsoft.DotNet.CoreSetup.Test
         {
             _repoRoot = repoRoot ?? GetRepoRootDirectory();
 
-            string baseArtifactsFolder = artifacts ?? Path.Combine(_repoRoot, "Bin");
+            string baseArtifactsFolder = artifacts ?? Path.Combine(_repoRoot, "bin");
 
             _targetRID = Environment.GetEnvironmentVariable("TEST_TARGETRID");
             _buildRID = Environment.GetEnvironmentVariable("BUILDRID");
