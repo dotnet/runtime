@@ -25,7 +25,6 @@ DECLARE_ABI_DETAILS (1, 2, 4, 8, 4, 8, 4)
 #define DECL_OFFSET(struct,field)
 #define DECL_OFFSET2(struct,field,offset)
 #define DECL_ALIGN2(type,size) MONO_ALIGN_value_ ##type = size,
-#define DECL_ALIGN2(type,size)
 #define DECL_SIZE(type)
 #define DECL_SIZE2(type,size)
 
