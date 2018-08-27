@@ -24,44 +24,8 @@ namespace System.Security.Cryptography.X509Certificates.Asn1
     //     extensions      [3]  Extensions OPTIONAL
     //                          -- If present, version MUST be v3 --
     // }
-    [StructLayout(LayoutKind.Sequential)]
-    internal sealed class TbsCertificateAsn
+    internal partial struct TbsCertificateAsn
     {
-        [ExpectedTag(0, ExplicitTag = true)]
-        [DefaultValue(0x02, 0x01, 0x00)]
-        internal byte Version;
-
-        [Integer]
-        internal ReadOnlyMemory<byte> SerialNumber;
-
-        internal AlgorithmIdentifierAsn SignatureAlgorithm;
-
-        [AnyValue]
-        [ExpectedTag(TagClass.Universal, (int)UniversalTagNumber.SequenceOf)]
-        internal ReadOnlyMemory<byte> Issuer;
-
-        internal ValidityAsn Validity;
-
-        [AnyValue]
-        [ExpectedTag(TagClass.Universal, (int)UniversalTagNumber.SequenceOf)]
-        internal ReadOnlyMemory<byte> Subject;
-
-        internal SubjectPublicKeyInfoAsn SubjectPublicKeyInfo;
-
-        [ExpectedTag(1)]
-        [OptionalValue]
-        [BitString]
-        internal ReadOnlyMemory<byte>? IssuerUniqueId;
-
-        [ExpectedTag(2)]
-        [OptionalValue]
-        [BitString]
-        internal ReadOnlyMemory<byte>? SubjectUniqueId;
-
-        [ExpectedTag(3, ExplicitTag = true)]
-        [OptionalValue]
-        internal X509ExtensionAsn[] Extensions;
-
         /// <summary>
         /// Validate semantics by the specified version.
         /// </summary>

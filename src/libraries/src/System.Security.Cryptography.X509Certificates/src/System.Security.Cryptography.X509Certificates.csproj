@@ -9,6 +9,7 @@
     <DefineConstants Condition="'$(TargetGroup)' == 'netcoreapp'">$(DefineConstants);netcoreapp</DefineConstants>
     <Configurations>netcoreapp-OSX-Debug;netcoreapp-OSX-Release;netcoreapp-Unix-Debug;netcoreapp-Unix-Release;netcoreapp-Windows_NT-Debug;netcoreapp-Windows_NT-Release;uap-Windows_NT-Debug;uap-Windows_NT-Release</Configurations>
   </PropertyGroup>
+  <Import Project="$(CommonPath)\System\Security\Cryptography\Asn1\AsnXml.targets"/>
   <ItemGroup>
     <Compile Include="Internal\Cryptography\ICertificatePal.cs" />
     <Compile Include="Internal\Cryptography\ICertificatePalCore.cs" />
@@ -118,15 +119,43 @@
     <Compile Include="System\Security\Cryptography\X509Certificates\X509SubjectKeyIdentifierExtension.cs" />
     <Compile Include="System\Security\Cryptography\X509Certificates\X509SubjectKeyIdentifierHashAlgorithm.cs" />
     <Compile Include="System\Security\Cryptography\X509Certificates\X509VerificationFlags.cs" />
-    <Compile Include="System\Security\Cryptography\X509Certificates\Asn1\BasicConstraintsAsn.cs" />
-    <Compile Include="System\Security\Cryptography\X509Certificates\Asn1\CertificateAsn.cs" />
-    <Compile Include="System\Security\Cryptography\X509Certificates\Asn1\CertificationRequestAsn.cs" />
-    <Compile Include="System\Security\Cryptography\X509Certificates\Asn1\CertificationRequestInfoAsn.cs" />
+    <AsnXml Include="System\Security\Cryptography\X509Certificates\Asn1\BasicConstraintsAsn.xml" />
+    <Compile Include="System\Security\Cryptography\X509Certificates\Asn1\BasicConstraintsAsn.xml.cs">
+      <DependentUpon>System\Security\Cryptography\X509Certificates\Asn1\BasicConstraintsAsn.xml</DependentUpon>
+    </Compile>
+    <AsnXml Include="System\Security\Cryptography\X509Certificates\Asn1\CertificateAsn.xml" />
+    <Compile Include="System\Security\Cryptography\X509Certificates\Asn1\CertificateAsn.xml.cs">
+      <DependentUpon>System\Security\Cryptography\X509Certificates\Asn1\CertificateAsn.xml</DependentUpon>
+    </Compile>
+    <AsnXml Include="System\Security\Cryptography\X509Certificates\Asn1\CertificationRequestAsn.xml" />
+    <Compile Include="System\Security\Cryptography\X509Certificates\Asn1\CertificationRequestAsn.xml.cs">
+      <DependentUpon>System\Security\Cryptography\X509Certificates\Asn1\CertificationRequestAsn.xml</DependentUpon>
+    </Compile>
+    <AsnXml Include="System\Security\Cryptography\X509Certificates\Asn1\CertificationRequestInfoAsn.xml" />
+    <Compile Include="System\Security\Cryptography\X509Certificates\Asn1\CertificationRequestInfoAsn.xml.cs">
+      <DependentUpon>System\Security\Cryptography\X509Certificates\Asn1\CertificationRequestInfoAsn.xml</DependentUpon>
+    </Compile>
     <Compile Include="System\Security\Cryptography\X509Certificates\Asn1\KeyUsageFlagsAsn.cs" />
-    <Compile Include="System\Security\Cryptography\X509Certificates\Asn1\TbsCertificateAsn.cs" />
-    <Compile Include="System\Security\Cryptography\X509Certificates\Asn1\TimeAsn.cs" />
-    <Compile Include="System\Security\Cryptography\X509Certificates\Asn1\ValidityAsn.cs" />
-    <Compile Include="System\Security\Cryptography\X509Certificates\Asn1\X501AttributeAsn.cs" />
+    <AsnXml Include="System\Security\Cryptography\X509Certificates\Asn1\TbsCertificateAsn.xml" />
+    <Compile Include="System\Security\Cryptography\X509Certificates\Asn1\TbsCertificateAsn.xml.cs">
+      <DependentUpon>System\Security\Cryptography\X509Certificates\Asn1\TbsCertificateAsn.xml</DependentUpon>
+    </Compile>
+    <Compile Include="System\Security\Cryptography\X509Certificates\Asn1\TbsCertificateAsn.manual.cs" />
+    <AsnXml Include="System\Security\Cryptography\X509Certificates\Asn1\TimeAsn.xml" />
+    <Compile Include="System\Security\Cryptography\X509Certificates\Asn1\TimeAsn.xml.cs">
+      <DependentUpon>System\Security\Cryptography\X509Certificates\Asn1\TimeAsn.xml</DependentUpon>
+    </Compile>
+    <Compile Include="System\Security\Cryptography\X509Certificates\Asn1\TimeAsn.manual.cs" />
+    <AsnXml Include="System\Security\Cryptography\X509Certificates\Asn1\ValidityAsn.xml" />
+    <Compile Include="System\Security\Cryptography\X509Certificates\Asn1\ValidityAsn.xml.cs">
+      <DependentUpon>System\Security\Cryptography\X509Certificates\Asn1\ValidityAsn.xml</DependentUpon>
+    </Compile>
+    <Compile Include="System\Security\Cryptography\X509Certificates\Asn1\ValidityAsn.manual.cs" />
+    <AsnXml Include="System\Security\Cryptography\X509Certificates\Asn1\X501AttributeAsn.xml" />
+    <Compile Include="System\Security\Cryptography\X509Certificates\Asn1\X501AttributeAsn.xml.cs">
+      <DependentUpon>System\Security\Cryptography\X509Certificates\Asn1\X501AttributeAsn.xml</DependentUpon>
+    </Compile>
+    <Compile Include="System\Security\Cryptography\X509Certificates\Asn1\X501AttributeAsn.manual.cs" />
   </ItemGroup>
   <ItemGroup Condition=" '$(TargetsWindows)' == 'true'">
     <Compile Include="Internal\Cryptography\Pal.Windows\CertificatePal.cs" />
@@ -464,5 +493,8 @@
   </ItemGroup>
   <ItemGroup Condition="'$(TargetsUnix)' == 'true' AND '$(TargetsOSX)' != 'true'">
     <Reference Include="System.Security.Cryptography.OpenSsl" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="@(AsnXml)" /> 
   </ItemGroup>
 </Project>

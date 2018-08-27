@@ -1,0 +1,19 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<asn:Sequence
+  xmlns:asn="http://schemas.dot.net/asnxml/201808/"
+  name="X501AttributeAsn"
+  namespace="System.Security.Cryptography.X509Certificates.Asn1">
+
+  <!--
+    https://tools.ietf.org/html/rfc2986#section-4.1
+
+    Attribute { ATTRIBUTE:IOSet } ::= SEQUENCE {
+        type   ATTRIBUTE.&id({IOSet}),
+        values SET SIZE(1..MAX) OF ATTRIBUTE.&Type({IOSet}{@type})
+    }
+  -->
+  <asn:ObjectIdentifier name="AttrId" />
+  <asn:SetOf name="AttrValues">
+	  <asn:AnyValue />
+  </asn:SetOf>
+</asn:Sequence>
