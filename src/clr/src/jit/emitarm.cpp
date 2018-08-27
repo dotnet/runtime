@@ -4402,7 +4402,7 @@ void emitter::emitIns_Call(EmitCallType          callType,
                            CORINFO_METHOD_HANDLE methHnd,                   // used for pretty printing
                            INDEBUG_LDISASM_COMMA(CORINFO_SIG_INFO* sigInfo) // used to report call sites to the EE
                            void*            addr,
-                           ssize_t          argSize,
+                           int              argSize,
                            emitAttr         retSize,
                            VARSET_VALARG_TP ptrVars,
                            regMaskTP        gcrefRegs,
@@ -4411,7 +4411,7 @@ void emitter::emitIns_Call(EmitCallType          callType,
                            regNumber        ireg /* = REG_NA */,
                            regNumber        xreg /* = REG_NA */,
                            unsigned         xmul /* = 0     */,
-                           int              disp /* = 0     */,
+                           ssize_t          disp /* = 0     */,
                            bool             isJump /* = false */,
                            bool             isNoGC /* = false */,
                            bool             isProfLeaveCB /* = false */)
@@ -4487,8 +4487,8 @@ void emitter::emitIns_Call(EmitCallType          callType,
     }
 #endif
 
-    assert(argSize % (int)REGSIZE_BYTES == 0);
-    argCnt = argSize / (int)REGSIZE_BYTES;
+    assert(argSize % REGSIZE_BYTES == 0);
+    argCnt = argSize / REGSIZE_BYTES;
 
     /* Managed RetVal: emit sequence point for the call */
     if (emitComp->opts.compDbgInfo && ilOffset != BAD_IL_OFFSET)
@@ -6268,10 +6268,10 @@ size_t emitter::emitOutputInstr(insGroup* ig, instrDesc* id, BYTE** dp)
                 addr = (BYTE*)((size_t)addr & ~1); // Clear the lowest bit from target address
 
                 /* Calculate PC relative displacement */
-                int  disp = addr - (dst + 4);
-                bool S    = (disp < 0);
-                bool I1   = ((disp & 0x00800000) == 0);
-                bool I2   = ((disp & 0x00400000) == 0);
+                ptrdiff_t disp = addr - (dst + 4);
+                bool      S    = (disp < 0);
+                bool      I1   = ((disp & 0x00800000) == 0);
+                bool      I2   = ((disp & 0x00400000) == 0);
 
                 if (S)
                     code |= (1 << 26); // S bit
@@ -6498,7 +6498,7 @@ static bool insAlwaysSetFlags(instruction ins)
 void emitter::emitDispInst(instruction ins, insFlags flags)
 {
     const char* insstr = codeGen->genInsName(ins);
-    int         len    = strlen(insstr);
+    size_t      len    = strlen(insstr);
 
     /* Display the instruction name */
 
@@ -6882,7 +6882,6 @@ void emitter::emitDispInsHelp(
     switch (fmt)
     {
         int         imm;
-        int         offs;
         const char* methodName;
 
         case IF_T1_A: // None
@@ -7382,29 +7381,31 @@ void emitter::emitDispInsHelp(
         break;
 
         case IF_T2_J3:
+        {
+            BYTE* addr;
             if (id->idIsCallAddr())
             {
-                offs       = (ssize_t)id->idAddr()->iiaAddr;
+                addr       = id->idAddr()->iiaAddr;
                 methodName = "";
             }
             else
             {
-                offs       = 0;
+                addr       = nullptr;
                 methodName = emitComp->eeGetMethodFullName((CORINFO_METHOD_HANDLE)id->idDebugOnlyInfo()->idMemCookie);
             }
 
-            if (offs)
+            if (addr)
             {
                 if (id->idIsDspReloc())
                     printf("reloc ");
-                printf("%08X", offs);
+                printf("%p", dspPtr(addr));
             }
             else
             {
                 printf("%s", methodName);
             }
-
-            break;
+        }
+        break;
 
         default:
             printf("unexpected format %s", emitIfName(id->idInsFmt()));

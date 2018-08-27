@@ -1899,17 +1899,17 @@ AGAIN:
                 break;
             case GT_CNS_LNG:
                 bits = (UINT64)tree->gtLngCon.gtLconVal;
-#ifdef _TARGET_64BIT_
+#ifdef _HOST_64BIT_
                 add = bits;
-#else // 32-bit target
+#else // 32-bit host
                 add = genTreeHashAdd(uhi32(bits), ulo32(bits));
 #endif
                 break;
             case GT_CNS_DBL:
                 bits = *(UINT64*)(&tree->gtDblCon.gtDconVal);
-#ifdef _TARGET_64BIT_
+#ifdef _HOST_64BIT_
                 add = bits;
-#else // 32-bit target
+#else // 32-bit host
                 add = genTreeHashAdd(uhi32(bits), ulo32(bits));
 #endif
                 break;
@@ -1929,9 +1929,9 @@ AGAIN:
         // clang-format off
         // narrow 'add' into a 32-bit 'val'
         unsigned val;
-#ifdef _TARGET_64BIT_
+#ifdef _HOST_64BIT_
         val = genTreeHashAdd(uhi32(add), ulo32(add));
-#else // 32-bit target
+#else // 32-bit host
         val = add;
 #endif
         // clang-format on
@@ -3153,7 +3153,8 @@ unsigned Compiler::gtSetEvalOrder(GenTree* tree)
                 //
                 GenTreeIntConCommon* con = tree->AsIntConCommon();
 
-                if (con->ImmedValNeedsReloc(this) || !codeGen->validImmForInstr(INS_mov, tree->gtIntCon.gtIconVal))
+                if (con->ImmedValNeedsReloc(this) ||
+                    !codeGen->validImmForInstr(INS_mov, (target_ssize_t)tree->gtIntCon.gtIconVal))
                 {
                     // Uses movw/movt
                     costSz = 7;

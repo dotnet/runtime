@@ -1382,7 +1382,7 @@ void CodeGen::genConsumePutStructArgStk(GenTreePutArgStk* putArgNode,
     assert((src->gtOper == GT_OBJ) || ((src->gtOper == GT_IND && varTypeIsSIMD(src))));
     GenTree* srcAddr = src->gtGetOp1();
 
-    size_t size = putArgNode->getArgSize();
+    unsigned int size = putArgNode->getArgSize();
 
     assert(dstReg != REG_NA);
     assert(srcReg != REG_NA);
@@ -1844,7 +1844,7 @@ void CodeGen::genEmitCall(int                   callType,
                           CORINFO_METHOD_HANDLE methHnd,
                           INDEBUG_LDISASM_COMMA(CORINFO_SIG_INFO* sigInfo)
                           void*                 addr
-                          X86_ARG(ssize_t argSize),
+                          X86_ARG(int argSize),
                           emitAttr              retSize
                           MULTIREG_HAS_SECOND_GC_RET_ONLY_ARG(emitAttr secondRetSize),
                           IL_OFFSETX            ilOffset,
@@ -1853,7 +1853,7 @@ void CodeGen::genEmitCall(int                   callType,
                           bool                  isNoGC)
 {
 #if !defined(_TARGET_X86_)
-    ssize_t argSize = 0;
+    int argSize = 0;
 #endif // !defined(_TARGET_X86_)
     getEmitter()->emitIns_Call(emitter::EmitCallType(callType),
                                methHnd,
@@ -1879,13 +1879,13 @@ void CodeGen::genEmitCall(int                   callType,
                           CORINFO_METHOD_HANDLE methHnd,
                           INDEBUG_LDISASM_COMMA(CORINFO_SIG_INFO* sigInfo)
                           GenTreeIndir*         indir
-                          X86_ARG(ssize_t argSize),
+                          X86_ARG(int argSize),
                           emitAttr              retSize
                           MULTIREG_HAS_SECOND_GC_RET_ONLY_ARG(emitAttr secondRetSize),
                           IL_OFFSETX            ilOffset)
 {
 #if !defined(_TARGET_X86_)
-    ssize_t argSize = 0;
+    int argSize = 0;
 #endif // !defined(_TARGET_X86_)
     genConsumeAddress(indir->Addr());
 
