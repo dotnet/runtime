@@ -1,0 +1,19 @@
+﻿<?xml version="1.0" encoding="utf-8" ?>
+<asn:Sequence
+  xmlns:asn="http://schemas.dot.net/asnxml/201808/"
+  name="CertificationRequestAsn"
+  namespace="System.Security.Cryptography.X509Certificates.Asn1">
+
+  <!--
+    https://tools.ietf.org/html/rfc2986#section-4.2
+
+    CertificationRequest ::= SEQUENCE {
+        certificationRequestInfo CertificationRequestInfo,
+        signatureAlgorithm AlgorithmIdentifier{ { SignatureAlgorithms } },
+        signature BIT STRING
+    }
+  -->
+  <asn:AsnType name="CertificationRequestInfo" typeName="System.Security.Cryptography.X509Certificates.Asn1.CertificationRequestInfoAsn" />
+  <asn:AsnType name="SignatureAlgorithm" typeName="System.Security.Cryptography.Asn1.AlgorithmIdentifierAsn" />
+  <asn:BitString name="SignatureValue" />
+</asn:Sequence>

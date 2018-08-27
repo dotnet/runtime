@@ -12,7 +12,7 @@ namespace System.Security.Cryptography.Asn1
     // AlgorithmIdentifier  ::=  SEQUENCE  {
     //   algorithm OBJECT IDENTIFIER,
     //   parameters ANY DEFINED BY algorithm OPTIONAL  }
-    internal struct AlgorithmIdentifierAsn
+    internal partial struct AlgorithmIdentifierAsn
     {
         internal static readonly ReadOnlyMemory<byte> ExplicitDerNull = new byte[] { 0x05, 0x00 };
 
@@ -70,6 +70,29 @@ namespace System.Security.Cryptography.Asn1
             }
 
             return span[1] == 0;
+        }
+
+        internal void Encode(AsnWriter writer)
+        {
+            AsnSerializer.Serialize(this, writer);
+        }
+
+        internal static void Decode(AsnReader reader, out AlgorithmIdentifierAsn decoded)
+        {
+            if (reader == null)
+                throw new ArgumentNullException(nameof(reader));
+
+            ReadOnlyMemory<byte> value = reader.GetEncodedValue();
+            decoded = AsnSerializer.Deserialize<AlgorithmIdentifierAsn>(value, reader.RuleSet);
+        }
+
+        internal static AlgorithmIdentifierAsn Decode(ReadOnlyMemory<byte> encoded, AsnEncodingRules ruleSet)
+        {
+            AsnReader reader = new AsnReader(encoded, ruleSet);
+
+            Decode(reader, out AlgorithmIdentifierAsn decoded);
+            reader.ThrowIfNotEmpty();
+            return decoded;
         }
     }
 }

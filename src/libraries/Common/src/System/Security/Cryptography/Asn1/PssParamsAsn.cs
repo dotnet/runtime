@@ -36,5 +36,19 @@ namespace System.Security.Cryptography.Asn1
         [DefaultValue(0x02, 0x01, 0x01)]
         [ExpectedTag(3, ExplicitTag = true)]
         public uint TrailerField;
+
+        internal void Encode(AsnWriter writer)
+        {
+            AsnSerializer.Serialize(this, writer);
+        }
+
+        internal static void Decode(AsnReader reader, out PssParamsAsn decoded)
+        {
+            if (reader == null)
+                throw new ArgumentNullException(nameof(reader));
+
+            ReadOnlyMemory<byte> value = reader.GetEncodedValue();
+            decoded = AsnSerializer.Deserialize<PssParamsAsn>(value, reader.RuleSet);
+        }
     }
 }

@@ -9,7 +9,7 @@ using Internal.Cryptography;
 namespace System.Security.Cryptography.Asn1
 {
     [StructLayout(LayoutKind.Sequential)]
-    internal struct X509ExtensionAsn
+    internal partial struct X509ExtensionAsn
     {
         [ObjectIdentifier]
         internal string ExtnId;
@@ -30,6 +30,20 @@ namespace System.Security.Cryptography.Asn1
             ExtnId = extension.Oid.Value;
             Critical = extension.Critical;
             ExtnValue = copyValue ? extension.RawData.CloneByteArray() : extension.RawData;
+        }
+
+        internal void Encode(AsnWriter writer)
+        {
+            AsnSerializer.Serialize(this, writer);
+        }
+
+        internal static void Decode(AsnReader reader, out X509ExtensionAsn decoded)
+        {
+            if (reader == null)
+                throw new ArgumentNullException(nameof(reader));
+
+            ReadOnlyMemory<byte> value = reader.GetEncodedValue();
+            decoded = AsnSerializer.Deserialize<X509ExtensionAsn>(value, reader.RuleSet);
         }
     }
 }
