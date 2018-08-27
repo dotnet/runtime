@@ -6,21 +6,21 @@ internal partial class Interop
 {
     internal partial class Advapi32
     {
-        internal partial class RegistryOptions
+        internal static class RegistryOptions
         {
             internal const int REG_OPTION_NON_VOLATILE = 0x0000;     // (default) keys are persisted beyond reboot/unload
             internal const int REG_OPTION_VOLATILE = 0x0001;        // All keys created by the function are volatile
             internal const int REG_OPTION_CREATE_LINK = 0x0002;     // They key is a symbolic link
-            internal const int REG_OPTION_BACKUP_RESTORE = 0x0004;  // Use SE_BACKUP_NAME process special privileges
+            internal const int REG_OPTION_BACKUP_RESTORE = 0x0004;  // Use SE_BACKUP_NAME process special privileges         
         }
 
-        internal partial class RegistryView
+        internal static class RegistryView
         {
             internal const int KEY_WOW64_64KEY = 0x0100;
             internal const int KEY_WOW64_32KEY = 0x0200;
         }
 
-        internal partial class RegistryOperations
+        internal static class RegistryOperations
         {
             internal const int KEY_QUERY_VALUE = 0x0001;
             internal const int KEY_SET_VALUE = 0x0002;
@@ -47,7 +47,7 @@ internal partial class Interop
             internal const int STANDARD_RIGHTS_WRITE = READ_CONTROL;
         }
 
-        internal partial class RegistryValues
+        internal static class RegistryValues
         {
             internal const int REG_NONE = 0;                // No value type
             internal const int REG_SZ = 1;                  // Unicode nul terminated string

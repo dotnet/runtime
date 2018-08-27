@@ -15,8 +15,8 @@
     <Configurations>net461-Windows_NT-Debug;net461-Windows_NT-Release;netcoreapp-Unix-Debug;netcoreapp-Unix-Release;netcoreapp-Windows_NT-Debug;netcoreapp-Windows_NT-Release;netfx-Windows_NT-Debug;netfx-Windows_NT-Release;netstandard-Debug;netstandard-Release;netstandard-Unix-Debug;netstandard-Unix-Release;netstandard-Windows_NT-Debug;netstandard-Windows_NT-Release</Configurations>
   </PropertyGroup>
   <ItemGroup Condition="'$(TargetsNetFx)' != 'true' AND '$(OSGroup)' != 'AnyOS'">
-    <Compile Include="$(CommonPath)\Interop\Windows\advapi32\Interop.RegistryOptions.cs">
-      <Link>Common\Interop\Windows\Interop.RegistryOptions.cs</Link>
+    <Compile Include="$(CommonPath)\CoreLib\Interop\Windows\Advapi32\Interop.RegistryConstants.cs">
+      <Link>Common\CoreLib\Interop\Windows\Advapi32\Interop.RegistryConstants.cs</Link>
     </Compile>
     <Compile Include="$(CommonPath)\CoreLib\Microsoft\Win32\Registry.cs">
       <Link>Common\CoreLib\Microsoft\Win32\Registry.cs</Link>
@@ -24,13 +24,15 @@
     <Compile Include="$(CommonPath)\CoreLib\Microsoft\Win32\RegistryHive.cs">
       <Link>Common\CoreLib\Microsoft\Win32\RegistryHive.cs</Link>
     </Compile>
+    <Compile Include="$(CommonPath)\CoreLib\Microsoft\Win32\RegistryValueKind.cs">
+      <Link>Common\CoreLib\Microsoft\Win32\RegistryValueKind.cs"</Link>
+    </Compile>
     <Compile Include="$(CommonPath)\CoreLib\Microsoft\Win32\SafeHandles\SafeRegistryHandle.cs">
       <Link>Common\CoreLib\Microsoft\Win32\SafeHandles\SafeRegistryHandle.cs</Link>
     </Compile>
     <Compile Include="Microsoft\Win32\RegistryKey.cs" />
     <Compile Include="Microsoft\Win32\RegistryKeyPermissionCheck.cs" />
     <Compile Include="Microsoft\Win32\RegistryOptions.cs" />
-    <Compile Include="Microsoft\Win32\RegistryValueKind.cs" />
     <Compile Include="Microsoft\Win32\RegistryValueOptions.cs" />
     <Compile Include="Microsoft\Win32\RegistryView.cs" />
     <Compile Include="Microsoft\Win32\ThrowHelper.cs" />
