@@ -188,7 +188,7 @@
         "definitionType": "task"
       },
       "inputs": {
-        "SourceFolder": "$(PB_SourcesDirectory)/Bin/obj/linux-x64.$(BuildConfiguration)/sharedFrameworkPublish",
+        "SourceFolder": "$(PB_SourcesDirectory)/bin/obj/linux-x64.$(BuildConfiguration)/sharedFrameworkPublish",
         "Contents": "**",
         "TargetFolder": "$(Build.StagingDirectory)/sharedFrameworkPublish",
         "CleanTargetFolder": "false",
