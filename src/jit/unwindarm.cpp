@@ -2172,7 +2172,7 @@ DWORD DumpRegSetRange(const char* const rtype, DWORD start, DWORD end, DWORD lr)
 {
     assert(start <= end);
     DWORD printed  = 0;
-    DWORD rtypeLen = strlen(rtype);
+    DWORD rtypeLen = (DWORD)strlen(rtype);
 
     printf("{");
     ++printed;

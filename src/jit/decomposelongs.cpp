@@ -1431,7 +1431,7 @@ GenTree* DecomposeLongs::DecomposeRotate(LIR::Use& use)
         oper = GT_RSH_LO;
     }
 
-    unsigned int count = rotateByOp->gtIntCon.gtIconVal;
+    unsigned count = (unsigned)rotateByOp->gtIntCon.gtIconVal;
     Range().Remove(rotateByOp);
 
     // Make sure the rotate amount is between 0 and 63.

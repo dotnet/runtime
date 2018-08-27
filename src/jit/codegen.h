@@ -420,7 +420,7 @@ protected:
                      CORINFO_METHOD_HANDLE methHnd,
                      INDEBUG_LDISASM_COMMA(CORINFO_SIG_INFO* sigInfo)
                      void*                 addr
-                     X86_ARG(ssize_t argSize),
+                     X86_ARG(int  argSize),
                      emitAttr              retSize
                      MULTIREG_HAS_SECOND_GC_RET_ONLY_ARG(emitAttr secondRetSize),
                      IL_OFFSETX            ilOffset,
@@ -434,7 +434,7 @@ protected:
                      CORINFO_METHOD_HANDLE methHnd,
                      INDEBUG_LDISASM_COMMA(CORINFO_SIG_INFO* sigInfo)
                      GenTreeIndir*         indir
-                     X86_ARG(ssize_t argSize),
+                     X86_ARG(int  argSize),
                      emitAttr              retSize
                      MULTIREG_HAS_SECOND_GC_RET_ONLY_ARG(emitAttr secondRetSize),
                      IL_OFFSETX            ilOffset);
