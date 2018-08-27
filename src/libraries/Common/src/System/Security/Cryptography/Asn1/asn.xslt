@@ -74,6 +74,20 @@ namespace <xsl:value-of select="@namespace" />
             writer.PopSequence(tag);
         }
 
+        internal static <xsl:value-of select="@name" /> Decode(ReadOnlyMemory&lt;byte&gt; encoded, AsnEncodingRules ruleSet)
+        {
+            return Decode(Asn1Tag.Sequence, encoded, ruleSet);
+        }
+        
+        internal static <xsl:value-of select="@name" /> Decode(Asn1Tag expectedTag, ReadOnlyMemory&lt;byte&gt; encoded, AsnEncodingRules ruleSet)
+        {
+            AsnReader reader = new AsnReader(encoded, ruleSet);
+            
+            Decode(reader, expectedTag, out <xsl:value-of select="@name" /> decoded);
+            reader.ThrowIfNotEmpty();
+            return decoded;
+        }
+
         internal static void Decode(AsnReader reader, out <xsl:value-of select="@name" /> decoded)
         {
             if (reader == null)
@@ -137,6 +151,15 @@ namespace <xsl:value-of select="@namespace" />
             {
                 throw new CryptographicException();
             }
+        }
+
+        internal static <xsl:value-of select="@name" /> Decode(ReadOnlyMemory&lt;byte&gt; encoded, AsnEncodingRules ruleSet)
+        {
+            AsnReader reader = new AsnReader(encoded, ruleSet);
+            
+            Decode(reader, out <xsl:value-of select="@name" /> decoded);
+            reader.ThrowIfNotEmpty();
+            return decoded;
         }
 
         internal static void Decode(AsnReader reader, out <xsl:value-of select="@name" /> decoded)

@@ -65,9 +65,9 @@ namespace Internal.Cryptography.Pal.AnyOS
                             break;
                         }
 
-                        Rc2CbcParameters.Decode(
-                            new AsnReader(asn.Parameters.Value, AsnEncodingRules.BER),
-                            out Rc2CbcParameters rc2Params);
+                        Rc2CbcParameters rc2Params = Rc2CbcParameters.Decode(
+                            asn.Parameters.Value,
+                            AsnEncodingRules.BER);
 
                         int keySize = rc2Params.GetEffectiveKeyBits();
 

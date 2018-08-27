@@ -98,9 +98,9 @@ namespace Internal.Cryptography.Pal.AnyOS
                     throw new CryptographicException(SR.Cryptography_Der_Invalid_Encoding);
                 }
 
-                Rc2CbcParameters.Decode(
-                    new AsnReader(contentEncryptionAlgorithm.Parameters.Value, AsnEncodingRules.BER),
-                    out Rc2CbcParameters rc2Params);
+                Rc2CbcParameters rc2Params = Rc2CbcParameters.Decode(
+                    contentEncryptionAlgorithm.Parameters.Value,
+                    AsnEncodingRules.BER);
 
                 alg.KeySize = rc2Params.GetEffectiveKeyBits();
                 alg.IV = rc2Params.Iv.ToArray();
