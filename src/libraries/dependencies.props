@@ -47,11 +47,11 @@
 
     <!-- xunit test dependency version  -->
     <MicrosoftDotNetTestSdkVersion>15.8.0</MicrosoftDotNetTestSdkVersion>
-    <XUnitPackageVersion>2.4.1-alpha.1.build4054</XUnitPackageVersion>
+    <XUnitPackageVersion>2.4.1-pre.build.4059</XUnitPackageVersion>
     <XUnitPerformancePackageVersion>1.0.0-beta-build0020</XUnitPerformancePackageVersion>
     <TraceEventPackageVersion>2.0.5</TraceEventPackageVersion>
     <MicrosoftDotNetXUnitExtensionsVersion>2.4.0-beta.18420.3</MicrosoftDotNetXUnitExtensionsVersion>
-    <UAPToolsPackageVersion>1.0.19</UAPToolsPackageVersion>
+    <UAPToolsPackageVersion>1.0.21</UAPToolsPackageVersion>
 
     <!-- Roslyn optimization data package version -->
     <MicrosoftDotNetIBCMergePackageVersion>4.6.0-alpha-00001</MicrosoftDotNetIBCMergePackageVersion>
