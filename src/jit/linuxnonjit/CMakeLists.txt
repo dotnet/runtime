@@ -14,9 +14,11 @@ if (CLR_CMAKE_PLATFORM_ARCH_I386)
     remove_definitions(-DFEATURE_HW_INTRINSICS)
     add_definitions(-DUNIX_X86_ABI)
     set(JIT_ARCH_ALTJIT_SOURCES ${JIT_I386_SOURCES})
+    set(JIT_ARCH_LINK_LIBRARIES gcinfo_linuxx86)
 elseif(CLR_CMAKE_PLATFORM_ARCH_AMD64)
     add_definitions(-DUNIX_AMD64_ABI)
     set(JIT_ARCH_ALTJIT_SOURCES ${JIT_AMD64_SOURCES})
+    set(JIT_ARCH_LINK_LIBRARIES gcinfo)
 else()
     clr_unknown_arch()
 endif()
@@ -38,7 +40,7 @@ set_property(TARGET linuxnonjit APPEND_STRING PROPERTY LINK_DEPENDS ${JIT_EXPORT
 
 set(RYUJIT_LINK_LIBRARIES
    utilcodestaticnohost
-   gcinfo
+   ${JIT_ARCH_LINK_LIBRARIES}
 )
 
 if(CLR_CMAKE_PLATFORM_UNIX)
