@@ -7,7 +7,7 @@ Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "System.Runtime.Serializatio
 		{9D747A18-C8FD-4D7A-8913-4ED7911683B4} = {9D747A18-C8FD-4D7A-8913-4ED7911683B4}
 	EndProjectSection
 EndProject
-Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Canonicalization.Tests", "tests\Canonicalization\Canonicalization.Tests.csproj", "{D3AD82FC-051D-4121-8E48-B13CE8024776}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Canonicalization.Tests", "tests\Canonicalization\System.Runtime.Serialization.Xml.Canonicalization.csproj", "{D3AD82FC-051D-4121-8E48-B13CE8024776}"
 	ProjectSection(ProjectDependencies) = postProject
 		{9D747A18-C8FD-4D7A-8913-4ED7911683B4} = {9D747A18-C8FD-4D7A-8913-4ED7911683B4}
 	EndProjectSection
