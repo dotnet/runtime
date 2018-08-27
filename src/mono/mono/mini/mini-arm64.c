@@ -5465,7 +5465,7 @@ mono_arch_skip_single_step (MonoContext *ctx)
 	g_assert_not_reached ();
 }
 
-gpointer
+SeqPointInfo*
 mono_arch_get_seq_point_info (MonoDomain *domain, guint8 *code)
 {
 	SeqPointInfo *info;
