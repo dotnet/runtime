@@ -6,7 +6,7 @@
   <ItemGroup>
     <Compile Include="System.Runtime.InteropServices.RuntimeInformation.cs" />
   </ItemGroup>
-  <ItemGroup Condition="'$(TargetGroup)' == 'netcoreapp' Or '$(TargetGroup)' == 'uap'">
+  <ItemGroup>
     <ProjectReference Include="..\..\System.Runtime\ref\System.Runtime.csproj" />
   </ItemGroup>
 </Project>

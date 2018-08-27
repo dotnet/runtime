@@ -11,9 +11,7 @@ namespace System.Runtime.InteropServices
     {
 #if uapaot
         private const string FrameworkName = ".NET Native";
-#elif win8
-        private const string FrameworkName = ".NET Framework";
-#else // uap || wpa81 || other
+#else // uap || netcoreapp
         private const string FrameworkName = ".NET Core";
 #endif
 

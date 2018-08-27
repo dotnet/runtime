@@ -1,26 +1,18 @@
 <Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
-    <OutputType>Library</OutputType>
     <RootNamespace>System.Runtime.InteropServices</RootNamespace>
-    <AssemblyName>System.Runtime.InteropServices.RuntimeInformation</AssemblyName>
     <ProjectGuid>{1CBC030D-B5D3-4AB5-A9FD-24EC5F6F38D2}</ProjectGuid>
-    <DefineConstants Condition="'$(TargetGroup)'=='wpa81'">$(DefineConstants);wpa81</DefineConstants>
-    <DefineConstants Condition="'$(TargetGroup)'=='win8'">$(DefineConstants);win8</DefineConstants>
     <DefineConstants Condition="'$(TargetGroup)'=='uap'">$(DefineConstants);uap</DefineConstants>
     <DefineConstants Condition="'$(TargetGroup)'=='uapaot'">$(DefineConstants);uapaot</DefineConstants>
-    <DefineConstants Condition="'$(TargetGroup)'=='netstandard1.1'">$(DefineConstants);netstandard11</DefineConstants>
-    <GeneratePlatformNotSupportedAssemblyMessage Condition="'$(TargetGroup)'=='netstandard1.1' AND '$(OSGroup)'=='AnyOS'">SR.PlatformNotSupported_RuntimeInformation</GeneratePlatformNotSupportedAssemblyMessage>
-    <!-- use netstandard1.1 refs for win8 and wpa81 -->
-    <RefPath Condition="'$(TargetGroup)'=='wpa81' OR '$(TargetGroup)'=='win8'">$(RefRootPath)/netstandard1.1</RefPath>
-    <!-- For net45 use the netstandard1.1 contract for APICompat -->
-    <ContractAssemblyPath Condition="'$(TargetGroup)'=='net45'">$(RefRootPath)/netstandard1.1</ContractAssemblyPath>
-    <!-- Clear runtime for wpa81 & win8: these project types don't use project.json and need to resolve without a runtime -->
-    <PackageTargetRuntime Condition="'$(TargetGroup)'=='wpa81' OR '$(TargetGroup)'=='win8'">
-    </PackageTargetRuntime>
-    <ValidPInvokeMappings Condition="'$(TargetGroup)'=='wpa81' OR '$(TargetGroup)'=='win8'">$(MSBuildThisFileDirectory)PInvokeAnalyzer_win8-wpa81-APIs.txt</ValidPInvokeMappings>
     <Configurations>netcoreapp-Unix-Debug;netcoreapp-Unix-Release;netcoreapp-Windows_NT-Debug;netcoreapp-Windows_NT-Release;uap-Windows_NT-Debug;uap-Windows_NT-Release;uapaot-Windows_NT-Debug;uapaot-Windows_NT-Release</Configurations>
   </PropertyGroup>
-  <ItemGroup Condition="'$(TargetsUnix)'=='true'">
+  <ItemGroup>
+    <Compile Include="System\Runtime\InteropServices\RuntimeInformation\RuntimeInformation.cs" />
+    <Compile Include="System\Runtime\InteropServices\RuntimeInformation\Architecture.cs" />
+    <Compile Include="System\Runtime\InteropServices\RuntimeInformation\OSPlatform.cs" />
+  </ItemGroup>
+  <ItemGroup Condition="'$(TargetsUnix)' == 'true'">
+    <Compile Include="System\Runtime\InteropServices\RuntimeInformation\RuntimeInformation.Unix.cs" />
     <Compile Include="$(CommonPath)\Interop\Unix\System.Native\Interop.GetUnixName.cs">
       <Link>Common\Interop\Unix\System.Native\Interop.GetUnixName.cs</Link>
     </Compile>
@@ -39,9 +31,8 @@
     <Compile Include="$(CommonPath)\Interop\Unix\Interop.Libraries.cs">
       <Link>Common\Interop\Unix\Interop.Libraries.cs</Link>
     </Compile>
-    <Compile Include="System\Runtime\InteropServices\RuntimeInformation\RuntimeInformation.Unix.cs" />
   </ItemGroup>
-  <ItemGroup Condition="'$(TargetsWindows)'=='true' And ('$(TargetGroup)' != 'win8' AND '$(TargetGroup)' != 'wpa81' and '$(TargetGroup)' != 'netstandard1.1' and '$(TargetGroup)' != 'uap' and '$(TargetGroup)' != 'uapaot')">
+  <ItemGroup Condition="'$(TargetsWindows)' == 'true' and '$(TargetGroup)' != 'uap' and '$(TargetGroup)' != 'uapaot'">
     <Compile Include="$(CommonPath)\Interop\Windows\NtDll\Interop.RtlGetVersion.cs">
       <Link>Common\Interop\Windows\NtDll\Interop.RtlGetVersion.cs</Link>
     </Compile>
@@ -49,7 +40,7 @@
       <Link>Common\Interop\Windows\NtDll\Interop.RTL_OSVERSIONINFOEX.cs</Link>
     </Compile>
   </ItemGroup>
-  <ItemGroup Condition=" '$(TargetsWindows)'=='true' ">
+  <ItemGroup Condition="'$(TargetsWindows)' == 'true'">
     <Compile Include="System\Runtime\InteropServices\RuntimeInformation\RuntimeInformation.Windows.cs" />
     <Compile Include="$(CommonPath)\Interop\Windows\Interop.Libraries.cs">
       <Link>Common\Interop\Windows\Interop.Libraries.cs</Link>
@@ -60,8 +51,6 @@
     <Compile Include="$(CommonPath)\Interop\Windows\kernel32\Interop.SYSTEM_INFO.cs">
       <Link>Common\Interop\Windows\kernel32\Interop.SYSTEM_INFO.cs</Link>
     </Compile>
-  </ItemGroup>
-  <ItemGroup Condition=" '$(TargetsWindows)'=='true' AND '$(TargetGroup)' != 'win8' AND '$(TargetGroup)' != 'wpa81'">
     <Compile Include="$(CommonPath)\Interop\Windows\kernel32\Interop.GetSystemInfo.cs">
       <Link>Common\Interop\Windows\kernel32\Interop.GetSystemInfo.cs</Link>
     </Compile>
@@ -74,10 +63,5 @@
     <Reference Include="System.Runtime" />
     <Reference Include="System.Runtime.InteropServices" />
     <Reference Include="System.Threading" />
-  </ItemGroup>
-  <ItemGroup Condition="'$(TargetGroup)'!='netstandard1.1' OR '$(OSGroup)'!='AnyOS'">
-    <Compile Include="System\Runtime\InteropServices\RuntimeInformation\RuntimeInformation.cs" />
-    <Compile Include="System\Runtime\InteropServices\RuntimeInformation\Architecture.cs" />
-    <Compile Include="System\Runtime\InteropServices\RuntimeInformation\OSPlatform.cs" />
   </ItemGroup>
 </Project>
