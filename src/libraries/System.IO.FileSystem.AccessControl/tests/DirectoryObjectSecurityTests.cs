@@ -45,6 +45,7 @@ namespace System.Security.AccessControl
 
         [Fact]
         [ActiveIssue(24903, TargetFrameworkMonikers.NetFramework)]
+        [SkipOnTargetFramework(TargetFrameworkMonikers.Uap, "System.DirectoryServices is not supported on this platform.")]
         public void GetAccessRules_InvalidTargetType()
         {
             var activeDirectorySecurity = new ActiveDirectorySecurity();
