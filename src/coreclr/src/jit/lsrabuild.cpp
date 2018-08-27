@@ -2826,18 +2826,9 @@ int LinearScan::BuildStoreLoc(GenTreeLclVarCommon* storeLoc)
     {
         if (op1->OperIs(GT_MUL_LONG))
         {
-#ifdef _TARGET_X86_
-            // This is actually a bug. A GT_MUL_LONG produces two registers, but is modeled as only producing
-            // eax (and killing edx). This only works because it always occurs as var = GT_MUL_LONG (ensured by
-            // DecomposeMul), and therefore edx won't be reused before the store.
-            // TODO-X86-Cleanup: GT_MUL_LONG should be a multireg node on x86, just as on ARM.
-            srcCount     = 1;
-            singleUseRef = BuildUse(op1);
-#else
             srcCount = 2;
             BuildUse(op1, allRegs(TYP_INT), 0);
             BuildUse(op1, allRegs(TYP_INT), 1);
-#endif
         }
         else
         {

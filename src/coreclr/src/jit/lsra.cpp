@@ -130,21 +130,23 @@ void lsraAssignRegToTree(GenTree* tree, regNumber reg, unsigned regIdx)
     {
         tree->gtRegNum = reg;
     }
-#if FEATURE_ARG_SPLIT
-#ifdef _TARGET_ARM_
+#if !defined(_TARGET_64BIT_)
     else if (tree->OperIsMultiRegOp())
     {
         assert(regIdx == 1);
         GenTreeMultiRegOp* mul = tree->AsMultiRegOp();
         mul->gtOtherReg        = reg;
     }
-#endif // _TARGET_ARM_
+#endif // _TARGET_64BIT_
+#if FEATURE_MULTIREG_RET
     else if (tree->OperGet() == GT_COPY)
     {
         assert(regIdx == 1);
         GenTreeCopyOrReload* copy = tree->AsCopyOrReload();
         copy->gtOtherRegs[0]      = (regNumberSmall)reg;
     }
+#endif // FEATURE_MULTIREG_RET
+#if FEATURE_ARG_SPLIT
     else if (tree->OperIsPutArgSplit())
     {
         GenTreePutArgSplit* putArg = tree->AsPutArgSplit();
@@ -6176,11 +6178,10 @@ void LinearScan::insertCopyOrReload(BasicBlock* block, GenTree* tree, unsigned m
 #endif
     }
 
-    // If the parent is a reload/copy node, then tree must be a multi-reg call node
-    // that has already had one of its registers spilled. This is because multi-reg
-    // call node is the only node whose RefTypeDef positions get independently
-    // spilled or reloaded.  It is possible that one of its RefTypeDef position got
-    // spilled and the next use of it requires it to be in a different register.
+    // If the parent is a reload/copy node, then tree must be a multi-reg node
+    // that has already had one of its registers spilled.
+    // It is possible that one of its RefTypeDef positions got spilled and the next
+    // use of it requires it to be in a different register.
     //
     // In this case set the i'th position reg of reload/copy node to the reg allocated
     // for copy/reload refPosition.  Essentially a copy/reload node will have a reg
@@ -6190,8 +6191,7 @@ void LinearScan::insertCopyOrReload(BasicBlock* block, GenTree* tree, unsigned m
     if (parent->IsCopyOrReload())
     {
         noway_assert(parent->OperGet() == oper);
-        noway_assert(tree->IsMultiRegCall());
-        GenTreeCall*         call         = tree->AsCall();
+        noway_assert(tree->IsMultiRegNode());
         GenTreeCopyOrReload* copyOrReload = parent->AsCopyOrReload();
         noway_assert(copyOrReload->GetRegNumByIdx(multiRegIdx) == REG_NA);
         copyOrReload->SetRegNumByIdx(refPosition->assignedReg(), multiRegIdx);
@@ -8762,8 +8762,24 @@ void LinearScan::lsraGetOperandString(GenTree*          tree,
             }
             else
             {
-                _snprintf_s(operandString, operandStringLength, operandStringLength, "%s%s",
-                            getRegName(tree->gtRegNum, useFloatReg(tree->TypeGet())), lastUseChar);
+                regNumber reg       = tree->gtRegNum;
+                int       charCount = _snprintf_s(operandString, operandStringLength, operandStringLength, "%s%s",
+                                            getRegName(reg, genIsValidFloatReg(reg)), lastUseChar);
+                operandString += charCount;
+                operandStringLength -= charCount;
+
+                if (tree->IsMultiRegNode())
+                {
+                    unsigned regCount = tree->GetMultiRegCount();
+                    for (unsigned regIndex = 1; regIndex < regCount; regIndex++)
+                    {
+                        regNumber reg = tree->GetRegByIndex(regIndex);
+                        charCount     = _snprintf_s(operandString, operandStringLength, operandStringLength, ",%s%s",
+                                                getRegName(reg, genIsValidFloatReg(reg)), lastUseChar);
+                        operandString += charCount;
+                        operandStringLength -= charCount;
+                    }
+                }
             }
         }
         break;
@@ -8893,18 +8909,13 @@ void LinearScan::DumpOperandDefs(
     if (dstCount != 0)
     {
         // This operand directly produces registers; print it.
-        for (int i = 0; i < dstCount; i++)
+        if (!first)
         {
-            if (!first)
-            {
-                printf(",");
-            }
-
-            lsraGetOperandString(operand, mode, operandString, operandStringLength);
-            printf("%s", operandString);
-
-            first = false;
+            printf(",");
         }
+        lsraGetOperandString(operand, mode, operandString, operandStringLength);
+        printf("%s", operandString);
+        first = false;
     }
     else if (operand->isContained())
     {

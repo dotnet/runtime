@@ -1634,58 +1634,6 @@ void CodeGen::genEmitHelperCall(unsigned helper, int argSize, emitAttr retSize, 
 }
 
 //------------------------------------------------------------------------
-// genStoreLongLclVar: Generate code to store a non-enregistered long lclVar
-//
-// Arguments:
-//    treeNode - A TYP_LONG lclVar node.
-//
-// Return Value:
-//    None.
-//
-// Assumptions:
-//    'treeNode' must be a TYP_LONG lclVar node for a lclVar that has NOT been promoted.
-//    Its operand must be a GT_LONG node.
-//
-void CodeGen::genStoreLongLclVar(GenTree* treeNode)
-{
-    emitter* emit = getEmitter();
-
-    GenTreeLclVarCommon* lclNode = treeNode->AsLclVarCommon();
-    unsigned             lclNum  = lclNode->gtLclNum;
-    LclVarDsc*           varDsc  = &(compiler->lvaTable[lclNum]);
-    assert(varDsc->TypeGet() == TYP_LONG);
-    assert(!varDsc->lvPromoted);
-    GenTree* op1 = treeNode->gtOp.gtOp1;
-    noway_assert(op1->OperGet() == GT_LONG || op1->OperGet() == GT_MUL_LONG);
-    genConsumeRegs(op1);
-
-    if (op1->OperGet() == GT_LONG)
-    {
-        // Definitions of register candidates will have been lowered to 2 int lclVars.
-        assert(!treeNode->gtHasReg());
-
-        GenTree* loVal = op1->gtGetOp1();
-        GenTree* hiVal = op1->gtGetOp2();
-
-        noway_assert((loVal->gtRegNum != REG_NA) && (hiVal->gtRegNum != REG_NA));
-
-        emit->emitIns_S_R(ins_Store(TYP_INT), EA_4BYTE, loVal->gtRegNum, lclNum, 0);
-        emit->emitIns_S_R(ins_Store(TYP_INT), EA_4BYTE, hiVal->gtRegNum, lclNum, genTypeSize(TYP_INT));
-    }
-    else if (op1->OperGet() == GT_MUL_LONG)
-    {
-        assert((op1->gtFlags & GTF_MUL_64RSLT) != 0);
-
-        GenTreeMultiRegOp* mul = op1->AsMultiRegOp();
-
-        // Stack store
-        getEmitter()->emitIns_S_R(ins_Store(TYP_INT), emitTypeSize(TYP_INT), mul->gtRegNum, lclNum, 0);
-        getEmitter()->emitIns_S_R(ins_Store(TYP_INT), emitTypeSize(TYP_INT), mul->gtOtherReg, lclNum,
-                                  genTypeSize(TYP_INT));
-    }
-}
-
-//------------------------------------------------------------------------
 // genCodeForMulLong: Generates code for int*int->long multiplication
 //
 // Arguments:
