@@ -1213,13 +1213,18 @@ public:
 
     bool OperIsMultiRegOp() const
     {
-#if defined(_TARGET_ARM_)
-        if ((gtOper == GT_MUL_LONG) || (gtOper == GT_PUTARG_REG) || (gtOper == GT_BITCAST))
+#if !defined(_TARGET_64BIT_)
+        if (OperIs(GT_MUL_LONG))
         {
             return true;
         }
-#endif
-
+#if defined(_TARGET_ARM_)
+        if (OperIs(GT_PUTARG_REG, GT_BITCAST))
+        {
+            return true;
+        }
+#endif // _TARGET_ARM_
+#endif // _TARGET_64BIT_
         return false;
     }
 
@@ -3839,7 +3844,7 @@ struct GenTreeCmpXchg : public GenTree
 #endif
 };
 
-#if defined(_TARGET_ARM_)
+#if !defined(_TARGET_64BIT_)
 struct GenTreeMultiRegOp : public GenTreeOp
 {
     regNumber gtOtherReg;
@@ -3994,7 +3999,7 @@ struct GenTreeMultiRegOp : public GenTreeOp
     }
 #endif
 };
-#endif // defined(_TARGET_ARM_)
+#endif // !defined(_TARGET_64BIT_)
 
 struct GenTreeFptrVal : public GenTree
 {
@@ -5425,6 +5430,11 @@ struct GenTreePutArgSplit : public GenTreePutArgStk
 #endif // FEATURE_ARG_SPLIT
 
 // Represents GT_COPY or GT_RELOAD node
+//
+// As it turns out, these are only needed on targets that happen to have multi-reg returns.
+// However, they are actually needed on any target that has any multi-reg ops. It is just
+// coincidence that those are the same (and there isn't a FEATURE_MULTIREG_OPS).
+//
 struct GenTreeCopyOrReload : public GenTreeUnOp
 {
 #if FEATURE_MULTIREG_RET
@@ -6031,7 +6041,7 @@ inline bool GenTree::IsMultiRegNode() const
         return true;
     }
 
-#if defined(_TARGET_ARM_)
+#if !defined(_TARGET_64BIT_)
     if (OperIsMultiRegOp() || OperIsPutArgSplit() || (gtOper == GT_COPY))
     {
         return true;
@@ -6061,7 +6071,7 @@ inline unsigned GenTree::GetMultiRegCount()
         return AsPutArgSplit()->gtNumRegs;
     }
 #endif
-#if defined(_TARGET_ARM_)
+#if !defined(_TARGET_64BIT_)
     if (OperIsMultiRegOp())
     {
         return AsMultiRegOp()->GetRegCount();
@@ -6102,7 +6112,7 @@ inline regNumber GenTree::GetRegByIndex(int regIndex)
         return AsPutArgSplit()->GetRegNumByIdx(regIndex);
     }
 #endif
-#if defined(_TARGET_ARM_)
+#if !defined(_TARGET_64BIT_)
     if (OperIsMultiRegOp())
     {
         return AsMultiRegOp()->GetRegNumByIdx(regIndex);
@@ -6143,7 +6153,7 @@ inline var_types GenTree::GetRegTypeByIndex(int regIndex)
         return AsPutArgSplit()->GetRegType(regIndex);
     }
 #endif
-#if defined(_TARGET_ARM_)
+#if !defined(_TARGET_64BIT_)
     if (OperIsMultiRegOp())
     {
         return AsMultiRegOp()->GetRegType(regIndex);
