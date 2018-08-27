@@ -13,6 +13,7 @@ namespace System.Reflection.Metadata.Decoding.Tests
     public class CustomAttributeDecoderTests
     {
         [Fact]
+        [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework, "Type assembly name is different on full framework.")]
         public void TestCustomAttributeDecoder()
         {
             using (FileStream stream = File.OpenRead(typeof(HasAttributes).GetTypeInfo().Assembly.Location))

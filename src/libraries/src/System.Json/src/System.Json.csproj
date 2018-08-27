@@ -7,7 +7,6 @@
     <AssemblyKey>SilverlightExtension</AssemblyKey>
     <Configurations>netstandard-Debug;netstandard-Release;netstandard1.0-Debug;netstandard1.0-Release</Configurations>
   </PropertyGroup>
-  <!-- Default configurations to help VS understand the options -->
   <ItemGroup>
     <Compile Include="System\Json\JsonArray.cs" />
     <Compile Include="System\Json\JsonObject.cs" />

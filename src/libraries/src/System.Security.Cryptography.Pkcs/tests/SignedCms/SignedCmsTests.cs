@@ -462,6 +462,7 @@ namespace System.Security.Cryptography.Pkcs.Tests
         [Theory]
         [InlineData(SubjectIdentifierType.IssuerAndSerialNumber, false)]
         [InlineData(SubjectIdentifierType.IssuerAndSerialNumber, true)]
+        [ActiveIssue(31977, TargetFrameworkMonikers.Uap)]
         public static void AddFirstSigner_DSA(SubjectIdentifierType identifierType, bool detached)
         {
             ContentInfo contentInfo = new ContentInfo(new byte[] { 9, 8, 7, 6, 5 });
@@ -721,6 +722,7 @@ namespace System.Security.Cryptography.Pkcs.Tests
         [Theory]
         [InlineData(false)]
         [InlineData(true)]
+        [ActiveIssue(31977, TargetFrameworkMonikers.Uap)]
         public static void EnsureExtraCertsAdded(bool newDocument)
         {
             SignedCms cms;

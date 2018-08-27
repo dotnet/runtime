@@ -2,7 +2,7 @@
   <PropertyGroup>
     <ProjectGuid>{DC683D60-34EC-4D85-B6E0-E97FDB37A583}</ProjectGuid>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
-    <Configurations>netcoreapp-Debug;netcoreapp-Release</Configurations>
+    <Configurations>netstandard-Debug;netstandard-Release</Configurations>
   </PropertyGroup>
   <ItemGroup>
     <Compile Include="JsonArrayTests.cs" />

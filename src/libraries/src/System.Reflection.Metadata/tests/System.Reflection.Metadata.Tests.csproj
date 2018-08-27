@@ -3,8 +3,9 @@
     <ProjectGuid>{7061832A-E8CF-4AB6-A8DC-44D2F5A43A13}</ProjectGuid>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
     <ExternallyShipping>false</ExternallyShipping>
-    <RootNamespace>System.Reflection.Metadata.Tests</RootNamespace>
-    <Configurations>netcoreapp-Debug;netcoreapp-Release</Configurations>
+    <!-- UAP build currently failing: https://github.com/dotnet/corefx/issues/31962 -->
+    <DefineConstants Condition="'$(TargetsNetStandard)' == 'true'">$(DefineConstants);netstandard</DefineConstants>
+    <Configurations>netcoreapp-Debug;netcoreapp-Release;netfx-Debug;netfx-Release<!-- ;netstandard-Debug;netstandard-Release --></Configurations>
   </PropertyGroup>
   <ItemGroup>
     <Compile Include="..\..\Common\src\Interop\Windows\Interop.Libraries.cs">
