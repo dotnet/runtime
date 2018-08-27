@@ -98,7 +98,7 @@ __portableBuildArgs=
 __configuration=Debug
 __linkPortable=0
 __cmake_defines=
-__baseIntermediateOutputPath="$RootRepo/Bin/obj"
+__baseIntermediateOutputPath="$RootRepo/bin/obj"
 __versionSourceFile="$__baseIntermediateOutputPath/version.cpp"
 
 while [ "$1" != "" ]; do
