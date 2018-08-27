@@ -27,7 +27,7 @@ namespace System.Security.Cryptography.X509Certificates
 
                 foreach (X509Extension e in extensions)
                 {
-                    AsnSerializer.Serialize(new X509ExtensionAsn(e), writer);
+                    new X509ExtensionAsn(e).Encode(writer);
                 }
 
                 writer.PopSequence();

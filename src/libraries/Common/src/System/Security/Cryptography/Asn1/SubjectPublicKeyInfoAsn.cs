@@ -12,11 +12,25 @@ namespace System.Security.Cryptography.Asn1
     //   algorithm            AlgorithmIdentifier,
     //   subjectPublicKey     BIT STRING  }
     [StructLayout(LayoutKind.Sequential)]
-    internal struct SubjectPublicKeyInfoAsn
+    internal partial struct SubjectPublicKeyInfoAsn
     {
         internal AlgorithmIdentifierAsn Algorithm;
 
         [BitString]
         internal ReadOnlyMemory<byte> SubjectPublicKey;
+
+        internal void Encode(AsnWriter writer)
+        {
+            AsnSerializer.Serialize(this, writer);
+        }
+
+        internal static void Decode(AsnReader reader, out SubjectPublicKeyInfoAsn decoded)
+        {
+            if (reader == null)
+                throw new ArgumentNullException(nameof(reader));
+
+            ReadOnlyMemory<byte> value = reader.GetEncodedValue();
+            decoded = AsnSerializer.Deserialize<SubjectPublicKeyInfoAsn>(value, reader.RuleSet);
+        }
     }
 }

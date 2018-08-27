@@ -1,0 +1,17 @@
+﻿<?xml version="1.0" encoding="utf-8" ?>
+<asn:Choice
+  xmlns:asn="http://schemas.dot.net/asnxml/201808/"
+  name="TimeAsn"
+  namespace="System.Security.Cryptography.X509Certificates.Asn1">
+
+  <!--
+    https://tools.ietf.org/html/rfc5280#section-4.1
+
+    Time ::= CHOICE {
+        utcTime        UTCTime,
+        generalTime    GeneralizedTime
+    }
+  -->
+  <asn:UtcTime name="UtcTime" />
+  <asn:GeneralizedTime name="GeneralTime" />
+</asn:Choice>

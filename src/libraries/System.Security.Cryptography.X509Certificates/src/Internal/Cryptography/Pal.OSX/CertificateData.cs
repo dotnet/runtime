@@ -77,13 +77,14 @@ namespace Internal.Cryptography.Pal
         {
 #endif
             RawData = rawData;
-            certificate = AsnSerializer.Deserialize<CertificateAsn>(rawData, AsnEncodingRules.DER);
+            certificate = CertificateAsn.Decode(rawData, AsnEncodingRules.DER);
             certificate.TbsCertificate.ValidateVersion();
             Issuer = new X500DistinguishedName(certificate.TbsCertificate.Issuer.ToArray());
             Subject = new X500DistinguishedName(certificate.TbsCertificate.Subject.ToArray());
 
-            using (AsnWriter writer = AsnSerializer.Serialize(certificate.TbsCertificate.SubjectPublicKeyInfo, AsnEncodingRules.DER))
+            using (AsnWriter writer = new AsnWriter(AsnEncodingRules.DER))
             {
+                certificate.TbsCertificate.SubjectPublicKeyInfo.Encode(writer);
                 SubjectPublicKeyInfo = writer.Encode();
             }
 
