@@ -59,12 +59,13 @@ bool Lowering::IsContainableImmed(GenTree* parentNode, GenTree* childNode)
         // Make sure we have an actual immediate
         if (!childNode->IsCnsIntOrI())
             return false;
-        if (childNode->IsIconHandle() && comp->opts.compReloc)
+        if (childNode->gtIntCon.ImmedValNeedsReloc(comp))
             return false;
 
-        ssize_t  immVal = childNode->gtIntCon.gtIconVal;
-        emitAttr attr   = emitActualTypeSize(childNode->TypeGet());
-        emitAttr size   = EA_SIZE(attr);
+        // TODO-CrossBitness: we wouldn't need the cast below if GenTreeIntCon::gtIconVal had target_ssize_t type.
+        target_ssize_t immVal = (target_ssize_t)childNode->gtIntCon.gtIconVal;
+        emitAttr       attr   = emitActualTypeSize(childNode->TypeGet());
+        emitAttr       size   = EA_SIZE(attr);
 #ifdef _TARGET_ARM_
         insFlags flags = parentNode->gtSetFlags() ? INS_FLAGS_SET : INS_FLAGS_DONT_CARE;
 #endif
