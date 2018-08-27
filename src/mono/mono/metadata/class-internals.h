@@ -1178,7 +1178,7 @@ mono_class_alloc (MonoClass *klass, int size);
 gpointer
 mono_class_alloc0 (MonoClass *klass, int size);
 
-#define mono_class_alloc0(klass, size) (g_cast (mono_class_alloc0 (klass, size)))
+#define mono_class_alloc0(klass, size) (g_cast (mono_class_alloc0 ((klass), (size))))
 
 void
 mono_class_setup_interfaces (MonoClass *klass, MonoError *error);
