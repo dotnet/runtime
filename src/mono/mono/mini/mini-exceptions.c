@@ -1084,12 +1084,7 @@ mono_walk_stack_with_ctx (MonoJitStackWalk func, MonoContext *start_ctx, MonoUnw
 
 	if (!start_ctx) {
 		mono_arch_flush_register_windows ();
-
-#ifdef MONO_INIT_CONTEXT_FROM_CURRENT
-		MONO_INIT_CONTEXT_FROM_CURRENT (&extra_ctx);
-#else
 		MONO_INIT_CONTEXT_FROM_FUNC (&extra_ctx, mono_walk_stack_with_ctx);
-#endif
 		start_ctx = &extra_ctx;
 	}
 
@@ -1547,12 +1542,7 @@ ves_icall_get_frame_info (gint32 skip, MonoBoolean need_file_info,
 		*native_offset = frame_ip - (guint8*)ji->code_start;
 	} else {
 		mono_arch_flush_register_windows ();
-
-#ifdef MONO_INIT_CONTEXT_FROM_CURRENT
-		MONO_INIT_CONTEXT_FROM_CURRENT (&ctx);
-#else
 		MONO_INIT_CONTEXT_FROM_FUNC (&ctx, ves_icall_get_frame_info);
-#endif
 
 		unwinder_init (&unwinder);
 
@@ -3338,12 +3328,8 @@ mono_thread_state_init_from_current (MonoThreadUnwindState *ctx)
 		ctx->valid = FALSE;
 		return FALSE;
 	}
-#ifdef MONO_INIT_CONTEXT_FROM_CURRENT
-	MONO_INIT_CONTEXT_FROM_CURRENT (&ctx->ctx);
-#else
 	MONO_INIT_CONTEXT_FROM_FUNC (&ctx->ctx, mono_thread_state_init_from_current);
-#endif
-		
+
 	ctx->unwind_data [MONO_UNWIND_DATA_DOMAIN] = mono_domain_get ();
 	ctx->unwind_data [MONO_UNWIND_DATA_LMF] = mono_get_lmf ();
 	ctx->unwind_data [MONO_UNWIND_DATA_JIT_TLS] = thread->jit_data;
