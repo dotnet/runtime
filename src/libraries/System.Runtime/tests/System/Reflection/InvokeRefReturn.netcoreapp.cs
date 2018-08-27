@@ -13,7 +13,6 @@ namespace System.Reflection.Tests
     {
         [Theory]
         [MemberData(nameof(RefReturnInvokeTestData))]
-        [ActiveIssue("TFS 603305 - Bring Project N up to sync", TargetFrameworkMonikers.UapAot)]
         public static void TestRefReturnPropertyGetValue<T>(T value)
         {
             TestRefReturnInvoke<T>(value, (p, t) => p.GetValue(t));
@@ -21,21 +20,18 @@ namespace System.Reflection.Tests
 
         [Theory]
         [MemberData(nameof(RefReturnInvokeTestData))]
-        [ActiveIssue("TFS 603305 - Bring Project N up to sync", TargetFrameworkMonikers.UapAot)]
         public static void TestRefReturnMethodInvoke<T>(T value)
         {
             TestRefReturnInvoke<T>(value, (p, t) => p.GetGetMethod().Invoke(t, Array.Empty<object>()));
         }
 
         [Fact]
-        [ActiveIssue("TFS 603305 - Bring Project N up to sync", TargetFrameworkMonikers.UapAot)]
         public static void TestRefReturnNullable()
         {
             TestRefReturnInvokeNullable<int>(42);
         }
 
         [Fact]
-        [ActiveIssue("TFS 603305 - Bring Project N up to sync", TargetFrameworkMonikers.UapAot)]
         public static void TestRefReturnNullableNoValue()
         {
             TestRefReturnInvokeNullable<int>(default(int?));
@@ -43,7 +39,6 @@ namespace System.Reflection.Tests
 
         [Theory]
         [MemberData(nameof(RefReturnInvokeTestData))]
-        [ActiveIssue("TFS 603305 - Bring Project N up to sync", TargetFrameworkMonikers.UapAot)]
         public static void TestNullRefReturnInvoke<T>(T value)
         {
             TestClass<T> tc = new TestClass<T>(value);
@@ -53,7 +48,6 @@ namespace System.Reflection.Tests
         }
 
         [Fact]
-        [ActiveIssue("TFS 603305 - Bring Project N up to sync", TargetFrameworkMonikers.UapAot)]
         public static unsafe void TestRefReturnOfPointer()
         {
             int* expected = (int*)0x1122334455667788;
@@ -66,7 +60,6 @@ namespace System.Reflection.Tests
         }
         
         [Fact]
-        [ActiveIssue("TFS 603305 - Bring Project N up to sync", TargetFrameworkMonikers.UapAot)]
         public static unsafe void TestNullRefReturnOfPointer()
         {
             TestClassIntPointer tc = new TestClassIntPointer(null);
@@ -77,7 +70,6 @@ namespace System.Reflection.Tests
         }
         
         [Fact]
-        [ActiveIssue("TFS 603305 - Bring Project N up to sync", TargetFrameworkMonikers.UapAot)]
         public static unsafe void TestByRefLikeRefReturn()
         {
             ByRefLike brl = new ByRefLike();
