@@ -360,14 +360,14 @@ void CodeGen::genLclHeap(GenTree* tree)
     if (size->IsCnsIntOrI())
     {
         // 'amount' is the total number of bytes to localloc to properly STACK_ALIGN
-        size_t amount = size->gtIntCon.gtIconVal;
-        amount        = AlignUp(amount, STACK_ALIGN);
+        target_size_t amount = (target_size_t)size->gtIntCon.gtIconVal;
+        amount               = AlignUp(amount, STACK_ALIGN);
 
         // For small allocations we will generate up to four push instructions (either 2 or 4, exactly,
         // since STACK_ALIGN is 8, and REGSIZE_BYTES is 4).
         static_assert_no_msg(STACK_ALIGN == (REGSIZE_BYTES * 2));
         assert(amount % REGSIZE_BYTES == 0);
-        size_t pushCount = amount / REGSIZE_BYTES;
+        target_size_t pushCount = amount / REGSIZE_BYTES;
         if (pushCount <= 4)
         {
             instGen_Set_Reg_To_Zero(EA_PTRSIZE, regCnt);
@@ -902,7 +902,7 @@ void CodeGen::genCodeForShiftLong(GenTree* tree)
 
     assert(shiftBy->isContainedIntOrIImmed());
 
-    unsigned int count = shiftBy->AsIntConCommon()->IconValue();
+    unsigned count = (unsigned)shiftBy->AsIntConCommon()->IconValue();
 
     regNumber regResult = (oper == GT_LSH_HI) ? regHi : regLo;
 

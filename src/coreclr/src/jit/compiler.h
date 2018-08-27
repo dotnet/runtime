@@ -6718,13 +6718,13 @@ public:
     GenTree* eeGetPInvokeCookie(CORINFO_SIG_INFO* szMetaSig);
 
     // Returns the page size for the target machine as reported by the EE.
-    inline size_t eeGetPageSize()
+    inline target_size_t eeGetPageSize()
     {
-        return eeGetEEInfo()->osPageSize;
+        return (target_size_t)eeGetEEInfo()->osPageSize;
     }
 
     // Returns the frame size at which we will generate a loop to probe the stack.
-    inline size_t getVeryLargeFrameSize()
+    inline target_size_t getVeryLargeFrameSize()
     {
 #ifdef _TARGET_ARM_
         // The looping probe code is 40 bytes, whereas the straight-line probing for
