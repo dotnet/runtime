@@ -682,6 +682,11 @@ DWORD NgenHashTable<NGEN_HASH_ARGS>::PersistedBucketList::GetBucketSize(DWORD cE
 
 #ifndef DACCESS_COMPILE
 
+#ifdef _MSC_VER
+#pragma warning(push)
+#pragma warning(disable:4723) // Prevent "warning C4723: potential divide by 0"
+#endif // _MSC_VER
+
 // Call during ngen to save hash table data structures into the ngen image. Calls derived-class
 // implementations of ShouldSave to determine which entries should be serialized, IsHotEntry to hot/cold split
 // the entries and SaveEntry to allow per-entry extension of the saving process.
@@ -806,6 +811,7 @@ void NgenHashTable<NGEN_HASH_ARGS>::BaseSave(DataImage *pImage, CorProfileData *
         // us to lay out entries into their final order using a linear algorithm in a later phase.
         if (pMapEntry->m_fHot)
         {
+            _ASSERTE(cHotBuckets != 0);
             pMapEntry->m_dwNewBucket = pMapEntry->m_iHashValue % cHotBuckets;
             pMapEntry->m_dwChainOrdinal = pHotBucketSizes[pMapEntry->m_dwNewBucket]++;
             if (pHotBucketSizes[pMapEntry->m_dwNewBucket] > cMaxHotChain)
@@ -1005,6 +1011,10 @@ void NgenHashTable<NGEN_HASH_ARGS>::BaseSave(DataImage *pImage, CorProfileData *
     VolatileEntry *pNewBuckets = (VolatileEntry*)pImage->GetImagePointer(GetWarmBuckets());
     memset(pNewBuckets, 0, cNewWarmBuckets * sizeof(VolatileEntry*));
 }
+
+#ifdef _MSC_VER
+#pragma warning(pop)
+#endif // _MSC_VER:
 
 // Call during ngen to register fixups for hash table data structure fields. Calls derived-class
 // implementation of FixupEntry to allow per-entry extension of the fixup process.
