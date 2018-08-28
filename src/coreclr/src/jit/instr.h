@@ -94,6 +94,7 @@ enum insFlags: uint8_t
     INS_FLAGS_WritesFlags = 0x02,
     INS_FLAGS_x87Instr = 0x04,
     INS_Flags_IsDstDstSrcAVXInstruction = 0x08,
+    INS_Flags_IsDstSrcSrcAVXInstruction = 0x10,
 
     //  TODO-Cleanup:  Remove this flag and its usage from _TARGET_XARCH_
     INS_FLAGS_DONT_CARE = 0x00,

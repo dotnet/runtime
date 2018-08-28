@@ -181,7 +181,7 @@ INST3(pmovmskb,         "pmovmskb",         IUM_WR, BAD_CODE,     BAD_CODE,     
 INST3(movmskpd,         "movmskpd",         IUM_WR, BAD_CODE,     BAD_CODE,     PCKDBL(0x50),                            INS_FLAGS_None)    // Extract 2-bit sign mask from xmm and store in reg. The upper bits of r32 or r64 are filled with zeros.
 INST3(movd,             "movd",             IUM_WR, PCKDBL(0x7E), BAD_CODE,     PCKDBL(0x6E),                            INS_FLAGS_None)
 INST3(movq,             "movq",             IUM_WR, PCKDBL(0xD6), BAD_CODE,     SSEFLT(0x7E),                            INS_FLAGS_None)
-INST3(movsdsse2,        "movsd",            IUM_WR, SSEDBL(0x11), BAD_CODE,     SSEDBL(0x10),                            INS_FLAGS_None)
+INST3(movsdsse2,        "movsd",            IUM_WR, SSEDBL(0x11), BAD_CODE,     SSEDBL(0x10),                            INS_Flags_IsDstSrcSrcAVXInstruction)
 
 INST3(punpckldq,        "punpckldq",        IUM_WR, BAD_CODE,     BAD_CODE,     PCKDBL(0x62),                            INS_Flags_IsDstDstSrcAVXInstruction)
 
@@ -195,11 +195,11 @@ INST3(movntpd,          "movntpd",          IUM_WR, PCKDBL(0x2B), BAD_CODE,     
 INST3(movntps,          "movntps",          IUM_WR, PCKFLT(0x2B), BAD_CODE,     BAD_CODE,                                INS_FLAGS_None)
 INST3(movdqu,           "movdqu",           IUM_WR, SSEFLT(0x7F), BAD_CODE,     SSEFLT(0x6F),                            INS_FLAGS_None)
 INST3(movdqa,           "movdqa",           IUM_WR, PCKDBL(0x7F), BAD_CODE,     PCKDBL(0x6F),                            INS_FLAGS_None)
-INST3(movlpd,           "movlpd",           IUM_WR, PCKDBL(0x13), BAD_CODE,     PCKDBL(0x12),                            INS_FLAGS_None)
-INST3(movlps,           "movlps",           IUM_WR, PCKFLT(0x13), BAD_CODE,     PCKFLT(0x12),                            INS_FLAGS_None)
-INST3(movhpd,           "movhpd",           IUM_WR, PCKDBL(0x17), BAD_CODE,     PCKDBL(0x16),                            INS_FLAGS_None)
-INST3(movhps,           "movhps",           IUM_WR, PCKFLT(0x17), BAD_CODE,     PCKFLT(0x16),                            INS_FLAGS_None)
-INST3(movss,            "movss",            IUM_WR, SSEFLT(0x11), BAD_CODE,     SSEFLT(0x10),                            INS_FLAGS_None)
+INST3(movlpd,           "movlpd",           IUM_WR, PCKDBL(0x13), BAD_CODE,     PCKDBL(0x12),                            INS_Flags_IsDstSrcSrcAVXInstruction)
+INST3(movlps,           "movlps",           IUM_WR, PCKFLT(0x13), BAD_CODE,     PCKFLT(0x12),                            INS_Flags_IsDstSrcSrcAVXInstruction)
+INST3(movhpd,           "movhpd",           IUM_WR, PCKDBL(0x17), BAD_CODE,     PCKDBL(0x16),                            INS_Flags_IsDstSrcSrcAVXInstruction)
+INST3(movhps,           "movhps",           IUM_WR, PCKFLT(0x17), BAD_CODE,     PCKFLT(0x16),                            INS_Flags_IsDstSrcSrcAVXInstruction)
+INST3(movss,            "movss",            IUM_WR, SSEFLT(0x11), BAD_CODE,     SSEFLT(0x10),                            INS_Flags_IsDstSrcSrcAVXInstruction)
 INST3(movapd,           "movapd",           IUM_WR, PCKDBL(0x29), BAD_CODE,     PCKDBL(0x28),                            INS_FLAGS_None)
 INST3(movaps,           "movaps",           IUM_WR, PCKFLT(0x29), BAD_CODE,     PCKFLT(0x28),                            INS_FLAGS_None)
 INST3(movupd,           "movupd",           IUM_WR, PCKDBL(0x11), BAD_CODE,     PCKDBL(0x10),                            INS_FLAGS_None)
@@ -253,9 +253,9 @@ INST3(xorpd,            "xorpd",            IUM_WR, BAD_CODE,     BAD_CODE,     
 INST3(andps,            "andps",            IUM_WR, BAD_CODE,     BAD_CODE,     PCKFLT(0x54),                            INS_Flags_IsDstDstSrcAVXInstruction)    // AND packed singles
 INST3(andpd,            "andpd",            IUM_WR, BAD_CODE,     BAD_CODE,     PCKDBL(0x54),                            INS_Flags_IsDstDstSrcAVXInstruction)    // AND packed doubles
 INST3(sqrtps,           "sqrtps",           IUM_WR, BAD_CODE,     BAD_CODE,     PCKFLT(0x51),                            INS_FLAGS_None)    // Sqrt of packed singles
-INST3(sqrtss,           "sqrtss",           IUM_WR, BAD_CODE,     BAD_CODE,     SSEFLT(0x51),                            INS_FLAGS_None)    // Sqrt of scalar single
+INST3(sqrtss,           "sqrtss",           IUM_WR, BAD_CODE,     BAD_CODE,     SSEFLT(0x51),                            INS_Flags_IsDstSrcSrcAVXInstruction)    // Sqrt of scalar single
 INST3(sqrtpd,           "sqrtpd",           IUM_WR, BAD_CODE,     BAD_CODE,     PCKDBL(0x51),                            INS_FLAGS_None)    // Sqrt of packed doubles
-INST3(sqrtsd,           "sqrtsd",           IUM_WR, BAD_CODE,     BAD_CODE,     SSEDBL(0x51),                            INS_FLAGS_None)    // Sqrt of scalar double
+INST3(sqrtsd,           "sqrtsd",           IUM_WR, BAD_CODE,     BAD_CODE,     SSEDBL(0x51),                            INS_Flags_IsDstSrcSrcAVXInstruction)    // Sqrt of scalar double
 INST3(andnps,           "andnps",           IUM_WR, BAD_CODE,     BAD_CODE,     PCKFLT(0x55),                            INS_Flags_IsDstDstSrcAVXInstruction)    // And-Not packed singles
 INST3(andnpd,           "andnpd",           IUM_WR, BAD_CODE,     BAD_CODE,     PCKDBL(0x55),                            INS_Flags_IsDstDstSrcAVXInstruction)    // And-Not packed doubles
 INST3(orps,             "orps",             IUM_WR, BAD_CODE,     BAD_CODE,     PCKFLT(0x56),                            INS_Flags_IsDstDstSrcAVXInstruction)    // Or packed singles
@@ -269,9 +269,9 @@ INST3(addsubpd,         "addsubpd",         IUM_WR, BAD_CODE,     BAD_CODE,     
 
 // SSE 2 approx arith
 INST3(rcpps,            "rcpps",            IUM_WR, BAD_CODE,     BAD_CODE,     PCKFLT(0x53),                            INS_FLAGS_None)    // Reciprocal of packed singles
-INST3(rcpss,            "rcpss",            IUM_WR, BAD_CODE,     BAD_CODE,     SSEFLT(0x53),                            INS_FLAGS_None)    // Reciprocal of scalar single
+INST3(rcpss,            "rcpss",            IUM_WR, BAD_CODE,     BAD_CODE,     SSEFLT(0x53),                            INS_Flags_IsDstSrcSrcAVXInstruction)    // Reciprocal of scalar single
 INST3(rsqrtps,          "rsqrtps",          IUM_WR, BAD_CODE,     BAD_CODE,     PCKFLT(0x52),                            INS_FLAGS_None)    // Reciprocal Sqrt of packed singles
-INST3(rsqrtss,          "rsqrtss",          IUM_WR, BAD_CODE,     BAD_CODE,     SSEFLT(0x52),                            INS_FLAGS_None)    // Reciprocal Sqrt of scalar single
+INST3(rsqrtss,          "rsqrtss",          IUM_WR, BAD_CODE,     BAD_CODE,     SSEFLT(0x52),                            INS_Flags_IsDstSrcSrcAVXInstruction)    // Reciprocal Sqrt of scalar single
 
 // SSE2 conversions
 INST3(cvtpi2ps,         "cvtpi2ps",         IUM_WR, BAD_CODE,     BAD_CODE,     PCKFLT(0x2A),                            INS_FLAGS_None)    // cvt packed DWORDs to singles
@@ -425,9 +425,9 @@ INST3(pmovzxwq,         "pmovzxwq",         IUM_WR, BAD_CODE,     BAD_CODE,     
 INST3(pmovzxdq,         "pmovzxdq",         IUM_WR, BAD_CODE,     BAD_CODE,     SSE38(0x35),                             INS_FLAGS_None)    // Packed zero extend int to long
 INST3(packusdw,         "packusdw",         IUM_WR, BAD_CODE,     BAD_CODE,     SSE38(0x2B),                             INS_Flags_IsDstDstSrcAVXInstruction)    // Pack (narrow) int to unsigned short with saturation
 INST3(roundps,          "roundps",          IUM_WR, BAD_CODE,     BAD_CODE,     SSE3A(0x08),                             INS_FLAGS_None)    // Round packed single precision floating-point values
-INST3(roundss,          "roundss",          IUM_WR, BAD_CODE,     BAD_CODE,     SSE3A(0x0A),                             INS_FLAGS_None)    // Round scalar single precision floating-point values
+INST3(roundss,          "roundss",          IUM_WR, BAD_CODE,     BAD_CODE,     SSE3A(0x0A),                             INS_Flags_IsDstSrcSrcAVXInstruction)    // Round scalar single precision floating-point values
 INST3(roundpd,          "roundpd",          IUM_WR, BAD_CODE,     BAD_CODE,     SSE3A(0x09),                             INS_FLAGS_None)    // Round packed double precision floating-point values
-INST3(roundsd,          "roundsd",          IUM_WR, BAD_CODE,     BAD_CODE,     SSE3A(0x0B),                             INS_FLAGS_None)    // Round scalar double precision floating-point values
+INST3(roundsd,          "roundsd",          IUM_WR, BAD_CODE,     BAD_CODE,     SSE3A(0x0B),                             INS_Flags_IsDstSrcSrcAVXInstruction)    // Round scalar double precision floating-point values
 INST3(pmuldq,           "pmuldq",           IUM_WR, BAD_CODE,     BAD_CODE,     SSE38(0x28),                             INS_Flags_IsDstDstSrcAVXInstruction)    // packed multiply 32-bit signed integers and store 64-bit result
 INST3(blendps,          "blendps",          IUM_WR, BAD_CODE,     BAD_CODE,     SSE3A(0x0C),                             INS_Flags_IsDstDstSrcAVXInstruction)    // Blend Packed Single Precision Floating-Point Values
 INST3(blendvps,         "blendvps",         IUM_WR, BAD_CODE,     BAD_CODE,     SSE38(0x14),                             INS_FLAGS_None)    // Variable Blend Packed Singles
