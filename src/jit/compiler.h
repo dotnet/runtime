@@ -4234,12 +4234,10 @@ public:
     // Assumes that all inputs to "tree" have had value numbers assigned; assigns a VN to tree.
     // (With some exceptions: the VN of the lhs of an assignment is assigned as part of the
     // assignment.)
-    // If "evalAsgLhsInd" is true, evaluate a GT_IND node, even if it's labeled as the LHS of
-    // an assignment.
-    void fgValueNumberTree(GenTree* tree, bool evalAsgLhsInd = false);
+    void fgValueNumberTree(GenTree* tree);
 
     // Does value-numbering for a block assignment.
-    void fgValueNumberBlockAssignment(GenTree* tree, bool evalAsgLhsInd);
+    void fgValueNumberBlockAssignment(GenTree* tree);
 
     // Does value-numbering for a cast tree.
     void fgValueNumberCastTree(GenTree* tree);
