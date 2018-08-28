@@ -208,6 +208,10 @@ namespace System.Collections.Specialized
         {
             get
             {
+                if (_objectsTable == null)
+                {
+                    return null;
+                }
                 return objectsTable[key];
             }
             set
