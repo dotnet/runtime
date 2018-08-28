@@ -91,7 +91,7 @@ public:
     static bool AppDomainCanAccessHandleTable(uint32_t appDomainID);
     static uint32_t GetIndexOfAppDomainBeingUnloaded();
     static uint32_t GetTotalNumSizedRefHandles();
-    static bool GCToEEInterface::AppDomainIsRudeUnload(void *appDomain);
+    static bool AppDomainIsRudeUnload(void *appDomain);
 };
 
 #endif // __GCENV_EE_H__
