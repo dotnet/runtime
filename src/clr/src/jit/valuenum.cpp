@@ -5505,7 +5505,6 @@ void Compiler::fgValueNumberTreeConst(GenTree* tree)
 //
 // Arguments:
 //    tree          - the block assignment to be value numbered.
-//    evalAsgLhsInd - true iff we should value number the LHS of the assignment.
 //
 // Return Value:
 //    None.
@@ -5513,7 +5512,7 @@ void Compiler::fgValueNumberTreeConst(GenTree* tree)
 // Assumptions:
 //    'tree' must be a block assignment (GT_INITBLK, GT_COPYBLK, GT_COPYOBJ).
 
-void Compiler::fgValueNumberBlockAssignment(GenTree* tree, bool evalAsgLhsInd)
+void Compiler::fgValueNumberBlockAssignment(GenTree* tree)
 {
     GenTree* lhs = tree->gtGetOp1();
     GenTree* rhs = tree->gtGetOp2();
@@ -5817,7 +5816,7 @@ void Compiler::fgValueNumberBlockAssignment(GenTree* tree, bool evalAsgLhsInd)
     }
 }
 
-void Compiler::fgValueNumberTree(GenTree* tree, bool evalAsgLhsInd)
+void Compiler::fgValueNumberTree(GenTree* tree)
 {
     genTreeOps oper = tree->OperGet();
 
@@ -6024,10 +6023,9 @@ void Compiler::fgValueNumberTree(GenTree* tree, bool evalAsgLhsInd)
 
             case GT_CLS_VAR:
                 // Skip GT_CLS_VAR nodes that are the LHS of an assignment.  (We labeled these earlier.)
-                // We will "evaluate" this as part of the assignment.  (Unless we're explicitly told by
-                // the caller to evaluate anyway -- perhaps the assignment is an "op=" assignment.)
+                // We will "evaluate" this as part of the assignment.
                 //
-                if (((tree->gtFlags & GTF_CLS_VAR_ASG_LHS) == 0) || evalAsgLhsInd)
+                if ((tree->gtFlags & GTF_CLS_VAR_ASG_LHS) == 0)
                 {
                     bool isVolatile = (tree->gtFlags & GTF_FLD_VOLATILE) != 0;
 
@@ -6704,7 +6702,7 @@ void Compiler::fgValueNumberTree(GenTree* tree, bool evalAsgLhsInd)
         // Other kinds of assignment: initblk and copyblk.
         else if (oper == GT_ASG && varTypeIsStruct(tree))
         {
-            fgValueNumberBlockAssignment(tree, evalAsgLhsInd);
+            fgValueNumberBlockAssignment(tree);
         }
         else if (oper == GT_ADDR)
         {
@@ -6875,10 +6873,10 @@ void Compiler::fgValueNumberTree(GenTree* tree, bool evalAsgLhsInd)
 #endif // DEBUG
                 // We now need to retrieve the value number for the array element value
                 // and give this value number to the GT_IND node 'tree'
-                // We do this whenever we have an rvalue, or for the LHS when we have an "op=",
-                // but we don't do it for a normal LHS assignment into an array element.
+                // We do this whenever we have an rvalue, but we don't do it for a
+                // normal LHS assignment into an array element.
                 //
-                if (evalAsgLhsInd || ((tree->gtFlags & GTF_IND_ASG_LHS) == 0))
+                if ((tree->gtFlags & GTF_IND_ASG_LHS) == 0)
                 {
                     fgValueNumberArrIndexVal(tree, elemTypeEq, arrVN, inxVN, addrXvnp.GetLiberal(), fldSeq);
                 }
@@ -6918,9 +6916,8 @@ void Compiler::fgValueNumberTree(GenTree* tree, bool evalAsgLhsInd)
             }
 
             // In general we skip GT_IND nodes on that are the LHS of an assignment.  (We labeled these earlier.)
-            // We will "evaluate" this as part of the assignment.  (Unless we're explicitly told by
-            // the caller to evaluate anyway -- perhaps the assignment is an "op=" assignment.)
-            else if (((tree->gtFlags & GTF_IND_ASG_LHS) == 0) || evalAsgLhsInd)
+            // We will "evaluate" this as part of the assignment.
+            else if ((tree->gtFlags & GTF_IND_ASG_LHS) == 0)
             {
                 FieldSeqNode* localFldSeq = nullptr;
                 VNFuncApp     funcApp;
