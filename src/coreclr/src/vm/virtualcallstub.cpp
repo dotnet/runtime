@@ -2034,7 +2034,7 @@ PCODE VirtualCallStubManager::ResolveWorker(StubCallSite* pCallSite,
                                     ResolveHolder* pResolveHolder = ResolveHolder::FromResolveEntry(pCallSite->GetSiteTarget());
                                     PCODE addrOfFail = pResolveHolder->stub()->failEntryPoint();
                                     pDispatchHolder = GenerateDispatchStub(
-                                        pCallSite, target, addrOfFail, objectType, token.To_SIZE_T());
+                                        target, addrOfFail, objectType, token.To_SIZE_T());
                                     dispatchers->Add((size_t)(pDispatchHolder->stub()->entryPoint()), &probeD);
                                 }
                                 else
