@@ -639,3 +639,12 @@ mono_arch_undo_ip_adjustment (MonoContext *ctx)
 	if (mono_arm_thumb_supported ())
 		ctx->pc |= 1;
 }
+
+void
+mono_arch_do_ip_adjustment (MonoContext *ctx)
+{
+	/* Clear thumb bit */
+	ctx->pc &= ~1;
+
+	ctx->pc--;
+}

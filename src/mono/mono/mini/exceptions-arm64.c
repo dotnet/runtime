@@ -605,3 +605,9 @@ mono_arch_undo_ip_adjustment (MonoContext *ctx)
 {
 	ctx->pc++;
 }
+
+void
+mono_arch_do_ip_adjustment (MonoContext *ctx)
+{
+	ctx->pc--;
+}

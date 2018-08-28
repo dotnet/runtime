@@ -403,16 +403,20 @@ arch_unwind_frame (MonoDomain *domain, MonoJitTlsData *jit_tls,
 
 			*new_ctx = *ctx;
 
-			if (ext->debugger_invoke) {
+			if (ext->kind == MONO_LMFEXT_DEBUGGER_INVOKE) {
 				/*
 				 * This LMF entry is created by the soft debug code to mark transitions to
 				 * managed code done during invokes.
 				 */
 				frame->type = FRAME_TYPE_DEBUGGER_INVOKE;
 				memcpy (new_ctx, &ext->ctx, sizeof (MonoContext));
-			} else if (ext->interp_exit) {
+			} else if (ext->kind == MONO_LMFEXT_INTERP_EXIT || ext->kind == MONO_LMFEXT_INTERP_EXIT_WITH_CTX) {
 				frame->type = FRAME_TYPE_INTERP_TO_MANAGED;
 				frame->interp_exit_data = ext->interp_exit_data;
+				if (ext->kind == MONO_LMFEXT_INTERP_EXIT_WITH_CTX) {
+					frame->type = FRAME_TYPE_INTERP_TO_MANAGED_WITH_CTX;
+					memcpy (new_ctx, &ext->ctx, sizeof (MonoContext));
+				}
 			} else {
 				g_assert_not_reached ();
 			}
@@ -615,7 +619,9 @@ mono_find_jit_info_ext (MonoDomain *domain, MonoJitTlsData *jit_tls,
 	if (!err)
 		return FALSE;
 
-	if (frame->type != FRAME_TYPE_INTERP_TO_MANAGED && *lmf && ((*lmf) != jit_tls->first_lmf) && ((gpointer)MONO_CONTEXT_GET_SP (new_ctx) >= (gpointer)(*lmf))) {
+	gboolean not_i2m = frame->type != FRAME_TYPE_INTERP_TO_MANAGED && frame->type != FRAME_TYPE_INTERP_TO_MANAGED_WITH_CTX;
+
+	if (not_i2m && *lmf && ((*lmf) != jit_tls->first_lmf) && ((gpointer)MONO_CONTEXT_GET_SP (new_ctx) >= (gpointer)(*lmf))) {
 		/*
 		 * Remove any unused lmf.
 		 * Mask out the lower bits which might be used to hold additional information.
@@ -713,7 +719,7 @@ unwinder_unwind_frame (Unwinder *unwinder,
 		if (unwinder->last_frame_addr < (gpointer)(*lmf)) {
 			if (((gsize)(*lmf)->previous_lmf) & 2) {
 				MonoLMFExt *ext = (MonoLMFExt*)(*lmf);
-				if (ext->debugger_invoke) {
+				if (ext->kind == MONO_LMFEXT_DEBUGGER_INVOKE) {
 					*lmf = (MonoLMF *)(((gsize)(*lmf)->previous_lmf) & ~7);
 					frame->type = FRAME_TYPE_DEBUGGER_INVOKE;
 					return TRUE;
@@ -734,7 +740,7 @@ unwinder_unwind_frame (Unwinder *unwinder,
 											   save_locations, frame);
 		if (!res)
 			return FALSE;
-		if (frame->type == FRAME_TYPE_INTERP_TO_MANAGED) {
+		if (frame->type == FRAME_TYPE_INTERP_TO_MANAGED || frame->type == FRAME_TYPE_INTERP_TO_MANAGED_WITH_CTX) {
 			unwinder->in_interp = TRUE;
 			mini_get_interp_callbacks ()->frame_iter_init (&unwinder->interp_iter, frame->interp_exit_data);
 		}
@@ -1567,6 +1573,7 @@ ves_icall_get_frame_info (gint32 skip, MonoBoolean need_file_info,
 			case FRAME_TYPE_DEBUGGER_INVOKE:
 			case FRAME_TYPE_TRAMPOLINE:
 			case FRAME_TYPE_INTERP_TO_MANAGED:
+			case FRAME_TYPE_INTERP_TO_MANAGED_WITH_CTX:
 				continue;
 			case FRAME_TYPE_INTERP:
 			case FRAME_TYPE_MANAGED:
@@ -1973,6 +1980,7 @@ handle_exception_first_pass (MonoContext *ctx, MonoObject *obj, gint32 *out_filt
 		case FRAME_TYPE_MANAGED_TO_NATIVE:
 		case FRAME_TYPE_TRAMPOLINE:
 		case FRAME_TYPE_INTERP_TO_MANAGED:
+		case FRAME_TYPE_INTERP_TO_MANAGED_WITH_CTX:
 			*ctx = new_ctx;
 			continue;
 		case FRAME_TYPE_INTERP:
@@ -2409,6 +2417,7 @@ mono_handle_exception_internal (MonoContext *ctx, MonoObject *obj, gboolean resu
 			case FRAME_TYPE_DEBUGGER_INVOKE:
 			case FRAME_TYPE_MANAGED_TO_NATIVE:
 			case FRAME_TYPE_TRAMPOLINE:
+			case FRAME_TYPE_INTERP_TO_MANAGED_WITH_CTX:
 				*ctx = new_ctx;
 				continue;
 			case FRAME_TYPE_INTERP_TO_MANAGED:

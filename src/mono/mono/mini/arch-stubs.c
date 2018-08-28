@@ -81,6 +81,12 @@ mono_arch_undo_ip_adjustment (MonoContext *context)
 	g_assert_not_reached ();
 }
 
+void
+mono_arch_do_ip_adjustment (MonoContext *context)
+{
+	g_assert_not_reached ();
+}
+
 #endif
 
 #ifndef MONO_ARCH_HAVE_EXCEPTIONS_INIT

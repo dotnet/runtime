@@ -2474,7 +2474,7 @@ get_top_method_ji (gpointer ip, MonoDomain **domain, gpointer *out_ip)
 		g_assert (((gsize)lmf->previous_lmf) & 2);
 		MonoLMFExt *ext = (MonoLMFExt*)lmf;
 
-		g_assert (ext->interp_exit);
+		g_assert (ext->kind == MONO_LMFEXT_INTERP_EXIT || ext->kind == MONO_LMFEXT_INTERP_EXIT_WITH_CTX);
 		frame = (MonoInterpFrameHandle*)ext->interp_exit_data;
 		ji = mini_get_interp_callbacks ()->frame_get_jit_info (frame);
 		if (domain)
@@ -2633,7 +2633,7 @@ thread_interrupt (DebuggerTlsData *tls, MonoThreadInfo *info, MonoJitInfo *ji)
 
 				memcpy (&tls->async_last_frame, &data.last_frame, sizeof (StackFrameInfo));
 
-				if (data.last_frame.type == FRAME_TYPE_INTERP_TO_MANAGED) {
+				if (data.last_frame.type == FRAME_TYPE_INTERP_TO_MANAGED || data.last_frame.type == FRAME_TYPE_INTERP_TO_MANAGED_WITH_CTX) {
 					/*
 					 * Store the current lmf instead of the parent one, since that
 					 * contains the interp exit data.
@@ -4558,7 +4558,7 @@ user_break_cb (StackFrameInfo *frame, MonoContext *ctx, gpointer user_data)
 {
 	UserBreakCbData *data = (UserBreakCbData*)user_data;
 
-	if (frame->type == FRAME_TYPE_INTERP_TO_MANAGED) {
+	if (frame->type == FRAME_TYPE_INTERP_TO_MANAGED || frame->type == FRAME_TYPE_INTERP_TO_MANAGED_WITH_CTX) {
 		data->found = TRUE;
 		return TRUE;
 	}
@@ -6095,7 +6095,7 @@ do_invoke_method (DebuggerTlsData *tls, Buffer *buf, InvokeData *invoke, guint8 
 	if (invoke->has_ctx) {
 		/* Setup our lmf */
 		memset (&ext, 0, sizeof (ext));
-		ext.debugger_invoke = TRUE;
+		ext.kind = MONO_LMFEXT_DEBUGGER_INVOKE;
 		memcpy (&ext.ctx, &invoke->ctx, sizeof (MonoContext));
 
 		mono_push_lmf (&ext);

@@ -146,16 +146,18 @@ struct MonoJitTlsData {
 #endif
 };
 
+#define MONO_LMFEXT_DEBUGGER_INVOKE 1
+#define MONO_LMFEXT_INTERP_EXIT 2
+#define MONO_LMFEXT_INTERP_EXIT_WITH_CTX 3
+
 /*
  * This structure is an extension of MonoLMF and contains extra information.
  */
 typedef struct {
 	struct MonoLMF lmf;
-	gboolean debugger_invoke;
-	gboolean interp_exit;
-	MonoContext ctx; /* if debugger_invoke is TRUE */
-	/* If interp_exit is TRUE */
-	gpointer interp_exit_data;
+	int kind;
+	MonoContext ctx; /* valid if kind == DEBUGGER_INVOKE || kind == INTERP_EXIT_WITH_CTX */
+	gpointer interp_exit_data; /* valid if kind == INTERP_EXIT || kind == INTERP_EXIT_WITH_CTX */
 } MonoLMFExt;
 
 typedef void (*MonoFtnPtrEHCallback) (guint32 gchandle);
