@@ -1316,6 +1316,29 @@ TerminateProcess(
 
 /*++
 Function:
+  RaiseFailFastException
+
+See MSDN doc.
+--*/
+VOID
+PALAPI
+RaiseFailFastException(
+    IN PEXCEPTION_RECORD pExceptionRecord,
+    IN PCONTEXT pContextRecord,
+    IN DWORD dwFlags)
+{
+    PERF_ENTRY(RaiseFailFastException);
+    ENTRY("RaiseFailFastException");
+
+    TerminateCurrentProcessNoExit(TRUE);
+    PROCAbort();
+
+    LOGEXIT("RaiseFailFastException");
+    PERF_EXIT(RaiseFailFastException);
+}
+
+/*++
+Function:
   PROCEndProcess
   
   Called from TerminateProcess and ExitProcess. This does the work of

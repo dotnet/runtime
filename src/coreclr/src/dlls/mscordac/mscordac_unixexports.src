@@ -154,6 +154,7 @@ nativeStringResourceTable_mscorrc_debug
 #QueryPerformanceCounter
 #QueryPerformanceFrequency
 #RaiseException
+#RaiseFailFastException
 #ReadFile
 #ReleaseMutex
 #ReleaseSemaphore

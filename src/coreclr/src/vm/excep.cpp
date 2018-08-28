@@ -4172,7 +4172,7 @@ LONG WatsonLastChance(                  // EXCEPTION_CONTINUE_SEARCH, _CONTINUE_
                     pThread->GetFrame()->Pop(pThread);
                 }
 
-                LOG((LF_EH, LL_INFO10, "D::WLC: Call RaiseFailFastExceptionOnWin7\n"));
+                LOG((LF_EH, LL_INFO10, "D::WLC: Call RaiseFailFastException\n"));
 
                 // enable preemptive mode before call into OS to allow runtime suspend to finish
                 GCX_PREEMP();
@@ -6377,49 +6377,8 @@ FCIMPL1(Object*, MissingMemberException_FormatSignature, I1Array* pPersistedSigU
 
     HELPER_METHOD_FRAME_END();
     return OBJECTREFToObject(pString);
-    }
-FCIMPLEND
-
-// Check if the Win32 Error code is an IO error.
-BOOL IsWin32IOError(SCODE scode)
-{
-    LIMITED_METHOD_CONTRACT;
-
-    switch (scode)
-    {
-    case ERROR_FILE_NOT_FOUND:
-    case ERROR_PATH_NOT_FOUND:
-    case ERROR_TOO_MANY_OPEN_FILES:
-    case ERROR_ACCESS_DENIED:
-    case ERROR_INVALID_HANDLE:
-    case ERROR_INVALID_DRIVE:
-    case ERROR_WRITE_PROTECT:
-    case ERROR_NOT_READY:
-    case ERROR_WRITE_FAULT:
-    case ERROR_SHARING_VIOLATION:
-    case ERROR_LOCK_VIOLATION:
-    case ERROR_SHARING_BUFFER_EXCEEDED:
-    case ERROR_HANDLE_DISK_FULL:
-    case ERROR_BAD_NETPATH:
-    case ERROR_DEV_NOT_EXIST:
-    case ERROR_FILE_EXISTS:
-    case ERROR_CANNOT_MAKE:
-    case ERROR_NET_WRITE_FAULT:
-    case ERROR_DRIVE_LOCKED:
-    case ERROR_OPEN_FAILED:
-    case ERROR_BUFFER_OVERFLOW:
-    case ERROR_DISK_FULL:
-    case ERROR_INVALID_NAME:
-    case ERROR_FILENAME_EXCED_RANGE:
-    case ERROR_IO_DEVICE:
-    case ERROR_DISK_OPERATION_FAILED:
-        return TRUE;
-
-    default:
-        return FALSE;
-    }
 }
-
+FCIMPLEND
 
 // Check if there is a pending exception or the thread is already aborting. Returns 0 if yes.
 // Otherwise, sets the thread up for generating an abort and returns address of ThrowControlForThread

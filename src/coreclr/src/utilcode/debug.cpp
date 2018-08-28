@@ -180,7 +180,7 @@ VOID TerminateOnAssert()
     STATIC_CONTRACT_DEBUG_ONLY;
 
     ShutdownLogging();
-    TerminateProcess(GetCurrentProcess(), 123456789);
+    RaiseFailFastException(NULL, NULL, 0);
 }
 
 // Whether this thread is already displaying an assert dialog.
@@ -431,14 +431,14 @@ bool _DbgBreakCheck(
         return false;       // don't stop debugger. No gui.
     }
 
+    if (IsDebuggerPresent() || DebugBreakOnAssert())
+    {
+        return true;       // like a retry
+    }
+
     if (NoGuiOnAssert())
     {
         TerminateOnAssert();
-    }
-
-    if (DebugBreakOnAssert())
-    {
-        return true;       // like a retry
     }
 
     if (IsDisplayingAssertDlg())
@@ -870,12 +870,9 @@ void DECLSPEC_NORETURN __FreeBuildAssertFail(const char *szFile, int iLine, cons
 
     _flushall();
 
-    //    TerminateOnAssert();
     ShutdownLogging();
 
-    // Failing here implies an error in the runtime - hence we use
-    // COR_E_EXECUTIONENGINE
-    TerminateProcess(GetCurrentProcess(), COR_E_EXECUTIONENGINE);
+    RaiseFailFastException(NULL, NULL, 0);
 
     UNREACHABLE();
 }
