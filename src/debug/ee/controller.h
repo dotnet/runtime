@@ -1815,6 +1815,7 @@ public:
         LOG((LF_CORDB, LL_INFO10000, "D::DDBP: Doing TriggerDataBreakpoint...\n"));
 
         bool hitDataBp = false;
+#ifndef FEATURE_PAL    
 #if defined(_TARGET_X86_) || defined(_TARGET_AMD64_)
         PDR6 pdr6 = (PDR6)&(pContext->Dr6);
 
@@ -1831,6 +1832,7 @@ public:
         {
             LOG((LF_CORDB, LL_INFO10000, "D::DDBP: DIDN'T TRIGGER DATA BREAKPOINT...\n"));
         }
+#endif
 #endif
         return hitDataBp;
     }
