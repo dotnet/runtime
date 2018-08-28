@@ -147,24 +147,7 @@ bool emitter::IsDstDstSrcAVXInstruction(instruction ins)
 // to indicate whether a 3-operand instruction.
 bool emitter::IsDstSrcSrcAVXInstruction(instruction ins)
 {
-    switch (ins)
-    {
-        case INS_movhpd:
-        case INS_movhps:
-        case INS_movlpd:
-        case INS_movlps:
-        case INS_movsdsse2:
-        case INS_movss:
-        case INS_rcpss:
-        case INS_roundsd:
-        case INS_roundss:
-        case INS_rsqrtss:
-        case INS_sqrtsd:
-        case INS_sqrtss:
-            return IsAVXInstruction(ins);
-        default:
-            return false;
-    }
+    return ((CodeGenInterface::instInfo[ins] & INS_Flags_IsDstSrcSrcAVXInstruction) != 0) && IsAVXInstruction(ins);
 }
 
 #ifdef FEATURE_HW_INTRINSICS
