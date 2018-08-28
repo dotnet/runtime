@@ -33,6 +33,24 @@ dotnet R2RDump.dll --in &lt;path to ReadyToRun image&gt;
 * -v, --verbose
 	- Dump disassembly, unwindInfo, gcInfo and section contents
 
+## Architectures Supported
+
+### R2RDump Architectures
+
+|             | x64 | x86       | ARM | ARM64 |
+| ----------- | --- | --------- | --- | ----- |
+| **Windows** | yes | no disasm |     |       |
+| **Linux**   | yes |           |     |       |
+| **OSX**     | yes | -         | -   | -     |
+
+### Input Image Architectures
+
+|             | x64 | x86 | ARM       | ARM64 |
+| ----------- | --- | --- | --------- | ----- |
+| **Windows** | yes | yes | no disasm | yes   |
+| **Linux**   | yes | yes | no disasm |       |
+| **OSX**     | yes | -   | -         | -     |    
+
 ## ReadyToRun Format
 
 ![R2RFormat](R2RFormat.png)
@@ -106,8 +124,7 @@ In x64/Arm/Arm64, GcTransitions are grouped into chunks where each chunk covers 
 >> For each slot that changed state in the chunk:
 >>> Array of elements consisting of a bit set to 1 and the normCodeOffsetDelta indicating all the code offsets where the slot changed state in the chunk. CodeOffset = normCodeOffsetDelta + normChunkBaseCodeOffset + currentRangeStartOffset - cumInterruptibleLength, where normChunkBaseCodeOffset is the sum of the sizes of all preceeding chunks, currentRangeStartOffset is the start offset of the interruptible range that the transition falls under and cumInterruptibleLength is the sum of the lengths of interruptible ranges that came before it
 
-
-# Todo
+## Todo
 
 * Support R2RDump on ARM and ARM64 (https://github.com/dotnet/coreclr/issues/19089)
 
