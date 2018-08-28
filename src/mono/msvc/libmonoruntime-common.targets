@@ -124,7 +124,6 @@
     <ClInclude Include="$(MonoSourceLocation)\mono\metadata\security-manager.h" />
     <ClCompile Include="$(MonoSourceLocation)\mono\metadata\string-icalls.c" />
     <ClInclude Include="$(MonoSourceLocation)\mono\metadata\string-icalls.h" />
-    <ClInclude Include="$(MonoSourceLocation)\mono\metadata\sysmath.h" />
     <ClCompile Include="$(MonoSourceLocation)\mono\metadata\sysmath.c" />
     <ClInclude Include="$(MonoSourceLocation)\mono\metadata\tabledefs.h" />
     <ClCompile Include="$(MonoSourceLocation)\mono\metadata\threads.c" />
