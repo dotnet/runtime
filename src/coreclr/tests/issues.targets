@@ -47,6 +47,9 @@
         <ExcludeList Include="$(XunitTestBinBase)/JIT/Regression/JitBlue/GitHub_11408/GitHub_11408/*">
             <Issue>11408</Issue>
         </ExcludeList>
+        <ExcludeList Include="$(XunitTestBinBase)\Interop\COM\NETClients\Primitives\NETClientPrimitives\NETClientPrimitives.cmd">
+            <Issue>19164</Issue>
+        </ExcludeList>
     </ItemGroup>
 
     <!-- All Unix targets -->
@@ -248,9 +251,6 @@
         </ExcludeList>
         <ExcludeList Include="$(XunitTestBinBase)/baseservices/varargs/varargsupport_r/*">
             <Issue>Varargs supported on this platform</Issue>
-        </ExcludeList>
-        <ExcludeList Include="$(XunitTestBinBase)\Interop\COM\NETClients\Primitives\NETClientPrimitives\NETClientPrimitives.cmd">
-            <Issue>19164</Issue>
         </ExcludeList>
     </ItemGroup>
 
