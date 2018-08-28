@@ -274,7 +274,11 @@ namespace System.Collections.Specialized
         /// </devdoc>
         public bool Contains(object key)
         {
-            return objectsTable.Contains(key);
+            if (_objectsTable == null)
+            {
+                return false;
+            }
+            return _objectsTable.Contains(key);
         }
 
         /// <devdoc>
