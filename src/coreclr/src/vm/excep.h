@@ -33,11 +33,6 @@ bool IsIPInEpilog(PTR_CONTEXT pContextToCheck, EECodeInfo *pCodeInfo, BOOL *pSaf
 
 #endif // defined(_TARGET_AMD64_) && defined(FEATURE_HIJACK)
 
-void RaiseFailFastExceptionOnWin7(PEXCEPTION_RECORD pExceptionRecord, PT_CONTEXT pContext);
-
-// Check if the Win32 Error code is an IO error.
-BOOL IsWin32IOError(SCODE scode);
-
 //******************************************************************************
 //
 //  SwallowUnhandledExceptions
