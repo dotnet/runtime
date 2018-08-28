@@ -291,9 +291,13 @@ namespace System.Collections.Specialized
 
         private int IndexOfKey(object key)
         {
-            for (int i = 0; i < objectsArray.Count; i++)
+            if (_objectsArray == null)
             {
-                object o = ((DictionaryEntry)objectsArray[i]).Key;
+                return -1;
+            }
+            for (int i = 0; i < _objectsArray.Count; i++)
+            {
+                object o = ((DictionaryEntry)_objectsArray[i]).Key;
                 if (_comparer != null)
                 {
                     if (_comparer.Equals(o, key))
