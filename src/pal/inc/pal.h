@@ -3187,14 +3187,13 @@ RaiseException(
            IN DWORD nNumberOfArguments,
            IN CONST ULONG_PTR *lpArguments);
 
-#ifdef FEATURE_PAL_SXS
 PALIMPORT
-PAL_NORETURN
 VOID
 PALAPI
-PAL_RaiseException(
-           IN PEXCEPTION_POINTERS ExceptionPointers);
-#endif // FEATURE_PAL_SXS
+RaiseFailFastException(
+    IN PEXCEPTION_RECORD pExceptionRecord,
+    IN PCONTEXT pContextRecord,
+    IN DWORD dwFlags);
 
 PALIMPORT
 DWORD
