@@ -3773,41 +3773,42 @@ internal_llvm="no"
 if test "x$enable_llvm" = "xyes"; then
 	if test "x$with_llvm" != "x"; then
 		EXTERNAL_LLVM_CONFIG=$with_llvm/bin/llvm-config
+		if test x$host_win32 = xyes; then
+			EXTERNAL_LLVM_CONFIG=$EXTERNAL_LLVM_CONFIG.exe
+		fi
 		if test ! -x $EXTERNAL_LLVM_CONFIG; then
 			AC_MSG_ERROR([LLVM executable $EXTERNAL_LLVM_CONFIG not found.])
 		fi
 	else
-		AC_PATH_PROG(EXTERNAL_LLVM_CONFIG, llvm-config, no)
+		if test x$host_win32 = xyes; then
+			AC_PATH_PROG(EXTERNAL_LLVM_CONFIG, llvm-config.exe, no)
+		else
+			AC_PATH_PROG(EXTERNAL_LLVM_CONFIG, llvm-config, no)
+		fi
 		if test "x$EXTERNAL_LLVM_CONFIG" = "xno"; then
 			internal_llvm=yes
-		else
-			with_llvm=`$EXTERNAL_LLVM_CONFIG --prefix`
 		fi
 	fi
-          
-	if test "x$host_win32" != "xyes"; then
-		LLVM_CODEGEN_LIBS="x86codegen"
-		case "$target" in
-		arm*)
-			LLVM_CODEGEN_LIBS="armcodegen"
-			;;
-		aarch64*)
-			LLVM_CODEGEN_LIBS="aarch64codegen"
-			;;
-		powerpc*)
-			LLVM_CODEGEN_LIBS="powerpccodegen"
-			;;
-		esac
-		if test "x$host" != "x$target"; then
-			# No need for jit libs
-			LLVM_CODEGEN_LIBS=
-		fi
 
-		AC_SUBST(LLVM_CODEGEN_LIBS)
-		AC_SUBST(EXTERNAL_LLVM_CONFIG)
-	else # is win32
-		AC_MSG_ERROR([LLVM for Windows only supported using Visual Studio build mono runtime, see http://www.mono-project.com/docs/advanced/mono-llvm/ for more details.])
-	fi # win32
+	LLVM_CODEGEN_LIBS="x86codegen"
+	case "$target" in
+	arm*)
+		LLVM_CODEGEN_LIBS="armcodegen"
+		;;
+	aarch64*)
+		LLVM_CODEGEN_LIBS="aarch64codegen"
+		;;
+	powerpc*)
+		LLVM_CODEGEN_LIBS="powerpccodegen"
+		;;
+	esac
+	if test "x$host" != "x$target"; then
+		# No need for jit libs
+		LLVM_CODEGEN_LIBS=
+	fi
+
+	AC_SUBST(LLVM_CODEGEN_LIBS)
+	AC_SUBST(EXTERNAL_LLVM_CONFIG)
 	
 	AC_DEFINE(ENABLE_LLVM, 1, [Enable the LLVM back end])
 fi # ENABLE_LLVM
