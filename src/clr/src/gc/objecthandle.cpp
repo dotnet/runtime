@@ -21,12 +21,6 @@
 
 #include "gchandletableimpl.h"
 
-#ifndef BUILD_AS_STANDALONE
-#ifdef FEATURE_COMINTEROP
-#include "comcallablewrapper.h"
-#endif // FEATURE_COMINTEROP
-#endif // BUILD_AS_STANDALONE
-
 HandleTableMap g_HandleTableMap;
 
 // Array of contexts used while scanning dependent handles for promotion. There are as many contexts as GC
@@ -469,13 +463,12 @@ void CALLBACK ScanPointerForProfilerAndETW(_UNCHECKED_OBJECTREF *pObjRef, uintpt
 #endif
         break;
 
-#if defined(FEATURE_COMINTEROP) && !defined(FEATURE_REDHAWK) && !defined(BUILD_AS_STANDALONE)
+#if defined(FEATURE_COMINTEROP) && !defined(FEATURE_REDHAWK)
     case    HNDTYPE_REFCOUNTED:
         rootFlags |= kEtwGCRootFlagsRefCounted;
         if (*pRef != NULL)
         {
-            ComCallWrapper* pWrap = ComCallWrapper::GetWrapperForObject((OBJECTREF)*pRef);
-            if (pWrap == NULL || !pWrap->IsWrapperActive())
+            if (!GCToEEInterface::RefCountedHandleCallbacks(*pRef))
                 rootFlags |= kEtwGCRootFlagsWeakRef;
         }
         break;
