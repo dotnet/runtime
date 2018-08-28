@@ -28,13 +28,13 @@ typedef struct {
 	ArgStorage storage : 8;
 } ArgInfo;
 
-typedef struct {
+struct CallInfo {
 	int nargs;
 	gboolean gsharedvt;
 
 	ArgInfo ret;
 	ArgInfo args [1];
-} CallInfo;
+};
 
 static ArgStorage
 get_storage (MonoType *type, gboolean is_return)
@@ -467,6 +467,8 @@ mono_arch_cpu_enumerate_simd_versions (void)
 guint32
 mono_arch_cpu_optimizations (guint32 *exclude_mask)
 {
+	/* No arch specific passes yet */
+	*exclude_mask = 0;
 	return 0;
 }
 
@@ -561,9 +563,7 @@ mono_wasm_set_timeout (int timeout, int id)
 void
 mono_arch_register_icall (void)
 {
-#ifdef HOST_WASM
 	mono_add_internal_call ("System.Threading.WasmRuntime::SetTimeout", mono_wasm_set_timeout);
-#endif
 }
 
 void

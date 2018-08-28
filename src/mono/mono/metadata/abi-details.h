@@ -23,29 +23,30 @@
  * is given by the --with-cross-offsets= configure argument.
  */
 
-#define MONO_ABI_ALIGNOF(type) MONO_ALIGN_ ## type
-#define MONO_CURRENT_ABI_ALIGNOF_TYPEDEF(type) typedef struct { char c; type x; } Mono_Align_Struct_ ##type;
-#define MONO_CURRENT_ABI_ALIGNOF(type) ((int)G_STRUCT_OFFSET(Mono_Align_Struct_ ##type, x))
+typedef enum {
+	MONO_ALIGN_gint8,
+	MONO_ALIGN_gint16,
+	MONO_ALIGN_gint32,
+	MONO_ALIGN_gint64,
+	MONO_ALIGN_float,
+	MONO_ALIGN_double,
+	MONO_ALIGN_gpointer,
+	MONO_ALIGN_COUNT
+} CoreTypeAlign;
+
+int mono_abi_alignment (CoreTypeAlign type);
+
+#define MONO_ABI_ALIGNOF(type) mono_abi_alignment (MONO_ALIGN_ ## type)
 #define MONO_ABI_SIZEOF(type) (MONO_STRUCT_SIZE (type))
 #define MONO_CURRENT_ABI_SIZEOF(type) ((int)sizeof(type))
 
-#undef DECL_OFFSET
 #undef DECL_OFFSET2
 #define DECL_OFFSET(struct,field) MONO_OFFSET_ ## struct ## _ ## field = -1,
 #define DECL_OFFSET2(struct,field,offset) MONO_OFFSET_ ## struct ## _ ## field = offset,
-#define DECL_ALIGN(type) MONO_ALIGN_ ##type = MONO_CURRENT_ABI_ALIGNOF (type),
-#define DECL_ALIGN2(type,size) MONO_ALIGN_ ##type = size,
+#define DECL_ALIGN2(type,size)
 #define DECL_SIZE(type) MONO_SIZEOF_ ##type = -1,
 #define DECL_SIZE2(type,size) MONO_SIZEOF_ ##type = size,
 
-/* Needed by MONO_CURRENT_ABI_ALIGNOF */
-MONO_CURRENT_ABI_ALIGNOF_TYPEDEF(gint8)
-MONO_CURRENT_ABI_ALIGNOF_TYPEDEF(gint16)
-MONO_CURRENT_ABI_ALIGNOF_TYPEDEF(gint32)
-MONO_CURRENT_ABI_ALIGNOF_TYPEDEF(gint64)
-MONO_CURRENT_ABI_ALIGNOF_TYPEDEF(float)
-MONO_CURRENT_ABI_ALIGNOF_TYPEDEF(double)
-MONO_CURRENT_ABI_ALIGNOF_TYPEDEF(gpointer)
 
 enum {
 #include "object-offsets.h"
@@ -64,4 +65,6 @@ enum {
 #endif
 #endif
 
+// #define MONO_SIZEOF_MonoObject (2 * MONO_ABI_SIZEOF(gpointer))
+#define MONO_SIZEOF_MonoObject (2 * MONO_SIZEOF_gpointer)
 #endif

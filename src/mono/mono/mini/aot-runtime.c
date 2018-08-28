@@ -2727,7 +2727,10 @@ compute_llvm_code_range (MonoAotModule *amodule, guint8 **code_start, guint8 **c
 		*code_start = (guint8 *)get_method (-1);
 		*code_end = (guint8 *)get_method (-2);
 
+		//WASM doesn't support this
+#ifndef HOST_WASM
 		g_assert (*code_end > *code_start);
+#endif
 		return;
 	}
 
@@ -2760,10 +2763,14 @@ compute_llvm_code_range (MonoAotModule *amodule, guint8 **code_start, guint8 **c
 static gboolean
 is_llvm_code (MonoAotModule *amodule, guint8 *code)
 {
+#if HOST_WASM
+	return TRUE;
+#else
 	if ((guint8*)code >= amodule->llvm_code_start && (guint8*)code < amodule->llvm_code_end)
 		return TRUE;
 	else
 		return FALSE;
+#endif
 }
 
 static gboolean
