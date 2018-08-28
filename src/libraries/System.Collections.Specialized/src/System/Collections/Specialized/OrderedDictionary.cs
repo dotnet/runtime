@@ -15,7 +15,7 @@ namespace System.Collections.Specialized
     /// OrderedDictionary is used by the ParameterCollection because MSAccess relies on ordering of
     /// parameters, while almost all other DBs do not.  DataKeyArray also uses it so
     /// DataKeys can be retrieved by either their name or their index.
-    /// 
+    ///
     /// OrderedDictionary implements IDeserializationCallback because it needs to have the
     /// contained ArrayList and Hashtable deserialized before it tries to get its count and objects.
     /// </para>
@@ -69,7 +69,7 @@ namespace System.Collections.Specialized
         protected OrderedDictionary(SerializationInfo info, StreamingContext context)
         {
             // We can't do anything with the keys and values until the entire graph has been deserialized
-            // and getting Counts and objects won't fail.  For the time being, we'll just cache this.  
+            // and getting Counts and objects won't fail.  For the time being, we'll just cache this.
             // The graph is not valid until OnDeserialization has been called.
             _siInfo = info;
         }
@@ -81,7 +81,11 @@ namespace System.Collections.Specialized
         {
             get
             {
-                return objectsArray.Count;
+                if (_objectsArray == null)
+                {
+                    return 0;
+                }
+                return _objectsArray.Count;
             }
         }
 
@@ -377,7 +381,7 @@ namespace System.Collections.Specialized
         }
 #endregion
 
-#region ISerializable implementation 
+#region ISerializable implementation
         public virtual void GetObjectData(SerializationInfo info, StreamingContext context)
         {
             if (info == null)
@@ -399,7 +403,7 @@ namespace System.Collections.Specialized
         void IDeserializationCallback.OnDeserialization(object sender) {
             OnDeserialization(sender);
         }
-        
+
         protected virtual void OnDeserialization(object sender)
         {
             if (_siInfo == null)
