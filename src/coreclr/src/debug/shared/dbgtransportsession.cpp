@@ -2202,6 +2202,7 @@ DWORD DbgTransportSession::GetEventSize(DebuggerIPCEvent *pEvent)
     case DB_IPCE_GET_NGEN_COMPILER_FLAGS:
     case DB_IPCE_DETACH_FROM_PROCESS:
     case DB_IPCE_CONTROL_C_EVENT_RESULT:
+    case DB_IPCE_DATA_BREAKPOINT:
         cbAdditionalSize = 0;
         break;
 
@@ -2491,6 +2492,14 @@ DWORD DbgTransportSession::GetEventSize(DebuggerIPCEvent *pEvent)
     
     case DB_IPCE_CUSTOM_NOTIFICATION:
         cbAdditionalSize = sizeof(pEvent->CustomNotification);
+        break;
+            
+    case DB_IPCE_GET_CONTAINER:
+        cbAdditionalSize = sizeof(pEvent->GetContainer);
+        break;
+            
+    case DB_IPCE_GET_CONTAINER_RESULT:
+        cbAdditionalSize = sizeof(pEvent->GetContainerResult);
         break;
             
     default:
