@@ -3,12 +3,12 @@
   <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), Directory.Build.props))\Directory.Build.props" />
   <ItemGroup>
     <ProjectReference Include="..\ref\System.Security.Cryptography.OpenSsl.csproj">
-      <!-- Removing net461 and AllXamarianFrameworks from validation because of https://github.com/dotnet/corefx/issues/25924 -->
-      <SupportedFramework>netcoreapp2.1</SupportedFramework>
+      <SupportedFramework>netcoreapp3.0</SupportedFramework>
     </ProjectReference>
     <ProjectReference Include="..\src\System.Security.Cryptography.OpenSsl.csproj" />
     <HarvestIncludePaths Include="ref/netstandard1.6;lib/netstandard1.6;runtimes/unix/lib/netstandard1.6" />
     <HarvestIncludePaths Include="ref/netcoreapp2.0;runtimes/unix/lib/netcoreapp2.0" />
+    <HarvestIncludePaths Include="ref/netcoreapp2.1;lib/netcoreapp2.1;runtimes/unix/lib/netcoreapp2.1" />
     <!-- this package is part of the implementation closure of NETStandard.Library
          therefore it cannot reference NETStandard.Library -->
     <SuppressMetaPackage Include="NETStandard.Library" />
