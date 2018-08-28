@@ -179,7 +179,11 @@ namespace System.Collections.Specialized
         {
             get
             {
-                return ((DictionaryEntry)objectsArray[index]).Value;
+                if (_objectsArray == null)
+                {
+                    throw new ArgumentOutOfRangeException(nameof(index));
+                }
+                return ((DictionaryEntry)_objectsArray[index]).Value;
             }
             set
             {
@@ -187,7 +191,7 @@ namespace System.Collections.Specialized
                 {
                     throw new NotSupportedException(SR.OrderedDictionary_ReadOnly);
                 }
-                if (index < 0 || index >= objectsArray.Count)
+                if (_objectsArray == null || index < 0 || index >= _objectsArray.Count)
                 {
                     throw new ArgumentOutOfRangeException(nameof(index));
                 }
