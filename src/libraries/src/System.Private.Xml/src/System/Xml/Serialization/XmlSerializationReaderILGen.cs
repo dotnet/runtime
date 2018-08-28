@@ -3045,34 +3045,78 @@ namespace System.Xml.Serialization
                 {
                 }
 
-                WriteSourceBegin(source);
-                if (element.Mapping.TypeDesc == QnameTypeDesc)
+                if (element.Mapping.TypeDesc.Type == typeof(TimeSpan))
                 {
-                    MethodInfo XmlSerializationReader_ReadElementQualifiedName = typeof(XmlSerializationReader).GetMethod(
-                           "ReadElementQualifiedName",
-                           CodeGenerator.InstanceBindingFlags,
-                           Array.Empty<Type>()
-                           );
+                    MethodInfo XmlSerializationReader_get_Reader = typeof(XmlSerializationReader).GetMethod(
+                       "get_Reader",
+                       CodeGenerator.InstanceBindingFlags,
+                       Array.Empty<Type>()
+                       );
+                    MethodInfo XmlReader_get_IsEmptyElement = typeof(XmlReader).GetMethod(
+                        "get_IsEmptyElement",
+                        CodeGenerator.InstanceBindingFlags,
+                        Array.Empty<Type>()
+                        );
                     ilg.Ldarg(0);
-                    ilg.Call(XmlSerializationReader_ReadElementQualifiedName);
+                    ilg.Call(XmlSerializationReader_get_Reader);
+                    ilg.Call(XmlReader_get_IsEmptyElement);
+                    ilg.If();
+                    WriteSourceBegin(source);
+                    MethodInfo XmlReader_Skip = typeof(XmlReader).GetMethod(
+                        "Skip",
+                        CodeGenerator.InstanceBindingFlags,
+                        Array.Empty<Type>()
+                        );
+                    ilg.Ldarg(0);
+                    ilg.Call(XmlSerializationReader_get_Reader);
+                    ilg.Call(XmlReader_Skip);
+                    ConstructorInfo TimeSpan_ctor = typeof(TimeSpan).GetConstructor(
+                        CodeGenerator.InstanceBindingFlags,
+                        null,
+                        new Type[] { typeof(Int64) },
+                        null
+                        );
+                    ilg.Ldc(default(TimeSpan).Ticks);
+                    ilg.New(TimeSpan_ctor);
+                    WriteSourceEnd(source, element.Mapping.TypeDesc.Type);
+                    ilg.Else();
+                    WriteSourceBegin(source);
+                    WritePrimitive(element.Mapping, "Reader.ReadElementString()");
+                    WriteSourceEnd(source, element.Mapping.TypeDesc.Type);
+                    ilg.EndIf();
                 }
                 else
                 {
-                    string readFunc;
-                    switch (element.Mapping.TypeDesc.FormatterName)
+                    WriteSourceBegin(source);
+                    if (element.Mapping.TypeDesc == QnameTypeDesc)
                     {
-                        case "ByteArrayBase64":
-                        case "ByteArrayHex":
-                            readFunc = "false";
-                            break;
-                        default:
-                            readFunc = "Reader.ReadElementString()";
-                            break;
+                        MethodInfo XmlSerializationReader_ReadElementQualifiedName = typeof(XmlSerializationReader).GetMethod(
+                               "ReadElementQualifiedName",
+                               CodeGenerator.InstanceBindingFlags,
+                               Array.Empty<Type>()
+                               );
+                        ilg.Ldarg(0);
+                        ilg.Call(XmlSerializationReader_ReadElementQualifiedName);
                     }
-                    WritePrimitive(element.Mapping, readFunc);
+                    else
+                    {
+                        string readFunc;
+                        switch (element.Mapping.TypeDesc.FormatterName)
+                        {
+                            case "ByteArrayBase64":
+                            case "ByteArrayHex":
+                                readFunc = "false";
+                                break;
+                            default:
+                                readFunc = "Reader.ReadElementString()";
+                                break;
+                        }
+                        WritePrimitive(element.Mapping, readFunc);
+                    }
+
+                    WriteSourceEnd(source, element.Mapping.TypeDesc.Type);
                 }
 
-                WriteSourceEnd(source, element.Mapping.TypeDesc.Type);
                 if (doEndIf)
                     ilg.EndIf();
             }

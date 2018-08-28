@@ -634,6 +634,12 @@ namespace System.Xml.Serialization
             {
                 if (((object)Reader.LocalName == (object)_id19_TimeSpan && (object)Reader.NamespaceURI == (object)_id2_Item))
                 {
+                    if(Reader.IsEmptyElement)
+                    {
+                        Reader.Skip();
+                        o = default(TimeSpan);
+                    }
+                    else
                     {
                         o = System.Xml.XmlConvert.ToTimeSpan(Reader.ReadElementString());
                     }
