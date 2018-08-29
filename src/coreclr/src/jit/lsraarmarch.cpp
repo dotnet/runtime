@@ -480,7 +480,9 @@ int LinearScan::BuildPutArgSplit(GenTreePutArgSplit* argNode)
     regMaskTP argMask = RBM_NONE;
     for (unsigned i = 0; i < argNode->gtNumRegs; i++)
     {
-        argMask |= genRegMask((regNumber)((unsigned)argReg + i));
+        regNumber thisArgReg = (regNumber)((unsigned)argReg + i);
+        argMask |= genRegMask(thisArgReg);
+        argNode->SetRegNumByIdx(thisArgReg, i);
     }
 
     if (putArgChild->OperGet() == GT_FIELD_LIST)
