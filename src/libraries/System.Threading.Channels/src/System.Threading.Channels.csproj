@@ -3,7 +3,7 @@
     <ProjectGuid>{AAADA5D3-CF64-4E9D-943C-EFDC006D6366}</ProjectGuid>
     <RootNamespace>System.Threading.Channels</RootNamespace>
     <DocumentationFile>$(OutputPath)$(MSBuildProjectName).xml</DocumentationFile>
-    <Configurations>netcoreapp-Debug;netcoreapp-Release;netstandard-Debug;netstandard-Release;netstandard1.3-Debug;netstandard1.3-Release</Configurations>
+    <Configurations>netcoreapp-Debug;netcoreapp-Release;netcoreapp2.1-Debug;netcoreapp2.1-Release;netstandard-Debug;netstandard-Release;netstandard1.3-Debug;netstandard1.3-Release</Configurations>
   </PropertyGroup>
   <ItemGroup>
     <Compile Include="System\VoidResult.cs" />

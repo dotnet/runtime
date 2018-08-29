@@ -6,11 +6,6 @@ Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Microsoft.IO.Redist", "src\
 EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "src", "src", "{E107E9C1-E893-4E87-987E-04EF0DCEAEFD}"
 EndProject
-Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "pkg", "pkg", "{AEF27864-DBA3-4C6C-8F86-E4B0270A5A16}"
-	ProjectSection(SolutionItems) = preProject
-		pkg\Microsoft.IO.Redist.pkgproj = pkg\Microsoft.IO.Redist.pkgproj
-	EndProjectSection
-EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
