@@ -111,6 +111,10 @@ namespace R2RDump
             {
                 Size = gcInfo.CodeLength;
             }
+            else
+            {
+                Size = -1;
+            }
             CodeOffset = codeOffset;
             method.GcInfo = gcInfo;
         }
