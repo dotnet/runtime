@@ -1428,6 +1428,7 @@ PROFILE_DISABLED_TESTS += \
 if MONO_ARCH_GSHAREDVT_SUPPORTED
 PROFILE_DISABLED_TESTS += tailcall-interface-conservestack.exe
 PROFILE_DISABLED_TESTS += tailcall/fsharp-deeptail.exe
+PROFILE_DISABLED_TESTS += tailcall/interface-conservestack/20.exe
 PROFILE_DISABLED_TESTS += tailcall/interface-conservestack/26.exe
 PROFILE_DISABLED_TESTS += tailcall/interface-conservestack/31.exe
 PROFILE_DISABLED_TESTS += tailcall/interface-conservestack/33.exe
