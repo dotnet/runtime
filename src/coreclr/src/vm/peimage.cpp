@@ -947,7 +947,7 @@ PTR_PEImageLayout PEImage::CreateLayoutMapped()
     {
         // For CoreCLR, try to load all files via LoadLibrary first. If LoadLibrary did not work, retry using 
         // regular mapping - but not for native images.
-        pLoadLayout = PEImageLayout::Load(this, TRUE /* bNTSafeLoad */, m_bIsTrustedNativeImage /* bThrowOnError */);
+        pLoadLayout = PEImageLayout::Load(this, FALSE /* bNTSafeLoad */, m_bIsTrustedNativeImage /* bThrowOnError */);
     }
 
     if (pLoadLayout != NULL)
@@ -964,11 +964,19 @@ PTR_PEImageLayout PEImage::CreateLayoutMapped()
         bool fMarkAnyCpuImageAsLoaded = false;
         // Avoid mapping another image if we can. We can only do this for IL-ONLY images
         // since LoadLibrary is needed if we are to actually load code
-        if (pLayout->HasCorHeader() && pLayout->IsILOnly())
+        if (pLayout->HasCorHeader())
         {
-            // For CoreCLR, IL only images will always be mapped. We also dont bother doing the conversion of PE header on 64bit,
-            // as done below for the desktop case, as there is no appcompat burden for CoreCLR on 64bit to have that conversion done.
-            fMarkAnyCpuImageAsLoaded = true;
+            if (pLayout->IsILOnly())
+            {
+                // For CoreCLR, IL only images will always be mapped. We also dont bother doing the conversion of PE header on 64bit,
+                // as done below for the desktop case, as there is no appcompat burden for CoreCLR on 64bit to have that conversion done.
+                fMarkAnyCpuImageAsLoaded = true;
+            }
+            else
+            {
+                // IJW images must be loaded, not mapped
+                ThrowHR(COR_E_BADIMAGEFORMAT);
+            }
         }
 
         pLayout.SuppressRelease();
@@ -984,8 +992,8 @@ PTR_PEImageLayout PEImage::CreateLayoutMapped()
     else
     {
         PEImageLayoutHolder flatPE(GetLayoutInternal(PEImageLayout::LAYOUT_FLAT,LAYOUT_CREATEIFNEEDED));
-        if (!flatPE->CheckFormat())
-            ThrowFormat(COR_E_BADIMAGEFORMAT);
+        if (!flatPE->CheckFormat() || !flatPE->IsILOnly())
+            ThrowHR(COR_E_BADIMAGEFORMAT);
         pRetVal=PEImageLayout::LoadFromFlat(flatPE);
         SetLayout(IMAGE_MAPPED,pRetVal);
     }
