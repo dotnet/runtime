@@ -181,9 +181,7 @@ GTNODE(SUB_HI           , GenTreeOp          ,0,GTK_BINOP)
 // with long results are morphed into helper calls. It is similar to GT_MULHI,
 // the difference being that GT_MULHI drops the lo part of the result, whereas
 // GT_MUL_LONG keeps both parts of the result.
-#if defined(_TARGET_X86_)
-GTNODE(MUL_LONG         , GenTreeOp          ,1,GTK_BINOP)
-#elif defined (_TARGET_ARM_)
+#if !defined(_TARGET_64BIT_)
 GTNODE(MUL_LONG         , GenTreeMultiRegOp  ,1,GTK_BINOP)
 #endif
 
