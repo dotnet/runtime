@@ -894,25 +894,25 @@ xxd_mem (gpointer d, int len)
 	guint8 *data = (guint8 *) d;
 
 	for (int off = 0; off < len; off += 0x10) {
-		g_printerr ("%p  ", data + off);
+		gchar *line = g_strdup_printf ("%p  ", data + off);
 
 		for (int i = 0; i < 0x10; i++) {
 			if ((i + off) >= len)
-				g_printerr ("   ");
+				line = g_strdup_printf ("%s   ", line);
 			else
-				g_printerr ("%02x ", data [off + i]);
+				line = g_strdup_printf ("%s%02x ", line, data [off + i]);
 		}
 
-		g_printerr (" ");
+		line = g_strdup_printf ("%s ", line);
 
 		for (int i = 0; i < 0x10; i++) {
 			if ((i + off) >= len)
-				g_printerr (" ");
+				line = g_strdup_printf ("%s ", line);
 			else
-				g_printerr ("%c", conv_ascii_char (data [off + i]));
+				line = g_strdup_printf ("%s%c", line, conv_ascii_char (data [off + i]));
 		}
 
-		g_printerr ("\n");
+		mono_runtime_printf_err ("%s", line);
 	}
 }
 
@@ -923,8 +923,12 @@ dump_memory_around_ip (void *ctx)
 	MonoContext mctx;
 	mono_sigctx_to_monoctx (ctx, &mctx);
 	gpointer native_ip = MONO_CONTEXT_GET_IP (&mctx);
-	g_printerr ("Memory around native instruction pointer (%p):\n", native_ip);
-	xxd_mem (((guint8 *) native_ip) - 0x10, 0x40);
+	if (native_ip) {
+		mono_runtime_printf_err ("Memory around native instruction pointer (%p):", native_ip);
+		xxd_mem (((guint8 *) native_ip) - 0x10, 0x40);
+	} else {
+		mono_runtime_printf_err ("instruction pointer is NULL, skip dumping");
+	}
 #endif
 }
 
