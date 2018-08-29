@@ -4,8 +4,6 @@
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
     <HaveDSA Condition="'$(TargetGroup)'=='netcoreapp' OR '$(TargetGroup)'=='uap' OR '$(TargetGroup)'=='net462'">true</HaveDSA>
     <HaveCertificateCreation Condition="'$(TargetGroup)'=='netcoreapp' OR '$(TargetGroup)'=='uap' OR '$(TargetGroup)'=='net472'">true</HaveCertificateCreation>
-    <DefineConstants Condition="'$(TargetGroup)'=='netcoreapp'">$(DefineConstants);netcoreapp</DefineConstants>
-    <DefineConstants Condition="'$(TargetGroup)'=='uap'">$(DefineConstants);uap</DefineConstants>
     <DefineConstants Condition="'$(TargetGroup)'!='netcoreapp' AND '$(TargetGroup)'!='uap' AND '$(TargetGroup)'!='net462'">$(DefineConstants);NO_DSA_AVAILABLE</DefineConstants>
     <DefineConstants Condition="'$(HaveCertificateCreation)'!='true'">$(DefineConstants);NO_EPHEMERALKEYSET_AVAILABLE</DefineConstants>
     <DefineConstants Condition="'$(TargetGroup)'=='netcoreapp' OR '$(TargetGroup)'=='uap'">$(DefineConstants);HAVE_THUMBPRINT_OVERLOADS</DefineConstants>

@@ -3,8 +3,6 @@
     <ProjectGuid>{B1BF7CE0-CAB5-4FA2-A39C-450B05D5DB1C}</ProjectGuid>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
     <NoWarn>1718</NoWarn>
-    <DefineConstants Condition="'$(TargetGroup)'=='netcoreapp'">$(DefineConstants);netcoreapp</DefineConstants>
-    <DefineConstants Condition="'$(TargetGroup)'=='uapaot'">$(DefineConstants);uapaot</DefineConstants>
     <!-- Please don't delete. We need App.config for netfx -->
     <NETFxTestRunnerAppConfig Condition="'$(TargetGroup)' == 'netfx'">$(MSBuildProjectDirectory)\App.config</NETFxTestRunnerAppConfig>
     <Configurations>netcoreapp-Debug;netcoreapp-Release;netfx-Debug;netfx-Release;uap-Debug;uap-Release;uapaot-Debug;uapaot-Release</Configurations>

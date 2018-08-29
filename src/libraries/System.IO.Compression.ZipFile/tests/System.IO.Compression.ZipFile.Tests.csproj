@@ -1,7 +1,6 @@
 <Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
     <ProjectGuid>{775727A6-DF41-4160-A7FD-180279A653C7}</ProjectGuid>
-    <DefineConstants Condition="'$(TargetGroup)' == 'netcoreapp' or '$(TargetGroup)' == 'uap'">$(DefineConstants);netcoreapp</DefineConstants>
     <Configurations>netcoreapp-Debug;netcoreapp-Release;netstandard-Debug;netstandard-Release</Configurations>
   </PropertyGroup>
   <ItemGroup>

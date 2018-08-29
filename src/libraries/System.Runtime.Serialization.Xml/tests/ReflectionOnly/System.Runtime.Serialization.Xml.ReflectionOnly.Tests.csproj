@@ -2,7 +2,6 @@
   <PropertyGroup>
     <DefineConstants>$(DefineConstants);ReflectionOnly</DefineConstants>
     <ProjectGuid>{38889701-0af4-48b3-999c-e99d639c61b6}</ProjectGuid>
-    <DefineConstants Condition="'$(TargetGroup)' == 'uapaot'">$(DefineConstants);uapaot</DefineConstants>
     <Configurations>netstandard-Debug;netstandard-Release;uapaot-Debug;uapaot-Release</Configurations>
   </PropertyGroup>
   <ItemGroup>

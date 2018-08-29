@@ -4,7 +4,6 @@
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
     <ExternallyShipping>false</ExternallyShipping>
     <!-- UAP build currently failing: https://github.com/dotnet/corefx/issues/31962 -->
-    <DefineConstants Condition="'$(TargetsNetStandard)' == 'true'">$(DefineConstants);netstandard</DefineConstants>
     <Configurations>netcoreapp-Debug;netcoreapp-Release;netfx-Debug;netfx-Release<!-- ;netstandard-Debug;netstandard-Release --></Configurations>
   </PropertyGroup>
   <ItemGroup>
