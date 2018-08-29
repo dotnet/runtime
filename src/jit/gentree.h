@@ -3618,10 +3618,6 @@ struct GenTreeCall final : public GenTree
     // Return Value:
     //     True if the call is returning a multi-reg return value. False otherwise.
     //
-    // Note:
-    //     This is implemented only for x64 Unix and yet to be implemented for
-    //     other multi-reg return target arch (arm64/arm32/x86).
-    //
     bool HasMultiRegRetVal() const
     {
 #if defined(_TARGET_X86_)
@@ -3967,14 +3963,13 @@ struct GenTreeMultiRegOp : public GenTreeOp
     var_types GetRegType(unsigned index)
     {
         assert(index < 2);
-        // The type of register is usually the same as GenTree type
-        // since most of time GenTreeMultiRegOp uses only a single reg (when gtOtherReg is REG_NA).
-        // The special case is when we have TYP_LONG here, which was `TYP_DOUBLE` originally
-        // (copied to int regs for argument push on armel). Then we need to separate them into int for each index.
+        // The type of register is usually the same as GenTree type, since GenTreeMultiRegOp usually defines a single
+        // reg.
+        // The special case is when we have TYP_LONG, which may be a MUL_LONG, or a DOUBLE arg passed as LONG,
+        // in which case we need to separate them into int for each index.
         var_types result = TypeGet();
         if (result == TYP_LONG)
         {
-            assert(gtOtherReg != REG_NA);
             result = TYP_INT;
         }
         return result;
