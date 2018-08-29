@@ -496,7 +496,7 @@ if (WIN32)
   add_compile_options(/Gy) # separate functions for linker
   add_compile_options(/Zc:wchar_t-) # C++ language conformance: wchar_t is NOT the native type, but a typedef
   add_compile_options(/Zc:forScope) # C++ language conformance: enforce Standard C++ for scoping rules
-  add_compile_options(/GR-) # disable C++ RTTI
+  set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} /GR-") # disable C++ RTTI
   add_compile_options(/FC) # use full pathnames in diagnostics
   add_compile_options(/MP) # Build with Multiple Processes (number of processes equal to the number of processors)
   add_compile_options(/GS) # Buffer Security Check
@@ -519,7 +519,9 @@ if (WIN32)
   endif (CLR_CMAKE_PLATFORM_ARCH_AMD64)
 
   # enable control-flow-guard support for native components for non-Arm64 builds
-  add_compile_options(/guard:cf) 
+  # Added using variables instead of add_compile_options to let individual projects override it
+  set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} /guard:cf")
+  set(CMAKE_C_FLAGS "${CMAKE_CXX_FLAGS} /guard:cf")
 
   # Statically linked CRT (libcmt[d].lib, libvcruntime[d].lib and libucrt[d].lib) by default. This is done to avoid  
   # linking in VCRUNTIME140.DLL for a simplified xcopy experience by reducing the dependency on VC REDIST.  
