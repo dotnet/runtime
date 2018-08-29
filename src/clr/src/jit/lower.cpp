@@ -1078,7 +1078,12 @@ GenTree* Lowering::NewPutArg(GenTreeCall* call, GenTree* arg, fgArgTabEntry* inf
             // Set type of registers
             for (unsigned index = 0; index < info->numRegs; index++)
             {
-                var_types regType          = comp->getJitGCType(gcLayout[index]);
+                var_types regType = comp->getJitGCType(gcLayout[index]);
+                // Account for the possibility that float fields may be passed in integer registers.
+                if (varTypeIsFloating(regType) && !genIsValidFloatReg(argSplit->GetRegNumByIdx(index)))
+                {
+                    regType = (regType == TYP_FLOAT) ? TYP_INT : TYP_LONG;
+                }
                 argSplit->m_regType[index] = regType;
             }
         }
@@ -1087,7 +1092,12 @@ GenTree* Lowering::NewPutArg(GenTreeCall* call, GenTree* arg, fgArgTabEntry* inf
             GenTreeFieldList* fieldListPtr = arg->AsFieldList();
             for (unsigned index = 0; index < info->numRegs; fieldListPtr = fieldListPtr->Rest(), index++)
             {
-                var_types regType          = fieldListPtr->gtGetOp1()->TypeGet();
+                var_types regType = fieldListPtr->gtGetOp1()->TypeGet();
+                // Account for the possibility that float fields may be passed in integer registers.
+                if (varTypeIsFloating(regType) && !genIsValidFloatReg(argSplit->GetRegNumByIdx(index)))
+                {
+                    regType = (regType == TYP_FLOAT) ? TYP_INT : TYP_LONG;
+                }
                 argSplit->m_regType[index] = regType;
 
                 // Clear the register assignments on the fieldList nodes, as these are contained.
