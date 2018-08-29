@@ -2888,6 +2888,16 @@ void PInvokeStaticSigInfo::DllImportInit(MethodDesc* pMD, LPCUTF8 *ppLibName, LP
     mdModuleRef modref = mdModuleRefNil;
     if (FAILED(pInternalImport->GetPinvokeMap(pMD->GetMemberDef(), (DWORD*)&mappingFlags, ppEntryPointName, &modref)))
     {
+#if !defined(CROSSGEN_COMPILE) // IJW
+        // The guessing heuristic has been broken with NGen for a long time since we stopped loading
+        // images at NGen time using full LoadLibrary. The DLL references are not resolved correctly
+        // without full LoadLibrary.
+        //
+        // Disable the heuristic consistently during NGen so that it does not kick in by accident.
+        if (!IsCompilationProcess())
+            BestGuessNDirectDefaults(pMD);
+#endif
+
         InitCallConv((CorPinvokeMap)0, pMD->IsVarArg());
         return;
     }
@@ -2949,6 +2959,146 @@ void PInvokeStaticSigInfo::DllImportInit(MethodDesc* pMD, LPCUTF8 *ppLibName, LP
         SetError(IDS_EE_NDIRECT_BADNATL);
     }
 }
+
+#if !defined(CROSSGEN_COMPILE) // IJW
+
+// This function would work, but be unused on Unix. Ifdefing out to avoid build errors due to the unused function.
+#if !defined (FEATURE_PAL)
+static LPBYTE FollowIndirect(LPBYTE pTarget)
+{
+    CONTRACT(LPBYTE)
+    {
+        NOTHROW;
+        GC_NOTRIGGER;
+        MODE_ANY;
+        POSTCONDITION(CheckPointer(RETVAL, NULL_OK));
+    }
+    CONTRACT_END;
+
+    LPBYTE pRet = NULL;
+
+    EX_TRY
+    {
+        AVInRuntimeImplOkayHolder AVOkay;
+
+#ifdef _TARGET_X86_
+        if (pTarget != NULL && !(pTarget[0] != 0xff || pTarget[1] != 0x25))
+        {
+            pRet = **(LPBYTE**)(pTarget + 2);
+        }
+#elif defined(_TARGET_AMD64_)
+        if (pTarget != NULL && !(pTarget[0] != 0xff || pTarget[1] != 0x25))
+        {
+            INT64 rva = *(INT32*)(pTarget + 2);
+            pRet = *(LPBYTE*)(pTarget + 6 + rva);
+        }
+#endif
+    }
+    EX_CATCH
+    {
+        // Catch AVs here.
+    }
+    EX_END_CATCH(SwallowAllExceptions);
+
+    RETURN pRet;
+}
+#endif // !FEATURE_PAL
+
+BOOL HeuristicDoesThisLookLikeAGetLastErrorCall(LPBYTE pTarget)
+{
+    CONTRACTL
+    {
+        NOTHROW;
+        GC_NOTRIGGER;
+        MODE_ANY;
+    }
+    CONTRACTL_END;
+
+#if !defined(FEATURE_PAL)
+    static LPBYTE pGetLastError = NULL;
+    if (!pGetLastError)
+    {
+        // No need to use a holder here, since no cleanup is necessary.
+        HMODULE hMod = CLRGetModuleHandle(WINDOWS_KERNEL32_DLLNAME_W);
+        if (hMod)
+        {
+            pGetLastError = (LPBYTE)GetProcAddress(hMod, "GetLastError");
+            if (!pGetLastError)
+            {
+                // This should never happen but better to be cautious.
+                pGetLastError = (LPBYTE)-1;
+            }
+        }
+        else
+        {
+            // We failed to get the module handle for kernel32.dll. This is almost impossible
+            // however better to err on the side of caution.
+            pGetLastError = (LPBYTE)-1;
+        }
+    }
+
+    if (pTarget == pGetLastError)
+        return TRUE;
+
+    if (pTarget == NULL)
+        return FALSE;
+
+    LPBYTE pTarget2 = FollowIndirect(pTarget);
+    if (pTarget2)
+    {
+        // jmp [xxxx] - could be an import thunk
+        return pTarget2 == pGetLastError;
+    }
+#endif // !FEATURE_PAL
+
+    return FALSE;
+}
+
+DWORD STDMETHODCALLTYPE FalseGetLastError()
+{
+    WRAPPER_NO_CONTRACT;
+
+    return GetThread()->m_dwLastError;
+}
+
+void PInvokeStaticSigInfo::BestGuessNDirectDefaults(MethodDesc* pMD)
+{
+    CONTRACTL
+    {
+        NOTHROW;
+        GC_NOTRIGGER;
+        MODE_ANY;
+    }
+    CONTRACTL_END;
+
+    if (!pMD->IsNDirect())
+        return;
+
+    NDirectMethodDesc* pMDD = (NDirectMethodDesc*)pMD;
+
+    if (!pMDD->IsEarlyBound())
+        return;
+
+    LPVOID pTarget = NULL;
+
+    // NOTE: If we get inside this block, and this is a call to GetLastError, 
+    //  then InitEarlyBoundNDirectTarget has not been run yet.
+    if (pMDD->NDirectTargetIsImportThunk())
+    {
+        // Get the unmanaged callsite.
+        pTarget = (LPVOID)pMDD->GetModule()->GetInternalPInvokeTarget(pMDD->GetRVA());
+
+        // If this is a call to GetLastError, then we haven't overwritten m_pNativeNDirectTarget yet.
+        if (HeuristicDoesThisLookLikeAGetLastErrorCall((LPBYTE)pTarget))
+            pTarget = (BYTE*)FalseGetLastError;
+    }
+    else
+    {
+        pTarget = pMDD->GetNativeNDirectTarget();
+    }
+}
+
+#endif // !CROSSGEN_COMPILE
 
 inline CorPinvokeMap GetDefaultCallConv(BOOL bIsVarArg)
 {
@@ -5284,6 +5434,11 @@ PCODE NDirect::GetStubForILStub(NDirectMethodDesc* pNMD, MethodDesc** ppStubMD, 
         pStub = TheVarargNDirectStub(pNMD->HasRetBuffArg());
     }
 
+    if (pNMD->IsEarlyBound())
+    {
+        pNMD->InitEarlyBoundNDirectTarget();
+    }
+    else
     {
         NDirectLink(pNMD);
     }
@@ -6410,6 +6565,19 @@ EXTERN_C LPVOID STDCALL NDirectImportWorker(NDirectMethodDesc* pMD)
     // any of our internal exceptions into managed exceptions.
     INSTALL_UNWIND_AND_CONTINUE_HANDLER;
 
+    if (pMD->IsEarlyBound())
+    {
+        if (!pMD->IsZapped())
+        {
+            // we need the MD to be populated in case we decide to build an intercept
+            // stub to wrap the target in InitEarlyBoundNDirectTarget
+            PInvokeStaticSigInfo sigInfo;
+            NDirect::PopulateNDirectMethodDesc(pMD, &sigInfo);
+        }
+
+        pMD->InitEarlyBoundNDirectTarget();
+    }
+    else
     {
         //
         // Otherwise we're in an inlined pinvoke late bound MD

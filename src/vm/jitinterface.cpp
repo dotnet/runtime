@@ -9982,30 +9982,16 @@ void* CEEInfo::getPInvokeUnmanagedTarget(CORINFO_METHOD_HANDLE method,
         MODE_PREEMPTIVE;
     } CONTRACTL_END;
 
-    void* result = NULL;
+    // Not expected to work due to multicore and tiered JIT potentially needing
+    // to call managed cctors
+    _ASSERTE(FALSE);
 
     if (ppIndirection != NULL)
+    {
         *ppIndirection = NULL;
-
-#ifndef CROSSGEN_COMPILE
-    JIT_TO_EE_TRANSITION();
-
-    MethodDesc* ftn = GetMethod(method);
-    _ASSERTE(ftn->IsNDirect());
-    NDirectMethodDesc *pMD = (NDirectMethodDesc*)ftn;
-
-    if (pMD->NDirectTargetIsImportThunk())
-    {
-    }
-    else
-    {
-        result = pMD->GetNDirectTarget();
     }
 
-    EE_TO_JIT_TRANSITION();
-#endif // CROSSGEN_COMPILE
-
-    return result;
+    return NULL;
 }
 
 /*********************************************************************/
