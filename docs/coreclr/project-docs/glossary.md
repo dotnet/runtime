@@ -16,7 +16,7 @@ As much as possible, we should link to the most authoritative and recent source 
 | DAC | Data Access Component. An abstraction layer over the internal structures in the runtime. |
 | EE | Execution Engine. |
 | GC | [Garbage Collector](https://github.com/dotnet/coreclr/blob/master/Documentation/botr/garbage-collection.md). |
-| IPC | Inter-Process Communicaton. |
+| IPC | Inter-Process Communication. |
 | JIT | [Just-in-Time](https://github.com/dotnet/coreclr/blob/master/Documentation/botr/ryujit-overview.md) compiler. RyuJIT is the code name for the next generation Just-in-Time(aka "JIT") for the .NET runtime. |
 | LCG | Lightweight Code Generation. An early name for [dynamic methods](https://github.com/dotnet/coreclr/blob/master/src/System.Private.CoreLib/src/System/Reflection/Emit/DynamicMethod.cs). |
 | MD | MetaData. |

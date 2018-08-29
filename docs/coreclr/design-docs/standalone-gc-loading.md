@@ -17,7 +17,7 @@ some terms that will be used often in this document.
   of an execution engine varies widely between runtimes; the CoreRT EE is primarily in managed code
   (C#), while CoreCLR (and the .NET Framework)'s EE is primarily in C++.
 * The **GC**, or **Garbage Collector** - The component of the CLR responsible for allocating managed
-  objects and reclaming unused memory. It is written in C++ and the code is shared by multiple runtimes.
+  objects and reclaiming unused memory. It is written in C++ and the code is shared by multiple runtimes.
   (That is, CoreCLR/CoreRT may have different execution engines, but they share the *same* GC code.)
 * The **DAC**, or **Data Access Component** - A subset of the execution engine that is compiled in
   such a way that it can be run *out of process*, when debugging .NET code using a debugger. The DAC
