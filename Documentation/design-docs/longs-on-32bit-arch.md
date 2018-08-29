@@ -43,7 +43,7 @@ the lo and hi computations together.
 There are concerns about this, because it requires generating a number of extra temps
 in the case of nested expressions. However, mikedn has done some experimentation
 [here](https://github.com/mikedn/coreclr/blob/decompose/src/jit/lower.cpp#L424) 
-that indicaates that this approach may not be as problematic as we feared.
+that indicates that this approach may not be as problematic as we feared.
 
 This basic idea is that whenever we need to decompose hi/lo operations but keep them
 together (i.e. can’t preserve the tree traversal/linear order invariants), we create a temp.

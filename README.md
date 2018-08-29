@@ -160,7 +160,7 @@ There are two basic techniques for using your new runtime.
  2. **Use corerun.exe to run an application using unpackaged Dlls**. This repository also defines a simple host called
  corerun.exe that does NOT take any dependency on NuGet.   Basically it has to be told where to get all the
  necessary DLLs you actually use, and you have to gather them together 'by hand'.   This is the technique that
- all the tests in the repo use, and is useful for quick local 'edit-compile-debug' loop (e.g. preliminary unit testsing).
+ all the tests in the repo use, and is useful for quick local 'edit-compile-debug' loop (e.g. preliminary unit testing).
  See [Using corerun To Run .NET Core Application](Documentation/workflow/UsingCoreRun.md) for details on using 
  this technique.  
 

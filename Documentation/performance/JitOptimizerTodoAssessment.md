@@ -69,7 +69,7 @@ high priority.
 
 ### Loop Optimizations
 
-We haven't been targeting benchmarks that spend a lot of time doing compuations
+We haven't been targeting benchmarks that spend a lot of time doing computations
 in an inner loop.  Pursuing loop optimizations for the peanut butter effect
 would seem odd.  So this simply hasn't bubbled up in priority yet, though it's
 bound to eventually.  Obvious candidates include [IV widening](https://github.com/dotnet/coreclr/issues/9179),

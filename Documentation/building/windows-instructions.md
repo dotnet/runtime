@@ -75,7 +75,7 @@ any recent (2.4+) version of Python should work, including Python 3.
 
 ## Git
 
-For actual user operations, it is often more convinient to use the GIT features built into Visual Studio 2015.
+For actual user operations, it is often more convenient to use the GIT features built into Visual Studio 2015.
 However the CoreCLR and the tests use the GIT command line utilities directly so you need to install them
 for these to work properly.   You can get it from 
 
