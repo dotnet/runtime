@@ -4290,9 +4290,12 @@ void emitter::emitIns_R_L(instruction ins, emitAttr attr, BasicBlock* dst, regNu
     id->idjNext      = emitCurIGjmpList;
     emitCurIGjmpList = id;
 
-    // Set the relocation flags - these give hint to zap to perform
-    // relocation of the specified 32bit address.
-    id->idSetRelocFlags(attr);
+    if (emitComp->opts.compReloc)
+    {
+        // Set the relocation flags - these give hint to zap to perform
+        // relocation of the specified 32bit address.
+        id->idSetRelocFlags(attr);
+    }
 
 #if EMITTER_STATS
     emitTotalIGjmps++;
@@ -5379,30 +5382,30 @@ BYTE* emitter::emitOutputLJ(insGroup* ig, BYTE* dst, instrDesc* i)
         }
         else if (fmt == IF_T2_N1)
         {
+            assert(ins == INS_movt || ins == INS_movw);
             code |= insEncodeRegT2_D(id->idReg1());
-            unsigned imm = distVal;
-            if (ins == INS_movw)
+            ((instrDescJmp*)id)->idjTemp.idjAddr = (dstOffs > srcOffs) ? dst : NULL;
+
+            if (id->idIsReloc())
             {
-                imm &= 0xffff;
+                dst += emitOutput_Thumb2Instr(dst, code);
+                if ((ins == INS_movt) && emitComp->info.compMatchedVM)
+                    emitHandlePCRelativeMov32((void*)(dst - 8), (void*)distVal);
             }
             else
             {
-                imm = (imm >> 16) & 0xffff;
-            }
-            ((instrDescJmp*)id)->idjTemp.idjAddr = (dstOffs > srcOffs) ? dst : NULL;
-
-            assert((imm & 0x0000ffff) == imm);
-            code |= (imm & 0x00ff);
-            code |= ((imm & 0x0700) << 4);
-            code |= ((imm & 0x0800) << 15);
-            code |= ((imm & 0xf000) << 4);
-            dst += emitOutput_Thumb2Instr(dst, code);
-
-            if (id->idIsCnsReloc() || id->idIsDspReloc())
-            {
-                assert(ins == INS_movt || ins == INS_movw);
-                if ((ins == INS_movt) && emitComp->info.compMatchedVM)
-                    emitHandlePCRelativeMov32((void*)(dst - 8), (void*)distVal);
+                assert(sizeof(size_t) == sizeof(target_size_t));
+                target_size_t imm = (target_size_t)distVal;
+                if (ins == INS_movw)
+                {
+                    imm &= 0xffff;
+                }
+                else
+                {
+                    imm = (imm >> 16) & 0xffff;
+                }
+                code |= insEncodeImmT2_Mov(imm);
+                dst += emitOutput_Thumb2Instr(dst, code);
             }
         }
         else
