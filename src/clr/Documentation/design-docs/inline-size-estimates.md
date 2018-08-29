@@ -233,7 +233,7 @@ caller, callee, and the capabilities of the compiler?
 The tried-and-true approach is to build the heuristic manually. There
 are two prongs to the approach: the first is case analysis of actual
 behavior, and the second is modelling based on the compiler writer's
-experience and intution.
+experience and intuition.
 
 ### Some Case Analysis
 

@@ -38,7 +38,7 @@ However, if *C1* was not found in *A1's* context, the *Load* method override in 
 
 If the *Load* method override does not resolve the load, fallback to *Default LoadContext* is attempted to resolve the load incase the assembly was already loaded there. If the operating context is *Default LoadContext*, there is no fallback attempted since it has nothing to fallback to.
 
-If the *Default LoadContext* fallback also did not resolve the load (or was not applicable), the *Resolving* event is invoked against *A1's* load context. This is the last oppurtunity to attempt to resolve the assembly load. If there are no subscribers for this event, or neither resolved the load, a *FileNotFoundException* is thrown.
+If the *Default LoadContext* fallback also did not resolve the load (or was not applicable), the *Resolving* event is invoked against *A1's* load context. This is the last opportunity to attempt to resolve the assembly load. If there are no subscribers for this event, or neither resolved the load, a *FileNotFoundException* is thrown.
 
 ## PInvoke Resolution
 
@@ -72,7 +72,7 @@ This method can be used to load an assembly into a load context different from t
 
 ### Resolving
 
-This event is raised to give the last oppurtunity to a *LoadContext* instance to attempt to resolve a requested assembly that has neither been resolved by **Load** method, nor by fallback to **Default LoadContext**.
+This event is raised to give the last opportunity to a *LoadContext* instance to attempt to resolve a requested assembly that has neither been resolved by **Load** method, nor by fallback to **Default LoadContext**.
 
 ## Assembly Load APIs and LoadContext
 
