@@ -2059,56 +2059,30 @@ void CodeGen::genCodeForStoreOffset(instruction ins, emitAttr size, regNumber sr
 }
 
 //------------------------------------------------------------------------
-// genRegCopy: Generate a register copy.
+// genRegCopy: Produce code for a GT_COPY node.
+//
+// Arguments:
+//    tree - the GT_COPY node
+//
+// Notes:
+//    This will copy the register(s) produced by this node's source, to
+//    the register(s) allocated to this GT_COPY node.
+//    It has some special handling for these cases:
+//    - when the source and target registers are in different register files
+//      (note that this is *not* a conversion).
+//    - when the source is a lclVar whose home location is being moved to a new
+//      register (rather than just being copied for temporary use).
 //
 void CodeGen::genRegCopy(GenTree* treeNode)
 {
     assert(treeNode->OperGet() == GT_COPY);
+    GenTree* op1 = treeNode->gtOp.gtOp1;
 
-    var_types targetType = treeNode->TypeGet();
-    regNumber targetReg  = treeNode->gtRegNum;
-    assert(targetReg != REG_NA);
-
-    GenTree*  op1       = treeNode->gtOp.gtOp1;
     regNumber sourceReg = genConsumeReg(op1);
 
-    // Check whether this node and the node from which we're copying the value have the same
-    // register type.
-    // This can happen if (currently iff) we have a SIMD vector type that fits in an integer
-    // register, in which case it is passed as an argument, or returned from a call,
-    // in an integer register and must be copied if it's in an xmm register.
-
-    if (varTypeIsFloating(treeNode) != varTypeIsFloating(op1))
+    if (op1->IsMultiRegNode())
     {
-#ifdef _TARGET_ARM64_
-        inst_RV_RV(INS_fmov, targetReg, sourceReg, targetType);
-#else  // !_TARGET_ARM64_
-        if (varTypeIsFloating(treeNode))
-        {
-            // GT_COPY from 'int' to 'float' currently can't happen. Maybe if ARM SIMD is implemented
-            // it will happen, according to the comment above?
-            NYI_ARM("genRegCopy from 'int' to 'float'");
-        }
-        else
-        {
-            assert(varTypeIsFloating(op1));
-
-            if (op1->TypeGet() == TYP_FLOAT)
-            {
-                inst_RV_RV(INS_vmov_f2i, targetReg, genConsumeReg(op1), targetType);
-            }
-            else
-            {
-                regNumber otherReg = (regNumber)treeNode->AsCopyOrReload()->gtOtherRegs[0];
-                assert(otherReg != REG_NA);
-                inst_RV_RV_RV(INS_vmov_d2i, targetReg, otherReg, genConsumeReg(op1), EA_8BYTE);
-            }
-        }
-#endif // !_TARGET_ARM64_
-    }
-    else if (targetType == TYP_STRUCT)
-    {
-        noway_assert(op1->IsMultiRegNode() && !op1->IsCopyOrReload());
+        noway_assert(!op1->IsCopyOrReload());
         unsigned regCount = op1->GetMultiRegCount();
         for (unsigned i = 0; i < regCount; i++)
         {
@@ -2120,7 +2094,51 @@ void CodeGen::genRegCopy(GenTree* treeNode)
     }
     else
     {
-        inst_RV_RV(ins_Copy(targetType), targetReg, sourceReg, targetType);
+        var_types targetType = treeNode->TypeGet();
+        regNumber targetReg  = treeNode->gtRegNum;
+        assert(targetReg != REG_NA);
+        assert(targetType != TYP_STRUCT);
+
+        // Check whether this node and the node from which we're copying the value have the same
+        // register type.
+        // This can happen if (currently iff) we have a SIMD vector type that fits in an integer
+        // register, in which case it is passed as an argument, or returned from a call,
+        // in an integer register and must be copied if it's in a floating point register.
+
+        bool srcFltReg = (varTypeIsFloating(op1) || varTypeIsSIMD(op1));
+        bool tgtFltReg = (varTypeIsFloating(treeNode) || varTypeIsSIMD(treeNode));
+        if (srcFltReg != tgtFltReg)
+        {
+#ifdef _TARGET_ARM64_
+            inst_RV_RV(INS_fmov, targetReg, sourceReg, targetType);
+#else  // !_TARGET_ARM64_
+            if (varTypeIsFloating(treeNode))
+            {
+                // GT_COPY from 'int' to 'float' currently can't happen. Maybe if ARM SIMD is implemented
+                // it will happen, according to the comment above?
+                NYI_ARM("genRegCopy from 'int' to 'float'");
+            }
+            else
+            {
+                assert(varTypeIsFloating(op1));
+
+                if (op1->TypeGet() == TYP_FLOAT)
+                {
+                    inst_RV_RV(INS_vmov_f2i, targetReg, genConsumeReg(op1), targetType);
+                }
+                else
+                {
+                    regNumber otherReg = (regNumber)treeNode->AsCopyOrReload()->gtOtherRegs[0];
+                    assert(otherReg != REG_NA);
+                    inst_RV_RV_RV(INS_vmov_d2i, targetReg, otherReg, genConsumeReg(op1), EA_8BYTE);
+                }
+            }
+#endif // !_TARGET_ARM64_
+        }
+        else
+        {
+            inst_RV_RV(ins_Copy(targetType), targetReg, sourceReg, targetType);
+        }
     }
 
     if (op1->IsLocal())
@@ -2258,7 +2276,8 @@ void CodeGen::genCallInstruction(GenTreeCall* call)
 #endif // _TARGET_*
     }
 
-    // Either gtControlExpr != null or gtCallAddr != null or it is a direct non-virtual call to a user or helper method.
+    // Either gtControlExpr != null or gtCallAddr != null or it is a direct non-virtual call to a user or helper
+    // method.
     CORINFO_METHOD_HANDLE methHnd;
     GenTree*              target = call->gtControlExpr;
     if (callType == CT_INDIRECT)
