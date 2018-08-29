@@ -1115,7 +1115,9 @@ AssertionIndex Compiler::optCreateAssertion(GenTree*         op1,
                             goto DONE_ASSERTION;
                         }
                         // Do not Constant-Prop large constants for ARM
-                        if (!codeGen->validImmForMov(op2->gtIntCon.gtIconVal))
+                        // TODO-CrossBitness: we wouldn't need the cast below if GenTreeIntCon::gtIconVal had
+                        // target_ssize_t type.
+                        if (!codeGen->validImmForMov((target_ssize_t)op2->gtIntCon.gtIconVal))
                         {
                             goto DONE_ASSERTION; // Don't make an assertion
                         }
