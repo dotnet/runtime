@@ -37,6 +37,7 @@
 ////////////////////////////////////////////////////////////////////////////////////
 
 #ifdef _MSC_VER
+#pragma float_control(push)
 #pragma float_control(precise, off)
 #endif
 
@@ -123,7 +124,9 @@ FCIMPLEND
 
 #if defined(_MSC_VER) && defined(_TARGET_AMD64_)
 // The /fp:fast form of `ceilf` for AMD64 does not correctly handle: `-1.0 < value <= -0.0`
-#pragma float_control(precise, on )
+// https://github.com/dotnet/coreclr/issues/19739
+#pragma float_control(push)
+#pragma float_control(precise, on)
 #endif
 
 /*====================================Ceil======================================
@@ -136,7 +139,7 @@ FCIMPL1_V(float, COMSingle::Ceil, float x)
 FCIMPLEND
 
 #if defined(_MSC_VER) && defined(_TARGET_AMD64_)
-#pragma float_control(precise, off)
+#pragma float_control(pop)
 #endif
 
 /*=====================================Cos======================================
@@ -266,7 +269,7 @@ FCIMPL1_V(float, COMSingle::Tanh, float x)
 FCIMPLEND
 
 #ifdef _MSC_VER
-#pragma float_control(precise, on )
+#pragma float_control(pop)
 #endif
 
 ////////////////////////////////////////////////////////////////////////////////////
