@@ -20,15 +20,4 @@
     <SuppressMetaPackage Include="NETStandard.Library" />
   </ItemGroup>
   <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), Directory.Build.targets))\Directory.Build.targets" />
-  <ItemGroup>
-    <!--
-      All frameworks except net45 support the frozen 4.2.0.0 api version. Need to include this after Directory.Build.targets to
-      have DefaultValidateionFramework defined. Normally this wouldn't be necessary but the harvested supported
-      frameworks all complain if we don't lift the version of the assembly they support. This won't be any issue
-      once the 4.5.0 package is stable and we can harvest it.
-    -->
-    <SupportedFramework Include="@(DefaultValidateFramework)">
-      <Version>4.2.0.0</Version>
-    </SupportedFramework>
-  </ItemGroup>
 </Project>

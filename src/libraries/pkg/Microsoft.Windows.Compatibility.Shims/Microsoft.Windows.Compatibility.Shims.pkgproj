@@ -7,6 +7,8 @@
     <SkipPackageFileCheck>true</SkipPackageFileCheck>
     <SkipValidatePackage>true</SkipValidatePackage>
     <OmitDependencies>true</OmitDependencies>
+    <!-- We don't need to harvest the stable packages to build this -->
+    <HarvestStablePackage>false</HarvestStablePackage>
   </PropertyGroup>
 
   <ItemGroup>

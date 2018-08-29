@@ -6,6 +6,8 @@
     <_PreReleasePackageVersion>$(PackageVersion)</_PreReleasePackageVersion>
     <PackageVersion>2.1.0</PackageVersion>
     <ServiceModelVersion>4.4.1</ServiceModelVersion>
+    <!-- We don't need to harvest the stable packages to build this -->
+    <HarvestStablePackage>false</HarvestStablePackage>
   </PropertyGroup>
   <ItemDefinitionGroup>
     <PrereleaseLibraryPackage>
