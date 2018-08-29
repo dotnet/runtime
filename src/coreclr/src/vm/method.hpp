@@ -2680,6 +2680,17 @@ public:
     // Atomically set specified flags. Only setting of the bits is supported.
     void InterlockedSetNDirectFlags(WORD wFlags);
 
+    void SetIsEarlyBound()
+    {
+        LIMITED_METHOD_CONTRACT;
+        ndirect.m_wFlags |= kEarlyBound;
+    }
+
+    BOOL IsEarlyBound()
+    {
+        LIMITED_METHOD_CONTRACT;
+        return (ndirect.m_wFlags & kEarlyBound) != 0;
+    }
 
     BOOL IsNativeAnsi() const
     {
@@ -2912,6 +2923,7 @@ public:
     }
 #endif // defined(_TARGET_X86_)
 
+    VOID InitEarlyBoundNDirectTarget();
 
     // In AppDomains, we can trigger declarer's cctor when we link the P/Invoke,
     // which takes care of inlined calls as well. See code:NDirect.NDirectLink.
