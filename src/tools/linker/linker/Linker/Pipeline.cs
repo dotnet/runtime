@@ -123,11 +123,16 @@ namespace Mono.Linker {
 		{
 			while (_steps.Count > 0) {
 				IStep step = _steps [0];
-				context.Tracer.Push (step);
-				step.Process (context);
-				context.Tracer.Pop ();
+				ProcessStep (context, step);
 				_steps.Remove (step);
 			}
+		}
+		
+		protected virtual void ProcessStep (LinkContext context, IStep step)
+		{
+			context.Tracer.Push (step);
+			step.Process (context);
+			context.Tracer.Pop ();
 		}
 
 		public IStep [] GetSteps ()
