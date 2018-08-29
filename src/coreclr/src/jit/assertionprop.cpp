@@ -1109,6 +1109,11 @@ AssertionIndex Compiler::optCreateAssertion(GenTree*         op1,
                     if (op2->gtOper == GT_CNS_INT)
                     {
 #ifdef _TARGET_ARM_
+                        // Do not Constant-Prop immediate values that require relocation
+                        if (op2->gtIntCon.ImmedValNeedsReloc(this))
+                        {
+                            goto DONE_ASSERTION;
+                        }
                         // Do not Constant-Prop large constants for ARM
                         if (!codeGen->validImmForMov(op2->gtIntCon.gtIconVal))
                         {
