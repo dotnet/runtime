@@ -205,6 +205,8 @@ typedef enum {
 	JIT_INFO_HAS_UNWIND_INFO = (1 << 4)
 } MonoJitInfoFlags;
 
+G_ENUM_FUNCTIONS (MonoJitInfoFlags)
+
 struct _MonoJitInfo {
 	/* NOTE: These first two elements (method and
 	   next_jit_code_hash) must be in the same order and at the

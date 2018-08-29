@@ -2440,14 +2440,14 @@ void
 ves_icall_System_Threading_Thread_ClrState (MonoInternalThreadHandle this_obj, guint32 state, MonoError *error)
 {
 	// InternalThreads are always pinned, so shallowly coop-handleize.
-	mono_thread_clr_state (mono_internal_thread_handle_ptr (this_obj), state);
+	mono_thread_clr_state (mono_internal_thread_handle_ptr (this_obj), (MonoThreadState)state);
 }
 
 void
 ves_icall_System_Threading_Thread_SetState (MonoInternalThreadHandle thread_handle, guint32 state, MonoError *error)
 {
 	// InternalThreads are always pinned, so shallowly coop-handleize.
-	mono_thread_set_state (mono_internal_thread_handle_ptr (thread_handle), state);
+	mono_thread_set_state (mono_internal_thread_handle_ptr (thread_handle), (MonoThreadState)state);
 }
 
 guint32
@@ -5168,7 +5168,7 @@ mono_thread_clear_and_set_state (MonoInternalThread *thread, MonoThreadState cle
 {
 	LOCK_THREAD (thread);
 
-	MonoThreadState const old_state = thread->state;
+	MonoThreadState const old_state = (MonoThreadState)thread->state;
 	MonoThreadState const new_state = (old_state & ~clear) | set;
 	thread->state = new_state;
 
@@ -5180,7 +5180,7 @@ mono_thread_clear_and_set_state (MonoInternalThread *thread, MonoThreadState cle
 void
 mono_thread_set_state (MonoInternalThread *thread, MonoThreadState state)
 {
-	mono_thread_clear_and_set_state (thread, 0, state);
+	mono_thread_clear_and_set_state (thread, (MonoThreadState)0, state);
 }
 
 /**
@@ -5193,7 +5193,7 @@ mono_thread_test_and_set_state (MonoInternalThread *thread, MonoThreadState test
 {
 	LOCK_THREAD (thread);
 	
-	MonoThreadState const old_state = thread->state;
+	MonoThreadState const old_state = (MonoThreadState)thread->state;
 
 	if ((old_state & test) != 0) {
 		UNLOCK_THREAD (thread);
@@ -5213,7 +5213,7 @@ mono_thread_test_and_set_state (MonoInternalThread *thread, MonoThreadState test
 void
 mono_thread_clr_state (MonoInternalThread *thread, MonoThreadState state)
 {
-	mono_thread_clear_and_set_state (thread, state, 0);
+	mono_thread_clear_and_set_state (thread, state, (MonoThreadState)0);
 }
 
 gboolean

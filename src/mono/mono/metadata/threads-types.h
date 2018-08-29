@@ -34,7 +34,9 @@ typedef enum {
 	ThreadState_Suspended = 0x00000040,
 	ThreadState_AbortRequested = 0x00000080,
 	ThreadState_Aborted = 0x00000100
-} MonoThreadState; 
+} MonoThreadState;
+
+G_ENUM_FUNCTIONS (MonoThreadState)
 
 /* This is a copy of System.Threading.ApartmentState */
 typedef enum {

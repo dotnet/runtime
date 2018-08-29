@@ -2670,7 +2670,7 @@ reflection_setup_internal_class_internal (MonoReflectionTypeBuilderHandle ref_tb
 		gboolean recursive_init = TRUE;
 
 		if (is_sre_type_builder (parent_klass)) {
-			MonoTypeBuilderState parent_state = MONO_HANDLE_GETVAL (MONO_HANDLE_CAST (MonoReflectionTypeBuilder, ref_parent), state);
+			MonoTypeBuilderState parent_state = (MonoTypeBuilderState)MONO_HANDLE_GETVAL (MONO_HANDLE_CAST (MonoReflectionTypeBuilder, ref_parent), state);
 
 			if (parent_state != MonoTypeBuilderNew) {
 				// Initialize types reachable from parent recursively
@@ -2733,7 +2733,7 @@ reflection_init_generic_class (MonoReflectionTypeBuilderHandle ref_tb, MonoError
 
 	error_init (error);
 
-	MonoTypeBuilderState ref_state = MONO_HANDLE_GETVAL (ref_tb, state);
+	MonoTypeBuilderState ref_state = (MonoTypeBuilderState)MONO_HANDLE_GETVAL (ref_tb, state);
 	g_assert (ref_state == MonoTypeBuilderFinished);
 
 	MonoType *type = MONO_HANDLE_GETVAL (MONO_HANDLE_CAST (MonoReflectionType, ref_tb), type);

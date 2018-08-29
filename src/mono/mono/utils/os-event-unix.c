@@ -182,7 +182,7 @@ mono_os_event_wait_multiple (MonoOSEvent **events, gsize nevents, gboolean waita
 			signalled = (count > 0);
 
 		if (signalled) {
-			ret = MONO_OS_EVENT_WAIT_RET_SUCCESS_0 + lowest;
+			ret = (MonoOSEventWaitRet)(MONO_OS_EVENT_WAIT_RET_SUCCESS_0 + lowest);
 			goto done;
 		}
 

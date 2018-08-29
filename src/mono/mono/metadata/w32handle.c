@@ -1002,10 +1002,10 @@ mono_w32handle_wait_multiple (gpointer *handles, gsize nhandles, gboolean waital
 		mono_w32handle_unlock_handles (handles_data, nhandles);
 
 		if (signalled) {
-			ret = MONO_W32HANDLE_WAIT_RET_SUCCESS_0 + lowest;
+			ret = (MonoW32HandleWaitRet)(MONO_W32HANDLE_WAIT_RET_SUCCESS_0 + lowest);
 			for (i = lowest; i < nhandles; i++) {
 				if (abandoned [i]) {
-					ret = MONO_W32HANDLE_WAIT_RET_ABANDONED_0 + lowest;
+					ret = (MonoW32HandleWaitRet)(MONO_W32HANDLE_WAIT_RET_ABANDONED_0 + lowest);
 					break;
 				}
 			}

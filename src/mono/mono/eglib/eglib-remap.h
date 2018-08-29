@@ -294,3 +294,5 @@
 #define g_log_set_default_handler monoeg_log_set_default_handler
 #define g_set_print_handler monoeg_set_print_handler
 #define g_set_printerr_handler monoeg_set_printerr_handler
+
+#define g_size_to_int monoeg_size_to_int

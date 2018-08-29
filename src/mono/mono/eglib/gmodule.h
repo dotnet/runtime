@@ -20,6 +20,9 @@ typedef enum {
 	G_MODULE_BIND_LOCAL = 0x02,
 	G_MODULE_BIND_MASK = 0x03
 } GModuleFlags;
+
+G_ENUM_FUNCTIONS (GModuleFlags)
+
 typedef struct _GModule GModule;
 
 GModule *g_module_open (const gchar *file, GModuleFlags flags);

@@ -153,8 +153,6 @@ enum {
 	ASYNC_SUSPEND_STATE_INDEX = 1,
 };
 
-typedef struct _MonoThreadInfoInterruptToken MonoThreadInfoInterruptToken;
-
 /*
  * These flags control how the rest of the runtime will see and interact with
  * a thread.
@@ -176,6 +174,10 @@ typedef enum {
 	 */
 	MONO_THREAD_INFO_FLAGS_NO_SAMPLE = 2,
 } MonoThreadInfoFlags;
+
+G_ENUM_FUNCTIONS (MonoThreadInfoFlags)
+
+typedef struct _MonoThreadInfoInterruptToken MonoThreadInfoInterruptToken;
 
 typedef struct _MonoThreadInfo {
 	MonoLinkedListSetNode node;
@@ -704,12 +706,11 @@ gboolean mono_thread_is_gc_unsafe_mode (void);
  * BLOCKING_SUSPEND_REQUESTED state, in which case they are preemptively
  * suspended.
  */
-typedef enum {
-	MONO_THREAD_SUSPEND_PHASE_INITIAL = 0,
-	MONO_THREAD_SUSPEND_PHASE_MOPUP = 1,
-	// number of phases
-	MONO_THREAD_SUSPEND_PHASE_COUNT = 2,
-} MonoThreadSuspendPhase;
+#define MONO_THREAD_SUSPEND_PHASE_INITIAL (0)
+#define MONO_THREAD_SUSPEND_PHASE_MOPUP (1)
+// number of phases
+#define MONO_THREAD_SUSPEND_PHASE_COUNT (2)
+typedef int MonoThreadSuspendPhase;
 
 typedef enum {
 	MONO_THREAD_BEGIN_SUSPEND_SKIP = 0,
