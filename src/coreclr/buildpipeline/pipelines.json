@@ -86,7 +86,8 @@
         {
           "Name": "DotNet-CoreClr-Trusted-Windows",
           "Parameters": {
-            "Architecture": "arm64"
+            "Architecture": "arm64",
+            "PB_IBCOptimize": ""
           },
           "ReportingParameters": {
             "OperatingSystem": "Windows",
@@ -99,7 +100,8 @@
         {
           "Name": "DotNet-CoreClr-Trusted-Windows",
           "Parameters": {
-            "Architecture": "arm"
+            "Architecture": "arm",
+            "PB_IBCOptimize": ""
           },
           "ReportingParameters": {
             "OperatingSystem": "Windows",
@@ -175,7 +177,8 @@
       "BuildParameters": {
         "PB_BuildType": "Release",
         "PublishFlat": "false",
-        "PB_EnforcePGO": "enforcepgo"
+        "PB_EnforcePGO": "enforcepgo",
+        "PB_IBCOptimize": "-ibcoptimize"
       },
       "ReportingParameters": {
         "PB_BuildType": "Release"
