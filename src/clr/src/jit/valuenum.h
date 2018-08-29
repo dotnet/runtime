@@ -176,21 +176,27 @@ private:
     template <typename T>
     static T EvalOp(VNFunc vnf, T v0);
 
+    // returns vnf(v0)  for int/INT32
+    int EvalOpInt(VNFunc vnf, int v0);
+
     // If vnf(v0, v1) would raise an exception, sets *pExcSet to the singleton set containing the exception, and
     // returns (T)0. Otherwise, returns vnf(v0, v1).
     template <typename T>
     T EvalOp(VNFunc vnf, T v0, T v1, ValueNum* pExcSet);
 
+    // returns vnf(v0, v1)  for int/INT32
+    int EvalOpInt(VNFunc vnf, int v0, int v1, ValueNum* pExcSet);
+
+    // return vnf(v0) or vnf(v0, v1), respectively (must, of course be unary/binary ops, respectively.)
+    template <typename T>
+    static T EvalOpSpecialized(VNFunc vnf, T v0);
+    template <typename T>
+    T EvalOpSpecialized(VNFunc vnf, T v0, T v1);
+
     template <typename T>
     static int EvalComparison(VNFunc vnf, T v0, T v1);
     template <typename T>
     static int EvalOrderedComparisonFloat(VNFunc vnf, T v0, T v1);
-    // return vnf(v0) or vnf(v0, v1), respectively (must, of course be unary/binary ops, respectively.)
-    // Should only be instantiated for integral types.
-    template <typename T>
-    static T EvalOpIntegral(VNFunc vnf, T v0);
-    template <typename T>
-    T EvalOpIntegral(VNFunc vnf, T v0, T v1, ValueNum* pExcSet);
 
     // Should only instantiate (in a non-trivial way) for "int" and "INT64".  Returns true iff dividing "v0" by "v1"
     // would produce integer overflow (an ArithmeticException -- *not* division by zero, which is separate.)
@@ -216,13 +222,6 @@ private:
     ValueNum EvalFuncForConstantArgs(var_types typ, VNFunc vnf, ValueNum vn0, ValueNum vn1);
     ValueNum EvalFuncForConstantFPArgs(var_types typ, VNFunc vnf, ValueNum vn0, ValueNum vn1);
     ValueNum EvalCastForConstantArgs(var_types typ, VNFunc vnf, ValueNum vn0, ValueNum vn1);
-
-#ifdef DEBUG
-    // This helps test some performance pathologies related to "evaluation" of VNF_MapSelect terms,
-    // especially relating to GcHeap/ByrefExposed.  We count the number of applications of such terms we consider,
-    // and if this exceeds a limit, indicated by a COMPlus_ variable, we assert.
-    unsigned m_numMapSels;
-#endif
 
 // This is the constant value used for the default value of m_mapSelectBudget
 #define DEFAULT_MAP_SELECT_BUDGET 100 // used by JitVNMapSelBudget
@@ -1313,6 +1312,13 @@ private:
     // be carried by the distinct value numbers.
     static class Object* s_specialRefConsts[SRC_NumSpecialRefConsts];
     static class Object* s_nullConst;
+
+#ifdef DEBUG
+    // This helps test some performance pathologies related to "evaluation" of VNF_MapSelect terms,
+    // especially relating to GcHeap/ByrefExposed.  We count the number of applications of such terms we consider,
+    // and if this exceeds a limit, indicated by a COMPlus_ variable, we assert.
+    unsigned m_numMapSels;
+#endif
 };
 
 template <>
