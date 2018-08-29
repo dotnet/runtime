@@ -17,7 +17,8 @@
     <Exec Command="$(DotnetToolCommand) build $(MSBuildThisFileDirectory)tools-local/tasks/core-setup.tasks.csproj" />
   </Target>
 
-  <Target Name="GetLatestCommitHash">
+  <Target Name="GetLatestCommitHash"
+          Condition="'$(LatestCommit)' == ''">
     <!-- Get the latest commit hash -->
     <Exec Command="git rev-parse HEAD 2>&amp;1" StandardOutputImportance="Low" IgnoreExitCode="true" IgnoreStandardErrorWarningFormat="true" ConsoleToMSBuild="true">
       <Output TaskParameter="ConsoleOutput" PropertyName="LatestCommit" />
@@ -29,13 +30,13 @@
     </PropertyGroup>
   </Target>
 
-  <Target Name="GetCommitCount">
+  <Target Name="GetCommitCount"
+          Condition="'$(CommitCount)' == ''">
     <Exec Command="git rev-list --count HEAD"
           StandardOutputImportance="Low"
           IgnoreExitCode="true"
           IgnoreStandardErrorWarningFormat="true"
-          ConsoleToMSBuild="true"
-          Condition="'$(CommitCount)' == ''">
+          ConsoleToMSBuild="true">
      <Output TaskParameter="ConsoleOutput" PropertyName="CommitCount" />
      <Output TaskParameter="ExitCode" PropertyName="CommitCountExitCode" />
     </Exec>
