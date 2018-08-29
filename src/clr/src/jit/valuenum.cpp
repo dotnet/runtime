@@ -687,20 +687,14 @@ T ValueNumStore::EvalOpIntegral(VNFunc vnf, T v0, T v1, ValueNum* pExcSet)
     }
 }
 
+// Create a ValueNum for an exception set singleton for 'x'
+//
 ValueNum ValueNumStore::VNExcSetSingleton(ValueNum x)
 {
-    ValueNum res = VNForFunc(TYP_REF, VNF_ExcSetCons, x, VNForEmptyExcSet());
-#ifdef DEBUG
-    if (m_pComp->verbose)
-    {
-        printf("    " FMT_VN " = singleton exc set", res);
-        vnDump(m_pComp, x);
-        printf("\n");
-    }
-#endif
-    return res;
+    return VNForFunc(TYP_REF, VNF_ExcSetCons, x, VNForEmptyExcSet());
 }
-
+// Create a ValueNumPair for an exception set singleton for 'xp'
+//
 ValueNumPair ValueNumStore::VNPExcSetSingleton(ValueNumPair xp)
 {
     return ValueNumPair(VNExcSetSingleton(xp.GetLiberal()), VNExcSetSingleton(xp.GetConservative()));
@@ -773,6 +767,23 @@ void ValueNumStore::VNPUnpackExc(ValueNumPair vnWx, ValueNumPair* pvn, ValueNumP
     VNUnpackExc(vnWx.GetConservative(), pvn->GetConservativeAddr(), pvnx->GetConservativeAddr());
 }
 
+//--------------------------------------------------------------------------------
+// VNNormVal:    - Returns a Value Number that represents the result for the
+//                 normal (non-exceptional) evaluation for the expression.
+//
+// Arguments:
+//    vn         - The Value Number for the expression, including any  excSet.
+//                 This excSet is an optional item and represents the set of
+//                 possible exceptions for the expression.
+//
+// Return Value:
+//               - The Value Number for the expression without the exception set.
+//                 This can be the orginal 'vn', when there are no exceptions.
+//
+// Notes:        - Whenever we have an exception set the Value Number will be
+//                 a VN func with VNF_ValWithExc.
+//                 This VN func has the normal value as m_args[0]
+//
 ValueNum ValueNumStore::VNNormVal(ValueNum vn)
 {
     VNFuncApp funcApp;
@@ -786,11 +797,37 @@ ValueNum ValueNumStore::VNNormVal(ValueNum vn)
     }
 }
 
+//--------------------------------------------------------------------------------
+// VNPNormVal:   - Returns a Value Number Pair that represents the result for the
+//                 normal (non-exceptional) evaluation for the expression.
+//                 (see VNNormVal for more details)
+//
+// Notes:        = This method is used to form a Value Number Pair when we
+//                 want both the Liberal and Conservative Value NUmbers
+//
 ValueNumPair ValueNumStore::VNPNormVal(ValueNumPair vnp)
 {
     return ValueNumPair(VNNormVal(vnp.GetLiberal()), VNNormVal(vnp.GetConservative()));
 }
 
+//---------------------------------------------------------------------------
+// VNExcVal:     - Returns a Value Number that represents the set of possible
+//                 exceptions that could be encountered for the expression.
+//
+// Arguments:
+//    vn         - The Value Number for the expression, including any excSet.
+//                 This excSet is an optional item and represents the set of
+//                 possible exceptions for the expression.
+//
+// Return Value:
+//               - The Value Number for the set of exceptions of the expression.
+//                 If the 'vn' has no exception set then a special Value Number
+//                 representing the empty exception set is returned.
+//
+// Notes:        - Whenever we have an exception set the Value Number will be
+//                 a VN func with VNF_ValWithExc.
+//                 This VN func has the exception set as m_args[1]
+//
 ValueNum ValueNumStore::VNExcVal(ValueNum vn)
 {
     VNFuncApp funcApp;
@@ -804,13 +841,37 @@ ValueNum ValueNumStore::VNExcVal(ValueNum vn)
     }
 }
 
+//--------------------------------------------------------------------------------
+// VNPExcVal:    - Returns a Value Number Pair that represents the set of possible
+//                 exceptions that could be encountered for the expression.
+//                 (see VNExcVal for more details)
+//
+// Notes:        = This method is used to form a Value Number Pair when we
+//                 want both the Liberal and Conservative Value NUmbers
+//
 ValueNumPair ValueNumStore::VNPExcVal(ValueNumPair vnp)
 {
     return ValueNumPair(VNExcVal(vnp.GetLiberal()), VNExcVal(vnp.GetConservative()));
 }
 
-// If vn "excSet" is not "VNForEmptyExcSet()", return "VNF_ValWithExc(vn, excSet)".  Otherwise,
-// just return "vn".
+//---------------------------------------------------------------------------
+// VNWithExc:    - Returns a Value Number that also can have both a normal value
+//                 as well as am exception set.
+//
+// Arguments:
+//    vn         - The current Value Number for the expression, it may include
+//                 an exception set.
+//    excSet     - The Value Number representing the new exception set that
+//                 is to be added to any exceptions already present in 'vn'
+//
+// Return Value:
+//               - The new Value Number for the combination the two inputs.
+//                 If the 'excSet' is the special Value Number representing
+//                 the empty exception set then 'vn' is returned.
+//
+// Notes:        - We use a Set Union operation, 'VNExcSetUnion', to add any
+//                 new exception items from  'excSet' to the existing set.
+//
 ValueNum ValueNumStore::VNWithExc(ValueNum vn, ValueNum excSet)
 {
     if (excSet == VNForEmptyExcSet())
@@ -826,6 +887,14 @@ ValueNum ValueNumStore::VNWithExc(ValueNum vn, ValueNum excSet)
     }
 }
 
+//--------------------------------------------------------------------------------
+// VNPWithExc:   - Returns a Value Number Pair that also can have both a normal value
+//                 as well as am exception set.
+//                 (see VNWithExc for more details)
+//
+// Notes:        = This method is used to form a Value Number Pair when we
+//                 want both the Liberal and Conservative Value NUmbers
+//
 ValueNumPair ValueNumStore::VNPWithExc(ValueNumPair vnp, ValueNumPair excSetVNP)
 {
     return ValueNumPair(VNWithExc(vnp.GetLiberal(), excSetVNP.GetLiberal()),
@@ -2867,23 +2936,6 @@ ValueNum ValueNumStore::VNApplySelectorsAssign(
         var_types   fieldType = JITtype2varType(fieldCit);
 
         ValueNum fieldHndVN = VNForHandle(ssize_t(fldHnd), GTF_ICON_FIELD_HDL);
-
-#ifdef DEBUG
-        if (m_pComp->verbose)
-        {
-            printf("  fieldHnd " FMT_VN " is ", fieldHndVN);
-            vnDump(m_pComp, fieldHndVN);
-            printf("\n");
-
-            ValueNum seqNextVN  = VNForFieldSeq(fieldSeq->m_next);
-            ValueNum fieldSeqVN = VNForFunc(TYP_REF, VNF_FieldSeq, fieldHndVN, seqNextVN);
-
-            printf("  fieldSeq " FMT_VN " is ", fieldSeqVN);
-            vnDump(m_pComp, fieldSeqVN);
-            printf("\n");
-        }
-#endif
-
         ValueNum elemAfter;
         if (fieldSeq->m_next)
         {
@@ -3169,8 +3221,6 @@ ValueNum Compiler::fgValueNumberArrIndexAssign(CORINFO_CLASS_HANDLE elemTypeEq,
         printf("  newValAtArrType " FMT_VN " is ", newValAtArrType);
         vnStore->vnDump(this, newValAtArrType);
         printf("\n");
-
-        printf("  fgCurMemoryVN assigned:\n");
     }
 #endif // DEBUG
 
@@ -4197,6 +4247,9 @@ void ValueNumStore::vnDump(Compiler* comp, ValueNum vn, bool isPtr)
             case VNF_MapStore:
                 vnDumpMapStore(comp, &funcApp);
                 break;
+            case VNF_ValWithExc:
+                vnDumpValWithExc(comp, &funcApp);
+                break;
             default:
                 printf("%s(", VNFuncName(funcApp.m_func));
                 for (unsigned i = 0; i < funcApp.m_arity; i++)
@@ -4206,7 +4259,7 @@ void ValueNumStore::vnDump(Compiler* comp, ValueNum vn, bool isPtr)
                         printf(", ");
                     }
 
-                    printf(FMT_VN "", funcApp.m_args[i]);
+                    printf(FMT_VN, funcApp.m_args[i]);
 
 #if FEATURE_VN_DUMP_FUNC_ARGS
                     printf("=");
@@ -4222,6 +4275,58 @@ void ValueNumStore::vnDump(Compiler* comp, ValueNum vn, bool isPtr)
         printf("%x", vn);
     }
     printf("}");
+}
+
+// Requires "valWithExc" to be a value with an exeception set VNFuncApp.
+// Prints a representation of the exeception set on standard out.
+void ValueNumStore::vnDumpValWithExc(Compiler* comp, VNFuncApp* valWithExc)
+{
+    assert(valWithExc->m_func == VNF_ValWithExc); // Precondition.
+
+    ValueNum normVN = valWithExc->m_args[0]; // First arg is the VN from normal execution
+    ValueNum excVN  = valWithExc->m_args[1]; // Second arg is the set of possible exceptions
+
+    assert(IsVNFunc(excVN));
+    VNFuncApp excSeq;
+    GetVNFunc(excVN, &excSeq);
+
+    printf("norm=");
+    printf(FMT_VN, normVN);
+    vnDump(comp, normVN);
+    printf(", exc=");
+    printf(FMT_VN, excVN);
+    vnDumpExcSeq(comp, &excSeq, true);
+}
+
+// Requires "excSeq" to be a ExcSetCons sequence.
+// Prints a representation of the set of exceptions on standard out.
+void ValueNumStore::vnDumpExcSeq(Compiler* comp, VNFuncApp* excSeq, bool isHead)
+{
+    assert(excSeq->m_func == VNF_ExcSetCons); // Precondition.
+
+    ValueNum curExc  = excSeq->m_args[0];
+    bool     hasTail = (excSeq->m_args[1] != VNForEmptyExcSet());
+
+    if (isHead && hasTail)
+    {
+        printf("(");
+    }
+
+    vnDump(comp, curExc);
+
+    if (hasTail)
+    {
+        printf(", ");
+        assert(IsVNFunc(excSeq->m_args[1]));
+        VNFuncApp tail;
+        GetVNFunc(excSeq->m_args[1], &tail);
+        vnDumpExcSeq(comp, &tail, false);
+    }
+
+    if (isHead && hasTail)
+    {
+        printf(")");
+    }
 }
 
 void ValueNumStore::vnDumpFieldSeq(Compiler* comp, VNFuncApp* fieldSeq, bool isHead)
@@ -5272,8 +5377,6 @@ ValueNum Compiler::fgMemoryVNForLoopSideEffects(MemoryKind  memoryKind,
                     const char* modName;
                     const char* fldName = eeGetFieldName(fldHnd, &modName);
                     printf("     VNForHandle(Fseq[%s]) is " FMT_VN "\n", fldName, fldHndVN);
-
-                    printf("  fgCurMemoryVN assigned:\n");
                 }
 #endif // DEBUG
 
@@ -5302,7 +5405,6 @@ ValueNum Compiler::fgMemoryVNForLoopSideEffects(MemoryKind  memoryKind,
                     {
                         printf("     Array map %s[]\n", varTypeName(elemTyp));
                     }
-                    printf("  fgCurMemoryVN assigned:\n");
                 }
 #endif // DEBUG
 
@@ -5369,7 +5471,7 @@ void Compiler::recordGcHeapStore(GenTree* curTree, ValueNum gcHeapVN DEBUGARG(co
 #ifdef DEBUG
     if (verbose)
     {
-        printf("  fgCurMemoryVN[GcHeap] assigned by %s at ", msg);
+        printf("  fgCurMemoryVN[GcHeap] assigned for %s at ", msg);
         Compiler::printTreeID(curTree);
         printf(" to VN: " FMT_VN ".\n", gcHeapVN);
     }
@@ -5393,7 +5495,7 @@ void Compiler::recordAddressExposedLocalStore(GenTree* curTree, ValueNum memoryV
 #ifdef DEBUG
     if (verbose)
     {
-        printf("  fgCurMemoryVN[ByrefExposed] assigned by %s at ", msg);
+        printf("  fgCurMemoryVN[ByrefExposed] assigned for %s at ", msg);
         Compiler::printTreeID(curTree);
         printf(" to VN: " FMT_VN ".\n", memoryVN);
     }
@@ -6320,10 +6422,14 @@ void Compiler::fgValueNumberTree(GenTree* tree)
                 break;
 
                 case GT_PHI_ARG:
-                    assert(false); // Phi arg cannot be LHS.
+                    noway_assert(!"Phi arg cannot be LHS.");
+                    break;
 
                 case GT_BLK:
                 case GT_OBJ:
+                    noway_assert(!"GT_BLK/GT_OBJ can not be LHS when !varTypeIsStruct(tree) is true!");
+                    break;
+
                 case GT_IND:
                 {
                     bool isVolatile = (lhs->gtFlags & GTF_IND_VOLATILE) != 0;
@@ -6466,7 +6572,7 @@ void Compiler::fgValueNumberTree(GenTree* tree)
 
                             ValueNum heapVN = fgValueNumberArrIndexAssign(elemTypeEq, arrVN, inxVN, fldSeq,
                                                                           rhsVNPair.GetLiberal(), lhs->TypeGet());
-                            recordGcHeapStore(tree, heapVN DEBUGARG("Array element assignment"));
+                            recordGcHeapStore(tree, heapVN DEBUGARG("ArrIndexAssign (case 1)"));
                         }
                         // It may be that we haven't parsed it yet.  Try.
                         else if (lhs->gtFlags & GTF_IND_ARR_INDEX)
@@ -6503,7 +6609,7 @@ void Compiler::fgValueNumberTree(GenTree* tree)
 
                             ValueNum heapVN = fgValueNumberArrIndexAssign(elemTypeEq, arrVN, inxVN, fldSeq,
                                                                           rhsVNPair.GetLiberal(), lhs->TypeGet());
-                            recordGcHeapStore(tree, heapVN DEBUGARG("assignment to unparseable array expression"));
+                            recordGcHeapStore(tree, heapVN DEBUGARG("ArrIndexAssign (case 2)"));
                         }
                         else if (arg->IsFieldAddr(this, &obj, &staticOffset, &fldSeq))
                         {
@@ -6603,15 +6709,6 @@ void Compiler::fgValueNumberTree(GenTree* tree)
                                 // but the dumps read better with it set to the 'storeVal' that we just computed
                                 lhs->gtVNPair.SetBoth(storeVal);
 
-#ifdef DEBUG
-                                if (verbose)
-                                {
-                                    printf("  fgCurMemoryVN assigned:\n");
-                                }
-#endif // DEBUG
-                                // bbMemoryDef must include GcHeap for any block that mutates the GC heap
-                                assert((compCurBB->bbMemoryDef & memoryKindSet(GcHeap)) != 0);
-
                                 // Update the field map for firstField in GcHeap to this new value.
                                 ValueNum heapVN =
                                     vnStore->VNApplySelectorsAssign(VNK_Liberal, fgCurMemoryVN[GcHeap], firstFieldOnly,
@@ -6677,12 +6774,7 @@ void Compiler::fgValueNumberTree(GenTree* tree)
                     // It is not strictly necessary to set the lhs value number,
                     // but the dumps read better with it set to the 'storeVal' that we just computed
                     lhs->gtVNPair.SetBoth(storeVal);
-#ifdef DEBUG
-                    if (verbose)
-                    {
-                        printf("  fgCurMemoryVN assigned:\n");
-                    }
-#endif // DEBUG
+
                     // bbMemoryDef must include GcHeap for any block that mutates the GC heap
                     assert((compCurBB->bbMemoryDef & memoryKindSet(GcHeap)) != 0);
 
