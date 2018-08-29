@@ -6,7 +6,7 @@
     <DefineConstants Condition="'$(TargetGroup)' == 'netcoreapp' or '$(TargetGroup)' == 'netcoreappaot'">$(DefineConstants);FEATURE_COMPILEAPIS</DefineConstants>
     <ILLinkClearInitLocals>true</ILLinkClearInitLocals>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
-    <Configurations>netcoreapp-Debug;netcoreapp-Release;uap-Windows_NT-Debug;uap-Windows_NT-Release</Configurations>
+    <Configurations>netcoreapp-Debug;netcoreapp-Release;netcoreappaot-Debug;netcoreappaot-Release;uap-Windows_NT-Debug;uap-Windows_NT-Release</Configurations>
   </PropertyGroup>
   <ItemGroup>
     <Compile Include="System\Collections\Generic\ValueListBuilder.Pop.cs" />
