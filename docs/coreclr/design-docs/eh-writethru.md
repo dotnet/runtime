@@ -88,7 +88,7 @@ the more expensive analysis out of the startup path.
 On the IR directly before SSA build:
 - Run global liveness to identify local vars that cross EH boundaries (as a
   byproduct of this these local vars are marked "do not enregister")
-- Foreach EH local var create a new local var "proxy" that can be enregisterd.
+- Foreach EH local var create a new local var "proxy" that can be enregistered.
 - Iterate each block in the flow graph doing the following:
   * Foreach tree in block do a post order traversal and
     - Replace all appearances of EH local vars with the defined proxy
