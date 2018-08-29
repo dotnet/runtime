@@ -4530,29 +4530,41 @@ void CodeGen::genCodeForIndir(GenTreeIndir* tree)
     genProduceReg(tree);
 }
 
+//------------------------------------------------------------------------
+// genRegCopy: Produce code for a GT_COPY node.
+//
+// Arguments:
+//    tree - the GT_COPY node
+//
+// Notes:
+//    This will copy the register(s) produced by this nodes source, to
+//    the register(s) allocated to this GT_COPY node.
+//    It has some special handling for these casess:
+//    - when the source and target registers are in different register files
+//      (note that this is *not* a conversion).
+//    - when the source is a lclVar whose home location is being moved to a new
+//      register (rather than just being copied for temporary use).
+//
 void CodeGen::genRegCopy(GenTree* treeNode)
 {
     assert(treeNode->OperGet() == GT_COPY);
     GenTree* op1 = treeNode->gtOp.gtOp1;
 
-    if (op1->IsMultiRegCall())
+    if (op1->IsMultiRegNode())
     {
         genConsumeReg(op1);
 
-        GenTreeCopyOrReload* copyTree    = treeNode->AsCopyOrReload();
-        GenTreeCall*         call        = op1->AsCall();
-        ReturnTypeDesc*      retTypeDesc = call->GetReturnTypeDesc();
-        unsigned             regCount    = retTypeDesc->GetReturnRegCount();
+        GenTreeCopyOrReload* copyTree = treeNode->AsCopyOrReload();
+        unsigned             regCount = treeNode->GetMultiRegCount();
 
         for (unsigned i = 0; i < regCount; ++i)
         {
-            var_types type    = retTypeDesc->GetReturnRegType(i);
-            regNumber fromReg = call->GetRegNumByIdx(i);
+            var_types type    = op1->GetRegTypeByIndex(i);
+            regNumber fromReg = op1->GetRegByIndex(i);
             regNumber toReg   = copyTree->GetRegNumByIdx(i);
 
-            // A Multi-reg GT_COPY node will have valid reg only for those
-            // positions that corresponding result reg of call node needs
-            // to be copied.
+            // A Multi-reg GT_COPY node will have a valid reg only for those positions for which a corresponding
+            // result reg of the multi-reg node needs to be copied.
             if (toReg != REG_NA)
             {
                 assert(toReg != fromReg);
@@ -8619,61 +8631,6 @@ void CodeGen::genEmitHelperCall(unsigned helper, int argSize, emitAttr retSize, 
 
     regSet.verifyRegistersUsed(killMask);
 }
-
-#if !defined(_TARGET_64BIT_)
-//-----------------------------------------------------------------------------
-//
-// Code Generation for Long integers
-//
-//-----------------------------------------------------------------------------
-
-//------------------------------------------------------------------------
-// genStoreLongLclVar: Generate code to store a non-enregistered long lclVar
-//
-// Arguments:
-//    treeNode - A TYP_LONG lclVar node.
-//
-// Return Value:
-//    None.
-//
-// Assumptions:
-//    'treeNode' must be a TYP_LONG lclVar node for a lclVar that has NOT been promoted.
-//    Its operand must be a GT_LONG node.
-//
-void CodeGen::genStoreLongLclVar(GenTree* treeNode)
-{
-    emitter* emit = getEmitter();
-
-    GenTreeLclVarCommon* lclNode = treeNode->AsLclVarCommon();
-    unsigned             lclNum  = lclNode->gtLclNum;
-    LclVarDsc*           varDsc  = &(compiler->lvaTable[lclNum]);
-    assert(varDsc->TypeGet() == TYP_LONG);
-    assert(!varDsc->lvPromoted);
-    GenTree* op1 = treeNode->gtOp.gtOp1;
-    noway_assert(op1->OperGet() == GT_LONG || op1->OperGet() == GT_MUL_LONG);
-    genConsumeRegs(op1);
-
-    if (op1->OperGet() == GT_LONG)
-    {
-        GenTree* loVal = op1->gtGetOp1();
-        GenTree* hiVal = op1->gtGetOp2();
-
-        noway_assert((loVal->gtRegNum != REG_NA) && (hiVal->gtRegNum != REG_NA));
-
-        emit->emitIns_S_R(ins_Store(TYP_INT), EA_4BYTE, loVal->gtRegNum, lclNum, 0);
-        emit->emitIns_S_R(ins_Store(TYP_INT), EA_4BYTE, hiVal->gtRegNum, lclNum, genTypeSize(TYP_INT));
-    }
-    else if (op1->OperGet() == GT_MUL_LONG)
-    {
-        assert((op1->gtFlags & GTF_MUL_64RSLT) != 0);
-
-        // Stack store
-        getEmitter()->emitIns_S_R(ins_Store(TYP_INT), emitTypeSize(TYP_INT), REG_LNGRET_LO, lclNum, 0);
-        getEmitter()->emitIns_S_R(ins_Store(TYP_INT), emitTypeSize(TYP_INT), REG_LNGRET_HI, lclNum,
-                                  genTypeSize(TYP_INT));
-    }
-}
-#endif // !defined(_TARGET_64BIT_)
 
 /*****************************************************************************
 * Unit testing of the XArch emitter: generate a bunch of instructions into the prolog

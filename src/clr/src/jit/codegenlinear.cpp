@@ -1947,3 +1947,57 @@ void CodeGen::genCodeForCast(GenTreeOp* tree)
     }
     // The per-case functions call genProduceReg()
 }
+
+#if !defined(_TARGET_64BIT_)
+//------------------------------------------------------------------------
+// genStoreLongLclVar: Generate code to store a non-enregistered long lclVar
+//
+// Arguments:
+//    treeNode - A TYP_LONG lclVar node.
+//
+// Return Value:
+//    None.
+//
+// Assumptions:
+//    'treeNode' must be a TYP_LONG lclVar node for a lclVar that has NOT been promoted.
+//    Its operand must be a GT_LONG node.
+//
+void CodeGen::genStoreLongLclVar(GenTree* treeNode)
+{
+    emitter* emit = getEmitter();
+
+    GenTreeLclVarCommon* lclNode = treeNode->AsLclVarCommon();
+    unsigned             lclNum  = lclNode->gtLclNum;
+    LclVarDsc*           varDsc  = &(compiler->lvaTable[lclNum]);
+    assert(varDsc->TypeGet() == TYP_LONG);
+    assert(!varDsc->lvPromoted);
+    GenTree* op1 = treeNode->gtOp.gtOp1;
+
+    // A GT_LONG is always contained, so it cannot have RELOAD or COPY inserted between it and its consumer,
+    // but a MUL_LONG may.
+    noway_assert(op1->OperIs(GT_LONG) || op1->gtSkipReloadOrCopy()->OperIs(GT_MUL_LONG));
+    genConsumeRegs(op1);
+
+    if (op1->OperGet() == GT_LONG)
+    {
+        GenTree* loVal = op1->gtGetOp1();
+        GenTree* hiVal = op1->gtGetOp2();
+
+        noway_assert((loVal->gtRegNum != REG_NA) && (hiVal->gtRegNum != REG_NA));
+
+        emit->emitIns_S_R(ins_Store(TYP_INT), EA_4BYTE, loVal->gtRegNum, lclNum, 0);
+        emit->emitIns_S_R(ins_Store(TYP_INT), EA_4BYTE, hiVal->gtRegNum, lclNum, genTypeSize(TYP_INT));
+    }
+    else
+    {
+        assert((op1->gtSkipReloadOrCopy()->gtFlags & GTF_MUL_64RSLT) != 0);
+        // This is either a multi-reg MUL_LONG, or a multi-reg reload or copy.
+        assert(op1->IsMultiRegNode() && (op1->GetMultiRegCount() == 2));
+
+        // Stack store
+        emit->emitIns_S_R(ins_Store(TYP_INT), emitTypeSize(TYP_INT), op1->GetRegByIndex(0), lclNum, 0);
+        emit->emitIns_S_R(ins_Store(TYP_INT), emitTypeSize(TYP_INT), op1->GetRegByIndex(1), lclNum,
+                          genTypeSize(TYP_INT));
+    }
+}
+#endif // !defined(_TARGET_64BIT_)

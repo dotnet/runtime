@@ -747,18 +747,22 @@ int GenTree::GetRegisterDstCount() const
     {
         return (const_cast<GenTree*>(this))->AsPutArgSplit()->gtNumRegs;
     }
-    // A PUTARG_REG could be a MultiRegOp on ARM since we could move a double register to two int registers,
-    // either for all double parameters w/SoftFP or for varargs).
-    else
+#endif
+#if !defined(_TARGET_64BIT_)
+    else if (OperIsMultiRegOp())
     {
+        // A MultiRegOp is a GT_MUL_LONG, GT_PUTARG_REG, or GT_BITCAST.
+        // For the latter two (ARM-only), they only have multiple registers if they produce a long value
+        // (GT_MUL_LONG always produces a long value).
+        CLANG_FORMAT_COMMENT_ANCHOR;
 #ifdef _TARGET_ARM_
-        assert(OperIsMultiRegOp());
         return (TypeGet() == TYP_LONG) ? 2 : 1;
 #else
-        unreached();
-#endif // _TARGET_ARM_
+        assert(OperIs(GT_MUL_LONG));
+        return 2;
+#endif
     }
-#endif // FEATURE_ARG_SPLIT
+#endif
     assert(!"Unexpected multi-reg node");
     return 0;
 }
