@@ -94153,7 +94153,7 @@ RelativePath=JIT\SIMD\Matrix4x4_ro\Matrix4x4_ro.cmd
 WorkingDir=JIT\SIMD\Matrix4x4_ro
 Expected=0
 MaxAllowedDurationSeconds=600
-Categories=EXPECTED_PASS;NEW
+Categories=EXPECTED_FAIL;EXCLUDED;19537;NEW
 HostStyle=0
 
 [BroadcastVector128ToVector256_ro.cmd_11857]
@@ -94297,7 +94297,7 @@ RelativePath=JIT\SIMD\Matrix4x4_r\Matrix4x4_r.cmd
 WorkingDir=JIT\SIMD\Matrix4x4_r
 Expected=0
 MaxAllowedDurationSeconds=600
-Categories=EXPECTED_PASS;NEW
+Categories=EXPECTED_FAIL;EXCLUDED;19537;NEW
 HostStyle=0
 
 [MoveMask_ro.cmd_11875]
