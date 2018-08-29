@@ -121,6 +121,11 @@ FCIMPL1_V(float, COMSingle::Cbrt, float x)
     return (float)cbrtf(x);
 FCIMPLEND
 
+#if defined(_MSC_VER) && defined(_TARGET_AMD64_)
+// The /fp:fast form of `ceilf` for AMD64 does not correctly handle: `-1.0 < value <= -0.0`
+#pragma float_control(precise, on )
+#endif
+
 /*====================================Ceil======================================
 **
 ==============================================================================*/
@@ -129,6 +134,10 @@ FCIMPL1_V(float, COMSingle::Ceil, float x)
 
     return (float)ceilf(x);
 FCIMPLEND
+
+#if defined(_MSC_VER) && defined(_TARGET_AMD64_)
+#pragma float_control(precise, off)
+#endif
 
 /*=====================================Cos======================================
 **
