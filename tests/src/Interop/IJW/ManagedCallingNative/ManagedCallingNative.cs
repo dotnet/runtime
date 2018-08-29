@@ -14,6 +14,11 @@ namespace ManagedCallingNative
     {
         static int Main(string[] args)
         {
+            if(Environment.OSVersion.Platform != PlatformID.Win32NT)
+            {
+                return 100;
+            }
+
             bool success = true;
             // Load a fake mscoree.dll to avoid starting desktop
             LoadLibraryEx(Path.Combine(Environment.CurrentDirectory, "mscoree.dll"), IntPtr.Zero, 0);
