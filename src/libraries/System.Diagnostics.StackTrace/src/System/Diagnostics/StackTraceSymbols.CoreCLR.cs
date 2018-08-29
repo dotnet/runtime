@@ -121,25 +121,22 @@ namespace System.Diagnostics
             IntPtr cacheKey = (inMemoryPdbAddress != IntPtr.Zero) ? inMemoryPdbAddress : loadedPeAddress;
 
             MetadataReaderProvider provider;
-            if (_metadataCache.TryGetValue(cacheKey, out provider))
+            while (!_metadataCache.TryGetValue(cacheKey, out provider))
             {
-                return provider?.GetMetadataReader();
+                provider = (inMemoryPdbAddress != IntPtr.Zero) ?
+                            TryOpenReaderForInMemoryPdb(inMemoryPdbAddress, inMemoryPdbSize) :
+                            TryOpenReaderFromAssemblyFile(assemblyPath, loadedPeAddress, loadedPeSize);
+
+                 // If the add loses the race with another thread, then the dispose the provider just 
+                 // created and return the provider already in the cache.
+                 if (_metadataCache.TryAdd(cacheKey, provider))
+                     break;
+
+                 provider?.Dispose();
             }
 
-            provider = (inMemoryPdbAddress != IntPtr.Zero) ?
-                TryOpenReaderForInMemoryPdb(inMemoryPdbAddress, inMemoryPdbSize) :
-                TryOpenReaderFromAssemblyFile(assemblyPath, loadedPeAddress, loadedPeSize);
-
-            // This may fail as another thread might have beaten us to it, but it doesn't matter
-            _metadataCache.TryAdd(cacheKey, provider);
-
-            if (provider == null)
-            {
-                return null;
-            }
-
-            // The reader has already been open, so this doesn't throw:
-            return provider.GetMetadataReader();
+            // The reader has already been open, so this doesn't throw.
+            return provider?.GetMetadataReader();
         }
 
         private static unsafe MetadataReaderProvider TryOpenReaderForInMemoryPdb(IntPtr inMemoryPdbAddress, int inMemoryPdbSize)
