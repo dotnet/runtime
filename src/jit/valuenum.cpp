@@ -780,7 +780,7 @@ void ValueNumStore::VNPUnpackExc(ValueNumPair vnWx, ValueNumPair* pvn, ValueNumP
 //               - The Value Number for the expression without the exception set.
 //                 This can be the orginal 'vn', when there are no exceptions.
 //
-// Notes:        - Whenever we have an exceptionm set the Value Number will be
+// Notes:        - Whenever we have an exception set the Value Number will be
 //                 a VN func with VNF_ValWithExc.
 //                 This VN func has the normal value as m_args[0]
 //
@@ -824,7 +824,7 @@ ValueNumPair ValueNumStore::VNPNormVal(ValueNumPair vnp)
 //                 If the 'vn' has no exception set then a special Value Number
 //                 representing the empty exception set is returned.
 //
-// Notes:        - Whenever we have an exceptionm set the Value Number will be
+// Notes:        - Whenever we have an exception set the Value Number will be
 //                 a VN func with VNF_ValWithExc.
 //                 This VN func has the exception set as m_args[1]
 //
