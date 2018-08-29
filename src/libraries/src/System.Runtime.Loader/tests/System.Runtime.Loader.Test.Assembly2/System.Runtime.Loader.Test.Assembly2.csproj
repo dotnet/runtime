@@ -1,0 +1,9 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <ProjectGuid>{FBF73A8E-7889-4C7D-AFC3-509B821D0FC6}</ProjectGuid>
+    <Configurations>netcoreapp-Debug;netcoreapp-Release;netstandard-Debug;netstandard-Release</Configurations>
+  </PropertyGroup>
+  <ItemGroup>
+    <Compile Include="../System.Runtime.Loader.Test.Assembly/TestClass.cs" />
+  </ItemGroup>
+</Project>

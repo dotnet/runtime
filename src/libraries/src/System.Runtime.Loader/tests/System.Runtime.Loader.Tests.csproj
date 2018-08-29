@@ -7,10 +7,29 @@
   </PropertyGroup>
   <ItemGroup>
     <Compile Include="AssemblyLoadContextTest.cs" />
+    <Compile Include="CollectibleAssemblyLoadContextTest.cs" />
+    <Compile Include="CollectibleAssemblyLoadContextTest.Windows.cs" Condition="'$(TargetsWindows)' == 'true'"/>
     <Compile Include="CustomTPALoadContext.cs" />
     <Compile Include="ResourceAssemblyLoadContext.cs" />
   </ItemGroup>
   <ItemGroup>
-    <EmbeddedResource Include="System.Runtime.Loader.Test.Assembly.dll" />
+    <ProjectReference Include="System.Runtime.Loader.Test.Assembly\System.Runtime.Loader.Test.Assembly.csproj">
+      <Project>{b402782f-de0a-41fa-b364-60612a786fb2}</Project>
+      <Name>System.Runtime.Loader.Test.Assembly</Name>
+      <ReferenceOutputAssembly>false</ReferenceOutputAssembly>
+      <OutputItemType>EmbeddedResource</OutputItemType>
+    </ProjectReference>
+    <ProjectReference Include="System.Runtime.Loader.Test.Assembly2\System.Runtime.Loader.Test.Assembly2.csproj">
+      <Project>{b402782f-de0a-41fa-b364-60612a786fb2}</Project>
+      <Name>System.Runtime.Loader.Test.Assembly2</Name>
+      <ReferenceOutputAssembly>false</ReferenceOutputAssembly>
+      <OutputItemType>EmbeddedResource</OutputItemType>
+    </ProjectReference>
+    <ProjectReference Include="System.Runtime.Loader.Test.AssemblyNotSupported\System.Runtime.Loader.Test.AssemblyNotSupported.csproj">
+      <Project>{b402782f-de0a-41fa-b364-60612a786fb2}</Project>
+      <Name>System.Runtime.Loader.Test.AssemblyNotSupported</Name>
+      <ReferenceOutputAssembly>false</ReferenceOutputAssembly>
+      <OutputItemType>EmbeddedResource</OutputItemType>
+    </ProjectReference>
   </ItemGroup>
 </Project>
