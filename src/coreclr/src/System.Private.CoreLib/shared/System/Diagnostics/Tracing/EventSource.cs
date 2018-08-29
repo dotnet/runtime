@@ -1785,9 +1785,10 @@ namespace System.Diagnostics.Tracing
                     if (dataType.IsEnum())
                     {
                         dataType = Enum.GetUnderlyingType(dataType);
+                        if (Runtime.InteropServices.Marshal.SizeOf(dataType) < sizeof(int))
+                            dataType = typeof(int);
                         goto Again;
                     }
-
 
                     // Everything else is marshaled as a string.
                     // ETW strings are NULL-terminated, so marshal everything up to the first
@@ -1799,7 +1800,6 @@ namespace System.Diagnostics.Tracing
                     }
 
                     return new string((char *)dataPointer);
-
                 }
                 finally
                 {
@@ -5569,28 +5569,37 @@ namespace System.Diagnostics.Tracing
 
                     // write out each enum value 
                     FieldInfo[] staticFields = enumType.GetFields(BindingFlags.DeclaredOnly | BindingFlags.Public | BindingFlags.Static);
+                    bool anyValuesWritten = false;
                     foreach (FieldInfo staticField in staticFields)
                     {
                         object constantValObj = staticField.GetRawConstantValue();
+
                         if (constantValObj != null)
                         {
-                            long hexValue;
-                            if (constantValObj is int)
-                                hexValue = ((int)constantValObj);
-                            else if (constantValObj is long)
-                                hexValue = ((long)constantValObj);
-                            else
-                                continue;
+                            ulong hexValue;
+                            if (constantValObj is ulong)
+                                hexValue = (ulong)constantValObj;    // This is the only integer type that can't be represented by a long.  
+                            else 
+                                hexValue = (ulong) Convert.ToInt64(constantValObj); // Handles all integer types except ulong.  
 
                             // ETW requires all bitmap values to be powers of 2.  Skip the ones that are not. 
                             // TODO: Warn people about the dropping of values. 
                             if (isbitmap && ((hexValue & (hexValue - 1)) != 0 || hexValue == 0))
                                 continue;
-
                             sb.Append("   <map value=\"0x").Append(hexValue.ToString("x", CultureInfo.InvariantCulture)).Append("\"");
                             WriteMessageAttrib(sb, "map", enumType.Name + "." + staticField.Name, staticField.Name);
                             sb.Append("/>").AppendLine();
+                            anyValuesWritten = true;
                         }
+                    }
+
+                    // the OS requires that bitmaps and valuemaps have at least one value or it reject the whole manifest.
+                    // To avoid that put a 'None' entry if there are no other values.  
+                    if (!anyValuesWritten)
+                    {
+                        sb.Append("   <map value=\"0x0\"");
+                        WriteMessageAttrib(sb, "map", enumType.Name + "." + "None", "None");
+                        sb.Append("/>").AppendLine();
                     }
                     sb.Append("  </").Append(mapKind).Append(">").AppendLine();
                 }
