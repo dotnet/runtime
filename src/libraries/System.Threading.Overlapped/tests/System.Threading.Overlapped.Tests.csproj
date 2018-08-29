@@ -2,7 +2,6 @@
   <PropertyGroup>
     <ProjectGuid>{861A3318-35AD-46ac-8257-8D5D2479BAD9}</ProjectGuid>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
-    <DefineConstants Condition="'$(TargetGroup)' == 'uap'">$(DefineConstants);uap</DefineConstants>
     <Configurations>netstandard-Debug;netstandard-Release;uap-Windows_NT-Debug;uap-Windows_NT-Release</Configurations>
   </PropertyGroup>
   <ItemGroup>

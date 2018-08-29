@@ -8,9 +8,6 @@
     <GeneratePlatformNotSupportedAssemblyMessage Condition="'$(TargetsWindows)' != 'true'">SR.PlatformNotSupported_Principal</GeneratePlatformNotSupportedAssemblyMessage>
     <Configurations>net461-Windows_NT-Debug;net461-Windows_NT-Release;netcoreapp-Unix-Debug;netcoreapp-Unix-Release;netcoreapp-Windows_NT-Debug;netcoreapp-Windows_NT-Release;netcoreapp2.0-Unix-Debug;netcoreapp2.0-Unix-Release;netcoreapp2.0-Windows_NT-Debug;netcoreapp2.0-Windows_NT-Release;netfx-Windows_NT-Debug;netfx-Windows_NT-Release;netstandard-Debug;netstandard-Release;uap-Windows_NT-Debug;uap-Windows_NT-Release</Configurations>
   </PropertyGroup>
-  <PropertyGroup Condition="'$(TargetGroup)' == 'uap'">
-    <DefineConstants>$(DefineConstants);uap</DefineConstants>
-  </PropertyGroup>
   <ItemGroup Condition="($(TargetGroup.StartsWith('netcoreapp')) or '$(TargetGroup)' == 'uap') AND '$(TargetsWindows)' == 'true'">
     <Compile Include="Microsoft\Win32\SafeHandles\SafeAccessTokenHandle.cs" />
     <Compile Include="Microsoft\Win32\SafeHandles\SafeSecurityHandles.cs" />

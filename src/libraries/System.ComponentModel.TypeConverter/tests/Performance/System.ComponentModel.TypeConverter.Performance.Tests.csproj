@@ -3,7 +3,6 @@
     <DefineConstants>$(DefineConstants);PERFORMANCE_TESTS</DefineConstants>
     <ProjectGuid>{89C76728-ECAF-4905-A33F-BD6BFED5E91D}</ProjectGuid>
     <AssemblyVersion>9.9.9.9</AssemblyVersion>
-    <DefineConstants Condition="'$(TargetGroup)' == 'netcoreapp'">$(DefineConstants);netcoreapp</DefineConstants>
     <Configurations>netcoreapp-Debug;netcoreapp-Release;netstandard-Debug;netstandard-Release</Configurations>
   </PropertyGroup>
   <ItemGroup>

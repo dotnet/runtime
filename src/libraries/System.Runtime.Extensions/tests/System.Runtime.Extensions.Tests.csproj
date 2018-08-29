@@ -3,8 +3,6 @@
     <ProjectGuid>{6C314C9B-3D28-4B05-9B4C-B57A00A9B3B9}</ProjectGuid>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
     <DefineConstants Condition="'$(TargetsUnix)' == 'true'">$(DefineConstants);Unix</DefineConstants>
-    <DefineConstants Condition="'$(TargetGroup)'=='netcoreapp'">$(DefineConstants);netcoreapp</DefineConstants>
-    <DefineConstants Condition="'$(TargetGroup)'=='uapaot'">$(DefineConstants);uapaot</DefineConstants>
     <Configurations>netcoreapp-Unix-Debug;netcoreapp-Unix-Release;netcoreapp-Windows_NT-Debug;netcoreapp-Windows_NT-Release;netstandard-Unix-Debug;netstandard-Unix-Release;netstandard-Windows_NT-Debug;netstandard-Windows_NT-Release;uap-Windows_NT-Debug;uap-Windows_NT-Release</Configurations>
   </PropertyGroup>
   <ItemGroup>

@@ -172,7 +172,7 @@ namespace System.IO.Compression.Tests
                         using (Stream entrystream = entry.Open())
                         {
                             entrystream.Read(buffer, 0, buffer.Length);
-#if netcoreapp
+#if netcoreapp || uap
                             uint zipcrc = entry.Crc32;
                             Assert.Equal(CRC.CalculateCRC(buffer), zipcrc.ToString());
 #endif
