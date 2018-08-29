@@ -829,6 +829,14 @@ public:
     // Prints a representation of a MapStore operation on standard out.
     void vnDumpMapStore(Compiler* comp, VNFuncApp* mapStore);
 
+    // Requires "valWithExc" to be a value with an exeception set VNFuncApp.
+    // Prints a representation of the exeception set on standard out.
+    void vnDumpValWithExc(Compiler* comp, VNFuncApp* valWithExc);
+
+    // Requires "excSeq" to be a ExcSetCons sequence.
+    // Prints a representation of the set of exceptions on standard out.
+    void vnDumpExcSeq(Compiler* comp, VNFuncApp* excSeq, bool isHead);
+
     // Returns the string name of "vnf".
     static const char* VNFuncName(VNFunc vnf);
     // Used in the implementation of the above.
