@@ -754,6 +754,12 @@ public class BuiltinTests {
 		return 0;
 	}
 
+	static int test_0_nfloat_isnan ()
+	{
+		var x = (nfloat) float.NaN;
+		return nfloat.IsNaN (x) ? 0 : 1;
+	}
+
 	// static int test_0_nfloat_call_boxed_equals ()
 	// {
 	// 	object x = new nfloat (10f);
