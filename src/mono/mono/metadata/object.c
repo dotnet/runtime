@@ -7841,9 +7841,10 @@ mono_get_eh_callbacks (void)
 void
 mono_raise_exception (MonoException *ex) 
 {
-	MONO_ENTER_GC_UNSAFE;
+	/* raise_exception doesn't return, so the transition to GC Unsafe is unbalanced */
+	MONO_STACKDATA (stackdata);
+	mono_threads_enter_gc_unsafe_region_unbalanced_with_info (mono_thread_info_current (), &stackdata);
 	mono_raise_exception_deprecated (ex);
-	MONO_EXIT_GC_UNSAFE;
 }
 
 /*
