@@ -121,7 +121,9 @@ GTSTRUCT_1(HWIntrinsic , GT_HWIntrinsic)
 GTSTRUCT_1(AllocObj    , GT_ALLOCOBJ)
 GTSTRUCT_1(RuntimeLookup, GT_RUNTIMELOOKUP)
 GTSTRUCT_2(CC          , GT_JCC, GT_SETCC)
-#if defined(_TARGET_ARM_)
+#if defined(_TARGET_X86_)
+GTSTRUCT_1(MultiRegOp  , GT_MUL_LONG)
+#elif defined (_TARGET_ARM_)
 GTSTRUCT_3(MultiRegOp  , GT_MUL_LONG, GT_PUTARG_REG, GT_BITCAST)
 #endif
 /*****************************************************************************/
