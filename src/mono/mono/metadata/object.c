@@ -6998,7 +6998,7 @@ mono_object_get_size (MonoObject* o)
 
 	MonoClass* klass = mono_object_class (o);
 	if (klass == mono_defaults.string_class) {
-		return sizeof (MonoString) + 2 * mono_string_length ((MonoString*) o) + 2;
+		return MONO_SIZEOF_MONO_STRING + 2 * mono_string_length ((MonoString*) o) + 2;
 	} else if (o->vtable->rank) {
 		MonoArray *array = (MonoArray*)o;
 		size_t size = MONO_SIZEOF_MONO_ARRAY + mono_array_element_size (klass) * mono_array_length (array);
@@ -7241,7 +7241,7 @@ mono_string_get_pinned (MonoString *str, MonoError *error)
 		return str;
 	int size;
 	MonoString *news;
-	size = sizeof (MonoString) + 2 * (mono_string_length (str) + 1);
+	size = MONO_SIZEOF_MONO_STRING + 2 * (mono_string_length (str) + 1);
 	news = (MonoString *)mono_gc_alloc_pinned_obj (((MonoObject*)str)->vtable, size);
 	if (news) {
 		memcpy (mono_string_chars (news), mono_string_chars (str), mono_string_length (str) * 2);
