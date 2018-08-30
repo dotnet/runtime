@@ -4,7 +4,7 @@
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
     <Configurations>netcoreapp-Debug;netcoreapp-Release;netstandard-Debug;netstandard-Release</Configurations>
   </PropertyGroup>
-  <ItemGroup>
+  <ItemGroup Condition="'$(TargetGroup)' != 'netstandard'">
     <!-- Some internal types are needed, so we reference the implementation assembly, rather than the reference assembly. -->
     <TargetingPackExclusions Include="System.IO.Pipelines" />
     <ReferenceFromRuntime Include="System.IO.Pipelines" />
@@ -15,7 +15,6 @@
     <Compile Include="FlushAsyncCompletionTests.cs" />
     <Compile Include="FlushResultTests.cs" />
     <Compile Include="PipeCompletionCallbacksTests.cs" />
-    <Compile Include="PipeLengthTests.cs" />
     <Compile Include="PipeOptionsTests.cs" />
     <Compile Include="PipeReaderWriterFacts.cs" />
     <Compile Include="PipePoolTests.cs" />
@@ -27,5 +26,10 @@
     <Compile Include="ReadResultTests.cs" />
     <Compile Include="SchedulerFacts.cs" />
     <Compile Include="TestMemoryPool.cs" />
+  </ItemGroup>
+  <ItemGroup Condition="'$(TargetGroup)' != 'netstandard'">
+    <Compile Include="PipeLengthTests.cs" />
+    <Compile Include="PipeReaderWriterFacts.nonnetstandard.cs" />
+    <Compile Include="PipeResetTests.nonnetstandard.cs" />
   </ItemGroup>
 </Project>
