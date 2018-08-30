@@ -2179,10 +2179,21 @@ void CodeGen::genBMI1Intrinsic(GenTreeHWIntrinsic* node)
         case NI_BMI1_ExtractLowestSetBit:
         case NI_BMI1_GetMaskUpToLowestSetBit:
         case NI_BMI1_ResetLowestSetBit:
+        {
+            assert(op2 == nullptr);
+            assert((targetType == TYP_INT) || (targetType == TYP_LONG));
+            genHWIntrinsic_R_RM(node, ins, emitTypeSize(node->TypeGet()));
+            break;
+        }
+
         case NI_BMI1_TrailingZeroCount:
         {
             assert(op2 == nullptr);
             assert((targetType == TYP_INT) || (targetType == TYP_LONG));
+            // tzcnt has false dependency on the target register on Intel Sandy Bridge and Haswell processors,
+            // so insert a `XOR target, target` to break the dependency via XOR triggering register renaming.
+            regNumber targetReg = node->gtRegNum;
+            getEmitter()->emitIns_R_R(INS_xor, EA_4BYTE, targetReg, targetReg);
             genHWIntrinsic_R_RM(node, ins, emitTypeSize(node->TypeGet()));
             break;
         }
@@ -2353,6 +2364,10 @@ void CodeGen::genLZCNTIntrinsic(GenTreeHWIntrinsic* node)
     assert(node->gtHWIntrinsicId == NI_LZCNT_LeadingZeroCount);
 
     genConsumeOperands(node);
+    // lzcnt has false dependency on the target register on Intel Sandy Bridge and Haswell processors,
+    // so insert a `XOR target, target` to break the dependency via XOR triggering register renaming.
+    regNumber targetReg = node->gtRegNum;
+    getEmitter()->emitIns_R_R(INS_xor, EA_4BYTE, targetReg, targetReg);
     genHWIntrinsic_R_RM(node, INS_lzcnt, emitTypeSize(node->TypeGet()));
     genProduceReg(node);
 }
@@ -2379,6 +2394,10 @@ void CodeGen::genPOPCNTIntrinsic(GenTreeHWIntrinsic* node)
     assert(node->gtHWIntrinsicId == NI_POPCNT_PopCount);
 
     genConsumeOperands(node);
+    // popcnt has false dependency on the target register on Intel Sandy Bridge, Haswell, and Skylake processors,
+    // so insert a `XOR target, target` to break the dependency via XOR triggering register renaming.
+    regNumber targetReg = node->gtRegNum;
+    getEmitter()->emitIns_R_R(INS_xor, EA_4BYTE, targetReg, targetReg);
     genHWIntrinsic_R_RM(node, INS_popcnt, emitTypeSize(node->TypeGet()));
     genProduceReg(node);
 }
