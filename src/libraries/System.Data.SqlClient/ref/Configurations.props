@@ -2,12 +2,13 @@
 <Project ToolsVersion="14.0" DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
   <PropertyGroup>
     <PackageConfigurations>
+      netcoreapp2.1;
       netstandard;
       net461;
-      netcoreapp;
     </PackageConfigurations>
     <BuildConfigurations>
       $(PackageConfigurations)
+      netcoreapp;
       netfx;
     </BuildConfigurations>
   </PropertyGroup>

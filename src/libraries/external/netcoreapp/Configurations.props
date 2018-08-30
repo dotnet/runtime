@@ -4,6 +4,7 @@
     <BuildConfigurations>
       netcoreapp2.0;
       netcoreapp2.0-Windows_NT;
+      netcoreapp2.1;
     </BuildConfigurations>
   </PropertyGroup>
 </Project>

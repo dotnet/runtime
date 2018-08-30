@@ -2,29 +2,11 @@
   <PropertyGroup>
     <AssemblyName>System.IO.Pipes.AccessControl</AssemblyName>
     <ProjectGuid>{40059634-BB03-4A6F-8657-CCE2D376BC8B}</ProjectGuid>
-    <IncludeDefaultReferences Condition="'$(TargetGroup)' == 'netcoreapp' OR '$(TargetGroup)' == 'uap'">false</IncludeDefaultReferences>
-    <AllowUnsafeBlocks Condition="'$(TargetGroup)' == 'netstandard'">true</AllowUnsafeBlocks>
-    <GeneratePlatformNotSupportedAssemblyMessage Condition="'$(TargetGroup)' == 'netstandard' AND '$(TargetsWindows)' != 'true'">SR.PlatformNotSupported_AccessControl</GeneratePlatformNotSupportedAssemblyMessage>
-    <IsPartialFacadeAssembly Condition="'$(TargetGroup)' != 'netstandard'">true</IsPartialFacadeAssembly>
-    <Configurations>net461-Windows_NT-Debug;net461-Windows_NT-Release;netcoreapp-Windows_NT-Debug;netcoreapp-Windows_NT-Release;netfx-Windows_NT-Debug;netfx-Windows_NT-Release;netstandard-Debug;netstandard-Release;netstandard-Windows_NT-Debug;netstandard-Windows_NT-Release;uap-Windows_NT-Debug;uap-Windows_NT-Release</Configurations>
+    <IncludeDefaultReferences>false</IncludeDefaultReferences>
+    <IsPartialFacadeAssembly>true</IsPartialFacadeAssembly>
+    <Configurations>netcoreapp-Windows_NT-Debug;netcoreapp-Windows_NT-Release;uap-Windows_NT-Debug;uap-Windows_NT-Release</Configurations>
   </PropertyGroup>
-  <ItemGroup Condition="'$(TargetGroup)' == 'netstandard' AND '$(TargetsWindows)' == 'true'">
-    <Compile Include="..\..\System.IO.Pipes\src\System\IO\Pipes\PipeSecurity.cs" />
-    <Compile Include="..\..\System.IO.Pipes\src\System\IO\Pipes\PipeAccessRights.cs" />
-    <Compile Include="..\..\System.IO.Pipes\src\System\IO\Pipes\PipeAccessRule.cs" />
-    <Compile Include="..\..\System.IO.Pipes\src\System\IO\Pipes\PipeAuditRule.cs" />
-    <Compile Include="..\..\System.IO.Pipes\src\System\IO\Pipes\PipesAclExtensions.cs" />
-  </ItemGroup>
-  <ItemGroup Condition="'$(TargetsNetFx)' == 'true'">
-    <Reference Include="mscorlib" />
-    <Reference Include="System.Core" />
-    <Compile Include="System\IO\PipesAclExtensions.net46.cs" />
-  </ItemGroup>
-  <ItemGroup Condition="'$(TargetGroup)' == 'netstandard'">
-    <Reference Include="System.Security.AccessControl" />
-    <Reference Include="System.Security.Principal.Windows" />
-  </ItemGroup>
-  <ItemGroup Condition="'$(TargetGroup)' == 'netcoreapp' OR '$(TargetGroup)' == 'uap'">
+  <ItemGroup>
     <Reference Include="System.Runtime" />
     <Reference Include="System.Resources.ResourceManager" />
     <ProjectReference Include="..\..\System.IO.Pipes\src\System.IO.Pipes.csproj" />
