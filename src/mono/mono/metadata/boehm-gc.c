@@ -707,6 +707,12 @@ mono_gc_alloc_fixed (size_t size, void *descr, MonoGCRootSource source, void *ke
 	return (MonoObject*)start;
 }
 
+MonoObject*
+mono_gc_alloc_fixed_no_descriptor (size_t size, MonoGCRootSource source, void *key, const char *msg)
+{
+	return mono_gc_alloc_fixed (size, 0, source, key, msg);
+}
+
 void
 mono_gc_free_fixed (void* addr)
 {
