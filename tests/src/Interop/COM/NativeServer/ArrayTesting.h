@@ -7,7 +7,7 @@
 #include <cstdint>
 #include "Servers.h"
 
-class DECLSPEC_UUID("B99ABE6A-DFF6-440F-BFB6-55179B8FE18E") ArrayTesting : public UnknownImpl, public IArrayTesting
+class ArrayTesting : public UnknownImpl, public IArrayTesting
 {
 private:
     template<typename L, typename D>

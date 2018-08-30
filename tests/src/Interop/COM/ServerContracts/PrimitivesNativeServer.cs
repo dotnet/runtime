@@ -23,7 +23,7 @@ namespace Server.Contract.Servers
     /// Managed activation for CoClass
     /// </summary>
     [ComImport]
-    [Guid("53169A33-E85D-4E3C-B668-24E438D0929B")]
+    [Guid(Server.Contract.Guids.NumericTesting)]
     internal class NumericTestingClass
     {
     }
@@ -42,7 +42,7 @@ namespace Server.Contract.Servers
     /// Managed activation for CoClass
     /// </summary>
     [ComImport]
-    [Guid("B99ABE6A-DFF6-440F-BFB6-55179B8FE18E")]
+    [Guid(Server.Contract.Guids.ArrayTesting)]
     internal class ArrayTestingClass
     {
     }
@@ -61,7 +61,7 @@ namespace Server.Contract.Servers
     /// Managed activation for CoClass
     /// </summary>
     [ComImport]
-    [Guid("C73C83E8-51A2-47F8-9B5C-4284458E47A6")]
+    [Guid(Server.Contract.Guids.StringTesting)]
     internal class StringTestingClass
     {
     }
@@ -80,7 +80,7 @@ namespace Server.Contract.Servers
     /// Managed activation for CoClass
     /// </summary>
     [ComImport]
-    [Guid("71CF5C45-106C-4B32-B418-43A463C6041F")]
+    [Guid(Server.Contract.Guids.ErrorMarshalTesting)]
     internal class ErrorMarshalTestingClass
     {
     }
