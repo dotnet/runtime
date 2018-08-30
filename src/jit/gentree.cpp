@@ -7443,7 +7443,6 @@ GenTree* Compiler::gtCloneExpr(
                                      asIndAddr->gtStructElemClass, asIndAddr->gtElemSize, asIndAddr->gtLenOffset,
                                      asIndAddr->gtElemOffset);
                 copy->AsIndexAddr()->gtIndRngFailBB = asIndAddr->gtIndRngFailBB;
-                copy->AsIndexAddr()->gtStkDepth     = asIndAddr->gtStkDepth;
             }
             break;
 
@@ -7782,7 +7781,6 @@ GenTree* Compiler::gtCloneExpr(
                                  gtCloneExpr(tree->gtBoundsChk.gtArrLen, addFlags, deepVarNum, deepVarVal),
                                  tree->gtBoundsChk.gtThrowKind);
             copy->gtBoundsChk.gtIndRngFailBB = tree->gtBoundsChk.gtIndRngFailBB;
-            copy->gtBoundsChk.gtStkDepth     = tree->gtBoundsChk.gtStkDepth;
             break;
 
         case GT_STORE_DYN_BLK:
