@@ -52,6 +52,7 @@
     <ClInclude Include="$(MonoSourceLocation)\mono\metadata\image-internals.h" />
     <ClCompile Include="$(MonoSourceLocation)\mono\metadata\jit-info.c" />
     <ClCompile Include="$(MonoSourceLocation)\mono\metadata\loader.c" />
+    <ClInclude Include="$(MonoSourceLocation)\mono\metadata\loader-internals.h" />
     <ClCompile Include="$(MonoSourceLocation)\mono\metadata\locales.c" />
     <ClInclude Include="$(MonoSourceLocation)\mono\metadata\locales.h" />
     <ClCompile Include="$(MonoSourceLocation)\mono\metadata\lock-tracer.c" />

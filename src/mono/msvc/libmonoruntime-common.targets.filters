@@ -145,6 +145,9 @@
     <ClCompile Include="$(MonoSourceLocation)\mono\metadata\loader.c">
       <Filter>Source Files$(MonoRuntimeFilterSubFolder)\common</Filter>
     </ClCompile>
+    <ClInclude Include="$(MonoSourceLocation)\mono\metadata\loader-internals.h">
+      <Filter>Header Files$(MonoRuntimeFilterSubFolder)\common</Filter>
+    </ClInclude>
     <ClCompile Include="$(MonoSourceLocation)\mono\metadata\locales.c">
       <Filter>Source Files$(MonoRuntimeFilterSubFolder)\common</Filter>
     </ClCompile>
