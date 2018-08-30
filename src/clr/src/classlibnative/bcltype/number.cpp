@@ -288,7 +288,7 @@ void DoubleToNumberWorker( double value, int count, int* dec, int* sign, wchar_t
     if (value == 0.0)
     {
         *dec = 0;
-        *sign = 0;
+        *sign = _signbit(value);
 
         // Instead of zeroing digits, we just make it as an empty string due to performance reason.
         *digits = 0;
