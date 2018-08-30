@@ -2408,7 +2408,7 @@ typedef DPTR(union _UNWIND_CODE)       PTR_UNWIND_CODE;
 #endif // _TARGET_64BIT_
 
 #ifdef _TARGET_ARM_
-typedef DPTR(RUNTIME_FUNCTION) PTR_RUNTIME_FUNCTION;
+typedef DPTR(T_RUNTIME_FUNCTION) PTR_RUNTIME_FUNCTION;
 #endif
 
 //----------------------------------------------------------------------------
