@@ -1109,8 +1109,15 @@ AssertionIndex Compiler::optCreateAssertion(GenTree*         op1,
                     if (op2->gtOper == GT_CNS_INT)
                     {
 #ifdef _TARGET_ARM_
+                        // Do not Constant-Prop immediate values that require relocation
+                        if (op2->gtIntCon.ImmedValNeedsReloc(this))
+                        {
+                            goto DONE_ASSERTION;
+                        }
                         // Do not Constant-Prop large constants for ARM
-                        if (!codeGen->validImmForMov(op2->gtIntCon.gtIconVal))
+                        // TODO-CrossBitness: we wouldn't need the cast below if GenTreeIntCon::gtIconVal had
+                        // target_ssize_t type.
+                        if (!codeGen->validImmForMov((target_ssize_t)op2->gtIntCon.gtIconVal))
                         {
                             goto DONE_ASSERTION; // Don't make an assertion
                         }
