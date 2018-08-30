@@ -207,7 +207,6 @@ namespace System.Collections.Specialized
                 {
                     return null;
                 }
-                EnsureObjectsTable();
                 return _objectsTable[key];
             }
             set
@@ -266,10 +265,14 @@ namespace System.Collections.Specialized
             {
                 throw new NotSupportedException(SR.OrderedDictionary_ReadOnly);
             }
-            EnsureObjectsTable();
-            EnsureObjectsArray();
-            _objectsTable.Clear();
-            _objectsArray.Clear();
+            if (_objectsTable != null)
+            {
+                _objectsTable.Clear();
+            }
+            if (_objectsArray != null)
+            {
+                _objectsArray.Clear();
+            }
         }
 
         /// <devdoc>
@@ -285,6 +288,10 @@ namespace System.Collections.Specialized
         /// </devdoc>
         public bool Contains(object key)
         {
+            if (key == null)
+            {
+                throw new ArgumentNullException(nameof(key));
+            }
             if (_objectsTable == null)
             {
                 return false;
@@ -422,6 +429,7 @@ namespace System.Collections.Specialized
             info.AddValue(InitCapacityName, _initialCapacity);
 
             object[] serArray = new object[Count];
+            EnsureObjectsArray();
             _objectsArray.CopyTo(serArray);
             info.AddValue(ArrayListName, serArray);
         }
