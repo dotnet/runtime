@@ -10,6 +10,14 @@
 #define _CRT_SECURE_NO_WARNINGS 1
 #endif
 
+// Ensure that both UNICODE and _UNICODE are set.
+#ifndef _UNICODE
+#define _UNICODE
+#endif
+#ifndef UNICODE
+#define UNICODE
+#endif
+
 // common headers
 #include <stdio.h>
 #include <memory.h>
@@ -29,6 +37,7 @@
 //  include 
 #ifdef _WIN32
     #include <windows.h>
+    #include <combaseapi.h>
 
     #ifndef snprintf
     #define snprintf _snprintf
@@ -68,15 +77,7 @@
 #endif
 #endif //!_WIN32
 
-// Ensure that both UNICODE and _UNICODE are set.
-#ifndef _UNICODE
-    #define _UNICODE
-#endif
-#ifndef UNICODE
-    #define UNICODE
-#endif
-
-void *CoreClrAlloc(size_t cb)
+inline void *CoreClrAlloc(size_t cb)
 {
 #ifdef _WIN32
     return ::CoTaskMemAlloc(cb);
@@ -85,7 +86,7 @@ void *CoreClrAlloc(size_t cb)
 #endif
 }
 
-void CoreClrFree(void *p)
+inline void CoreClrFree(void *p)
 {
 #ifdef _WIN32
     return ::CoTaskMemFree(p);

@@ -14,16 +14,8 @@ typedef int BOOL;
 typedef WCHAR *LPWSTR, *PWSTR;
 typedef const WCHAR *LPCWSTR, *PCWSTR;
 
-#ifdef UNICODE
-typedef WCHAR TCHAR;
-#else // ANSI
-typedef char TCHAR;
-#endif // UNICODE
-
 typedef char* LPSTR;
 typedef const char* LPCSTR;
-typedef TCHAR* LPTSTR;
-typedef const TCHAR* LPCTSTR;
 typedef void* FARPROC;
 typedef void* HMODULE;
 typedef void* ULONG_PTR;

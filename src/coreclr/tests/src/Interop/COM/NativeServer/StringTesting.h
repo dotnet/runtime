@@ -6,7 +6,7 @@
 
 #include "Servers.h"
 
-class DECLSPEC_UUID("C73C83E8-51A2-47F8-9B5C-4284458E47A6") StringTesting : public UnknownImpl, public IStringTesting
+class StringTesting : public UnknownImpl, public IStringTesting
 {
 private:
     template <typename STRING>
