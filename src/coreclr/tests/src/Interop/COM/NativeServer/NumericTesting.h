@@ -5,9 +5,10 @@
 #pragma once
 
 #include <type_traits>
+#include <limits>
 #include "Servers.h"
 
-class DECLSPEC_UUID("53169A33-E85D-4E3C-B668-24E438D0929B") NumericTesting : public UnknownImpl, public INumericTesting
+class NumericTesting : public UnknownImpl, public INumericTesting
 {
 public:
     DEF_RAWFUNC(Add_Byte)(

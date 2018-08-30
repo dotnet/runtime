@@ -6,7 +6,7 @@
 
 #include "Servers.h"
 
-class DECLSPEC_UUID("71CF5C45-106C-4B32-B418-43A463C6041F") ErrorMarshalTesting : public UnknownImpl, public IErrorMarshalTesting
+class ErrorMarshalTesting : public UnknownImpl, public IErrorMarshalTesting
 {
 public: // IErrorMarshalTesting
     DEF_RAWFUNC(Throw_HResult)(
