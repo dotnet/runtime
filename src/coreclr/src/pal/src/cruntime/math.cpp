@@ -45,6 +45,34 @@ SET_DEFAULT_DEBUG_CHANNEL(CRT);
 
 /*++
 Function:
+  _signbit
+
+Determines whether given double-precision floating point value has a negative sign.
+
+Return Value
+
+_signbit returns a nonzero value (TRUE) if the sign of its argument x is negative.
+
+Parameter
+
+x  Double-precision floating-point value
+
+--*/
+int __cdecl _signbit(double x)
+{
+    int ret;
+    PERF_ENTRY(_signbit);
+    ENTRY("_signbit (x=%f)\n", x);
+
+    ret = signbit(x);
+
+    LOGEXIT("_signbit returns int %d\n", ret);
+    PERF_EXIT(_signbit);
+    return ret;
+}
+
+/*++
+Function:
   _finite
 
 Determines whether given double-precision floating point value is finite.
@@ -450,6 +478,34 @@ PALIMPORT double __cdecl PAL_pow(double x, double y)
 
     LOGEXIT("pow returns double %f\n", ret);
     PERF_EXIT(pow);
+    return ret;
+}
+
+/*++
+Function:
+  _signbitf
+
+Determines whether given single-precision floating point value has a negative sign.
+
+Return Value
+
+_signbitf returns a nonzero value (TRUE) if the sign of its argument x is negative.
+
+Parameter
+
+x  Single-precision floating-point value
+
+--*/
+int __cdecl _signbitf(float x)
+{
+    int ret;
+    PERF_ENTRY(_signbitf);
+    ENTRY("_signbitf (x=%f)\n", x);
+
+    ret = signbit(x);
+
+    LOGEXIT("_signbitf returns int %d\n", ret);
+    PERF_EXIT(_signbitf);
     return ret;
 }
 

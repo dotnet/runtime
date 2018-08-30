@@ -12,6 +12,11 @@
 
 #include "diyfp.h"
 
+#ifdef _MSC_VER
+#define _signbit signbit
+#define _signbitf signbit
+#endif
+
 struct PowerOfTen
 {
     UINT64 significand;
