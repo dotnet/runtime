@@ -12994,26 +12994,19 @@ bool Compiler::fgMightHaveLoop()
     return false;
 }
 
-void Compiler::fgComputeEdgeWeights()
+//-------------------------------------------------------------
+// fgComputeBlockAndEdgeWeights: determine weights for blocks
+//   and optionally for edges
+//
+void Compiler::fgComputeBlockAndEdgeWeights()
 {
-#ifdef DEBUG
-    if (verbose)
-    {
-        printf("*************** In fgComputeEdgeWeights()\n");
-    }
-#endif // DEBUG
+    JITDUMP("*************** In fgComputeBlockAndEdgeWeights()\n");
 
-    if (fgIsUsingProfileWeights() == false)
-    {
-#ifdef DEBUG
-        if (verbose)
-        {
-            printf("fgComputeEdgeWeights() we do not have any profile data so we are not using the edge weights\n");
-        }
-#endif // DEBUG
-        fgHaveValidEdgeWeights = false;
-        fgCalledCount          = BB_UNITY_WEIGHT;
-    }
+    const bool usingProfileWeights = fgIsUsingProfileWeights();
+    const bool isOptimizing        = !opts.MinOpts() && !opts.compDbgCode;
+
+    fgHaveValidEdgeWeights = false;
+    fgCalledCount          = BB_UNITY_WEIGHT;
 
 #if DEBUG
     if (verbose)
@@ -13023,21 +13016,42 @@ void Compiler::fgComputeEdgeWeights()
     }
 #endif // DEBUG
 
-    BasicBlock* bSrc;
-    BasicBlock* bDst;
-    flowList*   edge;
-    unsigned    iterations               = 0;
-    unsigned    goodEdgeCountCurrent     = 0;
-    unsigned    goodEdgeCountPrevious    = 0;
-    bool        inconsistentProfileData  = false;
-    bool        hasIncompleteEdgeWeights = false;
-    unsigned    numEdges                 = 0;
-    bool        usedSlop                 = false;
-    bool        changed;
-    bool        modified;
+    const BasicBlock::weight_t returnWeight = fgComputeMissingBlockWeights();
 
+    if (usingProfileWeights)
+    {
+        fgComputeCalledCount(returnWeight);
+    }
+    else
+    {
+        JITDUMP(" -- no profile data, so using default called count\n");
+    }
+
+    if (isOptimizing)
+    {
+        fgComputeEdgeWeights();
+    }
+    else
+    {
+        JITDUMP(" -- not optimizing, so not computing edge weights\n");
+    }
+}
+
+//-------------------------------------------------------------
+// fgComputeMissingBlockWeights: determine weights for blocks
+//   that were not profiled and do not yet have weights.
+//
+// Returns:
+//   sum of weights for all return and throw blocks in the method
+
+BasicBlock::weight_t Compiler::fgComputeMissingBlockWeights()
+{
+    BasicBlock*          bSrc;
+    BasicBlock*          bDst;
+    unsigned             iterations = 0;
+    bool                 changed;
+    bool                 modified = false;
     BasicBlock::weight_t returnWeight;
-    BasicBlock::weight_t slop;
 
     // If we have any blocks that did not have profile derived weight
     // we will try to fix their weight up here
@@ -13144,68 +13158,96 @@ void Compiler::fgComputeEdgeWeights()
 #if DEBUG
     if (verbose && modified)
     {
-        printf("fgComputeEdgeWeights() adjusted the weight of some blocks\n");
+        printf("fgComputeMissingBlockWeights() adjusted the weight of some blocks\n");
         fgDispBasicBlocks();
         printf("\n");
     }
 #endif
 
+    return returnWeight;
+}
+
+//-------------------------------------------------------------
+// fgComputeCalledCount: when profile information is in use,
+//   compute fgCalledCount
+//
+// Argument:
+//   returnWeight - sum of weights for all return and throw blocks
+
+void Compiler::fgComputeCalledCount(BasicBlock::weight_t returnWeight)
+{
     // When we are not using profile data we have already setup fgCalledCount
     // only set it here if we are using profile data
-    //
-    if (fgIsUsingProfileWeights())
+    assert(fgIsUsingProfileWeights());
+
+    BasicBlock* firstILBlock = fgFirstBB; // The first block for IL code (i.e. for the IL code at offset 0)
+
+    // Do we have an internal block as our first Block?
+    if (firstILBlock->bbFlags & BBF_INTERNAL)
     {
-        BasicBlock* firstILBlock = fgFirstBB; // The first block for IL code (i.e. for the IL code at offset 0)
-
-        // Do we have an internal block as our first Block?
-        if (firstILBlock->bbFlags & BBF_INTERNAL)
-        {
-            // Skip past any/all BBF_INTERNAL blocks that may have been added before the first real IL block.
-            //
-            while (firstILBlock->bbFlags & BBF_INTERNAL)
-            {
-                firstILBlock = firstILBlock->bbNext;
-            }
-            // The 'firstILBlock' is now expected to have a profile-derived weight
-            assert(firstILBlock->hasProfileWeight());
-        }
-
-        // If the first block only has one ref then we use it's weight for fgCalledCount.
-        // Otherwise we have backedge's into the first block, so instead we use the sum
-        // of the return block weights for fgCalledCount.
+        // Skip past any/all BBF_INTERNAL blocks that may have been added before the first real IL block.
         //
-        // If the profile data has a 0 for the returnWeight
-        // (i.e. the function never returns because it always throws)
-        // then just use the first block weight rather than 0.
-        //
-        if ((firstILBlock->countOfInEdges() == 1) || (returnWeight == 0))
+        while (firstILBlock->bbFlags & BBF_INTERNAL)
         {
-            assert(firstILBlock->hasProfileWeight()); // This should always be a profile-derived weight
-            fgCalledCount = firstILBlock->bbWeight;
+            firstILBlock = firstILBlock->bbNext;
         }
-        else
-        {
-            fgCalledCount = returnWeight;
-        }
+        // The 'firstILBlock' is now expected to have a profile-derived weight
+        assert(firstILBlock->hasProfileWeight());
+    }
 
-        // If we allocated a scratch block as the first BB then we need
-        // to set its profile-derived weight to be fgCalledCount
-        if (fgFirstBBisScratch())
+    // If the first block only has one ref then we use it's weight for fgCalledCount.
+    // Otherwise we have backedge's into the first block, so instead we use the sum
+    // of the return block weights for fgCalledCount.
+    //
+    // If the profile data has a 0 for the returnWeight
+    // (i.e. the function never returns because it always throws)
+    // then just use the first block weight rather than 0.
+    //
+    if ((firstILBlock->countOfInEdges() == 1) || (returnWeight == 0))
+    {
+        assert(firstILBlock->hasProfileWeight()); // This should always be a profile-derived weight
+        fgCalledCount = firstILBlock->bbWeight;
+    }
+    else
+    {
+        fgCalledCount = returnWeight;
+    }
+
+    // If we allocated a scratch block as the first BB then we need
+    // to set its profile-derived weight to be fgCalledCount
+    if (fgFirstBBisScratch())
+    {
+        fgFirstBB->setBBProfileWeight(fgCalledCount);
+        if (fgFirstBB->bbWeight == 0)
         {
-            fgFirstBB->setBBProfileWeight(fgCalledCount);
-            if (fgFirstBB->bbWeight == 0)
-            {
-                fgFirstBB->bbFlags |= BBF_RUN_RARELY;
-            }
+            fgFirstBB->bbFlags |= BBF_RUN_RARELY;
         }
+    }
 
 #if DEBUG
-        if (verbose)
-        {
-            printf("We are using the Profile Weights and fgCalledCount is %d.\n", fgCalledCount);
-        }
-#endif
+    if (verbose)
+    {
+        printf("We are using the Profile Weights and fgCalledCount is %d.\n", fgCalledCount);
     }
+#endif
+}
+
+//-------------------------------------------------------------
+// fgComputeEdgeWeights: compute edge weights from block weights
+
+void Compiler::fgComputeEdgeWeights()
+{
+    BasicBlock*          bSrc;
+    BasicBlock*          bDst;
+    flowList*            edge;
+    BasicBlock::weight_t slop;
+    unsigned             goodEdgeCountCurrent     = 0;
+    unsigned             goodEdgeCountPrevious    = 0;
+    bool                 inconsistentProfileData  = false;
+    bool                 hasIncompleteEdgeWeights = false;
+    bool                 usedSlop                 = false;
+    unsigned             numEdges                 = 0;
+    unsigned             iterations               = 0;
 
     // Now we will compute the initial flEdgeWeightMin and flEdgeWeightMax values
     for (bDst = fgFirstBB; bDst != nullptr; bDst = bDst->bbNext)
