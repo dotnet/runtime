@@ -169,6 +169,14 @@ endif
 
 noinst_LTLIBRARIES = $(mini_common_lib)
 
+noinst_LIBRARIES = libmain.a
+
+libmain_a_SOURCES = main-sgen.c
+if SUPPORT_BOEHM
+libmain_a_SOURCES += main.c
+endif
+libmain_a_CFLAGS = $(AM_CFLAGS) @CXX_ADD_CFLAGS@
+
 if LOADED_LLVM
 lib_LTLIBRARIES += libmono-llvm.la
 libmono_llvm_la_SOURCES = mini-llvm.c mini-llvm-cpp.cpp llvm-jit.cpp
@@ -179,23 +187,12 @@ libmono_llvm_la_LDFLAGS=-Wl,-undefined -Wl,suppress -Wl,-flat_namespace
 endif
 endif
 
-mono_boehm_SOURCES = \
-	main.c
-
-mono_CFLAGS = $(AM_CFLAGS) @CXX_REMOVE_CFLAGS@
-
+mono_boehm_SOURCES =
 mono_boehm_CFLAGS = $(AM_CFLAGS) @CXX_REMOVE_CFLAGS@
 
 AM_CPPFLAGS = $(LIBGC_CPPFLAGS)
 
-# These files are stuck as C for now, because -xc++
-# can only be used when compiling, not linking.
-mono_sgen_SOURCES = \
-	main-sgen.c
-
-mono_SOURCES = \
-	main-sgen.c
-
+mono_sgen_SOURCES =
 mono_sgen_CFLAGS = $(AM_CFLAGS) @CXX_REMOVE_CFLAGS@
 
 # We build this after libmono was built so it contains the date when the final
@@ -203,13 +200,13 @@ mono_sgen_CFLAGS = $(AM_CFLAGS) @CXX_REMOVE_CFLAGS@
 if SUPPORT_BOEHM
 buildver-boehm.h: libmini.la $(monodir)/mono/metadata/libmonoruntime.la
 	@echo "const char *build_date = \"`date`\";" > buildver-boehm.h
-mono_boehm-main.$(OBJEXT): buildver-boehm.h
+libmain_a-main.$(OBJEXT): buildver-boehm.h
 endif
 
 buildver-sgen.h: libmini.la $(monodir)/mono/metadata/libmonoruntimesgen.la $(monodir)/mono/sgen/libmonosgen.la
 	@echo "const char *build_date = \"`date`\";" > buildver-sgen.h
-mono_sgen-main-sgen.$(OBJEXT): buildver-sgen.h
-main-sgen.$(OBJEXT): buildver-sgen.h
+
+libmain_a-main-sgen.$(OBJEXT): buildver-sgen.h
 
 if DTRACE_G_REQUIRED
 LIBMONO_DTRACE_OBJECT = .libs/mono-dtrace.$(OBJEXT)
@@ -240,6 +237,7 @@ LLVMMONOF=$(LLVM_LIBS) $(LLVM_LDFLAGS)
 endif
 
 mono_boehm_LDADD = \
+	libmain_a-main.$(OBJEXT) \
 	$(MONO_LIB)		\
 	$(glib_libs)		\
 	$(LLVMMONOF)		\
@@ -250,6 +248,7 @@ mono_boehm_LDFLAGS = \
 	$(static_flags) $(monobinldflags) $(monobin_platform_ldflags) 
 
 mono_sgen_LDADD = \
+	libmain_a-main-sgen.$(OBJEXT) \
 	$(MONO_SGEN_LIB)	\
 	$(glib_libs)		\
 	$(LLVMMONOF)		\
@@ -644,11 +643,10 @@ endif
 
 if MONO_JEMALLOC_ENABLED
 libmonoldflags += $(JEMALLOC_LDFLAGS)
-mono_CFLAGS += $(JEMALLOC_CFLAGS)
 endif
 
 libmono_ee_interp_la_SOURCES = $(interp_sources)
-libmono_ee_interp_la_CFLAGS = $(mono_CFLAGS) @CXX_ADD_CFLAGS@
+libmono_ee_interp_la_CFLAGS = $(AM_CFLAGS) @CXX_ADD_CFLAGS@
 if BITCODE
 libmono_ee_interp_la_LDFLAGS = $(libmonoldflags)
 if DISABLE_INTERPRETER
@@ -661,7 +659,7 @@ extra_libmono_dbg_source = debugger-engine.c
 endif
 
 libmono_dbg_la_SOURCES = debugger-agent.c debugger-state-machine.c $(extra_libmono_dbg_source)
-libmono_dbg_la_CFLAGS = $(mono_CFLAGS) @CXX_ADD_CFLAGS@
+libmono_dbg_la_CFLAGS = $(AM_CFLAGS) @CXX_ADD_CFLAGS@
 if BITCODE
 if DISABLE_DEBUGGER_AGENT
 libmono_dbg_la_LIBADD = libmonosgen-2.0.la
@@ -684,7 +682,7 @@ endif
 # compile time dependencies on boehm/sgen.
 #
 libmini_la_SOURCES = $(common_sources) $(llvm_sources) $(llvm_runtime_sources) $(arch_sources) $(os_sources)
-libmini_la_CFLAGS = $(mono_CFLAGS) @CXX_ADD_CFLAGS@
+libmini_la_CFLAGS = $(AM_CFLAGS) @CXX_ADD_CFLAGS@
 
 libmonoboehm_2_0_la_SOURCES =
 libmonoboehm_2_0_la_CFLAGS = $(mono_boehm_CFLAGS) @CXX_ADD_CFLAGS@

@@ -17,6 +17,7 @@
 #ifdef HOST_WIN32
 #include <windows.h>
 
+MONO_EXTERN_C
 BOOL APIENTRY DllMain (HMODULE module_handle, DWORD reason, LPVOID reserved)
 {
 	if (!mono_gc_dllmain (module_handle, reason, reserved))
@@ -39,4 +40,3 @@ BOOL APIENTRY DllMain (HMODULE module_handle, DWORD reason, LPVOID reserved)
 	return TRUE;
 }
 #endif
-
