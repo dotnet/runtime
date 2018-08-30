@@ -292,7 +292,7 @@ build_Tests()
         # Always create the test wrappers and set the exclude file.
         export __Exclude="$__TestDir/issues.targets"
         echo "Exclude set to $__TestDir/issues.targets"
-        build_Tests_internal "Tests_XunitWrapper" "$__ProjectDir/tests/runtest.proj" "Test Xunit Wrapper" "-BuildWrappers" "-MsBuildEventLogging= " "-TargetsWindows=false"
+        build_MSBuild_projects "Tests_XunitWrapper" "$__ProjectDir/tests/runtest.proj" "Test Xunit Wrapper" "-BuildWrappers" "-MsBuildEventLogging= " "-TargetsWindows=false"
 
         if [ $? -ne 0 ]; then
             echo "${__MsgPrefix}Error: build failed. Refer to the build log files for details (above)"
