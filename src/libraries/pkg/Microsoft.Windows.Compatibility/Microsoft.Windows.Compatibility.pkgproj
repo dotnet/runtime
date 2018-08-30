@@ -35,7 +35,6 @@
     <PrereleaseLibraryPackage Include="System.DirectoryServices.Protocols" />
     <PrereleaseLibraryPackage Include="System.IO.FileSystem.AccessControl" />
     <PrereleaseLibraryPackage Include="System.IO.Packaging" />
-    <PrereleaseLibraryPackage Include="System.IO.Pipes.AccessControl" />
     <PrereleaseLibraryPackage Include="System.IO.Ports" />
     <PrereleaseLibraryPackage Include="System.Management" />
     <PrereleaseLibraryPackage Include="System.Runtime.Caching" />
@@ -65,6 +64,10 @@
     </LibraryPackage>
     <LibraryPackage Include="System.ServiceModel.Security">
       <Version>$(ServiceModelVersion)</Version>
+    </LibraryPackage>
+    <!-- Packages we don't build in master anymore -->
+    <LibraryPackage Include="System.IO.Pipes.AccessControl">
+      <Version>4.5.1</Version>
     </LibraryPackage>
   </ItemGroup>
   <ItemGroup>
