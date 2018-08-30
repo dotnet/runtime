@@ -80,7 +80,6 @@
     <Compile Include="Tests\System\Text\ValueStringBuilderTests.cs" />
     <Compile Include="Tests\System\SpanTestHelpers.cs" />
     <Compile Include="Tests\System\StringExtensions.Tests.cs" />
-    <Compile Include="Tests\System\StringTests.cs" />
     <Compile Include="Tests\System\Collections\Generic\ArrayBuilderTests.cs" />
     <Compile Include="Tests\System\Collections\Generic\LargeArrayBuilderTests.cs" />
     <Compile Include="Tests\System\IO\RowConfigReaderTests.cs" />
