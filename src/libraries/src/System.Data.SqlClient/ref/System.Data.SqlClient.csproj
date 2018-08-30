@@ -2,14 +2,14 @@
   <PropertyGroup>
     <ProjectGuid>{D58E8D2B-3331-4660-8DFB-512D66F8EC63}</ProjectGuid>
     <IsPartialFacadeAssembly Condition="'$(TargetsNetFx)' == 'true'">true</IsPartialFacadeAssembly>
-    <Configurations>net461-Debug;net461-Release;netcoreapp-Debug;netcoreapp-Release;netfx-Debug;netfx-Release;netstandard-Debug;netstandard-Release</Configurations>
+    <Configurations>net461-Debug;net461-Release;netcoreapp-Debug;netcoreapp-Release;netcoreapp2.1-Debug;netcoreapp2.1-Release;netfx-Debug;netfx-Release;netstandard-Debug;netstandard-Release</Configurations>
   </PropertyGroup>
   <ItemGroup>
     <SuppressPackageTargetFrameworkCompatibility Include="$(UAPvNextTFM);uap10.0.16299" />
     <Compile Include="System.Data.SqlClient.cs" />
     <Compile Include="System.Data.SqlClient.Manual.cs" />
   </ItemGroup>
-  <ItemGroup Condition="'$(TargetGroup)' == 'netcoreapp'">
+  <ItemGroup Condition="'$(TargetsNETCoreApp)' == 'true'">
     <Compile Include="System.Data.SqlClient.NetCoreApp.cs" />
   </ItemGroup>
   <ItemGroup Condition="'$(TargetsNetFx)' == 'true'">
@@ -17,6 +17,15 @@
     <Reference Include="System" />
     <Reference Include="System.Data" />
     <Reference Include="System.Xml" />
+  </ItemGroup>
+  <ItemGroup Condition="'$(TargetGroup)' == 'netcoreapp2.1'">
+    <Reference Include="System.Runtime" />
+    <Reference Include="System.Runtime.Extensions" />
+    <Reference Include="System.Data.Common" />
+    <Reference Include="System.Collections.NonGeneric" />
+    <Reference Include="System.ComponentModel.Primitives" />
+    <Reference Include="System.Xml.ReaderWriter" />
+    <Reference Include="System.Runtime.InteropServices" />
   </ItemGroup>
   <ItemGroup Condition="'$(TargetGroup)' == 'netcoreapp'">
     <ProjectReference Include="..\..\System.Runtime\ref\System.Runtime.csproj" />

@@ -6,9 +6,9 @@
     For non-SDK projects that import this file and then import Microsoft.Common.targets,
     tell Microsoft.Common.targets not to import Directory.Build.targets again
     -->
-    <ImportDirectoryBuildTargets>false</ImportDirectoryBuildTargets>  
+    <ImportDirectoryBuildTargets>false</ImportDirectoryBuildTargets>
   </PropertyGroup>
-  
+
   <Target Name="CheckForBuildTools">
     <Error Condition="!Exists('$(ToolsDir)') and '$(OverrideToolsDir)'=='true'"
            Text="The tools directory [$(ToolsDir)] does not exist. Please run sync in your repo to ensure the tools are installed before attempting to build an individual project." />
@@ -141,6 +141,14 @@
   <Import Condition="'$(IncludeVSTestReferences)' == 'true' AND ('$(BuildingNETCoreAppVertical)' == 'true' OR '$(BuildingNETFxVertical)' == 'true')" Project="$(PackagesDir)\microsoft.codecoverage\$(MicrosoftDotNetTestSdkVersion)\build\netstandard1.0\Microsoft.CodeCoverage.props" />
   <Import Condition="'$(IncludeVSTestReferences)' == 'true' AND ('$(BuildingNETCoreAppVertical)' == 'true' OR '$(BuildingNETFxVertical)' == 'true') AND '$(Language)' != 'VB'" Project="$(PackagesDir)\microsoft.net.test.sdk\$(MicrosoftDotNetTestSdkVersion)\build\netcoreapp1.0\Microsoft.Net.Test.Sdk.targets" />
   <Import Condition="'$(IncludeVSTestReferences)' == 'true' AND ('$(BuildingNETCoreAppVertical)' == 'true' OR '$(BuildingNETFxVertical)' == 'true')" Project="$(PackagesDir)\microsoft.codecoverage\$(MicrosoftDotNetTestSdkVersion)\build\netstandard1.0\Microsoft.CodeCoverage.targets" />
+
+  <ItemGroup>
+    <!-- Should be added to BuildTools but for now adding here to enable netcoreapp3.0 support -->
+    <NETCoreApp30RIDs Condition="'@(NETCoreApp30RIDs)' == ''" Include="@(NETCoreApp22RIDs)" />
+    <DefaultValidateFramework Include="netcoreapp3.0">
+      <RuntimeIDs>@(NETCoreApp30RIDs)</RuntimeIDs>
+    </DefaultValidateFramework>
+  </ItemGroup>
 
   <Target Name="ProducesPackageId"
           Returns="@(PackageIds)">

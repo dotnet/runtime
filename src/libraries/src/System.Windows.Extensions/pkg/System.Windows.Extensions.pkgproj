@@ -3,7 +3,7 @@
   <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), Directory.Build.props))\Directory.Build.props" />
   <ItemGroup>
     <ProjectReference Include="..\ref\System.Windows.Extensions.csproj">
-      <SupportedFramework>netcoreapp2.1</SupportedFramework>
+      <SupportedFramework>netcoreapp3.0</SupportedFramework>
     </ProjectReference>
     <ProjectReference Include="..\src\System.Windows.Extensions.csproj" />
   </ItemGroup>

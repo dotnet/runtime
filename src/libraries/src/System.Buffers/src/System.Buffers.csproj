@@ -5,7 +5,7 @@
     <DocumentationFile>$(OutputPath)$(MSBuildProjectName).xml</DocumentationFile>
     <IsPartialFacadeAssembly Condition="'$(TargetGroup)' != 'netstandard' and '$(TargetGroup)' != 'netstandard1.1' and '$(TargetGroup)' != 'uap10.0.16299'">true</IsPartialFacadeAssembly>
     <ExcludeResourcesImport Condition="'$(IsPartialFacadeAssembly)'=='true'">true</ExcludeResourcesImport>
-    <Configurations>netcoreapp-Unix-Debug;netcoreapp-Unix-Release;netcoreapp-Windows_NT-Debug;netcoreapp-Windows_NT-Release;netstandard-Debug;netstandard-Release;netstandard1.1-Debug;netstandard1.1-Release;uap-Windows_NT-Debug;uap-Windows_NT-Release;uapaot-Windows_NT-Debug;uapaot-Windows_NT-Release</Configurations>
+    <Configurations>netcoreapp-Unix-Debug;netcoreapp-Unix-Release;netcoreapp-Windows_NT-Debug;netcoreapp-Windows_NT-Release;netcoreappaot-Windows_NT-Debug;netcoreappaot-Windows_NT-Release;netstandard-Debug;netstandard-Release;netstandard1.1-Debug;netstandard1.1-Release;uap-Windows_NT-Debug;uap-Windows_NT-Release;uapaot-Windows_NT-Debug;uapaot-Windows_NT-Release</Configurations>
   </PropertyGroup>
   <ItemGroup Condition="'$(IsPartialFacadeAssembly)' != 'true'">
     <Compile Include="System\Buffers\ArrayPool.cs" />
