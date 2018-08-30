@@ -44,7 +44,7 @@ bool Grisu3::Run(double value, int count, int* dec, int* sign, wchar_t* digits)
     // kappa: A factor used for generating digits. See step 5 of the Grisu3 procedure in the paper.
 
     // Handle sign bit.
-    if (value < 0)
+    if (_signbit(value) != 0)
     {
         value = -value;
         *sign = 1;
