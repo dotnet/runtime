@@ -555,6 +555,8 @@ mono_method_desc_is_full (MonoMethodDesc *desc)
 gboolean
 mono_method_desc_full_match (MonoMethodDesc *desc, MonoMethod *method)
 {
+	if (!desc)
+		return FALSE;
 	if (!desc->klass)
 		return FALSE;
 	if (!match_class (desc, strlen (desc->klass), method->klass))

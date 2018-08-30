@@ -3378,10 +3378,12 @@ mini_method_compile (MonoMethod *method, guint32 opts, MonoDomain *domain, JitFl
 				MonoMethodDesc *desc;
 				
 				desc = mono_method_desc_new (name, TRUE);
-				if (mono_method_desc_full_match (desc, cfg->method)) {
-					cfg->verbose_level = 4;
+				if (desc) {
+					if (mono_method_desc_full_match (desc, cfg->method)) {
+						cfg->verbose_level = 4;
+					}
+					mono_method_desc_free (desc);
 				}
-				mono_method_desc_free (desc);
 			} else {
 				if (strcmp (cfg->method->name, name) == 0)
 					cfg->verbose_level = 4;

@@ -11996,14 +11996,23 @@ mono_ldptr:
 	goto cleanup;
 
 mono_error_exit:
+	if (cfg->verbose_level > 3)
+		g_print ("exiting due to error");
+
 	g_assert (!mono_error_ok (&cfg->error));
 	goto cleanup;
  
  exception_exit:
+	if (cfg->verbose_level > 3)
+		g_print ("exiting due to exception");
+
 	g_assert (cfg->exception_type != MONO_EXCEPTION_NONE);
 	goto cleanup;
 
  unverified:
+	if (cfg->verbose_level > 3)
+		g_print ("exiting due to invalid il");
+
 	set_exception_type_from_invalid_il (cfg, method, ip);
 	goto cleanup;
 
