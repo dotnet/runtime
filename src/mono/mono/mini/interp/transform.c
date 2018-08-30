@@ -993,6 +993,10 @@ interp_handle_intrinsics (TransformData *td, MonoMethod *target_method, MonoMeth
 		} else if (!strcmp ("Parse", tm)) {
 			/* white list */
 			return FALSE;
+		} else if (!strcmp ("IsNaN", tm)) {
+			g_assert (type_index == 2); // nfloat only
+			/* white list */
+			return FALSE;
 		}
 
 		for (i = 0; i < sizeof (int_unnop) / sizeof  (MagicIntrinsic); ++i) {
