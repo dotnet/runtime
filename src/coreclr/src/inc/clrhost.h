@@ -44,7 +44,7 @@
 //
 #ifdef _DEBUG
 
-#define LAST_ERROR_TRASH_VALUE 42424
+#define LAST_ERROR_TRASH_VALUE 42424 /* = 0xa5b8 */
 
 #define TRASH_LASTERROR \
     SetLastError(LAST_ERROR_TRASH_VALUE)
