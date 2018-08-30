@@ -286,6 +286,7 @@ common_sources = \
 	image-internals.h	\
 	jit-info.c		\
 	loader.c		\
+	loader-internals.h	\
 	locales.c		\
 	locales.h		\
 	lock-tracer.c		\

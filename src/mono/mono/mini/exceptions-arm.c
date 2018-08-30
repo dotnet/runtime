@@ -391,7 +391,7 @@ mono_arch_exceptions_init (void)
 	} else {
 		tramps = mono_arm_get_exception_trampolines (FALSE);
 		for (l = tramps; l; l = l->next) {
-			MonoTrampInfo *info = l->data;
+			MonoTrampInfo *info = (MonoTrampInfo*)l->data;
 
 			mono_register_jit_icall (info->code, g_strdup (info->name), NULL, TRUE);
 			mono_tramp_info_register (info, NULL);
@@ -446,9 +446,9 @@ mono_arch_unwind_frame (MonoDomain *domain, MonoJitTlsData *jit_tls,
 			regs [MONO_MAX_IREGS + i] = *(guint64*)&(new_ctx->fregs [8 + i]);
 #endif
 
-		mono_unwind_frame (unwind_info, unwind_info_len, ji->code_start, 
+		mono_unwind_frame (unwind_info, unwind_info_len, (guint8*)ji->code_start,
 						   (guint8*)ji->code_start + ji->code_size,
-						   ip, NULL, regs, MONO_MAX_IREGS + 8,
+						   (guint8*)ip, NULL, regs, MONO_MAX_IREGS + 8,
 						   save_locations, MONO_MAX_IREGS, &cfa);
 
 		for (i = 0; i < 16; ++i)
@@ -499,7 +499,7 @@ mono_arch_unwind_frame (MonoDomain *domain, MonoJitTlsData *jit_tls,
 		/* we substract 1, so that the IP points into the call instruction */
 		new_ctx->pc--;
 
-		*lmf = (gpointer)(((gsize)(*lmf)->previous_lmf) & ~3);
+		*lmf = (MonoLMF*)(((gsize)(*lmf)->previous_lmf) & ~3);
 
 		return TRUE;
 	}
@@ -520,7 +520,7 @@ handle_signal_exception (gpointer obj)
 
 	memcpy (&ctx, &jit_tls->ex_ctx, sizeof (MonoContext));
 
-	mono_handle_exception (&ctx, obj);
+	mono_handle_exception (&ctx, (MonoObject*)obj);
 
 	mono_restore_context (&ctx);
 }
@@ -532,7 +532,7 @@ handle_signal_exception (gpointer obj)
 static MONO_NEVER_INLINE gpointer
 get_handle_signal_exception_addr (void)
 {
-	return handle_signal_exception;
+	return (gpointer)handle_signal_exception;
 }
 
 /*
@@ -544,7 +544,7 @@ mono_arch_handle_exception (void *ctx, gpointer obj)
 #if defined(MONO_CROSS_COMPILE) || !defined(MONO_ARCH_HAVE_SIGCTX_TO_MONOCTX)
 	g_assert_not_reached ();
 #elif defined(MONO_ARCH_USE_SIGACTION)
-	arm_ucontext *sigctx = ctx;
+	arm_ucontext *sigctx = (arm_ucontext*)ctx;
 	/*
 	 * Handling the exception in the signal handler is problematic, since the original
 	 * signal is disabled, and we could run arbitrary code though the debugger. So
@@ -594,7 +594,7 @@ mono_arch_ip_from_context (void *sigctx)
 #ifdef MONO_CROSS_COMPILE
 	g_assert_not_reached ();
 #else
-	arm_ucontext *my_uc = sigctx;
+	arm_ucontext *my_uc = (arm_ucontext*)sigctx;
 	return (void*) UCONTEXT_REG_PC (my_uc);
 #endif
 }
@@ -611,7 +611,7 @@ mono_arch_setup_async_callback (MonoContext *ctx, void (*async_cb)(void *fun), g
 	sp -= 16;
 	MONO_CONTEXT_SET_SP (ctx, sp);
 
-	mono_arch_setup_resume_sighandler_ctx (ctx, async_cb);
+	mono_arch_setup_resume_sighandler_ctx (ctx, (gpointer)async_cb);
 }
 
 /*

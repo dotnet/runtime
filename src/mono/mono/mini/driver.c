@@ -907,8 +907,9 @@ free_jit_info_data (ThreadData *td, JitInfoData *free)
 #define MODE_FREE	2
 
 static void
-test_thread_func (ThreadData *td)
+test_thread_func (gpointer void_arg)
 {
+	ThreadData* td = (ThreadData*)void_arg;
 	int mode = MODE_ALLOC;
 	int i = 0;
 	gulong lookup_successes = 0, lookup_failures = 0;
@@ -948,7 +949,7 @@ test_thread_func (ThreadData *td)
 				}
 			} else {
 				int pos = random () % MAX_ADDR;
-				char *addr = (char*)(gulong) pos;
+				char *addr = (char*)(uintptr_t)pos;
 				MonoJitInfo *ji;
 
 				ji = mono_jit_info_table_find (domain, addr);
@@ -1145,8 +1146,9 @@ compile_all_methods_thread_main_inner (CompileAllThreadArgs *args)
 }
 
 static void
-compile_all_methods_thread_main (CompileAllThreadArgs *args)
+compile_all_methods_thread_main (gpointer void_args)
 {
+	CompileAllThreadArgs *args = (CompileAllThreadArgs*)void_args;
 	guint32 i;
 	for (i = 0; i < args->recompilation_times; ++i)
 		compile_all_methods_thread_main_inner (args);

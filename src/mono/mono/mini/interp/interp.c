@@ -2369,7 +2369,7 @@ static void
 interp_entry_from_trampoline (gpointer ccontext_untyped, gpointer rmethod_untyped)
 {
 	InterpFrame frame;
-	ThreadContext *context = mono_native_tls_get_value (thread_context_id);
+	ThreadContext *context = (ThreadContext*)mono_native_tls_get_value (thread_context_id);
 	InterpFrame *old_frame;
 	stackval result;
 	stackval *args;
@@ -2449,7 +2449,7 @@ static gpointer
 interp_create_method_pointer (MonoMethod *method, gboolean compile, MonoError *error)
 {
 #ifndef MONO_ARCH_HAVE_INTERP_NATIVE_TO_MANAGED
-	return interp_no_native_to_managed;
+	return (gpointer)interp_no_native_to_managed;
 #else
 	gpointer addr, entry_func, entry_wrapper;
 	MonoDomain *domain = mono_domain_get ();
@@ -2496,17 +2496,17 @@ interp_create_method_pointer (MonoMethod *method, gboolean compile, MonoError *e
 #else
 	if (!mono_native_to_interp_trampoline) {
 		if (mono_aot_only) {
-			mono_native_to_interp_trampoline = mono_aot_get_trampoline ("native_to_interp_trampoline");
+			mono_native_to_interp_trampoline = (MonoFuncV)mono_aot_get_trampoline ("native_to_interp_trampoline");
 		} else {
 			MonoTrampInfo *info;
-			mono_native_to_interp_trampoline = mono_arch_get_native_to_interp_trampoline (&info);
+			mono_native_to_interp_trampoline = (MonoFuncV)mono_arch_get_native_to_interp_trampoline (&info);
 			mono_tramp_info_register (info, NULL);
 		}
 	}
-	entry_wrapper = mono_native_to_interp_trampoline;
+	entry_wrapper = (gpointer)mono_native_to_interp_trampoline;
 	/* We need the lmf wrapper only when being called from mixed mode */
 	if (sig->pinvoke)
-		entry_func = interp_entry_from_trampoline;
+		entry_func = (gpointer)interp_entry_from_trampoline;
 	else
 		entry_func = mono_jit_compile_method_jit_only (mini_get_interp_lmf_wrapper (), error);
 #endif

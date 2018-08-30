@@ -467,15 +467,15 @@ get_darwin_locale (void)
 	locale = CFLocaleCopyCurrent ();
 
 	if (locale) {
-		locale_language = CFLocaleGetValue (locale, kCFLocaleLanguageCode);
+		locale_language = (CFStringRef)CFLocaleGetValue (locale, kCFLocaleLanguageCode);
 		if (locale_language != NULL && CFStringGetBytes(locale_language, CFRangeMake (0, CFStringGetLength (locale_language)), kCFStringEncodingMacRoman, 0, FALSE, NULL, 0, &bytes_converted) > 0) {
 			len = bytes_converted + 1;
 
-			locale_country = CFLocaleGetValue (locale, kCFLocaleCountryCode);
+			locale_country = (CFStringRef)CFLocaleGetValue (locale, kCFLocaleCountryCode);
 			if (locale_country != NULL && CFStringGetBytes (locale_country, CFRangeMake (0, CFStringGetLength (locale_country)), kCFStringEncodingMacRoman, 0, FALSE, NULL, 0, &bytes_converted) > 0) {
 				len += bytes_converted + 1;
 
-				locale_script = CFLocaleGetValue (locale, kCFLocaleScriptCode);
+				locale_script = (CFStringRef)CFLocaleGetValue (locale, kCFLocaleScriptCode);
 				if (locale_script != NULL && CFStringGetBytes (locale_script, CFRangeMake (0, CFStringGetLength (locale_script)), kCFStringEncodingMacRoman, 0, FALSE, NULL, 0, &bytes_converted) > 0) {
 					len += bytes_converted + 1;
 				}

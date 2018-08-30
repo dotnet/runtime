@@ -315,7 +315,7 @@ dllmap_start (gpointer user_data,
 			if (strcmp (attribute_names [i], "dll") == 0)
 				info->dll = g_strdup (attribute_values [i]);
 			else if (strcmp (attribute_names [i], "target") == 0){
-				char *p = strstr (attribute_values [i], "$mono_libdir");
+				const char* p = strstr (attribute_values [i], "$mono_libdir");
 				if (p != NULL){
 					char *libdir = mono_native_getrootdir ();
 					size_t libdir_len = strlen (libdir);

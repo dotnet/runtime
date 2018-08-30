@@ -1169,7 +1169,7 @@ static gboolean
 ss_bp_is_unique (GSList *bps, GHashTable *ss_req_bp_cache, MonoMethod *method, guint32 il_offset)
 {
 	if (ss_req_bp_cache) {
-		MonoBreakpoint dummy = {method, il_offset, NULL, NULL};
+		MonoBreakpoint dummy = {method, (long)il_offset, NULL, NULL};
 		return !g_hash_table_lookup (ss_req_bp_cache, &dummy);
 	}
 	for (GSList *l = bps; l; l = l->next) {

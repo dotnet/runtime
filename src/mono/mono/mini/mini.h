@@ -2043,6 +2043,16 @@ MonoInst *mono_get_got_var (MonoCompile *cfg);
 void      mono_add_seq_point (MonoCompile *cfg, MonoBasicBlock *bb, MonoInst *ins, int native_offset);
 void      mono_add_var_location (MonoCompile *cfg, MonoInst *var, gboolean is_reg, int reg, int offset, int from, int to);
 MonoInst* mono_emit_jit_icall (MonoCompile *cfg, gconstpointer func, MonoInst **args);
+
+#ifdef __cplusplus
+template <typename T>
+inline MonoInst*
+mono_emit_jit_icall (MonoCompile *cfg, T func, MonoInst **args)
+{
+	return mono_emit_jit_icall (cfg, (gconstpointer)func, args);
+}
+#endif // __cplusplus
+
 MonoInst* mono_emit_jit_icall_by_info (MonoCompile *cfg, int il_offset, MonoJitICallInfo *info, MonoInst **args);
 MonoInst* mono_emit_method_call (MonoCompile *cfg, MonoMethod *method, MonoInst **args, MonoInst *this_ins);
 void      mono_create_helper_signatures (void);
@@ -2078,6 +2088,15 @@ void      mono_add_ins_to_end               (MonoBasicBlock *bb, MonoInst *inst)
 void      mono_replace_ins                  (MonoCompile *cfg, MonoBasicBlock *bb, MonoInst *ins, MonoInst **prev, MonoBasicBlock *first_bb, MonoBasicBlock *last_bb);
 
 void              mini_register_opcode_emulation (int opcode, const char *name, const char *sigstr, gpointer func, const char *symbol, gboolean no_throw);
+
+#ifdef __cplusplus
+template <typename T>
+inline void
+mini_register_opcode_emulation (int opcode, const char *name, const char *sigstr, T func, const char *symbol, gboolean no_throw)
+{
+	mini_register_opcode_emulation (opcode, name, sigstr, (gpointer)func, symbol, no_throw);
+}
+#endif // __cplusplus
 
 void              mono_trampolines_init (void);
 void              mono_trampolines_cleanup (void);

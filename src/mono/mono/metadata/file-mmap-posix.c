@@ -387,7 +387,7 @@ mono_mmap_open_file (const gunichar2 *path, gint path_length, int mode, const gu
 	if (!mapName) {
 		char * c_path = mono_utf16_to_utf8 (path, path_length, error);
 		return_val_if_nok (error, NULL);
-		handle = open_file_map (c_path, -1, mode, capacity, access, options, ioerror);
+		handle = (MmapHandle*)open_file_map (c_path, -1, mode, capacity, access, options, ioerror);
 		g_free (c_path);
 		return handle;
 	}
@@ -416,7 +416,7 @@ mono_mmap_open_file (const gunichar2 *path, gint path_length, int mode, const gu
 		}
 		named_regions_unlock ();
 	} else
-		handle = open_memory_map (c_mapName, mode, capacity, access, options, ioerror);
+		handle = (MmapHandle*)open_memory_map (c_mapName, mode, capacity, access, options, ioerror);
 
 	g_free (c_mapName);
 	return handle;

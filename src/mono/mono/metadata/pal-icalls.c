@@ -12,7 +12,7 @@
 #include <glib.h>
 #include "mono/utils/mono-threads-api.h"
 #include "mono/utils/atomic.h"
-
+#include "loader-internals.h"
 #include "pal-icalls.h"
 
 /*
@@ -56,7 +56,7 @@ static void
 interrupt_CFRunLoop (gpointer data)
 {
 	g_assert (data);
-	CFRunLoopStop (data);
+	CFRunLoopStop ((CFRunLoopRef)data);
 }
 
 void

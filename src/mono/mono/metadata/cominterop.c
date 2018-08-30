@@ -80,8 +80,14 @@ mono_IUnknown_Release (MonoIUnknown *pUnk)
 /*
 Code shared between the DISABLE_COM and !DISABLE_COM
 */
+#ifdef __cplusplus
+template <typename T>
+static void
+register_icall (       T func, const char *name, const char *sigstr, gboolean save)
+#else
 static void
 register_icall (gpointer func, const char *name, const char *sigstr, gboolean save)
+#endif
 {
 	MonoMethodSignature *sig = mono_create_icall_signature (sigstr);
 
@@ -99,9 +105,6 @@ mono_string_to_bstr_handle (MonoStringHandle s)
 	mono_gchandle_free (gchandle);
 	return res;
 }
-
-// Cast the first parameter to gpointer; macros do not recurse.
-#define register_icall(func, name, sigstr, save) (register_icall ((gpointer)(func), (name), (sigstr), (save)))
 
 gpointer
 mono_string_to_bstr (MonoString* s_raw)

@@ -807,7 +807,7 @@ finalize_domain_objects (void)
 	DomainFinalizationReq *req = NULL;
 	MonoDomain *domain;
 
-	if (UnlockedReadPointer ((gpointer)&domains_to_finalize)) {
+	if (UnlockedReadPointer ((gpointer volatile*)&domains_to_finalize)) {
 		mono_finalizer_lock ();
 		if (domains_to_finalize) {
 			req = (DomainFinalizationReq *)domains_to_finalize->data;

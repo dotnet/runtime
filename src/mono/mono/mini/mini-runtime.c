@@ -32,6 +32,7 @@
 #include <mono/metadata/assembly.h>
 #include <mono/metadata/assembly-internals.h>
 #include <mono/metadata/loader.h>
+#include <mono/metadata/loader-internals.h>
 #include <mono/metadata/tabledefs.h>
 #include <mono/metadata/class.h>
 #include <mono/metadata/object.h>
@@ -667,8 +668,14 @@ mono_dynamic_code_hash_lookup (MonoDomain *domain, MonoMethod *method)
 	return res;
 }
 
+#ifdef __cplusplus
+template <typename T>
+static void
+register_opcode_emulation (int opcode, const char *name, const char *sigstr, T func, const char *symbol, gboolean no_wrapper)
+#else
 static void
 register_opcode_emulation (int opcode, const char *name, const char *sigstr, gpointer func, const char *symbol, gboolean no_wrapper)
+#endif
 {
 #ifndef DISABLE_JIT
 	mini_register_opcode_emulation (opcode, name, sigstr, func, symbol, no_wrapper);
@@ -688,8 +695,14 @@ register_opcode_emulation (int opcode, const char *name, const char *sigstr, gpo
  * If @avoid_wrapper is TRUE, no wrapper is generated. This is for perf critical icalls which
  * can't throw exceptions.
  */
+#ifdef __cplusplus
+template <typename T>
+static void
+register_icall (T func, const char *name, const char *sigstr, gboolean avoid_wrapper)
+#else
 static void
 register_icall (gpointer func, const char *name, const char *sigstr, gboolean avoid_wrapper)
+#endif
 {
 	MonoMethodSignature *sig;
 
@@ -701,8 +714,14 @@ register_icall (gpointer func, const char *name, const char *sigstr, gboolean av
 	mono_register_jit_icall_full (func, name, sig, avoid_wrapper, avoid_wrapper ? name : NULL);
 }
 
+#ifdef __cplusplus
+template <typename T>
+static void
+register_icall_no_wrapper (T func, const char *name, const char *sigstr)
+#else
 static void
 register_icall_no_wrapper (gpointer func, const char *name, const char *sigstr)
+#endif
 {
 	MonoMethodSignature *sig;
 
@@ -714,8 +733,14 @@ register_icall_no_wrapper (gpointer func, const char *name, const char *sigstr)
 	mono_register_jit_icall_full (func, name, sig, TRUE, name);
 }
 
+#ifdef __cplusplus
+template <typename T>
+static void
+register_icall_with_wrapper (T func, const char *name, const char *sigstr)
+#else
 static void
 register_icall_with_wrapper (gpointer func, const char *name, const char *sigstr)
+#endif
 {
 	MonoMethodSignature *sig;
 

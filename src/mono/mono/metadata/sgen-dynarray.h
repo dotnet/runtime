@@ -250,7 +250,7 @@ dyn_array_ptr_set (DynPtrArray *da, int x, void *ptr)
 #ifdef OPTIMIZATION_SINGLETON_DYN_ARRAY
 	if (da->array.capacity == 1) {
 		g_assert (x == 0);
-		da->array.data = ptr;
+		da->array.data = (char*)ptr;
 	} else
 #endif
 	{

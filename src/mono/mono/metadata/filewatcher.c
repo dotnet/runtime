@@ -225,7 +225,7 @@ ves_icall_System_IO_InotifyWatcher_RemoveWatch (int fd, gint32 watch_descriptor)
 static void
 interrupt_kevent (gpointer data)
 {
-	int *kq_ptr = data;
+	int *kq_ptr = (int*)data;
 
 	/* Interrupt the kevent () call by closing the fd */
 	close (*kq_ptr);
@@ -252,7 +252,7 @@ ves_icall_System_IO_KqueueMonitor_kevent_notimeout (int *kq_ptr, gpointer change
 	}
 
 	MONO_ENTER_GC_SAFE;
-	res = kevent (*kq_ptr, changelist, nchanges, eventlist, nevents, NULL);
+	res = kevent (*kq_ptr, (const struct kevent*)changelist, nchanges, (struct kevent*)eventlist, nevents, NULL);
 	MONO_EXIT_GC_SAFE;
 
 	mono_thread_info_uninstall_interrupt (&interrupted);

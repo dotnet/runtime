@@ -123,25 +123,33 @@ get_method_image (MonoMethod *method)
 	return m_class_get_image (method->klass);
 }
 
+#ifdef __cplusplus
+template <typename T>
+static void
+register_icall (T func, const char *name, const char *sigstr, gboolean no_wrapper)
+#else
 static void
 register_icall (gpointer func, const char *name, const char *sigstr, gboolean no_wrapper)
+#endif
 {
 	MonoMethodSignature *sig = mono_create_icall_signature (sigstr);
 
 	mono_register_jit_icall (func, name, sig, no_wrapper);
 }
 
+#ifdef __cplusplus
+template <typename T>
+static void
+register_icall_no_wrapper (T func , const char *name, const char *sigstr)
+#else
 static void
 register_icall_no_wrapper (gpointer func, const char *name, const char *sigstr)
+#endif
 {
 	MonoMethodSignature *sig = mono_create_icall_signature (sigstr);
 
 	mono_register_jit_icall (func, name, sig, TRUE);
 }
-
-// Cast the first parameter to gpointer; macros do not recurse.
-#define register_icall(func, name, sigstr, no_wrapper) (register_icall ((gpointer)(func), (name), (sigstr), (no_wrapper)))
-#define register_icall_no_wrapper(func, name, sigstr) (register_icall_no_wrapper ((gpointer)(func), (name), (sigstr)))
 
 MonoMethodSignature*
 mono_signature_no_pinvoke (MonoMethod *method)

@@ -699,7 +699,7 @@ sgen_bridge_handle_gc_debug (const char *opt)
 	} else if (!strcmp (opt, "enable-bridge-accounting")) {
 		bridge_processor_config.accounting = TRUE;
 	} else if (g_str_has_prefix (opt, "bridge-dump=")) {
-		char *prefix = strchr (opt, '=') + 1;
+		const char* prefix = strchr (opt, '=') + 1;
 		set_dump_prefix(prefix);
 	} else if (g_str_has_prefix (opt, "bridge-compare-to=")) {
 		const char *name = strchr (opt, '=') + 1;

@@ -85,7 +85,7 @@ void
 mono_debugger_log_free (void)
 {
 	MonoFlightRecorder *log = debugger_log;
-	debugger_log = GINT_TO_POINTER (MONO_DEBUGGER_LOG_FREED);
+	debugger_log = (MonoFlightRecorder*)GINT_TO_POINTER (MONO_DEBUGGER_LOG_FREED);
 
 	mono_memory_barrier ();
 	mono_flight_recorder_free (log);

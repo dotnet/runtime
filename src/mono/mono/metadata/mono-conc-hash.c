@@ -111,7 +111,7 @@ set_key (conc_table *table, int slot, gpointer key)
 {
 	gpointer *key_addr = &table->keys [slot];
 	if (table->gc_type & MONO_HASH_KEY_GC)
-		mono_gc_wbarrier_generic_store (key_addr, key);
+		mono_gc_wbarrier_generic_store (key_addr, (MonoObject*)key);
 	else
 		*key_addr = key;
 }
@@ -131,7 +131,7 @@ set_value (conc_table *table, int slot, gpointer value)
 {
 	gpointer *value_addr = &table->values [slot];
 	if (table->gc_type & MONO_HASH_VALUE_GC)
-		mono_gc_wbarrier_generic_store (value_addr, value);
+		mono_gc_wbarrier_generic_store (value_addr, (MonoObject*)value);
 	else
 		*value_addr = value;
 }

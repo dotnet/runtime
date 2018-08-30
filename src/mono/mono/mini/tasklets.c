@@ -11,6 +11,8 @@
 
 #if defined(MONO_SUPPORT_TASKLETS)
 
+#include "mono/metadata/loader-internals.h"
+
 static mono_mutex_t tasklets_mutex;
 #define tasklets_lock() mono_os_mutex_lock(&tasklets_mutex)
 #define tasklets_unlock() mono_os_mutex_unlock(&tasklets_mutex)

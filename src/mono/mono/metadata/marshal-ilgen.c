@@ -162,7 +162,7 @@ get_fixed_buffer_attr (MonoClassField *field, MonoType **out_etype, int *out_len
 															  &typed_args, &named_args, &num_named_args, &arginfo, error);
 		if (!is_ok (error))
 			return FALSE;
-		*out_etype = typed_args [0];
+		*out_etype = (MonoType*)typed_args [0];
 		*out_len = *(gint32*)typed_args [1];
 		g_free (typed_args);
 		g_free (named_args);
@@ -566,77 +566,77 @@ conv_to_icall (MonoMarshalConv conv, int *ind_store_type)
 	*ind_store_type = CEE_STIND_I;
 	switch (conv) {
 	case MONO_MARSHAL_CONV_STR_LPWSTR:
-		return mono_marshal_string_to_utf16;		
+		return (gpointer)mono_marshal_string_to_utf16;
 	case MONO_MARSHAL_CONV_LPWSTR_STR:
 		*ind_store_type = CEE_STIND_REF;
-		return ves_icall_mono_string_from_utf16;
+		return (gpointer)ves_icall_mono_string_from_utf16;
 	case MONO_MARSHAL_CONV_LPTSTR_STR:
 		*ind_store_type = CEE_STIND_REF;
-		return ves_icall_string_new_wrapper;
+		return (gpointer)ves_icall_string_new_wrapper;
 	case MONO_MARSHAL_CONV_UTF8STR_STR:
 	case MONO_MARSHAL_CONV_LPSTR_STR:
 		*ind_store_type = CEE_STIND_REF;
-		return ves_icall_string_new_wrapper;
+		return (gpointer)ves_icall_string_new_wrapper;
 	case MONO_MARSHAL_CONV_STR_LPTSTR:
 #ifdef TARGET_WIN32
-		return mono_marshal_string_to_utf16;
+		return (gpointer)mono_marshal_string_to_utf16;
 #else
-		return mono_string_to_utf8str;
+		return (gpointer)mono_string_to_utf8str;
 #endif
 		// In Mono historically LPSTR was treated as a UTF8STR
 	case MONO_MARSHAL_CONV_STR_UTF8STR:
 	case MONO_MARSHAL_CONV_STR_LPSTR:
-		return mono_string_to_utf8str;
+		return (gpointer)mono_string_to_utf8str;
 	case MONO_MARSHAL_CONV_STR_BSTR:
-		return mono_string_to_bstr;
+		return (gpointer)mono_string_to_bstr;
 	case MONO_MARSHAL_CONV_BSTR_STR:
 		*ind_store_type = CEE_STIND_REF;
-		return mono_string_from_bstr_icall;
+		return (gpointer)mono_string_from_bstr_icall;
 	case MONO_MARSHAL_CONV_STR_TBSTR:
 	case MONO_MARSHAL_CONV_STR_ANSIBSTR:
-		return mono_string_to_ansibstr;
+		return (gpointer)mono_string_to_ansibstr;
 	case MONO_MARSHAL_CONV_SB_UTF8STR:
 	case MONO_MARSHAL_CONV_SB_LPSTR:
-		return mono_string_builder_to_utf8;
+		return (gpointer)mono_string_builder_to_utf8;
 	case MONO_MARSHAL_CONV_SB_LPTSTR:
 #ifdef TARGET_WIN32
-		return mono_string_builder_to_utf16;
+		return (gpointer)mono_string_builder_to_utf16;
 #else
-		return mono_string_builder_to_utf8;
+		return (gpointer)mono_string_builder_to_utf8;
 #endif
 	case MONO_MARSHAL_CONV_SB_LPWSTR:
-		return mono_string_builder_to_utf16;
+		return (gpointer)mono_string_builder_to_utf16;
 	case MONO_MARSHAL_CONV_ARRAY_SAVEARRAY:
-		return mono_array_to_savearray;
+		return (gpointer)mono_array_to_savearray;
 	case MONO_MARSHAL_CONV_ARRAY_LPARRAY:
-		return mono_array_to_lparray;
+		return (gpointer)mono_array_to_lparray;
 	case MONO_MARSHAL_FREE_LPARRAY:
-		return mono_free_lparray;
+		return (gpointer)mono_free_lparray;
 	case MONO_MARSHAL_CONV_DEL_FTN:
-		return mono_delegate_to_ftnptr;
+		return (gpointer)mono_delegate_to_ftnptr;
 	case MONO_MARSHAL_CONV_FTN_DEL:
 		*ind_store_type = CEE_STIND_REF;
-		return mono_ftnptr_to_delegate;
+		return (gpointer)mono_ftnptr_to_delegate;
 	case MONO_MARSHAL_CONV_UTF8STR_SB:
 	case MONO_MARSHAL_CONV_LPSTR_SB:
 		*ind_store_type = CEE_STIND_REF;
-		return mono_string_utf8_to_builder;
+		return (gpointer)mono_string_utf8_to_builder;
 	case MONO_MARSHAL_CONV_LPTSTR_SB:
 		*ind_store_type = CEE_STIND_REF;
 #ifdef TARGET_WIN32
-		return mono_string_utf16_to_builder;
+		return (gpointer)mono_string_utf16_to_builder;
 #else
-		return mono_string_utf8_to_builder;
+		return (gpointer)mono_string_utf8_to_builder;
 #endif
 	case MONO_MARSHAL_CONV_LPWSTR_SB:
 		*ind_store_type = CEE_STIND_REF;
-		return mono_string_utf16_to_builder;
+		return (gpointer)mono_string_utf16_to_builder;
 	case MONO_MARSHAL_FREE_ARRAY:
-		return mono_marshal_free_array;
+		return (gpointer)mono_marshal_free_array;
 	case MONO_MARSHAL_CONV_STR_BYVALSTR:
-		return mono_string_to_byvalstr;
+		return (gpointer)mono_string_to_byvalstr;
 	case MONO_MARSHAL_CONV_STR_BYVALWSTR:
-		return mono_string_to_byvalwstr;
+		return (gpointer)mono_string_to_byvalwstr;
 	default:
 		g_assert_not_reached ();
 	}
@@ -1183,13 +1183,13 @@ emit_thread_interrupt_checkpoint (MonoMethodBuilder *mb)
 	if (strstr (mb->name, "mono_thread_interruption_checkpoint"))
 		return;
 	
-	emit_thread_interrupt_checkpoint_call (mb, mono_thread_interruption_checkpoint);
+	emit_thread_interrupt_checkpoint_call (mb, (gpointer)mono_thread_interruption_checkpoint);
 }
 
 static void
 emit_thread_force_interrupt_checkpoint (MonoMethodBuilder *mb)
 {
-	emit_thread_interrupt_checkpoint_call (mb, mono_thread_force_interruption_checkpoint_noraise);
+	emit_thread_interrupt_checkpoint_call (mb, (gpointer)mono_thread_force_interruption_checkpoint_noraise);
 }
 
 void

@@ -100,8 +100,14 @@ static MonoMethod *method_set_call_context, *method_needs_context_sink, *method_
 static gpointer
 mono_compile_method_icall (MonoMethod *method);
 
+#ifdef __cplusplus
+template <typename T>
+static void
+register_icall (T func, const char *name, const char *sigstr, gboolean save)
+#else
 static void
 register_icall (gpointer func, const char *name, const char *sigstr, gboolean save)
+#endif
 {
 	MonoMethodSignature *sig = mono_create_icall_signature (sigstr);
 
@@ -229,7 +235,6 @@ mono_remoting_marshal_init (void)
 
 		register_icall (mono_context_get_icall, "mono_context_get_icall", "object", FALSE);
 		register_icall (mono_context_set_icall, "mono_context_set_icall", "void object", FALSE);
-
 	}
 
 	icalls_registered = TRUE;

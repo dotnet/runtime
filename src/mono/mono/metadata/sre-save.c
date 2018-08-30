@@ -559,7 +559,7 @@ mono_image_basic_method (ReflectionMethodBuilder *mb, MonoDynamicImage *assembly
 				}
 				pb->table_idx = table->next_idx++;
 				if (pb->attrs & PARAM_ATTRIBUTE_HAS_DEFAULT) {
-					guint32 field_type = 0;
+					MonoTypeEnum field_type = (MonoTypeEnum)0;
 					mtable = &assembly->tables [MONO_TABLE_CONSTANT];
 					mtable->rows ++;
 					alloc_table (mtable, mtable->rows);
