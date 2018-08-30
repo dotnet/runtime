@@ -151,8 +151,14 @@ static MonoClass *test_mono_class_from_name (MonoImage *image,
 	return klass;
 }
 
+#ifdef __cplusplus
+extern "C"
+#endif
 int
-main (void)
+test_mono_callspec_main (void);
+
+int
+test_mono_callspec_main (void)
 {
 	int res = 0;
 	MonoDomain *domain = NULL;
