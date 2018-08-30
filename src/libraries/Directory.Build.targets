@@ -84,6 +84,11 @@
       <RuntimePath>$(TestHostRootPath)</RuntimePath>
     </BinPlaceConfiguration>
 
+    <!-- binplace netstandard test suite -->
+    <BinPlaceConfiguration Condition="'$(BuildingNETStandardVertical)' == 'true' AND '$(IsTestProject)' == 'true'" Include="netstandard-$(_bc_OSGroup)">
+      <TestPath>$(NETStandardTestSuiteOutputPath)$(AssemblyName)/</TestPath>
+    </BinPlaceConfiguration>
+
     <!-- binplace targeting packs which may be different from BuildConfiguration -->
     <BinPlaceConfiguration Include="netstandard">
       <RefPath>$(RefRootPath)netstandard/</RefPath>

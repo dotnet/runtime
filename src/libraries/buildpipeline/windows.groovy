@@ -53,6 +53,7 @@ simpleNode('windows.10.amd64.clientrs4.devex.open') {
             bat ".\\build-tests.cmd ${framework} -buildArch=${params.AGroup} -${params.CGroup}${additionalArgs} -- /p:RuntimeOS=win10 /p:ArchiveTests=${archiveTests} /p:EnableDumpling=true"
         }
         else {
+            bat ".\\build-tests.cmd -framework:netstandard -buildArch=${params.AGroup} -${params.CGroup} -SkipTests"
             bat ".\\build-tests.cmd ${framework} -${params.CGroup}${additionalArgs}"
         }
     }

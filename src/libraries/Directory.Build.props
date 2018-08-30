@@ -179,6 +179,7 @@
   <!-- set properties for each vertical -->
   <PropertyGroup>
     <BuildingNETCoreAppVertical Condition="'$(BuildingNETCoreAppVertical)' == '' AND ('$(_bc_TargetGroup)'=='netcoreapp' OR '$(_bc_TargetGroup)'=='netcoreappaot' OR '$(BuildAllConfigurations)' == 'true')">true</BuildingNETCoreAppVertical>
+    <BuildingNETStandardVertical Condition="'$(BuildingNETStandardVertical)' == '' AND ('$(_bc_TargetGroup)'=='netstandard' OR '$(BuildAllConfigurations)' == 'true')">true</BuildingNETStandardVertical>
     <BuildingNETFxVertical Condition="'$(BuildingNETFxVertical)' == '' AND ('$(_bc_TargetGroup)'=='netfx' OR '$(BuildAllConfigurations)' == 'true')">true</BuildingNETFxVertical>
     <BuildingUAPVertical Condition="'$(BuildingUAPVertical)' == '' AND ('$(_bc_TargetGroup)'=='uap' OR '$(BuildAllConfigurations)' == 'true')">true</BuildingUAPVertical>
     <BuildingUAPAOTVertical Condition="'$(BuildingUAPAOTVertical)' == '' AND ('$(_bc_TargetGroup)'=='uapaot' OR '$(BuildAllConfigurations)' == 'true')">true</BuildingUAPAOTVertical>
@@ -304,6 +305,7 @@
     <UAPAOTPackageRuntimePath>$(BinDir)pkg\uapaot\lib</UAPAOTPackageRuntimePath>
     <NetFxPackageRefPath>$(BinDir)pkg\netfx\ref</NetFxPackageRefPath>
     <NetFxPackageRuntimePath>$(BinDir)pkg\netfx\lib</NetFxPackageRuntimePath>
+    <NETStandardTestSuiteOutputPath>$(BinDir)NetStandardTestSuite\</NETStandardTestSuiteOutputPath>
 
     <!-- We add extra binplacing for the test shared framework until we can get hardlinking with the runtime directory working on all platforms -->
     <BinPlaceTestSharedFramework Condition="'$(_bc_TargetGroup)' == 'netcoreapp' AND '$(BuildTests)'!='false'">true</BinPlaceTestSharedFramework>
