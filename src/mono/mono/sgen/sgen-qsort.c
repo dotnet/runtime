@@ -109,13 +109,8 @@ void sgen_qsort (
 	const size_t element_size,
 	int (*compare) (const void *, const void *))
 {
-#ifndef _MSC_VER
-	unsigned char pivot_tmp [element_size];
-	unsigned char swap_tmp [element_size];
-#else
 	unsigned char *pivot_tmp = g_newa (unsigned char, element_size);
 	unsigned char *swap_tmp = g_newa (unsigned char, element_size);
-#endif
 	sgen_qsort_rec (
 		array,
 		element_size,
