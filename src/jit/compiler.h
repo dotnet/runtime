@@ -4638,6 +4638,9 @@ public:
 #ifdef DEBUG
     void fgPrintEdgeWeights();
 #endif
+    void                 fgComputeBlockAndEdgeWeights();
+    BasicBlock::weight_t fgComputeMissingBlockWeights();
+    void fgComputeCalledCount(BasicBlock::weight_t returnWeight);
     void fgComputeEdgeWeights();
 
     void fgReorderBlocks();

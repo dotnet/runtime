@@ -4630,8 +4630,8 @@ void Compiler::compCompile(void** methodCodePtr, ULONG* methodCodeSize, JitFlags
     /* From this point on the flowgraph information such as bbNum,
      * bbRefs or bbPreds has to be kept updated */
 
-    // Compute the edge weights (if we have profile data)
-    fgComputeEdgeWeights();
+    // Compute the block and edge weights
+    fgComputeBlockAndEdgeWeights();
     EndPhase(PHASE_COMPUTE_EDGE_WEIGHTS);
 
 #if FEATURE_EH_FUNCLETS
