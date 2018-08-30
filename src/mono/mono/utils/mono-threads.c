@@ -272,14 +272,15 @@ dump_threads (void)
 
 	MOSTLY_ASYNC_SAFE_PRINTF ("STATE CUE CARD: (? means a positive number, usually 1 or 2, * means any number)\n");
 	MOSTLY_ASYNC_SAFE_PRINTF ("\t0x0\t- starting (GOOD, unless the thread is running managed code)\n");
-	MOSTLY_ASYNC_SAFE_PRINTF ("\t0x1\t- running (BAD, unless it's the gc thread)\n");
-	MOSTLY_ASYNC_SAFE_PRINTF ("\t0x2\t- detached (GOOD, unless the thread is running managed code)\n");
+	MOSTLY_ASYNC_SAFE_PRINTF ("\t0x1\t- detached (GOOD, unless the thread is running managed code)\n");
+	MOSTLY_ASYNC_SAFE_PRINTF ("\t0x2\t- running (BAD, unless it's the gc thread)\n");
 	MOSTLY_ASYNC_SAFE_PRINTF ("\t0x?03\t- async suspended (GOOD)\n");
 	MOSTLY_ASYNC_SAFE_PRINTF ("\t0x?04\t- self suspended (GOOD)\n");
 	MOSTLY_ASYNC_SAFE_PRINTF ("\t0x?05\t- async suspend requested (BAD)\n");
-	MOSTLY_ASYNC_SAFE_PRINTF ("\t0x?06\t- self suspend requested (BAD)\n");
-	MOSTLY_ASYNC_SAFE_PRINTF ("\t0x*07\t- blocking (GOOD)\n");
-	MOSTLY_ASYNC_SAFE_PRINTF ("\t0x?08\t- blocking with pending suspend (GOOD)\n");
+	MOSTLY_ASYNC_SAFE_PRINTF ("\t0x6\t- blocking (BAD, unless there's no suspend initiator)\n");
+	MOSTLY_ASYNC_SAFE_PRINTF ("\t0x?07\t- blocking async suspended (GOOD)\n");
+	MOSTLY_ASYNC_SAFE_PRINTF ("\t0x?08\t- blocking self suspended (GOOD)\n");
+	MOSTLY_ASYNC_SAFE_PRINTF ("\t0x?09\t- blocking suspend requested (BAD in coop; GOOD in hybrid)\n");
 
 	FOREACH_THREAD_SAFE_ALL (info) {
 #ifdef TARGET_MACH
