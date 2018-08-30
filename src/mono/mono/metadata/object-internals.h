@@ -153,6 +153,8 @@ struct _MonoString {
 	mono_unichar2 chars [MONO_ZERO_LEN_ARRAY];
 };
 
+#define MONO_SIZEOF_MONO_STRING (MONO_STRUCT_OFFSET (MonoString, chars))
+
 #define mono_object_class(obj) (((MonoObject*)(obj))->vtable->klass)
 #define mono_object_domain(obj) (((MonoObject*)(obj))->vtable->domain)
 
