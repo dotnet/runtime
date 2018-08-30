@@ -4223,7 +4223,6 @@ struct GenTreeIndexAddr : public GenTreeOp
     CORINFO_CLASS_HANDLE gtStructElemClass; // If the element type is a struct, this is the struct type.
 
     GenTree* gtIndRngFailBB; // Label to jump to for array-index-out-of-range
-    unsigned gtStkDepth;     // Stack depth at which the jump occurs (required for fgSetRngChkTarget)
 
     var_types gtElemType;   // The element type of the array.
     unsigned  gtElemSize;   // size of elements in the array
@@ -4240,7 +4239,6 @@ struct GenTreeIndexAddr : public GenTreeOp
         : GenTreeOp(GT_INDEX_ADDR, TYP_BYREF, arr, ind)
         , gtStructElemClass(structElemClass)
         , gtIndRngFailBB(nullptr)
-        , gtStkDepth(0)
         , gtElemType(elemType)
         , gtElemSize(elemSize)
         , gtLenOffset(lenOffset)
@@ -4314,18 +4312,8 @@ struct GenTreeBoundsChk : public GenTree
     GenTree*        gtIndRngFailBB; // Label to jump to for array-index-out-of-range
     SpecialCodeKind gtThrowKind;    // Kind of throw block to branch to on failure
 
-    /* Only out-of-ranges at same stack depth can jump to the same label (finding return address is easier)
-       For delayed calling of fgSetRngChkTarget() so that the
-       optimizer has a chance of eliminating some of the rng checks */
-    unsigned gtStkDepth;
-
     GenTreeBoundsChk(genTreeOps oper, var_types type, GenTree* index, GenTree* arrLen, SpecialCodeKind kind)
-        : GenTree(oper, type)
-        , gtIndex(index)
-        , gtArrLen(arrLen)
-        , gtIndRngFailBB(nullptr)
-        , gtThrowKind(kind)
-        , gtStkDepth(0)
+        : GenTree(oper, type), gtIndex(index), gtArrLen(arrLen), gtIndRngFailBB(nullptr), gtThrowKind(kind)
     {
         // Effects flags propagate upwards.
         gtFlags |= (arrLen->gtFlags & GTF_ALL_EFFECT);

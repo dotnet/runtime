@@ -164,8 +164,6 @@ void Rationalizer::RewriteNodeAsCall(GenTree**             use,
 #endif
 
     call = comp->fgMorphArgs(call);
-    // Determine if this call has changed any codegen requirements.
-    comp->fgCheckArgCnt();
 
     // Replace "tree" with "call"
     if (parents.Height() > 1)

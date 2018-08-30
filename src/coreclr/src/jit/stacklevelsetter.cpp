@@ -20,6 +20,8 @@ StackLevelSetter::StackLevelSetter(Compiler* compiler)
     , throwHelperBlocksUsed(comp->fgUseThrowHelperBlocks() && comp->compUsesThrowHelper)
 #endif // !FEATURE_FIXED_OUT_ARGS
 {
+    // The constructor reads this value to skip iterations that could set it if it is already set.
+    compiler->codeGen->resetWritePhaseForFramePointerRequired();
 }
 
 //------------------------------------------------------------------------
@@ -43,19 +45,16 @@ void StackLevelSetter::DoPhase()
     }
 #if !FEATURE_FIXED_OUT_ARGS
 
-    if (framePointerRequired && !comp->codeGen->isFramePointerRequired())
+    if (framePointerRequired)
     {
-        JITDUMP("framePointerRequired is not set when it is required\n");
-        comp->codeGen->resetWritePhaseForFramePointerRequired();
         comp->codeGen->setFramePointerRequired(true);
     }
 #endif // !FEATURE_FIXED_OUT_ARGS
-    if (maxStackLevel != comp->fgGetPtrArgCntMax())
-    {
-        JITDUMP("fgPtrArgCntMax was calculated wrong during the morph, the old value: %u, the right value: %u.\n",
-                comp->fgGetPtrArgCntMax(), maxStackLevel);
-        comp->fgSetPtrArgCntMax(maxStackLevel);
-    }
+
+    CheckAdditionalArgs();
+
+    comp->fgSetPtrArgCntMax(maxStackLevel);
+    CheckArgCnt();
 }
 
 //------------------------------------------------------------------------
@@ -97,11 +96,9 @@ void StackLevelSetter::ProcessBlock(BasicBlock* block)
 
         if (node->IsCall())
         {
-            GenTreeCall* call = node->AsCall();
-
-            unsigned usedStackSlotsCount = PopArgumentsFromCall(call);
+            GenTreeCall* call                = node->AsCall();
+            unsigned     usedStackSlotsCount = PopArgumentsFromCall(call);
 #if defined(UNIX_X86_ABI)
-            assert(call->fgArgInfo->GetStkSizeBytes() == usedStackSlotsCount * TARGET_POINTER_SIZE);
             call->fgArgInfo->SetStkSizeBytes(usedStackSlotsCount * TARGET_POINTER_SIZE);
 #endif // UNIX_X86_ABI
         }
@@ -179,10 +176,37 @@ void StackLevelSetter::SetThrowHelperBlock(SpecialCodeKind kind, BasicBlock* blo
     assert(add != nullptr);
     if (add->acdStkLvlInit)
     {
+        // If different range checks happen at different stack levels,
+        // they can't all jump to the same "call @rngChkFailed" AND have
+        // frameless methods, as the rngChkFailed may need to unwind the
+        // stack, and we have to be able to report the stack level.
+        //
+        // The following check forces most methods that reference an
+        // array element in a parameter list to have an EBP frame,
+        // this restriction could be removed with more careful code
+        // generation for BBJ_THROW (i.e. range check failed).
+        //
+        // For Linux/x86, we possibly need to insert stack alignment adjustment
+        // before the first stack argument pushed for every call. But we
+        // don't know what the stack alignment adjustment will be when
+        // we morph a tree that calls fgAddCodeRef(), so the stack depth
+        // number will be incorrect. For now, simply force all functions with
+        // these helpers to have EBP frames. It might be possible to make
+        // this less conservative. E.g., for top-level (not nested) calls
+        // without stack args, the stack pointer hasn't changed and stack
+        // depth will be known to be zero. Or, figure out a way to update
+        // or generate all required helpers after all stack alignment
+        // has been added, and the stack level at each call to fgAddCodeRef()
+        // is known, or can be recalculated.
+        CLANG_FORMAT_COMMENT_ANCHOR;
+#if defined(UNIX_X86_ABI)
+        framePointerRequired = true;
+#else  // !defined(UNIX_X86_ABI)
         if (add->acdStkLvl != currentStackLevel)
         {
             framePointerRequired = true;
         }
+#endif // !defined(UNIX_X86_ABI)
     }
     else
     {
@@ -267,4 +291,62 @@ void StackLevelSetter::SubStackLevel(unsigned value)
 {
     assert(currentStackLevel >= value);
     currentStackLevel -= value;
+}
+
+//------------------------------------------------------------------------
+// CheckArgCnt: Check whether the maximum arg size will change codegen requirements.
+//
+// Notes:
+//    CheckArgCnt records the maximum number of pushed arguments.
+//    Depending upon this value of the maximum number of pushed arguments
+//    we may need to use an EBP frame or be partially interuptible.
+//    This functionality has to be called after maxStackLevel is set.
+//
+// Assumptions:
+//    This must be called when isFramePointerRequired() is in a write phase, because it is a
+//    phased variable (can only be written before it has been read).
+//
+void StackLevelSetter::CheckArgCnt()
+{
+    if (!comp->compCanEncodePtrArgCntMax())
+    {
+#ifdef DEBUG
+        if (comp->verbose)
+        {
+            printf("Too many pushed arguments for fully interruptible encoding, marking method as partially "
+                   "interruptible\n");
+        }
+#endif
+        comp->genInterruptible = false;
+    }
+    if (maxStackLevel >= sizeof(unsigned))
+    {
+#ifdef DEBUG
+        if (comp->verbose)
+        {
+            printf("Too many pushed arguments for an ESP based encoding, forcing an EBP frame\n");
+        }
+#endif
+        comp->codeGen->setFramePointerRequired(true);
+    }
+}
+
+//------------------------------------------------------------------------
+// CheckAdditionalArgs: Check if there are additional args that need stack slots.
+//
+// Notes:
+//    Currently only x86 profiler hook needs it.
+//
+void StackLevelSetter::CheckAdditionalArgs()
+{
+#if defined(_TARGET_X86_)
+    if (comp->compIsProfilerHookNeeded())
+    {
+        if (maxStackLevel == 0)
+        {
+            JITDUMP("Upping fgPtrArgCntMax from %d to 1\n", maxStackLevel);
+            maxStackLevel = 1;
+        }
+    }
+#endif // _TARGET_X86_
 }

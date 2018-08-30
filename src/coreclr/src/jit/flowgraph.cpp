@@ -116,8 +116,6 @@ void Compiler::fgInit()
     }
 
     /* Keep track of the max count of pointer arguments */
-
-    fgPtrArgCntCur = 0;
     fgPtrArgCntMax = 0;
 
     /* This global flag is set whenever we remove a statement */
@@ -18119,13 +18117,18 @@ unsigned Compiler::acdHelper(SpecialCodeKind codeKind)
     }
 }
 
-/*****************************************************************************
- *
- *  Find/create an added code entry associated with the given block and with
- *  the given kind.
- */
-
-BasicBlock* Compiler::fgAddCodeRef(BasicBlock* srcBlk, unsigned refData, SpecialCodeKind kind, unsigned stkDepth)
+//------------------------------------------------------------------------
+// fgAddCodeRef: Find/create an added code entry associated with the given block and with the given kind.
+//
+// Arguments:
+//   srcBlk  - the block that needs an entry;
+//   refData - the index to use as the cache key for sharing throw blocks;
+//   kind    - the kind of exception;
+//
+// Return Value:
+//   The target throw helper block or nullptr if throw helper blocks are disabled.
+//
+BasicBlock* Compiler::fgAddCodeRef(BasicBlock* srcBlk, unsigned refData, SpecialCodeKind kind)
 {
     // Record that the code will call a THROW_HELPER
     // so on Windows Amd64 we can allocate the 4 outgoing
@@ -18155,43 +18158,6 @@ BasicBlock* Compiler::fgAddCodeRef(BasicBlock* srcBlk, unsigned refData, Special
 
     if (add) // found it
     {
-#if !FEATURE_FIXED_OUT_ARGS
-        // If different range checks happen at different stack levels,
-        // they can't all jump to the same "call @rngChkFailed" AND have
-        // frameless methods, as the rngChkFailed may need to unwind the
-        // stack, and we have to be able to report the stack level.
-        //
-        // The following check forces most methods that reference an
-        // array element in a parameter list to have an EBP frame,
-        // this restriction could be removed with more careful code
-        // generation for BBJ_THROW (i.e. range check failed).
-        //
-        // For Linux/x86, we possibly need to insert stack alignment adjustment
-        // before the first stack argument pushed for every call. But we
-        // don't know what the stack alignment adjustment will be when
-        // we morph a tree that calls fgAddCodeRef(), so the stack depth
-        // number will be incorrect. For now, simply force all functions with
-        // these helpers to have EBP frames. It might be possible to make
-        // this less conservative. E.g., for top-level (not nested) calls
-        // without stack args, the stack pointer hasn't changed and stack
-        // depth will be known to be zero. Or, figure out a way to update
-        // or generate all required helpers after all stack alignment
-        // has been added, and the stack level at each call to fgAddCodeRef()
-        // is known, or can be recalculated.
-        CLANG_FORMAT_COMMENT_ANCHOR;
-
-#if defined(UNIX_X86_ABI)
-        codeGen->setFrameRequired(true);
-        codeGen->setFramePointerRequiredGCInfo(true);
-#else  // !defined(UNIX_X86_ABI)
-        if (add->acdStkLvl != stkDepth)
-        {
-            codeGen->setFrameRequired(true);
-            codeGen->setFramePointerRequiredGCInfo(true);
-        }
-#endif // !defined(UNIX_X86_ABI)
-#endif // !FEATURE_FIXED_OUT_ARGS
-
         return add->acdDstBlk;
     }
 
@@ -18202,7 +18168,7 @@ BasicBlock* Compiler::fgAddCodeRef(BasicBlock* srcBlk, unsigned refData, Special
     add->acdKind = kind;
     add->acdNext = fgAddCodeList;
 #if !FEATURE_FIXED_OUT_ARGS
-    add->acdStkLvl     = stkDepth;
+    add->acdStkLvl     = 0;
     add->acdStkLvlInit = false;
 #endif // !FEATURE_FIXED_OUT_ARGS
 
@@ -18267,13 +18233,8 @@ BasicBlock* Compiler::fgAddCodeRef(BasicBlock* srcBlk, unsigned refData, Special
                 break;
         }
 
-        printf("\nfgAddCodeRef - Add BB in %s%s, new block %s, stkDepth is %d\n", msgWhere, msg,
-               add->acdDstBlk->dspToString(), stkDepth);
+        printf("\nfgAddCodeRef - Add BB in %s%s, new block %s\n", msgWhere, msg, add->acdDstBlk->dspToString());
     }
-#endif // DEBUG
-
-#ifdef DEBUG
-    newBlk->bbTgtStkDepth = stkDepth;
 #endif // DEBUG
 
     /* Mark the block as added by the compiler and not removable by future flow
@@ -18384,12 +18345,22 @@ Compiler::AddCodeDsc* Compiler::fgFindExcptnTarget(SpecialCodeKind kind, unsigne
  *  range check is to jump to upon failure.
  */
 
-BasicBlock* Compiler::fgRngChkTarget(BasicBlock* block, unsigned stkDepth, SpecialCodeKind kind)
+//------------------------------------------------------------------------
+// fgRngChkTarget: Create/find the appropriate "range-fail" label for the block.
+//
+// Arguments:
+//   srcBlk  - the block that needs an entry;
+//   kind    - the kind of exception;
+//
+// Return Value:
+//   The target throw helper block this check jumps to upon failure.
+//
+BasicBlock* Compiler::fgRngChkTarget(BasicBlock* block, SpecialCodeKind kind)
 {
 #ifdef DEBUG
     if (verbose)
     {
-        printf("*** Computing fgRngChkTarget for block " FMT_BB " to stkDepth %d\n", block->bbNum, stkDepth);
+        printf("*** Computing fgRngChkTarget for block " FMT_BB "\n", block->bbNum);
         if (!block->IsLIR())
         {
             gtDispTree(compCurStmt);
@@ -18399,7 +18370,7 @@ BasicBlock* Compiler::fgRngChkTarget(BasicBlock* block, unsigned stkDepth, Speci
 
     /* We attach the target label to the containing try block (if any) */
     noway_assert(!compIsForInlining());
-    return fgAddCodeRef(block, bbThrowIndex(block), kind, stkDepth);
+    return fgAddCodeRef(block, bbThrowIndex(block), kind);
 }
 
 // Sequences the tree.

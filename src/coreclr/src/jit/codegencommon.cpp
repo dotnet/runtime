@@ -6968,14 +6968,8 @@ void CodeGen::genProfilingEnterCallback(regNumber initReg, bool* pInitRegZeroed)
                       EA_UNKNOWN); // retSize
 
 #if defined(_TARGET_X86_)
-    //
-    // Adjust the number of stack slots used by this managed method if necessary.
-    //
-    if (compiler->fgPtrArgCntMax < 1)
-    {
-        JITDUMP("Upping fgPtrArgCntMax from %d to 1\n", compiler->fgPtrArgCntMax);
-        compiler->fgPtrArgCntMax = 1;
-    }
+    // Check that we have place for the push.
+    assert(compiler->fgPtrArgCntMax >= 1);
 #elif defined(_TARGET_ARM_)
     if (initReg == argReg)
     {
@@ -7168,14 +7162,8 @@ void CodeGen::genProfilingLeaveCallback(unsigned helper /*= CORINFO_HELP_PROF_FC
                       sizeof(int) * 1, // argSize
                       EA_UNKNOWN);     // retSize
 
-    //
-    // Adjust the number of stack slots used by this managed method if necessary.
-    //
-    if (compiler->fgPtrArgCntMax < 1)
-    {
-        JITDUMP("Upping fgPtrArgCntMax from %d to 1\n", compiler->fgPtrArgCntMax);
-        compiler->fgPtrArgCntMax = 1;
-    }
+    // Check that we have place for the push.
+    assert(compiler->fgPtrArgCntMax >= 1);
 
 #elif defined(_TARGET_ARM_)
     //
