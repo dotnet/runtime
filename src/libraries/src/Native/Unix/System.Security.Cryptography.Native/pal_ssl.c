@@ -69,6 +69,12 @@ static long TrySetECDHNamedCurve(SSL_CTX* ctx)
 
 void CryptoNative_SetProtocolOptions(SSL_CTX* ctx, SslProtocols protocols)
 {
+    // Ensure that ECDHE is available
+    if (TrySetECDHNamedCurve(ctx) == 0)
+    {
+        ERR_clear_error();
+    }
+
     // protocols may be 0, meaning system default, in which case let OpenSSL do what OpenSSL wants.
     if (protocols == 0)
     {
@@ -103,10 +109,6 @@ void CryptoNative_SetProtocolOptions(SSL_CTX* ctx, SslProtocols protocols)
 #endif
 
     SSL_CTX_set_options(ctx, protocolOptions);
-    if (TrySetECDHNamedCurve(ctx) == 0)
-    {
-        ERR_clear_error();
-    }
 }
 
 SSL* CryptoNative_SslCreate(SSL_CTX* ctx)
