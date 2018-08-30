@@ -12,10 +12,10 @@ namespace System.Runtime.InteropServices.Tests
         [InlineData(-1)]
         [InlineData(0)]
         [InlineData(4)]
-        public void Ctor_ShortClassInterfaceType(ClassInterfaceType classInterfaceType)
+        public void Ctor_ShortClassInterfaceType(short classInterfaceType)
         {
             var attribute = new ClassInterfaceAttribute(classInterfaceType);
-            Assert.Equal(classInterfaceType, attribute.Value);
+            Assert.Equal((ClassInterfaceType)classInterfaceType, attribute.Value);
         }
 
         [Theory]

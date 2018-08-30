@@ -10,22 +10,73 @@ using Xunit;
 
 namespace System.Runtime.InteropServices.Tests
 {
-    public class GetTypedObjectForIUnknownTests
+    public partial class GetTypedObjectForIUnknownTests
     {
-        [Fact]
-        [PlatformSpecific(TestPlatforms.Windows)]
-        public void GetTypedObjectForIUnknown_GenericTypeParameter_ReturnsExpected()
+        public static IEnumerable<object> GetTypedObjectForIUnknown_RoundtrippableType_TestData()
         {
-            Type type = typeof(GenericClass<>).GetTypeInfo().GenericTypeParameters[0];
-            IntPtr iUnknown = Marshal.GetIUnknownForObject(new object());
+            yield return new object();
+            yield return 10;
+            yield return "string";
+
+            yield return new NonGenericClass();
+            yield return new NonGenericStruct();
+            yield return Int32Enum.Value1;
+
+            MethodInfo method = typeof(GetTypedObjectForIUnknownTests).GetMethod(nameof(NonGenericMethod));
+            Delegate d = method.CreateDelegate(typeof(NonGenericDelegate));
+            yield return d;
+        }
+
+        public static IEnumerable<object[]> GetTypedObjectForIUnknown_TestData()
+        {
+            foreach (object o in GetTypedObjectForIUnknown_RoundtrippableType_TestData())
+            {
+                yield return new object[] { o, o.GetType() };
+                yield return new object[] { o, typeof(GenericClass<>).GetTypeInfo().GenericTypeParameters[0] };
+                yield return new object[] { o, typeof(int).MakeByRefType() };
+
+                Type baseType = o.GetType().BaseType;
+                while (baseType != null)
+                {
+                    yield return new object[] { o, baseType };
+                    baseType = baseType.BaseType;
+                }
+            }
+
+            yield return new object[] { new ClassWithInterface(), typeof(NonGenericInterface) };
+            yield return new object[] { new StructWithInterface(), typeof(NonGenericInterface) };
+
+            yield return new object[] { new GenericClass<string>(), typeof(object) };
+            yield return new object[] { new Dictionary<string, int>(), typeof(object) };
+            yield return new object[] { new GenericStruct<string>(), typeof(object) };
+            yield return new object[] { new GenericStruct<string>(), typeof(ValueType) };
+
+            yield return new object[] { new int[] { 10 }, typeof(object) };
+            yield return new object[] { new int[] { 10 }, typeof(Array) };
+
+            yield return new object[] { new int[][] { new int[] { 10 } }, typeof(object) };
+            yield return new object[] { new int[][] { new int[] { 10 } }, typeof(Array) };
+
+            yield return new object[] { new int[,] { { 10 } }, typeof(object) };
+            yield return new object[] { new int[,] { { 10 } }, typeof(Array) };
+
+            yield return new object[] { new KeyValuePair<string, int>("key", 10), typeof(object) };
+            yield return new object[] { new KeyValuePair<string, int>("key", 10), typeof(ValueType) };
+        }
+
+        [Theory]
+        [MemberData(nameof(GetTypedObjectForIUnknown_TestData))]
+        [PlatformSpecific(TestPlatforms.Windows)]
+        public void GetTypedObjectForIUnknown_ValidPointer_ReturnsExpected(object o, Type type)
+        {
+            IntPtr ptr = Marshal.GetIUnknownForObject(o);
             try
             {
-                object typedObject = Marshal.GetTypedObjectForIUnknown(iUnknown, type);
-                Assert.IsType<object>(typedObject);
+                Assert.Equal(o, Marshal.GetTypedObjectForIUnknown(ptr, type));
             }
             finally
             {
-                Marshal.Release(iUnknown);
+                Marshal.Release(ptr);
             }
         }
 
@@ -73,38 +124,86 @@ namespace System.Runtime.InteropServices.Tests
         }
 
         [Theory]
-        [PlatformSpecific(TestPlatforms.Windows)]
         [MemberData(nameof(GetTypedObjectForIUnknown_Invalid_TestData))]
+        [PlatformSpecific(TestPlatforms.Windows)]
         public void GetTypedObjectForIUnknown_InvalidType_ThrowsArgumentException(Type type)
         {
-            IntPtr iUnknown = Marshal.GetIUnknownForObject(new object());
+            IntPtr ptr = Marshal.GetIUnknownForObject(new object());
             try
             {
-                AssertExtensions.Throws<ArgumentException>("t", () => Marshal.GetTypedObjectForIUnknown(iUnknown, type));
+                AssertExtensions.Throws<ArgumentException>("t", () => Marshal.GetTypedObjectForIUnknown(ptr, type));
             }
             finally
             {
-                Marshal.Release(iUnknown);
+                Marshal.Release(ptr);
             }
         }
 
-        [Theory]
-        [PlatformSpecific(TestPlatforms.Windows)]
-        [InlineData(typeof(AbstractClass))]
-        [InlineData(typeof(NonGenericClass))]
-        [InlineData(typeof(NonGenericStruct))]
-        [InlineData(typeof(NonGenericInterface))]
-        public void GetTypedObjectForIUnknown_UncastableType_ThrowsInvalidCastException(Type type)
+        public static IEnumerable<object[]> GetTypedObjectForIUnknownType_UncastableObject_TestData()
         {
-            IntPtr iUnknown = Marshal.GetIUnknownForObject(new object());
+            yield return new object[] { new object(), typeof(AbstractClass) };
+            yield return new object[] { new object(), typeof(NonGenericClass) };
+            yield return new object[] { new object(), typeof(NonGenericStruct) };
+            yield return new object[] { new object(), typeof(NonGenericStruct) };
+            yield return new object[] { new object(), typeof(NonGenericInterface) };
+
+            yield return new object[] { new NonGenericClass(), typeof(IFormattable) };
+            yield return new object[] { new ClassWithInterface(), typeof(IFormattable) };
+
+            yield return new object[] { new object(), typeof(int).MakePointerType() };
+
+            AssemblyBuilder assemblyBuilder = AssemblyBuilder.DefineDynamicAssembly(new AssemblyName("Assembly"), AssemblyBuilderAccess.RunAndCollect);
+            ModuleBuilder moduleBuilder = assemblyBuilder.DefineDynamicModule("Module");
+            TypeBuilder typeBuilder = moduleBuilder.DefineType("Type");
+            Type collectibleType = typeBuilder.CreateType();
+            yield return new object[] { new object(), collectibleType };
+        }
+
+        [Theory]
+        [MemberData(nameof(GetTypedObjectForIUnknownType_UncastableObject_TestData))]
+        [PlatformSpecific(TestPlatforms.Windows)]
+        public void GetTypedObjectForIUnknown_UncastableObject_ThrowsInvalidCastException(object o, Type type)
+        {
+            IntPtr ptr = Marshal.GetIUnknownForObject(o);
             try
             {
-                Assert.Throws<InvalidCastException>(() => Marshal.GetTypedObjectForIUnknown(iUnknown, type));
+                Assert.Throws<InvalidCastException>(() => Marshal.GetTypedObjectForIUnknown(ptr, type));
             }
             finally
             {
-                Marshal.Release(iUnknown);
+                Marshal.Release(ptr);
             }
         }
+
+        public static IEnumerable<object[]> GetTypedObjectForIUnknown_ArrayObjects_TestData()
+        {
+            yield return new object[] { new int[] { 10 } };
+            yield return new object[] { new int[][] { new int[] { 10 } } };
+            yield return new object[] { new int[,] { { 10 } } };
+        }
+
+        [Theory]
+        [MemberData(nameof(GetTypedObjectForIUnknown_ArrayObjects_TestData))]
+        [PlatformSpecific(TestPlatforms.Windows)]
+        public void GetTypedObjectForIUnknown_ArrayType_ThrowsBadImageFormatException(object o)
+        {
+            IntPtr ptr = Marshal.GetIUnknownForObject(o);
+            try
+            {
+                Assert.Throws<BadImageFormatException>(() => Marshal.GetTypedObjectForIUnknown(ptr, o.GetType()));
+            }
+            finally
+            {
+                Marshal.Release(ptr);
+            }
+        }
+
+        public class ClassWithInterface : NonGenericInterface { }
+        public struct StructWithInterface : NonGenericInterface { }
+
+        public static void NonGenericMethod(int i) { }
+        public delegate void NonGenericDelegate(int i);
+
+        public enum Int32Enum : int { Value1, Value2 }
     }
 }
