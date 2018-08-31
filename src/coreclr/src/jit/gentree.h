@@ -479,8 +479,8 @@ public:
     // happening.
     void CopyCosts(const GenTree* const tree)
     {
-        INDEBUG(gtCostsInitialized =
-                    tree->gtCostsInitialized;) // If the 'tree' costs aren't initialized, we'll hit an assert below.
+        // If the 'tree' costs aren't initialized, we'll hit an assert below.
+        INDEBUG(gtCostsInitialized = tree->gtCostsInitialized;)
         _gtCostEx = tree->gtCostEx;
         _gtCostSz = tree->gtCostSz;
     }
@@ -4115,6 +4115,7 @@ struct GenTreeSIMD : public GenTreeJitIntrinsic
 struct GenTreeHWIntrinsic : public GenTreeJitIntrinsic
 {
     NamedIntrinsic gtHWIntrinsicId;
+    var_types      gtIndexBaseType; // for AVX2 Gather* intrinsics
 
     GenTreeHWIntrinsic(var_types type, NamedIntrinsic hwIntrinsicID, var_types baseType, unsigned size)
         : GenTreeJitIntrinsic(GT_HWIntrinsic, type, nullptr, nullptr, baseType, size), gtHWIntrinsicId(hwIntrinsicID)

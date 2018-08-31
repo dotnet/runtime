@@ -17501,13 +17501,18 @@ bool GenTreeHWIntrinsic::OperIsMemoryLoad()
     {
         // Some AVX instructions here also have MemoryLoad sematics
 
-        // Do we have 3 operands?
-        if (HWIntrinsicInfo::lookupNumArgs(this) != 3)
+        // Do we have less than 3 operands?
+        if (HWIntrinsicInfo::lookupNumArgs(this) < 3)
         {
             return false;
         }
-        else // We have 3 operands/args
+        else // We have 3 or more operands/args
         {
+            if (HWIntrinsicInfo::isAVX2GatherIntrinsic(gtHWIntrinsicId))
+            {
+                return true;
+            }
+
             GenTreeArgList* argList = gtOp.gtOp1->AsArgList();
 
             if ((gtHWIntrinsicId == NI_AVX_InsertVector128 || gtHWIntrinsicId == NI_AVX2_InsertVector128) &&
@@ -17558,38 +17563,7 @@ bool GenTreeHWIntrinsic::OperIsMemoryStore()
 bool GenTreeHWIntrinsic::OperIsMemoryLoadOrStore()
 {
 #ifdef _TARGET_XARCH_
-    // Some xarch instructions have MemoryLoad sematics
-    HWIntrinsicCategory category = HWIntrinsicInfo::lookupCategory(gtHWIntrinsicId);
-    if ((category == HW_Category_MemoryLoad) || (category == HW_Category_MemoryStore))
-    {
-        return true;
-    }
-    else if (category == HW_Category_IMM)
-    {
-        // Some AVX instructions here also have MemoryLoad or MemoryStore sematics
-
-        // Do we have 3 operands?
-        if (HWIntrinsicInfo::lookupNumArgs(this) != 3)
-        {
-            return false;
-        }
-        else // We have 3 operands/args
-        {
-            GenTreeArgList* argList = gtOp.gtOp1->AsArgList();
-
-            if ((gtHWIntrinsicId == NI_AVX_InsertVector128 || gtHWIntrinsicId == NI_AVX2_InsertVector128) &&
-                (argList->Rest()->Current()->TypeGet() == TYP_I_IMPL)) // Is the type of the second arg TYP_I_IMPL?
-            {
-                // This is Avx/Avx2.InsertVector128
-                return true;
-            }
-            else if ((gtHWIntrinsicId == NI_AVX_ExtractVector128 || gtHWIntrinsicId == NI_AVX2_ExtractVector128))
-            {
-                // This is Avx/Avx2.ExtractVector128
-                return true;
-            }
-        }
-    }
+    return OperIsMemoryLoad() || OperIsMemoryStore();
 #endif // _TARGET_XARCH_
     return false;
 }
