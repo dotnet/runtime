@@ -2584,6 +2584,16 @@ int LinearScan::BuildHWIntrinsic(GenTreeHWIntrinsic* intrinsicTree)
                 break;
             }
 
+            case NI_BMI1_TrailingZeroCount:
+            case NI_LZCNT_LeadingZeroCount:
+            case NI_POPCNT_PopCount:
+            {
+                assert(numArgs == 1);
+                srcCount += BuildDelayFreeUses(op1);
+                buildUses = false;
+                break;
+            }
+
             default:
             {
                 assert((intrinsicId > NI_HW_INTRINSIC_START) && (intrinsicId < NI_HW_INTRINSIC_END));
