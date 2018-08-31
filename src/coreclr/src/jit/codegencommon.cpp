@@ -639,6 +639,19 @@ regMaskTP Compiler::compNoGCHelperCallKillSet(CorInfoHelpFunc helper)
 
     switch (helper)
     {
+        case CORINFO_HELP_ASSIGN_BYREF:
+#if defined(_TARGET_X86_)
+            // This helper only trashes ECX.
+            return RBM_ECX;
+#elif defined(_TARGET_AMD64_)
+            // This uses and defs RDI and RSI.
+            return RBM_CALLEE_TRASH_NOGC & ~(RBM_RDI | RBM_RSI);
+#elif defined(_TARGET_ARMARCH_)
+            return RBM_CALLEE_GCTRASH_WRITEBARRIER_BYREF;
+#else
+            assert(!"unknown arch");
+#endif
+
 #if defined(_TARGET_XARCH_)
         case CORINFO_HELP_PROF_FCN_ENTER:
             return RBM_PROFILER_ENTER_TRASH;
@@ -650,16 +663,7 @@ regMaskTP Compiler::compNoGCHelperCallKillSet(CorInfoHelpFunc helper)
             return RBM_PROFILER_TAILCALL_TRASH;
 #endif // defined(_TARGET_XARCH_)
 
-#if defined(_TARGET_X86_)
-        case CORINFO_HELP_ASSIGN_BYREF:
-            // This helper only trashes ECX.
-            return RBM_ECX;
-#endif // defined(_TARGET_X86_)
-
 #if defined(_TARGET_ARMARCH_)
-        case CORINFO_HELP_ASSIGN_BYREF:
-            return RBM_CALLEE_GCTRASH_WRITEBARRIER_BYREF;
-
         case CORINFO_HELP_ASSIGN_REF:
         case CORINFO_HELP_CHECKED_ASSIGN_REF:
             return RBM_CALLEE_GCTRASH_WRITEBARRIER;
