@@ -138,7 +138,7 @@ void Compiler::fgLocalVarLiveness()
     EndPhase(PHASE_LCLVARLIVENESS_INIT);
 
     // Make sure we haven't noted any partial last uses of promoted structs.
-    GetPromotedStructDeathVars()->RemoveAll();
+    ClearPromotedStructDeathVars();
 
     // Initialize the per-block var sets.
     fgInitBlockVarSets();
@@ -1340,7 +1340,7 @@ VARSET_VALRET_TP Compiler::fgUpdateLiveSet(VARSET_VALARG_TP liveSet, GenTree* tr
                 // We maintain the invariant that if the lclVarTree is a promoted struct, but the
                 // the lookup fails, then all the field vars (i.e., "varBits") are dying.
                 VARSET_TP* deadVarBits = nullptr;
-                if (varTypeIsStruct(lclVarTree) && GetPromotedStructDeathVars()->Lookup(lclVarTree, &deadVarBits))
+                if (varTypeIsStruct(lclVarTree) && LookupPromotedStructDeathVars(lclVarTree, &deadVarBits))
                 {
                     VarSetOps::DiffD(this, newLiveSet, *deadVarBits);
                 }
