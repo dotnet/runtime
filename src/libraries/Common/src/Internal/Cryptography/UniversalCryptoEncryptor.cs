@@ -30,11 +30,21 @@ namespace Internal.Cryptography
             return BasicSymmetricCipher.Transform(inputBuffer, inputOffset, inputCount, outputBuffer, outputOffset);
         }
 
-        protected sealed override byte[] UncheckedTransformFinalBlock(byte[] inputBuffer, int inputOffset, int inputCount)
+        protected sealed override unsafe byte[] UncheckedTransformFinalBlock(byte[] inputBuffer, int inputOffset, int inputCount)
         {
             byte[] paddedBlock = PadBlock(inputBuffer, inputOffset, inputCount);
-            byte[] output = BasicSymmetricCipher.TransformFinal(paddedBlock, 0, paddedBlock.Length);
-            return output;
+
+            fixed (byte* paddedBlockPtr = paddedBlock)
+            {
+                byte[] output = BasicSymmetricCipher.TransformFinal(paddedBlock, 0, paddedBlock.Length);
+
+                if (paddedBlock != inputBuffer)
+                {
+                    CryptographicOperations.ZeroMemory(paddedBlock);
+                }
+
+                return output;
+            }
         }
 
         private byte[] PadBlock(byte[] block, int offset, int count)
