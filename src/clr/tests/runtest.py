@@ -1914,6 +1914,23 @@ def do_setup(host_os,
 
     if unprocessed_args.build_test_wrappers:
         build_test_wrappers(host_os, arch, build_type, coreclr_repo_location, test_location)
+    else:
+        # We will write out build information into the test directory. This is used
+        # by runtest.py to determine whether we need to rebuild the test wrappers.
+        if os.path.isfile(os.path.join(test_location, "build_info.json")):
+            build_info = None
+            with open(os.path.join(test_location, "build_info.json")) as file_handle:
+                build_info = json.load(file_handle)
+
+            is_same_os = build_info["build_os"] == host_os
+            is_same_arch = build_info["build_arch"] == arch
+            is_same_build_type = build_info["build_type"] == build_type
+
+            # We will force a build of the test wrappers if they were cross built
+            if not (is_same_os and is_same_arch and is_same_build_type):
+                build_test_wrappers(host_os, arch, build_type, coreclr_repo_location, test_location)
+        else:
+            build_test_wrappers(host_os, arch, build_type, coreclr_repo_location, test_location)
 
     run_tests(host_os, 
               arch,

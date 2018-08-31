@@ -40,7 +40,7 @@ function print_usage {
     echo '  --tieredcompilation              : Runs the tests with COMPlus_TieredCompilation=1'
     echo '  --link <ILlink>                  : Runs the tests after linking via ILlink'
     echo '  --xunitOutputPath=<path>         : Create xUnit XML report at the specifed path (default: <test root>/coreclrtests.xml)'
-    echo '  --skipXunitWrapperBuild          : Skip creating the xunit wrapper'
+    echo '  --buildXUnitWrappers             : Force creating the xunit wrappers, this is useful if there have been changes to issues.targets'
     echo '  --printLastResultsOnly           : Print the results of the last run'
     echo ''
     echo 'CoreFX Test Options '
@@ -219,7 +219,7 @@ verbose=0
 doCrossgen=0
 jitdisasm=0
 ilasmroundtrip=
-skipXunitWrapperBuild=
+buildXUnitWrappers=
 printLastResultsOnly=
 generateLayoutOnly=
 generateLayout=
@@ -255,8 +255,8 @@ do
         release|Release)
             buildConfiguration="Release"
             ;;
-        --skipXunitWrapperBuild)
-            skipXunitWrapperBuild=1
+        --buildXUnitWrappers)
+            buildXUnitWrappers=1
             ;;
         --printLastResultsOnly)
             printLastResultsOnly=1
@@ -515,20 +515,11 @@ if [ ! -z "$ilasmroundtrip" ]; then
     runtestPyArguments+=("--ilasmroundtrip")
 fi
 
-if [ ! -z "$skipXunitWrapperBuild" ]; then
+if [ ! -z "$buildXUnitWrappers" ]; then
+    runtestPyArguments+=("--build_xunit_test_wrappers")
+else
     echo "Skipping xunit wrapper build. If build-test was called on a different"
     echo "host_os or arch the test run will most likely have failures."
-else
-    # By default rebuild the test wrappers, as we cannot gaurentee the following
-    # is true:
-    #   1) There are no added or removed excludes since the tests were built
-    #   2) That the wrapper generation happened on the same host_os and arch
-    #      as where we are running now
-    #
-    # Note that the wrapper generation is slow. To skip this pass --skipXunitWrapperBuild
-    # if the above requirements are met.
-
-    runtestPyArguments+=("--build_xunit_test_wrappers")
 fi
 
 if (($verbose!=0)); then

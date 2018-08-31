@@ -482,6 +482,8 @@ if errorlevel 1 (
     exit /b 1
 )
 
+echo { "build_os": "%__BuildOS%", "build_arch": "%__BuildArch%", "build_type": "%__BuildType%" } > "%__TestBinDir%/build_info.json"
+
 :SkipBuildingWrappers
 
 REM =========================================================================================
