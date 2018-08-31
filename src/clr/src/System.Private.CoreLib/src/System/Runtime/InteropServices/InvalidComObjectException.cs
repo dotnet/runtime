@@ -13,6 +13,7 @@ namespace System.Runtime.InteropServices
     /// class factory.
     /// </summary>
     [Serializable]
+    [TypeForwardedFrom("mscorlib, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089")]
     public class InvalidComObjectException : SystemException
     {
         public InvalidComObjectException()

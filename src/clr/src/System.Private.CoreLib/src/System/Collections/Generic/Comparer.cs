@@ -11,6 +11,7 @@ namespace System.Collections.Generic
 {
     [Serializable]
     [TypeDependencyAttribute("System.Collections.Generic.ObjectComparer`1")]
+    [System.Runtime.CompilerServices.TypeForwardedFrom("mscorlib, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089")] 
     public abstract class Comparer<T> : IComparer, IComparer<T>
     {
         // To minimize generic instantiation overhead of creating the comparer per type, we keep the generic portion of the code as small
@@ -43,6 +44,7 @@ namespace System.Collections.Generic
     // means another generic instantiation, which can be costly esp.
     // for value types.
     [Serializable]
+    [System.Runtime.CompilerServices.TypeForwardedFrom("mscorlib, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089")]
     // Needs to be public to support binary serialization compatibility
     public sealed class GenericComparer<T> : Comparer<T> where T : IComparable<T>
     {
@@ -66,6 +68,7 @@ namespace System.Collections.Generic
     }
 
     [Serializable]
+    [System.Runtime.CompilerServices.TypeForwardedFrom("mscorlib, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089")]
     // Needs to be public to support binary serialization compatibility
     public sealed class NullableComparer<T> : Comparer<T?> where T : struct, IComparable<T>
     {
@@ -89,6 +92,7 @@ namespace System.Collections.Generic
     }
 
     [Serializable]
+    [System.Runtime.CompilerServices.TypeForwardedFrom("mscorlib, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089")]
     // Needs to be public to support binary serialization compatibility
     public sealed class ObjectComparer<T> : Comparer<T>
     {
