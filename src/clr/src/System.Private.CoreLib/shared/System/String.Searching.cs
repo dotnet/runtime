@@ -55,7 +55,7 @@ namespace System
                     return CompareInfo.Invariant.IndexOf(this, value, GetCaseCompareOfComparisonCulture(comparisonType));
 
                 case StringComparison.Ordinal:
-                    return CompareInfo.Invariant.IndexOf(this, value, CompareOptions.Ordinal);
+                    return IndexOf(value);
 
                 case StringComparison.OrdinalIgnoreCase:
                     return CompareInfo.Invariant.IndexOf(this, value, CompareOptions.OrdinalIgnoreCase);
