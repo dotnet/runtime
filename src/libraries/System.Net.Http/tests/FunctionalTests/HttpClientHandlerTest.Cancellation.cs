@@ -288,6 +288,7 @@ namespace System.Net.Http.Functional.Tests
             }
         }
 
+        [ActiveIssue(32000)]
         [SkipOnTargetFramework(TargetFrameworkMonikers.Uap, "WinRT stack can't set MaxConnectionsPerServer < 2")]
         [Fact]
         public async Task MaxConnectionsPerServer_WaitingConnectionsAreCancelable()
