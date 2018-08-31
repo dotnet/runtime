@@ -5794,9 +5794,7 @@ mono_object_new_alloc_specific_checked (MonoVTable *vtable, MonoError *error)
 {
 	MONO_REQ_GC_UNSAFE_MODE;
 
-	MonoObject *o;
-
-	o = (MonoObject *)mono_gc_alloc_obj (vtable, m_class_get_instance_size (vtable->klass));
+	MonoObject *o = mono_gc_alloc_obj (vtable, m_class_get_instance_size (vtable->klass));
 
 	return object_new_common_tail (o, vtable->klass, error);
 }
@@ -5834,11 +5832,7 @@ mono_object_new_fast (MonoVTable *vtable)
 {
 	ERROR_DECL (error);
 
-	MonoObject *o;
-
-	error_init (error);
-
-	o = mono_gc_alloc_obj (vtable, m_class_get_instance_size (vtable->klass));
+	MonoObject *o = mono_gc_alloc_obj (vtable, m_class_get_instance_size (vtable->klass));
 
 	// This deliberately skips object_new_common_tail.
 
@@ -5865,9 +5859,7 @@ mono_object_new_mature (MonoVTable *vtable, MonoError *error)
 	size *= 2;
 #endif
 
-	MonoObject *o;
-
-	o = mono_gc_alloc_mature (vtable, size);
+	MonoObject *o = mono_gc_alloc_mature (vtable, size);
 
 	return object_new_common_tail (o, vtable->klass, error);
 }
@@ -5932,16 +5924,14 @@ mono_object_clone_checked (MonoObject *obj, MonoError *error)
 {
 	MONO_REQ_GC_UNSAFE_MODE;
 
-	MonoObject *o;
 	MonoClass *klass = mono_object_class (obj);
-	int size;
 
-	size = m_class_get_instance_size (klass);
+	int size = m_class_get_instance_size (klass);
 
 	if (m_class_get_rank (klass))
 		return (MonoObject*)mono_array_clone_checked ((MonoArray*)obj, error);
 
-	o = (MonoObject *)mono_gc_alloc_obj (obj->vtable, size);
+	MonoObject *o = mono_gc_alloc_obj (obj->vtable, size);
 
 	/* If the object doesn't contain references this will do a simple memmove. */
 	if (G_LIKELY (o))

@@ -140,7 +140,7 @@ register_icall (gpointer func, const char *name, const char *sigstr, gboolean no
 #ifdef __cplusplus
 template <typename T>
 static void
-register_icall_no_wrapper (T func , const char *name, const char *sigstr)
+register_icall_no_wrapper (T func, const char *name, const char *sigstr)
 #else
 static void
 register_icall_no_wrapper (gpointer func, const char *name, const char *sigstr)
