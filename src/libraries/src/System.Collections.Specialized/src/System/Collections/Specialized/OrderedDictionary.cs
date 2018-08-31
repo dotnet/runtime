@@ -367,8 +367,8 @@ namespace System.Collections.Specialized
             {
                 throw new ArgumentOutOfRangeException(nameof(index));
             }
-            EnsureObjectsTable();
-            EnsureObjectsArray();
+            // The 'index >= Count' check above ensures
+            // that the '_objectsArray' and '_objectsTable' objects are initialized.
             object key = ((DictionaryEntry)_objectsArray[index]).Key;
             _objectsArray.RemoveAt(index);
             _objectsTable.Remove(key);
