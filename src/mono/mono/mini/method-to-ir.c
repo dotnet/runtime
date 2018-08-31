@@ -12763,11 +12763,11 @@ mono_spill_global_vars (MonoCompile *cfg, gboolean *need_local_opts)
 	memset (spec2, 0, sizeof (spec2));
 
 	/* FIXME: Move this function to mini.c */
-	stacktypes ['i'] = STACK_PTR;
-	stacktypes ['l'] = STACK_I8;
-	stacktypes ['f'] = STACK_R8;
+	stacktypes [(int)'i'] = STACK_PTR;
+	stacktypes [(int)'l'] = STACK_I8;
+	stacktypes [(int)'f'] = STACK_R8;
 #ifdef MONO_ARCH_SIMD_INTRINSICS
-	stacktypes ['x'] = STACK_VTYPE;
+	stacktypes [(int)'x'] = STACK_VTYPE;
 #endif
 
 #if SIZEOF_REGISTER == 4
