@@ -203,6 +203,10 @@ build_Tests()
     __ProjectFilesDir=$__TestDir
     __TestBinDir=$__TestWorkingDir
 
+    if [ -f  "${__TestWorkingDir}/build_info.json" ]; then
+        rm  "${__TestWorkingDir}/build_info.json"
+    fi
+
     if [ $__RebuildTests -ne 0 ]; then
         if [ -d "${__TestBinDir}" ]; then
             echo "Removing tests build dir: ${__TestBinDir}"
@@ -289,18 +293,31 @@ build_Tests()
     if [ $__BuildTestWrappers -ne -0 ]; then
         echo "${__MsgPrefix}Creating test wrappers..."
 
-        # Always create the test wrappers and set the exclude file.
-        export __Exclude="$__TestDir/issues.targets"
-        echo "Exclude set to $__TestDir/issues.targets"
-        build_MSBuild_projects "Tests_XunitWrapper" "$__ProjectDir/tests/runtest.proj" "Test Xunit Wrapper" "-BuildWrappers" "-MsBuildEventLogging= " "-TargetsWindows=false"
+        export __Exclude="${__ProjectDir}/tests/issues.targets"
+        export __BuildLogRootName="Tests_XunitWrapper"
+
+        # Set up directories and file names
+        __BuildLogRootName=$subDirectoryName
+        __BuildLog="$__LogsDir/${__BuildLogRootName}.${__BuildOS}.${__BuildArch}.${__BuildType}.log"
+        __BuildWrn="$__LogsDir/${__BuildLogRootName}.${__BuildOS}.${__BuildArch}.${__BuildType}.wrn"
+        __BuildErr="$__LogsDir/${__BuildLogRootName}.${__BuildOS}.${__BuildArch}.${__BuildType}.err"
+
+        buildVerbosity="Summary"
+
+        if [ $__VerboseBuild == 1 ]; then
+            buildVerbosity="Diag"
+        fi
+
+        echo "${__DotNetCli}" msbuild "${__ProjectDir}/tests/runtest.proj" /p:RestoreAdditionalProjectSources=https://dotnet.myget.org/F/dotnet-core/ /p:BuildWrappers=true /p:TargetsWindows=false /fileloggerparameters:"\"Verbosity=normal;LogFile=${__BuildLog}\"" /fileloggerparameters1:"\"WarningsOnly;LogFile=${__BuildWrn}\"" /fileloggerparameters2:"\"ErrorsOnly;LogFile=${__BuildErr}\"" /consoleloggerparameters:$buildVerbosity /p:__BuildOS=$__BuildOS /p:__BuildType=$__BuildType /p:__BuildArch=$__BuildArch
+        "${__DotNetCli}" msbuild "${__ProjectDir}/tests/runtest.proj" /p:RestoreAdditionalProjectSources=https://dotnet.myget.org/F/dotnet-core/ /p:BuildWrappers=true /p:TargetsWindows=false /fileloggerparameters:"\"Verbosity=normal;LogFile=${__BuildLog}\"" /fileloggerparameters1:"\"WarningsOnly;LogFile=${__BuildWrn}\"" /fileloggerparameters2:"\"ErrorsOnly;LogFile=${__BuildErr}\"" /consoleloggerparameters:$buildVerbosity /p:__BuildOS=$__BuildOS /p:__BuildType=$__BuildType /p:__BuildArch=$__BuildArch
 
         if [ $? -ne 0 ]; then
             echo "${__MsgPrefix}Error: build failed. Refer to the build log files for details (above)"
             exit 1
         else
             echo "XUnit Wrappers have been built."
-            echo "Create marker \"${__XUnitWrapperBuiltMarker}\""
-            touch $__XUnitWrapperBuiltMarker
+            echo { "\"build_os\"": "\"${__BuildOS}\"", "\"build_arch\"": "\"${__BuildArch}\"", "\"build_type\"": "\"${__BuildType}\"" } > "${__TestWorkingDir}/build_info.json"
+
         fi
     fi
 
@@ -612,6 +629,7 @@ __SourceDir="$__ProjectDir/src"
 __PackagesDir="$__ProjectDir/packages"
 __RootBinDir="$__ProjectDir/bin"
 __BuildToolsDir="$__ProjectDir/Tools"
+__DotNetCli="${__BuildToolsDir}/dotnetcli/dotnet"
 __UnprocessedBuildArgs=
 __RunArgs=
 __MSBCleanBuildArgs=
@@ -862,7 +880,6 @@ initHostDistroRid
 # Set the remaining variables based upon the determined build configuration
 __BinDir="$__RootBinDir/Product/$__BuildOS.$__BuildArch.$__BuildType"
 __PackagesBinDir="$__BinDir/.nuget"
-__ToolsDir="$__RootBinDir/tools"
 __TestDir="$__ProjectDir/tests"
 __TestWorkingDir="$__RootBinDir/tests/$__BuildOS.$__BuildArch.$__BuildType"
 __IntermediatesDir="$__RootBinDir/obj/$__BuildOS.$__BuildArch.$__BuildType"
