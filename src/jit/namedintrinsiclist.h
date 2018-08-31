@@ -7,7 +7,7 @@
 
 // Named jit intrinsics
 
-enum NamedIntrinsic : unsigned int
+enum NamedIntrinsic : unsigned short
 {
     NI_Illegal                                                 = 0,
     NI_System_Enum_HasFlag                                     = 1,
