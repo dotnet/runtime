@@ -1,1 +1,2 @@
-@MONO@ $([MSBuild]::GetDirectoryNameOfFileAbove($(TargetDir), culevel.exe))\culevel.exe -o $(ProjectDir)\System.Web\UplevelHelper.cs $(ProjectDir)\UplevelHelperDefinitions.xml
+set CULEVELPATH=$([MSBuild]::ValueOrDefault($([MSBuild]::GetDirectoryNameOfFileAbove($(TargetDir), culevel.exe)), "$(TargetDir)"))\culevel.exe
+@MONO@ %CULEVELPATH% -o $(ProjectDir)\System.Web\UplevelHelper.cs $(ProjectDir)\UplevelHelperDefinitions.xml

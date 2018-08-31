@@ -25,6 +25,36 @@ public enum Target {
 	Library, Exe, Module, WinExe
 }
 
+public static class KnownProject {
+	public static readonly KnownProjectInfo
+		Genconsts = new KnownProjectInfo {
+			Name = "genconsts",
+			Path = @"$(SolutionDir)\msvc\scripts\genconsts.csproj",
+			Guid = "{702AE2C0-71DD-4112-9A06-E4FABCA59986}"
+		},
+		Stringreplacer = new KnownProjectInfo {
+			Name = "cil-stringreplacer",
+			Path = @"$(SolutionDir)\mcs\tools\cil-stringreplacer\cil-stringreplacer.csproj",
+			Guid = "{53c50ffa-8b39-4c70-8ba8-caa70c41a47b}"
+		},
+		Jay = new KnownProjectInfo {
+			Name = "jay",
+			Path = @"$(SolutionDir)\mcs\jay\jay.vcxproj",
+			Guid = "{5d485d32-3b9f-4287-ab24-c8da5b89f537}"
+		},
+		Culevel = new KnownProjectInfo {
+			Name = "culevel",
+			Path = @"$(SolutionDir)\mcs\tools\culevel\culevel.csproj",
+			Guid = "{E8E246BD-CD0C-4734-A3C2-7F44796EC47B}"
+		};		
+}
+
+public class KnownProjectInfo {
+	public string Path;
+	public string Guid;
+	public string Name;
+}
+
 public class SlnGenerator {
 	public static readonly string NewLine = "\r\n"; //Environment.NewLine; // "\n"; 
 	public SlnGenerator (string slnVersion)
@@ -55,10 +85,6 @@ public class SlnGenerator {
 
 	public const string csproj_type_guid = "{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}";
 	public const string vcxproj_type_guid = "{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}";
-
-	public const string jay_vcxproj_guid = "{5D485D32-3B9F-4287-AB24-C8DA5B89F537}";
-	public const string genconsts_csproj_guid = "{702AE2C0-71DD-4112-9A06-E4FABCA59986}";
-	public const string cilstringreplacer_csproj_guid = "{53C50FFA-8B39-4C70-8BA8-CAA70C41A47B}";
 
 	public static Dictionary<string, HashSet<string>> profilesByGuid = new Dictionary<string, HashSet<string>> ();
 	public List<MsbuildGenerator.VsCsproj> libraries = new List<MsbuildGenerator.VsCsproj> ();
@@ -105,20 +131,7 @@ public class SlnGenerator {
 		var unixProjFile = proj.csProjFilename.Replace ("\\", "/");
 		var fullProjPath = Path.GetFullPath (unixProjFile).Replace ("\\", "/");
 		var relativePath = MsbuildGenerator.GetRelativePath (slnFullPath, fullProjPath);
-
-		var dependencyGuids = new string[0];
-
-		if (proj.preBuildEvent.Contains ("jay"))
-			dependencyGuids = new [] { jay_vcxproj_guid };
-
-		foreach (var fd in MsbuildGenerator.fixed_dependencies) {
-			if (fullProjPath.EndsWith (fd.Item1)) {
-				dependencyGuids = dependencyGuids.Concat (fd.Item2).ToArray ();
-			}
-		}
-
-		if (dependencyGuids.Length > 0)
-			Console.WriteLine ($"Project {fullProjPath} has {dependencyGuids.Length} dependencies: {string.Join(", ", dependencyGuids)}");
+		string[] dependencyGuids = null;
 
 		WriteProjectReference(sln, csproj_type_guid, proj.library, relativePath, proj.projectGuid, dependencyGuids);
 	}
@@ -165,13 +178,13 @@ public class SlnGenerator {
 			sln.WriteLine (header);
 
 			// Manually insert jay's vcxproj. We depend on jay.exe to perform build steps later.
-			WriteProjectReference (sln, vcxproj_type_guid, "jay", "mcs/jay/jay.vcxproj", jay_vcxproj_guid, null);
+			WriteProjectReference (sln, vcxproj_type_guid, "jay", "mcs/jay/jay.vcxproj", KnownProject.Jay.Guid, null);
 
 			// Manually insert genconsts. This is used to generate Consts.cs.
-			WriteProjectReference (sln, csproj_type_guid, "genconsts", "msvc/scripts/genconsts.csproj", genconsts_csproj_guid, null);
+			WriteProjectReference (sln, csproj_type_guid, "genconsts", "msvc/scripts/genconsts.csproj", KnownProject.Genconsts.Guid, null);
 
 			// Manually insert cil-stringreplacer. We can't trivially do this through the order.xml flow and it has a custom csproj.
-			WriteProjectReference (sln, csproj_type_guid, "cil-stringreplacer", "mcs/tools/cil-stringreplacer/cil-stringreplacer.csproj", cilstringreplacer_csproj_guid, null);
+			WriteProjectReference (sln, csproj_type_guid, "cil-stringreplacer", "mcs/tools/cil-stringreplacer/cil-stringreplacer.csproj", KnownProject.Stringreplacer.Guid, null);
 
 			foreach (var proj in libraries) {
 				WriteProjectReference (sln, fullPath, proj);
@@ -192,9 +205,9 @@ public class SlnGenerator {
 			sln.WriteLine ("\tGlobalSection(ProjectConfigurationPlatforms) = postSolution");
 
 			// Manually insert configurations for the special projects that always build
-			WriteProjectConfigurationPlatforms (sln, jay_vcxproj_guid, "Win32", true);
-			WriteProjectConfigurationPlatforms (sln, genconsts_csproj_guid, "x86", true);
-			WriteProjectConfigurationPlatforms (sln, cilstringreplacer_csproj_guid, "AnyCPU", true);
+			WriteProjectConfigurationPlatforms (sln, KnownProject.Jay.Guid, "Win32", true);
+			WriteProjectConfigurationPlatforms (sln, KnownProject.Genconsts.Guid, "x86", true);
+			WriteProjectConfigurationPlatforms (sln, KnownProject.Stringreplacer.Guid, "AnyCPU", true);
 
 			foreach (var proj in libraries) {
 				WriteProjectConfigurationPlatforms (sln, proj.projectGuid, "net_4_x", false);
@@ -227,15 +240,8 @@ public class MsbuildGenerator {
 	public const string profile_4_0 = "_4_0";
 	public const string profile_4_x = "_4_x";
 
-	public const string culevel_guid = "{E8E246BD-CD0C-4734-A3C2-7F44796EC47B}";
-
 	public static readonly (string, string)[] fixed_guids = new [] {
-		("tools/culevel/culevel.csproj", culevel_guid)
-	};
-
-	public static readonly (string, string[])[] fixed_dependencies = new [] {
-		("class/System.Web/System.Web.csproj", new [] { culevel_guid }),
-		("class/corlib/corlib.csproj", new [] { SlnGenerator.cilstringreplacer_csproj_guid })
+		("tools/culevel/culevel.csproj", KnownProject.Culevel.Guid)
 	};
 
 	static void Usage ()
@@ -869,11 +875,44 @@ public class MsbuildGenerator {
 		}	
 	}
 
+	private void GenerateProjectDependency (XmlWriter xmlWriter, KnownProjectInfo project) {
+		xmlWriter.WriteStartElement ("ProjectReference");
+		xmlWriter.WriteAttributeString ("Include", project.Path);
+		xmlWriter.WriteElementString ("Name", project.Name);
+		xmlWriter.WriteElementString ("Project", project.Guid);
+		xmlWriter.WriteElementString ("ReferenceOutputAssembly", "false");
+		xmlWriter.WriteElementString ("CopyToOutputDirectory", "Never");
+		xmlWriter.WriteElementString ("Private", "false");
+		xmlWriter.WriteEndElement();
+	}
+
+	private void GenerateProjectDependencies (
+		XmlWriter writer,
+		HashSet<string> commonFiles,
+		string prebuild, string postbuild
+	) {
+		var prebuild_postbuild = (prebuild + Environment.NewLine + postbuild)
+			.Replace ("\\", "/");
+
+		if (commonFiles.Any (f => f.EndsWith("build\\common\\Consts.cs")))
+			GenerateProjectDependency (writer, KnownProject.Genconsts);
+
+		if (prebuild_postbuild.Contains ("jay.exe"))
+			GenerateProjectDependency (writer, KnownProject.Jay);
+
+		if (prebuild_postbuild.Contains ("culevel.exe"))
+			GenerateProjectDependency (writer, KnownProject.Culevel);
+
+		if (prebuild_postbuild.Contains ("cil-stringreplacer.exe"))
+			GenerateProjectDependency (writer, KnownProject.Stringreplacer);
+	}
+
 	private StringBuilder GenerateSourceItemGroups (
 		string output_name, 
 		string profile,
 		string sources_file_name,
-		string groupConditional
+		string groupConditional,
+		string prebuild, string postbuild
 	) {
 		var result = new StringBuilder ();
 		var xmlWriterSettings = new XmlWriterSettings () {
@@ -923,18 +962,7 @@ public class MsbuildGenerator {
 		xmlWriter.WriteStartElement ("ItemGroup");
 		GenerateSourceItems (xmlWriter, commonFiles, null);
 
-		if (commonFiles.Any (f => f.EndsWith("build\\common\\Consts.cs"))) {
-			var genconstsRelativePath = "$(SolutionDir)\\msvc\\scripts\\genconsts.csproj";
-			xmlWriter.WriteComment ("Genconsts dependency because this project includes Consts.cs");
-			xmlWriter.WriteStartElement ("ProjectReference");
-			xmlWriter.WriteAttributeString ("Include", genconstsRelativePath);
-			xmlWriter.WriteElementString ("Name", "genconsts");
-			xmlWriter.WriteElementString ("Project", SlnGenerator.genconsts_csproj_guid);
-			xmlWriter.WriteElementString ("ReferenceOutputAssembly", "false");
-			xmlWriter.WriteElementString ("CopyToOutputDirectory", "Never");
-			xmlWriter.WriteElementString ("Private", "false");
-			xmlWriter.WriteEndElement();
-  		}
+		GenerateProjectDependencies (xmlWriter, commonFiles, prebuild, postbuild);
 
   		xmlWriter.WriteEndElement ();
   		xmlWriter.WriteComment ("End of common files");
@@ -1089,7 +1117,11 @@ public class MsbuildGenerator {
 		var sources = 
 			updatingExistingProject 
 				? new StringBuilder ()
-				: GenerateSourceItemGroups (output_name, profile, sources_file_name, groupConditional);
+				: GenerateSourceItemGroups (
+					output_name, profile, 
+					sources_file_name, groupConditional, 
+					prebuild, postbuild
+				);
 
 		//if (library == "corlib-build") // otherwise, does not compile on fx_version == 4.0
 		//{
