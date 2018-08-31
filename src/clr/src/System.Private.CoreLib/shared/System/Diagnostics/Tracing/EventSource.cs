@@ -1785,7 +1785,12 @@ namespace System.Diagnostics.Tracing
                     if (dataType.IsEnum())
                     {
                         dataType = Enum.GetUnderlyingType(dataType);
-                        if (Runtime.InteropServices.Marshal.SizeOf(dataType) < sizeof(int))
+#if ES_BUILD_PN
+                        int dataTypeSize = (int)dataType.TypeHandle.ToEETypePtr().ValueTypeSize;
+#else
+                        int dataTypeSize = System.Runtime.InteropServices.Marshal.SizeOf(dataType);
+#endif
+                        if (dataTypeSize < sizeof(int))
                             dataType = typeof(int);
                         goto Again;
                     }
