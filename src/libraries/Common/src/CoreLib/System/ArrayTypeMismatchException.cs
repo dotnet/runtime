@@ -18,6 +18,7 @@ namespace System
     // The ArrayMismatchException is thrown when an attempt to store
     // an object of the wrong type within an array occurs.
     [Serializable]
+    [System.Runtime.CompilerServices.TypeForwardedFrom("mscorlib, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089")]
     public class ArrayTypeMismatchException : SystemException
     {
         // Creates a new ArrayMismatchException with its message string set to

@@ -55,6 +55,7 @@ namespace System
     [StructLayout(LayoutKind.Sequential)]
     [Serializable]
     [System.Runtime.Versioning.NonVersionable] // This only applies to field layout
+    [System.Runtime.CompilerServices.TypeForwardedFrom("mscorlib, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089")]
     public readonly partial struct Decimal : IFormattable, IComparable, IConvertible, IComparable<decimal>, IEquatable<decimal>, IDeserializationCallback, ISpanFormattable
     {
         // Sign mask for the flags field. A value of zero in this bit indicates a
