@@ -19,6 +19,7 @@ namespace System
     // The ArgumentOutOfRangeException is thrown when an argument 
     // is outside the legal range for that argument.
     [Serializable]
+    [System.Runtime.CompilerServices.TypeForwardedFrom("mscorlib, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089")]
     public class ArgumentOutOfRangeException : ArgumentException
     {
         private object _actualValue;

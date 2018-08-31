@@ -20,6 +20,7 @@ namespace System.Runtime.InteropServices
     /// Exception for Structured Exception Handler exceptions.
     /// </summary>
     [Serializable]
+    [TypeForwardedFrom("mscorlib, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089")]
     public class SEHException : ExternalException
     {
         public SEHException()

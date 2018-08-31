@@ -14,6 +14,7 @@ namespace System
     [StructLayout(LayoutKind.Sequential)]
     [Serializable]
     [Runtime.Versioning.NonVersionable] // This only applies to field layout
+    [TypeForwardedFrom("mscorlib, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089")]
     public partial struct Guid : IFormattable, IComparable, IComparable<Guid>, IEquatable<Guid>, ISpanFormattable
     {
         public static readonly Guid Empty = new Guid();
