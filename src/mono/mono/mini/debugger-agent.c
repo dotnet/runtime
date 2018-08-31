@@ -273,7 +273,7 @@ typedef struct {
 #define HEADER_LENGTH 11
 
 #define MAJOR_VERSION 2
-#define MINOR_VERSION 47
+#define MINOR_VERSION 48
 
 typedef enum {
 	CMD_SET_VM = 1,
@@ -7861,7 +7861,11 @@ type_commands_internal (int command, MonoClass *klass, MonoDomain *domain, guint
 	case CMD_TYPE_GET_METHODS_BY_NAME_FLAGS: {
 		char *name = decode_string (p, &p, end);
 		int i, flags = decode_int (p, &p, end);
-		int mlisttype = decode_int (p, &p, end);
+		int mlisttype;
+		if (CHECK_PROTOCOL_VERSION (2, 48))
+			mlisttype = decode_int (p, &p, end);
+		else
+			mlisttype = 0; // MLISTTYPE_All
 		ERROR_DECL (error);
 		GPtrArray *array;
 
