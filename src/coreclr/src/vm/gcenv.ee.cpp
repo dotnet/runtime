@@ -1475,3 +1475,37 @@ bool GCToEEInterface::AppDomainIsRudeUnload(void *appDomain)
     AppDomain *realPtr = static_cast<AppDomain *>(appDomain);
     return realPtr->IsRudeUnload() != FALSE;
 }
+
+bool GCToEEInterface::AnalyzeSurvivorsRequested(int condemnedGeneration)
+{
+    LIMITED_METHOD_CONTRACT;
+
+    // Is the list active?
+    GcNotifications gn(g_pGcNotificationTable);
+    if (gn.IsActive())
+    {
+        GcEvtArgs gea = { GC_MARK_END, { (1<<condemnedGeneration) } };
+        if (gn.GetNotification(gea) != 0)
+        {
+            return true;
+        }
+    }
+
+    return false;
+}
+
+void GCToEEInterface::AnalyzeSurvivorsFinished(int condemnedGeneration)
+{
+    LIMITED_METHOD_CONTRACT;
+
+    // Is the list active?
+    GcNotifications gn(g_pGcNotificationTable);
+    if (gn.IsActive())
+    {
+        GcEvtArgs gea = { GC_MARK_END, { (1<<condemnedGeneration) } };
+        if (gn.GetNotification(gea) != 0)
+        {
+            DACNotify::DoGCNotification(gea);
+        }
+    }
+}

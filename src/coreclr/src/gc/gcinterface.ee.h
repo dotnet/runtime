@@ -427,6 +427,12 @@ public:
 
     virtual
     bool AppDomainIsRudeUnload(void *appDomain) = 0;
+
+    virtual
+    bool AnalyzeSurvivorsRequested(int condemnedGeneration) = 0;
+
+    virtual
+    void AnalyzeSurvivorsFinished(int condemnedGeneration) = 0;
 };
 
 #endif // _GCINTERFACE_EE_H_
