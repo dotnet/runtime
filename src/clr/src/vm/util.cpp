@@ -2964,7 +2964,7 @@ void DACNotify::DoGCNotification(const GcEvtArgs& args)
         NOTHROW;
         GC_NOTRIGGER;
         SO_INTOLERANT;
-        MODE_PREEMPTIVE;
+        MODE_COOPERATIVE;
     }
     CONTRACTL_END;
 
