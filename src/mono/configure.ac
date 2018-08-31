@@ -2414,19 +2414,18 @@ if test x$host_win32 = xno; then
 	AC_CHECK_FUNCS(pthread_get_stacksize_np pthread_get_stackaddr_np)
 
 	dnl **********************************
-	dnl *** Check for mincore ***
+	dnl *** Check for mlock ***
 	dnl **********************************
-	AC_MSG_CHECKING(for mincore)
+	AC_MSG_CHECKING(for mlock)
 		AC_TRY_LINK([
-		#include <stdio.h>
 		#include <sys/types.h>
 		#include <sys/mman.h>
 	], [
-		mincore(NULL, 0, NULL);
+		mlock(0, 0);
 	], [
 		# Yes, we have it...
 		AC_MSG_RESULT(yes)
-		AC_DEFINE(HAVE_MINCORE, 1, [Have mincore])
+		AC_DEFINE(HAVE_MLOCK, 1, [Have mlock])
 	], [
 		AC_MSG_RESULT(no)
 	])
