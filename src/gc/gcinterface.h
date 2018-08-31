@@ -174,10 +174,7 @@ struct segment_info
 };
 
 #ifdef PROFILING_SUPPORTED
-#ifndef BUILD_AS_STANDALONE
-// [LOCALGC TODO] Enable profiling (GitHub #11515)
 #define GC_PROFILING       //Turn on profiling
-#endif // BUILD_AS_STANDALONE
 #endif // PROFILING_SUPPORTED
 
 #define LARGE_OBJECT_SIZE ((size_t)(85000))
@@ -923,12 +920,7 @@ struct ScanContext
 #else
     void* _unused1;
 #endif //FEATURE_APPDOMAIN_RESOURCE_MONITORING || DACCESS_COMPILE
-
-#if defined(GC_PROFILING) || defined (DACCESS_COMPILE)
-    MethodDesc *pMD;
-#else
-    void* _unused2;
-#endif //GC_PROFILING || DACCESS_COMPILE
+    void* pMD;
 #if defined(GC_PROFILING) || defined(FEATURE_EVENT_TRACE)
     EtwGCRootKind dwEtwRootKind;
 #else
@@ -944,9 +936,7 @@ struct ScanContext
         stack_limit = 0;
         promotion = false;
         concurrent = false;
-#ifdef GC_PROFILING
         pMD = NULL;
-#endif //GC_PROFILING
 #if defined(GC_PROFILING) || defined(FEATURE_EVENT_TRACE)
         dwEtwRootKind = kEtwGCRootKindOther;
 #endif
