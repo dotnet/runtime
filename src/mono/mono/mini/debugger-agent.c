@@ -2629,7 +2629,7 @@ thread_interrupt (DebuggerTlsData *tls, MonoThreadInfo *info, MonoJitInfo *ji)
 			data.last_frame_set = FALSE;
 			mono_get_eh_callbacks ()->mono_walk_stack_with_state (get_last_frame, state, MONO_UNWIND_SIGNAL_SAFE, &data);
 			if (data.last_frame_set) {
-				gpointer jit_tls = ((MonoThreadInfo*)tls->thread->thread_info)->jit_data;
+				gpointer jit_tls = tls->thread->thread_info->jit_data;
 
 				memcpy (&tls->async_last_frame, &data.last_frame, sizeof (StackFrameInfo));
 
@@ -8575,7 +8575,7 @@ thread_commands (int command, guint8 *p, guint8 *end, Buffer *buf)
 		DEBUG_PRINTF (1, "[dbg] Setting IP to %s:0x%0x(0x%0x)\n", tls->frames [0]->actual_method->name, (int)sp.il_offset, (int)sp.native_offset);
 
 		if (tls->frames [0]->de.ji->is_interp) {
-			MonoJitTlsData *jit_data = (thread->thread_info)->jit_data;
+			MonoJitTlsData *jit_data = thread->thread_info->jit_data;
 			mini_get_interp_callbacks ()->set_resume_state (jit_data, NULL, NULL, tls->frames [0]->interp_frame, (guint8*)tls->frames [0]->de.ji->code_start + sp.native_offset);
 		} else {
 			MONO_CONTEXT_SET_IP (&tls->restore_state.ctx, (guint8*)tls->frames [0]->de.ji->code_start + sp.native_offset);

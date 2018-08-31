@@ -13,6 +13,7 @@
 
 #include <mono/utils/mono-publib.h>
 
+#include <mono/utils/mono-forward.h>
 #include <mono/metadata/object.h>
 #include <mono/metadata/reflection.h>
 
@@ -23,7 +24,6 @@ typedef void (*MonoThreadStartCB) (intptr_t tid, void* stack_start,
 typedef void (*MonoThreadAttachCB) (intptr_t tid, void* stack_start);
 
 typedef struct _MonoAppDomain MonoAppDomain;
-typedef struct _MonoJitInfo MonoJitInfo;
 
 typedef void (*MonoDomainFunc) (MonoDomain *domain, void* user_data);
 

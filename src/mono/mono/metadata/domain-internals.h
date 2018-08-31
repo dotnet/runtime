@@ -7,6 +7,7 @@
 #ifndef __MONO_METADATA_DOMAIN_INTERNALS_H__
 #define __MONO_METADATA_DOMAIN_INTERNALS_H__
 
+#include <mono/utils/mono-forward-internal.h>
 #include <mono/metadata/object-forward.h>
 #include <mono/metadata/appdomain.h>
 #include <mono/metadata/mempool.h>
@@ -215,12 +216,12 @@ struct _MonoJitInfo {
 	union {
 		MonoMethod *method;
 		MonoImage *image;
-		gpointer aot_info;
-		gpointer tramp_info;
+		MonoAotModule *aot_info;
+		MonoTrampInfo *tramp_info;
 	} d;
 	union {
-		struct _MonoJitInfo *next_jit_code_hash;
-		struct _MonoJitInfo *next_tombstone;
+		MonoJitInfo *next_jit_code_hash;
+		MonoJitInfo *next_tombstone;
 	} n;
 	gpointer    code_start;
 	guint32     unwind_info;

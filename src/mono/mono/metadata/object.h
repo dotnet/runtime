@@ -5,6 +5,7 @@
 #ifndef _MONO_CLI_OBJECT_H_
 #define _MONO_CLI_OBJECT_H_
 
+#include <mono/utils/mono-forward.h>
 #include <mono/metadata/object-forward.h>
 #include <mono/metadata/class.h>
 #include <mono/utils/mono-error.h>

@@ -15,6 +15,7 @@
 
 #include <glib.h>
 
+#include <mono/utils/mono-forward-internal.h>
 #include <mono/metadata/object.h>
 #include "mono/metadata/handle.h"
 #include "mono/utils/mono-compiler.h"
@@ -58,8 +59,6 @@ typedef enum {
 #define SPECIAL_STATIC_NONE 0
 #define SPECIAL_STATIC_THREAD 1
 #define SPECIAL_STATIC_CONTEXT 2
-
-typedef struct _MonoInternalThread MonoInternalThread;
 
 /* It's safe to access System.Threading.InternalThread from native code via a
  * raw pointer because all instances should be pinned.  But for uniformity of

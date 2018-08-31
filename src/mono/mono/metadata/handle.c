@@ -198,7 +198,7 @@ mono_handle_new (MonoObject *obj, const char *owner)
 #endif
 {
 	MonoThreadInfo *info = mono_thread_info_current ();
-	HandleStack *handles = (HandleStack *)info->handle_stack;
+	HandleStack *handles = info->handle_stack;
 	HandleChunk *top = handles->top;
 #ifdef MONO_HANDLE_TRACK_SP
 	mono_handle_chunk_leak_check (handles);
@@ -252,7 +252,7 @@ mono_handle_new_interior (gpointer rawptr, const char *owner)
 #endif
 {
 	MonoThreadInfo *info = mono_thread_info_current ();
-	HandleStack *handles = (HandleStack *)info->handle_stack;
+	HandleStack *handles = info->handle_stack;
 	HandleChunk *top = handles->interior;
 #ifdef MONO_HANDLE_TRACK_SP
 	mono_handle_chunk_leak_check (handles);
@@ -428,7 +428,7 @@ mono_handle_stack_scan (HandleStack *stack, GcScanFunc func, gpointer gc_data, g
 void
 mono_stack_mark_record_size (MonoThreadInfo *info, HandleStackMark *stackmark, const char *func_name)
 {
-	HandleStack *handles = (HandleStack *)info->handle_stack;
+	HandleStack *handles = info->handle_stack;
 	HandleChunk *cur = stackmark->chunk;
 	int size = -stackmark->size; //discard the starting point of the stack
 	while (cur) {
@@ -493,7 +493,7 @@ mono_gchandle_from_handle (MonoObjectHandle handle, mono_bool pinned)
 	/* FIXME: chunk_element_to_chunk_idx does a linear search through the
 	 * chunks and we only need it for the assert */
 	MonoThreadInfo *info = mono_thread_info_current ();
-	HandleStack *stack = (HandleStack*) info->handle_stack;
+	HandleStack *stack = info->handle_stack;
 	HandleChunkElem* elem = handle_to_chunk_element (handle);
 	int elem_idx = 0;
 	HandleChunk *chunk = chunk_element_to_chunk_idx (stack, elem, &elem_idx);

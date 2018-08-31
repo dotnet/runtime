@@ -613,7 +613,7 @@ mono_push_other_roots (void)
 {
 	g_hash_table_foreach (roots, push_root, NULL);
 	FOREACH_THREAD_EXCLUDE (info, MONO_THREAD_INFO_FLAGS_NO_GC) {
-		HandleStack* stack = (HandleStack*)info->handle_stack;
+		HandleStack* stack = info->handle_stack;
 		if (stack)
 			push_handle_stack (stack);
 	} FOREACH_THREAD_END

@@ -5,6 +5,7 @@
 #ifndef __MONO_METADATA_INTERNALS_H__
 #define __MONO_METADATA_INTERNALS_H__
 
+#include "mono/utils/mono-forward-internal.h"
 #include "mono/metadata/image.h"
 #include "mono/metadata/blob.h"
 #include "mono/metadata/cil-coff.h"
@@ -320,7 +321,7 @@ struct _MonoImage {
 	MonoImage **files;
 	guint32 file_count;
 
-	gpointer aot_module;
+	MonoAotModule *aot_module;
 
 	guint8 aotid[16];
 

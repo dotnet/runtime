@@ -136,6 +136,7 @@ monoutils_sources = \
 	mono-counters.h	\
 	mono-digest.h	\
 	mono-error.h	\
+	mono-forward-internal.h	\
 	mono-machine.h	\
 	mono-math.h	\
 	mono-membar.h	\
@@ -309,6 +310,7 @@ libmonoutilsincludedir = $(includedir)/mono-$(API_VER)/mono/utils
 libmonoutilsinclude_HEADERS = 	\
 	mono-logger.h		\
 	mono-error.h		\
+	mono-forward.h	\
 	mono-publib.h		\
 	mono-jemalloc.h		\
 	mono-dl-fallback.h	\

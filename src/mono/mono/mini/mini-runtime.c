@@ -202,7 +202,7 @@ get_method_from_ip (void *ip)
 		else
 			return NULL;
 	} else if (ji->is_trampoline) {
-		res = g_strdup_printf ("<%p - %s trampoline>", ip, ((MonoTrampInfo*)ji->d.tramp_info)->name);
+		res = g_strdup_printf ("<%p - %s trampoline>", ip, ji->d.tramp_info->name);
 		return res;
 	}
 
@@ -268,7 +268,7 @@ mono_print_method_from_ip (void *ip)
 		domain = mono_get_root_domain ();
 	ji = mini_jit_info_table_find_ext (domain, (char *)ip, TRUE, &target_domain);
 	if (ji && ji->is_trampoline) {
-		MonoTrampInfo *tinfo = (MonoTrampInfo *)ji->d.tramp_info;
+		MonoTrampInfo *tinfo = ji->d.tramp_info;
 
 		printf ("IP %p is at offset 0x%x of trampoline '%s'.\n", ip, (int)((guint8*)ip - tinfo->code), tinfo->name);
 		return;
@@ -426,7 +426,7 @@ mono_tramp_info_create (const char *name, guint8 *code, guint32 code_size, MonoJ
 {
 	MonoTrampInfo *info = g_new0 (MonoTrampInfo, 1);
 
-	info->name = g_strdup ((char*)name);
+	info->name = g_strdup (name);
 	info->code = code;
 	info->code_size = code_size;
 	info->ji = ji;
@@ -783,7 +783,7 @@ mono_get_lmf (void)
 MonoLMF **
 mono_get_lmf_addr (void)
 {
-	return (MonoLMF **)mono_tls_get_lmf_addr ();
+	return mono_tls_get_lmf_addr ();
 }
 
 void
@@ -913,7 +913,7 @@ mono_jit_set_domain (MonoDomain *domain)
 static void
 mono_thread_abort (MonoObject *obj)
 {
-	/* MonoJitTlsData *jit_tls = (MonoJitTlsData *)mono_tls_get_jit_tls (); */
+	/* MonoJitTlsData *jit_tls = mono_tls_get_jit_tls (); */
 
 	/* handle_remove should be eventually called for this thread, too
 	g_free (jit_tls);*/
@@ -934,7 +934,7 @@ setup_jit_tls_data (gpointer stack_start, gpointer abort_func)
 	MonoJitTlsData *jit_tls;
 	MonoLMF *lmf;
 
-	jit_tls = (MonoJitTlsData *)mono_tls_get_jit_tls ();
+	jit_tls = mono_tls_get_jit_tls ();
 	if (jit_tls)
 		return jit_tls;
 
@@ -1027,7 +1027,7 @@ mini_thread_cleanup (MonoNativeThreadId tid)
 	 * The current offender is mono_thread_manage which cleanup threads from the outside.
 	 */
 	if (info && mono_thread_info_get_tid (info) == tid) {
-		jit_tls = (MonoJitTlsData *)info->jit_data;
+		jit_tls = info->jit_data;
 		info->jit_data = NULL;
 
 		mono_set_jit_tls (NULL);
@@ -1040,7 +1040,7 @@ mini_thread_cleanup (MonoNativeThreadId tid)
 	} else {
 		info = mono_thread_info_lookup (tid);
 		if (info) {
-			jit_tls = (MonoJitTlsData *)info->jit_data;
+			jit_tls = info->jit_data;
 			info->jit_data = NULL;
 		}
 		mono_hazard_pointer_clear (mono_hazard_pointer_get (), 1);
@@ -2006,7 +2006,7 @@ unref_jit_entry (JitCompilationEntry *entry)
 static gboolean
 wait_or_register_method_to_compile (MonoMethod *method, MonoDomain *domain)
 {
-	MonoJitTlsData *jit_tls = (MonoJitTlsData *)mono_tls_get_jit_tls ();
+	MonoJitTlsData *jit_tls = mono_tls_get_jit_tls ();
 	JitCompilationEntry *entry;
 
 	static gboolean inited;
@@ -2085,7 +2085,7 @@ wait_or_register_method_to_compile (MonoMethod *method, MonoDomain *domain)
 static void
 unregister_method_for_compile (MonoMethod *method, MonoDomain *target_domain)
 {
-	MonoJitTlsData *jit_tls = (MonoJitTlsData *)mono_tls_get_jit_tls ();
+	MonoJitTlsData *jit_tls = mono_tls_get_jit_tls ();
 
 	lock_compilation_data ();
 
@@ -3398,7 +3398,7 @@ is_addr_implicit_null_check (void *addr)
 MONO_SIG_HANDLER_FUNC (, mono_sigsegv_signal_handler)
 {
 	MonoJitInfo *ji;
-	MonoJitTlsData *jit_tls = (MonoJitTlsData *)mono_tls_get_jit_tls ();
+	MonoJitTlsData *jit_tls = mono_tls_get_jit_tls ();
 	gpointer fault_addr = NULL;
 #ifdef HAVE_SIG_INFO
 	MONO_SIG_HANDLER_INFO_TYPE *info = MONO_SIG_HANDLER_GET_INFO ();
@@ -4853,7 +4853,7 @@ mini_cleanup (MonoDomain *domain)
 	if (profile_options)
 		g_ptr_array_free (profile_options, TRUE);
 
-	free_jit_tls_data ((MonoJitTlsData *)mono_tls_get_jit_tls ());
+	free_jit_tls_data (mono_tls_get_jit_tls ());
 
 	mono_icall_cleanup ();
 

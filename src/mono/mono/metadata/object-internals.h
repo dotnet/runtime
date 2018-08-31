@@ -5,6 +5,7 @@
 #ifndef __MONO_OBJECT_INTERNALS_H__
 #define __MONO_OBJECT_INTERNALS_H__
 
+#include <mono/utils/mono-forward-internal.h>
 #include <mono/metadata/object-forward.h>
 #include <mono/metadata/object.h>
 #include <mono/metadata/threads.h>
@@ -491,7 +492,7 @@ struct _MonoInternalThread {
 
 struct _MonoThread {
 	MonoObject obj;
-	struct _MonoInternalThread *internal_thread;
+	MonoInternalThread *internal_thread;
 	MonoObject *start_obj;
 	MonoException *pending_exception;
 };

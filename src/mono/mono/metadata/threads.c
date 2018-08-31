@@ -181,8 +181,8 @@ static void threads_add_pending_joinable_runtime_thread (MonoThreadInfo *mono_th
 static gboolean threads_wait_pending_joinable_threads (uint32_t timeout);
 static gchar* thread_dump_dir = NULL;
 
-#define SET_CURRENT_OBJECT(x) (mono_tls_set_thread (x))
-#define GET_CURRENT_OBJECT() ((MonoInternalThread*) mono_tls_get_thread ())
+#define SET_CURRENT_OBJECT   mono_tls_set_thread
+#define GET_CURRENT_OBJECT   mono_tls_get_thread
 
 /* function called at thread start */
 static MonoThreadStartCB mono_thread_start_cb = NULL;
@@ -1079,7 +1079,7 @@ fire_attach_profiler_events (MonoNativeThreadId tid)
 
 	// The handle stack is a pseudo-root similar to the finalizer queues.
 	MONO_PROFILER_RAISE (gc_root_register, (
-		info->handle_stack,
+		(const mono_byte*)info->handle_stack,
 		1,
 		MONO_ROOT_SOURCE_HANDLE,
 		(void *) tid,

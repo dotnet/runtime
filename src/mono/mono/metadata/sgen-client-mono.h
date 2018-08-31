@@ -683,7 +683,7 @@ sgen_client_binary_protocol_collection_end_stats (long long major_scan, long lon
 {
 }
 
-#define TLAB_ACCESS_INIT	SgenThreadInfo *__thread_info__ = (SgenThreadInfo*)mono_tls_get_sgen_thread_info ()
+#define TLAB_ACCESS_INIT	SgenThreadInfo *__thread_info__ = mono_tls_get_sgen_thread_info ()
 #define IN_CRITICAL_REGION (__thread_info__->client_info.in_critical_region)
 
 /* Enter must be visible before anything is done in the critical region. */

@@ -216,7 +216,7 @@ static gint32 async_jit_info_size;
 static GHashTable *aot_jit_icall_hash;
 
 #ifdef MONOTOUCH
-#define USE_PAGE_TRAMPOLINES ((MonoAotModule*)mono_defaults.corlib->aot_module)->use_page_trampolines
+#define USE_PAGE_TRAMPOLINES (mono_defaults.corlib->aot_module->use_page_trampolines)
 #else
 #define USE_PAGE_TRAMPOLINES 0
 #endif
@@ -1971,7 +1971,7 @@ init_amodule_got (MonoAotModule *amodule)
 			amodule->shared_got [i] = amodule->assembly->image;
 		} else if (ji->type == MONO_PATCH_INFO_MSCORLIB_GOT_ADDR) {
 			if (mono_defaults.corlib) {
-				MonoAotModule *mscorlib_amodule = (MonoAotModule *)mono_defaults.corlib->aot_module;
+				MonoAotModule *mscorlib_amodule = mono_defaults.corlib->aot_module;
 
 				if (mscorlib_amodule)
 					amodule->shared_got [i] = mscorlib_amodule->got;
@@ -2526,7 +2526,7 @@ mono_aot_get_method_from_vt_slot (MonoDomain *domain, MonoVTable *vtable, int sl
 {
 	int i;
 	MonoClass *klass = vtable->klass;
-	MonoAotModule *amodule = (MonoAotModule *)m_class_get_image (klass)->aot_module;
+	MonoAotModule *amodule = m_class_get_image (klass)->aot_module;
 	guint8 *info, *p;
 	MonoCachedClassInfo class_info;
 	gboolean err;
@@ -2569,7 +2569,7 @@ mono_aot_get_method_from_vt_slot (MonoDomain *domain, MonoVTable *vtable, int sl
 gboolean
 mono_aot_get_cached_class_info (MonoClass *klass, MonoCachedClassInfo *res)
 {
-	MonoAotModule *amodule = (MonoAotModule *)m_class_get_image (klass)->aot_module;
+	MonoAotModule *amodule = m_class_get_image (klass)->aot_module;
 	guint8 *p;
 	gboolean err;
 
@@ -2598,7 +2598,7 @@ mono_aot_get_cached_class_info (MonoClass *klass, MonoCachedClassInfo *res)
 gboolean
 mono_aot_get_class_from_name (MonoImage *image, const char *name_space, const char *name, MonoClass **klass)
 {
-	MonoAotModule *amodule = (MonoAotModule *)image->aot_module;
+	MonoAotModule *amodule = image->aot_module;
 	guint16 *table, *entry;
 	guint16 table_size;
 	guint32 hash;
@@ -2699,7 +2699,7 @@ mono_aot_get_class_from_name (MonoImage *image, const char *name_space, const ch
 GHashTable *
 mono_aot_get_weak_field_indexes (MonoImage *image)
 {
-	MonoAotModule *amodule = (MonoAotModule *)image->aot_module;
+	MonoAotModule *amodule = image->aot_module;
 
 	if (!amodule)
 		return NULL;
@@ -3330,9 +3330,9 @@ mono_aot_get_unwind_info (MonoJitInfo *ji, guint32 *unwind_info_len)
 	guint8 *code = (guint8 *)ji->code_start;
 
 	if (ji->async)
-		amodule = (MonoAotModule *)ji->d.aot_info;
+		amodule = ji->d.aot_info;
 	else
-		amodule = (MonoAotModule *)m_class_get_image (jinfo_get_method (ji)->klass)->aot_module;
+		amodule = m_class_get_image (jinfo_get_method (ji)->klass)->aot_module;
 	g_assert (amodule);
 	g_assert (ji->from_aot);
 
@@ -3422,7 +3422,7 @@ mono_aot_find_jit_info (MonoDomain *domain, MonoImage *image, gpointer addr)
 	int pos, left, right, code_len;
 	int method_index, table_len;
 	guint32 token;
-	MonoAotModule *amodule = (MonoAotModule *)image->aot_module;
+	MonoAotModule *amodule = image->aot_module;
 	MonoMethod *method = NULL;
 	MonoJitInfo *jinfo;
 	guint8 *code, *ex_info, *p;
@@ -4216,7 +4216,7 @@ find_aot_method_in_amodule (MonoAotModule *code_amodule, MonoMethod *method, gui
 	// The reference to the metadata amodule will differ among multiple dedup methods
 	// which mangle to the same name but live in different assemblies. This leads to
 	// the caching breaking. The solution seems to be to cache using the "metadata" amodule.
-	MonoAotModule *metadata_amodule = (MonoAotModule *)m_class_get_image (method->klass)->aot_module;
+	MonoAotModule *metadata_amodule = m_class_get_image (method->klass)->aot_module;
 
 	if (!metadata_amodule || metadata_amodule->out_of_date || !code_amodule || code_amodule->out_of_date)
 		return 0xffffff;
@@ -4324,8 +4324,8 @@ find_aot_method (MonoMethod *method, MonoAotModule **out_amodule)
 	}
 
 	/* Try the method's module first */
-	*out_amodule = (MonoAotModule *)m_class_get_image (method->klass)->aot_module;
-	index = find_aot_method_in_amodule ((MonoAotModule *)m_class_get_image (method->klass)->aot_module, method, hash);
+	*out_amodule = m_class_get_image (method->klass)->aot_module;
+	index = find_aot_method_in_amodule (m_class_get_image (method->klass)->aot_module, method, hash);
 	if (index != 0xffffff)
 		return index;
 
@@ -4593,7 +4593,7 @@ mono_aot_get_method (MonoDomain *domain, MonoMethod *method, MonoError *error)
 	MonoClass *klass = method->klass;
 	MonoMethod *orig_method = method;
 	guint32 method_index;
-	MonoAotModule *amodule = (MonoAotModule *)m_class_get_image (klass)->aot_module;
+	MonoAotModule *amodule = m_class_get_image (klass)->aot_module;
 	guint8 *code;
 	gboolean cache_result = FALSE;
 	ERROR_DECL_VALUE (inner_error);
@@ -4609,7 +4609,7 @@ mono_aot_get_method (MonoDomain *domain, MonoMethod *method, MonoError *error)
 		if (!mscorlib_aot_loaded) {
 			mscorlib_aot_loaded = TRUE;
 			load_aot_module (m_class_get_image (klass)->assembly, NULL);
-			amodule = (MonoAotModule *)m_class_get_image (klass)->aot_module;
+			amodule = m_class_get_image (klass)->aot_module;
 		}
 	}
 
@@ -4866,7 +4866,7 @@ mono_aot_get_method (MonoDomain *domain, MonoMethod *method, MonoError *error)
 gpointer
 mono_aot_get_method_from_token (MonoDomain *domain, MonoImage *image, guint32 token, MonoError *error)
 {
-	MonoAotModule *aot_module = (MonoAotModule *)image->aot_module;
+	MonoAotModule *aot_module = image->aot_module;
 	int method_index;
 	gpointer res;
 
@@ -5353,7 +5353,7 @@ get_mscorlib_aot_module (void)
 
 	image = mono_defaults.corlib;
 	if (image)
-		amodule = (MonoAotModule *)image->aot_module;
+		amodule = image->aot_module;
 	else
 		amodule = mscorlib_aot_module;
 	g_assert (amodule);
@@ -5785,7 +5785,7 @@ mono_aot_get_unbox_trampoline (MonoMethod *method)
 		}
 		g_assert (method_index != 0xffffff);
 	} else {
-		amodule = (MonoAotModule *)m_class_get_image (method->klass)->aot_module;
+		amodule = m_class_get_image (method->klass)->aot_module;
 		g_assert (amodule);
 	}
 
@@ -5839,7 +5839,7 @@ mono_aot_get_lazy_fetch_trampoline (guint32 slot)
 {
 	char *symbol;
 	gpointer code;
-	MonoAotModule *amodule = (MonoAotModule *)mono_defaults.corlib->aot_module;
+	MonoAotModule *amodule = mono_defaults.corlib->aot_module;
 	guint32 index = MONO_RGCTX_SLOT_INDEX (slot);
 	static int count = 0;
 
@@ -5861,7 +5861,7 @@ mono_aot_get_lazy_fetch_trampoline (guint32 slot)
 	}
 
 	symbol = mono_get_rgctx_fetch_trampoline_name (slot);
-	code = load_function ((MonoAotModule *)mono_defaults.corlib->aot_module, symbol);
+	code = load_function (mono_defaults.corlib->aot_module, symbol);
 	g_free (symbol);
 	/* The caller expects an ftnptr */
 	return mono_create_ftnptr (mono_domain_get (), code);

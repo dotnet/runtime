@@ -11,6 +11,7 @@
 #ifndef __MONO_THREADS_H__
 #define __MONO_THREADS_H__
 
+#include <mono/utils/mono-forward-internal.h>
 #include <mono/utils/mono-os-semaphore.h>
 #include <mono/utils/mono-stack-unwinding.h>
 #include <mono/utils/mono-linked-list-set.h>
@@ -246,12 +247,12 @@ typedef struct _MonoThreadInfo {
 	/* Set when the thread is started, or in _wapi_thread_duplicate () */
 	MonoThreadHandle *handle;
 
-	void *jit_data;
+	MonoJitTlsData *jit_data;
 
 	MonoThreadInfoInterruptToken *interrupt_token;
 
 	/* HandleStack for coop handles */
-	gpointer handle_stack;
+	MonoHandleStack *handle_stack;
 
 	/* Stack mark for targets that explicitly require one */
 	gpointer stack_mark;

@@ -1081,7 +1081,7 @@ altstack_handle_and_restore (MonoContext *ctx, gpointer obj, gboolean stack_ovf)
 
 	mono_handle_exception (&mctx, (MonoObject*)obj);
 	if (stack_ovf) {
-		MonoJitTlsData *jit_tls = (MonoJitTlsData *) mono_tls_get_jit_tls ();
+		MonoJitTlsData *jit_tls = mono_tls_get_jit_tls ();
 		jit_tls->stack_ovf_pending = 1;
 		prepare_for_guard_pages (&mctx);
 	}

@@ -112,7 +112,7 @@ struct _HandleChunk {
 	HandleChunkElem elems [OBJECTS_PER_HANDLES_CHUNK];
 };
 
-typedef struct {
+typedef struct MonoHandleStack {
 	HandleChunk *top; //alloc from here
 	HandleChunk *bottom; //scan from here
 #ifdef MONO_HANDLE_TRACK_SP
@@ -177,7 +177,7 @@ mono_stack_mark_init (MonoThreadInfo *info, HandleStackMark *stackmark)
 #ifdef MONO_HANDLE_TRACK_SP
 	gpointer sptop = &stackmark;
 #endif
-	HandleStack *handles = (HandleStack *)info->handle_stack;
+	HandleStack *handles = info->handle_stack;
 	stackmark->size = handles->top->size;
 	stackmark->chunk = handles->top;
 	stackmark->interior_size = handles->interior->size;
@@ -190,7 +190,7 @@ mono_stack_mark_init (MonoThreadInfo *info, HandleStackMark *stackmark)
 static inline void
 mono_stack_mark_pop (MonoThreadInfo *info, HandleStackMark *stackmark)
 {
-	HandleStack *handles = (HandleStack *)info->handle_stack;
+	HandleStack *handles = info->handle_stack;
 	HandleChunk *old_top = stackmark->chunk;
 	old_top->size = stackmark->size;
 	mono_memory_write_barrier ();

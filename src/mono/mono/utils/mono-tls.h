@@ -15,6 +15,7 @@
 
 #include <config.h>
 #include <glib.h>
+#include <mono/utils/mono-forward-internal.h>
 
 /* TLS entries used by the runtime */
 typedef enum {
@@ -85,16 +86,16 @@ gint32 mono_tls_get_tls_offset (MonoTlsKey key);
 gpointer mono_tls_get_tls_getter (MonoTlsKey key, gboolean name);
 gpointer mono_tls_get_tls_setter (MonoTlsKey key, gboolean name);
 
-gpointer mono_tls_get_thread (void);
-gpointer mono_tls_get_jit_tls (void);
-gpointer mono_tls_get_domain (void);
-gpointer mono_tls_get_sgen_thread_info (void);
-gpointer mono_tls_get_lmf_addr (void);
+MonoInternalThread *mono_tls_get_thread (void);
+MonoJitTlsData     *mono_tls_get_jit_tls (void);
+MonoDomain         *mono_tls_get_domain (void);
+SgenThreadInfo     *mono_tls_get_sgen_thread_info (void);
+MonoLMF           **mono_tls_get_lmf_addr (void);
 
-void mono_tls_set_thread (gpointer value);
-void mono_tls_set_jit_tls (gpointer value);
-void mono_tls_set_domain (gpointer value);
-void mono_tls_set_sgen_thread_info (gpointer value);
-void mono_tls_set_lmf_addr (gpointer value);
+void mono_tls_set_thread 	   (MonoInternalThread *value);
+void mono_tls_set_jit_tls 	   (MonoJitTlsData     *value);
+void mono_tls_set_domain 	   (MonoDomain         *value);
+void mono_tls_set_sgen_thread_info (SgenThreadInfo     *value);
+void mono_tls_set_lmf_addr 	   (MonoLMF           **value);
 
 #endif /* __MONO_TLS_H__ */
