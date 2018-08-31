@@ -533,6 +533,7 @@ int LinearScan::BuildNode(GenTree* tree)
 #ifdef FEATURE_HW_INTRINSICS
         case GT_HW_INTRINSIC_CHK:
 #endif // FEATURE_HW_INTRINSICS
+
             // Consumes arrLen & index - has no result
             srcCount = 2;
             assert(dstCount == 0);
@@ -2311,7 +2312,7 @@ int LinearScan::BuildHWIntrinsic(GenTreeHWIntrinsic* intrinsicTree)
         if (op1->OperIsList())
         {
             assert(op2 == nullptr);
-            assert(numArgs == 3);
+            assert(numArgs >= 3);
 
             GenTreeArgList* argList = op1->AsArgList();
 
@@ -2321,10 +2322,16 @@ int LinearScan::BuildHWIntrinsic(GenTreeHWIntrinsic* intrinsicTree)
             op2     = argList->Current();
             argList = argList->Rest();
 
-            op3     = argList->Current();
+            op3 = argList->Current();
+
+            while (argList->Rest() != nullptr)
+            {
+                argList = argList->Rest();
+            }
+
+            lastOp  = argList->Current();
             argList = argList->Rest();
 
-            lastOp = op3;
             assert(argList == nullptr);
         }
         else if (op2 != nullptr)
@@ -2590,6 +2597,45 @@ int LinearScan::BuildHWIntrinsic(GenTreeHWIntrinsic* intrinsicTree)
             {
                 assert(numArgs == 1);
                 srcCount += BuildDelayFreeUses(op1);
+
+                buildUses = false;
+                break;
+            }
+
+            case NI_AVX2_GatherVector128:
+            case NI_AVX2_GatherVector256:
+            {
+                assert(numArgs == 3);
+                // Any pair of the index, mask, or destination registers should be different
+                srcCount += BuildOperandUses(op1);
+                srcCount += BuildDelayFreeUses(op2);
+
+                // get a tmp register for mask that will be cleared by gather instructions
+                buildInternalFloatRegisterDefForNode(intrinsicTree, allSIMDRegs());
+                setInternalRegsDelayFree = true;
+
+                buildUses = false;
+                break;
+            }
+
+            case NI_AVX2_GatherMaskVector128:
+            case NI_AVX2_GatherMaskVector256:
+            {
+                assert(numArgs == 5);
+                // Any pair of the index, mask, or destination registers should be different
+                srcCount += BuildOperandUses(op1);
+                srcCount += BuildOperandUses(op2);
+                srcCount += BuildDelayFreeUses(op3);
+
+                assert(intrinsicTree->gtGetOp1()->OperIsList());
+                GenTreeArgList* argList = intrinsicTree->gtGetOp1()->AsArgList();
+                GenTree*        op4     = argList->Rest()->Rest()->Rest()->Current();
+                srcCount += BuildDelayFreeUses(op4);
+
+                // get a tmp register for mask that will be cleared by gather instructions
+                buildInternalFloatRegisterDefForNode(intrinsicTree, allSIMDRegs());
+                setInternalRegsDelayFree = true;
+
                 buildUses = false;
                 break;
             }
