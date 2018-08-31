@@ -1249,6 +1249,12 @@
   <data name="Argument_InvalidSerializedString" xml:space="preserve">
     <value>The specified serialized string '{0}' is not supported.</value>
   </data>
+  <data name="Argument_InvalidStartupHookSyntax" xml:space="preserve">
+    <value>The syntax of the startup hook variable was invalid.</value>
+  </data>
+  <data name="Argument_InvalidStartupHookSignature" xml:space="preserve">
+    <value>The signature of the startup hook '{0}' in assembly '{1}' was invalid. It must be 'public static void Initialize()'.</value>
+  </data>
   <data name="Argument_InvalidTimeSpanStyles" xml:space="preserve">
     <value>An undefined TimeSpanStyles value is being used.</value>
   </data>
