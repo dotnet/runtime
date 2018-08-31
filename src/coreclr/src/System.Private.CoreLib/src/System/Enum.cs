@@ -26,6 +26,7 @@ using System.Diagnostics;
 namespace System
 {
     [Serializable]
+    [System.Runtime.CompilerServices.TypeForwardedFrom("mscorlib, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089")]
     public abstract class Enum : ValueType, IComparable, IFormattable, IConvertible
     {
         #region Private Constants
