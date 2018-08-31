@@ -311,4 +311,16 @@ inline bool GCToEEInterface::AppDomainIsRudeUnload(void *appDomain)
     return g_theGCToCLR->AppDomainIsRudeUnload(appDomain);
 }
 
+inline bool GCToEEInterface::AnalyzeSurvivorsRequested(int condemnedGeneration)
+{
+    assert(g_theGCToCLR != nullptr);
+    return g_theGCToCLR->AnalyzeSurvivorsRequested(condemnedGeneration);
+}
+
+inline void GCToEEInterface::AnalyzeSurvivorsFinished(int condemnedGeneration)
+{
+    assert(g_theGCToCLR != nullptr);
+    g_theGCToCLR->AnalyzeSurvivorsFinished(condemnedGeneration);
+}
+
 #endif // __GCTOENV_EE_STANDALONE_INL__
