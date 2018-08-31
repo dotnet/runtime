@@ -503,6 +503,14 @@ INST3(vmaskmovps,       "maskmovps",        IUM_WR, SSE38(0x2E),  BAD_CODE,     
 INST3(vmaskmovpd,       "maskmovpd",        IUM_WR, SSE38(0x2F),  BAD_CODE,     SSE38(0x2D),                             INS_Flags_IsDstDstSrcAVXInstruction)    // Conditional SIMD Packed Double-Precision Floating-Point Loads and Stores
 INST3(vpmaskmovd,       "pmaskmovd",        IUM_WR, SSE38(0x8E),  BAD_CODE,     SSE38(0x8C),                             INS_Flags_IsDstDstSrcAVXInstruction)    // Conditional SIMD Integer Packed Dword Loads and Stores
 INST3(vpmaskmovq,       "pmaskmovq",        IUM_WR, SSE38(0x8E),  BAD_CODE,     SSE38(0x8C),                             INS_Flags_IsDstDstSrcAVXInstruction)    // Conditional SIMD Integer Packed Qword Loads and Stores
+INST3(vpgatherdd,       "pgatherdd",        IUM_WR, BAD_CODE,     BAD_CODE,     SSE38(0x90),                             INS_Flags_IsDstDstSrcAVXInstruction)    // Gather Packed Dword Values Using Signed Dword
+INST3(vpgatherqd,       "pgatherqd",        IUM_WR, BAD_CODE,     BAD_CODE,     SSE38(0x91),                             INS_Flags_IsDstDstSrcAVXInstruction)    // Gather Packed Dword Values Using Signed Qword
+INST3(vpgatherdq,       "pgatherdq",        IUM_WR, BAD_CODE,     BAD_CODE,     SSE38(0x90),                             INS_Flags_IsDstDstSrcAVXInstruction)    // Gather Packed Dword with Signed Dword Indices
+INST3(vpgatherqq,       "pgatherqq",        IUM_WR, BAD_CODE,     BAD_CODE,     SSE38(0x91),                             INS_Flags_IsDstDstSrcAVXInstruction)    // Gather Packed Qword with Signed Dword Indices
+INST3(vgatherdps,       "gatherdps",        IUM_WR, BAD_CODE,     BAD_CODE,     SSE38(0x92),                             INS_Flags_IsDstDstSrcAVXInstruction)    // Gather Packed SP FP values Using Signed Dword Indices
+INST3(vgatherqps,       "gatherqps",        IUM_WR, BAD_CODE,     BAD_CODE,     SSE38(0x93),                             INS_Flags_IsDstDstSrcAVXInstruction)    // Gather Packed SP FP values Using Signed Qword Indices
+INST3(vgatherdpd,       "gatherdpd",        IUM_WR, BAD_CODE,     BAD_CODE,     SSE38(0x92),                             INS_Flags_IsDstDstSrcAVXInstruction)    // Gather Packed DP FP Values Using Signed Dword Indices
+INST3(vgatherqpd,       "gatherqpd",        IUM_WR, BAD_CODE,     BAD_CODE,     SSE38(0x93),                             INS_Flags_IsDstDstSrcAVXInstruction)    // Gather Packed DP FP Values Using Signed Qword Indices
 
 INST3(FIRST_FMA_INSTRUCTION, "FIRST_FMA_INSTRUCTION", IUM_WR, BAD_CODE, BAD_CODE, BAD_CODE, INS_FLAGS_None)
 //    id                nm                  um      mr            mi            rm                                       flags

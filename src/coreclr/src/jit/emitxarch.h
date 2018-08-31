@@ -335,6 +335,15 @@ void emitIns_R_R_A(instruction ins, emitAttr attr, regNumber reg1, regNumber reg
 
 void emitIns_R_R_AR(instruction ins, emitAttr attr, regNumber reg1, regNumber reg2, regNumber base, int offs);
 
+void emitIns_R_AR_R(instruction ins,
+                    emitAttr    attr,
+                    regNumber   reg1,
+                    regNumber   reg2,
+                    regNumber   base,
+                    regNumber   index,
+                    int         scale,
+                    int         offs);
+
 void emitIns_R_R_C(
     instruction ins, emitAttr attr, regNumber reg1, regNumber reg2, CORINFO_FIELD_HANDLE fldHnd, int offs);
 

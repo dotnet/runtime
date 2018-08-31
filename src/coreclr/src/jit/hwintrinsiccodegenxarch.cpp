@@ -1184,6 +1184,9 @@ void CodeGen::genHWIntrinsicJumpTableFallback(NamedIntrinsic            intrinsi
                                               HWIntrinsicSwitchCaseBody emitSwCase)
 {
     assert(nonConstImmReg != REG_NA);
+    // AVX2 Gather intrinsics use managed non-const fallback since they have discrete imm8 value range
+    // that does work with the current compiler generated jump-table fallback
+    assert(!HWIntrinsicInfo::isAVX2GatherIntrinsic(intrinsic));
     emitter* emit = getEmitter();
 
     const unsigned maxByte = (unsigned)HWIntrinsicInfo::lookupImmUpperBound(intrinsic) + 1;
@@ -2005,6 +2008,117 @@ void CodeGen::genAvxOrAvx2Intrinsic(GenTreeHWIntrinsic* node)
 
             assert(op2 == nullptr);
             emit->emitIns_R_R(ins, emitTypeSize(TYP_SIMD16), targetReg, op1Reg);
+            break;
+        }
+
+        case NI_AVX2_GatherVector128:
+        case NI_AVX2_GatherVector256:
+        case NI_AVX2_GatherMaskVector128:
+        case NI_AVX2_GatherMaskVector256:
+        {
+            GenTreeArgList* list = op1->AsArgList();
+            op1                  = list->Current();
+            op1Reg               = op1->gtRegNum;
+            genConsumeRegs(op1);
+
+            list   = list->Rest();
+            op2    = list->Current();
+            op2Reg = op2->gtRegNum;
+            genConsumeRegs(op2);
+
+            list         = list->Rest();
+            GenTree* op3 = list->Current();
+            genConsumeRegs(op3);
+
+            list             = list->Rest();
+            GenTree* op4     = nullptr;
+            GenTree* lastOp  = nullptr;
+            GenTree* indexOp = nullptr;
+
+            regNumber op3Reg       = REG_NA;
+            regNumber op4Reg       = REG_NA;
+            regNumber addrBaseReg  = REG_NA;
+            regNumber addrIndexReg = REG_NA;
+            regNumber maskReg      = node->ExtractTempReg(RBM_ALLFLOAT);
+
+            if (numArgs == 5)
+            {
+                assert(intrinsicId == NI_AVX2_GatherMaskVector128 || intrinsicId == NI_AVX2_GatherMaskVector256);
+                op4    = list->Current();
+                list   = list->Rest();
+                lastOp = list->Current();
+                op3Reg = op3->gtRegNum;
+                op4Reg = op4->gtRegNum;
+                genConsumeRegs(op4);
+                addrBaseReg  = op2Reg;
+                addrIndexReg = op3Reg;
+                indexOp      = op3;
+
+                // copy op4Reg into the tmp mask register,
+                // the mask register will be cleared by gather instructions
+                emit->emitIns_R_R(INS_movaps, attr, maskReg, op4Reg);
+
+                if (targetReg != op1Reg)
+                {
+                    // copy source vector to the target register for masking merge
+                    emit->emitIns_R_R(INS_movaps, attr, targetReg, op1Reg);
+                }
+            }
+            else
+            {
+                assert(intrinsicId == NI_AVX2_GatherVector128 || intrinsicId == NI_AVX2_GatherVector256);
+                addrBaseReg  = op1Reg;
+                addrIndexReg = op2Reg;
+                indexOp      = op2;
+                lastOp       = op3;
+
+                // generate all-one mask vector
+                emit->emitIns_SIMD_R_R_R(INS_pcmpeqd, attr, maskReg, maskReg, maskReg);
+            }
+
+            bool isVector128GatherWithVector256Index = (targetType == TYP_SIMD16) && (indexOp->TypeGet() == TYP_SIMD32);
+
+            // hwintrinsiclistxarch.h uses Dword index instructions in default
+            if (varTypeIsLong(node->gtIndexBaseType))
+            {
+                switch (ins)
+                {
+                    case INS_vpgatherdd:
+                        ins = INS_vpgatherqd;
+                        if (isVector128GatherWithVector256Index)
+                        {
+                            // YMM index in address mode
+                            attr = emitTypeSize(TYP_SIMD32);
+                        }
+                        break;
+                    case INS_vpgatherdq:
+                        ins = INS_vpgatherqq;
+                        break;
+                    case INS_vgatherdps:
+                        ins = INS_vgatherqps;
+                        if (isVector128GatherWithVector256Index)
+                        {
+                            // YMM index in address mode
+                            attr = emitTypeSize(TYP_SIMD32);
+                        }
+                        break;
+                    case INS_vgatherdpd:
+                        ins = INS_vgatherqpd;
+                        break;
+                    default:
+                        unreached();
+                }
+            }
+
+            assert(lastOp->IsCnsIntOrI());
+            ssize_t ival = lastOp->AsIntCon()->IconValue();
+            assert((ival >= 0) && (ival <= 255));
+
+            assert(targetReg != maskReg);
+            assert(targetReg != addrIndexReg);
+            assert(maskReg != addrIndexReg);
+            emit->emitIns_R_AR_R(ins, attr, targetReg, maskReg, addrBaseReg, addrIndexReg, (int8_t)ival, 0);
+
             break;
         }
 
