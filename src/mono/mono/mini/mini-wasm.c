@@ -352,7 +352,8 @@ mono_arch_tailcall_supported (MonoCompile *cfg, MonoMethodSignature *caller_sig,
 {
 	return FALSE;
 }
-#endif
+
+#endif // DISABLE_JIT
 
 int
 mono_arch_get_argument_info (MonoMethodSignature *csig, int param_count, MonoJitArgumentInfo *arg_info)
@@ -380,12 +381,18 @@ mono_arch_get_delegate_invoke_impl (MonoMethodSignature *sig, gboolean has_targe
 }
 
 #ifdef HOST_WASM
+
 #include <emscripten.h>
+
 //functions exported to be used by JS
+G_BEGIN_DECLS
 EMSCRIPTEN_KEEPALIVE void mono_set_timeout_exec (int id);
+
 //JS functions imported that we use
 extern void mono_set_timeout (int t, int d);
-#endif
+G_END_DECLS
+
+#endif // HOST_WASM
 
 gpointer
 mono_arch_get_this_arg_from_call (mgreg_t *regs, guint8 *code)
@@ -579,6 +586,9 @@ mono_arch_patch_code_new (MonoCompile *cfg, MonoDomain *domain, guint8 *code, Mo
 The following functions don't belong here, but are due to laziness.
 */
 gboolean mono_w32file_get_volume_information (const gunichar2 *path, gunichar2 *volumename, gint volumesize, gint *outserial, gint *maxcomp, gint *fsflags, gunichar2 *fsbuffer, gint fsbuffersize);
+
+G_BEGIN_DECLS
+
 void * getgrnam (const char *name);
 void * getgrgid (gid_t gid);
 int inotify_init (void);
@@ -586,6 +596,7 @@ int inotify_rm_watch (int fd, int wd);
 int inotify_add_watch (int fd, const char *pathname, uint32_t mask);
 int sem_timedwait (sem_t *sem, const struct timespec *abs_timeout);
 
+G_END_DECLS
 
 //w32file-wasm.c
 gboolean
@@ -606,6 +617,7 @@ mono_w32file_get_volume_information (const gunichar2 *path, gunichar2 *volumenam
 	return status;
 }
 
+G_BEGIN_DECLS
 
 //llvm builtin's that we should not have used in the first place
 
@@ -689,4 +701,7 @@ sem_timedwait (sem_t *sem, const struct timespec *abs_timeout)
 	return 0;
 	
 }
-#endif
+
+G_END_DECLS
+
+#endif // HOST_WASM

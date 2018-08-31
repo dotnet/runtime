@@ -103,7 +103,12 @@ typedef struct {
 
 void mono_wasm_debugger_init (void);
 
+G_BEGIN_DECLS // sdks/wasm/driver.c is C and uses this
+
 void mono_wasm_enable_debugging (void);
+
+G_END_DECLS
+
 void mono_wasm_breakpoint_hit (void);
 void mono_wasm_set_timeout (int timeout, int id);
 

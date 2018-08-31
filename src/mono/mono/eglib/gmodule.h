@@ -25,7 +25,9 @@ G_ENUM_FUNCTIONS (GModuleFlags)
 
 typedef struct _GModule GModule;
 
+G_EXTERN_C // Used by libtest, at least.
 GModule *g_module_open (const gchar *file, GModuleFlags flags);
+G_EXTERN_C // Used by libtest, at least.
 gboolean g_module_symbol (GModule *module, const gchar *symbol_name,
 			  gpointer *symbol);
 const gchar *g_module_error (void);
