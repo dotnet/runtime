@@ -371,3 +371,13 @@ bool GCToEEInterface::AppDomainIsRudeUnload(void *appDomain)
 {
     return false;
 }
+
+inline bool GCToEEInterface::AnalyzeSurvivorsRequested(int condemnedGeneration)
+{
+    return false;
+}
+
+inline void GCToEEInterface::AnalyzeSurvivorsFinished(int condemnedGeneration)
+{
+    
+}

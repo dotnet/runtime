@@ -16293,42 +16293,6 @@ void gc_heap::update_collection_counts ()
     }
 }
 
-#ifdef HEAP_ANALYZE
-inline
-BOOL AnalyzeSurvivorsRequested(int condemnedGeneration)
-{
-#ifndef BUILD_AS_STANDALONE
-    // Is the list active?
-    GcNotifications gn(g_pGcNotificationTable);
-    if (gn.IsActive())
-    {
-        GcEvtArgs gea = { GC_MARK_END, { (1<<condemnedGeneration) } };
-        if (gn.GetNotification(gea) != 0)
-        {
-            return TRUE;
-        }
-    }
-#endif // BUILD_AS_STANDALONE
-    return FALSE;
-}
-
-void DACNotifyGcMarkEnd(int condemnedGeneration)
-{
-#ifndef BUILD_AS_STANDALONE
-    // Is the list active?
-    GcNotifications gn(g_pGcNotificationTable);
-    if (gn.IsActive())
-    {
-        GcEvtArgs gea = { GC_MARK_END, { (1<<condemnedGeneration) } };
-        if (gn.GetNotification(gea) != 0)
-        {
-            DACNotify::DoGCNotification(gea);
-        }
-    }
-#endif // BUILD_AS_STANDALONE
-}
-#endif // HEAP_ANALYZE
-
 BOOL gc_heap::expand_soh_with_minimal_gc()
 {
     if ((size_t)(heap_segment_reserved (ephemeral_heap_segment) - heap_segment_allocated (ephemeral_heap_segment)) >= soh_allocation_no_gc)
@@ -16709,7 +16673,7 @@ int gc_heap::garbage_collect (int n)
 #ifdef HEAP_ANALYZE
         // At this point we've decided what generation is condemned
         // See if we've been requested to analyze survivors after the mark phase
-        if (AnalyzeSurvivorsRequested(settings.condemned_generation))
+        if (GCToEEInterface::AnalyzeSurvivorsRequested(settings.condemned_generation))
         {
             heap_analyze_enabled = TRUE;
         }
@@ -19729,7 +19693,7 @@ void gc_heap::mark_phase (int condemned_gen_number, BOOL mark_only_p)
     {
 #ifdef HEAP_ANALYZE
         heap_analyze_enabled = FALSE;
-        DACNotifyGcMarkEnd(condemned_gen_number);
+        GCToEEInterface::AnalyzeSurvivorsFinished(condemned_gen_number);
 #endif // HEAP_ANALYZE
         GCToEEInterface::AfterGcScanRoots (condemned_gen_number, max_generation, &sc);
 

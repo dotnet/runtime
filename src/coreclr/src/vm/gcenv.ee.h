@@ -70,6 +70,9 @@ public:
     uint32_t GetIndexOfAppDomainBeingUnloaded();
     uint32_t GetTotalNumSizedRefHandles();
     bool AppDomainIsRudeUnload(void *appDomain);
+
+    bool AnalyzeSurvivorsRequested(int condemnedGeneration);
+    void AnalyzeSurvivorsFinished(int condemnedGeneration);
 };
 
 } // namespace standalone
