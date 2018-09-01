@@ -599,6 +599,8 @@ For AMD64, all probes receive a second parameter (passed in `RDX` according to t
 
 TODO: describe ARM64 tail call convention.
 
+On Linux/x86 the profiling hooks are declared with the ```__cdecl``` attribute.  In cdecl (which stands for C declaration), subroutine arguments are passed on the stack. Integer values and memory addresses are returned in the EAX register, floating point values in the ST0 x87 register. Registers EAX, ECX, and EDX are caller-saved, and the rest are callee-saved. The x87 floating point registers ST0 to ST7 must be empty (popped or freed) when calling a new function, and ST1 to ST7 must be empty on exiting a function. ST0 must also be empty when not used for returning a value. Returned values of managed-code are formed before the leave/tailcall profiling hooks, so they should be saved in these hooks and restored on returning from them. The instruction ```ret``` for assembler implementations of profiling hooks should be without a parameter.
+
 JIT32 only generates one epilog (and causes all returns to branch to it) when there are profiler hooks.
 
 # Synchronized Methods

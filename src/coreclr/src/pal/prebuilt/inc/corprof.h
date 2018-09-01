@@ -438,50 +438,50 @@ typedef struct _COR_PRF_METHOD
     mdMethodDef methodId;
     }   COR_PRF_METHOD;
 
-typedef void __stdcall __stdcall FunctionEnter( 
+typedef void STDMETHODCALLTYPE STDMETHODCALLTYPE FunctionEnter(
     FunctionID funcID);
 
-typedef void __stdcall __stdcall FunctionLeave( 
+typedef void STDMETHODCALLTYPE STDMETHODCALLTYPE FunctionLeave(
     FunctionID funcID);
 
-typedef void __stdcall __stdcall FunctionTailcall( 
+typedef void STDMETHODCALLTYPE STDMETHODCALLTYPE FunctionTailcall(
     FunctionID funcID);
 
-typedef void __stdcall __stdcall FunctionEnter2( 
+typedef void STDMETHODCALLTYPE STDMETHODCALLTYPE FunctionEnter2(
     FunctionID funcId,
     UINT_PTR clientData,
     COR_PRF_FRAME_INFO func,
     COR_PRF_FUNCTION_ARGUMENT_INFO *argumentInfo);
 
-typedef void __stdcall __stdcall FunctionLeave2( 
+typedef void STDMETHODCALLTYPE STDMETHODCALLTYPE FunctionLeave2(
     FunctionID funcId,
     UINT_PTR clientData,
     COR_PRF_FRAME_INFO func,
     COR_PRF_FUNCTION_ARGUMENT_RANGE *retvalRange);
 
-typedef void __stdcall __stdcall FunctionTailcall2( 
+typedef void STDMETHODCALLTYPE STDMETHODCALLTYPE FunctionTailcall2(
     FunctionID funcId,
     UINT_PTR clientData,
     COR_PRF_FRAME_INFO func);
 
-typedef void __stdcall __stdcall FunctionEnter3( 
+typedef void STDMETHODCALLTYPE STDMETHODCALLTYPE FunctionEnter3(
     FunctionIDOrClientID functionIDOrClientID);
 
-typedef void __stdcall __stdcall FunctionLeave3( 
+typedef void STDMETHODCALLTYPE STDMETHODCALLTYPE FunctionLeave3(
     FunctionIDOrClientID functionIDOrClientID);
 
-typedef void __stdcall __stdcall FunctionTailcall3( 
+typedef void STDMETHODCALLTYPE STDMETHODCALLTYPE FunctionTailcall3(
     FunctionIDOrClientID functionIDOrClientID);
 
-typedef void __stdcall __stdcall FunctionEnter3WithInfo( 
+typedef void STDMETHODCALLTYPE STDMETHODCALLTYPE FunctionEnter3WithInfo(
     FunctionIDOrClientID functionIDOrClientID,
     COR_PRF_ELT_INFO eltInfo);
 
-typedef void __stdcall __stdcall FunctionLeave3WithInfo( 
+typedef void STDMETHODCALLTYPE STDMETHODCALLTYPE FunctionLeave3WithInfo(
     FunctionIDOrClientID functionIDOrClientID,
     COR_PRF_ELT_INFO eltInfo);
 
-typedef void __stdcall __stdcall FunctionTailcall3WithInfo( 
+typedef void STDMETHODCALLTYPE STDMETHODCALLTYPE FunctionTailcall3WithInfo(
     FunctionIDOrClientID functionIDOrClientID,
     COR_PRF_ELT_INFO eltInfo);
 
