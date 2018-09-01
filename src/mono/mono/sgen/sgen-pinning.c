@@ -334,7 +334,7 @@ sgen_cement_lookup_or_register (GCObject *obj)
 
 	if (!hash [i].obj) {
 		GCObject *old_obj;
-		old_obj = mono_atomic_cas_ptr ((gpointer*)&hash [i].obj, obj, NULL);
+		old_obj = (GCObject*)mono_atomic_cas_ptr ((gpointer*)&hash [i].obj, obj, NULL);
 		/* Check if the slot was occupied by some other object */
 		if (old_obj != NULL && old_obj != obj)
 			return FALSE;

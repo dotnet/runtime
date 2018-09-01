@@ -957,7 +957,7 @@ ves_icall_System_AppDomain_GetData (MonoAppDomainHandle ad, MonoStringHandle nam
 	else if (!strcmp (str, "FORCE_CACHE_INSTALL"))
 		o = MONO_HANDLE_NEW_GET (MonoString, ad_setup, shadow_copy_files);
 	else 
-		o = MONO_HANDLE_NEW (MonoString, mono_g_hash_table_lookup (add->env, MONO_HANDLE_RAW (name)));
+		o = MONO_HANDLE_NEW (MonoString, (MonoString*)mono_g_hash_table_lookup (add->env, MONO_HANDLE_RAW (name)));
 
 	mono_domain_unlock (add);
 	g_free (str);

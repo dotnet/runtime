@@ -597,8 +597,21 @@ mono_native_thread_id_get (void);
 MONO_API gboolean
 mono_native_thread_id_equals (MonoNativeThreadId id1, MonoNativeThreadId id2);
 
+//FIXMEcxx typedef mono_native_thread_return_t (MONO_STDCALL * MonoNativeThreadStart)(void*);
+// mono_native_thread_return_t func
+// and remove the template
+
 MONO_API gboolean
 mono_native_thread_create (MonoNativeThreadId *tid, gpointer func, gpointer arg);
+
+#ifdef __cplusplus
+template <typename T>
+inline gboolean
+mono_native_thread_create (MonoNativeThreadId *tid, T func, gpointer arg)
+{
+	return  mono_native_thread_create (tid, (gpointer)func, arg);
+}
+#endif
 
 MONO_API void
 mono_native_thread_set_name (MonoNativeThreadId tid, const char *name);

@@ -2609,7 +2609,8 @@ scan_card_table_for_block (MSBlockInfo *block, CardTableScanType scan_type, Scan
 					goto next_object;
 			}
 
-			GCObject *object = (GCObject*)obj;
+			GCObject *object;
+			object = (GCObject*)obj;
 
 			if (small_objects) {
 				HEAVY_STAT (++scanned_objects);

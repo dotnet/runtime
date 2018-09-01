@@ -415,7 +415,7 @@ typedef struct {
 
 #define MONO_CONTEXT_GET_CURRENT(ctx) do { \
 	gpointer _dummy; \
-    ctx.regs [ARMREG_SP] = &_dummy; \
+    ctx.regs [ARMREG_SP] = (mgreg_t)&_dummy; \
 } while (0);
 
 #else

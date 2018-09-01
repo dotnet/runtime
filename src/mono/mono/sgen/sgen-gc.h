@@ -394,7 +394,7 @@ enum {
 
 extern SgenHashTable sgen_roots_hash [ROOT_TYPE_NUM];
 
-int sgen_register_root (char *start, size_t size, SgenDescriptor descr, int root_type, int source, void *key, const char *msg)
+int sgen_register_root (char *start, size_t size, SgenDescriptor descr, int root_type, MonoGCRootSource source, void *key, const char *msg)
 	MONO_PERMIT (need (sgen_lock_gc));
 void sgen_deregister_root (char* addr)
 	MONO_PERMIT (need (sgen_lock_gc));

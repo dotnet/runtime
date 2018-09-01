@@ -85,7 +85,7 @@ void
 mono_dl_close_handle (MonoDl *module)
 {
 	if (!module->main_module)
-		FreeLibrary (module->handle);
+		FreeLibrary ((HMODULE)module->handle);
 }
 
 #if G_HAVE_API_SUPPORT(HAVE_CLASSIC_WINAPI_SUPPORT)
@@ -126,7 +126,7 @@ mono_dl_lookup_symbol_in_process (const char *symbol_name)
 	}
 
 	for (i = 0; i < needed / sizeof (HANDLE); i++) {
-		proc = GetProcAddress (modules [i], symbol_name);
+		proc = (gpointer)GetProcAddress (modules [i], symbol_name);
 		if (proc != NULL) {
 			g_free (modules);
 			return proc;
@@ -145,10 +145,10 @@ mono_dl_lookup_symbol (MonoDl *module, const char *symbol_name)
 
 	/* get the symbol directly from the specified module */
 	if (!module->main_module)
-		return GetProcAddress (module->handle, symbol_name);
+		return (void*)GetProcAddress ((HMODULE)module->handle, symbol_name);
 
 	/* get the symbol from the main module */
-	proc = GetProcAddress (module->handle, symbol_name);
+	proc = (gpointer)GetProcAddress ((HMODULE)module->handle, symbol_name);
 	if (proc != NULL)
 		return proc;
 

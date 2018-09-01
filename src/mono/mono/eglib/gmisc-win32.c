@@ -170,8 +170,8 @@ g_get_home_dir (void)
 				sprintf (home_dir, "%s%s", drive, path);
 			}
 		}
-		g_free (drive);
-		g_free (path);
+		g_free ((void*)drive);
+		g_free ((void*)path);
 	}
 
 	return home_dir;

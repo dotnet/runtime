@@ -29,7 +29,7 @@
 
 static FILE *logFile = NULL;
 static void *logUserData = NULL;
-static wchar_t *logFileName = L".//mono.log";
+static const wchar_t *logFileName = L".//mono.log"; // FIXME double slash
 
 /**
  * mapSyslogLevel:

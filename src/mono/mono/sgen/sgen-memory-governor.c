@@ -355,7 +355,7 @@ sgen_memgov_collection_end (int generation, gint64 stw_time)
 		SGEN_ASSERT (0, !sgen_is_world_stopped (), "We can't log if the world is stopped");
 		mono_os_mutex_lock (&log_entries_mutex);
 		for (i = 0; i < log_entries.next_slot; i++) {
-			sgen_output_log_entry (log_entries.data [i], stw_time, generation);
+			sgen_output_log_entry ((SgenLogEntry*)log_entries.data [i], stw_time, generation);
 			sgen_free_internal (log_entries.data [i], INTERNAL_MEM_LOG_ENTRY);
 		}
 		sgen_pointer_queue_clear (&log_entries);

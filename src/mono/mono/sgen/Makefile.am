@@ -61,8 +61,6 @@ monosgen_sources = \
 	sgen-workers.c \
 	sgen-workers.h
 
-CFLAGS := $(filter-out @CXX_REMOVE_CFLAGS@, @CFLAGS@) @CXX_ADD_CFLAGS@
-
 libmonosgen_la_SOURCES = $(monosgen_sources)
 libmonosgen_la_CFLAGS = $(SGEN_DEFINES)
 

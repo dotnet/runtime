@@ -546,7 +546,7 @@ typedef struct {
 static gpointer
 register_root (gpointer arg)
 {
-	RootData* root_data = arg;
+	RootData* root_data = (RootData*)arg;
 	g_hash_table_insert (roots, root_data->start, root_data->end);
 	return NULL;
 }
@@ -1522,7 +1522,7 @@ mono_gc_register_for_finalization (MonoObject *obj, MonoFinalizationProc user_da
 	g_assert (GC_base (obj) == (char*)obj - offset);
 #endif
 
-	GC_REGISTER_FINALIZER_NO_ORDER ((char*)obj - offset, (GC_finalization_proc)user_data, GUINT_TO_POINTER (offset), NULL, NULL);
+	GC_REGISTER_FINALIZER_NO_ORDER ((char*)obj - offset, user_data, GUINT_TO_POINTER (offset), NULL, NULL);
 }
 
 #ifndef HOST_WIN32
@@ -1810,7 +1810,7 @@ alloc_handle (HandleData *handles, MonoObject *obj, gboolean track)
 #endif
 	unlock_handles (handles);
 	res = MONO_GC_HANDLE (slot, handles->type);
-	MONO_PROFILER_RAISE (gc_handle_created, (res, handles->type, obj));
+	MONO_PROFILER_RAISE (gc_handle_created, (res, (MonoGCHandleType)handles->type, obj));
 	return res;
 }
 
@@ -2011,7 +2011,7 @@ mono_gchandle_free (guint32 gchandle)
 #endif
 	/*g_print ("freed entry %d of type %d\n", slot, handles->type);*/
 	unlock_handles (handles);
-	MONO_PROFILER_RAISE (gc_handle_deleted, (gchandle, handles->type));
+	MONO_PROFILER_RAISE (gc_handle_deleted, (gchandle, (MonoGCHandleType)handles->type));
 }
 
 /**

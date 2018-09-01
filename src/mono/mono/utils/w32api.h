@@ -7,8 +7,6 @@
 
 #include <glib.h>
 
-G_BEGIN_DECLS
-
 #ifndef HOST_WIN32
 
 #define WAIT_FAILED        ((gint) 0xFFFFFFFF)
@@ -56,7 +54,5 @@ typedef struct pollfd {
 #endif
 
 #endif /* HOST_WIN32 */
-
-G_END_DECLS
 
 #endif /* __MONO_UTILS_W32API_H__ */

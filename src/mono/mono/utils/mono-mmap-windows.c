@@ -85,7 +85,7 @@ void*
 mono_valloc_aligned (size_t length, size_t alignment, int flags, MonoMemAccountType type)
 {
 	int prot = mono_mmap_win_prot_from_flags (flags);
-	char *mem = VirtualAlloc (NULL, length + alignment, MEM_RESERVE, prot);
+	char *mem = (char*)VirtualAlloc (NULL, length + alignment, MEM_RESERVE, prot);
 	char *aligned;
 
 	if (!mem)
@@ -96,7 +96,7 @@ mono_valloc_aligned (size_t length, size_t alignment, int flags, MonoMemAccountT
 
 	aligned = mono_aligned_address (mem, length, alignment);
 
-	aligned = VirtualAlloc (aligned, length, MEM_COMMIT, prot);
+	aligned = (char*)VirtualAlloc (aligned, length, MEM_COMMIT, prot);
 	g_assert (aligned);
 
 	mono_account_mem (type, (ssize_t)length);

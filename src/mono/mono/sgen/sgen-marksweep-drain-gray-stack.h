@@ -48,9 +48,11 @@ COPY_OR_MARK_FUNCTION_NAME (GCObject **ptr, GCObject *obj, SgenGrayQueue *queue)
 	if (sgen_ptr_in_nursery (obj)) {
 #if !defined(COPY_OR_MARK_CONCURRENT) && !defined(COPY_OR_MARK_CONCURRENT_WITH_EVACUATION)
 		int word, bit;
-		gboolean first = TRUE;
+		gboolean first;
+		first = TRUE;
 		GCObject *forwarded, *old_obj;
-		mword vtable_word = *(mword*)obj;
+		mword vtable_word;
+		vtable_word = *(mword*)obj;
 
 		HEAVY_STAT (++stat_optimized_copy_nursery);
 

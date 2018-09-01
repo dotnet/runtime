@@ -58,7 +58,7 @@ coop_tls_push (gpointer cookie)
 {
 	GArray *stack;
 
-	stack = mono_native_tls_get_value (coop_reset_count_stack_key);
+	stack = (GArray*)mono_native_tls_get_value (coop_reset_count_stack_key);
 	if (!stack) {
 		stack = g_array_new (FALSE, FALSE, sizeof(gpointer));
 		mono_native_tls_set_value (coop_reset_count_stack_key, stack);
@@ -73,7 +73,7 @@ coop_tls_pop (gpointer received_cookie)
 	GArray *stack;
 	gpointer expected_cookie;
 
-	stack = mono_native_tls_get_value (coop_reset_count_stack_key);
+	stack = (GArray*)mono_native_tls_get_value (coop_reset_count_stack_key);
 	if (!stack || 0 == stack->len)
 		mono_fatal_with_history ("Received cookie %p but found no stack at all\n", received_cookie);
 

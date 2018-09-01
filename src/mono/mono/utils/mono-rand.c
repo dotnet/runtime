@@ -228,7 +228,7 @@ gpointer
 mono_rand_init (const guchar *seed, gssize seed_size)
 {
 	// file < 0 is expected in the egd case
-	return (!use_egd && file < 0) ? NULL : GINT_TO_POINTER (file);
+	return (!use_egd && file < 0) ? (gpointer)NULL : GINT_TO_POINTER (file);
 }
 
 gboolean

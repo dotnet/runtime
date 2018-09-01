@@ -224,7 +224,7 @@ g_find_program_in_path (const gchar *program)
 	char *save = NULL;
 #ifdef G_OS_WIN32
 	char *program_exe;
-	char *suffix_list[5] = {".exe",".cmd",".bat",".com",NULL};
+	static char const * const suffix_list[5] = {".exe",".cmd",".bat",".com",NULL};
 	int listx;
 	gboolean hasSuffix;
 #endif

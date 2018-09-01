@@ -56,8 +56,8 @@ mono_threads_safepoint (void)
 // 0 also used internally for uninitialized
 typedef enum {
 	MONO_THREADS_SUSPEND_FULL_PREEMPTIVE = 1,
-	MONO_THREADS_SUSPEND_FULL_COOP,
-	MONO_THREADS_SUSPEND_HYBRID
+	MONO_THREADS_SUSPEND_FULL_COOP       = 2,
+	MONO_THREADS_SUSPEND_HYBRID          = 3,
 } MonoThreadsSuspendPolicy;
 
 /* Don't use this. */

@@ -110,7 +110,8 @@ mono_threads_suspend_begin_async_resume (MonoThreadInfo *info)
 
 		ctx = info->thread_saved_state [ASYNC_SUSPEND_STATE_INDEX].ctx;
 		mono_threads_get_runtime_callbacks ()->setup_async_callback (&ctx, info->async_target, info->user_data);
-		info->async_target = info->user_data = NULL;
+		info->async_target = NULL;
+		info->user_data = NULL;
 
 		context.ContextFlags = CONTEXT_INTEGER | CONTEXT_CONTROL;
 
@@ -233,7 +234,7 @@ mono_native_thread_id_equals (MonoNativeThreadId id1, MonoNativeThreadId id2)
 gboolean
 mono_native_thread_create (MonoNativeThreadId *tid, gpointer func, gpointer arg)
 {
-	return CreateThread (NULL, 0, (func), (arg), 0, (tid)) != NULL;
+	return CreateThread (NULL, 0, (LPTHREAD_START_ROUTINE)func, arg, 0, tid) != NULL;
 }
 
 gboolean

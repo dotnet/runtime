@@ -414,7 +414,7 @@ mono_sigctx_to_monoctx (void *sigctx, MonoContext *mctx)
 	/* Why are we only copying 16 registers?! There are 32! */
 	memcpy (&mctx->fregs, &context->D, sizeof (double) * 16);
 #else
-	arm_ucontext *my_uc = sigctx;
+	arm_ucontext *my_uc = (arm_ucontext*)sigctx;
 
 	mctx->pc = UCONTEXT_REG_PC (my_uc);
 	mctx->regs [ARMREG_SP] = UCONTEXT_REG_SP (my_uc);
@@ -441,7 +441,7 @@ mono_monoctx_to_sigctx (MonoContext *mctx, void *ctx)
 	/* Why are we only copying 16 registers?! There are 32! */
 	memcpy (&context->D, &mctx->fregs, sizeof (double) * 16);
 #else
-	arm_ucontext *my_uc = ctx;
+	arm_ucontext *my_uc = (arm_ucontext*)ctx;
 
 	UCONTEXT_REG_PC (my_uc) = mctx->pc;
 	UCONTEXT_REG_SP (my_uc) = mctx->regs [ARMREG_SP];
