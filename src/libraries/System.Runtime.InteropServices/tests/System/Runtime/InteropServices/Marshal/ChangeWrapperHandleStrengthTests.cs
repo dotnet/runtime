@@ -51,6 +51,7 @@ namespace System.Runtime.InteropServices.Tests
             AssertExtensions.Throws<ArgumentNullException>("otp", () => Marshal.ChangeWrapperHandleStrength(null, fIsWeak: false));
         }
 
+#if !netstandard // TODO: Enable for netstandard2.1
         [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotNetNative))]
         [PlatformSpecific(TestPlatforms.Windows)]
         public void ChangeWrapperHandleStrength_ObjectNotCollectible_ThrowsNotSupportedException()
@@ -63,6 +64,7 @@ namespace System.Runtime.InteropServices.Tests
             object o = Activator.CreateInstance(type);
             Assert.Throws<NotSupportedException>(() => Marshal.ChangeWrapperHandleStrength(o, fIsWeak: true));
         }
+#endif
 
         [Fact]
         [PlatformSpecific(TestPlatforms.AnyUnix)]
