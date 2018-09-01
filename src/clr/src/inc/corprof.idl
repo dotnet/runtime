@@ -125,6 +125,8 @@ import "wtypes.idl";
 import "unknwn.idl";
 #endif
 
+#define STDMETHODCALLTYPE
+
 typedef UINT_PTR ProcessID;
 typedef UINT_PTR AssemblyID;
 typedef UINT_PTR AppDomainID;
@@ -303,13 +305,13 @@ typedef struct _COR_PRF_METHOD
  * bits cleared for COR_PRF_ENABLE_FRAME_INFO, COR_PRF_ENABLE_FUNCTION_RETVAL
  * and COR_PRF_ENABLE_FUNCTION_ARGS.
  */
-typedef void __stdcall FunctionEnter(
+typedef void STDMETHODCALLTYPE FunctionEnter(
                 FunctionID funcID);
                 
-typedef void __stdcall FunctionLeave(
+typedef void STDMETHODCALLTYPE FunctionLeave(
                 FunctionID funcID);
                 
-typedef void __stdcall FunctionTailcall(
+typedef void STDMETHODCALLTYPE FunctionTailcall(
                 FunctionID funcID);
 
 /*
@@ -320,19 +322,19 @@ typedef void __stdcall FunctionTailcall(
  * functionality, use the FunctionEnter3/Leave3/Tailcall3 callbacks.
  */
 
-typedef void __stdcall FunctionEnter2(
+typedef void STDMETHODCALLTYPE FunctionEnter2(
                 FunctionID funcId, 
                 UINT_PTR clientData, 
                 COR_PRF_FRAME_INFO func, 
                 COR_PRF_FUNCTION_ARGUMENT_INFO *argumentInfo);
                 
-typedef void __stdcall FunctionLeave2(
+typedef void STDMETHODCALLTYPE FunctionLeave2(
                 FunctionID funcId, 
                 UINT_PTR clientData, 
                 COR_PRF_FRAME_INFO func, 
                 COR_PRF_FUNCTION_ARGUMENT_RANGE *retvalRange);
                 
-typedef void __stdcall FunctionTailcall2(
+typedef void STDMETHODCALLTYPE FunctionTailcall2(
                 FunctionID funcId, 
                 UINT_PTR clientData, 
                 COR_PRF_FRAME_INFO func);
@@ -348,13 +350,13 @@ typedef void __stdcall FunctionTailcall2(
  * true FunctionID of the function.
  */
 
-typedef void __stdcall FunctionEnter3(
+typedef void STDMETHODCALLTYPE FunctionEnter3(
                 FunctionIDOrClientID functionIDOrClientID);
  
-typedef void __stdcall FunctionLeave3(
+typedef void STDMETHODCALLTYPE FunctionLeave3(
                 FunctionIDOrClientID functionIDOrClientID);
  
-typedef void __stdcall FunctionTailcall3(
+typedef void STDMETHODCALLTYPE FunctionTailcall3(
                 FunctionIDOrClientID functionIDOrClientID);
 
 /*
@@ -371,15 +373,15 @@ typedef void __stdcall FunctionTailcall3(
  * It is only valid during the callback to which it is passed.
  */
 
-typedef void __stdcall FunctionEnter3WithInfo(
+typedef void STDMETHODCALLTYPE FunctionEnter3WithInfo(
                 FunctionIDOrClientID functionIDOrClientID,
                 COR_PRF_ELT_INFO eltInfo);
  
-typedef void __stdcall FunctionLeave3WithInfo(
+typedef void STDMETHODCALLTYPE FunctionLeave3WithInfo(
                 FunctionIDOrClientID functionIDOrClientID,
                 COR_PRF_ELT_INFO eltInfo);
  
-typedef void __stdcall FunctionTailcall3WithInfo(
+typedef void STDMETHODCALLTYPE FunctionTailcall3WithInfo(
                 FunctionIDOrClientID functionIDOrClientID,
                 COR_PRF_ELT_INFO eltInfo);
 

@@ -1225,3 +1225,19 @@ NESTED_ENTRY BackPatchWorkerAsmStub, _TEXT, NoHandler
     EPILOG_END
     ret
 NESTED_END BackPatchWorkerAsmStub, _TEXT
+
+NESTED_ENTRY ProfileEnterNaked, _TEXT, NoHandler
+    ret
+NESTED_END ProfileEnterNaked, _TEXT
+
+NESTED_ENTRY ProfileLeaveNaked, _TEXT, NoHandler
+    ret
+NESTED_END ProfileLeaveNaked, _TEXT
+
+NESTED_ENTRY ProfileTailcallNaked, _TEXT, NoHandler
+    ret
+NESTED_END ProfileTailcallNaked, _TEXT
+
+NESTED_ENTRY JIT_ProfilerEnterLeaveTailcallStub, _TEXT, NoHandler
+    ret
+NESTED_END JIT_ProfilerEnterLeaveTailcallStub, _TEXT

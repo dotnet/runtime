@@ -4,28 +4,6 @@
 
 #include "common.h"
 
-extern "C"
-{
-    void ProfileEnterNaked(FunctionIDOrClientID functionIDOrClientID)    
-    {
-        PORTABILITY_ASSERT("Implement for PAL");
-    }
-
-    void ProfileLeaveNaked(FunctionIDOrClientID functionIDOrClientID)
-    {
-        PORTABILITY_ASSERT("Implement for PAL");
-    }
-
-    void ProfileTailcallNaked(FunctionIDOrClientID functionIDOrClientID)
-    {
-        PORTABILITY_ASSERT("Implement for PAL");
-    }
-
-    void STDCALL JIT_ProfilerEnterLeaveTailcallStub(UINT_PTR ProfilerHandle)
-    {
-    }
-};
-
 EXTERN_C VOID JIT_TailCall()
 {
   PORTABILITY_ASSERT("JIT_TailCall");
