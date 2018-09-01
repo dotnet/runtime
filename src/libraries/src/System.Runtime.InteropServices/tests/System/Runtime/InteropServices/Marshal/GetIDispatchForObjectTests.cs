@@ -54,6 +54,7 @@ namespace System.Runtime.InteropServices.Tests
             AssertExtensions.Throws<ArgumentNullException>("o", () => Marshal.GetIDispatchForObject(null));
         }
 
+#if !netstandard // TODO: Enable for netstandard2.1
         [ConditionalFact]
         [PlatformSpecific(TestPlatforms.Windows)]
         [SkipOnTargetFramework(~TargetFrameworkMonikers.NetFramework, "Marshal.GetIDispatchForObject is not implemented in .NET Core.")]
@@ -67,6 +68,7 @@ namespace System.Runtime.InteropServices.Tests
             object o = Activator.CreateInstance(type);
             Assert.Throws<NotSupportedException>(() => Marshal.GetIDispatchForObject(o));
         }
+#endif
 
         [Theory]
         [MemberData(nameof(GetIDispatchForObject_Invalid_TestData))]

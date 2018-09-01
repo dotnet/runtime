@@ -449,6 +449,7 @@ namespace System.Runtime.InteropServices.Tests
             }
         }
 
+#if !netstandard // TODO: Enable for netstandard2.1
         [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotNetNative))]
         [PlatformSpecific(TestPlatforms.Windows)]
         public void GetNativeVariantForObject_ObjectNotCollectible_ThrowsNotSupportedException()
@@ -471,6 +472,7 @@ namespace System.Runtime.InteropServices.Tests
                 Marshal.FreeHGlobal(pNative);
             }
         }
+#endif
 
         public struct StructWithValue
         {

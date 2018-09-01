@@ -61,11 +61,13 @@ namespace System.Runtime.InteropServices.Tests
             yield return new object[] { typeof(GenericClass<>) };
             yield return new object[] { typeof(GenericClass<>).GetTypeInfo().GenericTypeParameters[0] };
 
+#if !netstandard // TODO: Enable for netstandard2.1
             AssemblyBuilder assemblyBuilder = AssemblyBuilder.DefineDynamicAssembly(new AssemblyName("Assembly"), AssemblyBuilderAccess.RunAndCollect);
             ModuleBuilder moduleBuilder = assemblyBuilder.DefineDynamicModule("Module");
             TypeBuilder typeBuilder = moduleBuilder.DefineType("Type");
             Type collectibleType = typeBuilder.CreateType();
             yield return new object[] { collectibleType };
+#endif
         }
 
         [Theory]
