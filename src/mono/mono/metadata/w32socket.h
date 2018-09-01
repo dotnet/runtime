@@ -303,7 +303,7 @@ ves_icall_System_Net_Sockets_Socket_SendFile_internal (gsize sock, MonoStringHan
 						       MonoArrayHandle pre_buffer, MonoArrayHandle post_buffer,
 						       gint flags, gint32 *werror, gboolean blocking, MonoError *error);
 
-void
+ICALL_EXPORT void
 ves_icall_cancel_blocking_socket_operation (MonoThreadObjectHandle thread, MonoError *error);
 
 ICALL_EXPORT
