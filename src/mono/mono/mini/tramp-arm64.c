@@ -303,9 +303,9 @@ mono_arch_create_generic_trampoline (MonoTrampolineType tramp_type, MonoTrampInf
 	 */
 	if (aot) {
 		/* Not really a jit icall */
-		code = mono_arm_emit_aotconst (&ji, code, buf, ARMREG_IP0, MONO_PATCH_INFO_JIT_ICALL_ADDR, "throw_exception_addr");
+		code = mono_arm_emit_aotconst (&ji, code, buf, ARMREG_IP0, MONO_PATCH_INFO_JIT_ICALL_ADDR, "rethrow_exception_addr");
 	} else {
-		code = mono_arm_emit_imm64 (code, ARMREG_IP0, (guint64)mono_get_throw_exception_addr ());
+		code = mono_arm_emit_imm64 (code, ARMREG_IP0, (guint64)mono_get_rethrow_exception_addr ());
 	}
 	arm_ldrx (code, ARMREG_IP0, ARMREG_IP0, 0);
 	/* lr contains the return address, the trampoline will use it as the throw site */

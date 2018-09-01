@@ -416,11 +416,11 @@ mono_arch_create_generic_trampoline (MonoTrampolineType tramp_type, MonoTrampInf
 	 */
 	if (aot) {
 		/* Not really a jit icall */
-		code = mono_arm_emit_aotconst (&ji, code, buf, ARMREG_IP, MONO_PATCH_INFO_JIT_ICALL_ADDR, "throw_exception_addr");
+		code = mono_arm_emit_aotconst (&ji, code, buf, ARMREG_IP, MONO_PATCH_INFO_JIT_ICALL_ADDR, "rethrow_exception_addr");
 	} else {
 		ARM_LDR_IMM (code, ARMREG_IP, ARMREG_PC, 0);
 		ARM_B (code, 0);
-		*(gpointer*)code = mono_get_throw_exception_addr ();
+		*(gpointer*)code = mono_get_rethrow_exception_addr ();
 		code += 4;
 	}
 	ARM_LDR_IMM (code, ARMREG_IP, ARMREG_IP, 0);

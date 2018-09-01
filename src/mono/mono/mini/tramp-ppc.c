@@ -424,7 +424,7 @@ mono_arch_create_generic_trampoline (MonoTrampolineType tramp_type, MonoTrampInf
 	if (aot) {
 		g_error ("Not implemented");
 	} else {
-		ppc_load_func (code, PPC_CALL_REG, mono_get_throw_exception_addr ());
+		ppc_load_func (code, PPC_CALL_REG, mono_get_rethrow_exception_addr ());
 		ppc_ldr (code, PPC_CALL_REG, 0, PPC_CALL_REG);
 		ppc_mtctr (code, PPC_CALL_REG);
 	}

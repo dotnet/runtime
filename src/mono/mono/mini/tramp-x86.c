@@ -343,9 +343,9 @@ mono_arch_create_generic_trampoline (MonoTrampolineType tramp_type, MonoTrampInf
 	 */
 	if (aot) {
 		/* Not really a jit icall */
-		code = mono_arch_emit_load_aotconst (buf, code, &ji, MONO_PATCH_INFO_JIT_ICALL_ADDR, "throw_exception_addr");
+		code = mono_arch_emit_load_aotconst (buf, code, &ji, MONO_PATCH_INFO_JIT_ICALL_ADDR, "rethrow_exception_addr");
 	} else {
-		x86_mov_reg_imm (code, X86_ECX, (guint8*)mono_get_throw_exception_addr ());
+		x86_mov_reg_imm (code, X86_ECX, (guint8*)mono_get_rethrow_exception_addr ());
 	}
 	x86_mov_reg_membase (code, X86_ECX, X86_ECX, 0, sizeof(target_mgreg_t));
 	x86_jump_reg (code, X86_ECX);

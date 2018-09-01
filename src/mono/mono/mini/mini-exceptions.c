@@ -318,6 +318,12 @@ mono_get_throw_exception_addr (void)
 	return &throw_exception_func;
 }
 
+gpointer
+mono_get_rethrow_exception_addr (void)
+{
+	return &rethrow_exception_func;
+}
+
 static gboolean 
 is_address_protected (MonoJitInfo *ji, MonoJitExceptionInfo *ei, gpointer ip)
 {
