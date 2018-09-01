@@ -142,6 +142,7 @@ endif
 
 mprof_report_SOURCES = mprof-report.c
 mprof_report_LDADD = $(glib_libs) $(zlib_dep)
+mprof_report_LDFLAGS = -no-undefined
 
 PLOG_TESTS_SRC = \
 	test-alloc.cs \
