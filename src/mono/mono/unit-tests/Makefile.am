@@ -67,38 +67,38 @@ libtestlib_la_LIBADD = ../metadata/libmonoruntimesgen.la ../sgen/libmonosgen.la 
 
 test_sgen_qsort_SOURCES = main.c
 test_sgen_qsort_CFLAGS = $(test_cflags) -DMAIN=test_sgen_qsort_main
-test_sgen_qsort_LDADD = $(test_ldadd) libtestlib_la-test-sgen-qsort.$(OBJEXT)
+test_sgen_qsort_LDADD = $(test_ldadd) libtestlib_la-test-sgen-qsort.lo
 test_sgen_qsort_LDFLAGS = $(test_ldflags)
 
 test_memfuncs_SOURCES = main.c
 test_memfuncs_CFLAGS = $(test_cflags) -DMAIN=test_memfuncs_main
-test_memfuncs_LDADD = $(test_ldadd) libtestlib_la-test-memfuncs.$(OBJEXT)
+test_memfuncs_LDADD = $(test_ldadd) libtestlib_la-test-memfuncs.lo
 test_memfuncs_LDFLAGS = $(test_ldflags)
 
 test_mono_linked_list_set_SOURCES = main.c
 test_mono_linked_list_set_CFLAGS = $(test_cflags) -DMAIN=test_mono_linked_list_set_main
-test_mono_linked_list_set_LDADD = $(test_ldadd) libtestlib_la-test-mono-linked-list-set.$(OBJEXT)
+test_mono_linked_list_set_LDADD = $(test_ldadd) libtestlib_la-test-mono-linked-list-set.lo
 test_mono_linked_list_set_LDFLAGS = $(test_ldflags)
 
 test_conc_hashtable_SOURCES = main.c
 test_conc_hashtable_CFLAGS = $(test_cflags) -DMAIN=test_conc_hashtable_main
-test_conc_hashtable_LDADD = $(test_ldadd) libtestlib_la-test-conc-hashtable.$(OBJEXT)
+test_conc_hashtable_LDADD = $(test_ldadd) libtestlib_la-test-conc-hashtable.lo
 test_conc_hashtable_LDFLAGS = $(test_ldflags)
 
 test_mono_handle_SOURCES = main.c
 test_mono_handle_CFLAGS = $(test_cflags) -DMAIN=test_mono_handle_main
-test_mono_handle_LDADD = $(test_ldadd) libtestlib_la-test-mono-handle.$(OBJEXT)
+test_mono_handle_LDADD = $(test_ldadd) libtestlib_la-test-mono-handle.lo
 test_mono_handle_LDFLAGS = $(test_ldflags)
 
 test_mono_callspec_SOURCES = main.c
 test_mono_callspec_CFLAGS = $(AM_CFLAGS) -DMAIN=test_mono_callspec_main
-test_mono_callspec_LDADD = $(test_ldadd) $(mini_libs) $(sgen_libs) libtestlib_la-test-mono-callspec.$(OBJEXT)
+test_mono_callspec_LDADD = $(test_ldadd) $(mini_libs) $(sgen_libs) libtestlib_la-test-mono-callspec.lo
 test_mono_callspec_LDFLAGS = $(test_ldflags)
 test_mono_callspec_DEPENDENCIES = callspec.exe
 
 test_mono_string_SOURCES = main.c
 test_mono_string_CFLAGS = $(test-cflags) -DMAIN=test_mono_string_main
-test_mono_string_LDADD = $(test_ldadd) $(mini_libs) $(sgen_libs) libtestlib_la-test-mono-string.$(OBJEXT)
+test_mono_string_LDADD = $(test_ldadd) $(mini_libs) $(sgen_libs) libtestlib_la-test-mono-string.lo
 test_mono_string_LDFLAGS = $(test_ldflags)
 
 check_PROGRAMS = test-sgen-qsort test-memfuncs test-mono-linked-list-set test-conc-hashtable test-mono-handle	\
