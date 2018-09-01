@@ -423,7 +423,7 @@ extern "C"
     void STDCALL JIT_MemSet(void *dest, int c, SIZE_T count);
     void STDCALL JIT_MemCpy(void *dest, const void *src, SIZE_T count);
 
-    void STDCALL JIT_ProfilerEnterLeaveTailcallStub(UINT_PTR ProfilerHandle);
+    void STDMETHODCALLTYPE JIT_ProfilerEnterLeaveTailcallStub(UINT_PTR ProfilerHandle);
 };
 
 

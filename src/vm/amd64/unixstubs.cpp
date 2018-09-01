@@ -53,8 +53,8 @@ extern "C"
         // check OS has enabled both XMM and YMM state support
         return ((eax & 0x06) == 0x06) ? 1 : 0;
     }
-    
-    void STDCALL JIT_ProfilerEnterLeaveTailcallStub(UINT_PTR ProfilerHandle)
+
+    void STDMETHODCALLTYPE JIT_ProfilerEnterLeaveTailcallStub(UINT_PTR ProfilerHandle)
     {
     }
 };
