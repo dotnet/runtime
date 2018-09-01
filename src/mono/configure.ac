@@ -2412,23 +2412,7 @@ if test x$host_win32 = xno; then
 	AC_CHECK_FUNCS(pthread_attr_setstacksize)
 	AC_CHECK_FUNCS(pthread_attr_getstack pthread_attr_getstacksize)
 	AC_CHECK_FUNCS(pthread_get_stacksize_np pthread_get_stackaddr_np)
-
-	dnl **********************************
-	dnl *** Check for mlock ***
-	dnl **********************************
-	AC_MSG_CHECKING(for mlock)
-		AC_TRY_LINK([
-		#include <sys/types.h>
-		#include <sys/mman.h>
-	], [
-		mlock(0, 0);
-	], [
-		# Yes, we have it...
-		AC_MSG_RESULT(yes)
-		AC_DEFINE(HAVE_MLOCK, 1, [Have mlock])
-	], [
-		AC_MSG_RESULT(no)
-	])
+	AC_CHECK_FUNCS(mincore mlock munlock)
 
 	dnl ***********************************
 	dnl *** Checks for working __thread ***
