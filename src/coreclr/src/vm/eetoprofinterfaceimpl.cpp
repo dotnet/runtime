@@ -2071,9 +2071,9 @@ HRESULT EEToProfInterfaceImpl::EnsureProfilerDetachable()
 }
 
 // Declarations for asm wrappers of profiler callbacks
-EXTERN_C void __stdcall ProfileEnterNaked(FunctionIDOrClientID functionIDOrClientID);
-EXTERN_C void __stdcall ProfileLeaveNaked(FunctionIDOrClientID functionIDOrClientID);
-EXTERN_C void __stdcall ProfileTailcallNaked(FunctionIDOrClientID functionIDOrClientID);
+EXTERN_C void STDMETHODCALLTYPE ProfileEnterNaked(FunctionIDOrClientID functionIDOrClientID);
+EXTERN_C void STDMETHODCALLTYPE ProfileLeaveNaked(FunctionIDOrClientID functionIDOrClientID);
+EXTERN_C void STDMETHODCALLTYPE ProfileTailcallNaked(FunctionIDOrClientID functionIDOrClientID);
 #define PROFILECALLBACK(name) name##Naked
 
 //---------------------------------------------------------------------------------------

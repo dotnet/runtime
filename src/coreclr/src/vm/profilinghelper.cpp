@@ -460,9 +460,9 @@ void ProfilingAPIUtility::LogProfInfo(int iStringResourceID, ...)
 // InitializeProfiling() below solely for the debug-only, test-only code to allow
 // enter/leave/tailcall to be turned on at startup without a profiler. See
 // code:ProfControlBlock#TestOnlyELT
-EXTERN_C void __stdcall ProfileEnterNaked(UINT_PTR clientData);
-EXTERN_C void __stdcall ProfileLeaveNaked(UINT_PTR clientData);
-EXTERN_C void __stdcall ProfileTailcallNaked(UINT_PTR clientData);
+EXTERN_C void STDMETHODCALLTYPE ProfileEnterNaked(UINT_PTR clientData);
+EXTERN_C void STDMETHODCALLTYPE ProfileLeaveNaked(UINT_PTR clientData);
+EXTERN_C void STDMETHODCALLTYPE ProfileTailcallNaked(UINT_PTR clientData);
 #endif //PROF_TEST_ONLY_FORCE_ELT
 
 // ----------------------------------------------------------------------------
