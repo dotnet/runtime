@@ -10,7 +10,7 @@ using Xunit;
 
 namespace System.Runtime.InteropServices.Tests
 {
-    public partial class Int32Tests
+    public class Int32Tests
     {
         [Theory]
         [InlineData(new int[] { 0, 1, 2, 3, 4, 5, 6, 7, 8, 9, int.MaxValue })]
@@ -138,6 +138,20 @@ namespace System.Runtime.InteropServices.Tests
             Assert.Throws<AccessViolationException>(() => Marshal.ReadInt32(null, 2));
         }
 
+#if !netstandard // TODO: Enable for netstandard2.1
+        [Fact]
+        public void ReadInt32_NotReadable_ThrowsArgumentException()
+        {
+            AssemblyBuilder assemblyBuilder = AssemblyBuilder.DefineDynamicAssembly(new AssemblyName("Assembly"), AssemblyBuilderAccess.RunAndCollect);
+            ModuleBuilder moduleBuilder = assemblyBuilder.DefineDynamicModule("Module");
+            TypeBuilder typeBuilder = moduleBuilder.DefineType("Type");
+            Type collectibleType = typeBuilder.CreateType();
+            object collectibleObject = Activator.CreateInstance(collectibleType);
+
+            AssertExtensions.Throws<ArgumentException>(null, () => Marshal.ReadInt32(collectibleObject, 0));
+        }
+#endif
+
         [Fact]
         public void WriteInt32_ZeroPointer_ThrowsException()
         {
@@ -151,6 +165,20 @@ namespace System.Runtime.InteropServices.Tests
         {
             Assert.Throws<AccessViolationException>(() => Marshal.WriteInt32(null, 2, 0));
         }
+
+#if !netstandard // TODO: Enable for netstandard2.1
+        [Fact]
+        public void WriteInt32_NotReadable_ThrowsArgumentException()
+        {
+            AssemblyBuilder assemblyBuilder = AssemblyBuilder.DefineDynamicAssembly(new AssemblyName("Assembly"), AssemblyBuilderAccess.RunAndCollect);
+            ModuleBuilder moduleBuilder = assemblyBuilder.DefineDynamicModule("Module");
+            TypeBuilder typeBuilder = moduleBuilder.DefineType("Type");
+            Type collectibleType = typeBuilder.CreateType();
+            object collectibleObject = Activator.CreateInstance(collectibleType);
+
+            AssertExtensions.Throws<ArgumentException>(null, () => Marshal.WriteInt32(collectibleObject, 0, 0));
+        }
+#endif
 
         public struct BlittableStruct
         {
