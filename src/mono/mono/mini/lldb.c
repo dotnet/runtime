@@ -125,6 +125,8 @@ static int num_entries;
 #define lldb_lock() mono_os_mutex_lock (&mutex)
 #define lldb_unlock() mono_os_mutex_unlock (&mutex)
 
+G_BEGIN_DECLS
+
 void MONO_NEVER_INLINE __mono_jit_debug_register_code (void);
 
 /* The native debugger puts a breakpoint in this function. */
@@ -136,6 +138,8 @@ __mono_jit_debug_register_code (void)
 	asm ("");
 #endif
 }
+
+G_END_DECLS
 
 /*
  * Functions to encode protocol data

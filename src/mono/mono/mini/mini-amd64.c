@@ -6684,6 +6684,11 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 
 #endif /* DISABLE_JIT */
 
+G_BEGIN_DECLS
+void __chkstk (void);
+void ___chkstk_ms (void);
+G_END_DECLS
+
 void
 mono_arch_register_lowlevel_calls (void)
 {
@@ -6692,10 +6697,8 @@ mono_arch_register_lowlevel_calls (void)
 
 #if defined(TARGET_WIN32) || defined(HOST_WIN32)
 #if _MSC_VER
-	extern void __chkstk (void);
 	mono_register_jit_icall_full (__chkstk, "mono_chkstk_win64", NULL, TRUE, "__chkstk");
 #else
-	extern void ___chkstk_ms (void);
 	mono_register_jit_icall_full (___chkstk_ms, "mono_chkstk_win64", NULL, TRUE, "___chkstk_ms");
 #endif
 #endif
