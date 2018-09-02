@@ -187,6 +187,9 @@ libmono_llvm_la_LDFLAGS=-Wl,-undefined -Wl,suppress -Wl,-flat_namespace
 endif
 endif
 
+# we need this to prevent automake from generating a default mono_SOURCES = mono.c
+mono_SOURCES =
+
 mono_boehm_SOURCES =
 mono_boehm_CFLAGS = $(AM_CFLAGS) @CXX_REMOVE_CFLAGS@
 
