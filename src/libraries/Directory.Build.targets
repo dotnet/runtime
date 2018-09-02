@@ -54,15 +54,4 @@
   <Target Name="DumpTargets" BeforeTargets="ResolveProjectReferences">
     <Message Text="DumpTargets> $(OutputPath), C=[$(Configuration)], CG=[$(ConfigurationGroup)], OG=[$(OSGroup)], TG=[$(TargetGroup)]" Importance="Low" />
   </Target>
-
-  <!--
-    Harvesting supported versions can sometimes lead to unknown versions when harvesting a package
-    which has placeholders for older frameworks like net45. We should just exclude those from validation
-    since we cannot easily determine what they are without looking at each specific platform itself.
-  -->
-  <Target Name="ExcludeSupportedFrameworksWithUnknownVersion" BeforeTargets="ValidateLibraryPackage">
-    <ItemGroup>
-      <SupportedFramework Remove="@(SupportedFramework)" Condition="'%(SupportedFramework.Version)' == 'unknown'" />
-    </ItemGroup>
-  </Target>
 </Project>
