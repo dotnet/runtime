@@ -27,10 +27,6 @@
     Microsoft.NETFramework.props will force a dependency on the assembly System.Core. This
     is a problem to compile the Mono mscorlib.dll -->
     <AddAdditionalExplicitAssemblyReferences>false</AddAdditionalExplicitAssemblyReferences>
-    <!-- Force the pre-build event to run after references have been resolved. The default
-      behavior is to run them before resolving references, which can cause things like
-      culevel.exe to be used before they have been built. -->
-    <PreBuildEventDependsOn>ResolveReferences</PreBuildEventDependsOn>
   </PropertyGroup>
 
 <!-- @ALL_PROFILE_PROPERTIES@ -->
@@ -54,6 +50,13 @@
 <!-- @COMMON_PROJECT_REFERENCES@ -->
 <!-- @ALL_REFERENCES@ -->
 <!-- @ALL_RESOURCES@ -->
+
+  <PropertyGroup>
+    <!-- Force the pre-build event to run after references have been resolved. The default
+      behavior is to run them before resolving references, which can cause things like
+      culevel.exe to be used before they have been built. -->
+    <PreBuildEventDependsOn>ResolveReferences</PreBuildEventDependsOn>
+  </PropertyGroup>
 
 @PREBUILD_POSTBUILD@
 </Project>
