@@ -4,6 +4,7 @@
     <Configurations>netstandard-Debug;netstandard-Release</Configurations>
   </PropertyGroup>
   <ItemGroup>
+    <Compile Include="CollectionsTests.cs" />
     <Compile Include="CompilerServices\BooleanTypeTests.cs" />
     <Compile Include="CompilerServices\DoubleTypeTests.cs" />
     <Compile Include="CompilerServices\DecimalTypeTests.cs" />
