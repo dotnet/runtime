@@ -16,6 +16,36 @@ namespace Microsoft.VisualBasic
         Method = 1,
         Set = 8,
     }
+    public sealed partial class Collection : System.Collections.ICollection, System.Collections.IList
+    {
+        public Collection() { }
+        public int Count { get { throw null; } }
+        int System.Collections.ICollection.Count { get { throw null; } }
+        bool System.Collections.ICollection.IsSynchronized { get { throw null; } }
+        object System.Collections.ICollection.SyncRoot { get { throw null; } }
+        bool System.Collections.IList.IsFixedSize { get { throw null; } }
+        bool System.Collections.IList.IsReadOnly { get { throw null; } }
+        object System.Collections.IList.this[int index] { get { throw null; } set { } }
+        public object this[int Index] { get { throw null; } }
+        [System.ComponentModel.EditorBrowsableAttribute((System.ComponentModel.EditorBrowsableState)(2))]
+        public object this[object Index] { get { throw null; } }
+        public object this[string Key] { get { throw null; } }
+        public void Add(object Item, string Key = null, object Before = null, object After = null) { }
+        public void Clear() { }
+        public bool Contains(string Key) { throw null; }
+        public System.Collections.IEnumerator GetEnumerator() { throw null; }
+        void System.Collections.ICollection.CopyTo(System.Array array, int index) { }
+        System.Collections.IEnumerator System.Collections.IEnumerable.GetEnumerator() { throw null; }
+        int System.Collections.IList.Add(object value) { throw null; }
+        void System.Collections.IList.Clear() { }
+        bool System.Collections.IList.Contains(object value) { throw null; }
+        int System.Collections.IList.IndexOf(object value) { throw null; }
+        void System.Collections.IList.Insert(int index, object value) { }
+        void System.Collections.IList.Remove(object value) { }
+        void System.Collections.IList.RemoveAt(int index) { }
+        public void Remove(int Index) { }
+        public void Remove(string Key) { }
+    }
     public enum CompareMethod
     { 
         Binary = 0,
