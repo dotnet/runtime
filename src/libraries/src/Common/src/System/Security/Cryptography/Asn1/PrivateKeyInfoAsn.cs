@@ -31,5 +31,19 @@ namespace System.Security.Cryptography.Asn1
         [ExpectedTag(0)]
         [OptionalValue]
         public AttributeAsn[] Attributes;
+
+        internal void Encode(AsnWriter writer)
+        {
+            AsnSerializer.Serialize(this, writer);
+        }
+
+        internal static void Decode(AsnReader reader, out PrivateKeyInfoAsn decoded)
+        {
+            if (reader == null)
+                throw new ArgumentNullException(nameof(reader));
+
+            ReadOnlyMemory<byte> value = reader.GetEncodedValue();
+            decoded = AsnSerializer.Deserialize<PrivateKeyInfoAsn>(value, reader.RuleSet);
+        }
     }
 }

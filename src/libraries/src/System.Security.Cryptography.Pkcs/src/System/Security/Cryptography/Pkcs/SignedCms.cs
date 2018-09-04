@@ -104,7 +104,11 @@ namespace System.Security.Cryptography.Pkcs
                 throw new InvalidOperationException(SR.Cryptography_Cms_MessageNotSigned);
             }
 
-            return PkcsHelpers.EncodeContentInfo(_signedData, Oids.Pkcs7Signed);
+            using (AsnWriter writer = new AsnWriter(AsnEncodingRules.DER))
+            {
+                _signedData.Encode(writer);
+                return PkcsHelpers.EncodeContentInfo(writer.Encode(), Oids.Pkcs7Signed);
+            }
         }
 
         public void Decode(byte[] encodedMessage)
@@ -118,11 +122,10 @@ namespace System.Security.Cryptography.Pkcs
         internal void Decode(ReadOnlyMemory<byte> encodedMessage)
         { 
             // Windows (and thus NetFx) reads the leading data and ignores extra.
-            // So use the Deserialize overload which doesn't throw on extra data.
-            ContentInfoAsn contentInfo = AsnSerializer.Deserialize<ContentInfoAsn>(
-                encodedMessage,
-                AsnEncodingRules.BER,
-                out int bytesRead);
+            // So use the Decode overload which doesn't throw on extra data.
+            ContentInfoAsn.Decode(
+                new AsnReader(encodedMessage, AsnEncodingRules.BER),
+                out ContentInfoAsn contentInfo);
 
             if (contentInfo.ContentType != Oids.Pkcs7Signed)
             {
@@ -131,7 +134,7 @@ namespace System.Security.Cryptography.Pkcs
 
             // Hold a copy of the SignedData memory so we are protected against memory reuse by the caller.
             _heldData = contentInfo.Content.ToArray();
-            _signedData = AsnSerializer.Deserialize<SignedDataAsn>(_heldData, AsnEncodingRules.BER);
+            _signedData = SignedDataAsn.Decode(_heldData, AsnEncodingRules.BER);
             _contentType = _signedData.EncapContentInfo.ContentType;
             _hasPkcs7Content = false;
 

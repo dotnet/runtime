@@ -18,7 +18,7 @@ namespace Internal.Cryptography.Pal.AnyOS
         internal static SubjectIdentifierOrKey ToSubjectIdentifierOrKey(
             this OriginatorIdentifierOrKeyAsn originator)
         {
-            if (originator.IssuerAndSerialNumber != null)
+            if (originator.IssuerAndSerialNumber.HasValue)
             {
                 var name = new X500DistinguishedName(originator.IssuerAndSerialNumber.Value.Issuer.ToArray());
 
@@ -29,16 +29,16 @@ namespace Internal.Cryptography.Pal.AnyOS
                         originator.IssuerAndSerialNumber.Value.SerialNumber.Span.ToBigEndianHex()));
             }
 
-            if (originator.SubjectKeyIdentifier != null)
+            if (originator.SubjectKeyIdentifier.HasValue)
             {
                 return new SubjectIdentifierOrKey(
                     SubjectIdentifierOrKeyType.SubjectKeyIdentifier,
                     originator.SubjectKeyIdentifier.Value.Span.ToBigEndianHex());
             }
 
-            if (originator.OriginatorKey != null)
+            if (originator.OriginatorKey.HasValue)
             {
-                OriginatorPublicKeyAsn originatorKey = originator.OriginatorKey;
+                OriginatorPublicKeyAsn originatorKey = originator.OriginatorKey.Value;
 
                 return new SubjectIdentifierOrKey(
                     SubjectIdentifierOrKeyType.PublicKeyInfo,

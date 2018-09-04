@@ -43,9 +43,7 @@ namespace System.Security.Cryptography.Pkcs
         {
             _certTypeOid = new Oid(certificateType);
 
-            _decoded = AsnSerializer.Deserialize<CertBagAsn>(
-                EncodedBagValue,
-                AsnEncodingRules.BER);
+            _decoded = CertBagAsn.Decode(EncodedBagValue, AsnEncodingRules.BER);
 
             IsX509Certificate = _decoded.CertId == Oids.Pkcs12X509CertBagType;
         }
@@ -58,9 +56,7 @@ namespace System.Security.Cryptography.Pkcs
                     PkcsPal.Instance.EncodeOctetString(cert.RawData)),
                 skipCopy: true)
         {
-            _decoded = AsnSerializer.Deserialize<CertBagAsn>(
-                EncodedBagValue,
-                AsnEncodingRules.BER);
+            _decoded = CertBagAsn.Decode(EncodedBagValue, AsnEncodingRules.BER);
 
             IsX509Certificate = true;
         }
@@ -91,6 +87,8 @@ namespace System.Security.Cryptography.Pkcs
         {
             if (certificateType == null)
                 throw new ArgumentNullException(nameof(certificateType));
+            if (certificateType.Value == null)
+                throw new CryptographicException(SR.Argument_InvalidOidValue);
 
             return EncodeBagValue(certificateType.Value, encodedCertificate);
         }
@@ -110,15 +108,16 @@ namespace System.Security.Cryptography.Pkcs
                 CertValue = encodedCertificate,
             };
 
-            using (AsnWriter writer = AsnSerializer.Serialize(certBagAsn, AsnEncodingRules.BER))
+            using (AsnWriter writer = new AsnWriter(AsnEncodingRules.BER))
             {
+                certBagAsn.Encode(writer);
                 return writer.Encode();
             }
         }
 
         internal static Pkcs12CertBag DecodeValue(ReadOnlyMemory<byte> bagValue)
         {
-            CertBagAsn decoded = AsnSerializer.Deserialize<CertBagAsn>(bagValue, AsnEncodingRules.BER);
+            CertBagAsn decoded = CertBagAsn.Decode(bagValue, AsnEncodingRules.BER);
             return new Pkcs12CertBag(bagValue, decoded);
         }
     }

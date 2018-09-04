@@ -246,8 +246,7 @@ namespace System.Security.Cryptography.Pkcs
 
                     while (collReader.HasData)
                     {
-                        SignerInfoAsn parsedData =
-                            AsnSerializer.Deserialize<SignerInfoAsn>(collReader.GetEncodedValue(), AsnEncodingRules.BER);
+                        SignerInfoAsn.Decode(collReader, out SignerInfoAsn parsedData);
 
                         SignerInfo signerInfo = new SignerInfo(ref parsedData, _document)
                         {
@@ -293,7 +292,7 @@ namespace System.Security.Cryptography.Pkcs
             using (AsnWriter writer = new AsnWriter(AsnEncodingRules.DER))
             {
                 writer.PushSetOf();
-                AsnSerializer.Serialize(newSignerInfo, writer);
+                newSignerInfo.Encode(writer);
                 writer.PopSetOf();
 
                 newUnsignedAttr = new AttributeAsn
@@ -617,7 +616,7 @@ namespace System.Security.Cryptography.Pkcs
 
                     foreach (AttributeAsn attr in _signedAttributes)
                     {
-                        AsnSerializer.Serialize(attr, writer);
+                        attr.Encode(writer);
 
                         // .NET Framework doesn't seem to validate the content type attribute,
                         // so we won't, either.

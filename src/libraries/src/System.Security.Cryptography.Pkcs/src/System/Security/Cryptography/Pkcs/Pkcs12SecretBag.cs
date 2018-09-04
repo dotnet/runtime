@@ -25,7 +25,7 @@ namespace System.Security.Cryptography.Pkcs
         {
             _secretTypeOid = new Oid(secretTypeOid);
 
-            _decoded = AsnSerializer.Deserialize<SecretBagAsn>(EncodedBagValue, AsnEncodingRules.BER);
+            _decoded = SecretBagAsn.Decode(EncodedBagValue, AsnEncodingRules.BER);
         }
 
         private Pkcs12SecretBag(SecretBagAsn secretBagAsn, ReadOnlyMemory<byte> encodedBagValue)
@@ -54,15 +54,16 @@ namespace System.Security.Cryptography.Pkcs
                 SecretValue = secretValue,
             };
 
-            using (AsnWriter writer = AsnSerializer.Serialize(secretBagAsn, AsnEncodingRules.BER))
+            using (AsnWriter writer = new AsnWriter(AsnEncodingRules.BER))
             {
+                secretBagAsn.Encode(writer);
                 return writer.Encode();
             }
         }
 
         internal static Pkcs12SecretBag DecodeValue(ReadOnlyMemory<byte> bagValue)
         {
-            SecretBagAsn decoded = AsnSerializer.Deserialize<SecretBagAsn>(bagValue, AsnEncodingRules.BER);
+            SecretBagAsn decoded = SecretBagAsn.Decode(bagValue, AsnEncodingRules.BER);
             return new Pkcs12SecretBag(decoded, bagValue);
         }
     }

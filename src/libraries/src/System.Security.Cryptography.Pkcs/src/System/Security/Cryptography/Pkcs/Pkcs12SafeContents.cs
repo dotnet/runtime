@@ -214,8 +214,7 @@ namespace System.Security.Cryptography.Pkcs
                         ConfidentialityMode));
             }
 
-            EncryptedDataAsn encryptedData =
-                AsnSerializer.Deserialize<EncryptedDataAsn>(_encrypted, AsnEncodingRules.BER);
+            EncryptedDataAsn encryptedData = EncryptedDataAsn.Decode(_encrypted, AsnEncodingRules.BER);
 
             // https://tools.ietf.org/html/rfc5652#section-8
             if (encryptedData.Version != 0 && encryptedData.Version != 2)
@@ -282,17 +281,25 @@ namespace System.Security.Cryptography.Pkcs
 
         private static List<Pkcs12SafeBag> ReadBags(ReadOnlyMemory<byte> serialized)
         {
-            SafeBagAsn[] serializedBags =
-                AsnSerializer.Deserialize<SafeBagAsn[]>(serialized, AsnEncodingRules.BER);
+            List<SafeBagAsn> serializedBags = new List<SafeBagAsn>();
+            AsnReader reader = new AsnReader(serialized, AsnEncodingRules.BER);
+            AsnReader sequenceReader = reader.ReadSequence();
 
-            if (serializedBags.Length == 0)
+            reader.ThrowIfNotEmpty();
+            while (sequenceReader.HasData)
+            {
+                SafeBagAsn.Decode(sequenceReader, out SafeBagAsn serializedBag);
+                serializedBags.Add(serializedBag);
+            }
+
+            if (serializedBags.Count == 0)
             {
                 return new List<Pkcs12SafeBag>(0);
             }
 
-            List<Pkcs12SafeBag> bags = new List<Pkcs12SafeBag>(serializedBags.Length);
+            List<Pkcs12SafeBag> bags = new List<Pkcs12SafeBag>(serializedBags.Count);
 
-            for (int i = 0; i < serializedBags.Length; i++)
+            for (int i = 0; i < serializedBags.Count; i++)
             {
                 ReadOnlyMemory<byte> bagValue = serializedBags[i].BagValue;
                 Pkcs12SafeBag bag = null;

@@ -1063,5 +1063,15 @@ namespace System.Security.Cryptography
 
             return (int)iterationCount;
         }
+
+        internal static int NormalizeIterationCount(int iterationCount)
+        {
+            if (iterationCount <= 0 || iterationCount > IterationLimit)
+            {
+                throw new CryptographicException(SR.Argument_InvalidValue);
+            }
+
+            return iterationCount;
+        }
     }
 }

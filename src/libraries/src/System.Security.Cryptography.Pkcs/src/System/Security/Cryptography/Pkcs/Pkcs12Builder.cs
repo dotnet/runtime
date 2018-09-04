@@ -161,8 +161,6 @@ namespace System.Security.Cryptography.Pkcs
             if (IsSealed)
                 throw new InvalidOperationException(SR.Cryptography_Pkcs12_PfxIsSealed);
 
-            ContentInfoAsn[] contents = _contents?.ToArray() ?? Array.Empty<ContentInfoAsn>();
-
             byte[] rentedAuthSafe = null;
             Span<byte> authSafeSpan = default;
             byte[] rentedMac = null;
@@ -171,10 +169,20 @@ namespace System.Security.Cryptography.Pkcs
 
             try
             {
-                using (AsnWriter writer = AsnSerializer.Serialize(contents, AsnEncodingRules.BER))
+                using (AsnWriter contentsWriter = new AsnWriter(AsnEncodingRules.BER))
                 using (IncrementalHash hasher = IncrementalHash.CreateHash(hashAlgorithm))
                 {
-                    ReadOnlySpan<byte> encodedSpan = writer.EncodeAsSpan();
+                    contentsWriter.PushSequence();
+                    if (_contents != null)
+                    {
+                        foreach (ContentInfoAsn contentInfo in _contents)
+                        {
+                            contentInfo.Encode(contentsWriter);
+                        }
+                    }
+                    contentsWriter.PopSequence();
+
+                    ReadOnlySpan<byte> encodedSpan = contentsWriter.EncodeAsSpan();
 
                     rentedAuthSafe = ArrayPool<byte>.Shared.Rent(encodedSpan.Length);
                     encodedSpan.CopyTo(rentedAuthSafe);
@@ -297,11 +305,19 @@ namespace System.Security.Cryptography.Pkcs
             if (IsSealed)
                 throw new InvalidOperationException(SR.Cryptography_Pkcs12_PfxIsSealed);
 
-            ContentInfoAsn[] contents = _contents?.ToArray() ?? Array.Empty<ContentInfoAsn>();
-
-            using (AsnWriter contentsWriter = AsnSerializer.Serialize(contents, AsnEncodingRules.BER))
+            using (AsnWriter contentsWriter = new AsnWriter(AsnEncodingRules.BER))
             using (AsnWriter writer = new AsnWriter(AsnEncodingRules.BER))
             {
+                contentsWriter.PushSequence();
+                if (_contents != null)
+                {
+                    foreach (ContentInfoAsn contentInfo in _contents)
+                    {
+                        contentInfo.Encode(contentsWriter);
+                    }
+                }
+                contentsWriter.PopSequence();
+
                 // https://tools.ietf.org/html/rfc7292#section-4
                 //
                 // PFX ::= SEQUENCE {

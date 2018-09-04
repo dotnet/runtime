@@ -1,0 +1,21 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<asn:Sequence
+  xmlns:asn="http://schemas.dot.net/asnxml/201808/"
+  name="MacData"
+  namespace="System.Security.Cryptography.Pkcs.Asn1">
+
+  <!--
+    https://tools.ietf.org/html/rfc7292#section-4
+
+    MacData ::= SEQUENCE {
+        mac        DigestInfo,
+        macSalt    OCTET STRING,
+        iterations INTEGER DEFAULT 1
+        - Note: The default is for historical reasons and its use is
+        - deprecated.
+    }
+  -->
+  <asn:AsnType name="Mac" typeName="System.Security.Cryptography.Pkcs.Asn1.DigestInfoAsn" />
+  <asn:OctetString name="MacSalt" />
+  <asn:Integer name="IterationCount" backingType="int" defaultDerInit="0x02, 0x01, 0x01" />
+</asn:Sequence>

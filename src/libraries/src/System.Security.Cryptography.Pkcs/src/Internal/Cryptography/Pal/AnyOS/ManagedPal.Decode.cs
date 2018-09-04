@@ -26,9 +26,9 @@ namespace Internal.Cryptography.Pal.AnyOS
             // Read using BER because the CMS specification says the encoding is BER.
             AsnReader reader = new AsnReader(encodedMessage, AsnEncodingRules.BER);
 
-            ContentInfoAsn parsedContentInfo = AsnSerializer.Deserialize<ContentInfoAsn>(
-                reader.GetEncodedValue(),
-                AsnEncodingRules.BER);
+            ContentInfoAsn.Decode(
+                reader,
+                out ContentInfoAsn parsedContentInfo);
 
             if (parsedContentInfo.ContentType != Oids.Pkcs7Enveloped)
             {
@@ -37,9 +37,7 @@ namespace Internal.Cryptography.Pal.AnyOS
 
             byte[] copy = parsedContentInfo.Content.ToArray();
 
-            EnvelopedDataAsn data = AsnSerializer.Deserialize<EnvelopedDataAsn>(
-                copy,
-                AsnEncodingRules.BER);
+            EnvelopedDataAsn data = EnvelopedDataAsn.Decode(copy, AsnEncodingRules.BER);
 
             version = data.Version;
 
@@ -52,9 +50,9 @@ namespace Internal.Cryptography.Pal.AnyOS
 
             originatorCerts = new X509Certificate2Collection();
 
-            if (data.OriginatorInfo != null && data.OriginatorInfo.CertificateSet != null)
+            if (data.OriginatorInfo.HasValue && data.OriginatorInfo.Value.CertificateSet != null)
             {
-                foreach (CertificateChoiceAsn certChoice in data.OriginatorInfo.CertificateSet)
+                foreach (CertificateChoiceAsn certChoice in data.OriginatorInfo.Value.CertificateSet)
                 {
                     if (certChoice.Certificate != null)
                     {
@@ -69,16 +67,16 @@ namespace Internal.Cryptography.Pal.AnyOS
 
             foreach (RecipientInfoAsn recipientInfo in data.RecipientInfos)
             {
-                if (recipientInfo.Ktri != null)
+                if (recipientInfo.Ktri.HasValue)
                 {
-                    recipientInfos.Add(new KeyTransRecipientInfo(new ManagedKeyTransPal(recipientInfo.Ktri)));
+                    recipientInfos.Add(new KeyTransRecipientInfo(new ManagedKeyTransPal(recipientInfo.Ktri.Value)));
                 }
-                else if (recipientInfo.Kari != null)
+                else if (recipientInfo.Kari.HasValue)
                 {
-                    for (int i = 0; i < recipientInfo.Kari.RecipientEncryptedKeys.Length; i++)
+                    for (int i = 0; i < recipientInfo.Kari.Value.RecipientEncryptedKeys.Length; i++)
                     {
                         recipientInfos.Add(
-                            new KeyAgreeRecipientInfo(new ManagedKeyAgreePal(recipientInfo.Kari, i)));
+                            new KeyAgreeRecipientInfo(new ManagedKeyAgreePal(recipientInfo.Kari.Value, i)));
                     }
                 }
                 else

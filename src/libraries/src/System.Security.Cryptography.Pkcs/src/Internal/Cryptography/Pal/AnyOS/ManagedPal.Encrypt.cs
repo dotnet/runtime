@@ -80,7 +80,7 @@ namespace Internal.Cryptography.Pal.AnyOS
             {
                 List<AttributeAsn> attrList = CmsSigner.BuildAttributes(unprotectedAttributes);
 
-                envelopedData.UnprotectedAttributes = PkcsHelpers.NormalizeSet(attrList.ToArray());
+                envelopedData.UnprotectedAttributes = PkcsHelpers.NormalizeAttributeSet(attrList.ToArray());
             }
 
             if (originatorCerts != null && originatorCerts.Count > 0)
@@ -145,7 +145,11 @@ namespace Internal.Cryptography.Pal.AnyOS
                 envelopedData.Version = 2;
             }
 
-            return PkcsHelpers.EncodeContentInfo(envelopedData, Oids.Pkcs7Enveloped);
+            using (AsnWriter writer = new AsnWriter(AsnEncodingRules.DER))
+            {
+                envelopedData.Encode(writer);
+                return PkcsHelpers.EncodeContentInfo(writer.Encode(), Oids.Pkcs7Enveloped);
+            }
         }
 
         private byte[] EncryptContent(
