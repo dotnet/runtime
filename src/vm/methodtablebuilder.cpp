@@ -6787,8 +6787,10 @@ VOID MethodTableBuilder::AllocAndInitMethodDescs()
             }
         }
 
+#ifndef CROSSGEN_COMPILE
         if (tokenRange != currentTokenRange ||
             sizeOfMethodDescs + size > MethodDescChunk::MaxSizeOfMethodDescs)
+#endif // CROSSGEN_COMPILE
         {
             if (sizeOfMethodDescs != 0)
             {
