@@ -4,13 +4,16 @@
 
 using Microsoft.Win32.SafeHandles;
 using System;
+using System.Buffers;
+using System.ComponentModel;
 using System.Runtime.InteropServices;
+using System.Text;
 
 internal partial class Interop
 {
     internal partial class Advapi32
     {
-        [DllImport(Libraries.Advapi32, EntryPoint = "StartServiceW", CharSet = CharSet.Unicode, SetLastError = true)]
-        internal extern static bool StartService(SafeServiceHandle serviceHandle, int argNum, IntPtr argPtrs);
+        [DllImport(Libraries.Advapi32, EntryPoint = "GetServiceKeyNameW", CharSet = System.Runtime.InteropServices.CharSet.Unicode, SetLastError = true)]
+        internal static extern unsafe bool GetServiceKeyName(SafeServiceHandle SCMHandle, string displayName, char* KeyName, ref int KeyNameLength);
     }
 }

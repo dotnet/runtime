@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
+using Microsoft.Win32.SafeHandles;
 using System.ComponentModel;
 using System.Diagnostics;
 using System.Text;
@@ -52,7 +53,7 @@ namespace System.ServiceProcess.Tests
                 ServiceCommandLine = $"\"{processName}\" {arguments}";
             }
 
-            //Build servicesDependedOn string
+            // Build servicesDependedOn string
             string servicesDependedOn = null;
             if (ServicesDependedOn.Length > 0)
             {
@@ -70,52 +71,44 @@ namespace System.ServiceProcess.Tests
             }
 
             // Open the service manager
-            IntPtr serviceManagerHandle = Interop.Advapi32.OpenSCManager(null, null, Interop.Advapi32.ServiceControllerOptions.SC_MANAGER_ALL);
-            IntPtr serviceHandle = IntPtr.Zero;
-            if (serviceManagerHandle == IntPtr.Zero)
-                throw new InvalidOperationException("Cannot open Service Control Manager");
-
-            try
+            using (var serviceManagerHandle = new SafeServiceHandle(Interop.Advapi32.OpenSCManager(null, null, Interop.Advapi32.ServiceControllerOptions.SC_MANAGER_ALL)))
             {
+                if (serviceManagerHandle.IsInvalid)
+                    throw new InvalidOperationException("Cannot open Service Control Manager");
+
                 // Install the service
-                serviceHandle = Interop.Advapi32.CreateService(serviceManagerHandle, ServiceName,
+                using (var serviceHandle = new SafeServiceHandle(Interop.Advapi32.CreateService(serviceManagerHandle, ServiceName,
                     DisplayName, Interop.Advapi32.ServiceAccessOptions.ACCESS_TYPE_ALL, Interop.Advapi32.ServiceTypeOptions.SERVICE_TYPE_WIN32_OWN_PROCESS,
                     (int)StartType, Interop.Advapi32.ServiceStartErrorModes.ERROR_CONTROL_NORMAL,
-                    ServiceCommandLine, null, IntPtr.Zero, servicesDependedOn, username, password);
-
-                if (serviceHandle == IntPtr.Zero)
-                    throw new Win32Exception("Cannot create service");
-
-                // A local variable in an unsafe method is already fixed -- so we don't need a "fixed { }" blocks to protect
-                // across the p/invoke calls below.
-
-                if (Description.Length != 0)
+                    ServiceCommandLine, null, IntPtr.Zero, servicesDependedOn, username, password)))
                 {
-                    Interop.Advapi32.SERVICE_DESCRIPTION serviceDesc = new Interop.Advapi32.SERVICE_DESCRIPTION();
-                    serviceDesc.description = Marshal.StringToHGlobalUni(Description);
-                    bool success = Interop.Advapi32.ChangeServiceConfig2(serviceHandle, Interop.Advapi32.ServiceConfigOptions.SERVICE_CONFIG_DESCRIPTION, ref serviceDesc);
-                    Marshal.FreeHGlobal(serviceDesc.description);
-                    if (!success)
-                        throw new Win32Exception("Cannot set description");
-                }
+                    if (serviceHandle.IsInvalid)
+                        throw new Win32Exception("Cannot create service");
 
-                // Start the service after creating it
-                using (ServiceController svc = new ServiceController(ServiceName))
-                {
-                    if (svc.Status != ServiceControllerStatus.Running)
+                    // A local variable in an unsafe method is already fixed -- so we don't need a "fixed { }" blocks to protect
+                    // across the p/invoke calls below.
+
+                    if (Description.Length != 0)
                     {
-                        svc.Start();
-                        if (!ServiceName.StartsWith("PropagateExceptionFromOnStart"))
-                            svc.WaitForStatus(ServiceControllerStatus.Running, TimeSpan.FromSeconds(30));
+                        Interop.Advapi32.SERVICE_DESCRIPTION serviceDesc = new Interop.Advapi32.SERVICE_DESCRIPTION();
+                        serviceDesc.description = Marshal.StringToHGlobalUni(Description);
+                        bool success = Interop.Advapi32.ChangeServiceConfig2(serviceHandle, Interop.Advapi32.ServiceConfigOptions.SERVICE_CONFIG_DESCRIPTION, ref serviceDesc);
+                        Marshal.FreeHGlobal(serviceDesc.description);
+                        if (!success)
+                            throw new Win32Exception("Cannot set description");
+                    }
+
+                    // Start the service after creating it
+                    using (ServiceController svc = new ServiceController(ServiceName))
+                    {
+                        if (svc.Status != ServiceControllerStatus.Running)
+                        {
+                            svc.Start();
+                            if (!ServiceName.StartsWith("PropagateExceptionFromOnStart"))
+                                svc.WaitForStatus(ServiceControllerStatus.Running, TimeSpan.FromSeconds(30));
+                        }
                     }
                 }
-            }
-            finally
-            {
-                if (serviceHandle != IntPtr.Zero)
-                    Interop.Advapi32.CloseServiceHandle(serviceHandle);
-
-                Interop.Advapi32.CloseServiceHandle(serviceManagerHandle);
             }
         }
 
@@ -170,28 +163,21 @@ namespace System.ServiceProcess.Tests
 
         private void DeleteService()
         {
-            IntPtr serviceManagerHandle = Interop.Advapi32.OpenSCManager(null, null, Interop.Advapi32.ServiceControllerOptions.SC_MANAGER_ALL);
-            if (serviceManagerHandle == IntPtr.Zero)
-                throw new Win32Exception("Could not open SCM");
-
-            IntPtr serviceHandle = IntPtr.Zero;
-            try
+            using (var serviceManagerHandle = new SafeServiceHandle(Interop.Advapi32.OpenSCManager(null, null, Interop.Advapi32.ServiceControllerOptions.SC_MANAGER_ALL)))
             {
-                serviceHandle = Interop.Advapi32.OpenService(serviceManagerHandle,
-                    ServiceName, Interop.Advapi32.ServiceOptions.STANDARD_RIGHTS_DELETE);
+                if (serviceManagerHandle.IsInvalid)
+                    throw new Win32Exception("Could not open SCM");
 
-                if (serviceHandle == IntPtr.Zero)
-                    throw new Win32Exception($"Could not find service '{ServiceName}'");
+                using (var serviceHandle = new SafeServiceHandle(Interop.Advapi32.OpenService(serviceManagerHandle, ServiceName, Interop.Advapi32.ServiceOptions.STANDARD_RIGHTS_DELETE)))
+                {
+                    if (serviceHandle.IsInvalid)
+                        throw new Win32Exception($"Could not find service '{ServiceName}'");
 
-                if (!Interop.Advapi32.DeleteService(serviceHandle))
-                    throw new Win32Exception($"Could not delete service '{ServiceName}'");
-            }
-            finally
-            {
-                if (serviceHandle != IntPtr.Zero)
-                    Interop.Advapi32.CloseServiceHandle(serviceHandle);
-
-                Interop.Advapi32.CloseServiceHandle(serviceManagerHandle);
+                    if (!Interop.Advapi32.DeleteService(serviceHandle))
+                    {
+                        throw new Win32Exception($"Could not delete service '{ServiceName}'");
+                    }
+                }
             }
         }
     }
