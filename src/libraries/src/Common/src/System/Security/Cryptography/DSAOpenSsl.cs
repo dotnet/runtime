@@ -193,7 +193,7 @@ namespace System.Security.Cryptography
                 byte[] signature = ArrayPool<byte>.Shared.Rent(signatureSize);
                 try
                 {
-                    bool success = Interop.Crypto.DsaSign(key, rgbHash, rgbHash.Length, new Span<byte>(signature, 0, signatureSize), out signatureSize);
+                    bool success = Interop.Crypto.DsaSign(key, rgbHash, new Span<byte>(signature, 0, signatureSize), out signatureSize);
                     if (!success)
                     {
                         throw Interop.Crypto.CreateOpenSslCryptographicException();
@@ -224,7 +224,7 @@ namespace System.Security.Cryptography
                 byte[] signature = ArrayPool<byte>.Shared.Rent(signatureSize);
                 try
                 {
-                    bool success = Interop.Crypto.DsaSign(key, hash, hash.Length, new Span<byte>(signature, 0, signatureSize), out signatureSize);
+                    bool success = Interop.Crypto.DsaSign(key, hash, new Span<byte>(signature, 0, signatureSize), out signatureSize);
                     if (!success)
                     {
                         throw Interop.Crypto.CreateOpenSslCryptographicException();
