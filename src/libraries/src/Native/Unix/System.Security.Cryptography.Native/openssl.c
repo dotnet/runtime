@@ -96,11 +96,11 @@ Return values:
 NULL if the validity cannot be determined, a pointer to the ASN1_TIME structure for the NotBefore value
 otherwise.
 */
-ASN1_TIME* CryptoNative_GetX509NotBefore(X509* x509)
+const ASN1_TIME* CryptoNative_GetX509NotBefore(X509* x509)
 {
-    if (x509 && x509->cert_info && x509->cert_info->validity)
+    if (x509)
     {
-        return x509->cert_info->validity->notBefore;
+        return X509_get0_notBefore(x509);
     }
 
     return NULL;
@@ -117,11 +117,11 @@ Return values:
 NULL if the validity cannot be determined, a pointer to the ASN1_TIME structure for the NotAfter value
 otherwise.
 */
-ASN1_TIME* CryptoNative_GetX509NotAfter(X509* x509)
+const ASN1_TIME* CryptoNative_GetX509NotAfter(X509* x509)
 {
-    if (x509 && x509->cert_info && x509->cert_info->validity)
+    if (x509)
     {
-        return x509->cert_info->validity->notAfter;
+        return X509_get0_notAfter(x509);
     }
 
     return NULL;
@@ -138,11 +138,11 @@ Return values:
 NULL if the validity cannot be determined, a pointer to the ASN1_TIME structure for the NextUpdate value
 otherwise.
 */
-ASN1_TIME* CryptoNative_GetX509CrlNextUpdate(X509_CRL* crl)
+const ASN1_TIME* CryptoNative_GetX509CrlNextUpdate(X509_CRL* crl)
 {
     if (crl)
     {
-        return X509_CRL_get_nextUpdate(crl);
+        return X509_CRL_get0_nextUpdate(crl);
     }
 
     return NULL;
@@ -164,10 +164,9 @@ The encoded value of the version, otherwise:
 */
 int32_t CryptoNative_GetX509Version(X509* x509)
 {
-    if (x509 && x509->cert_info)
+    if (x509)
     {
-        long ver = ASN1_INTEGER_get(x509->cert_info->version);
-        return (int32_t)ver;
+        return (int32_t)X509_get_version(x509);
     }
 
     return -1;
@@ -186,9 +185,15 @@ describing the object type.
 */
 ASN1_OBJECT* CryptoNative_GetX509PublicKeyAlgorithm(X509* x509)
 {
-    if (x509 && x509->cert_info && x509->cert_info->key && x509->cert_info->key->algor)
+    if (x509)
     {
-        return x509->cert_info->key->algor->algorithm;
+        X509_PUBKEY* pubkey = X509_get_X509_PUBKEY(x509);
+        ASN1_OBJECT* algOid;
+
+        if (pubkey && X509_PUBKEY_get0_param(&algOid, NULL, NULL, NULL, pubkey))
+        {
+            return algOid;
+        }
     }
 
     return NULL;
@@ -207,9 +212,14 @@ describing the object type.
 */
 ASN1_OBJECT* CryptoNative_GetX509SignatureAlgorithm(X509* x509)
 {
-    if (x509 && x509->sig_alg && x509->sig_alg->algorithm)
+    if (x509)
     {
-        return x509->sig_alg->algorithm;
+        const X509_ALGOR* sigAlg = X509_get0_tbs_sigalg(x509);
+
+        if (sigAlg)
+        {
+            return sigAlg->algorithm;
+        }
     }
 
     return NULL;
@@ -229,12 +239,26 @@ Any negative value: The input buffer size was reported as insufficient. A buffer
 */
 int32_t CryptoNative_GetX509PublicKeyParameterBytes(X509* x509, uint8_t* pBuf, int32_t cBuf)
 {
-    if (!x509 || !x509->cert_info || !x509->cert_info->key || !x509->cert_info->key->algor)
+    if (!x509)
     {
         return 0;
     }
 
-    ASN1_TYPE* parameter = x509->cert_info->key->algor->parameter;
+    X509_PUBKEY* pubkey = X509_get_X509_PUBKEY(x509);
+
+    if (!pubkey)
+    {
+        return 0;
+    }
+
+    X509_ALGOR* alg;
+
+    if (!X509_PUBKEY_get0_param(NULL, NULL, NULL, &alg, pubkey) || !alg)
+    {
+        return 0;
+    }
+
+    ASN1_TYPE* parameter = alg->parameter;
 
     if (!parameter)
     {
@@ -242,7 +266,7 @@ int32_t CryptoNative_GetX509PublicKeyParameterBytes(X509* x509, uint8_t* pBuf, i
         // If pBuf is non-NULL we're asking to fill the data, in which case we return 1.
         return pBuf != NULL;
     }
-    
+
     int len = i2d_ASN1_TYPE(parameter, NULL);
 
     if (cBuf < len)
@@ -274,9 +298,9 @@ the public key.
 */
 ASN1_BIT_STRING* CryptoNative_GetX509PublicKeyBytes(X509* x509)
 {
-    if (x509 && x509->cert_info && x509->cert_info->key)
+    if (x509)
     {
-        return x509->cert_info->key->public_key;
+        return X509_get0_pubkey_bitstr(x509);
     }
 
     return NULL;
@@ -352,7 +376,10 @@ Any negative value: The input buffer size was reported as insufficient. A buffer
 */
 int32_t CryptoNative_GetX509NameRawBytes(X509_NAME* x509Name, uint8_t* pBuf, int32_t cBuf)
 {
-    if (!x509Name || !x509Name->bytes || cBuf < 0)
+    const uint8_t* nameBuf;
+    size_t nameBufLen;
+
+    if (!x509Name || cBuf < 0 || !X509_NAME_get0_der(x509Name, &nameBuf, &nameBufLen))
     {
         return 0;
     }
@@ -366,13 +393,13 @@ int32_t CryptoNative_GetX509NameRawBytes(X509_NAME* x509Name, uint8_t* pBuf, int
      * value is less than INT_MAX in it's native format; once we know it is not
      * too large, we can safely cast to an int to make sure it is not negative
      */
-    if (x509Name->bytes->length > INT_MAX)
+    if (nameBufLen > INT_MAX)
     {
         assert(0 && "Huge length X509_NAME");
         return 0;
     }
 
-    int length = (int)(x509Name->bytes->length);
+    int length = (int)(nameBufLen);
 
     if (length < 0)
     {
@@ -385,7 +412,7 @@ int32_t CryptoNative_GetX509NameRawBytes(X509_NAME* x509Name, uint8_t* pBuf, int
         return -length;
     }
 
-    memcpy_s(pBuf, Int32ToSizeT(cBuf), x509Name->bytes->data, Int32ToSizeT(length));
+    memcpy_s(pBuf, Int32ToSizeT(cBuf), nameBuf, Int32ToSizeT(length));
     return 1;
 }
 
@@ -436,7 +463,7 @@ BIO* CryptoNative_GetX509NameInfo(X509* x509, int32_t nameType, int32_t forIssue
 {
     static const char szOidUpn[] = "1.3.6.1.4.1.311.20.2.3";
 
-    if (!x509 || !x509->cert_info || nameType < NAME_TYPE_SIMPLE || nameType > NAME_TYPE_URL)
+    if (!x509 || nameType < NAME_TYPE_SIMPLE || nameType > NAME_TYPE_URL)
     {
         return NULL;
     }
@@ -453,7 +480,7 @@ BIO* CryptoNative_GetX509NameInfo(X509* x509, int32_t nameType, int32_t forIssue
     // UrlName: SAN.Entries.FirstOrDefault(type == GEN_URI);
     if (nameType == NAME_TYPE_SIMPLE)
     {
-        X509_NAME* name = forIssuer ? x509->cert_info->issuer : x509->cert_info->subject;
+        X509_NAME* name = forIssuer ? X509_get_issuer_name(x509) : X509_get_subject_name(x509);
 
         if (name)
         {
@@ -628,7 +655,7 @@ BIO* CryptoNative_GetX509NameInfo(X509* x509, int32_t nameType, int32_t forIssue
 
     if (nameType == NAME_TYPE_EMAIL || nameType == NAME_TYPE_DNS)
     {
-        X509_NAME* name = forIssuer ? x509->cert_info->issuer : x509->cert_info->subject;
+        X509_NAME* name = forIssuer ? X509_get_issuer_name(x509) : X509_get_subject_name(x509);
         int expectedNid = NID_undef;
 
         switch (nameType)
@@ -819,8 +846,7 @@ int32_t CryptoNative_CheckX509Hostname(X509* x509, const char* hostname, int32_t
 
     int subjectNid = NID_commonName;
     int sanGenType = GEN_DNS;
-    GENERAL_NAMES* san = (GENERAL_NAMES*)(
-        X509_get_ext_d2i(x509, NID_subject_alt_name, NULL, NULL));
+    GENERAL_NAMES* san = (GENERAL_NAMES*)(X509_get_ext_d2i(x509, NID_subject_alt_name, NULL, NULL));
     char readSubject = 1;
     int success = 0;
 
@@ -1025,13 +1051,13 @@ Return values:
 1 on success.
 */
 int32_t CryptoNative_SetX509ChainVerifyTime(X509_STORE_CTX* ctx,
-                                                   int32_t year,
-                                                   int32_t month,
-                                                   int32_t day,
-                                                   int32_t hour,
-                                                   int32_t minute,
-                                                   int32_t second,
-                                                   int32_t isDst)
+                                            int32_t year,
+                                            int32_t month,
+                                            int32_t day,
+                                            int32_t hour,
+                                            int32_t minute,
+                                            int32_t second,
+                                            int32_t isDst)
 {
     if (!ctx)
     {
@@ -1241,6 +1267,21 @@ int32_t CryptoNative_LookupFriendlyNameByOid(const char* oidValue, const char** 
     return 0;
 }
 
+/*
+Function:
+SSLeay (OpenSSL_version_num for OpenSSL 1.1+)
+
+Gets the version of openssl library.
+
+Return values:
+Version number as MNNFFRBB (major minor fix final beta/patch)
+*/
+uint32_t CryptoNative_OpenSslVersionNumber()
+{
+    return (uint32_t)OpenSSL_version_num();
+}
+
+#ifdef NEED_OPENSSL_1_0
 // Lock used to make sure EnsureopenSslInitialized itself is thread safe
 static pthread_mutex_t g_initLock = PTHREAD_MUTEX_INITIALIZER;
 
@@ -1260,6 +1301,10 @@ static void LockingCallback(int mode, int n, const char* file, int line)
 // Clang complains about releasing locks that are not held.
 #pragma clang diagnostic push
 #pragma clang diagnostic ignored "-Wthread-safety-analysis"
+
+#ifndef CRYPTO_LOCK
+#define CRYPTO_LOCK 1
+#endif
 
     int result;
     if (mode & CRYPTO_LOCK)
@@ -1306,7 +1351,7 @@ Return values:
 0 on success
 non-zero on failure
 */
-int32_t CryptoNative_EnsureOpenSslInitialized()
+static int32_t EnsureOpenSsl10Initialized()
 {
     int ret = 0;
     int numLocks = 0;
@@ -1396,17 +1441,46 @@ done:
     pthread_mutex_unlock(&g_initLock);
     return ret;
 }
+#endif // NEED_OPENSSL_1_0 */
 
-/*
-Function:
-SSLeay (OpenSSL_version_num for OpenSSL 1.1+)
+#ifdef NEED_OPENSSL_1_1
 
-Gets the version of openssl library.
-
-Return values:
-Version number as MNNFFRBB (major minor fix final beta/patch)
-*/
-uint32_t CryptoNative_OpenSslVersionNumber()
+static int32_t EnsureOpenSsl11Initialized()
 {
-    return (uint32_t)SSLeay();
+    // In OpenSSL 1.0 we call OPENSSL_add_all_algorithms_conf() and ERR_load_crypto_strings(),
+    // so do the same for 1.1
+    OPENSSL_init_ssl(
+        // OPENSSL_add_all_algorithms_conf
+            OPENSSL_INIT_ADD_ALL_CIPHERS |
+            OPENSSL_INIT_ADD_ALL_DIGESTS |
+            OPENSSL_INIT_LOAD_CONFIG |
+        // ERR_load_crypto_strings
+            OPENSSL_INIT_LOAD_CRYPTO_STRINGS |
+            OPENSSL_INIT_LOAD_SSL_STRINGS,
+        NULL);
+
+    return 0;
+}
+
+#endif
+
+int32_t CryptoNative_EnsureOpenSslInitialized()
+{
+    // If portable then decide which OpenSSL we are, and call the right one.
+    // If 1.0, call the 1.0 one.
+    // Otherwise call the 1.1 one.
+#ifdef FEATURE_DISTRO_AGNOSTIC_SSL
+    if (API_EXISTS(SSL_state))
+    {
+        return EnsureOpenSsl10Initialized();
+    }
+    else
+    {
+        return EnsureOpenSsl11Initialized();
+    }
+#elif OPENSSL_VERSION_NUMBER < OPENSSL_VERSION_1_1_0_RTM
+    return EnsureOpenSsl10Initialized();
+#else
+    return EnsureOpenSsl11Initialized();
+#endif
 }

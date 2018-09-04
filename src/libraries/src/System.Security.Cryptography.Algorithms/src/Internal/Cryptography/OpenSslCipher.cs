@@ -3,6 +3,7 @@
 // See the LICENSE file in the project root for more information.
 
 using System;
+using System.Buffers;
 using System.Diagnostics;
 using System.Runtime.InteropServices;
 using System.Security.Cryptography;
@@ -49,6 +50,24 @@ namespace Internal.Cryptography
             Debug.Assert(output != null);
             Debug.Assert(outputOffset >= 0);
             Debug.Assert(output.Length - outputOffset >= count);
+
+            // OpenSSL 1.1 does not allow partial overlap.
+            if (input == output && inputOffset != outputOffset)
+            {
+                byte[] tmp = ArrayPool<byte>.Shared.Rent(count);
+
+                try
+                {
+                    int written = CipherUpdate(input, inputOffset, count, tmp, 0);
+                    Buffer.BlockCopy(tmp, 0, output, outputOffset, written);
+                    return written;
+                }
+                finally
+                {
+                    CryptographicOperations.ZeroMemory(tmp.AsSpan(0, count));
+                    ArrayPool<byte>.Shared.Return(tmp);
+                }
+            }
 
             return CipherUpdate(input, inputOffset, count, output, outputOffset);
         }

@@ -18,20 +18,24 @@ CryptoNative_EvpCipherCreate(const EVP_CIPHER* type, uint8_t* key, unsigned char
 EVP_CIPHER_CTX*
 CryptoNative_EvpCipherCreate2(const EVP_CIPHER* type, uint8_t* key, int32_t keyLength, int32_t effectiveKeyLength, unsigned char* iv, int32_t enc)
 {
-    EVP_CIPHER_CTX* ctx = (EVP_CIPHER_CTX*)malloc(sizeof(EVP_CIPHER_CTX));
+    EVP_CIPHER_CTX* ctx = EVP_CIPHER_CTX_new();
     if (ctx == NULL)
     {
         // Allocation failed
         return NULL;
     }
 
-    EVP_CIPHER_CTX_init(ctx);
+    if (!EVP_CIPHER_CTX_reset(ctx))
+    {
+        EVP_CIPHER_CTX_free(ctx);
+        return NULL;
+    }
 
     // Perform partial initialization so we can set the key lengths
     int ret = EVP_CipherInit_ex(ctx, type, NULL, NULL, NULL, 0);
     if (!ret)
     {
-        free(ctx);
+        EVP_CIPHER_CTX_free(ctx);
         return NULL;
     }
 
@@ -41,7 +45,7 @@ CryptoNative_EvpCipherCreate2(const EVP_CIPHER* type, uint8_t* key, int32_t keyL
         ret = EVP_CIPHER_CTX_set_key_length(ctx, keyLength / 8);
         if (!ret)
         {
-            free(ctx);
+            EVP_CIPHER_CTX_free(ctx);
             return NULL;
         }
     }
@@ -52,7 +56,7 @@ CryptoNative_EvpCipherCreate2(const EVP_CIPHER* type, uint8_t* key, int32_t keyL
         ret = EVP_CIPHER_CTX_ctrl(ctx, EVP_CTRL_SET_RC2_KEY_BITS, effectiveKeyLength, NULL);
         if (ret <= 0)
         {
-            free(ctx);
+            EVP_CIPHER_CTX_free(ctx);
             return NULL;
         }
     }
@@ -61,7 +65,7 @@ CryptoNative_EvpCipherCreate2(const EVP_CIPHER* type, uint8_t* key, int32_t keyL
     ret = EVP_CipherInit_ex(ctx, NULL, NULL, key, iv, enc);
     if (!ret)
     {
-        free(ctx);
+        EVP_CIPHER_CTX_free(ctx);
         return NULL;
     }
 
@@ -71,20 +75,24 @@ CryptoNative_EvpCipherCreate2(const EVP_CIPHER* type, uint8_t* key, int32_t keyL
 EVP_CIPHER_CTX*
 CryptoNative_EvpCipherCreatePartial(const EVP_CIPHER* type)
 {
-    EVP_CIPHER_CTX* ctx = (EVP_CIPHER_CTX*)malloc(sizeof(EVP_CIPHER_CTX));
+    EVP_CIPHER_CTX* ctx = EVP_CIPHER_CTX_new();
     if (ctx == NULL)
     {
         // Allocation failed
         return NULL;
     }
 
-    EVP_CIPHER_CTX_init(ctx);
+    if (!EVP_CIPHER_CTX_reset(ctx))
+    {
+        EVP_CIPHER_CTX_free(ctx);
+        return NULL;
+    }
 
     // Perform partial initialization so we can set the key lengths
     int ret = EVP_CipherInit_ex(ctx, type, NULL, NULL, NULL, 0);
     if (!ret)
     {
-        free(ctx);
+        EVP_CIPHER_CTX_free(ctx);
         return NULL;
     }
 
@@ -111,8 +119,7 @@ void CryptoNative_EvpCipherDestroy(EVP_CIPHER_CTX* ctx)
 {
     if (ctx != NULL)
     {
-        EVP_CIPHER_CTX_cleanup(ctx);
-        free(ctx);
+        EVP_CIPHER_CTX_free(ctx);
     }
 }
 

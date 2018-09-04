@@ -6,13 +6,24 @@
 #include <dlfcn.h>
 #include <stdio.h>
 #include <stdbool.h>
+#include <string.h>
 
 #include "opensslshim.h"
 
-// Define pointers to all the used ICU functions
-#define PER_FUNCTION_BLOCK(fn, isRequired) __typeof(fn) fn##_ptr;
+// Define pointers to all the used OpenSSL functions
+#define REQUIRED_FUNCTION(fn) __typeof(fn) fn##_ptr;
+#define NEW_REQUIRED_FUNCTION(fn) __typeof(fn) fn##_ptr;
+#define LIGHTUP_FUNCTION(fn) __typeof(fn) fn##_ptr;
+#define FALLBACK_FUNCTION(fn) __typeof(fn) fn##_ptr;
+#define RENAMED_FUNCTION(fn,oldfn) __typeof(fn) fn##_ptr;
+#define LEGACY_FUNCTION(fn) __typeof(fn) fn##_ptr;
 FOR_ALL_OPENSSL_FUNCTIONS
-#undef PER_FUNCTION_BLOCK
+#undef LEGACY_FUNCTION
+#undef RENAMED_FUNCTION
+#undef FALLBACK_FUNCTION
+#undef LIGHTUP_FUNCTION
+#undef NEW_REQUIRED_FUNCTION
+#undef REQUIRED_FUNCTION
 
 // x.x.x, considering the max number of decimal digits for each component
 #define MaxVersionStringLength 32
@@ -34,6 +45,12 @@ static bool OpenLibrary()
 
         strcat(soName, versionOverride);
         libssl = dlopen(soName, RTLD_LAZY);
+    }
+
+    if (libssl == NULL)
+    {
+        // Prefer OpenSSL 1.1.x
+        libssl = dlopen("libssl.so.1.1", RTLD_LAZY);
     }
 
     if (libssl == NULL)
@@ -64,17 +81,41 @@ static void InitializeOpenSSLShim()
 {
     if (!OpenLibrary())
     {
-        fprintf(stderr, "No usable version of the libssl was found\n");
+        fprintf(stderr, "No usable version of libssl was found\n");
         abort();
     }
 
-    // Get pointers to all the ICU functions that are needed
-#define PER_FUNCTION_BLOCK(fn, isRequired) \
-    fn##_ptr = (__typeof(fn))(dlsym(libssl, #fn)); \
-    if ((fn##_ptr) == NULL && isRequired) { fprintf(stderr, "Cannot get required symbol " #fn " from libssl\n"); abort(); }
+    // A function defined in libcrypto.so.1.0.0/libssl.so.1.0.0 that is not defined in
+    // libcrypto.so.1.1.0/libssl.so.1.1.0
+    const void* v1_0_sentinel = dlsym(libssl, "SSL_state");
+
+    // Get pointers to all the functions that are needed
+#define REQUIRED_FUNCTION(fn) \
+    if (!(fn##_ptr = (__typeof(fn))(dlsym(libssl, #fn)))) { fprintf(stderr, "Cannot get required symbol " #fn " from libssl\n"); abort(); }
+
+#define NEW_REQUIRED_FUNCTION(fn) \
+    if (!v1_0_sentinel && !(fn##_ptr = (__typeof(fn))(dlsym(libssl, #fn)))) { fprintf(stderr, "Cannot get required symbol " #fn " from libssl\n"); abort(); }
+
+#define LIGHTUP_FUNCTION(fn) \
+    fn##_ptr = (__typeof(fn))(dlsym(libssl, #fn));
+
+#define FALLBACK_FUNCTION(fn) \
+    if (!(fn##_ptr = (__typeof(fn))(dlsym(libssl, #fn)))) { fn##_ptr = (__typeof(fn))local_##fn; }
+
+#define RENAMED_FUNCTION(fn,oldfn) \
+    if (!v1_0_sentinel && !(fn##_ptr = (__typeof(fn))(dlsym(libssl, #fn)))) { fprintf(stderr, "Cannot get required symbol " #fn " from libssl\n"); abort(); } \
+    if (v1_0_sentinel && !(fn##_ptr = (__typeof(fn))(dlsym(libssl, #oldfn)))) { fprintf(stderr, "Cannot get required symbol " #oldfn " from libssl\n"); abort(); }
+
+#define LEGACY_FUNCTION(fn) \
+    if (v1_0_sentinel && !(fn##_ptr = (__typeof(fn))(dlsym(libssl, #fn)))) { fprintf(stderr, "Cannot get required symbol " #fn " from libssl\n"); abort(); }
 
     FOR_ALL_OPENSSL_FUNCTIONS
-#undef PER_FUNCTION_BLOCK    
+#undef LEGACY_FUNCTION
+#undef RENAMED_FUNCTION
+#undef FALLBACK_FUNCTION
+#undef LIGHTUP_FUNCTION
+#undef NEW_REQUIRED_FUNCTION
+#undef REQUIRED_FUNCTION
 }
 
 __attribute__((destructor))

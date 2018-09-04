@@ -88,11 +88,11 @@ Returns 1 upon success, otherwise 0.
 */
 DLLEXPORT int32_t CryptoNative_GetDsaParameters(
     const DSA* dsa,
-    BIGNUM** p, int32_t* pLength,
-    BIGNUM** q, int32_t* qLength,
-    BIGNUM** g, int32_t* gLength,
-    BIGNUM** y, int32_t* yLength,
-    BIGNUM** x, int32_t* xLength);
+    const BIGNUM** p, int32_t* pLength,
+    const BIGNUM** q, int32_t* qLength,
+    const BIGNUM** g, int32_t* gLength,
+    const BIGNUM** y, int32_t* yLength,
+    const BIGNUM** x, int32_t* xLength);
 
 /*
 Sets all the parameters on the DSA instance.

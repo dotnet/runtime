@@ -115,14 +115,14 @@ Gets all the parameters from the RSA instance.
 Returns 1 upon success, otherwise 0.
 */
 DLLEXPORT int32_t CryptoNative_GetRsaParameters(const RSA* rsa,
-                                                 BIGNUM** n,
-                                                 BIGNUM** e,
-                                                 BIGNUM** d,
-                                                 BIGNUM** p,
-                                                 BIGNUM** dmp1,
-                                                 BIGNUM** q,
-                                                 BIGNUM** dmq1,
-                                                 BIGNUM** iqmp);
+                                                const BIGNUM** n,
+                                                const BIGNUM** e,
+                                                const BIGNUM** d,
+                                                const BIGNUM** p,
+                                                const BIGNUM** dmp1,
+                                                const BIGNUM** q,
+                                                const BIGNUM** dmq1,
+                                                const BIGNUM** iqmp);
 
 /*
 Sets all the parameters on the RSA instance.

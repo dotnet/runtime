@@ -14,7 +14,7 @@ HMAC_CTX* CryptoNative_HmacCreate(const uint8_t* key, int32_t keyLen, const EVP_
     assert(keyLen >= 0);
     assert(md != NULL);
 
-    HMAC_CTX* ctx = (HMAC_CTX*)malloc(sizeof(HMAC_CTX));
+    HMAC_CTX* ctx = HMAC_CTX_new();
     if (ctx == NULL)
     {
         // Allocation failed
@@ -27,7 +27,6 @@ HMAC_CTX* CryptoNative_HmacCreate(const uint8_t* key, int32_t keyLen, const EVP_
     if (keyLen == 0)
         key = &_;
 
-    HMAC_CTX_init(ctx);
     int ret = HMAC_Init_ex(ctx, key, keyLen, md, NULL);
 
     if (!ret)
@@ -43,8 +42,7 @@ void CryptoNative_HmacDestroy(HMAC_CTX* ctx)
 {
     if (ctx != NULL)
     {
-        HMAC_CTX_cleanup(ctx);
-        free(ctx);
+        HMAC_CTX_free(ctx);
     }
 }
 
