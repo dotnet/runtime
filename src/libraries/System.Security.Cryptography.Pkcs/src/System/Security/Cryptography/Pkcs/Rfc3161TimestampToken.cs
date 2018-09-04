@@ -16,8 +16,8 @@ namespace System.Security.Cryptography.Pkcs
     {
         private SignedCms _parsedDocument;
         private SignerInfo _signerInfo;
-        private EssCertId _essCertId;
-        private EssCertIdV2 _essCertIdV2;
+        private EssCertId? _essCertId;
+        private EssCertIdV2? _essCertIdV2;
 
         public Rfc3161TimestampTokenInfo TokenInfo { get; private set; }
 
@@ -45,7 +45,7 @@ namespace System.Security.Cryptography.Pkcs
 
             if (signerCert != null)
             {
-                if (CheckCertificate(signerCert, _signerInfo, _essCertId, _essCertIdV2, TokenInfo))
+                if (CheckCertificate(signerCert, _signerInfo, in _essCertId, in _essCertIdV2, TokenInfo))
                 {
                     return signerCert;
                 }
@@ -61,7 +61,7 @@ namespace System.Security.Cryptography.Pkcs
 
             foreach (X509Certificate2 candidate in extraCandidates)
             {
-                if (CheckCertificate(candidate, _signerInfo, _essCertId, _essCertIdV2, TokenInfo))
+                if (CheckCertificate(candidate, _signerInfo, in _essCertId, in _essCertIdV2, TokenInfo))
                 {
                     return candidate;
                 }
@@ -205,8 +205,8 @@ namespace System.Security.Cryptography.Pkcs
         private static bool CheckCertificate(
             X509Certificate2 tsaCertificate,
             SignerInfo signer,
-            EssCertId certId,
-            EssCertIdV2 certId2,
+            in EssCertId? certId,
+            in EssCertIdV2? certId2,
             Rfc3161TimestampTokenInfo tokenInfo)
         {
             Debug.Assert(tsaCertificate != null);
@@ -296,8 +296,12 @@ namespace System.Security.Cryptography.Pkcs
 
             try
             {
-                ContentInfoAsn contentInfo =
-                    AsnSerializer.Deserialize<ContentInfoAsn>(source, AsnEncodingRules.BER, out int bytesActuallyRead);
+                AsnReader reader = new AsnReader(source, AsnEncodingRules.BER);
+                int bytesActuallyRead = reader.PeekEncodedValue().Length;
+                
+                ContentInfoAsn.Decode(
+                    reader,
+                    out ContentInfoAsn contentInfo);
 
                 // https://tools.ietf.org/html/rfc3161#section-2.4.2
                 //
@@ -347,8 +351,8 @@ namespace System.Security.Cryptography.Pkcs
                 }
 
                 SignerInfo signer = signerInfos[0];
-                EssCertId certId;
-                EssCertIdV2 certId2;
+                EssCertId? certId;
+                EssCertIdV2? certId2;
 
                 if (!TryGetCertIds(signer, out certId, out certId2))
                 {
@@ -364,10 +368,10 @@ namespace System.Security.Cryptography.Pkcs
                     // and the ESSCertId(V2) has specified an issuerSerial value, ensure it's a match.
                     X509IssuerSerial issuerSerial = (X509IssuerSerial)signer.SignerIdentifier.Value;
 
-                    if (certId?.IssuerSerial != null)
+                    if (certId.HasValue && certId.Value.IssuerSerial != null)
                     {
                         if (!IssuerAndSerialMatch(
-                            certId.IssuerSerial.Value,
+                            certId.Value.IssuerSerial.Value,
                             issuerSerial.IssuerName,
                             issuerSerial.SerialNumber))
                         {
@@ -375,10 +379,10 @@ namespace System.Security.Cryptography.Pkcs
                         }
                     }
 
-                    if (certId2?.IssuerSerial != null)
+                    if (certId2.HasValue && certId2.Value.IssuerSerial != null)
                     {
                         if (!IssuerAndSerialMatch(
-                            certId2.IssuerSerial.Value,
+                            certId2.Value.IssuerSerial.Value,
                             issuerSerial.IssuerName,
                             issuerSerial.SerialNumber))
                         {
@@ -392,7 +396,7 @@ namespace System.Security.Cryptography.Pkcs
                 if (Rfc3161TimestampTokenInfo.TryDecode(cms.ContentInfo.Content, out tokenInfo, out _))
                 {
                     if (signerCert != null &&
-                        !CheckCertificate(signerCert, signer, certId, certId2, tokenInfo))
+                        !CheckCertificate(signerCert, signer, in certId, in certId2, tokenInfo))
                     {
                         return false;
                     }
@@ -471,30 +475,30 @@ namespace System.Security.Cryptography.Pkcs
             return serialNumber.SequenceEqual(issuerSerial.SerialNumber.Span);
         }
 
-        private static bool CertMatchesIds(X509Certificate2 signerCert, EssCertId certId, EssCertIdV2 certId2)
+        private static bool CertMatchesIds(X509Certificate2 signerCert, in EssCertId? certId, in EssCertIdV2? certId2)
         {
             Debug.Assert(signerCert != null);
-            Debug.Assert(certId != null || certId2 != null);
+            Debug.Assert(certId.HasValue || certId2.HasValue);
             byte[] serialNumber = null;
 
-            if (certId != null)
+            if (certId.HasValue)
             {
                 Span<byte> thumbprint = stackalloc byte[20];
 
                 if (!signerCert.TryGetCertHash(HashAlgorithmName.SHA1, thumbprint, out int written) ||
                     written != thumbprint.Length ||
-                    !thumbprint.SequenceEqual(certId.Hash.Span))
+                    !thumbprint.SequenceEqual(certId.Value.Hash.Span))
                 {
                     return false;
                 }
 
-                if (certId.IssuerSerial != null)
+                if (certId.Value.IssuerSerial.HasValue)
                 {
                     serialNumber = signerCert.GetSerialNumber();
                     Array.Reverse(serialNumber);
 
                     if (!IssuerAndSerialMatch(
-                        certId.IssuerSerial.Value,
+                        certId.Value.IssuerSerial.Value,
                         signerCert.IssuerName.RawData,
                         serialNumber))
                     {
@@ -503,7 +507,7 @@ namespace System.Security.Cryptography.Pkcs
                 }
             }
 
-            if (certId2 != null)
+            if (certId2.HasValue)
             {
                 HashAlgorithmName alg;
                 // SHA-2-512 is the biggest we know about.
@@ -511,7 +515,7 @@ namespace System.Security.Cryptography.Pkcs
 
                 try
                 {
-                    alg = PkcsHelpers.GetDigestAlgorithm(certId2.HashAlgorithm.Algorithm);
+                    alg = PkcsHelpers.GetDigestAlgorithm(certId2.Value.HashAlgorithm.Algorithm);
 
                     if (signerCert.TryGetCertHash(alg, thumbprint, out int written))
                     {
@@ -520,7 +524,7 @@ namespace System.Security.Cryptography.Pkcs
                     else
                     {
                         Debug.Fail(
-                            $"TryGetCertHash did not fit in {thumbprint.Length} for hash {certId2.HashAlgorithm.Algorithm.Value}");
+                            $"TryGetCertHash did not fit in {thumbprint.Length} for hash {certId2.Value.HashAlgorithm.Algorithm.Value}");
 
                         thumbprint = signerCert.GetCertHash(alg);
                     }
@@ -530,12 +534,12 @@ namespace System.Security.Cryptography.Pkcs
                     return false;
                 }
 
-                if (!thumbprint.SequenceEqual(certId2.Hash.Span))
+                if (!thumbprint.SequenceEqual(certId2.Value.Hash.Span))
                 {
                     return false;
                 }
 
-                if (certId2.IssuerSerial != null)
+                if (certId2.Value.IssuerSerial.HasValue)
                 {
                     if (serialNumber == null)
                     {
@@ -544,7 +548,7 @@ namespace System.Security.Cryptography.Pkcs
                     }
 
                     if (!IssuerAndSerialMatch(
-                        certId2.IssuerSerial.Value,
+                        certId2.Value.IssuerSerial.Value,
                         signerCert.IssuerName.RawData,
                         serialNumber))
                     {
@@ -556,7 +560,7 @@ namespace System.Security.Cryptography.Pkcs
             return true;
         }
 
-        private static bool TryGetCertIds(SignerInfo signer, out EssCertId certId, out EssCertIdV2 certId2)
+        private static bool TryGetCertIds(SignerInfo signer, out EssCertId? certId, out EssCertIdV2? certId2)
         {
             // RFC 5035 says that SigningCertificateV2 (contains ESSCertIDv2) is a signed
             // attribute, with OID 1.2.840.113549.1.9.16.2.47, and that it must not be multiply defined.
@@ -590,8 +594,9 @@ namespace System.Security.Cryptography.Pkcs
 
                         try
                         {
-                            SigningCertificateAsn signingCert =
-                                AsnSerializer.Deserialize<SigningCertificateAsn>(attr.RawData, AsnEncodingRules.BER);
+                            SigningCertificateAsn signingCert = SigningCertificateAsn.Decode(
+                                attr.RawData,
+                                AsnEncodingRules.BER);
 
                             if (signingCert.Certs.Length < 1)
                             {
@@ -616,8 +621,9 @@ namespace System.Security.Cryptography.Pkcs
 
                         try
                         {
-                            SigningCertificateV2Asn signingCert =
-                                AsnSerializer.Deserialize<SigningCertificateV2Asn>(attr.RawData, AsnEncodingRules.BER);
+                            SigningCertificateV2Asn signingCert = SigningCertificateV2Asn.Decode(
+                                attr.RawData,
+                                AsnEncodingRules.BER);
 
                             if (signingCert.Certs.Length < 1)
                             {

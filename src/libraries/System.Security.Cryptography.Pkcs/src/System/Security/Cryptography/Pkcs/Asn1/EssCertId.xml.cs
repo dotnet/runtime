@@ -1,0 +1,86 @@
+﻿using System;
+using System.Runtime.InteropServices;
+using System.Security.Cryptography;
+using System.Security.Cryptography.Asn1;
+
+namespace System.Security.Cryptography.Pkcs.Asn1
+{
+    [StructLayout(LayoutKind.Sequential)]
+    internal partial struct EssCertId
+    {
+        internal ReadOnlyMemory<byte> Hash;
+        internal System.Security.Cryptography.Pkcs.Asn1.CadesIssuerSerial? IssuerSerial;
+      
+        internal void Encode(AsnWriter writer)
+        {
+            Encode(writer, Asn1Tag.Sequence);
+        }
+    
+        internal void Encode(AsnWriter writer, Asn1Tag tag)
+        {
+            writer.PushSequence(tag);
+            
+            writer.WriteOctetString(Hash.Span);
+
+            if (IssuerSerial.HasValue)
+            {
+                IssuerSerial.Value.Encode(writer);
+            }
+
+            writer.PopSequence(tag);
+        }
+
+        internal static EssCertId Decode(ReadOnlyMemory<byte> encoded, AsnEncodingRules ruleSet)
+        {
+            return Decode(Asn1Tag.Sequence, encoded, ruleSet);
+        }
+        
+        internal static EssCertId Decode(Asn1Tag expectedTag, ReadOnlyMemory<byte> encoded, AsnEncodingRules ruleSet)
+        {
+            AsnReader reader = new AsnReader(encoded, ruleSet);
+            
+            Decode(reader, expectedTag, out EssCertId decoded);
+            reader.ThrowIfNotEmpty();
+            return decoded;
+        }
+
+        internal static void Decode(AsnReader reader, out EssCertId decoded)
+        {
+            if (reader == null)
+                throw new ArgumentNullException(nameof(reader));
+
+            Decode(reader, Asn1Tag.Sequence, out decoded);
+        }
+
+        internal static void Decode(AsnReader reader, Asn1Tag expectedTag, out EssCertId decoded)
+        {
+            if (reader == null)
+                throw new ArgumentNullException(nameof(reader));
+
+            decoded = default;
+            AsnReader sequenceReader = reader.ReadSequence(expectedTag);
+            
+
+            if (sequenceReader.TryGetPrimitiveOctetStringBytes(out ReadOnlyMemory<byte> tmpHash))
+            {
+                decoded.Hash = tmpHash;
+            }
+            else
+            {
+                decoded.Hash = sequenceReader.ReadOctetString();
+            }
+
+
+            if (sequenceReader.HasData && sequenceReader.PeekTag().HasSameClassAndValue(Asn1Tag.Sequence))
+            {
+                System.Security.Cryptography.Pkcs.Asn1.CadesIssuerSerial tmpIssuerSerial;
+                System.Security.Cryptography.Pkcs.Asn1.CadesIssuerSerial.Decode(sequenceReader, out tmpIssuerSerial);
+                decoded.IssuerSerial = tmpIssuerSerial;
+
+            }
+
+
+            sequenceReader.ThrowIfNotEmpty();
+        }
+    }
+}

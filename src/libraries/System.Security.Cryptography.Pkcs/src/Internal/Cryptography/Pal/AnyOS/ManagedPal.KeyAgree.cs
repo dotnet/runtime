@@ -41,18 +41,18 @@ namespace Internal.Cryptography.Pal.AnyOS
                 {
                     KeyAgreeRecipientIdentifierAsn rid = _asn.RecipientEncryptedKeys[_index].Rid;
 
-                    if (rid.RKeyId == null)
+                    if (!rid.RKeyId.HasValue)
                     {
                         throw new InvalidOperationException(SR.Cryptography_Cms_Key_Agree_Date_Not_Available);
                     }
 
-                    if (rid.RKeyId.Date == null)
+                    if (!rid.RKeyId.Value.Date.HasValue)
                     {
                         // Compatibility with Windows/NetFX.
                         return DateTime.FromFileTimeUtc(0);
                     }
 
-                    return rid.RKeyId.Date.Value.LocalDateTime;
+                    return rid.RKeyId.Value.Date.Value.LocalDateTime;
                 }
             }
 
@@ -65,23 +65,23 @@ namespace Internal.Cryptography.Pal.AnyOS
                 {
                     KeyAgreeRecipientIdentifierAsn rid = _asn.RecipientEncryptedKeys[_index].Rid;
 
-                    if (rid.RKeyId == null)
+                    if (!rid.RKeyId.HasValue)
                     {
                         // Yes, "date" (Windows compat)
                         throw new InvalidOperationException(SR.Cryptography_Cms_Key_Agree_Date_Not_Available);
                     }
 
-                    if (rid.RKeyId.Other == null)
+                    if (!rid.RKeyId.Value.Other.HasValue)
                     {
                         return null;
                     }
 
-                    Oid oid = new Oid(rid.RKeyId.Other.Value.KeyAttrId);
+                    Oid oid = new Oid(rid.RKeyId.Value.Other.Value.KeyAttrId);
                     byte[] rawData = Array.Empty<byte>();
 
-                    if (rid.RKeyId.Other.Value.KeyAttr != null)
+                    if (rid.RKeyId.Value.Other.Value.KeyAttr != null)
                     {
-                        rawData = rid.RKeyId.Other.Value.KeyAttr.Value.ToArray();
+                        rawData = rid.RKeyId.Value.Other.Value.KeyAttr.Value.ToArray();
                     }
 
                     Pkcs9AttributeObject pkcs9AttributeObject = new Pkcs9AttributeObject(oid, rawData);

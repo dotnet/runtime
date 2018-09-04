@@ -67,19 +67,58 @@
     <Compile Include="Internal\Cryptography\Pal\AnyOS\ManagedPal.Exceptions.cs" />
     <Compile Include="Internal\Cryptography\Pal\AnyOS\ManagedPal.KeyAgree.cs" />
     <Compile Include="Internal\Cryptography\Pal\AnyOS\ManagedPal.KeyTrans.cs" />
-    <Compile Include="System\Security\Cryptography\Pkcs\Asn1\EncryptedContentInfoAsn.cs" />
-    <Compile Include="System\Security\Cryptography\Pkcs\Asn1\EnvelopedDataAsn.cs" />
-    <Compile Include="System\Security\Cryptography\Pkcs\Asn1\KeyAgreeRecipientIdentifierAsn.cs" />
-    <Compile Include="System\Security\Cryptography\Pkcs\Asn1\KeyAgreeRecipientInfoAsn.cs" />
-    <Compile Include="System\Security\Cryptography\Pkcs\Asn1\KeyTransRecipientInfoAsn.cs" />
-    <Compile Include="System\Security\Cryptography\Pkcs\Asn1\OriginatorIdentifierOrKeyAsn.cs" />
-    <Compile Include="System\Security\Cryptography\Pkcs\Asn1\OriginatorInfoAsn.cs" />
-    <Compile Include="System\Security\Cryptography\Pkcs\Asn1\OriginatorPublicKeyAsn.cs" />
-    <Compile Include="System\Security\Cryptography\Pkcs\Asn1\OtherKeyAttributeAsn.cs" />
-    <Compile Include="System\Security\Cryptography\Pkcs\Asn1\RecipientEncryptedKeyAsn.cs" />
-    <Compile Include="System\Security\Cryptography\Pkcs\Asn1\RecipientIdentifierAsn.cs" />
-    <Compile Include="System\Security\Cryptography\Pkcs\Asn1\RecipientInfoAsn.cs" />
-    <Compile Include="System\Security\Cryptography\Pkcs\Asn1\RecipientKeyIdentifier.cs" />
+    <AsnXml Include="System\Security\Cryptography\Pkcs\Asn1\EncryptedContentInfoAsn.xml" />
+    <Compile Include="System\Security\Cryptography\Pkcs\Asn1\EncryptedContentInfoAsn.xml.cs">
+      <DependentUpon>System\Security\Cryptography\Pkcs\Asn1\EncryptedContentInfoAsn.xml</DependentUpon>
+    </Compile>
+    <AsnXml Include="System\Security\Cryptography\Pkcs\Asn1\EnvelopedDataAsn.xml" />
+    <Compile Include="System\Security\Cryptography\Pkcs\Asn1\EnvelopedDataAsn.xml.cs">
+      <DependentUpon>System\Security\Cryptography\Pkcs\Asn1\EnvelopedDataAsn.xml</DependentUpon>
+    </Compile>
+    <AsnXml Include="System\Security\Cryptography\Pkcs\Asn1\KeyAgreeRecipientIdentifierAsn.xml" />
+    <Compile Include="System\Security\Cryptography\Pkcs\Asn1\KeyAgreeRecipientIdentifierAsn.xml.cs">
+      <DependentUpon>System\Security\Cryptography\Pkcs\Asn1\KeyAgreeRecipientIdentifierAsn.xml</DependentUpon>
+    </Compile>
+    <AsnXml Include="System\Security\Cryptography\Pkcs\Asn1\KeyAgreeRecipientInfoAsn.xml" />
+    <Compile Include="System\Security\Cryptography\Pkcs\Asn1\KeyAgreeRecipientInfoAsn.xml.cs">
+      <DependentUpon>System\Security\Cryptography\Pkcs\Asn1\KeyAgreeRecipientInfoAsn.xml</DependentUpon>
+    </Compile>
+    <AsnXml Include="System\Security\Cryptography\Pkcs\Asn1\KeyTransRecipientInfoAsn.xml" />
+    <Compile Include="System\Security\Cryptography\Pkcs\Asn1\KeyTransRecipientInfoAsn.xml.cs">
+      <DependentUpon>System\Security\Cryptography\Pkcs\Asn1\KeyTransRecipientInfoAsn.xml</DependentUpon>
+    </Compile>
+    <AsnXml Include="System\Security\Cryptography\Pkcs\Asn1\OriginatorIdentifierOrKeyAsn.xml" />
+    <Compile Include="System\Security\Cryptography\Pkcs\Asn1\OriginatorIdentifierOrKeyAsn.xml.cs">
+      <DependentUpon>System\Security\Cryptography\Pkcs\Asn1\OriginatorIdentifierOrKeyAsn.xml</DependentUpon>
+    </Compile>
+    <AsnXml Include="System\Security\Cryptography\Pkcs\Asn1\OriginatorInfoAsn.xml" />
+    <Compile Include="System\Security\Cryptography\Pkcs\Asn1\OriginatorInfoAsn.xml.cs">
+      <DependentUpon>System\Security\Cryptography\Pkcs\Asn1\OriginatorInfoAsn.xml</DependentUpon>
+    </Compile>
+    <AsnXml Include="System\Security\Cryptography\Pkcs\Asn1\OriginatorPublicKeyAsn.xml" />
+    <Compile Include="System\Security\Cryptography\Pkcs\Asn1\OriginatorPublicKeyAsn.xml.cs">
+      <DependentUpon>System\Security\Cryptography\Pkcs\Asn1\OriginatorPublicKeyAsn.xml</DependentUpon>
+    </Compile>
+    <AsnXml Include="System\Security\Cryptography\Pkcs\Asn1\OtherKeyAttributeAsn.xml" />
+    <Compile Include="System\Security\Cryptography\Pkcs\Asn1\OtherKeyAttributeAsn.xml.cs">
+      <DependentUpon>System\Security\Cryptography\Pkcs\Asn1\OtherKeyAttributeAsn.xml</DependentUpon>
+    </Compile>
+    <AsnXml Include="System\Security\Cryptography\Pkcs\Asn1\RecipientEncryptedKeyAsn.xml" />
+    <Compile Include="System\Security\Cryptography\Pkcs\Asn1\RecipientEncryptedKeyAsn.xml.cs">
+      <DependentUpon>System\Security\Cryptography\Pkcs\Asn1\RecipientEncryptedKeyAsn.xml</DependentUpon>
+    </Compile>
+    <AsnXml Include="System\Security\Cryptography\Pkcs\Asn1\RecipientIdentifierAsn.xml" />
+    <Compile Include="System\Security\Cryptography\Pkcs\Asn1\RecipientIdentifierAsn.xml.cs">
+      <DependentUpon>System\Security\Cryptography\Pkcs\Asn1\RecipientIdentifierAsn.xml</DependentUpon>
+    </Compile>
+    <AsnXml Include="System\Security\Cryptography\Pkcs\Asn1\RecipientInfoAsn.xml" />
+    <Compile Include="System\Security\Cryptography\Pkcs\Asn1\RecipientInfoAsn.xml.cs">
+      <DependentUpon>System\Security\Cryptography\Pkcs\Asn1\RecipientInfoAsn.xml</DependentUpon>
+    </Compile>
+    <AsnXml Include="System\Security\Cryptography\Pkcs\Asn1\RecipientKeyIdentifier.xml" />
+    <Compile Include="System\Security\Cryptography\Pkcs\Asn1\RecipientKeyIdentifier.xml.cs">
+      <DependentUpon>System\Security\Cryptography\Pkcs\Asn1\RecipientKeyIdentifier.xml</DependentUpon>
+    </Compile>
   </ItemGroup>
   <!-- Internal types (platform: Windows) -->
   <ItemGroup Condition="'$(TargetsWindows)' == 'true' AND '$(IsPartialFacadeAssembly)' != 'true'">
@@ -292,23 +331,93 @@
     <Compile Include="$(CommonPath)\System\Security\Cryptography\Asn1\X509ExtensionAsn.cs">
       <Link>Common\System\Security\Cryptography\Asn1\X509ExtensionAsn.cs</Link>
     </Compile>
-    <Compile Include="System\Security\Cryptography\Pkcs\Asn1\CertificateChoiceAsn.cs" />
-    <Compile Include="System\Security\Cryptography\Pkcs\Asn1\ContentInfoAsn.cs" />
-    <Compile Include="System\Security\Cryptography\Pkcs\Asn1\EncapsulatedContentInfoAsn.cs" />
-    <Compile Include="System\Security\Cryptography\Pkcs\Asn1\IssuerAndSerialNumberAsn.cs" />
-    <Compile Include="System\Security\Cryptography\Pkcs\Asn1\MessageImprint.cs" />
-    <Compile Include="System\Security\Cryptography\Pkcs\Asn1\Rfc3161Accuracy.cs" />
-    <Compile Include="System\Security\Cryptography\Pkcs\Asn1\Rfc3161TimeStampReq.cs" />
-    <Compile Include="System\Security\Cryptography\Pkcs\Asn1\Rfc3161TimeStampResp.cs" />
-    <Compile Include="System\Security\Cryptography\Pkcs\Asn1\Rfc3161TstInfo.cs" />
+    <AsnXml Include="System\Security\Cryptography\Pkcs\Asn1\CadesIssuerSerial.xml" />
+    <Compile Include="System\Security\Cryptography\Pkcs\Asn1\CadesIssuerSerial.xml.cs">
+      <DependentUpon>System\Security\Cryptography\Pkcs\Asn1\CadesIssuerSerial.xml</DependentUpon>
+    </Compile>
+    <AsnXml Include="System\Security\Cryptography\Pkcs\Asn1\CertificateChoiceAsn.xml" />
+    <Compile Include="System\Security\Cryptography\Pkcs\Asn1\CertificateChoiceAsn.xml.cs">
+      <DependentUpon>System\Security\Cryptography\Pkcs\Asn1\CertificateChoiceAsn.xml</DependentUpon>
+    </Compile>
+    <AsnXml Include="System\Security\Cryptography\Pkcs\Asn1\ContentInfoAsn.xml" />
+    <Compile Include="System\Security\Cryptography\Pkcs\Asn1\ContentInfoAsn.xml.cs">
+      <DependentUpon>System\Security\Cryptography\Pkcs\Asn1\ContentInfoAsn.xml</DependentUpon>
+    </Compile>
+    <AsnXml Include="System\Security\Cryptography\Pkcs\Asn1\EncapsulatedContentInfoAsn.xml" />
+    <Compile Include="System\Security\Cryptography\Pkcs\Asn1\EncapsulatedContentInfoAsn.xml.cs">
+      <DependentUpon>System\Security\Cryptography\Pkcs\Asn1\EncapsulatedContentInfoAsn.xml</DependentUpon>
+    </Compile>
+    <AsnXml Include="System\Security\Cryptography\Pkcs\Asn1\EssCertId.xml" />
+    <Compile Include="System\Security\Cryptography\Pkcs\Asn1\EssCertId.xml.cs">
+      <DependentUpon>System\Security\Cryptography\Pkcs\Asn1\EssCertId.xml</DependentUpon>
+    </Compile>
+    <AsnXml Include="System\Security\Cryptography\Pkcs\Asn1\EssCertIdV2.xml" />
+    <Compile Include="System\Security\Cryptography\Pkcs\Asn1\EssCertIdV2.xml.cs">
+      <DependentUpon>System\Security\Cryptography\Pkcs\Asn1\EssCertIdV2.xml</DependentUpon>
+    </Compile>
+    <AsnXml Include="System\Security\Cryptography\Pkcs\Asn1\IssuerAndSerialNumberAsn.xml" />
+    <Compile Include="System\Security\Cryptography\Pkcs\Asn1\IssuerAndSerialNumberAsn.xml.cs">
+      <DependentUpon>System\Security\Cryptography\Pkcs\Asn1\IssuerAndSerialNumberAsn.xml</DependentUpon>
+    </Compile>
+    <AsnXml Include="System\Security\Cryptography\Pkcs\Asn1\MessageImprint.xml" />
+    <Compile Include="System\Security\Cryptography\Pkcs\Asn1\MessageImprint.xml.cs">
+      <DependentUpon>System\Security\Cryptography\Pkcs\Asn1\MessageImprint.xml</DependentUpon>
+    </Compile>
+    <Compile Include="System\Security\Cryptography\Pkcs\Asn1\PkiFailureInfo.cs" />
+    <Compile Include="System\Security\Cryptography\Pkcs\Asn1\PkiStatus.cs" />
+    <AsnXml Include="System\Security\Cryptography\Pkcs\Asn1\PkiStatusInfo.xml" />
+    <Compile Include="System\Security\Cryptography\Pkcs\Asn1\PkiStatusInfo.xml.cs">
+      <DependentUpon>System\Security\Cryptography\Pkcs\Asn1\PkiStatusInfo.xml</DependentUpon>
+    </Compile>
+    <AsnXml Include="System\Security\Cryptography\Pkcs\Asn1\PolicyInformation.xml" />
+    <Compile Include="System\Security\Cryptography\Pkcs\Asn1\PolicyInformation.xml.cs">
+      <DependentUpon>System\Security\Cryptography\Pkcs\Asn1\PolicyInformation.xml</DependentUpon>
+    </Compile>
+    <AsnXml Include="System\Security\Cryptography\Pkcs\Asn1\PolicyQualifierInfo.xml" />
+    <Compile Include="System\Security\Cryptography\Pkcs\Asn1\PolicyQualifierInfo.xml.cs">
+      <DependentUpon>System\Security\Cryptography\Pkcs\Asn1\PolicyQualifierInfo.xml</DependentUpon>
+    </Compile>
+    <AsnXml Include="System\Security\Cryptography\Pkcs\Asn1\Rfc3161Accuracy.xml" />
+    <Compile Include="System\Security\Cryptography\Pkcs\Asn1\Rfc3161Accuracy.xml.cs">
+      <DependentUpon>System\Security\Cryptography\Pkcs\Asn1\Rfc3161Accuracy.xml</DependentUpon>
+    </Compile>
+    <Compile Include="System\Security\Cryptography\Pkcs\Asn1\Rfc3161Accuracy.manual.cs" />
+    <AsnXml Include="System\Security\Cryptography\Pkcs\Asn1\Rfc3161TimeStampReq.xml" />
+    <Compile Include="System\Security\Cryptography\Pkcs\Asn1\Rfc3161TimeStampReq.xml.cs">
+      <DependentUpon>System\Security\Cryptography\Pkcs\Asn1\Rfc3161TimeStampReq.xml</DependentUpon>
+    </Compile>
+    <AsnXml Include="System\Security\Cryptography\Pkcs\Asn1\Rfc3161TimeStampResp.xml" />
+    <Compile Include="System\Security\Cryptography\Pkcs\Asn1\Rfc3161TimeStampResp.xml.cs">
+      <DependentUpon>System\Security\Cryptography\Pkcs\Asn1\Rfc3161TimeStampResp.xml</DependentUpon>
+    </Compile>
+    <AsnXml Include="System\Security\Cryptography\Pkcs\Asn1\Rfc3161TstInfo.xml" />
+    <Compile Include="System\Security\Cryptography\Pkcs\Asn1\Rfc3161TstInfo.xml.cs">
+      <DependentUpon>System\Security\Cryptography\Pkcs\Asn1\Rfc3161TstInfo.xml</DependentUpon>
+    </Compile>
     <AsnXml Include="System\Security\Cryptography\Pkcs\Asn1\SignedAttributesSet.xml" />
     <Compile Include="System\Security\Cryptography\Pkcs\Asn1\SignedAttributesSet.xml.cs">
       <DependentUpon>System\Security\Cryptography\Pkcs\Asn1\SignedAttributesSet.xml</DependentUpon>
     </Compile>
-    <Compile Include="System\Security\Cryptography\Pkcs\Asn1\SignedDataAsn.cs" />
-    <Compile Include="System\Security\Cryptography\Pkcs\Asn1\SignerIdentifierAsn.cs" />
-    <Compile Include="System\Security\Cryptography\Pkcs\Asn1\SignerInfoAsn.cs" />
-    <Compile Include="System\Security\Cryptography\Pkcs\Asn1\SigningCertificateAsn.cs" />
+    <AsnXml Include="System\Security\Cryptography\Pkcs\Asn1\SignedDataAsn.xml" />
+    <Compile Include="System\Security\Cryptography\Pkcs\Asn1\SignedDataAsn.xml.cs">
+      <DependentUpon>System\Security\Cryptography\Pkcs\Asn1\SignedDataAsn.xml</DependentUpon>
+    </Compile>
+    <AsnXml Include="System\Security\Cryptography\Pkcs\Asn1\SignerIdentifierAsn.xml" />
+    <Compile Include="System\Security\Cryptography\Pkcs\Asn1\SignerIdentifierAsn.xml.cs">
+      <DependentUpon>System\Security\Cryptography\Pkcs\Asn1\SignerIdentifierAsn.xml</DependentUpon>
+    </Compile>
+    <AsnXml Include="System\Security\Cryptography\Pkcs\Asn1\SignerInfoAsn.xml" />
+    <Compile Include="System\Security\Cryptography\Pkcs\Asn1\SignerInfoAsn.xml.cs">
+      <DependentUpon>System\Security\Cryptography\Pkcs\Asn1\SignerInfoAsn.xml</DependentUpon>
+    </Compile>
+    <AsnXml Include="System\Security\Cryptography\Pkcs\Asn1\SigningCertificateAsn.xml" />
+    <Compile Include="System\Security\Cryptography\Pkcs\Asn1\SigningCertificateAsn.xml.cs">
+      <DependentUpon>System\Security\Cryptography\Pkcs\Asn1\SignerInfoAsn.xml</DependentUpon>
+    </Compile>
+    <AsnXml Include="System\Security\Cryptography\Pkcs\Asn1\SigningCertificateV2Asn.xml" />
+    <Compile Include="System\Security\Cryptography\Pkcs\Asn1\SigningCertificateV2Asn.xml.cs">
+      <DependentUpon>System\Security\Cryptography\Pkcs\Asn1\SigningCertificateV2Asn.xml</DependentUpon>
+    </Compile>
     <Compile Include="System\Security\Cryptography\Pkcs\CmsSignature.cs" />
     <Compile Include="System\Security\Cryptography\Pkcs\CmsSignature.ECDsa.cs" />
     <Compile Include="System\Security\Cryptography\Pkcs\CmsSignature.RSA.cs" />
@@ -329,13 +438,34 @@
     <Compile Include="$(CommonPath)\System\Security\Cryptography\Pkcs12Kdf.cs">
       <Link>Common\System\Security\Cryptography\Pkcs12Kdf.cs</Link>
     </Compile>
-    <Compile Include="System\Security\Cryptography\Pkcs\Asn1\CertBagAsn.cs" />
-    <Compile Include="System\Security\Cryptography\Pkcs\Asn1\DigestInfoAsn.cs" />
-    <Compile Include="System\Security\Cryptography\Pkcs\Asn1\EncryptedDataAsn.cs" />
-    <Compile Include="System\Security\Cryptography\Pkcs\Asn1\MacData.cs" />
-    <Compile Include="System\Security\Cryptography\Pkcs\Asn1\PfxAsn.cs" />
-    <Compile Include="System\Security\Cryptography\Pkcs\Asn1\SafeBagAsn.cs" />
-    <Compile Include="System\Security\Cryptography\Pkcs\Asn1\SecretBagAsn.cs" />
+    <AsnXml Include="System\Security\Cryptography\Pkcs\Asn1\CertBagAsn.xml" />
+    <Compile Include="System\Security\Cryptography\Pkcs\Asn1\CertBagAsn.xml.cs">
+      <DependentUpon>System\Security\Cryptography\Pkcs\Asn1\CertBagAsn.xml</DependentUpon>
+    </Compile>
+    <AsnXml Include="System\Security\Cryptography\Pkcs\Asn1\DigestInfoAsn.xml" />
+    <Compile Include="System\Security\Cryptography\Pkcs\Asn1\DigestInfoAsn.xml.cs">
+      <DependentUpon>System\Security\Cryptography\Pkcs\Asn1\DigestInfoAsn.xml</DependentUpon>
+    </Compile>
+    <AsnXml Include="System\Security\Cryptography\Pkcs\Asn1\EncryptedDataAsn.xml" />
+    <Compile Include="System\Security\Cryptography\Pkcs\Asn1\EncryptedDataAsn.xml.cs">
+      <DependentUpon>System\Security\Cryptography\Pkcs\Asn1\EncryptedDataAsn.xml</DependentUpon>
+    </Compile>
+    <AsnXml Include="System\Security\Cryptography\Pkcs\Asn1\MacData.xml" />
+    <Compile Include="System\Security\Cryptography\Pkcs\Asn1\MacData.xml.cs">
+      <DependentUpon>System\Security\Cryptography\Pkcs\Asn1\MacData.xml</DependentUpon>
+    </Compile>
+    <AsnXml Include="System\Security\Cryptography\Pkcs\Asn1\PfxAsn.xml" />
+    <Compile Include="System\Security\Cryptography\Pkcs\Asn1\PfxAsn.xml.cs">
+      <DependentUpon>System\Security\Cryptography\Pkcs\Asn1\PfxAsn.xml</DependentUpon>
+    </Compile>
+    <AsnXml Include="System\Security\Cryptography\Pkcs\Asn1\SafeBagAsn.xml" />
+    <Compile Include="System\Security\Cryptography\Pkcs\Asn1\SafeBagAsn.xml.cs">
+      <DependentUpon>System\Security\Cryptography\Pkcs\Asn1\SafeBagAsn.xml</DependentUpon>
+    </Compile>
+    <AsnXml Include="System\Security\Cryptography\Pkcs\Asn1\SecretBagAsn.xml" />
+    <Compile Include="System\Security\Cryptography\Pkcs\Asn1\SecretBagAsn.xml.cs">
+      <DependentUpon>System\Security\Cryptography\Pkcs\Asn1\SecretBagAsn.xml</DependentUpon>
+    </Compile>
     <Compile Include="System\Security\Cryptography\Pkcs\CmsSignature.DSA.cs" />
     <Compile Include="System\Security\Cryptography\Pkcs\Pkcs12Builder.cs" />
     <Compile Include="System\Security\Cryptography\Pkcs\Pkcs12CertBag.cs" />

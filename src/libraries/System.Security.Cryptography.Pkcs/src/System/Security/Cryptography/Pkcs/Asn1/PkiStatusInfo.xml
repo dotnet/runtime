@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<asn:Sequence
+  xmlns:asn="http://schemas.dot.net/asnxml/201808/"
+  name="PkiStatusInfo"
+  namespace="System.Security.Cryptography.Pkcs.Asn1">
+
+  <asn:Integer name="Status" backingType="int" />
+  <asn:AnyValue name="StatusString" universalTagNumber="16" optional="true" />
+  <asn:NamedBitList name="FailInfo" backingType="System.Security.Cryptography.Pkcs.Asn1.PkiFailureInfo" optional="true" />
+</asn:Sequence>

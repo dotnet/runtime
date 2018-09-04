@@ -1,0 +1,21 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<asn:Sequence
+  xmlns:asn="http://schemas.dot.net/asnxml/201808/"
+  name="EncryptedDataAsn"
+  namespace="System.Security.Cryptography.Pkcs.Asn1">
+
+  <!--
+    https://tools.ietf.org/html/rfc5652#section-8
+
+    EncryptedData ::= SEQUENCE {
+        version CMSVersion,
+        encryptedContentInfo EncryptedContentInfo,
+        unprotectedAttrs [1] IMPLICIT UnprotectedAttributes OPTIONAL
+    }
+  -->
+  <asn:Integer name="Version" backingType="int" />
+  <asn:AsnType name="EncryptedContentInfo" typeName="System.Security.Cryptography.Pkcs.Asn1.EncryptedContentInfoAsn" />
+  <asn:SetOf name="UnprotectedAttributes" implicitTag="1" optional="true">
+    <asn:AsnType typeName="System.Security.Cryptography.Asn1.AttributeAsn" />
+  </asn:SetOf>
+</asn:Sequence>

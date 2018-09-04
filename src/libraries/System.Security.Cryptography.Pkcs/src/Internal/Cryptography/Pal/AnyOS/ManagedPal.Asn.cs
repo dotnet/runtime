@@ -134,9 +134,7 @@ namespace Internal.Cryptography.Pal.AnyOS
         {
             AsnReader reader = new AsnReader(encodedMessage, AsnEncodingRules.BER);
 
-            ContentInfoAsn contentInfo = AsnSerializer.Deserialize<ContentInfoAsn>(
-                reader.GetEncodedValue(),
-                AsnEncodingRules.BER);
+            ContentInfoAsn.Decode(reader, out ContentInfoAsn contentInfo);
 
             switch (contentInfo.ContentType)
             {

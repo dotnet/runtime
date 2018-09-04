@@ -56,6 +56,29 @@ namespace System.Security.Cryptography.Asn1
         [ExpectedTag(8)]
         [ObjectIdentifier]
         internal string RegisteredId;
+
+        internal void Encode(AsnWriter writer)
+        {
+            AsnSerializer.Serialize(this, writer);
+        }
+
+        internal static void Decode(AsnReader reader, out GeneralNameAsn decoded)
+        {
+            if (reader == null)
+                throw new ArgumentNullException(nameof(reader));
+
+            ReadOnlyMemory<byte> value = reader.GetEncodedValue();
+            decoded = AsnSerializer.Deserialize<GeneralNameAsn>(value, reader.RuleSet);
+        }
+
+        internal static GeneralNameAsn Decode(ReadOnlyMemory<byte> encoded, AsnEncodingRules ruleSet)
+        {
+            AsnReader reader = new AsnReader(encoded, ruleSet);
+
+            Decode(reader, out GeneralNameAsn decoded);
+            reader.ThrowIfNotEmpty();
+            return decoded;
+        }
     }
 
     // https://tools.ietf.org/html/rfc5280#section-4.2.1.6

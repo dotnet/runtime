@@ -39,12 +39,12 @@ namespace System.Security.Cryptography.Pkcs
                     throw new CryptographicException();
                 
 
-                writer.PushSequence(new Asn1Tag(TagClass.ContextSpecific, 0));
+                writer.PushSetOf(new Asn1Tag(TagClass.ContextSpecific, 0));
                 for (int i = 0; i < SignedAttributes.Length; i++)
                 {
                     SignedAttributes[i].Encode(writer); 
                 }
-                writer.PopSequence(new Asn1Tag(TagClass.ContextSpecific, 0));
+                writer.PopSetOf(new Asn1Tag(TagClass.ContextSpecific, 0));
 
                 wroteValue = true;
             }
@@ -78,7 +78,7 @@ namespace System.Security.Cryptography.Pkcs
 
                 // Decode SEQUENCE OF for SignedAttributes
                 {
-                    collectionReader = reader.ReadSequence(new Asn1Tag(TagClass.ContextSpecific, 0));
+                    collectionReader = reader.ReadSetOf(new Asn1Tag(TagClass.ContextSpecific, 0));
                     var tmpList = new List<System.Security.Cryptography.Asn1.AttributeAsn>();
                     System.Security.Cryptography.Asn1.AttributeAsn tmpItem;
 
