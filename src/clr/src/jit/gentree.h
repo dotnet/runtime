@@ -1901,8 +1901,12 @@ public:
         Compiler* comp, struct ArrayInfo* arrayInfo, GenTree** pArr, ValueNum* pInxVN, FieldSeqNode** pFldSeq);
 
     // Helper method for the above.
-    void ParseArrayAddressWork(
-        Compiler* comp, ssize_t inputMul, GenTree** pArr, ValueNum* pInxVN, ssize_t* pOffset, FieldSeqNode** pFldSeq);
+    void ParseArrayAddressWork(Compiler*       comp,
+                               target_ssize_t  inputMul,
+                               GenTree**       pArr,
+                               ValueNum*       pInxVN,
+                               target_ssize_t* pOffset,
+                               FieldSeqNode**  pFldSeq);
 
     // Requires "this" to be a GT_IND.  Requires the outermost caller to set "*pFldSeq" to nullptr.
     // Returns true if it is an array index expression, or access to a (sequence of) struct field(s)
