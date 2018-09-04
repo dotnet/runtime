@@ -10,11 +10,25 @@ namespace System.Reflection
 {
     internal sealed class SignatureConstructedGenericType : SignatureType
     {
-        internal SignatureConstructedGenericType(Type genericTypeDefinition, Type[] genericTypeArguments)
+        // The exception-visible name "typeArguments" is chosen to match the parameter name to Type.MakeGenericType() since that's the
+        // intended user of this constructor.
+        internal SignatureConstructedGenericType(Type genericTypeDefinition, Type[] typeArguments)
         {
-            Debug.Assert(genericTypeDefinition != null && genericTypeArguments != null);
+            if (genericTypeDefinition == null)
+                throw new ArgumentNullException(nameof(genericTypeDefinition));
+
+            if (typeArguments == null)
+                throw new ArgumentNullException(nameof(typeArguments));
+
+            typeArguments = (Type[])(typeArguments.Clone());
+            for (int i = 0; i < typeArguments.Length; i++)
+            {
+                if (typeArguments[i] == null)
+                    throw new ArgumentNullException(nameof(typeArguments));
+            }
+
             _genericTypeDefinition = genericTypeDefinition;
-            _genericTypeArguments = (Type[])(genericTypeArguments.Clone());
+            _genericTypeArguments = typeArguments;
         }
     
         public sealed override bool IsTypeDefinition => false;
