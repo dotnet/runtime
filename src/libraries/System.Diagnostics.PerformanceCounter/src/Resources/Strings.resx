@@ -290,5 +290,53 @@
   </data>
   <data name="PlatformNotSupported_PerfCounters" xml:space="preserve">
     <value>Performance Counters are not supported on this platform.</value>
+  </data>  
+  <data name="Perflib_Argument_InvalidCounterSetInstanceType" xml:space="preserve">
+    <value>CounterSetInstanceType '{0}' is not a valid CounterSetInstanceType.</value>
+  </data>
+  <data name="Perflib_InvalidOperation_NoActiveProvider" xml:space="preserve">
+    <value>CounterSet provider '{0}' not active.</value>
+  </data>
+  <data name="Perflib_Argument_InvalidCounterType" xml:space="preserve">
+    <value>CounterType '{0}' is not a valid CounterType.</value>
+  </data>
+  <data name="Perflib_InvalidOperation_AddCounterAfterInstance" xml:space="preserve">
+    <value>Cannot AddCounter to CounterSet '{0}' after CreateCounterSetInstance.</value>
+  </data>
+  <data name="Perflib_Argument_CounterAlreadyExists" xml:space="preserve">
+    <value>CounterId '{0}' already added to CounterSet '{1}'.</value>
+  </data>
+  <data name="Perflib_Argument_EmptyInstanceName" xml:space="preserve">
+    <value>Non-empty instanceName required.</value>
+  </data>
+  <data name="Perflib_InvalidOperation_CounterSetNotInstalled" xml:space="preserve">
+    <value>CounterSet '{0}' not installed yet.</value>
+  </data>
+  <data name="Perflib_Argument_InvalidInstance" xml:space="preserve">
+    <value>Single instance type CounterSet '{0}' can only have 1 CounterSetInstance.</value>
+  </data>
+  <data name="Perflib_Argument_EmptyCounterName" xml:space="preserve">
+    <value>Non-empty counterName required.</value>
+  </data>
+  <data name="Perflib_Argument_CounterNameAlreadyExists" xml:space="preserve">
+    <value>CounterName '{0}' already added to CounterSet '{1}'.</value>
+  </data>
+  <data name="Perflib_Argument_ProviderNotFound" xml:space="preserve">
+    <value>CounterSet provider '{0}' not found.</value>
+  </data>
+  <data name="Perflib_InvalidOperation_CounterSetContainsNoCounter" xml:space="preserve">
+    <value>CounterSet '{0}' does not include any counters.</value>
+  </data>  
+  <data name="Perflib_Argument_CounterSetAlreadyRegister" xml:space="preserve">
+    <value>CounterSet '{0}' already registered.</value>
+  </data>
+  <data name="Perflib_Argument_InstanceAlreadyExists" xml:space="preserve">
+    <value>Instance '{0}' already exists in CounterSet '{1}'.</value>
+  </data>
+  <data name="Perflib_InsufficientMemory_InstanceCounterBlock" xml:space="preserve">
+    <value>Cannot allocate raw counter data for CounterSet '{0}' Instance '{1}'.</value>
+  </data>
+  <data name="Perflib_InvalidOperation_CounterRefValue" xml:space="preserve">
+    <value>Cannot locate raw counter data location for CounterSet '{0}', Counter '{1}, in Instance '{2}'.</value>
   </data>
 </root>
