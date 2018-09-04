@@ -14220,8 +14220,10 @@ void Module::ExpandAll()
 #include "clrvarargs.h" /* for VARARG C_ASSERTs in asmconstants.h */
 class CheckAsmOffsets
 {
+#ifndef CROSSBITNESS_COMPILE
 #define ASMCONSTANTS_C_ASSERT(cond) static_assert(cond, #cond);
 #include "asmconstants.h"
+#endif // CROSSBITNESS_COMPILE
 };
 
 //-------------------------------------------------------------------------------
