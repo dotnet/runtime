@@ -3264,6 +3264,7 @@ void Compiler::compInitOptions(JitFlags* jitFlags)
     opts.disDiffable     = false;
     opts.dspCode         = false;
     opts.dspEHTable      = false;
+    opts.dspDebugInfo    = false;
     opts.dspGCtbls       = false;
     opts.disAsm2         = false;
     opts.dspUnwind       = false;
@@ -3311,6 +3312,11 @@ void Compiler::compInitOptions(JitFlags* jitFlags)
             if (JitConfig.NgenEHDump().contains(info.compMethodName, info.compClassName, &info.compMethodInfo->args))
             {
                 opts.dspEHTable = true;
+            }
+
+            if (JitConfig.NgenDebugDump().contains(info.compMethodName, info.compClassName, &info.compMethodInfo->args))
+            {
+                opts.dspDebugInfo = true;
             }
         }
         else
@@ -3372,6 +3378,12 @@ void Compiler::compInitOptions(JitFlags* jitFlags)
                 if (JitConfig.JitEHDump().contains(info.compMethodName, info.compClassName, &info.compMethodInfo->args))
                 {
                     opts.dspEHTable = true;
+                }
+
+                if (JitConfig.JitDebugDump().contains(info.compMethodName, info.compClassName,
+                                                      &info.compMethodInfo->args))
+                {
+                    opts.dspDebugInfo = true;
                 }
             }
         }
