@@ -11,6 +11,7 @@
 
 #include <config.h>
 #include <glib.h>
+#include "attach.h"
 
 #ifdef HOST_WIN32
 #define DISABLE_ATTACH
@@ -39,7 +40,6 @@
 #include <mono/metadata/threads-types.h>
 #include <mono/metadata/gc-internals.h>
 #include <mono/utils/mono-threads.h>
-#include "attach.h"
 
 #include <mono/utils/w32api.h>
 

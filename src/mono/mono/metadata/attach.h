@@ -8,8 +8,6 @@
 #include <glib.h>
 #include <mono/utils/mono-compiler.h>
 
-G_BEGIN_DECLS
-
 void
 mono_attach_parse_options (char *options);
 
@@ -24,7 +22,5 @@ mono_attach_maybe_start (void);
 
 void
 mono_attach_cleanup (void);
-
-G_END_DECLS
 
 #endif
