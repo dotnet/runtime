@@ -10,8 +10,8 @@ internal static partial class Interop
 {
     internal static partial class Crypto
     {
-        internal static bool EcDsaSign(ReadOnlySpan<byte> dgst, int dlen, Span<byte> sig, [In, Out] ref int siglen, SafeEcKeyHandle ecKey) =>
-            EcDsaSign(ref MemoryMarshal.GetReference(dgst), dlen, ref MemoryMarshal.GetReference(sig), ref siglen, ecKey);
+        internal static bool EcDsaSign(ReadOnlySpan<byte> dgst, Span<byte> sig, [In, Out] ref int siglen, SafeEcKeyHandle ecKey) =>
+            EcDsaSign(ref MemoryMarshal.GetReference(dgst), dgst.Length, ref MemoryMarshal.GetReference(sig), ref siglen, ecKey);
 
         [DllImport(Libraries.CryptoNative, EntryPoint = "CryptoNative_EcDsaSign")]
         [return: MarshalAs(UnmanagedType.Bool)]
