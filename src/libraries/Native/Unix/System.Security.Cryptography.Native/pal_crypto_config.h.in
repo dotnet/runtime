@@ -1,6 +1,4 @@
 #pragma once
 
-#cmakedefine01 HAVE_TLS_V1_1
-#cmakedefine01 HAVE_TLS_V1_2
 #cmakedefine01 HAVE_OPENSSL_EC2M
 #cmakedefine01 HAVE_OPENSSL_ALPN

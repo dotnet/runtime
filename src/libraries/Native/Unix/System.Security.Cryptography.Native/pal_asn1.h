@@ -43,7 +43,7 @@ DLLEXPORT int32_t CryptoNative_ObjSn2Nid(const char* sn);
 /*
 Direct shim to OBJ_nid2obj.
 */
-DLLEXPORT ASN1_OBJECT* CryptoNative_ObjNid2Obj(int32_t nid);
+DLLEXPORT const ASN1_OBJECT* CryptoNative_ObjNid2Obj(int32_t nid);
 
 /*
 Direct shim to ASN1_OBJECT_free.

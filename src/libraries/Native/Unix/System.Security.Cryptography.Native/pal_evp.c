@@ -10,7 +10,7 @@
 
 EVP_MD_CTX* CryptoNative_EvpMdCtxCreate(const EVP_MD* type)
 {
-    EVP_MD_CTX* ctx = EVP_MD_CTX_create();
+    EVP_MD_CTX* ctx = EVP_MD_CTX_new();
     if (ctx == NULL)
     {
         // Allocation failed
@@ -20,7 +20,7 @@ EVP_MD_CTX* CryptoNative_EvpMdCtxCreate(const EVP_MD* type)
     int ret = EVP_DigestInit_ex(ctx, type, NULL);
     if (!ret)
     {
-        EVP_MD_CTX_destroy(ctx);
+        EVP_MD_CTX_free(ctx);
         return NULL;
     }
 
@@ -31,7 +31,7 @@ void CryptoNative_EvpMdCtxDestroy(EVP_MD_CTX* ctx)
 {
     if (ctx != NULL)
     {
-        EVP_MD_CTX_destroy(ctx);
+        EVP_MD_CTX_free(ctx);
     }
 }
 

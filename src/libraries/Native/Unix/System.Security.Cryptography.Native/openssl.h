@@ -10,11 +10,11 @@
 
 DLLEXPORT int32_t CryptoNative_GetX509Thumbprint(X509* x509, uint8_t* pBuf, int32_t cBuf);
 
-DLLEXPORT ASN1_TIME* CryptoNative_GetX509NotBefore(X509* x509);
+DLLEXPORT const ASN1_TIME* CryptoNative_GetX509NotBefore(X509* x509);
 
-DLLEXPORT ASN1_TIME* CryptoNative_GetX509NotAfter(X509* x509);
+DLLEXPORT const ASN1_TIME* CryptoNative_GetX509NotAfter(X509* x509);
 
-DLLEXPORT ASN1_TIME* CryptoNative_GetX509CrlNextUpdate(X509_CRL* crl);
+DLLEXPORT const ASN1_TIME* CryptoNative_GetX509CrlNextUpdate(X509_CRL* crl);
 
 DLLEXPORT int32_t CryptoNative_GetX509Version(X509* x509);
 
@@ -47,8 +47,14 @@ DLLEXPORT X509* CryptoNative_GetX509StackField(STACK_OF(X509) * stack, int loc);
 
 DLLEXPORT void CryptoNative_RecursiveFreeX509Stack(STACK_OF(X509) * stack);
 
-DLLEXPORT int32_t CryptoNative_SetX509ChainVerifyTime(
-    X509_STORE_CTX* ctx, int32_t year, int32_t month, int32_t day, int32_t hour, int32_t minute, int32_t second, int32_t isDst);
+DLLEXPORT int32_t CryptoNative_SetX509ChainVerifyTime(X509_STORE_CTX* ctx,
+                                                      int32_t year,
+                                                      int32_t month,
+                                                      int32_t day,
+                                                      int32_t hour,
+                                                      int32_t minute,
+                                                      int32_t second,
+                                                      int32_t isDst);
 
 DLLEXPORT X509* CryptoNative_ReadX509AsDerFromBio(BIO* bio);
 
