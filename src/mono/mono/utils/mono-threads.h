@@ -417,6 +417,9 @@ mono_thread_info_unset_internal_thread_gchandle (THREAD_INFO_TYPE *info);
 gboolean
 mono_thread_info_is_exiting (void);
 
+#ifdef HOST_WIN32
+G_EXTERN_C // due to THREAD_INFO_TYPE varying
+#endif
 THREAD_INFO_TYPE *
 mono_thread_info_current (void);
 
