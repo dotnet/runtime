@@ -57,6 +57,7 @@ internal partial class Interop
         internal const int ERROR_IO_INCOMPLETE = 0x3E4;
         internal const int ERROR_IO_PENDING = 0x3E5;
         internal const int ERROR_NO_TOKEN = 0x3f0;
+        internal const int ERROR_SERVICE_DOES_NOT_EXIST = 0x424;
         internal const int ERROR_DLL_INIT_FAILED = 0x45A;
         internal const int ERROR_COUNTER_TIMEOUT = 0x461;
         internal const int ERROR_NO_ASSOCIATION = 0x483;

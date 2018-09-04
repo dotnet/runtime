@@ -9,6 +9,9 @@ using System.Runtime.InteropServices;
 
 namespace Microsoft.Win32.SafeHandles
 {
+    /// <summary>
+    /// Used to wrap handles gotten from OpenSCManager or OpenService
+    /// </summary>
     internal class SafeServiceHandle : SafeHandle
     {
         internal SafeServiceHandle(IntPtr handle) : base(IntPtr.Zero, true)
