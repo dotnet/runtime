@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
+using System.ComponentModel;
 using Xunit;
 
 namespace System.ServiceProcess.Tests
@@ -59,6 +60,22 @@ namespace System.ServiceProcess.Tests
             Assert.True(foundOtherSvc, "foundOtherSvc");
         }
 
+        [Theory]
+        [InlineData(null)]
+        [InlineData("")]
+        public static void ConstructWithBadServiceName(string value)
+        {
+            Assert.Throws<ArgumentException>(() => new ServiceController(value));
+        }
+
+        [Fact]
+        [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework, "Full framework does not throw")]
+        public static void Initialize_GetNames()
+        {
+            Assert.Throws<InvalidOperationException>(() => new ServiceController().ServiceName);
+            Assert.Throws<InvalidOperationException>(() => new ServiceController().DisplayName);
+        }
+
         [Fact]
         public static void GetDevices()
         {
@@ -85,6 +102,96 @@ namespace System.ServiceProcess.Tests
             Assert.Equal(devices[0].DisplayName, actual.DisplayName);
             Assert.Equal(devices[0].ServiceType, actual.ServiceType);
             Assert.Equal(devices[0].MachineName, actual.MachineName);
+        }
+
+        [Fact]
+        public static void NonExistentService_GetStatus()
+        {
+            var controller = new ServiceController(Guid.NewGuid().ToString("N"));
+            Exception exception = Assert.Throws<InvalidOperationException>(() => controller.Status);
+            Assert.IsType<Win32Exception>(exception.InnerException);
+        }
+
+        [Fact]
+        public static void NonExistentService_GetDisplayName()
+        {
+            var controller = new ServiceController(Guid.NewGuid().ToString("N"));
+            Exception exception = Assert.Throws<InvalidOperationException>(() => controller.DisplayName);
+            Assert.IsType<Win32Exception>(exception.InnerException);
+        }
+
+        [Fact]
+        public static void SetNameToNonexistentService_GetStatus()
+        {
+            var controller = new ServiceController();
+            controller.ServiceName = Guid.NewGuid().ToString("N");
+            Exception exception = Assert.Throws<InvalidOperationException>(() => controller.Status);
+            Assert.IsType<Win32Exception>(exception.InnerException);
+        }
+
+        [Fact]
+        public static void SetNameToNonexistentService_GetDisplayName()
+        {
+            var controller = new ServiceController();
+            controller.ServiceName = Guid.NewGuid().ToString("N");
+            Exception exception = Assert.Throws<InvalidOperationException>(() => controller.DisplayName);
+            Assert.IsType<Win32Exception>(exception.InnerException);
+        }
+
+        [Fact]
+        public static void SetDisplayNameToNonexistentService_GetStatus()
+        {
+            var controller = new ServiceController();
+            controller.DisplayName = Guid.NewGuid().ToString("N");
+            Exception exception = Assert.Throws<InvalidOperationException>(() => controller.Status);
+            Assert.IsType<Win32Exception>(exception.InnerException);
+        }
+
+        [Fact]
+        public static void SetDisplayNameToNonexistentService_GetServiceName()
+        {
+            var controller = new ServiceController();
+            controller.DisplayName = Guid.NewGuid().ToString("N");
+            Exception exception = Assert.Throws<InvalidOperationException>(() => controller.ServiceName);
+            Assert.IsType<Win32Exception>(exception.InnerException);
+        }
+
+        [Fact]
+        public static void SetServiceName_GetDisplayName()
+        {
+            var keyIsoDisplayName = new ServiceController(KeyIsoSvcName).DisplayName;
+
+            var controller = new ServiceController();
+            controller.ServiceName = KeyIsoSvcName;
+            Assert.Equal(keyIsoDisplayName, controller.DisplayName);
+        }
+
+        [Fact]
+        public static void SetDisplayName_GetServiceName()
+        {
+            var keyIsoDisplayName = new ServiceController(KeyIsoSvcName).DisplayName;
+
+            var controller = new ServiceController();
+            controller.DisplayName = keyIsoDisplayName;
+            Assert.Equal(KeyIsoSvcName.ToLowerInvariant(), controller.ServiceName.ToLowerInvariant());
+        }
+
+        [Fact]
+        public static void InitializeServiceName_GetDisplayName()
+        {
+            var controller = new ServiceController(KeyIsoSvcName);
+            Assert.Equal(KeyIsoSvcName, controller.ServiceName);
+            Assert.NotEmpty(controller.DisplayName);
+        }
+
+        [Fact]
+        public static void InitializeDisplayName_GetServiceName()
+        {
+            var keyIsoDisplayName = new ServiceController(KeyIsoSvcName).DisplayName;
+
+            var controller = new ServiceController(keyIsoDisplayName);
+            Assert.Equal(KeyIsoSvcName.ToLowerInvariant(), controller.ServiceName.ToLowerInvariant());
+            Assert.Equal(keyIsoDisplayName, controller.DisplayName);
         }
 
         [Fact]
