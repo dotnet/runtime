@@ -1209,7 +1209,7 @@ int ArgIteratorTemplate<ARGITERATOR_BASE>::GetNextOffset()
 
         // Doubles or HFAs containing doubles need the stack aligned appropriately.
         if (fRequiresAlign64Bit)
-            m_idxStack = ALIGN_UP(m_idxStack, 2);
+            m_idxStack = (int)ALIGN_UP(m_idxStack, 2);
 
         // Indicate the stack location of the argument to the caller.
         int argOfs = TransitionBlock::GetOffsetOfArgs() + m_idxStack * 4;
@@ -1231,7 +1231,7 @@ int ArgIteratorTemplate<ARGITERATOR_BASE>::GetNextOffset()
         {
             // The argument requires 64-bit alignment. Align either the next general argument register if
             // we have any left.  See step C.3 in the algorithm in the ABI spec.       
-            m_idxGenReg = ALIGN_UP(m_idxGenReg, 2);
+            m_idxGenReg = (int)ALIGN_UP(m_idxGenReg, 2);
         }
 
         int argOfs = TransitionBlock::GetOffsetOfArgumentRegisters() + m_idxGenReg * 4;
@@ -1262,7 +1262,7 @@ int ArgIteratorTemplate<ARGITERATOR_BASE>::GetNextOffset()
     {
         // The argument requires 64-bit alignment. If it is going to be passed on the stack, align
         // the next stack slot.  See step C.6 in the algorithm in the ABI spec.  
-        m_idxStack = ALIGN_UP(m_idxStack, 2);
+        m_idxStack = (int)ALIGN_UP(m_idxStack, 2);
     }
 
     int argOfs = TransitionBlock::GetOffsetOfArgs() + m_idxStack * 4;
