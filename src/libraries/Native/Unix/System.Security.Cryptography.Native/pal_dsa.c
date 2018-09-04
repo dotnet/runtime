@@ -45,12 +45,34 @@ int32_t CryptoNative_DsaSizeSignature(DSA* dsa)
 
 int32_t CryptoNative_DsaSizeP(DSA* dsa)
 {
-    return BN_num_bytes(dsa->p);
+    if (dsa)
+    {
+        const BIGNUM* p;
+        DSA_get0_pqg(dsa, &p, NULL, NULL);
+
+        if (p)
+        {
+            return BN_num_bytes(p);
+        }
+    }
+
+    return -1;
 }
 
 int32_t CryptoNative_DsaSizeQ(DSA* dsa)
 {
-    return BN_num_bytes(dsa->q);
+    if (dsa)
+    {
+        const BIGNUM* q;
+        DSA_get0_pqg(dsa, NULL, &q, NULL);
+
+        if (q)
+        {
+            return BN_num_bytes(q);
+        }
+    }
+
+    return -1;
 }
 
 int32_t CryptoNative_DsaSign(
@@ -67,11 +89,18 @@ int32_t CryptoNative_DsaSign(
     }
 
     // DSA_OpenSSL() returns a shared pointer, no need to free/cache.
-    if (dsa->meth == DSA_OpenSSL() && dsa->priv_key == NULL)
+    if (DSA_get_method(dsa) == DSA_OpenSSL())
     {
-        *outSignatureLength = 0;
-        ERR_PUT_error(ERR_LIB_DSA, DSA_F_DSA_DO_SIGN, DSA_R_MISSING_PARAMETERS, __FILE__, __LINE__);
-        return 0;
+        const BIGNUM* privKey;
+
+        DSA_get0_key(dsa, NULL, &privKey);
+
+        if (!privKey)
+        {
+            *outSignatureLength = 0;
+            ERR_PUT_error(ERR_LIB_DSA, DSA_F_DSA_DO_SIGN, DSA_R_MISSING_PARAMETERS, __FILE__, __LINE__);
+            return 0;
+        }
     }
 
     unsigned int unsignedSigLen = 0;
@@ -111,11 +140,11 @@ int32_t CryptoNative_DsaVerify(
 
 int32_t CryptoNative_GetDsaParameters(
     const DSA* dsa,
-    BIGNUM** p, int32_t* pLength,
-    BIGNUM** q, int32_t* qLength,
-    BIGNUM** g, int32_t* gLength,
-    BIGNUM** y, int32_t* yLength,
-    BIGNUM** x, int32_t* xLength)
+    const BIGNUM** p, int32_t* pLength,
+    const BIGNUM** q, int32_t* qLength,
+    const BIGNUM** g, int32_t* gLength,
+    const BIGNUM** y, int32_t* yLength,
+    const BIGNUM** x, int32_t* xLength)
 {
     if (!dsa || !p || !q || !g || !y || !x)
     {
@@ -129,39 +158,28 @@ int32_t CryptoNative_GetDsaParameters(
         if (x) *x = NULL; if (xLength) *xLength = 0;
         return 0;
     }
-    
-    *p = dsa->p; *pLength = BN_num_bytes(*p);
-    *q = dsa->q; *qLength = BN_num_bytes(*q);
-    *g = dsa->g; *gLength = BN_num_bytes(*g);
-    *y = dsa->pub_key; *yLength = BN_num_bytes(*y);
 
-    // dsa->priv_key is optional
-    *x = dsa->priv_key;
+    DSA_get0_pqg(dsa, p, q, g);
+    *pLength = BN_num_bytes(*p);
+    *qLength = BN_num_bytes(*q);
+    *gLength = BN_num_bytes(*g);
+
+    DSA_get0_key(dsa, y, x);
+    *yLength = BN_num_bytes(*y);
+    // x (the private key) is optional
     *xLength = (*x == NULL) ? 0 : BN_num_bytes(*x);
 
     return 1;
 }
 
-static int32_t SetDsaParameter(BIGNUM** dsaFieldAddress, uint8_t* buffer, int32_t bufferLength)
+static BIGNUM* MakeBignum(uint8_t* buffer, int32_t bufferLength)
 {
-    assert(dsaFieldAddress != NULL);
-    if (dsaFieldAddress)
+    if (buffer && bufferLength)
     {
-        if (!buffer || !bufferLength)
-        {
-            *dsaFieldAddress = NULL;
-            return 1;
-        }
-        else
-        {
-            BIGNUM* bigNum = BN_bin2bn(buffer, bufferLength, NULL);
-            *dsaFieldAddress = bigNum;
-
-            return bigNum != NULL;
-        }
+        return BN_bin2bn(buffer, bufferLength, NULL);
     }
 
-    return 0;
+    return NULL;
 }
 
 int32_t CryptoNative_DsaKeyCreateByExplicitParameters(
@@ -191,10 +209,33 @@ int32_t CryptoNative_DsaKeyCreateByExplicitParameters(
 
     DSA* dsa = *outDsa;
 
-    return
-        SetDsaParameter(&dsa->p, p, pLength) &&
-        SetDsaParameter(&dsa->q, q, qLength) &&
-        SetDsaParameter(&dsa->g, g, gLength) &&
-        SetDsaParameter(&dsa->pub_key, y, yLength) &&
-        SetDsaParameter(&dsa->priv_key, x, xLength);
+    BIGNUM* bnP = MakeBignum(p, pLength);
+    BIGNUM* bnQ = MakeBignum(q, qLength);
+    BIGNUM* bnG = MakeBignum(g, gLength);
+
+    if (!DSA_set0_pqg(dsa, bnP, bnQ, bnG))
+    {
+        // BN_free handles NULL input
+        BN_free(bnP);
+        BN_free(bnQ);
+        BN_free(bnG);
+        return 0;
+    }
+
+    // Control was transferred, do not free.
+    bnP = NULL;
+    bnQ = NULL;
+    bnG = NULL;
+
+    BIGNUM* bnY = MakeBignum(y, yLength);
+    BIGNUM* bnX = MakeBignum(x, xLength);
+
+    if (!DSA_set0_key(dsa, bnY, bnX))
+    {
+        BN_free(bnY);
+        BN_free(bnX);
+        return 0;
+    }
+
+    return 1;
 }

@@ -58,8 +58,13 @@ static int HasNoPrivateKey(RSA* rsa)
 
     // The method has descibed itself as having the private key external to the structure.
     // That doesn't mean it's actually present, but we can't tell.
-    if (meth->flags & RSA_FLAG_EXT_PKEY)
+#pragma clang diagnostic push
+#pragma clang diagnostic ignored "-Wcast-qual"
+    if (RSA_meth_get_flags((RSA_METHOD*)meth) & RSA_FLAG_EXT_PKEY)
+#pragma clang diagnostic pop
+    {
         return 0;
+    }
 
     // In the event that there's a middle-ground where we report failure when success is expected,
     // one could do something like check if the RSA_METHOD intercepts all private key operations:
@@ -72,11 +77,27 @@ static int HasNoPrivateKey(RSA* rsa)
 
     // The module is documented as accepting either d or the full set of CRT parameters (p, q, dp, dq, qInv)
     // So if we see d, we're good. Otherwise, if any of the rest are missing, we're public-only.
-    if (rsa->d != NULL)
-        return 0;
+    const BIGNUM* d;
+    RSA_get0_key(rsa, NULL, NULL, &d);
 
-    if (rsa->p == NULL || rsa->q == NULL || rsa->dmp1 == NULL || rsa->dmq1 == NULL || rsa->iqmp == NULL)
+    if (d != NULL)
+    {
+        return 0;
+    }
+
+    const BIGNUM* p;
+    const BIGNUM* q;
+    const BIGNUM* dmp1;
+    const BIGNUM* dmq1;
+    const BIGNUM* iqmp;
+
+    RSA_get0_factors(rsa, &p, &q);
+    RSA_get0_crt_params(rsa, &dmp1, &dmq1, &iqmp);
+
+    if (p == NULL || q == NULL || dmp1 == NULL || dmq1 == NULL || iqmp == NULL)
+    {
         return 1;
+    }
 
     return 0;
 }
@@ -93,7 +114,7 @@ CryptoNative_RsaPrivateDecrypt(int32_t flen, const uint8_t* from, uint8_t* to, R
 {
     if (HasNoPrivateKey(rsa))
     {
-        ERR_PUT_error(ERR_LIB_RSA, RSA_F_RSA_PRIVATE_DECRYPT, RSA_R_VALUE_MISSING, __FILE__, __LINE__);
+        ERR_PUT_error(ERR_LIB_RSA, RSA_F_RSA_NULL_PRIVATE_DECRYPT, RSA_R_VALUE_MISSING, __FILE__, __LINE__);
         return -1;
     }
 
@@ -105,7 +126,7 @@ int32_t CryptoNative_RsaSignPrimitive(int32_t flen, const uint8_t* from, uint8_t
 {
     if (HasNoPrivateKey(rsa))
     {
-        ERR_PUT_error(ERR_LIB_RSA, RSA_F_RSA_PRIVATE_ENCRYPT, RSA_R_VALUE_MISSING, __FILE__, __LINE__);
+        ERR_PUT_error(ERR_LIB_RSA, RSA_F_RSA_NULL_PRIVATE_ENCRYPT, RSA_R_VALUE_MISSING, __FILE__, __LINE__);
         return -1;
     }
 
@@ -169,14 +190,14 @@ CryptoNative_RsaVerify(int32_t type, const uint8_t* m, int32_t mlen, uint8_t* si
 }
 
 int32_t CryptoNative_GetRsaParameters(const RSA* rsa,
-                                                 BIGNUM** n,
-                                                 BIGNUM** e,
-                                                 BIGNUM** d,
-                                                 BIGNUM** p,
-                                                 BIGNUM** dmp1,
-                                                 BIGNUM** q,
-                                                 BIGNUM** dmq1,
-                                                 BIGNUM** iqmp)
+                                      const BIGNUM** n,
+                                      const BIGNUM** e,
+                                      const BIGNUM** d,
+                                      const BIGNUM** p,
+                                      const BIGNUM** dmp1,
+                                      const BIGNUM** q,
+                                      const BIGNUM** dmq1,
+                                      const BIGNUM** iqmp)
 {
     if (!rsa || !n || !e || !d || !p || !dmp1 || !q || !dmq1 || !iqmp)
     {
@@ -203,57 +224,40 @@ int32_t CryptoNative_GetRsaParameters(const RSA* rsa,
         return 0;
     }
 
-    *n = rsa->n;
-    *e = rsa->e;
-    *d = rsa->d;
-    *p = rsa->p;
-    *dmp1 = rsa->dmp1;
-    *q = rsa->q;
-    *dmq1 = rsa->dmq1;
-    *iqmp = rsa->iqmp;
+    RSA_get0_key(rsa, n, e, d);
+    RSA_get0_factors(rsa, p, q);
+    RSA_get0_crt_params(rsa, dmp1, dmq1, iqmp);
 
     return 1;
 }
 
-static int32_t SetRsaParameter(BIGNUM** rsaFieldAddress, uint8_t* buffer, int32_t bufferLength)
+static BIGNUM* MakeBignum(uint8_t* buffer, int32_t bufferLength)
 {
-    assert(rsaFieldAddress != NULL);
-    if (rsaFieldAddress)
+    if (buffer && bufferLength)
     {
-        if (!buffer || !bufferLength)
-        {
-            *rsaFieldAddress = NULL;
-            return 1;
-        }
-        else
-        {
-            BIGNUM* bigNum = BN_bin2bn(buffer, bufferLength, NULL);
-            *rsaFieldAddress = bigNum;
-
-            return bigNum != NULL;
-        }
+        return BN_bin2bn(buffer, bufferLength, NULL);
     }
 
-    return 0;
+    return NULL;
 }
 
 int32_t CryptoNative_SetRsaParameters(RSA* rsa,
-                                              uint8_t* n,
-                                              int32_t nLength,
-                                              uint8_t* e,
-                                              int32_t eLength,
-                                              uint8_t* d,
-                                              int32_t dLength,
-                                              uint8_t* p,
-                                              int32_t pLength,
-                                              uint8_t* dmp1,
-                                              int32_t dmp1Length,
-                                              uint8_t* q,
-                                              int32_t qLength,
-                                              uint8_t* dmq1,
-                                              int32_t dmq1Length,
-                                              uint8_t* iqmp,
-                                              int32_t iqmpLength)
+                                      uint8_t* n,
+                                      int32_t nLength,
+                                      uint8_t* e,
+                                      int32_t eLength,
+                                      uint8_t* d,
+                                      int32_t dLength,
+                                      uint8_t* p,
+                                      int32_t pLength,
+                                      uint8_t* dmp1,
+                                      int32_t dmp1Length,
+                                      uint8_t* q,
+                                      int32_t qLength,
+                                      uint8_t* dmq1,
+                                      int32_t dmq1Length,
+                                      uint8_t* iqmp,
+                                      int32_t iqmpLength)
 {
     if (!rsa)
     {
@@ -261,13 +265,43 @@ int32_t CryptoNative_SetRsaParameters(RSA* rsa,
         return 0;
     }
 
-    return 
-        SetRsaParameter(&rsa->n, n, nLength) &&
-        SetRsaParameter(&rsa->e, e, eLength) &&
-        SetRsaParameter(&rsa->d, d, dLength) &&
-        SetRsaParameter(&rsa->p, p, pLength) &&
-        SetRsaParameter(&rsa->dmp1, dmp1, dmp1Length) &&
-        SetRsaParameter(&rsa->q, q, qLength) &&
-        SetRsaParameter(&rsa->dmq1, dmq1, dmq1Length) &&
-        SetRsaParameter(&rsa->iqmp, iqmp, iqmpLength);
+    BIGNUM* bnN = MakeBignum(n, nLength);
+    BIGNUM* bnE = MakeBignum(e, eLength);
+    BIGNUM* bnD = MakeBignum(d, dLength);
+
+    if (!RSA_set0_key(rsa, bnN, bnE, bnD))
+    {
+        // BN_free handles NULL input
+        BN_free(bnN);
+        BN_free(bnE);
+        BN_free(bnD);
+        return 0;
+    }
+
+    if (bnD != NULL)
+    {
+        BIGNUM* bnP = MakeBignum(p, pLength);
+        BIGNUM* bnQ = MakeBignum(q, qLength);
+
+        if (!RSA_set0_factors(rsa, bnP, bnQ))
+        {
+            BN_free(bnP);
+            BN_free(bnQ);
+            return 0;
+        }
+
+        BIGNUM* bnDmp1 = MakeBignum(dmp1, dmp1Length);
+        BIGNUM* bnDmq1 = MakeBignum(dmq1, dmq1Length);
+        BIGNUM* bnIqmp = MakeBignum(iqmp, iqmpLength);
+
+        if (!RSA_set0_crt_params(rsa, bnDmp1, bnDmq1, bnIqmp))
+        {
+            BN_free(bnDmp1);
+            BN_free(bnDmq1);
+            BN_free(bnIqmp);
+            return 0;
+        }
+    }
+
+    return 1;
 }

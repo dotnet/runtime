@@ -3,6 +3,7 @@
 // See the LICENSE file in the project root for more information.
 
 #include "pal_ssl.h"
+#include "openssl.h"
 
 #include <assert.h>
 #include <string.h>
@@ -17,16 +18,34 @@ c_static_assert(PAL_SSL_ERROR_ZERO_RETURN == SSL_ERROR_ZERO_RETURN);
 
 int32_t CryptoNative_EnsureOpenSslInitialized(void);
 
+#ifdef NEED_OPENSSL_1_0
+static void EnsureLibSsl10Initialized()
+{
+    SSL_library_init();
+    SSL_load_error_strings();
+}
+#endif
+
 void CryptoNative_EnsureLibSslInitialized()
 {
     CryptoNative_EnsureOpenSslInitialized();
-    SSL_library_init();
-    SSL_load_error_strings();
+
+    // If portable, call the 1.0 initializer when needed.
+    // If 1.0, call it statically.
+    // In 1.1 no action is required, since EnsureOpenSslInitialized does both libraries.
+#ifdef FEATURE_DISTRO_AGNOSTIC_SSL
+    if (API_EXISTS(SSL_state))
+    {
+        EnsureLibSsl10Initialized();
+    }
+#elif OPENSSL_VERSION_NUMBER < OPENSSL_VERSION_1_1_0_RTM
+    EnsureLibSsl10Initialized();
+#endif
 }
 
 const SSL_METHOD* CryptoNative_SslV2_3Method()
 {
-    const SSL_METHOD* method = SSLv23_method();
+    const SSL_METHOD* method = TLS_method();
     assert(method != NULL);
     return method;
 }
@@ -52,19 +71,39 @@ Returns 1 on success, 0 on failure.
 */
 static long TrySetECDHNamedCurve(SSL_CTX* ctx)
 {
-	long result = 0;
-#ifdef SSL_CTX_set_ecdh_auto
-	result = SSL_CTX_set_ecdh_auto(ctx, 1);
-#else
-	EC_KEY *ecdh = EC_KEY_new_by_curve_name(NID_X9_62_prime256v1);
-	if (ecdh != NULL)
-	{
-		result = SSL_CTX_set_tmp_ecdh(ctx, ecdh);
-		EC_KEY_free(ecdh);
-	}
+#ifdef NEED_OPENSSL_1_0
+    uint32_t version = CryptoNative_OpenSslVersionNumber();
+    long result = 0;
+
+    if (version >= OPENSSL_VERSION_1_1_0_RTM)
+    {
+        // OpenSSL 1.1+ automatically set up ECDH
+        result = 1;
+    }
+    else if (version >= OPENSSL_VERSION_1_0_2_RTM)
+    {
+#ifndef SSL_CTRL_SET_ECDH_AUTO
+#define SSL_CTRL_SET_ECDH_AUTO 94
 #endif
+        // Expanded form of SSL_CTX_set_ecdh_auto(ctx, 1)
+        result = SSL_CTX_ctrl(ctx, SSL_CTRL_SET_ECDH_AUTO, 1, NULL);
+    }
+    else
+    {
+        EC_KEY *ecdh = EC_KEY_new_by_curve_name(NID_X9_62_prime256v1);
+
+        if (ecdh != NULL)
+        {
+            result = SSL_CTX_set_tmp_ecdh(ctx, ecdh);
+            EC_KEY_free(ecdh);
+        }
+    }
 
 	return result;
+#else
+    (void)ctx;
+    return 1;
+#endif
 }
 
 void CryptoNative_SetProtocolOptions(SSL_CTX* ctx, SslProtocols protocols)
@@ -81,7 +120,7 @@ void CryptoNative_SetProtocolOptions(SSL_CTX* ctx, SslProtocols protocols)
         return;
     }
 
-    long protocolOptions = 0;
+    unsigned long protocolOptions = 0;
 
     if ((protocols & PAL_SSL_SSL2) != PAL_SSL_SSL2)
     {
@@ -95,20 +134,26 @@ void CryptoNative_SetProtocolOptions(SSL_CTX* ctx, SslProtocols protocols)
     {
         protocolOptions |= SSL_OP_NO_TLSv1;
     }
-#if HAVE_TLS_V1_1
     if ((protocols & PAL_SSL_TLS11) != PAL_SSL_TLS11)
     {
         protocolOptions |= SSL_OP_NO_TLSv1_1;
     }
-#endif
-#if HAVE_TLS_V1_2
     if ((protocols & PAL_SSL_TLS12) != PAL_SSL_TLS12)
     {
         protocolOptions |= SSL_OP_NO_TLSv1_2;
     }
-#endif
 
+    // protocol options were specified, and there's no handler yet for TLS 1.3.
+#ifndef SSL_OP_NO_TLSv1_3
+#define SSL_OP_NO_TLSv1_3 0x20000000U
+#endif
+    protocolOptions |= SSL_OP_NO_TLSv1_3;
+
+    // OpenSSL 1.0 calls this long, OpenSSL 1.1 calls it unsigned long.
+#pragma clang diagnostic push
+#pragma clang diagnostic ignored "-Wsign-conversion"
     SSL_CTX_set_options(ctx, protocolOptions);
+#pragma clang diagnostic pop
 }
 
 SSL* CryptoNative_SslCreate(SSL_CTX* ctx)
@@ -398,7 +443,8 @@ int32_t CryptoNative_GetSslConnectionInfo(SSL* ssl,
         goto err;
     }
 
-    *dataKeySize = cipher->alg_bits;
+    SSL_CIPHER_get_bits(cipher, dataKeySize);
+
     if (GetSslConnectionInfoFromDescription(cipher, dataCipherAlg, keyExchangeAlg, dataHashAlg, hashKeySize))
     {
         return 1;
@@ -455,7 +501,7 @@ int32_t CryptoNative_SslDoHandshake(SSL* ssl)
 
 int32_t CryptoNative_IsSslStateOK(SSL* ssl)
 {
-    return SSL_state(ssl) == SSL_ST_OK;
+    return SSL_is_init_finished(ssl);
 }
 
 X509* CryptoNative_SslGetPeerCertificate(SSL* ssl)
@@ -521,6 +567,8 @@ CryptoNative_SslCtxSetCertVerifyCallback(SSL_CTX* ctx, SslCtxSetCertVerifyCallba
 int32_t CryptoNative_SetEncryptionPolicy(SSL_CTX* ctx, EncryptionPolicy policy)
 {
     const char* cipherString = NULL;
+    bool clearSecLevel = false;
+
     switch (policy)
     {
         case RequireEncryption:
@@ -529,14 +577,22 @@ int32_t CryptoNative_SetEncryptionPolicy(SSL_CTX* ctx, EncryptionPolicy policy)
 
         case AllowNoEncryption:
             cipherString = SSL_TXT_AllIncludingNull;
+            clearSecLevel = true;
             break;
 
         case NoEncryption:
             cipherString = SSL_TXT_eNULL;
+            clearSecLevel = true;
             break;
     }
 
     assert(cipherString != NULL);
+
+    if (clearSecLevel)
+    {
+        // No minimum security policy, same as OpenSSL 1.0
+        SSL_CTX_set_security_level(ctx, 0);
+    }
 
     return SSL_CTX_set_cipher_list(ctx, cipherString);
 }

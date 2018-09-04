@@ -52,12 +52,9 @@ namespace System.Security.Cryptography
             // that we don't lose a tracked reference in low-memory situations.
             SafeEvpPKeyHandle safeHandle = new SafeEvpPKeyHandle();
 
-            int newRefCount = Interop.Crypto.UpRefEvpPkey(this);
+            int success = Interop.Crypto.UpRefEvpPkey(this);
 
-            // UpRefEvpPkey returns the number of references to this key, if it's less than 2
-            // (the incoming handle, and this one) then someone has already Disposed() this key
-            // into non-existence.
-            if (newRefCount < 2)
+            if (success != 1)
             {
                 Debug.Fail("Called UpRefEvpPkey on a key which was already marked for destruction");
                 throw Interop.Crypto.CreateOpenSslCryptographicException();

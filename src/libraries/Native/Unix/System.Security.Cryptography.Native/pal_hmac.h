@@ -13,7 +13,6 @@
 
 // Forward declarations - shim API must not depend on knowing layout of these types.
 typedef struct hmac_ctx_st HMAC_CTX;
-typedef struct env_md_st EVP_MD;
 
 /**
  * Creates and initializes an HMAC_CTX with the given key and EVP_MD.
