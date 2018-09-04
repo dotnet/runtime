@@ -676,10 +676,13 @@ namespace <xsl:value-of select="@namespace" />
 
   <xsl:template match="asn:OctetString" mode="DefaultTag">Asn1Tag.PrimitiveOctetString</xsl:template>
 
-  <xsl:template match="asn:ObjectIdentifier" mode="FieldDef">
+  <xsl:template match="asn:ObjectIdentifier[not(@backingType)] | asn:ObjectIdentifier[@backingType = 'Oid']" mode="FieldDef">
         internal Oid <xsl:value-of select="@name" />;</xsl:template>
+  <xsl:template match="asn:ObjectIdentifier[@backingType = 'string']" mode="FieldDef">
+        internal string <xsl:value-of select="@name" />;</xsl:template>
 
-  <xsl:template match="asn:ObjectIdentifier" mode="CollectionElementType">Oid</xsl:template>
+  <xsl:template match="asn:ObjectIdentifier[not(@backingType)] | asn:ObjectIdentifier[@backingType = 'Oid']" mode="CollectionElementType">Oid</xsl:template>
+  <xsl:template match="asn:ObjectIdentifier[@backingType = 'string']" mode="CollectionElementType">string</xsl:template>
 
   <xsl:template match="asn:ObjectIdentifier" mode="EncodeSimpleValue" xml:space="default">
     <xsl:param name="writerName" />
@@ -693,7 +696,7 @@ namespace <xsl:value-of select="@namespace" />
     </xsl:choose>
   </xsl:template>
 
-  <xsl:template match="asn:ObjectIdentifier" mode="DecodeSimpleValue" xml:space="default">
+  <xsl:template match="asn:ObjectIdentifier[not(@backingType)] | asn:ObjectIdentifier[@backingType = 'Oid']" mode="DecodeSimpleValue" xml:space="default">
     <xsl:param name="readerName" />
     <xsl:param name="indent" />
     <xsl:param name="name" select="concat('decoded.', @name)"/>
@@ -702,6 +705,18 @@ namespace <xsl:value-of select="@namespace" />
       <xsl:when test="0"></xsl:when>
       <xsl:otherwise xml:space="preserve">
             <xsl:value-of select="$indent"/><xsl:value-of select="$name"/> = <xsl:value-of select="$readerName"/>.ReadObjectIdentifier(<xsl:call-template name="MaybeImplicitCall0"/>);</xsl:otherwise>
+    </xsl:choose>
+  </xsl:template>
+
+  <xsl:template match="asn:ObjectIdentifier[@backingType = 'string']" mode="DecodeSimpleValue" xml:space="default">
+    <xsl:param name="readerName" />
+    <xsl:param name="indent" />
+    <xsl:param name="name" select="concat('decoded.', @name)"/>
+    <xsl:choose>
+      <!-- For when string and unpopulated friendly name are added -->
+      <xsl:when test="0"></xsl:when>
+      <xsl:otherwise xml:space="preserve">
+            <xsl:value-of select="$indent"/><xsl:value-of select="$name"/> = <xsl:value-of select="$readerName"/>.ReadObjectIdentifierAsString(<xsl:call-template name="MaybeImplicitCall0"/>);</xsl:otherwise>
     </xsl:choose>
   </xsl:template>
 

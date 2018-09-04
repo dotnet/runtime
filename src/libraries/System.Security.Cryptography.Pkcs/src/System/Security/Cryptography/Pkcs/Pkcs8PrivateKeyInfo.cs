@@ -59,14 +59,16 @@ namespace System.Security.Cryptography.Pkcs
             out int bytesRead,
             bool skipCopy = false)
         {
+            AsnReader reader = new AsnReader(source, AsnEncodingRules.BER);
+
             if (!skipCopy)
             {
-                AsnReader reader = new AsnReader(source, AsnEncodingRules.BER);
-                source = reader.GetEncodedValue().ToArray();
+                reader = new AsnReader(reader.GetEncodedValue().ToArray(), AsnEncodingRules.BER);
             }
 
-            PrivateKeyInfoAsn privateKeyInfo =
-                AsnSerializer.Deserialize<PrivateKeyInfoAsn>(source, AsnEncodingRules.BER, out bytesRead);
+            int localRead = reader.PeekEncodedValue().Length;
+            PrivateKeyInfoAsn.Decode(reader, out PrivateKeyInfoAsn privateKeyInfo);
+            bytesRead = localRead;
 
             return new Pkcs8PrivateKeyInfo(
                 privateKeyInfo.PrivateKeyAlgorithm.Algorithm,
@@ -249,11 +251,13 @@ namespace System.Security.Cryptography.Pkcs
 
             if (Attributes.Count > 0)
             {
-                info.Attributes = PkcsHelpers.NormalizeSet(CmsSigner.BuildAttributes(Attributes).ToArray());
+                info.Attributes = PkcsHelpers.NormalizeAttributeSet(CmsSigner.BuildAttributes(Attributes).ToArray());
             }
 
             // Write in BER in case any of the provided fields was BER.
-            return AsnSerializer.Serialize(info, AsnEncodingRules.BER);
+            AsnWriter writer = new AsnWriter(AsnEncodingRules.BER);
+            info.Encode(writer);
+            return writer;
         }
     }
 }

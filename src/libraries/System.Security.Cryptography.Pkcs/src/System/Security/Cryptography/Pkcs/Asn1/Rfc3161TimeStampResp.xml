@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<asn:Sequence
+  xmlns:asn="http://schemas.dot.net/asnxml/201808/"
+  name="Rfc3161TimeStampResp"
+  namespace="System.Security.Cryptography.Pkcs.Asn1">
+
+  <asn:AsnType name="Status" typeName="System.Security.Cryptography.Pkcs.Asn1.PkiStatusInfo" />
+  <asn:AnyValue name="TimeStampToken" optional="true" />
+</asn:Sequence>

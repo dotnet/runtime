@@ -1,0 +1,19 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<asn:Sequence
+  xmlns:asn="http://schemas.dot.net/asnxml/201808/"
+  name="EssCertIdV2"
+  namespace="System.Security.Cryptography.Pkcs.Asn1">
+
+  <!--
+    https://tools.ietf.org/html/rfc5035#section-4
+
+    ESSCertIDv2 ::=  SEQUENCE {
+        hashAlgorithm  AlgorithmIdentifier  DEFAULT {algorithm id-sha256},
+        certHash       Hash,
+        issuerSerial   IssuerSerial OPTIONAL
+    }
+  -->
+  <asn:AsnType name="HashAlgorithm" typeName="System.Security.Cryptography.Asn1.AlgorithmIdentifierAsn" defaultDerInit="0x30, 0x0B, 0x06, 0x09, 0x60, 0x86, 0x48, 0x01, 0x65, 0x03, 0x04, 0x02, 0x01" />
+  <asn:OctetString name="Hash" />
+  <asn:AsnType name="IssuerSerial" typeName="System.Security.Cryptography.Pkcs.Asn1.CadesIssuerSerial" optional="true" />
+</asn:Sequence>

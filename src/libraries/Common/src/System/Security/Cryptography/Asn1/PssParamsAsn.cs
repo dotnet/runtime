@@ -50,5 +50,14 @@ namespace System.Security.Cryptography.Asn1
             ReadOnlyMemory<byte> value = reader.GetEncodedValue();
             decoded = AsnSerializer.Deserialize<PssParamsAsn>(value, reader.RuleSet);
         }
+
+        internal static PssParamsAsn Decode(ReadOnlyMemory<byte> encoded, AsnEncodingRules ruleSet)
+        {
+            AsnReader reader = new AsnReader(encoded, ruleSet);
+
+            Decode(reader, out PssParamsAsn decoded);
+            reader.ThrowIfNotEmpty();
+            return decoded;
+        }
     }
 }

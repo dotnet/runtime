@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
+using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.Diagnostics;
 using System.Security.Cryptography.Asn1;
@@ -117,7 +118,7 @@ namespace System.Security.Cryptography.Pkcs
             encodedBytes = reader.PeekEncodedValue();
 
             ReadOnlyMemory<byte> maybeCopy = skipCopy ? encodedBytes : encodedBytes.ToArray();
-            PfxAsn pfx = AsnSerializer.Deserialize<PfxAsn>(maybeCopy, AsnEncodingRules.BER);
+            PfxAsn pfx = PfxAsn.Decode(maybeCopy, AsnEncodingRules.BER);
 
             // https://tools.ietf.org/html/rfc7292#section-4 only defines version 3.
             if (pfx.Version != 3)
@@ -143,8 +144,7 @@ namespace System.Security.Cryptography.Pkcs
             }
             else if (pfx.AuthSafe.ContentType == Oids.Pkcs7Signed)
             {
-                SignedDataAsn signedData =
-                    AsnSerializer.Deserialize<SignedDataAsn>(pfx.AuthSafe.Content, AsnEncodingRules.BER);
+                SignedDataAsn signedData = SignedDataAsn.Decode(pfx.AuthSafe.Content, AsnEncodingRules.BER);
 
                 mode = Pkcs12IntegrityMode.PublicKey;
 
@@ -164,18 +164,26 @@ namespace System.Security.Cryptography.Pkcs
                 throw new CryptographicException(SR.Cryptography_Der_Invalid_Encoding);
             }
 
-            ContentInfoAsn[] authSafeData =
-                AsnSerializer.Deserialize<ContentInfoAsn[]>(authSafeBytes, AsnEncodingRules.BER);
+            List<ContentInfoAsn> authSafeData = new List<ContentInfoAsn>();
+            AsnReader authSafeReader = new AsnReader(authSafeBytes, AsnEncodingRules.BER);
+            AsnReader sequenceReader = authSafeReader.ReadSequence();
+
+            authSafeReader.ThrowIfNotEmpty();
+            while (sequenceReader.HasData)
+            {
+                ContentInfoAsn.Decode(sequenceReader, out ContentInfoAsn contentInfo);
+                authSafeData.Add(contentInfo);
+            }
 
             ReadOnlyCollection<Pkcs12SafeContents> authSafe;
 
-            if (authSafeData.Length == 0)
+            if (authSafeData.Count == 0)
             {
                 authSafe = new ReadOnlyCollection<Pkcs12SafeContents>(Array.Empty<Pkcs12SafeContents>());
             }
             else
             {
-                Pkcs12SafeContents[] contentsArray = new Pkcs12SafeContents[authSafeData.Length];
+                Pkcs12SafeContents[] contentsArray = new Pkcs12SafeContents[authSafeData.Count];
 
                 for (int i = 0; i < contentsArray.Length; i++)
                 {

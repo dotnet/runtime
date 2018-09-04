@@ -181,8 +181,7 @@ namespace System.Security.Cryptography.Pkcs
                     throw new CryptographicException(SR.Cryptography_Pkcs_PssParametersMissing);
                 }
 
-                PssParamsAsn pssParams =
-                    AsnSerializer.Deserialize<PssParamsAsn>(signatureParameters.Value, AsnEncodingRules.DER);
+                PssParamsAsn pssParams = PssParamsAsn.Decode(signatureParameters.Value, AsnEncodingRules.DER);
 
                 if (pssParams.HashAlgorithm.Algorithm.Value != digestAlgorithmOid)
                 {
@@ -219,7 +218,7 @@ namespace System.Security.Cryptography.Pkcs
                     throw new CryptographicException(SR.Cryptography_Pkcs_InvalidSignatureParameters);
                 }
 
-                AlgorithmIdentifierAsn mgfParams = AsnSerializer.Deserialize<AlgorithmIdentifierAsn>(
+                AlgorithmIdentifierAsn mgfParams = AlgorithmIdentifierAsn.Decode(
                     pssParams.MaskGenAlgorithm.Parameters.Value,
                     AsnEncodingRules.DER);
 

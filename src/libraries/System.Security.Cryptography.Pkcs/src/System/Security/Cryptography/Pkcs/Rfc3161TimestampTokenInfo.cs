@@ -76,8 +76,12 @@ namespace System.Security.Cryptography.Pkcs
                     return null;
                 }
 
-                _tsaNameBytes = AsnSerializer.Serialize(tsaName.Value, AsnEncodingRules.DER).Encode();
-                Debug.Assert(_tsaNameBytes.HasValue);
+                using (AsnWriter writer = new AsnWriter(AsnEncodingRules.DER))
+                {
+                    tsaName.Value.Encode(writer);
+                    _tsaNameBytes = writer.Encode();
+                    Debug.Assert(_tsaNameBytes.HasValue);
+                }
             }
 
             return _tsaNameBytes.Value;
@@ -170,9 +174,7 @@ namespace System.Security.Cryptography.Pkcs
                     firstElement = copiedBytes;
                 }
 
-                Rfc3161TstInfo parsedInfo = AsnSerializer.Deserialize<Rfc3161TstInfo>(
-                    firstElement,
-                    AsnEncodingRules.DER);
+                Rfc3161TstInfo parsedInfo = Rfc3161TstInfo.Decode(firstElement, AsnEncodingRules.DER);
 
                 // The deserializer doesn't do bounds checks.
                 // Micros and Millis are defined as (1..999)
@@ -197,7 +199,7 @@ namespace System.Security.Cryptography.Pkcs
             }
             catch (CryptographicException)
             {
-                tstInfo = null;
+                tstInfo = default;
                 bytesConsumed = 0;
                 copiedBytes = null;
                 return false;
@@ -249,7 +251,7 @@ namespace System.Security.Cryptography.Pkcs
 
             if (tsaName != null)
             {
-                tstInfo.Tsa = AsnSerializer.Deserialize<GeneralNameAsn>(tsaName.Value, AsnEncodingRules.DER);
+                tstInfo.Tsa = GeneralNameAsn.Decode(tsaName.Value, AsnEncodingRules.DER);
             }
 
             if (extensions != null)
@@ -258,8 +260,11 @@ namespace System.Security.Cryptography.Pkcs
                     Select(ex => new X509ExtensionAsn(ex, copyValue: false)).ToArray();
             }
 
-            AsnWriter writer = AsnSerializer.Serialize(tstInfo, AsnEncodingRules.DER);
-            return writer.Encode();
+            using (AsnWriter writer = new AsnWriter(AsnEncodingRules.DER))
+            {
+                tstInfo.Encode(writer);
+                return writer.Encode();
+            }
         }
     }
 }

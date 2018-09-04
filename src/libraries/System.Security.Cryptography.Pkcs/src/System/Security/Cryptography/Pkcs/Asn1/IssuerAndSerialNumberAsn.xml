@@ -1,0 +1,19 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<asn:Sequence
+  xmlns:asn="http://schemas.dot.net/asnxml/201808/"
+  name="IssuerAndSerialNumberAsn"
+  namespace="System.Security.Cryptography.Pkcs.Asn1">
+
+  <!--
+    https://tools.ietf.org/html/rfc5652#section-10.2.4
+
+    IssuerAndSerialNumber ::= SEQUENCE {
+        issuer Name,
+        serialNumber CertificateSerialNumber
+    }
+
+    CertificateSerialNumber ::= INTEGER
+  -->
+  <asn:AnyValue name="Issuer" universalTagNumber="16" />
+  <asn:Integer name="SerialNumber"  backingType="ReadOnlyMemory" />
+</asn:Sequence>
