@@ -290,7 +290,8 @@ typedef struct {
 
 #if defined (HOST_WIN32) && !defined(__GNUC__)
 /* msvc doesn't support inline assembly, so have to use a separate .asm file */
-extern void mono_context_get_current (void *);
+// G_EXTERN_C due to being written in assembly.
+G_EXTERN_C void mono_context_get_current (void *);
 #define MONO_CONTEXT_GET_CURRENT(ctx) do { mono_context_get_current((void*)&(ctx)); } while (0)
 
 #else
