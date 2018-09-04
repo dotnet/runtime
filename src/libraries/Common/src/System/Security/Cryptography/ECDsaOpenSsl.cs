@@ -81,7 +81,7 @@ namespace System.Security.Cryptography
                 SafeEcKeyHandle key = _key.Value;
                 int signatureLength = Interop.Crypto.EcDsaSize(key);
                 byte[] signature = new byte[signatureLength];
-                if (!Interop.Crypto.EcDsaSign(hash, hash.Length, signature, ref signatureLength, key))
+                if (!Interop.Crypto.EcDsaSign(hash, signature, ref signatureLength, key))
                     throw Interop.Crypto.CreateOpenSslCryptographicException();
 
                 byte[] converted = AsymmetricAlgorithmHelpers.ConvertDerToIeee1363(signature, 0, signatureLength, KeySize);
@@ -98,7 +98,7 @@ namespace System.Security.Cryptography
                 byte[] signature = ArrayPool<byte>.Shared.Rent(signatureLength);
                 try
                 {
-                    if (!Interop.Crypto.EcDsaSign(hash, hash.Length, new Span<byte>(signature, 0, signatureLength), ref signatureLength, key))
+                    if (!Interop.Crypto.EcDsaSign(hash, new Span<byte>(signature, 0, signatureLength), ref signatureLength, key))
                     {
                         throw Interop.Crypto.CreateOpenSslCryptographicException();
                     }

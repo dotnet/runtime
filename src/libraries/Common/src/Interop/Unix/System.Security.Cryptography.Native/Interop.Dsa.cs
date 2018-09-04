@@ -66,8 +66,8 @@ internal static partial class Interop
             return keySize;
         }
 
-        internal static bool DsaSign(SafeDsaHandle dsa, ReadOnlySpan<byte> hash, int hashLength, ReadOnlySpan<byte> refSignature, out int outSignatureLength) =>
-            DsaSign(dsa, ref MemoryMarshal.GetReference(hash), hashLength, ref MemoryMarshal.GetReference(refSignature), out outSignatureLength);
+        internal static bool DsaSign(SafeDsaHandle dsa, ReadOnlySpan<byte> hash, Span<byte> refSignature, out int outSignatureLength) =>
+            DsaSign(dsa, ref MemoryMarshal.GetReference(hash), hash.Length, ref MemoryMarshal.GetReference(refSignature), out outSignatureLength);
 
         [DllImport(Libraries.CryptoNative, EntryPoint = "CryptoNative_DsaSign")]
         [return: MarshalAs(UnmanagedType.Bool)]
