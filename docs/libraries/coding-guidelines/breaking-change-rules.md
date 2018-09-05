@@ -211,6 +211,10 @@ successfully bind to that overload, if simply passing an `int` value. However, i
 
 * Adding or removing `static` keyword from a member
 
+* Adding a field to a struct that previously had no state
+
+    Definite assignment rules allow use of uninitialized variables so long as the variable type is a stateless struct. If the struct is made stateful, code could now end up with uninitialized data. This is both potentially a source breaking and binary breaking change.
+
 ### Signatures
 &#10003; **Allowed**
 * Adding `params` to a parameter
