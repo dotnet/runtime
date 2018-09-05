@@ -2484,6 +2484,7 @@ bool Lowering::IsContainableHWIntrinsicOp(GenTreeHWIntrinsic* containingNode, Ge
                 case NI_SSE41_DotProduct:
                 case NI_SSE41_MultipleSumAbsoluteDifferences:
                 case NI_AES_KeygenAssist:
+                case NI_PCLMULQDQ_CarrylessMultiply:
                 case NI_AVX_Blend:
                 case NI_AVX_Compare:
                 case NI_AVX_DotProduct:
@@ -3089,6 +3090,7 @@ void Lowering::ContainCheckHWIntrinsic(GenTreeHWIntrinsic* node)
                         case NI_AVX_Shuffle:
                         case NI_AVX2_Blend:
                         case NI_AVX2_Permute2x128:
+                        case NI_PCLMULQDQ_CarrylessMultiply:
                         {
                             if (IsContainableHWIntrinsicOp(node, op2, &supportsRegOptional))
                             {
