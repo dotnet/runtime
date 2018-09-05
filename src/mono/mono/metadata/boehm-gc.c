@@ -59,6 +59,7 @@ void *pthread_get_stackaddr_np(pthread_t);
 #define MIN_BOEHM_MAX_HEAP_SIZE (MIN_BOEHM_MAX_HEAP_SIZE_IN_MB << 20)
 
 static gboolean gc_initialized = FALSE;
+static gboolean gc_dont_gc_env = FALSE;
 static mono_mutex_t mono_gc_lock;
 
 typedef void (*GC_push_other_roots_proc)(void);
@@ -202,6 +203,9 @@ mono_gc_base_init (void)
 			g_free (env);
 		}
 	}
+
+	/* cache value rather than calling during collection since g_hasenv may take locks and can deadlock */
+	gc_dont_gc_env = g_hasenv ("GC_DONT_GC");
 
 	GC_init ();
 
@@ -1395,7 +1399,7 @@ mono_gc_is_moving (void)
 gboolean
 mono_gc_is_disabled (void)
 {
-	if (GC_dont_gc || g_hasenv ("GC_DONT_GC"))
+	if (GC_dont_gc || gc_dont_gc_env)
 		return TRUE;
 	else
 		return FALSE;
