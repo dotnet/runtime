@@ -41,8 +41,33 @@
     <Compile Include="$(CommonPath)\System\Security\Cryptography\Asn1\AlgorithmIdentifierAsn.cs">
       <Link>Common\System\Security\Cryptography\Asn1\AlgorithmIdentifierAsn.cs</Link>
     </Compile>
-    <Compile Include="$(CommonPath)\System\Security\Cryptography\Asn1\GeneralNameAsn.cs">
-      <Link>Common\System\Security\Cryptography\Asn1\GeneralNameAsn.cs</Link>
+    <AsnXml Include="$(CommonPath)\System\Security\Cryptography\Asn1\DirectoryStringAsn.xml">
+      <Link>Common\System\Security\Cryptography\Asn1\DirectoryStringAsn.xml</Link>
+    </AsnXml>
+    <Compile Include="$(CommonPath)\System\Security\Cryptography\Asn1\DirectoryStringAsn.xml.cs">
+      <Link>Common\System\Security\Cryptography\Asn1\DirectoryStringAsn.xml.cs</Link>
+      <DependentUpon>Common\System\Security\Cryptography\Asn1\DirectoryStringAsn.xml</DependentUpon>
+    </Compile>
+    <AsnXml Include="$(CommonPath)\System\Security\Cryptography\Asn1\EdiPartyNameAsn.xml">
+      <Link>Common\System\Security\Cryptography\Asn1\EdiPartyNameAsn.xml</Link>
+    </AsnXml>
+    <Compile Include="$(CommonPath)\System\Security\Cryptography\Asn1\EdiPartyNameAsn.xml.cs">
+      <Link>Common\System\Security\Cryptography\Asn1\EdiPartyNameAsn.xml.cs</Link>
+      <DependentUpon>Common\System\Security\Cryptography\Asn1\EdiPartyNameAsn.xml</DependentUpon>
+    </Compile>
+    <AsnXml Include="$(CommonPath)\System\Security\Cryptography\Asn1\GeneralNameAsn.xml">
+      <Link>Common\System\Security\Cryptography\Asn1\GeneralNameAsn.xml</Link>
+    </AsnXml>
+    <Compile Include="$(CommonPath)\System\Security\Cryptography\Asn1\GeneralNameAsn.xml.cs">
+      <Link>Common\System\Security\Cryptography\Asn1\GeneralNameAsn.xml.cs</Link>
+      <DependentUpon>Common\System\Security\Cryptography\Asn1\GeneralNameAsn.xml</DependentUpon>
+    </Compile>
+    <AsnXml Include="$(CommonPath)\System\Security\Cryptography\Asn1\OtherNameAsn.xml">
+      <Link>Common\System\Security\Cryptography\Asn1\OtherNameAsn.xml</Link>
+    </AsnXml>
+    <Compile Include="$(CommonPath)\System\Security\Cryptography\Asn1\OtherNameAsn.xml.cs">
+      <Link>Common\System\Security\Cryptography\Asn1\OtherNameAsn.xml.cs</Link>
+      <DependentUpon>Common\System\Security\Cryptography\Asn1\OtherNameAsn.xml</DependentUpon>
     </Compile>
     <Compile Include="$(CommonPath)\System\Security\Cryptography\Asn1\PssParamsAsn.cs">
       <Link>Common\System\Security\Cryptography\Asn1\PssParamsAsn.cs</Link>

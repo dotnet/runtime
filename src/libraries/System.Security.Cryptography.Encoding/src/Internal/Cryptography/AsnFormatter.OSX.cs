@@ -2,8 +2,10 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
+using System;
 using System.Collections.Generic;
 using System.Security.Cryptography;
+using System.Security.Cryptography.Asn1;
 using System.Text;
 
 namespace Internal.Cryptography
@@ -35,24 +37,6 @@ namespace Internal.Cryptography
             return null;
         }
 
-        private const string CommaSpace = ", ";
-
-        internal enum GeneralNameType
-        {
-            OtherName = 0,
-            Rfc822Name = 1,
-            // RFC 822: Standard for the format of ARPA Internet Text Messages.
-            // That means "email", and an RFC 822 Name: "Email address"
-            Email = Rfc822Name,
-            DnsName = 2,
-            X400Address = 3,
-            DirectoryName = 4,
-            EdiPartyName = 5,
-            UniformResourceIdentifier = 6,
-            IPAddress = 7,
-            RegisteredId = 8,
-        }
-
         private string FormatSubjectAlternativeName(byte[] rawData)
         {
             // Because SubjectAlternativeName is a commonly parsed structure, we'll
@@ -61,152 +45,100 @@ namespace Internal.Cryptography
             //
             // The intent here is to be functionally equivalent to OpenSSL GENERAL_NAME_print.
 
-            // The end size of this string is hard to predict.
-            // * dNSName values have a tag that takes four characters to represent ("DNS:")
-            //   and then their payload is ASCII encoded (so one byte -> one char), so they
-            //   work out to be about equal (in chars) to their DER encoded length (in bytes).
-            // * iPAddress values have a tag that takes 11 characters ("IP Address:") and then
-            //   grow from 4 bytes to up to 15 characters for IPv4, or 16 bytes to 47 characters
-            //   for IPv6
-            //
-            // So use a List<string> and just Concat them all when we're done, and we reduce the
-            // number of times we copy the header values (vs pointers to the header values).
-            List<string> segments = new List<string>();
-
             try
             {
-                // SubjectAltName ::= GeneralNames
-                //
-                // GeneralNames ::= SEQUENCE SIZE (1..MAX) OF GeneralName
-                //
-                // GeneralName ::= CHOICE {
-                //   otherName                       [0]     OtherName,
-                //   rfc822Name                      [1]     IA5String,
-                //   dNSName                         [2]     IA5String,
-                //   x400Address                     [3]     ORAddress,
-                //   directoryName                   [4]     Name,
-                //   ediPartyName                    [5]     EDIPartyName,
-                //   uniformResourceIdentifier       [6]     IA5String,
-                //   iPAddress                       [7]     OCTET STRING,
-                //   registeredID                    [8]     OBJECT IDENTIFIER }
-                //
-                // OtherName::= SEQUENCE {
-                //   type - id    OBJECT IDENTIFIER,
-                //   value[0] EXPLICIT ANY DEFINED BY type - id }
-                DerSequenceReader altNameReader = new DerSequenceReader(rawData);
+                StringBuilder output = new StringBuilder();
+                AsnReader reader = new AsnReader(rawData, AsnEncodingRules.DER);
+                AsnReader collectionReader = reader.ReadSequence();
 
-                while (altNameReader.HasData)
+                reader.ThrowIfNotEmpty();
+
+                while (collectionReader.HasData)
                 {
-                    if (segments.Count != 0)
+                    GeneralNameAsn.Decode(collectionReader, out GeneralNameAsn generalName);
+
+                    if (output.Length != 0)
                     {
-                        segments.Add(CommaSpace);
+                        output.Append(", ");
                     }
 
-                    byte tag = altNameReader.PeekTag();
-
-                    if ((tag & DerSequenceReader.ContextSpecificTagFlag) == 0)
+                    if (generalName.OtherName.HasValue)
                     {
-                        // All GeneralName values need the ContextSpecific flag.
-                        return null;
+                        output.Append("othername:<unsupported>");
                     }
-
-                    GeneralNameType nameType = (GeneralNameType)(tag & DerSequenceReader.TagNumberMask);
-
-                    bool needsConstructedFlag = false;
-
-                    switch (nameType)
+                    else if (generalName.Rfc822Name != null)
                     {
-                        case GeneralNameType.OtherName:
-                        case GeneralNameType.X400Address:
-                        case GeneralNameType.DirectoryName:
-                        case GeneralNameType.EdiPartyName:
-                            needsConstructedFlag = true;
-                            break;
+                        output.Append("email:");
+                        output.Append(generalName.Rfc822Name);
                     }
-
-                    if (needsConstructedFlag &&
-                        (tag & DerSequenceReader.ConstructedFlag) == 0)
+                    else if (generalName.DnsName != null)
                     {
-                        // All of the SEQUENCE types require the constructed bit,
-                        // or OpenSSL will have refused to print it.
-                        return null;
+                        output.Append("DNS:");
+                        output.Append(generalName.DnsName);
                     }
-
-                    switch (nameType)
+                    else if (generalName.X400Address != null)
                     {
-                        case GeneralNameType.OtherName:
-                            segments.Add("othername:<unsupported>");
-                            altNameReader.SkipValue();
-                            break;
-                        case GeneralNameType.Rfc822Name:
-                            segments.Add("email:");
-                            segments.Add(altNameReader.ReadIA5String());
-                            break;
-                        case GeneralNameType.DnsName:
-                            segments.Add("DNS:");
-                            segments.Add(altNameReader.ReadIA5String());
-                            break;
-                        case GeneralNameType.X400Address:
-                            segments.Add("X400Name:<unsupported>");
-                            altNameReader.SkipValue();
-                            break;
-                        case GeneralNameType.DirectoryName:
-                            // OpenSSL supports printing one of these, but the logic lives in X509Certificates,
-                            // and it isn't very common.  So we'll skip this one until someone asks for it.
-                            segments.Add("DirName:<unsupported>");
-                            altNameReader.SkipValue();
-                            break;
-                        case GeneralNameType.EdiPartyName:
-                            segments.Add("EdiPartyName:<unsupported>");
-                            altNameReader.SkipValue();
-                            break;
-                        case GeneralNameType.UniformResourceIdentifier:
-                            segments.Add("URI:");
-                            segments.Add(altNameReader.ReadIA5String());
-                            break;
-                        case GeneralNameType.IPAddress:
-                            segments.Add("IP Address");
+                        output.Append("X400Name:<unsupported>");
+                    }
+                    else if (generalName.DirectoryName != null)
+                    {
+                        // OpenSSL supports printing one of these, but the logic lives in X509Certificates,
+                        // and it isn't very common.  So we'll skip this one until someone asks for it.
+                        output.Append("DirName:<unsupported>");
+                    }
+                    else if (generalName.EdiPartyName != null)
+                    {
+                        output.Append("EdiPartyName:<unsupported>");
+                    }
+                    else if (generalName.Uri != null)
+                    {
+                        output.Append("URI:");
+                        output.Append(generalName.Uri);
+                    }
+                    else if (generalName.IPAddress.HasValue)
+                    {
+                        ReadOnlySpan<byte> ipAddressBytes = generalName.IPAddress.Value.Span;
 
-                            byte[] ipAddressBytes = altNameReader.ReadOctetString();
-
-                            if (ipAddressBytes.Length == 4)
-                            {
-                                // Add the colon and dotted-decimal representation of IPv4.
-                                segments.Add(
-                                    $":{ipAddressBytes[0]}.{ipAddressBytes[1]}.{ipAddressBytes[2]}.{ipAddressBytes[3]}");
-                            }
-                            else if (ipAddressBytes.Length == 16)
-                            {
-                                // Print the IP Address value as colon separated UInt16 hex values without leading zeroes.
-                                // 20 01 0D B8 AC 10 FE 01 00 00 00 00 00 00 00 00
-                                //
-                                // IP Address:2001:DB8:AC10:FE01:0:0:0:0
-                                for (int i = 0; i < ipAddressBytes.Length; i += 2)
-                                {
-                                    segments.Add($":{ipAddressBytes[i] << 8 | ipAddressBytes[i + 1]:X}");
-                                }
-                            }
-                            else
-                            {
-                                segments.Add(":<invalid>");
-                            }
-
-                            break;
-                        case GeneralNameType.RegisteredId:
-                            segments.Add("Registered ID:");
-                            segments.Add(altNameReader.ReadOidAsString());
-                            break;
-                        default:
-                            // A new extension to GeneralName could legitimately hit this,
-                            // but it's correct to say that until we know what that is that
-                            // the pretty-print has failed, and we should fall back to hex.
+                        output.Append("IP Address");
+                        if (ipAddressBytes.Length == 4)
+                        {
+                            // Add the colon and dotted-decimal representation of IPv4.
+                            output.Append(
+                                $":{ipAddressBytes[0]}.{ipAddressBytes[1]}.{ipAddressBytes[2]}.{ipAddressBytes[3]}");
+                        }
+                        else if (ipAddressBytes.Length == 16)
+                        {
+                            // Print the IP Address value as colon separated UInt16 hex values without leading zeroes.
+                            // 20 01 0D B8 AC 10 FE 01 00 00 00 00 00 00 00 00
                             //
-                            // But it could also simply be poorly encoded user data.
-                            return null;
+                            // IP Address:2001:DB8:AC10:FE01:0:0:0:0
+                            for (int i = 0; i < ipAddressBytes.Length; i += 2)
+                            {
+                                output.Append($":{ipAddressBytes[i] << 8 | ipAddressBytes[i + 1]:X}");
+                            }
+                        }
+                        else
+                        {
+                            output.Append(":<invalid>");
+                        }
+                    }
+                    else if (generalName.RegisteredId != null)
+                    {
+                        output.Append("Registered ID:");
+                        output.Append(generalName.RegisteredId);
+                    }
+                    else
+                    {
+                        // A new extension to GeneralName could legitimately hit this,
+                        // but it's correct to say that until we know what that is that
+                        // the pretty-print has failed, and we should fall back to hex.
+                        //
+                        // But it could also simply be poorly encoded user data.
+                        return null;
                     }
                 }
 
-                return string.Concat(segments);
+                return output.ToString();
             }
             catch (CryptographicException)
             {
