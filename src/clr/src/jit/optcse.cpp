@@ -886,11 +886,11 @@ void Compiler::optCseUpdateCheckedBoundMap(GenTree* compare)
 {
     assert(compare->OperIsCompare());
 
-    ValueNum  compareVN = compare->gtVNPair.GetConservative();
-    VNFuncApp cmpVNFuncApp;
+    ValueNum   compareVN = compare->gtVNPair.GetConservative();
+    VNFuncApp  cmpVNFuncApp;
 
     if (!vnStore->GetVNFunc(compareVN, &cmpVNFuncApp) ||
-        (cmpVNFuncApp.m_func != GetVNFuncForOper(compare->OperGet(), compare->IsUnsigned())))
+        (cmpVNFuncApp.m_func != GetVNFuncForNode(compare)))
     {
         // Value numbering inferred this compare as something other
         // than its own operator; leave its value number alone.
@@ -917,12 +917,12 @@ void Compiler::optCseUpdateCheckedBoundMap(GenTree* compare)
         GenTree* op2 = compare->gtGetOp2();
 
         vnStore->GetCompareCheckedBoundArithInfo(compareVN, &info);
-        if (GetVNFuncForOper(op1->OperGet(), op1->IsUnsigned()) == (VNFunc)info.arrOper)
+        if (GetVNFuncForNode(op1) == (VNFunc)info.arrOper)
         {
             // The arithmetic node is the bound's parent.
             boundParent = op1;
         }
-        else if (GetVNFuncForOper(op2->OperGet(), op2->IsUnsigned()) == (VNFunc)info.arrOper)
+        else if (GetVNFuncForNode(op2) == (VNFunc)info.arrOper)
         {
             // The arithmetic node is the bound's parent.
             boundParent = op2;

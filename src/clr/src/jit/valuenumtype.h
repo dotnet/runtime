@@ -67,7 +67,15 @@ public:
 
     ValueNum Get(ValueNumKind vnk)
     {
-        return vnk == VNK_Liberal ? m_liberal : m_conservative;
+        if (vnk == VNK_Liberal)
+        {
+            return m_liberal;
+        }
+        else
+        {
+            assert(vnk == VNK_Conservative);
+            return m_conservative;
+        }
     }
 
     void SetBoth(ValueNum vn)
