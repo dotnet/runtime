@@ -94,8 +94,9 @@ namespace System.Security.Cryptography.X509Certificates
             try
             {
                 // Verify that the general name can be serialized and store it.
-                using (AsnWriter writer = AsnSerializer.Serialize(generalName, AsnEncodingRules.DER))
+                using (AsnWriter writer = new AsnWriter(AsnEncodingRules.DER))
                 {
+                    generalName.Encode(writer);
                     _encodedNames.Add(writer.Encode());
                 }
             }

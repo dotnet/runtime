@@ -276,7 +276,7 @@ namespace System.Security.Cryptography.Tests.Asn1
         {
             var hybrid = new FlexibleStringClassHybrid
             {
-                DirectoryString = new DirectoryStringAsn
+                DirectoryString = new DirectoryString
                 {
                     Utf8String = "Marco",
                 },
@@ -293,7 +293,7 @@ namespace System.Security.Cryptography.Tests.Asn1
         {
             var hybrid = new FlexibleStringClassHybrid
             {
-                DirectoryString = new DirectoryStringAsn
+                DirectoryString = new DirectoryString
                 {
                     BmpString = "Polo",
                 },
