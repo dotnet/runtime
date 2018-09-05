@@ -6140,7 +6140,12 @@ do_invoke_method (DebuggerTlsData *tls, Buffer *buf, InvokeData *invoke, guint8 
 				buffer_add_value (buf, mono_get_void_type (), NULL, domain);
 			}
 		} else if (MONO_TYPE_IS_REFERENCE (sig->ret)) {
-			buffer_add_value (buf, sig->ret, &res, domain);
+			if (sig->ret->byref) {
+				MonoType* ret_byval = m_class_get_byval_arg (mono_class_from_mono_type (sig->ret));
+				buffer_add_value (buf, ret_byval, &res, domain);
+			} else {
+				buffer_add_value (buf, sig->ret, &res, domain);
+			}
 		} else if (m_class_is_valuetype (mono_class_from_mono_type (sig->ret)) || sig->ret->type == MONO_TYPE_PTR || sig->ret->type == MONO_TYPE_FNPTR) {
 			if (mono_class_is_nullable (mono_class_from_mono_type (sig->ret))) {
 				MonoClass *k = mono_class_from_mono_type (sig->ret);
@@ -6151,7 +6156,13 @@ do_invoke_method (DebuggerTlsData *tls, Buffer *buf, InvokeData *invoke, guint8 
 				buffer_add_value (buf, sig->ret, nullable_buf, domain);
 			} else {
 				g_assert (res);
-				buffer_add_value (buf, sig->ret, mono_object_unbox (res), domain);
+
+				if (sig->ret->byref) {
+					MonoType* ret_byval = m_class_get_byval_arg (mono_class_from_mono_type (sig->ret));
+					buffer_add_value (buf, ret_byval, mono_object_unbox (res), domain);
+				} else {
+					buffer_add_value (buf, sig->ret, mono_object_unbox (res), domain);
+				}
 			}
 		} else {
 			NOT_IMPLEMENTED;
