@@ -25,10 +25,12 @@ ValueNumFuncDef(PhiMemoryDef, 2, false, false, false) // Args: 0: VN for basic b
 ValueNumFuncDef(InitVal, 1, false, false, false)    // An input arg, or init val of a local Args: 0: a constant VN.
 
 
-ValueNumFuncDef(Cast, 2, false, false, false)               // VNF_Cast: Cast Operation changes the representations size and unsigned-ness.
-                                                     //           Args: 0: Source for the cast operation.
-                                                     //                 1: Constant integer representing the operation .
-                                                     //                    Use VNForCastOper() to construct.
+
+ValueNumFuncDef(Cast, 2, false, false, false)           // VNF_Cast: Cast Operation changes the representations size and unsigned-ness.
+                                                        //           Args: 0: Source for the cast operation.
+                                                        //                 1: Constant integer representing the operation .
+                                                        //                    Use VNForCastOper() to construct.
+ValueNumFuncDef(CastOvf, 2, false, false, false)        // Same as a VNF_Cast but also can throw an overflow exception, currently we don't try to constant fold this
 
 ValueNumFuncDef(CastClass, 2, false, false, false)          // Args: 0: Handle of class being cast to, 1: object being cast.
 ValueNumFuncDef(IsInstanceOf, 2, false, false, false)       // Args: 0: Handle of class being queried, 1: object being queried.
@@ -48,20 +50,22 @@ ValueNumFuncDef(LoopCloneChoiceAddr, 0, false, true, false)
 
 // How we represent values of expressions with exceptional side effects:
 ValueNumFuncDef(ValWithExc, 2, false, false, false)         // Args: 0: value number from normal execution; 1: VN for set of possible exceptions.
-
 ValueNumFuncDef(ExcSetCons, 2, false, false, false)         // Args: 0: exception; 1: exception set (including EmptyExcSet).  Invariant: "car"s are always in ascending order.
 
-// Various exception values.
-ValueNumFuncDef(NullPtrExc, 1, false, false, false)         // Null pointer exception.
-ValueNumFuncDef(ArithmeticExc, 0, false, false, false)      // E.g., for signed its, MinInt / -1.
-ValueNumFuncDef(OverflowExc, 0, false, false, false)        // Integer overflow.
-ValueNumFuncDef(ConvOverflowExc, 2, false, false, false)    // Integer overflow produced by converion.  Args: 0: input value; 1: var_types of target type
-                                                     // (shifted left one bit; low bit encode whether source is unsigned.) 
-ValueNumFuncDef(DivideByZeroExc, 0, false, false, false)    // Division by zero.
-ValueNumFuncDef(IndexOutOfRangeExc, 2, false, false, false) // Args: 0: array length; 1: index.  The exception raised if this bounds check fails.
+// Various functions that are used to indicate that an exceptions may occur
+// Curremtly  when the execution is always thrown, the value VNForVoid() is used as Arg0 by OverflowExc and DivideByZeroExc
+// 
+ValueNumFuncDef(NullPtrExc, 1, false, false, false)         // Null pointer exception check.  Args: 0: address value,  throws when it is null
+ValueNumFuncDef(ArithmeticExc, 2, false, false, false)      // E.g., for signed its, MinInt / -1.
+ValueNumFuncDef(OverflowExc, 1, false, false, false)        // Integer overflow check. Args: 0: expression value,  throws when it overflows
+ValueNumFuncDef(ConvOverflowExc, 2, false, false, false)    // Cast conversion overflow check.  Args: 0: input value; 1: var_types of the target type
+                                                            // (shifted left one bit; low bit encode whether source is unsigned.) 
+ValueNumFuncDef(DivideByZeroExc, 1, false, false, false)    // Division by zero check.  Args: 0: divisor value, throws when it is zero
+ValueNumFuncDef(IndexOutOfRangeExc, 2, false, false, false) // Args: 0: array length; 1: index value, throws when the bounds check fails.
 ValueNumFuncDef(InvalidCastExc, 2, false, false, false)     // Args: 0: ref value being cast; 1: handle of type being cast to.  Represents the exception thrown if the cast fails.
 ValueNumFuncDef(NewArrOverflowExc, 1, false, false, false)  // Raises Integer overflow when Arg 0 is negative
 ValueNumFuncDef(HelperMultipleExc, 0, false, false, false)  // Represents one or more different exceptions that may be thrown by a JitHelper
+
 
 ValueNumFuncDef(Lng2Dbl, 1, false, false, false)
 ValueNumFuncDef(ULng2Dbl, 1, false, false, false)
@@ -133,17 +137,26 @@ ValueNumFuncDef(JitReadyToRunNewArr, 3, false, true, false)
 ValueNumFuncDef(Box, 3, false, false, false)
 ValueNumFuncDef(BoxNullable, 3, false, false, false)
 
-ValueNumFuncDef(LT_UN, 2, false, false, false)
+ValueNumFuncDef(StrCns, 2, false, true, false)
+ValueNumFuncDef(Unbox, 2, false, true, false)
+
+ValueNumFuncDef(LT_UN, 2, false, false, false)      // unsigned or unordered comparisons
 ValueNumFuncDef(LE_UN, 2, false, false, false)
 ValueNumFuncDef(GE_UN, 2, false, false, false)
 ValueNumFuncDef(GT_UN, 2, false, false, false)
-ValueNumFuncDef(ADD_UN, 2, true, false, false)
-ValueNumFuncDef(SUB_UN, 2, false, false, false)
-ValueNumFuncDef(MUL_UN, 2, true, false, false)
 
-ValueNumFuncDef(StrCns, 2, false, true, false)
+ValueNumFuncDef(MUL64_UN, 2, true, false, false)    // unsigned multiplication (used by 32-bit targets)
 
-ValueNumFuncDef(Unbox, 2, false, true, false)
+// currently we won't constant fold the next six
+
+ValueNumFuncDef(ADD_OVF, 2, true, false, false)     // overflow checking operations
+ValueNumFuncDef(SUB_OVF, 2, false, false, false)
+ValueNumFuncDef(MUL_OVF, 2, true, false, false)
+
+ValueNumFuncDef(ADD_UN_OVF, 2, true, false, false)  // unsigned overflow checking operations
+ValueNumFuncDef(SUB_UN_OVF, 2, false, false, false)
+ValueNumFuncDef(MUL_UN_OVF, 2, true, false, false)
+
 // clang-format on
 
 #undef ValueNumFuncDef
