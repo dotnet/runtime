@@ -13671,6 +13671,10 @@ DONE_MORPHING_CHILDREN:
                     GenTree* throwNode = op1->gtOp.gtOp1;
                     noway_assert(throwNode->gtType == TYP_VOID);
 
+                    JITDUMP("Removing [%06d] GT_JTRUE as the block now unconditionally throws an exception.\n",
+                            dspTreeID(tree));
+                    DEBUG_DESTROY_NODE(tree);
+
                     return throwNode;
                 }
 
@@ -13680,13 +13684,17 @@ DONE_MORPHING_CHILDREN:
                 // We need to keep op1 for the side-effects. Hang it off
                 // a GT_COMMA node
 
+                JITDUMP("Keeping side-effects by bashing [%06d] GT_JTRUE into a GT_COMMA.\n", dspTreeID(tree));
+
                 tree->ChangeOper(GT_COMMA);
                 tree->gtOp.gtOp2 = op2 = gtNewNothingNode();
 
                 // Additionally since we're eliminating the JTRUE
                 // codegen won't like it if op1 is a RELOP of longs, floats or doubles.
                 // So we change it into a GT_COMMA as well.
+                JITDUMP("Also bashing [%06d] (a relop) into a GT_COMMA.\n", dspTreeID(op1));
                 op1->ChangeOper(GT_COMMA);
+                op1->gtFlags &= ~GTF_UNSIGNED; // Clear the unsigned flag if it was set on the relop
                 op1->gtType = op1->gtOp.gtOp1->gtType;
 
                 return tree;
