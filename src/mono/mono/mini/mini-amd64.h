@@ -209,7 +209,8 @@ typedef struct MonoCompileArch {
 	gint32 stack_alloc_size;
 	gint32 sp_fp_offset;
 	guint32 saved_iregs;
-	gboolean omit_fp, omit_fp_computed;
+	gboolean omit_fp;
+	gboolean omit_fp_computed;
 	CallInfo *cinfo;
 	gint32 async_point_count;
 	MonoInst *vret_addr_loc;

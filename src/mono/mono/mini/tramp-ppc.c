@@ -646,7 +646,7 @@ mono_arch_create_rgctx_lazy_fetch_trampoline (guint32 slot, MonoTrampInfo **info
 		ppc_mtctr (code, ppc_r12);
 		ppc_bcctr (code, PPC_BR_ALWAYS, 0);
 	} else {
-		tramp = mono_arch_create_specific_trampoline (GUINT_TO_POINTER (slot),
+		tramp = (guint8*)mono_arch_create_specific_trampoline (GUINT_TO_POINTER (slot),
 			MONO_TRAMPOLINE_RGCTX_LAZY_FETCH, mono_get_root_domain (), NULL);
 
 		/* jump to the actual trampoline */

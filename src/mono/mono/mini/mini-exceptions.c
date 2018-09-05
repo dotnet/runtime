@@ -133,7 +133,7 @@ static void mono_summarize_exception (MonoException *exc, MonoThreadSummary *out
 static gboolean
 first_managed (MonoStackFrameInfo *frame, MonoContext *ctx, gpointer addr)
 {
-	gpointer **data = (gpointer **)addr;
+	gpointer *data = (gpointer *)addr;
 
 	if (!frame->managed)
 		return FALSE;
@@ -2085,7 +2085,7 @@ handle_exception_first_pass (MonoContext *ctx, MonoObject *obj, gint32 *out_filt
 
 					if (G_UNLIKELY (mono_profiler_clauses_enabled ())) {
 						jit_tls->orig_ex_ctx_set = TRUE;
-						MONO_PROFILER_RAISE (exception_clause, (method, i, ei->flags, ex_obj));
+						MONO_PROFILER_RAISE (exception_clause, (method, i, (MonoExceptionEnum)ei->flags, ex_obj));
 						jit_tls->orig_ex_ctx_set = FALSE;
 					}
 
@@ -2589,7 +2589,7 @@ mono_handle_exception_internal (MonoContext *ctx, MonoObject *obj, gboolean resu
 
 					if (G_UNLIKELY (mono_profiler_clauses_enabled ())) {
 						jit_tls->orig_ex_ctx_set = TRUE;
-						MONO_PROFILER_RAISE (exception_clause, (method, i, ei->flags, ex_obj));
+						MONO_PROFILER_RAISE (exception_clause, (method, i, (MonoExceptionEnum)ei->flags, ex_obj));
 						jit_tls->orig_ex_ctx_set = FALSE;
 					}
 				}
@@ -2599,7 +2599,7 @@ mono_handle_exception_internal (MonoContext *ctx, MonoObject *obj, gboolean resu
 
 					if (G_UNLIKELY (mono_profiler_clauses_enabled ())) {
 						jit_tls->orig_ex_ctx_set = TRUE;
-						MONO_PROFILER_RAISE (exception_clause, (method, i, ei->flags, ex_obj));
+						MONO_PROFILER_RAISE (exception_clause, (method, i, (MonoExceptionEnum)ei->flags, ex_obj));
 						jit_tls->orig_ex_ctx_set = FALSE;
 					}
 
@@ -2707,8 +2707,10 @@ mono_debugger_run_finally (MonoContext *start_ctx)
  * return TRUE.
  */
 gboolean
-mono_handle_exception (MonoContext *ctx, MonoObject *obj)
+mono_handle_exception (MonoContext *ctx, gpointer void_obj)
 {
+	MonoObject *obj = (MonoObject*)void_obj;
+
 	MONO_REQ_GC_UNSAFE_MODE;
 
 #ifndef DISABLE_PERFCOUNTERS

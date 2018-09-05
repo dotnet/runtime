@@ -4075,7 +4075,7 @@ mono_arch_emit_prolog (MonoCompile *cfg)
 	}
 
 	if (mono_jit_trace_calls != NULL && mono_trace_eval (method))
-		code = mono_arch_instrument_prolog (cfg, mono_trace_enter_method, code, TRUE);
+		code = (guint32*)mono_arch_instrument_prolog (cfg, mono_trace_enter_method, code, TRUE);
 
 	set_code_cursor (cfg, code);
 
@@ -4099,7 +4099,7 @@ mono_arch_emit_epilog (MonoCompile *cfg)
 	code = (guint32 *)realloc_code (cfg, max_epilog_size);
 
 	if (mono_jit_trace_calls != NULL && mono_trace_eval (method))
-		code = mono_arch_instrument_epilog (cfg, mono_trace_leave_method, code, TRUE);
+		code = (guint32*)mono_arch_instrument_epilog (cfg, mono_trace_leave_method, code, TRUE);
 
 	if (cfg->method->save_lmf) {
 		gint32 lmf_offset = STACK_BIAS - cfg->arch.lmf_offset;

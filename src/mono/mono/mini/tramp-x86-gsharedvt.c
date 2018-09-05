@@ -60,7 +60,7 @@ mono_x86_start_gsharedvt_call (GSharedVtCallInfo *info, gpointer *caller, gpoint
 	}
 
 	if (info->vcall_offset != -1) {
-		MonoObject *this_obj = caller [0];
+		MonoObject *this_obj = (MonoObject*)caller [0];
 
 		if (G_UNLIKELY (!this_obj))
 			return NULL;

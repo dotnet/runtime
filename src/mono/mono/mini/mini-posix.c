@@ -145,7 +145,7 @@ get_saved_signal_handler (int signo, gboolean remove)
 {
 	if (mono_saved_signal_handlers) {
 		/* The hash is only modified during startup, so no need for locking */
-		struct sigaction *handler = g_hash_table_lookup (mono_saved_signal_handlers, GINT_TO_POINTER (signo));
+		struct sigaction *handler = (struct sigaction*)g_hash_table_lookup (mono_saved_signal_handlers, GINT_TO_POINTER (signo));
 		if (remove && handler)
 			g_hash_table_remove (mono_saved_signal_handlers, GINT_TO_POINTER (signo));
 		return handler;
@@ -301,7 +301,7 @@ MONO_SIG_HANDLER_FUNC (static, profiler_signal_handler)
 
 	mono_thread_info_set_is_async_context (TRUE);
 
-	MONO_PROFILER_RAISE (sample_hit, (mono_arch_ip_from_context (ctx), ctx));
+	MONO_PROFILER_RAISE (sample_hit, ((const mono_byte*)mono_arch_ip_from_context (ctx), ctx));
 
 	mono_thread_info_set_is_async_context (FALSE);
 
@@ -337,14 +337,16 @@ MONO_SIG_HANDLER_FUNC (static, sigusr2_signal_handler)
 	mono_chain_signal (MONO_SIG_HANDLER_PARAMS);
 }
 
+typedef void MONO_SIG_HANDLER_SIGNATURE ((*MonoSignalHandler));
+
 static void
-add_signal_handler (int signo, gpointer handler, int flags)
+add_signal_handler (int signo, MonoSignalHandler handler, int flags)
 {
 	struct sigaction sa;
 	struct sigaction previous_sa;
 
 #ifdef MONO_ARCH_USE_SIGACTION
-	sa.sa_sigaction = (void (*)(int, siginfo_t *, void *))handler;
+	sa.sa_sigaction = handler;
 	sigemptyset (&sa.sa_mask);
 	sa.sa_flags = SA_SIGINFO | flags;
 #ifdef MONO_ARCH_SIGSEGV_ON_ALTSTACK
@@ -375,7 +377,7 @@ add_signal_handler (int signo, gpointer handler, int flags)
 		sigemptyset (&block_mask);
 	}
 #else
-	sa.sa_handler = handler;
+	sa.sa_handler = (void (*)(int))handler;
 	sigemptyset (&sa.sa_mask);
 	sa.sa_flags = flags;
 #endif
@@ -710,7 +712,9 @@ sampling_thread_func (gpointer unused)
 	 * to do our work, the kernel may knock us back down to the normal thread
 	 * scheduling policy without telling us.
 	 */
-	struct sched_param sched = { .sched_priority = sched_get_priority_max (SCHED_FIFO) };
+	struct sched_param sched;
+	memset (&sched, 0, sizeof (sched));
+	sched.sched_priority = sched_get_priority_max (SCHED_FIFO);
 	pthread_setschedparam (pthread_self (), SCHED_FIFO, &sched);
 
 	MonoProfilerSampleMode mode;

@@ -24,9 +24,15 @@ typedef struct {
 
 typedef struct {
 	short op_index;
+#ifdef __cplusplus
+	MonoStackType big_stack_type : 16;
+	MonoStackType small_stack_type : 16;
+	MonoStackType stack_type : 16;
+#else
 	short big_stack_type;
 	short small_stack_type;
 	short stack_type;
+#endif
 	short conv_4_to_8;
 	short conv_8_to_4;
 	short move;
@@ -157,7 +163,7 @@ emit_narrow (MonoCompile *cfg, const MagicTypeInfo *info, int sreg)
 		ins->type = cfg->r4_stack_type;
 	else
 		ins->type = info->small_stack_type;
-	ins->dreg = alloc_dreg (cfg, ins->type);
+	ins->dreg = alloc_dreg (cfg, (MonoStackType)ins->type);
 	MONO_ADD_INS (cfg->cbb, ins);
 	return mono_decompose_opcode (cfg, ins);
 }
@@ -184,7 +190,8 @@ emit_intrinsics (MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSignature *fsi
 	int i = 0;
 	const char *name = cmethod->name;
 	MonoInst *ins;
-	int type_index, stack_type;
+	int type_index;
+	MonoStackType stack_type;
 
 	if (info->op_index == 2 && cfg->r4fp && TARGET_SIZEOF_VOID_P == 4) {
 		type_index = 3;
@@ -253,7 +260,7 @@ emit_intrinsics (MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSignature *fsi
 
 		/* We have IR for inc/dec */
 		MONO_INST_NEW (cfg, ins, inc ? info->inc_op : info->dec_op);
-		ins->dreg = alloc_dreg (cfg, info->stack_type);
+		ins->dreg = alloc_dreg (cfg, (MonoStackType)info->stack_type);
 		ins->sreg1 = args [0]->dreg;
 		ins->inst_imm = 1;
 		ins->type = info->stack_type;

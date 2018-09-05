@@ -332,7 +332,7 @@ mono_arch_create_generic_trampoline (MonoTrampolineType tramp_type, MonoTrampInf
 	} else {
 		ARM_LDR_IMM (code, ARMREG_IP, ARMREG_PC, 0);
 		ARM_B (code, 0);
-		*(gpointer*)code = mono_thread_force_interruption_checkpoint_noraise;
+		*(gpointer*)code = (gpointer)mono_thread_force_interruption_checkpoint_noraise;
 		code += 4;
 	}
 	ARM_MOV_REG_REG (code, ARMREG_LR, ARMREG_PC);
@@ -377,7 +377,7 @@ mono_arch_create_generic_trampoline (MonoTrampolineType tramp_type, MonoTrampInf
 
 	if (!aot) {
 		constants = (gpointer*)code;
-		constants [0] = mono_get_lmf_addr;
+		constants [0] = (gpointer)mono_get_lmf_addr;
 		constants [1] = (gpointer)mono_get_trampoline_func (tramp_type);
 
 		/* backpatch by emitting the missing instructions skipped above */
@@ -703,7 +703,7 @@ mono_arch_create_rgctx_lazy_fetch_trampoline (guint32 slot, MonoTrampInfo **info
 		code += 4;
 		ARM_LDR_REG_REG (code, ARMREG_PC, ARMREG_PC, ARMREG_R1);
 	} else {
-		tramp = mono_arch_create_specific_trampoline (GUINT_TO_POINTER (slot), MONO_TRAMPOLINE_RGCTX_LAZY_FETCH, mono_get_root_domain (), &code_len);
+		tramp = (guint8*)mono_arch_create_specific_trampoline (GUINT_TO_POINTER (slot), MONO_TRAMPOLINE_RGCTX_LAZY_FETCH, mono_get_root_domain (), &code_len);
 
 		/* Jump to the actual trampoline */
 		ARM_LDR_IMM (code, ARMREG_R1, ARMREG_PC, 0); /* temp reg */
@@ -815,9 +815,9 @@ mono_arch_create_sdb_trampoline (gboolean single_step, MonoTrampInfo **info, gbo
 		ARM_LDR_IMM (code, ARMREG_IP, ARMREG_PC, 0);
 		ARM_B (code, 0);
 		if (single_step)
-			*(gpointer*)code = mini_get_dbg_callbacks ()->single_step_from_context;
+			*(gpointer*)code = (gpointer)mini_get_dbg_callbacks ()->single_step_from_context;
 		else
-			*(gpointer*)code = mini_get_dbg_callbacks ()->breakpoint_from_context;
+			*(gpointer*)code = (gpointer)mini_get_dbg_callbacks ()->breakpoint_from_context;
 		code += 4;
 		ARM_BLX_REG (code, ARMREG_IP);
 	}

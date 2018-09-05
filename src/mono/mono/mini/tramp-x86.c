@@ -493,7 +493,7 @@ mono_arch_create_rgctx_lazy_fetch_trampoline (guint32 slot, MonoTrampInfo **info
 		code = mono_arch_emit_load_aotconst (buf, code, &ji, MONO_PATCH_INFO_JIT_ICALL_ADDR, g_strdup_printf ("specific_trampoline_lazy_fetch_%u", slot));
 		x86_jump_reg (code, X86_EAX);
 	} else {
-		tramp = mono_arch_create_specific_trampoline (GUINT_TO_POINTER (slot), MONO_TRAMPOLINE_RGCTX_LAZY_FETCH, mono_get_root_domain (), NULL);
+		tramp = (guint8*)mono_arch_create_specific_trampoline (GUINT_TO_POINTER (slot), MONO_TRAMPOLINE_RGCTX_LAZY_FETCH, mono_get_root_domain (), NULL);
 
 		/* jump to the actual trampoline */
 		x86_jump_code (code, tramp);
@@ -556,7 +556,7 @@ void
 mono_arch_invalidate_method (MonoJitInfo *ji, void *func, gpointer func_arg)
 {
 	/* FIXME: This is not thread safe */
-	guint8 *code = ji->code_start;
+	guint8 *code = (guint8*)ji->code_start;
 
 	x86_push_imm (code, func_arg);
 	x86_call_code (code, (guint8*)func);

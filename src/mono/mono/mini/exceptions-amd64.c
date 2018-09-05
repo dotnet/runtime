@@ -195,7 +195,7 @@ static LONG CALLBACK seh_vectored_exception_handler(EXCEPTION_POINTERS* ep)
 void win32_seh_init()
 {
 	if (!mono_aot_only)
-		restore_stack = get_win32_restore_stack ();
+		restore_stack = (void (*) (void))get_win32_restore_stack ();
 
 	mono_old_win_toplevel_exception_filter = SetUnhandledExceptionFilter(seh_unhandled_exception_filter);
 	mono_win_vectored_exception_handle = AddVectoredExceptionHandler (1, seh_vectored_exception_handler);
@@ -804,9 +804,9 @@ mono_arch_ip_from_context (void *sigctx)
 
 	return (gpointer)UCONTEXT_REG_RIP (ctx);
 #elif defined(HOST_WIN32)
-	return ((CONTEXT*)sigctx)->Rip;
+	return (gpointer)(((CONTEXT*)sigctx)->Rip);
 #else
-	MonoContext *ctx = sigctx;
+	MonoContext *ctx = (MonoContext*)sigctx;
 	return (gpointer)ctx->gregs [AMD64_RIP];
 #endif	
 }
@@ -1200,8 +1200,8 @@ fast_find_range_in_table_no_lock_ex (gsize begin_range, gsize end_range, gboolea
 
 	// Fast path, look at boundaries.
 	if (g_dynamic_function_table_begin != NULL) {
-		DynamicFunctionTableEntry *first_entry = g_dynamic_function_table_begin->data;
-		DynamicFunctionTableEntry *last_entry = (g_dynamic_function_table_end != NULL ) ? g_dynamic_function_table_end->data : first_entry;
+		DynamicFunctionTableEntry *first_entry = (DynamicFunctionTableEntry*)g_dynamic_function_table_begin->data;
+		DynamicFunctionTableEntry *last_entry = (g_dynamic_function_table_end != NULL ) ? (DynamicFunctionTableEntry*)g_dynamic_function_table_end->data : first_entry;
 
 		// Sorted in descending order based on begin_range, check first item, that is the entry with highest range.
 		if (first_entry != NULL && first_entry->begin_range <= begin_range && first_entry->end_range >= end_range) {
@@ -1746,7 +1746,7 @@ initialize_unwind_info_internal (GSList *unwind_ops)
 {
 	PUNWIND_INFO unwindinfo;
 
-	mono_arch_unwindinfo_create (&unwindinfo);
+	mono_arch_unwindinfo_create ((gpointer*)&unwindinfo);
 	initialize_unwind_info_internal_ex (unwind_ops, unwindinfo);
 
 	return unwindinfo;

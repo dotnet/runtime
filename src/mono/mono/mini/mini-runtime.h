@@ -73,6 +73,8 @@ typedef struct {
 	int first_filter_idx, filter_idx;
 } ResumeState;
 
+typedef void (*MonoAbortFunction)(MonoObject*);
+
 struct MonoJitTlsData {
 	gpointer          end_of_stack;
 	guint32           stack_size;
@@ -85,7 +87,7 @@ struct MonoJitTlsData {
 	guint32          stack_ovf_guard_size;
 	guint            stack_ovf_valloced : 1;
 	guint            stack_ovf_pending : 1;
-	void            (*abort_func) (MonoObject *object);
+	MonoAbortFunction abort_func;
 	/* Used to implement --debug=casts */
 	MonoClass       *class_cast_from, *class_cast_to;
 
@@ -422,10 +424,12 @@ MONO_API int       mono_parse_default_optimizations  (const char* p);
 gboolean          mono_running_on_valgrind (void);
 
 MonoLMF * mono_get_lmf                      (void);
+#define mono_get_lmf_addr mono_tls_get_lmf_addr
 MonoLMF** mono_get_lmf_addr                 (void);
 void      mono_set_lmf                      (MonoLMF *lmf);
 void      mono_push_lmf                     (MonoLMFExt *ext);
 void      mono_pop_lmf                      (MonoLMF *lmf);
+#define mono_get_jit_tls mono_tls_get_jit_tls
 MonoJitTlsData* mono_get_jit_tls            (void);
 MONO_API MonoDomain* mono_jit_thread_attach (MonoDomain *domain);
 MONO_API void      mono_jit_set_domain      (MonoDomain *domain);

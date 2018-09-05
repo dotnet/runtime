@@ -54,7 +54,7 @@ mono_arch_get_call_filter (MonoTrampInfo **info, gboolean aot)
 {
 	if (info)
 		*info = mono_tramp_info_create ("call_filter", (guint8*)wasm_call_filter, 1, NULL, NULL);
-	return wasm_call_filter;
+	return (gpointer)wasm_call_filter;
 }
 
 gpointer
@@ -62,14 +62,14 @@ mono_arch_get_restore_context (MonoTrampInfo **info, gboolean aot)
 {
 	if (info)
 		*info = mono_tramp_info_create ("restore_context", (guint8*)wasm_restore_context, 1, NULL, NULL);
-	return wasm_restore_context;
+	return (gpointer)wasm_restore_context;
 }
 gpointer 
 mono_arch_get_throw_corlib_exception (MonoTrampInfo **info, gboolean aot)
 {
 	if (info)
 		*info = mono_tramp_info_create ("throw_corlib_exception", (guint8*)wasm_throw_corlib_exception, 1, NULL, NULL);
-	return wasm_throw_corlib_exception;
+	return (gpointer)wasm_throw_corlib_exception;
 }
 
 gpointer
@@ -77,7 +77,7 @@ mono_arch_get_rethrow_exception (MonoTrampInfo **info, gboolean aot)
 {
 	if (info)
 		*info = mono_tramp_info_create ("rethrow_exception", (guint8*)wasm_rethrow_exception, 1, NULL, NULL);
-	return wasm_rethrow_exception;
+	return (gpointer)wasm_rethrow_exception;
 }
 
 gpointer
@@ -85,7 +85,7 @@ mono_arch_get_throw_exception (MonoTrampInfo **info, gboolean aot)
 {
 	if (info)
 		*info = mono_tramp_info_create ("throw_exception", (guint8*)wasm_throw_exception, 1, NULL, NULL);
-	return wasm_throw_exception;
+	return (gpointer)wasm_throw_exception;
 }
 
 void

@@ -37,7 +37,7 @@ recursively_make_pred_seq_points (MonoCompile *cfg, MonoBasicBlock *bb)
 	GHashTable *seen = g_hash_table_new_full (g_direct_hash, NULL, NULL, NULL);
 
 	// Insert/remove sentinel into the memoize table to detect loops containing bb
-	bb->pred_seq_points = MONO_SEQ_SEEN_LOOP;
+	bb->pred_seq_points = (MonoInst**)MONO_SEQ_SEEN_LOOP;
 
 	for (int i = 0; i < bb->in_count; ++i) {
 		MonoBasicBlock *in_bb = bb->in_bb [i];
@@ -78,7 +78,7 @@ recursively_make_pred_seq_points (MonoCompile *cfg, MonoBasicBlock *bb)
 		bb->num_pred_seq_points = predecessors->len;
 
 		for (int newer = 0; newer < bb->num_pred_seq_points; newer++) {
-			bb->pred_seq_points [newer] = g_array_index(predecessors, gpointer, newer);
+			bb->pred_seq_points [newer] = g_array_index(predecessors, MonoInst*, newer);
 		}
 	} 
 

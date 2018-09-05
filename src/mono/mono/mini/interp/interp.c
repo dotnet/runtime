@@ -2597,7 +2597,7 @@ interp_exec_method_full (InterpFrame *frame, ThreadContext *context, guint16 *st
 	GSList *finally_ips = NULL;
 	const unsigned short *endfinally_ip = NULL;
 	const unsigned short *ip = NULL;
-	register stackval *sp;
+	stackval *sp;
 	InterpMethod *rtm = NULL;
 #if DEBUG_INTERP
 	gint tracing = global_tracing;

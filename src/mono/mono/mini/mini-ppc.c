@@ -322,7 +322,7 @@ mono_ppc_is_direct_call_sequence (guint32 *code)
 
 #define MAX_ARCH_DELEGATE_PARAMS 7
 
-static gpointer
+static guint8*
 get_delegate_invoke_impl (MonoTrampInfo **info, gboolean has_target, guint32 param_count, gboolean aot)
 {
 	guint8 *code, *start;
@@ -1876,7 +1876,7 @@ mono_arch_is_inst_imm (int opcode, int imm_opcode, gint64 imm)
  */
 
 void*
-(mono_arch_instrument_prolog) (MonoCompile *cfg, void *func, void *p, gboolean enable_arguments)
+mono_arch_instrument_prolog (MonoCompile *cfg, void *func, void *p, gboolean enable_arguments)
 {
 	guchar *code = p;
 
@@ -1897,7 +1897,7 @@ enum {
 };
 
 void*
-(mono_arch_instrument_epilog) (MonoCompile *cfg, void *func, void *p, gboolean enable_arguments)
+mono_arch_instrument_epilog (MonoCompile *cfg, void *func, void *p, gboolean enable_arguments)
 {
 	guchar *code = p;
 	int save_mode = SAVE_NONE;
@@ -5299,7 +5299,7 @@ mono_arch_emit_prolog (MonoCompile *cfg)
 	}
 
 	if (tracing)
-		code = mono_arch_instrument_prolog (cfg, mono_trace_enter_method, code, TRUE);
+		code = (guint8*)mono_arch_instrument_prolog (cfg, mono_trace_enter_method, code, TRUE);
 
 	set_code_cursor (cfg, code);
 	g_free (cinfo);
@@ -5324,7 +5324,7 @@ mono_arch_emit_epilog (MonoCompile *cfg)
 	code = realloc_code (cfg, max_epilog_size);
 
 	if (mono_jit_trace_calls != NULL && mono_trace_eval (method)) {
-		code = mono_arch_instrument_epilog (cfg, mono_trace_leave_method, code, TRUE);
+		code = (guint8*)mono_arch_instrument_epilog (cfg, mono_trace_leave_method, code, TRUE);
 	}
 	pos = 0;
 

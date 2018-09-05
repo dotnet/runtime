@@ -138,7 +138,7 @@ typedef struct MonoAotFileInfo
 	 * The runtime version string for AOT images generated using 'bind-to-runtime-version',
 	 * NULL otherwise.
 	 */
-	gpointer runtime_version;
+	char *runtime_version;
 	/* Blocks of various kinds of trampolines */
 	gpointer specific_trampolines;
 	gpointer static_rgctx_trampolines;

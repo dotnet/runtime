@@ -8,6 +8,7 @@
 #include "mono/metadata/gc-internals.h"
 #include "mini.h"
 #include "mini-runtime.h"
+#include "mono/metadata/loader-internals.h"
 
 #if defined(MONO_SUPPORT_TASKLETS)
 

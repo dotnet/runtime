@@ -6458,7 +6458,7 @@ mono_arch_emit_prolog (MonoCompile *cfg)
 
 	if (tracing) {
 		argsClobbered = TRUE;
-		code = mono_arch_instrument_prolog (cfg, enter_method, code, TRUE);
+		code = (guint8*)mono_arch_instrument_prolog (cfg, enter_method, code, TRUE);
 	}
 
 	/*
@@ -6565,7 +6565,7 @@ mono_arch_emit_epilog (MonoCompile *cfg)
 	code = realloc_code (cfg, max_epilog_size);
 
 	if (mono_jit_trace_calls != NULL && mono_trace_eval (method)) {
-		code = mono_arch_instrument_epilog (cfg, leave_method, code, TRUE);
+		code = (guint8*)mono_arch_instrument_epilog (cfg, leave_method, code, TRUE);
 		tracing = 1;
 	}
 	
@@ -6913,7 +6913,7 @@ mono_arch_get_this_arg_from_call (mgreg_t *regs, guint8 *code)
 /*		                               			    */
 /*------------------------------------------------------------------*/
 
-static gpointer
+static guint8*
 get_delegate_invoke_impl (MonoTrampInfo **info, gboolean has_target, guint32 param_count, gboolean aot)
 {
 	guint8 *code, *start;

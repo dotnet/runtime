@@ -55,7 +55,7 @@ mono_arch_get_interp_to_native_trampoline (MonoTrampInfo **info)
 {
 	if (info)
 		*info = mono_tramp_info_create ("interp_to_native_trampoline", (guint8*)mono_wasm_interp_to_native_trampoline, 1, NULL, NULL);
-	return mono_wasm_interp_to_native_trampoline;
+	return (gpointer)mono_wasm_interp_to_native_trampoline;
 }
 
 guint8*
@@ -63,13 +63,13 @@ mono_arch_create_sdb_trampoline (gboolean single_step, MonoTrampInfo **info, gbo
 {
 	g_assert (!aot);
 	const char *name;
-	gpointer code;
+	guint8* code;
 	if (single_step) {
 		name = "sdb_single_step_trampoline";
-		code = mono_wasm_single_step_hit;
+		code = (guint8*)mono_wasm_single_step_hit;
 	} else {
 		name = "sdb_breakpoint_trampoline";
-		code = mono_wasm_breakpoint_hit;
+		code = (guint8*)mono_wasm_breakpoint_hit;
 	}
 
 	if (info)

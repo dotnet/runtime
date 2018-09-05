@@ -66,7 +66,8 @@ mini_emit_memset (MonoCompile *cfg, int destreg, int offset, int size, int val, 
 
 	//Unaligned offsets don't naturaly happen in the runtime, so it's ok to be conservative in how we copy
 	//We assume that input src and dest are be aligned to `align` so offset just worsen it
-	int offsets_mask = offset & 0x7; //we only care about the misalignment part
+	int offsets_mask;
+	offsets_mask = offset & 0x7; //we only care about the misalignment part
 	if (offsets_mask) {
 		if (offsets_mask % 2 == 1)
 			goto set_1;
@@ -126,7 +127,8 @@ mini_emit_memcpy (MonoCompile *cfg, int destreg, int doffset, int srcreg, int so
 
 	//Unaligned offsets don't naturaly happen in the runtime, so it's ok to be conservative in how we copy
 	//We assume that input src and dest are be aligned to `align` so offset just worsen it
-	int offsets_mask = (doffset | soffset) & 0x7; //we only care about the misalignment part
+	int offsets_mask;
+	offsets_mask = (doffset | soffset) & 0x7; //we only care about the misalignment part
 	if (offsets_mask) {
 		if (offsets_mask % 2 == 1)
 			goto copy_1;

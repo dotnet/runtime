@@ -780,22 +780,10 @@ mono_get_lmf (void)
 	return NULL;
 }
 
-MonoLMF **
-mono_get_lmf_addr (void)
-{
-	return mono_tls_get_lmf_addr ();
-}
-
 void
 mono_set_lmf (MonoLMF *lmf)
 {
 	(*mono_get_lmf_addr ()) = lmf;
-}
-
-MonoJitTlsData*
-mono_get_jit_tls (void)
-{
-	return (MonoJitTlsData *)mono_tls_get_jit_tls ();
 }
 
 static void
@@ -812,7 +800,7 @@ mono_set_jit_tls (MonoJitTlsData *jit_tls)
 }
 
 static void
-mono_set_lmf_addr (gpointer lmf_addr)
+mono_set_lmf_addr (MonoLMF **lmf_addr)
 {
 	MonoThreadInfo *info;
 
@@ -928,8 +916,8 @@ mono_thread_abort (MonoObject *obj)
 	}
 }
 
-static void*
-setup_jit_tls_data (gpointer stack_start, gpointer abort_func)
+static MonoJitTlsData*
+setup_jit_tls_data (gpointer stack_start, MonoAbortFunction abort_func)
 {
 	MonoJitTlsData *jit_tls;
 	MonoLMF *lmf;
@@ -940,7 +928,7 @@ setup_jit_tls_data (gpointer stack_start, gpointer abort_func)
 
 	jit_tls = g_new0 (MonoJitTlsData, 1);
 
-	jit_tls->abort_func = (void (*)(MonoObject *))abort_func;
+	jit_tls->abort_func = abort_func;
 	jit_tls->end_of_stack = stack_start;
 
 	mono_set_jit_tls (jit_tls);
@@ -981,7 +969,7 @@ static void
 mono_thread_start_cb (intptr_t tid, gpointer stack_start, gpointer func)
 {
 	MonoThreadInfo *thread;
-	void *jit_tls = setup_jit_tls_data (stack_start, mono_thread_abort);
+	MonoJitTlsData *jit_tls = setup_jit_tls_data (stack_start, mono_thread_abort);
 	thread = mono_thread_info_current_unchecked ();
 	if (thread)
 		thread->jit_data = jit_tls;
@@ -1004,7 +992,7 @@ static void
 mono_thread_attach_cb (intptr_t tid, gpointer stack_start)
 {
 	MonoThreadInfo *thread;
-	void *jit_tls = setup_jit_tls_data (stack_start, mono_thread_abort_dummy);
+	MonoJitTlsData *jit_tls = setup_jit_tls_data (stack_start, mono_thread_abort_dummy);
 	thread = mono_thread_info_current_unchecked ();
 	if (thread)
 		thread->jit_data = jit_tls;
@@ -1339,7 +1327,7 @@ mono_patch_info_equal (gconstpointer ka, gconstpointer kb)
 	case MONO_PATCH_INFO_JIT_ICALL_ADDR_NOCALL:
 		if (ji1->data.target == ji2->data.target)
 			return 1;
-		return strcmp (ji1->data.target, ji2->data.target) == 0 ? 1 : 0;
+		return strcmp ((const char*)ji1->data.target, (const char*)ji2->data.target) == 0 ? 1 : 0;
 	case MONO_PATCH_INFO_GSHAREDVT_IN_WRAPPER:
 		return mono_metadata_signature_equal (ji1->data.sig, ji2->data.sig) ? 1 : 0;
 	default:
@@ -1664,10 +1652,10 @@ mono_resolve_patch_target (MonoMethod *method, MonoDomain *domain, guint8 *code,
 		target = mini_get_gsharedvt_wrapper (TRUE, NULL, patch_info->data.sig, NULL, -1, FALSE);
 		break;
 	case MONO_PATCH_INFO_GET_TLS_TRAMP:
-		target = mono_tls_get_tls_getter (patch_info->data.index, FALSE);
+		target = mono_tls_get_tls_getter ((MonoTlsKey)patch_info->data.index, FALSE);
 		break;
 	case MONO_PATCH_INFO_SET_TLS_TRAMP:
-		target = mono_tls_get_tls_setter (patch_info->data.index, FALSE);
+		target = mono_tls_get_tls_setter ((MonoTlsKey)patch_info->data.index, FALSE);
 		break;
 	case MONO_PATCH_INFO_JIT_THREAD_ATTACH: {
 		MonoJitICallInfo *mi = mono_find_jit_icall_by_name ("mono_jit_thread_attach");
@@ -1975,7 +1963,7 @@ find_method (MonoMethod *method, MonoDomain *domain)
 {
 	int i;
 	for (i = 0; i < compilation_data.in_flight_methods->len; ++i){
-		JitCompilationEntry *e = compilation_data.in_flight_methods->pdata [i];
+		JitCompilationEntry *e = (JitCompilationEntry*)compilation_data.in_flight_methods->pdata [i];
 		if (e->method == method && e->domain == domain)
 			return e;
 	}
@@ -2152,7 +2140,7 @@ compile_special (MonoMethod *method, MonoDomain *target_domain, MonoError *error
 				 * sometimes we load methods too eagerly and have to create them even if they
 				 * will never be called.
 				 */
-				return no_gsharedvt_in_wrapper;
+				return (gpointer)no_gsharedvt_in_wrapper;
 			}
 		}
 	}
@@ -2578,7 +2566,7 @@ mono_jit_free_method (MonoDomain *domain, MonoMethod *method)
 		char *type_and_method = g_strdup_printf ("%s.%s", type, method->name);
 
 		g_free (type);
-		mono_arch_invalidate_method (ji->ji, invalidated_delegate_trampoline, type_and_method);
+		mono_arch_invalidate_method (ji->ji, (gpointer)invalidated_delegate_trampoline, (gpointer)type_and_method);
 		destroy = FALSE;
 	}
 #endif
@@ -2827,7 +2815,7 @@ create_runtime_invoke_info (MonoDomain *domain, MonoMethod *method, gpointer com
 				/* The out wrapper has the same signature as the compiled gsharedvt method */
 				MonoMethodSignature *wrapper_sig = mini_get_gsharedvt_out_sig_wrapper_signature (sig->hasthis, sig->ret->type != MONO_TYPE_VOID, sig->param_count);
 
-				info->wrapper_arg = mono_method_needs_static_rgctx_invoke (method, TRUE) ? mini_method_get_rgctx (method) : NULL;
+				info->wrapper_arg = (gpointer*)(mono_method_needs_static_rgctx_invoke (method, TRUE) ? mini_method_get_rgctx (method) : NULL);
 
 				invoke = mono_marshal_get_runtime_invoke_for_sig (wrapper_sig);
 				g_free (wrapper_sig);
@@ -3158,13 +3146,13 @@ static gpointer
 mini_llvmonly_initial_imt_tramp (gpointer *arg, MonoMethod *imt_method)
 {
 	IMTTrampInfo *info = (IMTTrampInfo*)arg;
-	gpointer *imt;
-	gpointer *ftndesc;
+	IMTTrampFunc **imt;
+	IMTTrampFunc *ftndesc;
 	IMTTrampFunc func;
 
 	mono_vtable_build_imt_slot (info->vtable, info->slot);
 
-	imt = (gpointer*)info->vtable;
+	imt = (IMTTrampFunc**)info->vtable;
 	imt -= MONO_IMT_SIZE;
 
 	/* Return what the real IMT trampoline returns */
@@ -3305,20 +3293,20 @@ mono_llvmonly_get_imt_trampoline (MonoVTable *vtable, MonoDomain *domain, MonoIM
 	res = (void **)mono_domain_alloc (domain, 2 * sizeof (gpointer));
 	switch (real_count) {
 	case 1:
-		res [0] = mono_llvmonly_imt_tramp_1;
+		res [0] = (gpointer)mono_llvmonly_imt_tramp_1;
 		break;
 	case 2:
-		res [0] = mono_llvmonly_imt_tramp_2;
+		res [0] = (gpointer)mono_llvmonly_imt_tramp_2;
 		break;
 	case 3:
-		res [0] = mono_llvmonly_imt_tramp_3;
+		res [0] = (gpointer)mono_llvmonly_imt_tramp_3;
 		break;
 	default:
-		res [0] = mono_llvmonly_imt_tramp;
+		res [0] = (gpointer)mono_llvmonly_imt_tramp;
 		break;
 	}
 	if (virtual_generic || fail_tramp)
-		res [0] = mono_llvmonly_fallback_imt_tramp;
+		res [0] = (gpointer)mono_llvmonly_fallback_imt_tramp;
 	res [1] = buf;
 
 	return res;
@@ -3481,7 +3469,7 @@ MONO_SIG_HANDLER_FUNC (, mono_sigsegv_signal_handler)
 		if (!mono_do_crash_chaining && mono_chain_signal (MONO_SIG_HANDLER_PARAMS))
 			return;
 
-		mono_handle_native_crash ("SIGSEGV", ctx, info);
+		mono_handle_native_crash ("SIGSEGV", ctx, (MONO_SIG_HANDLER_INFO_TYPE*)info);
 
 		if (mono_do_crash_chaining) {
 			mono_chain_signal (MONO_SIG_HANDLER_PARAMS);
@@ -3492,7 +3480,7 @@ MONO_SIG_HANDLER_FUNC (, mono_sigsegv_signal_handler)
 	if (is_addr_implicit_null_check (fault_addr)) {
 		mono_arch_handle_exception (ctx, NULL);
 	} else {
-		mono_handle_native_crash ("SIGSEGV", ctx, info);
+		mono_handle_native_crash ("SIGSEGV", ctx, (MONO_SIG_HANDLER_INFO_TYPE*)info);
 	}
 #endif
 }
@@ -3573,7 +3561,7 @@ mini_get_vtable_trampoline (MonoVTable *vt, int slot_index)
 			IMTTrampInfo *info = g_new0 (IMTTrampInfo, 1);
 			info->vtable = vt;
 			info->slot = index;
-			ftndesc [0] = mini_llvmonly_initial_imt_tramp;
+			ftndesc [0] = (gpointer)mini_llvmonly_initial_imt_tramp;
 			ftndesc [1] = info;
 			mono_memory_barrier ();
 			return ftndesc;
@@ -4005,7 +3993,7 @@ static void
 delete_jump_list (gpointer key, gpointer value, gpointer user_data)
 {
 	MonoJumpList *jlist = (MonoJumpList *)value;
-	g_slist_free (jlist->list);
+	g_slist_free ((GSList*)jlist->list);
 }
 
 static void
@@ -4038,7 +4026,7 @@ runtime_invoke_info_free (gpointer value)
 static void
 free_jit_callee_list (gpointer key, gpointer value, gpointer user_data)
 {
-	g_slist_free (value);
+	g_slist_free ((GSList*)value);
 }
 
 static void
@@ -4466,7 +4454,7 @@ mini_init (const char *filename, const char *runtime_version)
 #define JIT_RUNTIME_WORKS
 #ifdef JIT_RUNTIME_WORKS
 	mono_install_runtime_cleanup ((MonoDomainFunc)mini_cleanup);
-	mono_runtime_init_checked (domain, mono_thread_start_cb, mono_thread_attach_cb, error);
+	mono_runtime_init_checked (domain, (MonoThreadStartCB)mono_thread_start_cb, mono_thread_attach_cb, error);
 	mono_error_assert_ok (error);
 	mono_thread_attach (domain);
 	MONO_PROFILER_RAISE (thread_name, (MONO_NATIVE_THREAD_ID_TO_UINT (mono_native_thread_id_get ()), "Main"));

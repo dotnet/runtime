@@ -155,9 +155,9 @@ typedef struct {
 	gboolean need_stack_frame_inited;
 	gboolean need_stack_frame;
 	int sp_fp_offset, param_area_size;
-	gpointer cinfo;
-	gpointer ss_tramp_var;
-	gpointer bp_tramp_var;
+	CallInfo *cinfo;
+	MonoInst *ss_tramp_var;
+	MonoInst *bp_tramp_var;
 } MonoCompileArch;
 
 #define MONO_CONTEXT_SET_LLVM_EXC_REG(ctx, exc) do { (ctx)->eax = (gsize)exc; } while (0)

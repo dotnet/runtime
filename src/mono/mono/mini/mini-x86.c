@@ -1608,7 +1608,7 @@ void
 mono_arch_emit_outarg_vt (MonoCompile *cfg, MonoInst *ins, MonoInst *src)
 {
 	MonoCallInst *call = (MonoCallInst*)ins->inst_p0;
-	ArgInfo *ainfo = ins->inst_p1;
+	ArgInfo *ainfo = (ArgInfo*)ins->inst_p1;
 	int size = ins->backend.size;
 
 	if (ainfo->storage == ArgValuetypeInReg) {
@@ -1925,7 +1925,7 @@ x86_align_and_patch (MonoCompile *cfg, guint8 *code, guint32 patch_type, gconstp
 	MonoJumpInfo *jinfo = NULL;
 
 	if (cfg->abs_patches) {
-		jinfo = g_hash_table_lookup (cfg->abs_patches, data);
+		jinfo = (MonoJumpInfo*)g_hash_table_lookup (cfg->abs_patches, data);
 		if (jinfo && jinfo->type == MONO_PATCH_INFO_JIT_ICALL_ADDR)
 			needs_paddings = FALSE;
 	}
@@ -1939,7 +1939,7 @@ x86_align_and_patch (MonoCompile *cfg, guint8 *code, guint32 patch_type, gconstp
 	if (needs_paddings && pad_size)
 		x86_padding (code, 4 - pad_size);
 
-	mono_add_patch_info (cfg, code - cfg->native_code, patch_type, data);
+	mono_add_patch_info (cfg, code - cfg->native_code, (MonoJumpInfoType)patch_type, data);
 
 	return code;
 }
@@ -3127,11 +3127,11 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 			break;
 		case OP_AOTCONST:
 			g_assert_not_reached ();
-			mono_add_patch_info (cfg, offset, (MonoJumpInfoType)ins->inst_i1, ins->inst_p0);
+			mono_add_patch_info (cfg, offset, (MonoJumpInfoType)(gsize)ins->inst_i1, ins->inst_p0);
 			x86_mov_reg_imm (code, ins->dreg, 0);
 			break;
 		case OP_JUMP_TABLE:
-			mono_add_patch_info (cfg, offset, (MonoJumpInfoType)ins->inst_i1, ins->inst_p0);
+			mono_add_patch_info (cfg, offset, (MonoJumpInfoType)(gsize)ins->inst_i1, ins->inst_p0);
 			x86_mov_reg_imm (code, ins->dreg, 0);
 			break;
 		case OP_LOAD_GOTADDR:
@@ -3139,11 +3139,11 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 			code = mono_arch_emit_load_got_addr (cfg->native_code, code, cfg, NULL);
 			break;
 		case OP_GOT_ENTRY:
-			mono_add_patch_info (cfg, offset, (MonoJumpInfoType)ins->inst_right->inst_i1, ins->inst_right->inst_p0);
+			mono_add_patch_info (cfg, offset, (MonoJumpInfoType)(gsize)ins->inst_right->inst_i1, ins->inst_right->inst_p0);
 			x86_mov_reg_membase (code, ins->dreg, ins->inst_basereg, 0xf0f0f0f0, 4);
 			break;
 		case OP_X86_PUSH_GOT_ENTRY:
-			mono_add_patch_info (cfg, offset, (MonoJumpInfoType)ins->inst_right->inst_i1, ins->inst_right->inst_p0);
+			mono_add_patch_info (cfg, offset, (MonoJumpInfoType)(gsize)ins->inst_right->inst_i1, ins->inst_right->inst_p0);
 			x86_push_membase (code, ins->inst_basereg, 0xf0f0f0f0);
 			break;
 		case OP_MOVE:
@@ -3460,19 +3460,19 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 		case OP_COND_EXC_IGE_UN:
 		case OP_COND_EXC_ILE:
 		case OP_COND_EXC_ILE_UN:
-			EMIT_COND_SYSTEM_EXCEPTION (cc_table [mono_opcode_to_cond (ins->opcode)], cc_signed_table [mono_opcode_to_cond (ins->opcode)], ins->inst_p1);
+			EMIT_COND_SYSTEM_EXCEPTION (cc_table [mono_opcode_to_cond (ins->opcode)], cc_signed_table [mono_opcode_to_cond (ins->opcode)], (const char*)ins->inst_p1);
 			break;
 		case OP_COND_EXC_OV:
 		case OP_COND_EXC_NO:
 		case OP_COND_EXC_C:
 		case OP_COND_EXC_NC:
-			EMIT_COND_SYSTEM_EXCEPTION (branch_cc_table [ins->opcode - OP_COND_EXC_EQ], (ins->opcode < OP_COND_EXC_NE_UN), ins->inst_p1);
+			EMIT_COND_SYSTEM_EXCEPTION (branch_cc_table [ins->opcode - OP_COND_EXC_EQ], (ins->opcode < OP_COND_EXC_NE_UN), (const char*)ins->inst_p1);
 			break;
 		case OP_COND_EXC_IOV:
 		case OP_COND_EXC_INO:
 		case OP_COND_EXC_IC:
 		case OP_COND_EXC_INC:
-			EMIT_COND_SYSTEM_EXCEPTION (branch_cc_table [ins->opcode - OP_COND_EXC_IEQ], (ins->opcode < OP_COND_EXC_INE_UN), ins->inst_p1);
+			EMIT_COND_SYSTEM_EXCEPTION (branch_cc_table [ins->opcode - OP_COND_EXC_IEQ], (ins->opcode < OP_COND_EXC_INE_UN), (const char*)ins->inst_p1);
 			break;
 		case OP_IBEQ:
 		case OP_IBNE_UN:
@@ -5302,7 +5302,7 @@ mono_arch_emit_prolog (MonoCompile *cfg)
 		code = emit_setup_lmf (cfg, code, cfg->lmf_var->inst_offset, cfa_offset);
 
 	if (mono_jit_trace_calls != NULL && mono_trace_eval (method))
-		code = mono_arch_instrument_prolog (cfg, mono_trace_enter_method, code, TRUE);
+		code = (guint8*)mono_arch_instrument_prolog (cfg, (gpointer)mono_trace_enter_method, code, TRUE);
 
 	{
 		MonoInst *ins;
@@ -5375,7 +5375,7 @@ mono_arch_emit_epilog (MonoCompile *cfg)
 	code = realloc_code (cfg, max_epilog_size);
 
 	if (mono_jit_trace_calls != NULL && mono_trace_eval (method))
-		code = mono_arch_instrument_epilog (cfg, mono_trace_leave_method, code, TRUE);
+		code = (guint8*)mono_arch_instrument_epilog (cfg, (gpointer)mono_trace_leave_method, code, TRUE);
 
 	/* the code restoring the registers must be kept in sync with OP_TAILCALL */
 	pos = 0;
@@ -5658,7 +5658,7 @@ mono_arch_build_imt_trampoline (MonoVTable *vtable, MonoDomain *domain, MonoIMTC
 		size += item->chunk_size;
 	}
 	if (fail_tramp)
-		code = mono_method_alloc_generic_virtual_trampoline (domain, size);
+		code = (guint8*)mono_method_alloc_generic_virtual_trampoline (domain, size);
 	else
 		code = mono_domain_code_reserve (domain, size);
 	start = code;
@@ -6113,10 +6113,10 @@ mono_arch_get_delegate_invoke_impl (MonoMethodSignature *sig, gboolean has_targe
 			return cached;
 
 		if (mono_ee_features.use_aot_trampolines) {
-			start = mono_aot_get_trampoline ("delegate_invoke_impl_has_target");
+			start = (guint8*)mono_aot_get_trampoline ("delegate_invoke_impl_has_target");
 		} else {
 			MonoTrampInfo *info;
-			start = get_delegate_invoke_impl (&info, TRUE, 0);
+			start = (guint8*)get_delegate_invoke_impl (&info, TRUE, 0);
 			mono_tramp_info_register (info, NULL);
 		}
 
@@ -6137,11 +6137,11 @@ mono_arch_get_delegate_invoke_impl (MonoMethodSignature *sig, gboolean has_targe
 
 		if (mono_ee_features.use_aot_trampolines) {
 			char *name = g_strdup_printf ("delegate_invoke_impl_target_%d", sig->param_count);
-			start = mono_aot_get_trampoline (name);
+			start = (guint8*)mono_aot_get_trampoline (name);
 			g_free (name);
 		} else {
 			MonoTrampInfo *info;
-			start = get_delegate_invoke_impl (&info, FALSE, sig->param_count);
+			start = (guint8*)get_delegate_invoke_impl (&info, FALSE, sig->param_count);
 			mono_tramp_info_register (info, NULL);
 		}
 

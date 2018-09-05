@@ -287,7 +287,8 @@ probe_embedded (const char *program, int *ref_argc, char **ref_argv [])
 	for (i = 0; i < items; i++){
 		char *kind;
 		int strsize = STREAM_INT (p);
-		uint64_t offset, item_size;
+		uint64_t offset;
+		uint32_t item_size;
 		kind = p+4;
 		p += 4 + strsize;
 		offset = STREAM_LONG(p);

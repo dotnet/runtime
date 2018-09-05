@@ -51,7 +51,7 @@ OutOfProcessFunctionTableCallbackEx (ReadMemoryFunction read_memory, PVOID user_
 	if (read_memory (user_context, table_address, &func_table, sizeof (func_table), &reads)) {
 		if (func_table.Context != NULL && read_memory (user_context, func_table.Context, &func_table_entry, sizeof (func_table_entry), &reads)) {
 			if (func_table_entry.rt_funcs_current_count != 0) {
-				rt_funcs = HeapAlloc (GetProcessHeap (), HEAP_ZERO_MEMORY, func_table_entry.rt_funcs_current_count * sizeof (RUNTIME_FUNCTION));
+				rt_funcs = (PRUNTIME_FUNCTION)HeapAlloc (GetProcessHeap (), HEAP_ZERO_MEMORY, func_table_entry.rt_funcs_current_count * sizeof (RUNTIME_FUNCTION));
 				if (rt_funcs) {
 					if (read_memory (user_context, func_table_entry.rt_funcs, rt_funcs, func_table_entry.rt_funcs_current_count * sizeof (RUNTIME_FUNCTION), &reads)) {
 						*entries = func_table_entry.rt_funcs_current_count;

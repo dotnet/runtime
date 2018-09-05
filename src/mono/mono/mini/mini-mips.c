@@ -514,7 +514,7 @@ mono_arch_get_argument_info (MonoMethodSignature *csig, int param_count, MonoJit
 /* The delegate object plus 3 params */
 #define MAX_ARCH_DELEGATE_PARAMS (4 - 1)
 
-static gpointer
+static guint8*
 get_delegate_invoke_impl (MonoTrampInfo **info, gboolean has_target, gboolean param_count)
 {
 	guint8 *code, *start;
@@ -5145,7 +5145,7 @@ mono_arch_emit_prolog (MonoCompile *cfg)
 		/* no stack slots by default for argument regs, reserve a special block */
 		g_assert_not_reached ();
 #endif
-		code = mono_arch_instrument_prolog (cfg, mono_trace_enter_method, code, TRUE);
+		code = (guint8*)mono_arch_instrument_prolog (cfg, mono_trace_enter_method, code, TRUE);
 	}
 
 	set_code_cursor (cfg, code);
@@ -5285,7 +5285,7 @@ mono_arch_emit_epilog_sub (MonoCompile *cfg)
 	code = cfg->native_code + cfg->code_len;
 
 	if (mono_jit_trace_calls != NULL && mono_trace_eval (method)) {
-		code = mono_arch_instrument_epilog (cfg, mono_trace_leave_method, code, TRUE);
+		code = (guint8*)mono_arch_instrument_epilog (cfg, mono_trace_leave_method, code, TRUE);
 	}
 	if (cfg->frame_reg != mips_sp) {
 		MIPS_MOVE (code, mips_sp, cfg->frame_reg);

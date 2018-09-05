@@ -378,7 +378,7 @@ mono_arm_get_exception_trampolines (gboolean aot)
 void
 mono_arch_exceptions_init (void)
 {
-	guint8 *tramp;
+	gpointer tramp;
 	GSList *tramps, *l;
 	
 	if (mono_aot_only) {

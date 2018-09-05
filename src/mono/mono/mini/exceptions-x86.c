@@ -135,7 +135,7 @@ mono_win32_get_handle_stackoverflow (void)
  *  - done
  */
 static void 
-win32_handle_stack_overflow (EXCEPTION_POINTERS* ep, struct sigcontext *sctx) 
+win32_handle_stack_overflow (EXCEPTION_POINTERS* ep, CONTEXT *sctx)
 {
 	SYSTEM_INFO si;
 	DWORD page_size;
@@ -249,7 +249,7 @@ void win32_seh_init()
 {
 	/* install restore stack helper */
 	if (!restore_stack)
-		restore_stack = mono_win32_get_handle_stackoverflow ();
+		restore_stack = (void (*) (void*))mono_win32_get_handle_stackoverflow ();
 
 	mono_old_win_toplevel_exception_filter = SetUnhandledExceptionFilter(seh_unhandled_exception_filter);
 	mono_win_vectored_exception_handle = AddVectoredExceptionHandler (1, seh_vectored_exception_handler);
@@ -733,17 +733,18 @@ mono_arch_exceptions_init (void)
  * or (eventually) Windows 7 SP1.
  */
 #ifdef TARGET_WIN32
-	DWORD flags;
-	FARPROC getter;
-	FARPROC setter;
 	HMODULE kernel32 = LoadLibraryW (L"kernel32.dll");
-
 	if (kernel32) {
-		getter = GetProcAddress (kernel32, "GetProcessUserModeExceptionPolicy");
-		setter = GetProcAddress (kernel32, "SetProcessUserModeExceptionPolicy");
-		if (getter && setter) {
-			if (getter (&flags))
-				setter (flags & ~PROCESS_CALLBACK_FILTER_ENABLED);
+		typedef BOOL (WINAPI * SetProcessUserModeExceptionPolicy_t) (DWORD dwFlags);
+		typedef BOOL (WINAPI * GetProcessUserModeExceptionPolicy_t) (PDWORD dwFlags);
+		GetProcessUserModeExceptionPolicy_t const getter = (GetProcessUserModeExceptionPolicy_t)GetProcAddress (kernel32, "GetProcessUserModeExceptionPolicy");
+		if (getter) {
+			SetProcessUserModeExceptionPolicy_t const setter = (SetProcessUserModeExceptionPolicy_t)GetProcAddress (kernel32, "SetProcessUserModeExceptionPolicy");
+			if (setter) {
+				DWORD flags = 0;
+				if (getter (&flags))
+					setter (flags & ~PROCESS_CALLBACK_FILTER_ENABLED);
+			}
 		}
 	}
 #endif
@@ -895,7 +896,7 @@ mono_arch_ip_from_context (void *sigctx)
 	ucontext_t *ctx = (ucontext_t*)sigctx;
 	return (gpointer)UCONTEXT_REG_EIP (ctx);
 #elif defined(HOST_WIN32)
-	return ((CONTEXT*)sigctx)->Eip;
+	return (gpointer)((CONTEXT*)sigctx)->Eip;
 #else
 	struct sigcontext *ctx = sigctx;
 	return (gpointer)ctx->SC_EIP;
@@ -1015,7 +1016,6 @@ mono_arch_handle_exception (void *sigctx, gpointer obj)
 #elif defined (TARGET_WIN32)
 	MonoContext mctx;
 	MonoJitTlsData *jit_tls = mono_tls_get_jit_tls ();
-	struct sigcontext *ctx = (struct sigcontext *)sigctx;
 
 	mono_sigctx_to_monoctx (sigctx, &jit_tls->ex_ctx);
 

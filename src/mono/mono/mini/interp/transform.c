@@ -4867,7 +4867,7 @@ mono_interp_transform_method (InterpMethod *imethod, ThreadContext *context, Mon
 	MonoImage *image = m_class_get_image (method->klass);
 	MonoMethodHeader *header = NULL;
 	MonoMethodSignature *signature = mono_method_signature (method);
-	register const unsigned char *ip, *end;
+	const unsigned char *ip, *end;
 	const MonoOpcode *opcode;
 	MonoMethod *m;
 	MonoClass *klass;

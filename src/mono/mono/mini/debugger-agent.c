@@ -1172,7 +1172,7 @@ socket_transport_send (void *data, int len)
 	MONO_ENTER_GC_SAFE;
 
 	do {
-		res = send (conn_fd, data, len, 0);
+		res = send (conn_fd, (const char*)data, len, 0);
 	} while (res == -1 && get_last_sock_error () == MONO_EINTR);
 
 	MONO_EXIT_GC_SAFE;
@@ -1263,7 +1263,7 @@ socket_transport_connect (const char *address)
 				if (sfd == -1)
 					continue;
 
-				if (setsockopt (sfd, SOL_SOCKET, SO_REUSEADDR, &n, sizeof(n)) == -1)
+				if (setsockopt (sfd, SOL_SOCKET, SO_REUSEADDR, (const char*)&n, sizeof(n)) == -1)
 					continue;
 
 				res = bind (sfd, &sockaddr.addr, sock_len);
@@ -2721,7 +2721,7 @@ notify_thread (gpointer key, gpointer value, gpointer user_data)
 	InterruptData interrupt_data = { 0 };
 	interrupt_data.tls = tls;
 
-	mono_thread_info_safe_suspend_and_run ((MonoNativeThreadId)(gpointer)(gsize)thread->tid, FALSE, debugger_interrupt_critical, &interrupt_data);
+	mono_thread_info_safe_suspend_and_run ((MonoNativeThreadId)(gsize)thread->tid, FALSE, debugger_interrupt_critical, &interrupt_data);
 	if (!interrupt_data.valid_info) {
 		DEBUG_PRINTF (1, "[%p] mono_thread_info_suspend_sync () failed for %p...\n", (gpointer) (gsize) mono_native_thread_id_get (), (gpointer)tid);
 		/* 
@@ -5300,11 +5300,13 @@ obj_is_of_type (MonoObject *obj, MonoType *t)
 }
 
 static ErrorCode
-decode_value (MonoType *t, MonoDomain *domain, guint8 *addr, guint8 *buf, guint8 **endbuf, guint8 *limit);
+decode_value (MonoType *t, MonoDomain *domain, gpointer void_addr, gpointer void_buf, guint8 **endbuf, guint8 *limit);
 
 static ErrorCode
-decode_vtype (MonoType *t, MonoDomain *domain, guint8 *addr, guint8 *buf, guint8 **endbuf, guint8 *limit)
+decode_vtype (MonoType *t, MonoDomain *domain, gpointer void_addr, gpointer void_buf, guint8 **endbuf, guint8 *limit)
 {
+	guint8 *addr = (guint8*)void_addr;
+	guint8 *buf = (guint8*)void_buf;
 	gboolean is_enum;
 	MonoClass *klass;
 	MonoClassField *f;
@@ -5522,8 +5524,11 @@ decode_value_internal (MonoType *t, int type, MonoDomain *domain, guint8 *addr, 
 }
 
 static ErrorCode
-decode_value (MonoType *t, MonoDomain *domain, guint8 *addr, guint8 *buf, guint8 **endbuf, guint8 *limit)
+decode_value (MonoType *t, MonoDomain *domain, gpointer void_addr, gpointer void_buf, guint8 **endbuf, guint8 *limit)
 {
+	guint8 *addr = (guint8*)void_addr;
+	guint8 *buf = (guint8*)void_buf;
+
 	ERROR_DECL (error);
 	ErrorCode err;
 	int type = decode_byte (buf, &buf, limit);
@@ -6723,12 +6728,12 @@ vm_commands (int command, int id, guint8 *p, guint8 *end, Buffer *buf)
 		res_domains = g_ptr_array_new ();
 
 		mono_loader_lock ();
-		GetTypesForSourceFileArgs args = {
-			.ignore_case = ignore_case,
-			.basename = basename,
-			.res_classes  = res_classes,
-			.res_domains = res_domains
-		};
+		GetTypesForSourceFileArgs args;
+		memset (&args, 0, sizeof (args));
+		args.ignore_case = ignore_case;
+		args.basename = basename;
+		args.res_classes  = res_classes;
+		args.res_domains = res_domains;
 		mono_de_foreach_domain (get_types_for_source_file, &args);
 		mono_loader_unlock ();
 

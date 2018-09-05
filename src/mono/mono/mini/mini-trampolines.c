@@ -1350,23 +1350,23 @@ mono_get_trampoline_func (MonoTrampolineType tramp_type)
 	switch (tramp_type) {
 	case MONO_TRAMPOLINE_JIT:
 	case MONO_TRAMPOLINE_JUMP:
-		return mono_magic_trampoline;
+		return (gconstpointer)mono_magic_trampoline;
 	case MONO_TRAMPOLINE_RGCTX_LAZY_FETCH:
-		return mono_rgctx_lazy_fetch_trampoline;
+		return (gconstpointer)mono_rgctx_lazy_fetch_trampoline;
 #ifdef MONO_ARCH_AOT_SUPPORTED
 	case MONO_TRAMPOLINE_AOT:
-		return mono_aot_trampoline;
+		return (gconstpointer)mono_aot_trampoline;
 	case MONO_TRAMPOLINE_AOT_PLT:
-		return mono_aot_plt_trampoline;
+		return (gconstpointer)mono_aot_plt_trampoline;
 #endif
 	case MONO_TRAMPOLINE_DELEGATE:
-		return mono_delegate_trampoline;
+		return (gconstpointer)mono_delegate_trampoline;
 #ifndef DISABLE_REMOTING
 	case MONO_TRAMPOLINE_GENERIC_VIRTUAL_REMOTING:
-		return mono_generic_virtual_remoting_trampoline;
+		return (gconstpointer)mono_generic_virtual_remoting_trampoline;
 #endif
 	case MONO_TRAMPOLINE_VCALL:
-		return mono_vcall_trampoline;
+		return (gconstpointer)mono_vcall_trampoline;
 	default:
 		g_assert_not_reached ();
 		return NULL;
@@ -1536,7 +1536,7 @@ mono_create_jit_trampoline (MonoDomain *domain, MonoMethod *method, MonoError *e
 		if (mono_llvm_only) {
 			if (method->wrapper_type == MONO_WRAPPER_PROXY_ISINST)
 				/* These wrappers are not generated */
-				return method_not_found;
+				return (gpointer)method_not_found;
 			/* Methods are lazily initialized on first call, so this can't lead recursion */
 			code = mono_jit_compile_method (method, error);
 			if (!mono_error_ok (error))
@@ -1643,7 +1643,7 @@ gpointer
 mono_create_delegate_trampoline (MonoDomain *domain, MonoClass *klass)
 {
 	if (mono_llvm_only || (mono_use_interpreter && !mono_aot_only))
-		return no_delegate_trampoline;
+		return (gpointer)no_delegate_trampoline;
 
 	return mono_create_delegate_trampoline_info (domain, klass, NULL)->invoke_impl;
 }
