@@ -99,7 +99,7 @@ strrchr_seperator (const gchar* filename)
 
 	p = (char*)strrchr (filename, G_DIR_SEPARATOR);
 #ifdef G_OS_WIN32
-	p2 = strrchr (filename, '/');
+	p2 = (char*)strrchr (filename, '/');
 	if (p2 > p)
 		p = p2;
 #endif

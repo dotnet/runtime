@@ -11,7 +11,7 @@ typedef struct {
 
 #define DECLARE_ABI_DETAILS(I8, I16, I32, I64, F32, F64, PTR) \
 const static AbiDetails mono_abi_details = {	\
-	.alignment = { I8, I16, I32, I64, F32, F64, PTR }	\
+	{ I8, I16, I32, I64, F32, F64, PTR }	\
 };	\
 
 #ifdef MONO_CROSS_COMPILE
