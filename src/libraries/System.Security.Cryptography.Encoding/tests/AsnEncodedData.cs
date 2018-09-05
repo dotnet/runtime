@@ -73,20 +73,20 @@ namespace System.Security.Cryptography.Encoding.Tests
         public static void TestSubjectAlternativeName_Unix()
         {
             byte[] sanExtension = (
-                "3081D3A027060A2B0601040182371402" +
+                "3081D1A027060A2B0601040182371402" +
                 "03A0190C177375626A65637475706E31" +
                 "406578616D706C652E6F726781157361" +
                 "6E656D61696C31406578616D706C652E" +
                 "6F72678218646E73312E7375626A6563" +
                 "742E6578616D706C652E6F7267A30630" +
-                "0441027573A500863168747470733A2F" +
-                "2F7777772E6578616D706C652E6F7267" +
-                "2F706174682F746F2F612F7265736F75" +
-                "72636523616E63686F7287047F000001" +
-                "871020010DB8AC10FE01000000000000" +
-                "0000870F20010DB8AC10FE0100000000" +
-                "0000008704FFFFFFFF8704020F636488" +
-                "052901020203").HexToByteArray();
+                "0441027573863168747470733A2F2F77" +
+                "77772E6578616D706C652E6F72672F70" +
+                "6174682F746F2F612F7265736F757263" +
+                "6523616E63686F7287047F0000018710" +
+                "20010DB8AC10FE010000000000000000" +
+                "870F20010DB8AC10FE01000000000000" +
+                "008704FFFFFFFF8704020F6364880529" +
+                "01020203").HexToByteArray();
 
             AsnEncodedData asnData = new AsnEncodedData(
                 new Oid("2.5.29.17"),
@@ -106,8 +106,8 @@ namespace System.Security.Cryptography.Encoding.Tests
                 "X400Name:<unsupported>",
                 // Skip Choice[4]: DirName
                 //   (Supported by OpenSSL, but not by our Apple version)
-                // Choice[5]: EdiName
-                "EdiPartyName:<unsupported>",
+                // Skip Choice[5]: EdiName
+                //   (Buggy parsing in OpenSSL)
                 // Choice[6]: URI
                 "URI:https://www.example.org/path/to/a/resource#anchor",
                 // Choice[7]: IPAddress (IPv4)
@@ -126,6 +126,19 @@ namespace System.Security.Cryptography.Encoding.Tests
                 "Registered ID:1.1.1.2.2.3");
 
             Assert.Equal(expected, s);
+        }
+
+        [Fact]
+        [PlatformSpecific(TestPlatforms.OSX)]
+        public static void TestSubjectAlternativeName_Mac()
+        {
+            byte[] sanExtension = "300EA50CA10A13086564695061727479".HexToByteArray();
+
+            AsnEncodedData asnData = new AsnEncodedData(
+                new Oid("2.5.29.17"),
+                sanExtension);
+
+            Assert.Equal("EdiPartyName:<unsupported>", asnData.Format(false));
         }
     }
 }

@@ -1,0 +1,31 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<asn:Choice
+  xmlns:asn="http://schemas.dot.net/asnxml/201808/"
+  name="GeneralNameAsn"
+  namespace="System.Security.Cryptography.Asn1">
+
+  <!--
+    https://tools.ietf.org/html/rfc5280#section-4.2.1.6
+
+    GeneralName ::= CHOICE {
+        otherName                 [0]  OtherName,
+        rfc822Name                [1]  IA5String,
+        dNSName                   [2]  IA5String,
+        x400Address               [3]  ORAddress,
+        directoryName             [4]  Name,
+        ediPartyName              [5]  EDIPartyName,
+        uniformResourceIdentifier [6]  IA5String,
+        iPAddress                 [7]  OCTET STRING,
+        registeredID              [8]  OBJECT IDENTIFIER
+    }
+  -->
+  <asn:AsnType name="OtherName" implicitTag="0" typeName="System.Security.Cryptography.Asn1.OtherNameAsn" />
+  <asn:IA5String name="Rfc822Name" implicitTag="1" />
+  <asn:IA5String name="DnsName" implicitTag="2" />
+  <asn:AnyValue name="X400Address" implicitTag="3" />
+  <asn:AnyValue name="DirectoryName" explicitTag="4" />
+  <asn:AsnType name="EdiPartyName" implicitTag="5" typeName="System.Security.Cryptography.Asn1.EdiPartyNameAsn" />
+  <asn:IA5String name="Uri" implicitTag="6" />
+  <asn:OctetString name="IPAddress" implicitTag="7" />
+  <asn:ObjectIdentifier name="RegisteredId" implicitTag="8" backingType="string" />
+</asn:Choice>
