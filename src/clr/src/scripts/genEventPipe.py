@@ -249,12 +249,8 @@ def generateEventPipeCmakeFile(etwmanifest, eventpipe_directory, extern):
 set(CMAKE_INCLUDE_CURRENT_DIR ON)
 include_directories(${CLR_DIR}/src/vm)
 
+add_library_clr(eventpipe STATIC
 """)
-        if extern: cmake_file.write("add_library")
-        else: cmake_file.write("add_library_clr")
-        cmake_file.write("""(eventpipe
-    STATIC\n""")
-
         for providerNode in tree.getElementsByTagName('provider'):
             providerName = providerNode.getAttribute('name')
             providerName = providerName.replace("Windows-", '')
@@ -268,7 +264,7 @@ include_directories(${CLR_DIR}/src/vm)
         if extern: cmake_file.write("""
 
 # Install the static eventpipe library
-install(TARGETS eventpipe DESTINATION lib)
+_install(TARGETS eventpipe DESTINATION lib)
 """)
 
 def generateEventPipeHelperFile(etwmanifest, eventpipe_directory, extern):
