@@ -3536,7 +3536,6 @@ namespace System.Xml.Tests
             };
 
             [Theory]
-            [ActiveIssue(22705, TargetFrameworkMonikers.Uap)]
             [XmlWriterInlineData(1, "UInt64", "string", true, null )]
             [XmlWriterInlineData(1, "UInt32", "string", true, null )]
             [XmlWriterInlineData(1, "UInt16", "string", true, null )]
