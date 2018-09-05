@@ -10,6 +10,9 @@ For .NET Core 3 the proposal is to keep the existing behavior as described above
 * Redirect the trace to a file instead - this would be done by setting `COREHOST_TRACE=1` and also `COREHOST_TRACEFILE=<path>` in the environment for the process.
 * For custom host support a way to capture the trace output in code. This will be done by adding `*_set_trace_listener` functions to `hostfxr` and `hostpolicy` which would let the custom host intercept all tracing.
 
+This is directly related to #4455.
+Also solution for #4112 might eventually use these mechanisms.
+
 ## Components involved
 Host tracing spans various components:
 * `dotnet` or `apphost` executable
@@ -59,11 +62,13 @@ Only one trace listener can be registered at any given time.
 
 Registering custom trace listener or setting it to `NULL` overrides any tracing enabled by environment variables.
 
-The `hostfxr` component will propagate the trace listener to the `hostpolicy` component before it calls into it. So custom host only needs to register its trace listener with the `hostfxr` component and not both. The propagation of the trace listener is only done for the duration necessary after which it will be unregistered again. So custom host might need to register its own listener if it makes calls directly to `hostpolicy` on top of the calls to `hostfxr`.
+The `hostfxr` component will propagate the trace listener to the `hostpolicy` component before it calls into it. So custom host only needs to register its trace listener with the `hostfxr` component and not both. The propagation of the trace listener is only done for the duration necessary after which it will be unregistered again. So custom host might need to register its own listener if it makes calls directly to `hostpolicy` on top of the calls to `hostfxr`.  
+In case of new (.NET Core 3) `hostfxr` component which would call into an old (.NET Core 2.1) `hostpolicy` component, the `hostfxr` will not perform the propagation in any way since the older `hostpolicy` doesn't support this mechanism.
 
 ## Future investments
 ### Trace content
-Currently the host components tend to trace a lot. The trace contains lot of interesting information but it's done in a very verbose way which is sometimes hard to navigate. Future investment should look at the common scenarios which are using the host tracing and optimize the trace output for those scenarios. This doesn't necessarily mean decrease the amount of tracing, but possibly introduce "summary sections" which would describe the end result decisions for certain scenarios.
+Currently the host components tend to trace a lot. The trace contains lot of interesting information but it's done in a very verbose way which is sometimes hard to navigate. Future investment should look at the common scenarios which are using the host tracing and optimize the trace output for those scenarios. This doesn't necessarily mean decrease the amount of tracing, but possibly introduce "summary sections" which would describe the end result decisions for certain scenarios.  
+It would also be good to review the usage of verbose versus info tracing and make it consistent. Possibly also add an environment variable (or similar) to control info/verbose tracing for the `stderr` and file based tracing. Currently all traces are written always.
 
 ### Interaction with other diagnostics in the .NET Core
 The host tracing covers several areas which are interesting for diagnosing common failure patterns:
