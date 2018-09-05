@@ -456,6 +456,9 @@ INST3(pextrq,           "pextrq",           IUM_WR, SSE3A(0x16),  BAD_CODE,     
 INST3(pextrw_sse41,     "pextrw",           IUM_WR, SSE3A(0x15),  BAD_CODE,     BAD_CODE,                                INS_FLAGS_None)    // Extract Word
 INST3(extractps,        "extractps",        IUM_WR, SSE3A(0x17),  BAD_CODE,     BAD_CODE,                                INS_FLAGS_None)    // Extract Packed Floating-Point Values
 
+//PCLMULQDQ instructions
+INST3(pclmulqdq,        "pclmulqdq" ,       IUM_WR, BAD_CODE,     BAD_CODE,     SSE3A(0x44),                             INS_Flags_IsDstDstSrcAVXInstruction)   // Perform a carry-less multiplication of two quadwords
+
 //AES instructions
 INST3(aesdec,           "aesdec",           IUM_WR, BAD_CODE,     BAD_CODE,     SSE38(0xDE),                             INS_Flags_IsDstDstSrcAVXInstruction)   // Perform one round of an AES decryption flow
 INST3(aesdeclast,       "aesdeclast",       IUM_WR, BAD_CODE,     BAD_CODE,     SSE38(0xDF),                             INS_Flags_IsDstDstSrcAVXInstruction)   // Perform last round of an AES decryption flow
