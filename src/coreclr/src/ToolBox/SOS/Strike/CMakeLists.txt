@@ -220,5 +220,5 @@ target_link_libraries(sos ${SOS_LIBRARY})
 install_clr(sos)
 
 if(NOT WIN32)
-  install(FILES sosdocsunix.txt DESTINATION .)
+  _install(FILES sosdocsunix.txt DESTINATION .)
 endif(NOT WIN32)
