@@ -1590,7 +1590,7 @@ find_pinned_obj (char *addr)
  * We pass @root_report_address so register are properly accounted towards their thread
 */
 static void
-report_conservative_roots (GCRootReport *report, char *root_report_address, void **start, void **end)
+report_conservative_roots (GCRootReport *report, void *root_report_address, void **start, void **end)
 {
 	while (start < end) {
 		mword addr = (mword)*start;
@@ -2470,7 +2470,7 @@ mono_gc_make_descr_for_string (gsize *bitmap, int numbits)
 void
 mono_gc_register_obj_with_weak_fields (void *obj)
 {
-	return sgen_register_obj_with_weak_fields (obj);
+	return sgen_register_obj_with_weak_fields ((MonoObject*)obj);
 }
 
 void*
@@ -2640,7 +2640,7 @@ sgen_client_gchandle_created (int handle_type, GCObject *obj, guint32 handle)
 	mono_atomic_inc_i32 (&mono_perfcounters->gc_num_handles);
 #endif
 
-	MONO_PROFILER_RAISE (gc_handle_created, (handle, handle_type, obj));
+	MONO_PROFILER_RAISE (gc_handle_created, (handle, (MonoGCHandleType)handle_type, obj));
 }
 
 void
@@ -2650,7 +2650,7 @@ sgen_client_gchandle_destroyed (int handle_type, guint32 handle)
 	mono_atomic_dec_i32 (&mono_perfcounters->gc_num_handles);
 #endif
 
-	MONO_PROFILER_RAISE (gc_handle_deleted, (handle, handle_type));
+	MONO_PROFILER_RAISE (gc_handle_deleted, (handle, (MonoGCHandleType)handle_type));
 }
 
 void

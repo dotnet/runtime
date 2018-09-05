@@ -662,7 +662,7 @@ sgen_client_binary_protocol_pin_stats (int objects_pinned_in_nursery, size_t byt
 }
 
 static void G_GNUC_UNUSED
-sgen_client_root_registered (char *start, size_t size, int source, void *key, const char *msg)
+sgen_client_root_registered (char *start, size_t size, MonoGCRootSource source, void *key, const char *msg)
 {
 	MONO_PROFILER_RAISE (gc_root_register, ((const mono_byte *) start, size, source, key, msg));
 }

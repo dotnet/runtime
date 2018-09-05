@@ -240,7 +240,10 @@ mono_image_typedef_or_ref (MonoDynamicImage *assembly, MonoType *type)
  * dest may be misaligned.
  */
 static void
-swap_with_size (char *dest, const char* val, int len, int nelem) {
+swap_with_size (gpointer void_dest, gconstpointer void_val, int len, int nelem)
+{
+	char *dest = (char*)void_dest;
+	const char* val = (const char*)void_val;
 	MONO_REQ_GC_NEUTRAL_MODE;
 #if G_BYTE_ORDER != G_LITTLE_ENDIAN
 	int elem;
@@ -2107,8 +2110,9 @@ mono_is_sre_generic_instance (MonoClass *klass)
  * @error set on error.
  */
 static void
-encode_cattr_value (MonoAssembly *assembly, char *buffer, char *p, char **retbuffer, char **retp, guint32 *buflen, MonoType *type, MonoObject *arg, char *argval, MonoError *error)
+encode_cattr_value (MonoAssembly *assembly, char *buffer, char *p, char **retbuffer, char **retp, guint32 *buflen, MonoType *type, MonoObject *arg, gconstpointer void_argval, MonoError *error)
 {
+	const char *argval = (const char*)void_argval;
 	MonoTypeEnum simple_type;
 	
 	error_init (error);

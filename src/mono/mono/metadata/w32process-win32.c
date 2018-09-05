@@ -95,7 +95,7 @@ ves_icall_System_Diagnostics_Process_ShellExecuteEx_internal (MonoW32ProcessStar
 		shellex.lpDirectory = coop.working_directory;
 
 	if (MONO_HANDLE_GETVAL (proc_start_info, error_dialog))
-		shellex.hwnd = MONO_HANDLE_GETVAL (proc_start_info, error_dialog_parent_handle);
+		shellex.hwnd = (HWND)MONO_HANDLE_GETVAL (proc_start_info, error_dialog_parent_handle);
 	else
 		shellex.fMask = (gulong)(shellex.fMask | SEE_MASK_FLAG_NO_UI);
 

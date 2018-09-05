@@ -9026,9 +9026,9 @@ mono_object_get_data (MonoObject *o)
  *   Return the address of the FIELD in the valuetype VTYPE.
  */
 gpointer
-mono_vtype_get_field_addr (guint8 *vtype, MonoClassField *field)
+mono_vtype_get_field_addr (gpointer vtype, MonoClassField *field)
 {
-	return vtype + field->offset - MONO_ABI_SIZEOF (MonoObject);
+	return ((char*)vtype) + field->offset - MONO_ABI_SIZEOF (MonoObject);
 }
 
 

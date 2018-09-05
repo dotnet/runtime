@@ -80,7 +80,7 @@ g_file_test (const gchar *filename, GFileTest test)
 }
 
 gchar *
-g_mkdtemp (char *tmp_template)
+g_mkdtemp (char *temp)
 {
 /*
  * On systems without mkdtemp, use a reimplemented version
@@ -90,21 +90,14 @@ g_mkdtemp (char *tmp_template)
  * present without redefining it.
  */
 #if defined(HAVE_MKDTEMP) && !defined(_AIX)
-	char *template_copy = g_strdup (tmp_template);
-
-	return mkdtemp (template_copy);
+	return mkdtemp (g_strdup (temp));
 #else
-	char *template = g_strdup (tmp_template);
+	temp = mktemp (g_strdup (temp));
+	/* 0700 is the mode specified in specs */
+	if (temp && *temp && mkdir (temp, 0700) == 0)
+		return temp;
 
-	template = mktemp(template);
-	if (template && *template) {
-		/* 0700 is the mode specified in specs */
-		if (mkdir (template, 0700) == 0){
-			return template;
-		}
-	}
-
-	g_free (template);
+	g_free (temp);
 	return NULL;
 #endif
 }

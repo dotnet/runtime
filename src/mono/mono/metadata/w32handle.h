@@ -15,7 +15,7 @@
 #include "mono/utils/mono-coop-mutex.h"
 
 #ifndef INVALID_HANDLE_VALUE
-#define INVALID_HANDLE_VALUE (gpointer)-1
+#define INVALID_HANDLE_VALUE ((gpointer)-1)
 #endif
 
 #define MONO_W32HANDLE_MAXIMUM_WAIT_OBJECTS 64
@@ -170,9 +170,9 @@ static inline MonoW32HandleWaitRet
 mono_w32handle_convert_wait_ret (guint32 res, guint32 numobjects)
 {
 	if (res >= WAIT_OBJECT_0 && res <= WAIT_OBJECT_0 + numobjects - 1)
-		return MONO_W32HANDLE_WAIT_RET_SUCCESS_0 + (res - WAIT_OBJECT_0);
+		return (MonoW32HandleWaitRet)(MONO_W32HANDLE_WAIT_RET_SUCCESS_0 + (res - WAIT_OBJECT_0));
 	else if (res >= WAIT_ABANDONED_0 && res <= WAIT_ABANDONED_0 + numobjects - 1)
-		return MONO_W32HANDLE_WAIT_RET_ABANDONED_0 + (res - WAIT_ABANDONED_0);
+		return (MonoW32HandleWaitRet)(MONO_W32HANDLE_WAIT_RET_ABANDONED_0 + (res - WAIT_ABANDONED_0));
 	else if (res == WAIT_IO_COMPLETION)
 		return MONO_W32HANDLE_WAIT_RET_ALERTED;
 	else if (res == WAIT_TIMEOUT)

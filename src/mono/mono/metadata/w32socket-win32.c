@@ -66,7 +66,7 @@ static DWORD get_socket_timeout (SOCKET sock, int optname)
 */
 static gboolean alertable_socket_wait (SOCKET sock, int event_bit)
 {
-	static char *EVENT_NAMES[] = { "FD_READ", "FD_WRITE", NULL /*FD_OOB*/, "FD_ACCEPT", "FD_CONNECT", "FD_CLOSE" };
+	static char const * const EVENT_NAMES[] = { "FD_READ", "FD_WRITE", NULL /*FD_OOB*/, "FD_ACCEPT", "FD_CONNECT", "FD_CLOSE" };
 	gboolean success = FALSE;
 	int error = -1;
 	DWORD timeout = WSA_INFINITE;
@@ -177,7 +177,7 @@ int mono_w32socket_recvbuffers (SOCKET s, WSABUF *lpBuffers, guint32 dwBufferCou
 {
 	int ret = SOCKET_ERROR;
 	MONO_ENTER_GC_SAFE;
-	ALERTABLE_SOCKET_CALL (FD_READ_BIT, blocking, TRUE, ret, WSARecv, s, lpBuffers, dwBufferCount, (PDWORD)lpNumberOfBytesRecvd, (PDWORD)lpFlags, lpOverlapped, lpCompletionRoutine);
+	ALERTABLE_SOCKET_CALL (FD_READ_BIT, blocking, TRUE, ret, WSARecv, s, lpBuffers, dwBufferCount, (PDWORD)lpNumberOfBytesRecvd, (PDWORD)lpFlags, (LPWSAOVERLAPPED)lpOverlapped, (LPWSAOVERLAPPED_COMPLETION_ROUTINE)lpCompletionRoutine);
 	MONO_EXIT_GC_SAFE;
 	return ret;
 }
@@ -186,7 +186,7 @@ int mono_w32socket_send (SOCKET s, void *buf, int len, int flags, gboolean block
 {
 	int ret = SOCKET_ERROR;
 	MONO_ENTER_GC_SAFE;
-	ALERTABLE_SOCKET_CALL (FD_WRITE_BIT, blocking, TRUE, ret, send, s, buf, len, flags);
+	ALERTABLE_SOCKET_CALL (FD_WRITE_BIT, blocking, TRUE, ret, send, s, (char*)buf, len, flags);
 	MONO_EXIT_GC_SAFE;
 	return ret;
 }
@@ -204,7 +204,7 @@ int mono_w32socket_sendbuffers (SOCKET s, WSABUF *lpBuffers, guint32 dwBufferCou
 {
 	int ret = SOCKET_ERROR;
 	MONO_ENTER_GC_SAFE;
-	ALERTABLE_SOCKET_CALL (FD_WRITE_BIT, blocking, TRUE, ret, WSASend, s, lpBuffers, dwBufferCount, (PDWORD)lpNumberOfBytesRecvd, lpFlags, lpOverlapped, lpCompletionRoutine);
+	ALERTABLE_SOCKET_CALL (FD_WRITE_BIT, blocking, TRUE, ret, WSASend, s, lpBuffers, dwBufferCount, (PDWORD)lpNumberOfBytesRecvd, lpFlags, (LPWSAOVERLAPPED)lpOverlapped, (LPWSAOVERLAPPED_COMPLETION_ROUTINE)lpCompletionRoutine);
 	MONO_EXIT_GC_SAFE;
 	return ret;
 }

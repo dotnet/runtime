@@ -1694,7 +1694,7 @@ mono_image_open_a_lot (const char *fname, MonoImageOpenStatus *status, gboolean 
 
 		/* There is little overhead because the OS loader lock is held by LoadLibrary. */
 		mono_images_lock ();
-		image = g_hash_table_lookup (loaded_images, absfname);
+		image = (MonoImage*)g_hash_table_lookup (loaded_images, absfname);
 		if (image) { // Image already loaded
 			if (!load_from_context && mono_is_problematic_image (image)) {
 				// If we previously loaded a problematic image, don't
@@ -1731,7 +1731,7 @@ mono_image_open_a_lot (const char *fname, MonoImageOpenStatus *status, gboolean 
 			last_error = mono_w32error_get_last ();
 
 		/* mono_image_open_from_module_handle is called by _CorDllMain. */
-		image = g_hash_table_lookup (loaded_images, absfname);
+		image = (MonoImage*)g_hash_table_lookup (loaded_images, absfname);
 		if (image)
 			mono_image_addref (image);
 		mono_images_unlock ();
@@ -1881,7 +1881,7 @@ mono_image_fixup_vtable (MonoImage *image)
 
 	g_assert (image->is_module_handle);
 
-	iinfo = image->image_info;
+	iinfo = (MonoCLIImageInfo*)image->image_info;
 	de = &iinfo->cli_cli_header.ch_vtable_fixups;
 	if (!de->rva || !de->size)
 		return;
@@ -1900,7 +1900,7 @@ mono_image_fixup_vtable (MonoImage *image)
 		slot_count = vtfixup->count;
 		if (slot_type & VTFIXUP_TYPE_32BIT)
 			while (slot_count--) {
-				*((guint32*) slot) = (guint32) mono_marshal_get_vtfixup_ftnptr (image, *((guint32*) slot), slot_type);
+				*((guint32*) slot) = (guint32)(gsize)mono_marshal_get_vtfixup_ftnptr (image, *((guint32*) slot), slot_type);
 				slot = ((guint32*) slot) + 1;
 			}
 		else if (slot_type & VTFIXUP_TYPE_64BIT)

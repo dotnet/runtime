@@ -509,7 +509,7 @@ ves_icall_System_IO_MonoIO_Read (HANDLE handle, MonoArrayHandle dest,
 				 gint32 *io_error,
 				 MonoError *error)
 {
-	guchar *buffer;
+	void *buffer;
 	gboolean result;
 	guint32 n;
 
@@ -539,7 +539,7 @@ ves_icall_System_IO_MonoIO_Write (HANDLE handle, MonoArrayHandle src,
 				  gint32 *io_error,
 				  MonoError *error)
 {
-	guchar *buffer;
+	void *buffer;
 	gboolean result;
 	guint32 n;
 

@@ -3241,7 +3241,7 @@ ves_icall_MonoMethod_GetGenericMethodDefinition (MonoReflectionMethodHandle ref_
 		 * the dynamic case as well ?
 		 */
 		mono_image_lock ((MonoImage*)image);
-		MonoReflectionMethodHandle res = MONO_HANDLE_NEW (MonoReflectionMethod, mono_g_hash_table_lookup (image->generic_def_objects, imethod));
+		MonoReflectionMethodHandle res = MONO_HANDLE_NEW (MonoReflectionMethod, (MonoReflectionMethod*)mono_g_hash_table_lookup (image->generic_def_objects, imethod));
 		mono_image_unlock ((MonoImage*)image);
 
 		if (!MONO_HANDLE_IS_NULL (res))
@@ -6183,7 +6183,7 @@ ves_icall_System_Reflection_Module_ResolveStringToken (MonoImage *image, guint32
 		ERROR_DECL (ignore_inner_error);
 		// FIXME ignoring error
 		// FIXME Push MONO_HANDLE_NEW to lower layers.
-		MonoStringHandle result = MONO_HANDLE_NEW (MonoString, mono_lookup_dynamic_token_class (image, token, FALSE, NULL, NULL, ignore_inner_error));
+		MonoStringHandle result = MONO_HANDLE_NEW (MonoString, (MonoString*)mono_lookup_dynamic_token_class (image, token, FALSE, NULL, NULL, ignore_inner_error));
 		mono_error_cleanup (ignore_inner_error);
 		return result;
 	}

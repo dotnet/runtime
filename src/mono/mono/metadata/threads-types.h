@@ -81,8 +81,18 @@ typedef enum {
 	MONO_THREAD_CREATE_FLAGS_SMALL_STACK  = 0x8,
 } MonoThreadCreateFlags;
 
+// FIXME func should be MonoThreadStart and remove the template
 MonoInternalThread*
 mono_thread_create_internal (MonoDomain *domain, gpointer func, gpointer arg, MonoThreadCreateFlags flags, MonoError *error);
+
+#ifdef __cplusplus
+template <typename T>
+inline MonoInternalThread*
+mono_thread_create_internal (MonoDomain *domain, T func, gpointer arg, MonoThreadCreateFlags flags, MonoError *error)
+{
+	return mono_thread_create_internal(domain, (gpointer)func, arg, flags, error);
+}
+#endif
 
 void mono_threads_install_cleanup (MonoThreadCleanupFunc func);
 
@@ -440,8 +450,18 @@ void
 mono_thread_resume_interruption (gboolean exec);
 void mono_threads_perform_thread_dump (void);
 
+// FIXME Correct the type of func and remove the template.
 gboolean
 mono_thread_create_checked (MonoDomain *domain, gpointer func, gpointer arg, MonoError *error);
+
+#ifdef __cplusplus
+template <typename T>
+inline gboolean
+mono_thread_create_checked (MonoDomain *domain, T func, gpointer arg, MonoError *error)
+{
+	return mono_thread_create_checked (domain, (gpointer)func, arg, error);
+}
+#endif
 
 void mono_threads_add_joinable_runtime_thread (MonoThreadInfo *thread_info);
 void mono_threads_add_joinable_thread (gpointer tid);

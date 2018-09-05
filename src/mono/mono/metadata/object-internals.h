@@ -2121,6 +2121,6 @@ gpointer
 mono_object_get_data (MonoObject *o);
 
 gpointer
-mono_vtype_get_field_addr (guint8 *vtype, MonoClassField *field);
+mono_vtype_get_field_addr (gpointer vtype, MonoClassField *field);
 
 #endif /* __MONO_OBJECT_INTERNALS_H__ */

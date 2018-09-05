@@ -7,8 +7,6 @@
 
 #include <mono/utils/mono-publib.h>
 
-MONO_BEGIN_DECLS
-
 typedef struct _MonoMemPool MonoMemPool;
 
 MONO_API MonoMemPool *
@@ -44,7 +42,5 @@ mono_mempool_strdup        (MonoMemPool *pool, const char *s);
 
 MONO_API uint32_t
 mono_mempool_get_allocated (MonoMemPool *pool);
-
-MONO_END_DECLS
 
 #endif

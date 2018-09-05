@@ -425,7 +425,7 @@ lookup_icall_symbol (gpointer func)
 					functions_sorted [i + 1] = tmp;
 					tmp = symbols_sorted [i];
 					symbols_sorted [i] = symbols_sorted [i + 1];
-					symbols_sorted [i + 1] = tmp;
+					symbols_sorted [i + 1] = (const char*)tmp;
 					changed = TRUE;
 				}
 			}

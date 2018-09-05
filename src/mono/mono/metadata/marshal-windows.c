@@ -68,7 +68,7 @@ ves_icall_System_Runtime_InteropServices_Marshal_StringToHGlobalAnsi (const guni
 	 * large.
 	 */
 	size_t len = MAX (strlen (tres) + 1, length);
-	char* ret = ves_icall_System_Runtime_InteropServices_Marshal_AllocHGlobal (len, error);
+	char* ret = (char*)ves_icall_System_Runtime_InteropServices_Marshal_AllocHGlobal (len, error);
 	if (ret)
 		memcpy (ret, tres, len);
 	g_free (tres);
@@ -82,7 +82,7 @@ ves_icall_System_Runtime_InteropServices_Marshal_StringToHGlobalUni (const gunic
 		return NULL;
 
 	gsize const len = ((gsize)length + 1) * 2;
-	gunichar2 *res = ves_icall_System_Runtime_InteropServices_Marshal_AllocHGlobal (len, error);
+	gunichar2 *res = (gunichar2*)ves_icall_System_Runtime_InteropServices_Marshal_AllocHGlobal (len, error);
 	if (res) {
 		memcpy (res, s, length * 2);
 		res [length] = 0;
@@ -101,7 +101,7 @@ mono_string_to_utf8str_handle (MonoStringHandle s, MonoError *error)
 		return NULL;
 
 	if (!mono_string_handle_length (s)) {
-		as = CoTaskMemAlloc (1);
+		as = (char*)CoTaskMemAlloc (1);
 		g_assert (as);
 		as [0] = '\0';
 		return as;
@@ -117,7 +117,7 @@ mono_string_to_utf8str_handle (MonoStringHandle s, MonoError *error)
 		g_error_free (gerror);
 		return NULL;
 	} else {
-		as = CoTaskMemAlloc (len + 1);
+		as = (char*)CoTaskMemAlloc (len + 1);
 		g_assert (as);
 		memcpy (as, tmp, len + 1);
 		g_free (tmp);
