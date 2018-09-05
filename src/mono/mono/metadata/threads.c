@@ -1100,11 +1100,9 @@ static guint32 WINAPI start_wrapper_internal(StartInfo *start_info, gsize *stack
 	MonoInternalThread *internal;
 	MonoObject *start_delegate;
 	MonoObject *start_delegate_arg;
-	MonoDomain *domain;
 
 	thread = start_info->thread;
 	internal = thread->internal_thread;
-	domain = mono_object_domain (start_info->thread);
 
 	THREAD_DEBUG (g_message ("%s: (%" G_GSIZE_FORMAT ") Start wrapper", __func__, mono_native_thread_id_get ()));
 
@@ -5851,7 +5849,7 @@ mono_threads_attach_coop_internal (MonoDomain *domain, gpointer *cookie, MonoSta
 {
 	MonoDomain *orig;
 	MonoThreadInfo *info;
-	gboolean external;
+	gboolean external = FALSE;
 
 	orig = mono_domain_get ();
 
@@ -6104,6 +6102,8 @@ thread_summary_state_to_str (MonoSummaryState state)
 		return "MONO_SUMMARY_EXAMINE";
 	case MONO_SUMMARY_MUTATE_SHARED:
 		return "MONO_SUMMARY_MUTATE_SHARED";
+	default:
+		g_assert_not_reached ();
 	}
 }
 
