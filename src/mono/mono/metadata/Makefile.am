@@ -183,8 +183,8 @@ system_native_android_sources = \
 	pal-android.h \
 	pal-android.c
 
-if !TARGET_WIN32
-if !WASM
+if !HOST_WIN32
+if !HOST_WASM
 lib_LTLIBRARIES += libmono-system-native.la
 libmono_system_native_la_SOURCES = $(system_native_common_sources)
 if TARGET_OSX
