@@ -11184,9 +11184,23 @@ GenTree* Compiler::fgMorphFieldAssignToSIMDIntrinsicSet(GenTree* tree)
 
         GenTree* target = gtClone(simdOp1Struct);
         assert(target != nullptr);
-        GenTree* simdTree = gtNewSIMDNode(target->gtType, simdOp1Struct, op2, simdIntrinsicID, baseType, simdSize);
-        tree->gtOp.gtOp1  = target;
-        tree->gtOp.gtOp2  = simdTree;
+        var_types simdType = target->gtType;
+        GenTree*  simdTree = gtNewSIMDNode(simdType, simdOp1Struct, op2, simdIntrinsicID, baseType, simdSize);
+
+        tree->gtOp.gtOp1 = target;
+        tree->gtOp.gtOp2 = simdTree;
+
+        // fgMorphTree has already called fgMorphImplicitByRefArgs() on this assignment, but the source
+        // and target have not yet been morphed.
+        // Therefore, in case the source and/or target are now implicit byrefs, we need to call it again.
+        if (fgMorphImplicitByRefArgs(tree))
+        {
+            if (tree->gtGetOp1()->OperIsBlk())
+            {
+                assert(tree->gtGetOp1()->TypeGet() == simdType);
+                fgMorphBlkToInd(tree->gtGetOp1()->AsBlk(), simdType);
+            }
+        }
 #ifdef DEBUG
         tree->gtDebugFlags |= GTF_DEBUG_NODE_MORPHED;
 #endif
