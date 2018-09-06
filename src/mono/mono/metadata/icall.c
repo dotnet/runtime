@@ -8683,8 +8683,9 @@ ves_icall_System_Threading_Thread_SystemMaxStackSize (void)
 	return mono_thread_info_get_system_max_stack_size ();
 }
 
-ICALL_EXPORT void
+ICALL_EXPORT gboolean
 ves_icall_System_Threading_Thread_YieldInternal (void)
 {
 	mono_threads_platform_yield ();
+	return TRUE;
 }
