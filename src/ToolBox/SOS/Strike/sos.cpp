@@ -180,6 +180,15 @@ namespace sos
             info->BaseSize = mMTData->BaseSize;
             info->ComponentSize = mMTData->ComponentSize;
             info->bContainsPointers = mMTData->bContainsPointers;
+
+            // The following request doesn't work on older runtimes. For those, the
+            // objects would just look like non-collectible, which is acceptable.
+            DacpMethodTableCollectibleData mtcd;
+            if (SUCCEEDED(mtcd.Request(g_sos, GetMT())))
+            {
+                info->bCollectible = mtcd.bCollectible;
+                info->LoaderAllocatorObjectHandle = TO_TADDR(mtcd.LoaderAllocatorObjectHandle);
+            }
         }
         
         if (mSize == (size_t)~0)
@@ -380,14 +389,14 @@ namespace sos
 
 
     RefIterator::RefIterator(TADDR obj, LinearReadCache *cache)
-        : mCache(cache), mGCDesc(0), mArrayOfVC(false), mDone(false), mBuffer(0), mCurrSeries(0),
+        : mCache(cache), mGCDesc(0), mArrayOfVC(false), mDone(false), mBuffer(0), mCurrSeries(0), mLoaderAllocatorObjectHandle(0),
           i(0), mCount(0), mCurr(0), mStop(0), mObject(obj), mObjSize(0)
     {
         Init();
     }
 
     RefIterator::RefIterator(TADDR obj, CGCDesc *desc, bool arrayOfVC, LinearReadCache *cache)
-        : mCache(cache), mGCDesc(desc), mArrayOfVC(arrayOfVC), mDone(false), mBuffer(0), mCurrSeries(0),
+        : mCache(cache), mGCDesc(desc), mArrayOfVC(arrayOfVC), mDone(false), mBuffer(0), mCurrSeries(0), mLoaderAllocatorObjectHandle(0),
           i(0), mCount(0), mCurr(0), mStop(0), mObject(obj), mObjSize(0)
     {
         Init();
@@ -403,6 +412,13 @@ namespace sos
     {
         if (mDone)
             Throw<Exception>("Attempt to move past the end of the iterator.");
+
+        if (mCurr == mLoaderAllocatorObjectHandle)
+        {
+            // The mLoaderAllocatorObjectHandle is always the last reference returned
+            mDone = true;
+            return *this;
+        }
         
         if (!mArrayOfVC)
         {
@@ -440,6 +456,14 @@ namespace sos
                 mDone = true;
         }
         
+        if (mDone && mLoaderAllocatorObjectHandle != NULL)
+        {
+            // The iteration over all regular object references is done, but there is one more
+            // reference for collectible types - the LoaderAllocator for GC
+            mCurr = mLoaderAllocatorObjectHandle;
+            mDone = false;
+        }
+
         return *this;
     }
     
@@ -457,66 +481,89 @@ namespace sos
     {
         TADDR mt = ReadPointer(mObject);
         BOOL bContainsPointers = FALSE;
-        
+        BOOL bCollectible = FALSE;
+        TADDR loaderAllocatorObjectHandle;
+
         if (!GetSizeEfficient(mObject, mt, FALSE, mObjSize, bContainsPointers))
             Throw<DataRead>("Failed to get size of object.");
-        
-        if (!bContainsPointers)
+
+        if (!GetCollectibleDataEfficient(mt, bCollectible, loaderAllocatorObjectHandle))
+            Throw<DataRead>("Failed to get collectible info of object.");
+
+        if (!bContainsPointers && !bCollectible)
         {
             mDone = true;
             return;
         }
-        
-        if (!mGCDesc)
+
+        if (bContainsPointers)
         {
-            int entries = 0;
-            
-            if (FAILED(MOVE(entries, mt-sizeof(TADDR))))
-                Throw<DataRead>("Failed to request number of entries.");
-            
-            // array of vc?
-            if (entries < 0)
+            if (!mGCDesc)
             {
-                entries = -entries;
-                mArrayOfVC = true;
+                int entries = 0;
+
+                if (FAILED(MOVE(entries, mt-sizeof(TADDR))))
+                    Throw<DataRead>("Failed to request number of entries.");
+
+                // array of vc?
+                if (entries < 0)
+                {
+                    entries = -entries;
+                    mArrayOfVC = true;
+                }
+                else
+                {
+                    mArrayOfVC = false;
+                }
+
+                size_t slots = 1 + entries * sizeof(CGCDescSeries)/sizeof(TADDR);
+
+                ArrayHolder<TADDR> buffer = new TADDR[slots];
+
+                ULONG fetched = 0;
+                CLRDATA_ADDRESS address = TO_CDADDR(mt - slots*sizeof(TADDR));
+                if (FAILED(g_ExtData->ReadVirtual(address, buffer, (ULONG)(slots*sizeof(TADDR)), &fetched)))
+                    Throw<DataRead>("Failed to request GCDesc.");
+
+                mBuffer = buffer.Detach();
+                mGCDesc = (CGCDesc*)(mBuffer + slots);
+            }
+
+            mCurrSeries = mGCDesc->GetHighestSeries();
+
+            if (!mArrayOfVC)
+            {
+                mCurr = mObject + mCurrSeries->GetSeriesOffset();
+                mStop = mCurr + mCurrSeries->GetSeriesSize() + mObjSize;
             }
             else
             {
-                mArrayOfVC = false;
+                i = 0;
+                mCurr = mObject + mCurrSeries->startoffset;
+                mStop = mCurr + mCurrSeries->val_serie[i].nptrs * sizeof(TADDR);
+                mCount = (int)mGCDesc->GetNumSeries();
             }
-            
-            size_t slots = 1 + entries * sizeof(CGCDescSeries)/sizeof(TADDR);
-            
-            ArrayHolder<TADDR> buffer = new TADDR[slots];
-            
-            ULONG fetched = 0;
-            CLRDATA_ADDRESS address = TO_CDADDR(mt - slots*sizeof(TADDR));
-            if (FAILED(g_ExtData->ReadVirtual(address, buffer, (ULONG)(slots*sizeof(TADDR)), &fetched)))
-                Throw<DataRead>("Failed to request GCDesc.");
-            
-            mBuffer = buffer.Detach();
-            mGCDesc = (CGCDesc*)(mBuffer + slots);
-        }
-        
-        mCurrSeries = mGCDesc->GetHighestSeries();
-        
-        if (!mArrayOfVC)
-        {
-            mCurr = mObject + mCurrSeries->GetSeriesOffset();
-            mStop = mCurr + mCurrSeries->GetSeriesSize() + mObjSize;
+
+            if (mCurr == mStop)
+                operator++();
+            else if (mCurr >= mObject + mObjSize - plug_skew)
+                mDone = true;
         }
         else
         {
-            i = 0;
-            mCurr = mObject + mCurrSeries->startoffset;
-            mStop = mCurr + mCurrSeries->val_serie[i].nptrs * sizeof(TADDR);
-            mCount = (int)mGCDesc->GetNumSeries();
+            mDone = true;
         }
-        
-        if (mCurr == mStop)
-          operator++();
-        else if (mCurr >= mObject + mObjSize - plug_skew)
-          mDone = true;
+
+        if (bCollectible)
+        {
+            mLoaderAllocatorObjectHandle = loaderAllocatorObjectHandle;
+            if (mDone)
+            {
+                // There are no object references, but there is still a reference for 
+                // collectible types - the LoaderAllocator for GC
+                mCurr = mLoaderAllocatorObjectHandle;
+            }
+        }
     }
 
 

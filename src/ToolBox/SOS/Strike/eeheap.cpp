@@ -868,8 +868,7 @@ DWORD GetNumComponents(TADDR obj)
     return Value;
 }
 
-BOOL GetSizeEfficient(DWORD_PTR dwAddrCurrObj, 
-    DWORD_PTR dwAddrMethTable, BOOL bLarge, size_t& s, BOOL& bContainsPointers)
+static MethodTableInfo* GetMethodTableInfo(DWORD_PTR dwAddrMethTable)
 {
     // Remove lower bits in case we are in mark phase
     dwAddrMethTable = dwAddrMethTable & ~3;
@@ -880,12 +879,34 @@ BOOL GetSizeEfficient(DWORD_PTR dwAddrCurrObj,
         // from the target
         DacpMethodTableData dmtd;
         // see code:ClrDataAccess::RequestMethodTableData for details
-        if (dmtd.Request(g_sos,dwAddrMethTable) != S_OK)
-            return FALSE;
+        if (dmtd.Request(g_sos, dwAddrMethTable) != S_OK)
+            return NULL;
+
 
         info->BaseSize = dmtd.BaseSize;
         info->ComponentSize = dmtd.ComponentSize;
         info->bContainsPointers = dmtd.bContainsPointers;
+
+        // The following request doesn't work on older runtimes. For those, the
+        // objects would just look like non-collectible, which is acceptable.
+        DacpMethodTableCollectibleData dmtcd;
+        if (SUCCEEDED(dmtcd.Request(g_sos, dwAddrMethTable)))
+        {
+            info->bCollectible = dmtcd.bCollectible;
+            info->LoaderAllocatorObjectHandle = TO_TADDR(dmtcd.LoaderAllocatorObjectHandle);
+        }
+    }
+
+    return info;
+}
+
+BOOL GetSizeEfficient(DWORD_PTR dwAddrCurrObj, 
+    DWORD_PTR dwAddrMethTable, BOOL bLarge, size_t& s, BOOL& bContainsPointers)
+{
+    MethodTableInfo* info = GetMethodTableInfo(dwAddrMethTable);
+    if (info == NULL)
+    {
+        return FALSE;
     }
         
     bContainsPointers = info->bContainsPointers;
@@ -908,6 +929,20 @@ BOOL GetSizeEfficient(DWORD_PTR dwAddrCurrObj,
 #endif // _TARGET_WIN64_
 
     s = (bLarge ? AlignLarge(s) : Align (s));
+    return TRUE;
+}
+
+BOOL GetCollectibleDataEfficient(DWORD_PTR dwAddrMethTable, BOOL& bCollectible, TADDR& loaderAllocatorObjectHandle)
+{
+    MethodTableInfo* info = GetMethodTableInfo(dwAddrMethTable);
+    if (info == NULL)
+    {
+        return FALSE;
+    }
+
+    bCollectible = info->bCollectible;
+    loaderAllocatorObjectHandle = info->LoaderAllocatorObjectHandle;
+
     return TRUE;
 }
 
