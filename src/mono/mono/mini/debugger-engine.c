@@ -936,7 +936,6 @@ mono_de_ss_update (SingleStepReq *req, MonoJitInfo *ji, SeqPoint *sp, void *tls,
 			for (int i=0; i < nframes; i++)
 				g_printerr ("\t [%p] Frame (%d / %d): %s\n", (gpointer)(gsize)mono_native_thread_id_get (), i, nframes, mono_method_full_name (frames [i]->method, TRUE));
 		}
-		g_assert (method_in_stack);
 
 		rt_callbacks.ss_discard_frame_context (tls);
 
