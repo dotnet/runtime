@@ -9219,11 +9219,6 @@ int cTreeFlagsIR(Compiler* comp, GenTree* tree)
                 break;
 
             case GT_FIELD:
-
-                if (tree->gtFlags & GTF_FLD_NULLCHECK)
-                {
-                    chars += printf("[FLD_NULLCHECK]");
-                }
                 if (tree->gtFlags & GTF_FLD_VOLATILE)
                 {
                     chars += printf("[FLD_VOLATILE]");
@@ -9274,10 +9269,6 @@ int cTreeFlagsIR(Compiler* comp, GenTree* tree)
                 if (tree->gtFlags & GTF_IND_INVARIANT)
                 {
                     chars += printf("[IND_INVARIANT]");
-                }
-                if (tree->gtFlags & GTF_IND_ARR_LEN)
-                {
-                    chars += printf("[IND_ARR_INDEX]");
                 }
                 break;
 
