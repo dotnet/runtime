@@ -334,6 +334,10 @@ bool TakesRexWPrefix(instruction ins, emitAttr attr)
         case INS_vfnmsub213sd:
         case INS_vfnmsub231sd:
         case INS_vpmaskmovq:
+        case INS_vpgatherdq:
+        case INS_vpgatherqq:
+        case INS_vgatherdpd:
+        case INS_vgatherqpd:
             return true;
         default:
             break;
@@ -2901,8 +2905,8 @@ regNumber emitter::emitInsBinary(instruction ins, emitAttr attr, GenTree* dst, G
     if (dst->isContained() || (dst->isLclField() && (dst->gtRegNum == REG_NA)) || dst->isUsedFromSpillTemp())
     {
         // dst can only be a modrm
-        assert(dst->isUsedFromMemory() || (dst->gtRegNum == REG_NA) ||
-               instrIs3opImul(ins)); // dst on 3opImul isn't really the dst
+        // dst on 3opImul isn't really the dst
+        assert(dst->isUsedFromMemory() || (dst->gtRegNum == REG_NA) || instrIs3opImul(ins));
         assert(!src->isUsedFromMemory());
 
         memOp = dst;
@@ -4115,6 +4119,74 @@ void emitter::emitIns_R_R_AR(instruction ins, emitAttr attr, regNumber reg1, reg
     id->idInsFmt(IF_RWR_RRD_ARD);
     id->idAddr()->iiaAddrMode.amBaseReg = base;
     id->idAddr()->iiaAddrMode.amIndxReg = REG_NA;
+
+    UNATIVE_OFFSET sz = emitInsSizeAM(id, insCodeRM(ins));
+    id->idCodeSize(sz);
+
+    dispIns(id);
+    emitCurIGsize += sz;
+}
+
+//------------------------------------------------------------------------
+// IsAVX2GatherInstruction: return true if the instruction is AVX2 Gather
+//
+// Arguments:
+//    ins - the instruction to check
+// Return Value:
+//    true if the instruction is AVX2 Gather
+//
+bool IsAVX2GatherInstruction(instruction ins)
+{
+    switch (ins)
+    {
+        case INS_vpgatherdd:
+        case INS_vpgatherdq:
+        case INS_vpgatherqd:
+        case INS_vpgatherqq:
+        case INS_vgatherdps:
+        case INS_vgatherdpd:
+        case INS_vgatherqps:
+        case INS_vgatherqpd:
+            return true;
+        default:
+            return false;
+    }
+}
+
+//------------------------------------------------------------------------
+// emitIns_R_AR_R: Emits an AVX2 Gather instructions
+//
+// Arguments:
+//    ins - the instruction to emit
+//    attr - the instruction operand size
+//    reg1 - the destination and first source operand
+//    reg2 - the mask operand (encoded in VEX.vvvv)
+//    base - the base register of address to load
+//    index - the index register of VSIB
+//    scale - the scale number of VSIB
+//    offs - the offset added to the memory address from base
+//
+void emitter::emitIns_R_AR_R(instruction ins,
+                             emitAttr    attr,
+                             regNumber   reg1,
+                             regNumber   reg2,
+                             regNumber   base,
+                             regNumber   index,
+                             int         scale,
+                             int         offs)
+{
+    assert(IsAVX2GatherInstruction(ins));
+
+    instrDesc* id = emitNewInstrAmd(attr, offs);
+
+    id->idIns(ins);
+    id->idReg1(reg1);
+    id->idReg2(reg2);
+
+    id->idInsFmt(IF_RWR_ARD_RRD);
+    id->idAddr()->iiaAddrMode.amBaseReg = base;
+    id->idAddr()->iiaAddrMode.amIndxReg = index;
+    id->idAddr()->iiaAddrMode.amScale   = emitEncodeSize((emitAttr)scale);
 
     UNATIVE_OFFSET sz = emitInsSizeAM(id, insCodeRM(ins));
     id->idCodeSize(sz);
@@ -8341,6 +8413,17 @@ void emitter::emitDispIns(
             emitDispAddrMode(id);
             break;
 
+        case IF_RWR_ARD_RRD:
+            if (ins == INS_vpgatherqd || ins == INS_vgatherqps)
+            {
+                attr = EA_16BYTE;
+            }
+            sstr = codeGen->genSizeStr(EA_ATTR(4));
+            printf("%s, %s", emitRegName(id->idReg1(), attr), sstr);
+            emitDispAddrMode(id);
+            printf(", %s", emitRegName(id->idReg2(), attr));
+            break;
+
         case IF_RWR_RRD_ARD_CNS:
         {
             printf("%s, %s, %s", emitRegName(id->idReg1(), attr), emitRegName(id->idReg2(), attr), sstr);
@@ -9223,6 +9306,7 @@ BYTE* emitter::emitOutputAM(BYTE* dst, instrDesc* id, code_t code, CnsVal* addc)
             switch (id->idInsFmt())
             {
                 case IF_RWR_RRD_ARD:
+                case IF_RWR_ARD_RRD:
                 case IF_RWR_RRD_ARD_CNS:
                 case IF_RWR_RRD_ARD_RRD:
                 {
@@ -12881,6 +12965,15 @@ size_t emitter::emitOutputInstr(insGroup* ig, instrDesc* id, BYTE** dp)
                 dst     = emitOutputAM(dst, id, code | regcode);
             }
             sz = emitSizeOfInsDsc(id);
+            break;
+        }
+
+        case IF_RWR_ARD_RRD:
+        {
+            assert(IsAVX2GatherInstruction(ins));
+            code = insCodeRM(ins);
+            dst  = emitOutputAM(dst, id, code);
+            sz   = emitSizeOfInsDsc(id);
             break;
         }
 

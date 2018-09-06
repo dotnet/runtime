@@ -396,4 +396,4 @@ if(FEATURE_EVENT_TRACE)
 endif(FEATURE_EVENT_TRACE)
 
 # Install the static PAL library for VS
-install (TARGETS coreclrpal DESTINATION lib)
+_install (TARGETS coreclrpal DESTINATION lib)

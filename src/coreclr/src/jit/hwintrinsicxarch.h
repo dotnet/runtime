@@ -149,6 +149,8 @@ struct HWIntrinsicInfo
     static bool isImmOp(NamedIntrinsic id, const GenTree* op);
 
     static int lookupImmUpperBound(NamedIntrinsic id);
+    static bool isInImmRange(NamedIntrinsic id, int ival);
+    static bool isAVX2GatherIntrinsic(NamedIntrinsic id);
 
     static bool isFullyImplementedIsa(InstructionSet isa);
     static bool isScalarIsa(InstructionSet isa);

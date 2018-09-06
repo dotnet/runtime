@@ -6689,11 +6689,6 @@ GenTree* Compiler::fgMorphField(GenTree* tree, MorphAddrContext* mac)
                     }
 
                     tree->SetOper(GT_IND);
-                    // The GTF_FLD_NULLCHECK is the same bit as GTF_IND_ARR_LEN.
-                    // We must clear it when we transform the node.
-                    // TODO-Cleanup: It appears that the GTF_FLD_NULLCHECK flag is never checked, and note
-                    // that the logic above does its own checking to determine whether a nullcheck is needed.
-                    tree->gtFlags &= ~GTF_IND_ARR_LEN;
                     tree->gtOp.gtOp1 = addr;
 
                     return fgMorphSmpOp(tree);
@@ -6741,11 +6736,6 @@ GenTree* Compiler::fgMorphField(GenTree* tree, MorphAddrContext* mac)
         }
     }
     noway_assert(tree->gtOper == GT_IND);
-    // The GTF_FLD_NULLCHECK is the same bit as GTF_IND_ARR_LEN.
-    // We must clear it when we transform the node.
-    // TODO-Cleanup: It appears that the GTF_FLD_NULLCHECK flag is never checked, and note
-    // that the logic above does its own checking to determine whether a nullcheck is needed.
-    tree->gtFlags &= ~GTF_IND_ARR_LEN;
 
     GenTree* res = fgMorphSmpOp(tree);
 

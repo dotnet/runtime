@@ -138,7 +138,7 @@
 
 
 #ifndef ALLOC_ALIGN_CONSTANT
-#define ALLOC_ALIGN_CONSTANT ((1<<LOG2_PTRSIZE)-1)
+#define ALLOC_ALIGN_CONSTANT (sizeof(void*)-1)
 #endif
 
 

@@ -657,7 +657,7 @@ void Compiler::eeSetLVdone()
     assert(opts.compScopeInfo);
 
 #ifdef DEBUG
-    if (verbose)
+    if (verbose || opts.dspDebugInfo)
     {
         eeDispVars(info.compMethodHnd, eeVarsCount, (ICorDebugInfo::NativeVarInfo*)eeVars);
     }
@@ -943,7 +943,7 @@ void Compiler::eeSetLIdone()
     assert(opts.compDbgInfo);
 
 #if defined(DEBUG)
-    if (verbose)
+    if (verbose || opts.dspDebugInfo)
     {
         eeDispLineInfos();
     }
