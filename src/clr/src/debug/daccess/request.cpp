@@ -1955,6 +1955,33 @@ ClrDataAccess::GetMethodTableFieldData(CLRDATA_ADDRESS mt, struct DacpMethodTabl
 }
 
 HRESULT
+ClrDataAccess::GetMethodTableCollectibleData(CLRDATA_ADDRESS mt, struct DacpMethodTableCollectibleData *data)
+{
+    if (mt == 0 || data == NULL)
+        return E_INVALIDARG;
+
+    SOSDacEnter();
+
+    MethodTable* pMT = PTR_MethodTable(TO_TADDR(mt));
+    BOOL bIsFree = FALSE;
+    if (!pMT || !DacValidateMethodTable(pMT, bIsFree))
+    {
+        hr = E_INVALIDARG;
+    }
+    else
+    {
+        data->bCollectible = pMT->Collectible();
+        if (data->bCollectible)
+        {
+            data->LoaderAllocatorObjectHandle = pMT->GetLoaderAllocatorObjectHandle();
+        }
+    }
+
+    SOSDacLeave();
+    return hr;
+}
+
+HRESULT
 ClrDataAccess::GetMethodTableTransparencyData(CLRDATA_ADDRESS mt, struct DacpMethodTableTransparencyData *pTransparencyData)
 {
     if (mt == 0 || pTransparencyData == NULL)

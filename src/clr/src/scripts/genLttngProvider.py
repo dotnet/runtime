@@ -521,7 +521,7 @@ def generateLttngFiles(etwmanifest,eventprovider_directory):
         add_subdirectory(tracepointprovider)
 
         # Install the static eventprovider library
-        install(TARGETS eventprovider DESTINATION lib)
+        _install(TARGETS eventprovider DESTINATION lib)
         """)
 
 #TracepointProvider  Cmake

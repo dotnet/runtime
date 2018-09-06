@@ -151,6 +151,7 @@ CONFIG_METHODSET(JitEHDump, W("JitEHDump"))                  // Dump the EH tabl
 CONFIG_METHODSET(JitExclude, W("JitExclude"))
 CONFIG_METHODSET(JitForceProcedureSplitting, W("JitForceProcedureSplitting"))
 CONFIG_METHODSET(JitGCDump, W("JitGCDump"))
+CONFIG_METHODSET(JitDebugDump, W("JitDebugDump"))
 CONFIG_METHODSET(JitHalt, W("JitHalt")) // Emits break instruction into jitted code
 CONFIG_METHODSET(JitImportBreak, W("JitImportBreak"))
 CONFIG_METHODSET(JitInclude, W("JitInclude"))
@@ -171,6 +172,7 @@ CONFIG_METHODSET(NgenDump, W("NgenDump"))     // Same as JitDump, but for ngen
 CONFIG_METHODSET(NgenDumpIR, W("NgenDumpIR")) // Same as JitDumpIR, but for ngen
 CONFIG_METHODSET(NgenEHDump, W("NgenEHDump")) // Dump the EH table for the method, as reported to the VM
 CONFIG_METHODSET(NgenGCDump, W("NgenGCDump"))
+CONFIG_METHODSET(NgenDebugDump, W("NgenDebugDump"))
 CONFIG_METHODSET(NgenUnwindDump, W("NgenUnwindDump")) // Dump the unwind codes for the method
 ///
 /// JIT
