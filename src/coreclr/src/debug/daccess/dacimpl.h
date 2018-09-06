@@ -862,7 +862,8 @@ class ClrDataAccess
       public ISOSDacInterface2,
       public ISOSDacInterface3,
       public ISOSDacInterface4,
-      public ISOSDacInterface5
+      public ISOSDacInterface5,
+      public ISOSDacInterface6
 {
 public:
     ClrDataAccess(ICorDebugDataTarget * pTarget, ICLRDataTarget * pLegacyTarget=0);
@@ -1207,6 +1208,9 @@ public:
 
     // ISOSDacInterface5
     virtual HRESULT STDMETHODCALLTYPE GetTieredVersions(CLRDATA_ADDRESS methodDesc, int rejitId, struct DacpTieredVersionData *nativeCodeAddrs, int cNativeCodeAddrs, int *pcNativeCodeAddrs);
+
+    // ISOSDacInterface6
+    virtual HRESULT STDMETHODCALLTYPE GetMethodTableCollectibleData(CLRDATA_ADDRESS mt, struct DacpMethodTableCollectibleData *data);
 
     //
     // ClrDataAccess.
