@@ -3,11 +3,12 @@
   <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), Directory.Build.props))\Directory.Build.props" />
   <ItemGroup>
     <ProjectReference Include="..\ref\System.Security.Cryptography.Pkcs.csproj">
-      <SupportedFramework>net461;netcoreapp3.0;$(AllXamarinFrameworks)</SupportedFramework>
+      <SupportedFramework>net461;netcoreapp3.0</SupportedFramework>
     </ProjectReference>
     <ProjectReference Include="..\src\System.Security.Cryptography.Pkcs.csproj" />
     <HarvestIncludePaths Include="ref/net46;lib/net46;runtimes/win/lib/net46" />
     <HarvestIncludePaths Include="ref/netstandard1.3;runtimes/win/lib/netstandard1.3;lib/netstandard1.3" />
+    <HarvestIncludePaths Include="ref/netstandard2.0" />
     <HarvestIncludePaths Include="ref/netcoreapp2.1;lib/netcoreapp2.1;runtimes/win/lib/netcoreapp2.1" />
     <!--
       Suppress NETStandard.Library collpasing as it add more dependencies then needed in some

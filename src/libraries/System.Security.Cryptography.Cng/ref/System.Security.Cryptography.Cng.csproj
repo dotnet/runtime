@@ -7,17 +7,10 @@
     <!-- FEATURE_ECDH_DERIVEFROM is technically also available on net462+, but it doesn't require being enabled since it is a facade -->
     <DefineConstants Condition="'$(TargetGroup)' == 'uap' Or '$(TargetGroup)' == 'netcoreapp'">$(DefineConstants);FEATURE_ECDH_DERIVEFROM</DefineConstants>
     <IsPartialFacadeAssembly Condition="'$(TargetsNetFx)' == 'true'">true</IsPartialFacadeAssembly>
-    <!-- We must pin the netstandard2.0 version to match what was shipped in netcoreapp2.0
-         If we decided to add more Apis to that version of the library we need to also start
-         producing the netcoreapp2.0 src library again instead of harvesting it.
-     -->
-    <AssemblyVersion Condition="'$(TargetGroup)' == 'netstandard'">4.3.0.0</AssemblyVersion>
-    <Configurations>net461-Debug;net461-Release;net462-Debug;net462-Release;net47-Debug;net47-Release;netcoreapp-Debug;netcoreapp-Release;netfx-Debug;netfx-Release;netstandard-Debug;netstandard-Release;uap-Debug;uap-Release</Configurations>
+    <Configurations>net461-Debug;net461-Release;net462-Debug;net462-Release;net47-Debug;net47-Release;netcoreapp-Debug;netcoreapp-Release;netfx-Debug;netfx-Release;uap-Debug;uap-Release</Configurations>
   </PropertyGroup>
   <ItemGroup>
     <Compile Include="System.Security.Cryptography.Cng.cs" />
-  </ItemGroup>
-  <ItemGroup Condition="'$(TargetGroup)' != 'netstandard' AND '$(TargetGroup)' != 'netstandard1.3' AND '$(TargetGroup)' != 'netstandard1.4'">
     <Compile Include="System.Security.Cryptography.Cng.ECDiffieHellman.cs" />
   </ItemGroup>
   <ItemGroup Condition="'$(IsPartialFacadeAssembly)' == 'true'">
