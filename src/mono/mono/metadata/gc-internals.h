@@ -276,7 +276,7 @@ MonoMethod* mono_gc_get_write_barrier (void);
 
 /* Fast valuetype copy */
 /* WARNING: [dest, dest + size] must be within the bounds of a single type, otherwise the GC will lose remset entries */
-void mono_gc_wbarrier_range_copy (gpointer dest, gconstpointer src, int size);
+G_EXTERN_C void mono_gc_wbarrier_range_copy (gpointer dest, gconstpointer src, int size);
 
 typedef void (*MonoRangeCopyFunction)(gpointer, gconstpointer, int size);
 

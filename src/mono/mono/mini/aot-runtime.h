@@ -255,10 +255,10 @@ mono_aot_register_jit_icall (const char *name, T addr)
 #endif // __cplusplus
 
 guint32  mono_aot_find_method_index         (MonoMethod *method);
-void     mono_aot_init_llvm_method          (gpointer aot_module, guint32 method_index);
-void     mono_aot_init_gshared_method_this  (gpointer aot_module, guint32 method_index, MonoObject *this_ins);
-void     mono_aot_init_gshared_method_mrgctx  (gpointer aot_module, guint32 method_index, MonoMethodRuntimeGenericContext *rgctx);
-void     mono_aot_init_gshared_method_vtable  (gpointer aot_module, guint32 method_index, MonoVTable *vtable);
+G_EXTERN_C void mono_aot_init_llvm_method          (gpointer aot_module, guint32 method_index);
+G_EXTERN_C void mono_aot_init_gshared_method_this  (gpointer aot_module, guint32 method_index, MonoObject *this_ins);
+G_EXTERN_C void mono_aot_init_gshared_method_mrgctx  (gpointer aot_module, guint32 method_index, MonoMethodRuntimeGenericContext *rgctx);
+G_EXTERN_C void mono_aot_init_gshared_method_vtable  (gpointer aot_module, guint32 method_index, MonoVTable *vtable);
 GHashTable *mono_aot_get_weak_field_indexes (MonoImage *image);
 
 /* This is an exported function */
