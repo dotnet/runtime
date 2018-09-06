@@ -161,7 +161,7 @@ C_FUNC(\Name\()_End):
         .endif
 
         __PWTB_StackAlloc = __PWTB_TransitionBlock
-        __PWTB_ArgumentRegisters = __PWTB_StackAlloc + 96
+        __PWTB_ArgumentRegisters = __PWTB_StackAlloc + 104
         __PWTB_ArgumentRegister_FirstArg = __PWTB_ArgumentRegisters + 8
 
         PROLOG_SAVE_REG_PAIR_INDEXED   fp, lr, -176
@@ -192,11 +192,11 @@ C_FUNC(\Name\()_End):
 // Reserve 64 bytes of memory before calling  SAVE_ARGUMENT_REGISTERS
 .macro SAVE_ARGUMENT_REGISTERS reg, ofs
 
-        stp                    x0, x1, [\reg, #(\ofs)]
-        stp                    x2, x3, [\reg, #(\ofs + 16)]
-        stp                    x4, x5, [\reg, #(\ofs + 32)]
-        stp                    x6, x7, [\reg, #(\ofs + 48)]
-        str                    x8, [\reg, #(\ofs + 64)]
+        str                    x8, [\reg, #(\ofs)]
+        stp                    x0, x1, [\reg, #(\ofs + 8)]
+        stp                    x2, x3, [\reg, #(\ofs + 24)]
+        stp                    x4, x5, [\reg, #(\ofs + 40)]
+        stp                    x6, x7, [\reg, #(\ofs + 56)]
 
 .endm
 
@@ -212,11 +212,11 @@ C_FUNC(\Name\()_End):
 
 .macro RESTORE_ARGUMENT_REGISTERS reg, ofs
 
-        ldp                    x0, x1, [\reg, #(\ofs)]
-        ldp                    x2, x3, [\reg, #(\ofs + 16)]
-        ldp                    x4, x5, [\reg, #(\ofs + 32)]
-        ldp                    x6, x7, [\reg, #(\ofs + 48)]
-        ldr                    x8, [\reg, #(\ofs + 64)]
+        ldr                    x8, [\reg, #(\ofs)]
+        ldp                    x0, x1, [\reg, #(\ofs + 8)]
+        ldp                    x2, x3, [\reg, #(\ofs + 24)]
+        ldp                    x4, x5, [\reg, #(\ofs + 40)]
+        ldp                    x6, x7, [\reg, #(\ofs + 56)]
 
 .endm
 
