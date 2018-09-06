@@ -925,8 +925,8 @@ namespace System.Runtime.Intrinsics.X86
     {
         internal Pclmulqdq() { }
         public new static bool IsSupported { get { throw null; } }
-        public static Vector128<long> CarryLessMultiply(Vector128<long> left, Vector128<long> right, byte control) { throw null; }
-        public static Vector128<ulong> CarryLessMultiply(Vector128<ulong> left, Vector128<ulong> right, byte control) { throw null; }
+        public static Vector128<long> CarrylessMultiply(Vector128<long> left, Vector128<long> right, byte control) { throw null; }
+        public static Vector128<ulong> CarrylessMultiply(Vector128<ulong> left, Vector128<ulong> right, byte control) { throw null; }
     }
     public abstract class Popcnt : Sse42
     {
