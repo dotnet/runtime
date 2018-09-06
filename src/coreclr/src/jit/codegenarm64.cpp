@@ -3712,8 +3712,8 @@ void CodeGen::genEmitHelperCall(unsigned helper, int argSize, emitAttr retSize, 
                                gcInfo.gcRegByrefSetCur, BAD_IL_OFFSET, /* IL offset */
                                callTarget,                             /* ireg */
                                REG_NA, 0, 0,                           /* xreg, xmul, disp */
-                               false,                                  /* isJump */
-                               emitter::emitNoGChelper(helper));
+                               false                                   /* isJump */
+                               );
 
     regMaskTP killMask = compiler->compHelperCallKillSet((CorInfoHelpFunc)helper);
     regSet.verifyRegistersUsed(killMask);
