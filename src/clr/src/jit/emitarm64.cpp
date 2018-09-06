@@ -7392,9 +7392,7 @@ void emitter::emitIns_Call(EmitCallType          callType,
                            regNumber        xreg /* = REG_NA */,
                            unsigned         xmul /* = 0     */,
                            ssize_t          disp /* = 0     */,
-                           bool             isJump /* = false */,
-                           bool             isNoGC /* = false */,
-                           bool             isProfLeaveCB /* = false */)
+                           bool             isJump /* = false */)
 {
     /* Sanity check the arguments depending on callType */
 
@@ -7411,44 +7409,8 @@ void emitter::emitIns_Call(EmitCallType          callType,
     // a sanity test.
     assert((unsigned)abs(argSize) <= codeGen->genStackLevel);
 
-    int        argCnt;
-    instrDesc* id;
-
-    /* This is the saved set of registers after a normal call */
-    regMaskTP savedSet = RBM_CALLEE_SAVED;
-
-    /* some special helper calls have a different saved set registers */
-
-    if (isNoGC)
-    {
-        assert(emitNoGChelper(Compiler::eeGetHelperNum(methHnd)));
-
-        // Get the set of registers that this call kills and remove it from the saved set.
-        savedSet = RBM_ALLINT & ~emitComp->compNoGCHelperCallKillSet(Compiler::eeGetHelperNum(methHnd));
-
-        // In case of Leave profiler callback, we need to preserve liveness of REG_PROFILER_RET_SCRATCH
-        if (isProfLeaveCB)
-        {
-            savedSet |= RBM_PROFILER_RET_SCRATCH;
-        }
-
-#ifdef DEBUG
-        if (emitComp->verbose)
-        {
-            printf("NOGC Call: savedSet=");
-            printRegMaskInt(savedSet);
-            emitDispRegSet(savedSet);
-            printf("\n");
-        }
-#endif
-    }
-    else
-    {
-        assert(!emitNoGChelper(Compiler::eeGetHelperNum(methHnd)));
-    }
-
-    /* Trim out any callee-trashed registers from the live set */
-
+    // Trim out any callee-trashed registers from the live set.
+    regMaskTP savedSet = emitGetGCRegsSavedOrModified(methHnd);
     gcrefRegs &= savedSet;
     byrefRegs &= savedSet;
 
@@ -7467,9 +7429,6 @@ void emitter::emitIns_Call(EmitCallType          callType,
     }
 #endif
 
-    assert(argSize % REGSIZE_BYTES == 0);
-    argCnt = (int)(argSize / (int)REGSIZE_BYTES);
-
     /* Managed RetVal: emit sequence point for the call */
     if (emitComp->opts.compDbgInfo && ilOffset != BAD_IL_OFFSET)
     {
@@ -7481,6 +7440,10 @@ void emitter::emitIns_Call(EmitCallType          callType,
         on whether this is a direct/indirect call, and whether we need to
         record an updated set of live GC variables.
      */
+    instrDesc* id;
+
+    assert(argSize % REGSIZE_BYTES == 0);
+    int argCnt = (int)(argSize / (int)REGSIZE_BYTES);
 
     if (callType >= EC_INDIR_R)
     {
@@ -7506,11 +7469,11 @@ void emitter::emitIns_Call(EmitCallType          callType,
     emitThisGCrefRegs = gcrefRegs;
     emitThisByrefRegs = byrefRegs;
 
+    id->idSetIsNoGC(emitNoGChelper(methHnd));
+
     /* Set the instruction - special case jumping a function */
     instruction ins;
     insFormat   fmt = IF_NONE;
-
-    id->idSetIsNoGC(isNoGC);
 
     /* Record the address: method, indirection, or funcptr */
 

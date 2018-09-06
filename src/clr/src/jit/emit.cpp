@@ -2222,17 +2222,22 @@ emitter::instrDesc* emitter::emitNewInstrCnsDsp(emitAttr size, target_ssize_t cn
     }
 }
 
-/*****************************************************************************
- *
- *  Returns true if garbage-collection won't happen within the helper call.
- *  Don't need to record live pointers for such call sites.
- */
-
-bool emitter::emitNoGChelper(unsigned IHX)
+//------------------------------------------------------------------------
+// emitNoGChelper: Returns true if garbage collection won't happen within the helper call.
+//
+// Notes:
+//  There is no need to record live pointers for such call sites.
+//
+// Arguments:
+//   helpFunc - a helper signature for the call, can be CORINFO_HELP_UNDEF, that means that the call is not a helper.
+//
+// Return value:
+//   true if GC can't happen within this call, false otherwise.
+bool emitter::emitNoGChelper(CorInfoHelpFunc helpFunc)
 {
     // TODO-Throughput: Make this faster (maybe via a simple table of bools?)
 
-    switch (IHX)
+    switch (helpFunc)
     {
         case CORINFO_HELP_UNDEF:
             return false;
@@ -2276,11 +2281,32 @@ bool emitter::emitNoGChelper(unsigned IHX)
         case CORINFO_HELP_GETSHARED_NONGCSTATIC_BASE_NOCTOR:
 
         case CORINFO_HELP_INIT_PINVOKE_FRAME:
-
             return true;
-    }
 
-    return false;
+        default:
+            return false;
+    }
+}
+
+//------------------------------------------------------------------------
+// emitNoGChelper: Returns true if garbage collection won't happen within the helper call.
+//
+// Notes:
+//  There is no need to record live pointers for such call sites.
+//
+// Arguments:
+//   methHnd - a method handle for the call.
+//
+// Return value:
+//   true if GC can't happen within this call, false otherwise.
+bool emitter::emitNoGChelper(CORINFO_METHOD_HANDLE methHnd)
+{
+    CorInfoHelpFunc helpFunc = Compiler::eeGetHelperNum(methHnd);
+    if (helpFunc == CORINFO_HELP_UNDEF)
+    {
+        return false;
+    }
+    return emitNoGChelper(helpFunc);
 }
 
 /*****************************************************************************
@@ -7277,3 +7303,46 @@ const char* emitter::emitOffsetToLabel(unsigned offs)
 }
 
 #endif // DEBUG
+
+//------------------------------------------------------------------------
+// emitGetGCRegsSavedOrModified: Returns the set of registers that keeps gcrefs and byrefs across the call.
+//
+// Notes: it returns union of two sets:
+//        1) registers that could contain GC/byRefs before the call and call doesn't touch them;
+//        2) registers that contain GC/byRefs before the call and call modifies them, but they still
+//           contain GC/byRefs.
+//
+// Arguments:
+//   methHnd - the method handler of the call.
+//
+// Return value:
+//   the saved set of registers.
+//
+regMaskTP emitter::emitGetGCRegsSavedOrModified(CORINFO_METHOD_HANDLE methHnd)
+{
+    // Is it a helper with a special saved set?
+    bool isNoGCHelper = emitNoGChelper(methHnd);
+    if (isNoGCHelper)
+    {
+        CorInfoHelpFunc helpFunc = Compiler::eeGetHelperNum(methHnd);
+
+        // Get the set of registers that this call kills and remove it from the saved set.
+        regMaskTP savedSet = RBM_ALLINT & ~emitComp->compNoGCHelperCallKillSet(helpFunc);
+
+#ifdef DEBUG
+        if (emitComp->verbose)
+        {
+            printf("NoGC Call: savedSet=");
+            printRegMaskInt(savedSet);
+            emitDispRegSet(savedSet);
+            printf("\n");
+        }
+#endif
+        return savedSet;
+    }
+    else
+    {
+        // This is the saved set of registers after a normal call.
+        return RBM_CALLEE_SAVED;
+    }
+}

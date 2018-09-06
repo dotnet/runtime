@@ -334,14 +334,12 @@ void emitIns_Call(EmitCallType          callType,
                   VARSET_VALARG_TP ptrVars,
                   regMaskTP        gcrefRegs,
                   regMaskTP        byrefRegs,
-                  IL_OFFSETX       ilOffset      = BAD_IL_OFFSET,
-                  regNumber        ireg          = REG_NA,
-                  regNumber        xreg          = REG_NA,
-                  unsigned         xmul          = 0,
-                  ssize_t          disp          = 0,
-                  bool             isJump        = false,
-                  bool             isNoGC        = false,
-                  bool             isProfLeaveCB = false);
+                  IL_OFFSETX       ilOffset = BAD_IL_OFFSET,
+                  regNumber        ireg     = REG_NA,
+                  regNumber        xreg     = REG_NA,
+                  unsigned         xmul     = 0,
+                  ssize_t          disp     = 0,
+                  bool             isJump   = false);
 
 /*****************************************************************************
  *
