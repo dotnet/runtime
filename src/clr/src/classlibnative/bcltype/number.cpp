@@ -18,13 +18,6 @@ typedef wchar_t wchar;
 #define SCALE_NAN 0x80000000
 #define SCALE_INF 0x7FFFFFFF
 
-#if defined(_TARGET_X86_) && !defined(FEATURE_PAL)
-
-extern "C" void _cdecl /*__stdcall*/ DoubleToNumber(double value, int precision, NUMBER* number);
-extern "C" void _cdecl /*__stdcall*/ NumberToDouble(NUMBER* number, double* value);
-
-#else // _TARGET_X86_ && !FEATURE_PAL
-
 void Dragon4( double value, int count, int* dec, int* sign, wchar_t* digits )
 {
     // ========================================================================================================================================
@@ -739,8 +732,6 @@ void NumberToDouble(NUMBER* number, double* value)
 done:
     if (number->sign) *(UINT64*)value |= I64(0x8000000000000000);
 }
-
-#endif // _TARGET_X86_ && !FEATURE_PAL
 
 FCIMPL3_VII(void, COMNumber::DoubleToNumberFC, double value, int precision, NUMBER* number)
 {
