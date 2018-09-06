@@ -1495,8 +1495,7 @@ CI_DISABLED_TESTS = \
 
 # failing tests which we temporarily disable for PRs
 # so they don't interfere with other people's work
-CI_PR_DISABLED_TESTS = \
-	appdomain-threadpool-unload.exe
+CI_PR_DISABLED_TESTS =
 
 # FIXME Hybrid Suspend - see https://github.com/mono/mono/issues/9959
 # CI_PR_DISABLED_TESTS += sgen-new-threads-collect.exe

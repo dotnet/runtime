@@ -2774,7 +2774,7 @@ ves_icall_System_Threading_Thread_Resume (MonoThreadObjectHandle thread_handle, 
 		mono_error_set_exception_thread_not_started_or_dead (error);
 }
 
-static gboolean
+gboolean
 mono_threads_is_critical_method (MonoMethod *method)
 {
 	switch (method->wrapper_type) {

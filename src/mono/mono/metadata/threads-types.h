@@ -498,6 +498,9 @@ mono_thread_internal_is_current (MonoInternalThread *internal);
 gboolean
 mono_threads_is_current_thread_in_protected_block (void);
 
+gboolean
+mono_threads_is_critical_method (MonoMethod *method);
+
 gpointer
 mono_threads_enter_gc_unsafe_region_unbalanced_internal (MonoStackData *stackdata);
 

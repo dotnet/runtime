@@ -779,7 +779,7 @@ fill_in_trace (MonoException *exception, InterpFrame *frame)
 
 #define EXCEPTION_CHECKPOINT	\
 	do {										\
-		if (*mono_thread_interruption_request_flag ()) {			\
+		if (*mono_thread_interruption_request_flag () && !mono_threads_is_critical_method (rtm->method)) { \
 			MonoException *exc = mono_thread_interruption_checkpoint ();	\
 			if (exc)							\
 				THROW_EX (exc, ip);					\
@@ -2639,12 +2639,7 @@ interp_exec_method_full (InterpFrame *frame, ThreadContext *context, guint16 *st
 		do_transform_method (frame, context);
 		if (frame->ex)
 			THROW_EX (frame->ex, NULL);
-		if (*mono_thread_interruption_request_flag ()) {
-			MonoException *exc = mono_thread_interruption_checkpoint ();
-			if (exc)
-				THROW_EX (exc, NULL);
-		}
-
+		EXCEPTION_CHECKPOINT;
 	}
 
 	if (!start_with_ip) {
