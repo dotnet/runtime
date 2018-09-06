@@ -8,7 +8,6 @@
     <Compile Include="$(CommonTestPath)\System\Security\Cryptography\ByteUtils.cs">
       <Link>CommonTest\System\Security\Cryptography\ByteUtils.cs</Link>
     </Compile>
-    <Compile Include="AlgorithmIdentifierTest.cs" />
     <Compile Include="Certificates.cs" />
     <Compile Include="CertLoader.cs" />
     <Compile Include="CertLoader.Settings.cs" />
@@ -35,6 +34,7 @@
     <Compile Include="SignedCms\SignerInfoTests.cs" />
   </ItemGroup>
   <ItemGroup Condition="'$(TargetGroup)' == 'netcoreapp'">
+    <Compile Include="AlgorithmIdentifierTest.cs" />
     <Compile Include="EnvelopedCms\DecryptTestsUsingExplicitPrivateKey.cs" />
     <Compile Include="EnvelopedCms\SubjectIdentifierTests.cs" />
     <Compile Include="Pkcs12\CertBagTests.cs" />
