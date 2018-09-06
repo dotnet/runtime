@@ -77,6 +77,7 @@ Copyright (c) .NET Foundation. All rights reserved.
       <_IlasmSwitches Condition="'$(DebugType)' == 'Impl'">$(_IlasmSwitches) -DEBUG=IMPL</_IlasmSwitches>
       <_IlasmSwitches Condition="'$(DebugType)' == 'PdbOnly'">$(_IlasmSwitches) -DEBUG=OPT</_IlasmSwitches>
       <_IlasmSwitches Condition="'$(Optimize)' == 'True'">$(_IlasmSwitches) -OPTIMIZE</_IlasmSwitches>
+      <_IlasmSwitches Condition="'$(IlasmResourceFile)' != ''">$(_IlasmSwitches) -RESOURCES=$(IlasmResourceFile)</_IlasmSwitches>
     </PropertyGroup>
 
     <!-- Having to copy these binaries is really inefficient. https://github.com/dotnet/coreclr/issues/18892 tracks making the ilasm tool self-contained  -->

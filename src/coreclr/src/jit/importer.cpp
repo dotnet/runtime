@@ -3710,7 +3710,7 @@ GenTree* Compiler::impIntrinsic(GenTree*                newobjThis,
             op1                                    = impPopStack().val;
             GenTree*             thisptr           = newobjThis;
             CORINFO_FIELD_HANDLE fldHnd            = info.compCompHnd->getFieldInClass(clsHnd, 0);
-            GenTree*             field             = gtNewFieldRef(TYP_BYREF, fldHnd, thisptr, 0, false);
+            GenTree*             field             = gtNewFieldRef(TYP_BYREF, fldHnd, thisptr, 0);
             GenTree*             assign            = gtNewAssignNode(field, op1);
             GenTree*             byReferenceStruct = gtCloneExpr(thisptr->gtGetOp1());
             assert(byReferenceStruct != nullptr);
@@ -3723,7 +3723,7 @@ GenTree* Compiler::impIntrinsic(GenTree*                newobjThis,
         {
             op1                         = impPopStack().val;
             CORINFO_FIELD_HANDLE fldHnd = info.compCompHnd->getFieldInClass(clsHnd, 0);
-            GenTree*             field  = gtNewFieldRef(TYP_BYREF, fldHnd, op1, 0, false);
+            GenTree*             field  = gtNewFieldRef(TYP_BYREF, fldHnd, op1, 0);
             retNode                     = field;
             break;
         }
@@ -3775,7 +3775,7 @@ GenTree* Compiler::impIntrinsic(GenTree*                newobjThis,
             // Bounds check
             CORINFO_FIELD_HANDLE lengthHnd    = info.compCompHnd->getFieldInClass(clsHnd, 1);
             const unsigned       lengthOffset = info.compCompHnd->getFieldOffset(lengthHnd);
-            GenTree*             length       = gtNewFieldRef(TYP_INT, lengthHnd, ptrToSpan, lengthOffset, false);
+            GenTree*             length       = gtNewFieldRef(TYP_INT, lengthHnd, ptrToSpan, lengthOffset);
             GenTree*             boundsCheck  = new (this, GT_ARR_BOUNDS_CHECK)
                 GenTreeBoundsChk(GT_ARR_BOUNDS_CHECK, TYP_VOID, index, length, SCK_RNGCHK_FAIL);
 
@@ -3785,7 +3785,7 @@ GenTree* Compiler::impIntrinsic(GenTree*                newobjThis,
             GenTree*             mulNode     = gtNewOperNode(GT_MUL, TYP_I_IMPL, indexIntPtr, sizeofNode);
             CORINFO_FIELD_HANDLE ptrHnd      = info.compCompHnd->getFieldInClass(clsHnd, 0);
             const unsigned       ptrOffset   = info.compCompHnd->getFieldOffset(ptrHnd);
-            GenTree*             data        = gtNewFieldRef(TYP_BYREF, ptrHnd, ptrToSpanClone, ptrOffset, false);
+            GenTree*             data        = gtNewFieldRef(TYP_BYREF, ptrHnd, ptrToSpanClone, ptrOffset);
             GenTree*             result      = gtNewOperNode(GT_ADD, TYP_BYREF, data, mulNode);
 
             // Prepare result
@@ -13698,14 +13698,7 @@ void Compiler::impImportBlockCode(BasicBlock* block)
                     case CORINFO_FIELD_INSTANCE_WITH_BASE:
 #endif
                     {
-                        bool nullcheckNeeded = false;
-
                         obj = impCheckForNullPointer(obj);
-
-                        if (isLoadAddress && (obj->gtType == TYP_BYREF) && fgAddrCouldBeNull(obj))
-                        {
-                            nullcheckNeeded = true;
-                        }
 
                         // If the object is a struct, what we really want is
                         // for the field to operate on the address of the struct.
@@ -13717,7 +13710,7 @@ void Compiler::impImportBlockCode(BasicBlock* block)
                         }
 
                         /* Create the data member node */
-                        op1 = gtNewFieldRef(lclTyp, resolvedToken.hField, obj, fieldInfo.offset, nullcheckNeeded);
+                        op1 = gtNewFieldRef(lclTyp, resolvedToken.hField, obj, fieldInfo.offset);
 
 #ifdef FEATURE_READYTORUN_COMPILER
                         if (fieldInfo.fieldAccessor == CORINFO_FIELD_INSTANCE_WITH_BASE)
@@ -15525,7 +15518,6 @@ void Compiler::impImportBlockCode(BasicBlock* block)
                     op1 = gtNewOperNode(GT_ADD, TYP_BYREF, op1,
                                         gtNewIconNode(OFFSETOF__CORINFO_Array__length, TYP_I_IMPL));
                     op1 = gtNewIndir(TYP_INT, op1);
-                    op1->gtFlags |= GTF_IND_ARR_LEN;
                 }
 
                 /* Push the result back on the stack */
