@@ -11,19 +11,21 @@ namespace System.Net.Http.Functional.Tests
 {
     public class HuffmanDecodingTests
     {
-        private static readonly Func<byte[], int, int, byte[], int> s_decodeDelegate = GetDecodeDelegate();
+        delegate int DecodeDelegate(ReadOnlySpan<byte> src, Span<byte> dst);
 
-        private static Func<byte[], int, int, byte[], int> GetDecodeDelegate()
+        private static readonly DecodeDelegate s_decodeDelegate = GetDecodeDelegate();
+
+        private static DecodeDelegate GetDecodeDelegate()
         {
             Assembly assembly = typeof(HttpClient).Assembly;
             Type huffmanType = assembly.GetType("System.Net.Http.HPack.Huffman");
             MethodInfo decodeMethod = huffmanType.GetMethod("Decode", BindingFlags.Static | BindingFlags.Public | BindingFlags.NonPublic);
-            return (Func<byte[], int, int, byte[], int>)Delegate.CreateDelegate(typeof(Func<byte[], int, int, byte[], int>), decodeMethod);
+            return (DecodeDelegate)Delegate.CreateDelegate(typeof(DecodeDelegate), decodeMethod);
         }
 
-        private static int Decode(byte[] source, int length, byte[] destination)
+        private static int Decode(ReadOnlySpan<byte> source, Span<byte> destination)
         {
-            return s_decodeDelegate(source, 0, length, destination);
+            return s_decodeDelegate(source, destination);
         }
 
         private static readonly (uint code, int bitLength)[] s_encodingTable = new (uint code, int bitLength)[]
@@ -337,7 +339,7 @@ namespace System.Net.Http.Functional.Tests
             // Worst case decoding is an output byte per 5 input bits, so make the encoded buffer 2 times as big
             byte[] decoded = new byte[encoded.Length * 2];
 
-            int decodedByteCount = Decode(encoded, encodedByteCount, decoded);
+            int decodedByteCount = Decode(new ReadOnlySpan<byte>(encoded, 0, encodedByteCount), decoded);
 
             Assert.Equal(input.Length, decodedByteCount);
             Assert.Equal(input, decoded.Take(decodedByteCount));
@@ -352,7 +354,7 @@ namespace System.Net.Http.Functional.Tests
             // Worst case decoding is an output byte per 5 input bits, so make the encoded buffer 2 times as big
             byte[] decoded = new byte[encoded.Length * 2];
 
-            Assert.Throws(s_huffmanDecodingExceptionType, () => Decode(encoded, encoded.Length, decoded));
+            Assert.Throws(s_huffmanDecodingExceptionType, () => Decode(encoded, decoded));
         }
 
         // This input sequence will encode to 17 bits, thus offsetting the next character to encode
