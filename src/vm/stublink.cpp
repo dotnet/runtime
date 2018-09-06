@@ -1624,7 +1624,7 @@ bool StubLinker::EmitUnwindInfo(Stub* pStub, int globalsize, LoaderHeap* pHeap)
         *pUnwindCodes++ = (BYTE)0xFF; // end
     }
 
-    int epilogUnwindCodeIndex = 0;
+    ptrdiff_t epilogUnwindCodeIndex = 0;
 
     //epilog differs from prolog
     if(m_cbStackFrame >= 4096)
@@ -1659,7 +1659,7 @@ bool StubLinker::EmitUnwindInfo(Stub* pStub, int globalsize, LoaderHeap* pHeap)
     }
 
     // Number of 32-bit unwind codes
-    int codeWordsCount = (ALIGN_UP((size_t)pUnwindCodes, sizeof(void*)) - (size_t)pUnwindInfo - sizeof(DWORD))/4;
+    size_t codeWordsCount = (ALIGN_UP((size_t)pUnwindCodes, sizeof(void*)) - (size_t)pUnwindInfo - sizeof(DWORD))/4;
 
     _ASSERTE(epilogUnwindCodeIndex < 32);
 
@@ -1669,8 +1669,8 @@ bool StubLinker::EmitUnwindInfo(Stub* pStub, int globalsize, LoaderHeap* pHeap)
     *(DWORD *)pUnwindInfo = 
         ((functionLength) / 2) |
         (1 << 21) |
-        (epilogUnwindCodeIndex << 23)|
-        (codeWordsCount << 28);  
+        ((int)epilogUnwindCodeIndex << 23)|
+        ((int)codeWordsCount << 28);
 
 #elif defined(_TARGET_ARM64_)
     if (!m_fProlog)
