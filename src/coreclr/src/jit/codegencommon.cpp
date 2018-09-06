@@ -506,9 +506,7 @@ void CodeGenInterface::genUpdateRegLife(const LclVarDsc* varDsc, bool isBorn, bo
 }
 
 //----------------------------------------------------------------------
-// compNoGCHelperCallKillSet:
-//
-// Gets a register mask that represents the kill set for a helper call.
+// compHelperCallKillSet: Gets a register mask that represents the kill set for a helper call.
 // Not all JIT Helper calls follow the standard ABI on the target architecture.
 //
 // TODO-CQ: Currently this list is incomplete (not all helpers calls are
@@ -667,6 +665,9 @@ regMaskTP Compiler::compNoGCHelperCallKillSet(CorInfoHelpFunc helper)
         case CORINFO_HELP_ASSIGN_REF:
         case CORINFO_HELP_CHECKED_ASSIGN_REF:
             return RBM_CALLEE_GCTRASH_WRITEBARRIER;
+        case CORINFO_HELP_PROF_FCN_LEAVE:
+            // In case of Leave profiler callback, we need to preserve liveness of REG_PROFILER_RET_SCRATCH on ARMARCH.
+            return RBM_CALLEE_TRASH_NOGC & ~RBM_PROFILER_RET_SCRATCH;
 #endif
 
 #if defined(_TARGET_X86_)
@@ -9139,7 +9140,8 @@ void CodeGen::genFnEpilog(BasicBlock* block)
                                        gcInfo.gcRegGCrefSetCur,
                                        gcInfo.gcRegByrefSetCur,
                                        BAD_IL_OFFSET, REG_NA, REG_NA, 0, 0,  /* iloffset, ireg, xreg, xmul, disp */
-                                       true); /* isJump */
+                                       true /* isJump */
+            );
             // clang-format on
         }
 #if FEATURE_FASTTAILCALL

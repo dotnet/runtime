@@ -1849,8 +1849,7 @@ void CodeGen::genEmitCall(int                   callType,
                           MULTIREG_HAS_SECOND_GC_RET_ONLY_ARG(emitAttr secondRetSize),
                           IL_OFFSETX            ilOffset,
                           regNumber             base,
-                          bool                  isJump,
-                          bool                  isNoGC)
+                          bool                  isJump)
 {
 #if !defined(_TARGET_X86_)
     int argSize = 0;
@@ -1865,8 +1864,7 @@ void CodeGen::genEmitCall(int                   callType,
                                gcInfo.gcVarPtrSetCur,
                                gcInfo.gcRegGCrefSetCur,
                                gcInfo.gcRegByrefSetCur,
-                               ilOffset, base, REG_NA, 0, 0, isJump,
-                               emitter::emitNoGChelper(compiler->eeGetHelperNum(methHnd)));
+                               ilOffset, base, REG_NA, 0, 0, isJump);
 }
 // clang-format on
 

@@ -6824,8 +6824,7 @@ void emitter::emitIns_Call(EmitCallType          callType,
                            regNumber             xreg,     // = REG_NA
                            unsigned              xmul,     // = 0
                            ssize_t               disp,     // = 0
-                           bool                  isJump,   // = false
-                           bool                  isNoGC)   // = false
+                           bool                  isJump)   // = false
 // clang-format on
 {
     /* Sanity check the arguments depending on callType */
@@ -6930,28 +6929,8 @@ void emitter::emitIns_Call(EmitCallType          callType,
     }
 #endif // STACK_PROBES
 
-    int argCnt;
-
-    UNATIVE_OFFSET sz;
-    instrDesc*     id;
-
-    /* This is the saved set of registers after a normal call */
-    unsigned savedSet = RBM_CALLEE_SAVED;
-
-    /* some special helper calls have a different saved set registers */
-
-    if (isNoGC)
-    {
-        // Get the set of registers that this call kills and remove it from the saved set.
-        savedSet = RBM_ALLINT & ~emitComp->compNoGCHelperCallKillSet(Compiler::eeGetHelperNum(methHnd));
-    }
-    else
-    {
-        assert(!emitNoGChelper(Compiler::eeGetHelperNum(methHnd)));
-    }
-
-    /* Trim out any callee-trashed registers from the live set */
-
+    // Trim out any callee-trashed registers from the live set.
+    regMaskTP savedSet = emitGetGCRegsSavedOrModified(methHnd);
     gcrefRegs &= savedSet;
     byrefRegs &= savedSet;
 
@@ -6969,9 +6948,6 @@ void emitter::emitIns_Call(EmitCallType          callType,
         printf("\n");
     }
 #endif
-
-    assert(argSize % REGSIZE_BYTES == 0);
-    argCnt = (int)(argSize / (int)REGSIZE_BYTES); // we need a signed-divide
 
     /* Managed RetVal: emit sequence point for the call */
     if (emitComp->opts.compDbgInfo && ilOffset != BAD_IL_OFFSET)
@@ -6992,6 +6968,11 @@ void emitter::emitIns_Call(EmitCallType          callType,
             Direct call with GC vars          9,440
             Indir. call with GC vars          5,768
      */
+
+    instrDesc* id;
+
+    assert(argSize % REGSIZE_BYTES == 0);
+    int argCnt = (int)(argSize / (int)REGSIZE_BYTES); // we need a signed-divide
 
     if (callType >= EC_FUNC_VIRTUAL)
     {
@@ -7037,7 +7018,9 @@ void emitter::emitIns_Call(EmitCallType          callType,
     }
     id->idIns(ins);
 
-    id->idSetIsNoGC(isNoGC);
+    id->idSetIsNoGC(emitNoGChelper(methHnd));
+
+    UNATIVE_OFFSET sz;
 
     // Record the address: method, indirection, or funcptr
     if (callType >= EC_FUNC_VIRTUAL)
