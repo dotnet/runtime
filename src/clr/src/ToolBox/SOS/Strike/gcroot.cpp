@@ -1009,7 +1009,7 @@ GCRootImpl::RootNode *GCRootImpl::GetGCRefs(RootNode *path, RootNode *node)
 
     // Only calculate the size if we need it.
     size_t objSize = 0;
-    if (mSize || node->MTInfo->ContainsPointers)
+    if (mSize || node->MTInfo->ContainsPointers || node->MTInfo->Collectible)
     {
         objSize = GetSizeOfObject(obj, node->MTInfo);
         
@@ -1027,7 +1027,7 @@ GCRootImpl::RootNode *GCRootImpl::GetGCRefs(RootNode *path, RootNode *node)
     }
     
     // Early out:  If the object doesn't contain any pointers, return.
-    if (!node->MTInfo->ContainsPointers)
+    if (!node->MTInfo->ContainsPointers && !node->MTInfo->Collectible)
         return NULL;
     
     // Make sure we have the object's data in the cache.
@@ -1138,6 +1138,15 @@ GCRootImpl::MTInfo *GCRootImpl::GetMTInfo(TADDR mt)
     curr->BaseSize = (size_t)dmtd.BaseSize;
     curr->ComponentSize = (size_t)dmtd.ComponentSize;
     curr->ContainsPointers = dmtd.bContainsPointers ? true : false;
+
+    // The following request doesn't work on older runtimes. For those, the
+    // objects would just look like non-collectible, which is acceptable.
+    DacpMethodTableCollectibleData dmtcd;
+    if (SUCCEEDED(dmtcd.Request(g_sos, mt)))
+    {
+        curr->Collectible = dmtcd.bCollectible ? true : false;
+        curr->LoaderAllocatorObjectHandle = TO_TADDR(dmtcd.LoaderAllocatorObjectHandle);
+    }
 
     // If this method table contains pointers, fill out and cache the GCDesc.
     if (curr->ContainsPointers)

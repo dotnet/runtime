@@ -501,6 +501,8 @@ namespace sos
         TADDR *mBuffer;
         CGCDescSeries *mCurrSeries;
         
+        TADDR mLoaderAllocatorObjectHandle;
+
         int i, mCount;
         
         TADDR mCurr, mStop, mObject;

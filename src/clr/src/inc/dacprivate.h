@@ -177,6 +177,25 @@ struct MSLAYOUT DacpMethodTableFieldData : ZeroInit<DacpMethodTableFieldData>
     }
 };
 
+struct MSLAYOUT DacpMethodTableCollectibleData : ZeroInit<DacpMethodTableCollectibleData>
+{
+    CLRDATA_ADDRESS LoaderAllocatorObjectHandle;
+    BOOL bCollectible;
+
+    HRESULT Request(ISOSDacInterface *sos, CLRDATA_ADDRESS addr)
+    {
+        HRESULT hr;
+        ISOSDacInterface6 *pSOS6 = NULL;
+        if (SUCCEEDED(hr = sos->QueryInterface(__uuidof(ISOSDacInterface6), (void**)&pSOS6)))
+        {
+            hr = pSOS6->GetMethodTableCollectibleData(addr, this);
+            pSOS6->Release();
+        }
+
+        return hr;
+    }
+};
+
 struct MSLAYOUT DacpMethodTableTransparencyData : ZeroInit<DacpMethodTableTransparencyData>
 {
     BOOL bHasCriticalTransparentInfo;
@@ -1043,5 +1062,6 @@ static_assert(sizeof(DacpGetModuleAddress) == 0x8, "Dacp structs cannot be modif
 static_assert(sizeof(DacpFrameData) == 0x8, "Dacp structs cannot be modified due to backwards compatibility.");
 static_assert(sizeof(DacpJitCodeHeapInfo) == 0x18, "Dacp structs cannot be modified due to backwards compatibility.");
 static_assert(sizeof(DacpExceptionObjectData) == 0x38, "Dacp structs cannot be modified due to backwards compatibility.");
+static_assert(sizeof(DacpMethodTableCollectibleData) == 0x10, "Dacp structs cannot be modified due to backwards compatibility.");
 
 #endif  // _DACPRIVATE_H_
