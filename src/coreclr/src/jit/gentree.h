@@ -797,7 +797,6 @@ public:
 
 #define GTF_NOP_DEATH               0x40000000 // GT_NOP -- operand dies here
 
-#define GTF_FLD_NULLCHECK           0x80000000 // GT_FIELD -- need to nullcheck the "this" pointer
 #define GTF_FLD_VOLATILE            0x40000000 // GT_FIELD/GT_CLS_VAR -- same as GTF_IND_VOLATILE
 #define GTF_FLD_INITCLASS           0x20000000 // GT_FIELD/GT_CLS_VAR -- field access requires preceding class/static init helper
 
@@ -805,8 +804,6 @@ public:
 #define GTF_INX_REFARR_LAYOUT       0x20000000 // GT_INDEX
 #define GTF_INX_STRING_LAYOUT       0x40000000 // GT_INDEX -- this uses the special string array layout
 
-#define GTF_IND_ARR_LEN             0x80000000 // GT_IND   -- the indirection represents an array length (of the REF
-                                               //             contribution to its argument).
 #define GTF_IND_VOLATILE            0x40000000 // GT_IND   -- the load or store must use volatile sematics (this is a nop on X86)
 #define GTF_IND_NONFAULTING         0x20000000 // Operations for which OperIsIndir() is true  -- An indir that cannot fault.
                                                // Same as GTF_ARRLEN_NONFAULTING.
