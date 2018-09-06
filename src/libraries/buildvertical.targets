@@ -155,6 +155,13 @@
         purposes of annotating project references.
       -->
       <Configuration Condition="'$(Configuration)' == 'Debug' or '$(Configuration)' == 'Release'">$(BuildConfiguration)</Configuration>
+
+      <!--
+        When building in VS AssignProjectConfiguration tries to unset Configuration and Platform but for our configuration
+        system we need those properties to be passed through so the correct configuration can be selected. So we need to
+        set this property to false to prevent them from being unset.
+      -->
+      <ShouldUnsetParentConfigurationAndPlatform>false</ShouldUnsetParentConfigurationAndPlatform>
     </PropertyGroup>
 
     <!-- Find the best configuration for the current Project's Configuration -->
@@ -193,7 +200,7 @@
              Properties="Configuration=%(_buildConfigurations.Identity);BuildAllConfigurations=true" />
   </Target>
   <Target Name="BuildAll" DependsOnTargets="BuildAllConfigurations" />
-  
+
   <Target Name="RebuildAllConfigurations" DependsOnTargets="_getAllBuildConfigurations">
     <MSBuild Projects="$(MSBuildProjectFullPath)"
              Targets="Rebuild"
@@ -207,5 +214,5 @@
              Properties="Configuration=%(_buildConfigurations.Identity);BuildAllConfigurations=true" />
   </Target>
   <Target Name="CleanAll" DependsOnTargets="CleanAllConfigurations" />
-  
+
 </Project>
