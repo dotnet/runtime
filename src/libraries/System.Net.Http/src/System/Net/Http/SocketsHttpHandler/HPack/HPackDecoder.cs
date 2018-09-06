@@ -359,7 +359,7 @@ namespace System.Net.Http.HPack
             {
                 if (_huffman)
                 {
-                    return Huffman.Decode(_stringOctets, 0, _stringLength, dst);
+                    return Huffman.Decode(_stringOctets, dst);
                 }
                 else
                 {
