@@ -11,7 +11,7 @@
     <MONO_TARGET_GC>sgen</MONO_TARGET_GC>
     <!-- When true, build targets will get a suffix based on used GC. Makes it possible to have builds using different GC's in same build folders, sharing common targets. -->
     <MONO_USE_TARGET_SUFFIX>true</MONO_USE_TARGET_SUFFIX>
-    <!-- When true, build will get a separate build folder based on used GC. Makes it possible separate builds into different output folders under the same build prefix. -->
+    <!-- When true, build will get a separate build folder based on various configuration parameters. Makes it possible separate builds into different output folders under the same build prefix. -->
     <MONO_USE_SEPARATE_BUILD_DIR>true</MONO_USE_SEPARATE_BUILD_DIR>
     <!-- When true, all binaries and libraries will link using static c-runtime. When false, all binaries and libraries will link using dynamic c-runtime.  -->
     <MONO_USE_STATIC_C_RUNTIME>false</MONO_USE_STATIC_C_RUNTIME>
@@ -19,6 +19,8 @@
     <MONO_USE_STATIC_LIBMONO>false</MONO_USE_STATIC_LIBMONO>
     <!-- When true, mono binaries will link and include llvm. When false, mono binaries will not link and include llvm.  -->
     <MONO_ENABLE_LLVM>false</MONO_ENABLE_LLVM>
+    <!-- When true, ported mono projects will build using C++ instead of C compiler. When false, all project will be build using the default compiler.  -->
+    <MONO_COMPILE_AS_CPP>false</MONO_COMPILE_AS_CPP>
   </PropertyGroup>
   <PropertyGroup Label="MonoDirectories">
     <MonoSourceLocation Condition="'$(MonoSourceLocation)' == '' ">..</MonoSourceLocation>
@@ -52,14 +54,16 @@
     <GC_DEFINES>$(SGEN_DEFINES)</GC_DEFINES>
     <GC_LIB>libgcmonosgen.lib</GC_LIB>
     <MONO_TARGET_SUFFIX Condition="'$(MONO_USE_TARGET_SUFFIX)'=='true'">-sgen</MONO_TARGET_SUFFIX>
-    <MONO_BUILD_DIR_PREFIX Condition="'$(MONO_USE_SEPARATE_BUILD_DIR)'=='true'">$(MONO_BUILD_DIR_PREFIX)sgen/</MONO_BUILD_DIR_PREFIX>
+    <MONO_BUILD_DIR_PREFIX Condition="'$(MONO_USE_SEPARATE_BUILD_DIR)'=='true' And '$(MONO_COMPILE_AS_CPP)'!='true'">$(MONO_BUILD_DIR_PREFIX)sgen/</MONO_BUILD_DIR_PREFIX>
+    <MONO_BUILD_DIR_PREFIX Condition="'$(MONO_USE_SEPARATE_BUILD_DIR)'=='true' And '$(MONO_COMPILE_AS_CPP)'=='true'">$(MONO_BUILD_DIR_PREFIX)sgen-cpp/</MONO_BUILD_DIR_PREFIX>
   </PropertyGroup>
   <PropertyGroup Label="MonoBOEHM" Condition="$(MONO_TARGET_GC)=='boehm'">
     <BOEHM_DEFINES>HAVE_BOEHM_GC</BOEHM_DEFINES>
     <GC_DEFINES>$(BOEHM_DEFINES)</GC_DEFINES>
     <GC_LIB>libgc.lib</GC_LIB>
     <MONO_TARGET_SUFFIX Condition="'$(MONO_USE_TARGET_SUFFIX)'=='true'">-boehm</MONO_TARGET_SUFFIX>
-    <MONO_BUILD_DIR_PREFIX Condition="'$(MONO_USE_SEPARATE_BUILD_DIR)'=='true'">$(MONO_BUILD_DIR_PREFIX)boehm/</MONO_BUILD_DIR_PREFIX>
+    <MONO_BUILD_DIR_PREFIX Condition="'$(MONO_USE_SEPARATE_BUILD_DIR)'=='true'And '$(MONO_COMPILE_AS_CPP)'!='true'">$(MONO_BUILD_DIR_PREFIX)boehm/</MONO_BUILD_DIR_PREFIX>
+    <MONO_BUILD_DIR_PREFIX Condition="'$(MONO_USE_SEPARATE_BUILD_DIR)'=='true'And '$(MONO_COMPILE_AS_CPP)'=='true'">$(MONO_BUILD_DIR_PREFIX)boehm-cpp/</MONO_BUILD_DIR_PREFIX>
   </PropertyGroup>
   <PropertyGroup Label="Static-Mono-Libraries">
     <MONO_RUNTIME_LIBS>libmonoutils.lib;libmonoruntime$(MONO_TARGET_SUFFIX).lib;libmini$(MONO_TARGET_SUFFIX).lib;$(GC_LIB)</MONO_RUNTIME_LIBS>
@@ -108,6 +112,9 @@
     </BuildMacro>
     <BuildMacro Include="MONO_ENABLE_LLVM">
       <Value>$(MONO_ENABLE_LLVM)</Value>
+    </BuildMacro>
+    <BuildMacro Include="MONO_COMPILE_AS_CPP">
+      <Value>$(MONO_COMPILE_AS_CPP)</Value>
     </BuildMacro>
   </ItemGroup>
   <PropertyGroup Label="MonoDefaultPreprocessorDefinitions">
