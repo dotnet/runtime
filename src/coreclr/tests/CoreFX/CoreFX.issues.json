@@ -274,5 +274,33 @@
                }
             ]
         }
+    },
+    {
+        "name": "System.Memory.Tests",
+        "enabled": true,
+        "exclusions": {
+            "namespaces": null,
+            "classes": null,
+            "methods": [
+               { 
+                "name": "System.Buffers.Text.Tests.FormatterTests.TestFormatterDecimal",
+                "reason": "https://github.com/dotnet/coreclr/pull/19775"
+               }
+            ]
+        }
+    },
+    {
+        "name": "System.Runtime.Extensions.Tests",
+        "enabled": true,
+        "exclusions": {
+            "namespaces": null,
+            "classes": null,
+            "methods": [
+               { 
+                "name": "System.Tests.ConvertToStringTests.FromBoxedObject",
+                "reason": "https://github.com/dotnet/coreclr/pull/19775"
+               }
+            ]
+        }
     }
 ]
