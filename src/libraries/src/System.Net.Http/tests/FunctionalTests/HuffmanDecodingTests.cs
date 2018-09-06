@@ -336,7 +336,7 @@ namespace System.Net.Http.Functional.Tests
             byte[] encoded = new byte[input.Length * 4];
             int encodedByteCount = Encode(input, encoded);
 
-            // Worst case decoding is an output byte per 5 input bits, so make the encoded buffer 2 times as big
+            // Worst case decoding is an output byte per 5 input bits, so make the decoded buffer 2 times as big
             byte[] decoded = new byte[encoded.Length * 2];
 
             int decodedByteCount = Decode(new ReadOnlySpan<byte>(encoded, 0, encodedByteCount), decoded);
@@ -351,7 +351,7 @@ namespace System.Net.Http.Functional.Tests
         [MemberData(nameof(InvalidEncodingData))]
         public void HuffmanDecoding_InvalidEncoding_Throws(byte[] encoded)
         {
-            // Worst case decoding is an output byte per 5 input bits, so make the encoded buffer 2 times as big
+            // Worst case decoding is an output byte per 5 input bits, so make the decoded buffer 2 times as big
             byte[] decoded = new byte[encoded.Length * 2];
 
             Assert.Throws(s_huffmanDecodingExceptionType, () => Decode(encoded, decoded));
@@ -370,7 +370,7 @@ namespace System.Net.Http.Functional.Tests
                 yield return new object[] { new byte[] { (byte)i } };
             }
 
-            // Ensure that decoding every possible value leaves the decoder in a corect state so that 
+            // Ensure that decoding every possible value leaves the decoder in a correct state so that 
             // a subsequent value can be decoded (here, 'a')
             for (int i = 0; i < 256; i++)
             {
