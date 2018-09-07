@@ -2,10 +2,16 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
+#pragma managed
+int ManagedCallee()
+{
+    return 100;
+}
+
 #pragma unmanaged
 int NativeFunction()
 {
-    return 100;
+    return ManagedCallee();
 }
 
 #pragma managed

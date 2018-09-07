@@ -540,6 +540,7 @@
 #define BFA_BAD_CA_HEADER                       0x2050
 #define BFA_BAD_STRING_TOKEN                    0x2052
 #define BFA_BAD_STRING_TOKEN_RANGE              0x2053
+#define BFA_FIXUP_WRONG_PLATFORM                0x2054
 #define BFA_UNEXPECTED_GENERIC_TOKENTYPE        0x2055
 #define BFA_MDARRAY_BADRANK                     0x2056
 #define BFA_SDARRAY_BADRANK                     0x2057
