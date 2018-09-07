@@ -30,23 +30,6 @@ public:
     }
     virtual void DoPhase() override;
 
-    // If requiresOverflowCheck is false, all other values will be unset
-    struct CastInfo
-    {
-        bool requiresOverflowCheck; // Will the cast require an overflow check
-        bool unsignedSource;        // Is the source unsigned
-        bool unsignedDest;          // is the dest unsigned
-
-        // All other fields are only meaningful if requiresOverflowCheck is set.
-
-        ssize_t typeMin;       // Lowest storable value of the dest type
-        ssize_t typeMax;       // Highest storable value of the dest type
-        ssize_t typeMask;      // For converting from/to unsigned
-        bool    signCheckOnly; // For converting between unsigned/signed int
-    };
-
-    static void getCastDescription(GenTree* treeNode, CastInfo* castInfo);
-
     // This variant of LowerRange is called from outside of the main Lowering pass,
     // so it creates its own instance of Lowering to do so.
     void LowerRange(BasicBlock* block, LIR::ReadOnlyRange& range)

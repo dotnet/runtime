@@ -6345,269 +6345,134 @@ void CodeGen::genLongToIntCast(GenTree* cast)
 #endif
 
 //------------------------------------------------------------------------
-// genIntToIntCast: Generate code for an integer cast
-//    This method handles integer overflow checking casts
-//    as well as ordinary integer casts.
+// genIntCastOverflowCheck: Generate overflow checking code for an integer cast.
 //
 // Arguments:
-//    treeNode - The GT_CAST node
+//    cast - The GT_CAST node
+//    desc - The cast description
+//    reg  - The register containing the value to check
 //
-// Return Value:
-//    None.
-//
-// Assumptions:
-//    The treeNode is not a contained node and must have an assigned register.
-//    For a signed convert from byte, the source must be in a byte-addressable register.
-//    Neither the source nor target type can be a floating point type.
-//
-// TODO-XArch-CQ: Allow castOp to be a contained node without an assigned register.
-// TODO: refactor to use getCastDescription
-//
-void CodeGen::genIntToIntCast(GenTree* treeNode)
+void CodeGen::genIntCastOverflowCheck(GenTreeCast* cast, const GenIntCastDesc& desc, regNumber reg)
 {
-    assert(treeNode->OperGet() == GT_CAST);
-
-    GenTree*  castOp  = treeNode->gtCast.CastOp();
-    var_types srcType = genActualType(castOp->TypeGet());
-    noway_assert(genTypeSize(srcType) >= 4);
-    assert(genTypeSize(srcType) <= genTypeSize(TYP_I_IMPL));
-
-    regNumber targetReg     = treeNode->gtRegNum;
-    regNumber sourceReg     = castOp->gtRegNum;
-    var_types dstType       = treeNode->CastToType();
-    bool      isUnsignedDst = varTypeIsUnsigned(dstType);
-    bool      isUnsignedSrc = varTypeIsUnsigned(srcType);
-
-    // if necessary, force the srcType to unsigned when the GT_UNSIGNED flag is set
-    if (!isUnsignedSrc && treeNode->IsUnsigned())
+    switch (desc.CheckKind())
     {
-        srcType       = genUnsignedType(srcType);
-        isUnsignedSrc = true;
-    }
-
-    bool requiresOverflowCheck = false;
-
-    assert(genIsValidIntReg(targetReg));
-    assert(genIsValidIntReg(sourceReg));
-
-    instruction ins     = INS_invalid;
-    emitAttr    srcSize = EA_ATTR(genTypeSize(srcType));
-    emitAttr    dstSize = EA_ATTR(genTypeSize(dstType));
-
-    if (srcSize < dstSize)
-    {
-#ifdef _TARGET_X86_
-        // dstType cannot be a long type on x86, such casts should have been decomposed.
-        // srcType cannot be a small type since it's the "actual type" of the cast operand.
-        // This means that widening casts do not actually occur on x86.
-        unreached();
-#else
-        // This is a widening cast from TYP_(U)INT to TYP_(U)LONG.
-        assert(dstSize == EA_8BYTE);
-        assert(srcSize == EA_4BYTE);
-
-        // When widening, overflows can only happen if the source type is signed and the
-        // destination type is unsigned. Since the overflow check ensures that the value
-        // is positive a cheaper mov instruction can be used instead of movsxd.
-        if (treeNode->gtOverflow() && !isUnsignedSrc && isUnsignedDst)
-        {
-            requiresOverflowCheck = true;
-            ins                   = INS_mov;
-        }
-        else
-        {
-            ins = isUnsignedSrc ? INS_mov : INS_movsxd;
-        }
-#endif
-    }
-    else
-    {
-        // Narrowing cast, or sign-changing cast
-        noway_assert(srcSize >= dstSize);
-
-        // Is this an Overflow checking cast?
-        if (treeNode->gtOverflow())
-        {
-            requiresOverflowCheck = true;
-            ins                   = INS_mov;
-        }
-        else
-        {
-            ins = ins_Move_Extend(dstType, false);
-        }
-    }
-
-    noway_assert(ins != INS_invalid);
-
-    genConsumeReg(castOp);
-
-    if (requiresOverflowCheck)
-    {
-        ssize_t typeMin        = 0;
-        ssize_t typeMax        = 0;
-        ssize_t typeMask       = 0;
-        bool    needScratchReg = false;
-        bool    signCheckOnly  = false;
-
-        /* Do we need to compare the value, or just check masks */
-
-        switch (dstType)
-        {
-            case TYP_BYTE:
-                typeMask = ssize_t((int)0xFFFFFF80);
-                typeMin  = SCHAR_MIN;
-                typeMax  = SCHAR_MAX;
-                break;
-
-            case TYP_UBYTE:
-                typeMask = ssize_t((int)0xFFFFFF00L);
-                break;
-
-            case TYP_SHORT:
-                typeMask = ssize_t((int)0xFFFF8000);
-                typeMin  = SHRT_MIN;
-                typeMax  = SHRT_MAX;
-                break;
-
-            case TYP_USHORT:
-                typeMask = ssize_t((int)0xFFFF0000L);
-                break;
-
-            case TYP_INT:
-                if (srcType == TYP_UINT)
-                {
-                    signCheckOnly = true;
-                }
-                else
-                {
-                    typeMask = ssize_t((int)0x80000000);
-                    typeMin  = INT_MIN;
-                    typeMax  = INT_MAX;
-                }
-                break;
-
-            case TYP_UINT:
-                if (srcType == TYP_INT)
-                {
-                    signCheckOnly = true;
-                }
-                else
-                {
-                    needScratchReg = true;
-                }
-                break;
-
-            case TYP_LONG:
-                noway_assert(srcType == TYP_ULONG);
-                signCheckOnly = true;
-                break;
-
-            case TYP_ULONG:
-                noway_assert((srcType == TYP_LONG) || (srcType == TYP_INT));
-                signCheckOnly = true;
-                break;
-
-            default:
-                NO_WAY("Unknown type");
-                return;
-        }
-
-        if (signCheckOnly)
-        {
-            // We only need to check for a negative value in sourceReg
-            inst_RV_RV(INS_test, sourceReg, sourceReg, srcType, srcSize);
+        case GenIntCastDesc::CHECK_POSITIVE:
+            getEmitter()->emitIns_R_R(INS_test, EA_SIZE(desc.CheckSrcSize()), reg, reg);
             genJumpToThrowHlpBlk(EJ_jl, SCK_OVERFLOW);
-        }
-        else
+            break;
+
+#ifdef _TARGET_64BIT_
+        case GenIntCastDesc::CHECK_UINT_RANGE:
         {
-            // When we are converting from unsigned or to unsigned, we
-            // will only have to check for any bits set using 'typeMask'
-            if (isUnsignedSrc || isUnsignedDst)
+            // We need to check if the value is not greater than 0xFFFFFFFF but this value
+            // cannot be encoded in an immediate operand. Use a right shift to test if the
+            // upper 32 bits are zero. This requires a temporary register.
+            const regNumber tempReg = cast->GetSingleTempReg();
+            assert(tempReg != reg);
+            getEmitter()->emitIns_R_R(INS_mov, EA_8BYTE, tempReg, reg);
+            getEmitter()->emitIns_R_I(INS_shr_N, EA_8BYTE, tempReg, 32);
+            genJumpToThrowHlpBlk(EJ_jne, SCK_OVERFLOW);
+        }
+        break;
+
+        case GenIntCastDesc::CHECK_POSITIVE_INT_RANGE:
+            getEmitter()->emitIns_R_I(INS_cmp, EA_8BYTE, reg, INT32_MAX);
+            genJumpToThrowHlpBlk(EJ_ja, SCK_OVERFLOW);
+            break;
+
+        case GenIntCastDesc::CHECK_INT_RANGE:
+            getEmitter()->emitIns_R_I(INS_cmp, EA_8BYTE, reg, INT32_MAX);
+            genJumpToThrowHlpBlk(EJ_jg, SCK_OVERFLOW);
+            getEmitter()->emitIns_R_I(INS_cmp, EA_8BYTE, reg, INT32_MIN);
+            genJumpToThrowHlpBlk(EJ_jl, SCK_OVERFLOW);
+            break;
+#endif
+
+        default:
+        {
+            assert(desc.CheckKind() == GenIntCastDesc::CHECK_SMALL_INT_RANGE);
+            const int castMaxValue = desc.CheckSmallIntMax();
+            const int castMinValue = desc.CheckSmallIntMin();
+
+            getEmitter()->emitIns_R_I(INS_cmp, EA_SIZE(desc.CheckSrcSize()), reg, castMaxValue);
+            genJumpToThrowHlpBlk((castMinValue == 0) ? EJ_ja : EJ_jg, SCK_OVERFLOW);
+
+            if (castMinValue != 0)
             {
-                if (needScratchReg)
-                {
-                    regNumber tmpReg = treeNode->GetSingleTempReg();
-                    inst_RV_RV(INS_mov, tmpReg, sourceReg, TYP_LONG); // Move the 64-bit value to a writable temp reg
-                    inst_RV_SH(INS_SHIFT_RIGHT_LOGICAL, srcSize, tmpReg, 32); // Shift right by 32 bits
-                    genJumpToThrowHlpBlk(EJ_jne, SCK_OVERFLOW);               // Throw if result shift is non-zero
-                }
-                else
-                {
-                    noway_assert(typeMask != 0);
-                    inst_RV_IV(INS_TEST, sourceReg, typeMask, srcSize);
-                    genJumpToThrowHlpBlk(EJ_jne, SCK_OVERFLOW);
-                }
-            }
-            else
-            {
-                // For a narrowing signed cast
-                //
-                // We must check the value is in a signed range.
-
-                // Compare with the MAX
-
-                noway_assert((typeMin != 0) && (typeMax != 0));
-
-                inst_RV_IV(INS_cmp, sourceReg, typeMax, srcSize);
-                genJumpToThrowHlpBlk(EJ_jg, SCK_OVERFLOW);
-
-                // Compare with the MIN
-
-                inst_RV_IV(INS_cmp, sourceReg, typeMin, srcSize);
+                getEmitter()->emitIns_R_I(INS_cmp, EA_SIZE(desc.CheckSrcSize()), reg, castMinValue);
                 genJumpToThrowHlpBlk(EJ_jl, SCK_OVERFLOW);
             }
         }
-
-        if (targetReg != sourceReg
-#ifdef _TARGET_AMD64_
-            // On amd64, we can hit this path for a same-register
-            // 4-byte to 8-byte widening conversion, and need to
-            // emit the instruction to set the high bits correctly.
-            || (dstSize == EA_8BYTE && srcSize == EA_4BYTE)
-#endif // _TARGET_AMD64_
-                )
-            inst_RV_RV(ins, targetReg, sourceReg, srcType, srcSize);
+        break;
     }
-    else // non-overflow checking cast
+}
+
+//------------------------------------------------------------------------
+// genIntToIntCast: Generate code for an integer cast, with or without overflow check.
+//
+// Arguments:
+//    cast - The GT_CAST node
+//
+// Assumptions:
+//    The cast node is not a contained node and must have an assigned register.
+//    Neither the source nor target type can be a floating point type.
+//    On x86 casts to (U)BYTE require that the source be in a byte register.
+//
+// TODO-XArch-CQ: Allow castOp to be a contained node without an assigned register.
+//
+void CodeGen::genIntToIntCast(GenTreeCast* cast)
+{
+    genConsumeRegs(cast->gtGetOp1());
+
+    const regNumber srcReg = cast->gtGetOp1()->gtRegNum;
+    const regNumber dstReg = cast->gtRegNum;
+
+    assert(genIsValidIntReg(srcReg));
+    assert(genIsValidIntReg(dstReg));
+
+    GenIntCastDesc desc(cast);
+
+    if (desc.CheckKind() != GenIntCastDesc::CHECK_NONE)
     {
-        // We may have code transformations that result in casts where srcType is the same as dstType.
-        // e.g. Bug 824281, in which a comma is split by the rationalizer, leaving an assignment of a
-        // long constant to a long lclVar.
-        if (srcType == dstType)
-        {
-            ins = INS_mov;
-        }
-
-        if (ins == INS_mov)
-        {
-            if (targetReg != sourceReg
-#ifdef _TARGET_AMD64_
-                // On amd64, 'mov' is the opcode used to zero-extend from
-                // 4 bytes to 8 bytes.
-                || (dstSize == EA_8BYTE && srcSize == EA_4BYTE)
-#endif // _TARGET_AMD64_
-                    )
-            {
-                inst_RV_RV(ins, targetReg, sourceReg, srcType, srcSize);
-            }
-        }
-#ifdef _TARGET_AMD64_
-        else if (ins == INS_movsxd)
-        {
-            inst_RV_RV(ins, targetReg, sourceReg, srcType, srcSize);
-        }
-#endif // _TARGET_AMD64_
-        else
-        {
-            noway_assert(ins == INS_movsx || ins == INS_movzx);
-            noway_assert(srcSize >= dstSize);
-
-            /* Generate "mov targetReg, castOp->gtReg */
-            inst_RV_RV(ins, targetReg, sourceReg, srcType, dstSize);
-        }
+        genIntCastOverflowCheck(cast, desc, srcReg);
     }
 
-    genProduceReg(treeNode);
+    if ((desc.ExtendKind() != GenIntCastDesc::COPY) || (srcReg != dstReg))
+    {
+        instruction ins;
+        unsigned    insSize;
+
+        switch (desc.ExtendKind())
+        {
+            case GenIntCastDesc::ZERO_EXTEND_SMALL_INT:
+                ins     = INS_movzx;
+                insSize = desc.ExtendSrcSize();
+                break;
+            case GenIntCastDesc::SIGN_EXTEND_SMALL_INT:
+                ins     = INS_movsx;
+                insSize = desc.ExtendSrcSize();
+                break;
+#ifdef _TARGET_64BIT_
+            case GenIntCastDesc::ZERO_EXTEND_INT:
+                ins     = INS_mov;
+                insSize = 4;
+                break;
+            case GenIntCastDesc::SIGN_EXTEND_INT:
+                ins     = INS_movsxd;
+                insSize = 4;
+                break;
+#endif
+            default:
+                assert(desc.ExtendKind() == GenIntCastDesc::COPY);
+                ins     = INS_mov;
+                insSize = desc.ExtendSrcSize();
+                break;
+        }
+
+        getEmitter()->emitIns_R_R(ins, EA_ATTR(insSize), dstReg, srcReg);
+    }
+
+    genProduceReg(cast);
 }
 
 //------------------------------------------------------------------------
