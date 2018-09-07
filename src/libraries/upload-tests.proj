@@ -78,8 +78,12 @@
     <HelixConfigLabel>$(ConfigurationGroup)</HelixConfigLabel>
     <MaxRetryCount>1</MaxRetryCount>
     <TestsBlobPrefix>tests/</TestsBlobPrefix>
-    <!-- Unique container name per build and configuration, e.g., corefx-beta-12345-01-Windows_NT -->
-    <ContainerName Condition="'$(ContainerName)' == ''">corefx-$(PreReleaseLabel)-$(BuildNumberMajor)-$(BuildNumberMinor)-$(OSGroup)-$(ArchGroup)</ContainerName>
+    <!-- Unique container name per build and configuration, e.g., corefx-beta-12345-01-windows -->
+    <!-- Azure Storage containers can only contain [a-z, 0-9, -] in their names and $(OSGroup) is "Windows_NT" on Windows... -->
+    <ProcessedOSGroup>$(OSGroup.ToLower())</ProcessedOSGroup>
+    <ProcessedOSGroup Condition="'$(TargetsWindows)' == 'true'">windows</ProcessedOSGroup>
+    <ProcessedArchGroup>$(ArchGroup.ToLower())</ProcessedArchGroup>
+    <ContainerName Condition="'$(ContainerName)' == ''">corefx-$(PreReleaseLabel)-$(BuildNumberMajor)-$(BuildNumberMinor)-$(ProcessedOSGroup)-$(ProcessedArchGroup)</ContainerName>
   </PropertyGroup>
 
   <Target Name="CoreFXPreCloudBuild" >
