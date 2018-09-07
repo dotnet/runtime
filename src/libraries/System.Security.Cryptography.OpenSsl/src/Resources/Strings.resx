@@ -195,6 +195,33 @@
   <data name="Cryptography_SignHash_WrongSize" xml:space="preserve">
     <value>The provided hash value is not the expected size for the specified hash algorithm.</value>
   </data>
+  <data name="Cryptography_WriteEncodedValue_OneValueAtATime" xml:space="preserve">
+    <value>The input to WriteEncodedValue must represent a single encoded value with no trailing data.</value>
+  </data>
+  <data name="Cryptography_Asn_EnumeratedValueRequiresNonFlagsEnum" xml:space="preserve">
+    <value>ASN.1 Enumerated values only apply to enum types without the [Flags] attribute.</value>
+  </data>
+  <data name="Cryptography_Asn_NamedBitListRequiresFlagsEnum" xml:space="preserve">
+    <value>Named bit list operations require an enum with the [Flags] attribute.</value>
+  </data>
+  <data name="Cryptography_Asn_NamedBitListValueTooBig" xml:space="preserve">
+    <value>The encoded named bit list value is larger than the value size of the '{0}' enum.</value>
+  </data>
+  <data name="Cryptography_Asn_UniversalValueIsFixed" xml:space="preserve">
+    <value>Tags with TagClass Universal must have the appropriate TagValue value for the data type being read or written.</value>
+  </data>
+  <data name="Cryptography_Asn_UnusedBitCountRange" xml:space="preserve">
+    <value>Unused bit count must be between 0 and 7, inclusive.</value>
+  </data>
+  <data name="Cryptography_AsnWriter_EncodeUnbalancedStack" xml:space="preserve">
+    <value>Encode cannot be called while a Sequence or SetOf is still open.</value>
+  </data>
+  <data name="Cryptography_AsnWriter_PopWrongTag" xml:space="preserve">
+    <value>Cannot pop the requested tag as it is not currently in progress.</value>
+  </data>
+  <data name="Cryptography_NotValidPublicOrPrivateKey" xml:space="preserve">
+    <value>Key is not a valid public or private key.</value>
+  </data>
   <data name="PlatformNotSupported_CryptographyOpenSSL" xml:space="preserve">
     <value>OpenSSL is not supported on this platform.</value>
   </data>

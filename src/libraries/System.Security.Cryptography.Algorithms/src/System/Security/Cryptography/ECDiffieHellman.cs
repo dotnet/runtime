@@ -196,7 +196,7 @@ namespace System.Security.Cryptography
             {
                 try
                 {
-                    using (AsnWriter pkcs8PrivateKey = ecParameters.WritePkcs8PrivateKey())
+                    using (AsnWriter pkcs8PrivateKey = EccKeyFormatHelper.WritePkcs8PrivateKey(ecParameters))
                     using (AsnWriter writer = KeyFormatHelper.WriteEncryptedPkcs8(
                         passwordBytes,
                         pkcs8PrivateKey,
@@ -232,7 +232,7 @@ namespace System.Security.Cryptography
             {
                 try
                 {
-                    using (AsnWriter pkcs8PrivateKey = ecParameters.WritePkcs8PrivateKey())
+                    using (AsnWriter pkcs8PrivateKey = EccKeyFormatHelper.WritePkcs8PrivateKey(ecParameters))
                     using (AsnWriter writer = KeyFormatHelper.WriteEncryptedPkcs8(
                         password,
                         pkcs8PrivateKey,
@@ -258,7 +258,7 @@ namespace System.Security.Cryptography
             {
                 try
                 {
-                    using (AsnWriter writer = ecParameters.WritePkcs8PrivateKey())
+                    using (AsnWriter writer = EccKeyFormatHelper.WritePkcs8PrivateKey(ecParameters))
                     {
                         return writer.TryEncode(destination, out bytesWritten);
                     }
@@ -276,7 +276,7 @@ namespace System.Security.Cryptography
         {
             ECParameters ecParameters = ExportParameters(false);
 
-            using (AsnWriter writer = ecParameters.WriteSubjectPublicKeyInfo())
+            using (AsnWriter writer = EccKeyFormatHelper.WriteSubjectPublicKeyInfo(ecParameters))
             {
                 return writer.TryEncode(destination, out bytesWritten);
             }
@@ -287,11 +287,11 @@ namespace System.Security.Cryptography
             ReadOnlySpan<byte> source,
             out int bytesRead)
         {
-            KeyFormatHelper.ReadEncryptedPkcs8<ECParameters, ECPrivateKey>(
+            KeyFormatHelper.ReadEncryptedPkcs8<ECParameters>(
                 s_validOids,
                 source,
                 passwordBytes,
-                ECParameters.FromECPrivateKey,
+                EccKeyFormatHelper.FromECPrivateKey,
                 out int localRead,
                 out ECParameters ret);
 
@@ -314,11 +314,11 @@ namespace System.Security.Cryptography
             ReadOnlySpan<byte> source,
             out int bytesRead)
         {
-            KeyFormatHelper.ReadEncryptedPkcs8<ECParameters, ECPrivateKey>(
+            KeyFormatHelper.ReadEncryptedPkcs8<ECParameters>(
                 s_validOids,
                 source,
                 password,
-                ECParameters.FromECPrivateKey,
+                EccKeyFormatHelper.FromECPrivateKey,
                 out int localRead,
                 out ECParameters ret);
 
@@ -340,10 +340,10 @@ namespace System.Security.Cryptography
             ReadOnlySpan<byte> source,
             out int bytesRead)
         {
-            KeyFormatHelper.ReadPkcs8<ECParameters, ECPrivateKey>(
+            KeyFormatHelper.ReadPkcs8<ECParameters>(
                 s_validOids,
                 source,
-                ECParameters.FromECPrivateKey,
+                EccKeyFormatHelper.FromECPrivateKey,
                 out int localRead,
                 out ECParameters key);
 
@@ -365,10 +365,10 @@ namespace System.Security.Cryptography
             ReadOnlySpan<byte> source,
             out int bytesRead)
         {
-            KeyFormatHelper.ReadSubjectPublicKeyInfo<ECParameters, ReadOnlyMemory<byte>>(
+            KeyFormatHelper.ReadSubjectPublicKeyInfo<ECParameters>(
                 s_validOids,
                 source,
-                ECParameters.FromECPublicKey,
+                EccKeyFormatHelper.FromECPublicKey,
                 out int localRead,
                 out ECParameters key);
 
@@ -378,7 +378,7 @@ namespace System.Security.Cryptography
 
         public virtual unsafe void ImportECPrivateKey(ReadOnlySpan<byte> source, out int bytesRead)
         {
-            ECParameters ecParameters = ECParameters.FromECPrivateKey(source, out int localRead);
+            ECParameters ecParameters = EccKeyFormatHelper.FromECPrivateKey(source, out int localRead);
 
             fixed (byte* privPin = ecParameters.D)
             {
@@ -402,7 +402,7 @@ namespace System.Security.Cryptography
             {
                 try
                 {
-                    using (AsnWriter writer = ecParameters.WriteECPrivateKey())
+                    using (AsnWriter writer = EccKeyFormatHelper.WriteECPrivateKey(ecParameters))
                     {
                         return writer.Encode();
                     }
@@ -422,7 +422,7 @@ namespace System.Security.Cryptography
             {
                 try
                 {
-                    using (AsnWriter writer = ecParameters.WriteECPrivateKey())
+                    using (AsnWriter writer = EccKeyFormatHelper.WriteECPrivateKey(ecParameters))
                     {
                         return writer.TryEncode(destination, out bytesWritten);
                     }

@@ -34,7 +34,7 @@ namespace System.Security.Cryptography.X509Certificates
                 throw new CryptographicException(SR.Cryptography_InvalidPaddingMode);
             }
 
-            uint cbSalt;
+            int cbSalt;
             string digestOid;
 
             if (hashAlgorithm == HashAlgorithmName.SHA256)
