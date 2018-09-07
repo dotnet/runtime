@@ -46,6 +46,22 @@ namespace System.IO.Compression.Tests
             }
         }
 
+        [Theory]
+        [InlineData("../Foo")]
+        [InlineData("../Barbell")]
+        [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework, "Second case fails.")]
+        public void ExtractOutOfRoot(string entryName)
+        {
+            string archivePath = GetTestFilePath();
+            using (FileStream stream = new FileStream(archivePath, FileMode.Create))
+            using (ZipArchive archive = new ZipArchive(stream, ZipArchiveMode.Create, leaveOpen: true))
+            {
+                ZipArchiveEntry entry = archive.CreateEntry(entryName);
+            }
+
+            DirectoryInfo destination = Directory.CreateDirectory(Path.Combine(GetTestFilePath(), "Bar"));
+            Assert.Throws<IOException>(() => ZipFile.ExtractToDirectory(archivePath, destination.FullName));
+        }
 
         /// <summary>
         /// This test ensures that a zipfile with path names that are invalid to this OS will throw errors
