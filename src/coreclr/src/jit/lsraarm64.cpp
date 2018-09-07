@@ -335,53 +335,9 @@ int LinearScan::BuildNode(GenTree* tree)
 #endif // FEATURE_HW_INTRINSICS
 
         case GT_CAST:
-        {
-            // TODO-ARM64-CQ: Int-To-Int conversions - castOp cannot be a memory op and must have an assigned
-            //                register.
-            //         see CodeGen::genIntToIntCast()
-
-            // Non-overflow casts to/from float/double are done using SSE2 instructions
-            // and that allow the source operand to be either a reg or memop. Given the
-            // fact that casts from small int to float/double are done as two-level casts,
-            // the source operand is always guaranteed to be of size 4 or 8 bytes.
-            var_types castToType = tree->CastToType();
-            GenTree*  castOp     = tree->gtCast.CastOp();
-            var_types castOpType = castOp->TypeGet();
-            if (tree->gtFlags & GTF_UNSIGNED)
-            {
-                castOpType = genUnsignedType(castOpType);
-            }
-
-            // Some overflow checks need a temp reg
-
-            Lowering::CastInfo castInfo;
-            // Get information about the cast.
-            Lowering::getCastDescription(tree, &castInfo);
-
-            if (castInfo.requiresOverflowCheck)
-            {
-                var_types srcType = castOp->TypeGet();
-                emitAttr  cmpSize = EA_ATTR(genTypeSize(srcType));
-
-                // If we cannot store the comparisons in an immediate for either
-                // comparing against the max or min value, then we will need to
-                // reserve a temporary register.
-
-                bool canStoreMaxValue = emitter::emitIns_valid_imm_for_cmp(castInfo.typeMax, cmpSize);
-                bool canStoreMinValue = emitter::emitIns_valid_imm_for_cmp(castInfo.typeMin, cmpSize);
-
-                if (!canStoreMaxValue || !canStoreMinValue)
-                {
-                    buildInternalIntRegisterDefForNode(tree);
-                }
-            }
-            BuildUse(tree->gtGetOp1());
-            srcCount = 1;
-            buildInternalRegisterUses();
             assert(dstCount == 1);
-            BuildDef(tree);
-        }
-        break;
+            srcCount = BuildCast(tree->AsCast());
+            break;
 
         case GT_NEG:
         case GT_NOT:
