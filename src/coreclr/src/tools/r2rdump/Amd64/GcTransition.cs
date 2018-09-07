@@ -53,14 +53,23 @@ namespace R2RDump.Amd64
             string slotStr = "";
             if (slot.StackSlot == null)
             {
-                Type regType = typeof(Amd64.Registers);
-                if (machine == Machine.ArmThumb2)
+                Type regType;
+                switch (machine)
                 {
-                    regType = typeof(Arm.Registers);
-                }
-                else
-                {
-                    regType = typeof(Arm64.Registers);
+                    case Machine.ArmThumb2:
+                        regType = typeof(Arm.Registers);
+                        break;
+
+                    case Machine.Arm64:
+                        regType = typeof(Arm64.Registers);
+                        break;
+
+                    case Machine.Amd64:
+                        regType = typeof(Amd64.Registers);
+                        break;
+
+                    default:
+                        throw new NotImplementedException();
                 }
                 slotStr = Enum.GetName(regType, slot.RegisterNumber);
             }

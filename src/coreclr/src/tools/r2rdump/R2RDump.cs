@@ -405,7 +405,7 @@ namespace R2RDump
                     {
                         if (r2r.InputArchitectureSupported() && r2r.DisassemblerArchitectureSupported())
                         {
-                            disassembler = new Disassembler(r2r.Image, r2r.Machine);
+                            disassembler = new Disassembler(r2r);
                         }
                         else
                         {

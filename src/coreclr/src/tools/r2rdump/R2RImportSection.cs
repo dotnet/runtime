@@ -15,31 +15,6 @@ namespace R2RDump
     /// </summary>
     public struct R2RImportSection
     {
-        /// <summary>
-        /// based on <a href="https://github.com/dotnet/coreclr/blob/master/src/inc/corcompile.h">src/inc/corcompile.h</a> CorCompileImportType
-        /// </summary>
-        public enum CorCompileImportType
-        {
-            CORCOMPILE_IMPORT_TYPE_UNKNOWN = 0,
-            CORCOMPILE_IMPORT_TYPE_EXTERNAL_METHOD = 1,
-            CORCOMPILE_IMPORT_TYPE_STUB_DISPATCH = 2,
-            CORCOMPILE_IMPORT_TYPE_STRING_HANDLE = 3,
-            CORCOMPILE_IMPORT_TYPE_TYPE_HANDLE = 4,
-            CORCOMPILE_IMPORT_TYPE_METHOD_HANDLE = 5,
-            CORCOMPILE_IMPORT_TYPE_VIRTUAL_METHOD = 6,
-        };
-
-        /// <summary>
-        /// based on <a href="https://github.com/dotnet/coreclr/blob/master/src/inc/corcompile.h">src/inc/corcompile.h</a> CorCompileImportFlags
-        /// </summary>
-        public enum CorCompileImportFlags
-        {
-            CORCOMPILE_IMPORT_FLAGS_UNKNOWN = 0x0000,
-            CORCOMPILE_IMPORT_FLAGS_EAGER = 0x0001,   // Section at module load time.
-            CORCOMPILE_IMPORT_FLAGS_CODE = 0x0002,   // Section contains code.
-            CORCOMPILE_IMPORT_FLAGS_PCODE = 0x0004,   // Section contains pointers to code.
-        };
-
         public struct ImportSectionEntry
         {
             [XmlAttribute("Index")]
@@ -47,26 +22,24 @@ namespace R2RDump
             public int StartOffset { get; set; }
             public long Section { get; set; }
             public uint SignatureRVA { get; set; }
-            public byte[] SignatureSample { get; set; }
-            public ImportSectionEntry(int index, int startOffset, long section, uint signatureRVA, byte[] signatureSample)
+            public string Signature { get; set; }
+            public ImportSectionEntry(int index, int startOffset, long section, uint signatureRVA, string signature)
             {
                 Index = index;
                 StartOffset = startOffset;
                 Section = section;
                 SignatureRVA = signatureRVA;
-                SignatureSample = signatureSample;
+                Signature = signature;
             }
 
             public override string ToString()
             {
-                StringBuilder sb = new StringBuilder();
-                sb.Append($@"+{StartOffset:X4}  Section: 0x{Section:X8}  SignatureRVA: 0x{SignatureRVA:X8}  ");
-                foreach (byte b in SignatureSample)
-                {
-                    sb.AppendFormat("{0:X2} ", b);
-                }
-                sb.Append("...");
-                return sb.ToString();
+                StringBuilder builder = new StringBuilder();
+                builder.AppendFormat("+{0:X4}", StartOffset);
+                builder.AppendFormat("  Section: 0x{0:X8}", Section);
+                builder.AppendFormat("  SignatureRVA: 0x{0:X8}", SignatureRVA);
+                builder.AppendFormat("  {0}", Signature);
+                return builder.ToString();
             }
         }
 
