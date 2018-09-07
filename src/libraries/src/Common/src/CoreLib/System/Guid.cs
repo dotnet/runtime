@@ -427,7 +427,7 @@ namespace System
             }
 
             // Check for dashes
-            bool dashesExistInString = guidString.IndexOf('-') >= 0;
+            bool dashesExistInString = guidString.Contains('-');
 
             if (dashesExistInString)
             {

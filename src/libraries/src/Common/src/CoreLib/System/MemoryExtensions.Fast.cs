@@ -83,20 +83,6 @@ namespace System
             return CompareInfo.EqualsOrdinalIgnoreCase(ref MemoryMarshal.GetReference(span), ref MemoryMarshal.GetReference(value), span.Length);
         }
 
-        // TODO https://github.com/dotnet/corefx/issues/27526
-        internal static bool Contains(this ReadOnlySpan<char> source, char value)
-        {
-            for (int i = 0; i < source.Length; i++)
-            {
-                if (source[i] == value)
-                {
-                    return true;
-                }
-            }
-
-            return false;
-        }
-
         /// <summary>
         /// Compares the specified <paramref name="span"/> and <paramref name="other"/> using the specified <paramref name="comparisonType"/>,
         /// and returns an integer that indicates their relative position in the sort order.
