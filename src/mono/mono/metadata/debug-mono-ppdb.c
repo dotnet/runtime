@@ -62,6 +62,13 @@ typedef struct {
 	guint64 referenced_tables;
 } PdbStreamHeader;
 
+enum {
+	MONO_HAS_CUSTOM_DEBUG_METHODDEF = 0,
+	MONO_HAS_CUSTOM_DEBUG_MODULE = 7,
+	MONO_HAS_CUSTOM_DEBUG_BITS = 5,
+	MONO_HAS_CUSTOM_DEBUG_MASK = 0x1f
+};
+
 static gboolean
 get_pe_debug_guid (MonoImage *image, guint8 *out_guid, gint32 *out_age, gint32 *out_timestamp)
 {
@@ -657,7 +664,8 @@ table_locator (const void *a, const void *b)
 }
 
 static gboolean
-compare_guid (guint8* guid1, guint8* guid2) {
+compare_guid (guint8* guid1, guint8* guid2)
+{
 	for (int i = 0; i < 16; i++) {
 		if (guid1 [i] != guid2 [i])
 			return FALSE;
@@ -677,7 +685,7 @@ lookup_custom_debug_information (MonoImage* image, guint32 token, uint8_t parent
 	if (!table->base)
 		return 0;
 
-	loc.idx = (mono_metadata_token_index (token) << 5) | parent_type;
+	loc.idx = (mono_metadata_token_index (token) << MONO_HAS_CUSTOM_DEBUG_BITS) | parent_type;
 	loc.col_idx = MONO_CUSTOMDEBUGINFORMATION_PARENT;
 	loc.t = table;
 
@@ -717,7 +725,7 @@ mono_ppdb_lookup_method_async_debug_info (MonoDebugMethodInfo *minfo)
 	// Guid is taken from Roslyn source code:
 	// https://github.com/dotnet/roslyn/blob/1ad4b58/src/Dependencies/CodeAnalysis.Metadata/PortableCustomDebugInfoKinds.cs#L9
 	guint8 async_method_stepping_information_guid [16] = { 0xC5, 0x2A, 0xFD, 0x54, 0x25, 0xE9, 0x1A, 0x40, 0x9C, 0x2A, 0xF9, 0x4F, 0x17, 0x10, 0x72, 0xF8 };
-	char const *blob = lookup_custom_debug_information (image, method->token, 0, async_method_stepping_information_guid);
+	char const *blob = lookup_custom_debug_information (image, method->token, MONO_HAS_CUSTOM_DEBUG_METHODDEF, async_method_stepping_information_guid);
 	if (!blob)
 		return NULL;
 	int blob_len = mono_metadata_decode_blob_size (blob, &blob);
@@ -746,5 +754,24 @@ mono_ppdb_lookup_method_async_debug_info (MonoDebugMethodInfo *minfo)
 		res->resume_offsets [i] = read32 (pointer); pointer += 4;
 		res->move_next_method_token [i] = mono_metadata_decode_value (pointer, &pointer);
 	}
+	return res;
+}
+
+char*
+mono_ppdb_get_sourcelink (MonoDebugHandle *handle)
+{
+	MonoPPDBFile *ppdb = handle->ppdb;
+	MonoImage *image = ppdb->image;
+	char *res;
+
+	guint8 sourcelink_guid [16] = { 0x56, 0x05, 0x11, 0xCC, 0x91, 0xA0, 0x38, 0x4D, 0x9F, 0xEC, 0x25, 0xAB, 0x9A, 0x35, 0x1A, 0x6A };
+	/* The module table only has 1 row */
+	char const *blob = lookup_custom_debug_information (image, 1, MONO_HAS_CUSTOM_DEBUG_MODULE, sourcelink_guid);
+	if (!blob)
+		return NULL;
+	int blob_len = mono_metadata_decode_blob_size (blob, &blob);
+	res = g_malloc (blob_len + 1);
+	memcpy (res, blob, blob_len);
+	res [blob_len] = '\0';
 	return res;
 }

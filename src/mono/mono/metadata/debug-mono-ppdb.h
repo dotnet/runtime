@@ -41,4 +41,7 @@ mono_ppdb_lookup_method_async_debug_info (MonoDebugMethodInfo *minfo);
 MonoImage *
 mono_ppdb_get_image (MonoPPDBFile *ppdb);
 
+char *
+mono_ppdb_get_sourcelink (MonoDebugHandle *handle);
+
 #endif

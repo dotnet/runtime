@@ -1123,3 +1123,14 @@ mono_debug_get_seq_points (MonoDebugMethodInfo *minfo, char **source_file, GPtrA
 	else
 		mono_debug_symfile_get_seq_points (minfo, source_file, source_file_list, source_files, seq_points, n_seq_points);
 }
+
+char*
+mono_debug_image_get_sourcelink (MonoImage *image)
+{
+	MonoDebugHandle *handle = mono_debug_get_handle (image);
+
+	if (handle && handle->ppdb)
+		return mono_ppdb_get_sourcelink (handle);
+	else
+		return NULL;
+}

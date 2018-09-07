@@ -7346,7 +7346,10 @@ module_commands (int command, guint8 *p, guint8 *end, Buffer *buf)
 	switch (command) {
 	case CMD_MODULE_GET_INFO: {
 		MonoImage *image = decode_moduleid (p, &p, end, &domain, &err);
-		char *basename;
+		char *basename, *sourcelink = NULL;
+
+		if (CHECK_PROTOCOL_VERSION (2, 48))
+			sourcelink = mono_debug_image_get_sourcelink (image);
 
 		basename = g_path_get_basename (image->name);
 		buffer_add_string (buf, basename); // name
@@ -7354,7 +7357,10 @@ module_commands (int command, guint8 *p, guint8 *end, Buffer *buf)
 		buffer_add_string (buf, image->name); // fqname
 		buffer_add_string (buf, mono_image_get_guid (image)); // guid
 		buffer_add_assemblyid (buf, domain, image->assembly); // assembly
+		if (CHECK_PROTOCOL_VERSION (2, 48))
+			buffer_add_string (buf, sourcelink);
 		g_free (basename);
+		g_free (sourcelink);
 		break;			
 	}
 	default:
