@@ -1522,6 +1522,7 @@ BOOL RangeSectionStubManager::DoTraceStub(PCODE stubStartAddress, TraceDestinati
     case STUB_CODE_BLOCK_STUBLINK:
         return StubLinkStubManager::g_pManager->DoTraceStub(stubStartAddress, trace);
 
+#ifdef FEATURE_PREJIT
     case STUB_CODE_BLOCK_VIRTUAL_METHOD_THUNK:
         {
             PCODE pTarget = GetMethodThunkTarget(stubStartAddress);
@@ -1540,6 +1541,7 @@ BOOL RangeSectionStubManager::DoTraceStub(PCODE stubStartAddress, TraceDestinati
             }
             return TRUE;
         }
+#endif
 
     case STUB_CODE_BLOCK_EXTERNAL_METHOD_THUNK:
         {

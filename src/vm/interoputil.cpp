@@ -3907,6 +3907,7 @@ BOOL MethodNeedsForwardComStub(MethodDesc *pMD, DataImage *pImage)
     return FALSE;
 }
 
+#ifdef FEATURE_PREJIT
 //---------------------------------------------------------------------------
 // Determines if a method is visible from COM in a way that requires a marshaling
 // stub, i.e. it allows early binding.
@@ -3992,6 +3993,7 @@ BOOL MethodNeedsReverseComStub(MethodDesc *pMD)
 
     return IsMethodVisibleFromCom(pMD);
 }
+#endif // FEATURE_PREJIT
 
 
 #ifndef CROSSGEN_COMPILE

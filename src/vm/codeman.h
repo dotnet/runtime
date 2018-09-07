@@ -68,6 +68,7 @@ Abstract:
 #include "shash.h"
 #include "pedecoder.h"
 #include "gcinfo.h"
+#include "eexcp.h"
 
 #if defined(WIN64EXCEPTIONS) && !defined(USE_INDIRECT_CODEHEADER)
 #error "WIN64EXCEPTIONS requires USE_INDIRECT_CODEHEADER"
@@ -1742,7 +1743,9 @@ public:
 class EECodeInfo
 {
     friend BOOL EEJitManager::JitCodeToMethodInfo(RangeSection * pRangeSection, PCODE currentPC, MethodDesc** ppMethodDesc, EECodeInfo * pCodeInfo);
+#ifdef FEATURE_PREJIT
     friend BOOL NativeImageJitManager::JitCodeToMethodInfo(RangeSection * pRangeSection, PCODE currentPC, MethodDesc** ppMethodDesc, EECodeInfo * pCodeInfo);
+#endif
 #ifdef FEATURE_READYTORUN
     friend BOOL ReadyToRunJitManager::JitCodeToMethodInfo(RangeSection * pRangeSection, PCODE currentPC, MethodDesc** ppMethodDesc, EECodeInfo * pCodeInfo);
 #endif

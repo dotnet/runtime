@@ -814,43 +814,9 @@ typedef ReleaseHolder<PEFile> PEFileHolder;
 
 typedef ReleaseHolder<PEAssembly> PEAssemblyHolder;
 
-
-
-// A small shim around PEAssemblies/IBindResult that allow us to write Fusion/CLR-agnostic
-// for logging native bind failures to the Fusion log/CLR log.
-//
-// These structures are stack-based, non-thread-safe and created for the duration of a single RuntimeVerify call.
-// The methods are expected to compute their data lazily as they are only used in bind failures or in checked builds.
-class LoggablePEAssembly : public LoggableAssembly
-{
-  public:
-    virtual SString DisplayString()
-    {
-        STANDARD_VM_CONTRACT;
-
-        return m_peAssembly->GetPath();
-    }
-
-
-    LoggablePEAssembly(PEAssembly *peAssembly)
-    {
-        LIMITED_METHOD_CONTRACT;
-
-        m_peAssembly = peAssembly;
-        peAssembly->AddRef();
-    }
-
-    ~LoggablePEAssembly()
-    {
-        LIMITED_METHOD_CONTRACT;
-
-        m_peAssembly->Release();
-    }
-
-  private:
-    PEAssembly  *m_peAssembly;
-};
-
+BOOL RuntimeVerifyNativeImageDependency(const CORCOMPILE_DEPENDENCY   *pExpected,
+    const CORCOMPILE_VERSION_INFO *pActual,
+    PEAssembly                    *pLogAsm);
 
 // ================================================================================
 // Inline definitions

@@ -185,10 +185,12 @@ class WinMDImport : public IMetaDataImport2
                     _ASSERTE(!"WinMDImport::QueryInterface(IID_IMDInternalEmit) returning E_NOINTERFACE");
                 else if (riid == IID_IMetaDataEmitHelper)
                     _ASSERTE(!"WinMDImport::QueryInterface(IID_IMetaDataEmitHelper) returning E_NOINTERFACE");
+#ifdef FEATURE_PREJIT
                 else if (riid == IID_IMetaDataCorProfileData)
                     _ASSERTE(!"WinMDImport::QueryInterface(IID_IMetaDataCorProfileData) returning E_NOINTERFACE");
                 else if (riid == IID_IMDInternalMetadataReorderingOptions)
                     _ASSERTE(!"WinMDImport::QueryInterface(IID_IMDInternalMetadataReorderingOptions) returning E_NOINTERFACE");
+#endif
                 else
                     _ASSERTE(!"WinMDImport::QueryInterface() returning E_NOINTERFACE");
             }

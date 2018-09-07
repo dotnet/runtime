@@ -748,8 +748,7 @@ void DomainFile::VerifyNativeImageDependencies(bool verifyOnly)
         CORCOMPILE_VERSION_INFO * pDependencyNativeVersion =
                 pDependencyNativeLayout->GetNativeVersionInfo();
 
-        LoggablePEAssembly logAsm(pDependencyFile);
-        if (!RuntimeVerifyNativeImageDependency(pDependency, pDependencyNativeVersion, &logAsm))
+        if (!RuntimeVerifyNativeImageDependency(pDependency, pDependencyNativeVersion, pDependencyFile))
             goto NativeImageRejected;
     }
     LOG((LF_ZAP, LL_INFO100, "ZAP: Native image dependencies for %S OK.\n",
