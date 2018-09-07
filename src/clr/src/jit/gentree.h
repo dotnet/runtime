@@ -4119,18 +4119,24 @@ struct GenTreeHWIntrinsic : public GenTreeJitIntrinsic
     var_types      gtIndexBaseType; // for AVX2 Gather* intrinsics
 
     GenTreeHWIntrinsic(var_types type, NamedIntrinsic hwIntrinsicID, var_types baseType, unsigned size)
-        : GenTreeJitIntrinsic(GT_HWIntrinsic, type, nullptr, nullptr, baseType, size), gtHWIntrinsicId(hwIntrinsicID)
+        : GenTreeJitIntrinsic(GT_HWIntrinsic, type, nullptr, nullptr, baseType, size)
+        , gtHWIntrinsicId(hwIntrinsicID)
+        , gtIndexBaseType(TYP_UNKNOWN)
     {
     }
 
     GenTreeHWIntrinsic(var_types type, GenTree* op1, NamedIntrinsic hwIntrinsicID, var_types baseType, unsigned size)
-        : GenTreeJitIntrinsic(GT_HWIntrinsic, type, op1, nullptr, baseType, size), gtHWIntrinsicId(hwIntrinsicID)
+        : GenTreeJitIntrinsic(GT_HWIntrinsic, type, op1, nullptr, baseType, size)
+        , gtHWIntrinsicId(hwIntrinsicID)
+        , gtIndexBaseType(TYP_UNKNOWN)
     {
     }
 
     GenTreeHWIntrinsic(
         var_types type, GenTree* op1, GenTree* op2, NamedIntrinsic hwIntrinsicID, var_types baseType, unsigned size)
-        : GenTreeJitIntrinsic(GT_HWIntrinsic, type, op1, op2, baseType, size), gtHWIntrinsicId(hwIntrinsicID)
+        : GenTreeJitIntrinsic(GT_HWIntrinsic, type, op1, op2, baseType, size)
+        , gtHWIntrinsicId(hwIntrinsicID)
+        , gtIndexBaseType(TYP_UNKNOWN)
     {
     }
 
