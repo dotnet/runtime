@@ -983,11 +983,6 @@ void EEStartupHelper(COINITIEE fFlags)
         SystemDomain::System()->PublishAppDomainAndInformDebugger(SystemDomain::System()->DefaultDomain());
 #endif
 
-#ifdef FEATURE_PERFTRACING
-        // Start the event pipe if requested.
-        EventPipe::EnableOnStartup();
-#endif // FEATURE_PERFTRACING
-
 #endif // CROSSGEN_COMPILE
 
         SystemDomain::System()->Init();

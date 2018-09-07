@@ -741,6 +741,7 @@ RETAIL_CONFIG_DWORD_INFO(INTERNAL_EnableEventPipe, W("EnableEventPipe"), 0, "Ena
 RETAIL_CONFIG_STRING_INFO(INTERNAL_EventPipeOutputFile, W("EventPipeOutputFile"), "The full path including file name for the trace file that will be written when COMPlus_EnableEventPipe&=1")
 RETAIL_CONFIG_STRING_INFO(INTERNAL_EventPipeConfig, W("EventPipeConfig"), "Configuration for EventPipe.")
 RETAIL_CONFIG_DWORD_INFO(INTERNAL_EventPipeRundown, W("EventPipeRundown"), 1, "Enable/disable eventpipe rundown.")
+RETAIL_CONFIG_DWORD_INFO(INTERNAL_EventPipeCircularMB, W("EventPipeCircularMB"), 1024, "The EventPipe circular buffer size in megabytes.")
 
 #ifdef FEATURE_GDBJIT
 ///

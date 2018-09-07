@@ -234,9 +234,6 @@ class EventPipe
         // Shutdown the event pipe.
         static void Shutdown();
 
-        // Enable tracing from the start-up path based on COMPLUS variable.
-        static void EnableOnStartup();
-
         // Enable tracing via the event pipe.
         static EventPipeSessionID Enable(
             LPCWSTR strOutputPath,
