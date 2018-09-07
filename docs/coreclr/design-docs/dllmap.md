@@ -1,5 +1,5 @@
 # Dllmap design document
-This document is intended to describe a process of delivering a Dllmap feature for .NET Core.
+This document is intended to describe a design of a Dllmap feature for .NET Core.
 
 Author: Anna Aniol (@annaaniol)
 
@@ -18,7 +18,8 @@ Right now, CoreCLR has no good way to handle the differences between platforms w
 [DllImport("user32.dll", CharSet = CharSet.Unicode)]
 public  static  extern  int  MessageBox(IntPtr  hWnd, String text, String caption, uint type);
 ```
-This import works with Windows, but it doesn’t work with any other OS. If run e.g. on Linux, a DllNotFoundException will be thrown, which means that a DLL specified in a DLL import cannot be found.
+This import works on Windows, but it doesn’t work on any other OS. If run e.g. on Linux, a DllNotFoundException will be thrown,
+which means that a DLL specified in a DLL import directive cannot be found.
 
 ### Mono’s Dllmap
 
@@ -44,11 +45,11 @@ and [metadata/loader.c](https://github.com/mono/mono/blob/master/mono/metadata/l
 
 ### .NET Core Dllmap
 
-.NET Core Dllmap’s purpose is to deliver a cross-platform support for p/invoke mechanism in .NET.
+.NET Core Dllmap’s purpose is to deliver a cross-platform support for the p/invoke mechanism in .NET.
 With Dllmap user will be able to control interop methods by defining custom mapping between OS-specific dll names.
 
-.NET Core Dllmap won't support entrypoint mappings as Mono does.
-There is no significant Mono project that uses entrypint mappings so it shouldn't affect compatibility much.
+Use of entrypoint mappings does not seem to be widespread in publicly searchable code.
+.NET Core Dllmap won't support entrypoint mappings as Mono does. We can come back to it if necessary.
 
 Target platforms for this feature are: Windows, Linux and OS X.
 
@@ -65,23 +66,23 @@ Configuration files must be placed next to the assemblies that they describe.
 
 #### New users: flexibility
 New users, who plan to support p/invokes in their cross-platform applications, should implement their custom mapping policies that satisfies their needs.
-The runtime will use a specific callbacks on each dll load attempt.
+The runtime will use a specific callback on each dll load attempt.
 The user’s code can subscribe to these callbacks and define any mapping strategy.
-Users should keep in mind that the default Mono-like mapping methods are provided for an easier migration from Mono.
+The default Mono-like mapping methods are provided for an easier migration from Mono.
 For newcomers, it’s highly recommended to use callbacks and implement their own handers. Details of the callback strategy are described in the Design section.
 
 ### Usage example (XML configuration)
 
-Let’s say there is a customer developing a .NET application with p/invokes on Windows. The customer wants the application to run on both Windows and Linux without introducing any changes in the code.
+Let’s say there is a customer developing a .NET application with p/invokes on Windows.
+The customer wants the application to run on both Windows and Linux without introducing any changes in the code.
 
-The application calls a function GetCurrentProcessId from an OS-specific library kernel32.dll.
+The application calls a function `MyFunction()` from an OS-specific library `libWindows.dll`.
 ```c#
-[DllImport("kernel32.dll")]
-static  extern  uint  GetCurrentProcessId();
+[DllImport("libWindows.dll")]
+static  extern  uint  MyFunction();
 ```
 
-To make it work on Linux, that does not have kernel32.dll, user must define a mapping of the dll.
-There is no `GetCurrentProcessId` function in any corresponding Linux-specific library, so entrypoint name mapping must be defined too.
+To make it work on Linux, that does not have `libWindows.dll`, user must define a mapping of the dll.
 To achieve this, the user puts an XML configuration file next to the dll that is about to be loaded. The file looks like this:
 ```xml
 <configuration>
@@ -89,8 +90,9 @@ To achieve this, the user puts an XML configuration file next to the dll that is
 </configuration>
 ```
 
-With this file, all calls to `libWindows.dll` get automatically mapped to calls to `libLinux.so.6` on runtime and the end user of the
-application can’t see any difference in application’s behavior. Running the application cross-platform does not require any OS-specific changes in the code.
+With this file, all calls to `libWindows.dll` get automatically mapped to calls to `libLinux.so.6` on runtime.
+If only `libLinux.so.6` has a corresponding `MyFunction()` method, it gets called and the end user
+can’t see any difference in application’s behavior. Running the application cross-platform does not require any OS-specific changes in the code.
 All the mapping is defined in advance in the external configuration file.
 
 This is a very basic scenario and it can be extended to different operating systems and libraries.
@@ -183,7 +185,7 @@ public static NativeLibrary SimpleCallbackHandlerLogic(LoadNativeLibraryArgs arg
     if (libraryName == "TheNameToReplace")
     {
         libraryName = "TheCorrectName";
-        NativeLibrary nativeLibrary = Load(libraryName, dllImportSearchPath, assembly);
+        NativeLibrary nativeLibrary = NativeLibrary.Load(libraryName, dllImportSearchPath, assembly);
         return nativeLibrary;
     }
     return new NativeLibrary("LibraryNotFound", IntPtr.Zero);
@@ -209,7 +211,7 @@ public static int Main()
     
 **System.Runtime.InteropServices.LoadLibrary**
 -   Is a public sealed class with `Name` and `Handle`
--   Exposes load method for loading a native library
+-   Exposes a `Load` method for loading a native library
 ```c#
 public static NativeLibrary Load(string libraryName);
 public static NativeLibrary Load(string libraryName, DllImportSearchPath dllImportSearchPath, Assembly assembly);
