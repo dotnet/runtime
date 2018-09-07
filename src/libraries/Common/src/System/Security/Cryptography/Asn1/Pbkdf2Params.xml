@@ -1,0 +1,29 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<asn:Sequence
+  xmlns:asn="http://schemas.dot.net/asnxml/201808/"
+  name="Pbkdf2Params"
+  namespace="System.Security.Cryptography.Asn1">
+
+  <!--
+    https://tools.ietf.org/html/rfc2898#appendix-A.2
+
+    PBKDF2-params ::= SEQUENCE {
+        salt CHOICE {
+            specified OCTET STRING,
+            otherSource AlgorithmIdentifier {{PBKDF2-SaltSources}}
+        },
+        iterationCount INTEGER (1..MAX),
+        keyLength INTEGER (1..MAX) OPTIONAL,
+        prf AlgorithmIdentifier {{PBKDF2-PRFs}} DEFAULT algid-hmacWithSHA1
+    }
+  -->
+  <asn:AsnType name="Salt" typeName="System.Security.Cryptography.Asn1.Pbkdf2SaltChoice" />
+  <!--
+    The spec calls out that while there's technically no limit to IterationCount,
+    that specific platforms may have their own limits. This defines ours to int.MaxValue.
+  -->
+  <asn:Integer name="IterationCount" backingType="int" />
+  <!-- The biggest value that makes sense currently is 256/8 => 32. -->
+  <asn:Integer name="KeyLength" backingType="byte" optional="true" />    
+  <asn:AsnType name="Prf" typeName="System.Security.Cryptography.Asn1.AlgorithmIdentifierAsn" defaultDerInit="0x30, 0x0C, 0x06, 0x08, 0x2A, 0x86, 0x48, 0x86, 0xF7, 0x0D, 0x02, 0x07, 0x05, 0x00" />
+</asn:Sequence>

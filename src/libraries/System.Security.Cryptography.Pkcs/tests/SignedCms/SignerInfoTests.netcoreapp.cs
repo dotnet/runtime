@@ -298,7 +298,6 @@ namespace System.Security.Cryptography.Pkcs.Tests
         {
             Assert.NotSame(expected.Oid, actual.Oid);
             Assert.Equal(expected.Oid.Value, actual.Oid.Value);
-            Assert.Equal(expected.Oid.FriendlyName, actual.Oid.FriendlyName);
 
             // We need to decode bytes because DER and BER may encode the same information slightly differently
             Rfc3161TimestampTokenInfo expectedToken;

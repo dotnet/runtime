@@ -4,8 +4,10 @@
 
 using System;
 using System.Diagnostics;
+using System.Numerics;
 using System.Security.Cryptography;
 using System.Security.Cryptography.Apple;
+using System.Security.Cryptography.Asn1;
 using System.Security.Cryptography.X509Certificates;
 
 namespace Internal.Cryptography.Pal
@@ -82,9 +84,11 @@ namespace Internal.Cryptography.Pal
 
             private static AsymmetricAlgorithm DecodeRsaPublicKey(byte[] encodedKeyValue)
             {
-                DerSequenceReader reader = new DerSequenceReader(encodedKeyValue);
-                RSAParameters rsaParameters = new RSAParameters();
-                reader.ReadPkcs1PublicBlob(ref rsaParameters);
+                AlgorithmIdentifierAsn ignored = default;
+                RSAKeyFormatHelper.ReadRsaPublicKey(
+                    encodedKeyValue,
+                    ignored,
+                    out RSAParameters rsaParameters);
 
                 RSA rsa = RSA.Create();
                 try
@@ -101,10 +105,10 @@ namespace Internal.Cryptography.Pal
 
             private static AsymmetricAlgorithm DecodeDsaPublicKey(byte[] encodedKeyValue, byte[] encodedParameters)
             {
-                DSAParameters dsaParameters = new DSAParameters();
-                DerSequenceReader parameterReader = new DerSequenceReader(encodedParameters);
-
-                parameterReader.ReadSubjectPublicKeyInfo(encodedKeyValue, ref dsaParameters);
+                DSAKeyFormatHelper.ReadDsaPublicKey(
+                    encodedKeyValue,
+                    new AlgorithmIdentifierAsn { Parameters = encodedParameters },
+                    out DSAParameters dsaParameters);
 
                 DSA dsa = DSA.Create();
                 try

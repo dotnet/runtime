@@ -5,7 +5,9 @@
 using System.Buffers;
 using System.Diagnostics;
 using System.IO;
+using System.Numerics;
 using System.Security.Cryptography.Apple;
+using System.Security.Cryptography.Asn1;
 using Internal.Cryptography;
 
 namespace System.Security.Cryptography
@@ -84,38 +86,65 @@ namespace System.Security.Cryptography
 
             public override RSAParameters ExportParameters(bool includePrivateParameters)
             {
+                // Apple requires all private keys to be exported encrypted, but since we're trying to export
+                // as parsed structures we will need to decrypt it for the user.
+                const string ExportPassword = "DotnetExportPassphrase";
                 SecKeyPair keys = GetKeys();
 
-                SafeSecKeyRefHandle keyHandle = includePrivateParameters ? keys.PrivateKey : keys.PublicKey;
-
-                if (keyHandle == null)
-                {
+                if (keys.PublicKey == null ||
+                    (includePrivateParameters && keys.PrivateKey == null))
+                { 
                     throw new CryptographicException(SR.Cryptography_OpenInvalidHandle);
                 }
 
-                DerSequenceReader keyReader = Interop.AppleCrypto.SecKeyExport(keyHandle, includePrivateParameters);
-                RSAParameters parameters = new RSAParameters();
+                byte[] keyBlob = Interop.AppleCrypto.SecKeyExport(
+                    includePrivateParameters ? keys.PrivateKey : keys.PublicKey,
+                    exportPrivate: includePrivateParameters,
+                    password: ExportPassword);
 
-                if (includePrivateParameters)
+                try
                 {
-                    keyReader.ReadPkcs8Blob(ref parameters);
-                }
-                else
-                {
-                    // When exporting a key handle opened from a certificate, it seems to
-                    // export as a PKCS#1 blob instead of an X509 SubjectPublicKeyInfo blob.
-                    // So, check for that.
-                    if (keyReader.PeekTag() == (byte)DerSequenceReader.DerTag.Integer)
+                    if (!includePrivateParameters)
                     {
-                        keyReader.ReadPkcs1PublicBlob(ref parameters);
+                        // When exporting a key handle opened from a certificate, it seems to
+                        // export as a PKCS#1 blob instead of an X509 SubjectPublicKeyInfo blob.
+                        // So, check for that.
+                        // NOTE: It doesn't affect macOS Mojave when SecCertificateCopyKey API
+                        // is used.
+                        RSAParameters key;
+
+                        AsnReader reader = new AsnReader(keyBlob, AsnEncodingRules.BER);
+                        AsnReader sequenceReader = reader.ReadSequence();
+
+                        if (sequenceReader.PeekTag().Equals(Asn1Tag.Integer))
+                        {
+                            AlgorithmIdentifierAsn ignored = default;
+                            RSAKeyFormatHelper.ReadRsaPublicKey(keyBlob, ignored, out key);
+                        }
+                        else
+                        {
+                            RSAKeyFormatHelper.ReadSubjectPublicKeyInfo(
+                                keyBlob,
+                                out int localRead,
+                                out key);
+                            Debug.Assert(localRead == keyBlob.Length);
+                        }
+                        return key;
                     }
                     else
                     {
-                        keyReader.ReadSubjectPublicKeyInfo(ref parameters);
+                        RSAKeyFormatHelper.ReadEncryptedPkcs8(
+                            keyBlob,
+                            ExportPassword,
+                            out int localRead,
+                            out RSAParameters key);
+                        return key;
                     }
                 }
-
-                return parameters;
+                finally
+                {
+                    CryptographicOperations.ZeroMemory(keyBlob);
+                }
             }
 
             public override void ImportParameters(RSAParameters parameters)
@@ -690,7 +719,22 @@ namespace System.Security.Cryptography
             private static SafeSecKeyRefHandle ImportKey(RSAParameters parameters)
             {
                 bool isPrivateKey = parameters.D != null;
-                byte[] pkcs1Blob = isPrivateKey ? parameters.ToPkcs1Blob() : parameters.ToSubjectPublicKeyInfo();
+                byte[] pkcs1Blob;
+
+                if (isPrivateKey)
+                {
+                    using (AsnWriter pkcs1PrivateKey = RSAKeyFormatHelper.WritePkcs1PrivateKey(parameters))
+                    {
+                        pkcs1Blob = pkcs1PrivateKey.Encode();
+                    }
+                }
+                else
+                {
+                    using (AsnWriter pkcs1PublicKey = RSAKeyFormatHelper.WriteSubjectPublicKeyInfo(parameters))
+                    {
+                        pkcs1Blob = pkcs1PublicKey.Encode();
+                    }
+                }
 
                 return Interop.AppleCrypto.ImportEphemeralKey(pkcs1Blob, isPrivateKey);
             }
@@ -698,194 +742,5 @@ namespace System.Security.Cryptography
 
         private static Exception HashAlgorithmNameNullOrEmpty() =>
             new ArgumentException(SR.Cryptography_HashAlgorithmNameNullOrEmpty, "hashAlgorithm");
-    }
-
-    internal static class RsaKeyBlobHelpers
-    {
-        private const string RsaOid = "1.2.840.113549.1.1.1";
-
-        // The PKCS#1 version blob for an RSA key based on 2 primes.
-        private static readonly byte[] s_versionNumberBytes = { 0 };
-
-        // The AlgorithmIdentifier structure for RSA contains an explicit NULL, for legacy/compat reasons.
-        private static readonly byte[][] s_encodedRsaAlgorithmIdentifier =
-            DerEncoder.ConstructSegmentedSequence(
-                DerEncoder.SegmentedEncodeOid(new Oid(RsaOid)),
-                // DER:NULL (0x05 0x00)
-                new byte[][]
-                {
-                    new byte[] { (byte)DerSequenceReader.DerTag.Null },
-                    new byte[] { 0 }, 
-                    Array.Empty<byte>(),
-                });
-
-        internal static byte[] ToPkcs1Blob(this RSAParameters parameters)
-        {
-            if (parameters.Exponent == null || parameters.Modulus == null)
-                throw new CryptographicException(SR.Cryptography_InvalidRsaParameters);
-
-            if (parameters.D == null)
-            {
-                if (parameters.P != null ||
-                    parameters.DP != null ||
-                    parameters.Q != null ||
-                    parameters.DQ != null ||
-                    parameters.InverseQ != null)
-                {
-                    throw new CryptographicException(SR.Cryptography_InvalidRsaParameters);
-                }
-
-                return DerEncoder.ConstructSequence(
-                    DerEncoder.SegmentedEncodeUnsignedInteger(parameters.Modulus),
-                    DerEncoder.SegmentedEncodeUnsignedInteger(parameters.Exponent));
-            }
-
-            if (parameters.P == null ||
-                parameters.DP == null ||
-                parameters.Q == null ||
-                parameters.DQ == null ||
-                parameters.InverseQ == null)
-            {
-                throw new CryptographicException(SR.Cryptography_InvalidRsaParameters);
-            }
-
-            return DerEncoder.ConstructSequence(
-                DerEncoder.SegmentedEncodeUnsignedInteger(s_versionNumberBytes),
-                DerEncoder.SegmentedEncodeUnsignedInteger(parameters.Modulus),
-                DerEncoder.SegmentedEncodeUnsignedInteger(parameters.Exponent),
-                DerEncoder.SegmentedEncodeUnsignedInteger(parameters.D),
-                DerEncoder.SegmentedEncodeUnsignedInteger(parameters.P),
-                DerEncoder.SegmentedEncodeUnsignedInteger(parameters.Q),
-                DerEncoder.SegmentedEncodeUnsignedInteger(parameters.DP),
-                DerEncoder.SegmentedEncodeUnsignedInteger(parameters.DQ),
-                DerEncoder.SegmentedEncodeUnsignedInteger(parameters.InverseQ));
-        }
-
-        internal static void ReadPkcs8Blob(this DerSequenceReader reader, ref RSAParameters parameters)
-        {
-            // OneAsymmetricKey ::= SEQUENCE {
-            //   version                   Version,
-            //   privateKeyAlgorithm       PrivateKeyAlgorithmIdentifier,
-            //   privateKey                PrivateKey,
-            //   attributes            [0] Attributes OPTIONAL,
-            //   ...,
-            //   [[2: publicKey        [1] PublicKey OPTIONAL ]],
-            //   ...
-            // }
-            //
-            // PrivateKeyInfo ::= OneAsymmetricKey
-            //
-            // PrivateKey ::= OCTET STRING
-
-            int version = reader.ReadInteger();
-
-            // We understand both version 0 and 1 formats,
-            // which are now known as v1 and v2, respectively.
-            if (version > 1)
-            {
-                throw new CryptographicException();
-            }
-
-            {
-                // Ensure we're reading RSA
-                DerSequenceReader algorithm = reader.ReadSequence();
-
-                string algorithmOid = algorithm.ReadOidAsString();
-
-                if (algorithmOid != RsaOid)
-                {
-                    throw new CryptographicException();
-                }
-            }
-
-            byte[] privateKeyBytes = reader.ReadOctetString();
-            // Because this was an RSA private key, the key format is PKCS#1.
-            ReadPkcs1PrivateBlob(privateKeyBytes, ref parameters);
-
-            // We don't care about the rest of the blob here, but it's expected to not exist.
-        }
-
-        internal static byte[] ToSubjectPublicKeyInfo(this RSAParameters parameters)
-        {
-            Debug.Assert(parameters.D == null);
-
-            // SubjectPublicKeyInfo::= SEQUENCE  {
-            //    algorithm AlgorithmIdentifier,
-            //    subjectPublicKey     BIT STRING  }
-            return DerEncoder.ConstructSequence(
-                s_encodedRsaAlgorithmIdentifier,
-                DerEncoder.SegmentedEncodeBitString(
-                    parameters.ToPkcs1Blob()));
-        }
-
-        internal static void ReadSubjectPublicKeyInfo(this DerSequenceReader keyInfo, ref RSAParameters parameters)
-        {
-            // SubjectPublicKeyInfo::= SEQUENCE  {
-            //    algorithm AlgorithmIdentifier,
-            //    subjectPublicKey     BIT STRING  }
-            DerSequenceReader algorithm = keyInfo.ReadSequence();
-            string algorithmOid = algorithm.ReadOidAsString();
-
-            if (algorithmOid != RsaOid)
-            {
-                throw new CryptographicException();
-            }
-
-            byte[] subjectPublicKeyBytes = keyInfo.ReadBitString();
-
-            DerSequenceReader subjectPublicKey = new DerSequenceReader(subjectPublicKeyBytes);
-            subjectPublicKey.ReadPkcs1PublicBlob(ref parameters);
-        }
-
-        internal static void ReadPkcs1PublicBlob(this DerSequenceReader subjectPublicKey, ref RSAParameters parameters)
-        {
-            parameters.Modulus = KeyBlobHelpers.TrimPaddingByte(subjectPublicKey.ReadIntegerBytes());
-            parameters.Exponent = KeyBlobHelpers.TrimPaddingByte(subjectPublicKey.ReadIntegerBytes());
-
-            if (subjectPublicKey.HasData)
-                throw new CryptographicException();
-        }
-
-        private static void ReadPkcs1PrivateBlob(byte[] privateKeyBytes, ref RSAParameters parameters)
-        {
-            // RSAPrivateKey::= SEQUENCE {
-            //    version Version,
-            //    modulus           INTEGER,  --n
-            //    publicExponent INTEGER,  --e
-            //    privateExponent INTEGER,  --d
-            //    prime1 INTEGER,  --p
-            //    prime2 INTEGER,  --q
-            //    exponent1 INTEGER,  --d mod(p - 1)
-            //    exponent2 INTEGER,  --d mod(q - 1)
-            //    coefficient INTEGER,  --(inverse of q) mod p
-            //    otherPrimeInfos OtherPrimeInfos OPTIONAL
-            // }
-            DerSequenceReader privateKey = new DerSequenceReader(privateKeyBytes);
-            int version = privateKey.ReadInteger();
-
-            if (version != 0)
-            {
-                throw new CryptographicException();
-            }
-
-            parameters.Modulus = KeyBlobHelpers.TrimPaddingByte(privateKey.ReadIntegerBytes());
-            parameters.Exponent = KeyBlobHelpers.TrimPaddingByte(privateKey.ReadIntegerBytes());
-
-            int modulusLen = parameters.Modulus.Length;
-            // Add one so that odd byte-length values (RSA 1032) get padded correctly.
-            int halfModulus = (modulusLen + 1) / 2;
-
-            parameters.D = KeyBlobHelpers.PadOrTrim(privateKey.ReadIntegerBytes(), modulusLen);
-            parameters.P = KeyBlobHelpers.PadOrTrim(privateKey.ReadIntegerBytes(), halfModulus);
-            parameters.Q = KeyBlobHelpers.PadOrTrim(privateKey.ReadIntegerBytes(), halfModulus);
-            parameters.DP = KeyBlobHelpers.PadOrTrim(privateKey.ReadIntegerBytes(), halfModulus);
-            parameters.DQ = KeyBlobHelpers.PadOrTrim(privateKey.ReadIntegerBytes(), halfModulus);
-            parameters.InverseQ = KeyBlobHelpers.PadOrTrim(privateKey.ReadIntegerBytes(), halfModulus);
-
-            if (privateKey.HasData)
-            {
-                throw new CryptographicException();
-            }
-        }
     }
 }

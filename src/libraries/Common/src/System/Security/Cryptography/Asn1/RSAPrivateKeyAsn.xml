@@ -1,0 +1,39 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<asn:Sequence
+  xmlns:asn="http://schemas.dot.net/asnxml/201808/"
+  name="RSAPrivateKeyAsn"
+  namespace="System.Security.Cryptography.Asn1">
+
+  <!--
+    https://tools.ietf.org/html/rfc3447#appendix-C
+
+    RSAPrivateKey ::= SEQUENCE {
+        version           Version,
+        modulus           INTEGER,  - n
+        publicExponent    INTEGER,  - e
+        privateExponent   INTEGER,  - d
+        prime1            INTEGER,  - p
+        prime2            INTEGER,  - q
+        exponent1         INTEGER,  - d mod (p-1)
+        exponent2         INTEGER,  - d mod (q-1)
+        coefficient       INTEGER,  - (inverse of q) mod p
+        otherPrimeInfos   OtherPrimeInfos OPTIONAL
+    }
+
+    Version ::= INTEGER { two-prime(0), multi(1) }
+        (CONSTRAINED BY {
+         - version must be multi if otherPrimeInfos present -
+         })
+    
+    Since we don't support otherPrimeInfos (Version=1) just don't map it in.
+  -->
+  <asn:Integer name="Version" backingType="byte" />
+  <asn:Integer name="Modulus" />
+  <asn:Integer name="PublicExponent" />
+  <asn:Integer name="PrivateExponent" />
+  <asn:Integer name="Prime1" />
+  <asn:Integer name="Prime2" />
+  <asn:Integer name="Exponent1" />
+  <asn:Integer name="Exponent2" />
+  <asn:Integer name="Coefficient" />
+</asn:Sequence>

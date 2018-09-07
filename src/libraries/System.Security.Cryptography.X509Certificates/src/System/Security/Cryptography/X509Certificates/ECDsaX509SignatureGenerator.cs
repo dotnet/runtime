@@ -3,6 +3,8 @@
 // See the LICENSE file in the project root for more information.
 
 using System.Diagnostics;
+using System.Numerics;
+using System.Security.Cryptography.Asn1;
 using Internal.Cryptography;
 
 namespace System.Security.Cryptography.X509Certificates
@@ -42,19 +44,19 @@ namespace System.Security.Cryptography.X509Certificates
                     SR.Format(SR.Cryptography_UnknownHashAlgorithm, hashAlgorithm.Name));
             }
 
-            return DerEncoder.ConstructSequence(DerEncoder.SegmentedEncodeOid(oid));
+            using (AsnWriter writer = new AsnWriter(AsnEncodingRules.DER))
+            {
+                writer.PushSequence();
+                writer.WriteObjectIdentifier(oid);
+                writer.PopSequence();
+                return writer.Encode();
+            }
         }
 
         public override byte[] SignData(byte[] data, HashAlgorithmName hashAlgorithm)
         {
             byte[] ieeeFormat = _key.SignData(data, hashAlgorithm);
-
-            Debug.Assert(ieeeFormat.Length % 2 == 0);
-            int segmentLength = ieeeFormat.Length / 2;
-
-            return DerEncoder.ConstructSequence(
-                DerEncoder.SegmentedEncodeUnsignedInteger(new ReadOnlySpan<byte>(ieeeFormat, 0, segmentLength)),
-                DerEncoder.SegmentedEncodeUnsignedInteger(new ReadOnlySpan<byte>(ieeeFormat, segmentLength, segmentLength)));
+            return AsymmetricAlgorithmHelpers.ConvertIeee1363ToDer(ieeeFormat);
         }
 
         protected override PublicKey BuildPublicKey()
@@ -67,6 +69,7 @@ namespace System.Security.Cryptography.X509Certificates
             }
 
             string curveOid = ecParameters.Curve.Oid.Value;
+            byte[] curveOidEncoded;
 
             if (string.IsNullOrEmpty(curveOid))
             {
@@ -91,6 +94,12 @@ namespace System.Security.Cryptography.X509Certificates
                 }
             }
 
+            using (AsnWriter writer = new AsnWriter(AsnEncodingRules.DER))
+            {
+                writer.WriteObjectIdentifier(curveOid);
+                curveOidEncoded = writer.Encode();
+            }
+
             Debug.Assert(ecParameters.Q.X.Length == ecParameters.Q.Y.Length);
             byte[] uncompressedPoint = new byte[1 + ecParameters.Q.X.Length + ecParameters.Q.Y.Length];
 
@@ -104,7 +113,7 @@ namespace System.Security.Cryptography.X509Certificates
             
             return new PublicKey(
                 ecPublicKey,
-                new AsnEncodedData(ecPublicKey, DerEncoder.EncodeOid(curveOid)),
+                new AsnEncodedData(ecPublicKey, curveOidEncoded),
                 new AsnEncodedData(ecPublicKey, uncompressedPoint));
         }
     }

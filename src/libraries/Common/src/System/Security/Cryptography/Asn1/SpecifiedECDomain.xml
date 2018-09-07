@@ -1,0 +1,31 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<asn:Sequence
+  xmlns:asn="http://schemas.dot.net/asnxml/201808/"
+  name="SpecifiedECDomain"
+  namespace="System.Security.Cryptography.Asn1">
+
+  <!--
+    https://www.secg.org/sec1-v2.pdf, C.2
+
+    SpecifiedECDomain ::= SEQUENCE {
+        version SpecifiedECDomainVersion(ecdpVer1 | ecdpVer2 | ecdpVer3, ...),
+        fieldID FieldID {{FieldTypes}},
+        curve Curve,
+        base ECPoint,
+        order INTEGER,
+        cofactor INTEGER OPTIONAL,
+        hash HashAlgorithm OPTIONAL,
+        ...
+    }
+
+    HashAlgorithm ::= AlgorithmIdentifier {{ HashFunctions }}
+    ECPoint ::= OCTET STRING
+  -->
+  <asn:Integer name="Version" backingType="byte" />
+  <asn:AsnType name="FieldID" typeName="System.Security.Cryptography.Asn1.FieldID" />
+  <asn:AsnType name="Curve" typeName="System.Security.Cryptography.Asn1.CurveAsn" />
+  <asn:OctetString name="Base" />    
+  <asn:Integer name="Order" backingType="ReadOnlyMemory" />
+  <asn:Integer name="Cofactor" backingType="ReadOnlyMemory" optional="true" />
+  <asn:ObjectIdentifier name="Hash" />
+</asn:Sequence>
