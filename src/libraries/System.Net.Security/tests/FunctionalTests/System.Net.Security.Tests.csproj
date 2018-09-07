@@ -48,6 +48,9 @@
     <Compile Include="$(CommonTestPath)\System\Net\Configuration.Certificates.cs">
       <Link>Common\System\Net\Configuration.Certificates.cs</Link>
     </Compile>
+    <Compile Include="$(CommonTestPath)\System\Net\Configuration.Http.cs">
+      <Link>Common\System\Net\Configuration.Http.cs</Link>
+    </Compile>
     <Compile Include="$(CommonTestPath)\System\Net\HttpsTestClient.cs">
       <Link>Common\System\Net\HttpsTestClient.cs</Link>
     </Compile>

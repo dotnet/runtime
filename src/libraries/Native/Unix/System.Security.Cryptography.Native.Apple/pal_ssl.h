@@ -139,6 +139,21 @@ DLLEXPORT int32_t AppleCryptoNative_SslSetTargetName(SSLContextRef sslContext,
                                                      int32_t* pOSStatus);
 
 /*
+Set list of application protocols for ClientHello.
+
+Returns 1 on success, 0 on failure, other values for invalid state.
+
+Output:
+pOSStatus: Receives the value from SSLSetALPNData()
+*/
+DLLEXPORT int32_t AppleCryptoNative_SSLSetALPNProtocols(SSLContextRef sslContext, CFArrayRef protocols, int32_t* pOSStatus);
+
+/*
+Get negotiated protocol value from ServerHello.
+*/
+DLLEXPORT int32_t AppleCryptoNative_SslGetAlpnSelected(SSLContextRef sslContext, CFDataRef *protocol);
+
+/*
 Register the callbacks for reading and writing data to the SSL context.
 
 Returns the output of SSLSetIOFuncs.
