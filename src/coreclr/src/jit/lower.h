@@ -229,15 +229,18 @@ private:
     // operands.
     //
     // Arguments:
-    //     tree  -  Gentree of a binary operation.
+    //     tree  -             Gentree of a binary operation.
+    //     isSafeToMarkOp1     True if it's safe to mark op1 as register optional
+    //     isSafeToMarkOp2     True if it's safe to mark op2 as register optional
     //
     // Returns
-    //     None.
+    //     The caller is expected to get isSafeToMarkOp1 and isSafeToMarkOp2
+    //     by calling IsSafeToContainMem.
     //
     // Note: On xarch at most only one of the operands will be marked as
     // reg optional, even when both operands could be considered register
     // optional.
-    void SetRegOptionalForBinOp(GenTree* tree)
+    void SetRegOptionalForBinOp(GenTree* tree, bool isSafeToMarkOp1, bool isSafeToMarkOp2)
     {
         assert(GenTree::OperIsBinary(tree->OperGet()));
 
@@ -246,8 +249,9 @@ private:
 
         const unsigned operatorSize = genTypeSize(tree->TypeGet());
 
-        const bool op1Legal = tree->OperIsCommutative() && (operatorSize == genTypeSize(op1->TypeGet()));
-        const bool op2Legal = operatorSize == genTypeSize(op2->TypeGet());
+        const bool op1Legal =
+            isSafeToMarkOp1 && tree->OperIsCommutative() && (operatorSize == genTypeSize(op1->TypeGet()));
+        const bool op2Legal = isSafeToMarkOp2 && (operatorSize == genTypeSize(op2->TypeGet()));
 
         GenTree* regOptionalOperand = nullptr;
         if (op1Legal)
