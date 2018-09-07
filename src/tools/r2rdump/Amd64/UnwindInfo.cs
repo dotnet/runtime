@@ -133,11 +133,13 @@ namespace R2RDump.Amd64
                 UnwindCodes[UnwindCodeArray[i].CodeOffset].Add(UnwindCodeArray[i]);
             }
 
-            PersonalityRoutineRVA = NativeReader.ReadUInt32(image, ref offset);
-
             Size = _offsetofUnwindCode + CountOfUnwindCodes * _sizeofUnwindCode;
-            int alignmentPad = ((Size + sizeof(int) - 1) & ~(sizeof(int) - 1)) - Size;
-            Size += (alignmentPad + sizeof(uint));
+            int alignmentPad = -Size & 3;
+            Size += alignmentPad + sizeof(uint);
+
+            // Personality routine RVA must be at 4-aligned address
+            offset += alignmentPad;
+            PersonalityRoutineRVA = NativeReader.ReadUInt32(image, ref offset);
         }
 
         public override string ToString()
