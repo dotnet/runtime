@@ -6516,6 +6516,7 @@ VOID MethodTableBuilder::PlaceInterfaceDeclarationOnClass(
         pDecl->GetSlotIndex(), 
         pImpl);
 
+#ifdef FEATURE_PREJIT
     if (IsCompilationProcess())
     {
         //
@@ -6527,6 +6528,7 @@ VOID MethodTableBuilder::PlaceInterfaceDeclarationOnClass(
             pDeclMT->GetWriteableDataForWrite()->SetIsOverridingInterface();
         }
     }
+#endif
     
 #ifdef _DEBUG
     if (bmtInterface->dbg_fShouldInjectInterfaceDuplicates)

@@ -17,6 +17,10 @@
 
 typedef DPTR(struct READYTORUN_SECTION) PTR_READYTORUN_SECTION;
 
+#ifndef FEATURE_PREJIT
+typedef DPTR(struct READYTORUN_IMPORT_SECTION) PTR_CORCOMPILE_IMPORT_SECTION;
+#endif
+
 class PrepareCodeConfig;
 
 typedef DPTR(class ReadyToRunInfo) PTR_ReadyToRunInfo;

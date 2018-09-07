@@ -4056,9 +4056,9 @@ BOOL DacDbiInterfaceImpl::GetModuleNGenPath(VMPTR_Module vmModule,
             return TRUE;
         }
     }
+NoFileName:
 #endif // FEATURE_PREJIT
 
-NoFileName:
     // no ngen filename
     IfFailThrow(pStrFilename->AssignCopy(W("")));
     return FALSE;

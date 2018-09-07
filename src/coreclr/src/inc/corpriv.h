@@ -383,17 +383,6 @@ DECLARE_INTERFACE_(ICeeGenInternal, IUnknown)
     STDMETHOD (SetInitialGrowth) (DWORD growth) PURE;
 };
 
-// ===========================================================================
-#ifdef FEATURE_PREJIT
-// ===========================================================================
-
-
-// Use the default JIT compiler
-#define DEFAULT_NGEN_COMPILER_DLL_NAME W("clrjit.dll")
-
-
-struct CORCOMPILE_ASSEMBLY_SIGNATURE;
-
 //
 // IGetIMDInternalImport
 //
@@ -403,7 +392,7 @@ struct CORCOMPILE_ASSEMBLY_SIGNATURE;
 //    RegMeta, WinMDImport - supports the internal GetMetaDataInternalInterfaceFromPublic() "api".
 //
 // {92B2FEF9-F7F5-420d-AD42-AECEEE10A1EF}
-EXTERN_GUID(IID_IGetIMDInternalImport,  0x92b2fef9, 0xf7f5, 0x420d, 0xad, 0x42, 0xae, 0xce, 0xee, 0x10, 0xa1, 0xef);
+EXTERN_GUID(IID_IGetIMDInternalImport, 0x92b2fef9, 0xf7f5, 0x420d, 0xad, 0x42, 0xae, 0xce, 0xee, 0x10, 0xa1, 0xef);
 #undef  INTERFACE
 #define INTERFACE IGetIMDInternalImport
 DECLARE_INTERFACE_(IGetIMDInternalImport, IUnknown)
@@ -413,7 +402,12 @@ DECLARE_INTERFACE_(IGetIMDInternalImport, IUnknown)
     ) PURE;
 };
 
+// ===========================================================================
+#ifdef FEATURE_PREJIT
+// ===========================================================================
 
+// Use the default JIT compiler
+#define DEFAULT_NGEN_COMPILER_DLL_NAME W("clrjit.dll")
 
 #ifndef DACCESS_COMPILE
 
@@ -483,54 +477,6 @@ STDAPI GetCORVersionInternal(
     __out_ecount_z_opt(cchBuffer) LPWSTR pBuffer, 
                                   DWORD  cchBuffer,
     __out                         DWORD *pdwLength);
-
-
-#ifdef FEATURE_PREJIT
-
-//**********************************************************************
-// Access to native image validation logic in the runtime.
-//
-// An interface only a mother could live as this logic should really be encapsulated in
-// the native binder. But for historical reasons, it lives in the VM directory
-// and is shared by the desktop and coreclr's which have separate native binders.
-// Hence, this interface inherits a lot of "baggage."
-
-
-
-// A small shim around PEAssemblies/IBindResult that allow us to write Fusion/CLR-agnostic code
-// for logging native bind failures to the Fusion log/CLR log.
-//
-// These objects are stack-based and non-thread-safe. They are created for the duration of a single RuntimeVerify call.
-// The methods are expected to compute their data lazily as they are only used in bind failures or in checked builds.
-//
-// This class also exposes the IFusionBindLog pointer. This isn't really the appropriate place to expose that but 
-// it serves to avoid compiling references to IFUsionBindLog into code that doesn't define FEATURE_FUSION.
-class LoggableAssembly
-{
-  public:
-    virtual SString         DisplayString() = 0;        // Returns an unspecified representation suitable for injecting into log messages.   
-};
-
-
-// Validates that an NI matches the running CLR, OS, CPU, etc.
-BOOL RuntimeVerifyNativeImageVersion(const CORCOMPILE_VERSION_INFO *pVerInfo, LoggableAssembly *pLogAsm);
-
-// Validates that an NI matches the required flavor (debug, instrumented, etc.)
-BOOL RuntimeVerifyNativeImageFlavor(const CORCOMPILE_VERSION_INFO *pVerInfo, LoggableAssembly *pLogAsm);
-
-// Validates that a hard-dep matches the a parent NI's compile-time hard-dep.
-BOOL RuntimeVerifyNativeImageDependency(const CORCOMPILE_NGEN_SIGNATURE &ngenSigExpected,
-                                        const CORCOMPILE_VERSION_INFO *pActual,
-                                        LoggableAssembly              *pLogAsm);
-
-BOOL RuntimeVerifyNativeImageDependency(const CORCOMPILE_DEPENDENCY   *pExpected,
-                                        const CORCOMPILE_VERSION_INFO *pActual,
-                                        LoggableAssembly              *pLogAsm);
-
-#endif // FEATURE_PREJIT
-
-
-
 
 #endif  // _CORPRIV_H_
 // EOF =======================================================================

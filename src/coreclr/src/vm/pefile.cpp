@@ -1034,7 +1034,7 @@ extern DWORD g_dwLogLevel;
 //===========================================================================================================
 // Encapsulates CLR and Fusion logging for runtime verification of native images.
 //===========================================================================================================
-static void RuntimeVerifyVLog(DWORD level, LoggableAssembly *pLogAsm, const WCHAR *fmt, va_list args)
+static void RuntimeVerifyVLog(DWORD level, PEAssembly *pLogAsm, const WCHAR *fmt, va_list args)
 {
     STANDARD_VM_CONTRACT;
 
@@ -1046,7 +1046,7 @@ static void RuntimeVerifyVLog(DWORD level, LoggableAssembly *pLogAsm, const WCHA
 
     if (fOutputToLogging)
     {
-        SString displayString = pLogAsm->DisplayString();
+        SString displayString = pLogAsm->GetPath();
         LOG((LF_ZAP, level, "%s: \"%S\"\n", "ZAP", displayString.GetUnicode()));
         LOG((LF_ZAP, level, "%S", message.GetUnicode()));
         LOG((LF_ZAP, level, "\n"));
@@ -1054,7 +1054,7 @@ static void RuntimeVerifyVLog(DWORD level, LoggableAssembly *pLogAsm, const WCHA
 
     if (fOutputToDebugger)
     {
-        SString displayString = pLogAsm->DisplayString();
+        SString displayString = pLogAsm->GetPath();
         WszOutputDebugString(W("CLR:("));
         WszOutputDebugString(displayString.GetUnicode());
         WszOutputDebugString(W(") "));
@@ -1068,7 +1068,7 @@ static void RuntimeVerifyVLog(DWORD level, LoggableAssembly *pLogAsm, const WCHA
 //===========================================================================================================
 // Encapsulates CLR and Fusion logging for runtime verification of native images.
 //===========================================================================================================
-static void RuntimeVerifyLog(DWORD level, LoggableAssembly *pLogAsm, const WCHAR *fmt, ...)
+static void RuntimeVerifyLog(DWORD level, PEAssembly *pLogAsm, const WCHAR *fmt, ...)
 {
     STANDARD_VM_CONTRACT;
 
@@ -1156,67 +1156,6 @@ extern HMODULE CorCompileGetRuntimeDll(CorCompileRuntimeDlls id)
 #endif // CROSSGEN_COMPILE
 
 //===========================================================================================================
-// Helper for RuntimeVerifyNativeImageVersion(). Compares the loaded clr.dll and clrjit.dll's against
-// the ones the native image was compiled against.
-//===========================================================================================================
-static BOOL RuntimeVerifyNativeImageTimestamps(const CORCOMPILE_VERSION_INFO *info, LoggableAssembly *pLogAsm)
-{
-    STANDARD_VM_CONTRACT;
-
-
-    return TRUE;
-}
-
-//===========================================================================================================
-// Validates that an NI matches the running CLR, OS, CPU, etc. This is the entrypoint used by the CLR loader.
-//
-//===========================================================================================================
-BOOL PEAssembly::CheckNativeImageVersion(PEImage *peimage)
-{
-    STANDARD_VM_CONTRACT;
-
-    //
-    // Get the zap version header. Note that modules will not have version
-    // headers - they add no additional versioning constraints from their
-    // assemblies.
-    //
-    PEImageLayoutHolder image=peimage->GetLayout(PEImageLayout::LAYOUT_ANY,PEImage::LAYOUT_CREATEIFNEEDED);
-
-    if (!image->HasNativeHeader())
-        return FALSE;
-
-    if (!image->CheckNativeHeaderVersion())
-    {
-        // Wrong native image version is fatal error on CoreCLR
-        ThrowHR(COR_E_NI_AND_RUNTIME_VERSION_MISMATCH);
-    }
-
-    CORCOMPILE_VERSION_INFO *info = image->GetNativeVersionInfo();
-    if (info == NULL)
-        return FALSE;
-
-    LoggablePEAssembly logAsm(this);
-    if (!RuntimeVerifyNativeImageVersion(info, &logAsm))
-    {
-        // Wrong native image version is fatal error on CoreCLR
-        ThrowHR(COR_E_NI_AND_RUNTIME_VERSION_MISMATCH);
-    }
-
-    CorCompileConfigFlags configFlags = PEFile::GetNativeImageConfigFlagsWithOverrides();
-
-    // Otherwise, match regardless of the instrumentation flags
-    configFlags = (CorCompileConfigFlags) (configFlags & ~(CORCOMPILE_CONFIG_INSTRUMENTATION_NONE | CORCOMPILE_CONFIG_INSTRUMENTATION));
-
-    if ((info->wConfigFlags & configFlags) != configFlags)
-    {
-        return FALSE;
-    }
-
-    return TRUE;
-}
-
-
-//===========================================================================================================
 // Validates that an NI matches the running CLR, OS, CPU, etc.
 //
 // For historial reasons, some versions of the runtime perform this check at native bind time (preferrred),
@@ -1225,12 +1164,9 @@ BOOL PEAssembly::CheckNativeImageVersion(PEImage *peimage)
 // This is the common funnel for both versions and is agnostic to whether the "assembly" is represented
 // by a CLR object or Fusion object.
 //===========================================================================================================
-BOOL RuntimeVerifyNativeImageVersion(const CORCOMPILE_VERSION_INFO *info, LoggableAssembly *pLogAsm)
+BOOL RuntimeVerifyNativeImageVersion(const CORCOMPILE_VERSION_INFO *info, PEAssembly *pLogAsm)
 {
     STANDARD_VM_CONTRACT;
-
-    if (!RuntimeVerifyNativeImageTimestamps(info, pLogAsm))
-        return FALSE;
 
     //
     // Check that the EE version numbers are the same.
@@ -1292,6 +1228,53 @@ BOOL RuntimeVerifyNativeImageVersion(const CORCOMPILE_VERSION_INFO *info, Loggab
     //
 
     RuntimeVerifyLog(LL_INFO100, pLogAsm, W("Native image has correct version information."));
+    return TRUE;
+}
+
+//===========================================================================================================
+// Validates that an NI matches the running CLR, OS, CPU, etc. This is the entrypoint used by the CLR loader.
+//
+//===========================================================================================================
+BOOL PEAssembly::CheckNativeImageVersion(PEImage *peimage)
+{
+    STANDARD_VM_CONTRACT;
+
+    //
+    // Get the zap version header. Note that modules will not have version
+    // headers - they add no additional versioning constraints from their
+    // assemblies.
+    //
+    PEImageLayoutHolder image = peimage->GetLayout(PEImageLayout::LAYOUT_ANY, PEImage::LAYOUT_CREATEIFNEEDED);
+
+    if (!image->HasNativeHeader())
+        return FALSE;
+
+    if (!image->CheckNativeHeaderVersion())
+    {
+        // Wrong native image version is fatal error on CoreCLR
+        ThrowHR(COR_E_NI_AND_RUNTIME_VERSION_MISMATCH);
+    }
+
+    CORCOMPILE_VERSION_INFO *info = image->GetNativeVersionInfo();
+    if (info == NULL)
+        return FALSE;
+
+    if (!RuntimeVerifyNativeImageVersion(info, this))
+    {
+        // Wrong native image version is fatal error on CoreCLR
+        ThrowHR(COR_E_NI_AND_RUNTIME_VERSION_MISMATCH);
+    }
+
+    CorCompileConfigFlags configFlags = PEFile::GetNativeImageConfigFlagsWithOverrides();
+
+    // Otherwise, match regardless of the instrumentation flags
+    configFlags = (CorCompileConfigFlags)(configFlags & ~(CORCOMPILE_CONFIG_INSTRUMENTATION_NONE | CORCOMPILE_CONFIG_INSTRUMENTATION));
+
+    if ((info->wConfigFlags & configFlags) != configFlags)
+    {
+        return FALSE;
+    }
+
     return TRUE;
 }
 
@@ -1401,14 +1384,14 @@ CorCompileConfigFlags PEFile::GetNativeImageConfigFlagsWithOverrides()
 //===========================================================================================================
 BOOL RuntimeVerifyNativeImageDependency(const CORCOMPILE_NGEN_SIGNATURE &ngenSigExpected,
                                         const CORCOMPILE_VERSION_INFO *pActual,
-                                        LoggableAssembly              *pLogAsm)
+                                        PEAssembly                    *pLogAsm)
 {
     STANDARD_VM_CONTRACT;
 
     if (ngenSigExpected != pActual->signature)
     {
         // Signature did not match
-        SString displayString = pLogAsm->DisplayString();
+        SString displayString = pLogAsm->GetPath();
         RuntimeVerifyLog(LL_ERROR,
                          pLogAsm,
                          W("Rejecting native image because native image dependency %s ")
@@ -1422,7 +1405,7 @@ BOOL RuntimeVerifyNativeImageDependency(const CORCOMPILE_NGEN_SIGNATURE &ngenSig
 // Wrapper function for use by parts of the runtime that actually have a CORCOMPILE_DEPENDENCY to work with.
 BOOL RuntimeVerifyNativeImageDependency(const CORCOMPILE_DEPENDENCY   *pExpected,
                                         const CORCOMPILE_VERSION_INFO *pActual,
-                                        LoggableAssembly              *pLogAsm)
+                                        PEAssembly                    *pLogAsm)
 {
     WRAPPER_NO_CONTRACT;
 

@@ -10,16 +10,16 @@
 
 #ifdef WIN64EXCEPTIONS
 
+#include "eexcp.h"
+#include "exstatecommon.h"
+
 #if defined(_TARGET_ARM_) || defined(_TARGET_X86_)
 #define USE_PER_FRAME_PINVOKE_INIT
 #endif // _TARGET_ARM_ || _TARGET_X86_
 
-
 // This address lies in the NULL pointer partition of the process memory.
 // Accessing it will result in AV.
 #define INVALID_RESUME_ADDRESS 0x000000000000bad0
-
-#include "exstatecommon.h"
 
 EXTERN_C EXCEPTION_DISPOSITION
 ProcessCLRException(IN     PEXCEPTION_RECORD     pExceptionRecord

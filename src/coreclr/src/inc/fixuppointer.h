@@ -588,16 +588,13 @@ public:
     BOOL IsTagged(TADDR base) const
     {
         LIMITED_METHOD_DAC_CONTRACT;
-        return IsTagged();
+        return FALSE;
     }
 
     // Returns whether the indirection cell contain fixup that has not been converted to real pointer yet.
     BOOL IsTagged() const
     {
         LIMITED_METHOD_DAC_CONTRACT;
-        TADDR addr = m_ptr;
-        if ((addr & FIXUP_POINTER_INDIRECTION) != 0)
-             return (*PTR_TADDR(addr - FIXUP_POINTER_INDIRECTION) & 1) != 0;
         return FALSE;
     }
 
@@ -613,9 +610,6 @@ public:
     PTR_TYPE * GetValuePtr() const
     {
         LIMITED_METHOD_CONTRACT;
-        TADDR addr = m_ptr;
-        if ((addr & FIXUP_POINTER_INDIRECTION) != 0)
-            return (PTR_TYPE *)(addr - FIXUP_POINTER_INDIRECTION);
         return (PTR_TYPE *)&m_ptr;
     }
 #endif // !DACCESS_COMPILE
@@ -655,12 +649,27 @@ public:
         return dac_cast<DPTR(PlainPointer<PTR_TYPE>)>(base)->GetValueMaybeNull(base);
     }
 
+    // Returns value of the encoded pointer.
+    // Allows the value to be tagged.
+    FORCEINLINE TADDR GetValueMaybeTagged() const
+    {
+        LIMITED_METHOD_DAC_CONTRACT;
+        return m_ptr;
+    }
+
+    // Returns value of the encoded pointer. Assumes that the pointer is not NULL. 
+    // Allows the value to be tagged.
+    FORCEINLINE TADDR GetValueMaybeTagged(TADDR base) const
+    {
+        LIMITED_METHOD_DAC_CONTRACT;
+        return m_ptr;
+    }
+
     // Returns whether pointer is indirect. Assumes that the value is not NULL.
     bool IsIndirectPtr(TADDR base) const
     {
         LIMITED_METHOD_DAC_CONTRACT;
-
-        return (m_ptr & FIXUP_POINTER_INDIRECTION) != 0;
+        return FALSE;
     }
 
 #ifndef DACCESS_COMPILE
@@ -669,7 +678,7 @@ public:
     bool IsIndirectPtr() const
     {
         LIMITED_METHOD_CONTRACT;
-        return IsIndirectPtr((TADDR)this);
+        return FALSE;
     }
 #endif
 
@@ -677,8 +686,7 @@ public:
     bool IsIndirectPtrMaybeNull(TADDR base) const
     {
         LIMITED_METHOD_DAC_CONTRACT;
-
-        return IsIndirectPtr(base);
+        return FALSE;
     }
 
 #ifndef DACCESS_COMPILE
@@ -687,7 +695,7 @@ public:
     bool IsIndirectPtrMaybeNull() const
     {
         LIMITED_METHOD_CONTRACT;
-        return IsIndirectPtrMaybeNull((TADDR)this);
+        return FALSE;
     }
 #endif
 
