@@ -50,7 +50,7 @@
     <XUnitPackageVersion>2.4.1-pre.build.4059</XUnitPackageVersion>
     <XUnitPerformancePackageVersion>1.0.0-beta-build0020</XUnitPerformancePackageVersion>
     <TraceEventPackageVersion>2.0.5</TraceEventPackageVersion>
-    <MicrosoftDotNetXUnitExtensionsVersion>2.4.0-beta.18420.3</MicrosoftDotNetXUnitExtensionsVersion>
+    <MicrosoftDotNetXUnitExtensionsVersion>2.4.0-beta.18456.9</MicrosoftDotNetXUnitExtensionsVersion>
     <UAPToolsPackageVersion>1.0.21</UAPToolsPackageVersion>
 
     <!-- Roslyn optimization data package version -->
