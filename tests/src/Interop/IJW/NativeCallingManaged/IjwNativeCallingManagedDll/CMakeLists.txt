@@ -1,7 +1,7 @@
 cmake_minimum_required (VERSION 2.6)
-project (IjwNativeDll)
+project (IjwNativeCallingManagedDll)
 include_directories( ${INC_PLATFORM_DIR} )
-set(SOURCES IjwNativeDll.cpp)
+set(SOURCES IjwNativeCallingManagedDll.cpp)
 
 if (WIN32)
   # 4365 - signed/unsigned mismatch
@@ -35,8 +35,8 @@ if (WIN32)
 endif()
 
 # add the shared library
-add_library (IjwNativeDll SHARED ${SOURCES})
-target_link_libraries(IjwNativeDll ${LINK_LIBRARIES_ADDITIONAL})
+add_library (IjwNativeCallingManagedDll SHARED ${SOURCES})
+target_link_libraries(IjwNativeCallingManagedDll ${LINK_LIBRARIES_ADDITIONAL})
 
 # add the install targets
-install (TARGETS IjwNativeDll DESTINATION bin)
+install (TARGETS IjwNativeCallingManagedDll DESTINATION bin)
