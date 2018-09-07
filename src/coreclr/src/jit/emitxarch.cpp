@@ -9526,9 +9526,9 @@ GOT_DSP:
 #ifdef _TARGET_AMD64_
                         // all these opcodes only take a sign-extended 4-byte immediate
                         noway_assert(opsz < 8 || ((int)cval == cval && !addc->cnsReloc));
-#else
+#else  //_TARGET_X86_
                         noway_assert(opsz <= 4);
-#endif
+#endif //_TARGET_X86_
 
                         switch (opsz)
                         {
@@ -10762,9 +10762,9 @@ BYTE* emitter::emitOutputCV(BYTE* dst, instrDesc* id, code_t code, CnsVal* addc)
 #ifdef _TARGET_AMD64_
             // all these opcodes only take a sign-extended 4-byte immediate
             noway_assert(opsz < 8 || ((int)cval == cval && !addc->cnsReloc));
-#else
+#else  //_TARGET_X86_
             noway_assert(opsz <= 4);
-#endif
+#endif //_TARGET_X86_
 
             switch (opsz)
             {
