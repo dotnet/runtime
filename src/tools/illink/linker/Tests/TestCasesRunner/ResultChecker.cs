@@ -80,7 +80,7 @@ namespace Mono.Linker.Tests.TestCasesRunner {
 			_linkedResolver.AddSearchDirectory (linkedResult.OutputAssemblyPath.Parent.ToString ());
 		}
 
-		AssemblyDefinition ResolveLinkedAssembly (string assemblyName)
+		protected AssemblyDefinition ResolveLinkedAssembly (string assemblyName)
 		{
 			var cleanAssemblyName = assemblyName;
 			if (assemblyName.EndsWith(".exe") || assemblyName.EndsWith(".dll"))
@@ -88,7 +88,7 @@ namespace Mono.Linker.Tests.TestCasesRunner {
 			return _linkedResolver.Resolve (new AssemblyNameReference (cleanAssemblyName, null), _linkedReaderParameters);
 		}
 
-		AssemblyDefinition ResolveOriginalsAssembly (string assemblyName)
+		protected AssemblyDefinition ResolveOriginalsAssembly (string assemblyName)
 		{
 			var cleanAssemblyName = assemblyName;
 			if (assemblyName.EndsWith (".exe") || assemblyName.EndsWith (".dll"))
