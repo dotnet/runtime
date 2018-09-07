@@ -54,6 +54,7 @@ namespace System.IO.Compression.Tests
         [InlineData("WindowsInvalid_FromWindows.zip", "aa<b>d")]
         [InlineData("NullCharFileName_FromWindows.zip", "a\06b6d")]
         [InlineData("NullCharFileName_FromUnix.zip", "a\06b6d")]
+        [ActiveIssue(32167, TargetFrameworkMonikers.NetFramework)]
         public static async Task ZipWithInvalidFileNames_ParsedBasedOnSourceOS(string zipName, string fileName)
         {
             using (Stream stream = await StreamHelpers.CreateTempCopyStream(compat(zipName)))

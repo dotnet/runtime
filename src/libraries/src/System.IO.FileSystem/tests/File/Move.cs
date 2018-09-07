@@ -197,6 +197,7 @@ namespace System.IO.Tests
         }
 
         [ConditionalFact(nameof(AreAllLongPathsAvailable))]
+        [ActiveIssue(32167, TargetFrameworkMonikers.NetFramework)]
         [PlatformSpecific(TestPlatforms.Windows)]  // Path longer than max path limit
         public void OverMaxPathWorks_Windows()
         {
