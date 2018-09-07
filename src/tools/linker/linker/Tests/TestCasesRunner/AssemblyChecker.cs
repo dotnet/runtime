@@ -35,6 +35,7 @@ namespace Mono.Linker.Tests.TestCasesRunner {
 				VerifyModule (originalModule, linkedAssembly.Modules.FirstOrDefault (m => m.Name == originalModule.Name));
 
 			VerifyResources (originalAssembly, linkedAssembly);
+			VerifyReferences (originalAssembly, linkedAssembly);
 
 			linkedMembers = new HashSet<string> (linkedAssembly.MainModule.AllMembers ().Select (s => {
 				return s.FullName;
@@ -325,6 +326,41 @@ namespace Mono.Linker.Tests.TestCasesRunner {
 			VerifyParameters (src, linked);
 			VerifySecurityAttributes (src, linked);
 			VerifyArrayInitializers (src, linked);
+		}
+
+		void VerifyReferences (AssemblyDefinition original, AssemblyDefinition linked)
+		{
+			var expected = original.MainModule.AllDefinedTypes ()
+				.SelectMany (t => GetCustomAttributeCtorValues<string> (t, nameof (KeptReferenceAttribute)))
+				.Select (ReduceAssemblyFileNameOrNameToNameOnly)
+				.ToArray ();
+
+			/*
+			 - The test case will always need to have at least 1 reference.
+			 - Forcing all tests to define their expected references seems tedious
+			 
+			 Given the above, let's assume that when no [KeptReference] attributes are present,
+			 the test case does not want to make any assertions regarding references.
+			 
+			 Once 1 kept reference attribute is used, the test will need to define all of of it's expected references
+			*/
+			if (expected.Length == 0)
+				return;
+
+			var actual = linked.MainModule.AssemblyReferences
+				.Select (name => name.Name)
+				.ToArray ();
+
+			Assert.That (actual, Is.EquivalentTo (expected));
+		}
+
+		string ReduceAssemblyFileNameOrNameToNameOnly (string fileNameOrAssemblyName)
+		{
+			if (fileNameOrAssemblyName.EndsWith (".dll") || fileNameOrAssemblyName.EndsWith (".exe") || fileNameOrAssemblyName.EndsWith (".winmd"))
+				return System.IO.Path.GetFileNameWithoutExtension (fileNameOrAssemblyName);
+			
+			// It must already be just the assembly name
+			return fileNameOrAssemblyName;
 		}
 
 		void VerifyResources (AssemblyDefinition original, AssemblyDefinition linked)

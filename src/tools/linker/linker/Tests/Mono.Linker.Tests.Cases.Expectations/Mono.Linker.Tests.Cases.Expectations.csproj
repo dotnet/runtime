@@ -50,6 +50,7 @@
     <Compile Include="Assertions\KeptInitializerData.cs" />
     <Compile Include="Assertions\KeptMemberAttribute.cs" />
     <Compile Include="Assertions\KeptMemberInAssemblyAttribute.cs" />
+    <Compile Include="Assertions\KeptReferenceAttribute.cs" />
     <Compile Include="Assertions\KeptResourceAttribute.cs" />
     <Compile Include="Assertions\KeptResourceInAssemblyAttribute.cs" />
     <Compile Include="Assertions\KeptSecurityAttribute.cs" />
