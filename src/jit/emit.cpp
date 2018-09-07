@@ -7169,6 +7169,8 @@ void emitter::emitRecordRelocation(void* location,            /* IN */
                                    WORD  slotNum /* = 0 */,   /* IN */
                                    INT32 addlDelta /* = 0 */) /* IN */
 {
+    assert(slotNum == 0); // It is unused on all supported platforms.
+
     // If we're an unmatched altjit, don't tell the VM anything. We still record the relocation for
     // late disassembly; maybe we'll need it?
     if (emitComp->info.compMatchedVM)
