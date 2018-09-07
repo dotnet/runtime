@@ -11336,14 +11336,14 @@ HANDLE Module::OpenMethodProfileDataLogFile(GUID mvid)
         path.Set(assemblyPath);                         // no, then put it beside the IL dll
     }
     else {
-        LPCWSTR assemblyFileName = wcsrchr(assemblyPath, '\\'); 
+        LPCWSTR assemblyFileName = wcsrchr(assemblyPath, DIRECTORY_SEPARATOR_CHAR_W);
         if (assemblyFileName)
             assemblyFileName++;                         // skip past the \ char
         else 
             assemblyFileName = assemblyPath;
 
         path.Set(ibcDir);                               // yes, put it in the directory, named with the assembly name.
-        path.Append('\\');
+        path.Append(DIRECTORY_SEPARATOR_CHAR_W);
         path.Append(assemblyFileName);
     }
 
