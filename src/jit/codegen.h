@@ -1117,7 +1117,7 @@ protected:
     void genCallInstruction(GenTreeCall* call);
     void genJmpMethod(GenTree* jmp);
     BasicBlock* genCallFinally(BasicBlock* block);
-    void genCodeForJumpTrue(GenTree* tree);
+    void genCodeForJumpTrue(GenTreeOp* jtrue);
 #ifdef _TARGET_ARM64_
     void genCodeForJumpCompare(GenTreeOp* tree);
 #endif // _TARGET_ARM64_
@@ -1337,6 +1337,50 @@ public:
 #ifdef _TARGET_XARCH_
     instruction genMapShiftInsToShiftByConstantIns(instruction ins, int shiftByValue);
 #endif // _TARGET_XARCH_
+
+    // Maps a GenCondition code to a sequence of conditional jumps or other conditional instructions
+    // such as X86's SETcc. A sequence of instructions rather than just a single one is required for
+    // certain floating point conditions.
+    // For example, X86's UCOMISS sets ZF to indicate equality but it also sets it, together with PF,
+    // to indicate an unordered result. So for GenCondition::FEQ we first need to check if PF is 0
+    // and then jump if ZF is 1:
+    //       JP fallThroughBlock
+    //       JE jumpDestBlock
+    //   fallThroughBlock:
+    //       ...
+    //   jumpDestBlock:
+    //
+    // This is very similar to the way shortcircuit evaluation of bool AND and OR operators works so
+    // in order to make the GenConditionDesc mapping tables easier to read, a bool expression-like
+    // pattern is used to encode the above:
+    //     { EJ_jnp, GT_AND, EJ_je  }
+    //     { EJ_jp,  GT_OR,  EJ_jne }
+    //
+    // For more details check inst_JCC and inst_SETCC functions.
+    //
+    struct GenConditionDesc
+    {
+        emitJumpKind jumpKind1;
+        genTreeOps   oper;
+        emitJumpKind jumpKind2;
+        char         padTo4Bytes;
+
+        static const GenConditionDesc& Get(GenCondition condition)
+        {
+            assert(condition.GetCode() < _countof(map));
+            const GenConditionDesc& desc = map[condition.GetCode()];
+            assert(desc.jumpKind1 != EJ_NONE);
+            assert((desc.oper == GT_NONE) || (desc.oper == GT_AND) || (desc.oper == GT_OR));
+            assert((desc.oper == GT_NONE) == (desc.jumpKind2 == EJ_NONE));
+            return desc;
+        }
+
+    private:
+        static const GenConditionDesc map[32];
+    };
+
+    void inst_JCC(GenCondition condition, BasicBlock* target);
+    void inst_SETCC(GenCondition condition, var_types type, regNumber dstReg);
 };
 
 /*XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
