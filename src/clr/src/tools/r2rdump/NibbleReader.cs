@@ -86,5 +86,10 @@ namespace R2RDump
             int signedValue = (int)(unsignedValue >> 1);
             return ((unsignedValue & 1) != 0 ? -signedValue : signedValue);
         }
+
+        /// <summary>
+        /// 
+        /// </summary>
+        public int GetNextByteOffset() => _offset;
     }
 }
