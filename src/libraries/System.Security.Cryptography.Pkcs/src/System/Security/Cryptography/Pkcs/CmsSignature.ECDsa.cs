@@ -65,8 +65,13 @@ namespace System.Security.Cryptography.Pkcs
                     return false;
                 }
 
-                // 2 * KeySizeBytes => 2 * KeySizeBits / 8 => KeySizeBits / 4
-                int bufSize = key.KeySize / 4;
+                int bufSize;
+                checked
+                {
+                    // fieldSize = ceil(KeySizeBits / 8);
+                    int fieldSize = (key.KeySize + 7) / 8;
+                    bufSize = 2 * fieldSize;
+                }
 
 #if netcoreapp
                 ArrayPool<byte> pool = ArrayPool<byte>.Shared;
@@ -137,9 +142,16 @@ namespace System.Security.Cryptography.Pkcs
 
 #if netcoreapp
                 ArrayPool<byte> pool = ArrayPool<byte>.Shared;
-                // The signature size is twice the KeySize.
-                // 2 * KeySizeInBytes => 2 * KeySizeInBits / 8 => KeySizeInBits / 4
-                byte[] rented = pool.Rent(key.KeySize / 4);
+
+                int bufSize;
+                checked
+                {
+                    // fieldSize = ceil(KeySizeBits / 8);
+                    int fieldSize = (key.KeySize + 7) / 8;
+                    bufSize = 2 * fieldSize;
+                }
+
+                byte[] rented = pool.Rent(bufSize);
                 int bytesWritten = 0;
 
                 try
