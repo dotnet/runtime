@@ -28,7 +28,6 @@
     <Compile Include="SerialPort\DiscardNull.cs" />
     <Compile Include="SerialPort\DiscardOutBuffer.cs" />
     <Compile Include="SerialPort\DiscardOutBuffer_Generic.cs" />
-    <Compile Include="SerialPort\DosDevices.cs" />
     <Compile Include="SerialPort\DsrHolding.cs" />
     <Compile Include="SerialPort\DtrEnable.cs" />
     <Compile Include="SerialPort\Encoding.cs" />
@@ -41,12 +40,10 @@
     <Compile Include="SerialPort\NewLine.cs" />
     <Compile Include="SerialPort\AbortOnError.cs" />
     <Compile Include="SerialPort\Open.cs" />
-    <Compile Include="SerialPort\OpenDevices.cs" />
     <Compile Include="SerialPort\Open_Stress.cs" />
     <Compile Include="SerialPort\Parity.cs" />
     <Compile Include="SerialPort\ParityReplace.cs" />
     <Compile Include="SerialPort\PinChangedEvent.cs" />
-    <Compile Include="SerialPort\PortName.cs" />
     <Compile Include="SerialPort\ReadBufferSize.cs" />
     <Compile Include="SerialPort\ReadByte.cs" />
     <Compile Include="SerialPort\ReadByte_Generic.cs" />
@@ -113,6 +110,11 @@
     <Compile Include="Support\TCSupport.cs" />
     <Compile Include="Support\PortsTest.cs" />
     <Compile Include="Support\TestEventHandler.cs" />
+  </ItemGroup>
+  <ItemGroup Condition="'$(TargetsLinux)' != 'true' AND '$(TargetsOSX)' != 'true'">
+    <Compile Include="SerialPort\DosDevices.cs" />
+    <Compile Include="SerialPort\PortName.cs" />
+    <Compile Include="SerialPort\OpenDevices.cs" />
   </ItemGroup>
   <ItemGroup>
     <Folder Include="Legacy\Manual\" />
