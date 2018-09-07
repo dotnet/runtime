@@ -5844,7 +5844,9 @@ ClrDataAccess::RawGetMethodName(
 #endif
         if (pStubManager == PrecodeStubManager::g_pManager)
         {
+#ifdef FEATURE_PREJIT
         PrecodeStub:
+#endif
             PCODE alignedAddress = AlignDown(TO_TADDR(address), PRECODE_ALIGNMENT);
 
 #ifdef _TARGET_ARM_
@@ -5892,7 +5894,9 @@ ClrDataAccess::RawGetMethodName(
         else
         if (pStubManager == JumpStubStubManager::g_pManager)
         {
+#ifdef FEATURE_PREJIT
         JumpStub:
+#endif
             PCODE pTarget = decodeBackToBackJump(TO_TADDR(address));
 
             HRESULT hr = GetRuntimeNameByAddress(pTarget, flags, bufLen, symbolLen, symbolBuf, NULL);

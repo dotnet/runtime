@@ -73,15 +73,14 @@ class Pending;
 class MethodTable;
 class AppDomain;
 class DynamicMethodTable;
-struct CerPrepInfo;
+class CodeVersionManager;
+class CallCounter;
+class TieredCompilationManager;
 #ifdef FEATURE_PREJIT
 class CerNgenRootTable;
 struct MethodContextElement;
 class TypeHandleList;
 class ProfileEmitter;
-class CodeVersionManager;
-class CallCounter;
-class TieredCompilationManager;
 class TrackingMap;
 struct MethodInModule;
 class PersistentInlineTrackingMapNGen;
@@ -508,6 +507,7 @@ typedef DPTR(class MemberRef) PTR_MemberRef;
 #define IS_FIELD_MEMBER_REF ((TADDR)0x00000002)
 
 
+#ifdef FEATURE_PREJIT
 //
 // NGen image layout information that we need to quickly access at runtime
 //
@@ -557,6 +557,8 @@ struct NGenLayoutInfo
     PCODE                   m_pExternalMethodFixupJumpStub;
     DWORD                   m_rvaFilterPersonalityRoutine;
 };
+#endif // FEATURE_PREJIT
+
 
 //
 // VASigCookies are allocated to encapsulate a varargs call signature.
@@ -1622,13 +1624,15 @@ public:
         return (m_dwPersistedFlags & COLLECTIBLE_MODULE) != 0;
     }
 
+#ifdef FEATURE_READYTORUN
+private:
+    PTR_ReadyToRunInfo      m_pReadyToRunInfo;
+#endif
+
 #ifdef FEATURE_PREJIT
 
 private:
     PTR_NGenLayoutInfo      m_pNGenLayoutInfo;
-#ifdef FEATURE_READYTORUN
-    PTR_ReadyToRunInfo      m_pReadyToRunInfo;
-#endif
 
     PTR_ProfilingBlobTable  m_pProfilingBlobTable;   // While performing IBC instrumenting this hashtable is populated with the External defs
     CorProfileData *        m_pProfileData;          // While ngen-ing with IBC optimizations this contains a link to the IBC data for the assembly
@@ -2946,25 +2950,6 @@ public:
         return m_pNGenLayoutInfo->m_VirtualMethodThunks.IsInRange(code);
     }
 
-    BOOL IsReadyToRun()
-    {
-        LIMITED_METHOD_DAC_CONTRACT;
-
-#ifdef FEATURE_READYTORUN
-        return m_pReadyToRunInfo != NULL;
-#else
-        return FALSE;
-#endif
-    }
-
-#ifdef FEATURE_READYTORUN
-    PTR_ReadyToRunInfo GetReadyToRunInfo()
-    {
-        LIMITED_METHOD_DAC_CONTRACT;
-        return m_pReadyToRunInfo;
-    }
-#endif
-
     ICorJitInfo::ProfileBuffer * AllocateProfileBuffer(mdToken _token, DWORD _size, DWORD _ILSize);
     HANDLE OpenMethodProfileDataLogFile(GUID mvid);
     static void ProfileDataAllocateTokenLists(ProfileEmitter * pEmitter, TokenProfileData* pTokenProfileData);
@@ -3004,6 +2989,25 @@ public:
     }
 
 #endif  // FEATURE_PREJIT
+
+    BOOL IsReadyToRun()
+    {
+        LIMITED_METHOD_DAC_CONTRACT;
+
+#ifdef FEATURE_READYTORUN
+        return m_pReadyToRunInfo != NULL;
+#else
+        return FALSE;
+#endif
+    }
+
+#ifdef FEATURE_READYTORUN
+    PTR_ReadyToRunInfo GetReadyToRunInfo()
+    {
+        LIMITED_METHOD_DAC_CONTRACT;
+        return m_pReadyToRunInfo;
+    }
+#endif
 
 #ifdef _DEBUG
     //Similar to the ExpandAll we use for NGen, this forces jitting of all methods in a module.  This is
