@@ -476,7 +476,7 @@ namespace Mono.Linker.Steps {
 			// then surely nothing is using this attribute and there is no need to mark it
 			if (!Annotations.IsMarked (resolvedConstructor.Module) && !Annotations.IsMarked (ca.AttributeType))
 				return false;
-			
+
 			if (ca.Constructor.DeclaringType.Namespace == "System.Diagnostics") {
 				string attributeName = ca.Constructor.DeclaringType.Name;
 				if (attributeName == "DebuggerDisplayAttribute" || attributeName == "DebuggerTypeProxyAttribute") {
