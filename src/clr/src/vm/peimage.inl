@@ -376,6 +376,7 @@ inline const BOOL PEImage::HasStrongNameSignature()
 
 inline BOOL PEImage::IsIbcOptimized()   
 {
+#ifdef FEATURE_PREJIT 
     WRAPPER_NO_CONTRACT;
     if (HasLoadedLayout())
         return GetLoadedLayout()->GetNativeILIsIbcOptimized();
@@ -384,6 +385,9 @@ inline BOOL PEImage::IsIbcOptimized()
         PEImageLayoutHolder pLayout(GetLayout(PEImageLayout::LAYOUT_ANY,LAYOUT_CREATEIFNEEDED));
         return pLayout->GetNativeILIsIbcOptimized();
     }
+#else
+    return false;
+#endif
 }
 
 #ifdef FEATURE_PREJIT 

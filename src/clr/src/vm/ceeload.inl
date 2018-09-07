@@ -269,10 +269,12 @@ void LookupMap<TYPE>::EnsureElementCanBeStored(Module * pModule, DWORD rid)
     }
     CONTRACTL_END;
 
+#ifdef FEATURE_PREJIT
     // don't attempt to call GetElementPtr for rids inside the compressed portion of
     // a multi-node map
     if (MapIsCompressed() && rid < dwCount)
         return;
+#endif
     PTR_TADDR pElement = GetElementPtr(rid);
     if (pElement == NULL)
         GrowMap(pModule, rid);
