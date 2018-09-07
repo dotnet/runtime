@@ -354,7 +354,8 @@ int LinearScan::BuildNode(GenTree* tree)
 #endif // FEATURE_HW_INTRINSICS
 
         case GT_CAST:
-            srcCount = BuildCast(tree);
+            assert(dstCount == 1);
+            srcCount = BuildCast(tree->AsCast());
             break;
 
         case GT_BITCAST:
@@ -2684,52 +2685,40 @@ int LinearScan::BuildHWIntrinsic(GenTreeHWIntrinsic* intrinsicTree)
 // BuildCast: Set the NodeInfo for a GT_CAST.
 //
 // Arguments:
-//    tree      - The node of interest
+//    cast - The GT_CAST node
 //
 // Return Value:
 //    The number of sources consumed by this node.
 //
-int LinearScan::BuildCast(GenTree* tree)
+int LinearScan::BuildCast(GenTreeCast* cast)
 {
-    // TODO-XArch-CQ: Int-To-Int conversions - castOp cannot be a memory op and must have an assigned register.
-    //         see CodeGen::genIntToIntCast()
+    GenTree* src = cast->gtGetOp1();
 
-    // Non-overflow casts to/from float/double are done using SSE2 instructions
-    // and that allow the source operand to be either a reg or memop. Given the
-    // fact that casts from small int to float/double are done as two-level casts,
-    // the source operand is always guaranteed to be of size 4 or 8 bytes.
-    var_types castToType = tree->CastToType();
-    GenTree*  castOp     = tree->gtCast.CastOp();
-    var_types castOpType = castOp->TypeGet();
+    const var_types srcType  = genActualType(src->TypeGet());
+    const var_types castType = cast->gtCastType;
+
     regMaskTP candidates = RBM_NONE;
-
-    if (tree->gtFlags & GTF_UNSIGNED)
-    {
-        castOpType = genUnsignedType(castOpType);
-    }
-
 #ifdef _TARGET_X86_
-    if (varTypeIsByte(castToType))
+    if (varTypeIsByte(castType))
     {
         candidates = allByteRegs();
     }
-#endif // _TARGET_X86_
 
-    // some overflow checks need a temp reg:
-    //  - GT_CAST from INT64/UINT64 to UINT32
-    RefPosition* internalDef = nullptr;
-    if (tree->gtOverflow() && (castToType == TYP_UINT))
+    assert(!varTypeIsLong(srcType) || (src->OperIs(GT_LONG) && src->isContained()));
+#else
+    // Overflow checking cast from TYP_(U)LONG to TYP_UINT requires a temporary
+    // register to extract the upper 32 bits of the 64 bit source register.
+    if (cast->gtOverflow() && varTypeIsLong(srcType) && (castType == TYP_UINT))
     {
-        if (genTypeSize(castOpType) == 8)
-        {
-            // Here we don't need internal register to be different from targetReg,
-            // rather require it to be different from operand's reg.
-            buildInternalIntRegisterDefForNode(tree);
-        }
+        // Here we don't need internal register to be different from targetReg,
+        // rather require it to be different from operand's reg.
+        buildInternalIntRegisterDefForNode(cast);
     }
-    int srcCount = BuildOperandUses(castOp, candidates);
+#endif
+
+    int srcCount = BuildOperandUses(src, candidates);
     buildInternalRegisterUses();
-    BuildDef(tree, candidates);
+    BuildDef(cast, candidates);
     return srcCount;
 }
 
