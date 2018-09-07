@@ -141,7 +141,6 @@ setup_dirs()
 
     if [ $__CrossBuild == 1 ]; then
         mkdir -p "$__CrossComponentBinDir"
-        mkdir -p "$__CrossCompIntermediatesDir"
     fi
 }
 
@@ -250,11 +249,7 @@ generate_event_logging()
     if [[ $__SkipCoreCLR == 0 || $__SkipMSCorLib == 0 || $__ConfigureOnly == 1 ]]; then
         generate_event_logging_sources "$__IntermediatesDir" "the native build system"
     fi
-
-    if [[ $__CrossBuild == 1 && $__DoCrossArchBuild == 1 ]]; then
-        generate_event_logging_sources "$__CrossCompIntermediatesDir" "the crossarch build system"
-    fi
- }
+}
 
 build_native()
 {
@@ -336,12 +331,22 @@ build_native()
     popd
 }
 
-build_cross_arch_component()
+build_cross_architecture_components()
 {
+    local crossArch="$1"
+
+    local intermediatesForBuild="$__IntermediatesDir/Host$crossArch/crossgen"
+    local crossArchBinDir="$__BinDir/$crossArch"
+
+    mkdir -p "$intermediatesForBuild"
+    mkdir -p "$crossArchBinDir"
+
+    generate_event_logging_sources "$intermediatesForBuild" "the crossarch build system"
+
     __SkipCrossArchBuild=1
     TARGET_ROOTFS=""
     # check supported cross-architecture components host(__HostArch)/target(__BuildArch) pair
-    if [[ ("$__BuildArch" == "arm" || "$__BuildArch" == "armel") && "$__CrossArch" == "x86" ]]; then
+    if [[ ("$__BuildArch" == "arm" || "$__BuildArch" == "armel") && "$crossArch" == "x86" ]]; then
         export CROSSCOMPILE=0
         __SkipCrossArchBuild=0
 
@@ -349,7 +354,10 @@ build_cross_arch_component()
         if [ "$__HostArch" == "x64" ]; then
             export CROSSCOMPILE=1
         fi
-    elif [[ ("$__BuildArch" == "arm64") && "$__CrossArch" == "x64" ]]; then
+    elif [[ ("$__BuildArch" == "arm64") && "$crossArch" == "x64" ]]; then
+        export CROSSCOMPILE=0
+        __SkipCrossArchBuild=0
+    elif [[ ("$__BuildArch" == "arm" || "$__BuildArch" == "armel") && "$crossArch" == "x64" ]]; then
         export CROSSCOMPILE=0
         __SkipCrossArchBuild=0
     else
@@ -357,7 +365,7 @@ build_cross_arch_component()
         return
     fi
 
-    export __CMakeBinDir="$__CrossComponentBinDir"
+    export __CMakeBinDir="$crossArchBinDir"
     export CROSSCOMPONENT=1
 
     if [ $CROSSCOMPILE == 1 ]; then
@@ -370,7 +378,7 @@ build_cross_arch_component()
     fi
 
     __ExtraCmakeArgs="-DCLR_CMAKE_TARGET_ARCH=$__BuildArch -DCLR_CMAKE_TARGET_OS=$__BuildOS -DCLR_CMAKE_PACKAGES_DIR=$__PackagesDir -DCLR_CMAKE_PGO_INSTRUMENT=$__PgoInstrument -DCLR_CMAKE_OPTDATA_VERSION=$__PgoOptDataVersion -DCLR_CMAKE_PGO_OPTIMIZE=$__PgoOptimize"
-    build_native $__SkipCrossArchBuild "$__CrossArch" "$__CrossCompIntermediatesDir" "$__ExtraCmakeArgs" "cross-architecture component"
+    build_native $__SkipCrossArchBuild "$crossArch" "$intermediatesForBuild" "$__ExtraCmakeArgs" "cross-architecture components"
 
     # restore ROOTFS_DIR, CROSSCOMPONENT, and CROSSCOMPILE
     if [ -n "$TARGET_ROOTFS" ]; then
@@ -494,6 +502,9 @@ build_CoreLib()
     elif [ $__DoCrossArchBuild == 1 ]; then
        if [[ ( "$__CrossArch" == "x86" ) && ( "$__BuildArch" == "arm" ) ]]; then
            build_CoreLib_ni "$__CrossComponentBinDir/crossgen"
+       elif [[ ( "$__HostArch" == "x64" ) && ( "$__BuildArch" == "arm" ) ]]; then
+           # For now, continue to use Hostx86/arm crossgen to crossgen System.Private.CoreLib.dll
+           build_CoreLib_ni "$__BinDir/x86/crossgen"
        elif [[ ( "$__HostArch" == "x64" ) && ( "$__BuildArch" == "arm64" ) ]]; then
            build_CoreLib_ni "$__CrossComponentBinDir/crossgen"
        fi
@@ -954,17 +965,12 @@ export __IntermediatesDir="$__RootBinDir/obj/$__BuildOS.$__BuildArch.$__BuildTyp
 __TestIntermediatesDir="$__RootBinDir/tests/obj/$__BuildOS.$__BuildArch.$__BuildType"
 __isMSBuildOnNETCoreSupported=0
 __CrossComponentBinDir="$__BinDir"
-__CrossCompIntermediatesDir="$__IntermediatesDir/crossgen"
 
 __CrossArch="$__HostArch"
-if [[ "$__HostArch" == "x64" && ("$__BuildArch" == "arm" || "$__BuildArch" == "armel") ]]; then
-    __CrossArch="x86"
-fi
 if [ $__CrossBuild == 1 ]; then
     __CrossComponentBinDir="$__CrossComponentBinDir/$__CrossArch"
 fi
 __CrossGenCoreLibLog="$__LogsDir/CrossgenCoreLib_$__BuildOS.$__BuildArch.$__BuildType.log"
-__CrossgenExe="$__CrossComponentBinDir/crossgen"
 
 # Init if MSBuild for .NET Core is supported for this platform
 isMSBuildOnNETCoreSupported
@@ -1019,7 +1025,12 @@ build_native $__SkipCoreCLR "$__BuildArch" "$__IntermediatesDir" "$__ExtraCmakeA
 
 # Build cross-architecture components
 if [[ $__CrossBuild == 1 && $__DoCrossArchBuild == 1 ]]; then
-    build_cross_arch_component
+    build_cross_architecture_components "$__CrossArch"
+
+    # For now, continue building Hostx86/arm crossgen
+    if [[ "$__HostArch" == "x64" && ("$__BuildArch" == "arm" || "$__BuildArch" == "armel") ]]; then
+        build_cross_architecture_components "x86"
+    fi
 fi
 
 # Build System.Private.CoreLib.
