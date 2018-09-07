@@ -162,8 +162,8 @@ namespace System.Threading.Threads.Tests
         [InlineData("STAMain.exe", "WaitAllNotSupportedOnSta_Test1")]
         [InlineData("MTAMain.exe", "GetApartmentStateTest")]
         [InlineData("MTAMain.exe", "SetApartmentStateTest")]
-        [InlineData("DefaultApartmentStateMain.dll", "GetApartmentStateTest")]
-        [InlineData("DefaultApartmentStateMain.dll", "SetApartmentStateTest")]
+        [InlineData("DefaultApartmentStateMain.exe", "GetApartmentStateTest")]
+        [InlineData("DefaultApartmentStateMain.exe", "SetApartmentStateTest")]
         [ActiveIssue(20766, TargetFrameworkMonikers.Uap)]
         public static void ApartmentState_AttributePresent(string appName, string testName)
         {
