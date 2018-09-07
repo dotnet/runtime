@@ -4,18 +4,15 @@
 
 using System.Diagnostics;
 using System.Runtime.CompilerServices; // Do not remove. This is necessary for netstandard, since this file is mirrored into corefx
+using System.Numerics;
 
 #if !netstandard
 using Internal.Runtime.CompilerServices;
 #endif
 
-#if !netstandard11
-using System.Numerics;
-#endif
-
 namespace System
 {
-    internal static partial class SpanHelpers
+    internal static partial class SpanHelpers // .T
     {
         public static int IndexOf<T>(ref T searchSpace, int searchSpaceLength, ref T value, int valueLength)
             where T : IEquatable<T>
@@ -51,6 +48,63 @@ namespace System
                 index++;
             }
             return -1;
+        }
+
+        // Adapted from IndexOf(...)
+        public static unsafe bool Contains<T>(ref T searchSpace, T value, int length)
+               where T : IEquatable<T>
+        {
+            Debug.Assert(length >= 0);
+
+            IntPtr index = (IntPtr)0; // Use IntPtr for arithmetic to avoid unnecessary 64->32->64 truncations
+            while (length >= 8)
+            {
+                length -= 8;
+
+                if (value.Equals(Unsafe.Add(ref searchSpace, index + 0)) ||
+                    value.Equals(Unsafe.Add(ref searchSpace, index + 1)) ||
+                    value.Equals(Unsafe.Add(ref searchSpace, index + 2)) ||
+                    value.Equals(Unsafe.Add(ref searchSpace, index + 3)) ||
+                    value.Equals(Unsafe.Add(ref searchSpace, index + 4)) ||
+                    value.Equals(Unsafe.Add(ref searchSpace, index + 5)) ||
+                    value.Equals(Unsafe.Add(ref searchSpace, index + 6)) ||
+                    value.Equals(Unsafe.Add(ref searchSpace, index + 7)))
+                {
+                    goto Found;
+                }
+
+                index += 8;
+            }
+
+            if (length >= 4)
+            {
+                length -= 4;
+
+                if (value.Equals(Unsafe.Add(ref searchSpace, index + 0)) ||
+                    value.Equals(Unsafe.Add(ref searchSpace, index + 1)) ||
+                    value.Equals(Unsafe.Add(ref searchSpace, index + 2)) ||
+                    value.Equals(Unsafe.Add(ref searchSpace, index + 3)))
+                {
+                    goto Found;
+                }
+
+                index += 4;
+            }
+
+            while (length > 0)
+            {
+                length -= 1;
+
+                if (value.Equals(Unsafe.Add(ref searchSpace, index)))
+                    goto Found;
+
+                index += 1;
+            }
+
+            return false;
+
+        Found:
+            return true;
         }
 
         public static unsafe int IndexOf<T>(ref T searchSpace, T value, int length)
