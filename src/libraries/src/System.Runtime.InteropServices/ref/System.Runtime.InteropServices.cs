@@ -567,6 +567,7 @@ namespace System.Runtime.InteropServices
         [System.ObsoleteAttribute("GetObjectsForNativeVariants<T>(IntPtr, Int32) may be unavailable in future releases.")]
         public static T[] GetObjectsForNativeVariants<T>(System.IntPtr aSrcNativeVariant, int cVars) { throw null; }
         public static int GetStartComSlot(System.Type t) { throw null; }
+        public static int GetEndComSlot(System.Type t) { throw null; }
         public static object GetTypedObjectForIUnknown(System.IntPtr pUnk, System.Type t) { throw null; }         
         public static System.Type GetTypeFromCLSID(System.Guid clsid) { throw null; }
         public static string GetTypeInfoName(System.Runtime.InteropServices.ComTypes.ITypeInfo typeInfo) { throw null; }
@@ -592,6 +593,7 @@ namespace System.Runtime.InteropServices
         public static object PtrToStructure(System.IntPtr ptr, System.Type structureType) { throw null; }
         public static T PtrToStructure<T>(System.IntPtr ptr) { throw null; }
         public static void PtrToStructure<T>(System.IntPtr ptr, T structure) { }
+        public static bool IsTypeVisibleFromCom(Type t) { throw null;}
         public static int QueryInterface(System.IntPtr pUnk, ref System.Guid iid, out System.IntPtr ppv) { throw null; }
         public static byte ReadByte(System.IntPtr ptr) { throw null; }
         public static byte ReadByte(System.IntPtr ptr, int ofs) { throw null; }
