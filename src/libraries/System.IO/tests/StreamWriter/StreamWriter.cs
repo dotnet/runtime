@@ -27,5 +27,52 @@ namespace System.IO.Tests
                 Assert.Equal("apppad", reader.ReadLine());
             }
         }
+
+        private class TestFormatWriter : StreamWriter
+        {
+            public int WriteCalls { get; private set; }
+            public int WriteLineCalls { get; private set; }
+
+            public TestFormatWriter(Stream stream) : base(stream)
+            { }
+
+            public override void Write(string value)
+            {
+                WriteCalls++;
+                base.Write(value);
+            }
+
+            public override void WriteLine(string value)
+            {
+                WriteLineCalls++;
+                base.WriteLine(value);
+            }
+        }
+
+        [Fact]
+        public void FormatOverloadsCallWrite()
+        {
+            TestFormatWriter writer = new TestFormatWriter(new MemoryStream());
+            writer.Write("{0}", "Zero");
+            Assert.Equal(1, writer.WriteCalls);
+            writer.Write("{0}{1}", "Zero", "One");
+            Assert.Equal(2, writer.WriteCalls);
+            writer.Write("{0}{1}{2}", "Zero", "One", "Two");
+            Assert.Equal(3, writer.WriteCalls);
+            writer.Write("{0}{1}{2}{3}", "Zero", "One", "Two", "Three");
+            Assert.Equal(4, writer.WriteCalls);
+            writer.Write("{0}{1}{2}{3}{4}", "Zero", "One", "Two", "Three", "Four");
+            Assert.Equal(5, writer.WriteCalls);
+            writer.WriteLine("{0}", "Zero");
+            Assert.Equal(1, writer.WriteLineCalls);
+            writer.WriteLine("{0}{1}", "Zero", "One");
+            Assert.Equal(2, writer.WriteLineCalls);
+            writer.WriteLine("{0}{1}{2}", "Zero", "One", "Two");
+            Assert.Equal(3, writer.WriteLineCalls);
+            writer.WriteLine("{0}{1}{2}{3}", "Zero", "One", "Two", "Three");
+            Assert.Equal(4, writer.WriteLineCalls);
+            writer.WriteLine("{0}{1}{2}{3}{4}", "Zero", "One", "Two", "Three", "Four");
+            Assert.Equal(5, writer.WriteLineCalls);
+        }
     }
 }
