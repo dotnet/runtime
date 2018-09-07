@@ -98,6 +98,8 @@ namespace System.IO.Compression
             // Note that this will give us a good DirectoryInfo even if destinationDirectoryName exists:
             DirectoryInfo di = Directory.CreateDirectory(destinationDirectoryName);
             string destinationDirectoryFullPath = di.FullName;
+            if (!destinationDirectoryFullPath.EndsWith(Path.DirectorySeparatorChar))
+                destinationDirectoryFullPath += Path.DirectorySeparatorChar;
 
             string fileDestinationPath = Path.GetFullPath(Path.Combine(destinationDirectoryFullPath, source.FullName));
 
