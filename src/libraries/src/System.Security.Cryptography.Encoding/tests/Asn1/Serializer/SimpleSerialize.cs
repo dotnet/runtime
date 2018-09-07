@@ -98,7 +98,6 @@ namespace System.Security.Cryptography.Tests.Asn1
                   "0303000102" +
                   "0404FF0055AA" +
                   "0500" +
-                  "06082A8648CE3D030107" +
                   "06072A8648CE3D0201" +
                   "06092A864886F70D010101" +
                   "0A011E" +
@@ -156,8 +155,7 @@ namespace System.Security.Cryptography.Tests.Asn1
                 BitStringBytes = new byte[] { 1, 2 },
                 OctetStringBytes = new byte[] { 0xFF, 0, 0x55, 0xAA },
                 Null = new byte[] { 5, 0 },
-                UnattrOid = new Oid("1.2.840.10045.3.1.7", "1.2.840.10045.3.1.7"),
-                WithName = new Oid("1.2.840.10045.2.1", "ECC"),
+                Oid = new Oid("1.2.840.10045.2.1", "ECC"),
                 OidString = "1.2.840.113549.1.1.1",
                 LinearEnum = UniversalTagNumber.BMPString,
                 Utf8Encoded = UnicodeVerifier,
