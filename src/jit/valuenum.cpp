@@ -7657,7 +7657,8 @@ void Compiler::fgValueNumberHelperCallFunc(GenTreeCall* call, VNFunc vnf, ValueN
 #ifdef FEATURE_READYTORUN_COMPILER
         if (useEntryPointAddrAsArg0)
         {
-            ValueNum callAddrVN = vnStore->VNForPtrSizeIntCon((ssize_t)call->gtCall.gtEntryPoint.addr);
+            ssize_t  addrValue  = (ssize_t)call->gtEntryPoint.addr;
+            ValueNum callAddrVN = vnStore->VNForHandle(addrValue, GTF_ICON_FTN_ADDR);
             vnp0                = ValueNumPair(callAddrVN, callAddrVN);
         }
         else
