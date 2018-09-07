@@ -1931,13 +1931,15 @@ namespace System.Security.Cryptography.Asn1
             return oidValue;
         }
 
-        public Oid ReadObjectIdentifier(bool skipFriendlyName = false) =>
-            ReadObjectIdentifier(Asn1Tag.ObjectIdentifier, skipFriendlyName);
+        public Oid ReadObjectIdentifier() =>
+            ReadObjectIdentifier(Asn1Tag.ObjectIdentifier);
 
-        public Oid ReadObjectIdentifier(Asn1Tag expectedTag, bool skipFriendlyName=false)
+        public Oid ReadObjectIdentifier(Asn1Tag expectedTag)
         {
             string oidValue = ReadObjectIdentifierAsString(expectedTag, out int bytesRead);
-            Oid oid = skipFriendlyName ? new Oid(oidValue, oidValue) : new Oid(oidValue);
+            // Specifying null for friendly name makes the lookup deferred until first read
+            // of the Oid.FriendlyName property.
+            Oid oid = new Oid(oidValue, null);
 
             // Don't slice until the return object has been created.
             _data = _data.Slice(bytesRead);

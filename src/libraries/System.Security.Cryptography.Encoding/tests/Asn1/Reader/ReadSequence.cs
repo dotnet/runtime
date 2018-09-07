@@ -125,12 +125,12 @@ namespace System.Security.Cryptography.Tests.Asn1
             Assert.False(spkiReader.HasData, "spkiReader.HasData after reading subjectPublicKey");
             Assert.True(algorithmReader.HasData, "algorithmReader.HasData before reading");
 
-            Oid algorithmOid = algorithmReader.ReadObjectIdentifier(true);
+            Oid algorithmOid = algorithmReader.ReadObjectIdentifier();
             Assert.True(algorithmReader.HasData, "algorithmReader.HasData after reading first OID");
 
             Assert.Equal("1.2.840.10045.2.1", algorithmOid.Value);
 
-            Oid curveOid = algorithmReader.ReadObjectIdentifier(true);
+            Oid curveOid = algorithmReader.ReadObjectIdentifier();
             Assert.False(algorithmReader.HasData, "algorithmReader.HasData after reading second OID");
 
             Assert.Equal("1.2.840.10045.3.1.7", curveOid.Value);

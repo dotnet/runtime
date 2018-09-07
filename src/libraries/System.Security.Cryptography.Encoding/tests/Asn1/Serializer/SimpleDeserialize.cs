@@ -37,7 +37,7 @@ namespace System.Security.Cryptography.Tests.Asn1
             Assert.Equal("1.2.840.10045.2.1", algorithmIdentifier.Algorithm.Value);
             
             var reader = new AsnReader(algorithmIdentifier.Parameters.Value, (AsnEncodingRules)ruleSet);
-            Oid curveId = reader.ReadObjectIdentifier(skipFriendlyName: true);
+            Oid curveId = reader.ReadObjectIdentifier();
             Assert.Equal(curveOid, curveId.Value);
         }
 
@@ -59,7 +59,6 @@ namespace System.Security.Cryptography.Tests.Asn1
                   "0303000102" +
                   "0404FF0055AA" +
                   "0500" +
-                  "06082A8648CE3D030107" +
                   "06072A8648CE3D0201" +
                   "06092A864886F70D010101" +
                   "0A011E" +
@@ -119,10 +118,8 @@ namespace System.Security.Cryptography.Tests.Asn1
             Assert.Equal("0102", atst.BitStringBytes.ByteArrayToHex());
             Assert.Equal("FF0055AA", atst.OctetStringBytes.ByteArrayToHex());
             Assert.Equal("0500", atst.Null.ByteArrayToHex());
-            Assert.Equal("1.2.840.10045.3.1.7", atst.UnattrOid.Value);
-            Assert.Equal("1.2.840.10045.3.1.7", atst.UnattrOid.FriendlyName);
-            Assert.Equal("1.2.840.10045.2.1", atst.WithName.Value);
-            Assert.Equal("ECC", atst.WithName.FriendlyName);
+            Assert.Equal("1.2.840.10045.2.1", atst.Oid.Value);
+            Assert.Equal("ECC", atst.Oid.FriendlyName);
             Assert.Equal("1.2.840.113549.1.1.1", atst.OidString);
             Assert.Equal(UniversalTagNumber.BMPString, atst.LinearEnum);
             Assert.Equal(UnicodeVerifier, atst.Utf8Encoded);
@@ -539,8 +536,6 @@ namespace System.Security.Cryptography.Tests.Asn1
         private ReadOnlyMemory<byte> _octetString;
         [AnyValue]
         private ReadOnlyMemory<byte> _null;
-        private Oid _oidNoName;
-        [ObjectIdentifier(PopulateFriendlyName = true)]
         private Oid _oid;
         [ObjectIdentifier]
         private string _oidString;
@@ -644,13 +639,7 @@ namespace System.Security.Cryptography.Tests.Asn1
             set => _null = value.ToArray();
         }
 
-        public Oid UnattrOid
-        {
-            get => _oidNoName;
-            set => _oidNoName = value;
-        }
-
-        public Oid WithName
+        public Oid Oid
         {
             get => _oid;
             set => _oid = value;
@@ -922,7 +911,7 @@ namespace System.Security.Cryptography.Tests.Asn1
     {
         internal static readonly ReadOnlyMemory<byte> ExplicitDerNull = new byte[] { 0x05, 0x00 };
 
-        [ObjectIdentifier(PopulateFriendlyName = true)]
+        [ObjectIdentifier]
         public Oid Algorithm;
 
         [AnyValue, OptionalValue]
