@@ -3,15 +3,14 @@
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
     <ProjectGuid>{187503F4-BEF9-4369-A1B2-E3DC5D564E4E}</ProjectGuid>
     <IsPartialFacadeAssembly Condition="'$(TargetsNetFx)' == 'true'">true</IsPartialFacadeAssembly>
-    <GeneratePlatformNotSupportedAssemblyMessage Condition="'$(TargetGroup)' == 'netstandard' AND '$(TargetsWindows)' != 'true'">SR.PlatformNotSupported_IOPorts</GeneratePlatformNotSupportedAssemblyMessage>
+    <GeneratePlatformNotSupportedAssemblyMessage Condition="'$(TargetGroup)' == 'netstandard' AND '$(TargetsWindows)' != 'true' AND '$(TargetsLinux)' != 'true'">SR.PlatformNotSupported_IOPorts</GeneratePlatformNotSupportedAssemblyMessage>
     <DefineConstants>$(DefineConstants);NOSPAN</DefineConstants>
     <IncludeDllSafeSearchPathAttribute>true</IncludeDllSafeSearchPathAttribute>
-    <Configurations>net461-Debug;net461-Release;netfx-Debug;netfx-Release;netstandard-Debug;netstandard-Release;netstandard-Windows_NT-Debug;netstandard-Windows_NT-Release;uap-Windows_NT-Debug;uap-Windows_NT-Release</Configurations>
+    <Configurations>net461-Debug;net461-Release;netfx-Debug;netfx-Release;netstandard-Debug;netstandard-Release;netstandard-Windows_NT-Debug;netstandard-Windows_NT-Release;uap-Windows_NT-Debug;uap-Windows_NT-Release;netstandard-Linux-Debug;netstandard-Linux-Release</Configurations>
   </PropertyGroup>
   <!-- Default configurations to help VS understand the options -->
-  <ItemGroup Condition="'$(TargetsNetFx)' != 'true' AND '$(TargetsWindows)' == 'true'">
+  <ItemGroup Condition="'$(TargetsNetFx)' != 'true' AND ('$(TargetsWindows)' == 'true' OR '$(TargetsLinux)' == 'true')">
     <Compile Include="System\IO\Ports\Handshake.cs" />
-    <Compile Include="System\IO\Ports\InternalResources.cs" />
     <Compile Include="System\IO\Ports\NativeMethods.cs" />
     <Compile Include="System\IO\Ports\Parity.cs" />
     <Compile Include="System\IO\Ports\SerialData.cs" />
@@ -23,9 +22,12 @@
     <Compile Include="System\IO\Ports\SerialPinChange.cs" />
     <Compile Include="System\IO\Ports\SerialPinChangedEventArgs.cs" />
     <Compile Include="System\IO\Ports\SerialPinChangedEventHandler.cs" />
-    <Compile Include="System\IO\Ports\SerialPort.cs" />
-    <Compile Include="System\IO\Ports\SerialStream.cs" />
+    <Compile Include="System\IO\Ports\SerialPort.Windows.cs" />
     <Compile Include="System\IO\Ports\StopBits.cs" />
+  </ItemGroup>  
+  <ItemGroup Condition="'$(TargetGroup)' != 'netfx' AND '$(TargetsWindows)' == 'true'">
+    <Compile Include="System\IO\Ports\InternalResources.cs" />
+    <Compile Include="System\IO\Ports\SerialStream.Windows.cs" />
     <Compile Include="$(CommonPath)\Interop\Windows\kernel32\Interop.DCB.cs">
       <Link>Common\Interop\Windows\kernel32\Interop.DCB.cs</Link>
     </Compile>
@@ -142,6 +144,30 @@
     <Compile Include="System\IO\Ports\SerialPort.Win32.cs" />
     <Compile Include="System\IO\Ports\SerialStream.Win32.cs" />
   </ItemGroup>
+  <ItemGroup Condition=" '$(TargetsLinux)' == 'true' ">
+    <Compile Include="System\IO\Ports\SerialPort.Linux.cs" />
+    <Compile Include="System\IO\Ports\SerialStream.Unix.cs" />
+    <Compile Include="Interop\Unix\Interop.Termios.cs" />
+    <Compile Include="Interop\Unix\Interop.Serial.cs" />
+    <Compile Include="$(CommonPath)\Interop\Unix\Interop.Libraries.cs">
+      <Link>Common\Interop\Unix\Interop.Libraries.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)\CoreLib\Interop\Unix\Interop.Errors.cs">
+      <Link>Common\Interop\Unix\Interop.Errors.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)\CoreLib\Interop\Unix\System.Native\Interop.Read.cs">
+      <Link>Interop\Unix\System.Native\Interop.Read.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)\CoreLib\Interop\Unix\System.Native\Interop.Write.cs">
+      <Link>Interop\Unix\System.Native\Interop.Write.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)\Interop\Unix\System.Native\Interop.Poll.cs">
+      <Link>Interop\Unix\System.Native\Interop.Poll.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)\Interop\Unix\System.Native\Interop.Shutdown.cs">
+      <Link>Interop\Unix\System.Native\Interop.Shutdown.cs</Link>
+    </Compile>
+  </ItemGroup>
   <ItemGroup Condition="'$(TargetsNetFx)' == 'true'">
     <Reference Include="mscorlib" />
     <Reference Include="System" />
@@ -164,5 +190,20 @@
     <Reference Include="System.Threading.Overlapped" />
     <Reference Include="System.Threading.Thread" />
     <Reference Include="System.Threading.ThreadPool" />
+  </ItemGroup>
+  <ItemGroup Condition="'$(TargetsLinux)' == 'true'">
+    <Reference Include="Microsoft.Win32.Primitives" />
+    <Reference Include="System.Collections" />
+    <Reference Include="System.ComponentModel.Primitives" />
+    <Reference Include="System.Diagnostics.Debug" />
+    <Reference Include="System.Diagnostics.Tools" />
+    <Reference Include="System.IO.FileSystem" />
+    <Reference Include="System.Resources.ResourceManager" />
+    <Reference Include="System.Runtime" />
+    <Reference Include="System.Runtime.Extensions" />
+    <Reference Include="System.Runtime.InteropServices" />
+    <Reference Include="System.Text.Encoding.Extensions" />
+    <Reference Include="System.Threading" />
+    <Reference Include="System.Threading.Thread" />
   </ItemGroup>
 </Project>

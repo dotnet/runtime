@@ -5,6 +5,7 @@
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
+using System.IO.Ports;
 using System.Runtime.InteropServices;
 using System.Text.RegularExpressions;
 using Microsoft.Win32;
@@ -21,6 +22,11 @@ namespace Legacy.Support
 
         public static string[] GetPorts()
         {
+            if (RuntimeInformation.IsOSPlatform(OSPlatform.Linux))
+            {
+                return SerialPort.GetPortNames();
+            }
+
             if (PlatformDetection.IsUap)
             {
                 // On UAP it is not possible to call QueryDosDevice, so use HARDWARE\DEVICEMAP\SERIALCOMM on the registry
