@@ -341,7 +341,7 @@ namespace System
                 if (buildEnd != -1)
                 {
                     buildEnd += (minorEnd + 1);
-                    if (input.Slice(buildEnd + 1).IndexOf('.') != -1)
+                    if (input.Slice(buildEnd + 1).Contains('.'))
                     {
                         if (throwOnFailure) throw new ArgumentException(SR.Arg_VersionString, nameof(input));
                         return null;
