@@ -371,6 +371,12 @@ class Tests
 		public static Nullable<T> GetNull<T>() where T : struct {
 			return null;
 		}
+
+		[MethodImplAttribute (MethodImplOptions.NoInlining)]
+		public static bool GetHasValueManyArgs<T>(int i1, int i2, int i3, int i4, int i5, int i6, int i7, int i8, T? value) where T : struct
+		{
+			return value.HasValue;
+		}
 	}
 
 	[Category ("DYNCALL")]
@@ -400,6 +406,24 @@ class Tests
 		res2 = (int?)typeof (NullableMethods).GetMethod ("GetNull").MakeGenericMethod (new Type [] { typeof (int) }).Invoke (null, new object [] { });
 		if (res2.HasValue)
 			return 5;
+		return 0;
+	}
+
+	[Category ("DYNCALL")]
+	[Category ("!WASM")] //Interp fails
+	public static int test_0_arm64_dyncall_vtypebyrefonstack () {
+		var s = new LargeStruct () { a = 1, b = 2, c = 3, d = 4 };
+
+		NullableMethods.GetHasValueManyArgs<LargeStruct> (1, 2, 3, 4, 5, 6, 7, 8, s);
+
+		Type type = typeof (LargeStruct?).GetGenericArguments () [0];
+		var m = typeof(NullableMethods).GetMethod("GetHasValueManyArgs", BindingFlags.Static | BindingFlags.Public);
+		bool b1 = (bool)m.MakeGenericMethod (new Type[] {type}).Invoke (null, new object[] { 1, 2, 3, 4, 5, 6, 7, 8, s });
+		if (!b1)
+			return 1;
+		bool b2 = (bool)m.MakeGenericMethod (new Type[] {type}).Invoke (null, new object[] { 1, 2, 3, 4, 5, 6, 7, 8, null });
+		if (b2)
+			return 2;
 		return 0;
 	}
 
@@ -527,13 +551,9 @@ class Tests
 	public static int test_0_large_nullable_invoke () {
 		var s = new LargeStruct () { a = 1, b = 2, c = 3, d = 4 };
 
-		GetHasValue<LargeStruct> (s);
+		NullableMethods.GetHasValue<LargeStruct> (s);
 
-#if __MOBILE__
-		var m = typeof(AotTests).GetMethod("GetHasValue", BindingFlags.Static | BindingFlags.Public);
-#else
-		var m = typeof(Tests).GetMethod("GetHasValue", BindingFlags.Static | BindingFlags.Public);
-#endif
+		var m = typeof(NullableMethods).GetMethod("GetHasValue", BindingFlags.Static | BindingFlags.Public);
 
 		Type type = typeof (LargeStruct?).GetGenericArguments () [0];
 		bool b1 = (bool)m.MakeGenericMethod (new Type[] {type}).Invoke (null, new object[] { s });
