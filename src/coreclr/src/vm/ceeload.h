@@ -1740,6 +1740,7 @@ protected:
 
     void ApplyMetaData();
 
+    void FixupVTables();
 
     void FreeClassTables();
 
@@ -3155,6 +3156,14 @@ public:
         return m_pNgenStats;
     }
 #endif // FEATURE_PREJIT
+
+    // LoaderHeap for storing IJW thunks
+    PTR_LoaderHeap           m_pThunkHeap;
+
+    // Self-initializing accessor for IJW thunk heap
+    LoaderHeap              *GetThunkHeap();
+    // Self-initializing accessor for domain-independent IJW thunk heap
+    LoaderHeap              *GetDllThunkHeap();
 
     void            EnumRegularStaticGCRefs        (AppDomain* pAppDomain, promote_func* fn, ScanContext* sc);
 

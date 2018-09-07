@@ -1075,6 +1075,10 @@ void DomainFile::VtableFixups()
 {
     WRAPPER_NO_CONTRACT;
 
+#if !defined(CROSSGEN_COMPILE)
+    if (!GetCurrentModule()->IsResource())
+        GetCurrentModule()->FixupVTables();
+#endif // !CROSSGEN_COMPILE
 }
 
 void DomainFile::FinishLoad()

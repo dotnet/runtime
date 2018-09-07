@@ -6390,8 +6390,7 @@ MethodDesc *Module::FindMethod(mdToken pMethod)
         CONTRACT_VIOLATION(ThrowsViolation);
         char szMethodName [MAX_CLASSNAME_LENGTH];
         CEEInfo::findNameOfToken(this, pMethod, szMethodName, COUNTOF (szMethodName));
-        // This used to be LF_IJW, but changed to LW_INTEROP to reclaim a bit in our log facilities
-        // IJW itself is not supported in coreclr so this code should never be run.
+        // This used to be IJW, but changed to LW_INTEROP to reclaim a bit in our log facilities
         LOG((LF_INTEROP, LL_INFO10, "Failed to find Method: %s for Vtable Fixup\n", szMethodName));
 #endif // _DEBUG
     }
@@ -6837,7 +6836,379 @@ void Module::NotifyDebuggerUnload(AppDomain *pDomain)
     g_pDebugInterface->UnloadModule(this, pDomain);
 }
 
+#if !defined(CROSSGEN_COMPILE)
+//=================================================================================
+mdToken GetTokenForVTableEntry(HINSTANCE hInst, BYTE **ppVTEntry)
+{
+    CONTRACTL{
+        NOTHROW;
+    } CONTRACTL_END;
 
+    mdToken tok =(mdToken)(UINT_PTR)*ppVTEntry;
+    _ASSERTE(TypeFromToken(tok) == mdtMethodDef || TypeFromToken(tok) == mdtMemberRef);
+    return tok;
+}
+
+//=================================================================================
+void SetTargetForVTableEntry(HINSTANCE hInst, BYTE **ppVTEntry, BYTE *pTarget)
+{
+    CONTRACTL{
+        THROWS;
+    } CONTRACTL_END;
+
+    DWORD oldProtect;
+    if (!ClrVirtualProtect(ppVTEntry, sizeof(BYTE*), PAGE_READWRITE, &oldProtect))
+    {
+        
+        // This is very bad.  We are not going to be able to update header.
+        _ASSERTE(!"SetTargetForVTableEntry(): VirtualProtect() changing IJW thunk vtable to R/W failed.\n");
+        ThrowLastError();
+    }
+
+    *ppVTEntry = pTarget;
+
+    DWORD ignore;
+    if (!ClrVirtualProtect(ppVTEntry, sizeof(BYTE*), oldProtect, &ignore))
+    {
+        // This is not so bad, we're already done the update, we just didn't return the thunk table to read only
+        _ASSERTE(!"SetTargetForVTableEntry(): VirtualProtect() changing IJW thunk vtable back to RO failed.\n");
+    }
+}
+
+//=================================================================================
+BYTE * GetTargetForVTableEntry(HINSTANCE hInst, BYTE **ppVTEntry)
+{
+    CONTRACTL{
+        NOTHROW;
+    } CONTRACTL_END;
+
+    return *ppVTEntry;
+}
+
+//======================================================================================
+// Fixup vtables stored in the header to contain pointers to method desc
+// prestubs rather than metadata method tokens.
+void Module::FixupVTables()
+{
+    CONTRACTL{
+        INSTANCE_CHECK;
+        STANDARD_VM_CHECK;
+    } CONTRACTL_END;
+
+
+    // If we've already fixed up, or this is not an IJW module, just return.
+    // NOTE: This relies on ILOnly files not having fixups. If this changes,
+    //       we need to change this conditional.
+    if (IsIJWFixedUp() || m_file->IsILOnly()) {
+        return;
+    }
+
+    HINSTANCE hInstThis = GetFile()->GetIJWBase();
+
+    // <REVISIT_TODO>@todo: workaround!</REVISIT_TODO>
+    // If we are compiling in-process, we don't want to fixup the vtables - as it
+    // will have side effects on the other copy of the module!
+    if (SystemDomain::GetCurrentDomain()->IsPassiveDomain()) {
+        return;
+    }
+
+#ifdef FEATURE_PREJIT
+    // We delayed filling in this value until the LoadLibrary occurred
+    if (HasTls() && HasNativeImage()) {
+        CORCOMPILE_EE_INFO_TABLE *pEEInfo = GetNativeImage()->GetNativeEEInfoTable();
+        pEEInfo->rvaStaticTlsIndex = GetTlsIndex();
+    }
+#endif
+    // Get vtable fixup data
+    COUNT_T cFixupRecords;
+    IMAGE_COR_VTABLEFIXUP *pFixupTable = m_file->GetVTableFixups(&cFixupRecords);
+
+    // No records then return
+    if (cFixupRecords == 0) {
+        return;
+    }
+
+    // Now, we need to take a lock to serialize fixup.
+    PEImage::IJWFixupData *pData = PEImage::GetIJWData(m_file->GetIJWBase());
+
+    // If it's already been fixed (in some other appdomain), record the fact and return
+    if (pData->IsFixedUp()) {
+        SetIsIJWFixedUp();
+        return;
+    }
+
+    //////////////////////////////////////////////////////
+    //
+    // This is done in three stages:
+    //  1. We enumerate the types we'll need to load
+    //  2. We load the types
+    //  3. We create and install the thunks
+    //
+
+    COUNT_T cVtableThunks = 0;
+    struct MethodLoadData
+    {
+        mdToken     token;
+        MethodDesc *pMD;
+    };
+    MethodLoadData *rgMethodsToLoad = NULL;
+    COUNT_T cMethodsToLoad = 0;
+
+    //
+    // Stage 1
+    //
+
+    // Each fixup entry describes a vtable, so iterate the vtables and sum their counts
+    {
+        DWORD iFixup;
+        for (iFixup = 0; iFixup < cFixupRecords; iFixup++)
+            cVtableThunks += pFixupTable[iFixup].Count;
+    }
+
+    Thread *pThread = GetThread();
+    StackingAllocator *pAlloc = &pThread->m_MarshalAlloc;
+    CheckPointHolder cph(pAlloc->GetCheckpoint());
+
+    // Allocate the working array of tokens.
+    cMethodsToLoad = cVtableThunks;
+
+    rgMethodsToLoad = new (pAlloc) MethodLoadData[cMethodsToLoad];
+    memset(rgMethodsToLoad, 0, cMethodsToLoad * sizeof(MethodLoadData));
+
+    // Now take the IJW module lock and get all the tokens
+    {
+        // Take the lock
+        CrstHolder lockHolder(pData->GetLock());
+
+        // If someone has beaten us, just return
+        if (pData->IsFixedUp())
+        {
+            SetIsIJWFixedUp();
+            return;
+        }
+
+        COUNT_T iCurMethod = 0;
+
+        if (cFixupRecords != 0)
+        {
+            for (COUNT_T iFixup = 0; iFixup < cFixupRecords; iFixup++)
+            {
+                // Vtables can be 32 or 64 bit.
+                if ((pFixupTable[iFixup].Type == (COR_VTABLE_PTRSIZED)) ||
+                    (pFixupTable[iFixup].Type == (COR_VTABLE_PTRSIZED | COR_VTABLE_FROM_UNMANAGED)) ||
+                    (pFixupTable[iFixup].Type == (COR_VTABLE_PTRSIZED | COR_VTABLE_FROM_UNMANAGED_RETAIN_APPDOMAIN)))
+                {
+                    const BYTE** pPointers = (const BYTE **)m_file->GetVTable(pFixupTable[iFixup].RVA);
+                    for (int iMethod = 0; iMethod < pFixupTable[iFixup].Count; iMethod++)
+                    {
+                        if (pData->IsMethodFixedUp(iFixup, iMethod))
+                            continue;
+                        mdToken mdTok = GetTokenForVTableEntry(hInstThis, (BYTE **)(pPointers + iMethod));
+                        CONSISTENCY_CHECK(mdTok != mdTokenNil);
+                        rgMethodsToLoad[iCurMethod++].token = mdTok;
+                    }
+                }
+            }
+        }
+
+    }
+
+    //
+    // Stage 2 - Load the types
+    //
+
+    {
+        for (COUNT_T iCurMethod = 0; iCurMethod < cMethodsToLoad; iCurMethod++)
+        {
+            mdToken curTok = rgMethodsToLoad[iCurMethod].token;
+            if (!GetMDImport()->IsValidToken(curTok))
+            {
+                _ASSERTE(!"Invalid token in v-table fix-up table");
+                ThrowHR(COR_E_BADIMAGEFORMAT);
+            }
+
+
+            // Find the method desc
+            MethodDesc *pMD;
+
+            {
+                CONTRACT_VIOLATION(LoadsTypeViolation);
+                pMD = FindMethodThrowing(curTok);
+            }
+
+            CONSISTENCY_CHECK(CheckPointer(pMD));
+
+            rgMethodsToLoad[iCurMethod].pMD = pMD;
+        }
+    }
+
+    //
+    // Stage 3 - Create the thunk data
+    //
+    {
+        // Take the lock
+        CrstHolder lockHolder(pData->GetLock());
+
+        // If someone has beaten us, just return
+        if (pData->IsFixedUp())
+        {
+            SetIsIJWFixedUp();
+            return;
+        }
+
+        // This phase assumes there is only one AppDomain and that thunks
+        // can all safely point directly to the method in the current AppDomain
+
+        AppDomain *pAppDomain = GetAppDomain();
+
+        // Used to index into rgMethodsToLoad
+        COUNT_T iCurMethod = 0;
+
+
+        // Each fixup entry describes a vtable (each slot contains a metadata token
+        // at this stage).
+        DWORD iFixup;
+        for (iFixup = 0; iFixup < cFixupRecords; iFixup++)
+            cVtableThunks += pFixupTable[iFixup].Count;
+
+        DWORD dwIndex = 0;
+        DWORD dwThunkIndex = 0;
+
+        // Now to fill in the thunk table.
+        for (iFixup = 0; iFixup < cFixupRecords; iFixup++)
+        {
+            // Tables may contain zero fixups, in which case the RVA is null, which triggers an assert
+            if (pFixupTable[iFixup].Count == 0)
+                continue;
+
+            const BYTE** pPointers = (const BYTE **)
+                m_file->GetVTable(pFixupTable[iFixup].RVA);
+
+            // Vtables can be 32 or 64 bit.
+            if (pFixupTable[iFixup].Type == COR_VTABLE_PTRSIZED)
+            {
+                for (int iMethod = 0; iMethod < pFixupTable[iFixup].Count; iMethod++)
+                {
+                    if (pData->IsMethodFixedUp(iFixup, iMethod))
+                        continue;
+
+                    mdToken mdTok = rgMethodsToLoad[iCurMethod].token;
+                    MethodDesc *pMD = rgMethodsToLoad[iCurMethod].pMD;
+                    iCurMethod++;
+
+#ifdef _DEBUG 
+                    if (pMD->IsNDirect())
+                    {
+                        LOG((LF_INTEROP, LL_INFO10, "[0x%lx] <-- PINV thunk for \"%s\" (target = 0x%lx)\n",
+                            (size_t)&(pPointers[iMethod]), pMD->m_pszDebugMethodName,
+                            (size_t)(((NDirectMethodDesc*)pMD)->GetNDirectTarget())));
+                    }
+#endif // _DEBUG
+
+                    CONSISTENCY_CHECK(dwThunkIndex < cVtableThunks);
+
+                    // Point the local vtable slot to the thunk we created
+                    SetTargetForVTableEntry(hInstThis, (BYTE **)&pPointers[iMethod], (BYTE *)pMD->GetMultiCallableAddrOfCode());
+
+                    pData->MarkMethodFixedUp(iFixup, iMethod);
+
+                    dwThunkIndex++;
+                }
+
+            }
+            else if (pFixupTable[iFixup].Type == (COR_VTABLE_PTRSIZED | COR_VTABLE_FROM_UNMANAGED) || 
+                    (pFixupTable[iFixup].Type == (COR_VTABLE_PTRSIZED | COR_VTABLE_FROM_UNMANAGED_RETAIN_APPDOMAIN)))
+            {
+                for (int iMethod = 0; iMethod < pFixupTable[iFixup].Count; iMethod++)
+                {
+                    if (pData->IsMethodFixedUp(iFixup, iMethod))
+                        continue;
+
+                    mdToken mdTok = rgMethodsToLoad[iCurMethod].token;
+                    MethodDesc *pMD = rgMethodsToLoad[iCurMethod].pMD;
+                    iCurMethod++;
+                    LOG((LF_INTEROP, LL_INFO10, "[0x%p] <-- VTable  thunk for \"%s\" (pMD = 0x%p)\n",
+                        (UINT_PTR)&(pPointers[iMethod]), pMD->m_pszDebugMethodName, pMD));
+
+                    UMEntryThunk *pUMEntryThunk = (UMEntryThunk*)(void*)(GetDllThunkHeap()->AllocAlignedMem(sizeof(UMEntryThunk), CODE_SIZE_ALIGN)); // UMEntryThunk contains code
+                    FillMemory(pUMEntryThunk, sizeof(*pUMEntryThunk), 0);
+
+                    UMThunkMarshInfo *pUMThunkMarshInfo = (UMThunkMarshInfo*)(void*)(GetThunkHeap()->AllocAlignedMem(sizeof(UMThunkMarshInfo), CODE_SIZE_ALIGN));
+                    FillMemory(pUMThunkMarshInfo, sizeof(*pUMThunkMarshInfo), 0);
+
+                    pUMThunkMarshInfo->LoadTimeInit(pMD);
+                    pUMEntryThunk->LoadTimeInit(NULL, NULL, pUMThunkMarshInfo, pMD, pAppDomain->GetId());
+                    SetTargetForVTableEntry(hInstThis, (BYTE **)&pPointers[iMethod], (BYTE *)pUMEntryThunk->GetCode());
+
+                    pData->MarkMethodFixedUp(iFixup, iMethod);
+                }
+            }
+            else if ((pFixupTable[iFixup].Type & COR_VTABLE_NOT_PTRSIZED) == COR_VTABLE_NOT_PTRSIZED)
+            {
+                // fixup type doesn't match the platform
+                THROW_BAD_FORMAT(BFA_FIXUP_WRONG_PLATFORM, this);
+            }
+            else
+            {
+                _ASSERTE(!"Unknown vtable fixup type");
+            }
+        }
+
+        // Indicate that this module has been fixed before releasing the lock
+        pData->SetIsFixedUp();  // On the data
+        SetIsIJWFixedUp();      // On the module
+    } // End of Stage 3
+}
+
+// Self-initializing accessor for m_pThunkHeap
+LoaderHeap *Module::GetDllThunkHeap()
+{
+    CONTRACTL
+    {
+        THROWS;
+        GC_TRIGGERS;
+        MODE_ANY;
+    }
+    CONTRACTL_END;
+    return PEImage::GetDllThunkHeap(GetFile()->GetIJWBase());
+
+}
+
+LoaderHeap *Module::GetThunkHeap()
+{
+    CONTRACT(LoaderHeap *)
+    {
+        INSTANCE_CHECK;
+        THROWS;
+        GC_NOTRIGGER;
+        MODE_ANY;
+        INJECT_FAULT(COMPlusThrowOM());
+        POSTCONDITION(CheckPointer(RETVAL));
+    }
+    CONTRACT_END
+
+        if (!m_pThunkHeap)
+        {
+            size_t * pPrivatePCLBytes = NULL;
+            size_t * pGlobalPCLBytes = NULL;
+
+            COUNTER_ONLY(pPrivatePCLBytes = &(GetPerfCounters().m_Loading.cbLoaderHeapSize));
+
+            LoaderHeap *pNewHeap = new LoaderHeap(VIRTUAL_ALLOC_RESERVE_GRANULARITY, // DWORD dwReserveBlockSize
+                0,                                 // DWORD dwCommitBlockSize
+                pPrivatePCLBytes,
+                ThunkHeapStubManager::g_pManager->GetRangeList(),
+                TRUE);                             // BOOL fMakeExecutable
+
+            if (FastInterlockCompareExchangePointer(&m_pThunkHeap, pNewHeap, 0) != 0)
+            {
+                delete pNewHeap;
+            }
+        }
+
+    RETURN m_pThunkHeap;
+}
+#endif // !CROSSGEN_COMPILE
 
 #ifdef FEATURE_NATIVE_IMAGE_GENERATION
 
@@ -12492,7 +12863,11 @@ void Module::DeleteProfilingData()
 }
 #endif //FEATURE_PREJIT
 
-
+void Module::SetIsIJWFixedUp()
+{
+    LIMITED_METHOD_CONTRACT;
+    FastInterlockOr(&m_dwTransientFlags, IS_IJW_FIXED_UP);
+}
 
 #ifdef FEATURE_PREJIT
 /* static */
