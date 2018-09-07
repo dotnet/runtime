@@ -49,7 +49,11 @@ namespace System
             if (i == 0)
             {
                 number.Scale = 0;
-                number.IsNegative = false;
+
+                if (number.Kind == NumberBufferKind.Integer)
+                {
+                    number.IsNegative = false;
+                }
             }
             digits[i] = 0;
 
