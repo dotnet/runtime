@@ -6,6 +6,7 @@
     <NoWarn>CS3016;CA5351;$(NoWarn)</NoWarn>
     <Configurations>netcoreapp-OSX-Debug;netcoreapp-OSX-Release;netcoreapp-Unix-Debug;netcoreapp-Unix-Release;netcoreapp-Windows_NT-Debug;netcoreapp-Windows_NT-Release;uap-Windows_NT-Debug;uap-Windows_NT-Release</Configurations>
   </PropertyGroup>
+  <Import Project="$(CommonPath)\System\Security\Cryptography\Asn1\AsnXml.targets"/>
   <ItemGroup>
     <Compile Include="Internal\Cryptography\AesImplementation.cs" />
     <Compile Include="Internal\Cryptography\DesImplementation.cs" />
@@ -25,15 +26,6 @@
     <Compile Include="System\Security\Cryptography\AsymmetricKeyExchangeFormatter.cs" />
     <Compile Include="System\Security\Cryptography\AsymmetricSignatureDeformatter.cs" />
     <Compile Include="System\Security\Cryptography\AsymmetricSignatureFormatter.cs" />
-    <Compile Include="System\Security\Cryptography\Asn1\CurveAsn.cs" />
-    <Compile Include="System\Security\Cryptography\Asn1\DSSParms.cs" />
-    <Compile Include="System\Security\Cryptography\Asn1\DsaPrivateKeyAsn.cs" />
-    <Compile Include="System\Security\Cryptography\Asn1\ECDomainParameters.cs" />
-    <Compile Include="System\Security\Cryptography\Asn1\ECPrivateKey.cs" />
-    <Compile Include="System\Security\Cryptography\Asn1\FieldID.cs" />
-    <Compile Include="System\Security\Cryptography\Asn1\RSAPrivateKeyAsn.cs" />
-    <Compile Include="System\Security\Cryptography\Asn1\RSAPublicKeyAsn.cs" />
-    <Compile Include="System\Security\Cryptography\Asn1\SpecifiedECDomain.cs" />
     <Compile Include="System\Security\Cryptography\CryptoConfig.cs" />
     <Compile Include="System\Security\Cryptography\DeriveBytes.cs" />
     <Compile Include="System\Security\Cryptography\DES.cs" />
@@ -114,14 +106,20 @@
     <Compile Include="$(CommonPath)\System\Security\Cryptography\Asn1V2.cs">
       <Link>Common\System\Security\Cryptography\Asn1V2.cs</Link>
     </Compile>
-    <Compile Include="$(CommonPath)\System\Security\Cryptography\Asn1V2.Serializer.cs">
-      <Link>Common\System\Security\Cryptography\Asn1V2.Serializer.cs</Link>
-    </Compile>
     <Compile Include="$(CommonPath)\System\Security\Cryptography\AsnReader.cs">
       <Link>Common\System\Security\Cryptography\AsnReader.cs</Link>
     </Compile>
     <Compile Include="$(CommonPath)\System\Security\Cryptography\AsnWriter.cs">
       <Link>Common\System\Security\Cryptography\AsnWriter.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)\System\Security\Cryptography\DSAKeyFormatHelper.cs">
+      <Link>Common\System\Security\Cryptography\DSAKeyFormatHelper.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)\System\Security\Cryptography\EccKeyFormatHelper.cs">
+      <Link>Common\System\Security\Cryptography\EccKeyFormatHelper.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)\System\Security\Cryptography\KeyBlobHelpers.cs">
+      <Link>Common\System\Security\Cryptography\KeyBlobHelpers.cs</Link>
     </Compile>
     <Compile Include="$(CommonPath)\System\Security\Cryptography\KeyFormatHelper.cs">
       <Link>Common\System\Security\Cryptography\KeyFormatHelper.cs</Link>
@@ -138,32 +136,106 @@
     <Compile Include="$(CommonPath)\System\Security\Cryptography\Pkcs12Kdf.cs">
       <Link>Common\System\Security\Cryptography\Pkcs12Kdf.cs</Link>
     </Compile>
+    <Compile Include="$(CommonPath)\System\Security\Cryptography\RSAKeyFormatHelper.cs">
+      <Link>Common\System\Security\Cryptography\RSAKeyFormatHelper.cs</Link>
+    </Compile>
     <Compile Include="$(CommonPath)\System\Security\Cryptography\RsaPaddingProcessor.cs">
       <Link>Common\System\Security\Cryptography\RsaPaddingProcessor.cs</Link>
     </Compile>
-    <Compile Include="$(CommonPath)\System\Security\Cryptography\Asn1\AlgorithmIdentifierAsn.cs">
-      <Link>Common\System\Security\Cryptography\Asn1\AlgorithmIdentifierAsn.cs</Link>
+    <AsnXml Include="$(CommonPath)\System\Security\Cryptography\Asn1\AlgorithmIdentifierAsn.xml">
+      <Link>Common\System\Security\Cryptography\Asn1\AlgorithmIdentifierAsn.xml</Link>
+    </AsnXml>
+    <Compile Include="$(CommonPath)\System\Security\Cryptography\Asn1\AlgorithmIdentifierAsn.xml.cs">
+      <Link>Common\System\Security\Cryptography\Asn1\AlgorithmIdentifierAsn.xml.cs</Link>
+      <DependentUpon>Common\System\Security\Cryptography\Asn1\AlgorithmIdentifierAsn.xml</DependentUpon>
     </Compile>
-    <Compile Include="$(CommonPath)\System\Security\Cryptography\Asn1\AttributeAsn.cs">
-      <Link>Common\System\Security\Cryptography\Asn1\AttributeAsn.cs</Link>
+    <Compile Include="$(CommonPath)\System\Security\Cryptography\Asn1\AlgorithmIdentifierAsn.manual.cs">
+      <Link>Common\System\Security\Cryptography\Asn1\AlgorithmIdentifierAsn.manual.cs</Link>
+      <DependentUpon>Common\System\Security\Cryptography\Asn1\AlgorithmIdentifierAsn.xml</DependentUpon>
     </Compile>
-    <Compile Include="$(CommonPath)\System\Security\Cryptography\Asn1\EncryptedPrivateKeyInfoAsn.cs">
-      <Link>Common\System\Security\Cryptography\Asn1\EncryptedPrivateKeyInfoAsn.cs</Link>
+    <AsnXml Include="$(CommonPath)\System\Security\Cryptography\Asn1\AttributeAsn.xml">
+      <Link>Common\System\Security\Cryptography\Asn1\AttributeAsn.xml</Link>
+    </AsnXml>
+    <Compile Include="$(CommonPath)\System\Security\Cryptography\Asn1\AttributeAsn.xml.cs">
+      <Link>Common\System\Security\Cryptography\Asn1\AttributeAsn.xml.cs</Link>
+      <DependentUpon>Common\System\Security\Cryptography\Asn1\AttributeAsn.xml</DependentUpon>
     </Compile>
-    <Compile Include="$(CommonPath)\System\Security\Cryptography\Asn1\PBEParameter.cs">
-      <Link>Common\System\Security\Cryptography\Asn1\PBEParameter.cs</Link>
+    <AsnXml Include="$(CommonPath)\System\Security\Cryptography\Asn1\CurveAsn.xml">
+      <Link>Common\System\Security\Cryptography\Asn1\CurveAsn.xml</Link>
+    </AsnXml>
+    <Compile Include="$(CommonPath)\System\Security\Cryptography\Asn1\CurveAsn.xml.cs">
+      <Link>Common\System\Security\Cryptography\Asn1\CurveAsn.xml.cs</Link>
+      <DependentUpon>Common\System\Security\Cryptography\Asn1\CurveAsn.xml</DependentUpon>
     </Compile>
-    <Compile Include="$(CommonPath)\System\Security\Cryptography\Asn1\PBES2Params.cs">
-      <Link>Common\System\Security\Cryptography\Asn1\PBES2Params.cs</Link>
+    <AsnXml Include="$(CommonPath)\System\Security\Cryptography\Asn1\DssParms.xml">
+      <Link>Common\System\Security\Cryptography\Asn1\DssParms.xml</Link>
+    </AsnXml>
+    <Compile Include="$(CommonPath)\System\Security\Cryptography\Asn1\DssParms.xml.cs">
+      <Link>Common\System\Security\Cryptography\Asn1\DssParms.xml.cs</Link>
+      <DependentUpon>Common\System\Security\Cryptography\Asn1\DssParms.xml</DependentUpon>
     </Compile>
-    <Compile Include="$(CommonPath)\System\Security\Cryptography\Asn1\Pbkdf2Params.cs">
-      <Link>Common\System\Security\Cryptography\Asn1\Pbkdf2Params.cs</Link>
+    <AsnXml Include="$(CommonPath)\System\Security\Cryptography\Asn1\ECDomainParameters.xml">
+      <Link>Common\System\Security\Cryptography\Asn1\ECDomainParameters.xml</Link>
+    </AsnXml>
+    <Compile Include="$(CommonPath)\System\Security\Cryptography\Asn1\ECDomainParameters.xml.cs">
+      <Link>Common\System\Security\Cryptography\Asn1\ECDomainParameters.xml.cs</Link>
+      <DependentUpon>Common\System\Security\Cryptography\Asn1\ECDomainParameters.xml</DependentUpon>
     </Compile>
-    <Compile Include="$(CommonPath)\System\Security\Cryptography\Asn1\Pbkdf2SaltChoice.cs">
-      <Link>Common\System\Security\Cryptography\Asn1\Pbkdf2SaltChoice.cs</Link>
+    <AsnXml Include="$(CommonPath)\System\Security\Cryptography\Asn1\ECPrivateKey.xml">
+      <Link>Common\System\Security\Cryptography\Asn1\ECPrivateKey.xml</Link>
+    </AsnXml>
+    <Compile Include="$(CommonPath)\System\Security\Cryptography\Asn1\ECPrivateKey.xml.cs">
+      <Link>Common\System\Security\Cryptography\Asn1\ECPrivateKey.xml.cs</Link>
+      <DependentUpon>Common\System\Security\Cryptography\Asn1\ECPrivateKey.xml</DependentUpon>
     </Compile>
-    <Compile Include="$(CommonPath)\System\Security\Cryptography\Asn1\PrivateKeyInfoAsn.cs">
-      <Link>Common\System\Security\Cryptography\Asn1\PrivateKeyInfoAsn.cs</Link>
+    <AsnXml Include="$(CommonPath)\System\Security\Cryptography\Asn1\EncryptedPrivateKeyInfoAsn.xml">
+      <Link>Common\System\Security\Cryptography\Asn1\EncryptedPrivateKeyInfoAsn.xml</Link>
+    </AsnXml>
+    <Compile Include="$(CommonPath)\System\Security\Cryptography\Asn1\EncryptedPrivateKeyInfoAsn.xml.cs">
+      <Link>Common\System\Security\Cryptography\Asn1\EncryptedPrivateKeyInfoAsn.xml.cs</Link>
+      <DependentUpon>Common\System\Security\Cryptography\Asn1\EncryptedPrivateKeyInfoAsn.xml</DependentUpon>
+    </Compile>
+    <AsnXml Include="$(CommonPath)\System\Security\Cryptography\Asn1\FieldID.xml">
+      <Link>Common\System\Security\Cryptography\Asn1\FieldID.xml</Link>
+    </AsnXml>
+    <Compile Include="$(CommonPath)\System\Security\Cryptography\Asn1\FieldID.xml.cs">
+      <Link>Common\System\Security\Cryptography\Asn1\FieldID.xml.cs</Link>
+      <DependentUpon>Common\System\Security\Cryptography\Asn1\FieldID.xml</DependentUpon>
+    </Compile>
+    <AsnXml Include="$(CommonPath)\System\Security\Cryptography\Asn1\PBEParameter.xml">
+      <Link>Common\System\Security\Cryptography\Asn1\PBEParameter.xml</Link>
+    </AsnXml>
+    <Compile Include="$(CommonPath)\System\Security\Cryptography\Asn1\PBEParameter.xml.cs">
+      <Link>Common\System\Security\Cryptography\Asn1\PBEParameter.xml.cs</Link>
+      <DependentUpon>Common\System\Security\Cryptography\Asn1\PBEParameter.xml</DependentUpon>
+    </Compile>
+    <AsnXml Include="$(CommonPath)\System\Security\Cryptography\Asn1\PBES2Params.xml">
+      <Link>Common\System\Security\Cryptography\Asn1\PBES2Params.xml</Link>
+    </AsnXml>
+    <Compile Include="$(CommonPath)\System\Security\Cryptography\Asn1\PBES2Params.xml.cs">
+      <Link>Common\System\Security\Cryptography\Asn1\PBES2Params.xml.cs</Link>
+      <DependentUpon>Common\System\Security\Cryptography\Asn1\PBES2Params.xml</DependentUpon>
+    </Compile>
+    <AsnXml Include="$(CommonPath)\System\Security\Cryptography\Asn1\Pbkdf2Params.xml">
+      <Link>Common\System\Security\Cryptography\Asn1\Pbkdf2Params.xml</Link>
+    </AsnXml>
+    <Compile Include="$(CommonPath)\System\Security\Cryptography\Asn1\Pbkdf2Params.xml.cs">
+      <Link>Common\System\Security\Cryptography\Asn1\Pbkdf2Params.xml.cs</Link>
+      <DependentUpon>Common\System\Security\Cryptography\Asn1\Pbkdf2Params.xml</DependentUpon>
+    </Compile>
+    <AsnXml Include="$(CommonPath)\System\Security\Cryptography\Asn1\Pbkdf2SaltChoice.xml">
+      <Link>Common\System\Security\Cryptography\Asn1\Pbkdf2SaltChoice.xml</Link>
+    </AsnXml>
+    <Compile Include="$(CommonPath)\System\Security\Cryptography\Asn1\Pbkdf2SaltChoice.xml.cs">
+      <Link>Common\System\Security\Cryptography\Asn1\Pbkdf2SaltChoice.xml.cs</Link>
+      <DependentUpon>Common\System\Security\Cryptography\Asn1\Pbkdf2SaltChoice.xml</DependentUpon>
+    </Compile>
+    <AsnXml Include="$(CommonPath)\System\Security\Cryptography\Asn1\PrivateKeyInfoAsn.xml">
+      <Link>Common\System\Security\Cryptography\Asn1\PrivateKeyInfoAsn.xml</Link>
+    </AsnXml>
+    <Compile Include="$(CommonPath)\System\Security\Cryptography\Asn1\PrivateKeyInfoAsn.xml.cs">
+      <Link>Common\System\Security\Cryptography\Asn1\PrivateKeyInfoAsn.xml.cs</Link>
+      <DependentUpon>Common\System\Security\Cryptography\Asn1\PrivateKeyInfoAsn.xml</DependentUpon>
     </Compile>
     <AsnXml Include="$(CommonPath)\System\Security\Cryptography\Asn1\Rc2CbcParameters.xml">
       <Link>Common\System\Security\Cryptography\Asn1\Rc2CbcParameters.xml</Link>
@@ -176,8 +248,33 @@
       <Link>Common\System\Security\Cryptography\Asn1\Rc2CbcParameters.manual.cs</Link>
       <DependentUpon>Common\System\Security\Cryptography\Asn1\Rc2CbcParameters.xml</DependentUpon>
     </Compile>
-    <Compile Include="$(CommonPath)\System\Security\Cryptography\Asn1\SubjectPublicKeyInfoAsn.cs">
-      <Link>Common\System\Security\Cryptography\Asn1\SubjectPublicKeyInfoAsn.cs</Link>
+    <AsnXml Include="$(CommonPath)\System\Security\Cryptography\Asn1\RSAPrivateKeyAsn.xml">
+      <Link>Common\System\Security\Cryptography\Asn1\RSAPrivateKeyAsn.xml</Link>
+    </AsnXml>
+    <Compile Include="$(CommonPath)\System\Security\Cryptography\Asn1\RSAPrivateKeyAsn.xml.cs">
+      <Link>Common\System\Security\Cryptography\Asn1\RSAPrivateKeyAsn.xml.cs</Link>
+      <DependentUpon>Common\System\Security\Cryptography\Asn1\RSAPrivateKeyAsn.xml</DependentUpon>
+    </Compile>
+    <AsnXml Include="$(CommonPath)\System\Security\Cryptography\Asn1\RSAPublicKeyAsn.xml">
+      <Link>Common\System\Security\Cryptography\Asn1\RSAPublicKeyAsn.xml</Link>
+    </AsnXml>
+    <Compile Include="$(CommonPath)\System\Security\Cryptography\Asn1\RSAPublicKeyAsn.xml.cs">
+      <Link>Common\System\Security\Cryptography\Asn1\RSAPublicKeyAsn.xml.cs</Link>
+      <DependentUpon>Common\System\Security\Cryptography\Asn1\RSAPublicKeyAsn.xml</DependentUpon>
+    </Compile>
+    <AsnXml Include="$(CommonPath)\System\Security\Cryptography\Asn1\SpecifiedECDomain.xml">
+      <Link>Common\System\Security\Cryptography\Asn1\SpecifiedECDomain.xml</Link>
+    </AsnXml>
+    <Compile Include="$(CommonPath)\System\Security\Cryptography\Asn1\SpecifiedECDomain.xml.cs">
+      <Link>Common\System\Security\Cryptography\Asn1\SpecifiedECDomain.xml.cs</Link>
+      <DependentUpon>Common\System\Security\Cryptography\Asn1\SpecifiedECDomain.xml</DependentUpon>
+    </Compile>
+    <AsnXml Include="$(CommonPath)\System\Security\Cryptography\Asn1\SubjectPublicKeyInfoAsn.xml">
+      <Link>Common\System\Security\Cryptography\Asn1\SubjectPublicKeyInfoAsn.xml</Link>
+    </AsnXml>
+    <Compile Include="$(CommonPath)\System\Security\Cryptography\Asn1\SubjectPublicKeyInfoAsn.xml.cs">
+      <Link>Common\System\Security\Cryptography\Asn1\SubjectPublicKeyInfoAsn.xml.cs</Link>
+      <DependentUpon>Common\System\Security\Cryptography\Asn1\SubjectPublicKeyInfoAsn.xml</DependentUpon>
     </Compile>
   </ItemGroup>
   <ItemGroup Condition="'$(TargetsWindows)' == 'true'">
@@ -569,9 +666,6 @@
     <Compile Include="$(CommonPath)\System\Security\Cryptography\ECDsaSecurityTransforms.cs">
       <Link>Common\System\Security\Cryptography\ECDsaSecurityTransforms.cs</Link>
     </Compile>
-    <Compile Include="$(CommonPath)\System\Security\Cryptography\KeyBlobHelpers.cs">
-      <Link>Common\System\Security\Cryptography\KeyBlobHelpers.cs</Link>
-    </Compile>
     <Compile Include="$(CommonPath)\System\Security\Cryptography\RSASecurityTransforms.cs">
       <Link>Common\System\Security\Cryptography\RSASecurityTransforms.cs</Link>
     </Compile>
@@ -609,12 +703,6 @@
     <Compile Include="$(CommonPath)\Microsoft\Win32\SafeHandles\SafeEvpCipherCtxHandle.Unix.cs">
       <Link>Common\Microsoft\Win32\SafeHandles\SafeEvpCipherCtxHandle.Unix.cs</Link>
     </Compile>
-    <Compile Include="$(CommonPath)\System\Security\Cryptography\DerEncoder.cs">
-      <Link>Common\System\Security\Cryptography\DerEncoder.cs</Link>
-    </Compile>
-    <Compile Include="$(CommonPath)\System\Security\Cryptography\DerSequenceReader.cs">
-      <Link>Common\System\Security\Cryptography\DerSequenceReader.cs</Link>
-    </Compile>
     <Compile Include="$(CommonPath)\System\Security\Cryptography\ECDiffieHellmanDerivation.cs">
       <Link>Common\System\Security\Cryptography\ECDiffieHellmanDerivation.cs</Link>
     </Compile>
@@ -642,5 +730,8 @@
   </ItemGroup>
   <ItemGroup Condition="'$(TargetsUnix)' == 'true'">
     <Reference Include="System.Runtime.Numerics" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="@(AsnXml)" /> 
   </ItemGroup>
 </Project>

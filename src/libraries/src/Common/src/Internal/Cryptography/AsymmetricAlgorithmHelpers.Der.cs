@@ -5,7 +5,9 @@
 using System;
 using System.Diagnostics;
 using System.IO;
+using System.Numerics;
 using System.Security.Cryptography;
+using System.Security.Cryptography.Asn1;
 
 namespace Internal.Cryptography
 {
@@ -26,10 +28,14 @@ namespace Internal.Cryptography
             // Output is the DER encoded value of CONSTRUCTEDSEQUENCE(INTEGER(r), INTEGER(s)). 
             int halfLength = input.Length / 2;
 
-            byte[][] rEncoded = DerEncoder.SegmentedEncodeUnsignedInteger(input.Slice(0, halfLength));
-            byte[][] sEncoded = DerEncoder.SegmentedEncodeUnsignedInteger(input.Slice(halfLength, halfLength));
-
-            return DerEncoder.ConstructSequence(rEncoded, sEncoded);
+            using (AsnWriter writer = new AsnWriter(AsnEncodingRules.DER))
+            {
+                writer.PushSequence();
+                writer.WriteKeyParameterInteger(input.Slice(0, halfLength));
+                writer.WriteKeyParameterInteger(input.Slice(halfLength, halfLength));
+                writer.PopSequence();
+                return writer.Encode();
+            }
         }
 
         /// <summary>
@@ -39,22 +45,18 @@ namespace Internal.Cryptography
         {
             int size = BitsToBytes(fieldSizeBits);
 
-            try
-            {
-                DerSequenceReader reader = new DerSequenceReader(input, inputOffset, inputCount);
-                byte[] rDer = reader.ReadIntegerBytes();
-                byte[] sDer = reader.ReadIntegerBytes();
-                byte[] response = new byte[2 * size];
+            AsnReader reader = new AsnReader(input.AsMemory(inputOffset, inputCount), AsnEncodingRules.DER);
+            AsnReader sequenceReader = reader.ReadSequence();
+            reader.ThrowIfNotEmpty();
+            ReadOnlySpan<byte> rDer = sequenceReader.GetIntegerBytes().Span;
+            ReadOnlySpan<byte> sDer = sequenceReader.GetIntegerBytes().Span;
+            sequenceReader.ThrowIfNotEmpty();
 
-                CopySignatureField(rDer, response, 0, size);
-                CopySignatureField(sDer, response, size, size);
+            byte[] response = new byte[2 * size];
+            CopySignatureField(rDer, response.AsSpan(0, size));
+            CopySignatureField(sDer, response.AsSpan(size, size));
 
-                return response;
-            }
-            catch (InvalidOperationException e)
-            {
-                throw new CryptographicException(SR.Arg_CryptographyException, e);
-            }
+            return response;
         }
 
         public static int BitsToBytes(int bitLength)
@@ -63,30 +65,22 @@ namespace Internal.Cryptography
             return byteLength;
         }
 
-        private static void CopySignatureField(byte[] signatureField, byte[] response, int offset, int fieldLength)
+        private static void CopySignatureField(ReadOnlySpan<byte> signatureField, Span<byte> response)
         {
-            if (signatureField.Length > fieldLength)
+            if (signatureField.Length > response.Length)
             {
                 // The only way this should be true is if the value required a zero-byte-pad.
-                Debug.Assert(signatureField.Length == fieldLength + 1, "signatureField.Length == fieldLength + 1");
+                Debug.Assert(signatureField.Length == response.Length + 1, "signatureField.Length == fieldLength + 1");
                 Debug.Assert(signatureField[0] == 0, "signatureField[0] == 0");
                 Debug.Assert(signatureField[1] > 0x7F, "signatureField[1] > 0x7F");
+                signatureField = signatureField.Slice(1);
+            }
 
-                Buffer.BlockCopy(signatureField, 1, response, offset, fieldLength);
-            }
-            else if (signatureField.Length == fieldLength)
-            {
-                Buffer.BlockCopy(signatureField, 0, response, offset, fieldLength);
-            }
-            else
-            {
-                // If the field is too short then it needs to be prepended
-                // with zeroes in the response.  Since the array was already
-                // zeroed out, just figure out where we need to start copying.
-                int writeOffset = fieldLength - signatureField.Length;
-
-                Buffer.BlockCopy(signatureField, 0, response, offset + writeOffset, signatureField.Length);
-            }
+            // If the field is too short then it needs to be prepended
+            // with zeroes in the response.  Since the array was already
+            // zeroed out, just figure out where we need to start copying.
+            int writeOffset = response.Length - signatureField.Length;
+            signatureField.CopyTo(response.Slice(writeOffset));
         }
     }
 }

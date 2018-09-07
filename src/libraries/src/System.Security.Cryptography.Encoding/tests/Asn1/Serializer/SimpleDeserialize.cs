@@ -911,4 +911,35 @@ namespace System.Security.Cryptography.Tests.Asn1
         [Integer]
         public ReadOnlyMemory<byte> Second;
     }
+
+    // https://tools.ietf.org/html/rfc3280#section-4.1.1.2
+    //
+    // AlgorithmIdentifier  ::=  SEQUENCE  {
+    //   algorithm OBJECT IDENTIFIER,
+    //   parameters ANY DEFINED BY algorithm OPTIONAL  }
+    [StructLayout(LayoutKind.Sequential)]
+    internal partial struct AlgorithmIdentifierAsn
+    {
+        internal static readonly ReadOnlyMemory<byte> ExplicitDerNull = new byte[] { 0x05, 0x00 };
+
+        [ObjectIdentifier(PopulateFriendlyName = true)]
+        public Oid Algorithm;
+
+        [AnyValue, OptionalValue]
+        public ReadOnlyMemory<byte>? Parameters;
+    }
+
+    // https://tools.ietf.org/html/rfc3280#section-4.1
+    //
+    // SubjectPublicKeyInfo  ::=  SEQUENCE  {
+    //   algorithm            AlgorithmIdentifier,
+    //   subjectPublicKey     BIT STRING  }
+    [StructLayout(LayoutKind.Sequential)]
+    internal partial struct SubjectPublicKeyInfoAsn
+    {
+        internal AlgorithmIdentifierAsn Algorithm;
+
+        [BitString]
+        internal ReadOnlyMemory<byte> SubjectPublicKey;
+    }
 }

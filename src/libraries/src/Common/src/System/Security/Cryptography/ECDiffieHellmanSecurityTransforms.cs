@@ -267,7 +267,7 @@ namespace System.Security.Cryptography
                         throw new ObjectDisposedException(typeof(ECDiffieHellmanSecurityTransformsPublicKey).Name);
                     }
 
-                    return _ecc.ExportParameters(includePrivateParameters: false, keySizeInBIts: -1);
+                    return _ecc.ExportParameters(includePrivateParameters: false, keySizeInBits: -1);
                 }
 
                 internal SafeSecKeyRefHandle KeyHandle

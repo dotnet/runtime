@@ -3,6 +3,7 @@
 // See the LICENSE file in the project root for more information.
 
 using System.Diagnostics;
+using System.Security.Cryptography.Asn1;
 using Internal.Cryptography;
 
 namespace System.Security.Cryptography.X509Certificates
@@ -30,12 +31,6 @@ namespace System.Security.Cryptography.X509Certificates
 
         internal static PublicKey BuildPublicKey(RSA rsa)
         {
-            RSAParameters parameters = rsa.ExportParameters(false);
-
-            byte[] rsaPublicKey = DerEncoder.ConstructSequence(
-                DerEncoder.SegmentedEncodeUnsignedInteger(parameters.Modulus),
-                DerEncoder.SegmentedEncodeUnsignedInteger(parameters.Exponent));
-
             Oid oid = new Oid(Oids.Rsa);
 
             // The OID is being passed to everything here because that's what
@@ -47,7 +42,7 @@ namespace System.Security.Cryptography.X509Certificates
                 // This is due to one version of the ASN.1 not including OPTIONAL, and that was
                 // the version that got predominately implemented for RSA. Now it's convention.
                 new AsnEncodedData(oid, new byte[] { 0x05, 0x00 }),
-                new AsnEncodedData(oid, rsaPublicKey));
+                new AsnEncodedData(oid, rsa.ExportRSAPublicKey()));
         }
 
         public override byte[] GetSignatureAlgorithmIdentifier(HashAlgorithmName hashAlgorithm)
@@ -74,9 +69,14 @@ namespace System.Security.Cryptography.X509Certificates
                     SR.Format(SR.Cryptography_UnknownHashAlgorithm, hashAlgorithm.Name));
             }
 
-            return DerEncoder.ConstructSequence(
-                DerEncoder.SegmentedEncodeOid(oid),
-                DerEncoder.SegmentedEncodeNull());
+            using (AsnWriter writer = new AsnWriter(AsnEncodingRules.DER))
+            {
+                writer.PushSequence();
+                writer.WriteObjectIdentifier(oid);
+                writer.WriteNull();
+                writer.PopSequence();
+                return writer.Encode();
+            }
         }
     }
 }

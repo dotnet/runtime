@@ -6,25 +6,13 @@ using System.Runtime.InteropServices;
 
 namespace System.Security.Cryptography.Asn1
 {
-    [StructLayout(LayoutKind.Sequential)]
-    // https://tools.ietf.org/html/rfc3280#section-4.1.1.2
-    //
-    // AlgorithmIdentifier  ::=  SEQUENCE  {
-    //   algorithm OBJECT IDENTIFIER,
-    //   parameters ANY DEFINED BY algorithm OPTIONAL  }
-    internal partial struct AlgorithmIdentifierAsn
-    {
+	internal partial struct AlgorithmIdentifierAsn
+	{
         internal static readonly ReadOnlyMemory<byte> ExplicitDerNull = new byte[] { 0x05, 0x00 };
-
-        [ObjectIdentifier(PopulateFriendlyName = true)]
-        public Oid Algorithm;
-
-        [AnyValue, OptionalValue]
-        public ReadOnlyMemory<byte>? Parameters;
 
         internal bool Equals(ref AlgorithmIdentifierAsn other)
         {
-            if (Algorithm.Value != other.Algorithm.Value)
+            if (Algorithm != other.Algorithm)
             {
                 return false;
             }
@@ -70,29 +58,6 @@ namespace System.Security.Cryptography.Asn1
             }
 
             return span[1] == 0;
-        }
-
-        internal void Encode(AsnWriter writer)
-        {
-            AsnSerializer.Serialize(this, writer);
-        }
-
-        internal static void Decode(AsnReader reader, out AlgorithmIdentifierAsn decoded)
-        {
-            if (reader == null)
-                throw new ArgumentNullException(nameof(reader));
-
-            ReadOnlyMemory<byte> value = reader.GetEncodedValue();
-            decoded = AsnSerializer.Deserialize<AlgorithmIdentifierAsn>(value, reader.RuleSet);
-        }
-
-        internal static AlgorithmIdentifierAsn Decode(ReadOnlyMemory<byte> encoded, AsnEncodingRules ruleSet)
-        {
-            AsnReader reader = new AsnReader(encoded, ruleSet);
-
-            Decode(reader, out AlgorithmIdentifierAsn decoded);
-            reader.ThrowIfNotEmpty();
-            return decoded;
         }
     }
 }

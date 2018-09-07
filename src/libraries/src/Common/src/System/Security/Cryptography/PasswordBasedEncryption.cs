@@ -487,8 +487,7 @@ namespace System.Security.Cryptography
                 throw new CryptographicException(SR.Cryptography_Der_Invalid_Encoding);
             }
 
-            PBES2Params pbes2Params =
-                AsnSerializer.Deserialize<PBES2Params>(algorithmParameters.Value, AsnEncodingRules.BER);
+            PBES2Params pbes2Params = PBES2Params.Decode(algorithmParameters.Value, AsnEncodingRules.BER);
 
             if (pbes2Params.KeyDerivationFunc.Algorithm.Value != Oids.Pbkdf2)
             {
@@ -678,8 +677,7 @@ namespace System.Security.Cryptography
                 throw new CryptographicException(SR.Cryptography_Der_Invalid_Encoding);
             }
 
-            Pbkdf2Params pbkdf2Params =
-                AsnSerializer.Deserialize<Pbkdf2Params>(parameters.Value, AsnEncodingRules.BER);
+            Pbkdf2Params pbkdf2Params = Pbkdf2Params.Decode(parameters.Value, AsnEncodingRules.BER);
 
             // No OtherSource is defined in RFC 2898 or RFC 8018, so whatever
             // algorithm was requested isn't one we know.
@@ -779,8 +777,7 @@ namespace System.Security.Cryptography
                 throw new CryptographicException(SR.Cryptography_Der_Invalid_Encoding);
             }
 
-            PBEParameter pbeParameters =
-                AsnSerializer.Deserialize<PBEParameter>(algorithmParameters.Value, AsnEncodingRules.BER);
+            PBEParameter pbeParameters = PBEParameter.Decode(algorithmParameters.Value, AsnEncodingRules.BER);
 
             if (pbeParameters.Salt.Length != 8)
             {
@@ -841,7 +838,7 @@ namespace System.Security.Cryptography
                 throw new CryptographicException();
             }
 
-            PBEParameter pbeParameters = AsnSerializer.Deserialize<PBEParameter>(
+            PBEParameter pbeParameters = PBEParameter.Decode(
                 algorithmIdentifier.Parameters.Value,
                 AsnEncodingRules.BER);
 

@@ -433,4 +433,25 @@
   <data name="Cryptography_AsnWriter_PopWrongTag" xml:space="preserve">
     <value>Cannot pop the requested tag as it is not currently in progress.</value>
   </data>
+  <data name="Cryptography_NotValidPublicOrPrivateKey" xml:space="preserve">
+    <value>Key is not a valid public or private key.</value>
+  </data>
+  <data name="Cryptography_Pkcs8_EncryptedReadFailed" xml:space="preserve">
+    <value>The EncryptedPrivateKeyInfo structure was decoded but was not successfully interpreted, the password may be incorrect.</value>
+  </data>
+  <data name="Cryptography_UnknownAlgorithmIdentifier" xml:space="preserve">
+    <value>The algorithm identified by '{0}' is unknown, not valid for the requested usage, or was not handled.</value>
+  </data>
+  <data name="Argument_InvalidValue" xml:space="preserve">
+    <value>Value was invalid.</value>
+  </data>
+  <data name="Cryptography_AlgKdfRequiresChars" xml:space="preserve">
+    <value>The KDF for algorithm '{0}' requires a char-based password input.</value>
+  </data>
+  <data name="Cryptography_RSAPrivateKey_VersionTooNew" xml:space="preserve">
+    <value>The provided RSAPrivateKey value has version '{0}', but version '{1}' is the maximum supported.</value>
+  </data>
+  <data name="Cryptography_NotValidPrivateKey" xml:space="preserve">
+    <value>Key is not a valid private key.</value>
+  </data>
 </root>
