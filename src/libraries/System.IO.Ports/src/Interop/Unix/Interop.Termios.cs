@@ -42,7 +42,7 @@ internal static partial class Interop
         internal static extern int TermiosGetSpeed(SafeFileHandle handle);
 
         [DllImport(Libraries.IOPortsNative, EntryPoint = "SystemIoPortsNative_TermiosAvailableBytes", SetLastError = true)]
-        internal static extern int TermiosGetAvailableBytes(SafeFileHandle handle, int input);
+        internal static extern int TermiosGetAvailableBytes(SafeFileHandle handle, Queue input);
 
         [DllImport(Libraries.IOPortsNative, EntryPoint = "SystemIoPortsNative_TermiosDiscard", SetLastError = true)]
         internal static extern int TermiosDiscard(SafeFileHandle handle, Queue input);

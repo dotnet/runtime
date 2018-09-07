@@ -196,6 +196,7 @@ namespace System.IO.Ports.Tests
         }
 
         [ConditionalFact(nameof(HasOneSerialPort))]
+        [PlatformSpecific(~TestPlatforms.AnyUnix)]
         public void RtsEnable_Get_Handshake_RequestToSendXOnXOff()
         {
             using (SerialPort com1 = new SerialPort(TCSupport.LocalMachineSerialInfo.FirstAvailablePortName))
