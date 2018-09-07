@@ -13,5 +13,7 @@ MembersMustExist : Member 'System.Runtime.InteropServices.Marshal.StringToCoTask
 MembersMustExist : Member 'System.Runtime.InteropServices.Marshal.ZeroFreeCoTaskMemUTF8(System.IntPtr)' does not exist in the implementation but it does exist in the contract.
 MembersMustExist : Member 'System.Runtime.InteropServices.UnmanagedType System.Runtime.InteropServices.UnmanagedType.LPUTF8Str' does not exist in the implementation but it does exist in the contract.
 MembersMustExist : Member 'System.Runtime.InteropServices.Marshal.GetExceptionPointers()' does not exist in the implementation but it does exist in the contract.
+MembersMustExist : Member 'System.Runtime.InteropServices.Marshal.GetEndComSlot(System.Type)' does not exist in the implementation but it does exist in the contract.
+MembersMustExist : Member 'System.Runtime.InteropServices.Marshal.IsTypeVisibleFromCom(System.Type)' does not exist in the implementation but it does exist in the contract.
 TypeCannotChangeClassification : Type 'System.Runtime.InteropServices.HandleRef' is marked as readonly in the contract so it must also be marked readonly in the implementation.
-Total Issues: 13
+Total Issues: 15
