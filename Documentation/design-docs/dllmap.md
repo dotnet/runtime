@@ -1,7 +1,11 @@
 # Dllmap design document
-This document is intended to describe a plan on delivering a Dllmap feature for .NET Core.
+This document is intended to describe a process of delivering a Dllmap feature for .NET Core.
 
 Author: Anna Aniol (@annaaniol)
+
+PR: https://github.com/dotnet/coreclr/pull/19826
+
+API proposal: https://github.com/dotnet/corefx/issues/32015
 
 ## Background
 
@@ -20,8 +24,8 @@ This import works with Windows, but it doesn’t work with any other OS. If run 
 
 Mono already provides a feature that addresses the problem of cross-platform p/invoke support. Mono’s [Dllmap](http://www.mono-project.com/docs/advanced/pinvoke/dllmap/) 
 enables to configure p/invoke signatures at runtime. By providing an XML configuration file, 
-user can define a custom mapping between OS-specific library names and methods. 
-Thanks to that, even if a library defined in DllImport is incompatible with an OS that is currently running the application, 
+user can define a custom mapping between OS-specific library names and method names.
+Thanks to that, even if a library defined in DllImport is incompatible with an OS that is currently running the application,
 a correct unmanaged method can be called (if it exists for this OS).
 
 In Mono Dllmap feature custom mapping can be tightly specified based on the OS name, CPU name and a wordsize.
@@ -40,9 +44,11 @@ and [metadata/loader.c](https://github.com/mono/mono/blob/master/mono/metadata/l
 
 ### .NET Core Dllmap
 
-.NET Core Dllmap’s purpose is to deliver a cross-platform support for p/invoke mechanism in .NET. With Dllmap user will be able to control interop methods by defining custom mapping between OS-specific dlls and methods.
+.NET Core Dllmap’s purpose is to deliver a cross-platform support for p/invoke mechanism in .NET.
+With Dllmap user will be able to control interop methods by defining custom mapping between OS-specific dll names.
 
-Dllmap will allow making changes in both library names and target method names (entrypoints). Changing entrypoint name will be optional (it will remain unchanged by default).
+.NET Core Dllmap won't support entrypoint mappings as Mono does.
+There is no significant Mono project that uses entrypint mappings so it shouldn't affect compatibility much.
 
 Target platforms for this feature are: Windows, Linux and OS X.
 
@@ -51,16 +57,17 @@ There will be a diagnostic mechanism available to monitor dllmap related issues.
 ### Interaction with Dllmap
 
 #### Mono users: Mono compatibility
-The Dllmap method is meant as a compatibility feature for Mono and provides users with a straightforward migration story from Mono to .NET Core applications having p/invokes.
-The default dllmap will consume a configuration file of [the same style](http://www.mono-project.com/docs/advanced/pinvoke/dllmap/) as Mono does.
+The Dllmap method is meant as a compatibility feature for Mono and provides users with a straightforward migration story from Mono to .NET Core applications having p/invokes
+for applications that *do not use entrypoint mappings*.
+The Mono-like dllmap behavior will consume a configuration file of [the same style](http://www.mono-project.com/docs/advanced/pinvoke/dllmap/) as Mono does.
 Users will be able to use their old Mono configuration files when specifying the mapping for .NET Core applications.
 Configuration files must be placed next to the assemblies that they describe.
 
 #### New users: flexibility
 New users, who plan to support p/invokes in their cross-platform applications, should implement their custom mapping policies that satisfies their needs.
-The runtime will use two dll specific callbacks on each dll load attempt (one on loading a library, one on determining an entrypoint).
+The runtime will use a specific callbacks on each dll load attempt.
 The user’s code can subscribe to these callbacks and define any mapping strategy.
-Users should keep in mind that the default dllmap methods are provided for an easier migration from Mono.
+Users should keep in mind that the default Mono-like mapping methods are provided for an easier migration from Mono.
 For newcomers, it’s highly recommended to use callbacks and implement their own handers. Details of the callback strategy are described in the Design section.
 
 ### Usage example (XML configuration)
@@ -73,29 +80,28 @@ The application calls a function GetCurrentProcessId from an OS-specific library
 static  extern  uint  GetCurrentProcessId();
 ```
 
-To make it work on Linux, that does not have kernel32.dll, user must define a mapping of the dll. 
-There is no `GetCurrentProcessId` function in any corresponding Linux-specific library, so entrypoint name mapping must be defined too. 
+To make it work on Linux, that does not have kernel32.dll, user must define a mapping of the dll.
+There is no `GetCurrentProcessId` function in any corresponding Linux-specific library, so entrypoint name mapping must be defined too.
 To achieve this, the user puts an XML configuration file next to the dll that is about to be loaded. The file looks like this:
 ```xml
 <configuration>
-    <dllmap  dll="kernel32.dll">
-        <dllentry  dll="libc.so.6" name="GetCurrentProcessId" target="getpid" />
-    </dllmap>
+    <dllmap dll="libWindows.dll" target="libLinux.so.6" />
 </configuration>
 ```
 
-With this file, all `GetCurrentProcessId` calls get automatically mapped to `getpid` calls on runtime and the end user of the application can’t see any difference in application’s behavior. Running the application cross-platform does not require any OS-specific changes in the code. All the mapping is defined in advance in the external configuration file.
+With this file, all calls to `libWindows.dll` get automatically mapped to calls to `libLinux.so.6` on runtime and the end user of the
+application can’t see any difference in application’s behavior. Running the application cross-platform does not require any OS-specific changes in the code.
+All the mapping is defined in advance in the external configuration file.
 
-When mapping a function into another function, both the source and the target functions must take the same number of arguments of compatible type. Otherwise, the mapping will not work.
-
-This is a very basic scenario and it can be extended to different operating systems, libraries and entrypoints. 
+This is a very basic scenario and it can be extended to different operating systems and libraries.
 It assumes that user does not implement any custom actions (handlers) but uses the default Mono-like dllmap behavior.
 
 ## Design
 ### XML configuration file
-For a basic case, the mapping must be defined in an XML configuration file and placed next to the assembly that requires mapping of p/invokes. The file must be named AssemblyName.config where AssemblyName is a name of the executable for which the mapping is defined. 
+For a basic case, the mapping must be defined in an XML configuration file and placed next to the assembly that requires mapping of p/invokes.
+The file must be named AssemblyName.config where AssemblyName is a name of the executable for which the mapping is defined.
 
-XML parsing will be implemented in corefx.labs using XML parsers that .NET provides. 
+XML parsing will be implemented in corefx.labs using XML parsers that .NET provides.
 
 ### Library mapping
 In [dllimport.cpp](https://github.com/dotnet/coreclr/blob/master/src/vm/dllimport.cpp) file there is a method that loads the DLL and finds the procaddress for an N/Direct call.
@@ -112,125 +118,109 @@ VOID NDirect::NDirectLink(NDirectMethodDesc *pMD)
 ```
 `LoadLibraryModule`  is responsible for loading a correct library and `NDirectGetEntryPoint ` is responsible for resolving a right entrypoint.
 
-There are several functions that get called in `LoadLibraryModule`  to get an hmod of the unmanaged dll. If any of them returns a valid hmod, execution flow ends and the hmod gets returned. First line presents the proposed change:
-```c++
-hmod = LoadLibraryViaCallback(pMD, wszLibName); // this is the only intoduced step
-hmod = LoadLibraryModuleViaHost(pMD, pDomain, wszLibName);
-hmod = FindUnmanagedImageInCache(wszLibName)
-If FEATURE_CORESYSTEM:
-    hmod = LocalLoadLibraryHelper(wszLibName, LOAD_LIBRARY_SEARCH_SYSTEM32, pErrorTracker);
-FOR currLibNameVariation IN VARIATIONS:
-    hmod = LoadFromNativeDllSearchDirectories(pDomain, currLibNameVariation, loadWithAlteredPathFlags, pErrorTracker)
-    IF !libNameIsRelativePath:
-        hmod = LocalLoadLibraryHelper(currLibNameVariation, flags, pErrorTracker)
-    ELSE IF searchAssemblyDirectory:
-        hmod = LoadFromPInvokeAssemblyDirectory(pAssembly, currLibNameVariation, loadWithAlteredPathFlags | dllImportSearchPathFlag, pErrorTracker)
-    hmod = LocalLoadLibraryHelper(currLibNameVariation, dllImportSearchPathFlag, pErrorTracker)
-hmod = LocalLoadLibraryHelper(pModule->GetPath(), loadWithAlteredPathFlags | dllImportSearchPathFlag, pErrorTracker)
-```
-`LoadLibraryModuleViaHost`  already contains a callback (`AssemblyLoadContext` exposes `LoadUnmanagedDll()` API to load a dll but it can be used for a 
-`CustomAssemblyLoadContext` only, not the default one).  `LoadLibraryViaCallback`  will do  a callback for all assemblies except `System.Private.CoreLib`, 
-which can’t be mapped at any time. The check to determine if the assembly is `System.Private.CoreLib` will happen on runtime in the unmanaged code.
+There are several functions that get called in `LoadLibraryModule`  to get an hmod of the unmanaged dll.
+If any of them returns a valid hmod, execution flow ends and the hmod gets returned.
 
-### Entrypoint mapping
-Once hmod gets resolved and returned via `LoadLibraryModule`, an entrypoint must be find:
+The proposed change extracts the logic of `LoadLibraryModule` and places it in a new function called `LoadLibraryModuleHierarchy`.
+`LoadLibraryModule` calls two functions:
 
-Currently `NDirectGetEntryPoint` takes two arguments: `pMD` and hmod. When `NDirectGetEntryPoint`  gets called, 
-`pMD `points to a target dll and hmod is correlated with a target dll too. The entrypoint name mapping will be done at the beginning of `NDirectGetEntryPoint`. 
-A new method ` IntPtr  GetMappedEntrypoint(sourceEntrypointName)`  will be a callback and will return a mapping for an entrypoint if it exists. 
-Similarly to library mapping, the callback will be done for all assemblies except `System.Private.CoreLib`.
-`pMD` will get updated to point to a target entrypoint. The rest of `NDirectGetEntryPoint()`  flow will remain the same.
 ```c++
-HINSTANCE hmod = LoadLibraryModule( pMD, &errorTracker );
-if ( hmod )
+hmod = LoadLibraryViaCallback(Assembly* pAssembly, AppDomain* pDomain, const wchar_t* wszLibName, BOOL searchAssemblyDirectory, DWORD dllImportSearchPathFlag);
+if(hmod == null)
 {
-    LPVOID pvTarget = GetEntrypointViaCallback(pMD, hmod); // this is the only introduced step
-    if (!pvTarget)
-    {
-        LPVOID pvTarget = NDirectGetEntryPoint(pMD, hmod);
-    }
-    …
+    hmod = LoadLibraryModuleHierarchy(Assembly *pAssembly, LPCWSTR wszLibName, BOOL searchAssemblyDirectory, DWORD dllImportSearchPathFlag);
 }
 ```
 
-In consequence, after `LoadLibraryModule()`  and `GetEntrypointViaCallback() / NDirectGetEntryPoint()`  execution, `pMD` will get updated: `pMD->SetNDirectTarget(pvTarget)` with a correctly mapped `pvTarget`.
+`LoadLibraryViaCallback`  executs a callback for all assemblies except `System.Private.CoreLib`,
+which can’t be mapped at any time. The check to determine if the assembly is `System.Private.CoreLib` will happen on runtime in the unmanaged code.
+
+`LoadLibraryViaCallback` makes a call to managed code and managed code decides which dll to load (if mapping/custom behavior has been defined).
+Managed code calls `LoadLibraryModuleHierarchy` with updated parameters (e.g. with a mapped name) and passes a result back to unmanaged code.
+
+If there was no custom loading behavior defined for the assembly that triggered the callback, then LoadLibraryViaCallback returns a null pointer
+and LoadLibraryModuleHierarchy gets called with the original parameters from the DllImport directive.
 
 ### Callbacks
 
-As explained above, runtime will rise two dll specific events on each load attempt:
-* 1st callback - when loading a non-system library
-* 2nd callback - when finding an entrypoint
+On each dll load attempt, the unmanaged code will make a call to a managed method(`LoadLibraryCallback`). On the managed side there is a map that maps
+an assembly to a specific callback that should be executed when `LoadLibraryCallback` gets called.
 
-Events will be defined in `AssemblyLoadContext` in `System.Private.CoreLib`. Default handlers that subscribe to dll load events will implement the mono-based dllmap logic.
-They will take string as argument and return IntPtr of target libraries and entrypoints based on the parsed XML configuration file.
-
-Handlers implementation will stay in `corefx.labs`. Load library resolver will cache all the dll mapping results that got resolved (as key-value: IntPtr-hmod pairs). 
-Thanks to that, the same library won't get loaded multiple times. User’s code will be able to subscribe to events and implement any loading behavior. 
-That will give a user full flexibility when using dllmap and won’t limit defining the mapping to only xml-based style. 
+Users can implement their own callback functions and register them for a specific assembly or for all project assemblies. Implementing own customized handlers is highly recommended.
+That gives a user full flexibility when using dllmap and doesn't limit defining the mapping to only XML-based style.
 Callbacks can be executed for all assemblies except `System.Private.CoreLib`.
 
-We do not plan to support unsubscribing from events at this point.
+For those, who only want Mono compatibility, implementation of Mono-style callbacks will be placed in `corefx.labs`.
 
-### Resolution flow
+Registering more than one callback per assembly will throw an exception.
 
-**User’s code [managed code]**
+### Example resolution flow
 
--   Includes `using System.Runtime.Dllmap`
--   Subscribes to `LoadNativeLibrary` and `LoadNativeEntrypoint` events with their default or custom handler
--   Uses DllImport directive and does the p/invoke
-	 ```c#
-    using System.Runtime.Dllmap;
-	…
-	System.Runtime.Loader.AssemblyLoadContext.Default.LoadNativeLibrary += LoadLibraryCustomHandler;
-	System.Runtime.Loader.AssemblyLoadContext.Default.LoadNativeEntrypoint += LoadEntrypointCustomHandler;
-	…
-    [DllImport("MyLibrary.dll", EntryPoint="MyFunction")]
-	static  extern  int  MyFunction();
-	…
-	MyFunction();
-	```
+**User’s code**
+
+```c#
+using System.Runtime.InteropServices;
+
+// Implements a handler of AssemblyLoad event (raised for every assembly on its load)
+public static void AssemblyLoadCallbackHandler(object sender, AssemblyLoadEventArgs args)
+{
+    Assembly assembly = args.LoadedAssembly;
+    // Registers a speific callback for the given assembly
+    NativeLibrary.RegisterNativeLibraryLoadCallback(assembly, SimpleCallbackHandler);
+}
+
+
+// Implements a custom callback function that does the mapping and calls
+// NativeLibrary.Load to load a library with updated parameters
+public static Func<LoadNativeLibraryArgs, NativeLibrary> SimpleCallbackHandler = SimpleCallbackHandlerLogic;
+
+public static NativeLibrary SimpleCallbackHandlerLogic(LoadNativeLibraryArgs args)
+{
+    string libraryName = args.LibraryName;
+    DllImportSearchPath dllImportSearchPath = args.DllImportSearchPath;
+    Assembly assembly = args.CallingAssembly;
+
+    if (libraryName == "TheNameToReplace")
+    {
+        libraryName = "TheCorrectName";
+        NativeLibrary nativeLibrary = Load(libraryName, dllImportSearchPath, assembly);
+        return nativeLibrary;
+    }
+    return new NativeLibrary("LibraryNotFound", IntPtr.Zero);
+}
+
+
+// Declares the actual interop function
+[DllImport("TheNameToReplace.dll", EntryPoint="MyFunction")]
+static  extern  int  MyFunction();
+
+public static int Main()
+{
+    // Registers a callback per each assembly of the current domain that gets loaded
+    AppDomain.CurrentDomain.AssemblyLoad += AssemblyLoadCallbackHandler;
+    // Executes the imported function
+    // It will execute MyFunction() from TheCorrectName.dll
+    MyFunction();
+}
+```
 
 **Runtime [unmanaged code]**
--   Calls `LoadLibraryModuleViaCallback` that raises `LoadNativeLibrary` event
--   Calls `GetEntrypointViaCallback` that raises `LoadNativeEntrypoint` event
+-   Calls `LoadLibraryCallback` that executes a `callback` function to check for mappings and load a dll if there was a mapping strategy defined
     
-**AssemblyLoadContext [unmanaged code]**
--   Defines `LoadNativeLibrary` and `LoadNativeEntrypoint` and exposes an API:
-	```c#
-	IntPtr  LoadNativeLibrary(string libraryName)
-	IntPtr  LoadNativeEntrypoint(string entrypointName, HMOD hmod)
-	```
+**System.Runtime.InteropServices.LoadLibrary**
+-   Is a public sealed class with `Name` and `Handle`
+-   Exposes load method for loading a native library
+```c#
+public static NativeLibrary Load(string libraryName);
+public static NativeLibrary Load(string libraryName, DllImportSearchPath dllImportSearchPath, Assembly assembly);
+```
+- Defines a method to register a callback per assembly
+```c#
+public static void RegisterNativeLibraryLoadCallback(Assembly assembly, Func<LoadNativeLibraryArgs, NativeLibrary> callback)
+```
 
-**corefx.labs [managed code]**
--   Implements default handlers - `LoadLibraryCustomHandler` and `LoadEntrypointCustomHandler`
--   To avoid infinite looping, `LoadLibraryCustomHandler` takes a lock and releases it after the default library loading process is completed
-	```c#
-	IntPtr  LoadLibraryCustomHandler(string libraryName)
-	{
-        private Object dllLock = new Object(); 
-
-        lock(dllLock)
-        {  
-            if (libraryName in cachedResults)
-                return cachedResults[libraryName];
-            if (!mapStructure)
-                mapStructure = ReadAndParseXML();
-            targetLibraryName = mapStructure.GetLibrary(libraryName);
-            hmod = LoadLibrary(targetLibraryName);
-            AddToCache(libraryName, hmod);
-        }
-
-        return hmod;
-	}
-	```
-	```c#
-	IntPtr  LoadEntrypointCustomHandler(string entrypointName, HMOD hmod)
-	{
-        targetEntrypointName = mapStructure.GetEntrypoint(entrypointName);
-        pvTarget = GetProcAddress(targetEntrypointName, hmod);
-        return pvTarget;
-	}
-	```
+**corefx.labs**
+-   Implements Mono compatibile handler with XML parsing
 
 ## Testing
 
@@ -283,7 +273,7 @@ Test cases:
 - correct config file
 - config file that can't be parsed  &rightarrow; 
 log a warning, ignore the mapping for the corresponding assembly &rightarrow;  on some platforms (where mapping is not required) execute application, on some throw DllNotFoundException
-- config file pointing to a dll/entrypoint that can't be found &rightarrow; on the affected platforms throw a DllNotFoundException
+- config file pointing to a dll that can't be found &rightarrow; on the affected platforms throw a DllNotFoundException
 
 All the above test cases will be covered.
 
