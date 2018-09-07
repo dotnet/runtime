@@ -115,9 +115,6 @@
   <data name="Cryptography_AsnSerializer_Optional_NonNullableField" xml:space="preserve">
     <value>Field '{0}' on type '{1}' is declared [OptionalValue], but it can not be assigned a null value.</value>
   </data>
-  <data name="Cryptography_AsnSerializer_PopulateFriendlyNameOnString" xml:space="preserve">
-    <value>Field '{0}' on type '{1}' has [ObjectIdentifier].PopulateFriendlyName set to true, which is not applicable to a string.  Change the field to '{2}' or set PopulateFriendlyName to false.</value>
-  </data>
   <data name="Cryptography_AsnSerializer_SetValueException" xml:space="preserve">
     <value>Unable to set field {0} on type {1}.</value>
   </data>
