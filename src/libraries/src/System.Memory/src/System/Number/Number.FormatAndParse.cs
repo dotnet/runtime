@@ -140,6 +140,7 @@ namespace System
 
             Span<byte> buffer = number.Digits;
             number.IsNegative = d.IsNegative;
+            number.Kind = NumberBufferKind.Decimal;
 
             int index = DECIMAL_PRECISION;
 

@@ -66,7 +66,6 @@ namespace System.Tests
             // Single
             -12.2364f,
             -12.2364659234064826243f,
-            -1.7753e-83f,
             (float)+12.345e+234,
             +12e+1f,
             float.NegativeInfinity,
@@ -150,7 +149,6 @@ namespace System.Tests
             // Single
             "-12.2364",
             "-12.23647",
-            "0",
             "Infinity",
             "120",
             "-Infinity",
@@ -179,6 +177,50 @@ namespace System.Tests
             "100",
             "18446744073709551615",
         };
+
+            for (int i = 0; i < testValues.Length; i++)
+            {
+                Assert.Equal(expectedValues[i], Convert.ToString(testValues[i], NumberFormatInfo.InvariantInfo));
+            }
+        }
+
+        [Fact]
+        [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework)]
+        public static void FromBoxedObject_NotNetFramework()
+        {
+            object[] testValues =
+            {
+                // Single
+                -1.7753e-83f,
+            };
+
+            string[] expectedValues =
+            {
+                // Single
+                "-0",
+            };
+
+            for (int i = 0; i < testValues.Length; i++)
+            {
+                Assert.Equal(expectedValues[i], Convert.ToString(testValues[i], NumberFormatInfo.InvariantInfo));
+            }
+        }
+
+        [Fact]
+        [SkipOnTargetFramework(~TargetFrameworkMonikers.NetFramework)]
+        public static void FromBoxedObject_NetFramework()
+        {
+            object[] testValues =
+            {
+                // Single
+                -1.7753e-83f,
+            };
+
+            string[] expectedValues =
+            {
+                // Single
+                "0",
+            };
 
             for (int i = 0; i < testValues.Length; i++)
             {
