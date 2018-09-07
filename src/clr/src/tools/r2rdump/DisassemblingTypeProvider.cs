@@ -11,7 +11,7 @@ using System.Text;
 
 namespace R2RDump
 {
-    internal class DisassemblingGenericContext
+    public class DisassemblingGenericContext
     {
         public DisassemblingGenericContext(string[] typeParameters, string[] methodParameters)
         {
@@ -25,7 +25,7 @@ namespace R2RDump
 
     // Test implementation of ISignatureTypeProvider<TType, TGenericContext> that uses strings in ilasm syntax as TType.
     // A real provider in any sort of perf constraints would not want to allocate strings freely like this, but it keeps test code simple.
-    internal class DisassemblingTypeProvider : ISignatureTypeProvider<string, DisassemblingGenericContext>
+    public class DisassemblingTypeProvider : ISignatureTypeProvider<string, DisassemblingGenericContext>
     {
         public virtual string GetPrimitiveType(PrimitiveTypeCode typeCode)
         {
@@ -69,7 +69,7 @@ namespace R2RDump
                     return "[" + reader.GetString(assemblyReference.Name) + "]" + name;
 
                 case HandleKind.TypeReference:
-                    return GetTypeFromReference(reader, (TypeReferenceHandle)scope) + "/" + name;
+                    return GetTypeFromReference(reader, (TypeReferenceHandle)scope) + "+" + name;
 
                 default:
                     return name;
@@ -100,8 +100,7 @@ namespace R2RDump
         {
             if (index >= genericContext.MethodParameters.Length)
             {
-                R2RDump.WriteWarning("GenericMethodParameters index out of bounds");
-                return "";
+                return "!!" + index.ToString();
             }
             return genericContext.MethodParameters[index];
         }
@@ -110,8 +109,7 @@ namespace R2RDump
         {
             if (index >= genericContext.TypeParameters.Length)
             {
-                R2RDump.WriteWarning("GenericTypeParameter index out of bounds");
-                return "";
+                return "!" + index.ToString();
             }
             return genericContext.TypeParameters[index];
         }

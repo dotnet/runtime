@@ -91,6 +91,7 @@ namespace R2RDump.Amd64
         {
             Offset = offset;
             _gcInfoTypes = new GcInfoTypes(machine);
+            _machine = machine;
 
             SecurityObjectStackSlot = -1;
             GSCookieStackSlot = -1;
@@ -190,8 +191,6 @@ namespace R2RDump.Amd64
             Transitions = GetTranstions(image, ref bitOffset);
 
             Size = bitOffset - startBitOffset;
-
-            _machine = machine;
         }
 
         public override string ToString()
