@@ -1241,6 +1241,7 @@ ves_icall_System_Net_Sockets_Socket_Poll_internal (gsize sock, gint mode,
 	mono_pollfd *pfds;
 	int ret;
 	time_t start;
+	gint rtimeout;
 
 	error_init (error);
 	*werror = 0;
@@ -1261,6 +1262,7 @@ ves_icall_System_Net_Sockets_Socket_Poll_internal (gsize sock, gint mode,
 	}
 
 	timeout = (timeout >= 0) ? (timeout / 1000) : -1;
+	rtimeout = timeout;
 	start = time (NULL);
 
 	do {
@@ -1274,7 +1276,7 @@ ves_icall_System_Net_Sockets_Socket_Poll_internal (gsize sock, gint mode,
 			int err = errno;
 			int sec = time (NULL) - start;
 			
-			timeout -= sec * 1000;
+			timeout = rtimeout - sec * 1000;
 			if (timeout < 0) {
 				timeout = 0;
 			}
@@ -1620,6 +1622,7 @@ ves_icall_System_Net_Sockets_Socket_Select_internal (MonoArrayHandle sockets, gi
 	MonoClass *sock_arr_class;
 	time_t start;
 	uintptr_t socks_size;
+	gint32 rtimeout;
 
 	error_init (error);
 	*werror = 0;
@@ -1639,6 +1642,7 @@ ves_icall_System_Net_Sockets_Socket_Select_internal (MonoArrayHandle sockets, gi
 	}
 
 	timeout = (timeout >= 0) ? (timeout / 1000) : -1;
+	rtimeout = timeout;
 	start = time (NULL);
 	do {
 		MONO_ENTER_GC_SAFE;
@@ -1651,7 +1655,7 @@ ves_icall_System_Net_Sockets_Socket_Select_internal (MonoArrayHandle sockets, gi
 			int err = errno;
 			int sec = time (NULL) - start;
 
-			timeout -= sec * 1000;
+			timeout = rtimeout - sec * 1000;
 			if (timeout < 0)
 				timeout = 0;
 			errno = err;
