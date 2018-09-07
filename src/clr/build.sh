@@ -416,20 +416,23 @@ build_CoreLib_ni()
 {
     local __CrossGenExec=$1
 
-    echo "Generating native image for System.Private.CoreLib.dll"
+    if [ -e $__CrossGenCoreLibLog ]; then
+        rm $__CrossGenCoreLibLog
+    fi
+    echo "Generating native image of System.Private.CoreLib.dll for $__BuildOS.$__BuildArch.$__BuildType. Logging to \"$__CrossGenCoreLibLog\"."
     echo "$__CrossGenExec /Platform_Assemblies_Paths $__BinDir/IL $__IbcTuning /out $__BinDir/System.Private.CoreLib.dll $__BinDir/IL/System.Private.CoreLib.dll"
-    $__CrossGenExec /Platform_Assemblies_Paths $__BinDir/IL $__IbcTuning /out $__BinDir/System.Private.CoreLib.dll $__BinDir/IL/System.Private.CoreLib.dll
+    $__CrossGenExec /Platform_Assemblies_Paths $__BinDir/IL $__IbcTuning /out $__BinDir/System.Private.CoreLib.dll $__BinDir/IL/System.Private.CoreLib.dll >> $__CrossGenCoreLibLog 2>&1
     if [ $? -ne 0 ]; then
-        echo "Failed to generate native image for System.Private.CoreLib."
+        echo "Failed to generate native image for System.Private.CoreLib. Refer to $__CrossGenCoreLibLog"
         exit 1
     fi
 
     if [ "$__BuildOS" == "Linux" ]; then
         echo "Generating symbol file for System.Private.CoreLib.dll"
         echo "$__CrossGenExec /Platform_Assemblies_Paths $__BinDir /CreatePerfMap $__BinDir $__BinDir/System.Private.CoreLib.dll"
-        $__CrossGenExec /Platform_Assemblies_Paths $__BinDir /CreatePerfMap $__BinDir $__BinDir/System.Private.CoreLib.dll
+        $__CrossGenExec /Platform_Assemblies_Paths $__BinDir /CreatePerfMap $__BinDir $__BinDir/System.Private.CoreLib.dll >> $__CrossGenCoreLibLog 2>&1
         if [ $? -ne 0 ]; then
-            echo "Failed to generate symbol file for System.Private.CoreLib."
+            echo "Failed to generate symbol file for System.Private.CoreLib. Refer to $__CrossGenCoreLibLog"
             exit 1
         fi
     fi
@@ -960,7 +963,7 @@ fi
 if [ $__CrossBuild == 1 ]; then
     __CrossComponentBinDir="$__CrossComponentBinDir/$__CrossArch"
 fi
-__CrossgenCoreLibLog="$__LogsDir/CrossgenCoreLib_$__BuildOS.$BuildArch.$__BuildType.log"
+__CrossGenCoreLibLog="$__LogsDir/CrossgenCoreLib_$__BuildOS.$__BuildArch.$__BuildType.log"
 __CrossgenExe="$__CrossComponentBinDir/crossgen"
 
 # Init if MSBuild for .NET Core is supported for this platform
