@@ -127,6 +127,8 @@ namespace R2RDump
         /// </summary>
         public Dictionary<int, string> ImportCellNames { get; }
 
+        private Dictionary<int, DebugInfo> _runtimeFunctionToDebugInfo = new Dictionary<int, DebugInfo>();
+
         public unsafe R2RReader() { }
 
         /// <summary>
@@ -179,6 +181,8 @@ namespace R2RDump
                 if (PEReader.HasMetadata)
                 {
                     MetadataReader = PEReader.GetMetadataReader();
+
+                    ParseDebugInfo();
 
                     R2RMethods = new List<R2RMethod>();
                     if (R2RHeader.Sections.ContainsKey(R2RSection.SectionType.READYTORUN_SECTION_RUNTIME_FUNCTIONS))
@@ -376,7 +380,7 @@ namespace R2RDump
                         }
                     }
 
-                    RuntimeFunction rtf = new RuntimeFunction(runtimeFunctionId, startRva, endRva, unwindRva, codeOffset, method, unwindInfo, gcInfo);
+                    RuntimeFunction rtf = new RuntimeFunction(runtimeFunctionId, startRva, endRva, unwindRva, codeOffset, method, unwindInfo, gcInfo, _runtimeFunctionToDebugInfo.GetValueOrDefault(runtimeFunctionId));
                     method.RuntimeFunctions.Add(rtf);
                     runtimeFunctionId++;
                     codeOffset += rtf.Size;
@@ -520,6 +524,30 @@ namespace R2RDump
                     auxDataOffset = GetOffset(auxDataRVA);
                 }
                 ImportSections.Add(new R2RImportSection(ImportSections.Count, Image, rva, size, flags, type, entrySize, signatureRVA, entries, auxDataRVA, auxDataOffset, Machine, R2RHeader.MajorVersion));
+            }
+        }
+
+        private void ParseDebugInfo()
+        {
+            if (!R2RHeader.Sections.ContainsKey(R2RSection.SectionType.READYTORUN_SECTION_DEBUG_INFO))
+            {
+                return;
+            }
+
+            R2RSection debugInfoSection = R2RHeader.Sections[R2RSection.SectionType.READYTORUN_SECTION_DEBUG_INFO];
+            int debugInfoSectionOffset = GetOffset(debugInfoSection.RelativeVirtualAddress);
+
+            NativeArray debugInfoArray = new NativeArray(Image, (uint)debugInfoSectionOffset);
+            for (uint i = 0; i < debugInfoArray.GetCount(); ++i)
+            {
+                int offset = 0;
+                if (!debugInfoArray.TryGetAt(Image, i, ref offset))
+                {
+                    continue;
+                }
+
+                var debugInfo = new DebugInfo(Image, offset, Machine);
+                _runtimeFunctionToDebugInfo.Add((int)i, debugInfo);
             }
         }
 
