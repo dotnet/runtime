@@ -1086,6 +1086,7 @@ BEGIN
         BFA_BAD_CA_HEADER                       "Malformed custom attribute header."
         BFA_BAD_STRING_TOKEN                    "Bad string token."
         BFA_BAD_STRING_TOKEN_RANGE              "No string associated with token."
+        BFA_FIXUP_WRONG_PLATFORM                "Image has a platform-specific fixup type that is not compatible with this platform."
         BFA_UNEXPECTED_GENERIC_TOKENTYPE        "Token specifying generic type must be either a typeref or typedef."
         BFA_MDARRAY_BADRANK                     "Array rank may not be zero."
         BFA_SDARRAY_BADRANK                     "Single-dimensional array rank must be one."

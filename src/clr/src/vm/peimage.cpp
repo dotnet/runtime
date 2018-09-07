@@ -28,6 +28,8 @@
 
 CrstStatic  PEImage::s_hashLock;
 PtrHashMap *PEImage::s_Images = NULL;
+CrstStatic  PEImage::s_ijwHashLock;
+PtrHashMap *PEImage::s_ijwFixupDataHash;
 
 extern LocaleID g_lcid; // fusion path comparison lcid
 
@@ -54,6 +56,12 @@ void PEImage::Startup()
     LockOwner lock = { &s_hashLock, IsOwnerOfCrst };
     s_Images         = ::new PtrHashMap;
     s_Images->Init(CompareImage, FALSE, &lock);
+
+    s_ijwHashLock.Init(CrstIJWHash, CRST_REENTRANCY);
+    LockOwner ijwLock = { &s_ijwHashLock, IsOwnerOfCrst };
+    s_ijwFixupDataHash = ::new PtrHashMap;
+    s_ijwFixupDataHash->Init(CompareIJWDataBase, FALSE, &ijwLock);
+
     PEImageLayout::Startup();
 #ifdef FEATURE_USE_LCID
     g_lcid = MAKELCID(LOCALE_INVARIANT, SORT_DEFAULT);
@@ -196,6 +204,20 @@ PEImage::~PEImage()
 
 }
 
+/* static */
+BOOL PEImage::CompareIJWDataBase(UPTR base, UPTR mapping)
+{
+    CONTRACTL{
+        PRECONDITION(CheckStartup());
+        PRECONDITION(CheckPointer((BYTE *)(base << 1)));
+        PRECONDITION(CheckPointer((IJWFixupData *)mapping));
+        NOTHROW;
+        GC_NOTRIGGER;
+        MODE_ANY;
+    } CONTRACTL_END;
+
+    return ((BYTE *)(base << 1) == ((IJWFixupData*)mapping)->GetBase());
+}
 
     // Thread stress
 #if 0
@@ -686,7 +708,145 @@ void DECLSPEC_NORETURN PEImage::ThrowFormat(HRESULT hrError)
     EEFileLoadException::Throw(m_path, hrError);
 }
 
+#if !defined(CROSSGEN_COMPILE)
 
+//may outlive PEImage
+PEImage::IJWFixupData::IJWFixupData(void *pBase)
+    : m_lock(CrstIJWFixupData),
+    m_base(pBase), m_flags(0), m_DllThunkHeap(NULL), m_iNextFixup(0), m_iNextMethod(0)
+{
+    WRAPPER_NO_CONTRACT;
+}
+
+PEImage::IJWFixupData::~IJWFixupData()
+{
+    WRAPPER_NO_CONTRACT;
+    if (m_DllThunkHeap)
+        delete m_DllThunkHeap;
+}
+
+
+// Self-initializing accessor for m_DllThunkHeap
+LoaderHeap *PEImage::IJWFixupData::GetThunkHeap()
+{
+    CONTRACT(LoaderHeap *)
+    {
+        INSTANCE_CHECK;
+        THROWS;
+        GC_NOTRIGGER;
+        MODE_ANY;
+        INJECT_FAULT(COMPlusThrowOM());
+        POSTCONDITION(CheckPointer(RETVAL));
+    }
+    CONTRACT_END
+
+        if (!m_DllThunkHeap)
+        {
+            size_t * pPrivatePCLBytes = NULL;
+            size_t * pGlobalPCLBytes = NULL;
+
+            COUNTER_ONLY(pPrivatePCLBytes = &(GetPerfCounters().m_Loading.cbLoaderHeapSize));
+
+            LoaderHeap *pNewHeap = new LoaderHeap(VIRTUAL_ALLOC_RESERVE_GRANULARITY, // DWORD dwReserveBlockSize
+                0,                                 // DWORD dwCommitBlockSize
+                pPrivatePCLBytes,
+                ThunkHeapStubManager::g_pManager->GetRangeList(),
+                TRUE);                             // BOOL fMakeExecutable
+
+            if (FastInterlockCompareExchangePointer((PVOID*)&m_DllThunkHeap, (VOID*)pNewHeap, (VOID*)0) != 0)
+            {
+                delete pNewHeap;
+            }
+        }
+
+    RETURN m_DllThunkHeap;
+}
+
+void PEImage::IJWFixupData::MarkMethodFixedUp(COUNT_T iFixup, COUNT_T iMethod)
+{
+    LIMITED_METHOD_CONTRACT;
+    // supports only sequential fixup/method
+    _ASSERTE((iFixup == m_iNextFixup + 1 && iMethod == 0) ||                 //first method of the next fixup or
+        (iFixup == m_iNextFixup && iMethod == m_iNextMethod));     //the method that was next to fixup
+
+    m_iNextFixup = iFixup;
+    m_iNextMethod = iMethod + 1;
+}
+
+BOOL PEImage::IJWFixupData::IsMethodFixedUp(COUNT_T iFixup, COUNT_T iMethod)
+{
+    LIMITED_METHOD_CONTRACT;
+    if (iFixup < m_iNextFixup)
+        return TRUE;
+    if (iFixup > m_iNextFixup)
+        return FALSE;
+    if (iMethod < m_iNextMethod)
+        return TRUE;
+
+    return FALSE;
+}
+
+/*static */
+PTR_LoaderHeap PEImage::GetDllThunkHeap(void *pBase)
+{
+    CONTRACTL
+    {
+        THROWS;
+        GC_TRIGGERS;
+        MODE_ANY;
+    }
+    CONTRACTL_END;
+    return GetIJWData(pBase)->GetThunkHeap();
+}
+
+/* static */
+PEImage::IJWFixupData *PEImage::GetIJWData(void *pBase)
+{
+    CONTRACTL{
+        THROWS;
+        GC_TRIGGERS;
+        MODE_ANY;
+        INJECT_FAULT(COMPlusThrowOM(););
+    } CONTRACTL_END
+
+    // Take the IJW hash lock
+    CrstHolder hashLockHolder(&s_ijwHashLock);
+
+    // Try to find the data
+    IJWFixupData *pData = (IJWFixupData *)s_ijwFixupDataHash->LookupValue((UPTR)pBase, pBase);
+
+    // No data, must create
+    if ((UPTR)pData == (UPTR)INVALIDENTRY)
+    {
+        pData = new IJWFixupData(pBase);
+        s_ijwFixupDataHash->InsertValue((UPTR)pBase, pData);
+    }
+
+    // Return the new data
+    return (pData);
+}
+
+/* static */
+void PEImage::UnloadIJWModule(void *pBase)
+{
+    CONTRACTL{
+        NOTHROW;
+        GC_TRIGGERS;
+        MODE_ANY;
+    } CONTRACTL_END
+
+    // Take the IJW hash lock
+    CrstHolder hashLockHolder(&s_ijwHashLock);
+
+    // Try to delete the hash entry
+    IJWFixupData *pData = (IJWFixupData *)s_ijwFixupDataHash->DeleteValue((UPTR)pBase, pBase);
+
+    // Now delete the data
+    if ((UPTR)pData != (UPTR)INVALIDENTRY)
+        delete pData;
+}
+
+#endif // !CROSSGEN_COMPILE
 
 
 

@@ -38,5 +38,6 @@ if(WIN32)
     # IJW isn't supported on ARM64
     if(NOT CLR_CMAKE_PLATFORM_ARCH_ARM64)
         add_subdirectory(IJW/ManagedCallingNative/IjwNativeDll)
+        add_subdirectory(IJW/NativeCallingManaged/IjwNativeCallingManagedDll)
     endif()
 endif(WIN32)
