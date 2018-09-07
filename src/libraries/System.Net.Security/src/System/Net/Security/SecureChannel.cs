@@ -876,9 +876,12 @@ namespace System.Net.Security
             }
 
             output = outgoingSecurity.token;
-
-            byte[] alpnResult = SslStreamPal.GetNegotiatedApplicationProtocol(_securityContext);
-            _negotiatedApplicationProtocol = alpnResult == null ? default : new SslApplicationProtocol(alpnResult, false);
+            if (_negotiatedApplicationProtocol == default)
+            {
+                // try to get ALPN info unless we already have it. (this function can be called multiple times)
+                byte[] alpnResult = SslStreamPal.GetNegotiatedApplicationProtocol(_securityContext);
+                _negotiatedApplicationProtocol = alpnResult == null ? default : new SslApplicationProtocol(alpnResult, false);
+            }
 
             if (NetEventSource.IsEnabled)
             {

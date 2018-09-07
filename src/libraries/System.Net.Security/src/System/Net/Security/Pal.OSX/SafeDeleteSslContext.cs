@@ -46,6 +46,15 @@ namespace System.Net
                 {
                     throw Interop.AppleCrypto.CreateExceptionForOSStatus(osStatus);
                 }
+
+                if (sslAuthenticationOptions.ApplicationProtocols != null)
+                {
+                    // On OSX coretls supports only client side. For server, we will silently ignore the option.
+                    if (!sslAuthenticationOptions.IsServer)
+                    {
+                        Interop.AppleCrypto.SslCtxSetAlpnProtos(_sslContext, sslAuthenticationOptions.ApplicationProtocols);
+                    }
+                }
             }
             catch (Exception ex)
             {

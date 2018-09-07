@@ -3,6 +3,15 @@
 // See the LICENSE file in the project root for more information.
 
 #include "pal_ssl.h"
+#include <dlfcn.h>
+
+// 10.13.4 introduced public API but linking would fail on all prior versions.
+// For that reason we use function pointers instead of direct call.
+// This can be revisited after we drop support for 10.12.
+
+static OSStatus (*SSLSetALPNProtocolsPtr)(SSLContextRef context, CFArrayRef protocols) = NULL;
+static OSStatus (*SSLCopyALPNProtocolsPtr)(SSLContextRef context, CFArrayRef* protocols) = NULL;
+// end of ALPN.
 
 SSLContextRef AppleCryptoNative_SslCreateContext(int32_t isServer)
 {
@@ -60,8 +69,7 @@ int32_t AppleCryptoNative_SslSetMaxProtocolVersion(SSLContextRef sslContext, PAL
     return SSLSetProtocolVersionMax(sslContext, protocol);
 }
 
-int32_t
-AppleCryptoNative_SslCopyCertChain(SSLContextRef sslContext, SecTrustRef* pChainOut, int32_t* pOSStatus)
+int32_t AppleCryptoNative_SslCopyCertChain(SSLContextRef sslContext, SecTrustRef* pChainOut, int32_t* pOSStatus)
 {
     if (pChainOut != NULL)
         *pChainOut = NULL;
@@ -107,14 +115,12 @@ static int32_t AppleCryptoNative_SslSetSessionOption(SSLContextRef sslContext,
     return *pOSStatus == noErr;
 }
 
-int32_t
-AppleCryptoNative_SslSetBreakOnServerAuth(SSLContextRef sslContext, int32_t setBreak, int32_t* pOSStatus)
+int32_t AppleCryptoNative_SslSetBreakOnServerAuth(SSLContextRef sslContext, int32_t setBreak, int32_t* pOSStatus)
 {
     return AppleCryptoNative_SslSetSessionOption(sslContext, kSSLSessionOptionBreakOnServerAuth, setBreak, pOSStatus);
 }
 
-int32_t
-AppleCryptoNative_SslSetBreakOnClientAuth(SSLContextRef sslContext, int32_t setBreak, int32_t* pOSStatus)
+int32_t AppleCryptoNative_SslSetBreakOnClientAuth(SSLContextRef sslContext, int32_t setBreak, int32_t* pOSStatus)
 {
     return AppleCryptoNative_SslSetSessionOption(sslContext, kSSLSessionOptionBreakOnClientAuth, setBreak, pOSStatus);
 }
@@ -153,8 +159,52 @@ int32_t AppleCryptoNative_SslSetTargetName(SSLContextRef sslContext,
     return *pOSStatus == noErr;
 }
 
-int32_t
-AppleCryptoNative_SslSetIoCallbacks(SSLContextRef sslContext, SSLReadFunc readFunc, SSLWriteFunc writeFunc)
+int32_t AppleCryptoNative_SSLSetALPNProtocols(SSLContextRef sslContext,
+                                                        CFArrayRef protocols,
+                                                        int32_t* pOSStatus)
+{
+    if (sslContext == NULL || protocols == NULL || pOSStatus == NULL)
+        return -1;
+
+    if (!SSLSetALPNProtocolsPtr)
+    {
+        // not available.
+        *pOSStatus = 0;
+        return 1;
+    }
+    // The underlying call handles NULL inputs, so just pass it through
+    *pOSStatus = (*SSLSetALPNProtocolsPtr)(sslContext, protocols);
+    return *pOSStatus == noErr;
+}
+
+int32_t AppleCryptoNative_SslGetAlpnSelected(SSLContextRef sslContext, CFDataRef* protocol)
+{
+    if (sslContext == NULL || protocol == NULL)
+        return -1;
+
+    *protocol = NULL;
+    if (!SSLCopyALPNProtocolsPtr)
+    {
+        // not available.
+        return 0;
+    }
+
+    CFArrayRef protocols = NULL;
+    OSStatus osStatus = (*SSLCopyALPNProtocolsPtr)(sslContext, &protocols);
+
+    if (osStatus == noErr && protocols != NULL && CFArrayGetCount(protocols) > 0)
+    {
+        *protocol =
+            CFStringCreateExternalRepresentation(NULL, CFArrayGetValueAtIndex(protocols, 0), kCFStringEncodingASCII, 0);
+    }
+
+    if (protocols)
+        CFRelease(protocols);
+
+    return *protocol != NULL;
+}
+
+int32_t AppleCryptoNative_SslSetIoCallbacks(SSLContextRef sslContext, SSLReadFunc readFunc, SSLWriteFunc writeFunc)
 {
     return SSLSetIOFuncs(sslContext, readFunc, writeFunc);
 }
@@ -214,8 +264,7 @@ AppleCryptoNative_SslWrite(SSLContextRef sslContext, const uint8_t* buf, uint32_
     return PAL_TlsIo_Success;
 }
 
-PAL_TlsIo
-AppleCryptoNative_SslRead(SSLContextRef sslContext, uint8_t* buf, uint32_t bufLen, uint32_t* written)
+PAL_TlsIo AppleCryptoNative_SslRead(SSLContextRef sslContext, uint8_t* buf, uint32_t bufLen, uint32_t* written)
 {
     if (written == NULL)
         return PAL_TlsIo_Unknown;
@@ -249,8 +298,7 @@ AppleCryptoNative_SslRead(SSLContextRef sslContext, uint8_t* buf, uint32_t bufLe
     return OSStatusToPAL_TlsIo(status);
 }
 
-int32_t
-AppleCryptoNative_SslIsHostnameMatch(SSLContextRef sslContext, CFStringRef cfHostname, CFDateRef notBefore)
+int32_t AppleCryptoNative_SslIsHostnameMatch(SSLContextRef sslContext, CFStringRef cfHostname, CFDateRef notBefore)
 {
     if (sslContext == NULL || notBefore == NULL)
         return -1;
@@ -394,4 +442,10 @@ int32_t AppleCryptoNative_SslGetCipherSuite(SSLContextRef sslContext, uint32_t* 
         *pCipherSuiteOut = 0;
 
     return SSLGetNegotiatedCipher(sslContext, pCipherSuiteOut);
+}
+
+__attribute__((constructor)) static void InitializeAppleCryptoSslShim()
+{
+    SSLSetALPNProtocolsPtr = (OSStatus(*)(SSLContextRef, CFArrayRef))dlsym(RTLD_DEFAULT, "SSLSetALPNProtocols");
+    SSLCopyALPNProtocolsPtr = (OSStatus(*)(SSLContextRef, CFArrayRef*))dlsym(RTLD_DEFAULT, "SSLCopyALPNProtocols");
 }
