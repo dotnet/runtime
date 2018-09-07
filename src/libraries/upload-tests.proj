@@ -77,6 +77,9 @@
     <HelixArchLabel>$(ArchGroup)</HelixArchLabel>
     <HelixConfigLabel>$(ConfigurationGroup)</HelixConfigLabel>
     <MaxRetryCount>1</MaxRetryCount>
+    <TestsBlobPrefix>tests/</TestsBlobPrefix>
+    <!-- Unique container name per build and configuration, e.g., corefx-beta-12345-01-Windows_NT -->
+    <ContainerName Condition="'$(ContainerName)' == ''">corefx-$(PreReleaseLabel)-$(BuildNumberMajor)-$(BuildNumberMinor)-$(OSGroup)-$(ArchGroup)</ContainerName>
   </PropertyGroup>
 
   <Target Name="CoreFXPreCloudBuild" >
