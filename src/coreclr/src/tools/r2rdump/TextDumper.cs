@@ -186,10 +186,10 @@ namespace R2RDump
                     List<Amd64.UnwindCode> codes = ((Amd64.UnwindInfo)rtf.UnwindInfo).UnwindCodes[codeOffset];
                     foreach (Amd64.UnwindCode code in codes)
                     {
-                        _writer.Write($"\t\t\t\t{code.UnwindOp} {code.OpInfoStr}");
+                        _writer.Write($"                                {code.UnwindOp} {code.OpInfoStr}");
                         if (code.NextFrameOffset != -1)
                         {
-                            _writer.WriteLine($" - {code.NextFrameOffset}");
+                            _writer.WriteLine($"                                {code.NextFrameOffset}");
                         }
                         _writer.WriteLine();
                     }
@@ -199,7 +199,7 @@ namespace R2RDump
                 {
                     foreach (BaseGcTransition transition in rtf.Method.GcInfo.Transitions[codeOffset])
                     {
-                        _writer.WriteLine($"\t\t\t\t{transition.ToString()}");
+                        _writer.WriteLine($"                                {transition.ToString()}");
                     }
                 }
 
