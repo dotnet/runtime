@@ -4874,7 +4874,6 @@ GenTree* Lowering::LowerConstIntDivOrMod(GenTree* node)
 
         newDivMod = comp->gtNewOperNode(GT_SUB, type, comp->gtNewLclvNode(dividendLclNum, type),
                                         comp->gtNewOperNode(GT_AND, type, adjustedDividend, divisor));
-        ContainCheckBinary(newDivMod->AsOp());
     }
 
     // Remove the divisor and dividend nodes from the linear order,
