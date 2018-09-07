@@ -159,7 +159,7 @@ namespace System.Net.Security
                 }
 
                 // When the handshake is done, and the context is server, check if the alpnHandle target was set to null during ALPN.
-                // If it was, then that indiciates ALPN failed, send failure.
+                // If it was, then that indicates ALPN failed, send failure.
                 // We have this workaround, as openssl supports terminating handshake only from version 1.1.0,
                 // whereas ALPN is supported from version 1.0.2.
                 SafeSslHandle sslContext = ((SafeDeleteSslContext)context).SslContext;

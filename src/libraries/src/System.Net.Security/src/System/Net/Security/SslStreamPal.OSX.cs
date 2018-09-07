@@ -103,8 +103,10 @@ namespace System.Net.Security
 
         internal static byte[] GetNegotiatedApplicationProtocol(SafeDeleteContext context)
         {
-            // OSX SecureTransport does not export APIs to support ALPN, no-op.
-            return null;
+            if (context == null)
+                return null;
+
+            return Interop.AppleCrypto.SslGetAlpnSelected(((SafeDeleteSslContext)context).SslContext);
         }
 
         public static SecurityStatusPal EncryptMessage(
