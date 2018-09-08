@@ -21,7 +21,7 @@
     <NuGetTargetMonikerShort Condition="'$(TargetGroup)' == 'uap' OR '$(TargetGroup)' == 'uapaot'">netstandard2.0</NuGetTargetMonikerShort>
     <!-- Coverlet related properties -->
     <CoverletPackageId>coverlet.msbuild</CoverletPackageId>
-    <CoverletPackageVersion>2.2.1</CoverletPackageVersion>
+    <CoverletPackageVersion>2.3.0</CoverletPackageVersion>
     <!-- In case the project language is not set -->
     <Language Condition="'$(Language)' == ''">unknown</Language>
     <!-- Don't warn if some dependencies were rolled forward -->
@@ -336,21 +336,6 @@
         <Private>false</Private>
         <NuGetPackageId>$(XUnitTestAdapterPackageId)</NuGetPackageId>
         <NuGetPackageVersion>$(XUnitPackageVersion)</NuGetPackageVersion>
-      </ReferenceCopyLocalPaths>
-    </ItemGroup>
-  </Target>
-
-  <Target Name="AddCoverletDependencies" BeforeTargets="ResolveReferences" >
-    <Error Condition="!Exists('$(PackagesDir)$(CoverletPackageId)/$(CoverletPackageVersion)/build/netstandard2.0/coverlet.tracker.dll')"
-            Text="Error: looks the package $(PackagesDir)$(CoverletPackageId)/$(CoverletPackageVersion) not restored or missing coverlet.tracker.dll."
-    />
-    <ItemGroup>
-      <ReferenceCopyLocalPaths
-        Include="$(PackagesDir)$(CoverletPackageId)/$(CoverletPackageVersion)/build/netstandard2.0/coverlet.tracker.dll"
-      >
-        <Private>false</Private>
-        <NuGetPackageId>$(CoverletPackageId)</NuGetPackageId>
-        <NuGetPackageVersion>$(CoverletPackageVersion)</NuGetPackageVersion>
       </ReferenceCopyLocalPaths>
     </ItemGroup>
   </Target>
