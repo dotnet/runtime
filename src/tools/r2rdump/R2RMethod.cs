@@ -82,15 +82,19 @@ namespace R2RDump
 
         public BaseUnwindInfo UnwindInfo { get; }
 
+        public DebugInfo DebugInfo { get; }
+
         public RuntimeFunction() { }
 
-        public RuntimeFunction(int id, int startRva, int endRva, int unwindRva, int codeOffset, R2RMethod method, BaseUnwindInfo unwindInfo, BaseGcInfo gcInfo)
+        public RuntimeFunction(int id, int startRva, int endRva, int unwindRva, int codeOffset, R2RMethod method, BaseUnwindInfo unwindInfo, BaseGcInfo gcInfo, DebugInfo debugInfo)
         {
             Id = id;
             StartAddress = startRva;
             UnwindRVA = unwindRva;
             Method = method;
             UnwindInfo = unwindInfo;
+            DebugInfo = debugInfo;
+
             if (endRva != -1)
             {
                 Size = endRva - startRva;
@@ -173,6 +177,11 @@ namespace R2RDump
                 }
             }
             sb.AppendLine();
+
+            if (DebugInfo != null)
+            {
+                sb.AppendLine(DebugInfo.ToString());
+            }
 
             return sb.ToString();
         }
