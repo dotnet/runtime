@@ -35,4 +35,8 @@
     <Rule Id="CA5350" Action="Error" /> <!-- Do not use Weak/Broken cryptographic algorithms -->
     <Rule Id="CA5351" Action="Error" />
   </Rules>
+  <Rules AnalyzerId="Microsoft.AnalyzerPowerPack.CSharp" RuleNamespace="Microsoft.AnalyzerPowerPack.CSharp">
+    <!-- Disable analyzer warning 1821 until https://github.com/dotnet/roslyn-analyzers/issues/1804 is resolved -->
+    <Rule Id="CA1821" Action="None" />
+  </Rules>
 </RuleSet>
