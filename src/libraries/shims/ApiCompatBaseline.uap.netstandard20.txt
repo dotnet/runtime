@@ -30,3 +30,7 @@ TypeCannotChangeClassification : Type 'System.Func<T1, T2, T3, T4, T5, T6, T7, T
 TypeCannotChangeClassification : Type 'System.IO.HandleInheritability' is a 'class' in the implementation but is a 'struct' in the contract.
 TypeCannotChangeClassification : Type 'System.IO.FileAttributes' is a 'class' in the implementation but is a 'struct' in the contract.
 
+# As part of https://github.com/dotnet/corefx/pull/30233 these setters were removed. We need to baseline these until we can start harvesting the newer package that has them removed.
+MembersMustExist : Member 'System.Security.Cryptography.Pkcs.CmsSigner.Certificates.set(System.Security.Cryptography.X509Certificates.X509Certificate2Collection)' does not exist in the implementation but it does exist in the contract.
+MembersMustExist : Member 'System.Security.Cryptography.Pkcs.CmsSigner.SignedAttributes.set(System.Security.Cryptography.CryptographicAttributeObjectCollection)' does not exist in the implementation but it does exist in the contract.
+MembersMustExist : Member 'System.Security.Cryptography.Pkcs.CmsSigner.UnsignedAttributes.set(System.Security.Cryptography.CryptographicAttributeObjectCollection)' does not exist in the implementation but it does exist in the contract.
