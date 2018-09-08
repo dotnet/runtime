@@ -88,7 +88,6 @@ As of 07/2018 CoreFx is only able to get coverage information on Windows. To cor
 ### Know Issues ###
 
 1. Instrumenting "System.Private.CoreLib" is causing test to crash (both on Windows and Unix).
-2. Coverage on macOS fails if the test uses "RemoteExecutorConsoleApp".
 
 ### Windows Instructions ###
 On Windows by default coverage runs will use OpenCover instead of coverlet, use the build property `UseCoverlet` to change this default. Currently the use of `dotnet msbuild` is required to avoid a problem with one of the coverlet dependencies. Here is the command:
