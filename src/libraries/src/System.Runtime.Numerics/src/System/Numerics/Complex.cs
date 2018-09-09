@@ -193,18 +193,21 @@ namespace System.Numerics
 
         public static Complex operator /(Complex left, double right)
         {
+            // IEEE prohibit optimizations which are value changing
+            // so we make sure that behaviour for the simplified version exactly match
+            // full version.
             if (right == 0)
             {
                 return new Complex(double.NaN, double.NaN);
             }
 
-            if (!double.IsFinite(left.m_real) && !double.IsFinite(left.m_imaginary))
-            {
-                return new Complex(double.NaN / right, double.NaN);
-            }
-
             if (!double.IsFinite(left.m_real))
             {
+                if (!double.IsFinite(left.m_imaginary))
+                {
+                    return new Complex(double.NaN, double.NaN);
+                }
+
                 return new Complex(left.m_real / right, double.NaN);
             }
 
@@ -213,6 +216,7 @@ namespace System.Numerics
                 return new Complex(double.NaN, left.m_imaginary / right);
             }
 
+            // Here the actual optimized version of code.
             return new Complex(left.m_real / right, left.m_imaginary / right);
         }
 
