@@ -178,11 +178,6 @@ namespace System.Numerics
             double c = right.m_real;
             double d = right.m_imaginary;
 
-            if (d == 0.0)
-            {
-                return left / c;
-            }
-
             // Computing c * c + d * d will overflow even in cases where the actual result of the division does not overflow.
             if (Math.Abs(d) < Math.Abs(c))
             {
@@ -198,6 +193,26 @@ namespace System.Numerics
 
         public static Complex operator /(Complex left, double right)
         {
+            if (right == 0)
+            {
+                return new Complex(double.NaN, double.NaN);
+            }
+
+            if (!double.IsFinite(left.m_real) && !double.IsFinite(left.m_imaginary))
+            {
+                return new Complex(double.NaN / right, double.NaN);
+            }
+
+            if (!double.IsFinite(left.m_real))
+            {
+                return new Complex(left.m_real / right, double.NaN);
+            }
+
+            if (!double.IsFinite(left.m_imaginary))
+            {
+                return new Complex(double.NaN, left.m_imaginary / right);
+            }
+
             return new Complex(left.m_real / right, left.m_imaginary / right);
         }
 
@@ -207,16 +222,6 @@ namespace System.Numerics
             double a = left;
             double c = right.m_real;
             double d = right.m_imaginary;
-
-            if (d == 0.0)
-            {
-                if (c == 0.0)
-                {
-                    return new Complex(left / c, left / c);
-                }
-
-                return left / c;
-            }
 
             // Computing c * c + d * d will overflow even in cases where the actual result of the division does not overflow.
             if (Math.Abs(d) < Math.Abs(c))

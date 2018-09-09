@@ -728,7 +728,8 @@ namespace System.Numerics.Tests
         public static IEnumerable<object[]> Divide_TestData()
         {
             yield return new object[] { 0, 0, 10, 50 }; // 0 / x = 0
-            yield return new object[] { 10, 50, double.NaN, double.NaN }; // x / NaN = NaN
+            yield return new object[] { 10, 50, double.NaN, double.NaN }; // 0 / x = NaN
+            yield return new object[] { 10, 50, 0, 0 }; // x / 0 = 0
 
             yield return new object[] { 1, 0, 10, 50 }; // 1 / x = x
             yield return new object[] { 10, 50, 1, 0 }; // x / 1 = x
@@ -740,13 +741,6 @@ namespace System.Numerics.Tests
             // Boundary values
             yield return new object[] { double.MaxValue, double.MaxValue, SmallRandomPositiveDouble(), SmallRandomPositiveDouble() };
             yield return new object[] { double.MinValue, double.MinValue, SmallRandomPositiveDouble(), SmallRandomPositiveDouble() };
-        }
-
-        public static IEnumerable<object[]> Divide_AdvancedTestData()
-        {
-            yield return new object[] { 10, 50, double.NaN, double.NaN, double.NaN, double.NaN }; // 0 / NaN = NaN
-            yield return new object[] { 10, 50, 0, 0, double.PositiveInfinity, double.PositiveInfinity }; // x / 0 = Inf
-            yield return new object[] { 0, 0, 0, 0, double.NaN, double.NaN }; // 0 / 0 = NaN
         }
 
         [Theory]
@@ -781,22 +775,6 @@ namespace System.Numerics.Tests
         }
 
         [Theory]
-        [MemberData(nameof(Divide_AdvancedTestData))]
-        public static void Divide_Advanced(double realLeft, double imaginaryLeft, double realRight, double imaginaryRight, double expectedReal, double expectedImaginary)
-        {
-            var dividend = new Complex(realLeft, imaginaryLeft);
-            var divisor = new Complex(realRight, imaginaryRight);
-
-            // Operator
-            Complex result = dividend / divisor;
-            VerifyRealImaginaryProperties(result, expectedReal, expectedImaginary);
-
-            // Static method
-            result = Complex.Divide(dividend, divisor);
-            VerifyRealImaginaryProperties(result, expectedReal, expectedImaginary);
-        }
-
-        [Theory]
         [MemberData(nameof(Divide_TestData))]
         [MemberData(nameof(SmallRandom_4_TestData))]
         [MemberData(nameof(Invalid_4_TestData))]
@@ -819,22 +797,6 @@ namespace System.Numerics.Tests
         }
 
         [Theory]
-        [MemberData(nameof(Divide_AdvancedTestData))]
-        public static void DivideByDouble_Advanced(double realLeft, double imaginaryLeft, double realRight, double imaginaryRight, double expectedReal, double expectedImaginary)
-        {
-            var dividend = new Complex(realLeft, imaginaryLeft);
-            var divisor = realRight;
-
-            // Operator
-            Complex result = dividend / divisor;
-            VerifyRealImaginaryProperties(result, expectedReal, expectedImaginary);
-
-            // Static method
-            result = Complex.Divide(dividend, divisor);
-            VerifyRealImaginaryProperties(result, expectedReal, expectedImaginary);
-        }
-
-        [Theory]
         [MemberData(nameof(Divide_TestData))]
         [MemberData(nameof(SmallRandom_4_TestData))]
         [MemberData(nameof(Invalid_4_TestData))]
@@ -846,22 +808,6 @@ namespace System.Numerics.Tests
             Complex expected = new Complex(realLeft, 0.0) / divisor;
             double expectedReal = expected.Real;
             double expectedImaginary = expected.Imaginary;
-
-            // Operator
-            Complex result = dividend / divisor;
-            VerifyRealImaginaryProperties(result, expectedReal, expectedImaginary);
-
-            // Static method
-            result = Complex.Divide(dividend, divisor);
-            VerifyRealImaginaryProperties(result, expectedReal, expectedImaginary);
-        }
-
-        [Theory]
-        [MemberData(nameof(Divide_AdvancedTestData))]
-        public static void DivideByComplex_Advanced(double realLeft, double imaginaryLeft, double realRight, double imaginaryRight, double expectedReal, double expectedImaginary)
-        {
-            var dividend = realLeft;
-            var divisor = new Complex(realRight, imaginaryRight);
 
             // Operator
             Complex result = dividend / divisor;
