@@ -51,8 +51,6 @@
     <Compile Include="AsnEncodedData.cs" />
     <Compile Include="AsnEncodedDataCollectionTests.cs" />
     <Compile Include="Base64TransformsTests.cs" />
-    <Compile Include="DerEncoderTests.cs" />
-    <Compile Include="DerSequenceReaderTests.cs" />
     <Compile Include="Oid.cs" />
     <Compile Include="OidCollectionTests.cs" />
     <Compile Include="$(CommonPath)\System\Security\Cryptography\Asn1V2.cs">
@@ -66,12 +64,6 @@
     </Compile>
     <Compile Include="$(CommonPath)\System\Security\Cryptography\AsnWriter.cs">
       <Link>Common\System\Security\Cryptography\AsnWriter.cs</Link>
-    </Compile>
-    <Compile Include="$(CommonPath)\System\Security\Cryptography\DerEncoder.cs">
-      <Link>Common\System\Security\Cryptography\DerEncoder.cs</Link>
-    </Compile>
-    <Compile Include="$(CommonPath)\System\Security\Cryptography\DerSequenceReader.cs">
-      <Link>Common\System\Security\Cryptography\DerSequenceReader.cs</Link>
     </Compile>
     <Compile Include="$(CommonTestPath)\System\Security\Cryptography\ByteUtils.cs">
       <Link>CommonTest\System\Security\Cryptography\ByteUtils.cs</Link>

@@ -210,6 +210,35 @@ namespace Internal.Cryptography
         }
     }
 
+    internal static class DictionaryStringHelper
+    {
+        internal static string ReadDirectoryOrIA5String(this AsnReader tavReader)
+        {
+            Asn1Tag tag = tavReader.PeekTag();
+
+            if (tag.TagClass != TagClass.Universal)
+            {
+                throw new CryptographicException(SR.Cryptography_Der_Invalid_Encoding);
+            }
+
+            switch ((UniversalTagNumber)tag.TagValue)
+            {
+                case UniversalTagNumber.BMPString:
+                case UniversalTagNumber.IA5String:
+                case UniversalTagNumber.PrintableString:
+                case UniversalTagNumber.UTF8String:
+                case UniversalTagNumber.T61String:
+                    // .NET's string comparisons start by checking the length, so a trailing
+                    // NULL character which was literally embedded in the DER would cause a
+                    // failure in .NET whereas it wouldn't have with strcmp.
+                    return tavReader.GetCharacterString((UniversalTagNumber)tag.TagValue).TrimEnd('\0');
+                    
+                default:
+                    throw new CryptographicException(SR.Cryptography_Der_Invalid_Encoding);
+            }
+        }
+    }
+
     internal struct PinAndClear : IDisposable
     {
         private byte[] _data;

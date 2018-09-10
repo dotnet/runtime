@@ -6,8 +6,8 @@ using System.Runtime.InteropServices;
 
 namespace System.Security.Cryptography.Asn1
 {
-	internal partial struct AlgorithmIdentifierAsn
-	{
+    internal partial struct AlgorithmIdentifierAsn
+    {
         internal static readonly ReadOnlyMemory<byte> ExplicitDerNull = new byte[] { 0x05, 0x00 };
 
         internal bool Equals(ref AlgorithmIdentifierAsn other)

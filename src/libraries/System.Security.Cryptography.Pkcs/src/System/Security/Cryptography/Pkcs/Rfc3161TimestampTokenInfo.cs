@@ -257,7 +257,7 @@ namespace System.Security.Cryptography.Pkcs
             if (extensions != null)
             {
                 tstInfo.Extensions = extensions.OfType<X509Extension>().
-                    Select(ex => new X509ExtensionAsn(ex, copyValue: false)).ToArray();
+                    Select(ex => new X509ExtensionAsn(ex)).ToArray();
             }
 
             using (AsnWriter writer = new AsnWriter(AsnEncodingRules.DER))

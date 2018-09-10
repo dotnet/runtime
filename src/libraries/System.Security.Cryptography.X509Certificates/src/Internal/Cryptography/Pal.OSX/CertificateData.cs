@@ -275,79 +275,49 @@ namespace Internal.Cryptography.Pal
                 otherOid == null || otherOid == Oids.UserPrincipalName,
                 $"otherOid ({otherOid}) is not supported");
 
-            // SubjectAltName ::= GeneralNames
-            //
-            // IssuerAltName ::= GeneralNames
-            //
-            // GeneralNames ::= SEQUENCE SIZE (1..MAX) OF GeneralName
-            //
-            // GeneralName ::= CHOICE {
-            //   otherName                       [0]     OtherName,
-            //   rfc822Name                      [1]     IA5String,
-            //   dNSName                         [2]     IA5String,
-            //   x400Address                     [3]     ORAddress,
-            //   directoryName                   [4]     Name,
-            //   ediPartyName                    [5]     EDIPartyName,
-            //   uniformResourceIdentifier       [6]     IA5String,
-            //   iPAddress                       [7]     OCTET STRING,
-            //   registeredID                    [8]     OBJECT IDENTIFIER }
-            //
-            // OtherName::= SEQUENCE {
-            //   type - id    OBJECT IDENTIFIER,
-            //   value[0] EXPLICIT ANY DEFINED BY type - id }
+            AsnReader reader = new AsnReader(extensionBytes, AsnEncodingRules.DER);
+            AsnReader sequenceReader = reader.ReadSequence();
+            reader.ThrowIfNotEmpty();
 
-            byte expectedTag = (byte)(DerSequenceReader.ContextSpecificTagFlag | (byte)matchType);
-
-            if (matchType == GeneralNameType.OtherName)
+            while (sequenceReader.HasData)
             {
-                expectedTag |= DerSequenceReader.ConstructedFlag;
-            }
-
-            DerSequenceReader altNameReader = new DerSequenceReader(extensionBytes);
-
-            while (altNameReader.HasData)
-            {
-                if (altNameReader.PeekTag() != expectedTag)
-                {
-                    altNameReader.SkipValue();
-                    continue;
-                }
+                GeneralNameAsn.Decode(sequenceReader, out GeneralNameAsn generalName);
 
                 switch (matchType)
                 {
                     case GeneralNameType.OtherName:
-                    {
-                        DerSequenceReader otherNameReader = altNameReader.ReadSequence();
-                        string oid = otherNameReader.ReadOidAsString();
-
-                        if (oid == otherOid)
+                        // If the OtherName OID didn't match, move to the next entry.
+                        if (generalName.OtherName.HasValue && generalName.OtherName.Value.TypeId == otherOid)
                         {
-                            // Payload is value[0] EXPLICIT, meaning
-                            // a) it'll be tagged as ContextSpecific0
-                            // b) that's interpretable as a Sequence (EXPLICIT)
-                            // c) the payload will then be retagged as the correct type (EXPLICIT)
-                            if (otherNameReader.PeekTag() != DerSequenceReader.ContextSpecificConstructedTag0)
-                            {
-                                throw new CryptographicException(SR.Cryptography_Der_Invalid_Encoding);
-                            }
-
-                            otherNameReader = otherNameReader.ReadSequence();
-
                             // Currently only UPN is supported, which is a UTF8 string per
                             // https://msdn.microsoft.com/en-us/library/ff842518.aspx
-                            return otherNameReader.ReadUtf8String();
+                            AsnReader nameReader = new AsnReader(generalName.OtherName.Value.Value, AsnEncodingRules.DER);
+                            string udnName = nameReader.GetCharacterString(UniversalTagNumber.UTF8String);
+                            nameReader.ThrowIfNotEmpty();
+                            return udnName;
                         }
+                        break;
 
-                        // If the OtherName OID didn't match, move to the next entry.
-                        continue;
-                    }
                     case GeneralNameType.Rfc822Name:
+                        if (generalName.Rfc822Name != null)
+                        {
+                            return generalName.Rfc822Name;
+                        }
+                        break;
+
                     case GeneralNameType.DnsName:
+                        if (generalName.DnsName != null)
+                        {
+                            return generalName.DnsName;
+                        }
+                        break;
+
                     case GeneralNameType.UniformResourceIdentifier:
-                        return altNameReader.ReadIA5String();
-                    default:
-                        altNameReader.SkipValue();
-                        continue;
+                        if (generalName.Uri != null)
+                        {
+                            return generalName.Uri;
+                        }
+                        break;
                 }
             }
 
@@ -356,52 +326,26 @@ namespace Internal.Cryptography.Pal
 
         private static IEnumerable<KeyValuePair<string, string>> ReadReverseRdns(X500DistinguishedName name)
         {
-            DerSequenceReader x500NameReader = new DerSequenceReader(name.RawData);
-            var rdnReaders = new Stack<DerSequenceReader>();
+            AsnReader x500NameReader = new AsnReader(name.RawData, AsnEncodingRules.DER);
+            AsnReader sequenceReader = x500NameReader.ReadSequence();
+            var rdnReaders = new Stack<AsnReader>();
+            x500NameReader.ThrowIfNotEmpty();
 
-            while (x500NameReader.HasData)
+            while (sequenceReader.HasData)
             {
-                rdnReaders.Push(x500NameReader.ReadSet());
+                rdnReaders.Push(sequenceReader.ReadSetOf());
             }
-
 
             while (rdnReaders.Count > 0)
             {
-                DerSequenceReader rdnReader = rdnReaders.Pop();
-
+                AsnReader rdnReader = rdnReaders.Pop();
                 while (rdnReader.HasData)
                 {
-                    DerSequenceReader tavReader = rdnReader.ReadSequence();
-                    string oid = tavReader.ReadOidAsString();
-
-                    var tag = (DerSequenceReader.DerTag)tavReader.PeekTag();
-                    string value = null;
-
-                    switch (tag)
-                    {
-                        case DerSequenceReader.DerTag.BMPString:
-                            value = tavReader.ReadBMPString();
-                            break;
-                        case DerSequenceReader.DerTag.IA5String:
-                            value = tavReader.ReadIA5String();
-                            break;
-                        case DerSequenceReader.DerTag.PrintableString:
-                            value = tavReader.ReadPrintableString();
-                            break;
-                        case DerSequenceReader.DerTag.UTF8String:
-                            value = tavReader.ReadUtf8String();
-                            break;
-                        case DerSequenceReader.DerTag.T61String:
-                            value = tavReader.ReadT61String();
-                            break;
-
-                        // Ignore anything we don't know how to read.
-                    }
-
-                    if (value != null)
-                    {
-                        yield return new KeyValuePair<string, string>(oid, value);
-                    }
+                    AsnReader tavReader = rdnReader.ReadSequence();
+                    string oid = tavReader.ReadObjectIdentifierAsString();
+                    string value = tavReader.ReadDirectoryOrIA5String();
+                    tavReader.ThrowIfNotEmpty();
+                    yield return new KeyValuePair<string, string>(oid, value);
                 }
             }
         }
