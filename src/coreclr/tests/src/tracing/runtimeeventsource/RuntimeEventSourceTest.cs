@@ -101,7 +101,7 @@ namespace Tracing.Tests
             Console.WriteLine($"TimeStamp: {eventData.TimeStamp.ToLocalTime()}");
             Console.WriteLine($"LocalTime: {DateTime.Now}");
             Console.WriteLine($"Difference: {DateTime.UtcNow - eventData.TimeStamp}");
-            Assert.True("eventData.TimeStamp < DateTime.UtcNow", eventData.TimeStamp < DateTime.UtcNow);
+            Assert.True("eventData.TimeStamp <= DateTime.UtcNow", eventData.TimeStamp <= DateTime.UtcNow);
             for (int i = 0; i < eventData.Payload.Count; i++)
             {
                 string payloadString = eventData.Payload[i] != null ? eventData.Payload[i].ToString() : string.Empty;
