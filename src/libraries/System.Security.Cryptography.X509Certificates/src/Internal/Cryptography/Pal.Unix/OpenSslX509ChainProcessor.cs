@@ -6,7 +6,9 @@ using System;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Security.Cryptography;
+using System.Security.Cryptography.Asn1;
 using System.Security.Cryptography.X509Certificates;
+using System.Security.Cryptography.X509Certificates.Asn1;
 using Microsoft.Win32.SafeHandles;
 
 namespace Internal.Cryptography.Pal
@@ -595,36 +597,22 @@ namespace Internal.Cryptography.Pal
 
         internal static string FindHttpAiaRecord(byte[] authorityInformationAccess, string recordTypeOid)
         {
-            DerSequenceReader reader = new DerSequenceReader(authorityInformationAccess);
+            AsnReader reader = new AsnReader(authorityInformationAccess, AsnEncodingRules.DER);
+            AsnReader sequenceReader = reader.ReadSequence();
+            reader.ThrowIfNotEmpty();
 
-            while (reader.HasData)
+            while (sequenceReader.HasData)
             {
-                DerSequenceReader innerReader = reader.ReadSequence();
-
-                // If the sequence's first element is a sequence, unwrap it.
-                if (innerReader.PeekTag() == ConstructedSequenceTagId)
+                AccessDescriptionAsn.Decode(sequenceReader, out AccessDescriptionAsn description);
+                if (StringComparer.Ordinal.Equals(description.AccessMethod, recordTypeOid))
                 {
-                    innerReader = innerReader.ReadSequence();
-                }
-
-                Oid oid = innerReader.ReadOid();
-
-                if (StringComparer.Ordinal.Equals(oid.Value, recordTypeOid))
-                {
-                    string uri = innerReader.ReadIA5String();
-
-                    Uri parsedUri;
-                    if (!Uri.TryCreate(uri, UriKind.Absolute, out parsedUri))
+                    GeneralNameAsn name = description.AccessLocation;
+                    if (name.Uri != null &&
+                        Uri.TryCreate(name.Uri, UriKind.Absolute, out Uri uri) &&
+                        uri.Scheme == "http")
                     {
-                        continue;
+                        return name.Uri;
                     }
-
-                    if (!StringComparer.Ordinal.Equals(parsedUri.Scheme, "http"))
-                    {
-                        continue;
-                    }
-
-                    return uri;
                 }
             }
 

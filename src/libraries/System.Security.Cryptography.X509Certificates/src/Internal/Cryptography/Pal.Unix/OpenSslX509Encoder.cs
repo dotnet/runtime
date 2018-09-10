@@ -5,6 +5,7 @@
 using System;
 using System.Diagnostics;
 using System.Security.Cryptography;
+using System.Security.Cryptography.Asn1;
 using System.Security.Cryptography.X509Certificates;
 using Microsoft.Win32.SafeHandles;
 
@@ -267,71 +268,19 @@ namespace Internal.Cryptography.Pal
 
         private static DSA BuildDsaPublicKey(byte[] encodedKey, byte[] encodedParameters)
         {
-            // Dss-Parms ::= SEQUENCE { 
-            //   p INTEGER, 
-            //   q INTEGER, 
-            //   g INTEGER 
-            // } 
-
-            // The encodedKey value is a DER INTEGER representing the Y value
-
-            DerSequenceReader parametersReader = new DerSequenceReader(encodedParameters);
-            DerSequenceReader keyReader = DerSequenceReader.CreateForPayload(encodedKey);
-
-            DSAParameters parameters = new DSAParameters();
-
-            // While this could use the object initializer, the read modifies the data stream, so
-            // leaving these in flat call for clarity.
-            parameters.P = parametersReader.ReadIntegerBytes();
-            parameters.Q = parametersReader.ReadIntegerBytes();
-            parameters.G = parametersReader.ReadIntegerBytes();
-            parameters.Y = keyReader.ReadIntegerBytes();
-
-            // Make the structure look like it would from Windows / .NET Framework
-            TrimPaddingByte(ref parameters.P);
-            TrimPaddingByte(ref parameters.Q);
-
-            PadOrTrim(ref parameters.G, parameters.P.Length);
-            PadOrTrim(ref parameters.Y, parameters.P.Length);
-
-            DSA dsa = new DSAOpenSsl();
-            dsa.ImportParameters(parameters);
-            return dsa;
-        }
-
-        private static void TrimPaddingByte(ref byte[] data)
-        {
-            if (data.Length > 0 && data[0] == 0)
+            SubjectPublicKeyInfoAsn spki = new SubjectPublicKeyInfoAsn
             {
-                byte[] tmp = new byte[data.Length - 1];
-                Buffer.BlockCopy(data, 1, tmp, 0, tmp.Length);
-                data = tmp;
-            }
-        }
+                Algorithm = new AlgorithmIdentifierAsn { Algorithm = new Oid(Oids.Dsa), Parameters = encodedParameters },
+                SubjectPublicKey = encodedKey,
+            };
 
-        private static void PadOrTrim(ref byte[] data, int dataLen)
-        {
-            if (data.Length == dataLen)
-                return;
-
-            if (data.Length < dataLen)
+            using (AsnWriter writer = new AsnWriter(AsnEncodingRules.DER))
             {
-                // Add leading 0s
-                byte[] tmp = new byte[dataLen];
-                Buffer.BlockCopy(data, 0, tmp, dataLen - data.Length, dataLen);
-                data = tmp;
-                return;
+                DSA dsa = new DSAOpenSsl();
+                spki.Encode(writer);
+                dsa.ImportSubjectPublicKeyInfo(writer.EncodeAsSpan(), out _);
+                return dsa;
             }
-
-            if (data.Length == dataLen + 1 && data[0] == 0)
-            {
-                byte[] tmp = new byte[dataLen];
-                Buffer.BlockCopy(data, 1, tmp, 0, dataLen);
-                data = tmp;
-                return;
-            }
-
-            throw new CryptographicException();
         }
     }
 }

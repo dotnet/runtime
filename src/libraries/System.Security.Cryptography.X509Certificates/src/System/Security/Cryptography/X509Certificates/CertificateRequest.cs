@@ -584,7 +584,7 @@ namespace System.Security.Cryptography.X509Certificates
                             SR.Format(SR.Cryptography_CertReq_DuplicateExtension, extension.Oid.Value));
                     }
 
-                    extensionAsns.Add(new X509ExtensionAsn(extension, false));
+                    extensionAsns.Add(new X509ExtensionAsn(extension));
                 }
 
                 tbsCertificate.Extensions = extensionAsns.ToArray();

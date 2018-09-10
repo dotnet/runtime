@@ -91,7 +91,7 @@ namespace Internal.Cryptography.Pal
                 {
                     AsnReader tavReader = rdnReader.ReadSequence();
                     string oid = tavReader.ReadObjectIdentifierAsString();
-                    string attributeValue = ReadString(tavReader);
+                    string attributeValue = tavReader.ReadDirectoryOrIA5String();
 
                     tavReader.ThrowIfNotEmpty();
 
@@ -136,28 +136,6 @@ namespace Internal.Cryptography.Pal
             }
 
             return decodedName.ToString();
-        }
-
-        private static string ReadString(AsnReader tavReader)
-        {
-            Asn1Tag tag = tavReader.PeekTag();
-
-            if (tag.TagClass != TagClass.Universal)
-            {
-                throw new CryptographicException(SR.Cryptography_Der_Invalid_Encoding);
-            }
-
-            switch ((UniversalTagNumber)tag.TagValue)
-            {
-                case UniversalTagNumber.BMPString:
-                case UniversalTagNumber.IA5String:
-                case UniversalTagNumber.PrintableString:
-                case UniversalTagNumber.UTF8String:
-                case UniversalTagNumber.T61String:
-                    return tavReader.GetCharacterString((UniversalTagNumber)tag.TagValue);
-                default:
-                    throw new CryptographicException(SR.Cryptography_Der_Invalid_Encoding);
-            }
         }
     }
 }

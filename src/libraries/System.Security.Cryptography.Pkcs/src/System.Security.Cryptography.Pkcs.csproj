@@ -272,9 +272,6 @@
     <Compile Include="$(CommonPath)\System\Security\Cryptography\Asn1V2.cs">
       <Link>Common\System\Security\Cryptography\Asn1V2.cs</Link>
     </Compile>
-    <Compile Include="$(CommonPath)\System\Security\Cryptography\Asn1V2.Serializer.cs">
-      <Link>Common\System\Security\Cryptography\Asn1V2.Serializer.cs</Link>
-    </Compile>
     <Compile Include="$(CommonPath)\System\Security\Cryptography\AsnReader.cs">
       <Link>Common\System\Security\Cryptography\AsnReader.cs</Link>
     </Compile>
@@ -397,8 +394,16 @@
       <Link>Common\System\Security\Cryptography\Asn1\SubjectPublicKeyInfoAsn.xml.cs</Link>
       <DependentUpon>Common\System\Security\Cryptography\Asn1\SubjectPublicKeyInfoAsn.xml</DependentUpon>
     </Compile>
-    <Compile Include="$(CommonPath)\System\Security\Cryptography\Asn1\X509ExtensionAsn.cs">
-      <Link>Common\System\Security\Cryptography\Asn1\X509ExtensionAsn.cs</Link>
+    <AsnXml Include="$(CommonPath)\System\Security\Cryptography\Asn1\X509ExtensionAsn.xml">
+      <Link>Common\System\Security\Cryptography\Asn1\X509ExtensionAsn.xml</Link>
+    </AsnXml>
+    <Compile Include="$(CommonPath)\System\Security\Cryptography\Asn1\X509ExtensionAsn.xml.cs">
+      <Link>Common\System\Security\Cryptography\Asn1\X509ExtensionAsn.xml.cs</Link>
+      <DependentUpon>Common\System\Security\Cryptography\Asn1\X509ExtensionAsn.xml</DependentUpon>
+    </Compile>
+    <Compile Include="$(CommonPath)\System\Security\Cryptography\Asn1\X509ExtensionAsn.manual.cs">
+      <Link>Common\System\Security\Cryptography\Asn1\X509ExtensionAsn.manual.cs</Link>
+      <DependentUpon>Common\System\Security\Cryptography\Asn1\X509ExtensionAsn.xml</DependentUpon>
     </Compile>
     <AsnXml Include="System\Security\Cryptography\Pkcs\Asn1\CadesIssuerSerial.xml" />
     <Compile Include="System\Security\Cryptography\Pkcs\Asn1\CadesIssuerSerial.xml.cs">

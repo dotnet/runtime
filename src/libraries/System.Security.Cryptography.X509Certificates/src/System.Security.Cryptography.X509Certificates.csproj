@@ -14,17 +14,8 @@
     <Compile Include="$(CommonPath)\Microsoft\Win32\SafeHandles\SafeHandleCache.cs">
       <Link>Common\Microsoft\Win32\SafeHandles\SafeHandleCache.cs</Link>
     </Compile>
-    <Compile Include="$(CommonPath)\System\Security\Cryptography\DerEncoder.cs">
-      <Link>Common\System\Security\Cryptography\DerEncoder.cs</Link>
-    </Compile>
-    <Compile Include="$(CommonPath)\System\Security\Cryptography\DerSequenceReader.cs">
-      <Link>Common\System\Security\Cryptography\DerSequenceReader.cs</Link>
-    </Compile>
     <Compile Include="$(CommonPath)\System\Security\Cryptography\Asn1V2.cs">
       <Link>Common\System\Security\Cryptography\Asn1V2.cs</Link>
-    </Compile>
-    <Compile Include="$(CommonPath)\System\Security\Cryptography\Asn1V2.Serializer.cs">
-      <Link>Common\System\Security\Cryptography\Asn1V2.Serializer.cs</Link>
     </Compile>
     <Compile Include="$(CommonPath)\System\Security\Cryptography\AsnReader.cs">
       <Link>Common\System\Security\Cryptography\AsnReader.cs</Link>
@@ -94,8 +85,16 @@
       <Link>Common\System\Security\Cryptography\Asn1\SubjectPublicKeyInfoAsn.xml.cs</Link>
       <DependentUpon>Common\System\Security\Cryptography\Asn1\SubjectPublicKeyInfoAsn.xml</DependentUpon>
     </Compile>
-    <Compile Include="$(CommonPath)\System\Security\Cryptography\Asn1\X509ExtensionAsn.cs">
-      <Link>Common\System\Security\Cryptography\Asn1\X509ExtensionAsn.cs</Link>
+    <AsnXml Include="$(CommonPath)\System\Security\Cryptography\Asn1\X509ExtensionAsn.xml">
+      <Link>Common\System\Security\Cryptography\Asn1\X509ExtensionAsn.xml</Link>
+    </AsnXml>
+    <Compile Include="$(CommonPath)\System\Security\Cryptography\Asn1\X509ExtensionAsn.xml.cs">
+      <Link>Common\System\Security\Cryptography\Asn1\X509ExtensionAsn.xml.cs</Link>
+      <DependentUpon>Common\System\Security\Cryptography\Asn1\X509ExtensionAsn.xml</DependentUpon>
+    </Compile>
+    <Compile Include="$(CommonPath)\System\Security\Cryptography\Asn1\X509ExtensionAsn.manual.cs">
+      <Link>Common\System\Security\Cryptography\Asn1\X509ExtensionAsn.manual.cs</Link>
+      <DependentUpon>Common\System\Security\Cryptography\Asn1\X509ExtensionAsn.xml</DependentUpon>
     </Compile>
     <Compile Include="$(CommonPath)\Internal\Cryptography\AsymmetricAlgorithmHelpers.Der.cs">
       <Link>Common\Internal\Cryptography\AsymmetricAlgorithmHelpers.Der.cs</Link>
@@ -201,6 +200,26 @@
       <DependentUpon>System\Security\Cryptography\X509Certificates\Asn1\X501AttributeAsn.xml</DependentUpon>
     </Compile>
     <Compile Include="System\Security\Cryptography\X509Certificates\Asn1\X501AttributeAsn.manual.cs" />
+    <AsnXml Include="System\Security\Cryptography\X509Certificates\Asn1\AccessDescriptionAsn.xml" />
+    <Compile Include="System\Security\Cryptography\X509Certificates\Asn1\AccessDescriptionAsn.xml.cs">
+      <DependentUpon>System\Security\Cryptography\X509Certificates\Asn1\AccessDescriptionAsn.xml</DependentUpon>
+    </Compile>
+    <AsnXml Include="System\Security\Cryptography\X509Certificates\Asn1\CertificatePolicyMappingAsn.xml" />
+    <Compile Include="System\Security\Cryptography\X509Certificates\Asn1\CertificatePolicyMappingAsn.xml.cs">
+      <DependentUpon>System\Security\Cryptography\X509Certificates\Asn1\CertificatePolicyMappingAsn.xml</DependentUpon>
+    </Compile>
+    <AsnXml Include="System\Security\Cryptography\X509Certificates\Asn1\CertificateTemplateAsn.xml" />
+    <Compile Include="System\Security\Cryptography\X509Certificates\Asn1\CertificateTemplateAsn.xml.cs">
+      <DependentUpon>System\Security\Cryptography\X509Certificates\Asn1\CertificateTemplateAsn.xml</DependentUpon>
+    </Compile>
+    <AsnXml Include="System\Security\Cryptography\X509Certificates\Asn1\PolicyConstraintsAsn.xml" />
+    <Compile Include="System\Security\Cryptography\X509Certificates\Asn1\PolicyConstraintsAsn.xml.cs">
+      <DependentUpon>System\Security\Cryptography\X509Certificates\Asn1\PolicyConstraintsAsn.xml</DependentUpon>
+    </Compile>
+    <AsnXml Include="System\Security\Cryptography\X509Certificates\Asn1\PolicyInformationAsn.xml" />
+    <Compile Include="System\Security\Cryptography\X509Certificates\Asn1\PolicyInformationAsn.xml.cs">
+      <DependentUpon>System\Security\Cryptography\X509Certificates\Asn1\PolicyInformationAsn.xml</DependentUpon>
+    </Compile>
   </ItemGroup>
   <ItemGroup Condition=" '$(TargetsWindows)' == 'true'">
     <Compile Include="Internal\Cryptography\Pal.Windows\CertificatePal.cs" />
@@ -271,6 +290,15 @@
     <Compile Include="Microsoft\Win32\SafeHandles\SafePasswordHandle.Unix.cs" />
   </ItemGroup>
   <ItemGroup Condition=" '$(TargetsUnix)' == 'true' AND '$(TargetsOSX)' != 'true' ">
+    <AsnXml Include="System\Security\Cryptography\X509Certificates\Asn1\DistributionPointAsn.xml" />
+    <Compile Include="System\Security\Cryptography\X509Certificates\Asn1\DistributionPointAsn.xml.cs">
+      <DependentUpon>System\Security\Cryptography\X509Certificates\Asn1\DistributionPointAsn.xml</DependentUpon>
+    </Compile>
+    <AsnXml Include="System\Security\Cryptography\X509Certificates\Asn1\DistributionPointNameAsn.xml" />
+    <Compile Include="System\Security\Cryptography\X509Certificates\Asn1\DistributionPointNameAsn.xml.cs">
+      <DependentUpon>System\Security\Cryptography\X509Certificates\Asn1\DistributionPointNameAsn.xml</DependentUpon>
+    </Compile>
+    <Compile Include="System\Security\Cryptography\X509Certificates\Asn1\ReasonFlagsAsn.cs" />
     <Compile Include="Internal\Cryptography\Pal.Unix\CertCollectionLoader.cs" />
     <Compile Include="Internal\Cryptography\Pal.Unix\CertificateAssetDownloader.cs" />
     <Compile Include="Internal\Cryptography\Pal.Unix\CertificatePal.cs" />
