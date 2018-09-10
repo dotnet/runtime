@@ -18,12 +18,12 @@
 //
 // PRINCIPLE: EventSource - ETW decoupling
 // 
-// Conceptually and EventSouce is something takes event logging data from the source methods 
-// To the EventListener that can subscribe them.  Note that CONCEPTUALLY EVENTSOURCES DON'T
-// KNOW ABOUT ETW!.   The MODEL of the system is that there is a special EventListener Which
+// Conceptually an EventSouce is something that takes event logging data from the source methods 
+// to the EventListener that can subscribe to them.  Note that CONCEPTUALLY EVENTSOURCES DON'T
+// KNOW ABOUT ETW!.   The MODEL of the system is that there is a special EventListener which
 // we will call the EtwEventListener, that forwards commands from ETW to EventSources and
-// listeners to the EventSources and forwards on those events to ETW.   THus the model should
-// be that you DON'T NEED ETW.    
+// listens to EventSources and forwards on those events to ETW.   Thus the model should
+// be that you DON'T NEED ETW.
 //
 // Now in actual practice, EventSouce have rather intimate knowledge of ETW and send events
 // to it directly, but this can be VIEWED AS AN OPTIMIZATION.  
@@ -33,20 +33,20 @@
 // There are two ways for event Data to enter the system
 //     1) WriteEvent* and friends.  This is called the 'contract' based approach because 
 //        you write a method per event which forms a contract that is know at compile time.
-//        In this scheme each event is given an EVENTID (small integer). which is its identity
+//        In this scheme each event is given an EVENTID (small integer), which is its identity
 //     2) Write<T> methods.   This is called the 'dynamic' approach because new events 
 //        can be created on the fly.  Event identity is determined by the event NAME, and these
 //        are not quite as efficient at runtime since you have at least a hash table lookup
 //        on every event write.  
 //
-// EventSource-EventListener transfer fully support both ways of writing events (either contract
-// based (WriteEvent*) or dynamic (Write<T>).   Both way fully support the same set of data
-// types.   It is suggested, however, that you use the contract based approach when the event scheme 
+// EventSource-EventListener transfer fully supports both ways of writing events (either contract
+// based (WriteEvent*) or dynamic (Write<T>)).   Both ways fully support the same set of data
+// types.   It is recommended, however, that you use the contract based approach when the event scheme 
 // is known at compile time (that is whenever possible).  It is more efficient, but more importantly
 // it makes the contract very explicit, and centralizes all policy about logging.  These are good 
-// things.    The Write<T> API is really meant for more ad-hoc 
+// things.    The Write<T> API is really meant for more ad-hoc cases.
 //
-// Allowed Data. 
+// Allowed Data:
 // 
 // Note that EventSource-EventListeners have a conceptual serialization-deserialization that happens
 // during the transfer.   In particular object identity is not preserved, some objects are morphed, 
@@ -57,7 +57,7 @@
 //   * IEnumerable<T> of valid types T (this include arrays)  (* New for V4.6)
 //   * Explicitly Opted in class or struct with public property Getters over Valid types.  (* New for V4.6)
 // 
-// This set of types is roughly a generalization of JSON support (Basically primitives, bags, and arrays).   
+// This set of types is roughly a generalization of JSON support (basically primitives, bags, and arrays).  
 //
 // Explicitly allowed structs include (* New for V4.6)
 //   * Marked with the EventData attribute
@@ -67,27 +67,27 @@
 // When classes are returned in an EventListener, what is returned is something that implements 
 // IDictionary<string, T>.  Thus when objects are passed to an EventSource they are transformed
 // into a key-value bag (the IDictionary<string, T>) for consumption in the listener.   These 
-// are obvious NOT the original objects.  
+// are obviously NOT the original objects.  
 // 
-// ETWserialization formats:
+// ETW serialization formats:
 // 
-// As mentioned conceptually EventSource's send data to EventListeners and there is a conceptual 
+// As mentioned, conceptually EventSources send data to EventListeners and there is a conceptual 
 // copy/morph of that data as described above.   In addition the .NET framework supports a conceptual
-// ETWListener that will send the data to then ETW stream.   If you use this feature, the data needs 
+// ETWListener that will send the data to the ETW stream.   If you use this feature, the data needs 
 // to be serialized in a way that ETW supports.  ETW supports the following serialization formats 
 // 
 //     1) Manifest Based serialization. 
 //     2) SelfDescribing serialization (TraceLogging style in the TraceLogging directory)
 //
-// A key factor is that the Write<T> method, which support on the fly definition of events, can't
+// A key factor is that the Write<T> method, which supports on the fly definition of events, can't
 // support the manifest based serialization because the manifest needs the schema of all events 
-// to be known before any events are emitted.  This implies the following
+// to be known before any events are emitted.  This implies the following:
 //
 // If you use Write<T> and the output goes to ETW it will use the SelfDescribing format.
 // If you use the EventSource(string) constructor for an eventSource (in which you don't
 // create a subclass), the default is also to use Self-Describing serialization.  In addition
 // you can use the EventSoruce(EventSourceSettings) constructor to also explicitly specify
-// Self-Describing serialization format.   These effect the WriteEvent* APIs going to ETW.  
+// Self-Describing serialization format.   These affect the WriteEvent* APIs going to ETW.  
 //
 // Note that none of this ETW serialization logic affects EventListeners.   Only the ETW listener.  
 // 
@@ -117,7 +117,7 @@
 //
 //       EventPayload is the internal type that implements the IDictionary<string, object> interface
 //       The EventListeners will pass back for serialized classes for nested object, but  
-//       WriteToAllListeners(NAME, Guid*, Guid*, EventPayload) unpacks this uses the fields as if they
+//       WriteToAllListeners(NAME, Guid*, Guid*, EventPayload) unpacks this and uses the fields as if they
 //       were parameters to a method.  
 // 
 //       The first two are used for the WriteEvent* case, and the later is used for the Write<T> case.  
@@ -129,7 +129,7 @@
 //          WriteMultiMerge(NAME, Options, Types, EventData*)
 //          WriteMultiMerge(NAME, Options, Types, object[])
 //          WriteImpl<T> has logic that knows how to serialize (like WriteMultiMerge) but also knows 
-//             will write it to 
+//             where it will write it to 
 //
 //    All ETW writes eventually call
 //      EventWriteTransfer (native PINVOKE wrapper)
@@ -146,7 +146,7 @@
 // since it is the TraceLoggingTypeInfo structure that knows how to do this.   Effectively for a type you
 // can call one of these 
 //      WriteMetadata - transforms the type T into serialization meta data blob for that type
-//      WriteObjectData - transforms an object of T into serialization meta data blob for that type
+//      WriteObjectData - transforms an object of T into serialization data blob for that instance
 //      GetData - transforms an object of T into its deserialized form suitable for passing to EventListener. 
 // The first two are used to serialize something for ETW.   The second one is used to transform the object 
 // for use by the EventListener.    We also have a 'DecodeObject' method that will take a EventData* and
