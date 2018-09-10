@@ -344,6 +344,100 @@ exit:
     return g_RestrictedPhysicalMemoryLimit;
 }
 
+// This function checks to see if GetLogicalProcessorInformation API is supported. 
+// On success, this function allocates a SLPI array, sets nEntries to number 
+// of elements in the SLPI array and returns a pointer to the SLPI array after filling it with information. 
+//
+// Note: If successful, GetLPI allocates memory for the SLPI array and expects the caller to
+// free the memory once the caller is done using the information in the SLPI array.
+SYSTEM_LOGICAL_PROCESSOR_INFORMATION *GetLPI(PDWORD nEntries) 
+{
+    DWORD cbslpi = 0;
+    DWORD dwNumElements = 0;
+    SYSTEM_LOGICAL_PROCESSOR_INFORMATION *pslpi = NULL;
+
+    // We setup the first call to GetLogicalProcessorInformation to fail so that we can obtain
+    // the size of the buffer required to allocate for the SLPI array that is returned
+
+    if (!GetLogicalProcessorInformation(pslpi, &cbslpi) &&
+            GetLastError() != ERROR_INSUFFICIENT_BUFFER)
+    {
+        // If we fail with anything other than an ERROR_INSUFFICIENT_BUFFER here, we punt with failure.
+        return NULL;
+    }
+
+    _ASSERTE(cbslpi);
+
+    // compute the number of SLPI entries required to hold the information returned from GLPI
+
+    dwNumElements = cbslpi / sizeof(SYSTEM_LOGICAL_PROCESSOR_INFORMATION);
+
+    // allocate a buffer in the free heap to hold an array of SLPI entries from GLPI, number of elements in the array is dwNumElements 
+
+    pslpi = new (std::nothrow) SYSTEM_LOGICAL_PROCESSOR_INFORMATION[ dwNumElements ];
+
+    if (pslpi == NULL)
+    {
+        // the memory allocation failed
+        return NULL;
+    }      
+
+    // Make call to GetLogicalProcessorInformation. Returns array of SLPI structures
+
+    if (!GetLogicalProcessorInformation(pslpi, &cbslpi))
+    {
+        // GetLogicalProcessorInformation failed
+        delete[] pslpi ; //Allocation was fine but the API call itself failed and so we are releasing the memory before the return NULL.
+        return NULL ;
+    } 
+
+    // GetLogicalProcessorInformation successful, set nEntries to number of entries in the SLPI array
+    *nEntries  = dwNumElements;
+
+    return pslpi;    // return pointer to SLPI array
+
+}//GetLPI
+
+// This function returns the size of highest level cache on the physical chip.   If it cannot
+// determine the cachesize this function returns 0.
+size_t GetLogicalProcessorCacheSizeFromOS()
+{
+    size_t cache_size = 0;
+    DWORD nEntries = 0;
+
+    // Try to use GetLogicalProcessorInformation API and get a valid pointer to the SLPI array if successful.  Returns NULL
+    // if API not present or on failure.
+
+    SYSTEM_LOGICAL_PROCESSOR_INFORMATION *pslpi = GetLPI(&nEntries) ;   
+
+    if (pslpi == NULL)
+    {
+        // GetLogicalProcessorInformation not supported or failed.  
+        goto Exit;
+    }
+
+    // Crack the information. Iterate through all the SLPI array entries for all processors in system.
+    // Will return the greatest of all the processor cache sizes or zero
+    {
+        size_t last_cache_size = 0;
+
+        for (DWORD i=0; i < nEntries; i++)
+        {
+            if (pslpi[i].Relationship == RelationCache)
+            {
+                last_cache_size = max(last_cache_size, pslpi[i].Cache.Size);
+            }             
+        }  
+        cache_size = last_cache_size;
+    }
+Exit:
+
+    if(pslpi)
+        delete[] pslpi;  // release the memory allocated for the SLPI array.    
+
+    return cache_size;
+}
+
 } // anonymous namespace
 
 // Initialize the interface implementation
@@ -604,8 +698,132 @@ bool GCToOSInterface::GetWriteWatch(bool resetState, void* address, size_t size,
 //  Size of the cache
 size_t GCToOSInterface::GetCacheSizePerLogicalCpu(bool trueSize)
 {
-    // TODO(segilles) processor detection (see src/vm/util.cpp:1935)
-    return 0;
+    static size_t maxSize;
+    static size_t maxTrueSize;
+
+    if (maxSize)
+    {
+        // maxSize and maxTrueSize cached
+        if (trueSize)
+        {
+            return maxTrueSize;
+        }
+        else
+        {
+            return maxSize;
+        }
+    }
+
+#if defined(_AMD64_) || defined (_X86_)
+    int dwBuffer[4];
+
+    __cpuid(dwBuffer, 0);
+
+    int maxCpuId = dwBuffer[0];
+
+    if (dwBuffer[1] == 'uneG') 
+    {
+        if (dwBuffer[3] == 'Ieni') 
+        {
+            if (dwBuffer[2] == 'letn') 
+            {
+                maxTrueSize = GetLogicalProcessorCacheSizeFromOS(); //use OS API for cache enumeration on LH and above
+#ifdef BIT64
+                if (maxCpuId >= 2)
+                {
+                    // If we're running on a Prescott or greater core, EM64T tests
+                    // show that starting with a gen0 larger than LLC improves performance.
+                    // Thus, start with a gen0 size that is larger than the cache.  The value of
+                    // 3 is a reasonable tradeoff between workingset and performance.
+                    maxSize = maxTrueSize * 3;
+                }
+                else
+#endif
+                {
+                    maxSize = maxTrueSize;
+                }
+            }
+        }
+    }
+
+    if (dwBuffer[1] == 'htuA') {
+        if (dwBuffer[3] == 'itne') {
+            if (dwBuffer[2] == 'DMAc') {
+                __cpuid(dwBuffer, 0x80000000);
+                if (dwBuffer[0] >= 0x80000006)
+                {
+                    __cpuid(dwBuffer, 0x80000006);
+
+                    DWORD dwL2CacheBits = dwBuffer[2];
+                    DWORD dwL3CacheBits = dwBuffer[3];
+
+                    maxTrueSize = (size_t)((dwL2CacheBits >> 16) * 1024);    // L2 cache size in ECX bits 31-16
+                            
+                    __cpuid(dwBuffer, 0x1);
+                    DWORD dwBaseFamily = (dwBuffer[0] & (0xF << 8)) >> 8;
+                    DWORD dwExtFamily  = (dwBuffer[0] & (0xFF << 20)) >> 20;
+                    DWORD dwFamily = dwBaseFamily >= 0xF ? dwBaseFamily + dwExtFamily : dwBaseFamily;
+
+                    if (dwFamily >= 0x10)
+                    {
+                        BOOL bSkipAMDL3 = FALSE;
+
+                        if (dwFamily == 0x10)   // are we running on a Barcelona (Family 10h) processor?
+                        {
+                            // check model
+                            DWORD dwBaseModel = (dwBuffer[0] & (0xF << 4)) >> 4 ;
+                            DWORD dwExtModel  = (dwBuffer[0] & (0xF << 16)) >> 16;
+                            DWORD dwModel = dwBaseFamily >= 0xF ? (dwExtModel << 4) | dwBaseModel : dwBaseModel;
+
+                            switch (dwModel)
+                            {
+                                case 0x2:
+                                    // 65nm parts do not benefit from larger Gen0
+                                    bSkipAMDL3 = TRUE;
+                                    break;
+
+                                case 0x4:
+                                default:
+                                    bSkipAMDL3 = FALSE;
+                            }
+                        }
+
+                        if (!bSkipAMDL3)
+                        {
+                            // 45nm Greyhound parts (and future parts based on newer northbridge) benefit
+                            // from increased gen0 size, taking L3 into account
+                            __cpuid(dwBuffer, 0x80000008);
+                            DWORD dwNumberOfCores = (dwBuffer[2] & (0xFF)) + 1;     // NC is in ECX bits 7-0
+
+                            DWORD dwL3CacheSize = (size_t)((dwL3CacheBits >> 18) * 512 * 1024);  // L3 size in EDX bits 31-18 * 512KB
+                            // L3 is shared between cores
+                            dwL3CacheSize = dwL3CacheSize / dwNumberOfCores;
+                            maxTrueSize += dwL3CacheSize;       // due to exclusive caches, add L3 size (possibly zero) to L2
+                                                                // L1 is too small to worry about, so ignore it
+                        }
+                    }
+
+
+                    maxSize = maxTrueSize;
+                }
+            }
+        }
+    }
+
+#else
+    maxSize = maxTrueSize = GetLogicalProcessorCacheSizeFromOS() ; // Returns the size of the highest level processor cache
+#endif
+
+#if defined(_ARM64_)
+    // Bigger gen0 size helps arm64 targets
+    maxSize = maxTrueSize * 3;
+#endif
+
+    //    printf("GetCacheSizePerLogicalCpu returns %d, adjusted size %d\n", maxSize, maxTrueSize);
+    if (trueSize)
+        return maxTrueSize;
+    else
+        return maxSize;
 }
 
 // Sets the calling thread's affinity to only run on the processor specified
@@ -673,8 +891,42 @@ bool GCToOSInterface::GetCurrentProcessAffinityMask(uintptr_t* processMask, uint
 //  The number of processors
 uint32_t GCToOSInterface::GetCurrentProcessCpuCount()
 {
-    // TODO(segilles) this does not take into account process affinity
-    return g_SystemInfo.dwNumberOfProcessors;
+    static int cCPUs = 0;
+
+    if (cCPUs != 0)
+        return cCPUs;
+
+    int count = 0;
+    DWORD_PTR pmask, smask;
+
+    if (!GetProcessAffinityMask(GetCurrentProcess(), &pmask, &smask))
+    {
+        count = 1;
+    }
+    else
+    {
+        pmask &= smask;
+
+        while (pmask)
+        {
+            pmask &= (pmask - 1);
+            count++;
+        }
+
+        // GetProcessAffinityMask can return pmask=0 and smask=0 on systems with more
+        // than 64 processors, which would leave us with a count of 0.  Since the GC
+        // expects there to be at least one processor to run on (and thus at least one
+        // heap), we'll return 64 here if count is 0, since there are likely a ton of
+        // processors available in that case.  The GC also cannot (currently) handle
+        // the case where there are more than 64 processors, so we will return a
+        // maximum of 64 here.
+        if (count == 0 || count > 64)
+            count = 64;
+    }
+
+    cCPUs = count;
+
+    return count;
 }
 
 // Return the size of the user-mode portion of the virtual address space of this process.
