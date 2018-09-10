@@ -55,16 +55,16 @@ The trace listener interface looks like this:
 ``` C++
 struct host_trace_listener
 {
-    void trace_verbose(const pal::char_t *message, const pal::char_t *bindingId);
-    void trace_info(const pal::char_t *message, const pal::char_t *bindingId);
-    void trace_warning(const pal::char_t *message, const pal::char_t *bindingId);
-    void trace_error(const pal::char_t *message, const pal::char_t *bindingId);
+    void trace_verbose(const pal::char_t *message, const pal::char_t *activityId);
+    void trace_info(const pal::char_t *message, const pal::char_t *activityId);
+    void trace_warning(const pal::char_t *message, const pal::char_t *activityId);
+    void trace_error(const pal::char_t *message, const pal::char_t *activityId);
     void flush();
 }
 ```
 
 The `message` parameter is a standard `NUL` terminated string and it's the message to trace with the respective verbosity level.  
-The `bidningId` parameter is a standard `NUL` terminated string. It's used to correlate traces for a given binding event. The content of the string is not yet defined, but the trace listeners should consider it opaque. Trace listeners should include this string in the trace of the message in some form. The parameter may be `NULL` in which case the trace doesn't really belong to any specific binding event.
+The `activityId` parameter is a standard `NUL` terminated string. It's used to correlate traces for a given binding event. The content of the string is not yet defined, but the trace listeners should consider it opaque. Trace listeners should include this string in the trace of the message in some form. The parameter may be `NULL` in which case the trace doesn't really belong to any specific binding event.
 
 Methods on the trace listener interface can be called from any thread in the app, and should be able to handle multiple calls at the same time from different threads.
 
