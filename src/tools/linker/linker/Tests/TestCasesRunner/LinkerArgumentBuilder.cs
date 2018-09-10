@@ -35,6 +35,12 @@ namespace Mono.Linker.Tests.TestCasesRunner {
 			Append (value);
 		}
 
+		public virtual void AddUserLink (string value)
+		{
+			Append ("-u");
+			Append (value);
+		}
+
 		public virtual void LinkFromAssembly (string fileName)
 		{
 			Append ("-a");
@@ -131,6 +137,9 @@ namespace Mono.Linker.Tests.TestCasesRunner {
 		{
 			if (options.CoreAssembliesAction != null)
 				AddCoreLink (options.CoreAssembliesAction);
+
+			if (options.UserAssembliesAction != null)
+				AddUserLink (options.UserAssembliesAction);
 
 			if (options.AssembliesAction != null) {
 				foreach (var entry in options.AssembliesAction)

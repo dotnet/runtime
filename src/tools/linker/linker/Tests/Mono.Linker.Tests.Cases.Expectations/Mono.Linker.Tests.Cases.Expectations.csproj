@@ -78,6 +78,7 @@
     <Compile Include="Metadata\SandboxDependencyAttribute.cs" />
     <Compile Include="Metadata\SetupLinkerKeepDebugMembersAttribute.cs" />
     <Compile Include="Metadata\SetupLinkerLinkPublicAndFamilyAttribute.cs" />
+    <Compile Include="Metadata\SetupLinkerUserActionAttribute.cs" />
     <Compile Include="Metadata\SkipUnresolvedAttribute.cs" />
     <Compile Include="Metadata\StripResourcesAttribute.cs" />
     <Compile Include="Assertions\KeptBaseTypeAttribute.cs" />

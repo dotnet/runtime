@@ -34,6 +34,7 @@ namespace Mono.Linker.Tests.TestCasesRunner {
 				KeepDebugMembers = GetOptionAttributeValue (nameof (SetupLinkerKeepDebugMembersAttribute), string.Empty),
 				LinkSymbols = GetOptionAttributeValue (nameof (SetupLinkerLinkSymbolsAttribute), string.Empty),
 				CoreAssembliesAction = GetOptionAttributeValue<string> (nameof (SetupLinkerCoreActionAttribute), null),
+				UserAssembliesAction = GetOptionAttributeValue<string> (nameof (SetupLinkerUserActionAttribute), null),
 				SkipUnresolved = GetOptionAttributeValue (nameof (SkipUnresolvedAttribute), false),
 				StripResources = GetOptionAttributeValue (nameof (StripResourcesAttribute), true)
 			};
