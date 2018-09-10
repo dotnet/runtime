@@ -7,7 +7,9 @@ using System.Collections.Generic;
 using System.Diagnostics;
 using System.Numerics;
 using System.Security.Cryptography;
+using System.Security.Cryptography.Asn1;
 using System.Security.Cryptography.X509Certificates;
+using System.Security.Cryptography.X509Certificates.Asn1;
 
 namespace Internal.Cryptography.Pal
 {
@@ -123,37 +125,6 @@ namespace Internal.Cryptography.Pal
             FindCore(cert => cert.NotAfter < normalized);
         }
 
-        private string DerStringToManagedString(byte[] anyString)
-        {
-            DerSequenceReader reader = DerSequenceReader.CreateForPayload(anyString);
-
-            var tag = (DerSequenceReader.DerTag)reader.PeekTag();
-            string value = null;
-
-            switch (tag)
-            {
-                case DerSequenceReader.DerTag.BMPString:
-                    value = reader.ReadBMPString();
-                    break;
-                case DerSequenceReader.DerTag.IA5String:
-                    value = reader.ReadIA5String();
-                    break;
-                case DerSequenceReader.DerTag.PrintableString:
-                    value = reader.ReadPrintableString();
-                    break;
-                case DerSequenceReader.DerTag.UTF8String:
-                    value = reader.ReadUtf8String();
-                    break;
-                case DerSequenceReader.DerTag.T61String:
-                    value = reader.ReadT61String();
-                    break;
-
-                // Ignore anything we don't know how to read.
-            }
-
-            return value;
-        }
-
         public void FindByTemplateName(string templateName)
         {
             FindCore(
@@ -164,7 +135,9 @@ namespace Internal.Cryptography.Pal
                     if (ext != null)
                     {
                         // Try a V1 template structure, just a string:
-                        string decodedName = DerStringToManagedString(ext.RawData);
+                        AsnReader reader = new AsnReader(ext.RawData, AsnEncodingRules.DER);
+                        string decodedName = reader.ReadDirectoryOrIA5String();
+                        reader.ThrowIfNotEmpty();
 
                         // If this doesn't match, maybe a V2 template will
                         if (StringComparer.OrdinalIgnoreCase.Equals(templateName, decodedName))
@@ -177,21 +150,10 @@ namespace Internal.Cryptography.Pal
 
                     if (ext != null)
                     {
-                        DerSequenceReader reader = new DerSequenceReader(ext.RawData);
-                        // SEQUENCE (
-                        //     OID oid,
-                        //     INTEGER major,
-                        //     INTEGER minor OPTIONAL
-                        //  )
-
-                        if (reader.PeekTag() == (byte)DerSequenceReader.DerTag.ObjectIdentifier)
+                        CertificateTemplateAsn template = CertificateTemplateAsn.Decode(ext.RawData, AsnEncodingRules.DER);
+                        if (StringComparer.Ordinal.Equals(templateName, template.TemplateID))
                         {
-                            Oid oid = reader.ReadOid();
-
-                            if (StringComparer.Ordinal.Equals(templateName, oid.Value))
-                            {
-                                return true;
-                            }
+                            return true;
                         }
                     }
 

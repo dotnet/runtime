@@ -1,0 +1,21 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<asn:Sequence
+  xmlns:asn="http://schemas.dot.net/asnxml/201808/"
+  name="DistributionPointAsn"
+  namespace="System.Security.Cryptography.X509Certificates.Asn1">
+
+  <!--
+    https://tools.ietf.org/html/rfc5280#section-4.2.1.13
+
+    DistributionPoint ::= SEQUENCE {
+        distributionPoint       [0]     DistributionPointName OPTIONAL,
+        reasons                 [1]     ReasonFlags OPTIONAL,
+        cRLIssuer               [2]     GeneralNames OPTIONAL
+    }
+  -->
+  <asn:AsnType name="DistributionPoint" typeName="System.Security.Cryptography.X509Certificates.Asn1.DistributionPointNameAsn" explicitTag="0" optional="true" />
+  <asn:NamedBitList name="Reasons" backingType="System.Security.Cryptography.X509Certificates.Asn1.ReasonFlagsAsn" implicitTag="1" optional="true" />
+  <asn:SequenceOf name="CRLIssuer" implicitTag="2" optional="true">
+    <asn:AsnType typeName="System.Security.Cryptography.Asn1.GeneralNameAsn" />
+  </asn:SequenceOf>
+</asn:Sequence>
