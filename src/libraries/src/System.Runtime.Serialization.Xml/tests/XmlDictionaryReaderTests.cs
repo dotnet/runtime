@@ -103,6 +103,18 @@ namespace System.Runtime.Serialization.Xml.Tests
         }
 
         [Fact]
+        public static void ReadElementContentAsBinHexTest()
+        {
+            string xmlFileContent = @"<data>540068006500200071007500690063006B002000620072006F0077006E00200066006F00780020006A0075006D007000730020006F00760065007200200074006800650020006C0061007A007900200064006F0067002E00</data>";
+            Stream sm = GenerateStreamFromString(xmlFileContent);
+            XmlDictionaryReader reader = XmlDictionaryReader.CreateTextReader(sm, XmlDictionaryReaderQuotas.Max);
+            reader.ReadToFollowing("data");
+            byte[] bytes = reader.ReadElementContentAsBinHex();
+            byte[] expected = Encoding.Unicode.GetBytes("The quick brown fox jumps over the lazy dog.");
+            Assert.Equal(expected, bytes);
+        }
+
+        [Fact]
         public static void GetNonAtomizedNamesTest()
         {
             string localNameTest = "localNameTest";
