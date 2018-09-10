@@ -5,6 +5,7 @@ namespace Mono.Linker.Tests.TestCasesRunner {
 	public class TestCaseLinkerOptions
 	{
 		public string CoreAssembliesAction;
+		public string UserAssembliesAction;
 		public List<KeyValuePair<string, string>> AssembliesAction = new List<KeyValuePair<string, string>> ();
 
 		public string Il8n;
