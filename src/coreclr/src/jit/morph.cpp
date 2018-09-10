@@ -4351,18 +4351,7 @@ GenTreeCall* Compiler::fgMorphArgs(GenTreeCall* call)
 
 #if defined(UNIX_AMD64_ABI)
         opts.compNeedToAlignFrame = true; // this is currently required for the UNIX ABI to work correctly
-
-        // ToDo: Remove this re-calculation preallocatedArgCount and use the value assigned above.
-
-        // First slots go in registers only, no stack needed.
-        // TODO-Amd64-Unix-CQ This calculation is only accurate for integer arguments,
-        // and ignores floating point args (it is overly conservative in that case).
-        preallocatedArgCount = nonRegPassedStructSlots;
-        if (argSlots > MAX_REG_ARG)
-        {
-            preallocatedArgCount += argSlots - MAX_REG_ARG;
-        }
-#endif // UNIX_AMD64_ABI
+#endif                                    // UNIX_AMD64_ABI
 
         const unsigned outgoingArgSpaceSize = preallocatedArgCount * REGSIZE_BYTES;
         call->fgArgInfo->SetOutArgSize(max(outgoingArgSpaceSize, MIN_ARG_AREA_FOR_CALL));
