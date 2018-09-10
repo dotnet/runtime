@@ -59,6 +59,7 @@ namespace System.Xml
         private static XmlEndOfFileNode s_endOfFileNode = new XmlEndOfFileNode(XmlBufferReader.Empty);
         private static XmlClosedNode s_closedNode = new XmlClosedNode(XmlBufferReader.Empty);
         private static Base64Encoding s_base64Encoding;
+        private static BinHexEncoding s_binHexEncoding;
         private const string xmlns = "xmlns";
         private const string xml = "xml";
         private const string xmlnsNamespace = "http://www.w3.org/2000/xmlns/";
@@ -84,6 +85,16 @@ namespace System.Xml
                 if (s_base64Encoding == null)
                     s_base64Encoding = new Base64Encoding();
                 return s_base64Encoding;
+            }
+        }
+
+        private static BinHexEncoding BinHexEncoding
+        {
+            get
+            {
+                if (s_binHexEncoding == null)
+                    s_binHexEncoding = new BinHexEncoding();
+                return s_binHexEncoding;
             }
         }
 
@@ -1366,6 +1377,52 @@ namespace System.Xml
             return ReadBytes(Base64Encoding, 3, 4, buffer, offset, Math.Min(count, 512), true);
         }
 
+        public override byte[] ReadContentAsBinHex()
+        {
+            return ReadContentAsBinHex(_quotas.MaxArrayLength);
+        }
+
+        public override int ReadContentAsBinHex(byte[] buffer, int offset, int count)
+        {
+            if (buffer == null)
+                throw System.Runtime.Serialization.DiagnosticUtility.ExceptionUtility.ThrowHelperError(new ArgumentNullException(nameof(buffer)));
+            if (offset < 0)
+                throw System.Runtime.Serialization.DiagnosticUtility.ExceptionUtility.ThrowHelperError(new ArgumentOutOfRangeException(nameof(offset), SR.Format(SR.ValueMustBeNonNegative)));
+            if (offset > buffer.Length)
+                throw System.Runtime.Serialization.DiagnosticUtility.ExceptionUtility.ThrowHelperError(new ArgumentOutOfRangeException(nameof(offset), SR.Format(SR.OffsetExceedsBufferSize, buffer.Length)));
+            if (count < 0)
+                throw System.Runtime.Serialization.DiagnosticUtility.ExceptionUtility.ThrowHelperError(new ArgumentOutOfRangeException(nameof(count), SR.Format(SR.ValueMustBeNonNegative)));
+            if (count > buffer.Length - offset)
+                throw System.Runtime.Serialization.DiagnosticUtility.ExceptionUtility.ThrowHelperError(new ArgumentOutOfRangeException(nameof(count), SR.Format(SR.SizeExceedsRemainingBufferSpace, buffer.Length - offset)));
+            if (count == 0)
+                return 0;
+            return ReadBytes(BinHexEncoding, 1, 2, buffer, offset, Math.Min(count, 512), true);
+        }
+
+        public override int ReadElementContentAsBinHex(byte[] buffer, int offset, int count)
+        {
+            if (!_readingElement)
+            {
+                if (IsEmptyElement)
+                {
+                    Read();
+                    return 0;
+                }
+
+                ReadStartElement();
+                _readingElement = true;
+            }
+
+            int i = ReadContentAsBinHex(buffer, offset, count);
+
+            if (i == 0)
+            {
+                ReadEndElement();
+                _readingElement = false;
+            }
+
+            return i;
+        }
 
         private int ReadBytes(Encoding encoding, int byteBlock, int charBlock, byte[] buffer, int offset, int byteCount, bool readContent)
         {

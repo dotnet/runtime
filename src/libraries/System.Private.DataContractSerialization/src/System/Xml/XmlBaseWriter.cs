@@ -32,6 +32,7 @@ namespace System.Xml
         private bool _inList;
         private const string xmlnsNamespace = "http://www.w3.org/2000/xmlns/";
         private const string xmlNamespace = "http://www.w3.org/XML/1998/namespace";
+        private static BinHexEncoding _binhexEncoding;
         private static string[] s_prefixes = { "a", "b", "c", "d", "e", "f", "g", "h", "i", "j", "k", "l", "m", "n", "o", "p", "q", "r", "s", "t", "u", "v", "w", "x", "y", "z" };
 
         protected XmlBaseWriter()
@@ -113,6 +114,15 @@ namespace System.Xml
             throw System.Runtime.Serialization.DiagnosticUtility.ExceptionUtility.ThrowHelperError(new InvalidOperationException(SR.Format(SR.XmlWriterClosed)));
         }
 
+        private static BinHexEncoding BinHexEncoding
+        {
+            get
+            {
+                if (_binhexEncoding == null)
+                    _binhexEncoding = new BinHexEncoding();
+                return _binhexEncoding;
+            }
+        }
 
         public override string XmlLang
         {
@@ -1457,6 +1467,14 @@ namespace System.Xml
                 _writer.WriteTimeSpanText(value);
                 EndContent();
             }
+        }
+
+        public override void WriteBinHex(byte[] buffer, int offset, int count)
+        {
+            if (IsClosed)
+                ThrowClosed();
+
+            WriteRaw(BinHexEncoding.GetString(buffer, offset, count));
         }
 
         public override void WriteBase64(byte[] buffer, int offset, int count)
