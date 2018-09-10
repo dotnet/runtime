@@ -1,4 +1,4 @@
-﻿﻿using System.Linq;
+﻿using System.Linq;
 using System.Collections.Generic;
 using NUnit.Framework;
 using System.Runtime.CompilerServices;
@@ -134,7 +134,12 @@ namespace Mono.Linker.Tests.TestCases
 		{
 			var thisDirectory = Path.GetDirectoryName(thisFile);
 			rootSourceDirectory = Path.GetFullPath(Path.Combine(thisDirectory, "..", "Mono.Linker.Tests.Cases"));
-			testCaseAssemblyPath = Path.GetFullPath(Path.Combine(rootSourceDirectory, "bin", "Debug", "Mono.Linker.Tests.Cases.dll"));
+#if DEBUG
+			var configDirectoryName = "Debug";
+#else
+			var configDirectoryName = "Release";
+#endif
+			testCaseAssemblyPath = Path.GetFullPath(Path.Combine(rootSourceDirectory, "bin", configDirectoryName, "Mono.Linker.Tests.Cases.dll"));
 		}
 	}
 }
