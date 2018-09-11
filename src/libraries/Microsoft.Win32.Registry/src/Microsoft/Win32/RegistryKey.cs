@@ -9,7 +9,6 @@ using System.Diagnostics.CodeAnalysis;
 using System.IO;
 using System.Security;
 using System.Security.AccessControl;
-using System.Security.Permissions;
 using System.Text;
 
 namespace Microsoft.Win32
@@ -140,35 +139,30 @@ namespace Microsoft.Win32
 
         public RegistryKey CreateSubKey(string subkey, bool writable)
         {
-            return CreateSubKeyInternal(subkey, writable ? RegistryKeyPermissionCheck.ReadWriteSubTree : RegistryKeyPermissionCheck.ReadSubTree, null, RegistryOptions.None);
+            return CreateSubKey(subkey, writable ? RegistryKeyPermissionCheck.ReadWriteSubTree : RegistryKeyPermissionCheck.ReadSubTree, RegistryOptions.None);
         }
 
         public RegistryKey CreateSubKey(string subkey, bool writable, RegistryOptions options)
         {
-            return CreateSubKeyInternal(subkey, writable ? RegistryKeyPermissionCheck.ReadWriteSubTree : RegistryKeyPermissionCheck.ReadSubTree, null, options);
+            return CreateSubKey(subkey, writable ? RegistryKeyPermissionCheck.ReadWriteSubTree : RegistryKeyPermissionCheck.ReadSubTree, options);
         }
 
         public RegistryKey CreateSubKey(string subkey, RegistryKeyPermissionCheck permissionCheck)
         {
-            return CreateSubKeyInternal(subkey, permissionCheck, null, RegistryOptions.None);
-        }
-
-        public RegistryKey CreateSubKey(string subkey, RegistryKeyPermissionCheck permissionCheck, RegistryOptions registryOptions)
-        {
-            return CreateSubKeyInternal(subkey, permissionCheck, null, registryOptions);
+            return CreateSubKey(subkey, permissionCheck, RegistryOptions.None);
         }
 
         public RegistryKey CreateSubKey(string subkey, RegistryKeyPermissionCheck permissionCheck, RegistryOptions registryOptions, RegistrySecurity registrySecurity)
         {
-            return CreateSubKeyInternal(subkey, permissionCheck, registrySecurity, registryOptions);
+            return CreateSubKey(subkey, permissionCheck, registryOptions);
         }
 
         public RegistryKey CreateSubKey(string subkey, RegistryKeyPermissionCheck permissionCheck, RegistrySecurity registrySecurity)
         {
-            return CreateSubKeyInternal(subkey, permissionCheck, registrySecurity, RegistryOptions.None);
+            return CreateSubKey(subkey, permissionCheck, RegistryOptions.None);
         }
 
-        private RegistryKey CreateSubKeyInternal(string subkey, RegistryKeyPermissionCheck permissionCheck, object registrySecurityObj, RegistryOptions registryOptions)
+        public RegistryKey CreateSubKey(string subkey, RegistryKeyPermissionCheck permissionCheck, RegistryOptions registryOptions)
         {
             ValidateKeyOptions(registryOptions);
             ValidateKeyName(subkey);
@@ -188,7 +182,7 @@ namespace Microsoft.Win32
                 }
             }
 
-            return CreateSubKeyInternalCore(subkey, permissionCheck, registrySecurityObj, registryOptions);
+            return CreateSubKeyInternalCore(subkey, permissionCheck, registryOptions);
         }
 
         /// <summary>
@@ -216,9 +210,9 @@ namespace Microsoft.Win32
             {
                 using (key)
                 {
-                    if (key.InternalSubKeyCount() > 0)
+                    if (key.SubKeyCount > 0)
                     {
-                        ThrowHelper.ThrowInvalidOperationException(SR.InvalidOperation_RegRemoveSubKey);
+                        throw new InvalidOperationException(SR.InvalidOperation_RegRemoveSubKey);
                     }
                 }
 
@@ -228,7 +222,7 @@ namespace Microsoft.Win32
             {
                 if (throwOnMissingSubKey)
                 {
-                    ThrowHelper.ThrowArgumentException(SR.Arg_RegSubKeyAbsent);
+                    throw new ArgumentException(SR.Arg_RegSubKeyAbsent);
                 }
             }
         }
@@ -248,7 +242,7 @@ namespace Microsoft.Win32
             // of that hive's contents.  Don't allow "".
             if (subkey.Length == 0 && IsSystemKey())
             {
-                ThrowHelper.ThrowArgumentException(SR.Arg_RegKeyDelHive);
+                throw new ArgumentException(SR.Arg_RegKeyDelHive);
             }
 
             EnsureWriteable();
@@ -260,9 +254,9 @@ namespace Microsoft.Win32
             {
                 using (key)
                 {
-                    if (key.InternalSubKeyCount() > 0)
+                    if (key.SubKeyCount > 0)
                     {
-                        string[] keys = key.InternalGetSubKeyNames();
+                        string[] keys = key.GetSubKeyNames();
 
                         for (int i = 0; i < keys.Length; i++)
                         {
@@ -275,7 +269,7 @@ namespace Microsoft.Win32
             }
             else if (throwOnMissingSubKey)
             {
-                ThrowHelper.ThrowArgumentException(SR.Arg_RegSubKeyAbsent);
+                throw new ArgumentException(SR.Arg_RegSubKeyAbsent);
             }
         }
 
@@ -290,9 +284,9 @@ namespace Microsoft.Win32
             {
                 using (key)
                 {
-                    if (key.InternalSubKeyCount() > 0)
+                    if (key.SubKeyCount > 0)
                     {
-                        string[] keys = key.InternalGetSubKeyNames();
+                        string[] keys = key.GetSubKeyNames();
                         for (int i = 0; i < keys.Length; i++)
                         {
                             key.DeleteSubKeyTreeInternal(keys[i]);
@@ -304,7 +298,7 @@ namespace Microsoft.Win32
             }
             else
             {
-                ThrowHelper.ThrowArgumentException(SR.Arg_RegSubKeyAbsent);
+                throw new ArgumentException(SR.Arg_RegSubKeyAbsent);
             }
         }
 
@@ -368,27 +362,22 @@ namespace Microsoft.Win32
             EnsureNotDisposed();
             name = FixupName(name);
 
-            return InternalOpenSubKeyCore(name, writable, true);
+            return InternalOpenSubKeyCore(name, writable);
         }
 
         public RegistryKey OpenSubKey(string name, RegistryKeyPermissionCheck permissionCheck)
         {
             ValidateKeyMode(permissionCheck);
 
-            return InternalOpenSubKey(name, permissionCheck, GetRegistryKeyAccess(permissionCheck));
+            return OpenSubKey(name, permissionCheck, (RegistryRights)GetRegistryKeyAccess(permissionCheck));
         }
 
         public RegistryKey OpenSubKey(string name, RegistryRights rights)
         {
-            return InternalOpenSubKey(name, this._checkMode, (int)rights);
+            return OpenSubKey(name, this._checkMode, rights);
         }
 
         public RegistryKey OpenSubKey(string name, RegistryKeyPermissionCheck permissionCheck, RegistryRights rights)
-        {
-            return InternalOpenSubKey(name, permissionCheck, (int)rights);
-        }
-
-        private RegistryKey InternalOpenSubKey(string name, RegistryKeyPermissionCheck permissionCheck, int rights)
         {
             ValidateKeyName(name);
             ValidateKeyMode(permissionCheck);
@@ -398,7 +387,7 @@ namespace Microsoft.Win32
             EnsureNotDisposed();
             name = FixupName(name); // Fixup multiple slashes to a single slash
 
-            return InternalOpenSubKeyCore(name, permissionCheck, rights, true);
+            return InternalOpenSubKeyCore(name, permissionCheck, (int)rights);
         }
 
         internal RegistryKey InternalOpenSubKeyWithoutSecurityChecks(string name, bool writable)
@@ -435,7 +424,11 @@ namespace Microsoft.Win32
         /// <returns>A count of subkeys.</returns>
         public int SubKeyCount
         {
-            get { return InternalSubKeyCount(); }
+            get
+            {
+                EnsureNotDisposed();
+                return InternalSubKeyCountCore();
+            }
         }
 
         public RegistryView View
@@ -469,23 +462,12 @@ namespace Microsoft.Win32
             return new RegistryKey(handle, writable: true, view: view);
         }
 
-        private int InternalSubKeyCount()
-        {
-            EnsureNotDisposed();
-            return InternalSubKeyCountCore();
-        }
-
         /// <summary>Retrieves an array of strings containing all the subkey names.</summary>
         /// <returns>All subkey names.</returns>
         public string[] GetSubKeyNames()
         {
-            return InternalGetSubKeyNames();
-        }
-
-        private string[] InternalGetSubKeyNames()
-        {
             EnsureNotDisposed();
-            int subkeys = InternalSubKeyCount();
+            int subkeys = SubKeyCount;
             return subkeys > 0 ?
                 InternalGetSubKeyNamesCore(subkeys) :
                 Array.Empty<string>();
@@ -497,14 +479,9 @@ namespace Microsoft.Win32
         {
             get
             {
-                return InternalValueCount();
+                EnsureNotDisposed();
+                return InternalValueCountCore();
             }
-        }
-
-        private int InternalValueCount()
-        {
-            EnsureNotDisposed();
-            return InternalValueCountCore();
         }
 
         /// <summary>Retrieves an array of strings containing all the value names.</summary>
@@ -513,7 +490,7 @@ namespace Microsoft.Win32
         {
             EnsureNotDisposed();
 
-            int values = InternalValueCount();
+            int values = ValueCount;
             return values > 0 ?
                 GetValueNamesCore(values) :
                 Array.Empty<string>();
@@ -528,7 +505,7 @@ namespace Microsoft.Win32
         /// <returns>The data associated with the value.</returns>
         public object GetValue(string name)
         {
-            return InternalGetValue(name, null, false, true);
+            return InternalGetValue(name, null, false);
         }
 
         /// <summary>Retrieves the specified value. <i>defaultValue</i> is returned if the value doesn't exist.</summary>
@@ -545,7 +522,7 @@ namespace Microsoft.Win32
         /// <returns>The data associated with the value.</returns>
         public object GetValue(string name, object defaultValue)
         {
-            return InternalGetValue(name, defaultValue, false, true);
+            return InternalGetValue(name, defaultValue, false);
         }
 
         public object GetValue(string name, object defaultValue, RegistryValueOptions options)
@@ -555,17 +532,12 @@ namespace Microsoft.Win32
                 throw new ArgumentException(SR.Format(SR.Arg_EnumIllegalVal, (int)options), nameof(options));
             }
             bool doNotExpand = (options == RegistryValueOptions.DoNotExpandEnvironmentNames);
-            return InternalGetValue(name, defaultValue, doNotExpand, checkSecurity: true);
+            return InternalGetValue(name, defaultValue, doNotExpand);
         }
 
-        private object InternalGetValue(string name, object defaultValue, bool doNotExpand, bool checkSecurity)
+        private object InternalGetValue(string name, object defaultValue, bool doNotExpand)
         {
-            if (checkSecurity)
-            {
-                EnsureNotDisposed();
-            }
-
-            // Name can be null!  It's the most common use of RegQueryValueEx
+            EnsureNotDisposed();
             return InternalGetValueCore(name, defaultValue, doNotExpand);
         }
 
@@ -596,7 +568,7 @@ namespace Microsoft.Win32
         {
             if (value == null)
             {
-                ThrowHelper.ThrowArgumentNullException(nameof(value));
+                throw new ArgumentNullException(nameof(value));
             }
 
             if (name != null && name.Length > MaxValueLength)
@@ -725,7 +697,7 @@ namespace Microsoft.Win32
         {
             if (_hkey == null)
             {
-                ThrowHelper.ThrowObjectDisposedException(_keyName, SR.ObjectDisposed_RegKeyClosed);
+                throw new ObjectDisposedException(_keyName, SR.ObjectDisposed_RegKeyClosed);
             }
         }
 
@@ -734,7 +706,7 @@ namespace Microsoft.Win32
             EnsureNotDisposed();
             if (!IsWritable())
             {
-                ThrowHelper.ThrowUnauthorizedAccessException(SR.UnauthorizedAccess_RegistryNoWrite);
+                throw new UnauthorizedAccessException(SR.UnauthorizedAccess_RegistryNoWrite);
             }
         }
 
@@ -759,7 +731,7 @@ namespace Microsoft.Win32
         {
             if (name == null)
             {
-                ThrowHelper.ThrowArgumentNullException(nameof(name));
+                throw new ArgumentNullException(nameof(name));
             }
 
             int nextSlash = name.IndexOf("\\", StringComparison.OrdinalIgnoreCase);
@@ -768,7 +740,7 @@ namespace Microsoft.Win32
             {
                 if ((nextSlash - current) > MaxKeyLength)
                 {
-                    ThrowHelper.ThrowArgumentException(SR.Arg_RegKeyStrLenBug, nameof(name));
+                    throw new ArgumentException(SR.Arg_RegKeyStrLenBug, nameof(name));
                 }
                 current = nextSlash + 1;
                 nextSlash = name.IndexOf("\\", current, StringComparison.OrdinalIgnoreCase);
@@ -776,7 +748,7 @@ namespace Microsoft.Win32
 
             if ((name.Length - current) > MaxKeyLength)
             {
-                ThrowHelper.ThrowArgumentException(SR.Arg_RegKeyStrLenBug, nameof(name));
+                throw new ArgumentException(SR.Arg_RegKeyStrLenBug, nameof(name));
             }
         }
 
@@ -784,7 +756,7 @@ namespace Microsoft.Win32
         {
             if (mode < RegistryKeyPermissionCheck.Default || mode > RegistryKeyPermissionCheck.ReadWriteSubTree)
             {
-                ThrowHelper.ThrowArgumentException(SR.Argument_InvalidRegistryKeyPermissionCheck, nameof(mode));
+                throw new ArgumentException(SR.Argument_InvalidRegistryKeyPermissionCheck, nameof(mode));
             }
         }
 
@@ -792,7 +764,7 @@ namespace Microsoft.Win32
         {
             if (options < RegistryOptions.None || options > RegistryOptions.Volatile)
             {
-                ThrowHelper.ThrowArgumentException(SR.Argument_InvalidRegistryOptionsCheck, nameof(options));
+                throw new ArgumentException(SR.Argument_InvalidRegistryOptionsCheck, nameof(options));
             }
         }
 
@@ -800,17 +772,17 @@ namespace Microsoft.Win32
         {
             if (view != RegistryView.Default && view != RegistryView.Registry32 && view != RegistryView.Registry64)
             {
-                ThrowHelper.ThrowArgumentException(SR.Argument_InvalidRegistryViewCheck, nameof(view));
+                throw new ArgumentException(SR.Argument_InvalidRegistryViewCheck, nameof(view));
             }
         }
 
-        private static void ValidateKeyRights(int rights)
+        private static void ValidateKeyRights(RegistryRights rights)
         {
-            if (0 != (rights & ~((int)RegistryRights.FullControl)))
+            if (0 != (rights & ~RegistryRights.FullControl))
             {
                 // We need to throw SecurityException here for compatiblity reason,
                 // although UnauthorizedAccessException will make more sense.
-                ThrowHelper.ThrowSecurityException(SR.Security_RegistryPermission);
+                throw new SecurityException(SR.Security_RegistryPermission);
             }
         }
 
