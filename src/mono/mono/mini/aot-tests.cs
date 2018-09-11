@@ -410,7 +410,6 @@ class Tests
 	}
 
 	[Category ("DYNCALL")]
-	[Category ("!WASM")] //Interp fails
 	public static int test_0_arm64_dyncall_vtypebyrefonstack () {
 		var s = new LargeStruct () { a = 1, b = 2, c = 3, d = 4 };
 
