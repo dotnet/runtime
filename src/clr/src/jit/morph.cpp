@@ -8316,7 +8316,12 @@ GenTree* Compiler::fgMorphCall(GenTreeCall* call)
                                                                               : CORINFO_TAILCALL_NORMAL);
             if (pfnCopyArgs == nullptr)
             {
+#ifdef ALT_JIT
+                // If this is an altjit, we may not get a thunk from the VM, so use a fake one.
+                pfnCopyArgs = (void*)0xdddddddd;
+#else
                 szFailReason = "TailCallCopyArgsThunk not available.";
+#endif
             }
         }
 #endif // !_TARGET_X86_
