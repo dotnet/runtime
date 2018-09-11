@@ -33,6 +33,7 @@ add_subdirectory(DllImportAttribute/Simple)
 
 if(WIN32)
     add_subdirectory(COM/NativeServer)
+    add_subdirectory(COM/NativeClients/Primitives)
     add_subdirectory(IJW/FakeMscoree)
 
     # IJW isn't supported on ARM64

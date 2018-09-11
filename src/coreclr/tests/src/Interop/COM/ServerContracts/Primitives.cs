@@ -51,25 +51,25 @@ namespace Server.Contract
     [InterfaceType(ComInterfaceType.InterfaceIsIUnknown)]
     public interface IArrayTesting
     {
-        double Mean_Byte_LP_PreLen(int len, [MarshalAs(UnmanagedType.LPArray)] byte[] d);
-        double Mean_Short_LP_PreLen(int len, [MarshalAs(UnmanagedType.LPArray)] short[] d);
-        double Mean_UShort_LP_PreLen(int len, [MarshalAs(UnmanagedType.LPArray)] ushort[] d);
-        double Mean_Int_LP_PreLen(int len, [MarshalAs(UnmanagedType.LPArray)] int[] d);
-        double Mean_UInt_LP_PreLen(int len, [MarshalAs(UnmanagedType.LPArray)] uint[] d);
-        double Mean_Long_LP_PreLen(int len, [MarshalAs(UnmanagedType.LPArray)] long[] d);
-        double Mean_ULong_LP_PreLen(int len, [MarshalAs(UnmanagedType.LPArray)] ulong[] d);
-        double Mean_Float_LP_PreLen(int len, [MarshalAs(UnmanagedType.LPArray)] float[] d);
-        double Mean_Double_LP_PreLen(int len, [MarshalAs(UnmanagedType.LPArray)] double[] d);
+        double Mean_Byte_LP_PreLen(int len, [MarshalAs(UnmanagedType.LPArray, SizeParamIndex=0)] byte[] d);
+        double Mean_Short_LP_PreLen(int len, [MarshalAs(UnmanagedType.LPArray, SizeParamIndex=0)] short[] d);
+        double Mean_UShort_LP_PreLen(int len, [MarshalAs(UnmanagedType.LPArray, SizeParamIndex=0)] ushort[] d);
+        double Mean_Int_LP_PreLen(int len, [MarshalAs(UnmanagedType.LPArray, SizeParamIndex=0)] int[] d);
+        double Mean_UInt_LP_PreLen(int len, [MarshalAs(UnmanagedType.LPArray, SizeParamIndex=0)] uint[] d);
+        double Mean_Long_LP_PreLen(int len, [MarshalAs(UnmanagedType.LPArray, SizeParamIndex=0)] long[] d);
+        double Mean_ULong_LP_PreLen(int len, [MarshalAs(UnmanagedType.LPArray, SizeParamIndex=0)] ulong[] d);
+        double Mean_Float_LP_PreLen(int len, [MarshalAs(UnmanagedType.LPArray, SizeParamIndex=0)] float[] d);
+        double Mean_Double_LP_PreLen(int len, [MarshalAs(UnmanagedType.LPArray, SizeParamIndex=0)] double[] d);
 
-        double Mean_Byte_LP_PostLen([MarshalAs(UnmanagedType.LPArray)] byte[] d, int len);
-        double Mean_Short_LP_PostLen([MarshalAs(UnmanagedType.LPArray)] short[] d, int len);
-        double Mean_UShort_LP_PostLen([MarshalAs(UnmanagedType.LPArray)] ushort[] d, int len);
-        double Mean_Int_LP_PostLen([MarshalAs(UnmanagedType.LPArray)] int[] d, int len);
-        double Mean_UInt_LP_PostLen([MarshalAs(UnmanagedType.LPArray)] uint[] d, int len);
-        double Mean_Long_LP_PostLen([MarshalAs(UnmanagedType.LPArray)] long[] d, int len);
-        double Mean_ULong_LP_PostLen([MarshalAs(UnmanagedType.LPArray)] ulong[] d, int len);
-        double Mean_Float_LP_PostLen([MarshalAs(UnmanagedType.LPArray)] float[] d, int len);
-        double Mean_Double_LP_PostLen([MarshalAs(UnmanagedType.LPArray)] double[] d, int len);
+        double Mean_Byte_LP_PostLen([MarshalAs(UnmanagedType.LPArray, SizeParamIndex=1)] byte[] d, int len);
+        double Mean_Short_LP_PostLen([MarshalAs(UnmanagedType.LPArray, SizeParamIndex=1)] short[] d, int len);
+        double Mean_UShort_LP_PostLen([MarshalAs(UnmanagedType.LPArray, SizeParamIndex=1)] ushort[] d, int len);
+        double Mean_Int_LP_PostLen([MarshalAs(UnmanagedType.LPArray, SizeParamIndex=1)] int[] d, int len);
+        double Mean_UInt_LP_PostLen([MarshalAs(UnmanagedType.LPArray, SizeParamIndex=1)] uint[] d, int len);
+        double Mean_Long_LP_PostLen([MarshalAs(UnmanagedType.LPArray, SizeParamIndex=1)] long[] d, int len);
+        double Mean_ULong_LP_PostLen([MarshalAs(UnmanagedType.LPArray, SizeParamIndex=1)] ulong[] d, int len);
+        double Mean_Float_LP_PostLen([MarshalAs(UnmanagedType.LPArray, SizeParamIndex=1)] float[] d, int len);
+        double Mean_Double_LP_PostLen([MarshalAs(UnmanagedType.LPArray, SizeParamIndex=1)] double[] d, int len);
 
         double Mean_Byte_SafeArray_OutLen([MarshalAs(UnmanagedType.SafeArray)] byte[] d, out int len);
         double Mean_Short_SafeArray_OutLen([MarshalAs(UnmanagedType.SafeArray)] short[] d, out int len);

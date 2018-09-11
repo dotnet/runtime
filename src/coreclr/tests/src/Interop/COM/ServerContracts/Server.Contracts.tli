@@ -27,15 +27,15 @@ inline unsigned short INumericTesting::Add_UShort ( unsigned short a, unsigned s
     return _result;
 }
 
-inline long INumericTesting::Add_Int ( long a, long b ) {
-    long _result = 0;
+inline int INumericTesting::Add_Int ( int a, int b ) {
+    int _result = 0;
     HRESULT _hr = raw_Add_Int(a, b, &_result);
     if (FAILED(_hr)) _com_issue_errorex(_hr, this, __uuidof(this));
     return _result;
 }
 
-inline unsigned long INumericTesting::Add_UInt ( unsigned long a, unsigned long b ) {
-    unsigned long _result = 0;
+inline unsigned int INumericTesting::Add_UInt ( unsigned int a, unsigned int b ) {
+    unsigned int _result = 0;
     HRESULT _hr = raw_Add_UInt(a, b, &_result);
     if (FAILED(_hr)) _com_issue_errorex(_hr, this, __uuidof(this));
     return _result;
@@ -87,13 +87,13 @@ inline HRESULT INumericTesting::Add_UShort_Ref ( unsigned short a, unsigned shor
     return _hr;
 }
 
-inline HRESULT INumericTesting::Add_Int_Ref ( long a, long b, long * c ) {
+inline HRESULT INumericTesting::Add_Int_Ref ( int a, int b, int * c ) {
     HRESULT _hr = raw_Add_Int_Ref(a, b, c);
     if (FAILED(_hr)) _com_issue_errorex(_hr, this, __uuidof(this));
     return _hr;
 }
 
-inline HRESULT INumericTesting::Add_UInt_Ref ( unsigned long a, unsigned long b, unsigned long * c ) {
+inline HRESULT INumericTesting::Add_UInt_Ref ( unsigned int a, unsigned int b, unsigned int * c ) {
     HRESULT _hr = raw_Add_UInt_Ref(a, b, c);
     if (FAILED(_hr)) _com_issue_errorex(_hr, this, __uuidof(this));
     return _hr;
@@ -141,13 +141,13 @@ inline HRESULT INumericTesting::Add_UShort_Out ( unsigned short a, unsigned shor
     return _hr;
 }
 
-inline HRESULT INumericTesting::Add_Int_Out ( long a, long b, long * c ) {
+inline HRESULT INumericTesting::Add_Int_Out ( int a, int b, int * c ) {
     HRESULT _hr = raw_Add_Int_Out(a, b, c);
     if (FAILED(_hr)) _com_issue_errorex(_hr, this, __uuidof(this));
     return _hr;
 }
 
-inline HRESULT INumericTesting::Add_UInt_Out ( unsigned long a, unsigned long b, unsigned long * c ) {
+inline HRESULT INumericTesting::Add_UInt_Out ( unsigned int a, unsigned int b, unsigned int * c ) {
     HRESULT _hr = raw_Add_UInt_Out(a, b, c);
     if (FAILED(_hr)) _com_issue_errorex(_hr, this, __uuidof(this));
     return _hr;
@@ -181,189 +181,189 @@ inline HRESULT INumericTesting::Add_Double_Out ( double a, double b, double * c 
 // interface IArrayTesting wrapper method implementations
 //
 
-inline double IArrayTesting::Mean_Byte_LP_PreLen ( long len, unsigned char * d ) {
+inline double IArrayTesting::Mean_Byte_LP_PreLen ( int len, unsigned char * d ) {
     double _result = 0;
     HRESULT _hr = raw_Mean_Byte_LP_PreLen(len, d, &_result);
     if (FAILED(_hr)) _com_issue_errorex(_hr, this, __uuidof(this));
     return _result;
 }
 
-inline double IArrayTesting::Mean_Short_LP_PreLen ( long len, short * d ) {
+inline double IArrayTesting::Mean_Short_LP_PreLen ( int len, short * d ) {
     double _result = 0;
     HRESULT _hr = raw_Mean_Short_LP_PreLen(len, d, &_result);
     if (FAILED(_hr)) _com_issue_errorex(_hr, this, __uuidof(this));
     return _result;
 }
 
-inline double IArrayTesting::Mean_UShort_LP_PreLen ( long len, unsigned short * d ) {
+inline double IArrayTesting::Mean_UShort_LP_PreLen ( int len, unsigned short * d ) {
     double _result = 0;
     HRESULT _hr = raw_Mean_UShort_LP_PreLen(len, d, &_result);
     if (FAILED(_hr)) _com_issue_errorex(_hr, this, __uuidof(this));
     return _result;
 }
 
-inline double IArrayTesting::Mean_Int_LP_PreLen ( long len, long * d ) {
+inline double IArrayTesting::Mean_Int_LP_PreLen ( int len, int * d ) {
     double _result = 0;
     HRESULT _hr = raw_Mean_Int_LP_PreLen(len, d, &_result);
     if (FAILED(_hr)) _com_issue_errorex(_hr, this, __uuidof(this));
     return _result;
 }
 
-inline double IArrayTesting::Mean_UInt_LP_PreLen ( long len, unsigned long * d ) {
+inline double IArrayTesting::Mean_UInt_LP_PreLen ( int len, unsigned int * d ) {
     double _result = 0;
     HRESULT _hr = raw_Mean_UInt_LP_PreLen(len, d, &_result);
     if (FAILED(_hr)) _com_issue_errorex(_hr, this, __uuidof(this));
     return _result;
 }
 
-inline double IArrayTesting::Mean_Long_LP_PreLen ( long len, __int64 * d ) {
+inline double IArrayTesting::Mean_Long_LP_PreLen ( int len, __int64 * d ) {
     double _result = 0;
     HRESULT _hr = raw_Mean_Long_LP_PreLen(len, d, &_result);
     if (FAILED(_hr)) _com_issue_errorex(_hr, this, __uuidof(this));
     return _result;
 }
 
-inline double IArrayTesting::Mean_ULong_LP_PreLen ( long len, unsigned __int64 * d ) {
+inline double IArrayTesting::Mean_ULong_LP_PreLen ( int len, unsigned __int64 * d ) {
     double _result = 0;
     HRESULT _hr = raw_Mean_ULong_LP_PreLen(len, d, &_result);
     if (FAILED(_hr)) _com_issue_errorex(_hr, this, __uuidof(this));
     return _result;
 }
 
-inline double IArrayTesting::Mean_Float_LP_PreLen ( long len, float * d ) {
+inline double IArrayTesting::Mean_Float_LP_PreLen ( int len, float * d ) {
     double _result = 0;
     HRESULT _hr = raw_Mean_Float_LP_PreLen(len, d, &_result);
     if (FAILED(_hr)) _com_issue_errorex(_hr, this, __uuidof(this));
     return _result;
 }
 
-inline double IArrayTesting::Mean_Double_LP_PreLen ( long len, double * d ) {
+inline double IArrayTesting::Mean_Double_LP_PreLen ( int len, double * d ) {
     double _result = 0;
     HRESULT _hr = raw_Mean_Double_LP_PreLen(len, d, &_result);
     if (FAILED(_hr)) _com_issue_errorex(_hr, this, __uuidof(this));
     return _result;
 }
 
-inline double IArrayTesting::Mean_Byte_LP_PostLen ( unsigned char * d, long len ) {
+inline double IArrayTesting::Mean_Byte_LP_PostLen ( unsigned char * d, int len ) {
     double _result = 0;
     HRESULT _hr = raw_Mean_Byte_LP_PostLen(d, len, &_result);
     if (FAILED(_hr)) _com_issue_errorex(_hr, this, __uuidof(this));
     return _result;
 }
 
-inline double IArrayTesting::Mean_Short_LP_PostLen ( short * d, long len ) {
+inline double IArrayTesting::Mean_Short_LP_PostLen ( short * d, int len ) {
     double _result = 0;
     HRESULT _hr = raw_Mean_Short_LP_PostLen(d, len, &_result);
     if (FAILED(_hr)) _com_issue_errorex(_hr, this, __uuidof(this));
     return _result;
 }
 
-inline double IArrayTesting::Mean_UShort_LP_PostLen ( unsigned short * d, long len ) {
+inline double IArrayTesting::Mean_UShort_LP_PostLen ( unsigned short * d, int len ) {
     double _result = 0;
     HRESULT _hr = raw_Mean_UShort_LP_PostLen(d, len, &_result);
     if (FAILED(_hr)) _com_issue_errorex(_hr, this, __uuidof(this));
     return _result;
 }
 
-inline double IArrayTesting::Mean_Int_LP_PostLen ( long * d, long len ) {
+inline double IArrayTesting::Mean_Int_LP_PostLen ( int * d, int len ) {
     double _result = 0;
     HRESULT _hr = raw_Mean_Int_LP_PostLen(d, len, &_result);
     if (FAILED(_hr)) _com_issue_errorex(_hr, this, __uuidof(this));
     return _result;
 }
 
-inline double IArrayTesting::Mean_UInt_LP_PostLen ( unsigned long * d, long len ) {
+inline double IArrayTesting::Mean_UInt_LP_PostLen ( unsigned int * d, int len ) {
     double _result = 0;
     HRESULT _hr = raw_Mean_UInt_LP_PostLen(d, len, &_result);
     if (FAILED(_hr)) _com_issue_errorex(_hr, this, __uuidof(this));
     return _result;
 }
 
-inline double IArrayTesting::Mean_Long_LP_PostLen ( __int64 * d, long len ) {
+inline double IArrayTesting::Mean_Long_LP_PostLen ( __int64 * d, int len ) {
     double _result = 0;
     HRESULT _hr = raw_Mean_Long_LP_PostLen(d, len, &_result);
     if (FAILED(_hr)) _com_issue_errorex(_hr, this, __uuidof(this));
     return _result;
 }
 
-inline double IArrayTesting::Mean_ULong_LP_PostLen ( unsigned __int64 * d, long len ) {
+inline double IArrayTesting::Mean_ULong_LP_PostLen ( unsigned __int64 * d, int len ) {
     double _result = 0;
     HRESULT _hr = raw_Mean_ULong_LP_PostLen(d, len, &_result);
     if (FAILED(_hr)) _com_issue_errorex(_hr, this, __uuidof(this));
     return _result;
 }
 
-inline double IArrayTesting::Mean_Float_LP_PostLen ( float * d, long len ) {
+inline double IArrayTesting::Mean_Float_LP_PostLen ( float * d, int len ) {
     double _result = 0;
     HRESULT _hr = raw_Mean_Float_LP_PostLen(d, len, &_result);
     if (FAILED(_hr)) _com_issue_errorex(_hr, this, __uuidof(this));
     return _result;
 }
 
-inline double IArrayTesting::Mean_Double_LP_PostLen ( double * d, long len ) {
+inline double IArrayTesting::Mean_Double_LP_PostLen ( double * d, int len ) {
     double _result = 0;
     HRESULT _hr = raw_Mean_Double_LP_PostLen(d, len, &_result);
     if (FAILED(_hr)) _com_issue_errorex(_hr, this, __uuidof(this));
     return _result;
 }
 
-inline double IArrayTesting::Mean_Byte_SafeArray_OutLen ( SAFEARRAY * d, long * len ) {
+inline double IArrayTesting::Mean_Byte_SafeArray_OutLen ( SAFEARRAY * d, int * len ) {
     double _result = 0;
     HRESULT _hr = raw_Mean_Byte_SafeArray_OutLen(d, len, &_result);
     if (FAILED(_hr)) _com_issue_errorex(_hr, this, __uuidof(this));
     return _result;
 }
 
-inline double IArrayTesting::Mean_Short_SafeArray_OutLen ( SAFEARRAY * d, long * len ) {
+inline double IArrayTesting::Mean_Short_SafeArray_OutLen ( SAFEARRAY * d, int * len ) {
     double _result = 0;
     HRESULT _hr = raw_Mean_Short_SafeArray_OutLen(d, len, &_result);
     if (FAILED(_hr)) _com_issue_errorex(_hr, this, __uuidof(this));
     return _result;
 }
 
-inline double IArrayTesting::Mean_UShort_SafeArray_OutLen ( SAFEARRAY * d, long * len ) {
+inline double IArrayTesting::Mean_UShort_SafeArray_OutLen ( SAFEARRAY * d, int * len ) {
     double _result = 0;
     HRESULT _hr = raw_Mean_UShort_SafeArray_OutLen(d, len, &_result);
     if (FAILED(_hr)) _com_issue_errorex(_hr, this, __uuidof(this));
     return _result;
 }
 
-inline double IArrayTesting::Mean_Int_SafeArray_OutLen ( SAFEARRAY * d, long * len ) {
+inline double IArrayTesting::Mean_Int_SafeArray_OutLen ( SAFEARRAY * d, int * len ) {
     double _result = 0;
     HRESULT _hr = raw_Mean_Int_SafeArray_OutLen(d, len, &_result);
     if (FAILED(_hr)) _com_issue_errorex(_hr, this, __uuidof(this));
     return _result;
 }
 
-inline double IArrayTesting::Mean_UInt_SafeArray_OutLen ( SAFEARRAY * d, long * len ) {
+inline double IArrayTesting::Mean_UInt_SafeArray_OutLen ( SAFEARRAY * d, int * len ) {
     double _result = 0;
     HRESULT _hr = raw_Mean_UInt_SafeArray_OutLen(d, len, &_result);
     if (FAILED(_hr)) _com_issue_errorex(_hr, this, __uuidof(this));
     return _result;
 }
 
-inline double IArrayTesting::Mean_Long_SafeArray_OutLen ( SAFEARRAY * d, long * len ) {
+inline double IArrayTesting::Mean_Long_SafeArray_OutLen ( SAFEARRAY * d, int * len ) {
     double _result = 0;
     HRESULT _hr = raw_Mean_Long_SafeArray_OutLen(d, len, &_result);
     if (FAILED(_hr)) _com_issue_errorex(_hr, this, __uuidof(this));
     return _result;
 }
 
-inline double IArrayTesting::Mean_ULong_SafeArray_OutLen ( SAFEARRAY * d, long * len ) {
+inline double IArrayTesting::Mean_ULong_SafeArray_OutLen ( SAFEARRAY * d, int * len ) {
     double _result = 0;
     HRESULT _hr = raw_Mean_ULong_SafeArray_OutLen(d, len, &_result);
     if (FAILED(_hr)) _com_issue_errorex(_hr, this, __uuidof(this));
     return _result;
 }
 
-inline double IArrayTesting::Mean_Float_SafeArray_OutLen ( SAFEARRAY * d, long * len ) {
+inline double IArrayTesting::Mean_Float_SafeArray_OutLen ( SAFEARRAY * d, int * len ) {
     double _result = 0;
     HRESULT _hr = raw_Mean_Float_SafeArray_OutLen(d, len, &_result);
     if (FAILED(_hr)) _com_issue_errorex(_hr, this, __uuidof(this));
     return _result;
 }
 
-inline double IArrayTesting::Mean_Double_SafeArray_OutLen ( SAFEARRAY * d, long * len ) {
+inline double IArrayTesting::Mean_Double_SafeArray_OutLen ( SAFEARRAY * d, int * len ) {
     double _result = 0;
     HRESULT _hr = raw_Mean_Double_SafeArray_OutLen(d, len, &_result);
     if (FAILED(_hr)) _com_issue_errorex(_hr, this, __uuidof(this));
@@ -564,7 +564,7 @@ inline HRESULT IStringTesting::Reverse_BStr_OutAttr ( _bstr_t a, _bstr_t b ) {
 // interface IErrorMarshalTesting wrapper method implementations
 //
 
-inline HRESULT IErrorMarshalTesting::Throw_HResult ( long hresultToReturn ) {
+inline HRESULT IErrorMarshalTesting::Throw_HResult ( int hresultToReturn ) {
     HRESULT _hr = raw_Throw_HResult(hresultToReturn);
     if (FAILED(_hr)) _com_issue_errorex(_hr, this, __uuidof(this));
     return _hr;

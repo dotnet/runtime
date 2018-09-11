@@ -253,6 +253,11 @@ if defined DoLink (
       </PropertyGroup>
       <PropertyGroup>      
       <_CLRTestRunFile Condition="'$(CLRTestIsHosted)'=='true'">"%CORE_ROOT%\corerun.exe"</_CLRTestRunFile>
+      <BatchCopyCoreShimLocalCmds Condition="'$(CLRTestScriptLocalCoreShim)' == 'true'"><![CDATA[
+REM Local CoreShim requested - see MSBuild property 'CLRTestScriptLocalCoreShim'
+ECHO Copying '%CORE_ROOT%\CoreShim.dll'...
+COPY /y %CORE_ROOT%\CoreShim.dll .
+      ]]></BatchCopyCoreShimLocalCmds>
       <BatchCLRTestLaunchCmds><![CDATA[
 IF NOT "%CLRCustomTestLauncher%"=="" (
   set LAUNCHER=call %CLRCustomTestLauncher% %~dp0
@@ -260,6 +265,7 @@ IF NOT "%CLRCustomTestLauncher%"=="" (
   set LAUNCHER=%_DebuggerFullPath% $(_CLRTestRunFile)
 )
 $(BatchIlrtTestLaunchCmds)
+$(BatchCopyCoreShimLocalCmds)
       ]]></BatchCLRTestLaunchCmds>
       <BatchCLRTestLaunchCmds Condition="'$(CLRTestKind)' == 'BuildAndRun'">
     <![CDATA[

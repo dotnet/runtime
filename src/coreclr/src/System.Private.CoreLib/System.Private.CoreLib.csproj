@@ -158,6 +158,7 @@
     <Compile Condition="'$(FeatureCominterop)' != 'true'" Include="$(BclSourcesRoot)\System\Runtime\InteropServices\NonPortable.cs" />
     <Compile Condition="'$(FeatureCominterop)' == 'true'" Include="$(BclSourcesRoot)\System\Runtime\InteropServices\DispatchWrapper.cs" />
     <Compile Include="$(BclSourcesRoot)\System\Runtime\InteropServices\ICustomFactory.cs" />
+    <Compile Condition="'$(FeatureCominteropUnmanagedActivation)' == 'true'" Include="$(BclSourcesRoot)\System\Runtime\InteropServices\ComActivator.cs" />
   </ItemGroup>
   <ItemGroup>
     <Compile Include="$(BclSourcesRoot)\System\Runtime\InteropServices\Expando\IExpando.cs" />
