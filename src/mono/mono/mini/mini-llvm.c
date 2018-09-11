@@ -4989,7 +4989,14 @@ process_bb (EmitContext *ctx, MonoBasicBlock *bb)
 				break;
 			case OP_ISHL_IMM:
 			case OP_LSHL_IMM:
+				values [ins->dreg] = LLVMBuildShl (builder, lhs, imm, dname);
+				break;
 			case OP_SHL_IMM:
+				if (TARGET_SIZEOF_VOID_P == 8) {
+					/* The IL is not regular */
+					lhs = convert (ctx, lhs, LLVMInt64Type ());
+					imm = convert (ctx, imm, LLVMInt64Type ());
+				}
 				values [ins->dreg] = LLVMBuildShl (builder, lhs, imm, dname);
 				break;
 			case OP_ISHR_IMM:
