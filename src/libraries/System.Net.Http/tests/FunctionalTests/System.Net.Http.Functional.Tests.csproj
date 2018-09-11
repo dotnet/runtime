@@ -125,6 +125,7 @@
     <Compile Include="HttpClientTest.netcoreapp.cs" />
     <Compile Include="HttpMethodTest.netcoreapp.cs" />
     <Compile Include="HuffmanDecodingTests.cs" />
+    <Compile Include="NtAuthTests.cs" />
     <Compile Include="ReadOnlyMemoryContentTest.cs" />
     <Compile Include="SocketsHttpHandlerTest.cs" />
     <Compile Include="SocketsHttpHandlerTest.Http2.cs" />
