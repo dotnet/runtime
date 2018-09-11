@@ -1137,18 +1137,6 @@ namespace Microsoft.Win32
         private const int FORMAT_MESSAGE_ARGUMENT_ARRAY = 0x00002000;
     }
 
-    [Flags]
-#if REGISTRY_ASSEMBLY
-    public
-#else
-    internal
-#endif
-    enum RegistryValueOptions
-    {
-        None = 0,
-        DoNotExpandEnvironmentNames = 1
-    }
-
     // the name for this API is meant to mimic FileMode, which has similar values
 
     internal enum RegistryKeyPermissionCheck
