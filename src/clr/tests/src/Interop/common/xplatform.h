@@ -36,6 +36,7 @@
 
 //  include 
 #ifdef _WIN32
+    #define NOMINMAX
     #include <windows.h>
     #include <combaseapi.h>
 
@@ -92,6 +93,28 @@ inline void CoreClrFree(void *p)
     return ::CoTaskMemFree(p);
 #else
     return ::free(p);
+#endif
+}
+
+inline void *CoreClrBstrAlloc(size_t cb)
+{
+#ifdef _WIN32
+    // A null is automatically applied in the SysAllocStringByteLen API.
+    // Remove a single OLECHAR for the implied null.
+    // https://docs.microsoft.com/en-us/previous-versions/windows/desktop/api/oleauto/nf-oleauto-sysallocstringbytelen
+    if (cb >= sizeof(OLECHAR))
+        cb -= sizeof(OLECHAR);
+
+    return ::SysAllocStringByteLen(nullptr, static_cast<UINT>(cb));
+#else
+    return nullptr;
+#endif
+}
+
+inline void CoreClrBstrFree(void *p)
+{
+#ifdef _WIN32
+    return ::SysFreeString((BSTR)p);
 #endif
 }
 

@@ -49,12 +49,12 @@ INumericTesting : IUnknown
     unsigned short Add_UShort (
         unsigned short a,
         unsigned short b );
-    long Add_Int (
-        long a,
-        long b );
-    unsigned long Add_UInt (
-        unsigned long a,
-        unsigned long b );
+    int Add_Int (
+        int a,
+        int b );
+    unsigned int Add_UInt (
+        unsigned int a,
+        unsigned int b );
     __int64 Add_Long (
         __int64 a,
         __int64 b );
@@ -80,13 +80,13 @@ INumericTesting : IUnknown
         unsigned short b,
         unsigned short * c );
     HRESULT Add_Int_Ref (
-        long a,
-        long b,
-        long * c );
+        int a,
+        int b,
+        int * c );
     HRESULT Add_UInt_Ref (
-        unsigned long a,
-        unsigned long b,
-        unsigned long * c );
+        unsigned int a,
+        unsigned int b,
+        unsigned int * c );
     HRESULT Add_Long_Ref (
         __int64 a,
         __int64 b,
@@ -116,13 +116,13 @@ INumericTesting : IUnknown
         unsigned short b,
         unsigned short * c );
     HRESULT Add_Int_Out (
-        long a,
-        long b,
-        long * c );
+        int a,
+        int b,
+        int * c );
     HRESULT Add_UInt_Out (
-        unsigned long a,
-        unsigned long b,
-        unsigned long * c );
+        unsigned int a,
+        unsigned int b,
+        unsigned int * c );
     HRESULT Add_Long_Out (
         __int64 a,
         __int64 b,
@@ -157,13 +157,13 @@ INumericTesting : IUnknown
         /*[in]*/ unsigned short b,
         /*[out,retval]*/ unsigned short * pRetVal ) = 0;
       virtual HRESULT STDMETHODCALLTYPE raw_Add_Int (
-        /*[in]*/ long a,
-        /*[in]*/ long b,
-        /*[out,retval]*/ long * pRetVal ) = 0;
+        /*[in]*/ int a,
+        /*[in]*/ int b,
+        /*[out,retval]*/ int * pRetVal ) = 0;
       virtual HRESULT STDMETHODCALLTYPE raw_Add_UInt (
-        /*[in]*/ unsigned long a,
-        /*[in]*/ unsigned long b,
-        /*[out,retval]*/ unsigned long * pRetVal ) = 0;
+        /*[in]*/ unsigned int a,
+        /*[in]*/ unsigned int b,
+        /*[out,retval]*/ unsigned int * pRetVal ) = 0;
       virtual HRESULT STDMETHODCALLTYPE raw_Add_Long (
         /*[in]*/ __int64 a,
         /*[in]*/ __int64 b,
@@ -193,13 +193,13 @@ INumericTesting : IUnknown
         /*[in]*/ unsigned short b,
         /*[in,out]*/ unsigned short * c ) = 0;
       virtual HRESULT STDMETHODCALLTYPE raw_Add_Int_Ref (
-        /*[in]*/ long a,
-        /*[in]*/ long b,
-        /*[in,out]*/ long * c ) = 0;
+        /*[in]*/ int a,
+        /*[in]*/ int b,
+        /*[in,out]*/ int * c ) = 0;
       virtual HRESULT STDMETHODCALLTYPE raw_Add_UInt_Ref (
-        /*[in]*/ unsigned long a,
-        /*[in]*/ unsigned long b,
-        /*[in,out]*/ unsigned long * c ) = 0;
+        /*[in]*/ unsigned int a,
+        /*[in]*/ unsigned int b,
+        /*[in,out]*/ unsigned int * c ) = 0;
       virtual HRESULT STDMETHODCALLTYPE raw_Add_Long_Ref (
         /*[in]*/ __int64 a,
         /*[in]*/ __int64 b,
@@ -229,13 +229,13 @@ INumericTesting : IUnknown
         /*[in]*/ unsigned short b,
         /*[out]*/ unsigned short * c ) = 0;
       virtual HRESULT STDMETHODCALLTYPE raw_Add_Int_Out (
-        /*[in]*/ long a,
-        /*[in]*/ long b,
-        /*[out]*/ long * c ) = 0;
+        /*[in]*/ int a,
+        /*[in]*/ int b,
+        /*[out]*/ int * c ) = 0;
       virtual HRESULT STDMETHODCALLTYPE raw_Add_UInt_Out (
-        /*[in]*/ unsigned long a,
-        /*[in]*/ unsigned long b,
-        /*[out]*/ unsigned long * c ) = 0;
+        /*[in]*/ unsigned int a,
+        /*[in]*/ unsigned int b,
+        /*[out]*/ unsigned int * c ) = 0;
       virtual HRESULT STDMETHODCALLTYPE raw_Add_Long_Out (
         /*[in]*/ __int64 a,
         /*[in]*/ __int64 b,
@@ -262,198 +262,198 @@ IArrayTesting : IUnknown
     //
 
     double Mean_Byte_LP_PreLen (
-        long len,
+        int len,
         unsigned char * d );
     double Mean_Short_LP_PreLen (
-        long len,
+        int len,
         short * d );
     double Mean_UShort_LP_PreLen (
-        long len,
+        int len,
         unsigned short * d );
     double Mean_Int_LP_PreLen (
-        long len,
-        long * d );
+        int len,
+        int * d );
     double Mean_UInt_LP_PreLen (
-        long len,
-        unsigned long * d );
+        int len,
+        unsigned int * d );
     double Mean_Long_LP_PreLen (
-        long len,
+        int len,
         __int64 * d );
     double Mean_ULong_LP_PreLen (
-        long len,
+        int len,
         unsigned __int64 * d );
     double Mean_Float_LP_PreLen (
-        long len,
+        int len,
         float * d );
     double Mean_Double_LP_PreLen (
-        long len,
+        int len,
         double * d );
     double Mean_Byte_LP_PostLen (
         unsigned char * d,
-        long len );
+        int len );
     double Mean_Short_LP_PostLen (
         short * d,
-        long len );
+        int len );
     double Mean_UShort_LP_PostLen (
         unsigned short * d,
-        long len );
+        int len );
     double Mean_Int_LP_PostLen (
-        long * d,
-        long len );
+        int * d,
+        int len );
     double Mean_UInt_LP_PostLen (
-        unsigned long * d,
-        long len );
+        unsigned int * d,
+        int len );
     double Mean_Long_LP_PostLen (
         __int64 * d,
-        long len );
+        int len );
     double Mean_ULong_LP_PostLen (
         unsigned __int64 * d,
-        long len );
+        int len );
     double Mean_Float_LP_PostLen (
         float * d,
-        long len );
+        int len );
     double Mean_Double_LP_PostLen (
         double * d,
-        long len );
+        int len );
     double Mean_Byte_SafeArray_OutLen (
         SAFEARRAY * d,
-        long * len );
+        int * len );
     double Mean_Short_SafeArray_OutLen (
         SAFEARRAY * d,
-        long * len );
+        int * len );
     double Mean_UShort_SafeArray_OutLen (
         SAFEARRAY * d,
-        long * len );
+        int * len );
     double Mean_Int_SafeArray_OutLen (
         SAFEARRAY * d,
-        long * len );
+        int * len );
     double Mean_UInt_SafeArray_OutLen (
         SAFEARRAY * d,
-        long * len );
+        int * len );
     double Mean_Long_SafeArray_OutLen (
         SAFEARRAY * d,
-        long * len );
+        int * len );
     double Mean_ULong_SafeArray_OutLen (
         SAFEARRAY * d,
-        long * len );
+        int * len );
     double Mean_Float_SafeArray_OutLen (
         SAFEARRAY * d,
-        long * len );
+        int * len );
     double Mean_Double_SafeArray_OutLen (
         SAFEARRAY * d,
-        long * len );
+        int * len );
 
     //
     // Raw methods provided by interface
     //
 
       virtual HRESULT STDMETHODCALLTYPE raw_Mean_Byte_LP_PreLen (
-        /*[in]*/ long len,
+        /*[in]*/ int len,
         /*[in]*/ unsigned char * d,
         /*[out,retval]*/ double * pRetVal ) = 0;
       virtual HRESULT STDMETHODCALLTYPE raw_Mean_Short_LP_PreLen (
-        /*[in]*/ long len,
+        /*[in]*/ int len,
         /*[in]*/ short * d,
         /*[out,retval]*/ double * pRetVal ) = 0;
       virtual HRESULT STDMETHODCALLTYPE raw_Mean_UShort_LP_PreLen (
-        /*[in]*/ long len,
+        /*[in]*/ int len,
         /*[in]*/ unsigned short * d,
         /*[out,retval]*/ double * pRetVal ) = 0;
       virtual HRESULT STDMETHODCALLTYPE raw_Mean_Int_LP_PreLen (
-        /*[in]*/ long len,
-        /*[in]*/ long * d,
+        /*[in]*/ int len,
+        /*[in]*/ int * d,
         /*[out,retval]*/ double * pRetVal ) = 0;
       virtual HRESULT STDMETHODCALLTYPE raw_Mean_UInt_LP_PreLen (
-        /*[in]*/ long len,
-        /*[in]*/ unsigned long * d,
+        /*[in]*/ int len,
+        /*[in]*/ unsigned int * d,
         /*[out,retval]*/ double * pRetVal ) = 0;
       virtual HRESULT STDMETHODCALLTYPE raw_Mean_Long_LP_PreLen (
-        /*[in]*/ long len,
+        /*[in]*/ int len,
         /*[in]*/ __int64 * d,
         /*[out,retval]*/ double * pRetVal ) = 0;
       virtual HRESULT STDMETHODCALLTYPE raw_Mean_ULong_LP_PreLen (
-        /*[in]*/ long len,
+        /*[in]*/ int len,
         /*[in]*/ unsigned __int64 * d,
         /*[out,retval]*/ double * pRetVal ) = 0;
       virtual HRESULT STDMETHODCALLTYPE raw_Mean_Float_LP_PreLen (
-        /*[in]*/ long len,
+        /*[in]*/ int len,
         /*[in]*/ float * d,
         /*[out,retval]*/ double * pRetVal ) = 0;
       virtual HRESULT STDMETHODCALLTYPE raw_Mean_Double_LP_PreLen (
-        /*[in]*/ long len,
+        /*[in]*/ int len,
         /*[in]*/ double * d,
         /*[out,retval]*/ double * pRetVal ) = 0;
       virtual HRESULT STDMETHODCALLTYPE raw_Mean_Byte_LP_PostLen (
         /*[in]*/ unsigned char * d,
-        /*[in]*/ long len,
+        /*[in]*/ int len,
         /*[out,retval]*/ double * pRetVal ) = 0;
       virtual HRESULT STDMETHODCALLTYPE raw_Mean_Short_LP_PostLen (
         /*[in]*/ short * d,
-        /*[in]*/ long len,
+        /*[in]*/ int len,
         /*[out,retval]*/ double * pRetVal ) = 0;
       virtual HRESULT STDMETHODCALLTYPE raw_Mean_UShort_LP_PostLen (
         /*[in]*/ unsigned short * d,
-        /*[in]*/ long len,
+        /*[in]*/ int len,
         /*[out,retval]*/ double * pRetVal ) = 0;
       virtual HRESULT STDMETHODCALLTYPE raw_Mean_Int_LP_PostLen (
-        /*[in]*/ long * d,
-        /*[in]*/ long len,
+        /*[in]*/ int * d,
+        /*[in]*/ int len,
         /*[out,retval]*/ double * pRetVal ) = 0;
       virtual HRESULT STDMETHODCALLTYPE raw_Mean_UInt_LP_PostLen (
-        /*[in]*/ unsigned long * d,
-        /*[in]*/ long len,
+        /*[in]*/ unsigned int * d,
+        /*[in]*/ int len,
         /*[out,retval]*/ double * pRetVal ) = 0;
       virtual HRESULT STDMETHODCALLTYPE raw_Mean_Long_LP_PostLen (
         /*[in]*/ __int64 * d,
-        /*[in]*/ long len,
+        /*[in]*/ int len,
         /*[out,retval]*/ double * pRetVal ) = 0;
       virtual HRESULT STDMETHODCALLTYPE raw_Mean_ULong_LP_PostLen (
         /*[in]*/ unsigned __int64 * d,
-        /*[in]*/ long len,
+        /*[in]*/ int len,
         /*[out,retval]*/ double * pRetVal ) = 0;
       virtual HRESULT STDMETHODCALLTYPE raw_Mean_Float_LP_PostLen (
         /*[in]*/ float * d,
-        /*[in]*/ long len,
+        /*[in]*/ int len,
         /*[out,retval]*/ double * pRetVal ) = 0;
       virtual HRESULT STDMETHODCALLTYPE raw_Mean_Double_LP_PostLen (
         /*[in]*/ double * d,
-        /*[in]*/ long len,
+        /*[in]*/ int len,
         /*[out,retval]*/ double * pRetVal ) = 0;
       virtual HRESULT STDMETHODCALLTYPE raw_Mean_Byte_SafeArray_OutLen (
         /*[in]*/ SAFEARRAY * d,
-        /*[out]*/ long * len,
+        /*[out]*/ int * len,
         /*[out,retval]*/ double * pRetVal ) = 0;
       virtual HRESULT STDMETHODCALLTYPE raw_Mean_Short_SafeArray_OutLen (
         /*[in]*/ SAFEARRAY * d,
-        /*[out]*/ long * len,
+        /*[out]*/ int * len,
         /*[out,retval]*/ double * pRetVal ) = 0;
       virtual HRESULT STDMETHODCALLTYPE raw_Mean_UShort_SafeArray_OutLen (
         /*[in]*/ SAFEARRAY * d,
-        /*[out]*/ long * len,
+        /*[out]*/ int * len,
         /*[out,retval]*/ double * pRetVal ) = 0;
       virtual HRESULT STDMETHODCALLTYPE raw_Mean_Int_SafeArray_OutLen (
         /*[in]*/ SAFEARRAY * d,
-        /*[out]*/ long * len,
+        /*[out]*/ int * len,
         /*[out,retval]*/ double * pRetVal ) = 0;
       virtual HRESULT STDMETHODCALLTYPE raw_Mean_UInt_SafeArray_OutLen (
         /*[in]*/ SAFEARRAY * d,
-        /*[out]*/ long * len,
+        /*[out]*/ int * len,
         /*[out,retval]*/ double * pRetVal ) = 0;
       virtual HRESULT STDMETHODCALLTYPE raw_Mean_Long_SafeArray_OutLen (
         /*[in]*/ SAFEARRAY * d,
-        /*[out]*/ long * len,
+        /*[out]*/ int * len,
         /*[out,retval]*/ double * pRetVal ) = 0;
       virtual HRESULT STDMETHODCALLTYPE raw_Mean_ULong_SafeArray_OutLen (
         /*[in]*/ SAFEARRAY * d,
-        /*[out]*/ long * len,
+        /*[out]*/ int * len,
         /*[out,retval]*/ double * pRetVal ) = 0;
       virtual HRESULT STDMETHODCALLTYPE raw_Mean_Float_SafeArray_OutLen (
         /*[in]*/ SAFEARRAY * d,
-        /*[out]*/ long * len,
+        /*[out]*/ int * len,
         /*[out,retval]*/ double * pRetVal ) = 0;
       virtual HRESULT STDMETHODCALLTYPE raw_Mean_Double_SafeArray_OutLen (
         /*[in]*/ SAFEARRAY * d,
-        /*[out]*/ long * len,
+        /*[out]*/ int * len,
         /*[out,retval]*/ double * pRetVal ) = 0;
 };
 
@@ -635,16 +635,16 @@ IErrorMarshalTesting : IUnknown
     //
 
     HRESULT Throw_HResult (
-        long hresultToReturn );
+        int hresultToReturn );
 
     //
     // Raw methods provided by interface
     //
 
       virtual HRESULT STDMETHODCALLTYPE raw_Throw_HResult (
-        /*[in]*/ long hresultToReturn ) = 0;
-      virtual long STDMETHODCALLTYPE Return_As_HResult (
-        /*[in]*/ long hresultToReturn ) = 0;
+        /*[in]*/ int hresultToReturn ) = 0;
+      virtual int STDMETHODCALLTYPE Return_As_HResult (
+        /*[in]*/ int hresultToReturn ) = 0;
 };
 
 //
