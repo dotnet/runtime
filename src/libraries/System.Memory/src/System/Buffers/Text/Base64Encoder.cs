@@ -20,7 +20,7 @@ namespace System.Buffers.Text
         /// <param name="utf8">The output span which contains the result of the operation, i.e. the UTF-8 encoded text in base 64.</param>
         /// <param name="bytesConsumed">The number of input bytes consumed during the operation. This can be used to slice the input for subsequent calls, if necessary.</param>
         /// <param name="bytesWritten">The number of bytes written into the output span. This can be used to slice the output for subsequent calls, if necessary.</param>
-        /// <param name="isFinalBlock">True (default) when the input span contains the entire data to decode. 
+        /// <param name="isFinalBlock">True (default) when the input span contains the entire data to encode. 
         /// Set to false only if it is known that the input span contains partial data with more data to follow.</param>
         /// <returns>It returns the OperationStatus enum values:
         /// - Done - on successful processing of the entire input span
