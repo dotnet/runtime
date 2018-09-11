@@ -510,7 +510,14 @@ namespace System.IO.Ports
 
             if (tempHandle.IsInvalid)
             {
-                throw new ArgumentException(SR.Arg_InvalidSerialPort, nameof(portName));
+                if (Interop.Error.EACCES == Interop.Sys.GetLastError())
+                {
+                    throw new UnauthorizedAccessException(string.Format(SR.UnauthorizedAccess_IODenied_Port, portName));
+                }
+                else
+                {
+                    throw new ArgumentException(SR.Arg_InvalidSerialPort, nameof(portName));
+                }
             }
 
             try
