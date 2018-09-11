@@ -7,9 +7,9 @@ void mono_sdb_single_step_trampoline (void);
 gpointer
 mono_arch_create_specific_trampoline (gpointer arg1, MonoTrampolineType tramp_type, MonoDomain *domain, guint32 *code_len)
 {
-	static void *_dummy;
-
-	return (gpointer)&_dummy;
+	//FUN FACT but this is a key used to do reverse lookups when resolving patch entries!
+	//it's seeded to mono_register_jit_icall_wrapper and then used to reverse that value in mini-llvm <o>
+	return g_malloc (1);
 }
 
 guchar*

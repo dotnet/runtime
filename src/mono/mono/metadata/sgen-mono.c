@@ -225,7 +225,12 @@ sgen_has_critical_method (void)
 gboolean
 mono_gc_is_critical_method (MonoMethod *method)
 {
+#ifdef HOST_WASM
+	//methods can't be critical under wasm due to the single thread'ness of it
+	return FALSE;
+#else
 	return sgen_is_critical_method (method);
+#endif
 }
 
 static void
