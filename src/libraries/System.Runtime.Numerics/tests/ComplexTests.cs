@@ -1294,7 +1294,7 @@ namespace System.Numerics.Tests
         [Theory]
         [MemberData(nameof(Multiply_TestData))]
         [MemberData(nameof(SmallRandom_4_TestData))]
-        //[MemberData(nameof(Invalid_4_TestData))]
+        [MemberData(nameof(Invalid_4_TestData))]
         public static void MultiplyDouble(double realLeft, double imaginaryLeft, double realRight, double imaginaryRight)
         {
             var left = new Complex(realLeft, imaginaryLeft);
