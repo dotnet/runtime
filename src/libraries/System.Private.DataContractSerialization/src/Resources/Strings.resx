@@ -417,6 +417,9 @@
   <data name="NoConversionPossibleTo" xml:space="preserve">
     <value>An internal error has occurred. No conversion is possible to '{0}' - error generating code for serialization.</value>
   </data>
+  <data name="NoDefaultConstructorForCollection" xml:space="preserve">
+    <value>Collection type '{0}' doesn't have default constructor.</value>
+  </data>
   <data name="NoGetMethodForProperty" xml:space="preserve">
     <value>No get method for property '{1}' in type '{0}'.</value>
   </data>
