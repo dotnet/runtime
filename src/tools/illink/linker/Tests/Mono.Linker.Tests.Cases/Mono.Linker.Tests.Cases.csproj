@@ -78,6 +78,7 @@
     <Compile Include="Attributes\AttributeOnUsedMethodIsKept.cs" />
     <Compile Include="Attributes\AttributeOnUsedPropertyIsKept.cs" />
     <None Include="Attributes\OnlyKeepUsed\Dependencies\UnusedAttributeWithTypeForwarderIsRemoved_Forwarder.cs" />
+    <Compile Include="Attributes\CoreLibraryAssemblyAttributesAreKept.cs" />
     <Compile Include="Attributes\Csc\OnlyTypeUsedInAssemblyIsTypeArrayOnAttributeCtorOnType.cs" />
     <Compile Include="Attributes\Csc\OnlyTypeUsedInAssemblyIsTypeOnAttributeCtorOnAssembly.cs" />
     <Compile Include="Attributes\Csc\OnlyTypeUsedInAssemblyIsTypeOnAttributeCtorOnAssemblyOtherTypesInAttributeAssemblyUsed.cs" />
@@ -127,7 +128,9 @@
     <Compile Include="Attributes\OnlyKeepUsed\Dependencies\UnusedAttributeWithTypeForwarderIsRemoved_Lib.cs" />
     <Compile Include="Attributes\OnlyKeepUsed\AttributeDefinedAndUsedInOtherAssemblyIsKept.cs" />
     <Compile Include="Attributes\OnlyKeepUsed\AttributeUsedByAttributeIsKept.cs" />
+    <Compile Include="Attributes\OnlyKeepUsed\CoreLibraryUsedAssemblyAttributesAreKept.cs" />
     <Compile Include="Attributes\OnlyKeepUsed\ThreadStaticIsPreservedOnField.cs" />
+    <Compile Include="Attributes\OnlyKeepUsed\CoreLibraryUnusedAssemblyAttributesAreRemoved.cs" />
     <Compile Include="Attributes\OnlyKeepUsed\UnusedAttributeOnReturnTypeIsRemoved.cs" />
     <Compile Include="Attributes\OnlyKeepUsed\UnusedAttributeTypeOnModuleIsRemoved.cs" />
     <Compile Include="Attributes\OnlyKeepUsed\UnusedAttributeWithTypeForwarderIsRemoved.cs" />
@@ -278,6 +281,10 @@
     <Compile Include="TestFramework\Dependencies\CanCompileTestCaseWithMcs_Lib.cs" />
     <Compile Include="TestFramework\Dependencies\CanSandboxDependenciesUsingType_Source1.cs" />
     <Compile Include="TestFramework\Dependencies\CanSandboxDependenciesUsingType_Source2.cs" />
+    <Compile Include="TestFramework\Dependencies\VerifyAttributesInAssemblyWorks_Base.cs" />
+    <Compile Include="TestFramework\Dependencies\VerifyAttributesInAssemblyWorks_Lib.cs" />
+    <Compile Include="TestFramework\VerifyAttributesInAssemblyWorks.cs" />
+    <Compile Include="TestFramework\VerifyAttributesInAssemblyWorksWithStrings.cs" />
     <Compile Include="TestFramework\VerifyDefineAttributeBehavior.cs" />
     <None Include="TypeForwarding\Dependencies\ForwarderLibrary.cs" />
     <Compile Include="TestFramework\VerifyResourceInAssemblyAttributesBehavior.cs" />
