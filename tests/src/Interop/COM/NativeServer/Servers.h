@@ -5,6 +5,7 @@
 #pragma once
 
 #include <xplatform.h>
+#include <cassert>
 
 //#import "Server.Contract.tlb" no_namespace
 #include <Server.Contracts.tlh>
@@ -24,6 +25,29 @@ class DECLSPEC_UUID("71CF5C45-106C-4B32-B418-43A463C6041F") ErrorMarshalTesting;
 #define IID_IArrayTesting __uuidof(IArrayTesting)
 #define IID_IStringTesting __uuidof(IStringTesting)
 #define IID_IErrorMarshalTesting __uuidof(IErrorMarshalTesting)
+
+// Class used for COM activation when using CoreShim
+struct CoreShimComActivation
+{
+    CoreShimComActivation(_In_z_ const WCHAR *assemblyName, _In_z_ const WCHAR *typeName)
+    {
+        assert(assemblyName && typeName);
+        Set(assemblyName, typeName);
+    }
+
+    ~CoreShimComActivation()
+    {
+        Set(nullptr, nullptr);
+    }
+
+private:
+    void Set(_In_opt_z_ const WCHAR *assemblyName, _In_opt_z_ const WCHAR *typeName)
+    {
+        // See CoreShim.h for usage of environment variables
+        ::SetEnvironmentVariableW(W("CORESHIM_COMACT_ASSEMBLYNAME"), assemblyName);
+        ::SetEnvironmentVariableW(W("CORESHIM_COMACT_TYPENAME"), typeName);
+    }
+};
 
 #ifndef COM_CLIENT
     #include "ComHelpers.h"

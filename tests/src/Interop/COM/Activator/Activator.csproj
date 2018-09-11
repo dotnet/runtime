@@ -5,11 +5,14 @@
   <PropertyGroup>
     <Configuration Condition=" '$(Configuration)' == '' ">Debug</Configuration>
     <Platform Condition=" '$(Platform)' == '' ">AnyCPU</Platform>
-    <AssemblyName>NETServer</AssemblyName>
+    <AssemblyName>Activator</AssemblyName>
     <SchemaVersion>2.0</SchemaVersion>
-    <ProjectGuid>{C04AB564-CC61-499D-9F4C-AA1A9FDE42C9}</ProjectGuid>
-    <OutputType>library</OutputType>
-    <ProjectTypeGuids>{4948E98A-ECFC-4988-851E-68E1ADD2DD5A};{B850CC46-E8FB-4569-A28D-423F81E8A861}</ProjectTypeGuids>
+    <OutputType>Exe</OutputType>
+    <ReferenceSystemPrivateCoreLib>true</ReferenceSystemPrivateCoreLib>
+
+    <!-- Test unsupported outside of windows -->
+    <TestUnsupportedOutsideWindows>true</TestUnsupportedOutsideWindows>
+    <DisableProjectBuild Condition="'$(TargetsUnix)' == 'true'">true</DisableProjectBuild>
   </PropertyGroup>
   <!-- Default configurations to help VS understand the configurations -->
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'Debug|x64'">
@@ -17,13 +20,10 @@
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'Release|x64'">
   </PropertyGroup>
   <ItemGroup>
-    <Compile Include="ImportedTypes.cs" />
-    <Compile Include="NumericTesting.cs" />
-    <Compile Include="ArrayTesting.cs" />
-    <Compile Include="StringTesting.cs" />
-    <Compile Include="ErrorMarshalTesting.cs" />
-    <Compile Include="../ServerContracts/Primitives.cs" />
-    <Compile Include="../ServerContracts/ServerGuids.cs" />
+    <Compile Include="Program.cs" />
+  </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="..\NetServer\NetServer.csproj" />
   </ItemGroup>
   <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.targets))\dir.targets" />
 </Project>

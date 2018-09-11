@@ -28,14 +28,15 @@ namespace System.Runtime.InteropServices
     /// </summary>
     public static partial class Marshal
     {
+#if FEATURE_COMINTEROP
+        internal static Guid IID_IUnknown = new Guid("00000000-0000-0000-C000-000000000046");
+#endif //FEATURE_COMINTEROP
+
         private const int LMEM_FIXED = 0;
         private const int LMEM_MOVEABLE = 2;
 #if !FEATURE_PAL
         private const long HiWordMask = unchecked((long)0xffffffffffff0000L);
 #endif //!FEATURE_PAL
-#if FEATURE_COMINTEROP
-        private static Guid IID_IUnknown = new Guid("00000000-0000-0000-C000-000000000046");
-#endif //FEATURE_COMINTEROP
 
         // Win32 has the concept of Atoms, where a pointer can either be a pointer
         // or an int.  If it's less than 64K, this is guaranteed to NOT be a 

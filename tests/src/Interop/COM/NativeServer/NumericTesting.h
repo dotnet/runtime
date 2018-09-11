@@ -36,17 +36,17 @@ public:
         return S_OK;
     }
     DEF_RAWFUNC(Add_Int)(
-        /*[in]*/ long a,
-        /*[in]*/ long b,
-        /*[out,retval]*/ long * pRetVal)
+        /*[in]*/ int a,
+        /*[in]*/ int b,
+        /*[out,retval]*/ int * pRetVal)
     {
         *pRetVal = a + b;
         return S_OK;
     }
     DEF_RAWFUNC(Add_UInt)(
-        /*[in]*/ unsigned long a,
-        /*[in]*/ unsigned long b,
-        /*[out,retval]*/ unsigned long * pRetVal)
+        /*[in]*/ unsigned int a,
+        /*[in]*/ unsigned int b,
+        /*[out,retval]*/ unsigned int * pRetVal)
     {
         *pRetVal = a + b;
         return S_OK;
@@ -114,9 +114,9 @@ public:
         return S_OK;
     }
     DEF_RAWFUNC(Add_Int_Ref)(
-        /*[in]*/ long a,
-        /*[in]*/ long b,
-        /*[in,out]*/ long * c)
+        /*[in]*/ int a,
+        /*[in]*/ int b,
+        /*[in,out]*/ int * c)
     {
         if (*c != std::numeric_limits<std::remove_reference<decltype(*c)>::type>::max())
             return E_UNEXPECTED;
@@ -124,9 +124,9 @@ public:
         return S_OK;
     }
     DEF_RAWFUNC(Add_UInt_Ref)(
-        /*[in]*/ unsigned long a,
-        /*[in]*/ unsigned long b,
-        /*[in,out]*/ unsigned long * c)
+        /*[in]*/ unsigned int a,
+        /*[in]*/ unsigned int b,
+        /*[in,out]*/ unsigned int * c)
     {
         if (*c != std::numeric_limits<std::remove_reference<decltype(*c)>::type>::max())
             return E_UNEXPECTED;
@@ -198,17 +198,17 @@ public:
         return S_OK;
     }
     DEF_RAWFUNC(Add_Int_Out)(
-        /*[in]*/ long a,
-        /*[in]*/ long b,
-        /*[out]*/ long * c)
+        /*[in]*/ int a,
+        /*[in]*/ int b,
+        /*[out]*/ int * c)
     {
         *c = a + b;
         return S_OK;
     }
     DEF_RAWFUNC(Add_UInt_Out)(
-        /*[in]*/ unsigned long a,
-        /*[in]*/ unsigned long b,
-        /*[out]*/ unsigned long * c)
+        /*[in]*/ unsigned int a,
+        /*[in]*/ unsigned int b,
+        /*[out]*/ unsigned int * c)
     {
         *c = a + b;
         return S_OK;

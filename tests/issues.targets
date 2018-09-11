@@ -47,7 +47,11 @@
         <ExcludeList Include="$(XunitTestBinBase)/JIT/Regression/JitBlue/GitHub_11408/GitHub_11408/*">
             <Issue>11408</Issue>
         </ExcludeList>
-        <ExcludeList Include="$(XunitTestBinBase)\Interop\COM\NETClients\Primitives\NETClientPrimitives\NETClientPrimitives.cmd">
+        <!-- Disable COM tests since they don't properly run on Windows.Nano and at present there is no way to special case that OS flavor. -->
+        <ExcludeList Include="$(XunitTestBinBase)/Interop/COM/NETClients/Primitives/NETClientPrimitives/NETClientPrimitives.cmd">
+            <Issue>19164</Issue>
+        </ExcludeList>
+        <ExcludeList Include="$(XunitTestBinBase)/Interop/COM/NativeClients/Primitives/Primitives.cmd">
             <Issue>19164</Issue>
         </ExcludeList>
     </ItemGroup>
@@ -671,11 +675,6 @@
         <ExcludeList Include="$(XunitTestBinBase)/baseservices/varargs/varargsupport_r/*">
             <Issue>Varargs supported on this platform</Issue>
         </ExcludeList>
-
-        <!-- Disable COM tests since they don't properly run on Windows.Nano and at present there is no way to special case that OS flavor. -->
-        <ExcludeList Include="$(XunitTestBinBase)/Interop/COM/NETClients/Primitives/NETClientPrimitives/*">
-            <Issue>Fails on Windows.Nano</Issue>
-        </ExcludeList>
     </ItemGroup>
 
     <!-- The following are tests that fail on non-Windows, which we must not run when building against packages -->
@@ -784,6 +783,9 @@
             <Issue>needs triage</Issue>
         </ExcludeList>
         <ExcludeList Include="$(XunitTestBinBase)/Interop/COM/NETClients/Primitives/NETClientPrimitives/NETClientPrimitives.*">
+            <Issue>by design Windows only</Issue>
+        </ExcludeList>
+        <ExcludeList Include="$(XunitTestBinBase)/Interop/COM/NativeClients/Primitives/Primitives.*">
             <Issue>by design Windows only</Issue>
         </ExcludeList>
         <ExcludeList Include="$(XunitTestBinBase)/JIT/Directed/IL/PInvokeTail/PInvokeTail/*">
