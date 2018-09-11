@@ -82,6 +82,14 @@ namespace System.Runtime.Serialization
             throw System.Runtime.Serialization.DiagnosticUtility.ExceptionUtility.ThrowHelperError(XmlObjectSerializer.CreateSerializationException(SR.Format(SR.NullValueReturnedForGetOnlyCollection, DataContract.GetClrTypeFullName(type))));
         }
 
+#if uapaot
+        // Referenced from generated code in .NET Native's SerializationAssemblyGenerator
+        internal static void ThrowNoDefaultConstructorForCollectionException(Type type)
+        {
+            throw System.Runtime.Serialization.DiagnosticUtility.ExceptionUtility.ThrowHelperError(XmlObjectSerializer.CreateSerializationException(SR.Format(SR.NoDefaultConstructorForCollection, DataContract.GetClrTypeFullName(type))));
+        }
+#endif
+
 #if USE_REFEMIT
         public static void ThrowArrayExceededSizeException(int arraySize, Type type)
 #else
