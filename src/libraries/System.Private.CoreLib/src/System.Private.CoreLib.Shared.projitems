@@ -802,8 +802,17 @@
   </ItemGroup>
   <ItemGroup Condition="$(TargetsWindows) and '$(EnableWinRT)' != 'true'">
     <Compile Include="$(MSBuildThisFileDirectory)Interop\Windows\NtDll\NtQueryInformationFile.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)Interop\Windows\Advapi32\Interop.RegCreateKeyEx.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)Interop\Windows\Advapi32\Interop.RegCloseKey.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)Interop\Windows\Advapi32\Interop.RegDeleteKeyEx.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)Interop\Windows\Advapi32\Interop.RegDeleteValue.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)Interop\Windows\Advapi32\Interop.RegEnumKeyEx.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)Interop\Windows\Advapi32\Interop.RegEnumValue.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)Interop\Windows\Advapi32\Interop.RegOpenKeyEx.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)Interop\Windows\Advapi32\Interop.RegQueryInfoKey.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)Interop\Windows\Advapi32\Interop.RegQueryValueEx.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)Interop\Windows\Advapi32\Interop.RegSetValueEx.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Interop\Windows\Advapi32\Interop.RegistryConstants.cs" />
-    <Compile Include="$(MSBuildThisFileDirectory)Interop\Windows\Kernel32\Interop.RegistryView.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\IO\FileStream.Win32.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\TimeZoneInfo.Win32.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Microsoft\Win32\Registry.cs" />
@@ -813,7 +822,6 @@
     <Compile Include="$(MSBuildThisFileDirectory)Microsoft\Win32\SafeHandles\SafeLibraryHandle.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Microsoft\Win32\SafeHandles\SafeRegistryHandle.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Microsoft\Win32\SafeHandles\SafeRegistryHandle.Windows.cs" />
-    <Compile Include="$(MSBuildThisFileDirectory)Interop\Windows\Advapi32\Interop.RegCloseKey.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Interop\Windows\Kernel32\Interop.LoadLibraryEx.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Interop\Windows\Kernel32\Interop.FreeLibrary.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Interop\Windows\Kernel32\Interop.CreateFile.cs" />
