@@ -4501,10 +4501,9 @@ init_method (MonoAotModule *amodule, guint32 method_index, MonoMethod *method, M
 static void
 init_llvmonly_method (MonoAotModule *amodule, guint32 method_index, MonoMethod *method, MonoClass *init_class, MonoGenericContext *context)
 {
-	gboolean res;
 	ERROR_DECL (error);
 
-	res = init_method (amodule, method_index, method, init_class, context, error);
+	init_method (amodule, method_index, method, init_class, context, error);
 	if (!is_ok (error)) {
 		MonoException *ex = mono_error_convert_to_exception (error);
 		/* Its okay to raise in llvmonly mode */

@@ -12593,8 +12593,7 @@ mono_compile_assembly (MonoAssembly *ass, guint32 opts, const char *aot_options,
 	int i, res;
 	gint64 all_sizes;
 	MonoAotCompile *acfg;
-	char *outfile_name, *tmp_outfile_name, *p;
-	char llvm_stats_msg [256];
+	char llvm_stats_msg [256], *p;
 	TV_DECLARE (atv);
 	TV_DECLARE (btv);
 
@@ -12938,9 +12937,6 @@ mono_compile_assembly (MonoAssembly *ass, guint32 opts, const char *aot_options,
 	}
 	if (acfg->fp)
 		acfg->w = mono_img_writer_create (acfg->fp, FALSE);
-
-	tmp_outfile_name = NULL;
-	outfile_name = NULL;
 
 	/* Compute symbols for methods */
 	for (i = 0; i < acfg->nmethods; ++i) {

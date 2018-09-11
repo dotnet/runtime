@@ -522,12 +522,6 @@ mono_lldb_save_method_info (MonoCompile *cfg)
 		buffer_add_int (buf, n_il_offsets);
 		for (i = 0; i < n_il_offsets; ++i) {
 			MonoSymSeqPoint *sp = &locs [i].sp;
-			const char *srcfile = "";
-
-			if (source_files [i] != -1) {
-				MonoDebugSourceInfo *sinfo = (MonoDebugSourceInfo *)g_ptr_array_index (source_file_list, source_files [i]);
-				srcfile = sinfo->source_file;
-			}
 
 			//printf ("%s %x %d %d\n", cfg->method->name, locs [i].native_offset, sp->il_offset, sp->line);
 			buffer_add_int (buf, locs [i].native_offset);
