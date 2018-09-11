@@ -43,6 +43,7 @@
     <Compile Include="Assertions\KeptAssemblyAttribute.cs" />
     <Compile Include="Assertions\KeptAttribute.cs" />
     <Compile Include="Assertions\BaseExpectedLinkedBehaviorAttribute.cs" />
+    <Compile Include="Assertions\KeptAttributeInAssemblyAttribute.cs" />
     <Compile Include="Assertions\KeptBackingFieldAttribute.cs" />
     <Compile Include="Assertions\KeptDelegateCacheFieldAttribute.cs" />
     <Compile Include="Assertions\KeptEventAddMethodAttribute.cs" />
@@ -57,6 +58,7 @@
     <Compile Include="Assertions\KeptSymbolsAttribute.cs" />
     <Compile Include="Assertions\KeptTypeInAssemblyAttribute.cs" />
     <Compile Include="Assertions\RemovedAssemblyAttribute.cs" />
+    <Compile Include="Assertions\RemovedAttributeInAssembly.cs" />
     <Compile Include="Assertions\RemovedMemberInAssemblyAttribute.cs" />
     <Compile Include="Assertions\RemovedPseudoAttributeAttribute.cs" />
     <Compile Include="Assertions\RemovedResourceInAssemblyAttribute.cs" />

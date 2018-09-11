@@ -182,6 +182,16 @@ namespace Mono.Linker.Tests.TestCasesRunner {
 								continue;
 							}
 
+							if (attributeTypeName == nameof (KeptAttributeInAssemblyAttribute)) {
+								VerifyKeptAttributeInAssembly (checkAttrInAssembly, linkedAssembly);
+								continue;
+							}
+
+							if (attributeTypeName == nameof (RemovedAttributeInAssembly)) {
+								VerifyRemovedAttributeInAssembly (checkAttrInAssembly, linkedAssembly);
+								continue;
+							}
+
 							var expectedTypeName = checkAttrInAssembly.ConstructorArguments [1].Value.ToString ();
 							var linkedType = linkedAssembly.MainModule.GetType (expectedTypeName);
 
@@ -234,6 +244,100 @@ namespace Mono.Linker.Tests.TestCasesRunner {
 			} catch (AssemblyResolutionException e) {
 				Assert.Fail ($"Failed to resolve linked assembly `{e.AssemblyReference.Name}`.  It must not exist in any of the output directories:\n\t{_linkedResolver.GetSearchDirectories ().Aggregate ((buff, s) => $"{buff}\n\t{s}")}\n");
 			}
+		}
+
+		void VerifyKeptAttributeInAssembly (CustomAttribute inAssemblyAttribute, AssemblyDefinition linkedAssembly)
+		{
+			VerifyAttributeInAssembly(inAssemblyAttribute, linkedAssembly, VerifyCustomAttributeKept);
+		}
+
+		void VerifyRemovedAttributeInAssembly (CustomAttribute inAssemblyAttribute, AssemblyDefinition linkedAssembly)
+		{
+			VerifyAttributeInAssembly (inAssemblyAttribute, linkedAssembly, VerifyCustomAttributeRemoved);
+		}
+		
+		void VerifyAttributeInAssembly (CustomAttribute inAssemblyAttribute, AssemblyDefinition linkedAssembly, Action<ICustomAttributeProvider, string> assertExpectedAttribute)
+		{
+			var assemblyName = (string) inAssemblyAttribute.ConstructorArguments [0].Value;
+			string expectedAttributeTypeName;
+			var attributeTypeOrTypeName = inAssemblyAttribute.ConstructorArguments [1].Value;
+			if (attributeTypeOrTypeName is TypeReference typeReference) {
+				expectedAttributeTypeName = typeReference.FullName;
+			} else {
+				expectedAttributeTypeName = attributeTypeOrTypeName.ToString ();
+			}
+
+			if (inAssemblyAttribute.ConstructorArguments.Count == 2) {
+				// Assembly
+				assertExpectedAttribute (linkedAssembly, expectedAttributeTypeName);
+				return;
+			}
+
+			// We are asserting on type or member
+			var typeOrTypeName = inAssemblyAttribute.ConstructorArguments [2].Value;
+			var originalType = GetOriginalTypeFromInAssemblyAttribute (inAssemblyAttribute.ConstructorArguments[0].Value.ToString (), typeOrTypeName);
+			if (originalType == null)
+				Assert.Fail ($"Invalid test assertion.  The original `{assemblyName}` does not contain a type `{typeOrTypeName}`");
+
+			var linkedType = linkedAssembly.MainModule.GetType (originalType.FullName);
+			if (linkedType == null)
+				Assert.Fail ($"Missing expected type `{typeOrTypeName}` in `{assemblyName}`");
+
+			if (inAssemblyAttribute.ConstructorArguments.Count == 3) {
+				assertExpectedAttribute (linkedType, expectedAttributeTypeName);
+				return;
+			}
+
+			// we are asserting on a member
+			string memberName = (string) inAssemblyAttribute.ConstructorArguments [3].Value;
+
+			// We will find the matching type from the original assembly first that way we can confirm
+			// that the name defined in the attribute corresponds to a member that actually existed
+			var originalFieldMember = originalType.Fields.FirstOrDefault (m => m.Name == memberName);
+			if (originalFieldMember != null) {
+				var linkedField = linkedType.Fields.FirstOrDefault (m => m.Name == memberName);
+				if (linkedField == null)
+					Assert.Fail ($"Field `{memberName}` on Type `{originalType}` should have been kept");
+				
+				assertExpectedAttribute (linkedField, expectedAttributeTypeName);
+				return;
+			}
+
+			var originalPropertyMember = originalType.Properties.FirstOrDefault (m => m.Name == memberName);
+			if (originalPropertyMember != null) {
+				var linkedProperty = linkedType.Properties.FirstOrDefault (m => m.Name == memberName);
+				if (linkedProperty == null)
+					Assert.Fail ($"Property `{memberName}` on Type `{originalType}` should have been kept");
+				
+				assertExpectedAttribute (linkedProperty, expectedAttributeTypeName);
+				return;
+			}
+
+			var originalMethodMember = originalType.Methods.FirstOrDefault (m => m.GetSignature () == memberName);
+			if (originalMethodMember != null) {
+				var linkedMethod = linkedType.Methods.FirstOrDefault (m => m.GetSignature () == memberName);
+				if (linkedMethod == null)
+					Assert.Fail ($"Method `{memberName}` on Type `{originalType}` should have been kept");
+
+				assertExpectedAttribute (linkedMethod, expectedAttributeTypeName);
+				return;
+			}
+
+			Assert.Fail ($"Invalid test assertion.  No member named `{memberName}` exists on the original type `{originalType}`");
+		}
+
+		void VerifyCustomAttributeKept (ICustomAttributeProvider provider, string expectedAttributeTypeName)
+		{
+			var match = provider.CustomAttributes.FirstOrDefault (attr => attr.AttributeType.FullName == expectedAttributeTypeName);
+			if (match == null)
+				Assert.Fail ($"Expected `{provider}` to have an attribute of type `{expectedAttributeTypeName}`");
+		}
+		
+		void VerifyCustomAttributeRemoved (ICustomAttributeProvider provider, string expectedAttributeTypeName)
+		{
+			var match = provider.CustomAttributes.FirstOrDefault (attr => attr.AttributeType.FullName == expectedAttributeTypeName);
+			if (match != null)
+				Assert.Fail ($"Expected `{provider}` to no longer have an attribute of type `{expectedAttributeTypeName}`");
 		}
 
 		void VerifyRemovedMemberInAssembly (CustomAttribute inAssemblyAttribute, TypeDefinition linkedType)
@@ -383,13 +487,18 @@ namespace Mono.Linker.Tests.TestCasesRunner {
 
 		protected TypeDefinition GetOriginalTypeFromInAssemblyAttribute (CustomAttribute inAssemblyAttribute)
 		{
-			var attributeValueAsTypeReference = inAssemblyAttribute.ConstructorArguments [1].Value as TypeReference;
+			return GetOriginalTypeFromInAssemblyAttribute (inAssemblyAttribute.ConstructorArguments [0].Value.ToString (), inAssemblyAttribute.ConstructorArguments [1].Value);
+		}
+
+		protected TypeDefinition GetOriginalTypeFromInAssemblyAttribute (string assemblyName, object typeOrTypeName)
+		{
+			var attributeValueAsTypeReference = typeOrTypeName as TypeReference;
 			if (attributeValueAsTypeReference != null)
 				return attributeValueAsTypeReference.Resolve ();
 
-			var assembly = ResolveOriginalsAssembly (inAssemblyAttribute.ConstructorArguments [0].Value.ToString ());
+			var assembly = ResolveOriginalsAssembly (assemblyName);
 
-			var expectedTypeName = inAssemblyAttribute.ConstructorArguments [1].Value.ToString ();
+			var expectedTypeName = typeOrTypeName.ToString ();
 			var originalType = assembly.MainModule.GetType (expectedTypeName);
 			if (originalType == null)
 				Assert.Fail ($"Invalid test assertion.  Unable to locate the original type `{expectedTypeName}.`");
