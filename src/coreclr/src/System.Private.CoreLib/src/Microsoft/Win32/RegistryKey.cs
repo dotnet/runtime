@@ -277,7 +277,7 @@ namespace Microsoft.Win32
         public void DeleteValue(string name, bool throwOnMissingValue)
         {
             EnsureWriteable();
-            int errorCode = Win32Native.RegDeleteValue(_hkey, name);
+            int errorCode = Interop.Advapi32.RegDeleteValue(_hkey, name);
 
             //
             // From windows 2003 server, if the name is too long we will get error code ERROR_FILENAME_EXCED_RANGE  
@@ -351,7 +351,7 @@ namespace Microsoft.Win32
             name = FixupName(name); // Fixup multiple slashes to a single slash
 
             SafeRegistryHandle result = null;
-            int ret = Win32Native.RegOpenKeyEx(_hkey,
+            int ret = Interop.Advapi32.RegOpenKeyEx(_hkey,
                 name,
                 0,
                 GetRegistryKeyAccess(writable) | (int)_regView,
@@ -403,7 +403,7 @@ namespace Microsoft.Win32
                 int result;
                 int nameLength = name.Length;
 
-                while ((result = Win32Native.RegEnumKeyEx(
+                while ((result = Interop.Advapi32.RegEnumKeyEx(
                     _hkey,
                     names.Count,
                     name,
@@ -457,7 +457,7 @@ namespace Microsoft.Win32
                 int result;
                 int nameLength = name.Length;
 
-                while ((result = Win32Native.RegEnumValue(
+                while ((result = Interop.Advapi32.RegEnumValue(
                     _hkey,
                     names.Count,
                     name,
@@ -567,7 +567,7 @@ namespace Microsoft.Win32
             int type = 0;
             int datasize = 0;
 
-            int ret = Win32Native.RegQueryValueEx(_hkey, name, null, ref type, (byte[])null, ref datasize);
+            int ret = Interop.Advapi32.RegQueryValueEx(_hkey, name, null, ref type, (byte[])null, ref datasize);
 
             if (ret != 0)
             {
@@ -578,7 +578,7 @@ namespace Microsoft.Win32
 
                     int r;
                     byte[] blob = new byte[size];
-                    while (Interop.Errors.ERROR_MORE_DATA == (r = Win32Native.RegQueryValueEx(_hkey, name, null, ref type, blob, ref sizeInput)))
+                    while (Interop.Errors.ERROR_MORE_DATA == (r = Interop.Advapi32.RegQueryValueEx(_hkey, name, null, ref type, blob, ref sizeInput)))
                     {
                         if (size == int.MaxValue)
                         {
@@ -621,47 +621,47 @@ namespace Microsoft.Win32
 
             switch (type)
             {
-                case Win32Native.REG_NONE:
-                case Win32Native.REG_DWORD_BIG_ENDIAN:
-                case Win32Native.REG_BINARY:
+                case Interop.Advapi32.RegistryValues.REG_NONE:
+                case Interop.Advapi32.RegistryValues.REG_DWORD_BIG_ENDIAN:
+                case Interop.Advapi32.RegistryValues.REG_BINARY:
                     {
                         byte[] blob = new byte[datasize];
-                        ret = Win32Native.RegQueryValueEx(_hkey, name, null, ref type, blob, ref datasize);
+                        ret = Interop.Advapi32.RegQueryValueEx(_hkey, name, null, ref type, blob, ref datasize);
                         data = blob;
                     }
                     break;
-                case Win32Native.REG_QWORD:
+                case Interop.Advapi32.RegistryValues.REG_QWORD:
                     {    // also REG_QWORD_LITTLE_ENDIAN
                         if (datasize > 8)
                         {
                             // prevent an AV in the edge case that datasize is larger than sizeof(long)
-                            goto case Win32Native.REG_BINARY;
+                            goto case Interop.Advapi32.RegistryValues.REG_BINARY;
                         }
                         long blob = 0;
                         Debug.Assert(datasize == 8, "datasize==8");
                         // Here, datasize must be 8 when calling this
-                        ret = Win32Native.RegQueryValueEx(_hkey, name, null, ref type, ref blob, ref datasize);
+                        ret = Interop.Advapi32.RegQueryValueEx(_hkey, name, null, ref type, ref blob, ref datasize);
 
                         data = blob;
                     }
                     break;
-                case Win32Native.REG_DWORD:
+                case Interop.Advapi32.RegistryValues.REG_DWORD:
                     {    // also REG_DWORD_LITTLE_ENDIAN
                         if (datasize > 4)
                         {
                             // prevent an AV in the edge case that datasize is larger than sizeof(int)
-                            goto case Win32Native.REG_QWORD;
+                            goto case Interop.Advapi32.RegistryValues.REG_QWORD;
                         }
                         int blob = 0;
                         Debug.Assert(datasize == 4, "datasize==4");
                         // Here, datasize must be four when calling this
-                        ret = Win32Native.RegQueryValueEx(_hkey, name, null, ref type, ref blob, ref datasize);
+                        ret = Interop.Advapi32.RegQueryValueEx(_hkey, name, null, ref type, ref blob, ref datasize);
 
                         data = blob;
                     }
                     break;
 
-                case Win32Native.REG_SZ:
+                case Interop.Advapi32.RegistryValues.REG_SZ:
                     {
                         if (datasize % 2 == 1)
                         {
@@ -677,7 +677,7 @@ namespace Microsoft.Win32
                         }
                         char[] blob = new char[datasize / 2];
 
-                        ret = Win32Native.RegQueryValueEx(_hkey, name, null, ref type, blob, ref datasize);
+                        ret = Interop.Advapi32.RegQueryValueEx(_hkey, name, null, ref type, blob, ref datasize);
                         if (blob.Length > 0 && blob[blob.Length - 1] == (char)0)
                         {
                             data = new string(blob, 0, blob.Length - 1);
@@ -691,7 +691,7 @@ namespace Microsoft.Win32
                     }
                     break;
 
-                case Win32Native.REG_EXPAND_SZ:
+                case Interop.Advapi32.RegistryValues.REG_EXPAND_SZ:
                     {
                         if (datasize % 2 == 1)
                         {
@@ -707,7 +707,7 @@ namespace Microsoft.Win32
                         }
                         char[] blob = new char[datasize / 2];
 
-                        ret = Win32Native.RegQueryValueEx(_hkey, name, null, ref type, blob, ref datasize);
+                        ret = Interop.Advapi32.RegQueryValueEx(_hkey, name, null, ref type, blob, ref datasize);
 
                         if (blob.Length > 0 && blob[blob.Length - 1] == (char)0)
                         {
@@ -724,7 +724,7 @@ namespace Microsoft.Win32
                             data = Environment.ExpandEnvironmentVariables((string)data);
                     }
                     break;
-                case Win32Native.REG_MULTI_SZ:
+                case Interop.Advapi32.RegistryValues.REG_MULTI_SZ:
                     {
                         if (datasize % 2 == 1)
                         {
@@ -740,7 +740,7 @@ namespace Microsoft.Win32
                         }
                         char[] blob = new char[datasize / 2];
 
-                        ret = Win32Native.RegQueryValueEx(_hkey, name, null, ref type, blob, ref datasize);
+                        ret = Interop.Advapi32.RegQueryValueEx(_hkey, name, null, ref type, blob, ref datasize);
 
                         // make sure the string is null terminated before processing the data
                         if (blob.Length > 0 && blob[blob.Length - 1] != (char)0)
@@ -801,7 +801,7 @@ namespace Microsoft.Win32
                         strings.CopyTo((string[])data, 0);
                     }
                     break;
-                case Win32Native.REG_LINK:
+                case Interop.Advapi32.RegistryValues.REG_LINK:
                 default:
                     break;
             }
@@ -851,7 +851,7 @@ namespace Microsoft.Win32
                     case RegistryValueKind.String:
                         {
                             string data = value.ToString();
-                            ret = Win32Native.RegSetValueEx(_hkey,
+                            ret = Interop.Advapi32.RegSetValueEx(_hkey,
                                 name,
                                 0,
                                 valueKind,
@@ -898,7 +898,7 @@ namespace Microsoft.Win32
                                 *(char*)(currentPtr.ToPointer()) = '\0';
                                 currentPtr = new IntPtr((long)currentPtr + 2);
 
-                                ret = Win32Native.RegSetValueEx(_hkey,
+                                ret = Interop.Advapi32.RegSetValueEx(_hkey,
                                     name,
                                     0,
                                     RegistryValueKind.MultiString,
@@ -911,10 +911,10 @@ namespace Microsoft.Win32
                     case RegistryValueKind.None:
                     case RegistryValueKind.Binary:
                         byte[] dataBytes = (byte[])value;
-                        ret = Win32Native.RegSetValueEx(_hkey,
+                        ret = Interop.Advapi32.RegSetValueEx(_hkey,
                             name,
                             0,
-                            (valueKind == RegistryValueKind.None ? Win32Native.REG_NONE : RegistryValueKind.Binary),
+                            (valueKind == RegistryValueKind.None ? Interop.Advapi32.RegistryValues.REG_NONE : RegistryValueKind.Binary),
                             dataBytes,
                             dataBytes.Length);
                         break;
@@ -925,7 +925,7 @@ namespace Microsoft.Win32
                             // unboxed and cast at the same time.  I.e. ((int)(object)(short) 5) will fail.
                             int data = Convert.ToInt32(value, System.Globalization.CultureInfo.InvariantCulture);
 
-                            ret = Win32Native.RegSetValueEx(_hkey,
+                            ret = Interop.Advapi32.RegSetValueEx(_hkey,
                                 name,
                                 0,
                                 RegistryValueKind.DWord,
@@ -938,7 +938,7 @@ namespace Microsoft.Win32
                         {
                             long data = Convert.ToInt64(value, System.Globalization.CultureInfo.InvariantCulture);
 
-                            ret = Win32Native.RegSetValueEx(_hkey,
+                            ret = Interop.Advapi32.RegSetValueEx(_hkey,
                                 name,
                                 0,
                                 RegistryValueKind.QWord,
@@ -1074,11 +1074,11 @@ namespace Microsoft.Win32
             int winAccess;
             if (!isWritable)
             {
-                winAccess = Win32Native.KEY_READ;
+                winAccess = Interop.Advapi32.RegistryOperations.KEY_READ;
             }
             else
             {
-                winAccess = Win32Native.KEY_READ | Win32Native.KEY_WRITE;
+                winAccess = Interop.Advapi32.RegistryOperations.KEY_READ | Interop.Advapi32.RegistryOperations.KEY_WRITE;
             }
 
             return winAccess;
