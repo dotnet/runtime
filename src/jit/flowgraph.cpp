@@ -4145,26 +4145,6 @@ BasicBlock* Compiler::fgLookupBB(unsigned addr)
     NO_WAY("fgLookupBB failed.");
 }
 
-/*****************************************************************************
- *
- *  The 'jump target' array uses the following flags to indicate what kind
- *  of label is present.
- */
-
-#define JT_NONE 0x00  // This IL offset is never used
-#define JT_ADDR 0x01  // merely make sure this is an OK address
-#define JT_JUMP 0x02  // 'normal' jump target
-#define JT_MULTI 0x04 // target of multiple jumps
-
-inline void Compiler::fgMarkJumpTarget(BYTE* jumpTarget, unsigned offs)
-{
-    /* Make sure we set JT_MULTI if target of multiple jumps */
-
-    noway_assert(JT_MULTI == JT_JUMP << 1);
-
-    jumpTarget[offs] |= (jumpTarget[offs] & JT_JUMP) << 1 | JT_JUMP;
-}
-
 //------------------------------------------------------------------------
 // FgStack: simple stack model for the inlinee's evaluation stack.
 //
@@ -4277,7 +4257,7 @@ private:
 // Arguments:
 //    codeAddr   - base address of the IL code buffer
 //    codeSize   - number of bytes in the IL code buffer
-//    jumpTarget - [OUT] byte array for flagging jump targets
+//    jumpTarget - [OUT] bit vector for flagging jump targets
 //
 // Notes:
 //    If inlining or prejitting the root, this method also makes
@@ -4286,8 +4266,7 @@ private:
 //
 //    May throw an exception if the IL is malformed.
 //
-//    jumpTarget[N] is set to a JT_* value if IL offset N is a
-//    jump target in the method.
+//    jumpTarget[N] is set to 1 if IL offset N is a jump target in the method.
 //
 //    Also sets lvAddrExposed and lvHasILStoreOp, ilHasMultipleILStoreOp in lvaTable[].
 
@@ -4296,7 +4275,7 @@ private:
 #pragma warning(disable : 21000) // Suppress PREFast warning about overly large function
 #endif
 
-void Compiler::fgFindJumpTargets(const BYTE* codeAddr, IL_OFFSET codeSize, BYTE* jumpTarget)
+void Compiler::fgFindJumpTargets(const BYTE* codeAddr, IL_OFFSET codeSize, FixedBitVect* jumpTarget)
 {
     const BYTE* codeBegp = codeAddr;
     const BYTE* codeEndp = codeAddr + codeSize;
@@ -4469,7 +4448,7 @@ void Compiler::fgFindJumpTargets(const BYTE* codeAddr, IL_OFFSET codeSize, BYTE*
                 }
 
                 // Mark the jump target
-                fgMarkJumpTarget(jumpTarget, jmpAddr);
+                jumpTarget->bitVectSet(jmpAddr);
 
                 // See if jump might be sensitive to inlining
                 if (makeInlineObservations && (opcode != CEE_BR_S) && (opcode != CEE_BR))
@@ -4519,7 +4498,7 @@ void Compiler::fgFindJumpTargets(const BYTE* codeAddr, IL_OFFSET codeSize, BYTE*
                 }
 
                 // jmpBase is also the target of the default case, so mark it
-                fgMarkJumpTarget(jumpTarget, jmpBase);
+                jumpTarget->bitVectSet(jmpBase);
 
                 // Process table entries
                 while (jmpCnt > 0)
@@ -4532,7 +4511,7 @@ void Compiler::fgFindJumpTargets(const BYTE* codeAddr, IL_OFFSET codeSize, BYTE*
                         BADCODE3("jump target out of range", " at offset %04X", (IL_OFFSET)(codeAddr - codeBegp));
                     }
 
-                    fgMarkJumpTarget(jumpTarget, jmpAddr);
+                    jumpTarget->bitVectSet(jmpAddr);
                     jmpCnt--;
                 }
 
@@ -5219,25 +5198,32 @@ void Compiler::fgLinkBasicBlocks()
     }
 }
 
-/*****************************************************************************
- *
- *  Walk the instrs to create the basic blocks. Returns the number of BBJ_RETURN in method
- */
+//------------------------------------------------------------------------
+// fgMakeBasicBlocks: walk the IL creating basic blocks, and look for
+//   operations that might get optimized if this method were to be inlined.
+//
+// Arguments:
+//   codeAddr -- starting address of the method's IL stream
+//   codeSize -- length of the IL stream
+//   jumpTarget -- [in] bit vector of jump targets found by fgFindJumpTargets
+//
+// Returns:
+//   number of return blocks (BBJ_RETURN) in the method (may be zero)
+//
+// Notes:
+//   Invoked for prejited and jitted methods, and for all inlinees
 
-unsigned Compiler::fgMakeBasicBlocks(const BYTE* codeAddr, IL_OFFSET codeSize, BYTE* jumpTarget)
+unsigned Compiler::fgMakeBasicBlocks(const BYTE* codeAddr, IL_OFFSET codeSize, FixedBitVect* jumpTarget)
 {
-    unsigned    retBlocks;
-    const BYTE* codeBegp = codeAddr;
-    const BYTE* codeEndp = codeAddr + codeSize;
-    bool        tailCall = false;
-    unsigned    curBBoffs;
+    unsigned    retBlocks = 0;
+    const BYTE* codeBegp  = codeAddr;
+    const BYTE* codeEndp  = codeAddr + codeSize;
+    bool        tailCall  = false;
+    unsigned    curBBoffs = 0;
     BasicBlock* curBBdesc;
 
-    retBlocks = 0;
-    /* Clear the beginning offset for the first BB */
-
-    curBBoffs = 0;
-
+    // Keep track of where we are in the scope lists, as we will also
+    // create blocks at scope boundaries.
     if (opts.compDbgCode && (info.compVarScopesCount > 0))
     {
         compResetScopeLists();
@@ -5251,20 +5237,15 @@ unsigned Compiler::fgMakeBasicBlocks(const BYTE* codeAddr, IL_OFFSET codeSize, B
         }
     }
 
-    BBjumpKinds jmpKind;
-
     do
     {
-        OPCODE     opcode;
-        unsigned   sz;
         unsigned   jmpAddr = DUMMY_INIT(BAD_IL_OFFSET);
         unsigned   bbFlags = 0;
         BBswtDesc* swtDsc  = nullptr;
         unsigned   nxtBBoffs;
-
-        opcode = (OPCODE)getU1LittleEndian(codeAddr);
+        OPCODE     opcode = (OPCODE)getU1LittleEndian(codeAddr);
         codeAddr += sizeof(__int8);
-        jmpKind = BBJ_NONE;
+        BBjumpKinds jmpKind = BBJ_NONE;
 
     DECODE_OPCODE:
 
@@ -5272,14 +5253,14 @@ unsigned Compiler::fgMakeBasicBlocks(const BYTE* codeAddr, IL_OFFSET codeSize, B
 
         noway_assert((unsigned)opcode < CEE_COUNT);
 
-        sz = opcodeSizes[opcode];
+        unsigned sz = opcodeSizes[opcode];
 
         switch (opcode)
         {
             signed jmpDist;
 
             case CEE_PREFIX1:
-                if (jumpTarget[codeAddr - codeBegp] != JT_NONE)
+                if (jumpTarget->bitVectTest((UINT)(codeAddr - codeBegp)))
                 {
                     BADCODE3("jump target between prefix 0xFE and opcode", " at offset %04X",
                              (IL_OFFSET)(codeAddr - codeBegp));
@@ -5451,7 +5432,7 @@ unsigned Compiler::fgMakeBasicBlocks(const BYTE* codeAddr, IL_OFFSET codeSize, B
                 //   (i.e. a prefix opcodes as last intruction in a block)
                 noway_assert(codeAddr < codeEndp);
 
-                if (jumpTarget[codeAddr - codeBegp] != JT_NONE)
+                if (jumpTarget->bitVectTest((UINT)(codeAddr - codeBegp)))
                 {
                     BADCODE3("jump target between prefix and an opcode", " at offset %04X",
                              (IL_OFFSET)(codeAddr - codeBegp));
@@ -5621,7 +5602,7 @@ unsigned Compiler::fgMakeBasicBlocks(const BYTE* codeAddr, IL_OFFSET codeSize, B
 
             for (unsigned i = 0; i < sz; i++, offs++)
             {
-                if (jumpTarget[offs] != JT_NONE)
+                if (jumpTarget->bitVectTest(offs))
                 {
                     BADCODE3("jump into the middle of an opcode", " at offset %04X", (IL_OFFSET)(codeAddr - codeBegp));
                 }
@@ -5659,7 +5640,7 @@ unsigned Compiler::fgMakeBasicBlocks(const BYTE* codeAddr, IL_OFFSET codeSize, B
 
             /* If a label follows this opcode, we'll have to make a new BB */
 
-            bool makeBlock = (jumpTarget[nxtBBoffs] != JT_NONE);
+            bool makeBlock = jumpTarget->bitVectTest(nxtBBoffs);
 
             if (!makeBlock && foundScope)
             {
@@ -5753,19 +5734,10 @@ void Compiler::fgFindBasicBlocks()
     }
 #endif
 
-    /* Allocate the 'jump target' vector
-     *
-     *  We need one extra byte as we mark
-     *  jumpTarget[info.compILCodeSize] with JT_ADDR
-     *  when we need to add a dummy block
-     *  to record the end of a try or handler region.
-     */
-    BYTE* jumpTarget = new (this, CMK_Unknown) BYTE[info.compILCodeSize + 1];
-    memset(jumpTarget, JT_NONE, info.compILCodeSize + 1);
-    noway_assert(JT_NONE == 0);
+    // Allocate the 'jump target' bit vector
+    FixedBitVect* jumpTarget = FixedBitVect::bitVectInit(info.compILCodeSize + 1, this);
 
-    /* Walk the instrs to find all jump targets */
-
+    // Walk the instrs to find all jump targets
     fgFindJumpTargets(info.compCode, info.compILCodeSize, jumpTarget);
     if (compDonotInline())
     {
@@ -5784,7 +5756,6 @@ void Compiler::fgFindBasicBlocks()
 
         for (XTnum = 0; XTnum < info.compXcptnsCount; XTnum++)
         {
-            DWORD             tmpOffset;
             CORINFO_EH_CLAUSE clause;
             info.compCompHnd->getEHinfo(info.compMethodHnd, XTnum, &clause);
             noway_assert(clause.HandlerLength != (unsigned)-1);
@@ -5800,39 +5771,25 @@ void Compiler::fgFindBasicBlocks()
             {
                 BADCODE("try offset is > codesize");
             }
-            if (jumpTarget[clause.TryOffset] == JT_NONE)
-            {
-                jumpTarget[clause.TryOffset] = JT_ADDR;
-            }
+            jumpTarget->bitVectSet(clause.TryOffset);
 
-            tmpOffset = clause.TryOffset + clause.TryLength;
-            if (tmpOffset > info.compILCodeSize)
+            if (clause.TryOffset + clause.TryLength > info.compILCodeSize)
             {
                 BADCODE("try end is > codesize");
             }
-            if (jumpTarget[tmpOffset] == JT_NONE)
-            {
-                jumpTarget[tmpOffset] = JT_ADDR;
-            }
+            jumpTarget->bitVectSet(clause.TryOffset + clause.TryLength);
 
             if (clause.HandlerOffset > info.compILCodeSize)
             {
                 BADCODE("handler offset > codesize");
             }
-            if (jumpTarget[clause.HandlerOffset] == JT_NONE)
-            {
-                jumpTarget[clause.HandlerOffset] = JT_ADDR;
-            }
+            jumpTarget->bitVectSet(clause.HandlerOffset);
 
-            tmpOffset = clause.HandlerOffset + clause.HandlerLength;
-            if (tmpOffset > info.compILCodeSize)
+            if (clause.HandlerOffset + clause.HandlerLength > info.compILCodeSize)
             {
                 BADCODE("handler end > codesize");
             }
-            if (jumpTarget[tmpOffset] == JT_NONE)
-            {
-                jumpTarget[tmpOffset] = JT_ADDR;
-            }
+            jumpTarget->bitVectSet(clause.HandlerOffset + clause.HandlerLength);
 
             if (clause.Flags & CORINFO_EH_CLAUSE_FILTER)
             {
@@ -5840,10 +5797,7 @@ void Compiler::fgFindBasicBlocks()
                 {
                     BADCODE("filter offset > codesize");
                 }
-                if (jumpTarget[clause.FilterOffset] == JT_NONE)
-                {
-                    jumpTarget[clause.FilterOffset] = JT_ADDR;
-                }
+                jumpTarget->bitVectSet(clause.FilterOffset);
             }
         }
     }
@@ -5855,24 +5809,13 @@ void Compiler::fgFindBasicBlocks()
         printf("Jump targets:\n");
         for (unsigned i = 0; i < info.compILCodeSize + 1; i++)
         {
-            if (jumpTarget[i] == JT_NONE)
+            if (jumpTarget->bitVectTest(i))
             {
-                continue;
+                anyJumpTargets = true;
+                printf("  IL_%04x\n", i);
             }
-
-            anyJumpTargets = true;
-            printf("  IL_%04x", i);
-
-            if (jumpTarget[i] & JT_ADDR)
-            {
-                printf(" addr");
-            }
-            if (jumpTarget[i] & JT_MULTI)
-            {
-                printf(" multi");
-            }
-            printf("\n");
         }
+
         if (!anyJumpTargets)
         {
             printf("  none\n");
