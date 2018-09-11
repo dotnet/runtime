@@ -43,7 +43,7 @@ The following are the minimum requirements:
 
 If you've installed Visual Studio 2017 already, go to `C:\Program Files (x86)\Microsoft Visual Studio\Installer` and run
 
-     vs_installer.exe modify --installPath "C:\Program Files (x86)\Microsoft Visual Studio\2017\Community" --add Microsoft.VisualStudio.Component.NuGet --add Microsoft.Net.Component.4.6.TargetingPack --add Microsoft.VisualStudio.Component.PortableLibrary --add Microsoft.VisualStudio.Component.Static.Analysis.Tools --add Microsoft.VisualStudio.Component.Roslyn.Compiler --add Microsoft.Component.MSBuild --add Microsoft.VisualStudio.Component.VC.Tools.x86.x64 --add Microsoft.VisualStudio.Component.VC.CoreIde --add Microsoft.VisualStudio.Component.Windows10SDK --add Microsoft.VisualStudio.Component.VC.140
+     vs_installer.exe modify --installPath "C:\Program Files (x86)\Microsoft Visual Studio\2017\Community" --add Microsoft.VisualStudio.Component.NuGet --add Microsoft.Net.Component.4.6.TargetingPack --add Microsoft.VisualStudio.Component.PortableLibrary --add Microsoft.VisualStudio.Component.Static.Analysis.Tools --add Microsoft.VisualStudio.Component.Roslyn.Compiler --add Microsoft.Component.MSBuild --add Microsoft.VisualStudio.Component.VC.Tools.x86.x64 --add Microsoft.VisualStudio.Component.VC.CoreIde --add Microsoft.VisualStudio.Component.Windows10SDK.17134 --add Microsoft.VisualStudio.Component.VC.140
 
 This will install all the components needed.
 
