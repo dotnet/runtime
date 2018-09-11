@@ -162,11 +162,41 @@ namespace System.Numerics
 
         public static Complex operator *(Complex left, double right)
         {
+            if (!double.IsFinite(left.m_real))
+            {
+                if (!double.IsFinite(left.m_imaginary))
+                {
+                    return new Complex(double.NaN, double.NaN);
+                }
+
+                return new Complex(left.m_real * right, double.NaN);
+            }
+
+            if (!double.IsFinite(left.m_imaginary))
+            {
+                return new Complex(double.NaN, left.m_imaginary * right);
+            }
+
             return new Complex(left.m_real * right, left.m_imaginary * right);
         }
 
         public static Complex operator *(double left, Complex right)
         {
+            if (!double.IsFinite(right.m_real))
+            {
+                if (!double.IsFinite(right.m_imaginary))
+                {
+                    return new Complex(double.NaN, double.NaN);
+                }
+
+                return new Complex(left * right.m_real, double.NaN);
+            }
+
+            if (!double.IsFinite(right.m_imaginary))
+            {
+                return new Complex(double.NaN, left * right.m_imaginary);
+            }
+
             return new Complex(left * right.m_real, left * right.m_imaginary);
         }
 
