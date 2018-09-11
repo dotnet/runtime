@@ -4775,15 +4775,13 @@ protected:
     void        fgInitBBLookup();
     BasicBlock* fgLookupBB(unsigned addr);
 
-    void fgMarkJumpTarget(BYTE* jumpTarget, IL_OFFSET offs);
-
-    void fgFindJumpTargets(const BYTE* codeAddr, IL_OFFSET codeSize, BYTE* jumpTarget);
+    void fgFindJumpTargets(const BYTE* codeAddr, IL_OFFSET codeSize, FixedBitVect* jumpTarget);
 
     void fgMarkBackwardJump(BasicBlock* startBlock, BasicBlock* endBlock);
 
     void fgLinkBasicBlocks();
 
-    unsigned fgMakeBasicBlocks(const BYTE* codeAddr, IL_OFFSET codeSize, BYTE* jumpTarget);
+    unsigned fgMakeBasicBlocks(const BYTE* codeAddr, IL_OFFSET codeSize, FixedBitVect* jumpTarget);
 
     void fgCheckBasicBlockControlFlow();
 
