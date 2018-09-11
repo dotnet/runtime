@@ -156,6 +156,7 @@ namespace Legacy.Support
 
                         openablePortNames.Add(portName);
                     }
+                    catch (UnauthorizedAccessException) { }
                     catch (Exception e)
                     {
                         PrintInfo("Exception opening port {0}: {1}", portName, e);
