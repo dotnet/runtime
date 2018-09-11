@@ -112,50 +112,6 @@ namespace Microsoft.Win32
 
     internal static class Win32Native
     {
-        internal const int KEY_QUERY_VALUE = 0x0001;
-        internal const int KEY_SET_VALUE = 0x0002;
-        internal const int KEY_CREATE_SUB_KEY = 0x0004;
-        internal const int KEY_ENUMERATE_SUB_KEYS = 0x0008;
-        internal const int KEY_NOTIFY = 0x0010;
-        internal const int KEY_CREATE_LINK = 0x0020;
-        internal const int KEY_READ = ((STANDARD_RIGHTS_READ |
-                                                           KEY_QUERY_VALUE |
-                                                           KEY_ENUMERATE_SUB_KEYS |
-                                                           KEY_NOTIFY)
-                                                          &
-                                                          (~SYNCHRONIZE));
-
-        internal const int KEY_WRITE = ((STANDARD_RIGHTS_WRITE |
-                                                           KEY_SET_VALUE |
-                                                           KEY_CREATE_SUB_KEY)
-                                                          &
-                                                          (~SYNCHRONIZE));
-        internal const int REG_OPTION_NON_VOLATILE = 0x0000;     // (default) keys are persisted beyond reboot/unload
-        internal const int REG_OPTION_VOLATILE = 0x0001;     // All keys created by the function are volatile
-        internal const int REG_OPTION_CREATE_LINK = 0x0002;     // They key is a symbolic link
-        internal const int REG_OPTION_BACKUP_RESTORE = 0x0004;  // Use SE_BACKUP_NAME process special privileges
-        internal const int REG_NONE = 0;     // No value type
-        internal const int REG_SZ = 1;     // Unicode nul terminated string
-        internal const int REG_EXPAND_SZ = 2;     // Unicode nul terminated string
-        // (with environment variable references)
-        internal const int REG_BINARY = 3;     // Free form binary
-        internal const int REG_DWORD = 4;     // 32-bit number
-        internal const int REG_DWORD_LITTLE_ENDIAN = 4;     // 32-bit number (same as REG_DWORD)
-        internal const int REG_DWORD_BIG_ENDIAN = 5;     // 32-bit number
-        internal const int REG_LINK = 6;     // Symbolic Link (unicode)
-        internal const int REG_MULTI_SZ = 7;     // Multiple Unicode strings
-        internal const int REG_RESOURCE_LIST = 8;     // Resource list in the resource map
-        internal const int REG_FULL_RESOURCE_DESCRIPTOR = 9;   // Resource list in the hardware description
-        internal const int REG_RESOURCE_REQUIREMENTS_LIST = 10;
-        internal const int REG_QWORD = 11;    // 64-bit number
-
-        // Win32 ACL-related constants:
-        internal const int READ_CONTROL = 0x00020000;
-        internal const int SYNCHRONIZE = 0x00100000;
-
-        internal const int STANDARD_RIGHTS_READ = READ_CONTROL;
-        internal const int STANDARD_RIGHTS_WRITE = READ_CONTROL;
-
         internal const int LMEM_FIXED = 0x0000;
         internal const int LMEM_ZEROINIT = 0x0040;
         internal const int LPTR = (LMEM_FIXED | LMEM_ZEROINIT);
@@ -181,15 +137,6 @@ namespace Microsoft.Win32
             internal short SuiteMask = 0;
             internal byte ProductType = 0;
             internal byte Reserved = 0;
-        }
-
-        [StructLayout(LayoutKind.Sequential)]
-        internal class SECURITY_ATTRIBUTES
-        {
-            internal int nLength = 0;
-            // don't remove null, or this field will disappear in bcl.small
-            internal unsafe byte* pSecurityDescriptor = null;
-            internal int bInheritHandle = 0;
         }
 
         [StructLayout(LayoutKind.Sequential)]
@@ -220,11 +167,6 @@ namespace Microsoft.Win32
         }
 
         internal const string ADVAPI32 = "advapi32.dll";
-        internal const string SHELL32 = "shell32.dll";
-        internal const string SHIM = "mscoree.dll";
-        internal const string CRYPT32 = "crypt32.dll";
-        internal const string SECUR32 = "secur32.dll";
-        internal const string MSCORWKS = "coreclr.dll";
 
         [DllImport(Interop.Libraries.Kernel32, EntryPoint = "LocalAlloc")]
         internal static extern IntPtr LocalAlloc_NoSafeHandle(int uFlags, UIntPtr sizetdwBytes);
@@ -331,64 +273,6 @@ namespace Microsoft.Win32
 
         [DllImport(Interop.Libraries.Ole32)]
         internal static extern IntPtr CoTaskMemRealloc(IntPtr pv, UIntPtr cb);
-
-#if FEATURE_WIN32_REGISTRY
-
-        [DllImport(ADVAPI32, CharSet = CharSet.Auto, BestFitMapping = false)]
-        internal static extern int RegDeleteValue(SafeRegistryHandle hKey, string lpValueName);
-
-        [DllImport(ADVAPI32, CharSet = CharSet.Auto, BestFitMapping = false)]
-        internal static extern unsafe int RegEnumKeyEx(SafeRegistryHandle hKey, int dwIndex,
-                    char[] lpName, ref int lpcbName, int[] lpReserved,
-                    [Out]StringBuilder lpClass, int[] lpcbClass,
-                    long[] lpftLastWriteTime);
-
-        [DllImport(ADVAPI32, CharSet = CharSet.Auto, BestFitMapping = false)]
-        internal static extern unsafe int RegEnumValue(SafeRegistryHandle hKey, int dwIndex,
-                    char[] lpValueName, ref int lpcbValueName,
-                    IntPtr lpReserved_MustBeZero, int[] lpType, byte[] lpData,
-                    int[] lpcbData);
-
-        [DllImport(ADVAPI32, CharSet = CharSet.Auto, BestFitMapping = false)]
-        internal static extern int RegOpenKeyEx(SafeRegistryHandle hKey, string lpSubKey,
-                    int ulOptions, int samDesired, out SafeRegistryHandle hkResult);
-
-        [DllImport(ADVAPI32, CharSet = CharSet.Auto, BestFitMapping = false)]
-        internal static extern int RegQueryValueEx(SafeRegistryHandle hKey, string lpValueName,
-                    int[] lpReserved, ref int lpType, [Out] byte[] lpData,
-                    ref int lpcbData);
-
-        [DllImport(ADVAPI32, CharSet = CharSet.Auto, BestFitMapping = false)]
-        internal static extern int RegQueryValueEx(SafeRegistryHandle hKey, string lpValueName,
-                    int[] lpReserved, ref int lpType, ref int lpData,
-                    ref int lpcbData);
-
-        [DllImport(ADVAPI32, CharSet = CharSet.Auto, BestFitMapping = false)]
-        internal static extern int RegQueryValueEx(SafeRegistryHandle hKey, string lpValueName,
-                    int[] lpReserved, ref int lpType, ref long lpData,
-                    ref int lpcbData);
-
-        [DllImport(ADVAPI32, CharSet = CharSet.Auto, BestFitMapping = false)]
-        internal static extern int RegQueryValueEx(SafeRegistryHandle hKey, string lpValueName,
-                     int[] lpReserved, ref int lpType, [Out] char[] lpData,
-                     ref int lpcbData);
-
-        [DllImport(ADVAPI32, CharSet = CharSet.Auto, BestFitMapping = false)]
-        internal static extern int RegSetValueEx(SafeRegistryHandle hKey, string lpValueName,
-                    int Reserved, RegistryValueKind dwType, byte[] lpData, int cbData);
-
-        [DllImport(ADVAPI32, CharSet = CharSet.Auto, BestFitMapping = false)]
-        internal static extern int RegSetValueEx(SafeRegistryHandle hKey, string lpValueName,
-                    int Reserved, RegistryValueKind dwType, ref int lpData, int cbData);
-
-        [DllImport(ADVAPI32, CharSet = CharSet.Auto, BestFitMapping = false)]
-        internal static extern int RegSetValueEx(SafeRegistryHandle hKey, string lpValueName,
-                    int Reserved, RegistryValueKind dwType, ref long lpData, int cbData);
-
-        [DllImport(ADVAPI32, CharSet = CharSet.Auto, BestFitMapping = false)]
-        internal static extern int RegSetValueEx(SafeRegistryHandle hKey, string lpValueName,
-                    int Reserved, RegistryValueKind dwType, string lpData, int cbData);
-#endif // FEATURE_WIN32_REGISTRY
 
         [DllImport(Interop.Libraries.Kernel32, CharSet = CharSet.Auto, SetLastError = true, BestFitMapping = false)]
         internal static extern int ExpandEnvironmentStrings(string lpSrc, [Out]StringBuilder lpDst, int nSize);
