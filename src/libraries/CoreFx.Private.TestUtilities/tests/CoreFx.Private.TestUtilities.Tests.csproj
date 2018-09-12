@@ -8,6 +8,7 @@
   </PropertyGroup>
   <ItemGroup>
     <Compile Include="AssertExtensionTests.cs" />
+    <Compile Include="ConditionalAttributeTests.cs" />
     <Compile Include="TheoryExtensionTests.cs" />
   </ItemGroup>
 </Project>
