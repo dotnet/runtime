@@ -16,7 +16,7 @@ namespace System.Net
 
         internal static unsafe IPAddress Parse(ReadOnlySpan<char> ipSpan, bool tryParse)
         {
-            if (ipSpan.IndexOf(':') >= 0)
+            if (ipSpan.Contains(':'))
             {
                 // The address is parsed as IPv6 if and only if it contains a colon. This is valid because
                 // we don't support/parse a port specification at the end of an IPv4 address.
