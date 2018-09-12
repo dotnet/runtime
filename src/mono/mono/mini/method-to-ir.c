@@ -9787,6 +9787,14 @@ calli_end:
 
 			context_used = mini_class_check_context_used (cfg, klass);
 
+			if (il_op == MONO_CEE_LDSFLD) {
+				ins = mini_emit_inst_for_field_load (cfg, field);
+				if (ins) {
+					*sp++ = ins;
+					goto field_access_end;
+				}
+			}
+
 			/* INSTANCE CASE */
 
 			foffset = m_class_is_valuetype (klass) ? field->offset - MONO_ABI_SIZEOF (MonoObject): field->offset;

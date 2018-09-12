@@ -680,6 +680,9 @@
 
 #define SIZEOF_REGISTER SIZEOF_VOID_P
 
+/* byte order of target */
+#define TARGET_BYTE_ORDER G_BYTE_ORDER
+
 /* Define to 1 if you have the ANSI C header files. */
 #define STDC_HEADERS 1
 

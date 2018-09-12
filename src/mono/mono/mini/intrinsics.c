@@ -1390,4 +1390,23 @@ mini_emit_inst_for_sharable_method (MonoCompile *cfg, MonoMethod *cmethod, MonoM
 	return NULL;
 }
 
+MonoInst*
+mini_emit_inst_for_field_load (MonoCompile *cfg, MonoClassField *field)
+{
+	MonoClass *klass = field->parent;
+	const char *klass_name_space = m_class_get_name_space (klass);
+	const char *klass_name = m_class_get_name (klass);
+	MonoImage *klass_image = m_class_get_image (klass);
+	gboolean in_corlib = klass_image == mono_defaults.corlib;
+	gboolean is_le;
+	MonoInst *ins;
+
+	if (in_corlib && !strcmp (klass_name_space, "System") && !strcmp (klass_name, "BitConverter") && !strcmp (field->name, "IsLittleEndian")) {
+		is_le = (TARGET_BYTE_ORDER == G_LITTLE_ENDIAN);
+		EMIT_NEW_ICONST (cfg, ins, is_le);
+		return ins;
+	}
+	return NULL;
+}
+
 #endif
