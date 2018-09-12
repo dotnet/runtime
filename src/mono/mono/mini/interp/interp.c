@@ -244,6 +244,17 @@ set_context (ThreadContext *context)
 		jit_tls->interp_context = context;
 }
 
+static ThreadContext *
+get_context (void)
+{
+	ThreadContext *context = (ThreadContext *) mono_native_tls_get_value (thread_context_id);
+	if (context == NULL) {
+		context = g_new0 (ThreadContext, 1);
+		set_context (context);
+	}
+	return context;
+}
+
 static void
 ves_real_abort (int line, MonoMethod *mh,
 		const unsigned short *ip, stackval *stack, stackval *sp)
@@ -1604,7 +1615,7 @@ static MonoObject*
 interp_runtime_invoke (MonoMethod *method, void *obj, void **params, MonoObject **exc, MonoError *error)
 {
 	InterpFrame frame, *old_frame;
-	ThreadContext *context = (ThreadContext*)mono_native_tls_get_value (thread_context_id);
+	ThreadContext *context = get_context ();
 	MonoMethodSignature *sig = mono_method_signature (method);
 	MonoClass *klass = mono_class_from_mono_type (sig->ret);
 	stackval result;
@@ -1616,10 +1627,6 @@ interp_runtime_invoke (MonoMethod *method, void *obj, void **params, MonoObject 
 
 	frame.ex = NULL;
 
-	if (context == NULL) {
-		context = g_new0 (ThreadContext, 1);
-		set_context (context);
-	}
 	old_frame = context->current_frame;
 
 	MonoDomain *domain = mono_domain_get ();
@@ -1675,7 +1682,7 @@ interp_entry (InterpEntryData *data)
 {
 	InterpFrame frame;
 	InterpMethod *rmethod = data->rmethod;
-	ThreadContext *context = (ThreadContext*)mono_native_tls_get_value (thread_context_id);
+	ThreadContext *context = get_context ();
 	InterpFrame *old_frame;
 	stackval result;
 	stackval *args;
@@ -1692,10 +1699,6 @@ interp_entry (InterpEntryData *data)
 	//printf ("%s\n", mono_method_full_name (method, 1));
 
 	frame.ex = NULL;
-	if (context == NULL) {
-		context = g_new0 (ThreadContext, 1);
-		set_context (context);
-	}
 	old_frame = context->current_frame;
 
 	args = g_newa (stackval, sig->param_count + (sig->hasthis ? 1 : 0));
@@ -2369,7 +2372,7 @@ static void
 interp_entry_from_trampoline (gpointer ccontext_untyped, gpointer rmethod_untyped)
 {
 	InterpFrame frame;
-	ThreadContext *context = (ThreadContext*)mono_native_tls_get_value (thread_context_id);
+	ThreadContext *context = get_context ();
 	InterpFrame *old_frame;
 	stackval result;
 	stackval *args;
@@ -2383,10 +2386,6 @@ interp_entry_from_trampoline (gpointer ccontext_untyped, gpointer rmethod_untype
 	sig = mono_method_signature (method);
 
 	frame.ex = NULL;
-	if (context == NULL) {
-		context = g_new0 (ThreadContext, 1);
-		set_context (context);
-	}
 	old_frame = context->current_frame;
 
 	args = (stackval*)alloca (sizeof (stackval) * (sig->param_count + (sig->hasthis ? 1 : 0)));
@@ -2458,7 +2457,7 @@ interp_create_method_pointer (MonoMethod *method, gboolean compile, MonoError *e
 
 	if (compile) {
 		/* Return any errors from method compilation */
-		mono_interp_transform_method (imethod, (ThreadContext*)mono_native_tls_get_value (thread_context_id), error);
+		mono_interp_transform_method (imethod, get_context (), error);
 		return_val_if_nok (error, NULL);
 	}
 
@@ -5730,7 +5729,7 @@ static gboolean
 interp_run_finally (StackFrameInfo *frame, int clause_index, gpointer handler_ip)
 {
 	InterpFrame *iframe = (InterpFrame*)frame->interp_frame;
-	ThreadContext *context = (ThreadContext*)mono_native_tls_get_value (thread_context_id);
+	ThreadContext *context = get_context ();
 	const unsigned short *old_ip = iframe->ip;
 
 
@@ -5753,7 +5752,7 @@ static gboolean
 interp_run_filter (StackFrameInfo *frame, MonoException *ex, int clause_index, gpointer handler_ip)
 {
 	InterpFrame *iframe = (InterpFrame*)frame->interp_frame;
-	ThreadContext *context = (ThreadContext*)mono_native_tls_get_value (thread_context_id);
+	ThreadContext *context = get_context ();
 	InterpFrame child_frame;
 	stackval retval;
 
