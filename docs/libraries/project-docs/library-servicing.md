@@ -16,7 +16,11 @@ Note that it's possible that somebody else has already incremented the package v
 
 ## Determine AssemblyVersion
 
-Much like `PackageVersion`, each library package has a property called `AssemblyVersion`. This will be in either the `.csproj` or in `Directory.Build.Props`/`dir.props`. If your library's `.csproj` (inside the library's `src` directory) references `.NETStandard` or `.NETFramework`, the `AssemblyVersion` should have its patch version incremented by 1 (e.g. `4.0.0.0` -> `4.0.1.0`). If we don't update the AssemblyVersion, a user could run into a situation where two different dependencies of their application pull a version of your library with the same `AssemblyVersion` (`4.0.0.0`), but different `PackageVersion`. If the older package is loaded first, then the application will be using the older version of your library.
+Much like `PackageVersion`, each library package has a property called `AssemblyVersion`. This will be in either the `.csproj` or in `Directory.Build.Props`/`dir.props`. If your library's `.csproj` (inside the library's `src` directory) references `.NETStandard` or `.NETFramework`, the `AssemblyVersion` should have its revision incremented by 1 (e.g. `4.0.0.0` -> `4.0.0.1`). If we don't update the AssemblyVersion, a user could run into a situation where two different dependencies of their application pull a version of your library with the same `AssemblyVersion` (`4.0.0.0`), but different `PackageVersion`. If the older package is loaded first, then the application will be using the older version of your library.
+
+## Update the package index
+
+If you incremented the `AssemblyVersion` in the last step, you'll also need to add an entry to [packageIndex.json](https://github.com/dotnet/corefx/blob/master/pkg/Microsoft.Private.PackageBaseline/packageIndex.json). Find the entry for your library in that file (again, making sure you're in the correct release branch), then find the subsection labeled `AssemblyVersionInPackageVersion`. There, add an entry that maps your new `AssemblyVersion` to your new `PackageVersion`. For an example, see [this PR](https://github.com/dotnet/corefx/commit/fe796bbb8f658c98407b189244d37a68d25a6b32#diff-122916076db7087dbc454352fada61eeR107), where we bumped the `PackageVersion` of `Microsoft.Diagnostics.Tracing.EventSource` from `2.0.0` to `2.0.1`, and bumped the `AssemblyVersion` from `2.0.0.0` to `2.0.1.0`. Therefore, we added an entry to `packageIndex.json` of the form `"2.0.1.0": "2.0.1"`. 
 
 ## Add your package to packages.builds
 
