@@ -2485,7 +2485,7 @@ CopyFile (const gunichar2 *name, const gunichar2 *dest_name, gboolean fail_if_ex
 #if HOST_DARWIN
 	if (clonefile_ptr != NULL) {
 		ret = _wapi_clonefile (utf8_src, utf8_dest, 0);
-		if (ret == 0 || errno != ENOTSUP) {
+		if (ret == 0 || (errno != ENOTSUP && errno != EXDEV)) {
 			g_free (utf8_src);
 			g_free (utf8_dest);
 			MONO_ENTER_GC_SAFE;
