@@ -233,12 +233,9 @@ set_resume_state (ThreadContext *context, InterpFrame *frame)
 	} while (0)
 
 static void
-set_context (ThreadContext *context)
+update_jittls_context (ThreadContext *context)
 {
-	MonoJitTlsData *jit_tls;
-
-	mono_native_tls_set_value (thread_context_id, context);
-	jit_tls = mono_tls_get_jit_tls ();
+	MonoJitTlsData *jit_tls = mono_tls_get_jit_tls ();
 	if (jit_tls)
 		/* jit_tls assumes ownership of 'context' */
 		jit_tls->interp_context = context;
@@ -253,6 +250,13 @@ get_context (void)
 		set_context (context);
 	}
 	return context;
+}
+
+static void
+set_context (ThreadContext *context)
+{
+	mono_native_tls_set_value (thread_context_id, context);
+	update_jittls_context (context);
 }
 
 static void
@@ -731,6 +735,11 @@ interp_throw (ThreadContext *context, MonoException *ex, InterpFrame *frame, gco
 		}
 	}
 	mono_error_assert_ok (error);
+
+	/* Make sure context in MonoJitTls is in sync, as EH relies on it. Out of
+	 * sync can happen if we resume interp execution from an unattached thread
+	 */
+	update_jittls_context (context);
 
 	MonoContext ctx;
 	memset (&ctx, 0, sizeof (MonoContext));
@@ -5087,28 +5096,12 @@ interp_exec_method_full (InterpFrame *frame, ThreadContext *context, guint16 *st
 			mono_memory_barrier ();
 			MINT_IN_BREAK;
 		}
-		MINT_IN_CASE(MINT_MONO_JIT_ATTACH) {
+		MINT_IN_CASE(MINT_MONO_THREADS_ATTACH_COOP) {
 			++ip;
-
-			context->original_domain = NULL;
-			MonoDomain *tls_domain = (MonoDomain *) mono_tls_get_domain ();
-			gpointer tls_jit = mono_tls_get_jit_tls ();
-
-			if (tls_domain != rtm->domain || !tls_jit) {
-				context->original_domain = mono_jit_thread_attach (rtm->domain);
-				/*
-				 * Make sure the JitTlsData contains the interp context, in case
-				 * we weren't yet attached at interp_entry time.
-				 */
-				g_assert (context == mono_native_tls_get_value (thread_context_id));
-				set_context (context);
-			}
+			--sp;
+			sp [-1].data.p = mono_threads_attach_coop ((MonoDomain*)sp[-1].data.p, (gpointer*)sp[0].data.p);
 			MINT_IN_BREAK;
 		}
-		MINT_IN_CASE(MINT_MONO_JIT_DETACH)
-			++ip;
-			mono_jit_set_domain (context->original_domain);
-			MINT_IN_BREAK;
 		MINT_IN_CASE(MINT_MONO_LDDOMAIN)
 			sp->data.p = mono_domain_get ();
 			++sp;

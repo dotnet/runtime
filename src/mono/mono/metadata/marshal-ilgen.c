@@ -5862,12 +5862,13 @@ emit_managed_wrapper_ilgen (MonoMethodBuilder *mb, MonoMethodSignature *invoke_s
 	/*
 	 * guint32 ex = -1;
 	 * // does (STARTING|RUNNING|BLOCKING) -> RUNNING + set/switch domain
-	 * mono_threads_attach_coop ();
+	 * intptr_t attach_dummy;
+	 * intptr_t attach_cookie = mono_threads_attach_coop (domain, &attach_dummy);
 	 * <interrupt check>
 	 *
 	 * ret = method (...);
 	 * // does RUNNING -> (RUNNING|BLOCKING) + unset/switch domain
-	 * mono_threads_detach_coop ();
+	 * mono_threads_detach_coop (attach_cookie, &attach_dummy);
 	 *
 	 * return ret;
 	 */
@@ -5879,21 +5880,16 @@ emit_managed_wrapper_ilgen (MonoMethodBuilder *mb, MonoMethodSignature *invoke_s
 	mono_mb_emit_byte (mb, CEE_CONV_U4);
 	mono_mb_emit_stloc (mb, ex_local);
 
-	if (!mono_threads_is_blocking_transition_enabled ()) {
-		mono_mb_emit_byte (mb, MONO_CUSTOM_PREFIX);
-		mono_mb_emit_byte (mb, CEE_MONO_JIT_ATTACH);
-	} else {
-		/* mono_threads_attach_coop (); */
-		mono_mb_emit_byte (mb, MONO_CUSTOM_PREFIX);
-		mono_mb_emit_byte (mb, CEE_MONO_LDDOMAIN);
-		mono_mb_emit_ldloc_addr (mb, attach_dummy_local);
-		/*
-		 * This icall is special cased in the JIT so it works in native-to-managed wrappers in unattached threads.
-		 * Keep this in sync with the CEE_JIT_ICALL code in the JIT.
-		 */
-		mono_mb_emit_icall (mb, mono_threads_attach_coop);
-		mono_mb_emit_stloc (mb, attach_cookie_local);
-	}
+	/* attach_cookie = mono_threads_attach_coop (domain, &attach_dummy); */
+	mono_mb_emit_byte (mb, MONO_CUSTOM_PREFIX);
+	mono_mb_emit_byte (mb, CEE_MONO_LDDOMAIN);
+	mono_mb_emit_ldloc_addr (mb, attach_dummy_local);
+	/*
+	 * This icall is special cased in the JIT so it works in native-to-managed wrappers in unattached threads.
+	 * Keep this in sync with the CEE_JIT_ICALL code in the JIT.
+	 */
+	mono_mb_emit_icall (mb, mono_threads_attach_coop);
+	mono_mb_emit_stloc (mb, attach_cookie_local);
 
 	/* <interrupt check> */
 	emit_thread_interrupt_checkpoint (mb);
@@ -6036,15 +6032,10 @@ emit_managed_wrapper_ilgen (MonoMethodBuilder *mb, MonoMethodSignature *invoke_s
 		}
 	}
 
-	if (!mono_threads_is_blocking_transition_enabled ()) {
-		mono_mb_emit_byte (mb, MONO_CUSTOM_PREFIX);
-		mono_mb_emit_byte (mb, CEE_MONO_JIT_DETACH);
-	} else {
-		/* mono_threads_detach_coop (); */
-		mono_mb_emit_ldloc (mb, attach_cookie_local);
-		mono_mb_emit_ldloc_addr (mb, attach_dummy_local);
-		mono_mb_emit_icall (mb, mono_threads_detach_coop);
-	}
+	/* mono_threads_detach_coop (attach_cookie, &attach_dummy); */
+	mono_mb_emit_ldloc (mb, attach_cookie_local);
+	mono_mb_emit_ldloc_addr (mb, attach_dummy_local);
+	mono_mb_emit_icall (mb, mono_threads_detach_coop);
 
 	/* return ret; */
 	if (m->retobj_var) {
