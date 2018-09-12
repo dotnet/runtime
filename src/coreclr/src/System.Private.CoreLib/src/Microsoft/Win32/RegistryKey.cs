@@ -1041,7 +1041,7 @@ namespace Microsoft.Win32
         internal static string FixupName(string name)
         {
             Debug.Assert(name != null, "[FixupName]name!=null");
-            if (name.IndexOf('\\') == -1)
+            if (!name.Contains('\\'))
                 return name;
 
             StringBuilder sb = new StringBuilder(name);
