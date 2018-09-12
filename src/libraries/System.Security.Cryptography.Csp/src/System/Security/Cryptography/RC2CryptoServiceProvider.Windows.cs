@@ -13,7 +13,6 @@ namespace System.Security.Cryptography
     {
         private bool _use40bitSalt = false;
         private const int BitsPerByte = 8;
-        private static readonly RandomNumberGenerator s_rng = RandomNumberGenerator.Create();
 
         private static KeySizes[] s_legalKeySizes =
         {
@@ -66,7 +65,7 @@ namespace System.Security.Cryptography
         public override void GenerateKey()
         {
             var key = new byte[KeySizeValue / 8];
-            s_rng.GetBytes(key);
+            RandomNumberGenerator.Fill(key);
             KeyValue = key;
         }
 
@@ -74,7 +73,7 @@ namespace System.Security.Cryptography
         {
             // Block size is always 64 bits so IV is always 64 bits == 8 bytes
             var iv = new byte[8];
-            s_rng.GetBytes(iv);
+            RandomNumberGenerator.Fill(iv);
             IVValue = iv;
         }
 
@@ -92,7 +91,7 @@ namespace System.Security.Cryptography
                 if (Mode.UsesIv())
                 {
                     rgbIV = new byte[8];
-                    s_rng.GetBytes(rgbIV);
+                    RandomNumberGenerator.Fill(rgbIV);
                 }
             }
             else

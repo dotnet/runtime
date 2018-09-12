@@ -11,7 +11,6 @@ namespace Internal.Cryptography
     internal sealed partial class DesImplementation : DES
     {
         private const int BitsPerByte = 8;
-        private static readonly RandomNumberGenerator s_rng = RandomNumberGenerator.Create();
 
         public override ICryptoTransform CreateDecryptor()
         {
@@ -36,18 +35,18 @@ namespace Internal.Cryptography
         public override void GenerateIV()
         {
             byte[] iv = new byte[BlockSize / BitsPerByte];
-            s_rng.GetBytes(iv);
+            RandomNumberGenerator.Fill(iv);
             IV = iv;
         }
 
         public sealed override void GenerateKey()
         {
             byte[] key = new byte[KeySize / BitsPerByte];
-            s_rng.GetBytes(key);
+            RandomNumberGenerator.Fill(key);
             // Never hand back a weak or semi-weak key
             while (IsWeakKey(key) || IsSemiWeakKey(key))
             {
-                s_rng.GetBytes(key);
+                RandomNumberGenerator.Fill(key);
             }
             KeyValue = key;
         }
