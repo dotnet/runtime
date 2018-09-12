@@ -124,5 +124,6 @@ namespace System
         internal const int RO_E_CLOSED = unchecked((int)0x80000013);
         internal const int TYPE_E_TYPEMISMATCH = unchecked((int)0x80028CA0);
         internal const int CO_E_NOTINITIALIZED = unchecked((int)0x800401F0);
+        internal const int RPC_E_CHANGED_MODE = unchecked((int)0x80010106);
     }
 }
