@@ -145,11 +145,15 @@
     <_portableOS Condition="'$(_runtimeOSFamily)' == 'win'">win</_portableOS>
     <_portableOS Condition="'$(_runtimeOSFamily)' == 'osx'">osx</_portableOS>
     <_portableOS Condition="'$(_runtimeOSFamily)' == 'FreeBSD'">freebsd</_portableOS>
+    <_portableOS Condition="'$(RuntimeOS)' == 'WebAssembly'">webassembly</_portableOS>
 
     <_runtimeOS>$(RuntimeOS)</_runtimeOS>
     <_runtimeOS Condition="'$(_runtimeOS)' == 'tizen.4.0.0'">ubuntu.14.04</_runtimeOS>
     <_runtimeOS Condition="'$(PortableBuild)' == 'true'">$(_portableOS)</_runtimeOS>
     <ToolRuntimeRID>$(_runtimeOS)-x64</ToolRuntimeRID>
+    
+    <!-- There are no WebAssembly tools, so treat them as Windows -->
+    <ToolRuntimeRID Condition="'$(RuntimeOS)' == 'WebAssembly'">win-x64</ToolRuntimeRID>
     <MicrosoftNetCoreIlasmPackageRuntimeId Condition="'$(MicrosoftNetCoreIlasmPackageRuntimeId)' == ''">$(ToolRuntimeRID)</MicrosoftNetCoreIlasmPackageRuntimeId>
 
     <!-- support cross-targeting by choosing a RID to restore when running on a different machine that what we're build for -->

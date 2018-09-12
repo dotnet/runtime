@@ -11,6 +11,7 @@
       netcoreapp2.0-Windows_NT;
       netcoreapp2.0-Unix;
       netcoreappaot-Windows_NT;
+      netcoreappaot-WebAssembly;
     </BuildConfigurations>
   </PropertyGroup>
 </Project>

@@ -5,6 +5,8 @@
       uap-Windows_NT;
       netcoreapp-Windows_NT;
       netcoreapp-Unix;
+      netcoreappaot-Windows_NT;
+      netcoreappaot-WebAssembly;
     </BuildConfigurations>
   </PropertyGroup>
 </Project>

@@ -12,6 +12,7 @@
       netfx;
       netcoreapp-Windows_NT;
       netcoreappaot-Windows_NT;
+      netcoreappaot-WebAssembly;
       netcoreapp-Unix;
       uap-Windows_NT;
       uapaot-Windows_NT;
