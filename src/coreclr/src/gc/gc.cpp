@@ -17771,6 +17771,11 @@ void gc_heap::mark_object_simple1 (uint8_t* oo, uint8_t* start THREAD_NUMBER_DCL
                             size_t obj_size = size (class_obj);
                             promoted_bytes (thread) += obj_size;
                             *(mark_stack_tos++) = class_obj;
+                            // The code below expects that the oo is still stored in the stack slot that was
+                            // just popped and it "pushes" it back just by incrementing the mark_stack_tos. 
+                            // But the class_obj has just overwritten that stack slot and so the oo needs to
+                            // be stored to the new slot that's pointed to by the mark_stack_tos.
+                            *mark_stack_tos = oo;
                         }
                     }
                 }
