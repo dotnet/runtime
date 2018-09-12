@@ -28,7 +28,7 @@ namespace System.Net.Http.Functional.Tests
             return s_decodeDelegate(source, destination);
         }
 
-        private static readonly (uint code, int bitLength)[] s_encodingTable = new(uint code, int bitLength)[]
+        private static readonly (uint code, int bitLength)[] s_encodingTable = new (uint code, int bitLength)[]
         {
             (0b11111111_11000000_00000000_00000000, 13),
             (0b11111111_11111111_10110000_00000000, 23),
