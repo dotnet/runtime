@@ -805,7 +805,7 @@ namespace System.Runtime.CompilerServices
                     Task<bool> task = value ? AsyncTaskCache.TrueTask : AsyncTaskCache.FalseTask;
                     return Unsafe.As<Task<TResult>>(task); // UnsafeCast avoids type check we know will succeed
                 }
-                // For Int32, we cache a range of common values, e.g. [-1,4).
+                // For Int32, we cache a range of common values, e.g. [-1,9).
                 else if (typeof(TResult) == typeof(int))
                 {
                     // Compare to constants to avoid static field access if outside of cached range.
