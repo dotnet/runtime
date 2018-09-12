@@ -174,7 +174,7 @@ namespace System.Diagnostics.Tracing
 
         public static void CheckName(string name)
         {
-            if (name != null && 0 <= name.IndexOf('\0'))
+            if (name != null && name.Contains('\0'))
             {
                 throw new ArgumentOutOfRangeException(nameof(name));
             }
