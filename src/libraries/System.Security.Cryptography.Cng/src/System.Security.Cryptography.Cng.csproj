@@ -8,12 +8,10 @@
     <IsPartialFacadeAssembly Condition="'$(TargetsNetFx)' == 'true'">true</IsPartialFacadeAssembly>
     <ResourcesSourceOutputDirectory Condition="'$(IsPartialFacadeAssembly)' == 'true'">None</ResourcesSourceOutputDirectory>
     <GenFacadesIgnoreMissingTypes Condition="'$(TargetGroup)' == 'net461'">true</GenFacadesIgnoreMissingTypes>
-    <Configurations>net461-Windows_NT-Debug;net461-Windows_NT-Release;net462-Windows_NT-Debug;net462-Windows_NT-Release;net47-Windows_NT-Debug;net47-Windows_NT-Release;netcoreapp-Debug;netcoreapp-Release;netcoreapp-Windows_NT-Debug;netcoreapp-Windows_NT-Release;netfx-Windows_NT-Debug;netfx-Windows_NT-Release;netstandard-Debug;netstandard-Release;netstandard1.3-Debug;netstandard1.3-Release;netstandard1.4-Debug;netstandard1.4-Release;uap-Windows_NT-Debug;uap-Windows_NT-Release</Configurations>
+    <Configurations>net461-Windows_NT-Debug;net461-Windows_NT-Release;net462-Windows_NT-Debug;net462-Windows_NT-Release;net47-Windows_NT-Debug;net47-Windows_NT-Release;netcoreapp-Debug;netcoreapp-Release;netcoreapp-Windows_NT-Debug;netcoreapp-Windows_NT-Release;netfx-Windows_NT-Debug;netfx-Windows_NT-Release;netstandard-Debug;netstandard-Release;uap-Windows_NT-Debug;uap-Windows_NT-Release</Configurations>
   </PropertyGroup>
   <PropertyGroup Condition="'$(TargetsWindows)' != 'true'">
     <GeneratePlatformNotSupportedAssemblyMessage>SR.PlatformNotSupported_CryptographyCng</GeneratePlatformNotSupportedAssemblyMessage>
-    <AssemblyVersion Condition="'$(TargetGroup)' == 'netstandard1.3'">4.0.0.0</AssemblyVersion>
-    <AssemblyVersion Condition="'$(TargetGroup)' == 'netstandard1.4'">4.1.0.0</AssemblyVersion>
     <AssemblyVersion Condition="'$(TargetGroup)' == 'netstandard'">4.3.0.0</AssemblyVersion>
   </PropertyGroup>
   <Import Project="$(CommonPath)\System\Security\Cryptography\Asn1\AsnXml.targets"/>
@@ -393,10 +391,6 @@
   <ItemGroup Condition="'$(IsPartialFacadeAssembly)' == 'true'">
     <Reference Include="mscorlib" />
     <Reference Include="System.Core" />
-  </ItemGroup>
-  <ItemGroup Condition="'$(TargetGroup)' == 'netstandard1.3' OR '$(TargetGroup)' == 'netstandard1.4'">
-    <Reference Include="System.IO" />
-    <Reference Include="System.Runtime.Handles" />
   </ItemGroup>
   <ItemGroup Condition="'$(IsPartialFacadeAssembly)' != 'true'">
     <Reference Include="System.Buffers" />

@@ -3,8 +3,6 @@
   <PropertyGroup>
     <PackageConfigurations>
       netstandard;
-      netstandard1.3;
-      netstandard1.4;
       net461-Windows_NT;
       netcoreapp-Windows_NT;
       netcoreapp;
