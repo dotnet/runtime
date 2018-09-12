@@ -173,10 +173,7 @@ namespace Internal.Cryptography
         public static byte[] GenerateRandom(int count)
         {
             byte[] buffer = new byte[count];
-            using (RandomNumberGenerator rng = RandomNumberGenerator.Create())
-            {
-                rng.GetBytes(buffer);
-            }
+            RandomNumberGenerator.Fill(buffer);
             return buffer;
         }
     }
