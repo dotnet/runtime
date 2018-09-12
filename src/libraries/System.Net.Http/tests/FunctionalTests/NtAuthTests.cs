@@ -109,7 +109,7 @@ namespace System.Net.Http.Functional.Tests
         }
 
         [OuterLoop]
-        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsWindows))]    // HttpListener doesn't support nt auth on non-Windows platforms
+        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsWindows), nameof(PlatformDetection.IsNotWindowsNanoServer))]    // HttpListener doesn't support nt auth on non-Windows platforms
         [InlineData(true, HttpStatusCode.OK)]
         [InlineData(true, HttpStatusCode.Unauthorized)]
         [InlineData(false, HttpStatusCode.OK)]
