@@ -2268,7 +2268,7 @@ namespace System.Globalization
             for (int i = startIndex; i < format.Length; ++i)
             {
                 // See if we have a time Part
-                if (!inQuote && timeParts.IndexOf(format[i]) != -1)
+                if (!inQuote && timeParts.Contains(format[i]))
                 {
                     return i;
                 }

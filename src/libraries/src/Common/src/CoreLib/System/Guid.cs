@@ -449,7 +449,7 @@ namespace System
             }
 
             // Check for braces
-            bool bracesExistInString = (guidString.IndexOf('{') >= 0);
+            bool bracesExistInString = guidString.Contains('{');
 
             if (bracesExistInString)
             {
@@ -471,7 +471,7 @@ namespace System
             }
 
             // Check for parenthesis
-            bool parenthesisExistInString = (guidString.IndexOf('(') >= 0);
+            bool parenthesisExistInString = guidString.Contains('(');
 
             if (parenthesisExistInString)
             {

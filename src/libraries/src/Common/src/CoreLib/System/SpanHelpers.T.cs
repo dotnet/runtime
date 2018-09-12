@@ -51,7 +51,7 @@ namespace System
         }
 
         // Adapted from IndexOf(...)
-        public static unsafe bool Contains<T>(ref T searchSpace, T value, int length)
+        public static bool Contains<T>(ref T searchSpace, T value, int length)
                where T : IEquatable<T>
         {
             Debug.Assert(length >= 0);

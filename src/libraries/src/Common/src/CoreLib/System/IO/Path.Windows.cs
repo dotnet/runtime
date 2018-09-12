@@ -47,7 +47,7 @@ namespace System.IO
             // Embedded null characters are the only invalid character case we trully care about.
             // This is because the nulls will signal the end of the string to Win32 and therefore have
             // unpredictable results.
-            if (path.IndexOf('\0') != -1)
+            if (path.Contains('\0'))
                 throw new ArgumentException(SR.Argument_InvalidPathChars, nameof(path));
 
             if (PathInternal.IsExtended(path.AsSpan()))

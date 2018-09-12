@@ -311,7 +311,7 @@ namespace System.Globalization
                         break;
                     default:
                         const string unsupportedDateFieldSymbols = "YuUrQqwWDFg";
-                        Debug.Assert(unsupportedDateFieldSymbols.IndexOf(input[index]) == -1,
+                        Debug.Assert(!unsupportedDateFieldSymbols.Contains(input[index]),
                             string.Format(CultureInfo.InvariantCulture,
                                 "Encountered an unexpected date field symbol '{0}' from ICU which has no known corresponding .NET equivalent.", 
                                 input[index]));
