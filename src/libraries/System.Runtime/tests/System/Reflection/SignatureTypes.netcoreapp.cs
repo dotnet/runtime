@@ -47,6 +47,9 @@ namespace System.Reflection.Tests
                 yield return new object[] { sigType.MakeByRefType(), true };
                 yield return new object[] { sigType.MakePointerType(), true };
                 yield return new object[] { typeof(List<>).MakeGenericType(sigType), true };
+
+                yield return new object[] { Type.MakeGenericSignatureType(typeof(List<>), typeof(int)), true };
+                yield return new object[] { Type.MakeGenericSignatureType(typeof(List<>), sigType), true };
             }
         }
 
@@ -281,21 +284,33 @@ namespace System.Reflection.Tests
         [InlineData(typeof(Span<>))]
         public static void MakeSignatureConstructedGenericType(Type genericTypeDefinition)
         {
-            Type t = Type.MakeGenericMethodParameter(5);
-            t = genericTypeDefinition.MakeGenericType(t);
+            Type gmp = Type.MakeGenericMethodParameter(5);
 
-            Assert.True(t.IsConstructedGenericType);
-            Assert.Equal(genericTypeDefinition, t.GetGenericTypeDefinition());
-            Assert.Equal(1, t.GenericTypeArguments.Length);
+            Type[] testTypes = { genericTypeDefinition.MakeGenericType(gmp), Type.MakeGenericSignatureType(genericTypeDefinition, gmp) };
+            Assert.All(testTypes,
+                (Type t) =>
+                {
+                    Assert.True(t.IsConstructedGenericType);
+                    Assert.Equal(genericTypeDefinition, t.GetGenericTypeDefinition());
+                    Assert.Equal(1, t.GenericTypeArguments.Length);
 
-            Type et = t.GenericTypeArguments[0];
-            Assert.True(et.IsSignatureType);
-            Assert.True(et.IsGenericParameter);
-            Assert.False(et.IsGenericTypeParameter);
-            Assert.True(et.IsGenericMethodParameter);
-            Assert.Equal(5, et.GenericParameterPosition);
+                    Type et = t.GenericTypeArguments[0];
+                    Assert.True(et.IsSignatureType);
+                    Assert.True(et.IsGenericParameter);
+                    Assert.False(et.IsGenericTypeParameter);
+                    Assert.True(et.IsGenericMethodParameter);
+                    Assert.Equal(5, et.GenericParameterPosition);
 
-            TestSignatureTypeInvariants(t);
+                    TestSignatureTypeInvariants(t);
+                });
+        }
+
+        [Fact]
+        public static void MakeGenericSignatureTypeValidation()
+        {
+            AssertExtensions.Throws<ArgumentNullException>("genericTypeDefinition", () => Type.MakeGenericSignatureType(null));
+            AssertExtensions.Throws<ArgumentNullException>("typeArguments", () => Type.MakeGenericSignatureType(typeof(IList<>), typeArguments: null));
+            AssertExtensions.Throws<ArgumentNullException>("typeArguments", () => Type.MakeGenericSignatureType(typeof(IList<>), new Type[] { null }));
         }
 
         private static Type ToSignatureType(this Type type)

@@ -3050,6 +3050,7 @@ namespace System
         public static System.Type MakeGenericMethodParameter(int position) { throw null; }
         public virtual System.Type MakeGenericType(params System.Type[] typeArguments) { throw null; }
         public virtual System.Type MakePointerType() { throw null; }
+        public static System.Type MakeGenericSignatureType(System.Type genericTypeDefinition, params System.Type[] typeArguments) { throw null; }
         public static bool operator ==(System.Type left, System.Type right) { throw null; }
         public static bool operator !=(System.Type left, System.Type right) { throw null; }
         public static System.Type ReflectionOnlyGetType(string typeName, bool throwIfNotFound, bool ignoreCase) { throw null; }
@@ -5494,7 +5495,7 @@ namespace System.Reflection
     public partial class CustomAttributeData
     {
         protected CustomAttributeData() { }
-        public System.Type AttributeType { get { throw null; } }
+        public virtual System.Type AttributeType { get { throw null; } }
         public virtual System.Reflection.ConstructorInfo Constructor { get { throw null; } }
         public virtual System.Collections.Generic.IList<System.Reflection.CustomAttributeTypedArgument> ConstructorArguments { get { throw null; } }
         public virtual System.Collections.Generic.IList<System.Reflection.CustomAttributeNamedArgument> NamedArguments { get { throw null; } }
