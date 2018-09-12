@@ -420,7 +420,7 @@ namespace System
             {
                 throw new ArgumentException(SR.Argument_StringFirstCharIsZero, nameof(variable));
             }
-            if (variable.IndexOf('=') != -1)
+            if (variable.Contains('='))
             {
                 throw new ArgumentException(SR.Argument_IllegalEnvVarName, nameof(variable));
             }

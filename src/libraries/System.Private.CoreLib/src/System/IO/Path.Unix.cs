@@ -23,7 +23,7 @@ namespace System.IO
             if (path.Length == 0)
                 throw new ArgumentException(SR.Arg_PathEmpty, nameof(path));
 
-            if (path.IndexOf('\0') != -1)
+            if (path.Contains('\0'))
                 throw new ArgumentException(SR.Argument_InvalidPathChars, nameof(path)); 
             
             // Expand with current directory if necessary
