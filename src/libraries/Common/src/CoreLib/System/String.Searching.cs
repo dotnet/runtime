@@ -22,10 +22,7 @@ namespace System
             return (IndexOf(value, comparisonType) >= 0);
         }
 
-        public bool Contains(char value)
-        {
-            return IndexOf(value) != -1;
-        }
+        public bool Contains(char value) => SpanHelpers.Contains(ref _firstChar, value, Length);
 
         public bool Contains(char value, StringComparison comparisonType)
         {
