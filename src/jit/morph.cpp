@@ -453,29 +453,23 @@ GenTree* Compiler::fgMorphCast(GenTree* tree)
                 {
                     const ssize_t shiftAmountValue = shiftAmount->AsIntCon()->IconValue();
 
-                    if (shiftAmountValue >= 64)
+                    if ((shiftAmountValue >= 64) || (shiftAmountValue < 0))
                     {
-                        // Shift amount is large enough that result is undefined.
-                        // Don't try and optimize.
+                        // Shift amount is large enough or negative so result is undefined.
+                        // Don't try to optimize.
                         assert(!canPushCast);
                     }
-                    else if (shiftAmountValue >= 32)
+                    else if ((shiftAmountValue >= 32) && ((tree->gtFlags & GTF_ALL_EFFECT) == 0))
                     {
                         // Result of the shift is zero.
                         DEBUG_DESTROY_NODE(tree);
                         GenTree* zero = gtNewZeroConNode(TYP_INT);
                         return fgMorphTree(zero);
                     }
-                    else if (shiftAmountValue >= 0)
-                    {
-                        // Shift amount is small enough that we can push the cast through.
-                        canPushCast = true;
-                    }
                     else
                     {
-                        // Shift amount is negative and so result is undefined.
-                        // Don't try and optimize.
-                        assert(!canPushCast);
+                        // Shift amount is positive and small enough that we can push the cast through.
+                        canPushCast = true;
                     }
                 }
                 else
@@ -489,14 +483,14 @@ GenTree* Compiler::fgMorphCast(GenTree* tree)
             {
                 DEBUG_DESTROY_NODE(tree);
 
-                // Insert narrowing casts for op1 and op2
+                // Insert narrowing casts for op1 and op2.
                 oper->gtOp.gtOp1 = gtNewCastNode(TYP_INT, oper->gtOp.gtOp1, false, dstType);
                 if (oper->gtOp.gtOp2 != nullptr)
                 {
                     oper->gtOp.gtOp2 = gtNewCastNode(TYP_INT, oper->gtOp.gtOp2, false, dstType);
                 }
 
-                // Clear the GT_MUL_64RSLT if it is set
+                // Clear the GT_MUL_64RSLT if it is set.
                 if (oper->gtOper == GT_MUL && (oper->gtFlags & GTF_MUL_64RSLT))
                 {
                     oper->gtFlags &= ~GTF_MUL_64RSLT;
