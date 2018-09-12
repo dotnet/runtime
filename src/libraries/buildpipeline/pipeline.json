@@ -111,7 +111,7 @@
           "Parameters": {
             "PB_BuildArguments": "-buildArch=x64 -$(PB_ConfigurationGroup) -- /p:StabilizePackageVersion=$(PB_IsStable) /p:PackageVersionStamp=$(PB_VersionStamp)",
             "PB_SyncArguments": "-p -- /p:ArchGroup=x64 /p:DotNetRestoreSources=$(PB_RestoreSource) /p:DotNetAssetRootUrl=$(PB_AssetRootUrl)",
-            "PB_TargetQueue": "OSX.1012.Amd64+OSX.1013.Amd64",
+            "PB_TargetQueue": "OSX.1012.Amd64+OSX.1013.Amd64+OSX.1014.Amd64",
             "PB_CreateHelixArguments": "/p:ArchGroup=x64 /p:ConfigurationGroup=$(PB_ConfigurationGroup) /p:TestProduct=corefx /p:TimeoutInSeconds=1200 /p:TargetOS=OSX"
           },
           "ReportingParameters": {
