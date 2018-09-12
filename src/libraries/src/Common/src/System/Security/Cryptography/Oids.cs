@@ -78,6 +78,9 @@ namespace System.Security.Cryptography
 
         internal const string Mgf1 = "1.2.840.113549.1.1.8";
 
+        // PKCS#7
+        internal const string NoSignature = "1.3.6.1.5.5.7.6.2";
+
         // X500 Names
         internal const string CommonName = "2.5.4.3";
         internal const string Organization = "2.5.4.10";

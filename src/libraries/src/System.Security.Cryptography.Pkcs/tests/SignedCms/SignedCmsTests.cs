@@ -378,6 +378,79 @@ namespace System.Security.Cryptography.Pkcs.Tests
         }
 
         [Theory]
+        [InlineData(SubjectIdentifierType.Unknown)]
+        [InlineData(SubjectIdentifierType.IssuerAndSerialNumber)]
+        [InlineData(SubjectIdentifierType.SubjectKeyIdentifier)]
+        [InlineData((SubjectIdentifierType)76)]
+        public static void ZeroArgComputeSignature(SubjectIdentifierType identifierType)
+        {
+            ContentInfo contentInfo = new ContentInfo(new byte[] { 9, 8, 7, 6, 5 });
+            SignedCms cms = new SignedCms(identifierType, contentInfo);
+
+            Assert.Throws<InvalidOperationException>(() => cms.ComputeSignature());
+
+            cms = new SignedCms(identifierType, contentInfo, detached: true);
+            Assert.Throws<InvalidOperationException>(() => cms.ComputeSignature());
+        }
+
+        [Theory]
+        [InlineData(false)]
+        [InlineData(true)]
+        public static void ZeroArgComputeSignature_NoSignature(bool detached)
+        {
+            ContentInfo contentInfo = new ContentInfo(new byte[] { 9, 8, 7, 6, 5 });
+            SignedCms cms = new SignedCms(SubjectIdentifierType.NoSignature, contentInfo, detached);
+
+            if (PlatformDetection.IsFullFramework)
+            {
+                Assert.Throws<NullReferenceException>(() => cms.ComputeSignature());
+            }
+            else
+            {
+                cms.ComputeSignature();
+
+                SignerInfoCollection signers = cms.SignerInfos;
+                Assert.Equal(1, signers.Count);
+                Assert.Equal(SubjectIdentifierType.NoSignature, signers[0].SignerIdentifier.Type);
+                cms.CheckHash();
+                Assert.Throws<CryptographicException>(() => cms.CheckSignature(true));
+            }
+        }
+
+        [Theory]
+        [InlineData(SubjectIdentifierType.IssuerAndSerialNumber, false)]
+        [InlineData(SubjectIdentifierType.IssuerAndSerialNumber, true)]
+        [InlineData(SubjectIdentifierType.SubjectKeyIdentifier, false)]
+        [InlineData(SubjectIdentifierType.SubjectKeyIdentifier, true)]
+        // NoSignature is a different test, because it succeeds (CoreFX) or fails differently (NetFX)
+        public static void SignSilentWithNoCertificate(SubjectIdentifierType identifierType, bool detached)
+        {
+            ContentInfo contentInfo = new ContentInfo(new byte[] { 9, 8, 7, 6, 5 });
+            SignedCms cms = new SignedCms(contentInfo, detached);
+
+            Assert.Throws<InvalidOperationException>(
+                () => cms.ComputeSignature(new CmsSigner(identifierType), silent: true));
+        }
+
+        [Theory]
+        [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework)]
+        [InlineData(SubjectIdentifierType.IssuerAndSerialNumber, false)]
+        [InlineData(SubjectIdentifierType.IssuerAndSerialNumber, true)]
+        [InlineData(SubjectIdentifierType.SubjectKeyIdentifier, false)]
+        [InlineData(SubjectIdentifierType.SubjectKeyIdentifier, true)]
+        // NoSignature is a different test, because it succeeds (CoreFX) or fails differently (NetFX)
+        public static void SignNoisyWithNoCertificate_NotSupported(
+            SubjectIdentifierType identifierType,
+            bool detached)
+        {
+            ContentInfo contentInfo = new ContentInfo(new byte[] { 9, 8, 7, 6, 5 });
+            SignedCms cms = new SignedCms(contentInfo, detached);
+
+            Assert.Throws<PlatformNotSupportedException>(
+                () => cms.ComputeSignature(new CmsSigner(identifierType), silent: false));
+        }
+
+        [Theory]
         [InlineData(SubjectIdentifierType.IssuerAndSerialNumber, false)]
         [InlineData(SubjectIdentifierType.IssuerAndSerialNumber, true)]
         [InlineData(SubjectIdentifierType.SubjectKeyIdentifier, false)]
@@ -595,6 +668,236 @@ namespace System.Security.Cryptography.Pkcs.Tests
             }
 
             cms.CheckSignature(true);
+        }
+
+        [Theory]
+        [InlineData(false, false)]
+        [InlineData(false, true)]
+        [InlineData(true, false)]
+        [InlineData(true, true)]
+        public static void AddFirstSigner_NoSignature(bool detached, bool includeExtraCert)
+        {
+            ContentInfo contentInfo = new ContentInfo(new byte[] { 9, 8, 7, 6, 5 });
+            SignedCms cms = new SignedCms(contentInfo, detached);
+            X509Certificate2Collection certs;
+
+            // A certificate shouldn't really be required here, but on .NET Framework
+            // it will encounter throw a NullReferenceException.
+            using (X509Certificate2 cert = Certificates.RSAKeyTransferCapi1.GetCertificate())
+            using (X509Certificate2 cert2 = Certificates.DHKeyAgree1.GetCertificate())
+            {
+                CmsSigner cmsSigner = new CmsSigner(SubjectIdentifierType.NoSignature, cert);
+
+                if (includeExtraCert)
+                {
+                    cmsSigner.Certificates.Add(cert2);
+                }
+
+                cms.ComputeSignature(cmsSigner);
+
+                certs = cms.Certificates;
+
+                if (includeExtraCert)
+                {
+                    Assert.Equal(1, certs.Count);
+                    Assert.Equal(cert2.RawData, certs[0].RawData);
+                }
+                else
+                {
+                    Assert.Equal(0, certs.Count);
+                }
+            }
+
+            Assert.ThrowsAny<CryptographicException>(() => cms.CheckSignature(true));
+            cms.CheckHash();
+
+            byte[] encoded = cms.Encode();
+
+            if (detached)
+            {
+                cms = new SignedCms(contentInfo, detached);
+            }
+            else
+            {
+                cms = new SignedCms();
+            }
+
+            cms.Decode(encoded);
+            Assert.ThrowsAny<CryptographicException>(() => cms.CheckSignature(true));
+            cms.CheckHash();
+
+            SignerInfoCollection signerInfos = cms.SignerInfos;
+            Assert.Equal(1, signerInfos.Count);
+
+            SignerInfo firstSigner = signerInfos[0];
+            Assert.ThrowsAny<CryptographicException>(() => firstSigner.CheckSignature(true));
+            firstSigner.CheckHash();
+
+            certs = cms.Certificates;
+
+            if (includeExtraCert)
+            {
+                Assert.Equal(1, certs.Count);
+                Assert.Equal("CN=DfHelleKeyAgreement1", certs[0].SubjectName.Name);
+            }
+            else
+            {
+                Assert.Equal(0, certs.Count);
+            }
+        }
+
+        [Theory]
+        [InlineData(false)]
+        [InlineData(true)]
+        public static void AddFirstSigner_NoSignature_NoCert(bool detached)
+        {
+            ContentInfo contentInfo = new ContentInfo(new byte[] { 9, 8, 7, 6, 5 });
+            SignedCms cms = new SignedCms(contentInfo, detached);
+
+            Action sign = () =>
+                cms.ComputeSignature(
+                    new CmsSigner(SubjectIdentifierType.NoSignature)
+                    {
+                        IncludeOption = X509IncludeOption.None,
+                    });
+
+            if (PlatformDetection.IsFullFramework)
+            {
+                Assert.Throws<NullReferenceException>(sign);
+            }
+            else
+            {
+                sign();
+                Assert.ThrowsAny<CryptographicException>(() => cms.CheckSignature(true));
+                cms.CheckHash();
+                Assert.Equal(1, cms.SignerInfos.Count);
+            }
+        }
+
+        [Theory]
+        [InlineData(false)]
+        [InlineData(true)]
+        public static void AddSecondSigner_NoSignature(bool detached)
+        {
+            ContentInfo contentInfo = new ContentInfo(new byte[] { 9, 8, 7, 6, 5 });
+            SignedCms cms = new SignedCms(contentInfo, detached);
+
+            using (X509Certificate2 cert = Certificates.RSAKeyTransferCapi1.TryGetCertificateWithPrivateKey())
+            {
+                cms.ComputeSignature(
+                    new CmsSigner(cert)
+                    {
+                        IncludeOption = X509IncludeOption.None,
+                    });
+
+                Assert.Throws<CryptographicException>(
+                    () =>
+                        cms.ComputeSignature(
+                            new CmsSigner(SubjectIdentifierType.NoSignature)
+                            {
+                                IncludeOption = X509IncludeOption.None,
+                            }));
+            }
+
+            Assert.Equal(1, cms.SignerInfos.Count);
+            Assert.ThrowsAny<CryptographicException>(() => cms.CheckSignature(true));
+            cms.CheckHash();
+        }
+
+        [Theory]
+        [InlineData(false)]
+        [InlineData(true)]
+        public static void AddSecondSigner_NoSignature_AfterRemove(bool detached)
+        {
+            ContentInfo contentInfo = new ContentInfo(new byte[] { 9, 8, 7, 6, 5 });
+            SignedCms cms = new SignedCms(contentInfo, detached);
+
+            using (X509Certificate2 cert = Certificates.RSAKeyTransferCapi1.TryGetCertificateWithPrivateKey())
+            {
+                cms.ComputeSignature(
+                    new CmsSigner(cert)
+                    {
+                        IncludeOption = X509IncludeOption.None,
+                    });
+
+                Assert.Throws<CryptographicException>(
+                    () =>
+                        cms.ComputeSignature(
+                            new CmsSigner(SubjectIdentifierType.NoSignature)
+                            {
+                                IncludeOption = X509IncludeOption.None,
+                            }));
+
+                cms.RemoveSignature(0);
+
+                // Because the document was already initialized (when initially signed),
+                // the "NoSignature must be the first signer" exception is thrown, even
+                // though there are no signers.
+                Assert.Throws<CryptographicException>(
+                    () =>
+                        cms.ComputeSignature(
+                            new CmsSigner(SubjectIdentifierType.NoSignature)
+                            {
+                                IncludeOption = X509IncludeOption.None,
+                            }));
+            }
+
+            Assert.Equal(0, cms.SignerInfos.Count);
+        }
+
+        [Theory]
+        [InlineData(false)]
+        [InlineData(true)]
+        public static void AddSecondSigner_NoSignature_LoadUnsigned(bool detached)
+        {
+            ContentInfo contentInfo = new ContentInfo(new byte[] { 9, 8, 7, 6, 5 });
+            SignedCms cms = new SignedCms(contentInfo, detached);
+
+            using (X509Certificate2 cert = Certificates.RSAKeyTransferCapi1.TryGetCertificateWithPrivateKey())
+            {
+                cms.ComputeSignature(
+                    new CmsSigner(cert)
+                    {
+                        IncludeOption = X509IncludeOption.None,
+                    });
+
+                Assert.Throws<CryptographicException>(
+                    () =>
+                        cms.ComputeSignature(
+                            new CmsSigner(SubjectIdentifierType.NoSignature)
+                            {
+                                IncludeOption = X509IncludeOption.None,
+                            }));
+
+                cms.RemoveSignature(0);
+
+                // Reload the document now that it has no signatures.
+                byte[] encoded = cms.Encode();
+
+                if (detached)
+                {
+                    cms = new SignedCms(contentInfo, detached);
+                }
+                else
+                {
+                    cms = new SignedCms();
+                }
+
+                cms.Decode(encoded);
+
+                // Because the document was already initialized (when loaded),
+                // the "NoSignature must be the first signer" exception is thrown, even
+                // though there are no signers.
+                Assert.Throws<CryptographicException>(
+                    () =>
+                        cms.ComputeSignature(
+                            new CmsSigner(SubjectIdentifierType.NoSignature)
+                            {
+                                IncludeOption = X509IncludeOption.None,
+                            }));
+            }
+
+            Assert.Equal(0, cms.SignerInfos.Count);
         }
 
         [Theory]
@@ -1162,6 +1465,114 @@ namespace System.Security.Cryptography.Pkcs.Tests
             }
 
             Assert.Equal("42", envelopedCms.ContentInfo.Content.ByteArrayToHex());
+        }
+
+        [Fact]
+        public static void CheckNoSignature_FromNetFx()
+        {
+            byte[] encoded = (
+                "30819F06092A864886F70D010702A0819130818E020101310F300D0609608648" +
+                "0165030402010500301406092A864886F70D010701A007040509080706053162" +
+                "3060020101301C3017311530130603550403130C44756D6D79205369676E6572" +
+                "020100300D06096086480165030402010500300C06082B060105050706020500" +
+                "0420AF5F6F5C5967C377E49193ECA1EE0B98300A171CD3165C9A2410E8FB7C02" +
+                "8674"
+            ).HexToByteArray();
+
+            CheckNoSignature(encoded);
+        }
+
+        [Fact]
+        public static void CheckNoSignature_FromNetFx_TamperSignatureOid()
+        {
+            // CheckNoSignature_FromNetFx with the algorithm identifier changed from
+            // 1.3.6.1.5.5.7.6.2 to 10.3.6.1.5.5.7.6.10
+            byte[] encoded = (
+                "30819F06092A864886F70D010702A0819130818E020101310F300D0609608648" +
+                "0165030402010500301406092A864886F70D010701A007040509080706053162" +
+                "3060020101301C3017311530130603550403130C44756D6D79205369676E6572" +
+                "020100300D06096086480165030402010500300C06082B0601050507060A0500" +
+                "0420AF5F6F5C5967C377E49193ECA1EE0B98300A171CD3165C9A2410E8FB7C02" +
+                "8674"
+            ).HexToByteArray();
+
+            CheckNoSignature(encoded, badOid: true);
+        }
+
+        [Fact]
+        public static void CheckNoSignature_FromCoreFx()
+        {
+            byte[] encoded = (
+                "30819906092A864886F70D010702A0818B308188020101310D300B0609608648" +
+                "016503040201301406092A864886F70D010701A00704050908070605315E305C" +
+                "020101301C3017311530130603550403130C44756D6D79205369676E65720201" +
+                "00300B0609608648016503040201300A06082B060105050706020420AF5F6F5C" +
+                "5967C377E49193ECA1EE0B98300A171CD3165C9A2410E8FB7C028674"
+            ).HexToByteArray();
+
+            CheckNoSignature(encoded);
+        }
+
+        [Fact]
+        public static void CheckNoSignature_FromCoreFx_TamperSignatureOid()
+        {
+            // CheckNoSignature_FromCoreFx with the algorithm identifier changed from
+            // 1.3.6.1.5.5.7.6.2 to 10.3.6.1.5.5.7.6.10
+            byte[] encoded = (
+                "30819906092A864886F70D010702A0818B308188020101310D300B0609608648" +
+                "016503040201301406092A864886F70D010701A00704050908070605315E305C" +
+                "020101301C3017311530130603550403130C44756D6D79205369676E65720201" +
+                "00300B0609608648016503040201300A06082B0601050507060A0420AF5F6F5C" +
+                "5967C377E49193ECA1EE0B98300A171CD3165C9A2410E8FB7C028674"
+            ).HexToByteArray();
+
+            CheckNoSignature(encoded, badOid: true);
+        }
+
+        [Fact]
+        public static void CheckNoSignature_FromCoreFx_TamperIssuerName()
+        {
+            // CheckNoSignature_FromCoreFx with the issuer name changed from "Dummy Cert"
+            // to "Dumny Cert" (m => n / 0x6D => 0x6E)
+            byte[] encoded = (
+                "30819906092A864886F70D010702A0818B308188020101310D300B0609608648" +
+                "016503040201301406092A864886F70D010701A00704050908070605315E305C" +
+                "020101301C3017311530130603550403130C44756D6E79205369676E65720201" +
+                "00300B0609608648016503040201300A06082B060105050706020420AF5F6F5C" +
+                "5967C377E49193ECA1EE0B98300A171CD3165C9A2410E8FB7C028674"
+            ).HexToByteArray();
+
+            SignedCms cms = new SignedCms();
+            cms.Decode(encoded);
+            SignerInfoCollection signers = cms.SignerInfos;
+            Assert.Equal(1, signers.Count);
+            Assert.Equal(SubjectIdentifierType.IssuerAndSerialNumber, signers[0].SignerIdentifier.Type);
+            Assert.ThrowsAny<CryptographicException>(() => cms.CheckSignature(true));
+            Assert.ThrowsAny<CryptographicException>(() => signers[0].CheckSignature(true));
+
+            // Assert.NoThrow
+            cms.CheckHash();
+            signers[0].CheckHash();
+        }
+
+        private static void CheckNoSignature(byte[] encoded, bool badOid=false)
+        {
+            SignedCms cms = new SignedCms();
+            cms.Decode(encoded);
+            SignerInfoCollection signers = cms.SignerInfos;
+            Assert.Equal(1, signers.Count);
+            Assert.Equal(SubjectIdentifierType.NoSignature, signers[0].SignerIdentifier.Type);
+            Assert.Throws<CryptographicException>(() => cms.CheckSignature(true));
+
+            if (badOid)
+            {
+                Assert.ThrowsAny<CryptographicException>(() => cms.CheckHash());
+            }
+            else
+            {
+                // Assert.NoThrow
+                cms.CheckHash();
+            }
         }
     }
 }

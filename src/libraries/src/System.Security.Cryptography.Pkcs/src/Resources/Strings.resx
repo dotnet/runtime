@@ -148,6 +148,9 @@
   <data name="Cryptography_Cms_NoSignerCert" xml:space="preserve">
     <value>No signer certificate was provided. This platform does not implement the certificate picker UI.</value>
   </data>
+  <data name="Cryptography_Cms_NoSignerCertSilent" xml:space="preserve">
+    <value>No signer certificate was provided.</value>
+  </data>
   <data name="Cryptography_Cms_NoSignerAtIndex" xml:space="preserve">
     <value>The signed cryptographic message does not have a signer for the specified signer index.</value>
   </data>
@@ -159,6 +162,9 @@
   </data>
   <data name="Cryptography_Cms_Sign_Empty_Content" xml:space="preserve">
     <value>Cannot create CMS signature for empty content.</value>
+  </data>
+  <data name="Cryptography_Cms_Sign_No_Signature_First_Signer" xml:space="preserve">
+    <value>CmsSigner has to be the first signer with NoSignature.</value>
   </data>
   <data name="Cryptography_Cms_SignerNotFound" xml:space="preserve">
     <value>Cannot find the original signer.</value>
