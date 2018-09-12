@@ -224,14 +224,27 @@ namespace System.Security.Cryptography.Pkcs
                 newSignerInfo.UnsignedAttributes = PkcsHelpers.NormalizeAttributeSet(attrs.ToArray());
             }
 
-            bool signed = CmsSignature.Sign(
-                dataHash,
-                hashAlgorithmName,
-                Certificate,
-                PrivateKey,
-                silent,
-                out Oid signatureAlgorithm,
-                out ReadOnlyMemory<byte> signatureValue);
+            bool signed;
+            Oid signatureAlgorithm;
+            ReadOnlyMemory<byte> signatureValue;
+
+            if (SignerIdentifierType == SubjectIdentifierType.NoSignature)
+            {
+                signatureAlgorithm = new Oid(Oids.NoSignature, null);
+                signatureValue = dataHash;
+                signed = true;
+            }
+            else
+            {
+                signed = CmsSignature.Sign(
+                    dataHash,
+                    hashAlgorithmName,
+                    Certificate,
+                    PrivateKey,
+                    silent,
+                    out signatureAlgorithm,
+                    out signatureValue);
+            }
 
             if (!signed)
             {
