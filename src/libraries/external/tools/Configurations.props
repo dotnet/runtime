@@ -4,6 +4,7 @@
     <BuildConfigurations>
       netcoreapp-Windows_NT;
       netcoreappaot-Windows_NT;
+      netcoreappaot-WebAssembly;
       netcoreapp-Unix;
       netfx;
       uap10.0.16299;

@@ -14,6 +14,13 @@
     <BinPlaceILCInputFolder>false</BinPlaceILCInputFolder>
     <NuGetDeploySourceItem>Reference</NuGetDeploySourceItem>
   </PropertyGroup>
+  
+  <!-- There isn't a WebAssembly runtime package yet, but the Windows AOT package has the right surface area 
+  to build against. -->  
+  <PropertyGroup Condition="'$(TargetsAOT)'=='true' AND '$(ArchGroup)'=='wasm'">
+    <NugetRuntimeIdentifier>win10-x86</NugetRuntimeIdentifier>
+  </PropertyGroup>
+    
   <ItemGroup Condition="'$(TargetsAOT)'=='true'">
     <PackageReference Include="Microsoft.TargetingPack.Private.NETNative">
       <Version Condition="'$(TargetGroup)'=='uapaot' OR '$(TargetGroup)'=='netcoreappaot'">1.1.0-$(ProjectNTfsExpectedPrerelease)</Version>

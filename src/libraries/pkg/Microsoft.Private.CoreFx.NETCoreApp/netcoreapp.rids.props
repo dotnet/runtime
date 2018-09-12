@@ -32,5 +32,8 @@
     <OfficialBuildRID Include="tizen.5.0.0-armel">
       <Platform>armel</Platform>
     </OfficialBuildRID>
+    <OfficialBuildRID Include="webassembly-wasm-aot">
+      <Platform>wasm</Platform>
+    </OfficialBuildRID>
   </ItemGroup>
 </Project>
