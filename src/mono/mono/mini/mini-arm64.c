@@ -1196,6 +1196,7 @@ add_valuetype (CallInfo *cinfo, ArgInfo *ainfo, MonoType *t)
 			cinfo->fr = FP_PARAM_REGS;
 			size = ALIGN_TO (size, 8);
 			ainfo->storage = ArgVtypeOnStack;
+			cinfo->stack_usage = ALIGN_TO (cinfo->stack_usage, align);
 			ainfo->offset = cinfo->stack_usage;
 			ainfo->size = size;
 			ainfo->hfa = TRUE;
@@ -1215,6 +1216,7 @@ add_valuetype (CallInfo *cinfo, ArgInfo *ainfo, MonoType *t)
 	if (cinfo->gr + nregs > PARAM_REGS) {
 		size = ALIGN_TO (size, 8);
 		ainfo->storage = ArgVtypeOnStack;
+		cinfo->stack_usage = ALIGN_TO (cinfo->stack_usage, align);
 		ainfo->offset = cinfo->stack_usage;
 		ainfo->size = size;
 		cinfo->stack_usage += size;

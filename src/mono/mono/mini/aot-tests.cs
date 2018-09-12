@@ -326,6 +326,24 @@ class Tests
 		return (int)res;
 	}
 
+	struct Struct7 {
+		public string value;
+	}
+
+	class Foo7 {
+		public static string vtypeonstack_align (string s1, string s2, string s3, string s4, string s5, string s6, string s7, string s8, bool b, Struct7 s) {
+			return s.value;
+		}
+	}
+
+	[Category ("DYNCALL")]
+	static int test_0_arm64_ios_dyncall_vtypeonstack_align () {
+		var m = typeof (Foo7).GetMethod ("vtypeonstack_align");
+
+		string s = (string)m.Invoke (null, new object [] { null, null, null, null, null, null, null, null, true, new Struct7 () { value = "ABC" } });
+		return s == "ABC" ? 0 : 1;
+	}
+
 	class Foo6 {
 		public T reg_stack_split_inner<T> (int i, int j, T l) {
 			return l;
