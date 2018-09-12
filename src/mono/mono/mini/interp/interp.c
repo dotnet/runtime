@@ -114,6 +114,8 @@ static gboolean ss_enabled;
 
 static gboolean interp_init_done = FALSE;
 
+static void set_context (ThreadContext *context);
+
 static char* dump_frame (InterpFrame *inv);
 static MonoArray *get_trace_ips (MonoDomain *domain, InterpFrame *top);
 static void interp_exec_method_full (InterpFrame *frame, ThreadContext *context, guint16 *start_with_ip, MonoException *filter_exception, int exit_at_finally, InterpFrame *base_frame);
