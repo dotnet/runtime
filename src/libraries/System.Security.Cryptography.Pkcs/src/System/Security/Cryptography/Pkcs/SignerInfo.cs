@@ -473,6 +473,11 @@ namespace System.Security.Cryptography.Pkcs
 
         public void CheckHash()
         {
+            if (_signatureAlgorithm.Value != Oids.NoSignature)
+            {
+                throw new CryptographicException(SR.Cryptography_Pkcs_InvalidSignatureParameters);
+            }
+
             if (!CheckHash(compatMode: false) && !CheckHash(compatMode: true))
             {
                 throw new CryptographicException(SR.Cryptography_BadSignature);

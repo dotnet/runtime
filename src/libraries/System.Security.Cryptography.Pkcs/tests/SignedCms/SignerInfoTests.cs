@@ -732,6 +732,202 @@ namespace System.Security.Cryptography.Pkcs.Tests
         }
 
         [Fact]
+        public static void AddFirstCounterSigner_NoSignature_NoPrivateKey()
+        {
+            SignedCms cms = new SignedCms();
+            cms.Decode(SignedDocuments.RsaPkcs1OneSignerIssuerAndSerialNumber);
+
+            SignerInfo firstSigner = cms.SignerInfos[0];
+
+            using (X509Certificate2 cert = Certificates.RSAKeyTransferCapi1.GetCertificate())
+            {
+                Action sign = () =>
+                    firstSigner.ComputeCounterSignature(
+                        new CmsSigner(
+                            SubjectIdentifierType.NoSignature,
+                            cert)
+                        {
+                            IncludeOption = X509IncludeOption.None,
+                        });
+
+                if (PlatformDetection.IsFullFramework)
+                {
+                    Assert.ThrowsAny<CryptographicException>(sign);
+                }
+                else
+                {
+                    sign();
+                    cms.CheckHash();
+                    Assert.ThrowsAny<CryptographicException>(() => cms.CheckSignature(true));
+                    firstSigner.CheckSignature(true);
+                }
+            }
+        }
+
+        [Fact]
+        public static void AddFirstCounterSigner_NoSignature()
+        {
+            SignedCms cms = new SignedCms();
+            cms.Decode(SignedDocuments.RsaPkcs1OneSignerIssuerAndSerialNumber);
+
+            SignerInfo firstSigner = cms.SignerInfos[0];
+
+            // A certificate shouldn't really be required here, but on .NET Framework
+            // it will prompt for the counter-signer's certificate if it's null,
+            // even if the signature type is NoSignature.
+            using (X509Certificate2 cert = Certificates.RSAKeyTransferCapi1.TryGetCertificateWithPrivateKey())
+            {
+                firstSigner.ComputeCounterSignature(
+                    new CmsSigner(
+                        SubjectIdentifierType.NoSignature,
+                        cert)
+                    {
+                        IncludeOption = X509IncludeOption.None,
+                    });
+            }
+
+            Assert.ThrowsAny<CryptographicException>(() => cms.CheckSignature(true));
+            cms.CheckHash();
+
+            byte[] encoded = cms.Encode();
+            cms = new SignedCms();
+            cms.Decode(encoded);
+            Assert.ThrowsAny<CryptographicException>(() => cms.CheckSignature(true));
+            cms.CheckHash();
+
+            firstSigner = cms.SignerInfos[0];
+            firstSigner.CheckSignature(verifySignatureOnly: true);
+            Assert.ThrowsAny<CryptographicException>(() => firstSigner.CheckHash());
+
+            SignerInfo firstCounterSigner = firstSigner.CounterSignerInfos[0];
+            Assert.ThrowsAny<CryptographicException>(() => firstCounterSigner.CheckSignature(true));
+
+            if (PlatformDetection.IsFullFramework)
+            {
+                // NetFX's CheckHash only looks at top-level SignerInfos to find the
+                // crypt32 CMS signer ID, so it fails on any check from a countersigner.
+                Assert.ThrowsAny<CryptographicException>(() => firstCounterSigner.CheckHash());
+            }
+            else
+            {
+                firstCounterSigner.CheckHash();
+            }
+        }
+
+        [Theory]
+        [InlineData(false)]
+        [InlineData(true)]
+        public static void AddSecondCounterSignature_NoSignature_WithCert(bool addExtraCert)
+        {
+            AddSecondCounterSignature_NoSignature(withCertificate: true, addExtraCert);
+        }
+
+        [Theory]
+        // On .NET Framework it will prompt for the counter-signer's certificate if it's null,
+        // even if the signature type is NoSignature, so don't run the test there.
+        [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework)]
+        [InlineData(false)]
+        [InlineData(true)]
+        public static void AddSecondCounterSignature_NoSignature_WithoutCert(bool addExtraCert)
+        {
+            AddSecondCounterSignature_NoSignature(withCertificate: false, addExtraCert);
+        }
+
+        private static void AddSecondCounterSignature_NoSignature(bool withCertificate, bool addExtraCert)
+        {
+            X509Certificate2Collection certs;
+            SignedCms cms = new SignedCms();
+            cms.Decode(SignedDocuments.RsaPkcs1OneSignerIssuerAndSerialNumber);
+
+            SignerInfo firstSigner = cms.SignerInfos[0];
+
+            using (X509Certificate2 cert = Certificates.RSAKeyTransferCapi1.TryGetCertificateWithPrivateKey())
+            using (X509Certificate2 cert2 = Certificates.DHKeyAgree1.GetCertificate())
+            {
+                firstSigner.ComputeCounterSignature(
+                    new CmsSigner(cert)
+                    {
+                        IncludeOption = X509IncludeOption.None,
+                    });
+
+                CmsSigner counterSigner;
+
+                if (withCertificate)
+                {
+                    counterSigner = new CmsSigner(SubjectIdentifierType.NoSignature, cert);
+                }
+                else
+                {
+                    counterSigner = new CmsSigner(SubjectIdentifierType.NoSignature);
+                }
+
+                if (addExtraCert)
+                {
+                    counterSigner.Certificates.Add(cert2);
+                }
+
+                firstSigner.ComputeCounterSignature(counterSigner);
+
+                certs = cms.Certificates;
+
+                if (addExtraCert)
+                {
+                    Assert.Equal(2, certs.Count);
+                    Assert.NotEqual(cert2.RawData, certs[0].RawData);
+                    Assert.Equal(cert2.RawData, certs[1].RawData);
+                }
+                else
+                {
+                    Assert.Equal(1, certs.Count);
+                    Assert.NotEqual(cert2.RawData, certs[0].RawData);
+                }
+            }
+
+            Assert.ThrowsAny<CryptographicException>(() => cms.CheckSignature(true));
+            cms.CheckHash();
+
+            byte[] encoded = cms.Encode();
+            cms = new SignedCms();
+            cms.Decode(encoded);
+            Assert.ThrowsAny<CryptographicException>(() => cms.CheckSignature(true));
+            cms.CheckHash();
+
+            firstSigner = cms.SignerInfos[0];
+            firstSigner.CheckSignature(verifySignatureOnly: true);
+            Assert.ThrowsAny<CryptographicException>(() => firstSigner.CheckHash());
+
+            // The NoSignature CounterSigner sorts first.
+            SignerInfo firstCounterSigner = firstSigner.CounterSignerInfos[0];
+            Assert.Equal(SubjectIdentifierType.NoSignature, firstCounterSigner.SignerIdentifier.Type);
+            Assert.ThrowsAny<CryptographicException>(() => firstCounterSigner.CheckSignature(true));
+
+            if (PlatformDetection.IsFullFramework)
+            {
+                // NetFX's CheckHash only looks at top-level SignerInfos to find the
+                // crypt32 CMS signer ID, so it fails on any check from a countersigner.
+                Assert.ThrowsAny<CryptographicException>(() => firstCounterSigner.CheckHash());
+            }
+            else
+            {
+                firstCounterSigner.CheckHash();
+            }
+
+            certs = cms.Certificates;
+
+            if (addExtraCert)
+            {
+                Assert.Equal(2, certs.Count);
+                Assert.Equal("CN=DfHelleKeyAgreement1", certs[1].SubjectName.Name);
+            }
+            else
+            {
+                Assert.Equal(1, certs.Count);
+            }
+
+            Assert.Equal("CN=RSAKeyTransferCapi1", certs[0].SubjectName.Name);
+        }
+
+        [Fact]
         [ActiveIssue(31977, TargetFrameworkMonikers.Uap)]
         public static void EnsureExtraCertsAdded()
         {
