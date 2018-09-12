@@ -1,0 +1,4 @@
+Compat issues with assembly System.Runtime.Intrinsics:
+MembersMustExist : Member 'System.Runtime.Intrinsics.X86.Pclmulqdq.CarrylessMultiply(System.Runtime.Intrinsics.Vector128<System.Int64>, System.Runtime.Intrinsics.Vector128<System.Int64>, System.Byte)' does not exist in the implementation but it does exist in the contract.
+MembersMustExist : Member 'System.Runtime.Intrinsics.X86.Pclmulqdq.CarrylessMultiply(System.Runtime.Intrinsics.Vector128<System.UInt64>, System.Runtime.Intrinsics.Vector128<System.UInt64>, System.Byte)' does not exist in the implementation but it does exist in the contract.
+Total Issues: 2

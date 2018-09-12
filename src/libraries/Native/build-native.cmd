@@ -186,8 +186,15 @@ exit /B 0
 pushd "%__IntermediatesDir%"
 nmake install
 popd
-IF NOT ERRORLEVEL 1 exit /B 0
-exit /B 1
+IF ERRORLEVEL 1 (
+    goto :Failure
+)
+
+:: Copy results to native_aot since packaging expects a copy there too
+mkdir %__binDir%\%__BuildOS%.%__BuildArch%.%CMAKE_BUILD_TYPE%\native_aot
+copy %__binDir%\%__BuildOS%.%__BuildArch%.%CMAKE_BUILD_TYPE%\native\* %__binDir%\%__BuildOS%.%__BuildArch%.%CMAKE_BUILD_TYPE%\native_aot\
+
+exit /B 0
 
 :Failure
 :: Build failed
