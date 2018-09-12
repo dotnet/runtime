@@ -582,7 +582,7 @@ namespace System.Reflection
             {
                 return true;
             }
-            return (RFC3986ReservedMarks.IndexOf(c) >= 0);
+            return (RFC3986ReservedMarks.Contains(c));
         }
 
         internal static unsafe bool IsUnreserved(char c)
@@ -591,7 +591,7 @@ namespace System.Reflection
             {
                 return true;
             }
-            return (RFC3986UnreservedMarks.IndexOf(c) >= 0);
+            return (RFC3986UnreservedMarks.Contains(c));
         }
 
         //Only consider ASCII characters
