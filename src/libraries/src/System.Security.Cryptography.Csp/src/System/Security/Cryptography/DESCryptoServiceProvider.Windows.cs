@@ -12,7 +12,6 @@ namespace System.Security.Cryptography
     public sealed class DESCryptoServiceProvider : DES
     {
         private const int BitsPerByte = 8;
-        private static readonly RandomNumberGenerator s_rng = RandomNumberGenerator.Create();
 
         public DESCryptoServiceProvider()
         {
@@ -23,11 +22,11 @@ namespace System.Security.Cryptography
         public override void GenerateKey()
         {
             var key = new byte[8];
-            s_rng.GetBytes(key);
+            RandomNumberGenerator.Fill(key);
             // Never hand back a weak or semi-weak key
             while (IsWeakKey(key) || IsSemiWeakKey(key))
             {
-                s_rng.GetBytes(key);
+                RandomNumberGenerator.Fill(key);
             }
             KeyValue = key;
         }
@@ -35,7 +34,7 @@ namespace System.Security.Cryptography
         public override void GenerateIV()
         {
             var iv = new byte[8];
-            s_rng.GetBytes(iv);
+            RandomNumberGenerator.Fill(iv);
             IVValue = iv;
         }
 
@@ -85,7 +84,7 @@ namespace System.Security.Cryptography
                 if (Mode.UsesIv())
                 {
                     rgbIV = new byte[8];
-                    s_rng.GetBytes(rgbIV);
+                    RandomNumberGenerator.Fill(rgbIV);
                 }
             }
             else

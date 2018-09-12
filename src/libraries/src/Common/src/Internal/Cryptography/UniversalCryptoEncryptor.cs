@@ -18,8 +18,6 @@ namespace Internal.Cryptography
     //
     internal sealed class UniversalCryptoEncryptor : UniversalCryptoTransform
     {
-        private static readonly RandomNumberGenerator s_randomNumberGenerator = RandomNumberGenerator.Create();
-
         public UniversalCryptoEncryptor(PaddingMode paddingMode, BasicSymmetricCipher basicSymmetricCipher)
             : base(paddingMode, basicSymmetricCipher)
         {
@@ -82,7 +80,7 @@ namespace Internal.Cryptography
                     result = new byte[count + padBytes];
                     
                     Buffer.BlockCopy(block, offset, result, 0, count);
-                    s_randomNumberGenerator.GetBytes(result, count + 1, padBytes - 1);
+                    RandomNumberGenerator.Fill(result.AsSpan(count + 1, padBytes - 1));
                     result[result.Length - 1] = (byte)padBytes;
 
                     break;
