@@ -6783,7 +6783,6 @@ void emitter::emitIns_S_S_R_R(
 
     // TODO-ARM64-CQ: with compLocallocUsed, should we use REG_SAVED_LOCALLOC_SP instead?
     regNumber reg3 = FPbased ? REG_FPBASE : REG_SPBASE;
-    reg3           = encodingSPtoZR(reg3);
 
     bool    useRegForAdr = true;
     ssize_t imm          = disp;
@@ -6836,6 +6835,8 @@ void emitter::emitIns_S_S_R_R(
     {
         id->idGCrefReg2(GCT_NONE);
     }
+
+    reg3 = encodingSPtoZR(reg3);
 
     id->idReg1(reg1);
     id->idReg2(reg2);
