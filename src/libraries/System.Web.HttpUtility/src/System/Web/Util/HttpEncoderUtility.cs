@@ -48,6 +48,6 @@ namespace System.Web.Util
         }
 
         //  Helper to encode spaces only
-        internal static string UrlEncodeSpaces(string str) => str != null && str.IndexOf(' ') >= 0 ? str.Replace(" ", "%20") : str;
+        internal static string UrlEncodeSpaces(string str) => str != null && str.Contains(' ') ? str.Replace(" ", "%20") : str;
     }
 }

@@ -1170,7 +1170,7 @@ namespace System.Transactions
         {
             Guid guid = Guid.Empty;
 
-            if (str.IndexOf('-') >= 0)
+            if (str.Contains('-'))
             { // GUID with dash
                 if (str.Length >= 36)
                 {

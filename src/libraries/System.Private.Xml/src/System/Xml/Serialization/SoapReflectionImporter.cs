@@ -804,7 +804,7 @@ namespace System.Xml.Serialization
             if (a.SoapType != null && a.SoapType.TypeName.Length > 0)
                 typeName = a.SoapType.TypeName;
 
-            if (type.IsGenericType && typeName.IndexOf('{') >= 0)
+            if (type.IsGenericType && typeName.Contains('{'))
             {
                 Type genType = type.GetGenericTypeDefinition();
                 Type[] names = genType.GetGenericArguments();
@@ -816,7 +816,7 @@ namespace System.Xml.Serialization
                     if (typeName.Contains(argument))
                     {
                         typeName = typeName.Replace(argument, XsdTypeName(types[i]));
-                        if (typeName.IndexOf('{') < 0)
+                        if (!typeName.Contains('{'))
                         {
                             break;
                         }

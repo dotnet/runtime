@@ -78,7 +78,7 @@ namespace System.ComponentModel
             {
                 try
                 {
-                    if (strValue.IndexOf(',') != -1)
+                    if (strValue.Contains(','))
                     {
                         bool isUnderlyingTypeUInt64 = Enum.GetUnderlyingType(EnumType) == typeof(ulong);
                         long convertedValue = 0;

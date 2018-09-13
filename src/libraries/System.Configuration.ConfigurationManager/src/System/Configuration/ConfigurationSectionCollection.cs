@@ -93,7 +93,7 @@ namespace System.Configuration
                 throw ExceptionUtil.ParameterNullOrEmpty(nameof(name));
 
             // prevent GetConfig from returning config not in this collection
-            if (name.IndexOf('/') >= 0)
+            if (name.IndexOf('/') >= 0) // string.Contains(char) is .NetCore2.1+ specific
                 return null;
 
             // get the section from the config record

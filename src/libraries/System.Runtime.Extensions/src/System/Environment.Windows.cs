@@ -30,7 +30,7 @@ namespace System
                 builder.Length = (int)length;
 
                 // If we have a tilde in the path, make an attempt to expand 8.3 filenames
-                return builder.AsSpan().IndexOf('~') >= 0
+                return builder.AsSpan().Contains('~')
                     ? PathHelper.TryExpandShortFileName(ref builder, null)
                     : builder.ToString();
             }

@@ -360,7 +360,7 @@ namespace System.Xml.Schema
                     {
                         _regStr.Append(")");
                         string tempStr = _regStr.ToString();
-                        if (tempStr.IndexOf('|') != -1)
+                        if (tempStr.Contains('|'))
                         { // ordinal compare
                             _regStr.Insert(0, "(");
                             _regStr.Append(")");

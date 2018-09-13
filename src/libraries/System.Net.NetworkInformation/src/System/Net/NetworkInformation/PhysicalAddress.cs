@@ -127,7 +127,7 @@ namespace System.Net.NetworkInformation
             }
 
             // Has dashes?
-            if (address.IndexOf('-') >= 0)
+            if (address.Contains('-'))
             {
                 hasDashes = true;
                 buffer = new byte[(address.Length + 1) / 3];

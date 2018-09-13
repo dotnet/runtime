@@ -268,7 +268,7 @@ namespace System.Runtime.Serialization
             }
 
             // Now see if we have some arity.  baseType could be null if this is an array type. 
-            if (_baseType != null && _baseType.IndexOf('`') != -1)
+            if (_baseType != null && _baseType.IndexOf('`') != -1) // string.Contains(char) is .NetCore2.1+ specific
             {
                 _needsFixup = false;
             }

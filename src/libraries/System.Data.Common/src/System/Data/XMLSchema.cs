@@ -2756,7 +2756,7 @@ namespace System.Data
             if ((QualifiedTableName == null) || (QualifiedTableName.Length == 0))
                 throw ExceptionBuilder.InvalidSelector(xpath);
 
-            if (QualifiedTableName.IndexOf(':') != -1)
+            if (QualifiedTableName.Contains(':'))
                 prefix = QualifiedTableName.Substring(0, QualifiedTableName.IndexOf(':'));
             else
                 return GetMsdataAttribute(key, Keywords.MSD_TABLENS);
