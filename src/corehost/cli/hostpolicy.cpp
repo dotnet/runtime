@@ -108,7 +108,7 @@ int run(const arguments_t& args, pal::string_t* out_host_command_result = nullpt
     };
 
     // Note: these variables' lifetime should be longer than coreclr_initialize.
-    std::vector<char> tpa_paths_cstr, app_base_cstr, native_dirs_cstr, resources_dirs_cstr, fx_deps, deps, clrjit_path_cstr, probe_directories, clr_library_version;
+    std::vector<char> tpa_paths_cstr, app_base_cstr, native_dirs_cstr, resources_dirs_cstr, fx_deps, deps, clrjit_path_cstr, probe_directories, clr_library_version, startup_hooks_cstr;
     pal::pal_clrstring(probe_paths.tpa, &tpa_paths_cstr);
     pal::pal_clrstring(args.app_root, &app_base_cstr);
     pal::pal_clrstring(probe_paths.native, &native_dirs_cstr);
@@ -195,6 +195,15 @@ int run(const arguments_t& args, pal::string_t* out_host_command_result = nullpt
         property_keys.push_back("APP_NI_PATHS");
         property_values.push_back(app_base_cstr.data());
         property_values.push_back(app_base_cstr.data());
+    }
+
+    // Startup hooks
+    pal::string_t startup_hooks;
+    if (pal::getenv(_X("DOTNET_STARTUP_HOOKS"), &startup_hooks))
+    {
+        pal::pal_clrstring(startup_hooks, &startup_hooks_cstr);
+        property_keys.push_back("STARTUP_HOOKS");
+        property_values.push_back(startup_hooks_cstr.data());
     }
 
     size_t property_size = property_keys.size();
