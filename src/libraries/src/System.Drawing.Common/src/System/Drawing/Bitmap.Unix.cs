@@ -64,7 +64,7 @@ namespace System.Drawing
         public Bitmap(Stream stream, bool useIcm)
         {
             // false: stream is owned by user code
-            nativeImage = InitFromStream(stream);
+            nativeImage = InitializeFromStream(stream);
         }
 
         public Bitmap(Type type, string resource)
@@ -83,7 +83,7 @@ namespace System.Drawing
                 throw new FileNotFoundException(msg);
             }
 
-            nativeImage = InitFromStream(s);
+            nativeImage = InitializeFromStream(s);
         }
         #endregion
     }

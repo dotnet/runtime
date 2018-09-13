@@ -6,6 +6,7 @@ using System.Runtime.InteropServices;
 using System.IO;
 using System.Drawing.Internal;
 using Gdip = System.Drawing.SafeNativeMethods.Gdip;
+using System.Runtime.Serialization;
 
 namespace System.Drawing.Imaging
 {
@@ -13,6 +14,7 @@ namespace System.Drawing.Imaging
     /// Defines a graphic metafile. A metafile contains records that describe a sequence of graphics operations that
     /// can be recorded and played back.
     /// </summary>
+    [Serializable]
     public sealed partial class Metafile : Image
     {
         // GDI+ doesn't handle filenames over MAX_PATH very well
@@ -460,6 +462,11 @@ namespace System.Drawing.Imaging
 
             SetNativeImage(metafile);
         }
+
+        private Metafile(SerializationInfo info, StreamingContext context) : base(info, context)
+        {
+        }
+
 
         /// <summary>
         /// Returns the <see cref='MetafileHeader'/> associated with the specified <see cref='Metafile'/>.

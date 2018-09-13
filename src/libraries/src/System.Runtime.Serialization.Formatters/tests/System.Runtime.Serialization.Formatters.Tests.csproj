@@ -30,6 +30,9 @@
     <Compile Include="$(CommonTestPath)\System\ThreadCultureChange.cs">
       <Link>Common\System\ThreadCultureChange.cs</Link>
     </Compile>
+    <Compile Include="$(CommonTestPath)\System\Drawing\Helpers.cs">
+      <Link>Common\System\Drawing\Helpers.cs</Link>
+    </Compile>
   </ItemGroup>
   <ItemGroup>
     <EmbeddedResource Include="BinaryFormatterTests.rd.xml" />

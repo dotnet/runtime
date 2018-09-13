@@ -26,8 +26,6 @@
     <Compile Include="System\Drawing\GdiplusNative.cs" />
     <Compile Include="System\Drawing\Graphics.cs" />
     <Compile Include="System\Drawing\GraphicsUnit.cs" />
-    <Compile Include="System\Drawing\Icon.NotSerializable.cs" />
-    <Compile Include="System\Drawing\Image.NotSerializable.cs" />
     <Compile Include="System\Drawing\Image.cs" />
     <Compile Include="System\Drawing\ImageType.cs" />
     <Compile Include="System\Drawing\Pen.cs" />

@@ -76,7 +76,7 @@ namespace System.Drawing
         }
 
         // Used for serialization
-        private void InitializeFromStream(Stream stream)
+        private IntPtr InitializeFromStream(Stream stream)
         {
             IntPtr image = IntPtr.Zero;
 
@@ -89,6 +89,7 @@ namespace System.Drawing
 
             Gdip.CheckStatus(Gdip.GdipGetImageType(new HandleRef(this, nativeImage), out type));
             EnsureSave(this, null, stream);
+            return image;
         }
 
         internal Image(IntPtr nativeImage) => SetNativeImage(nativeImage);
@@ -265,11 +266,11 @@ namespace System.Drawing
             }
         }
 
-        internal void Save(MemoryStream stream)
+        private void Save(MemoryStream stream)
         {
             // Jpeg loses data, so we don't want to use it to serialize...
             ImageFormat dest = RawFormat;
-            if (dest == ImageFormat.Jpeg)
+            if (dest.Guid == ImageFormat.Jpeg.Guid)
                 dest = ImageFormat.Png;
 
             // If we don't find an Encoder (for things like Icon), we just switch back to PNG...

@@ -11,7 +11,10 @@ using System.Data;
 using System.Data.SqlClient;
 using System.Data.SqlTypes;
 using System.DirectoryServices.ActiveDirectory;
+using System.Drawing;
+using System.Drawing.Imaging;
 using System.Globalization;
+using System.IO;
 using System.Linq;
 using System.Net;
 using System.Net.NetworkInformation;
@@ -1190,6 +1193,45 @@ namespace System.Runtime.Serialization.Formatters.Tests
         {
             Assert.NotNull(@this);
             Assert.NotNull(other);
+        }
+
+        public static void IsEqual(this Bitmap @this, Bitmap other, bool isSamePlatform)
+        {
+            if (@this == null && other == null)
+                return;
+
+            Assert.NotNull(@this);
+            Assert.NotNull(other);
+            Assert.Equal(@this.Width, other.Width);
+            Assert.Equal(@this.Height, other.Height);
+            Assert.Equal(@this.Flags, other.Flags);
+            Assert.Equal(@this.HorizontalResolution, other.HorizontalResolution);
+            Assert.Equal(@this.PhysicalDimension, other.PhysicalDimension);
+            Assert.Equal(@this.PixelFormat, other.PixelFormat);
+            Assert.Equal(@this.RawFormat, other.RawFormat);
+            Assert.Equal(@this.VerticalResolution, other.VerticalResolution);
+        }
+
+        public static void IsEqual(this Metafile @this, Metafile other, bool isSamePlatform)
+        {
+            if (@this == null && other == null)
+                return;
+
+            Assert.NotNull(@this);
+            Assert.NotNull(other);
+            Assert.Equal(@this.Width, other.Width);
+            Assert.Equal(@this.Height, other.Height);
+        }
+
+        public static void IsEqual(this Icon @this, Icon other, bool isSamePlatform)
+        {
+            if (@this == null && other == null)
+                return;
+
+            Assert.NotNull(@this);
+            Assert.NotNull(other);
+            Assert.Equal(@this.Width, other.Width);
+            Assert.Equal(@this.Height, other.Height);
         }
 
         public class ReferenceComparer<T> : IEqualityComparer<T> where T: class

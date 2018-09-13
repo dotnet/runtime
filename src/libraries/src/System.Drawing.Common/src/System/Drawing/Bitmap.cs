@@ -7,9 +7,11 @@ using System.Drawing.Imaging;
 using System.IO;
 using System.Runtime.InteropServices;
 using Gdip = System.Drawing.SafeNativeMethods.Gdip;
+using System.Runtime.Serialization;
 
 namespace System.Drawing
 {
+    [Serializable]
     public sealed partial class Bitmap : Image
     {
         private static Color s_defaultTransparentColor = Color.LightGray;
@@ -98,6 +100,10 @@ namespace System.Drawing
                 g.Clear(Color.Transparent);
                 g.DrawImage(original, 0, 0, width, height);
             }
+        }
+
+        private Bitmap(SerializationInfo info, StreamingContext context) : base(info, context)
+        {
         }
 
         public static Bitmap FromHicon(IntPtr hicon)
