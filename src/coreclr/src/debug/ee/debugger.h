@@ -2679,6 +2679,7 @@ private:
         ipce->hr = S_OK;
 
         ipce->processId = m_processId;
+        ipce->threadId = 0;
         // AppDomain, Thread, are already initialized
     }
 
@@ -2709,6 +2710,7 @@ private:
         ipce->type = type;
         ipce->hr = S_OK;
         ipce->processId = m_processId;
+        ipce->threadId = pThread ? pThread->GetOSThreadId() : 0;
         ipce->vmAppDomain = vmAppDomain;
         ipce->vmThread.SetRawPtr(pThread);
     }

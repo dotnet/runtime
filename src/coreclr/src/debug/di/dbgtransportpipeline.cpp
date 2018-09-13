@@ -357,29 +357,12 @@ BOOL DbgTransportPipeline::WaitForDebugEvent(DEBUG_EVENT * pEvent, DWORD dwTimeo
         m_pTransport->GetNextEvent(m_pIPCEvent, CorDBIPC_BUFFER_SIZE);
 
         pEvent->dwProcessId = m_pIPCEvent->processId;
+        pEvent->dwThreadId = m_pIPCEvent->threadId;
         _ASSERTE(m_dwProcessId == m_pIPCEvent->processId);
-
-        // We are supposed to return a thread ID in the DEBUG_EVENT back to our caller.  
-        // However, we don't actually store the thread ID in the DebuggerIPCEvent anymore.  Instead, 
-        // we just get a VMPTR_Thread, and so we need to find the thread ID associated with the VMPTR_Thread.
-        pEvent->dwThreadId = 0;
-        HRESULT hr = S_OK;
-        EX_TRY
-        {
-            if (!m_pIPCEvent->vmThread.IsNull())
-            {
-                pEvent->dwThreadId = pProcess->GetDAC()->TryGetVolatileOSThreadID(m_pIPCEvent->vmThread);
-            }
-        }
-        EX_CATCH_HRESULT(hr);
-        if (FAILED(hr))
-        {
-            return FALSE;
-        }
 
         // The Windows implementation stores the target address of the IPC event in the debug event.
         // We can do that for Mac debugging, but that would require the caller to do another cross-machine
-        // ReadProcessMemory().  Since we have all the data in-proc already, we just store a local address.
+        // ReadProcessMemory(). Since we have all the data in-proc already, we just store a local address.
         // 
         // @dbgtodo  Mac - We are using -1 as a dummy base address right now.  
         // Currently Mac remote debugging doesn't really support multi-instance.
