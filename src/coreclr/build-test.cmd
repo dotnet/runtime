@@ -121,6 +121,16 @@ if defined __BuildAgainstPackagesArg (
     )
 )
 
+set TargetsWindowsArg=
+set TargetsWindowsMsbuildArg=
+if "%__TargetsWindows%"=="1" (
+    set TargetsWindowsArg=-TargetsWindows=true
+    set TargetsWindowsMsbuildArg=/p:TargetsWindows=true
+) else if "%__TargetsWindows%"=="0" (
+    set TargetsWindowsArg=-TargetsWindows=false
+    set TargetsWindowsMsbuildArg=/p:TargetsWindows=false
+)
+
 @if defined _echo @echo on
 
 set __RunArgs=-BuildOS=%__BuildOS% -BuildType=%__BuildType% -BuildArch=%__BuildArch%
@@ -324,8 +334,9 @@ for /l %%G in (1, 1, %__BuildLoopCount%) do (
     set __MsbuildErr=/flp2:ErrorsOnly;LogFile="%__BuildErr%";Append=!__AppendToLog!
 
     set TestBuildSlice=%%G
-    echo Running: msbuild %__ProjectDir%\tests\build.proj !__MsbuildLog! !__MsbuildWrn! !__MsbuildErr! %__msbuildArgs% %__BuildAgainstPackagesMsbuildArg% !__PriorityMsbuildArg! %__UnprocessedBuildArgs%
-    call msbuild %__ProjectDir%\tests\build.proj !__MsbuildLog! !__MsbuildWrn! !__MsbuildErr! %__msbuildArgs% %__BuildAgainstPackagesMsbuildArg% !__PriorityMsbuildArg! %__UnprocessedBuildArgs%
+    echo Running: msbuild %__ProjectDir%\tests\build.proj !__MsbuildLog! !__MsbuildWrn! !__MsbuildErr! %TargetsWindowsMsbuildArg% %__msbuildArgs% %__BuildAgainstPackagesMsbuildArg% !__PriorityMsbuildArg! %__UnprocessedBuildArgs%
+
+    call msbuild %__ProjectDir%\tests\build.proj !__MsbuildLog! !__MsbuildWrn! !__MsbuildErr! %TargetsWindowsMsbuildArg% %__msbuildArgs% %__BuildAgainstPackagesMsbuildArg% !__PriorityMsbuildArg! %__UnprocessedBuildArgs%
 
     if errorlevel 1 (
         echo %__MsgPrefix%Error: build failed. Refer to the build log files for details:
@@ -396,16 +407,6 @@ echo %__MsgPrefix%Creating test overlay
 set RuntimeIdArg=
 if defined __RuntimeId (
     set RuntimeIdArg=-RuntimeID="%__RuntimeId%"
-)
-
-set TargetsWindowsArg=
-set TargetsWindowsMsbuildArg=
-if "%__TargetsWindows%"=="1" (
-    set TargetsWindowsArg=-TargetsWindows=true
-    set TargetsWindowsMsbuildArg=/p:TargetsWindows=true
-) else if "%__TargetsWindows%"=="0" (
-    set TargetsWindowsArg=-TargetsWindows=false
-    set TargetsWindowsMsbuildArg=/p:TargetsWindows=false
 )
 
 set __BuildLogRootName=Tests_Overlay_Managed

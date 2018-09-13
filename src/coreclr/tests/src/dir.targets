@@ -76,11 +76,11 @@
   <Import Project="..\dir.targets" />
 
   <!-- Determine if this project should be built or not -->
-  <PropertyGroup> 
-    <BuildAllProjects Condition=" '$(BuildAllProjects)' == ''">false</BuildAllProjects>
+  <PropertyGroup>
+    <BuildAllProjects Condition="'$(BuildAllProjects)' == ''">false</BuildAllProjects>
     <_WillCLRTestProjectBuild Condition="'$(_WillCLRTestProjectBuild)' == ''">false</_WillCLRTestProjectBuild>
-    <_WillCLRTestProjectBuild Condition="'$(BuildAllProjects)' != true">true</_WillCLRTestProjectBuild>
-    <_WillCLRTestProjectBuild Condition="'$(DisableProjectBuild)' != true And '$(BuildAllProjects)' == true And '$(CLRTestPriority)' &lt;= '$(CLRTestPriorityToBuild)'">true</_WillCLRTestProjectBuild>
+    <_WillCLRTestProjectBuild Condition="'$(BuildAllProjects)' != 'true'">true</_WillCLRTestProjectBuild>
+    <_WillCLRTestProjectBuild Condition="'$(DisableProjectBuild)' != 'true' And '$(BuildAllProjects)' == 'true' And '$(CLRTestPriority)' &lt;= '$(CLRTestPriorityToBuild)'">true</_WillCLRTestProjectBuild>
   </PropertyGroup>
     
   <!-- if we have determined that there is nothing to build, overwrite the build targets so that nothing happens -->
@@ -91,7 +91,7 @@
   
   <!-- We will use an imported build here in the instance that we're a non-sdk style project, have source that we need to build, and we are the correct priority...OR if we are being asked to build for
   a test with a higher priority. -->
-  <Import Project="$(ToolsDir)Build.Common.targets" Condition="('$(UsingMicrosoftNETSdk)' != 'true') And ('$(CLRTestKind)'!='RunOnly') And $(_CLRTestCompilesSource) And ('$(_WillCLRTestProjectBuild)')"/>
+  <Import Project="$(ToolsDir)Build.Common.targets" Condition="('$(UsingMicrosoftNETSdk)' != 'true') And ('$(CLRTestKind)'!='RunOnly') And $(_CLRTestCompilesSource) And ('$(_WillCLRTestProjectBuild)' == 'true')"/>
 
 
   <Import Project="..\override.targets" Condition="Exists('..\override.targets')"/>
@@ -114,7 +114,7 @@
   <Import Project="CLRTest.Execute.targets" />
   <Target Name="CreateExecuteScript" 
           AfterTargets="Build"
-          Condition="'$(GenerateRunScript)' != 'false' And ('$(_WillCLRTestProjectBuild)')"
+          Condition="'$(GenerateRunScript)' != 'false' And ('$(_WillCLRTestProjectBuild)' == 'true')"
           DependsOnTargets="GenerateExecutionScriptsInternal" />
 
   <Target Name="CopyNativeProjectBinaries">
