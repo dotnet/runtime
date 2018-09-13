@@ -1447,8 +1447,10 @@ handle_enum:
 	}
 
 	if (sig->ret->byref) {
-		/* fixme: */
-		g_assert_not_reached ();
+		/* perform indirect load and return by value */
+		MonoType* ret_byval = m_class_get_byval_arg (mono_class_from_mono_type (sig->ret));
+		g_assert (!ret_byval->byref);
+		mono_mb_emit_byte (mb, mono_type_to_ldind (ret_byval));
 	}
 
 	switch (sig->ret->type) {

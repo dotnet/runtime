@@ -2462,6 +2462,11 @@ get_runtime_invoke_type (MonoType *t, gboolean ret)
 	if (t->byref) {
 		if (t->type == MONO_TYPE_GENERICINST && mono_class_is_nullable (mono_class_from_mono_type (t)))
 			return t;
+
+		/* The result needs loaded indirectly */
+		if (ret)
+			return t;
+
 		/* Can't share this with 'I' as that needs another indirection */
 		return m_class_get_this_arg (mono_defaults.int_class);
 	}
