@@ -78,7 +78,10 @@
     </When>
     <When Condition="'$(OSGroup)'=='Windows_NT'">
       <PropertyGroup>
-        <TargetsWindows>true</TargetsWindows>
+        <!-- Since cross compilation of test builds on Windows is possible, the
+             TargetsWindows property may already be set. Only set the property if
+             it is not already defined -->
+        <TargetsWindows Condition="'$(TargetsWindows)' == ''" >true</TargetsWindows>
         <TestNugetRuntimeId>win-$(__BuildArch)</TestNugetRuntimeId>
       </PropertyGroup>
     </When>
@@ -111,8 +114,8 @@
   </Choose>
 
   <PropertyGroup>
-    <TargetRid Condition="'$(__RuntimeId)' != ''">$(__RuntimeId)</TargetRid>
-    <TargetRid Condition="'$(__RuntimeId)' == ''">$(TestNugetRuntimeId)</TargetRid>
+    <TargetRid>$(__RuntimeId)</TargetRid>
+    <TargetRid Condition="'$(TargetRid)' == ''">$(TestNugetRuntimeId)</TargetRid>
   </PropertyGroup>
 
   <PropertyGroup>
