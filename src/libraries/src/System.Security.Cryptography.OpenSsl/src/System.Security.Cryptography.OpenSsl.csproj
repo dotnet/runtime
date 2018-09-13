@@ -98,6 +98,9 @@
     <Compile Include="$(CommonPath)\Microsoft\Win32\SafeHandles\SafeEvpPKeyHandle.Unix.cs">
       <Link>Common\Microsoft\Win32\SafeHandles\SafeEvpPKeyHandle.Unix.cs</Link>
     </Compile>
+    <Compile Include="$(CommonPath)\System\Memory\PointerMemoryManager.cs">
+      <Link>Common\System\Memory\PointerMemoryManager.cs</Link>
+    </Compile>
     <Compile Include="$(CommonPath)\System\Security\Cryptography\Asn1V2.cs">
       <Link>Common\System\Security\Cryptography\Asn1V2.cs</Link>
     </Compile>

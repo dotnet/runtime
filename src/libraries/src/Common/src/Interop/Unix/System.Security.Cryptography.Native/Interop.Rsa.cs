@@ -22,8 +22,11 @@ internal static partial class Interop
         [DllImport(Libraries.CryptoNative, EntryPoint = "CryptoNative_RsaDestroy")]
         internal static extern void RsaDestroy(IntPtr rsa);
 
+        internal static SafeRsaHandle DecodeRsaPublicKey(ReadOnlySpan<byte> buf) =>
+            DecodeRsaPublicKey(ref MemoryMarshal.GetReference(buf), buf.Length);
+
         [DllImport(Libraries.CryptoNative, EntryPoint = "CryptoNative_DecodeRsaPublicKey")]
-        internal static extern SafeRsaHandle DecodeRsaPublicKey(byte[] buf, int len);
+        private static extern SafeRsaHandle DecodeRsaPublicKey(ref byte buf, int len);
 
         internal static int RsaPublicEncrypt(
             int flen,

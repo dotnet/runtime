@@ -2,7 +2,9 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
+using System.Buffers;
 using System.Diagnostics;
+using System.Runtime.InteropServices;
 using System.Security.Cryptography.Apple;
 using System.Security.Cryptography.Asn1;
 using Internal.Cryptography;
@@ -132,7 +134,7 @@ namespace System.Security.Cryptography
             }
         }
 
-        public int ImportParameters(ECParameters parameters)
+        internal int ImportParameters(ECParameters parameters)
         {
             parameters.Validate();
 
@@ -184,25 +186,44 @@ namespace System.Security.Cryptography
 
         private static SafeSecKeyRefHandle ImportKey(ECParameters parameters)
         {
-            bool isPrivateKey = parameters.D != null;
-            byte[] blob;
-
-            if (isPrivateKey)
+            if (parameters.D != null)
             {
                 using (AsnWriter privateKey = EccKeyFormatHelper.WriteECPrivateKey(parameters))
                 {
-                    blob = privateKey.Encode();
+                    return Interop.AppleCrypto.ImportEphemeralKey(privateKey.EncodeAsSpan(), true);
                 }
             }
             else
             {
                 using (AsnWriter publicKey = EccKeyFormatHelper.WriteSubjectPublicKeyInfo(parameters))
                 {
-                    blob = publicKey.Encode();
+                    return Interop.AppleCrypto.ImportEphemeralKey(publicKey.EncodeAsSpan(), false);
                 }
             }
+        }
 
-            return Interop.AppleCrypto.ImportEphemeralKey(blob, isPrivateKey);
+        internal unsafe int ImportSubjectPublicKeyInfo(
+            ReadOnlySpan<byte> source,
+            out int bytesRead)
+        {
+            fixed (byte* ptr = &MemoryMarshal.GetReference(source))
+            {
+                using (MemoryManager<byte> manager = new PointerMemoryManager<byte>(ptr, source.Length))
+                {
+                    // Validate the DER value and get the number of bytes.
+                    EccKeyFormatHelper.ReadSubjectPublicKeyInfo(
+                        manager.Memory,
+                        out int localRead);
+
+                    SafeSecKeyRefHandle publicKey = Interop.AppleCrypto.ImportEphemeralKey(source.Slice(0, localRead), false);
+                    SecKeyPair newKeys = SecKeyPair.PublicOnly(publicKey);
+                    int size = GetKeySize(newKeys);
+                    SetKey(newKeys);
+
+                    bytesRead = localRead;
+                    return size;
+                }
+            }
         }
     }
 }
