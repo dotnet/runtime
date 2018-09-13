@@ -32,13 +32,13 @@ def static getOSGroup(def os) {
     return osGroupMap[os]
 }
 
-def static getCrossArchitecture(def os, def architecture, def scenario) {
+def static getCrossArchitectures(def os, def architecture, def scenario) {
     switch (architecture) {
         case 'arm':
-            return 'x86'
+            return ['x86','x64']
 
         case 'arm64':
-            return 'x64'
+            return ['x64']
     }
 
     assert false
@@ -2516,23 +2516,22 @@ def static calculateBuildCommands(def newJob, def scenario, def branch, def isPR
                     else if (isCrossGenComparisonScenario(scenario)) {
                         buildCommands += "${dockerCmd}\${WORKSPACE}/build-test.sh ${lowerConfiguration} ${architecture} cross generatelayoutonly"
 
-                        def crossArchitecture = getCrossArchitecture(os, architecture, scenario)
-
                         def workspaceRelativeProductBinDir = "bin/Product/${osGroup}.${architecture}.${configuration}"
                         def workspaceRelativeCoreLib = "${workspaceRelativeProductBinDir}/IL/System.Private.CoreLib.dll"
                         def workspaceRelativeCoreRootDir = "bin/tests/${osGroup}.${architecture}.${configuration}/Tests/Core_Root"
                         def workspaceRelativeCrossGenComparisonScript = "tests/scripts/crossgen_comparison.py"
-                        def workspaceRelativeCrossResultDir = "_/${osGroup}.${crossArchitecture}_${architecture}.${configuration}"
+                        def workspaceRelativeResultsDir = "_"
                         def workspaceRelativeArtifactsArchive = "${os}.${architecture}.${configuration}.${scenario}.zip"
-
                         def crossGenComparisonCmd = "python -u \${WORKSPACE}/${workspaceRelativeCrossGenComparisonScript} "
-                        def crossGenExecutable = "\${WORKSPACE}/${workspaceRelativeProductBinDir}/${crossArchitecture}/crossgen"
+                        getCrossArchitectures(os, architecture, scenario).each{ crossArch ->
+                            def crossGenExecutable = "\${WORKSPACE}/${workspaceRelativeProductBinDir}/${crossArch}/crossgen"
+                            def workspaceRelativeCrossArchResultDir = "${workspaceRelativeResultsDir}/${osGroup}.${crossArch}_${architecture}.${configuration}"
 
-                        buildCommands += "${dockerCmd}mkdir -p \${WORKSPACE}/${workspaceRelativeCrossResultDir}"
-                        buildCommands += "${dockerCmd}${crossGenComparisonCmd}crossgen_corelib --crossgen ${crossGenExecutable} --il_corelib \${WORKSPACE}/${workspaceRelativeCoreLib} --result_dir \${WORKSPACE}/${workspaceRelativeCrossResultDir}"
-                        buildCommands += "${dockerCmd}${crossGenComparisonCmd}crossgen_framework --crossgen ${crossGenExecutable} --core_root \${WORKSPACE}/${workspaceRelativeCoreRootDir} --result_dir \${WORKSPACE}/${workspaceRelativeCrossResultDir}"
-                        buildCommands += "${dockerCmd}zip -r ${workspaceRelativeArtifactsArchive} ${workspaceRelativeCoreLib} ${workspaceRelativeCoreRootDir} ${workspaceRelativeCrossGenComparisonScript} ${workspaceRelativeCrossResultDir}"
-
+                            buildCommands += "${dockerCmd}mkdir -p \${WORKSPACE}/${workspaceRelativeCrossArchResultDir}"
+                            buildCommands += "${dockerCmd}${crossGenComparisonCmd}crossgen_corelib --crossgen ${crossGenExecutable} --il_corelib \${WORKSPACE}/${workspaceRelativeCoreLib} --result_dir \${WORKSPACE}/${workspaceRelativeCrossArchResultDir}"
+                            buildCommands += "${dockerCmd}${crossGenComparisonCmd}crossgen_framework --crossgen ${crossGenExecutable} --core_root \${WORKSPACE}/${workspaceRelativeCoreRootDir} --result_dir \${WORKSPACE}/${workspaceRelativeCrossArchResultDir}"
+                        } // crossArch
+                        buildCommands += "${dockerCmd}zip -r ${workspaceRelativeArtifactsArchive} ${workspaceRelativeCoreLib} ${workspaceRelativeCoreRootDir} ${workspaceRelativeCrossGenComparisonScript} ${workspaceRelativeResultsDir}"
                         Utilities.addArchival(newJob, "${workspaceRelativeArtifactsArchive}")
                     }
                     else {
@@ -3445,9 +3444,8 @@ def static CreateNonWindowsCrossGenComparisonTestJob(def dslFactory, def project
     def osGroup = getOSGroup(os)
     def jobName = getJobName(configuration, architecture, os, scenario, false) + "_tst"
 
-    def crossArchitecture = getCrossArchitecture(os, architecture, scenario)
-    def workspaceRelativeCrossResultDir = "_/${osGroup}.${crossArchitecture}_${architecture}.${configuration}"
-    def workspaceRelativeNativeResultDir = "_/${osGroup}.${architecture}_${architecture}.${configuration}"
+    def workspaceRelativeResultsDir = "_"
+    def workspaceRelativeNativeArchResultDir = "${workspaceRelativeResultsDir}/${osGroup}.${architecture}_${architecture}.${configuration}"
 
     def jobFolder = getJobFolder(scenario)
     def newJob = dslFactory.job(Utilities.getFullJobName(project, jobName, isPR, jobFolder)) {
@@ -3475,15 +3473,22 @@ def static CreateNonWindowsCrossGenComparisonTestJob(def dslFactory, def project
             def crossGenComparisonCmd = "python -u \${WORKSPACE}/${workspaceRelativeCrossGenComparisonScript} "
             def crossGenExecutable = "\${WORKSPACE}/${workspaceRelativeCrossGenExecutable}"
 
-            shell("mkdir -p ${workspaceRelativeNativeResultDir}")
-            shell("${crossGenComparisonCmd}crossgen_corelib --crossgen ${crossGenExecutable} --il_corelib \${WORKSPACE}/${workspaceRelativeCoreLib} --result_dir \${WORKSPACE}/${workspaceRelativeNativeResultDir}")
-            shell("${crossGenComparisonCmd}crossgen_framework --crossgen ${crossGenExecutable} --core_root \${WORKSPACE}/${workspaceRelativeCoreRootDir} --result_dir \${WORKSPACE}/${workspaceRelativeNativeResultDir}")
-            shell("${crossGenComparisonCmd}compare --base_dir \${WORKSPACE}/${workspaceRelativeNativeResultDir} --diff_dir \${WORKSPACE}/${workspaceRelativeCrossResultDir}")
+            shell("mkdir -p ${workspaceRelativeNativeArchResultDir}")
+            shell("${crossGenComparisonCmd}crossgen_corelib --crossgen ${crossGenExecutable} --il_corelib \${WORKSPACE}/${workspaceRelativeCoreLib} --result_dir \${WORKSPACE}/${workspaceRelativeNativeArchResultDir}")
+            shell("${crossGenComparisonCmd}crossgen_framework --crossgen ${crossGenExecutable} --core_root \${WORKSPACE}/${workspaceRelativeCoreRootDir} --result_dir \${WORKSPACE}/${workspaceRelativeNativeArchResultDir}")
+
+            getCrossArchitectures(os, architecture, scenario).each{ crossArch ->
+                def workspaceRelativeCrossArchResultDir = "${workspaceRelativeResultsDir}/${osGroup}.${crossArch}_${architecture}.${configuration}"
+                shell("${crossGenComparisonCmd}compare --base_dir \${WORKSPACE}/${workspaceRelativeNativeArchResultDir} --diff_dir \${WORKSPACE}/${workspaceRelativeCrossArchResultDir}")
+            } // crossArch
         } // steps
     }  // job
 
-    Utilities.addArchival(newJob, "${workspaceRelativeCrossResultDir}/**")
-    Utilities.addArchival(newJob, "${workspaceRelativeNativeResultDir}/**")
+    Utilities.addArchival(newJob, "${workspaceRelativeNativeArchResultDir}/**")
+    getCrossArchitectures(os, architecture, scenario).each{ crossArch ->
+        def workspaceRelativeCrossArchResultDir = "${workspaceRelativeResultsDir}/${osGroup}.${crossArch}_${architecture}.${configuration}"
+        Utilities.addArchival(newJob, "${workspaceRelativeCrossArchResultDir}/**")
+    } // crossArch
 
     return newJob
 }
