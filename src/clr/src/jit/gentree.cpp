@@ -15378,66 +15378,6 @@ bool Compiler::gtHasCatchArg(GenTree* tree)
 }
 
 //------------------------------------------------------------------------
-// gtCheckQuirkAddrExposedLclVar:
-//
-// Arguments:
-//    tree: an address taken GenTree node that is a GT_LCL_VAR
-//    parentStack: a context (stack of parent nodes)
-//    The 'parentStack' is used to ensure that we are in an argument context.
-//
-// Return Value:
-//    None
-//
-// Notes:
-//    When allocation size of this LclVar is 32-bits we will quirk the size to 64-bits
-//    because some PInvoke signatures incorrectly specify a ByRef to an INT32
-//    when they actually write a SIZE_T or INT64. There are cases where overwriting
-//    these extra 4 bytes corrupts some data (such as a saved register) that leads to A/V
-//    Wheras previously the JIT64 codegen did not lead to an A/V
-//
-// Assumptions:
-//    'tree' is known to be address taken and that we have a stack
-//    of parent nodes. Both of these generally requires that
-//    we are performing a recursive tree walk using struct fgWalkData
-//------------------------------------------------------------------------
-void Compiler::gtCheckQuirkAddrExposedLclVar(GenTree* tree, GenTreeStack* parentStack)
-{
-#ifdef _TARGET_64BIT_
-    // We only need to Quirk for _TARGET_64BIT_
-
-    // Do we have a parent node that is a Call?
-    if (!Compiler::gtHasCallOnStack(parentStack))
-    {
-        // No, so we don't apply the Quirk
-        return;
-    }
-    noway_assert(tree->gtOper == GT_LCL_VAR);
-    unsigned   lclNum  = tree->gtLclVarCommon.gtLclNum;
-    LclVarDsc* varDsc  = &lvaTable[lclNum];
-    var_types  vartype = varDsc->TypeGet();
-
-    if (varDsc->lvIsParam)
-    {
-        // We can't Quirk the size of an incoming parameter
-        return;
-    }
-
-    // We may need to Quirk the storage size for this LCL_VAR
-    if (genActualType(vartype) == TYP_INT)
-    {
-        varDsc->lvQuirkToLong = true;
-#ifdef DEBUG
-        if (verbose)
-        {
-            printf("\nAdding a Quirk for the storage size of LvlVar V%02d:", lclNum);
-            printf(" (%s ==> %s)\n", varTypeName(vartype), varTypeName(TYP_LONG));
-        }
-#endif // DEBUG
-    }
-#endif
-}
-
-//------------------------------------------------------------------------
 // gtGetTypeProducerKind: determine if a tree produces a runtime type, and
 //    if so, how.
 //
