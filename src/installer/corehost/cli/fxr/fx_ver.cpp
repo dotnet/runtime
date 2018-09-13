@@ -25,6 +25,11 @@ fx_ver_t::fx_ver_t(int major, int minor, int patch)
 {
 }
 
+fx_ver_t::fx_ver_t()
+    : fx_ver_t(-1, -1, -1, _X(""), _X(""))
+{
+}
+
 bool fx_ver_t::operator ==(const fx_ver_t& b) const
 {
     return compare(*this, b) == 0;

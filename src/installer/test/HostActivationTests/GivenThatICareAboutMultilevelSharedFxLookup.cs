@@ -9,6 +9,9 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation.MultilevelSharedFxLooku
 {
     public partial class GivenThatICareAboutMultilevelSharedFxLookup : IDisposable
     {
+        private const string SystemCollectionsImmutableFileVersion = "88.2.3.4";
+        private const string SystemCollectionsImmutableAssemblyVersion = "88.0.1.2";
+
         private RepoDirectoriesProvider RepoDirectories;
         private TestProjectFixture PreviouslyBuiltAndRestoredPortableTestProjectFixture;
 
@@ -100,6 +103,7 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation.MultilevelSharedFxLooku
             _sharedFxVersion = (new DirectoryInfo(greatestVersionSharedFxPath)).Name;
             _builtSharedFxDir = Path.Combine(_builtDotnet, "shared", "Microsoft.NETCore.App", _sharedFxVersion);
             _builtSharedUberFxDir = Path.Combine(_builtDotnet, "shared", "Microsoft.UberFramework", _sharedFxVersion);
+            SharedFramework.CreateUberFrameworkArtifacts(_builtSharedFxDir, _builtSharedUberFxDir, SystemCollectionsImmutableAssemblyVersion, SystemCollectionsImmutableFileVersion);
 
             // Trace messages used to identify from which folder the framework was picked
             _hostPolicyDllName = Path.GetFileName(fixture.TestProject.HostPolicyDll);
@@ -647,7 +651,7 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation.MultilevelSharedFxLooku
 
             // Add versions in the exe folders
             SharedFramework.AddAvailableSharedFxVersions(_builtSharedFxDir, _exeSharedFxBaseDir, "9999.0.0");
-            SharedFramework.AddAvailableSharedUberFxVersions(_builtSharedUberFxDir, _exeSharedUberFxBaseDir, "9999.0.0", null, "7777.0.0");
+            SharedFramework.AddAvailableSharedUberFxVersions(_builtSharedUberFxDir, _exeSharedUberFxBaseDir, "9999.0.0", "7777.0.0");
 
             // Version: NetCoreApp 9999.0.0
             //          UberFramework 7777.0.0
@@ -672,7 +676,7 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation.MultilevelSharedFxLooku
 
             // Add a newer version to verify roll-forward
             SharedFramework.AddAvailableSharedFxVersions(_builtSharedFxDir, _exeSharedFxBaseDir, "9999.0.1");
-            SharedFramework.AddAvailableSharedUberFxVersions(_builtSharedUberFxDir, _exeSharedUberFxBaseDir, "9999.0.0", null, "7777.0.1");
+            SharedFramework.AddAvailableSharedUberFxVersions(_builtSharedUberFxDir, _exeSharedUberFxBaseDir, "9999.0.0", "7777.0.1");
 
             // Version: NetCoreApp 9999.0.0
             //          UberFramework 7777.0.0
@@ -712,7 +716,7 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation.MultilevelSharedFxLooku
         }
 
         [Fact]
-        public void Multiple_SharedFxLookup_Propagated_Global_RuntimeConfig_Values()
+        public void Multiple_SharedFxLookup_Do_Not_Propagate()
         {
             var fixture = PreviouslyBuiltAndRestoredPortableTestProjectFixture
                 .Copy();
@@ -725,7 +729,7 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation.MultilevelSharedFxLooku
 
             // Add versions in the exe folders
             SharedFramework.AddAvailableSharedFxVersions(_builtSharedFxDir, _exeSharedFxBaseDir, "9999.1.0");
-            SharedFramework.AddAvailableSharedUberFxVersions(_builtSharedUberFxDir, _exeSharedUberFxBaseDir, "9999.0.0", "UberValue", "7777.0.0");
+            SharedFramework.AddAvailableSharedUberFxVersions(_builtSharedUberFxDir, _exeSharedUberFxBaseDir, "9999.0.0", "7777.0.0");
 
             // Version: NetCoreApp 9999.0.0
             //          UberFramework 7777.0.0
@@ -745,65 +749,30 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation.MultilevelSharedFxLooku
                 .And
                 .HaveStdErrContaining("It was not possible to find any compatible framework version");
 
-            // Enable rollForwardOnNoCandidateFx on app's config, which will be used as the default for Uber's config
-            SharedFramework.SetRuntimeConfigJson(runtimeConfig, "7777.0.0", rollFwdOnNoCandidateFx: 1, testConfigPropertyValue: null, useUberFramework: true);
+            // Enable rollForwardOnNoCandidateFx on app's config, which will not be used as the default for Uber's config
+            SharedFramework.SetRuntimeConfigJson(runtimeConfig, "7777.0.0", rollFwdOnNoCandidateFx: 1, useUberFramework: true);
 
             // Version: NetCoreApp 9999.0.0
             //          UberFramework 7777.0.0
             //          'Roll forward on no candidate fx' enabled through config
             // Exe: NetCoreApp 9999.1.0
             //      UberFramework 7777.0.0
-            // Expected: 9999.1.0
-            //           7777.0.0
+            // Expected: no compatible version
             dotnet.Exec(appDll)
                 .WorkingDirectory(_currentWorkingDir)
                 .EnvironmentVariable("COREHOST_TRACE", "1")
                 .EnvironmentVariable("DOTNET_ROLL_FORWARD_ON_NO_CANDIDATE_FX", "0")
                 .CaptureStdOut()
                 .CaptureStdErr()
-                .Execute()
+                .Execute(fExpectedToFail: true)
                 .Should()
-                .Pass()
+                .Fail()
                 .And
-                .HaveStdErrContaining(Path.Combine(_exeSelectedMessage, "9999.1.0"))
-                .And
-                .HaveStdOutContaining("Framework Version:9999.1.0")
-                .And
-                .HaveStdErrContaining(Path.Combine(_exeFoundUberFxMessage, "7777.0.0"))
-                .And
-                .HaveStdErrContaining("Property TestProperty = UberValue");
-
-            // Change the app's TestProperty value which should override the uber's config value
-            SharedFramework.SetRuntimeConfigJson(runtimeConfig, "7777.0.0", rollFwdOnNoCandidateFx: 1, testConfigPropertyValue: "AppValue", useUberFramework: true);
-
-            // Version: NetCoreApp 9999.0.0
-            //          UberFramework 7777.0.0
-            //          'Roll forward on no candidate fx' enabled through config
-            // Exe: NetCoreApp 9999.1.0
-            //      UberFramework 7777.0.0
-            // Expected: 9999.1.0
-            //           7777.0.0
-            dotnet.Exec(appDll)
-                .WorkingDirectory(_currentWorkingDir)
-                .EnvironmentVariable("COREHOST_TRACE", "1")
-                .EnvironmentVariable("DOTNET_ROLL_FORWARD_ON_NO_CANDIDATE_FX", "0")
-                .CaptureStdOut()
-                .CaptureStdErr()
-                .Execute()
-                .Should()
-                .Pass()
-                .And
-                .HaveStdErrContaining(Path.Combine(_exeSelectedMessage, "9999.1.0"))
-                .And
-                .HaveStdOutContaining("Framework Version:9999.1.0")
-                .And
-                .HaveStdErrContaining(Path.Combine(_exeFoundUberFxMessage, "7777.0.0"))
-                .And
-                .HaveStdErrContaining("Property TestProperty = AppValue");
+                .HaveStdErrContaining("It was not possible to find any compatible framework version");
         }
 
         [Fact]
-        public void Multiple_SharedFxLookup_Propagated_Additional_Framework_RuntimeConfig_Values()
+        public void Multiple_Fx_References_Cant_Roll_Forward_Because_Incompatible_Config()
         {
             var fixture = PreviouslyBuiltAndRestoredPortableTestProjectFixture
                 .Copy();
@@ -815,83 +784,244 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation.MultilevelSharedFxLooku
 
             var additionalfxs = new JArray();
             additionalfxs.Add(GetAdditionalFramework("Microsoft.NETCore.App", "9999.1.0", applyPatches: false, rollForwardOnNoCandidateFx: 0));
-            SharedFramework.SetRuntimeConfigJson(runtimeConfig, "7777.0.0", null, useUberFramework: true, additionalFrameworks: additionalfxs);
+            SharedFramework.SetRuntimeConfigJson(runtimeConfig, "7777.0.0", null, useUberFramework: true, frameworks: additionalfxs);
 
             // Add versions in the exe folders
-            SharedFramework.AddAvailableSharedFxVersions(_builtSharedFxDir, _exeSharedFxBaseDir, "9999.1.0");
-            SharedFramework.AddAvailableSharedUberFxVersions(_builtSharedUberFxDir, _exeSharedUberFxBaseDir, "9999.5.5", "UberValue", "7777.0.0");
+            SharedFramework.AddAvailableSharedFxVersions(_builtSharedFxDir, _exeSharedFxBaseDir, "9999.1.0", "9999.5.5");
+            SharedFramework.AddAvailableSharedUberFxVersions(_builtSharedUberFxDir, _exeSharedUberFxBaseDir, "9999.5.5", "7777.0.0");
 
+            // Verify that both 9999.1.0 and 9999.5.5 can't be selected with roll-forward disabled
             // Version: NetCoreApp 9999.5.5 (in framework section)
-            //          NetCoreApp 9999.1.0 (in app's additionalFrameworks section)
+            //          NetCoreApp 9999.1.0 (in frameworks section)
             //          UberFramework 7777.0.0
-            // Exe: NetCoreApp 9999.1.0
+            // Exe: NetCoreApp 9999.1.0 rollForwardOnNoCandidateFx:0 applyPatches:false
+            //      NetCoreApp 9999.5.5
             //      UberFramework 7777.0.0
-            // Expected: 9999.1.0
-            //           7777.0.0
+            // Expected: no compatible version
             dotnet.Exec(appDll)
                 .WorkingDirectory(_currentWorkingDir)
                 .EnvironmentVariable("COREHOST_TRACE", "1")
-                .CaptureStdOut()
-                .CaptureStdErr()
-                .Execute()
-                .Should()
-                .Pass()
-                .And
-                .HaveStdErrContaining(Path.Combine(_exeSelectedMessage, "9999.1.0"))
-                .And
-                .HaveStdOutContaining("Framework Version:9999.1.0")
-                .And
-                .HaveStdErrContaining(Path.Combine(_exeFoundUberFxMessage, "7777.0.0"));
-
-            // Change the additionalFrameworks to allow roll forward, overriding Uber's global section and ignoring Uber's framework section
-            additionalfxs.Clear();
-            additionalfxs.Add(GetAdditionalFramework("Microsoft.NETCore.App", "9999.0.0", applyPatches: false, rollForwardOnNoCandidateFx: 1));
-            additionalfxs.Add(GetAdditionalFramework("UberFx", "7777.0.0", applyPatches: false, rollForwardOnNoCandidateFx: 0));
-            SharedFramework.SetRuntimeConfigJson(runtimeConfig, "7777.0.0", rollFwdOnNoCandidateFx: 0, useUberFramework: true, additionalFrameworks: additionalfxs);
-
-            // Version: NetCoreApp 9999.5.5 (in framework section)
-            //          NetCoreApp 9999.0.0 (in app's additionalFrameworks section)
-            //          UberFramework 7777.0.0
-            //          UberFramework 7777.0.0 (in app's additionalFrameworks section)
-            // 'Roll forward on no candidate fx' disabled through env var
-            // 'Roll forward on no candidate fx' disabled through Uber's global runtimeconfig
-            // 'Roll forward on no candidate fx' enabled for NETCore.App enabled through additionalFrameworks section
-            // Exe: NetCoreApp 9999.1.0
-            //      UberFramework 7777.0.0
-            // Expected: 9999.1.0
-            //           7777.0.0
-            dotnet.Exec(appDll)
-                .WorkingDirectory(_currentWorkingDir)
-                .EnvironmentVariable("COREHOST_TRACE", "1")
-                .EnvironmentVariable("DOTNET_ROLL_FORWARD_ON_NO_CANDIDATE_FX", "0")
-                .CaptureStdOut()
-                .CaptureStdErr()
-                .Execute()
-                .Should()
-                .Pass()
-                .And
-                .HaveStdErrContaining(Path.Combine(_exeSelectedMessage, "9999.1.0"))
-                .And
-                .HaveStdOutContaining("Framework Version:9999.1.0")
-                .And
-                .HaveStdErrContaining(Path.Combine(_exeFoundUberFxMessage, "7777.0.0"));
-
-            // Same as previous except use of '--roll-forward-on-no-candidate-fx'
-            // Expected: Fail since '--roll-forward-on-no-candidate-fx' should apply to all layers
-            dotnet.Exec(
-                    "exec",
-                    "--roll-forward-on-no-candidate-fx", "0",
-                    appDll)
-                .WorkingDirectory(_currentWorkingDir)
-                .EnvironmentVariable("COREHOST_TRACE", "1")
-                .EnvironmentVariable("DOTNET_ROLL_FORWARD_ON_NO_CANDIDATE_FX", "1")
                 .CaptureStdOut()
                 .CaptureStdErr()
                 .Execute(fExpectedToFail: true)
                 .Should()
                 .Fail()
                 .And
-                .HaveStdErrContaining("It was not possible to find any compatible framework version");
+                .HaveStdErrContaining("cannot roll-forward to the previously referenced version '9999.5.5");
+        }
+
+        [Fact]
+        public void Multiple_Fx_References_Can_Roll_Forward_Without_Retry()
+        {
+            var fixture = PreviouslyBuiltAndRestoredPortableTestProjectFixture
+                .Copy();
+
+            var dotnet = fixture.BuiltDotnet;
+            var appDll = fixture.TestProject.AppDll;
+
+            string runtimeConfig = Path.Combine(fixture.TestProject.OutputDirectory, "SharedFxLookupPortableApp.runtimeconfig.json");
+
+            var additionalfxs = new JArray();
+            additionalfxs.Add(GetAdditionalFramework("Microsoft.NETCore.App", "9999.1.1", applyPatches: false, rollForwardOnNoCandidateFx: 1));
+            SharedFramework.SetRuntimeConfigJson(runtimeConfig, "7777.0.0", null, useUberFramework: true, frameworks: additionalfxs);
+
+            // Add versions in the exe folders
+            SharedFramework.AddAvailableSharedFxVersions(_builtSharedFxDir, _exeSharedFxBaseDir, "9999.1.0", "9999.5.5");
+            SharedFramework.AddAvailableSharedUberFxVersions(_builtSharedUberFxDir, _exeSharedUberFxBaseDir, "9999.5.5", "7777.0.0");
+
+            // Version: NetCoreApp 9999.5.5 (in framework section)
+            //          NetCoreApp 9999.1.0 (in frameworks section)
+            //          UberFramework 7777.0.0
+            // Exe: NetCoreApp 9999.1.0 rollForwardOnNoCandidateFx:1 applyPatches:false
+            //      NetCoreApp 9999.5.5
+            //      UberFramework 7777.0.0
+            // Expected: 9999.5.5
+            //           7777.0.0
+            dotnet.Exec(appDll)
+                .WorkingDirectory(_currentWorkingDir)
+                .EnvironmentVariable("COREHOST_TRACE", "1")
+                .CaptureStdOut()
+                .CaptureStdErr()
+                .Execute()
+                .Should()
+                .Pass()
+                .And
+                .HaveStdErrContaining(Path.Combine(_exeSelectedMessage, "9999.5.5"))
+                .And
+                .HaveStdOutContaining("Framework Version:9999.5.5")
+                .And
+                .HaveStdErrContaining(Path.Combine(_exeFoundUberFxMessage, "7777.0.0"))
+                .And
+                .NotHaveStdErrContaining("Restarting all framework resolution");
+        }
+
+        [Fact]
+        public void Multiple_Fx_References_Can_Roll_Forward_With_Retry()
+        {
+            var fixture = PreviouslyBuiltAndRestoredPortableTestProjectFixture
+                .Copy();
+
+            var dotnet = fixture.BuiltDotnet;
+            var appDll = fixture.TestProject.AppDll;
+
+            string runtimeConfig = Path.Combine(fixture.TestProject.OutputDirectory, "SharedFxLookupPortableApp.runtimeconfig.json");
+
+            var additionalfxs = new JArray();
+            additionalfxs.Add(GetAdditionalFramework("Microsoft.UberFramework", "7777.0.0", null, null));
+            // Specify Uber as additional fx so we find NetCoreApp 9999.1.1 and then need to do a re-try for 9999.5.5
+            SharedFramework.SetRuntimeConfigJson(runtimeConfig, "9999.1.1", null, null, frameworks: additionalfxs);
+
+            // Add versions in the exe folders
+            SharedFramework.AddAvailableSharedFxVersions(_builtSharedFxDir, _exeSharedFxBaseDir, "9999.1.1", "9999.5.5");
+            SharedFramework.AddAvailableSharedUberFxVersions(_builtSharedUberFxDir, _exeSharedUberFxBaseDir, "9999.5.5", "7777.0.0");
+
+            // Version: NetCoreApp 9999.1.1 (in framework section)
+            //          UberFramework 7777.0.0 (in frameworks section)
+            //          NetCoreApp 9999.5.5 (in uber's config)
+            // Exe: NetCoreApp 9999.1.1
+            //      NetCoreApp 9999.5.5
+            //      UberFramework 7777.0.0
+            // Expected: 9999.5.5
+            //           7777.0.0
+            dotnet.Exec(appDll)
+                .WorkingDirectory(_currentWorkingDir)
+                .EnvironmentVariable("COREHOST_TRACE", "1")
+                .CaptureStdOut()
+                .CaptureStdErr()
+                .Execute()
+                .Should()
+                .Pass()
+                .And
+                .HaveStdErrContaining(Path.Combine(_exeSelectedMessage, "9999.5.5"))
+                .And
+                .HaveStdOutContaining("Framework Version:9999.5.5")
+                .And
+                .HaveStdErrContaining(Path.Combine(_exeFoundUberFxMessage, "7777.0.0"))
+                .And
+                .HaveStdErrContaining("Restarting all framework resolution because the previously resolved framework 'Microsoft.NETCore.App', version '9999.1.1' must be re-resolved with the new version '9999.5.5'");
+        }
+
+        [Fact]
+        public void Multiple_Fx_References_Cant_Roll_Forward_Because_Disabled_Through_CommandLine()
+        {
+            var fixture = PreviouslyBuiltAndRestoredPortableTestProjectFixture
+                .Copy();
+
+            var dotnet = fixture.BuiltDotnet;
+            var appDll = fixture.TestProject.AppDll;
+
+            string runtimeConfig = Path.Combine(fixture.TestProject.OutputDirectory, "SharedFxLookupPortableApp.runtimeconfig.json");
+
+            var additionalfxs = new JArray();
+            additionalfxs.Add(GetAdditionalFramework("Microsoft.NETCore.App", "9999.1.1", applyPatches: false, rollForwardOnNoCandidateFx: 1));
+            SharedFramework.SetRuntimeConfigJson(runtimeConfig, "7777.0.0", null, useUberFramework: true, frameworks: additionalfxs);
+
+            // Add versions in the exe folders
+            SharedFramework.AddAvailableSharedFxVersions(_builtSharedFxDir, _exeSharedFxBaseDir, "9999.1.0", "9999.5.5");
+            SharedFramework.AddAvailableSharedUberFxVersions(_builtSharedUberFxDir, _exeSharedUberFxBaseDir, "9999.5.5", "7777.0.0");
+
+            // Version: NetCoreApp 9999.5.5 (in framework section)
+            //          NetCoreApp 9999.1.0 (in frameworks section)
+            //          UberFramework 7777.0.0
+            // Exe: NetCoreApp 9999.1.0 rollForwardOnNoCandidateFx:1 applyPatches:false
+            //      NetCoreApp 9999.5.5
+            //      UberFramework 7777.0.0
+            // --roll-forward-on-no-candidate-fx=0 should override config settings
+            // Expected: 9999.5.5
+            //           7777.0.0
+
+            dotnet.Exec(
+                    "exec",
+                    "--roll-forward-on-no-candidate-fx", "0",
+                    appDll)
+                .WorkingDirectory(_currentWorkingDir)
+                .EnvironmentVariable("COREHOST_TRACE", "1")
+                .CaptureStdOut()
+                .CaptureStdErr()
+                .Execute(fExpectedToFail: true)
+                .Should()
+                .Fail()
+                .And
+                .HaveStdErrContaining("cannot roll-forward to the previously referenced version '9999.5.5");
+        }
+
+        [Fact]
+        public void Multiple_SharedFxLookup_NetCoreApp_MinorRollForward_Wins_Over_UberFx()
+        {
+            var fixture = PreviouslyBuiltAndRestoredPortableTestProjectFixture
+                .Copy();
+
+            var dotnet = fixture.BuiltDotnet;
+            var appDll = fixture.TestProject.AppDll;
+
+            string runtimeConfig = Path.Combine(fixture.TestProject.OutputDirectory, "SharedFxLookupPortableApp.runtimeconfig.json");
+            SharedFramework.SetRuntimeConfigJson(runtimeConfig, "7777.0.0", null, useUberFramework: true);
+
+            // Modify the Uber values
+            SharedFramework.CreateUberFrameworkArtifacts(_builtSharedFxDir, _builtSharedUberFxDir, "0.0.0.1", "0.0.0.2");
+
+            // Add versions in the exe folders
+            SharedFramework.AddAvailableSharedFxVersions(_builtSharedFxDir, _exeSharedFxBaseDir, "9999.1.0");
+            SharedFramework.AddAvailableSharedUberFxVersions(_builtSharedUberFxDir, _exeSharedUberFxBaseDir, "9999.0.0", "7777.0.0");
+
+            string uberFile = Path.Combine(_exeSharedUberFxBaseDir, "7777.0.0", "System.Collections.Immutable.dll");
+            string netCoreAppFile = Path.Combine(_exeSharedFxBaseDir, "9999.1.0", "System.Collections.Immutable.dll");
+            // The System.Collections.Immutable.dll is located in the UberFramework and NetCoreApp
+            // Version: NetCoreApp 9999.0.0
+            //          UberFramework 7777.0.0
+            //          'Roll forward on no candidate fx' enabled through config
+            // Exe: NetCoreApp 9999.1.0
+            //      UberFramework 7777.0.0
+            // Expected: 9999.1.0
+            //           7777.0.0
+            dotnet.Exec(appDll)
+                .WorkingDirectory(_currentWorkingDir)
+                .EnvironmentVariable("COREHOST_TRACE", "1")
+                .CaptureStdOut()
+                .CaptureStdErr()
+                .Execute()
+                .Should()
+                .Pass()
+                .And
+                .HaveStdErrContaining($"Replacing deps entry [{uberFile}, AssemblyVersion:0.0.0.1, FileVersion:0.0.0.2] with [{netCoreAppFile}");
+        }
+
+        [Fact]
+        public void Multiple_SharedFxLookup_Uber_Wins_Over_NetCoreApp_On_PatchRollForward()
+        {
+            var fixture = PreviouslyBuiltAndRestoredPortableTestProjectFixture
+                .Copy();
+
+            var dotnet = fixture.BuiltDotnet;
+            var appDll = fixture.TestProject.AppDll;
+
+            string runtimeConfig = Path.Combine(fixture.TestProject.OutputDirectory, "SharedFxLookupPortableApp.runtimeconfig.json");
+            SharedFramework.SetRuntimeConfigJson(runtimeConfig, "7777.0.0", null, useUberFramework: true);
+
+            // Add versions in the exe folders
+            SharedFramework.AddAvailableSharedFxVersions(_builtSharedFxDir, _exeSharedFxBaseDir, "9999.0.1");
+            SharedFramework.AddAvailableSharedUberFxVersions(_builtSharedUberFxDir, _exeSharedUberFxBaseDir, "9999.0.0", "7777.0.0");
+
+            // The System.Collections.Immutable.dll is located in the UberFramework and NetCoreApp
+            // Version: NetCoreApp 9999.0.0
+            //          UberFramework 7777.0.0
+            //          'Roll forward on no candidate fx' enabled through config
+            // Exe: NetCoreApp 9999.0.1
+            //      UberFramework 7777.0.0
+            // Expected: 9999.0.1
+            //           7777.0.0
+            dotnet.Exec(appDll)
+                .WorkingDirectory(_currentWorkingDir)
+                .EnvironmentVariable("COREHOST_TRACE", "1")
+                .CaptureStdOut()
+                .CaptureStdErr()
+                .Execute()
+                .Should()
+                .Pass()
+                .And
+                .HaveStdErrContaining(Path.Combine("7777.0.0", "System.Collections.Immutable.dll"))
+                .And
+                .NotHaveStdErrContaining(Path.Combine("9999.1.0", "System.Collections.Immutable.dll"));
         }
 
         static private JObject GetAdditionalFramework(string fxName, string fxVersion, bool? applyPatches, int? rollForwardOnNoCandidateFx)

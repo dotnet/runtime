@@ -61,7 +61,7 @@ namespace Microsoft.DotNet.CoreSetup.Test
         // This method adds a list of new framework version folders in the specified
         // sharedFxUberBaseDir. A runtimeconfig file is created that references
         // Microsoft.NETCore.App version=sharedFxBaseVersion
-        public static void AddAvailableSharedUberFxVersions(string sharedFxDir, string sharedUberFxBaseDir, string sharedFxBaseVersion, string testConfigPropertyValue = null, params string[] availableUberVersions)
+        public static void AddAvailableSharedUberFxVersions(string sharedFxDir, string sharedUberFxBaseDir, string sharedFxBaseVersion, params string[] availableUberVersions)
         {
             DirectoryInfo sharedFxUberBaseDirInfo = new DirectoryInfo(sharedUberFxBaseDir);
 
@@ -76,7 +76,7 @@ namespace Microsoft.DotNet.CoreSetup.Test
                 CopyDirectory(sharedFxDir, newSharedFxDir);
 
                 string runtimeBaseConfig = Path.Combine(newSharedFxDir, "Microsoft.UberFramework.runtimeconfig.json");
-                SharedFramework.SetRuntimeConfigJson(runtimeBaseConfig, sharedFxBaseVersion, null, testConfigPropertyValue);
+                SharedFramework.SetRuntimeConfigJson(runtimeBaseConfig, sharedFxBaseVersion, null);
             }
         }
 
@@ -92,7 +92,7 @@ namespace Microsoft.DotNet.CoreSetup.Test
          *   }
          * }
         */
-        public static void SetRuntimeConfigJson(string destFile, string version, int? rollFwdOnNoCandidateFx = null, string testConfigPropertyValue = null, bool? useUberFramework = false, JArray additionalFrameworks = null)
+        public static void SetRuntimeConfigJson(string destFile, string version, int? rollFwdOnNoCandidateFx = null, bool? useUberFramework = false, JArray frameworks = null)
         {
             string name = useUberFramework.HasValue && useUberFramework.Value ? "Microsoft.UberFramework" : "Microsoft.NETCore.App";
 
@@ -110,20 +110,9 @@ namespace Microsoft.DotNet.CoreSetup.Test
                 runtimeOptions.Add("rollForwardOnNoCandidateFx", rollFwdOnNoCandidateFx);
             }
 
-            if (testConfigPropertyValue != null)
+            if (frameworks != null)
             {
-                runtimeOptions.Add(
-                    new JProperty("configProperties",
-                        new JObject(
-                            new JProperty("TestProperty", testConfigPropertyValue)
-                        )
-                    )
-                );
-            }
-
-            if (additionalFrameworks != null)
-            {
-                runtimeOptions.Add("additionalFrameworks", additionalFrameworks);
+                runtimeOptions.Add("frameworks", frameworks);
             }
 
             FileInfo file = new FileInfo(destFile);
