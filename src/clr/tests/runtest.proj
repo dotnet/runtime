@@ -57,9 +57,7 @@
   <!-- Target to check the test build, to see if it looks ok. We've had several cases where a change inadvertently and drastically changes
        the set of tests that are built, and that change is unnoticed. The most common case is for a build of the Priority 1 tests
        to only build the Priority 0 tests. This target is run after a test build to verify that the basic number of tests that were
-       built is basically what was expected. When this was written, there were about 2500 Priority 0 tests and about 12270 Priority 1
-       tests (differing slightly based on platform). We currently check that the number of Priority 0 tests is greater than 2000 and
-       less than 3000, and the number of Priority 1 tests is greater than 12000.
+       built is basically what was expected.
   -->
   <Target Name="CheckTestBuild" DependsOnTargets="GetListOfTestCmds">
     <Error Condition="!Exists('$(XunitTestBinBase)')"

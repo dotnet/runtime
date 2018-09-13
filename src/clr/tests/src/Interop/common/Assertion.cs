@@ -15,7 +15,7 @@ namespace CoreFXTestLibrary
     /// unit tests. If the condition being tested is not met, an exception
     /// is thrown.
     /// </summary>
-    public static class Assert
+    internal static class Assert
     {
         /// <summary>
         ///     Asserts that the given delegate throws an <see cref="ArgumentNullException"/> with the given parameter name.
@@ -771,7 +771,7 @@ namespace CoreFXTestLibrary
     /// <summary>
     /// Exception raised by the Assert on Fail
     /// </summary>
-    public class AssertTestException : Exception
+    internal class AssertTestException : Exception
     {
         public AssertTestException(string message)
             : base(message)
@@ -784,7 +784,7 @@ namespace CoreFXTestLibrary
         }
     }
 
-    public static class ExceptionAssert
+    internal static class ExceptionAssert
     {
         public static void Throws<T>(String message, Action a) where T : Exception
         {
@@ -796,7 +796,7 @@ namespace CoreFXTestLibrary
     ///     Specifies whether <see cref="Assert.Throws{T}"/> should require an exact type match when comparing the expected exception type with the thrown exception.
     /// </summary>
     [Flags]
-    public enum AssertThrowsOptions
+    internal enum AssertThrowsOptions
     {
         /// <summary>
         ///     Specifies that <see cref="Assert.Throws{T}"/> should require an exact type 
