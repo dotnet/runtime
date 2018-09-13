@@ -11,6 +11,7 @@
 
 namespace
 {
+    template<typename CT>
     struct PathBuffer
     {
         PathBuffer()
@@ -38,21 +39,21 @@ namespace
             return Len;
         }
 
-        operator WCHAR *()
+        operator CT *()
         {
             return Buf;
         }
 
-        WCHAR DefBuffer[MAX_PATH];
-        std::vector<WCHAR> BigBuffer;
+        CT DefBuffer[MAX_PATH];
+        std::vector<CT> BigBuffer;
 
-        WCHAR *Buf;
+        CT *Buf;
         DWORD Len;
     };
 
-    std::string GetExePath()
+    std::wstring GetExePath()
     {
-        PathBuffer buffer;
+        PathBuffer<WCHAR> buffer;
         DWORD len = ::GetModuleFileNameW(nullptr, buffer, buffer);
         while (::GetLastError() == ERROR_INSUFFICIENT_BUFFER)
         {
@@ -60,7 +61,7 @@ namespace
             len = ::GetModuleFileNameW(nullptr, buffer, buffer);
         }
 
-        return std::string{ buffer.Buf, buffer.Buf + len };
+        return std::wstring{ buffer.Buf, buffer.Buf + len };
     }
 
     std::wstring GetEnvVar(_In_z_ const WCHAR *env)
@@ -69,11 +70,21 @@ namespace
         if (len == 0)
             throw __HRESULT_FROM_WIN32(ERROR_ENVVAR_NOT_FOUND);
 
-        PathBuffer buffer;
+        PathBuffer<WCHAR> buffer;
         buffer.SetLength(len);
         (void)::GetEnvironmentVariableW(env, buffer, buffer);
 
         return static_cast<WCHAR *>(buffer.Buf);
+    }
+
+    std::string ConvertWideToUtf8(_In_ const std::wstring &wide)
+    {
+        // [TODO] Properly convert to UTF-8
+        std::string narrow;
+        for (WCHAR p : wide)
+            narrow.push_back(static_cast<CHAR>(p));
+
+        return narrow;
     }
 
     coreclr *s_CoreClrInstance;
@@ -86,7 +97,7 @@ namespace Utility
         try
         {
             std::wstring envVarLocal = GetEnvVar(env);
-            envVar = { std::begin(envVarLocal), std::end(envVarLocal) };
+            envVar = ConvertWideToUtf8(envVarLocal);
         }
         catch (HRESULT hr)
         {
@@ -163,7 +174,7 @@ HRESULT coreclr::CreateTpaList(_Inout_ std::string &tpaList, _In_opt_z_ const WC
             w_dirLocal = { dir };
         }
 
-        std::string dirLocal{ std::begin(w_dirLocal), std::end(w_dirLocal) };
+        std::string dirLocal = ConvertWideToUtf8(w_dirLocal);
         w_dirLocal.append(W("\\*"));
 
         std::set<std::wstring> addedAssemblies;
@@ -204,8 +215,7 @@ HRESULT coreclr::CreateTpaList(_Inout_ std::string &tpaList, _In_opt_z_ const WC
                     {
                         addedAssemblies.insert(std::move(filenameWithoutExt));
 
-                        // [TODO] Properly convert to UTF-8
-                        std::string filename_utf8{ std::begin(filename), std::end(filename) };
+                        std::string filename_utf8 = ConvertWideToUtf8(filename);
                         tpaStream << dirLocal << "\\" << filename_utf8 << ";";
                     }
                 }
@@ -266,7 +276,8 @@ HRESULT coreclr::Initialize(
     HRESULT hr;
     try
     {
-        const std::string exePath = GetExePath();
+        const std::wstring exePathW = GetExePath();
+        const std::string exePath = ConvertWideToUtf8(exePathW);
         RETURN_IF_FAILED(_initialize(exePath.c_str(), appDomainName, propertyCount, keys, values, &_clrInst, &_appDomainId));
     }
     catch (const std::bad_alloc&)
