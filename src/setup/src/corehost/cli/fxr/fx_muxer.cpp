@@ -9,6 +9,7 @@
 #include "framework_info.h"
 #include "fx_definition.h"
 #include "fx_muxer.h"
+#include "fx_reference.h"
 #include "fx_ver.h"
 #include "host_startup_info.h"
 #include "libhost.h"
@@ -23,8 +24,7 @@
 * When the framework is not found, display detailed error message
 *   about available frameworks and installation of new framework.
 */
-void handle_missing_framework_error(
-    host_mode_t mode,
+void fx_muxer_t::display_missing_framework_error(
     const pal::string_t& fx_name,
     const pal::string_t& fx_version,
     const pal::string_t& fx_dir,
@@ -35,14 +35,14 @@ void handle_missing_framework_error(
     if (fx_dir.length())
     {
         fx_ver_dirs = fx_dir;
-        framework_info::get_all_framework_infos(mode, get_directory(fx_dir), fx_name, &framework_infos);
+        framework_info::get_all_framework_infos(get_directory(fx_dir), fx_name, &framework_infos);
     }
     else
     {
         fx_ver_dirs = dotnet_root;
     }
 
-    framework_info::get_all_framework_infos(mode, dotnet_root, fx_name, &framework_infos);
+    framework_info::get_all_framework_infos(dotnet_root, fx_name, &framework_infos);
 
     // Display the error message about missing FX.
     if (fx_version.length())
@@ -64,7 +64,7 @@ void handle_missing_framework_error(
     // Gather the list of versions installed at the shared FX location.
     bool is_print_header = true;
 
-    for (framework_info info : framework_infos)
+    for (const framework_info& info : framework_infos)
     {
         // Print banner only once before printing the versions
         if (is_print_header)
@@ -274,7 +274,6 @@ bool fx_muxer_t::resolve_hostpolicy_dir(
     const fx_definition_vector_t& fx_definitions,
     const pal::string_t& app_candidate,
     const pal::string_t& specified_deps_file,
-    const pal::string_t& specified_fx_version,
     const std::vector<pal::string_t>& probe_realpaths,
     pal::string_t* impl_dir)
 {
@@ -345,7 +344,7 @@ bool fx_muxer_t::resolve_hostpolicy_dir(
             trace::error(_X("Failed to run as a self-contained app. If this should be a framework-dependent app, add the %s file specifying the appropriate framework."),
                 get_app(fx_definitions).get_runtime_config().get_path().c_str());
         }
-        else if (get_app(fx_definitions).get_runtime_config().get_fx_name().empty())
+        else if (get_app(fx_definitions).get_name().empty())
         {
             trace::error(_X("Failed to run as a self-contained app. If this should be a framework-dependent app, specify the appropriate framework in %s."),
                 get_app(fx_definitions).get_runtime_config().get_path().c_str());
@@ -367,7 +366,7 @@ fx_ver_t fx_muxer_t::resolve_framework_version(const std::vector<fx_ver_t>& vers
     {
         if (roll_fwd_on_no_candidate_fx != roll_fwd_on_no_candidate_fx_option::disabled)
         {
-            fx_ver_t next_lowest(-1, -1, -1);
+            fx_ver_t next_lowest;
 
             // Look for the least production version
             trace::verbose(_X("'Roll forward on no candidate fx' enabled with value [%d]. Looking for the least production greater than or equal to [%s]"),
@@ -385,11 +384,11 @@ fx_ver_t fx_muxer_t::resolve_framework_version(const std::vector<fx_ver_t>& vers
                             continue;
                         }
                     }
-                    next_lowest = (next_lowest == fx_ver_t(-1, -1, -1)) ? ver : std::min(next_lowest, ver);
+                    next_lowest = (next_lowest == fx_ver_t()) ? ver : std::min(next_lowest, ver);
                 }
             }
 
-            if (next_lowest == fx_ver_t(-1, -1, -1))
+            if (next_lowest == fx_ver_t())
             {
                 // Look for the least preview version
                 trace::verbose(_X("No production greater than or equal to [%s] found. Looking for the least preview greater than [%s]"),
@@ -407,12 +406,12 @@ fx_ver_t fx_muxer_t::resolve_framework_version(const std::vector<fx_ver_t>& vers
                                 continue;
                             }
                         }
-                        next_lowest = (next_lowest == fx_ver_t(-1, -1, -1)) ? ver : std::min(next_lowest, ver);
+                        next_lowest = (next_lowest == fx_ver_t()) ? ver : std::min(next_lowest, ver);
                     }
                 }
             }
 
-            if (next_lowest == fx_ver_t(-1, -1, -1))
+            if (next_lowest == fx_ver_t())
             {
                 trace::verbose(_X("No preview greater than or equal to [%s] found."), fx_ver.c_str());
             }
@@ -442,11 +441,11 @@ fx_ver_t fx_muxer_t::resolve_framework_version(const std::vector<fx_ver_t>& vers
     }
     else
     {
+        // pre-release has its own roll forward rules and ignores roll_fwd_on_no_candidate_fx and patch_roll_fwd
         for (const auto& ver : version_list)
         {
             trace::verbose(_X("Inspecting version... [%s]"), ver.as_str().c_str());
 
-            //both production and prerelease.
             if (ver.is_prerelease() && // prevent roll forward to production.
                 ver.get_major() == specified.get_major() &&
                 ver.get_minor() == specified.get_minor() &&
@@ -463,26 +462,21 @@ fx_ver_t fx_muxer_t::resolve_framework_version(const std::vector<fx_ver_t>& vers
 }
 
 fx_definition_t* fx_muxer_t::resolve_fx(
-    host_mode_t mode,
-    const runtime_config_t& config,
-    const pal::string_t& dotnet_dir,
-    const pal::string_t& specified_fx_version
+    const fx_reference_t& fx_ref,
+    const pal::string_t& oldest_requested_version,
+    const pal::string_t& dotnet_dir
 )
 {
-    // If invoking using FX dotnet.exe, use own directory.
-    if (mode == host_mode_t::split_fx)
-    {
-        return new fx_definition_t(config.get_fx_name(), dotnet_dir, pal::string_t(), pal::string_t());
-    }
-
-    assert(!config.get_fx_name().empty());
-    assert(!config.get_fx_version().empty());
+    assert(!fx_ref.get_fx_name().empty());
+    assert(!fx_ref.get_fx_version().empty());
+    assert(fx_ref.get_patch_roll_fwd() != nullptr);
+    assert(fx_ref.get_roll_fwd_on_no_candidate_fx() != nullptr);
 
     trace::verbose(_X("--- Resolving FX directory, name '%s' version '%s'"),
-        config.get_fx_name().c_str(), config.get_fx_version().c_str());
+        fx_ref.get_fx_name().c_str(), fx_ref.get_fx_version().c_str());
 
-    const auto fx_ver = specified_fx_version.empty() ? config.get_fx_version() : specified_fx_version;
-    fx_ver_t specified(-1, -1, -1);
+    const auto fx_ver = fx_ref.get_fx_version();
+    fx_ver_t specified;
     if (!fx_ver_t::parse(fx_ver, &specified, false))
     {
         trace::error(_X("The specified framework version '%s' could not be parsed"), fx_ver.c_str());
@@ -518,7 +512,7 @@ fx_definition_t* fx_muxer_t::resolve_fx(
 
     pal::string_t selected_fx_dir;
     pal::string_t selected_fx_version;
-    fx_ver_t selected_ver(-1, -1, -1);
+    fx_ver_t selected_ver;
 
     for (pal::string_t dir : hive_dir)
     {
@@ -526,15 +520,15 @@ fx_definition_t* fx_muxer_t::resolve_fx(
         trace::verbose(_X("Searching FX directory in [%s]"), fx_dir.c_str());
 
         append_path(&fx_dir, _X("shared"));
-        append_path(&fx_dir, config.get_fx_name().c_str());
+        append_path(&fx_dir, fx_ref.get_fx_name().c_str());
 
         bool do_roll_forward = false;
-        if (specified_fx_version.empty())
+        if (!fx_ref.get_use_exact_version())
         {
             if (!specified.is_prerelease())
             {
                 // If production and no roll forward use given version.
-                do_roll_forward = (config.get_patch_roll_fwd()) || (config.get_roll_fwd_on_no_candidate_fx() != roll_fwd_on_no_candidate_fx_option::disabled);
+                do_roll_forward = (*(fx_ref.get_patch_roll_fwd())) || (*(fx_ref.get_roll_fwd_on_no_candidate_fx()) != roll_fwd_on_no_candidate_fx_option::disabled);
             }
             else
             {
@@ -547,8 +541,8 @@ fx_definition_t* fx_muxer_t::resolve_fx(
 
         if (!do_roll_forward)
         {
-            trace::verbose(_X("Did not roll forward because specified version='%s', patch_roll_fwd=%d, roll_fwd_on_no_candidate_fx=%d, chose [%s]"),
-                specified_fx_version.c_str(), config.get_patch_roll_fwd(), config.get_roll_fwd_on_no_candidate_fx(), fx_ver.c_str());
+            trace::verbose(_X("Did not roll forward because patch_roll_fwd=%d, roll_fwd_on_no_candidate_fx=%d, use_exact_version=%d chose [%s]"),
+                *(fx_ref.get_patch_roll_fwd()), *(fx_ref.get_roll_fwd_on_no_candidate_fx()), fx_ref.get_use_exact_version(), fx_ver.c_str());
 
             append_path(&fx_dir, fx_ver.c_str());
             if (pal::directory_exists(fx_dir))
@@ -566,27 +560,27 @@ fx_definition_t* fx_muxer_t::resolve_fx(
 
             for (const auto& version : list)
             {
-                fx_ver_t ver(-1, -1, -1);
+                fx_ver_t ver;
                 if (fx_ver_t::parse(version, &ver, false))
                 {
                     version_list.push_back(ver);
                 }
             }
 
-            fx_ver_t resolved_ver = resolve_framework_version(version_list, fx_ver, specified, config.get_patch_roll_fwd(), config.get_roll_fwd_on_no_candidate_fx());
+            fx_ver_t resolved_ver = resolve_framework_version(version_list, fx_ver, specified, *(fx_ref.get_patch_roll_fwd()), *(fx_ref.get_roll_fwd_on_no_candidate_fx()));
 
             pal::string_t resolved_ver_str = resolved_ver.as_str();
             append_path(&fx_dir, resolved_ver_str.c_str());
 
             if (pal::directory_exists(fx_dir))
             {
-                if (selected_ver != fx_ver_t(-1, -1, -1))
+                if (selected_ver != fx_ver_t())
                 {
                     // Compare the previous hive_dir selection with the current hive_dir to see which one is the better match
                     std::vector<fx_ver_t> version_list;
                     version_list.push_back(resolved_ver);
                     version_list.push_back(selected_ver);
-                    resolved_ver = resolve_framework_version(version_list, fx_ver, specified, config.get_patch_roll_fwd(), config.get_roll_fwd_on_no_candidate_fx());
+                    resolved_ver = resolve_framework_version(version_list, fx_ver, specified, *(fx_ref.get_patch_roll_fwd()), *(fx_ref.get_roll_fwd_on_no_candidate_fx()));
                 }
 
                 if (resolved_ver != selected_ver)
@@ -608,7 +602,7 @@ fx_definition_t* fx_muxer_t::resolve_fx(
 
     trace::verbose(_X("Chose FX version [%s]"), selected_fx_dir.c_str());
 
-    return new fx_definition_t(config.get_fx_name(), selected_fx_dir, fx_ver, selected_fx_version);
+    return new fx_definition_t(fx_ref.get_fx_name(), selected_fx_dir, oldest_requested_version, selected_fx_version);
 }
 
 bool is_sdk_dir_present(const pal::string_t& dotnet_root)
@@ -828,7 +822,8 @@ int fx_muxer_t::parse_args(
 int read_config(
     fx_definition_t& app,
     const pal::string_t& app_candidate,
-    pal::string_t& runtime_config
+    pal::string_t& runtime_config,
+    const fx_reference_t& override_settings
 )
 {
     if (!runtime_config.empty() && !pal::realpath(&runtime_config))
@@ -850,7 +845,7 @@ int read_config(
         get_runtime_config_paths_from_arg(runtime_config, &config_file, &dev_config_file);
     }
 
-    app.parse_runtime_config(config_file, dev_config_file, nullptr, nullptr);
+    app.parse_runtime_config(config_file, dev_config_file, fx_reference_t(), override_settings);
     if (!app.get_runtime_config().is_valid())
     {
         trace::error(_X("Invalid runtimeconfig.json [%s] [%s]"), app.get_runtime_config().get_path().c_str(), app.get_runtime_config().get_dev_path().c_str());
@@ -858,6 +853,168 @@ int read_config(
     }
 
     return 0;
+}
+
+int fx_muxer_t::soft_roll_forward_helper(
+    const fx_reference_t& newer,
+    const fx_reference_t& older,
+    bool older_is_hard_roll_forward,
+    fx_name_to_fx_reference_map_t& newest_references,
+    fx_name_to_fx_reference_map_t& oldest_references)
+{
+    const pal::string_t& fx_name = newer.get_fx_name();
+    fx_reference_t updated_newest = newer;
+
+    if (older.get_fx_version_number() == newer.get_fx_version_number())
+    {
+        updated_newest.merge_roll_forward_settings_from(older);
+        newest_references[fx_name] = updated_newest;
+        return 0;
+    }
+
+    if (older.is_roll_forward_compatible(newer.get_fx_version_number()))
+    {
+        updated_newest.merge_roll_forward_settings_from(older);
+        newest_references[fx_name] = updated_newest;
+
+        auto oldest = oldest_references[fx_name];
+        if (older.get_fx_version_number() < oldest.get_fx_version_number())
+        {
+            oldest_references[fx_name] = older;
+        }
+
+        if (older_is_hard_roll_forward)
+        {
+            display_retry_framework_trace(older, newer);
+            return FrameworkCompatRetry;
+        }
+
+        display_compatible_framework_trace(newer.get_fx_version(), older);
+        return 0;
+    }
+
+    // Error condition - not compatible with the other reference
+    display_incompatible_framework_error(newer.get_fx_version(), older);
+    return FrameworkCompatFailure;
+}
+
+// Peform a "soft" roll-forward meaning we don't read any physical framework folders
+// and just check if the older reference is compatible with the newer reference
+// with respect to roll-forward\applypatches.
+int fx_muxer_t::soft_roll_forward(
+    const fx_reference_t fx_ref, //byval to avoid side-effects with mutable newest_references and oldest_references
+    bool current_is_hard_roll_forward, // true if reference was obtained from a "real" roll-forward meaning it probed the disk to find the most compatible version
+    fx_name_to_fx_reference_map_t& newest_references,
+    fx_name_to_fx_reference_map_t& oldest_references)
+{
+    /*byval*/ fx_reference_t current_ref = newest_references[fx_ref.get_fx_name()];
+
+    // Perform soft "in-memory" roll-forwards
+    if (fx_ref.get_fx_version_number() >= current_ref.get_fx_version_number())
+    {
+        return soft_roll_forward_helper(fx_ref, current_ref, current_is_hard_roll_forward, newest_references, oldest_references);
+    }
+
+    assert(fx_ref.get_fx_version_number() < current_ref.get_fx_version_number());
+    return soft_roll_forward_helper(current_ref, fx_ref, false, newest_references, oldest_references);
+}
+
+int fx_muxer_t::read_framework(
+    const host_startup_info_t& host_info,
+    const fx_reference_t& override_settings,
+    const runtime_config_t& config,
+    fx_name_to_fx_reference_map_t& newest_references,
+    fx_name_to_fx_reference_map_t& oldest_references,
+    fx_definition_vector_t& fx_definitions)
+{
+    // Loop through each reference and update the list of newest references before we resolve_fx.
+    // This reconciles duplicate references to minimize the number of resolve retries.
+    for (const fx_reference_t& fx_ref : config.get_frameworks())
+    {
+        const pal::string_t& fx_name = fx_ref.get_fx_name();
+        auto temp_ref = newest_references.find(fx_name);
+        if (temp_ref == newest_references.end())
+        {
+            newest_references.insert({fx_name, fx_ref});
+            oldest_references.insert({fx_name, fx_ref});
+        }
+    }
+
+    int rc = 0;
+
+    // Loop through each reference and resolve the framework
+    for (const fx_reference_t& fx_ref : config.get_frameworks())
+    {
+        const pal::string_t& fx_name = fx_ref.get_fx_name();
+
+        auto existing_framework = std::find_if(
+            fx_definitions.begin(),
+            fx_definitions.end(),
+            [&](const std::unique_ptr<fx_definition_t>& fx) { return fx_name == fx->get_name(); });
+
+        if (existing_framework == fx_definitions.end())
+        {
+            // Perform a "soft" roll-forward meaning we don't read any physical framework folders yet
+            rc = soft_roll_forward(fx_ref, false, newest_references, oldest_references);
+            if (rc)
+            {
+                break; // Error case
+            }
+
+            const pal::string_t& oldest_requested_version = oldest_references[fx_name].get_fx_version();
+            fx_reference_t& newest_ref = newest_references[fx_name];
+
+            // Resolve the framwork against the the existing physical framework folders
+            fx_definition_t* fx = resolve_fx(newest_ref, oldest_requested_version, host_info.dotnet_root);
+            if (fx == nullptr)
+            {
+                display_missing_framework_error(fx_name, newest_ref.get_fx_version(), pal::string_t(), host_info.dotnet_root);
+                return FrameworkMissingFailure;
+            }
+
+            // Update the newest version based on the hard version found
+            newest_ref.set_fx_version(fx->get_found_version());
+
+            fx_definitions.push_back(std::unique_ptr<fx_definition_t>(fx));
+
+            // Recursively process the base frameworks
+            pal::string_t config_file;
+            pal::string_t dev_config_file;
+            get_runtime_config_paths(fx->get_dir(), fx_name, &config_file, &dev_config_file);
+            fx->parse_runtime_config(config_file, dev_config_file, newest_ref, override_settings);
+
+            runtime_config_t new_config = fx->get_runtime_config();
+            if (!new_config.is_valid())
+            {
+                trace::error(_X("Invalid framework config.json [%s]"), new_config.get_path().c_str());
+                return StatusCode::InvalidConfigFile;
+            }
+
+            rc = read_framework(host_info, override_settings, new_config, newest_references, oldest_references, fx_definitions);
+            if (rc)
+            {
+                break; // Error case
+            }
+        }
+        else
+        {
+            // Perform a "soft" roll-forward meaning we don't read any physical framework folders yet
+            rc = soft_roll_forward(fx_ref, true, newest_references, oldest_references);
+            if (rc)
+            {
+                break; // Error or retry case
+            }
+
+            fx_reference_t& newest_ref = newest_references[fx_name];
+            if (fx_ref.get_fx_version_number() == newest_ref.get_fx_version_number())
+            {
+                // Success but move it to the back (without calling dtors) so that lower-level frameworks come last including Microsoft.NetCore.App
+                std::rotate(existing_framework, existing_framework + 1, fx_definitions.end());
+            }
+        }
+    }
+
+    return rc;
 }
 
 int fx_muxer_t::read_config_and_execute(
@@ -879,7 +1036,6 @@ int fx_muxer_t::read_config_and_execute(
     pal::string_t opts_additional_deps = _X("--additional-deps");
     pal::string_t opts_runtime_config = _X("--runtimeconfig");
 
-    pal::string_t fx_version_specified;
     pal::string_t roll_fwd_on_no_candidate_fx;
     pal::string_t deps_file = get_last_known_arg(opts, opts_deps_file, _X(""));
     pal::string_t additional_deps;
@@ -892,12 +1048,26 @@ int fx_muxer_t::read_config_and_execute(
         return StatusCode::InvalidArgFailure;
     }
 
+    fx_reference_t override_settings;
+
+    // 'Roll forward on no candidate fx' is set to 1 (roll_fwd_on_no_candidate_fx_option::minor) by default. It can be changed through:
+    // 1. Command line argument (--roll-forward-on-no-candidate-fx).
+    // 2. Runtimeconfig json file ('rollForwardOnNoCandidateFx' property in "framework" section).
+    // 3. Runtimeconfig json file ('rollForwardOnNoCandidateFx' property in a referencing "frameworks" section).
+    // 4. DOTNET_ROLL_FORWARD_ON_NO_CANDIDATE_FX env var.
+    // The conflicts will be resolved by following the priority rank described above (from 1 to 4).
+    // The env var condition is verified in the config file processing
+    roll_fwd_on_no_candidate_fx = get_last_known_arg(opts, opts_roll_fwd_on_no_candidate_fx, _X(""));
+    if (roll_fwd_on_no_candidate_fx.length() > 0)
+    {
+        override_settings.set_roll_fwd_on_no_candidate_fx(static_cast<roll_fwd_on_no_candidate_fx_option>(pal::xtoi(roll_fwd_on_no_candidate_fx.c_str())));
+    }
+
     // Read config
     fx_definition_vector_t fx_definitions;
     auto app = new fx_definition_t();
     fx_definitions.push_back(std::unique_ptr<fx_definition_t>(app));
-
-    int rc = read_config(*app, app_candidate, runtime_config);
+    int rc = read_config(*app, app_candidate, runtime_config, override_settings);
     if (rc)
     {
         return rc;
@@ -906,28 +1076,18 @@ int fx_muxer_t::read_config_and_execute(
     auto app_config = app->get_runtime_config();
     bool is_framework_dependent = app_config.get_is_framework_dependent();
 
-    // These settings are only valid for framework-dependent apps
+    // Apply the --fx-version option to the first framework
     if (is_framework_dependent)
     {
-        fx_version_specified = get_last_known_arg(opts, opts_fx_version, _X(""));
-        roll_fwd_on_no_candidate_fx = get_last_known_arg(opts, opts_roll_fwd_on_no_candidate_fx, _X(""));
-        additional_deps = get_last_known_arg(opts, opts_additional_deps, _X(""));
+        pal::string_t fx_version_specified = get_last_known_arg(opts, opts_fx_version, _X(""));
+        if (fx_version_specified.length() > 0)
+        {
+            // This will also set roll forward defaults on the ref
+            app_config.set_fx_version(fx_version_specified);
+        }
     }
 
-    // 'Roll forward on no candidate fx' is set to 1 (roll_fwd_on_no_candidate_fx_option::minor) by default. It can be changed through:
-    // 1. Command line argument (--roll-forward-on-no-candidate-fx).
-    // 2. Runtimeconfig json file ('rollForwardOnNoCandidateFx' property in "framework" section:).
-    // 3. Runtimeconfig json file ('rollForwardOnNoCandidateFx' property), which is used as a default for lower level frameworks if they don't specify a value.
-    // 4. DOTNET_ROLL_FORWARD_ON_NO_CANDIDATE_FX env var. Only defaults the app's config.
-    // The conflicts will be resolved by following the priority rank described above (from 1 to 4).
-    // The env var condition is verified in the config file processing
-    if (!roll_fwd_on_no_candidate_fx.empty())
-    {
-        app_config.force_roll_fwd_on_no_candidate_fx(static_cast<roll_fwd_on_no_candidate_fx_option>(pal::xtoi(roll_fwd_on_no_candidate_fx.c_str())));
-    }
-
-    auto config = app_config;
-
+    additional_deps = get_last_known_arg(opts, opts_additional_deps, _X(""));
     pal::string_t additional_deps_serialized;
     if (is_framework_dependent)
     {
@@ -939,34 +1099,34 @@ int fx_muxer_t::read_config_and_execute(
             pal::getenv(_X("DOTNET_ADDITIONAL_DEPS"), &additional_deps_serialized);
         }
 
-        // Obtain frameworks\platforms
-        auto version = fx_version_specified;
-        while (!config.get_fx_name().empty() && !config.get_fx_version().empty())
+        // If invoking using FX dotnet.exe, use own directory.
+        if (mode == host_mode_t::split_fx)
         {
-            fx_definition_t* fx = resolve_fx(mode, config, host_info.dotnet_root, version);
-            if (fx == nullptr)
-            {
-                pal::string_t searched_version = fx_version_specified.empty() ? config.get_fx_version() : fx_version_specified;
-                handle_missing_framework_error(mode, config.get_fx_name(), searched_version, pal::string_t(), host_info.dotnet_root);
-                return FrameworkMissingFailure;
-            }
-
+            auto fx = new fx_definition_t(app_config.get_frameworks()[0].get_fx_name(), host_info.dotnet_root, pal::string_t(), pal::string_t());
             fx_definitions.push_back(std::unique_ptr<fx_definition_t>(fx));
+        }
+        else
+        {
+            fx_name_to_fx_reference_map_t newest_references;
+            fx_name_to_fx_reference_map_t oldest_references;
 
-            pal::string_t config_file;
-            pal::string_t dev_config_file;
-            get_runtime_config_paths(fx->get_dir(), config.get_fx_name(), &config_file, &dev_config_file);
-            fx->parse_runtime_config(config_file, dev_config_file, &config, &app_config);
-
-            config = fx->get_runtime_config();
-            if (!config.is_valid())
+            // Read the shared frameworks; retry is necessary when a framework is already resolved, but then a newer compatible version is processed.
+            int rc = 0;
+            int retry_count = 0;
+            do
             {
-                trace::error(_X("Invalid framework config.json [%s]"), config.get_path().c_str());
-                return StatusCode::InvalidConfigFile;
+                fx_definitions.resize(1); // Erase any existing frameworks for re-try
+                rc = read_framework(host_info, override_settings, app_config, newest_references, oldest_references, fx_definitions);
+            } while (rc == FrameworkCompatRetry && retry_count++ < Max_Framework_Resolve_Retries);
+
+            assert(retry_count < Max_Framework_Resolve_Retries);
+
+            if (rc)
+            {
+                return rc;
             }
 
-            // Only the first framework can have a specified version (through --fx-version)
-            version.clear();
+            display_summary_of_frameworks(fx_definitions, newest_references);
         }
     }
 
@@ -991,10 +1151,10 @@ int fx_muxer_t::read_config_and_execute(
     }
 
     trace::verbose(_X("Executing as a %s app as per config file [%s]"),
-        (is_framework_dependent ? _X("framework-dependent") : _X("self-contained")), config.get_path().c_str());
+        (is_framework_dependent ? _X("framework-dependent") : _X("self-contained")), app_config.get_path().c_str());
 
     pal::string_t impl_dir;
-    if (!resolve_hostpolicy_dir(mode, host_info.dotnet_root, fx_definitions, app_candidate, deps_file, fx_version_specified, probe_realpaths, &impl_dir))
+    if (!resolve_hostpolicy_dir(mode, host_info.dotnet_root, fx_definitions, app_candidate, deps_file, probe_realpaths, &impl_dir))
     {
         return CoreHostLibMissingFailure;
     }

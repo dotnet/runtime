@@ -66,7 +66,7 @@ pal::string_t resolve_cli_version(const pal::string_t& global_json)
 
 pal::string_t resolve_sdk_version(pal::string_t sdk_path, bool disallow_prerelease, pal::string_t global_cli_version)
 {
-    fx_ver_t specified(-1, -1, -1);
+    fx_ver_t specified;
 
     //   Validate the global cli version if specified
     if (!global_cli_version.empty())
@@ -90,12 +90,12 @@ pal::string_t resolve_sdk_version(pal::string_t sdk_path, bool disallow_prerelea
     std::vector<pal::string_t> versions;
 
     pal::readdir_onlydirectories(sdk_path, &versions);
-    fx_ver_t max_ver(-1, -1, -1);
+    fx_ver_t max_ver;
     for (const auto& version : versions)
     {
         trace::verbose(_X("Considering version... [%s]"), version.c_str());
 
-        fx_ver_t ver(-1, -1, -1);
+        fx_ver_t ver;
         if (fx_ver_t::parse(version, &ver, disallow_prerelease))
         {
             if (global_cli_version.empty() ||
@@ -140,8 +140,8 @@ bool higher_sdk_version(const pal::string_t& new_version, pal::string_t* version
 {
     bool disallow_prerelease = false;
     bool retval = false;
-    fx_ver_t ver(-1, -1, -1);
-    fx_ver_t new_ver(-1, -1, -1);
+    fx_ver_t ver;
+    fx_ver_t new_ver;
 
     if (fx_ver_t::parse(new_version, &new_ver, disallow_prerelease))
     {

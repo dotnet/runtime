@@ -33,5 +33,7 @@ enum StatusCode
     LibHostUnknownCommand       = 0x80008099,
     LibHostAppRootFindFailure   = 0x8000809a,
     SdkResolverResolveFailure   = 0x8000809b,
+    FrameworkCompatFailure      = 0x8000809c,
+    FrameworkCompatRetry        = 0x8000809d,
 };
 #endif // __ERROR_CODES_H__

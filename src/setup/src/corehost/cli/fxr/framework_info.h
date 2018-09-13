@@ -14,7 +14,6 @@ struct framework_info
         , version(version) { }
 
     static void get_all_framework_infos(
-        host_mode_t mode,
         const pal::string_t& own_dir,
         const pal::string_t& fx_name,
         std::vector<framework_info>* framework_infos);

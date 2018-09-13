@@ -12,7 +12,6 @@ class fx_definition_t
 {
 public:
     fx_definition_t();
-
     fx_definition_t(
         const pal::string_t& name,
         const pal::string_t& dir,
@@ -24,7 +23,7 @@ public:
     const pal::string_t& get_found_version() const { return m_found_version; }
     const pal::string_t& get_dir() const { return m_dir; }
     const runtime_config_t& get_runtime_config() const { return m_runtime_config; }
-    void parse_runtime_config(const pal::string_t& path, const pal::string_t& dev_path, const runtime_config_t* higher_layer_config, const runtime_config_t* app_config);
+    void parse_runtime_config(const pal::string_t& path, const pal::string_t& dev_path, const fx_reference_t& fx_ref, const fx_reference_t& override_settings);
 
     const pal::string_t& get_deps_file() const { return m_deps_file; }
     void set_deps_file(const pal::string_t value) { m_deps_file = value; }

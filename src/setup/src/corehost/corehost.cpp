@@ -143,21 +143,21 @@ bool resolve_fxr_path(const pal::string_t& host_path, const pal::string_t& app_r
     std::vector<pal::string_t> list;
     pal::readdir_onlydirectories(fxr_dir, &list);
 
-    fx_ver_t max_ver(-1, -1, -1);
+    fx_ver_t max_ver;
     for (const auto& dir : list)
     {
         trace::info(_X("Considering fxr version=[%s]..."), dir.c_str());
 
         pal::string_t ver = get_filename(dir);
 
-        fx_ver_t fx_ver(-1, -1, -1);
+        fx_ver_t fx_ver;
         if (fx_ver_t::parse(ver, &fx_ver, false))
         {
             max_ver = std::max(max_ver, fx_ver);
         }
     }
 
-    if (max_ver == fx_ver_t(-1, -1, -1))
+    if (max_ver == fx_ver_t())
     {
         trace::error(_X("A fatal error occurred, the folder [%s] does not contain any version-numbered child folders"), fxr_dir.c_str());
         return false;

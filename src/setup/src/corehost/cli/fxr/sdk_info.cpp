@@ -81,7 +81,7 @@ void sdk_info::get_all_sdk_infos(
             for (const auto& ver : versions)
             {
                 // Make sure we filter out any non-version folders.
-                fx_ver_t parsed(-1, -1, -1);
+                fx_ver_t parsed;
                 if (fx_ver_t::parse(ver, &parsed, false))
                 {
                     trace::verbose(_X("Found SDK version [%s]"), ver.c_str());
