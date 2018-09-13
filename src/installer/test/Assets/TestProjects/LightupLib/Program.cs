@@ -8,7 +8,7 @@ namespace LightupLib
         public static string Hello(string name)
         {
             // Load a dependency of LightupLib
-             var t = typeof(Newtonsoft.Json.JsonReader);
+            var t = typeof(Newtonsoft.Json.JsonReader);
             if (t != null)
                 return "Hello "+name;
             else 
