@@ -6,6 +6,7 @@ using System.Buffers;
 using System.Diagnostics;
 using System.IO;
 using System.Numerics;
+using System.Runtime.InteropServices;
 using System.Security.Cryptography.Apple;
 using System.Security.Cryptography.Asn1;
 using Internal.Cryptography;
@@ -182,6 +183,57 @@ namespace System.Security.Cryptography
                 {
                     SafeSecKeyRefHandle publicKey = ImportKey(parameters);
                     SetKey(SecKeyPair.PublicOnly(publicKey));
+                }
+            }
+
+            public override unsafe void ImportSubjectPublicKeyInfo(
+                ReadOnlySpan<byte> source,
+                out int bytesRead)
+            {
+                fixed (byte* ptr = &MemoryMarshal.GetReference(source))
+                {
+                    using (MemoryManager<byte> manager = new PointerMemoryManager<byte>(ptr, source.Length))
+                    {
+                        // Validate the DER value and get the number of bytes.
+                        RSAKeyFormatHelper.ReadSubjectPublicKeyInfo(
+                            manager.Memory,
+                            out int localRead);
+
+                        SafeSecKeyRefHandle publicKey = Interop.AppleCrypto.ImportEphemeralKey(source.Slice(0, localRead), false);
+                        SetKey(SecKeyPair.PublicOnly(publicKey));
+
+                        bytesRead = localRead;
+                    }
+                }
+            }
+
+            public override unsafe void ImportRSAPublicKey(ReadOnlySpan<byte> source, out int bytesRead)
+            {
+                fixed (byte* ptr = &MemoryMarshal.GetReference(source))
+                {
+                    using (MemoryManager<byte> manager = new PointerMemoryManager<byte>(ptr, source.Length))
+                    {
+                        AsnReader reader = new AsnReader(manager.Memory, AsnEncodingRules.BER);
+                        ReadOnlyMemory<byte> firstElement = reader.PeekEncodedValue();
+
+                        SubjectPublicKeyInfoAsn spki = new SubjectPublicKeyInfoAsn
+                        {
+                            Algorithm = new AlgorithmIdentifierAsn
+                            {
+                                Algorithm = new Oid(Oids.Rsa),
+                                Parameters = AlgorithmIdentifierAsn.ExplicitDerNull,
+                            },
+                            SubjectPublicKey = firstElement,
+                        };
+
+                        using (AsnWriter writer = new AsnWriter(AsnEncodingRules.DER))
+                        {
+                            spki.Encode(writer);
+                            ImportSubjectPublicKeyInfo(writer.EncodeAsSpan(), out _);
+                        }
+
+                        bytesRead = firstElement.Length;
+                    }
                 }
             }
 
@@ -718,25 +770,20 @@ namespace System.Security.Cryptography
 
             private static SafeSecKeyRefHandle ImportKey(RSAParameters parameters)
             {
-                bool isPrivateKey = parameters.D != null;
-                byte[] pkcs1Blob;
-
-                if (isPrivateKey)
+                if (parameters.D != null)
                 {
                     using (AsnWriter pkcs1PrivateKey = RSAKeyFormatHelper.WritePkcs1PrivateKey(parameters))
                     {
-                        pkcs1Blob = pkcs1PrivateKey.Encode();
+                        return Interop.AppleCrypto.ImportEphemeralKey(pkcs1PrivateKey.EncodeAsSpan(), true);
                     }
                 }
                 else
                 {
                     using (AsnWriter pkcs1PublicKey = RSAKeyFormatHelper.WriteSubjectPublicKeyInfo(parameters))
                     {
-                        pkcs1Blob = pkcs1PublicKey.Encode();
+                        return Interop.AppleCrypto.ImportEphemeralKey(pkcs1PublicKey.EncodeAsSpan(), false);
                     }
                 }
-
-                return Interop.AppleCrypto.ImportEphemeralKey(pkcs1Blob, isPrivateKey);
             }
         }
 

@@ -255,31 +255,41 @@ namespace Internal.Cryptography.Pal
 
         private static RSA BuildRsaPublicKey(byte[] encodedData)
         {
-            using (SafeRsaHandle rsaHandle = Interop.Crypto.DecodeRsaPublicKey(encodedData, encodedData.Length))
+            RSA rsa = new RSAOpenSsl();
+            try
             {
-                Interop.Crypto.CheckValidOpenSslHandle(rsaHandle);
-
-                RSAParameters rsaParameters = Interop.Crypto.ExportRsaParameters(rsaHandle, false);
-                RSA rsa = new RSAOpenSsl();
-                rsa.ImportParameters(rsaParameters);
-                return rsa;
+                rsa.ImportRSAPublicKey(encodedData.AsSpan(), out _);
             }
+            catch (Exception)
+            {
+                rsa.Dispose();
+                throw;
+            }
+            return rsa;
         }
 
-        private static DSA BuildDsaPublicKey(byte[] encodedKey, byte[] encodedParameters)
+        private static DSA BuildDsaPublicKey(byte[] encodedKeyValue, byte[] encodedParameters)
         {
             SubjectPublicKeyInfoAsn spki = new SubjectPublicKeyInfoAsn
             {
-                Algorithm = new AlgorithmIdentifierAsn { Algorithm = new Oid(Oids.Dsa), Parameters = encodedParameters },
-                SubjectPublicKey = encodedKey,
+                Algorithm = new AlgorithmIdentifierAsn { Algorithm = new Oid(Oids.Dsa, null), Parameters = encodedParameters },
+                SubjectPublicKey = encodedKeyValue,
             };
 
             using (AsnWriter writer = new AsnWriter(AsnEncodingRules.DER))
             {
-                DSA dsa = new DSAOpenSsl();
                 spki.Encode(writer);
-                dsa.ImportSubjectPublicKeyInfo(writer.EncodeAsSpan(), out _);
-                return dsa;
+                DSA dsa = new DSAOpenSsl();
+                try
+                {
+                    dsa.ImportSubjectPublicKeyInfo(writer.EncodeAsSpan(), out _);
+                    return dsa;
+                }
+                catch (Exception)
+                {
+                    dsa.Dispose();
+                    throw;
+                }
             }
         }
     }

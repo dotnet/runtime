@@ -13,9 +13,21 @@ internal static partial class Interop
 {
     internal static partial class AppleCrypto
     {
+        private static int AppleCryptoNative_SecKeyImportEphemeral(
+            ReadOnlySpan<byte> pbKeyBlob,
+            int isPrivateKey,
+            out SafeSecKeyRefHandle ppKeyOut,
+            out int pOSStatus) =>
+            AppleCryptoNative_SecKeyImportEphemeral(
+                ref MemoryMarshal.GetReference(pbKeyBlob),
+                pbKeyBlob.Length,
+                isPrivateKey,
+                out ppKeyOut,
+                out pOSStatus);
+
         [DllImport(Libraries.AppleCryptoNative)]
         private static extern int AppleCryptoNative_SecKeyImportEphemeral(
-            byte[] pbKeyBlob,
+            ref byte pbKeyBlob,
             int cbKeyBlob,
             int isPrivateKey,
             out SafeSecKeyRefHandle ppKeyOut,
@@ -24,11 +36,14 @@ internal static partial class Interop
         private static int AppleCryptoNative_GenerateSignature(
             SafeSecKeyRefHandle privateKey,
             ReadOnlySpan<byte> pbDataHash,
-            int cbDataHash,
             out SafeCFDataHandle pSignatureOut,
             out SafeCFErrorHandle pErrorOut) =>
             AppleCryptoNative_GenerateSignature(
-                privateKey, ref MemoryMarshal.GetReference(pbDataHash), cbDataHash, out pSignatureOut, out pErrorOut);
+                privateKey,
+                ref MemoryMarshal.GetReference(pbDataHash),
+                pbDataHash.Length,
+                out pSignatureOut,
+                out pErrorOut);
 
         [DllImport(Libraries.AppleCryptoNative)]
         private static extern int AppleCryptoNative_GenerateSignature(
@@ -41,12 +56,16 @@ internal static partial class Interop
         private static int AppleCryptoNative_GenerateSignatureWithHashAlgorithm(
             SafeSecKeyRefHandle privateKey,
             ReadOnlySpan<byte> pbDataHash,
-            int cbDataHash,
             PAL_HashAlgorithm hashAlgorithm,
             out SafeCFDataHandle pSignatureOut,
             out SafeCFErrorHandle pErrorOut) =>
             AppleCryptoNative_GenerateSignatureWithHashAlgorithm(
-                privateKey, ref MemoryMarshal.GetReference(pbDataHash), cbDataHash, hashAlgorithm, out pSignatureOut, out pErrorOut);
+                privateKey,
+                ref MemoryMarshal.GetReference(pbDataHash),
+                pbDataHash.Length,
+                hashAlgorithm,
+                out pSignatureOut,
+                out pErrorOut);
 
         [DllImport(Libraries.AppleCryptoNative)]
         private static extern int AppleCryptoNative_GenerateSignatureWithHashAlgorithm(
@@ -60,16 +79,14 @@ internal static partial class Interop
         private static int AppleCryptoNative_VerifySignature(
             SafeSecKeyRefHandle publicKey,
             ReadOnlySpan<byte> pbDataHash,
-            int cbDataHash,
             ReadOnlySpan<byte> pbSignature,
-            int cbSignature,
             out SafeCFErrorHandle pErrorOut) =>
             AppleCryptoNative_VerifySignature(
                 publicKey,
                 ref MemoryMarshal.GetReference(pbDataHash),
-                cbDataHash,
+                pbDataHash.Length,
                 ref MemoryMarshal.GetReference(pbSignature),
-                cbSignature,
+                pbSignature.Length,
                 out pErrorOut);
 
         [DllImport(Libraries.AppleCryptoNative)]
@@ -84,17 +101,15 @@ internal static partial class Interop
         private static int AppleCryptoNative_VerifySignatureWithHashAlgorithm(
             SafeSecKeyRefHandle publicKey,
             ReadOnlySpan<byte> pbDataHash,
-            int cbDataHash,
             ReadOnlySpan<byte> pbSignature,
-            int cbSignature,
             PAL_HashAlgorithm hashAlgorithm,
             out SafeCFErrorHandle pErrorOut) =>
             AppleCryptoNative_VerifySignatureWithHashAlgorithm(
                 publicKey,
                 ref MemoryMarshal.GetReference(pbDataHash),
-                cbDataHash,
+                pbDataHash.Length,
                 ref MemoryMarshal.GetReference(pbSignature),
-                cbSignature,
+                pbSignature.Length,
                 hashAlgorithm,
                 out pErrorOut);
 
@@ -180,7 +195,7 @@ internal static partial class Interop
             }
         }
 
-        internal static SafeSecKeyRefHandle ImportEphemeralKey(byte[] keyBlob, bool hasPrivateKey)
+        internal static SafeSecKeyRefHandle ImportEphemeralKey(ReadOnlySpan<byte> keyBlob, bool hasPrivateKey)
         {
             Debug.Assert(keyBlob != null);
 
@@ -189,7 +204,6 @@ internal static partial class Interop
 
             int ret = AppleCryptoNative_SecKeyImportEphemeral(
                 keyBlob,
-                keyBlob.Length,
                 hasPrivateKey ? 1 : 0,
                 out keyHandle,
                 out osStatus);
@@ -218,7 +232,6 @@ internal static partial class Interop
                     AppleCryptoNative_GenerateSignature(
                         privateKey,
                         source,
-                        source.Length,
                         out signature,
                         out error));
         }
@@ -237,7 +250,6 @@ internal static partial class Interop
                     AppleCryptoNative_GenerateSignatureWithHashAlgorithm(
                         privateKey,
                         source,
-                        source.Length,
                         hashAlgorithm,
                         out signature,
                         out error));
@@ -260,7 +272,7 @@ internal static partial class Interop
                 delegate (ReadOnlySpan<byte> innerSource, out SafeCFDataHandle outputHandle, out SafeCFErrorHandle errorHandle)
                 {
                     return AppleCryptoNative_GenerateSignatureWithHashAlgorithm(
-                        privateKey, innerSource, innerSource.Length, hashAlgorithm, out outputHandle, out errorHandle);
+                        privateKey, innerSource, hashAlgorithm, out outputHandle, out errorHandle);
                 });
         }
 
@@ -276,9 +288,7 @@ internal static partial class Interop
             int ret = AppleCryptoNative_VerifySignature(
                 publicKey,
                 dataHash,
-                dataHash.Length,
                 signature,
-                signature.Length,
                 out error);
 
             const int True = 1;
@@ -316,9 +326,7 @@ internal static partial class Interop
             int ret = AppleCryptoNative_VerifySignatureWithHashAlgorithm(
                 publicKey,
                 dataHash,
-                dataHash.Length,
                 signature,
-                signature.Length,
                 hashAlgorithm,
                 out error);
 
