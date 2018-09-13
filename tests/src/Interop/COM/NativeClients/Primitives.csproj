@@ -3,7 +3,7 @@
   <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.props))\dir.props" />
   <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), Interop.settings.targets))\Interop.settings.targets" />
   <PropertyGroup>
-    <IgnoreInteropAssertionFile>true</IgnoreInteropAssertionFile>
+    <IgnoreCoreCLRTestLibraryDependency>true</IgnoreCoreCLRTestLibraryDependency>
     <CLRTestScriptLocalCoreShim>true</CLRTestScriptLocalCoreShim>
   </PropertyGroup>
   <ItemGroup>
