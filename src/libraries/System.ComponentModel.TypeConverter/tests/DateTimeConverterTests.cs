@@ -2,7 +2,9 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
+using System.ComponentModel.Design.Serialization;
 using System.Globalization;
+using System.Reflection;
 using Xunit;
 
 namespace System.ComponentModel.Tests
@@ -46,6 +48,18 @@ namespace System.ComponentModel.Tests
         }
 
         [Fact]
+        public static void CanConvertTo_WithContext()
+        {
+            CanConvertTo_WithContext(new object[3, 2]
+                {
+                    { typeof(string), true },
+                    { typeof(InstanceDescriptor), true },
+                    { typeof(int), false }
+                },
+                DateTimeConverterTests.s_converter);
+        }
+
+        [Fact]
         public static void ConvertTo_WithContext()
         {
             RemoteInvoke(() => {
@@ -54,6 +68,16 @@ namespace System.ComponentModel.Tests
                 string formatWithTime = formatInfo.ShortDatePattern + " " + formatInfo.ShortTimePattern;
                 string format = formatInfo.ShortDatePattern;
                 DateTime testDateAndTime = new DateTime(1998, 12, 5, 22, 30, 30);
+                ConstructorInfo ctor = typeof(DateTime).GetConstructor(new Type[] 
+                    {
+                        typeof(int), typeof(int), typeof(int), typeof(int), 
+                        typeof(int), typeof(int), typeof(int) 
+                    });
+
+                InstanceDescriptor descriptor = new InstanceDescriptor(ctor, new object[]
+                    {
+                        testDateAndTime.Year, testDateAndTime.Month, testDateAndTime.Day, testDateAndTime.Hour, testDateAndTime.Minute, testDateAndTime.Second, testDateAndTime.Millisecond
+                    });
 
                 ConvertTo_WithContext(new object[5, 3]
                     {
@@ -64,6 +88,15 @@ namespace System.ComponentModel.Tests
                     { testDateAndTime, "12/05/1998 22:30:30", CultureInfo.InvariantCulture }
                     },
                     DateTimeConverterTests.s_converter);
+
+                object describedInstanceNoCulture = s_converter.ConvertTo(TypeConverterTests.s_context, null, testDateAndTime, descriptor.GetType());
+                describedInstanceNoCulture = ((InstanceDescriptor)describedInstanceNoCulture).Invoke();
+
+                object describedInstanceCulture = s_converter.ConvertTo(TypeConverterTests.s_context, CultureInfo.InvariantCulture, testDateAndTime, descriptor.GetType());
+                describedInstanceCulture = ((InstanceDescriptor)describedInstanceCulture).Invoke();
+                
+                Assert.Equal(testDateAndTime, describedInstanceNoCulture);
+                Assert.Equal(testDateAndTime, describedInstanceCulture); 
 
                 return SuccessExitCode;
             }).Dispose();
