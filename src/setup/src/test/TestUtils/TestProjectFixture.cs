@@ -375,6 +375,7 @@ namespace Microsoft.DotNet.CoreSetup.Test
             {
                 publishArgs.Add("--framework");
                 publishArgs.Add(framework);
+                publishArgs.Add($"/p:NETCoreAppFramework={framework}");
             }
 
             if (outputDirectory != null)
