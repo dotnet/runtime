@@ -886,11 +886,10 @@ void Compiler::optCseUpdateCheckedBoundMap(GenTree* compare)
 {
     assert(compare->OperIsCompare());
 
-    ValueNum   compareVN = compare->gtVNPair.GetConservative();
-    VNFuncApp  cmpVNFuncApp;
+    ValueNum  compareVN = compare->gtVNPair.GetConservative();
+    VNFuncApp cmpVNFuncApp;
 
-    if (!vnStore->GetVNFunc(compareVN, &cmpVNFuncApp) ||
-        (cmpVNFuncApp.m_func != GetVNFuncForNode(compare)))
+    if (!vnStore->GetVNFunc(compareVN, &cmpVNFuncApp) || (cmpVNFuncApp.m_func != GetVNFuncForNode(compare)))
     {
         // Value numbering inferred this compare as something other
         // than its own operator; leave its value number alone.
