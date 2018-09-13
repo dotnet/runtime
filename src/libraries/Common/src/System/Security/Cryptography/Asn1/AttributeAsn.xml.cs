@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Collections.Generic;
 using System.Runtime.InteropServices;
 using System.Security.Cryptography;
 using System.Security.Cryptography.Asn1;
@@ -9,7 +10,7 @@ namespace System.Security.Cryptography.Asn1
     internal partial struct AttributeAsn
     {
         internal Oid AttrType;
-        internal ReadOnlyMemory<byte> AttrValues;
+        internal ReadOnlyMemory<byte>[] AttrValues;
       
         internal void Encode(AsnWriter writer)
         {
@@ -21,7 +22,14 @@ namespace System.Security.Cryptography.Asn1
             writer.PushSequence(tag);
             
             writer.WriteObjectIdentifier(AttrType);
-            writer.WriteEncodedValue(AttrValues);
+
+            writer.PushSetOf();
+            for (int i = 0; i < AttrValues.Length; i++)
+            {
+                writer.WriteEncodedValue(AttrValues[i]); 
+            }
+            writer.PopSetOf();
+
             writer.PopSequence(tag);
         }
 
@@ -54,9 +62,25 @@ namespace System.Security.Cryptography.Asn1
 
             decoded = default;
             AsnReader sequenceReader = reader.ReadSequence(expectedTag);
+            AsnReader collectionReader;
             
             decoded.AttrType = sequenceReader.ReadObjectIdentifier();
-            decoded.AttrValues = sequenceReader.GetEncodedValue();
+
+            // Decode SEQUENCE OF for AttrValues
+            {
+                collectionReader = sequenceReader.ReadSetOf();
+                var tmpList = new List<ReadOnlyMemory<byte>>();
+                ReadOnlyMemory<byte> tmpItem;
+
+                while (collectionReader.HasData)
+                {
+                    tmpItem = collectionReader.GetEncodedValue(); 
+                    tmpList.Add(tmpItem);
+                }
+
+                decoded.AttrValues = tmpList.ToArray();
+            }
+
 
             sequenceReader.ThrowIfNotEmpty();
         }

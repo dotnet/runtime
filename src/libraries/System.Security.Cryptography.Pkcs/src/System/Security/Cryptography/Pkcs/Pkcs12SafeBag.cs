@@ -104,10 +104,7 @@ namespace System.Security.Cryptography.Pkcs
 
                 foreach (AttributeAsn attr in attrs)
                 {
-                    writer.PushSequence();
-                    writer.WriteObjectIdentifier(attr.AttrType);
-                    writer.WriteEncodedValue(attr.AttrValues);
-                    writer.PopSequence();
+                    attr.Encode(writer);
                 }
 
                 writer.PopSetOf();

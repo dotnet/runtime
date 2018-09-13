@@ -12,7 +12,7 @@ namespace System.Security.Cryptography.X509Certificates.Asn1
         internal System.Numerics.BigInteger Version;
         internal ReadOnlyMemory<byte> Subject;
         internal System.Security.Cryptography.Asn1.SubjectPublicKeyInfoAsn SubjectPublicKeyInfo;
-        internal System.Security.Cryptography.X509Certificates.Asn1.X501AttributeAsn[] Attributes;
+        internal System.Security.Cryptography.Asn1.AttributeAsn[] Attributes;
       
         internal void Encode(AsnWriter writer)
         {
@@ -89,12 +89,12 @@ namespace System.Security.Cryptography.X509Certificates.Asn1
             // Decode SEQUENCE OF for Attributes
             {
                 collectionReader = sequenceReader.ReadSetOf(new Asn1Tag(TagClass.ContextSpecific, 0));
-                var tmpList = new List<System.Security.Cryptography.X509Certificates.Asn1.X501AttributeAsn>();
-                System.Security.Cryptography.X509Certificates.Asn1.X501AttributeAsn tmpItem;
+                var tmpList = new List<System.Security.Cryptography.Asn1.AttributeAsn>();
+                System.Security.Cryptography.Asn1.AttributeAsn tmpItem;
 
                 while (collectionReader.HasData)
                 {
-                    System.Security.Cryptography.X509Certificates.Asn1.X501AttributeAsn.Decode(collectionReader, out tmpItem); 
+                    System.Security.Cryptography.Asn1.AttributeAsn.Decode(collectionReader, out tmpItem); 
                     tmpList.Add(tmpItem);
                 }
 
