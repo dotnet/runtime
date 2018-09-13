@@ -284,7 +284,7 @@ namespace Microsoft.CSharp
             // If the string is short, use C style quoting (e.g "\r\n")
             // Also do it if it is too long to fit in one line
             // If the string contains '\0', verbatim style won't work.
-            if (value.Length < 256 || value.Length > 1500 || (value.IndexOf('\0') != -1))
+            if (value.Length < 256 || value.Length > 1500 || (value.IndexOf('\0') != -1)) // string.Contains(char) is .NetCore2.1+ specific
                 return QuoteSnippetStringCStyle(value);
 
             // Otherwise, use 'verbatim' style quoting (e.g. @"foo")

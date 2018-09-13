@@ -202,7 +202,7 @@ namespace System
                 }
                 _host = value;
                 //probable ipv6 address - Note: this is only supported for cases where the authority is inet-based.
-                if (_host.IndexOf(':') >= 0)
+                if (_host.Contains(':'))
                 {
                     //set brackets
                     if (_host[0] != '[')
