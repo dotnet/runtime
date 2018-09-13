@@ -50,7 +50,7 @@ internal static partial class Interop
 
                 int charCount = Encoding.UTF8.GetChars(nameBytes, buffer);
                 ReadOnlySpan<char> value = buffer.Slice(0, charCount);
-                Debug.Assert(NameLength != -1 || value.IndexOf('\0') == -1, "should not have embedded nulls if we parsed the end of string");
+                Debug.Assert(NameLength != -1 || !value.Contains('\0'), "should not have embedded nulls if we parsed the end of string");
                 return value;
             }
         }

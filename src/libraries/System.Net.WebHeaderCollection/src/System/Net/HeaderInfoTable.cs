@@ -21,7 +21,7 @@ namespace System.Net
         {
             // RFC 6265: (for Set-Cookie header)
             // If the name-value-pair string lacks a %x3D ("=") character, ignore the set-cookie-string entirely.
-            if (isSetCookie && (value.IndexOf('=') < 0)) return Array.Empty<string>();
+            if (isSetCookie && (!value.Contains('='))) return Array.Empty<string>();
 
             var tempStringCollection = new List<string>();
 
@@ -65,10 +65,10 @@ namespace System.Net
         private static bool IsDuringExpiresAttributeParsing(string singleValue)
         {
             // Current cookie doesn't contain any attributes.
-            if (singleValue.IndexOf(';') < 0) return false;
+            if (!singleValue.Contains(';')) return false;
 
             string lastElement = singleValue.Split(';').Last();
-            bool noComma = lastElement.IndexOf(',') < 0;
+            bool noComma = !lastElement.Contains(',');
 
             string lastAttribute = lastElement.Split('=')[0].Trim();
             bool isExpires = string.Equals(lastAttribute, "Expires", StringComparison.OrdinalIgnoreCase);

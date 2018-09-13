@@ -25,7 +25,7 @@ namespace System.ComponentModel
                 return false;
 
             // Machine names shouldn't contain any "\"
-            return (value.IndexOf('\\') == -1);
+            return !value.Contains('\\');
         }
 
         /// <summary>

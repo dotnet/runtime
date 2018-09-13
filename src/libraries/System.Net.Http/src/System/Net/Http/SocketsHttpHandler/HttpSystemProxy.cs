@@ -307,7 +307,7 @@ namespace System.Net.Http
                             }
                         }
                     }
-                    if (uri.HostNameType != UriHostNameType.IPv6 && uri.IdnHost.IndexOf('.') == -1)
+                    if (uri.HostNameType != UriHostNameType.IPv6 && !uri.IdnHost.Contains('.'))
                     {
                         // Not address and does not have a dot.
                         // Hosts without FQDN are considered local.

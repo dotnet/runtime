@@ -1009,7 +1009,7 @@ namespace System.Xml
         public override string GetAttribute(string name)
         {
             int i;
-            if (name.IndexOf(':') == -1)
+            if (!name.Contains(':'))
             {
                 i = GetIndexOfAttributeWithoutPrefix(name);
             }
@@ -1049,7 +1049,7 @@ namespace System.Xml
         public override bool MoveToAttribute(string name)
         {
             int i;
-            if (name.IndexOf(':') == -1)
+            if (!name.Contains(':'))
             {
                 i = GetIndexOfAttributeWithoutPrefix(name);
             }

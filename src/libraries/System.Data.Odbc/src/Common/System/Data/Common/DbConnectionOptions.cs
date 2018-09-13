@@ -151,6 +151,7 @@ namespace System.Data.Common
                 if (useOdbcRules)
                 {
                     if ((0 < keyValue.Length) &&
+                        // string.Contains(char) is .NetCore2.1+ specific
                         (('{' == keyValue[0]) || (0 <= keyValue.IndexOf(';')) || (0 == string.Compare(DbConnectionStringKeywords.Driver, keyName, StringComparison.OrdinalIgnoreCase))) &&
                         !s_connectionStringQuoteOdbcValueRegex.IsMatch(keyValue))
                     {
@@ -168,6 +169,7 @@ namespace System.Data.Common
                     // <value> -> <value>
                     builder.Append(keyValue);
                 }
+                // string.Contains(char) is .NetCore2.1+ specific
                 else if ((-1 != keyValue.IndexOf('\"')) && (-1 == keyValue.IndexOf('\'')))
                 {
                     // <val"ue> -> <'val"ue'>

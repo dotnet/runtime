@@ -299,7 +299,7 @@ namespace System.Net
                 }
 
                 Uri hostUri;
-                if ((value.IndexOf('/') != -1) || (!TryGetHostUri(value, out hostUri)))
+                if ((value.Contains('/')) || (!TryGetHostUri(value, out hostUri)))
                 {
                     throw new ArgumentException(SR.net_invalid_host, nameof(value));
                 }
@@ -311,7 +311,7 @@ namespace System.Net
                 {
                     _hostHasPort = true;
                 }
-                else if (value.IndexOf(':') == -1)
+                else if (!value.Contains(':'))
                 {
                     _hostHasPort = false;
                 }

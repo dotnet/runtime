@@ -1112,7 +1112,7 @@ namespace System.Xml
             {
                 systemId = GetValue();
 
-                if (systemId.IndexOf('#') >= 0)
+                if (systemId.Contains('#'))
                 {
                     Throw(_curPos - systemId.Length - 1, SR.Xml_FragmentId, new string[] { systemId.Substring(systemId.IndexOf('#')), systemId });
                 }

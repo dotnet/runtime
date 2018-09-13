@@ -80,7 +80,7 @@ namespace System.Data.Common
                     }
 
                     // Mutate name if it contains space(s)
-                    if (columnName.IndexOf(' ') >= 0)
+                    if (columnName.Contains(' '))
                     {
                         columnName = columnName.Replace(' ', '_');
                         isMutatedName = true;

@@ -130,7 +130,7 @@ namespace System.Xml.Serialization
         {
             if (nmTokens == null)
                 return null;
-            if (nmTokens.IndexOf(' ') < 0)
+            if (!nmTokens.Contains(' '))
                 return FromXmlNmToken(nmTokens);
             else
             {
