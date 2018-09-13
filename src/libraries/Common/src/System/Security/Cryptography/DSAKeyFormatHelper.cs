@@ -88,6 +88,16 @@ namespace System.Security.Cryptography
                 out key);
         }
 
+       internal static ReadOnlyMemory<byte> ReadSubjectPublicKeyInfo(
+            ReadOnlyMemory<byte> source,
+            out int bytesRead)
+        {
+            return KeyFormatHelper.ReadSubjectPublicKeyInfo(
+                s_validOids,
+                source,
+                out bytesRead);
+        }
+
         internal static void ReadPkcs8(
             ReadOnlySpan<byte> source,
             out int bytesRead,

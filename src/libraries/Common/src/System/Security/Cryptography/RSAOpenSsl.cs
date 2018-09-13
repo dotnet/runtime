@@ -5,7 +5,8 @@
 using System.Buffers;
 using System.Diagnostics;
 using System.IO;
-
+using System.Runtime.InteropServices;
+using System.Security.Cryptography.Asn1;
 using Microsoft.Win32.SafeHandles;
 using Internal.Cryptography;
 
@@ -393,6 +394,31 @@ namespace System.Security.Cryptography
             // Use ForceSet instead of the property setter to ensure that LegalKeySizes doesn't interfere
             // with the already loaded key.
             ForceSetKeySize(BitsPerByte * Interop.Crypto.RsaSize(key));
+        }
+
+        public override unsafe void ImportRSAPublicKey(ReadOnlySpan<byte> source, out int bytesRead)
+        {
+            fixed (byte* ptr = &MemoryMarshal.GetReference(source))
+            {
+                using (MemoryManager<byte> manager = new PointerMemoryManager<byte>(ptr, source.Length))
+                {
+                    AsnReader reader = new AsnReader(manager.Memory, AsnEncodingRules.BER);
+                    ReadOnlyMemory<byte> firstElement = reader.PeekEncodedValue();
+
+                    SafeRsaHandle key = Interop.Crypto.DecodeRsaPublicKey(firstElement.Span);
+
+                    Interop.Crypto.CheckValidOpenSslHandle(key);
+
+                    FreeKey();
+                    _key = new Lazy<SafeRsaHandle>(key);
+
+                    // Use ForceSet instead of the property setter to ensure that LegalKeySizes doesn't interfere
+                    // with the already loaded key.
+                    ForceSetKeySize(BitsPerByte * Interop.Crypto.RsaSize(key));
+
+                    bytesRead = firstElement.Length;
+                }
+            }
         }
 
         protected override void Dispose(bool disposing)

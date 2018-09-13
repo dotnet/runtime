@@ -84,16 +84,10 @@ namespace Internal.Cryptography.Pal
 
             private static AsymmetricAlgorithm DecodeRsaPublicKey(byte[] encodedKeyValue)
             {
-                AlgorithmIdentifierAsn ignored = default;
-                RSAKeyFormatHelper.ReadRsaPublicKey(
-                    encodedKeyValue,
-                    ignored,
-                    out RSAParameters rsaParameters);
-
                 RSA rsa = RSA.Create();
                 try
                 {
-                    rsa.ImportParameters(rsaParameters);
+                    rsa.ImportRSAPublicKey(encodedKeyValue.AsSpan(), out _);
                     return rsa;
                 }
                 catch (Exception)
@@ -105,21 +99,26 @@ namespace Internal.Cryptography.Pal
 
             private static AsymmetricAlgorithm DecodeDsaPublicKey(byte[] encodedKeyValue, byte[] encodedParameters)
             {
-                DSAKeyFormatHelper.ReadDsaPublicKey(
-                    encodedKeyValue,
-                    new AlgorithmIdentifierAsn { Parameters = encodedParameters },
-                    out DSAParameters dsaParameters);
+                SubjectPublicKeyInfoAsn spki = new SubjectPublicKeyInfoAsn
+                {
+                    Algorithm = new AlgorithmIdentifierAsn { Algorithm = new Oid(Oids.Dsa, null), Parameters = encodedParameters },
+                    SubjectPublicKey = encodedKeyValue,
+                };
 
-                DSA dsa = DSA.Create();
-                try
+                using (AsnWriter writer = new AsnWriter(AsnEncodingRules.DER))
                 {
-                    dsa.ImportParameters(dsaParameters);
-                    return dsa;
-                }
-                catch (Exception)
-                {
-                    dsa.Dispose();
-                    throw;
+                    spki.Encode(writer);
+                    DSA dsa = DSA.Create();
+                    try
+                    {
+                        dsa.ImportSubjectPublicKeyInfo(writer.EncodeAsSpan(), out _);
+                        return dsa;
+                    }
+                    catch (Exception)
+                    {
+                        dsa.Dispose();
+                        throw;
+                    }
                 }
             }
 
