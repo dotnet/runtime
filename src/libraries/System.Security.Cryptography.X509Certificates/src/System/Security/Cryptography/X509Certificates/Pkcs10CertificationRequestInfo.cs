@@ -63,7 +63,7 @@ namespace System.Security.Cryptography.X509Certificates
                 Version = 0,
                 Subject = this.Subject.RawData,
                 SubjectPublicKeyInfo = spki,
-                Attributes = Attributes.Select(a => new X501AttributeAsn(a)).ToArray(),
+                Attributes = Attributes.Select(a => new AttributeAsn(a)).ToArray(),
             };
 
             using (AsnWriter writer = new AsnWriter(AsnEncodingRules.DER))

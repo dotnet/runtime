@@ -2,20 +2,18 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
-using System.Security.Cryptography.X509Certificates;
-
-namespace System.Security.Cryptography.X509Certificates.Asn1
+namespace System.Security.Cryptography.Asn1
 {
-    internal partial struct X501AttributeAsn
+    internal partial struct AttributeAsn
     {
-        public X501AttributeAsn(X501Attribute attribute)
+        public AttributeAsn(AsnEncodedData attribute)
         {
             if (attribute == null)
             {
                 throw new ArgumentNullException(nameof(attribute));
             }
 
-            AttrId = attribute.Oid;
+            AttrType = new Oid(attribute.Oid);
             AttrValues = new[] { new ReadOnlyMemory<byte>(attribute.RawData) };
         }
     }

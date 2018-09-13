@@ -15,5 +15,7 @@
     AttributeValue ::= ANY
   -->
   <asn:ObjectIdentifier name="AttrType" />
-  <asn:AnyValue name="AttrValues" />
+  <asn:SetOf name="AttrValues">
+	  <asn:AnyValue />
+  </asn:SetOf>
 </asn:Sequence>

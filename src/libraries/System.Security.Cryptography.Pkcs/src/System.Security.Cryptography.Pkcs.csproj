@@ -299,6 +299,10 @@
       <Link>Common\System\Security\Cryptography\Asn1\AttributeAsn.xml.cs</Link>
       <DependentUpon>Common\System\Security\Cryptography\Asn1\AttributeAsn.xml</DependentUpon>
     </Compile>
+    <Compile Include="$(CommonPath)\System\Security\Cryptography\Asn1\AttributeAsn.manual.cs">
+      <Link>Common\System\Security\Cryptography\Asn1\AttributeAsn.manual.cs</Link>
+      <DependentUpon>Common\System\Security\Cryptography\Asn1\AttributeAsn.xml</DependentUpon>
+    </Compile>
     <AsnXml Include="$(CommonPath)\System\Security\Cryptography\Asn1\EncryptedPrivateKeyInfoAsn.xml">
       <Link>Common\System\Security\Cryptography\Asn1\EncryptedPrivateKeyInfoAsn.xml</Link>
     </AsnXml>
