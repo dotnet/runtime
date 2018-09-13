@@ -18,6 +18,6 @@
   <asn:AnyValue name="Subject" universalTagNumber="16" />
   <asn:AsnType name="SubjectPublicKeyInfo" typeName="System.Security.Cryptography.Asn1.SubjectPublicKeyInfoAsn" />
   <asn:SetOf name="Attributes" implicitTag="0">
-	  <asn:AsnType typeName="System.Security.Cryptography.X509Certificates.Asn1.X501AttributeAsn" />
+    <asn:AsnType typeName="System.Security.Cryptography.Asn1.AttributeAsn" />
   </asn:SetOf>
 </asn:Sequence>

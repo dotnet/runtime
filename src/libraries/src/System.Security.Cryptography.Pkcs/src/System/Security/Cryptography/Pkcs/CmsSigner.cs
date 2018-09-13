@@ -139,15 +139,12 @@ namespace System.Security.Cryptography.Pkcs
 
                 using (var writer = new AsnWriter(AsnEncodingRules.DER))
                 {
-                    writer.PushSetOf();
                     writer.WriteOctetString(dataHash);
-                    writer.PopSetOf();
-
                     signedAttrs.Add(
                         new AttributeAsn
                         {
                             AttrType = new Oid(Oids.MessageDigest, Oids.MessageDigest),
-                            AttrValues = writer.Encode(),
+                            AttrValues = new[] { new ReadOnlyMemory<byte>(writer.Encode()) },
                         });
                 }
 
@@ -155,15 +152,12 @@ namespace System.Security.Cryptography.Pkcs
                 {
                     using (var writer = new AsnWriter(AsnEncodingRules.DER))
                     {
-                        writer.PushSetOf();
                         writer.WriteObjectIdentifier(contentTypeOid);
-                        writer.PopSetOf();
-
                         signedAttrs.Add(
                             new AttributeAsn
                             {
                                 AttrType = new Oid(Oids.ContentType, Oids.ContentType),
-                                AttrValues = writer.Encode(),
+                                AttrValues = new[] { new ReadOnlyMemory<byte>(writer.Encode()) },
                             });
                     }
                 }
@@ -321,25 +315,18 @@ namespace System.Security.Cryptography.Pkcs
 
             foreach (CryptographicAttributeObject attributeObject in attributes)
             {
-                using (var writer = new AsnWriter(AsnEncodingRules.DER))
+                AttributeAsn newAttr = new AttributeAsn
                 {
-                    writer.PushSetOf();
+                    AttrType = attributeObject.Oid,
+                    AttrValues = new ReadOnlyMemory<byte>[attributeObject.Values.Count],
+                };
 
-                    foreach (AsnEncodedData objectValue in attributeObject.Values)
-                    {
-                        writer.WriteEncodedValue(objectValue.RawData);
-                    }
-
-                    writer.PopSetOf();
-
-                    AttributeAsn newAttr = new AttributeAsn
-                    {
-                        AttrType = attributeObject.Oid,
-                        AttrValues = writer.Encode(),
-                    };
-
-                    signedAttrs.Add(newAttr);
+                for (int i = 0; i < attributeObject.Values.Count; i++)
+                {
+                    newAttr.AttrValues[i] = attributeObject.Values[i].RawData;
                 }
+
+                signedAttrs.Add(newAttr);
             }
 
             return signedAttrs;
