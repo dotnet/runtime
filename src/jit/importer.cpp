@@ -561,46 +561,64 @@ inline void Compiler::impAppendStmt(GenTree* stmt, unsigned chkLevel)
     assert(stmt->gtOper == GT_STMT);
     noway_assert(impTreeLast != nullptr);
 
-    /* If the statement being appended has any side-effects, check the stack
-       to see if anything needs to be spilled to preserve correct ordering. */
-
-    GenTree* expr  = stmt->gtStmt.gtStmtExpr;
-    unsigned flags = expr->gtFlags & GTF_GLOB_EFFECT;
-
-    // Assignment to (unaliased) locals don't count as a side-effect as
-    // we handle them specially using impSpillLclRefs(). Temp locals should
-    // be fine too.
-
-    if ((expr->gtOper == GT_ASG) && (expr->gtOp.gtOp1->gtOper == GT_LCL_VAR) &&
-        !(expr->gtOp.gtOp1->gtFlags & GTF_GLOB_REF) && !gtHasLocalsWithAddrOp(expr->gtOp.gtOp2))
-    {
-        unsigned op2Flags = expr->gtOp.gtOp2->gtFlags & GTF_GLOB_EFFECT;
-        assert(flags == (op2Flags | GTF_ASG));
-        flags = op2Flags;
-    }
-
     if (chkLevel == (unsigned)CHECK_SPILL_ALL)
     {
         chkLevel = verCurrentState.esStackDepth;
     }
 
-    if (chkLevel && chkLevel != (unsigned)CHECK_SPILL_NONE)
+    if ((chkLevel != 0) && (chkLevel != (unsigned)CHECK_SPILL_NONE))
     {
         assert(chkLevel <= verCurrentState.esStackDepth);
 
-        if (flags)
-        {
-            // If there is a call, we have to spill global refs
-            bool spillGlobEffects = (flags & GTF_CALL) ? true : false;
+        /* If the statement being appended has any side-effects, check the stack
+           to see if anything needs to be spilled to preserve correct ordering. */
 
-            if (expr->gtOper == GT_ASG)
+        GenTree* expr  = stmt->gtStmt.gtStmtExpr;
+        unsigned flags = expr->gtFlags & GTF_GLOB_EFFECT;
+
+        // Assignment to (unaliased) locals don't count as a side-effect as
+        // we handle them specially using impSpillLclRefs(). Temp locals should
+        // be fine too.
+
+        if ((expr->gtOper == GT_ASG) && (expr->gtOp.gtOp1->gtOper == GT_LCL_VAR) &&
+            ((expr->gtOp.gtOp1->gtFlags & GTF_GLOB_REF) == 0) && !gtHasLocalsWithAddrOp(expr->gtOp.gtOp2))
+        {
+            unsigned op2Flags = expr->gtOp.gtOp2->gtFlags & GTF_GLOB_EFFECT;
+            assert(flags == (op2Flags | GTF_ASG));
+            flags = op2Flags;
+        }
+
+        if (flags != 0)
+        {
+            bool spillGlobEffects = false;
+
+            if ((flags & GTF_CALL) != 0)
+            {
+                // If there is a call, we have to spill global refs
+                spillGlobEffects = true;
+            }
+            else if (!expr->OperIs(GT_ASG))
+            {
+                if ((flags & GTF_ASG) != 0)
+                {
+                    // The expression is not an assignment node but it has an assignment side effect, it
+                    // must be an atomic op, HW intrinsic or some other kind of node that stores to memory.
+                    // Since we don't know what it assigns to, we need to spill global refs.
+                    spillGlobEffects = true;
+                }
+            }
+            else
             {
                 GenTree* lhs = expr->gtGetOp1();
-                // If we are assigning to a global ref, we have to spill global refs on stack.
-                // TODO-1stClassStructs: Previously, spillGlobEffects was set to true for
-                // GT_INITBLK and GT_COPYBLK, but this is overly conservative, and should be
-                // revisited. (Note that it was NOT set to true for GT_COPYOBJ.)
-                if (!expr->OperIsBlkOp())
+                GenTree* rhs = expr->gtGetOp2();
+
+                if (((rhs->gtFlags | lhs->gtFlags) & GTF_ASG) != 0)
+                {
+                    // Either side of the assignment node has an assignment side effect.
+                    // Since we don't know what it assigns to, we need to spill global refs.
+                    spillGlobEffects = true;
+                }
+                else if (!expr->OperIsBlkOp())
                 {
                     // If we are assigning to a global ref, we have to spill global refs on stack
                     if ((lhs->gtFlags & GTF_GLOB_REF) != 0)
@@ -612,6 +630,9 @@ inline void Compiler::impAppendStmt(GenTree* stmt, unsigned chkLevel)
                          ((lhs->OperGet() == GT_LCL_VAR) &&
                           (lvaTable[lhs->AsLclVarCommon()->gtLclNum].lvStructGcCount == 0)))
                 {
+                    // TODO-1stClassStructs: Previously, spillGlobEffects was set to true for
+                    // GT_INITBLK and GT_COPYBLK, but this is overly conservative, and should be
+                    // revisited. (Note that it was NOT set to true for GT_COPYOBJ.)
                     spillGlobEffects = true;
                 }
             }
