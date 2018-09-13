@@ -265,7 +265,7 @@ TFp FpRem(TFp dividend, TFp divisor)
 //    overflowCheck - The operKind returned should have the overflow check property
 //
 // Return Value:
-//                  - The VNOperKind to use for this pair of (isUnsigned, overflowCheck) 
+//                  - The VNOperKind to use for this pair of (isUnsigned, overflowCheck)
 //
 VNOperKind VNGetOperKind(bool isUnsigned, bool overflowCheck)
 {
@@ -303,7 +303,7 @@ VNOperKind VNGetOperKind(bool isUnsigned, bool overflowCheck)
 //                      and Unsigned_OverflowCheck,
 //
 // Return Value:
-//               - The VNFunc to use for this pair of (oper, operKind) 
+//               - The VNFunc to use for this pair of (oper, operKind)
 //
 // Notes:        - An assert will fire when the oper does not support
 //                 the operKInd that is supplied.
@@ -454,7 +454,7 @@ VNFunc GetVNFuncForOper(genTreeOps oper, VNOperKind operKind)
 // Return Value:
 //               - The VNFunc to use for this GenTree node
 //
-// Notes:        - The gtFlags from the node are used to set operKind 
+// Notes:        - The gtFlags from the node are used to set operKind
 //                 to one of Normal, Unsigned, OverflowCheck,
 //                 or Unsigned_OverflowCheck. Also see GetVNFuncForOper()
 //
