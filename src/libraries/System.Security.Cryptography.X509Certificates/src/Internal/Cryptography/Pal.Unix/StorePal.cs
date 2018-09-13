@@ -244,7 +244,7 @@ namespace Internal.Cryptography.Pal
 
             if (rootStoreFile != null && rootStoreFile.Exists)
             {
-                trustedCertFiles = Append(trustedCertFiles, rootStoreFile);
+                trustedCertFiles = Prepend(trustedCertFiles, rootStoreFile);
             }
 
             HashSet<X509Certificate2> uniqueRootCerts = new HashSet<X509Certificate2>();
@@ -301,12 +301,14 @@ namespace Internal.Cryptography.Pal
             Volatile.Write(ref s_machineRootStore, rootStorePal);
         }
 
-        private static IEnumerable<T> Append<T>(IEnumerable<T> current, T addition)
+        private static IEnumerable<T> Prepend<T>(IEnumerable<T> current, T addition)
         {
-            foreach (T element in current)
-                yield return element;
-
             yield return addition;
+
+            foreach (T element in current)
+            {
+                yield return element;
+            }
         }
     }
 }
