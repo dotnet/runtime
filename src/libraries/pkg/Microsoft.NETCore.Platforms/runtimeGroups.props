@@ -130,7 +130,7 @@
     <RuntimeGroup Include="ubuntu">
       <Parent>debian</Parent>
       <Architectures>x64;x86;arm;arm64</Architectures>
-      <Versions>16.04;16.10;17.04;17.10;18.04</Versions>
+      <Versions>16.04;16.10;17.04;17.10;18.04;18.10</Versions>
       <TreatVersionsAsCompatible>false</TreatVersionsAsCompatible>
     </RuntimeGroup>
 
