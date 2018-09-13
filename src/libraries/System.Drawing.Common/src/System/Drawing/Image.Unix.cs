@@ -82,7 +82,7 @@ namespace System.Drawing
             if (stream == null)
                 throw new ArgumentNullException(nameof(stream));
 
-            Image img = CreateFromHandle(InitFromStream(stream));
+            Image img = CreateFromHandle(InitializeFromStream(stream));
             return img;
         }
 
@@ -172,7 +172,7 @@ namespace System.Drawing
             return result;
         }
 
-        internal static IntPtr InitFromStream(Stream stream)
+        private protected static IntPtr InitializeFromStream(Stream stream)
         {
             if (stream == null)
                 throw new ArgumentNullException(nameof(stream));
@@ -332,6 +332,19 @@ namespace System.Drawing
             }
 
             Gdip.CheckStatus(st);
+        }
+
+        private void Save(MemoryStream stream)
+        {
+            // Jpeg loses data, so we don't want to use it to serialize...
+            ImageFormat dest = RawFormat;
+            if (dest.Guid == ImageFormat.Jpeg.Guid)
+                dest = ImageFormat.Png;
+
+            // If we don't find an Encoder (for things like Icon), we just switch back to PNG...
+            ImageCodecInfo codec = FindEncoderForFormat(dest) ?? FindEncoderForFormat(ImageFormat.Png);
+
+            Save(stream, codec, null);
         }
 
         public void Save(Stream stream, ImageFormat format)

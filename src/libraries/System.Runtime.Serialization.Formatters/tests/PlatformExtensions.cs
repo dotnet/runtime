@@ -72,14 +72,18 @@ namespace System.Runtime.Serialization.Formatters.Tests
             // .NET Core
             if (PlatformDetection.IsNetCore)
             {
-                // Check if a specialized blob for >=netcoreapp2.1 is present and return if found.
-                int index = blobList.FindIndex(b => b.Platform == TargetFrameworkMoniker.netcoreapp21);
+                // Check if a specialized blob for >=netcoreapp3.0 is present and return if found.
+                int index = blobList.FindIndex(b => b.Platform == TargetFrameworkMoniker.netcoreapp30);
+                if (index >= 0)
+                    return index;
 
+                // Check if a specialized blob for netcoreapp2.1 is present and return if found.
+                index = blobList.FindIndex(b => b.Platform == TargetFrameworkMoniker.netcoreapp21);
                 if (index >= 0)
                     return index;
 
                 // If no newer blob for >=netcoreapp2.1 is present use existing one.
-                // If no netfx blob is present then -1 will be returned.
+                // If no netcoreapp blob is present then -1 will be returned.
                 return blobList.FindIndex((b => b.Platform == TargetFrameworkMoniker.netcoreapp20));
             }
 
