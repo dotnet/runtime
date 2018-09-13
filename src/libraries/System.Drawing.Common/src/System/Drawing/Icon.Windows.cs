@@ -13,6 +13,7 @@ using System.Text;
 
 namespace System.Drawing
 {
+    [Serializable]
     public sealed partial class Icon : MarshalByRefObject, ICloneable, IDisposable, ISerializable
     {
 #if FINALIZATION_WATCH
@@ -127,6 +128,29 @@ namespace System.Drawing
             _iconData = new byte[(int)stream.Length];
             stream.Read(_iconData, 0, _iconData.Length);
             Initialize(width, height);
+        }
+
+        private Icon(SerializationInfo info, StreamingContext context)
+        {
+            _iconData = (byte[])info.GetValue("IconData", typeof(byte[])); // Do not rename (binary serialization)
+            _iconSize = (Size)info.GetValue("IconSize", typeof(Size)); // Do not rename (binary serialization)
+            Initialize(_iconSize.Width, _iconSize.Height);
+        }
+
+        void ISerializable.GetObjectData(SerializationInfo si, StreamingContext context)
+        {
+            if (_iconData != null)
+            {
+                si.AddValue("IconData", _iconData, typeof(byte[])); // Do not rename (binary serialization)
+            }
+            else
+            {
+                MemoryStream stream = new MemoryStream();
+                Save(stream);
+                si.AddValue("IconData", stream.ToArray(), typeof(byte[])); // Do not rename (binary serialization)
+            }
+
+            si.AddValue("IconSize", _iconSize, typeof(Size)); // Do not rename (binary serialization)
         }
 
         public static Icon ExtractAssociatedIcon(string filePath) => ExtractAssociatedIcon(filePath, 0);

@@ -50,6 +50,7 @@ namespace System.Drawing
 #endif
     [TypeConverter(typeof(IconConverter))]
 #endif
+    [Serializable]
     public sealed partial class Icon : MarshalByRefObject, ISerializable, ICloneable, IDisposable
     {
         // The PNG signature is specified at http://www.w3.org/TR/PNG/#5PNG-file-signature
@@ -259,8 +260,6 @@ namespace System.Drawing
             }
         }
 
-
-
         internal Icon(string resourceName, bool undisposable)
         {
             using (Stream s = typeof(Icon).GetTypeInfo().Assembly.GetManifestResourceStream(resourceName))
@@ -294,6 +293,23 @@ namespace System.Drawing
             {
                 InitFromStreamWithSize(fs, size.Width, size.Height);
             }
+        }
+
+        private Icon(SerializationInfo info, StreamingContext context)
+        {
+            byte[] iconData = (byte[])info.GetValue("IconData", typeof(byte[])); // Do not rename (binary serialization)
+            Size iconSize = (Size)info.GetValue("IconSize", typeof(Size)); // Do not rename (binary serialization)
+            var dataStream = new MemoryStream(iconData);
+
+            InitFromStreamWithSize(dataStream, iconSize.Width, iconSize.Height);
+        }
+
+        void ISerializable.GetObjectData(SerializationInfo si, StreamingContext context)
+        {
+            MemoryStream ms = new MemoryStream();
+            Save(ms);
+            si.AddValue("IconSize", this.Size, typeof(Size)); // Do not rename (binary serialization)
+            si.AddValue("IconData", ms.ToArray()); // Do not rename (binary serialization)
         }
 
         public static Icon ExtractAssociatedIcon(string filePath)

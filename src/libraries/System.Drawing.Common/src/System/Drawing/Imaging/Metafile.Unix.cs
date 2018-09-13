@@ -36,13 +36,14 @@ using System.Reflection;
 using System.ComponentModel;
 using System.Runtime.InteropServices;
 using Gdip = System.Drawing.SafeNativeMethods.Gdip;
+using System.Runtime.Serialization;
 
 namespace System.Drawing.Imaging
 {
 #if !NETCORE
-    [Serializable]
     [Editor ("System.Drawing.Design.MetafileEditor, " + Consts.AssemblySystem_Drawing_Design, typeof (System.Drawing.Design.UITypeEditor))]
 #endif
+    [Serializable]
     public sealed class Metafile : Image
     {
 
@@ -317,6 +318,10 @@ namespace System.Drawing.Imaging
             int status = Gdip.GdipRecordMetafileFileName(fileName, referenceHdc, type, ref frameRect, frameUnit,
                 description, out nativeImage);
             Gdip.CheckStatus(status);
+        }
+
+        private Metafile(SerializationInfo info, StreamingContext context) : base(info, context)
+        {
         }
 
         // methods
