@@ -297,7 +297,7 @@ namespace System.Net.Http.Functional.Tests
             return (((ulong)code) << 32, bitLength);
         }
 
-        private static int Encode(byte[] source, byte[] destination)
+        private static int Encode(byte[] source, byte[] destination, bool injectEOS)
         {
             ulong currentBits = 0;  // We can have 7 bits of rollover plus 30 bits for the next encoded value, so use a ulong
             int currentBitCount = 0;
@@ -306,6 +306,14 @@ namespace System.Net.Http.Functional.Tests
             for (int i = 0; i < source.Length; i++)
             {
                 (ulong code, int bitLength) = GetEncodedValue(source[i]);
+
+                // inject EOS if instructed to
+                if (injectEOS)
+                {
+                    code |= (ulong)0b11111111_11111111_11111111_11111100 << (32 - bitLength);
+                    bitLength += 30;
+                    injectEOS = false;
+                }
 
                 currentBits |= code >> currentBitCount;
                 currentBitCount += bitLength;
@@ -334,7 +342,7 @@ namespace System.Net.Http.Functional.Tests
         {
             // Worst case encoding is 30 bits per input byte, so make the encoded buffer 4 times as big
             byte[] encoded = new byte[input.Length * 4];
-            int encodedByteCount = Encode(input, encoded);
+            int encodedByteCount = Encode(input, encoded, false);
 
             // Worst case decoding is an output byte per 5 input bits, so make the decoded buffer 2 times as big
             byte[] decoded = new byte[encoded.Length * 2];
@@ -409,7 +417,7 @@ namespace System.Net.Http.Functional.Tests
             for (int i = 0; i < 256; i++)
             {
                 source[0] = (byte)i;
-                int encodedByteCount = Encode(source, destination);
+                int encodedByteCount = Encode(source, destination, false);
                 if (encodedByteCount > 1)
                 {
                     yield return new object[] { destination.Take(encodedByteCount - 1).ToArray() };
@@ -433,11 +441,24 @@ namespace System.Net.Http.Functional.Tests
             for (int i = 0; i < 256; i++)
             {
                 source[0] = (byte)i;
-                int encodedByteCount = Encode(source, destination);
+                int encodedByteCount = Encode(source, destination, false);
                 yield return new object[] { destination.Take(encodedByteCount).Concat(pad1).ToArray() };
                 yield return new object[] { destination.Take(encodedByteCount).Concat(pad2).ToArray() };
                 yield return new object[] { destination.Take(encodedByteCount).Concat(pad3).ToArray() };
                 yield return new object[] { destination.Take(encodedByteCount).Concat(pad4).ToArray() };
+            }
+
+            // send single EOS
+            yield return new object[] { new byte[] { 0b11111111, 0b11111111, 0b11111111, 0b11111100 } };
+
+            // send combinations with EOS in the middle
+            source = new byte[2];
+            destination = new byte[24];
+            for (int i = 0; i < 256; i++)
+            {
+                source[0] = source[1] = (byte)i;
+                int encodedByteCount = Encode(source, destination, true);
+                yield return new object[] { destination.Take(encodedByteCount).ToArray() };
             }
         }
     }
