@@ -629,8 +629,8 @@ void deps_resolver_t::resolve_additional_deps(const hostpolicy_init_t& init)
         {
             for (int i = 1; i < m_fx_definitions.size(); ++i)
             {
-                fx_ver_t most_compatible_deps_folder_version(-1, -1, -1);
-                fx_ver_t framework_found_version(-1, -1, -1);
+                fx_ver_t most_compatible_deps_folder_version;
+                fx_ver_t framework_found_version;
                 fx_ver_t::parse(m_fx_definitions[i]->get_found_version(), &framework_found_version);
 
                 // We'll search deps directories in 'base_dir'/shared/fx_name/ for closest compatible patch version
@@ -643,7 +643,7 @@ void deps_resolver_t::resolve_additional_deps(const hostpolicy_init_t& init)
 
                 for (pal::string_t dir : deps_dirs)
                 {
-                    fx_ver_t ver(-1, -1, -1);
+                    fx_ver_t ver;
                     if (fx_ver_t::parse(dir, &ver))
                     {
                         if (ver > most_compatible_deps_folder_version &&
@@ -656,7 +656,7 @@ void deps_resolver_t::resolve_additional_deps(const hostpolicy_init_t& init)
                     }
                 }
 
-                if (most_compatible_deps_folder_version == fx_ver_t(-1, -1, -1))
+                if (most_compatible_deps_folder_version == fx_ver_t())
                 {
                     trace::verbose(_X("No additional deps directory less than or equal to [%s] found with same major and minor version."), framework_found_version.as_str().c_str());
                 }

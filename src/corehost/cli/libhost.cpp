@@ -94,7 +94,7 @@ void try_patch_roll_forward_in_dir(const pal::string_t& cur_dir, const fx_ver_t&
     pal::readdir_onlydirectories(path, maj_min_star, &list);
 
     fx_ver_t max_ver = start_ver;
-    fx_ver_t ver(-1, -1, -1);
+    fx_ver_t ver;
     for (const auto& str : list)
     {
         trace::verbose(_X("Considering patch roll forward candidate version [%s]"), str.c_str());
@@ -128,7 +128,7 @@ void try_prerelease_roll_forward_in_dir(const pal::string_t& cur_dir, const fx_v
     pal::readdir_onlydirectories(path, maj_min_pat_star, &list);
 
     fx_ver_t max_ver = start_ver;
-    fx_ver_t ver(-1, -1, -1);
+    fx_ver_t ver;
     for (const auto& str : list)
     {
         trace::verbose(_X("Considering prerelease roll forward candidate version [%s]"), str.c_str());

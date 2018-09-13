@@ -426,7 +426,7 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation.LightupApp
 
             // Add versions in the exe folder
             SharedFramework.AddAvailableSharedFxVersions(_builtSharedFxDir, _fxBaseDir, "9999.0.0");
-            SharedFramework.AddAvailableSharedUberFxVersions(_builtSharedUberFxDir, _uberFxBaseDir, "9999.0.0", null, "7777.0.0");
+            SharedFramework.AddAvailableSharedUberFxVersions(_builtSharedUberFxDir, _uberFxBaseDir, "9999.0.0", "7777.0.0");
 
             // Copy NetCoreApp's copy of the assembly to the app location
             string netcoreAssembly = Path.Combine(_fxBaseDir, "9999.0.0", "System.Collections.Immutable.dll");
@@ -492,7 +492,7 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation.LightupApp
 
             // Add versions in the exe folder
             SharedFramework.AddAvailableSharedFxVersions(_builtSharedFxDir, _fxBaseDir, "9999.0.0");
-            SharedFramework.AddAvailableSharedUberFxVersions(_builtSharedUberFxDir, _uberFxBaseDir, "9999.0.0", null, "7777.0.0");
+            SharedFramework.AddAvailableSharedUberFxVersions(_builtSharedUberFxDir, _uberFxBaseDir, "9999.0.0", "7777.0.0");
 
             // Copy NetCoreApp's copy of the assembly to the app location
             string netcoreAssembly = Path.Combine(_fxBaseDir, "9999.0.0", "System.Collections.Immutable.dll");
