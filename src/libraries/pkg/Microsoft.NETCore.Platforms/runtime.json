@@ -1272,6 +1272,35 @@
         "ubuntu-x86"
       ]
     },
+    "ubuntu.18.10": {
+      "#import": [
+        "ubuntu"
+      ]
+    },
+    "ubuntu.18.10-arm": {
+      "#import": [
+        "ubuntu.18.10",
+        "ubuntu-arm"
+      ]
+    },
+    "ubuntu.18.10-arm64": {
+      "#import": [
+        "ubuntu.18.10",
+        "ubuntu-arm64"
+      ]
+    },
+    "ubuntu.18.10-x64": {
+      "#import": [
+        "ubuntu.18.10",
+        "ubuntu-x64"
+      ]
+    },
+    "ubuntu.18.10-x86": {
+      "#import": [
+        "ubuntu.18.10",
+        "ubuntu-x86"
+      ]
+    },
     "unix": {
       "#import": [
         "any"
