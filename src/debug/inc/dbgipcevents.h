@@ -180,15 +180,14 @@ struct MSLAYOUT DebuggerIPCRuntimeOffsets
 
 #if defined(DBG_TARGET_X86) || defined(DBG_TARGET_ARM)
 #ifdef _WIN64
-#define CorDBIPC_BUFFER_SIZE (2096)
+#define CorDBIPC_BUFFER_SIZE 2104
 #else
-#define CorDBIPC_BUFFER_SIZE (2088) // hand tuned to ensure that ipc block in IPCHeader.h fits in 1 page.
+#define CorDBIPC_BUFFER_SIZE 2092
 #endif
 #else  // !_TARGET_X86_ && !_TARGET_ARM_
-// This is the size of a DebuggerIPCEvent.  You will hit an assert in Cordb::Initialize() (DI\process.cpp)
+// This is the size of a DebuggerIPCEvent.  You will hit an assert in Cordb::Initialize() (di\rsmain.cpp)
 // if this is not defined correctly.  AMD64 actually has a page size of 0x1000, not 0x2000.
-#define CorDBIPC_BUFFER_SIZE 4016 // (4016 + 6) * 2 + 148 = 8192 (two (DebuggerIPCEvent + alignment padding) +
-                                  //                              other fields = page size)
+#define CorDBIPC_BUFFER_SIZE 4016 // (4016 + 6) * 2 + 148 = 8192 (two (DebuggerIPCEvent + alignment padding) + other fields = page size)
 #endif // DBG_TARGET_X86 || DBG_TARGET_ARM
 
 //
@@ -1911,6 +1910,7 @@ struct MSLAYOUT DebuggerIPCEvent
     DebuggerIPCEvent*       next;
     DebuggerIPCEventType    type;
     DWORD             processId;
+    DWORD             threadId;
     VMPTR_AppDomain   vmAppDomain;
     VMPTR_Thread      vmThread;
 
