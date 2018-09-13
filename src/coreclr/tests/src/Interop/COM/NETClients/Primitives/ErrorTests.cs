@@ -4,9 +4,9 @@
 
 namespace NetClient
 {
-    using CoreFXTestLibrary;
     using System;
     using System.Runtime.InteropServices;
+    using TestLibrary;
 
     class ErrorTests
     {

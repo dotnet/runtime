@@ -26,6 +26,7 @@
     </CodeAnalysisDependentAssemblyPaths>
   </ItemGroup>
   <ItemGroup>
+    <Compile Include="Assertion.cs" />
     <Compile Include="Generator.cs" />
     <Compile Include="Logging.cs" />
     <Compile Include="TestFramework.cs" />
