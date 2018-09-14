@@ -27,7 +27,7 @@
 #  --il_corelib bin/Product/Linux.arm.Checked/IL/System.Private.CoreLib.dll
 #  --result_dir Linux.arm_arm.Checked
 #
-# runs arm_arm crossgen on System.Private.CoreLib.dll and puts all the
+# runs Hostarm/arm crossgen on System.Private.CoreLib.dll and puts all the
 # information in file Linux.arm_arm.Checked/System.Private.CoreLib.dll.json
 #
 #  ~/git/coreclr$ cat Linux.arm_arm.Checked/System.Private.CoreLib.dll.json
@@ -40,6 +40,38 @@
 #       "Native image /tmp/System.Private.CoreLib.dll generated successfully."
 #     ]
 #   }
+#
+# The following command
+#
+#  ~/git/coreclr$ python tests/scripts/crossgen_comparison.py crossgen_dotnet_sdk
+#  --crossgen bin/Product/Linux.arm.Checked/x64/crossgen
+#  --il_corelib bin/Product/Linux.arm.Checked/IL/System.Private.CoreLib.dll
+#  --dotnet_sdk dotnet-sdk-latest-linux-arm.tar.gz
+#  --result_dir Linux.x64_arm.Checked
+#
+#  runs Hostx64/arm crossgen on System.Private.CoreLib.dll in bin/Product and on
+#  all the assemblies inside dotnet-sdk-latest-linux-arm.tar.gz and stores the
+#  collected information in directory Linux.x64_arm.Checked
+#
+#  ~/git/coreclr$ ls Linux.x64_arm.Checked | head
+#   Microsoft.AI.DependencyCollector.dll.json
+#   Microsoft.ApplicationInsights.AspNetCore.dll.json
+#   Microsoft.ApplicationInsights.dll.json
+#   Microsoft.AspNetCore.Antiforgery.dll.json
+#   Microsoft.AspNetCore.ApplicationInsights.HostingStartup.dll.json
+#   Microsoft.AspNetCore.Authentication.Abstractions.dll.json
+#   Microsoft.AspNetCore.Authentication.Cookies.dll.json
+#   Microsoft.AspNetCore.Authentication.Core.dll.json
+#   Microsoft.AspNetCore.Authentication.dll.json
+#   Microsoft.AspNetCore.Authentication.Facebook.dll.json
+#
+# The following command
+#
+#  ~/git/coreclr$ python -u tests/scripts/crossgen_comparison.py compare
+#  --base_dir Linux.x64_arm.Checked
+#  --diff_dir Linux.x86_arm.Checked
+#
+# compares the results of Hostx64/arm crossgen and Hostx86/arm crossgen.
 ################################################################################
 ################################################################################
 
@@ -48,7 +80,9 @@ import glob
 import json
 import hashlib
 import os
+import tarfile
 import tempfile
+import re
 import sys
 import subprocess
 
@@ -81,6 +115,14 @@ def build_argument_parser():
     frameworks_parser.add_argument('--core_root', dest='core_root', required=True)
     frameworks_parser.add_argument('--result_dir', dest='result_dirname', required=True)
     frameworks_parser.set_defaults(func=crossgen_framework)
+
+    dotnet_sdk_parser_description = "Unpack .NET Core SDK archive file and runs crossgen on each assembly."
+    dotnet_sdk_parser = subparsers.add_parser('crossgen_dotnet_sdk', description=dotnet_sdk_parser_description)
+    dotnet_sdk_parser.add_argument('--crossgen', dest='crossgen_executable_filename', required=True)
+    dotnet_sdk_parser.add_argument('--il_corelib', dest='il_corelib_filename', required=True)
+    dotnet_sdk_parser.add_argument('--dotnet_sdk', dest='dotnet_sdk_filename', required=True)
+    dotnet_sdk_parser.add_argument('--result_dir', dest='result_dirname', required=True)
+    dotnet_sdk_parser.set_defaults(func=crossgen_dotnet_sdk)
 
     compare_parser_description = """Compares collected information from two crossgen scenarios - base vs diff"""
 
@@ -287,7 +329,7 @@ class CrossGenRunner:
     def __init__(self, crossgen_executable_filename, no_logo=True):
         self.crossgen_executable_filename = crossgen_executable_filename
         self.no_logo = no_logo
-        self.platform_assemblies_paths_sep = ";"
+        self.platform_assemblies_paths_sep = ';' if sys.platform == 'win32' else ':'
 
     """
         Creates a subprocess running crossgen with specified set of arguments, 
@@ -331,12 +373,13 @@ def compute_file_hashsum(filename):
 # This describes collected during crossgen information.
 ################################################################################
 class CrossGenResult:
-    def __init__(self, assembly_name, returncode, stdout, stderr, out_file_hashsum):
+    def __init__(self, assembly_name, returncode, stdout, stderr, out_file_hashsum, out_file_size_in_bytes):
         self.assembly_name = assembly_name
         self.returncode = returncode
         self.stdout = stdout
         self.stderr = stderr
         self.out_file_hashsum = out_file_hashsum
+        self.out_file_size_in_bytes = out_file_size_in_bytes
 
 ################################################################################
 # JSON Encoder for CrossGenResult objects.
@@ -349,7 +392,8 @@ class CrossGenResultEncoder(json.JSONEncoder):
                 'ReturnCode': obj.returncode,
                 'StdOut': obj.stdout.splitlines(),
                 'StdErr': obj.stderr.splitlines(),
-                'OutputFileHash': obj.out_file_hashsum }
+                'OutputFileHash': obj.out_file_hashsum,
+                'OutputFileSizeInBytes': obj.out_file_size_in_bytes }
         # Let the base class default method raise the TypeError
         return json.JSONEncoder.default(self, obj)
 
@@ -366,9 +410,11 @@ class CrossGenResultDecoder(json.JSONDecoder):
             stdout = dict['StdOut']
             stderr = dict['StdErr']
             out_file_hashsum = dict['OutputFileHash']
-            return CrossGenResult(assembly_name, returncode, stdout, stderr, out_file_hashsum)
+            out_file_size_in_bytes = dict['OutputFileSizeInBytes']
+            return CrossGenResult(assembly_name, returncode, stdout, stderr, out_file_hashsum, out_file_size_in_bytes)
         except KeyError:
             return dict
+
 
 ################################################################################
 # Helper Functions
@@ -379,7 +425,8 @@ def crossgen_assembly(crossgen_executable_filename, in_filename, out_filename, p
     returncode, stdout, stderr = runner.run(in_filename, out_filename, platform_assemblies_paths)
     assembly_name = os.path.basename(in_filename)
     out_file_hashsum = compute_file_hashsum(out_filename) if returncode == 0 else None
-    return CrossGenResult(assembly_name, returncode, stdout, stderr, out_file_hashsum)
+    ouf_file_size_in_bytes = os.path.getsize(out_filename) if returncode == 0 else None
+    return CrossGenResult(assembly_name, returncode, stdout, stderr, out_file_hashsum, ouf_file_size_in_bytes)
 
 def save_crossgen_result_to_json_file(crossgen_result, json_filename):
     with open(json_filename, 'wt') as json_file:
@@ -411,41 +458,125 @@ def load_crossgen_result_from_json_file(json_filename):
         return json.load(json_file, cls=CrossGenResultDecoder)
 
 def load_crossgen_results_from_dir(dirname):
-    results_by_assembly_name = dict()
+    crossgen_results = []
     for filename in glob.glob(os.path.join(dirname, '*.json')):
-        result = load_crossgen_result_from_json_file(filename)
-        results_by_assembly_name[result.assembly_name] = result
-    return results_by_assembly_name
+        loaded_result = load_crossgen_result_from_json_file(filename)
+        crossgen_results.append(loaded_result)
+    return crossgen_results
+
+def dotnet_sdk_enumerate_assemblies(dotnet_sdk_dirname):
+    for dirpath, _, filenames in os.walk(dotnet_sdk_dirname):
+        dirname = os.path.dirname(dirpath)
+        if dirname.endswith('Microsoft.NETCore.App') or dirname.endswith('Microsoft.AspNetCore.App') or dirname.endswith('Microsoft.AspNetCore.All'):
+            filenames = filter(lambda filename: not re.match(r'^(Microsoft|System)\..*dll$', filename) is None, filenames)
+            filenames = filter(lambda filename: filename != 'System.Private.CoreLib.dll', filenames)
+            yield (dirpath, filenames)
+
+def crossgen_dotnet_sdk(args):
+    dotnet_sdk_dirname = tempfile.mkdtemp()
+    with tarfile.open(args.dotnet_sdk_filename) as dotnet_sdk_tarfile:
+        dotnet_sdk_tarfile.extractall(dotnet_sdk_dirname)
+
+    ni_files_dirname = tempfile.mkdtemp()
+    crossgen_results = []
+
+    il_corelib_filename = args.il_corelib_filename
+    ni_corelib_filename = os.path.join(ni_files_dirname, os.path.basename(il_corelib_filename))
+    corelib_result = crossgen_assembly(args.crossgen_executable_filename, il_corelib_filename, ni_corelib_filename, [os.path.dirname(il_corelib_filename)])
+    crossgen_results.append(corelib_result)
+
+    platform_assemblies_paths = [ni_files_dirname]
+
+    for il_files_dirname, _ in dotnet_sdk_enumerate_assemblies(dotnet_sdk_dirname):
+        platform_assemblies_paths.append(il_files_dirname)
+
+    for il_files_dirname, assembly_names in dotnet_sdk_enumerate_assemblies(dotnet_sdk_dirname):
+        for assembly_name in assembly_names:
+            il_filename = os.path.join(il_files_dirname, assembly_name)
+            ni_filename = os.path.join(ni_files_dirname, add_ni_extension(assembly_name))
+            result = crossgen_assembly(args.crossgen_executable_filename, il_filename, ni_filename, platform_assemblies_paths)
+            crossgen_results.append(result)
+
+    for result in crossgen_results:
+        result_filename = os.path.join(args.result_dirname, result.assembly_name + '.json')
+        save_crossgen_result_to_json_file(result, result_filename)
+
+def print_omitted_assemblies_message(omitted_assemblies, dirname):
+    print('The information for the following assemblies was omitted from "{0}" directory:'.format(dirname))
+    for assembly_name in sorted(omitted_assemblies):
+        print(' - ' + assembly_name)
+
+def print_compare_result_message_helper(message_header, base_value, diff_value, base_dirname, diff_dirname):
+    assert base_value != diff_value
+    print(message_header)
+    print(' - "{0}" has "{1}"'.format(base_dirname, base_value))
+    print(' - "{0}" has "{1}"'.format(diff_dirname, diff_value))
+
+def compare_and_print_message(base_result, diff_result, base_dirname, diff_dirname):
+    base_diff_are_equal = True
+
+    assert base_result.assembly_name == diff_result.assembly_name
+    if base_result.returncode != diff_result.returncode:
+        base_diff_are_equal = False
+        print_compare_result_message_helper('Return code mismatch for "{0}" assembly:'.format(base_result.assembly_name), base_result.returncode, diff_result.returncode, base_dirname, diff_dirname)
+    elif base_result.returncode == 0 and diff_result.returncode == 0:
+        assert not base_result.out_file_hashsum is None
+        assert not base_result.out_file_size_in_bytes is None
+
+        assert not diff_result.out_file_hashsum is None
+        assert not diff_result.out_file_size_in_bytes is None
+
+        if base_result.out_file_hashsum != diff_result.out_file_hashsum:
+            base_diff_are_equal = False
+            print_compare_result_message_helper('Native image hash sum mismatch for "{0}" assembly:'.format(base_result.assembly_name), base_result.out_file_hashsum, diff_result.out_file_hashsum, base_dirname, diff_dirname)
+
+        if base_result.out_file_size_in_bytes != diff_result.out_file_size_in_bytes:
+            base_diff_are_equal = False
+            print_compare_result_message_helper('Native image size mismatch for "{0}" assembly:'.format(base_result.assembly_name), base_result.out_file_size_in_bytes, diff_result.out_file_size_in_bytes, base_dirname, diff_dirname)
+
+    return base_diff_are_equal
 
 def compare(args):
+    print('Comparing crossgen results in "{0}" and "{1}" directories'.format(args.base_dirname, args.diff_dirname))
+
     base_results = load_crossgen_results_from_dir(args.base_dirname)
     diff_results = load_crossgen_results_from_dir(args.diff_dirname)
 
-    base_assemblies = set(base_results.keys())
-    diff_assemblies = set(diff_results.keys())
+    base_assemblies = { r.assembly_name for r in base_results }
+    diff_assemblies = { r.assembly_name for r in diff_results }
+    both_assemblies = base_assemblies & diff_assemblies
 
-    column_width = max(len(assembly_name) for assembly_name in base_assemblies | diff_assemblies)
-    has_mismatch_error = False
+    # We want to see whether {base} and {diff} crossgens are "equal":
+    #  1. their return codes are the same;
+    #  2. their binary outputs (native images) are the same.
+    num_omitted_results = 0
 
-    for assembly_name in sorted(base_assemblies & diff_assemblies):
-        base_result = base_results[assembly_name]
-        diff_result = diff_results[assembly_name]
+    omitted_from_base_dir = diff_assemblies - base_assemblies
+    omitted_from_diff_dir = base_assemblies - diff_assemblies
 
-        if base_result.out_file_hashsum == diff_result.out_file_hashsum:
-            print('{0}  [OK]'.format(assembly_name.ljust(column_width)))
-        else:
-            print('{0}  [MISMATCH]'.format(assembly_name.ljust(column_width)))
-            has_mismatch_error = True
+    if len(omitted_from_base_dir) != 0:
+        num_omitted_results += len(omitted_from_base_dir)
+        print_omitted_assemblies_message(omitted_from_base_dir, args.base_dirname)
 
-    for assembly_name in sorted(base_assemblies - diff_assemblies):
-        print('{0}  [BASE ONLY]'.format(assembly_name.ljust(column_width)))
-        has_mismatch_error = True
+    if len(omitted_from_diff_dir) != 0:
+        num_omitted_results += len(omitted_from_diff_dir)
+        print_omitted_assemblies_message(omitted_from_diff_dir, args.diff_dirname)
 
-    for assembly_name in sorted(diff_assemblies - base_assemblies):
-        print('{0}  [DIFF ONLY]'.format(assembly_name.ljust(column_width)))
-        has_mismatch_error = True
+    base_results_by_name = dict((r.assembly_name, r) for r in base_results)
+    diff_results_by_name = dict((r.assembly_name, r) for r in diff_results)
 
-    sys.exit(1 if has_mismatch_error else 0)
+    num_mismatched_results = 0
+
+    for assembly_name in sorted(both_assemblies):
+        base_result = base_results_by_name[assembly_name]
+        diff_result = diff_results_by_name[assembly_name]
+        if not compare_and_print_message(base_result, diff_result, args.base_dirname, args.diff_dirname):
+            num_mismatched_results += 1
+
+    print("Number of omitted results: {0}".format(num_omitted_results))
+    print("Number of mismatched results: {0}".format(num_mismatched_results))
+    print("Total number of assemblies: {0}".format(len(both_assemblies)))
+    sys.exit(0 if (num_mismatched_results + num_omitted_results) == 0 else 1)
 
 ################################################################################
 # __main__
