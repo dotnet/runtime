@@ -7,7 +7,7 @@ using System.Reflection;
 using System.Security;
 using System.Runtime.InteropServices;
 using System.Collections.Generic;
-using CoreFXTestLibrary;
+using TestLibrary;
 
 #pragma warning disable 618
 
