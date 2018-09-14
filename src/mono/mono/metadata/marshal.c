@@ -5111,6 +5111,8 @@ ves_icall_System_Runtime_InteropServices_Marshal_SizeOf (MonoReflectionTypeHandl
 
 	if (type->type == MONO_TYPE_PTR || type->type == MONO_TYPE_FNPTR) {
 		return sizeof (gpointer);
+	} else if (type->type == MONO_TYPE_VOID) {
+		return 1;
 	} else if (layout == TYPE_ATTRIBUTE_AUTO_LAYOUT) {
 		mono_error_set_argument_format (error, "t", "Type %s cannot be marshaled as an unmanaged structure.", m_class_get_name (klass));
 		return 0;
