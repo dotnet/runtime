@@ -885,9 +885,8 @@ public:
 #define GTF_BLK_VOLATILE            GTF_IND_VOLATILE  // GT_ASG, GT_STORE_BLK, GT_STORE_OBJ, GT_STORE_DYNBLK -- is a volatile block operation
 #define GTF_BLK_UNALIGNED           GTF_IND_UNALIGNED // GT_ASG, GT_STORE_BLK, GT_STORE_OBJ, GT_STORE_DYNBLK -- is an unaligned block operation
 
-#define GTF_OVERFLOW                0x10000000 // GT_ADD, GT_SUB, GT_MUL, -- Need overflow check. Use gtOverflow(Ex)() to check this flag.
-                                               // GT_ASG_ADD, GT_ASG_SUB,
-                                               // GT_CAST
+#define GTF_OVERFLOW                0x10000000 // Supported for: GT_ADD, GT_SUB, GT_MUL and GT_CAST.
+                                               // Requires an overflow check. Use gtOverflow(Ex)() to check this flag.
 
 #define GTF_ARR_BOUND_INBND         0x80000000 // GT_ARR_BOUNDS_CHECK -- have proved this check is always in-bounds
 
