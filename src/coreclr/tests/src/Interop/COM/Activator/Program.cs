@@ -7,7 +7,7 @@ namespace Activator
     using System;
     using System.Runtime.InteropServices;
 
-    using CoreFXTestLibrary;
+    using TestLibrary;
 
     using Console = Internal.Console;
 

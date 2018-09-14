@@ -9,7 +9,7 @@ class TestHelper
 {
     public static void Assert(bool exp,string msg="")
     {
-        CoreFXTestLibrary.Assert.IsTrue(exp, msg);
+        TestLibrary.Assert.IsTrue(exp, msg);
     }
 }
 
