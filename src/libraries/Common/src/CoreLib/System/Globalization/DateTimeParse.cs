@@ -5936,7 +5936,7 @@ new DS[] { DS.ERROR, DS.TX_NNN,  DS.TX_NNN,  DS.TX_NNN,  DS.ERROR,   DS.ERROR,  
         internal int Month;
         internal int Day;
         //
-        // Set time defualt to 00:00:00.
+        // Set time default to 00:00:00.
         //
         internal int Hour;
         internal int Minute;
