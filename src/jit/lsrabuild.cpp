@@ -2368,16 +2368,10 @@ RefPosition* LinearScan::BuildDef(GenTree* tree, regMaskTP dstCandidates, int mu
         assert((tree->gtRegNum == REG_NA) || (dstCandidates == genRegMask(tree->GetRegByIndex(multiRegIdx))));
     }
 
-#ifdef FEATURE_MULTIREG_ARGS_OR_RET
-    if (tree->TypeGet() == TYP_STRUCT)
+    if (tree->IsMultiRegNode())
     {
-        // We require a fixed set of candidates for this case.
-        assert(isSingleRegister(dstCandidates));
-        type = (dstCandidates & allRegs(TYP_FLOAT)) != RBM_NONE ? TYP_FLOAT : TYP_INT;
+        type = tree->GetRegTypeByIndex(multiRegIdx);
     }
-#else
-    assert(!tree->TypeGet() == TYP_STRUCT);
-#endif
 
     Interval* interval = newInterval(type);
     if (tree->gtRegNum != REG_NA)
