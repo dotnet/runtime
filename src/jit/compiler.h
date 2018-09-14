@@ -5819,12 +5819,6 @@ protected:
     bool optCSE_canSwap(GenTree* firstNode, GenTree* secondNode);
     bool optCSE_canSwap(GenTree* tree);
 
-    static fgWalkPostFn optPropagateNonCSE;
-    static fgWalkPreFn  optHasNonCSEChild;
-
-    static fgWalkPreFn optUnmarkCSEs;
-    static fgWalkPreFn optHasCSEdefWithSideeffect;
-
     static int __cdecl optCSEcostCmpEx(const void* op1, const void* op2);
     static int __cdecl optCSEcostCmpSz(const void* op1, const void* op2);
 
@@ -5852,7 +5846,6 @@ protected:
     void     optValnumCSE_DataFlow();
     void     optValnumCSE_Availablity();
     void     optValnumCSE_Heuristic();
-    bool optValnumCSE_UnmarkCSEs(GenTree* deadTree, GenTree** wbKeepList);
 
 #endif // FEATURE_VALNUM_CSE
 
