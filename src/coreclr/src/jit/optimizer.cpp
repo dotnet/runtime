@@ -5894,8 +5894,14 @@ bool Compiler::optNarrowTree(GenTree* tree, var_types srct, var_types dstt, Valu
                         {
                             // Same size and there is no signedness mismatch for small types: change the CAST
                             // into a NOP
+
+                            JITDUMP("Cast operation has no effect, bashing [%06d] GT_CAST into a GT_NOP.\n",
+                                    dspTreeID(tree));
+
                             tree->ChangeOper(GT_NOP);
-                            tree->gtType     = dstt;
+                            tree->gtType = dstt;
+                            // Clear the GTF_UNSIGNED flag, as it may have been set on the cast node
+                            tree->gtFlags &= ~GTF_UNSIGNED;
                             tree->gtOp.gtOp2 = nullptr;
                             tree->gtVNPair   = op1->gtVNPair; // Set to op1's ValueNumber
                         }
@@ -7716,7 +7722,7 @@ void Compiler::optComputeLoopSideEffectsOfBlock(BasicBlock* blk)
                     // If we gave the RHS a value number, propagate it.
                     if (rhsVN != ValueNumStore::NoVN)
                     {
-                        rhsVN = vnStore->VNNormVal(rhsVN);
+                        rhsVN = vnStore->VNNormalValue(rhsVN);
                         if (lvaInSsa(lhsLcl->GetLclNum()))
                         {
                             lvaTable[lhsLcl->GetLclNum()]
