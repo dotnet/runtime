@@ -7,16 +7,16 @@ using System.Diagnostics;
 namespace System.Threading
 {
     /// <summary>
-    /// A helper class to capture a start time using Environment.TickCout as a time in milliseconds, also updates a given timeout bu subtracting the current time from
-    /// the start time
+    /// A helper class to capture a start time using <see cref="Environment.TickCount"/> as a time in milliseconds.
+    /// Also updates a given timeout by subtracting the current time from the start time.
     /// </summary>
     internal static class TimeoutHelper
     {
         /// <summary>
-        /// Returns the Environment.TickCount as a start time in milliseconds as a uint, TickCount tools over from positive to negative every ~ 25 days
-        /// then ~25 days to back to positive again, uint is sued to ignore the sign and double the range to 50 days
+        /// Returns <see cref="Environment.TickCount"/> as a start time in milliseconds as a <see cref="UInt32"/>.
+        /// <see cref="Environment.TickCount"/> rolls over from positive to negative every ~25 days, then ~25 days to back to positive again.
+        /// <see cref="UInt32"/> is used to ignore the sign and double the range to 50 days.
         /// </summary>
-        /// <returns></returns>
         public static uint GetTime()
         {
             return (uint)Environment.TickCount;
@@ -27,7 +27,7 @@ namespace System.Threading
         /// </summary>
         /// <param name="startTime"> The first time (in milliseconds) observed when the wait started</param>
         /// <param name="originalWaitMillisecondsTimeout">The original wait timeout in milliseconds</param>
-        /// <returns>The new wait time in milliseconds, -1 if the time expired</returns>
+        /// <returns>The new wait time in milliseconds, or -1 if the time expired</returns>
         public static int UpdateTimeOut(uint startTime, int originalWaitMillisecondsTimeout)
         {
             // The function must be called in case the time out is not infinite
@@ -42,7 +42,7 @@ namespace System.Threading
             }
 
             // Subtract the elapsed time from the current wait time
-            int currentWaitTimeout = originalWaitMillisecondsTimeout - (int)elapsedMilliseconds; ;
+            int currentWaitTimeout = originalWaitMillisecondsTimeout - (int)elapsedMilliseconds;
             if (currentWaitTimeout <= 0)
             {
                 return 0;
