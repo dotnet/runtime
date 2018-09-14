@@ -3029,7 +3029,8 @@ emit_entry_bb (EmitContext *ctx, LLVMBuilderRef builder)
 			ctx->addresses [reg] = build_alloca (ctx, ainfo->type);
 
 			size = mono_class_value_size (mono_class_from_mono_type (ainfo->type), NULL);
-			if (size < TARGET_SIZEOF_VOID_P) {
+			if (size == 0) {
+			} else if (size < TARGET_SIZEOF_VOID_P) {
 				/* The upper bits of the registers might not be valid */
 				LLVMValueRef val = LLVMBuildExtractValue (builder, arg, 0, "");
 				LLVMValueRef dest = convert (ctx, ctx->addresses [reg], LLVMPointerType (LLVMIntType (size * 8), 0));
