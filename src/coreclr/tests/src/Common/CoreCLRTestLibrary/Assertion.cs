@@ -8,14 +8,14 @@ using System;
 using System.Collections.Generic;
 using System.Threading.Tasks;
 
-namespace CoreFXTestLibrary
+namespace TestLibrary
 {
     /// <summary>
     ///    A collection of helper classes to test various conditions within
     /// unit tests. If the condition being tested is not met, an exception
     /// is thrown.
     /// </summary>
-    internal static class Assert
+    public static class Assert
     {
         /// <summary>
         ///     Asserts that the given delegate throws an <see cref="ArgumentNullException"/> with the given parameter name.
@@ -771,7 +771,7 @@ namespace CoreFXTestLibrary
     /// <summary>
     /// Exception raised by the Assert on Fail
     /// </summary>
-    internal class AssertTestException : Exception
+    public class AssertTestException : Exception
     {
         public AssertTestException(string message)
             : base(message)
@@ -784,7 +784,7 @@ namespace CoreFXTestLibrary
         }
     }
 
-    internal static class ExceptionAssert
+    public static class ExceptionAssert
     {
         public static void Throws<T>(String message, Action a) where T : Exception
         {
@@ -796,7 +796,7 @@ namespace CoreFXTestLibrary
     ///     Specifies whether <see cref="Assert.Throws{T}"/> should require an exact type match when comparing the expected exception type with the thrown exception.
     /// </summary>
     [Flags]
-    internal enum AssertThrowsOptions
+    public enum AssertThrowsOptions
     {
         /// <summary>
         ///     Specifies that <see cref="Assert.Throws{T}"/> should require an exact type 
