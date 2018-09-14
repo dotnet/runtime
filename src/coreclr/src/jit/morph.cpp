@@ -151,12 +151,9 @@ GenTree* Compiler::fgMorphCast(GenTree* tree)
     // See if the cast has to be done in two steps.  R -> I
     if (varTypeIsFloating(srcType) && varTypeIsIntegral(dstType))
     {
-        // Only x86 must go through TYP_DOUBLE to get to all
-        // integral types everybody else can get straight there
-        // except for when using helpers
         if (srcType == TYP_FLOAT
 #if defined(_TARGET_ARM64_)
-            // Amd64: src = float, dst is overflow conversion.
+            // Arm64: src = float, dst is overflow conversion.
             // This goes through helper and hence src needs to be converted to double.
             && tree->gtOverflow()
 #elif defined(_TARGET_AMD64_)
@@ -166,6 +163,9 @@ GenTree* Compiler::fgMorphCast(GenTree* tree)
 #elif defined(_TARGET_ARM_)
             // Arm: src = float, dst = int64/uint64 or overflow conversion.
             && (tree->gtOverflow() || varTypeIsLong(dstType))
+#else
+            // x86: src = float, dst = uint32/int64/uint64 or overflow conversion.
+            && (tree->gtOverflow() || varTypeIsLong(dstType) || (dstType == TYP_UINT))
 #endif
                 )
         {
@@ -212,7 +212,6 @@ GenTree* Compiler::fgMorphCast(GenTree* tree)
                     case TYP_LONG:
 #ifdef _TARGET_AMD64_
                         // SSE2 has instructions to convert a float/double directly to a long
-                        // TODO-X86-CQ: should this be enabled for x86 also?
                         goto OPTIMIZECAST;
 #else  // !_TARGET_AMD64_
                         return fgMorphCastIntoHelper(tree, CORINFO_HELP_DBL2LNG, oper);
