@@ -256,35 +256,266 @@ TFp FpRem(TFp dividend, TFp divisor)
     return (TFp)fmod((double)dividend, (double)divisor);
 }
 
-VNFunc GetVNFuncForOper(genTreeOps oper, bool isUnsigned)
+//--------------------------------------------------------------------------------
+// VNGetOperKind:   - Given two bools: isUnsigned and overFlowCheck
+//                    return the correct VNOperKind for them.
+//
+// Arguments:
+//    isUnsigned    - The operKind returned should have the unsigned property
+//    overflowCheck - The operKind returned should have the overflow check property
+//
+// Return Value:
+//                  - The VNOperKind to use for this pair of (isUnsigned, overflowCheck)
+//
+VNOperKind VNGetOperKind(bool isUnsigned, bool overflowCheck)
 {
-    if (!isUnsigned || (oper == GT_EQ) || (oper == GT_NE))
+    if (!isUnsigned)
     {
-        return VNFunc(oper);
+        if (!overflowCheck)
+        {
+            return VOK_Default;
+        }
+        else
+        {
+            return VOK_OverflowCheck;
+        }
     }
-    switch (oper)
+    else // isUnsigned
     {
-        case GT_LT:
-            return VNF_LT_UN;
-        case GT_LE:
-            return VNF_LE_UN;
-        case GT_GE:
-            return VNF_GE_UN;
-        case GT_GT:
-            return VNF_GT_UN;
-        case GT_ADD:
-            return VNF_ADD_UN;
-        case GT_SUB:
-            return VNF_SUB_UN;
-        case GT_MUL:
-            return VNF_MUL_UN;
+        if (!overflowCheck)
+        {
+            return VOK_Unsigned;
+        }
+        else
+        {
+            return VOK_Unsigned_OverflowCheck;
+        }
+    }
+}
 
-        case GT_NOP:
-        case GT_COMMA:
-            return VNFunc(oper);
-        default:
-            unreached();
+//--------------------------------------------------------------------------------
+// GetVNFuncForOper:  - Given a genTreeOper this function Returns the correct
+//                         VNFunc to use for ValueNumbering
+//
+// Arguments:
+//    oper            - The gtOper value from the GenTree node
+//    operKind        - An enum that supports Normal, Unsigned, OverflowCheck,
+//                      and Unsigned_OverflowCheck,
+//
+// Return Value:
+//               - The VNFunc to use for this pair of (oper, operKind)
+//
+// Notes:        - An assert will fire when the oper does not support
+//                 the operKInd that is supplied.
+//
+VNFunc GetVNFuncForOper(genTreeOps oper, VNOperKind operKind)
+{
+    VNFunc result  = VNF_COUNT; // An illegal value
+    bool   invalid = false;
+
+    // For most genTreeOpers we just use the VNFunc with the same enum value as the oper
+    //
+    if (operKind == VOK_Default)
+    {
+        // We can directly use the enum value of oper
+        result = VNFunc(oper);
     }
+    else if ((oper == GT_EQ) || (oper == GT_NE))
+    {
+        if (operKind == VOK_Unsigned)
+        {
+            // We will permit unsignedOper to be used with GT_EQ and GT_NE (as it is a no-op)
+            //
+            // Again we directly use the enum value of oper
+            result = VNFunc(oper);
+        }
+        else
+        {
+            invalid = true;
+        }
+    }
+    else // We will need to use a VNF_ function
+    {
+        switch (oper)
+        {
+            case GT_LT:
+                if (operKind == VOK_Unsigned)
+                {
+                    result = VNF_LT_UN;
+                }
+                else
+                {
+                    invalid = true;
+                }
+                break;
+
+            case GT_LE:
+                if (operKind == VOK_Unsigned)
+                {
+                    result = VNF_LE_UN;
+                }
+                else
+                {
+                    invalid = true;
+                }
+                break;
+
+            case GT_GE:
+                if (operKind == VOK_Unsigned)
+                {
+                    result = VNF_GE_UN;
+                }
+                else
+                {
+                    invalid = true;
+                }
+                break;
+
+            case GT_GT:
+                if (operKind == VOK_Unsigned)
+                {
+                    result = VNF_GT_UN;
+                }
+                else
+                {
+                    invalid = true;
+                }
+                break;
+
+            case GT_ADD:
+                if (operKind == VOK_OverflowCheck)
+                {
+                    result = VNF_ADD_OVF;
+                }
+                else if (operKind == VOK_Unsigned_OverflowCheck)
+                {
+                    result = VNF_ADD_UN_OVF;
+                }
+                else
+                {
+                    invalid = true;
+                }
+                break;
+
+            case GT_SUB:
+                if (operKind == VOK_OverflowCheck)
+                {
+                    result = VNF_SUB_OVF;
+                }
+                else if (operKind == VOK_Unsigned_OverflowCheck)
+                {
+                    result = VNF_SUB_UN_OVF;
+                }
+                else
+                {
+                    invalid = true;
+                }
+                break;
+
+            case GT_MUL:
+                if (operKind == VOK_OverflowCheck)
+                {
+                    result = VNF_MUL_OVF;
+                }
+                else if (operKind == VOK_Unsigned_OverflowCheck)
+                {
+                    result = VNF_MUL_UN_OVF;
+                }
+#ifndef _TARGET_64BIT_
+                else if (operKind == VOK_Unsigned)
+                {
+                    // This is the special 64-bit unsigned multiply used on 32-bit targets
+                    result = VNF_MUL64_UN;
+                }
+#endif
+                else
+                {
+                    invalid = true;
+                }
+                break;
+
+            default:
+                // Will trigger the noway_assert below.
+                break;
+        }
+    }
+    noway_assert(!invalid && (result != VNF_COUNT));
+
+    return result;
+}
+
+//--------------------------------------------------------------------------------
+// GetVNFuncForNode:  - Given a GenTree node, this returns the proper
+//                      VNFunc to use for ValueNumbering
+//
+// Arguments:
+//    node            - The GenTree node that we need the VNFunc for.
+//
+// Return Value:
+//               - The VNFunc to use for this GenTree node
+//
+// Notes:        - The gtFlags from the node are used to set operKind
+//                 to one of Normal, Unsigned, OverflowCheck,
+//                 or Unsigned_OverflowCheck. Also see GetVNFuncForOper()
+//
+VNFunc GetVNFuncForNode(GenTree* node)
+{
+    bool       isUnsignedOper   = ((node->gtFlags & GTF_UNSIGNED) != 0);
+    bool       hasOverflowCheck = node->gtOverflowEx();
+    VNOperKind operKind         = VNGetOperKind(isUnsignedOper, hasOverflowCheck);
+    VNFunc     result           = GetVNFuncForOper(node->gtOper, operKind);
+
+    return result;
+}
+
+unsigned ValueNumStore::VNFuncArity(VNFunc vnf)
+{
+    // Read the bit field out of the table...
+    return (s_vnfOpAttribs[vnf] & VNFOA_ArityMask) >> VNFOA_ArityShift;
+}
+
+template <>
+bool ValueNumStore::IsOverflowIntDiv(int v0, int v1)
+{
+    return (v1 == -1) && (v0 == INT32_MIN);
+}
+
+template <>
+bool ValueNumStore::IsOverflowIntDiv(INT64 v0, INT64 v1)
+{
+    return (v1 == -1) && (v0 == INT64_MIN);
+}
+
+template <typename T>
+bool ValueNumStore::IsOverflowIntDiv(T v0, T v1)
+{
+    return false;
+}
+
+template <>
+bool ValueNumStore::IsIntZero(int v)
+{
+    return v == 0;
+}
+template <>
+bool ValueNumStore::IsIntZero(unsigned v)
+{
+    return v == 0;
+}
+template <>
+bool ValueNumStore::IsIntZero(INT64 v)
+{
+    return v == 0;
+}
+template <>
+bool ValueNumStore::IsIntZero(UINT64 v)
+{
+    return v == 0;
+}
+template <typename T>
+bool ValueNumStore::IsIntZero(T v)
+{
+    return false;
 }
 
 ValueNumStore::ValueNumStore(Compiler* comp, CompAllocator alloc)
@@ -337,54 +568,6 @@ ValueNumStore::ValueNumStore(Compiler* comp, CompAllocator alloc)
     {
         m_mapSelectBudget = DEFAULT_MAP_SELECT_BUDGET;
     }
-}
-
-unsigned ValueNumStore::VNFuncArity(VNFunc vnf)
-{
-    // Read the bit field out of the table...
-    return (s_vnfOpAttribs[vnf] & VNFOA_ArityMask) >> VNFOA_ArityShift;
-}
-
-template <>
-bool ValueNumStore::IsOverflowIntDiv(int v0, int v1)
-{
-    return (v1 == -1) && (v0 == INT32_MIN);
-}
-template <>
-bool ValueNumStore::IsOverflowIntDiv(INT64 v0, INT64 v1)
-{
-    return (v1 == -1) && (v0 == INT64_MIN);
-}
-template <typename T>
-bool ValueNumStore::IsOverflowIntDiv(T v0, T v1)
-{
-    return false;
-}
-
-template <>
-bool ValueNumStore::IsIntZero(int v)
-{
-    return v == 0;
-}
-template <>
-bool ValueNumStore::IsIntZero(unsigned v)
-{
-    return v == 0;
-}
-template <>
-bool ValueNumStore::IsIntZero(INT64 v)
-{
-    return v == 0;
-}
-template <>
-bool ValueNumStore::IsIntZero(UINT64 v)
-{
-    return v == 0;
-}
-template <typename T>
-bool ValueNumStore::IsIntZero(T v)
-{
-    return false;
 }
 
 //
@@ -460,37 +643,7 @@ T ValueNumStore::EvalOp(VNFunc vnf, T v0, T v1, ValueNum* pExcSet)
 {
     // Here we handle the binary ops that are the same for all types.
 
-    if (vnf < VNF_Boundary)
-    {
-        genTreeOps oper = genTreeOps(vnf);
-
-        // Temporary will be removed
-        switch (oper)
-        {
-            case GT_DIV:
-            case GT_MOD:
-                if (IsOverflowIntDiv(v0, v1))
-                {
-                    *pExcSet = VNExcSetSingleton(VNForFunc(TYP_REF, VNF_ArithmeticExc));
-                    return 0;
-                }
-
-                __fallthrough;
-
-            case GT_UDIV:
-            case GT_UMOD:
-                if (IsIntZero(v1))
-                {
-                    *pExcSet = VNExcSetSingleton(VNForFunc(TYP_REF, VNF_DivideByZeroExc));
-                    return 0;
-                }
-
-                __fallthrough;
-
-            default:
-                break;
-        }
-    }
+    // Currently there are none (due to floating point NaN representations)
 
     // Otherwise must be handled by the type specific method
     return EvalOpSpecialized(vnf, v0, v1);
@@ -662,13 +815,6 @@ T ValueNumStore::EvalOpSpecialized(VNFunc vnf, T v0, T v1)
         switch (vnf)
         {
             // Here we handle those that are the same for all integer types.
-
-            case VNF_ADD_UN:
-                return T(UT(v0) + UT(v1));
-            case VNF_SUB_UN:
-                return T(UT(v0) - UT(v1));
-            case VNF_MUL_UN:
-                return T(UT(v0) * UT(v1));
 
             default:
                 // For any other value of 'vnf', we will assert below
@@ -847,7 +993,53 @@ ValueNumPair ValueNumStore::VNPExcSetSingleton(ValueNumPair xp)
     return ValueNumPair(VNExcSetSingleton(xp.GetLiberal()), VNExcSetSingleton(xp.GetConservative()));
 }
 
-ValueNum ValueNumStore::VNExcSetUnion(ValueNum xs0, ValueNum xs1 DEBUGARG(bool topLevel))
+//-------------------------------------------------------------------------------------------
+// VNCheckAscending: - Helper method used to verify that elements in an exception set list
+//                     are sorted in ascending order.  This method only checks that the
+//                     next value in the list has a greater value number than 'item'.
+//
+// Arguments:
+//    item           - The previous item visited in the exception set that we are iterating
+//    xs1            - The tail portion of the exception set that we are iterating.
+//
+// Return Value:
+//                   - Returns true when the next value is greater than 'item'
+//                   - or whne we have an empty list remaining.
+//
+// Note:  - Duplicates items aren't allowed in an exception set
+//          Used to verify that exception sets are in ascending order when processing them.
+//
+bool ValueNumStore::VNCheckAscending(ValueNum item, ValueNum xs1)
+{
+    if (xs1 == VNForEmptyExcSet())
+    {
+        return true;
+    }
+    else
+    {
+        VNFuncApp funcXs1;
+        bool      b1 = GetVNFunc(xs1, &funcXs1);
+        assert(b1 && funcXs1.m_func == VNF_ExcSetCons); // Precondition: xs1 is an exception set.
+
+        return (item < funcXs1.m_args[0]);
+    }
+}
+
+//-------------------------------------------------------------------------------------------
+// VNExcSetUnion: - Given two exception sets, performs a set Union operation
+//                  and returns the value number for the combined exception set.
+//
+// Arguments:     - The arguments must be applications of VNF_ExcSetCons or the empty set
+//    xs0         - The value number of the first exception set
+//    xs1         - The value number of the second exception set
+//
+// Return Value:  - The value number of the combined exception set
+//
+// Note: - Checks and relies upon the invariant that exceptions sets
+//          1. Have no duplicate values
+//          2. all elements in an exception set are in sorted order.
+//
+ValueNum ValueNumStore::VNExcSetUnion(ValueNum xs0, ValueNum xs1)
 {
     if (xs0 == VNForEmptyExcSet())
     {
@@ -868,31 +1060,229 @@ ValueNum ValueNumStore::VNExcSetUnion(ValueNum xs0, ValueNum xs1 DEBUGARG(bool t
         ValueNum res = NoVN;
         if (funcXs0.m_args[0] < funcXs1.m_args[0])
         {
-            res = VNForFunc(TYP_REF, VNF_ExcSetCons, funcXs0.m_args[0],
-                            VNExcSetUnion(funcXs0.m_args[1], xs1 DEBUGARG(false)));
+            assert(VNCheckAscending(funcXs0.m_args[0], funcXs0.m_args[1]));
+
+            // add the lower one (from xs0) to the result, advance xs0
+            res = VNForFunc(TYP_REF, VNF_ExcSetCons, funcXs0.m_args[0], VNExcSetUnion(funcXs0.m_args[1], xs1));
         }
         else if (funcXs0.m_args[0] == funcXs1.m_args[0])
         {
-            // Equal elements; only add one to the result.
-            res = VNExcSetUnion(funcXs0.m_args[1], xs1);
+            assert(VNCheckAscending(funcXs0.m_args[0], funcXs0.m_args[1]));
+            assert(VNCheckAscending(funcXs1.m_args[0], funcXs1.m_args[1]));
+
+            // Equal elements; add one (from xs0) to the result, advance both sets
+            res = VNForFunc(TYP_REF, VNF_ExcSetCons, funcXs0.m_args[0],
+                            VNExcSetUnion(funcXs0.m_args[1], funcXs1.m_args[1]));
         }
         else
         {
             assert(funcXs0.m_args[0] > funcXs1.m_args[0]);
-            res = VNForFunc(TYP_REF, VNF_ExcSetCons, funcXs1.m_args[0],
-                            VNExcSetUnion(xs0, funcXs1.m_args[1] DEBUGARG(false)));
+            assert(VNCheckAscending(funcXs1.m_args[0], funcXs1.m_args[1]));
+
+            // add the lower one (from xs1) to the result, advance xs1
+            res = VNForFunc(TYP_REF, VNF_ExcSetCons, funcXs1.m_args[0], VNExcSetUnion(xs0, funcXs1.m_args[1]));
         }
 
         return res;
     }
 }
 
+//--------------------------------------------------------------------------------
+// VNPExcSetUnion: - Returns a Value Number Pair that represents the set union
+//                   for both parts.
+//                   (see VNExcSetUnion for more details)
+//
+// Notes:   - This method is used to form a Value Number Pair when we
+//            want both the Liberal and Conservative Value NUmbers
+//
 ValueNumPair ValueNumStore::VNPExcSetUnion(ValueNumPair xs0vnp, ValueNumPair xs1vnp)
 {
     return ValueNumPair(VNExcSetUnion(xs0vnp.GetLiberal(), xs1vnp.GetLiberal()),
                         VNExcSetUnion(xs0vnp.GetConservative(), xs1vnp.GetConservative()));
 }
 
+//-------------------------------------------------------------------------------------------
+// VNExcSetIntersection: - Given two exception sets, performs a set Intersection operation
+//                         and returns the value number for this exception set.
+//
+// Arguments:     - The arguments must be applications of VNF_ExcSetCons or the empty set
+//    xs0         - The value number of the first exception set
+//    xs1         - The value number of the second exception set
+//
+// Return Value:  - The value number of the new exception set.
+//                  if the e are no values in common then VNForEmptyExcSet() is returned.
+//
+// Note: - Checks and relies upon the invariant that exceptions sets
+//          1. Have no duplicate values
+//          2. all elements in an exception set are in sorted order.
+//
+ValueNum ValueNumStore::VNExcSetIntersection(ValueNum xs0, ValueNum xs1)
+{
+    if ((xs0 == VNForEmptyExcSet()) || (xs1 == VNForEmptyExcSet()))
+    {
+        return VNForEmptyExcSet();
+    }
+    else
+    {
+        VNFuncApp funcXs0;
+        bool      b0 = GetVNFunc(xs0, &funcXs0);
+        assert(b0 && funcXs0.m_func == VNF_ExcSetCons); // Precondition: xs0 is an exception set.
+        VNFuncApp funcXs1;
+        bool      b1 = GetVNFunc(xs1, &funcXs1);
+        assert(b1 && funcXs1.m_func == VNF_ExcSetCons); // Precondition: xs1 is an exception set.
+        ValueNum res = NoVN;
+
+        if (funcXs0.m_args[0] < funcXs1.m_args[0])
+        {
+            assert(VNCheckAscending(funcXs0.m_args[0], funcXs0.m_args[1]));
+            res = VNExcSetIntersection(funcXs0.m_args[1], xs1);
+        }
+        else if (funcXs0.m_args[0] == funcXs1.m_args[0])
+        {
+            assert(VNCheckAscending(funcXs0.m_args[0], funcXs0.m_args[1]));
+            assert(VNCheckAscending(funcXs1.m_args[0], funcXs1.m_args[1]));
+
+            // Equal elements; Add it to the result.
+            res = VNForFunc(TYP_REF, VNF_ExcSetCons, funcXs0.m_args[0],
+                            VNExcSetIntersection(funcXs0.m_args[1], funcXs1.m_args[1]));
+        }
+        else
+        {
+            assert(funcXs0.m_args[0] > funcXs1.m_args[0]);
+            assert(VNCheckAscending(funcXs1.m_args[0], funcXs1.m_args[1]));
+            res = VNExcSetIntersection(xs0, funcXs1.m_args[1]);
+        }
+
+        return res;
+    }
+}
+
+//--------------------------------------------------------------------------------
+// VNPExcSetIntersection: - Returns a Value Number Pair that represents the set
+//                 intersection for both parts.
+//                 (see VNExcSetIntersection for more details)
+//
+// Notes:   - This method is used to form a Value Number Pair when we
+//            want both the Liberal and Conservative Value NUmbers
+//
+ValueNumPair ValueNumStore::VNPExcSetIntersection(ValueNumPair xs0vnp, ValueNumPair xs1vnp)
+{
+    return ValueNumPair(VNExcSetIntersection(xs0vnp.GetLiberal(), xs1vnp.GetLiberal()),
+                        VNExcSetIntersection(xs0vnp.GetConservative(), xs1vnp.GetConservative()));
+}
+
+//----------------------------------------------------------------------------------------
+// VNExcIsSubset     - Given two exception sets, returns true when vnCandidateSet is a
+//                     subset of vnFullSet
+//
+// Arguments:        - The arguments must be applications of VNF_ExcSetCons or the empty set
+//    vnFullSet      - The value number of the 'full' exception set
+//    vnCandidateSet - The value number of the 'candidate' exception set
+//
+// Return Value:     - Returns true if every singleton ExcSet value in the vnCandidateSet
+//                     is also present in the vnFullSet.
+//
+// Note: - Checks and relies upon the invariant that exceptions sets
+//          1. Have no duplicate values
+//          2. all elements in an exception set are in sorted order.
+//
+bool ValueNumStore::VNExcIsSubset(ValueNum vnFullSet, ValueNum vnCandidateSet)
+{
+    if (vnCandidateSet == VNForEmptyExcSet())
+    {
+        return true;
+    }
+    else if ((vnFullSet == VNForEmptyExcSet()) || (vnFullSet == ValueNumStore::NoVN))
+    {
+        return false;
+    }
+
+    VNFuncApp funcXsFull;
+    bool      b0 = GetVNFunc(vnFullSet, &funcXsFull);
+    assert(b0 && funcXsFull.m_func == VNF_ExcSetCons); // Precondition: vnFullSet is an exception set.
+    VNFuncApp funcXsCand;
+    bool      b1 = GetVNFunc(vnCandidateSet, &funcXsCand);
+    assert(b1 && funcXsCand.m_func == VNF_ExcSetCons); // Precondition: vnCandidateSet is an exception set.
+
+    ValueNum vnFullSetPrev = VNForNull();
+    ValueNum vnCandSetPrev = VNForNull();
+
+    ValueNum vnFullSetRemainder = funcXsFull.m_args[1];
+    ValueNum vnCandSetRemainder = funcXsCand.m_args[1];
+
+    while (true)
+    {
+        ValueNum vnFullSetItem = funcXsFull.m_args[0];
+        ValueNum vnCandSetItem = funcXsCand.m_args[0];
+
+        // Enforce that both sets are sorted by increasing ValueNumbers
+        //
+        assert(vnFullSetItem > vnFullSetPrev);
+        assert(vnCandSetItem >= vnCandSetPrev); // equal when we didn't advance the candidate set
+
+        if (vnFullSetItem > vnCandSetItem)
+        {
+            // The Full set does not contain the vnCandSetItem
+            return false;
+        }
+        // now we must have (vnFullSetItem <= vnCandSetItem)
+
+        // When we have a matching value we advance the candidate set
+        //
+        if (vnFullSetItem == vnCandSetItem)
+        {
+            // Have we finished matching?
+            //
+            if (vnCandSetRemainder == VNForEmptyExcSet())
+            {
+                // We matched every item in the candidate set'
+                //
+                return true;
+            }
+
+            // Advance the candidate set
+            //
+            b1 = GetVNFunc(vnCandSetRemainder, &funcXsCand);
+            assert(b1 && funcXsCand.m_func == VNF_ExcSetCons); // Precondition: vnCandSetRemainder is an exception set.
+            vnCandSetRemainder = funcXsCand.m_args[1];
+        }
+
+        if (vnFullSetRemainder == VNForEmptyExcSet())
+        {
+            // No more items are left in the full exception set
+            return false;
+        }
+
+        //
+        // We will advance the full set
+        //
+        b0 = GetVNFunc(vnFullSetRemainder, &funcXsFull);
+        assert(b0 && funcXsFull.m_func == VNF_ExcSetCons); // Precondition: vnFullSetRemainder is an exception set.
+        vnFullSetRemainder = funcXsFull.m_args[1];
+
+        vnFullSetPrev = vnFullSetItem;
+        vnCandSetPrev = vnCandSetItem;
+    }
+}
+
+//-------------------------------------------------------------------------------------
+// VNUnpackExc: - Given a ValueNum 'vnWx, return via write back parameters both
+//                the normal and the exception set components.
+//
+// Arguments:
+//    vnWx        - The value number of the first exception set
+//    pvn         - a write back pointer to the normal value portion of 'vnWx'
+//    pvnx        - a write back pointer for the exception set portion of 'vnWx'
+//
+// Return Values: - This method signature is void but can return up to two values
+//                  using the write back parameters.
+//
+// Note: 'pvnx' is only written when 'vnWx' actually has an exception set,
+//       otherwise it is left unchanged.  When we have an exception set 'vnWx'
+//       will be a VN func with m_func == VNF_ValWithExc.
+//       When 'vnWx' does not have an exception set, the orginal value is the
+//       normal value and is written to 'pvn'.
+//
 void ValueNumStore::VNUnpackExc(ValueNum vnWx, ValueNum* pvn, ValueNum* pvnx)
 {
     assert(vnWx != NoVN);
@@ -908,18 +1298,26 @@ void ValueNumStore::VNUnpackExc(ValueNum vnWx, ValueNum* pvn, ValueNum* pvnx)
     }
 }
 
-void ValueNumStore::VNPUnpackExc(ValueNumPair vnWx, ValueNumPair* pvn, ValueNumPair* pvnx)
+//-------------------------------------------------------------------------------------
+// VNPUnpackExc: - Given a ValueNumPair 'vnpWx, return via write back parameters
+//                 both the normal and the exception set components.
+//                 (see VNUnpackExc for more details)
+//
+// Notes:   - This method is used to form a Value Number Pair when we
+//            want both the Liberal and Conservative Value NUmbers
+//
+void ValueNumStore::VNPUnpackExc(ValueNumPair vnpWx, ValueNumPair* pvnp, ValueNumPair* pvnpx)
 {
-    VNUnpackExc(vnWx.GetLiberal(), pvn->GetLiberalAddr(), pvnx->GetLiberalAddr());
-    VNUnpackExc(vnWx.GetConservative(), pvn->GetConservativeAddr(), pvnx->GetConservativeAddr());
+    VNUnpackExc(vnpWx.GetLiberal(), pvnp->GetLiberalAddr(), pvnpx->GetLiberalAddr());
+    VNUnpackExc(vnpWx.GetConservative(), pvnp->GetConservativeAddr(), pvnpx->GetConservativeAddr());
 }
 
 //--------------------------------------------------------------------------------
-// VNNormVal:    - Returns a Value Number that represents the result for the
-//                 normal (non-exceptional) evaluation for the expression.
+// VNNormalValue: - Returns a Value Number that represents the result for the
+//                  normal (non-exceptional) evaluation for the expression.
 //
 // Arguments:
-//    vn         - The Value Number for the expression, including any  excSet.
+//    vn         - The Value Number for the expression, including any excSet.
 //                 This excSet is an optional item and represents the set of
 //                 possible exceptions for the expression.
 //
@@ -931,7 +1329,7 @@ void ValueNumStore::VNPUnpackExc(ValueNumPair vnWx, ValueNumPair* pvn, ValueNumP
 //                 a VN func with VNF_ValWithExc.
 //                 This VN func has the normal value as m_args[0]
 //
-ValueNum ValueNumStore::VNNormVal(ValueNum vn)
+ValueNum ValueNumStore::VNNormalValue(ValueNum vn)
 {
     VNFuncApp funcApp;
     if (GetVNFunc(vn, &funcApp) && funcApp.m_func == VNF_ValWithExc)
@@ -945,21 +1343,46 @@ ValueNum ValueNumStore::VNNormVal(ValueNum vn)
 }
 
 //--------------------------------------------------------------------------------
-// VNPNormVal:   - Returns a Value Number Pair that represents the result for the
-//                 normal (non-exceptional) evaluation for the expression.
-//                 (see VNNormVal for more details)
+// VNNormalValue: - Returns a Value Number that represents the result for the
+//                  normal (non-exceptional) evaluation for the expression.
 //
-// Notes:        = This method is used to form a Value Number Pair when we
-//                 want both the Liberal and Conservative Value NUmbers
+// Arguments:
+//    vnp        - The Value Number Pair for the expression, including any excSet.
+//                 This excSet is an optional item and represents the set of
+//                 possible exceptions for the expression.
+//    vnk        - The ValueNumKind either liberal or conservative
 //
-ValueNumPair ValueNumStore::VNPNormVal(ValueNumPair vnp)
+// Return Value:
+//               - The Value Number for the expression without the exception set.
+//                 This can be the orginal 'vn', when there are no exceptions.
+//
+// Notes:        - Whenever we have an exception set the Value Number will be
+//                 a VN func with VNF_ValWithExc.
+//                 This VN func has the normal value as m_args[0]
+//
+ValueNum ValueNumStore::VNNormalValue(ValueNumPair vnp, ValueNumKind vnk)
 {
-    return ValueNumPair(VNNormVal(vnp.GetLiberal()), VNNormVal(vnp.GetConservative()));
+    return VNNormalValue(vnp.Get(vnk));
+}
+
+//--------------------------------------------------------------------------------
+// VNPNormalPair: - Returns a Value Number Pair that represents the result for the
+//                  normal (non-exceptional) evaluation for the expression.
+//                  (see VNNormalValue for more details)
+// Arguments:
+//    vnp         - The Value Number Pair for the expression, including any excSet.
+//
+// Notes:         - This method is used to form a Value Number Pair using both
+//                  the Liberal and Conservative Value NUmbers normal (non-exceptional)
+//
+ValueNumPair ValueNumStore::VNPNormalPair(ValueNumPair vnp)
+{
+    return ValueNumPair(VNNormalValue(vnp.GetLiberal()), VNNormalValue(vnp.GetConservative()));
 }
 
 //---------------------------------------------------------------------------
-// VNExcVal:     - Returns a Value Number that represents the set of possible
-//                 exceptions that could be encountered for the expression.
+// VNExceptionSet: - Returns a Value Number that represents the set of possible
+//                   exceptions that could be encountered for the expression.
 //
 // Arguments:
 //    vn         - The Value Number for the expression, including any excSet.
@@ -975,7 +1398,7 @@ ValueNumPair ValueNumStore::VNPNormVal(ValueNumPair vnp)
 //                 a VN func with VNF_ValWithExc.
 //                 This VN func has the exception set as m_args[1]
 //
-ValueNum ValueNumStore::VNExcVal(ValueNum vn)
+ValueNum ValueNumStore::VNExceptionSet(ValueNum vn)
 {
     VNFuncApp funcApp;
     if (GetVNFunc(vn, &funcApp) && funcApp.m_func == VNF_ValWithExc)
@@ -989,16 +1412,16 @@ ValueNum ValueNumStore::VNExcVal(ValueNum vn)
 }
 
 //--------------------------------------------------------------------------------
-// VNPExcVal:    - Returns a Value Number Pair that represents the set of possible
+// VNPExceptionSet:    - Returns a Value Number Pair that represents the set of possible
 //                 exceptions that could be encountered for the expression.
-//                 (see VNExcVal for more details)
+//                 (see VNExceptionSet for more details)
 //
-// Notes:        = This method is used to form a Value Number Pair when we
+// Notes:        - This method is used to form a Value Number Pair when we
 //                 want both the Liberal and Conservative Value NUmbers
 //
-ValueNumPair ValueNumStore::VNPExcVal(ValueNumPair vnp)
+ValueNumPair ValueNumStore::VNPExceptionSet(ValueNumPair vnp)
 {
-    return ValueNumPair(VNExcVal(vnp.GetLiberal()), VNExcVal(vnp.GetConservative()));
+    return ValueNumPair(VNExceptionSet(vnp.GetLiberal()), VNExceptionSet(vnp.GetConservative()));
 }
 
 //---------------------------------------------------------------------------
@@ -1403,7 +1826,7 @@ ValueNum ValueNumStore::VNForFunc(var_types typ, VNFunc func)
 
 ValueNum ValueNumStore::VNForFunc(var_types typ, VNFunc func, ValueNum arg0VN)
 {
-    assert(arg0VN == VNNormVal(arg0VN)); // Arguments don't carry exceptions.
+    assert(arg0VN == VNNormalValue(arg0VN)); // Arguments don't carry exceptions.
 
     ValueNum      res;
     VNDefFunc1Arg fstruct(func, arg0VN);
@@ -1444,14 +1867,15 @@ ValueNum ValueNumStore::VNForFunc(var_types typ, VNFunc func, ValueNum arg0VN)
 ValueNum ValueNumStore::VNForFunc(var_types typ, VNFunc func, ValueNum arg0VN, ValueNum arg1VN)
 {
     assert(arg0VN != NoVN && arg1VN != NoVN);
-    assert(arg0VN == VNNormVal(arg0VN)); // Arguments carry no exceptions.
-    assert(arg1VN == VNNormVal(arg1VN)); // Arguments carry no exceptions.
+    assert(arg0VN == VNNormalValue(arg0VN)); // Arguments carry no exceptions.
+    assert(arg1VN == VNNormalValue(arg1VN)); // Arguments carry no exceptions.
     assert(VNFuncArity(func) == 2);
     assert(func != VNF_MapSelect); // Precondition: use the special function VNForMapSelect defined for that.
 
     ValueNum res;
 
-    // Do constant-folding.
+    // When both operands are constants we can usually perform the constant-folding.
+    //
     if (CanEvalForConstantArgs(func) && IsVNConstant(arg0VN) && IsVNConstant(arg1VN))
     {
         bool canFold = true; // Normally we will be able to fold this 'func'
@@ -1462,6 +1886,80 @@ ValueNum ValueNumStore::VNForFunc(var_types typ, VNFunc func, ValueNum arg0VN, V
         if ((func == VNF_Cast) && (typ != TYP_I_IMPL) && IsVNHandle(arg0VN))
         {
             canFold = false;
+        }
+
+        // Currently CanEvalForConstantArgs() returns false for VNF_CastOvf
+        // IN the future we may want to handle this case.
+        assert(func != VNF_CastOvf);
+
+        // We have some arithmetic operations that will always throw
+        // an exception given particular constant argument(s).
+        // (i.e. integer division by zero)
+        //
+        // We will avoid performing any constant folding on them
+        // since they won't actually produce any result (because
+        // they instead they always will throw an exception)
+        //
+        if (func < VNF_Boundary)
+        {
+            genTreeOps oper = genTreeOps(func);
+
+            // Floating point operations do not throw exceptions
+            //
+            if (!varTypeIsFloating(typ))
+            {
+                // Is this an integer divide/modulo that will throw an exception?
+                //
+                if ((oper == GT_DIV) || (oper == GT_UDIV) || (oper == GT_MOD) || (oper == GT_UMOD))
+                {
+                    if ((TypeOfVN(arg0VN) != typ) || (TypeOfVN(arg1VN) != typ))
+                    {
+                        // Just in case we have mismatched types
+                        canFold = false;
+                    }
+                    else
+                    {
+                        bool isUnsigned = (oper == GT_UDIV) || (oper == GT_UMOD);
+                        if (typ == TYP_LONG)
+                        {
+                            INT64 kArg0 = ConstantValue<INT64>(arg0VN);
+                            INT64 kArg1 = ConstantValue<INT64>(arg1VN);
+
+                            if (IsIntZero(kArg1))
+                            {
+                                // Don't fold we have a divide by zero
+                                canFold = false;
+                            }
+                            else if (!isUnsigned || IsOverflowIntDiv(kArg0, kArg1))
+                            {
+                                // Don't fold we have a divide of INT64_MIN/-1
+                                canFold = false;
+                            }
+                        }
+                        else if (typ == TYP_INT)
+                        {
+                            int kArg0 = ConstantValue<int>(arg0VN);
+                            int kArg1 = ConstantValue<int>(arg1VN);
+
+                            if (IsIntZero(kArg1))
+                            {
+                                // Don't fold We have a divide by zero
+                                canFold = false;
+                            }
+                            else if (!isUnsigned && IsOverflowIntDiv(kArg0, kArg1))
+                            {
+                                // Don't fold we have a divide of INT32_MIN/-1
+                                canFold = false;
+                            }
+                        }
+                        else // strange value for 'typ'
+                        {
+                            assert(!"unexpected 'typ' in VNForFunc constant folding");
+                            canFold = false;
+                        }
+                    }
+                }
+            }
         }
 
         // It is possible for us to have mismatched types (see Bug 750863)
@@ -1699,8 +2197,7 @@ ValueNum ValueNumStore::VNForFunc(var_types typ, VNFunc func, ValueNum arg0VN, V
                 }
                 // x < x ==> false
                 // x > x ==> false
-                // x - x ==> 0
-                else if ((func == VNF_LT_UN) || (func == VNF_GT_UN) || (func == VNF_SUB_UN))
+                else if ((func == VNF_LT_UN) || (func == VNF_GT_UN))
                 {
                     return VNZeroForType(typ);
                 }
@@ -1817,8 +2314,8 @@ ValueNum ValueNumStore::VNForMapSelectWork(
 TailCall:
     // This label allows us to directly implement a tail call by setting up the arguments, and doing a goto to here.
     assert(arg0VN != NoVN && arg1VN != NoVN);
-    assert(arg0VN == VNNormVal(arg0VN)); // Arguments carry no exceptions.
-    assert(arg1VN == VNNormVal(arg1VN)); // Arguments carry no exceptions.
+    assert(arg0VN == VNNormalValue(arg0VN)); // Arguments carry no exceptions.
+    assert(arg1VN == VNNormalValue(arg1VN)); // Arguments carry no exceptions.
 
     *pUsedRecursiveVN = false;
 
@@ -2233,6 +2730,7 @@ ValueNum ValueNumStore::EvalFuncForConstantArgs(var_types typ, VNFunc func, Valu
                 ValueNum handleVN = IsVNHandle(arg0VN) ? arg0VN : IsVNHandle(arg1VN) ? arg1VN : NoVN;
                 if (handleVN != NoVN)
                 {
+                    assert(excSet == VNForEmptyExcSet()); // Handles aren't allowed to generate exceptions
                     result = VNForHandle(ssize_t(resultVal), GetHandleFlags(handleVN)); // Use VN for Handle
                 }
                 else
@@ -2364,12 +2862,12 @@ ValueNum ValueNumStore::EvalFuncForConstantFPArgs(var_types typ, VNFunc func, Va
 
         if (arg0VNtyp == TYP_FLOAT)
         {
-            result = VNForIntCon(EvalComparison(func, GetConstantSingle(arg0VN), GetConstantSingle(arg1VN)));
+            result = VNForIntCon(EvalComparison<float>(func, GetConstantSingle(arg0VN), GetConstantSingle(arg1VN)));
         }
         else
         {
             assert(arg0VNtyp == TYP_DOUBLE);
-            result = VNForIntCon(EvalComparison(func, GetConstantDouble(arg0VN), GetConstantDouble(arg1VN)));
+            result = VNForIntCon(EvalComparison<double>(func, GetConstantDouble(arg0VN), GetConstantDouble(arg1VN)));
         }
     }
     else
@@ -2729,10 +3227,10 @@ ValueNum ValueNumStore::VNForFunc(var_types typ, VNFunc func, ValueNum arg0VN, V
         // (I don't know if having such non-VN arguments to a VN function is a good idea -- if we wanted to declare
         // ValueNum to be "short" it would be a problem, for example.  But we'll leave it for now, with these explicit
         // exceptions.)
-        assert(arg0VN == VNNormVal(arg0VN));
-        assert(arg1VN == VNNormVal(arg1VN));
+        assert(arg0VN == VNNormalValue(arg0VN));
+        assert(arg1VN == VNNormalValue(arg1VN));
     }
-    assert(arg2VN == VNNormVal(arg2VN));
+    assert(arg2VN == VNNormalValue(arg2VN));
 
 #endif
     assert(VNFuncArity(func) == 3);
@@ -2759,10 +3257,10 @@ ValueNum ValueNumStore::VNForFunc(
 {
     assert(arg0VN != NoVN && arg1VN != NoVN && arg2VN != NoVN && arg3VN != NoVN);
     // Function arguments carry no exceptions.
-    assert(arg0VN == VNNormVal(arg0VN));
-    assert(arg1VN == VNNormVal(arg1VN));
-    assert(arg2VN == VNNormVal(arg2VN));
-    assert(arg3VN == VNNormVal(arg3VN));
+    assert(arg0VN == VNNormalValue(arg0VN));
+    assert(arg1VN == VNNormalValue(arg1VN));
+    assert(arg2VN == VNNormalValue(arg2VN));
+    assert(arg3VN == VNNormalValue(arg3VN));
     assert(VNFuncArity(func) == 4);
 
     ValueNum      res;
@@ -3180,7 +3678,7 @@ ValueNum ValueNumStore::ExtendPtrVN(GenTree* opA, FieldSeqNode* fldSeq)
 #ifdef DEBUG
         // For PtrToLoc, lib == cons.
         VNFuncApp consFuncApp;
-        assert(GetVNFunc(VNNormVal(opA->GetVN(VNK_Conservative)), &consFuncApp) && consFuncApp.Equals(funcApp));
+        assert(GetVNFunc(VNNormalValue(opA->gtVNPair, VNK_Conservative), &consFuncApp) && consFuncApp.Equals(funcApp));
 #endif
         ValueNum fldSeqVN = VNForFieldSeq(fldSeq);
         res = VNForFunc(TYP_BYREF, VNF_PtrToLoc, funcApp.m_args[0], FieldSeqVNAppend(funcApp.m_args[1], fldSeqVN));
@@ -3325,8 +3823,8 @@ ValueNum Compiler::fgValueNumberArrIndexVal(GenTree*             tree,
     assert(tree == nullptr || tree->OperIsIndir());
 
     // The VN inputs are required to be non-exceptional values.
-    assert(arrVN == vnStore->VNNormVal(arrVN));
-    assert(inxVN == vnStore->VNNormVal(inxVN));
+    assert(arrVN == vnStore->VNNormalValue(arrVN));
+    assert(inxVN == vnStore->VNNormalValue(inxVN));
 
     var_types elemTyp = DecodeElemType(elemTypeEq);
     var_types indType = (tree == nullptr) ? elemTyp : tree->TypeGet();
@@ -3415,7 +3913,8 @@ ValueNum Compiler::fgValueNumberByrefExposedLoad(var_types type, ValueNum pointe
     // The memoization for VNFunc applications does not factor in the result type, so
     // VNF_ByrefExposedLoad takes the loaded type as an explicit parameter.
     ValueNum typeVN = vnStore->VNForIntCon(type);
-    ValueNum loadVN = vnStore->VNForFunc(type, VNF_ByrefExposedLoad, typeVN, vnStore->VNNormVal(pointerVN), memoryVN);
+    ValueNum loadVN =
+        vnStore->VNForFunc(type, VNF_ByrefExposedLoad, typeVN, vnStore->VNNormalValue(pointerVN), memoryVN);
 
     return loadVN;
 }
@@ -3823,7 +4322,7 @@ void ValueNumStore::SetVNIsCheckedBound(ValueNum vn)
 
 ValueNum ValueNumStore::EvalMathFuncUnary(var_types typ, CorInfoIntrinsics gtMathFN, ValueNum arg0VN)
 {
-    assert(arg0VN == VNNormVal(arg0VN));
+    assert(arg0VN == VNNormalValue(arg0VN));
 
     // If the math intrinsic is not implemented by target-specific instructions, such as implemented
     // by user calls, then don't do constant folding on it. This minimizes precision loss.
@@ -4028,8 +4527,8 @@ ValueNum ValueNumStore::EvalMathFuncUnary(var_types typ, CorInfoIntrinsics gtMat
 ValueNum ValueNumStore::EvalMathFuncBinary(var_types typ, CorInfoIntrinsics gtMathFN, ValueNum arg0VN, ValueNum arg1VN)
 {
     assert(varTypeIsFloating(typ));
-    assert(arg0VN == VNNormVal(arg0VN));
-    assert(arg1VN == VNNormVal(arg1VN));
+    assert(arg0VN == VNNormalValue(arg0VN));
+    assert(arg1VN == VNNormalValue(arg1VN));
 
     VNFunc vnf = VNF_Boundary;
 
@@ -5881,7 +6380,8 @@ void Compiler::fgValueNumberBlockAssignment(GenTree* tree)
                             rhsVNPair = vnStore->VNPairApplySelectors(rhsVNPair, rhsFldSeq, indType);
                         }
                     }
-                    else if (vnStore->GetVNFunc(vnStore->VNNormVal(srcAddr->gtVNPair.GetLiberal()), &srcAddrFuncApp))
+                    else if (vnStore->GetVNFunc(vnStore->VNNormalValue(srcAddr->gtVNPair, VNK_Liberal),
+                                                &srcAddrFuncApp))
                     {
                         if (srcAddrFuncApp.m_func == VNF_PtrToStatic)
                         {
@@ -5962,7 +6462,7 @@ void Compiler::fgValueNumberBlockAssignment(GenTree* tree)
                     rhsVNPair.SetBoth(vnStore->VNForExpr(compCurBB, lclVarTree->TypeGet()));
                 }
 
-                lvaTable[lhsLclNum].GetPerSsaData(lclDefSsaNum)->m_vnPair = vnStore->VNPNormVal(rhsVNPair);
+                lvaTable[lhsLclNum].GetPerSsaData(lclDefSsaNum)->m_vnPair = vnStore->VNPNormalPair(rhsVNPair);
 
 #ifdef DEBUG
                 if (verbose)
@@ -6339,7 +6839,7 @@ void Compiler::fgValueNumberTree(GenTree* tree)
             }
 
             // Now that we've labeled the assignment as a whole, we don't care about exceptions.
-            rhsVNPair = vnStore->VNPNormVal(rhsVNPair);
+            rhsVNPair = vnStore->VNPNormalPair(rhsVNPair);
 
             // If the types of the rhs and lhs are different then we
             //  may want to change the ValueNumber assigned to the lhs.
@@ -6529,7 +7029,7 @@ void Compiler::fgValueNumberTree(GenTree* tree)
                     VNFuncApp funcApp;
                     ValueNum  argVN = arg->gtVNPair.GetLiberal();
 
-                    bool argIsVNFunc = vnStore->GetVNFunc(vnStore->VNNormVal(argVN), &funcApp);
+                    bool argIsVNFunc = vnStore->GetVNFunc(vnStore->VNNormalValue(argVN), &funcApp);
 
                     // Is this an assignment to a (field of, perhaps) a local?
                     // If it is a PtrToLoc, lib and cons VNs will be the same.
@@ -6744,14 +7244,14 @@ void Compiler::fgValueNumberTree(GenTree* tree)
                                     if (obj != nullptr)
                                     {
                                         // construct the ValueNumber for 'fldMap at obj'
-                                        normVal = vnStore->VNNormVal(obj->GetVN(VNK_Liberal));
+                                        normVal = vnStore->VNNormalValue(obj->gtVNPair, VNK_Liberal);
                                         valAtAddr =
                                             vnStore->VNForMapSelect(VNK_Liberal, firstFieldType, fldMapVN, normVal);
                                     }
                                     else // (staticOffset != nullptr)
                                     {
                                         // construct the ValueNumber for 'fldMap at staticOffset'
-                                        normVal = vnStore->VNNormVal(staticOffset->GetVN(VNK_Liberal));
+                                        normVal = vnStore->VNNormalValue(staticOffset->gtVNPair, VNK_Liberal);
                                         valAtAddr =
                                             vnStore->VNForMapSelect(VNK_Liberal, firstFieldType, fldMapVN, normVal);
                                     }
@@ -7012,10 +7512,10 @@ void Compiler::fgValueNumberTree(GenTree* tree)
                 CORINFO_CLASS_HANDLE elemTypeEq   = EncodeElemType(arrInfo.m_elemType, arrInfo.m_elemStructType);
                 ValueNum             elemTypeEqVN = vnStore->VNForHandle(ssize_t(elemTypeEq), GTF_ICON_CLASS_HDL);
 
-                // We take the "VNNormVal"s here, because if either has exceptional outcomes, they will be captured
+                // We take the "VNNormalValue"s here, because if either has exceptional outcomes, they will be captured
                 // as part of the value of the composite "addr" operation...
-                ValueNum arrVN = vnStore->VNNormVal(arr->gtVNPair.GetLiberal());
-                inxVN          = vnStore->VNNormVal(inxVN);
+                ValueNum arrVN = vnStore->VNNormalValue(arr->gtVNPair, VNK_Liberal);
+                inxVN          = vnStore->VNNormalValue(inxVN);
 
                 // Additionally, relabel the address with a PtrToArrElem value number.
                 ValueNum fldSeqVN = vnStore->VNForFieldSeq(fldSeq);
@@ -7033,10 +7533,10 @@ void Compiler::fgValueNumberTree(GenTree* tree)
                     printf(" with l:" FMT_VN ": ", elemAddr);
                     vnStore->vnDump(this, elemAddr);
                     printf("\n");
-                    if (vnStore->VNNormVal(elemAddr) != elemAddr)
+                    if (vnStore->VNNormalValue(elemAddr) != elemAddr)
                     {
-                        printf("      [" FMT_VN " is: ", vnStore->VNNormVal(elemAddr));
-                        vnStore->vnDump(this, vnStore->VNNormVal(elemAddr));
+                        printf("      [" FMT_VN " is: ", vnStore->VNNormalValue(elemAddr));
+                        vnStore->vnDump(this, vnStore->VNNormalValue(elemAddr));
                         printf("]\n");
                     }
                 }
@@ -7148,13 +7648,13 @@ void Compiler::fgValueNumberTree(GenTree* tree)
                         if (obj != nullptr)
                         {
                             // construct the ValueNumber for 'fldMap at obj'
-                            ValueNum objNormVal = vnStore->VNNormVal(obj->GetVN(VNK_Liberal));
+                            ValueNum objNormVal = vnStore->VNNormalValue(obj->gtVNPair, VNK_Liberal);
                             valAtAddr = vnStore->VNForMapSelect(VNK_Liberal, firstFieldType, fldMapVN, objNormVal);
                         }
                         else if (staticOffset != nullptr)
                         {
                             // construct the ValueNumber for 'fldMap at staticOffset'
-                            ValueNum offsetNormVal = vnStore->VNNormVal(staticOffset->GetVN(VNK_Liberal));
+                            ValueNum offsetNormVal = vnStore->VNNormalValue(staticOffset->gtVNPair, VNK_Liberal);
                             valAtAddr = vnStore->VNForMapSelect(VNK_Liberal, firstFieldType, fldMapVN, offsetNormVal);
                         }
 
@@ -7197,181 +7697,177 @@ void Compiler::fgValueNumberTree(GenTree* tree)
         {
             fgValueNumberIntrinsic(tree);
         }
-        else if (ValueNumStore::VNFuncIsLegal(GetVNFuncForOper(oper, (tree->gtFlags & GTF_UNSIGNED) != 0)))
+        else // Look up the VNFunc for the node
         {
-            if (GenTree::OperIsUnary(oper))
+            VNFunc vnf = GetVNFuncForNode(tree);
+
+            if (ValueNumStore::VNFuncIsLegal(vnf))
             {
-                if (tree->gtOp.gtOp1 != nullptr)
+                if (GenTree::OperIsUnary(oper))
                 {
-                    if (tree->OperGet() == GT_NOP)
+                    if (tree->gtOp.gtOp1 != nullptr)
                     {
-                        // Pass through arg vn.
-                        tree->gtVNPair = tree->gtOp.gtOp1->gtVNPair;
+                        if (tree->OperGet() == GT_NOP)
+                        {
+                            // Pass through arg vn.
+                            tree->gtVNPair = tree->gtOp.gtOp1->gtVNPair;
+                        }
+                        else
+                        {
+                            ValueNumPair op1VNP;
+                            ValueNumPair op1VNPx = ValueNumStore::VNPForEmptyExcSet();
+                            vnStore->VNPUnpackExc(tree->gtOp.gtOp1->gtVNPair, &op1VNP, &op1VNPx);
+
+                            // If we are fetching the array length for an array ref that came from global memory
+                            // then for CSE safety we must use the conservative value number for both
+                            //
+                            if ((tree->OperGet() == GT_ARR_LENGTH) && ((tree->gtOp.gtOp1->gtFlags & GTF_GLOB_REF) != 0))
+                            {
+                                // use the conservative value number for both when computing the VN for the ARR_LENGTH
+                                op1VNP.SetBoth(op1VNP.GetConservative());
+                            }
+
+                            tree->gtVNPair =
+                                vnStore->VNPWithExc(vnStore->VNPairForFunc(tree->TypeGet(), vnf, op1VNP), op1VNPx);
+                        }
+                    }
+                    else // Is actually nullary.
+                    {
+                        // Mostly we'll leave these without a value number, assuming we'll detect these as VN failures
+                        // if they actually need to have values.  With the exception of NOPs, which can sometimes have
+                        // meaning.
+                        if (tree->OperGet() == GT_NOP)
+                        {
+                            tree->gtVNPair.SetBoth(vnStore->VNForExpr(compCurBB, tree->TypeGet()));
+                        }
+                    }
+                }
+                else
+                {
+                    assert(oper != GT_ASG); // We handled assignments earlier.
+                    assert(GenTree::OperIsBinary(oper));
+                    // Standard binary operator.
+                    ValueNumPair op2VNPair;
+                    if (tree->gtOp.gtOp2 == nullptr)
+                    {
+                        op2VNPair.SetBoth(ValueNumStore::VNForNull());
                     }
                     else
                     {
-                        ValueNumPair op1VNP;
-                        ValueNumPair op1VNPx = ValueNumStore::VNPForEmptyExcSet();
-                        vnStore->VNPUnpackExc(tree->gtOp.gtOp1->gtVNPair, &op1VNP, &op1VNPx);
-
-                        // If we are fetching the array length for an array ref that came from global memory
-                        // then for CSE safety we must use the conservative value number for both
-                        //
-                        if ((tree->OperGet() == GT_ARR_LENGTH) && ((tree->gtOp.gtOp1->gtFlags & GTF_GLOB_REF) != 0))
-                        {
-                            // use the conservative value number for both when computing the VN for the ARR_LENGTH
-                            op1VNP.SetBoth(op1VNP.GetConservative());
-                        }
-
-                        tree->gtVNPair =
-                            vnStore->VNPWithExc(vnStore->VNPairForFunc(tree->TypeGet(),
-                                                                       GetVNFuncForOper(oper, (tree->gtFlags &
-                                                                                               GTF_UNSIGNED) != 0),
-                                                                       op1VNP),
-                                                op1VNPx);
+                        op2VNPair = tree->gtOp.gtOp2->gtVNPair;
                     }
-                }
-                else // Is actually nullary.
-                {
-                    // Mostly we'll leave these without a value number, assuming we'll detect these as VN failures
-                    // if they actually need to have values.  With the exception of NOPs, which can sometimes have
-                    // meaning.
-                    if (tree->OperGet() == GT_NOP)
-                    {
-                        tree->gtVNPair.SetBoth(vnStore->VNForExpr(compCurBB, tree->TypeGet()));
-                    }
-                }
-            }
-            else
-            {
-                assert(oper != GT_ASG); // We handled assignments earlier.
-                assert(GenTree::OperIsBinary(oper));
-                // Standard binary operator.
-                ValueNumPair op2VNPair;
-                if (tree->gtOp.gtOp2 == nullptr)
-                {
-                    op2VNPair.SetBoth(ValueNumStore::VNForNull());
-                }
-                else
-                {
-                    op2VNPair = tree->gtOp.gtOp2->gtVNPair;
-                }
-                // A few special case: if we add a field offset constant to a PtrToXXX, we get back a new PtrToXXX.
-                ValueNum newVN = ValueNumStore::NoVN;
+                    // A few special case: if we add a field offset constant to a PtrToXXX, we get back a new PtrToXXX.
+                    ValueNum newVN = ValueNumStore::NoVN;
 
-                ValueNumPair op1vnp;
-                ValueNumPair op1Xvnp = ValueNumStore::VNPForEmptyExcSet();
-                vnStore->VNPUnpackExc(tree->gtOp.gtOp1->gtVNPair, &op1vnp, &op1Xvnp);
-                ValueNumPair op2vnp;
-                ValueNumPair op2Xvnp = ValueNumStore::VNPForEmptyExcSet();
-                vnStore->VNPUnpackExc(op2VNPair, &op2vnp, &op2Xvnp);
-                ValueNumPair excSet = vnStore->VNPExcSetUnion(op1Xvnp, op2Xvnp);
-
-                if (oper == GT_ADD)
-                {
-                    newVN = vnStore->ExtendPtrVN(tree->gtOp.gtOp1, tree->gtOp.gtOp2);
-                    if (newVN == ValueNumStore::NoVN)
-                    {
-                        newVN = vnStore->ExtendPtrVN(tree->gtOp.gtOp2, tree->gtOp.gtOp1);
-                    }
-                }
-                if (newVN != ValueNumStore::NoVN)
-                {
-                    newVN = vnStore->VNWithExc(newVN, excSet.GetLiberal());
-                    // We don't care about differences between liberal and conservative for pointer values.
-                    tree->gtVNPair.SetBoth(newVN);
-                }
-                else
-                {
-
-                    ValueNumPair normalRes =
-                        vnStore->VNPairForFunc(tree->TypeGet(),
-                                               GetVNFuncForOper(oper, (tree->gtFlags & GTF_UNSIGNED) != 0), op1vnp,
-                                               op2vnp);
-                    // Overflow-checking operations add an overflow exception
-                    if (tree->gtOverflowEx())
-                    {
-                        ValueNum overflowExcSet =
-                            vnStore->VNExcSetSingleton(vnStore->VNForFunc(TYP_REF, VNF_OverflowExc));
-                        excSet = vnStore->VNPExcSetUnion(excSet, ValueNumPair(overflowExcSet, overflowExcSet));
-                    }
-                    tree->gtVNPair = vnStore->VNPWithExc(normalRes, excSet);
-                }
-            }
-        }
-        else // ValueNumStore::VNFuncIsLegal returns false
-        {
-            // Some of the genTreeOps that aren't legal VNFuncs so they get special handling.
-            switch (oper)
-            {
-                case GT_COMMA:
-                {
                     ValueNumPair op1vnp;
                     ValueNumPair op1Xvnp = ValueNumStore::VNPForEmptyExcSet();
                     vnStore->VNPUnpackExc(tree->gtOp.gtOp1->gtVNPair, &op1vnp, &op1Xvnp);
                     ValueNumPair op2vnp;
                     ValueNumPair op2Xvnp = ValueNumStore::VNPForEmptyExcSet();
+                    vnStore->VNPUnpackExc(op2VNPair, &op2vnp, &op2Xvnp);
+                    ValueNumPair excSet = vnStore->VNPExcSetUnion(op1Xvnp, op2Xvnp);
 
-                    GenTree* op2 = tree->gtGetOp2();
-                    if (op2->OperIsIndir() && ((op2->gtFlags & GTF_IND_ASG_LHS) != 0))
+                    if (oper == GT_ADD)
                     {
-                        // If op2 represents the lhs of an assignment then we give a VNForVoid for the lhs
-                        op2vnp = ValueNumPair(ValueNumStore::VNForVoid(), ValueNumStore::VNForVoid());
+                        newVN = vnStore->ExtendPtrVN(tree->gtOp.gtOp1, tree->gtOp.gtOp2);
+                        if (newVN == ValueNumStore::NoVN)
+                        {
+                            newVN = vnStore->ExtendPtrVN(tree->gtOp.gtOp2, tree->gtOp.gtOp1);
+                        }
                     }
-                    else if ((op2->OperGet() == GT_CLS_VAR) && (op2->gtFlags & GTF_CLS_VAR_ASG_LHS))
+                    if (newVN != ValueNumStore::NoVN)
                     {
-                        // If op2 represents the lhs of an assignment then we give a VNForVoid for the lhs
-                        op2vnp = ValueNumPair(ValueNumStore::VNForVoid(), ValueNumStore::VNForVoid());
+                        newVN = vnStore->VNWithExc(newVN, excSet.GetLiberal());
+                        // We don't care about differences between liberal and conservative for pointer values.
+                        tree->gtVNPair.SetBoth(newVN);
                     }
                     else
                     {
-                        vnStore->VNPUnpackExc(op2->gtVNPair, &op2vnp, &op2Xvnp);
+
+                        ValueNumPair normalRes = vnStore->VNPairForFunc(tree->TypeGet(), vnf, op1vnp, op2vnp);
+                        // Overflow-checking operations add an overflow exception
+                        if (tree->gtOverflowEx())
+                        {
+                            ValueNum overflowExcSet = vnStore->VNExcSetSingleton(
+                                vnStore->VNForFunc(TYP_REF, VNF_OverflowExc, vnStore->VNForVoid()));
+                            excSet = vnStore->VNPExcSetUnion(excSet, ValueNumPair(overflowExcSet, overflowExcSet));
+                        }
+                        tree->gtVNPair = vnStore->VNPWithExc(normalRes, excSet);
                     }
-
-                    tree->gtVNPair = vnStore->VNPWithExc(op2vnp, vnStore->VNPExcSetUnion(op1Xvnp, op2Xvnp));
                 }
-                break;
-
-                case GT_NULLCHECK:
+            }
+            else // ValueNumStore::VNFuncIsLegal returns false
+            {
+                // Some of the genTreeOps that aren't legal VNFuncs so they get special handling.
+                switch (oper)
                 {
-                    // Explicit null check.
-                    // Handle case where operand tree also may cause exceptions.
-                    ValueNumPair excSet = vnStore->VNPExcSetSingleton(
-                        vnStore->VNPairForFunc(TYP_REF, VNF_NullPtrExc,
-                                               vnStore->VNPNormVal(tree->gtOp.gtOp1->gtVNPair)));
-                    ValueNumPair excSetBoth =
-                        vnStore->VNPExcSetUnion(excSet, vnStore->VNPExcVal(tree->gtOp.gtOp1->gtVNPair));
+                    case GT_COMMA:
+                    {
+                        ValueNumPair op1vnp;
+                        ValueNumPair op1Xvnp = ValueNumStore::VNPForEmptyExcSet();
+                        vnStore->VNPUnpackExc(tree->gtOp.gtOp1->gtVNPair, &op1vnp, &op1Xvnp);
+                        ValueNumPair op2vnp;
+                        ValueNumPair op2Xvnp = ValueNumStore::VNPForEmptyExcSet();
+                        GenTree*     op2     = tree->gtGetOp2();
 
-                    tree->gtVNPair = vnStore->VNPWithExc(vnStore->VNPForVoid(), excSetBoth);
+                        if (op2->OperIsIndir() && ((op2->gtFlags & GTF_IND_ASG_LHS) != 0))
+                        {
+                            // If op2 represents the lhs of an assignment then we give a VNForVoid for the lhs
+                            op2vnp = ValueNumPair(ValueNumStore::VNForVoid(), ValueNumStore::VNForVoid());
+                        }
+                        else if ((op2->OperGet() == GT_CLS_VAR) && (op2->gtFlags & GTF_CLS_VAR_ASG_LHS))
+                        {
+                            // If op2 represents the lhs of an assignment then we give a VNForVoid for the lhs
+                            op2vnp = ValueNumPair(ValueNumStore::VNForVoid(), ValueNumStore::VNForVoid());
+                        }
+                        else
+                        {
+                            vnStore->VNPUnpackExc(op2->gtVNPair, &op2vnp, &op2Xvnp);
+                        }
+                        tree->gtVNPair = vnStore->VNPWithExc(op2vnp, vnStore->VNPExcSetUnion(op1Xvnp, op2Xvnp));
+                    }
+                    break;
+
+                    case GT_NULLCHECK:
+                    {
+                        // Explicit null check.
+                        // Handle case where operand tree also may cause exceptions.
+                        ValueNumPair excSet = vnStore->VNPExcSetSingleton(
+                            vnStore->VNPairForFunc(TYP_REF, VNF_NullPtrExc,
+                                                   vnStore->VNPNormalPair(tree->gtOp.gtOp1->gtVNPair)));
+                        ValueNumPair excSetBoth =
+                            vnStore->VNPExcSetUnion(excSet, vnStore->VNPExceptionSet(tree->gtOp.gtOp1->gtVNPair));
+                        tree->gtVNPair = vnStore->VNPWithExc(vnStore->VNPForVoid(), excSetBoth);
+                    }
+                    break;
+
+                    case GT_LOCKADD: // Binop
+                    case GT_XADD:    // Binop
+                    case GT_XCHG:    // Binop
+                        assert(!tree->OperIs(GT_LOCKADD) && "LOCKADD should not appear before lowering");
+                        // For CMPXCHG and other intrinsics add an arbitrary side effect on GcHeap/ByrefExposed.
+                        fgMutateGcHeap(tree DEBUGARG("Interlocked intrinsic"));
+                        tree->gtVNPair.SetBoth(vnStore->VNForExpr(compCurBB, tree->TypeGet()));
+                        break;
+
+                    case GT_JTRUE:
+                    case GT_LIST:
+                        // These nodes never need to have a ValueNumber
+                        tree->gtVNPair.SetBoth(ValueNumStore::NoVN);
+                        break;
+
+                    case GT_BOX:
+                        // BOX doesn't do anything at this point, the actual object allocation
+                        // and initialization happens separately (and not numbering BOX correctly
+                        // prevents seeing allocation related assertions through it)
+                        tree->gtVNPair = tree->gtGetOp1()->gtVNPair;
+                        break;
+
+                    default:
+                        // The default action is to give the node a new, unique VN.
+                        tree->gtVNPair.SetBoth(vnStore->VNForExpr(compCurBB, tree->TypeGet()));
+                        break;
                 }
-                break;
-
-                case GT_LOCKADD: // Binop
-                case GT_XADD:    // Binop
-                case GT_XCHG:    // Binop
-                    assert(!tree->OperIs(GT_LOCKADD) && "LOCKADD should not appear before lowering");
-                    // For CMPXCHG and other intrinsics add an arbitrary side effect on GcHeap/ByrefExposed.
-                    fgMutateGcHeap(tree DEBUGARG("Interlocked intrinsic"));
-                    tree->gtVNPair.SetBoth(vnStore->VNForExpr(compCurBB, tree->TypeGet()));
-                    break;
-
-                case GT_JTRUE:
-                case GT_LIST:
-                    // These nodes never need to have a ValueNumber
-                    tree->gtVNPair.SetBoth(ValueNumStore::NoVN);
-                    break;
-
-                case GT_BOX:
-                    // BOX doesn't do anything at this point, the actual object allocation
-                    // and initialization happens separately (and not numbering BOX correctly
-                    // prevents seeing allocation related assertions through it)
-                    tree->gtVNPair = tree->gtGetOp1()->gtVNPair;
-                    break;
-
-                default:
-                    // The default action is to give the node a new, unique VN.
-                    tree->gtVNPair.SetBoth(vnStore->VNForExpr(compCurBB, tree->TypeGet()));
-                    break;
             }
         }
     }
@@ -7397,10 +7893,12 @@ void Compiler::fgValueNumberTree(GenTree* tree)
                 // A bounds check node has no value, but may throw exceptions.
                 ValueNumPair excSet = vnStore->VNPExcSetSingleton(
                     vnStore->VNPairForFunc(TYP_REF, VNF_IndexOutOfRangeExc,
-                                           vnStore->VNPNormVal(tree->AsBoundsChk()->gtIndex->gtVNPair),
-                                           vnStore->VNPNormVal(tree->AsBoundsChk()->gtArrLen->gtVNPair)));
-                excSet = vnStore->VNPExcSetUnion(excSet, vnStore->VNPExcVal(tree->AsBoundsChk()->gtIndex->gtVNPair));
-                excSet = vnStore->VNPExcSetUnion(excSet, vnStore->VNPExcVal(tree->AsBoundsChk()->gtArrLen->gtVNPair));
+                                           vnStore->VNPNormalPair(tree->AsBoundsChk()->gtIndex->gtVNPair),
+                                           vnStore->VNPNormalPair(tree->AsBoundsChk()->gtArrLen->gtVNPair)));
+                excSet =
+                    vnStore->VNPExcSetUnion(excSet, vnStore->VNPExceptionSet(tree->AsBoundsChk()->gtIndex->gtVNPair));
+                excSet =
+                    vnStore->VNPExcSetUnion(excSet, vnStore->VNPExceptionSet(tree->AsBoundsChk()->gtArrLen->gtVNPair));
 
                 tree->gtVNPair = vnStore->VNPWithExc(vnStore->VNPForVoid(), excSet);
 
@@ -7615,7 +8113,7 @@ void Compiler::fgValueNumberHelperCallFunc(GenTreeCall* call, VNFunc vnf, ValueN
         case VNF_JitNewArr:
         {
             generateUniqueVN  = true;
-            ValueNumPair vnp1 = vnStore->VNPNormVal(args->Rest()->Current()->gtVNPair);
+            ValueNumPair vnp1 = vnStore->VNPNormalPair(args->Rest()->Current()->gtVNPair);
 
             // The New Array helper may throw an overflow exception
             vnpExc = vnStore->VNPExcSetSingleton(vnStore->VNPairForFunc(TYP_REF, VNF_NewArrOverflowExc, vnp1));
@@ -7646,7 +8144,7 @@ void Compiler::fgValueNumberHelperCallFunc(GenTreeCall* call, VNFunc vnf, ValueN
         case VNF_JitReadyToRunNewArr:
         {
             generateUniqueVN  = true;
-            ValueNumPair vnp1 = vnStore->VNPNormVal(args->Current()->gtVNPair);
+            ValueNumPair vnp1 = vnStore->VNPNormalPair(args->Current()->gtVNPair);
 
             // The New Array helper may throw an overflow exception
             vnpExc = vnStore->VNPExcSetSingleton(vnStore->VNPairForFunc(TYP_REF, VNF_NewArrOverflowExc, vnp1));
@@ -8177,7 +8675,8 @@ bool Compiler::fgValueNumberHelperCall(GenTreeCall* call)
         {
             case CORINFO_HELP_OVERFLOW:
                 // This helper always throws the VNF_OverflowExc exception
-                vnpExc = vnStore->VNPExcSetSingleton(vnStore->VNPairForFunc(TYP_REF, VNF_OverflowExc));
+                vnpExc = vnStore->VNPExcSetSingleton(
+                    vnStore->VNPairForFunc(TYP_REF, VNF_OverflowExc, vnStore->VNPForVoid()));
                 break;
 
             default:
@@ -8292,7 +8791,7 @@ void Compiler::JitTestCheckVN()
 
             if (tlAndN.m_tl == TL_VNNorm)
             {
-                nodeVN = vnStore->VNNormVal(nodeVN);
+                nodeVN = vnStore->VNNormalValue(nodeVN);
             }
 
             ValueNum vn;
