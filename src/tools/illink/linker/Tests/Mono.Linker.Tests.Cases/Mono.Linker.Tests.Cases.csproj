@@ -386,6 +386,7 @@
     <Compile Include="Advanced\Dependencies\PreserveDependencyMethodInNonReferencedAssemblyBase.cs" />
     <Compile Include="Advanced\Dependencies\PreserveDependencyMethodInNonReferencedAssemblyLibrary.cs" />
     <Compile Include="Advanced\PreserveDependencyMethodInNonReferencedAssembly.cs" />
+    <Compile Include="Advanced\PreserveDependencyField.cs" />
   </ItemGroup>
   <ItemGroup>
     <Content Include="Advanced\Dependencies\PreserveDependencyMethodInNonReferencedAssemblyLibrary.xml" />

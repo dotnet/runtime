@@ -28,6 +28,7 @@
 
 using System;
 using Mono.Cecil;
+using Mono.Collections.Generic;
 
 namespace Mono.Linker.Steps {
 	public class PreserveDependencyLookupStep : LoadReferencesStep {
@@ -36,28 +37,23 @@ namespace Mono.Linker.Steps {
 			var module = assembly.MainModule;
 
 			foreach (var type in module.Types) {
-				if (!type.HasMethods)
-					continue;
-
-				foreach (var method in type.GetMethods ()) {
-					var md = method.Resolve ();
-					if (md?.HasCustomAttributes != true)
-						continue;
-
-					foreach (var ca in md.CustomAttributes) {
-						if (!IsPreserveDependencyAttribute (ca.AttributeType))
+				if (type.HasMethods) {
+					foreach (var method in type.GetMethods ()) {
+						var md = method.Resolve ();
+						if (md?.HasCustomAttributes != true)
 							continue;
 
-						if (ca.ConstructorArguments.Count != 3)
+						ProcessPreserveDependencyAttribute (md.CustomAttributes);
+					}
+				}
+
+				if (type.HasFields) {
+					foreach (var field in type.Fields) {
+						var md = field.Resolve ();
+						if (md?.HasCustomAttributes != true)
 							continue;
 
-						var assemblyName = ca.ConstructorArguments [2].Value as string;
-						if (assemblyName == null)
-							continue;
-
-						var newDependency = Context.Resolve (new AssemblyNameReference (assemblyName, new Version ()));
-						if (newDependency != null)
-							ProcessReferences (newDependency);
+						ProcessPreserveDependencyAttribute (md.CustomAttributes);
 					}
 				}
 			}
@@ -66,6 +62,25 @@ namespace Mono.Linker.Steps {
 		public static bool IsPreserveDependencyAttribute (TypeReference tr)
 		{
 			return tr.Name == "PreserveDependencyAttribute" && tr.Namespace == "System.Runtime.CompilerServices";
+		}
+
+		void ProcessPreserveDependencyAttribute (Collection<CustomAttribute> attributes)
+		{
+			foreach (var ca in attributes) {
+				if (!IsPreserveDependencyAttribute (ca.AttributeType))
+					continue;
+
+				if (ca.ConstructorArguments.Count != 3)
+					continue;
+
+				var assemblyName = ca.ConstructorArguments [2].Value as string;
+				if (assemblyName == null)
+					continue;
+
+				var newDependency = Context.Resolve (new AssemblyNameReference (assemblyName, new Version ()));
+				if (newDependency != null)
+					ProcessReferences (newDependency);
+			}
 		}
 	}
 }
