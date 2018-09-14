@@ -5822,7 +5822,7 @@ static void
 emit_managed_wrapper_ilgen (MonoMethodBuilder *mb, MonoMethodSignature *invoke_sig, MonoMarshalSpec **mspecs, EmitMarshalContext* m, MonoMethod *method, uint32_t target_handle)
 {
 	MonoMethodSignature *sig, *csig;
-	int i, *tmp_locals, ex_local, e_local, attach_cookie_local, attach_dummy_local;
+	int i, *tmp_locals, ex_local, e_local, orig_domain, attach_cookie;
 	gboolean closed = FALSE;
 
 	sig = m->sig;
@@ -5858,19 +5858,19 @@ emit_managed_wrapper_ilgen (MonoMethodBuilder *mb, MonoMethodSignature *invoke_s
 	ex_local = mono_mb_add_local (mb, m_class_get_byval_arg (mono_defaults.uint32_class));
 	e_local = mono_mb_add_local (mb, m_class_get_byval_arg (mono_defaults.exception_class));
 
-	attach_cookie_local = mono_mb_add_local (mb, int_type);
-	attach_dummy_local = mono_mb_add_local (mb, int_type);
+	orig_domain = mono_mb_add_local (mb, int_type);
+	attach_cookie = mono_mb_add_local (mb, int_type);
 
 	/*
 	 * guint32 ex = -1;
 	 * // does (STARTING|RUNNING|BLOCKING) -> RUNNING + set/switch domain
-	 * intptr_t attach_dummy;
-	 * intptr_t attach_cookie = mono_threads_attach_coop (domain, &attach_dummy);
+	 * intptr_t attach_cookie;
+	 * intptr_t orig_domain = mono_threads_attach_coop (domain, &attach_cookie);
 	 * <interrupt check>
 	 *
 	 * ret = method (...);
 	 * // does RUNNING -> (RUNNING|BLOCKING) + unset/switch domain
-	 * mono_threads_detach_coop (attach_cookie, &attach_dummy);
+	 * mono_threads_detach_coop (orig_domain, &attach_cookie);
 	 *
 	 * return ret;
 	 */
@@ -5882,16 +5882,18 @@ emit_managed_wrapper_ilgen (MonoMethodBuilder *mb, MonoMethodSignature *invoke_s
 	mono_mb_emit_byte (mb, CEE_CONV_U4);
 	mono_mb_emit_stloc (mb, ex_local);
 
-	/* attach_cookie = mono_threads_attach_coop (domain, &attach_dummy); */
+	/* orig_domain = mono_threads_attach_coop (domain, &attach_cookie); */
 	mono_mb_emit_byte (mb, MONO_CUSTOM_PREFIX);
 	mono_mb_emit_byte (mb, CEE_MONO_LDDOMAIN);
-	mono_mb_emit_ldloc_addr (mb, attach_dummy_local);
+	mono_mb_emit_ldloc_addr (mb, attach_cookie);
 	/*
 	 * This icall is special cased in the JIT so it works in native-to-managed wrappers in unattached threads.
 	 * Keep this in sync with the CEE_JIT_ICALL code in the JIT.
+	 *
+	 * Special cased in interpreter, keep in sync.
 	 */
 	mono_mb_emit_icall (mb, mono_threads_attach_coop);
-	mono_mb_emit_stloc (mb, attach_cookie_local);
+	mono_mb_emit_stloc (mb, orig_domain);
 
 	/* <interrupt check> */
 	emit_thread_interrupt_checkpoint (mb);
@@ -6034,9 +6036,10 @@ emit_managed_wrapper_ilgen (MonoMethodBuilder *mb, MonoMethodSignature *invoke_s
 		}
 	}
 
-	/* mono_threads_detach_coop (attach_cookie, &attach_dummy); */
-	mono_mb_emit_ldloc (mb, attach_cookie_local);
-	mono_mb_emit_ldloc_addr (mb, attach_dummy_local);
+	/* mono_threads_detach_coop (orig_domain, &attach_cookie); */
+	mono_mb_emit_ldloc (mb, orig_domain);
+	mono_mb_emit_ldloc_addr (mb, attach_cookie);
+	/* Special cased in interpreter, keep in sync */
 	mono_mb_emit_icall (mb, mono_threads_detach_coop);
 
 	/* return ret; */

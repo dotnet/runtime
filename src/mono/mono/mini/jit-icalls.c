@@ -1360,6 +1360,11 @@ mono_get_native_calli_wrapper (MonoImage *image, MonoMethodSignature *sig, gpoin
 
 	m = mono_marshal_get_native_func_wrapper (image, sig, &piinfo, mspecs, func);
 
+	for (int i = sig->param_count; i >= 0; i--)
+		if (mspecs [i])
+			mono_metadata_free_marshal_spec (mspecs [i]);
+	g_free (mspecs);
+
 	gpointer compiled_ptr = mono_compile_method_checked (m, error);
 	mono_error_set_pending_exception (error);
 	return compiled_ptr;

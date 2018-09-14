@@ -4338,10 +4338,19 @@ generate (MonoMethod *method, MonoMethodHeader *header, InterpMethod *rtm, unsig
 
 					CHECK_STACK (td, info->sig->param_count);
 					if (!strcmp (info->name, "mono_threads_attach_coop")) {
-						/* This icall can be called on
-						 * threads that aren't attached
-						 * yet. */
-						ADD_CODE (td, MINT_MONO_THREADS_ATTACH_COOP);
+						rtm->needs_thread_attach = 1;
+
+						/* attach needs two arguments, and has one return value: leave one element on the stack */
+						ADD_CODE (td, MINT_POP);
+						ADD_CODE (td, 0);
+					} else if (!strcmp (info->name, "mono_threads_detach_coop")) {
+						g_assert (rtm->needs_thread_attach);
+
+						/* detach consumes two arguments, and no return value: drop both of them */
+						ADD_CODE (td, MINT_POP);
+						ADD_CODE (td, 0);
+						ADD_CODE (td, MINT_POP);
+						ADD_CODE (td, 0);
 					} else {
 						icall_op = interp_icall_op_for_sig (info->sig);
 						g_assert (icall_op != -1);
