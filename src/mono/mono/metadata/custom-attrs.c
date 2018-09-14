@@ -1332,8 +1332,13 @@ reflection_resolve_custom_attribute_data (MonoReflectionMethod *ref_method, Mono
 	for (i = 0; i < mono_method_signature (method)->param_count; ++i) {
 		MonoObject *obj = mono_array_get (typedargs, MonoObject*, i);
 		MonoObject *typedarg;
+		MonoType *t;
 
-		typedarg = create_cattr_typed_arg (mono_method_signature (method)->params [i], obj, error);
+		t = mono_method_signature (method)->params [i];
+		if (t->type == MONO_TYPE_OBJECT && obj)
+			t = m_class_get_byval_arg (obj->vtable->klass);
+		typedarg = create_cattr_typed_arg (t, obj, error);
+
 		goto_if_nok (error, leave);
 		mono_array_setref (typedargs, i, typedarg);
 	}
