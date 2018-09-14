@@ -108,6 +108,35 @@ namespace System.IO.Tests
             Assert.True(firstFileTicks <= secondFileTicks, $"First File Ticks\t{firstFileTicks}\nSecond File Ticks\t{secondFileTicks}");
         }
 
+        [ConditionalFact(nameof(isNotHFS))] // OSX HFS driver format does not support nanosecond granularity.
+        public void SetUptoNanoseconds()
+        {
+            string file = GetTestFilePath();
+            File.WriteAllText(file, "");
+
+            DateTime dateTime = DateTime.UtcNow;
+            File.SetLastWriteTimeUtc(file, dateTime);
+            long ticks = File.GetLastWriteTimeUtc(file).Ticks;
+
+            Assert.Equal(dateTime, File.GetLastWriteTimeUtc(file));
+            Assert.Equal(ticks, dateTime.Ticks);
+        }
+
+        [Fact]
+        [PlatformSpecific(~TestPlatforms.OSX)] // OSX has the limitation of setting upto 2262-04-11T23:47:16 (long.Max) date.
+        public void SetDateTimeMax()
+        {
+            string file = GetTestFilePath();
+            File.WriteAllText(file, "");
+
+            DateTime dateTime = new DateTime(9999, 4, 11, 23, 47, 17, 21, DateTimeKind.Utc);
+            File.SetLastWriteTimeUtc(file, dateTime);
+            long ticks = File.GetLastWriteTimeUtc(file).Ticks;
+
+            Assert.Equal(dateTime, File.GetLastWriteTimeUtc(file));
+            Assert.Equal(ticks, dateTime.Ticks);
+        }
+
         [Fact]
         public void SetLastAccessTimeTicks()
         {
