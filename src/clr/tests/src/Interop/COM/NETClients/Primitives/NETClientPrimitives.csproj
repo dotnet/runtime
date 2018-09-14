@@ -29,10 +29,10 @@
     <Compile Include="../../ServerContracts/Primitives.cs" />
     <Compile Include="../../ServerContracts/PrimitivesNativeServer.cs" />
     <Compile Include="../../ServerContracts/ServerGuids.cs" />
-    <Compile Include="../../../common/Assertion.cs" />
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="../../NativeServer/CMakeLists.txt" />
+    <ProjectReference Include="../../../../Common/CoreCLRTestLibrary/CoreCLRTestLibrary.csproj" />
   </ItemGroup>
   <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.targets))\dir.targets" />
 </Project>

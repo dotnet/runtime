@@ -10,6 +10,11 @@
 
   <!-- Required source files -->
   <ItemGroup>
-    <Compile Condition="'$(IgnoreInteropAssertionFile)' != 'true'" Include="$(InteropCommonDir)Assertion.cs"/>
+    <ProjectReference 
+      Condition="('$(IgnoreCoreCLRTestLibraryDependency)' != 'true') And ('$(ReferenceSystemPrivateCoreLib)' != 'true')" 
+      Include="$(MSBuildThisFileDirectory)\..\Common\CoreCLRTestLibrary\CoreCLRTestLibrary.csproj" />
+    <Compile
+      Condition="('$(IgnoreCoreCLRTestLibraryDependency)' != 'true') And ('$(ReferenceSystemPrivateCoreLib)' == 'true')"
+      Include="$(MSBuildThisFileDirectory)\..\Common\CoreCLRTestLibrary\Assertion.cs" />
   </ItemGroup>
 </Project>

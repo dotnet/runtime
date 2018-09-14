@@ -4,8 +4,8 @@
 
 namespace NetClient
 {
-    using CoreFXTestLibrary;
     using System;
+    using TestLibrary;
 
     class NumericTests
     {

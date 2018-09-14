@@ -4,10 +4,10 @@
 
 namespace NetClient
 {
-    using CoreFXTestLibrary;
     using System;
     using System.Collections.Generic;
     using System.Linq;
+    using TestLibrary;
 
     class ArrayTests
     {
