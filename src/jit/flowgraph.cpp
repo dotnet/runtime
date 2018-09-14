@@ -5330,7 +5330,7 @@ unsigned Compiler::fgMakeBasicBlocks(const BYTE* codeAddr, IL_OFFSET codeSize, F
             case CEE_SWITCH:
             {
                 unsigned jmpBase;
-                unsigned jmpCnt; // # of switch cases (excluding defualt)
+                unsigned jmpCnt; // # of switch cases (excluding default)
 
                 BasicBlock** jmpTab;
                 BasicBlock** jmpPtr;
