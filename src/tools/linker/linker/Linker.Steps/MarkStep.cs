@@ -253,8 +253,8 @@ namespace Mono.Linker.Steps {
 			Tracer.Push (provider);
 			try {
 				foreach (CustomAttribute ca in provider.CustomAttributes) {
-					if (IsUserDependencyMarker (ca.AttributeType)) {
-						MarkUserDependency (provider as MethodReference, ca);
+					if (IsUserDependencyMarker (ca.AttributeType) && provider is MemberReference mr) {
+						MarkUserDependency (mr, ca);
 						continue;
 					}
 
@@ -277,7 +277,7 @@ namespace Mono.Linker.Steps {
 			return PreserveDependencyLookupStep.IsPreserveDependencyAttribute (type);
 		}
 
-		protected virtual void MarkUserDependency (MethodReference context, CustomAttribute ca)
+		protected virtual void MarkUserDependency (MemberReference context, CustomAttribute ca)
 		{
 			if (ca.HasProperties && ca.Properties [0].Name == "Condition") {
 				var condition = ca.Properties [0].Argument.Value as string;
