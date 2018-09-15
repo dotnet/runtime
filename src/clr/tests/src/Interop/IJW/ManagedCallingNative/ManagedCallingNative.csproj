@@ -12,7 +12,9 @@
     <SolutionDir Condition="$(SolutionDir) == '' Or $(SolutionDir) == '*Undefined*'">..\..\</SolutionDir>
     
     <!-- IJW is Windows-only -->
+    <!-- Test unsupported outside of windows -->
     <TestUnsupportedOutsideWindows>true</TestUnsupportedOutsideWindows>
+    <DisableProjectBuild Condition="'$(TargetsUnix)' == 'true'">true</DisableProjectBuild>
 
     <!-- IJW is not supported on ARM64 -->
     <DisableProjectBuild Condition="'$(Platform)' == 'arm64'">true</DisableProjectBuild>
