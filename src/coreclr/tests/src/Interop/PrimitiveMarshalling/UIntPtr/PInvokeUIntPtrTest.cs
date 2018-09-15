@@ -6,7 +6,7 @@ using System.Runtime.InteropServices;
 using System;
 using System.Reflection;
 using System.Text;
-using CoreFXTestLibrary;
+using TestLibrary;
 
 class Test
 {
