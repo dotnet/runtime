@@ -5,6 +5,9 @@
   <PropertyGroup>
     <IgnoreCoreCLRTestLibraryDependency>true</IgnoreCoreCLRTestLibraryDependency>
     <CLRTestScriptLocalCoreShim>true</CLRTestScriptLocalCoreShim>
+
+    <TestUnsupportedOutsideWindows>true</TestUnsupportedOutsideWindows>
+    <DisableProjectBuild Condition="'$(TargetsUnix)' == 'true'">true</DisableProjectBuild>
   </PropertyGroup>
   <ItemGroup>
     <Compile Include="$(InteropCommonDir)ExeLauncherProgram.cs" />

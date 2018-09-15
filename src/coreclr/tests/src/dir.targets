@@ -119,7 +119,45 @@
 
   <Target Name="CopyNativeProjectBinaries">
      <ItemGroup>
-        <NativeProjectBinaries Include="$(NativeProjectOutputFolder)\**\*.*" />
+        <NativeProjectBinaries Condition="'$(RunningOnUnix)' != 'true'" Include="$(NativeProjectOutputFolder)\**\*.*" />
+
+        <!-- ############################################################### -->
+        <!-- The following is unix only. It is required because the unix test-->
+        <!-- build, unlike the windows test build, do not place the binaries -->
+        <!-- built into a separate Debug/Checked/Release directory. Therefore-->
+        <!-- we must filter the folder to only include dynamic libraries,    -->
+        <!-- static libraries and executables.                               -->
+        <!--                                                                 -->
+        <!-- Please take care when modifying the following lines of code.    -->
+        <!-- At a minimum to test any changes to the below, please run a     -->
+        <!-- pri1 test build.                                                -->
+        <!-- ############################################################### -->
+
+        <!-- Include everything and then filter. -->
+        <NativeProjectBinariesMatched Condition="'$(RunningOnUnix)' == 'true'" Include="$(NativeProjectOutputFolder)\**\*.*" />
+
+        <!-- Filter executables on unix -->
+        <NativeProjectBinariesExeFilter Condition="'$(RunningOnUnix)' == 'true' and $([System.Text.RegularExpressions.Regex]::IsMatch(['%(Identity)', `(.*\/)([^.]+)$`))" Include="@(NativeProjectBinariesMatched)" />
+        <!-- Filter out the *Make* files -->
+        <NativeProjectBinariesExeFilterRemovedMakeFile Condition="'$(RunningOnUnix)' == 'true' and !$([System.Text.RegularExpressions.Regex]::IsMatch(['%(Identity)', `.*Makefile.*`))" Include="@(NativeProjectBinariesExeFilter)" />
+
+        <!-- Filter out the CMakeFiles files -->
+        <NativeProjectBinariesExeFilterRemovedCMakeFile Condition="'$(RunningOnUnix)' == 'true' and !$([System.Text.RegularExpressions.Regex]::IsMatch(['%(Identity)', `.*CMakeFiles.*`))" Include="@(NativeProjectBinariesExeFilterRemovedMakeFile)" />
+
+        <!-- Filter .dylib files on OSX -->
+        <NativeProjectBinariesDyLibFilter Condition="'$(__BuildOS)' == 'OSX' and $([System.Text.RegularExpressions.Regex]::IsMatch(['%(Identity)', `(.*\/).*\.dylib`))" Include="@(NativeProjectBinariesMatched)" />
+
+        <!-- Filter .so files on Linux -->
+        <NativeProjectBinariesDyLibFilter Condition="'$(__BuildOS)' == 'Linux' and $([System.Text.RegularExpressions.Regex]::IsMatch(['%(Identity)', `(.*\/).*\.so`))" Include="@(NativeProjectBinariesMatched)" />
+
+        <!-- Filter static lib files on Unix -->
+        <NativeProjectBinariesStaticLibFilter Condition="'$(RunningOnUnix)' == 'true' and $([System.Text.RegularExpressions.Regex]::IsMatch(['%(Identity)', `(.*\/).*\.a`))" Include="@(NativeProjectBinariesMatched)" />
+
+        <!-- Merge the filtered lists -->
+        <NativeProjectBinaries Condition="'$(RunningOnUnix)' == 'true'" Include="@(NativeProjectBinariesExeFilterRemovedCMakeFile)" />
+        <NativeProjectBinaries Condition="'$(RunningOnUnix)' == 'true'" Include="@(NativeProjectBinariesDyLibFilter)" />
+        <NativeProjectBinaries Condition="'$(RunningOnUnix)' == 'true'" Include="@(NativeProjectBinariesStaticLibFilter)" />
+
      </ItemGroup>
 
      <Error  Text="The native project files are missing in $(NativeProjectOutputFolder) please run build from the root of the repo at least once"
@@ -127,7 +165,7 @@
 
      <Copy
         SourceFiles="@(NativeProjectBinaries)"
-        DestinationFiles="@(NativeProjectBinaries -> '$(OutDir)%(RecursiveDir)%(Filename)%(Extension)')"
+        DestinationFiles="@(NativeProjectBinaries -> '$(OutDir)%(Filename)%(Extension)')"
         SkipUnchangedFiles="$(SkipCopyUnchangedFiles)"
         OverwriteReadOnlyFiles="$(OverwriteReadOnlyFiles)"
         Retries="$(CopyRetryCount)"
@@ -157,7 +195,7 @@
 
     <Message Text= "Full native project references are :%(NativeProjectReferenceNormalized.Identity)" />
     <Message Text= "Native binaries will be copied from :%(NativeProjectOutputFoldersToCopy.Identity)" />
-   <MSBuild Projects="$(MSBuildProjectFile)" Targets="CopyNativeProjectBinaries" Properties="NativeProjectOutputFolder=%(NativeProjectOutputFoldersToCopy.Identity)" Condition="'@(NativeProjectReference)' != '' And '$(RunningOnUnix)' != 'true'" />
+   <MSBuild Projects="$(MSBuildProjectFile)" Targets="CopyNativeProjectBinaries" Properties="NativeProjectOutputFolder=%(NativeProjectOutputFoldersToCopy.Identity)" Condition="'@(NativeProjectReference)' != ''" />
 
   </Target>
 
