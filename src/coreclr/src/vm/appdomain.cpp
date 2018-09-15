@@ -4137,7 +4137,7 @@ void AppDomain::Init()
 
 #ifdef FEATURE_APPDOMAIN_RESOURCE_MONITORING
     // NOTE: it's important that we initialize ARM data structures before calling
-    // Ref_CreateHandleTableBucket, this is because AD::Init() can race with GC
+    // IGCHandleManager::CreateHandleStore, this is because AD::Init() can race with GC
     // and once we add ourselves to the handle table map the GC can start walking
     // our handles and calling AD::RecordSurvivedBytes() which touches ARM data.
     if (GCHeapUtilities::IsServerHeap())
