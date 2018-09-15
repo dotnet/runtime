@@ -19,6 +19,7 @@
 #include <mono/metadata/seq-points-data.h>
 #include <mono/metadata/mono-basic-block.h>
 #include <mono/metadata/abi-details.h>
+#include <mono/metadata/reflection-internals.h>
 
 #include <mono/mini/mini.h>
 #include <mono/mini/mini-runtime.h>
@@ -4229,13 +4230,30 @@ generate (MonoMethod *method, MonoMethodHeader *header, InterpMethod *rtm, unsig
 			g_assert (mt == MINT_TYPE_VT);
 			size = mono_class_value_size (klass, NULL);
 			g_assert (size == sizeof(gpointer));
-			PUSH_VT (td, sizeof(gpointer));
-			ADD_CODE (td, MINT_LDTOKEN);
-			ADD_CODE (td, get_data_item_index (td, handle));
 
-			SET_TYPE (td->sp, stack_type [mt], klass);
-			td->sp++;
-			td->ip += 5;
+			const unsigned char *next_ip = td->ip + 5;
+			MonoMethod *cmethod;
+			if (next_ip < end &&
+					!is_bb_start [next_ip - td->il_code] &&
+					(*next_ip == CEE_CALL || *next_ip == CEE_CALLVIRT) &&
+					(cmethod = mono_get_method_checked (image, read32 (next_ip + 1), NULL, generic_context, error)) &&
+					(cmethod->klass == mono_defaults.systemtype_class) &&
+					(strcmp (cmethod->name, "GetTypeFromHandle") == 0)) {
+				ADD_CODE (td, MINT_MONO_LDPTR);
+				gpointer systype = mono_type_get_object_checked (domain, handle, error);
+				goto_if_nok (error, exit);
+				ADD_CODE (td, get_data_item_index (td, systype));
+				PUSH_SIMPLE_TYPE (td, STACK_TYPE_MP);
+				td->ip = next_ip + 5;
+			} else {
+				PUSH_VT (td, sizeof(gpointer));
+				ADD_CODE (td, MINT_LDTOKEN);
+				ADD_CODE (td, get_data_item_index (td, handle));
+				SET_TYPE (td->sp, stack_type [mt], klass);
+				td->sp++;
+				td->ip += 5;
+			}
+
 			break;
 		}
 		case CEE_ADD_OVF:
