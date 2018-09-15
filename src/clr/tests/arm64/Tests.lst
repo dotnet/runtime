@@ -56089,7 +56089,7 @@ RelativePath=JIT\Methodical\MDArray\DataTypes\float_cs_ro\float_cs_ro.cmd
 WorkingDir=JIT\Methodical\MDArray\DataTypes\float_cs_ro
 Expected=0
 MaxAllowedDurationSeconds=600
-Categories=JIT;EXPECTED_PASS;Pri1
+Categories=JIT;EXPECTED_FAIL;Pri1;18989
 HostStyle=0
 
 [int_cs_d.cmd_7351]
