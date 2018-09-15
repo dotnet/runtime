@@ -5766,7 +5766,6 @@ mono_aot_get_unbox_trampoline (MonoMethod *method)
 	gpointer code;
 	guint32 *ut, *ut_end, *entry;
 	int low, high, entry_index = 0;
-	gpointer symbol_addr;
 	MonoTrampInfo *tinfo;
 
 	if (method->is_inflated && !mono_method_is_generic_sharable_full (method, FALSE, FALSE, FALSE)) {
@@ -5820,7 +5819,7 @@ mono_aot_get_unbox_trampoline (MonoMethod *method)
 
 	tinfo = mono_tramp_info_create (NULL, (guint8 *)code, 0, NULL, NULL);
 
-	symbol_addr = read_unwind_info (amodule, tinfo, "unbox_trampoline_p");
+	gpointer const symbol_addr = read_unwind_info (amodule, tinfo, "unbox_trampoline_p");
 	if (!symbol_addr) {
 		mono_tramp_info_free (tinfo);
 		return FALSE;

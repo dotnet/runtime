@@ -2152,6 +2152,8 @@ arch_emit_specific_trampoline (MonoAotCompile *acfg, int offset, int *tramp_size
  *
  *   Emit code for the unbox trampoline for METHOD used in the full-aot case.
  * CALL_TARGET is the symbol pointing to the native code of METHOD.
+ *
+ * See mono_aot_get_unbox_trampoline.
  */
 static void
 arch_emit_unbox_trampoline (MonoAotCompile *acfg, MonoCompile *cfg, MonoMethod *method, const char *call_target)
@@ -9189,7 +9191,7 @@ static void
 emit_code (MonoAotCompile *acfg)
 {
 	int oindex, i, prev_index;
-	gboolean saved_unbox_info = FALSE;
+	gboolean saved_unbox_info = FALSE; // See mono_aot_get_unbox_trampoline.
 	char symbol [MAX_SYMBOL_SIZE];
 
 	if (acfg->aot_opts.llvm_only)
@@ -9302,8 +9304,15 @@ emit_code (MonoAotCompile *acfg)
 				mono_free_unwind_info (unwind_ops);
 
 				/* Save the unbox trampoline size */
+#ifdef TARGET_AMD64
+				// LLVM unbox trampolines vary in size, 6 or 9 bytes,
+				// due to the last instruction being 2 or 5 bytes.
+				// There is no need to describe interior bytes of instructions
+				// however, so state the size as if the last instruction is size 1.
+				emit_int32 (acfg, 5);
+#else
 				emit_symbol_diff (acfg, "ut_end", symbol, 0);
-
+#endif
 				saved_unbox_info = TRUE;
 			}
 		}
