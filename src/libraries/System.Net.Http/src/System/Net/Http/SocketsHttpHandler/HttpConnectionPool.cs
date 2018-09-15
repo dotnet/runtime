@@ -1053,34 +1053,25 @@ namespace System.Net.Http
         private sealed class ConnectionWaiter
         {
             private readonly TaskCompletionSource<HttpConnection> _tcs;
-            /// <summary>The pool with which this waiter is associated.</summary>
-            private readonly HttpConnectionPool _pool;
-            /// <summary>Request to use to create the connection.</summary>
-            private readonly HttpRequestMessage _request;
 
-            /// <summary>Cancellation token for the waiter.</summary>
-            private readonly CancellationToken _cancellationToken;
             /// <summary>Next waiter in the list.</summary>
             internal ConnectionWaiter _next;
             /// <summary>Previous waiter in the list.</summary>
             internal ConnectionWaiter _prev;
 
             /// <summary>Initializes the waiter.</summary>
-            public ConnectionWaiter(HttpConnectionPool pool, HttpRequestMessage request, CancellationToken cancellationToken)
+            public ConnectionWaiter()
             {
-                Debug.Assert(pool != null, "Expected non-null pool");
                 _tcs = new TaskCompletionSource<HttpConnection>(TaskCreationOptions.RunContinuationsAsynchronously);
-                _pool = pool;
-                _request = request;
-                _cancellationToken = cancellationToken;
             }
 
-            public async ValueTask<(HttpConnectionBase connection, bool isNewConnection, HttpResponseMessage failureResponse)> GetConnectionAsync()
+            public async ValueTask<(HttpConnectionBase connection, bool isNewConnection, HttpResponseMessage failureResponse)> 
+                GetConnectionAsync(HttpConnectionPool pool, HttpRequestMessage request, CancellationToken cancellationToken)
             {
                 CancellationTokenRegistration cancellationTokenRegistration = default;
-                if (_cancellationToken.CanBeCanceled)
+                if (cancellationToken.CanBeCanceled)
                 {
-                    cancellationTokenRegistration = _cancellationToken.Register(() => _tcs.TrySetCanceled());
+                    cancellationTokenRegistration = cancellationToken.Register(() => _tcs.TrySetCanceled());
                 }
 
                 HttpConnection connection = await _tcs.Task;
@@ -1092,7 +1083,7 @@ namespace System.Net.Http
                     return (connection, false, null);
                 }
 
-                return await _pool.WaitForCreatedConnectionAsync(_pool.CreateHttp11ConnectionAsync(_request, _cancellationToken));
+                return await pool.WaitForCreatedConnectionAsync(pool.CreateHttp11ConnectionAsync(request, cancellationToken));
             }
 
             public bool TransferConnection(HttpConnection connection)
