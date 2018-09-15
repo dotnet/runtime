@@ -99,7 +99,9 @@ IGCHandleStore* GCHandleManager::CreateHandleStore(void* context)
 #ifndef FEATURE_REDHAWK
     GCHandleStore* store = new (nothrow) GCHandleStore();
     if (store == nullptr)
+    {
         return nullptr;
+    }
 
     bool success = ::Ref_InitializeHandleTableBucket(&store->_underlyingBucket, context);
     if (!success)

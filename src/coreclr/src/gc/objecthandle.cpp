@@ -689,21 +689,6 @@ void Ref_Shutdown()
 }
 
 #ifndef FEATURE_REDHAWK
-HandleTableBucket* Ref_CreateHandleTableBucket(void* context)
-{
-    HandleTableBucket* result = new (nothrow) HandleTableBucket();
-    if (result == nullptr)
-        return nullptr;
-
-    if (!Ref_InitializeHandleTableBucket(result, context))
-    {
-        delete result;
-        return nullptr;
-    }
-
-    return result;
-}
-
 bool Ref_InitializeHandleTableBucket(HandleTableBucket* bucket, void* context)
 {
     CONTRACTL
@@ -836,7 +821,6 @@ void Ref_DestroyHandleTableBucket(HandleTableBucket *pBucket)
         HndDestroyHandleTable(pBucket->pTable[uCPUindex]);
     }
     delete [] pBucket->pTable;
-    delete pBucket;
 }
 
 int getSlotNumber(ScanContext* sc)
