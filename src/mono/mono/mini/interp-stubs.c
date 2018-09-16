@@ -134,12 +134,6 @@ stub_get_remoting_invoke (gpointer imethod, MonoError *error)
 }
 
 static void
-stub_walk_stack_with_ctx (MonoInternalStackWalk func, MonoContext *ctx, MonoUnwindOptions options, void *user_data)
-{
-	g_assert_not_reached ();
-}
-
-static void
 stub_delegate_ctor (MonoObjectHandle this_obj, MonoObjectHandle target, gpointer addr, MonoError *error)
 {
 	g_assert_not_reached ();
