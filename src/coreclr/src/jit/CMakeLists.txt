@@ -82,6 +82,10 @@ set( JIT_SOURCES
 # change has effect on editor experience and has no impact on build
 if (WIN32)
   set( JIT_HEADERS
+    ../inc/corinfo.h
+    ../inc/corjit.h
+    ../inc/corjitflags.h
+    ../inc/corjithost.h
     _typeinfo.h
     alloc.h
     arraystack.h
@@ -105,17 +109,11 @@ if (WIN32)
     decomposelongs.h
     disasm.h
     emit.h
-    emitarm.h
-    emitarm64.h
     emitdef.h
     emitfmts.h
-    emitfmtsarm.h
-    emitfmtsarm64.h
-    emitfmtsxarch.h
     emitinl.h
     emitjmps.h
     emitpub.h
-    emitxarch.h
     error.h
     gentree.h
     gtlist.h
@@ -123,16 +121,13 @@ if (WIN32)
     hashbv.h
     host.h
     hostallocator.h
-    hwintrinsiclistxarch.h
+    hwintrinsic.h
     ICorJitInfo_API_names.h
     ICorJitInfo_API_wrapper.hpp
     inline.h
     inlinepolicy.h
     instr.h
     instrs.h
-    instrsarm.h
-    instrsarm64.h
-    instrsxarch.h
     jit.h
     jitconfig.h
     jitconfigvalues.h
@@ -159,8 +154,6 @@ if (WIN32)
     regalloc.h
     register_arg_convention.h
     register.h
-    registerarm.h
-    registerarm64.h
     reglist.h
     regset.h
     sideeffects.h
@@ -186,6 +179,27 @@ if (WIN32)
     varset.h
     vartype.h
   )
+
+  if (CLR_CMAKE_TARGET_ARCH_ARM64 OR CLR_CMAKE_TARGET_ARCH_ARM)
+    list (APPEND JIT_HEADERS
+      emitarm.h
+      emitarm64.h
+      emitfmtsarm.h
+      emitfmtsarm64.h
+      hwintrinsicArm64.h
+      hwintrinsiclistArm64.h
+      instrsarm.h
+      instrsarm64.h
+      registerarm.h
+      registerarm64.h)
+  elseif (CLR_CMAKE_TARGET_ARCH_AMD64 OR CLR_CMAKE_TARGET_ARCH_I386)
+    list (APPEND JIT_HEADERS
+      emitfmtsxarch.h
+      emitxarch.h
+      hwintrinsiclistxarch.h
+      hwintrinsicxarch.h
+      instrsxarch.h)
+  endif ()
 endif(WIN32)
 
 # Define all the architecture-specific source files
