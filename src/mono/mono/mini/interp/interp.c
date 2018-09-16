@@ -1471,14 +1471,11 @@ dump_frame (InterpFrame *inv)
 	for (i = 0; inv; inv = inv->parent) {
 		if (inv->imethod != NULL) {
 			MonoMethod *method = inv->imethod->method;
-			MonoClass *k;
 
 			int codep = 0;
 			const char * opname = "";
 			char *name;
 			gchar *source = NULL;
-
-			k = method->klass;
 
 			if ((method->flags & METHOD_ATTRIBUTE_PINVOKE_IMPL) == 0 &&
 				(method->iflags & METHOD_IMPL_ATTRIBUTE_RUNTIME) == 0) {
@@ -4016,16 +4013,12 @@ interp_exec_method_full (InterpFrame *frame, ThreadContext *context, guint16 *st
 			MINT_IN_BREAK;
 		}
 		MINT_IN_CASE(MINT_NEWOBJ_MAGIC) {
-			guint32 token;
-
 			frame->ip = ip;
-			token = * (guint16 *)(ip + 1);
 			ip += 2;
 
 			MINT_IN_BREAK;
 		}
 		MINT_IN_CASE(MINT_INTRINS_BYREFERENCE_CTOR) {
-			MonoClass *newobj_class;
 			MonoMethodSignature *csig;
 			guint32 token;
 
@@ -4035,7 +4028,6 @@ interp_exec_method_full (InterpFrame *frame, ThreadContext *context, guint16 *st
 
 			InterpMethod *cmethod = (InterpMethod*)rtm->data_items [token];
 			csig = mono_method_signature (cmethod->method);
-			newobj_class = cmethod->method->klass;
 
 			g_assert (csig->hasthis);
 			sp -= csig->param_count;
