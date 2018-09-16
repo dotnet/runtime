@@ -812,7 +812,7 @@ mono_arch_ip_from_context (void *sigctx)
 }
 
 static MonoObject*
-restore_soft_guard_pages ()
+restore_soft_guard_pages (void)
 {
 	MonoJitTlsData *jit_tls = mono_tls_get_jit_tls ();
 	if (jit_tls->stack_ovf_guard_base)
