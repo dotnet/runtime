@@ -476,8 +476,6 @@
     <Compile Include="$(BclSourcesRoot)\System\Resources\IResourceGroveler.cs" />
     <Compile Include="$(BclSourcesRoot)\System\Resources\ManifestBasedResourceGroveler.cs" />
     <Compile Include="$(BclSourcesRoot)\System\Resources\ResourceManager.cs" />
-    <Compile Include="$(BclSourcesRoot)\System\Resources\ResourceReader.cs" />
-    <Compile Include="$(BclSourcesRoot)\System\Resources\ResourceSet.cs" />
   </ItemGroup>
   <ItemGroup>
     <Compile Include="$(BclSourcesRoot)\System\Collections\Generic\Comparer.cs" />
