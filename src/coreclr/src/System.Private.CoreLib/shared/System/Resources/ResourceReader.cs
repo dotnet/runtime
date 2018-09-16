@@ -94,7 +94,7 @@ namespace System.Resources
         private unsafe int* _nameHashesPtr;  // In case we're using UnmanagedMemoryStream
         private int[] _namePositions; // relative locations of names
         private unsafe int* _namePositionsPtr;  // If we're using UnmanagedMemoryStream
-        private RuntimeType[] _typeTable;    // Lazy array of Types for resource values.
+        private Type[] _typeTable;    // Lazy array of Types for resource values.
         private int[] _typeNamePositions;  // To delay initialize type table
         private int _numResources;    // Num of resources files, in case arrays aren't allocated.        
 
@@ -547,7 +547,7 @@ namespace System.Resources
             int typeIndex = _store.Read7BitEncodedInt();
             if (typeIndex == -1)
                 return null;
-            RuntimeType type = FindType(typeIndex);
+            Type type = FindType(typeIndex);
             // Consider putting in logic to see if this type is a 
             // primitive or a value type first, so we can reach the 
             // deserialization code faster for arbitrary objects.
@@ -827,7 +827,7 @@ namespace System.Resources
             {
                 throw new BadImageFormatException(SR.BadImageFormat_ResourcesHeaderCorrupted);
             }
-            _typeTable = new RuntimeType[numTypes];
+            _typeTable = new Type[numTypes];
             _typeNamePositions = new int[numTypes];
             for (int i = 0; i < numTypes; i++)
             {
@@ -931,7 +931,7 @@ namespace System.Resources
         // This allows us to delay-initialize the Type[].  This might be a 
         // good startup time savings, since we might have to load assemblies
         // and initialize Reflection.
-        private RuntimeType FindType(int typeIndex)
+        private Type FindType(int typeIndex)
         {
             if (typeIndex < 0 || typeIndex >= _typeTable.Length)
             {
@@ -944,7 +944,7 @@ namespace System.Resources
                 {
                     _store.BaseStream.Position = _typeNamePositions[typeIndex];
                     string typeName = _store.ReadString();
-                    _typeTable[typeIndex] = (RuntimeType)Type.GetType(typeName, true);
+                    _typeTable[typeIndex] = Type.GetType(typeName, true);
                 }
                 // If serialization isn't supported, we convert FileNotFoundException to 
                 // NotSupportedException for consistency with v2. This is a corner-case, but the 
