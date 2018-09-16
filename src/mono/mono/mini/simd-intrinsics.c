@@ -817,6 +817,12 @@ mono_simd_simplify_indirection (MonoCompile *cfg)
 	g_free (target_bb);
 }
 
+/*
+* Windows x64 value type ABI uses reg/stack references (ArgValuetypeAddrInIReg/ArgValuetypeAddrOnStack)
+* for function arguments. When using SIMD intrinsics arguments optimized into OP_ARG needs to be decomposed
+* into correspondig SIMD LOADX/STOREX instructions.
+*/
+#if defined(TARGET_WIN32) && defined(TARGET_AMD64)
 static gboolean
 decompose_vtype_opt_uses_simd_intrinsics (MonoCompile *cfg, MonoInst *ins)
 {
@@ -855,12 +861,6 @@ decompose_vtype_opt_load_arg (MonoCompile *cfg, MonoBasicBlock *bb, MonoInst *in
 	}
 }
 
-/*
-* Windows x64 value type ABI uses reg/stack references (ArgValuetypeAddrInIReg/ArgValuetypeAddrOnStack)
-* for function arguments. When using SIMD intrinsics arguments optimized into OP_ARG needs to be decomposed
-* into correspondig SIMD LOADX/STOREX instructions.
-*/
-#if defined(TARGET_WIN32) && defined(TARGET_AMD64)
 void
 mono_simd_decompose_intrinsic (MonoCompile *cfg, MonoBasicBlock *bb, MonoInst *ins)
 {
