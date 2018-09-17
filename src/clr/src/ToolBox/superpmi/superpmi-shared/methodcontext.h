@@ -1275,14 +1275,34 @@ public:
     void dmpGetStringConfigValue(DWORD nameIndex, DWORD result);
     const wchar_t* repGetStringConfigValue(const wchar_t* name);
 
-    bool                                              wasEnviromentChanged();
-    static DenseLightWeightMap<Agnostic_Environment>* prevEnviroment;
+    struct Environment
+    {
+        Environment() : getIntConfigValue(nullptr), getStingConfigValue(nullptr)
+        {
+        }
+
+        LightWeightMap<MethodContext::Agnostic_ConfigIntInfo, DWORD>* getIntConfigValue;
+        LightWeightMap<DWORD, DWORD>*                                 getStingConfigValue;
+    };
+
+    Environment cloneEnvironment();
+
+    bool WasEnvironmentChanged(const Environment& prevEnv);
 
     CompileResult* cr;
     CompileResult* originalCR;
     int            index;
 
 private:
+    bool IsEnvironmentHeaderEqual(const Environment& prevEnv);
+    bool IsEnvironmentContentEqual(const Environment& prevEnv);
+
+    template <typename key, typename value>
+    static bool AreLWMHeadersEqual(LightWeightMap<key, value>* prev, LightWeightMap<key, value>* curr);
+    static bool IsIntConfigContentEqual(LightWeightMap<Agnostic_ConfigIntInfo, DWORD>* prev,
+                                        LightWeightMap<Agnostic_ConfigIntInfo, DWORD>* curr);
+    static bool IsStringContentEqual(LightWeightMap<DWORD, DWORD>* prev, LightWeightMap<DWORD, DWORD>* curr);
+
 #define LWM(map, key, value) LightWeightMap<key, value>* map;
 #define DENSELWM(map, value) DenseLightWeightMap<value>* map;
 #include "lwmlist.h"
@@ -1322,7 +1342,7 @@ enum mcPackets
     Packet_EmbedMethodHandle                             = 19,
     Packet_EmbedModuleHandle                             = 20,
     Packet_EmptyStringLiteral                            = 21,
-    Packet_Environment                                   = 136, // Deprecated 7/29/2017
+    Retired9                                             = 136,
     Packet_ErrorList                                     = 22,
     Packet_FilterException                               = 134,
     Packet_FindCallSiteSig                               = 23,

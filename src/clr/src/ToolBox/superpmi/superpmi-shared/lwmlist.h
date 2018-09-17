@@ -42,7 +42,6 @@ LWM(EmbedGenericHandle, Agnostic_EmbedGenericHandle, Agnostic_CORINFO_GENERICHAN
 LWM(EmbedMethodHandle, DWORDLONG, DLDL)
 LWM(EmbedModuleHandle, DWORDLONG, DLDL)
 DENSELWM(EmptyStringLiteral, DLD)
-DENSELWM(Environment, Agnostic_Environment)
 DENSELWM(ErrorList, DWORD)
 LWM(FilterException, DWORD, DWORD)
 LWM(FindCallSiteSig, Agnostic_FindCallSiteSig, Agnostic_CORINFO_SIG_INFO)
