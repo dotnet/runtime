@@ -77,7 +77,6 @@
     <HelixArchLabel>$(ArchGroup)</HelixArchLabel>
     <HelixConfigLabel>$(ConfigurationGroup)</HelixConfigLabel>
     <MaxRetryCount>1</MaxRetryCount>
-    <TestsBlobPrefix>tests/</TestsBlobPrefix>
     <!-- Unique container name per build and configuration, e.g., corefx-beta-12345-01-windows-x64 -->
     <!-- Azure Storage containers can only contain [a-z, 0-9, -] in their names and $(OSGroup) is "Windows_NT" on Windows... -->
     <ProcessedOSGroup>$(OSGroup.ToLower())</ProcessedOSGroup>
