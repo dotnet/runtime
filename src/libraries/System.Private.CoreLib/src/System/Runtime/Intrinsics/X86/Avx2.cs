@@ -2513,7 +2513,7 @@ namespace System.Runtime.Intrinsics.X86
         /// __m256i _mm256_sad_epu8 (__m256i a, __m256i b)
         ///   VPSADBW ymm, ymm, ymm/m256
         /// </summary>
-        public static Vector256<ulong> SumAbsoluteDifferences(Vector256<byte> left, Vector256<byte> right) => SumAbsoluteDifferences(left, right);
+        public static Vector256<ushort> SumAbsoluteDifferences(Vector256<byte> left, Vector256<byte> right) => SumAbsoluteDifferences(left, right);
 
         /// <summary>
         /// __m256i _mm256_unpackhi_epi8 (__m256i a, __m256i b)
