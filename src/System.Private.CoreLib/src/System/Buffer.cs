@@ -117,10 +117,17 @@ namespace System
             return _ByteLength(array);
         }
 
-        internal static unsafe void ZeroMemory(byte* src, long len)
+        // This is currently used by System.IO.UnmanagedMemoryStream
+        internal static unsafe void ZeroMemory(byte* dest, long len)
         {
-            while (len-- > 0)
-                *(src + len) = 0;
+            Debug.Assert((ulong)(len) == (nuint)(len));
+            ZeroMemory(dest, (nuint)(len));
+        }
+
+        // This method has different signature for x64 and other platforms and is done for performance reasons.
+        internal static unsafe void ZeroMemory(byte* dest, nuint len)
+        {
+            SpanHelpers.ClearWithoutReferences(ref *dest, len);
         }
 
         internal static unsafe void Memcpy(byte[] dest, int destIndex, byte* src, int srcIndex, int len)
