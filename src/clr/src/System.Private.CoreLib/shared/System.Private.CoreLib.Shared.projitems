@@ -278,6 +278,7 @@
     <Compile Include="$(MSBuildThisFileDirectory)System\NotSupportedException.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Nullable.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Number.BigInteger.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)System\Number.DiyFp.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Number.Dragon4.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Number.Formatting.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Number.NumberBuffer.cs" />
