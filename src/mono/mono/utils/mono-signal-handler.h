@@ -78,25 +78,34 @@
  */
 
 #ifdef HOST_WIN32
-#define MONO_SIG_HANDLER_SIGNATURE(ftn) ftn (int _dummy, EXCEPTION_POINTERS *_info, void *context)
-#define MONO_SIG_HANDLER_FUNC(access, ftn) MONO_SIGNAL_HANDLER_FUNC (access, ftn, (int _dummy, EXCEPTION_POINTERS *_info, void *context))
-#define MONO_SIG_HANDLER_PARAMS _dummy, _info, context
-#define MONO_SIG_HANDLER_GET_SIGNO() (_dummy)
-#define MONO_SIG_HANDLER_GET_INFO() (_info)
 #define MONO_SIG_HANDLER_INFO_TYPE EXCEPTION_POINTERS
 /* seh_vectored_exception_handler () passes in a CONTEXT* */
-#define MONO_SIG_HANDLER_GET_CONTEXT \
-    void *ctx = context;
 #else
 /* sigaction */
-#define MONO_SIG_HANDLER_SIGNATURE(ftn) ftn (int _dummy, siginfo_t *_info, void *context)
-#define MONO_SIG_HANDLER_FUNC(access, ftn) MONO_SIGNAL_HANDLER_FUNC (access, ftn, (int _dummy, siginfo_t *_info, void *context))
+#define MONO_SIG_HANDLER_INFO_TYPE siginfo_t
+#endif
+
+// FIXME This should be defined (MONO_ARCH_USE_SIGACTION) || defined (HOST_WIN32)
+// But the correct value isn't coming through on Mac. A small C-only test does work on Mac.
+#if /*defined (HOST_WIN32) ||*/ defined (HOST_LINUX)
+#define MONO_SIG_HANDLER_DEBUG 1 // "with_fault_addr" but could be extended in future, so "debug"
+#endif
+
+#define MONO_SIG_HANDLER_SIGNATURE(ftn) ftn (int _dummy, MONO_SIG_HANDLER_INFO_TYPE *_info, void *context)
+#define MONO_SIG_HANDLER_FUNC(access, ftn) MONO_SIGNAL_HANDLER_FUNC (access, ftn, (int _dummy, MONO_SIG_HANDLER_INFO_TYPE *_info, void *context))
 #define MONO_SIG_HANDLER_PARAMS _dummy, _info, context
 #define MONO_SIG_HANDLER_GET_SIGNO() (_dummy)
 #define MONO_SIG_HANDLER_GET_INFO() (_info)
-#define MONO_SIG_HANDLER_INFO_TYPE siginfo_t
 #define MONO_SIG_HANDLER_GET_CONTEXT \
     void *ctx = context;
+
+#ifdef MONO_SIG_HANDLER_DEBUG
+// Same as MONO_SIG_HANDLER_FUNC but debug_fault_addr is added to params, and no_optimize.
+// The Krait workaround is not needed here, due to this not actually being the signal handler,
+// so MONO_SIGNAL_HANDLER_FUNC is combined into it.
+#define MONO_SIG_HANDLER_FUNC_DEBUG(access, ftn) access MONO_ATTRIBUTE_NO_OPTIMIZE void ftn \
+	(int _dummy, MONO_SIG_HANDLER_INFO_TYPE *_info, void *context, void * volatile debug_fault_addr G_GNUC_UNUSED)
+#define MONO_SIG_HANDLER_PARAMS_DEBUG MONO_SIG_HANDLER_PARAMS, debug_fault_addr
 #endif
 
-#endif
+#endif // __MONO_SIGNAL_HANDLER_H__

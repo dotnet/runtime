@@ -425,6 +425,10 @@ if test x$host_darwin = xyes; then
    AC_DEFINE(HOST_DARWIN, 1, [Host Platform is Darwin])
 fi
 
+if test x$host_linux = xyes; then
+   AC_DEFINE(HOST_LINUX, 1, [Host Platform is Linux])
+fi
+
 # Defined for all targets/platforms using classic Windows API support.
 AC_DEFINE(HAVE_CLASSIC_WINAPI_SUPPORT, 1, [Use classic Windows API support])
 AC_DEFINE(HAVE_UWP_WINAPI_SUPPORT, 0, [Don't use UWP Windows API support])

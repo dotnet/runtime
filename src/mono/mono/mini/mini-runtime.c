@@ -3392,7 +3392,14 @@ is_addr_implicit_null_check (void *addr)
 	return addr <= GUINT_TO_POINTER (mono_target_pagesize ());
 }
 
+// This function is separate from mono_sigsegv_signal_handler
+// so debug_fault_addr can be seen in debugger stacks.
+#ifdef MONO_SIG_HANDLER_DEBUG
+MONO_NEVER_INLINE
+MONO_SIG_HANDLER_FUNC_DEBUG (static, mono_sigsegv_signal_handler_debug)
+#else
 MONO_SIG_HANDLER_FUNC (, mono_sigsegv_signal_handler)
+#endif
 {
 	MonoJitInfo *ji;
 	MonoJitTlsData *jit_tls = mono_tls_get_jit_tls ();
@@ -3493,6 +3500,27 @@ MONO_SIG_HANDLER_FUNC (, mono_sigsegv_signal_handler)
 	}
 #endif
 }
+
+#ifdef MONO_SIG_HANDLER_DEBUG
+
+// This function is separate from mono_sigsegv_signal_handler_debug
+// so debug_fault_addr can be seen in debugger stacks.
+MONO_SIG_HANDLER_FUNC (, mono_sigsegv_signal_handler)
+{
+#ifdef HOST_WIN32 // This is inactive as there were problems seen.
+	// Presumed EXCEPTION_ACCESS_VIOLATION and NumberParameters >= 2.
+	// ExceptionInformation is a fixed size array, so it is ok
+	// if this is incorrect, it will not index out of bounds.
+	gpointer const debug_fault_addr = (gpointer)_info->ExceptionRecord->ExceptionInformation [1];
+#elif defined (HAVE_SIG_INFO)
+	gpointer const debug_fault_addr = MONO_SIG_HANDLER_GET_INFO ()->si_addr;
+#else
+#error No extra parameter is passed, not even 0, to avoid any confusion.
+#endif
+	mono_sigsegv_signal_handler_debug (MONO_SIG_HANDLER_PARAMS_DEBUG);
+}
+
+#endif // MONO_SIG_HANDLER_DEBUG
 
 MONO_SIG_HANDLER_FUNC (, mono_sigint_signal_handler)
 {
