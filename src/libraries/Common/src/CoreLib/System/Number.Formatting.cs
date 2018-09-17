@@ -2302,7 +2302,7 @@ SkipRounding:
                 number.sign = double.IsNegative(value);
                 number.digits[0] = '\0';
             }
-            else
+            else if (!Grisu3.Run(value, precision, ref number))
             {
                 Dragon4(value, precision, ref number);
             }
