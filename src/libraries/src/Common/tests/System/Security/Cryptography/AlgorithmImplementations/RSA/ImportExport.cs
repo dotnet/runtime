@@ -10,9 +10,7 @@ namespace System.Security.Cryptography.Rsa.Tests
 {
     public partial class ImportExport
     {
-        private static bool EphemeralKeysAreExportable => !PlatformDetection.IsFullFramework || PlatformDetection.IsNetfx462OrNewer;
-
-        [ConditionalFact(nameof(EphemeralKeysAreExportable))]
+        [Fact]
         public static void ExportAutoKey()
         {
             RSAParameters privateParams;
@@ -42,8 +40,7 @@ namespace System.Security.Cryptography.Rsa.Tests
             Assert.Equal(privateParams.Exponent, publicParams.Exponent);
         }
 
-        [ActiveIssue(20214, TargetFrameworkMonikers.NetFramework)]
-        [ConditionalFact(nameof(EphemeralKeysAreExportable))]
+        [Fact]
         public static void PaddedExport()
         {
             // OpenSSL's numeric type for the storage of RSA key parts disregards zero-valued
@@ -70,8 +67,7 @@ namespace System.Security.Cryptography.Rsa.Tests
             AssertKeyEquals(diminishedDPParameters, exported);
         }
 
-        [ActiveIssue(20214, TargetFrameworkMonikers.NetFramework)]
-        [ConditionalFact(nameof(EphemeralKeysAreExportable))]
+        [Fact]
         public static void LargeKeyImportExport()
         {
             RSAParameters imported = TestData.RSA16384Params;
@@ -100,8 +96,7 @@ namespace System.Security.Cryptography.Rsa.Tests
             }
         }
 
-        [ActiveIssue(20214, TargetFrameworkMonikers.NetFramework)]
-        [ConditionalFact(nameof(EphemeralKeysAreExportable))]
+        [Fact]
         public static void UnusualExponentImportExport()
         {
             // Most choices for the Exponent value in an RSA key use a Fermat prime.
@@ -125,8 +120,7 @@ namespace System.Security.Cryptography.Rsa.Tests
             AssertKeyEquals(unusualExponentParameters, exported);
         }
 
-        [ActiveIssue(20214, TargetFrameworkMonikers.NetFramework)]
-        [ConditionalFact(nameof(EphemeralKeysAreExportable))]
+        [Fact]
         public static void ImportExport1032()
         {
             RSAParameters imported = TestData.RSA1032Parameters;
@@ -147,8 +141,7 @@ namespace System.Security.Cryptography.Rsa.Tests
             Assert.Null(exportedPublic.D);
         }
 
-        [ActiveIssue(20214, TargetFrameworkMonikers.NetFramework)]
-        [ConditionalFact(nameof(EphemeralKeysAreExportable))]
+        [Fact]
         public static void ImportReset()
         {
             using (RSA rsa = RSAFactory.Create())
@@ -196,8 +189,7 @@ namespace System.Security.Cryptography.Rsa.Tests
             }
         }
 
-        [ActiveIssue(20214, TargetFrameworkMonikers.NetFramework)]
-        [ConditionalFact(nameof(EphemeralKeysAreExportable))]
+        [Fact]
         public static void MultiExport()
         {
             RSAParameters imported = TestData.RSA1024Params;
