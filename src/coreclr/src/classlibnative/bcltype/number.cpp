@@ -12,9 +12,6 @@
 
 typedef wchar_t wchar;
 
-#define SCALE_NAN 0x80000000
-#define SCALE_INF 0x7FFFFFFF
-
 /*===========================================================
     Portable NumberToDouble implementation
     --------------------------------------

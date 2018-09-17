@@ -15,7 +15,7 @@ namespace System
         {
             private const int MaxBlockCount = 35;
 
-            private static readonly uint[] Pow10UInt32Table = new uint[]
+            private static readonly uint[] s_Pow10UInt32Table = new uint[]
             {
                 1,          // 10^0
                 10,         // 10^1
@@ -27,7 +27,7 @@ namespace System
                 10000000,   // 10^7
             };
 
-            private static readonly int[] Pow10BigNumTableIndices = new int[]
+            private static readonly int[] s_s_Pow10BigNumTableIndices = new int[]
             {
                 0,          // 10^8
                 2,          // 10^16
@@ -37,7 +37,7 @@ namespace System
                 33,         // 10^256
             };
 
-            private static readonly uint[] Pow10BigNumTable = new uint[]
+            private static readonly uint[] s_Pow10BigNumTable = new uint[]
             {
                 // 10^8
                 1,          // _length
@@ -123,7 +123,7 @@ namespace System
                 0x00000000,
             };
 
-            private static readonly uint[] MultiplyDeBruijnBitPosition = new uint[]
+            private static readonly uint[] s_MultiplyDeBruijnBitPosition = new uint[]
             {
                 0, 9, 1, 10, 13, 21, 2, 29, 11, 14, 16, 18, 22, 25, 3, 30,
                 8, 12, 20, 28, 15, 17, 24, 7, 19, 27, 23, 6, 26, 5, 4, 31
@@ -161,7 +161,7 @@ namespace System
                 mask |= (mask >> 16);
 
                 uint index = (mask * 0x07C4ACDD) >> 27;
-                return MultiplyDeBruijnBitPosition[(int)(index)];
+                return s_MultiplyDeBruijnBitPosition[(int)(index)];
             }
 
             public static int Compare(ref BigInteger lhs, ref BigInteger rhs)
@@ -367,7 +367,7 @@ namespace System
                 Debug.Assert(unchecked((uint)(maxResultLength)) <= MaxBlockCount);
 
                 // Zero out result internal blocks.
-                Buffer.ZeroMemory((byte*)(result._blocks.GetPointer()), (MaxBlockCount * sizeof(uint)));
+                Buffer.ZeroMemory((byte*)(result._blocks.GetPointer()), (maxResultLength * sizeof(uint)));
 
                 int smallIndex = 0;
                 int resultStartIndex = 0;
@@ -412,33 +412,33 @@ namespace System
 
             public static void Pow10(uint exponent, ref BigInteger result)
             {
-                // We leverage two arrays - Pow10UInt32Table and Pow10BigNumTable to speed up the Pow10 calculation.
+                // We leverage two arrays - s_Pow10UInt32Table and s_Pow10BigNumTable to speed up the Pow10 calculation.
                 //
-                // Pow10UInt32Table stores the results of 10^0 to 10^7.
-                // Pow10BigNumTable stores the results of 10^8, 10^16, 10^32, 10^64, 10^128 and 10^256.
+                // s_Pow10UInt32Table stores the results of 10^0 to 10^7.
+                // s_Pow10BigNumTable stores the results of 10^8, 10^16, 10^32, 10^64, 10^128 and 10^256.
                 //
                 // For example, let's say exp = 0b111111. We can split the exp to two parts, one is small exp, 
                 // which 10^smallExp can be represented as uint, another part is 10^bigExp, which must be represented as BigNum. 
                 // So the result should be 10^smallExp * 10^bigExp.
                 //
-                // Calculating 10^smallExp is simple, we just lookup the 10^smallExp from Pow10UInt32Table. 
+                // Calculating 10^smallExp is simple, we just lookup the 10^smallExp from s_Pow10UInt32Table. 
                 // But here's a bad news: although uint can represent 10^9, exp 9's binary representation is 1001. 
                 // That means 10^(1011), 10^(1101), 10^(1111) all cannot be stored as uint, we cannot easily say something like: 
-                // "Any bits <= 3 is small exp, any bits > 3 is big exp". So instead of involving 10^8, 10^9 to Pow10UInt32Table, 
-                // consider 10^8 and 10^9 as a bigNum, so they fall into Pow10BigNumTable. Now we can have a simple rule: 
+                // "Any bits <= 3 is small exp, any bits > 3 is big exp". So instead of involving 10^8, 10^9 to s_Pow10UInt32Table, 
+                // consider 10^8 and 10^9 as a bigNum, so they fall into s_Pow10BigNumTable. Now we can have a simple rule: 
                 // "Any bits <= 3 is small exp, any bits > 3 is big exp".
                 //
                 // For 0b111111, we first calculate 10^(smallExp), which is 10^(7), now we can shift right 3 bits, prepare to calculate the bigExp part, 
                 // the exp now becomes 0b000111.
                 //
-                // Apparently the lowest bit of bigExp should represent 10^8 because we have already shifted 3 bits for smallExp, so Pow10BigNumTable[0] = 10^8.
+                // Apparently the lowest bit of bigExp should represent 10^8 because we have already shifted 3 bits for smallExp, so s_Pow10BigNumTable[0] = 10^8.
                 // Now let's shift exp right 1 bit, the lowest bit should represent 10^(8 * 2) = 10^16, and so on...
                 //
-                // That's why we just need the values of Pow10BigNumTable be power of 2.
+                // That's why we just need the values of s_Pow10BigNumTable be power of 2.
                 //
                 // More details of this implementation can be found at: https://github.com/dotnet/coreclr/pull/12894#discussion_r128890596
 
-                BigInteger temp1 = new BigInteger(Pow10UInt32Table[exponent & 0x7]);
+                BigInteger temp1 = new BigInteger(s_Pow10UInt32Table[exponent & 0x7]);
                 ref BigInteger lhs = ref temp1;
 
                 BigInteger temp2 = new BigInteger(0);
@@ -453,7 +453,7 @@ namespace System
                     if ((exponent & 1) != 0)
                     {
                         // Multiply into the next temporary
-                        ref BigInteger rhs = ref *(BigInteger*)(Unsafe.AsPointer(ref Pow10BigNumTable[Pow10BigNumTableIndices[index]]));
+                        ref BigInteger rhs = ref *(BigInteger*)(Unsafe.AsPointer(ref s_Pow10BigNumTable[s_s_Pow10BigNumTableIndices[index]]));
                         Multiply(ref lhs, ref rhs, ref product);
 
                         // Swap to the next temporary

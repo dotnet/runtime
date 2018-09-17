@@ -24,7 +24,7 @@ namespace System
             private const uint Ten8 = 100000000;
             private const uint Ten9 = 1000000000;
 
-            private static readonly short[] CachedPowerBinaryExponents = new short[]
+            private static readonly short[] s_CachedPowerBinaryExponents = new short[]
             {
                 -1220,
                 -1193,
@@ -115,7 +115,7 @@ namespace System
                 1066,
             };
 
-            private static readonly short[] CachedPowerDecimalExponents = new short[]
+            private static readonly short[] s_CachedPowerDecimalExponents = new short[]
             {
                 PowerMinDecimalExponent,
                 -340,
@@ -206,7 +206,7 @@ namespace System
                 PowerMaxDecimalExponent,
             };
 
-            private static readonly uint[] CachedPowerOfTen = new uint[]
+            private static readonly uint[] s_CachedPowerOfTen = new uint[]
             {
                 1,          // 10^0
                 10,         // 10^1
@@ -220,7 +220,7 @@ namespace System
                 1000000000, // 10^9
             };
 
-            private static readonly ulong[] CachedPowerSignificands = new ulong[]
+            private static readonly ulong[] s_CachedPowerSignificands = new ulong[]
             {
                 0xFA8FD5A0081C0288,
                 0xBAAEE17FA23EBF76,
@@ -545,8 +545,8 @@ namespace System
             private static void CachedPower(int k, out DiyFp cmk, out int decimalExponent)
             {
                 int index = ((PowerOffset + k - 1) / PowerDecimalExponentDistance) + 1;
-                cmk = new DiyFp(CachedPowerSignificands[index], CachedPowerBinaryExponents[index]);
-                decimalExponent = CachedPowerDecimalExponents[index];
+                cmk = new DiyFp(s_CachedPowerSignificands[index], s_CachedPowerBinaryExponents[index]);
+                decimalExponent = s_CachedPowerDecimalExponents[index];
             }
 
             private static bool DigitGen(ref DiyFp mp, int precision, char* digits, out int length, out int k)
@@ -582,7 +582,7 @@ namespace System
                 // - When requested digit count >= 11, p1 is not be able to exhaust the count as 10^(11 - 1) > uint.MaxValue >= p1.
                 // - When p1 < 10^(count - 1), p1 is not be able to exhaust the count.
                 // - Otherwise, p1 may have chance to exhaust the count.
-                if ((p2 == 0) && ((precision >= 11) || (p1 < CachedPowerOfTen[precision - 1])))
+                if ((p2 == 0) && ((precision >= 11) || (p1 < s_CachedPowerOfTen[precision - 1])))
                 {
                     length = 0;
                     k = 0;
