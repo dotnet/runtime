@@ -564,10 +564,18 @@ namespace System
                 Debug.Assert(mp.e >= Alpha);
                 Debug.Assert(mp.e <= Gamma);
 
+                ulong mpF = mp.f;
+                int mpE = mp.e;
+
+                var one = new DiyFp(1UL << -mpE, mpE);
+
+                ulong oneF = one.f;
+                int oneNegE = -one.e;
+
                 ulong ulp = 1;
-                var one = new DiyFp(1UL << -mp.e, mp.e);
-                uint p1 = (uint)(mp.f >> -one.e);
-                ulong p2 = mp.f & (one.f - 1);
+
+                uint p1 = (uint)(mpF >> oneNegE);
+                ulong p2 = mpF & (oneF - 1);
 
                 // When p2 (fractional part) is zero, we can predicate if p1 is good to produce the numbers in requested digit count:
                 //
@@ -589,17 +597,17 @@ namespace System
                 // The idea is to find the biggest power of 10 that is less than or equal to the given number.
                 // Then we don't need to worry about the leading zeros and we can get 10% performance gain.
                 int index = 0;
-                BiggestPowerTenLessThanOrEqualTo(p1, DiyFp.SignificandLength - (-one.e), out uint div, out int kappa);
+                BiggestPowerTenLessThanOrEqualTo(p1, (DiyFp.SignificandLength - oneNegE), out uint div, out int kappa);
                 kappa++;
 
                 // Produce integral.
                 while (kappa > 0)
                 {
-                    int d = (int)(p1 / div);
-                    digits[index++] = (char)('0' + d);
-                    precision--;
+                    int d = (int)(Math.DivRem(p1, div, out p1));
+                    digits[index] = (char)('0' + d);
 
-                    p1 %= div;
+                    index++;
+                    precision--;
                     kappa--;
 
                     if (precision == 0)
@@ -613,15 +621,16 @@ namespace System
                 // End up here if we already exhausted the digit count.
                 if (precision == 0)
                 {
-                    ulong rest = ((ulong)(p1) << -one.e) + p2;
+                    ulong rest = ((ulong)(p1) << oneNegE) + p2;
 
                     length = index;
                     k = kappa;
 
-                    return RoundWeed(digits,
+                    return RoundWeed(
+                        digits,
                         index,
                         rest,
-                        (ulong)(div) << -one.e,
+                        ((ulong)(div)) << oneNegE,
                         ulp,
                         ref k
                     );
@@ -633,12 +642,14 @@ namespace System
                 {
                     p2 *= 10;
 
-                    int d = (int)(p2 >> -one.e);
-                    digits[index++] = (char)('0' + d);
-                    precision--;
+                    int d = (int)(p2 >> oneNegE);
+                    digits[index] = (char)('0' + d);
 
-                    p2 &= (one.f - 1);
+                    index++;
+                    precision--;
                     kappa--;
+
+                    p2 &= (oneF - 1);
 
                     ulp *= 10;
                 }
@@ -654,7 +665,7 @@ namespace System
                 length = index;
                 k = kappa;
 
-                return RoundWeed(digits, index, p2, one.f, ulp, ref k);
+                return RoundWeed(digits, index, p2, oneF, ulp, ref k);
             }
 
             private static int KComp(int e)
