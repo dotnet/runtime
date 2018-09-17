@@ -329,7 +329,7 @@ int __cdecl main(int argc, char* argv[])
         mc->cr         = new CompileResult();
         mc->originalCR = crl;
 
-        if (mc->wasEnviromentChanged())
+        if (mc->WasEnvironmentChanged(jit->getEnvironment()))
         {
             if (!jit->resetConfig(mc))
             {

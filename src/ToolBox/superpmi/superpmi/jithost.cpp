@@ -61,71 +61,90 @@ void JitHost::freeMemory(void* block)
     InitIEEMemoryManager(&jitInstance)->ClrVirtualFree(block, 0, 0);
 }
 
+bool JitHost::convertStringValueToInt(const wchar_t* key, const wchar_t* stringValue, int& result)
+{
+    if (stringValue == nullptr)
+    {
+        return false;
+    }
+
+    wchar_t*      endPtr;
+    unsigned long longResult = wcstoul(stringValue, &endPtr, 16);
+    bool          succeeded  = (errno != ERANGE) && (endPtr != stringValue) && (longResult <= INT_MAX);
+    if (!succeeded)
+    {
+        LogWarning("Can't convert int config value from string, key: %ws, string value: %ws\n", key, stringValue);
+        return false;
+    }
+
+    result = static_cast<int>(longResult);
+    return true;
+}
+
 int JitHost::getIntConfigValue(const wchar_t* key, int defaultValue)
 {
     jitInstance.mc->cr->AddCall("getIntConfigValue");
 
+    // First check the force options, then the mc value. If value is not presented there, probe the JIT options, then
+    // check
+    // the special cases and then the  environment.
+
     int result = defaultValue;
 
-    const wchar_t* forceValue = jitInstance.getForceOption(key);
+    bool valueFound;
 
-    if (forceValue != nullptr)
+    valueFound = convertStringValueToInt(key, jitInstance.getForceOption(key), result);
+
+    if (!valueFound)
     {
-        wchar_t* endPtr;
-        result         = static_cast<int>(wcstoul(forceValue, &endPtr, 16));
-        bool succeeded = (errno != ERANGE) && (endPtr != forceValue);
-        if (succeeded)
+        // Right now we can't distinguish between the default value that was set explicitly and the default value
+        // from the key that was not set. See comments in CLRConfig::GetConfigValue.
+        result = jitInstance.mc->repGetIntConfigValue(key, defaultValue);
+        if (result != defaultValue)
         {
-            return result;
+            valueFound = true;
         }
     }
 
-    result = jitInstance.mc->repGetIntConfigValue(key, defaultValue);
-
-    if (result != defaultValue)
+    if (!valueFound)
     {
-        return result;
-    }
-
-    // Look for special case keys.
-    if (wcscmp(key, W("SuperPMIMethodContextNumber")) == 0)
-    {
-        return jitInstance.mc->index;
-    }
-
-    // If the result is the default value, probe the JIT options and then the environment. If a value is found, parse
-    // it as a hex integer.
-
-    const wchar_t* value = jitInstance.getOption(key);
-
-    bool succeeded;
-    if (value != nullptr)
-    {
-        wchar_t* endPtr;
-        result    = static_cast<int>(wcstoul(value, &endPtr, 16));
-        succeeded = (errno != ERANGE) && (endPtr != value);
-    }
-    else
-    {
-        wchar_t* complus = GetCOMPlusVariable(key, jitInstance);
-        if (complus == nullptr)
+        // Look for special case keys.
+        if (wcscmp(key, W("SuperPMIMethodContextNumber")) == 0)
         {
-            return defaultValue;
+            result     = jitInstance.mc->index;
+            valueFound = true;
         }
-        wchar_t* endPtr;
-        result    = static_cast<int>(wcstoul(complus, &endPtr, 16));
-        succeeded = (errno != ERANGE) && (endPtr != complus);
-        jitInstance.freeLongLivedArray(complus);
     }
 
-    return succeeded ? result : defaultValue;
+    if (!valueFound)
+    {
+        valueFound = convertStringValueToInt(key, jitInstance.getOption(key), result);
+    }
+
+    if (!valueFound)
+    {
+        wchar_t* complusVar = GetCOMPlusVariable(key, jitInstance);
+        valueFound          = convertStringValueToInt(key, complusVar, result);
+        if (complusVar != nullptr)
+        {
+            jitInstance.freeLongLivedArray(complusVar);
+        }
+    }
+
+    if (valueFound)
+    {
+        LogDebug("Environment variable %ws=%d", key, result);
+    }
+
+    return valueFound ? result : defaultValue;
 }
 
 const wchar_t* JitHost::getStringConfigValue(const wchar_t* key)
 {
     jitInstance.mc->cr->AddCall("getStringConfigValue");
 
-    const wchar_t* result = nullptr;
+    bool           needToDup = true;
+    const wchar_t* result    = nullptr;
 
     // First check the force options, then mc value. If value is not presented there, probe the JIT options and then the
     // environment.
@@ -140,18 +159,28 @@ const wchar_t* JitHost::getStringConfigValue(const wchar_t* key)
     if (result == nullptr)
     {
         result = jitInstance.getOption(key);
-        if (result == nullptr)
-        {
-            return GetCOMPlusVariable(key, jitInstance);
-        }
     }
 
-    // Now we need to dup it, so you can call freeStringConfigValue() on what we return.
-    size_t   resultLenInChars = wcslen(result) + 1;
-    wchar_t* dupResult = (wchar_t*)jitInstance.allocateLongLivedArray((ULONG)(sizeof(wchar_t) * resultLenInChars));
-    wcscpy_s(dupResult, resultLenInChars, result);
+    if (result == nullptr)
+    {
+        result    = GetCOMPlusVariable(key, jitInstance);
+        needToDup = false;
+    }
 
-    return dupResult;
+    if (result != nullptr && needToDup)
+    {
+        // Now we need to dup it, so you can call freeStringConfigValue() on what we return.
+        size_t   resultLenInChars = wcslen(result) + 1;
+        wchar_t* dupResult = (wchar_t*)jitInstance.allocateLongLivedArray((ULONG)(sizeof(wchar_t) * resultLenInChars));
+        wcscpy_s(dupResult, resultLenInChars, result);
+        result = dupResult;
+    }
+
+    if (result != nullptr)
+    {
+        LogDebug("Environment variable %ws=%ws", key, result);
+    }
+    return result;
 }
 
 void JitHost::freeStringConfigValue(const wchar_t* value)
