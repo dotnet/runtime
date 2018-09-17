@@ -39,7 +39,6 @@ struct NUMBER {
 class COMNumber
 {
 public:
-    static FCDECL3_VII(void, DoubleToNumberFC, double value, int precision, NUMBER* number);
     static FCDECL1(double, NumberToDoubleFC, NUMBER* number);
 };
 

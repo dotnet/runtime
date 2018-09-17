@@ -740,7 +740,6 @@ FCFuncStart(gWaitHandleFuncs)
 FCFuncEnd()
 
 FCFuncStart(gNumberFuncs)
-    FCFuncElement("DoubleToNumber", COMNumber::DoubleToNumberFC)
     FCFuncElement("NumberToDouble", COMNumber::NumberToDoubleFC)
 FCFuncEnd()
 
