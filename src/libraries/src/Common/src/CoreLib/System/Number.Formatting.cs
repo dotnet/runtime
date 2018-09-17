@@ -2290,7 +2290,7 @@ SkipRounding:
         {
             number.precision = precision;
 
-            if (double.GetExponent(value) == 0x7FF)
+            if (!double.IsFinite(value))
             {
                 number.scale = double.IsNaN(value) ? ScaleNAN : ScaleINF;
                 number.sign = double.IsNegative(value);
