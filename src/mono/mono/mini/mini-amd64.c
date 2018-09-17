@@ -1549,7 +1549,6 @@ mono_arch_regalloc_cost (MonoCompile *cfg, MonoMethodVar *vmv)
 void
 mono_arch_fill_argument_info (MonoCompile *cfg)
 {
-	MonoType *sig_ret;
 	MonoMethodSignature *sig;
 	MonoInst *ins;
 	int i;
@@ -1558,7 +1557,6 @@ mono_arch_fill_argument_info (MonoCompile *cfg)
 	sig = mono_method_signature (cfg->method);
 
 	cinfo = cfg->arch.cinfo;
-	sig_ret = mini_get_underlying_type (sig->ret);
 
 	/*
 	 * Contrary to mono_arch_allocate_vars (), the information should describe
@@ -1843,7 +1841,6 @@ mono_arch_create_vars (MonoCompile *cfg)
 {
 	MonoMethodSignature *sig;
 	CallInfo *cinfo;
-	MonoType *sig_ret;
 
 	sig = mono_method_signature (cfg->method);
 
@@ -1854,7 +1851,6 @@ mono_arch_create_vars (MonoCompile *cfg)
 	if (cinfo->ret.storage == ArgValuetypeInReg)
 		cfg->ret_var_is_local = TRUE;
 
-	sig_ret = mini_get_underlying_type (sig->ret);
 	if (cinfo->ret.storage == ArgValuetypeAddrInIReg || cinfo->ret.storage == ArgGsharedvtVariableInReg) {
 		cfg->vret_addr = mono_compile_create_var (cfg, mono_get_int_type (), OP_ARG);
 		if (G_UNLIKELY (cfg->verbose_level > 1)) {
@@ -2107,7 +2103,6 @@ mono_arch_emit_call (MonoCompile *cfg, MonoCallInst *call)
 {
 	MonoInst *arg, *in;
 	MonoMethodSignature *sig;
-	MonoType *sig_ret;
 	int i, n;
 	CallInfo *cinfo;
 	ArgInfo *ainfo;
@@ -2116,8 +2111,6 @@ mono_arch_emit_call (MonoCompile *cfg, MonoCallInst *call)
 	n = sig->param_count + sig->hasthis;
 
 	cinfo = get_call_info (cfg->mempool, sig);
-
-	sig_ret = sig->ret;
 
 	if (COMPILE_LLVM (cfg)) {
 		/* We shouldn't be called in the llvm case */
@@ -5571,7 +5564,6 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 		case OP_RCLT_UN:
 		case OP_RCGT_UN: {
 			int x86_cond;
-			gboolean unordered = FALSE;
 
 			amd64_alu_reg_reg (code, X86_XOR, ins->dreg, ins->dreg);
 			amd64_sse_comiss_reg_reg (code, ins->sreg2, ins->sreg1);
@@ -5588,11 +5580,9 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 				break;
 			case OP_RCLT_UN:
 				x86_cond = X86_CC_GT;
-				unordered = TRUE;
 				break;
 			case OP_RCGT_UN:
 				x86_cond = X86_CC_LT;
-				unordered = TRUE;
 				break;
 			default:
 				g_assert_not_reached ();

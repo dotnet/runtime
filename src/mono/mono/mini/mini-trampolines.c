@@ -191,7 +191,6 @@ mini_resolve_imt_method (MonoVTable *vt, gpointer *vtable_slot, MonoMethod *imt_
 {
 	MonoMethod *impl = NULL, *generic_virtual = NULL;
 	gboolean lookup_aot, variance_used = FALSE, need_rgctx_tramp = FALSE;
-	gpointer addr;
 	guint8 *aot_addr = NULL;
 	int displacement = vtable_slot - ((gpointer*)vt);
 	int interface_offset;
@@ -214,7 +213,6 @@ mini_resolve_imt_method (MonoVTable *vt, gpointer *vtable_slot, MonoMethod *imt_
 		*variant_iface = imt_method;
 	}
 
-	addr = NULL;
 	/* We can only use the AOT compiled code if we don't require further processing */
 	lookup_aot = !generic_virtual & !variant_iface;
 
@@ -442,7 +440,7 @@ gpointer
 mini_add_method_wrappers_llvmonly (MonoMethod *m, gpointer compiled_method, gboolean caller_gsharedvt, gboolean add_unbox_tramp, gpointer *out_arg)
 {
 	gpointer addr;
-	gboolean callee_gsharedvt, callee_array_helper;
+	gboolean callee_gsharedvt;
 	MonoMethod *jmethod = NULL;
 	MonoJitInfo *ji;
 
@@ -450,7 +448,6 @@ mini_add_method_wrappers_llvmonly (MonoMethod *m, gpointer compiled_method, gboo
 	ji = mini_jit_info_table_find (mono_domain_get (), (char *)mono_get_addr_from_ftnptr (compiled_method), NULL);
 	callee_gsharedvt = mini_jit_info_is_gsharedvt (ji);
 
-	callee_array_helper = FALSE;
 	if (m->wrapper_type == MONO_WRAPPER_MANAGED_TO_MANAGED) {
 		WrapperInfo *info = mono_marshal_get_wrapper_info (m);
 
@@ -459,7 +456,6 @@ mini_add_method_wrappers_llvmonly (MonoMethod *m, gpointer compiled_method, gboo
 		 * Have to replace the wrappers with the original generic instances.
 		 */
 		if (info && info->subtype == WRAPPER_SUBTYPE_GENERIC_ARRAY_HELPER) {
-			callee_array_helper = TRUE;
 			m = info->d.generic_array_helper.method;
 		}
 	} else if (m->wrapper_type == MONO_WRAPPER_UNKNOWN) {
