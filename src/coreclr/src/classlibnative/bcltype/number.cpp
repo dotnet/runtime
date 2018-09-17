@@ -9,7 +9,6 @@
 
 #include "common.h"
 #include "number.h"
-#include "grisu3.h"
 #include "fp.h"
 
 typedef wchar_t wchar;

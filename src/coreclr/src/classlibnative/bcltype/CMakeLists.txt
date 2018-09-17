@@ -7,8 +7,6 @@ endif(PerfCountersSupportedBuild)
 set(BCLTYPE_SOURCES
     arraynative.cpp
     arrayhelpers.cpp
-    diyfp.cpp
-    grisu3.cpp
     number.cpp
     oavariant.cpp
     objectnative.cpp
