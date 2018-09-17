@@ -9,9 +9,6 @@ namespace System
     internal static partial class Number
     {
         [MethodImpl(MethodImplOptions.InternalCall)]
-        public static extern void DoubleToNumber(double value, int precision, ref NumberBuffer number);
-
-        [MethodImpl(MethodImplOptions.InternalCall)]
         public static extern double NumberToDouble(ref NumberBuffer number);
     }
 }
