@@ -2050,11 +2050,13 @@ if (container_assm_name && !container_amodule) {
 	char *local_ref = container_assm_name;
 	container_assm_name = NULL;
 	MonoImageOpenStatus status = MONO_IMAGE_OK;
+	MonoAssemblyOpenRequest req;
 	gchar *dll = g_strdup_printf (		"%s.dll", local_ref);
-	MonoAssembly *assm = mono_assembly_open_a_lot (dll, &status, MONO_ASMCTX_DEFAULT);
+	mono_assembly_request_prepare (&req.request, sizeof (req), MONO_ASMCTX_DEFAULT);
+	MonoAssembly *assm = mono_assembly_request_open (dll, &req, &status);
 	if (!assm) {
 		gchar *exe = g_strdup_printf ("%s.exe", local_ref);
-		assm = mono_assembly_open_a_lot (exe, &status, MONO_ASMCTX_DEFAULT);
+		assm = mono_assembly_request_open (exe, &req, &status);
 	}
 	g_assert (assm);
 	load_aot_module (assm, NULL);

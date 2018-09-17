@@ -662,7 +662,9 @@ mini_regression_list (int verbose, int count, char *images [])
 	
 	total_run =  total = 0;
 	for (i = 0; i < count; ++i) {
-		ass = mono_assembly_open_predicate (images [i], MONO_ASMCTX_DEFAULT, NULL, NULL, NULL, NULL);
+		MonoAssemblyOpenRequest req;
+		mono_assembly_request_prepare (&req.request, sizeof (req), MONO_ASMCTX_DEFAULT);
+		ass = mono_assembly_request_open (images [i], &req, NULL);
 		if (!ass) {
 			g_warning ("failed to load assembly: %s", images [i]);
 			continue;
@@ -787,7 +789,9 @@ mono_interp_regression_list (int verbose, int count, char *images [])
 
 	total_run = total = 0;
 	for (i = 0; i < count; ++i) {
-		MonoAssembly *ass = mono_assembly_open_predicate (images [i], MONO_ASMCTX_DEFAULT, NULL, NULL, NULL, NULL);
+		MonoAssemblyOpenRequest req;
+		mono_assembly_request_prepare (&req.request, sizeof (req), MONO_ASMCTX_DEFAULT);
+		MonoAssembly *ass = mono_assembly_request_open (images [i], &req, NULL);
 		if (!ass) {
 			g_warning ("failed to load assembly: %s", images [i]);
 			continue;
@@ -1395,7 +1399,9 @@ load_agent (MonoDomain *domain, char *desc)
 		args = NULL;
 	}
 
-	agent_assembly = mono_assembly_open_predicate (agent, MONO_ASMCTX_DEFAULT, NULL, NULL, NULL, &open_status);
+	MonoAssemblyOpenRequest req;
+	mono_assembly_request_prepare (&req.request, sizeof (req), MONO_ASMCTX_DEFAULT);
+	agent_assembly = mono_assembly_request_open (agent, &req, &open_status);
 	if (!agent_assembly) {
 		fprintf (stderr, "Cannot open agent assembly '%s': %s.\n", agent, mono_image_strerror (open_status));
 		g_free (agent);
@@ -2503,7 +2509,9 @@ mono_main (int argc, char* argv[])
 		apply_root_domain_configuration_file_bindings (domain, extra_bindings_config_file);
 	}
 
-	assembly = mono_assembly_open_predicate (aname, MONO_ASMCTX_DEFAULT, NULL, NULL, NULL, &open_status);
+	MonoAssemblyOpenRequest open_req;
+	mono_assembly_request_prepare (&open_req.request, sizeof (open_req), MONO_ASMCTX_DEFAULT);
+	assembly = mono_assembly_request_open (aname, &open_req, &open_status);
 	if (!assembly) {
 		fprintf (stderr, "Cannot open assembly '%s': %s.\n", aname, mono_image_strerror (open_status));
 		mini_cleanup (domain);

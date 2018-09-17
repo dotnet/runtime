@@ -711,7 +711,9 @@ get_socket_assembly (void)
 
 		socket_assembly = mono_image_loaded ("System");
 		if (!socket_assembly) {
-			MonoAssembly *sa = mono_assembly_open_predicate ("System.dll", MONO_ASMCTX_DEFAULT, NULL, NULL, NULL, NULL);
+			MonoAssemblyOpenRequest req;
+			mono_assembly_request_prepare (&req.request, sizeof (req), MONO_ASMCTX_DEFAULT);
+			MonoAssembly *sa = mono_assembly_request_open ("System.dll", &req, NULL);
 		
 			if (!sa) {
 				g_assert_not_reached ();
@@ -1836,7 +1838,9 @@ ves_icall_System_Net_Sockets_Socket_GetSocketOption_obj_internal (gsize sock, gi
 		if (mono_posix_image == NULL) {
 			mono_posix_image = mono_image_loaded ("Mono.Posix");
 			if (!mono_posix_image) {
-				MonoAssembly *sa = mono_assembly_open_predicate ("Mono.Posix.dll", MONO_ASMCTX_DEFAULT, NULL, NULL, NULL, NULL);
+				MonoAssemblyOpenRequest req;
+				mono_assembly_request_prepare (&req.request, sizeof (req), MONO_ASMCTX_DEFAULT);
+				MonoAssembly *sa = mono_assembly_request_open ("Mono.Posix.dll", &req, NULL);
 				if (!sa) {
 					*werror = WSAENOPROTOOPT;
 					return;

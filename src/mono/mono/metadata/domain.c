@@ -1025,14 +1025,16 @@ mono_domain_assembly_open_internal (MonoDomain *domain, const char *name)
 	}
 	mono_domain_assemblies_unlock (domain);
 
+	MonoAssemblyOpenRequest req;
+	mono_assembly_request_prepare (&req.request, sizeof (req), MONO_ASMCTX_DEFAULT);
 	if (domain != mono_domain_get ()) {
 		current = mono_domain_get ();
 
 		mono_domain_set (domain, FALSE);
-		ass = mono_assembly_open_predicate (name, MONO_ASMCTX_DEFAULT, NULL, NULL, NULL, NULL);
+		ass = mono_assembly_request_open (name, &req, NULL);
 		mono_domain_set (current, FALSE);
 	} else {
-		ass = mono_assembly_open_predicate (name, MONO_ASMCTX_DEFAULT, NULL, NULL, NULL, NULL);
+		ass = mono_assembly_request_open (name, &req, NULL);
 	}
 
 	return ass;
