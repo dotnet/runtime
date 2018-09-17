@@ -12,6 +12,11 @@ namespace System
     {
         private const int NumberMaxDigits = 50; // needs to == NUMBER_MAXDIGITS in coreclr's src/classlibnative/bcltype/number.h.
 
+        private const double Log10V2 = 0.30102999566398119521373889472449;
+
+        // DriftFactor = 1 - Log10V2 - epsilon (a small number account for drift of floating point multiplication)
+        private const double DriftFactor = 0.69;
+
         [StructLayout(LayoutKind.Sequential, Pack = 1)]
         internal unsafe ref struct NumberBuffer // needs to match layout of NUMBER in coreclr's src/classlibnative/bcltype/number.h
         {
