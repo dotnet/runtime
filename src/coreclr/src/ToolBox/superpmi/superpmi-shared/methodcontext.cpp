@@ -17,26 +17,6 @@
 #include "spmirecordhelper.h"
 #include "spmidumphelper.h"
 
-struct
-{
-    int         packetID;
-    const char* message;
-} retiredPackets[] = {
-    {6, "CanEmbedModuleHandleForHelper id 6 superseded by GetLazyStringLiteralHelper id 147 on 12/20/2013"},
-    {13, "CheckMethodModifier id 13 superseded by id 142 on 2013/07/04. Re-record input with newer shim."},
-    {14, "CompileMethod id 14 superseded by id 141 on 2013/07/03. Re-record input with newer shim."},
-    {24, "FindNameOfToken id 24 superseded by id 145 on 2013/07/19. Re-record input with newer shim. Adjusted members "
-         "to be proper."},
-    {28, "GetArgClass id 28 superseded by id 139 on 2013/07/03. Re-record input with newer shim."},
-    {30, "GetArgType id 30 superseded by id 140 on 2013/07/03. Re-record input with newer shim."},
-    {93, "GetUnBoxHelper2 id 93 unused. 2016/02/19. Re-record input with newer shim."},
-    {104, "IsValidToken id 104 superseded by id 144 on 2013/07/19. Re-record input with newer shim. Adjusted members "
-          "to be proper."},
-    {141, "CompileMethod id 141 superseded by id 142 on 2013/07/09. Re-record input with newer shim. We basically "
-          "reset lots of other stuff too. :-)"},
-};
-int retiredPacketCount = 7;
-
 #define sparseMC // Support filling in details where guesses are okay and will still generate good code. (i.e. helper
                  // function addresses)
 
@@ -306,7 +286,7 @@ void MethodContext::MethodInitHelper(unsigned char* buff2, unsigned int totalLen
 
     while (buffIndex < totalLen)
     {
-        unsigned char packetType = buff2[buffIndex++];
+        mcPackets packetType = (mcPackets)buff2[buffIndex++];
         memcpy(&localsize, &buff2[buffIndex], sizeof(unsigned int));
         buffIndex += 4;
 
@@ -321,11 +301,6 @@ void MethodContext::MethodInitHelper(unsigned char* buff2, unsigned int totalLen
 #include "crlwmlist.h"
 
             default:
-                for (int i = 0; i < retiredPacketCount; i++)
-                {
-                    AssertCodeMsg(retiredPackets[i].packetID != packetType, EXCEPTIONCODE_MC,
-                                  "Ran into retired packet %u '%s'", packetType, retiredPackets[i].message);
-                }
                 LogException(EXCEPTIONCODE_MC, "Read ran into unknown packet type %u. Are you using a newer recorder?",
                              packetType);
                 // break;
@@ -494,10 +469,6 @@ void MethodContext::recGlobalContext(const MethodContext& other)
     {
         GetStringConfigValue = new LightWeightMap<DWORD, DWORD>(*other.GetStringConfigValue);
     }
-}
-
-void MethodContext::dmpEnvironment(DWORD key, const Agnostic_Environment& value)
-{
 }
 
 void MethodContext::dumpToConsole(int mcNumber)
@@ -6290,52 +6261,157 @@ OnError:
 #endif // !FEATURE_PAL
 }
 
-DenseLightWeightMap<MethodContext::Agnostic_Environment>* MethodContext::prevEnviroment = nullptr;
-
-bool MethodContext::wasEnviromentChanged()
+MethodContext::Environment MethodContext::cloneEnvironment()
 {
-    bool changed = false;
-    if (prevEnviroment == nullptr)
+    MethodContext::Environment env;
+    if (GetIntConfigValue != nullptr)
     {
-        changed = true;
+        env.getIntConfigValue = new LightWeightMap<MethodContext::Agnostic_ConfigIntInfo, DWORD>(*GetIntConfigValue);
     }
-    else if (Environment->GetCount() != prevEnviroment->GetCount())
+    if (GetStringConfigValue != nullptr)
     {
-        changed = true;
+        env.getStingConfigValue = new LightWeightMap<DWORD, DWORD>(*GetStringConfigValue);
     }
-    else
-    {
-        for (unsigned int i = 0; i < Environment->GetCount(); i++)
-        {
-            Agnostic_Environment currEnvValue = Environment->Get(i);
-            LPCSTR               currKey      = (LPCSTR)Environment->GetBuffer(currEnvValue.name_index);
-            LPCSTR               currVal      = (LPCSTR)Environment->GetBuffer(currEnvValue.val_index);
+    return env;
+}
 
-            Agnostic_Environment prevEnvValue = prevEnviroment->Get(i);
-            LPCSTR               prevKey      = (LPCSTR)prevEnviroment->GetBuffer(prevEnvValue.name_index);
-            LPCSTR               prevVal      = (LPCSTR)prevEnviroment->GetBuffer(prevEnvValue.val_index);
-            if (strcmp(currKey, prevKey) != 0 || strcmp(currVal, prevVal) != 0)
-            {
-                changed = true;
-                break;
-            }
-        }
-    }
-    if (changed)
+// Check that there is a difference between the current enviroment variables maps and the prevEnv.
+bool MethodContext::WasEnvironmentChanged(const Environment& prevEnv)
+{
+    if (!IsEnvironmentHeaderEqual(prevEnv))
     {
-        if (prevEnviroment != nullptr)
-        {
-            delete prevEnviroment;
-        }
-        if (Environment != nullptr)
-        {
-            prevEnviroment = new DenseLightWeightMap<Agnostic_Environment>(*Environment);
-        }
-        else
-        {
-            prevEnviroment = nullptr;
-        }
+        return true;
+    }
+    if (!IsEnvironmentContentEqual(prevEnv))
+    {
         return true;
     }
     return false;
+}
+
+// Check that environment maps headers are equal to the prevEnv maps headers.
+bool MethodContext::IsEnvironmentHeaderEqual(const Environment& prevEnv)
+{
+    if (!AreLWMHeadersEqual(prevEnv.getIntConfigValue, GetIntConfigValue))
+    {
+        return false;
+    }
+    if (!AreLWMHeadersEqual(prevEnv.getStingConfigValue, GetStringConfigValue))
+    {
+        return false;
+    }
+    return true;
+}
+
+// Check that environment maps content is equal to the prevEnv content.
+bool MethodContext::IsEnvironmentContentEqual(const Environment& prevEnv)
+{
+    if (!IsIntConfigContentEqual(prevEnv.getIntConfigValue, GetIntConfigValue))
+    {
+        return false;
+    }
+    if (!IsStringContentEqual(prevEnv.getStingConfigValue, GetStringConfigValue))
+    {
+        return false;
+    }
+    return true;
+}
+
+// Check pointers to be both initizlized or null and number of keys to be equal.
+template <typename key, typename value>
+bool MethodContext::AreLWMHeadersEqual(LightWeightMap<key, value>* prev, LightWeightMap<key, value>* curr)
+{
+    if (prev == nullptr && curr == nullptr)
+    {
+        return true;
+    }
+    if (prev != nullptr && curr != nullptr)
+    {
+        if (prev->GetCount() == curr->GetCount())
+        {
+            return true;
+        }
+    }
+    return false;
+}
+
+bool MethodContext::IsIntConfigContentEqual(LightWeightMap<Agnostic_ConfigIntInfo, DWORD>* prev,
+                                            LightWeightMap<Agnostic_ConfigIntInfo, DWORD>* curr)
+{
+    if (prev != nullptr && curr != nullptr)
+    {
+        if (prev->GetCount() != curr->GetCount())
+        {
+            return false;
+        }
+
+        for (unsigned i = 0; i < prev->GetCount(); ++i)
+        {
+            DWORD currValue = curr->GetItem(i);
+            DWORD prevValue = prev->GetItem(i);
+            if (currValue != prevValue)
+            {
+                return false;
+            }
+
+            Agnostic_ConfigIntInfo currKey = curr->GetKey(i);
+            Agnostic_ConfigIntInfo prevKey = prev->GetKey(i);
+
+            if (currKey.defaultValue != prevKey.defaultValue)
+            {
+                return false;
+            }
+
+            DWORD  currNameIndex = currKey.nameIndex;
+            LPCSTR currName      = (LPCSTR)curr->GetBuffer(currNameIndex);
+            DWORD  prevNameIndex = prevKey.nameIndex;
+            LPCSTR prevName      = (LPCSTR)prev->GetBuffer(currNameIndex);
+            if (strcmp(currName, prevName) != 0)
+            {
+                return false;
+            }
+        }
+        return true;
+    }
+    else
+    {
+        return (prev == curr);
+    }
+}
+
+bool MethodContext::IsStringContentEqual(LightWeightMap<DWORD, DWORD>* prev, LightWeightMap<DWORD, DWORD>* curr)
+{
+    if (prev != nullptr && curr != nullptr)
+    {
+        if (prev->GetCount() != curr->GetCount())
+        {
+            return false;
+        }
+
+        for (unsigned i = 0; i < curr->GetCount(); ++i)
+        {
+            DWORD  currKeyIndex = curr->GetKey(i);
+            LPCSTR currKey      = (LPCSTR)curr->GetBuffer(currKeyIndex);
+            DWORD  prevKeyIndex = prev->GetKey(i);
+            LPCSTR prevKey      = (LPCSTR)prev->GetBuffer(prevKeyIndex);
+            if (strcmp(currKey, prevKey) != 0)
+            {
+                return false;
+            }
+
+            DWORD  currValueIndex = curr->GetItem(i);
+            LPCSTR currValue      = (LPCSTR)curr->GetBuffer(currValueIndex);
+            DWORD  prevValueIndex = prev->GetItem(i);
+            LPCSTR prevValue      = (LPCSTR)prev->GetBuffer(prevValueIndex);
+            if (strcmp(currValue, prevValue) != 0)
+            {
+                return false;
+            }
+        }
+        return true;
+    }
+    else
+    {
+        return (prev == curr);
+    }
 }
