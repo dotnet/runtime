@@ -28,6 +28,8 @@ private:
     LightWeightMap<DWORD, DWORD>* forceOptions;
     LightWeightMap<DWORD, DWORD>* options;
 
+    MethodContext::Environment environment;
+
     JitInstance(){};
     void timeResult(CORINFO_METHOD_INFO info, unsigned flags);
 
@@ -63,6 +65,8 @@ public:
     const wchar_t* getForceOption(const wchar_t* key);
     const wchar_t* getOption(const wchar_t* key);
     const wchar_t* getOption(const wchar_t* key, LightWeightMap<DWORD, DWORD>* options);
+
+    const MethodContext::Environment& getEnvironment();
 
     void* allocateArray(ULONG size);
     void* allocateLongLivedArray(ULONG size);

@@ -14,6 +14,8 @@ public:
 #include "icorjithostimpl.h"
 
 private:
+    bool convertStringValueToInt(const wchar_t* key, const wchar_t* stringValue, int& result);
+
     JitInstance& jitInstance;
 };
 
