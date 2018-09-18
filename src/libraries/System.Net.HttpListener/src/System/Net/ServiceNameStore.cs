@@ -304,7 +304,7 @@ namespace System.Net
                     return Array.Empty<string>();
                 }
             }
-            else if (!hostname.Contains("."))
+            else if (!hostname.Contains('.'))
             {
                 // for a dotless name, try to resolve the FQDN.  If the caller doesn't have DNS permission
                 // or the query fails for some reason, add only the dotless name.

@@ -451,7 +451,7 @@ namespace System.Drawing.Printing
             int x_resolution, y_resolution;
             try
             {
-                if (resolution.Contains("x"))
+                if (resolution.Contains("x")) // string.Contains(char) is .NetCore2.1+ specific
                 {
                     string[] resolutions = resolution.Split(new[] { 'x' });
                     x_resolution = Convert.ToInt32(resolutions[0]);

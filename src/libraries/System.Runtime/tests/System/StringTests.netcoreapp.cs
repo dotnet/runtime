@@ -107,6 +107,9 @@ namespace System.Tests
         public static void Contains(string s, char value, bool expected)
         {
             Assert.Equal(expected, s.Contains(value));
+
+            ReadOnlySpan<char> span = s.AsSpan();
+            Assert.Equal(expected, span.Contains(value));
         }
 
         [Theory]
@@ -256,7 +259,9 @@ namespace System.Tests
             Assert.False("".AsSpan().Contains('a'));
 
             // Use a long-enough string to incur vectorization code
-            for (var length = 1; length < 250; length++)
+            const int max = 250;
+
+            for (var length = 1; length < max; length++)
             {
                 char[] ca = new char[length];
                 for (int i = 0; i < length; i++)
@@ -264,22 +269,109 @@ namespace System.Tests
                     ca[i] = (char)(i + 1);
                 }
 
-                var str = new string(ca);
                 var span = new Span<char>(ca);
                 var ros = new ReadOnlySpan<char>(ca);
+                var str = new string(ca);
 
                 for (var targetIndex = 0; targetIndex < length; targetIndex++)
                 {
                     char target = ca[targetIndex];
-                    var found = str.Contains(target);
+
+                    // Span
+                    bool found = span.Contains(target);
                     Assert.True(found);
 
-                    found = span.Contains(target);
-                    Assert.True(found);
-
+                    // ReadOnlySpan
                     found = ros.Contains(target);
                     Assert.True(found);
+
+                    // String
+                    found = str.Contains(target);
+                    Assert.True(found);
                 }
+            }
+        }
+
+        [Fact]
+        public static void Contains_ZeroLength_Char()
+        {
+            // Span
+            var span = new Span<char>(Array.Empty<char>());
+            bool found = span.Contains((char)0);
+            Assert.False(found);
+
+            span = Span<char>.Empty;
+            found = span.Contains((char)0);
+            Assert.False(found);
+
+            // ReadOnlySpan
+            var ros = new ReadOnlySpan<char>(Array.Empty<char>());
+            found = ros.Contains((char)0);
+            Assert.False(found);
+
+            ros = ReadOnlySpan<char>.Empty;
+            found = ros.Contains((char)0);
+            Assert.False(found);
+
+            // String
+            found = string.Empty.Contains((char)0);
+            Assert.False(found);
+        }
+
+        [Fact]
+        public static void Contains_MultipleMatches_Char()
+        {
+            for (int length = 2; length < 32; length++)
+            {
+                var ca = new char[length];
+                for (int i = 0; i < length; i++)
+                {
+                    ca[i] = (char)(i + 1);
+                }
+
+                ca[length - 1] = (char)200;
+                ca[length - 2] = (char)200;
+
+                // Span
+                var span = new Span<char>(ca);
+                bool found = span.Contains((char)200);
+                Assert.True(found);
+
+                // ReadOnlySpan
+                var ros = new ReadOnlySpan<char>(ca);
+                found = ros.Contains((char)200);
+                Assert.True(found);
+
+                // String
+                var str = new string(ca);
+                found = str.Contains((char)200);
+                Assert.True(found);
+            }
+        }
+
+        [Fact]
+        public static void Contains_EnsureNoChecksGoOutOfRange_Char()
+        {
+            for (int length = 0; length < 100; length++)
+            {
+                var ca = new char[length + 2];
+                ca[0] = '9';
+                ca[length + 1] = '9';
+
+                // Span
+                var span = new Span<char>(ca, 1, length);
+                bool found = span.Contains('9');
+                Assert.False(found);
+
+                // ReadOnlySpan
+                var ros = new ReadOnlySpan<char>(ca, 1, length);
+                found = ros.Contains('9');
+                Assert.False(found);
+
+                // String
+                var str = new string(ca, 1, length);
+                found = str.Contains('9');
+                Assert.False(found);
             }
         }
 
