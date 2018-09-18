@@ -4107,6 +4107,9 @@ interp_exec_method_full (InterpFrame *frame, ThreadContext *context, guint16 *st
 			++ip;
 			MINT_IN_BREAK;
 		MINT_IN_CASE(MINT_SAFEPOINT)
+			/* Do synchronous checking of abort requests */
+			EXCEPTION_CHECKPOINT;
+			/* Poll safepoint */
 			mono_threads_safepoint ();
 			++ip;
 			MINT_IN_BREAK;
