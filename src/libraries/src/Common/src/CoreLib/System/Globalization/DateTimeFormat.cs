@@ -11,7 +11,7 @@ using System.Runtime.CompilerServices;
 
 namespace System
 {
-    /*  
+    /*
      Customized format patterns:
      P.S. Format in the table below is the internal number format used to display the pattern.
 
@@ -58,14 +58,14 @@ namespace System
         "ddd"               short weekday name (abbreviation)     Mon
         "dddd"              full weekday name                     Monday
         "dddd*"             full weekday name                     Monday
-        
+
 
         "M"     "0"         month w/o leading zero                2
         "MM"    "00"        month with leading zero               02
         "MMM"               short month name (abbreviation)       Feb
         "MMMM"              full month name                       Febuary
         "MMMM*"             full month name                       Febuary
-       
+
         "y"     "0"         two digit year (year % 100) w/o leading zero           0
         "yy"    "00"        two digit year (year % 100) with leading zero          00
         "yyy"   "D3"        year                                  2000
@@ -77,10 +77,10 @@ namespace System
         "zz"    "+00;-00"   timezone offset with leading zero     -08
         "zzz"      "+00;-00" for hour offset, "00" for minute offset  full timezone offset   -07:30
         "zzz*"  "+00;-00" for hour offset, "00" for minute offset   full timezone offset   -08:00
-        
+
         "K"    -Local       "zzz", e.g. -08:00
                -Utc         "'Z'", representing UTC
-               -Unspecified ""               
+               -Unspecified ""
                -DateTimeOffset      "zzzzz" e.g -07:30:15
 
         "g*"                the current era name                  A.D.
@@ -91,12 +91,12 @@ namespace System
         '"'                 quoted string                         "ABC" will insert ABC into the formatted string.
         "%"                 used to quote a single pattern characters      E.g.The format character "%y" is to print two digit year.
         "\"                 escaped character                     E.g. '\d' insert the character 'd' into the format string.
-        other characters    insert the character into the format string. 
+        other characters    insert the character into the format string.
 
-    Pre-defined format characters: 
+    Pre-defined format characters:
         (U) to indicate Universal time is used.
         (G) to indicate Gregorian calendar is used.
-    
+
         Format              Description                             Real format                             Example
         =========           =================================       ======================                  =======================
         "d"                 short date                              culture-specific                        10/31/1999
@@ -120,7 +120,7 @@ namespace System
 
     */
 
-    //This class contains only static members and does not require the serializable attribute.    
+    //This class contains only static members and does not require the serializable attribute.
     internal static
     class DateTimeFormat
     {
@@ -155,16 +155,16 @@ namespace System
         };
 
         ////////////////////////////////////////////////////////////////////////////
-        // 
-        // Format the positive integer value to a string and perfix with assigned 
+        //
+        // Format the positive integer value to a string and perfix with assigned
         // length of leading zero.
         //
         // Parameters:
         //  value: The value to format
-        //  len: The maximum length for leading zero.  
+        //  len: The maximum length for leading zero.
         //  If the digits of the value is greater than len, no leading zero is added.
         //
-        // Notes: 
+        // Notes:
         //  The function can format to int.MaxValue.
         //
         ////////////////////////////////////////////////////////////////////////////
@@ -252,16 +252,16 @@ namespace System
         //
         //  Action: Return the Hebrew month name for the specified DateTime.
         //  Returns: The month name string for the specified DateTime.
-        //  Arguments: 
+        //  Arguments:
         //        time   the time to format
-        //        month  The month is the value of HebrewCalendar.GetMonth(time).         
+        //        month  The month is the value of HebrewCalendar.GetMonth(time).
         //        repeat Return abbreviated month name if repeat=3, or full month name if repeat=4
         //        dtfi    The DateTimeFormatInfo which uses the Hebrew calendars as its calendar.
         //  Exceptions: None.
-        // 
+        //
 
         /* Note:
-            If DTFI is using Hebrew calendar, GetMonthName()/GetAbbreviatedMonthName() will return month names like this:            
+            If DTFI is using Hebrew calendar, GetMonthName()/GetAbbreviatedMonthName() will return month names like this:
             1   Hebrew 1st Month
             2   Hebrew 2nd Month
             ..  ...
@@ -274,7 +274,7 @@ namespace System
             12  Hebrew 11th Month
             13  Hebrew 12th Month
 
-            Therefore, if we are in a regular year, we have to increment the month name if moth is greater or eqaul to 7.            
+            Therefore, if we are in a regular year, we have to increment the month name if moth is greater or eqaul to 7.
         */
         private static string FormatHebrewMonthName(DateTime time, int month, int repeatCount, DateTimeFormatInfo dtfi)
         {
@@ -377,7 +377,7 @@ namespace System
         //
         //  Actions: Check the format to see if we should use genitive month in the formatting.
         //      Starting at the position (index) in the (format) string, look back and look ahead to
-        //      see if there is "d" or "dd".  In the case like "d MMMM" or "MMMM dd", we can use 
+        //      see if there is "d" or "dd".  In the case like "d MMMM" or "MMMM dd", we can use
         //      genitive form.  Genitive form is not used if there is more than two "d".
         //  Arguments:
         //      format      The format string to be scanned.
@@ -447,7 +447,7 @@ namespace System
         //  FormatCustomized
         //
         //  Actions: Format the DateTime instance using the specified format.
-        // 
+        //
         private static StringBuilder FormatCustomized(
             DateTime dateTime, ReadOnlySpan<char> format, DateTimeFormatInfo dtfi, TimeSpan offset, StringBuilder result)
         {
@@ -459,9 +459,10 @@ namespace System
                 resultBuilderIsPooled = true;
                 result = StringBuilderCache.Acquire();
             }
-            
+
             // This is a flag to indicate if we are format the dates using Hebrew calendar.
             bool isHebrewCalendar = (cal.ID == CalendarId.HEBREW);
+            bool isJapaneseCalendar = (cal.ID == CalendarId.JAPAN);
             // This is a flag to indicate if we are formating hour/minute/second only.
             bool bTimeOnly = true;
 
@@ -601,7 +602,7 @@ namespace System
                         bTimeOnly = false;
                         break;
                     case 'M':
-                        // 
+                        //
                         // tokenLen == 1 : Month as digits with no leading zero.
                         // tokenLen == 2 : Month as digits with leading zero for single-digit months.
                         // tokenLen == 3 : Month as a three-letter abbreviation.
@@ -653,7 +654,19 @@ namespace System
 
                         int year = cal.GetYear(dateTime);
                         tokenLen = ParseRepeatPattern(format, i, ch);
-                        if (dtfi.HasForceTwoDigitYears)
+                        if (isJapaneseCalendar &&
+                            !AppContextSwitches.FormatJapaneseFirstYearAsANumber &&
+                            year == 1 &&
+                            i + tokenLen < format.Length - 1 &&
+                            format[i + tokenLen] == '\'' &&
+                            format[i + tokenLen + 1] == DateTimeFormatInfoScanner.CJKYearSuff[0])
+                        {
+                            // We are formatting a Japanese date with year equals 1 and the year number is followed by the year sign \u5e74
+                            // In Japanese dates, the first year in the era is not formatted as a number 1 instead it is formatted as \u5143 which means
+                            // first or beginning of the era.
+                            result.Append(DateTimeFormatInfo.JapaneseEraStart[0]);
+                        }
+                        else if (dtfi.HasForceTwoDigitYears)
                         {
                             FormatDigits(result, year, tokenLen <= 2 ? tokenLen : 2);
                         }
@@ -697,7 +710,7 @@ namespace System
                         break;
                     case '%':
                         // Optional format character.
-                        // For example, format string "%d" will print day of month 
+                        // For example, format string "%d" will print day of month
                         // without leading zero.  Most of the cases, "%" can be ignored.
                         nextChar = ParseNextChar(format, i);
                         // nextChar will be -1 if we already reach the end of the format string.
@@ -726,7 +739,7 @@ namespace System
                         // Escaped character.  Can be used to insert character into the format string.
                         // For exmple, "\d" will insert the character 'd' into the string.
                         //
-                        // NOTENOTE : we can remove this format character if we enforce the enforced quote 
+                        // NOTENOTE : we can remove this format character if we enforce the enforced quote
                         // character rule.
                         // That is, we ask everyone to use single quote or double quote to insert characters,
                         // then we can remove this character.
@@ -775,7 +788,7 @@ namespace System
 
                 if (timeOnly && dateTime.Ticks < Calendar.TicksPerDay)
                 {
-                    // For time only format and a time only input, the time offset on 0001/01/01 is less 
+                    // For time only format and a time only input, the time offset on 0001/01/01 is less
                     // accurate than the system's current offset because of daylight saving time.
                     offset = TimeZoneInfo.GetLocalUtcOffset(DateTime.Now, TimeZoneInfoOptions.NoThrowOnInvalidTime);
                 }
@@ -820,8 +833,8 @@ namespace System
         private static void FormatCustomizedRoundripTimeZone(DateTime dateTime, TimeSpan offset, StringBuilder result)
         {
             // The objective of this format is to round trip the data in the type
-            // For DateTime it should round-trip the Kind value and preserve the time zone. 
-            // DateTimeOffset instance, it should do so by using the internal time zone.                        
+            // For DateTime it should round-trip the Kind value and preserve the time zone.
+            // DateTimeOffset instance, it should do so by using the internal time zone.
 
             if (offset == NullOffset)
             {
@@ -897,7 +910,7 @@ namespace System
                     realFormat = RoundtripFormat;
                     break;
                 case 'r':
-                case 'R':       // RFC 1123 Standard                    
+                case 'R':       // RFC 1123 Standard
                     realFormat = dtfi.RFC1123Pattern;
                     break;
                 case 's':       // Sortable without Time Zone Info
@@ -940,7 +953,7 @@ namespace System
                     dtfi = DateTimeFormatInfo.InvariantInfo;
                     break;
                 case 'r':
-                case 'R':       // RFC 1123 Standard                    
+                case 'R':       // RFC 1123 Standard
                     if (offset != NullOffset)
                     {
                         // Convert to UTC invariants mean this will be in range
@@ -952,7 +965,7 @@ namespace System
                     }
                     dtfi = DateTimeFormatInfo.InvariantInfo;
                     break;
-                case 's':       // Sortable without Time Zone Info                
+                case 's':       // Sortable without Time Zone Info
                     dtfi = DateTimeFormatInfo.InvariantInfo;
                     break;
                 case 'u':       // Universal time in sortable format.
@@ -1075,7 +1088,7 @@ namespace System
                     // If the time is less than 1 day, consider it as time of day.
                     // Just print out the short time format.
                     //
-                    // This is a workaround for VB, since they use ticks less then one day to be 
+                    // This is a workaround for VB, since they use ticks less then one day to be
                     // time of day.  In cultures which use calendar other than Gregorian calendar, these
                     // alternative calendar may not support ticks less than a day.
                     // For example, Japanese calendar only supports date after 1868/9/8.
