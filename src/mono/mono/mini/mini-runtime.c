@@ -3389,7 +3389,7 @@ MONO_SIG_HANDLER_FUNC (, mono_sigill_signal_handler)
 // Same as MONO_SIG_HANDLER_FUNC but debug_fault_addr is added to params, and no_optimize.
 // The Krait workaround is not needed here, due to this not actually being the signal handler,
 // so MONO_SIGNAL_HANDLER_FUNC is combined into it.
-#define MONO_SIG_HANDLER_FUNC_DEBUG(access, ftn) access MONO_ATTRIBUTE_NO_OPTIMIZE void ftn \
+#define MONO_SIG_HANDLER_FUNC_DEBUG(access, ftn) access MONO_NO_OPTIMIZATION void ftn \
 	(int _dummy, MONO_SIG_HANDLER_INFO_TYPE *_info, void *context, void * volatile debug_fault_addr G_GNUC_UNUSED)
 #define MONO_SIG_HANDLER_PARAMS_DEBUG MONO_SIG_HANDLER_PARAMS, debug_fault_addr
 #endif
