@@ -11,26 +11,28 @@ namespace System.Tests
 {
     public partial class DoubleTests : RemoteExecutorTestBase
     {
+        // NOTE: Consider duplicating any tests added here in SingleTests.cs
+
         [Theory]
         [InlineData("a")]
-        [InlineData((float)234)]
+        [InlineData(234.0f)]
         public void CompareTo_ObjectNotDouble_ThrowsArgumentException(object value)
         {
             AssertExtensions.Throws<ArgumentException>(null, () => ((double)123).CompareTo(value));
         }
 
         [Theory]
-        [InlineData((double)234, (double)234, 0)]
-        [InlineData((double)234, double.MinValue, 1)]
-        [InlineData((double)234, (double)-123, 1)]
-        [InlineData((double)234, (double)0, 1)]
-        [InlineData((double)234, (double)123, 1)]
-        [InlineData((double)234, (double)456, -1)]
-        [InlineData((double)234, double.MaxValue, -1)]
-        [InlineData((double)234, double.NaN, 1)]
+        [InlineData(234.0, 234.0, 0)]
+        [InlineData(234.0, double.MinValue, 1)]
+        [InlineData(234.0, -123.0, 1)]
+        [InlineData(234.0, 0.0, 1)]
+        [InlineData(234.0, 123.0, 1)]
+        [InlineData(234.0, 456.0, -1)]
+        [InlineData(234.0, double.MaxValue, -1)]
+        [InlineData(234.0, double.NaN, 1)]
         [InlineData(double.NaN, double.NaN, 0)]
-        [InlineData(double.NaN, (double)0, -1)]
-        [InlineData((double)234, null, 1)]
+        [InlineData(double.NaN, 0.0, -1)]
+        [InlineData(234.0, null, 1)]
         public void CompareTo_Other_ReturnsExpected(double d1, object value, int expected)
         {
             if (value is double d2)
@@ -95,13 +97,13 @@ namespace System.Tests
         }
 
         [Theory]
-        [InlineData((double)789, (double)789, true)]
-        [InlineData((double)789, (double)-789, false)]
-        [InlineData((double)789, (double)0, false)]
+        [InlineData(789.0, 789.0, true)]
+        [InlineData(789.0, -789.0, false)]
+        [InlineData(789.0, 0.0, false)]
         [InlineData(double.NaN, double.NaN, true)]
         [InlineData(double.NaN, -double.NaN, true)]
-        [InlineData((double)789, (float)789, false)]
-        [InlineData((double)789, "789", false)]
+        [InlineData(789.0, 789.0f, false)]
+        [InlineData(789.0, "789", false)]
         [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework, "The fix was made in coreclr that is not in netfx. See https://github.com/dotnet/coreclr/issues/6237")]
         public static void Equals(double d1, object value, bool expected)
         {
@@ -135,11 +137,11 @@ namespace System.Tests
         [InlineData(double.MinValue, false)]            // Min Negative Normal
         [InlineData(-2.2250738585072014E-308, false)]   // Max Negative Normal
         [InlineData(-2.2250738585072009E-308, false)]   // Min Negative Subnormal
-        [InlineData(-4.94065645841247E-324, false)]     // Max Negative Subnormal
+        [InlineData(-double.Epsilon, false)]            // Max Negative Subnormal (Negative Epsilon)
         [InlineData(-0.0, false)]                       // Negative Zero
         [InlineData(double.NaN, false)]                 // NaN
         [InlineData(0.0, false)]                        // Positive Zero
-        [InlineData(4.94065645841247E-324, false)]      // Min Positive Subnormal
+        [InlineData(double.Epsilon, false)]             // Min Positive Subnormal (Positive Epsilon)
         [InlineData(2.2250738585072009E-308, false)]    // Max Positive Subnormal
         [InlineData(2.2250738585072014E-308, false)]    // Min Positive Normal
         [InlineData(double.MaxValue, false)]            // Max Positive Normal
@@ -154,11 +156,11 @@ namespace System.Tests
         [InlineData(double.MinValue, false)]            // Min Negative Normal
         [InlineData(-2.2250738585072014E-308, false)]   // Max Negative Normal
         [InlineData(-2.2250738585072009E-308, false)]   // Min Negative Subnormal
-        [InlineData(-4.94065645841247E-324, false)]     // Max Negative Subnormal
+        [InlineData(-double.Epsilon, false)]            // Max Negative Subnormal (Negative Epsilon)
         [InlineData(-0.0, false)]                       // Negative Zero
         [InlineData(double.NaN, true)]                  // NaN
         [InlineData(0.0, false)]                        // Positive Zero
-        [InlineData(4.94065645841247E-324, false)]      // Min Positive Subnormal
+        [InlineData(double.Epsilon, false)]             // Min Positive Subnormal (Positive Epsilon)
         [InlineData(2.2250738585072009E-308, false)]    // Max Positive Subnormal
         [InlineData(2.2250738585072014E-308, false)]    // Min Positive Normal
         [InlineData(double.MaxValue, false)]            // Max Positive Normal
@@ -173,11 +175,11 @@ namespace System.Tests
         [InlineData(double.MinValue, false)]            // Min Negative Normal
         [InlineData(-2.2250738585072014E-308, false)]   // Max Negative Normal
         [InlineData(-2.2250738585072009E-308, false)]   // Min Negative Subnormal
-        [InlineData(-4.94065645841247E-324, false)]     // Max Negative Subnormal
+        [InlineData(-double.Epsilon, false)]            // Max Negative Subnormal (Negative Epsilon)
         [InlineData(-0.0, false)]                       // Negative Zero
         [InlineData(double.NaN, false)]                 // NaN
         [InlineData(0.0, false)]                        // Positive Zero
-        [InlineData(4.94065645841247E-324, false)]      // Min Positive Subnormal
+        [InlineData(double.Epsilon, false)]             // Min Positive Subnormal (Positive Epsilon)
         [InlineData(2.2250738585072009E-308, false)]    // Max Positive Subnormal
         [InlineData(2.2250738585072014E-308, false)]    // Min Positive Normal
         [InlineData(double.MaxValue, false)]            // Max Positive Normal
@@ -192,11 +194,11 @@ namespace System.Tests
         [InlineData(double.MinValue, false)]            // Min Negative Normal
         [InlineData(-2.2250738585072014E-308, false)]   // Max Negative Normal
         [InlineData(-2.2250738585072009E-308, false)]   // Min Negative Subnormal
-        [InlineData(-4.94065645841247E-324, false)]     // Max Negative Subnormal
+        [InlineData(-double.Epsilon, false)]            // Max Negative Subnormal (Negative Epsilon)
         [InlineData(-0.0, false)]                       // Negative Zero
         [InlineData(double.NaN, false)]                 // NaN
         [InlineData(0.0, false)]                        // Positive Zero
-        [InlineData(4.94065645841247E-324, false)]      // Min Positive Subnormal
+        [InlineData(double.Epsilon, false)]             // Min Positive Subnormal (Positive Epsilon)
         [InlineData(2.2250738585072009E-308, false)]    // Max Positive Subnormal
         [InlineData(2.2250738585072014E-308, false)]    // Min Positive Normal
         [InlineData(double.MaxValue, false)]            // Max Positive Normal
@@ -249,24 +251,24 @@ namespace System.Tests
 
             NumberFormatInfo invariantFormat = NumberFormatInfo.InvariantInfo;
 
-            yield return new object[] { "-123", defaultStyle, null, (double)-123 };
-            yield return new object[] { "0", defaultStyle, null, (double)0 };
-            yield return new object[] { "123", defaultStyle, null, (double)123 };
-            yield return new object[] { "  123  ", defaultStyle, null, (double)123 };
+            yield return new object[] { "-123", defaultStyle, null, -123.0 };
+            yield return new object[] { "0", defaultStyle, null, 0.0 };
+            yield return new object[] { "123", defaultStyle, null, 123.0 };
+            yield return new object[] { "  123  ", defaultStyle, null, 123.0 };
             yield return new object[] { (567.89).ToString(), defaultStyle, null, 567.89 };
             yield return new object[] { (-567.89).ToString(), defaultStyle, null, -567.89 };
             yield return new object[] { "1E23", defaultStyle, null, 1E23 };
 
             yield return new object[] { (123.1).ToString(), NumberStyles.AllowDecimalPoint, null, 123.1 };
-            yield return new object[] { 1000.ToString("N0"), NumberStyles.AllowThousands, null, (double)1000 };
+            yield return new object[] { (1000.0).ToString("N0"), NumberStyles.AllowThousands, null, 1000.0 };
 
-            yield return new object[] { "123", NumberStyles.Any, emptyFormat, (double)123 };
+            yield return new object[] { "123", NumberStyles.Any, emptyFormat, 123.0 };
             yield return new object[] { (123.567).ToString(), NumberStyles.Any, emptyFormat, 123.567 };
-            yield return new object[] { "123", NumberStyles.Float, emptyFormat, (double)123 };
-            yield return new object[] { "$1,000", NumberStyles.Currency, dollarSignCommaSeparatorFormat, (double)1000 };
-            yield return new object[] { "$1000", NumberStyles.Currency, dollarSignCommaSeparatorFormat, (double)1000 };
+            yield return new object[] { "123", NumberStyles.Float, emptyFormat, 123.0 };
+            yield return new object[] { "$1,000", NumberStyles.Currency, dollarSignCommaSeparatorFormat, 1000.0 };
+            yield return new object[] { "$1000", NumberStyles.Currency, dollarSignCommaSeparatorFormat, 1000.0 };
             yield return new object[] { "123.123", NumberStyles.Float, decimalSeparatorFormat, 123.123 };
-            yield return new object[] { "(123)", NumberStyles.AllowParentheses, decimalSeparatorFormat, -123 };
+            yield return new object[] { "(123)", NumberStyles.AllowParentheses, decimalSeparatorFormat, -123.0 };
 
             yield return new object[] { "NaN", NumberStyles.Any, invariantFormat, double.NaN };
             yield return new object[] { "Infinity", NumberStyles.Any, invariantFormat, double.PositiveInfinity };
@@ -327,7 +329,7 @@ namespace System.Tests
 
             yield return new object[] { "ab", defaultStyle, null, typeof(FormatException) }; // Hex value
             yield return new object[] { "(123)", defaultStyle, null, typeof(FormatException) }; // Parentheses
-            yield return new object[] { 100.ToString("C0"), defaultStyle, null, typeof(FormatException) }; // Currency
+            yield return new object[] { (100.0).ToString("C0"), defaultStyle, null, typeof(FormatException) }; // Currency
 
             yield return new object[] { (123.456).ToString(), NumberStyles.Integer, null, typeof(FormatException) }; // Decimal
             yield return new object[] { "  " + (123.456).ToString(), NumberStyles.None, null, typeof(FormatException) }; // Leading space
@@ -384,21 +386,21 @@ namespace System.Tests
         public static IEnumerable<object[]> ToString_TestData()
         {
             yield return new object[] { double.MinValue, "G", null, "-1.79769313486232E+308" };
-            yield return new object[] { (double)-4567, "G", null, "-4567" };
+            yield return new object[] { -4567.0, "G", null, "-4567" };
             yield return new object[] { -4567.89101, "G", null, "-4567.89101" };
-            yield return new object[] { (double)0, "G", null, "0" };
-            yield return new object[] { (double)4567, "G", null, "4567" };
+            yield return new object[] { 0.0, "G", null, "0" };
+            yield return new object[] { 4567.0, "G", null, "4567" };
             yield return new object[] { 4567.89101, "G", null, "4567.89101" };
             yield return new object[] { double.MaxValue, "G", null, "1.79769313486232E+308" };
 
-            yield return new object[] { double.Epsilon, "G", null, "4.94065645841247E-324" };
+            yield return new object[] { double.Epsilon, "G", null, "double.Epsilon" };
             yield return new object[] { double.NaN, "G", null, "NaN" };
 
-            yield return new object[] { (double)2468, "N", null, "2,468.00" };
+            yield return new object[] { 2468.0, "N", null, "2,468.00" };
 
             // Changing the negative pattern doesn't do anything without also passing in a format string
             var customNegativePattern = new NumberFormatInfo() { NumberNegativePattern = 0 };
-            yield return new object[] { (double)-6310, "G", customNegativePattern, "-6310" };
+            yield return new object[] { -6310.0, "G", customNegativePattern, "-6310" };
 
             var customNegativeSignDecimalGroupSeparator = new NumberFormatInfo()
             {
@@ -406,8 +408,8 @@ namespace System.Tests
                 NumberDecimalSeparator = "~",
                 NumberGroupSeparator = "*"
             };
-            yield return new object[] { (double)-2468, "N", customNegativeSignDecimalGroupSeparator, "#2*468~00" };
-            yield return new object[] { (double)2468, "N", customNegativeSignDecimalGroupSeparator, "2*468~00" };
+            yield return new object[] { -2468.0, "N", customNegativeSignDecimalGroupSeparator, "#2*468~00" };
+            yield return new object[] { 2468.0, "N", customNegativeSignDecimalGroupSeparator, "2*468~00" };
 
             var customNegativeSignGroupSeparatorNegativePattern = new NumberFormatInfo()
             {
@@ -415,10 +417,10 @@ namespace System.Tests
                 NumberGroupSeparator = "*",
                 NumberNegativePattern = 0,
             };
-            yield return new object[] { (double)-2468, "N", customNegativeSignGroupSeparatorNegativePattern, "(2*468.00)" };
+            yield return new object[] { -2468.0, "N", customNegativeSignGroupSeparatorNegativePattern, "(2*468.00)" };
 
             NumberFormatInfo invariantFormat = NumberFormatInfo.InvariantInfo;
-            yield return new object[] { double.Epsilon, "G", invariantFormat, "4.94065645841247E-324" };
+            yield return new object[] { double.Epsilon, "G", invariantFormat, "double.Epsilon" };
             yield return new object[] { double.NaN, "G", invariantFormat, "NaN" };
             yield return new object[] { double.PositiveInfinity, "G", invariantFormat, "Infinity" };
             yield return new object[] { double.NegativeInfinity, "G", invariantFormat, "-Infinity" };
@@ -465,7 +467,7 @@ namespace System.Tests
         [Fact]
         public static void ToString_InvalidFormat_ThrowsFormatException()
         {
-            double d = 123;
+            double d = 123.0;
             Assert.Throws<FormatException>(() => d.ToString("Y")); // Invalid format
             Assert.Throws<FormatException>(() => d.ToString("Y", null)); // Invalid format
         }
