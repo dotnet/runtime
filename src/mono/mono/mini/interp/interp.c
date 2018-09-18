@@ -5532,6 +5532,23 @@ interp_exec_method_full (InterpFrame *frame, ThreadContext *context, guint16 *st
 			THROW_EX_GENERAL (*(MonoException**)(frame->locals + exvar_offset), ip - 1, TRUE);
 			MINT_IN_BREAK;
 	   }
+	   MINT_IN_CASE(MINT_MONO_RETHROW) {
+			/* 
+			 * need to clarify what this should actually do:
+			 *
+			 * Takes an exception from the stack and rethrows it.
+			 * This is useful for wrappers that don't want to have to
+			 * use CEE_THROW and lose the exception stacktrace. 
+			 */
+
+			--sp;
+			frame->ex_handler = NULL;
+			if (!sp->data.p)
+				sp->data.p = mono_get_exception_null_reference ();
+
+			THROW_EX_GENERAL ((MonoException *)sp->data.p, ip, TRUE);
+			MINT_IN_BREAK;
+	   }
 	   MINT_IN_CASE(MINT_LD_DELEGATE_METHOD_PTR) {
 		   MonoDelegate *del;
 
